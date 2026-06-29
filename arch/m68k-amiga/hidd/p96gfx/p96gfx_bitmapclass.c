@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2020, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for p96 rtg card drivers.
     
@@ -316,7 +316,8 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
     OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
-    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);
+    OOP_GetAttr(o, aHidd_BitMap_Display, (APTR)&data->gfxhidd);
+    OOP_GetAttr(data->gfxhidd, aHidd_Display_GfxHidd, (APTR)&data->gfxhidd);
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&data->pixfmtobj);
     OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel, &multi);
 
@@ -448,7 +449,7 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                     if (tag->ti_Data) {
                         if (cid->disp != data)
                         {
-                            OOP_Object *gfxhidd, *sync, *pf;
+                            OOP_Object *sync, *pf;
                             IPTR modeid = vHidd_ModeID_Invalid;
                             IPTR dwidth, dheight, depth, width, height;
                             struct ModeInfo *modeinfo;
@@ -456,8 +457,7 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                             width = data->width;
                             height = data->height;
                             OOP_GetAttr(o, aHidd_BitMap_ModeID , &modeid);
-                            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-                            HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pf);
+                            HIDD_DMEnum_GetMode(csd->dmenum, modeid, &sync, &pf);
                             OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
                             OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
                             OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
@@ -522,7 +522,7 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                                             c.red = clut[i * 3 + 0];
                                             c.green = clut[i * 3 + 1];
                                             c.blue = clut[i * 3 + 2];
-                                            HIDD_P96GFX_SetCursorPen(gfxhidd, i, c);
+                                            HIDD_P96GFX_SetCursorPen(data->gfxhidd, i, c);
                                         }
                                     }
                                 }
@@ -530,12 +530,15 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                             SetInterrupt(cid, FALSE);
                             SetColorArray(cid, 0, 256);
                             SetDisplay(cid, FALSE);
+                            /*                             bug("[P96CRASH] 5 pre-setgc mi=%p vdata=%p w=%d\n", modeinfo, data->VideoData, (int)width); /* P96CRASH-DEBUG */
                             SetGC(cid, modeinfo, 0);
                             SetClock(cid);
                             SetDAC(cid);
+                            /*                             bug("[P96CRASH] 6 pre-setpan vdata=%p\n", data->VideoData); /* P96CRASH-DEBUG */
                             SetPanning(cid, data->VideoData, width, 0, 0);
                             SetDisplay(cid, TRUE);
                             SetSwitch(cid, TRUE);
+                            /*                             bug("[P96CRASH] 6b show-ok\n"); /* P96CRASH-DEBUG */
                             SetInterrupt(cid, TRUE);
                             cid->disp = data;
                             cid->disp->locked++;
@@ -980,7 +983,7 @@ VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
                 APTR        srcPixels = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
                 OOP_Object *dstpf;
 
-                dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+                dstpf = HIDD_DMEnum_GetPixFmt(csd->dmenum, msg->pixFmt);
 
                 HIDD_BM_ConvertPixels(o, &srcPixels, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
                                       &pixels, (HIDDT_PixelFormat *)dstpf, msg->modulo,
@@ -1160,7 +1163,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
                 APTR        dstBuf = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
                 OOP_Object *srcpf;
 
-                srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+                srcpf = HIDD_DMEnum_GetPixFmt(csd->dmenum, msg->pixFmt);
 
                 HIDD_BM_ConvertPixels(o, &pixels, (HIDDT_PixelFormat *)srcpf, msg->modulo,
                                       &dstBuf, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,

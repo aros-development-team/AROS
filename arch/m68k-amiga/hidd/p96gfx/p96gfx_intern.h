@@ -7,6 +7,17 @@
 
 #include <hidd/gfx.h>
 
+#define CLID_Hidd_Display_P96                                "hidd.display.p96"
+#define CLID_Hidd_DMEnum_P96                                 "hidd.dmenum.p96"
+
+struct P96GfxDisplayData
+{
+};
+
+struct P96GfxDMEnumData
+{
+};
+
 struct RTGMode
 {
     struct Node                                         node;
@@ -28,6 +39,8 @@ struct p96gfx_staticdata
 
     OOP_Class                                           *basebm;            /* baseclass for CreateObject */
     OOP_Class                                           *gfxclass;
+    OOP_Class                                           *displayclass;
+    OOP_Class                                           *dmenumclass;
     OOP_Class                                           *bmclass;
 
     OOP_AttrBase                                        hiddAttrBase;
@@ -37,13 +50,20 @@ struct p96gfx_staticdata
     OOP_AttrBase                                        hiddSyncAttrBase;
     OOP_AttrBase                                        hiddPixFmtAttrBase;
     OOP_AttrBase                                        hiddGfxAttrBase;
+    OOP_AttrBase                                        hiddDisplayAttrBase;
+    OOP_AttrBase                                        hiddDMEnumAttrBase;
     OOP_AttrBase                                        hiddP96GfxAttrBase;
     OOP_AttrBase                                        hiddColorMapAttrBase;
 
     OOP_MethodID                                        hiddBitMapBase;
     OOP_MethodID                                        hiddColorMapBase;
     OOP_MethodID                                        hiddGfxBase;
+    OOP_MethodID                                        hiddDisplayBase;
+    OOP_MethodID                                        hiddDMEnumBase;
     OOP_MethodID                                        hiddP96GfxBase;
+
+    OOP_Object                                          *display;
+    OOP_Object                                          *dmenum;
 
     struct List                                         foundCards;
 };
@@ -112,6 +132,8 @@ struct P96GFXclbase
 #define __IHidd_Sync	                                (csd->hiddSyncAttrBase)
 #define __IHidd_PixFmt		                            (csd->hiddPixFmtAttrBase)
 #define __IHidd_Gfx 	                                (csd->hiddGfxAttrBase)
+#define __IHidd_Display                                  (csd->hiddDisplayAttrBase)
+#define __IHidd_DMEnum                                   (csd->hiddDMEnumAttrBase)
 #define __IHidd_P96Gfx 	                                (csd->hiddP96GfxAttrBase)
 //#define __IHidd_Attr		                            (csd->hiddAttrBase)
 #define __IHidd_ColorMap	                            (csd->hiddColorMapAttrBase)
@@ -119,6 +141,8 @@ struct P96GFXclbase
 #define HiddBitMapBase		                            (csd->hiddBitMapBase)
 #define HiddColorMapBase	                            (csd->hiddColorMapBase)
 #define HiddGfxBase		                                (csd->hiddGfxBase)
+#define HiddDisplayBase                                 (csd->hiddDisplayBase)
+#define HiddDMEnumBase                                  (csd->hiddDMEnumBase)
 #define HiddP96GfxBase                                  (csd->hiddP96GfxBase)
 
 #define LOCK_HW                                         {ObtainSemaphore(&(cid)->HWLock);}

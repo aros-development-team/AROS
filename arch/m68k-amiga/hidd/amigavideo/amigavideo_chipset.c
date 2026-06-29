@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -654,12 +654,13 @@ UBYTE av__PickPen(struct amigavideo_staticdata *csd, ULONG pixel)
     return retval;
 }
 
-BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHidd_Display_SetCursorShape *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     struct Library *OOPBase = csd->cs_OOPBase;
     OOP_MethodID HiddGfxBase = csd->cs_HiddGfxBase;
     OOP_MethodID HiddBitMapBase = csd->cs_HiddBitMapBase;
+    OOP_MethodID HiddDMEnumBase = csd->cs_HiddDMEnumBase;
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
     OOP_Object *bmPFObj = NULL;
     HIDDT_PixelFormat *bmPF;
@@ -675,7 +676,7 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
     if (bmcmod == vHidd_ColorModel_TrueColor)
     {
         OOP_GetAttr(bmPFObj, aHidd_PixFmt_StdPixFmt, (IPTR*)&pf);
-        bmPF = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(o, pf);
+        bmPF = (HIDDT_PixelFormat *)HIDD_DMEnum_GetPixFmt(csd->dmenum, pf);
     }
 
     if (csd->aga && csd->aga_enabled && width > 16)
@@ -739,6 +740,7 @@ BOOL new_setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct
     struct Library *OOPBase = csd->cs_OOPBase;
     OOP_MethodID HiddGfxBase = csd->cs_HiddGfxBase;
     OOP_MethodID HiddBitMapBase = csd->cs_HiddBitMapBase;
+    OOP_MethodID HiddDMEnumBase = csd->cs_HiddDMEnumBase;
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
     OOP_Object *bmPFObj = NULL;
     HIDDT_PixelFormat *bmPF;
@@ -754,7 +756,7 @@ BOOL new_setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct
     if (bmcmod == vHidd_ColorModel_TrueColor)
     {
         OOP_GetAttr(bmPFObj, aHidd_PixFmt_StdPixFmt, (IPTR*)&pf);
-        bmPF = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(o, pf);
+        bmPF = (HIDDT_PixelFormat *)HIDD_DMEnum_GetPixFmt(csd->dmenum, pf);
     }
 
     if (csd->aga && csd->aga_enabled && width > 16)
@@ -1690,6 +1692,7 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     OOPBase = csd->cs_OOPBase;
     csd->cs_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
     csd->cs_HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    csd->cs_HiddDMEnumBase = OOP_GetMethodID(IID_Hidd_DMEnum, 0);
 
     csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!csd->cs_UtilityBase)

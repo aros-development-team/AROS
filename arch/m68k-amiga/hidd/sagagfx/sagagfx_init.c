@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: SAGA Gfx Hidd for V4 AROS
 */
@@ -67,7 +67,9 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
     IID_Hidd,
-    IID_Hidd_ColorMap
+    IID_Hidd_ColorMap,
+    IID_Hidd_Display,
+    IID_Hidd_DMEnum
 };
 
 static int SAGAGfx_Init(LIBBASETYPEPTR LIBBASE)

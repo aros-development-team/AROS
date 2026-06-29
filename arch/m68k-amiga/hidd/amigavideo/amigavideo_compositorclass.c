@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2019-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -25,6 +25,9 @@
 #include "amigavideo_hidd.h"
 #include "amigavideo_compositor.h"
 
+#undef HiddDisplayAttrBase
+#define HiddDisplayAttrBase (compdata->displayAttrBase)
+
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
 
@@ -45,6 +48,11 @@ OOP_Object *METHOD(AmigaVideoCompositor, Root, New)
         struct Library *OOPBase = csd->cs_OOPBase;
         struct Library *UtilityBase = csd->cs_UtilityBase;
         BOOL dodispose = FALSE;
+        struct OOP_ABDescr attrbases[] =
+        {
+            { IID_Hidd_Display, &compdata->displayAttrBase },
+            { NULL, NULL }
+        };
 
         InitSemaphore(&compdata->semaphore);
 
@@ -55,14 +63,22 @@ OOP_Object *METHOD(AmigaVideoCompositor, Root, New)
         NEWLIST(&csd->c2fragments);
         NEWLIST(&csd->c2ifragments);
 
-        compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositor_GfxHidd, 0, msg->attrList);
-        if (compdata->gfx == NULL)
+        if (!OOP_ObtainAttrBases(attrbases))
             dodispose = TRUE;
+
+        compdata->display = (OOP_Object *)GetTagData(aHidd_Compositor_DisplayHidd, 0, msg->attrList);
+        if (compdata->display == NULL)
+            dodispose = TRUE;
+        else
+        {
+            OOP_GetAttr(compdata->display, aHidd_Display_GfxHidd, (IPTR *)&compdata->gfx);
+            OOP_GetAttr(compdata->display, aHidd_Display_DMEnumerator, (IPTR *)&compdata->dmenum);
+        }
 #if (0)
         else
         {
             /* Create GC object that will be used for drawing operations */
-            compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, CSD(cl)->basegc, NULL);
+            compdata->gc = HIDD_Display_CreateObject(compdata->display, CSD(cl)->basegc, NULL);
             if (compdata->gc == NULL)
                 dodispose = TRUE;
         }
@@ -500,4 +516,3 @@ static void DisplayServiceTask(OOP_Object *displayCompositor)
     }
     D(bug("[AmigaVideo:Compositor] %s: Exiting\n", __func__));
 }
-

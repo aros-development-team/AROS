@@ -75,7 +75,7 @@ VOID initcustom(struct amigavideo_staticdata *);
 
 VOID setfmode(struct amigavideo_staticdata *, struct amigabm_data *);
 VOID setspritepos(struct amigavideo_staticdata *, WORD, WORD, UBYTE, BOOL);
-BOOL setsprite(OOP_Class *, OOP_Object *, WORD, WORD, struct pHidd_Gfx_SetCursorShape *);
+BOOL setsprite(OOP_Class *, OOP_Object *, WORD, WORD, struct pHidd_Display_SetCursorShape *);
 VOID resetsprite(struct amigavideo_staticdata *);
 VOID setspritevisible(struct amigavideo_staticdata *, BOOL);
 

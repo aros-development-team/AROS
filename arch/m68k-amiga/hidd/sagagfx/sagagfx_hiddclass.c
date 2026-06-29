@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Gfx Hidd class for SM502.
 */
@@ -111,7 +111,7 @@ struct TagItem * LoadExternalSyncs(OOP_Class *cl)
                             }
 
                             snprintf(desc, 32, "SAGA(User):%dx%d", Modeline[ML_HPIXEL], Modeline[ML_VPIXEL]);
-                            tags[0].ti_Tag = aHidd_Gfx_SyncTags;
+                            tags[0].ti_Tag = aHidd_DMEnum_SyncTags;
                             tags[0].ti_Data = (IPTR)&tags[2];
                             tags[1].ti_Tag = TAG_DONE;
                             tags[1].ti_Data = 0;
@@ -175,12 +175,12 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
     MAKE_SYNC(800x600, 28375, 800, 848, 880, 960, 600, 603, 607, 615, 1, "SAGA:800x600");
 
     struct TagItem syncs[] = {
-        { aHidd_Gfx_SyncTags,       (IPTR)sync_320x240 },
-        { aHidd_Gfx_SyncTags,       (IPTR)sync_640x360 },
-        { aHidd_Gfx_SyncTags,       (IPTR)sync_640x480 },
-        { aHidd_Gfx_SyncTags,       (IPTR)sync_720x400 },
-        { aHidd_Gfx_SyncTags,       (IPTR)sync_720x576 },
-        { aHidd_Gfx_SyncTags,       (IPTR)sync_800x600 },
+        { aHidd_DMEnum_SyncTags,       (IPTR)sync_320x240 },
+        { aHidd_DMEnum_SyncTags,       (IPTR)sync_640x360 },
+        { aHidd_DMEnum_SyncTags,       (IPTR)sync_640x480 },
+        { aHidd_DMEnum_SyncTags,       (IPTR)sync_720x400 },
+        { aHidd_DMEnum_SyncTags,       (IPTR)sync_720x576 },
+        { aHidd_DMEnum_SyncTags,       (IPTR)sync_800x600 },
         { TAG_DONE, 0UL }
     };
 
@@ -259,17 +259,16 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
     };
 
     struct TagItem modetags[] = {
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_32bpp  },
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_8bpp   },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags_32bpp  },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags_24bpp  },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags_16bpp  },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags_8bpp   },
         { TAG_MORE,             (IPTR)syncs },
         { TAG_DONE, 0UL }
     };
 
     struct TagItem saganewtags[] =
     {
-        { aHidd_Gfx_ModeTags    , (IPTR)modetags                },
         { aHidd_Name            , (IPTR)"SAGA"                  },
         { aHidd_HardwareName    , (IPTR)"SAGA Graphics Chip"    },
         { aHidd_ProducerName    , (IPTR)"APOLLO Team"           },
@@ -345,8 +344,28 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
+        struct TagItem displaytags[] =
+        {
+            { aHidd_Display_GfxHidd,  (IPTR)o        },
+            { aHidd_Display_ModeTags, (IPTR)modetags },
+            { TAG_DONE,               0              }
+        };
+
         D(bug("[SAGA] DoSuperMethod() returned %p\n", o));
         XSD(cl)->sagagfxhidd = o;
+
+        XSD(cl)->sagagfxdisplay = OOP_NewObject(XSD(cl)->sagagfxdisplayclass, NULL, displaytags);
+        if (XSD(cl)->sagagfxdisplay)
+        {
+            OOP_GetAttr(XSD(cl)->sagagfxdisplay, aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->dmenum);
+        }
+        else
+        {
+            OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+            XSD(cl)->sagagfxhidd = NULL;
+            o = NULL;
+        }
     }
 
     D(bug("[SAGA] IRoot::New() = %p\n", o));
@@ -358,6 +377,8 @@ VOID METHOD(SAGAGfx, Root, Dispose)
 {
     D(bug("[SAGA] Root::Dispose()\n"));
     XSD(cl)->sagagfxhidd = NULL;
+    XSD(cl)->sagagfxdisplay = NULL;
+    XSD(cl)->dmenum = NULL;
     DeletePool(XSD(cl)->mempool);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -376,9 +397,9 @@ VOID METHOD(SAGAGfx, Root, Get)
                 *msg->storage = TRUE;
                 break;
 
-            case aoHidd_Gfx_HWSpriteTypes:
+            case aoHidd_Gfx_DisplayDefault:
                 found = TRUE;
-                *msg->storage = XSD(cl)->useHWSprite ? vHidd_SpriteType_3Plus1 : 0;
+                *msg->storage = (IPTR)XSD(cl)->sagagfxdisplay;
                 break;
 
 #if 0 /* Not implemented yet */
@@ -399,7 +420,24 @@ VOID METHOD(SAGAGfx, Root, Get)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorPos)
+VOID METHOD(SAGAGfxDisplay, Root, Get)
+{
+    ULONG idx;
+    BOOL found = FALSE;
+
+    Hidd_Display_Switch(msg->attrID, idx)
+    {
+        case aoHidd_Display_SpriteTypes:
+            *msg->storage = XSD(cl)->useHWSprite ? vHidd_SpriteType_3Plus1 : 0;
+            found = TRUE;
+            break;
+    }
+
+    if (!found)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+BOOL METHOD(SAGAGfxDisplay, Hidd_Display, SetCursorPos)
 {
     if (XSD(cl)->visible)
     {
@@ -437,7 +475,7 @@ BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorPos)
     return TRUE;
 }
 
-VOID METHOD(SAGAGfx, Hidd_Gfx, SetCursorVisible)
+VOID METHOD(SAGAGfxDisplay, Hidd_Display, SetCursorVisible)
 {
     D(bug("[SAGA] SetCursorVisible(%d)\n", msg->visible));
 
@@ -455,7 +493,7 @@ VOID METHOD(SAGAGfx, Hidd_Gfx, SetCursorVisible)
     XSD(cl)->cursor_visible = msg->visible;
 }
 
-BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorShape)
+BOOL METHOD(SAGAGfxDisplay, Hidd_Display, SetCursorShape)
 {
     IPTR width, height, depth;
     OOP_Object *cmap = NULL;
@@ -545,7 +583,7 @@ BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorShape)
     return TRUE;
 }
 
-OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, CreateObject)
+OOP_Object *METHOD(SAGAGfxDisplay, Hidd_Display, CreateObject)
 {
     OOP_Object      *object = NULL;
 
@@ -560,7 +598,7 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, CreateObject)
             {TAG_IGNORE, 0                  },
             {TAG_MORE  , (IPTR)msg->attrList}
         };
-        struct pHidd_Gfx_CreateObject p;
+        struct pHidd_Display_CreateObject p;
 
         displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
         framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
@@ -641,7 +679,7 @@ msg->srcX, msg->srcY, msg->width, msg->height));
 
 /*********  GfxHidd::Show()  ***************************/
 
-OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, Show)
+OOP_Object *METHOD(SAGAGfxDisplay, Hidd_Display, Show)
 {
     struct SAGAGfx_staticdata *data = XSD(cl);
     struct TagItem tags[] = {

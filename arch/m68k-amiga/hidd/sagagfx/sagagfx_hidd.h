@@ -2,7 +2,7 @@
 #define SAGAGFX_HIDD_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SAGAGfx header.
@@ -17,21 +17,29 @@
 #include <oop/oop.h>
 #include <hidd/gfx.h>
 
-#define ATTRBASES_NUM 7
+#define ATTRBASES_NUM 9
 
 #define CLID_Hidd_Gfx_SAGA "hidd.gfx.saga"
+#define CLID_Hidd_Display_SAGA "hidd.display.saga"
 
 struct SAGAGfx_data
 {
     int __dummy__;
 };
 
+struct SAGAGfxDisplayData
+{
+};
+
 struct SAGAGfx_staticdata
 {
     OOP_Class *     basebm;
     OOP_Class *     sagagfxclass;
+    OOP_Class *     sagagfxdisplayclass;
     OOP_Class *     bmclass;
     OOP_Object *    sagagfxhidd;
+    OOP_Object *    sagagfxdisplay;
+    OOP_Object *    dmenum;
     OOP_Object *    visible;        /* Currently visible bitmap */
     OOP_AttrBase    attrBases[ATTRBASES_NUM];
 
@@ -60,6 +68,8 @@ struct SAGAGfxBase
 #undef HiddChunkyBMAttrBase
 #undef HiddBitMapAttrBase
 #undef HiddGfxAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddAttrBase
@@ -73,6 +83,8 @@ struct SAGAGfxBase
 #define HiddSyncAttrBase      XSD(cl)->attrBases[4]
 #define HiddAttrBase          XSD(cl)->attrBases[5]
 #define HiddColorMapAttrBase  XSD(cl)->attrBases[6]
+#define HiddDisplayAttrBase   XSD(cl)->attrBases[7]
+#define HiddDMEnumAttrBase    XSD(cl)->attrBases[8]
 
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)

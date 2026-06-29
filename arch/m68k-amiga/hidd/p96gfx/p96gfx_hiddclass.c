@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: P96 rtg card Gfx Hidd wrapper.
 */
 
 #include <exec/libraries.h>
+#include <exec/execbase.h>
 #include <exec/rawfmt.h>
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -49,9 +50,29 @@
 /* REMOVE-ME: 4MB Hack (used for easier debug of vram <-> ram swapping) !!!!*/
 /*#define USE_VRAM_HACK*/
 
-HIDDT_ModeID *P96GFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
+static void p96sbx(struct p96gfx_staticdata *csd, const char *t);   /* SBGUARD temp debug, defined below */
+
+static struct P96GfxData *P96GFX__GetGfxDataFromDisplay(OOP_Class *cl, OOP_Object *o, OOP_Object **gfx)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_staticdata *csd = CSD(cl);
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)gfx);
+    return OOP_INST_DATA(CSD(cl)->gfxclass, *gfx);
+}
+
+static struct P96GfxData *P96GFX__GetGfxDataFromDMEnum(OOP_Class *cl, OOP_Object *o, OOP_Object **gfx)
+{
+    struct p96gfx_staticdata *csd = CSD(cl);
+    OOP_Object *display = NULL;
+
+    OOP_GetAttr(o, aHidd_DMEnum_Display, (IPTR *)&display);
+    OOP_GetAttr(display, aHidd_Display_GfxHidd, (IPTR *)gfx);
+    return OOP_INST_DATA(CSD(cl)->gfxclass, *gfx);
+}
+
+HIDDT_ModeID *P96GFXDMEnum__Hidd_DMEnum__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_DMEnum_QueryModeIDs *msg)
+{
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDMEnum(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     struct RTGMode *node;
@@ -136,9 +157,10 @@ HIDDT_ModeID *P96GFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
     return modeids;
 }
 
-VOID P96GFXCl__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ReleaseModeIDs *msg)
+VOID P96GFXDMEnum__Hidd_DMEnum__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_DMEnum_ReleaseModeIDs *msg)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDMEnum(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
 
@@ -148,11 +170,11 @@ VOID P96GFXCl__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o, struct pHi
         FreeVec(msg->modeIDs);
 }
 
-HIDDT_ModeID P96GFXCl__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NextModeID *msg)
+HIDDT_ModeID P96GFXDMEnum__Hidd_DMEnum__NextModeID(OOP_Class *cl, OOP_Object *o, struct pHidd_DMEnum_NextModeID *msg)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDMEnum(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
-    struct p96gfx_staticdata *csd = CSD(cl);
     struct RTGMode *node = NULL;
     HIDDT_ModeID mid = vHidd_ModeID_Invalid;
 
@@ -177,11 +199,11 @@ HIDDT_ModeID P96GFXCl__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o, struct
     return mid;
 }
 
-BOOL P96GFXCl__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMode *msg)
+BOOL P96GFXDMEnum__Hidd_DMEnum__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_DMEnum_GetMode *msg)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDMEnum(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
-    struct p96gfx_staticdata *csd = CSD(cl);
     struct RTGMode *node;
 
     DB2(bug("[P96Gfx] %s(%08x)\n", __func__, msg->modeID);)
@@ -290,7 +312,6 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     struct LibResolution *r;
     struct TagItem *reslist, *restags, *pflist, *modetags;
     struct TagItem mytags[] = {
-        { aHidd_Gfx_ModeTags,           0                   },
         { aHidd_Name,                   (IPTR)"p96gfx.hidd" },
         { aHidd_HardwareName,           0                   },
         { aHidd_ProducerName,           (IPTR)"P96"         },
@@ -304,6 +325,8 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
     if (!cid || cid->initialized)
         return NULL;
+
+    /*     bug("[P96CRASH] 0 new-enter cid=%p\n", cid); /* P96CRASH-DEBUG */
 
     NEWLIST(&cid->rtglist);
     NEWLIST(&cid->bitmaplist);
@@ -324,7 +347,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         cid->p96gfx_HWResTmplt = (cid->CardBase) ? "RTGFX:%hx%v" : "P96:%hx%v";
         cid->p96gfx_HWName = "P96 Card Wrapper";
     }
-    mytags[2].ti_Data = (IPTR)cid->p96gfx_HWName;
+    mytags[1].ti_Data = (IPTR)cid->p96gfx_HWName;
 
     supportedformats = gw(cid->boardinfo + PSSO_BoardInfo_RGBFormats);
 
@@ -375,12 +398,14 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         reslist[i * SIZE_RESLIST + 10].ti_Data = 0;
 
         D(bug("[P96Gfx] %s:     %08x %d*%d\n", __func__, r, r->Width, r->Height);)
-        restags[i].ti_Tag = aHidd_Gfx_SyncTags;
+        restags[i].ti_Tag = aHidd_DMEnum_SyncTags;
         restags[i].ti_Data = (IPTR)&reslist[i * SIZE_RESLIST];
         i++;
     }
     restags[i].ti_Tag = TAG_DONE;
     restags[i].ti_Data = 0;
+
+    /*     bug("[P96CRASH] Q reslist-done cnt=%d\n", (int)rescnt); /* P96CRASH-DEBUG */
 
     gotmodes = 0;
     k = 0;
@@ -416,7 +441,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
         gotmodes |= 1 << (depth / 8);
 
-        modetags[k].ti_Tag = aHidd_Gfx_PixFmtTags;
+        modetags[k].ti_Tag = aHidd_DMEnum_PixFmtTags;
         modetags[k].ti_Data = (IPTR)&pflist[j];
         k++;
 
@@ -490,8 +515,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     k++;
     modetags[k].ti_Tag = TAG_MORE;
     modetags[k].ti_Data = (IPTR)restags;
-
-    mytags[0].ti_Data = (IPTR)modetags;
+    mytags[3].ti_Data = (IPTR)msg->attrList;
 
     EnterFunc(bug("[P96Gfx] %s: tags @ %x\n", __func__, mytags);)
 
@@ -500,9 +524,17 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     msg = &mymsg;
 
     /* Register gfxmodes */
+    /*     bug("[P96CRASH] R pre-super o=%p\n", o); /* P96CRASH-DEBUG */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    /*     bug("[P96CRASH] B post-super o=%p\n", o); /* P96CRASH-DEBUG */
     if (NULL != o)
     {
+        struct TagItem displaytags[] = {
+            { aHidd_Display_GfxHidd,     (IPTR)o               },
+            { aHidd_Display_ModeTags,    (IPTR)modetags        },
+            { aHidd_Display_DMEnumClass, (IPTR)csd->dmenumclass },
+            { TAG_DONE,                  0                     }
+        };
         struct P96GfxData *data = OOP_INST_DATA(cl, o);
         struct TagItem cmtags[] = {
             { aHidd_ColorMap_NumEntries,    SPRITE_PEN_COUNT    },
@@ -518,18 +550,43 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR*)&data->pfo);
         cid->spritepencnt = SPRITE_PEN_COUNT;
 
+        /*         bug("[P96CRASH] P5 pre-disp cm=%p\n", data->spriteColors); /* P96CRASH-DEBUG */
+        csd->display = OOP_NewObject(csd->displayclass, NULL, displaytags);
+        if (!csd->display)
+        {
+            OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+            o = NULL;
+        }
+        else
+        {
+            OOP_GetAttr(csd->display, aHidd_Display_DMEnumerator, (IPTR *)&csd->dmenum);
+            if (!csd->dmenum)
+            {
+                OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+                OOP_DisposeObject(csd->display);
+                csd->display = NULL;
+                OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+                o = NULL;
+            }
+        }
+
+        /*         bug("[P96CRASH] C disp=%p dmenum=%p o=%p\n", csd->display, csd->dmenum, o); /* P96CRASH-DEBUG */
+        if (!o)
+            goto new_cleanup;
+
         cid->initialized = 1;
 
         cid->superforward = TRUE;
-        midp = HIDD_Gfx_QueryModeIDs(o, NULL);
-        for (i = 0; midp[i] != vHidd_ModeID_Invalid; i++) {
+        midp = HIDD_DMEnum_QueryModeIDs(csd->dmenum, NULL);
+        for (i = 0; midp && midp[i] != vHidd_ModeID_Invalid; i++) {
             OOP_Object *sync, *pf;
             HIDDT_ModeID mid = midp[i];
             IPTR dwidth, dheight;
             struct RTGMode *node1, *node2;
             ULONG modeid, rtgmodeid, p96mode;
 
-            if (!HIDD_Gfx_GetMode(o, mid, &sync, &pf))
+            if (!HIDD_DMEnum_GetMode(csd->dmenum, mid, &sync, &pf))
                 continue;
             OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
             OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
@@ -570,20 +627,24 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
             DB2(bug("[P96Gfx] %s: Added %dx%d %08x %d\n", __func__, node1->width, node1->height, node1->modeid, p96mode);)
         }
-        HIDD_Gfx_ReleaseModeIDs(o, midp);
+        if (midp)
+            HIDD_DMEnum_ReleaseModeIDs(csd->dmenum, midp);
         cid->superforward = FALSE;
+        /*         bug("[P96CRASH] D modereg-done o=%p\n", o); /* P96CRASH-DEBUG */
     }
-    
+
+new_cleanup:
     FreeVec(restags);
     FreeVec(reslist);
     FreeVec(pflist);
     FreeVec(modetags);
 
+    /*     bug("[P96CRASH] 2 new-done o=%p\n", o); /* P96CRASH-DEBUG */
     ReturnPtr("[P96Gfx]:New", OOP_Object *, o);
 }
 
 /********** GfxHidd::Dispose()  ******************************/
-OOP_Object *P96GFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+OOP_Object *P96GFXDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
@@ -593,7 +654,7 @@ OOP_Object *P96GFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struc
     {
         struct p96gfx_staticdata        *csd = CSD(cl);
         HIDDT_ModeID                    modeid;
-        struct pHidd_Gfx_CreateObject   p;
+        struct pHidd_Display_CreateObject   p;
         struct TagItem tags[] =
         {
             { TAG_IGNORE,       TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
@@ -631,9 +692,6 @@ VOID P96GFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         //bug("=%x\n", idx);
         switch (idx)
         {
-            case aoHidd_Gfx_HWSpriteTypes:
-                *msg->storage = cid->hardwaresprite ? vHidd_SpriteType_3Plus1 : 0;
-                return;
             case aoHidd_Gfx_SupportsHWCursor:
                 *msg->storage = cid->hardwaresprite;
                 return;
@@ -646,6 +704,9 @@ VOID P96GFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             case aoHidd_Gfx_DriverName:
                 *msg->storage = (IPTR)"P96GFX";
                 return;
+            case aoHidd_Gfx_DisplayDefault:
+                *msg->storage = (IPTR)csd->display;
+                return;
         }
     }
     Hidd_P96Gfx_Switch(msg->attrID, idx)
@@ -654,6 +715,32 @@ VOID P96GFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             *msg->storage = (IPTR)data->cardData;
             return;
     }
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID P96GFXDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    struct p96gfx_staticdata *csd = CSD(cl);
+    ULONG idx;
+
+    /*
+     * NB: do NOT fetch the gfx data (which queries aHidd_Display_GfxHidd on this
+     * very object) unconditionally here - that re-enters this Get method and
+     * recurses infinitely. Only resolve it for the attribute that needs it.
+     */
+    Hidd_Display_Switch(msg->attrID, idx)
+    {
+        case aoHidd_Display_SpriteTypes:
+        {
+            OOP_Object *gfx = NULL;
+            struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
+            struct p96gfx_carddata *cid = data->cardData;
+
+            *msg->storage = cid->hardwaresprite ? vHidd_SpriteType_3Plus1 : 0;
+            return;
+        }
+    }
+
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -685,40 +772,46 @@ VOID P96GFXCl__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
-#if 0
-ULONG P96GFXCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)
+
+ULONG P96GFXDisplay__Hidd_Display__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_MakeViewPort *msg)
 {
-    struct p96gfx_staticdata *csd = CSD(cl);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
+    struct p96gfx_carddata *cid = data->cardData;
+    struct HIDD_ViewPortData *vpd = msg->Data;
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
-    csd->vpe = NULL;
-    if (!msg)
-        return MVP_OK;
-    bug("[P96Gfx] %s: %p\n", __func__, msg->Data->vpe);
-    csd->vpe = msg->Data->vpe;
+    cid->viewport = NULL;
+    if (vpd && vpd->vpe)
+        cid->viewport = vpd->vpe->ViewPort;
+
     return MVP_OK;
 }
 
-void P96GFXCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CleanViewPort *msg)
+void P96GFXDisplay__Hidd_Display__DeinitViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_DeinitViewPort *msg)
 {
-    struct p96gfx_staticdata *csd = CSD(cl);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
+    struct p96gfx_carddata *cid = data->cardData;
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
-    csd->vpe = NULL;
+    cid->viewport = NULL;
 }
-#endif
 
-static void P96GFXCl__DoShow(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct ViewPort *vp, BOOL offonly)
+static void P96GFXDisplay__DoShow(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct ViewPort *vp, BOOL offonly)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     struct IntuitionBase *ib = (struct IntuitionBase*)csd->cs_IntuitionBase;
     struct ViewPort *vpi = NULL;
 
     D(bug("[P96Gfx] %s()\n", __func__));
+
+    /*     bug("[P96CRASH] 3 doshow-enter bm=%p\n", bm); /* P96CRASH-DEBUG */
 
     if (ib->FirstScreen)
         vpi = &ib->FirstScreen->ViewPort;
@@ -732,6 +825,7 @@ static void P96GFXCl__DoShow(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struc
         if (offonly)
             return;
 
+        /*         bug("[P96CRASH] 4 doshow-visible bm=%p\n", bm); /* P96CRASH-DEBUG */
         OOP_SetAttrs(bm, (struct TagItem *)tags);
 
         if (cid->acb)
@@ -759,20 +853,22 @@ static void P96GFXCl__DoShow(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struc
     }
 }
 
-OOP_Object *P96GFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+OOP_Object *P96GFXDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
-    P96GFXCl__DoShow(cl, o, msg->bitMap, cid->viewport, FALSE);
+    P96GFXDisplay__DoShow(cl, o, msg->bitMap, cid->viewport, FALSE);
     return msg->bitMap;
 }
 
-ULONG P96GFXCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+ULONG P96GFXDisplay__Hidd_Display__InitViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_InitViewPorts *msg)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
     struct HIDD_ViewPortData *vpd = msg->Data;
     OOP_Object *bm = NULL;
@@ -786,13 +882,13 @@ ULONG P96GFXCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct 
             vp = vpd->vpe->ViewPort;
     }
     cid->viewport = vp;
-    P96GFXCl__DoShow(cl, o, bm, vp, FALSE);
+    P96GFXDisplay__DoShow(cl, o, bm, vp, FALSE);
 
     D(bug("[P96Gfx] %s: viewport=%p\n", __func__, cid->viewport);)
     return MCOP_OK;
 }
 
-ULONG P96GFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+ULONG P96GFXDisplay__Hidd_Display__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ShowViewPorts *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
     struct HIDD_ViewPortData *vpd = msg->Data;
@@ -801,12 +897,14 @@ ULONG P96GFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHi
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
+    p96sbx(csd, "SVe");
     if (vpd) {
         bm = vpd->Bitmap;
         if (vpd->vpe)
             vp = vpd->vpe->ViewPort;
     }
-    P96GFXCl__DoShow(cl, o, bm, vp, FALSE);
+    P96GFXDisplay__DoShow(cl, o, bm, vp, FALSE);
+    p96sbx(csd, "SVx");
     return TRUE;
 }
 
@@ -973,9 +1071,21 @@ BOOL P96GFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHid
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-static UBYTE *P96GFXCl__PrepareSprite(OOP_Class *cl, OOP_Object *o, ULONG store, ULONG size, ULONG width, ULONG height, struct pHidd_Gfx_SetCursorShape *msg)
+/* SBGUARD (temp debug): detect corruption of the SysBase region. ln_Type should
+   stay NT_LIBRARY and SysStkUpper should remain a high RAMSEY address. */
+static void p96sbx(struct p96gfx_staticdata *csd, const char *t)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct ExecBase *sb = SysBase;
+    if (sb->LibNode.lib_Node.ln_Type != NT_LIBRARY ||
+        (IPTR)sb->SysStkUpper < 0x07000000 || (IPTR)sb->SysStkUpper > 0x08000000)
+        bug("[SBX]%s lt=%d su=%p sl=%p\n", t, sb->LibNode.lib_Node.ln_Type,
+            sb->SysStkUpper, sb->SysStkLower);
+}
+
+static UBYTE *P96GFXCl__PrepareSprite(OOP_Class *cl, OOP_Object *o, ULONG store, ULONG size, ULONG width, ULONG height, struct pHidd_Display_SetCursorShape *msg)
+{
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     UBYTE *p;
@@ -1027,9 +1137,10 @@ static UBYTE P96GFXCl__PickPen(struct p96gfx_staticdata *csd, ULONG pixel, OOP_O
     return retval;
 }
 
-BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     OOP_Object *cm = NULL;
@@ -1040,6 +1151,8 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHi
     ULONG flags;
 
     D(bug("[P96Gfx] %s()\n", __func__);)
+
+    p96sbx(csd, "CSe");
 
     if (!(gl(cid->boardinfo + PSSO_BoardInfo_Flags ) & BIF_HARDWARESPRITE))
         return FALSE;
@@ -1052,7 +1165,7 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHi
     if (bmcmod == vHidd_ColorModel_TrueColor)
     {
         OOP_GetAttr(bmPFObj, aHidd_PixFmt_StdPixFmt, (IPTR*)&pf);
-        bmPF = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(o, pf);
+        bmPF = (HIDDT_PixelFormat *)HIDD_DMEnum_GetPixFmt(csd->dmenum, pf);
     }
 
     LOCK_HW
@@ -1060,7 +1173,7 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHi
         for (i = 0; i < 3; i++) {
             HIDDT_Color c;
             HIDD_CM_GetColor(cm, i + 1, &c);
-            HIDD_P96GFX_SetCursorPen(o, i, c);
+            HIDD_P96GFX_SetCursorPen(gfx, i, c);
         }
     }
     else
@@ -1155,42 +1268,50 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHi
     Permit();
 
     DB2(bug("[P96Gfx] %s: loading hw sprite ...\n", __func__));
+    /*     bug("[P96CRASH] 8 cursor-setimage w=%d h=%d\n", (int)width, (int)height); /* P96CRASH-DEBUG */
     SetSpriteImage(cid);
 
     UNLOCK_HW
     DB2(bug("[P96Gfx] %s: hw sprite loaded\n", __func__));
 
+    p96sbx(csd, "CSx");
     return TRUE;
 }
                              
-BOOL P96GFXCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+BOOL P96GFXDisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorPos *msg)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
+    p96sbx(csd, "CPe");
     LOCK_HW
     pw(cid->boardinfo + PSSO_BoardInfo_MouseX, msg->x + (BYTE)cid->boardinfo[PSSO_BoardInfo_MouseXOffset]);
     pw(cid->boardinfo + PSSO_BoardInfo_MouseY, msg->y + (BYTE)cid->boardinfo[PSSO_BoardInfo_MouseYOffset]);
     SetSpritePosition(cid);
     UNLOCK_HW
 
+    p96sbx(csd, "CPx");
     return TRUE;
 }
 
-VOID P96GFXCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+VOID P96GFXDisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorVisible *msg)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDisplay(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
+    p96sbx(csd, "CVe");
     LOCK_HW
     SetSprite(cid, msg->visible);
     UNLOCK_HW
+    p96sbx(csd, "CVx");
 }
 
 VOID P96GFXCl__Hidd_P96Gfx__SetCursorPen(OOP_Class *cl, OOP_Object *o, struct pHidd_P96Gfx_SetCursorPen *msg)
@@ -1205,9 +1326,10 @@ VOID P96GFXCl__Hidd_P96Gfx__SetCursorPen(OOP_Class *cl, OOP_Object *o, struct pH
     SetSpriteColor(cid, msg->pen, msg->color.red, msg->color.green, msg->color.blue);
 }
 
-BOOL P96GFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CheckMode *msg)
+BOOL P96GFXDMEnum__Hidd_DMEnum__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_DMEnum_CheckMode *msg)
 {
-    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct P96GfxData *data = P96GFX__GetGfxDataFromDMEnum(cl, o, &gfx);
     struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     IPTR width, height, bpp;
@@ -1236,6 +1358,8 @@ static void P96GFX__FreeAttrBases(LIBBASETYPEPTR LIBBASE, struct p96gfx_staticda
     OOP_ReleaseAttrBase(IID_Hidd_GC);
     OOP_ReleaseAttrBase(IID_Hidd_Sync);
     OOP_ReleaseAttrBase(IID_Hidd_Gfx);
+    OOP_ReleaseAttrBase(IID_Hidd_Display);
+    OOP_ReleaseAttrBase(IID_Hidd_DMEnum);
     OOP_ReleaseAttrBase(IID_Hidd_P96Gfx);
     OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
     OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
@@ -1584,6 +1708,7 @@ BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
         mc->mc_Next = NULL;
         mc->mc_Bytes = cid->vmem->mh_Free;
     }
+    /*     bug("[P96CRASH] 9 init-vram-done retval=%d\n", retval); /* P96CRASH-DEBUG */
     if (!retval)
     {
         // We dont fail if atleast one card successfully built its resolution list.
@@ -1603,6 +1728,8 @@ BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
     __IHidd_GC          = OOP_ObtainAttrBase(IID_Hidd_GC);
     __IHidd_Sync        = OOP_ObtainAttrBase(IID_Hidd_Sync);
     __IHidd_Gfx         = OOP_ObtainAttrBase(IID_Hidd_Gfx);
+    __IHidd_Display     = OOP_ObtainAttrBase(IID_Hidd_Display);
+    __IHidd_DMEnum      = OOP_ObtainAttrBase(IID_Hidd_DMEnum);
     __IHidd_P96Gfx      = OOP_ObtainAttrBase(IID_Hidd_P96Gfx);
     __IHidd_PixFmt      = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
     __IHidd_ColorMap    = OOP_ObtainAttrBase(IID_Hidd_ColorMap);
@@ -1610,11 +1737,13 @@ BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
     HiddBitMapBase      = OOP_GetMethodID(IID_Hidd_BitMap, 0);
     HiddColorMapBase    = OOP_GetMethodID(IID_Hidd_ColorMap, 0);
     HiddGfxBase         = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    HiddDisplayBase     = OOP_GetMethodID(IID_Hidd_Display, 0);
+    HiddDMEnumBase      = OOP_GetMethodID(IID_Hidd_DMEnum, 0);
     HiddP96GfxBase      = OOP_GetMethodID(IID_Hidd_P96Gfx, 0);
     
     if (!__IHidd || !__IHidd_BitMap || !__IHidd_BitMap_P96 || !__IHidd_GC ||
-        !__IHidd_Sync || !__IHidd_Gfx || !__IHidd_P96Gfx || !__IHidd_PixFmt ||
-        !__IHidd_ColorMap)
+        !__IHidd_Sync || !__IHidd_Gfx || !__IHidd_Display || !__IHidd_DMEnum ||
+        !__IHidd_P96Gfx || !__IHidd_PixFmt || !__IHidd_ColorMap)
     {
         D(bug("[HiddP96Gfx] %s: failed to obtain attribute bases!\n", __func__);)
         P96GFX__FreeAttrBases(LIBBASE, csd);
@@ -1652,6 +1781,7 @@ BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
         }
     }
     DRTG(bug("[HiddP96Gfx] %s: P96GFX init done\n", __func__);)
+    /*     bug("[P96CRASH] 1 init-done retval=%d\n", retval); /* P96CRASH-DEBUG */
     return retval;
 }
 

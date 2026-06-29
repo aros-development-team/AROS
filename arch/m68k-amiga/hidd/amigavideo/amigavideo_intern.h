@@ -40,12 +40,26 @@ struct NativeChipsetMode
     UBYTE                       special;
 };
 
+/* Driver-private class ids and datatypes */
+#define CLID_Hidd_Display_AmigaVideo    "hidd.display.amigavideo"
+#define CLID_Hidd_DMEnum_AmigaVideo     "hidd.dmenum.amigavideo"
+
+struct amigadisplay_data
+{
+};
+
+struct amigadmenum_data
+{
+};
+
 struct amigavideo_staticdata
 {
     struct Task                 *svcTask;
     OOP_Class 	    	        *cs_basebm;                     /* baseclass for CreateObject */
 
     OOP_Class 	    	        *amigagfxclass;
+    OOP_Class 	    	        *amigadisplayclass;
+    OOP_Class 	    	        *amigadmenumclass;
     OOP_Class 	    	        *amigacompositorclass;
     OOP_Class 	    	        *amigabmclass;
 
@@ -57,10 +71,14 @@ struct amigavideo_staticdata
     OOP_AttrBase                hiddSyncAttrBase;
     OOP_AttrBase                hiddPixFmtAttrBase;
     OOP_AttrBase                hiddGfxAttrBase;
+    OOP_AttrBase                hiddDisplayAttrBase;
+    OOP_AttrBase                hiddDMEnumAttrBase;
     OOP_AttrBase                hiddCompositorAttrBase;
     OOP_AttrBase                hiddColorMapAttrBase;
 
     OOP_Object                  *amigagfxinstance;              /* There can be only one! */
+    OOP_Object                  *display;
+    OOP_Object                  *dmenum;
     LONG                        hiddopencnt;
 
     struct List                 nativemodelist;
@@ -97,6 +115,7 @@ struct amigavideo_staticdata
     UBYTE                       fmode_bpl, fmode_spr;
 
     UWORD                       max_colors;
+    ULONG                       dpms_level;
 
     Gfx_ActiveCallBack_t        acb;
     APTR                        acbdata;
@@ -111,6 +130,7 @@ struct amigavideo_staticdata
 
     OOP_MethodID                cs_HiddGfxBase;
     OOP_MethodID                cs_HiddBitMapBase;
+    OOP_MethodID                cs_HiddDMEnumBase;
 
     OOP_MethodID                mid_BitMapStackChanged;
     OOP_MethodID                mid_BitMapPositionChanged;
@@ -156,6 +176,8 @@ struct amigavideoclbase
 #define __IHidd_Sync	                (csd->hiddSyncAttrBase)
 #define __IHidd_PixFmt		        (csd->hiddPixFmtAttrBase)
 #define __IHidd_Gfx 	                (csd->hiddGfxAttrBase)
+#define __IHidd_Display               (csd->hiddDisplayAttrBase)
+#define __IHidd_DMEnum                (csd->hiddDMEnumAttrBase)
 //#define __IHidd_Attr		        (csd->hiddAttrBase)
 #define __IHidd_ColorMap	        (csd->hiddColorMapAttrBase)
 

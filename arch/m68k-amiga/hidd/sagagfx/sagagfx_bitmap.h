@@ -2,7 +2,7 @@
 #define SAGAGFX_BITMAP_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SAGAGfx header.
@@ -49,7 +49,7 @@ struct SAGAGfxBitmapData
     BYTE        bpp;            /* Cached bits per pixel */
     BYTE        disp;           /* !=0 - displayable */
     OOP_Object  *pixfmtobj;     /* Cached pixelformat object */
-    OOP_Object  *gfxhidd;       /* Cached driver object */
+    OOP_Object  *display;       /* Cached display object */
     LONG        xoffset;        /* Bitmap offset */
     LONG        yoffset;
 };
