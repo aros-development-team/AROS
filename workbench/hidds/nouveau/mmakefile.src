@@ -32,27 +32,23 @@ GALLIUM_NOUVEAU_C_SOURCES := \
 GALLIUM_NOUVEAU_CXX_SOURCES := \
             	$(filter %.cpp, $(GALLIUM_NOUVEAU_SOURCES))
 
-XF86_NOUVEAU_SOURCES = \
-            nv_accel_common \
-            nv50_accel \
-            nv40_exa \
-            nv30_exa \
-            nv10_exa \
-            nv50_exa \
-            nouveau_exa \
-            nvc0_accel \
-            nvc0_exa \
-            nv04_exa \
-            nouveau_xv \
-            nouveau_copya0b5 \
+#NOUVEAU_HIDD_CXX_SOURCES := \
+#            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
 
-
-
-XF86_NOUVEAU_PATH = $(SRCDIR)/$(CURDIR)/xf86-video-nouveau/
+#            -iquote $(GALLIUM_PATH)/drivers \
+#            -iquote $(GALLIUM_PATH)/drivers/nouveau \
+#            -iquote $(GALLIUM_PATH)/include \
+#            -iquote $(GALLIUM_PATH)/auxiliary \
+#            -iquote $(top_srcdir)/src/mesa \
+#            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
 
 #FIXME
 #            nouveau_galliumclass \
 #            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_C_SOURCES:.c=)) \
+
+###############################################
+# drm, drm-aros, drm-compat -> libdrm_nouveau.a
+###############################################
 
 USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/include \
@@ -67,6 +63,26 @@ NOUVEAU_DRM_C_SOURCES := \
 
 %build_linklib mmake=hidd-nouveau-drm libname=drm_nouveau files="$(NOUVEAU_DRM_C_SOURCES)" sdk=drm usesdks="config private"
 
+#################################################
+# xf86-video-nouveau + hidd codes -> nouveau.hidd
+#################################################
+
+XF86_NOUVEAU_SOURCES = \
+            nv_accel_common \
+            nv50_accel \
+            nv40_exa \
+            nv30_exa \
+            nv10_exa \
+            nv50_exa \
+            nouveau_exa \
+            nvc0_accel \
+            nvc0_exa \
+            nv04_exa \
+            nouveau_xv \
+            nouveau_copya0b5 \
+
+XF86_NOUVEAU_PATH = $(SRCDIR)/$(CURDIR)/xf86-video-nouveau/
+
 NOUVEAU_HIDD_C_SOURCES := \
             nouveau_hiddclass \
             nouveau_init \
@@ -76,21 +92,10 @@ NOUVEAU_HIDD_C_SOURCES := \
             nouveau_compositorclass \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
 
-#NOUVEAU_HIDD_CXX_SOURCES := \
-#            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
-
-#            -iquote $(GALLIUM_PATH)/drivers \
-#            -iquote $(GALLIUM_PATH)/drivers/nouveau \
-#            -iquote $(GALLIUM_PATH)/include \
-#            -iquote $(GALLIUM_PATH)/auxiliary \
-#            -iquote $(top_srcdir)/src/mesa \
-#            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
-
 USER_INCLUDES := \
             -I$(XF86_NOUVEAU_PATH) \
             -I$(SRCDIR)/$(CURDIR)/include \
             -I$(SRCDIR)/$(CURDIR)/include/libdrm/nouveau \
-
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING)
 USER_CFLAGS += $(NOWARN_FLAGS) -std=gnu99
