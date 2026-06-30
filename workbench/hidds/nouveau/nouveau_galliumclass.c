@@ -14,6 +14,8 @@
 #include "util/u_inlines.h"
 #include "nouveau_screen.h"
 #include "nouveau_winsys.h"
+#include "nv50/nv50_resource.h"
+#include "nv30/nv30_resource.h"
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
@@ -31,16 +33,16 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
     {
         case NV_ARCH_30:
         case NV_ARCH_40:
-            // bo = nvfx_resource(resource)->bo;
-            // pitch = ((struct nvfx_miptree *)resource)->linear_pitch;
+            bo = nv30_miptree(resource)->base.bo;
+            pitch = nv30_miptree(resource)->level[0].pitch;
             break;
         case NV_TESLA:
-            // bo = nv50_miptree(resource)->base.bo;
-            // pitch = nv50_miptree(resource)->level[0].pitch;
-            break;
         case NV_FERMI:
-            // bo = nvc0_miptree(resource)->base.bo;
-            // pitch = nvc0_miptree(resource)->level[0].pitch;
+        case NV_KEPLER:
+        case NV_MAXWELL:
+        case NV_PASCAL:
+            bo = nv50_miptree(resource)->base.bo;
+            pitch = nv50_miptree(resource)->level[0].pitch;
             break;
     }
     
@@ -139,20 +141,27 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
     struct nouveau_screen *(*init)(struct nouveau_device *);
     struct nouveau_screen *screen = NULL;
 
-    switch (dev->chipset & 0xf0) 
+    switch (dev->chipset & 0xff0)
     {
-    case 0x30:
-    case 0x40:
-    case 0x60:
+    case 0x030:
+    case 0x040:
+    case 0x060:
         init = nv30_screen_create;
         break;
-    case 0x50:
-    case 0x80:
-    case 0x90:
-    case 0xa0:
+    case 0x050:
+    case 0x080:
+    case 0x090:
+    case 0x0a0:
         init = nv50_screen_create;
         break;
-    case 0xc0:
+    case 0x0c0:
+    case 0x0d0:
+    case 0x0e0:
+    case 0x0f0:
+    case 0x100:
+    case 0x110:
+    case 0x120:
+    case 0x130:
         init = nvc0_screen_create;
         break;
     default:
@@ -215,11 +224,15 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
         HIDDNouveauNV50CopySameFormat(carddata, &srcdata, dstdata, 
             msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
-        break;    
+        break;
     case NV_FERMI:
+    case NV_KEPLER:
+    case NV_MAXWELL:
+    case NV_PASCAL:
         HIDDNouveauNVC0CopySameFormat(carddata, &srcdata, dstdata, 
             msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
+        break;
     default:
         /* TODO: Report error */
         break;
