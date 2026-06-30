@@ -205,6 +205,11 @@ NOT_IMPLEMENTED_STOP
         /* Read during BIOS init, triggered first on GTX 550 Ti */
         return i2c_writeread(adap, msgs);
     }
+    else if ((num == 2) && (msgs[0].addr == 0x40) && (msgs[1].addr == 0x40) && (msgs[0].len == 1) && (msgs[1].len == 2))
+    {
+        /* Something on GTX 760 */
+        return i2c_writeread(adap, msgs);
+    }
     else if ((num == 1) && (msgs[0].flags == 0x0))
     {
         /* Generic write call */
