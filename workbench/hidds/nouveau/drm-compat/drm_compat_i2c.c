@@ -45,6 +45,38 @@ static int i2c_writeread(struct i2c_adapter *adap, struct i2c_msg *msgs)
         return 0;
 }
 
+/* This function assumes there is one message in msgs[] */
+static int i2c_write(struct i2c_adapter *adap, struct i2c_msg *msgs)
+{
+    struct pHidd_I2CDevice_Write msg;
+    BOOL result = FALSE;
+
+    struct TagItem attrs[] =
+    {
+        { aHidd_I2CDevice_Driver,   (IPTR)adap->i2cdriver   },
+        { aHidd_I2CDevice_Address,  msgs[0].addr << 1       }, /* AROS has shifted addresses (<< 1) */
+        { aHidd_I2CDevice_Name,     (IPTR)"Write Call"      },
+        { TAG_DONE, 0UL }
+    };
+
+    D(bug("i2c_transfer -Write Call\n"));
+
+    OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
+
+    msg.mID = OOP_GetMethodID((STRPTR)IID_Hidd_I2CDevice, moHidd_I2CDevice_Write);
+    msg.writeBuffer = msgs[0].buf;
+    msg.writeLength = msgs[0].len;
+
+    result = OOP_DoMethod(obj, &msg.mID);
+
+    OOP_DisposeObject(obj);
+
+    if (result)
+        return 1;
+    else
+        return 0;
+}
+
 int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 {
 
@@ -172,6 +204,12 @@ NOT_IMPLEMENTED_STOP
     {
         /* Read during BIOS init, triggered first on GTX 550 Ti */
         return i2c_writeread(adap, msgs);
+    }
+    else if ((num == 1) && (msgs[0].flags == 0x0))
+    {
+        /* Generic write call */
+        bug("i2c_transfer: generic WRITE call at addr 0x%x len %d\n", msgs[0].addr, msgs[0].len);
+        return i2c_write(adap, msgs);
     }
     else
     {
