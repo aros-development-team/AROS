@@ -216,7 +216,7 @@ NOT_IMPLEMENTED_STOP
         /* Not supported case */
         bug("i2c_transfer case not supported: num = %d\n", num);
         for (int i = 0; i < num; i++)
-            bug("   msg%d addr 0x%x len %d\n", i, msgs[i].addr, msgs[i].len);
+            bug("   msg%d addr 0x%x len %d flags 0x%x\n", i, msgs[i].addr, msgs[i].len, msgs[i].flags);
 NOT_IMPLEMENTED_STOP
     }
     
