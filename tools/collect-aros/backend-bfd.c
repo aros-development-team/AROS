@@ -119,8 +119,7 @@ void collect_libs(const char *file, setnode **liblist_ptr)
 static void collect_extrasymbol(asymbol *sym, setnode **liblist_ptr)
 {
     setnode *node;
-    char *cp, *name, *extraobj;
-    int pri;
+    char *name, *extraobj;
 
     if (strncmp(sym->name, "__cxa_pure_virtual", 18) == 0)
     {
@@ -131,8 +130,32 @@ static void collect_extrasymbol(asymbol *sym, setnode **liblist_ptr)
         extraobj = xmalloc(strlen(OBJLIBDIR)+strlen(AROSOBJ_CXXPUREVIRT)+2);
         sprintf(extraobj, "%s/%s", OBJLIBDIR, AROSOBJ_CXXPUREVIRT);
     }
+    else if ((strncmp(sym->name, "pthread_", 8) == 0) &&
+        bfd_is_und_section(sym->section))
+    {
+        /*
+             * Emulated TLS (libgcc's emutls.o, pulled in for __thread /
+             * _Thread_local data) references the pthread_* functions. These
+             * live in the standard AROS libpthread linklib but are not part of
+             * the auto-linked set, so they never appear on the command line and
+             * are left undefined. Supply the libpthread archive from the lib/
+             * dir so ld can pull the required members on demand.
+             */
+        extraobj = xmalloc(strlen(OBJLIBDIR)+strlen(AROSLIB_PTHREAD)+2);
+        sprintf(extraobj, "%s/%s", OBJLIBDIR, AROSLIB_PTHREAD);
+    }
     else
         return;
+
+    /* don't add the same extra object/archive more than once */
+    for (node = *liblist_ptr; node != NULL; node = node->next)
+    {
+        if (strcmp(node->secname, extraobj) == 0)
+        {
+            free(extraobj);
+            return;
+        }
+    }
 
     node = xmalloc(sizeof(*node)+strlen(extraobj)+1);
     name = (char *)(&node[1]);
@@ -141,6 +164,12 @@ static void collect_extrasymbol(asymbol *sym, setnode **liblist_ptr)
     node->secname = name;
     node->next = *liblist_ptr;
     *liblist_ptr = node;
+
+    if (getenv("COLLECT_AROS_DEBUG") != NULL)
+        fprintf(stderr, "[collect-aros] undefined symbol '%s'; adding %s\n",
+            sym->name, extraobj);
+
+    free(extraobj);
 }
 
 void collect_extra(const char *file, setnode **liblist_ptr)
@@ -232,6 +261,61 @@ int check_and_print_undefined_symbols(const char *file)
        do it for us.  */
 
     return undefined_syms;
+}
+
+/* Quiet variant of the above: returns non-zero as soon as a single undefined
+   symbol is found, without printing anything. Used to decide whether the
+   library re-supply fixup is needed for the final link. */
+int has_undefined_symbols(const char *file)
+{
+    bfd_byte *cur, *minisyms;
+    asymbol *store;
+    long symcount;
+    unsigned int size;
+    int result = 0;
+    bfd *abfd;
+
+    if
+    (
+        (abfd = bfd_openr(file, "default")) == NULL ||
+        !bfd_check_format(abfd, bfd_object)
+    )
+    {
+        bfd_fatal(file);
+    }
+
+    symcount = bfd_read_minisymbols(abfd, FALSE, (void **)&minisyms, &size);
+    if (symcount < 0)
+        bfd_fatal (bfd_get_filename (abfd));
+
+    if (symcount == 0)
+    {
+        bfd_close(abfd);
+        return 0;
+    }
+
+    store = bfd_make_empty_symbol(abfd);
+    if (store == NULL)
+        bfd_fatal(bfd_get_filename(abfd));
+
+    for (cur = minisyms; cur < (minisyms + (symcount * size)); cur += size)
+    {
+        asymbol *sym;
+
+        sym = bfd_minisymbol_to_symbol(abfd, FALSE, (const void *)cur, store);
+        if (sym == NULL)
+            bfd_fatal(bfd_get_filename (abfd));
+
+        if (bfd_is_und_section (sym->section))
+        {
+            result = 1;
+            break;
+        }
+    }
+
+    bfd_close(abfd);
+
+    return result;
 }
 
 void backend_init(char *ldname)

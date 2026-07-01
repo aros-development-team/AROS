@@ -35,6 +35,13 @@ static void exitfunc(void)
     if (ldscriptfile != NULL)
         fclose(ldscriptfile);
 
+    if (getenv("COLLECT_AROS_DEBUG") != NULL)
+    {
+        fprintf(stderr, "[collect-aros] keeping intermediates: tempoutput=%s ldscript=%s\n",
+            tempoutput ? tempoutput : "(none)", ldscriptname ? ldscriptname : "(none)");
+        return;
+    }
+
     if (ldscriptname != NULL)
         remove(ldscriptname);
 
@@ -231,7 +238,16 @@ int main(int argc, char *argv[])
     }
       
     ldargs[cnt] = NULL;
-              
+
+    if (getenv("COLLECT_AROS_DEBUG") != NULL)
+    {
+        int dbgi;
+        fprintf(stderr, "[collect-aros] relocatable link command:\n[collect-aros]");
+        for (dbgi = 0; ldargs[dbgi] != NULL; dbgi++)
+            fprintf(stderr, " %s", ldargs[dbgi]);
+        fprintf(stderr, "\n");
+    }
+
     docommandvp(ld_name, ldargs);
 
     if (incremental == 1)
@@ -396,9 +412,86 @@ int main(int argc, char *argv[])
 
     fclose(ldscriptfile);
     ldscriptfile = NULL;
-    
+
+    /*
+     * The GCC LTO linker plugin only resolves "pass-through" libraries (the
+     * standard AROS link sequence) during the relocatable stage above. Symbols
+     * that are provided by direct, non pass-through static archives passed on
+     * the command line (e.g. -lpthread) can therefore be left undefined in the
+     * intermediate object, even though the archive was present. Re-supply the
+     * libraries (and all -L search paths) to the final link so ld can pull the
+     * required members and resolve those symbols (including any further symbols
+     * those members pull from the standard libraries). The compiler's own
+     * support libraries (-lgcc*) are skipped: they live on search paths that
+     * are private to the gcc driver and are already linked in.
+     */
+    char **libargv = xmalloc(sizeof(char *) * (argc + 2));
+    int libargc = 0;
+    /*
+     * Only perform the re-supply when the relocatable object actually has
+     * undefined symbols left over from the plugin stage. Clean links - which
+     * is every core AROS module and by far the common case - then take exactly
+     * the original final-link path and are completely unaffected by this fixup
+     * (no extra libraries, no --allow-multiple-definition).
+     */
+    if (has_undefined_symbols(tempoutput))
+    {
+        if (getenv("COLLECT_AROS_DEBUG") != NULL)
+            fprintf(stderr, "[collect-aros] relocatable object has undefined symbols;"
+                            " re-supplying libraries to the final link\n");
+        /*
+         * Members of the re-supplied archives may already have been pulled into the
+         * relocatable object during the plugin stage (e.g. when only some of a
+         * library's symbols were left undefined). Allow the resulting identical
+         * duplicate definitions rather than erroring on them.
+         */
+        libargv[libargc++] = "--allow-multiple-definition";
+        for (i = 1; i < argc; i++)
+        {
+            if (argv[i][0] != '-')
+            {
+                /* re-supply explicit static archives (e.g. libtool convenience
+                   libraries) - a member defining a symbol that is only referenced
+                   by a later -l library may not have been pulled during the plugin
+                   stage */
+                size_t l = strlen(argv[i]);
+                if (l > 2 && strcmp(&argv[i][l - 2], ".a") == 0)
+                    libargv[libargc++] = argv[i];
+                continue;
+            }
+
+            if (argv[i][1] == 'L')
+            {
+                /* keep all library search paths, including the separate "-L" "path"
+                   form */
+                libargv[libargc++] = argv[i];
+                if (argv[i][2] == '\0' && (i + 1) < argc)
+                    libargv[libargc++] = argv[++i];
+            }
+            else if (argv[i][1] == 'l')
+            {
+                const char *name;
+                int separate = (argv[i][2] == '\0' && (i + 1) < argc);
+
+                name = separate ? argv[i + 1] : &argv[i][2];
+
+                /* skip the gcc support libraries (private driver search paths) */
+                if (strncmp(name, "gcc", 3) == 0)
+                {
+                    if (separate)
+                        i++;
+                    continue;
+                }
+
+                libargv[libargc++] = argv[i];
+                if (separate)
+                    libargv[libargc++] = argv[++i];
+            }
+        }
+    }
+
     char **cmdargv;
-    int argallocs = 0;
+    int argallocs = libargc;
     if (extralist) {
         struct setnode *n;
         for (n = extralist; n; n = n->next)
@@ -526,7 +619,13 @@ int main(int argc, char *argv[])
         for (n = extralist; n; n = n->next)
             cmdargv[6 + cnt++] = n->secname;
         }
-    
+
+        {
+        int li;
+        for (li = 0; li < libargc; li++)
+            cmdargv[6 + cnt++] = libargv[li];
+        }
+
         cmdargv[6 + cnt] = "-T";
         cmdargv[7 + cnt] = ldscriptname;
         cmdargv[8 + cnt] = do_verbose;

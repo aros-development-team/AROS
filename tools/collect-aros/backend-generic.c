@@ -118,6 +118,7 @@ void collect_extra(const char *file, setnode **liblist_ptr)
     char buff[256];
     unsigned long offset;
     char type;
+    int pthread_added = 0;
 
     FILE *pipe = my_popen("nm ", file);
 
@@ -136,6 +137,27 @@ void collect_extra(const char *file, setnode **liblist_ptr)
             objname = calloc(strlen(OBJLIBDIR)+strlen(AROSOBJ_CXXPUREVIRT)+2, 1);
             sprintf(objname, "%s/%s", OBJLIBDIR, AROSOBJ_CXXPUREVIRT);
         }
+        else if ((strncmp(secname, "pthread_", 8) == 0) &&
+            (type == 'U') && !pthread_added)
+        {
+            /*
+             * Emulated TLS (libgcc's emutls.o, pulled in for __thread /
+             * _Thread_local data) references the pthread_* functions. These
+             * live in the standard AROS libpthread linklib but are not part of
+             * the auto-linked set, so they never appear on the command line and
+             * are left undefined by the (LTO plugin) relocatable stage. Supply
+             * the libpthread archive from the lib/ dir so ld can pull the
+             * required members on demand.
+             */
+            objname = calloc(strlen(OBJLIBDIR)+strlen(AROSLIB_PTHREAD)+2, 1);
+            sprintf(objname, "%s/%s", OBJLIBDIR, AROSLIB_PTHREAD);
+            pthread_added = 1;
+
+            if (getenv("COLLECT_AROS_DEBUG") != NULL)
+                fprintf(stderr, "[collect-aros] undefined pthread symbol '%s'"
+                                " (emulated-TLS dependency); adding %s\n",
+                                secname, objname);
+        }
         else
             continue;
 
@@ -143,6 +165,8 @@ void collect_extra(const char *file, setnode **liblist_ptr)
         node->secname = strdup(objname);
         node->next = *liblist_ptr;
         *liblist_ptr = node;
+
+        free(objname);
     }
 
     pclose(pipe);
@@ -178,6 +202,32 @@ int check_and_print_undefined_symbols(const char *file)
     pclose(pipe);
 
     return undefined_syms;
+}
+
+/* Quiet variant of the above: returns non-zero if there is at least one
+   undefined symbol, without printing anything. Used to decide whether the
+   library re-supply fixup is needed for the final link. */
+int has_undefined_symbols(const char *file)
+{
+    char buf[200];
+    int result = 0;
+    size_t cnt;
+
+    strcpy(buf, NM_NAME);
+    if (!strstr(buf, "--undefined-only"))
+        strcat(buf, " --undefined-only");
+
+    FILE *pipe = my_popen(buf, file);
+
+    while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0)
+    {
+        result = 1;
+        break;
+    }
+
+    pclose(pipe);
+
+    return result;
 }
 
 void backend_init(char *ldname)
