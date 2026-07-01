@@ -67,7 +67,6 @@ int main(void)
         socklen_t len;
         fd_set rf;
         struct timeval tv;
-        char buf[16];
 
         printf("UDP6-rt: creating receiver\n");
         rfd = socket(AF_INET6, SOCK_DGRAM, 0);
@@ -91,6 +90,7 @@ int main(void)
         r = WaitSelect(rfd + 1, &rf, NULL, NULL, &tv, NULL);
         printf("UDP6-rt: WaitSelect = %d\n", r);
         if (r > 0) {
+            char buf[16];
             r = recv(rfd, buf, sizeof(buf), 0);
             printf("UDP6-rt: recv = %d (%.4s)\n", r, buf);
         }
@@ -100,7 +100,7 @@ int main(void)
 
     /* TCP6 loopback handshake + echo over ::1, step by step. */
     {
-        int lfd, cfd, afd, on = 1, r;
+        int lfd, cfd, on = 1, r;
         struct sockaddr_in6 sa;
         struct in6_addr lo = IN6ADDR_LOOPBACK_INIT;
         socklen_t len;
@@ -137,6 +137,7 @@ int main(void)
         r = WaitSelect(lfd + 1, &rf, NULL, NULL, &tv, NULL);
         printf("TCP6-rt: WaitSelect = %d\n", r);
         if (r > 0) {
+            int afd;
             len = sizeof(sa);
             afd = accept(lfd, (struct sockaddr *)&sa, &len);
             printf("TCP6-rt: accept = %d port=%d\n", afd, ntohs(sa.sin6_port));
