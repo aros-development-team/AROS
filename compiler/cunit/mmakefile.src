@@ -4,7 +4,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-CUNITVERSION=3.5.2
+CUNITVERSION=3.5.5
 REPOSITORIES :=  \
     cache:// \
     https://gitlab.com/cunity/cunit/-/archive/$(CUNITVERSION)
