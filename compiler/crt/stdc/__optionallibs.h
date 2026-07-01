@@ -22,4 +22,5 @@ static inline LONG stdcEasyRequest(struct IntuitionBase *IntuitionBase, struct W
 
 int __locale_available(struct StdCIntBase *StdCBase);
 int __intuition_available(struct StdCIntBase *StdCBase);
+int __entropy_available(struct StdCIntBase *StdCBase);
 int __optionallibs_close(struct StdCIntBase *StdCBase);

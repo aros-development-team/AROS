@@ -5,6 +5,9 @@ If NOT WARN
     ; Perform basic "Exec" type unit tests...
     Execute S/Test cunit/exec/cunit-exec-types
 
+    ; Perform entropy.resource stress/behaviour unit tests...
+    Execute S/Test cunit/entropy/cunit-entropy
+
     ; Peform basic 'C' type unit tests..
     Execute S/Test cunit/crt/stdc/cunit-crt-types
 

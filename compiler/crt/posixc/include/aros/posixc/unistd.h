@@ -2,7 +2,7 @@
 #define _POSIXC_UNISTD_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file unistd.h
@@ -428,6 +428,11 @@ int usleep(useconds_t microseconds);
 
 #if defined(_GNU_SOURCE) || (_POSIX_C_SOURCE >= 200809L)
 int unlinkat(int dirfd, const char *pathname, int flags);
+#endif
+
+/* POSIX.1-2024 / BSD entropy interface (also declared in <sys/random.h>). */
+#if defined(__cplusplus) || !defined(__STRICT_ANSI__)
+int getentropy(void *buffer, size_t length);
 #endif
 
 /* AROS-specific extensions */

@@ -6,6 +6,8 @@
 
 #define __NOBLIBBASE__
 
+#include <resources/entropy.h>
+
 #include "__posixc_intbase.h"
 #include "__optionallibs.h"
 
@@ -29,6 +31,17 @@ int __usergroup_available(struct PosixCIntBase *PosixCBase)
         PosixCBase->PosixCUserGroupBase = OpenLibrary("usergroup.library", 0);
 
     return PosixCBase->PosixCUserGroupBase != NULL;
+}
+
+int __entropy_available(struct PosixCIntBase *PosixCBase)
+{
+    /* entropy.resource is a resource, not a library: it is obtained with
+       OpenResource() and is never closed, so it is not handled in
+       __optionallibs_close(). */
+    if (PosixCBase->PosixCEntropyBase == NULL)
+        PosixCBase->PosixCEntropyBase = OpenResource(ENTROPYNAME);
+
+    return PosixCBase->PosixCEntropyBase != NULL;
 }
 
 int __optionallibs_close(struct PosixCIntBase *PosixCBase)

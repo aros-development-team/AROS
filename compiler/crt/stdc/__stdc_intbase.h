@@ -36,6 +36,7 @@ struct StdCIntBase
     struct LocaleBase           *StdCLocaleBase;
     struct IntuitionBase        *StdCIntuitionBase;
     struct Device               *StdCTimerBase;
+    struct Library              *StdCEntropyBase;       // entropy.resource, for arc4random()
 
     /* common */
     int                         flags;
@@ -43,6 +44,7 @@ struct StdCIntBase
     /* stdlib.h */
     APTR                        mempool;
     unsigned int                srand_seed;
+    unsigned int                arc4_fallbackctr;       // arc4random() fallback when entropy.resource is absent
 
     /* time.h and it's functions */
     struct timerequest          timereq;

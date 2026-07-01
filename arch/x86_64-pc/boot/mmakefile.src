@@ -43,6 +43,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM                     kernel-nvme                             \
 #MM                     kernel-virtio                           \
 #MM                     kernel-battclock                        \
+#MM                     kernel-entropy                          \
 #MM                     kernel-efi                              \
 #MM                     kernel-timer                            \
 #MM                     kernel-expansion                        \
@@ -57,7 +58,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM                     kernel-hidd-pci-pcipc                   \
 #MM                     kernel-processor
 
-KRSRCS      := efi hpet log
+KRSRCS      := efi hpet log entropy
 KRSRCS_ARCH := battclock processor
 KLIBS       := acpica
 KLIBS_ARCH  := expansion

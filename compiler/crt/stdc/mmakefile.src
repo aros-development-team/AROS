@@ -479,6 +479,7 @@ STDC_WCHAR_LIBSTUBS := \
 STDC := \
     __ctype \
     __optionallibs \
+    __arc4random \
     __signal \
     __assert \
     __stdc_gmtoffset \
@@ -490,6 +491,9 @@ STDC := \
     abort \
     abs labs llabs \
     aligned_alloc \
+    arc4random \
+    arc4random_buf \
+    arc4random_uniform \
     asctime \
     asprintf \
     atof \
@@ -750,7 +754,7 @@ STDC_LINK_FILES := \
     files="$(STDC_FILES)" linklibfiles="$(STDC_LINK_FILES)" \
     linklibobjs=$(STDC_LINKOBJS)
 
-#MM compiler-stdc : compiler-stdc-genwcharsupport
+#MM compiler-stdc : compiler-stdc-genwcharsupport kernel-entropy-includes
 
 STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdcio/,$(notdir $(STDCIO_COMMON))))
 USER_CPPFLAGS := \

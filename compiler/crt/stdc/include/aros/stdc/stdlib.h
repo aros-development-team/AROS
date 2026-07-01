@@ -104,6 +104,16 @@ void qsort_r(void * array, size_t count, size_t elementsize,
              void * arg);
 #endif
 
+#if !defined(__STRICT_ANSI__)
+/* BSD cryptographically-strong random number generator, backed by
+   entropy.resource.  Unlike rand(), it needs no seeding and has no
+   reproducible sequence. */
+#include <aros/stdc/stdint.h>
+uint32_t arc4random(void);
+void arc4random_buf(void *buf, size_t nbytes);
+uint32_t arc4random_uniform(uint32_t upper_bound);
+#endif
+
 /* Integer arithmetic */
 int abs(int j);
 long labs(long j);

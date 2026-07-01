@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -215,6 +216,43 @@ void testTZSET(void)
     tzset();
 }
 
+/* getentropy() fills a buffer (up to 256 bytes) with high-quality random data
+   from entropy.resource, returning 0 on success or -1/errno on error. */
+void testGETENTROPY(void)
+{
+    unsigned char a[64], b[64];
+    unsigned char buf[40];
+    int i, changed = 0;
+
+    /* A normal request succeeds and fills the buffer. */
+    memset(buf, 0x5A, sizeof(buf));
+    CU_ASSERT_EQUAL(getentropy(buf, 32), 0);
+    for (i = 0; i < 32; i++)
+        if (buf[i] != 0x5A)
+            changed = 1;
+    CU_ASSERT_TRUE(changed);
+    for (i = 32; i < (int)sizeof(buf); i++)      /* tail untouched */
+        CU_ASSERT_EQUAL(buf[i], 0x5A);
+
+    /* Two requests must differ. */
+    CU_ASSERT_EQUAL(getentropy(a, sizeof(a)), 0);
+    CU_ASSERT_EQUAL(getentropy(b, sizeof(b)), 0);
+    CU_ASSERT_TRUE(memcmp(a, b, sizeof(a)) != 0);
+
+    /* length > 256 is rejected with EINVAL. */
+    errno = 0;
+    CU_ASSERT_EQUAL(getentropy(a, 257), -1);
+    CU_ASSERT_EQUAL(errno, EINVAL);
+
+    /* NULL buffer is rejected with EFAULT. */
+    errno = 0;
+    CU_ASSERT_EQUAL(getentropy(NULL, 16), -1);
+    CU_ASSERT_EQUAL(errno, EFAULT);
+
+    /* Zero length is a successful no-op. */
+    CU_ASSERT_EQUAL(getentropy(a, 0), 0);
+}
+
 int main(void)
 {
     CU_pSuite pSuite = NULL;
@@ -233,7 +271,8 @@ int main(void)
         (NULL == CU_add_test(pSuite, "getline()", testGETLINE)) ||
         (NULL == CU_add_test(pSuite, "getdelim()", testGETDELIM)) ||
         (NULL == CU_add_test(pSuite, "dprintf()", testDPRINTF)) ||
-        (NULL == CU_add_test(pSuite, "tzset()", testTZSET)))
+        (NULL == CU_add_test(pSuite, "tzset()", testTZSET)) ||
+        (NULL == CU_add_test(pSuite, "getentropy()", testGETENTROPY)))
     {
         CU_cleanup_registry();
         return CU_get_error();

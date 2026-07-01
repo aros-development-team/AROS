@@ -2,18 +2,20 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
     CUnit tests for the BSD / GNU <stdlib.h> extensions provided by the AROS
-    C runtime (stdc.library): qsort_r().
+    C runtime (stdc.library): qsort_r() and the arc4random() family.
 
-    These are not part of ISO C up to C17; qsort_r() is a historical BSD /
-    glibc extension (standardised only in POSIX.1-2024).  AROS exposes it with
-    the GNU/glibc argument order: the context pointer is the last argument of
-    both qsort_r() and the comparison function (compar(a, b, arg)).
+    qsort_r() is a historical BSD / glibc extension (standardised only in
+    POSIX.1-2024), exposed with the GNU/glibc argument order.  The arc4random()
+    family is a BSD cryptographic random API backed by entropy.resource; its
+    output is non-deterministic, so it is checked for API contract and
+    statistical sanity rather than fixed values.
 */
 
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <CUnit/Basic.h>
 #include <CUnit/Automated.h>
@@ -127,6 +129,78 @@ void testQSORT_R_edge(void)
     CU_ASSERT_EQUAL(one[0], 7);
 }
 
+/* --- arc4random() family ------------------------------------------------ */
+
+void testARC4RANDOM(void)
+{
+    uint32_t a = arc4random();
+    uint32_t b = arc4random();
+    uint32_t prev = b;
+    int      i, distinct = 0;
+
+    /* Two independent draws colliding is astronomically unlikely. */
+    CU_ASSERT_TRUE(a != b);
+
+    /* A run of draws must show variety, not a stuck value. */
+    for (i = 0; i < 64; i++)
+    {
+        uint32_t v = arc4random();
+        if (v != prev)
+            distinct++;
+        prev = v;
+    }
+    CU_ASSERT_TRUE(distinct > 60);
+}
+
+void testARC4RANDOM_BUF(void)
+{
+    unsigned char buf[64];
+    int i, changed = 0, allsame = 1;
+
+    /* Fills exactly the requested length and not a byte more. */
+    memset(buf, 0xC3, sizeof(buf));
+    arc4random_buf(buf, 32);
+    for (i = 0; i < 32; i++)
+        if (buf[i] != 0xC3)
+            changed = 1;
+    CU_ASSERT_TRUE(changed);
+    for (i = 32; i < (int)sizeof(buf); i++)
+        CU_ASSERT_EQUAL(buf[i], 0xC3);
+
+    /* A full buffer must not be one repeated byte. */
+    arc4random_buf(buf, sizeof(buf));
+    for (i = 1; i < (int)sizeof(buf); i++)
+        if (buf[i] != buf[0])
+            allsame = 0;
+    CU_ASSERT_FALSE(allsame);
+
+    /* NULL / zero length are harmless no-ops. */
+    arc4random_buf(NULL, 16);
+    arc4random_buf(buf, 0);
+}
+
+void testARC4RANDOM_UNIFORM(void)
+{
+    int seen[6] = { 0 };
+    int i;
+
+    /* Degenerate bounds return 0. */
+    CU_ASSERT_EQUAL(arc4random_uniform(0), 0);
+    CU_ASSERT_EQUAL(arc4random_uniform(1), 0);
+
+    /* Every result is in range, and over many draws the whole range is
+       covered (no gross bias/truncation). */
+    for (i = 0; i < 6000; i++)
+    {
+        uint32_t v = arc4random_uniform(6);
+        CU_ASSERT_TRUE(v < 6);
+        if (v < 6)
+            seen[v]++;
+    }
+    for (i = 0; i < 6; i++)
+        CU_ASSERT_TRUE(seen[i] > 0);
+}
+
 int main(void)
 {
     CU_pSuite pSuite = NULL;
@@ -145,7 +219,10 @@ int main(void)
         (NULL == CU_add_test(pSuite, "qsort_r() descending", testQSORT_R_descending)) ||
         (NULL == CU_add_test(pSuite, "qsort_r() context order", testQSORT_R_context)) ||
         (NULL == CU_add_test(pSuite, "qsort_r() comparator invoked", testQSORT_R_invoked)) ||
-        (NULL == CU_add_test(pSuite, "qsort_r() edge cases", testQSORT_R_edge)))
+        (NULL == CU_add_test(pSuite, "qsort_r() edge cases", testQSORT_R_edge)) ||
+        (NULL == CU_add_test(pSuite, "arc4random()", testARC4RANDOM)) ||
+        (NULL == CU_add_test(pSuite, "arc4random_buf()", testARC4RANDOM_BUF)) ||
+        (NULL == CU_add_test(pSuite, "arc4random_uniform()", testARC4RANDOM_UNIFORM)))
     {
         CU_cleanup_registry();
         return CU_get_error();

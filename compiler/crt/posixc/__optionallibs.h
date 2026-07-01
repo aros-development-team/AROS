@@ -8,4 +8,5 @@
 */
 
 int __usergroup_available(struct PosixCIntBase *PosixCBase);
+int __entropy_available(struct PosixCIntBase *PosixCBase);
 int __optionallibs_close(struct PosixCIntBase *PosixCBase);

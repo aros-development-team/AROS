@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# entropy_hw.c needs the generic resource's private headers.
+USER_INCLUDES := -I$(SRCDIR)/rom/entropy
+
+%build_archspecific \
+  mainmmake=kernel-entropy modname=entropy maindir=rom/entropy \
+  arch=pc \
+  files="entropy_hw"
+
+%common

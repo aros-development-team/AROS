@@ -9,6 +9,8 @@
 #include <proto/locale.h>
 #include <proto/intuition.h>
 
+#include <resources/entropy.h>
+
 #include "__stdc_intbase.h"
 #include "__optionallibs.h"
 
@@ -40,6 +42,17 @@ int __intuition_available(struct StdCIntBase *StdCBase)
         StdCBase->StdCIntuitionBase = (struct IntuitionBase *)__libfindandopen("intuition.library", 0);
 
     return StdCBase->StdCIntuitionBase != NULL;
+}
+
+int __entropy_available(struct StdCIntBase *StdCBase)
+{
+    /* entropy.resource is a resource, not a library: it is obtained with
+       OpenResource() and is never closed, so it is handled here rather than in
+       __optionallibs_close(). */
+    if (StdCBase->StdCEntropyBase == NULL)
+        StdCBase->StdCEntropyBase = OpenResource(ENTROPYNAME);
+
+    return StdCBase->StdCEntropyBase != NULL;
 }
 
 int __optionallibs_close(struct StdCIntBase *StdCBase)

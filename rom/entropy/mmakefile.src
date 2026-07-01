@@ -1,0 +1,23 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# Allow an architecture to override entropy_hw.c (and, if ever needed,
+# entropy_intern.h) from its arch directory. Overrideable files must be
+# included using #include <name>, not #include "name", for this to work.
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/entropy \
+		 -I$(SRCDIR)/arch/all-$(ARCH)/entropy
+ifneq ($(FAMILY),)
+    USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/entropy
+endif
+USER_INCLUDES += -I$(SRCDIR)/rom/entropy
+
+FUNCTIONS := getentropy addentropy getentropyinfo
+FILES     := entropy_init entropy_chacha entropy_software entropy_hw
+
+#MM- kernel-entropy : includes linklibs kernel-entropy-$(ARCH)-$(CPU)
+
+%build_module mmake=kernel-entropy \
+    modname=entropy modtype=resource \
+    files="$(FILES) $(FUNCTIONS)"
+
+%common

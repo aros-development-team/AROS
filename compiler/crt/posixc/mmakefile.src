@@ -102,6 +102,7 @@ POSIXC := \
     getcwd \
     getdelim \
     getegid \
+    getentropy \
     geteuid \
     getenv \
     getfsstat \
