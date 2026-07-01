@@ -2677,3 +2677,27 @@ diff -ruN gcc-16.1.0/libstdc++-v3/include/std/ratio gcc-16.1.0.aros/libstdc++-v3
        static constexpr int __shift = __builtin_clzll(__d);
        static constexpr int __coshift_ = sizeof(uintmax_t) * 8 - __shift;
        static constexpr int __coshift = (__shift != 0) ? __coshift_ : 0;
+diff -ruN gcc-16.1.0/gcc/diagnostics/sarif-sink.cc gcc-16.1.0.aros/gcc/diagnostics/sarif-sink.cc
+--- gcc-16.1.0/gcc/diagnostics/sarif-sink.cc	2026-04-30 08:33:19.000000000 +0000
++++ gcc-16.1.0.aros/gcc/diagnostics/sarif-sink.cc	2020-12-27 16:58:14.310000000 +0000
+@@ -4627,6 +4627,12 @@
+ void
+ maybe_open_sarif_sink_for_socket (context &dc)
+ {
++#if defined(__AROS__)
++  /* AROS provides sockets through bsdsocket.library (via SocketBase) rather
++     than as POSIX socket()/connect() in the C library, so the experimental
++     SARIF-over-socket diagnostic sink is not supported here.  */
++  (void) dc;
++#else
+   gcc_assert (line_table);
+ 
+   const char * const env_var_name = "EXPERIMENTAL_SARIF_SOCKET";
+@@ -4663,6 +4669,7 @@
+      std::move (sfd));
+   sink_->update_printer ();
+   dc.add_sink (std::move (sink_));
++#endif
+ }
+ 
+ #if CHECKING_P
