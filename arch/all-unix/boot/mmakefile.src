@@ -33,6 +33,7 @@ $(AROSARCHDIR):
 #MM	kernel-kernel-kobj			\
 #MM     kernel-hostlib     			\
 #MM	kernel-battclock     			\
+#MM	kernel-entropy     			\
 #MM	kernel-processor     			\
 #MM	kernel-timer     			\
 #MM	kernel-expansion     			\
