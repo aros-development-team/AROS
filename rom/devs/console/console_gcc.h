@@ -228,17 +228,15 @@ struct cdihData
 {
     /* Port to which we send input to the console device
        from the console device input handler.
+
+       The handoff is asynchronous: one cdihMessage is allocated per
+       forwarded event and the console task frees it after processing.
+       The input handler must never wait for the console task: the task
+       renders (RectFill needs the layer lock), and during an interactive
+       window drag intuition holds LockLayers() across many input events,
+       so a synchronous round-trip deadlocks the whole input chain.
      */
     struct MsgPort *inputPort;
-
-    /* The port the console.device task replies to telling
-       the console.device input handler that it is finished
-       with the output.
-     */
-    struct MsgPort *cdihReplyPort;
-
-    /* The message struct used to pass user input to the console device */
-    struct cdihMessage *cdihMsg;
 };
 
 

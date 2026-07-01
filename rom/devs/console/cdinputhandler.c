@@ -59,10 +59,8 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
     struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)consoleDevice;
 
     struct InputEvent *ie;
-    BOOL send_message = FALSE;
 
     struct cdihData *cdihdata = (struct cdihData *)&ConsoleDevice->consIHData;
-    struct cdihMessage *message = cdihdata->cdihMsg;
 
     D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 
@@ -87,11 +85,28 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
             unit = obtainconunit(ConsoleDevice);
             if (unit)
             {
-                message->unit = unit;
-                message->ie = *ie;
-                send_message = TRUE;
+                /* Hand the event to the console task asynchronously: one
+                   message per event, freed by the task after processing.
+                   NEVER wait for the console task here. This handler runs
+                   in the input.device task, and the console task renders
+                   (RectFill obtains the window's layer lock). During an
+                   interactive size/drag intuition holds LockLayers() across
+                   many input events, so waiting for the console task while
+                   it waits for the layer lock deadlocks all input. Under
+                   memory pressure the event is dropped instead. */
+                struct cdihMessage *message =
+                    AllocMem(sizeof(struct cdihMessage),
+                    MEMF_PUBLIC | MEMF_CLEAR);
 
                 D(bug("Event should be passed to unit %p\n", unit));
+
+                if (message)
+                {
+                    message->msg.mn_Length = sizeof(struct cdihMessage);
+                    message->unit = unit;
+                    message->ie = *ie;
+                    PutMsg(cdihdata->inputPort, (struct Message *)message);
+                }
 
                 /* deletion of unit is now allowed */
                 releaseconunit(unit, ConsoleDevice);
@@ -101,28 +116,6 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
         else
         {
             D(bug("Ignoring event of ie_Class %d\n", ie->ie_Class));
-        }
-
-        if (send_message)
-        {
-            /* This function might be called by any task, not only
-               by the input.device, so it is important that
-               we initialize the replyport's task each time.
-             */
-            struct MsgPort *replyport;
-
-            replyport = message->msg.mn_ReplyPort;
-
-            replyport->mp_SigTask = FindTask(NULL);
-            PutMsg(cdihdata->inputPort, (struct Message *)message);
-
-            /* Wait for reply */
-            WaitPort(replyport);
-
-            /* Remove it from the replyport's msgqueue */
-            GetMsg(replyport);
-
-            send_message = FALSE;
         }
     } /* for (each event in the chain) */
 
@@ -237,56 +230,17 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
     if (cdihandler)
     {
         cdihdata = &ConsoleDevice->consIHData;
+        cdihdata->inputPort = CreateMsgPort();
+        if (cdihdata->inputPort)
         {
-            cdihdata->inputPort = CreateMsgPort();
-            if (cdihdata->inputPort)
-            {
-                struct cdihMessage *msg;
+            /* Initialize Interrupt struct */
+            cdihandler->is_Code =
+                (VOID_FUNC) AROS_SLIB_ENTRY(CDInputHandler, Console, 7);
+            cdihandler->is_Data = ConsoleDevice;
+            cdihandler->is_Node.ln_Pri = 50;
+            cdihandler->is_Node.ln_Name = "console.device InputHandler";
 
-                msg =
-                    AllocMem(sizeof(struct cdihMessage),
-                    MEMF_PUBLIC | MEMF_CLEAR);
-                if (msg)
-                {
-                    struct MsgPort *port;
-                    port =
-                        CreateMsgPort();
-                    if (port)
-                    {
-                        /* Free the signal allocated for msgport by exec */
-                        FreeSignal(port->mp_SigBit);
-
-                        /* Initialize port */
-                        port->mp_Flags = PA_SIGNAL;
-                        port->mp_SigBit = SIGB_INTUITION;
-
-                        /* The task of the replyport must be initialized each
-                           time used, because the CDInputHandler might be
-                           called by an app
-                         */
-                        cdihdata->cdihReplyPort = port;
-
-                        /* Initialize Message struct */
-                        cdihdata->cdihMsg = msg;
-                        msg->msg.mn_ReplyPort = cdihdata->cdihReplyPort;
-                        msg->msg.mn_Length = sizeof(struct cdihMessage);
-
-                        /* Initialize Interrupt struct */
-                        cdihandler->is_Code =
-                            (VOID_FUNC) AROS_SLIB_ENTRY(CDInputHandler,
-                            Console, 7);
-                        cdihandler->is_Data = ConsoleDevice;
-                        cdihandler->is_Node.ln_Pri = 50;
-                        cdihandler->is_Node.ln_Name =
-                            "console.device InputHandler";
-
-                        ReturnPtr("initCDIH", struct Interrupt *,
-                            cdihandler);
-                    }
-                    FreeMem(cdihdata->cdihMsg, sizeof(struct cdihMessage));
-                }
-                DeleteMsgPort(cdihdata->inputPort);
-            }
+            ReturnPtr("initCDIH", struct Interrupt *, cdihandler);
         }
         FreeMem(cdihandler, sizeof(struct Interrupt));
     }
@@ -304,12 +258,12 @@ VOID cleanupCDIH(struct Interrupt *cdihandler,
 
     cdihdata = &ConsoleDevice->consIHData;
 
-    /* Reset mp_SigBit, since we were not using it */
-    cdihdata->cdihReplyPort->mp_SigBit = -1;
-    DeleteMsgPort(cdihdata->cdihReplyPort);
-
-    FreeMem(cdihdata->cdihMsg, sizeof(struct cdihMessage));
-
+    /* Drop any events still queued for the console task */
+    {
+        struct Message *msg;
+        while ((msg = GetMsg(cdihdata->inputPort)))
+            FreeMem(msg, sizeof(struct cdihMessage));
+    }
     DeleteMsgPort(cdihdata->inputPort);
 
     FreeMem(cdihandler, sizeof(struct Interrupt));
