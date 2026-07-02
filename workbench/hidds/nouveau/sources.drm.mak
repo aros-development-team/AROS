@@ -39,6 +39,8 @@ AROS_DRM_CORE_SOURCES = \
             drm/drm_fourcc \
             drm/drm_framebuffer \
             drm/drm_gem \
+            drm/drm_dp_helper \
+            drm/drm_dp_mst_topology \
             drm/ttm/ttm_bo \
             drm/ttm/ttm_tt \
             drm/ttm/ttm_bo_util \

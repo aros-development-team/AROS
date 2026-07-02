@@ -692,68 +692,70 @@ static int drm_atomic_plane_check(const struct drm_plane_state *old_plane_state,
 // 		plane->funcs->atomic_print_state(p, state);
 // }
 
-// /**
-//  * DOC: handling driver private state
-//  *
-//  * Very often the DRM objects exposed to userspace in the atomic modeset api
-//  * (&drm_connector, &drm_crtc and &drm_plane) do not map neatly to the
-//  * underlying hardware. Especially for any kind of shared resources (e.g. shared
-//  * clocks, scaler units, bandwidth and fifo limits shared among a group of
-//  * planes or CRTCs, and so on) it makes sense to model these as independent
-//  * objects. Drivers then need to do similar state tracking and commit ordering for
-//  * such private (since not exposed to userpace) objects as the atomic core and
-//  * helpers already provide for connectors, planes and CRTCs.
-//  *
-//  * To make this easier on drivers the atomic core provides some support to track
-//  * driver private state objects using struct &drm_private_obj, with the
-//  * associated state struct &drm_private_state.
-//  *
-//  * Similar to userspace-exposed objects, private state structures can be
-//  * acquired by calling drm_atomic_get_private_obj_state(). Since this function
-//  * does not take care of locking, drivers should wrap it for each type of
-//  * private state object they have with the required call to drm_modeset_lock()
-//  * for the corresponding &drm_modeset_lock.
-//  *
-//  * All private state structures contained in a &drm_atomic_state update can be
-//  * iterated using for_each_oldnew_private_obj_in_state(),
-//  * for_each_new_private_obj_in_state() and for_each_old_private_obj_in_state().
-//  * Drivers are recommended to wrap these for each type of driver private state
-//  * object they have, filtering on &drm_private_obj.funcs using for_each_if(), at
-//  * least if they want to iterate over all objects of a given type.
-//  *
-//  * An earlier way to handle driver private state was by subclassing struct
-//  * &drm_atomic_state. But since that encourages non-standard ways to implement
-//  * the check/commit split atomic requires (by using e.g. "check and rollback or
-//  * commit instead" of "duplicate state, check, then either commit or release
-//  * duplicated state) it is deprecated in favour of using &drm_private_state.
-//  */
+/**
+ * DOC: handling driver private state
+ *
+ * Very often the DRM objects exposed to userspace in the atomic modeset api
+ * (&drm_connector, &drm_crtc and &drm_plane) do not map neatly to the
+ * underlying hardware. Especially for any kind of shared resources (e.g. shared
+ * clocks, scaler units, bandwidth and fifo limits shared among a group of
+ * planes or CRTCs, and so on) it makes sense to model these as independent
+ * objects. Drivers then need to do similar state tracking and commit ordering for
+ * such private (since not exposed to userpace) objects as the atomic core and
+ * helpers already provide for connectors, planes and CRTCs.
+ *
+ * To make this easier on drivers the atomic core provides some support to track
+ * driver private state objects using struct &drm_private_obj, with the
+ * associated state struct &drm_private_state.
+ *
+ * Similar to userspace-exposed objects, private state structures can be
+ * acquired by calling drm_atomic_get_private_obj_state(). Since this function
+ * does not take care of locking, drivers should wrap it for each type of
+ * private state object they have with the required call to drm_modeset_lock()
+ * for the corresponding &drm_modeset_lock.
+ *
+ * All private state structures contained in a &drm_atomic_state update can be
+ * iterated using for_each_oldnew_private_obj_in_state(),
+ * for_each_new_private_obj_in_state() and for_each_old_private_obj_in_state().
+ * Drivers are recommended to wrap these for each type of driver private state
+ * object they have, filtering on &drm_private_obj.funcs using for_each_if(), at
+ * least if they want to iterate over all objects of a given type.
+ *
+ * An earlier way to handle driver private state was by subclassing struct
+ * &drm_atomic_state. But since that encourages non-standard ways to implement
+ * the check/commit split atomic requires (by using e.g. "check and rollback or
+ * commit instead" of "duplicate state, check, then either commit or release
+ * duplicated state) it is deprecated in favour of using &drm_private_state.
+ */
 
-// /**
-//  * drm_atomic_private_obj_init - initialize private object
-//  * @dev: DRM device this object will be attached to
-//  * @obj: private object
-//  * @state: initial private object state
-//  * @funcs: pointer to the struct of function pointers that identify the object
-//  * type
-//  *
-//  * Initialize the private object, which can be embedded into any
-//  * driver private object that needs its own atomic state.
-//  */
-// void
-// drm_atomic_private_obj_init(struct drm_device *dev,
-// 			    struct drm_private_obj *obj,
-// 			    struct drm_private_state *state,
-// 			    const struct drm_private_state_funcs *funcs)
-// {
-// 	memset(obj, 0, sizeof(*obj));
+/**
+ * drm_atomic_private_obj_init - initialize private object
+ * @dev: DRM device this object will be attached to
+ * @obj: private object
+ * @state: initial private object state
+ * @funcs: pointer to the struct of function pointers that identify the object
+ * type
+ *
+ * Initialize the private object, which can be embedded into any
+ * driver private object that needs its own atomic state.
+ */
+void
+drm_atomic_private_obj_init(struct drm_device *dev,
+			    struct drm_private_obj *obj,
+			    struct drm_private_state *state,
+			    const struct drm_private_state_funcs *funcs)
+{
+	memset(obj, 0, sizeof(*obj));
 
-// 	drm_modeset_lock_init(&obj->lock);
+#if !defined(__AROS__)
+	drm_modeset_lock_init(&obj->lock);
+#endif
 
-// 	obj->state = state;
-// 	obj->funcs = funcs;
-// 	list_add_tail(&obj->head, &dev->mode_config.privobj_list);
-// }
-// EXPORT_SYMBOL(drm_atomic_private_obj_init);
+	obj->state = state;
+	obj->funcs = funcs;
+	list_add_tail(&obj->head, &dev->mode_config.privobj_list);
+}
+EXPORT_SYMBOL(drm_atomic_private_obj_init);
 
 // /**
 //  * drm_atomic_private_obj_fini - finalize private object

@@ -9,10 +9,14 @@
 
 /* I2C handling */
 
-#define I2C_FUNC_I2C        (1 << 1)
-#define I2C_FUNC_SMBUS_EMUL (1 << 2)
+#define I2C_FUNC_I2C                    (1 << 1)
+#define I2C_FUNC_SMBUS_EMUL             (1 << 2)
+#define I2C_FUNC_SMBUS_BLOCK_PROC_CALL  (1 << 3)
+#define I2C_FUNC_10BIT_ADDR             (1 << 4)
+#define I2C_FUNC_SMBUS_READ_BLOCK_DATA  (1 << 5)
 
 #define I2C_M_RD    0x0001
+#define I2C_M_STOP  0x0002
 
 struct i2c_msg
 {

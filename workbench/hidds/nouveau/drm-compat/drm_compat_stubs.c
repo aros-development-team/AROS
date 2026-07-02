@@ -88,11 +88,11 @@ void drm_crtc_helper_set_mode() { NOT_IMPLEMENTED_STOP }
 void drm_cvt_mode() { NOT_IMPLEMENTED_STOP }
 void drm_dp_atomic_find_vcpi_slots() { NOT_IMPLEMENTED_STOP }
 void drm_dp_atomic_release_vcpi_slots() { NOT_IMPLEMENTED_STOP }
-void drm_dp_aux_register() { NOT_IMPLEMENTED_STOP }
+
 void drm_dp_aux_unregister() { NOT_IMPLEMENTED_STOP }
-void drm_dp_calc_pbn_mode() { NOT_IMPLEMENTED_STOP }
+
 void drm_dp_check_act_status() { NOT_IMPLEMENTED_STOP }
-void drm_dp_dpcd_read() { NOT_IMPLEMENTED_STOP }
+
 void drm_dp_dpcd_write() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_allocate_vcpi() { NOT_IMPLEMENTED_STOP }
 
@@ -103,7 +103,7 @@ void drm_dp_mst_hpd_irq() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_put_port_malloc() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_reset_vcpi_slots() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_topology_mgr_destroy() { NOT_IMPLEMENTED_STOP }
-void drm_dp_mst_topology_mgr_init() { NOT_IMPLEMENTED_STOP }
+
 void drm_dp_mst_topology_mgr_resume() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_topology_mgr_set_mst() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_topology_mgr_suspend() { NOT_IMPLEMENTED_STOP }
