@@ -134,39 +134,6 @@ NOT_IMPLEMENTED_STOP
             return 0;
 #endif
     }
-    else if ((num == 2) && (msgs[0].addr == 0x50) && (msgs[1].addr == 0x50) && (msgs[0].len == 1) && (msgs[1].len != 1))
-    {
-        /* This is reading data from DDC */
-        struct pHidd_I2CDevice_WriteRead msg;
-        BOOL result = FALSE;
-
-        struct TagItem attrs[] = 
-        {
-            { aHidd_I2CDevice_Driver,   (IPTR)adap->i2cdriver   },
-            { aHidd_I2CDevice_Address,  0xa0                    }, /* AROS has shifted addresses (<< 1) */
-            { aHidd_I2CDevice_Name,     (IPTR)"Read DDC"        },
-            { TAG_DONE, 0UL }
-        };
-
-        D(bug("i2c_transfer - reading from DDC\n"));
-
-        OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
-        
-        msg.mID = OOP_GetMethodID((STRPTR)IID_Hidd_I2CDevice, moHidd_I2CDevice_WriteRead);
-        msg.readBuffer = msgs[1].buf;
-        msg.readLength = msgs[1].len;
-        msg.writeBuffer = msgs[0].buf;
-        msg.writeLength = msgs[0].len;
-
-        result = OOP_DoMethod(obj, &msg.mID);
-        
-        OOP_DisposeObject(obj);
-        
-        if (result)
-            return 2;
-        else
-            return 0;
-    }
     else if ((num == 2) && (msgs[0].addr == 0x54) && (msgs[1].addr == 0x54) && (msgs[0].len == 1) && (msgs[1].len == 1))
     {
         /* This is reading data from register 0x54 */
@@ -200,14 +167,10 @@ NOT_IMPLEMENTED_STOP
         else
             return 0;
     }
-    else if ((num == 2) && (msgs[0].addr == 0x54) && (msgs[1].addr == 0x54) && (msgs[0].len == 2) && (msgs[1].len == 1))
+    else if ((num == 2) && (msgs[0].addr == msgs[1].addr) && (msgs[0].len > 1 || msgs[1].len > 1) && (msgs[0].flags == 0) && (msgs[1].flags == I2C_M_RD))
     {
-        /* Read during BIOS init, triggered first on GTX 550 Ti */
-        return i2c_writeread(adap, msgs);
-    }
-    else if ((num == 2) && (msgs[0].addr == 0x40) && (msgs[1].addr == 0x40) && (msgs[0].len == 1) && (msgs[1].len == 2))
-    {
-        /* Something on GTX 760 */
+        /* Generic writeread call */
+        bug("i2c_transfer: generic WRITEREAD call at addr 0x%x len0 %d, len1 %d\n", msgs[0].addr, msgs[0].len, msgs[1].len);
         return i2c_writeread(adap, msgs);
     }
     else if ((num == 1) && (msgs[0].flags == 0x0))
