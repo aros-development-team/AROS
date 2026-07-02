@@ -14,9 +14,6 @@ void *dma_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle, U
 void *dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle, ULONG flags) { NOT_IMPLEMENTED_STOP }
 void dma_free_coherent(struct device *dev, size_t size, void *cpuaddr, dma_addr_t dma_handle) { NOT_IMPLEMENTED_STOP }
 
-int request_firmware(const struct firmware **fw, const char *name, struct device *device) { NOT_IMPLEMENTED_STOP }
-int firmware_request_nowarn(const struct firmware **fw, const char *name, struct device *device) { NOT_IMPLEMENTED_STOP }
-void release_firmware(const struct firmware *fw) { NOT_IMPLEMENTED_STOP }
 
 struct scatterlist *sg_next(struct scatterlist *s) { NOT_IMPLEMENTED_STOP }
 dma_addr_t sg_dma_address(struct scatterlist *s) { NOT_IMPLEMENTED_STOP }
