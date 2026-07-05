@@ -49,14 +49,11 @@ NVAccelM2MF(NVPtr pNv, int w, int h, int cpp, uint32_t srcoff, uint32_t dstoff,
 	    struct nouveau_bo *src, int sd, int sp, int sh, int sx, int sy,
 	    struct nouveau_bo *dst, int dd, int dp, int dh, int dx, int dy)
 {
-#warning implement better COPY
-#if 0
 	if (pNv->ce_rect && pNv->ce_enabled)
 		return pNv->ce_rect(pNv->ce_pushbuf, pNv->NvCopy, w, h, cpp,
 				    src, srcoff, sd, sp, sh, sx, sy,
 				    dst, dstoff, dd, dp, dh, dx, dy);
 	else
-#endif
 	if (pNv->Architecture >= NV_KEPLER)
 		return NVE0EXARectCopy(pNv, w, h, cpp,
 				       src, srcoff, sd, sp, sh, sx, sy,

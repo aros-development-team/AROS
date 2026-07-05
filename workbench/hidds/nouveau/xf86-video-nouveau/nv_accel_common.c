@@ -773,10 +773,18 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 }
 
 /* AROS CODE */
+#include "nouveau_copy.h"
 
-BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata)
+BOOL HIDDNouveauAccelCommonInit(struct CardData *carddata)
 {
-    return NVAccelCommonInit(carddata);
+    if (NVAccelCommonInit(carddata))
+    {
+        if (nouveau_copy_init(carddata))
+            carddata->ce_enabled = TRUE;
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch, struct nouveau_bo **bo)

@@ -27,8 +27,8 @@
 #include "hwdefs/nv_object.xml.h"
 #include "nvc0_accel.h"
 
-Bool
-nouveau_copya0b5_rect(struct nouveau_pushbuf *push, struct nouveau_object *copy,
+static Bool
+nouveau_copy90b5_rect(struct nouveau_pushbuf *push, struct nouveau_object *copy,
 		      int w, int h, int cpp,
 		      struct nouveau_bo *src, uint32_t src_off, int src_dom,
 		      int src_pitch, int src_h, int src_x, int src_y,
@@ -45,31 +45,33 @@ nouveau_copya0b5_rect(struct nouveau_pushbuf *push, struct nouveau_object *copy,
 	    nouveau_pushbuf_refn (push, refs, 2))
 		return FALSE;
 
-	exec = 0x00000206;
+	exec = 0x00000000;
 	if (!src->config.nvc0.memtype) {
 		src_off += src_y * src_pitch + src_x * cpp;
-		exec |= 0x00000080;
+		exec |= 0x00000010;
 	}
 	if (!dst->config.nvc0.memtype) {
 		dst_off += dst_y * dst_pitch + dst_x * cpp;
 		exec |= 0x00000100;
 	}
 
-	BEGIN_NVC0(push, SUBC_COPY(0x0728), 6);
-	PUSH_DATA (push, 0x00001000 | src->config.nvc0.tile_mode);
+	BEGIN_NVC0(push, SUBC_COPY(0x0200), 7);
+	PUSH_DATA (push, src->config.nvc0.tile_mode);
 	PUSH_DATA (push, src_pitch);
 	PUSH_DATA (push, src_h);
 	PUSH_DATA (push, 1);
 	PUSH_DATA (push, 0);
-	PUSH_DATA (push, (src_y << 16) | src_x * cpp);
-	BEGIN_NVC0(push, SUBC_COPY(0x070c), 6);
-	PUSH_DATA (push, 0x000001000 | dst->config.nvc0.tile_mode);
+	PUSH_DATA (push, src_x * cpp);
+	PUSH_DATA (push, src_y);
+	BEGIN_NVC0(push, SUBC_COPY(0x0220), 7);
+	PUSH_DATA (push, dst->config.nvc0.tile_mode);
 	PUSH_DATA (push, dst_pitch);
 	PUSH_DATA (push, dst_h);
 	PUSH_DATA (push, 1);
 	PUSH_DATA (push, 0);
-	PUSH_DATA (push, (dst_y << 16) | dst_x * cpp);
-	BEGIN_NVC0(push, SUBC_COPY(0x0400), 8);
+	PUSH_DATA (push, dst_x * cpp);
+	PUSH_DATA (push, dst_y);
+	BEGIN_NVC0(push, SUBC_COPY(0x030c), 8);
 	PUSH_DATA (push, (src->offset + src_off) >> 32);
 	PUSH_DATA (push, (src->offset + src_off));
 	PUSH_DATA (push, (dst->offset + dst_off) >> 32);
@@ -80,17 +82,18 @@ nouveau_copya0b5_rect(struct nouveau_pushbuf *push, struct nouveau_object *copy,
 	PUSH_DATA (push, h);
 	BEGIN_NVC0(push, SUBC_COPY(0x0300), 1);
 	PUSH_DATA (push, exec);
+
 	return TRUE;
 }
 
 Bool
-nouveau_copya0b5_init(NVPtr pNv)
+nouveau_copy90b5_init(NVPtr pNv)
 {
 	struct nouveau_pushbuf *push = pNv->ce_pushbuf;
 	if (PUSH_SPACE(push, 8)) {
 		BEGIN_NVC0(push, NV01_SUBC(COPY, OBJECT), 1);
 		PUSH_DATA (push, pNv->NvCopy->handle);
-		pNv->ce_rect = nouveau_copya0b5_rect;
+		pNv->ce_rect = nouveau_copy90b5_rect;
 		return TRUE;
 	}
 	return FALSE;

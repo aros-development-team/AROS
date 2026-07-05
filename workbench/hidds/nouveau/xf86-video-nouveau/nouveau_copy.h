@@ -4,10 +4,8 @@
 #include "nv_include.h"
 #include "nouveau_local.h"
 
-#if !defined(__AROS__)
 Bool nouveau_copy_init(ScreenPtr);
 void nouveau_copy_fini(ScreenPtr);
-#endif
 
 Bool nouveau_copy85b5_init(NVPtr);
 Bool nouveau_copy90b5_init(NVPtr);

@@ -155,6 +155,15 @@ struct CardData
     struct nouveau_object   *NvCOPY;
     struct nouveau_bo       *scratch;
 
+    BOOL ce_enabled;
+    struct nouveau_object   *ce_channel;
+    struct nouveau_pushbuf  *ce_pushbuf;
+    struct nouveau_object   *NvCopy;
+    BOOL (*ce_rect)(struct nouveau_pushbuf *, struct nouveau_object *,
+            int, int, int,
+            struct nouveau_bo *, uint32_t, int, int, int, int, int,
+            struct nouveau_bo *, uint32_t, int, int, int, int, int);
+
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
     struct SignalSemaphore  gartsemaphore;
 };
