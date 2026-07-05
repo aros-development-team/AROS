@@ -308,7 +308,7 @@ nouveau_fence_wait_busy(struct nouveau_fence *fence, bool intr)
 {
 	int ret = 0;
 
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	while (!nouveau_fence_done(fence)) {
 		if (time_after_eq(jiffies, fence->timeout)) {
@@ -327,6 +327,9 @@ NOT_IMPLEMENTED_STOP
 	}
 
 	__set_current_state(TASK_RUNNING);
+#else
+	while (!nouveau_fence_done(fence)) {
+	}
 #endif
 	return ret;
 }
