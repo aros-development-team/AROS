@@ -281,7 +281,6 @@ NV04EXACopy(PixmapPtr pdpix, int srcX, int srcY, int dstX, int dstY,
 		PUSH_KICK(push);
 }
 
-#if !defined(__AROS__)
 void
 NV04EXADoneCopy(PixmapPtr pdpix)
 {
@@ -289,6 +288,7 @@ NV04EXADoneCopy(PixmapPtr pdpix)
 	nouveau_pushbuf_bufctx(NVPTR(pScrn)->pushbuf, NULL);
 }
 
+#if !defined(__AROS__)
 Bool
 NV04EXAUploadIFC(ScrnInfoPtr pScrn, const char *src, int src_pitch,
 		 PixmapPtr pdpix, int x, int y, int w, int h, int cpp)
@@ -464,6 +464,7 @@ BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
     if (NV04EXAPrepareSolid(bmdata, drawmode, ~0, color))
     {
         NV04EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1, color);
+        NV04EXADoneSolid(bmdata);
         return TRUE;
     }
 
@@ -480,6 +481,7 @@ BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     if (NV04EXAPrepareCopy(srcdata, destdata, 0, 0, drawmode, ~0))
     {
         NV04EXACopy(destdata, srcX, srcY, destX, destY, width, height);
+        NV04EXADoneCopy(destdata);
         return TRUE;
     }
 
