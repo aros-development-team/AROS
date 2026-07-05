@@ -14,7 +14,9 @@
 /* Some overriding defines for AROS */
 #define Bool                        BOOL
 #define ScrnInfoPtr                 struct CardData *
-#define NVPTR(x)                    x
+#define ScreenPtr                   struct CardData *
+#define NVPTR(x)                    (x)
+#define xf86ScreenToScrn(x)         (x)
 #define NVPtr                       struct CardData *
 #define PixmapPtr                   struct HIDDNouveauBitMapData *
 #define xf86DrvMsg(a, b, fmt, ...)  bug(fmt, ##__VA_ARGS__)
@@ -26,13 +28,6 @@
 #define BoxPtr                      APTR
 
 #include "nouveau_local.h"
-
-/* This construction is implemented so that original EXA funtion calls don't 
-   have to be extended with ScrnInfoPtr parameter which makes code harder to
-   maintain */
-extern struct CardData * globalcarddataptr;
-
-#define xf86ScreenToScrn(x) globalcarddataptr
 
 
 #define nouveau_pixmap_bo(x)    (x->bo)

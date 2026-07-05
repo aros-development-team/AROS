@@ -1092,10 +1092,11 @@ NVE0EXARectCopy(NVPtr pNv, int w, int h, int cpp,
 
 /* AROS CODE */
 
-VOID HIDDNouveauNVC0SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
-		  LONG pat0, LONG pat1)
+VOID HIDDNouveauNVC0SetPattern(struct CardData *carddata, LONG clr0, LONG clr1, LONG pat0, LONG pat1)
 {
-    NVC0EXASetPattern(NULL, clr0, clr1, pat0, pat1);
+    struct HIDDNouveauBitMapData fake;
+    fake.drawable.pScreen = carddata;
+    NVC0EXASetPattern(&fake, clr0, clr1, pat0, pat1);
 }
 
 /* NOTE: Assumes lock on bitmap is already made */

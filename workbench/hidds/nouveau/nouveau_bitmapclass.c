@@ -77,6 +77,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     bmdata->drawable.width = width;
     bmdata->drawable.height = height;
     bmdata->drawable.depth = bmdata->drawable.bitsPerPixel = depth;
+    bmdata->drawable.pScreen = carddata;
     bmdata->bytesperpixel = bytesperpixel;
 
     if (displayable) bmdata->displayable = TRUE; else bmdata->displayable = FALSE;

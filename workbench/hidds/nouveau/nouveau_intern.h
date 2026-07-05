@@ -78,6 +78,7 @@ struct HIDDNouveauBitMapData
         ULONG width;            /* Width of bitmap in pixels */
         UBYTE bitsPerPixel;     /* In bits, how many bits used to represt the color */
         UBYTE depth;            /* In bits, how many bits used to represt the color */
+        APTR  pScreen;          /* Pointer to CardData */
     } drawable;
 
     BOOL    displayable;    /* Can bitmap be displayed on screen */

@@ -1039,10 +1039,11 @@ NV50EXARectM2MF(NVPtr pNv, int w, int h, int cpp,
 
 /* AROS CODE */
 
-VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0,
-    LONG col1, LONG pat0, LONG pat1)
+VOID HIDDNouveauNV50SetPattern(struct CardData *carddata, LONG col0, LONG col1, LONG pat0, LONG pat1)
 {
-    NV50EXASetPattern(NULL, col0, col1, pat0, pat1);
+    struct HIDDNouveauBitMapData fake;
+    fake.drawable.pScreen = carddata;
+    NV50EXASetPattern(&fake, col0, col1, pat0, pat1);
 }
 
 /* NOTE: Assumes lock on bitmap is already made */

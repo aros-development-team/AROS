@@ -78,6 +78,7 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
     bmdata->drawable.width = resource->width0;
     bmdata->drawable.height = resource->height0;
     bmdata->drawable.depth = bmdata->drawable.bitsPerPixel = depth;
+    bmdata->drawable.pScreen = carddata;
     if (bmdata->drawable.depth == 16)
         bmdata->bytesperpixel = 2;
     else
