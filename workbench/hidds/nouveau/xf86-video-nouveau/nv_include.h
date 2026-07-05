@@ -39,6 +39,8 @@
 
 void NVXVComputeBicubicFilter(struct nouveau_bo *, unsigned, unsigned);
 
+Bool NV04EXAUploadIFC(ScrnInfoPtr, const char *src, int src_pitch,
+             PixmapPtr pdPix, int x, int y, int w, int h, int cpp);
 Bool NV04EXARectM2MF(NVPtr pNv, int, int, int,
              struct nouveau_bo *, uint32_t, int, int, int, int, int,
              struct nouveau_bo *, uint32_t, int, int, int, int, int);
@@ -50,6 +52,8 @@ Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitM2MF_NV50(ScrnInfoPtr pScrn);
 Bool NVAccelInit2D_NV50(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV50TCL(ScrnInfoPtr pScrn);
+Bool NV50EXAUploadSIFC(const char *src, int src_pitch,
+             PixmapPtr pdPix, int x, int y, int w, int h, int cpp);
 Bool NV50EXARectM2MF(NVPtr pNv, int, int, int,
              struct nouveau_bo *, uint32_t, int, int, int, int, int,
              struct nouveau_bo *, uint32_t, int, int, int, int, int);
@@ -57,6 +61,8 @@ Bool NV50EXARectM2MF(NVPtr pNv, int, int, int,
 Bool NVAccelInitM2MF_NVC0(ScrnInfoPtr pScrn);
 Bool NVAccelInit2D_NVC0(ScrnInfoPtr pScrn);
 Bool NVAccelInit3D_NVC0(ScrnInfoPtr pScrn);
+Bool NVC0EXAUploadSIFC(const char *src, int src_pitch,
+             PixmapPtr pdPix, int x, int y, int w, int h, int cpp);
 Bool NVC0EXARectM2MF(NVPtr pNv, int, int, int,
              struct nouveau_bo *, uint32_t, int, int, int, int, int,
              struct nouveau_bo *, uint32_t, int, int, int, int, int);

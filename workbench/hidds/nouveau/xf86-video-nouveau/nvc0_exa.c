@@ -323,7 +323,6 @@ NVC0EXADoneCopy(PixmapPtr pdpix)
 	nouveau_pushbuf_bufctx(push, NULL);
 }
 
-#if !defined(__AROS__)
 Bool
 NVC0EXAUploadSIFC(const char *src, int src_pitch,
 		  PixmapPtr pdpix, int x, int y, int w, int h, int cpp)
@@ -387,11 +386,12 @@ NVC0EXAUploadSIFC(const char *src, int src_pitch,
 	ret = TRUE;
 out:
 	nouveau_pushbuf_bufctx(push, NULL);
+#if !defined(__AROS__)
 	if (pdpix == pScreen->GetScreenPixmap(pScreen))
+#endif
 		PUSH_KICK(push);
 	return ret;
 }
-#endif
 
 static Bool
 NVC0EXACheckRenderTarget(PicturePtr ppict)

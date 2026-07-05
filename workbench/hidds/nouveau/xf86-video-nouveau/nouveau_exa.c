@@ -553,7 +553,8 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     struct CardData * carddata = &(SD(cl)->carddata);
 
     PixmapPtr pdpix = bmdata;
-	NVPtr pNv = carddata;
+    ScrnInfoPtr pScrn = carddata;
+    NVPtr pNv = carddata;
 
     int dst_pitch, tmp_pitch, cpp;
     char *dst;
@@ -563,30 +564,28 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     dst_pitch  = exaGetPixmapPitch(pdpix);
     tmp_pitch = width * cpp;
 
-#warning removed optimization
-#if 0
     /* try hostdata transfer */
-    if (w * h * cpp < 16*1024) /* heuristic */
+    if (srcPixFmt == vHidd_StdPixFmt_Native || (srcPixFmt == vHidd_StdPixFmt_Native32 && cpp == 4))
+    if (width * height * cpp < 16*1024) /* heuristic */
     {
         if (pNv->Architecture < NV_TESLA) {
-            if (NV04EXAUploadIFC(pScrn, src, src_pitch, pdpix,
-                            x, y, w, h, cpp)) {
+            if (NV04EXAUploadIFC(pScrn, srcpixels, srcpitch, pdpix,
+                            x, y, width, height, cpp)) {
                 return TRUE;
             }
         } else
         if (pNv->Architecture < NV_FERMI) {
-            if (NV50EXAUploadSIFC(src, src_pitch, pdpix,
-                            x, y, w, h, cpp)) {
+            if (NV50EXAUploadSIFC(srcpixels, srcpitch, pdpix,
+                            x, y, width, height, cpp)) {
                 return TRUE;
             }
         } else {
-            if (NVC0EXAUploadSIFC(src, src_pitch, pdpix,
-                            x, y, w, h, cpp)) {
+            if (NVC0EXAUploadSIFC(srcpixels, srcpitch, pdpix,
+                            x, y, width, height, cpp)) {
                 return TRUE;
             }
         }
     }
-#endif
 
     while (height) {
         const int lines = (height > 2047) ? 2047 : height;

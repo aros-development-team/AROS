@@ -288,11 +288,11 @@ NV04EXADoneCopy(PixmapPtr pdpix)
 	nouveau_pushbuf_bufctx(NVPTR(pScrn)->pushbuf, NULL);
 }
 
-#if !defined(__AROS__)
 Bool
 NV04EXAUploadIFC(ScrnInfoPtr pScrn, const char *src, int src_pitch,
 		 PixmapPtr pdpix, int x, int y, int w, int h, int cpp)
 {
+#if !defined(__AROS__)
 	NVPtr pNv = NVPTR(pScrn);
 	ScreenPtr pScreen = pdpix->drawable.pScreen;
 	struct nouveau_bo *bo = nouveau_pixmap_bo(pdpix);
@@ -393,8 +393,10 @@ out:
 	if (pdpix == pScreen->GetScreenPixmap(pScreen))
 		PUSH_KICK(push);
 	return ret;
-}
+#else
+	return FALSE;
 #endif
+}
 
 Bool
 NV04EXARectM2MF(NVPtr pNv, int w, int h, int cpp,
