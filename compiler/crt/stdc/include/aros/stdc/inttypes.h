@@ -25,7 +25,7 @@
 #  define __PRIPTR_PREFIX	"l"
 # else
 #  define __PRI64_PREFIX	"ll"
-#  define __PRIMAX_PREFIX	"l"
+#  define __PRIMAX_PREFIX	"ll"
 #  define __PRIPTR_PREFIX
 # endif
 
