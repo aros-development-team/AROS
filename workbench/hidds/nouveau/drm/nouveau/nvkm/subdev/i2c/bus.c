@@ -245,8 +245,8 @@ nvkm_i2c_bus_ctor(const struct nvkm_i2c_bus_func *func,
 bug("CHECKME: I2C\n");
 #if !defined(__AROS__)
 		bit->udelay = 10;
-		bit->timeout = usecs_to_jiffies(2200);
 #endif
+		bit->timeout = usecs_to_jiffies(2200);
 		bit->data = bus;
 #if !defined(__AROS__)
 		bit->pre_xfer = nvkm_i2c_bus_pre_xfer;
