@@ -248,10 +248,8 @@ bug("CHECKME: I2C\n");
 #endif
 		bit->timeout = usecs_to_jiffies(2200);
 		bit->data = bus;
-#if !defined(__AROS__)
 		bit->pre_xfer = nvkm_i2c_bus_pre_xfer;
 		bit->post_xfer = nvkm_i2c_bus_post_xfer;
-#endif
 		bit->setscl = nvkm_i2c_bus_setscl;
 		bit->setsda = nvkm_i2c_bus_setsda;
 		bit->getscl = nvkm_i2c_bus_getscl;
