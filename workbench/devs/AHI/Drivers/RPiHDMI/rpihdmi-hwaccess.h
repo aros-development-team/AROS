@@ -51,7 +51,7 @@ static inline void wr32le(ULONG addr, ULONG val)
 #define HDMI_MAI_SMP(pb)  ((pb) + HD_OFFSET + 0x2C)
 
 /*
- * HDMI register block — offsets from Linux vc4_hdmi_fields[] for BCM2835
+ * HDMI register block — BCM2835 offsets.
  * Bus address: 0x7E902000, ARM offset from peribase: 0x902000
  */
 #define HDMI_OFFSET                0x902000

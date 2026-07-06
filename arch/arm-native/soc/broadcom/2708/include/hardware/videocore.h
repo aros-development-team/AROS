@@ -5,10 +5,14 @@
 #ifndef VCMBOX_H
 #define VCMBOX_H
 
-#define VCMB_BASE               (ARM_PERIIOBASE + 0x00B880)
+#define VCMB_OFFSET             0x00B880
+#define VCMB_BASE               (ARM_PERIIOBASE + VCMB_OFFSET)
 
 #define VCMB_CHAN_MAX           8
 #define VCMB_CHAN_MASK          0xF
+
+/* Property tag channel (ARM -> VC) */
+#define VCMB_PROPCHAN           8
 
 /* Mailbox register offsets */
 #define VCMB_READ               0
@@ -38,6 +42,18 @@
 #define VCTAG_GETPOWER          0x00020001
 #define VCTAG_GETTIMING         0x00020002
 #define VCTAG_SETPOWER	        0x00028001
+
+/* Clock ids for the VCTAG_*CLK* tags */
+#define VCCLOCK_EMMC            1
+#define VCCLOCK_UART            2
+#define VCCLOCK_ARM             3
+#define VCCLOCK_CORE            4
+#define VCCLOCK_V3D             5
+#define VCCLOCK_H264            6
+#define VCCLOCK_ISP             7
+#define VCCLOCK_SDRAM           8
+#define VCCLOCK_PIXEL           9
+#define VCCLOCK_PWM             10
 
 #define VCTAG_GETCLKSTATE       0x00030001
 #define VCTAG_GETCLKRATE        0x00030002

@@ -154,25 +154,6 @@ void Slave(struct ExecBase *SysBase)
                 CallHookPkt(AudioCtrl->ahiac_MixerFunc, AudioCtrl, dd->mixbuffer);
 
                 /*
-                 * The mixer only writes ahiac_BuffSamples frames, but the
-                 * DMA buffer is sized for dmabuf_samples (MaxBuffSamples).
-                 * Zero the tail so the IEC958 encode produces silent (but
-                 * still valid) subframes there — leaving stale zero ULONGs
-                 * in the DMA buffer produces invalid subframes that put
-                 * the MAI into an error state.
-                 */
-                {
-                    ULONG mixed = AudioCtrl->ahiac_BuffSamples;
-                    if (mixed < dd->dmabuf_samples) {
-                        WORD *tail = (WORD *) dd->mixbuffer + mixed * 2;
-                        ULONG n = (dd->dmabuf_samples - mixed) * 2;
-                        ULONG i;
-                        for (i = 0; i < n; i++)
-                            tail[i] = 0;
-                    }
-                }
-
-                /*
                  * Convert mixed audio to SPDIF subframes and write
                  * to the DMA buffer that is NOT currently being read.
                  *
@@ -186,6 +167,11 @@ void Slave(struct ExecBase *SysBase)
                     ULONG dma_base = dd->periiobase + 0x007000 + dd->dma_channel * 0x100;
                     ULONG cbaddr = rd32le(dma_base + 0x04);
                     ULONG fillbuf;
+                    ULONG frames = AudioCtrl->ahiac_BuffSamples;
+
+                    /* The mix buffer holds at most MaxBuffSamples frames. */
+                    if (frames == 0 || frames > AudioCtrl->ahiac_MaxBuffSamples)
+                        frames = AudioCtrl->ahiac_MaxBuffSamples;
 
                     if (cbaddr == GPU_BUS_ADDR(dd->cb[0]))
                         fillbuf = 1; /* DMA on CB[0] → fill dmabuf[1] */
@@ -193,20 +179,25 @@ void Slave(struct ExecBase *SysBase)
                         fillbuf = 0; /* DMA on CB[1] → fill dmabuf[0] */
 
                     /*
-                     * Encode fully-formed IEC958 subframes in software.
-                     * The MAI consumes L/R subframe pairs from the DMA buffer.
-                     * Encode the full DMA buffer width (dmabuf_samples), not
-                     * just BuffSamples — the tail was padded with silence above.
+                     * Encode exactly the frames the mixer produced (the
+                     * DMA length below is shortened to match) — padding
+                     * the tail with silence stretched playback.
+                     * frame_counter advances by 'frames', keeping the
+                     * 192-frame IEC958 block continuous.
                      */
                     convert_mix_to_iec958((WORD *) dd->mixbuffer,
                                           dd->dmabuf[fillbuf],
-                                          dd->dmabuf_samples,
+                                          frames,
                                           dd->channel_status_l,
                                           dd->channel_status_r,
                                           &dd->frame_counter);
 
                     /* Flush converted data to physical RAM for DMA */
-                    CacheClearE(dd->dmabuf[fillbuf], dd->dmabuf_size, CACRF_ClearD);
+                    CacheClearE(dd->dmabuf[fillbuf], frames * 2 * sizeof(ULONG), CACRF_ClearD);
+
+                    /* Play exactly the encoded frames (see PWM driver notes). */
+                    dd->cb[fillbuf]->txfr_len = frames * 2 * sizeof(ULONG);
+                    CacheClearE(dd->cb[fillbuf], sizeof(struct BCM2708DMACB), CACRF_ClearD);
                 }
             }
         }

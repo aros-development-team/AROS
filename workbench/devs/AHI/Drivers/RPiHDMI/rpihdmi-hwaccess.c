@@ -9,7 +9,7 @@
  *  Software must provide fully formatted subframes (audio data,
  *  validity, user data, channel status, parity).
  *
- *  Register offsets taken from Linux vc4_hdmi_fields[] for BCM2835.
+ *  Register offsets are for the BCM2835 HD/HDMI core register blocks.
  *  No VCHIQ firmware interaction needed — HDMI link is already
  *  established by the VideoCore firmware at boot.
  */
@@ -20,6 +20,13 @@
 #include <aros/macros.h>
 
 #include "rpihdmi-hwaccess.h"
+
+/*
+ * HDMI State Machine (HSM) clock feeding the MAI sample-rate divider.
+ * Owned by the firmware and not queryable here; measured on Pi 3B+ at
+ * ~163.68 MHz (the 216 MHz assumed before gave 0.7578x playback speed).
+ */
+#define HDMI_HSM_CLOCK 163680000
 
 /*
  * Microsecond delay using a busy loop on the system timer.
@@ -344,11 +351,11 @@ static void hdmi_write_audio_infoframe(ULONG pb, ULONG samplerate)
 /*
  * Initialize the HDMI MAI for audio output.
  *
- * Based on Linux vc4_hdmi.c (BCM2835) and verified against
- * working bare-metal implementations.
+ * Programming sequence verified against working bare-metal
+ * implementations.
  *
  * Key points:
- * - Reset sequence from Linux vc4_hdmi: RESET, ERRORF, FLUSH (separate writes)
+ * - Reset sequence: RESET, ERRORF, FLUSH (separate writes)
  * - Software provides complete IEC958 subframes, including parity
  * - BIT_REVERSE | FORMAT_REVERSE required for correct serialization
  * - Channel map: 3-bit fields at bits 0-2 (ch0) and 4-6 (ch1)
@@ -361,7 +368,7 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
     ULONG n_value = srate_to_n(dd->samplerate);
 
     /*
-     * Reset MAI — matches Linux vc4_hdmi_audio_reset() sequence.
+     * Reset MAI.
      * Three separate writes: RESET, then clear ERRORF, then FLUSH.
      * This resets the internal channel counter and FIFO state.
      */
@@ -375,7 +382,7 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
     wr32le(HDMI_MAI_FMT(pb), MAI_FMT_FORMAT_PCM | MAI_FMT_RATE(srate_enum));
 
     /*
-     * FIFO thresholds — matches Linux vc4_hdmi values (all 0x10).
+     * FIFO thresholds (all 0x10).
      */
     wr32le(HDMI_MAI_THR(pb), MAI_THR_DREQL(0x10) | MAI_THR_DREQH(0x10) | MAI_THR_PANICL(0x10) | MAI_THR_PANICH(0x10));
 
@@ -386,7 +393,7 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
     wr32le(HDMI_MAI_CHANNEL_MAP(pb), 0x08);
 
     /*
-     * Audio packet config (matches Linux):
+     * Audio packet config:
      *   B_FRAME_IDENTIFIER = 0x8 at bits [13:10]
      *   CEA channel mask = 0x03 (channels 0 and 1 active)
      *   ZERO_DATA_ON_INACTIVE_CHANNELS
@@ -399,16 +406,17 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
     /*
      * Sample rate clock divider.
      * MAI_SMP register: bits 31:8 = N (numerator), bits 7:0 = M (denominator-1).
-     * Clock ratio = N / (M+1) ≈ hsm_clock / samplerate.
+     * Clock ratio = N / (M+1) = hsm_clock / samplerate. Round N (rather than
+     * truncate) to halve the residual rate error.
      */
-    wr32le(HDMI_MAI_SMP(pb), (216000000 / dd->samplerate) << 8);
+    wr32le(HDMI_MAI_SMP(pb),
+           ((HDMI_HSM_CLOCK + dd->samplerate / 2) / dd->samplerate) << 8);
 
     /*
      * CTS/N audio clock recovery.
      * N is set from the HDMI spec standard values.
      * CTS is set to external mode — the hardware derives CTS from
      * the pixel clock automatically.
-     * Linux also writes CTS_0 and CTS_1 explicitly.
      * CTS = (pixel_clock * N) / (128 * samplerate)
      * RPi 3B+ default pixel clock ≈ 148500 kHz (1080p60) or 74250 kHz (720p60).
      * We read CTS_0 first to get the hardware-derived value, then write it back.
@@ -429,10 +437,11 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
     hdmi_write_audio_infoframe(pb, dd->samplerate);
 
     /*
-     * Enable MAI (matches Linux vc4_hdmi_audio_prepare MAI_CTL write).
+     * Enable MAI.
      * WHOLSMP + CHALIGN: L/R pairs consumed atomically.
      * Parity is already encoded in software, so leave PAREN cleared.
-     * Note: Linux does NOT set DLATE/ERRORE/ERRORF at enable time.
+     * Note: DLATE/ERRORE/ERRORF are deliberately left cleared at
+     * enable time.
      */
     wr32le(HDMI_MAI_CTL(pb), MAI_CTL_CHALIGN | MAI_CTL_WHOLSMP | MAI_CTL_CHNUM(2) | MAI_CTL_ENABLE);
 

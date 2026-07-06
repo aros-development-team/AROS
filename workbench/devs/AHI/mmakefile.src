@@ -8,8 +8,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM- workbench-devs-AHI : workbench-devs-AHI-subsystem AHI-drivers
 #MM- workbench-devs-AHI-quick : workbench-devs-AHI-subsystem-quick AHI-drivers-quick
 
-#MM- AHI-raspi-armhf :  kernel-dma-bcm2708-includes
-#MM- AHI-raspi-arm :  kernel-dma-bcm2708-includes
+#MM- AHI-raspi-armhf :  kernel-dma-bcm2708-includes kernel-mbox-bcm2708-includes
+#MM- AHI-raspi-arm :  kernel-dma-bcm2708-includes kernel-mbox-bcm2708-includes
 
 #MM- AHI-standalone-prereqs : \
 #MM                         AHI-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)

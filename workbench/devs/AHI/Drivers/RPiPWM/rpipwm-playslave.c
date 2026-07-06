@@ -193,6 +193,15 @@ void Slave(struct ExecBase *SysBase)
                     ULONG dma_base = dd->periiobase + 0x007000 + dd->dma_channel * 0x100;
                     ULONG cbaddr = rd32le(dma_base + 0x04);
                     ULONG fillbuf;
+                    ULONG frames = AudioCtrl->ahiac_BuffSamples;
+
+                    /*
+                     * The mix buffer holds at most MaxBuffSamples frames,
+                     * which can be less than the (min. 256 frame) DMA
+                     * buffer.
+                     */
+                    if (frames == 0 || frames > AudioCtrl->ahiac_MaxBuffSamples)
+                        frames = AudioCtrl->ahiac_MaxBuffSamples;
 
                     if (cbaddr == GPU_BUS_ADDR(dd->cb[0]))
                         fillbuf = 1; /* DMA on CB[0] → fill dmabuf[1] */
@@ -200,10 +209,21 @@ void Slave(struct ExecBase *SysBase)
                         fillbuf = 0; /* DMA on CB[1] → fill dmabuf[0] */
 
                     convert_mix_to_pwm(
-                        (WORD *) dd->mixbuffer, dd->dmabuf[fillbuf], AudioCtrl->ahiac_BuffSamples, dd->pwm_range);
+                        (WORD *) dd->mixbuffer, dd->dmabuf[fillbuf], frames, dd->pwm_range);
 
                     /* Flush converted data to physical RAM for DMA */
-                    CacheClearE(dd->dmabuf[fillbuf], dd->dmabuf_size, CACRF_ClearD);
+                    CacheClearE(dd->dmabuf[fillbuf], frames * 2 * sizeof(ULONG), CACRF_ClearD);
+
+                    /*
+                     * Play exactly the frames the mixer produced —
+                     * playing the full (MaxBuffSamples-sized) DMA buffer
+                     * would stretch playback and shift the pitch. The DMA
+                     * re-reads the CB from RAM on each chain; we only
+                     * touch the CB that is not playing, which assumes the
+                     * refill completes within one buffer period.
+                     */
+                    dd->cb[fillbuf]->txfr_len = frames * 2 * sizeof(ULONG);
+                    CacheClearE(dd->cb[fillbuf], sizeof(struct BCM2708DMACB), CACRF_ClearD);
                 }
             }
         }

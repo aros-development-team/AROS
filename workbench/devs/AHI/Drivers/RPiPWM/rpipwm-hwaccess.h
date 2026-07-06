@@ -86,6 +86,10 @@ static inline void wr32le(ULONG addr, ULONG val)
 #define PWM_DMAC_PANIC(x) (((x) & 0xFF) << 8)
 #define PWM_DMAC_DREQ(x)  (((x) & 0xFF) << 0)
 
+/* Clock Manager PWM clock registers */
+#define CM_PWMCTL_ADDR(peribase) ((peribase) + 0x1010A0)
+#define CM_PWMDIV_ADDR(peribase) ((peribase) + 0x1010A4)
+
 /* Clock Manager bits */
 #define CM_PASSWORD 0x5A000000
 #define CM_SRC_PLLD 6
@@ -102,8 +106,8 @@ static inline void wr32le(ULONG addr, ULONG val)
 /* Hardware setup/teardown functions */
 void pwm_gpio_setup(ULONG peribase);
 void pwm_gpio_restore(ULONG peribase);
-void pwm_clock_setup(ULONG peribase, ULONG samplerate, ULONG range);
-void pwm_clock_stop(ULONG peribase);
+void pwm_clock_setup(struct DriverBase *AHIsubBase, ULONG peribase, ULONG samplerate, ULONG range);
+void pwm_clock_stop(struct DriverBase *AHIsubBase, ULONG peribase);
 void pwm_init(ULONG peribase, ULONG range);
 void pwm_stop(ULONG peribase);
 void dma_setup(ULONG peribase, ULONG channel, ULONG cb_bus_addr);

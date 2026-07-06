@@ -144,6 +144,35 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
         dd->samplerate = AudioCtrl->ahiac_MixFreq;
 
         /*
+         * Pick a PWM range near PWM_AUDIO_RANGE so samplerate * range
+         * lands close to an integer division of PLLD — the firmware
+         * programs the clock with MASH off, so PLLD/divi are the only
+         * rates it can hit (e.g. 48000: range 1042 is -0.03% off vs
+         * 1024 at +1.7%).
+         */
+        {
+            ULONG best_ppm = ~0UL;
+            ULONG R;
+
+            dd->pwm_range = PWM_AUDIO_RANGE;
+            for (R = PWM_AUDIO_RANGE - 64; R <= PWM_AUDIO_RANGE + 64; R++) {
+                ULONG clk = dd->samplerate * R;
+                ULONG d = (PLLD_FREQ + clk / 2) / clk;
+                ULONG actual, err, ppm;
+
+                if (d == 0)
+                    continue;
+                actual = PLLD_FREQ / d;
+                err = (actual > clk) ? actual - clk : clk - actual;
+                ppm = (ULONG) (((unsigned long long) err * 1000000ULL) / clk);
+                if (ppm < best_ppm) {
+                    best_ppm = ppm;
+                    dd->pwm_range = R;
+                }
+            }
+        }
+
+        /*
          * Calculate DMA buffer size.
          * Use the AHI-requested buffer size in sample frames.
          * Each frame = 2 channels * 4 bytes (32-bit PWM words) = 8 bytes.
@@ -199,7 +228,7 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
 
         /* Configure hardware (but don't start DMA yet) */
         pwm_gpio_setup(dd->periiobase);
-        pwm_clock_setup(dd->periiobase, dd->samplerate, dd->pwm_range);
+        pwm_clock_setup(AHIsubBase, dd->periiobase, dd->samplerate, dd->pwm_range);
         pwm_init(dd->periiobase, dd->pwm_range);
 
         /*
@@ -283,7 +312,7 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverB
         /* Stop hardware */
         dma_stop(dd->periiobase, dd->dma_channel);
         pwm_stop(dd->periiobase);
-        pwm_clock_stop(dd->periiobase);
+        pwm_clock_stop(AHIsubBase, dd->periiobase);
         pwm_gpio_restore(dd->periiobase);
 
         dd->slavesignal = -1;
