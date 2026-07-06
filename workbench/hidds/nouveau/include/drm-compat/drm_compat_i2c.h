@@ -67,6 +67,7 @@ struct i2c_algo_bit_data
     int  (*getscl)(void *data);
 
     APTR data;
+    ULONG timeout; /* jiffies */
 };
 
 /* I2C handling */

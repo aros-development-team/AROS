@@ -10,6 +10,7 @@
 
 
 OOP_AttrBase HiddI2CDeviceAttrBase = 0; /* TODO: Implement  freeing */
+OOP_AttrBase HiddI2CAttrBase = 0; /* TODO: Implement  freeing */
 
 /* This function assumes there are two messages in msgs[] */
 static int i2c_writeread(struct i2c_adapter *adap, struct i2c_msg *msgs)
@@ -214,9 +215,18 @@ int i2c_bit_add_bus(struct i2c_adapter *adap)
     if (HiddI2CNouveauAttrBase == 0)
         HiddI2CNouveauAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C_Nouveau);
 
+    if (HiddI2CAttrBase == 0)
+        HiddI2CAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C);
+
+    ULONG timeout = jiffies_to_usecs(((struct i2c_algo_bit_data *)adap->algo_data)->timeout);
+    timeout /= 10; /* I2C expects values in 10 microsecond units */
     struct TagItem i2c_attrs[] =
     {
-        { aHidd_I2C_Nouveau_Adapter, (IPTR)adap },
+        { aHidd_I2C_Nouveau_Adapter,    (IPTR)adap },
+        { aHidd_I2C_BitTimeout,         timeout },
+        { aHidd_I2C_ByteTimeout,        timeout },
+        { aHidd_I2C_StartTimeout,       timeout },
+        { aHidd_I2C_AcknTimeout,        timeout },
         { TAG_DONE, 0UL }
     };
 
