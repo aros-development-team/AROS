@@ -57,7 +57,7 @@
 #define	DECLARE_BITMAP(n, bits) \
     unsigned long n[howmany(bits, sizeof(long) * 8)]
 
-#define HZ 250 /* 1 jiffy = 4 ms */
+#define HZ 1000 /* 1 jiffy = 1 ms */
 
 
 #define IRQ_NONE    0

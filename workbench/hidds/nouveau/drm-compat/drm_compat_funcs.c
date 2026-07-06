@@ -374,7 +374,12 @@ NOT_IMPLEMENTED_STOP
 
 unsigned int jiffies_to_usecs(const unsigned long j)
 {
-    return j * 4 /* ms */ * 1000;
+    return j * (1000 / HZ) /* ms */ * 1000;
+}
+
+unsigned long usecs_to_jiffies(unsigned int us) /* this function rounds up the result */
+{
+    return (us + ((1000 / HZ) * 1000) - 1) / ((1000 / HZ) /* ms */ * 1000);
 }
 
 /* Other */
