@@ -68,6 +68,9 @@ struct i2c_algo_bit_data
 
     APTR data;
     ULONG timeout; /* jiffies */
+
+    int  (*pre_xfer)(struct i2c_adapter *);
+    void (*post_xfer)(struct i2c_adapter *);
 };
 
 /* I2C handling */
