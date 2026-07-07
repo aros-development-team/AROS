@@ -89,7 +89,6 @@ nvkm_i2c_bus_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 	return ret;
 }
 
-#if !defined(__AROS__)
 static u32
 nvkm_i2c_bus_func(struct i2c_adapter *adap)
 {
@@ -101,7 +100,6 @@ nvkm_i2c_bus_algo = {
 	.master_xfer = nvkm_i2c_bus_xfer,
 	.functionality = nvkm_i2c_bus_func,
 };
-#endif
 
 /*******************************************************************************
  * nvkm_i2c_bus base
@@ -257,11 +255,8 @@ bug("CHECKME: I2C\n");
 		bus->i2c.algo_data = bit;
 		ret = i2c_bit_add_bus(&bus->i2c);
 	} else {
-NOT_IMPLEMENTED_STOP
-#if 0
 		bus->i2c.algo = &nvkm_i2c_bus_algo;
 		ret = i2c_add_adapter(&bus->i2c);
-#endif
 	}
 
 	return ret;
