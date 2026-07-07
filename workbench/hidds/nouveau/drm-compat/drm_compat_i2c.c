@@ -83,8 +83,13 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 
     if (adap->type == ADAP_TYPE_ALGO)
     {
-NOT_IMPLEMENTED_STOP
-return 0;
+        if (adap->algo)
+        {
+            struct i2c_algorithm *algo = (struct i2c_algorithm *)adap->algo;
+            if (algo->master_xfer)
+                return algo->master_xfer(adap, msgs, num);
+        }
+        return 0;
     }
 
     if (adap->i2cdriver == (IPTR)0)
