@@ -4377,53 +4377,53 @@ bool drm_detect_hdmi_monitor(struct edid *edid)
 }
 EXPORT_SYMBOL(drm_detect_hdmi_monitor);
 
-// /**
-//  * drm_detect_monitor_audio - check monitor audio capability
-//  * @edid: EDID block to scan
-//  *
-//  * Monitor should have CEA extension block.
-//  * If monitor has 'basic audio', but no CEA audio blocks, it's 'basic
-//  * audio' only. If there is any audio extension block and supported
-//  * audio format, assume at least 'basic audio' support, even if 'basic
-//  * audio' is not defined in EDID.
-//  *
-//  * Return: True if the monitor supports audio, false otherwise.
-//  */
-// bool drm_detect_monitor_audio(struct edid *edid)
-// {
-// 	u8 *edid_ext;
-// 	int i, j;
-// 	bool has_audio = false;
-// 	int start_offset, end_offset;
+/**
+ * drm_detect_monitor_audio - check monitor audio capability
+ * @edid: EDID block to scan
+ *
+ * Monitor should have CEA extension block.
+ * If monitor has 'basic audio', but no CEA audio blocks, it's 'basic
+ * audio' only. If there is any audio extension block and supported
+ * audio format, assume at least 'basic audio' support, even if 'basic
+ * audio' is not defined in EDID.
+ *
+ * Return: True if the monitor supports audio, false otherwise.
+ */
+bool drm_detect_monitor_audio(struct edid *edid)
+{
+	u8 *edid_ext;
+	int i, j;
+	bool has_audio = false;
+	int start_offset, end_offset;
 
-// 	edid_ext = drm_find_cea_extension(edid);
-// 	if (!edid_ext)
-// 		goto end;
+	edid_ext = drm_find_cea_extension(edid);
+	if (!edid_ext)
+		goto end;
 
-// 	has_audio = (edid_ext[0] == CEA_EXT &&
-// 		    (edid_ext[3] & EDID_BASIC_AUDIO) != 0);
+	has_audio = (edid_ext[0] == CEA_EXT &&
+		    (edid_ext[3] & EDID_BASIC_AUDIO) != 0);
 
-// 	if (has_audio) {
-// 		DRM_DEBUG_KMS("Monitor has basic audio support\n");
-// 		goto end;
-// 	}
+	if (has_audio) {
+		DRM_DEBUG_KMS("Monitor has basic audio support\n");
+		goto end;
+	}
 
-// 	if (cea_db_offsets(edid_ext, &start_offset, &end_offset))
-// 		goto end;
+	if (cea_db_offsets(edid_ext, &start_offset, &end_offset))
+		goto end;
 
-// 	for_each_cea_db(edid_ext, i, start_offset, end_offset) {
-// 		if (cea_db_tag(&edid_ext[i]) == AUDIO_BLOCK) {
-// 			has_audio = true;
-// 			for (j = 1; j < cea_db_payload_len(&edid_ext[i]) + 1; j += 3)
-// 				DRM_DEBUG_KMS("CEA audio format %d\n",
-// 					      (edid_ext[i + j] >> 3) & 0xf);
-// 			goto end;
-// 		}
-// 	}
-// end:
-// 	return has_audio;
-// }
-// EXPORT_SYMBOL(drm_detect_monitor_audio);
+	for_each_cea_db(edid_ext, i, start_offset, end_offset) {
+		if (cea_db_tag(&edid_ext[i]) == AUDIO_BLOCK) {
+			has_audio = true;
+			for (j = 1; j < cea_db_payload_len(&edid_ext[i]) + 1; j += 3)
+				DRM_DEBUG_KMS("CEA audio format %d\n",
+					      (edid_ext[i + j] >> 3) & 0xf);
+			goto end;
+		}
+	}
+end:
+	return has_audio;
+}
+EXPORT_SYMBOL(drm_detect_monitor_audio);
 
 
 // /**

@@ -508,8 +508,6 @@ nv50_audio_enable(struct drm_encoder *encoder, struct drm_display_mode *mode)
 	struct nouveau_crtc *nv_crtc = nouveau_crtc(encoder->crtc);
 	struct nouveau_connector *nv_connector;
 	struct nv50_disp *disp = nv50_disp(encoder->dev);
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct __packed {
 		struct {
 			struct nv50_disp_mthd_v1 mthd;
@@ -532,7 +530,6 @@ NOT_IMPLEMENTED_STOP
 
 	nvif_mthd(&disp->disp->object, 0, &args,
 		  sizeof(args.base) + drm_eld_size(args.data));
-#endif
 }
 
 /******************************************************************************
