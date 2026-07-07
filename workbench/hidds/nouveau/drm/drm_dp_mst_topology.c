@@ -3854,81 +3854,81 @@ static void drm_dp_mst_destroy_state(struct drm_private_obj *obj,
 	kfree(mst_state);
 }
 
-// static inline int
-// drm_dp_mst_atomic_check_topology_state(struct drm_dp_mst_topology_mgr *mgr,
-// 				       struct drm_dp_mst_topology_state *mst_state)
-// {
-// 	struct drm_dp_vcpi_allocation *vcpi;
-// 	int avail_slots = 63, payload_count = 0;
+static inline int
+drm_dp_mst_atomic_check_topology_state(struct drm_dp_mst_topology_mgr *mgr,
+				       struct drm_dp_mst_topology_state *mst_state)
+{
+	struct drm_dp_vcpi_allocation *vcpi;
+	int avail_slots = 63, payload_count = 0;
 
-// 	list_for_each_entry(vcpi, &mst_state->vcpis, next) {
-// 		/* Releasing VCPI is always OK-even if the port is gone */
-// 		if (!vcpi->vcpi) {
-// 			DRM_DEBUG_ATOMIC("[MST PORT:%p] releases all VCPI slots\n",
-// 					 vcpi->port);
-// 			continue;
-// 		}
+	list_for_each_entry(vcpi, &mst_state->vcpis, next) {
+		/* Releasing VCPI is always OK-even if the port is gone */
+		if (!vcpi->vcpi) {
+			DRM_DEBUG_ATOMIC("[MST PORT:%p] releases all VCPI slots\n",
+					 vcpi->port);
+			continue;
+		}
 
-// 		DRM_DEBUG_ATOMIC("[MST PORT:%p] requires %d vcpi slots\n",
-// 				 vcpi->port, vcpi->vcpi);
+		DRM_DEBUG_ATOMIC("[MST PORT:%p] requires %d vcpi slots\n",
+				 vcpi->port, vcpi->vcpi);
 
-// 		avail_slots -= vcpi->vcpi;
-// 		if (avail_slots < 0) {
-// 			DRM_DEBUG_ATOMIC("[MST PORT:%p] not enough VCPI slots in mst state %p (avail=%d)\n",
-// 					 vcpi->port, mst_state,
-// 					 avail_slots + vcpi->vcpi);
-// 			return -ENOSPC;
-// 		}
+		avail_slots -= vcpi->vcpi;
+		if (avail_slots < 0) {
+			DRM_DEBUG_ATOMIC("[MST PORT:%p] not enough VCPI slots in mst state %p (avail=%d)\n",
+					 vcpi->port, mst_state,
+					 avail_slots + vcpi->vcpi);
+			return -ENOSPC;
+		}
 
-// 		if (++payload_count > mgr->max_payloads) {
-// 			DRM_DEBUG_ATOMIC("[MST MGR:%p] state %p has too many payloads (max=%d)\n",
-// 					 mgr, mst_state, mgr->max_payloads);
-// 			return -EINVAL;
-// 		}
-// 	}
-// 	DRM_DEBUG_ATOMIC("[MST MGR:%p] mst state %p VCPI avail=%d used=%d\n",
-// 			 mgr, mst_state, avail_slots,
-// 			 63 - avail_slots);
+		if (++payload_count > mgr->max_payloads) {
+			DRM_DEBUG_ATOMIC("[MST MGR:%p] state %p has too many payloads (max=%d)\n",
+					 mgr, mst_state, mgr->max_payloads);
+			return -EINVAL;
+		}
+	}
+	DRM_DEBUG_ATOMIC("[MST MGR:%p] mst state %p VCPI avail=%d used=%d\n",
+			 mgr, mst_state, avail_slots,
+			 63 - avail_slots);
 
-// 	return 0;
-// }
+	return 0;
+}
 
-// /**
-//  * drm_dp_mst_atomic_check - Check that the new state of an MST topology in an
-//  * atomic update is valid
-//  * @state: Pointer to the new &struct drm_dp_mst_topology_state
-//  *
-//  * Checks the given topology state for an atomic update to ensure that it's
-//  * valid. This includes checking whether there's enough bandwidth to support
-//  * the new VCPI allocations in the atomic update.
-//  *
-//  * Any atomic drivers supporting DP MST must make sure to call this after
-//  * checking the rest of their state in their
-//  * &drm_mode_config_funcs.atomic_check() callback.
-//  *
-//  * See also:
-//  * drm_dp_atomic_find_vcpi_slots()
-//  * drm_dp_atomic_release_vcpi_slots()
-//  *
-//  * Returns:
-//  *
-//  * 0 if the new state is valid, negative error code otherwise.
-//  */
-// int drm_dp_mst_atomic_check(struct drm_atomic_state *state)
-// {
-// 	struct drm_dp_mst_topology_mgr *mgr;
-// 	struct drm_dp_mst_topology_state *mst_state;
-// 	int i, ret = 0;
+/**
+ * drm_dp_mst_atomic_check - Check that the new state of an MST topology in an
+ * atomic update is valid
+ * @state: Pointer to the new &struct drm_dp_mst_topology_state
+ *
+ * Checks the given topology state for an atomic update to ensure that it's
+ * valid. This includes checking whether there's enough bandwidth to support
+ * the new VCPI allocations in the atomic update.
+ *
+ * Any atomic drivers supporting DP MST must make sure to call this after
+ * checking the rest of their state in their
+ * &drm_mode_config_funcs.atomic_check() callback.
+ *
+ * See also:
+ * drm_dp_atomic_find_vcpi_slots()
+ * drm_dp_atomic_release_vcpi_slots()
+ *
+ * Returns:
+ *
+ * 0 if the new state is valid, negative error code otherwise.
+ */
+int drm_dp_mst_atomic_check(struct drm_atomic_state *state)
+{
+	struct drm_dp_mst_topology_mgr *mgr;
+	struct drm_dp_mst_topology_state *mst_state;
+	int i, ret = 0;
 
-// 	for_each_new_mst_mgr_in_state(state, mgr, mst_state, i) {
-// 		ret = drm_dp_mst_atomic_check_topology_state(mgr, mst_state);
-// 		if (ret)
-// 			break;
-// 	}
+	for_each_new_mst_mgr_in_state(state, mgr, mst_state, i) {
+		ret = drm_dp_mst_atomic_check_topology_state(mgr, mst_state);
+		if (ret)
+			break;
+	}
 
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_dp_mst_atomic_check);
+	return ret;
+}
+EXPORT_SYMBOL(drm_dp_mst_atomic_check);
 
 const struct drm_private_state_funcs drm_dp_mst_topology_state_funcs = {
 	.atomic_duplicate_state = drm_dp_mst_duplicate_state,
