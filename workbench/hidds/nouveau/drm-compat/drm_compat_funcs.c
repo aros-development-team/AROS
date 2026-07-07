@@ -422,7 +422,7 @@ void *kmalloc(size_t size, gfp_t flags)
 {
     if (size == 0)
     {
-bug("FIXME: implemented ZERO_SIZE_PTR\n");
+bug("FIXME: kmalloc: implemented ZERO_SIZE_PTR\n");
         size = 1;
     }
 

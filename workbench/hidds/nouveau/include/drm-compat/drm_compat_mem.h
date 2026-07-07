@@ -9,6 +9,7 @@
 
 VOID HIDDNouveauFree(APTR memory);
 APTR HIDDNouveauAlloc(ULONG size);
+IPTR HIDDNouveauAllocSize(CONST_APTR memory);
 
 #define gfp_t           ULONG
 #define GFP_KERNEL      (1UL << 0)
@@ -24,6 +25,7 @@ APTR HIDDNouveauAlloc(ULONG size);
 #define kzalloc(size, flags)            HIDDNouveauAlloc(size)
 #define kmalloc_array(n, size, flags)   kmalloc((n) * (size), flags)
 #define kfree(objp)                     HIDDNouveauFree((APTR)objp)
+#define ksize(objp)                     HIDDNouveauAllocSize(objp)
 
 #define vmalloc_user(size)              HIDDNouveauAlloc(size)
 #define vmalloc(size)                   HIDDNouveauAlloc(size)

@@ -124,19 +124,19 @@ krealloc(const void *ptr, size_t size, gfp_t flags)
 	if (ptr == NULL)
 		return (kmalloc(size, flags));
 
-bug("FIXME: implemented ZERO_SIZE_PTR\n");
-#if 0
 	if (size == 0) {
+#if !defined(__AROS__)
 		kfree(ptr);
 		return (ZERO_SIZE_PTR);
-	}
+#else
+bug("FIXME: krealloc: implemented ZERO_SIZE_PTR\n");
+		size = 1;
 #endif
+	}
 
-#if !defined(__AROS__)
 	osize = ksize(ptr);
 	if (size <= osize)
 		return (__DECONST(void *, ptr));
-#endif
 
 	nptr = kmalloc(size, flags);
 	if (nptr == NULL)
