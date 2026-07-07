@@ -168,12 +168,35 @@ VOID HIDDNouveauFree(APTR memory)
 #else
 APTR HIDDNouveauAlloc(ULONG size)
 {
-    return AllocVecPooled(NouveauMemPool, size);
+    size += sizeof(IPTR);
+    IPTR *memory = AllocPooled(NouveauMemPool, size);
+
+    if (memory != NULL)
+        *memory++ = size;
+
+    return (APTR)memory;
 }
 
 VOID HIDDNouveauFree(APTR memory)
 {
-    FreeVecPooled(NouveauMemPool, memory);
+    if (memory != NULL)
+    {
+        IPTR *real = (IPTR *)memory;
+        IPTR size  = *--real;
+
+        FreePooled(NouveauMemPool, real, size);
+    }
+}
+
+IPTR HIDDNouveauAllocSize(CONST_APTR memory)
+{
+    IPTR size = 0;
+    if (memory != NULL)
+    {
+        IPTR *real = (IPTR *)memory;
+        size  = *--real;
+    }
+    return size;
 }
 #endif
 
