@@ -45,7 +45,7 @@
 #include <drm/drm_connector.h>
 #include <drm/drm_device.h>
 #include <drm/drm_property.h>
-// #include <drm/drm_bridge.h>
+#include <drm/drm_bridge.h>
 #include <drm/drm_edid.h>
 #include <drm/drm_plane.h>
 #include <drm/drm_blend.h>
@@ -993,20 +993,20 @@ struct drm_crtc {
 	 */
 	struct drm_display_mode mode;
 
-// 	/**
-// 	 * @hwmode:
-// 	 *
-// 	 * Programmed mode in hw, after adjustments for encoders, crtc, panel
-// 	 * scaling etc. Should only be used by legacy drivers, for high
-// 	 * precision vblank timestamps in
-// 	 * drm_calc_vbltimestamp_from_scanoutpos().
-// 	 *
-// 	 * Note that atomic drivers should not use this, but instead use
-// 	 * &drm_crtc_state.adjusted_mode. And for high-precision timestamps
-// 	 * drm_calc_vbltimestamp_from_scanoutpos() used &drm_vblank_crtc.hwmode,
-// 	 * which is filled out by calling drm_calc_timestamping_constants().
-// 	 */
-// 	struct drm_display_mode hwmode;
+	/**
+	 * @hwmode:
+	 *
+	 * Programmed mode in hw, after adjustments for encoders, crtc, panel
+	 * scaling etc. Should only be used by legacy drivers, for high
+	 * precision vblank timestamps in
+	 * drm_calc_vbltimestamp_from_scanoutpos().
+	 *
+	 * Note that atomic drivers should not use this, but instead use
+	 * &drm_crtc_state.adjusted_mode. And for high-precision timestamps
+	 * drm_calc_vbltimestamp_from_scanoutpos() used &drm_vblank_crtc.hwmode,
+	 * which is filled out by calling drm_calc_timestamping_constants().
+	 */
+	struct drm_display_mode hwmode;
 
 	/**
 	 * @x:
@@ -1197,7 +1197,7 @@ static inline uint32_t drm_crtc_mask(const struct drm_crtc *crtc)
 	return 1 << drm_crtc_index(crtc);
 }
 
-// int drm_mode_set_config_internal(struct drm_mode_set *set);
+int drm_mode_set_config_internal(struct drm_mode_set *set);
 // struct drm_crtc *drm_crtc_from_index(struct drm_device *dev, int idx);
 
 /**

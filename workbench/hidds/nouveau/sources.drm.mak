@@ -41,6 +41,9 @@ AROS_DRM_CORE_SOURCES = \
             drm/drm_gem \
             drm/drm_dp_helper \
             drm/drm_dp_mst_topology \
+            drm/drm_plane_helper \
+            drm/drm_encoder_slave \
+            drm/drm_crtc_helper \
             drm/ttm/ttm_bo \
             drm/ttm/ttm_tt \
             drm/ttm/ttm_bo_util \

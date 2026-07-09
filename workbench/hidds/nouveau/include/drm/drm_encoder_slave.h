@@ -27,6 +27,10 @@
 #ifndef __DRM_ENCODER_SLAVE_H__
 #define __DRM_ENCODER_SLAVE_H__
 
+#if defined(__AROS__)
+#include <drm-compat/drm_compat_i2c.h>
+#endif
+
 #include <drm/drm_crtc.h>
 #include <drm/drm_encoder.h>
 

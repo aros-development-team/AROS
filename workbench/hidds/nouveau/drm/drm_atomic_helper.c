@@ -3386,87 +3386,87 @@ EXPORT_SYMBOL(drm_atomic_helper_set_config);
 // }
 // EXPORT_SYMBOL(drm_atomic_helper_resume);
 
-// static int page_flip_common(struct drm_atomic_state *state,
-// 			    struct drm_crtc *crtc,
-// 			    struct drm_framebuffer *fb,
-// 			    struct drm_pending_vblank_event *event,
-// 			    uint32_t flags)
-// {
-// 	struct drm_plane *plane = crtc->primary;
-// 	struct drm_plane_state *plane_state;
-// 	struct drm_crtc_state *crtc_state;
-// 	int ret = 0;
+static int page_flip_common(struct drm_atomic_state *state,
+			    struct drm_crtc *crtc,
+			    struct drm_framebuffer *fb,
+			    struct drm_pending_vblank_event *event,
+			    uint32_t flags)
+{
+	struct drm_plane *plane = crtc->primary;
+	struct drm_plane_state *plane_state;
+	struct drm_crtc_state *crtc_state;
+	int ret = 0;
 
-// 	crtc_state = drm_atomic_get_crtc_state(state, crtc);
-// 	if (IS_ERR(crtc_state))
-// 		return PTR_ERR(crtc_state);
+	crtc_state = drm_atomic_get_crtc_state(state, crtc);
+	if (IS_ERR(crtc_state))
+		return PTR_ERR(crtc_state);
 
-// 	crtc_state->event = event;
-// 	crtc_state->async_flip = flags & DRM_MODE_PAGE_FLIP_ASYNC;
+	crtc_state->event = event;
+	crtc_state->async_flip = flags & DRM_MODE_PAGE_FLIP_ASYNC;
 
-// 	plane_state = drm_atomic_get_plane_state(state, plane);
-// 	if (IS_ERR(plane_state))
-// 		return PTR_ERR(plane_state);
+	plane_state = drm_atomic_get_plane_state(state, plane);
+	if (IS_ERR(plane_state))
+		return PTR_ERR(plane_state);
 
-// 	ret = drm_atomic_set_crtc_for_plane(plane_state, crtc);
-// 	if (ret != 0)
-// 		return ret;
-// 	drm_atomic_set_fb_for_plane(plane_state, fb);
+	ret = drm_atomic_set_crtc_for_plane(plane_state, crtc);
+	if (ret != 0)
+		return ret;
+	drm_atomic_set_fb_for_plane(plane_state, fb);
 
-// 	/* Make sure we don't accidentally do a full modeset. */
-// 	state->allow_modeset = false;
-// 	if (!crtc_state->active) {
-// 		DRM_DEBUG_ATOMIC("[CRTC:%d:%s] disabled, rejecting legacy flip\n",
-// 				 crtc->base.id, crtc->name);
-// 		return -EINVAL;
-// 	}
+	/* Make sure we don't accidentally do a full modeset. */
+	state->allow_modeset = false;
+	if (!crtc_state->active) {
+		DRM_DEBUG_ATOMIC("[CRTC:%d:%s] disabled, rejecting legacy flip\n",
+				 crtc->base.id, crtc->name);
+		return -EINVAL;
+	}
 
-// 	return ret;
-// }
+	return ret;
+}
 
-// /**
-//  * drm_atomic_helper_page_flip - execute a legacy page flip
-//  * @crtc: DRM crtc
-//  * @fb: DRM framebuffer
-//  * @event: optional DRM event to signal upon completion
-//  * @flags: flip flags for non-vblank sync'ed updates
-//  * @ctx: lock acquisition context
-//  *
-//  * Provides a default &drm_crtc_funcs.page_flip implementation
-//  * using the atomic driver interface.
-//  *
-//  * Returns:
-//  * Returns 0 on success, negative errno numbers on failure.
-//  *
-//  * See also:
-//  * drm_atomic_helper_page_flip_target()
-//  */
-// int drm_atomic_helper_page_flip(struct drm_crtc *crtc,
-// 				struct drm_framebuffer *fb,
-// 				struct drm_pending_vblank_event *event,
-// 				uint32_t flags,
-// 				struct drm_modeset_acquire_ctx *ctx)
-// {
-// 	struct drm_plane *plane = crtc->primary;
-// 	struct drm_atomic_state *state;
-// 	int ret = 0;
+/**
+ * drm_atomic_helper_page_flip - execute a legacy page flip
+ * @crtc: DRM crtc
+ * @fb: DRM framebuffer
+ * @event: optional DRM event to signal upon completion
+ * @flags: flip flags for non-vblank sync'ed updates
+ * @ctx: lock acquisition context
+ *
+ * Provides a default &drm_crtc_funcs.page_flip implementation
+ * using the atomic driver interface.
+ *
+ * Returns:
+ * Returns 0 on success, negative errno numbers on failure.
+ *
+ * See also:
+ * drm_atomic_helper_page_flip_target()
+ */
+int drm_atomic_helper_page_flip(struct drm_crtc *crtc,
+				struct drm_framebuffer *fb,
+				struct drm_pending_vblank_event *event,
+				uint32_t flags,
+				struct drm_modeset_acquire_ctx *ctx)
+{
+	struct drm_plane *plane = crtc->primary;
+	struct drm_atomic_state *state;
+	int ret = 0;
 
-// 	state = drm_atomic_state_alloc(plane->dev);
-// 	if (!state)
-// 		return -ENOMEM;
+	state = drm_atomic_state_alloc(plane->dev);
+	if (!state)
+		return -ENOMEM;
 
-// 	state->acquire_ctx = ctx;
+	state->acquire_ctx = ctx;
 
-// 	ret = page_flip_common(state, crtc, fb, event, flags);
-// 	if (ret != 0)
-// 		goto fail;
+	ret = page_flip_common(state, crtc, fb, event, flags);
+	if (ret != 0)
+		goto fail;
 
-// 	ret = drm_atomic_nonblocking_commit(state);
-// fail:
-// 	drm_atomic_state_put(state);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_atomic_helper_page_flip);
+	ret = drm_atomic_nonblocking_commit(state);
+fail:
+	drm_atomic_state_put(state);
+	return ret;
+}
+EXPORT_SYMBOL(drm_atomic_helper_page_flip);
 
 // /**
 //  * drm_atomic_helper_page_flip_target - do page flip on target vblank period.
@@ -3520,72 +3520,72 @@ EXPORT_SYMBOL(drm_atomic_helper_set_config);
 // }
 // EXPORT_SYMBOL(drm_atomic_helper_page_flip_target);
 
-// /**
-//  * drm_atomic_helper_legacy_gamma_set - set the legacy gamma correction table
-//  * @crtc: CRTC object
-//  * @red: red correction table
-//  * @green: green correction table
-//  * @blue: green correction table
-//  * @size: size of the tables
-//  * @ctx: lock acquire context
-//  *
-//  * Implements support for legacy gamma correction table for drivers
-//  * that support color management through the DEGAMMA_LUT/GAMMA_LUT
-//  * properties. See drm_crtc_enable_color_mgmt() and the containing chapter for
-//  * how the atomic color management and gamma tables work.
-//  */
-// int drm_atomic_helper_legacy_gamma_set(struct drm_crtc *crtc,
-// 				       u16 *red, u16 *green, u16 *blue,
-// 				       uint32_t size,
-// 				       struct drm_modeset_acquire_ctx *ctx)
-// {
-// 	struct drm_device *dev = crtc->dev;
-// 	struct drm_atomic_state *state;
-// 	struct drm_crtc_state *crtc_state;
-// 	struct drm_property_blob *blob = NULL;
-// 	struct drm_color_lut *blob_data;
-// 	int i, ret = 0;
-// 	bool replaced;
+/**
+ * drm_atomic_helper_legacy_gamma_set - set the legacy gamma correction table
+ * @crtc: CRTC object
+ * @red: red correction table
+ * @green: green correction table
+ * @blue: green correction table
+ * @size: size of the tables
+ * @ctx: lock acquire context
+ *
+ * Implements support for legacy gamma correction table for drivers
+ * that support color management through the DEGAMMA_LUT/GAMMA_LUT
+ * properties. See drm_crtc_enable_color_mgmt() and the containing chapter for
+ * how the atomic color management and gamma tables work.
+ */
+int drm_atomic_helper_legacy_gamma_set(struct drm_crtc *crtc,
+				       u16 *red, u16 *green, u16 *blue,
+				       uint32_t size,
+				       struct drm_modeset_acquire_ctx *ctx)
+{
+	struct drm_device *dev = crtc->dev;
+	struct drm_atomic_state *state;
+	struct drm_crtc_state *crtc_state;
+	struct drm_property_blob *blob = NULL;
+	struct drm_color_lut *blob_data;
+	int i, ret = 0;
+	bool replaced;
 
-// 	state = drm_atomic_state_alloc(crtc->dev);
-// 	if (!state)
-// 		return -ENOMEM;
+	state = drm_atomic_state_alloc(crtc->dev);
+	if (!state)
+		return -ENOMEM;
 
-// 	blob = drm_property_create_blob(dev,
-// 					sizeof(struct drm_color_lut) * size,
-// 					NULL);
-// 	if (IS_ERR(blob)) {
-// 		ret = PTR_ERR(blob);
-// 		blob = NULL;
-// 		goto fail;
-// 	}
+	blob = drm_property_create_blob(dev,
+					sizeof(struct drm_color_lut) * size,
+					NULL);
+	if (IS_ERR(blob)) {
+		ret = PTR_ERR(blob);
+		blob = NULL;
+		goto fail;
+	}
 
-// 	/* Prepare GAMMA_LUT with the legacy values. */
-// 	blob_data = blob->data;
-// 	for (i = 0; i < size; i++) {
-// 		blob_data[i].red = red[i];
-// 		blob_data[i].green = green[i];
-// 		blob_data[i].blue = blue[i];
-// 	}
+	/* Prepare GAMMA_LUT with the legacy values. */
+	blob_data = blob->data;
+	for (i = 0; i < size; i++) {
+		blob_data[i].red = red[i];
+		blob_data[i].green = green[i];
+		blob_data[i].blue = blue[i];
+	}
 
-// 	state->acquire_ctx = ctx;
-// 	crtc_state = drm_atomic_get_crtc_state(state, crtc);
-// 	if (IS_ERR(crtc_state)) {
-// 		ret = PTR_ERR(crtc_state);
-// 		goto fail;
-// 	}
+	state->acquire_ctx = ctx;
+	crtc_state = drm_atomic_get_crtc_state(state, crtc);
+	if (IS_ERR(crtc_state)) {
+		ret = PTR_ERR(crtc_state);
+		goto fail;
+	}
 
-// 	/* Reset DEGAMMA_LUT and CTM properties. */
-// 	replaced  = drm_property_replace_blob(&crtc_state->degamma_lut, NULL);
-// 	replaced |= drm_property_replace_blob(&crtc_state->ctm, NULL);
-// 	replaced |= drm_property_replace_blob(&crtc_state->gamma_lut, blob);
-// 	crtc_state->color_mgmt_changed |= replaced;
+	/* Reset DEGAMMA_LUT and CTM properties. */
+	replaced  = drm_property_replace_blob(&crtc_state->degamma_lut, NULL);
+	replaced |= drm_property_replace_blob(&crtc_state->ctm, NULL);
+	replaced |= drm_property_replace_blob(&crtc_state->gamma_lut, blob);
+	crtc_state->color_mgmt_changed |= replaced;
 
-// 	ret = drm_atomic_commit(state);
+	ret = drm_atomic_commit(state);
 
-// fail:
-// 	drm_atomic_state_put(state);
-// 	drm_property_blob_put(blob);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_atomic_helper_legacy_gamma_set);
+fail:
+	drm_atomic_state_put(state);
+	drm_property_blob_put(blob);
+	return ret;
+}
+EXPORT_SYMBOL(drm_atomic_helper_legacy_gamma_set);

@@ -162,12 +162,12 @@ static int drm_crtc_crc_init(struct drm_crtc *crtc)
 	return 0;
 }
 
-// static void drm_crtc_crc_fini(struct drm_crtc *crtc)
-// {
-// #ifdef CONFIG_DEBUG_FS
-// 	kfree(crtc->crc.source);
-// #endif
-// }
+static void drm_crtc_crc_fini(struct drm_crtc *crtc)
+{
+#ifdef CONFIG_DEBUG_FS
+	kfree(crtc->crc.source);
+#endif
+}
 
 // static const struct dma_fence_ops drm_crtc_fence_ops;
 
@@ -313,43 +313,45 @@ int drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *crtc,
 }
 EXPORT_SYMBOL(drm_crtc_init_with_planes);
 
-// /**
-//  * drm_crtc_cleanup - Clean up the core crtc usage
-//  * @crtc: CRTC to cleanup
-//  *
-//  * This function cleans up @crtc and removes it from the DRM mode setting
-//  * core. Note that the function does *not* free the crtc structure itself,
-//  * this is the responsibility of the caller.
-//  */
-// void drm_crtc_cleanup(struct drm_crtc *crtc)
-// {
-// 	struct drm_device *dev = crtc->dev;
+/**
+ * drm_crtc_cleanup - Clean up the core crtc usage
+ * @crtc: CRTC to cleanup
+ *
+ * This function cleans up @crtc and removes it from the DRM mode setting
+ * core. Note that the function does *not* free the crtc structure itself,
+ * this is the responsibility of the caller.
+ */
+void drm_crtc_cleanup(struct drm_crtc *crtc)
+{
+	struct drm_device *dev = crtc->dev;
 
-// 	/* Note that the crtc_list is considered to be static; should we
-// 	 * remove the drm_crtc at runtime we would have to decrement all
-// 	 * the indices on the drm_crtc after us in the crtc_list.
-// 	 */
+	/* Note that the crtc_list is considered to be static; should we
+	 * remove the drm_crtc at runtime we would have to decrement all
+	 * the indices on the drm_crtc after us in the crtc_list.
+	 */
 
-// 	drm_crtc_crc_fini(crtc);
+	drm_crtc_crc_fini(crtc);
 
-// 	kfree(crtc->gamma_store);
-// 	crtc->gamma_store = NULL;
+	kfree(crtc->gamma_store);
+	crtc->gamma_store = NULL;
 
-// 	drm_modeset_lock_fini(&crtc->mutex);
+#if !defined(__AROS__)
+	drm_modeset_lock_fini(&crtc->mutex);
+#endif
 
-// 	drm_mode_object_unregister(dev, &crtc->base);
-// 	list_del(&crtc->head);
-// 	dev->mode_config.num_crtc--;
+	drm_mode_object_unregister(dev, &crtc->base);
+	list_del(&crtc->head);
+	dev->mode_config.num_crtc--;
 
-// 	WARN_ON(crtc->state && !crtc->funcs->atomic_destroy_state);
-// 	if (crtc->state && crtc->funcs->atomic_destroy_state)
-// 		crtc->funcs->atomic_destroy_state(crtc, crtc->state);
+	WARN_ON(crtc->state && !crtc->funcs->atomic_destroy_state);
+	if (crtc->state && crtc->funcs->atomic_destroy_state)
+		crtc->funcs->atomic_destroy_state(crtc, crtc->state);
 
-// 	kfree(crtc->name);
+	kfree(crtc->name);
 
-// 	memset(crtc, 0, sizeof(*crtc));
-// }
-// EXPORT_SYMBOL(drm_crtc_cleanup);
+	memset(crtc, 0, sizeof(*crtc));
+}
+EXPORT_SYMBOL(drm_crtc_cleanup);
 
 /**
  * drm_mode_getcrtc - get CRTC configuration
@@ -476,26 +478,26 @@ static int __drm_mode_set_config_internal(struct drm_mode_set *set,
 	return ret;
 }
 
-// /**
-//  * drm_mode_set_config_internal - helper to call &drm_mode_config_funcs.set_config
-//  * @set: modeset config to set
-//  *
-//  * This is a little helper to wrap internal calls to the
-//  * &drm_mode_config_funcs.set_config driver interface. The only thing it adds is
-//  * correct refcounting dance.
-//  *
-//  * This should only be used by non-atomic legacy drivers.
-//  *
-//  * Returns:
-//  * Zero on success, negative errno on failure.
-//  */
-// int drm_mode_set_config_internal(struct drm_mode_set *set)
-// {
-// 	WARN_ON(drm_drv_uses_atomic_modeset(set->crtc->dev));
+/**
+ * drm_mode_set_config_internal - helper to call &drm_mode_config_funcs.set_config
+ * @set: modeset config to set
+ *
+ * This is a little helper to wrap internal calls to the
+ * &drm_mode_config_funcs.set_config driver interface. The only thing it adds is
+ * correct refcounting dance.
+ *
+ * This should only be used by non-atomic legacy drivers.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_mode_set_config_internal(struct drm_mode_set *set)
+{
+	WARN_ON(drm_drv_uses_atomic_modeset(set->crtc->dev));
 
-// 	return __drm_mode_set_config_internal(set, NULL);
-// }
-// EXPORT_SYMBOL(drm_mode_set_config_internal);
+	return __drm_mode_set_config_internal(set, NULL);
+}
+EXPORT_SYMBOL(drm_mode_set_config_internal);
 
 /**
  * drm_crtc_check_viewport - Checks that a framebuffer is big enough for the

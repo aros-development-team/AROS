@@ -430,91 +430,97 @@ void drm_mode_config_init(struct drm_device *dev)
 }
 EXPORT_SYMBOL(drm_mode_config_init);
 
-// /**
-//  * drm_mode_config_cleanup - free up DRM mode_config info
-//  * @dev: DRM device
-//  *
-//  * Free up all the connectors and CRTCs associated with this DRM device, then
-//  * free up the framebuffers and associated buffer objects.
-//  *
-//  * Note that since this /should/ happen single-threaded at driver/device
-//  * teardown time, no locking is required. It's the driver's job to ensure that
-//  * this guarantee actually holds true.
-//  *
-//  * FIXME: cleanup any dangling user buffer objects too
-//  */
-// void drm_mode_config_cleanup(struct drm_device *dev)
-// {
-// 	struct drm_connector *connector;
-// 	struct drm_connector_list_iter conn_iter;
-// 	struct drm_crtc *crtc, *ct;
-// 	struct drm_encoder *encoder, *enct;
-// 	struct drm_framebuffer *fb, *fbt;
-// 	struct drm_property *property, *pt;
-// 	struct drm_property_blob *blob, *bt;
-// 	struct drm_plane *plane, *plt;
+/**
+ * drm_mode_config_cleanup - free up DRM mode_config info
+ * @dev: DRM device
+ *
+ * Free up all the connectors and CRTCs associated with this DRM device, then
+ * free up the framebuffers and associated buffer objects.
+ *
+ * Note that since this /should/ happen single-threaded at driver/device
+ * teardown time, no locking is required. It's the driver's job to ensure that
+ * this guarantee actually holds true.
+ *
+ * FIXME: cleanup any dangling user buffer objects too
+ */
+void drm_mode_config_cleanup(struct drm_device *dev)
+{
+	struct drm_connector *connector;
+	struct drm_connector_list_iter conn_iter;
+	struct drm_crtc *crtc, *ct;
+	struct drm_encoder *encoder, *enct;
+	struct drm_framebuffer *fb, *fbt;
+	struct drm_property *property, *pt;
+	struct drm_property_blob *blob, *bt;
+	struct drm_plane *plane, *plt;
 
-// 	list_for_each_entry_safe(encoder, enct, &dev->mode_config.encoder_list,
-// 				 head) {
-// 		encoder->funcs->destroy(encoder);
-// 	}
+	list_for_each_entry_safe(encoder, enct, &dev->mode_config.encoder_list,
+				 head) {
+		encoder->funcs->destroy(encoder);
+	}
 
-// 	drm_connector_list_iter_begin(dev, &conn_iter);
-// 	drm_for_each_connector_iter(connector, &conn_iter) {
-// 		/* drm_connector_list_iter holds an full reference to the
-// 		 * current connector itself, which means it is inherently safe
-// 		 * against unreferencing the current connector - but not against
-// 		 * deleting it right away. */
-// 		drm_connector_put(connector);
-// 	}
-// 	drm_connector_list_iter_end(&conn_iter);
-// 	/* connector_iter drops references in a work item. */
-// 	flush_work(&dev->mode_config.connector_free_work);
-// 	if (WARN_ON(!list_empty(&dev->mode_config.connector_list))) {
-// 		drm_connector_list_iter_begin(dev, &conn_iter);
-// 		drm_for_each_connector_iter(connector, &conn_iter)
-// 			DRM_ERROR("connector %s leaked!\n", connector->name);
-// 		drm_connector_list_iter_end(&conn_iter);
-// 	}
+	drm_connector_list_iter_begin(dev, &conn_iter);
+	drm_for_each_connector_iter(connector, &conn_iter) {
+		/* drm_connector_list_iter holds an full reference to the
+		 * current connector itself, which means it is inherently safe
+		 * against unreferencing the current connector - but not against
+		 * deleting it right away. */
+		drm_connector_put(connector);
+	}
+	drm_connector_list_iter_end(&conn_iter);
+	/* connector_iter drops references in a work item. */
+#if !defined(__AROS__)
+	flush_work(&dev->mode_config.connector_free_work);
+#endif
+	if (WARN_ON(!list_empty(&dev->mode_config.connector_list))) {
+		drm_connector_list_iter_begin(dev, &conn_iter);
+		drm_for_each_connector_iter(connector, &conn_iter)
+			DRM_ERROR("connector %s leaked!\n", connector->name);
+		drm_connector_list_iter_end(&conn_iter);
+	}
 
-// 	list_for_each_entry_safe(property, pt, &dev->mode_config.property_list,
-// 				 head) {
-// 		drm_property_destroy(dev, property);
-// 	}
+	list_for_each_entry_safe(property, pt, &dev->mode_config.property_list,
+				 head) {
+		drm_property_destroy(dev, property);
+	}
 
-// 	list_for_each_entry_safe(plane, plt, &dev->mode_config.plane_list,
-// 				 head) {
-// 		plane->funcs->destroy(plane);
-// 	}
+	list_for_each_entry_safe(plane, plt, &dev->mode_config.plane_list,
+				 head) {
+		plane->funcs->destroy(plane);
+	}
 
-// 	list_for_each_entry_safe(crtc, ct, &dev->mode_config.crtc_list, head) {
-// 		crtc->funcs->destroy(crtc);
-// 	}
+	list_for_each_entry_safe(crtc, ct, &dev->mode_config.crtc_list, head) {
+		crtc->funcs->destroy(crtc);
+	}
 
-// 	list_for_each_entry_safe(blob, bt, &dev->mode_config.property_blob_list,
-// 				 head_global) {
-// 		drm_property_blob_put(blob);
-// 	}
+	list_for_each_entry_safe(blob, bt, &dev->mode_config.property_blob_list,
+				 head_global) {
+		drm_property_blob_put(blob);
+	}
 
-// 	/*
-// 	 * Single-threaded teardown context, so it's not required to grab the
-// 	 * fb_lock to protect against concurrent fb_list access. Contrary, it
-// 	 * would actually deadlock with the drm_framebuffer_cleanup function.
-// 	 *
-// 	 * Also, if there are any framebuffers left, that's a driver leak now,
-// 	 * so politely WARN about this.
-// 	 */
-// 	WARN_ON(!list_empty(&dev->mode_config.fb_list));
-// 	list_for_each_entry_safe(fb, fbt, &dev->mode_config.fb_list, head) {
-// 		struct drm_printer p = drm_debug_printer("[leaked fb]");
-// 		drm_printf(&p, "framebuffer[%u]:\n", fb->base.id);
-// 		drm_framebuffer_print_info(&p, 1, fb);
-// 		drm_framebuffer_free(&fb->base.refcount);
-// 	}
+	/*
+	 * Single-threaded teardown context, so it's not required to grab the
+	 * fb_lock to protect against concurrent fb_list access. Contrary, it
+	 * would actually deadlock with the drm_framebuffer_cleanup function.
+	 *
+	 * Also, if there are any framebuffers left, that's a driver leak now,
+	 * so politely WARN about this.
+	 */
+	WARN_ON(!list_empty(&dev->mode_config.fb_list));
+	list_for_each_entry_safe(fb, fbt, &dev->mode_config.fb_list, head) {
+#if !defined(__AROS__)
+		struct drm_printer p = drm_debug_printer("[leaked fb]");
+		drm_printf(&p, "framebuffer[%u]:\n", fb->base.id);
+		drm_framebuffer_print_info(&p, 1, fb);
+#endif
+		drm_framebuffer_free(&fb->base.refcount);
+	}
 
-// 	ida_destroy(&dev->mode_config.connector_ida);
-// 	idr_destroy(&dev->mode_config.tile_idr);
-// 	idr_destroy(&dev->mode_config.object_idr);
-// 	drm_modeset_lock_fini(&dev->mode_config.connection_mutex);
-// }
-// EXPORT_SYMBOL(drm_mode_config_cleanup);
+	ida_destroy(&dev->mode_config.connector_ida);
+	idr_destroy(&dev->mode_config.tile_idr);
+	idr_destroy(&dev->mode_config.object_idr);
+#if !defined(__AROS__)
+	drm_modeset_lock_fini(&dev->mode_config.connection_mutex);
+#endif
+}
+EXPORT_SYMBOL(drm_mode_config_cleanup);

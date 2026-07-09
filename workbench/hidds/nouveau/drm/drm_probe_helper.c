@@ -787,63 +787,65 @@ EXPORT_SYMBOL(drm_helper_probe_single_connector_modes);
 // }
 // EXPORT_SYMBOL(drm_kms_helper_poll_fini);
 
-// /**
-//  * drm_helper_hpd_irq_event - hotplug processing
-//  * @dev: drm_device
-//  *
-//  * Drivers can use this helper function to run a detect cycle on all connectors
-//  * which have the DRM_CONNECTOR_POLL_HPD flag set in their &polled member. All
-//  * other connectors are ignored, which is useful to avoid reprobing fixed
-//  * panels.
-//  *
-//  * This helper function is useful for drivers which can't or don't track hotplug
-//  * interrupts for each connector.
-//  *
-//  * Drivers which support hotplug interrupts for each connector individually and
-//  * which have a more fine-grained detect logic should bypass this code and
-//  * directly call drm_kms_helper_hotplug_event() in case the connector state
-//  * changed.
-//  *
-//  * This function must be called from process context with no mode
-//  * setting locks held.
-//  *
-//  * Note that a connector can be both polled and probed from the hotplug handler,
-//  * in case the hotplug interrupt is known to be unreliable.
-//  */
-// bool drm_helper_hpd_irq_event(struct drm_device *dev)
-// {
-// 	struct drm_connector *connector;
-// 	struct drm_connector_list_iter conn_iter;
-// 	enum drm_connector_status old_status;
-// 	bool changed = false;
+/**
+ * drm_helper_hpd_irq_event - hotplug processing
+ * @dev: drm_device
+ *
+ * Drivers can use this helper function to run a detect cycle on all connectors
+ * which have the DRM_CONNECTOR_POLL_HPD flag set in their &polled member. All
+ * other connectors are ignored, which is useful to avoid reprobing fixed
+ * panels.
+ *
+ * This helper function is useful for drivers which can't or don't track hotplug
+ * interrupts for each connector.
+ *
+ * Drivers which support hotplug interrupts for each connector individually and
+ * which have a more fine-grained detect logic should bypass this code and
+ * directly call drm_kms_helper_hotplug_event() in case the connector state
+ * changed.
+ *
+ * This function must be called from process context with no mode
+ * setting locks held.
+ *
+ * Note that a connector can be both polled and probed from the hotplug handler,
+ * in case the hotplug interrupt is known to be unreliable.
+ */
+bool drm_helper_hpd_irq_event(struct drm_device *dev)
+{
+	struct drm_connector *connector;
+	struct drm_connector_list_iter conn_iter;
+	enum drm_connector_status old_status;
+	bool changed = false;
 
-// 	if (!dev->mode_config.poll_enabled)
-// 		return false;
+	if (!dev->mode_config.poll_enabled)
+		return false;
 
-// 	mutex_lock(&dev->mode_config.mutex);
-// 	drm_connector_list_iter_begin(dev, &conn_iter);
-// 	drm_for_each_connector_iter(connector, &conn_iter) {
-// 		/* Only handle HPD capable connectors. */
-// 		if (!(connector->polled & DRM_CONNECTOR_POLL_HPD))
-// 			continue;
+	mutex_lock(&dev->mode_config.mutex);
+	drm_connector_list_iter_begin(dev, &conn_iter);
+	drm_for_each_connector_iter(connector, &conn_iter) {
+		/* Only handle HPD capable connectors. */
+		if (!(connector->polled & DRM_CONNECTOR_POLL_HPD))
+			continue;
 
-// 		old_status = connector->status;
+		old_status = connector->status;
 
-// 		connector->status = drm_helper_probe_detect(connector, NULL, false);
-// 		DRM_DEBUG_KMS("[CONNECTOR:%d:%s] status updated from %s to %s\n",
-// 			      connector->base.id,
-// 			      connector->name,
-// 			      drm_get_connector_status_name(old_status),
-// 			      drm_get_connector_status_name(connector->status));
-// 		if (old_status != connector->status)
-// 			changed = true;
-// 	}
-// 	drm_connector_list_iter_end(&conn_iter);
-// 	mutex_unlock(&dev->mode_config.mutex);
+		connector->status = drm_helper_probe_detect(connector, NULL, false);
+		DRM_DEBUG_KMS("[CONNECTOR:%d:%s] status updated from %s to %s\n",
+			      connector->base.id,
+			      connector->name,
+			      drm_get_connector_status_name(old_status),
+			      drm_get_connector_status_name(connector->status));
+		if (old_status != connector->status)
+			changed = true;
+	}
+	drm_connector_list_iter_end(&conn_iter);
+	mutex_unlock(&dev->mode_config.mutex);
 
-// 	if (changed)
-// 		drm_kms_helper_hotplug_event(dev);
+#if !defined(__AROS__)
+	if (changed)
+		drm_kms_helper_hotplug_event(dev);
+#endif
 
-// 	return changed;
-// }
-// EXPORT_SYMBOL(drm_helper_hpd_irq_event);
+	return changed;
+}
+EXPORT_SYMBOL(drm_helper_hpd_irq_event);

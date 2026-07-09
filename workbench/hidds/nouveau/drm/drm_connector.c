@@ -874,24 +874,24 @@ static const struct drm_prop_enum_list drm_dvi_i_subconnector_enum_list[] = {
 // DRM_ENUM_NAME_FN(drm_get_dvi_i_subconnector_name,
 // 		 drm_dvi_i_subconnector_enum_list)
 
-// static const struct drm_prop_enum_list drm_tv_select_enum_list[] = {
-// 	{ DRM_MODE_SUBCONNECTOR_Automatic, "Automatic" }, /* DVI-I and TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_Composite, "Composite" }, /* TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_SVIDEO,    "SVIDEO"    }, /* TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_Component, "Component" }, /* TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_SCART,     "SCART"     }, /* TV-out */
-// };
-// DRM_ENUM_NAME_FN(drm_get_tv_select_name, drm_tv_select_enum_list)
+static const struct drm_prop_enum_list drm_tv_select_enum_list[] = {
+	{ DRM_MODE_SUBCONNECTOR_Automatic, "Automatic" }, /* DVI-I and TV-out */
+	{ DRM_MODE_SUBCONNECTOR_Composite, "Composite" }, /* TV-out */
+	{ DRM_MODE_SUBCONNECTOR_SVIDEO,    "SVIDEO"    }, /* TV-out */
+	{ DRM_MODE_SUBCONNECTOR_Component, "Component" }, /* TV-out */
+	{ DRM_MODE_SUBCONNECTOR_SCART,     "SCART"     }, /* TV-out */
+};
+DRM_ENUM_NAME_FN(drm_get_tv_select_name, drm_tv_select_enum_list)
 
-// static const struct drm_prop_enum_list drm_tv_subconnector_enum_list[] = {
-// 	{ DRM_MODE_SUBCONNECTOR_Unknown,   "Unknown"   }, /* DVI-I and TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_Composite, "Composite" }, /* TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_SVIDEO,    "SVIDEO"    }, /* TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_Component, "Component" }, /* TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_SCART,     "SCART"     }, /* TV-out */
-// };
-// DRM_ENUM_NAME_FN(drm_get_tv_subconnector_name,
-// 		 drm_tv_subconnector_enum_list)
+static const struct drm_prop_enum_list drm_tv_subconnector_enum_list[] = {
+	{ DRM_MODE_SUBCONNECTOR_Unknown,   "Unknown"   }, /* DVI-I and TV-out */
+	{ DRM_MODE_SUBCONNECTOR_Composite, "Composite" }, /* TV-out */
+	{ DRM_MODE_SUBCONNECTOR_SVIDEO,    "SVIDEO"    }, /* TV-out */
+	{ DRM_MODE_SUBCONNECTOR_Component, "Component" }, /* TV-out */
+	{ DRM_MODE_SUBCONNECTOR_SCART,     "SCART"     }, /* TV-out */
+};
+DRM_ENUM_NAME_FN(drm_get_tv_subconnector_name,
+		 drm_tv_subconnector_enum_list)
 
 // static const struct drm_prop_enum_list hdmi_colorspaces[] = {
 // 	/* For Default case, driver will set the colorspace */
@@ -1370,138 +1370,138 @@ EXPORT_SYMBOL(drm_mode_create_dvi_i_properties);
 // }
 // EXPORT_SYMBOL(drm_connector_attach_tv_margin_properties);
 
-// /**
-//  * drm_mode_create_tv_margin_properties - create TV connector margin properties
-//  * @dev: DRM device
-//  *
-//  * Called by a driver's HDMI connector initialization routine, this function
-//  * creates the TV margin properties for a given device. No need to call this
-//  * function for an SDTV connector, it's already called from
-//  * drm_mode_create_tv_properties().
-//  */
-// int drm_mode_create_tv_margin_properties(struct drm_device *dev)
-// {
-// 	if (dev->mode_config.tv_left_margin_property)
-// 		return 0;
+/**
+ * drm_mode_create_tv_margin_properties - create TV connector margin properties
+ * @dev: DRM device
+ *
+ * Called by a driver's HDMI connector initialization routine, this function
+ * creates the TV margin properties for a given device. No need to call this
+ * function for an SDTV connector, it's already called from
+ * drm_mode_create_tv_properties().
+ */
+int drm_mode_create_tv_margin_properties(struct drm_device *dev)
+{
+	if (dev->mode_config.tv_left_margin_property)
+		return 0;
 
-// 	dev->mode_config.tv_left_margin_property =
-// 		drm_property_create_range(dev, 0, "left margin", 0, 100);
-// 	if (!dev->mode_config.tv_left_margin_property)
-// 		return -ENOMEM;
+	dev->mode_config.tv_left_margin_property =
+		drm_property_create_range(dev, 0, "left margin", 0, 100);
+	if (!dev->mode_config.tv_left_margin_property)
+		return -ENOMEM;
 
-// 	dev->mode_config.tv_right_margin_property =
-// 		drm_property_create_range(dev, 0, "right margin", 0, 100);
-// 	if (!dev->mode_config.tv_right_margin_property)
-// 		return -ENOMEM;
+	dev->mode_config.tv_right_margin_property =
+		drm_property_create_range(dev, 0, "right margin", 0, 100);
+	if (!dev->mode_config.tv_right_margin_property)
+		return -ENOMEM;
 
-// 	dev->mode_config.tv_top_margin_property =
-// 		drm_property_create_range(dev, 0, "top margin", 0, 100);
-// 	if (!dev->mode_config.tv_top_margin_property)
-// 		return -ENOMEM;
+	dev->mode_config.tv_top_margin_property =
+		drm_property_create_range(dev, 0, "top margin", 0, 100);
+	if (!dev->mode_config.tv_top_margin_property)
+		return -ENOMEM;
 
-// 	dev->mode_config.tv_bottom_margin_property =
-// 		drm_property_create_range(dev, 0, "bottom margin", 0, 100);
-// 	if (!dev->mode_config.tv_bottom_margin_property)
-// 		return -ENOMEM;
+	dev->mode_config.tv_bottom_margin_property =
+		drm_property_create_range(dev, 0, "bottom margin", 0, 100);
+	if (!dev->mode_config.tv_bottom_margin_property)
+		return -ENOMEM;
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_mode_create_tv_margin_properties);
+	return 0;
+}
+EXPORT_SYMBOL(drm_mode_create_tv_margin_properties);
 
-// /**
-//  * drm_mode_create_tv_properties - create TV specific connector properties
-//  * @dev: DRM device
-//  * @num_modes: number of different TV formats (modes) supported
-//  * @modes: array of pointers to strings containing name of each format
-//  *
-//  * Called by a driver's TV initialization routine, this function creates
-//  * the TV specific connector properties for a given device.  Caller is
-//  * responsible for allocating a list of format names and passing them to
-//  * this routine.
-//  */
-// int drm_mode_create_tv_properties(struct drm_device *dev,
-// 				  unsigned int num_modes,
-// 				  const char * const modes[])
-// {
-// 	struct drm_property *tv_selector;
-// 	struct drm_property *tv_subconnector;
-// 	unsigned int i;
+/**
+ * drm_mode_create_tv_properties - create TV specific connector properties
+ * @dev: DRM device
+ * @num_modes: number of different TV formats (modes) supported
+ * @modes: array of pointers to strings containing name of each format
+ *
+ * Called by a driver's TV initialization routine, this function creates
+ * the TV specific connector properties for a given device.  Caller is
+ * responsible for allocating a list of format names and passing them to
+ * this routine.
+ */
+int drm_mode_create_tv_properties(struct drm_device *dev,
+				  unsigned int num_modes,
+				  const char * const modes[])
+{
+	struct drm_property *tv_selector;
+	struct drm_property *tv_subconnector;
+	unsigned int i;
 
-// 	if (dev->mode_config.tv_select_subconnector_property)
-// 		return 0;
+	if (dev->mode_config.tv_select_subconnector_property)
+		return 0;
 
-// 	/*
-// 	 * Basic connector properties
-// 	 */
-// 	tv_selector = drm_property_create_enum(dev, 0,
-// 					  "select subconnector",
-// 					  drm_tv_select_enum_list,
-// 					  ARRAY_SIZE(drm_tv_select_enum_list));
-// 	if (!tv_selector)
-// 		goto nomem;
+	/*
+	 * Basic connector properties
+	 */
+	tv_selector = drm_property_create_enum(dev, 0,
+					  "select subconnector",
+					  drm_tv_select_enum_list,
+					  ARRAY_SIZE(drm_tv_select_enum_list));
+	if (!tv_selector)
+		goto nomem;
 
-// 	dev->mode_config.tv_select_subconnector_property = tv_selector;
+	dev->mode_config.tv_select_subconnector_property = tv_selector;
 
-// 	tv_subconnector =
-// 		drm_property_create_enum(dev, DRM_MODE_PROP_IMMUTABLE,
-// 				    "subconnector",
-// 				    drm_tv_subconnector_enum_list,
-// 				    ARRAY_SIZE(drm_tv_subconnector_enum_list));
-// 	if (!tv_subconnector)
-// 		goto nomem;
-// 	dev->mode_config.tv_subconnector_property = tv_subconnector;
+	tv_subconnector =
+		drm_property_create_enum(dev, DRM_MODE_PROP_IMMUTABLE,
+				    "subconnector",
+				    drm_tv_subconnector_enum_list,
+				    ARRAY_SIZE(drm_tv_subconnector_enum_list));
+	if (!tv_subconnector)
+		goto nomem;
+	dev->mode_config.tv_subconnector_property = tv_subconnector;
 
-// 	/*
-// 	 * Other, TV specific properties: margins & TV modes.
-// 	 */
-// 	if (drm_mode_create_tv_margin_properties(dev))
-// 		goto nomem;
+	/*
+	 * Other, TV specific properties: margins & TV modes.
+	 */
+	if (drm_mode_create_tv_margin_properties(dev))
+		goto nomem;
 
-// 	dev->mode_config.tv_mode_property =
-// 		drm_property_create(dev, DRM_MODE_PROP_ENUM,
-// 				    "mode", num_modes);
-// 	if (!dev->mode_config.tv_mode_property)
-// 		goto nomem;
+	dev->mode_config.tv_mode_property =
+		drm_property_create(dev, DRM_MODE_PROP_ENUM,
+				    "mode", num_modes);
+	if (!dev->mode_config.tv_mode_property)
+		goto nomem;
 
-// 	for (i = 0; i < num_modes; i++)
-// 		drm_property_add_enum(dev->mode_config.tv_mode_property,
-// 				      i, modes[i]);
+	for (i = 0; i < num_modes; i++)
+		drm_property_add_enum(dev->mode_config.tv_mode_property,
+				      i, modes[i]);
 
-// 	dev->mode_config.tv_brightness_property =
-// 		drm_property_create_range(dev, 0, "brightness", 0, 100);
-// 	if (!dev->mode_config.tv_brightness_property)
-// 		goto nomem;
+	dev->mode_config.tv_brightness_property =
+		drm_property_create_range(dev, 0, "brightness", 0, 100);
+	if (!dev->mode_config.tv_brightness_property)
+		goto nomem;
 
-// 	dev->mode_config.tv_contrast_property =
-// 		drm_property_create_range(dev, 0, "contrast", 0, 100);
-// 	if (!dev->mode_config.tv_contrast_property)
-// 		goto nomem;
+	dev->mode_config.tv_contrast_property =
+		drm_property_create_range(dev, 0, "contrast", 0, 100);
+	if (!dev->mode_config.tv_contrast_property)
+		goto nomem;
 
-// 	dev->mode_config.tv_flicker_reduction_property =
-// 		drm_property_create_range(dev, 0, "flicker reduction", 0, 100);
-// 	if (!dev->mode_config.tv_flicker_reduction_property)
-// 		goto nomem;
+	dev->mode_config.tv_flicker_reduction_property =
+		drm_property_create_range(dev, 0, "flicker reduction", 0, 100);
+	if (!dev->mode_config.tv_flicker_reduction_property)
+		goto nomem;
 
-// 	dev->mode_config.tv_overscan_property =
-// 		drm_property_create_range(dev, 0, "overscan", 0, 100);
-// 	if (!dev->mode_config.tv_overscan_property)
-// 		goto nomem;
+	dev->mode_config.tv_overscan_property =
+		drm_property_create_range(dev, 0, "overscan", 0, 100);
+	if (!dev->mode_config.tv_overscan_property)
+		goto nomem;
 
-// 	dev->mode_config.tv_saturation_property =
-// 		drm_property_create_range(dev, 0, "saturation", 0, 100);
-// 	if (!dev->mode_config.tv_saturation_property)
-// 		goto nomem;
+	dev->mode_config.tv_saturation_property =
+		drm_property_create_range(dev, 0, "saturation", 0, 100);
+	if (!dev->mode_config.tv_saturation_property)
+		goto nomem;
 
-// 	dev->mode_config.tv_hue_property =
-// 		drm_property_create_range(dev, 0, "hue", 0, 100);
-// 	if (!dev->mode_config.tv_hue_property)
-// 		goto nomem;
+	dev->mode_config.tv_hue_property =
+		drm_property_create_range(dev, 0, "hue", 0, 100);
+	if (!dev->mode_config.tv_hue_property)
+		goto nomem;
 
-// 	return 0;
-// nomem:
-// 	return -ENOMEM;
-// }
-// EXPORT_SYMBOL(drm_mode_create_tv_properties);
+	return 0;
+nomem:
+	return -ENOMEM;
+}
+EXPORT_SYMBOL(drm_mode_create_tv_properties);
 
 /**
  * drm_mode_create_scaling_mode_property - create scaling mode property
@@ -1814,34 +1814,34 @@ EXPORT_SYMBOL(drm_mode_create_scaling_mode_property);
 // }
 // EXPORT_SYMBOL(drm_mode_create_suggested_offset_properties);
 
-// /**
-//  * drm_connector_set_path_property - set tile property on connector
-//  * @connector: connector to set property on.
-//  * @path: path to use for property; must not be NULL.
-//  *
-//  * This creates a property to expose to userspace to specify a
-//  * connector path. This is mainly used for DisplayPort MST where
-//  * connectors have a topology and we want to allow userspace to give
-//  * them more meaningful names.
-//  *
-//  * Returns:
-//  * Zero on success, negative errno on failure.
-//  */
-// int drm_connector_set_path_property(struct drm_connector *connector,
-// 				    const char *path)
-// {
-// 	struct drm_device *dev = connector->dev;
-// 	int ret;
+/**
+ * drm_connector_set_path_property - set tile property on connector
+ * @connector: connector to set property on.
+ * @path: path to use for property; must not be NULL.
+ *
+ * This creates a property to expose to userspace to specify a
+ * connector path. This is mainly used for DisplayPort MST where
+ * connectors have a topology and we want to allow userspace to give
+ * them more meaningful names.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_connector_set_path_property(struct drm_connector *connector,
+				    const char *path)
+{
+	struct drm_device *dev = connector->dev;
+	int ret;
 
-// 	ret = drm_property_replace_global_blob(dev,
-// 	                                       &connector->path_blob_ptr,
-// 	                                       strlen(path) + 1,
-// 	                                       path,
-// 	                                       &connector->base,
-// 	                                       dev->mode_config.path_property);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_connector_set_path_property);
+	ret = drm_property_replace_global_blob(dev,
+	                                       &connector->path_blob_ptr,
+	                                       strlen(path) + 1,
+	                                       path,
+	                                       &connector->base,
+	                                       dev->mode_config.path_property);
+	return ret;
+}
+EXPORT_SYMBOL(drm_connector_set_path_property);
 
 /**
  * drm_connector_set_tile_property - set tile property on connector

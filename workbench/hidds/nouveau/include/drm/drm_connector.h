@@ -1235,13 +1235,13 @@ struct drm_connector {
 	 */
 	struct drm_property *colorspace_property;
 
-// 	/**
-// 	 * @path_blob_ptr:
-// 	 *
-// 	 * DRM blob property data for the DP MST path property. This should only
-// 	 * be updated by calling drm_connector_set_path_property().
-// 	 */
-// 	struct drm_property_blob *path_blob_ptr;
+	/**
+	 * @path_blob_ptr:
+	 *
+	 * DRM blob property data for the DP MST path property. This should only
+	 * be updated by calling drm_connector_set_path_property().
+	 */
+	struct drm_property_blob *path_blob_ptr;
 
 	/**
 	 * @max_bpc_property: Default connector property for the max bpc to be

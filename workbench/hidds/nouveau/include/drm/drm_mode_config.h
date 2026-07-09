@@ -529,8 +529,8 @@ struct drm_mode_config {
 	const struct drm_mode_config_funcs *funcs;
 	resource_size_t fb_base;
 
-// 	/* output poll support */
-// 	bool poll_enabled;
+	/* output poll support */
+	bool poll_enabled;
 // 	bool poll_running;
 // 	bool delayed_event;
 // 	struct delayed_work output_poll_work;

@@ -148,19 +148,19 @@
 // }
 // EXPORT_SYMBOL(drm_bridge_attach);
 
-// void drm_bridge_detach(struct drm_bridge *bridge)
-// {
-// 	if (WARN_ON(!bridge))
-// 		return;
+void drm_bridge_detach(struct drm_bridge *bridge)
+{
+	if (WARN_ON(!bridge))
+		return;
 
-// 	if (WARN_ON(!bridge->dev))
-// 		return;
+	if (WARN_ON(!bridge->dev))
+		return;
 
-// 	if (bridge->funcs->detach)
-// 		bridge->funcs->detach(bridge);
+	if (bridge->funcs->detach)
+		bridge->funcs->detach(bridge);
 
-// 	bridge->dev = NULL;
-// }
+	bridge->dev = NULL;
+}
 
 // /**
 //  * DOC: bridge callbacks

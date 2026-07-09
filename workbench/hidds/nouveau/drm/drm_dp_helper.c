@@ -301,31 +301,31 @@ out:
 }
 EXPORT_SYMBOL(drm_dp_dpcd_read);
 
-// /**
-//  * drm_dp_dpcd_write() - write a series of bytes to the DPCD
-//  * @aux: DisplayPort AUX channel
-//  * @offset: address of the (first) register to write
-//  * @buffer: buffer containing the values to write
-//  * @size: number of bytes in @buffer
-//  *
-//  * Returns the number of bytes transferred on success, or a negative error
-//  * code on failure. -EIO is returned if the request was NAKed by the sink or
-//  * if the retry count was exceeded. If not all bytes were transferred, this
-//  * function returns -EPROTO. Errors from the underlying AUX channel transfer
-//  * function, with the exception of -EBUSY (which causes the transaction to
-//  * be retried), are propagated to the caller.
-//  */
-// ssize_t drm_dp_dpcd_write(struct drm_dp_aux *aux, unsigned int offset,
-// 			  void *buffer, size_t size)
-// {
-// 	int ret;
+/**
+ * drm_dp_dpcd_write() - write a series of bytes to the DPCD
+ * @aux: DisplayPort AUX channel
+ * @offset: address of the (first) register to write
+ * @buffer: buffer containing the values to write
+ * @size: number of bytes in @buffer
+ *
+ * Returns the number of bytes transferred on success, or a negative error
+ * code on failure. -EIO is returned if the request was NAKed by the sink or
+ * if the retry count was exceeded. If not all bytes were transferred, this
+ * function returns -EPROTO. Errors from the underlying AUX channel transfer
+ * function, with the exception of -EBUSY (which causes the transaction to
+ * be retried), are propagated to the caller.
+ */
+ssize_t drm_dp_dpcd_write(struct drm_dp_aux *aux, unsigned int offset,
+			  void *buffer, size_t size)
+{
+	int ret;
 
-// 	ret = drm_dp_dpcd_access(aux, DP_AUX_NATIVE_WRITE, offset, buffer,
-// 				 size);
-// 	drm_dp_dump_access(aux, DP_AUX_NATIVE_WRITE, offset, buffer, ret);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_dp_dpcd_write);
+	ret = drm_dp_dpcd_access(aux, DP_AUX_NATIVE_WRITE, offset, buffer,
+				 size);
+	drm_dp_dump_access(aux, DP_AUX_NATIVE_WRITE, offset, buffer, ret);
+	return ret;
+}
+EXPORT_SYMBOL(drm_dp_dpcd_write);
 
 // /**
 //  * drm_dp_dpcd_read_link_status() - read DPCD link status (bytes 0x202-0x207)
@@ -1158,16 +1158,16 @@ int drm_dp_aux_register(struct drm_dp_aux *aux)
 }
 EXPORT_SYMBOL(drm_dp_aux_register);
 
-// /**
-//  * drm_dp_aux_unregister() - unregister an AUX adapter
-//  * @aux: DisplayPort AUX channel
-//  */
-// void drm_dp_aux_unregister(struct drm_dp_aux *aux)
-// {
-// 	drm_dp_aux_unregister_devnode(aux);
-// 	i2c_del_adapter(&aux->ddc);
-// }
-// EXPORT_SYMBOL(drm_dp_aux_unregister);
+/**
+ * drm_dp_aux_unregister() - unregister an AUX adapter
+ * @aux: DisplayPort AUX channel
+ */
+void drm_dp_aux_unregister(struct drm_dp_aux *aux)
+{
+	drm_dp_aux_unregister_devnode(aux);
+	i2c_del_adapter(&aux->ddc);
+}
+EXPORT_SYMBOL(drm_dp_aux_unregister);
 
 // #define PSR_SETUP_TIME(x) [DP_PSR_SETUP_TIME_ ## x >> DP_PSR_SETUP_TIME_SHIFT] = (x)
 

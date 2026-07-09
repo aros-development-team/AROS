@@ -210,28 +210,31 @@ idr_init(struct idr *idr)
 }
 
 /* Only frees cached pages. */
-// void
-// idr_destroy(struct idr *idr)
-// {
-// 	struct idr_layer *il, *iln;
+void
+idr_destroy(struct idr *idr)
+{
+	struct idr_layer *il, *iln;
 
-// 	/*
-// 	 * This idr can be reused, and this function might be called multiple times
-// 	 * without a idr_init(). Check if this is the case.  If we do not do this
-// 	 * then the mutex will panic while asserting that it is valid.
-// 	 */
-// 	if (mtx_initialized(&idr->lock) == 0)
-// 		return;
+NOT_IMPLEMENTED_STOP
+#if 0
+	/*
+	 * This idr can be reused, and this function might be called multiple times
+	 * without a idr_init(). Check if this is the case.  If we do not do this
+	 * then the mutex will panic while asserting that it is valid.
+	 */
+	if (mtx_initialized(&idr->lock) == 0)
+		return;
+#endif
 
-// 	idr_remove_all(idr);
-// 	mtx_lock(&idr->lock);
-// 	for (il = idr->free; il != NULL; il = iln) {
-// 		iln = il->ary[0];
-// 		idr_free(il, M_IDR);
-// 	}
-// 	mtx_unlock(&idr->lock);
-// 	mtx_destroy(&idr->lock);
-// }
+	idr_remove_all(idr);
+	mtx_lock(&idr->lock);
+	for (il = idr->free; il != NULL; il = iln) {
+		iln = il->ary[0];
+		idr_free(il, M_IDR);
+	}
+	mtx_unlock(&idr->lock);
+	mtx_destroy(&idr->lock);
+}
 
 static void
 idr_remove_layer(struct idr_layer *il, int layer)
@@ -848,10 +851,10 @@ ida_init(struct ida *ida)
 	idr_init(&ida->idr);
 }
 
-// void
-// ida_destroy(struct ida *ida)
-// {
-// 	idr_destroy(&ida->idr);
-// 	idr_free(ida->free_bitmap, M_IDR);
-// 	ida->free_bitmap = NULL;
-// }
+void
+ida_destroy(struct ida *ida)
+{
+	idr_destroy(&ida->idr);
+	idr_free(ida->free_bitmap, M_IDR);
+	ida->free_bitmap = NULL;
+}

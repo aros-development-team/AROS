@@ -350,43 +350,45 @@ int drm_plane_init(struct drm_device *dev, struct drm_plane *plane,
 }
 EXPORT_SYMBOL(drm_plane_init);
 
-// /**
-//  * drm_plane_cleanup - Clean up the core plane usage
-//  * @plane: plane to cleanup
-//  *
-//  * This function cleans up @plane and removes it from the DRM mode setting
-//  * core. Note that the function does *not* free the plane structure itself,
-//  * this is the responsibility of the caller.
-//  */
-// void drm_plane_cleanup(struct drm_plane *plane)
-// {
-// 	struct drm_device *dev = plane->dev;
+/**
+ * drm_plane_cleanup - Clean up the core plane usage
+ * @plane: plane to cleanup
+ *
+ * This function cleans up @plane and removes it from the DRM mode setting
+ * core. Note that the function does *not* free the plane structure itself,
+ * this is the responsibility of the caller.
+ */
+void drm_plane_cleanup(struct drm_plane *plane)
+{
+	struct drm_device *dev = plane->dev;
 
-// 	drm_modeset_lock_fini(&plane->mutex);
+#if !defined(__AROS__)
+	drm_modeset_lock_fini(&plane->mutex);
+#endif
 
-// 	kfree(plane->format_types);
-// 	kfree(plane->modifiers);
-// 	drm_mode_object_unregister(dev, &plane->base);
+	kfree(plane->format_types);
+	kfree(plane->modifiers);
+	drm_mode_object_unregister(dev, &plane->base);
 
-// 	BUG_ON(list_empty(&plane->head));
+	BUG_ON(list_empty(&plane->head));
 
-// 	/* Note that the plane_list is considered to be static; should we
-// 	 * remove the drm_plane at runtime we would have to decrement all
-// 	 * the indices on the drm_plane after us in the plane_list.
-// 	 */
+	/* Note that the plane_list is considered to be static; should we
+	 * remove the drm_plane at runtime we would have to decrement all
+	 * the indices on the drm_plane after us in the plane_list.
+	 */
 
-// 	list_del(&plane->head);
-// 	dev->mode_config.num_total_plane--;
+	list_del(&plane->head);
+	dev->mode_config.num_total_plane--;
 
-// 	WARN_ON(plane->state && !plane->funcs->atomic_destroy_state);
-// 	if (plane->state && plane->funcs->atomic_destroy_state)
-// 		plane->funcs->atomic_destroy_state(plane, plane->state);
+	WARN_ON(plane->state && !plane->funcs->atomic_destroy_state);
+	if (plane->state && plane->funcs->atomic_destroy_state)
+		plane->funcs->atomic_destroy_state(plane, plane->state);
 
-// 	kfree(plane->name);
+	kfree(plane->name);
 
-// 	memset(plane, 0, sizeof(*plane));
-// }
-// EXPORT_SYMBOL(drm_plane_cleanup);
+	memset(plane, 0, sizeof(*plane));
+}
+EXPORT_SYMBOL(drm_plane_cleanup);
 
 // /**
 //  * drm_plane_from_index - find the registered plane at an index

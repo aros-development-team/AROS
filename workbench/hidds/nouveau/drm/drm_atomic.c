@@ -757,79 +757,83 @@ drm_atomic_private_obj_init(struct drm_device *dev,
 }
 EXPORT_SYMBOL(drm_atomic_private_obj_init);
 
-// /**
-//  * drm_atomic_private_obj_fini - finalize private object
-//  * @obj: private object
-//  *
-//  * Finalize the private object.
-//  */
-// void
-// drm_atomic_private_obj_fini(struct drm_private_obj *obj)
-// {
-// 	list_del(&obj->head);
-// 	obj->funcs->atomic_destroy_state(obj, obj->state);
-// 	drm_modeset_lock_fini(&obj->lock);
-// }
-// EXPORT_SYMBOL(drm_atomic_private_obj_fini);
+/**
+ * drm_atomic_private_obj_fini - finalize private object
+ * @obj: private object
+ *
+ * Finalize the private object.
+ */
+void
+drm_atomic_private_obj_fini(struct drm_private_obj *obj)
+{
+	list_del(&obj->head);
+	obj->funcs->atomic_destroy_state(obj, obj->state);
+#if !defined(__AROS__)
+	drm_modeset_lock_fini(&obj->lock);
+#endif
+}
+EXPORT_SYMBOL(drm_atomic_private_obj_fini);
 
-// /**
-//  * drm_atomic_get_private_obj_state - get private object state
-//  * @state: global atomic state
-//  * @obj: private object to get the state for
-//  *
-//  * This function returns the private object state for the given private object,
-//  * allocating the state if needed. It will also grab the relevant private
-//  * object lock to make sure that the state is consistent.
-//  *
-//  * RETURNS:
-//  *
-//  * Either the allocated state or the error code encoded into a pointer.
-//  */
-// struct drm_private_state *
-// drm_atomic_get_private_obj_state(struct drm_atomic_state *state,
-// 				 struct drm_private_obj *obj)
-// {
-// 	int index, num_objs, i, ret;
-// 	size_t size;
-// 	struct __drm_private_objs_state *arr;
-// 	struct drm_private_state *obj_state;
+/**
+ * drm_atomic_get_private_obj_state - get private object state
+ * @state: global atomic state
+ * @obj: private object to get the state for
+ *
+ * This function returns the private object state for the given private object,
+ * allocating the state if needed. It will also grab the relevant private
+ * object lock to make sure that the state is consistent.
+ *
+ * RETURNS:
+ *
+ * Either the allocated state or the error code encoded into a pointer.
+ */
+struct drm_private_state *
+drm_atomic_get_private_obj_state(struct drm_atomic_state *state,
+				 struct drm_private_obj *obj)
+{
+	int index, num_objs, i, ret;
+	size_t size;
+	struct __drm_private_objs_state *arr;
+	struct drm_private_state *obj_state;
 
-// 	for (i = 0; i < state->num_private_objs; i++)
-// 		if (obj == state->private_objs[i].ptr)
-// 			return state->private_objs[i].state;
+	for (i = 0; i < state->num_private_objs; i++)
+		if (obj == state->private_objs[i].ptr)
+			return state->private_objs[i].state;
 
-// 	ret = drm_modeset_lock(&obj->lock, state->acquire_ctx);
-// 	if (ret)
-// 		return ERR_PTR(ret);
+#if !defined(__AROS__)
+	ret = drm_modeset_lock(&obj->lock, state->acquire_ctx);
+	if (ret)
+		return ERR_PTR(ret);
+#endif
 
-// 	num_objs = state->num_private_objs + 1;
-// 	size = sizeof(*state->private_objs) * num_objs;
-// 	arr = krealloc(state->private_objs, size, GFP_KERNEL);
-// 	if (!arr)
-// 		return ERR_PTR(-ENOMEM);
+	num_objs = state->num_private_objs + 1;
+	size = sizeof(*state->private_objs) * num_objs;
+	arr = krealloc(state->private_objs, size, GFP_KERNEL);
+	if (!arr)
+		return ERR_PTR(-ENOMEM);
 
-// 	state->private_objs = arr;
-// 	index = state->num_private_objs;
-// 	memset(&state->private_objs[index], 0, sizeof(*state->private_objs));
+	state->private_objs = arr;
+	index = state->num_private_objs;
+	memset(&state->private_objs[index], 0, sizeof(*state->private_objs));
 
-// 	obj_state = obj->funcs->atomic_duplicate_state(obj);
-// 	if (!obj_state)
-// 		return ERR_PTR(-ENOMEM);
+	obj_state = obj->funcs->atomic_duplicate_state(obj);
+	if (!obj_state)
+		return ERR_PTR(-ENOMEM);
 
-// 	state->private_objs[index].state = obj_state;
-// 	state->private_objs[index].old_state = obj->state;
-// 	state->private_objs[index].new_state = obj_state;
-// 	state->private_objs[index].ptr = obj;
-// 	obj_state->state = state;
+	state->private_objs[index].state = obj_state;
+	state->private_objs[index].old_state = obj->state;
+	state->private_objs[index].new_state = obj_state;
+	state->private_objs[index].ptr = obj;
+	obj_state->state = state;
 
-// 	state->num_private_objs = num_objs;
+	state->num_private_objs = num_objs;
 
-// 	DRM_DEBUG_ATOMIC("Added new private object %p state %p to %p\n",
-// 			 obj, obj_state, state);
+	DRM_DEBUG_ATOMIC("Added new private object %p state %p to %p\n",
+			 obj, obj_state, state);
 
-// 	return obj_state;
-// }
-// EXPORT_SYMBOL(drm_atomic_get_private_obj_state);
+	return obj_state;
+}
+EXPORT_SYMBOL(drm_atomic_get_private_obj_state);
 
 // /**
 //  * drm_atomic_get_old_private_obj_state
@@ -1254,34 +1258,34 @@ int drm_atomic_commit(struct drm_atomic_state *state)
 }
 EXPORT_SYMBOL(drm_atomic_commit);
 
-// /**
-//  * drm_atomic_nonblocking_commit - atomic nonblocking commit
-//  * @state: atomic configuration to check
-//  *
-//  * Note that this function can return -EDEADLK if the driver needed to acquire
-//  * more locks but encountered a deadlock. The caller must then do the usual w/w
-//  * backoff dance and restart. All other errors are fatal.
-//  *
-//  * This function will take its own reference on @state.
-//  * Callers should always release their reference with drm_atomic_state_put().
-//  *
-//  * Returns:
-//  * 0 on success, negative error code on failure.
-//  */
-// int drm_atomic_nonblocking_commit(struct drm_atomic_state *state)
-// {
-// 	struct drm_mode_config *config = &state->dev->mode_config;
-// 	int ret;
+/**
+ * drm_atomic_nonblocking_commit - atomic nonblocking commit
+ * @state: atomic configuration to check
+ *
+ * Note that this function can return -EDEADLK if the driver needed to acquire
+ * more locks but encountered a deadlock. The caller must then do the usual w/w
+ * backoff dance and restart. All other errors are fatal.
+ *
+ * This function will take its own reference on @state.
+ * Callers should always release their reference with drm_atomic_state_put().
+ *
+ * Returns:
+ * 0 on success, negative error code on failure.
+ */
+int drm_atomic_nonblocking_commit(struct drm_atomic_state *state)
+{
+	struct drm_mode_config *config = &state->dev->mode_config;
+	int ret;
 
-// 	ret = drm_atomic_check_only(state);
-// 	if (ret)
-// 		return ret;
+	ret = drm_atomic_check_only(state);
+	if (ret)
+		return ret;
 
-// 	DRM_DEBUG_ATOMIC("committing %p nonblocking\n", state);
+	DRM_DEBUG_ATOMIC("committing %p nonblocking\n", state);
 
-// 	return config->funcs->atomic_commit(state->dev, state, true);
-// }
-// EXPORT_SYMBOL(drm_atomic_nonblocking_commit);
+	return config->funcs->atomic_commit(state->dev, state, true);
+}
+EXPORT_SYMBOL(drm_atomic_nonblocking_commit);
 
 /* just used from drm-client and atomic-helper: */
 int __drm_atomic_helper_disable_plane(struct drm_plane *plane,
