@@ -85,7 +85,7 @@ void drm_crtc_cleanup() { NOT_IMPLEMENTED_STOP }
 void drm_crtc_helper_set_config() { NOT_IMPLEMENTED_STOP }
 void drm_crtc_helper_set_mode() { NOT_IMPLEMENTED_STOP }
 
-void drm_cvt_mode() { NOT_IMPLEMENTED_STOP }
+
 void drm_dp_atomic_find_vcpi_slots() { NOT_IMPLEMENTED_STOP }
 void drm_dp_atomic_release_vcpi_slots() { NOT_IMPLEMENTED_STOP }
 
