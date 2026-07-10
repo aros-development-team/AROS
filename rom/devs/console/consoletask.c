@@ -359,8 +359,9 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
                     } /* switch(cdihmsg->ie.ie_Class) */
                 } /* if (checkconunit(cdihmsg->unit, ConsoleDevice)) */
 
-                /* Tell the input handler we're done */
-                ReplyMsg((struct Message *)cdihmsg);
+                /* The input handler sent this asynchronously (it must never
+                   wait for us, see CDInputHandler); we own the message. */
+                FreeMem(cdihmsg, sizeof(struct cdihMessage));
             } /* while ((cdihmsg = (struct cdihMessage *)GetMsg(inputport))) */
         } /* if (wakeupsig & inputsig) */
 
