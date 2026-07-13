@@ -1,13 +1,13 @@
 ---
 exclude_paths:
-  - 'arch/.unmaintained/**'
-  - 'arch/all-pc/udis86/docs/**'
-  - 'arch/all-pc/udis86/scripts/**'
-  - 'arch/all-pc/udis86/tests/**'
-  - 'workbench/classes/datatypes/heic/libde265/**'
-  - 'workbench/classes/datatypes/heic/libheif/**'
-  - 'compiler/purify/test*'
-  - 'developer/debug/test/**/cunit-*'
-  - 'developer/debug/test/exec/crashtest.c'
-  - 'developer/debug/test/exec/traptest.c'
+  - "arch/.unmaintained/**"
+  - "arch/all-pc/udis86/docs/**"
+  - "arch/all-pc/udis86/scripts/**"
+  - "arch/all-pc/udis86/tests/**"
+  - "workbench/classes/datatypes/heic/libde265/**"
+  - "workbench/classes/datatypes/heic/libheif/**"
+  - "compiler/purify/test*"
+  - "developer/debug/test/**/cunit-*"
+  - "developer/debug/test/exec/crashtest*.c"
+  - "developer/debug/test/exec/traptest.c"
   
