@@ -375,30 +375,16 @@ jobs:
       artifactName: sources
 
   # Create target directory on SourceForge web space
-  - bash: |
-      echo "Checking shell access..."
-      if ! ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
-        echo "Shell not active yet. Creating shell..."
-        ssh -t "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net create
+- script: |
+    mkdir -p "$(Build.BinariesDirectory)/Prepare/uploads/nightly2"
 
-        echo "Waiting for shell to become active (retrying up to 5 times)..."
-        for i in $(seq 1 5); do
-          if ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
-            echo "Shell is ready."
-            break
-          else
-            echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
-            sleep 5
-          fi
-        done
-      else
-        echo "Shell already active."
-      fi
-      echo "Ensuring target directory exists on SourceForge..."
-      ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net \
-        "mkdir -p /home/project-web/arosdev/uploads/nightly2"
-    condition: ne( variables['SF_RSYNC_USER'], '' )
-    displayName: 'Preparing source package upload directory on SourceForge'
+    rsync -avz -e ssh \
+      "$(Build.BinariesDirectory)/Prepare/uploads/" \
+      "$MAPPED_USER,arosdev@web.sourceforge.net:"
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: ne( variables['SF_RSYNC_USER'], '' )
+  displayName: 'Preparing source package upload directory on SourceForge'
 
   - script: |
       mkdir -p ~/.ssh
