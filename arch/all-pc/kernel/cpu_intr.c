@@ -428,7 +428,9 @@ SAVE_XMM_INTO_AREA(localarea)
        Interrupt handler or soft interrupt code is required to preserve XMM registers 5-15. */
     /* If we are here, we are either exiting from a nested interrupt or we are exiting to user mode
        but without task switch. If task switch happened, we had already exited in cpu_Dispatch via
-       core_LeaveInterrupt with first restoring all XMM/YMM registers from cpu context. */
+       core_LeaveInterrupt with first restoring all XMM/YMM registers from cpu context. If this
+       was a SC_SUPERVISOR call, we had already exited via core_Supervisor. In such case registers were
+       not restored, but whole flow was inside of kernel which is guaranteed not to use XMM/YMM */
     asm volatile (
         "       movaps (%0), %%xmm0\n"
         "       movaps 16(%0), %%xmm1\n"
