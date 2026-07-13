@@ -16,10 +16,10 @@
 
 /*  SYNOPSIS */
         AROS_LHA(struct RastPort *, rp, A0),
-        AROS_LHA(LONG             , xstart, D0),
-        AROS_LHA(LONG             , ystart, D1),
-        AROS_LHA(LONG             , xstop, D2),
-        AROS_LHA(LONG             , ystop, D3),
+        AROS_LHA(WORD             , xstart, D0),
+        AROS_LHA(WORD             , ystart, D1),
+        AROS_LHA(WORD             , xstop, D2),
+        AROS_LHA(WORD             , ystop, D3),
         AROS_LHA(UBYTE           *, array, A2),
         AROS_LHA(LONG             , bytesperrow, D4),
 
