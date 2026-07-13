@@ -562,6 +562,15 @@ void doColdCapture(void)
           "a0", "a1", "a2", "a3", "a4", "a5", "a6");
 }
 
+/* Returns TRUE if a Kickstart-format ROM image is present at 'rom'.
+ * Uses the standard ROM header signature (top 12 bits == 0x111), the same
+ * check as AMiGAROM_IsValid(). Lets us skip the romtag scan of the
+ * 0xF00000 window when no expansion/diagnostic ROM is mapped there. */
+static BOOL rom_present(IPTR rom)
+{
+    return (*(volatile ULONG *)rom & 0xFFF00000) == 0x11100000;
+}
+
 static void RomInfo(IPTR rom)
 {
 #if AROS_SERIAL_DEBUG && (DEBUG > 0)
@@ -793,26 +802,33 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
     Early_ScreenCode(CODE_RAM_CHECK);
 
-    if (arosbootstrapmode) {
-        /* Scan only first rom image.
-         * The rest is in BootStruct resident list
+    {
+        /*
+         * Build the romtag scan ranges. The main ROM (and, when not in
+         * bootstrap mode, the ext ROM) are always scanned. The 0xF00000
+         * window is only scanned if a ROM image is actually mapped there
+         * (expansion/diagnostic ROM). On stock machines and emulators that
+         * window is empty, so scanning its 512K word-by-word is pure waste
+         * and dominates boot time - skip it unless a ROM signature is found.
          */
-        kickrom[0] = (UWORD*)&_rom_start;
-        kickrom[1] = (UWORD*)&_rom_end;
-        kickrom[2] = (UWORD*)0x00f00000;
-        kickrom[3] = (UWORD*)0x00f80000;
-        kickrom[4] = (UWORD*)~0;
-        kickrom[5] = (UWORD*)~0;
-        resetKickMem (BootS);
-    } else {
-        kickrom[0] = (UWORD*)&_rom_start;
-        kickrom[1] = (UWORD*)&_rom_end;
-        kickrom[2] = (UWORD*)0x00f00000;
-        kickrom[3] = (UWORD*)0x00f80000;
-        kickrom[4] = (UWORD*)&_ext_start;
-        kickrom[5] = (UWORD*)&_ext_end;
-        kickrom[6] = (UWORD*)~0;
-        kickrom[7] = (UWORD*)~0;
+        i = 0;
+        kickrom[i++] = (UWORD*)&_rom_start;
+        kickrom[i++] = (UWORD*)&_rom_end;
+        if (rom_present(0x00f00000)) {
+            kickrom[i++] = (UWORD*)0x00f00000;
+            kickrom[i++] = (UWORD*)0x00f80000;
+        }
+        if (arosbootstrapmode) {
+            /* Scan only first rom image.
+             * The rest is in BootStruct resident list
+             */
+            resetKickMem (BootS);
+        } else {
+            kickrom[i++] = (UWORD*)&_ext_start;
+            kickrom[i++] = (UWORD*)&_ext_end;
+        }
+        kickrom[i++] = (UWORD*)~0;
+        kickrom[i++] = (UWORD*)~0;
     }
 
     mh = addmemoryregion(membanks[0], membanks[1],
