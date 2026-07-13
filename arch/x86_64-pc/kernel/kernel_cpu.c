@@ -73,7 +73,7 @@ extern UBYTE *pseudorsp;
         ::"r"(area));
 
 #define SAVE_XMM_AND_CHECK                      \
-UQUAD xmmpost[16];                              \
+UQUAD xmmpost[16] __attribute__((aligned(16))); \
 SAVE_XMM_INTO_AREA(xmmpost)                     \
 UQUAD *xmmpre = (UQUAD *)localarea;             \
 for (int i = 0; i < 15; i++)                    \
