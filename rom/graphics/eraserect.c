@@ -25,10 +25,10 @@
 
 /*  SYNOPSIS */
         AROS_LHA(struct RastPort *, rp, A1),
-        AROS_LHA(LONG             , xMin, D0),
-        AROS_LHA(LONG             , yMin, D1),
-        AROS_LHA(LONG             , xMax, D2),
-        AROS_LHA(LONG             , yMax, D3),
+        AROS_LHA(WORD             , xMin, D0),
+        AROS_LHA(WORD             , yMin, D1),
+        AROS_LHA(WORD             , xMax, D2),
+        AROS_LHA(WORD             , yMax, D3),
 
 /*  LOCATION */
         struct GfxBase *, GfxBase, 135, Graphics)
