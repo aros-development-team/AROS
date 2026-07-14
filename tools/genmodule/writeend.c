@@ -33,8 +33,16 @@ void writeend(struct config *cfg)
         );
     }
 
+    /*
+     * The module's Resident rt_EndSkip points at this End marker so the romtag
+     * scanner can leap from a module's tag to its end in one step. For that the
+     * marker must be the LAST thing in the module. It is emitted into its own
+     * ".text.moduleend" section; the m68k ROM link (see arch/m68k-amiga/boot,
+     * config/make.tmpl KERNEL_KOBJ_LDSCRIPT) orders sections so .text.moduleend
+     * comes last, making &End the true module end.
+     */
     fprintf(out,
-            "int GM_UNIQUENAME(End)(void) {return 0;}\n"
+            "__section(\".text.moduleend\") const char GM_UNIQUENAME(End)[] = { 0 };\n"
     );
     fclose(out);
 }

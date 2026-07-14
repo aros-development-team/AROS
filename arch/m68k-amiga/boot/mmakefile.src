@@ -193,11 +193,16 @@ kernel-link-amiga-m68k-quick : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
 	$(Q)$(HOST_CC) $(DEBUG_CFLAGS) -o $@ $<
 
+# Emit each module's .text BEFORE its .rodata. Combined with the romtag-first
+# KOBJ link (config/make.tmpl KERNEL_KOBJ_LDSCRIPT), this puts each module's
+# Resident tag at the module's head, so the boot-time romtag scanner finds it on
+# the first read and leaps to the next module via rt_EndSkip - instead of walking
+# every word of the ROM. Only the module's small .rodata is walked per module.
 $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)rm -f $@
 	$(Q)for file in $(OBJS_$*) $(KOBJS_$*); do \
-		echo "$$file(.rodata .rodata.*)" >>$@; \
 		echo "$$file(.text)" >>$@; \
+		echo "$$file(.rodata .rodata.*)" >>$@; \
 	done
 
 $(GENDIR)/boot/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \

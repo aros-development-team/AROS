@@ -617,7 +617,7 @@ static void writeresident(FILE *out, struct config *cfg)
     else
     {
         rt_skip = "GM_UNIQUENAME(End)";
-        fprintf(out, "extern int %s(void);\n", rt_skip);
+        fprintf(out, "extern const char %s[];\n", rt_skip);
     }
     fprintf(out,
             "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"

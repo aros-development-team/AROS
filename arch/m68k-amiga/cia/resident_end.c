@@ -2,4 +2,6 @@
     Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 */
 
-void Cia_End(void) { }
+/* In .text.moduleend so it links at the module tail: rt_EndSkip = &Cia_End then
+ * marks the true module end for the romtag scanner's leap to the next module. */
+__attribute__((section(".text.moduleend"))) void Cia_End(void) { }

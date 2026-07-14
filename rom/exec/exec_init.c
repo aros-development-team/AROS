@@ -64,7 +64,9 @@ AROS_UFP3S(struct ExecBase *, GM_UNIQUENAME(init),
  *
  * WARNING: the CPU privilege level must be set to user before calling InitCode(RTF_COLDSTART)!
  */
-const struct Resident Exec_resident =
+/* In .text.romtag so the m68k ROM link places this tag at the module head,
+ * letting the romtag scanner find it on the first read and leap via rt_EndSkip. */
+__attribute__((section(".text.romtag"))) const struct Resident Exec_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Exec_resident,

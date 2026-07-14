@@ -32,7 +32,9 @@ AROS_UFP3S(struct KernelBase *, Kernel_Init,
     AROS_UFPA(BPTR, segList, A0),
     AROS_UFPA(struct ExecBase *, sysBase, A6));
 
-const struct Resident Kernel_resident =
+/* In .text.romtag so the m68k ROM link places this tag at the module head,
+ * letting the romtag scanner find it on the first read and leap via rt_EndSkip. */
+__attribute__((section(".text.romtag"))) const struct Resident Kernel_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Kernel_resident,
