@@ -169,10 +169,21 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         if (displayable)
             data->bitmap->Flags |= BMF_DISPLAYABLE;
 
-        /* Allocate memory for all the planes. Use chip memory. */
+        /*
+         * Allocate memory for all the planes. Use chip memory.
+         *
+         * Displayable bitmaps (screens, framebuffers) are always fully painted
+         * before/at display, and graphics.library's AllocBitMap() blit-clears
+         * them itself when the caller passes BMF_CLEAR, so zeroing the planes
+         * here with a CPU memset is redundant work on the boot path. Only clear
+         * offscreen bitmaps, whose fresh contents a caller may read before any
+         * draw. (MEMF_CLEAR is expensive on the 68000; skipping the full-screen
+         * clear saves a large memset at boot.)
+         */
+        ULONG planeflags = MEMF_CHIP | (displayable ? 0 : MEMF_CLEAR);
         for (i = 0; i < depth; i++)
         {
-            data->bitmap->Planes[i] = AllocMem(height * bytesperrow, MEMF_CHIP | MEMF_CLEAR);
+            data->bitmap->Planes[i] = AllocMem(height * bytesperrow, planeflags);
 
             if (NULL == data->bitmap->Planes[i])
             {
