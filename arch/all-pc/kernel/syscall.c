@@ -21,6 +21,7 @@
 #include "kernel_scheduler.h"
 #include "kernel_syscall.h"
 #include "cpu_traps.h"
+#include "debug_xmm.h"
 
 #define D(x)
 #define DSYSCALL(x)
@@ -30,11 +31,6 @@ extern void core_Kick(struct TagItem *, void *);
 extern void kernel_cstart(const struct TagItem *);
 #else
 extern IPTR core_BSPReconfigure(struct KernBootPrivate *, UWORD);
-#endif
-
-#define DEBUG_XMM 0 /* Keep the same with x86_64-pc/kernel/kernel_cpu.c !! */
-#if DEBUG_XMM
-extern UBYTE *pseudorsp;
 #endif
 
 int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2)
@@ -55,7 +51,7 @@ int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *Kernel
 #if DEBUG_XMM
 if (sc == SC_SUPERVISOR)
 {
-pseudorsp -= 16 * 8;
+    PSEUDOSTACK_POPFRAME
 }
 #endif
             scHandler->sc_SysCall(regs);

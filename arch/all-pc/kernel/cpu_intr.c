@@ -22,6 +22,7 @@
 #include "kernel_syscall.h"
 #include "kernel_ipi.h"
 #include "cpu_traps.h"
+#include "debug_xmm.h"
 
 #ifdef DEBUG
 #undef DEBUG
@@ -256,32 +257,10 @@ void core_InvalidateIDT()
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
-#define DEBUG_XMM 0 /* Keep the same with x86_64-pc/kernel/kernel_cpu.c !! */
+
 #if DEBUG_XMM
-/* Debug code to detect damaging XMM registers in interrupt handling */
-UBYTE pseudostack[16 * 8 * 8 + 15]; // Pseudo-stack to support nesting
-UBYTE *pseudorsp = NULL;
-
-#define SAVE_XMM_INTO_AREA(area)                \
-    asm volatile (                              \
-        "       movaps %%xmm0, (%0)\n"          \
-        "       movaps %%xmm1, 16(%0)\n"        \
-        "       movaps %%xmm2, 32(%0)\n"        \
-        "       movaps %%xmm3, 48(%0)\n"        \
-        "       movaps %%xmm4, 64(%0)\n"        \
-        "       movaps %%xmm5, 80(%0)\n"        \
-        "       movaps %%xmm6, 96(%0)\n"        \
-        "       movaps %%xmm7, 112(%0)\n"       \
-        ::"r"(area));
-
-#define SAVE_XMM_AND_CHECK                      \
-UQUAD xmmpost[16] __attribute__((aligned(16))); \
-SAVE_XMM_INTO_AREA(xmmpost)                     \
-UQUAD *xmmpre = (UQUAD *)localarea;             \
-for (int i = 0; i < 15; i++)                    \
-    if (xmmpre[i] != xmmpost[i]) bug("diff in core_IRQHandle (%d) %lx vs %lx!!\n", i, xmmpre[i], xmmpost[i]);
+DEFINEPSEUDOSTACK
 #endif
-
 
 /*
     Naming convention:
@@ -296,8 +275,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     struct PlatformData *pdata = NULL;
 
 #if DEBUG_XMM
-if (pseudorsp == NULL)
-    pseudorsp = (UBYTE *)AROS_ROUNDUP2((IPTR)pseudostack, 16);
+CREATEPSEUDOSTACK
 #endif
 
 #if (__WORDSIZE==64)
@@ -311,8 +289,8 @@ if (pseudorsp == NULL)
 #endif
 
 #if DEBUG_XMM
-pseudorsp += 16 * 8;
-APTR localarea = pseudorsp - (16 * 8);
+PSEUDOSTACK_MAKEFRAME
+SETLOCALAREA
 SAVE_XMM_INTO_AREA(localarea)
 #endif
 
@@ -448,7 +426,7 @@ SAVE_XMM_INTO_AREA(localarea)
 
 #if DEBUG_XMM
 SAVE_XMM_AND_CHECK
-pseudorsp -= 16 * 8;
+PSEUDOSTACK_POPFRAME
 #endif
 
     core_LeaveInterrupt(regs);

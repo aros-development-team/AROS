@@ -23,6 +23,7 @@
 
 #include "apic.h"
 #include "apic_ia32.h"
+#include "debug_xmm.h"
 
 #include "cpu_freq.h"
 
@@ -55,30 +56,6 @@
 #define DEBUGCOLOR_SET
 #define DEBUGFUNCCOLOR_SET
 #define DEBUGCOLOR_RESET
-#endif
-
-#define DEBUG_XMM 0 /* Keep the same with all-pc/kernel/cpu_intr.c !! */
-#if DEBUG_XMM
-extern UBYTE *pseudorsp;
-#define SAVE_XMM_INTO_AREA(area)                \
-    asm volatile (                              \
-        "       movaps %%xmm0, (%0)\n"          \
-        "       movaps %%xmm1, 16(%0)\n"        \
-        "       movaps %%xmm2, 32(%0)\n"        \
-        "       movaps %%xmm3, 48(%0)\n"        \
-        "       movaps %%xmm4, 64(%0)\n"        \
-        "       movaps %%xmm5, 80(%0)\n"        \
-        "       movaps %%xmm6, 96(%0)\n"        \
-        "       movaps %%xmm7, 112(%0)\n"       \
-        ::"r"(area));
-
-#define SAVE_XMM_AND_CHECK                      \
-UQUAD xmmpost[16] __attribute__((aligned(16))); \
-SAVE_XMM_INTO_AREA(xmmpost)                     \
-UQUAD *xmmpre = (UQUAD *)localarea;             \
-for (int i = 0; i < 15; i++)                    \
-    if (xmmpre[i] != xmmpost[i]) bug("diff in core_Switch (%d) %lx vs %lx!!\n", i, xmmpre[i], xmmpost[i]);
-
 #endif
 
 void cpu_Dispatch(struct ExceptionContext *regs)
@@ -197,7 +174,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Leaving..." DEBUGCOLOR_RESET "\n", cpunum, __func__);
     )
 #if DEBUG_XMM
-pseudorsp -= 16 * 8;
+PSEUDOSTACK_POPFRAME
 #endif
     /* Disable interrupts. core_LeaveInterrupt uses the passed argument as stack to restore registers and
        do iretq. If interrupt fires before iretq, this interrupt is serviced on a "stack" that in reality
@@ -250,7 +227,7 @@ void cpu_Switch(struct ExceptionContext *regs)
                 ::"r"(regs->FXSData));
 
 #if DEBUG_XMM
-APTR localarea = pseudorsp - (16 * 8);
+SETLOCALAREA
 SAVE_XMM_AND_CHECK
 #endif
             /*
