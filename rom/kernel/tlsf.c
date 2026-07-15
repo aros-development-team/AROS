@@ -1340,16 +1340,35 @@ void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, 
 
 struct MemHeader * krnConvertMemHeaderToTLSF(struct MemHeader * source)
 {
-    struct MemChunk * mc = source->mh_First->mc_Next;
-    APTR mh = source->mh_First;
-    IPTR fsize = source->mh_First->mc_Bytes;
     APTR mhUpper = source->mh_Upper;    // Cache the mh_Upper value
+    struct MemChunk *mc = source->mh_First;
+    APTR mh = NULL;
+    IPTR fsize;
+
     if (source->mh_Attributes & MEMF_MANAGED)
         return NULL;
 
-    /* First chunk will host the mem header */
-    krnCreateTLSFMemHeader(source->mh_Node.ln_Name, source->mh_Node.ln_Pri, mh, fsize,
-            source->mh_Attributes);
+    /* Find first chunk that is large enough to host TSLF mem header and structures */
+    while (mc)
+    {
+        fsize = mc->mc_Bytes;
+        if (fsize >= (ROUNDUP(sizeof(tlsf_t)) + 3 * ROUNDUP(sizeof(bhdr_t))))
+        {
+            mh = mc;
+            break;
+        }
+        mc = mc->mc_Next;
+    }
+
+    /* No chunk that is big enough */
+    if (mh == NULL)
+        return NULL;
+
+    /* Advance to next chunk */
+    mc = mc->mc_Next;
+
+    /* Found chunk will host the mem header */
+    krnCreateTLSFMemHeader(source->mh_Node.ln_Name, source->mh_Node.ln_Pri, mh, fsize, source->mh_Attributes);
 
     /* Restore cached mh_Upper value (informative field, only) */
     ((struct MemHeaderExt *)mh)->mhe_MemHeader.mh_Upper = mhUpper;

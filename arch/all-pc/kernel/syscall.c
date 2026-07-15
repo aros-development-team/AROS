@@ -21,6 +21,7 @@
 #include "kernel_scheduler.h"
 #include "kernel_syscall.h"
 #include "cpu_traps.h"
+#include "debug_xmm.h"
 
 #define D(x)
 #define DSYSCALL(x)
@@ -47,6 +48,12 @@ int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *Kernel
         if ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == sc)
         {
             DSYSCALL(bug("[Kernel] %s: calling handler @ 0x%p\n", __func__, scHandler));
+#if DEBUG_XMM
+if (sc == SC_SUPERVISOR)
+{
+    PSEUDOSTACK_POPFRAME
+}
+#endif
             scHandler->sc_SysCall(regs);
             if (scHandler->sc_Node.ln_Type == 1)
                 systemSysCall = FALSE;

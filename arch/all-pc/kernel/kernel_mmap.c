@@ -201,7 +201,8 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
                     if (allocator == ALLOCATOR_TLSF)
                         mh = krnConvertMemHeaderToTLSF(mh);
 
-                    ADDTAIL(memList, mh);
+                    if (mh)
+                        ADDTAIL(memList, mh);
                     mh = NULL;
                     phys_start = ~0;
                 }
@@ -264,7 +265,8 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
             if (allocator == ALLOCATOR_TLSF)
                 mh = krnConvertMemHeaderToTLSF(mh);
 
-            ADDTAIL(memList, mh);
+            if (mh)
+                ADDTAIL(memList, mh);
         }
 
         reg++;
