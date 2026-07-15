@@ -199,6 +199,12 @@ void cpu_Dispatch(struct ExceptionContext *regs)
 #if DEBUG_XMM
 pseudorsp -= 16 * 8;
 #endif
+    /* Disable interrupts. core_LeaveInterrupt uses the passed argument as stack to restore registers and
+       do iretq. If interrupt fires before iretq, this interrupt is serviced on a "stack" that in reality
+       is memory before et_RegFrame, damaging that memory. Prevent that.
+     */
+    __asm__ __volatile__("cli;");
+
     /*
      * Leave interrupt and jump to the new task.
      * We will restore CPU state right from this buffer,
