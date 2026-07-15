@@ -23,7 +23,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#ifndef __OOP_NOATTRBASES__
 #define __OOP_NOATTRBASES__
+#endif
 
 #include "vesagfx_hidd.h"
 #include "vesagfx_support.h"
