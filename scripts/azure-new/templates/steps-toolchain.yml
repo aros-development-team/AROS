@@ -89,17 +89,17 @@ steps:
   artifact: 'toolchain-$(arosbuild.name)'
   displayName: 'Publish toolchain artifact (for Core/Contrib stages)'
 
-  # Prepare toolchain upload directory on SourceForge
-  - script: |
-      mkdir -p "$(Build.BinariesDirectory)/Prepare/uploads/nightly2"
-      rsync -avz -e ssh \
-        "$(Build.BinariesDirectory)/Prepare/uploads/" \
-        "$MAPPED_USER,arosdev@web.sourceforge.net:"
-      rm -rf "$(Build.BinariesDirectory)/Prepare"
-    env:
-      MAPPED_USER: $(SF_RSYNC_USER)
-    condition: and(ne(variables['SF_RSYNC_USER'], ''), ne(variables['arosbuild.deploy'], 'no'), eq(variables['arosbuild.withtoolchain'], 'yes'))
-    displayName: 'Preparing toolchain upload directory on SourceForge'
+ # Prepare toolchain upload directory on SourceForge
+- script: |
+    mkdir -p "$(Build.BinariesDirectory)/Prepare/uploads/nightly2"
+    rsync -avz -e ssh \
+      "$(Build.BinariesDirectory)/Prepare/uploads/" \
+      "$MAPPED_USER,arosdev@web.sourceforge.net:"
+    rm -rf "$(Build.BinariesDirectory)/Prepare"
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: and(ne(variables['SF_RSYNC_USER'], ''), ne(variables['arosbuild.deploy'], 'no'), eq(variables['arosbuild.withtoolchain'], 'yes'))
+  displayName: 'Preparing toolchain upload directory on SourceForge'
 
 - script: |
     mkdir -p ~/.ssh

@@ -34,16 +34,16 @@ steps:
   artifact: 'sources-$(arosbuild.name)'
   displayName: 'Publish source tarball artifacts'
 
-  # Create target directory on SourceForge web space
-  - script: |
-      mkdir -p "$(Build.BinariesDirectory)/Prepare/uploads/nightly2"
-      rsync -avz -e ssh \
-        "$(Build.BinariesDirectory)/Prepare/uploads/" \
-        "$MAPPED_USER,arosdev@web.sourceforge.net:"
-    env:
-      MAPPED_USER: $(SF_RSYNC_USER)
-    condition: ne( variables['SF_RSYNC_USER'], '' )
-    displayName: 'Preparing source package upload directory on SourceForge'
+# Create target directory on SourceForge web space
+- script: |
+    mkdir -p "$(Build.BinariesDirectory)/Prepare/uploads/nightly2"
+    rsync -avz -e ssh \
+      "$(Build.BinariesDirectory)/Prepare/uploads/" \
+      "$MAPPED_USER,arosdev@web.sourceforge.net:"
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: ne( variables['SF_RSYNC_USER'], '' )
+  displayName: 'Preparing source package upload directory on SourceForge'
 
 - script: |
     mkdir -p ~/.ssh
