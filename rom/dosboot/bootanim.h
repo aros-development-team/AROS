@@ -8,6 +8,7 @@ struct AnimData
     struct Library      *OOPBase;
     OOP_Object          *gfxhidd;
     UBYTE               **framedata;
+    struct BitMap       *srcbm;         /* planar source bitmap (NOMEDIA_PLANAR only) */
 
     IPTR                ad_State;
     UWORD               x;

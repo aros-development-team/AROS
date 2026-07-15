@@ -26,6 +26,20 @@ void WriteChunkRegion(struct DOSBootBase *DOSBootBase,
                                     struct RastPort *rp, UWORD x, UWORD y, UWORD width,
                                     UBYTE *data, UWORD regx, UWORD regy, UWORD regwidth, UWORD regheight)
 {
+    /* Native planar: blit the region straight from the planar source bitmap.
+     * The blitter does planar->planar in hardware - no per-pixel CPU C2P.
+     * srcbm is only set up when the image was emitted planar (m68k); otherwise
+     * it is NULL and we fall through to the chunky path. */
+    struct AnimData *ad = DOSBootBase->animData;
+
+    if (ad && ad->srcbm)
+    {
+        BltBitMap(ad->srcbm, regx, regy,
+                  rp->BitMap, x + regx, y + regy,
+                  regwidth, regheight, 0xC0 /* copy */, 0xFF, NULL);
+        return;
+    }
+
     WriteChunkyPixels(rp, x + regx, y + regy,
                                     x + regx + regwidth - 1, y + regy + regheight - 1,
                                     data + regx + (regy * width), width);
