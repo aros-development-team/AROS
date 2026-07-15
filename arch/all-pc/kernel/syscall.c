@@ -32,6 +32,11 @@ extern void kernel_cstart(const struct TagItem *);
 extern IPTR core_BSPReconfigure(struct KernBootPrivate *, UWORD);
 #endif
 
+#define DEBUG_XMM 0 /* Keep the same with x86_64-pc/kernel/kernel_cpu.c !! */
+#if DEBUG_XMM
+extern UBYTE *pseudorsp;
+#endif
+
 int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
@@ -47,6 +52,12 @@ int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *Kernel
         if ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == sc)
         {
             DSYSCALL(bug("[Kernel] %s: calling handler @ 0x%p\n", __func__, scHandler));
+#if DEBUG_XMM
+if (sc == SC_SUPERVISOR)
+{
+pseudorsp -= 16 * 8;
+}
+#endif
             scHandler->sc_SysCall(regs);
             if (scHandler->sc_Node.ln_Type == 1)
                 systemSysCall = FALSE;
