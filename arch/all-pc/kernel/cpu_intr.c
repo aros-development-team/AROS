@@ -282,6 +282,13 @@ for (int i = 0; i < 15; i++)                    \
     if (xmmpre[i] != xmmpost[i]) bug("diff in core_IRQHandle (%d) %lx vs %lx!!\n", i, xmmpre[i], xmmpost[i]);
 #endif
 
+
+/*
+    Naming convention:
+    struct ExceptionContext *regs - always represents an area on a valid stack
+    struct ExceptionContext *ctx - always represents et_RegFrame which is not a valid stack
+*/
+
 /* CPU exceptions are processed here */
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long int_number)
 {
