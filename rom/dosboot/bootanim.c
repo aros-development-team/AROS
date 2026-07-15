@@ -55,9 +55,8 @@ APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
     if (ad)
     {
         D(bug("[dosboot] %s: ad @ 0x%p\n", __func__, ad);)
-        DOSBootBase->blank_pointer = AllocMem(6*2, MEMF_CHIP | MEMF_CLEAR);
-        SetPointer(DOSBootBase->bm_Window, DOSBootBase->blank_pointer,
-                   1, 16, 0, 0);
+        /* The mouse pointer is blanked earlier (right after OpenWindow in
+           NoBootMediaScreen) so it doesn't linger during animation setup. */
         ad->ad_State |= STATEF_POINTERHIDE;
         SetAPen(&scr->RastPort, 0);
         RectFill(&scr->RastPort, 0, 0, scr->Width, scr->Height);
