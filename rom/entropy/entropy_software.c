@@ -60,6 +60,7 @@ ULONG Entropy_GatherSoftware(struct EntropyBase *EntropyBase,
     idle0 = sysBase->IdleCount;
     put_iptr(buffer, &pos, length, (IPTR)disp0);
     put_iptr(buffer, &pos, length, (IPTR)idle0);
+#if !defined(__AROSPLATFORM_SMP__)
     put_iptr(buffer, &pos, length,
              (IPTR)(((ULONG)sysBase->Quantum << 16) | (ULONG)sysBase->Elapsed));
     put_iptr(buffer, &pos, length,
@@ -67,6 +68,11 @@ ULONG Entropy_GatherSoftware(struct EntropyBase *EntropyBase,
                     ((ULONG)(UBYTE)sysBase->TDNestCnt << 16) |
                     ((ULONG)sysBase->SysFlags << 0) |
                     ((ULONG)sysBase->AttnResched << 8)));
+#else
+    put_iptr(buffer, &pos, length,
+             (IPTR)(((ULONG)sysBase->SysFlags << 0) |
+                    ((ULONG)sysBase->AttnResched << 8)));
+#endif
 
     /* Free-memory figures shift with every allocation in the system. */
     put_iptr(buffer, &pos, length, (IPTR)AvailMem(MEMF_ANY));
