@@ -1,0 +1,51 @@
+# steps-workspace.yml
+#
+# Creates the common workspace directory tree, computes the build id/date, and
+# sets up the per-target build/package directories. Shared by every build
+# stage.
+#
+# Parameters:
+#   cloneContrib  - "true" to git clone the contrib sources (only the Sources
+#                   and Contrib stages need them). Default "false".
+
+parameters:
+- name: cloneContrib
+  type: boolean
+  default: false
+
+steps:
+- script: |
+    mkdir -p '$(AROSBUILDSDIR)'
+    mkdir -p '$(AROSBUILDBINDIR)'
+    mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
+    mkdir -p '$(AROSPORTSSRCSDIR)'
+    mkdir -p '$(AROSLOGSDIR)'
+    echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
+    echo '##vso[task.prependpath]$(AROSBUILDSDIR)'
+    echo '##vso[task.prependpath]$(AROSPORTSSRCSDIR)'
+    echo '##vso[task.prependpath]$(AROSLOGSDIR)'
+    BUILDDATE=$(date -u +'%Y%m%d')
+    echo "##vso[task.setvariable variable=arosbuilddate;]$BUILDDATE"
+    echo "##vso[task.setvariable variable=arosbuildid;]AROS-$BUILDDATE"
+    echo "##vso[task.setvariable variable=AROSPACKAGEDIR;]$(AROSBUILDSDIR)/AROS-$BUILDDATE-$(arosbuild.name)-$(arosbuild.package)"
+    echo "Common BUILD dir '$(AROSBUILDSDIR)'"
+    echo "Common TOOLCHAIN dir '$(AROSBUILDTOOLCHAINDIR)'"
+    echo "Common PORTSSOURCES dir '$(AROSPORTSSRCSDIR)'"
+    echo "Common LOG dir '$(AROSLOGSDIR)'"
+  displayName: 'Setup common workspace'
+
+- ${{ if eq(parameters.cloneContrib, true) }}:
+  - script: |
+      mkdir -p '$(AROSCONTRIBSRCDIR)'
+      echo '##vso[task.prependpath]$(AROSCONTRIBSRCDIR)'
+      git clone --depth 1 --recurse-submodules https://github.com/aros-development-team/contrib.git $(AROSCONTRIBSRCDIR)/
+    displayName: 'Cloning contrib sources'
+
+- script: |
+    mkdir -p '$(AROSBUILDDIR)'
+    mkdir -p '$(AROSPACKAGEDIR)'
+    echo '##vso[task.prependpath]$(AROSBUILDDIR)'
+    echo '##vso[task.prependpath]$(AROSPACKAGEDIR)'
+    echo "Target BUILD dir '$(AROSBUILDDIR)'"
+    echo "Target PACKAGE dir '$(AROSPACKAGEDIR)'"
+  displayName: 'Setup $(arosbuild.name) workspace'

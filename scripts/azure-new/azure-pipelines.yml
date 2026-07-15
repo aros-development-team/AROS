@@ -1,0 +1,116 @@
+#
+# AROS staged Build pipeline
+#
+# Staged re-implementation of scripts/azure/azure-pipelines.yml. Builds a single
+# flavour defined by the pipeline variables, but splits the work across
+# dependent stages running on fresh agents so that no single agent has to hold
+# the toolchain build, the core build and contrib at once.
+#
+#   Sources    (parallel)  -> source + contrib-source tarballs
+#   Toolchain  (parallel)  -> cross toolchain (CACHED across runs; LLVM is not
+#                             rebuilt every night), published as an artifact
+#   Core       (needs A)   -> core + boot/main distfiles, base package, base
+#                             manifest, hosted unit tests
+#   Contrib    (needs A,C) -> contrib built self-contained against the toolchain,
+#                             packaged by diffing the Core base manifest
+#
+# The build SYSTEM is unchanged: a developer still builds all-in-one locally
+# with ./configure && make && make contrib. See README.md.
+#
+# Required pipeline variables (set per-flavour, same as the original pipeline):
+#    arosbuild.name, arosbuild.target, arosbuild.variant, arosbuild.package,
+#    arosbuild.packagefmt, arosbuild.vmimage, SF_RSYNC_USER, SF_RSYNC_PASSWORD
+# Optional:
+#    arosbuild.nativetoolchain, arosbuild.toolchain.family, arosbuild.gcc.version,
+#    arosbuild.llvm.version, arosbuild.bootpackage, arosbuild.bootpackagefmt,
+#    arosbuild.withcontrib, arosbuild.withtoolchain, arosbuild.withunittests,
+#    arosbuild.deploy, arosbuild.config.extra, arosbuild.log.parsetranslations
+#
+
+trigger:
+- master
+
+variables:
+  AROSBUILDTOOLCHAINDIR: '$(AZBUILDPATH)/toolchain'   # Location toolchains are installed in
+  AROSPORTSSRCSDIR:      '$(AZBUILDPATH)/portssources' # Location external sources are downloaded to.
+  AROSBUILDSDIR:         '$(AZBUILDPATH)/builds'       # Location builds are done in
+  AROSBUILDBINDIR:       '$(AZBUILDPATH)/binaires'     # Location built binaries are collected in
+  AROSLOGSDIR:           '$(AZBUILDPATH)/logs'         # Location logs are stored in.
+  AROSDISTFILESDIR:      '$(AZBUILDPATH)/distfiles'    # Location built binaries are copied to.
+  AZBUILDPATH:           '$(Build.BinariesDirectory)'  # workspace path
+  AROSBUILDDIR:          '$(AROSBUILDSDIR)/$(arosbuild.name)' # current builds directory
+  AROSSRCDIR:            '$(system.defaultWorkingDirectory)'  # Path to the source code
+  AROSCONTRIBSRCDIR:     '$(Agent.BuildDirectory)/s-contrib'  # Path to the contrib source code
+
+stages:
+# =============================================================================
+- stage: Sources
+  dependsOn: []
+  jobs:
+  - job: sources
+    timeoutInMinutes: 120
+    pool:
+      vmImage: '$(arosbuild.vmimage)'
+    steps:
+    - template: templates/steps-prepare-host.yml
+    - template: templates/steps-workspace.yml
+      parameters:
+        cloneContrib: true
+    - template: templates/steps-source-package.yml
+
+# =============================================================================
+- stage: Toolchain
+  dependsOn: []
+  jobs:
+  - job: toolchain
+    timeoutInMinutes: 360
+    pool:
+      vmImage: '$(arosbuild.vmimage)'
+    steps:
+    - template: templates/steps-prepare-host.yml
+    - template: templates/steps-workspace.yml
+    # Restore a previously-built toolchain so the heavy crosstools/LLVM build
+    # only runs when its inputs actually change. Restore to the SAME absolute
+    # path it was built at (the toolchain is not relocatable - see README).
+    - task: Cache@2
+      inputs:
+        key: 'aros-toolchain | "$(arosbuild.name)" | "$(arosbuild.toolchain.family)" | "$(arosbuild.gcc.version)" | "$(arosbuild.llvm.version)" | tools/crosstools/**'
+        path: '$(AROSBUILDTOOLCHAINDIR)'
+        cacheHitVar: TOOLCHAIN_RESTORED
+      displayName: 'Restore cached toolchain'
+    - template: templates/steps-darwin-hosttoolchain.yml
+    - template: templates/steps-toolchain.yml
+
+# =============================================================================
+- stage: Core
+  dependsOn: Toolchain
+  condition: succeeded()
+  jobs:
+  - job: core
+    timeoutInMinutes: 360
+    pool:
+      vmImage: '$(arosbuild.vmimage)'
+    steps:
+    - template: templates/steps-prepare-host.yml
+    - template: templates/steps-workspace.yml
+    - template: templates/steps-darwin-hosttoolchain.yml
+    - template: templates/steps-core.yml
+
+# =============================================================================
+- stage: Contrib
+  dependsOn:
+  - Toolchain
+  - Core
+  condition: and( succeeded(), eq( variables['arosbuild.withcontrib'], 'yes' ) )
+  jobs:
+  - job: contrib
+    timeoutInMinutes: 360
+    pool:
+      vmImage: '$(arosbuild.vmimage)'
+    steps:
+    - template: templates/steps-prepare-host.yml
+    - template: templates/steps-workspace.yml
+      parameters:
+        cloneContrib: true
+    - template: templates/steps-darwin-hosttoolchain.yml
+    - template: templates/steps-contrib.yml

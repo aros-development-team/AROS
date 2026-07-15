@@ -1,0 +1,108 @@
+# steps-unittests.yml
+#
+# Hosted CUnit unit testing. Runs inside the Core stage because that is where
+# the freshly-built base package exists locally (no re-download). Gated by
+# arosbuild.withunittests, exactly as in the original pipeline.
+
+steps:
+- script: |
+    brew uninstall --force node
+    brew uninstall --force npm
+    brew install node || sudo chown -R $(whoami) $(brew --prefix)/* && brew link --overwrite node
+    brew unlink md5sha1sum
+    brew list coreutils &>/dev/null || brew install coreutils
+    npm install -g junit-viewer
+    echo "##vso[task.setvariable variable=TIMEOUTCMD;]gtimeout"
+  condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), eq( variables['Agent.OS'], 'Darwin' ))
+  displayName: 'Install Node.js/npm for MacOS'
+
+- script: |
+    sudo apt-get install -y npm
+    sudo npm install -g junit-viewer
+    echo "##vso[task.setvariable variable=TIMEOUTCMD;]timeout"
+  condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['Agent.OS'], 'Darwin' ))
+  displayName: 'Install npm for Linux'
+
+- script: |
+    echo "Entered AROS Hosted Cunit Test Phase"
+    for oldfile in $(AROSBUILDBINDIR)/*; do
+        rm -Rf $oldfile
+    done
+    if [ -f "$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)" ]; then
+      echo "Preparing Host Environment"
+      if [[ "$(arosbuild.packagefmt)" = "zip" ]]; then
+        unzip $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -d $(AROSBUILDBINDIR)
+      else
+        if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]; then
+          tar xjf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -C $(AROSBUILDBINDIR)
+        else
+          if [[ "$(arosbuild.packagefmt)" = "lha" ]]; then
+            lha -x $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDBINDIR)
+          fi
+        fi
+      fi
+      cd $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)/
+      echo "Copying CUnit test scripts, and enabling headless operation"
+      cp $(AROSSRCDIR)/scripts/nightly/autotest/User-Startup.cunit S/User-Startup
+      cp $(AROSSRCDIR)/scripts/nightly/autotest/Try S/
+      cp $(AROSSRCDIR)/scripts/nightly/autotest/Test.cunit S/Test
+      mv Devs/Monitors/X1* Storage/Monitors
+      arosexetarget=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
+      arosexehost=${arosexetarget%% *}
+      sed -i.bak "s|Startup = 0|Startup = 1|g" ./Devs/DOSDrivers/DEBUG
+      rm ./Devs/DOSDrivers/DEBUG.bak
+      sed -i.bak "/module Devs\/Drivers\/gfx.hidd/a\\
+    module Storage\/Drivers\/headlessgfx.hidd" "./boot/$arosexehost/AROSBootstrap.conf"
+      rm "./boot/$arosexehost/AROSBootstrap.conf.bak"
+      chmod 744 "./boot/$arosexehost/AROSBootstrap"
+      echo "Launching CUnit tests under AROS $AGENT_OS hosted ..."
+      DISPLAY=:1 $(TIMEOUTCMD) 5m "./boot/$arosexehost/AROSBootstrap" || UNITTESTFAILFLAG="true"
+      for entry in ./*-Results.xml
+      do
+        if [ -f  "$entry" ]; then
+          sed "/^  <testsuite id=.*/a\\
+        <properties>\n      <property name=\"Build Toolchain\" value=\"$(TOOLCHAIN)\"/>\n      <property name=\"Host OS\" value=\"$(uname -a)\"/>\n    </properties>" "$entry" | iconv -c -t utf8 > "$(AROSLOGSDIR)/$entry"
+        fi
+      done
+      junit-viewer --results=$(AROSLOGSDIR)/ --save=$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html
+      if [ -f "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html" ]; then
+        sed -i.bak -e "s|</title>|</title>\n<link href=\"http://www.aros.org/aros.css?v=1.3\" type=\"text/css\" rel=\"stylesheet\">\n<link media=\"print\" href=\"http://www.aros.org/print.css\" type=\"text/css\" rel=\"stylesheet\">|g" -e "s|background-color:#FF1717|background-color:#F03030|g" -e "s|background-color:#E50000|background-color:#E55050|g" -e "s|background-color:#0CAB37|background-color:#46F788|g" -e "s|background-color:#0DBD3D|background-color:#20E070|g" -e "/<h1 class=\"/d" "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html"
+        rm "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html.bak"
+        rsync -avz -e ssh \
+            "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html" \
+            "$MAPPED_USER,arosdev@web.sourceforge.net:/home/project-web/arosdev/htdocs/unittests/"
+      fi
+    fi
+    echo "##vso[task.setvariable variable=UNITTESTFAILFLAG;]$UNITTESTFAILFLAG"
+    echo "AROS Hosted Cunit Test Phase completed"
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  continueOnError: true
+  condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['SF_RSYNC_USER'], '' ))
+  displayName: 'Performing Unit testing with CUnit'
+
+- task: CopyFiles@2
+  continueOnError: true
+  condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['UNITTESTFAILFLAG'], 'true' ))
+  inputs:
+    SourceFolder: '$(AROSLOGSDIR)'
+    contents: '**/*-Results.xml'
+    targetFolder: $(Build.ArtifactStagingDirectory)/publish/unittests
+
+- task: PublishBuildArtifacts@1
+  continueOnError: true
+  condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['UNITTESTFAILFLAG'], 'true' ))
+  displayName: Publish unit test build artifacts
+  inputs:
+    pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/unittests
+    artifactName: $(arosbuild.name) unit tests
+
+- task: PublishTestResults@2
+  continueOnError: true
+  condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['UNITTESTFAILFLAG'], 'true' ))
+  inputs:
+    testRunner: 'JUnit'
+    testResultsFiles: '**/*.xml'
+    testRunTitle: '$(AROSBUILDID)-$(arosbuild.name)'
+    platform: '$(arosbuild.name)'
+    searchFolder: '$(AROSLOGSDIR)'

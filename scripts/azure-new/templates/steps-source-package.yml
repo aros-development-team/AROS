@@ -1,0 +1,74 @@
+# steps-source-package.yml
+#
+# Sources stage: package the AROS and contrib source trees, publish them as a
+# pipeline artifact, and upload to SourceForge. Requires the contrib sources to
+# have been cloned (use steps-workspace.yml with cloneContrib: true).
+
+steps:
+- script: |
+    mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-source'
+    cp -r $(AROSSRCDIR)/* $(AROSBUILDSDIR)/$(AROSBUILDID)-source/
+    echo "Creating $(AROSBUILDID)-source.tar.bz2"
+    tar cjvf $(AROSBUILDID)-source.tar.bz2 --exclude=.git $(AROSBUILDID)-source
+    md5sum $(AROSBUILDID)-source.tar.bz2 >$(AROSBUILDID)-source.tar.bz2.md5
+    mv $(AROSBUILDID)-source.tar.bz2 $(AROSBUILDBINDIR)/
+    mv $(AROSBUILDID)-source.tar.bz2.md5 $(AROSBUILDBINDIR)/
+    rm -Rf $(AROSBUILDSDIR)/$(AROSBUILDID)-source
+  workingDirectory: '$(AROSBUILDSDIR)'
+  displayName: 'Creating AROS source package'
+
+- script: |
+    mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source'
+    cp -r $(AROSCONTRIBSRCDIR)/* $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source/
+    echo "Creating $(AROSBUILDID)-contrib-source.tar.bz2"
+    tar cjvf $(AROSBUILDID)-contrib-source.tar.bz2 --exclude=.git $(AROSBUILDID)-contrib-source
+    md5sum $(AROSBUILDID)-contrib-source.tar.bz2 >$(AROSBUILDID)-contrib-source.tar.bz2.md5
+    mv $(AROSBUILDID)-contrib-source.tar.bz2 $(AROSBUILDBINDIR)/
+    mv $(AROSBUILDID)-contrib-source.tar.bz2.md5 $(AROSBUILDBINDIR)/
+    rm -Rf $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source
+  workingDirectory: '$(AROSBUILDSDIR)'
+  displayName: 'Creating contrib source package'
+
+# Publish the source tarballs as a pipeline artifact (cross-stage/run accessible)
+- publish: '$(AROSBUILDBINDIR)'
+  artifact: 'sources-$(arosbuild.name)'
+  displayName: 'Publish source tarball artifacts'
+
+# Create target directory on SourceForge web space
+- bash: |
+    echo "Checking shell access..."
+    if ! ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
+      echo "Shell not active yet. Creating shell..."
+      ssh -t "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net create
+      echo "Waiting for shell to become active (retrying up to 5 times)..."
+      for i in $(seq 1 5); do
+        if ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
+          echo "Shell is ready."
+          break
+        else
+          echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
+          sleep 5
+        fi
+      done
+    else
+      echo "Shell already active."
+    fi
+    echo "Ensuring target directory exists on SourceForge..."
+    ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net \
+      "mkdir -p /home/project-web/arosdev/uploads/nightly2"
+  condition: ne( variables['SF_RSYNC_USER'], '' )
+  displayName: 'Preparing source package upload directory on SourceForge'
+
+- script: |
+    mkdir -p ~/.ssh
+    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources'
+    mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
+    mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
+    rsync -avz -e ssh \
+        $(Build.BinariesDirectory)/Upload/ \
+        "$MAPPED_USER,arosdev@web.sourceforge.net:uploads/nightly2/"
+    rm -Rf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: and( ne( variables['SF_RSYNC_USER'], '' ), ne( variables['arosbuild.deploy'], 'no' ) )
+  displayName: 'Deploying source package(s)'

@@ -1,0 +1,242 @@
+# steps-core.yml
+#
+# Core stage: build the core system + boot/main distfiles against the prebuilt
+# toolchain, package the base (and boot) distribution, emit the base file
+# manifest the Contrib stage needs, deploy, and run the hosted unit tests.
+#
+# Contrib is intentionally NOT built here, so the contrib sources/objects never
+# share this agent's disk with the core build.
+
+steps:
+# --- Restore the prebuilt toolchain to the SAME absolute path ----------------
+- download: current
+  artifact: 'toolchain-$(arosbuild.name)'
+  displayName: 'Download prebuilt toolchain'
+
+- script: |
+    mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
+    cp -a '$(Pipeline.Workspace)/toolchain-$(arosbuild.name)/.' '$(AROSBUILDTOOLCHAINDIR)/'
+    echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
+  displayName: 'Restore prebuilt toolchain'
+
+# --- Configure against the prebuilt toolchain --------------------------------
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      if [ -f /tmp/_aros_build_failed ]; then
+        exit 5
+      fi
+    }
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+        echo "Using PATH=$AROSBUILDENVPATH"
+    fi
+    execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR) --with-aros-toolchain=yes
+  workingDirectory: '$(AROSBUILDDIR)'
+  displayName: 'Configuring $(arosbuild.name)'
+
+# --- Build core --------------------------------------------------------------
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      if [ -f /tmp/_aros_build_failed ]; then
+        exit 5
+      fi
+    }
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+        echo "Using PATH=$AROSBUILDENVPATH"
+    fi
+    execute make -j $(BUILDTHREADS)
+  workingDirectory: '$(AROSBUILDDIR)'
+  displayName: 'Build $(arosbuild.name) core system'
+
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+    }
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+        echo "Using PATH=$AROSBUILDENVPATH"
+    fi
+    execute make -j $(BUILDTHREADS) boot-distfiles
+    if [ -f /tmp/_aros_build_failed ]; then
+      touch /tmp/_aros_boot_build_failed
+      rm /tmp/_aros_build_failed
+      rm -Rf $(AROSBUILDDIR)/distfiles
+      echo '##vso[task.complete result=SucceededWithIssues;]DONE'
+    else
+      if [ -d "$(AROSBUILDDIR)/distfiles" ]; then
+        mv distfiles distfiles-boot
+      fi
+    fi
+  workingDirectory: '$(AROSBUILDDIR)'
+  displayName: 'Build $(arosbuild.name) boot distfiles'
+
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+    }
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+        echo "Using PATH=$AROSBUILDENVPATH"
+    fi
+    execute make -j $(BUILDTHREADS) distfiles
+    if [ -f /tmp/_aros_build_failed ]; then
+      touch /tmp/_aros_distfiles_build_failed
+      rm /tmp/_aros_build_failed
+      rm -Rf $(AROSBUILDDIR)/distfiles
+      echo '##vso[task.complete result=SucceededWithIssues;]DONE'
+    fi
+  workingDirectory: '$(AROSBUILDDIR)'
+  displayName: 'Build $(arosbuild.name) main distfiles'
+
+# --- Emit the base file manifest the Contrib stage diffs against -------------
+# This is the staged replacement for the in-place "AROS.precontrib" full copy.
+# It is a path list of the fully-built base tree; the Contrib stage packages
+# exactly the files NOT present here (identical semantics to the old recursive
+# existence diff, for a few KB instead of a second copy of the tree).
+- script: |
+    AROSROOT="$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS"
+    if [ -d "$AROSROOT" ]; then
+      ( cd "$AROSROOT" && find . \( -type f -o -type l \) | LC_ALL=C sort ) > $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-base.manifest
+    fi
+  displayName: 'Emit base file manifest for contrib'
+
+- publish: '$(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-base.manifest'
+  artifact: 'base-manifest-$(arosbuild.name)'
+  condition: eq( variables['arosbuild.withcontrib'], 'yes' )
+  displayName: 'Publish base manifest (for Contrib stage)'
+
+# --- Package the base (and boot) distribution --------------------------------
+- script: |
+    if [ -d "$(AROSBUILDDIR)/distfiles-boot" ]; then
+      if [ ! -f /tmp/_aros_boot_build_failed ]; then
+        mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
+        cp -r $(AROSBUILDDIR)/distfiles-boot/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+        cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+        cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+        echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt)"
+        if [[ "$(arosbuild.bootpackagefmt)" = "zip" ]]; then
+          zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+        else
+          if [[ "$(arosbuild.bootpackagefmt)" = "tar.bz2" ]]; then
+            tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+          else
+            if [[ "$(arosbuild.bootpackagefmt)" = "lha" ]]; then
+              lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+            fi
+          fi
+        fi
+        md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt).md5
+        mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDBINDIR)/
+        mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt).md5 $(AROSBUILDBINDIR)/
+        rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
+      fi
+    fi
+    if [ ! -f /tmp/_aros_distfiles_build_failed ]; then
+      cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
+      cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
+      cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSPACKAGEDIR)/
+      echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)"
+      if [[ "$(arosbuild.packagefmt)" = "zip" ]]; then
+        zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+      else
+        if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]; then
+          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+        else
+          if [[ "$(arosbuild.packagefmt)" = "lha" ]]; then
+            lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+          fi
+        fi
+      fi
+      md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
+      mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDBINDIR)/
+      mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5 $(AROSBUILDBINDIR)/
+      rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)'
+    fi
+    rm -Rf $(AROSPACKAGEDIR)
+  workingDirectory: '$(AROSBUILDSDIR)'
+  displayName: 'Creating $(arosbuild.name) base package(s)'
+
+- script: |
+    grep "missing translation" $(arosbuild.package)-$(arosbuild.name).log > translations-missing.txt
+    grep "trailing ellipsis" $(arosbuild.package)-$(arosbuild.name).log > translations-ellipsis.txt
+    grep "trailing blanks for identifier" $(arosbuild.package)-$(arosbuild.name).log > translations-blanks.txt
+    grep "mismatching placeholders" $(arosbuild.package)-$(arosbuild.name).log > translations-placeholders.txt
+    grep "missing in catalog description" $(arosbuild.package)-$(arosbuild.name).log > translations-notincatalog.txt
+    grep "UTF8 conversion failed" $(arosbuild.package)-$(arosbuild.name).log > translations-utf8.txt
+  workingDirectory: '$(AROSLOGSDIR)'
+  condition: eq( variables['arosbuild.log.parsetranslations'], 'yes' )
+  displayName: 'Parsing translation errors in build log..'
+
+- script: |
+    cd $(AROSBUILDDIR)
+    for deplog in *.deplog; do
+      if [ -f $deplog ]; then
+        bzip2 $deplog
+        md5sum $deplog.bz2 > $(AROSLOGSDIR)/$deplog.bz2.md5
+        mv $deplog.bz2 $(AROSLOGSDIR)/$deplog.bz2
+      fi
+    done
+    cd $(AROSLOGSDIR)
+    bzip2 $(arosbuild.package)-$(arosbuild.name).log
+    md5sum $(arosbuild.package)-$(arosbuild.name).log.bz2 >$(arosbuild.package)-$(arosbuild.name).log.bz2.md5
+  workingDirectory: '$(AROSBUILDSDIR)'
+  displayName: 'Preparing $(arosbuild.name) Logs(s)'
+  condition: always()
+
+# --- Publish + deploy base/boot distfiles ------------------------------------
+- publish: '$(AROSBUILDBINDIR)'
+  artifact: 'distfiles-$(arosbuild.name)'
+  displayName: 'Publish distfiles artifacts'
+
+- script: |
+    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
+    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure'
+    mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/ 2>/dev/null || true
+    if [ -f $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) ]; then
+      mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
+    fi
+    mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/ 2>/dev/null || true
+    mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/ 2>/dev/null || true
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: ne( variables['SF_RSYNC_USER'], '' )
+  displayName: 'Staging base build for deployment'
+
+- script: |
+    rsync -avz -e ssh \
+        $(Build.BinariesDirectory)/Upload/ \
+        "$MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/"
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: and( ne( variables['SF_RSYNC_USER'], '' ), ne( variables['arosbuild.deploy'], 'no' ) )
+  displayName: 'Deploying base build'
+
+# --- Hosted unit tests (the base package exists locally on this agent) -------
+- template: steps-unittests.yml

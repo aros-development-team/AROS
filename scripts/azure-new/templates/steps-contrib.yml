@@ -1,0 +1,142 @@
+# steps-contrib.yml
+#
+# Contrib stage: build contrib against the prebuilt toolchain, self-contained.
+# MetaMake builds only includes+linklibs (the SDK) plus contrib here - the full
+# core ROM/distfiles are never built or present, so the heavy contrib sources
+# and objects get a fresh agent's whole disk to themselves.
+#
+# Requires the contrib sources cloned (steps-workspace.yml cloneContrib: true).
+#
+# The contrib package is selected by diffing the built tree against the base
+# file manifest produced by the Core stage (identical semantics to the original
+# AROS-vs-AROS.precontrib existence diff, without the second full tree copy).
+
+steps:
+# --- Restore the prebuilt toolchain to the SAME absolute path ----------------
+- download: current
+  artifact: 'toolchain-$(arosbuild.name)'
+  displayName: 'Download prebuilt toolchain'
+
+- script: |
+    mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
+    cp -a '$(Pipeline.Workspace)/toolchain-$(arosbuild.name)/.' '$(AROSBUILDTOOLCHAINDIR)/'
+    echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
+  displayName: 'Restore prebuilt toolchain'
+
+# --- Get the base file manifest from the Core stage --------------------------
+- download: current
+  artifact: 'base-manifest-$(arosbuild.name)'
+  displayName: 'Download base file manifest'
+
+# --- Configure against the prebuilt toolchain --------------------------------
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      if [ -f /tmp/_aros_build_failed ]; then
+        exit 5
+      fi
+    }
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+        echo "Using PATH=$AROSBUILDENVPATH"
+    fi
+    execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR) --with-aros-toolchain=yes
+  workingDirectory: '$(AROSBUILDDIR)'
+  displayName: 'Configuring $(arosbuild.name) (contrib)'
+
+# --- Build contrib -----------------------------------------------------------
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+    }
+    mv $(AROSCONTRIBSRCDIR) $(AROSSRCDIR)/contrib
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+        echo "Using PATH=$AROSBUILDENVPATH"
+    fi
+    execute make -j $(BUILDTHREADS) contrib
+    mv $(AROSSRCDIR)/contrib $(AROSCONTRIBSRCDIR)
+    if [ -f /tmp/_aros_build_failed ]; then
+      touch /tmp/_aros_contrib_build_failed
+      rm /tmp/_aros_build_failed
+      echo '##vso[task.complete result=SucceededWithIssues;]DONE'
+    fi
+  workingDirectory: '$(AROSBUILDDIR)'
+  displayName: 'Build $(arosbuild.name) contrib'
+
+# --- Package contrib (= built tree minus the base manifest) ------------------
+- script: |
+    if [ ! -f /tmp/_aros_contrib_build_failed ]; then
+      AROSROOT="$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS"
+      BASEMANIFEST=$(ls $(Pipeline.Workspace)/base-manifest-$(arosbuild.name)/*-base.manifest 2>/dev/null | head -1)
+      if [ -z "$BASEMANIFEST" ]; then
+        echo "ERROR: base manifest from Core stage not found"; exit 1
+      fi
+      mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
+      ( cd "$AROSROOT" && find . \( -type f -o -type l \) | LC_ALL=C sort ) > /tmp/postcontrib.lst
+      # contrib-added files = present after contrib build but NOT in the base
+      LC_ALL=C comm -13 "$BASEMANIFEST" /tmp/postcontrib.lst > /tmp/contrib-new.lst
+      echo "contrib added `wc -l < /tmp/contrib-new.lst` files"
+      while IFS= read -r f; do
+        rel="${f#./}"
+        dest="$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$rel"
+        mkdir -p "${dest%/*}"
+        cp "$AROSROOT/$rel" "$dest"
+      done < /tmp/contrib-new.lst
+      cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+      cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+      tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
+      md5sum $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 >$(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5
+      mv $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDBINDIR)/
+      mv $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5 $(AROSBUILDBINDIR)/
+      rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
+    fi
+  workingDirectory: '$(AROSBUILDSDIR)'
+  displayName: 'Creating $(arosbuild.name) contrib package'
+
+- script: |
+    cd $(AROSLOGSDIR)
+    if [ -f $(arosbuild.package)-$(arosbuild.name).log ]; then
+      bzip2 $(arosbuild.package)-$(arosbuild.name).log
+      md5sum $(arosbuild.package)-$(arosbuild.name).log.bz2 >$(arosbuild.package)-$(arosbuild.name).log.bz2.md5
+    fi
+  workingDirectory: '$(AROSBUILDSDIR)'
+  displayName: 'Preparing $(arosbuild.name) contrib log(s)'
+  condition: always()
+
+# --- Publish + deploy contrib ------------------------------------------------
+- publish: '$(AROSBUILDBINDIR)'
+  artifact: 'contrib-$(arosbuild.name)'
+  displayName: 'Publish contrib artifacts'
+
+- script: |
+    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
+    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure'
+    mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/ 2>/dev/null || true
+    mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/contrib-$(arosbuild.name).log.bz2 2>/dev/null || true
+    mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/contrib-$(arosbuild.name).log.bz2.md5 2>/dev/null || true
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: ne( variables['SF_RSYNC_USER'], '' )
+  displayName: 'Staging contrib build for deployment'
+
+- script: |
+    rsync -avz -e ssh \
+        $(Build.BinariesDirectory)/Upload/ \
+        "$MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/"
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: and( ne( variables['SF_RSYNC_USER'], '' ), ne( variables['arosbuild.deploy'], 'no' ) )
+  displayName: 'Deploying contrib build'

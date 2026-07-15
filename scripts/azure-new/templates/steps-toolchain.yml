@@ -1,0 +1,128 @@
+# steps-toolchain.yml
+#
+# Toolchain stage: build the AROS cross toolchain into $(AROSBUILDTOOLCHAINDIR)
+# and hand it forward as a pipeline artifact. The expensive crosstools/LLVM
+# build is skipped when the Cache@2 task in the orchestrator restored the
+# toolchain (cacheHitVar: TOOLCHAIN_RESTORED) - this is what stops LLVM being
+# rebuilt on every nightly.
+#
+# Pre-req in the orchestrator job (before this template):
+#   - task: Cache@2
+#     inputs:
+#       key: 'aros-toolchain | "$(arosbuild.name)" | ... | tools/crosstools/**'
+#       path: '$(AROSBUILDTOOLCHAINDIR)'
+#       cacheHitVar: TOOLCHAIN_RESTORED
+
+steps:
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      if [ -f /tmp/_aros_build_failed ]; then
+        exit 5
+      fi
+    }
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+        echo "Using PATH=$AROSBUILDENVPATH"
+    fi
+    execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR)
+  workingDirectory: '$(AROSBUILDDIR)'
+  condition: ne( variables['TOOLCHAIN_RESTORED'], 'true' )
+  displayName: 'Configuring $(arosbuild.name) $(TOOLCHAIN) toolchain (cache miss)'
+
+- script: |
+    cp config.* $(AROSLOGSDIR)
+  workingDirectory: '$(AROSBUILDDIR)'
+  condition: and( ne( variables['TOOLCHAIN_RESTORED'], 'true' ), eq( variables['Agent.OS'], 'Darwin' ))
+  displayName: 'Gathering MacOS config logs'
+
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      if [ -f /tmp/_aros_build_failed ]; then
+        exit 5
+      fi
+    }
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+    fi
+    execute make -j $(BUILDTHREADS) crosstools
+    rm -Rf $(AROSBUILDDIR)/bin
+  workingDirectory: '$(AROSBUILDDIR)'
+  condition: ne( variables['TOOLCHAIN_RESTORED'], 'true' )
+  displayName: 'Build $(arosbuild.name) $(TOOLCHAIN) toolchain (cache miss)'
+
+- script: |
+    echo "Toolchain restored from cache - skipping crosstools build."
+  condition: eq( variables['TOOLCHAIN_RESTORED'], 'true' )
+  displayName: 'Toolchain restored from cache'
+
+# Tar the toolchain for the SourceForge Developer_Tools upload, then drop the
+# (now redundant) build directory. Runs whether the toolchain was built or
+# restored from cache.
+- script: |
+    cd $(AROSBUILDTOOLCHAINDIR)/../
+    tar cjvf $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 toolchain
+    md5sum $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 >$(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5
+    mv $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 $(AROSBUILDBINDIR)/
+    mv $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5 $(AROSBUILDBINDIR)/
+    rm -Rf $(AROSBUILDDIR)/*
+  workingDirectory: '$(AROSBUILDDIR)'
+  displayName: 'Packaging $(arosbuild.name) toolchain'
+
+# Hand the toolchain *directory* forward to the Core and Contrib stages.
+# Restore it to the SAME absolute path it was built at (see README - the
+# toolchain is not relocatable).
+- publish: '$(AROSBUILDTOOLCHAINDIR)'
+  artifact: 'toolchain-$(arosbuild.name)'
+  displayName: 'Publish toolchain artifact (for Core/Contrib stages)'
+
+# Create target directory on SourceForge web space
+- bash: |
+    echo "Checking shell access..."
+    if ! ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
+      echo "Shell not active yet. Creating shell..."
+      ssh -t "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net create
+      echo "Waiting for shell to become active (retrying up to 5 times)..."
+      for i in $(seq 1 5); do
+        if ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
+          echo "Shell is ready."
+          break
+        else
+          echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
+          sleep 5
+        fi
+      done
+    else
+      echo "Shell already active."
+    fi
+    echo "Ensuring target directory exists on SourceForge..."
+    ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net \
+      "mkdir -p /home/project-web/arosdev/uploads/nightly2"
+  condition: and(ne(variables['SF_RSYNC_USER'], ''), ne(variables['arosbuild.deploy'], 'no'), eq(variables['arosbuild.withtoolchain'], 'yes'))
+  displayName: 'Preparing toolchain upload directory on SourceForge'
+
+- script: |
+    mkdir -p ~/.ssh
+    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/'
+    mv $(AROSBUILDBINDIR)/$(AROSBUILDID)*-toolchain* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/
+    rsync -avz -e ssh \
+         $(Build.BinariesDirectory)/Upload/ \
+         "$MAPPED_USER,arosdev@web.sourceforge.net:uploads/nightly2/"
+    rm -Rf '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)'
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: and( eq( variables['arosbuild.withtoolchain'], 'yes' ), ne( variables['SF_RSYNC_USER'], '' ))
+  displayName: 'Deploying toolchain'
