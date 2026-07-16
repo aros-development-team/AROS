@@ -106,6 +106,11 @@ void core_Switch(void)
 
     DSCHED(bug("[Kernel:%02d] core_Switch(%08x)\n", cpunum, task->tc_State));
 
+    /* Preserve the Disable() nest count for every outgoing task, not only
+     * TS_RUN ones: Wait() switches away in TS_WAIT holding a Disable() level
+     * and relies on Switch() to restore it. */
+    task->tc_IDNestCnt = IDNESTCOUNT_GET;
+
     if (task->tc_State == TS_RUN)
     {
         DSCHED(bug("[Kernel:%02d] Switching away from '%s' @ 0x%p\n", cpunum, task->tc_Node.ln_Name, task));
@@ -136,8 +141,6 @@ void core_Switch(void)
 
             Alert(AN_StackProbe);
         }
-
-        task->tc_IDNestCnt = IDNESTCOUNT_GET;
 
         if (task->tc_Flags & TF_SWITCH)
             AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
