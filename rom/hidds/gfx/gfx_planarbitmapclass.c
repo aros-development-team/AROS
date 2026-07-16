@@ -417,6 +417,78 @@ ULONG PBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 /****************************************************************************************/
 
 /*
+ * Fast planar FillRect: fill whole bytes per bitplane row instead of going
+ * through the generic per-pixel DrawLine/PutPixel path (which is ~8x the work
+ * and pays per-pixel OOP dispatch). Each plane row is set to 0x00 or 0xFF for
+ * that plane's bit of the fill pen, with partial start/end bytes masked. Only
+ * the plain Copy draw mode is handled here; other modes fall back to super.
+ */
+VOID PBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o,
+                                struct pHidd_BitMap_DrawRect *msg)
+{
+    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    struct BitMap        *bm = data->bitmap;
+    HIDDT_Pixel           fg;
+    HIDDT_DrawMode        mode;
+    WORD                  x1, y1, x2, y2, y;
+    ULONG                 firstbyte, lastbyte, rowoffset;
+    UBYTE                 leftmask, rightmask;
+    UBYTE                 d;
+
+    mode = GC_DRMD(msg->gc);
+    if (!bm || mode != vHidd_GC_DrawMode_Copy)
+    {
+        /* Rare draw modes: keep the generic (correct) implementation. */
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+
+    fg = GC_FG(msg->gc);
+    x1 = msg->minX; y1 = msg->minY;
+    x2 = msg->maxX; y2 = msg->maxY;
+
+    firstbyte = x1 >> 3;
+    lastbyte  = x2 >> 3;
+    /* Bits set within the first/last (partial) bytes; MSB is leftmost pixel. */
+    leftmask  = 0xFF >> (x1 & 7);
+    rightmask = 0xFF << (7 - (x2 & 7));
+
+    for (d = 0; d < bm->Depth; d++)
+    {
+        UBYTE *plane = bm->Planes[d];
+        UBYTE  planefill;
+
+        if (plane == NULL || plane == (UBYTE *)-1)
+            continue;
+
+        planefill = (fg & (1 << d)) ? 0xFF : 0x00;
+        rowoffset = y1 * (ULONG)bm->BytesPerRow;
+
+        for (y = y1; y <= y2; y++, rowoffset += bm->BytesPerRow)
+        {
+            UBYTE *row = plane + rowoffset;
+
+            if (firstbyte == lastbyte)
+            {
+                UBYTE m = leftmask & rightmask;
+                row[firstbyte] = (row[firstbyte] & ~m) | (planefill & m);
+            }
+            else
+            {
+                ULONG b;
+
+                row[firstbyte] = (row[firstbyte] & ~leftmask) | (planefill & leftmask);
+                for (b = firstbyte + 1; b < lastbyte; b++)
+                    row[b] = planefill;
+                row[lastbyte] = (row[lastbyte] & ~rightmask) | (planefill & rightmask);
+            }
+        }
+    }
+}
+
+/****************************************************************************************/
+
+/*
  * In fact these two routines are implementations of C2P algorighm. The first one takes chunky
  * array of 8-bit values, the second one - 32-bit one.
  */

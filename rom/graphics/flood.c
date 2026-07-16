@@ -22,8 +22,59 @@ struct fillinfo {
     ULONG rp_width;
     ULONG rp_height;
 
+    /*
+     * Fast path for a plain planar bitmap with no layer: read/write pixel
+     * pens directly from the bitplanes instead of paying per-pixel ReadPixel/
+     * WritePixel OOP dispatch. planar_bm is NULL when the fast path can't be
+     * used (layered rastport, HIDD/RTG bitmap), and the code falls back to the
+     * graphics.library calls.
+     */
+    struct BitMap *planar_bm;
+    ULONG planar_bpr;
+    UBYTE planar_depth;
+
     struct GfxBase *gfxbase;
 };
+
+/* Direct planar pixel read: assemble the pen from one bit of each plane. */
+static ULONG planar_readpixel(struct fillinfo *fi, LONG x, LONG y)
+{
+    struct BitMap *bm = fi->planar_bm;
+    ULONG offset = (ULONG)y * fi->planar_bpr + (x >> 3);
+    UBYTE bit = 128 >> (x & 7);
+    ULONG pen = 0;
+    UBYTE d;
+
+    for (d = 0; d < fi->planar_depth; d++) {
+        UBYTE *plane = bm->Planes[d];
+        if (plane != NULL && plane != (UBYTE *)-1) {
+            if (plane[offset] & bit)
+                pen |= (1 << d);
+        } else if (plane == (UBYTE *)-1) {
+            pen |= (1 << d);
+        }
+    }
+    return pen;
+}
+
+/* Direct planar pixel write of pen value. */
+static void planar_writepixel(struct fillinfo *fi, LONG x, LONG y, ULONG pen)
+{
+    struct BitMap *bm = fi->planar_bm;
+    ULONG offset = (ULONG)y * fi->planar_bpr + (x >> 3);
+    UBYTE bit = 128 >> (x & 7);
+    UBYTE d;
+
+    for (d = 0; d < fi->planar_depth; d++) {
+        UBYTE *plane = bm->Planes[d];
+        if (plane == NULL || plane == (UBYTE *)-1)
+            continue;
+        if (pen & (1 << d))
+            plane[offset] |= bit;
+        else
+            plane[offset] &= ~bit;
+    }
+}
 
 static VOID settmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr, UBYTE state);
 static BOOL gettmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr);
@@ -152,6 +203,20 @@ static int pix_written;
     fi.orig_apen = GetAPen(rp);
     fi.orig_bpen = GetBPen(rp);
 
+    /*
+     * Enable the direct-planar fast path only for a plain, unlayered standard
+     * planar bitmap. Anything with a layer (clipping/scroll) or a HIDD/RTG
+     * bitmap keeps the safe ReadPixel/WritePixel path.
+     */
+    fi.planar_bm = NULL;
+    if (rp->Layer == NULL && rp->BitMap != NULL &&
+        (rp->BitMap->Flags & BMF_STANDARD) && !IS_HIDD_BM(rp->BitMap))
+    {
+        fi.planar_bm    = rp->BitMap;
+        fi.planar_bpr   = rp->BitMap->BytesPerRow;
+        fi.planar_depth = rp->BitMap->Depth;
+    }
+
     fi.gfxbase = GfxBase;
 
     D(bug("Calling filline\n"));
@@ -218,7 +283,9 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
         fail_count ++;
 #endif
     } else {
-        fill = (fi->fillpen == ReadPixel(fi->rp, x, y));
+        ULONG pen = fi->planar_bm ? planar_readpixel(fi, x, y)
+                                  : ReadPixel(fi->rp, x, y);
+        fill = (fi->fillpen == pen);
     }
 
     return fill;
@@ -240,7 +307,9 @@ static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
         fail_count ++;
 #endif
     } else {
-        fill = (fi->fillpen != ReadPixel(fi->rp, x, y));
+        ULONG pen = fi->planar_bm ? planar_readpixel(fi, x, y)
+                                  : ReadPixel(fi->rp, x, y);
+        fill = (fi->fillpen != pen);
     }
 
     /*    D(bug("fillpen: %d, pen: %d\n", fi->fillpen, ReadPixel(fi->rp, x, y)));
@@ -274,8 +343,13 @@ static VOID putfillpixel(struct fillinfo *fi, LONG x, LONG y)
     }
 
     if(set_pixel) {
-        SetAPen(fi->rp, pixval);
-        WritePixel(fi->rp, x, y);
+        /* Fast path: no pattern and a plain planar bitmap -> write directly. */
+        if(fi->planar_bm && !fi->rp->AreaPtrn) {
+            planar_writepixel(fi, x, y, pixval);
+        } else {
+            SetAPen(fi->rp, pixval);
+            WritePixel(fi->rp, x, y);
+        }
     }
 
 #endif
