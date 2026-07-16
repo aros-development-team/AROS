@@ -74,10 +74,10 @@ steps:
 # restored from cache.
 - script: |
     cd $(AROSBUILDTOOLCHAINDIR)/../
-    tar cjvf $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 toolchain
-    md5sum $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 >$(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5
-    mv $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 $(AROSBUILDBINDIR)/
-    mv $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5 $(AROSBUILDBINDIR)/
+    tar cjvf $(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 toolchain
+    md5sum $(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 >$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5
+    mv $(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 $(AROSBUILDBINDIR)/
+    mv $(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5 $(AROSBUILDBINDIR)/
     rm -Rf $(AROSBUILDDIR)/*
   workingDirectory: '$(AROSBUILDDIR)'
   displayName: 'Packaging $(arosbuild.name) toolchain'
@@ -85,7 +85,7 @@ steps:
 # Hand the toolchain *directory* forward to the Core and Contrib stages.
 # Restore it to the SAME absolute path it was built at (see README - the
 # toolchain is not relocatable).
-- publish: '$(AROSBUILDBINDIR)/$(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2'
+- publish: '$(AROSBUILDBINDIR)/$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2'
   artifact: 'toolchain-$(arosbuild.name)'
   displayName: 'Publish toolchain artifact (for Core/Contrib stages)'
 

@@ -18,8 +18,8 @@ steps:
   displayName: 'Download prebuilt toolchain'
 
 - script: |
-    mkdir -p '$(AROSBUILDTOOLCHAINDIR)/..'
-    tar xjvf '$(Pipeline.Workspace)/toolchain-$(arosbuild.name)/$(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2' \
+    mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
+    tar xjvf '$(Pipeline.Workspace)/toolchain-$(arosbuild.name)/$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2' \
         -C '$(AROSBUILDTOOLCHAINDIR)/..'
     echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
   displayName: 'Restore prebuilt toolchain'
