@@ -137,7 +137,68 @@ void query_vmem()
     boottag->ti_Data = AROS_LE2LONG(vc_msg[5]) + AROS_LE2LONG(vc_msg[6]);
     boottag++;
 
-    mmu_map_section(AROS_LE2LONG(vc_msg[5]), AROS_LE2LONG(vc_msg[5]), AROS_LE2LONG(vc_msg[6]), 1, 0, 3, 0);
+    /* Normal Non-Cacheable rather than Device: the GPU pool and framebuffer
+     * live here, and NC lets CPU/NEON writes write-combine while staying
+     * uncached-coherent with GPU/DMA/HVS reads (drained by the dsb at each
+     * submit/kick). Clip against the peripheral window. */
+    uint32_t vc_base = AROS_LE2LONG(vc_msg[5]);
+    uint32_t vc_len  = AROS_LE2LONG(vc_msg[6]);
+
+    if (vc_base + vc_len > __arm_periiobase)
+        vc_len = __arm_periiobase - vc_base;
+
+    mmu_map_section(vc_base, vc_base, vc_len, 0, 0, 3, 1);
+}
+
+/* Firmware boots the ARM core in a temporary turbo window and later drops it
+ * to the setpoint; with no cpufreq governor it stays there. Request the max
+ * rate once (firmware still enforces thermal/undervolt limits). */
+void setup_arm_clock()
+{
+    volatile unsigned int *vc_msg = (unsigned int *) BOOTMEMADDR(bm_mboxmsg);
+    uint32_t arm_cur, arm_max;
+
+    vc_msg[0] = AROS_LONG2LE(8 * 4);
+    vc_msg[1] = AROS_LONG2LE(VCTAG_REQ);
+    vc_msg[2] = AROS_LONG2LE(VCTAG_GETCLKRATE);
+    vc_msg[3] = AROS_LONG2LE(8);
+    vc_msg[4] = AROS_LONG2LE(4);
+    vc_msg[5] = AROS_LONG2LE(3);            /* clock id 3 = ARM */
+    vc_msg[6] = 0;
+    vc_msg[7] = 0;
+    vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vc_msg);
+    vc_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+    arm_cur = AROS_LE2LONG(vc_msg[6]);
+
+    vc_msg[0] = AROS_LONG2LE(8 * 4);
+    vc_msg[1] = AROS_LONG2LE(VCTAG_REQ);
+    vc_msg[2] = AROS_LONG2LE(VCTAG_GETCLKMAX);
+    vc_msg[3] = AROS_LONG2LE(8);
+    vc_msg[4] = AROS_LONG2LE(4);
+    vc_msg[5] = AROS_LONG2LE(3);
+    vc_msg[6] = 0;
+    vc_msg[7] = 0;
+    vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vc_msg);
+    vc_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+    arm_max = AROS_LE2LONG(vc_msg[6]);
+
+    kprintf("[BOOT] ARM clock: setpoint %u Hz, max %u Hz\n", arm_cur, arm_max);
+
+    if (arm_max && arm_cur < arm_max)
+    {
+        vc_msg[0] = AROS_LONG2LE(9 * 4);
+        vc_msg[1] = AROS_LONG2LE(VCTAG_REQ);
+        vc_msg[2] = AROS_LONG2LE(VCTAG_SETCLKRATE);
+        vc_msg[3] = AROS_LONG2LE(12);
+        vc_msg[4] = AROS_LONG2LE(12);
+        vc_msg[5] = AROS_LONG2LE(3);
+        vc_msg[6] = AROS_LONG2LE(arm_max);
+        vc_msg[7] = 0;
+        vc_msg[8] = 0;
+        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vc_msg);
+        vc_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+        kprintf("[BOOT] ARM clock set to %u Hz\n", AROS_LE2LONG(vc_msg[6]));
+    }
 }
 
 void query_memory()
@@ -368,6 +429,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
     query_memory();
     query_vmem();
+    setup_arm_clock();
 
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);
 
