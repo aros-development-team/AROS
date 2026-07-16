@@ -166,7 +166,11 @@ AROS_UFH3(ULONG, wbFilterIcons_Hook,
         return FALSE;
 
     i = strlen(ead->ed_Name);
-    if (i >= 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
+    /* i > 5 (not >= 5) so a bare ".info" - the directory's own icon marker,
+     * e.g. the volume's disk-icon entry - is rejected rather than stripped to
+     * an empty name. A stripped-to-empty entry otherwise renders as a nameless
+     * ghost icon (it resolves to the drawer/volume disk.info image). */
+    if (i > 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
         ead->ed_Name[i-5] = 0;
         return TRUE;
     }
@@ -175,7 +179,7 @@ AROS_UFH3(ULONG, wbFilterIcons_Hook,
         return FALSE;
 
     return FALSE;
-    
+
     AROS_USERFUNC_EXIT
 }
 
@@ -191,8 +195,13 @@ AROS_UFH3(ULONG, wbFilterAll_Hook,
     if (stricmp(ead->ed_Name, "disk.info") == 0)
         return FALSE;
 
+    /* Reject a bare ".info" (the directory's own icon marker); see
+     * wbFilterIcons_Hook - it would otherwise become a nameless ghost icon. */
+    if (stricmp(ead->ed_Name, ".info") == 0)
+        return FALSE;
+
     i = strlen(ead->ed_Name);
-    if (i >= 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
+    if (i > 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
         ead->ed_Name[i-5] = 0;
         return TRUE;
     }
@@ -201,7 +210,7 @@ AROS_UFH3(ULONG, wbFilterAll_Hook,
         return FALSE;
 
     return TRUE;
-    
+
     AROS_USERFUNC_EXIT
 }
 
