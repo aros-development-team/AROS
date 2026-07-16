@@ -198,10 +198,17 @@ $(HOSTGENDIR)/tools/romcheck: romcheck.c
 # Resident tag at the module's head, so the boot-time romtag scanner finds it on
 # the first read and leaps to the next module via rt_EndSkip - instead of walking
 # every word of the ROM. Only the module's small .rodata is walked per module.
+#
+# ALIGN(4) before each part is REQUIRED: a module's .text can end on an odd byte,
+# and .rodata holds longword constants (e.g. __aros_libreq_* version markers) that
+# code reads with CMP.L. A .L read from an odd address is an address error on the
+# 68000/010 (fine on 68020+), so without this the A500 crashes booting from disk.
 $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)rm -f $@
 	$(Q)for file in $(OBJS_$*) $(KOBJS_$*); do \
+		echo ". = ALIGN(4);" >>$@; \
 		echo "$$file(.text)" >>$@; \
+		echo ". = ALIGN(4);" >>$@; \
 		echo "$$file(.rodata .rodata.*)" >>$@; \
 	done
 
