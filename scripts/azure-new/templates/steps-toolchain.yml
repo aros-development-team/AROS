@@ -85,7 +85,7 @@ steps:
 # Hand the toolchain *directory* forward to the Core and Contrib stages.
 # Restore it to the SAME absolute path it was built at (see README - the
 # toolchain is not relocatable).
-- publish: '$(AROSBUILDTOOLCHAINDIR)'
+- publish: '$(AROSBUILDBINDIR)/$(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2'
   artifact: 'toolchain-$(arosbuild.name)'
   displayName: 'Publish toolchain artifact (for Core/Contrib stages)'
 
