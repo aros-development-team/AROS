@@ -78,6 +78,21 @@ struct TrackDiskBase
     UBYTE					td_lastdir;		/* last step direction */
     BOOL					td_dirty;
     UWORD					*crc_table16;		/* PCDOS checksum table */
+
+    /* Read-only decoded-track cache. The single td_DataBuffer holds only the
+     * last-decoded track, so a filesystem that interleaves reads across tracks
+     * (directory block on one track, file header on another) keeps evicting and
+     * re-reading the same tracks - each re-read is a full disk revolution plus a
+     * seek. These slots keep the last TD_TRACKCACHE_SLOTS decoded tracks so
+     * such re-reads become memory copies. Writes/format invalidate the cache. */
+#define TD_TRACKCACHE_SLOTS 4
+    UBYTE					*td_tcData[TD_TRACKCACHE_SLOTS];	/* 11*512 (or 22*512 HD) each */
+    WORD					td_tcTrack[TD_TRACKCACHE_SLOTS];	/* -1 = empty */
+    BYTE					td_tcUnit[TD_TRACKCACHE_SLOTS];
+    ULONG					td_tcSectorbits[TD_TRACKCACHE_SLOTS];
+    ULONG					td_tcLRU[TD_TRACKCACHE_SLOTS];	/* higher = more recently used */
+    ULONG					td_tcClock;
+    ULONG					td_tcSlotSize;			/* bytes per slot currently allocated */
 };
 
 #endif /* TRACKDISK_DEVICE_H */

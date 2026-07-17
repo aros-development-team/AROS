@@ -652,10 +652,83 @@ static UBYTE td_readbuffer(UBYTE track, struct TDU *tdu, struct TrackDiskBase *t
         return ret;
 }
 
+/* --- Read-only decoded-track cache ------------------------------------- */
+
+/* Ensure the per-slot buffers are allocated at the right (DD/HD) size. */
+static void tc_ensure(struct TrackDiskBase *tdb, struct TDU *tdu)
+{
+        ULONG want = (tdu->tdu_hddisk ? 22 : 11) * 512;
+        int i;
+
+        if (tdb->td_tcSlotSize == want && tdb->td_tcData[0] != NULL)
+                return;
+
+        for (i = 0; i < TD_TRACKCACHE_SLOTS; i++) {
+                if (tdb->td_tcData[i])
+                        FreeMem(tdb->td_tcData[i], tdb->td_tcSlotSize);
+                tdb->td_tcData[i] = AllocMem(want, MEMF_ANY);
+                tdb->td_tcTrack[i] = -1;
+                tdb->td_tcUnit[i] = -1;
+                tdb->td_tcSectorbits[i] = 0;
+                tdb->td_tcLRU[i] = 0;
+        }
+        tdb->td_tcSlotSize = want;
+        tdb->td_tcClock = 0;
+}
+
+/* Drop all cached tracks (called on write/format/detect and disk change). */
+static void tc_invalidate(struct TrackDiskBase *tdb)
+{
+        int i;
+        for (i = 0; i < TD_TRACKCACHE_SLOTS; i++)
+                tdb->td_tcTrack[i] = -1;
+}
+
+/* Find a fully-decoded cached track; returns slot index or -1. */
+static int tc_find(struct TrackDiskBase *tdb, struct TDU *tdu, UBYTE track)
+{
+        int i;
+        ULONG full = (1 << tdu->tdu_sectors) - 1;
+        for (i = 0; i < TD_TRACKCACHE_SLOTS; i++) {
+                if (tdb->td_tcData[i] && tdb->td_tcTrack[i] == (WORD)track &&
+                    tdb->td_tcUnit[i] == (BYTE)tdu->tdu_UnitNum &&
+                    tdb->td_tcSectorbits[i] == full) {
+                        tdb->td_tcLRU[i] = ++tdb->td_tcClock;
+                        return i;
+                }
+        }
+        return -1;
+}
+
+/* Copy the freshly-decoded single buffer into an LRU cache slot. */
+static void tc_store(struct TrackDiskBase *tdb, struct TDU *tdu, UBYTE track)
+{
+        ULONG full = (1 << tdu->tdu_sectors) - 1;
+        int i, victim = 0;
+
+        /* Only cache fully-decoded tracks. */
+        if (tdb->td_sectorbits != full || tdb->td_tcData[0] == NULL)
+                return;
+
+        for (i = 0; i < TD_TRACKCACHE_SLOTS; i++) {
+                if (tdb->td_tcTrack[i] == -1) { victim = i; break; }
+                if (tdb->td_tcLRU[i] < tdb->td_tcLRU[victim]) victim = i;
+        }
+        CopyMem(tdb->td_DataBuffer, tdb->td_tcData[victim], tdu->tdu_sectors * 512);
+        tdb->td_tcTrack[victim] = track;
+        tdb->td_tcUnit[victim] = tdu->tdu_UnitNum;
+        tdb->td_tcSectorbits[victim] = full;
+        tdb->td_tcLRU[victim] = ++tdb->td_tcClock;
+}
+
 static void maybe_detect(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-        if (tdu->tdu_disktype == DT_UNDETECTED)
+        if (tdu->tdu_disktype == DT_UNDETECTED) {
+                /* Format is undetected after a disk change; the cached tracks
+                 * (if any) belong to the previous disk, so drop them. */
+                tc_invalidate(tdb);
                 td_detectformat(tdu, tdb);
+        }
 }
 
 static UBYTE maybe_flush(struct TDU *tdu, struct TrackDiskBase *tdb, int track)
@@ -712,12 +785,40 @@ UBYTE td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
                         }
                 }
 
+                /* Fast path: whole track already decoded in the read cache?
+                 * Copy the needed sectors from there, no seek/read/decode. */
+                {
+                        int _tcslot;
+                        tc_ensure(tdb, tdu);
+                        _tcslot = tc_find(tdb, tdu, track);
+                        if (_tcslot >= 0) {
+                                UBYTE *src = tdb->td_tcData[_tcslot];
+                                smallestsectorneeded = (offset / 512) % tdu->tdu_sectors;
+                                largestsectorneeded = smallestsectorneeded + len / 512;
+                                if (largestsectorneeded > tdu->tdu_sectors || len / 512 > tdu->tdu_sectors)
+                                        largestsectorneeded = tdu->tdu_sectors;
+                                totalsectorsneeded = largestsectorneeded - smallestsectorneeded;
+                                for (sec = smallestsectorneeded; sec < largestsectorneeded; sec++)
+                                        CopyMem(src + sec * 512, data + (sec - smallestsectorneeded) * 512, 512);
+                                sectorsdone = totalsectorsneeded;
+                                data += sectorsdone * 512;
+                                offset += sectorsdone * 512;
+                                len -= sectorsdone * 512;
+                                iotd->iotd_Req.io_Actual += sectorsdone * 512;
+                                continue;
+                        }
+                }
+
                 err = maybe_flush(tdu, tdb, track);
                 if (err)
                         break;
-                if (tdb->td_buffer_unit != tdu->tdu_UnitNum || tdb->td_buffer_track != track)
+                if (tdb->td_buffer_unit != tdu->tdu_UnitNum || tdb->td_buffer_track != track) {
                         err = td_readbuffer(track, tdu, tdb);
-                
+                        /* Cache the freshly decoded track for future reads. */
+                        if (!err)
+                                tc_store(tdb, tdu, track);
+                }
+
                 smallestsectorneeded = (offset / 512) % tdu->tdu_sectors;
                 largestsectorneeded = smallestsectorneeded + len / 512;
                 if (largestsectorneeded > tdu->tdu_sectors || len / 512 > tdu->tdu_sectors) {
@@ -771,9 +872,12 @@ static UBYTE td_write2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBa
         APTR data;
         ULONG len, offset;
         UBYTE err;
- 
+
         if (checkbuffer(tdu, tdb))
                 return TDERR_NoMem;
+
+        /* Any write may change on-disk data; drop the read cache to stay coherent. */
+        tc_invalidate(tdb);
 
         err = 0;
         iotd->iotd_Req.io_Actual = 0;
@@ -897,6 +1001,7 @@ static UBYTE td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskB
         return TDERR_NoMem;
     if (tdu->tdu_disktype != DT_ADOS)
         return TDERR_WriteProt;
+    tc_invalidate(tdb);
     iotd->iotd_Req.io_Actual = 0;
     offset = iotd->iotd_Req.io_Offset;
     len = iotd->iotd_Req.io_Length;
