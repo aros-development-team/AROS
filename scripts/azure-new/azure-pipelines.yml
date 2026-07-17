@@ -70,14 +70,26 @@ stages:
     - template: templates/steps-prepare-host.yml
     - template: templates/steps-workspace.yml
     # Restore a previously-built toolchain so the heavy crosstools/LLVM build
-    # only runs when its inputs actually change. Restore to the SAME absolute
-    # path it was built at (the toolchain is not relocatable - see README).
+    # only runs when its inputs actually change. The cache holds the toolchain
+    # tarball (preserving filesystem permissions/attributes) in a temporary
+    # location; on a hit it is extracted to the SAME absolute path it was
+    # built at (the toolchain is not relocatable - see README) and the
+    # tarball is removed again.
     - task: Cache@2
       inputs:
         key: 'aros-toolchain | "$(arosbuild.name)" | "$(arosbuild.toolchain.family)" | "$(arosbuild.gcc.version)" | "$(arosbuild.llvm.version)" | tools/crosstools/**'
-        path: '$(AROSBUILDTOOLCHAINDIR)'
+        path: '$(Agent.TempDirectory)/toolchain-cache'
         cacheHitVar: TOOLCHAIN_RESTORED
       displayName: 'Restore cached toolchain'
+    - script: |
+        # The cached tarball keeps the name it was packaged with on the run
+        # that built it (its AROSBUILDID/date differs from today's), so glob
+        # for it rather than assuming a name.
+        cd '$(Agent.TempDirectory)/toolchain-cache'
+        tar xjf *-toolchain.tar.bz2 -C '$(AROSBUILDTOOLCHAINDIR)/..'
+        rm -f *-toolchain.tar.bz2
+      condition: eq( variables['TOOLCHAIN_RESTORED'], 'true' )
+      displayName: 'Extract cached toolchain'
     - template: templates/steps-darwin-hosttoolchain.yml
     - template: templates/steps-toolchain.yml
 

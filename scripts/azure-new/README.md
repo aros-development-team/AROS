@@ -54,8 +54,11 @@ follows both (it needs the toolchain artifact and the Core base manifest).
 
 * **Toolchain caching (`Cache@2`).** The toolchain is restored from a cache keyed
   on `arosbuild.name | family | gcc.version | llvm.version | hashFiles('tools/crosstools/**')`.
-  On a hit, `make crosstools` is skipped entirely — **LLVM is not rebuilt every
-  night**. On a miss, the LLVM tree is the only large thing on a fresh agent.
+  The cache holds the toolchain **tarball** (preserving filesystem
+  permissions/attributes) in a temporary location; on a hit it is unpacked to
+  the canonical toolchain path (and the tarball removed) and `make crosstools`
+  is skipped entirely — **LLVM is not rebuilt every night**. On a miss, the
+  LLVM tree is the only large thing on a fresh agent.
 * **Toolchain is not relocatable.** `configure` bakes the absolute
   `CROSSTOOLSDIR` into the generated config, and GCC bakes its `--prefix`. The
   toolchain is always restored to the **same** absolute path

@@ -1,3 +1,37 @@
+# Publishes verified dev nightly build uploads and cleans up the uploads area.
+# Requires secrets:
+# - SF_RSYNC_USER
+#
+# NOTE: SourceForge has discontinued interactive/remote-command shell
+# access (shell.sourceforge.net), so the old approach of ssh-ing in and
+# running the remote nightly2-update-dev-frs / nightly2-update-dev /
+# nightly2-clean-dev scripts no longer works. Their logic is now performed
+# locally in this pipeline, talking to SourceForge only via rsync-over-SSH
+# to web.sourceforge.net, which is still supported for file management
+# (list/download/upload/delete). All logic is inlined below so the pipeline
+# has no dependency on scripts living on the project web space.
+#
+# The dev scripts are identical to the regular nightly ones except that they
+# operate on the arosdev project web space; this pipeline is likewise
+# identical to update-nightlies.yml apart from the remote directories below.
+#
+# What it does (mirroring scripts/web/nightly2-update-dev-frs,
+# nightly2-update-dev and nightly2-clean-dev):
+#  1. Downloads the pending files from uploads/nightly2 and checks each
+#     against its .md5 companion, so incomplete or broken files are never
+#     made available for download.
+#  2. For each verified file, deletes older dated versions of the same
+#     package from frs/nightly2 and htdocs/downloads/nightly2 (pruning
+#     category/date directories left empty, or left holding only logs).
+#  3. Uploads the verified files (and their .md5 files) to both
+#     destinations.
+#  4. Cleans the uploads area: published files are removed and only the
+#     newest upload entry is kept (as nightly2-clean-dev did).
+#
+# The legacy .xml changelog -> php conversion (xsltproc) performed by the
+# old remote scripts is not reproduced: nothing uploads changelog .xml
+# files to uploads/nightly2 any more.
+
 trigger:
 - master
 
@@ -5,7 +39,10 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-    PROJWEBDIR:  '/home/project-web' # Location script is run from
+  SF_HOST: 'web.sourceforge.net'
+  REMOTE_UPLOADS_DIR: '/home/project-web/arosdev/uploads/nightly2'
+  REMOTE_FRS_DIR: '/home/project-web/arosdev/frs/nightly2'
+  REMOTE_DOWNLOADS_DIR: '/home/project-web/arosdev/htdocs/downloads/nightly2'
 
 steps:
 - task: DownloadSecureFile@1
@@ -20,22 +57,284 @@ steps:
     chmod 600 ~/.ssh/id_rsa
     chmod 700 ~/.ssh
 
-    # Add SourceForge to known hosts (non-interactive SSH)
-    ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
+    # Add SourceForge file-management host to known hosts (non-interactive SSH)
+    ssh-keyscan -t rsa $(SF_HOST) >> ~/.ssh/known_hosts
+
+    echo "Host $(SF_HOST)" > ~/.ssh/config
+    echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+    echo "    IdentitiesOnly yes" >> ~/.ssh/config
+    echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
+    echo "    Port 22" >> ~/.ssh/config
+    chmod 600 ~/.ssh/config
   displayName: 'Setup SSH Key for SourceForge'
 
-- script: |
-    echo "Checking shell access..."
-    # Try a noop command to test if shell is ready
-    if ! ssh -o StrictHostKeyChecking=no "$MAPPED_USER"@shell.sourceforge.net true; then
-      echo "Shell not active yet. Creating shell..."
-      ssh -t "$MAPPED_USER"@shell.sourceforge.net create
-    fi
+- bash: |
+    set -e
 
-    echo "Running update scripts on SourceForge..."
-    ssh -o StrictHostKeyChecking=yes -p 22 "$MAPPED_USER"@shell.sourceforge.net \
-      "cd '$PROJWEBDIR' && ./aros/scripts/nightly2-update-dev-frs && ./aros/scripts/nightly2-update-dev &&  ./aros/scripts/nightly2-clean-dev"
+    cat > nightlies_update.py <<'PYEOF'
+    import argparse
+    import fnmatch
+    import os
+    import posixpath
+    import shutil
+    import subprocess
+    import sys
+    import tempfile
+    from pathlib import Path
+
+
+    def run(cmd, check=True, cwd=None):
+        print('+ ' + ' '.join(cmd))
+        result = subprocess.run(cmd, text=True, capture_output=True, cwd=cwd)
+        if result.stdout:
+            print(result.stdout)
+        if result.returncode != 0:
+            print(result.stderr, file=sys.stderr)
+            if check:
+                result.check_returncode()
+        return result
+
+
+    def list_remote(ssh_cmd, target):
+        """Recursively list a remote directory. Returns (dirs, files) as
+        sorted lists of relative paths. A missing directory yields empty
+        lists."""
+        result = run(['rsync', '--list-only', '-r', '-e', ssh_cmd, target + '/'],
+                     check=False)
+        dirs, files = [], []
+        if result.returncode != 0:
+            print(f"Listing {target} failed (missing directory?); treating as empty.")
+            return dirs, files
+        for line in result.stdout.splitlines():
+            parts = line.split(None, 4)
+            if len(parts) < 5:
+                continue
+            perms, _size, _date, _time, name = parts
+            if name in ('.', './'):
+                continue
+            if perms.startswith('d'):
+                dirs.append(name)
+            else:
+                if perms.startswith('l'):
+                    name = name.split(' -> ')[0]
+                files.append(name)
+        return sorted(dirs), sorted(files)
+
+
+    def verify_md5(incoming, relpath):
+        """Check a downloaded file against its .md5 companion, exactly as the
+        old remote md5check() did. Missing md5 or mismatch = failure."""
+        path = incoming / relpath
+        md5 = incoming / (relpath + '.md5')
+        if not md5.is_file():
+            return False
+        result = subprocess.run(['md5sum', '-c', md5.name], cwd=path.parent,
+                                text=True, capture_output=True)
+        return result.returncode == 0
+
+
+    def old_version_pattern(name):
+        """Wildcard the date part of a nightly package name, matching the old
+        scripts' pattern "${f:0:5}????????${f:13}" (AROS-YYYYMMDD-...)."""
+        if len(name) <= 13 or not name[5:13].isdigit():
+            return None
+        return name[:5] + '????????' + name[13:]
+
+
+    def compute_old_versions(dest_files, new_files):
+        """Destination files (and their .md5s) superseded by the files about
+        to be published."""
+        dest_set = set(dest_files)
+        to_delete = set()
+        for rel in new_files:
+            if 'logs' in rel.split('/')[:-1]:
+                continue  # log files are never deduplicated
+            pattern = old_version_pattern(posixpath.basename(rel))
+            if not pattern:
+                continue
+            for dest in dest_files:
+                if dest.endswith('.md5') or dest == rel:
+                    continue
+                if fnmatch.fnmatch(posixpath.basename(dest), pattern):
+                    to_delete.add(dest)
+                    if dest + '.md5' in dest_set:
+                        to_delete.add(dest + '.md5')
+        return to_delete
+
+
+    def compute_dir_prunes(dest_dirs, dest_files, deleted):
+        """Directories to remove after the deletions: category dirs left with
+        no files, and date dirs left holding nothing but logs."""
+        remaining = set(dest_files) - set(deleted)
+        prune = set()
+
+        def has_content(d):
+            prefix = d + '/'
+            return any(f.startswith(prefix) for f in remaining)
+
+        for catdir in sorted({posixpath.dirname(p) for p in deleted}):
+            if not catdir:
+                continue
+            if not has_content(catdir):
+                prune.add(catdir)
+            datedir = posixpath.dirname(catdir)
+            if not datedir:
+                continue
+            kids = set()
+            for d in dest_dirs:
+                if posixpath.dirname(d) == datedir and d not in prune and has_content(d):
+                    kids.add(d)
+            for f in remaining:
+                if posixpath.dirname(f) == datedir:
+                    kids.add(f)
+            if len(kids) < 2 and all(posixpath.basename(k) == 'logs' for k in kids):
+                prune.add(datedir)
+
+        # Drop prunes nested inside other prunes
+        return {p for p in prune
+                if not any(p != q and p.startswith(q + '/') for q in prune)}
+
+
+    def rsync_delete(ssh_cmd, target, files, dirs, dry_run):
+        """Delete the given remote files/directories using rsync only: sync a
+        local skeleton of empty ancestor directories with --delete and filters
+        selecting exactly the doomed paths."""
+        dirs = sorted(dirs)
+        files = sorted(f for f in files
+                       if not any(f.startswith(d + '/') for d in dirs))
+        if not files and not dirs:
+            print(f"Nothing to delete under {target}.")
+            return
+
+        ancestors = set()
+        for p in files + dirs:
+            d = posixpath.dirname(p)
+            while d:
+                ancestors.add(d)
+                d = posixpath.dirname(d)
+        ancestors -= {a for a in ancestors
+                      if any(a == d or a.startswith(d + '/') for d in dirs)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            skeleton = Path(tmp) / 'skeleton'
+            skeleton.mkdir()
+            filter_lines = []
+            for a in sorted(ancestors):
+                (skeleton / a).mkdir(parents=True, exist_ok=True)
+                filter_lines.append(f"+ /{a}/")
+            for d in dirs:
+                filter_lines.append(f"+ /{d}/")
+                filter_lines.append(f"+ /{d}/**")
+            for f in files:
+                filter_lines.append(f"+ /{f}")
+            filter_lines.append("- *")
+            filter_path = Path(tmp) / 'delete.filter'
+            filter_path.write_text('\n'.join(filter_lines) + '\n')
+
+            cmd = ['rsync', '-rv', '--delete', '--force',
+                   '--include-from', str(filter_path), '-e', ssh_cmd]
+            if dry_run:
+                cmd.append('--dry-run')
+            cmd += [str(skeleton) + '/', target + '/']
+            run(cmd)
+
+
+    def main():
+        parser = argparse.ArgumentParser(
+            description="Verify, publish and clean up nightly build uploads on SourceForge"
+        )
+        parser.add_argument('--remote-user', required=True)
+        parser.add_argument('--remote-host', default='web.sourceforge.net')
+        parser.add_argument('--uploads-dir', required=True)
+        parser.add_argument('--frs-dir', required=True)
+        parser.add_argument('--downloads-dir', required=True)
+        parser.add_argument('--ssh-cmd', default='ssh -o StrictHostKeyChecking=yes')
+        parser.add_argument('--dry-run', action='store_true')
+        args = parser.parse_args()
+
+        remote = f"{args.remote_user}@{args.remote_host}"
+        uploads = f"{remote}:{args.uploads_dir}"
+        destinations = [f"{remote}:{args.frs_dir}",
+                        f"{remote}:{args.downloads_dir}"]
+
+        updirs, upfiles = list_remote(args.ssh_cmd, uploads)
+        pending = [f for f in upfiles if not f.endswith('.md5')]
+
+        workdir = Path(tempfile.mkdtemp(prefix='nightlies-', dir='.'))
+        incoming = workdir / 'incoming'
+        incoming.mkdir()
+
+        verified = []
+        if pending:
+            print(f"Found {len(pending)} pending file(s); downloading for verification...")
+            run(['rsync', '-avz', '-e', args.ssh_cmd, uploads + '/', str(incoming) + '/'])
+            for rel in pending:
+                if verify_md5(incoming, rel):
+                    print(f"> {rel}")
+                    verified.append(rel)
+                else:
+                    print(f"! {rel} (md5 missing or mismatch - not published)")
+        else:
+            print("No pending upload files found.")
+
+        if verified:
+            # Prune older dated versions of the packages being published,
+            # then upload to both the frs and downloads areas.
+            for dest in destinations:
+                ddirs, dfiles = list_remote(args.ssh_cmd, dest)
+                doomed = compute_old_versions(dfiles, verified)
+                prune = compute_dir_prunes(ddirs, dfiles, doomed)
+                rsync_delete(args.ssh_cmd, dest, doomed, prune, args.dry_run)
+
+            publish = workdir / 'publish'
+            for rel in verified:
+                for suffix in ('', '.md5'):
+                    src = incoming / (rel + suffix)
+                    dst = publish / (rel + suffix)
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    try:
+                        os.link(src, dst)
+                    except OSError:
+                        shutil.copy2(src, dst)
+            for dest in destinations:
+                cmd = ['rsync', '-avz', '-e', args.ssh_cmd]
+                if args.dry_run:
+                    cmd.append('--dry-run')
+                cmd += [str(publish) + '/', dest + '/']
+                run(cmd)
+
+        # Clean the uploads area: drop the published files, and (as
+        # nightly2-clean did) keep only the newest top-level upload entry.
+        top_dirs = {d for d in updirs if '/' not in d}
+        top_entries = sorted(top_dirs | {f for f in upfiles if '/' not in f})
+        keep = top_entries[-1] if top_entries else None
+        del_dirs = [t for t in top_entries if t != keep and t in top_dirs]
+        del_files = [t for t in top_entries if t != keep and t not in top_dirs]
+        for rel in verified:
+            if rel.split('/')[0] == keep:
+                del_files.append(rel)
+                if rel + '.md5' in upfiles:
+                    del_files.append(rel + '.md5')
+        if keep:
+            print(f"Cleaning uploads (keeping newest entry: {keep})...")
+        rsync_delete(args.ssh_cmd, uploads, del_files, del_dirs, args.dry_run)
+
+        shutil.rmtree(workdir, ignore_errors=True)
+        print(f"Done: {len(verified)} of {len(pending)} pending file(s) published.")
+
+
+    if __name__ == '__main__':
+        main()
+    PYEOF
+
+    echo "Running dev nightly build update locally against SourceForge (rsync only, no remote shell)..."
+    python3 nightlies_update.py \
+      --remote-user "$MAPPED_USER" \
+      --remote-host $(SF_HOST) \
+      --uploads-dir "$(REMOTE_UPLOADS_DIR)" \
+      --frs-dir "$(REMOTE_FRS_DIR)" \
+      --downloads-dir "$(REMOTE_DOWNLOADS_DIR)"
   env:
-    MAPPED_USER: $(SF_RSYNC_USER)  # Set this in your pipeline variable group or UI
+    MAPPED_USER: $(SF_RSYNC_USER)
   condition: ne( variables['SF_RSYNC_USER'], '' )
-  displayName: 'Run Remote Dev Nightly Build Update'
+  displayName: 'Run Dev Nightly Build Update'
