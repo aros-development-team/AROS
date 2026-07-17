@@ -120,12 +120,14 @@ Object *MakeCheck(STRPTR label, STRPTR help, ULONG check)
   return (obj);
 }
 
+/* MUIA_String_Contents carries a pointer; a bare int 0 vararg is not
+   pointer-sized on 64-bit targets, so cast it here */
 #define String2(contents,maxlen)\
   (void *)StringObject,\
     StringFrame,\
     MUIA_CycleChain, 1,\
     MUIA_String_MaxLen  , maxlen,\
-    MUIA_String_Contents, contents,\
+    MUIA_String_Contents, (STRPTR)(contents),\
     End
 
 #define LOAD_DATALONG(obj,attr,cfg_attr,defaultval) \
