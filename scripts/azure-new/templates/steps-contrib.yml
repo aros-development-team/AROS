@@ -80,7 +80,31 @@ steps:
 # --- Package contrib (= built tree minus the base manifest) ------------------
 - script: |
     if [ ! -f /tmp/_aros_contrib_build_failed ]; then
-      AROSROOT="$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS"
+      # The on-disk build output directory is named after the toolchain's
+      # actual AROS_TARGET_ARCH/AROS_TARGET_CPU (e.g. "raspi-arm"), which can
+      # differ from arosbuild.name (e.g. "raspi-armhf"). Read the real values
+      # out of the generated top-level Makefile rather than assuming they
+      # match the pipeline's build name.
+      AROSMAKEFILE="$(AROSBUILDDIR)/Makefile"
+      if [ ! -f "$AROSMAKEFILE" ]; then
+        echo "ERROR: $AROSMAKEFILE not found - cannot determine target directory name"; exit 1
+      fi
+      get_mkvar() {
+        awk -v var="$1" '
+          $0 ~ "^"var"[ \t]*\\?=" {
+            sub(/^[^=]*\?=[ \t]*/, "");
+            sub(/[ \t]*$/, "");
+            print;
+            exit
+          }' "$AROSMAKEFILE"
+      }
+      AROS_TARGET_ARCH_VAL="$(get_mkvar AROS_TARGET_ARCH)"
+      AROS_TARGET_CPU_VAL="$(get_mkvar AROS_TARGET_CPU)"
+      AROS_TARGET_SUFFIX_VAL="$(get_mkvar AROS_TARGET_SUFFIX)"
+      if [ -z "$AROS_TARGET_ARCH_VAL" ] || [ -z "$AROS_TARGET_CPU_VAL" ]; then
+        echo "ERROR: could not read AROS_TARGET_ARCH/AROS_TARGET_CPU from $AROSMAKEFILE"; exit 1
+      fi
+      AROSROOT="$(AROSBUILDDIR)/bin/${AROS_TARGET_ARCH_VAL}-${AROS_TARGET_CPU_VAL}${AROS_TARGET_SUFFIX_VAL}/AROS"
       BASEMANIFEST=$(ls $(Pipeline.Workspace)/base-manifest-$(arosbuild.name)/*-base.manifest 2>/dev/null | head -1)
       if [ -z "$BASEMANIFEST" ]; then
         echo "ERROR: base manifest from Core stage not found"; exit 1
