@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-#MM- includes-copy: external-openurl-includes external-openurl-fd
+#MM- ports-includes : external-openurl-includes external-openurl-fd
 
 #MM external-openurl-includes : \
 #MM     kernel-exec-includes \
