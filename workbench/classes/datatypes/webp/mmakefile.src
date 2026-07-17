@@ -31,9 +31,6 @@ WEBPARCHSRCDIR := $(PORTSDIR)/libwebp/$(WEBPARCHBASE)
     archive=$(WEBPARCHBASE) suffixes=$(WEBPARCHSUFFIX) \
     srcdir="libwebp-$(LIBWEBPVERSION)" destination=$(PORTSDIR)/libwebp
 
-#MM- includes-copy : \
-#MM     linklibs-webp-fetch
-
 #MM datatypes-webp-linklibs-sharpyuv : linklibs-webp-fetch workbench-datatypes-webp-generated
 #MM datatypes-webp-linklibs-webpdsp : linklibs-webp-fetch workbench-datatypes-webp-generated
 #MM datatypes-webp-linklibs-webpdecode : linklibs-webp-fetch workbench-datatypes-webp-generated

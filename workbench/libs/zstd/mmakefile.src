@@ -32,7 +32,8 @@ USER_CPPFLAGS := -DZSTD_NO_TRACE
 USER_LDFLAGS := -static
 
 #MM- workbench-libs-zstd : workbench-libs-zstd-library
-#MM workbench-libs-zstd-library : workbench-libs-zstd-fetch workbench-libs-zstd-includes 
+#MM workbench-libs-zstd-library : workbench-libs-zstd-fetch workbench-libs-zstd-includes
+#MM- workbench-libs-zstd-includes : workbench-libs-zstd-includes-copy
 
 %build_module mmake=workbench-libs-zstd-library \
     modname=zstd modtype=library \
@@ -44,11 +45,14 @@ USER_LDFLAGS := -static
     objdir=$(GENDIR)/$(CURDIR)/libzstd-static
 
 INCLUDE_FILES:=zstd.h zstd_errors.h zdict.h
-%copy_includes dir=$(ZSTDARCHSRCDIR)/lib includes=$(INCLUDE_FILES)
+%copy_includes mmake=workbench-libs-zstd-includes-copy dir=$(ZSTDARCHSRCDIR)/lib includes=$(INCLUDE_FILES)
 
-#MM- includes-copy : \
-#MM     workbench-libs-zstd-fetch \
+#MM- ports-includes : \
+#MM     workbench-libs-zstd-includes-copy \
 #MM     workbench-libs-zstd-pkgc
+
+#MM workbench-libs-zstd-includes-copy : workbench-libs-zstd-fetch
+#MM workbench-libs-zstd-pkgc : workbench-libs-zstd-fetch
 
 $(AROS_LIB)/pkgconfig/libzstd.pc : $(ZSTDARCHSRCDIR)/lib/libzstd.pc.in
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi

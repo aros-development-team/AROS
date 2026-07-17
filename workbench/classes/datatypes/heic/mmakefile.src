@@ -60,9 +60,6 @@ AOMARCHSRCDIR := $(PORTSDIR)/libaom/$(AOMARCHBASE)
     archive=$(AOMARCHBASE) suffixes=$(AOMARCHSUFFIX) \
     srcdir="libaom-$(LIBAOMVERSION)" destination=$(PORTSDIR)/libaom
 
-#MM- includes-copy : \
-#MM     linklibs-aom-fetch linklibs-heif-fetch
-
 #MM datatypes-heic-linklibs-aom : linklibs-aom-fetch
 
 USER_INCLUDES   := -I$(GENDIR)/$(CURDIR)/libaom -I$(AOMARCHSRCDIR)
@@ -146,9 +143,6 @@ DE265ARCHSRCDIR := $(PORTSDIR)/libde265/libde265-$(LIBDE265VERSION)
     archive=$(DE265ARCHBASE) suffixes=$(DE265ARCHSUFFIX) \
     location=$(PORTSSOURCEDIR)/de265 destination=$(PORTSDIR)/libde265 \
     srcdir="libde265-$(LIBDE265VERSION)"
-
-#MM- includes-copy : \
-#MM     linklibs-de265-fetch linklibs-heif-fetch
 
 #MM datatypes-heic-linklibs-de265 : linklibs-de265-fetch
 

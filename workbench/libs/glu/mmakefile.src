@@ -10,9 +10,10 @@ include $(SRCDIR)/config/aros.cfg
 #MM- workbench-libs-complete : workbench-libs-glu
 
 #MM workbench-libs-glu : includes workbench-libs-mesa-linklib workbench-libs-glu-fetch
-#MM workbench-libs-glu-includes : workbench-libs-glu-fetch
+#MM workbench-libs-glu-includes : workbench-libs-glu-fetch workbench-libs-glu-includes-copy
+#MM workbench-libs-glu-includes-copy : workbench-libs-glu-fetch
 
-#MM- includes-copy : workbench-libs-glu-includes
+#MM- ports-includes : workbench-libs-glu-includes-copy
 
 REPOSITORIES =  \
     cache:// \
@@ -163,7 +164,7 @@ CC_SOURCES := \
 
 #MM
 workbench-libs-glu-includes:
-%copy_includes path=GL dir=$(top_srcdir)/include/GL includes=$(GLU_INCLUDE_FILES)
+%copy_includes mmake=workbench-libs-glu-includes-copy path=GL dir=$(top_srcdir)/include/GL includes=$(GLU_INCLUDE_FILES)
 
 %common
 

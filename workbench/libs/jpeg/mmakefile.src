@@ -19,13 +19,16 @@ ARCHSRCDIR := $(PORTSDIR)/jpeg/$(ARCHDIR)
     archive=$(ARCHBASE) srcdir=$(ARCHDIR) suffixes=$(ARCHSUFFIX) \
     destination=$(PORTSDIR)/jpeg
 
-#MM- includes-copy : \
-#MM     jpeg-fetch
+#MM- ports-includes : \
+#MM     workbench-libs-jpeg-includes-copy
+
+#MM workbench-libs-jpeg-includes-copy : jpeg-fetch
 
 #MM workbench-libs-jpeg-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
-#MM     includes-copy
+#MM     includes-copy \
+#MM     workbench-libs-jpeg-includes-copy
 
 FILES := jaricom jcapimin jcapistd jcarith jccoefct jccolor \
         jcdctmgr jchuff jcinit jcmainct jcmarker jcmaster \
@@ -48,6 +51,6 @@ USER_CPPFLAGS := -DNO_GETENV
   files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" linklibname=jpeg
 
 INCLUDE_FILES := jerror.h jmorecfg.h jpeglib.h jconfig.h
-%copy_includes dir=$(ARCHSRCDIR)
+%copy_includes mmake=workbench-libs-jpeg-includes-copy dir=$(ARCHSRCDIR)
 
 %common

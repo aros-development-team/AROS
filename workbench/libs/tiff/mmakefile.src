@@ -1,8 +1,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- includes-copy : libtiff-fetch
-
 LIBTIFFVERSION=4.7.1
 REPOSITORIES =  \
     cache:// \
@@ -20,8 +18,10 @@ ARCHSRCDIR := $(PORTSDIR)/libtiff/$(ARCHBASE)
     archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
     destination=$(PORTSDIR)/libtiff
 
-#MM includes-copy : \
-#MM     libtiff-fetch
+#MM- ports-includes : \
+#MM     workbench-libs-tiff-includes-copy
+
+#MM workbench-libs-tiff-includes-copy : libtiff-fetch
 
 #MM workbench-libs-tiff : \
 #MM     workbench-libs-z-includes \
@@ -33,6 +33,7 @@ ARCHSRCDIR := $(PORTSDIR)/libtiff/$(ARCHBASE)
 
 #MM- workbench-libs-tiff-includes : \
 #MM     includes-copy \
+#MM     workbench-libs-tiff-includes-copy \
 #MM     workbench-libs-tiff-generated
 
 TIFFILES := \
@@ -129,9 +130,8 @@ $(GENDIR)/$(CURDIR)/tif_config.h :  $(SRCDIR)/$(CURDIR)/tif_config.h | $(GENDIR)
 #MM
 workbench-libs-tiff-generated : $(AROS_INCLUDES)/tifftypes.h $(AROS_INCLUDES)/tiffinline.h $(AROS_INCLUDES)/tiffconf.h $(GENDIR)/$(CURDIR)/tif_config.h
 
-#MM includes-copy
 INCLUDE_FILES := tiff.h
-%copy_includes dir=$(ARCHSRCDIR)/libtiff
+%copy_includes mmake=workbench-libs-tiff-includes-copy dir=$(ARCHSRCDIR)/libtiff
 
 %copy_dir_recursive mmake=test-tiff-tiffsuite src=$(ARCHSRCDIR)/contrib/tiffsuite dst=$(AROS_TESTS)/Datatypes/tiff/tiffsuite
 

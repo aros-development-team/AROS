@@ -19,14 +19,20 @@ PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
     archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
     srcdir=zlib base=$(PORTSDIR)/zlib destination=$(PORTSDIR)/zlib/zlib 
 
-#MM- includes-copy : \
-#MM     zlib-fetch \
+#MM- ports-includes : \
+#MM     workbench-libs-z-includes-copy \
+#MM     workbench-libs-z-geninc \
 #MM     workbench-libs-z-pkgc
+
+#MM workbench-libs-z-includes-copy : zlib-fetch
+#MM workbench-libs-z-geninc : zlib-fetch
+#MM workbench-libs-z-pkgc : zlib-fetch
 
 #MM workbench-libs-z-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
-#MM     includes-copy
+#MM     includes-copy \
+#MM     workbench-libs-z-includes-copy
 
 FILES := \
     adler32 \
@@ -130,7 +136,7 @@ USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNDEBUG
     objdir=$(GENDIR)/$(CURDIR)/static
 
 INCLUDE_FILES := zlib.h chromeconf.h
-%copy_includes dir=$(ARCHSRCDIR)
+%copy_includes mmake=workbench-libs-z-includes-copy dir=$(ARCHSRCDIR)
 
 #MM
 workbench-libs-z-geninc : $(AROS_INCLUDES)/zconf.h

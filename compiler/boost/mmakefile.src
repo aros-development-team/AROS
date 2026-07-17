@@ -1,7 +1,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- compiler-boost : compiler-boost-geninc-copy compiler-boost-includes-copy
-#MM- compiler-includes : compiler-boost-geninc-copy compiler-boost-includes-copy
+#MM- ports-includes : compiler-boost-geninc-copy compiler-boost-includes-copy
 
 #MM- compiler-boost-geninc-copy : compiler-boost-fetch
 #MM- compiler-boost-includes-copy : compiler-boost-fetch

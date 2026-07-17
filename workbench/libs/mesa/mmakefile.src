@@ -11,7 +11,8 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 # common mesa3d fetch...
 #
 
-#MM- includes-copy : mesa3d-fetch
+#MM- ports-includes : mesa3d-includes-copy
+#MM mesa3d-includes-copy : mesa3d-fetch
 
 %fetch mmake=mesa3d-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/mesa \
     location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.xz tar.gz" \
@@ -97,18 +98,18 @@ mesa3dgl-library-env : $(AROS_ENVARC)/SYS/GL.default
 
 GL_INCLUDE_FILES := gl.h glext.h
 
-%copy_includes path=GL dir=$(top_srcdir)/include/GL includes=$(GL_INCLUDE_FILES)
+%copy_includes mmake=mesa3d-includes-copy path=GL dir=$(top_srcdir)/include/GL includes=$(GL_INCLUDE_FILES)
 
 KHR_INCLUDE_FILES := khrplatform.h
 
-%copy_includes path=KHR dir=$(top_srcdir)/include/KHR includes=$(KHR_INCLUDE_FILES)
+%copy_includes mmake=mesa3d-includes-copy path=KHR dir=$(top_srcdir)/include/KHR includes=$(KHR_INCLUDE_FILES)
 
 GL_INCLUDE_FILES := egl.h eglext.h eglplatform.h eglmesaext.h eglextchromium.h
 
-%copy_includes path=EGL dir=$(top_srcdir)/include/EGL includes=$(GL_INCLUDE_FILES)
+%copy_includes mmake=mesa3d-includes-copy path=EGL dir=$(top_srcdir)/include/EGL includes=$(GL_INCLUDE_FILES)
 
 VK_INCLUDE_FILES := vulkan.h vulkan_core.h vk_icd.h vk_platform.h
 
-%copy_includes path=vulkan dir=$(top_srcdir)/include/vulkan includes=$(VK_INCLUDE_FILES)
+%copy_includes mmake=mesa3d-includes-copy path=vulkan dir=$(top_srcdir)/include/vulkan includes=$(VK_INCLUDE_FILES)
 
 %common

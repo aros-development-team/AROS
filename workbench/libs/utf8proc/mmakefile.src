@@ -28,7 +28,8 @@ USER_INCLUDES = -I. -idirafter $(UTF8PROCBASEDIR)/include
 USER_LDFLAGS := -static
 
 #MM- workbench-libs-utf8proc : workbench-libs-utf8proc-library
-#MM workbench-libs-utf8proc-library : workbench-libs-utf8proc-fetch workbench-libs-utf8proc-includes 
+#MM workbench-libs-utf8proc-library : workbench-libs-utf8proc-fetch workbench-libs-utf8proc-includes
+#MM- workbench-libs-utf8proc-includes : workbench-libs-utf8proc-includes-copy
 
 #MM workbench-libs-utf8proc-library : workbench-libs-utf8proc-fetch
 #MM workbench-libs-utf8proc-library-includes : workbench-libs-utf8proc-fetch
@@ -169,9 +170,10 @@ MAXDECOMPOSITIONTESTFILES := \
 #MM     workbench-libs-utf8proc-tests-misc \
 #MM     workbench-libs-utf8proc-tests-maxdecomposition
 
-#MM- includes-copy: workbench-libs-utf8proc-fetch
+#MM- ports-includes : workbench-libs-utf8proc-includes-copy
+#MM workbench-libs-utf8proc-includes-copy : workbench-libs-utf8proc-fetch
 
 INCLUDE_FILES:=utf8proc.h
-%copy_includes dir=$(UTF8PROCARCHSRCDIR) includes=$(INCLUDE_FILES)
+%copy_includes mmake=workbench-libs-utf8proc-includes-copy dir=$(UTF8PROCARCHSRCDIR) includes=$(INCLUDE_FILES)
 
 %common

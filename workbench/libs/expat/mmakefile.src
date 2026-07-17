@@ -40,7 +40,8 @@ EXPATARCHSRCDIR := $(PORTSDIR)/expat/$(EXPATARCHBASE)
 #MM- workbench-libs-expat-includes : \
 #MM     workbench-libs-expat-fetch \
 #MM     kernel-exec-includes \
-#MM     includes-copy
+#MM     includes-copy \
+#MM     workbench-libs-expat-includes-copy
 
 EXPATFILES := \
     $(EXPATARCHSRCDIR)/lib/xmlparse \
@@ -58,10 +59,13 @@ USER_INCLUDES := \
     files="$(EXPATFILES)"  linklibname=expat
 
 INCLUDE_FILES := expat.h expat_external.h
-%copy_includes dir=$(EXPATARCHSRCDIR)/lib
+%copy_includes mmake=workbench-libs-expat-includes-copy dir=$(EXPATARCHSRCDIR)/lib
 
-#MM- includes-copy : \
-#MM     workbench-libs-expat-fetch
+#MM- ports-includes : \
+#MM     workbench-libs-expat-includes-copy
+
+#MM workbench-libs-expat-includes-copy : workbench-libs-expat-fetch
+#MM workbench-libs-expat-pc : workbench-libs-expat-fetch
 
 #MM
 workbench-libs-expat-pc : $(AROS_LIB)/pkgconfig/expat.pc

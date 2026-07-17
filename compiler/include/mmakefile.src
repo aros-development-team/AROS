@@ -80,7 +80,11 @@ INCL_DIRS     := $(foreach dir,$(INCSUBDIRS) $(INCEMPTYDIRS),$(AROS_INCLUDES)/$(
 
 #MM- includes : includes-generate
 #MM- includes-generate : includes-generate-deps
-#MM- includes-generate-deps : includes-copy includes-$(ARCH)-$(CPU) includes-$(FAMILY)-$(CPU)
+#MM- includes-generate-deps : includes-copy ports-includes includes-$(ARCH)-$(CPU) includes-$(FAMILY)-$(CPU)
+# ports-includes aggregates headers/pkgconfig files installed from fetched
+# external port archives. It is deliberately kept out of includes-copy, so
+# targets that only need the core includes (e.g. the crosstools toolchain)
+# do not force every port archive to be downloaded and unpacked.
 #MM- includes-copy : compiler-includes includes-copy-$(ARCH)-$(CPU) includes-copy-$(FAMILY)-$(CPU)
 
 #MM- includes-$(ARCH)-$(CPU) : \

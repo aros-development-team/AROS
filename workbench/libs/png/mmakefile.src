@@ -1,8 +1,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- includes-copy : libpng-fetch
-
 LIBPNGVERSION=1.6.48
 REPOSITORIES =  \
     cache:// \
@@ -21,12 +19,16 @@ ARCHSRCDIR := $(PORTSDIR)/libpng/$(ARCHBASE)
     archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
     destination=$(PORTSDIR)/libpng
 
-#MM includes-copy : \
-#MM     libpng-fetch
+#MM- ports-includes : \
+#MM     workbench-libs-png-includes-copy \
+#MM     workbench-libs-png-generated
+
+#MM workbench-libs-png-includes-copy : libpng-fetch
 
 #MM workbench-libs-png : workbench-libs-z
 #MM- workbench-libs-png-includes : \
 #MM     includes-copy \
+#MM     workbench-libs-png-includes-copy \
 #MM     workbench-libs-png-generated
 
 FILES := png pngerror \
@@ -98,9 +100,8 @@ $(AROS_INCLUDES)/pnglibconf.h :  $(ARCHSRCDIR)/scripts/pnglibconf.h.prebuilt
 #MM
 workbench-libs-png-generated : $(AROS_INCLUDES)/pnglibconf.h
 
-#MM includes-copy
 INCLUDE_FILES := png.h pngconf.h
-%copy_includes dir=$(ARCHSRCDIR)
+%copy_includes mmake=workbench-libs-png-includes-copy dir=$(ARCHSRCDIR)
 
 %copy_dir_recursive mmake=test-png-pngsuite src=$(ARCHSRCDIR)/contrib/pngsuite dst=$(AROS_TESTS)/Datatypes/png/pngsuite
 

@@ -4,7 +4,8 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-libs-lzma : workbench-libs-lzma-library
-#MM workbench-libs-lzma-library : xz-fetch workbench-libs-lzma-includes 
+#MM workbench-libs-lzma-library : xz-fetch workbench-libs-lzma-includes
+#MM- workbench-libs-lzma-includes : workbench-libs-lzma-includes-copy
 
 VERSION := 5.8.1
 REPOSITORIES := \
@@ -158,14 +159,17 @@ FILES += \
 
 API_HEADERS:=$(sort $(wildcard $(ARCHSRCDIR)/src/liblzma/api/lzma/*.h))
 APIINCLUDE_FILES:=$(patsubst $(ARCHSRCDIR)/src/liblzma/api/lzma/%,%,$(API_HEADERS))
-%copy_includes dir=$(ARCHSRCDIR)/src/liblzma/api/lzma includes=$(APIINCLUDE_FILES)  path=lzma
+%copy_includes mmake=workbench-libs-lzma-includes-copy dir=$(ARCHSRCDIR)/src/liblzma/api/lzma includes=$(APIINCLUDE_FILES)  path=lzma
 
 INCLUDE_FILES:=lzma.h
-%copy_includes dir=$(ARCHSRCDIR)/src/liblzma/api includes=$(INCLUDE_FILES)
+%copy_includes mmake=workbench-libs-lzma-includes-copy dir=$(ARCHSRCDIR)/src/liblzma/api includes=$(INCLUDE_FILES)
 
-#MM- includes-copy : \
-#MM     xz-fetch \
+#MM- ports-includes : \
+#MM     workbench-libs-lzma-includes-copy \
 #MM     workbench-libs-lzma-pkgc
+
+#MM workbench-libs-lzma-includes-copy : xz-fetch
+#MM workbench-libs-lzma-pkgc : xz-fetch
 
 $(AROS_LIB)/pkgconfig/liblzma.pc : $(ARCHSRCDIR)/src/liblzma/liblzma.pc.in
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi

@@ -2,7 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM external-bz2-includes : \
-#MM     kernel-exec-includes includes-copy
+#MM     kernel-exec-includes includes-copy external-bz2-includes-copy
 
 #MM- external-bz2 : external-bz2-lib external-bz2-bzip2
 
@@ -26,8 +26,8 @@ ARCHSRCDIR := $(PORTSDIR)/bzip2/$(ARCHBASE)
     archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
     destination=$(PORTSDIR)/bzip2
 
-#MM includes-copy : \
-#MM     external-bzip2-fetch
+#MM- ports-includes : external-bz2-includes-copy
+#MM external-bz2-includes-copy : external-bzip2-fetch
 
 ###################################################################################
 
@@ -50,7 +50,7 @@ USER_CFLAGS := $(NOWARN_FLAGS) -DBZ_NO_STDIO
                files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" objdir=$(OBJDIR)/nostdio
 
 INCLUDE_FILES := bzlib.h
-%copy_includes dir=$(ARCHSRCDIR)
+%copy_includes mmake=external-bz2-includes-copy dir=$(ARCHSRCDIR)
 
 ###################################################################################
 

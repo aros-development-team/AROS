@@ -50,7 +50,7 @@ USER_LDFLAGS := -static
     files="$(addprefix $(CODESETSARCHSRCDIR)/libcodesets/, autoinit-aros)" \
     objdir=$(GENDIR)/$(CURDIR)/libcodesets
 
-#MM- includes-copy: workbench-libs-codesets-includes workbench-libs-codesets-fd
+#MM- ports-includes : workbench-libs-codesets-includes workbench-libs-codesets-fd
 
 #MM workbench-libs-codesets-includes : \
 #MM     workbench-libs-codesets-fetch \
