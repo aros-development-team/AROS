@@ -258,12 +258,15 @@ void obtain_pen(Object *obj, IPTR *pen, struct MUI_PenSpec *ps)
 
 #if !defined(__MORPHOS__)
 #ifdef __AROS__
-static __attribute__ ((noinline)) Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, Tag tag1, ...)
-{
-    AROS_SLOWSTACKTAGS_PRE_AS(tag1, Object *)
-    retval = (Object *)DoSuperMethod(cl, obj, OM_NEW, AROS_SLOWSTACKTAGS_ARG(tag1), NULL);
-    AROS_SLOWSTACKTAGS_POST
-}
+/* varargs cannot carry int-typed tag data on 64-bit targets; expand the
+   tag list into a full-width IPTR array at the call site instead */
+#include <aros/preprocessor/variadic/cast2iptr.hpp>
+#define DoSuperNew(cl, obj, ...)                                          \
+({                                                                        \
+    IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };          \
+    struct opSet __ops = { OM_NEW, (struct TagItem *)__args, NULL };      \
+    (Object *)DoSuperMethodA((cl), (obj), (Msg)&__ops);                   \
+})
 #else
 static Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 {
@@ -346,28 +349,31 @@ IPTR mNL_New(struct IClass *cl,Object *obj,struct opSet *msg)
   if(DragSortable)
     dropable = TRUE;
 
+  img_tr = MUI_NewObject(MUIC_Image,
+    MUIA_FillArea,FALSE,
+    MUIA_Image_Spec,img_name,
+/*
+ *   MUIA_Image_FontMatch, TRUE,
+ *   MUIA_Font, Topaz_8,
+ *   MUIA_Image_State, IDS_NORMAL,
+ */
+  End;
+
+  grp = NewObject(NGR_Class->mcc_Class,NULL,
+    MUIA_Group_LayoutHook, &NL_LayoutHookGroup,
+    MUIA_FillArea, FALSE,
+    NoFrame,
+    Child, img_tr,
+    /*Child, HVSpace,*/
+  End;
+
   obj = (Object *) DoSuperNew(cl,obj,
     MUIA_Group_LayoutHook, &NL_LayoutHookNList,
     MUIA_FillArea, FALSE,
     MUIA_Dropable, dropable,
     NoFrame,
-      Child, grp = NewObject(NGR_Class->mcc_Class,NULL,
-        MUIA_Group_LayoutHook, &NL_LayoutHookGroup,
-        MUIA_FillArea, FALSE,
-        NoFrame,
-        Child, img_tr = MUI_NewObject(MUIC_Image,
-          MUIA_FillArea,FALSE,
-          MUIA_Image_Spec,img_name,
-/*
- *         MUIA_Image_FontMatch, TRUE,
- *         MUIA_Font, Topaz_8,
- *         MUIA_Image_State, IDS_NORMAL,
- */
-        End,
-        /*Child, HVSpace,*/
-      End,
-    TAG_MORE, taglist
-  );
+    Child, grp,
+    TAG_MORE, taglist);
 
 
   if(obj == NULL || (data = INST_DATA(cl, obj)) == NULL)

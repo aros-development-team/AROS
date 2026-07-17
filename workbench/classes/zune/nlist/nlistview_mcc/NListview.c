@@ -452,12 +452,9 @@ static void NLV_Scrollers(Object *obj, struct NLVData *data, LONG vert, LONG hor
 
 #if !defined(__MORPHOS__)
 #ifdef __AROS__
-static __attribute__ ((noinline)) Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, Tag tag1, ...)
-{
-    AROS_SLOWSTACKTAGS_PRE_AS(tag1, Object *)
-    retval = (Object *)DoSuperMethod(cl, obj, OM_NEW, AROS_SLOWSTACKTAGS_ARG(tag1), NULL);
-    AROS_SLOWSTACKTAGS_POST
-}
+/* varargs cannot carry int-typed tag data on 64-bit targets; expand the
+   tag list into a full-width IPTR array at the call site instead */
+#define DoSuperNew(cl, obj, ...) DoSuperNewTags((cl), (obj), NULL, __VA_ARGS__)
 #else
 static Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 {
@@ -557,17 +554,18 @@ static IPTR mNLV_New(struct IClass *cl, Object *obj, struct opSet *msg)
     nlist = MUI_NewObject(MUIC_NList, MUIA_Dropable, dropable, TAG_MORE, msg->ops_AttrList);
   }
 
+  vgroup = VGroup,
+    MUIA_Group_Spacing, 0,
+    Child, nlist,
+  TAG_DONE);
+
   obj = (Object *)DoSuperNew(cl, obj,
     MUIA_Group_Horiz, TRUE,
     MUIA_Group_Spacing, 0,
     MUIA_CycleChain, cyclechain,
     NoFrame,
-    Child, vgroup = VGroup,
-      MUIA_Group_Spacing, 0,
-      Child, nlist,
-    TAG_DONE),
-    TAG_MORE, msg->ops_AttrList
-  );
+    Child, vgroup,
+    TAG_MORE, msg->ops_AttrList);
 
   if(obj)
   {
