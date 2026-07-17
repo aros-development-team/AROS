@@ -1,3 +1,15 @@
+# Cleans up old unit test result files in the remote unittests directory.
+# Requires secrets:
+# - SF_RSYNC_USER
+#
+# NOTE: SourceForge has discontinued interactive/remote-command shell
+# access (shell.sourceforge.net), so the old approach of ssh-ing in and
+# running a remote cleanup script no longer works. Cleanup is now done
+# locally in this pipeline, talking to SourceForge only via
+# rsync-over-SSH to web.sourceforge.net, which is still supported for
+# file management (list/upload/delete). All logic is inlined below so
+# the pipeline has no dependency on scripts living elsewhere in the repo.
+
 trigger:
 - master
 
@@ -5,7 +17,9 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  PROJWEBDIR: '/home/project-web' # Location script is run from
+  REMOTE_UNITTESTS_DIR: '/home/project-web/arosdev/htdocs/unittests'
+  SF_HOST: 'web.sourceforge.net'
+  DAYS_KEEP: '30'
 
 steps:
 - task: DownloadSecureFile@1
@@ -20,34 +34,161 @@ steps:
     chmod 600 ~/.ssh/id_rsa
     chmod 700 ~/.ssh
 
-    # Add SourceForge to known hosts (non-interactive SSH)
-    ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
+    # Add SourceForge file-management host to known hosts (non-interactive SSH)
+    ssh-keyscan -t rsa $(SF_HOST) >> ~/.ssh/known_hosts
+
+    echo "Host $(SF_HOST)" > ~/.ssh/config
+    echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+    echo "    IdentitiesOnly yes" >> ~/.ssh/config
+    echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
+    echo "    Port 22" >> ~/.ssh/config
+    chmod 600 ~/.ssh/config
   displayName: 'Setup SSH Key for SourceForge'
 
-- script: |
-    echo "Checking shell access..."
-    if ! ssh -o StrictHostKeyChecking=no "$MAPPED_USER,aros"@shell.sourceforge.net true; then
-      echo "Shell not active yet. Creating shell..."
-      ssh -t "$MAPPED_USER,aros"@shell.sourceforge.net create
+- bash: |
+    set -e
 
-      echo "Waiting for shell to become active (retrying up to 5 times)..."
-      for i in $(seq 1 5); do
-        if ssh -o StrictHostKeyChecking=no "$MAPPED_USER,aros"@shell.sourceforge.net true; then
-          echo "Shell is ready."
-          break
-        else
-          echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
-          sleep 5
-        fi
-      done
-    else
-      echo "Shell already active."
-    fi
+    cat > unittests_clean.py <<'PYEOF'
+    import argparse
+    import re
+    import subprocess
+    import sys
+    import tempfile
+    from datetime import datetime
+    from pathlib import Path
 
-    echo "Running cleanup script on SourceForge..."
-    ssh -o StrictHostKeyChecking=yes -p 22 "$MAPPED_USER,aros"@shell.sourceforge.net \
-      "cd '$PROJWEBDIR' && ./aros/scripts/unittests-clean"
+    FILENAME_RE = re.compile(r'^(?P<prefix>.+)-(?P<date>\d{8})-unittests\.html$')
+
+
+    def run(cmd):
+        print('+ ' + ' '.join(cmd))
+        result = subprocess.run(cmd, text=True, capture_output=True)
+        if result.stdout:
+            print(result.stdout)
+        if result.returncode != 0:
+            print(result.stderr, file=sys.stderr)
+            result.check_returncode()
+        return result
+
+
+    def list_remote_files(ssh_cmd, remote_user, remote_host, remote_dir):
+        target = f"{remote_user}@{remote_host}:{remote_dir}/"
+        result = run(['rsync', '--list-only', '-e', ssh_cmd, target])
+
+        files = []
+        for line in result.stdout.splitlines():
+            parts = line.split(None, 4)
+            if len(parts) < 5:
+                continue
+            perms, _size, _date, _time, name = parts
+            if perms.startswith('d'):
+                continue  # skip directories, including the "." entry
+            files.append(name)
+        return files
+
+
+    def compute_deletions(files, days_keep):
+        by_prefix = {}
+        for name in files:
+            m = FILENAME_RE.match(name)
+            if not m:
+                continue
+            by_prefix.setdefault(m.group('prefix'), []).append((m.group('date'), name))
+
+        to_delete = []
+        for prefix, entries in sorted(by_prefix.items()):
+            dated = []
+            for date_str, name in entries:
+                try:
+                    dated.append((datetime.strptime(date_str, '%Y%m%d'), name))
+                except ValueError:
+                    print(f"Skipping file with invalid date: {name}")
+
+            if not dated:
+                continue
+
+            newest = max(d for d, _ in dated)
+            print(f"Processing prefix: {prefix} (newest: {newest.date()})")
+
+            for date, name in sorted(dated, key=lambda t: t[0]):
+                age_days = (newest - date).days
+                if age_days > days_keep:
+                    print(f"  Deleting old file: {name} (age: {age_days} days from latest)")
+                    to_delete.append(name)
+                else:
+                    print(f"  Keeping recent file: {name} (age: {age_days} days from latest)")
+
+        return to_delete
+
+
+    def delete_remote_files(ssh_cmd, remote_user, remote_host, remote_dir, filenames, dry_run):
+        if not filenames:
+            print("Nothing to delete.")
+            return
+
+        target = f"{remote_user}@{remote_host}:{remote_dir}/"
+
+        with tempfile.TemporaryDirectory() as empty_dir:
+            filter_path = None
+            try:
+                with tempfile.NamedTemporaryFile(
+                    mode='w', suffix='.filter', delete=False
+                ) as filter_file:
+                    for name in filenames:
+                        filter_file.write(f"+ /{name}\n")
+                    filter_file.write("- *\n")
+                    filter_path = filter_file.name
+
+                cmd = [
+                    'rsync', '-av', '--delete',
+                    '--include-from', filter_path,
+                    '--exclude', '*',
+                    '-e', ssh_cmd,
+                ]
+                if dry_run:
+                    cmd.append('--dry-run')
+                cmd += [empty_dir + '/', target]
+
+                run(cmd)
+            finally:
+                if filter_path:
+                    Path(filter_path).unlink(missing_ok=True)
+
+
+    def main():
+        parser = argparse.ArgumentParser(
+            description="Remove old unittest result files from the remote unittests directory"
+        )
+        parser.add_argument('--remote-user', required=True)
+        parser.add_argument('--remote-host', default='web.sourceforge.net')
+        parser.add_argument('--remote-dir', required=True)
+        parser.add_argument('--days-keep', type=int, default=30)
+        parser.add_argument('--ssh-cmd', default='ssh -o StrictHostKeyChecking=yes')
+        parser.add_argument('--dry-run', action='store_true')
+        args = parser.parse_args()
+
+        files = list_remote_files(args.ssh_cmd, args.remote_user, args.remote_host, args.remote_dir)
+        if not files:
+            print("No unittest files found remotely (or listing failed). Nothing to do.")
+            return
+
+        to_delete = compute_deletions(files, args.days_keep)
+        delete_remote_files(
+            args.ssh_cmd, args.remote_user, args.remote_host, args.remote_dir, to_delete, args.dry_run
+        )
+
+
+    if __name__ == '__main__':
+        main()
+    PYEOF
+
+    echo "Running unittest cleanup locally against SourceForge (rsync only, no remote shell)..."
+    python3 unittests_clean.py \
+      --remote-user "$MAPPED_USER" \
+      --remote-host $(SF_HOST) \
+      --remote-dir "$(REMOTE_UNITTESTS_DIR)" \
+      --days-keep $(DAYS_KEEP)
   env:
     MAPPED_USER: $(SF_RSYNC_USER)
   condition: ne( variables['SF_RSYNC_USER'], '' )
-  displayName: 'Run Remote Unittest Cleanup'
+  displayName: 'Run Unittest Cleanup'
