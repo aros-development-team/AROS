@@ -203,6 +203,11 @@ struct intConUnit
 
     /* Position in the first pasteData element */
     ULONG pasteBufferPos;
+
+    /* An escape/CSI sequence split across several writes is held here until
+       the terminating byte arrives, then prepended to the next write. */
+    UBYTE pendingCSI[64];
+    UWORD pendingCSILen;
 };
 
 /* The conFlags */
@@ -281,6 +286,12 @@ struct ConsoleBase
     struct SignalSemaphore consoleTaskLock;
 
     struct Interrupt *inputHandler;
+    /* Second input handler, BELOW intuition (priority < 50). Intuition
+       delivers window events (IECLASS_SIZEWINDOW, IECLASS_REFRESHWINDOW,
+       IECLASS_CLOSEWINDOW, IECLASS_GADGETDOWN/UP) for IDCMP-less windows
+       by generating input events that only handlers below priority 50 can
+       see, so the priority-51 handler above never receives them. */
+    struct Interrupt *winEventHandler;
     struct Task *consoleTask;
     struct MsgPort *commandPort;
 

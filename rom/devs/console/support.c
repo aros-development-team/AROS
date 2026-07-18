@@ -65,27 +65,71 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
 #define MAX_COMMAND_PARAMS 16
 
 
+/* An escape sequence runs <CSI> params(0x30-0x3F) intermediates(0x20-0x2F)
+   final(0x40-0x7E). It is unterminated while only parameter or intermediate
+   bytes have arrived, so it must not be interpreted or printed yet. */
+static BOOL csi_incomplete(const UBYTE *buf, LONG len)
+{
+    const UBYTE *p;
+    LONG rem, i;
+
+    if (len >= 1 && buf[0] == CSI)
+    {
+        p = buf + 1;
+        rem = len - 1;
+    }
+    else if (len == 1 && buf[0] == ESC)
+        return TRUE;
+    else if (len >= 2 && buf[0] == ESC && buf[1] == '[')
+    {
+        p = buf + 2;
+        rem = len - 2;
+    }
+    else
+        return FALSE;
+
+    for (i = 0; i < rem; i++)
+    {
+        if (p[i] < 0x20 || p[i] > 0x3F)
+            return FALSE;
+    }
+    return TRUE;
+}
+
+
 ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
     struct ConsoleBase *ConsoleDevice)
 {
     IPTR param_tab[MAX_COMMAND_PARAMS];
+    struct intConUnit *icu = ICU(unit);
 
     BYTE command = 0;
     UBYTE numparams;
     UBYTE *orig_write_str, *write_str;
-    LONG written, orig_towrite;
-
-    write_str = orig_write_str = (UBYTE *) buf;
+    LONG orig_towrite;
+    UBYTE *allocbuf = NULL;
+    ULONG accepted = towrite;
 
     EnterFunc(bug("WriteToConsole(ioreq=%p)\n"));
 
+    if (icu->pendingCSILen > 0)
+    {
+        UWORD pl = icu->pendingCSILen;
+        icu->pendingCSILen = 0;
+        allocbuf = AllocMem(pl + towrite, MEMF_ANY);
+        if (allocbuf)
+        {
+            CopyMem(icu->pendingCSI, allocbuf, pl);
+            CopyMem(buf, allocbuf + pl, towrite);
+            buf = (STRPTR) allocbuf;
+            towrite += pl;
+        }
+    }
+
+    write_str = orig_write_str = (UBYTE *) buf;
     orig_towrite = towrite;
 
     D(bug("Number of chars to write %d\n", towrite));
-
-    /* Interpret string into a command and execute command */
-
-    /* DEBUG aid */
 
 #if DEBUG
     {
@@ -99,6 +143,15 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
 #endif
     while (towrite > 0)
     {
+        if (csi_incomplete(write_str, towrite)
+            && towrite <= (LONG) sizeof(icu->pendingCSI))
+        {
+            CopyMem(write_str, icu->pendingCSI, towrite);
+            icu->pendingCSILen = towrite;
+            write_str += towrite;
+            break;
+        }
+
         numparams = 0;
 
         if (!string2command(&command, &write_str, &numparams, towrite,
@@ -112,9 +165,10 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
         towrite = orig_towrite - (write_str - orig_write_str);
     } /* while (characters left to interpret) */
 
-    written = write_str - orig_write_str;
+    if (allocbuf)
+        FreeMem(allocbuf, orig_towrite);
 
-    ReturnInt("WriteToConsole", LONG, written);
+    ReturnInt("WriteToConsole", LONG, accepted);
 }
 
 
