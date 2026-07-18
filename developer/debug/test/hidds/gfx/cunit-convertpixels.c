@@ -126,27 +126,17 @@ static int ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt
  */
 void testCONVPIX(void)
 {
-    CU_ASSERT(0 == ConvertPixels(argb, 0, SRC_PIXFMT, rgb15, 0, DST_PIXFMT, 8, 1, HIDD_BM_OBJ(bitmap)));
-#if (0)
-    //TODO: verify the conversion?
+    static const UWORD expected[8] =
     {
-        int i;
-        
-        for(i = 0; i < 8; i++)
-        {
-            printf("ARGB32 %08x = RGB15 %04x (%02x %02x %02x) (%3d%% %3d%% %3d%%) [%08x]\n",
-                    (unsigned int)argb[i], rgb15[i],
-                    (rgb15[i] & 0x7C00) >> 10,
-                    (rgb15[i] & 0x03E0) >> 5,
-                    (rgb15[i] & 0x001F),
-                    ((rgb15[i] & 0x7C00) >> 10) * 100 / 31,
-                    ((rgb15[i] & 0x03E0) >> 5) * 100 / 31,
-                    (rgb15[i] & 0x001F) * 100 / 31,
-                    (unsigned int)argb_inv[i]
-                    );
-        }
-    }
-#endif
+        0x0886, 0x7FFF, 0x4631, 0x7C00,
+        0x03E0, 0x001F, 0x7FE0, 0x4EB7,
+    };
+    int i;
+
+    CU_ASSERT(0 == ConvertPixels(argb, 0, SRC_PIXFMT, rgb15, 0, DST_PIXFMT, 8, 1, HIDD_BM_OBJ(bitmap)));
+
+    for (i = 0; i < 8; i++)
+        CU_ASSERT_EQUAL(rgb15[i], expected[i]);
 }
 
 /* Simple test of ConvertPixels(rgb15 -> argb).
