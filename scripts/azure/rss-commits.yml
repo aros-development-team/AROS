@@ -29,10 +29,12 @@ variables:
 steps:
 - script: |
     sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
-    sudo apt-get update
-    sudo apt-get install -y sshpass
-    sudo apt-get install -y python3-feedparser python3-bs4
-  displayName: 'Installing AROS build dependencies'
+  displayName: 'Add Microsoft package signing key'
+
+- template: templates/install-deps.yml
+  parameters:
+    aptPackages: 'sshpass python3-feedparser python3-bs4'
+    displayName: 'Installing AROS build dependencies'
 
 - script: |
     sudo mkdir -p '$(AROSWEBDIR)/htdocs'

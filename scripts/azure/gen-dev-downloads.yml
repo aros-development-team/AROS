@@ -19,52 +19,30 @@ pool:
 
 steps:
 
-- task: DownloadSecureFile@1
-  name: GetSSHKey
-  inputs:
-    secureFile: 'sf-azure-key'
-
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.x'      # Use Python 3.x
   displayName: 'Use Python 3'
 
-- bash: |
-    echo "Setting up SSH key..."
-    mkdir -p ~/.ssh
-    cp "$(GetSSHKey.secureFilePath)" ~/.ssh/id_rsa
-    chmod 600 ~/.ssh/id_rsa
-    chmod 700 ~/.ssh
+- template: templates/setup-sf-ssh.yml
+  parameters:
+    keyscanHosts: 'shell.sourceforge.net web.sourceforge.net'
 
-    ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
-    ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
-
-    echo "Host web.sourceforge.net" > ~/.ssh/config
-    echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
-    echo "    IdentitiesOnly yes" >> ~/.ssh/config
-    echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
-    echo "    Port 22" >> ~/.ssh/config
-    chmod 600 ~/.ssh/config
-
-    echo "SSH key and config setup complete."
-  displayName: 'Setup SSH Key and SSH Config for SourceForge'
-
-- script: |
-    python3 -m pip install --upgrade pip
-    pip install requests beautifulsoup4
-  displayName: 'Install dependencies'
+- template: templates/install-deps.yml
+  parameters:
+    pipPackages: 'requests beautifulsoup4'
+    displayName: 'Install dependencies'
 
 - script: |
     echo "Run download scraper script..."
     python3 $(Build.SourcesDirectory)/scripts/azure/gen-downloads.py > downloads.html
+  displayName: 'Generate downloads.html'
 
-    echo "Upload generated downloads.html back to remote..."
-    rsync -avz -e ssh \
-      downloads.html \
-      "$(SF_RSYNC_USER),arosdev"@web.sourceforge.net:/home/project-web/arosdev/htdocs/downloads.html
-  env:
-    SF_RSYNC_USER: $(SF_RSYNC_USER)
-  displayName: 'Generating downloads.html, and Uploading'
+- template: templates/rsync-upload.yml
+  parameters:
+    source: 'downloads.html'
+    destination: '$(SF_RSYNC_USER),arosdev@web.sourceforge.net:/home/project-web/arosdev/htdocs/downloads.html'
+    displayName: 'Upload generated downloads.html'
   
 - publish: downloads.html
   artifact: downloads-html

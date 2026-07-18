@@ -1,0 +1,515 @@
+# Step template: verify, publish and clean up nightly build uploads on a
+# SourceForge project web space. Shared by update-nightlies.yml (aros)
+# and update-dev-nightlies.yml (arosdev), which differ only in the
+# remote directories they pass in.
+#
+# Requires:
+# - the SF_RSYNC_USER secret
+# - SSH already configured for the host (see setup-sf-ssh.yml)
+#
+# NOTE: SourceForge has discontinued interactive/remote-command shell
+# access (shell.sourceforge.net), so the old approach of ssh-ing in and
+# running the remote nightly2-update-frs / nightly2-update / nightly2-clean
+# scripts (or their -dev variants) no longer works. Their logic is
+# performed locally here, talking to SourceForge only via rsync-over-SSH
+# to web.sourceforge.net, which is still supported for file management
+# (list/download/upload/delete). All logic is inlined below so the
+# pipeline has no dependency on scripts living on the project web space.
+#
+# What it does (mirroring scripts/web/nightly2-update-frs, nightly2-update
+# and nightly2-clean, and their -dev counterparts):
+#  1. Downloads the pending files from uploads/nightly2 and checks each
+#     against its .md5 companion, so incomplete or broken files are never
+#     made available for download. Uploads are fetched one dated entry at
+#     a time (newest first, skipping files superseded by an already
+#     published newer nightly, and deleting each local copy once
+#     published), so local disk usage stays bounded to a single nightly
+#     even when a large backlog has accumulated on SourceForge.
+#  2. For each verified file, deletes older dated versions of the same
+#     package from frs/nightly2 and htdocs/downloads/nightly2 (pruning
+#     category/date directories left empty, or left holding only logs).
+#  3. Uploads the verified files (and their .md5 files) to both
+#     destinations.
+#  4. Sweeps the destination areas: removes older duplicate versions of
+#     packages left by earlier runs (keeping only the newest date of
+#     each), then stale dated/category directories left holding no
+#     packages (empty, or only logs), so the generated downloads pages
+#     stop showing older versions and empty date columns.
+#  5. Cleans the uploads area: published files are removed and only the
+#     newest upload entry is kept (as nightly2-clean did).
+#
+# The legacy .xml changelog -> php conversion (xsltproc) performed by the
+# old remote scripts is not reproduced: nothing uploads changelog .xml
+# files to uploads/nightly2 any more.
+
+parameters:
+- name: uploadsDir        # remote uploads/nightly2 directory
+  type: string
+- name: frsDir            # remote frs/nightly2 directory
+  type: string
+- name: downloadsDir      # remote htdocs/downloads/nightly2 directory
+  type: string
+- name: sfHost
+  type: string
+  default: 'web.sourceforge.net'
+- name: displayName
+  type: string
+  default: 'Run Nightly Build Update'
+
+steps:
+- bash: |
+    set -e
+
+    cat > nightlies_update.py <<'PYEOF'
+    import argparse
+    import fnmatch
+    import os
+    import posixpath
+    import shutil
+    import subprocess
+    import sys
+    import tempfile
+    from pathlib import Path
+
+
+    def run(cmd, check=True, cwd=None):
+        print('+ ' + ' '.join(cmd))
+        result = subprocess.run(cmd, text=True, capture_output=True, cwd=cwd)
+        if result.stdout:
+            print(result.stdout)
+        if result.returncode != 0:
+            print(result.stderr, file=sys.stderr)
+            if check:
+                result.check_returncode()
+        return result
+
+
+    def list_remote(ssh_cmd, target):
+        """Recursively list a remote directory. Returns (dirs, files) as
+        sorted lists of relative paths. A missing directory yields empty
+        lists."""
+        result = run(['rsync', '--list-only', '-r', '-e', ssh_cmd, target + '/'],
+                     check=False)
+        dirs, files = [], []
+        if result.returncode != 0:
+            print(f"Listing {target} failed (missing directory?); treating as empty.")
+            return dirs, files
+        for line in result.stdout.splitlines():
+            parts = line.split(None, 4)
+            if len(parts) < 5:
+                continue
+            perms, _size, _date, _time, name = parts
+            if name in ('.', './'):
+                continue
+            if perms.startswith('d'):
+                dirs.append(name)
+            else:
+                if perms.startswith('l'):
+                    name = name.split(' -> ')[0]
+                files.append(name)
+        return sorted(dirs), sorted(files)
+
+
+    def verify_md5(incoming, relpath):
+        """Check a downloaded file against its .md5 companion, exactly as the
+        old remote md5check() did. Missing md5 or mismatch = failure."""
+        path = incoming / relpath
+        md5 = incoming / (relpath + '.md5')
+        if not md5.is_file():
+            return False
+        result = subprocess.run(['md5sum', '-c', md5.name], cwd=path.parent,
+                                text=True, capture_output=True)
+        return result.returncode == 0
+
+
+    def old_version_pattern(name):
+        """Wildcard the date part of a nightly package name, matching the old
+        scripts' pattern "${f:0:5}????????${f:13}" (AROS-YYYYMMDD-...)."""
+        if len(name) <= 13 or not name[5:13].isdigit():
+            return None
+        return name[:5] + '????????' + name[13:]
+
+
+    def compute_old_versions(dest_files, new_files):
+        """Destination files (and their .md5s) superseded by the files about
+        to be published."""
+        dest_set = set(dest_files)
+        to_delete = set()
+        for rel in new_files:
+            if 'logs' in rel.split('/')[:-1]:
+                continue  # log files are never deduplicated
+            pattern = old_version_pattern(posixpath.basename(rel))
+            if not pattern:
+                continue
+            for dest in dest_files:
+                if dest.endswith('.md5') or dest == rel:
+                    continue
+                if fnmatch.fnmatch(posixpath.basename(dest), pattern):
+                    to_delete.add(dest)
+                    if dest + '.md5' in dest_set:
+                        to_delete.add(dest + '.md5')
+        return to_delete
+
+
+    def compute_dir_prunes(dest_dirs, dest_files, deleted):
+        """Directories to remove after the deletions: category dirs left with
+        no files, and date dirs left holding nothing but logs."""
+        remaining = set(dest_files) - set(deleted)
+        prune = set()
+
+        def has_content(d):
+            prefix = d + '/'
+            return any(f.startswith(prefix) for f in remaining)
+
+        for catdir in sorted({posixpath.dirname(p) for p in deleted}):
+            if not catdir:
+                continue
+            if not has_content(catdir):
+                prune.add(catdir)
+            datedir = posixpath.dirname(catdir)
+            if not datedir:
+                continue
+            kids = set()
+            for d in dest_dirs:
+                if posixpath.dirname(d) == datedir and d not in prune and has_content(d):
+                    kids.add(d)
+            for f in remaining:
+                if posixpath.dirname(f) == datedir:
+                    kids.add(f)
+            if len(kids) < 2 and all(posixpath.basename(k) == 'logs' for k in kids):
+                prune.add(datedir)
+
+        # Drop prunes nested inside other prunes
+        return {p for p in prune
+                if not any(p != q and p.startswith(q + '/') for q in prune)}
+
+
+    def compute_dest_duplicates(dest_files):
+        """Older dated versions of packages already in a destination.
+        Publishing normally prunes these, but duplicates accumulate when a
+        multi-day backlog was published in one batch (older code pruned
+        only pre-existing destination files, not within the batch) or when
+        a package stops being built. Keeps only the newest date of each
+        package."""
+        dest_set = set(dest_files)
+        groups = {}
+        for f in dest_files:
+            if f.endswith('.md5') or 'logs' in f.split('/')[:-1]:
+                continue
+            name = posixpath.basename(f)
+            pattern = old_version_pattern(name)
+            if not pattern:
+                continue
+            groups.setdefault(pattern, []).append((name[5:13], f))
+        doomed = set()
+        for versions in groups.values():
+            if len(versions) > 1:
+                versions.sort()
+                for _date, f in versions[:-1]:
+                    doomed.add(f)
+                    if f + '.md5' in dest_set:
+                        doomed.add(f + '.md5')
+        return doomed
+
+
+    def compute_stale_dirs(dest_dirs, dest_files):
+        """Destination directories left without published content by past
+        runs: category directories holding no files at all, and dated
+        directories holding nothing but logs. compute_dir_prunes() only
+        considers directories touched by the current run's deletions, so
+        without this sweep such leftovers linger forever and show up as
+        empty date columns on the generated downloads pages."""
+        files = set(dest_files)
+        prune = set()
+
+        def has_content(d):
+            prefix = d + '/'
+            return any(f.startswith(prefix) for f in files)
+
+        for d in dest_dirs:
+            if '/' not in d:
+                if len(d) == 8 and d.isdigit():
+                    kids = [k for k in dest_dirs
+                            if posixpath.dirname(k) == d and has_content(k)]
+                    kids += [f for f in files if posixpath.dirname(f) == d]
+                    if all(posixpath.basename(k) == 'logs' for k in kids):
+                        prune.add(d)
+            elif posixpath.basename(d) != 'logs' and \
+                    'logs' not in d.split('/')[:-1]:
+                if not has_content(d):
+                    prune.add(d)
+        return {p for p in prune
+                if not any(p != q and p.startswith(q + '/') for q in prune)}
+
+
+    def rsync_delete(ssh_cmd, target, files, dirs, dry_run):
+        """Delete the given remote files/directories using rsync only: sync a
+        local skeleton of empty ancestor directories with --delete and filters
+        selecting exactly the doomed paths."""
+        dirs = sorted(dirs)
+        files = sorted(f for f in files
+                       if not any(f.startswith(d + '/') for d in dirs))
+        if not files and not dirs:
+            print(f"Nothing to delete under {target}.")
+            return
+
+        ancestors = set()
+        for p in files + dirs:
+            d = posixpath.dirname(p)
+            while d:
+                ancestors.add(d)
+                d = posixpath.dirname(d)
+        ancestors -= {a for a in ancestors
+                      if any(a == d or a.startswith(d + '/') for d in dirs)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            skeleton = Path(tmp) / 'skeleton'
+            skeleton.mkdir()
+            filter_lines = []
+            for a in sorted(ancestors):
+                (skeleton / a).mkdir(parents=True, exist_ok=True)
+                filter_lines.append(f"+ /{a}/")
+            for d in dirs:
+                filter_lines.append(f"+ /{d}/")
+                filter_lines.append(f"+ /{d}/**")
+            for f in files:
+                filter_lines.append(f"+ /{f}")
+            filter_lines.append("- *")
+            filter_path = Path(tmp) / 'delete.filter'
+            filter_path.write_text('\n'.join(filter_lines) + '\n')
+
+            cmd = ['rsync', '-rv', '--delete', '--force',
+                   '--include-from', str(filter_path), '-e', ssh_cmd]
+            if dry_run:
+                cmd.append('--dry-run')
+            cmd += [str(skeleton) + '/', target + '/']
+            run(cmd)
+
+
+    def download_files(ssh_cmd, uploads, incoming, files):
+        """Fetch just the given remote files (and their .md5 companions)
+        into the local incoming tree."""
+        ancestors = set()
+        for rel in files:
+            d = posixpath.dirname(rel)
+            while d:
+                ancestors.add(d)
+                d = posixpath.dirname(d)
+        cmd = ['rsync', '-avz', '-e', ssh_cmd]
+        for a in sorted(ancestors):
+            cmd += ['--include', '/' + a + '/']
+        for rel in files:
+            cmd += ['--include', '/' + rel, '--include', '/' + rel + '.md5']
+        cmd += ['--exclude', '*', uploads + '/', str(incoming) + '/']
+        run(cmd)
+
+
+    def main():
+        parser = argparse.ArgumentParser(
+            description="Verify, publish and clean up nightly build uploads on SourceForge"
+        )
+        parser.add_argument('--remote-user', required=True)
+        parser.add_argument('--remote-host', default='web.sourceforge.net')
+        parser.add_argument('--uploads-dir', required=True)
+        parser.add_argument('--frs-dir', required=True)
+        parser.add_argument('--downloads-dir', required=True)
+        parser.add_argument('--ssh-cmd', default='ssh -o StrictHostKeyChecking=yes')
+        parser.add_argument('--dry-run', action='store_true')
+        args = parser.parse_args()
+
+        remote = f"{args.remote_user}@{args.remote_host}"
+        uploads = f"{remote}:{args.uploads_dir}"
+        destinations = [f"{remote}:{args.frs_dir}",
+                        f"{remote}:{args.downloads_dir}"]
+
+        updirs, upfiles = list_remote(args.ssh_cmd, uploads)
+        pending = [f for f in upfiles if not f.endswith('.md5')]
+
+        workdir = Path(tempfile.mkdtemp(prefix='nightlies-', dir='.'))
+        incoming = workdir / 'incoming'
+        incoming.mkdir()
+
+        # Group the pending files by top-level uploads entry (dated
+        # directory, or '' for loose files) and handle one entry at a
+        # time, newest first: download, verify, publish, then delete the
+        # local copy before fetching the next. This bounds local disk
+        # usage to a single nightly instead of the whole backlog, which
+        # can exceed the hosted agent's disk when several days of uploads
+        # have piled up.
+        groups = {}
+        for rel in pending:
+            top = rel.split('/', 1)[0] if '/' in rel else ''
+            groups.setdefault(top, []).append(rel)
+
+        # Destination listings are fetched once up front and kept current
+        # in memory as entries are published.
+        dest_state = {}
+        for dest in destinations:
+            ddirs, dfiles = list_remote(args.ssh_cmd, dest)
+            dest_state[dest] = (set(ddirs), set(dfiles))
+
+        verified = []
+        skipped = 0
+        if pending:
+            print(f"Found {len(pending)} pending file(s) in "
+                  f"{len(groups)} upload entrie(s).")
+
+            # Wildcarded names of packages already published this run. A
+            # file superseded by a newer, verified nightly published from
+            # an earlier (newer) entry is not worth downloading:
+            # publishing it would only delete the newer version again, and
+            # the uploads cleanup below removes it from the backlog
+            # regardless.
+            published = set()
+
+            def superseded(rel):
+                if 'logs' in rel.split('/')[:-1]:
+                    return False
+                pattern = old_version_pattern(posixpath.basename(rel))
+                return pattern is not None and pattern in published
+
+            for top in sorted(groups, reverse=True):
+                todo = [rel for rel in groups[top] if not superseded(rel)]
+                skipped += len(groups[top]) - len(todo)
+                if not todo:
+                    print(f"Skipping upload entry '{top or '.'}': all "
+                          "files superseded by newer published nightlies.")
+                    continue
+                print(f"Processing upload entry '{top or '.'}' "
+                      f"({len(todo)} file(s))...")
+                download_files(args.ssh_cmd, uploads, incoming, todo)
+
+                batch = []
+                for rel in todo:
+                    if verify_md5(incoming, rel):
+                        print(f"> {rel}")
+                        batch.append(rel)
+                    else:
+                        print(f"! {rel} (md5 missing or mismatch - not published)")
+
+                if batch:
+                    # Prune older dated versions of the packages being
+                    # published, then upload to both the frs and
+                    # downloads areas.
+                    for dest in destinations:
+                        ddirs, dfiles = dest_state[dest]
+                        doomed = compute_old_versions(sorted(dfiles), batch)
+                        prune = compute_dir_prunes(sorted(ddirs),
+                                                   sorted(dfiles), doomed)
+                        rsync_delete(args.ssh_cmd, dest, doomed, prune,
+                                     args.dry_run)
+                        dfiles -= doomed
+                        dfiles -= {f for f in dfiles if any(
+                            f.startswith(p + '/') for p in prune)}
+                        ddirs -= {d for d in ddirs if any(
+                            d == p or d.startswith(p + '/') for p in prune)}
+
+                    publish = workdir / 'publish'
+                    for rel in batch:
+                        for suffix in ('', '.md5'):
+                            src = incoming / (rel + suffix)
+                            dst = publish / (rel + suffix)
+                            dst.parent.mkdir(parents=True, exist_ok=True)
+                            try:
+                                os.link(src, dst)
+                            except OSError:
+                                shutil.copy2(src, dst)
+                    for dest in destinations:
+                        cmd = ['rsync', '-avz', '-e', args.ssh_cmd]
+                        if args.dry_run:
+                            cmd.append('--dry-run')
+                        cmd += [str(publish) + '/', dest + '/']
+                        run(cmd)
+                        ddirs, dfiles = dest_state[dest]
+                        for rel in batch:
+                            dfiles.add(rel)
+                            dfiles.add(rel + '.md5')
+                            parent = posixpath.dirname(rel)
+                            while parent:
+                                ddirs.add(parent)
+                                parent = posixpath.dirname(parent)
+                    shutil.rmtree(publish, ignore_errors=True)
+
+                    for rel in batch:
+                        if 'logs' not in rel.split('/')[:-1]:
+                            pattern = old_version_pattern(
+                                posixpath.basename(rel))
+                            if pattern:
+                                published.add(pattern)
+                    verified += batch
+
+                # Free the local copy before the next entry is fetched.
+                if top:
+                    shutil.rmtree(incoming / top, ignore_errors=True)
+                else:
+                    for rel in todo:
+                        for suffix in ('', '.md5'):
+                            (incoming / (rel + suffix)).unlink(missing_ok=True)
+        else:
+            print("No pending upload files found.")
+
+        # Sweep both destinations: drop older duplicate versions of
+        # packages (leftovers of batch-published backlogs or discontinued
+        # packages), then stale directories left without published content
+        # (empty category dirs, date dirs holding only logs), so the
+        # downloads pages stop showing older versions and empty date
+        # columns.
+        for dest in destinations:
+            ddirs, dfiles = dest_state[dest]
+            dupes = compute_dest_duplicates(sorted(dfiles))
+            if dupes:
+                print(f"Removing older duplicate versions under {dest}:")
+                for f in sorted(dupes):
+                    if not f.endswith('.md5'):
+                        print(f"  - {f}")
+            prune = compute_dir_prunes(sorted(ddirs), sorted(dfiles), dupes)
+            dfiles = dfiles - dupes
+            dfiles -= {f for f in dfiles if any(
+                f.startswith(p + '/') for p in prune)}
+            ddirs = ddirs - {d for d in ddirs if any(
+                d == p or d.startswith(p + '/') for p in prune)}
+            stale = compute_stale_dirs(sorted(ddirs), sorted(dfiles))
+            if stale:
+                print(f"Sweeping stale directories under {dest}: "
+                      + ', '.join(sorted(stale)))
+            rsync_delete(args.ssh_cmd, dest, dupes, prune | stale,
+                         args.dry_run)
+
+        # Clean the uploads area: drop the published files, and (as
+        # nightly2-clean did) keep only the newest top-level upload entry.
+        top_dirs = {d for d in updirs if '/' not in d}
+        top_entries = sorted(top_dirs | {f for f in upfiles if '/' not in f})
+        keep = top_entries[-1] if top_entries else None
+        del_dirs = [t for t in top_entries if t != keep and t in top_dirs]
+        del_files = [t for t in top_entries if t != keep and t not in top_dirs]
+        for rel in verified:
+            if rel.split('/')[0] == keep:
+                del_files.append(rel)
+                if rel + '.md5' in upfiles:
+                    del_files.append(rel + '.md5')
+        if keep:
+            print(f"Cleaning uploads (keeping newest entry: {keep})...")
+        rsync_delete(args.ssh_cmd, uploads, del_files, del_dirs, args.dry_run)
+
+        shutil.rmtree(workdir, ignore_errors=True)
+        summary = f"Done: {len(verified)} of {len(pending)} pending file(s) published"
+        if skipped:
+            summary += f" ({skipped} skipped as superseded)"
+        print(summary + ".")
+
+
+    if __name__ == '__main__':
+        main()
+    PYEOF
+
+    echo "Running nightly build update locally against SourceForge (rsync only, no remote shell)..."
+    python3 nightlies_update.py \
+      --remote-user "$MAPPED_USER" \
+      --remote-host ${{ parameters.sfHost }} \
+      --uploads-dir "${{ parameters.uploadsDir }}" \
+      --frs-dir "${{ parameters.frsDir }}" \
+      --downloads-dir "${{ parameters.downloadsDir }}"
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: ne( variables['SF_RSYNC_USER'], '' )
+  displayName: ${{ parameters.displayName }}

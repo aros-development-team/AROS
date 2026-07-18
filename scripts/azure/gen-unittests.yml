@@ -32,29 +32,7 @@ variables:
 
 steps:
 
-- task: DownloadSecureFile@1
-  name: GetSSHKey
-  inputs:
-    secureFile: 'sf-azure-key'
-
-- bash: |
-    echo "Setting up SSH key..."
-    mkdir -p ~/.ssh
-    cp "$(GetSSHKey.secureFilePath)" ~/.ssh/id_rsa
-    chmod 600 ~/.ssh/id_rsa
-    chmod 700 ~/.ssh
-
-    ssh-keyscan -t rsa $(SF_HOST) >> ~/.ssh/known_hosts
-
-    echo "Host $(SF_HOST)" > ~/.ssh/config
-    echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
-    echo "    IdentitiesOnly yes" >> ~/.ssh/config
-    echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
-    echo "    Port 22" >> ~/.ssh/config
-    chmod 600 ~/.ssh/config
-
-    echo "SSH key and config setup complete."
-  displayName: 'Setup SSH Key and SSH Config for SourceForge'
+- template: templates/setup-sf-ssh.yml
 
 - bash: |
     set -e

@@ -19,32 +19,10 @@ steps:
 - checkout: self
   persistCredentials: true
 
-# Download the SSH key from secure files
-- task: DownloadSecureFile@1
-  name: GetSSHKey
-  inputs:
-    secureFile: 'sf-azure-key'
-
 # Set up SSH key and config for SourceForge
-- bash: |
-    echo "Setting up SSH key..."
-    mkdir -p ~/.ssh
-    cp "$(GetSSHKey.secureFilePath)" ~/.ssh/id_rsa
-    chmod 600 ~/.ssh/id_rsa
-    chmod 700 ~/.ssh
-
-    ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
-    ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
-
-    echo "Host web.sourceforge.net" > ~/.ssh/config
-    echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
-    echo "    IdentitiesOnly yes" >> ~/.ssh/config
-    echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
-    echo "    Port 22" >> ~/.ssh/config
-    chmod 600 ~/.ssh/config
-
-    echo "SSH key and config setup complete."
-  displayName: 'Setup SSH Key and SSH Config for SourceForge'
+- template: templates/setup-sf-ssh.yml
+  parameters:
+    keyscanHosts: 'shell.sourceforge.net web.sourceforge.net'
 
 # Download log, parse .gitmodules, categorize warnings, and generate output
 - bash: |
@@ -165,17 +143,15 @@ steps:
   displayName: 'Create target directory on SourceForge'
 
 # Upload the generated HTML pages using SSH key
-- bash: |
-    echo "Uploading generated HTML pages using SSH key..."
-    rsync -avz -e ssh \
-      output/ \
-      "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:htdocs/documentation/issues/"
-  displayName: 'Upload generated HTML pages using SSH key'
+- template: templates/rsync-upload.yml
+  parameters:
+    source: 'output/'
+    destination: '$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:htdocs/documentation/issues/'
+    displayName: 'Upload generated HTML pages using SSH key'
 
 # Upload the remaining file via SSH key using rsync
-- bash: |
-    echo "Uploading localization issue files using SSH key..."
-    rsync -avz -e ssh \
-      repository_localization_issues.txt \
-      "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:htdocs/documentation/"
-  displayName: 'Upload localization issue files using SSH key'
+- template: templates/rsync-upload.yml
+  parameters:
+    source: 'repository_localization_issues.txt'
+    destination: '$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:htdocs/documentation/'
+    displayName: 'Upload localization issue files using SSH key'

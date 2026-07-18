@@ -1,0 +1,19 @@
+# Step template: upload local files to SourceForge over rsync/SSH.
+# Assumes SSH has already been configured (see setup-sf-ssh.yml).
+
+parameters:
+- name: source            # local path(s), passed verbatim to rsync
+  type: string
+- name: destination       # remote rsync destination (user@host:path)
+  type: string
+- name: displayName
+  type: string
+  default: 'Upload files to SourceForge'
+
+steps:
+- bash: |
+    echo "Uploading to ${{ parameters.destination }} ..."
+    rsync -avz -e ssh \
+      ${{ parameters.source }} \
+      "${{ parameters.destination }}"
+  displayName: ${{ parameters.displayName }}

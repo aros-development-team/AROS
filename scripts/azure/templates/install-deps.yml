@@ -1,0 +1,24 @@
+# Step template: install apt and/or pip dependencies on the build agent.
+
+parameters:
+- name: aptPackages       # space-separated apt package names ('' = none)
+  type: string
+  default: ''
+- name: pipPackages       # space-separated pip package names ('' = none)
+  type: string
+  default: ''
+- name: displayName
+  type: string
+  default: 'Install dependencies'
+
+steps:
+- bash: |
+    if [ -n "${{ parameters.aptPackages }}" ]; then
+      sudo apt-get update
+      sudo apt-get install -y ${{ parameters.aptPackages }}
+    fi
+    if [ -n "${{ parameters.pipPackages }}" ]; then
+      python3 -m pip install --upgrade pip
+      pip install ${{ parameters.pipPackages }}
+    fi
+  displayName: ${{ parameters.displayName }}

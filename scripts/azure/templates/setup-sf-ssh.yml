@@ -1,0 +1,48 @@
+# Step template: download the SourceForge SSH key secure file and
+# configure ~/.ssh so later steps can talk to SourceForge
+# non-interactively (rsync-over-SSH / SFTP / SCP).
+#
+# Requires the secure file named by the secureFile parameter
+# (default 'sf-azure-key') to be available to the pipeline.
+
+parameters:
+- name: secureFile
+  type: string
+  default: 'sf-azure-key'
+- name: configHost        # host the ~/.ssh/config entry is written for
+  type: string
+  default: 'web.sourceforge.net'
+- name: keyscanHosts      # space-separated hosts added to known_hosts
+  type: string
+  default: 'web.sourceforge.net'
+- name: displayName
+  type: string
+  default: 'Setup SSH Key and SSH Config for SourceForge'
+
+steps:
+- task: DownloadSecureFile@1
+  name: GetSSHKey
+  inputs:
+    secureFile: ${{ parameters.secureFile }}
+
+- bash: |
+    echo "Setting up SSH key..."
+    mkdir -p ~/.ssh
+    cp "$(GetSSHKey.secureFilePath)" ~/.ssh/id_rsa
+    chmod 600 ~/.ssh/id_rsa
+    chmod 700 ~/.ssh
+
+    # Add SourceForge host(s) to known hosts (non-interactive SSH)
+    for host in ${{ parameters.keyscanHosts }}; do
+      ssh-keyscan -t rsa "$host" >> ~/.ssh/known_hosts
+    done
+
+    echo "Host ${{ parameters.configHost }}" > ~/.ssh/config
+    echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+    echo "    IdentitiesOnly yes" >> ~/.ssh/config
+    echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
+    echo "    Port 22" >> ~/.ssh/config
+    chmod 600 ~/.ssh/config
+
+    echo "SSH key and config setup complete."
+  displayName: ${{ parameters.displayName }}
