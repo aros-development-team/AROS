@@ -143,6 +143,8 @@ struct ClassBase
 #ifdef USE_DOSLIB
 #define DOSBase                 cb->cb_DOSBase
    struct Library *cb_DOSBase;
+#define DOS64Base               cb->cb_DOS64Base
+   struct Library *cb_DOS64Base;   /* optional, may be NULL */
 #endif
 
 #ifdef USE_GFXLIB

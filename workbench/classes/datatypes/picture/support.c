@@ -10,6 +10,10 @@
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
+#include "../dtio64.h"
+
+DTIO_DOS64_SUPPORT()
+
 #ifndef __AROS__
 #ifdef __SASC
 
@@ -135,27 +139,11 @@ STRPTR StrCopy( const STRPTR str )
 }
 
 /**************************************************************************
- Returns the size of a file
+ Returns the size of a file (64-bit, via dos64.library when available)
 **************************************************************************/
-LONG GetFileSize( BPTR fileh )
+QUAD GetFileSize( BPTR fileh )
 {
-    struct FileInfoBlock *fib = (struct FileInfoBlock*)AllocDosObject( DOS_FIB, NULL );
-    LONG                 size = -1;
-    
-    if (fib)
-    {
-        if (ExamineFH( fileh, fib ))
-        {
-            if ((fib->fib_DirEntryType > 0) && (fib->fib_DirEntryType != ST_SOFTLINK))
-            {
-                size = 0;
-            }
-            size = fib->fib_Size;
-        }
-        FreeDosObject( DOS_FIB, fib );
-    }
-    
-    return size;
+    return DTIO_GetFileSize(fileh);
 }
 
 /**************************************************************************

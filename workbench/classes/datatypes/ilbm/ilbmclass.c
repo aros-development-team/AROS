@@ -37,6 +37,10 @@ ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 #include "compilerspecific.h"
 #endif
 
+#include "../dtio64.h"
+
+DTIO_DOS64_SUPPORT()
+
 #include "debug.h"
 
 #include "methods.h"
@@ -596,10 +600,10 @@ static BOOL ReadILBM(Class *cl, Object *o)
 
 /**************************************************************************************************/
 
-LONG WriteBytes(BPTR file, APTR data, LONG offset, LONG length)
+LONG WriteBytes(BPTR file, APTR data, QUAD offset, LONG length)
 {
     LONG count = 0;
-    Seek(file,offset,OFFSET_BEGINNING);
+    DTIO_Seek64(file, OFFSET_BEGINNING, offset);
     
     //Write contents of buffer to file.
     count = Write(file, data, length);

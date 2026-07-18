@@ -11,6 +11,12 @@
 
 #include <graphics/gfxbase.h>
 #include "classbase.h"
+#include "../dtio64.h"
+
+#ifdef __AROS__
+/* dos64.library is optional; opened at module init when present */
+DTIO_DOS64_SUPPORT()
+#endif
 
 #include <dos/dostags.h>
 
@@ -393,7 +399,7 @@ struct AmigaGuideObject *AllocAGObjectNode(Class *cl, Object *obj,
 	 agobj = NULL;
       } else
       {
-	 Seek(agf->agf_Handle, agnode->agn_Pos, OFFSET_BEGINNING);
+	 DTIO_Seek64(agf->agf_Handle, OFFSET_BEGINNING, agnode->agn_Pos);
 	 if(Read(agf->agf_Handle, agobj->ago_Buffer, agnode->agn_Length) != agnode->agn_Length)
 	 {
 	    FreeAGMem(cl, obj, agobj->ago_Buffer, agobj->ago_BufferLen);

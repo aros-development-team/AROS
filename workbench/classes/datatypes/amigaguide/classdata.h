@@ -189,8 +189,8 @@ struct AmigaGuideFile
 struct AmigaGuideNode
 {
    struct Node agn_Node;
-   ULONG agn_Pos;
-   ULONG agn_Length;
+   UQUAD agn_Pos;
+   UQUAD agn_Length;
 
    STRPTR agn_Keywords;
    STRPTR agn_Font;

@@ -20,6 +20,10 @@
 #include "classbase.h"
 #include "otag.h"
 
+#include "../dtio64.h"
+
+DTIO_DOS64_SUPPORT()
+
 /*
  * Private constants and macros
  */
@@ -90,13 +94,12 @@ STATIC struct FontContentsHeader *ReadOutlines(BPTR lock, STRPTR name)
     struct FontContentsHeader *FCH = NULL;
     struct TFontContents *TFC;
     struct TagItem *Tags;
-    struct FileInfoBlock *FIB;
     BPTR FH, OldLock;
     UWORD *Sizes;
     STRPTR Suffix;
     IPTR Offset;
     ULONG I;
-    LONG FileLen;
+    QUAD FileLen;
 
     D(bug("[font.datatype] %s()\n", __func__));
 
@@ -116,15 +119,11 @@ STATIC struct FontContentsHeader *ReadOutlines(BPTR lock, STRPTR name)
     FH = Open(NewName, MODE_OLDFILE);
     if (FH) {
         D(bug("[font.datatype] %s: Opened '%s' @ 0x%p\n", __func__, NewName, FH));
-        if ((FIB = AllocDosObject(DOS_FIB, NULL))) {
-            if (ExamineFH(FH, FIB))                                                 /* Examine it */
-                FileLen = FIB->fib_Size;                                            /* Get length of file */
-            else
-                FileLen = LocSeekFileSize(FH);                                  /* Get size by seeking */
-            FreeDosObject(DOS_FIB, FIB);
-        }
-        else
-            FileLen = LocSeekFileSize(FH);                                      /* No FIB? - seek */
+        FileLen = DTIO_GetFileSize(FH);                                         /* 64-bit aware size */
+        if (FileLen < 0)
+            FileLen = LocSeekFileSize(FH);                                      /* Get size by seeking */
+        if (!DTIO_SIZE_OK(FileLen))
+            FileLen = -1;                                                       /* Not loadable whole */
 
         D(bug("[font.datatype] %s: FileLen = %u\n", __func__, FileLen));
         if (FileLen >= 0) {
@@ -137,7 +136,7 @@ STATIC struct FontContentsHeader *ReadOutlines(BPTR lock, STRPTR name)
             tmptags = (ULONG *)Tags;
             D(bug("[font.datatype] %s: Tag storage @  0x%p\n", __func__, Tags));
 
-            if (Read(FH, Tags, FileLen) != FileLen) {
+            if (DTIO_Read64(FH, Tags, FileLen) != FileLen) {
                 FreeVec(Tags);
                 Close(FH);
                 return NULL;

@@ -23,6 +23,10 @@
 #include "src/webp/encode.h"
 #include "src/webp/decode.h"
 
+#include "../dtio64.h"
+
+DTIO_DOS64_SUPPORT()
+
 #define RGB8to32(RGB) (((ULONG)(RGB) << 24)|((ULONG)(RGB) << 16)|((ULONG)(RGB) << 8)|((ULONG)(RGB)))
 
 ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
@@ -76,25 +80,22 @@ static LONG WebP_Export (Class *cl, Object *o, struct dtWrite *msg)
 static LONG WebP_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *bmh)
 {
     LONG status, error = (0);
-    UBYTE *buffer, *output;
-    struct FileInfoBlock *fib;
-    ULONG size = 0;
+    UBYTE *buffer = NULL, *output;
+    QUAD size;
     LONG width, height;
     LONG level = 0;
 
     D(bug("[webp.datatype] %s()\n", __func__));
 
-    fib = AllocDosObject(DOS_FIB, NULL);
-    ExamineFH(file, fib);
-    size = fib->fib_Size;
-    buffer = AllocVec(size+1, MEMF_PRIVATE);
-    FreeDosObject(DOS_FIB, fib);
+    size = DTIO_GetFileSize(file);
+    if (DTIO_SIZE_OK(size + 1))
+        buffer = AllocVec(size+1, MEMF_PRIVATE);
 
     if (buffer != NULL)
     {
         Seek(file, 0, OFFSET_BEGINNING);
 
-        if (Read(file, buffer, size) != -1)
+        if (DTIO_Read64(file, buffer, size) != -1)
         {
             output = WebPDecodeRGBA(buffer, size, &width, &height);
 

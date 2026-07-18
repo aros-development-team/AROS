@@ -157,6 +157,8 @@ struct DTBase *LibInit(struct DTBase *lib_base REG("d0"),
       DATATYPES_VERSION);
    base->graphics_base = (APTR)OpenLibrary(graphics_name, GRAPHICS_VERSION);
    base->dos_base = (APTR)OpenLibrary(dos_name, DOS_VERSION);
+   /* Optional: enables 64-bit file access when present */
+   base->dos64_base = OpenLibrary("dos64.library", 50);
    if(base->superclass_base == NULL || base->intuition_base == NULL
       || base->utility_base == NULL || base->datatypes_base == NULL
       || base->graphics_base == NULL || base->dos_base == NULL)
@@ -335,6 +337,8 @@ static VOID DeleteDataType(struct DTBase *base)
 
    /* Close libraries */
 
+   if(base->dos64_base != NULL)
+      CloseLibrary(base->dos64_base);
    if(base->dos_base != NULL)
       CloseLibrary((APTR)base->dos_base);
    if(base->graphics_base != NULL)

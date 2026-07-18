@@ -58,6 +58,7 @@ struct GemImgBase
    struct Library *datatypes_base;
    struct GfxBase *graphics_base;
    struct DosLibrary *dos_base;
+   struct Library *dos64_base;   /* optional, may be NULL */
 };
 
 
@@ -76,6 +77,7 @@ struct GemImgBase
 #define DataTypesBase (base->datatypes_base)
 #define GfxBase (base->graphics_base)
 #define DOSBase (base->dos_base)
+#define DOS64Base (base->dos64_base)
 
 #ifndef BASE_REG
 #define BASE_REG "a6"

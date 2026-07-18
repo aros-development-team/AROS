@@ -58,6 +58,11 @@ ISG BOOL                  DestMode
 #ifndef __AROS__
 #include "compilerspecific.h"
 #endif
+
+#include "../dtio64.h"
+
+DTIO_DOS64_SUPPORT()
+
 #include "debug.h"
 #include "pictureclass.h"
 #include "prefs.h"
@@ -1625,11 +1630,11 @@ IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
 
 /**************************************************************************************************/
 
-LONG WriteBytes(BPTR file, char *data, LONG offset, LONG length)
+LONG WriteBytes(BPTR file, char *data, QUAD offset, LONG length)
 {
     //Write data buffer to file
     LONG count = 0;
-    Seek(file,offset,OFFSET_BEGINNING);    	
+    DTIO_Seek64(file, OFFSET_BEGINNING, offset);
     count = Write(file, data, length);
     if (count != length)
     {

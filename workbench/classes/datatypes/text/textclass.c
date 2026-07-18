@@ -51,6 +51,10 @@
 #include "support.h"
 #include "textclass.h"
 
+#include "../dtio64.h"
+
+extern struct Library *DOS64Base;
+
 #ifdef MORPHOS_AG_EXTENSION
 #include "agextension.h"
 #endif
@@ -301,13 +305,24 @@ static int LoadText(struct Text_Data *td, STRPTR filename, BPTR file)
 {
     if ((td->title = StrCopy(filename)))
     {
+	QUAD size;
+
 	D(bug("text.datatype/LoadText: Get the file size\n"));
-	if ((td->buffer_allocated_len = GetFileSize(file)) >= 0)
+	size = GetFileSize(file);
+	/* The text buffer length is held in a ULONG, and the buffer must
+	   be addressable in memory */
+	if (size > 0xFFFFFFFELL || !DTIO_SIZE_OK(size + 1))
 	{
+	    SetIoErr(ERROR_OBJECT_TOO_LARGE);
+	    size = -1;
+	}
+	if (size >= 0)
+	{
+	    td->buffer_allocated_len = size;
 	    if ((td->buffer_allocated = AllocVec(td->buffer_allocated_len + 1, MEMF_PUBLIC)))
 	    {
 		D(bug("text.datatype/LoadText: Buffer allocated at 0x%lx now reading in the file\n",td->buffer_allocated));
-		if ((Read(file, td->buffer_allocated, td->buffer_allocated_len) == td->buffer_allocated_len))
+		if ((DTIO_Read64(file, td->buffer_allocated, size) == size))
 		{
 		    td->buffer_allocated[td->buffer_allocated_len] = 10;
 		    return 1;
@@ -1311,7 +1326,7 @@ static int HandleMouse(struct Text_Data *td, struct RastPort *rp, LONG x, LONG y
 	{
 	    if (old_dclick == 0)
 	    {
-		/* x wird an Grenzen angepaßt */
+		/* x wird an Grenzen angepaï¿½t */
 		LONG xstart;
 		LONG xend;
 

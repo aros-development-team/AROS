@@ -1,5 +1,5 @@
 /*
-    Copyright © 2020-2025, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2020-2025, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,6 +26,10 @@
 #include "libheif/heif_version.h"
 #include "libheif/heif_plugin.h"
 
+#include "../dtio64.h"
+
+DTIO_DOS64_SUPPORT()
+
 ADD2LIBS("SYS:Classes/datatypes/picture.datatype", 0, struct Library *, PictureBase);
 
 #if defined(__x86_64__)
@@ -37,20 +41,17 @@ ADD2LIBS("SYS:Classes/datatypes/picture.datatype", 0, struct Library *, PictureB
 static LONG HEIC_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *bmh)
 {
     LONG status, error = (0);
-    UBYTE *buffer, *output;
-    struct FileInfoBlock *fib;
-    ULONG size = 0;
+    UBYTE *buffer = NULL, *output;
+    QUAD size;
     LONG width, height;
     LONG level = 0;
     enum heif_filetype_result heifres;
 
     D(bug("[heic.datatype] %s()\n", __func__));
 
-    fib = AllocDosObject(DOS_FIB, NULL);
-    ExamineFH(file, fib);
-    size = fib->fib_Size;
-    buffer = AllocVec(size+1, MEMF_PRIVATE);
-    FreeDosObject(DOS_FIB, fib);
+    size = DTIO_GetFileSize(file);
+    if (DTIO_SIZE_OK(size + 1))
+        buffer = AllocVec(size+1, MEMF_PRIVATE);
 
     if (buffer != NULL)
     {
@@ -81,7 +82,7 @@ static LONG HEIC_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *b
                         D(bug("[heic.datatype] %s: heif_context allocated @ 0x%p\n", __func__, heifc));
 
                         Seek(file, 0, OFFSET_BEGINNING);
-                        if (Read(file, buffer, size) != -1)
+                        if (DTIO_Read64(file, buffer, size) != -1)
                         {
                             ULONG mode = PBPAFMT_RGB;
                             int hmode = heif_chroma_interleaved_RGB;

@@ -34,6 +34,10 @@
 #include "riff-wave.h"
 #include "decoders.h"
 
+#include "../dtio64.h"
+
+DTIO_DOS64_SUPPORT()
+
 ADD2LIBS("datatypes/sound.datatype", 0, struct Library *, SoundBase);
 
 IPTR WAVE__DTM_WRITE(Class *cl, Object *obj, struct dtWrite *msg)
@@ -423,7 +427,7 @@ D(bug("[wave.dt] %s: DATA Chunk Type\n", __PRETTY_FUNCTION__));
 			    // skip unknown chunks!
 			    default:
 D(bug("[wave.dt] %s: Unknown Chunk Type - Skipping\n", __PRETTY_FUNCTION__));
-				    if (Seek(file, (chunk.size+1)&~1, OFFSET_CURRENT) == -1)
+				    if (DTIO_Seek64(file, OFFSET_CURRENT, ((QUAD)chunk.size + 1) & ~(QUAD)1) == -1)
 					    Error = IoErr();
 				    break;
 

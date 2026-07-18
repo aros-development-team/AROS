@@ -228,6 +228,8 @@ static BOOL OpenLibraries(struct ClassBase *cb)
 
 #ifdef USE_DOSLIB
    DOSBase       = OpenLibrary("dos.library",      39);
+   /* Optional: enables 64-bit file access when present */
+   DOS64Base     = OpenLibrary("dos64.library",    50);
 #endif
 #ifdef USE_GFXLIB
    GfxBase       = OpenLibrary("graphics.library", 39);
@@ -291,6 +293,9 @@ static void CloseLibraries(struct ClassBase *cb)
    IntuitionBase = NULL;
 
 #ifdef USE_DOSLIB
+   if(DOS64Base != NULL)
+      CloseLibrary(DOS64Base);
+   DOS64Base     = NULL;
    CloseLibrary((struct Library *) DOSBase);
    DOSBase       = NULL;
 #endif

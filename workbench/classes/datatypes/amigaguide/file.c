@@ -10,6 +10,7 @@
 /* ------------------------------- includes ------------------------------- */
 
 #include "classbase.h"
+#include "../dtio64.h"
 
 /* ------------------------------- defines -------------------------------- */
 
@@ -110,7 +111,7 @@ ParseNodeLine(Class *cl, Object *obj, struct AmigaGuideFile *agf,
       /* stegerg: definitely needed for AROS */
       Flush(agf->agf_Handle);
 #endif      
-      agn->agn_Pos = Seek(agf->agf_Handle, 0, OFFSET_CURRENT) - linelen;
+      agn->agn_Pos = DTIO_GetFilePosition(agf->agf_Handle) - linelen;
       agn->agn_File = agf;
       ++agf->agf_NodeCount;
       AddTail(&agf->agf_Nodes, &agn->agn_Node);
@@ -405,7 +406,7 @@ void ScanFile(Class *cl, Object *obj, struct AmigaGuideFile *agf)
       	    	  /* stegerg: definitely needed for AROS */
 		  Flush(fh);
 #endif
-		  agn->agn_Length = Seek(fh, 0, OFFSET_CURRENT) - agn->agn_Pos - strlen(buf) - 1;
+		  agn->agn_Length = DTIO_GetFilePosition(fh) - agn->agn_Pos - strlen(buf) - 1;
 		  agn = NULL;
 		  break;
 	       case CMD_KEYWORDS:

@@ -38,6 +38,8 @@ MA 02111-1307, USA.
 
 #include "degas_protos.h"
 
+#include "../dtio64.h"
+
 
 #define HEADER_SIZE 34
 #define TAIL_SIZE 32
@@ -152,7 +154,7 @@ static UPINT OMNew(struct IClass *class, Object *object, struct opSet *op,
    UBYTE *buffer = NULL, *buffer_end, *in, *out, *in_stop, *out_stop,
       *end_of_line, fill;
    BPTR file;
-   struct FileInfoBlock *info = NULL;
+   QUAD size = -1;
    struct BitMap *bitmap = NULL;
    struct BitMapHeader *bitmap_header;
    struct ColorRegister *colour_registers;
@@ -178,24 +180,24 @@ static UPINT OMNew(struct IClass *class, Object *object, struct opSet *op,
          PDTA_BitMapHeader, (UPINT)&bitmap_header, TAG_END);
       if(Seek(file, 0, OFFSET_BEGINNING) == -1)
          error = IoErr();
-      info = AllocDosObject(DOS_FIB, NULL);
-      if(info == NULL)
-         error = IoErr();
    }
 
    if(error == 0)
    {
-      if(!ExamineFH(file, info))
+      size = DTIO_GetFileSize(file);
+      if(size == -1)
          error = IoErr();
+      else if(!DTIO_SIZE_OK(size))
+         error = ERROR_OBJECT_TOO_LARGE;
    }
 
    if(error == 0)
    {
-      if(info->fib_Size < HEADER_SIZE)
+      if(size < HEADER_SIZE)
          error = ERROR_OBJECT_WRONG_TYPE;
 
-      buffer = AllocVec(info->fib_Size, MEMF_ANY);
-      buffer_end = buffer + info->fib_Size;
+      buffer = AllocVec(size, MEMF_ANY);
+      buffer_end = buffer + size;
       if(buffer == NULL)
          error = IoErr();
    }
@@ -204,7 +206,7 @@ static UPINT OMNew(struct IClass *class, Object *object, struct opSet *op,
    {
       /* Read entire file */
 
-      if(Read(file, buffer, info->fib_Size) == -1)
+      if(DTIO_Read64(file, buffer, size) == -1)
          error = IoErr();
    }
 
@@ -259,7 +261,7 @@ static UPINT OMNew(struct IClass *class, Object *object, struct opSet *op,
       /* Check an uncompressed file has enough data */
 
       if(!compressed
-         && info->fib_Size < HEADER_SIZE + height * in_line_size * depth)
+         && size < HEADER_SIZE + height * in_line_size * depth)
          error = ERROR_OBJECT_WRONG_TYPE;
    }
 
@@ -395,7 +397,6 @@ static UPINT OMNew(struct IClass *class, Object *object, struct opSet *op,
    /* Free Resources */
 
    FreeVec(buffer);
-   FreeDosObject(DOS_FIB, info);
 
    if(error != 0)
    {

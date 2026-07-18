@@ -8,7 +8,7 @@ struct MinNode *	List_Find(APTR list, ULONG num);
 STRPTR 			StrCopy( const STRPTR str );
 STRPTR 			StrCopyPool( APTR pool, const STRPTR str );
 STRPTR 			StrNCopyPool( APTR pool, const STRPTR str, LONG len);
-LONG 			GetFileSize( BPTR fileh );
+QUAD 			GetFileSize( BPTR fileh );
 struct IFFHandle *	PrepareClipboard(void);
 VOID 			FreeClipboard(struct IFFHandle *iff);
 
