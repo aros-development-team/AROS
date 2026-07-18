@@ -82,6 +82,18 @@ steps:
   workingDirectory: '$(AROSBUILDDIR)'
   displayName: 'Packaging $(arosbuild.name) toolchain'
 
+# Stash the packaged toolchain tarball where the orchestrator's Cache@2
+# post-job save (path: $(Agent.TempDirectory)/toolchain-cache) will pick
+# it up. Without this the cache is never populated and the heavy
+# crosstools/LLVM build would rerun every night. Only needed when the
+# toolchain was rebuilt this run - after a cache hit the task skips
+# saving anyway.
+- script: |
+    mkdir -p '$(Agent.TempDirectory)/toolchain-cache'
+    cp '$(AROSBUILDBINDIR)/$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2' '$(Agent.TempDirectory)/toolchain-cache/'
+  condition: ne( variables['TOOLCHAIN_RESTORED'], 'true' )
+  displayName: 'Stash toolchain tarball for cache save'
+
 # Hand the toolchain *directory* forward to the Core and Contrib stages.
 # Restore it to the SAME absolute path it was built at (see README - the
 # toolchain is not relocatable).

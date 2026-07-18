@@ -41,6 +41,13 @@ variables:
   AROSBUILDDIR:          '$(AROSBUILDSDIR)/$(arosbuild.name)' # current builds directory
   AROSSRCDIR:            '$(system.defaultWorkingDirectory)'  # Path to the source code
   AROSCONTRIBSRCDIR:     '$(Agent.BuildDirectory)/s-contrib'  # Path to the contrib source code
+  # Toolchain cache-key components. The arosbuild.* toolchain settings are
+  # optional per-flavour variables; an undefined $(var) would be left as
+  # literal text in the Cache@2 key, so coalesce them to stable defaults
+  # here and use these in the key instead.
+  AROSTOOLCHAINFAMILY:   $[ coalesce(variables['arosbuild.toolchain.family'], 'gnu') ]
+  AROSTOOLCHAINGCCVER:   $[ coalesce(variables['arosbuild.gcc.version'], 'default') ]
+  AROSTOOLCHAINLLVMVER:  $[ coalesce(variables['arosbuild.llvm.version'], 'default') ]
 
 stages:
 # =============================================================================
@@ -75,9 +82,14 @@ stages:
     # location; on a hit it is extracted to the SAME absolute path it was
     # built at (the toolchain is not relocatable - see README) and the
     # tarball is removed again.
+    # The Cache task's path must exist both when the task runs (restore)
+    # and at its post-job save; nothing else creates it, and the task
+    # fails with a tar error if it is missing.
+    - script: mkdir -p '$(Agent.TempDirectory)/toolchain-cache'
+      displayName: 'Prepare toolchain cache directory'
     - task: Cache@2
       inputs:
-        key: 'aros-toolchain | "$(arosbuild.name)" | "$(arosbuild.toolchain.family)" | "$(arosbuild.gcc.version)" | "$(arosbuild.llvm.version)" | tools/crosstools/**'
+        key: 'aros-toolchain | "$(arosbuild.name)" | "$(AROSTOOLCHAINFAMILY)" | "$(AROSTOOLCHAINGCCVER)" | "$(AROSTOOLCHAINLLVMVER)" | tools/crosstools/**'
         path: '$(Agent.TempDirectory)/toolchain-cache'
         cacheHitVar: TOOLCHAIN_RESTORED
       displayName: 'Restore cached toolchain'
