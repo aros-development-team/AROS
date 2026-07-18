@@ -124,7 +124,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (argume
 
     /* All the 'noise' goes to cli_StandardError
      */
-    if (!SHArg(QUIET)) {
+    if (!SHArg(QUIET) && IsInteractive(Output())) {
         if (cli)
         {
             ces = cli->cli_StandardError;
