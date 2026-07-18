@@ -24,14 +24,23 @@
 
 /* The following define prevents the initial
  * scan to count residents */
-//#define ROMTAG_FLATALLOC
+#if defined(__mc68000__)
+/* On the 7MHz 68000 the ROM scan is a major boot cost, and it runs TWICE
+ * (a count pass to size the array, then a register pass). Skip the count
+ * pass: krnSysMemAlloc() grabs a whole free MemChunk anyway and the unused
+ * tail is returned by krnReleaseSysMem(), so this is memory-equivalent to the
+ * count path but scans ~1MB of ROM once instead of twice. */
+#define ROMTAG_FLATALLOC
+#endif
 
 /*
- * Currently the ROMTag code tries to allocate a 1MB
- * chunk to store the Resident info.
- * TODO: 1MB seems a bit excessive .. look at using a more conservative value
+ * FLATALLOC over-allocates before the resident count is known. This is the
+ * minimum free-chunk size krnGetSysMem() will look for; the whole chunk found
+ * is used and its unused tail released afterwards. Keep it small enough to be
+ * satisfiable on a 512KB Amiga (the old 1MB value could not be met there),
+ * but large enough to hold far more resident pointers than any ROM has.
  */
-#define ROMTAG_CHUNKSIZE    (1024 * 1024)
+#define ROMTAG_CHUNKSIZE    (8 * 1024)
 
 static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 {

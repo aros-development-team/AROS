@@ -885,10 +885,26 @@ VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_
  
     OOP_GetAttr(msg->src,  aHidd_BitMap_AmigaVideo_Drawable, &src);
     OOP_GetAttr(msg->dest, aHidd_BitMap_AmigaVideo_Drawable, &dst);
-    if (src && dst) {
-        struct amigabm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+    if (dst) {
         struct amigabm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
-        ok = blit_copybox(csd, sdata->pbm, ddata->pbm, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode);
+        struct BitMap *srcpbm = NULL;
+
+        if (src) {
+            /* Source is an AmigaVideo bitmap. */
+            struct amigabm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+            srcpbm = sdata->pbm;
+        } else {
+            /* Source is a generic planar bitmap (e.g. a plain struct BitMap
+             * wrapped by get_planarbm_object). Its planes can be blitted from
+             * directly as long as they live in Chip RAM (checked by canblit).
+             * This lets callers BltBitMap a hand-built planar BitMap - such as
+             * the dosboot animation image - straight to the screen with the
+             * hardware blitter instead of falling back to per-pixel C2P. */
+            OOP_GetAttr(msg->src, aHidd_PlanarBM_BitMap, (IPTR *)&srcpbm);
+        }
+
+        if (srcpbm)
+            ok = blit_copybox(csd, srcpbm, ddata->pbm, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode);
     }
     if (!ok)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

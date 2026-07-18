@@ -53,7 +53,8 @@ static struct Screen *OpenBootScreenType(struct DOSBootBase *DOSBootBase, BYTE M
     if (mode != INVALID_ID)
     {
         struct Screen *scr = OpenScreenTags(NULL, SA_DisplayID, mode, SA_Draggable, FALSE,
-                                            SA_Quiet, TRUE, SA_Depth, MinDepth, TAG_DONE);
+                                            SA_Quiet, TRUE, SA_ShowTitle, FALSE,
+                                            SA_Depth, MinDepth, TAG_DONE);
 
         if (scr)
             return scr;
@@ -96,6 +97,15 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
         };
 
         DOSBootBase->bm_Window = OpenWindow(&nw);
+
+        /* Hide the mouse pointer immediately, before the (slower) animation
+           setup runs, so the default arrow doesn't linger over the screen. */
+        if (DOSBootBase->bm_Window)
+        {
+            DOSBootBase->blank_pointer = AllocMem(6 * 2, MEMF_CHIP | MEMF_CLEAR);
+            if (DOSBootBase->blank_pointer)
+                SetPointer(DOSBootBase->bm_Window, DOSBootBase->blank_pointer, 1, 16, 0, 0);
+        }
 
         if (!anim_Init(scr, DOSBootBase))
         {

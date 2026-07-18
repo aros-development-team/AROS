@@ -204,6 +204,17 @@ AROS_CXXEXTS                  := cpp cxx cc c++
 AROS_AS                       := $(TARGET_AS)
 AROS_LD                       := $(TARGET_LD)
 
+# Optional -T linker script for the kernel-module partial link (AROS_LD -Ur), used
+# to order each module's sections so its Resident romtag lands at the module head
+# (see arch/m68k-amiga/boot/kobj-romtag.ld). Empty for every target except
+# amiga-m68k, so all other builds pass the identical -Ur command as before.
+KERNEL_KOBJ_LDSCRIPT          :=
+ifeq ($(AROS_TARGET_ARCH),amiga)
+ifeq ($(AROS_TARGET_CPU),m68k)
+KERNEL_KOBJ_LDSCRIPT          := -T $(SRCDIR)/arch/m68k-amiga/boot/kobj-romtag.ld
+endif
+endif
+
 STRIP                         := $(TARGET_STRIP)
 
 CALL                          := env AROS_HOST_ARCH=$(AROS_HOST_ARCH) \

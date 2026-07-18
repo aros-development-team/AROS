@@ -79,6 +79,7 @@ static char                 imagename[1000];
 static char                 bigimagename[1000];
 static BOOL                 brush2c;    // compatibility with brush2c from MUI SDK
 static BOOL                 brush2pix;  // compatibility with brush2pix from JabberWocky
+static BOOL                 planar;     // emit deinterleaved planar planes (for direct BltBitMap)
 
 /****************************************************************************************/
 
@@ -115,11 +116,16 @@ static void getarguments(int argc, char **argv)
         brush2pix = 1;
         narg++;
     }
-    
+    else if (!strcasecmp(argv[1], "-p"))
+    {
+        planar = 1;
+        narg++;
+    }
+
     if (argc > narg)
         filename = argv[narg++];
     else
-        cleanup("Usage: ilbmtoc [-b2c|-b2p] filename [imagename]", 1);
+        cleanup("Usage: ilbmtoc [-b2c|-b2p|-p] filename [imagename]", 1);
     
     if (argc > narg)
         imagenamestart = argv[narg];
@@ -648,6 +654,91 @@ static void gensource(void)
 
 /****************************************************************************************/
 
+/*
+ * Emit the image as native planar bitplanes so the target can point a struct
+ * BitMap at them and BltBitMap directly - no chunky<->planar conversion at
+ * runtime. Used for m68k/native Amiga where per-pixel C2P on the CPU is
+ * prohibitively slow.
+ *
+ * The ILBM body (planarbuffer) is line-interleaved (per row: plane0 row,
+ * plane1 row, ...). We deinterleave it into a single contiguous planar buffer
+ * (all of plane0, then all of plane1, ...), then byterun1-RLE-pack the whole
+ * thing so it stays small in ROM. At runtime the target unpacks it ONCE into an
+ * allocated buffer (a cheap linear RLE decode, NOT per-pixel C2P) and points the
+ * bitplanes at plane-sized offsets.
+ */
+static void gensourceplanar(void)
+{
+    LONG p, y, i;
+    LONG planesize = bpr * bmh.bmh_Height;
+    LONG totalsize = planesize * bmh.bmh_Depth;
+    unsigned char *deint, *packed, *emit;
+    LONG emitsize, packedsize = 0;
+    BOOL packok;
+
+    /* Deinterleave into contiguous per-plane layout. */
+    deint = malloc(totalsize);
+    if (!deint) cleanup("Memory allocation for deinterleave buffer failed!", 1);
+    for (p = 0; p < bmh.bmh_Depth; p++)
+        for (y = 0; y < bmh.bmh_Height; y++)
+            memcpy(deint + p * planesize + y * bpr,
+                   planarbuffer + (y * totdepth + p) * bpr, bpr);
+
+    /* Try to RLE-pack the whole planar buffer. */
+    packed = malloc(totalsize);
+    if (!packed) cleanup("Memory allocation for packed planar buffer failed!", 1);
+    packok = pack_byterun1(deint, packed, totalsize, totalsize, &packedsize);
+    if (packok)
+    {
+        emit = packed; emitsize = packedsize;
+    }
+    else
+    {
+        emit = deint; emitsize = totalsize;
+    }
+
+    printf("#include <exec/types.h>\n");
+    printf("\n");
+    printf("#define %s_PLANAR       1\n", bigimagename);
+    printf("#define %s_PACKED       %d\n", bigimagename, packok ? 1 : 0);
+    printf("#define %s_WIDTH  %d\n", bigimagename, bmh.bmh_Width);
+    printf("#define %s_HEIGHT %d\n", bigimagename, bmh.bmh_Height);
+    printf("#define %s_PLANES %d\n", bigimagename, bmh.bmh_Depth);
+    printf("#define %s_BYTESPERROW %ld\n", bigimagename, (long)bpr);
+    printf("#define %s_PLANESIZE %ld\n", bigimagename, (long)planesize);
+    printf("#define %s_DATASIZE %ld\n", bigimagename, (long)emitsize);
+    if (have_cmap)
+        printf("#define %s_COLORS %ld\n", bigimagename, cmapentries);
+    printf("\n");
+
+    if (have_cmap)
+    {
+        printf("const ULONG %s_pal[%ld] =\n{\n", imagename, cmapentries);
+        for (i = 0; i < cmapentries; i++)
+        {
+            ULONG col = (((ULONG)red[i]) << 16) +
+                        (((ULONG)green[i]) << 8) +
+                        ((ULONG)blue[i]);
+            printf("    0x%06lx%s\n", col, (i == cmapentries - 1) ? "" : ",");
+        }
+        printf("};\n\n");
+    }
+
+    printf("const UBYTE %s_data[%ld] =\n{", imagename, (long)emitsize);
+    for (i = 0; i < emitsize; i++)
+    {
+        if ((i % 20) == 0) printf("\n    ");
+        printf("0x%02x", emit[i]);
+        if (i != emitsize - 1) printf(",");
+    }
+    printf("\n};\n");
+
+    free(packed);
+    free(deint);
+}
+
+/****************************************************************************************/
+
 static void genbrush2csource(void)
 {
     int i;
@@ -759,6 +850,11 @@ int main(int argc, char **argv)
     else if (brush2pix)
     {
         genbrush2pixsource();
+    }
+    else if (planar)
+    {
+        convertbody();
+        gensourceplanar();
     }
     else
     {

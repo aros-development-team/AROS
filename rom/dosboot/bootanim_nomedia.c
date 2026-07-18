@@ -15,32 +15,46 @@
 
 static const UBYTE *unpack_byterun1(const UBYTE *source, UBYTE *dest, LONG unpackedsize)
 {
-    UBYTE r;
     BYTE c;
 
-    for(;;)
+    /*
+     * byterun1 (ILBM/PackBits): most of this image's output (~88%) comes from
+     * replicate runs (avg ~30 bytes each), so fill those with long-word stores
+     * instead of one byte per loop. dest may be odd after a literal run and the
+     * 68000 faults on odd-address long access, so align to a longword first.
+     */
+    while (unpackedsize > 0)
     {
+        LONG n;
+
         c = (BYTE)(*source++);
         if (c >= 0)
         {
-            while(c-- >= 0)
-            {
-                *dest++ = *source++;
-                if (--unpackedsize <= 0) return source;
-            }
+            n = (LONG)c + 1;
+            if (n > unpackedsize) n = unpackedsize;
+            unpackedsize -= n;
+            do { *dest++ = *source++; } while (--n);
         }
         else if (c != -128)
         {
-            c = -c;
-            r = *source++;
+            UBYTE r = *source++;
 
-            while(c-- >= 0)
+            n = (LONG)(-c) + 1;
+            if (n > unpackedsize) n = unpackedsize;
+            unpackedsize -= n;
+
+            if (n >= 8)
             {
-                *dest++ = r;
-                if (--unpackedsize <= 0) return source;
+                ULONG rr = r;
+                rr |= rr << 8;
+                rr |= rr << 16;
+                while (((IPTR)dest & 3) && n) { *dest++ = r; n--; }
+                while (n >= 4) { *(ULONG *)dest = rr; dest += 4; n -= 4; }
             }
+            while (n--) *dest++ = r;
         }
     }
+    return source;
 }
 
 struct AnimData *banm_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
@@ -69,6 +83,46 @@ struct AnimData *banm_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 
             /* set up the date for the frames of the animation ..*/
             ad->framedata = (APTR)(IPTR)ad + sizeof(struct AnimData);
+#if defined(NOMEDIA_PLANAR)
+            /*
+             * Native planar: build a struct BitMap over the image bitplanes and
+             * let WriteChunkRegion() blit regions from it with the hardware
+             * blitter (BltBitMap -> amigavideo CopyBox -> blit_copybox), avoiding
+             * per-pixel chunky->planar conversion entirely. The planes must live
+             * in Chip RAM so the blitter can read them.
+             */
+            {
+                ULONG i;
+                UBYTE *planebuf = AllocMem(NOMEDIA_PLANESIZE * NOMEDIA_PLANES,
+                                           MEMF_CHIP);
+
+                ad->srcbm = AllocMem(sizeof(struct BitMap), MEMF_ANY | MEMF_CLEAR);
+                /* planebuf is reachable via srcbm->Planes[0]; keep framedata as
+                 * sentinels so banm_Dispose's FreeVec loop skips them. */
+                ad->framedata[0] = (APTR)(IPTR)-1;
+                ad->framedata[1] = (APTR)(IPTR)-1;
+
+                if (ad->srcbm && planebuf)
+                {
+                    /* Unpack the RLE planar blob ONCE (linear decode, not C2P). */
+#if NOMEDIA_PACKED
+                    unpack_byterun1(nomedia_data, planebuf,
+                                    NOMEDIA_PLANESIZE * NOMEDIA_PLANES);
+#else
+                    CopyMem((APTR)nomedia_data, planebuf,
+                            NOMEDIA_PLANESIZE * NOMEDIA_PLANES);
+#endif
+                    InitBitMap(ad->srcbm, NOMEDIA_PLANES, NOMEDIA_WIDTH, NOMEDIA_HEIGHT);
+                    for (i = 0; i < NOMEDIA_PLANES; i++)
+                        ad->srcbm->Planes[i] = (PLANEPTR)(planebuf + i * NOMEDIA_PLANESIZE);
+                }
+
+                for (i = 0; i < NOMEDIA_COLORS; i++)
+                    SetRGB32(&scr->ViewPort, i, (nomedia_pal[i] << 8) & 0xFF000000,
+                                                (nomedia_pal[i] << 16) & 0xFF000000, (nomedia_pal[i] << 24) & 0xFF000000);
+            }
+#else
+            ad->srcbm = NULL;
             ad->framedata[0] = AllocVec(size, MEMF_ANY);
 
             if (ad->framedata[0])
@@ -83,6 +137,7 @@ struct AnimData *banm_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
                     SetRGB32(&scr->ViewPort, i, (nomedia_pal[i] << 8) & 0xFF000000,
                                                 (nomedia_pal[i] << 16) & 0xFF000000, (nomedia_pal[i] << 24) & 0xFF000000);
             }
+#endif
         }
     }
     return ad;
@@ -98,6 +153,14 @@ void banm_Dispose(struct DOSBootBase *DOSBootBase)
     {
         int frame;
         DOSBootBase->animData = NULL;
+#if defined(NOMEDIA_PLANAR)
+        if (ad->srcbm)
+        {
+            if (ad->srcbm->Planes[0])
+                FreeMem(ad->srcbm->Planes[0], NOMEDIA_PLANESIZE * NOMEDIA_PLANES);
+            FreeMem(ad->srcbm, sizeof(struct BitMap));
+        }
+#endif
         for (frame = 0; frame < ad->framecnt; frame ++)
         {
             if (ad->framedata[frame] != (APTR)(IPTR)-1)

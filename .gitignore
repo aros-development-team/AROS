@@ -3063,3 +3063,8 @@
 
 # /workbench/utilities/Presenter/
 /workbench/utilities/Presenter/mmakefile
+
+# Build-generated mmakefiles (produced from mmakefile.src by the build).
+# Tracked, hand-written mmakefiles that predate mmakefile.src are unaffected,
+# since .gitignore does not untrack already-committed files.
+mmakefile

@@ -193,11 +193,23 @@ kernel-link-amiga-m68k-quick : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
 	$(Q)$(HOST_CC) $(DEBUG_CFLAGS) -o $@ $<
 
+# Emit each module's .text BEFORE its .rodata. Combined with the romtag-first
+# KOBJ link (config/make.tmpl KERNEL_KOBJ_LDSCRIPT), this puts each module's
+# Resident tag at the module's head, so the boot-time romtag scanner finds it on
+# the first read and leaps to the next module via rt_EndSkip - instead of walking
+# every word of the ROM. Only the module's small .rodata is walked per module.
+#
+# ALIGN(4) before each part is REQUIRED: a module's .text can end on an odd byte,
+# and .rodata holds longword constants (e.g. __aros_libreq_* version markers) that
+# code reads with CMP.L. A .L read from an odd address is an address error on the
+# 68000/010 (fine on 68020+), so without this the A500 crashes booting from disk.
 $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)rm -f $@
 	$(Q)for file in $(OBJS_$*) $(KOBJS_$*); do \
-		echo "$$file(.rodata .rodata.*)" >>$@; \
+		echo ". = ALIGN(4);" >>$@; \
 		echo "$$file(.text)" >>$@; \
+		echo ". = ALIGN(4);" >>$@; \
+		echo "$$file(.rodata .rodata.*)" >>$@; \
 	done
 
 $(GENDIR)/boot/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
