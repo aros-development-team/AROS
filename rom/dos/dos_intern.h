@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal types and stuff for dos
 */
@@ -77,13 +77,7 @@ struct vfp
 };
 
 /* fh_Flags. The flags are AROS specific and therefore PRIVATE.. */
-#define FHF_WRITE    0x80000000
-#define FHF_BUF      0x00000001
-#define FHF_APPEND   0x00000002
-#define FHF_LINEBUF  0x00000004
-#define FHF_NOBUF    0x00000008
-#define FHF_OWNBUF   0x00000010
-#define FHF_FLUSHING 0x00000020
+#include "dos_fhflags.h"
 
 #define FPUTC(f,c) \
 (((struct FileHandle *)BADDR(f))->fh_Flags&FHF_WRITE&& \
