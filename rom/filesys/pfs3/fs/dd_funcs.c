@@ -2192,6 +2192,19 @@ static LONG dd_MorphOSQueryAttr(struct DosPacket *pkt, globaldata *g)
 /* Totally untested at the moment, logic copied from UAE */
 
 #define DP64_INIT -3
+#if defined(__AROS__) && (__WORDSIZE == 64)
+/*
+ * On 64-bit AROS the standard DosPacket argument and result fields are
+ * already 64-bit wide (SIPTR), so 64-bit values travel in the standard
+ * fields. Overlaying the 32-bit DosPacket64 layout here would corrupt
+ * the packet (dp_Res0 lands in the reply port field).
+ */
+#define PKT64_MARK(pkt)		do { } while (0)
+#define PKT64_RES1(pkt)		((pkt)->dp_Res1)
+#define PKT64_RES2(pkt)		((pkt)->dp_Res2)
+#define PKT64_ARG2(pkt)		((pkt)->dp_Arg2)
+#define PKT64_ARG3(pkt)		((pkt)->dp_Arg3)
+#else
 /* Not real one but close enough */
 struct DosPacket64OS4
 {
@@ -2208,23 +2221,29 @@ struct DosPacket64OS4
 	ULONG dp_Arg5;
 };
 
+#define PKT64_MARK(pkt)		(((struct DosPacket64OS4 *)(pkt))->dp_Res0 = DP64_INIT)
+#define PKT64_RES1(pkt)		(((struct DosPacket64OS4 *)(pkt))->dp_Res1)
+#define PKT64_RES2(pkt)		(((struct DosPacket64OS4 *)(pkt))->dp_Res2)
+#define PKT64_ARG2(pkt)		(((struct DosPacket64OS4 *)(pkt))->dp_Arg2)
+#define PKT64_ARG3(pkt)		(((struct DosPacket64OS4 *)(pkt))->dp_Arg3)
+#endif
+
 static listentry_t *InitOS464(struct DosPacket *pkt, globaldata *g, BOOL errortype)
 {
-	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
-	
-	dp->dp_Res0 = DP64_INIT;
-	dp->dp_Res2 = 0;
+
+	PKT64_MARK(pkt);
+	PKT64_RES2(pkt) = 0;
 	listentry = (listentry_t *) pkt->dp_Arg1;
 	if (!CheckVolume(listentry->volume, 0, &pkt->dp_Res2, g)) {
-		dp->dp_Res1 = errortype ? -1 : 0;
-		dp->dp_Res2 = ERROR_INVALID_LOCK;
+		PKT64_RES1(pkt) = errortype ? -1 : 0;
+		PKT64_RES2(pkt) = ERROR_INVALID_LOCK;
 		return NULL;
 	}
 	UpdateLE(listentry, g);
 	if (!IsFile(listentry->info)) {
-		dp->dp_Res1 = errortype ? -1 : 0;
-		dp->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
+		PKT64_RES1(pkt) = errortype ? -1 : 0;
+		PKT64_RES2(pkt) = ERROR_OBJECT_WRONG_TYPE;
 		return NULL;
 	}
 	return listentry;
@@ -2232,18 +2251,16 @@ static listentry_t *InitOS464(struct DosPacket *pkt, globaldata *g, BOOL errorty
 
 static void dd_GetFileSize64(struct DosPacket *pkt, globaldata *g)
 {
-	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
-	
+
 	listentry = InitOS464(pkt, g, TRUE);
 	if (!listentry)
 		return;
-	dp->dp_Res1 = GetDEFileSize(listentry->info.file.direntry, g);
+	PKT64_RES1(pkt) = GetDEFileSize(listentry->info.file.direntry, g);
 }
 
 static void dd_ChangeFileSize64(struct DosPacket *pkt, globaldata *g)
 {
-	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
 	SIPTR error;
 	SFSIZE pos;
@@ -2251,18 +2268,17 @@ static void dd_ChangeFileSize64(struct DosPacket *pkt, globaldata *g)
 	listentry = InitOS464(pkt, g, FALSE);
 	if (!listentry)
 		return;
-	pos = ChangeFileSize((fileentry_t *)listentry, dp->dp_Arg2, dp->dp_Arg3, &error, g);
+	pos = ChangeFileSize((fileentry_t *)listentry, PKT64_ARG2(pkt), PKT64_ARG3(pkt), &error, g);
 	if (pos < 0) {
-		dp->dp_Res1 = DOSFALSE;
-		dp->dp_Res2 = error;
+		PKT64_RES1(pkt) = DOSFALSE;
+		PKT64_RES2(pkt) = error;
 	} else {
-		dp->dp_Res1 = DOSTRUE;
-	}	
+		PKT64_RES1(pkt) = DOSTRUE;
+	}
 }
 
 static void dd_GetFilePosition64(struct DosPacket *pkt, globaldata *g)
 {
-	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
 	SIPTR error;
 	SFSIZE pos;
@@ -2270,18 +2286,17 @@ static void dd_GetFilePosition64(struct DosPacket *pkt, globaldata *g)
 	listentry = InitOS464(pkt, g, TRUE);
 	if (!listentry)
 		return;
-	pos = SeekInObject((fileentry_t *)listentry, OFFSET_CURRENT, 0, &error, g);
+	pos = SeekInObject((fileentry_t *)listentry, 0, OFFSET_CURRENT, &error, g);
 	if (pos < 0) {
-		dp->dp_Res1 = -1;
-		dp->dp_Res2 = error;
+		PKT64_RES1(pkt) = -1;
+		PKT64_RES2(pkt) = error;
 	} else {
-		dp->dp_Res1 = pos;
+		PKT64_RES1(pkt) = pos;
 	}
 }
 
 static void dd_ChangeFilePosition64(struct DosPacket *pkt, globaldata *g)
 {
-	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
 	SIPTR error;
 	SFSIZE pos;
@@ -2289,13 +2304,14 @@ static void dd_ChangeFilePosition64(struct DosPacket *pkt, globaldata *g)
 	listentry = InitOS464(pkt, g, FALSE);
 	if (!listentry)
 		return;
-	pos = SeekInObject((fileentry_t *)listentry, dp->dp_Arg3, dp->dp_Arg2, &error, g);
+	/* SeekInObject() takes (file, offset, mode) */
+	pos = SeekInObject((fileentry_t *)listentry, PKT64_ARG2(pkt), PKT64_ARG3(pkt), &error, g);
 	if (pos < 0) {
-		dp->dp_Res1 = DOSFALSE;
-		dp->dp_Res2 = error;
+		PKT64_RES1(pkt) = DOSFALSE;
+		PKT64_RES2(pkt) = error;
 	} else {
-		dp->dp_Res1 = DOSTRUE;
-	}		
+		PKT64_RES1(pkt) = DOSTRUE;
+	}
 }
 
 

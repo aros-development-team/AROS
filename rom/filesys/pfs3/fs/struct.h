@@ -817,7 +817,10 @@ struct idlehandle
 
 #if LARGE_FILE_SIZE
 /* >4G file size support */
+#ifndef __AROS__
+/* On AROS a (compatible) QUAD comes from <exec/types.h> */
 typedef signed long long QUAD;
+#endif
 typedef signed long long FSIZE;
 typedef signed long long SFSIZE;
 /* Limit to useful sane size, not real max for now */

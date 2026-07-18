@@ -5,6 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-aros \
 #MM	kernel-disk \
 #MM     kernel-dos \
+#MM     kernel-dos64 \
 #MM	kernel-debug \
 #MM	kernel-fs-con \
 #MM     kernel-graphics \
@@ -35,6 +36,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-ata-includes \
 #MM     kernel-cia-includes \
 #MM     kernel-dos-includes \
+#MM     kernel-dos64-includes \
 #MM     kernel-bootloader-includes \
 #MM	kernel-debug-includes \
 #MM	kernel-efi-includes \
@@ -79,6 +81,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-aros \
 #MM	kernel-bootloader \
 #MM     kernel-dos \
+#MM     kernel-dos64 \
 #MM	kernel-debug \
 #MM     kernel-dosboot \
 #MM	kernel-filesystem \
@@ -108,6 +111,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-aros \
 #MM	kernel-bootloader \
 #MM     kernel-dos \
+#MM     kernel-dos64 \
 #MM	kernel-dosboot \
 #MM	kernel-debug \
 #MM	kernel-filesystem \
@@ -137,7 +141,7 @@ include $(SRCDIR)/config/aros.cfg
 BASE_DEVICES  := console input gameport keyboard
 BASE_HANDLERS := ram con
 BASE_HIDD     := hiddclass gfx inputclass keyboard mouse
-BASE_LIBS     := aros dos gadtools graphics intuition keymap layers oop utility
+BASE_LIBS     := aros dos dos64 gadtools graphics intuition keymap layers oop utility
 BASE_LIBS_ARCH := debug
 BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 

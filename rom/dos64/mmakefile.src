@@ -1,0 +1,31 @@
+#
+#   Makefile for building dos64.library
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- core-linklibs : linklibs-dos64
+
+FUNCS := seek64 setfilesize64 getfileposition64 getfilesize64 \
+         changefileposition64 changefilesize64 read64 write64 \
+         examine64 exnext64 examinefh64 info64 \
+         lockrecord64 lockrecords64 unlockrecord64 unlockrecords64 \
+         allocdosobject64 freedosobject64
+
+FILES := dos64_packet dos64_support
+
+USER_INCLUDES := -I$(SRCDIR)/rom/dos
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
+USER_CPPFLAGS := \
+               -DNO_INLINE_STDARG \
+               -DUSE_EXEC_DEBUG
+USER_LDFLAGS := -static
+
+#MM kernel-dos64 : includes
+#MM kernel-dos64-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes
+
+%build_module mmake=kernel-dos64 \
+  modname=dos64 modtype=library \
+  files="dos64_init $(FUNCS) $(FILES)"

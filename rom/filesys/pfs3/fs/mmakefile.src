@@ -63,6 +63,9 @@ PFS3DS_CFLAGS := \
 
 USER_INCLUDES := \
     -I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+# The pfs3 sources predate C23 (e.g. they typedef their own bool) and
+# rely on int/pointer conversions that newer compilers reject by default
+USER_CFLAGS := $(CFLAGS_GNU11) $(CFLAGS_PERMISSIVE)
 USER_CPPFLAGS := \
     -DAROS_KERNEL $(PFS3_CFLAGS) -DMIN_LIB_VERSION=36 \
 	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
