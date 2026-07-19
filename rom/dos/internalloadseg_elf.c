@@ -720,6 +720,13 @@ static int relocate
                     *p = *p + s;  /* SHT_REL: addend is in *p */
                 break;
 
+            case R_ARM_REL32: /* PC-relative data (S + A - P), e.g. .eh_frame */
+                if (is_rela)
+                    *p = (ULONG)((struct rela *)rel)->addend + s - (ULONG)p;
+                else
+                    *p = *p + s - (ULONG)p;  /* SHT_REL: addend is in *p */
+                break;
+
             case R_ARM_NONE:
                 break;
             #elif defined(__riscv)
