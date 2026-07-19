@@ -25,15 +25,6 @@
 
 #define ioStd(x)  ((struct IOStdReq *)x)
 
-struct GfxBase;
-
-#define TD_OWNBLITTER(base) \
-    AROS_LC0NR(void, OwnBlitter, struct GfxBase *, (base), 76, Graphics)
-#define TD_WAITBLIT(base) \
-    AROS_LC0NR(void, WaitBlit, struct GfxBase *, (base), 38, Graphics)
-#define TD_DISOWNBLITTER(base) \
-    AROS_LC0NR(void, DisownBlitter, struct GfxBase *, (base), 77, Graphics)
-
 static void td_wait_start(struct TrackDiskBase *tdb, UWORD millis)
 {
     // do not remove, AbortIO()+WaitIO() does not clear signal bit
@@ -447,51 +438,12 @@ static ULONG getdecodedlongchk(UWORD *mfmbuf, UWORD offset, ULONG *chksum)
     return (odd << 1) | even;
 }
 
-/* Decode 512 bytes of Amiga odd/even MFM data into chip scratch space.
- * The first pass shifts and masks the odd bits; the second merges the even
- * bits.  Width zero means 64 words on the original blitter, so four rows
- * cover the 256 words in one sector. */
-static void blitdecodesector(UWORD *raw, UWORD *scratch,
-                            volatile struct Custom *custom, APTR gfxbase)
-{
-    TD_WAITBLIT(gfxbase);
-
-    custom->bltafwm = 0xffff;
-    custom->bltalwm = 0xffff;
-    custom->bltamod = 0;
-    custom->bltcmod = 0;
-    custom->bltdmod = 0;
-
-    /* Descending A shift is a left shift. B is disabled as a DMA channel,
-     * leaving BLTBDAT as the constant mask: (A << 1) & $aaaa. */
-    custom->bltapt = raw + 255;
-    custom->bltdpt = scratch + 255;
-    custom->bltbdat = 0xaaaa;
-    custom->bltcon1 = 0x0002;
-    custom->bltcon0 = 0x19c0;
-    custom->bltsize = 4 << 6;
-    TD_WAITBLIT(gfxbase);
-
-    /* Merge the even stream: C | (A & $5555). */
-    custom->bltapt = raw + 256;
-    custom->bltcpt = scratch;
-    custom->bltdpt = scratch;
-    custom->bltbdat = 0x5555;
-    custom->bltcon1 = 0;
-    custom->bltcon0 = 0x0bea;
-    custom->bltsize = 4 << 6;
-    TD_WAITBLIT(gfxbase);
-}
-
 static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
         UWORD *raw, *rawend;
         UBYTE i;
         UBYTE lasterr;
         UBYTE *data = tdb->td_DataBuffer;
-        APTR gfxbase = OpenLibrary("graphics.library", 0);
-        BOOL scratchready = FALSE;
-        BOOL blitterowned = FALSE;
 
         lasterr = 0;
         raw = tdb->td_DMABuffer;
@@ -501,7 +453,6 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
             UBYTE *secdata;
             ULONG chksum, id, dlong;
             UBYTE trackoffs;
-            UWORD *mfmdata;
 
             if (raw != tdb->td_DMABuffer) {
                 while (*raw != 0x4489) {
@@ -564,49 +515,22 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
             chksum = getdecodedlong(raw, 2);
             raw += 4;
             secdata = data + trackoffs * 512;
-            mfmdata = raw;
-            if (gfxbase != NULL && scratchready) {
-                for (i = 0; i < 128; i++) {
-                    chksum ^= getmfmlong(raw) ^ getmfmlong(raw + 256);
-                    raw += 2;
-                }
-            } else {
-                for (i = 0; i < 128; i++) {
-                    dlong = getdecodedlongchk(raw, 256, &chksum);
-                    raw += 2;
-                    *secdata++ = dlong >> 24;
-                    *secdata++ = dlong >> 16;
-                    *secdata++ = dlong >> 8;
-                    *secdata++ = dlong;
-                }
+            for (i = 0; i < 128; i++) {
+                dlong = getdecodedlongchk(raw, 256, &chksum);
+                raw += 2;
+                *secdata++ = dlong >> 24;
+                *secdata++ = dlong >> 16;
+                *secdata++ = dlong >> 8;
+                *secdata++ = dlong;
             }
             if (chksum) {
                 lasterr = TDERR_BadSecSum;
                 D(bug("td_decodebuffer sector %d data checksum error\n", trackoffs));
                 continue; // data checksum error
             }
-            if (gfxbase != NULL && scratchready) {
-                if (!blitterowned) {
-                    TD_OWNBLITTER(gfxbase);
-                    blitterowned = TRUE;
-                }
-                blitdecodesector(mfmdata, tdb->td_DMABuffer,
-                                 tdb->custom, gfxbase);
-                CopyMem(tdb->td_DMABuffer, data + trackoffs * 512, 512);
-            } else {
-                /* This sector's raw area is now dead and provides 512 bytes
-                 * of chip scratch for every subsequent sector. */
-                scratchready = TRUE;
-            }
             tdb->td_sectorbits |= 1 << trackoffs;
         }
 end:
-        if (blitterowned) {
-            TD_WAITBLIT(gfxbase);
-            TD_DISOWNBLITTER(gfxbase);
-        }
-        if (gfxbase != NULL)
-            CloseLibrary(gfxbase);
         D(bug("td_decodebuffer err=%d secmask=%08x\n", lasterr, tdb->td_sectorbits));
         return lasterr;
 }
