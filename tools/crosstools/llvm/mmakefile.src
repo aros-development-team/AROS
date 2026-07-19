@@ -350,8 +350,8 @@ LLVM_COMPILER_RT_CMAKEBASE :=                                                   
   -DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF                                                                                              \
   -DBUILD_SHARED_LIBS=OFF                                                                                                               \
   -DAROS_BUILD=ON \
-  -DCOMPILER_RT_LIBRARY_INSTALL_DIR="lib/clang/$(LLVM_VERSION)/lib/aros" \
-  -DCOMPILER_RT_LIBRARY_OUTPUT_DIR="$(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)/lib/aros"
+  -DCOMPILER_RT_INSTALL_PATH="$(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)" \
+  -DCOMPILER_RT_OS_DIR="aros"
 
 # Without COMPILER_RT_ARMHF_TARGET, compiler-rt tags its builtins with
 # __pcs__("aapcs"), forcing the soft-float return ABI even under
@@ -375,14 +375,15 @@ LLVM_COMPILER_RT_CMAKEOPTIONS :=                                                
     prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host usecppflags=no
 
 # Clang's driver looks for libclang_rt.builtins-armhf.a on hard-float targets,
-# but compiler-rt builds it as builtins-arm.a. Create a symlink.
+# but compiler-rt builds it as builtins-arm.a. Provide it under both names
+# (copied, not symlinked, as AROS' build tools define no $(LN)).
 COMPILER_RT_CLANG_LIBDIR := $(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)/lib/aros
 
 #MM crosstools-compiler-rt-fixup : crosstools-compiler-rt
 crosstools-compiler-rt-fixup :
 	$(Q)$(IF) $(TEST) -f $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-arm.a -a \
 	    ! -e $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-armhf.a ; then \
-	    $(LN) -sf libclang_rt.builtins-arm.a $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-armhf.a ; \
+	    $(CP) $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-arm.a $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-armhf.a ; \
 	fi
 
 ifneq ($(AROS_TARGET_CPU32),)
