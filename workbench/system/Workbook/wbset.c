@@ -64,8 +64,8 @@ static void rearrange(Class *cl, Object *obj)
     /* Set the start of the auto area to be
      * immediately below the fixed objects.
      */
-    CurrRight = sbox.Left;
-    CurrBottom = sbox.Top + sbox.Height;
+    CurrRight = 0;
+    CurrBottom = sbox.Height;
 
     /* For each item in the auto list, add it to the right */
     ForeachNode(&my->AutoObjects, node) {
@@ -78,9 +78,9 @@ static void rearrange(Class *cl, Object *obj)
             ibox.Left = CurrRight;
         } else {
             wbGABox(wb, obj, &sbox);
-            ibox.Left = sbox.Left;
-            CurrRight = sbox.Left;
-            CurrBottom = sbox.Top + sbox.Height;
+            ibox.Left = 0;
+            CurrRight = 0;
+            CurrBottom = sbox.Height;
         }
         ibox.Top  = CurrBottom;
         CurrRight += ibox.Width;
@@ -111,7 +111,7 @@ static IPTR WBSetAddMember(Class *cl, Object *obj, struct opMember *opm)
 
     if (ibox.Left == ~0 ||
         ibox.Top == ~0) {
-        AddHead(&my->AutoObjects, (struct Node *)&node->sn_Node);
+        AddTail(&my->AutoObjects, (struct Node *)&node->sn_Node);
     } else {
         AddHead(&my->FixedObjects, (struct Node *)&node->sn_Node);
     }

@@ -235,6 +235,49 @@ static int wbwiIconCmp(Class *cl, Object *obj, Object *a, Object *b)
     return Stricmp(al, bl);
 }
 
+static void wbRedimension(Class *cl, Object *obj);
+
+static void wbProgressiveRedimension(Class *cl, Object *obj)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
+    struct Window *win = my->Window;
+    IPTR setWidth = 0, setHeight = 0;
+    WORD innerWidth = win->Width - win->BorderLeft - win->BorderRight;
+    WORD innerHeight = win->Height - win->BorderTop - win->BorderBottom;
+
+    SetAttrs(my->Area,
+             GA_Left, win->BorderLeft,
+             GA_Top, win->BorderTop,
+             GA_Width, innerWidth,
+             GA_Height, innerHeight,
+             TAG_END);
+
+    GetAttr(GA_Width, my->Set, &setWidth);
+    GetAttr(GA_Height, my->Set, &setHeight);
+    SetAttrs(my->Area,
+             WBVA_VirtWidth, setWidth,
+             WBVA_VirtHeight, setHeight,
+             TAG_END);
+
+    SetAttrs(my->ScrollH,
+             PGA_Total, setWidth,
+             PGA_Visible, innerWidth,
+             GA_Left, win->BorderLeft,
+             GA_RelBottom, -(win->BorderBottom - 2),
+             GA_Width, innerWidth,
+             GA_Height, win->BorderBottom - 3,
+             TAG_END);
+    SetAttrs(my->ScrollV,
+             PGA_Total, setHeight,
+             PGA_Visible, innerHeight,
+             GA_RelRight, -(win->BorderRight - 2),
+             GA_Top, win->BorderTop,
+             GA_Width, win->BorderRight - 3,
+             GA_Height, innerHeight,
+             TAG_END);
+}
+
 static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -245,6 +288,7 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
     if (!wbwi) {
         DisposeObject(iobj);
     } else {
+        struct opMember opmmsg;
         struct wbWindow_Icon *tmp, *pred = NULL;
         wbwi->wbwiObject = iobj;
 
@@ -252,6 +296,7 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
         ForeachNode(&my->IconList, tmp) {
             if (wbwiIconCmp(cl, obj, tmp->wbwiObject, wbwi->wbwiObject) == 0) {
                 DisposeObject(iobj);
+                FreeMem(wbwi, sizeof(*wbwi));
                 return;
             }
             if (wbwiIconCmp(cl, obj, tmp->wbwiObject, wbwi->wbwiObject) < 0)
@@ -260,6 +305,16 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
         }
 
         Insert((struct List *)&my->IconList, (struct Node *)wbwi, (struct Node *)pred);
+
+        /* Make each completed icon visible immediately instead of waiting
+         * for the entire directory scan and all following disk reads. */
+        opmmsg.MethodID = OM_ADDMEMBER;
+        opmmsg.opam_Object = iobj;
+        DoMethodA(my->Set, (Msg)&opmmsg);
+        wbProgressiveRedimension(cl, obj);
+        AddGadget(my->Window, (struct Gadget *)iobj, 0);
+        RefreshGList((struct Gadget *)iobj, my->Window, NULL, 1);
+        RemoveGadget(my->Window, (struct Gadget *)iobj);
     }
 }
 
@@ -472,16 +527,10 @@ static void wbRescan(Class *cl, Object *obj)
         wbAddFiles(cl, obj);
     }
 
-    /* Display the new icons */
-    opmmsg.MethodID = OM_ADDMEMBER;
-    ForeachNode(&my->IconList, wbwi)
-    {
-        opmmsg.opam_Object = wbwi->wbwiObject;
-        DoMethodA(my->Set, &opmmsg);
-    }
-
-    /* Adjust the scrolling regions */
-    wbRedimension(cl, obj);
+    /* Progressive geometry updates do not refresh the whole window. Redraw
+     * only the proportional gadgets once their final totals are known. */
+    RefreshGList((struct Gadget *)my->ScrollH, my->Window, NULL, 1);
+    RefreshGList((struct Gadget *)my->ScrollV, my->Window, NULL, 1);
 
     /* Return the point back to normal */
     SetWindowPointer(my->Window, WA_BusyPointer, FALSE, TAG_END);
