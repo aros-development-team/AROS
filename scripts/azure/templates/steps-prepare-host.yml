@@ -16,33 +16,13 @@
 # unchanged.
 
 steps:
-# Download the SSH key from secure files (used by every stage that uploads)
-- task: DownloadSecureFile@1
-  name: GetSSHKey
-  inputs:
-    secureFile: 'sf-azure-key'
+# SSH key + config for SourceForge (used by every stage that uploads);
+# shared with the aux pipelines in scripts/azure.
+- template: setup-sf-ssh.yml
+  parameters:
+    keyscanHosts: 'shell.sourceforge.net web.sourceforge.net'
 
 - script: |
-    echo "Setting up SSH key..."
-    mkdir -p ~/.ssh
-    cp "$(GetSSHKey.secureFilePath)" ~/.ssh/id_rsa
-    chmod 600 ~/.ssh/id_rsa
-    chmod 700 ~/.ssh
-
-    # Add host keys for strict verification (includes ED25519)
-    ssh-keyscan -H -t rsa,ecdsa,ed25519 shell.sourceforge.net >> ~/.ssh/known_hosts
-    ssh-keyscan -H -t rsa,ecdsa,ed25519 web.sourceforge.net   >> ~/.ssh/known_hosts
-    chmod 600 ~/.ssh/known_hosts
-
-    echo "Host web.sourceforge.net" > ~/.ssh/config
-    echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
-    echo "    IdentitiesOnly yes" >> ~/.ssh/config
-    echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
-    echo "    UserKnownHostsFile ~/.ssh/known_hosts" >> ~/.ssh/config
-    echo "    Port 22" >> ~/.ssh/config
-    chmod 600 ~/.ssh/config
-
-    echo "SSH key and config setup complete."
     if [ "$AROSBUILD_TOOLCHAIN_FAMILY" != "" ]; then
       export TARGETTOOLCHAINOPTS="$TARGETTOOLCHAINOPTS --with-toolchain=$(arosbuild.toolchain.family)"
       export TARGETTOOLCHAIN="$(arosbuild.toolchain.family)"
@@ -73,7 +53,6 @@ steps:
     if [ "$AROSBUILD_WITHUNITTESTS" != "" ]; then
       export CONFIGOPTS="$CONFIGOPTS --enable-unit-tests=$(arosbuild.withunittests)"
     fi
-    sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
     sudo apt-get update -y
     if [ "$AROSBUILD_AGENT_UPGRADE" != "" ]; then
       sudo ACCEPT_EULA=Y apt-get upgrade -y

@@ -253,14 +253,12 @@ steps:
   condition: ne( variables['SF_RSYNC_USER'], '' )
   displayName: 'Staging base build for deployment'
 
-- script: |
-    rsync -avz -e ssh \
-        $(Build.BinariesDirectory)/Upload/ \
-        "$MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/"
-  env:
-    MAPPED_USER: $(SF_RSYNC_USER)
-  condition: and( ne( variables['SF_RSYNC_USER'], '' ), ne( variables['arosbuild.deploy'], 'no' ) )
-  displayName: 'Deploying base build'
+- template: rsync-upload.yml
+  parameters:
+    source: '$(Build.BinariesDirectory)/Upload/'
+    destination: '$(SF_RSYNC_USER),aros@web.sourceforge.net:uploads/nightly2/'
+    condition: and( ne( variables['SF_RSYNC_USER'], '' ), ne( variables['arosbuild.deploy'], 'no' ) )
+    displayName: 'Deploying base build'
 
 # --- Hosted unit tests (the base package exists locally on this agent) -------
 - template: steps-unittests.yml

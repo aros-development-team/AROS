@@ -1,9 +1,9 @@
-# scripts/azure-new — staged AROS nightly pipeline
+# scripts/azure — staged AROS nightly pipeline
 
-This directory is a **staged** re-implementation of the nightly Azure pipeline in
-`scripts/azure/`. It exists **alongside** the original, which is left completely
-untouched, so nothing breaks: you opt in by pointing an Azure pipeline at
-`scripts/azure-new/azure-pipelines.yml` instead of `scripts/azure/azure-pipelines.yml`.
+`azure-pipelines.yml` in this directory is a **staged** re-implementation of the
+original single-job nightly Azure pipeline, which it replaces. The auxiliary
+pipelines (`update-nightlies.yml`, `gen-unittests.yml`, …) live alongside it and
+share the step templates under `templates/`.
 
 The motivation, root-cause analysis and full design rationale are in the
 companion document **`aros-nightly-staged-build.md`** (kept with the build
@@ -35,6 +35,12 @@ templates/
   steps-core.yml                 Core stage body (core + distfiles + unittests)
   steps-unittests.yml            hosted CUnit testing (used by Core)
   steps-contrib.yml              Contrib stage body (self-contained)
+  setup-sf-ssh.yml               SSH key/config for SourceForge (shared with the
+                                 aux pipelines)
+  rsync-upload.yml               rsync-over-SSH upload step (shared)
+  install-deps.yml               apt/pip dependency install step (shared)
+  nightlies-update.yml           nightly publish/cleanup logic (used by
+                                 update-nightlies.yml / update-dev-nightlies.yml)
 aros-stage.sh                    run a single stage locally (developer convenience)
 ```
 
@@ -75,7 +81,7 @@ follows both (it needs the toolchain artifact and the Core base manifest).
 1. **Reuse the existing project setup** unchanged: the `sf-azure-key` secure
    file and the `SF_RSYNC_USER` / `SF_RSYNC_PASSWORD` variables.
 2. Create (or clone) a per-flavour pipeline and set its **YAML path** to
-   `scripts/azure-new/azure-pipelines.yml`.
+   `scripts/azure/azure-pipelines.yml`.
 3. Keep the **same** `arosbuild.*` variables you already use — they now drive
    stages instead of steps. The relevant gates:
    * `arosbuild.withcontrib=yes` → enables the **Contrib** stage.
@@ -93,9 +99,9 @@ The downstream jobs (`scripts/azure/update-nightlies.yml`, `gen-unittests.yml`,
 
 * **Target: Linux Microsoft-hosted agents**, where the disk failures occur. The
   macOS dependency and flag branches are preserved so a Darwin flavour still
-  works, but because each stage runs on a fresh agent the native host GCC would
-  be rebuilt per stage — **macOS native-toolchain flavours are better kept on the
-  original `scripts/azure` single-job pipeline.**
+  works, but because each stage runs on a fresh agent the native host GCC is
+  rebuilt per stage — **expect macOS native-toolchain flavours to be slower than
+  they were under the replaced single-job pipeline.**
 * `Contrib` recompiles `includes`+`linklibs` (not the full core). That trades a
   bit of CPU for bounded disk; the 360-minute job timeout is ample. If contrib
   recompile time ever becomes the constraint, switch that flavour to the

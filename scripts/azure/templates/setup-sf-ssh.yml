@@ -32,15 +32,18 @@ steps:
     chmod 600 ~/.ssh/id_rsa
     chmod 700 ~/.ssh
 
-    # Add SourceForge host(s) to known hosts (non-interactive SSH)
+    # Add SourceForge host(s) to known hosts for strict verification
+    # (includes ED25519)
     for host in ${{ parameters.keyscanHosts }}; do
-      ssh-keyscan -t rsa "$host" >> ~/.ssh/known_hosts
+      ssh-keyscan -H -t rsa,ecdsa,ed25519 "$host" >> ~/.ssh/known_hosts
     done
+    chmod 600 ~/.ssh/known_hosts
 
     echo "Host ${{ parameters.configHost }}" > ~/.ssh/config
     echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
     echo "    IdentitiesOnly yes" >> ~/.ssh/config
     echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
+    echo "    UserKnownHostsFile ~/.ssh/known_hosts" >> ~/.ssh/config
     echo "    Port 22" >> ~/.ssh/config
     chmod 600 ~/.ssh/config
 

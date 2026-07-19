@@ -8,7 +8,7 @@
 #     ./configure [options] && make && make contrib
 #
 # Usage:
-#     scripts/azure-new/aros-stage.sh <toolchain|core|contrib> [configure-args...]
+#     scripts/azure/aros-stage.sh <toolchain|core|contrib> [configure-args...]
 #
 # Environment (set sane defaults if unset):
 #     AROSSRCDIR              - AROS source tree (default: git toplevel)
@@ -19,9 +19,9 @@
 #
 # Typical local sequence (mirrors the pipeline, shared toolchain + ports):
 #     export AROSBUILDTOOLCHAINDIR=$PWD/toolchain AROSPORTSSRCSDIR=$PWD/portssources
-#     scripts/azure-new/aros-stage.sh toolchain --target=pc-x86_64
-#     scripts/azure-new/aros-stage.sh core      --target=pc-x86_64
-#     scripts/azure-new/aros-stage.sh contrib   --target=pc-x86_64
+#     scripts/azure/aros-stage.sh toolchain --target=pc-x86_64
+#     scripts/azure/aros-stage.sh core      --target=pc-x86_64
+#     scripts/azure/aros-stage.sh contrib   --target=pc-x86_64
 #
 set -eu
 

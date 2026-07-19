@@ -1,7 +1,7 @@
 # AROS Nightly Build — Staged Build Implementation Guide
 
 > **Implemented:** the design below is realised in this directory
-> (`scripts/azure-new/`). See `README.md` for the operational quick reference;
+> (`scripts/azure/`). See `README.md` for the operational quick reference;
 > this document is the full rationale and analysis.
 
 **Status:** Design / implementation guide

@@ -9,6 +9,9 @@ parameters:
 - name: displayName
   type: string
   default: 'Upload files to SourceForge'
+- name: condition       # optional step condition
+  type: string
+  default: succeeded()
 
 steps:
 - bash: |
@@ -16,4 +19,5 @@ steps:
     rsync -avz -e ssh \
       ${{ parameters.source }} \
       "${{ parameters.destination }}"
+  condition: ${{ parameters.condition }}
   displayName: ${{ parameters.displayName }}
