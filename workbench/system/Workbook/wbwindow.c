@@ -267,9 +267,7 @@ static void wbAddFiles(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbWindow *my = INST_DATA(cl, obj);
-    struct ExAllControl *eac;
-    struct ExAllData *ead;
-    const ULONG eadSize = sizeof(struct ExAllData) + 1024;
+    struct FileInfoBlock *fib;
     TEXT *path;
     int file_part;
 
@@ -279,43 +277,46 @@ static void wbAddFiles(Class *cl, Object *obj)
 
     if (!NameFromLock(my->Lock, path, 1024)) {
         FreeVec(path);
+        return;
     }
     file_part = strlen(path);
 
-    ead = AllocVec(eadSize, MEMF_CLEAR);
-    if (ead != NULL) {
-        eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-        if (eac != NULL) {
-            struct Hook hook;
-            BOOL more = TRUE;
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (fib != NULL) {
+        struct Hook hook;
+        LONG data = ED_NAME;
 
-            hook.h_Entry = my->FilterHook;
-            hook.h_SubEntry = NULL;
-            hook.h_Data = wb;
+        hook.h_Entry = my->FilterHook;
+        hook.h_SubEntry = NULL;
+        hook.h_Data = wb;
 
-            eac->eac_MatchFunc = &hook;
-            while (more) {
-                struct ExAllData *tmp = ead;
-                int i;
+        if (Examine(my->Lock, fib)) {
+            while (ExNext(my->Lock, fib)) {
+                struct ExAllData ead = { 0 };
+                Object *iobj;
 
-                more = ExAll(my->Lock, ead, eadSize, ED_NAME, eac);
-                for (i = 0; i < eac->eac_Entries; i++, tmp=tmp->ed_Next) {
-                    Object *iobj;
-                    path[file_part] = 0;
-                    if (AddPart(path, tmp->ed_Name, 1024)) {
-                        iobj = NewObject(WBIcon, NULL,
-                                WBIA_File, path,
-                                WBIA_Label, tmp->ed_Name,
-                                WBIA_Screen, my->Window->WScreen,
-                                TAG_END);
-                        if (iobj != NULL)
-                            wbwiAppend(cl, obj, iobj);
-                    }
+                /* The existing filter hooks operate on ExAllData and strip
+                 * the .info suffix in place.  ExNext's FileInfoBlock is
+                 * disposable on the next iteration, so it is safe to expose
+                 * its name directly and preserves exactly the old filtering
+                 * semantics. */
+                ead.ed_Name = fib->fib_FileName;
+                if (!CALLHOOKPKT(&hook, &ead, &data))
+                    continue;
+
+                path[file_part] = 0;
+                if (AddPart(path, ead.ed_Name, 1024)) {
+                    iobj = NewObject(WBIcon, NULL,
+                            WBIA_File, path,
+                            WBIA_Label, ead.ed_Name,
+                            WBIA_Screen, my->Window->WScreen,
+                            TAG_END);
+                    if (iobj != NULL)
+                        wbwiAppend(cl, obj, iobj);
                 }
             }
-            FreeDosObject(DOS_EXALLCONTROL, eac);
         }
-        FreeVec(ead);
+        FreeDosObject(DOS_FIB, fib);
     }
 
     FreeVec(path);

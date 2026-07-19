@@ -452,22 +452,36 @@ static struct Image * ReadImage (struct DiskObject *icon, struct Hook * streamho
             MEMF_PUBLIC | MEMF_CHIP, IconBase)))
             return NULL;
 
-        size >>= 1;
-
-        for (t=0; t<size; t++)
+        /* Classic planar image data is stored as raw big-endian bitplane
+         * bytes, which is also the in-memory representation expected by
+         * graphics.library.  The normal DOS stream can therefore read the
+         * whole block directly instead of calling the stream hook/FGetC for
+         * every byte.  Retain the hook path for callers using custom streams.
+         */
+        if (streamhook == &(LB(IconBase)->dsh))
         {
-            UWORD data;
-
-            if (!ReadWord (streamhook, &data, (APTR)file))
-                break;
-
-            image->ImageData[t] = AROS_WORD2BE(data);
+            if (FRead(file, image->ImageData, 1, size) != size)
+                return NULL;
         }
-
-        if (t != size)
+        else
         {
-            D(bug("[%s] Strange. Short read at %d, expected %d\n", t, size));
-            return NULL;
+            size >>= 1;
+
+            for (t=0; t<size; t++)
+            {
+                UWORD data;
+
+                if (!ReadWord (streamhook, &data, (APTR)file))
+                    break;
+
+                image->ImageData[t] = AROS_WORD2BE(data);
+            }
+
+            if (t != size)
+            {
+                D(bug("[%s] Strange. Short read at %d, expected %d\n", t, size));
+                return NULL;
+            }
         }
     }
 
