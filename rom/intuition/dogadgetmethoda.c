@@ -7,6 +7,7 @@
 #include <intuition/classusr.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/cghooks.h>
+#include <graphics/rpattr.h>
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -81,6 +82,7 @@
     AROS_LIBFUNC_INIT
 
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct GadgetInfo   *gi = &GetPrivIBase(IntuitionBase)->DoGadgetMethodGI;
     struct RastPort     *rp = &GetPrivIBase(IntuitionBase)->DoGadgetMethodRP;
     IPTR                 ret = 0;
@@ -127,40 +129,53 @@
 
             case GM_RENDER:
                 {
-                    struct RastPort *rport;
+                    struct Layer *layer = rp->Layer;
 
-                    /* Allocate a clone rastport derived from the GadgetInfo
-                     * whose layer clipping information has been nulled out...
-                     */
-                    rport = ObtainGIRPort(gi);
-
-                    if (rport)
+                    /* DoGadgetMethodA is serialized by GadgetLock and already
+                     * owns a reusable RastPort. Avoid allocating and freeing a
+                     * cloned RastPort for every system gadget rendered during
+                     * a window-frame refresh. Preserve ObtainGIRPort's layer
+                     * and clipping semantics around the reusable port. */
+                    if (layer)
                     {
-                    #if 0 /* stegerg: CHECKME!!!! */
-                        //init intuition's global dogadmethod rp with obtained data
-                        CopyMem(rport,rp,sizeof (struct RastPort));
+                        LockLayer(0, layer);
+
+                        if (((GetPrivIBase(IntuitionBase)->BackupLayerContext.nestcount)++) == 0)
+                        {
+                            GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_x = layer->Scroll_X;
+                            GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_y = layer->Scroll_Y;
+                            layer->Scroll_X = 0;
+                            layer->Scroll_Y = 0;
+                            GetPrivIBase(IntuitionBase)->BackupLayerContext.clipregion =
+                                InstallClipRegion(layer, NULL);
+                        }
+
+                        SetWriteMask(rp, 0xFF);
+                        SetRPAttrs(rp, RPTAG_DrMd, JAM1,
+                                  RPTAG_PenMode, TRUE, TAG_DONE);
 
                         if (gi->gi_DrInfo)
-                        {
                             SetFont(rp, gi->gi_DrInfo->dri_Font);
-                        }
 
                         ((struct gpRender *)msg)->gpr_RPort = rp;
                         ((struct gpRender *)msg)->gpr_GInfo = gi;
-                    #else
-                        if (gi->gi_DrInfo)
-                        {
-                            SetFont(rport, gi->gi_DrInfo->dri_Font);
-                        }
-
-                        ((struct gpRender *)msg)->gpr_RPort = rport;
-                        ((struct gpRender *)msg)->gpr_GInfo = gi;
-
-                    #endif
-
                         ret = Custom_DoMethodA(IntuitionBase, gad, msg);
 
-                        ReleaseGIRPort(rport);
+                        if ((--GetPrivIBase(IntuitionBase)->BackupLayerContext.nestcount) == 0)
+                        {
+                            InstallClipRegion(layer,
+                                GetPrivIBase(IntuitionBase)->BackupLayerContext.clipregion);
+                            layer->Scroll_X = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_x;
+                            layer->Scroll_Y = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_y;
+                        }
+
+                        UnlockLayer(layer);
+                    }
+                    else if (gi->gi_RastPort)
+                    {
+                        ((struct gpRender *)msg)->gpr_RPort = rp;
+                        ((struct gpRender *)msg)->gpr_GInfo = gi;
+                        ret = Custom_DoMethodA(IntuitionBase, gad, msg);
                     }
                 }
                 break;

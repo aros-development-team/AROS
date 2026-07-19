@@ -845,35 +845,45 @@ static IPTR WBWindowUpdate(Class *cl, Object *obj, struct opUpdate *opu)
     struct TagItem *tstate;
     struct TagItem *tag;
     IPTR rc;
+    IPTR areaChanged;
+    BOOL refreshH = FALSE;
+    BOOL refreshV = FALSE;
 
     rc = DoSuperMethodA(cl, obj, (Msg)opu);
 
     /* Also send these to the Area */
-    rc |= DoMethodA(my->Area, (Msg)opu);
+    areaChanged = DoMethodA(my->Area, (Msg)opu);
+    rc |= areaChanged;
 
     /* Update scrollbars if needed */
     tstate = opu->opu_AttrList;
     while ((tag = NextTagItem(&tstate))) {
         switch (tag->ti_Tag) {
         case WBVA_VirtLeft:
-            rc = TRUE;
             break;
         case WBVA_VirtTop:
-            rc = TRUE;
             break;
         case WBVA_VirtWidth:
             SetAttrs(my->ScrollH, PGA_Total, tag->ti_Data, TAG_END);
+            refreshH = TRUE;
             rc = TRUE;
             break;
         case WBVA_VirtHeight:
             SetAttrs(my->ScrollV, PGA_Total, tag->ti_Data, TAG_END);
+            refreshV = TRUE;
             rc = TRUE;
             break;
         }
     }
 
-    if (rc && !(opu->opu_Flags & OPUF_INTERIM))
-        RefreshGadgets(my->Window->FirstGadget, my->Window, NULL);
+    if (!(opu->opu_Flags & OPUF_INTERIM)) {
+        if (areaChanged)
+            RefreshGList((struct Gadget *)my->Area, my->Window, NULL, 1);
+        if (refreshH)
+            RefreshGList((struct Gadget *)my->ScrollH, my->Window, NULL, 1);
+        if (refreshV)
+            RefreshGList((struct Gadget *)my->ScrollV, my->Window, NULL, 1);
+    }
 
     return rc;
 }
