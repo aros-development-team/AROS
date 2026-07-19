@@ -415,6 +415,9 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
     UWORD                *pens = DRI(msg->sdp_Dri)->dri_Pens;
     LONG                  right, left;
     BOOL                  beeping = FALSE;
+    BOOL                  atomicTitle = FALSE;
+    TEXT                  titleLine[128];
+    ULONG                 titleChars = 0;
 
     D(bug("[SCRDECOR] %s()\n", __func__));
 
@@ -430,10 +433,41 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
     D(bug("[SCRDECOR] %s: Screen Dimensions  %dx%d\n", __func__, msg->sdp_Screen->Width, msg->sdp_Screen->Height));
     D(bug("[SCRDECOR] %s: Bar Height  %d\n", __func__, msg->sdp_Screen->BarHeight));
 
+    if ((msg->sdp_Flags & SDF_DSB_TITLEONLY) && rp->Font &&
+        !rp->Font->tf_CharKern && !rp->Font->tf_CharSpace &&
+        rp->Font->tf_XSize == 8 && rp->TxSpacing == 0 &&
+        !(rp->AlgoStyle & (FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED)))
+    {
+        LONG titleWidth = right - msg->sdp_Screen->BarHBorder;
+
+        if (titleWidth >= 8)
+        {
+            ULONG len;
+
+            titleChars = titleWidth / 8;
+            if (titleChars > sizeof(titleLine))
+                titleChars = sizeof(titleLine);
+
+            memset(titleLine, ' ', titleChars);
+            if (msg->sdp_Screen->Title)
+            {
+                len = strlen(msg->sdp_Screen->Title);
+                if (len > titleChars)
+                    len = titleChars;
+                memcpy(titleLine, msg->sdp_Screen->Title, len);
+            }
+            atomicTitle = TRUE;
+        }
+    }
+
     SetDrMd(rp, JAM1);
 
-    SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
-    RectFill(rp, left + 1, 0, right - 1, msg->sdp_Screen->BarHeight - 1);
+    if (!atomicTitle)
+    {
+        SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
+        RectFill(rp, left + 1, 0, right - 1,
+                 msg->sdp_Screen->BarHeight - 1);
+    }
 
     D(bug("[SCRDECOR] %s: Filled Bar Area\n", __func__));
 
@@ -442,7 +476,7 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 
     D(bug("[SCRDECOR] %s: Filled Bar Area\n", __func__));
 
-    if (msg->sdp_Screen->Title)
+    if (msg->sdp_Screen->Title || atomicTitle)
     {
         UWORD ypad, xunused;
 
@@ -451,11 +485,17 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
         SetAPen(rp, pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
         SetBPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
 
+        if (atomicTitle)
+            SetDrMd(rp, JAM2);
+
         Move(rp, msg->sdp_Screen->BarHBorder, ypad + rp->TxBaseline + ((msg->sdp_Screen->BarHeight - rp->TxHeight) >> 1));
 
         D(bug("[SCRDECOR] %s: Title Text @ %p\n", __func__, msg->sdp_Screen->Title));
         D(bug("[SCRDECOR] %s: Title '%s'\n", __func__, msg->sdp_Screen->Title));
-        Text(rp, msg->sdp_Screen->Title, strlen(msg->sdp_Screen->Title));
+        if (atomicTitle)
+            Text(rp, titleLine, titleChars);
+        else
+            Text(rp, msg->sdp_Screen->Title, strlen(msg->sdp_Screen->Title));
 
         D(bug("[SCRDECOR] %s: Text Rendered\n", __func__));
     }

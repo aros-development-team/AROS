@@ -558,6 +558,20 @@ static void wbFixBorders(struct Window *win)
     win->BorderRight += br;
 }
 
+static void wbFormatScreenTitle(struct wbWindow *my)
+{
+    ULONG val[5];
+
+    val[0] = WB_VERSION;
+    val[1] = WB_REVISION;
+    val[2] = AvailMem(MEMF_CHIP) / 1024;
+    val[3] = AvailMem(MEMF_FAST) / 1024;
+    val[4] = AvailMem(MEMF_ANY) / 1024;
+
+    RawDoFmt("Workbook %ld.%ld  Chip: %ldk, Fast: %ldk, Any: %ldk",
+             (RAWARG)val, RAWFMTFUNC_STRING, my->ScreenTitle);
+}
+
 static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -578,6 +592,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 
     NEWLIST(&my->IconList);
     my->FilterHook = wbFilterIcons_Hook;
+    wbFormatScreenTitle(my);
 
     path = (CONST_STRPTR)GetTagData(WBWA_Path, (IPTR)NULL, ops->ops_AttrList);
     if (path == NULL) {
@@ -605,6 +620,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
                         WA_IDCMP, 0,
                         WA_Backdrop,    TRUE,
                         WA_WBenchWindow, TRUE,
+                        WA_ScreenTitle, my->ScreenTitle,
                         WA_Borderless,  TRUE,
                         WA_Activate,    TRUE,
                         WA_SmartRefresh, TRUE,
@@ -644,6 +660,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
                         WA_Backdrop, FALSE,
                         WA_WBenchWindow, TRUE,
                         WA_Title,    my->Path,
+                        WA_ScreenTitle, my->ScreenTitle,
                         WA_SmartRefresh, TRUE,
                         WA_SizeGadget, TRUE,
                         WA_DragBar, TRUE,
@@ -1029,17 +1046,8 @@ static IPTR WBWindowIntuiTick(Class *cl, Object *obj, Msg msg)
     IPTR rc = FALSE;
 
     if (my->Tick == 0) {
-        ULONG val[5];
-
-        val[0] = WB_VERSION;
-        val[1] = WB_REVISION;
-        val[2] = AvailMem(MEMF_CHIP) / 1024;
-        val[3] = AvailMem(MEMF_FAST) / 1024;
-        val[4] = AvailMem(MEMF_ANY) / 1024;
-
         /* Update the window's title */
-        RawDoFmt("Workbook %ld.%ld  Chip: %ldk, Fast: %ldk, Any: %ldk", (RAWARG)val,
-                 RAWFMTFUNC_STRING, my->ScreenTitle);
+        wbFormatScreenTitle(my);
 
         SetWindowTitles(my->Window, (CONST_STRPTR)-1, my->ScreenTitle);
         rc = TRUE;

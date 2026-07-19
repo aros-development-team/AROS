@@ -1067,6 +1067,12 @@ moreFlags |= (name); else moreFlags &= ~(name)
     msg.invisible = windowinvisible;
     msg.success = FALSE;
 
+    /* int_openwindow() may activate and render the window before returning.
+     * Install WA_ScreenTitle first so that activation never exposes the
+     * screen's default title as an intermediate state. */
+    if (screenTitle != NULL)
+        w->ScreenTitle = (UBYTE *)screenTitle;
+
     DoSyncAction((APTR)int_openwindow, &msg.msg, IntuitionBase);
 
 #ifdef USEWINDOWLOCK
@@ -1148,9 +1154,6 @@ moreFlags |= (name); else moreFlags &= ~(name)
         RefreshWindowFrame(w);
     }
 #endif
-
-    if (screenTitle != NULL)
-        SetWindowTitles (w, (CONST_STRPTR)~0, screenTitle);
 
     UpdateMouseCoords(w);
 
