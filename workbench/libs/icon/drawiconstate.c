@@ -128,12 +128,11 @@
 
         TextExtent(rp, label, txtlen, &extent);
 
-        /* wDelta will be the centering offset for the icon */
-        /* textLeft is the horiz offset for the text */
+        /* leftEdge is the icon image origin. Center the label around it. */
 
         if (extent.te_Width > wDelta) {
-            wDelta = (extent.te_Width - wDelta) / 2;
-            textLeft = 0;
+            textLeft = -((extent.te_Width - wDelta) / 2);
+            wDelta = 0;
         } else {
             textLeft = (wDelta - extent.te_Width) / 2;
             wDelta = 0;
