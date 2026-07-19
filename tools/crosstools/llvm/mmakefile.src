@@ -487,11 +487,27 @@ endif
 #MM
 tools-crosstools-llvm-toolchain: $(llvm-installflag)
 
+# LLVM_INSTALL_TOOLCHAIN_ONLY=ON excludes llvm-config, llvm-as and the
+# lib/cmake/llvm export files from the install target, but the standalone
+# compiler-rt/libunwind configure steps need them - so install them by hand
+# from the build tree, before it is cleaned.
+ifneq (,$(findstring LLVM_INSTALL_TOOLCHAIN_ONLY=ON,$(LLVM_CMAKEOPTIONS)))
+llvm-install-extras :=                                                          \
+	cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-config $(LLVM_BUILD_BINDIR)/ &&    \
+	cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-as $(LLVM_BUILD_BINDIR)/ &&        \
+	$(HOST_STRIP) $(LLVM_BUILD_BINDIR)/llvm-config $(LLVM_BUILD_BINDIR)/llvm-as && \
+	$(MKDIR) $(CROSSTOOLSDIR)/lib/cmake/llvm &&                                 \
+	cp $(HOSTGENDIR)/$(CURDIR)/llvm/lib/cmake/llvm/*.cmake $(CROSSTOOLSDIR)/lib/cmake/llvm/
+else
+llvm-install-extras := true
+endif
+
 $(llvm-installflag): $(LLLVM_EXTRA_DEPS)
 	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag); then                        \
 	$(ECHO) "Building LLVM" &&                                              \
 	$(CMAKE) --build   $(HOSTGENDIR)/$(CURDIR)/llvm &&                      \
 	$(CMAKE) --install $(HOSTGENDIR)/$(CURDIR)/llvm --strip &&              \
+	$(llvm-install-extras) &&                                               \
 	$(CMAKE) --build   $(HOSTGENDIR)/$(CURDIR)/llvm --target clean &&       \
 	$(TOUCH) $(llvm-installflag);                                           \
 	fi
