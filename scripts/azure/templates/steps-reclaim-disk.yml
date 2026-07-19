@@ -7,6 +7,9 @@ parameters:
 - name: displayName
   type: string
   default: 'Reclaim host disk space'
+- name: condition       # optional step condition; keep it Linux-gated
+  type: string
+  default: eq( variables['Agent.OS'], 'Linux' )
 
 steps:
 - script: |
@@ -22,5 +25,5 @@ steps:
     sudo docker image prune --all --force > /dev/null 2>&1 || true
     echo "Disk usage after cleanup:"
     df -h /
-  condition: eq( variables['Agent.OS'], 'Linux' )
+  condition: ${{ parameters.condition }}
   displayName: ${{ parameters.displayName }}
