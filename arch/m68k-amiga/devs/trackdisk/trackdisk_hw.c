@@ -25,6 +25,15 @@
 
 #define ioStd(x)  ((struct IOStdReq *)x)
 
+struct GfxBase;
+
+#define TD_OWNBLITTER(base) \
+    AROS_LC0NR(void, OwnBlitter, struct GfxBase *, (base), 76, Graphics)
+#define TD_WAITBLIT(base) \
+    AROS_LC0NR(void, WaitBlit, struct GfxBase *, (base), 38, Graphics)
+#define TD_DISOWNBLITTER(base) \
+    AROS_LC0NR(void, DisownBlitter, struct GfxBase *, (base), 77, Graphics)
+
 static void td_wait_start(struct TrackDiskBase *tdb, UWORD millis)
 {
     // do not remove, AbortIO()+WaitIO() does not clear signal bit
@@ -438,12 +447,49 @@ static ULONG getdecodedlongchk(UWORD *mfmbuf, UWORD offset, ULONG *chksum)
     return (odd << 1) | even;
 }
 
+/* Decode one sector's 256-word odd stream followed by its 256-word even
+ * stream. BLTxDAT is immediate data and therefore must be loaded only after
+ * BLTCON0/1 have established the corresponding source shift. */
+static void blitdecodesector(UWORD *raw, UWORD *scratch,
+                            volatile struct Custom *custom, APTR gfxbase)
+{
+    TD_WAITBLIT(gfxbase);
+
+    custom->bltafwm = 0xffff;
+    custom->bltalwm = 0xffff;
+    custom->bltamod = 0;
+    custom->bltcmod = 0;
+    custom->bltdmod = 0;
+
+    /* Descending A shift reconstructs the odd bits in positions 1,3,...;
+     * B is an immediate $aaaa mask. */
+    custom->bltapt = raw + 255;
+    custom->bltdpt = scratch + 255;
+    custom->bltcon1 = 0x0002;
+    custom->bltcon0 = 0x19c0;
+    custom->bltbdat = 0xaaaa;
+    custom->bltsize = 4 << 6;
+    TD_WAITBLIT(gfxbase);
+
+    /* Merge the masked even stream with the shifted odd result. */
+    custom->bltapt = raw + 256;
+    custom->bltcpt = scratch;
+    custom->bltdpt = scratch;
+    custom->bltcon1 = 0;
+    custom->bltcon0 = 0x0bea;
+    custom->bltbdat = 0x5555;
+    custom->bltsize = 4 << 6;
+    TD_WAITBLIT(gfxbase);
+}
+
 static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
         UWORD *raw, *rawend;
         UBYTE i;
         UBYTE lasterr;
         UBYTE *data = tdb->td_DataBuffer;
+        APTR gfxbase = OpenLibrary("graphics.library", 0);
+        BOOL blitterowned = FALSE;
 
         lasterr = 0;
         raw = tdb->td_DMABuffer;
@@ -453,6 +499,7 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
             UBYTE *secdata;
             ULONG chksum, id, dlong;
             UBYTE trackoffs;
+            UWORD *mfmdata;
 
             if (raw != tdb->td_DMABuffer) {
                 while (*raw != 0x4489) {
@@ -515,22 +562,49 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
             chksum = getdecodedlong(raw, 2);
             raw += 4;
             secdata = data + trackoffs * 512;
-            for (i = 0; i < 128; i++) {
-                dlong = getdecodedlongchk(raw, 256, &chksum);
-                raw += 2;
-                *secdata++ = dlong >> 24;
-                *secdata++ = dlong >> 16;
-                *secdata++ = dlong >> 8;
-                *secdata++ = dlong;
+            mfmdata = raw;
+            if (gfxbase != NULL) {
+                for (i = 0; i < 128; i++) {
+                    chksum ^= getmfmlong(raw) ^ getmfmlong(raw + 256);
+                    raw += 2;
+                }
+            } else {
+                for (i = 0; i < 128; i++) {
+                    dlong = getdecodedlongchk(raw, 256, &chksum);
+                    raw += 2;
+                    *secdata++ = dlong >> 24;
+                    *secdata++ = dlong >> 16;
+                    *secdata++ = dlong >> 8;
+                    *secdata++ = dlong;
+                }
             }
             if (chksum) {
                 lasterr = TDERR_BadSecSum;
                 D(bug("td_decodebuffer sector %d data checksum error\n", trackoffs));
                 continue; // data checksum error
             }
+
+            if (gfxbase != NULL) {
+                if (!blitterowned) {
+                    TD_OWNBLITTER(gfxbase);
+                    blitterowned = TRUE;
+                }
+                /* The odd stream is no longer needed after its checksum has
+                 * been verified. Decode it in place, avoiding extra chip
+                 * scratch memory and any assumptions about dead DMA space. */
+                blitdecodesector(mfmdata, mfmdata,
+                                 tdb->custom, gfxbase);
+                CopyMem(mfmdata, data + trackoffs * 512, 512);
+            }
             tdb->td_sectorbits |= 1 << trackoffs;
         }
 end:
+        if (blitterowned) {
+            TD_WAITBLIT(gfxbase);
+            TD_DISOWNBLITTER(gfxbase);
+        }
+        if (gfxbase != NULL)
+            CloseLibrary(gfxbase);
         D(bug("td_decodebuffer err=%d secmask=%08x\n", lasterr, tdb->td_sectorbits));
         return lasterr;
 }
