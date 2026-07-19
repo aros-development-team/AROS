@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 /* This program generates the libcall.h macroset for m68k-elf
  *
@@ -514,6 +514,16 @@ static const char libextra[] =
 "#define __AROS_LC3LONG   __AROS_LC3\n"
 "#define __AROS_LC4LONG   __AROS_LC4\n"
 "#define __AROS_LC5LONG   __AROS_LC5\n"
+"/* 64-bit results are returned in d0/d1, which the plain call macros\n"
+"   already reassemble, so these map straight through */\n"
+"#define __AROS_LC2QUAD   __AROS_LC2\n"
+"#define __AROS_LC3QUAD   __AROS_LC3\n"
+"#define __AROS_LC4QUAD   __AROS_LC4\n"
+"#define __AROS_LC5QUAD   __AROS_LC5\n"
+"#define __AROS_LC2UQUAD  __AROS_LC2\n"
+"#define __AROS_LC3UQUAD  __AROS_LC3\n"
+"#define __AROS_LC4UQUAD  __AROS_LC4\n"
+"#define __AROS_LC5UQUAD  __AROS_LC5\n"
 "\n"
 "#   define AROS_LDDOUBLE1(t,n,q1,bt,bn,o,s) \\\n"
 "        __AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \\\n"
