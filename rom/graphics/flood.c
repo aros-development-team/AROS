@@ -205,12 +205,15 @@ static int pix_written;
 
     /*
      * Enable the direct-planar fast path only for a plain, unlayered standard
-     * planar bitmap. Anything with a layer (clipping/scroll) or a HIDD/RTG
-     * bitmap keeps the safe ReadPixel/WritePixel path.
+     * planar bitmap. HIDD bitmaps can use this path when BMF_STANDARD is set:
+     * AllocBitMap sets that flag only when the driver exposes a real planar
+     * memory map and copies its plane pointers into the public BitMap.
+     * Layered or non-planar/RTG bitmaps keep the safe ReadPixel/WritePixel
+     * path.
      */
     fi.planar_bm = NULL;
     if (rp->Layer == NULL && rp->BitMap != NULL &&
-        (rp->BitMap->Flags & BMF_STANDARD) && !IS_HIDD_BM(rp->BitMap))
+        (rp->BitMap->Flags & BMF_STANDARD))
     {
         fi.planar_bm    = rp->BitMap;
         fi.planar_bpr   = rp->BitMap->BytesPerRow;
