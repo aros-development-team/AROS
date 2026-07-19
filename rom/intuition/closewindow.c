@@ -221,6 +221,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window   **winprev_ptr, *wincur;
+    struct Window    *newactive = NULL;
     struct Screen   *screen;
     struct IIHData  *iihd;
     ULONG            lock;
@@ -321,7 +322,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
            active now. We first check whether we have a "parent",
            which is a msg->window that was open before the one we're closing. */
         if (msg->window->Parent)
-            ActivateWindow (msg->window->Parent);
+            newactive = msg->window->Parent;
         else {
             /* Otherwise, we find out which was the latest one, and activate it.
                It's debatable whether this is the best policy, but this is how
@@ -329,7 +330,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
             if ((wincur = msg->window->Descendant)) {
                 for (;wincur->Descendant; wincur = wincur->Descendant)
                     ;
-                ActivateWindow(wincur);
+                newactive = wincur;
             }
         }
     }
@@ -366,7 +367,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
             if (!neww) neww = scanw;
         }
-        if (neww) ActivateWindow(neww);
+        if (neww) newactive = neww;
     }
 #endif
 
@@ -443,6 +444,12 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     CheckLayers(screen, IntuitionBase);
 
     UNLOCK_REFRESH(screen);
+
+    /* Activate only after the closing layer has been removed and its damage
+     * restored. Otherwise the new active frame is clipped by the old window,
+     * and stale inactive-border pixels are exposed by CheckLayers(). */
+    if (newactive)
+        ActivateWindow(newactive);
 } /* int_closewindow */
 
 
