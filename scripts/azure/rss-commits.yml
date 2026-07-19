@@ -27,10 +27,6 @@ variables:
     AROSDOCSRCDIR: '$(system.defaultWorkingDirectory)' # Path to the source code
 
 steps:
-- script: |
-    sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
-  displayName: 'Add Microsoft package signing key'
-
 - template: templates/install-deps.yml
   parameters:
     aptPackages: 'sshpass python3-feedparser python3-bs4'
