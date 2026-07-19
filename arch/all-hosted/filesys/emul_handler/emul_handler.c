@@ -31,6 +31,7 @@
 #include <utility/tagitem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
+#include <dos/notify.h>
 #include <proto/arossupport.h>
 #include <proto/dos.h>
 #include <proto/expansion.h>
@@ -689,7 +690,121 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *path
            (struct filehandle *)_fh;\
          })
 
-static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct MsgPort *mp, struct DosPacket *dp, struct DosLibrary *DOSBase)
+/* Notification bookkeeping, one set per mounted volume */
+struct emulnotify
+{
+    struct MinNode node;
+    struct NotifyRequest *nr;
+    char *path;                 /* watched name, relative to the volume root */
+};
+
+struct notifydata
+{
+    struct MinList requests;
+    struct MsgPort *replyport;
+};
+
+static void notify_send(struct notifydata *nd, struct NotifyRequest *nr)
+{
+    if (nr->nr_Flags & NRF_SEND_MESSAGE)
+    {
+        struct NotifyMessage *nm;
+
+        /* With NRF_WAIT_REPLY, defer while a message is still unreplied */
+        if ((nr->nr_Flags & NRF_WAIT_REPLY) && (nr->nr_MsgCount > 0))
+        {
+            nr->nr_Flags |= NRF_MAGIC;
+            return;
+        }
+
+        nm = AllocMem(sizeof(struct NotifyMessage), MEMF_PUBLIC|MEMF_CLEAR);
+        if (!nm)
+            return;
+
+        nm->nm_ExecMessage.mn_ReplyPort = nd->replyport;
+        nm->nm_ExecMessage.mn_Length    = sizeof(struct NotifyMessage);
+        nm->nm_Class = NOTIFY_CLASS;
+        nm->nm_Code  = NOTIFY_CODE;
+        nm->nm_NReq  = nr;
+
+        nr->nr_MsgCount++;
+        PutMsg(nr->nr_stuff.nr_Msg.nr_Port, &nm->nm_ExecMessage);
+    }
+    else if (nr->nr_Flags & NRF_SEND_SIGNAL)
+        Signal(nr->nr_stuff.nr_Signal.nr_Task,
+            1 << nr->nr_stuff.nr_Signal.nr_SignalNum);
+}
+
+/* Notify requests watching the changed object or its parent directory */
+static void notify_path(struct notifydata *nd, const char *path)
+{
+    struct emulnotify *en;
+    const char *sep;
+    size_t parlen;
+
+    if (!path)
+        return;
+
+    /* Handler names carry a leading separator, watched names do not */
+    while (*path == '/')
+        path++;
+
+    sep = strrchr(path, '/');
+    parlen = sep ? (size_t)(sep - path) : 0;
+
+    for (en = (struct emulnotify *)nd->requests.mlh_Head;
+         en->node.mln_Succ;
+         en = (struct emulnotify *)en->node.mln_Succ)
+    {
+        if (!strcasecmp(en->path, path) ||
+            ((strlen(en->path) == parlen) && !strncasecmp(en->path, path, parlen)))
+            notify_send(nd, en->nr);
+    }
+}
+
+/* Resolve a (directory, name) pair and notify its watchers */
+static void notify_name(struct notifydata *nd, struct emulbase *emulbase,
+    struct filehandle *fh, const char *name)
+{
+    char *host = NULL, *part = NULL;
+
+    if (IsListEmpty((struct List *)&nd->requests))
+        return;
+
+    if (makefilename(emulbase, &host, &part, fh, name) == 0)
+    {
+        notify_path(nd, part);
+        FreeVecPooled(emulbase->mempool, host);
+    }
+}
+
+static void notify_reply(struct notifydata *nd, struct NotifyMessage *nm)
+{
+    struct NotifyRequest *nr = nm->nm_NReq;
+    struct emulnotify *en;
+
+    FreeMem(nm, sizeof(struct NotifyMessage));
+
+    /* The request may have been ended while the message was in flight;
+       dereference it only if it is still registered */
+    for (en = (struct emulnotify *)nd->requests.mlh_Head;
+         en->node.mln_Succ;
+         en = (struct emulnotify *)en->node.mln_Succ)
+    {
+        if (en->nr == nr)
+        {
+            nr->nr_MsgCount--;
+            if (nr->nr_Flags & NRF_MAGIC)
+            {
+                nr->nr_Flags &= ~NRF_MAGIC;
+                notify_send(nd, nr);
+            }
+            break;
+        }
+    }
+}
+
+static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct MsgPort *mp, struct DosPacket *dp, struct DosLibrary *DOSBase, struct notifydata *nd)
 {
     SIPTR Res1 = DOSFALSE;
     SIPTR Res2 = ERROR_UNKNOWN;
@@ -716,6 +831,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
             f->fh_Arg1 = (SIPTR)fh2;
             if (fh2 != fhv)
                 fh2->locks++;
+            if (dp->dp_Type == ACTION_FINDOUTPUT && fh2 != fhv && fh2->name)
+                notify_path(nd, fh2->name);
             Res1 = DOSTRUE;
         }
         else
@@ -756,6 +873,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         if (fh->type & FHD_FILE)
         {
             Res1 = DoWrite(emulbase, fh, (APTR)dp->dp_Arg2, dp->dp_Arg3, &Res2);
+            if (Res1 != -1 && fh->name)
+                notify_path(nd, fh->name);
         } else {
             Res1 = -1;
             Res2 = ERROR_OBJECT_WRONG_TYPE;
@@ -783,6 +902,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         if (Res2 != 0) {
            Res1 = -1;
         }
+        else if (fh->name)
+            notify_path(nd, fh->name);
         break;
 
     case ACTION_SAME_LOCK:
@@ -864,6 +985,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         fl->fl_Volume = MKBADDR(fh->dl);
         if (fh != fhv)
             fh->locks++;
+        notify_path(nd, fh->name);
         Res2 = 0;
         Res1 = (SIPTR)fl;
         break;
@@ -985,6 +1107,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
                 Res2 = create_hardlink(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2), fh2);
         }
 
+        if (Res2 == 0)
+            notify_name(nd, emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2));
         Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
         break;
           
@@ -994,6 +1118,11 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         DCMD(bug("[emul] %p ACTION_RENAME_OBJECT: %p, \"%b\" => %p, \"%b\"\n", fhv, fh, dp->dp_Arg2, fh2, dp->dp_Arg4));
         Res2 = rename_object(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2), fh2, AROS_BSTR_ADDR(dp->dp_Arg4));
 
+        if (Res2 == 0)
+        {
+            notify_name(nd, emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2));
+            notify_name(nd, emulbase, fh2, AROS_BSTR_ADDR(dp->dp_Arg4));
+        }
         Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
         break;
           
@@ -1008,6 +1137,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         fh = FH_FROM_LOCK(dp->dp_Arg1);
         DCMD(bug("[emul] %p ACTION_DELETE_OBJECT: %p\n", fhv, fh));
         Res2 = delete_object(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2));
+        if (Res2 == 0)
+            notify_name(nd, emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2));
         Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
         break;
           
@@ -1016,6 +1147,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         fh = FH_FROM_LOCK(dp->dp_Arg2);
         DCMD(bug("[emul] %p ACTION_SET_PROTECT: %p\n", fhv, fh));
         Res2 = set_protect(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg3), dp->dp_Arg4);
+        if (Res2 == 0)
+            notify_name(nd, emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg3));
         Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
         break;
           
@@ -1121,6 +1254,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         fh = FH_FROM_LOCK(dp->dp_Arg2);
         DCMD(bug("[emul] %p ACTION_SET_DATE: %p\n", fhv, fh));
         Res2 = set_date(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg3), (struct DateStamp *)dp->dp_Arg4);
+        if (Res2 == 0)
+            notify_name(nd, emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg3));
         Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
         break;
 
@@ -1128,6 +1263,98 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         /* pretend to have changed owner, avoids tons of error messages from e.g. tar */
         Res1 = DOSTRUE;
         break;
+
+    case ACTION_ADD_NOTIFY:
+    {
+        struct NotifyRequest *nr = (struct NotifyRequest *)dp->dp_Arg1;
+        struct emulnotify *en;
+        const char *rel;
+        int len;
+
+        DCMD(bug("[emul] %p ACTION_ADD_NOTIFY: %s\n", fhv, nr->nr_FullName));
+
+        if (!nd->replyport)
+        {
+            Res2 = ERROR_NO_FREE_STORE;
+            Res1 = DOSFALSE;
+            break;
+        }
+
+        rel = strchr(nr->nr_FullName, ':');
+        rel = rel ? rel + 1 : (const char *)nr->nr_FullName;
+        while (*rel == '/')
+            rel++;
+        len = strlen(rel);
+        while (len > 0 && rel[len - 1] == '/')
+            len--;
+
+        en = AllocMem(sizeof(struct emulnotify), MEMF_PUBLIC|MEMF_CLEAR);
+        if (en)
+        {
+            en->path = AllocVec(len + 1, MEMF_PUBLIC);
+            if (en->path)
+            {
+                CopyMem(rel, en->path, len);
+                en->path[len] = 0;
+            }
+            else
+            {
+                FreeMem(en, sizeof(struct emulnotify));
+                en = NULL;
+            }
+        }
+        if (!en)
+        {
+            Res2 = ERROR_NO_FREE_STORE;
+            Res1 = DOSFALSE;
+            break;
+        }
+
+        en->nr = nr;
+        nr->nr_Flags &= ~NRF_MAGIC;
+        nr->nr_MsgCount = 0;
+        AddTail((struct List *)&nd->requests, (struct Node *)en);
+
+        if (nr->nr_Flags & NRF_NOTIFY_INITIAL)
+        {
+            fh = fhv;
+            if (open_(emulbase, fhv, &fh, en->path, ACCESS_READ, MODE_OLDFILE, 0, TRUE) == 0)
+            {
+                notify_send(nd, nr);
+                if (fh != fhv)
+                    free_lock(emulbase, fh);
+            }
+        }
+
+        Res2 = 0;
+        Res1 = DOSTRUE;
+        break;
+    }
+
+    case ACTION_REMOVE_NOTIFY:
+    {
+        struct NotifyRequest *nr = (struct NotifyRequest *)dp->dp_Arg1;
+        struct emulnotify *en;
+
+        DCMD(bug("[emul] %p ACTION_REMOVE_NOTIFY: %p\n", fhv, nr));
+
+        for (en = (struct emulnotify *)nd->requests.mlh_Head;
+             en->node.mln_Succ;
+             en = (struct emulnotify *)en->node.mln_Succ)
+        {
+            if (en->nr == nr)
+            {
+                Remove((struct Node *)en);
+                FreeVec(en->path);
+                FreeMem(en, sizeof(struct emulnotify));
+                break;
+            }
+        }
+
+        Res2 = 0;
+        Res1 = DOSTRUE;
+        break;
+    }
 
 /* FIXME: not supported yet
     case ACTION_SET_COMMENT:
@@ -1157,6 +1384,7 @@ static void EmulHandler_work(struct ExecBase *SysBase)
     struct MsgPort *mp;
     struct filehandle *fhv;
     struct emulbase *emulbase;
+    struct notifydata nd;
     const STRPTR hname = "emul-handler";
 
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
@@ -1211,14 +1439,51 @@ static void EmulHandler_work(struct ExecBase *SysBase)
 
     ReplyPkt(dp, DOSTRUE, 0);
 
+    nd.requests.mlh_Head     = (struct MinNode *)&nd.requests.mlh_Tail;
+    nd.requests.mlh_Tail     = NULL;
+    nd.requests.mlh_TailPred = (struct MinNode *)&nd.requests.mlh_Head;
+    nd.replyport = CreateMsgPort();
+
     fhv->locks = 1;
     while (fhv->locks)
     {
-        dp = WaitPkt();
-        handlePacket(emulbase, fhv, mp, dp, DOSBase);
+        struct Message *msg;
+        ULONG pktmask = 1 << mp->mp_SigBit;
+        ULONG repmask = nd.replyport ? (1 << nd.replyport->mp_SigBit) : 0;
+        ULONG sigs;
+
+        sigs = Wait(pktmask | repmask);
+
+        if (sigs & repmask)
+        {
+            while ((msg = GetMsg(nd.replyport)))
+                notify_reply(&nd, (struct NotifyMessage *)msg);
+        }
+
+        while (fhv->locks && (msg = GetMsg(mp)))
+        {
+            dp = (struct DosPacket *)msg->mn_Node.ln_Name;
+            handlePacket(emulbase, fhv, mp, dp, DOSBase, &nd);
+        }
     }
 
     D(bug("EMUL: Closing volume %s\n", fhv->volumename));
+    {
+        struct emulnotify *en;
+        struct Message *msg;
+
+        while ((en = (struct emulnotify *)RemHead((struct List *)&nd.requests)))
+        {
+            FreeVec(en->path);
+            FreeMem(en, sizeof(struct emulnotify));
+        }
+        if (nd.replyport)
+        {
+            while ((msg = GetMsg(nd.replyport)))
+                FreeMem(msg, sizeof(struct NotifyMessage));
+            DeleteMsgPort(nd.replyport);
+        }
+    }
     RemDosEntry(fhv->dl);
     free_lock(emulbase, fhv);
     CloseLibrary((APTR)DOSBase);
