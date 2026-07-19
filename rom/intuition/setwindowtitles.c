@@ -133,7 +133,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
             else
                 window->WScreen->Title = window->WScreen->DefaultTitle;
 
-            RenderScreenBar(window->WScreen, FALSE, IntuitionBase);
+            RenderScreenTitle(window->WScreen, IntuitionBase);
         }
         //UnlockIBase(lock);
     }

@@ -383,14 +383,20 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 #endif
 
     SetDrMd(rp, JAM1);
-    
-    SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
-    RectFill(rp, 0, 0, msg->sdp_Screen->Width - 1, msg->sdp_Screen->BarHeight - 1);
-
-    SetAPen(rp, pens[beeping ? BARDETAILPEN : BARTRIMPEN]);
-    RectFill(rp, 0, msg->sdp_Screen->BarHeight, msg->sdp_Screen->Width - 1, msg->sdp_Screen->BarHeight);
 
     findtitlearea(msg->sdp_Screen, &left, &right);
+
+    SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
+    if (msg->sdp_Flags & SDF_DSB_TITLEONLY)
+        RectFill(rp, left + 1, 0, right - 1, msg->sdp_Screen->BarHeight - 1);
+    else
+        RectFill(rp, 0, 0, msg->sdp_Screen->Width - 1, msg->sdp_Screen->BarHeight - 1);
+
+    if (!(msg->sdp_Flags & SDF_DSB_TITLEONLY))
+    {
+        SetAPen(rp, pens[beeping ? BARDETAILPEN : BARTRIMPEN]);
+        RectFill(rp, 0, msg->sdp_Screen->BarHeight, msg->sdp_Screen->Width - 1, msg->sdp_Screen->BarHeight);
+    }
 
     SetAPen(rp, pens[SHADOWPEN]);
     RectFill(rp, right, 1, right, msg->sdp_Screen->BarHeight - 1);

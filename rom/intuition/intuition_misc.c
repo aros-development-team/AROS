@@ -687,7 +687,8 @@ void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 
 #ifndef SKINS
 
-void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase)
+static void renderScreenBar(struct Screen *scr, BOOL refresh, ULONG flags,
+    struct IntuitionBase *IntuitionBase)
 {
     struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
     struct GfxBase *GfxBase = _intuitionBase->GfxBase;
@@ -730,7 +731,7 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
             msg.MethodID        = SDM_DRAW_SCREENBAR;
             msg.sdp_Layer        = scr->BarLayer;
             msg.sdp_RPort        = rp;
-                msg.sdp_Flags        = 0;
+                msg.sdp_Flags        = flags;
             msg.sdp_Screen        = scr;
             msg.sdp_Dri           = (struct DrawInfo *)&((struct IntScreen *)scr)->DInfo;
             msg.sdp_UserBuffer = ((struct IntScreen *)(scr))->DecorUserBuffer;
@@ -742,7 +743,7 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 
         D(bug("[intuition] RenderScreenBar: Update gadgets .. \n"));
 
-        if (scr->FirstGadget)
+        if (!(flags & SDF_DSB_TITLEONLY) && scr->FirstGadget)
         {
             RefreshBoopsiGadget(scr->FirstGadget, (struct Window *)scr, NULL, IntuitionBase);
         }
@@ -769,6 +770,16 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 
     } /* if (scr->BarLayer) */
     D(bug("[intuition] RenderScreenBar: Done \n"));
+}
+
+void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase)
+{
+    renderScreenBar(scr, refresh, 0, IntuitionBase);
+}
+
+void RenderScreenTitle(struct Screen *scr, struct IntuitionBase *IntuitionBase)
+{
+    renderScreenBar(scr, FALSE, SDF_DSB_TITLEONLY, IntuitionBase);
 }
 
 #endif
