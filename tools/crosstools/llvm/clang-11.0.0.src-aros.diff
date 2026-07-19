@@ -229,7 +229,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Drive
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
 +++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-15 20:21:11.609706173 +0000
-@@ -0,0 +1,432 @@
+@@ -0,0 +1,439 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -407,10 +407,10 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +        CmdArgs.push_back(Args.MakeArgString(StringRef("-L") + LibPath));
 +
 +        CmdArgs.push_back("--start-group");
-+        if ((jobWantsPThread) ||
-+           (Args.hasArg(options::OPT_pthreads, options::OPT_pthread))) {
-+            CmdArgs.push_back("-lpthread");
-+        }
++        /* Emulated TLS is the AROS default and __emutls_get_address pulls
++         * pthread; -lpthread is pull-on-demand, so this is free unless TLS
++         * or threads are actually used. */
++        CmdArgs.push_back("-lpthread");
 +        CmdArgs.push_back("-lmui");
 +        CmdArgs.push_back("-larossupport");
 +        CmdArgs.push_back("-lamiga");
@@ -474,6 +474,10 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +                }
 +            }
 +        }// 2nd OPT_nostartfiles endif
++        // Pull in the compiler runtime (compiler-rt, builtins, including 
++        // the emutls helpers).  Kept inside the group so its pthread 
++        // references resolve against the -lpthread above.
++        AddRunTimeLibs(AROSTC, D, CmdArgs, Args);
 +        CmdArgs.push_back("--end-group");
 +    }
 +
@@ -567,6 +571,9 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    if (DriverArgs.hasArg(options::OPT_nix)) {
 +        CC1Args.push_back("-D__NIX__");
 +    }
++    // AROS has no usable hardware TLS; force emulated TLS (compiler-rt
++    // emutls + pthread keys).  A later -fno-emulated-tls still overrides.
++    CC1Args.push_back("-femulated-tls");
 +}
 +
 +
