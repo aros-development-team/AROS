@@ -672,8 +672,18 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
 
     fb = MEM_TO_BHDR(ptr);
 
-    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
+    BOOL sem_protected = !!(((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED);
+    if (sem_protected)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
+
+    /* Double-free detection (after semaphore for SMP safety) */
+    if (FREE_BLOCK(fb))
+    {
+        D(nbug("[Kernel:TLSF] DOUBLE FREE! ptr=%p size=%llu\n", ptr, (unsigned long long)GET_SIZE(fb)));
+        if (sem_protected)
+            ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
+        return;
+    }
 
     /* Mark block as free */
     SET_FREE_BLOCK(fb);
@@ -700,8 +710,10 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
         INSERT_FREE_BLOCK(tlsf, fb);
     }
 
-    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
+    if (sem_protected)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
+
+
 }
 
 void tlsf_freemem(struct MemHeaderExt * mhe, APTR ptr, IPTR size)
