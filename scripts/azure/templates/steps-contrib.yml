@@ -12,6 +12,9 @@
 # AROS-vs-AROS.precontrib existence diff, without the second full tree copy).
 
 steps:
+# --- Free host disk up front - contrib is the tightest stage for space -------
+- template: steps-reclaim-disk.yml
+
 # --- Restore the prebuilt toolchain to the SAME absolute path ----------------
 - download: current
   artifact: 'toolchain-$(arosbuild.name)'
@@ -21,6 +24,8 @@ steps:
     mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
     tar xjvf '$(Pipeline.Workspace)/toolchain-$(arosbuild.name)/$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2' \
         -C '$(AROSBUILDTOOLCHAINDIR)/..'
+    # The downloaded artifact tarball is dead weight once extracted.
+    rm -f '$(Pipeline.Workspace)/toolchain-$(arosbuild.name)/$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2'
     echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
   displayName: 'Restore prebuilt toolchain'
 
@@ -68,7 +73,10 @@ steps:
         echo "Using PATH=$AROSBUILDENVPATH"
     fi
     execute make -j $(BUILDTHREADS) contrib
-    mv $(AROSSRCDIR)/contrib $(AROSCONTRIBSRCDIR)
+    # Nothing after the build uses the contrib sources; delete them
+    # (instead of moving them back to $(AROSCONTRIBSRCDIR)) so the
+    # packaging step below has their disk space to work with.
+    rm -Rf $(AROSSRCDIR)/contrib
     if [ -f /tmp/_aros_build_failed ]; then
       touch /tmp/_aros_contrib_build_failed
       rm /tmp/_aros_build_failed
@@ -109,24 +117,26 @@ steps:
       if [ -z "$BASEMANIFEST" ]; then
         echo "ERROR: base manifest from Core stage not found"; exit 1
       fi
-      mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
       ( cd "$AROSROOT" && find . \( -type f -o -type l \) | LC_ALL=C sort ) > /tmp/postcontrib.lst
       # contrib-added files = present after contrib build but NOT in the base
       LC_ALL=C comm -13 "$BASEMANIFEST" /tmp/postcontrib.lst > /tmp/contrib-new.lst
       echo "contrib added `wc -l < /tmp/contrib-new.lst` files"
-      while IFS= read -r f; do
-        rel="${f#./}"
-        dest="$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$rel"
-        mkdir -p "${dest%/*}"
-        cp "$AROSROOT/$rel" "$dest"
-      done < /tmp/contrib-new.lst
-      cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
-      cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
-      tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
-      md5sum $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 >$(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5
-      mv $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDBINDIR)/
-      mv $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5 $(AROSBUILDBINDIR)/
-      rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
+      # Tar the contrib files straight out of the built tree instead of
+      # staging a second copy first - the duplicate previously exhausted
+      # the agent's disk on large targets. --dereference matches the old
+      # cp behaviour for symlinks; the --transform rules place everything
+      # under the package directory name inside the archive, with
+      # LICENSE/ACKNOWLEDGEMENTS appended from the source tree.
+      PKGNAME=$(AROSBUILDID)-$(arosbuild.name)-contrib
+      tar cjf $PKGNAME.tar.bz2 --dereference --hard-dereference \
+          --transform "s|^\./|$PKGNAME/|" \
+          --transform "s|^LICENSE$|$PKGNAME/LICENSE|" \
+          --transform "s|^ACKNOWLEDGEMENTS$|$PKGNAME/ACKNOWLEDGEMENTS|" \
+          -C "$AROSROOT" --verbatim-files-from -T /tmp/contrib-new.lst \
+          -C $(AROSSRCDIR) LICENSE ACKNOWLEDGEMENTS
+      md5sum $PKGNAME.tar.bz2 >$PKGNAME.tar.bz2.md5
+      mv $PKGNAME.tar.bz2 $(AROSBUILDBINDIR)/
+      mv $PKGNAME.tar.bz2.md5 $(AROSBUILDBINDIR)/
     fi
   workingDirectory: '$(AROSBUILDSDIR)'
   displayName: 'Creating $(arosbuild.name) contrib package'

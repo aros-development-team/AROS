@@ -1,0 +1,26 @@
+# Step template: reclaim disk space on Microsoft-hosted Linux agents by
+# removing large preinstalled tool bundles the AROS build never uses
+# (.NET, Android SDK, Haskell, CodeQL, ...).
+# ubuntu-latest images. No-op on other platforms.
+
+parameters:
+- name: displayName
+  type: string
+  default: 'Reclaim host disk space'
+
+steps:
+- script: |
+    echo "Disk usage before cleanup:"
+    df -h /
+    sudo rm -rf /usr/share/dotnet \
+                /usr/local/lib/android \
+                /opt/ghc \
+                /usr/local/.ghcup \
+                /opt/hostedtoolcache/CodeQL \
+                /usr/local/share/powershell \
+                /usr/share/swift
+    sudo docker image prune --all --force > /dev/null 2>&1 || true
+    echo "Disk usage after cleanup:"
+    df -h /
+  condition: eq( variables['Agent.OS'], 'Linux' )
+  displayName: ${{ parameters.displayName }}
