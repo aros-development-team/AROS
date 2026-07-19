@@ -4106,11 +4106,10 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 #     - cxxflags   = additional flags to use with the C++ compiler.
 #     - cflags          = flags to use with the C compiler.
 #     - cxxflags        = flags to use with the C++ compiler.
-#     - installoptions    = additional options for the install step.
 #
 
 %define build_with_cmake mmake=/A package= srcdir="$(SRCDIR)/$(CURDIR)" gendir= prefix= \
-    aros_prefix= extraoptions= installoptions= maketarget= compiler=target \
+    aros_prefix= extraoptions= compiler=target \
     touch=yes cmakebuildcmd= cmakeinstallcmd= cleanafterbuild=no cleandir= \
     precmake=  postcmake= \
     usecppflags=yes extracppflags= \
@@ -4130,7 +4129,7 @@ ifneq (%(aros_prefix),)
 else
     %(mmake)-aros_prefix     := $(%(mmake)-prefix)
 endif
-    %(mmake)-cmake-env += CMAKE_GENERATOR='Unix Makefiles'
+
 ifeq (%(compiler),host)
     ifeq (%(usecrosstoolsdir),yes)
     %(mmake)-cmake-env += LDFLAGS="$(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags)"
@@ -4232,26 +4231,14 @@ endif
 #MM
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
-ifeq (%(maketarget),)
-%(mmake)-buildargs :=  --build
-else
-%(mmake)-buildargs :=  %(maketarget)
-endif
-
 ifeq (%(cmakebuildcmd),)
-%(mmake)-cmakecmdbuild := $(CMAKE) $(%(mmake)-buildargs) $(%(mmake)-pkgdir)
+%(mmake)-cmakecmdbuild := $(CMAKE) --build $(%(mmake)-pkgdir)
 else
 %(mmake)-cmakecmdbuild := %(cmakebuildcmd)
 endif
 
-ifeq (%(installoptions),)
-%(mmake)-installargs :=  --install
-else
-%(mmake)-installargs :=  %(installoptions)
-endif
-
 ifeq (%(cmakeinstallcmd),)
-%(mmake)-cmakecmdinstall := $(CMAKE) $(%(mmake)-installargs) $(%(mmake)-pkgdir)
+%(mmake)-cmakecmdinstall := $(CMAKE) --install $(%(mmake)-pkgdir)
 else
 %(mmake)-cmakecmdinstall := %(cmakeinstallcmd)
 endif
@@ -4263,16 +4250,12 @@ else
 endif
 
 $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
-	$(Q)$(IF) ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
-	    $(RM) $(%(mmake)-installflag) && \
-	    $(%(mmake)-cmakecmdbuild) && \
-	    cd $(%(mmake)-pkgdir) && \
-	    $(%(mmake)-cmakecmdinstall) && \
-	    $(TOUCH) $@ -r $^; \
-	    $(IF) $(TEST) "%(cleanafterbuild)" = "yes"; then \
-	        $(IF) ! $(MAKE) -C $(%(mmake)-pkgdir) clean; then \
-	            $(RM) -r $(%(mmake)-cmakecleandir); \
-	        fi; \
+	$(%(mmake)-cmakecmdbuild)
+	$(%(mmake)-cmakecmdinstall)
+	$(TOUCH) $@
+	$(IF) $(TEST) "%(cleanafterbuild)" = "yes"; then \
+	    $(IF) ! $(CMAKE) --build $(%(mmake)-pkgdir) --target clean; then \
+	        $(RM) -r $(%(mmake)-cmakecleandir); \
 	    fi; \
 	fi
 
@@ -4282,23 +4265,26 @@ $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 #<target>-touchfileflag := $(GENDIR)/$(CURDIR)/.files-touched
 %(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
 ## **********************************************************************
+## touch= parameter is going to be removed, this is bad to touch files in
+## the source-tree as this breaks parallel builds for different targets.
+## using ripgrep to find usages in this template:
+## rg -gmmakefile.src -l %build_with_cmake . contrib/ ports/ | xargs rg touch=
+## **********************************************************************
 ifeq (%(touch),yes)
 $(%(mmake)-touchfileflag):
 	%mkdirs_q $(%(mmake)-pkgdir)
-	$(Q)find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/CMakeLists.txt '{}' \; && \
+	$(Q)true find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/CMakeLists.txt '{}' \; && \
 	$(TOUCH) $@
 endif
 
 #MM
 %(mmake)-cmake : %(precmake) $(%(mmake)-cmakeflag) %(postcmake)
 
+# cmake configure step
+$(%(mmake)-cmakeflag) : CMAKE := $(%(mmake)-cmake-env) $(CMAKE)
 $(%(mmake)-cmakeflag) : TMP_SRCDIR := $(shell $(ECHO) %(srcdir) | sed 's/^\(.\):\//\/\1\//')
 $(%(mmake)-cmakeflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
-	$(RM) $@
-	%mkdirs_q $(%(mmake)-pkgdir)
-	$(Q)cd $(%(mmake)-pkgdir) && \
-	$(RM) -Rf CMakeCache.txt CMakeFiles \; && \
-	$(%(mmake)-cmake-env) $(CMAKE) $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR) && \
+	$(CMAKE) -B $(%(mmake)-pkgdir) $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR)
 	$(TOUCH) $@
 
 #MM
