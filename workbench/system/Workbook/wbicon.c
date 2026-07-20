@@ -31,6 +31,7 @@ struct wbIcon {
     struct Screen     *Screen;
     WORD               DrawOffsetX;
     WORD               DrawOffsetY;
+    BOOL               Positioned;
 
     struct timeval LastActive;
 };
@@ -75,6 +76,8 @@ void wbIcon_Update(Class *cl, Object *obj)
     }
 
     D(bug("%s: %dx%d @%d,%d (%s)\n", my->File, (int)w, (int)h, (WORD)my->Icon->do_CurrentX, (WORD)my->Icon->do_CurrentY, my->Label));
+    my->Positioned = my->Icon->do_CurrentX != NO_ICON_POSITION &&
+                     my->Icon->do_CurrentY != NO_ICON_POSITION;
     SetAttrs(obj,
         GA_Left, (my->Icon->do_CurrentX == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentX + rect.MinX,
         /* Classic Workbench leaves one pixel between Y=0 icons and the
@@ -184,6 +187,9 @@ static IPTR wbIconGet(Class *cl, Object *obj, struct opGet *opg)
         break;
     case WBIA_Label:
         *(opg->opg_Storage) = (IPTR)my->Label;
+        break;
+    case WBIA_Positioned:
+        *(opg->opg_Storage) = my->Positioned;
         break;
     default:
         rc = DoSuperMethodA(cl, obj, (Msg)opg);
