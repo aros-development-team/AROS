@@ -418,6 +418,8 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
     BOOL                  atomicTitle = FALSE;
     TEXT                  titleLine[128];
     ULONG                 titleChars = 0;
+    ULONG                 len;
+    LONG                  titleWidth;
 
     D(bug("[SCRDECOR] %s()\n", __func__));
 
@@ -426,6 +428,14 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 #endif
 
     findtitlearea(msg->sdp_Screen, &left, &right);
+
+    titleWidth = right - msg->sdp_Screen->BarHBorder;
+    if (titleWidth >= 8)
+    {
+        titleChars = titleWidth / 8;
+        if (titleChars > sizeof(titleLine))
+            titleChars = sizeof(titleLine);
+    }
 
     D(bug("[SCRDECOR] %s: Title_Left = %d, Title_Right = %d\n", __func__, left, right));
 
@@ -438,22 +448,14 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
         rp->Font->tf_XSize == 8 && rp->TxSpacing == 0 &&
         !(rp->AlgoStyle & (FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED)))
     {
-        LONG titleWidth = right - msg->sdp_Screen->BarHBorder;
-
-        if (titleWidth >= 8)
+        if (titleChars)
         {
-            ULONG len;
-
-            titleChars = titleWidth / 8;
-            if (titleChars > sizeof(titleLine))
-                titleChars = sizeof(titleLine);
-
             memset(titleLine, ' ', titleChars);
             if (msg->sdp_Screen->Title)
             {
-                len = strlen(msg->sdp_Screen->Title);
-                if (len > titleChars)
-                    len = titleChars;
+                len = 0;
+                while ((len < titleChars) && msg->sdp_Screen->Title[len])
+                    len++;
                 memcpy(titleLine, msg->sdp_Screen->Title, len);
             }
             atomicTitle = TRUE;
@@ -495,7 +497,11 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
         if (atomicTitle)
             Text(rp, titleLine, titleChars);
         else
-            Text(rp, msg->sdp_Screen->Title, strlen(msg->sdp_Screen->Title));
+        {
+            for (len = 0; (len < titleChars) && msg->sdp_Screen->Title[len]; len++)
+                ;
+            Text(rp, msg->sdp_Screen->Title, len);
+        }
 
         D(bug("[SCRDECOR] %s: Text Rendered\n", __func__));
     }
