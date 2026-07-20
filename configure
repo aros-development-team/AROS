@@ -9697,7 +9697,7 @@ use_ld_wrapper=yes
 
 case "$aros_toolchain" in
     *llvm*)
-        aros_c_libs="-L$""(CROSSTOOLSDIR)/lib/generic -lclang_rt.builtins-$""(AROS_TARGET_CPU)"
+        aros_c_libs="-L$""(CROSSTOOLSDIR)/lib/clang/$""(TARGET_LLVM_VER)/lib/aros -lclang_rt.builtins-$""(AROS_TARGET_CPU)"
         toolchain_c_compiler="clang"
         toolchain_cxx_compiler="clang++"
         toolchain_cpp_preprocessor="clang"
@@ -10569,7 +10569,7 @@ case "$target_os" in
                 target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
                 case "$aros_toolchain" in
                     *llvm*)
-                        target_link_extra="TARGET_32_C_LIBS              = $""(strip -L$""(CROSSTOOLSDIR)/lib/generic -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
+                        target_link_extra="TARGET_32_C_LIBS              = $""(strip -L$""(CROSSTOOLSDIR)/lib/clang/$""(TARGET_LLVM_VER)/lib/aros -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
                         ;;
                 esac
                 ;;
@@ -10756,7 +10756,7 @@ case "$target_os" in
                 target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
                 case "$aros_toolchain" in
                     *llvm*)
-                        target_link_extra="TARGET_32_C_LIBS              = $""(strip -L$""(CROSSTOOLSDIR)/lib/generic -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
+                        target_link_extra="TARGET_32_C_LIBS              = $""(strip -L$""(CROSSTOOLSDIR)/lib/clang/$""(TARGET_LLVM_VER)/lib/aros -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
                         ;;
                 esac
                 ;;
@@ -10861,7 +10861,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
                 case "$aros_toolchain" in
                     *llvm*)
-                        target_link_extra="TARGET_32_C_LIBS              = $""(strip -L$""(CROSSTOOLSDIR)/lib/generic -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
+                        target_link_extra="TARGET_32_C_LIBS              = $""(strip -L$""(CROSSTOOLSDIR)/lib/clang/$""(TARGET_LLVM_VER)/lib/aros -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
                         ;;
                 esac
                 ;;
