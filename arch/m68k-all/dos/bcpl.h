@@ -10,6 +10,7 @@
 /* Our BCPL stub private data */
 
 #define GV_DEBUG_Result2	-0xac
+#define GV_IntuitionBase        0x170   /* Not a function, but a value */
 #define GV_DOSBase              0x204   /* Not a function, but a value */
 
 /* We can add private data up to -0x88 */

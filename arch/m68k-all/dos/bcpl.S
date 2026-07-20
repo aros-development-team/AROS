@@ -523,8 +523,6 @@ BCPL doIO           /*  54, LONG, @IORequest */
 BCPL sendIO         /*  58, void, @IORequest */
     movem.l     %a0-%a1/%a6,%sp@-
     lsl.l       #2,%d1
-    moveq.l     #0,%d2
-    move.l      %d2,%a0@(ln_Name,%d1)    /* NULL dos packet */
     move.l      %d1, %a1
     move.l      SysBase,%a6
     jsr         %a6@(77 * -6)   /* Exec/SendIO */
@@ -744,8 +742,7 @@ BCPL readinput      /* a0, bytelength , &buf, bytelength */
      */
 BCPL taskwait       /* a4, DosPacket @,  */
     movem.l	%a0-%a1/%a6,%sp@-
-    move.l	%a2@(GV_DOSBase),%a6
-    jsr		%a6@(42 * -6)	/* Dos/WaitPkt() */
+    jsr		BCPL_TaskWait
     lsr.l	#2,%d0
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
@@ -870,7 +867,17 @@ BCPL returnPacket   /* c4, void, @DosPacket, res1, res2 */
 #define WA_Width	(WA_Dummy + 3)
 #define WA_Height	(WA_Dummy + 4)
 #define WA_Title	(WA_Dummy + 11)
+#define WA_MinWidth	(WA_Dummy + 15)
+#define WA_MinHeight	(WA_Dummy + 16)
+#define WA_MaxWidth	(WA_Dummy + 17)
+#define WA_MaxHeight	(WA_Dummy + 18)
 #define WA_PubScreen	(WA_Dummy + 22)
+#define WA_SizeGadget	(WA_Dummy + 30)
+#define WA_DragBar	(WA_Dummy + 31)
+#define WA_DepthGadget	(WA_Dummy + 32)
+#define WA_Activate	(WA_Dummy + 38)
+#define WA_SmartRefresh	(WA_Dummy + 42)
+#define WA_SizeBRight	(WA_Dummy + 43)
 #define WA_AutoAdjust	(WA_Dummy + 45)
 
 BCPL openWindow     /* c8, struct Window *, leftedge, topedge, width, height, @title */
@@ -878,11 +885,40 @@ BCPL openWindow     /* c8, struct Window *, leftedge, topedge, width, height, @t
 	move.l	%a2@(GV_DOSBase),%a6
 	move.l	%a6@(dl_IntuitionBase),%a6
 	move.l	#TAG_END, %sp@-
+	move.l	#32767, %sp@-
+	move.l	#WA_MaxHeight, %sp@-
+	move.l	#32767, %sp@-
+	move.l	#WA_MaxWidth, %sp@-
+	move.l	#70, %sp@-
+	move.l	#WA_MinHeight, %sp@-
+	move.l	#100, %sp@-
+	move.l	#WA_MinWidth, %sp@-
+	move.l	#-1, %sp@-
+	move.l	#WA_SizeBRight, %sp@-
+	move.l	#-1, %sp@-
+	move.l	#WA_SmartRefresh, %sp@-
+	move.l	#-1, %sp@-
+	move.l	#WA_DepthGadget, %sp@-
+	move.l	#-1, %sp@-
+	move.l	#WA_DragBar, %sp@-
+	move.l	#-1, %sp@-
+	move.l	#WA_SizeGadget, %sp@-
 	move.l	#-1, %sp@-
 	move.l	#WA_AutoAdjust, %sp@-
+	move.l	#-1, %sp@-
+	move.l	#WA_Activate, %sp@-
 	move.l	%a0, %sp@-
 	move.l	#WA_PubScreen, %sp@-
-	move.l	%a1@(4*4),%sp@-
+	/* NEWCON passes a BCPL word pointer to the first title character.
+	 * Convert it to the byte pointer required by WA_Title (BADDR), while
+	 * preserving a NULL title.  This is not an AmigaDOS length-prefixed
+	 * BSTR, so no byte is skipped after conversion.
+	 */
+	move.l	%a1@(4*4),%d0
+	beq.s	1f
+	lsl.l	#2,%d0
+1:
+	move.l	%d0,%sp@-
 	move.l	#WA_Title, %sp@-
 	move.l	%d4, %sp@-
 	move.l	#WA_Height, %sp@-
@@ -894,7 +930,7 @@ BCPL openWindow     /* c8, struct Window *, leftedge, topedge, width, height, @t
 	move.l	#WA_Left, %sp@-
 	move.l	%sp, %a1			/* a0 is still 0 here */
 	jsr		%a6@(101 * -6)		/* OpenWindowTagList */
-	lea.l	%sp@(15 * 4),%sp
+	lea.l	%sp@(35 * 4),%sp
 	movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
