@@ -64,7 +64,7 @@ diff -ruN clang-11.0.0.src/include/clang/Driver/Options.td clang-11.0.0.src.aros
 diff -ruN clang-11.0.0.src/lib/Basic/Targets/OSTargets.h clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h
 --- clang-11.0.0.src/lib/Basic/Targets/OSTargets.h	2020-10-07 10:10:48.000000000 +0000
 +++ clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h	2025-07-11 10:54:33.575958710 +0000
-@@ -71,6 +71,42 @@
+@@ -71,6 +71,47 @@
        : OSTargetInfo<Target>(Triple, Opts) {}
  };
  
@@ -98,6 +98,11 @@ diff -ruN clang-11.0.0.src/lib/Basic/Targets/OSTargets.h clang-11.0.0.src.aros/l
 +      : OSTargetInfo<Target>(Triple, Opts) {
 +      this->WCharType = TargetInfo::UnsignedInt;
 +      this->WIntType = TargetInfo::UnsignedInt;
++      /* AROS gcc provides __float128 on 32-bit x86, and the host gcc's
++         stddef.h relies on it (max_align_t) when hosted glue is built
++         against the host headers.  x86-64 enables it in the base target. */
++      if (Triple.getArch() == llvm::Triple::x86)
++          this->HasFloat128 = true;
 +#if (0)
 +      CharIsSigned = false;
 +#endif
