@@ -684,8 +684,8 @@ tools-crosstools-libunwind-cleanup :
 #MM tools-crosstools-llvm-toolchain : crosstools-llvm-toolchain-cmake
 #MM crosstools-llvm-toolchain-cmake : tools-crosstools-llvm-setup tools-crosstools-llvm-lld-setup tools-crosstools-clang-setup
 #MM tools-crosstools-llvm-libcxx : tools-crosstools-llvm-setup tools-crosstools-llvm-libcxx-setup tools-crosstools-llvm-libcxxabi-setup \
-#MM           crosstools-compiler-rt
-#MM tools-crosstools-llvm-libcxxabi : tools-crosstools-llvm-setup crosstools-compiler-rt tools-crosstools-llvm-libcxx
+#MM           crosstools-compiler-rt-fixup
+#MM tools-crosstools-llvm-libcxxabi : tools-crosstools-llvm-setup crosstools-compiler-rt-fixup tools-crosstools-llvm-libcxx
 #MM crosstools-libunwind : tools-crosstools-llvm-libcxxabi
 
 #MM- toolchain-linklibs-llvm : tools-crosstools-llvm-libcxx tools-crosstools-llvm-libcxxabi crosstools-libunwind
