@@ -1,0 +1,10 @@
+# DataType Description for JXLBox (JPEG XL ISOBMFF container)
+Name=JXLBox
+Version=$VER: JXLBox 45.1 (20.07.2026)
+BaseName=jpegxl
+Pattern=#?.jxl
+Mask=0x00 0x00 0x00 0x0C 'J' 'X' 'L' 0x20 0x0D 0x0A 0x87 0x0A
+GroupID=pict
+ID=jxlc
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
