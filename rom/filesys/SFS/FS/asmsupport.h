@@ -85,10 +85,29 @@ ULONG CALCCHECKSUM(ULONG, ULONG *);
 
 
 #ifdef __i386__
+/* Prefer the bswap builtins (as arm's cpu.h does): clang rejects the
+   old xchgb asm's 32-bit input tied to a 16-bit output, and the
+   builtins let the compiler pick the optimal encoding.  Fall back to
+   the inline asm on compilers without them (gcc < 4.8). */
+#if defined(__has_builtin)
+#  if __has_builtin(__builtin_bswap32)
+#    define AROS_SWAP_BYTES_LONG_CPU(l) __builtin_bswap32(l)
+#  endif
+#  if __has_builtin(__builtin_bswap16)
+#    define AROS_SWAP_BYTES_WORD_CPU(l) __builtin_bswap16(l)
+#  endif
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
+#  define AROS_SWAP_BYTES_LONG_CPU(l)   __builtin_bswap32(l)
+#  define AROS_SWAP_BYTES_WORD_CPU(l)   __builtin_bswap16(l)
+#endif
+#if !defined(AROS_SWAP_BYTES_LONG_CPU)
 #define AROS_SWAP_BYTES_LONG_CPU(l)     \
     ({ ULONG v; __asm__ __volatile__("bswap %0":"=r"(v):"0"(l)); v;})
+#endif
+#if !defined(AROS_SWAP_BYTES_WORD_CPU)
 #define AROS_SWAP_BYTES_WORD_CPU(l)     \
-    ({ UWORD w; __asm__ __volatile__("xchgb %b0,%h0":"=q"(w):"0"(l)); w;})
+    ({ UWORD w; __asm__ __volatile__("xchgb %b0,%h0":"=q"(w):"0"((UWORD)(l))); w;})
+#endif
 #endif
 
 
