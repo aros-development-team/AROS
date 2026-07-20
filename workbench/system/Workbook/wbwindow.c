@@ -63,6 +63,23 @@ struct wbWindow {
     struct MinList IconList;
 };
 
+/* Classic drawer files describe the outer window size, while Workbook needs
+ * a 16-pixel strip for its proportional gadgets.  Keep that layout policy
+ * local to Workbook: Window.BorderRight/BorderBottom belong to Intuition and
+ * changing them after OpenWindow() makes later damage refreshes draw a frame
+ * with geometry different from the original one. */
+static WORD wbBorderRight(const struct wbWindow *my)
+{
+    return my->Path ? max(my->Window->BorderRight, 16)
+                    : my->Window->BorderRight;
+}
+
+static WORD wbBorderBottom(const struct wbWindow *my)
+{
+    return my->Path ? max(my->Window->BorderBottom, 16)
+                    : my->Window->BorderBottom;
+}
+
 #define WBWF_USERPORT   (1 << 0)    /* Window has a custom port */
 
 #define Broken NM_ITEMDISABLED |
@@ -243,8 +260,10 @@ static void wbProgressiveRedimension(Class *cl, Object *obj)
     struct wbWindow *my = INST_DATA(cl, obj);
     struct Window *win = my->Window;
     IPTR setWidth = 0, setHeight = 0;
-    WORD innerWidth = win->Width - win->BorderLeft - win->BorderRight;
-    WORD innerHeight = win->Height - win->BorderTop - win->BorderBottom;
+    WORD borderRight = wbBorderRight(my);
+    WORD borderBottom = wbBorderBottom(my);
+    WORD innerWidth = win->Width - win->BorderLeft - borderRight;
+    WORD innerHeight = win->Height - win->BorderTop - borderBottom;
 
     SetAttrs(my->Area,
              GA_Left, win->BorderLeft,
@@ -264,16 +283,16 @@ static void wbProgressiveRedimension(Class *cl, Object *obj)
              PGA_Total, setWidth,
              PGA_Visible, innerWidth,
              GA_Left, win->BorderLeft,
-             GA_RelBottom, -(win->BorderBottom - 2),
+             GA_RelBottom, -(borderBottom - 2),
              GA_Width, innerWidth,
-             GA_Height, win->BorderBottom - 3,
+             GA_Height, borderBottom - 3,
              TAG_END);
     SetAttrs(my->ScrollV,
              PGA_Total, setHeight,
              PGA_Visible, innerHeight,
-             GA_RelRight, -(win->BorderRight - 2),
+             GA_RelRight, -(borderRight - 2),
              GA_Top, win->BorderTop,
-             GA_Width, win->BorderRight - 3,
+             GA_Width, borderRight - 3,
              GA_Height, innerHeight,
              TAG_END);
 }
@@ -436,11 +455,13 @@ static void wbRedimension(Class *cl, Object *obj)
     struct Window *win = my->Window;
     struct IBox    real;     /* pos & size of the inner window area */
     IPTR setWidth = 0, setHeight = 0;
+    WORD borderRight = wbBorderRight(my);
+    WORD borderBottom = wbBorderBottom(my);
 
     real.Left = win->BorderLeft;
     real.Top  = win->BorderTop;
-    real.Width = win->Width - (win->BorderLeft + win->BorderRight);
-    real.Height= win->Height- (win->BorderTop  + win->BorderBottom);
+    real.Width = win->Width - (win->BorderLeft + borderRight);
+    real.Height= win->Height- (win->BorderTop  + borderBottom);
 
     D(bug("%s: Real   (%d,%d) %dx%d\n", __func__,
                 real.Left, real.Top, real.Width, real.Height));
@@ -456,15 +477,15 @@ static void wbRedimension(Class *cl, Object *obj)
 
     SetAttrs(my->ScrollH, PGA_Visible, real.Width,
                           GA_Left, real.Left,
-                          GA_RelBottom, -(my->Window->BorderBottom - 2),
+                          GA_RelBottom, -(borderBottom - 2),
                           GA_Width, real.Width,
-                          GA_Height, my->Window->BorderBottom - 3,
+                          GA_Height, borderBottom - 3,
                           TAG_END);
 
     SetAttrs(my->ScrollV, PGA_Visible, real.Height,
-                          GA_RelRight, -(my->Window->BorderRight - 2),
+                          GA_RelRight, -(borderRight - 2),
                           GA_Top, real.Top,
-                          GA_Width, my->Window->BorderRight - 3,
+                          GA_Width, borderRight - 3,
                           GA_Height, real.Height,
                           TAG_END);
 
@@ -479,8 +500,8 @@ static void wbRedimension(Class *cl, Object *obj)
     if (setWidth < real.Width) {
         SetAPen(win->RPort,0);
         RectFill(win->RPort, win->BorderLeft + setWidth, win->BorderTop,
-                win->Width - win->BorderRight - 1,
-                win->Height - win->BorderBottom - 1);
+                win->Width - borderRight - 1,
+                win->Height - borderBottom - 1);
     } else {
         setWidth = real.Width;
     }
@@ -489,8 +510,8 @@ static void wbRedimension(Class *cl, Object *obj)
     if (setHeight < real.Height) {
         SetAPen(win->RPort,0);
         RectFill(win->RPort, win->BorderLeft, win->BorderTop + setHeight,
-                setWidth - win->BorderRight - 1,
-                win->Height - win->BorderBottom - 1);
+                setWidth - borderRight - 1,
+                win->Height - borderBottom - 1);
     }
 
 }
@@ -546,17 +567,6 @@ const struct TagItem scrollh2window[] = {
         { PGA_Top, WBVA_VirtLeft },
         { TAG_END, 0 },
 };
-
-static void wbFixBorders(struct Window *win)
-{
-    int bb, br;
-
-    bb = 16 - win->BorderBottom;
-    br = 16 - win->BorderRight;
-
-    win->BorderBottom += bb;
-    win->BorderRight += br;
-}
 
 static void wbFormatScreenTitle(struct wbWindow *my)
 {
@@ -672,9 +682,6 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
                         WA_PubScreen, NULL,
                         TAG_MORE, (IPTR)&extra[0] );
 
-        if (my->Window)
-            wbFixBorders(my->Window);
-
         FreeDiskObject(icon);
     }
 
@@ -711,6 +718,8 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     
     /* Add the horizontal scrollbar */
     AddGadget(my->Window, (struct Gadget *)(my->ScrollH = NewObject(NULL, "propgclass",
+                GA_BottomBorder, TRUE,
+
                 ICA_TARGET, (IPTR)obj,
                 ICA_MAP, (IPTR)scrollh2window,
                 PGA_Freedom, FREEHORIZ,
@@ -748,7 +757,8 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
         }
     }
 
-    SetAttrs(my->Set, WBSA_MaxWidth, my->Window->Width - (my->Window->BorderLeft + my->Window->BorderRight));
+    SetAttrs(my->Set, WBSA_MaxWidth,
+             my->Window->Width - (my->Window->BorderLeft + wbBorderRight(my)));
     RefreshGadgets(my->Window->FirstGadget, my->Window, NULL);
 
     wbRescan(cl, obj);
@@ -913,7 +923,8 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
     struct Window *win = my->Window;
     struct Region *clip;
 
-    SetAttrs(my->Set, WBSA_MaxWidth, win->Width - (win->BorderLeft + win->BorderRight));
+    SetAttrs(my->Set, WBSA_MaxWidth,
+             win->Width - (win->BorderLeft + wbBorderRight(my)));
 
     /* Clip to the window for drawing */
     clip = wbClipWindow(wb, win);

@@ -350,12 +350,15 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
             case WA_SimpleRefresh:
                 if (tag->ti_Data)
+                {
                     nw.Flags |= WFLG_SIMPLE_REFRESH;
+                    nw.Flags &= ~WFLG_SUPER_BITMAP;
+                }
                 break;
 
             case WA_SmartRefresh:
                 if (tag->ti_Data)
-                    nw.Flags |= WFLG_SMART_REFRESH;
+                    nw.Flags &= ~(WFLG_SIMPLE_REFRESH | WFLG_SUPER_BITMAP);
                 break;
 
             case WA_PubScreenFallBack:
