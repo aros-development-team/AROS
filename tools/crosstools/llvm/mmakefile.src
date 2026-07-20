@@ -197,9 +197,15 @@ LLVM_CMAKEOPTIONS       +=-DLLVM_EXTERNAL_CLANG_SOURCE_DIR="$(CLANG_BUILDBASE)"
 
 LLVM_TARGET_FLAGS       :=--target=$(AROS_TARGET_CPU)-unknown-aros $(ISA_FLAGS)
 
-LLVM_CXX_CFLAGS         :=$(LLVM_TARGET_FLAGS) -fno-PIC -fno-pic -fno-PIE -fno-pie -fno-plt
+# N.B.: -fno-plt must not be used here. With clang it stops external function
+# declarations being treated as dso-local, so taking their address (e.g. libcxx
+# registering static-local destructors via __cxa_atexit) is lowered to a GOT
+# load; on 32-bit x86 with -fno-pic the GOT base register is never materialised
+# and the LLVM backend crashes (MachineCSE segfault building future.cpp).
+# AROS links statically, so dso-local symbols already give direct calls.
+LLVM_CXX_CFLAGS         :=$(LLVM_TARGET_FLAGS) -fno-PIC -fno-pic -fno-PIE -fno-pie
 LLVM_CXX_CXXFLAGS       :=$(LLVM_CXX_CFLAGS) -nostdinc++ $(NOWARN_MISSING_FIELD_INITIALIZERS)
-LLVM_CXX_EXEFLAGS       :=$(LLVM_TARGET_FLAGS) -fno-pie -fno-pic -no-pie -fno-plt -static
+LLVM_CXX_EXEFLAGS       :=$(LLVM_TARGET_FLAGS) -fno-pie -fno-pic -no-pie -static
 LLVM_CXX_CPPFLAGS       :=-D_GNU_SOURCE
 ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
 LLVM_LIBCXX_INCLUDES     :=-I$(LIBCXXABI_BUILDBASE)/include
