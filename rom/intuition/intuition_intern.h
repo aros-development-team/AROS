@@ -1092,6 +1092,7 @@ extern VOID KillWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionB
 extern void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
+extern void RenderScreenTitle(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 extern void UpdateMouseCoords(struct Window *win);
 extern WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
 

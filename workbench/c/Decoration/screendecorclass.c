@@ -232,6 +232,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     UWORD                  *pens = dri->dri_Pens;
     LONG                    left, right = 0, len, filllen;
     BOOL                    beeping = scr->Flags & BEEPING;
+    BOOL                    titleonly = msg->sdp_Flags & SDF_DSB_TITLEONLY;
 
     if ((data->dc->SBarChildPre_s > 0) && (data->dc->SBarChildPre_s < sd->img_stitlebar->w))
         filllen = data->dc->SBarChildPre_o;
@@ -245,7 +246,36 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 
     scr_findtitlearea(data, scr, &left, &right);
 
-    if (beeping)
+    if (titleonly)
+    {
+        LONG x = data->dc->STitleOffset;
+        LONG phase = x % filllen;
+        LONG width = right + 1 - x;
+
+        if (!beeping && sd->img_stitlebar->ok)
+        {
+            if (phase && width > 0)
+            {
+                LONG first = filllen - phase;
+                if (first > width) first = width;
+                WriteVerticalScaledTiledImageHorizontal(rp,
+                    sd->img_stitlebar, 0, phase, first, x, 0,
+                    data->dc->SBarHeight, first, scr->BarHeight + 1);
+                x += first;
+                width -= first;
+            }
+            if (width > 0)
+                WriteVerticalScaledTiledImageHorizontal(rp,
+                    sd->img_stitlebar, 0, 0, filllen, x, 0,
+                    data->dc->SBarHeight, width, scr->BarHeight + 1);
+        }
+        else if (width > 0)
+        {
+            SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
+            RectFill(rp, x, 0, right, scr->BarHeight);
+        }
+    }
+    else if (beeping)
     {
         SetAPen(rp, pens[BARDETAILPEN]);
         RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar->h);
@@ -339,7 +369,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         }
     }
 
-    if (sd->img_sbarlogo->ok)
+    if (!titleonly && sd->img_sbarlogo->ok)
     {
         WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0,
             sd->img_sbarlogo->w, data->dc->SLogoOffset,

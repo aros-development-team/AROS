@@ -93,8 +93,13 @@
 
         rectangle->MaxY += extent.te_Height;
 
-        if (extent.te_Width > (rectangle->MaxX+1))
-            rectangle->MaxX  = extent.te_Width - 1;
+        if (extent.te_Width > (rectangle->MaxX + 1))
+        {
+            LONG overhang = extent.te_Width - (rectangle->MaxX + 1);
+
+            rectangle->MinX -= overhang / 2;
+            rectangle->MaxX += overhang - (overhang / 2);
+        }
     }
 
     return TRUE;

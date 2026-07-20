@@ -29,6 +29,8 @@ struct wbIcon {
     struct DiskObject *Icon;
     STRPTR             Label;
     struct Screen     *Screen;
+    WORD               DrawOffsetX;
+    WORD               DrawOffsetY;
 
     struct timeval LastActive;
 };
@@ -53,6 +55,8 @@ void wbIcon_Update(Class *cl, Object *obj)
 
     w = (rect.MaxX - rect.MinX) + 1;
     h = (rect.MaxY - rect.MinY) + 1;
+    my->DrawOffsetX = -rect.MinX;
+    my->DrawOffsetY = -rect.MinY;
 
     /* If the icon is outside of the bounds for this
      * screen, ignore the position information
@@ -72,8 +76,10 @@ void wbIcon_Update(Class *cl, Object *obj)
 
     D(bug("%s: %dx%d @%d,%d (%s)\n", my->File, (int)w, (int)h, (WORD)my->Icon->do_CurrentX, (WORD)my->Icon->do_CurrentY, my->Label));
     SetAttrs(obj,
-        GA_Left, (my->Icon->do_CurrentX == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentX,
-        GA_Top, (my->Icon->do_CurrentY == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentY,
+        GA_Left, (my->Icon->do_CurrentX == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentX + rect.MinX,
+        /* Classic Workbench leaves one pixel between Y=0 icons and the
+         * inner top edge of the window or backdrop screen. */
+        GA_Top, (my->Icon->do_CurrentY == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentY + rect.MinY + 1,
         GA_Width, w,
         GA_Height, h,
         TAG_END);
@@ -198,8 +204,8 @@ static IPTR wbIconRender(Class *cl, Object *obj, struct gpRender *gpr)
     struct Gadget *gadget = (struct Gadget *)obj;       /* Legal for 'gadgetclass' */
     WORD x,y;
 
-    x = gadget->LeftEdge;
-    y = gadget->TopEdge;
+    x = gadget->LeftEdge + my->DrawOffsetX;
+    y = gadget->TopEdge + my->DrawOffsetY;
 
     /* Clip to the window for drawing */
     clip = wbClipWindow(wb, win);

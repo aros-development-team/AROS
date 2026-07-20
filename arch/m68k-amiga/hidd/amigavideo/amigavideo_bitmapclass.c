@@ -959,8 +959,16 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
+    WORD width = msg->maxX - msg->minX + 1;
+    WORD height = msg->maxY - msg->minY + 1;
+
     CLEARCACHE;
-    if (!blit_fillrect(csd, data->pbm, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode)) {
+    /* For tiny fills the blitter setup and ownership cost exceeds the few
+     * direct planar writes performed by the optimized superclass. */
+    if (((width <= 16) && (height <= 16)) ||
+        ((height == 1) && (width >= 256) &&
+         (mode == vHidd_GC_DrawMode_Copy)) ||
+        !blit_fillrect(csd, data->pbm, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode)) {
         CMDDEBUGUNIMP(bug("[AmigaVideo:Bitmap] %s()\n", __func__);)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }

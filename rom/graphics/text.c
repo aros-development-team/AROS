@@ -101,7 +101,7 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
     struct TextFont     *tf;
     WORD                 raswidth, raswidth16, raswidth_bpr, rasheight, x, y, gx;
     UBYTE               *raster;
-    BOOL                 is_bold, is_italic;
+    BOOL                 is_bold, is_italic, fastfont;
 
     TextExtent(rp, text, len, &te);
 
@@ -121,7 +121,62 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
         is_bold   = (rp->AlgoStyle & FSF_BOLD) != 0;
         is_italic = (rp->AlgoStyle & FSF_ITALIC) != 0;
 
-        while(len--) {
+        fastfont = !is_bold && !is_italic && !tf->tf_CharKern &&
+                   !tf->tf_CharSpace && tf->tf_XSize == 8 &&
+                   rp->TxSpacing == 0 && x == 0;
+
+        if (fastfont)
+        {
+            ULONG i;
+
+            for (i = 0; i < len; i++)
+            {
+                UBYTE c = text[i];
+                ULONG idx = (c < tf->tf_LoChar || c > tf->tf_HiChar) ?
+                            NUMCHARS(tf) - 1 : c - tf->tf_LoChar;
+                ULONG charloc = ((ULONG *)tf->tf_CharLoc)[idx];
+
+                if ((charloc & 0xFFFF) != 8 || ((charloc >> 16) & 7))
+                {
+                    fastfont = FALSE;
+                    break;
+                }
+            }
+        }
+
+        /* The standard Amiga screen font is an unstyled, fixed-width,
+         * byte-aligned 8-pixel font. Build its template a byte at a time
+         * instead of running the generic bit-copy loop for every pixel. */
+        if (fastfont)
+        {
+            UBYTE *dst = raster;
+
+            while (len--)
+            {
+                UBYTE c = *text++;
+                ULONG idx;
+                ULONG charloc;
+                UWORD glyphpos;
+                UBYTE *glyphdata;
+
+                if (c < tf->tf_LoChar || c > tf->tf_HiChar)
+                    idx = NUMCHARS(tf) - 1;
+                else
+                    idx = c - tf->tf_LoChar;
+
+                charloc = ((ULONG *)tf->tf_CharLoc)[idx];
+                glyphpos = charloc >> 16;
+
+                glyphdata = (UBYTE *)tf->tf_CharData + glyphpos / 8;
+                for (y = 0; y < rasheight; y++)
+                {
+                    dst[y * raswidth_bpr] = glyphdata[y * tf->tf_Modulo];
+                }
+                dst++;
+                x += 8;
+            }
+        }
+        else while(len--) {
             UBYTE c = *text++;
             ULONG idx;
             ULONG charloc;
@@ -643,4 +698,3 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
     Move(rp, rp->cp_x + te.te_Width, rp->cp_y);
 
 }
-

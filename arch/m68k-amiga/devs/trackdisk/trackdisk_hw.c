@@ -25,6 +25,15 @@
 
 #define ioStd(x)  ((struct IOStdReq *)x)
 
+struct GfxBase;
+
+#define TD_OWNBLITTER(base) \
+    AROS_LC0NR(void, OwnBlitter, struct GfxBase *, (base), 76, Graphics)
+#define TD_WAITBLIT(base) \
+    AROS_LC0NR(void, WaitBlit, struct GfxBase *, (base), 38, Graphics)
+#define TD_DISOWNBLITTER(base) \
+    AROS_LC0NR(void, DisownBlitter, struct GfxBase *, (base), 77, Graphics)
+
 static void td_wait_start(struct TrackDiskBase *tdb, UWORD millis)
 {
     // do not remove, AbortIO()+WaitIO() does not clear signal bit
@@ -438,12 +447,49 @@ static ULONG getdecodedlongchk(UWORD *mfmbuf, UWORD offset, ULONG *chksum)
     return (odd << 1) | even;
 }
 
+/* Decode one sector's 256-word odd stream followed by its 256-word even
+ * stream. BLTxDAT is immediate data and therefore must be loaded only after
+ * BLTCON0/1 have established the corresponding source shift. */
+static void blitdecodesector(UWORD *raw, UWORD *scratch,
+                            volatile struct Custom *custom, APTR gfxbase)
+{
+    TD_WAITBLIT(gfxbase);
+
+    custom->bltafwm = 0xffff;
+    custom->bltalwm = 0xffff;
+    custom->bltamod = 0;
+    custom->bltcmod = 0;
+    custom->bltdmod = 0;
+
+    /* Descending A shift reconstructs the odd bits in positions 1,3,...;
+     * B is an immediate $aaaa mask. */
+    custom->bltapt = raw + 255;
+    custom->bltdpt = scratch + 255;
+    custom->bltcon1 = 0x0002;
+    custom->bltcon0 = 0x19c0;
+    custom->bltbdat = 0xaaaa;
+    custom->bltsize = 4 << 6;
+    TD_WAITBLIT(gfxbase);
+
+    /* Merge the masked even stream with the shifted odd result. */
+    custom->bltapt = raw + 256;
+    custom->bltcpt = scratch;
+    custom->bltdpt = scratch;
+    custom->bltcon1 = 0;
+    custom->bltcon0 = 0x0bea;
+    custom->bltbdat = 0x5555;
+    custom->bltsize = 4 << 6;
+    TD_WAITBLIT(gfxbase);
+}
+
 static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
         UWORD *raw, *rawend;
         UBYTE i;
         UBYTE lasterr;
         UBYTE *data = tdb->td_DataBuffer;
+        APTR gfxbase = OpenLibrary("graphics.library", 0);
+        BOOL blitterowned = FALSE;
 
         lasterr = 0;
         raw = tdb->td_DMABuffer;
@@ -453,6 +499,7 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
             UBYTE *secdata;
             ULONG chksum, id, dlong;
             UBYTE trackoffs;
+            UWORD *mfmdata;
 
             if (raw != tdb->td_DMABuffer) {
                 while (*raw != 0x4489) {
@@ -515,22 +562,49 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
             chksum = getdecodedlong(raw, 2);
             raw += 4;
             secdata = data + trackoffs * 512;
-            for (i = 0; i < 128; i++) {
-                dlong = getdecodedlongchk(raw, 256, &chksum);
-                raw += 2;
-                *secdata++ = dlong >> 24;
-                *secdata++ = dlong >> 16;
-                *secdata++ = dlong >> 8;
-                *secdata++ = dlong;
+            mfmdata = raw;
+            if (gfxbase != NULL) {
+                for (i = 0; i < 128; i++) {
+                    chksum ^= getmfmlong(raw) ^ getmfmlong(raw + 256);
+                    raw += 2;
+                }
+            } else {
+                for (i = 0; i < 128; i++) {
+                    dlong = getdecodedlongchk(raw, 256, &chksum);
+                    raw += 2;
+                    *secdata++ = dlong >> 24;
+                    *secdata++ = dlong >> 16;
+                    *secdata++ = dlong >> 8;
+                    *secdata++ = dlong;
+                }
             }
             if (chksum) {
                 lasterr = TDERR_BadSecSum;
                 D(bug("td_decodebuffer sector %d data checksum error\n", trackoffs));
                 continue; // data checksum error
             }
+
+            if (gfxbase != NULL) {
+                if (!blitterowned) {
+                    TD_OWNBLITTER(gfxbase);
+                    blitterowned = TRUE;
+                }
+                /* The odd stream is no longer needed after its checksum has
+                 * been verified. Decode it in place, avoiding extra chip
+                 * scratch memory and any assumptions about dead DMA space. */
+                blitdecodesector(mfmdata, mfmdata,
+                                 tdb->custom, gfxbase);
+                CopyMem(mfmdata, data + trackoffs * 512, 512);
+            }
             tdb->td_sectorbits |= 1 << trackoffs;
         }
 end:
+        if (blitterowned) {
+            TD_WAITBLIT(gfxbase);
+            TD_DISOWNBLITTER(gfxbase);
+        }
+        if (gfxbase != NULL)
+            CloseLibrary(gfxbase);
         D(bug("td_decodebuffer err=%d secmask=%08x\n", lasterr, tdb->td_sectorbits));
         return lasterr;
 }
@@ -652,10 +726,83 @@ static UBYTE td_readbuffer(UBYTE track, struct TDU *tdu, struct TrackDiskBase *t
         return ret;
 }
 
+/* --- Read-only decoded-track cache ------------------------------------- */
+
+/* Ensure the per-slot buffers are allocated at the right (DD/HD) size. */
+static void tc_ensure(struct TrackDiskBase *tdb, struct TDU *tdu)
+{
+        ULONG want = (tdu->tdu_hddisk ? 22 : 11) * 512;
+        int i;
+
+        if (tdb->td_tcSlotSize == want && tdb->td_tcData[0] != NULL)
+                return;
+
+        for (i = 0; i < TD_TRACKCACHE_SLOTS; i++) {
+                if (tdb->td_tcData[i])
+                        FreeMem(tdb->td_tcData[i], tdb->td_tcSlotSize);
+                tdb->td_tcData[i] = AllocMem(want, MEMF_ANY);
+                tdb->td_tcTrack[i] = -1;
+                tdb->td_tcUnit[i] = -1;
+                tdb->td_tcSectorbits[i] = 0;
+                tdb->td_tcLRU[i] = 0;
+        }
+        tdb->td_tcSlotSize = want;
+        tdb->td_tcClock = 0;
+}
+
+/* Drop all cached tracks (called on write/format/detect and disk change). */
+static void tc_invalidate(struct TrackDiskBase *tdb)
+{
+        int i;
+        for (i = 0; i < TD_TRACKCACHE_SLOTS; i++)
+                tdb->td_tcTrack[i] = -1;
+}
+
+/* Find a fully-decoded cached track; returns slot index or -1. */
+static int tc_find(struct TrackDiskBase *tdb, struct TDU *tdu, UBYTE track)
+{
+        int i;
+        ULONG full = (1 << tdu->tdu_sectors) - 1;
+        for (i = 0; i < TD_TRACKCACHE_SLOTS; i++) {
+                if (tdb->td_tcData[i] && tdb->td_tcTrack[i] == (WORD)track &&
+                    tdb->td_tcUnit[i] == (BYTE)tdu->tdu_UnitNum &&
+                    tdb->td_tcSectorbits[i] == full) {
+                        tdb->td_tcLRU[i] = ++tdb->td_tcClock;
+                        return i;
+                }
+        }
+        return -1;
+}
+
+/* Copy the freshly-decoded single buffer into an LRU cache slot. */
+static void tc_store(struct TrackDiskBase *tdb, struct TDU *tdu, UBYTE track)
+{
+        ULONG full = (1 << tdu->tdu_sectors) - 1;
+        int i, victim = 0;
+
+        /* Only cache fully-decoded tracks. */
+        if (tdb->td_sectorbits != full || tdb->td_tcData[0] == NULL)
+                return;
+
+        for (i = 0; i < TD_TRACKCACHE_SLOTS; i++) {
+                if (tdb->td_tcTrack[i] == -1) { victim = i; break; }
+                if (tdb->td_tcLRU[i] < tdb->td_tcLRU[victim]) victim = i;
+        }
+        CopyMem(tdb->td_DataBuffer, tdb->td_tcData[victim], tdu->tdu_sectors * 512);
+        tdb->td_tcTrack[victim] = track;
+        tdb->td_tcUnit[victim] = tdu->tdu_UnitNum;
+        tdb->td_tcSectorbits[victim] = full;
+        tdb->td_tcLRU[victim] = ++tdb->td_tcClock;
+}
+
 static void maybe_detect(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-        if (tdu->tdu_disktype == DT_UNDETECTED)
+        if (tdu->tdu_disktype == DT_UNDETECTED) {
+                /* Format is undetected after a disk change; the cached tracks
+                 * (if any) belong to the previous disk, so drop them. */
+                tc_invalidate(tdb);
                 td_detectformat(tdu, tdb);
+        }
 }
 
 static UBYTE maybe_flush(struct TDU *tdu, struct TrackDiskBase *tdb, int track)
@@ -712,12 +859,40 @@ UBYTE td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
                         }
                 }
 
+                /* Fast path: whole track already decoded in the read cache?
+                 * Copy the needed sectors from there, no seek/read/decode. */
+                {
+                        int _tcslot;
+                        tc_ensure(tdb, tdu);
+                        _tcslot = tc_find(tdb, tdu, track);
+                        if (_tcslot >= 0) {
+                                UBYTE *src = tdb->td_tcData[_tcslot];
+                                smallestsectorneeded = (offset / 512) % tdu->tdu_sectors;
+                                largestsectorneeded = smallestsectorneeded + len / 512;
+                                if (largestsectorneeded > tdu->tdu_sectors || len / 512 > tdu->tdu_sectors)
+                                        largestsectorneeded = tdu->tdu_sectors;
+                                totalsectorsneeded = largestsectorneeded - smallestsectorneeded;
+                                for (sec = smallestsectorneeded; sec < largestsectorneeded; sec++)
+                                        CopyMem(src + sec * 512, data + (sec - smallestsectorneeded) * 512, 512);
+                                sectorsdone = totalsectorsneeded;
+                                data += sectorsdone * 512;
+                                offset += sectorsdone * 512;
+                                len -= sectorsdone * 512;
+                                iotd->iotd_Req.io_Actual += sectorsdone * 512;
+                                continue;
+                        }
+                }
+
                 err = maybe_flush(tdu, tdb, track);
                 if (err)
                         break;
-                if (tdb->td_buffer_unit != tdu->tdu_UnitNum || tdb->td_buffer_track != track)
+                if (tdb->td_buffer_unit != tdu->tdu_UnitNum || tdb->td_buffer_track != track) {
                         err = td_readbuffer(track, tdu, tdb);
-                
+                        /* Cache the freshly decoded track for future reads. */
+                        if (!err)
+                                tc_store(tdb, tdu, track);
+                }
+
                 smallestsectorneeded = (offset / 512) % tdu->tdu_sectors;
                 largestsectorneeded = smallestsectorneeded + len / 512;
                 if (largestsectorneeded > tdu->tdu_sectors || len / 512 > tdu->tdu_sectors) {
@@ -771,9 +946,12 @@ static UBYTE td_write2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBa
         APTR data;
         ULONG len, offset;
         UBYTE err;
- 
+
         if (checkbuffer(tdu, tdb))
                 return TDERR_NoMem;
+
+        /* Any write may change on-disk data; drop the read cache to stay coherent. */
+        tc_invalidate(tdb);
 
         err = 0;
         iotd->iotd_Req.io_Actual = 0;
@@ -897,6 +1075,7 @@ static UBYTE td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskB
         return TDERR_NoMem;
     if (tdu->tdu_disktype != DT_ADOS)
         return TDERR_WriteProt;
+    tc_invalidate(tdb);
     iotd->iotd_Req.io_Actual = 0;
     offset = iotd->iotd_Req.io_Offset;
     len = iotd->iotd_Req.io_Length;

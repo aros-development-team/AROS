@@ -287,7 +287,8 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
                  * destination bitmap.
                  */
                 struct BitMap *bm;
-                if ((bm = AllocBitMap(gi->Width+2, gi->Height+2, gi->Depth, BMF_CLEAR, NULL))) {
+                if ((bm = AllocBitMap(gi->Width+2, gi->Height+2, gi->Depth,
+                                     BMF_CLEAR, image->BitMap))) {
                     PLANEPTR trbuf;
 
                     rp.BitMap = bm;

@@ -129,6 +129,9 @@ struct sdpExitScreen
     STACKED BYTE        sdp_TrueColor;
     STACKED IPTR	     sdp_UserBuffer;
 };
+/* ScrDecor DrawScreenBar Flags */
+#define SDF_DSB_TITLEONLY       1   /* Only the screen title area changed */
+
 /* ScrDecor LayoutScreenGadgets Flags */
 #define SDF_LSG_INITIAL     	1   /* First time == During OpenScreen */
 #define SDF_LSG_SYSTEMGADGET	2   /* Is a system gadget (sdepth) */

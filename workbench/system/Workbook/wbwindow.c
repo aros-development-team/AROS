@@ -63,6 +63,23 @@ struct wbWindow {
     struct MinList IconList;
 };
 
+/* Classic drawer files describe the outer window size, while Workbook needs
+ * a 16-pixel strip for its proportional gadgets.  Keep that layout policy
+ * local to Workbook: Window.BorderRight/BorderBottom belong to Intuition and
+ * changing them after OpenWindow() makes later damage refreshes draw a frame
+ * with geometry different from the original one. */
+static WORD wbBorderRight(const struct wbWindow *my)
+{
+    return my->Path ? max(my->Window->BorderRight, 16)
+                    : my->Window->BorderRight;
+}
+
+static WORD wbBorderBottom(const struct wbWindow *my)
+{
+    return my->Path ? max(my->Window->BorderBottom, 16)
+                    : my->Window->BorderBottom;
+}
+
 #define WBWF_USERPORT   (1 << 0)    /* Window has a custom port */
 
 #define Broken NM_ITEMDISABLED |
@@ -166,7 +183,11 @@ AROS_UFH3(ULONG, wbFilterIcons_Hook,
         return FALSE;
 
     i = strlen(ead->ed_Name);
-    if (i >= 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
+    /* i > 5 (not >= 5) so a bare ".info" - the directory's own icon marker,
+     * e.g. the volume's disk-icon entry - is rejected rather than stripped to
+     * an empty name. A stripped-to-empty entry otherwise renders as a nameless
+     * ghost icon (it resolves to the drawer/volume disk.info image). */
+    if (i > 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
         ead->ed_Name[i-5] = 0;
         return TRUE;
     }
@@ -175,7 +196,7 @@ AROS_UFH3(ULONG, wbFilterIcons_Hook,
         return FALSE;
 
     return FALSE;
-    
+
     AROS_USERFUNC_EXIT
 }
 
@@ -191,8 +212,13 @@ AROS_UFH3(ULONG, wbFilterAll_Hook,
     if (stricmp(ead->ed_Name, "disk.info") == 0)
         return FALSE;
 
+    /* Reject a bare ".info" (the directory's own icon marker); see
+     * wbFilterIcons_Hook - it would otherwise become a nameless ghost icon. */
+    if (stricmp(ead->ed_Name, ".info") == 0)
+        return FALSE;
+
     i = strlen(ead->ed_Name);
-    if (i >= 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
+    if (i > 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
         ead->ed_Name[i-5] = 0;
         return TRUE;
     }
@@ -201,7 +227,7 @@ AROS_UFH3(ULONG, wbFilterAll_Hook,
         return FALSE;
 
     return TRUE;
-    
+
     AROS_USERFUNC_EXIT
 }
 
@@ -226,6 +252,51 @@ static int wbwiIconCmp(Class *cl, Object *obj, Object *a, Object *b)
     return Stricmp(al, bl);
 }
 
+static void wbRedimension(Class *cl, Object *obj);
+
+static void wbProgressiveRedimension(Class *cl, Object *obj)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
+    struct Window *win = my->Window;
+    IPTR setWidth = 0, setHeight = 0;
+    WORD borderRight = wbBorderRight(my);
+    WORD borderBottom = wbBorderBottom(my);
+    WORD innerWidth = win->Width - win->BorderLeft - borderRight;
+    WORD innerHeight = win->Height - win->BorderTop - borderBottom;
+
+    SetAttrs(my->Area,
+             GA_Left, win->BorderLeft,
+             GA_Top, win->BorderTop,
+             GA_Width, innerWidth,
+             GA_Height, innerHeight,
+             TAG_END);
+
+    GetAttr(GA_Width, my->Set, &setWidth);
+    GetAttr(GA_Height, my->Set, &setHeight);
+    SetAttrs(my->Area,
+             WBVA_VirtWidth, setWidth,
+             WBVA_VirtHeight, setHeight,
+             TAG_END);
+
+    SetAttrs(my->ScrollH,
+             PGA_Total, setWidth,
+             PGA_Visible, innerWidth,
+             GA_Left, win->BorderLeft,
+             GA_RelBottom, -(borderBottom - 2),
+             GA_Width, innerWidth,
+             GA_Height, borderBottom - 3,
+             TAG_END);
+    SetAttrs(my->ScrollV,
+             PGA_Total, setHeight,
+             PGA_Visible, innerHeight,
+             GA_RelRight, -(borderRight - 2),
+             GA_Top, win->BorderTop,
+             GA_Width, borderRight - 3,
+             GA_Height, innerHeight,
+             TAG_END);
+}
+
 static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -236,6 +307,7 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
     if (!wbwi) {
         DisposeObject(iobj);
     } else {
+        struct opMember opmmsg;
         struct wbWindow_Icon *tmp, *pred = NULL;
         wbwi->wbwiObject = iobj;
 
@@ -243,6 +315,7 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
         ForeachNode(&my->IconList, tmp) {
             if (wbwiIconCmp(cl, obj, tmp->wbwiObject, wbwi->wbwiObject) == 0) {
                 DisposeObject(iobj);
+                FreeMem(wbwi, sizeof(*wbwi));
                 return;
             }
             if (wbwiIconCmp(cl, obj, tmp->wbwiObject, wbwi->wbwiObject) < 0)
@@ -251,6 +324,16 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
         }
 
         Insert((struct List *)&my->IconList, (struct Node *)wbwi, (struct Node *)pred);
+
+        /* Make each completed icon visible immediately instead of waiting
+         * for the entire directory scan and all following disk reads. */
+        opmmsg.MethodID = OM_ADDMEMBER;
+        opmmsg.opam_Object = iobj;
+        DoMethodA(my->Set, (Msg)&opmmsg);
+        wbProgressiveRedimension(cl, obj);
+        AddGadget(my->Window, (struct Gadget *)iobj, 0);
+        RefreshGList((struct Gadget *)iobj, my->Window, NULL, 1);
+        RemoveGadget(my->Window, (struct Gadget *)iobj);
     }
 }
 
@@ -258,9 +341,7 @@ static void wbAddFiles(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbWindow *my = INST_DATA(cl, obj);
-    struct ExAllControl *eac;
-    struct ExAllData *ead;
-    const ULONG eadSize = sizeof(struct ExAllData) + 1024;
+    struct FileInfoBlock *fib;
     TEXT *path;
     int file_part;
 
@@ -270,43 +351,46 @@ static void wbAddFiles(Class *cl, Object *obj)
 
     if (!NameFromLock(my->Lock, path, 1024)) {
         FreeVec(path);
+        return;
     }
     file_part = strlen(path);
 
-    ead = AllocVec(eadSize, MEMF_CLEAR);
-    if (ead != NULL) {
-        eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-        if (eac != NULL) {
-            struct Hook hook;
-            BOOL more = TRUE;
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (fib != NULL) {
+        struct Hook hook;
+        LONG data = ED_NAME;
 
-            hook.h_Entry = my->FilterHook;
-            hook.h_SubEntry = NULL;
-            hook.h_Data = wb;
+        hook.h_Entry = my->FilterHook;
+        hook.h_SubEntry = NULL;
+        hook.h_Data = wb;
 
-            eac->eac_MatchFunc = &hook;
-            while (more) {
-                struct ExAllData *tmp = ead;
-                int i;
+        if (Examine(my->Lock, fib)) {
+            while (ExNext(my->Lock, fib)) {
+                struct ExAllData ead = { 0 };
+                Object *iobj;
 
-                more = ExAll(my->Lock, ead, eadSize, ED_NAME, eac);
-                for (i = 0; i < eac->eac_Entries; i++, tmp=tmp->ed_Next) {
-                    Object *iobj;
-                    path[file_part] = 0;
-                    if (AddPart(path, tmp->ed_Name, 1024)) {
-                        iobj = NewObject(WBIcon, NULL,
-                                WBIA_File, path,
-                                WBIA_Label, tmp->ed_Name,
-                                WBIA_Screen, my->Window->WScreen,
-                                TAG_END);
-                        if (iobj != NULL)
-                            wbwiAppend(cl, obj, iobj);
-                    }
+                /* The existing filter hooks operate on ExAllData and strip
+                 * the .info suffix in place.  ExNext's FileInfoBlock is
+                 * disposable on the next iteration, so it is safe to expose
+                 * its name directly and preserves exactly the old filtering
+                 * semantics. */
+                ead.ed_Name = fib->fib_FileName;
+                if (!CALLHOOKPKT(&hook, &ead, &data))
+                    continue;
+
+                path[file_part] = 0;
+                if (AddPart(path, ead.ed_Name, 1024)) {
+                    iobj = NewObject(WBIcon, NULL,
+                            WBIA_File, path,
+                            WBIA_Label, ead.ed_Name,
+                            WBIA_Screen, my->Window->WScreen,
+                            TAG_END);
+                    if (iobj != NULL)
+                        wbwiAppend(cl, obj, iobj);
                 }
             }
-            FreeDosObject(DOS_EXALLCONTROL, eac);
         }
-        FreeVec(ead);
+        FreeDosObject(DOS_FIB, fib);
     }
 
     FreeVec(path);
@@ -371,11 +455,13 @@ static void wbRedimension(Class *cl, Object *obj)
     struct Window *win = my->Window;
     struct IBox    real;     /* pos & size of the inner window area */
     IPTR setWidth = 0, setHeight = 0;
+    WORD borderRight = wbBorderRight(my);
+    WORD borderBottom = wbBorderBottom(my);
 
     real.Left = win->BorderLeft;
     real.Top  = win->BorderTop;
-    real.Width = win->Width - (win->BorderLeft + win->BorderRight);
-    real.Height= win->Height- (win->BorderTop  + win->BorderBottom);
+    real.Width = win->Width - (win->BorderLeft + borderRight);
+    real.Height= win->Height- (win->BorderTop  + borderBottom);
 
     D(bug("%s: Real   (%d,%d) %dx%d\n", __func__,
                 real.Left, real.Top, real.Width, real.Height));
@@ -391,15 +477,15 @@ static void wbRedimension(Class *cl, Object *obj)
 
     SetAttrs(my->ScrollH, PGA_Visible, real.Width,
                           GA_Left, real.Left,
-                          GA_RelBottom, -(my->Window->BorderBottom - 2),
+                          GA_RelBottom, -(borderBottom - 2),
                           GA_Width, real.Width,
-                          GA_Height, my->Window->BorderBottom - 3,
+                          GA_Height, borderBottom - 3,
                           TAG_END);
 
     SetAttrs(my->ScrollV, PGA_Visible, real.Height,
-                          GA_RelRight, -(my->Window->BorderRight - 2),
+                          GA_RelRight, -(borderRight - 2),
                           GA_Top, real.Top,
-                          GA_Width, my->Window->BorderRight - 3,
+                          GA_Width, borderRight - 3,
                           GA_Height, real.Height,
                           TAG_END);
 
@@ -414,8 +500,8 @@ static void wbRedimension(Class *cl, Object *obj)
     if (setWidth < real.Width) {
         SetAPen(win->RPort,0);
         RectFill(win->RPort, win->BorderLeft + setWidth, win->BorderTop,
-                win->Width - win->BorderRight - 1,
-                win->Height - win->BorderBottom - 1);
+                win->Width - borderRight - 1,
+                win->Height - borderBottom - 1);
     } else {
         setWidth = real.Width;
     }
@@ -424,8 +510,8 @@ static void wbRedimension(Class *cl, Object *obj)
     if (setHeight < real.Height) {
         SetAPen(win->RPort,0);
         RectFill(win->RPort, win->BorderLeft, win->BorderTop + setHeight,
-                setWidth - win->BorderRight - 1,
-                win->Height - win->BorderBottom - 1);
+                setWidth - borderRight - 1,
+                win->Height - borderBottom - 1);
     }
 
 }
@@ -462,16 +548,10 @@ static void wbRescan(Class *cl, Object *obj)
         wbAddFiles(cl, obj);
     }
 
-    /* Display the new icons */
-    opmmsg.MethodID = OM_ADDMEMBER;
-    ForeachNode(&my->IconList, wbwi)
-    {
-        opmmsg.opam_Object = wbwi->wbwiObject;
-        DoMethodA(my->Set, &opmmsg);
-    }
-
-    /* Adjust the scrolling regions */
-    wbRedimension(cl, obj);
+    /* Progressive geometry updates do not refresh the whole window. Redraw
+     * only the proportional gadgets once their final totals are known. */
+    RefreshGList((struct Gadget *)my->ScrollH, my->Window, NULL, 1);
+    RefreshGList((struct Gadget *)my->ScrollV, my->Window, NULL, 1);
 
     /* Return the point back to normal */
     SetWindowPointer(my->Window, WA_BusyPointer, FALSE, TAG_END);
@@ -488,15 +568,18 @@ const struct TagItem scrollh2window[] = {
         { TAG_END, 0 },
 };
 
-static void wbFixBorders(struct Window *win)
+static void wbFormatScreenTitle(struct wbWindow *my)
 {
-    int bb, br;
+    ULONG val[5];
 
-    bb = 16 - win->BorderBottom;
-    br = 16 - win->BorderRight;
+    val[0] = WB_VERSION;
+    val[1] = WB_REVISION;
+    val[2] = AvailMem(MEMF_CHIP) / 1024;
+    val[3] = AvailMem(MEMF_FAST) / 1024;
+    val[4] = AvailMem(MEMF_ANY) / 1024;
 
-    win->BorderBottom += bb;
-    win->BorderRight += br;
+    RawDoFmt("Workbook %ld.%ld  Chip: %ldk, Fast: %ldk, Any: %ldk",
+             (RAWARG)val, RAWFMTFUNC_STRING, my->ScreenTitle);
 }
 
 static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
@@ -519,6 +602,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 
     NEWLIST(&my->IconList);
     my->FilterHook = wbFilterIcons_Hook;
+    wbFormatScreenTitle(my);
 
     path = (CONST_STRPTR)GetTagData(WBWA_Path, (IPTR)NULL, ops->ops_AttrList);
     if (path == NULL) {
@@ -546,6 +630,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
                         WA_IDCMP, 0,
                         WA_Backdrop,    TRUE,
                         WA_WBenchWindow, TRUE,
+                        WA_ScreenTitle, my->ScreenTitle,
                         WA_Borderless,  TRUE,
                         WA_Activate,    TRUE,
                         WA_SmartRefresh, TRUE,
@@ -585,6 +670,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
                         WA_Backdrop, FALSE,
                         WA_WBenchWindow, TRUE,
                         WA_Title,    my->Path,
+                        WA_ScreenTitle, my->ScreenTitle,
                         WA_SmartRefresh, TRUE,
                         WA_SizeGadget, TRUE,
                         WA_DragBar, TRUE,
@@ -595,9 +681,6 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
                         WA_AutoAdjust, TRUE,
                         WA_PubScreen, NULL,
                         TAG_MORE, (IPTR)&extra[0] );
-
-        if (my->Window)
-            wbFixBorders(my->Window);
 
         FreeDiskObject(icon);
     }
@@ -635,6 +718,8 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     
     /* Add the horizontal scrollbar */
     AddGadget(my->Window, (struct Gadget *)(my->ScrollH = NewObject(NULL, "propgclass",
+                GA_BottomBorder, TRUE,
+
                 ICA_TARGET, (IPTR)obj,
                 ICA_MAP, (IPTR)scrollh2window,
                 PGA_Freedom, FREEHORIZ,
@@ -672,7 +757,8 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
         }
     }
 
-    SetAttrs(my->Set, WBSA_MaxWidth, my->Window->Width - (my->Window->BorderLeft + my->Window->BorderRight));
+    SetAttrs(my->Set, WBSA_MaxWidth,
+             my->Window->Width - (my->Window->BorderLeft + wbBorderRight(my)));
     RefreshGadgets(my->Window->FirstGadget, my->Window, NULL);
 
     wbRescan(cl, obj);
@@ -786,35 +872,45 @@ static IPTR WBWindowUpdate(Class *cl, Object *obj, struct opUpdate *opu)
     struct TagItem *tstate;
     struct TagItem *tag;
     IPTR rc;
+    IPTR areaChanged;
+    BOOL refreshH = FALSE;
+    BOOL refreshV = FALSE;
 
     rc = DoSuperMethodA(cl, obj, (Msg)opu);
 
     /* Also send these to the Area */
-    rc |= DoMethodA(my->Area, (Msg)opu);
+    areaChanged = DoMethodA(my->Area, (Msg)opu);
+    rc |= areaChanged;
 
     /* Update scrollbars if needed */
     tstate = opu->opu_AttrList;
     while ((tag = NextTagItem(&tstate))) {
         switch (tag->ti_Tag) {
         case WBVA_VirtLeft:
-            rc = TRUE;
             break;
         case WBVA_VirtTop:
-            rc = TRUE;
             break;
         case WBVA_VirtWidth:
             SetAttrs(my->ScrollH, PGA_Total, tag->ti_Data, TAG_END);
+            refreshH = TRUE;
             rc = TRUE;
             break;
         case WBVA_VirtHeight:
             SetAttrs(my->ScrollV, PGA_Total, tag->ti_Data, TAG_END);
+            refreshV = TRUE;
             rc = TRUE;
             break;
         }
     }
 
-    if (rc && !(opu->opu_Flags & OPUF_INTERIM))
-        RefreshGadgets(my->Window->FirstGadget, my->Window, NULL);
+    if (!(opu->opu_Flags & OPUF_INTERIM)) {
+        if (areaChanged)
+            RefreshGList((struct Gadget *)my->Area, my->Window, NULL, 1);
+        if (refreshH)
+            RefreshGList((struct Gadget *)my->ScrollH, my->Window, NULL, 1);
+        if (refreshV)
+            RefreshGList((struct Gadget *)my->ScrollV, my->Window, NULL, 1);
+    }
 
     return rc;
 }
@@ -827,7 +923,8 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
     struct Window *win = my->Window;
     struct Region *clip;
 
-    SetAttrs(my->Set, WBSA_MaxWidth, win->Width - (win->BorderLeft + win->BorderRight));
+    SetAttrs(my->Set, WBSA_MaxWidth,
+             win->Width - (win->BorderLeft + wbBorderRight(my)));
 
     /* Clip to the window for drawing */
     clip = wbClipWindow(wb, win);
@@ -960,17 +1057,8 @@ static IPTR WBWindowIntuiTick(Class *cl, Object *obj, Msg msg)
     IPTR rc = FALSE;
 
     if (my->Tick == 0) {
-        ULONG val[5];
-
-        val[0] = WB_VERSION;
-        val[1] = WB_REVISION;
-        val[2] = AvailMem(MEMF_CHIP) / 1024;
-        val[3] = AvailMem(MEMF_FAST) / 1024;
-        val[4] = AvailMem(MEMF_ANY) / 1024;
-
         /* Update the window's title */
-        RawDoFmt("Workbook %ld.%ld  Chip: %ldk, Fast: %ldk, Any: %ldk", (RAWARG)val,
-                 RAWFMTFUNC_STRING, my->ScreenTitle);
+        wbFormatScreenTitle(my);
 
         SetWindowTitles(my->Window, (CONST_STRPTR)-1, my->ScreenTitle);
         rc = TRUE;
