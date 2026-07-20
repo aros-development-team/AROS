@@ -62,6 +62,8 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 #MM- toolchain-linklibs-llvm-x86_64 : crosstools-compiler-rt32
 #MM- tools-crosstools-llvm-ppc      : tools-crosstools-llvm-toolchain
 #MM- tools-crosstools-llvm-arm      : tools-crosstools-llvm-toolchain
+#MM- toolchain-linklibs-llvm-arm    : linklibs-arm
+#MM- toolchain-linklibs-llvm-armeb  : linklibs-armeb
 #MM- tools-crosstools-llvm-riscv    : tools-crosstools-llvm-toolchain
 #MM- tools-crosstools-llvm-m68k    : tools-crosstools-llvm-toolchain
 
