@@ -239,6 +239,18 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     if (newyoffset >= data->height)
         newyoffset = data->height - 1;
 
+    /*
+     * OCS cannot switch a display fragment cleanly on the vertical-counter
+     * rollover itself.  Round that single position to the following line;
+     * Root::Get then reports the actual hardware position to graphics and
+     * Intuition, as for other chipset positioning constraints.
+     */
+    if (data->disp && !csd->ecs_denise &&
+        newyoffset == ((256 - csd->starty) << data->interlace))
+    {
+        newyoffset += 1 << data->interlace;
+    }
+
     if ((newxoffset != data->leftedge) || (newyoffset != data->topedge))
     {
         struct pHidd_Compositor_BitMapPositionChanged bpcmsg =

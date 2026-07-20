@@ -22,6 +22,7 @@ struct copper2data
     UWORD                       *copper2_palette_aga_lo;
     UWORD                       *copper2_scroll;
     UWORD                       *copper2_diwstop;
+    UWORD                       *copper2_bplstart;
     UWORD                       *copper2_bpl;
     UWORD                       *copper2_fmode;
     UWORD                       *copper2_tail;

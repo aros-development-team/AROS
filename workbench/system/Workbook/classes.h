@@ -121,6 +121,9 @@ Class *WBSet_MakeClass(struct WorkbookBase *wb);
 #define WBIA_Label               (WBIA_Dummy+3)	/* CONST_STRPTR */
 #define WBIA_Screen              (WBIA_Dummy+4)	/* struct Screen * */
 
+/* Internal attributes */
+#define WBIA_Positioned          (WBIA_Dummy+128) /* BOOL */
+
 /* Methods */
 #define WBIM_Dummy               (TAG_USER | 0x40440100)
 #define WBIM_Open                (WBIM_Dummy + 1)	/* N/A */

@@ -101,6 +101,7 @@ static IPTR WBSetAddMember(Class *cl, Object *obj, struct opMember *opm)
     struct IBox ibox;
     struct wbSet *my = INST_DATA(cl, obj);
     struct wbSetNode *node;
+    IPTR positioned = FALSE;
     IPTR rc;
 
     node = AllocMem(sizeof(*node), MEMF_ANY);
@@ -109,8 +110,8 @@ static IPTR WBSetAddMember(Class *cl, Object *obj, struct opMember *opm)
     /* Get bounding box of item to add */
     wbGABox(wb, iobj, &ibox);
 
-    if (ibox.Left == ~0 ||
-        ibox.Top == ~0) {
+    GetAttr(WBIA_Positioned, iobj, &positioned);
+    if (!positioned) {
         AddTail(&my->AutoObjects, (struct Node *)&node->sn_Node);
     } else {
         AddHead(&my->FixedObjects, (struct Node *)&node->sn_Node);
