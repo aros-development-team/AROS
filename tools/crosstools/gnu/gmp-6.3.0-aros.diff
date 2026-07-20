@@ -26,3 +26,14 @@ diff -ruN gmp-6.3.0/configure.ac gmp-6.3.0.aros/configure.ac
  cc_cflags="-O"
  cc_64_cflags="-O"
  
+diff -ruN gmp-6.3.0/gmp-h.in gmp-6.3.0.aros/gmp-h.in
+--- gmp-6.3.0/gmp-h.in	2023-07-29 13:42:16.000000000 +0000
++++ gmp-6.3.0.aros/gmp-h.in	2025-06-10 14:36:11.702623568 +0000
+@@ -255,6 +255,7 @@
+ #if defined (FILE)                                              \
+   || defined (H_STDIO)                                          \
+   || defined (_H_STDIO)               /* AIX */                 \
++  || defined (_STDC_STDIO_H_)         /* AROS */                \
+   || defined (_STDIO_H)               /* glibc, Sun, SCO */     \
+   || defined (_STDIO_H_)              /* BSD, OSF */            \
+   || defined (__STDIO_H)              /* Borland */             \
