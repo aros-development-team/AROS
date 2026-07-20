@@ -7,6 +7,7 @@
 #include <aros/debug.h>
 #include <aros/asmcall.h>
 
+#include <devices/console.h>
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
 #include <dos/dostags.h>
@@ -35,6 +36,38 @@ const ULONG BCPL_GlobVec[(BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize) >> 2] = {
 #undef BCPL
 
 #define BCPL_ENTRY(proc)        (((APTR *)(proc)->pr_GlobVec)[1])
+
+/* Wait for either a DOS packet or an asynchronous IO completion on a
+ * legacy BCPL process port.  AmigaDOS exposed console read/write completions
+ * to BCPL handlers as private actions 1001/1002.  Provide a packet-shaped
+ * view backed by the completed IORequest; dp_Type aliases io_Actual, matching
+ * the layout expected by the original handlers.  The device has completed
+ * the request and BCPL setIO initializes it before the next submission.
+ */
+APTR BCPL_TaskWait(void)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct Message *msg;
+
+    while ((msg = GetMsg(&me->pr_MsgPort)) == NULL)
+        Wait(1L << me->pr_MsgPort.mp_SigBit);
+
+    if (msg->mn_Node.ln_Name != NULL)
+        return msg->mn_Node.ln_Name;
+
+    {
+        struct IOStdReq *io = (struct IOStdReq *)msg;
+
+        if (io->io_Command == CMD_READ || io->io_Command == CMD_WRITE)
+        {
+            io->io_Actual = (io->io_Command == CMD_READ) ? 1001 : 1002;
+            return &io->io_Unit;
+        }
+    }
+
+    return NULL;
+}
+
 /*
  * Set up the process's initial global vector
  */
@@ -49,6 +82,7 @@ ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
     }
 
     if (seg == (ULONG)-1) {
+        struct DosLibrary *DOSBase;
         ULONG slots = globvec[0];
         int i;
         if (slots > (BCPL_GlobVec_PosSize>>2))
@@ -66,8 +100,11 @@ ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
             globvec[i] = gv;
         }
 
-        D(bug("BCPL_InstallSeg: Inserting DOSBase global\n"));
-        globvec[GV_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0);
+        D(bug("BCPL_InstallSeg: Inserting library-base globals\n"));
+        DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
+        globvec[GV_DOSBase >> 2] = (IPTR)DOSBase;
+        if (DOSBase != NULL)
+            globvec[GV_IntuitionBase >> 2] = (IPTR)DOSBase->dl_IntuitionBase;
 
         return DOSTRUE;
     }
@@ -262,4 +299,3 @@ void bcpl_command_name(void)
     else
         bug("%b: ", cli->cli_CommandName);
 }
-
