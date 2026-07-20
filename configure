@@ -10523,7 +10523,7 @@ case "$target_os" in
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
-                aros_kernel_isa_flags="$""(ISA_X86_FLAGS)"
+                aros_kernel_isa_flags="-m32 -march=i486"
                 x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_kernel_ldflags="-Wl,-melf_i386"
                 aros_nominal_depth=8
