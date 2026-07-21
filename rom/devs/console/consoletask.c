@@ -13,6 +13,7 @@
 #include <proto/console.h>
 #include <exec/io.h>
 #include <exec/alerts.h>
+#include <exec/rawfmt.h>
 #include <dos/dos.h>
 #include <devices/input.h>
 #include <devices/rawkeycodes.h>
@@ -77,6 +78,68 @@ static VOID answer_requests(APTR unit, struct ConsoleBase *ConsoleDevice)
             }
         }
     }
+}
+
+static BOOL report_raw_event(Object *unit, const struct InputEvent *event,
+    struct ConsoleBase *ConsoleDevice)
+{
+    struct intConUnit *icu = ICU(unit);
+    UBYTE report[128];
+    LONG fields[8];
+    LONG x, y;
+    ULONG len;
+
+    if (!CHECK_RAWEVENT(unit, event->ie_Class))
+        return FALSE;
+
+    /* The classic console.device reports mouse button transitions but not
+     * IECODE_NOBUTTON movement events through this raw-event byte stream.
+     * Consumers such as Ed read the mouse coordinates maintained by
+     * Intuition when processing the press and release reports. */
+    if (event->ie_Class == IECLASS_RAWMOUSE &&
+        event->ie_Code == IECODE_NOBUTTON)
+        return TRUE;
+
+    if (event->ie_Class == IECLASS_RAWKEY)
+    {
+        x = ((ULONG)event->ie_Prev1DownCode << 8) |
+            event->ie_Prev1DownQual;
+        y = ((ULONG)event->ie_Prev2DownCode << 8) |
+            event->ie_Prev2DownQual;
+    }
+    else
+    {
+        x = event->ie_X;
+        y = event->ie_Y;
+    }
+
+    fields[0] = event->ie_Class;
+    fields[1] = event->ie_SubClass;
+    fields[2] = event->ie_Code;
+    fields[3] = event->ie_Qualifier;
+    fields[4] = x;
+    fields[5] = y;
+    fields[6] = event->ie_TimeStamp.tv_secs;
+    fields[7] = event->ie_TimeStamp.tv_micro;
+
+    /* RawDoFmt's explicit data stream is ABI-safe on m68k.  Passing this
+     * many values through NewRawDoFmt's varargs interface corrupts the
+     * stream there, producing more than the eight fields mandated by the
+     * console.device input-event report protocol. */
+    RawDoFmt("\x9b%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld|", fields,
+        RAWFMTFUNC_STRING, report);
+    len = strnlen(report, sizeof(report));
+    if (len == sizeof(report))
+        return TRUE;
+
+    if (len <= CON_INPUTBUF_SIZE - icu->numStoredChars)
+    {
+        CopyMem(report, icu->inputBuf + icu->numStoredChars, len);
+        icu->numStoredChars += len;
+        answer_requests(unit, ConsoleDevice);
+    }
+
+    return TRUE;
 }
 
 static ULONG pasteData(struct intConUnit *icu,
@@ -221,6 +284,9 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
                  */
                 if (checkconunit(cdihmsg->unit, ConsoleDevice))
                 {
+                    BOOL rawEvent = report_raw_event(cdihmsg->unit,
+                        &cdihmsg->ie, ConsoleDevice);
+
                     switch (cdihmsg->ie.ie_Class)
                     {
                     case IECLASS_CLOSEWINDOW:
@@ -239,6 +305,9 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
                             LONG actual;
                             ULONG tocopy;
                             struct InputEvent e;
+
+                            if (rawEvent)
+                                break;
 
                             /* Mouse wheel support */
                             if (cdihmsg->ie.ie_Code == RAWKEY_NM_WHEEL_UP ||

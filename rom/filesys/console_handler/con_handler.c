@@ -500,6 +500,33 @@ static void startread(struct filehandle *fh)
     fh->flags |= FHFLG_ASYNCCONSOLEREAD;
 }
 
+static void pump_raw_input(struct filehandle *fh)
+{
+    while (fh->conbufferpos < fh->conbuffersize)
+    {
+        LONG available = fh->conbuffersize - fh->conbufferpos;
+        LONG space = INPUTBUFFER_SIZE - fh->inputsize;
+        LONG copylen;
+
+        if (space <= 0)
+            break;
+
+        copylen = available < space ? available : space;
+        CopyMem(fh->consolebuffer + fh->conbufferpos,
+            fh->inputbuffer + fh->inputsize, copylen);
+        fh->conbufferpos += copylen;
+        fh->inputsize += copylen;
+        fh->inputpos = fh->inputstart = fh->inputsize;
+
+        HandlePendingReads(fh);
+
+        /* Without a pending application read, keep the remaining device
+         * bytes in consolebuffer until space is made by ACTION_READ. */
+        if (fh->inputsize != 0)
+            break;
+    }
+}
+
 static void stopwait(struct filehandle *fh, struct DosPacket *waitingdp, ULONG result)
 {
     if (waitingdp) {
@@ -727,14 +754,9 @@ LONG CONMain(struct ExecBase *SysBase)
                 /* terminate with 0 char */
                 fh->consolebuffer[fh->conbuffersize] = '\0';
                 if (fh->flags & FHFLG_RAW) {
-                    LONG inp;
                     /* raw mode */
                     DREAD(bug("[con:handler] %s: FHFLG_RAW\n", __func__));
-                    for (inp = 0; (inp < fh->conbuffersize) && (fh->inputpos < INPUTBUFFER_SIZE);) {
-                        fh->inputbuffer[fh->inputpos++] = fh->consolebuffer[inp++];
-                    }
-                    fh->inputsize = fh->inputstart = fh->inputpos;
-                    HandlePendingReads(fh);
+                    pump_raw_input(fh);
                 } /* if (fh->flags & FHFLG_RAW) */
                 else {
                     DREAD(bug("[con:handler] %s: COOKED\n", __func__));
@@ -749,7 +771,9 @@ LONG CONMain(struct ExecBase *SysBase)
                     }
                 } /* if (fh->flags & FHFLG_RAW) else ... */
 
-                if (fh->flags & FHFLG_CONSOLEDEVICEOPEN) /* device could have been closed */
+                if ((fh->flags & FHFLG_CONSOLEDEVICEOPEN) &&
+                    (!(fh->flags & FHFLG_RAW) ||
+                        fh->conbufferpos >= fh->conbuffersize))
                     startread(fh);
             }
 
@@ -835,8 +859,15 @@ LONG CONMain(struct ExecBase *SysBase)
                         break;
                     }
                     fh->breaktask = dp->dp_Port->mp_SigTask;
-                    startread(fh);
-                    con_read(fh, dp);
+                    if (fh->flags & FHFLG_RAW) {
+                        con_read(fh, dp);
+                        pump_raw_input(fh);
+                        if (fh->conbufferpos >= fh->conbuffersize)
+                            startread(fh);
+                    } else {
+                        startread(fh);
+                        con_read(fh, dp);
+                    }
                     break;
                 case ACTION_WRITE:
                     DACTION(bug("[con:handler] ACTION_WRITE\n"));

@@ -50,7 +50,9 @@ nisneg:
     rts
 nispos:
     tst.l   %d1
-    bpl.l   AROS_SLIB_ENTRY(UDivMod32,Utility,26)
+    bmi.s   divisor_negative
+    jmp     AROS_SLIB_ENTRY(UDivMod32,Utility,26)
+divisor_negative:
     neg.l   %d1
     jsr     AROS_SLIB_ENTRY(UDivMod32,Utility,26)
     neg.l   %d0

@@ -504,7 +504,7 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
             ScrollRaster(rp,
                 0,
-                -YRSIZE,
+                -YRSIZE * params[0],
                 GFX_XMIN(o), GFX_Y(o, YCP), GFX_XMAX(o), GFX_YMAX(o));
 
             SetAPen(rp, oldpen);
@@ -522,7 +522,7 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
             ScrollRaster(rp,
                 0,
-                YRSIZE,
+                YRSIZE * params[0],
                 GFX_XMIN(o), GFX_Y(o, YCP), GFX_XMAX(o), GFX_YMAX(o));
 
             SetAPen(rp, oldpen);
@@ -614,7 +614,7 @@ static VOID stdcon_docommand(Class *cl, Object *o,
         {
             UBYTE reply[32];
             NewRawDoFmt("\x9b" "1;1;%d;%d r", RAWFMTFUNC_STRING, reply,
-                CU(o)->cu_YMax, CU(o)->cu_XMax);
+                CU(o)->cu_YMax + 1, CU(o)->cu_XMax + 1);
             con_inject((struct ConsoleBase *)cl->cl_UserData, CU(o), reply,
                 -1);
             break;
@@ -624,7 +624,7 @@ static VOID stdcon_docommand(Class *cl, Object *o,
         {
             UBYTE reply[32];
             NewRawDoFmt("\x9b" "%d;%dR", RAWFMTFUNC_STRING, reply,
-                CU(o)->cu_YCP, CU(o)->cu_XCP);
+                CU(o)->cu_YCP + 1, CU(o)->cu_XCP + 1);
             con_inject((struct ConsoleBase *)cl->cl_UserData, CU(o), reply,
                 -1);
             break;
