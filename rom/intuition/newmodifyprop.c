@@ -78,6 +78,9 @@
     struct PropInfo *pi;
     struct BBox      old, new;
     BOOL             knobok1, knobok2;
+#if PROP_RENDER_OPTIMIZATION
+    BOOL             fullrefresh;
+#endif
 
     if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_PROPGADGET
         || !gadget->SpecialInfo || !window)
@@ -101,7 +104,19 @@
 
     new = old;
 #if PROP_RENDER_OPTIMIZATION
-    knobok1 = CalcKnobSize (gadget, &old);
+    /* Some legacy programs update PropInfo before calling NewModifyProp().
+     * Only use the partial renderer when an active pot actually moves. A
+     * call with no detectable movement may have changed the knob geometry
+     * already and therefore needs the complete gadget renderer. */
+    fullrefresh = pi->HorizBody != horizBody ||
+                  pi->VertBody != vertBody ||
+                  ((pi->Flags ^ flags) &
+                   (AUTOKNOB | FREEHORIZ | FREEVERT |
+                    PROPBORDERLESS | PROPNEWLOOK)) ||
+                  (!(flags & AUTOKNOB) && gadget->GadgetRender) ||
+                  !(((flags & FREEHORIZ) && pi->HorizPot != horizPot) ||
+                    ((flags & FREEVERT) && pi->VertPot != vertPot));
+    knobok1 = fullrefresh ? TRUE : CalcKnobSize (gadget, &old);
 #else
     knobok1 = TRUE;
 #endif
@@ -125,11 +140,20 @@
 
         // Permit(); stegerg: CHECKME, commented out!
 #endif
-        knobok2 = CalcKnobSize (gadget, &new);
-
-        if (knobok2)
+    #if PROP_RENDER_OPTIMIZATION
+        if (fullrefresh)
         {
-            RefreshPropGadgetKnob (gadget, knobok1 ? &old : 0, &new, window, requester, IntuitionBase);
+            RefreshPropGadget(gadget, window, requester, IntuitionBase);
+        }
+        else
+    #endif
+        {
+            knobok2 = CalcKnobSize (gadget, &new);
+
+            if (knobok2)
+            {
+                RefreshPropGadgetKnob (gadget, knobok1 ? &old : 0, &new, window, requester, IntuitionBase);
+            }
         }
 
 #ifdef PROPHACK
