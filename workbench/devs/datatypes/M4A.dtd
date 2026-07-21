@@ -1,0 +1,10 @@
+# DataType Description for AAC audio in an MP4 (ISO-BMFF) container
+Name=M4A
+Version=$VER: M4A 41.0 (21.7.2026)
+BaseName=aac
+Pattern=#?.(m4a|m4b|aac)
+Mask=ANY ANY ANY ANY 'f' 't' 'y' 'p'
+GroupID=soun
+ID=m4a_
+Flags=DTF_BINARY,DTF_CASE
+Priority=1
