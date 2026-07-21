@@ -1,0 +1,24 @@
+#
+#   Makefile to build decorator.library
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        decorator_library \
+        pixops \
+        newimagefuncs \
+        drawfuncs \
+        decoratorelement
+
+#MM workbench-libs-decorator : includes linklibs kernel-hidd-gfx-includes
+
+%build_module mmake=workbench-libs-decorator \
+    modname=decorator modtype=library \
+    files="$(FILES)"
+
+INCLUDE_FILES := decorator.h
+
+%copy_includes path=libraries
+
+%common

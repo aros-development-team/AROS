@@ -1,0 +1,18 @@
+#
+#   Makefile for the x86_64 optimized decorator.library pixel kernels
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        pixops
+
+DECORDIR_BASE := workbench/libs/decorator
+USER_INCLUDES := -iquote $(SRCDIR)/$(DECORDIR_BASE)
+
+%build_archspecific \
+  mainmmake=workbench-libs-decorator maindir=$(DECORDIR_BASE) \
+  files=$(FILES) \
+  arch=x86_64 modname=decorator
+
+%common

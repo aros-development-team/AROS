@@ -1,5 +1,5 @@
 /*
-    Copyright  2011-2012, The AROS Development Team.
+    Copyright  2011-2026, The AROS Development Team.
 */
 
 #define DEBUG 0
@@ -15,11 +15,11 @@
 #include <proto/utility.h>
 #include <proto/exec.h>
 
+#include <libraries/decorator.h>
+#include <proto/decorator.h>
+
 #include "menudecorclass.h"
 #include "screendecorclass.h"
-#include "drawfuncs.h"
-#include "config.h"
-
 
 #define SETIMAGE_MEN(id) md->img_##id=sd->di->img_##id
 
@@ -28,16 +28,16 @@ struct menudecor_data
     struct DecorConfig * dc;
 
     /* Pointers to images used for sys images */
-    struct NewImage *img_amigakey;
-    struct NewImage *img_menucheck;
-    struct NewImage *img_submenu;
+    struct DecorImage *img_amigakey;
+    struct DecorImage *img_menucheck;
+    struct DecorImage *img_submenu;
 };
 
 static IPTR menudecor_getdefsizes(Class *cl, Object *obj, struct mdpGetDefSizeSysImage *msg)
 {
     struct menudecor_data *data = INST_DATA(cl, obj);
 
-    struct NewImage *n = NULL;
+    struct DecorImage *n = NULL;
     BOOL  isset = FALSE;
 
     switch(msg->mdp_Which)
@@ -97,46 +97,38 @@ static IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysIma
 {
     struct ScreenData      *md = (struct ScreenData *) msg->mdp_UserBuffer;
     struct RastPort        *rp = msg->mdp_RPort;
-    struct NewImage        *ni = NULL;
+    struct DecoratorElement *elem = NULL;
     LONG                    left = msg->mdp_X;
     LONG                    top = msg->mdp_Y;
     WORD                    addx = 0;
     WORD                    addy = 0;
-    BOOL                    isset = FALSE;
+    ULONG                   elemid;
 
     switch(msg->mdp_Which)
     {
         case AMIGAKEY:
-            if (md && md->img_amigakey->ok)
-            {
-                ni = md->img_amigakey;
-                isset = TRUE;
-            }
+            elemid = DECOR_ELEM_MenuAmigaKey;
             break;
 
         case MENUCHECK:
-            if (md && md->img_menucheck->ok)
-            {
-                ni = md->img_menucheck;
-                isset = TRUE;
-            }
+            elemid = DECOR_ELEM_MenuCheck;
             break;
 
         case SUBMENUIMAGE:
-            if (md && md->img_submenu->ok)
-            {
-                ni = md->img_submenu;
-                isset = TRUE;
-            }
+            elemid = DECOR_ELEM_MenuSubMenu;
             break;
 
         default:
             return DoSuperMethodA(cl, obj, (Msg)msg);
     }
 
-    if (!isset || (ni == NULL)) return DoSuperMethodA(cl, obj, (Msg)msg);
+    if (md && md->dts)
+        elem = &md->dts->dts_Elements[elemid];
 
-    DrawStatefulGadgetImageToRP(rp, ni, IDS_NORMAL, left + addx, top + addy);
+    if (!elem || !elem->de_Image || !elem->de_Image->ok)
+        return DoSuperMethodA(cl, obj, (Msg)msg);
+
+    DRenderElement(elem, rp, IDS_NORMAL, left + addx, top + addy, -1, -1, 0);
 
     return TRUE;
 }
@@ -147,23 +139,23 @@ static IPTR menudecor_renderbackground(Class *cl, Object *obj, struct mdpDrawBac
 {
     struct menudecor_data *data = INST_DATA(cl, obj);
     struct RastPort    *rp = msg->mdp_RPort;
-    struct NewImage    *ni;
+    struct DecorImage    *ni;
     struct MenuData    *md = (struct MenuData *) msg->mdp_UserBuffer;
     UWORD               flags = msg->mdp_Flags;
 
     if ((flags & HIGHITEM) && md->ni)
     {
-        ni = NewImageContainer(msg->mdp_ItemWidth, msg->mdp_ItemHeight);
+        ni = DNewImageContainer(msg->mdp_ItemWidth, msg->mdp_ItemHeight);
         if (ni)
         {
-            DrawPartToImage(md->ni, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight, 0, 0);
-            SetImageTint(ni, 255 - (data->dc->MenuHighlightTint >> 24), data->dc->MenuHighlightTint & 0xffffff);
-            PutImageToRP(rp, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop);
+            DDrawPartToImage(md->ni, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight, 0, 0);
+            DSetImageTint(ni, 255 - (data->dc->MenuHighlightTint >> 24), data->dc->MenuHighlightTint & 0xffffff);
+            DPutImageToRP(rp, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop);
         }
     }
     else
     {
-        if (md->ni) DrawPartImageToRP(rp, md->ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight);
+        if (md->ni) DDrawPartImageToRP(rp, md->ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight);
     }
 
     return TRUE;
@@ -199,19 +191,19 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
         if ((data->dc->MenuIsTiled) && (height < (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop)))
             height = (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop);
 
-        md->ni = NewImageContainer(msg->mdp_Width, height);
+        md->ni = DNewImageContainer(msg->mdp_Width, height);
         if (md->ni)
         {
             md->ni->ok = TRUE;
-            RenderMenuBarBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
+            DRenderMenuBarBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
 
             /* Scale down if needed */
             if (height > msg->mdp_Height)
             {
-                struct NewImage * sni = ScaleNewImage(md->ni, msg->mdp_Width, msg->mdp_Height);
+                struct DecorImage * sni = DScaleNewImage(md->ni, msg->mdp_Width, msg->mdp_Height);
                 if (sni)
                 {
-                    DisposeImageContainer(md->ni);
+                    DDisposeImageContainer(md->ni);
                     md->ni = sni;
                     md->ni->ok = TRUE;
                 }
@@ -220,11 +212,11 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
     }
     else
     {
-        md->ni = GetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
+        md->ni = DGetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
         if (md->ni)
         {
             md->ni->ok = TRUE;
-            RenderMenuBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
+            DRenderMenuBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
         }
     }
 
@@ -236,7 +228,7 @@ static IPTR menudecor_exitmenu(Class *cl, Object *obj, struct mdpExitMenu *msg)
 {
     struct MenuData     *md = (struct MenuData *) msg->mdp_UserBuffer;
 
-    if (md->ni) DisposeImageContainer(md->ni);
+    if (md->ni) DDisposeImageContainer(md->ni);
     if (md->map) FreeBitMap(md->map);
     if (md->img_menu_ti) FreeVec(md->img_menu_ti);
 

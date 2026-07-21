@@ -1,5 +1,7 @@
 /*
-    Copyright (C) 2011-2023, The AROS Development Team.
+    Copyright (C) 2011-2026, The AROS Development Team.
+
+    Desc: decorator.library - DecorImage container functions
 */
 
 #include <datatypes/pictureclass.h>
@@ -13,11 +15,14 @@
 #include <proto/intuition.h>
 #include <proto/cybergraphics.h>
 
+#include <aros/libcall.h>
+
 #include <string.h>
 
 #include <aros/debug.h>
 
-#include "newimage.h"
+#include <libraries/decorator.h>
+#include "decorator_intern.h"
 
 #if AROS_BIG_ENDIAN
 #define GET_A(rgb)          (((rgb) >> 24) & 0xFF)
@@ -29,9 +34,44 @@
 #define MASK_ALPHAOPAQUE    0X000000FF
 #endif
 
+static Object * LoadPicture(CONST_STRPTR filename, struct Screen *scr)
+{
+    Object *o;
+
+    o = NewDTObject((APTR)filename,
+                    DTA_GroupID          , GID_PICTURE,
+                    OBP_Precision        , PRECISION_EXACT,
+                    PDTA_Screen          , (IPTR)scr,
+                    PDTA_FreeSourceBitMap, TRUE,
+                    PDTA_DestMode        , PMODE_V43,
+                    PDTA_UseFriendBitMap , TRUE,
+                    TAG_DONE);
+
+    if (o)
+    {
+        struct FrameInfo fri = {0};
+        
+        D(bug("DTM_FRAMEBOX\n", o));
+        DoMethod(o,DTM_FRAMEBOX,NULL,(IPTR)&fri,(IPTR)&fri,sizeof(struct FrameInfo),0);
+        
+        if (fri.fri_Dimensions.Depth > 0)
+        {
+            D(bug("DTM_PROCLAYOUT\n", o));
+            if (DoMethod(o,DTM_PROCLAYOUT,NULL,1))
+            {
+                return o;
+            }
+        }
+        DisposeDTObject(o);
+    }
+
+    return NULL;
+}
+
 /* Code taken from BM__Hidd_BitMap__BitMapScale */
 /* srcdata point directly to (0,0) point of subbuffer to be read from */
-ULONG * ScaleBuffer(ULONG * srcdata, LONG widthBuffer /* stride */, LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest)
+/* Internal implementation of ScaleBuffer */
+ULONG *ScaleBuffer(ULONG *srcdata, LONG widthBuffer, LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest)
 {
     ULONG * scaleddata = (ULONG *) AllocVec(sizeof(ULONG) * widthDest * heightDest, MEMF_ANY);
     LONG srcline = -1;
@@ -72,17 +112,20 @@ ULONG * ScaleBuffer(ULONG * srcdata, LONG widthBuffer /* stride */, LONG widthSr
         }
 
         if (srcline != ys) {
-            //HIDD_BM_GetImage(msg->src, (UBYTE *) srcbuf, bsa->bsa_SrcWidth * sizeof(ULONG), bsa->bsa_SrcX, bsa->bsa_SrcY + ys, bsa->bsa_SrcWidth, 1, vHidd_StdPixFmt_Native32);
             ULONG * srcptr = srcdata + (ys * widthBuffer);
             srcline = ys;
 
-            /* New: use last line as temp buffer */
-            for (x = 0; x < widthDest; x++)
-                lastscaledlineptr[x] = srcptr[linepattern[x]];
-
+            if (widthSrc == 1)
+                pixop_splat_row(lastscaledlineptr, widthDest, srcptr[0]);
+            else if (widthSrc == widthDest)
+                CopyMem(srcptr, lastscaledlineptr, widthDest * sizeof(ULONG));
+            else
+            {
+                for (x = 0; x < widthDest; x++)
+                    lastscaledlineptr[x] = srcptr[linepattern[x]];
+            }
         }
 
-        //HIDD_BM_PutImage(msg->dst, msg->gc, (UBYTE *) dstbuf, bsa->bsa_DestWidth * sizeof(ULONG), bsa->bsa_DestX, bsa->bsa_DestY + count, bsa->bsa_DestWidth, 1, vHidd_StdPixFmt_Native32);
         CopyMem(lastscaledlineptr, scaleddata + (count * widthDest), widthDest * sizeof(ULONG));
 
         count++;
@@ -93,7 +136,22 @@ ULONG * ScaleBuffer(ULONG * srcdata, LONG widthBuffer /* stride */, LONG widthSr
     return scaleddata;
 }
 
-void DisposeImageContainer(struct NewImage *ni)
+AROS_LH6(ULONG *, DScaleBuffer,
+    AROS_LHA(ULONG *, srcdata, A0),
+    AROS_LHA(LONG, widthBuffer, D0),
+    AROS_LHA(LONG, widthSrc, D1),
+    AROS_LHA(LONG, heightSrc, D2),
+    AROS_LHA(LONG, widthDest, D3),
+    AROS_LHA(LONG, heightDest, D4),
+    struct Library *, DecoratorBase, 14, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    return ScaleBuffer(srcdata, widthBuffer, widthSrc, heightSrc, widthDest, heightDest);
+    AROS_LIBFUNC_EXIT
+}
+
+/* Internal implementation of DisposeImageContainer */
+void DisposeImageContainer(struct DecorImage *ni)
 {
     if (ni)
     {
@@ -116,7 +174,17 @@ void DisposeImageContainer(struct NewImage *ni)
     }
 }
 
-void DisposeLUT8ImageContainer(struct NewLUT8Image *ni)
+AROS_LH1(void, DDisposeImageContainer,
+    AROS_LHA(struct DecorImage *, ni, A0),
+    struct Library *, DecoratorBase, 8, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    DisposeImageContainer(ni);
+    AROS_LIBFUNC_EXIT
+}
+
+/* Internal implementation of DisposeLUT8ImageContainer */
+void DisposeLUT8ImageContainer(struct DecorImageLUT8 *ni)
 {
     if (ni)
     {
@@ -125,11 +193,21 @@ void DisposeLUT8ImageContainer(struct NewLUT8Image *ni)
     }
 }
 
-struct NewLUT8Image *NewLUT8ImageContainer(UWORD w, UWORD h)
+AROS_LH1(void, DDisposeLUT8ImageContainer,
+    AROS_LHA(struct DecorImageLUT8 *, ni, A0),
+    struct Library *, DecoratorBase, 12, Decorator)
 {
-    struct      NewLUT8Image *ni;
+    AROS_LIBFUNC_INIT
+    DisposeLUT8ImageContainer(ni);
+    AROS_LIBFUNC_EXIT
+}
 
-    ni = AllocVec(sizeof(struct NewLUT8Image), MEMF_ANY | MEMF_CLEAR);
+/* Internal implementation of NewLUT8ImageContainer */
+struct DecorImageLUT8 *NewLUT8ImageContainer(UWORD w, UWORD h)
+{
+    struct      DecorImageLUT8 *ni;
+
+    ni = AllocVec(sizeof(struct DecorImageLUT8), MEMF_ANY | MEMF_CLEAR);
     if (ni)
     {
         ni->w = w;
@@ -144,11 +222,22 @@ struct NewLUT8Image *NewLUT8ImageContainer(UWORD w, UWORD h)
     return ni;
 }
 
-struct NewImage *NewImageContainer(UWORD w, UWORD h)
+AROS_LH2(struct DecorImageLUT8 *, DNewLUT8ImageContainer,
+    AROS_LHA(UWORD, w, D0),
+    AROS_LHA(UWORD, h, D1),
+    struct Library *, DecoratorBase, 11, Decorator)
 {
-    struct      NewImage *ni;
+    AROS_LIBFUNC_INIT
+    return NewLUT8ImageContainer(w, h);
+    AROS_LIBFUNC_EXIT
+}
 
-    ni = AllocVec(sizeof(struct NewImage), MEMF_ANY | MEMF_CLEAR);
+/* Internal implementation of NewImageContainer */
+struct DecorImage *NewImageContainer(UWORD w, UWORD h)
+{
+    struct      DecorImage *ni;
+
+    ni = AllocVec(sizeof(struct DecorImage), MEMF_ANY | MEMF_CLEAR);
     if (ni)
     {
         ni->w = w;
@@ -165,11 +254,22 @@ struct NewImage *NewImageContainer(UWORD w, UWORD h)
     return ni;
 }
 
-struct NewImage *ScaleNewImage(struct NewImage * oni, UWORD neww, UWORD newh)
+AROS_LH2(struct DecorImage *, DNewImageContainer,
+    AROS_LHA(UWORD, w, D0),
+    AROS_LHA(UWORD, h, D1),
+    struct Library *, DecoratorBase, 6, Decorator)
 {
-    struct  NewImage *ni;
+    AROS_LIBFUNC_INIT
+    return NewImageContainer(w, h);
+    AROS_LIBFUNC_EXIT
+}
 
-    ni = AllocVec(sizeof(struct NewImage), MEMF_ANY | MEMF_CLEAR);
+/* Internal implementation of ScaleNewImage */
+struct DecorImage *ScaleNewImage(struct DecorImage *oni, UWORD neww, UWORD newh)
+{
+    struct  DecorImage *ni;
+
+    ni = AllocVec(sizeof(struct DecorImage), MEMF_ANY | MEMF_CLEAR);
     if (ni)
     {
         ni->w = neww;
@@ -187,11 +287,22 @@ struct NewImage *ScaleNewImage(struct NewImage * oni, UWORD neww, UWORD newh)
     return ni;
 }
 
-struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
-    ULONG expectedsubimagescols, ULONG expectedsubimagesrows)
+AROS_LH3(struct DecorImage *, DScaleNewImage,
+    AROS_LHA(struct DecorImage *, oni, A0),
+    AROS_LHA(UWORD, neww, D0),
+    AROS_LHA(UWORD, newh, D1),
+    struct Library *, DecoratorBase, 7, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    return ScaleNewImage(oni, neww, newh);
+    AROS_LIBFUNC_EXIT
+}
+
+/* Internal implementation of GetImageFromFile */
+struct DecorImage *GetImageFromFile(STRPTR path, STRPTR name, ULONG expectedsubimagescols, ULONG expectedsubimagesrows)
 {
     struct BitMapHeader        *bmhd = NULL;
-    struct NewImage            *ni = NULL;
+    struct DecorImage            *ni = NULL;
     struct BitMap              *map = NULL;
     struct RastPort            *rp = NULL;
     Object                     *pic;
@@ -273,45 +384,24 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
     return ni;
 }
 
-static Object * LoadPicture(CONST_STRPTR filename, struct Screen *scr)
+AROS_LH4(struct DecorImage *, DGetImageFromFile,
+    AROS_LHA(STRPTR, path, A0),
+    AROS_LHA(STRPTR, name, A1),
+    AROS_LHA(ULONG, expectedsubimagescols, D0),
+    AROS_LHA(ULONG, expectedsubimagesrows, D1),
+    struct Library *, DecoratorBase, 9, Decorator)
 {
-    Object *o;
-
-    o = NewDTObject((APTR)filename,
-                    DTA_GroupID          , GID_PICTURE,
-                    OBP_Precision        , PRECISION_EXACT,
-                    PDTA_Screen          , (IPTR)scr,
-                    PDTA_FreeSourceBitMap, TRUE,
-                    PDTA_DestMode        , PMODE_V43,
-                    PDTA_UseFriendBitMap , TRUE,
-                    TAG_DONE);
-
-    if (o)
-    {
-        struct FrameInfo fri = {0};
-        
-        D(bug("DTM_FRAMEBOX\n", o));
-        DoMethod(o,DTM_FRAMEBOX,NULL,(IPTR)&fri,(IPTR)&fri,sizeof(struct FrameInfo),0);
-        
-        if (fri.fri_Dimensions.Depth > 0)
-        {
-            D(bug("DTM_PROCLAYOUT\n", o));
-            if (DoMethod(o,DTM_PROCLAYOUT,NULL,1))
-            {
-                return o;
-            }
-        }
-        DisposeDTObject(o);
-    }
-
-    return NULL;
+    AROS_LIBFUNC_INIT
+    return GetImageFromFile(path, name, expectedsubimagescols, expectedsubimagesrows);
+    AROS_LIBFUNC_EXIT
 }
 
 /* This function must never return NULL, because logic in drawing code
    checks img->ok instead of img != NULL to make decisions */
-struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOOL truecolor, struct Screen* scr)
+/* Internal implementation of CreateNewImageContainerMatchingScreen */
+struct DecorImage *CreateNewImageContainerMatchingScreen(struct DecorImage *in, BOOL truecolor, struct Screen *scr)
 {
-    struct NewImage * out = AllocVec(sizeof(struct NewImage), MEMF_ANY | MEMF_CLEAR);
+    struct DecorImage * out = AllocVec(sizeof(struct DecorImage), MEMF_ANY | MEMF_CLEAR);
     out->ok = FALSE;
 
     if (in != NULL)
@@ -441,7 +531,19 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
     return out;
 }
 
-struct Region *RegionFromLUT8Image(int w, int h, struct NewLUT8Image *s)
+AROS_LH3(struct DecorImage *, DCreateNewImageContainerMatchingScreen,
+    AROS_LHA(struct DecorImage *, in, A0),
+    AROS_LHA(BOOL, truecolor, D0),
+    AROS_LHA(struct Screen *, scr, A1),
+    struct Library *, DecoratorBase, 10, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    return CreateNewImageContainerMatchingScreen(in, truecolor, scr);
+    AROS_LIBFUNC_EXIT
+}
+
+/* Internal implementation of RegionFromLUT8Image */
+struct Region *RegionFromLUT8Image(int w, int h, struct DecorImageLUT8 *s)
 {
     struct Region  *shape;
     int             x, y;
@@ -492,4 +594,15 @@ struct Region *RegionFromLUT8Image(int w, int h, struct NewLUT8Image *s)
         }
     }
     return shape;
+}
+
+AROS_LH3(struct Region *, DRegionFromLUT8Image,
+    AROS_LHA(int, w, D0),
+    AROS_LHA(int, h, D1),
+    AROS_LHA(struct DecorImageLUT8 *, s, A0),
+    struct Library *, DecoratorBase, 13, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    return RegionFromLUT8Image(w, h, s);
+    AROS_LIBFUNC_EXIT
 }

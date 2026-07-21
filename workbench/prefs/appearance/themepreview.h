@@ -2,7 +2,7 @@
 #define _THEMEPREVIEW_H_
 
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 

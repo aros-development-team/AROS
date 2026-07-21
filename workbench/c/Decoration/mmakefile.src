@@ -5,16 +5,13 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES := \
             decoration \
-            windowdecorclass \
             screendecorclass \
-            menudecorclass \
-            newimagefuncs \
-            drawfuncs \
-            config \
+            windowdecorclass \
+            menudecorclass
 
 EXEDIR := $(AROS_C)
 
-#MM workbench-c-decoration : includes linklibs kernel-hidd-gfx-includes
+#MM workbench-c-decoration : includes linklibs workbench-libs-decorator-includes workbench-libs-decortheme-includes
 
 #MM- workbench-c : workbench-c-decoration
 

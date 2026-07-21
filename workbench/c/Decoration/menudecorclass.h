@@ -1,5 +1,5 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright  2011-2026, The AROS Development Team.
 */
 
 #ifndef MENUDECORCLASS_H
@@ -9,18 +9,18 @@
 #include <intuition/intuition.h>
 #include <intuition/classes.h>
 
-#include "newimage.h"
+#include <libraries/decortheme.h>
 
 struct MenuData
 {
-    struct NewImage *ni;
+    struct DecorImage *ni;
     struct BitMap   *map;
 
-    struct NewImage *img_menu;
+    struct DecorImage *img_menu;
     struct TileInfo *img_menu_ti;
-    struct NewImage *img_amigakey;
-    struct NewImage *img_menucheck;
-    struct NewImage *img_submenu;
+    struct DecorImage *img_amigakey;
+    struct DecorImage *img_menucheck;
+    struct DecorImage *img_submenu;
     LONG   ActivePen;
     LONG   DeactivePen;
     BOOL   truecolor;
@@ -29,6 +29,7 @@ struct MenuData
 
 #define MDA_DecorImages     0x10003
 #define MDA_DecorConfig     0x10004
+#define MDA_DecorTheme      0x10005
 
 struct IClass * MakeMenuDecorClass();
 #endif

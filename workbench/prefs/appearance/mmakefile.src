@@ -1,4 +1,4 @@
-# Copyright (C) 2013, The AROS Development Team. All rights reserved.
+# Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -9,7 +9,8 @@ EXEDIR := $(AROS_PREFS)
 USER_CFLAGS := $(PARANOIA_CFLAGS)
 
 #MM- workbench-prefs : workbench-prefs-appearance
-#MM workbench-prefs-appearance : includes linklibs workbench-prefs-appearance-catalogs
+#MM workbench-prefs-appearance : includes linklibs workbench-prefs-appearance-catalogs \
+#MM     workbench-libs-decorator-includes workbench-libs-decortheme-includes
 
 %build_prog mmake=workbench-prefs-appearance \
     progname=Appearance targetdir=$(EXEDIR) \

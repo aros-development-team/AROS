@@ -1,5 +1,7 @@
 /*
-    Copyright  2011-2023, The AROS Development Team.
+    Copyright (C) 2011-2026, The AROS Development Team.
+
+    Desc: decortheme.library - theme configuration parsing
 */
 
 #include <proto/dos.h>
@@ -9,8 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "newimage.h"
-#include "config.h"
+#include <libraries/decortheme.h>
+#include "decortheme_intern.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -507,7 +509,7 @@ struct DecorConfig * LoadConfig(STRPTR path)
     D(bug("Decoration/LoadConfig: system config loaded\n"));
 
     return dc;
-};
+}
 
 void FreeConfig(struct DecorConfig * dc)
 {
@@ -515,89 +517,4 @@ void FreeConfig(struct DecorConfig * dc)
         FreeVec(dc->ThemePath);
 
     FreeVec(dc);
-}
-
-struct DecorImages * NewImages()
-{
-    return AllocVec(sizeof(struct DecorImages), MEMF_ANY | MEMF_CLEAR);
-}
-
-struct DecorImages * LoadImages(struct DecorConfig * dc)
-{
-    ULONG   wgsubimagecols = 4; /* Default value of subimage cols in window gadget */
-    STRPTR  path = dc->ThemePath;
-
-    struct DecorImages * di = NewImages();
-
-    if (!di)
-        return NULL;
-        
-    if (dc->GadgetsThreeState) wgsubimagecols = 3;
-
-    di->img_sdepth = GetImageFromFile(path, "System/SDepth/Default", 2, 1);
-    di->img_stitlebar = GetImageFromFile(path, "System/STitlebar/Default", 1, 1);
-    di->img_sbarlogo = GetImageFromFile(path, "System/SBarLogo/Default", 1, 1);
-
-    di->img_size = GetImageFromFile(path, "System/Size/Default", wgsubimagecols, 1);
-    di->img_close = GetImageFromFile(path, "System/Close/Default", wgsubimagecols, 1);
-    di->img_depth = GetImageFromFile(path, "System/Depth/Default", wgsubimagecols, 1);
-    di->img_zoom = GetImageFromFile(path, "System/Zoom/Default", wgsubimagecols, 1);
-    di->img_mui = GetImageFromFile(path, "System/MUI/Default", wgsubimagecols, 1);
-    di->img_popup = GetImageFromFile(path, "System/PopUp/Default", wgsubimagecols, 1);
-    di->img_snapshot = GetImageFromFile(path, "System/Snapshot/Default", wgsubimagecols, 1);
-    di->img_iconify = GetImageFromFile(path, "System/Iconify/Default", wgsubimagecols, 1);
-    di->img_lock = GetImageFromFile(path, "System/Lock/Default", wgsubimagecols, 1);
-    di->img_up = GetImageFromFile(path, "System/ArrowUp/Default", wgsubimagecols, 1);
-    di->img_down = GetImageFromFile(path, "System/ArrowDown/Default", wgsubimagecols, 1);
-    di->img_left = GetImageFromFile(path, "System/ArrowLeft/Default", wgsubimagecols, 1);
-    di->img_right = GetImageFromFile(path, "System/ArrowRight/Default", wgsubimagecols, 1);
-    di->img_winbar_normal = GetImageFromFile(path, "System/Titlebar/Default", 1, 2);
-    di->img_border_normal = GetImageFromFile(path, "System/Borders/Default", 1, 1);
-    di->img_border_deactivated = GetImageFromFile(path, "System/Borders/Default_Deactivated", 1, 1);
-    di->img_verticalcontainer = GetImageFromFile(path, "System/Container/Vertical", 2, 1);
-    di->img_verticalknob = GetImageFromFile(path, "System/Knob/Vertical", 3, 1);
-    di->img_horizontalcontainer = GetImageFromFile(path, "System/Container/Horizontal", 1, 2);
-    di->img_horizontalknob = GetImageFromFile(path, "System/Knob/Horizontal", 1, 3);
-
-    di->img_menu = GetImageFromFile(path, "Menu/Background/Default", 1, 1);
-    di->img_amigakey = GetImageFromFile(path, "Menu/AmigaKey/Default", 1, 1);
-    di->img_menucheck = GetImageFromFile(path, "Menu/Checkmark/Default", 1, 1);
-    di->img_submenu = GetImageFromFile(path, "Menu/SubMenu/Default", 1, 1);
-    
-    return di;
-}
-
-void FreeImages(struct DecorImages * di)
-{
-    DisposeImageContainer(di->img_sdepth);
-    DisposeImageContainer(di->img_sbarlogo);
-    DisposeImageContainer(di->img_stitlebar);
-
-    DisposeImageContainer(di->img_size);
-    DisposeImageContainer(di->img_close);
-    DisposeImageContainer(di->img_depth);
-    DisposeImageContainer(di->img_zoom);
-    DisposeImageContainer(di->img_up);
-    DisposeImageContainer(di->img_down);
-    DisposeImageContainer(di->img_left);
-    DisposeImageContainer(di->img_right);
-    DisposeImageContainer(di->img_mui);
-    DisposeImageContainer(di->img_popup);
-    DisposeImageContainer(di->img_snapshot);
-    DisposeImageContainer(di->img_iconify);
-    DisposeImageContainer(di->img_lock);
-    DisposeImageContainer(di->img_winbar_normal);
-    DisposeImageContainer(di->img_border_normal);
-    DisposeImageContainer(di->img_border_deactivated);
-    DisposeImageContainer(di->img_verticalcontainer);
-    DisposeImageContainer(di->img_verticalknob);
-    DisposeImageContainer(di->img_horizontalcontainer);
-    DisposeImageContainer(di->img_horizontalknob);
-
-    DisposeImageContainer(di->img_menu);
-    DisposeImageContainer(di->img_amigakey);
-    DisposeImageContainer(di->img_menucheck);
-    DisposeImageContainer(di->img_submenu);
-    
-    FreeVec(di);
 }

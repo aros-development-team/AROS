@@ -1,5 +1,7 @@
 /*
-    Copyright (C) 2011-2023, The AROS Development Team.
+    Copyright (C) 2011-2026, The AROS Development Team.
+
+    Desc: decorator.library - drawing functions
 */
 
 #define DEBUG 0
@@ -16,9 +18,12 @@
 
 #include <hidd/gfx.h>
 
+#include <aros/libcall.h>
+
 #include <math.h>
 
-#include "drawfuncs.h"
+#include <libraries/decorator.h>
+#include "decorator_intern.h"
 
 #define DECOR_USELINEBUFF
 //#define DECOR_FAKESHADE
@@ -30,31 +35,9 @@
 // D = A + B + C
 #define BLIT_MINTERM_COPYTM      0xE0
 
-#if AROS_BIG_ENDIAN
-#define GET_ARGB_A(rgb) ((rgb >> 24) & 0xff)
-#define GET_ARGB_R(rgb) ((rgb >> 16) & 0xff)
-#define GET_ARGB_G(rgb) ((rgb >> 8) & 0xff)
-#define GET_ARGB_B(rgb) (rgb & 0xff)
-#define SET_ARGB(a, r, g, b) (a << 24 | r << 16 | g << 8 | b)
-#define GET_ARCH_A GET_ARGB_A
-#define GET_ARCH_R GET_ARGB_R
-#define GET_ARCH_G GET_ARGB_G
-#define GET_ARCH_B GET_ARGB_B
-#else
-#define GET_ARGB_A(rgb) (rgb & 0xff)
-#define GET_ARGB_R(rgb) ((rgb >> 8) & 0xff)
-#define GET_ARGB_G(rgb) ((rgb >> 16) & 0xff)
-#define GET_ARGB_B(rgb) ((rgb >> 24) & 0xff)
-#define GET_ARCH_A GET_ARGB_B
-#define GET_ARCH_R GET_ARGB_G
-#define GET_ARCH_G GET_ARGB_R
-#define GET_ARCH_B GET_ARGB_A
-#define SET_ARGB(a, r, g, b) (b << 24 | g << 16 | r << 8 | a)
-#endif
-
 struct ShadeData
 {
-    struct NewImage     *ni;
+    struct DecorImage     *ni;
     struct BitMap     *rpBm;
     UWORD               offy;
     UWORD               fact;
@@ -76,12 +59,12 @@ struct layerhookmsg
     LONG OffsetX, OffsetY;
 };
 
-/* This function provides a number of ways to blit a NewImage onto RastPort. Please take great care when modifying it.
+/* This function provides a number of ways to blit a DecorImage onto RastPort. Please take great care when modifying it.
  *
  * The number of combinations of arguments is quite high. Please take time to understand it.
  *
  * Arguments:
- * ni - a NewImage that is to be blitted
+ * ni - a DecorImage that is to be blitted
  * subimageCol, subimageRow - define the initial read offset in source image based on assumption that image contains
  *                            a number of subimages drawn in rows or columns
  * xSrc, ySrc - define additional read offset in the source image subimage
@@ -91,7 +74,7 @@ struct layerhookmsg
  * widthDest, heightDest - width/height of blit on destination RastPort, if -1 then use widthSrc/heightSrc
  *
  */
-static void BltScaleNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+static void BltScaleNewImageSubImageRastPort(struct DecorImage * ni, ULONG subimageCol, ULONG subimageRow,
         LONG xSrc, LONG ySrc, struct RastPort * destRP, LONG xDest, LONG yDest,
         LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest)
 {
@@ -164,21 +147,21 @@ static void BltScaleNewImageSubImageRastPort(struct NewImage * ni, ULONG subimag
 }
 
 /* HELPER WRAPPERS */
-static inline void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+static inline void BltNewImageSubImageRastPort(struct DecorImage * ni, ULONG subimageCol, ULONG subimageRow,
         LONG xSrc, LONG ySrc, struct RastPort * destRP, LONG xDest, LONG yDest, LONG widthSrc, LONG heightSrc)
 {
     BltScaleNewImageSubImageRastPort(ni, subimageCol, subimageRow, xSrc, ySrc, destRP,
             xDest, yDest, widthSrc, heightSrc, -1, -1);
 }
 
-static inline void BltNewImageSubImageRastPortSimple(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+static inline void BltNewImageSubImageRastPortSimple(struct DecorImage * ni, ULONG subimageCol, ULONG subimageRow,
     struct RastPort * destRP, LONG xDest, LONG yDest)
 {
     BltNewImageSubImageRastPort(ni, subimageCol, subimageRow, 0, 0, destRP,
             xDest, yDest, -1, -1);
 }
 
-static inline void BltScaleNewImageSubImageRastPortSimple(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+static inline void BltScaleNewImageSubImageRastPortSimple(struct DecorImage * ni, ULONG subimageCol, ULONG subimageRow,
     struct RastPort * destRP, LONG xDest, LONG yDest, LONG widthDest, LONG heightDest)
 {
     BltScaleNewImageSubImageRastPort(ni, subimageCol, subimageRow, 0, 0, destRP,
@@ -186,7 +169,7 @@ static inline void BltScaleNewImageSubImageRastPortSimple(struct NewImage * ni, 
 }
 /* HELPER WRAPPERS */
 
-static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
+static void DrawTileToImage(struct DecorImage *src, struct DecorImage *dest, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
 {
 
     ULONG   dy, dx;
@@ -217,7 +200,7 @@ static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _
     }
 }
 
-static void TileImageToImageMenuBar(struct NewImage *src, struct TileInfo * srcti, struct NewImage *dest)
+static void TileImageToImageMenuBar(struct DecorImage *src, struct TileInfo * srcti, struct DecorImage *dest)
 {
     UWORD   y, h;
 
@@ -242,7 +225,7 @@ static void TileImageToImageMenuBar(struct NewImage *src, struct TileInfo * srct
 
 }
 
-static void TileImageToImage(struct NewImage *src, struct TileInfo * srcti, struct NewImage *dest)
+static void TileImageToImage(struct DecorImage *src, struct TileInfo * srcti, struct DecorImage *dest)
 {
     UWORD   y, h;
 
@@ -268,66 +251,31 @@ static void TileImageToImage(struct NewImage *src, struct TileInfo * srcti, stru
     DrawTileToImage(src, dest, srcti->TileLeft, y + srcti->TileTop, src->w - srcti->TileLeft - srcti->TileRight, h - srcti->TileBottom - srcti->TileTop, srcti->TileLeft, srcti->TileTop + 0, dest->w - srcti->TileLeft - srcti->TileRight, dest->h - srcti->TileTop - srcti->TileBottom - 0);
 }
 
-static void  MixImage(struct NewImage *dst, struct NewImage *src, struct TileInfo *srcti, UWORD ratio, UWORD w, UWORD h, UWORD dx, UWORD dy)
+static void  MixImage(struct DecorImage *dst, struct DecorImage *src, struct TileInfo *srcti, UWORD ratio, UWORD w, UWORD h, UWORD dx, UWORD dy)
 {
-    ULONG  *s, *d;
-    ULONG   rgba, rgb;
-    UWORD   r, g, b;
-    UBYTE   as, rs, gs, bs, rd, gd, bd;
     BOOL    tiled = FALSE;
-    int     x, y;
+    int     y;
 
     if (src == NULL) return;
     if (dst == NULL) return;
-
-    s = src->data;
-    d = dst->data;
 
     if (srcti) tiled = TRUE;
 
     for (y = 0; y < h; y++)
     {
-        for (x = 0; x < w; x++)
-        {
-            rgba = s[x+y*src->w];
-            as = GET_ARGB_A(rgba);
-            rs = GET_ARGB_R(rgba);
-            gs = GET_ARGB_G(rgba);
-            bs = GET_ARGB_B(rgba);
-            rgb = d[x+dx + (y+dy) * dst->w];
-
-            rd = GET_ARGB_R(rgb);
-            gd = GET_ARGB_G(rgb);
-            bd = GET_ARGB_B(rgb);
-
-            r = ((rs * ratio) >> 8) + ((rd * (255 - ratio)) >> 8);
-            g = ((gs * ratio) >> 8) + ((gd * (255 - ratio)) >> 8);
-            b = ((bs * ratio) >> 8) + ((bd * (255 - ratio)) >> 8);
-
-            if (tiled) {
-                r = ((r * as) >> 8) + ((rd * (255 - as)) >> 8);
-                g = ((g * as) >> 8) + ((gd * (255 - as)) >> 8);
-                b = ((b * as) >> 8) + ((bd * (255 - as)) >> 8);
-            }
-
-            r = r & 0xff;
-            g = g & 0xff;
-            b = b & 0xff;
-
-            d[x+dx + (y+dy) * dst->w] = SET_ARGB(as, r, g, b);
-        }
+        pixop_mix_row(dst->data + dx + (ULONG)(y + dy) * dst->w,
+                      src->data + (ULONG)y * src->w, w, ratio, tiled);
     }
 }
 
 
-static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *texture, struct TileInfo * textureti, UWORD ratio)
+static void BlurSourceAndMixTexture(struct DecorImage *pic, struct DecorImage *texture, struct TileInfo * textureti, UWORD ratio)
 {
-    int     x, y, ytw, t1, t2, b1, b2, l1, l2, r1, r2;
-    UWORD   red, green, blue, alpha= 0, rs, gs, bs, as;
-    ULONG   rgb, argb;
+    LONG    y;
     int     width, w, height, ah, aw, xpos, ypos;
     BOOL    tiled = FALSE;
-    ULONG  *raw, tw, th;
+    ULONG  *raw;
+    LONG    tw, th;
 
     if (pic == NULL) return;
     if (pic->data == NULL) return;
@@ -341,128 +289,41 @@ static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *textu
 
     if (raw)
     {
-        for (y = 0; y < th; y++)
+        /* Rows are blurred in place; keep copies of the unmodified current
+           and two previous rows so the blur kernel always reads original
+           source data */
+        ULONG *rowbufs = AllocVec(tw * sizeof(ULONG) * 3, MEMF_ANY);
+
+        if (rowbufs)
         {
-            t1 = tw;
-            t2 = tw+tw;
-            b1 = tw;
-            b2 = tw+tw;
-            if (y == 0) t1 = t2 = 0;
-            else if (y == 1) t2 = t1;
+            ULONG *rm2 = rowbufs;
+            ULONG *rm1 = rowbufs + tw;
+            ULONG *rcur = rowbufs + (tw * 2);
 
-            if (y == (th-1)) b1 = b2 = 0;
-            else if (y == (th-2)) b2 = b1;
-
-            ytw = y*tw;
-
-            for (x = 0; x < tw; x++)
+            for (y = 0; y < th; y++)
             {
-                r1 = 1;
-                r2 = 2;
-                l1 = 1;
-                l2 = 2;
+                const ULONG *prow1, *prow2, *prowb1, *prowb2, *texrow;
+                ULONG *rotate;
 
-                if (x == 0) l1 = r1 = 0;
-                else if (x == 1) l2 = l1;
+                CopyMem(&raw[(ULONG)y * tw], rcur, tw * sizeof(ULONG));
 
-                if (x == (tw-1)) r1 = r2 = 0;
-                else if (x == (tw-2)) r2 = r1;
+                /* Clamp row taps at the image edges */
+                prow1 = (y >= 1) ? rm1 : rcur;
+                prow2 = (y >= 2) ? rm2 : prow1;
+                prowb1 = (y < th - 1) ? &raw[(ULONG)(y + 1) * tw] : rcur;
+                prowb2 = (y < th - 2) ? &raw[(ULONG)(y + 2) * tw] : prowb1;
+                texrow = tiled ? &texture->data[(ULONG)y * texture->w] : NULL;
 
-                rgb = raw[x+ytw];
-                red = GET_ARGB_R(rgb);
-                green = GET_ARGB_G(rgb);
-                blue = GET_ARGB_B(rgb);
+                pixop_blur14mix_row(&raw[(ULONG)y * tw], prow2, prow1, rcur,
+                                    prowb1, prowb2, texrow, tw);
 
-                rgb = raw[x+ytw-t2];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw-l1-t1];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw-t1];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw-t1];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw-t1+r1];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw-l2];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw-l1];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw+r1];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw+r2];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw+b1-l1];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw+b1];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw+b1+r1];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                rgb = raw[x+ytw+b2];
-                red += GET_ARGB_R(rgb);
-                green += GET_ARGB_G(rgb);
-                blue += GET_ARGB_B(rgb);
-
-                red = red/14;
-                green = green/14;
-                blue = blue/14;
-                alpha = 255;
-
-                if (tiled)
-                {
-                    argb = raw[x+ytw];
-                    as = 255 - GET_ARGB_A(texture->data[x + y * texture->w]);
-                    rs = GET_ARGB_R(argb);
-                    gs = GET_ARGB_G(argb);
-                    bs = GET_ARGB_B(argb);
-
-                    red = ((rs * as) >> 8) + ((red * (255 - as)) >> 8);
-                    green = ((gs * as) >> 8) + ((green * (255 - as)) >> 8);
-                    blue = ((bs * as) >> 8) + ((blue * (255 - as)) >> 8);
-
-                    raw[x+ytw] = SET_ARGB(as, red, green, blue);
-
-                }
-                else
-                {
-                    raw[x+ytw] = SET_ARGB(alpha, red, green, blue);
-                }
+                rotate = rm2;
+                rm2 = rm1;
+                rm1 = rcur;
+                rcur = rotate;
             }
+
+            FreeVec(rowbufs);
         }
     }
     if (ratio < 100)
@@ -491,10 +352,10 @@ static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *textu
     }
 }
 
-static void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti,
-        UWORD ratio, VOID (*TileImageToImageFunc)(struct NewImage *src, struct TileInfo * srcti, struct NewImage *dest))
+static void RenderBackgroundTiled(struct DecorImage *pic, struct DecorImage *texture, struct TileInfo *textureti,
+        UWORD ratio, VOID (*TileImageToImageFunc)(struct DecorImage *src, struct TileInfo * srcti, struct DecorImage *dest))
 {
-    struct NewImage *ni;
+    struct DecorImage *ni;
 
     if (texture)
     {
@@ -515,7 +376,7 @@ static void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture
     else BlurSourceAndMixTexture(pic, NULL, NULL, ratio);
 }
 
-static void DrawMapTileToRP(struct NewImage *src, struct RastPort *rp, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
+static void DrawMapTileToRP(struct DecorImage *src, struct RastPort *rp, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
 {
 
     ULONG   dy, dx;
@@ -560,7 +421,7 @@ static void DrawMapTileToRP(struct NewImage *src, struct RastPort *rp, UWORD _sx
 /******************************************************************************/
 /******************************************************************************/
 
-void DrawPartImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD y, UWORD sx, UWORD sy, UWORD sw, UWORD sh)
+void DrawPartImageToRP(struct RastPort *rp, struct DecorImage *ni, UWORD x, UWORD y, UWORD sx, UWORD sy, UWORD sw, UWORD sh)
 {
     if (ni->ok)
     {
@@ -575,20 +436,19 @@ void DrawPartImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD 
     }
 }
 
-void DrawPartToImage(struct NewImage *src, struct NewImage *dest, UWORD sx, UWORD sy, UWORD sw, UWORD sh, UWORD dx, UWORD dy)
+void DrawPartToImage(struct DecorImage *src, struct DecorImage *dest, UWORD sx, UWORD sy, UWORD sw, UWORD sh, UWORD dx, UWORD dy)
 {
-    UWORD   x, y;
+    UWORD   y;
 
     for (y = 0; y < sh; y++)
     {
-        for (x = 0; x < sw; x++)
-        {
-            dest->data[dx  + x + (dy + y) * dest->w] = src->data[sx + x + (sy + y) * src->w];
-        }
+        CopyMem(&src->data[sx + (ULONG)(sy + y) * src->w],
+                &dest->data[dx + (ULONG)(dy + y) * dest->w],
+                (ULONG)sw * sizeof(ULONG));
     }
 }
 
-void RenderMenuBackground(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio)
+void RenderMenuBackground(struct DecorImage *pic, struct DecorImage *texture, struct TileInfo *textureti, UWORD ratio)
 {
     if (texture)
     {
@@ -598,7 +458,7 @@ void RenderMenuBackground(struct NewImage *pic, struct NewImage *texture, struct
     else BlurSourceAndMixTexture(pic, NULL, NULL, ratio);
 }
 
-void RenderMenuBarBackground(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio)
+void RenderMenuBarBackground(struct DecorImage *pic, struct DecorImage *texture, struct TileInfo *textureti, UWORD ratio)
 {
     if (texture && textureti)
     {
@@ -613,62 +473,25 @@ void RenderMenuBarBackground(struct NewImage *pic, struct NewImage *texture, str
     }
 }
 
-void WriteAlphaPixelArray(struct NewImage *src, struct NewLUT8Image *dst, LONG sx, LONG sy, LONG dx, LONG dy, LONG w, LONG h)
+void WriteAlphaPixelArray(struct DecorImage *src, struct DecorImageLUT8 *dst, LONG sx, LONG sy, LONG dx, LONG dy, LONG w, LONG h)
 {
-    ULONG  *s = src->data;
-    ULONG   argb;
-    UBYTE  *d = dst->data;
-    int     x, y;
+    int     y;
 
     for (y = 0; y < h; y++)
     {
-        for (x = 0; x < w; x++)
-        {
-            argb = s[sx + x + (sy + y) * src->w];
-            d[dx + x + (dy + y) * dst->w] = GET_ARGB_A(argb);
-        }
+        pixop_extract_alpha_row(dst->data + dx + (ULONG)(dy + y) * dst->w,
+                                src->data + sx + (ULONG)(sy + y) * src->w, w);
     }
 }
 
-void  SetImageTint(struct NewImage *dst, UWORD ratio, ULONG argb)
+void  SetImageTint(struct DecorImage *dst, UWORD ratio, ULONG argb)
 {
-
-    ULONG  *d;
-    ULONG   rgb;
-    UWORD   r, g, b, w, h;
-    UBYTE   rs, gs, bs, rd, gd, bd;
-    int     x, y;
+    int     y;
 
     if (dst == NULL) return;
-   
-    d = dst->data;
 
-    w = dst->w;
-    h = dst->h;
-   
-    rs = (argb >> 16) & 0xff;
-    gs = (argb >> 8) & 0xff;
-    bs = argb & 0xff;
-   
-    for (y = 0; y < h; y++)
-    {
-        for (x = 0; x < w; x++)
-        {
-            rgb = d[x + y * w];
-            rd = GET_ARGB_R(rgb);
-            gd = GET_ARGB_G(rgb);
-            bd = GET_ARGB_B(rgb);
-            r = ((rs * ratio) >> 8) + ((rd * (255 - ratio)) >> 8);
-            g = ((gs * ratio) >> 8) + ((gd * (255 - ratio)) >> 8);
-            b = ((bs * ratio) >> 8) + ((bd * (255 - ratio)) >> 8);
-
-            r = r & 0xff;
-            g = g & 0xff;
-            b = b & 0xff;
-
-            d[x + y * w] = SET_ARGB(255, r, g, b);
-        }
-    }
+    for (y = 0; y < dst->h; y++)
+        pixop_tint_row(dst->data + (ULONG)y * dst->w, dst->w, argb, ratio);
 }
 
 /*
@@ -676,7 +499,7 @@ void  SetImageTint(struct NewImage *dst, UWORD ratio, ULONG argb)
  * offy - offset between start of ni and place where image should be sample from
  * x, y, w, h - coords in rastport rp
  */
-void HorizVertRepeatNewImage(struct NewImage *ni, ULONG color, UWORD offx, UWORD offy, struct RastPort *rp, UWORD x, UWORD y, WORD w, WORD h)
+void HorizVertRepeatNewImage(struct DecorImage *ni, ULONG color, UWORD offx, UWORD offy, struct RastPort *rp, UWORD x, UWORD y, WORD w, WORD h)
 {
     ULONG   ow, oh, sy, sx, dy, dx;
     LONG    dh, height, dw, width;
@@ -724,9 +547,10 @@ void HorizVertRepeatNewImage(struct NewImage *ni, ULONG color, UWORD offx, UWORD
 
 /* NOTE: fill parameter is ignored, previously it was forcing a no-alpha blit, but
    this is already handled in BltNewImageSubImageRastPort */
+/* clipw - if > 0 nothing is drawn beyond this x extent */
 /* dh - destination height to which subimage will be scaled to */
-LONG WriteTiledImageTitle(BOOL fill, struct Window *win,
-    struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw,
+LONG WriteTiledImageTitle(BOOL fill, LONG clipw,
+    struct RastPort *rp, struct DecorImage *ni, LONG sx, LONG sy, LONG sw,
     LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
 {
     int     w = dw;
@@ -737,10 +561,10 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win,
 
     if ((sw == 0) || (dw == 0)) return xp;
 
-    if (win)
+    if (clipw > 0)
     {
-        if (x > win->Width) return xp;
-        if ((x + w) > win->Width) w = win->Width - x;
+        if (x > clipw) return xp;
+        if ((x + w) > clipw) w = clipw - x;
     }
 
     while (w > 0)
@@ -759,7 +583,7 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win,
 /*
  * dh - destination height to scale to, -1 to use subimage height
  */
-LONG WriteVerticalScaledTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, ULONG subimage,
+LONG WriteVerticalScaledTiledImageHorizontal(struct RastPort *rp, struct DecorImage *ni, ULONG subimage,
         LONG sx, LONG sw, LONG xp, LONG yp, LONG sh, LONG dw, LONG dh)
 {
     LONG w = dw;
@@ -784,12 +608,12 @@ LONG WriteVerticalScaledTiledImageHorizontal(struct RastPort *rp, struct NewImag
     return x;
 }
 
-LONG WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw)
+LONG WriteTiledImageHorizontal(struct RastPort *rp, struct DecorImage *ni, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw)
 {
     return WriteVerticalScaledTiledImageHorizontal(rp, ni, subimage, sx, sw, xp, yp, -1, dw, -1);
 }
 
-LONG WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, ULONG subimage, LONG sy, LONG sh, LONG xp, LONG yp, LONG dh)
+LONG WriteTiledImageVertical(struct RastPort *rp, struct DecorImage *ni, ULONG subimage, LONG sy, LONG sh, LONG xp, LONG yp, LONG dh)
 {
     int     h = dh;
     int     y = yp;
@@ -985,8 +809,7 @@ void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LON
 void HorizRepeatBuffer(UBYTE * buf, LONG offy, LONG pen, BOOL tc, struct RastPort *rp, LONG x, LONG y, LONG w, LONG h)
 {
     UBYTE * bufblit = NULL;
-    ULONG xi, yi;
-    ULONG idxd;
+    ULONG yi;
     ULONG idxs;
 
     if ((w <= 0) || (h <= 0)) return;
@@ -1003,17 +826,25 @@ void HorizRepeatBuffer(UBYTE * buf, LONG offy, LONG pen, BOOL tc, struct RastPor
     if (!bufblit)
         return;
     
-    /* Copy one column buffer into blit buffer */
+    /* Copy one column buffer into blit buffer; each row is a single RGB
+       value repeated, so write the first pixel and then double the filled
+       region until the row is full */
     for (yi = 0; yi < h; yi++)
     {
+        UBYTE *row = bufblit + ((ULONG)yi * w * 3);
+        LONG rowlen = w * 3;
+        LONG filled, copylen;
+
         idxs = (offy + yi) * 3; /* source index */
-        idxd = yi * 3 * w; /* dest index */
-        for (xi = 0; xi < w; xi++)
+        row[0] = buf[idxs + 0];
+        row[1] = buf[idxs + 1];
+        row[2] = buf[idxs + 2];
+
+        for (filled = 3; filled < rowlen; filled += copylen)
         {
-            /* Copy RGB pixel */
-            bufblit[idxd++] = buf[idxs + 0];
-            bufblit[idxd++] = buf[idxs + 1];
-            bufblit[idxd++] = buf[idxs + 2];
+            copylen = filled;
+            if (copylen > rowlen - filled) copylen = rowlen - filled;
+            CopyMem(row, row + filled, copylen);
         }
     }
     
@@ -1022,7 +853,7 @@ void HorizRepeatBuffer(UBYTE * buf, LONG offy, LONG pen, BOOL tc, struct RastPor
     FreeVec(bufblit);
 }
 
-void TileMapToBitmap(struct NewImage *src, struct TileInfo *srcti, struct BitMap *map, UWORD dw, UWORD dh)
+void TileMapToBitmap(struct DecorImage *src, struct TileInfo *srcti, struct BitMap *map, UWORD dw, UWORD dh)
 {
     UWORD   y, h;
 
@@ -1056,9 +887,9 @@ void TileMapToBitmap(struct NewImage *src, struct TileInfo *srcti, struct BitMap
     }
 }
 
-struct NewImage *GetImageFromRP(struct RastPort *rp, UWORD x, UWORD y, UWORD w, UWORD h)
+struct DecorImage *GetImageFromRP(struct RastPort *rp, UWORD x, UWORD y, UWORD w, UWORD h)
 {
-    struct NewImage *ni;
+    struct DecorImage *ni;
 
     ni = NewImageContainer(w, h);
     if (ni)
@@ -1068,7 +899,7 @@ struct NewImage *GetImageFromRP(struct RastPort *rp, UWORD x, UWORD y, UWORD w, 
     return ni;
 }
 
-void PutImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD y) {
+void PutImageToRP(struct RastPort *rp, struct DecorImage *ni, UWORD x, UWORD y) {
 
     if (ni)
     {
@@ -1217,6 +1048,28 @@ AROS_UFH3(void, RectShadeFunc,
         }
 
 #endif
+#if defined(DECOR_USELINEBUFF) && !defined(DECOR_FAKESHADE)
+        if (outline && (width > 1))
+        {
+            /* Shade the whole scanline via the row kernel, split into
+               segments where the source image wraps around */
+            LONG niw = data->ni->w;
+            const ULONG *srow = data->ni->data + ((ULONG)y * niw);
+            LONG remaining = width, oidx = 0;
+            LONG sx = ((src_offset_x % niw) + niw) % niw;
+
+            while (remaining > 0)
+            {
+                LONG seg = niw - sx;
+                if (seg > remaining) seg = remaining;
+                pixop_shade_row(&outline[oidx], &srow[sx], seg, data->fact);
+                oidx += seg;
+                remaining -= seg;
+                sx = 0;
+            }
+        }
+        else
+#endif
         for (px = startx; px < (startx + width); px++)
         {
 #if !defined(DECOR_FAKESHADE)
@@ -1314,7 +1167,7 @@ AROS_UFH3(void, RectShadeFunc,
     AROS_USERFUNC_EXIT
 }
 
-void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct NewImage *ni, ULONG basecolor, UWORD fact, UWORD _offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1)
+void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct DecorImage *ni, ULONG basecolor, UWORD fact, UWORD _offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1)
 {
     ULONG   color;
 
@@ -1369,7 +1222,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
 }
 
-void DrawScaledStatefulGadgetImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG state, UWORD xp, UWORD yp,
+void DrawScaledStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *ni, ULONG state, UWORD xp, UWORD yp,
         WORD scaledwidth, WORD scaledheight)
 {
 
@@ -1394,7 +1247,317 @@ void DrawScaledStatefulGadgetImageToRP(struct RastPort *rp, struct NewImage *ni,
     }
 }
 
-void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG state, UWORD xp, UWORD yp)
+void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *ni, ULONG state, UWORD xp, UWORD yp)
 {
     DrawScaledStatefulGadgetImageToRP(rp, ni, state, xp, yp, -1, -1);
+}
+
+/******************************************************************************/
+/* AROS Library Function Wrappers                                             */
+/******************************************************************************/
+
+AROS_LH8(void, DDrawPartImageToRP,
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(UWORD, x, D0),
+    AROS_LHA(UWORD, y, D1),
+    AROS_LHA(UWORD, sx, D2),
+    AROS_LHA(UWORD, sy, D3),
+    AROS_LHA(UWORD, sw, D4),
+    AROS_LHA(UWORD, sh, D5),
+    struct Library *, DecoratorBase, 15, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    DrawPartImageToRP(rp, ni, x, y, sx, sy, sw, sh);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH8(void, DDrawPartToImage,
+    AROS_LHA(struct DecorImage *, src, A0),
+    AROS_LHA(struct DecorImage *, dest, A1),
+    AROS_LHA(UWORD, sx, D0),
+    AROS_LHA(UWORD, sy, D1),
+    AROS_LHA(UWORD, sw, D2),
+    AROS_LHA(UWORD, sh, D3),
+    AROS_LHA(UWORD, dx, D4),
+    AROS_LHA(UWORD, dy, D5),
+    struct Library *, DecoratorBase, 16, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    DrawPartToImage(src, dest, sx, sy, sw, sh, dx, dy);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, DDrawStatefulGadgetImageToRP,
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(ULONG, state, D0),
+    AROS_LHA(UWORD, xp, D1),
+    AROS_LHA(UWORD, yp, D2),
+    struct Library *, DecoratorBase, 17, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    DrawStatefulGadgetImageToRP(rp, ni, state, xp, yp);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH7(void, DDrawScaledStatefulGadgetImageToRP,
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(ULONG, state, D0),
+    AROS_LHA(UWORD, xp, D1),
+    AROS_LHA(UWORD, yp, D2),
+    AROS_LHA(WORD, scaledwidth, D3),
+    AROS_LHA(WORD, scaledheight, D4),
+    struct Library *, DecoratorBase, 18, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    DrawScaledStatefulGadgetImageToRP(rp, ni, state, xp, yp, scaledwidth, scaledheight);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH9(void, DHorizVertRepeatNewImage,
+    AROS_LHA(struct DecorImage *, ni, A0),
+    AROS_LHA(ULONG, color, D0),
+    AROS_LHA(UWORD, offx, D1),
+    AROS_LHA(UWORD, offy, D2),
+    AROS_LHA(struct RastPort *, rp, A1),
+    AROS_LHA(UWORD, x, D3),
+    AROS_LHA(UWORD, y, D4),
+    AROS_LHA(WORD, w, D5),
+    AROS_LHA(WORD, h, D6),
+    struct Library *, DecoratorBase, 19, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    HorizVertRepeatNewImage(ni, color, offx, offy, rp, x, y, w, h);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH9(void, DHorizRepeatBuffer,
+    AROS_LHA(UBYTE *, buf, A0),
+    AROS_LHA(LONG, offy, D0),
+    AROS_LHA(LONG, pen, D1),
+    AROS_LHA(BOOL, tc, D2),
+    AROS_LHA(struct RastPort *, rp, A1),
+    AROS_LHA(LONG, x, D3),
+    AROS_LHA(LONG, y, D4),
+    AROS_LHA(LONG, w, D5),
+    AROS_LHA(LONG, h, D6),
+    struct Library *, DecoratorBase, 20, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    HorizRepeatBuffer(buf, offy, pen, tc, rp, x, y, w, h);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, DFillPixelArrayGradient,
+    AROS_LHA(LONG, pen, D0),
+    AROS_LHA(BOOL, tc, D1),
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(struct GradientSpec *, spec, A1),
+    struct Library *, DecoratorBase, 21, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    FillPixelArrayGradient(pen, tc, rp, spec->gs_xt, spec->gs_yt, spec->gs_xb, spec->gs_yb,
+        spec->gs_xp, spec->gs_yp, spec->gs_w, spec->gs_h,
+        spec->gs_StartRGB, spec->gs_EndRGB, spec->gs_Angle, spec->gs_dx, spec->gs_dy);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, DRenderMenuBackground,
+    AROS_LHA(struct DecorImage *, pic, A0),
+    AROS_LHA(struct DecorImage *, texture, A1),
+    AROS_LHA(struct TileInfo *, textureti, A2),
+    AROS_LHA(UWORD, ratio, D0),
+    struct Library *, DecoratorBase, 22, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    RenderMenuBackground(pic, texture, textureti, ratio);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, DRenderMenuBarBackground,
+    AROS_LHA(struct DecorImage *, pic, A0),
+    AROS_LHA(struct DecorImage *, texture, A1),
+    AROS_LHA(struct TileInfo *, textureti, A2),
+    AROS_LHA(UWORD, ratio, D0),
+    struct Library *, DecoratorBase, 23, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    RenderMenuBarBackground(pic, texture, textureti, ratio);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH9(void, DShadeLine,
+    AROS_LHA(LONG, pen, D0),
+    AROS_LHA(BOOL, tc, D1),
+    AROS_LHA(BOOL, usegradients, D2),
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(ULONG, basecolor, D3),
+    AROS_LHA(UWORD, fact, D4),
+    AROS_LHA(UWORD, offy, D5),
+    AROS_LHA(struct Rectangle *, bounds, A2),
+    struct Library *, DecoratorBase, 24, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    ShadeLine(pen, tc, usegradients, rp, ni, basecolor, fact, offy,
+              bounds->MinX, bounds->MinY, bounds->MaxX, bounds->MaxY);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, DSetImageTint,
+    AROS_LHA(struct DecorImage *, dst, A0),
+    AROS_LHA(UWORD, ratio, D0),
+    AROS_LHA(ULONG, argb, D1),
+    struct Library *, DecoratorBase, 25, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    SetImageTint(dst, ratio, argb);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, DTileMapToBitmap,
+    AROS_LHA(struct DecorImage *, src, A0),
+    AROS_LHA(struct TileInfo *, srcti, A1),
+    AROS_LHA(struct BitMap *, map, A2),
+    AROS_LHA(UWORD, dw, D0),
+    AROS_LHA(UWORD, dh, D1),
+    struct Library *, DecoratorBase, 26, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    TileMapToBitmap(src, srcti, map, dw, dh);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH8(void, DWriteAlphaPixelArray,
+    AROS_LHA(struct DecorImage *, src, A0),
+    AROS_LHA(struct DecorImageLUT8 *, dst, A1),
+    AROS_LHA(LONG, sx, D0),
+    AROS_LHA(LONG, sy, D1),
+    AROS_LHA(LONG, dx, D2),
+    AROS_LHA(LONG, dy, D3),
+    AROS_LHA(LONG, w, D4),
+    AROS_LHA(LONG, h, D5),
+    struct Library *, DecoratorBase, 27, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    WriteAlphaPixelArray(src, dst, sx, sy, dx, dy, w, h);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH12(LONG, DWriteTiledImageTitle,
+    AROS_LHA(BOOL, fill, D0),
+    AROS_LHA(struct Window *, win, A0),
+    AROS_LHA(struct RastPort *, rp, A1),
+    AROS_LHA(struct DecorImage *, ni, A2),
+    AROS_LHA(LONG, sx, D1),
+    AROS_LHA(LONG, sy, D2),
+    AROS_LHA(LONG, sw, D3),
+    AROS_LHA(LONG, sh, D4),
+    AROS_LHA(LONG, xp, D5),
+    AROS_LHA(LONG, yp, D6),
+    AROS_LHA(LONG, dw, D7),
+    AROS_LHA(LONG, dh, A3),
+    struct Library *, DecoratorBase, 28, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    return WriteTiledImageTitle(fill, win ? win->Width : 0, rp, ni, sx, sy, sw, sh, xp, yp, dw, dh);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH8(LONG, DWriteTiledImageVertical,
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(ULONG, subimage, D0),
+    AROS_LHA(LONG, sy, D1),
+    AROS_LHA(LONG, sh, D2),
+    AROS_LHA(LONG, xp, D3),
+    AROS_LHA(LONG, yp, D4),
+    AROS_LHA(LONG, dh, D5),
+    struct Library *, DecoratorBase, 29, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    return WriteTiledImageVertical(rp, ni, subimage, sy, sh, xp, yp, dh);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH8(LONG, DWriteTiledImageHorizontal,
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(ULONG, subimage, D0),
+    AROS_LHA(LONG, sx, D1),
+    AROS_LHA(LONG, sw, D2),
+    AROS_LHA(LONG, xp, D3),
+    AROS_LHA(LONG, yp, D4),
+    AROS_LHA(LONG, dw, D5),
+    struct Library *, DecoratorBase, 30, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    return WriteTiledImageHorizontal(rp, ni, subimage, sx, sw, xp, yp, dw);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH10(LONG, DWriteVerticalScaledTiledImageHorizontal,
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(ULONG, subimage, D0),
+    AROS_LHA(LONG, sx, D1),
+    AROS_LHA(LONG, sw, D2),
+    AROS_LHA(LONG, xp, D3),
+    AROS_LHA(LONG, yp, D4),
+    AROS_LHA(LONG, sh, D5),
+    AROS_LHA(LONG, dw, D6),
+    AROS_LHA(LONG, dh, D7),
+    struct Library *, DecoratorBase, 31, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    return WriteVerticalScaledTiledImageHorizontal(rp, ni, subimage, sx, sw, xp, yp, sh, dw, dh);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, DPutImageToRP,
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(UWORD, x, D0),
+    AROS_LHA(UWORD, y, D1),
+    struct Library *, DecoratorBase, 32, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    PutImageToRP(rp, ni, x, y);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(struct DecorImage *, DGetImageFromRP,
+    AROS_LHA(struct RastPort *, rp, A0),
+    AROS_LHA(UWORD, x, D0),
+    AROS_LHA(UWORD, y, D1),
+    AROS_LHA(UWORD, w, D2),
+    AROS_LHA(UWORD, h, D3),
+    struct Library *, DecoratorBase, 33, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    return GetImageFromRP(rp, x, y, w, h);
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH13(void, DFillMemoryBufferRGBGradient,
+    AROS_LHA(UBYTE *, buf, A0),
+    AROS_LHA(LONG, pen, D0),
+    AROS_LHA(LONG, xt, D1),
+    AROS_LHA(LONG, yt, D2),
+    AROS_LHA(LONG, xb, D3),
+    AROS_LHA(LONG, yb, D4),
+    AROS_LHA(LONG, xp, D5),
+    AROS_LHA(LONG, yp, D6),
+    AROS_LHA(LONG, w, D7),
+    AROS_LHA(LONG, h, A1),
+    AROS_LHA(ULONG, start_rgb, A2),
+    AROS_LHA(ULONG, end_rgb, A3),
+    AROS_LHA(LONG, angle, A4),
+    struct Library *, DecoratorBase, 34, Decorator)
+{
+    AROS_LIBFUNC_INIT
+    FillMemoryBufferRGBGradient(buf, pen, xt, yt, xb, yb, xp, yp, w, h, start_rgb, end_rgb, angle);
+    AROS_LIBFUNC_EXIT
 }

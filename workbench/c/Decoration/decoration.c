@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2023, The AROS Development Team.
+    Copyright  1995-2026, The AROS Development Team.
 */
 
 /******************************************************************************
@@ -19,6 +19,9 @@
     FUNCTION
 
         Allows user definable skins for the intuition windows, menus and gadgets.
+        Provides the screen/window/menu decoration classes, using
+        decorator.library for configuration loading, rendering and
+        compositing support.
         
     NOTES
 
@@ -42,19 +45,24 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/decorator.h>
+#include <proto/decortheme.h>
+
+#include <libraries/decorator.h>
+#include <libraries/decortheme.h>
 
 #include <aros/detach.h>
 
-#include "windowdecorclass.h"
 #include "screendecorclass.h"
+#include "windowdecorclass.h"
 #include "menudecorclass.h"
-#include "newimage.h"
-#include "config.h"
 
-const TEXT version_string[] = "$VER: Decoration 1.10 (01.04.2023)";
+const TEXT version_string[] = "$VER: Decoration 2.0 (28.04.2024)";
 
 STRPTR __detached_name = "Decorator";
-struct IClass *screenchildgclass = NULL;
+
+struct Library *DecoratorBase = NULL;
+struct Library *DecorThemeBase = NULL;
 
 #define MAGIC_PRIVATE_SKIN              0x0001
 #define MAGIC_PRIVATE_TITLECLASS	    0x0F0E
@@ -63,8 +71,7 @@ struct IClass *screenchildgclass = NULL;
 struct DecorationDecorator
 {
     struct NewDecorator base;   /* MUST BE FIRST */
-    struct DecorConfig * dc;
-    struct DecorImages * di;
+    struct DecorTheme * theme;
 };
 
 struct  DecorationDecorator *basedecor = NULL;
@@ -79,8 +86,7 @@ struct SkinMessage {
 void DeleteDecorator(struct NewDecorator *nd)
 {
     if (nd == NULL) return;
-    if (((struct DecorationDecorator *)nd)->dc != NULL) FreeConfig(((struct DecorationDecorator *)nd)->dc);
-    if (((struct DecorationDecorator *)nd)->di != NULL) FreeImages(((struct DecorationDecorator *)nd)->di);
+    if (((struct DecorationDecorator *)nd)->theme != NULL) DTFreeTheme(((struct DecorationDecorator *)nd)->theme);
     FreeVec(nd);
 }
 
@@ -101,25 +107,17 @@ struct DecorationDecorator *LoadDecoration(STRPTR path)
 
     if (dnd)
     {
-        dnd->dc = LoadConfig(newpath);
-        D(bug("LoadDecoration: config @ 0x%p\n", dnd->dc));
-        if (!dnd->dc)
-        {
-            DeleteDecorator(&dnd->base);
-            return NULL;
-        }
-        
-        dnd->di = LoadImages(dnd->dc);
-        D(bug("LoadDecoration: images @ 0x%p\n", dnd->di));
-        if (!dnd->di)
+        dnd->theme = DTLoadTheme(newpath);
+        D(bug("LoadDecoration: theme @ 0x%p\n", dnd->theme));
+        if (!dnd->theme)
         {
             DeleteDecorator(&dnd->base);
             return NULL;
         }
 
-        dnd->base.nd_ScreenTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);
-        dnd->base.nd_MenuTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);
-        dnd->base.nd_WindowTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);
+        dnd->base.nd_ScreenTags = AllocVec(sizeof(struct TagItem) * 5, MEMF_CLEAR | MEMF_ANY);
+        dnd->base.nd_MenuTags = AllocVec(sizeof(struct TagItem) * 5, MEMF_CLEAR | MEMF_ANY);
+        dnd->base.nd_WindowTags = AllocVec(sizeof(struct TagItem) * 5, MEMF_CLEAR | MEMF_ANY);
 
         if (basedecor)
         {
@@ -143,20 +141,27 @@ struct DecorationDecorator *LoadDecoration(STRPTR path)
         screenTags[1].ti_Tag = SDA_DecorImages;
         menuTags[1].ti_Tag = MDA_DecorImages;
         windowTags[1].ti_Tag = WDA_DecorImages;
-        screenTags[1].ti_Data = (IPTR)dnd->di;
-        menuTags[1].ti_Data = (IPTR)dnd->di;
-        windowTags[1].ti_Data = (IPTR)dnd->di;
+        screenTags[1].ti_Data = (IPTR)DTGetImages(dnd->theme);
+        menuTags[1].ti_Data = (IPTR)DTGetImages(dnd->theme);
+        windowTags[1].ti_Data = (IPTR)DTGetImages(dnd->theme);
 
         screenTags[2].ti_Tag =  SDA_DecorConfig;
         menuTags[2].ti_Tag = MDA_DecorConfig;
         windowTags[2].ti_Tag = WDA_DecorConfig;
-        screenTags[2].ti_Data = (IPTR)dnd->dc;
-        menuTags[2].ti_Data = (IPTR)dnd->dc;
-        windowTags[2].ti_Data = (IPTR)dnd->dc;
+        screenTags[2].ti_Data = (IPTR)DTGetConfig(dnd->theme);
+        menuTags[2].ti_Data = (IPTR)DTGetConfig(dnd->theme);
+        windowTags[2].ti_Data = (IPTR)DTGetConfig(dnd->theme);
         
-        screenTags[3].ti_Tag = TAG_DONE;
-        menuTags[3].ti_Tag = TAG_DONE;
-        windowTags[3].ti_Tag = TAG_DONE;
+        screenTags[3].ti_Tag = SDA_DecorTheme;
+        menuTags[3].ti_Tag = MDA_DecorTheme;
+        windowTags[3].ti_Tag = WDA_DecorTheme;
+        screenTags[3].ti_Data = (IPTR)dnd->theme;
+        menuTags[3].ti_Data = (IPTR)dnd->theme;
+        windowTags[3].ti_Data = (IPTR)dnd->theme;
+
+        screenTags[4].ti_Tag = TAG_DONE;
+        menuTags[4].ti_Tag = TAG_DONE;
+        windowTags[4].ti_Tag = TAG_DONE;
 
     }
     return dnd;
@@ -177,8 +182,6 @@ int main(void)
 
     struct RDArgs *args, *newargs;
 
-    /* the 1M $$ Question why "Decoration ?" does not work in the shell? */
-
     newargs = (struct RDArgs*) AllocDosObject(DOS_RDARGS, NULL);
 
     if (newargs == NULL) return 0;
@@ -193,8 +196,33 @@ int main(void)
         return 0;
     }
 
-    if ((port = CreateMsgPort()) == NULL)
+    DecoratorBase = OpenLibrary("decorator.library", 0);
+    if (!DecoratorBase)
+    {
+        D(bug("Decoration: Failed to open decorator.library\n"));
+        FreeArgs(args);
+        FreeDosObject (DOS_RDARGS, (APTR) newargs);
         return 0;
+    }
+
+    DecorThemeBase = OpenLibrary("decortheme.library", 0);
+    if (!DecorThemeBase)
+    {
+        D(bug("Decoration: Failed to open decortheme.library\n"));
+        CloseLibrary(DecoratorBase);
+        FreeArgs(args);
+        FreeDosObject (DOS_RDARGS, (APTR) newargs);
+        return 0;
+    }
+
+    if ((port = CreateMsgPort()) == NULL)
+    {
+        CloseLibrary(DecorThemeBase);
+        CloseLibrary(DecoratorBase);
+        FreeArgs(args);
+        FreeDosObject (DOS_RDARGS, (APTR) newargs);
+        return 0;
+    }
 
     Forbid();
     if (FindPort(__detached_name)) {
@@ -210,6 +238,8 @@ int main(void)
         Permit();
         DeleteMsgPort(port);
         FreeArgs(args);
+        CloseLibrary(DecorThemeBase);
+        CloseLibrary(DecoratorBase);
         return 0;
     }
     Permit();
@@ -268,7 +298,7 @@ int main(void)
                                     case MAGIC_PRIVATE_TITLECLASS:
                                         dmsg = (struct DecoratorMessage *) msg;
                                         if (decor) {
-                                            dmsg->dm_Class = (IPTR)screenchildgclass;
+                                            dmsg->dm_Class = (IPTR)GetScreenChildGClass();
                                         }
                                         break;
                                     case MAGIC_PRIVATE_TITLECHILD:
@@ -304,6 +334,8 @@ int main(void)
             FreeClass(decor->nd_ScreenClass);
         }
     }
+    CloseLibrary(DecorThemeBase);
+    CloseLibrary(DecoratorBase);
     FreeDosObject (DOS_RDARGS, (APTR) newargs);
     FreeArgs(args);
     return 0;

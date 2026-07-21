@@ -1,5 +1,5 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright  2011-2026, The AROS Development Team.
 */
 
 #ifndef WINDOWDECORCLASS_H
@@ -9,7 +9,7 @@
 #include <intuition/intuition.h>
 #include <intuition/classes.h>
 
-#include "newimage.h"
+#include <libraries/decortheme.h>
 
 struct CachedPropGadget
 {
@@ -50,28 +50,31 @@ struct CachedTitleBarShape
 
 struct  WindowData
 {
-    struct NewImage *ni;
+    /* Per-screen theme instance shared with the ScreenData (not owned) */
+    struct DecorThemeScreen *dts;
 
-    struct NewImage *img_size;
-    struct NewImage *img_close;
-    struct NewImage *img_depth;
-    struct NewImage *img_zoom;
-    struct NewImage *img_up;
-    struct NewImage *img_down;
-    struct NewImage *img_left;
-    struct NewImage *img_right;
-    struct NewImage *img_mui;
-    struct NewImage *img_popup;
-    struct NewImage *img_snapshot;
-    struct NewImage *img_iconify;
-    struct NewImage *img_lock;
-    struct NewImage *img_winbar_normal;
-    struct NewImage *img_border_normal;
-    struct NewImage *img_border_deactivated;
-    struct NewImage *img_verticalcontainer;
-    struct NewImage *img_verticalknob;
-    struct NewImage *img_horizontalcontainer;
-    struct NewImage *img_horizontalknob;
+    struct DecorImage *ni;
+
+    struct DecorImage *img_size;
+    struct DecorImage *img_close;
+    struct DecorImage *img_depth;
+    struct DecorImage *img_zoom;
+    struct DecorImage *img_up;
+    struct DecorImage *img_down;
+    struct DecorImage *img_left;
+    struct DecorImage *img_right;
+    struct DecorImage *img_mui;
+    struct DecorImage *img_popup;
+    struct DecorImage *img_snapshot;
+    struct DecorImage *img_iconify;
+    struct DecorImage *img_lock;
+    struct DecorImage *img_winbar_normal;
+    struct DecorImage *img_border_normal;
+    struct DecorImage *img_border_deactivated;
+    struct DecorImage *img_verticalcontainer;
+    struct DecorImage *img_verticalknob;
+    struct DecorImage *img_horizontalcontainer;
+    struct DecorImage *img_horizontalknob;
 
     LONG                ActivePen;
     LONG                DeactivePen;
@@ -88,6 +91,7 @@ struct  WindowData
 
 #define WDA_DecorImages     0x30003
 #define WDA_DecorConfig     0x30004
+#define WDA_DecorTheme      0x30005
 
 struct IClass * MakeWindowDecorClass();
 #endif

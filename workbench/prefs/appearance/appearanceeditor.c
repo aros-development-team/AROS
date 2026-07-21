@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -113,8 +113,8 @@ static IPTR AppearanceEditor__ListToArray(struct List *ThemeList)
     return (IPTR)ThemeArray;
 }
 
-/* N.B. This hook doesn't currently produce any preview of the selected theme.
- * It just updates gadgets to match other gadgets and marks prefs as changed */
+/* Updates gadgets to match other gadgets, pushes the selected theme to
+ * the preview object and marks prefs as changed */
 AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
           AROS_UFHA(struct Hook *, h, A0),
           AROS_UFHA(Object *, self, A2),
@@ -211,6 +211,14 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
     SET(data->ae_CompRight, MUIA_Disabled, !(compEnable));
     SET(data->ae_CompAlpha, MUIA_Disabled, !(compEnable));
 
+    if (themeEnable && data->ae_ThemeArray[themeActive])
+    {
+        sprintf(themeFileTmp, "%s%s", THEMES_BASE, (char *)data->ae_ThemeArray[themeActive]);
+        SET(data->ae_ThemePreview, MUIA_ThemePreview_Theme, (IPTR)themeFileTmp);
+    }
+    else
+        SET(data->ae_ThemePreview, MUIA_ThemePreview_Theme, (IPTR)NULL);
+
     SET(self, MUIA_PrefsEditor_Changed, TRUE);
 
     AROS_USERFUNC_EXIT
@@ -236,9 +244,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     UBYTE               *ExAllBuffer = NULL;
     BOOL                ExAllMore;
 
-#if 0
     Object              *_ThemePreviewObj;
-#endif
     Object              *_ThemeEnable;
     Object              *_ThemeSelectionObj;
 
@@ -331,10 +337,8 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         MUIA_PrefsEditor_CanUse, FALSE,
 
         Child, (IPTR)VGroup,
-#if 0
             Child, (IPTR)(_ThemePreviewObj = ThemePreviewObject,
             End),
-#endif
             Child, (IPTR)HGroup,
 
                 Child, (IPTR)VGroup,
@@ -351,6 +355,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                             MUIA_Cycle_Entries, (IPTR)_ThemeArray,
                         End),
                     End,
+
 
                     Child, (IPTR)(_ThemeDescGrp = VGroup,
                         MUIA_ShowMe, FALSE,
@@ -369,6 +374,14 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                         End),
                     End),
 
+                    Child, (IPTR)(RectangleObject,
+                        MUIA_Rectangle_HBar, TRUE,
+                        MUIA_FixHeight,      2,
+                    End),
+
+                    Child, (IPTR)(TextObject,
+                        MUIA_Text_Contents, (IPTR)_(MSG_USETHEMECONFIGFOR),
+                    End),
                     Child, (IPTR)(_ThemeZunePrefsGrp = HGroup,
                         Child, (IPTR)(_ThemeZunePrefsObj = MakeCheckmark(TRUE)),
                         Child, (IPTR)Label1(_(MSG_ENABLEZUNEPREFS)),
@@ -438,9 +451,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     {
         SETUP_INST_DATA;
 
-#if 0
         data->ae_ThemePreview = _ThemePreviewObj;
-#endif
         data->ae_ThemeEnable = _ThemeEnable;
         data->ae_ThemeChoice = _ThemeSelectionObj;
         data->ae_ThemePalette = _ThemePalettePrefsGrp;
@@ -741,6 +752,19 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
             FreeDosObject(DOS_RDARGS, rdargs);
         }
     }
+
+    {
+        IPTR themeActive = XGET(data->ae_ThemeChoice, MUIA_Cycle_Active);
+
+        if ((BOOL)XGET(data->ae_ThemeEnable, MUIA_Selected) && data->ae_ThemeArray[themeActive])
+        {
+            sprintf(importBuffer, "%s%s", THEMES_BASE, (char *)data->ae_ThemeArray[themeActive]);
+            SET(data->ae_ThemePreview, MUIA_ThemePreview_Theme, (IPTR)importBuffer);
+        }
+        else
+            SET(data->ae_ThemePreview, MUIA_ThemePreview_Theme, (IPTR)NULL);
+    }
+
     return success;
 }
 
