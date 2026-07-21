@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Code executed by the console.device task.
 */
@@ -126,7 +126,7 @@ static BOOL report_raw_event(Object *unit, const struct InputEvent *event,
      * many values through NewRawDoFmt's varargs interface corrupts the
      * stream there, producing more than the eight fields mandated by the
      * console.device input-event report protocol. */
-    RawDoFmt("\x9b%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld|", fields,
+    RawDoFmt("\x9b%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld|", (RAWARG)fields,
         RAWFMTFUNC_STRING, report);
     len = strnlen(report, sizeof(report));
     if (len == sizeof(report))
