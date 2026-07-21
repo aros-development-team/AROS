@@ -657,6 +657,7 @@ KERNEL_DBUS_INCLUDES
 KERNEL_DBUS_KOBJ
 DBUS_LIBFLAGS
 DBUS_CFLAGS
+jpegxl_toolchainsupport
 rust_target
 java_target
 objc_target
@@ -9716,7 +9717,7 @@ case "$aros_toolchain" in
         toolchain_debug_opt_lvl="-O0"
         toolchain_size_opt_lvl="-Os"
         aros_cxx_ldflags="-L$""(CROSSTOOLSDIR)/lib -stdlib=libc++ -static-libstdc++"
-                                                        aros_target_cflags=""
+                                aros_target_cflags=""
         aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
         toolchain_ld_fmtbinary="--format=binary"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
@@ -12196,6 +12197,7 @@ printf "%s\n" "$ax_cv_gcc_version" >&6; }
 else
     target_gcc_version="$use_gcc_version"
 fi
+jpegxl_toolchainsupport=""
 if test "$aros_toolchain" = "gnu" ; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $target_gcc_version" >&5
 printf "%s\n" "$target_gcc_version" >&6; }
@@ -12214,6 +12216,11 @@ printf "%s\n" "release" >&6; }
         GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
         GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
         GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
+    fi
+
+    # libjxl (used by jpegxl.datatype) requires gcc >= 8
+    if test "$GCC_VERSION_MAJOR" -lt "8" ; then
+        jpegxl_toolchainsupport="no"
     fi
 
     gcc_fix_bitfields="false"
@@ -19971,6 +19978,9 @@ host_has_libelf=$have_libelf
 
 
 #Rust related
+
+
+# jpegxl.datatype toolchain support (libjxl requires gcc >= 8)
 
 
 # DBUS related

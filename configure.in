@@ -2574,6 +2574,7 @@ if test "$use_gcc_version" = ""; then
 else
     target_gcc_version="$use_gcc_version"
 fi
+jpegxl_toolchainsupport=""
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_RESULT($target_gcc_version)
 
@@ -2588,6 +2589,11 @@ if test "$aros_toolchain" = "gnu" ; then
         GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
         GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
         GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
+    fi
+
+    # libjxl (used by jpegxl.datatype) requires gcc >= 8
+    if test "$GCC_VERSION_MAJOR" -lt "8" ; then
+        jpegxl_toolchainsupport="no"
     fi
 
     gcc_fix_bitfields="false"
@@ -4357,6 +4363,9 @@ AC_SUBST(java_target)
 
 #Rust related
 AC_SUBST(rust_target)
+
+# jpegxl.datatype toolchain support (libjxl requires gcc >= 8)
+AC_SUBST(jpegxl_toolchainsupport)
 
 # DBUS related
 AC_SUBST(DBUS_CFLAGS)

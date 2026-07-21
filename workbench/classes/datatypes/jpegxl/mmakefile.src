@@ -2,9 +2,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#Q=
+#MM- workbench-datatypes-complete: workbench-datatypes-$(JPEGXL_TOOLCHAINSUPPORT)-jpegxl
+#MM- workbench-datatypes--jpegxl : workbench-datatypes-jpegxl
 
-#MM- workbench-datatypes-complete: workbench-datatypes-jpegxl
 #MM workbench-datatypes-jpegxl : \
 #MM includes \
 #MM linklibs \
