@@ -884,6 +884,12 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
     struct RastPort *rp = w->RPort;
     struct charmapcondata *data = INST_DATA(cl, o);
     struct Library *GfxBase = data->ccd_GfxBase;
+    struct TmpRas localTmpRas;
+    struct TmpRas *savedTmpRas = rp->TmpRas;
+    PLANEPTR scratch = NULL;
+    UWORD scratchWidth = GFX_XMAX(o) - GFX_XMIN(o) + 1;
+    UWORD scratchHeight = rp->Font->tf_YSize;
+    ULONG scratchSize = RASSIZE(scratchWidth, scratchHeight);
 
     if (fromLine < CHAR_YMIN(o))
         fromLine = CHAR_YMIN(o);
@@ -895,6 +901,13 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
 
     if (toLine < fromLine)
         return;
+
+    if (!savedTmpRas || savedTmpRas->Size < scratchSize)
+    {
+        scratch = AllocRaster(scratchWidth, scratchHeight);
+        if (scratch)
+            rp->TmpRas = InitTmpRas(&localTmpRas, scratch, scratchSize);
+    }
 
     Console_UnRenderCursor(o);
 
@@ -1045,6 +1058,13 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
     }
 
     Console_RenderCursor(o);
+
+    if (scratch)
+    {
+        rp->TmpRas = savedTmpRas;
+        FreeRaster(scratch, scratchWidth, scratchHeight);
+    }
+
 }
 
 

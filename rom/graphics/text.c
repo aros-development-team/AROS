@@ -102,47 +102,70 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
     WORD                 raswidth, raswidth16, raswidth_bpr, rasheight, x, y, gx;
     UBYTE               *raster;
     BOOL                 is_bold, is_italic, fastfont;
+    BOOL                 allocated = FALSE;
+    ULONG                rassize;
 
-    TextExtent(rp, text, len, &te);
+    tf = rp->Font;
+    is_bold = (rp->AlgoStyle & FSF_BOLD) != 0;
+    is_italic = (rp->AlgoStyle & FSF_ITALIC) != 0;
+    fastfont = !is_bold && !is_italic && tf->tf_XSize == 8 &&
+               rp->TxSpacing == 0;
+
+    if (fastfont)
+    {
+        ULONG i;
+
+        for (i = 0; i < len; i++)
+        {
+            UBYTE c = text[i];
+            ULONG idx = (c < tf->tf_LoChar || c > tf->tf_HiChar) ?
+                        NUMCHARS(tf) - 1 : c - tf->tf_LoChar;
+            ULONG charloc = ((ULONG *)tf->tf_CharLoc)[idx];
+
+            if ((charloc & 0xFFFF) != 8 || ((charloc >> 16) & 7) ||
+                (tf->tf_CharKern &&
+                    ((WORD *)tf->tf_CharKern)[idx] != 0) ||
+                (tf->tf_CharSpace &&
+                    ((WORD *)tf->tf_CharSpace)[idx] != 8))
+            {
+                fastfont = FALSE;
+                break;
+            }
+        }
+    }
+
+    if (fastfont)
+    {
+        te.te_Width = len * 8;
+        te.te_Height = tf->tf_YSize;
+        te.te_Extent.MinX = 0;
+        te.te_Extent.MaxX = te.te_Width - 1;
+        te.te_Extent.MinY = -tf->tf_Baseline;
+        te.te_Extent.MaxY = te.te_Height - 1 - tf->tf_Baseline;
+    }
+    else
+        TextExtent(rp, text, len, &te);
 
     raswidth  = te.te_Extent.MaxX - te.te_Extent.MinX + 1;
     rasheight = te.te_Extent.MaxY - te.te_Extent.MinY + 1;
 
     raswidth16 = (raswidth + 15) & ~15;
     raswidth_bpr = raswidth16 / 8;
+    rassize = RASSIZE(raswidth, rasheight);
 
-    if((raster = AllocRaster(raswidth, rasheight))) {
-        SetMem(raster, 0, RASSIZE(raswidth, rasheight));
+    if (rp->TmpRas && rp->TmpRas->RasPtr && rp->TmpRas->Size >= rassize)
+        raster = rp->TmpRas->RasPtr;
+    else
+    {
+        raster = AllocRaster(raswidth, rasheight);
+        allocated = raster != NULL;
+    }
 
-        tf = rp->Font;
+    if(raster) {
+        if (!fastfont)
+            SetMem(raster, 0, rassize);
 
         x = -te.te_Extent.MinX;
-
-        is_bold   = (rp->AlgoStyle & FSF_BOLD) != 0;
-        is_italic = (rp->AlgoStyle & FSF_ITALIC) != 0;
-
-        fastfont = !is_bold && !is_italic && !tf->tf_CharKern &&
-                   !tf->tf_CharSpace && tf->tf_XSize == 8 &&
-                   rp->TxSpacing == 0 && x == 0;
-
-        if (fastfont)
-        {
-            ULONG i;
-
-            for (i = 0; i < len; i++)
-            {
-                UBYTE c = text[i];
-                ULONG idx = (c < tf->tf_LoChar || c > tf->tf_HiChar) ?
-                            NUMCHARS(tf) - 1 : c - tf->tf_LoChar;
-                ULONG charloc = ((ULONG *)tf->tf_CharLoc)[idx];
-
-                if ((charloc & 0xFFFF) != 8 || ((charloc >> 16) & 7))
-                {
-                    fastfont = FALSE;
-                    break;
-                }
-            }
-        }
 
         /* The standard Amiga screen font is an unstyled, fixed-width,
          * byte-aligned 8-pixel font. Build its template a byte at a time
@@ -150,30 +173,60 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
         if (fastfont)
         {
             UBYTE *dst = raster;
+            ULONG remaining = len;
 
-            while (len--)
+            if (raswidth_bpr > len)
             {
-                UBYTE c = *text++;
-                ULONG idx;
-                ULONG charloc;
-                UWORD glyphpos;
-                UBYTE *glyphdata;
+                for (y = 0; y < rasheight; y++)
+                    raster[y * raswidth_bpr + len] = 0;
+            }
 
-                if (c < tf->tf_LoChar || c > tf->tf_HiChar)
-                    idx = NUMCHARS(tf) - 1;
-                else
-                    idx = c - tf->tf_LoChar;
+            while (remaining)
+            {
+                UBYTE *glyphdata[4];
+                ULONG batch = remaining >= 4 ? 4 :
+                              remaining >= 2 ? 2 : 1;
+                ULONG i;
 
-                charloc = ((ULONG *)tf->tf_CharLoc)[idx];
-                glyphpos = charloc >> 16;
+                for (i = 0; i < batch; i++)
+                {
+                    UBYTE c = text[i];
+                    ULONG idx = (c < tf->tf_LoChar || c > tf->tf_HiChar) ?
+                                NUMCHARS(tf) - 1 : c - tf->tf_LoChar;
+                    ULONG charloc = ((ULONG *)tf->tf_CharLoc)[idx];
 
-                glyphdata = (UBYTE *)tf->tf_CharData + glyphpos / 8;
+                    glyphdata[i] = (UBYTE *)tf->tf_CharData +
+                                   (charloc >> 16) / 8;
+                }
+
                 for (y = 0; y < rasheight; y++)
                 {
-                    dst[y * raswidth_bpr] = glyphdata[y * tf->tf_Modulo];
+                    UBYTE *row = dst + y * raswidth_bpr;
+
+                    if (batch == 4)
+                    {
+                        ULONG value =
+                            ((ULONG)glyphdata[0][y * tf->tf_Modulo] << 24) |
+                            ((ULONG)glyphdata[1][y * tf->tf_Modulo] << 16) |
+                            ((ULONG)glyphdata[2][y * tf->tf_Modulo] << 8) |
+                            glyphdata[3][y * tf->tf_Modulo];
+                        *(ULONG *)row = AROS_LONG2BE(value);
+                    }
+                    else if (batch == 2)
+                    {
+                        UWORD value =
+                            ((UWORD)glyphdata[0][y * tf->tf_Modulo] << 8) |
+                            glyphdata[1][y * tf->tf_Modulo];
+                        *(UWORD *)row = AROS_WORD2BE(value);
+                    }
+                    else
+                        *row = glyphdata[0][y * tf->tf_Modulo];
                 }
-                dst++;
-                x += 8;
+
+                text += batch;
+                dst += batch;
+                remaining -= batch;
+                x += batch * 8;
             }
         }
         else while(len--) {
@@ -334,7 +387,8 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
                     raswidth,
                     rasheight);
 
-        FreeRaster(raster, raswidth, rasheight);
+        if (allocated)
+            FreeRaster(raster, raswidth, rasheight);
 
     } /* if ((raster = AllocRaster(raswidth, rasheight))) */
 
