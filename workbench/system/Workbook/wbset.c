@@ -45,13 +45,45 @@ static void wbGABox(struct WorkbookBase *wb, Object *obj, struct IBox *box)
     box->Height = gadget->Height;
 }
 
+static BOOL wbFixedCollision(struct WorkbookBase *wb, struct wbSet *my,
+    const struct IBox *setbox, const struct IBox *candidate,
+    WORD *nextLeft, WORD *nextTop)
+{
+    struct wbSetNode *node;
+    BOOL collision = FALSE;
+
+    ForeachNode(&my->FixedObjects, node) {
+        struct IBox fixed;
+
+        wbGABox(wb, node->sn_Object, &fixed);
+        fixed.Left -= setbox->Left;
+        fixed.Top -= setbox->Top;
+
+        if (candidate->Left < fixed.Left + fixed.Width &&
+            candidate->Left + candidate->Width > fixed.Left &&
+            candidate->Top < fixed.Top + fixed.Height &&
+            candidate->Top + candidate->Height > fixed.Top) {
+            WORD right = fixed.Left + fixed.Width;
+            WORD bottom = fixed.Top + fixed.Height;
+
+            if (right > *nextLeft)
+                *nextLeft = right;
+            if (bottom > *nextTop)
+                *nextTop = bottom;
+            collision = TRUE;
+        }
+    }
+
+    return collision;
+}
+
 static void rearrange(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbSet *my = INST_DATA(cl, obj);
     struct wbSetNode *node;
     struct IBox sbox;
-    WORD CurrRight, CurrBottom;
+    WORD CurrRight, CurrBottom, RowHeight;
 
     /* First, remove all autoobjects from the superclass */
     ForeachNode(&my->AutoObjects, node) {
@@ -61,29 +93,53 @@ static void rearrange(Class *cl, Object *obj)
     /* Find the set size with just the fixed objects */
     wbGABox(wb, obj, &sbox);
 
-    /* Set the start of the auto area to be
-     * immediately below the fixed objects.
-     */
+    /* Pack automatic icons from the top-left. Positioned icons are obstacles,
+     * not a horizontal band: an icon saved low on the desktop must not force
+     * every automatic disk icon beneath it. */
     CurrRight = 0;
-    CurrBottom = sbox.Height;
+    CurrBottom = 0;
+    RowHeight = 0;
 
     /* For each item in the auto list, add it to the right */
     ForeachNode(&my->AutoObjects, node) {
         Object *iobj = node->sn_Object;
         struct IBox ibox;
+        BOOL placed = FALSE;
 
         wbGABox(wb, iobj, &ibox);
 
-        if ((CurrRight + ibox.Width) < my->MaxWidth) {
+        while (!placed) {
+            WORD nextLeft = CurrRight;
+            WORD nextTop = CurrBottom;
+
+            if (CurrRight && CurrRight + ibox.Width > my->MaxWidth) {
+                CurrRight = 0;
+                CurrBottom += RowHeight;
+                RowHeight = 0;
+                continue;
+            }
+
             ibox.Left = CurrRight;
-        } else {
-            wbGABox(wb, obj, &sbox);
-            ibox.Left = 0;
-            CurrRight = 0;
-            CurrBottom = sbox.Height;
+            ibox.Top = CurrBottom;
+
+            if (wbFixedCollision(wb, my, &sbox, &ibox,
+                                 &nextLeft, &nextTop)) {
+                if (nextLeft + ibox.Width <= my->MaxWidth) {
+                    CurrRight = nextLeft;
+                } else {
+                    CurrRight = 0;
+                    CurrBottom = nextTop;
+                    RowHeight = 0;
+                }
+                continue;
+            }
+
+            placed = TRUE;
         }
-        ibox.Top  = CurrBottom;
+
         CurrRight += ibox.Width;
+        if (ibox.Height > RowHeight)
+            RowHeight = ibox.Height;
 
         D(bug("New icon position: @%d,%d\n", ibox.Left, ibox.Top));
 
