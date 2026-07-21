@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES := \
         decorator_library \
         pixops \
-        newimagefuncs \
+        decorimagefuncs \
         drawfuncs \
         decoratorelement
 

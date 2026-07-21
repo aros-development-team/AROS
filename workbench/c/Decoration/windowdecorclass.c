@@ -26,7 +26,7 @@
 #include "screendecorclass.h"
 
 /* Compatibility shims for the struct-based decorator.library calls */
-static inline void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct DecorImage *ni,
+static inline void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct DecorImage *di,
                              ULONG basecolor, UWORD fact, UWORD offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1)
 {
     struct Rectangle bounds;
@@ -34,7 +34,7 @@ static inline void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPo
     bounds.MinY = y0;
     bounds.MaxX = x1;
     bounds.MaxY = y1;
-    DShadeLine(pen, tc, usegradients, rp, ni, basecolor, fact, offy, &bounds);
+    DShadeLine(pen, tc, usegradients, rp, di, basecolor, fact, offy, &bounds);
 }
 
 static inline void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb,
@@ -72,12 +72,12 @@ static inline void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp
    titlebar image of the current draw, advancing and clipping like
    tiled title rendering */
 static UWORD RenderWinBarElement(struct WindowData *wd, ULONG elemid, struct RastPort *rp,
-                                 struct DecorImage *ni, ULONG subimage, UWORD x, WORD dw,
+                                 struct DecorImage *di, ULONG subimage, UWORD x, WORD dw,
                                  UWORD barh, LONG clipw)
 {
     struct DecoratorElement elem = wd->dts->dts_Elements[elemid];
 
-    elem.de_Image = ni;
+    elem.de_Image = di;
     return (UWORD)DRenderElement(&elem, rp, subimage, x, 0, dw, barh, clipw);
 }
 
@@ -257,13 +257,13 @@ static VOID CacheTitleBarShape(struct CachedTitleBarShape *cached, struct Window
     cached->windowflags = (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX));
 }
 
-static int WriteTiledImageShape(BOOL fill, struct Window *win, struct DecorImageLUT8 *lut8, struct DecorImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
+static int WriteTiledImageShape(BOOL fill, struct Window *win, struct DecorImageLUT8 *lut8, struct DecorImage *di, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
 {
     int     w = dw;
     int     x = xp;
     int     ddw;
 
-    if (!ni->ok) return xp;
+    if (!di->ok) return xp;
 
     if ((sw == 0) || (dw == 0)) return xp;
 
@@ -277,7 +277,7 @@ static int WriteTiledImageShape(BOOL fill, struct Window *win, struct DecorImage
     {
         ddw = sw;
         if (w < ddw) ddw = w;
-        DWriteAlphaPixelArray(ni, lut8, sx, sy, x, yp, ddw, dh);
+        DWriteAlphaPixelArray(di, lut8, sx, sy, x, yp, ddw, dh);
         w -= ddw;
         x += ddw;
     }
@@ -406,7 +406,7 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct DecorImageLUT
         struct DecorImage * img_winbar_normal = wd->img_winbar_normal;
 
         if (data->dc->BarHeight != barh)
-            img_winbar_normal = DScaleNewImage(wd->img_winbar_normal, wd->img_winbar_normal->w, 2 * barh);
+            img_winbar_normal = DScaleDecorImage(wd->img_winbar_normal, wd->img_winbar_normal->w, 2 * barh);
 
         if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
             dy = 0;
@@ -465,7 +465,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     ULONG               textlen = 0, titlelen = 0, textpixellen = 0;
     struct TextExtent   te;
     struct RastPort    *rp;
-    struct DecorImage    *ni = NULL;
+    struct DecorImage    *di = NULL;
 
     BOOL                hastitle;
     BOOL                hastitlebar;
@@ -515,9 +515,9 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     hastitle = window->Title != NULL ? TRUE : FALSE;
     hastitlebar = (window->BorderTop > 0) ? TRUE : FALSE;
 
-    if (wd->img_border_normal->ok) ni = wd->img_border_normal;
+    if (wd->img_border_normal->ok) di = wd->img_border_normal;
 
-    if (ni == NULL) data->dc->UseGradients = TRUE;
+    if (di == NULL) data->dc->UseGradients = TRUE;
 
     color = 0x00cccccc;
 
@@ -535,7 +535,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
         dy = data->dc->BarHeight;
         if (!data->dc->UseGradients)
         {
-            if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
+            if (wd->img_border_deactivated->ok) di = wd->img_border_deactivated;
         }
         pen = wd->DeactivePen;
     }
@@ -544,7 +544,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     if (data->dc->FillTitleBar)
     {
         if (data->dc->UseGradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width - 1, window->Height - 1, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc, 0, 0);
-        else DHorizVertRepeatNewImage(ni, color, 0, 0, rp, 0, 0, window->Width, window->BorderTop);
+        else DHorizVertRepeatDecorImage(di, color, 0, 0, rp, 0, 0, window->Width, window->BorderTop);
     }
 
     getleftgadgetsdimensions(data, window, &xl0, &xl1);
@@ -585,7 +585,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
         struct DecorImage * img_winbar_normal = wd->img_winbar_normal;
 
         if (data->dc->BarHeight != barh)
-            img_winbar_normal = DScaleNewImage(wd->img_winbar_normal, wd->img_winbar_normal->w, 2 * barh);
+            img_winbar_normal = DScaleDecorImage(wd->img_winbar_normal, wd->img_winbar_normal->w, 2 * barh);
 
         /* Titlebar section subimage row: 0 = active, 1 = inactive */
         if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
@@ -898,7 +898,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     struct RastPort        *rp = msg->wdp_RPort;
     struct Window          *window = msg->wdp_Window;
     struct WindowData      *wd = (struct WindowData *) msg->wdp_UserBuffer;
-    struct DecorImage        *ni = NULL;
+    struct DecorImage        *di = NULL;
     UWORD                  *pens = msg->wdp_Dri->dri_Pens;
     ULONG                   bc, color, s_col, e_col, arc;
     UWORD                   bl, bt, br, bb, ww, wh;
@@ -908,9 +908,9 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     D(bug("[Decoration:Win] %s: window @ 0x%p\n", __func__, window);)
 
     if (wd->img_border_normal->ok)
-        ni = wd->img_border_normal;
+        di = wd->img_border_normal;
 
-    if (ni == NULL)
+    if (di == NULL)
         data->dc->UseGradients = TRUE;
 
     BOOL    tc = wd->truecolor;
@@ -945,7 +945,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         bc = data->dc->BaseColors_d;
         if (!data->dc->UseGradients)
         {
-            if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
+            if (wd->img_border_deactivated->ok) di = wd->img_border_deactivated;
         }
     }
 
@@ -986,13 +986,13 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         }
         else
         {
-            if (window->BorderLeft > overlap) DHorizVertRepeatNewImage(ni, color, 0, window->BorderTop, rp,
+            if (window->BorderLeft > overlap) DHorizVertRepeatDecorImage(di, color, 0, window->BorderTop, rp,
                                             0, window->BorderTop,
                                             window->BorderLeft - 1, window->Height - window->BorderTop);
-            if (window->BorderRight > overlap) DHorizVertRepeatNewImage(ni, color, window->Width - window->BorderRight , window->BorderTop, rp,
+            if (window->BorderRight > overlap) DHorizVertRepeatDecorImage(di, color, window->Width - window->BorderRight , window->BorderTop, rp,
                                             window->Width - window->BorderRight , window->BorderTop,
                                             window->BorderRight, window->Height - window->BorderTop);
-            if (window->BorderBottom > overlap) DHorizVertRepeatNewImage(ni, color, 0, window->Height - window->BorderBottom, rp,
+            if (window->BorderBottom > overlap) DHorizVertRepeatDecorImage(di, color, 0, window->Height - window->BorderBottom, rp,
                                             0, window->Height - window->BorderBottom,
                                             window->Width, window->BorderBottom);
         }
@@ -1002,24 +1002,24 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         {
             int bbt = bt;
 
-            if (bl > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt, 0, bbt, 0, wh - 1);
-            if (bb > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, wh - 1, 0, wh - 1, ww - 1, wh - 1);
-            if (br > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt , ww - 1, bbt , ww - 1, wh - 1);
-            if (bl > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt, bl - 1, bbt, bl - 1, wh - bb);
-            if (bb > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
-            if (br > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt , ww - br, bbt , ww - br, wh - bb);
-            if (bl > 2) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, bbt, 1, bbt, 1, wh - 2);
+            if (bl > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_d, bbt, 0, bbt, 0, wh - 1);
+            if (bb > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_d, wh - 1, 0, wh - 1, ww - 1, wh - 1);
+            if (br > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_d, bbt , ww - 1, bbt , ww - 1, wh - 1);
+            if (bl > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_d, bbt, bl - 1, bbt, bl - 1, wh - bb);
+            if (bb > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_d, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
+            if (br > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_d, bbt , ww - br, bbt , ww - br, wh - bb);
+            if (bl > 2) ShadeLine(lpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_l, bbt, 1, bbt, 1, wh - 2);
             if (bl > 3) {
-                if (bb > 1) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
-                else ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb);
+                if (bb > 1) ShadeLine(mpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
+                else ShadeLine(mpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb);
             }
-            if (br > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, ww - 2, bbt, ww - 2, wh - 2);
-            if (bb > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, wh - 2, 1, wh - 2, ww - 2, wh - 2);
+            if (br > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_m, bbt, ww - 2, bbt, ww - 2, wh - 2);
+            if (bb > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_m, wh - 2, 1, wh - 2, ww - 2, wh - 2);
             if (bb > 3) {
-                if ((bl > 0) && (br > 0)) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
+                if ((bl > 0) && (br > 0)) ShadeLine(lpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_l, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
             }
             if (br > 3) {
-                if (bb > 1) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
+                if (bb > 1) ShadeLine(lpen, tc, data->dc->UseGradients, rp, di, bc, data->dc->ShadeValues_l, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
             }
         }
         FreeVec(buf);
@@ -1493,7 +1493,7 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     struct Gadget          *gadget = msg->wdp_Gadget;
     struct Rectangle       *r;
     struct PropInfo        *pi = ((struct PropInfo *)gadget->SpecialInfo);
-    struct DecorImage        *ni = NULL;
+    struct DecorImage        *di = NULL;
     BOOL                    hit = (msg->wdp_Flags & WDF_DBPK_HIT) ? TRUE : FALSE;
     ULONG                   y, x, bx0, bx1, by0, by1;
     LONG                    size;
@@ -1576,9 +1576,9 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     else
         return FALSE;
 
-    if (wd->img_border_normal->ok) ni = wd->img_border_normal;
+    if (wd->img_border_normal->ok) di = wd->img_border_normal;
 
-    if (ni == NULL) data->dc->UseGradients = TRUE;
+    if (di == NULL) data->dc->UseGradients = TRUE;
 
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
     {
@@ -1594,7 +1594,7 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
         arc = data->dc->DeactivatedGradientColor_a;
         if (!data->dc->UseGradients)
         {
-            if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
+            if (wd->img_border_deactivated->ok) di = wd->img_border_deactivated;
         }
         pen = wd->DeactivePen;
     }
@@ -1607,10 +1607,10 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     }
     else
     {
-        if (ni->ok)
+        if (di->ok)
         {
             ULONG   color = 0x00cccccc;
-            DHorizVertRepeatNewImage(ni, color, bx0, by0, rp, 0, 0, bx1 - bx0 + 1, by1 - by0 + 1);
+            DHorizVertRepeatDecorImage(di, color, bx0, by0, rp, 0, 0, bx1 - bx0 + 1, by1 - by0 + 1);
         }
     }
 

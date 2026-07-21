@@ -71,35 +71,35 @@ void pixop_blur14mix_row(ULONG *d, const ULONG *rm2, const ULONG *rm1, const ULO
 /* These are the non-D-prefixed internal implementations called
    within the library. The D-prefixed AROS_LH wrappers delegate to these. */
 
-/* newimagefuncs.c */
-struct DecorImage *NewImageContainer(UWORD w, UWORD h);
-struct DecorImage *ScaleNewImage(struct DecorImage *oni, UWORD neww, UWORD newh);
-void DisposeImageContainer(struct DecorImage *ni);
+/* decorimagefuncs.c */
+struct DecorImage *NewDecorImageContainer(UWORD w, UWORD h);
+struct DecorImage *ScaleDecorImage(struct DecorImage *oni, UWORD neww, UWORD newh);
+void DisposeImageContainer(struct DecorImage *di);
 struct DecorImage *GetImageFromFile(STRPTR path, STRPTR name, ULONG expectedsubimagescols, ULONG expectedsubimagesrows);
-struct DecorImage *CreateNewImageContainerMatchingScreen(struct DecorImage *in, BOOL truecolor, struct Screen *scr);
+struct DecorImage *CreateDecorImageContainerMatchingScreen(struct DecorImage *in, BOOL truecolor, struct Screen *scr);
 struct DecorImageLUT8 *NewLUT8ImageContainer(UWORD w, UWORD h);
-void DisposeLUT8ImageContainer(struct DecorImageLUT8 *ni);
+void DisposeLUT8ImageContainer(struct DecorImageLUT8 *di);
 struct Region *RegionFromLUT8Image(int w, int h, struct DecorImageLUT8 *s);
 ULONG *ScaleBuffer(ULONG *srcdata, LONG widthBuffer, LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest);
 
 /* drawfuncs.c */
-void DrawPartImageToRP(struct RastPort *rp, struct DecorImage *ni, UWORD x, UWORD y, UWORD sx, UWORD sy, UWORD sw, UWORD sh);
+void DrawPartImageToRP(struct RastPort *rp, struct DecorImage *di, UWORD x, UWORD y, UWORD sx, UWORD sy, UWORD sw, UWORD sh);
 void DrawPartToImage(struct DecorImage *src, struct DecorImage *dest, UWORD sx, UWORD sy, UWORD sw, UWORD sh, UWORD dx, UWORD dy);
-void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *ni, ULONG state, UWORD xp, UWORD yp);
-void DrawScaledStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *ni, ULONG state, UWORD xp, UWORD yp, WORD scaledwidth, WORD scaledheight);
-void HorizVertRepeatNewImage(struct DecorImage *ni, ULONG color, UWORD offx, UWORD offy, struct RastPort *rp, UWORD x, UWORD y, WORD w, WORD h);
+void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *di, ULONG state, UWORD xp, UWORD yp);
+void DrawScaledStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *di, ULONG state, UWORD xp, UWORD yp, WORD scaledwidth, WORD scaledheight);
+void HorizVertRepeatDecorImage(struct DecorImage *di, ULONG color, UWORD offx, UWORD offy, struct RastPort *rp, UWORD x, UWORD y, WORD w, WORD h);
 void HorizRepeatBuffer(UBYTE *buf, LONG offy, LONG pen, BOOL tc, struct RastPort *rp, LONG x, LONG y, LONG w, LONG h);
 void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle, LONG dx, LONG dy);
 void FillMemoryBufferRGBGradient(UBYTE *buf, LONG pen, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle);
-void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct DecorImage *ni, ULONG basecolor, UWORD fact, UWORD offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1);
+void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct DecorImage *di, ULONG basecolor, UWORD fact, UWORD offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1);
 void SetImageTint(struct DecorImage *dst, UWORD ratio, ULONG argb);
 void TileMapToBitmap(struct DecorImage *src, struct TileInfo *srcti, struct BitMap *map, UWORD dw, UWORD dh);
 void WriteAlphaPixelArray(struct DecorImage *src, struct DecorImageLUT8 *dst, LONG sx, LONG sy, LONG dx, LONG dy, LONG w, LONG h);
-LONG WriteTiledImageTitle(BOOL fill, LONG clipw, struct RastPort *rp, struct DecorImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh);
-LONG WriteTiledImageVertical(struct RastPort *rp, struct DecorImage *ni, ULONG subimage, LONG sy, LONG sh, LONG xp, LONG yp, LONG dh);
-LONG WriteTiledImageHorizontal(struct RastPort *rp, struct DecorImage *ni, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw);
-LONG WriteVerticalScaledTiledImageHorizontal(struct RastPort *rp, struct DecorImage *ni, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG sh, LONG dw, LONG dh);
-void PutImageToRP(struct RastPort *rp, struct DecorImage *ni, UWORD x, UWORD y);
+LONG WriteTiledImageTitle(BOOL fill, LONG clipw, struct RastPort *rp, struct DecorImage *di, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh);
+LONG WriteTiledImageVertical(struct RastPort *rp, struct DecorImage *di, ULONG subimage, LONG sy, LONG sh, LONG xp, LONG yp, LONG dh);
+LONG WriteTiledImageHorizontal(struct RastPort *rp, struct DecorImage *di, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw);
+LONG WriteVerticalScaledTiledImageHorizontal(struct RastPort *rp, struct DecorImage *di, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG sh, LONG dw, LONG dh);
+void PutImageToRP(struct RastPort *rp, struct DecorImage *di, UWORD x, UWORD y);
 struct DecorImage *GetImageFromRP(struct RastPort *rp, UWORD x, UWORD y, UWORD w, UWORD h);
 void RenderMenuBackground(struct DecorImage *pic, struct DecorImage *texture, struct TileInfo *textureti, UWORD ratio);
 void RenderMenuBarBackground(struct DecorImage *pic, struct DecorImage *texture, struct TileInfo *textureti, UWORD ratio);

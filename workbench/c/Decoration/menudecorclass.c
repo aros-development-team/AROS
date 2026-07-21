@@ -139,23 +139,23 @@ static IPTR menudecor_renderbackground(Class *cl, Object *obj, struct mdpDrawBac
 {
     struct menudecor_data *data = INST_DATA(cl, obj);
     struct RastPort    *rp = msg->mdp_RPort;
-    struct DecorImage    *ni;
+    struct DecorImage    *di;
     struct MenuData    *md = (struct MenuData *) msg->mdp_UserBuffer;
     UWORD               flags = msg->mdp_Flags;
 
-    if ((flags & HIGHITEM) && md->ni)
+    if ((flags & HIGHITEM) && md->di)
     {
-        ni = DNewImageContainer(msg->mdp_ItemWidth, msg->mdp_ItemHeight);
-        if (ni)
+        di = DNewDecorImageContainer(msg->mdp_ItemWidth, msg->mdp_ItemHeight);
+        if (di)
         {
-            DDrawPartToImage(md->ni, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight, 0, 0);
-            DSetImageTint(ni, 255 - (data->dc->MenuHighlightTint >> 24), data->dc->MenuHighlightTint & 0xffffff);
-            DPutImageToRP(rp, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop);
+            DDrawPartToImage(md->di, di, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight, 0, 0);
+            DSetImageTint(di, 255 - (data->dc->MenuHighlightTint >> 24), data->dc->MenuHighlightTint & 0xffffff);
+            DPutImageToRP(rp, di, msg->mdp_ItemLeft, msg->mdp_ItemTop);
         }
     }
     else
     {
-        if (md->ni) DDrawPartImageToRP(rp, md->ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight);
+        if (md->di) DDrawPartImageToRP(rp, md->di, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight);
     }
 
     return TRUE;
@@ -191,32 +191,32 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
         if ((data->dc->MenuIsTiled) && (height < (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop)))
             height = (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop);
 
-        md->ni = DNewImageContainer(msg->mdp_Width, height);
-        if (md->ni)
+        md->di = DNewDecorImageContainer(msg->mdp_Width, height);
+        if (md->di)
         {
-            md->ni->ok = TRUE;
-            DRenderMenuBarBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
+            md->di->ok = TRUE;
+            DRenderMenuBarBackground(md->di, md->img_menu, md->img_menu_ti, 20);
 
             /* Scale down if needed */
             if (height > msg->mdp_Height)
             {
-                struct DecorImage * sni = DScaleNewImage(md->ni, msg->mdp_Width, msg->mdp_Height);
+                struct DecorImage * sni = DScaleDecorImage(md->di, msg->mdp_Width, msg->mdp_Height);
                 if (sni)
                 {
-                    DDisposeImageContainer(md->ni);
-                    md->ni = sni;
-                    md->ni->ok = TRUE;
+                    DDisposeImageContainer(md->di);
+                    md->di = sni;
+                    md->di->ok = TRUE;
                 }
             }
         }
     }
     else
     {
-        md->ni = DGetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
-        if (md->ni)
+        md->di = DGetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
+        if (md->di)
         {
-            md->ni->ok = TRUE;
-            DRenderMenuBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
+            md->di->ok = TRUE;
+            DRenderMenuBackground(md->di, md->img_menu, md->img_menu_ti, 20);
         }
     }
 
@@ -228,7 +228,7 @@ static IPTR menudecor_exitmenu(Class *cl, Object *obj, struct mdpExitMenu *msg)
 {
     struct MenuData     *md = (struct MenuData *) msg->mdp_UserBuffer;
 
-    if (md->ni) DDisposeImageContainer(md->ni);
+    if (md->di) DDisposeImageContainer(md->di);
     if (md->map) FreeBitMap(md->map);
     if (md->img_menu_ti) FreeVec(md->img_menu_ti);
 

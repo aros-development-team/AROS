@@ -53,7 +53,7 @@ struct  WindowData
     /* Per-screen theme instance shared with the ScreenData (not owned) */
     struct DecorThemeScreen *dts;
 
-    struct DecorImage *ni;
+    struct DecorImage *di;
 
     struct DecorImage *img_size;
     struct DecorImage *img_close;

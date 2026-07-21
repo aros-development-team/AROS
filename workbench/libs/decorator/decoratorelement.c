@@ -27,13 +27,13 @@
 LONG RenderElement(struct DecoratorElement *element, struct RastPort *rp,
                   ULONG subimage, LONG xp, LONG yp, LONG dw, LONG dh, LONG clipw)
 {
-    struct DecorImage *ni;
+    struct DecorImage *di;
 
     if (!element || !rp)
         return xp;
 
-    ni = element->de_Image;
-    if (!ni || !ni->ok)
+    di = element->de_Image;
+    if (!di || !di->ok)
         return (element->de_Type == DE_TYPE_TILED_VERTICAL) ? yp : xp;
 
     xp += element->de_PadX;
@@ -43,23 +43,23 @@ LONG RenderElement(struct DecoratorElement *element, struct RastPort *rp,
     {
         case DE_TYPE_STATEFUL_GADGET:
             /* Negative dimensions mean natural (unscaled) size */
-            DrawScaledStatefulGadgetImageToRP(rp, ni, subimage, xp, yp, dw, dh);
+            DrawScaledStatefulGadgetImageToRP(rp, di, subimage, xp, yp, dw, dh);
             return xp;
 
         case DE_TYPE_TILED_HORIZONTAL:
-            return WriteTiledImageHorizontal(rp, ni, subimage,
+            return WriteTiledImageHorizontal(rp, di, subimage,
                 element->de_SrcOffset, element->de_SrcSize, xp, yp, dw);
 
         case DE_TYPE_TILED_VERTICAL:
-            return WriteTiledImageVertical(rp, ni, subimage,
+            return WriteTiledImageVertical(rp, di, subimage,
                 element->de_SrcOffset, element->de_SrcSize, xp, yp, dh);
 
         case DE_TYPE_SCALED_TILED_H:
         {
             LONG sh = element->de_SrcHeight;
             if (sh <= 0)
-                sh = ni->h / (element->de_SubImageRows ? element->de_SubImageRows : 1);
-            return WriteVerticalScaledTiledImageHorizontal(rp, ni, subimage,
+                sh = di->h / (element->de_SubImageRows ? element->de_SubImageRows : 1);
+            return WriteVerticalScaledTiledImageHorizontal(rp, di, subimage,
                 element->de_SrcOffset, element->de_SrcSize,
                 xp, yp, sh, dw, dh);
         }
@@ -67,18 +67,18 @@ LONG RenderElement(struct DecoratorElement *element, struct RastPort *rp,
         case DE_TYPE_TILED_TITLE:
         {
             LONG rows = element->de_SubImageRows ? element->de_SubImageRows : 1;
-            LONG sh = ni->h / rows;
+            LONG sh = di->h / rows;
 
-            return WriteTiledImageTitle(TRUE, clipw, rp, ni, element->de_SrcOffset,
+            return WriteTiledImageTitle(TRUE, clipw, rp, di, element->de_SrcOffset,
                 subimage * sh, element->de_SrcSize, sh, xp, yp, dw, dh);
         }
 
         case DE_TYPE_TILED_BOTH:
-            HorizVertRepeatNewImage(ni, 0x00000000, 0, 0, rp, xp, yp, dw, dh);
+            HorizVertRepeatDecorImage(di, 0x00000000, 0, 0, rp, xp, yp, dw, dh);
             return xp;
 
         case DE_TYPE_IMAGE:
-            DrawPartImageToRP(rp, ni, xp, yp, 0, 0, ni->w, ni->h);
+            DrawPartImageToRP(rp, di, xp, yp, 0, 0, di->w, di->h);
             return xp;
 
         default:
@@ -91,20 +91,20 @@ LONG RenderElement(struct DecoratorElement *element, struct RastPort *rp,
 /* Natural size of an element along the chain axis */
 static LONG ElementNaturalSize(struct DecoratorElement *element, BOOL vertical)
 {
-    struct DecorImage *ni = element->de_Image;
+    struct DecorImage *di = element->de_Image;
 
-    if (!ni)
+    if (!di)
         return 0;
 
     switch (element->de_Type)
     {
         case DE_TYPE_STATEFUL_GADGET:
             if (vertical)
-                return ni->h / (element->de_SubImageRows ? element->de_SubImageRows : 1);
-            return ni->w / (element->de_SubImageCols ? element->de_SubImageCols : 1);
+                return di->h / (element->de_SubImageRows ? element->de_SubImageRows : 1);
+            return di->w / (element->de_SubImageCols ? element->de_SubImageCols : 1);
 
         case DE_TYPE_IMAGE:
-            return vertical ? ni->h : ni->w;
+            return vertical ? di->h : di->w;
 
         default:
             /* Tiled types cover de_SrcSize pixels of source per repeat */

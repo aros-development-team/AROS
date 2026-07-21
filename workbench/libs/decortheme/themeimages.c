@@ -19,7 +19,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-struct DecorImages * NewImages(void)
+struct DecorImages * NewDecorImages(void)
 {
     return AllocVec(sizeof(struct DecorImages), MEMF_ANY | MEMF_CLEAR);
 }
@@ -29,7 +29,7 @@ struct DecorImages * LoadImages(struct DecorConfig * dc)
     ULONG   wgsubimagecols = 4; /* Default value of subimage cols in window gadget */
     STRPTR  path = dc->ThemePath;
 
-    struct DecorImages * di = NewImages();
+    struct DecorImages * di = NewDecorImages();
 
     if (!di)
         return NULL;
@@ -106,11 +106,11 @@ void FreeImages(struct DecorImages * di)
 
 /* ========== Library Entry Points ========== */
 
-AROS_LH0(struct DecorImages *, DTNewImages,
+AROS_LH0(struct DecorImages *, DTNewDecorImages,
     struct Library *, DecorThemeBase, 11, Decortheme)
 {
     AROS_LIBFUNC_INIT
-    return NewImages();
+    return NewDecorImages();
     AROS_LIBFUNC_EXIT
 }
 

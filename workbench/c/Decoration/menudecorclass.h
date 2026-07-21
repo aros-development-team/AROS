@@ -13,7 +13,7 @@
 
 struct MenuData
 {
-    struct DecorImage *ni;
+    struct DecorImage *di;
     struct BitMap   *map;
 
     struct DecorImage *img_menu;

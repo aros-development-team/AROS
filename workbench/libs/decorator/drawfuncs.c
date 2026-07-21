@@ -37,7 +37,7 @@
 
 struct ShadeData
 {
-    struct DecorImage     *ni;
+    struct DecorImage     *di;
     struct BitMap     *rpBm;
     UWORD               offy;
     UWORD               fact;
@@ -64,7 +64,7 @@ struct layerhookmsg
  * The number of combinations of arguments is quite high. Please take time to understand it.
  *
  * Arguments:
- * ni - a DecorImage that is to be blitted
+ * di - a DecorImage that is to be blitted
  * subimageCol, subimageRow - define the initial read offset in source image based on assumption that image contains
  *                            a number of subimages drawn in rows or columns
  * xSrc, ySrc - define additional read offset in the source image subimage
@@ -74,15 +74,15 @@ struct layerhookmsg
  * widthDest, heightDest - width/height of blit on destination RastPort, if -1 then use widthSrc/heightSrc
  *
  */
-static void BltScaleNewImageSubImageRastPort(struct DecorImage * ni, ULONG subimageCol, ULONG subimageRow,
+static void BltScaleDecorImageSubImageRastPort(struct DecorImage * di, ULONG subimageCol, ULONG subimageRow,
         LONG xSrc, LONG ySrc, struct RastPort * destRP, LONG xDest, LONG yDest,
         LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest)
 {
-    ULONG subimagewidth     = ni->w / ni->subimagescols;
-    ULONG subimageheight    = ni->h / ni->subimagesrows;
+    ULONG subimagewidth     = di->w / di->subimagescols;
+    ULONG subimageheight    = di->h / di->subimagesrows;
     
-    if (subimageCol >= ni->subimagescols) return;
-    if (subimageRow >= ni->subimagesrows) return;
+    if (subimageCol >= di->subimagescols) return;
+    if (subimageRow >= di->subimagesrows) return;
 
     /* If source size not provided, use subimage size */
     if (widthSrc < 0) widthSrc = (LONG)subimagewidth;
@@ -96,10 +96,10 @@ static void BltScaleNewImageSubImageRastPort(struct DecorImage * ni, ULONG subim
     if ((widthSrc != widthDest) || (heightSrc != heightDest))
     {
         /* FIXME: The scaled blitting needs similar optimized code paths as non-scaled */
-        ULONG * srcptr = (ni->data) + (((subimageheight * subimageRow) + ySrc) * ni->w) +
+        ULONG * srcptr = (di->data) + (((subimageheight * subimageRow) + ySrc) * di->w) +
                 ((subimagewidth * subimageCol) + xSrc); /* Go to (0,0) of source rect */
 
-        ULONG * scaleddata = ScaleBuffer(srcptr, ni->w, widthSrc, heightSrc, widthDest, heightDest);
+        ULONG * scaleddata = ScaleBuffer(srcptr, di->w, widthSrc, heightSrc, widthDest, heightDest);
 
         D(bug("[Decoration] SCALED %d,%d -> %d,%d!\n", widthSrc, heightSrc, widthDest, heightDest));
 
@@ -110,35 +110,35 @@ static void BltScaleNewImageSubImageRastPort(struct DecorImage * ni, ULONG subim
     else /* ((widthSrc != widthDest) || (heightSrc != heightDest)) */
     {
         /* Detect if image can be drawn using blitting instead of alpha draw */
-        if ((!ni->subimageinbm) || (!(ni->subimageinbm[subimageCol + (subimageRow * ni->subimagescols)])))
+        if ((!di->subimageinbm) || (!(di->subimageinbm[subimageCol + (subimageRow * di->subimagescols)])))
         {
-            WritePixelArrayAlpha(ni->data, (subimagewidth * subimageCol) + xSrc ,
-                (subimageheight * subimageRow) + ySrc, ni->w * 4, destRP,
+            WritePixelArrayAlpha(di->data, (subimagewidth * subimageCol) + xSrc ,
+                (subimageheight * subimageRow) + ySrc, di->w * 4, destRP,
                 xDest, yDest, widthSrc, heightSrc, 0xffffffff);
         }
         else
         {
             /* LUT */
-            if (ni->bitmap != NULL)
+            if (di->bitmap != NULL)
             {
-                if (ni->mask)
+                if (di->mask)
                 {
-                    BltMaskBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
+                    BltMaskBitMapRastPort(di->bitmap, (subimagewidth * subimageCol) + xSrc ,
                         (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
-                        widthSrc, heightSrc, BLIT_MINTERM_COPYTM, (PLANEPTR) ni->mask);
+                        widthSrc, heightSrc, BLIT_MINTERM_COPYTM, (PLANEPTR) di->mask);
                 }
                 else
                 {
-                    BltBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
+                    BltBitMapRastPort(di->bitmap, (subimagewidth * subimageCol) + xSrc ,
                         (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
                         widthSrc, heightSrc, BLIT_MINTERM_COPY);
                 }
             }
 
             /* Truecolor */
-            if (ni->bitmap2 != NULL)
+            if (di->bitmap2 != NULL)
             {
-                BltBitMapRastPort(ni->bitmap2, (subimagewidth * subimageCol) + xSrc ,
+                BltBitMapRastPort(di->bitmap2, (subimagewidth * subimageCol) + xSrc ,
                     (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
                     widthSrc, heightSrc, BLIT_MINTERM_COPY);
             }
@@ -147,24 +147,24 @@ static void BltScaleNewImageSubImageRastPort(struct DecorImage * ni, ULONG subim
 }
 
 /* HELPER WRAPPERS */
-static inline void BltNewImageSubImageRastPort(struct DecorImage * ni, ULONG subimageCol, ULONG subimageRow,
+static inline void BltDecorImageSubImageRastPort(struct DecorImage * di, ULONG subimageCol, ULONG subimageRow,
         LONG xSrc, LONG ySrc, struct RastPort * destRP, LONG xDest, LONG yDest, LONG widthSrc, LONG heightSrc)
 {
-    BltScaleNewImageSubImageRastPort(ni, subimageCol, subimageRow, xSrc, ySrc, destRP,
+    BltScaleDecorImageSubImageRastPort(di, subimageCol, subimageRow, xSrc, ySrc, destRP,
             xDest, yDest, widthSrc, heightSrc, -1, -1);
 }
 
-static inline void BltNewImageSubImageRastPortSimple(struct DecorImage * ni, ULONG subimageCol, ULONG subimageRow,
+static inline void BltDecorImageSubImageRastPortSimple(struct DecorImage * di, ULONG subimageCol, ULONG subimageRow,
     struct RastPort * destRP, LONG xDest, LONG yDest)
 {
-    BltNewImageSubImageRastPort(ni, subimageCol, subimageRow, 0, 0, destRP,
+    BltDecorImageSubImageRastPort(di, subimageCol, subimageRow, 0, 0, destRP,
             xDest, yDest, -1, -1);
 }
 
-static inline void BltScaleNewImageSubImageRastPortSimple(struct DecorImage * ni, ULONG subimageCol, ULONG subimageRow,
+static inline void BltScaleDecorImageSubImageRastPortSimple(struct DecorImage * di, ULONG subimageCol, ULONG subimageRow,
     struct RastPort * destRP, LONG xDest, LONG yDest, LONG widthDest, LONG heightDest)
 {
-    BltScaleNewImageSubImageRastPort(ni, subimageCol, subimageRow, 0, 0, destRP,
+    BltScaleDecorImageSubImageRastPort(di, subimageCol, subimageRow, 0, 0, destRP,
             xDest, yDest, -1, -1, widthDest, heightDest);
 }
 /* HELPER WRAPPERS */
@@ -355,21 +355,21 @@ static void BlurSourceAndMixTexture(struct DecorImage *pic, struct DecorImage *t
 static void RenderBackgroundTiled(struct DecorImage *pic, struct DecorImage *texture, struct TileInfo *textureti,
         UWORD ratio, VOID (*TileImageToImageFunc)(struct DecorImage *src, struct TileInfo * srcti, struct DecorImage *dest))
 {
-    struct DecorImage *ni;
+    struct DecorImage *di;
 
     if (texture)
     {
-        ni = NewImageContainer(pic->w, pic->h);
-        if (ni)
+        di = NewDecorImageContainer(pic->w, pic->h);
+        if (di)
         {
             if (textureti)
             {
-                TileImageToImageFunc(texture, textureti, ni);
-                BlurSourceAndMixTexture(pic, ni, textureti, ratio);
+                TileImageToImageFunc(texture, textureti, di);
+                BlurSourceAndMixTexture(pic, di, textureti, ratio);
             }
             else BlurSourceAndMixTexture(pic, texture, textureti, ratio);
 
-            DisposeImageContainer(ni);
+            DisposeImageContainer(di);
         }
         else BlurSourceAndMixTexture(pic, texture, textureti, ratio);
     }
@@ -421,17 +421,17 @@ static void DrawMapTileToRP(struct DecorImage *src, struct RastPort *rp, UWORD _
 /******************************************************************************/
 /******************************************************************************/
 
-void DrawPartImageToRP(struct RastPort *rp, struct DecorImage *ni, UWORD x, UWORD y, UWORD sx, UWORD sy, UWORD sw, UWORD sh)
+void DrawPartImageToRP(struct RastPort *rp, struct DecorImage *di, UWORD x, UWORD y, UWORD sx, UWORD sy, UWORD sw, UWORD sh)
 {
-    if (ni->ok)
+    if (di->ok)
     {
-        if (ni->bitmap == NULL)
+        if (di->bitmap == NULL)
         {
-            WritePixelArray(ni->data, sx, sy, ni->w*4, rp, x, y, sw, sh, RECTFMT_ARGB);
+            WritePixelArray(di->data, sx, sy, di->w*4, rp, x, y, sw, sh, RECTFMT_ARGB);
         }
         else
         {
-            BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, y, sw, sh, BLIT_MINTERM_COPY);
+            BltBitMapRastPort(di->bitmap, sx, sy, rp, x, y, sw, sh, BLIT_MINTERM_COPY);
         }
     }
 }
@@ -495,25 +495,25 @@ void  SetImageTint(struct DecorImage *dst, UWORD ratio, ULONG argb)
 }
 
 /*
- * offx - offset between start of ni and place where image should be sample from
- * offy - offset between start of ni and place where image should be sample from
+ * offx - offset between start of di and place where image should be sample from
+ * offy - offset between start of di and place where image should be sample from
  * x, y, w, h - coords in rastport rp
  */
-void HorizVertRepeatNewImage(struct DecorImage *ni, ULONG color, UWORD offx, UWORD offy, struct RastPort *rp, UWORD x, UWORD y, WORD w, WORD h)
+void HorizVertRepeatDecorImage(struct DecorImage *di, ULONG color, UWORD offx, UWORD offy, struct RastPort *rp, UWORD x, UWORD y, WORD w, WORD h)
 {
     ULONG   ow, oh, sy, sx, dy, dx;
     LONG    dh, height, dw, width;
 
     if ((w <= 0) || (h <= 0)) return;
 
-    if (!ni->ok)
+    if (!di->ok)
     {
         FillPixelArray(rp, x, y, w, h, color);
         return;
     }
 
-    ow = ni->w;
-    oh = ni->h;
+    ow = di->w;
+    oh = di->h;
 
     sy = offy % oh;
     dh = oh - sy;
@@ -533,7 +533,7 @@ void HorizVertRepeatNewImage(struct DecorImage *ni, ULONG color, UWORD offx, UWO
             if ((width-dw)<0) dw = width;
             width -= dw;
 
-            BltNewImageSubImageRastPort(ni, 0, 0, sx, sy, rp, dx, dy, dw, dh);
+            BltDecorImageSubImageRastPort(di, 0, 0, sx, sy, rp, dx, dy, dw, dh);
 
             dx += dw;
             sx = 0;
@@ -546,18 +546,18 @@ void HorizVertRepeatNewImage(struct DecorImage *ni, ULONG color, UWORD offx, UWO
 }
 
 /* NOTE: fill parameter is ignored, previously it was forcing a no-alpha blit, but
-   this is already handled in BltNewImageSubImageRastPort */
+   this is already handled in BltDecorImageSubImageRastPort */
 /* clipw - if > 0 nothing is drawn beyond this x extent */
 /* dh - destination height to which subimage will be scaled to */
 LONG WriteTiledImageTitle(BOOL fill, LONG clipw,
-    struct RastPort *rp, struct DecorImage *ni, LONG sx, LONG sy, LONG sw,
+    struct RastPort *rp, struct DecorImage *di, LONG sx, LONG sy, LONG sw,
     LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
 {
     int     w = dw;
     int     x = xp;
     int     ddw;
 
-    if (!ni->ok) return x;
+    if (!di->ok) return x;
 
     if ((sw == 0) || (dw == 0)) return xp;
 
@@ -572,7 +572,7 @@ LONG WriteTiledImageTitle(BOOL fill, LONG clipw,
         ddw = sw;
         if (w < ddw) ddw = w;
 
-        BltScaleNewImageSubImageRastPort(ni, 0, 0, sx, sy, rp, x, yp, ddw, -1, -1, dh);
+        BltScaleDecorImageSubImageRastPort(di, 0, 0, sx, sy, rp, x, yp, ddw, -1, -1, dh);
 
         w -= ddw;
         x += ddw;
@@ -583,14 +583,14 @@ LONG WriteTiledImageTitle(BOOL fill, LONG clipw,
 /*
  * dh - destination height to scale to, -1 to use subimage height
  */
-LONG WriteVerticalScaledTiledImageHorizontal(struct RastPort *rp, struct DecorImage *ni, ULONG subimage,
+LONG WriteVerticalScaledTiledImageHorizontal(struct RastPort *rp, struct DecorImage *di, ULONG subimage,
         LONG sx, LONG sw, LONG xp, LONG yp, LONG sh, LONG dw, LONG dh)
 {
     LONG w = dw;
     LONG x = xp;
     LONG ddw;
 
-    if (!ni->ok) return xp;
+    if (!di->ok) return xp;
 
     if ((sw == 0) || (dw == 0)) return xp;
 
@@ -599,7 +599,7 @@ LONG WriteVerticalScaledTiledImageHorizontal(struct RastPort *rp, struct DecorIm
         ddw = sw;
         if (w < ddw) ddw = w;
 
-        BltScaleNewImageSubImageRastPort(ni, 0, subimage, sx, 0, rp, x, yp, ddw, sh, -1, dh);
+        BltScaleDecorImageSubImageRastPort(di, 0, subimage, sx, 0, rp, x, yp, ddw, sh, -1, dh);
 
         w -= ddw;
         x += ddw;
@@ -608,18 +608,18 @@ LONG WriteVerticalScaledTiledImageHorizontal(struct RastPort *rp, struct DecorIm
     return x;
 }
 
-LONG WriteTiledImageHorizontal(struct RastPort *rp, struct DecorImage *ni, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw)
+LONG WriteTiledImageHorizontal(struct RastPort *rp, struct DecorImage *di, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw)
 {
-    return WriteVerticalScaledTiledImageHorizontal(rp, ni, subimage, sx, sw, xp, yp, -1, dw, -1);
+    return WriteVerticalScaledTiledImageHorizontal(rp, di, subimage, sx, sw, xp, yp, -1, dw, -1);
 }
 
-LONG WriteTiledImageVertical(struct RastPort *rp, struct DecorImage *ni, ULONG subimage, LONG sy, LONG sh, LONG xp, LONG yp, LONG dh)
+LONG WriteTiledImageVertical(struct RastPort *rp, struct DecorImage *di, ULONG subimage, LONG sy, LONG sh, LONG xp, LONG yp, LONG dh)
 {
     int     h = dh;
     int     y = yp;
     int     ddh;
 
-    if (!ni->ok) return y;
+    if (!di->ok) return y;
 
     if ((sh == 0) || (dh == 0)) return yp;
 
@@ -628,7 +628,7 @@ LONG WriteTiledImageVertical(struct RastPort *rp, struct DecorImage *ni, ULONG s
         ddh = sh;
         if (h < ddh) ddh = h;
 
-        BltNewImageSubImageRastPort(ni, subimage, 0, 0, sy, rp, xp, y, -1, ddh);
+        BltDecorImageSubImageRastPort(di, subimage, 0, 0, sy, rp, xp, y, -1, ddh);
 
         h -= ddh;
         y += ddh;
@@ -889,22 +889,22 @@ void TileMapToBitmap(struct DecorImage *src, struct TileInfo *srcti, struct BitM
 
 struct DecorImage *GetImageFromRP(struct RastPort *rp, UWORD x, UWORD y, UWORD w, UWORD h)
 {
-    struct DecorImage *ni;
+    struct DecorImage *di;
 
-    ni = NewImageContainer(w, h);
-    if (ni)
+    di = NewDecorImageContainer(w, h);
+    if (di)
     {
-        ReadPixelArray(ni->data, 0, 0, w*4, rp, x, y, w, h, RECTFMT_ARGB);
+        ReadPixelArray(di->data, 0, 0, w*4, rp, x, y, w, h, RECTFMT_ARGB);
     }
-    return ni;
+    return di;
 }
 
-void PutImageToRP(struct RastPort *rp, struct DecorImage *ni, UWORD x, UWORD y) {
+void PutImageToRP(struct RastPort *rp, struct DecorImage *di, UWORD x, UWORD y) {
 
-    if (ni)
+    if (di)
     {
-        if (ni->data) WritePixelArray(ni->data, 0, 0, ni->w*4, rp, x, y, ni->w, ni->h, RECTFMT_ARGB);
-        DisposeImageContainer(ni);
+        if (di->data) WritePixelArray(di->data, 0, 0, di->w*4, rp, x, y, di->w, di->h, RECTFMT_ARGB);
+        DisposeImageContainer(di);
     }
 }
 
@@ -963,7 +963,7 @@ AROS_UFH3(void, RectShadeFunc,
 #endif
     D(
        bug("[Decoration] %s: data @ 0x%p\n", __func__, data);
-       bug("[Decoration] %s:      offy = %d, fact = %d, ni @ 0x%p\n", __func__, data->offy, data->fact, data->ni);
+       bug("[Decoration] %s:      offy = %d, fact = %d, di @ 0x%p\n", __func__, data->offy, data->fact, data->di);
        bug("[Decoration] %s: Msg  Area = %d,%d -> %d,%d\n", __func__, msg->MinX, msg->MinY, msg->MaxX, msg->MaxY);
        bug("[Decoration] %s:      Offset = %d,%d\n", __func__, msg->OffsetX, msg->OffsetY);
     )
@@ -1003,7 +1003,7 @@ AROS_UFH3(void, RectShadeFunc,
     else if (height > 1)
     {
 #if !defined(DECOR_FAKESHADE)
-        x = src_offset_x % data->ni->w;
+        x = src_offset_x % data->di->w;
 #endif
         linesize = height << 2;
     }
@@ -1031,14 +1031,14 @@ AROS_UFH3(void, RectShadeFunc,
     for (py = starty; py < (starty + height); py++)
     {
 #if !defined(DECOR_FAKESHADE)
-        y = (src_offset_y + py - starty) % data->ni->h;
+        y = (src_offset_y + py - starty) % data->di->h;
 #endif
 
 #if defined(DECOR_USELINEBUFF)
         if (width == 1 && outline)
         {
 #if !defined(DECOR_FAKESHADE)
-            color = CalcShade(data->ni->data[(y * data->ni->w) + x], data->fact);
+            color = CalcShade(data->di->data[(y * data->di->w) + x], data->fact);
 #else
             color = SET_ARGB(00, 0xFF, 0x00, 0x70);
 #endif
@@ -1053,8 +1053,8 @@ AROS_UFH3(void, RectShadeFunc,
         {
             /* Shade the whole scanline via the row kernel, split into
                segments where the source image wraps around */
-            LONG niw = data->ni->w;
-            const ULONG *srow = data->ni->data + ((ULONG)y * niw);
+            LONG niw = data->di->w;
+            const ULONG *srow = data->di->data + ((ULONG)y * niw);
             LONG remaining = width, oidx = 0;
             LONG sx = ((src_offset_x % niw) + niw) % niw;
 
@@ -1073,9 +1073,9 @@ AROS_UFH3(void, RectShadeFunc,
         for (px = startx; px < (startx + width); px++)
         {
 #if !defined(DECOR_FAKESHADE)
-            x = (src_offset_x + px - startx) % data->ni->w;
+            x = (src_offset_x + px - startx) % data->di->w;
 
-            color = CalcShade(data->ni->data[(y * data->ni->w) + x], data->fact);
+            color = CalcShade(data->di->data[(y * data->di->w) + x], data->fact);
 #else
             color = SET_ARGB(00, 0xFF, 0x00, 0x70);
 #endif
@@ -1167,7 +1167,7 @@ AROS_UFH3(void, RectShadeFunc,
     AROS_USERFUNC_EXIT
 }
 
-void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct DecorImage *ni, ULONG basecolor, UWORD fact, UWORD _offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1)
+void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct DecorImage *di, ULONG basecolor, UWORD fact, UWORD _offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1)
 {
     ULONG   color;
 
@@ -1189,7 +1189,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
         Move(rp, x0, y0);
         Draw(rp, x1, y1);
     }
-    else if (ni->ok)
+    else if (di->ok)
     {
         struct ShadeData shadeParams;
         struct Hook      shadeHook;
@@ -1202,7 +1202,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
 
         D(bug("[Decoration] %s: SHADE > %d,%d -> %d,%d\n", __func__, x0, y0, x1, y1);)
 
-        shadeParams.ni = ni;
+        shadeParams.di = di;
         shadeParams.rpBm = rp->BitMap;
         shadeParams.startx = x0,
         shadeParams.starty = y0;
@@ -1222,14 +1222,14 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
 }
 
-void DrawScaledStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *ni, ULONG state, UWORD xp, UWORD yp,
+void DrawScaledStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *di, ULONG state, UWORD xp, UWORD yp,
         WORD scaledwidth, WORD scaledheight)
 {
 
     UWORD subimagecol = 0;
     UWORD subimagerow = 0;
     
-    if (ni->ok)
+    if (di->ok)
     {
         switch(state)
         {
@@ -1243,13 +1243,13 @@ void DrawScaledStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *n
                 break;
         }
 
-        BltScaleNewImageSubImageRastPortSimple(ni, subimagecol, subimagerow, rp, xp, yp, scaledwidth, scaledheight);
+        BltScaleDecorImageSubImageRastPortSimple(di, subimagecol, subimagerow, rp, xp, yp, scaledwidth, scaledheight);
     }
 }
 
-void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *ni, ULONG state, UWORD xp, UWORD yp)
+void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *di, ULONG state, UWORD xp, UWORD yp)
 {
-    DrawScaledStatefulGadgetImageToRP(rp, ni, state, xp, yp, -1, -1);
+    DrawScaledStatefulGadgetImageToRP(rp, di, state, xp, yp, -1, -1);
 }
 
 /******************************************************************************/
@@ -1258,7 +1258,7 @@ void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *ni, ULO
 
 AROS_LH8(void, DDrawPartImageToRP,
     AROS_LHA(struct RastPort *, rp, A0),
-    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(struct DecorImage *, di, A1),
     AROS_LHA(UWORD, x, D0),
     AROS_LHA(UWORD, y, D1),
     AROS_LHA(UWORD, sx, D2),
@@ -1268,7 +1268,7 @@ AROS_LH8(void, DDrawPartImageToRP,
     struct Library *, DecoratorBase, 15, Decorator)
 {
     AROS_LIBFUNC_INIT
-    DrawPartImageToRP(rp, ni, x, y, sx, sy, sw, sh);
+    DrawPartImageToRP(rp, di, x, y, sx, sy, sw, sh);
     AROS_LIBFUNC_EXIT
 }
 
@@ -1290,20 +1290,20 @@ AROS_LH8(void, DDrawPartToImage,
 
 AROS_LH5(void, DDrawStatefulGadgetImageToRP,
     AROS_LHA(struct RastPort *, rp, A0),
-    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(struct DecorImage *, di, A1),
     AROS_LHA(ULONG, state, D0),
     AROS_LHA(UWORD, xp, D1),
     AROS_LHA(UWORD, yp, D2),
     struct Library *, DecoratorBase, 17, Decorator)
 {
     AROS_LIBFUNC_INIT
-    DrawStatefulGadgetImageToRP(rp, ni, state, xp, yp);
+    DrawStatefulGadgetImageToRP(rp, di, state, xp, yp);
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH7(void, DDrawScaledStatefulGadgetImageToRP,
     AROS_LHA(struct RastPort *, rp, A0),
-    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(struct DecorImage *, di, A1),
     AROS_LHA(ULONG, state, D0),
     AROS_LHA(UWORD, xp, D1),
     AROS_LHA(UWORD, yp, D2),
@@ -1312,12 +1312,12 @@ AROS_LH7(void, DDrawScaledStatefulGadgetImageToRP,
     struct Library *, DecoratorBase, 18, Decorator)
 {
     AROS_LIBFUNC_INIT
-    DrawScaledStatefulGadgetImageToRP(rp, ni, state, xp, yp, scaledwidth, scaledheight);
+    DrawScaledStatefulGadgetImageToRP(rp, di, state, xp, yp, scaledwidth, scaledheight);
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH9(void, DHorizVertRepeatNewImage,
-    AROS_LHA(struct DecorImage *, ni, A0),
+AROS_LH9(void, DHorizVertRepeatDecorImage,
+    AROS_LHA(struct DecorImage *, di, A0),
     AROS_LHA(ULONG, color, D0),
     AROS_LHA(UWORD, offx, D1),
     AROS_LHA(UWORD, offy, D2),
@@ -1329,7 +1329,7 @@ AROS_LH9(void, DHorizVertRepeatNewImage,
     struct Library *, DecoratorBase, 19, Decorator)
 {
     AROS_LIBFUNC_INIT
-    HorizVertRepeatNewImage(ni, color, offx, offy, rp, x, y, w, h);
+    HorizVertRepeatDecorImage(di, color, offx, offy, rp, x, y, w, h);
     AROS_LIBFUNC_EXIT
 }
 
@@ -1393,7 +1393,7 @@ AROS_LH9(void, DShadeLine,
     AROS_LHA(BOOL, tc, D1),
     AROS_LHA(BOOL, usegradients, D2),
     AROS_LHA(struct RastPort *, rp, A0),
-    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(struct DecorImage *, di, A1),
     AROS_LHA(ULONG, basecolor, D3),
     AROS_LHA(UWORD, fact, D4),
     AROS_LHA(UWORD, offy, D5),
@@ -1401,7 +1401,7 @@ AROS_LH9(void, DShadeLine,
     struct Library *, DecoratorBase, 24, Decorator)
 {
     AROS_LIBFUNC_INIT
-    ShadeLine(pen, tc, usegradients, rp, ni, basecolor, fact, offy,
+    ShadeLine(pen, tc, usegradients, rp, di, basecolor, fact, offy,
               bounds->MinX, bounds->MinY, bounds->MaxX, bounds->MaxY);
     AROS_LIBFUNC_EXIT
 }
@@ -1450,7 +1450,7 @@ AROS_LH12(LONG, DWriteTiledImageTitle,
     AROS_LHA(BOOL, fill, D0),
     AROS_LHA(struct Window *, win, A0),
     AROS_LHA(struct RastPort *, rp, A1),
-    AROS_LHA(struct DecorImage *, ni, A2),
+    AROS_LHA(struct DecorImage *, di, A2),
     AROS_LHA(LONG, sx, D1),
     AROS_LHA(LONG, sy, D2),
     AROS_LHA(LONG, sw, D3),
@@ -1462,13 +1462,13 @@ AROS_LH12(LONG, DWriteTiledImageTitle,
     struct Library *, DecoratorBase, 28, Decorator)
 {
     AROS_LIBFUNC_INIT
-    return WriteTiledImageTitle(fill, win ? win->Width : 0, rp, ni, sx, sy, sw, sh, xp, yp, dw, dh);
+    return WriteTiledImageTitle(fill, win ? win->Width : 0, rp, di, sx, sy, sw, sh, xp, yp, dw, dh);
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH8(LONG, DWriteTiledImageVertical,
     AROS_LHA(struct RastPort *, rp, A0),
-    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(struct DecorImage *, di, A1),
     AROS_LHA(ULONG, subimage, D0),
     AROS_LHA(LONG, sy, D1),
     AROS_LHA(LONG, sh, D2),
@@ -1478,13 +1478,13 @@ AROS_LH8(LONG, DWriteTiledImageVertical,
     struct Library *, DecoratorBase, 29, Decorator)
 {
     AROS_LIBFUNC_INIT
-    return WriteTiledImageVertical(rp, ni, subimage, sy, sh, xp, yp, dh);
+    return WriteTiledImageVertical(rp, di, subimage, sy, sh, xp, yp, dh);
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH8(LONG, DWriteTiledImageHorizontal,
     AROS_LHA(struct RastPort *, rp, A0),
-    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(struct DecorImage *, di, A1),
     AROS_LHA(ULONG, subimage, D0),
     AROS_LHA(LONG, sx, D1),
     AROS_LHA(LONG, sw, D2),
@@ -1494,13 +1494,13 @@ AROS_LH8(LONG, DWriteTiledImageHorizontal,
     struct Library *, DecoratorBase, 30, Decorator)
 {
     AROS_LIBFUNC_INIT
-    return WriteTiledImageHorizontal(rp, ni, subimage, sx, sw, xp, yp, dw);
+    return WriteTiledImageHorizontal(rp, di, subimage, sx, sw, xp, yp, dw);
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH10(LONG, DWriteVerticalScaledTiledImageHorizontal,
     AROS_LHA(struct RastPort *, rp, A0),
-    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(struct DecorImage *, di, A1),
     AROS_LHA(ULONG, subimage, D0),
     AROS_LHA(LONG, sx, D1),
     AROS_LHA(LONG, sw, D2),
@@ -1512,19 +1512,19 @@ AROS_LH10(LONG, DWriteVerticalScaledTiledImageHorizontal,
     struct Library *, DecoratorBase, 31, Decorator)
 {
     AROS_LIBFUNC_INIT
-    return WriteVerticalScaledTiledImageHorizontal(rp, ni, subimage, sx, sw, xp, yp, sh, dw, dh);
+    return WriteVerticalScaledTiledImageHorizontal(rp, di, subimage, sx, sw, xp, yp, sh, dw, dh);
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH4(void, DPutImageToRP,
     AROS_LHA(struct RastPort *, rp, A0),
-    AROS_LHA(struct DecorImage *, ni, A1),
+    AROS_LHA(struct DecorImage *, di, A1),
     AROS_LHA(UWORD, x, D0),
     AROS_LHA(UWORD, y, D1),
     struct Library *, DecoratorBase, 32, Decorator)
 {
     AROS_LIBFUNC_INIT
-    PutImageToRP(rp, ni, x, y);
+    PutImageToRP(rp, di, x, y);
     AROS_LIBFUNC_EXIT
 }
 

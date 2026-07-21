@@ -21,7 +21,7 @@
 #include "decortheme_intern.h"
 
 #define REMAP_SCR(id) dts->dts_Images->img_##id = \
-    DCreateNewImageContainerMatchingScreen(theme->dt_Images->img_##id, truecolor, scr)
+    DCreateDecorImageContainerMatchingScreen(theme->dt_Images->img_##id, truecolor, scr)
 
 struct DecorThemeScreen *ObtainScreenTheme(struct DecorTheme *theme, struct Screen *scr, BOOL truecolor)
 {
@@ -38,7 +38,7 @@ struct DecorThemeScreen *ObtainScreenTheme(struct DecorTheme *theme, struct Scre
     dts->dts_Screen = scr;
     dts->dts_TrueColor = truecolor;
 
-    dts->dts_Images = NewImages();
+    dts->dts_Images = NewDecorImages();
     if (!dts->dts_Images)
     {
         FreeVec(dts);

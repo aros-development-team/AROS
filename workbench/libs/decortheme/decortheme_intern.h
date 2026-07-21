@@ -25,7 +25,7 @@ struct DecorConfig *LoadConfig(STRPTR path);
 void FreeConfig(struct DecorConfig *dc);
 
 /* themeimages.c */
-struct DecorImages *NewImages(void);
+struct DecorImages *NewDecorImages(void);
 struct DecorImages *LoadImages(struct DecorConfig *dc);
 void FreeImages(struct DecorImages *di);
 
