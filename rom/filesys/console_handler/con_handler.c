@@ -651,7 +651,6 @@ LONG CONMain(struct ExecBase *SysBase)
                 while ((msg = (struct IntuiMessage *)GetMsg(fh->window->UserPort))) {
                     ULONG   msgclass = msg->Class;
                     UWORD   msgcode  = msg->Code;
-                    ReplyMsg((struct Message *)msg);
 
                     switch (msgclass) {
                     case IDCMP_MENUPICK:
@@ -660,6 +659,27 @@ LONG CONMain(struct ExecBase *SysBase)
                             UWORD           men  = msgcode;
 
                             D(bug("[con:handler] %s: IDCMP_MENUPICK\n", __func__));
+
+                            /* Applications using a console window may replace
+                             * the handler's menu strip and request menu picks
+                             * as console.device raw events.  Do not interpret
+                             * their menu codes against our stale menu strip. */
+                            if (fh->window->MenuStrip != fh->winmenu)
+                            {
+                                struct InputEvent ie = {0};
+                                struct Library *ConsoleDevice =
+                                    (struct Library *)fh->conreadio->io_Device;
+
+                                ie.ie_Class = IECLASS_MENULIST;
+                                ie.ie_Code = msg->Code;
+                                ie.ie_Qualifier = msg->Qualifier;
+                                ie.ie_X = msg->MouseX;
+                                ie.ie_Y = msg->MouseY;
+                                ie.ie_TimeStamp.tv_secs = msg->Seconds;
+                                ie.ie_TimeStamp.tv_micro = msg->Micros;
+                                CDInputHandler(&ie, ConsoleDevice);
+                                break;
+                            }
 
                             while(men != MENUNULL)
                             {
@@ -728,6 +748,7 @@ LONG CONMain(struct ExecBase *SysBase)
                     default:
                         break;
                     }
+                    ReplyMsg((struct Message *)msg);
                 }
             }
     #endif
