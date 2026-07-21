@@ -55,7 +55,7 @@ static void worker_main(void)
 
         while ((wmsg = (struct workqueue_message *)GetMsg(workqueue_port)))
         {
-            (bug("[Nouveau] WorkQueue: Executing work %p func %p\n", wmsg->work, wmsg->work->func));
+            D(bug("[Nouveau] WorkQueue: Executing work %p func %p\n", wmsg->work, wmsg->work->func));
 
             /* work->state == WORK_SCHEDULED */
             wmsg->work->state = WORK_EXECUTING;
