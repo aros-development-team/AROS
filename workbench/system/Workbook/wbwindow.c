@@ -309,6 +309,9 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
     } else {
         struct opMember opmmsg;
         struct wbWindow_Icon *tmp, *pred = NULL;
+        struct Rectangle oldAutoBounds;
+        BOOL haveOldAutoBounds = FALSE;
+        IPTR positioned = FALSE;
         wbwi->wbwiObject = iobj;
 
         /* Insert in Alpha order */
@@ -325,15 +328,73 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
 
         Insert((struct List *)&my->IconList, (struct Node *)wbwi, (struct Node *)pred);
 
+        /* Adding a positioned icon can enlarge the fixed part of WBSet and
+         * move auto-positioned icons which have already been rendered by the
+         * progressive loader. Remember their old on-screen bounds so those
+         * images do not remain behind as non-interactive ghosts. */
+        GetAttr(WBIA_Positioned, iobj, &positioned);
+        if (positioned) {
+            ForeachNode(&my->IconList, tmp) {
+                IPTR oldPositioned = FALSE;
+                struct Gadget *gadget;
+                struct Rectangle bounds;
+
+                if (tmp->wbwiObject == iobj)
+                    continue;
+
+                GetAttr(WBIA_Positioned, tmp->wbwiObject, &oldPositioned);
+                if (oldPositioned)
+                    continue;
+
+                gadget = (struct Gadget *)tmp->wbwiObject;
+                bounds.MinX = gadget->LeftEdge;
+                bounds.MinY = gadget->TopEdge;
+                bounds.MaxX = gadget->LeftEdge + gadget->Width - 1;
+                bounds.MaxY = gadget->TopEdge + gadget->Height - 1;
+
+                if (!haveOldAutoBounds) {
+                    oldAutoBounds = bounds;
+                    haveOldAutoBounds = TRUE;
+                } else {
+                    if (bounds.MinX < oldAutoBounds.MinX)
+                        oldAutoBounds.MinX = bounds.MinX;
+                    if (bounds.MinY < oldAutoBounds.MinY)
+                        oldAutoBounds.MinY = bounds.MinY;
+                    if (bounds.MaxX > oldAutoBounds.MaxX)
+                        oldAutoBounds.MaxX = bounds.MaxX;
+                    if (bounds.MaxY > oldAutoBounds.MaxY)
+                        oldAutoBounds.MaxY = bounds.MaxY;
+                }
+            }
+        }
+
         /* Make each completed icon visible immediately instead of waiting
          * for the entire directory scan and all following disk reads. */
         opmmsg.MethodID = OM_ADDMEMBER;
         opmmsg.opam_Object = iobj;
         DoMethodA(my->Set, (Msg)&opmmsg);
         wbProgressiveRedimension(cl, obj);
-        AddGadget(my->Window, (struct Gadget *)iobj, 0);
-        RefreshGList((struct Gadget *)iobj, my->Window, NULL, 1);
-        RemoveGadget(my->Window, (struct Gadget *)iobj);
+
+        if (haveOldAutoBounds) {
+            /* Erase the old images, then redraw the loaded set at its final
+             * positions. This path is only needed when existing gadgets were
+             * potentially moved; ordinary progressive additions still draw
+             * just the newly loaded icon. */
+            EraseRect(my->Window->RPort,
+                      oldAutoBounds.MinX, oldAutoBounds.MinY,
+                      oldAutoBounds.MaxX, oldAutoBounds.MaxY);
+
+            ForeachNode(&my->IconList, tmp) {
+                AddGadget(my->Window, (struct Gadget *)tmp->wbwiObject, 0);
+                RefreshGList((struct Gadget *)tmp->wbwiObject,
+                             my->Window, NULL, 1);
+                RemoveGadget(my->Window, (struct Gadget *)tmp->wbwiObject);
+            }
+        } else {
+            AddGadget(my->Window, (struct Gadget *)iobj, 0);
+            RefreshGList((struct Gadget *)iobj, my->Window, NULL, 1);
+            RemoveGadget(my->Window, (struct Gadget *)iobj);
+        }
     }
 }
 
