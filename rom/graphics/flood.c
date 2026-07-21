@@ -172,14 +172,8 @@ static int pix_written;
 
     /* Clear the needed part of tmpras */
 
-    /*
-
-    !!! Maybe we should use BltClear() here, since
-    !!! tmpras allways reside in CHIP RAM
-         */
-
     D(bug("Clearing tmpras\n"));
-    SetMem(tmpras->RasPtr, 0,  needed_size);
+    BltClear(tmpras->RasPtr, needed_size, 1);
 
     if(mode == 0) {
         /* Outline mode */
