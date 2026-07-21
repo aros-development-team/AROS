@@ -152,6 +152,8 @@ CONST struct Scroll ScrollBar = {
 //#define GfxBase (((struct charmapcondata *)INST_DATA(cl, o))->ccd_GfxBase)
 
 static VOID charmapcon_refresh(Class *cl, Object *o, LONG off);
+static VOID charmap_swap_line_contents(struct charmap_line *a,
+    struct charmap_line *b);
 
 /*** Allocate and attach a prop gadget to the window ***/
 static VOID charmapcon_add_prop(Class *cl, Object *o)
@@ -273,6 +275,9 @@ static VOID charmapcon_adj_prop(Class *cl, Object *o)
     struct Window *w = CU(o)->cu_Window;
     ULONG VertBody, VertPot;
 
+    if (!data->prop)
+        return;
+
     ULONG hidden =
         data->scrollback_size >
         CHAR_YMAX(o) ? data->scrollback_size - CHAR_YMAX(o) - 1 : 0;
@@ -307,6 +312,10 @@ void charmapcon_free_prop(Class *cl, Object *o)
 
     if (data->prop)
     {
+        /* Timer events repeat activeGad while a scroll gadget is held.  Do
+         * not leave it pointing into the block we are about to free. */
+        data->activeGad = NULL;
+
         if (win)
         {
             if (data->boopsigad)
@@ -325,6 +334,7 @@ void charmapcon_free_prop(Class *cl, Object *o)
             /* Free struct */
             FreeMem(data->prop, sizeof(*data->prop));
         }
+        data->prop = NULL;
     }
 }
 
@@ -538,6 +548,30 @@ static VOID charmap_scroll_down(Class *cl, Object *o, ULONG y)
     }
 }
 
+/* Scroll terminal contents down, inserting blank lines at the top.  This is
+ * distinct from charmap_scroll_down(), which navigates backwards through the
+ * scrollback history and saves a viewport that the next output restores. */
+static VOID charmap_scroll_contents_down(Class *cl, Object *o, ULONG count)
+{
+    ULONG y;
+
+    count = MIN(count, CHAR_YMAX(o) + 1);
+    charmapcon_find_line(cl, o, CHAR_YMAX(o));
+
+    while (count--)
+    {
+        struct charmap_line *line =
+            charmapcon_find_line(cl, o, CHAR_YMAX(o));
+
+        for (y = CHAR_YMAX(o); y > 0; y--)
+        {
+            charmap_swap_line_contents(line, line->prev);
+            line = line->prev;
+        }
+        charmap_resize(ConsoleDevice, line, 0);
+    }
+}
+
 static VOID charmapcon_scroll_to(Class *cl, Object *o, ULONG y)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
@@ -654,6 +688,68 @@ static VOID charmap_formfeed(Class *cl, Object *o)
     }
 }
 
+static VOID charmap_swap_line_contents(struct charmap_line *a,
+    struct charmap_line *b)
+{
+    ULONG size = a->size;
+    char *text = a->text;
+    BYTE *fgpen = a->fgpen;
+    BYTE *bgpen = a->bgpen;
+    BYTE *flags = a->flags;
+
+    a->size = b->size;
+    a->text = b->text;
+    a->fgpen = b->fgpen;
+    a->bgpen = b->bgpen;
+    a->flags = b->flags;
+    b->size = size;
+    b->text = text;
+    b->fgpen = fgpen;
+    b->bgpen = bgpen;
+    b->flags = flags;
+}
+
+static VOID charmap_insert_lines(Class *cl, Object *o, ULONG count)
+{
+    ULONG y, first = YCP;
+
+    count = MIN(count, CHAR_YMAX(o) - first + 1);
+    charmapcon_find_line(cl, o, CHAR_YMAX(o));
+
+    while (count--)
+    {
+        struct charmap_line *line =
+            charmapcon_find_line(cl, o, CHAR_YMAX(o));
+
+        for (y = CHAR_YMAX(o); y > first; y--)
+        {
+            charmap_swap_line_contents(line, line->prev);
+            line = line->prev;
+        }
+        charmap_resize(ConsoleDevice, line, 0);
+    }
+}
+
+static VOID charmap_delete_lines(Class *cl, Object *o, ULONG count)
+{
+    ULONG y, first = YCP;
+
+    count = MIN(count, CHAR_YMAX(o) - first + 1);
+    charmapcon_find_line(cl, o, CHAR_YMAX(o));
+
+    while (count--)
+    {
+        struct charmap_line *line = charmapcon_find_line(cl, o, first);
+
+        for (y = first; y < CHAR_YMAX(o); y++)
+        {
+            charmap_swap_line_contents(line, line->next);
+            line = line->next;
+        }
+        charmap_resize(ConsoleDevice, line, 0);
+    }
+}
+
 static VOID charmapcon_docommand(Class *cl, Object *o,
     struct P_Console_DoCommand *msg)
 {
@@ -723,7 +819,38 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
             D(bug("C_SCROLL_DOWN area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
                     YRSIZE * params[0]));
-            charmap_scroll_down(cl, o, params[0]);
+            charmap_scroll_contents_down(cl, o, params[0]);
+            DoSuperMethodA(cl, o, (Msg) msg);
+            break;
+        }
+
+    case C_INSERT_LINE:
+        charmap_insert_lines(cl, o, params[0]);
+        DoSuperMethodA(cl, o, (Msg) msg);
+        break;
+
+    case C_DELETE_LINE:
+        charmap_delete_lines(cl, o, params[0]);
+        DoSuperMethodA(cl, o, (Msg) msg);
+        break;
+
+    case C_SET_RAWEVENTS:
+        {
+            UBYTE i;
+
+            /* A program requesting menu selections through the classic
+             * console.device raw-event protocol owns the window's UI.  The
+             * AROS scrollback gadgets are an extension and change the usable
+             * dimensions expected by such programs. */
+            for (i = 0; i < msg->NumParams; i++)
+            {
+                if (params[i] == IECLASS_MENULIST && data->prop)
+                {
+                    charmapcon_free_prop(cl, o);
+                    RefreshWindowFrame(CU(o)->cu_Window);
+                    break;
+                }
+            }
             DoSuperMethodA(cl, o, (Msg) msg);
             break;
         }
@@ -1306,6 +1433,15 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o,
     }
 
     struct charmapcondata *data = INST_DATA(cl, o);
+
+    /* Classic applications can own the window UI without the optional AROS
+     * scrollback gadgets.  Gadget and timer events may already be queued when
+     * those gadgets are removed. */
+    if (!data->prop)
+    {
+        data->activeGad = NULL;
+        return;
+    }
 
     if (e->ie_Class == IECLASS_GADGETUP)
     {
