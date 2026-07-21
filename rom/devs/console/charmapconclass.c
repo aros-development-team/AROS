@@ -692,17 +692,20 @@ static VOID charmap_swap_line_contents(struct charmap_line *a,
     struct charmap_line *b)
 {
     ULONG size = a->size;
+    ULONG capacity = a->capacity;
     char *text = a->text;
     BYTE *fgpen = a->fgpen;
     BYTE *bgpen = a->bgpen;
     BYTE *flags = a->flags;
 
     a->size = b->size;
+    a->capacity = b->capacity;
     a->text = b->text;
     a->fgpen = b->fgpen;
     a->bgpen = b->bgpen;
     a->flags = b->flags;
     b->size = size;
+    b->capacity = capacity;
     b->text = text;
     b->fgpen = fgpen;
     b->bgpen = bgpen;

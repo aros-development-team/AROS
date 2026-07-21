@@ -18,14 +18,10 @@ struct charmap_line *charmap_dispose_line(struct charmap_line *line)
     if (line)
     {
         next = line->next;
-        if (line->size)
+        if (line->capacity)
         {
             if (line->text)
-                FreeMem(line->text, line->size);
-            if (line->fgpen)
-                FreeMem(line->fgpen, line->size);
-            if (line->bgpen)
-                FreeMem(line->bgpen, line->size);
+                FreeMem(line->text, line->capacity * 4);
         }
         FreeMem(line, sizeof(struct charmap_line));
     }
@@ -54,12 +50,11 @@ struct charmap_line *charmap_newline(struct charmap_line *next,
     newline->bgpen = 0;
     newline->flags = 0;
     newline->size = 0;
+    newline->capacity = 0;
     return newline;
 }
 
 
-// FIXME: **much** faster if add capacity to charmap_line and allocate
-// a few characters at a time
 VOID charmap_resize(struct ConsoleBase *ConsoleDevice, struct charmap_line *line, ULONG newsize)
 {
     char *text = line->text;
@@ -67,22 +62,51 @@ VOID charmap_resize(struct ConsoleBase *ConsoleDevice, struct charmap_line *line
     BYTE *bgpen = line->bgpen;
     BYTE *flags = line->flags;
     ULONG size = line->size;
+    ULONG capacity = line->capacity;
+
+    if (newsize && newsize <= capacity)
+    {
+        if (newsize > size)
+        {
+            SetMem(line->text + size, 0, newsize - size);
+            SetMem(line->fgpen + size, 0, newsize - size);
+            SetMem(line->bgpen + size, 0, newsize - size);
+            SetMem(line->flags + size, 0, newsize - size);
+        }
+        line->size = newsize;
+        return;
+    }
 
     if (newsize)
     {
-        line->text = (char *)AllocMem(newsize, MEMF_ANY);
-        if (line->text)
-            SetMem(line->text, 0, newsize);
-        line->fgpen = (BYTE *) AllocMem(newsize, MEMF_ANY);
-        if (line->fgpen)
-            SetMem(line->fgpen, 0, newsize);
-        line->bgpen = (BYTE *) AllocMem(newsize, MEMF_ANY);
-        if (line->bgpen)
-            SetMem(line->bgpen, 0, newsize);
-        line->flags = (BYTE *) AllocMem(newsize, MEMF_ANY);
-        if (line->flags)
-            SetMem(line->flags, 0, newsize);
+        ULONG growth = capacity / 2;
+        ULONG newcapacity;
+        UBYTE *buffer;
+
+        if (newsize > 0xffff)
+            return;
+        if (growth < 8)
+            growth = 8;
+        newcapacity = capacity + growth;
+        if (newcapacity < newsize)
+            newcapacity = newsize;
+        if (newcapacity > 0xffff)
+            newcapacity = 0xffff;
+
+        buffer = AllocMem(newcapacity * 4, MEMF_ANY);
+        if (!buffer)
+            return;
+
+        line->text = (char *)buffer;
+        line->fgpen = (BYTE *)(buffer + newcapacity);
+        line->bgpen = (BYTE *)(buffer + newcapacity * 2);
+        line->flags = (BYTE *)(buffer + newcapacity * 3);
+        SetMem(line->text, 0, newsize);
+        SetMem(line->fgpen, 0, newsize);
+        SetMem(line->bgpen, 0, newsize);
+        SetMem(line->flags, 0, newsize);
         line->size = newsize;
+        line->capacity = newcapacity;
     }
     else
     {
@@ -91,6 +115,7 @@ VOID charmap_resize(struct ConsoleBase *ConsoleDevice, struct charmap_line *line
         line->bgpen = 0;
         line->flags = 0;
         line->size = 0;
+        line->capacity = 0;
     }
 
     if (text && line->text)
@@ -103,11 +128,5 @@ VOID charmap_resize(struct ConsoleBase *ConsoleDevice, struct charmap_line *line
         memcpy(line->flags, flags, size);
 
     if (text)
-        FreeMem(text, size);
-    if (fgpen)
-        FreeMem(fgpen, size);
-    if (bgpen)
-        FreeMem(bgpen, size);
-    if (flags)
-        FreeMem(flags, size);
+        FreeMem(text, capacity * 4);
 }
