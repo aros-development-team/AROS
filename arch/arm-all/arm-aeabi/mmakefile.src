@@ -9,6 +9,7 @@ ASMFILES := uidivmod idivmod uldivmod ldivmod idiv0 ldiv0 unwind
 
 #MM- linklibs-arm : linklibs-aeabi
 #MM- linklibs-armeb : linklibs-aeabi
+#MM- core-linklibs : linklibs-aeabi
 
 #MM linklibs-aeabi : linklibs-softfloat includes-asm_h
 
