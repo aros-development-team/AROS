@@ -237,7 +237,11 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
             cdihandler->is_Code =
                 (VOID_FUNC) AROS_SLIB_ENTRY(CDInputHandler, Console, 7);
             cdihandler->is_Data = ConsoleDevice;
-            cdihandler->is_Node.ln_Pri = 50;
+            /* Intuition runs at priority 50 and leaves the original event
+             * available to lower-priority handlers.  Run afterwards so its
+             * ActiveWindow is current before obtainconunit() routes the event,
+             * matching the classic console.device input chain. */
+            cdihandler->is_Node.ln_Pri = 0;
             cdihandler->is_Node.ln_Name = "console.device InputHandler";
 
             ReturnPtr("initCDIH", struct Interrupt *, cdihandler);

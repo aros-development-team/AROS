@@ -504,9 +504,9 @@ static const struct Command
     {C_CURSOR_POS,               2},                     /* 0x48 H */
     {C_CURSOR_HTAB,              1},                     /* 0x49 I */
     {C_ERASE_IN_DISPLAY,         0},                     /* 0x4A J */
-    {C_ERASE_IN_LINE,            0},                     /* 0x4B K */
-    {C_INSERT_LINE,              0},                     /* 0x4C L */
-    {C_DELETE_LINE,              0},                     /* 0x4D M */
+    {C_ERASE_IN_LINE,            1},                     /* 0x4B K */
+    {C_INSERT_LINE,              1},                     /* 0x4C L */
+    {C_DELETE_LINE,              1},                     /* 0x4D M */
     {-1,                         },                      /* 0x4E N */
     {-1,                         },                      /* 0x4F O */
     {C_DELETE_CHAR,              1},                     /* 0x50 P */

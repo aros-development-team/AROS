@@ -446,6 +446,8 @@ static VOID console_getdefaultparams(Class *cl, Object *o,
     case C_CURSOR_BACKWARD:
     case C_CURSOR_NEXT_LINE:
     case C_CURSOR_PREV_LINE:
+    case C_INSERT_LINE:
+    case C_DELETE_LINE:
     case C_SET_TOP_OFFSET:
     case C_SET_PAGE_LENGTH:
         msg->Params[0] = 1;
