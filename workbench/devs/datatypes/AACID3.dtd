@@ -1,0 +1,10 @@
+# DataType Description for AAC with a leading ID3v2 tag
+Name=AACID3
+Version=$VER: AACID3 41.0 (21.7.2026)
+BaseName=aac
+Pattern=#?.aac
+Mask='I' 'D' '3'
+GroupID=soun
+ID=aaci
+Flags=DTF_BINARY
+Priority=2
