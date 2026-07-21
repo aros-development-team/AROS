@@ -57,7 +57,7 @@
 #include "windowdecorclass.h"
 #include "menudecorclass.h"
 
-const TEXT version_string[] = "$VER: Decoration 2.0 (28.04.2024)";
+const TEXT version_string[] = "$VER: Decoration 2.0 (21.07.2026)";
 
 STRPTR __detached_name = "Decorator";
 
