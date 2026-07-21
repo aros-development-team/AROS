@@ -28,13 +28,13 @@ QUAD dos64_Seek(struct Dos64Base *DOS64Base, struct FileHandle *fh,
     /* Single-packet 64-bit seek; returns the previous position */
     ret = dos64_SendPkt(DOS64Base, fh->fh_Type, ACTION_SEEK64,
                         fh->fh_Arg1, position, mode, 0, 0, &err);
-    if (!(ret == -1 && dos64_UnsupportedAction(err)))
+    if (!dos64_UnsupportedPkt(ret, err))
         return ret;
 
     /* OS4 style pair: query the old position, then reposition */
     old = dos64_SendPkt(DOS64Base, fh->fh_Type, ACTION_GET_FILE_POSITION64,
                         fh->fh_Arg1, 0, 0, 0, 0, &err);
-    if (!(old == -1 && dos64_UnsupportedAction(err)))
+    if (!dos64_UnsupportedPkt(old, err))
     {
         if (old == -1)
             return -1;
@@ -45,7 +45,7 @@ QUAD dos64_Seek(struct Dos64Base *DOS64Base, struct FileHandle *fh,
 #else
     old = dos64_SendPkt64OS4(DOS64Base, fh->fh_Type, ACTION_GET_FILE_POSITION64,
                              fh->fh_Arg1, 0, 0, &err);
-    if (!(old == -1 && dos64_UnsupportedAction(err)))
+    if (!dos64_UnsupportedPkt(old, err))
     {
         if (old == -1)
             return -1;
@@ -115,12 +115,12 @@ QUAD dos64_GetFileSize(struct Dos64Base *DOS64Base, struct FileHandle *fh)
 #if (__WORDSIZE == 64)
     ret = dos64_SendPkt(DOS64Base, fh->fh_Type, ACTION_GET_FILE_SIZE64,
                         fh->fh_Arg1, 0, 0, 0, 0, &err);
-    if (!(ret == -1 && dos64_UnsupportedAction(err)))
+    if (!dos64_UnsupportedPkt(ret, err))
         return ret;
 #else
     ret = dos64_SendPkt64OS4(DOS64Base, fh->fh_Type, ACTION_GET_FILE_SIZE64,
                              fh->fh_Arg1, 0, 0, &err);
-    if (!(ret == -1 && dos64_UnsupportedAction(err)))
+    if (!dos64_UnsupportedPkt(ret, err))
         return ret;
 #endif
 
@@ -165,7 +165,7 @@ QUAD dos64_SetFileSize(struct Dos64Base *DOS64Base, struct FileHandle *fh,
     /* Single-packet 64-bit set-size; returns the new size */
     ret = dos64_SendPkt(DOS64Base, fh->fh_Type, ACTION_SET_FILE_SIZE64,
                         fh->fh_Arg1, offset, mode, 0, 0, &err);
-    if (!(ret == -1 && dos64_UnsupportedAction(err)))
+    if (!dos64_UnsupportedPkt(ret, err))
         return ret;
 
     ret = dos64_SendPkt(DOS64Base, fh->fh_Type, ACTION_CHANGE_FILE_SIZE64,
@@ -174,7 +174,7 @@ QUAD dos64_SetFileSize(struct Dos64Base *DOS64Base, struct FileHandle *fh,
     ret = dos64_SendPkt64OS4(DOS64Base, fh->fh_Type, ACTION_CHANGE_FILE_SIZE64,
                              fh->fh_Arg1, offset, mode, &err);
 #endif
-    if (!(ret == DOSFALSE && dos64_UnsupportedAction(err)))
+    if (!dos64_UnsupportedPkt(ret, err))
     {
         if (ret == DOSFALSE)
             return -1;

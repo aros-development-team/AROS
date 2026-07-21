@@ -44,6 +44,14 @@ struct Dos64Base
      (err) == ERROR_NOT_IMPLEMENTED  || \
      (err) == ERROR_BAD_NUMBER)
 
+/*
+ * A value-returning packet failed because the filesystem does not
+ * understand the action. Handlers reply to unknown packets with
+ * either -1 or the canonical DOSFALSE, so accept both res1 values.
+ */
+#define dos64_UnsupportedPkt(ret, err) \
+    (((ret) == -1 || (ret) == DOSFALSE) && dos64_UnsupportedAction(err))
+
 /* Largest chunk handed to the 32-bit ACTION_READ/ACTION_WRITE packets */
 #define DOS64_IOCHUNK 0x40000000
 
