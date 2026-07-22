@@ -8,7 +8,10 @@
 #include <aros/config.h>
 #include <dos/dos.h>
 #include <dos/stdio.h>
+#include <exec/memory.h>
 #include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/kernel.h>
 #include <aros/debug.h>
 #include "dos_intern.h"
 
@@ -49,6 +52,24 @@ static AROS_UFH3(APTR, AllocFunc,
 {
     AROS_USERFUNC_INIT
 
+    /*
+     * Executable hunks must live in executable memory. On a W^X host the general
+     * AllocMem() pool is read/write only, so route executable allocations to
+     * KrnAllocPages(), which maps them appropriately (R/W/X). Plain data hunks
+     * keep using the pool. Falls back to AllocMem() if kernel.resource is absent.
+     */
+    if (flags & MEMF_EXECUTABLE)
+    {
+        struct KernelBase *KernelBase = OpenResource("kernel.resource");
+
+        if (KernelBase)
+        {
+            APTR p = KrnAllocPages(NULL, length, flags);
+            if (p)
+                return p;
+        }
+    }
+
     return AllocMem(length, flags);
 
     AROS_USERFUNC_EXIT
@@ -62,7 +83,21 @@ static AROS_UFH3(void, FreeFunc,
 {
     AROS_USERFUNC_INIT
 
-    FreeMem(buffer, length);
+    /* Mirror AllocFunc: page-allocated (executable) hunks live outside any
+     * MemHeader and must be returned with KrnFreePages(), not FreeMem(). */
+    if (TypeOfMem(buffer))
+    {
+        FreeMem(buffer, length);
+    }
+    else
+    {
+        struct KernelBase *KernelBase = OpenResource("kernel.resource");
+
+        if (KernelBase)
+            KrnFreePages(buffer, length);
+        else
+            FreeMem(buffer, length);
+    }
 
     AROS_USERFUNC_EXIT
 }

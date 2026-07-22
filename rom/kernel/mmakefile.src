@@ -27,6 +27,12 @@ PRIV_KERNEL_INCLUDES = \
 #MM kernel-print-includes : kernel-kernel-includes
 #MM kernel-kernel : kernel-print-includes
 
+# kernel-print-includes is a pure metatarget alias (no module provides a recipe),
+# so a standalone `mmake kernel-kernel` invokes `make kernel-print-includes` and
+# finds no rule. Give it a phony rule that just chains to its real dependency.
+.PHONY: kernel-print-includes
+kernel-print-includes : kernel-kernel-includes
+
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES)
 USER_CPPFLAGS := -D__AROS_EXEC_LIBRARY__ \
 	        -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""

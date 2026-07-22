@@ -617,6 +617,7 @@ STDC_LINKLIB := \
     __stdc_mathinit
 
 STDC_LINKLIB_COMMON := \
+    __stdc_geterrnoptr \
     __stdc_mb_cur_max
 
 STDC_CHAR_LIBSTUBS := \
@@ -800,11 +801,13 @@ STDC_MATH_STATIC_RAW := \
     math/k_cos \
     math/k_rem_pio2 \
     math/k_sin \
+    math/k_tan \
     math/s_copysign \
     math/s_copysignf \
     math/s_copysignl \
     math/s_cos \
     math/s_sin \
+    math/s_tan \
     math/s_fabs \
     math/s_floor \
     math/s_fpclassify \

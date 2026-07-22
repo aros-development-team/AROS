@@ -65,14 +65,31 @@ asm(".set __importnoinitexitsets, __noinitexitsets");
 extern void __startup_entries_init(void);
 
 static int __startup_latehook_dispatcher(struct Hook *_latehook);
+static SIPTR __attribute__((noinline)) __startup_entry_body(STRPTR argstr, ULONG argsize,
+    struct ExecBase *sysBase);
 
-/* Guarantee that __startup_entry is placed at the beginning of the binary */
-__startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
+/*
+ * Guarantee that __startup_entry is placed at the beginning of the binary.
+ *
+ * On darwin-aarch64 hosted builds the final module link keeps relocations for
+ * .text but can drop relocations from the special .aros.startup input section
+ * after merging it to the front of .text. Keep this section as a tiny
+ * relocation-free trampoline; the real startup body lives in normal .text.
+ */
+__startup AROS_PROCH(__startup_entry, argstr, argsize, sysBase)
+{
+    AROS_PROCFUNC_INIT
+    return __startup_entry_body(argstr, argsize, sysBase);
+    AROS_PROCFUNC_EXIT
+} /* entry */
+
+static SIPTR __attribute__((noinline)) __startup_entry_body(STRPTR argstr, ULONG argsize,
+    struct ExecBase *sysBase)
 {
     APTR TaskResBase;
-    AROS_PROCFUNC_INIT
+    SysBase = sysBase;
 
-    D(bug("%s(\"%s\", %d, %x)\n", __func__, argstr, argsize, SysBase));
+    D(bug("%s(\"%s\", %d, %x)\n", __func__, argstr, argsize, sysBase));
 
     _TaskResBase = OpenResource("task.resource");
     if ((TaskResBase = _TaskResBase) != NULL)
@@ -92,16 +109,14 @@ __startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
     __startup_error = RETURN_FAIL;
 
     __startup_entries_init();
-    __startup_entries_next();
+    ___startup_entries_next(sysBase);
 
     CloseLibrary((struct Library *)DOSBase);
 
     D(bug("%s: returning %d\n", __func__, __startup_error));
 
     return __startup_error;
-
-    AROS_PROCFUNC_EXIT
-} /* entry */
+}
 
 static int __startup_latehook_dispatcher(struct Hook *_latehook)
 {

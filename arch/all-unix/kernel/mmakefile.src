@@ -45,7 +45,8 @@ ifneq ($(AROS_TARGET_VARIANT),)
 endif
 
 FUNCS := cause cli issuper kernel_debug maygetchar sti setprotection \
-	 obtaininput releaseinput getpagesize allockernelbase
+	 obtaininput releaseinput getpagesize allockernelbase \
+	 allocpages freepages
 FILES := kernel_startup kernel kernel_cpu kernel_intr cpu_$(CPU)
 SUPPORTFILES := kernel_cpusupport
 

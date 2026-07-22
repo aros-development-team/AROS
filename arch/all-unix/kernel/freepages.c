@@ -16,7 +16,7 @@ AROS_LH2(void, KrnFreePages,
 {
     AROS_LIBFUNC_INIT
 
-    KernelIFace.munmap(phy_addr, length);
+    KernelBase->kb_PlatformData->iface->munmap(phy_addr, length);
     AROS_HOST_BARRIER
 
     AROS_LIBFUNC_EXIT
