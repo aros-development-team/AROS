@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <hidd/agp.h>
@@ -41,7 +41,7 @@ BOOL METHOD(i7505BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
         OOP_INST_DATA(SD(cl)->genericBridgeDeviceClass, o);
 
     struct pHidd_AGPBridgeDevice_ScanAndDetectDevices saddmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_ScanAndDetectDevices)
+    .mID = OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_ScanAndDetectDevices)
     };
 
     D(ULONG major, minor;)
@@ -100,7 +100,7 @@ BOOL METHOD(i7505BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 
     /* Creation of GATT table */
     struct pHidd_AGPBridgeDevice_CreateGattTable cgtmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_CreateGattTable)
+    .mID = OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_CreateGattTable)
     };
     if (!OOP_DoMethod(o, (OOP_Msg)&cgtmsg))
         return FALSE;

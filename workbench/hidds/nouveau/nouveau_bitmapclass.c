@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "nouveau_intern.h"
@@ -192,10 +192,10 @@ VOID METHOD(NouveauBitMap, Root, Set)
         /* If there was a change requested, validate it */
         struct pHidd_Compositor_ValidateBitMapPositionChange vbpcmsg =
         {
-            mID : SD(cl)->mid_ValidateBitMapPositionChange,
-            bm : o,
-            newxoffset : &newxoffset,
-            newyoffset : &newyoffset
+            .mID  = SD(cl)->mid_ValidateBitMapPositionChange,
+            .bm  = o,
+            .newxoffset  = &newxoffset,
+            .newyoffset  = &newyoffset
         };
         
         OOP_DoMethod(bmdata->compositor, (OOP_Msg)&vbpcmsg);
@@ -205,8 +205,8 @@ VOID METHOD(NouveauBitMap, Root, Set)
             /* If change passed validation, execute it */
             struct pHidd_Compositor_BitMapPositionChanged bpcmsg =
             {
-                mID : SD(cl)->mid_BitMapPositionChanged,
-                bm : o
+                .mID  = SD(cl)->mid_BitMapPositionChanged,
+                .bm  = o
             };
 
             HIDDNouveauSetOffsets(o, newxoffset, newyoffset);
@@ -857,12 +857,12 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
     {
         struct pHidd_Compositor_BitMapRectChanged brcmsg =
         {
-            mID : SD(cl)->mid_BitMapRectChanged,
-            bm : o,
-            x : msg->x,
-            y : msg->y,
-            width : msg->width,
-            height : msg->height
+            .mID  = SD(cl)->mid_BitMapRectChanged,
+            .bm  = o,
+            .x  = msg->x,
+            .y  = msg->y,
+            .width  = msg->width,
+            .height  = msg->height
         };
         
         OOP_DoMethod(bmdata->compositor, (OOP_Msg)&brcmsg);    

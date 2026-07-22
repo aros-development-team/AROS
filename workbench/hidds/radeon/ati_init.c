@@ -279,8 +279,8 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
                 if ((LIBBASE->sd.PCIObject = OOP_NewObject(NULL, (STRPTR)CLID_Hidd_PCI, NULL)))
                 {
                     struct Hook FindHook = {
-                        h_Entry:    (IPTR (*)())Enumerator,
-                        h_Data:     LIBBASE,
+                        .h_Entry =  (IPTR (*)())Enumerator,
+                        .h_Data =   LIBBASE,
                     };
 
                     struct TagItem Requirements[] = {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: VMWare SVGA Hidd initialisation code
 */
@@ -98,8 +98,8 @@ AROS_UFH3(void, QEMUEnumerator,
 STATIC VOID findQEMU(struct VMWareSVGA_staticdata *xsd)
 {
     struct Hook findHook = {
-        h_Entry:        (IPTR (*)())QEMUEnumerator,
-        h_Data:         xsd,
+        .h_Entry =      (IPTR (*)())QEMUEnumerator,
+        .h_Data =       xsd,
     };
 
     struct TagItem Requirements[] = {
@@ -114,8 +114,8 @@ STATIC VOID findQEMU(struct VMWareSVGA_staticdata *xsd)
 STATIC BOOL findCard(struct VMWareSVGA_staticdata *xsd)
 {
     struct Hook findHook = {
-        h_Entry:        (IPTR (*)())VMWSVGAEnumerator,
-        h_Data:         xsd,
+        .h_Entry =      (IPTR (*)())VMWSVGAEnumerator,
+        .h_Data =       xsd,
     };
 
     struct TagItem Requirements[] =

@@ -799,8 +799,8 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, ShowViewPorts)
 {
     struct pHidd_Compositor_BitMapStackChanged bscmsg =
     {
-        mID : OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
-        data : msg->Data
+        .mID  = OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
+        .data  = msg->Data
     };
     
     D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", (msg->Data ? (msg->Data->Bitmap) : NULL)));

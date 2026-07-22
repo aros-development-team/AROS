@@ -1,5 +1,5 @@
 /*
-    Copyright 2011, The AROS Development Team. All rights reserved.
+    Copyright 2011-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -66,8 +66,8 @@ ULONG METHOD(PCIMock, Hidd_PCIDriver, ReadConfigLong)
     {
         struct pHidd_PCIMockHardware_MemoryReadAtAddress mraa =
         {
-            mID : OOP_GetMethodID(IID_Hidd_PCIMockHardware, moHidd_PCIMockHardware_MemoryReadAtAddress),
-            memoryaddress : pciconfigspace + msg->reg
+            .mID  = OOP_GetMethodID(IID_Hidd_PCIMockHardware, moHidd_PCIMockHardware_MemoryReadAtAddress),
+            .memoryaddress  = pciconfigspace + msg->reg
         };
         
         OOP_DoMethod(mockHardware, (OOP_Msg)&mraa);
@@ -95,8 +95,8 @@ VOID METHOD(PCIMock, Hidd_PCIDriver, WriteConfigLong)
     {
         struct pHidd_PCIMockHardware_MemoryChangedAtAddress mcaa =
         {
-            mID : OOP_GetMethodID(IID_Hidd_PCIMockHardware, moHidd_PCIMockHardware_MemoryChangedAtAddress),
-            memoryaddress : pciconfigspace + msg->reg
+            .mID  = OOP_GetMethodID(IID_Hidd_PCIMockHardware, moHidd_PCIMockHardware_MemoryChangedAtAddress),
+            .memoryaddress  = pciconfigspace + msg->reg
         };
         
         OOP_DoMethod(mockHardware, (OOP_Msg)&mcaa);

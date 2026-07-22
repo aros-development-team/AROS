@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "drmP.h"
@@ -104,8 +104,8 @@ drm_aros_pci_find_card(struct drm_driver *drv)
     if (pciBus)
     {
         struct Hook FindHook = {
-        h_Entry:    (IPTR (*)())Enumerator,
-        h_Data:     drv,
+        .h_Entry =  (IPTR (*)())Enumerator,
+        .h_Data =   drv,
         };
 
         struct TagItem Requirements[] = {
@@ -117,9 +117,9 @@ drm_aros_pci_find_card(struct drm_driver *drv)
         };
     
         struct pHidd_PCI_EnumDevices enummsg = {
-        mID:        OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-        callback:   &FindHook,
-        requirements:   (struct TagItem*)&Requirements,
+        .mID =      OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+        .callback = &FindHook,
+        .requirements = (struct TagItem*)&Requirements,
         }, *msg = &enummsg;
         DRM_DEBUG("Calling search Hook\n");
         OOP_DoMethod(pciBus, (OOP_Msg)msg);

@@ -1,5 +1,5 @@
 /*
-    Copyright 2009, The AROS Development Team. All rights reserved.
+    Copyright 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "drm_compat_funcs.h"
@@ -381,15 +381,15 @@ void * pci_get_bus_and_slot(unsigned int bus, unsigned int dev, unsigned int fun
     if (pciBus)
     {
         struct GetBusSlotEnumeratorData data = {
-        Bus: bus,
-        Dev: dev,
-        Sub: fun,
-        pciDevice: &pciDevice,
+        .Bus = bus,
+        .Dev = dev,
+        .Sub = fun,
+        .pciDevice = &pciDevice,
         };
         
         struct Hook FindHook = {
-        h_Entry:    (IPTR (*)())GetBusSlotEnumerator,
-        h_Data:     &data,
+        .h_Entry =  (IPTR (*)())GetBusSlotEnumerator,
+        .h_Data =   &data,
         };
 
         struct TagItem Requirements[] = {
@@ -397,9 +397,9 @@ void * pci_get_bus_and_slot(unsigned int bus, unsigned int dev, unsigned int fun
         };
     
         struct pHidd_PCI_EnumDevices enummsg = {
-        mID:        OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-        callback:   &FindHook,
-        requirements:   (struct TagItem*)&Requirements,
+        .mID =      OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+        .callback = &FindHook,
+        .requirements = (struct TagItem*)&Requirements,
         }, *msg = &enummsg;
         
         OOP_DoMethod(pciBus, (OOP_Msg)msg);
@@ -411,8 +411,8 @@ void * pci_get_bus_and_slot(unsigned int bus, unsigned int dev, unsigned int fun
 int pci_read_config_word(struct pci_dev * pdev, int where, u16 *val)
 {
     struct pHidd_PCIDevice_ReadConfigWord rcwmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord),
-    reg: (UBYTE)where,
+    .mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord),
+    .reg = (UBYTE)where,
     }, *msg = &rcwmsg;
     
     *val = (UWORD)OOP_DoMethod((OOP_Object*)pdev->oopdev, (OOP_Msg)msg);
@@ -424,8 +424,8 @@ int pci_read_config_word(struct pci_dev * pdev, int where, u16 *val)
 int pci_read_config_dword(struct pci_dev * pdev, int where, u32 *val)
 {
     struct pHidd_PCIDevice_ReadConfigLong rclmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong),
-    reg: (UBYTE)where,
+    .mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong),
+    .reg = (UBYTE)where,
     }, *msg = &rclmsg;
     
     *val = (ULONG)OOP_DoMethod((OOP_Object*)pdev->oopdev, (OOP_Msg)msg);
@@ -437,9 +437,9 @@ int pci_read_config_dword(struct pci_dev * pdev, int where, u32 *val)
 int pci_write_config_dword(struct pci_dev * pdev, int where, u32 val)
 {
     struct pHidd_PCIDevice_WriteConfigLong wclmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong),
-    reg: (UBYTE)where,
-    val: val,
+    .mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong),
+    .reg = (UBYTE)where,
+    .val = val,
     }, *msg = &wclmsg;
     
     OOP_DoMethod((OOP_Object*)pdev->oopdev, (OOP_Msg)msg);
@@ -536,7 +536,7 @@ struct agp_bridge_data * agp_find_bridge(void * dev)
     if(agpbus)
     {
         struct pHidd_AGP_GetBridgeDevice gbdmsg = {
-        mID : OOP_GetMethodID(IID_Hidd_AGP, moHidd_AGP_GetBridgeDevice)
+        .mID  = OOP_GetMethodID(IID_Hidd_AGP, moHidd_AGP_GetBridgeDevice)
         };
         OOP_Object * bridgedevice = NULL;
 
@@ -572,8 +572,8 @@ void agp_enable(struct agp_bridge_data * bridge, u32 mode)
         return;
 
     struct pHidd_AGPBridgeDevice_Enable emsg = {
-    mID:            OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_Enable),
-    requestedmode:  mode
+    .mID =          OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_Enable),
+    .requestedmode = mode
     };
     
     OOP_DoMethod((OOP_Object *)bridge->agpbridgedevice, (OOP_Msg)&emsg);
@@ -600,11 +600,11 @@ int agp_bind_memory(struct agp_memory * mem, off_t offset)
     /* TODO: Move flush/map into bind call on the side of agp.hidd */
 
     struct pHidd_AGPBridgeDevice_BindMemory bmmsg = {
-    mID:        OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_BindMemory),
-    address:    (IPTR)(mem->pages[0]->address),
-    size:       mem->page_count * PAGE_SIZE,
-    offset:     offset,
-    type:       (mem->type == AGP_USER_MEMORY ? vHidd_AGP_NormalMemory : vHidd_AGP_CachedMemory)
+    .mID =      OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_BindMemory),
+    .address =  (IPTR)(mem->pages[0]->address),
+    .size =     mem->page_count * PAGE_SIZE,
+    .offset =   offset,
+    .type =     (mem->type == AGP_USER_MEMORY ? vHidd_AGP_NormalMemory : vHidd_AGP_CachedMemory)
     };
     
     OOP_DoMethod((OOP_Object *)global_agp_bridge->agpbridgedevice, (OOP_Msg)&bmmsg);
@@ -620,9 +620,9 @@ int agp_unbind_memory(struct agp_memory * mem)
         return -EINVAL;
 
     struct pHidd_AGPBridgeDevice_UnBindMemory ubmmsg = {
-    mID:        OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_UnBindMemory),
-    offset:     mem->pg_start,
-    size:       mem->page_count * PAGE_SIZE,
+    .mID =      OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_UnBindMemory),
+    .offset =   mem->pg_start,
+    .size =     mem->page_count * PAGE_SIZE,
     };
     
     OOP_DoMethod((OOP_Object *)global_agp_bridge->agpbridgedevice, (OOP_Msg)&ubmmsg);
@@ -640,7 +640,7 @@ void agp_flush_chipset(struct agp_bridge_data * bridge)
         return;
 
     struct pHidd_AGPBridgeDevice_FlushChipset fcmsg = {
-    mID:        OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushChipset),
+    .mID =      OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushChipset),
     };
     
     OOP_DoMethod((OOP_Object *)bridge->agpbridgedevice, (OOP_Msg)&fcmsg);
