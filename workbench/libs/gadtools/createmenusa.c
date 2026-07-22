@@ -1,6 +1,7 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
+#include <aros/isoascii.h>
 #include "gadtools_intern.h"
 #include <exec/memory.h>
 #include <exec/types.h>
@@ -387,7 +388,7 @@
                                 struct IntuiText *it2 = it + 1;
 
                                 it->NextText = it2;
-                                it2->IText = "»";
+                                it2->IText = ISOASCII_RGUILLEMET;
                             }
                         }
 
@@ -671,7 +672,7 @@ failexit:
                                 struct IntuiText *it2 = it + 1;
 
                                 it->NextText = it2;
-                                it2->IText = "»";
+                                it2->IText = ISOASCII_RGUILLEMET;
                             }
                         }
 

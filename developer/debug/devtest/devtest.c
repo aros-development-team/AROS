@@ -14,7 +14,10 @@
  * OR MISUSE OF THIS UTILITY OR INFORMATION REPORTED BY THIS UTILITY.
 
  */
-const char *version = "\0$VER: devtest 1.3 ("__DATE__") © Chris Hooper";
+
+#include <aros/isoascii.h>
+
+const char *version = "\0$VER: devtest 1.3 ("__DATE__") " ISOASCII_COPYRIGHT " Chris Hooper";
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Change your input preferences
 */
@@ -8,6 +8,7 @@
 
 #define SHOWFLAGS 1  /* Set to 1 to show Flags in the keylist */
 
+#include <aros/isoascii.h>
 #include <libraries/kms.h>
 
 #include <proto/alib.h>
@@ -50,7 +51,7 @@ static const struct nameexp layout_expansion_table[] =
     {"gb"   , "British"             , "Countries/United_Kingdom"},
     {"gbx"  , "British Extended"    , "Countries/United_Kingdom"},
     {"bg"   , "Bulgarian"           , "Countries/Bulgaria"      },
-    {"cdn"  , "Canadien Français"   , "Countries/Quebec"        },
+    {"cdn"  , "Canadien Fran" ISOASCII_ccedil "ais"   , "Countries/Quebec"        },
     {"cz"   , "Czech"               , "Countries/Czech_Republic"},
     {"dk"   , "Dansk"               , "Countries/Denmark"       },
     {"nl"   , "Dutch"               , "Countries/Netherlands"   },
@@ -59,15 +60,15 @@ static const struct nameexp layout_expansion_table[] =
     {"dvl"  , "Dvorak Left-handed"  , "Misc/Unknown"            },
     {"dvr"  , "Dvorak Right-handed" , "Misc/Unknown"            },
     {"irl"  , "English Ireland"     , "Countries/Ireland"       },
-    {"e"    , "Español"             , "Countries/Spain"         },
-    {"sp"   , "Español no deadkeys" , "Countries/Spain"         },
+    {"e"    , "Espa" ISOASCII_ntilde "ol"             , "Countries/Spain"         },
+    {"sp"   , "Espa" ISOASCII_ntilde "ol no deadkeys" , "Countries/Spain"         },
     {"est"  , "Eesti"               , "Countries/Estonia"       },
     {"fin"  , "Finnish"             , "Countries/Finland"       },
-    {"f"    , "Français"            , "Countries/France"        },
+    {"f"    , "Fran" ISOASCII_ccedil "ais"            , "Countries/France"        },
     {"il"   , "Hebrew"              , "Countries/Israel"        },
     {"gr"   , "Hellenic"            , "Countries/Greece"        },
     {"hr"   , "Hrvatski"            , "Countries/Croatia"       },
-    {"is"   , "Íslenska"            , "Countries/Iceland"       },
+    {"is"   , ISOASCII_Iacute "slenska"            , "Countries/Iceland"       },
     {"i"    , "Italiana"            , "Countries/Italy"         },
     {"la"   , "Latin American"      , "Misc/Unknown"            },
     {"lv"   , "Latvijas"            , "Countries/Latvia"        },
@@ -75,15 +76,15 @@ static const struct nameexp layout_expansion_table[] =
     {"h"    , "Magyar"              , "Countries/Hungary"       },
     {"n"    , "Norsk"               , "Countries/Norway"        },
     {"pl"   , "Polski"              , "Countries/Poland"        },
-    {"p"    , "Português"           , "Countries/Portugal"      },
-    {"ro"   , "Românesc"            , "Countries/Romania"       },
+    {"p"    , "Portugu" ISOASCII_ecirc "s"           , "Countries/Portugal"      },
+    {"ro"   , "Rom" ISOASCII_acirc "nesc"            , "Countries/Romania"       },
     {"rus"  , "Russian"             , "Countries/Russia"        },
     {"ch1"  , "Schweizer"           , "Countries/Switzerland"   },
     {"al"   , "Shqip"               , "Countries/Albania"       },
     {"sk"   , "Slovak"              , "Countries/Slovakia"      },
     {"ch2"  , "Suisse"              , "Countries/Switzerland"   },
     {"s"    , "Svenskt"             , "Countries/Sweden"        },
-    {"tr"   , "Türkçe"              , "Countries/Turkey"        },
+    {"tr"   , "T" ISOASCII_uuml "rk" ISOASCII_ccedil "e"              , "Countries/Turkey"        },
     {"ua"   , "Ukranian"            , "Countries/Ukraine"       },
     {NULL   , NULL                  , NULL                      }
 };

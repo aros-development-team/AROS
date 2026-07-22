@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 2003-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
 
 #define DEBUG 0
+#include <aros/isoascii.h>
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -930,7 +931,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
  
     application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.9 ("ADATE") © 2003-2022 The AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: Info 0.9 ("ADATE") " ISOASCII_COPYRIGHT " 2003-2022 The AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenustripObject,

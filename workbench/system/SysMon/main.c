@@ -1,8 +1,9 @@
 /*
-    Copyright 2010-2025, The AROS Development Team. All rights reserved.
+    Copyright 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
+#include <aros/isoascii.h>
 #include <aros/debug.h>
 
 #include <proto/alib.h>
@@ -144,7 +145,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
         MUIA_Application_Title, __(MSG_APP_NAME),
         MUIA_Application_Version, (IPTR) VERSION,
         MUIA_Application_Author, (IPTR) "Krzysztof Smiechowicz",
-        MUIA_Application_Copyright, (IPTR)"©2011-2019, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)ISOASCII_COPYRIGHT "2011-2019, The AROS Development Team",
         MUIA_Application_Base, (IPTR)"SYSMON",
         MUIA_Application_Description, __(MSG_APP_TITLE),
         SubWindow,

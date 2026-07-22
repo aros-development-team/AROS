@@ -1,9 +1,10 @@
 /*
-    Copyright © 2003-2025, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #define INTUITION_NO_INLINE_STDARG
+#include <aros/isoascii.h>
 #include   <aros/debug.h>
 
 #include   <proto/exec.h>
@@ -450,7 +451,7 @@ int main(int argc,char *argv[])
             AQPart_App = NewObject(mcc_qpapp->mcc_Class, NULL,
                 MUIA_Application_Title,       (IPTR)"AROS Quick Part",
                 MUIA_Application_Version,     (IPTR)"$VER: QuickPart 0.61 (27.05.23)",
-                MUIA_Application_Copyright,   (IPTR)"Copyright © 2003-2023, The AROS Development Team. All rights reserved.",
+                MUIA_Application_Copyright,   (IPTR)"Copyright " ISOASCII_COPYRIGHT " 2003-2023, The AROS Development Team. All rights reserved.",
                 MUIA_Application_Author,      (IPTR)"Nick \"Kalamatee\" Andrews",
                 MUIA_Application_Description, __(MSG_DESCRIPTION),
                 MUIA_Application_Base,        (IPTR)"AQPART",

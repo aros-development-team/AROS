@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Tell locale that the preferences have been changed.
 */
 
+#include <aros/isoascii.h>
 #include <string.h>
 #include <exec/types.h>
 #include <proto/exec.h>
@@ -17,10 +18,10 @@ static const char *langlist[] =
 {
     "english",
     "deutsch",
-    "français",
-    "español",
+    "fran" ISOASCII_ccedil "ais",
+    "espa" ISOASCII_ntilde "ol",
     "italiano",
-    "português",
+    "portugu" ISOASCII_ecirc "s",
     "dansk",
     "nederlands",
     "norsk",

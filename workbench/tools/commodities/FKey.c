@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*********************************************************************************************/
 
+#include <aros/isoascii.h>
 #include <intuition/classusr.h>
 #include <graphics/layers.h>
 #include <graphics/clip.h>
@@ -674,7 +675,7 @@ static void MakeGUI(void)
     app = ApplicationObject,
         MUIA_Application_Title, (IPTR)MSG(MSG_FKEY_CXNAME),
         MUIA_Application_Version, (IPTR)VERSIONSTR,
-        MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2016, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"Copyright " ISOASCII_COPYRIGHT " 1995-2016, The AROS Development Team",
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Description, (IPTR)MSG(MSG_FKEY_CXDESCR),
         MUIA_Application_BrokerPri, cx_pri,

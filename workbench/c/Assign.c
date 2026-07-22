@@ -1,6 +1,6 @@
 /*
 
-    (C) 1995-2023 The AROS Development Team
+    (C) 1995-2026 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
@@ -9,6 +9,7 @@
     Lang: English
 */
 
+#include <aros/isoascii.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
@@ -131,9 +132,9 @@ struct UtilityBase *UtilityBase;
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.13 (26.04.2023) © The AROS Dev Team" ;
+static const char version[] = "\0$VER: Assign unofficial 50.13 (26.04.2023) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
 #else
-static const char version[] __attribute__((used)) = "\0$VER: Assign 50.13 (26.04.2023) © The AROS Dev Team" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.13 (26.04.2023) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
 #endif
 
 struct localdata

@@ -1,7 +1,8 @@
 /*
-    Copyright  2009, The AROS Development Team. All rights reserved.
+    Copyright  2009-2026, The AROS Development Team. All rights reserved.
 */
 
+#include <aros/isoascii.h>
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <dos/dos.h>
@@ -59,7 +60,7 @@ ZUNE_CUSTOMCLASS_1(
 
 /* Utility class for choosing public screen */
 
-#define PSD_NAME_DEFAULT "«Default»"
+#define PSD_NAME_DEFAULT ISOASCII_LGUILLEMET "Default" ISOASCII_RGUILLEMET
 
 struct PopPublicScreen_DATA
 {

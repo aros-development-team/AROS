@@ -4,6 +4,7 @@
 ** Written by T.Pierron, aug 5, 2000                    **
 *********************************************************/
 
+#include <aros/isoascii.h>
 #include <intuition/intuition.h>
 #include <intuition/sghooks.h>
 #include <libraries/gadtools.h>
@@ -59,8 +60,8 @@ char HilitePattern(Project, STRPTR, BYTE, BYTE quiet);
 void init_searchtable( void )
 {
 	static UBYTE UpClassEqv[] =
-		"a¿¡¬√ƒ≈‡·‚„‰Â" "e»… ÀËÈÍÎ" "iÃÕŒœÏÌÓÔ" "nÒ—"
-		"o“”‘’÷ÚÛÙıˆ¯ÿ" "uŸ⁄€‹˘˙˚¸" "y˝ˇ"       "cÁ«";
+		"a" ISOASCII_Agrave ISOASCII_Aacute ISOASCII_Acirc ISOASCII_Atilde ISOASCII_Auml ISOASCII_Aring ISOASCII_agrave ISOASCII_aacute ISOASCII_acirc ISOASCII_atilde ISOASCII_auml ISOASCII_aring "e" ISOASCII_Egrave ISOASCII_Eacute ISOASCII_Ecirc ISOASCII_Euml ISOASCII_egrave ISOASCII_eacute ISOASCII_ecirc ISOASCII_euml "i" ISOASCII_Igrave ISOASCII_Iacute ISOASCII_Icirc ISOASCII_Iuml ISOASCII_igrave ISOASCII_iacute ISOASCII_icirc ISOASCII_iuml "n" ISOASCII_ntilde ISOASCII_Ntilde
+		"o" ISOASCII_Ograve ISOASCII_Oacute ISOASCII_Ocirc ISOASCII_Otilde ISOASCII_Ouml ISOASCII_ograve ISOASCII_oacute ISOASCII_ocirc ISOASCII_otilde ISOASCII_ouml ISOASCII_oslash ISOASCII_Oslash "u" ISOASCII_Ugrave ISOASCII_Uacute ISOASCII_Ucirc ISOASCII_Uuml ISOASCII_ugrave ISOASCII_uacute ISOASCII_ucirc ISOASCII_uuml "y" ISOASCII_yacute ISOASCII_yuml       "c" ISOASCII_ccedil ISOASCII_Ccedil;
 	STRPTR p;
 	UWORD  i;
 

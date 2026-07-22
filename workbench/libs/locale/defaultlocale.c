@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Default Locale Preferences
 */
 
+#include <aros/isoascii.h>
 #include <exec/types.h>
 #include <libraries/locale.h>
 #include <libraries/iffparse.h>
@@ -49,7 +50,7 @@ const struct Locale defLocale =
 
     2, 2, { 0, 0 },                 /* Monetary (Reg/Int) Frac Digits, Resvd */
 
-    "$", "¢", "USD",                /* Currency Symbols */
+    "$", ISOASCII_CENT, "USD",                /* Currency Symbols */
 
     /* Positive Representation */
     "", SS_NOSPACE, SP_PREC_ALL, CSP_PRECEDES, 0,

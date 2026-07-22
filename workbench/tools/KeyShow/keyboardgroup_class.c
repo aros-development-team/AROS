@@ -1,7 +1,8 @@
 /*
-    Copyright (C) 2012-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
 */
 
+#include <aros/isoascii.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/keymap.h>
@@ -55,7 +56,7 @@ static const BYTE keymapstr_table[8][8] =
 };
 
 // TODO: is this order always the same?
-static const BYTE deadkey_table[] = " ´`^~\"°";
+static const BYTE deadkey_table[] = " " ISOASCII_ACUTE "`^~\"" ISOASCII_DEGREE;
 
 #define KEYCOUNT                0x78
 #define PSEUDO_RAWKEY_RCONTROL  0x7F

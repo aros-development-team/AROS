@@ -9,6 +9,7 @@
 
 /* ------------------------------- includes ------------------------------- */
 
+#include <aros/isoascii.h>
 #include "classbase.h"
 
 #include <SDI/SDI_hook.h>
@@ -702,7 +703,7 @@ BOOL DoNodeAttr(Class *cl, Object *obj, struct ParseNodeData *pd,
       break;
    /* misc attributes */
    case ATTR_AMIGAGUIDE:
-      if((line = AllocLine(cl, obj, pd, "AmigaGuide®", 11)) != NULL)
+      if((line = AllocLine(cl, obj, pd, "AmigaGuide" ISOASCII_REGISTERED, 11)) != NULL)
       {
          line->ln_Style |= FSF_BOLD;
       }

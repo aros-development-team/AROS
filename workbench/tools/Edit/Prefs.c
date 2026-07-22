@@ -5,6 +5,7 @@
 ***************************************************************/
 
 #define	ASL_V38_NAMES_ONLY
+#include <aros/isoascii.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
 #include <intuition/intuitionbase.h>
@@ -39,7 +40,7 @@ UBYTE ENV[]    = "ENVARC:";
 UBYTE Path[100];
 
 /** Special table for word separation **/
-UBYTE WordsSep[MAX_SPLIT] = "!-/:-?[-]^`{-¿×÷";
+UBYTE WordsSep[MAX_SPLIT] = "!-/:-?[-]^`{-" ISOASCII_INVQUESTION ISOASCII_MULTIPLY ISOASCII_DIVIDE;
 UBYTE SpaceType[]         = "\t\n\r \177";
 UBYTE TypeChar[256];
 

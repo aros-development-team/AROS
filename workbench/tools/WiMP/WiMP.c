@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     WiMP -- Window manipulation program.
  */
@@ -39,6 +39,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <aros/isoascii.h>
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
 
@@ -109,7 +110,7 @@ struct ListEntry
     TEXT title[40];
 };
 
-static const char version[] = "$VER: WiMP 0.13 (06.01.2009) © AROS Dev Team";
+static const char version[] = "$VER: WiMP 0.13 (06.01.2009) " ISOASCII_COPYRIGHT " AROS Dev Team";
 
 /*********************************************************************************************/
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
     This file is part of the About program, which is distributed under
     the terms of version 2 of the GNU General Public License.
     
@@ -7,6 +7,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <aros/isoascii.h>
 #include <aros/debug.h>
 #include <aros/build.h>
 #include <aros/inquire.h>
@@ -41,7 +42,7 @@
 CONST_STRPTR str_aroscpu = "" BUILDCPU "";
 #endif
 
-#define VERSION "$VER: AboutAROS 0.3 ("ADATE") ©AROS Dev Team"
+#define VERSION "$VER: AboutAROS 0.3 ("ADATE") " ISOASCII_COPYRIGHT "AROS Dev Team"
 
 #define WINDOW_BG   ((IPTR) "2:00000000,00000000,00000000")
 #define REGISTER_BG ((IPTR) "7:V,00000000,92000000,91000000-00000000,82000000,81000000")
@@ -255,7 +256,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         MUIA_Application_Title, __(MSG_TITLE),
         MUIA_Application_Version, (IPTR)VERSION,
-        MUIA_Application_Copyright, (IPTR)"© 2010-2020, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)ISOASCII_COPYRIGHT " 2010-2020, The AROS Development Team",
         MUIA_Application_Description, __(MSG_TITLE),
         MUIA_Application_Base, (IPTR) "ABOUTAROS",
         SubWindow, (IPTR) (window = (Object *)WindowObject,
