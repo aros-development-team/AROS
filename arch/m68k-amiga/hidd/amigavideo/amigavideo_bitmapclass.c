@@ -240,15 +240,17 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
         newyoffset = data->height - 1;
 
     /*
-     * OCS cannot switch a display fragment cleanly on the vertical-counter
-     * rollover itself.  Round that single position to the following line;
-     * Root::Get then reports the actual hardware position to graphics and
-     * Intuition, as for other chipset positioning constraints.
+     * An OCS display fragment cannot cross the 8-bit vertical-counter
+     * rollover without changing a live Copper list.  Keep its first line on
+     * the safe side of the rollover; ECS Denise uses DIWHIGH and is exempt.
      */
-    if (data->disp && !csd->ecs_denise &&
-        newyoffset == ((256 - csd->starty) << data->interlace))
+    if (data->disp && !csd->ecs_denise)
     {
-        newyoffset += 1 << data->interlace;
+        LONG maxyoffset = ((REZ_Y_MIN + REZ_PAL_LINES - 1 - csd->starty)
+                           << data->interlace);
+
+        if (newyoffset > maxyoffset)
+            newyoffset = maxyoffset;
     }
 
     if ((newxoffset != data->leftedge) || (newyoffset != data->topedge))

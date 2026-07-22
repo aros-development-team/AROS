@@ -59,7 +59,6 @@ static inline VOID initvpicopper(struct ViewPort  *vp, struct amigabm_data *bm, 
     bm->copsd.copper2_palette = vp->DspIns->CopSStart + (bm->copld.copper2_palette - vp->DspIns->CopLStart);
     bm->copsd.copper2_scroll = vp->DspIns->CopSStart + (bm->copld.copper2_scroll - vp->DspIns->CopLStart);
     bm->copsd.copper2_diwstop = vp->DspIns->CopSStart + (bm->copld.copper2_diwstop - vp->DspIns->CopLStart);
-    bm->copsd.copper2_bplstart = vp->DspIns->CopSStart + (bm->copld.copper2_bplstart - vp->DspIns->CopLStart);
     bm->copsd.copper2_bpl = vp->DspIns->CopSStart + (bm->copld.copper2_bpl - vp->DspIns->CopLStart);
     bm->copsd.copper2_tail = vp->DspIns->CopSStart + (bm->copld.copper2_tail - vp->DspIns->CopLStart);
     bm->copsd.extralines = bm->copld.extralines;
