@@ -54,10 +54,31 @@ static size_t RAM_len  = 0;
     return ret;
  }
 
+/*
+ * Host mmap policy. On Apple Silicon / hardened macOS:
+ *  - a one-shot RWX anonymous mmap is refused (EACCES) even with the allow-jit /
+ *    allow-unsigned-executable-memory entitlements (W^X enforcement), and
+ *  - MAP_32BIT fails (ENOMEM) because the low 4GB is unavailable.
+ * A 64-bit target needs neither: map the AROS RAM pool RW (early boot executes
+ * from the kickstart RO region, mprotect'd RX, not from this pool) and drop
+ * MAP_32BIT. SHARED+EXEC anonymous memory is also refused, so use MAP_PRIVATE.
+ * (Executing code loaded *into* the pool via LoadSeg needs the W^X-aware path,
+ * like the existing iOS handling.)
+ */
+#if defined(HOST_OS_darwin) || defined(__APPLE__)
+#define AROS_RAM_MAPSHARING MAP_PRIVATE
+#define AROS_RAM_PROT       (PROT_READ|PROT_WRITE)
+#define AROS_MAP_32BIT      0
+#else
+#define AROS_RAM_MAPSHARING MAP_SHARED
+#define AROS_RAM_PROT       (PROT_READ|PROT_WRITE|PROT_EXEC)
+#define AROS_MAP_32BIT      MAP_32BIT
+#endif
+
 void *AllocateRO(size_t len)
 {
     /* There's no sense to set MAP_SHARED for ROM */
-    return doMMap(&code, &code_len, len, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE|MAP_32BIT);
+    return doMMap(&code, &code_len, len, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE|AROS_MAP_32BIT);
 }
 
 /*
@@ -86,15 +107,16 @@ void *AllocateRW(size_t len)
  * Yes, iOS will silently mask out PROT_EXEC here. This is bad.
  * Well, iOS will be a little bit special story in InternalLoadSeg()...
  */
+
 void *AllocateRAM32(size_t len)
 {
-    return doMMap(&RAM32, &RAM32_len, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_SHARED|MAP_32BIT);
+    return doMMap(&RAM32, &RAM32_len, len, AROS_RAM_PROT, MAP_ANON|AROS_RAM_MAPSHARING|AROS_MAP_32BIT);
 }
 
 #if (__WORDSIZE == 64)
 void *AllocateRAM(size_t len)
 {
-    return doMMap(&RAM, &RAM_len, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_SHARED);
+    return doMMap(&RAM, &RAM_len, len, AROS_RAM_PROT, MAP_ANON|AROS_RAM_MAPSHARING);
 }
 #endif
 

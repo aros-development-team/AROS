@@ -10,7 +10,15 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#ifndef HOST_OS_darwin
+/*
+ * <sys/ioctl.h> drags in the BSD networking headers (via <sys/sockio.h> ->
+ * <net/if.h>), which don't compile cleanly under macOS's strict POSIX mode.
+ * This class never uses an ioctl macro directly - it calls the host ioctl()
+ * through SysIFace->ioctl - so the header is simply unnecessary on darwin.
+ */
 #include <sys/ioctl.h>
+#endif
 #include <signal.h>
 #include <string.h>
 #include <errno.h>
@@ -844,6 +852,20 @@ int UXIO__Hidd_UnixIO__AddInterrupt(OOP_Class *cl, OOP_Object *o, struct pHidd_U
 
     HostLib_Unlock();
 
+#ifdef HOST_OS_darwin
+    /*
+     * On darwin we do not rely on SIGIO/O_ASYNC at all: it is never delivered for
+     * pipes, and F_SETOWN / F_SETFL(O_ASYNC) fails outright (EPERM) on a
+     * controlling tty. Readiness is instead detected by polling the interrupt list
+     * from the periodic timer IRQ (see UXIO_Init). So keep the interrupt registered
+     * and report success regardless of whether enabling async I/O worked - else an
+     * interactive console read on a tty would fail immediately (the Wait returns the
+     * fcntl errno) instead of blocking until the user types.
+     */
+    (void)res;
+    (void)err;
+    return 0;
+#else
     if (res != -1)
         return 0;
 
@@ -851,6 +873,7 @@ int UXIO__Hidd_UnixIO__AddInterrupt(OOP_Class *cl, OOP_Object *o, struct pHidd_U
     Hidd_UnixIO_RemInterrupt(o, msg->Int);
 
     return err;
+#endif
 }
 
 /*****************************************************************************************
@@ -1151,6 +1174,23 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
     if (!LIBBASE->irqHandle)
         return FALSE;
 
+#ifdef HOST_OS_darwin
+    /*
+     * On darwin, signal-driven I/O (F_SETOWN + O_ASYNC -> SIGIO) is not
+     * delivered for pipes - only for sockets and ttys. A task parked in
+     * Hidd_UnixIO_Wait() on a pipe fd (e.g. the boot console when stdin is a
+     * pipe) would therefore never be woken: SIGIO never arrives, so
+     * SigIO_IntServer never runs. Drive the same fd-readiness de-multiplexer
+     * from the periodic timer interrupt as well (timer.device arms ITIMER_REAL,
+     * which delivers SIGALRM, on which core_IRQ is also installed). The fd list
+     * is then polled within one scheduler tick regardless of whether SIGIO is
+     * ever delivered, which makes Wait() work for pipes as well as ttys.
+     */
+    LIBBASE->irqHandle2 = KrnAddIRQHandler(SIGALRM, SigIO_IntServer, LIBBASE, NULL);
+    if (!LIBBASE->irqHandle2)
+        return FALSE;
+#endif
+
     NewList((struct List *)&LIBBASE->intList);
     InitSemaphore(&LIBBASE->lock);
 
@@ -1171,6 +1211,11 @@ static int UXIO_Cleanup(struct unixio_base *LIBBASE)
 
     if (LIBBASE->irqHandle)
         KrnRemIRQHandler(LIBBASE->irqHandle);
+
+#ifdef HOST_OS_darwin
+    if (LIBBASE->irqHandle2)
+        KrnRemIRQHandler(LIBBASE->irqHandle2);
+#endif
 
     if (LIBBASE->SysIFace)
         HostLib_DropInterface ((APTR *)LIBBASE->SysIFace);

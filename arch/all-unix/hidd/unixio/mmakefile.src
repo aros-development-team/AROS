@@ -21,9 +21,20 @@ USER_LDFLAGS := -static
 
 #MM- includes-generate: kernel-unixio-includes
 
+# unixpkt_class uses Linux-only raw packet sockets (PF_PACKET, sockaddr_ll,
+# SIOCGIFHWADDR), which do not exist on darwin. The packet methods are required
+# by the UnixIO class method table, so on darwin we build failing stubs for
+# them instead (the filesystem path - emul-handler - never calls them).
+UNIXIO_FILES := unixio_class
+ifeq ($(ARCH),darwin)
+UNIXIO_FILES += unixpkt_darwin
+else
+UNIXIO_FILES += unixpkt_class
+endif
+
 %build_module mmake=kernel-unixio \
     modname=unixio modtype=hidd version=$(AROS_TARGET_PLATFORM) \
-    files="unixio_class unixpkt_class" archspecific=yes
+    files="$(UNIXIO_FILES)" archspecific=yes
 
 MY_INCLS := $(call WILDCARD, include/*.h)
 DEST_INC := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))

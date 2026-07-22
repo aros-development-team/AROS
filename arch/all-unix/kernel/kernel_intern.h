@@ -35,6 +35,9 @@ struct KernelInterface
     void *  (*mmap)(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
     int     (*munmap)(void *addr, size_t length);
     int    *(*__error)(void);
+#ifdef HOST_OS_darwin
+    void    (*sys_icache_invalidate)(void *start, size_t len);
+#endif
 #ifdef HOST_OS_android
     int     (*sigwait)(const sigset_t *restrict set, int *restrict sig);
 #else
@@ -42,6 +45,13 @@ struct KernelInterface
     int     (*SigFillSet)(sigset_t *set);
     int     (*SigAddSet)(sigset_t *set, int signum);
     int     (*SigDelSet)(sigset_t *set, int signum);
+#endif
+#ifdef HOST_OS_darwin
+    /* Used by core_IRQ to tell whether a process-directed SIGALRM was
+     * delivered to AROS's own host thread, and to forward it there
+     * (thread-directed) if not. Both are async-signal-safe. */
+    void *  (*pthread_self)(void);
+    int     (*pthread_kill)(void *thread, int sig);
 #endif
 };
 
@@ -66,6 +76,9 @@ struct PlatformData
     sigset_t		    sig_int_mask;   /* Mask of signals that Disable() block */
     int			   *errnoPtr;
     struct KernelInterface *iface;
+#ifdef HOST_OS_darwin
+    void                   *aros_host_thread;   /* pthread_self() of AROS's thread */
+#endif
 };
 
 struct SignalTranslation

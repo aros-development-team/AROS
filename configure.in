@@ -1762,6 +1762,38 @@ case "$target_os" in
                 kernel_tool_prefix="powerpc-apple-darwin10-"
                 llvm_target_cpu="PowerPC"
                 ;;
+            *aarch64* | *arm64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                aros_target_cpu="aarch64"
+                aros_object_format="aarch64elf"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Daarch64"
+                aros_isa_flags="$""(ISA_AARCH64_FLAGS)"
+                aros_macosx_version="11.0"
+                dnl x18 is the reserved platform register on the darwin host and
+                dnl is not preserved across signal delivery; keep AROS code off it.
+                dnl The host SDK headers dispatch their arm64 support on __arm64__,
+                dnl which the AROS-targeted compiler does not define by itself.
+                aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP) -ffixed-x18 -D__arm64__"
+                aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP) -ffixed-x18 -D__arm64__"
+                dnl The hosted kickstart links like a regular target binary; bind
+                dnl the compiler-emitted mem/str libcalls to the freestanding
+                dnl static C runtime instead of the weak stdc.library stubs,
+                dnl which would dereference a NULL StdCBase at early boot.
+                aros_config_ldflags="$aros_config_ldflags -lstdc.static"
+                default_llvm_version="20.1.0"
+                aros_kernel_isa_flags="-arch arm64"
+                aros_kernel_ldflags="-arch arm64"
+                aros_nominal_depth=8
+                aros_kernel_rs="$toolchain_ar"
+                aros_kernel_ar_flags="-cr"
+                aros_kernel_ld="$toolchain_ld -arch arm64"
+                aros_kernel_as="$toolchain_as -arch arm64"
+                aros_kernel_ranlib="ranlib"
+                aros_kernel_nm="nm"
+                aros_kernel_strip="strip"
+                kernel_tool_prefix=""
+                llvm_target_cpu="AArch64"
+                ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_ios_platform="iPhoneOS"
