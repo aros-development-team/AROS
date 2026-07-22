@@ -69,8 +69,11 @@ typedef	unsigned int	cpumask_t;
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
-#if defined(__GNUC__) && !defined(__clang__)
-register unsigned char* AROS_GET_SP __asm__("%sp");
+#if defined(__clang__)
+/* clang has no global "sp" register variable on AArch64; read it inline. */
+#define AROS_GET_SP ({ unsigned char *__sp; __asm__ __volatile__("mov %0, sp" : "=r"(__sp)); __sp; })
+#elif defined(__GNUC__)
+register unsigned char* AROS_GET_SP __asm__("sp");
 #endif
 
 /*
@@ -81,15 +84,19 @@ register unsigned char* AROS_GET_SP __asm__("%sp");
 */
 struct FullJumpVec
 {
-    unsigned long jmp;
-    unsigned long vec;
+    unsigned long jmp;	/* two AArch64 instrs: ldr x16,#8 ; br x16 */
+    unsigned long vec;	/* 64-bit absolute target address           */
 };
+/* AArch64 has no "load PC" instruction, so the trampoline loads the 64-bit
+   target (stored in 'vec', at offset 8) into x16 via an LDR-literal and
+   branches to it. Encodings: ldr x16,#8 = 0x58000050, br x16 = 0xd61f0200;
+   packed little-endian (first instruction in the low word). */
 #define __AROS_SET_FULLJMP(v,a) \
 do \
 {  \
     struct FullJumpVec *_v = (v); \
-    _v->jmp = 0xe51ff004; 		/* ldr pc, [pc, #-4] */ 	\
-    _v->vec = (a); 		/* target_address */ 	\
+    _v->jmp = 0xd61f020058000050UL;	/* ldr x16,#8 ; br x16 */	\
+    _v->vec = (unsigned long)(a);	/* 64-bit target_address */	\
 } while (0)
 
 struct JumpVec

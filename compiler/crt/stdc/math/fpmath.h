@@ -42,6 +42,8 @@
 #   include "ppc/_fpmath.h"
 #elif defined __arm__
 #   include "arm/_fpmath.h"
+#elif defined __aarch64__
+#   include "aarch64/_fpmath.h"
 #elif defined(__riscv)
 #   include "riscv/_fpmath.h"
 #else

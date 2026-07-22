@@ -800,6 +800,7 @@ CFLAGS="$save_cflags"
 #  -Wwrite-strings 
 #  -Wcomment
 #  -Wincompatible-pointer-types
+#  -Wincompatible-function-pointer-types
 #  -Wbool-compare
 #  -Wlogical-not-parentheses
 #  -Wpointer-sign
@@ -1225,6 +1226,15 @@ AC_MSG_RESULT($aros_incompatible_pointer_types)
 if test "x-$aros_incompatible_pointer_types" = "x-yes" ; then
     aros_warnflags_incompatible_pointer_types=-Wincompatible-pointer-types
     aros_nowarnflags_incompatible_pointer_types=-Wno-incompatible-pointer-types
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wincompatible-function-pointer-types])
+CFLAGS=-Wincompatible-function-pointer-types
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_incompatible_function_pointer_types="yes"],[aros_incompatible_function_pointer_types="no"])
+AC_MSG_RESULT($aros_incompatible_function_pointer_types)
+if test "x-$aros_incompatible_function_pointer_types" = "x-yes" ; then
+    aros_warnflags_incompatible_function_pointer_types=-Wincompatible-function-pointer-types
+    aros_nowarnflags_incompatible_function_pointer_types=-Wno-incompatible-function-pointer-types
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wbool-compare])
@@ -1863,6 +1873,8 @@ AC_SUBST(aros_warnflags_comment)
 AC_SUBST(aros_nowarnflags_comment)
 AC_SUBST(aros_warnflags_incompatible_pointer_types)
 AC_SUBST(aros_nowarnflags_incompatible_pointer_types)
+AC_SUBST(aros_warnflags_incompatible_function_pointer_types)
+AC_SUBST(aros_nowarnflags_incompatible_function_pointer_types)
 AC_SUBST(aros_warnflags_bool_compare)
 AC_SUBST(aros_nowarnflags_bool_compare)
 AC_SUBST(aros_warnflags_logical_not_parentheses)

@@ -270,11 +270,25 @@ else
 endif
 
 # compiler and assembler flags are set depending upon the directory
-CFLAGS                        = $(strip $(TARGET_ISA_CFLAGS) $(TARGET_CFLAGS))
+# clang 16+ promotes these legacy-C diagnostics to hard errors by default;
+# demote them back to warnings for the pre-C99 parts of the tree. The
+# NOWARN_ variables come from compiler.cfg (probed by config/features), so
+# each is empty on compilers without the corresponding option.
+MODERN_CLANG_NOWARN           = $(NOWARN_INT_CONVERSION) $(NOWARN_IMPLICIT_INT) $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWARN_INCOMPAT_POINTER_TYPES) $(NOWARN_INCOMPAT_FUNC_POINTER_TYPES)
+CFLAGS                        = $(strip $(TARGET_ISA_CFLAGS) $(TARGET_CFLAGS) $(MODERN_CLANG_NOWARN))
 CXXFLAGS                      = $(strip $(TARGET_ISA_CXXFLAGS) $(TARGET_CXXFLAGS))
 CPPFLAGS                      = $(strip $(TARGET_CPPFLAGS))
 AFLAGS                        = $(strip $(TARGET_ISA_AFLAGS) $(USER_AFLAGS) $(CONFIG_AFLAGS))
 LDFLAGS                       = $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS))
+
+ifeq ($(AROS_TARGET_CPU),aarch64)
+# clang emits the weak __aros_libreq_<base> version marker as a non-weak
+# block-scope static; the identical copies collide across a module's objects.
+# The kickstart kobj link is a raw '$(AROS_LD) -Ur' that bypasses LDFLAGS,
+# so the flag is needed on both link paths.
+LDFLAGS                       += -Wl,--allow-multiple-definition
+KOBJ_LDFLAGS                  += --allow-multiple-definition
+endif
 
 # Target arch/CPU-specific options that we can't set in 'configure'
 # (these could be added to CFLAGS instead of using a new variable, except

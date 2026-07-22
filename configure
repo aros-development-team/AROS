@@ -10417,7 +10417,14 @@ elf_tool_prefix="${target_cpu}-elf-"
 
 # Base target cpu ISA configuration switch.
 case "$target_cpu" in
-    *aarch64*)
+    *aarch64* | *arm64*)
+        aarch64_isa_extra="ISA_AARCH64_FLAGS             = "
+        case "$aros_toolchain" in
+            *llvm*)
+                aarch64_isa_extra+="--target=aarch64-unknown-aros "
+            ;;
+        esac
+        aarch64_isa_extra+="-mcmodel=large"
         ;;
     *armhf*)
         if test "$gcc_default_endian" = ""; then
@@ -12483,6 +12490,9 @@ printf "%s\n" "$aros_gcc_cpu" >&6; }
     *x86_64*)
         aros_isa_extra="$export_newline$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
                 spec_obj_format="%{!m32:-m elf_x86_64} %{m32:-m elf_i386}"
+        ;;
+    aarch64*)
+        aros_isa_extra="$export_newline$aarch64_isa_extra$export_newline"
         ;;
     arm*)
                 aros_isa_extra="$export_newline$arm_isa_extra"

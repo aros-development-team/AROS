@@ -81,8 +81,78 @@ struct libentry
     char *str;
 };
 
+#define ISWS(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\r'||(c)=='\f'||(c)=='\v')
+
+/* Expand @file response-file arguments into the argument list. clang switches to
+   a response file when the linker command line is long (e.g. stdc.library's
+   ~1700 objects); it then invokes us as `collect-aros @/tmp/response-XXX`. Without
+   expanding it here we never parse -o and write to the default "a.out", so the
+   real module is never produced. Tokens are whitespace-separated with '...'/"..."
+   grouping and \-escapes (the GNU/clang response-file syntax); we parse in place
+   (parsed length never exceeds the raw length) and keep the file buffer alive
+   since the resulting argv entries point into it (this tool is short-lived). */
+static char **expand_response_files(int *pargc, char **argv)
+{
+    int argc = *pargc, i, n = 0;
+    long extra = 0;
+    struct stat st;
+    char **out;
+
+    for (i = 0; i < argc; i++)
+        if (argv[i] && argv[i][0] == '@' && stat(&argv[i][1], &st) == 0)
+            extra += st.st_size + 1;          /* upper bound on token count */
+
+    if (extra == 0)
+        return argv;                          /* nothing to expand */
+
+    out = xmalloc(sizeof(char *) * (argc + extra + 1));
+    for (i = 0; i < argc; i++)
+    {
+        FILE *f;
+        if (argv[i] && argv[i][0] == '@' && (f = fopen(&argv[i][1], "rb")) != NULL)
+        {
+            long len;
+            char *buf, *p;
+
+            fseek(f, 0, SEEK_END); len = ftell(f); fseek(f, 0, SEEK_SET);
+            buf = xmalloc(len + 1);
+            len = fread(buf, 1, len, f);
+            buf[len] = '\0';
+            fclose(f);
+
+            for (p = buf; *p; )
+            {
+                char *tok, *w;
+                while (ISWS(*p)) p++;
+                if (!*p) break;
+                tok = w = p;
+                while (*p && !ISWS(*p))
+                {
+                    if (*p == '"' || *p == '\'')
+                    {
+                        char q = *p++;
+                        while (*p && *p != q) { if (*p == '\\' && p[1]) p++; *w++ = *p++; }
+                        if (*p == q) p++;
+                    }
+                    else if (*p == '\\' && p[1]) { p++; *w++ = *p++; }
+                    else *w++ = *p++;
+                }
+                if (*p) p++;                   /* step past the separator */
+                *w = '\0';                     /* terminate token (w <= old p) */
+                out[n++] = tok;
+            }
+        }
+        else
+            out[n++] = argv[i];
+    }
+    out[n] = NULL;
+    *pargc = n;
+    return out;
+}
+
 int main(int argc, char *argv[])
 {
+    argv = expand_response_files(&argc, argv);
     struct libentry llibs[argc];
     struct libentry rellibs[argc];
     char *output, **ldargs;

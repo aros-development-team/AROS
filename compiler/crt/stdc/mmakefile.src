@@ -775,11 +775,14 @@ STDC_MATH_STATIC := \
     cos \
     log \
     log10 \
+    log10l \
     log2 \
     pow \
+    powl \
     sin \
     sqrt \
-    tan \
+    sqrtl \
+    tan
 
 
 STDC_MATH_STATIC_RAW := \
@@ -801,12 +804,27 @@ STDC_MATH_STATIC_RAW := \
     math/s_copysignf \
     math/s_copysignl \
     math/s_cos \
+    math/s_sin \
     math/s_fabs \
     math/s_floor \
     math/s_fpclassify \
     math/s_scalbn \
     math/s_scalbnf \
-    math/s_isfinite
+    math/s_isfinite \
+    math/s_isinf
+
+#
+# Long double support for the static linklib, matching the shared build above
+#
+ifneq ($(filter $(AROS_TARGET_CPU),i386 x86_64 m68k),)
+STDC_MATH_STATIC_RAW += $(STDC_LONGDB_MATH)
+STDC_MATH_STATIC_RAW += $(STDC_LONGDB80_MATH)
+else
+ifneq ($(filter $(AROS_TARGET_CPU),aarch64 riscv),)
+STDC_MATH_STATIC_RAW += $(STDC_LONGDB_MATH)
+STDC_MATH_STATIC_RAW += $(STDC_LONGDB128_MATH)
+endif
+endif
 
 STDC_STATIC := \
     __ctype \
@@ -877,7 +895,7 @@ USER_CPPFLAGS := \
         -DSTDC_STATIC \
         -D_GNU_SOURCE \
         -D__ISO_C_VISIBLE=2011 \
-        -Dlint
+        -Dlint '-D__FBSDID(x)='
 #USER_CPPFLAGS += -DDEBUG=1
 
 #MM- core-linklibs : linklibs-stdc-static

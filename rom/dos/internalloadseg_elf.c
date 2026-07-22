@@ -729,6 +729,97 @@ static int relocate
 
             case R_ARM_NONE:
                 break;
+            #elif defined(__aarch64__)
+
+            case R_AARCH64_ABS64:
+                *(UQUAD *)p = s + rel->addend;
+                break;
+            case R_AARCH64_ABS32:
+                *(ULONG *)p = (ULONG)(s + rel->addend);
+                break;
+            case R_AARCH64_PREL64:
+                *(UQUAD *)p = s + rel->addend - (IPTR)p;
+                break;
+            case R_AARCH64_PREL32:
+                *(ULONG *)p = (ULONG)(s + rel->addend - (IPTR)p);
+                break;
+
+            /* movz/movk: replace the 16-bit imm (instruction bits 5-20) */
+            case R_AARCH64_MOVW_UABS_G0:
+            case R_AARCH64_MOVW_UABS_G0_NC:
+                *p = (*p & 0xffe0001fu) | ((((s + rel->addend) >> 0)  & 0xffff) << 5);
+                break;
+            case R_AARCH64_MOVW_UABS_G1:
+            case R_AARCH64_MOVW_UABS_G1_NC:
+                *p = (*p & 0xffe0001fu) | ((((s + rel->addend) >> 16) & 0xffff) << 5);
+                break;
+            case R_AARCH64_MOVW_UABS_G2:
+            case R_AARCH64_MOVW_UABS_G2_NC:
+                *p = (*p & 0xffe0001fu) | ((((s + rel->addend) >> 32) & 0xffff) << 5);
+                break;
+            case R_AARCH64_MOVW_UABS_G3:
+                *p = (*p & 0xffe0001fu) | ((((s + rel->addend) >> 48) & 0xffff) << 5);
+                break;
+
+            /* ADRP: 21-bit page offset, split immlo (bits 29-30) / immhi (5-23) */
+            case R_AARCH64_ADR_PREL_PG_HI21:
+            {
+                IPTR x = (((s + rel->addend) & ~(IPTR)0xfff) - ((IPTR)p & ~(IPTR)0xfff)) >> 12;
+                *p = (*p & 0x9f00001fu) | ((x & 0x3) << 29) | (((x >> 2) & 0x7ffff) << 5);
+                break;
+            }
+
+            /* ADD/LDST imm12 (instruction bits 10-21), LDST scaled by size */
+            case R_AARCH64_ADD_ABS_LO12_NC:
+            case R_AARCH64_LDST8_ABS_LO12_NC:
+                *p = (*p & 0xffc003ffu) | ((((s + rel->addend) & 0xfff) >> 0) << 10);
+                break;
+            case R_AARCH64_LDST16_ABS_LO12_NC:
+                *p = (*p & 0xffc003ffu) | ((((s + rel->addend) & 0xfff) >> 1) << 10);
+                break;
+            case R_AARCH64_LDST32_ABS_LO12_NC:
+                *p = (*p & 0xffc003ffu) | ((((s + rel->addend) & 0xfff) >> 2) << 10);
+                break;
+            case R_AARCH64_LDST64_ABS_LO12_NC:
+                *p = (*p & 0xffc003ffu) | ((((s + rel->addend) & 0xfff) >> 3) << 10);
+                break;
+            case R_AARCH64_LDST128_ABS_LO12_NC:
+                *p = (*p & 0xffc003ffu) | ((((s + rel->addend) & 0xfff) >> 4) << 10);
+                break;
+
+            /*
+             * b/bl: 26-bit signed branch offset >> 2 (instruction bits 0-25).
+             * The reach is +/-128MB; a target outside that range (or a
+             * misaligned one) cannot be encoded and must be refused rather
+             * than silently truncated.
+             */
+            case R_AARCH64_JUMP26:
+            case R_AARCH64_CALL26:
+            {
+                SIPTR temp = (SIPTR)(s + rel->addend - (IPTR)p);
+                SIPTR imm26;
+
+                if (temp & 3) {
+                    D(bug("[ELF Loader] CALL26/JUMP26 target misaligned\n"));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+
+                imm26 = temp >> 2;
+
+                /* signed 26-bit immediate: [-2^25, 2^25 - 1] */
+                if (imm26 < -((SIPTR)1 << 25) || imm26 > (((SIPTR)1 << 25) - 1)) {
+                    D(bug("[ELF Loader] CALL26/JUMP26 target out of range\n"));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+
+                *p = (*p & 0xfc000000u) | ((ULONG)imm26 & 0x03ffffffu);
+                break;
+            }
+
+            case R_AARCH64_NONE:
+                break;
             #elif defined(__riscv)
 
             #else

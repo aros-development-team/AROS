@@ -1,0 +1,19 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_AFLAGS 	:= -I$(GENINCDIR)
+
+STDC_AARCH64_ASMFILES := \
+    longjmp \
+    setjmp
+
+%build_archspecific \
+  mainmmake=compiler-stdc \
+  modname=stdc maindir=compiler/crt/stdc \
+  arch=aarch64 \
+  asmfiles="$(STDC_AARCH64_ASMFILES)"
+
+#MM compiler-stdc-aarch64 : includes-asm_h
+
+%common

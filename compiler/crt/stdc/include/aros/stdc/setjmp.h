@@ -2,7 +2,7 @@
 #define _STDC_SETJMP_H_
 
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file setjmp.h
@@ -21,6 +21,9 @@
 #   define _JMPLEN 58
 #elif __arm__
 #   define _JMPLEN 63
+#elif __aarch64__
+    /* AAPCS64 callee-saved: x19-x30, sp, NEON v8-v15, plus headroom */
+#   define _JMPLEN 31
 #elif __riscv64
 #   define _JMPLEN 12
 #elif __riscv
