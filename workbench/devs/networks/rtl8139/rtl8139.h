@@ -95,6 +95,9 @@ struct RTL8139Startup
 {
     struct MsgPort           *rtl8139sm_SyncPort;
     struct RTL8139Unit       *rtl8139sm_Unit;
+    /* Handshake message, owned by CreateUnit() so that the unit process can
+       signal setup failure (rtl8139sm_Unit = NULL) without allocating */
+    struct Message           rtl8139sm_Msg;
 };
 
 enum
@@ -145,9 +148,12 @@ struct AddressRange
 
 /* Big endian: should work, but is untested */
 
+/* NB: These describe hardware DMA descriptors - the buffer pointer is a
+   32-bit bus address regardless of the CPU pointer size, so it must be
+   ULONG, never IPTR */
 struct rx_ring_desc
 {
-	IPTR    PacketBuffer;
+	ULONG   PacketBuffer;
 	UWORD   BufferLength;
 	UWORD   BufferStatus;
 	ULONG   BufferMsgLength;
@@ -156,12 +162,17 @@ struct rx_ring_desc
 
 struct tx_ring_desc
 {
-	IPTR    PacketBuffer;
+	ULONG   PacketBuffer;
 	UWORD   BufferLength;
 	UWORD   BufferStatus;
 	ULONG   Misc;
 	ULONG   Reserved;
 };
+
+/* The RTL8139 is a 32-bit PCI busmaster: DMA addresses programmed into the
+   chip must fit in 32 bits. The double shift avoids an undefined shift by
+   the type width on 32-bit targets. */
+#define RTL8139_DMA_INVALID(addr) (((((IPTR)(addr)) >> 16) >> 16) != 0)
 
 #define STAT_COUNT 3
 
@@ -324,25 +335,24 @@ struct fe_priv {
 	IPTR                    ring_addr;
 
 /* Start - rtl new */
-	int                     full_duplex;
+	LONG                    full_duplex;
 
-	char                    mii_phys[4]; //MII device address
-	unsigned short          advertising;  //NWay media advertising
+	BYTE                    mii_phys[4]; //MII device address
+	UWORD                   advertising;  //NWay media advertising
 
-	unsigned int            rx_config;
+	ULONG                   rx_config;
 	UBYTE                   *rx_buffer;
-	unsigned int            rx_buf_len;
-	unsigned int            rx_current;
+	ULONG                   rx_buf_len;
 
 	ULONG                   tx_flag;
 	UBYTE                   *tx_buffer;
-	unsigned char           *tx_pbuf[NUM_TX_DESC];
-	unsigned char           *tx_buf[NUM_TX_DESC];
-	unsigned int            tx_dirty;
-	unsigned int            tx_current;
+	UBYTE                   *tx_pbuf[NUM_TX_DESC];
+	UBYTE                   *tx_buf[NUM_TX_DESC];
+	ULONG                   tx_dirty;
+	ULONG                   tx_current;
 /* End - rtl new */
-	
-	unsigned short          cur_rx;
+
+	UWORD                   cur_rx;
 	ULONG                   refill_rx;
 
 	ULONG                   next_tx, nic_tx;

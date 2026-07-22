@@ -66,7 +66,10 @@
 static ULONG usec2tick(ULONG usec)
 {
 	ULONG ret, timer_rpr = TIMER_RPROK;
-	asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(timer_rpr));
+	/* divl writes both EAX (quotient) and EDX (remainder), so the EDX
+	   input must be declared read-write or the compiler may assume it
+	   survives the asm */
+	asm volatile("xorl %%eax,%%eax; divl %2":"=a"(ret),"+d"(usec):"m"(timer_rpr):"cc");
 	return ret;
 }
 
@@ -94,24 +97,33 @@ void udelay(LONG usec)
 
 struct timerequest timerio;
 struct MsgPort *timermp;
+static struct SignalSemaphore timersem;
+static BOOL timeropen;
 
 void udelay(LONG usec)
 {
+	/* The timerequest is shared by all units - serialise its use */
+	ObtainSemaphore(&timersem);
 	timerio.tr_node.io_Command = TR_ADDREQUEST;
 	timerio.tr_time.tv_secs = usec / 1000000;
 	timerio.tr_time.tv_micro = usec % 1000000;
 	DoIO(&timerio.tr_node);
+	ReleaseSemaphore(&timersem);
 }
 
 int init_timer(void)
 {
+	InitSemaphore(&timersem);
 	if ((timermp = CreateMsgPort())) {
 		timerio.tr_node.io_Message.mn_Node.ln_Type=NT_MESSAGE;
 		timerio.tr_node.io_Message.mn_ReplyPort = timermp;
 		timerio.tr_node.io_Message.mn_Length=sizeof(timerio);
 		if (0 == OpenDevice("timer.device", UNIT_MICROHZ, &timerio.tr_node, 0)) {
+			timeropen = TRUE;
 			return TRUE;
 		}
+		DeleteMsgPort(timermp);
+		timermp = NULL;
 	}
 	return FALSE;
 }
@@ -119,8 +131,16 @@ ADD2INIT(init_timer, 10);
 
 void exit_timer(void)
 {
-	CloseDevice(&timerio.tr_node);
-	DeleteMsgPort(timermp);
+	if (timeropen)
+	{
+		CloseDevice(&timerio.tr_node);
+		timeropen = FALSE;
+	}
+	if (timermp != NULL)
+	{
+		DeleteMsgPort(timermp);
+		timermp = NULL;
+	}
 }
 ADD2EXIT(exit_timer, 10);
 #endif
@@ -135,11 +155,11 @@ static inline UBYTE *get_hwbase(struct net_device *unit)
 	return (UBYTE *)unit->rtl8139u_BaseMem;
 }
 
-static int read_eeprom(long base, int location, int addr_len)
+static int read_eeprom(IPTR base, int location, int addr_len)
 {
   int i;
-  unsigned retval = 0;
-  long rtlprom_addr = base + RTLr_Cfg9346;
+  ULONG retval = 0;
+  IPTR rtlprom_addr = base + RTLr_Cfg9346;
   int read_cmd = location | (EE_READ_CMD << addr_len);
 
   BYTEOUT(rtlprom_addr, EE_ENB & ~EE_CS);
@@ -173,12 +193,12 @@ static int read_eeprom(long base, int location, int addr_len)
 }
 
 // Syncronize the MII management interface by shifting 32 one bits out
-static char mii_2_8139_map[8] = 
+static const UBYTE mii_2_8139_map[8] =
 {
-  RTLr_MII_BMCR, RTLr_MII_BMSR, 0, 0, RTLr_NWayAdvert, RTLr_NWayLPAR, RTLr_NWayExpansion, 0 
+  RTLr_MII_BMCR, RTLr_MII_BMSR, 0, 0, RTLr_NWayAdvert, RTLr_NWayLPAR, RTLr_NWayExpansion, 0
 };
 
-static void mdio_sync(long base)
+static void mdio_sync(IPTR base)
 {
 	int i;
 
@@ -281,16 +301,12 @@ RTLD(bug("[%s] rtl8139nic_txrx_reset()\n", unit->rtl8139u_name))
  */
 static void rtl8139nic_set_multicast(struct net_device *unit)
 {
-	// struct fe_priv *np = get_pcnpriv(unit);
-	// UBYTE *base = get_hwbase(unit);
-	ULONG addr[2];
-	ULONG mask[2];
-	// ULONG pff;
-
 RTLD(bug("[%s] rtl8139nic_set_multicast()\n", unit->rtl8139u_name))
 
-	memset(addr, 0, sizeof(addr));
-	memset(mask, 0, sizeof(mask));
+	/* Reprogram the receive mode and multicast filter from the unit
+	   flags. Range filtering itself is done in software (AddressFilter),
+	   so IFF_ALLMULTI/IFF_PROMISC opens the hardware filter fully. */
+	rtl8139nic_set_rxmode(unit);
 }
 
 static void rtl8139nic_deinitialize(struct net_device *unit)
@@ -551,26 +567,26 @@ static int rtl8139nic_open(struct net_device *unit)
 		goto out_drain;
 	}
 
+	np->in_shutdown = 0;
 	np->rx_buf_len = 8192 << rx_buf_len_idx;
-		
+
+	// Double size so wrapped-over data can be appended at the end
 	np->rx_buffer = HIDD_PCIDriver_AllocPCIMem(
 						unit->rtl8139u_PCIDriver,
-#if 1 //stegerg: double size so wrapped-over data can be appended at end
-						(np->rx_buf_len * 2 + 16 + (TX_BUF_SIZE * NUM_TX_DESC))
-#else
-						(np->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC))
-#endif
+						(np->rx_buf_len * 2 + 16)
 					);
 
 	if (np->rx_buffer != NULL)
 	{
 		np->tx_buffer = HIDD_PCIDriver_AllocPCIMem(
 							unit->rtl8139u_PCIDriver,
-							(np->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC))
+							(TX_BUF_SIZE * NUM_TX_DESC)
 						);
 	}
 
-	if ((np->rx_buffer != NULL) && (np->tx_buffer != NULL))
+	if ((np->rx_buffer != NULL) && (np->tx_buffer != NULL) &&
+		!RTL8139_DMA_INVALID((IPTR)np->rx_buffer + np->rx_buf_len * 2 + 16) &&
+		!RTL8139_DMA_INVALID((IPTR)np->tx_buffer + (TX_BUF_SIZE * NUM_TX_DESC)))
 	{
 RTLD(bug("[%s] rtl8139nic_open: Allocated IO Buffers [ %d x Tx @ 0x%p] [ Rx @ 0x%p, %d bytes]\n",
                         unit->rtl8139u_name,
@@ -589,7 +605,11 @@ RTLD(bug("[%s] rtl8139nic_open: TX Buffers initialised\n",unit->rtl8139u_name))
 		// Early Tx threshold: 256 bytes
 		np->tx_flag = (TX_FIFO_THRESH << 11) & 0x003f0000;
 		np->rx_config = (RX_FIFO_THRESH << 13) | (rx_buf_len_idx << 11) | (RX_DMA_BURST << 8);
-		
+
+		// Bring the chip out of low-power mode (initialize halted its clock)
+		BYTEOUT(base + RTLr_HltClk, 'R');
+		udelay(10);
+
 		BYTEOUT(base + RTLr_ChipCmd,  (BYTEIN(base + RTLr_ChipCmd) & CmdClear) | CmdReset);
 		udelay(100);
 		for (i = 1000; i > 0; i--)
@@ -604,7 +624,7 @@ RTLD(bug("[%s] rtl8139nic_open: NIC Reset\n",unit->rtl8139u_name))
 		rtl8139nic_set_mac(unit);
 RTLD(bug("[%s] rtl8139nic_open: copied MAC address\n",unit->rtl8139u_name))
 
-		np->rx_current = 0;
+		np->cur_rx = 0;
 
 		// Unlock
 		BYTEOUT(base + RTLr_Cfg9346, 0xc0);
@@ -651,14 +671,14 @@ RTLD(bug("[%s] rtl8139nic_open: Setting %s%s-duplex based on auto-neg partner ab
 		// Lock
 		BYTEOUT(base + RTLr_Cfg9346, 0x00);
 		udelay(10);
-		LONGOUT(base + RTLr_RxBuf, (IPTR)np->rx_buffer);
+		LONGOUT(base + RTLr_RxBuf, (ULONG)(IPTR)np->rx_buffer);
 
 		//Start the chips Tx/Rx processes
 		LONGOUT(base + RTLr_RxMissed, 0);
 
 		rtl8139nic_set_rxmode(unit);
 
-		WORDOUT(base + RTLr_MultiIntr, WORDIN(RTLr_MultiIntr) & MultiIntrClear);
+		WORDOUT(base + RTLr_MultiIntr, WORDIN(base + RTLr_MultiIntr) & MultiIntrClear);
 
 		BYTEOUT(base + RTLr_ChipCmd, (BYTEIN(base + RTLr_ChipCmd) & CmdClear) |
 		                             CmdRxEnb | CmdTxEnb);
@@ -677,8 +697,24 @@ RTLD(bug("[%s] rtl8139nic_open: Setting %s%s-duplex based on auto-neg partner ab
 	   unit->rtl8139u_flags |= IFF_UP;
 	   ReportEvents(LIBBASE, unit, S2EVENT_ONLINE);
 RTLD(bug("[%s] rtl8139nic_open: Device set as ONLINE\n",unit->rtl8139u_name))
+		return 0;
 	}
-	return 0;
+
+	/* Buffer allocation failed, or a buffer lies outside the chip's
+	   32-bit DMA range - release everything and report the failure */
+RTLD(bug("[%s] rtl8139nic_open: Failed to allocate IO Buffers\n",unit->rtl8139u_name))
+	if (np->rx_buffer != NULL)
+	{
+		HIDD_PCIDriver_FreePCIMem(unit->rtl8139u_PCIDriver, np->rx_buffer);
+		np->rx_buffer = NULL;
+	}
+	if (np->tx_buffer != NULL)
+	{
+		HIDD_PCIDriver_FreePCIMem(unit->rtl8139u_PCIDriver, np->tx_buffer);
+		np->tx_buffer = NULL;
+	}
+	free_irq(unit);
+	ret = -1;
 
 out_drain:
 	drain_ring(unit);
@@ -707,8 +743,16 @@ static int rtl8139nic_close(struct net_device *unit)
 
 	drain_ring(unit);
 
-	HIDD_PCIDriver_FreePCIMem(unit->rtl8139u_PCIDriver, np->rx_buffer);
-	HIDD_PCIDriver_FreePCIMem(unit->rtl8139u_PCIDriver, np->tx_buffer);
+	if (np->rx_buffer != NULL)
+	{
+		HIDD_PCIDriver_FreePCIMem(unit->rtl8139u_PCIDriver, np->rx_buffer);
+		np->rx_buffer = NULL;
+	}
+	if (np->tx_buffer != NULL)
+	{
+		HIDD_PCIDriver_FreePCIMem(unit->rtl8139u_PCIDriver, np->tx_buffer);
+		np->tx_buffer = NULL;
+	}
 
 	ReportEvents(LIBBASE, unit, S2EVENT_OFFLINE);
 

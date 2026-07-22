@@ -113,6 +113,11 @@ void handle_request(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
 	BOOL complete;
 
+	/* The request is not on any queue while it is being processed - mark
+	   it so AbortIO() won't try to Remove() it. Requeueing (PutMsg) or
+	   replying restores a valid node type. */
+	request->ios2_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+
 	switch(request->ios2_Req.io_Command)
 	{
 		case CMD_READ:
@@ -264,6 +269,14 @@ RTLD(bug("[%s] S2CmdWrite()\n", unit->rtl8139u_name))
 		error = S2ERR_BAD_ADDRESS;
 		wire_error = S2WERR_BAD_MULTICAST;
 	}
+	else if(request->ios2_DataLength >
+		((request->ios2_Req.io_Flags & SANA2IOF_RAW) != 0 ?
+			(ULONG)(ETH_HEADERSIZE + ETH_MTU) : (ULONG)ETH_MTU))
+	{
+		/* Oversized requests would overflow the UWORD frame accounting
+		   and the chip's Tx buffers */
+		error = S2ERR_MTU_EXCEEDED;
+	}
 
 	/* Queue request for sending */
 
@@ -302,8 +315,14 @@ RTLD(bug("[%s] S2CmdDeviceQuery()\n", unit->rtl8139u_name))
 
 	info = request->ios2_StatData;
 	size = size_available = info->SizeAvailable;
-	if(size > sizeof(struct Sana2DeviceQuery))
-		size = sizeof(struct Sana2DeviceQuery);
+	if(size < sizeof(struct Sana2DeviceQuery))
+	{
+		/* Don't write beyond what the caller supplied */
+		request->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
+		request->ios2_WireError = S2WERR_BAD_STATDATA;
+		return TRUE;
+	}
+	size = sizeof(struct Sana2DeviceQuery);
 
 	CopyMem(&unit->rtl8139u_Sana2Info, info, size);
 
@@ -411,12 +430,18 @@ RTLD(bug("[%s] S2CmdTrackType()\n", unit->rtl8139u_name))
 		}
    }
 
+	if(tracker == NULL)
+	{
+		error = S2ERR_NO_RESOURCES;
+		wire_error = S2WERR_GENERIC_ERROR;
+	}
+
 	/* Store initial figures for this opener */
 
 	opener = request->ios2_BufferManagement;
 	initial_stats = FindTypeStats(LIBBASE, unit, &opener->initial_stats, packet_type);
 
-	if(initial_stats != NULL)
+	if((error == 0) && (initial_stats != NULL))
 	{
 		error = S2ERR_BAD_STATE;
 		wire_error = S2WERR_ALREADY_TRACKED;
@@ -468,7 +493,7 @@ RTLD(bug("[%s] S2CmdUntrackType()\n", unit->rtl8139u_name))
 
 	/* Decrement tracker usage and free unused structures */
 
-	if(initial_stats != NULL)
+	if((initial_stats != NULL) && (tracker != NULL))
 	{
 		if((--tracker->user_count) == 0)
 		{
@@ -513,7 +538,7 @@ RTLD(bug("[%s] S2CmdGetTypeStats()\n", unit->rtl8139u_name))
 	initial_stats = FindTypeStats(LIBBASE, unit, &opener->initial_stats, packet_type);
 
 	/* Copy and adjust figures */
-	if(initial_stats != NULL)
+	if((initial_stats != NULL) && (tracker != NULL))
 	{
 		stats = request->ios2_StatData;
 		CopyMem(&tracker->stats, stats, sizeof(struct Sana2PacketTypeStats));
@@ -556,7 +581,7 @@ static BOOL CmdGetSpecialStats(LIBBASETYPEPTR LIBBASE,
 	{
 		record->Type = (S2WireType_Ethernet << 16) + i;
 		record->Count = unit->rtl8139u_special_stats[i];
-		record->String = special_stat_names[i];
+		record->String = (STRPTR)special_stat_names[i];
 		record++;
 	}
 
@@ -692,12 +717,11 @@ RTLD(bug("[%s] S2CmdReadOrphan()\n", unit->rtl8139u_name))
 
 static BOOL CmdOnline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
-	// struct RTL8139Unit *unit = (struct RTL8139Unit *)request->ios2_Req.io_Unit;
+	struct RTL8139Unit *unit = (struct RTL8139Unit *)request->ios2_Req.io_Unit;
 	BYTE error = 0;
 	ULONG wire_error = 0;
-	// UWORD i;
+	UWORD i;
 
-#if 0 // FIXME: some of what's done here is duplicated in device init
 RTLD(bug("[%s] S2CmdOnline()\n", unit->rtl8139u_name))
 
 	/* Check request is valid */
@@ -722,12 +746,11 @@ RTLD(bug("[%s] S2CmdOnline()\n", unit->rtl8139u_name))
 			unit->rtl8139u_special_stats[i] = 0;
 
 		if (unit->start(unit))
-                {
+		{
 			error = S2ERR_OUTOFSERVICE;
 			wire_error = S2WERR_GENERIC_ERROR;
 		}
 	}
-#endif
 
 	/* Return */
 
@@ -738,9 +761,8 @@ RTLD(bug("[%s] S2CmdOnline()\n", unit->rtl8139u_name))
 
 static BOOL CmdOffline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
-	// struct RTL8139Unit *unit;
+	struct RTL8139Unit *unit;
 
-#if 0 // FIXME: some of what's done here is duplicated in device de-init
 	/* Put adapter offline */
 
 	unit = (APTR)request->ios2_Req.io_Unit;
@@ -749,7 +771,6 @@ RTLD(bug("[%s] S2CmdOffline()\n", unit->rtl8139u_name))
 
 	if((unit->rtl8139u_flags & IFF_UP) != 0)
 		unit->stop(unit);
-#endif
 
 	/* Return */
 	return TRUE;

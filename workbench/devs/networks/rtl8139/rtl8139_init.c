@@ -127,7 +127,7 @@ D(bug("[rtl8139] PCI_Enumerator(PCI Device Obj @ %p)\n", pciDevice));
 
 	if (FoundCompatNIC)
 	{
-D(bug("[rtl8139] PCI_Enumerator: Found %s NIC [%s], PCI_ID %04x:%04x Rev:%d\n", CardName, CardChipName, VendorID, DeviceID, RevisionID));
+D(bug("[rtl8139] PCI_Enumerator: Found %s NIC [%s], PCI_ID %04x:%04x Rev:%d\n", CardName, CardChipName, (unsigned int)VendorID, (unsigned int)DeviceID, (int)RevisionID));
 
 		struct RTL8139Unit *unit = NULL;
 		
@@ -166,7 +166,7 @@ D(bug("[rtl8139] Init()\n"));
 
     if (LIBBASE->rtl8139b_PCIDeviceAttrBase != 0)
     {
-        D(bug("[rtl8139] Init: HiddPCIDeviceAttrBase @ %p\n", LIBBASE->rtl8139b_PCIDeviceAttrBase));
+        D(bug("[rtl8139] Init: HiddPCIDeviceAttrBase = %x\n", (unsigned int)LIBBASE->rtl8139b_PCIDeviceAttrBase));
 
         LIBBASE->rtl8139b_PCI = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
@@ -189,7 +189,14 @@ D(bug("[rtl8139] Init()\n"));
             {
                 return TRUE;
             }
+
+            /* No units found - release what Init obtained */
+            OOP_DisposeObject(LIBBASE->rtl8139b_PCI);
+            LIBBASE->rtl8139b_PCI = NULL;
 		}
+
+        OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
+        LIBBASE->rtl8139b_PCIDeviceAttrBase = 0;
     }
     return FALSE;
 }
@@ -303,7 +310,8 @@ RTLD(bug("[rtl8139] OpenDevice: Unit %d @ %p\n", unitnum, unit));
 			{
 				unit->rtl8139u_flags |= IFF_SHARED;
 			}
-			else if ((flags & SANA2OPF_PROM) != 0)
+			/* Promiscuous mode is independent of exclusive access */
+			if ((flags & SANA2OPF_PROM) != 0)
 			{
 				unit->rtl8139u_flags |= IFF_PROMISC;
 			}
@@ -335,15 +343,36 @@ RTLD(bug("[rtl8139] OpenDevice: Unit %d @ %p\n", unitnum, unit));
 
 			opener->filter_hook = (APTR)GetTagData(S2_PacketFilter, 0, tags);
 
-			Disable();
-			AddTail((APTR)&unit->rtl8139u_Openers, (APTR)opener);
-			Enable();
+			if ((opener->rx_function == NULL) || (opener->tx_function == NULL))
+			{
+				/* Both copy hooks are required - they are called
+				   unconditionally on every packet */
+				error = IOERR_OPENFAIL;
+				req->ios2_BufferManagement = NULL;
+				FreeVec(opener);
+			}
+			else
+			{
+				Disable();
+				AddTail((APTR)&unit->rtl8139u_Openers, (APTR)opener);
+				Enable();
+			}
+		}
+
+		if ((error == 0) && (unit->rtl8139u_open_count == 1))
+		{
+			if (unit->start(unit) != 0)
+				error = IOERR_OPENFAIL;
+		}
+		else if ((error == 0) && ((unit->rtl8139u_flags & IFF_UP) != 0) &&
+			((flags & SANA2OPF_PROM) != 0))
+		{
+			/* Unit already running - apply the new receive mode */
+			unit->set_multicast(unit);
 		}
 
 		if (error != 0)
 			CloseDevice((struct IORequest *)req);
-		else if (unit->rtl8139u_open_count == 1)
-			unit->start(unit);
 	}
     else
     {
