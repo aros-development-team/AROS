@@ -19,9 +19,9 @@ static inline OOP_Object *compositor_LoadViewPorts(OOP_Object *o, struct HIDD_Vi
 {
     struct pHidd_Compositor_BitMapStackChanged bscmsg =
     {
-    	mID    : PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapStackChanged,
-        data   : Data,
-        active : Active
+    	.mID   = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapStackChanged,
+        .data  = Data,
+        .active = Active
     };
 
     return (OOP_Object *)OOP_DoMethod(o, &bscmsg.mID);
@@ -31,10 +31,10 @@ static inline BOOL compositor_ScrollBitMap(OOP_Object *o, OOP_Object *bitmap, SI
 {
     struct pHidd_Compositor_BitMapPositionChange msg =
     {
-        mID	   : PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapPositionChange,
-        bm	   : bitmap,
-        newxoffset : x,
-        newyoffset : y
+        .mID	  = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapPositionChange,
+        .bm	  = bitmap,
+        .newxoffset = x,
+        .newyoffset = y
     };
 
     return OOP_DoMethod(o, &msg.mID);
@@ -44,12 +44,12 @@ static inline void compositor_UpdateBitMap(OOP_Object *o, OOP_Object *bitmap, UW
 {
     struct pHidd_Compositor_BitMapRectChanged msg =
     {
-    	mID    : PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapRectChanged,
-    	bm     : bitmap,
-    	x      : x,
-    	y      : y,
-    	width  : w,
-    	height : h
+    	.mID   = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapRectChanged,
+    	.bm    = bitmap,
+    	.x     = x,
+    	.y     = y,
+    	.width = w,
+    	.height = h
     };
 
     OOP_DoMethod(o, &msg.mID);
