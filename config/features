@@ -6238,7 +6238,7 @@ fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -mgeneral-regs-only" >&5
 printf %s "checking whether ${CC} accepts -mgeneral-regs-only... " >&6; }
-CFLAGS=-mgeneral-regs-only
+CFLAGS="-mgeneral-regs-only -Werror"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -6261,6 +6261,33 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 printf "%s\n" "$aros_general_regs_only" >&6; }
 if test "x-$aros_general_regs_only" = "x-yes" ; then
     aros_cflags_general_regs_only=-mgeneral-regs-only
+else
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -mno-mmx -mno-sse -mno-sse2 -msoft-float" >&5
+printf %s "checking whether ${CC} accepts -mno-mmx -mno-sse -mno-sse2 -msoft-float... " >&6; }
+    CFLAGS="-mno-mmx -mno-sse -mno-sse2 -msoft-float -Werror"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_no_vector_regs="yes"
+else $as_nop
+  aros_no_vector_regs="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_no_vector_regs" >&5
+printf "%s\n" "$aros_no_vector_regs" >&6; }
+    if test "x-$aros_no_vector_regs" = "x-yes" ; then
+        aros_cflags_general_regs_only="-mno-mmx -mno-sse -mno-sse2 -msoft-float"
+    fi
 fi
 
 CFLAGS="$save_cflags"

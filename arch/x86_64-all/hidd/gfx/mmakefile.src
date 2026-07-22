@@ -9,7 +9,10 @@ AFILES :=
 
 USER_INCLUDES := -I$(SRCDIR)/rom/hidds/gfx
 
-USER_CFLAGS := -mssse3 -mavx2
+# NB: rgbconv_arch is only the runtime dispatcher - it must stay baseline
+# ISA (the SSE/AVX implementations are built separately with their own
+# flags via kernel-hidd-gfx-x86_sse / kernel-hidd-gfx-x86_avx)
+USER_CFLAGS :=
 
 %build_archspecific \
   mainmmake=kernel-hidd-gfx modname=gfx maindir=rom/hidds/gfx \

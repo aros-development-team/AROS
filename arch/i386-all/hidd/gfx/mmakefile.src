@@ -18,7 +18,9 @@ FILES  := rgbconv_arch
 AFILES := 
 
 USER_INCLUDES := -I$(SRCDIR)/rom/hidds/gfx
-HIDDGFX_SSE_CFLAGS ?= -mssse3
+# rgbconv_sse.c contains the runtime-dispatched SSE2 baseline paths; the
+# SSSE3 paths opt in per-function, so only SSE2 may be enabled file-wide
+HIDDGFX_SSE_CFLAGS ?= -msse2
 HIDDGFX_AVX_CFLAGS ?= -mavx2
 
 USER_CFLAGS :=

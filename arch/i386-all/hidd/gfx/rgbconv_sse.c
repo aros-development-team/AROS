@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 #if defined(__SSE__)
@@ -23,6 +23,14 @@ ULONG convert_ ## a ## _ ## b ## _ ## arch \
     APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt, \
     UWORD width, UWORD height) \
 {
+
+/*
+ * NB: This file must be compiled with only SSE2 enabled (-msse2): the _SSE2
+ * variants below are runtime-dispatched on CPUs without SSSE3, and compilers
+ * may reselect intrinsic sequences using any ISA enabled for the file (clang
+ * turns the shift/or swizzle below into an SSSE3 pshufb). The _SSE3 variants
+ * opt into SSSE3 per-function via the pragmas around them.
+ */
 
 // Macro to convert one register of 4 pixels from ABCD to DCBA
 #if defined REVERSECMPNTS_4PX
@@ -129,7 +137,13 @@ ARCHCONVERTFUNCH(SSE2,BGRA32,XRGB32)
     CONVERTFUNC_EXIT
 }
 
-#if defined(__SSSE3__)
+#if defined(__clang__)
+_Pragma("clang attribute push(__attribute__((target(\"ssse3\"))), apply_to=function)")
+#elif defined(__GNUC__)
+_Pragma("GCC push_options")
+_Pragma("GCC target(\"ssse3\")")
+#endif
+
 #define SSE_ABCDtoDCBA_MASK \
         0x0C, 0x0D, 0x0E, 0x0F, \
         0x08, 0x09, 0x0A, 0x0B, \
@@ -314,6 +328,10 @@ ARCHCONVERTFUNCH(SSE3,BGR24,XRGB32)
 
     CONVERTFUNC_EXIT
 }
+#if defined(__clang__)
+_Pragma("clang attribute pop")
+#elif defined(__GNUC__)
+_Pragma("GCC pop_options")
 #endif
 
 #endif /* __SSE__ */

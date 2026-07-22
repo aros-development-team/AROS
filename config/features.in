@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2019, The AROS Development Team. All rights reserved.
+dnl Copyright Â© 1997-2026, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for target compiler feature detection
@@ -745,11 +745,22 @@ if test "x-$aros_ms_bitfields" = "x-yes" ; then
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -mgeneral-regs-only])
-CFLAGS=-mgeneral-regs-only
+dnl Use -Werror: clang accepts but silently ignores -mgeneral-regs-only on
+dnl x86 (it only emits an unused-argument warning), which must not count
+dnl as support
+CFLAGS="-mgeneral-regs-only -Werror"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_general_regs_only="yes"],[aros_general_regs_only="no"])
 AC_MSG_RESULT($aros_general_regs_only)
 if test "x-$aros_general_regs_only" = "x-yes" ; then
     aros_cflags_general_regs_only=-mgeneral-regs-only
+else
+    AC_MSG_CHECKING([whether ${CC} accepts -mno-mmx -mno-sse -mno-sse2 -msoft-float])
+    CFLAGS="-mno-mmx -mno-sse -mno-sse2 -msoft-float -Werror"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_vector_regs="yes"],[aros_no_vector_regs="no"])
+    AC_MSG_RESULT($aros_no_vector_regs)
+    if test "x-$aros_no_vector_regs" = "x-yes" ; then
+        aros_cflags_general_regs_only="-mno-mmx -mno-sse -mno-sse2 -msoft-float"
+    fi
 fi
 
 CFLAGS="$save_cflags"

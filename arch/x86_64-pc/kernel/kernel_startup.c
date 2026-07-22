@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/multiboot.h>
@@ -143,6 +143,14 @@ extern void core_InitEarlyIDT(void);
 void core_Kick(struct TagItem *msg, void *target)
 {
     const struct TagItem *bss = LibFindTagItem(KRN_KernelBss, msg);
+
+    /*
+     * Enable fxsave/fxrstor and SSE before any other compiled code runs.
+     * The x86-64 ABI treats SSE as baseline, so compilers freely emit SSE
+     * instructions (clang does so even in memset), which raise #UD - with
+     * no IDT set up yet, a triple fault - while CR4.OSFXSR is still clear.
+     */
+    wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
 
     /* First clear .bss */
     if (bss)

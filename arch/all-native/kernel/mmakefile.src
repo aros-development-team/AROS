@@ -21,6 +21,9 @@ FILES := boot_utils kernel_bootmem tags
 
 MAINDIR	      := rom/kernel
 USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES)
+ifeq ($(AROS_TARGET_CPU),x86_64)
+USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
+endif
 
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=$(MAINDIR) \

@@ -57,9 +57,8 @@ USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
 
 ifeq ($(AROS_TOOLCHAIN),llvm)
 SMPBSLDFLAGS := -m elf_x86_64
-else
-USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
 endif
+USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
 
 #MM kernel-kernel-pc-x86_64 : kernel-pc-acpica-includes includes-asm_h includes kernel-kernel-includes linklibs-bootconsole
 #MM kernel-kernel-pc-x86_64-kobj : includes-asm_h includes kernel-kernel-includes linklibs-bootconsole

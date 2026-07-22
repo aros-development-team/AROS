@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -26,17 +26,19 @@ extern ULONG convert_ ## a ## _ ## b ## _ ## arch \
 #define SCCFAVX(SRCPIXFMT, DSTPIXFMT) \
     rgbconvertfuncs[FMT_##SRCPIXFMT - FIRST_RGB_STDPIXFMT][FMT_##DSTPIXFMT - FIRST_RGB_STDPIXFMT] = convert_##SRCPIXFMT##_##DSTPIXFMT##_AVX;
 
-#if defined(__SSE__)
+/*
+ * NB: no ISA preprocessor guards here. This dispatcher is deliberately
+ * compiled with only baseline ISA enabled, so that the compiler cannot
+ * emit extended instructions into always-executed code, and the SSE/AVX
+ * implementation modules are always linked on x86_64. The runtime cpuid
+ * checks below gate which implementations are actually installed.
+ */
 ARCHCONVERTFUNCP(SSE2,BGRA32,XRGB32)
 ARCHCONVERTFUNCP(SSE2,XRGB32,BGRA32)
-#if defined(__SSSE3__)
 ARCHCONVERTFUNCP(SSE3,BGRA32,XRGB32)
 ARCHCONVERTFUNCP(SSE3,XRGB32,BGRA32)
 ARCHCONVERTFUNCP(SSE3,RGB24,XRGB32)
 ARCHCONVERTFUNCP(SSE3,BGR24,XRGB32)
-#endif
-#endif
-#if defined(__AVX__)
 ARCHCONVERTFUNCP(AVX,XRGB32,BGRA32)
 ARCHCONVERTFUNCP(AVX,BGRA32,XRGB32)
 
@@ -52,8 +54,6 @@ ARCHCONVERTFUNCP(AVX,ARGB32,BGR15)
 
 ARCHCONVERTFUNCP(AVX,BGR15,ARGB32)
 ARCHCONVERTFUNCP(AVX,RGB15,ARGB32)
-
-#endif
 
 #define cpuid(num, subnum) \
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num),"c"(subnum)); } while(0)
@@ -104,17 +104,14 @@ void SetArchRGBConversionFunctions(HIDDT_RGBConversionFunction rgbconvertfuncs[N
 
     SCCFSSE2(XRGB32,BGRA32)
     SCCFSSE2(BGRA32,XRGB32)
-#if defined(__SSSE3__)
     if (useSSE3)
     {
         D(bug("[GFX:x86_64] %s: using SSSE3 based operations\n", __func__);)
         SCCFSSE3(XRGB32,BGRA32)
         SCCFSSE3(BGRA32,XRGB32)
-        SCCFSSE3(BGR24,XRGB32) 
+        SCCFSSE3(BGR24,XRGB32)
         SCCFSSE3(RGB24,XRGB32)
     }
-#endif
-#if defined(__AVX__)
     if (useAVX)
     {
         D(bug("[GFX:x86_64] %s: using AVX based operations\n", __func__);)
@@ -133,7 +130,6 @@ void SetArchRGBConversionFunctions(HIDDT_RGBConversionFunction rgbconvertfuncs[N
         SCCFAVX(BGR15,ARGB32)
         SCCFAVX(RGB15,ARGB32)
     }
-#endif
 
     rgbconvertfuncs[FMT_XRGB32 - FIRST_RGB_STDPIXFMT][FMT_BGRX32 - FIRST_RGB_STDPIXFMT] = rgbconvertfuncs[FMT_XRGB32 - FIRST_RGB_STDPIXFMT][FMT_BGRA32 - FIRST_RGB_STDPIXFMT];
     rgbconvertfuncs[FMT_BGRX32 - FIRST_RGB_STDPIXFMT][FMT_XRGB32 - FIRST_RGB_STDPIXFMT] = rgbconvertfuncs[FMT_BGRA32 - FIRST_RGB_STDPIXFMT][FMT_XRGB32 - FIRST_RGB_STDPIXFMT];
