@@ -1,0 +1,21 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+# The llvm toolchain links against compiler-rt's builtins, which
+# implement all of the __atomic_* helpers except __atomic_is_lock_free
+# (gcc toolchains get the full set from gcc's libatomic). Provide a
+# minimal libatomic supplying the missing helper.
+
+#MM- linklibs-llvm-libatomic : linklibs-atomic-helpers
+#MM linklibs-atomic-helpers : includes
+
+# clang refuses definitions of its __atomic_* builtins otherwise
+USER_CFLAGS := -fno-builtin
+
+FILES := atomic_is_lock_free
+
+%build_linklib mmake=linklibs-atomic-helpers libname=atomic \
+    files="$(FILES)"
+
+%common
