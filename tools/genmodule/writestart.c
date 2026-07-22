@@ -360,11 +360,11 @@ static void writedecl(FILE *out, struct config *cfg)
         fprintf(
             out,
             "static LONG __GM_BaseSlot;\n"
-            "char *__aros_getoffsettable(void)\n"
+            "__attribute__((visibility(\"hidden\"))) char *__aros_getoffsettable(void)\n"
             "{\n"
             "    return (char *)GetTaskStorageSlot(__GM_BaseSlot);\n"
             "}\n"
-            "void __aros_setoffsettable(void *base)\n"
+            "__attribute__((visibility(\"hidden\"))) void __aros_setoffsettable(void *base)\n"
             "{\n"
             "    SetTaskStorageSlot(__GM_BaseSlot, (IPTR)base);\n"
             "}\n"

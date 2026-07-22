@@ -114,6 +114,28 @@
 #define R_ARM_THM_MOVW_ABS_NC   47
 #define R_ARM_THM_MOVT_ABS      48
 
+#define R_AARCH64_NONE              0
+#define R_AARCH64_ABS64             257
+#define R_AARCH64_ABS32             258
+#define R_AARCH64_PREL64            260
+#define R_AARCH64_PREL32            261
+#define R_AARCH64_MOVW_UABS_G0      263
+#define R_AARCH64_MOVW_UABS_G0_NC   264
+#define R_AARCH64_MOVW_UABS_G1      265
+#define R_AARCH64_MOVW_UABS_G1_NC   266
+#define R_AARCH64_MOVW_UABS_G2      267
+#define R_AARCH64_MOVW_UABS_G2_NC   268
+#define R_AARCH64_MOVW_UABS_G3      269
+#define R_AARCH64_ADR_PREL_PG_HI21  275
+#define R_AARCH64_ADD_ABS_LO12_NC   277
+#define R_AARCH64_LDST8_ABS_LO12_NC 278
+#define R_AARCH64_JUMP26            282
+#define R_AARCH64_CALL26            283
+#define R_AARCH64_LDST16_ABS_LO12_NC 284
+#define R_AARCH64_LDST32_ABS_LO12_NC 285
+#define R_AARCH64_LDST64_ABS_LO12_NC 286
+#define R_AARCH64_LDST128_ABS_LO12_NC 299
+
 #define STT_NOTYPE              0
 #define STT_OBJECT              1
 #define STT_FUNC                2

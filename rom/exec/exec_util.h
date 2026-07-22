@@ -59,6 +59,12 @@
 #endif
 
 
+#ifdef __aarch64__
+#define PC pc
+#define FP fp
+#define CALLER_FRAME NULL
+#endif
+
 #ifndef PC
 #error unsupported CPU type
 #endif

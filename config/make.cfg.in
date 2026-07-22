@@ -281,6 +281,15 @@ CPPFLAGS                      = $(strip $(TARGET_CPPFLAGS))
 AFLAGS                        = $(strip $(TARGET_ISA_AFLAGS) $(USER_AFLAGS) $(CONFIG_AFLAGS))
 LDFLAGS                       = $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS))
 
+ifeq ($(AROS_TARGET_CPU),aarch64)
+# clang emits the weak __aros_libreq_<base> version marker as a non-weak
+# block-scope static; the identical copies collide across a module's objects.
+# The kickstart kobj link is a raw '$(AROS_LD) -Ur' that bypasses LDFLAGS,
+# so the flag is needed on both link paths.
+LDFLAGS                       += -Wl,--allow-multiple-definition
+KOBJ_LDFLAGS                  += --allow-multiple-definition
+endif
+
 # Target arch/CPU-specific options that we can't set in 'configure'
 # (these could be added to CFLAGS instead of using a new variable, except
 # that CFLAGS is unfortunately also passed to host and kernel compilers,
