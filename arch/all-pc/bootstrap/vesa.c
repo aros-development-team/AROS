@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2007-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2007-2026, The AROS Development Team. All rights reserved.
 
     Desc: Real-mode code to set VBE mode.
 */
@@ -85,7 +85,7 @@ short setVbeMode(long mode, BOOL set_refresh)
                 "movw $0x4f02, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"0"(mode),"D"(&timings):"eax","ecx","cc");
+                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"0"((short)mode),"D"(&timings):"eax","ecx","cc");
     return retval;
 }
 
@@ -99,7 +99,7 @@ short paletteWidth(long req, unsigned char* width)
                 "int $0x10\n\t"
                 "movb %%bh, %1\n\t"
                 "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval),"=c"(reswidth):"0"(req):"eax","cc");
+                "DATA32 call go32\n\t.code32\n\t":"=b"(retval),"=c"(reswidth):"0"((short)req):"eax","cc");
     *width = reswidth;
     return retval;
 }
@@ -284,7 +284,11 @@ short findMode(int x, int y, int d, int vfreq, BOOL prioritise_depth)
 
 asm(
         "               .code16\n\t.globl go32\n\t.type go32,@function\n"
+#ifdef __clang__
+        "go32:          lgdtl GDT_reg\n"        /* IAS emits the addr32/data32 prefixes */
+#else
         "go32:          DATA32 ADDR32 lgdt GDT_reg\n"
+#endif
         "               movl %cr0, %eax\n"
         "               bts $0, %eax\n"
         "               movl %eax, %cr0\n"
@@ -324,7 +328,11 @@ asm(
         "               movl %cr0, %eax\n"
         "               btc $0, %eax\n"
         "               movl %eax, %cr0\n"
+#ifdef __clang__
+        "               ljmpl $0x00, $1f\n"
+#else
         "               DATA32 ljmp $0x00, $1f\n"
+#endif
         "1:\n"
         "               xorl %eax,%eax\n"
         "               movw %ax, %ds\n"
@@ -332,7 +340,11 @@ asm(
         "               movw %ax, %fs\n"
         "               movw %ax, %gs\n"
         "               movw %ax, %ss\n"
+#ifdef __clang__
+        "               retl\n"
+#else
         "               DATA32 ret\n"
+#endif
         ".code32");
 
 const unsigned long long GDT_Table[] = {

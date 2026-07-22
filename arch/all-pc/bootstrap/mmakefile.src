@@ -23,6 +23,18 @@ USER_OBJS    := $(OBJDIR)/vesa.bin.o
 
 kernel-bootstrap-pc_LINK := $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
 
+ifeq ($(AROS_TOOLCHAIN),llvm)
+# The bootstrap is a standalone multiboot ELF executable linked at a fixed
+# address via ldscript.lds. The AROS clang triple links via collect-aros,
+# which emits AROS relocatable modules and ignores the linker script, so
+# use a bare linux triple for the link and let clang drive the system
+# linker. TARGET_ISA_LDFLAGS is what %build_prog passes to the link.
+TARGET_ISA_LDFLAGS := --target=i386-pc-linux-gnu -march=i486
+# The bootstrap is 32-bit, so it needs the 32-bit compiler-rt builtins
+# (%build_prog adds $(TARGET_C_LIBS), which names the 64-bit archive).
+TARGET_C_LIBS := $(TARGET_32_C_LIBS)
+endif
+
 %build_prog mmake=kernel-bootstrap-pc progname=$(EXENAME) \
 	files=$(FILES) targetdir=$(EXEDIR) \
 	uselibs="bootstrap bootconsole stdc.static" usestartup=no lto=no
