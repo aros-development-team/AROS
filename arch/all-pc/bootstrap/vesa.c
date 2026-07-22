@@ -11,6 +11,18 @@ asm ("begin:");
 #include "vesa.h"
 #define ABS(x) (((x) >= 0) ? (x) : -(x))
 
+/*
+ * clang's integrated assembler mis-encodes "DATA32 call" in .code16 - it
+ * emits the 0x66 prefix but only a 16-bit displacement, while the CPU
+ * consumes a 32-bit one. The l-suffixed mnemonic assembles to the correct
+ * 6-byte 66 E8 rel32 form (identical to what gas produces for DATA32 call).
+ */
+#ifdef __clang__
+#define VESA_CALL_GO32 "calll go32\n\t.code32\n\t"
+#else
+#define VESA_CALL_GO32 "DATA32 call go32\n\t.code32\n\t"
+#endif
+
 asm (".long getControllerInfo");
 asm (".long getModeInfo");
 asm (".long findMode");
@@ -19,6 +31,20 @@ asm (".long paletteWidth");
 asm (".long controllerinfo");
 asm (".long modeinfo");
 asm (".long timings");
+
+/*
+ * This blob is fully standalone: no libraries are linked. Compilers may
+ * lower the clearing loops below into memset() calls (clang does), so a
+ * local implementation must be provided. The volatile qualifier stops the
+ * loop being recognised and turned back into a memset() call.
+ */
+void *memset(void *dst, int c, unsigned long len)
+{
+    volatile unsigned char *p = dst;
+    while (len--)
+        *p++ = c;
+    return dst;
+}
 
 short getControllerInfo(void)
 {
@@ -32,7 +58,7 @@ short getControllerInfo(void)
                 "movw $0x4f00, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"D"(&controllerinfo):"eax","ecx","cc");
+                VESA_CALL_GO32 :"=b"(retval):"D"(&controllerinfo):"eax","ecx","cc");
     return retval;
 }
 
@@ -60,7 +86,7 @@ short getModeInfo(long mode)
                 "movw $0x4f01, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"c"(mode),"D"(&modeinfo):"eax","cc");
+                VESA_CALL_GO32 :"=b"(retval):"c"(mode),"D"(&modeinfo):"eax","cc");
     if ((controllerinfo.version < 0x0102) && (mode > 0x0FF) && (mode < 0x108)) {
         i = mode - 0x100;
         modeinfo.x_resolution = vesa11Modes[i].x_resolution;
@@ -85,7 +111,7 @@ short setVbeMode(long mode, BOOL set_refresh)
                 "movw $0x4f02, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"0"((short)mode),"D"(&timings):"eax","ecx","cc");
+                VESA_CALL_GO32 :"=b"(retval):"0"((short)mode),"D"(&timings):"eax","ecx","cc");
     return retval;
 }
 
@@ -99,7 +125,7 @@ short paletteWidth(long req, unsigned char* width)
                 "int $0x10\n\t"
                 "movb %%bh, %1\n\t"
                 "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval),"=c"(reswidth):"0"((short)req):"eax","cc");
+                VESA_CALL_GO32 :"=b"(retval),"=c"(reswidth):"0"((short)req):"eax","cc");
     *width = reswidth;
     return retval;
 }
@@ -315,8 +341,10 @@ asm(
         "               lidt IDT_reg16\n"
         "               movl %esp, stack32\n"
         "               movl (%esp), %eax\n"
-        "               movl %eax, scratch + 63\n"
-        "               movl $scratch + 63, %esp\n"
+        /* The BIOS runs on this stack and can use well over 63 bytes -
+           use the whole scratch array (top element = scratch[63]) */
+        "               movl %eax, scratch + 252\n"
+        "               movl $scratch + 252, %esp\n"
         "               movw $0x20, %ax\n"
         "               movw %ax, %ds\n"
         "               movw %ax, %es\n"

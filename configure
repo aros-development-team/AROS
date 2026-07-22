@@ -9719,7 +9719,7 @@ case "$aros_toolchain" in
         aros_cxx_ldflags="-L$""(CROSSTOOLSDIR)/lib -stdlib=libc++ -static-libstdc++"
                                 aros_target_cflags=""
         aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
-        toolchain_ld_fmtbinary="--format=binary"
+        toolchain_ld_fmtbinary="--oformat binary"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
     *gnu*)
