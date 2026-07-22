@@ -19,13 +19,13 @@ drm_private extern uint32_t libdrm_nouveau_debug;
 #define dbg_on(lvl) (libdrm_nouveau_debug & (1 << lvl))
 #define dbg(lvl, fmt, args...) do {                                            \
 	if (dbg_on((lvl)))                                                     \
-		fprintf("nouveau: "fmt, ##args);                       \
+		fprintf(stderr, "nouveau: "fmt, ##args);                       \
 } while(0)
 #else
 #define dbg_on(lvl) (0)
 #define dbg(lvl, fmt, args...)
 #endif
-#define err(fmt, args...) fprintf("nouveau: "fmt, ##args)
+#define err(fmt, args...) fprintf(stderr, "nouveau: "fmt, ##args)
 
 struct nouveau_client_kref {
 	struct drm_nouveau_gem_pushbuf_bo *kref;

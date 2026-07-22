@@ -799,40 +799,42 @@ nouveau_bo_ref(struct nouveau_bo *bo, struct nouveau_bo **pref)
 	*pref = bo;
 }
 
-// drm_public int
-// nouveau_bo_prime_handle_ref(struct nouveau_device *dev, int prime_fd,
-// 			    struct nouveau_bo **bo)
-// {
-// 	struct nouveau_drm *drm = nouveau_drm(&dev->object);
-// 	struct nouveau_device_priv *nvdev = nouveau_device(dev);
-// 	int ret;
-// 	unsigned int handle;
+#if !defined(__AROS__)
+drm_public int
+nouveau_bo_prime_handle_ref(struct nouveau_device *dev, int prime_fd,
+			    struct nouveau_bo **bo)
+{
+	struct nouveau_drm *drm = nouveau_drm(&dev->object);
+	struct nouveau_device_priv *nvdev = nouveau_device(dev);
+	int ret;
+	unsigned int handle;
 
-// 	nouveau_bo_ref(NULL, bo);
+	nouveau_bo_ref(NULL, bo);
 
-// 	pthread_mutex_lock(&nvdev->lock);
-// 	ret = drmPrimeFDToHandle(drm->fd, prime_fd, &handle);
-// 	if (ret == 0) {
-// 		ret = nouveau_bo_wrap_locked(dev, handle, bo, 0);
-// 	}
-// 	pthread_mutex_unlock(&nvdev->lock);
-// 	return ret;
-// }
+	pthread_mutex_lock(&nvdev->lock);
+	ret = drmPrimeFDToHandle(drm->fd, prime_fd, &handle);
+	if (ret == 0) {
+		ret = nouveau_bo_wrap_locked(dev, handle, bo, 0);
+	}
+	pthread_mutex_unlock(&nvdev->lock);
+	return ret;
+}
 
-// drm_public int
-// nouveau_bo_set_prime(struct nouveau_bo *bo, int *prime_fd)
-// {
-// 	struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
-// 	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
-// 	int ret;
+drm_public int
+nouveau_bo_set_prime(struct nouveau_bo *bo, int *prime_fd)
+{
+	struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
+	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
+	int ret;
 
-// 	ret = drmPrimeHandleToFD(drm->fd, nvbo->base.handle, DRM_CLOEXEC, prime_fd);
-// 	if (ret)
-// 		return ret;
+	ret = drmPrimeHandleToFD(drm->fd, nvbo->base.handle, DRM_CLOEXEC, prime_fd);
+	if (ret)
+		return ret;
 
-// 	nouveau_bo_make_global(nvbo);
-// 	return 0;
-// }
+	nouveau_bo_make_global(nvbo);
+	return 0;
+}
+#endif
 
 drm_public int
 nouveau_bo_wait(struct nouveau_bo *bo, uint32_t access,
