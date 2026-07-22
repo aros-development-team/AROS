@@ -324,11 +324,6 @@ static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_d
         copptr[0] = 0x01fe;  // NOP
     copptr[2] = (ystart << 8) | 0x05;
 
-    /* Do not enable DMA before the screen's exact first scanline. */
-    copptr = c2d->copper2_bplstart;
-    copptr[0] = 0x01fe;
-    copptr[2] = (y << 8) | 0x05;
-
     copptr = c2d->copper2_tail;
     if (copptr[0] != 0x0084)
     {
@@ -499,10 +494,6 @@ UWORD *populatebmcopperlist(struct amigavideo_staticdata *csd, struct amigabm_da
     c2d->copper2_scroll = c;
 
     COPPEROUT(c, 0x008e, 0)                     // Push (DIWSTRT) Display window start
-
-    c2d->copper2_bplstart = c;
-    COPPEROUT(c, 0x01fe, 0xfffe)                // Rollover marker or NOP
-    COPPEROUT(c, 0xffff, 0xfffe)                // Exact screen start WAIT
 
     COPPEROUT(c, 0x0100, bplcon0)               // Push the screens bplcon0
     COPPEROUT(c, 0x0104, csd->bplcon2 | ((csd->aga && !(bm->modeid & EXTRAHALFBRITE_KEY)) ? 0x0200 : 0))  // Push the screens bplcon2
