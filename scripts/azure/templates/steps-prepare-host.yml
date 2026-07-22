@@ -91,44 +91,72 @@ steps:
   displayName: 'Installing AROS build dependencies for Ubuntu'
 
 - script: |
-    if [ "$AROSBUILD_CONFIG_EXTRA" != "" ]; then
-      CONFIGOPTS="$(arosbuild.config.extra)"
+    set -euo pipefail
+
+    CONFIGOPTS="${CONFIGOPTS:-}"
+    if [ -n "${AROSBUILD_CONFIG_EXTRA:-}" ]; then
+      CONFIGOPTS="$CONFIGOPTS $(arosbuild.config.extra)"
     fi
     CONFIGOPTS="$CONFIGOPTS --target=$(arosbuild.target)"
-    if [ "$AROSBUILD_VARIANT" != "" ]; then
+    if [ -n "${AROSBUILD_VARIANT:-}" ]; then
       CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
     fi
-    CONFIGOPTS="$CONFIGOPTS $TOOLCHAINOPTS"
-    if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
+    CONFIGOPTS="$CONFIGOPTS ${TOOLCHAINOPTS:-}"
+    if [ -n "${AROSBUILD_GCC_VERSION:-}" ]; then
       CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
     fi
-    if [ "$AROSBUILD_LLVM_VERSION" != "" ]; then
+    if [ -n "${AROSBUILD_LLVM_VERSION:-}" ]; then
       CONFIGOPTS="$CONFIGOPTS --with-llvm-version=$(arosbuild.llvm.version)"
     fi
-    command -v brew &>/dev/null || ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
-    brew list gawk &>/dev/null || brew install gawk
-    brew list gnu-sed &>/dev/null || brew install gnu-sed
-    brew list autoconf &>/dev/null || brew install autoconf
-    brew list automake &>/dev/null || brew install automake
-    brew list wget &>/dev/null || brew install wget
-    brew list ccache &>/dev/null || brew install ccache
-    brew list cmake &>/dev/null || brew install cmake
-    brew list netpbm &>/dev/null || brew install netpbm
-    brew list md5sha1sum &>/dev/null || brew install md5sha1sum
-    brew list --cask xquartz &>/dev/null || brew install --cask xquartz
-    brew list python@3.9 &>/dev/null || brew install python@3.9
-    if ! command -v pip3; then
-        sudo easy_install pip3
+
+    # Homebrew is expected to be present on Microsoft-hosted macOS agents.
+    # Do not dynamically execute a remote installer in the build.
+    if ! command -v brew >/dev/null 2>&1; then
+      echo "ERROR: Homebrew is required on the macOS build agent."
+      exit 1
     fi
-    pip3 install Mako
-    DARWINPYTHONDIR=`brew --prefix python`
-    brew install bison
-    DARWINBISONDIR=`brew --prefix bison`
-    CONFIGPATH="$DARWINBISONDIR/bin:$DARWINPYTHONDIR/bin:$PATH"
-    brew tap esolitos/ipa
-    brew install sshpass
+
+    # Install formulae idempotently. sshpass is available from Homebrew core,
+    # so no third-party tap is required.
+    for formula in gawk gnu-sed autoconf automake wget ccache cmake netpbm md5sha1sum bison sshpass; do
+      brew list "$formula" >/dev/null 2>&1 || brew install "$formula"
+    done
+
+    # XQuartz is a system-level cask and may require a logout/restart.
+    # Prefer preinstalling it on self-hosted agents.
+    brew list --cask xquartz >/dev/null 2>&1 || brew install --cask xquartz
+
+    # Use the explicitly installed Python and isolate Mako in a venv to comply
+    # with PEP 668 (Homebrew's Python is externally managed).
+    brew list python@3.9 >/dev/null 2>&1 || brew install python@3.9
+    DARWINPYTHONDIR="$(brew --prefix python@3.9)"
+    PYTHONBIN="$DARWINPYTHONDIR/bin/python3.9"
+    PYTHONVENV="${HOME}/.aros-python-venv"
+
+    if [ ! -x "$PYTHONVENV/bin/python" ]; then
+      "$PYTHONBIN" -m venv "$PYTHONVENV"
+    fi
+    "$PYTHONVENV/bin/python" -m pip install --upgrade pip
+    "$PYTHONVENV/bin/python" -m pip install Mako
+
+    DARWINBISONDIR="$(brew --prefix bison)"
+    DARWINGAWDIR="$(brew --prefix gawk)"
+    DARWINGNUSEDDIR="$(brew --prefix gnu-sed)"
+    DARWINMD5SHA1SUMDIR="$(brew --prefix md5sha1sum)"
+
+    # Homebrew installs these tools under alternate names or as keg-only
+    # formulae. Add compatibility directories for the AROS build.
+    CONFIGPATH="$DARWINBISONDIR/bin:$DARWINGAWDIR/libexec/gnubin:$DARWINGNUSEDDIR/libexec/gnubin:$DARWINMD5SHA1SUMDIR/bin:$PYTHONVENV/bin:$PATH"
+
     CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
-    echo "##vso[task.setvariable variable=AROSBUILDENVPATH;]$CONFIGPATH";
+
+    # Make the PATH available to later Azure Pipeline tasks.
+    echo "##vso[task.setvariable variable=AROSBUILDENVPATH;]$CONFIGPATH"
+    echo "##vso[task.prependpath]$DARWINBISONDIR/bin"
+    echo "##vso[task.prependpath]$DARWINGAWDIR/libexec/gnubin"
+    echo "##vso[task.prependpath]$DARWINGNUSEDDIR/libexec/gnubin"
+    echo "##vso[task.prependpath]$DARWINMD5SHA1SUMDIR/bin"
+    echo "##vso[task.prependpath]$PYTHONVENV/bin"
     echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS;]$CONFIGOPTS"
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: 'Installing AROS build dependencies for MacOS'
