@@ -140,7 +140,7 @@ D(bug("[rtl8139] PCI_Enumerator: Found %s NIC [%s], PCI_ID %04x:%04x Rev:%d\n", 
 D(bug("[rtl8139] PCI_Enumerator: Failed to create unit!\n"));
             return;
         }
-RTLD(bug("[%s] PCI_Enumerator: %s NIC I/O MEM @ %08x\n", unit->rtl8139u_name, unit->rtl8139u_rtl_chipname, unit->rtl8139u_BaseMem))
+RTLD(bug("[%s] PCI_Enumerator: %s NIC I/O MEM @ %p\n", unit->rtl8139u_name, unit->rtl8139u_rtl_chipname, unit->rtl8139u_BaseMem))
 
 	}
 	

@@ -618,7 +618,7 @@ VOID CopyPacket(struct RTL8139Base *RTL8139DeviceBase, struct RTL8139Unit *unit,
 	UBYTE *ptr;
 	const UBYTE broadcast[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-RTLD(bug("[%s] CopyPacket(packet @ %x, len = %d)\n", unit->rtl8139u_name, buffer, packet_size))
+RTLD(bug("[%s] CopyPacket(packet @ 0x%p, len = %d)\n", unit->rtl8139u_name, buffer, packet_size))
 
 	/* Set multicast and broadcast flags */
 
@@ -653,7 +653,7 @@ RTLD(bug("[%s] CopyPacket: MULTICAST Flag set\n", unit->rtl8139u_name))
 
 	request->ios2_DataLength = packet_size;
 
-RTLD(bug("[%s] CopyPacket: packet @ %x (%d bytes)\n", unit->rtl8139u_name, ptr, packet_size))
+RTLD(bug("[%s] CopyPacket: packet @ 0x%p (%d bytes)\n", unit->rtl8139u_name, ptr, packet_size))
 
 	/* Filter packet */
 
@@ -913,8 +913,8 @@ RTLD(bug("[rtl8139] CreateUnit: Unit allocated @ 0x%p\n", unit))
 		OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0,   &len);
 
 RTLD(bug("[%s] CreateUnit:   INT:%d, base1:0x%p, base0:0x%p, size0:%d\n", unit->rtl8139u_name,
-																   unit->rtl8139u_IRQ, unit->rtl8139u_BaseIO,
-																   base, len))
+																   unit->rtl8139u_IRQ, (APTR)unit->rtl8139u_BaseIO,
+																   (APTR)base, (int)len))
 
 		unit->rtl8139u_BaseMem = HIDD_PCIDriver_MapPCI(driver, (APTR)base, len);
 		unit->rtl8139u_SizeMem = len;

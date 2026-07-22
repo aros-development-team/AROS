@@ -572,7 +572,7 @@ static int rtl8139nic_open(struct net_device *unit)
 
 	if ((np->rx_buffer != NULL) && (np->tx_buffer != NULL))
 	{
-RTLD(bug("[%s] rtl8139nic_open: Allocated IO Buffers [ %d x Tx @ %x] [ Rx @ %x, %d bytes]\n",
+RTLD(bug("[%s] rtl8139nic_open: Allocated IO Buffers [ %d x Tx @ 0x%p] [ Rx @ 0x%p, %d bytes]\n",
                         unit->rtl8139u_name,
 						NUM_TX_DESC, np->tx_buffer,
 						np->rx_buffer,  np->rx_buf_len))
