@@ -359,13 +359,22 @@ LLVM_COMPILER_RT_CMAKEBASE :=                                                   
   -DBUILD_SHARED_LIBS=OFF                                                                                                               \
   -DAROS_BUILD=ON \
   -DCOMPILER_RT_INSTALL_PATH="$(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)" \
-  -DCOMPILER_RT_OS_DIR="aros"
+  -DCOMPILER_RT_OS_DIR="aros" \
+  -DCOMPILER_RT_BUILTINS_ENABLE_PIC=OFF
 
+# The builtins are linked into AROS modules, whose ELF loader does not
+# handle PIC (GOT-based) relocations - large-model PIC in particular
+# emits R_X86_64_GOTPC64. Build them as non-PIC.
+LLVM_COMPILER_RT_EXTRA_CFLAGS := -fno-PIC -fno-pic -fno-PIE -fno-pie
+
+# ARM-specific compiler-rt build options
+ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 # Without COMPILER_RT_ARMHF_TARGET, compiler-rt tags its builtins with
 # __pcs__("aapcs"), forcing the soft-float return ABI even under
 # -mfloat-abi=hard, so hard-float callers read garbage from e.g. __floatundidf.
 ifneq (,$(findstring -mfloat-abi=hard,$(ISA_FLAGS)))
-LLVM_COMPILER_RT_EXTRA_CFLAGS := -DCOMPILER_RT_ARMHF_TARGET
+LLVM_COMPILER_RT_EXTRA_CFLAGS += -DCOMPILER_RT_ARMHF_TARGET
+endif
 endif
 
 LLVM_COMPILER_RT_CMAKEOPTIONS :=                                                                                                        \
