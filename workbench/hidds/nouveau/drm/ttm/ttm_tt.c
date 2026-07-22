@@ -40,7 +40,9 @@
 #include <drm-compat/drm_compat_types.h>
 #include <drm-compat/drm_compat_mem.h>
 #endif
-// #include <drm/drm_cache.h>
+#if !defined(__AROS__)
+#include <drm/drm_cache.h>
+#endif
 #include <drm/ttm/ttm_bo_driver.h>
 #include <drm/ttm/ttm_page_alloc.h>
 #include <drm/ttm/ttm_set_memory.h>
@@ -114,15 +116,17 @@ static int ttm_dma_tt_alloc_page_directory(struct ttm_dma_tt *ttm)
 	return 0;
 }
 
-// static int ttm_sg_tt_alloc_page_directory(struct ttm_dma_tt *ttm)
-// {
-// 	ttm->dma_address = kvmalloc_array(ttm->ttm.num_pages,
-// 					  sizeof(*ttm->dma_address),
-// 					  GFP_KERNEL | __GFP_ZERO);
-// 	if (!ttm->dma_address)
-// 		return -ENOMEM;
-// 	return 0;
-// }
+#if !defined(__AROS__)
+static int ttm_sg_tt_alloc_page_directory(struct ttm_dma_tt *ttm)
+{
+	ttm->dma_address = kvmalloc_array(ttm->ttm.num_pages,
+					  sizeof(*ttm->dma_address),
+					  GFP_KERNEL | __GFP_ZERO);
+	if (!ttm->dma_address)
+		return -ENOMEM;
+	return 0;
+}
+#endif
 
 static int ttm_tt_set_page_caching(struct page *p,
 				   enum ttm_caching_state c_old,
@@ -250,18 +254,20 @@ void ttm_tt_init_fields(struct ttm_tt *ttm, struct ttm_buffer_object *bo,
 	ttm->sg = bo->sg;
 }
 
-// int ttm_tt_init(struct ttm_tt *ttm, struct ttm_buffer_object *bo,
-// 		uint32_t page_flags)
-// {
-// 	ttm_tt_init_fields(ttm, bo, page_flags);
+#if !defined(__AROS__)
+int ttm_tt_init(struct ttm_tt *ttm, struct ttm_buffer_object *bo,
+		uint32_t page_flags)
+{
+	ttm_tt_init_fields(ttm, bo, page_flags);
 
-// 	if (ttm_tt_alloc_page_directory(ttm)) {
-// 		pr_err("Failed allocating page table\n");
-// 		return -ENOMEM;
-// 	}
-// 	return 0;
-// }
-// EXPORT_SYMBOL(ttm_tt_init);
+	if (ttm_tt_alloc_page_directory(ttm)) {
+		pr_err("Failed allocating page table\n");
+		return -ENOMEM;
+	}
+	return 0;
+}
+EXPORT_SYMBOL(ttm_tt_init);
+#endif
 
 void ttm_tt_fini(struct ttm_tt *ttm)
 {
@@ -290,26 +296,28 @@ int ttm_dma_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_buffer_object *bo,
 }
 EXPORT_SYMBOL(ttm_dma_tt_init);
 
-// int ttm_sg_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_buffer_object *bo,
-// 		   uint32_t page_flags)
-// {
-// 	struct ttm_tt *ttm = &ttm_dma->ttm;
-// 	int ret;
+#if !defined(__AROS__)
+int ttm_sg_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_buffer_object *bo,
+		   uint32_t page_flags)
+{
+	struct ttm_tt *ttm = &ttm_dma->ttm;
+	int ret;
 
-// 	ttm_tt_init_fields(ttm, bo, page_flags);
+	ttm_tt_init_fields(ttm, bo, page_flags);
 
-// 	INIT_LIST_HEAD(&ttm_dma->pages_list);
-// 	if (page_flags & TTM_PAGE_FLAG_SG)
-// 		ret = ttm_sg_tt_alloc_page_directory(ttm_dma);
-// 	else
-// 		ret = ttm_dma_tt_alloc_page_directory(ttm_dma);
-// 	if (ret) {
-// 		pr_err("Failed allocating page table\n");
-// 		return -ENOMEM;
-// 	}
-// 	return 0;
-// }
-// EXPORT_SYMBOL(ttm_sg_tt_init);
+	INIT_LIST_HEAD(&ttm_dma->pages_list);
+	if (page_flags & TTM_PAGE_FLAG_SG)
+		ret = ttm_sg_tt_alloc_page_directory(ttm_dma);
+	else
+		ret = ttm_dma_tt_alloc_page_directory(ttm_dma);
+	if (ret) {
+		pr_err("Failed allocating page table\n");
+		return -ENOMEM;
+	}
+	return 0;
+}
+EXPORT_SYMBOL(ttm_sg_tt_init);
+#endif
 
 void ttm_dma_tt_fini(struct ttm_dma_tt *ttm_dma)
 {
@@ -364,108 +372,109 @@ int ttm_tt_bind(struct ttm_tt *ttm, struct ttm_mem_reg *bo_mem,
 }
 EXPORT_SYMBOL(ttm_tt_bind);
 
-// int ttm_tt_swapin(struct ttm_tt *ttm)
-// {
-// 	struct address_space *swap_space;
-// 	struct file *swap_storage;
-// 	struct page *from_page;
-// 	struct page *to_page;
-// 	int i;
-// 	int ret = -ENOMEM;
+#if !defined(__AROS__)
+int ttm_tt_swapin(struct ttm_tt *ttm)
+{
+	struct address_space *swap_space;
+	struct file *swap_storage;
+	struct page *from_page;
+	struct page *to_page;
+	int i;
+	int ret = -ENOMEM;
 
-// 	swap_storage = ttm->swap_storage;
-// 	BUG_ON(swap_storage == NULL);
+	swap_storage = ttm->swap_storage;
+	BUG_ON(swap_storage == NULL);
 
-// 	swap_space = swap_storage->f_mapping;
+	swap_space = swap_storage->f_mapping;
 
-// 	for (i = 0; i < ttm->num_pages; ++i) {
-// 		gfp_t gfp_mask = mapping_gfp_mask(swap_space);
+	for (i = 0; i < ttm->num_pages; ++i) {
+		gfp_t gfp_mask = mapping_gfp_mask(swap_space);
 
-// 		gfp_mask |= (ttm->page_flags & TTM_PAGE_FLAG_NO_RETRY ? __GFP_RETRY_MAYFAIL : 0);
-// 		from_page = shmem_read_mapping_page_gfp(swap_space, i, gfp_mask);
+		gfp_mask |= (ttm->page_flags & TTM_PAGE_FLAG_NO_RETRY ? __GFP_RETRY_MAYFAIL : 0);
+		from_page = shmem_read_mapping_page_gfp(swap_space, i, gfp_mask);
 
-// 		if (IS_ERR(from_page)) {
-// 			ret = PTR_ERR(from_page);
-// 			goto out_err;
-// 		}
-// 		to_page = ttm->pages[i];
-// 		if (unlikely(to_page == NULL))
-// 			goto out_err;
+		if (IS_ERR(from_page)) {
+			ret = PTR_ERR(from_page);
+			goto out_err;
+		}
+		to_page = ttm->pages[i];
+		if (unlikely(to_page == NULL))
+			goto out_err;
 
-// 		copy_highpage(to_page, from_page);
-// 		put_page(from_page);
-// 	}
+		copy_highpage(to_page, from_page);
+		put_page(from_page);
+	}
 
-// 	if (!(ttm->page_flags & TTM_PAGE_FLAG_PERSISTENT_SWAP))
-// 		fput(swap_storage);
-// 	ttm->swap_storage = NULL;
-// 	ttm->page_flags &= ~TTM_PAGE_FLAG_SWAPPED;
+	if (!(ttm->page_flags & TTM_PAGE_FLAG_PERSISTENT_SWAP))
+		fput(swap_storage);
+	ttm->swap_storage = NULL;
+	ttm->page_flags &= ~TTM_PAGE_FLAG_SWAPPED;
 
-// 	return 0;
-// out_err:
-// 	return ret;
-// }
-// #endif
+	return 0;
+out_err:
+	return ret;
+}
 
-// int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
-// {
-// 	struct address_space *swap_space;
-// 	struct file *swap_storage;
-// 	struct page *from_page;
-// 	struct page *to_page;
-// 	int i;
-// 	int ret = -ENOMEM;
+int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
+{
+	struct address_space *swap_space;
+	struct file *swap_storage;
+	struct page *from_page;
+	struct page *to_page;
+	int i;
+	int ret = -ENOMEM;
 
-// 	BUG_ON(ttm->state != tt_unbound && ttm->state != tt_unpopulated);
-// 	BUG_ON(ttm->caching_state != tt_cached);
+	BUG_ON(ttm->state != tt_unbound && ttm->state != tt_unpopulated);
+	BUG_ON(ttm->caching_state != tt_cached);
 
-// 	if (!persistent_swap_storage) {
-// 		swap_storage = shmem_file_setup("ttm swap",
-// 						ttm->num_pages << PAGE_SHIFT,
-// 						0);
-// 		if (IS_ERR(swap_storage)) {
-// 			pr_err("Failed allocating swap storage\n");
-// 			return PTR_ERR(swap_storage);
-// 		}
-// 	} else {
-// 		swap_storage = persistent_swap_storage;
-// 	}
+	if (!persistent_swap_storage) {
+		swap_storage = shmem_file_setup("ttm swap",
+						ttm->num_pages << PAGE_SHIFT,
+						0);
+		if (IS_ERR(swap_storage)) {
+			pr_err("Failed allocating swap storage\n");
+			return PTR_ERR(swap_storage);
+		}
+	} else {
+		swap_storage = persistent_swap_storage;
+	}
 
-// 	swap_space = swap_storage->f_mapping;
+	swap_space = swap_storage->f_mapping;
 
-// 	for (i = 0; i < ttm->num_pages; ++i) {
-// 		gfp_t gfp_mask = mapping_gfp_mask(swap_space);
+	for (i = 0; i < ttm->num_pages; ++i) {
+		gfp_t gfp_mask = mapping_gfp_mask(swap_space);
 
-// 		gfp_mask |= (ttm->page_flags & TTM_PAGE_FLAG_NO_RETRY ? __GFP_RETRY_MAYFAIL : 0);
+		gfp_mask |= (ttm->page_flags & TTM_PAGE_FLAG_NO_RETRY ? __GFP_RETRY_MAYFAIL : 0);
 
-// 		from_page = ttm->pages[i];
-// 		if (unlikely(from_page == NULL))
-// 			continue;
+		from_page = ttm->pages[i];
+		if (unlikely(from_page == NULL))
+			continue;
 
-// 		to_page = shmem_read_mapping_page_gfp(swap_space, i, gfp_mask);
-// 		if (IS_ERR(to_page)) {
-// 			ret = PTR_ERR(to_page);
-// 			goto out_err;
-// 		}
-// 		copy_highpage(to_page, from_page);
-// 		set_page_dirty(to_page);
-// 		mark_page_accessed(to_page);
-// 		put_page(to_page);
-// 	}
+		to_page = shmem_read_mapping_page_gfp(swap_space, i, gfp_mask);
+		if (IS_ERR(to_page)) {
+			ret = PTR_ERR(to_page);
+			goto out_err;
+		}
+		copy_highpage(to_page, from_page);
+		set_page_dirty(to_page);
+		mark_page_accessed(to_page);
+		put_page(to_page);
+	}
 
-// 	ttm_tt_unpopulate(ttm);
-// 	ttm->swap_storage = swap_storage;
-// 	ttm->page_flags |= TTM_PAGE_FLAG_SWAPPED;
-// 	if (persistent_swap_storage)
-// 		ttm->page_flags |= TTM_PAGE_FLAG_PERSISTENT_SWAP;
+	ttm_tt_unpopulate(ttm);
+	ttm->swap_storage = swap_storage;
+	ttm->page_flags |= TTM_PAGE_FLAG_SWAPPED;
+	if (persistent_swap_storage)
+		ttm->page_flags |= TTM_PAGE_FLAG_PERSISTENT_SWAP;
 
-// 	return 0;
-// out_err:
-// 	if (!persistent_swap_storage)
-// 		fput(swap_storage);
+	return 0;
+out_err:
+	if (!persistent_swap_storage)
+		fput(swap_storage);
 
-// 	return ret;
-// }
+	return ret;
+}
+#endif
 
 static void ttm_tt_add_mapping(struct ttm_tt *ttm)
 {

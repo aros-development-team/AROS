@@ -54,17 +54,19 @@
 
 #include "drm_crtc_internal.h"
 
-// /**
-//  * drm_mode_debug_printmodeline - print a mode to dmesg
-//  * @mode: mode to print
-//  *
-//  * Describe @mode using DRM_DEBUG.
-//  */
-// void drm_mode_debug_printmodeline(const struct drm_display_mode *mode)
-// {
-// 	DRM_DEBUG_KMS("Modeline " DRM_MODE_FMT "\n", DRM_MODE_ARG(mode));
-// }
-// EXPORT_SYMBOL(drm_mode_debug_printmodeline);
+#if !defined(__AROS__)
+/**
+ * drm_mode_debug_printmodeline - print a mode to dmesg
+ * @mode: mode to print
+ *
+ * Describe @mode using DRM_DEBUG.
+ */
+void drm_mode_debug_printmodeline(const struct drm_display_mode *mode)
+{
+	DRM_DEBUG_KMS("Modeline " DRM_MODE_FMT "\n", DRM_MODE_ARG(mode));
+}
+EXPORT_SYMBOL(drm_mode_debug_printmodeline);
+#endif
 
 /**
  * drm_mode_create - create a new display mode
@@ -116,7 +118,9 @@ EXPORT_SYMBOL(drm_mode_destroy);
 void drm_mode_probed_add(struct drm_connector *connector,
 			 struct drm_display_mode *mode)
 {
-	// WARN_ON(!mutex_is_locked(&connector->dev->mode_config.mutex));
+#if !defined(__AROS__)
+	WARN_ON(!mutex_is_locked(&connector->dev->mode_config.mutex));
+#endif
 
 	list_add_tail(&mode->head, &connector->probed_modes);
 }
@@ -585,158 +589,158 @@ drm_gtf_mode(struct drm_device *dev, int hdisplay, int vdisplay, int vrefresh,
 }
 EXPORT_SYMBOL(drm_gtf_mode);
 
-// #ifdef CONFIG_VIDEOMODE_HELPERS
-// /**
-//  * drm_display_mode_from_videomode - fill in @dmode using @vm,
-//  * @vm: videomode structure to use as source
-//  * @dmode: drm_display_mode structure to use as destination
-//  *
-//  * Fills out @dmode using the display mode specified in @vm.
-//  */
-// void drm_display_mode_from_videomode(const struct videomode *vm,
-// 				     struct drm_display_mode *dmode)
-// {
-// 	dmode->hdisplay = vm->hactive;
-// 	dmode->hsync_start = dmode->hdisplay + vm->hfront_porch;
-// 	dmode->hsync_end = dmode->hsync_start + vm->hsync_len;
-// 	dmode->htotal = dmode->hsync_end + vm->hback_porch;
+#ifdef CONFIG_VIDEOMODE_HELPERS
+/**
+ * drm_display_mode_from_videomode - fill in @dmode using @vm,
+ * @vm: videomode structure to use as source
+ * @dmode: drm_display_mode structure to use as destination
+ *
+ * Fills out @dmode using the display mode specified in @vm.
+ */
+void drm_display_mode_from_videomode(const struct videomode *vm,
+				     struct drm_display_mode *dmode)
+{
+	dmode->hdisplay = vm->hactive;
+	dmode->hsync_start = dmode->hdisplay + vm->hfront_porch;
+	dmode->hsync_end = dmode->hsync_start + vm->hsync_len;
+	dmode->htotal = dmode->hsync_end + vm->hback_porch;
 
-// 	dmode->vdisplay = vm->vactive;
-// 	dmode->vsync_start = dmode->vdisplay + vm->vfront_porch;
-// 	dmode->vsync_end = dmode->vsync_start + vm->vsync_len;
-// 	dmode->vtotal = dmode->vsync_end + vm->vback_porch;
+	dmode->vdisplay = vm->vactive;
+	dmode->vsync_start = dmode->vdisplay + vm->vfront_porch;
+	dmode->vsync_end = dmode->vsync_start + vm->vsync_len;
+	dmode->vtotal = dmode->vsync_end + vm->vback_porch;
 
-// 	dmode->clock = vm->pixelclock / 1000;
+	dmode->clock = vm->pixelclock / 1000;
 
-// 	dmode->flags = 0;
-// 	if (vm->flags & DISPLAY_FLAGS_HSYNC_HIGH)
-// 		dmode->flags |= DRM_MODE_FLAG_PHSYNC;
-// 	else if (vm->flags & DISPLAY_FLAGS_HSYNC_LOW)
-// 		dmode->flags |= DRM_MODE_FLAG_NHSYNC;
-// 	if (vm->flags & DISPLAY_FLAGS_VSYNC_HIGH)
-// 		dmode->flags |= DRM_MODE_FLAG_PVSYNC;
-// 	else if (vm->flags & DISPLAY_FLAGS_VSYNC_LOW)
-// 		dmode->flags |= DRM_MODE_FLAG_NVSYNC;
-// 	if (vm->flags & DISPLAY_FLAGS_INTERLACED)
-// 		dmode->flags |= DRM_MODE_FLAG_INTERLACE;
-// 	if (vm->flags & DISPLAY_FLAGS_DOUBLESCAN)
-// 		dmode->flags |= DRM_MODE_FLAG_DBLSCAN;
-// 	if (vm->flags & DISPLAY_FLAGS_DOUBLECLK)
-// 		dmode->flags |= DRM_MODE_FLAG_DBLCLK;
-// 	drm_mode_set_name(dmode);
-// }
-// EXPORT_SYMBOL_GPL(drm_display_mode_from_videomode);
+	dmode->flags = 0;
+	if (vm->flags & DISPLAY_FLAGS_HSYNC_HIGH)
+		dmode->flags |= DRM_MODE_FLAG_PHSYNC;
+	else if (vm->flags & DISPLAY_FLAGS_HSYNC_LOW)
+		dmode->flags |= DRM_MODE_FLAG_NHSYNC;
+	if (vm->flags & DISPLAY_FLAGS_VSYNC_HIGH)
+		dmode->flags |= DRM_MODE_FLAG_PVSYNC;
+	else if (vm->flags & DISPLAY_FLAGS_VSYNC_LOW)
+		dmode->flags |= DRM_MODE_FLAG_NVSYNC;
+	if (vm->flags & DISPLAY_FLAGS_INTERLACED)
+		dmode->flags |= DRM_MODE_FLAG_INTERLACE;
+	if (vm->flags & DISPLAY_FLAGS_DOUBLESCAN)
+		dmode->flags |= DRM_MODE_FLAG_DBLSCAN;
+	if (vm->flags & DISPLAY_FLAGS_DOUBLECLK)
+		dmode->flags |= DRM_MODE_FLAG_DBLCLK;
+	drm_mode_set_name(dmode);
+}
+EXPORT_SYMBOL_GPL(drm_display_mode_from_videomode);
 
-// /**
-//  * drm_display_mode_to_videomode - fill in @vm using @dmode,
-//  * @dmode: drm_display_mode structure to use as source
-//  * @vm: videomode structure to use as destination
-//  *
-//  * Fills out @vm using the display mode specified in @dmode.
-//  */
-// void drm_display_mode_to_videomode(const struct drm_display_mode *dmode,
-// 				   struct videomode *vm)
-// {
-// 	vm->hactive = dmode->hdisplay;
-// 	vm->hfront_porch = dmode->hsync_start - dmode->hdisplay;
-// 	vm->hsync_len = dmode->hsync_end - dmode->hsync_start;
-// 	vm->hback_porch = dmode->htotal - dmode->hsync_end;
+/**
+ * drm_display_mode_to_videomode - fill in @vm using @dmode,
+ * @dmode: drm_display_mode structure to use as source
+ * @vm: videomode structure to use as destination
+ *
+ * Fills out @vm using the display mode specified in @dmode.
+ */
+void drm_display_mode_to_videomode(const struct drm_display_mode *dmode,
+				   struct videomode *vm)
+{
+	vm->hactive = dmode->hdisplay;
+	vm->hfront_porch = dmode->hsync_start - dmode->hdisplay;
+	vm->hsync_len = dmode->hsync_end - dmode->hsync_start;
+	vm->hback_porch = dmode->htotal - dmode->hsync_end;
 
-// 	vm->vactive = dmode->vdisplay;
-// 	vm->vfront_porch = dmode->vsync_start - dmode->vdisplay;
-// 	vm->vsync_len = dmode->vsync_end - dmode->vsync_start;
-// 	vm->vback_porch = dmode->vtotal - dmode->vsync_end;
+	vm->vactive = dmode->vdisplay;
+	vm->vfront_porch = dmode->vsync_start - dmode->vdisplay;
+	vm->vsync_len = dmode->vsync_end - dmode->vsync_start;
+	vm->vback_porch = dmode->vtotal - dmode->vsync_end;
 
-// 	vm->pixelclock = dmode->clock * 1000;
+	vm->pixelclock = dmode->clock * 1000;
 
-// 	vm->flags = 0;
-// 	if (dmode->flags & DRM_MODE_FLAG_PHSYNC)
-// 		vm->flags |= DISPLAY_FLAGS_HSYNC_HIGH;
-// 	else if (dmode->flags & DRM_MODE_FLAG_NHSYNC)
-// 		vm->flags |= DISPLAY_FLAGS_HSYNC_LOW;
-// 	if (dmode->flags & DRM_MODE_FLAG_PVSYNC)
-// 		vm->flags |= DISPLAY_FLAGS_VSYNC_HIGH;
-// 	else if (dmode->flags & DRM_MODE_FLAG_NVSYNC)
-// 		vm->flags |= DISPLAY_FLAGS_VSYNC_LOW;
-// 	if (dmode->flags & DRM_MODE_FLAG_INTERLACE)
-// 		vm->flags |= DISPLAY_FLAGS_INTERLACED;
-// 	if (dmode->flags & DRM_MODE_FLAG_DBLSCAN)
-// 		vm->flags |= DISPLAY_FLAGS_DOUBLESCAN;
-// 	if (dmode->flags & DRM_MODE_FLAG_DBLCLK)
-// 		vm->flags |= DISPLAY_FLAGS_DOUBLECLK;
-// }
-// EXPORT_SYMBOL_GPL(drm_display_mode_to_videomode);
+	vm->flags = 0;
+	if (dmode->flags & DRM_MODE_FLAG_PHSYNC)
+		vm->flags |= DISPLAY_FLAGS_HSYNC_HIGH;
+	else if (dmode->flags & DRM_MODE_FLAG_NHSYNC)
+		vm->flags |= DISPLAY_FLAGS_HSYNC_LOW;
+	if (dmode->flags & DRM_MODE_FLAG_PVSYNC)
+		vm->flags |= DISPLAY_FLAGS_VSYNC_HIGH;
+	else if (dmode->flags & DRM_MODE_FLAG_NVSYNC)
+		vm->flags |= DISPLAY_FLAGS_VSYNC_LOW;
+	if (dmode->flags & DRM_MODE_FLAG_INTERLACE)
+		vm->flags |= DISPLAY_FLAGS_INTERLACED;
+	if (dmode->flags & DRM_MODE_FLAG_DBLSCAN)
+		vm->flags |= DISPLAY_FLAGS_DOUBLESCAN;
+	if (dmode->flags & DRM_MODE_FLAG_DBLCLK)
+		vm->flags |= DISPLAY_FLAGS_DOUBLECLK;
+}
+EXPORT_SYMBOL_GPL(drm_display_mode_to_videomode);
 
-// /**
-//  * drm_bus_flags_from_videomode - extract information about pixelclk and
-//  * DE polarity from videomode and store it in a separate variable
-//  * @vm: videomode structure to use
-//  * @bus_flags: information about pixelclk, sync and DE polarity will be stored
-//  * here
-//  *
-//  * Sets DRM_BUS_FLAG_DE_(LOW|HIGH),  DRM_BUS_FLAG_PIXDATA_DRIVE_(POS|NEG)EDGE
-//  * and DISPLAY_FLAGS_SYNC_(POS|NEG)EDGE in @bus_flags according to DISPLAY_FLAGS
-//  * found in @vm
-//  */
-// void drm_bus_flags_from_videomode(const struct videomode *vm, u32 *bus_flags)
-// {
-// 	*bus_flags = 0;
-// 	if (vm->flags & DISPLAY_FLAGS_PIXDATA_POSEDGE)
-// 		*bus_flags |= DRM_BUS_FLAG_PIXDATA_DRIVE_POSEDGE;
-// 	if (vm->flags & DISPLAY_FLAGS_PIXDATA_NEGEDGE)
-// 		*bus_flags |= DRM_BUS_FLAG_PIXDATA_DRIVE_NEGEDGE;
+/**
+ * drm_bus_flags_from_videomode - extract information about pixelclk and
+ * DE polarity from videomode and store it in a separate variable
+ * @vm: videomode structure to use
+ * @bus_flags: information about pixelclk, sync and DE polarity will be stored
+ * here
+ *
+ * Sets DRM_BUS_FLAG_DE_(LOW|HIGH),  DRM_BUS_FLAG_PIXDATA_DRIVE_(POS|NEG)EDGE
+ * and DISPLAY_FLAGS_SYNC_(POS|NEG)EDGE in @bus_flags according to DISPLAY_FLAGS
+ * found in @vm
+ */
+void drm_bus_flags_from_videomode(const struct videomode *vm, u32 *bus_flags)
+{
+	*bus_flags = 0;
+	if (vm->flags & DISPLAY_FLAGS_PIXDATA_POSEDGE)
+		*bus_flags |= DRM_BUS_FLAG_PIXDATA_DRIVE_POSEDGE;
+	if (vm->flags & DISPLAY_FLAGS_PIXDATA_NEGEDGE)
+		*bus_flags |= DRM_BUS_FLAG_PIXDATA_DRIVE_NEGEDGE;
 
-// 	if (vm->flags & DISPLAY_FLAGS_SYNC_POSEDGE)
-// 		*bus_flags |= DRM_BUS_FLAG_SYNC_DRIVE_POSEDGE;
-// 	if (vm->flags & DISPLAY_FLAGS_SYNC_NEGEDGE)
-// 		*bus_flags |= DRM_BUS_FLAG_SYNC_DRIVE_NEGEDGE;
+	if (vm->flags & DISPLAY_FLAGS_SYNC_POSEDGE)
+		*bus_flags |= DRM_BUS_FLAG_SYNC_DRIVE_POSEDGE;
+	if (vm->flags & DISPLAY_FLAGS_SYNC_NEGEDGE)
+		*bus_flags |= DRM_BUS_FLAG_SYNC_DRIVE_NEGEDGE;
 
-// 	if (vm->flags & DISPLAY_FLAGS_DE_LOW)
-// 		*bus_flags |= DRM_BUS_FLAG_DE_LOW;
-// 	if (vm->flags & DISPLAY_FLAGS_DE_HIGH)
-// 		*bus_flags |= DRM_BUS_FLAG_DE_HIGH;
-// }
-// EXPORT_SYMBOL_GPL(drm_bus_flags_from_videomode);
+	if (vm->flags & DISPLAY_FLAGS_DE_LOW)
+		*bus_flags |= DRM_BUS_FLAG_DE_LOW;
+	if (vm->flags & DISPLAY_FLAGS_DE_HIGH)
+		*bus_flags |= DRM_BUS_FLAG_DE_HIGH;
+}
+EXPORT_SYMBOL_GPL(drm_bus_flags_from_videomode);
 
-// #ifdef CONFIG_OF
-// /**
-//  * of_get_drm_display_mode - get a drm_display_mode from devicetree
-//  * @np: device_node with the timing specification
-//  * @dmode: will be set to the return value
-//  * @bus_flags: information about pixelclk, sync and DE polarity
-//  * @index: index into the list of display timings in devicetree
-//  *
-//  * This function is expensive and should only be used, if only one mode is to be
-//  * read from DT. To get multiple modes start with of_get_display_timings and
-//  * work with that instead.
-//  *
-//  * Returns:
-//  * 0 on success, a negative errno code when no of videomode node was found.
-//  */
-// int of_get_drm_display_mode(struct device_node *np,
-// 			    struct drm_display_mode *dmode, u32 *bus_flags,
-// 			    int index)
-// {
-// 	struct videomode vm;
-// 	int ret;
+#ifdef CONFIG_OF
+/**
+ * of_get_drm_display_mode - get a drm_display_mode from devicetree
+ * @np: device_node with the timing specification
+ * @dmode: will be set to the return value
+ * @bus_flags: information about pixelclk, sync and DE polarity
+ * @index: index into the list of display timings in devicetree
+ *
+ * This function is expensive and should only be used, if only one mode is to be
+ * read from DT. To get multiple modes start with of_get_display_timings and
+ * work with that instead.
+ *
+ * Returns:
+ * 0 on success, a negative errno code when no of videomode node was found.
+ */
+int of_get_drm_display_mode(struct device_node *np,
+			    struct drm_display_mode *dmode, u32 *bus_flags,
+			    int index)
+{
+	struct videomode vm;
+	int ret;
 
-// 	ret = of_get_videomode(np, &vm, index);
-// 	if (ret)
-// 		return ret;
+	ret = of_get_videomode(np, &vm, index);
+	if (ret)
+		return ret;
 
-// 	drm_display_mode_from_videomode(&vm, dmode);
-// 	if (bus_flags)
-// 		drm_bus_flags_from_videomode(&vm, bus_flags);
+	drm_display_mode_from_videomode(&vm, dmode);
+	if (bus_flags)
+		drm_bus_flags_from_videomode(&vm, bus_flags);
 
-// 	pr_debug("%pOF: got %dx%d display mode\n",
-// 		np, vm.hactive, vm.vactive);
-// 	drm_mode_debug_printmodeline(dmode);
+	pr_debug("%pOF: got %dx%d display mode\n",
+		np, vm.hactive, vm.vactive);
+	drm_mode_debug_printmodeline(dmode);
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL_GPL(of_get_drm_display_mode);
-// #endif /* CONFIG_OF */
-// #endif /* CONFIG_VIDEOMODE_HELPERS */
+	return 0;
+}
+EXPORT_SYMBOL_GPL(of_get_drm_display_mode);
+#endif /* CONFIG_OF */
+#endif /* CONFIG_VIDEOMODE_HELPERS */
 
 /**
  * drm_mode_set_name - set the name on a mode
@@ -998,11 +1002,13 @@ static bool drm_mode_match_3d_flags(const struct drm_display_mode *mode1,
 		(mode2->flags & DRM_MODE_FLAG_3D_MASK);
 }
 
-// static bool drm_mode_match_aspect_ratio(const struct drm_display_mode *mode1,
-// 					const struct drm_display_mode *mode2)
-// {
-// 	return mode1->picture_aspect_ratio == mode2->picture_aspect_ratio;
-// }
+#if !defined(__AROS__)
+static bool drm_mode_match_aspect_ratio(const struct drm_display_mode *mode1,
+					const struct drm_display_mode *mode2)
+{
+	return mode1->picture_aspect_ratio == mode2->picture_aspect_ratio;
+}
+#endif
 
 /**
  * drm_mode_match - test modes for (partial) equality
@@ -1073,46 +1079,48 @@ bool drm_mode_equal(const struct drm_display_mode *mode1,
 }
 EXPORT_SYMBOL(drm_mode_equal);
 
-// /**
-//  * drm_mode_equal_no_clocks - test modes for equality
-//  * @mode1: first mode
-//  * @mode2: second mode
-//  *
-//  * Check to see if @mode1 and @mode2 are equivalent, but
-//  * don't check the pixel clocks.
-//  *
-//  * Returns:
-//  * True if the modes are equal, false otherwise.
-//  */
-// bool drm_mode_equal_no_clocks(const struct drm_display_mode *mode1,
-// 			      const struct drm_display_mode *mode2)
-// {
-// 	return drm_mode_match(mode1, mode2,
-// 			      DRM_MODE_MATCH_TIMINGS |
-// 			      DRM_MODE_MATCH_FLAGS |
-// 			      DRM_MODE_MATCH_3D_FLAGS);
-// }
-// EXPORT_SYMBOL(drm_mode_equal_no_clocks);
+#if !defined(__AROS__)
+/**
+ * drm_mode_equal_no_clocks - test modes for equality
+ * @mode1: first mode
+ * @mode2: second mode
+ *
+ * Check to see if @mode1 and @mode2 are equivalent, but
+ * don't check the pixel clocks.
+ *
+ * Returns:
+ * True if the modes are equal, false otherwise.
+ */
+bool drm_mode_equal_no_clocks(const struct drm_display_mode *mode1,
+			      const struct drm_display_mode *mode2)
+{
+	return drm_mode_match(mode1, mode2,
+			      DRM_MODE_MATCH_TIMINGS |
+			      DRM_MODE_MATCH_FLAGS |
+			      DRM_MODE_MATCH_3D_FLAGS);
+}
+EXPORT_SYMBOL(drm_mode_equal_no_clocks);
 
-// /**
-//  * drm_mode_equal_no_clocks_no_stereo - test modes for equality
-//  * @mode1: first mode
-//  * @mode2: second mode
-//  *
-//  * Check to see if @mode1 and @mode2 are equivalent, but
-//  * don't check the pixel clocks nor the stereo layout.
-//  *
-//  * Returns:
-//  * True if the modes are equal, false otherwise.
-//  */
-// bool drm_mode_equal_no_clocks_no_stereo(const struct drm_display_mode *mode1,
-// 					const struct drm_display_mode *mode2)
-// {
-// 	return drm_mode_match(mode1, mode2,
-// 			      DRM_MODE_MATCH_TIMINGS |
-// 			      DRM_MODE_MATCH_FLAGS);
-// }
-// EXPORT_SYMBOL(drm_mode_equal_no_clocks_no_stereo);
+/**
+ * drm_mode_equal_no_clocks_no_stereo - test modes for equality
+ * @mode1: first mode
+ * @mode2: second mode
+ *
+ * Check to see if @mode1 and @mode2 are equivalent, but
+ * don't check the pixel clocks nor the stereo layout.
+ *
+ * Returns:
+ * True if the modes are equal, false otherwise.
+ */
+bool drm_mode_equal_no_clocks_no_stereo(const struct drm_display_mode *mode1,
+					const struct drm_display_mode *mode2)
+{
+	return drm_mode_match(mode1, mode2,
+			      DRM_MODE_MATCH_TIMINGS |
+			      DRM_MODE_MATCH_FLAGS);
+}
+EXPORT_SYMBOL(drm_mode_equal_no_clocks_no_stereo);
+#endif
 
 static enum drm_mode_status
 drm_mode_validate_basic(const struct drm_display_mode *mode)
@@ -1232,62 +1240,64 @@ NOT_IMPLEMENTED_STOP
 }
 EXPORT_SYMBOL(drm_mode_validate_ycbcr420);
 
-// #define MODE_STATUS(status) [MODE_ ## status + 3] = #status
+#if !defined(__AROS__)
+#define MODE_STATUS(status) [MODE_ ## status + 3] = #status
 
-// static const char * const drm_mode_status_names[] = {
-// 	MODE_STATUS(OK),
-// 	MODE_STATUS(HSYNC),
-// 	MODE_STATUS(VSYNC),
-// 	MODE_STATUS(H_ILLEGAL),
-// 	MODE_STATUS(V_ILLEGAL),
-// 	MODE_STATUS(BAD_WIDTH),
-// 	MODE_STATUS(NOMODE),
-// 	MODE_STATUS(NO_INTERLACE),
-// 	MODE_STATUS(NO_DBLESCAN),
-// 	MODE_STATUS(NO_VSCAN),
-// 	MODE_STATUS(MEM),
-// 	MODE_STATUS(VIRTUAL_X),
-// 	MODE_STATUS(VIRTUAL_Y),
-// 	MODE_STATUS(MEM_VIRT),
-// 	MODE_STATUS(NOCLOCK),
-// 	MODE_STATUS(CLOCK_HIGH),
-// 	MODE_STATUS(CLOCK_LOW),
-// 	MODE_STATUS(CLOCK_RANGE),
-// 	MODE_STATUS(BAD_HVALUE),
-// 	MODE_STATUS(BAD_VVALUE),
-// 	MODE_STATUS(BAD_VSCAN),
-// 	MODE_STATUS(HSYNC_NARROW),
-// 	MODE_STATUS(HSYNC_WIDE),
-// 	MODE_STATUS(HBLANK_NARROW),
-// 	MODE_STATUS(HBLANK_WIDE),
-// 	MODE_STATUS(VSYNC_NARROW),
-// 	MODE_STATUS(VSYNC_WIDE),
-// 	MODE_STATUS(VBLANK_NARROW),
-// 	MODE_STATUS(VBLANK_WIDE),
-// 	MODE_STATUS(PANEL),
-// 	MODE_STATUS(INTERLACE_WIDTH),
-// 	MODE_STATUS(ONE_WIDTH),
-// 	MODE_STATUS(ONE_HEIGHT),
-// 	MODE_STATUS(ONE_SIZE),
-// 	MODE_STATUS(NO_REDUCED),
-// 	MODE_STATUS(NO_STEREO),
-// 	MODE_STATUS(NO_420),
-// 	MODE_STATUS(STALE),
-// 	MODE_STATUS(BAD),
-// 	MODE_STATUS(ERROR),
-// };
+static const char * const drm_mode_status_names[] = {
+	MODE_STATUS(OK),
+	MODE_STATUS(HSYNC),
+	MODE_STATUS(VSYNC),
+	MODE_STATUS(H_ILLEGAL),
+	MODE_STATUS(V_ILLEGAL),
+	MODE_STATUS(BAD_WIDTH),
+	MODE_STATUS(NOMODE),
+	MODE_STATUS(NO_INTERLACE),
+	MODE_STATUS(NO_DBLESCAN),
+	MODE_STATUS(NO_VSCAN),
+	MODE_STATUS(MEM),
+	MODE_STATUS(VIRTUAL_X),
+	MODE_STATUS(VIRTUAL_Y),
+	MODE_STATUS(MEM_VIRT),
+	MODE_STATUS(NOCLOCK),
+	MODE_STATUS(CLOCK_HIGH),
+	MODE_STATUS(CLOCK_LOW),
+	MODE_STATUS(CLOCK_RANGE),
+	MODE_STATUS(BAD_HVALUE),
+	MODE_STATUS(BAD_VVALUE),
+	MODE_STATUS(BAD_VSCAN),
+	MODE_STATUS(HSYNC_NARROW),
+	MODE_STATUS(HSYNC_WIDE),
+	MODE_STATUS(HBLANK_NARROW),
+	MODE_STATUS(HBLANK_WIDE),
+	MODE_STATUS(VSYNC_NARROW),
+	MODE_STATUS(VSYNC_WIDE),
+	MODE_STATUS(VBLANK_NARROW),
+	MODE_STATUS(VBLANK_WIDE),
+	MODE_STATUS(PANEL),
+	MODE_STATUS(INTERLACE_WIDTH),
+	MODE_STATUS(ONE_WIDTH),
+	MODE_STATUS(ONE_HEIGHT),
+	MODE_STATUS(ONE_SIZE),
+	MODE_STATUS(NO_REDUCED),
+	MODE_STATUS(NO_STEREO),
+	MODE_STATUS(NO_420),
+	MODE_STATUS(STALE),
+	MODE_STATUS(BAD),
+	MODE_STATUS(ERROR),
+};
 
-// #undef MODE_STATUS
+#undef MODE_STATUS
 
-// const char *drm_get_mode_status_name(enum drm_mode_status status)
-// {
-// 	int index = status + 3;
+const char *drm_get_mode_status_name(enum drm_mode_status status)
+{
+	int index = status + 3;
 
-// 	if (WARN_ON(index < 0 || index >= ARRAY_SIZE(drm_mode_status_names)))
-// 		return "";
+	if (WARN_ON(index < 0 || index >= ARRAY_SIZE(drm_mode_status_names)))
+		return "";
 
-// 	return drm_mode_status_names[index];
-// }
+	return drm_mode_status_names[index];
+}
+#endif
 
 /**
  * drm_mode_prune_invalid - remove invalid modes from mode list
@@ -1384,7 +1394,9 @@ void drm_connector_list_update(struct drm_connector *connector)
 {
 	struct drm_display_mode *pmode, *pt;
 
-	// WARN_ON(!mutex_is_locked(&connector->dev->mode_config.mutex));
+#if !defined(__AROS__)
+	WARN_ON(!mutex_is_locked(&connector->dev->mode_config.mutex));
+#endif
 
 	list_for_each_entry_safe(pmode, pt, &connector->probed_modes, head) {
 		struct drm_display_mode *mode;
@@ -2069,60 +2081,62 @@ int drm_mode_convert_umode(struct drm_device *dev,
 	return 0;
 }
 
-// /**
-//  * drm_mode_is_420_only - if a given videomode can be only supported in YCBCR420
-//  * output format
-//  *
-//  * @display: display under action
-//  * @mode: video mode to be tested.
-//  *
-//  * Returns:
-//  * true if the mode can be supported in YCBCR420 format
-//  * false if not.
-//  */
-// bool drm_mode_is_420_only(const struct drm_display_info *display,
-// 			  const struct drm_display_mode *mode)
-// {
-// 	u8 vic = drm_match_cea_mode(mode);
+#if !defined(__AROS__)
+/**
+ * drm_mode_is_420_only - if a given videomode can be only supported in YCBCR420
+ * output format
+ *
+ * @display: display under action
+ * @mode: video mode to be tested.
+ *
+ * Returns:
+ * true if the mode can be supported in YCBCR420 format
+ * false if not.
+ */
+bool drm_mode_is_420_only(const struct drm_display_info *display,
+			  const struct drm_display_mode *mode)
+{
+	u8 vic = drm_match_cea_mode(mode);
 
-// 	return test_bit(vic, display->hdmi.y420_vdb_modes);
-// }
-// EXPORT_SYMBOL(drm_mode_is_420_only);
+	return test_bit(vic, display->hdmi.y420_vdb_modes);
+}
+EXPORT_SYMBOL(drm_mode_is_420_only);
 
-// /**
-//  * drm_mode_is_420_also - if a given videomode can be supported in YCBCR420
-//  * output format also (along with RGB/YCBCR444/422)
-//  *
-//  * @display: display under action.
-//  * @mode: video mode to be tested.
-//  *
-//  * Returns:
-//  * true if the mode can be support YCBCR420 format
-//  * false if not.
-//  */
-// bool drm_mode_is_420_also(const struct drm_display_info *display,
-// 			  const struct drm_display_mode *mode)
-// {
-// 	u8 vic = drm_match_cea_mode(mode);
+/**
+ * drm_mode_is_420_also - if a given videomode can be supported in YCBCR420
+ * output format also (along with RGB/YCBCR444/422)
+ *
+ * @display: display under action.
+ * @mode: video mode to be tested.
+ *
+ * Returns:
+ * true if the mode can be support YCBCR420 format
+ * false if not.
+ */
+bool drm_mode_is_420_also(const struct drm_display_info *display,
+			  const struct drm_display_mode *mode)
+{
+	u8 vic = drm_match_cea_mode(mode);
 
-// 	return test_bit(vic, display->hdmi.y420_cmdb_modes);
-// }
-// EXPORT_SYMBOL(drm_mode_is_420_also);
-// /**
-//  * drm_mode_is_420 - if a given videomode can be supported in YCBCR420
-//  * output format
-//  *
-//  * @display: display under action.
-//  * @mode: video mode to be tested.
-//  *
-//  * Returns:
-//  * true if the mode can be supported in YCBCR420 format
-//  * false if not.
-//  */
-// bool drm_mode_is_420(const struct drm_display_info *display,
-// 		     const struct drm_display_mode *mode)
-// {
-// 	return drm_mode_is_420_only(display, mode) ||
-// 		drm_mode_is_420_also(display, mode);
-// }
-// EXPORT_SYMBOL(drm_mode_is_420);
+	return test_bit(vic, display->hdmi.y420_cmdb_modes);
+}
+EXPORT_SYMBOL(drm_mode_is_420_also);
+/**
+ * drm_mode_is_420 - if a given videomode can be supported in YCBCR420
+ * output format
+ *
+ * @display: display under action.
+ * @mode: video mode to be tested.
+ *
+ * Returns:
+ * true if the mode can be supported in YCBCR420 format
+ * false if not.
+ */
+bool drm_mode_is_420(const struct drm_display_info *display,
+		     const struct drm_display_mode *mode)
+{
+	return drm_mode_is_420_only(display, mode) ||
+		drm_mode_is_420_also(display, mode);
+}
+EXPORT_SYMBOL(drm_mode_is_420);
+#endif

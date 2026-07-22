@@ -44,9 +44,13 @@
 #include "nouveau_vmm.h"
 #include "nouveau_svm.h"
 
-// MODULE_PARM_DESC(vram_pushbuf, "Create DMA push buffers in VRAM");
+#if !defined(__AROS__)
+MODULE_PARM_DESC(vram_pushbuf, "Create DMA push buffers in VRAM");
+#endif
 int nouveau_vram_pushbuf;
-// module_param_named(vram_pushbuf, nouveau_vram_pushbuf, int, 0400);
+#if !defined(__AROS__)
+module_param_named(vram_pushbuf, nouveau_vram_pushbuf, int, 0400);
+#endif
 
 static int
 nouveau_channel_killed(struct nvif_notify *ntfy)

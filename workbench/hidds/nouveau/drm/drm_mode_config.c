@@ -65,13 +65,15 @@ err_plane:
 	return ret;
 }
 
-// void drm_modeset_unregister_all(struct drm_device *dev)
-// {
-// 	drm_connector_unregister_all(dev);
-// 	drm_encoder_unregister_all(dev);
-// 	drm_crtc_unregister_all(dev);
-// 	drm_plane_unregister_all(dev);
-// }
+#if !defined(__AROS__)
+void drm_modeset_unregister_all(struct drm_device *dev)
+{
+	drm_connector_unregister_all(dev);
+	drm_encoder_unregister_all(dev);
+	drm_crtc_unregister_all(dev);
+	drm_plane_unregister_all(dev);
+}
+#endif
 
 /**
  * drm_mode_getresources - get graphics configuration

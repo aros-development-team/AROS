@@ -32,9 +32,13 @@
 #include <nvif/class.h>
 #include <nvif/cl5070.h>
 
-// MODULE_PARM_DESC(mst, "Enable DisplayPort multi-stream (default: enabled)");
+#if !defined(__AROS__)
+MODULE_PARM_DESC(mst, "Enable DisplayPort multi-stream (default: enabled)");
+#endif
 static int nouveau_mst = 1;
-// module_param_named(mst, nouveau_mst, int, 0400);
+#if !defined(__AROS__)
+module_param_named(mst, nouveau_mst, int, 0400);
+#endif
 
 static void
 nouveau_dp_probe_oui(struct drm_device *dev, struct nvkm_i2c_aux *aux, u8 *dpcd)

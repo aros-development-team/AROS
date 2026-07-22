@@ -366,7 +366,9 @@ nvkm_therm_oneinit(struct nvkm_subdev *subdev)
 	nvkm_therm_sensor_ctor(therm);
 	nvkm_therm_ic_ctor(therm);
 	nvkm_therm_fan_ctor(therm);
-	// nvkm_therm_fan_mode(therm, NVKM_THERM_CTRL_AUTO);
+#if !defined(__AROS__)
+	nvkm_therm_fan_mode(therm, NVKM_THERM_CTRL_AUTO);
+#endif
 bug("temp: %d\n", therm->func->temp_get(therm));
 bug("FIXME: THERM: fan control!!\n");
     nvkm_therm_fan_mode(therm, NVKM_THERM_CTRL_NONE);

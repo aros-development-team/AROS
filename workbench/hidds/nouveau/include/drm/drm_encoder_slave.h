@@ -141,25 +141,27 @@ static inline struct i2c_client *drm_i2c_encoder_get_client(struct drm_encoder *
 	return (struct i2c_client *)to_encoder_slave(encoder)->bus_priv;
 }
 
-// /**
-//  * drm_i2c_encoder_register - Register an I2C encoder driver
-//  * @owner:	Module containing the driver.
-//  * @driver:	Driver to be registered.
-//  */
-// static inline int drm_i2c_encoder_register(struct module *owner,
-// 					   struct drm_i2c_encoder_driver *driver)
-// {
-// 	return i2c_register_driver(owner, &driver->i2c_driver);
-// }
+#if !defined(__AROS__)
+/**
+ * drm_i2c_encoder_register - Register an I2C encoder driver
+ * @owner:	Module containing the driver.
+ * @driver:	Driver to be registered.
+ */
+static inline int drm_i2c_encoder_register(struct module *owner,
+					   struct drm_i2c_encoder_driver *driver)
+{
+	return i2c_register_driver(owner, &driver->i2c_driver);
+}
 
-// /**
-//  * drm_i2c_encoder_unregister - Unregister an I2C encoder driver
-//  * @driver:	Driver to be unregistered.
-//  */
-// static inline void drm_i2c_encoder_unregister(struct drm_i2c_encoder_driver *driver)
-// {
-// 	i2c_del_driver(&driver->i2c_driver);
-// }
+/**
+ * drm_i2c_encoder_unregister - Unregister an I2C encoder driver
+ * @driver:	Driver to be unregistered.
+ */
+static inline void drm_i2c_encoder_unregister(struct drm_i2c_encoder_driver *driver)
+{
+	i2c_del_driver(&driver->i2c_driver);
+}
+#endif
 
 void drm_i2c_encoder_destroy(struct drm_encoder *encoder);
 

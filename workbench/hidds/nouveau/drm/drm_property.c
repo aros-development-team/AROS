@@ -27,7 +27,9 @@
 
 #include <drm/drm_crtc.h>
 #include <drm/drm_drv.h>
-// #include <drm/drm_file.h>
+#if !defined(__AROS__)
+#include <drm/drm_file.h>
+#endif
 #include <drm/drm_framebuffer.h>
 #include <drm/drm_property.h>
 
@@ -189,57 +191,59 @@ struct drm_property *drm_property_create_enum(struct drm_device *dev,
 }
 EXPORT_SYMBOL(drm_property_create_enum);
 
-// /**
-//  * drm_property_create_bitmask - create a new bitmask property type
-//  * @dev: drm device
-//  * @flags: flags specifying the property type
-//  * @name: name of the property
-//  * @props: enumeration lists with property bitflags
-//  * @num_props: size of the @props array
-//  * @supported_bits: bitmask of all supported enumeration values
-//  *
-//  * This creates a new bitmask drm property which can then be attached to a drm
-//  * object with drm_object_attach_property(). The returned property object must
-//  * be freed with drm_property_destroy(), which is done automatically when
-//  * calling drm_mode_config_cleanup().
-//  *
-//  * Compared to plain enumeration properties userspace is allowed to set any
-//  * or'ed together combination of the predefined property bitflag values
-//  *
-//  * Returns:
-//  * A pointer to the newly created property on success, NULL on failure.
-//  */
-// struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
-// 						 u32 flags, const char *name,
-// 						 const struct drm_prop_enum_list *props,
-// 						 int num_props,
-// 						 uint64_t supported_bits)
-// {
-// 	struct drm_property *property;
-// 	int i, ret;
-// 	int num_values = hweight64(supported_bits);
+#if !defined(__AROS__)
+/**
+ * drm_property_create_bitmask - create a new bitmask property type
+ * @dev: drm device
+ * @flags: flags specifying the property type
+ * @name: name of the property
+ * @props: enumeration lists with property bitflags
+ * @num_props: size of the @props array
+ * @supported_bits: bitmask of all supported enumeration values
+ *
+ * This creates a new bitmask drm property which can then be attached to a drm
+ * object with drm_object_attach_property(). The returned property object must
+ * be freed with drm_property_destroy(), which is done automatically when
+ * calling drm_mode_config_cleanup().
+ *
+ * Compared to plain enumeration properties userspace is allowed to set any
+ * or'ed together combination of the predefined property bitflag values
+ *
+ * Returns:
+ * A pointer to the newly created property on success, NULL on failure.
+ */
+struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
+						 u32 flags, const char *name,
+						 const struct drm_prop_enum_list *props,
+						 int num_props,
+						 uint64_t supported_bits)
+{
+	struct drm_property *property;
+	int i, ret;
+	int num_values = hweight64(supported_bits);
 
-// 	flags |= DRM_MODE_PROP_BITMASK;
+	flags |= DRM_MODE_PROP_BITMASK;
 
-// 	property = drm_property_create(dev, flags, name, num_values);
-// 	if (!property)
-// 		return NULL;
-// 	for (i = 0; i < num_props; i++) {
-// 		if (!(supported_bits & (1ULL << props[i].type)))
-// 			continue;
+	property = drm_property_create(dev, flags, name, num_values);
+	if (!property)
+		return NULL;
+	for (i = 0; i < num_props; i++) {
+		if (!(supported_bits & (1ULL << props[i].type)))
+			continue;
 
-// 		ret = drm_property_add_enum(property,
-// 					    props[i].type,
-// 					    props[i].name);
-// 		if (ret) {
-// 			drm_property_destroy(dev, property);
-// 			return NULL;
-// 		}
-// 	}
+		ret = drm_property_add_enum(property,
+					    props[i].type,
+					    props[i].name);
+		if (ret) {
+			drm_property_destroy(dev, property);
+			return NULL;
+		}
+	}
 
-// 	return property;
-// }
-// EXPORT_SYMBOL(drm_property_create_bitmask);
+	return property;
+}
+EXPORT_SYMBOL(drm_property_create_bitmask);
+#endif
 
 static struct drm_property *property_create_range(struct drm_device *dev,
 						  u32 flags, const char *name,
@@ -458,75 +462,77 @@ void drm_property_destroy(struct drm_device *dev, struct drm_property *property)
 }
 EXPORT_SYMBOL(drm_property_destroy);
 
-// int drm_mode_getproperty_ioctl(struct drm_device *dev,
-// 			       void *data, struct drm_file *file_priv)
-// {
-// 	struct drm_mode_get_property *out_resp = data;
-// 	struct drm_property *property;
-// 	int enum_count = 0;
-// 	int value_count = 0;
-// 	int i, copied;
-// 	struct drm_property_enum *prop_enum;
-// 	struct drm_mode_property_enum __user *enum_ptr;
-// 	uint64_t __user *values_ptr;
+#if !defined(__AROS__)
+int drm_mode_getproperty_ioctl(struct drm_device *dev,
+			       void *data, struct drm_file *file_priv)
+{
+	struct drm_mode_get_property *out_resp = data;
+	struct drm_property *property;
+	int enum_count = 0;
+	int value_count = 0;
+	int i, copied;
+	struct drm_property_enum *prop_enum;
+	struct drm_mode_property_enum __user *enum_ptr;
+	uint64_t __user *values_ptr;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	property = drm_property_find(dev, file_priv, out_resp->prop_id);
-// 	if (!property)
-// 		return -ENOENT;
+	property = drm_property_find(dev, file_priv, out_resp->prop_id);
+	if (!property)
+		return -ENOENT;
 
-// 	strncpy(out_resp->name, property->name, DRM_PROP_NAME_LEN);
-// 	out_resp->name[DRM_PROP_NAME_LEN-1] = 0;
-// 	out_resp->flags = property->flags;
+	strncpy(out_resp->name, property->name, DRM_PROP_NAME_LEN);
+	out_resp->name[DRM_PROP_NAME_LEN-1] = 0;
+	out_resp->flags = property->flags;
 
-// 	value_count = property->num_values;
-// 	values_ptr = u64_to_user_ptr(out_resp->values_ptr);
+	value_count = property->num_values;
+	values_ptr = u64_to_user_ptr(out_resp->values_ptr);
 
-// 	for (i = 0; i < value_count; i++) {
-// 		if (i < out_resp->count_values &&
-// 		    put_user(property->values[i], values_ptr + i)) {
-// 			return -EFAULT;
-// 		}
-// 	}
-// 	out_resp->count_values = value_count;
+	for (i = 0; i < value_count; i++) {
+		if (i < out_resp->count_values &&
+		    put_user(property->values[i], values_ptr + i)) {
+			return -EFAULT;
+		}
+	}
+	out_resp->count_values = value_count;
 
-// 	copied = 0;
-// 	enum_ptr = u64_to_user_ptr(out_resp->enum_blob_ptr);
+	copied = 0;
+	enum_ptr = u64_to_user_ptr(out_resp->enum_blob_ptr);
 
-// 	if (drm_property_type_is(property, DRM_MODE_PROP_ENUM) ||
-// 	    drm_property_type_is(property, DRM_MODE_PROP_BITMASK)) {
-// 		list_for_each_entry(prop_enum, &property->enum_list, head) {
-// 			enum_count++;
-// 			if (out_resp->count_enum_blobs < enum_count)
-// 				continue;
+	if (drm_property_type_is(property, DRM_MODE_PROP_ENUM) ||
+	    drm_property_type_is(property, DRM_MODE_PROP_BITMASK)) {
+		list_for_each_entry(prop_enum, &property->enum_list, head) {
+			enum_count++;
+			if (out_resp->count_enum_blobs < enum_count)
+				continue;
 
-// 			if (copy_to_user(&enum_ptr[copied].value,
-// 					 &prop_enum->value, sizeof(uint64_t)))
-// 				return -EFAULT;
+			if (copy_to_user(&enum_ptr[copied].value,
+					 &prop_enum->value, sizeof(uint64_t)))
+				return -EFAULT;
 
-// 			if (copy_to_user(&enum_ptr[copied].name,
-// 					 &prop_enum->name, DRM_PROP_NAME_LEN))
-// 				return -EFAULT;
-// 			copied++;
-// 		}
-// 		out_resp->count_enum_blobs = enum_count;
-// 	}
+			if (copy_to_user(&enum_ptr[copied].name,
+					 &prop_enum->name, DRM_PROP_NAME_LEN))
+				return -EFAULT;
+			copied++;
+		}
+		out_resp->count_enum_blobs = enum_count;
+	}
 
-// 	/*
-// 	 * NOTE: The idea seems to have been to use this to read all the blob
-// 	 * property values. But nothing ever added them to the corresponding
-// 	 * list, userspace always used the special-purpose get_blob ioctl to
-// 	 * read the value for a blob property. It also doesn't make a lot of
-// 	 * sense to return values here when everything else is just metadata for
-// 	 * the property itself.
-// 	 */
-// 	if (drm_property_type_is(property, DRM_MODE_PROP_BLOB))
-// 		out_resp->count_enum_blobs = 0;
+	/*
+	 * NOTE: The idea seems to have been to use this to read all the blob
+	 * property values. But nothing ever added them to the corresponding
+	 * list, userspace always used the special-purpose get_blob ioctl to
+	 * read the value for a blob property. It also doesn't make a lot of
+	 * sense to return values here when everything else is just metadata for
+	 * the property itself.
+	 */
+	if (drm_property_type_is(property, DRM_MODE_PROP_BLOB))
+		out_resp->count_enum_blobs = 0;
 
-// 	return 0;
-// }
+	return 0;
+}
+#endif
 
 static void drm_property_free_blob(struct kref *kref)
 {
@@ -611,20 +617,22 @@ void drm_property_blob_put(struct drm_property_blob *blob)
 }
 EXPORT_SYMBOL(drm_property_blob_put);
 
-// void drm_property_destroy_user_blobs(struct drm_device *dev,
-// 				     struct drm_file *file_priv)
-// {
-// 	struct drm_property_blob *blob, *bt;
+#if !defined(__AROS__)
+void drm_property_destroy_user_blobs(struct drm_device *dev,
+				     struct drm_file *file_priv)
+{
+	struct drm_property_blob *blob, *bt;
 
-// 	/*
-// 	 * When the file gets released that means no one else can access the
-// 	 * blob list any more, so no need to grab dev->blob_lock.
-// 	 */
-// 	list_for_each_entry_safe(blob, bt, &file_priv->blobs, head_file) {
-// 		list_del_init(&blob->head_file);
-// 		drm_property_blob_put(blob);
-// 	}
-// }
+	/*
+	 * When the file gets released that means no one else can access the
+	 * blob list any more, so no need to grab dev->blob_lock.
+	 */
+	list_for_each_entry_safe(blob, bt, &file_priv->blobs, head_file) {
+		list_del_init(&blob->head_file);
+		drm_property_blob_put(blob);
+	}
+}
+#endif
 
 /**
  * drm_property_blob_get - acquire blob property reference
@@ -640,30 +648,32 @@ struct drm_property_blob *drm_property_blob_get(struct drm_property_blob *blob)
 }
 EXPORT_SYMBOL(drm_property_blob_get);
 
-// /**
-//  * drm_property_lookup_blob - look up a blob property and take a reference
-//  * @dev: drm device
-//  * @id: id of the blob property
-//  *
-//  * If successful, this takes an additional reference to the blob property.
-//  * callers need to make sure to eventually unreference the returned property
-//  * again, using drm_property_blob_put().
-//  *
-//  * Return:
-//  * NULL on failure, pointer to the blob on success.
-//  */
-// struct drm_property_blob *drm_property_lookup_blob(struct drm_device *dev,
-// 					           uint32_t id)
-// {
-// 	struct drm_mode_object *obj;
-// 	struct drm_property_blob *blob = NULL;
+#if !defined(__AROS__)
+/**
+ * drm_property_lookup_blob - look up a blob property and take a reference
+ * @dev: drm device
+ * @id: id of the blob property
+ *
+ * If successful, this takes an additional reference to the blob property.
+ * callers need to make sure to eventually unreference the returned property
+ * again, using drm_property_blob_put().
+ *
+ * Return:
+ * NULL on failure, pointer to the blob on success.
+ */
+struct drm_property_blob *drm_property_lookup_blob(struct drm_device *dev,
+					           uint32_t id)
+{
+	struct drm_mode_object *obj;
+	struct drm_property_blob *blob = NULL;
 
-// 	obj = __drm_mode_object_find(dev, NULL, id, DRM_MODE_OBJECT_BLOB);
-// 	if (obj)
-// 		blob = obj_to_blob(obj);
-// 	return blob;
-// }
-// EXPORT_SYMBOL(drm_property_lookup_blob);
+	obj = __drm_mode_object_find(dev, NULL, id, DRM_MODE_OBJECT_BLOB);
+	if (obj)
+		blob = obj_to_blob(obj);
+	return blob;
+}
+EXPORT_SYMBOL(drm_property_lookup_blob);
+#endif
 
 /**
  * drm_property_replace_global_blob - replace existing blob property
@@ -756,190 +766,192 @@ bool drm_property_replace_blob(struct drm_property_blob **blob,
 }
 EXPORT_SYMBOL(drm_property_replace_blob);
 
-// int drm_mode_getblob_ioctl(struct drm_device *dev,
-// 			   void *data, struct drm_file *file_priv)
-// {
-// 	struct drm_mode_get_blob *out_resp = data;
-// 	struct drm_property_blob *blob;
-// 	int ret = 0;
+#if !defined(__AROS__)
+int drm_mode_getblob_ioctl(struct drm_device *dev,
+			   void *data, struct drm_file *file_priv)
+{
+	struct drm_mode_get_blob *out_resp = data;
+	struct drm_property_blob *blob;
+	int ret = 0;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	blob = drm_property_lookup_blob(dev, out_resp->blob_id);
-// 	if (!blob)
-// 		return -ENOENT;
+	blob = drm_property_lookup_blob(dev, out_resp->blob_id);
+	if (!blob)
+		return -ENOENT;
 
-// 	if (out_resp->length == blob->length) {
-// 		if (copy_to_user(u64_to_user_ptr(out_resp->data),
-// 				 blob->data,
-// 				 blob->length)) {
-// 			ret = -EFAULT;
-// 			goto unref;
-// 		}
-// 	}
-// 	out_resp->length = blob->length;
-// unref:
-// 	drm_property_blob_put(blob);
+	if (out_resp->length == blob->length) {
+		if (copy_to_user(u64_to_user_ptr(out_resp->data),
+				 blob->data,
+				 blob->length)) {
+			ret = -EFAULT;
+			goto unref;
+		}
+	}
+	out_resp->length = blob->length;
+unref:
+	drm_property_blob_put(blob);
 
-// 	return ret;
-// }
+	return ret;
+}
 
-// int drm_mode_createblob_ioctl(struct drm_device *dev,
-// 			      void *data, struct drm_file *file_priv)
-// {
-// 	struct drm_mode_create_blob *out_resp = data;
-// 	struct drm_property_blob *blob;
-// 	int ret = 0;
+int drm_mode_createblob_ioctl(struct drm_device *dev,
+			      void *data, struct drm_file *file_priv)
+{
+	struct drm_mode_create_blob *out_resp = data;
+	struct drm_property_blob *blob;
+	int ret = 0;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	blob = drm_property_create_blob(dev, out_resp->length, NULL);
-// 	if (IS_ERR(blob))
-// 		return PTR_ERR(blob);
+	blob = drm_property_create_blob(dev, out_resp->length, NULL);
+	if (IS_ERR(blob))
+		return PTR_ERR(blob);
 
-// 	if (copy_from_user(blob->data,
-// 			   u64_to_user_ptr(out_resp->data),
-// 			   out_resp->length)) {
-// 		ret = -EFAULT;
-// 		goto out_blob;
-// 	}
+	if (copy_from_user(blob->data,
+			   u64_to_user_ptr(out_resp->data),
+			   out_resp->length)) {
+		ret = -EFAULT;
+		goto out_blob;
+	}
 
-// 	/* Dropping the lock between create_blob and our access here is safe
-// 	 * as only the same file_priv can remove the blob; at this point, it is
-// 	 * not associated with any file_priv. */
-// 	mutex_lock(&dev->mode_config.blob_lock);
-// 	out_resp->blob_id = blob->base.id;
-// 	list_add_tail(&blob->head_file, &file_priv->blobs);
-// 	mutex_unlock(&dev->mode_config.blob_lock);
+	/* Dropping the lock between create_blob and our access here is safe
+	 * as only the same file_priv can remove the blob; at this point, it is
+	 * not associated with any file_priv. */
+	mutex_lock(&dev->mode_config.blob_lock);
+	out_resp->blob_id = blob->base.id;
+	list_add_tail(&blob->head_file, &file_priv->blobs);
+	mutex_unlock(&dev->mode_config.blob_lock);
 
-// 	return 0;
+	return 0;
 
-// out_blob:
-// 	drm_property_blob_put(blob);
-// 	return ret;
-// }
+out_blob:
+	drm_property_blob_put(blob);
+	return ret;
+}
 
-// int drm_mode_destroyblob_ioctl(struct drm_device *dev,
-// 			       void *data, struct drm_file *file_priv)
-// {
-// 	struct drm_mode_destroy_blob *out_resp = data;
-// 	struct drm_property_blob *blob = NULL, *bt;
-// 	bool found = false;
-// 	int ret = 0;
+int drm_mode_destroyblob_ioctl(struct drm_device *dev,
+			       void *data, struct drm_file *file_priv)
+{
+	struct drm_mode_destroy_blob *out_resp = data;
+	struct drm_property_blob *blob = NULL, *bt;
+	bool found = false;
+	int ret = 0;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	blob = drm_property_lookup_blob(dev, out_resp->blob_id);
-// 	if (!blob)
-// 		return -ENOENT;
+	blob = drm_property_lookup_blob(dev, out_resp->blob_id);
+	if (!blob)
+		return -ENOENT;
 
-// 	mutex_lock(&dev->mode_config.blob_lock);
-// 	/* Ensure the property was actually created by this user. */
-// 	list_for_each_entry(bt, &file_priv->blobs, head_file) {
-// 		if (bt == blob) {
-// 			found = true;
-// 			break;
-// 		}
-// 	}
+	mutex_lock(&dev->mode_config.blob_lock);
+	/* Ensure the property was actually created by this user. */
+	list_for_each_entry(bt, &file_priv->blobs, head_file) {
+		if (bt == blob) {
+			found = true;
+			break;
+		}
+	}
 
-// 	if (!found) {
-// 		ret = -EPERM;
-// 		goto err;
-// 	}
+	if (!found) {
+		ret = -EPERM;
+		goto err;
+	}
 
-// 	/* We must drop head_file here, because we may not be the last
-// 	 * reference on the blob. */
-// 	list_del_init(&blob->head_file);
-// 	mutex_unlock(&dev->mode_config.blob_lock);
+	/* We must drop head_file here, because we may not be the last
+	 * reference on the blob. */
+	list_del_init(&blob->head_file);
+	mutex_unlock(&dev->mode_config.blob_lock);
 
-// 	/* One reference from lookup, and one from the filp. */
-// 	drm_property_blob_put(blob);
-// 	drm_property_blob_put(blob);
+	/* One reference from lookup, and one from the filp. */
+	drm_property_blob_put(blob);
+	drm_property_blob_put(blob);
 
-// 	return 0;
+	return 0;
 
-// err:
-// 	mutex_unlock(&dev->mode_config.blob_lock);
-// 	drm_property_blob_put(blob);
+err:
+	mutex_unlock(&dev->mode_config.blob_lock);
+	drm_property_blob_put(blob);
 
-// 	return ret;
-// }
+	return ret;
+}
 
-// /* Some properties could refer to dynamic refcnt'd objects, or things that
-//  * need special locking to handle lifetime issues (ie. to ensure the prop
-//  * value doesn't become invalid part way through the property update due to
-//  * race).  The value returned by reference via 'obj' should be passed back
-//  * to drm_property_change_valid_put() after the property is set (and the
-//  * object to which the property is attached has a chance to take its own
-//  * reference).
-//  */
-// bool drm_property_change_valid_get(struct drm_property *property,
-// 				   uint64_t value, struct drm_mode_object **ref)
-// {
-// 	int i;
+/* Some properties could refer to dynamic refcnt'd objects, or things that
+ * need special locking to handle lifetime issues (ie. to ensure the prop
+ * value doesn't become invalid part way through the property update due to
+ * race).  The value returned by reference via 'obj' should be passed back
+ * to drm_property_change_valid_put() after the property is set (and the
+ * object to which the property is attached has a chance to take its own
+ * reference).
+ */
+bool drm_property_change_valid_get(struct drm_property *property,
+				   uint64_t value, struct drm_mode_object **ref)
+{
+	int i;
 
-// 	if (property->flags & DRM_MODE_PROP_IMMUTABLE)
-// 		return false;
+	if (property->flags & DRM_MODE_PROP_IMMUTABLE)
+		return false;
 
-// 	*ref = NULL;
+	*ref = NULL;
 
-// 	if (drm_property_type_is(property, DRM_MODE_PROP_RANGE)) {
-// 		if (value < property->values[0] || value > property->values[1])
-// 			return false;
-// 		return true;
-// 	} else if (drm_property_type_is(property, DRM_MODE_PROP_SIGNED_RANGE)) {
-// 		int64_t svalue = U642I64(value);
+	if (drm_property_type_is(property, DRM_MODE_PROP_RANGE)) {
+		if (value < property->values[0] || value > property->values[1])
+			return false;
+		return true;
+	} else if (drm_property_type_is(property, DRM_MODE_PROP_SIGNED_RANGE)) {
+		int64_t svalue = U642I64(value);
 
-// 		if (svalue < U642I64(property->values[0]) ||
-// 				svalue > U642I64(property->values[1]))
-// 			return false;
-// 		return true;
-// 	} else if (drm_property_type_is(property, DRM_MODE_PROP_BITMASK)) {
-// 		uint64_t valid_mask = 0;
+		if (svalue < U642I64(property->values[0]) ||
+				svalue > U642I64(property->values[1]))
+			return false;
+		return true;
+	} else if (drm_property_type_is(property, DRM_MODE_PROP_BITMASK)) {
+		uint64_t valid_mask = 0;
 
-// 		for (i = 0; i < property->num_values; i++)
-// 			valid_mask |= (1ULL << property->values[i]);
-// 		return !(value & ~valid_mask);
-// 	} else if (drm_property_type_is(property, DRM_MODE_PROP_BLOB)) {
-// 		struct drm_property_blob *blob;
+		for (i = 0; i < property->num_values; i++)
+			valid_mask |= (1ULL << property->values[i]);
+		return !(value & ~valid_mask);
+	} else if (drm_property_type_is(property, DRM_MODE_PROP_BLOB)) {
+		struct drm_property_blob *blob;
 
-// 		if (value == 0)
-// 			return true;
+		if (value == 0)
+			return true;
 
-// 		blob = drm_property_lookup_blob(property->dev, value);
-// 		if (blob) {
-// 			*ref = &blob->base;
-// 			return true;
-// 		} else {
-// 			return false;
-// 		}
-// 	} else if (drm_property_type_is(property, DRM_MODE_PROP_OBJECT)) {
-// 		/* a zero value for an object property translates to null: */
-// 		if (value == 0)
-// 			return true;
+		blob = drm_property_lookup_blob(property->dev, value);
+		if (blob) {
+			*ref = &blob->base;
+			return true;
+		} else {
+			return false;
+		}
+	} else if (drm_property_type_is(property, DRM_MODE_PROP_OBJECT)) {
+		/* a zero value for an object property translates to null: */
+		if (value == 0)
+			return true;
 
-// 		*ref = __drm_mode_object_find(property->dev, NULL, value,
-// 					      property->values[0]);
-// 		return *ref != NULL;
-// 	}
+		*ref = __drm_mode_object_find(property->dev, NULL, value,
+					      property->values[0]);
+		return *ref != NULL;
+	}
 
-// 	for (i = 0; i < property->num_values; i++)
-// 		if (property->values[i] == value)
-// 			return true;
-// 	return false;
-// }
+	for (i = 0; i < property->num_values; i++)
+		if (property->values[i] == value)
+			return true;
+	return false;
+}
 
-// void drm_property_change_valid_put(struct drm_property *property,
-// 		struct drm_mode_object *ref)
-// {
-// 	if (!ref)
-// 		return;
+void drm_property_change_valid_put(struct drm_property *property,
+		struct drm_mode_object *ref)
+{
+	if (!ref)
+		return;
 
-// 	if (drm_property_type_is(property, DRM_MODE_PROP_OBJECT)) {
-// 		drm_mode_object_put(ref);
-// 	} else if (drm_property_type_is(property, DRM_MODE_PROP_BLOB))
-// 		drm_property_blob_put(obj_to_blob(ref));
-// }
+	if (drm_property_type_is(property, DRM_MODE_PROP_OBJECT)) {
+		drm_mode_object_put(ref);
+	} else if (drm_property_type_is(property, DRM_MODE_PROP_BLOB))
+		drm_property_blob_put(obj_to_blob(ref));
+}
+#endif

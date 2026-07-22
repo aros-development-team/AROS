@@ -98,106 +98,108 @@ struct drm_fb_helper_funcs {
 			struct drm_fb_helper_surface_size *sizes);
 };
 
-// /**
-//  * struct drm_fb_helper - main structure to emulate fbdev on top of KMS
-//  * @fb: Scanout framebuffer object
-//  * @dev: DRM device
-//  * @funcs: driver callbacks for fb helper
-//  * @fbdev: emulated fbdev device info struct
-//  * @pseudo_palette: fake palette of 16 colors
-//  * @dirty_clip: clip rectangle used with deferred_io to accumulate damage to
-//  *              the screen buffer
-//  * @dirty_lock: spinlock protecting @dirty_clip
-//  * @dirty_work: worker used to flush the framebuffer
-//  * @resume_work: worker used during resume if the console lock is already taken
-//  *
-//  * This is the main structure used by the fbdev helpers. Drivers supporting
-//  * fbdev emulation should embedded this into their overall driver structure.
-//  * Drivers must also fill out a &struct drm_fb_helper_funcs with a few
-//  * operations.
-//  */
-// struct drm_fb_helper {
-// 	/**
-// 	 * @client:
-// 	 *
-// 	 * DRM client used by the generic fbdev emulation.
-// 	 */
-// 	struct drm_client_dev client;
+#if !defined(__AROS__)
+/**
+ * struct drm_fb_helper - main structure to emulate fbdev on top of KMS
+ * @fb: Scanout framebuffer object
+ * @dev: DRM device
+ * @funcs: driver callbacks for fb helper
+ * @fbdev: emulated fbdev device info struct
+ * @pseudo_palette: fake palette of 16 colors
+ * @dirty_clip: clip rectangle used with deferred_io to accumulate damage to
+ *              the screen buffer
+ * @dirty_lock: spinlock protecting @dirty_clip
+ * @dirty_work: worker used to flush the framebuffer
+ * @resume_work: worker used during resume if the console lock is already taken
+ *
+ * This is the main structure used by the fbdev helpers. Drivers supporting
+ * fbdev emulation should embedded this into their overall driver structure.
+ * Drivers must also fill out a &struct drm_fb_helper_funcs with a few
+ * operations.
+ */
+struct drm_fb_helper {
+	/**
+	 * @client:
+	 *
+	 * DRM client used by the generic fbdev emulation.
+	 */
+	struct drm_client_dev client;
 
-// 	/**
-// 	 * @buffer:
-// 	 *
-// 	 * Framebuffer used by the generic fbdev emulation.
-// 	 */
-// 	struct drm_client_buffer *buffer;
+	/**
+	 * @buffer:
+	 *
+	 * Framebuffer used by the generic fbdev emulation.
+	 */
+	struct drm_client_buffer *buffer;
 
-// 	struct drm_framebuffer *fb;
-// 	struct drm_device *dev;
-// 	const struct drm_fb_helper_funcs *funcs;
-// 	struct fb_info *fbdev;
-// 	u32 pseudo_palette[17];
-// 	struct drm_clip_rect dirty_clip;
-// 	spinlock_t dirty_lock;
-// 	struct work_struct dirty_work;
-// 	struct work_struct resume_work;
+	struct drm_framebuffer *fb;
+	struct drm_device *dev;
+	const struct drm_fb_helper_funcs *funcs;
+	struct fb_info *fbdev;
+	u32 pseudo_palette[17];
+	struct drm_clip_rect dirty_clip;
+	spinlock_t dirty_lock;
+	struct work_struct dirty_work;
+	struct work_struct resume_work;
 
-// 	/**
-// 	 * @lock:
-// 	 *
-// 	 * Top-level FBDEV helper lock. This protects all internal data
-// 	 * structures and lists, such as @connector_info and @crtc_info.
-// 	 *
-// 	 * FIXME: fbdev emulation locking is a mess and long term we want to
-// 	 * protect all helper internal state with this lock as well as reduce
-// 	 * core KMS locking as much as possible.
-// 	 */
-// 	struct mutex lock;
+	/**
+	 * @lock:
+	 *
+	 * Top-level FBDEV helper lock. This protects all internal data
+	 * structures and lists, such as @connector_info and @crtc_info.
+	 *
+	 * FIXME: fbdev emulation locking is a mess and long term we want to
+	 * protect all helper internal state with this lock as well as reduce
+	 * core KMS locking as much as possible.
+	 */
+	struct mutex lock;
 
-// 	/**
-// 	 * @kernel_fb_list:
-// 	 *
-// 	 * Entry on the global kernel_fb_helper_list, used for kgdb entry/exit.
-// 	 */
-// 	struct list_head kernel_fb_list;
+	/**
+	 * @kernel_fb_list:
+	 *
+	 * Entry on the global kernel_fb_helper_list, used for kgdb entry/exit.
+	 */
+	struct list_head kernel_fb_list;
 
-// 	/**
-// 	 * @delayed_hotplug:
-// 	 *
-// 	 * A hotplug was received while fbdev wasn't in control of the DRM
-// 	 * device, i.e. another KMS master was active. The output configuration
-// 	 * needs to be reprobe when fbdev is in control again.
-// 	 */
-// 	bool delayed_hotplug;
+	/**
+	 * @delayed_hotplug:
+	 *
+	 * A hotplug was received while fbdev wasn't in control of the DRM
+	 * device, i.e. another KMS master was active. The output configuration
+	 * needs to be reprobe when fbdev is in control again.
+	 */
+	bool delayed_hotplug;
 
-// 	/**
-// 	 * @deferred_setup:
-// 	 *
-// 	 * If no outputs are connected (disconnected or unknown) the FB helper
-// 	 * code will defer setup until at least one of the outputs shows up.
-// 	 * This field keeps track of the status so that setup can be retried
-// 	 * at every hotplug event until it succeeds eventually.
-// 	 *
-// 	 * Protected by @lock.
-// 	 */
-// 	bool deferred_setup;
+	/**
+	 * @deferred_setup:
+	 *
+	 * If no outputs are connected (disconnected or unknown) the FB helper
+	 * code will defer setup until at least one of the outputs shows up.
+	 * This field keeps track of the status so that setup can be retried
+	 * at every hotplug event until it succeeds eventually.
+	 *
+	 * Protected by @lock.
+	 */
+	bool deferred_setup;
 
-// 	/**
-// 	 * @preferred_bpp:
-// 	 *
-// 	 * Temporary storage for the driver's preferred BPP setting passed to
-// 	 * FB helper initialization. This needs to be tracked so that deferred
-// 	 * FB helper setup can pass this on.
-// 	 *
-// 	 * See also: @deferred_setup
-// 	 */
-// 	int preferred_bpp;
-// };
+	/**
+	 * @preferred_bpp:
+	 *
+	 * Temporary storage for the driver's preferred BPP setting passed to
+	 * FB helper initialization. This needs to be tracked so that deferred
+	 * FB helper setup can pass this on.
+	 *
+	 * See also: @deferred_setup
+	 */
+	int preferred_bpp;
+};
 
-// static inline struct drm_fb_helper *
-// drm_fb_helper_from_client(struct drm_client_dev *client)
-// {
-// 	return container_of(client, struct drm_fb_helper, client);
-// }
+static inline struct drm_fb_helper *
+drm_fb_helper_from_client(struct drm_client_dev *client)
+{
+	return container_of(client, struct drm_fb_helper, client);
+}
+#endif
 
 /**
  * define DRM_FB_HELPER_DEFAULT_OPS - helper define for drm drivers
@@ -295,44 +297,46 @@ static inline void drm_fb_helper_prepare(struct drm_device *dev,
 {
 }
 
-// static inline int drm_fb_helper_init(struct drm_device *dev,
-// 		       struct drm_fb_helper *helper,
-// 		       int max_conn)
-// {
-// 	/* So drivers can use it to free the struct */
-// 	helper->dev = dev;
-// 	dev->fb_helper = helper;
+#if !defined(__AROS__)
+static inline int drm_fb_helper_init(struct drm_device *dev,
+		       struct drm_fb_helper *helper,
+		       int max_conn)
+{
+	/* So drivers can use it to free the struct */
+	helper->dev = dev;
+	dev->fb_helper = helper;
 
-// 	return 0;
-// }
+	return 0;
+}
 
-// static inline void drm_fb_helper_fini(struct drm_fb_helper *helper)
-// {
-// 	if (helper && helper->dev)
-// 		helper->dev->fb_helper = NULL;
-// }
+static inline void drm_fb_helper_fini(struct drm_fb_helper *helper)
+{
+	if (helper && helper->dev)
+		helper->dev->fb_helper = NULL;
+}
 
-// static inline int drm_fb_helper_blank(int blank, struct fb_info *info)
-// {
-// 	return 0;
-// }
+static inline int drm_fb_helper_blank(int blank, struct fb_info *info)
+{
+	return 0;
+}
 
-// static inline int drm_fb_helper_pan_display(struct fb_var_screeninfo *var,
-// 					    struct fb_info *info)
-// {
-// 	return 0;
-// }
+static inline int drm_fb_helper_pan_display(struct fb_var_screeninfo *var,
+					    struct fb_info *info)
+{
+	return 0;
+}
 
-// static inline int drm_fb_helper_set_par(struct fb_info *info)
-// {
-// 	return 0;
-// }
+static inline int drm_fb_helper_set_par(struct fb_info *info)
+{
+	return 0;
+}
 
-// static inline int drm_fb_helper_check_var(struct fb_var_screeninfo *var,
-// 					  struct fb_info *info)
-// {
-// 	return 0;
-// }
+static inline int drm_fb_helper_check_var(struct fb_var_screeninfo *var,
+					  struct fb_info *info)
+{
+	return 0;
+}
+#endif
 
 static inline int
 drm_fb_helper_restore_fbdev_mode_unlocked(struct drm_fb_helper *fb_helper)
@@ -357,11 +361,13 @@ drm_fb_helper_fill_info(struct fb_info *info,
 {
 }
 
-// static inline int drm_fb_helper_setcmap(struct fb_cmap *cmap,
-// 					struct fb_info *info)
-// {
-// 	return 0;
-// }
+#if !defined(__AROS__)
+static inline int drm_fb_helper_setcmap(struct fb_cmap *cmap,
+					struct fb_info *info)
+{
+	return 0;
+}
+#endif
 
 static inline int drm_fb_helper_ioctl(struct fb_info *info, unsigned int cmd,
 				      unsigned long arg)
@@ -397,35 +403,37 @@ static inline ssize_t drm_fb_helper_sys_write(struct fb_info *info,
 	return -ENODEV;
 }
 
-// static inline void drm_fb_helper_sys_fillrect(struct fb_info *info,
-// 					      const struct fb_fillrect *rect)
-// {
-// }
+#if !defined(__AROS__)
+static inline void drm_fb_helper_sys_fillrect(struct fb_info *info,
+					      const struct fb_fillrect *rect)
+{
+}
 
-// static inline void drm_fb_helper_sys_copyarea(struct fb_info *info,
-// 					      const struct fb_copyarea *area)
-// {
-// }
+static inline void drm_fb_helper_sys_copyarea(struct fb_info *info,
+					      const struct fb_copyarea *area)
+{
+}
 
-// static inline void drm_fb_helper_sys_imageblit(struct fb_info *info,
-// 					       const struct fb_image *image)
-// {
-// }
+static inline void drm_fb_helper_sys_imageblit(struct fb_info *info,
+					       const struct fb_image *image)
+{
+}
 
-// static inline void drm_fb_helper_cfb_fillrect(struct fb_info *info,
-// 					      const struct fb_fillrect *rect)
-// {
-// }
+static inline void drm_fb_helper_cfb_fillrect(struct fb_info *info,
+					      const struct fb_fillrect *rect)
+{
+}
 
-// static inline void drm_fb_helper_cfb_copyarea(struct fb_info *info,
-// 					      const struct fb_copyarea *area)
-// {
-// }
+static inline void drm_fb_helper_cfb_copyarea(struct fb_info *info,
+					      const struct fb_copyarea *area)
+{
+}
 
-// static inline void drm_fb_helper_cfb_imageblit(struct fb_info *info,
-// 					       const struct fb_image *image)
-// {
-// }
+static inline void drm_fb_helper_cfb_imageblit(struct fb_info *info,
+					       const struct fb_image *image)
+{
+}
+#endif
 
 static inline void drm_fb_helper_set_suspend(struct drm_fb_helper *fb_helper,
 					     bool suspend)
@@ -458,23 +466,25 @@ static inline int drm_fb_helper_debug_leave(struct fb_info *info)
 	return 0;
 }
 
-// static inline int
-// drm_fb_helper_fbdev_setup(struct drm_device *dev,
-// 			  struct drm_fb_helper *fb_helper,
-// 			  const struct drm_fb_helper_funcs *funcs,
-// 			  unsigned int preferred_bpp,
-// 			  unsigned int max_conn_count)
-// {
-// 	/* So drivers can use it to free the struct */
-// 	dev->fb_helper = fb_helper;
+#if !defined(__AROS__)
+static inline int
+drm_fb_helper_fbdev_setup(struct drm_device *dev,
+			  struct drm_fb_helper *fb_helper,
+			  const struct drm_fb_helper_funcs *funcs,
+			  unsigned int preferred_bpp,
+			  unsigned int max_conn_count)
+{
+	/* So drivers can use it to free the struct */
+	dev->fb_helper = fb_helper;
 
-// 	return 0;
-// }
+	return 0;
+}
 
-// static inline void drm_fb_helper_fbdev_teardown(struct drm_device *dev)
-// {
-// 	dev->fb_helper = NULL;
-// }
+static inline void drm_fb_helper_fbdev_teardown(struct drm_device *dev)
+{
+	dev->fb_helper = NULL;
+}
+#endif
 
 static inline void drm_fb_helper_lastclose(struct drm_device *dev)
 {
@@ -520,56 +530,58 @@ drm_fb_helper_remove_one_connector(struct drm_fb_helper *fb_helper,
 	return 0;
 }
 
-// /**
-//  * drm_fb_helper_remove_conflicting_framebuffers - remove firmware-configured framebuffers
-//  * @a: memory range, users of which are to be removed
-//  * @name: requesting driver name
-//  * @primary: also kick vga16fb if present
-//  *
-//  * This function removes framebuffer devices (initialized by firmware/bootloader)
-//  * which use memory range described by @a. If @a is NULL all such devices are
-//  * removed.
-//  */
-// static inline int
-// drm_fb_helper_remove_conflicting_framebuffers(struct apertures_struct *a,
-// 					      const char *name, bool primary)
-// {
-// #if IS_REACHABLE(CONFIG_FB)
-// 	return remove_conflicting_framebuffers(a, name, primary);
-// #else
-// 	return 0;
-// #endif
-// }
+#if !defined(__AROS__)
+/**
+ * drm_fb_helper_remove_conflicting_framebuffers - remove firmware-configured framebuffers
+ * @a: memory range, users of which are to be removed
+ * @name: requesting driver name
+ * @primary: also kick vga16fb if present
+ *
+ * This function removes framebuffer devices (initialized by firmware/bootloader)
+ * which use memory range described by @a. If @a is NULL all such devices are
+ * removed.
+ */
+static inline int
+drm_fb_helper_remove_conflicting_framebuffers(struct apertures_struct *a,
+					      const char *name, bool primary)
+{
+#if IS_REACHABLE(CONFIG_FB)
+	return remove_conflicting_framebuffers(a, name, primary);
+#else
+	return 0;
+#endif
+}
 
-// /**
-//  * drm_fb_helper_remove_conflicting_pci_framebuffers - remove firmware-configured framebuffers for PCI devices
-//  * @pdev: PCI device
-//  * @resource_id: index of PCI BAR configuring framebuffer memory
-//  * @name: requesting driver name
-//  *
-//  * This function removes framebuffer devices (eg. initialized by firmware)
-//  * using memory range configured for @pdev's BAR @resource_id.
-//  *
-//  * The function assumes that PCI device with shadowed ROM drives a primary
-//  * display and so kicks out vga16fb.
-//  */
-// static inline int
-// drm_fb_helper_remove_conflicting_pci_framebuffers(struct pci_dev *pdev,
-// 						  int resource_id,
-// 						  const char *name)
-// {
-// 	int ret = 0;
+/**
+ * drm_fb_helper_remove_conflicting_pci_framebuffers - remove firmware-configured framebuffers for PCI devices
+ * @pdev: PCI device
+ * @resource_id: index of PCI BAR configuring framebuffer memory
+ * @name: requesting driver name
+ *
+ * This function removes framebuffer devices (eg. initialized by firmware)
+ * using memory range configured for @pdev's BAR @resource_id.
+ *
+ * The function assumes that PCI device with shadowed ROM drives a primary
+ * display and so kicks out vga16fb.
+ */
+static inline int
+drm_fb_helper_remove_conflicting_pci_framebuffers(struct pci_dev *pdev,
+						  int resource_id,
+						  const char *name)
+{
+	int ret = 0;
 
-// 	/*
-// 	 * WARNING: Apparently we must kick fbdev drivers before vgacon,
-// 	 * otherwise the vga fbdev driver falls over.
-// 	 */
-// #if IS_REACHABLE(CONFIG_FB)
-// 	ret = remove_conflicting_pci_framebuffers(pdev, resource_id, name);
-// #endif
-// 	if (ret == 0)
-// 		ret = vga_remove_vgacon(pdev);
-// 	return ret;
-// }
+	/*
+	 * WARNING: Apparently we must kick fbdev drivers before vgacon,
+	 * otherwise the vga fbdev driver falls over.
+	 */
+#if IS_REACHABLE(CONFIG_FB)
+	ret = remove_conflicting_pci_framebuffers(pdev, resource_id, name);
+#endif
+	if (ret == 0)
+		ret = vga_remove_vgacon(pdev);
+	return ret;
+}
+#endif
 
 #endif

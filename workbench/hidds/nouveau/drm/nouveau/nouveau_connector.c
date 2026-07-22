@@ -363,21 +363,31 @@ nouveau_conn_attach_properties(struct drm_connector *connector)
 	}
 }
 
-// MODULE_PARM_DESC(tv_disable, "Disable TV-out detection");
+#if !defined(__AROS__)
+MODULE_PARM_DESC(tv_disable, "Disable TV-out detection");
+#endif
 int nouveau_tv_disable = 0;
-// module_param_named(tv_disable, nouveau_tv_disable, int, 0400);
+#if !defined(__AROS__)
+module_param_named(tv_disable, nouveau_tv_disable, int, 0400);
 
-// MODULE_PARM_DESC(ignorelid, "Ignore ACPI lid status");
+MODULE_PARM_DESC(ignorelid, "Ignore ACPI lid status");
+#endif
 int nouveau_ignorelid = 0;
-// module_param_named(ignorelid, nouveau_ignorelid, int, 0400);
+#if !defined(__AROS__)
+module_param_named(ignorelid, nouveau_ignorelid, int, 0400);
 
-// MODULE_PARM_DESC(duallink, "Allow dual-link TMDS (default: enabled)");
+MODULE_PARM_DESC(duallink, "Allow dual-link TMDS (default: enabled)");
+#endif
 int nouveau_duallink = 1;
-// module_param_named(duallink, nouveau_duallink, int, 0400);
+#if !defined(__AROS__)
+module_param_named(duallink, nouveau_duallink, int, 0400);
 
-// MODULE_PARM_DESC(hdmimhz, "Force a maximum HDMI pixel clock (in MHz)");
+MODULE_PARM_DESC(hdmimhz, "Force a maximum HDMI pixel clock (in MHz)");
+#endif
 int nouveau_hdmimhz = 0;
-// module_param_named(hdmimhz, nouveau_hdmimhz, int, 0400);
+#if !defined(__AROS__)
+module_param_named(hdmimhz, nouveau_hdmimhz, int, 0400);
+#endif
 
 struct nouveau_encoder *
 find_encoder(struct drm_connector *connector, int type)

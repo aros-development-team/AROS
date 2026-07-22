@@ -32,7 +32,9 @@
 #define _TTM_BO_API_H_
 
 #include <drm/drm_gem.h>
-// #include <drm/drm_hashtab.h>
+#if !defined(__AROS__)
+#include <drm/drm_hashtab.h>
+#endif
 #include <drm/drm_vma_manager.h>
 #if !defined(__AROS__)
 #include <linux/kref.h>
@@ -307,13 +309,15 @@ static inline void ttm_bo_get(struct ttm_buffer_object *bo)
  *
  * Returns: @bo if the referencing was successful, NULL otherwise.
  */
-// static inline __must_check struct ttm_buffer_object *
-// ttm_bo_get_unless_zero(struct ttm_buffer_object *bo)
-// {
-// 	if (!kref_get_unless_zero(&bo->kref))
-// 		return NULL;
-// 	return bo;
-// }
+#if !defined(__AROS__)
+static inline __must_check struct ttm_buffer_object *
+ttm_bo_get_unless_zero(struct ttm_buffer_object *bo)
+{
+	if (!kref_get_unless_zero(&bo->kref))
+		return NULL;
+	return bo;
+}
+#endif
 
 /**
  * ttm_bo_wait - wait for buffer idle.
@@ -723,7 +727,9 @@ void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map);
  * This function is intended to be called by the fbdev mmap method
  * if the fbdev address space is to be backed by a bo.
  */
-// int ttm_fbdev_mmap(struct vm_area_struct *vma, struct ttm_buffer_object *bo);
+#if !defined(__AROS__)
+int ttm_fbdev_mmap(struct vm_area_struct *vma, struct ttm_buffer_object *bo);
+#endif
 
 /**
  * ttm_bo_mmap - mmap out of the ttm device address space.
@@ -735,8 +741,10 @@ void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map);
  * This function is intended to be called by the device mmap method.
  * if the device address space is to be backed by the bo manager.
  */
-// int ttm_bo_mmap(struct file *filp, struct vm_area_struct *vma,
-// 		struct ttm_bo_device *bdev);
+#if !defined(__AROS__)
+int ttm_bo_mmap(struct file *filp, struct vm_area_struct *vma,
+		struct ttm_bo_device *bdev);
+#endif
 
 void *ttm_kmap_atomic_prot(struct page *page, pgprot_t prot);
 

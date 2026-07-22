@@ -39,12 +39,14 @@
 
 struct drm_file;
 struct drm_gem_object;
-// struct drm_master;
-// struct drm_minor;
-// struct dma_buf_attachment;
-// struct drm_display_mode;
-// struct drm_mode_create_dumb;
-// struct drm_printer;
+#if !defined(__AROS__)
+struct drm_master;
+struct drm_minor;
+struct dma_buf_attachment;
+struct drm_display_mode;
+struct drm_mode_create_dumb;
+struct drm_printer;
+#endif
 
 /**
  * enum drm_driver_feature - feature flags
@@ -83,76 +85,78 @@ enum drm_driver_feature {
 	 * set this flag.
 	 */
 	DRIVER_ATOMIC			= BIT(4),
-// 	/**
-// 	 * @DRIVER_SYNCOBJ:
-// 	 *
-// 	 * Driver supports &drm_syncobj for explicit synchronization of command
-// 	 * submission.
-// 	 */
-// 	DRIVER_SYNCOBJ                  = BIT(5),
-// 	/**
-// 	 * @DRIVER_SYNCOBJ_TIMELINE:
-// 	 *
-// 	 * Driver supports the timeline flavor of &drm_syncobj for explicit
-// 	 * synchronization of command submission.
-// 	 */
-// 	DRIVER_SYNCOBJ_TIMELINE         = BIT(6),
+#if !defined(__AROS__)
+	/**
+	 * @DRIVER_SYNCOBJ:
+	 *
+	 * Driver supports &drm_syncobj for explicit synchronization of command
+	 * submission.
+	 */
+	DRIVER_SYNCOBJ                  = BIT(5),
+	/**
+	 * @DRIVER_SYNCOBJ_TIMELINE:
+	 *
+	 * Driver supports the timeline flavor of &drm_syncobj for explicit
+	 * synchronization of command submission.
+	 */
+	DRIVER_SYNCOBJ_TIMELINE         = BIT(6),
 
-// 	/* IMPORTANT: Below are all the legacy flags, add new ones above. */
+	/* IMPORTANT: Below are all the legacy flags, add new ones above. */
 
-// 	/**
-// 	 * @DRIVER_USE_AGP:
-// 	 *
-// 	 * Set up DRM AGP support, see drm_agp_init(), the DRM core will manage
-// 	 * AGP resources. New drivers don't need this.
-// 	 */
-// 	DRIVER_USE_AGP			= BIT(25),
-// 	/**
-// 	 * @DRIVER_LEGACY:
-// 	 *
-// 	 * Denote a legacy driver using shadow attach. Do not use.
-// 	 */
-// 	DRIVER_LEGACY			= BIT(26),
-// 	/**
-// 	 * @DRIVER_PCI_DMA:
-// 	 *
-// 	 * Driver is capable of PCI DMA, mapping of PCI DMA buffers to userspace
-// 	 * will be enabled. Only for legacy drivers. Do not use.
-// 	 */
-// 	DRIVER_PCI_DMA			= BIT(27),
-// 	/**
-// 	 * @DRIVER_SG:
-// 	 *
-// 	 * Driver can perform scatter/gather DMA, allocation and mapping of
-// 	 * scatter/gather buffers will be enabled. Only for legacy drivers. Do
-// 	 * not use.
-// 	 */
-// 	DRIVER_SG			= BIT(28),
+	/**
+	 * @DRIVER_USE_AGP:
+	 *
+	 * Set up DRM AGP support, see drm_agp_init(), the DRM core will manage
+	 * AGP resources. New drivers don't need this.
+	 */
+	DRIVER_USE_AGP			= BIT(25),
+	/**
+	 * @DRIVER_LEGACY:
+	 *
+	 * Denote a legacy driver using shadow attach. Do not use.
+	 */
+	DRIVER_LEGACY			= BIT(26),
+	/**
+	 * @DRIVER_PCI_DMA:
+	 *
+	 * Driver is capable of PCI DMA, mapping of PCI DMA buffers to userspace
+	 * will be enabled. Only for legacy drivers. Do not use.
+	 */
+	DRIVER_PCI_DMA			= BIT(27),
+	/**
+	 * @DRIVER_SG:
+	 *
+	 * Driver can perform scatter/gather DMA, allocation and mapping of
+	 * scatter/gather buffers will be enabled. Only for legacy drivers. Do
+	 * not use.
+	 */
+	DRIVER_SG			= BIT(28),
 
-// 	/**
-// 	 * @DRIVER_HAVE_DMA:
-// 	 *
-// 	 * Driver supports DMA, the userspace DMA API will be supported. Only
-// 	 * for legacy drivers. Do not use.
-// 	 */
-// 	DRIVER_HAVE_DMA			= BIT(29),
-// 	/**
-// 	 * @DRIVER_HAVE_IRQ:
-// 	 *
-// 	 * Legacy irq support. Only for legacy drivers. Do not use.
-// 	 *
-// 	 * New drivers can either use the drm_irq_install() and
-// 	 * drm_irq_uninstall() helper functions, or roll their own irq support
-// 	 * code by calling request_irq() directly.
-// 	 */
-// 	DRIVER_HAVE_IRQ			= BIT(30),
-// 	/**
-// 	 * @DRIVER_KMS_LEGACY_CONTEXT:
-// 	 *
-// 	 * Used only by nouveau for backwards compatibility with existing
-// 	 * userspace.  Do not use.
-// 	 */
-// 	DRIVER_KMS_LEGACY_CONTEXT	= BIT(31),
+	/**
+	 * @DRIVER_HAVE_DMA:
+	 *
+	 * Driver supports DMA, the userspace DMA API will be supported. Only
+	 * for legacy drivers. Do not use.
+	 */
+	DRIVER_HAVE_DMA			= BIT(29),
+	/**
+	 * @DRIVER_HAVE_IRQ:
+	 *
+	 * Legacy irq support. Only for legacy drivers. Do not use.
+	 *
+	 * New drivers can either use the drm_irq_install() and
+	 * drm_irq_uninstall() helper functions, or roll their own irq support
+	 * code by calling request_irq() directly.
+	 */
+	DRIVER_HAVE_IRQ			= BIT(30),
+	/**
+	 * @DRIVER_KMS_LEGACY_CONTEXT:
+	 *
+	 * Used only by nouveau for backwards compatibility with existing
+	 * userspace.  Do not use.
+	 */
+	DRIVER_KMS_LEGACY_CONTEXT	= BIT(31),
+#endif
 };
 
 /**
@@ -165,24 +169,26 @@ enum drm_driver_feature {
  * structure for GEM drivers.
  */
 struct drm_driver {
-// 	/**
-// 	 * @load:
-// 	 *
-// 	 * Backward-compatible driver callback to complete
-// 	 * initialization steps after the driver is registered.  For
-// 	 * this reason, may suffer from race conditions and its use is
-// 	 * deprecated for new drivers.  It is therefore only supported
-// 	 * for existing drivers not yet converted to the new scheme.
-// 	 * See drm_dev_init() and drm_dev_register() for proper and
-// 	 * race-free way to set up a &struct drm_device.
-// 	 *
-// 	 * This is deprecated, do not use!
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * Zero on success, non-zero value on failure.
-// 	 */
-// 	int (*load) (struct drm_device *, unsigned long flags);
+#if !defined(__AROS__)
+	/**
+	 * @load:
+	 *
+	 * Backward-compatible driver callback to complete
+	 * initialization steps after the driver is registered.  For
+	 * this reason, may suffer from race conditions and its use is
+	 * deprecated for new drivers.  It is therefore only supported
+	 * for existing drivers not yet converted to the new scheme.
+	 * See drm_dev_init() and drm_dev_register() for proper and
+	 * race-free way to set up a &struct drm_device.
+	 *
+	 * This is deprecated, do not use!
+	 *
+	 * Returns:
+	 *
+	 * Zero on success, non-zero value on failure.
+	 */
+	int (*load) (struct drm_device *, unsigned long flags);
+#endif
 
 	/**
 	 * @open:
@@ -204,298 +210,300 @@ struct drm_driver {
 	 */
 	int (*open) (struct drm_device *, struct drm_file *);
 
-// 	/**
-// 	 * @postclose:
-// 	 *
-// 	 * One of the driver callbacks when a new &struct drm_file is closed.
-// 	 * Useful for tearing down driver-private data structures allocated in
-// 	 * @open like buffer allocators, execution contexts or similar things.
-// 	 *
-// 	 * Since the display/modeset side of DRM can only be owned by exactly
-// 	 * one &struct drm_file (see &drm_file.is_master and &drm_device.master)
-// 	 * there should never be a need to tear down any modeset related
-// 	 * resources in this callback. Doing so would be a driver design bug.
-// 	 */
-// 	void (*postclose) (struct drm_device *, struct drm_file *);
+#if !defined(__AROS__)
+	/**
+	 * @postclose:
+	 *
+	 * One of the driver callbacks when a new &struct drm_file is closed.
+	 * Useful for tearing down driver-private data structures allocated in
+	 * @open like buffer allocators, execution contexts or similar things.
+	 *
+	 * Since the display/modeset side of DRM can only be owned by exactly
+	 * one &struct drm_file (see &drm_file.is_master and &drm_device.master)
+	 * there should never be a need to tear down any modeset related
+	 * resources in this callback. Doing so would be a driver design bug.
+	 */
+	void (*postclose) (struct drm_device *, struct drm_file *);
 
-// 	/**
-// 	 * @lastclose:
-// 	 *
-// 	 * Called when the last &struct drm_file has been closed and there's
-// 	 * currently no userspace client for the &struct drm_device.
-// 	 *
-// 	 * Modern drivers should only use this to force-restore the fbdev
-// 	 * framebuffer using drm_fb_helper_restore_fbdev_mode_unlocked().
-// 	 * Anything else would indicate there's something seriously wrong.
-// 	 * Modern drivers can also use this to execute delayed power switching
-// 	 * state changes, e.g. in conjunction with the :ref:`vga_switcheroo`
-// 	 * infrastructure.
-// 	 *
-// 	 * This is called after @postclose hook has been called.
-// 	 *
-// 	 * NOTE:
-// 	 *
-// 	 * All legacy drivers use this callback to de-initialize the hardware.
-// 	 * This is purely because of the shadow-attach model, where the DRM
-// 	 * kernel driver does not really own the hardware. Instead ownershipe is
-// 	 * handled with the help of userspace through an inheritedly racy dance
-// 	 * to set/unset the VT into raw mode.
-// 	 *
-// 	 * Legacy drivers initialize the hardware in the @firstopen callback,
-// 	 * which isn't even called for modern drivers.
-// 	 */
-// 	void (*lastclose) (struct drm_device *);
+	/**
+	 * @lastclose:
+	 *
+	 * Called when the last &struct drm_file has been closed and there's
+	 * currently no userspace client for the &struct drm_device.
+	 *
+	 * Modern drivers should only use this to force-restore the fbdev
+	 * framebuffer using drm_fb_helper_restore_fbdev_mode_unlocked().
+	 * Anything else would indicate there's something seriously wrong.
+	 * Modern drivers can also use this to execute delayed power switching
+	 * state changes, e.g. in conjunction with the :ref:`vga_switcheroo`
+	 * infrastructure.
+	 *
+	 * This is called after @postclose hook has been called.
+	 *
+	 * NOTE:
+	 *
+	 * All legacy drivers use this callback to de-initialize the hardware.
+	 * This is purely because of the shadow-attach model, where the DRM
+	 * kernel driver does not really own the hardware. Instead ownershipe is
+	 * handled with the help of userspace through an inheritedly racy dance
+	 * to set/unset the VT into raw mode.
+	 *
+	 * Legacy drivers initialize the hardware in the @firstopen callback,
+	 * which isn't even called for modern drivers.
+	 */
+	void (*lastclose) (struct drm_device *);
 
-// 	/**
-// 	 * @unload:
-// 	 *
-// 	 * Reverse the effects of the driver load callback.  Ideally,
-// 	 * the clean up performed by the driver should happen in the
-// 	 * reverse order of the initialization.  Similarly to the load
-// 	 * hook, this handler is deprecated and its usage should be
-// 	 * dropped in favor of an open-coded teardown function at the
-// 	 * driver layer.  See drm_dev_unregister() and drm_dev_put()
-// 	 * for the proper way to remove a &struct drm_device.
-// 	 *
-// 	 * The unload() hook is called right after unregistering
-// 	 * the device.
-// 	 *
-// 	 */
-// 	void (*unload) (struct drm_device *);
+	/**
+	 * @unload:
+	 *
+	 * Reverse the effects of the driver load callback.  Ideally,
+	 * the clean up performed by the driver should happen in the
+	 * reverse order of the initialization.  Similarly to the load
+	 * hook, this handler is deprecated and its usage should be
+	 * dropped in favor of an open-coded teardown function at the
+	 * driver layer.  See drm_dev_unregister() and drm_dev_put()
+	 * for the proper way to remove a &struct drm_device.
+	 *
+	 * The unload() hook is called right after unregistering
+	 * the device.
+	 *
+	 */
+	void (*unload) (struct drm_device *);
 
-// 	/**
-// 	 * @release:
-// 	 *
-// 	 * Optional callback for destroying device data after the final
-// 	 * reference is released, i.e. the device is being destroyed. Drivers
-// 	 * using this callback are responsible for calling drm_dev_fini()
-// 	 * to finalize the device and then freeing the struct themselves.
-// 	 */
-// 	void (*release) (struct drm_device *);
+	/**
+	 * @release:
+	 *
+	 * Optional callback for destroying device data after the final
+	 * reference is released, i.e. the device is being destroyed. Drivers
+	 * using this callback are responsible for calling drm_dev_fini()
+	 * to finalize the device and then freeing the struct themselves.
+	 */
+	void (*release) (struct drm_device *);
 
-// 	/**
-// 	 * @get_vblank_counter:
-// 	 *
-// 	 * Driver callback for fetching a raw hardware vblank counter for the
-// 	 * CRTC specified with the pipe argument.  If a device doesn't have a
-// 	 * hardware counter, the driver can simply leave the hook as NULL.
-// 	 * The DRM core will account for missed vblank events while interrupts
-// 	 * where disabled based on system timestamps.
-// 	 *
-// 	 * Wraparound handling and loss of events due to modesetting is dealt
-// 	 * with in the DRM core code, as long as drivers call
-// 	 * drm_crtc_vblank_off() and drm_crtc_vblank_on() when disabling or
-// 	 * enabling a CRTC.
-// 	 *
-// 	 * This is deprecated and should not be used by new drivers.
-// 	 * Use &drm_crtc_funcs.get_vblank_counter instead.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * Raw vblank counter value.
-// 	 */
-// 	u32 (*get_vblank_counter) (struct drm_device *dev, unsigned int pipe);
+	/**
+	 * @get_vblank_counter:
+	 *
+	 * Driver callback for fetching a raw hardware vblank counter for the
+	 * CRTC specified with the pipe argument.  If a device doesn't have a
+	 * hardware counter, the driver can simply leave the hook as NULL.
+	 * The DRM core will account for missed vblank events while interrupts
+	 * where disabled based on system timestamps.
+	 *
+	 * Wraparound handling and loss of events due to modesetting is dealt
+	 * with in the DRM core code, as long as drivers call
+	 * drm_crtc_vblank_off() and drm_crtc_vblank_on() when disabling or
+	 * enabling a CRTC.
+	 *
+	 * This is deprecated and should not be used by new drivers.
+	 * Use &drm_crtc_funcs.get_vblank_counter instead.
+	 *
+	 * Returns:
+	 *
+	 * Raw vblank counter value.
+	 */
+	u32 (*get_vblank_counter) (struct drm_device *dev, unsigned int pipe);
 
-// 	/**
-// 	 * @enable_vblank:
-// 	 *
-// 	 * Enable vblank interrupts for the CRTC specified with the pipe
-// 	 * argument.
-// 	 *
-// 	 * This is deprecated and should not be used by new drivers.
-// 	 * Use &drm_crtc_funcs.enable_vblank instead.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * Zero on success, appropriate errno if the given @crtc's vblank
-// 	 * interrupt cannot be enabled.
-// 	 */
-// 	int (*enable_vblank) (struct drm_device *dev, unsigned int pipe);
+	/**
+	 * @enable_vblank:
+	 *
+	 * Enable vblank interrupts for the CRTC specified with the pipe
+	 * argument.
+	 *
+	 * This is deprecated and should not be used by new drivers.
+	 * Use &drm_crtc_funcs.enable_vblank instead.
+	 *
+	 * Returns:
+	 *
+	 * Zero on success, appropriate errno if the given @crtc's vblank
+	 * interrupt cannot be enabled.
+	 */
+	int (*enable_vblank) (struct drm_device *dev, unsigned int pipe);
 
-// 	/**
-// 	 * @disable_vblank:
-// 	 *
-// 	 * Disable vblank interrupts for the CRTC specified with the pipe
-// 	 * argument.
-// 	 *
-// 	 * This is deprecated and should not be used by new drivers.
-// 	 * Use &drm_crtc_funcs.disable_vblank instead.
-// 	 */
-// 	void (*disable_vblank) (struct drm_device *dev, unsigned int pipe);
+	/**
+	 * @disable_vblank:
+	 *
+	 * Disable vblank interrupts for the CRTC specified with the pipe
+	 * argument.
+	 *
+	 * This is deprecated and should not be used by new drivers.
+	 * Use &drm_crtc_funcs.disable_vblank instead.
+	 */
+	void (*disable_vblank) (struct drm_device *dev, unsigned int pipe);
 
-// 	/**
-// 	 * @get_scanout_position:
-// 	 *
-// 	 * Called by vblank timestamping code.
-// 	 *
-// 	 * Returns the current display scanout position from a crtc, and an
-// 	 * optional accurate ktime_get() timestamp of when position was
-// 	 * measured. Note that this is a helper callback which is only used if a
-// 	 * driver uses drm_calc_vbltimestamp_from_scanoutpos() for the
-// 	 * @get_vblank_timestamp callback.
-// 	 *
-// 	 * Parameters:
-// 	 *
-// 	 * dev:
-// 	 *     DRM device.
-// 	 * pipe:
-// 	 *     Id of the crtc to query.
-// 	 * in_vblank_irq:
-// 	 *     True when called from drm_crtc_handle_vblank().  Some drivers
-// 	 *     need to apply some workarounds for gpu-specific vblank irq quirks
-// 	 *     if flag is set.
-// 	 * vpos:
-// 	 *     Target location for current vertical scanout position.
-// 	 * hpos:
-// 	 *     Target location for current horizontal scanout position.
-// 	 * stime:
-// 	 *     Target location for timestamp taken immediately before
-// 	 *     scanout position query. Can be NULL to skip timestamp.
-// 	 * etime:
-// 	 *     Target location for timestamp taken immediately after
-// 	 *     scanout position query. Can be NULL to skip timestamp.
-// 	 * mode:
-// 	 *     Current display timings.
-// 	 *
-// 	 * Returns vpos as a positive number while in active scanout area.
-// 	 * Returns vpos as a negative number inside vblank, counting the number
-// 	 * of scanlines to go until end of vblank, e.g., -1 means "one scanline
-// 	 * until start of active scanout / end of vblank."
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * True on success, false if a reliable scanout position counter could
-// 	 * not be read out.
-// 	 *
-// 	 * FIXME:
-// 	 *
-// 	 * Since this is a helper to implement @get_vblank_timestamp, we should
-// 	 * move it to &struct drm_crtc_helper_funcs, like all the other
-// 	 * helper-internal hooks.
-// 	 */
-// 	bool (*get_scanout_position) (struct drm_device *dev, unsigned int pipe,
-// 				      bool in_vblank_irq, int *vpos, int *hpos,
-// 				      ktime_t *stime, ktime_t *etime,
-// 				      const struct drm_display_mode *mode);
+	/**
+	 * @get_scanout_position:
+	 *
+	 * Called by vblank timestamping code.
+	 *
+	 * Returns the current display scanout position from a crtc, and an
+	 * optional accurate ktime_get() timestamp of when position was
+	 * measured. Note that this is a helper callback which is only used if a
+	 * driver uses drm_calc_vbltimestamp_from_scanoutpos() for the
+	 * @get_vblank_timestamp callback.
+	 *
+	 * Parameters:
+	 *
+	 * dev:
+	 *     DRM device.
+	 * pipe:
+	 *     Id of the crtc to query.
+	 * in_vblank_irq:
+	 *     True when called from drm_crtc_handle_vblank().  Some drivers
+	 *     need to apply some workarounds for gpu-specific vblank irq quirks
+	 *     if flag is set.
+	 * vpos:
+	 *     Target location for current vertical scanout position.
+	 * hpos:
+	 *     Target location for current horizontal scanout position.
+	 * stime:
+	 *     Target location for timestamp taken immediately before
+	 *     scanout position query. Can be NULL to skip timestamp.
+	 * etime:
+	 *     Target location for timestamp taken immediately after
+	 *     scanout position query. Can be NULL to skip timestamp.
+	 * mode:
+	 *     Current display timings.
+	 *
+	 * Returns vpos as a positive number while in active scanout area.
+	 * Returns vpos as a negative number inside vblank, counting the number
+	 * of scanlines to go until end of vblank, e.g., -1 means "one scanline
+	 * until start of active scanout / end of vblank."
+	 *
+	 * Returns:
+	 *
+	 * True on success, false if a reliable scanout position counter could
+	 * not be read out.
+	 *
+	 * FIXME:
+	 *
+	 * Since this is a helper to implement @get_vblank_timestamp, we should
+	 * move it to &struct drm_crtc_helper_funcs, like all the other
+	 * helper-internal hooks.
+	 */
+	bool (*get_scanout_position) (struct drm_device *dev, unsigned int pipe,
+				      bool in_vblank_irq, int *vpos, int *hpos,
+				      ktime_t *stime, ktime_t *etime,
+				      const struct drm_display_mode *mode);
 
-// 	/**
-// 	 * @get_vblank_timestamp:
-// 	 *
-// 	 * Called by drm_get_last_vbltimestamp(). Should return a precise
-// 	 * timestamp when the most recent VBLANK interval ended or will end.
-// 	 *
-// 	 * Specifically, the timestamp in @vblank_time should correspond as
-// 	 * closely as possible to the time when the first video scanline of
-// 	 * the video frame after the end of VBLANK will start scanning out,
-// 	 * the time immediately after end of the VBLANK interval. If the
-// 	 * @crtc is currently inside VBLANK, this will be a time in the future.
-// 	 * If the @crtc is currently scanning out a frame, this will be the
-// 	 * past start time of the current scanout. This is meant to adhere
-// 	 * to the OpenML OML_sync_control extension specification.
-// 	 *
-// 	 * Paramters:
-// 	 *
-// 	 * dev:
-// 	 *     dev DRM device handle.
-// 	 * pipe:
-// 	 *     crtc for which timestamp should be returned.
-// 	 * max_error:
-// 	 *     Maximum allowable timestamp error in nanoseconds.
-// 	 *     Implementation should strive to provide timestamp
-// 	 *     with an error of at most max_error nanoseconds.
-// 	 *     Returns true upper bound on error for timestamp.
-// 	 * vblank_time:
-// 	 *     Target location for returned vblank timestamp.
-// 	 * in_vblank_irq:
-// 	 *     True when called from drm_crtc_handle_vblank().  Some drivers
-// 	 *     need to apply some workarounds for gpu-specific vblank irq quirks
-// 	 *     if flag is set.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * True on success, false on failure, which means the core should
-// 	 * fallback to a simple timestamp taken in drm_crtc_handle_vblank().
-// 	 *
-// 	 * FIXME:
-// 	 *
-// 	 * We should move this hook to &struct drm_crtc_funcs like all the other
-// 	 * vblank hooks.
-// 	 */
-// 	bool (*get_vblank_timestamp) (struct drm_device *dev, unsigned int pipe,
-// 				     int *max_error,
-// 				     ktime_t *vblank_time,
-// 				     bool in_vblank_irq);
+	/**
+	 * @get_vblank_timestamp:
+	 *
+	 * Called by drm_get_last_vbltimestamp(). Should return a precise
+	 * timestamp when the most recent VBLANK interval ended or will end.
+	 *
+	 * Specifically, the timestamp in @vblank_time should correspond as
+	 * closely as possible to the time when the first video scanline of
+	 * the video frame after the end of VBLANK will start scanning out,
+	 * the time immediately after end of the VBLANK interval. If the
+	 * @crtc is currently inside VBLANK, this will be a time in the future.
+	 * If the @crtc is currently scanning out a frame, this will be the
+	 * past start time of the current scanout. This is meant to adhere
+	 * to the OpenML OML_sync_control extension specification.
+	 *
+	 * Paramters:
+	 *
+	 * dev:
+	 *     dev DRM device handle.
+	 * pipe:
+	 *     crtc for which timestamp should be returned.
+	 * max_error:
+	 *     Maximum allowable timestamp error in nanoseconds.
+	 *     Implementation should strive to provide timestamp
+	 *     with an error of at most max_error nanoseconds.
+	 *     Returns true upper bound on error for timestamp.
+	 * vblank_time:
+	 *     Target location for returned vblank timestamp.
+	 * in_vblank_irq:
+	 *     True when called from drm_crtc_handle_vblank().  Some drivers
+	 *     need to apply some workarounds for gpu-specific vblank irq quirks
+	 *     if flag is set.
+	 *
+	 * Returns:
+	 *
+	 * True on success, false on failure, which means the core should
+	 * fallback to a simple timestamp taken in drm_crtc_handle_vblank().
+	 *
+	 * FIXME:
+	 *
+	 * We should move this hook to &struct drm_crtc_funcs like all the other
+	 * vblank hooks.
+	 */
+	bool (*get_vblank_timestamp) (struct drm_device *dev, unsigned int pipe,
+				     int *max_error,
+				     ktime_t *vblank_time,
+				     bool in_vblank_irq);
 
-// 	/**
-// 	 * @irq_handler:
-// 	 *
-// 	 * Interrupt handler called when using drm_irq_install(). Not used by
-// 	 * drivers which implement their own interrupt handling.
-// 	 */
-// 	irqreturn_t(*irq_handler) (int irq, void *arg);
+	/**
+	 * @irq_handler:
+	 *
+	 * Interrupt handler called when using drm_irq_install(). Not used by
+	 * drivers which implement their own interrupt handling.
+	 */
+	irqreturn_t(*irq_handler) (int irq, void *arg);
 
-// 	/**
-// 	 * @irq_preinstall:
-// 	 *
-// 	 * Optional callback used by drm_irq_install() which is called before
-// 	 * the interrupt handler is registered. This should be used to clear out
-// 	 * any pending interrupts (from e.g. firmware based drives) and reset
-// 	 * the interrupt handling registers.
-// 	 */
-// 	void (*irq_preinstall) (struct drm_device *dev);
+	/**
+	 * @irq_preinstall:
+	 *
+	 * Optional callback used by drm_irq_install() which is called before
+	 * the interrupt handler is registered. This should be used to clear out
+	 * any pending interrupts (from e.g. firmware based drives) and reset
+	 * the interrupt handling registers.
+	 */
+	void (*irq_preinstall) (struct drm_device *dev);
 
-// 	/**
-// 	 * @irq_postinstall:
-// 	 *
-// 	 * Optional callback used by drm_irq_install() which is called after
-// 	 * the interrupt handler is registered. This should be used to enable
-// 	 * interrupt generation in the hardware.
-// 	 */
-// 	int (*irq_postinstall) (struct drm_device *dev);
+	/**
+	 * @irq_postinstall:
+	 *
+	 * Optional callback used by drm_irq_install() which is called after
+	 * the interrupt handler is registered. This should be used to enable
+	 * interrupt generation in the hardware.
+	 */
+	int (*irq_postinstall) (struct drm_device *dev);
 
-// 	/**
-// 	 * @irq_uninstall:
-// 	 *
-// 	 * Optional callback used by drm_irq_uninstall() which is called before
-// 	 * the interrupt handler is unregistered. This should be used to disable
-// 	 * interrupt generation in the hardware.
-// 	 */
-// 	void (*irq_uninstall) (struct drm_device *dev);
+	/**
+	 * @irq_uninstall:
+	 *
+	 * Optional callback used by drm_irq_uninstall() which is called before
+	 * the interrupt handler is unregistered. This should be used to disable
+	 * interrupt generation in the hardware.
+	 */
+	void (*irq_uninstall) (struct drm_device *dev);
 
-// 	/**
-// 	 * @master_create:
-// 	 *
-// 	 * Called whenever a new master is created. Only used by vmwgfx.
-// 	 */
-// 	int (*master_create)(struct drm_device *dev, struct drm_master *master);
+	/**
+	 * @master_create:
+	 *
+	 * Called whenever a new master is created. Only used by vmwgfx.
+	 */
+	int (*master_create)(struct drm_device *dev, struct drm_master *master);
 
-// 	/**
-// 	 * @master_destroy:
-// 	 *
-// 	 * Called whenever a master is destroyed. Only used by vmwgfx.
-// 	 */
-// 	void (*master_destroy)(struct drm_device *dev, struct drm_master *master);
+	/**
+	 * @master_destroy:
+	 *
+	 * Called whenever a master is destroyed. Only used by vmwgfx.
+	 */
+	void (*master_destroy)(struct drm_device *dev, struct drm_master *master);
 
-// 	/**
-// 	 * @master_set:
-// 	 *
-// 	 * Called whenever the minor master is set. Only used by vmwgfx.
-// 	 */
-// 	int (*master_set)(struct drm_device *dev, struct drm_file *file_priv,
-// 			  bool from_open);
-// 	/**
-// 	 * @master_drop:
-// 	 *
-// 	 * Called whenever the minor master is dropped. Only used by vmwgfx.
-// 	 */
-// 	void (*master_drop)(struct drm_device *dev, struct drm_file *file_priv);
+	/**
+	 * @master_set:
+	 *
+	 * Called whenever the minor master is set. Only used by vmwgfx.
+	 */
+	int (*master_set)(struct drm_device *dev, struct drm_file *file_priv,
+			  bool from_open);
+	/**
+	 * @master_drop:
+	 *
+	 * Called whenever the minor master is dropped. Only used by vmwgfx.
+	 */
+	void (*master_drop)(struct drm_device *dev, struct drm_file *file_priv);
 
-// 	/**
-// 	 * @debugfs_init:
-// 	 *
-// 	 * Allows drivers to create driver-specific debugfs files.
-// 	 */
-// 	int (*debugfs_init)(struct drm_minor *minor);
+	/**
+	 * @debugfs_init:
+	 *
+	 * Allows drivers to create driver-specific debugfs files.
+	 */
+	int (*debugfs_init)(struct drm_minor *minor);
+#endif
 
 	/**
 	 * @gem_free_object: deconstructor for drm_gem_objects
@@ -533,213 +541,219 @@ struct drm_driver {
 	 */
 	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
 
-// 	/**
-// 	 * @gem_print_info:
-// 	 *
-// 	 * This callback is deprecated in favour of
-// 	 * &drm_gem_object_funcs.print_info.
-// 	 *
-// 	 * If driver subclasses struct &drm_gem_object, it can implement this
-// 	 * optional hook for printing additional driver specific info.
-// 	 *
-// 	 * drm_printf_indent() should be used in the callback passing it the
-// 	 * indent argument.
-// 	 *
-// 	 * This callback is called from drm_gem_print_info().
-// 	 */
-// 	void (*gem_print_info)(struct drm_printer *p, unsigned int indent,
-// 			       const struct drm_gem_object *obj);
+#if !defined(__AROS__)
+	/**
+	 * @gem_print_info:
+	 *
+	 * This callback is deprecated in favour of
+	 * &drm_gem_object_funcs.print_info.
+	 *
+	 * If driver subclasses struct &drm_gem_object, it can implement this
+	 * optional hook for printing additional driver specific info.
+	 *
+	 * drm_printf_indent() should be used in the callback passing it the
+	 * indent argument.
+	 *
+	 * This callback is called from drm_gem_print_info().
+	 */
+	void (*gem_print_info)(struct drm_printer *p, unsigned int indent,
+			       const struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @gem_create_object: constructor for gem objects
-// 	 *
-// 	 * Hook for allocating the GEM object struct, for use by the CMA and
-// 	 * SHMEM GEM helpers.
-// 	 */
-// 	struct drm_gem_object *(*gem_create_object)(struct drm_device *dev,
-// 						    size_t size);
-// 	/**
-// 	 * @prime_handle_to_fd:
-// 	 *
-// 	 * Main PRIME export function. Should be implemented with
-// 	 * drm_gem_prime_handle_to_fd() for GEM based drivers.
-// 	 *
-// 	 * For an in-depth discussion see :ref:`PRIME buffer sharing
-// 	 * documentation <prime_buffer_sharing>`.
-// 	 */
-// 	int (*prime_handle_to_fd)(struct drm_device *dev, struct drm_file *file_priv,
-// 				uint32_t handle, uint32_t flags, int *prime_fd);
-// 	/**
-// 	 * @prime_fd_to_handle:
-// 	 *
-// 	 * Main PRIME import function. Should be implemented with
-// 	 * drm_gem_prime_fd_to_handle() for GEM based drivers.
-// 	 *
-// 	 * For an in-depth discussion see :ref:`PRIME buffer sharing
-// 	 * documentation <prime_buffer_sharing>`.
-// 	 */
-// 	int (*prime_fd_to_handle)(struct drm_device *dev, struct drm_file *file_priv,
-// 				int prime_fd, uint32_t *handle);
-// 	/**
-// 	 * @gem_prime_export:
-// 	 *
-// 	 * Export hook for GEM drivers. Deprecated in favour of
-// 	 * &drm_gem_object_funcs.export.
-// 	 */
-// 	struct dma_buf * (*gem_prime_export)(struct drm_gem_object *obj,
-// 					     int flags);
-// 	/**
-// 	 * @gem_prime_import:
-// 	 *
-// 	 * Import hook for GEM drivers.
-// 	 *
-// 	 * This defaults to drm_gem_prime_import() if not set.
-// 	 */
-// 	struct drm_gem_object * (*gem_prime_import)(struct drm_device *dev,
-// 				struct dma_buf *dma_buf);
+	/**
+	 * @gem_create_object: constructor for gem objects
+	 *
+	 * Hook for allocating the GEM object struct, for use by the CMA and
+	 * SHMEM GEM helpers.
+	 */
+	struct drm_gem_object *(*gem_create_object)(struct drm_device *dev,
+						    size_t size);
+	/**
+	 * @prime_handle_to_fd:
+	 *
+	 * Main PRIME export function. Should be implemented with
+	 * drm_gem_prime_handle_to_fd() for GEM based drivers.
+	 *
+	 * For an in-depth discussion see :ref:`PRIME buffer sharing
+	 * documentation <prime_buffer_sharing>`.
+	 */
+	int (*prime_handle_to_fd)(struct drm_device *dev, struct drm_file *file_priv,
+				uint32_t handle, uint32_t flags, int *prime_fd);
+	/**
+	 * @prime_fd_to_handle:
+	 *
+	 * Main PRIME import function. Should be implemented with
+	 * drm_gem_prime_fd_to_handle() for GEM based drivers.
+	 *
+	 * For an in-depth discussion see :ref:`PRIME buffer sharing
+	 * documentation <prime_buffer_sharing>`.
+	 */
+	int (*prime_fd_to_handle)(struct drm_device *dev, struct drm_file *file_priv,
+				int prime_fd, uint32_t *handle);
+	/**
+	 * @gem_prime_export:
+	 *
+	 * Export hook for GEM drivers. Deprecated in favour of
+	 * &drm_gem_object_funcs.export.
+	 */
+	struct dma_buf * (*gem_prime_export)(struct drm_gem_object *obj,
+					     int flags);
+	/**
+	 * @gem_prime_import:
+	 *
+	 * Import hook for GEM drivers.
+	 *
+	 * This defaults to drm_gem_prime_import() if not set.
+	 */
+	struct drm_gem_object * (*gem_prime_import)(struct drm_device *dev,
+				struct dma_buf *dma_buf);
 
-// 	/**
-// 	 * @gem_prime_pin:
-// 	 *
-// 	 * Deprecated hook in favour of &drm_gem_object_funcs.pin.
-// 	 */
-// 	int (*gem_prime_pin)(struct drm_gem_object *obj);
+	/**
+	 * @gem_prime_pin:
+	 *
+	 * Deprecated hook in favour of &drm_gem_object_funcs.pin.
+	 */
+	int (*gem_prime_pin)(struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @gem_prime_unpin:
-// 	 *
-// 	 * Deprecated hook in favour of &drm_gem_object_funcs.unpin.
-// 	 */
-// 	void (*gem_prime_unpin)(struct drm_gem_object *obj);
+	/**
+	 * @gem_prime_unpin:
+	 *
+	 * Deprecated hook in favour of &drm_gem_object_funcs.unpin.
+	 */
+	void (*gem_prime_unpin)(struct drm_gem_object *obj);
 
 
-// 	/**
-// 	 * @gem_prime_get_sg_table:
-// 	 *
-// 	 * Deprecated hook in favour of &drm_gem_object_funcs.get_sg_table.
-// 	 */
-// 	struct sg_table *(*gem_prime_get_sg_table)(struct drm_gem_object *obj);
+	/**
+	 * @gem_prime_get_sg_table:
+	 *
+	 * Deprecated hook in favour of &drm_gem_object_funcs.get_sg_table.
+	 */
+	struct sg_table *(*gem_prime_get_sg_table)(struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @gem_prime_import_sg_table:
-// 	 *
-// 	 * Optional hook used by the PRIME helper functions
-// 	 * drm_gem_prime_import() respectively drm_gem_prime_import_dev().
-// 	 */
-// 	struct drm_gem_object *(*gem_prime_import_sg_table)(
-// 				struct drm_device *dev,
-// 				struct dma_buf_attachment *attach,
-// 				struct sg_table *sgt);
-// 	/**
-// 	 * @gem_prime_vmap:
-// 	 *
-// 	 * Deprecated vmap hook for GEM drivers. Please use
-// 	 * &drm_gem_object_funcs.vmap instead.
-// 	 */
-// 	void *(*gem_prime_vmap)(struct drm_gem_object *obj);
+	/**
+	 * @gem_prime_import_sg_table:
+	 *
+	 * Optional hook used by the PRIME helper functions
+	 * drm_gem_prime_import() respectively drm_gem_prime_import_dev().
+	 */
+	struct drm_gem_object *(*gem_prime_import_sg_table)(
+				struct drm_device *dev,
+				struct dma_buf_attachment *attach,
+				struct sg_table *sgt);
+	/**
+	 * @gem_prime_vmap:
+	 *
+	 * Deprecated vmap hook for GEM drivers. Please use
+	 * &drm_gem_object_funcs.vmap instead.
+	 */
+	void *(*gem_prime_vmap)(struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @gem_prime_vunmap:
-// 	 *
-// 	 * Deprecated vunmap hook for GEM drivers. Please use
-// 	 * &drm_gem_object_funcs.vunmap instead.
-// 	 */
-// 	void (*gem_prime_vunmap)(struct drm_gem_object *obj, void *vaddr);
+	/**
+	 * @gem_prime_vunmap:
+	 *
+	 * Deprecated vunmap hook for GEM drivers. Please use
+	 * &drm_gem_object_funcs.vunmap instead.
+	 */
+	void (*gem_prime_vunmap)(struct drm_gem_object *obj, void *vaddr);
 
-// 	/**
-// 	 * @gem_prime_mmap:
-// 	 *
-// 	 * mmap hook for GEM drivers, used to implement dma-buf mmap in the
-// 	 * PRIME helpers.
-// 	 *
-// 	 * FIXME: There's way too much duplication going on here, and also moved
-// 	 * to &drm_gem_object_funcs.
-// 	 */
-// 	int (*gem_prime_mmap)(struct drm_gem_object *obj,
-// 				struct vm_area_struct *vma);
+	/**
+	 * @gem_prime_mmap:
+	 *
+	 * mmap hook for GEM drivers, used to implement dma-buf mmap in the
+	 * PRIME helpers.
+	 *
+	 * FIXME: There's way too much duplication going on here, and also moved
+	 * to &drm_gem_object_funcs.
+	 */
+	int (*gem_prime_mmap)(struct drm_gem_object *obj,
+				struct vm_area_struct *vma);
 
-// 	/**
-// 	 * @dumb_create:
-// 	 *
-// 	 * This creates a new dumb buffer in the driver's backing storage manager (GEM,
-// 	 * TTM or something else entirely) and returns the resulting buffer handle. This
-// 	 * handle can then be wrapped up into a framebuffer modeset object.
-// 	 *
-// 	 * Note that userspace is not allowed to use such objects for render
-// 	 * acceleration - drivers must create their own private ioctls for such a use
-// 	 * case.
-// 	 *
-// 	 * Width, height and depth are specified in the &drm_mode_create_dumb
-// 	 * argument. The callback needs to fill the handle, pitch and size for
-// 	 * the created buffer.
-// 	 *
-// 	 * Called by the user via ioctl.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * Zero on success, negative errno on failure.
-// 	 */
-// 	int (*dumb_create)(struct drm_file *file_priv,
-// 			   struct drm_device *dev,
-// 			   struct drm_mode_create_dumb *args);
-// 	/**
-// 	 * @dumb_map_offset:
-// 	 *
-// 	 * Allocate an offset in the drm device node's address space to be able to
-// 	 * memory map a dumb buffer.
-// 	 *
-// 	 * The default implementation is drm_gem_create_mmap_offset(). GEM based
-// 	 * drivers must not overwrite this.
-// 	 *
-// 	 * Called by the user via ioctl.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * Zero on success, negative errno on failure.
-// 	 */
-// 	int (*dumb_map_offset)(struct drm_file *file_priv,
-// 			       struct drm_device *dev, uint32_t handle,
-// 			       uint64_t *offset);
-// 	/**
-// 	 * @dumb_destroy:
-// 	 *
-// 	 * This destroys the userspace handle for the given dumb backing storage buffer.
-// 	 * Since buffer objects must be reference counted in the kernel a buffer object
-// 	 * won't be immediately freed if a framebuffer modeset object still uses it.
-// 	 *
-// 	 * Called by the user via ioctl.
-// 	 *
-// 	 * The default implementation is drm_gem_dumb_destroy(). GEM based drivers
-// 	 * must not overwrite this.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * Zero on success, negative errno on failure.
-// 	 */
-// 	int (*dumb_destroy)(struct drm_file *file_priv,
-// 			    struct drm_device *dev,
-// 			    uint32_t handle);
+	/**
+	 * @dumb_create:
+	 *
+	 * This creates a new dumb buffer in the driver's backing storage manager (GEM,
+	 * TTM or something else entirely) and returns the resulting buffer handle. This
+	 * handle can then be wrapped up into a framebuffer modeset object.
+	 *
+	 * Note that userspace is not allowed to use such objects for render
+	 * acceleration - drivers must create their own private ioctls for such a use
+	 * case.
+	 *
+	 * Width, height and depth are specified in the &drm_mode_create_dumb
+	 * argument. The callback needs to fill the handle, pitch and size for
+	 * the created buffer.
+	 *
+	 * Called by the user via ioctl.
+	 *
+	 * Returns:
+	 *
+	 * Zero on success, negative errno on failure.
+	 */
+	int (*dumb_create)(struct drm_file *file_priv,
+			   struct drm_device *dev,
+			   struct drm_mode_create_dumb *args);
+	/**
+	 * @dumb_map_offset:
+	 *
+	 * Allocate an offset in the drm device node's address space to be able to
+	 * memory map a dumb buffer.
+	 *
+	 * The default implementation is drm_gem_create_mmap_offset(). GEM based
+	 * drivers must not overwrite this.
+	 *
+	 * Called by the user via ioctl.
+	 *
+	 * Returns:
+	 *
+	 * Zero on success, negative errno on failure.
+	 */
+	int (*dumb_map_offset)(struct drm_file *file_priv,
+			       struct drm_device *dev, uint32_t handle,
+			       uint64_t *offset);
+	/**
+	 * @dumb_destroy:
+	 *
+	 * This destroys the userspace handle for the given dumb backing storage buffer.
+	 * Since buffer objects must be reference counted in the kernel a buffer object
+	 * won't be immediately freed if a framebuffer modeset object still uses it.
+	 *
+	 * Called by the user via ioctl.
+	 *
+	 * The default implementation is drm_gem_dumb_destroy(). GEM based drivers
+	 * must not overwrite this.
+	 *
+	 * Returns:
+	 *
+	 * Zero on success, negative errno on failure.
+	 */
+	int (*dumb_destroy)(struct drm_file *file_priv,
+			    struct drm_device *dev,
+			    uint32_t handle);
 
-// 	/**
-// 	 * @gem_vm_ops: Driver private ops for this object
-// 	 *
-// 	 * For GEM drivers this is deprecated in favour of
-// 	 * &drm_gem_object_funcs.vm_ops.
-// 	 */
-// 	const struct vm_operations_struct *gem_vm_ops;
+	/**
+	 * @gem_vm_ops: Driver private ops for this object
+	 *
+	 * For GEM drivers this is deprecated in favour of
+	 * &drm_gem_object_funcs.vm_ops.
+	 */
+	const struct vm_operations_struct *gem_vm_ops;
+#endif
 
 	/** @major: driver major number */
 	int major;
-// 	/** @minor: driver minor number */
-// 	int minor;
+#if !defined(__AROS__)
+	/** @minor: driver minor number */
+	int minor;
+#endif
 	/** @patchlevel: driver patch level */
 	int patchlevel;
-// 	/** @name: driver name */
-// 	char *name;
-// 	/** @desc: driver description */
-// 	char *desc;
-// 	/** @date: driver date */
-// 	char *date;
+#if !defined(__AROS__)
+	/** @name: driver name */
+	char *name;
+	/** @desc: driver description */
+	char *desc;
+	/** @date: driver date */
+	char *date;
+#endif
 
 	/**
 	 * @driver_features:
@@ -761,74 +775,82 @@ struct drm_driver {
 	/** @num_ioctls: Number of entries in @ioctls. */
 	int num_ioctls;
 
-// 	/**
-// 	 * @fops:
-// 	 *
-// 	 * File operations for the DRM device node. See the discussion in
-// 	 * :ref:`file operations<drm_driver_fops>` for in-depth coverage and
-// 	 * some examples.
-// 	 */
-// 	const struct file_operations *fops;
+#if !defined(__AROS__)
+	/**
+	 * @fops:
+	 *
+	 * File operations for the DRM device node. See the discussion in
+	 * :ref:`file operations<drm_driver_fops>` for in-depth coverage and
+	 * some examples.
+	 */
+	const struct file_operations *fops;
 
-// 	/* Everything below here is for legacy driver, never use! */
-// 	/* private: */
+	/* Everything below here is for legacy driver, never use! */
+	/* private: */
 
-// 	/* List of devices hanging off this driver with stealth attach. */
-// 	struct list_head legacy_dev_list;
-// 	int (*firstopen) (struct drm_device *);
-// 	void (*preclose) (struct drm_device *, struct drm_file *file_priv);
-// 	int (*dma_ioctl) (struct drm_device *dev, void *data, struct drm_file *file_priv);
-// 	int (*dma_quiescent) (struct drm_device *);
-// 	int (*context_dtor) (struct drm_device *dev, int context);
-// 	int dev_priv_size;
+	/* List of devices hanging off this driver with stealth attach. */
+	struct list_head legacy_dev_list;
+	int (*firstopen) (struct drm_device *);
+	void (*preclose) (struct drm_device *, struct drm_file *file_priv);
+	int (*dma_ioctl) (struct drm_device *dev, void *data, struct drm_file *file_priv);
+	int (*dma_quiescent) (struct drm_device *);
+	int (*context_dtor) (struct drm_device *dev, int context);
+	int dev_priv_size;
+#endif
 };
 
-// extern unsigned int drm_debug;
+#if !defined(__AROS__)
+extern unsigned int drm_debug;
 
-// int drm_dev_init(struct drm_device *dev,
-// 		 struct drm_driver *driver,
-// 		 struct device *parent);
-// int devm_drm_dev_init(struct device *parent,
-// 		      struct drm_device *dev,
-// 		      struct drm_driver *driver);
-// void drm_dev_fini(struct drm_device *dev);
+int drm_dev_init(struct drm_device *dev,
+		 struct drm_driver *driver,
+		 struct device *parent);
+int devm_drm_dev_init(struct device *parent,
+		      struct drm_device *dev,
+		      struct drm_driver *driver);
+void drm_dev_fini(struct drm_device *dev);
+#endif
 
 struct drm_device *drm_dev_alloc(struct drm_driver *driver,
 				 struct device *parent);
 int drm_dev_register(struct drm_device *dev, unsigned long flags);
-// void drm_dev_unregister(struct drm_device *dev);
+#if !defined(__AROS__)
+void drm_dev_unregister(struct drm_device *dev);
+#endif
 
 void drm_dev_get(struct drm_device *dev);
 void drm_dev_put(struct drm_device *dev);
-// void drm_put_dev(struct drm_device *dev);
-// bool drm_dev_enter(struct drm_device *dev, int *idx);
-// void drm_dev_exit(int idx);
-// void drm_dev_unplug(struct drm_device *dev);
+#if !defined(__AROS__)
+void drm_put_dev(struct drm_device *dev);
+bool drm_dev_enter(struct drm_device *dev, int *idx);
+void drm_dev_exit(int idx);
+void drm_dev_unplug(struct drm_device *dev);
 
-// /**
-//  * drm_dev_is_unplugged - is a DRM device unplugged
-//  * @dev: DRM device
-//  *
-//  * This function can be called to check whether a hotpluggable is unplugged.
-//  * Unplugging itself is singalled through drm_dev_unplug(). If a device is
-//  * unplugged, these two functions guarantee that any store before calling
-//  * drm_dev_unplug() is visible to callers of this function after it completes
-//  *
-//  * WARNING: This function fundamentally races against drm_dev_unplug(). It is
-//  * recommended that drivers instead use the underlying drm_dev_enter() and
-//  * drm_dev_exit() function pairs.
-//  */
-// static inline bool drm_dev_is_unplugged(struct drm_device *dev)
-// {
-// 	int idx;
+/**
+ * drm_dev_is_unplugged - is a DRM device unplugged
+ * @dev: DRM device
+ *
+ * This function can be called to check whether a hotpluggable is unplugged.
+ * Unplugging itself is singalled through drm_dev_unplug(). If a device is
+ * unplugged, these two functions guarantee that any store before calling
+ * drm_dev_unplug() is visible to callers of this function after it completes
+ *
+ * WARNING: This function fundamentally races against drm_dev_unplug(). It is
+ * recommended that drivers instead use the underlying drm_dev_enter() and
+ * drm_dev_exit() function pairs.
+ */
+static inline bool drm_dev_is_unplugged(struct drm_device *dev)
+{
+	int idx;
 
-// 	if (drm_dev_enter(dev, &idx)) {
-// 		drm_dev_exit(idx);
-// 		return false;
-// 	}
+	if (drm_dev_enter(dev, &idx)) {
+		drm_dev_exit(idx);
+		return false;
+	}
 
-// 	return true;
-// }
+	return true;
+}
+#endif
 
 /**
  * drm_core_check_feature - check driver feature flags
@@ -860,7 +882,9 @@ static inline bool drm_drv_uses_atomic_modeset(struct drm_device *dev)
 }
 
 
-// int drm_dev_set_unique(struct drm_device *dev, const char *name);
+#if !defined(__AROS__)
+int drm_dev_set_unique(struct drm_device *dev, const char *name);
+#endif
 
 
 #endif

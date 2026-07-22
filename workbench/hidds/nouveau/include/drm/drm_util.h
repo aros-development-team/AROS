@@ -64,22 +64,24 @@
  */
 #define for_each_if(condition) if (!(condition)) {} else
 
-// /**
-//  * drm_can_sleep - returns true if currently okay to sleep
-//  *
-//  * This function shall not be used in new code.
-//  * The check for running in atomic context may not work - see linux/preempt.h.
-//  *
-//  * FIXME: All users of drm_can_sleep should be removed (see todo.rst)
-//  *
-//  * Returns:
-//  * False if kgdb is active, we are in atomic context or irqs are disabled.
-//  */
-// static inline bool drm_can_sleep(void)
-// {
-// 	if (in_atomic() || in_dbg_master() || irqs_disabled())
-// 		return false;
-// 	return true;
-// }
+#if !defined(__AROS__)
+/**
+ * drm_can_sleep - returns true if currently okay to sleep
+ *
+ * This function shall not be used in new code.
+ * The check for running in atomic context may not work - see linux/preempt.h.
+ *
+ * FIXME: All users of drm_can_sleep should be removed (see todo.rst)
+ *
+ * Returns:
+ * False if kgdb is active, we are in atomic context or irqs are disabled.
+ */
+static inline bool drm_can_sleep(void)
+{
+	if (in_atomic() || in_dbg_master() || irqs_disabled())
+		return false;
+	return true;
+}
+#endif
 
 #endif

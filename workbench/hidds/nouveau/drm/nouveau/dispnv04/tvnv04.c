@@ -36,21 +36,23 @@
 #include <drm/i2c/ch7006.h>
 #endif
 
-// static struct nvkm_i2c_bus_probe nv04_tv_encoder_info[] = {
-// 	{
-// 		{
-// 			I2C_BOARD_INFO("ch7006", 0x75),
-// 			.platform_data = &(struct ch7006_encoder_params) {
-// 				CH7006_FORMAT_RGB24m12I, CH7006_CLOCK_MASTER,
-// 				0, 0, 0,
-// 				CH7006_SYNC_SLAVE, CH7006_SYNC_SEPARATED,
-// 				CH7006_POUT_3_3V, CH7006_ACTIVE_HSYNC
-// 			}
-// 		},
-// 		0
-// 	},
-// 	{ }
-// };
+#if !defined(__AROS__)
+static struct nvkm_i2c_bus_probe nv04_tv_encoder_info[] = {
+	{
+		{
+			I2C_BOARD_INFO("ch7006", 0x75),
+			.platform_data = &(struct ch7006_encoder_params) {
+				CH7006_FORMAT_RGB24m12I, CH7006_CLOCK_MASTER,
+				0, 0, 0,
+				CH7006_SYNC_SLAVE, CH7006_SYNC_SEPARATED,
+				CH7006_POUT_3_3V, CH7006_ACTIVE_HSYNC
+			}
+		},
+		0
+	},
+	{ }
+};
+#endif
 
 int nv04_tv_identify(struct drm_device *dev, int i2c_index)
 {

@@ -34,7 +34,9 @@
 #include <linux/moduleparam.h>
 #endif
 
-// #include <drm/drm_client.h>
+#if !defined(__AROS__)
+#include <drm/drm_client.h>
+#endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_edid.h>
 #include <drm/drm_fb_helper.h>
@@ -42,7 +44,9 @@
 #include <drm/drm_modeset_helper_vtables.h>
 #include <drm/drm_print.h>
 #include <drm/drm_probe_helper.h>
-// #include <drm/drm_sysfs.h>
+#if !defined(__AROS__)
+#include <drm/drm_sysfs.h>
+#endif
 
 #include "drm_crtc_helper_internal.h"
 
@@ -65,8 +69,10 @@
  * helper libraries. See &struct drm_connector_helper_funcs for the details.
  */
 
-// static bool drm_kms_helper_poll = true;
-// module_param_named(poll, drm_kms_helper_poll, bool, 0600);
+#if !defined(__AROS__)
+static bool drm_kms_helper_poll = true;
+module_param_named(poll, drm_kms_helper_poll, bool, 0600);
+#endif
 
 static enum drm_mode_status
 drm_mode_validate_flag(const struct drm_display_mode *mode,
@@ -208,59 +214,61 @@ enum drm_mode_status drm_connector_mode_valid(struct drm_connector *connector,
 	return connector_funcs->mode_valid(connector, mode);
 }
 
-// #define DRM_OUTPUT_POLL_PERIOD (10*HZ)
-// /**
-//  * drm_kms_helper_poll_enable - re-enable output polling.
-//  * @dev: drm_device
-//  *
-//  * This function re-enables the output polling work, after it has been
-//  * temporarily disabled using drm_kms_helper_poll_disable(), for example over
-//  * suspend/resume.
-//  *
-//  * Drivers can call this helper from their device resume implementation. It is
-//  * not an error to call this even when output polling isn't enabled.
-//  *
-//  * Note that calls to enable and disable polling must be strictly ordered, which
-//  * is automatically the case when they're only call from suspend/resume
-//  * callbacks.
-//  */
-// void drm_kms_helper_poll_enable(struct drm_device *dev)
-// {
-// 	bool poll = false;
-// 	struct drm_connector *connector;
-// 	struct drm_connector_list_iter conn_iter;
-// 	unsigned long delay = DRM_OUTPUT_POLL_PERIOD;
+#if !defined(__AROS__)
+#define DRM_OUTPUT_POLL_PERIOD (10*HZ)
+/**
+ * drm_kms_helper_poll_enable - re-enable output polling.
+ * @dev: drm_device
+ *
+ * This function re-enables the output polling work, after it has been
+ * temporarily disabled using drm_kms_helper_poll_disable(), for example over
+ * suspend/resume.
+ *
+ * Drivers can call this helper from their device resume implementation. It is
+ * not an error to call this even when output polling isn't enabled.
+ *
+ * Note that calls to enable and disable polling must be strictly ordered, which
+ * is automatically the case when they're only call from suspend/resume
+ * callbacks.
+ */
+void drm_kms_helper_poll_enable(struct drm_device *dev)
+{
+	bool poll = false;
+	struct drm_connector *connector;
+	struct drm_connector_list_iter conn_iter;
+	unsigned long delay = DRM_OUTPUT_POLL_PERIOD;
 
-// 	if (!dev->mode_config.poll_enabled || !drm_kms_helper_poll)
-// 		return;
+	if (!dev->mode_config.poll_enabled || !drm_kms_helper_poll)
+		return;
 
-// 	drm_connector_list_iter_begin(dev, &conn_iter);
-// 	drm_for_each_connector_iter(connector, &conn_iter) {
-// 		if (connector->polled & (DRM_CONNECTOR_POLL_CONNECT |
-// 					 DRM_CONNECTOR_POLL_DISCONNECT))
-// 			poll = true;
-// 	}
-// 	drm_connector_list_iter_end(&conn_iter);
+	drm_connector_list_iter_begin(dev, &conn_iter);
+	drm_for_each_connector_iter(connector, &conn_iter) {
+		if (connector->polled & (DRM_CONNECTOR_POLL_CONNECT |
+					 DRM_CONNECTOR_POLL_DISCONNECT))
+			poll = true;
+	}
+	drm_connector_list_iter_end(&conn_iter);
 
-// 	if (dev->mode_config.delayed_event) {
-// 		/*
-// 		 * FIXME:
-// 		 *
-// 		 * Use short (1s) delay to handle the initial delayed event.
-// 		 * This delay should not be needed, but Optimus/nouveau will
-// 		 * fail in a mysterious way if the delayed event is handled as
-// 		 * soon as possible like it is done in
-// 		 * drm_helper_probe_single_connector_modes() in case the poll
-// 		 * was enabled before.
-// 		 */
-// 		poll = true;
-// 		delay = HZ;
-// 	}
+	if (dev->mode_config.delayed_event) {
+		/*
+		 * FIXME:
+		 *
+		 * Use short (1s) delay to handle the initial delayed event.
+		 * This delay should not be needed, but Optimus/nouveau will
+		 * fail in a mysterious way if the delayed event is handled as
+		 * soon as possible like it is done in
+		 * drm_helper_probe_single_connector_modes() in case the poll
+		 * was enabled before.
+		 */
+		poll = true;
+		delay = HZ;
+	}
 
-// 	if (poll)
-// 		schedule_delayed_work(&dev->mode_config.output_poll_work, delay);
-// }
-// EXPORT_SYMBOL(drm_kms_helper_poll_enable);
+	if (poll)
+		schedule_delayed_work(&dev->mode_config.output_poll_work, delay);
+}
+EXPORT_SYMBOL(drm_kms_helper_poll_enable);
+#endif
 
 #if defined(__AROS__)
 struct drm_modeset_acquire_ctx
@@ -421,7 +429,9 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 	enum drm_connector_status old_status;
 	struct drm_modeset_acquire_ctx ctx;
 
-	// WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
+#if !defined(__AROS__)
+	WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
+#endif
 
 #if !defined(__AROS__)
 	drm_modeset_acquire_init(&ctx, 0);
@@ -586,206 +596,208 @@ prune:
 }
 EXPORT_SYMBOL(drm_helper_probe_single_connector_modes);
 
-// /**
-//  * drm_kms_helper_hotplug_event - fire off KMS hotplug events
-//  * @dev: drm_device whose connector state changed
-//  *
-//  * This function fires off the uevent for userspace and also calls the
-//  * output_poll_changed function, which is most commonly used to inform the fbdev
-//  * emulation code and allow it to update the fbcon output configuration.
-//  *
-//  * Drivers should call this from their hotplug handling code when a change is
-//  * detected. Note that this function does not do any output detection of its
-//  * own, like drm_helper_hpd_irq_event() does - this is assumed to be done by the
-//  * driver already.
-//  *
-//  * This function must be called from process context with no mode
-//  * setting locks held.
-//  */
-// void drm_kms_helper_hotplug_event(struct drm_device *dev)
-// {
-// 	/* send a uevent + call fbdev */
-// 	drm_sysfs_hotplug_event(dev);
-// 	if (dev->mode_config.funcs->output_poll_changed)
-// 		dev->mode_config.funcs->output_poll_changed(dev);
+#if !defined(__AROS__)
+/**
+ * drm_kms_helper_hotplug_event - fire off KMS hotplug events
+ * @dev: drm_device whose connector state changed
+ *
+ * This function fires off the uevent for userspace and also calls the
+ * output_poll_changed function, which is most commonly used to inform the fbdev
+ * emulation code and allow it to update the fbcon output configuration.
+ *
+ * Drivers should call this from their hotplug handling code when a change is
+ * detected. Note that this function does not do any output detection of its
+ * own, like drm_helper_hpd_irq_event() does - this is assumed to be done by the
+ * driver already.
+ *
+ * This function must be called from process context with no mode
+ * setting locks held.
+ */
+void drm_kms_helper_hotplug_event(struct drm_device *dev)
+{
+	/* send a uevent + call fbdev */
+	drm_sysfs_hotplug_event(dev);
+	if (dev->mode_config.funcs->output_poll_changed)
+		dev->mode_config.funcs->output_poll_changed(dev);
 
-// 	drm_client_dev_hotplug(dev);
-// }
-// EXPORT_SYMBOL(drm_kms_helper_hotplug_event);
+	drm_client_dev_hotplug(dev);
+}
+EXPORT_SYMBOL(drm_kms_helper_hotplug_event);
 
-// static void output_poll_execute(struct work_struct *work)
-// {
-// 	struct delayed_work *delayed_work = to_delayed_work(work);
-// 	struct drm_device *dev = container_of(delayed_work, struct drm_device, mode_config.output_poll_work);
-// 	struct drm_connector *connector;
-// 	struct drm_connector_list_iter conn_iter;
-// 	enum drm_connector_status old_status;
-// 	bool repoll = false, changed;
+static void output_poll_execute(struct work_struct *work)
+{
+	struct delayed_work *delayed_work = to_delayed_work(work);
+	struct drm_device *dev = container_of(delayed_work, struct drm_device, mode_config.output_poll_work);
+	struct drm_connector *connector;
+	struct drm_connector_list_iter conn_iter;
+	enum drm_connector_status old_status;
+	bool repoll = false, changed;
 
-// 	if (!dev->mode_config.poll_enabled)
-// 		return;
+	if (!dev->mode_config.poll_enabled)
+		return;
 
-// 	/* Pick up any changes detected by the probe functions. */
-// 	changed = dev->mode_config.delayed_event;
-// 	dev->mode_config.delayed_event = false;
+	/* Pick up any changes detected by the probe functions. */
+	changed = dev->mode_config.delayed_event;
+	dev->mode_config.delayed_event = false;
 
-// 	if (!drm_kms_helper_poll)
-// 		goto out;
+	if (!drm_kms_helper_poll)
+		goto out;
 
-// 	if (!mutex_trylock(&dev->mode_config.mutex)) {
-// 		repoll = true;
-// 		goto out;
-// 	}
+	if (!mutex_trylock(&dev->mode_config.mutex)) {
+		repoll = true;
+		goto out;
+	}
 
-// 	drm_connector_list_iter_begin(dev, &conn_iter);
-// 	drm_for_each_connector_iter(connector, &conn_iter) {
-// 		/* Ignore forced connectors. */
-// 		if (connector->force)
-// 			continue;
+	drm_connector_list_iter_begin(dev, &conn_iter);
+	drm_for_each_connector_iter(connector, &conn_iter) {
+		/* Ignore forced connectors. */
+		if (connector->force)
+			continue;
 
-// 		/* Ignore HPD capable connectors and connectors where we don't
-// 		 * want any hotplug detection at all for polling. */
-// 		if (!connector->polled || connector->polled == DRM_CONNECTOR_POLL_HPD)
-// 			continue;
+		/* Ignore HPD capable connectors and connectors where we don't
+		 * want any hotplug detection at all for polling. */
+		if (!connector->polled || connector->polled == DRM_CONNECTOR_POLL_HPD)
+			continue;
 
-// 		old_status = connector->status;
-// 		/* if we are connected and don't want to poll for disconnect
-// 		   skip it */
-// 		if (old_status == connector_status_connected &&
-// 		    !(connector->polled & DRM_CONNECTOR_POLL_DISCONNECT))
-// 			continue;
+		old_status = connector->status;
+		/* if we are connected and don't want to poll for disconnect
+		   skip it */
+		if (old_status == connector_status_connected &&
+		    !(connector->polled & DRM_CONNECTOR_POLL_DISCONNECT))
+			continue;
 
-// 		repoll = true;
+		repoll = true;
 
-// 		connector->status = drm_helper_probe_detect(connector, NULL, false);
-// 		if (old_status != connector->status) {
-// 			const char *old, *new;
+		connector->status = drm_helper_probe_detect(connector, NULL, false);
+		if (old_status != connector->status) {
+			const char *old, *new;
 
-// 			/*
-// 			 * The poll work sets force=false when calling detect so
-// 			 * that drivers can avoid to do disruptive tests (e.g.
-// 			 * when load detect cycles could cause flickering on
-// 			 * other, running displays). This bears the risk that we
-// 			 * flip-flop between unknown here in the poll work and
-// 			 * the real state when userspace forces a full detect
-// 			 * call after receiving a hotplug event due to this
-// 			 * change.
-// 			 *
-// 			 * Hence clamp an unknown detect status to the old
-// 			 * value.
-// 			 */
-// 			if (connector->status == connector_status_unknown) {
-// 				connector->status = old_status;
-// 				continue;
-// 			}
+			/*
+			 * The poll work sets force=false when calling detect so
+			 * that drivers can avoid to do disruptive tests (e.g.
+			 * when load detect cycles could cause flickering on
+			 * other, running displays). This bears the risk that we
+			 * flip-flop between unknown here in the poll work and
+			 * the real state when userspace forces a full detect
+			 * call after receiving a hotplug event due to this
+			 * change.
+			 *
+			 * Hence clamp an unknown detect status to the old
+			 * value.
+			 */
+			if (connector->status == connector_status_unknown) {
+				connector->status = old_status;
+				continue;
+			}
 
-// 			old = drm_get_connector_status_name(old_status);
-// 			new = drm_get_connector_status_name(connector->status);
+			old = drm_get_connector_status_name(old_status);
+			new = drm_get_connector_status_name(connector->status);
 
-// 			DRM_DEBUG_KMS("[CONNECTOR:%d:%s] "
-// 				      "status updated from %s to %s\n",
-// 				      connector->base.id,
-// 				      connector->name,
-// 				      old, new);
+			DRM_DEBUG_KMS("[CONNECTOR:%d:%s] "
+				      "status updated from %s to %s\n",
+				      connector->base.id,
+				      connector->name,
+				      old, new);
 
-// 			changed = true;
-// 		}
-// 	}
-// 	drm_connector_list_iter_end(&conn_iter);
+			changed = true;
+		}
+	}
+	drm_connector_list_iter_end(&conn_iter);
 
-// 	mutex_unlock(&dev->mode_config.mutex);
+	mutex_unlock(&dev->mode_config.mutex);
 
-// out:
-// 	if (changed)
-// 		drm_kms_helper_hotplug_event(dev);
+out:
+	if (changed)
+		drm_kms_helper_hotplug_event(dev);
 
-// 	if (repoll)
-// 		schedule_delayed_work(delayed_work, DRM_OUTPUT_POLL_PERIOD);
-// }
+	if (repoll)
+		schedule_delayed_work(delayed_work, DRM_OUTPUT_POLL_PERIOD);
+}
 
-// /**
-//  * drm_kms_helper_is_poll_worker - is %current task an output poll worker?
-//  *
-//  * Determine if %current task is an output poll worker.  This can be used
-//  * to select distinct code paths for output polling versus other contexts.
-//  *
-//  * One use case is to avoid a deadlock between the output poll worker and
-//  * the autosuspend worker wherein the latter waits for polling to finish
-//  * upon calling drm_kms_helper_poll_disable(), while the former waits for
-//  * runtime suspend to finish upon calling pm_runtime_get_sync() in a
-//  * connector ->detect hook.
-//  */
-// bool drm_kms_helper_is_poll_worker(void)
-// {
-// 	struct work_struct *work = current_work();
+/**
+ * drm_kms_helper_is_poll_worker - is %current task an output poll worker?
+ *
+ * Determine if %current task is an output poll worker.  This can be used
+ * to select distinct code paths for output polling versus other contexts.
+ *
+ * One use case is to avoid a deadlock between the output poll worker and
+ * the autosuspend worker wherein the latter waits for polling to finish
+ * upon calling drm_kms_helper_poll_disable(), while the former waits for
+ * runtime suspend to finish upon calling pm_runtime_get_sync() in a
+ * connector ->detect hook.
+ */
+bool drm_kms_helper_is_poll_worker(void)
+{
+	struct work_struct *work = current_work();
 
-// 	return work && work->func == output_poll_execute;
-// }
-// EXPORT_SYMBOL(drm_kms_helper_is_poll_worker);
+	return work && work->func == output_poll_execute;
+}
+EXPORT_SYMBOL(drm_kms_helper_is_poll_worker);
 
-// /**
-//  * drm_kms_helper_poll_disable - disable output polling
-//  * @dev: drm_device
-//  *
-//  * This function disables the output polling work.
-//  *
-//  * Drivers can call this helper from their device suspend implementation. It is
-//  * not an error to call this even when output polling isn't enabled or already
-//  * disabled. Polling is re-enabled by calling drm_kms_helper_poll_enable().
-//  *
-//  * Note that calls to enable and disable polling must be strictly ordered, which
-//  * is automatically the case when they're only call from suspend/resume
-//  * callbacks.
-//  */
-// void drm_kms_helper_poll_disable(struct drm_device *dev)
-// {
-// 	if (!dev->mode_config.poll_enabled)
-// 		return;
-// 	cancel_delayed_work_sync(&dev->mode_config.output_poll_work);
-// }
-// EXPORT_SYMBOL(drm_kms_helper_poll_disable);
+/**
+ * drm_kms_helper_poll_disable - disable output polling
+ * @dev: drm_device
+ *
+ * This function disables the output polling work.
+ *
+ * Drivers can call this helper from their device suspend implementation. It is
+ * not an error to call this even when output polling isn't enabled or already
+ * disabled. Polling is re-enabled by calling drm_kms_helper_poll_enable().
+ *
+ * Note that calls to enable and disable polling must be strictly ordered, which
+ * is automatically the case when they're only call from suspend/resume
+ * callbacks.
+ */
+void drm_kms_helper_poll_disable(struct drm_device *dev)
+{
+	if (!dev->mode_config.poll_enabled)
+		return;
+	cancel_delayed_work_sync(&dev->mode_config.output_poll_work);
+}
+EXPORT_SYMBOL(drm_kms_helper_poll_disable);
 
-// /**
-//  * drm_kms_helper_poll_init - initialize and enable output polling
-//  * @dev: drm_device
-//  *
-//  * This function intializes and then also enables output polling support for
-//  * @dev. Drivers which do not have reliable hotplug support in hardware can use
-//  * this helper infrastructure to regularly poll such connectors for changes in
-//  * their connection state.
-//  *
-//  * Drivers can control which connectors are polled by setting the
-//  * DRM_CONNECTOR_POLL_CONNECT and DRM_CONNECTOR_POLL_DISCONNECT flags. On
-//  * connectors where probing live outputs can result in visual distortion drivers
-//  * should not set the DRM_CONNECTOR_POLL_DISCONNECT flag to avoid this.
-//  * Connectors which have no flag or only DRM_CONNECTOR_POLL_HPD set are
-//  * completely ignored by the polling logic.
-//  *
-//  * Note that a connector can be both polled and probed from the hotplug handler,
-//  * in case the hotplug interrupt is known to be unreliable.
-//  */
-// void drm_kms_helper_poll_init(struct drm_device *dev)
-// {
-// 	INIT_DELAYED_WORK(&dev->mode_config.output_poll_work, output_poll_execute);
-// 	dev->mode_config.poll_enabled = true;
+/**
+ * drm_kms_helper_poll_init - initialize and enable output polling
+ * @dev: drm_device
+ *
+ * This function intializes and then also enables output polling support for
+ * @dev. Drivers which do not have reliable hotplug support in hardware can use
+ * this helper infrastructure to regularly poll such connectors for changes in
+ * their connection state.
+ *
+ * Drivers can control which connectors are polled by setting the
+ * DRM_CONNECTOR_POLL_CONNECT and DRM_CONNECTOR_POLL_DISCONNECT flags. On
+ * connectors where probing live outputs can result in visual distortion drivers
+ * should not set the DRM_CONNECTOR_POLL_DISCONNECT flag to avoid this.
+ * Connectors which have no flag or only DRM_CONNECTOR_POLL_HPD set are
+ * completely ignored by the polling logic.
+ *
+ * Note that a connector can be both polled and probed from the hotplug handler,
+ * in case the hotplug interrupt is known to be unreliable.
+ */
+void drm_kms_helper_poll_init(struct drm_device *dev)
+{
+	INIT_DELAYED_WORK(&dev->mode_config.output_poll_work, output_poll_execute);
+	dev->mode_config.poll_enabled = true;
 
-// 	drm_kms_helper_poll_enable(dev);
-// }
-// EXPORT_SYMBOL(drm_kms_helper_poll_init);
+	drm_kms_helper_poll_enable(dev);
+}
+EXPORT_SYMBOL(drm_kms_helper_poll_init);
 
-// /**
-//  * drm_kms_helper_poll_fini - disable output polling and clean it up
-//  * @dev: drm_device
-//  */
-// void drm_kms_helper_poll_fini(struct drm_device *dev)
-// {
-// 	if (!dev->mode_config.poll_enabled)
-// 		return;
+/**
+ * drm_kms_helper_poll_fini - disable output polling and clean it up
+ * @dev: drm_device
+ */
+void drm_kms_helper_poll_fini(struct drm_device *dev)
+{
+	if (!dev->mode_config.poll_enabled)
+		return;
 
-// 	dev->mode_config.poll_enabled = false;
-// 	cancel_delayed_work_sync(&dev->mode_config.output_poll_work);
-// }
-// EXPORT_SYMBOL(drm_kms_helper_poll_fini);
+	dev->mode_config.poll_enabled = false;
+	cancel_delayed_work_sync(&dev->mode_config.output_poll_work);
+}
+EXPORT_SYMBOL(drm_kms_helper_poll_fini);
+#endif
 
 /**
  * drm_helper_hpd_irq_event - hotplug processing

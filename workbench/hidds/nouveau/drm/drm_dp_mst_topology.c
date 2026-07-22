@@ -51,9 +51,11 @@
  * protocol. The helpers contain a topology manager and bandwidth manager.
  * The helpers encapsulate the sending and received of sideband msgs.
  */
-// static bool dump_dp_payload_table(struct drm_dp_mst_topology_mgr *mgr,
-// 				  char *buf);
-// static int test_calc_pbn_mode(void);
+#if !defined(__AROS__)
+static bool dump_dp_payload_table(struct drm_dp_mst_topology_mgr *mgr,
+				  char *buf);
+static int test_calc_pbn_mode(void);
+#endif
 
 static void drm_dp_mst_topology_put_port(struct drm_dp_mst_port *port);
 
@@ -61,9 +63,11 @@ static int drm_dp_dpcd_write_payload(struct drm_dp_mst_topology_mgr *mgr,
 				     int id,
 				     struct drm_dp_payload *payload);
 
-// static int drm_dp_send_dpcd_read(struct drm_dp_mst_topology_mgr *mgr,
-// 				 struct drm_dp_mst_port *port,
-// 				 int offset, int size, u8 *bytes);
+#if !defined(__AROS__)
+static int drm_dp_send_dpcd_read(struct drm_dp_mst_topology_mgr *mgr,
+				 struct drm_dp_mst_port *port,
+				 int offset, int size, u8 *bytes);
+#endif
 static int drm_dp_send_dpcd_write(struct drm_dp_mst_topology_mgr *mgr,
 				  struct drm_dp_mst_port *port,
 				  int offset, int size, u8 *bytes);
@@ -110,32 +114,34 @@ static const char *drm_dp_mst_req_type_str(u8 req_type)
 	return req_type_str[req_type];
 }
 
-// #undef DP_STR
-// #define DP_STR(x) [DP_NAK_ ## x] = #x
+#if !defined(__AROS__)
+#undef DP_STR
+#define DP_STR(x) [DP_NAK_ ## x] = #x
 
-// static const char *drm_dp_mst_nak_reason_str(u8 nak_reason)
-// {
-// 	static const char * const nak_reason_str[] = {
-// 		DP_STR(WRITE_FAILURE),
-// 		DP_STR(INVALID_READ),
-// 		DP_STR(CRC_FAILURE),
-// 		DP_STR(BAD_PARAM),
-// 		DP_STR(DEFER),
-// 		DP_STR(LINK_FAILURE),
-// 		DP_STR(NO_RESOURCES),
-// 		DP_STR(DPCD_FAIL),
-// 		DP_STR(I2C_NAK),
-// 		DP_STR(ALLOCATE_FAIL),
-// 	};
+static const char *drm_dp_mst_nak_reason_str(u8 nak_reason)
+{
+	static const char * const nak_reason_str[] = {
+		DP_STR(WRITE_FAILURE),
+		DP_STR(INVALID_READ),
+		DP_STR(CRC_FAILURE),
+		DP_STR(BAD_PARAM),
+		DP_STR(DEFER),
+		DP_STR(LINK_FAILURE),
+		DP_STR(NO_RESOURCES),
+		DP_STR(DPCD_FAIL),
+		DP_STR(I2C_NAK),
+		DP_STR(ALLOCATE_FAIL),
+	};
 
-// 	if (nak_reason >= ARRAY_SIZE(nak_reason_str) ||
-// 	    !nak_reason_str[nak_reason])
-// 		return "unknown";
+	if (nak_reason >= ARRAY_SIZE(nak_reason_str) ||
+	    !nak_reason_str[nak_reason])
+		return "unknown";
 
-// 	return nak_reason_str[nak_reason];
-// }
+	return nak_reason_str[nak_reason];
+}
 
-// #undef DP_STR
+#undef DP_STR
+#endif
 
 /* sideband msg handling */
 static u8 drm_dp_msg_header_crc4(const uint8_t *data, size_t num_nibbles)
@@ -793,21 +799,23 @@ static int build_allocate_payload(struct drm_dp_sideband_msg_tx *msg, int port_n
 	return 0;
 }
 
-// static int build_power_updown_phy(struct drm_dp_sideband_msg_tx *msg,
-// 				  int port_num, bool power_up)
-// {
-// 	struct drm_dp_sideband_msg_req_body req;
+#if !defined(__AROS__)
+static int build_power_updown_phy(struct drm_dp_sideband_msg_tx *msg,
+				  int port_num, bool power_up)
+{
+	struct drm_dp_sideband_msg_req_body req;
 
-// 	if (power_up)
-// 		req.req_type = DP_POWER_UP_PHY;
-// 	else
-// 		req.req_type = DP_POWER_DOWN_PHY;
+	if (power_up)
+		req.req_type = DP_POWER_UP_PHY;
+	else
+		req.req_type = DP_POWER_DOWN_PHY;
 
-// 	req.u.port_num.port_number = port_num;
-// 	drm_dp_encode_sideband_req(&req, msg);
-// 	msg->path_msg = true;
-// 	return 0;
-// }
+	req.u.port_num.port_number = port_num;
+	drm_dp_encode_sideband_req(&req, msg);
+	msg->path_msg = true;
+	return 0;
+}
+#endif
 
 static int drm_dp_mst_assign_payload_id(struct drm_dp_mst_topology_mgr *mgr,
 					struct drm_dp_vcpi *vcpi)
@@ -1499,51 +1507,53 @@ static bool drm_dp_port_setup_pdt(struct drm_dp_mst_port *port)
 	return send_link;
 }
 
-// /**
-//  * drm_dp_mst_dpcd_read() - read a series of bytes from the DPCD via sideband
-//  * @aux: Fake sideband AUX CH
-//  * @offset: address of the (first) register to read
-//  * @buffer: buffer to store the register values
-//  * @size: number of bytes in @buffer
-//  *
-//  * Performs the same functionality for remote devices via
-//  * sideband messaging as drm_dp_dpcd_read() does for local
-//  * devices via actual AUX CH.
-//  *
-//  * Return: Number of bytes read, or negative error code on failure.
-//  */
-// ssize_t drm_dp_mst_dpcd_read(struct drm_dp_aux *aux,
-// 			     unsigned int offset, void *buffer, size_t size)
-// {
-// 	struct drm_dp_mst_port *port = container_of(aux, struct drm_dp_mst_port,
-// 						    aux);
+#if !defined(__AROS__)
+/**
+ * drm_dp_mst_dpcd_read() - read a series of bytes from the DPCD via sideband
+ * @aux: Fake sideband AUX CH
+ * @offset: address of the (first) register to read
+ * @buffer: buffer to store the register values
+ * @size: number of bytes in @buffer
+ *
+ * Performs the same functionality for remote devices via
+ * sideband messaging as drm_dp_dpcd_read() does for local
+ * devices via actual AUX CH.
+ *
+ * Return: Number of bytes read, or negative error code on failure.
+ */
+ssize_t drm_dp_mst_dpcd_read(struct drm_dp_aux *aux,
+			     unsigned int offset, void *buffer, size_t size)
+{
+	struct drm_dp_mst_port *port = container_of(aux, struct drm_dp_mst_port,
+						    aux);
 
-// 	return drm_dp_send_dpcd_read(port->mgr, port,
-// 				     offset, size, buffer);
-// }
+	return drm_dp_send_dpcd_read(port->mgr, port,
+				     offset, size, buffer);
+}
 
-// /**
-//  * drm_dp_mst_dpcd_write() - write a series of bytes to the DPCD via sideband
-//  * @aux: Fake sideband AUX CH
-//  * @offset: address of the (first) register to write
-//  * @buffer: buffer containing the values to write
-//  * @size: number of bytes in @buffer
-//  *
-//  * Performs the same functionality for remote devices via
-//  * sideband messaging as drm_dp_dpcd_write() does for local
-//  * devices via actual AUX CH.
-//  *
-//  * Return: 0 on success, negative error code on failure.
-//  */
-// ssize_t drm_dp_mst_dpcd_write(struct drm_dp_aux *aux,
-// 			      unsigned int offset, void *buffer, size_t size)
-// {
-// 	struct drm_dp_mst_port *port = container_of(aux, struct drm_dp_mst_port,
-// 						    aux);
+/**
+ * drm_dp_mst_dpcd_write() - write a series of bytes to the DPCD via sideband
+ * @aux: Fake sideband AUX CH
+ * @offset: address of the (first) register to write
+ * @buffer: buffer containing the values to write
+ * @size: number of bytes in @buffer
+ *
+ * Performs the same functionality for remote devices via
+ * sideband messaging as drm_dp_dpcd_write() does for local
+ * devices via actual AUX CH.
+ *
+ * Return: 0 on success, negative error code on failure.
+ */
+ssize_t drm_dp_mst_dpcd_write(struct drm_dp_aux *aux,
+			      unsigned int offset, void *buffer, size_t size)
+{
+	struct drm_dp_mst_port *port = container_of(aux, struct drm_dp_mst_port,
+						    aux);
 
-// 	return drm_dp_send_dpcd_write(port->mgr, port,
-// 				      offset, size, buffer);
-// }
+	return drm_dp_send_dpcd_write(port->mgr, port,
+				      offset, size, buffer);
+}
+#endif
 
 static void drm_dp_check_mstb_guid(struct drm_dp_mst_branch *mstb, u8 *guid)
 {
@@ -1588,45 +1598,47 @@ static void build_mst_prop_path(const struct drm_dp_mst_branch *mstb,
 	strlcat(proppath, temp, proppath_size);
 }
 
-// /**
-//  * drm_dp_mst_connector_late_register() - Late MST connector registration
-//  * @connector: The MST connector
-//  * @port: The MST port for this connector
-//  *
-//  * Helper to register the remote aux device for this MST port. Drivers should
-//  * call this from their mst connector's late_register hook to enable MST aux
-//  * devices.
-//  *
-//  * Return: 0 on success, negative error code on failure.
-//  */
-// int drm_dp_mst_connector_late_register(struct drm_connector *connector,
-// 				       struct drm_dp_mst_port *port)
-// {
-// 	DRM_DEBUG_KMS("registering %s remote bus for %s\n",
-// 		      port->aux.name, connector->kdev->kobj.name);
+#if !defined(__AROS__)
+/**
+ * drm_dp_mst_connector_late_register() - Late MST connector registration
+ * @connector: The MST connector
+ * @port: The MST port for this connector
+ *
+ * Helper to register the remote aux device for this MST port. Drivers should
+ * call this from their mst connector's late_register hook to enable MST aux
+ * devices.
+ *
+ * Return: 0 on success, negative error code on failure.
+ */
+int drm_dp_mst_connector_late_register(struct drm_connector *connector,
+				       struct drm_dp_mst_port *port)
+{
+	DRM_DEBUG_KMS("registering %s remote bus for %s\n",
+		      port->aux.name, connector->kdev->kobj.name);
 
-// 	port->aux.dev = connector->kdev;
-// 	return drm_dp_aux_register_devnode(&port->aux);
-// }
-// EXPORT_SYMBOL(drm_dp_mst_connector_late_register);
+	port->aux.dev = connector->kdev;
+	return drm_dp_aux_register_devnode(&port->aux);
+}
+EXPORT_SYMBOL(drm_dp_mst_connector_late_register);
 
-// /**
-//  * drm_dp_mst_connector_early_unregister() - Early MST connector unregistration
-//  * @connector: The MST connector
-//  * @port: The MST port for this connector
-//  *
-//  * Helper to unregister the remote aux device for this MST port, registered by
-//  * drm_dp_mst_connector_late_register(). Drivers should call this from their mst
-//  * connector's early_unregister hook.
-//  */
-// void drm_dp_mst_connector_early_unregister(struct drm_connector *connector,
-// 					   struct drm_dp_mst_port *port)
-// {
-// 	DRM_DEBUG_KMS("unregistering %s remote bus for %s\n",
-// 		      port->aux.name, connector->kdev->kobj.name);
-// 	drm_dp_aux_unregister_devnode(&port->aux);
-// }
-// EXPORT_SYMBOL(drm_dp_mst_connector_early_unregister);
+/**
+ * drm_dp_mst_connector_early_unregister() - Early MST connector unregistration
+ * @connector: The MST connector
+ * @port: The MST port for this connector
+ *
+ * Helper to unregister the remote aux device for this MST port, registered by
+ * drm_dp_mst_connector_late_register(). Drivers should call this from their mst
+ * connector's early_unregister hook.
+ */
+void drm_dp_mst_connector_early_unregister(struct drm_connector *connector,
+					   struct drm_dp_mst_port *port)
+{
+	DRM_DEBUG_KMS("unregistering %s remote bus for %s\n",
+		      port->aux.name, connector->kdev->kobj.name);
+	drm_dp_aux_unregister_devnode(&port->aux);
+}
+EXPORT_SYMBOL(drm_dp_mst_connector_early_unregister);
+#endif
 
 static void drm_dp_add_port(struct drm_dp_mst_branch *mstb,
 			    struct drm_device *dev,
@@ -1922,18 +1934,20 @@ NOT_IMPLEMENTED_STOP
 	return false;
 }
 
-// static int build_dpcd_read(struct drm_dp_sideband_msg_tx *msg, u8 port_num, u32 offset, u8 num_bytes)
-// {
-// 	struct drm_dp_sideband_msg_req_body req;
+#if !defined(__AROS__)
+static int build_dpcd_read(struct drm_dp_sideband_msg_tx *msg, u8 port_num, u32 offset, u8 num_bytes)
+{
+	struct drm_dp_sideband_msg_req_body req;
 
-// 	req.req_type = DP_REMOTE_DPCD_READ;
-// 	req.u.dpcd_read.port_number = port_num;
-// 	req.u.dpcd_read.dpcd_address = offset;
-// 	req.u.dpcd_read.num_bytes = num_bytes;
-// 	drm_dp_encode_sideband_req(&req, msg);
+	req.req_type = DP_REMOTE_DPCD_READ;
+	req.u.dpcd_read.port_number = port_num;
+	req.u.dpcd_read.dpcd_address = offset;
+	req.u.dpcd_read.num_bytes = num_bytes;
+	drm_dp_encode_sideband_req(&req, msg);
 
-// 	return 0;
-// }
+	return 0;
+}
+#endif
 
 static int drm_dp_send_sideband_msg(struct drm_dp_mst_topology_mgr *mgr,
 				    bool up, u8 *msg, int len)
@@ -2067,7 +2081,9 @@ static void process_single_down_tx_qlock(struct drm_dp_mst_topology_mgr *mgr)
 	struct drm_dp_sideband_msg_tx *txmsg;
 	int ret;
 
-	// WARN_ON(!mutex_is_locked(&mgr->qlock));
+#if !defined(__AROS__)
+	WARN_ON(!mutex_is_locked(&mgr->qlock));
+#endif
 
 	/* construct a chunk from the first msg in the tx_msg queue */
 	if (list_empty(&mgr->tx_msg_downq))
@@ -2314,39 +2330,41 @@ fail_put:
 	return ret;
 }
 
-// int drm_dp_send_power_updown_phy(struct drm_dp_mst_topology_mgr *mgr,
-// 				 struct drm_dp_mst_port *port, bool power_up)
-// {
-// 	struct drm_dp_sideband_msg_tx *txmsg;
-// 	int len, ret;
+#if !defined(__AROS__)
+int drm_dp_send_power_updown_phy(struct drm_dp_mst_topology_mgr *mgr,
+				 struct drm_dp_mst_port *port, bool power_up)
+{
+	struct drm_dp_sideband_msg_tx *txmsg;
+	int len, ret;
 
-// 	port = drm_dp_mst_topology_get_port_validated(mgr, port);
-// 	if (!port)
-// 		return -EINVAL;
+	port = drm_dp_mst_topology_get_port_validated(mgr, port);
+	if (!port)
+		return -EINVAL;
 
-// 	txmsg = kzalloc(sizeof(*txmsg), GFP_KERNEL);
-// 	if (!txmsg) {
-// 		drm_dp_mst_topology_put_port(port);
-// 		return -ENOMEM;
-// 	}
+	txmsg = kzalloc(sizeof(*txmsg), GFP_KERNEL);
+	if (!txmsg) {
+		drm_dp_mst_topology_put_port(port);
+		return -ENOMEM;
+	}
 
-// 	txmsg->dst = port->parent;
-// 	len = build_power_updown_phy(txmsg, port->port_num, power_up);
-// 	drm_dp_queue_down_tx(mgr, txmsg);
+	txmsg->dst = port->parent;
+	len = build_power_updown_phy(txmsg, port->port_num, power_up);
+	drm_dp_queue_down_tx(mgr, txmsg);
 
-// 	ret = drm_dp_mst_wait_tx_reply(port->parent, txmsg);
-// 	if (ret > 0) {
-// 		if (txmsg->reply.reply_type == DP_SIDEBAND_REPLY_NAK)
-// 			ret = -EINVAL;
-// 		else
-// 			ret = 0;
-// 	}
-// 	kfree(txmsg);
-// 	drm_dp_mst_topology_put_port(port);
+	ret = drm_dp_mst_wait_tx_reply(port->parent, txmsg);
+	if (ret > 0) {
+		if (txmsg->reply.reply_type == DP_SIDEBAND_REPLY_NAK)
+			ret = -EINVAL;
+		else
+			ret = 0;
+	}
+	kfree(txmsg);
+	drm_dp_mst_topology_put_port(port);
 
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_dp_send_power_updown_phy);
+	return ret;
+}
+EXPORT_SYMBOL(drm_dp_send_power_updown_phy);
+#endif
 
 static int drm_dp_create_payload_step1(struct drm_dp_mst_topology_mgr *mgr,
 				       int id,
@@ -2549,58 +2567,60 @@ int drm_dp_update_payload_part2(struct drm_dp_mst_topology_mgr *mgr)
 }
 EXPORT_SYMBOL(drm_dp_update_payload_part2);
 
-// static int drm_dp_send_dpcd_read(struct drm_dp_mst_topology_mgr *mgr,
-// 				 struct drm_dp_mst_port *port,
-// 				 int offset, int size, u8 *bytes)
-// {
-// 	int len;
-// 	int ret = 0;
-// 	struct drm_dp_sideband_msg_tx *txmsg;
-// 	struct drm_dp_mst_branch *mstb;
+#if !defined(__AROS__)
+static int drm_dp_send_dpcd_read(struct drm_dp_mst_topology_mgr *mgr,
+				 struct drm_dp_mst_port *port,
+				 int offset, int size, u8 *bytes)
+{
+	int len;
+	int ret = 0;
+	struct drm_dp_sideband_msg_tx *txmsg;
+	struct drm_dp_mst_branch *mstb;
 
-// 	mstb = drm_dp_mst_topology_get_mstb_validated(mgr, port->parent);
-// 	if (!mstb)
-// 		return -EINVAL;
+	mstb = drm_dp_mst_topology_get_mstb_validated(mgr, port->parent);
+	if (!mstb)
+		return -EINVAL;
 
-// 	txmsg = kzalloc(sizeof(*txmsg), GFP_KERNEL);
-// 	if (!txmsg) {
-// 		ret = -ENOMEM;
-// 		goto fail_put;
-// 	}
+	txmsg = kzalloc(sizeof(*txmsg), GFP_KERNEL);
+	if (!txmsg) {
+		ret = -ENOMEM;
+		goto fail_put;
+	}
 
-// 	len = build_dpcd_read(txmsg, port->port_num, offset, size);
-// 	txmsg->dst = port->parent;
+	len = build_dpcd_read(txmsg, port->port_num, offset, size);
+	txmsg->dst = port->parent;
 
-// 	drm_dp_queue_down_tx(mgr, txmsg);
+	drm_dp_queue_down_tx(mgr, txmsg);
 
-// 	ret = drm_dp_mst_wait_tx_reply(mstb, txmsg);
-// 	if (ret < 0)
-// 		goto fail_free;
+	ret = drm_dp_mst_wait_tx_reply(mstb, txmsg);
+	if (ret < 0)
+		goto fail_free;
 
-// 	/* DPCD read should never be NACKed */
-// 	if (txmsg->reply.reply_type == 1) {
-// 		DRM_ERROR("mstb %p port %d: DPCD read on addr 0x%x for %d bytes NAKed\n",
-// 			  mstb, port->port_num, offset, size);
-// 		ret = -EIO;
-// 		goto fail_free;
-// 	}
+	/* DPCD read should never be NACKed */
+	if (txmsg->reply.reply_type == 1) {
+		DRM_ERROR("mstb %p port %d: DPCD read on addr 0x%x for %d bytes NAKed\n",
+			  mstb, port->port_num, offset, size);
+		ret = -EIO;
+		goto fail_free;
+	}
 
-// 	if (txmsg->reply.u.remote_dpcd_read_ack.num_bytes != size) {
-// 		ret = -EPROTO;
-// 		goto fail_free;
-// 	}
+	if (txmsg->reply.u.remote_dpcd_read_ack.num_bytes != size) {
+		ret = -EPROTO;
+		goto fail_free;
+	}
 
-// 	ret = min_t(size_t, txmsg->reply.u.remote_dpcd_read_ack.num_bytes,
-// 		    size);
-// 	memcpy(bytes, txmsg->reply.u.remote_dpcd_read_ack.bytes, ret);
+	ret = min_t(size_t, txmsg->reply.u.remote_dpcd_read_ack.num_bytes,
+		    size);
+	memcpy(bytes, txmsg->reply.u.remote_dpcd_read_ack.bytes, ret);
 
-// fail_free:
-// 	kfree(txmsg);
-// fail_put:
-// 	drm_dp_mst_topology_put_mstb(mstb);
+fail_free:
+	kfree(txmsg);
+fail_put:
+	drm_dp_mst_topology_put_mstb(mstb);
 
-// 	return ret;
-// }
+	return ret;
+}
+#endif
 
 static int drm_dp_send_dpcd_write(struct drm_dp_mst_topology_mgr *mgr,
 				  struct drm_dp_mst_port *port,
@@ -3130,82 +3150,84 @@ out:
 }
 EXPORT_SYMBOL(drm_dp_mst_detect_port);
 
-// /**
-//  * drm_dp_mst_port_has_audio() - Check whether port has audio capability or not
-//  * @mgr: manager for this port
-//  * @port: unverified pointer to a port.
-//  *
-//  * This returns whether the port supports audio or not.
-//  */
-// bool drm_dp_mst_port_has_audio(struct drm_dp_mst_topology_mgr *mgr,
-// 					struct drm_dp_mst_port *port)
-// {
-// 	bool ret = false;
+#if !defined(__AROS__)
+/**
+ * drm_dp_mst_port_has_audio() - Check whether port has audio capability or not
+ * @mgr: manager for this port
+ * @port: unverified pointer to a port.
+ *
+ * This returns whether the port supports audio or not.
+ */
+bool drm_dp_mst_port_has_audio(struct drm_dp_mst_topology_mgr *mgr,
+					struct drm_dp_mst_port *port)
+{
+	bool ret = false;
 
-// 	port = drm_dp_mst_topology_get_port_validated(mgr, port);
-// 	if (!port)
-// 		return ret;
-// 	ret = port->has_audio;
-// 	drm_dp_mst_topology_put_port(port);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_dp_mst_port_has_audio);
+	port = drm_dp_mst_topology_get_port_validated(mgr, port);
+	if (!port)
+		return ret;
+	ret = port->has_audio;
+	drm_dp_mst_topology_put_port(port);
+	return ret;
+}
+EXPORT_SYMBOL(drm_dp_mst_port_has_audio);
 
-// /**
-//  * drm_dp_mst_get_edid() - get EDID for an MST port
-//  * @connector: toplevel connector to get EDID for
-//  * @mgr: manager for this port
-//  * @port: unverified pointer to a port.
-//  *
-//  * This returns an EDID for the port connected to a connector,
-//  * It validates the pointer still exists so the caller doesn't require a
-//  * reference.
-//  */
-// struct edid *drm_dp_mst_get_edid(struct drm_connector *connector, struct drm_dp_mst_topology_mgr *mgr, struct drm_dp_mst_port *port)
-// {
-// 	struct edid *edid = NULL;
+/**
+ * drm_dp_mst_get_edid() - get EDID for an MST port
+ * @connector: toplevel connector to get EDID for
+ * @mgr: manager for this port
+ * @port: unverified pointer to a port.
+ *
+ * This returns an EDID for the port connected to a connector,
+ * It validates the pointer still exists so the caller doesn't require a
+ * reference.
+ */
+struct edid *drm_dp_mst_get_edid(struct drm_connector *connector, struct drm_dp_mst_topology_mgr *mgr, struct drm_dp_mst_port *port)
+{
+	struct edid *edid = NULL;
 
-// 	/* we need to search for the port in the mgr in case it's gone */
-// 	port = drm_dp_mst_topology_get_port_validated(mgr, port);
-// 	if (!port)
-// 		return NULL;
+	/* we need to search for the port in the mgr in case it's gone */
+	port = drm_dp_mst_topology_get_port_validated(mgr, port);
+	if (!port)
+		return NULL;
 
-// 	if (port->cached_edid)
-// 		edid = drm_edid_duplicate(port->cached_edid);
-// 	else {
-// 		edid = drm_get_edid(connector, &port->aux.ddc);
-// 	}
-// 	port->has_audio = drm_detect_monitor_audio(edid);
-// 	drm_dp_mst_topology_put_port(port);
-// 	return edid;
-// }
-// EXPORT_SYMBOL(drm_dp_mst_get_edid);
+	if (port->cached_edid)
+		edid = drm_edid_duplicate(port->cached_edid);
+	else {
+		edid = drm_get_edid(connector, &port->aux.ddc);
+	}
+	port->has_audio = drm_detect_monitor_audio(edid);
+	drm_dp_mst_topology_put_port(port);
+	return edid;
+}
+EXPORT_SYMBOL(drm_dp_mst_get_edid);
 
-// /**
-//  * drm_dp_find_vcpi_slots() - Find VCPI slots for this PBN value
-//  * @mgr: manager to use
-//  * @pbn: payload bandwidth to convert into slots.
-//  *
-//  * Calculate the number of VCPI slots that will be required for the given PBN
-//  * value. This function is deprecated, and should not be used in atomic
-//  * drivers.
-//  *
-//  * RETURNS:
-//  * The total slots required for this port, or error.
-//  */
-// int drm_dp_find_vcpi_slots(struct drm_dp_mst_topology_mgr *mgr,
-// 			   int pbn)
-// {
-// 	int num_slots;
+/**
+ * drm_dp_find_vcpi_slots() - Find VCPI slots for this PBN value
+ * @mgr: manager to use
+ * @pbn: payload bandwidth to convert into slots.
+ *
+ * Calculate the number of VCPI slots that will be required for the given PBN
+ * value. This function is deprecated, and should not be used in atomic
+ * drivers.
+ *
+ * RETURNS:
+ * The total slots required for this port, or error.
+ */
+int drm_dp_find_vcpi_slots(struct drm_dp_mst_topology_mgr *mgr,
+			   int pbn)
+{
+	int num_slots;
 
-// 	num_slots = DIV_ROUND_UP(pbn, mgr->pbn_div);
+	num_slots = DIV_ROUND_UP(pbn, mgr->pbn_div);
 
-// 	/* max. time slots - one slot for MTP header */
-// 	if (num_slots > 63)
-// 		return -ENOSPC;
-// 	return num_slots;
-// }
-// EXPORT_SYMBOL(drm_dp_find_vcpi_slots);
+	/* max. time slots - one slot for MTP header */
+	if (num_slots > 63)
+		return -ENOSPC;
+	return num_slots;
+}
+EXPORT_SYMBOL(drm_dp_find_vcpi_slots);
+#endif
 
 static int drm_dp_init_vcpi(struct drm_dp_mst_topology_mgr *mgr,
 			    struct drm_dp_vcpi *vcpi, int pbn, int slots)
@@ -3421,18 +3443,20 @@ out:
 }
 EXPORT_SYMBOL(drm_dp_mst_allocate_vcpi);
 
-// int drm_dp_mst_get_vcpi_slots(struct drm_dp_mst_topology_mgr *mgr, struct drm_dp_mst_port *port)
-// {
-// 	int slots = 0;
-// 	port = drm_dp_mst_topology_get_port_validated(mgr, port);
-// 	if (!port)
-// 		return slots;
+#if !defined(__AROS__)
+int drm_dp_mst_get_vcpi_slots(struct drm_dp_mst_topology_mgr *mgr, struct drm_dp_mst_port *port)
+{
+	int slots = 0;
+	port = drm_dp_mst_topology_get_port_validated(mgr, port);
+	if (!port)
+		return slots;
 
-// 	slots = port->vcpi.num_slots;
-// 	drm_dp_mst_topology_put_port(port);
-// 	return slots;
-// }
-// EXPORT_SYMBOL(drm_dp_mst_get_vcpi_slots);
+	slots = port->vcpi.num_slots;
+	drm_dp_mst_topology_put_port(port);
+	return slots;
+}
+EXPORT_SYMBOL(drm_dp_mst_get_vcpi_slots);
+#endif
 
 /**
  * drm_dp_mst_reset_vcpi_slots() - Reset number of slots to 0 for VCPI
@@ -3517,17 +3541,19 @@ fail:
 	return ret;
 }
 
-// static int do_get_act_status(struct drm_dp_aux *aux)
-// {
-// 	int ret;
-// 	u8 status;
+#if !defined(__AROS__)
+static int do_get_act_status(struct drm_dp_aux *aux)
+{
+	int ret;
+	u8 status;
 
-// 	ret = drm_dp_dpcd_readb(aux, DP_PAYLOAD_TABLE_UPDATE_STATUS, &status);
-// 	if (ret < 0)
-// 		return ret;
+	ret = drm_dp_dpcd_readb(aux, DP_PAYLOAD_TABLE_UPDATE_STATUS, &status);
+	if (ret < 0)
+		return ret;
 
-// 	return status;
-// }
+	return status;
+}
+#endif
 
 /**
  * drm_dp_check_act_status() - Check ACT handled status.
@@ -3633,25 +3659,27 @@ static void drm_dp_mst_kick_tx(struct drm_dp_mst_topology_mgr *mgr)
 	queue_work(system_long_wq, &mgr->tx_work);
 }
 
-// static void drm_dp_mst_dump_mstb(struct seq_file *m,
-// 				 struct drm_dp_mst_branch *mstb)
-// {
-// 	struct drm_dp_mst_port *port;
-// 	int tabs = mstb->lct;
-// 	char prefix[10];
-// 	int i;
+#if !defined(__AROS__)
+static void drm_dp_mst_dump_mstb(struct seq_file *m,
+				 struct drm_dp_mst_branch *mstb)
+{
+	struct drm_dp_mst_port *port;
+	int tabs = mstb->lct;
+	char prefix[10];
+	int i;
 
-// 	for (i = 0; i < tabs; i++)
-// 		prefix[i] = '\t';
-// 	prefix[i] = '\0';
+	for (i = 0; i < tabs; i++)
+		prefix[i] = '\t';
+	prefix[i] = '\0';
 
-// 	seq_printf(m, "%smst: %p, %d\n", prefix, mstb, mstb->num_ports);
-// 	list_for_each_entry(port, &mstb->ports, next) {
-// 		seq_printf(m, "%sport: %d: input: %d: pdt: %d, ddps: %d ldps: %d, sdp: %d/%d, %p, conn: %p\n", prefix, port->port_num, port->input, port->pdt, port->ddps, port->ldps, port->num_sdp_streams, port->num_sdp_stream_sinks, port, port->connector);
-// 		if (port->mstb)
-// 			drm_dp_mst_dump_mstb(m, port->mstb);
-// 	}
-// }
+	seq_printf(m, "%smst: %p, %d\n", prefix, mstb, mstb->num_ports);
+	list_for_each_entry(port, &mstb->ports, next) {
+		seq_printf(m, "%sport: %d: input: %d: pdt: %d, ddps: %d ldps: %d, sdp: %d/%d, %p, conn: %p\n", prefix, port->port_num, port->input, port->pdt, port->ddps, port->ldps, port->num_sdp_streams, port->num_sdp_stream_sinks, port, port->connector);
+		if (port->mstb)
+			drm_dp_mst_dump_mstb(m, port->mstb);
+	}
+}
+#endif
 
 #define DP_PAYLOAD_TABLE_SIZE		64
 
@@ -3669,92 +3697,94 @@ static bool dump_dp_payload_table(struct drm_dp_mst_topology_mgr *mgr,
 	return true;
 }
 
-// static void fetch_monitor_name(struct drm_dp_mst_topology_mgr *mgr,
-// 			       struct drm_dp_mst_port *port, char *name,
-// 			       int namelen)
-// {
-// 	struct edid *mst_edid;
+#if !defined(__AROS__)
+static void fetch_monitor_name(struct drm_dp_mst_topology_mgr *mgr,
+			       struct drm_dp_mst_port *port, char *name,
+			       int namelen)
+{
+	struct edid *mst_edid;
 
-// 	mst_edid = drm_dp_mst_get_edid(port->connector, mgr, port);
-// 	drm_edid_get_monitor_name(mst_edid, name, namelen);
-// 	kfree(mst_edid);
-// }
+	mst_edid = drm_dp_mst_get_edid(port->connector, mgr, port);
+	drm_edid_get_monitor_name(mst_edid, name, namelen);
+	kfree(mst_edid);
+}
 
-// /**
-//  * drm_dp_mst_dump_topology(): dump topology to seq file.
-//  * @m: seq_file to dump output to
-//  * @mgr: manager to dump current topology for.
-//  *
-//  * helper to dump MST topology to a seq file for debugfs.
-//  */
-// void drm_dp_mst_dump_topology(struct seq_file *m,
-// 			      struct drm_dp_mst_topology_mgr *mgr)
-// {
-// 	int i;
-// 	struct drm_dp_mst_port *port;
+/**
+ * drm_dp_mst_dump_topology(): dump topology to seq file.
+ * @m: seq_file to dump output to
+ * @mgr: manager to dump current topology for.
+ *
+ * helper to dump MST topology to a seq file for debugfs.
+ */
+void drm_dp_mst_dump_topology(struct seq_file *m,
+			      struct drm_dp_mst_topology_mgr *mgr)
+{
+	int i;
+	struct drm_dp_mst_port *port;
 
-// 	mutex_lock(&mgr->lock);
-// 	if (mgr->mst_primary)
-// 		drm_dp_mst_dump_mstb(m, mgr->mst_primary);
+	mutex_lock(&mgr->lock);
+	if (mgr->mst_primary)
+		drm_dp_mst_dump_mstb(m, mgr->mst_primary);
 
-// 	/* dump VCPIs */
-// 	mutex_unlock(&mgr->lock);
+	/* dump VCPIs */
+	mutex_unlock(&mgr->lock);
 
-// 	mutex_lock(&mgr->payload_lock);
-// 	seq_printf(m, "vcpi: %lx %lx %d\n", mgr->payload_mask, mgr->vcpi_mask,
-// 		mgr->max_payloads);
+	mutex_lock(&mgr->payload_lock);
+	seq_printf(m, "vcpi: %lx %lx %d\n", mgr->payload_mask, mgr->vcpi_mask,
+		mgr->max_payloads);
 
-// 	for (i = 0; i < mgr->max_payloads; i++) {
-// 		if (mgr->proposed_vcpis[i]) {
-// 			char name[14];
+	for (i = 0; i < mgr->max_payloads; i++) {
+		if (mgr->proposed_vcpis[i]) {
+			char name[14];
 
-// 			port = container_of(mgr->proposed_vcpis[i], struct drm_dp_mst_port, vcpi);
-// 			fetch_monitor_name(mgr, port, name, sizeof(name));
-// 			seq_printf(m, "vcpi %d: %d %d %d sink name: %s\n", i,
-// 				   port->port_num, port->vcpi.vcpi,
-// 				   port->vcpi.num_slots,
-// 				   (*name != 0) ? name :  "Unknown");
-// 		} else
-// 			seq_printf(m, "vcpi %d:unused\n", i);
-// 	}
-// 	for (i = 0; i < mgr->max_payloads; i++) {
-// 		seq_printf(m, "payload %d: %d, %d, %d\n",
-// 			   i,
-// 			   mgr->payloads[i].payload_state,
-// 			   mgr->payloads[i].start_slot,
-// 			   mgr->payloads[i].num_slots);
+			port = container_of(mgr->proposed_vcpis[i], struct drm_dp_mst_port, vcpi);
+			fetch_monitor_name(mgr, port, name, sizeof(name));
+			seq_printf(m, "vcpi %d: %d %d %d sink name: %s\n", i,
+				   port->port_num, port->vcpi.vcpi,
+				   port->vcpi.num_slots,
+				   (*name != 0) ? name :  "Unknown");
+		} else
+			seq_printf(m, "vcpi %d:unused\n", i);
+	}
+	for (i = 0; i < mgr->max_payloads; i++) {
+		seq_printf(m, "payload %d: %d, %d, %d\n",
+			   i,
+			   mgr->payloads[i].payload_state,
+			   mgr->payloads[i].start_slot,
+			   mgr->payloads[i].num_slots);
 
 
-// 	}
-// 	mutex_unlock(&mgr->payload_lock);
+	}
+	mutex_unlock(&mgr->payload_lock);
 
-// 	mutex_lock(&mgr->lock);
-// 	if (mgr->mst_primary) {
-// 		u8 buf[DP_PAYLOAD_TABLE_SIZE];
-// 		int ret;
+	mutex_lock(&mgr->lock);
+	if (mgr->mst_primary) {
+		u8 buf[DP_PAYLOAD_TABLE_SIZE];
+		int ret;
 
-// 		ret = drm_dp_dpcd_read(mgr->aux, DP_DPCD_REV, buf, DP_RECEIVER_CAP_SIZE);
-// 		seq_printf(m, "dpcd: %*ph\n", DP_RECEIVER_CAP_SIZE, buf);
-// 		ret = drm_dp_dpcd_read(mgr->aux, DP_FAUX_CAP, buf, 2);
-// 		seq_printf(m, "faux/mst: %*ph\n", 2, buf);
-// 		ret = drm_dp_dpcd_read(mgr->aux, DP_MSTM_CTRL, buf, 1);
-// 		seq_printf(m, "mst ctrl: %*ph\n", 1, buf);
+		ret = drm_dp_dpcd_read(mgr->aux, DP_DPCD_REV, buf, DP_RECEIVER_CAP_SIZE);
+		seq_printf(m, "dpcd: %*ph\n", DP_RECEIVER_CAP_SIZE, buf);
+		ret = drm_dp_dpcd_read(mgr->aux, DP_FAUX_CAP, buf, 2);
+		seq_printf(m, "faux/mst: %*ph\n", 2, buf);
+		ret = drm_dp_dpcd_read(mgr->aux, DP_MSTM_CTRL, buf, 1);
+		seq_printf(m, "mst ctrl: %*ph\n", 1, buf);
 
-// 		/* dump the standard OUI branch header */
-// 		ret = drm_dp_dpcd_read(mgr->aux, DP_BRANCH_OUI, buf, DP_BRANCH_OUI_HEADER_SIZE);
-// 		seq_printf(m, "branch oui: %*phN devid: ", 3, buf);
-// 		for (i = 0x3; i < 0x8 && buf[i]; i++)
-// 			seq_printf(m, "%c", buf[i]);
-// 		seq_printf(m, " revision: hw: %x.%x sw: %x.%x\n",
-// 			   buf[0x9] >> 4, buf[0x9] & 0xf, buf[0xa], buf[0xb]);
-// 		if (dump_dp_payload_table(mgr, buf))
-// 			seq_printf(m, "payload table: %*ph\n", DP_PAYLOAD_TABLE_SIZE, buf);
-// 	}
+		/* dump the standard OUI branch header */
+		ret = drm_dp_dpcd_read(mgr->aux, DP_BRANCH_OUI, buf, DP_BRANCH_OUI_HEADER_SIZE);
+		seq_printf(m, "branch oui: %*phN devid: ", 3, buf);
+		for (i = 0x3; i < 0x8 && buf[i]; i++)
+			seq_printf(m, "%c", buf[i]);
+		seq_printf(m, " revision: hw: %x.%x sw: %x.%x\n",
+			   buf[0x9] >> 4, buf[0x9] & 0xf, buf[0xa], buf[0xb]);
+		if (dump_dp_payload_table(mgr, buf))
+			seq_printf(m, "payload table: %*ph\n", DP_PAYLOAD_TABLE_SIZE, buf);
+	}
 
-// 	mutex_unlock(&mgr->lock);
+	mutex_unlock(&mgr->lock);
 
-// }
-// EXPORT_SYMBOL(drm_dp_mst_dump_topology);
+}
+EXPORT_SYMBOL(drm_dp_mst_dump_topology);
+#endif
 
 static void drm_dp_tx_work(struct work_struct *work)
 {

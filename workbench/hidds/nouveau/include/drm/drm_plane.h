@@ -29,9 +29,13 @@
 #endif
 #include <drm/drm_mode_object.h>
 #include <drm/drm_property.h>
-// #include <drm/drm_color_mgmt.h>
+#if !defined(__AROS__)
+#include <drm/drm_color_mgmt.h>
+#endif
 #include <drm/drm_rect.h>
-// #include <drm/drm_modeset_lock.h>
+#if !defined(__AROS__)
+#include <drm/drm_modeset_lock.h>
+#endif
 #include <drm/drm_util.h>
 
 struct drm_crtc;
@@ -162,19 +166,21 @@ struct drm_plane_state {
 	 */
 	unsigned int normalized_zpos;
 
-	// /**
-	//  * @color_encoding:
-	//  *
-	//  * Color encoding for non RGB formats
-	//  */
-	// enum drm_color_encoding color_encoding;
+#if !defined(__AROS__)
+	/**
+	 * @color_encoding:
+	 *
+	 * Color encoding for non RGB formats
+	 */
+	enum drm_color_encoding color_encoding;
 
-	// /**
-	//  * @color_range:
-	//  *
-	//  * Color range for non RGB formats
-	//  */
-	// enum drm_color_range color_range;
+	/**
+	 * @color_range:
+	 *
+	 * Color range for non RGB formats
+	 */
+	enum drm_color_range color_range;
+#endif
 
 	/**
 	 * @fb_damage_clips:
@@ -572,16 +578,18 @@ struct drm_plane {
 	/** @name: human readable name, can be overwritten by the driver */
 	char *name;
 
-	// /**
-	//  * @mutex:
-	//  *
-	//  * Protects modeset plane state, together with the &drm_crtc.mutex of
-	//  * CRTC this plane is linked to (when active, getting activated or
-	//  * getting disabled).
-	//  *
-	//  * For atomic drivers specifically this protects @state.
-	//  */
-	// struct drm_modeset_lock mutex;
+#if !defined(__AROS__)
+	/**
+	 * @mutex:
+	 *
+	 * Protects modeset plane state, together with the &drm_crtc.mutex of
+	 * CRTC this plane is linked to (when active, getting activated or
+	 * getting disabled).
+	 *
+	 * For atomic drivers specifically this protects @state.
+	 */
+	struct drm_modeset_lock mutex;
+#endif
 
 	/** @base: base mode object */
 	struct drm_mode_object base;
@@ -712,7 +720,9 @@ struct drm_plane {
 
 #define obj_to_plane(x) container_of(x, struct drm_plane, base)
 
-// __printf(9, 10)
+#if !defined(__AROS__)
+__printf(9, 10)
+#endif
 int drm_universal_plane_init(struct drm_device *dev,
 			     struct drm_plane *plane,
 			     uint32_t possible_crtcs,
@@ -758,23 +768,25 @@ int drm_mode_plane_set_obj_prop(struct drm_plane *plane,
 				       struct drm_property *property,
 				       uint64_t value);
 
-// /**
-//  * drm_plane_find - find a &drm_plane
-//  * @dev: DRM device
-//  * @file_priv: drm file to check for lease against.
-//  * @id: plane id
-//  *
-//  * Returns the plane with @id, NULL if it doesn't exist. Simple wrapper around
-//  * drm_mode_object_find().
-//  */
-// static inline struct drm_plane *drm_plane_find(struct drm_device *dev,
-// 		struct drm_file *file_priv,
-// 		uint32_t id)
-// {
-// 	struct drm_mode_object *mo;
-// 	mo = drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_PLANE);
-// 	return mo ? obj_to_plane(mo) : NULL;
-// }
+#if !defined(__AROS__)
+/**
+ * drm_plane_find - find a &drm_plane
+ * @dev: DRM device
+ * @file_priv: drm file to check for lease against.
+ * @id: plane id
+ *
+ * Returns the plane with @id, NULL if it doesn't exist. Simple wrapper around
+ * drm_mode_object_find().
+ */
+static inline struct drm_plane *drm_plane_find(struct drm_device *dev,
+		struct drm_file *file_priv,
+		uint32_t id)
+{
+	struct drm_mode_object *mo;
+	mo = drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_PLANE);
+	return mo ? obj_to_plane(mo) : NULL;
+}
+#endif
 
 /**
  * drm_for_each_plane_mask - iterate over planes specified by bitmask

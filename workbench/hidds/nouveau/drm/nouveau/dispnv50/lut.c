@@ -22,8 +22,10 @@
 #include "lut.h"
 #include "disp.h"
 
-// #include <drm/drm_color_mgmt.h>
-// #include <drm/drm_mode.h>
+#if !defined(__AROS__)
+#include <drm/drm_color_mgmt.h>
+#include <drm/drm_mode.h>
+#endif
 #include <drm/drm_property.h>
 
 #include <nvif/class.h>

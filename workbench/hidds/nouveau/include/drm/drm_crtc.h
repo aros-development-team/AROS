@@ -37,7 +37,9 @@
 #endif
 #include <uapi/drm/drm_mode.h>
 #include <uapi/drm/drm_fourcc.h>
-// #include <drm/drm_modeset_lock.h>
+#if !defined(__AROS__)
+#include <drm/drm_modeset_lock.h>
+#endif
 #include <drm/drm_rect.h>
 #include <drm/drm_mode_object.h>
 #include <drm/drm_framebuffer.h>
@@ -49,8 +51,10 @@
 #include <drm/drm_edid.h>
 #include <drm/drm_plane.h>
 #include <drm/drm_blend.h>
-// #include <drm/drm_color_mgmt.h>
-// #include <drm/drm_debugfs_crc.h>
+#if !defined(__AROS__)
+#include <drm/drm_color_mgmt.h>
+#include <drm/drm_debugfs_crc.h>
+#endif
 #include <drm/drm_mode_config.h>
 
 struct drm_device;
@@ -175,41 +179,43 @@ struct drm_crtc_state {
 	 */
 	bool color_mgmt_changed : 1;
 
-// 	/**
-// 	 * @no_vblank:
-// 	 *
-// 	 * Reflects the ability of a CRTC to send VBLANK events. This state
-// 	 * usually depends on the pipeline configuration. If set to true, DRM
-// 	 * atomic helpers will send out a fake VBLANK event during display
-// 	 * updates after all hardware changes have been committed. This is
-// 	 * implemented in drm_atomic_helper_fake_vblank().
-// 	 *
-// 	 * One usage is for drivers and/or hardware without support for VBLANK
-// 	 * interrupts. Such drivers typically do not initialize vblanking
-// 	 * (i.e., call drm_vblank_init() with the number of CRTCs). For CRTCs
-// 	 * without initialized vblanking, this field is set to true in
-// 	 * drm_atomic_helper_check_modeset(), and a fake VBLANK event will be
-// 	 * send out on each update of the display pipeline by
-// 	 * drm_atomic_helper_fake_vblank().
-// 	 *
-// 	 * Another usage is CRTCs feeding a writeback connector operating in
-// 	 * oneshot mode. In this case the fake VBLANK event is only generated
-// 	 * when a job is queued to the writeback connector, and we want the
-// 	 * core to fake VBLANK events when this part of the pipeline hasn't
-// 	 * changed but others had or when the CRTC and connectors are being
-// 	 * disabled.
-// 	 *
-// 	 * __drm_atomic_helper_crtc_duplicate_state() will not reset the value
-// 	 * from the current state, the CRTC driver is then responsible for
-// 	 * updating this field when needed.
-// 	 *
-// 	 * Note that the combination of &drm_crtc_state.event == NULL and
-// 	 * &drm_crtc_state.no_blank == true is valid and usually used when the
-// 	 * writeback connector attached to the CRTC has a new job queued. In
-// 	 * this case the driver will send the VBLANK event on its own when the
-// 	 * writeback job is complete.
-// 	 */
-// 	bool no_vblank : 1;
+#if !defined(__AROS__)
+	/**
+	 * @no_vblank:
+	 *
+	 * Reflects the ability of a CRTC to send VBLANK events. This state
+	 * usually depends on the pipeline configuration. If set to true, DRM
+	 * atomic helpers will send out a fake VBLANK event during display
+	 * updates after all hardware changes have been committed. This is
+	 * implemented in drm_atomic_helper_fake_vblank().
+	 *
+	 * One usage is for drivers and/or hardware without support for VBLANK
+	 * interrupts. Such drivers typically do not initialize vblanking
+	 * (i.e., call drm_vblank_init() with the number of CRTCs). For CRTCs
+	 * without initialized vblanking, this field is set to true in
+	 * drm_atomic_helper_check_modeset(), and a fake VBLANK event will be
+	 * send out on each update of the display pipeline by
+	 * drm_atomic_helper_fake_vblank().
+	 *
+	 * Another usage is CRTCs feeding a writeback connector operating in
+	 * oneshot mode. In this case the fake VBLANK event is only generated
+	 * when a job is queued to the writeback connector, and we want the
+	 * core to fake VBLANK events when this part of the pipeline hasn't
+	 * changed but others had or when the CRTC and connectors are being
+	 * disabled.
+	 *
+	 * __drm_atomic_helper_crtc_duplicate_state() will not reset the value
+	 * from the current state, the CRTC driver is then responsible for
+	 * updating this field when needed.
+	 *
+	 * Note that the combination of &drm_crtc_state.event == NULL and
+	 * &drm_crtc_state.no_blank == true is valid and usually used when the
+	 * writeback connector attached to the CRTC has a new job queued. In
+	 * this case the driver will send the VBLANK event on its own when the
+	 * writeback job is complete.
+	 */
+	bool no_vblank : 1;
+#endif
 
 	/**
 	 * @plane_mask: Bitmask of drm_plane_mask(plane) of planes attached to
@@ -293,13 +299,15 @@ struct drm_crtc_state {
 	 */
 	struct drm_property_blob *gamma_lut;
 
-// 	/**
-// 	 * @target_vblank:
-// 	 *
-// 	 * Target vertical blank period when a page flip
-// 	 * should take effect.
-// 	 */
-// 	u32 target_vblank;
+#if !defined(__AROS__)
+	/**
+	 * @target_vblank:
+	 *
+	 * Target vertical blank period when a page flip
+	 * should take effect.
+	 */
+	u32 target_vblank;
+#endif
 
 	/**
 	 * @async_flip:
@@ -591,41 +599,43 @@ struct drm_crtc_funcs {
 			 uint32_t flags,
 			 struct drm_modeset_acquire_ctx *ctx);
 
-// 	/**
-// 	 * @page_flip_target:
-// 	 *
-// 	 * Same as @page_flip but with an additional parameter specifying the
-// 	 * absolute target vertical blank period (as reported by
-// 	 * drm_crtc_vblank_count()) when the flip should take effect.
-// 	 *
-// 	 * Note that the core code calls drm_crtc_vblank_get before this entry
-// 	 * point, and will call drm_crtc_vblank_put if this entry point returns
-// 	 * any non-0 error code. It's the driver's responsibility to call
-// 	 * drm_crtc_vblank_put after this entry point returns 0, typically when
-// 	 * the flip completes.
-// 	 */
-// 	int (*page_flip_target)(struct drm_crtc *crtc,
-// 				struct drm_framebuffer *fb,
-// 				struct drm_pending_vblank_event *event,
-// 				uint32_t flags, uint32_t target,
-// 				struct drm_modeset_acquire_ctx *ctx);
+#if !defined(__AROS__)
+	/**
+	 * @page_flip_target:
+	 *
+	 * Same as @page_flip but with an additional parameter specifying the
+	 * absolute target vertical blank period (as reported by
+	 * drm_crtc_vblank_count()) when the flip should take effect.
+	 *
+	 * Note that the core code calls drm_crtc_vblank_get before this entry
+	 * point, and will call drm_crtc_vblank_put if this entry point returns
+	 * any non-0 error code. It's the driver's responsibility to call
+	 * drm_crtc_vblank_put after this entry point returns 0, typically when
+	 * the flip completes.
+	 */
+	int (*page_flip_target)(struct drm_crtc *crtc,
+				struct drm_framebuffer *fb,
+				struct drm_pending_vblank_event *event,
+				uint32_t flags, uint32_t target,
+				struct drm_modeset_acquire_ctx *ctx);
 
-// 	/**
-// 	 * @set_property:
-// 	 *
-// 	 * This is the legacy entry point to update a property attached to the
-// 	 * CRTC.
-// 	 *
-// 	 * This callback is optional if the driver does not support any legacy
-// 	 * driver-private properties. For atomic drivers it is not used because
-// 	 * property handling is done entirely in the DRM core.
-// 	 *
-// 	 * RETURNS:
-// 	 *
-// 	 * 0 on success or a negative error code on failure.
-// 	 */
-// 	int (*set_property)(struct drm_crtc *crtc,
-// 			    struct drm_property *property, uint64_t val);
+	/**
+	 * @set_property:
+	 *
+	 * This is the legacy entry point to update a property attached to the
+	 * CRTC.
+	 *
+	 * This callback is optional if the driver does not support any legacy
+	 * driver-private properties. For atomic drivers it is not used because
+	 * property handling is done entirely in the DRM core.
+	 *
+	 * RETURNS:
+	 *
+	 * 0 on success or a negative error code on failure.
+	 */
+	int (*set_property)(struct drm_crtc *crtc,
+			    struct drm_property *property, uint64_t val);
+#endif
 
 	/**
 	 * @atomic_duplicate_state:
@@ -766,132 +776,134 @@ struct drm_crtc_funcs {
 	 */
 	void (*early_unregister)(struct drm_crtc *crtc);
 
-// 	/**
-// 	 * @set_crc_source:
-// 	 *
-// 	 * Changes the source of CRC checksums of frames at the request of
-// 	 * userspace, typically for testing purposes. The sources available are
-// 	 * specific of each driver and a %NULL value indicates that CRC
-// 	 * generation is to be switched off.
-// 	 *
-// 	 * When CRC generation is enabled, the driver should call
-// 	 * drm_crtc_add_crc_entry() at each frame, providing any information
-// 	 * that characterizes the frame contents in the crcN arguments, as
-// 	 * provided from the configured source. Drivers must accept an "auto"
-// 	 * source name that will select a default source for this CRTC.
-// 	 *
-// 	 * This may trigger an atomic modeset commit if necessary, to enable CRC
-// 	 * generation.
-// 	 *
-// 	 * Note that "auto" can depend upon the current modeset configuration,
-// 	 * e.g. it could pick an encoder or output specific CRC sampling point.
-// 	 *
-// 	 * This callback is optional if the driver does not support any CRC
-// 	 * generation functionality.
-// 	 *
-// 	 * RETURNS:
-// 	 *
-// 	 * 0 on success or a negative error code on failure.
-// 	 */
-// 	int (*set_crc_source)(struct drm_crtc *crtc, const char *source);
+#if !defined(__AROS__)
+	/**
+	 * @set_crc_source:
+	 *
+	 * Changes the source of CRC checksums of frames at the request of
+	 * userspace, typically for testing purposes. The sources available are
+	 * specific of each driver and a %NULL value indicates that CRC
+	 * generation is to be switched off.
+	 *
+	 * When CRC generation is enabled, the driver should call
+	 * drm_crtc_add_crc_entry() at each frame, providing any information
+	 * that characterizes the frame contents in the crcN arguments, as
+	 * provided from the configured source. Drivers must accept an "auto"
+	 * source name that will select a default source for this CRTC.
+	 *
+	 * This may trigger an atomic modeset commit if necessary, to enable CRC
+	 * generation.
+	 *
+	 * Note that "auto" can depend upon the current modeset configuration,
+	 * e.g. it could pick an encoder or output specific CRC sampling point.
+	 *
+	 * This callback is optional if the driver does not support any CRC
+	 * generation functionality.
+	 *
+	 * RETURNS:
+	 *
+	 * 0 on success or a negative error code on failure.
+	 */
+	int (*set_crc_source)(struct drm_crtc *crtc, const char *source);
 
-// 	/**
-// 	 * @verify_crc_source:
-// 	 *
-// 	 * verifies the source of CRC checksums of frames before setting the
-// 	 * source for CRC and during crc open. Source parameter can be NULL
-// 	 * while disabling crc source.
-// 	 *
-// 	 * This callback is optional if the driver does not support any CRC
-// 	 * generation functionality.
-// 	 *
-// 	 * RETURNS:
-// 	 *
-// 	 * 0 on success or a negative error code on failure.
-// 	 */
-// 	int (*verify_crc_source)(struct drm_crtc *crtc, const char *source,
-// 				 size_t *values_cnt);
-// 	/**
-// 	 * @get_crc_sources:
-// 	 *
-// 	 * Driver callback for getting a list of all the available sources for
-// 	 * CRC generation. This callback depends upon verify_crc_source, So
-// 	 * verify_crc_source callback should be implemented before implementing
-// 	 * this. Driver can pass full list of available crc sources, this
-// 	 * callback does the verification on each crc-source before passing it
-// 	 * to userspace.
-// 	 *
-// 	 * This callback is optional if the driver does not support exporting of
-// 	 * possible CRC sources list.
-// 	 *
-// 	 * RETURNS:
-// 	 *
-// 	 * a constant character pointer to the list of all the available CRC
-// 	 * sources. On failure driver should return NULL. count should be
-// 	 * updated with number of sources in list. if zero we don't process any
-// 	 * source from the list.
-// 	 */
-// 	const char *const *(*get_crc_sources)(struct drm_crtc *crtc,
-// 					      size_t *count);
+	/**
+	 * @verify_crc_source:
+	 *
+	 * verifies the source of CRC checksums of frames before setting the
+	 * source for CRC and during crc open. Source parameter can be NULL
+	 * while disabling crc source.
+	 *
+	 * This callback is optional if the driver does not support any CRC
+	 * generation functionality.
+	 *
+	 * RETURNS:
+	 *
+	 * 0 on success or a negative error code on failure.
+	 */
+	int (*verify_crc_source)(struct drm_crtc *crtc, const char *source,
+				 size_t *values_cnt);
+	/**
+	 * @get_crc_sources:
+	 *
+	 * Driver callback for getting a list of all the available sources for
+	 * CRC generation. This callback depends upon verify_crc_source, So
+	 * verify_crc_source callback should be implemented before implementing
+	 * this. Driver can pass full list of available crc sources, this
+	 * callback does the verification on each crc-source before passing it
+	 * to userspace.
+	 *
+	 * This callback is optional if the driver does not support exporting of
+	 * possible CRC sources list.
+	 *
+	 * RETURNS:
+	 *
+	 * a constant character pointer to the list of all the available CRC
+	 * sources. On failure driver should return NULL. count should be
+	 * updated with number of sources in list. if zero we don't process any
+	 * source from the list.
+	 */
+	const char *const *(*get_crc_sources)(struct drm_crtc *crtc,
+					      size_t *count);
 
-// 	/**
-// 	 * @atomic_print_state:
-// 	 *
-// 	 * If driver subclasses &struct drm_crtc_state, it should implement
-// 	 * this optional hook for printing additional driver specific state.
-// 	 *
-// 	 * Do not call this directly, use drm_atomic_crtc_print_state()
-// 	 * instead.
-// 	 */
-// 	void (*atomic_print_state)(struct drm_printer *p,
-// 				   const struct drm_crtc_state *state);
+	/**
+	 * @atomic_print_state:
+	 *
+	 * If driver subclasses &struct drm_crtc_state, it should implement
+	 * this optional hook for printing additional driver specific state.
+	 *
+	 * Do not call this directly, use drm_atomic_crtc_print_state()
+	 * instead.
+	 */
+	void (*atomic_print_state)(struct drm_printer *p,
+				   const struct drm_crtc_state *state);
 
-// 	/**
-// 	 * @get_vblank_counter:
-// 	 *
-// 	 * Driver callback for fetching a raw hardware vblank counter for the
-// 	 * CRTC. It's meant to be used by new drivers as the replacement of
-// 	 * &drm_driver.get_vblank_counter hook.
-// 	 *
-// 	 * This callback is optional. If a device doesn't have a hardware
-// 	 * counter, the driver can simply leave the hook as NULL. The DRM core
-// 	 * will account for missed vblank events while interrupts where disabled
-// 	 * based on system timestamps.
-// 	 *
-// 	 * Wraparound handling and loss of events due to modesetting is dealt
-// 	 * with in the DRM core code, as long as drivers call
-// 	 * drm_crtc_vblank_off() and drm_crtc_vblank_on() when disabling or
-// 	 * enabling a CRTC.
-// 	 *
-// 	 * See also &drm_device.vblank_disable_immediate and
-// 	 * &drm_device.max_vblank_count.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * Raw vblank counter value.
-// 	 */
-// 	u32 (*get_vblank_counter)(struct drm_crtc *crtc);
+	/**
+	 * @get_vblank_counter:
+	 *
+	 * Driver callback for fetching a raw hardware vblank counter for the
+	 * CRTC. It's meant to be used by new drivers as the replacement of
+	 * &drm_driver.get_vblank_counter hook.
+	 *
+	 * This callback is optional. If a device doesn't have a hardware
+	 * counter, the driver can simply leave the hook as NULL. The DRM core
+	 * will account for missed vblank events while interrupts where disabled
+	 * based on system timestamps.
+	 *
+	 * Wraparound handling and loss of events due to modesetting is dealt
+	 * with in the DRM core code, as long as drivers call
+	 * drm_crtc_vblank_off() and drm_crtc_vblank_on() when disabling or
+	 * enabling a CRTC.
+	 *
+	 * See also &drm_device.vblank_disable_immediate and
+	 * &drm_device.max_vblank_count.
+	 *
+	 * Returns:
+	 *
+	 * Raw vblank counter value.
+	 */
+	u32 (*get_vblank_counter)(struct drm_crtc *crtc);
 
-// 	/**
-// 	 * @enable_vblank:
-// 	 *
-// 	 * Enable vblank interrupts for the CRTC. It's meant to be used by
-// 	 * new drivers as the replacement of &drm_driver.enable_vblank hook.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * Zero on success, appropriate errno if the vblank interrupt cannot
-// 	 * be enabled.
-// 	 */
-// 	int (*enable_vblank)(struct drm_crtc *crtc);
+	/**
+	 * @enable_vblank:
+	 *
+	 * Enable vblank interrupts for the CRTC. It's meant to be used by
+	 * new drivers as the replacement of &drm_driver.enable_vblank hook.
+	 *
+	 * Returns:
+	 *
+	 * Zero on success, appropriate errno if the vblank interrupt cannot
+	 * be enabled.
+	 */
+	int (*enable_vblank)(struct drm_crtc *crtc);
 
-// 	/**
-// 	 * @disable_vblank:
-// 	 *
-// 	 * Disable vblank interrupts for the CRTC. It's meant to be used by
-// 	 * new drivers as the replacement of &drm_driver.disable_vblank hook.
-// 	 */
-// 	void (*disable_vblank)(struct drm_crtc *crtc);
+	/**
+	 * @disable_vblank:
+	 *
+	 * Disable vblank interrupts for the CRTC. It's meant to be used by
+	 * new drivers as the replacement of &drm_driver.disable_vblank hook.
+	 */
+	void (*disable_vblank)(struct drm_crtc *crtc);
+#endif
 };
 
 /**
@@ -917,17 +929,19 @@ struct drm_crtc {
 	/** @name: human readable name, can be overwritten by the driver */
 	char *name;
 
-// 	/**
-// 	 * @mutex:
-// 	 *
-// 	 * This provides a read lock for the overall CRTC state (mode, dpms
-// 	 * state, ...) and a write lock for everything which can be update
-// 	 * without a full modeset (fb, cursor data, CRTC properties ...). A full
-// 	 * modeset also need to grab &drm_mode_config.connection_mutex.
-// 	 *
-// 	 * For atomic drivers specifically this protects @state.
-// 	 */
-// 	struct drm_modeset_lock mutex;
+#if !defined(__AROS__)
+	/**
+	 * @mutex:
+	 *
+	 * This provides a read lock for the overall CRTC state (mode, dpms
+	 * state, ...) and a write lock for everything which can be update
+	 * without a full modeset (fb, cursor data, CRTC properties ...). A full
+	 * modeset also need to grab &drm_mode_config.connection_mutex.
+	 *
+	 * For atomic drivers specifically this protects @state.
+	 */
+	struct drm_modeset_lock mutex;
+#endif
 
 	/** @base: base KMS object for ID tracking etc. */
 	struct drm_mode_object base;
@@ -1085,21 +1099,23 @@ struct drm_crtc {
 	 */
 	spinlock_t commit_lock;
 
-// #ifdef CONFIG_DEBUG_FS
-// 	/**
-// 	 * @debugfs_entry:
-// 	 *
-// 	 * Debugfs directory for this CRTC.
-// 	 */
-// 	struct dentry *debugfs_entry;
-// #endif
+#if !defined(__AROS__)
+#ifdef CONFIG_DEBUG_FS
+	/**
+	 * @debugfs_entry:
+	 *
+	 * Debugfs directory for this CRTC.
+	 */
+	struct dentry *debugfs_entry;
+#endif
 
-// 	/**
-// 	 * @crc:
-// 	 *
-// 	 * Configuration settings of CRC capture.
-// 	 */
-// 	struct drm_crtc_crc crc;
+	/**
+	 * @crc:
+	 *
+	 * Configuration settings of CRC capture.
+	 */
+	struct drm_crtc_crc crc;
+#endif
 
 	/**
 	 * @fence_context:
@@ -1114,13 +1130,15 @@ struct drm_crtc {
 	 * spinlock to protect the fences in the fence_context.
 	 */
 	spinlock_t fence_lock;
-// 	/**
-// 	 * @fence_seqno:
-// 	 *
-// 	 * Seqno variable used as monotonic counter for the fences
-// 	 * created on the CRTC's timeline.
-// 	 */
-// 	unsigned long fence_seqno;
+#if !defined(__AROS__)
+	/**
+	 * @fence_seqno:
+	 *
+	 * Seqno variable used as monotonic counter for the fences
+	 * created on the CRTC's timeline.
+	 */
+	unsigned long fence_seqno;
+#endif
 
 	/**
 	 * @timeline_name:
@@ -1129,12 +1147,14 @@ struct drm_crtc {
 	 */
 	char timeline_name[32];
 
-// 	/**
-// 	 * @self_refresh_data: Holds the state for the self refresh helpers
-// 	 *
-// 	 * Initialized via drm_self_refresh_helper_init().
-// 	 */
-// 	struct drm_self_refresh_data *self_refresh_data;
+#if !defined(__AROS__)
+	/**
+	 * @self_refresh_data: Holds the state for the self refresh helpers
+	 *
+	 * Initialized via drm_self_refresh_helper_init().
+	 */
+	struct drm_self_refresh_data *self_refresh_data;
+#endif
 };
 
 /**
@@ -1164,7 +1184,9 @@ struct drm_mode_set {
 
 #define obj_to_crtc(x) container_of(x, struct drm_crtc, base)
 
-// __printf(6, 7)
+#if !defined(__AROS__)
+__printf(6, 7)
+#endif
 int drm_crtc_init_with_planes(struct drm_device *dev,
 			      struct drm_crtc *crtc,
 			      struct drm_plane *primary,
@@ -1198,7 +1220,9 @@ static inline uint32_t drm_crtc_mask(const struct drm_crtc *crtc)
 }
 
 int drm_mode_set_config_internal(struct drm_mode_set *set);
-// struct drm_crtc *drm_crtc_from_index(struct drm_device *dev, int idx);
+#if !defined(__AROS__)
+struct drm_crtc *drm_crtc_from_index(struct drm_device *dev, int idx);
+#endif
 
 /**
  * drm_crtc_find - look up a CRTC object from its ID

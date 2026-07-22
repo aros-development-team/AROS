@@ -47,7 +47,9 @@
 #include <drm/drm_fourcc.h>
 #include <drm/drm_plane_helper.h>
 #include <drm/drm_print.h>
-// #include <drm/drm_vblank.h>
+#if !defined(__AROS__)
+#include <drm/drm_vblank.h>
+#endif
 
 /**
  * DOC: overview

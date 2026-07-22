@@ -30,8 +30,10 @@
 #ifndef _TTM_BO_DRIVER_H_
 #define _TTM_BO_DRIVER_H_
 
-// #include <drm/drm_mm.h>
-// #include <drm/drm_vma_manager.h>
+#if !defined(__AROS__)
+#include <drm/drm_mm.h>
+#include <drm/drm_vma_manager.h>
+#endif
 #if !defined(__AROS__)
 #include <linux/workqueue.h>
 #include <linux/fs.h>
@@ -736,7 +738,9 @@ static inline int ttm_bo_reserve(struct ttm_buffer_object *bo,
 {
 	int ret;
 
-	// WARN_ON(!kref_read(&bo->kref));
+#if !defined(__AROS__)
+	WARN_ON(!kref_read(&bo->kref));
+#endif
 
 	ret = __ttm_bo_reserve(bo, interruptible, no_wait, ticket);
 	if (likely(ret == 0))

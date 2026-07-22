@@ -1,5 +1,7 @@
 /* Auto-generated: subdev/pci */
-//#include "agp.c"
+#if !defined(__AROS__)
+#include "agp.c"
+#endif
 #include "base.c"
 #include "g84.c"
 #include "g92.c"

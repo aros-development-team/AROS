@@ -25,7 +25,9 @@
 #ifndef __NOUVEAU_DRM_H__
 #define __NOUVEAU_DRM_H__
 
-// #define DRM_NOUVEAU_EVENT_NVIF                                       0x80000000
+#if !defined(__AROS__)
+#define DRM_NOUVEAU_EVENT_NVIF                                       0x80000000
+#endif
 
 #include "drm.h"
 

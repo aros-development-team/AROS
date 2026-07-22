@@ -40,7 +40,9 @@
 #include <drm/drm_plane_helper.h>
 #include <drm/drm_probe_helper.h>
 #include <drm/drm_scdc_helper.h>
-// #include <drm/drm_vblank.h>
+#if !defined(__AROS__)
+#include <drm/drm_vblank.h>
+#endif
 
 #include <nvif/class.h>
 #include <nvif/cl0002.h>

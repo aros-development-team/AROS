@@ -355,101 +355,103 @@ struct drm_crtc_helper_funcs {
 	int (*atomic_check)(struct drm_crtc *crtc,
 			    struct drm_crtc_state *state);
 
-	// /**
-	//  * @atomic_begin:
-	//  *
-	//  * Drivers should prepare for an atomic update of multiple planes on
-	//  * a CRTC in this hook. Depending upon hardware this might be vblank
-	//  * evasion, blocking updates by setting bits or doing preparatory work
-	//  * for e.g. manual update display.
-	//  *
-	//  * This hook is called before any plane commit functions are called.
-	//  *
-	//  * Note that the power state of the display pipe when this function is
-	//  * called depends upon the exact helpers and calling sequence the driver
-	//  * has picked. See drm_atomic_helper_commit_planes() for a discussion of
-	//  * the tradeoffs and variants of plane commit helpers.
-	//  *
-	//  * This callback is used by the atomic modeset helpers and by the
-	//  * transitional plane helpers, but it is optional.
-	//  */
-	// void (*atomic_begin)(struct drm_crtc *crtc,
-	// 		     struct drm_crtc_state *old_crtc_state);
-	// /**
-	//  * @atomic_flush:
-	//  *
-	//  * Drivers should finalize an atomic update of multiple planes on
-	//  * a CRTC in this hook. Depending upon hardware this might include
-	//  * checking that vblank evasion was successful, unblocking updates by
-	//  * setting bits or setting the GO bit to flush out all updates.
-	//  *
-	//  * Simple hardware or hardware with special requirements can commit and
-	//  * flush out all updates for all planes from this hook and forgo all the
-	//  * other commit hooks for plane updates.
-	//  *
-	//  * This hook is called after any plane commit functions are called.
-	//  *
-	//  * Note that the power state of the display pipe when this function is
-	//  * called depends upon the exact helpers and calling sequence the driver
-	//  * has picked. See drm_atomic_helper_commit_planes() for a discussion of
-	//  * the tradeoffs and variants of plane commit helpers.
-	//  *
-	//  * This callback is used by the atomic modeset helpers and by the
-	//  * transitional plane helpers, but it is optional.
-	//  */
-	// void (*atomic_flush)(struct drm_crtc *crtc,
-	// 		     struct drm_crtc_state *old_crtc_state);
+#if !defined(__AROS__)
+	/**
+	 * @atomic_begin:
+	 *
+	 * Drivers should prepare for an atomic update of multiple planes on
+	 * a CRTC in this hook. Depending upon hardware this might be vblank
+	 * evasion, blocking updates by setting bits or doing preparatory work
+	 * for e.g. manual update display.
+	 *
+	 * This hook is called before any plane commit functions are called.
+	 *
+	 * Note that the power state of the display pipe when this function is
+	 * called depends upon the exact helpers and calling sequence the driver
+	 * has picked. See drm_atomic_helper_commit_planes() for a discussion of
+	 * the tradeoffs and variants of plane commit helpers.
+	 *
+	 * This callback is used by the atomic modeset helpers and by the
+	 * transitional plane helpers, but it is optional.
+	 */
+	void (*atomic_begin)(struct drm_crtc *crtc,
+			     struct drm_crtc_state *old_crtc_state);
+	/**
+	 * @atomic_flush:
+	 *
+	 * Drivers should finalize an atomic update of multiple planes on
+	 * a CRTC in this hook. Depending upon hardware this might include
+	 * checking that vblank evasion was successful, unblocking updates by
+	 * setting bits or setting the GO bit to flush out all updates.
+	 *
+	 * Simple hardware or hardware with special requirements can commit and
+	 * flush out all updates for all planes from this hook and forgo all the
+	 * other commit hooks for plane updates.
+	 *
+	 * This hook is called after any plane commit functions are called.
+	 *
+	 * Note that the power state of the display pipe when this function is
+	 * called depends upon the exact helpers and calling sequence the driver
+	 * has picked. See drm_atomic_helper_commit_planes() for a discussion of
+	 * the tradeoffs and variants of plane commit helpers.
+	 *
+	 * This callback is used by the atomic modeset helpers and by the
+	 * transitional plane helpers, but it is optional.
+	 */
+	void (*atomic_flush)(struct drm_crtc *crtc,
+			     struct drm_crtc_state *old_crtc_state);
 
-	// /**
-	//  * @atomic_enable:
-	//  *
-	//  * This callback should be used to enable the CRTC. With the atomic
-	//  * drivers it is called before all encoders connected to this CRTC are
-	//  * enabled through the encoder's own &drm_encoder_helper_funcs.enable
-	//  * hook.  If that sequence is too simple drivers can just add their own
-	//  * hooks and call it from this CRTC callback here by looping over all
-	//  * encoders connected to it using for_each_encoder_on_crtc().
-	//  *
-	//  * This hook is used only by atomic helpers, for symmetry with
-	//  * @atomic_disable. Atomic drivers don't need to implement it if there's
-	//  * no need to enable anything at the CRTC level. To ensure that runtime
-	//  * PM handling (using either DPMS or the new "ACTIVE" property) works
-	//  * @atomic_enable must be the inverse of @atomic_disable for atomic
-	//  * drivers.
-	//  *
-	//  * Drivers can use the @old_crtc_state input parameter if the operations
-	//  * needed to enable the CRTC don't depend solely on the new state but
-	//  * also on the transition between the old state and the new state.
-	//  *
-	//  * This function is optional.
-	//  */
-	// void (*atomic_enable)(struct drm_crtc *crtc,
-	// 		      struct drm_crtc_state *old_crtc_state);
+	/**
+	 * @atomic_enable:
+	 *
+	 * This callback should be used to enable the CRTC. With the atomic
+	 * drivers it is called before all encoders connected to this CRTC are
+	 * enabled through the encoder's own &drm_encoder_helper_funcs.enable
+	 * hook.  If that sequence is too simple drivers can just add their own
+	 * hooks and call it from this CRTC callback here by looping over all
+	 * encoders connected to it using for_each_encoder_on_crtc().
+	 *
+	 * This hook is used only by atomic helpers, for symmetry with
+	 * @atomic_disable. Atomic drivers don't need to implement it if there's
+	 * no need to enable anything at the CRTC level. To ensure that runtime
+	 * PM handling (using either DPMS or the new "ACTIVE" property) works
+	 * @atomic_enable must be the inverse of @atomic_disable for atomic
+	 * drivers.
+	 *
+	 * Drivers can use the @old_crtc_state input parameter if the operations
+	 * needed to enable the CRTC don't depend solely on the new state but
+	 * also on the transition between the old state and the new state.
+	 *
+	 * This function is optional.
+	 */
+	void (*atomic_enable)(struct drm_crtc *crtc,
+			      struct drm_crtc_state *old_crtc_state);
 
-	// /**
-	//  * @atomic_disable:
-	//  *
-	//  * This callback should be used to disable the CRTC. With the atomic
-	//  * drivers it is called after all encoders connected to this CRTC have
-	//  * been shut off already using their own
-	//  * &drm_encoder_helper_funcs.disable hook. If that sequence is too
-	//  * simple drivers can just add their own hooks and call it from this
-	//  * CRTC callback here by looping over all encoders connected to it using
-	//  * for_each_encoder_on_crtc().
-	//  *
-	//  * This hook is used only by atomic helpers. Atomic drivers don't
-	//  * need to implement it if there's no need to disable anything at the
-	//  * CRTC level.
-	//  *
-	//  * Comparing to @disable, this one provides the additional input
-	//  * parameter @old_crtc_state which could be used to access the old
-	//  * state. Atomic drivers should consider to use this one instead
-	//  * of @disable.
-	//  *
-	//  * This function is optional.
-	//  */
-	// void (*atomic_disable)(struct drm_crtc *crtc,
-	// 		       struct drm_crtc_state *old_crtc_state);
+	/**
+	 * @atomic_disable:
+	 *
+	 * This callback should be used to disable the CRTC. With the atomic
+	 * drivers it is called after all encoders connected to this CRTC have
+	 * been shut off already using their own
+	 * &drm_encoder_helper_funcs.disable hook. If that sequence is too
+	 * simple drivers can just add their own hooks and call it from this
+	 * CRTC callback here by looping over all encoders connected to it using
+	 * for_each_encoder_on_crtc().
+	 *
+	 * This hook is used only by atomic helpers. Atomic drivers don't
+	 * need to implement it if there's no need to disable anything at the
+	 * CRTC level.
+	 *
+	 * Comparing to @disable, this one provides the additional input
+	 * parameter @old_crtc_state which could be used to access the old
+	 * state. Atomic drivers should consider to use this one instead
+	 * of @disable.
+	 *
+	 * This function is optional.
+	 */
+	void (*atomic_disable)(struct drm_crtc *crtc,
+			       struct drm_crtc_state *old_crtc_state);
+#endif
 };
 
 /**
@@ -622,28 +624,30 @@ struct drm_encoder_helper_funcs {
 			 struct drm_display_mode *mode,
 			 struct drm_display_mode *adjusted_mode);
 
-	// /**
-	//  * @atomic_mode_set:
-	//  *
-	//  * This callback is used to update the display mode of an encoder.
-	//  *
-	//  * Note that the display pipe is completely off when this function is
-	//  * called. Drivers which need hardware to be running before they program
-	//  * the new display mode (because they implement runtime PM) should not
-	//  * use this hook, because the helper library calls it only once and not
-	//  * every time the display pipeline is suspended using either DPMS or the
-	//  * new "ACTIVE" property. Such drivers should instead move all their
-	//  * encoder setup into the @enable callback.
-	//  *
-	//  * This callback is used by the atomic modeset helpers in place of the
-	//  * @mode_set callback, if set by the driver. It is optional and should
-	//  * be used instead of @mode_set if the driver needs to inspect the
-	//  * connector state or display info, since there is no direct way to
-	//  * go from the encoder to the current connector.
-	//  */
-	// void (*atomic_mode_set)(struct drm_encoder *encoder,
-	// 			struct drm_crtc_state *crtc_state,
-	// 			struct drm_connector_state *conn_state);
+#if !defined(__AROS__)
+	/**
+	 * @atomic_mode_set:
+	 *
+	 * This callback is used to update the display mode of an encoder.
+	 *
+	 * Note that the display pipe is completely off when this function is
+	 * called. Drivers which need hardware to be running before they program
+	 * the new display mode (because they implement runtime PM) should not
+	 * use this hook, because the helper library calls it only once and not
+	 * every time the display pipeline is suspended using either DPMS or the
+	 * new "ACTIVE" property. Such drivers should instead move all their
+	 * encoder setup into the @enable callback.
+	 *
+	 * This callback is used by the atomic modeset helpers in place of the
+	 * @mode_set callback, if set by the driver. It is optional and should
+	 * be used instead of @mode_set if the driver needs to inspect the
+	 * connector state or display info, since there is no direct way to
+	 * go from the encoder to the current connector.
+	 */
+	void (*atomic_mode_set)(struct drm_encoder *encoder,
+				struct drm_crtc_state *crtc_state,
+				struct drm_connector_state *conn_state);
+#endif
 
 	/**
 	 * @get_crtc:

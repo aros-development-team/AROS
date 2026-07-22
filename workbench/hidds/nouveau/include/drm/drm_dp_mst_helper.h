@@ -639,8 +639,10 @@ int drm_dp_update_payload_part2(struct drm_dp_mst_topology_mgr *mgr);
 
 int drm_dp_check_act_status(struct drm_dp_mst_topology_mgr *mgr);
 
-// void drm_dp_mst_dump_topology(struct seq_file *m,
-// 			      struct drm_dp_mst_topology_mgr *mgr);
+#if !defined(__AROS__)
+void drm_dp_mst_dump_topology(struct seq_file *m,
+			      struct drm_dp_mst_topology_mgr *mgr);
+#endif
 
 void drm_dp_mst_topology_mgr_suspend(struct drm_dp_mst_topology_mgr *mgr);
 int __must_check

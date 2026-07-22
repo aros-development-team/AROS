@@ -43,128 +43,132 @@
 struct drm_file;
 #endif
 
-// #include <drm/drm_vma_manager.h>
+#if !defined(__AROS__)
+#include <drm/drm_vma_manager.h>
+#endif
 
 struct drm_gem_object;
 
-// /**
-//  * struct drm_gem_object_funcs - GEM object functions
-//  */
-// struct drm_gem_object_funcs {
-// 	/**
-// 	 * @free:
-// 	 *
-// 	 * Deconstructor for drm_gem_objects.
-// 	 *
-// 	 * This callback is mandatory.
-// 	 */
-// 	void (*free)(struct drm_gem_object *obj);
+#if !defined(__AROS__)
+/**
+ * struct drm_gem_object_funcs - GEM object functions
+ */
+struct drm_gem_object_funcs {
+	/**
+	 * @free:
+	 *
+	 * Deconstructor for drm_gem_objects.
+	 *
+	 * This callback is mandatory.
+	 */
+	void (*free)(struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @open:
-// 	 *
-// 	 * Called upon GEM handle creation.
-// 	 *
-// 	 * This callback is optional.
-// 	 */
-// 	int (*open)(struct drm_gem_object *obj, struct drm_file *file);
+	/**
+	 * @open:
+	 *
+	 * Called upon GEM handle creation.
+	 *
+	 * This callback is optional.
+	 */
+	int (*open)(struct drm_gem_object *obj, struct drm_file *file);
 
-// 	/**
-// 	 * @close:
-// 	 *
-// 	 * Called upon GEM handle release.
-// 	 *
-// 	 * This callback is optional.
-// 	 */
-// 	void (*close)(struct drm_gem_object *obj, struct drm_file *file);
+	/**
+	 * @close:
+	 *
+	 * Called upon GEM handle release.
+	 *
+	 * This callback is optional.
+	 */
+	void (*close)(struct drm_gem_object *obj, struct drm_file *file);
 
-// 	/**
-// 	 * @print_info:
-// 	 *
-// 	 * If driver subclasses struct &drm_gem_object, it can implement this
-// 	 * optional hook for printing additional driver specific info.
-// 	 *
-// 	 * drm_printf_indent() should be used in the callback passing it the
-// 	 * indent argument.
-// 	 *
-// 	 * This callback is called from drm_gem_print_info().
-// 	 *
-// 	 * This callback is optional.
-// 	 */
-// 	void (*print_info)(struct drm_printer *p, unsigned int indent,
-// 			   const struct drm_gem_object *obj);
+	/**
+	 * @print_info:
+	 *
+	 * If driver subclasses struct &drm_gem_object, it can implement this
+	 * optional hook for printing additional driver specific info.
+	 *
+	 * drm_printf_indent() should be used in the callback passing it the
+	 * indent argument.
+	 *
+	 * This callback is called from drm_gem_print_info().
+	 *
+	 * This callback is optional.
+	 */
+	void (*print_info)(struct drm_printer *p, unsigned int indent,
+			   const struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @export:
-// 	 *
-// 	 * Export backing buffer as a &dma_buf.
-// 	 * If this is not set drm_gem_prime_export() is used.
-// 	 *
-// 	 * This callback is optional.
-// 	 */
-// 	struct dma_buf *(*export)(struct drm_gem_object *obj, int flags);
+	/**
+	 * @export:
+	 *
+	 * Export backing buffer as a &dma_buf.
+	 * If this is not set drm_gem_prime_export() is used.
+	 *
+	 * This callback is optional.
+	 */
+	struct dma_buf *(*export)(struct drm_gem_object *obj, int flags);
 
-// 	/**
-// 	 * @pin:
-// 	 *
-// 	 * Pin backing buffer in memory. Used by the drm_gem_map_attach() helper.
-// 	 *
-// 	 * This callback is optional.
-// 	 */
-// 	int (*pin)(struct drm_gem_object *obj);
+	/**
+	 * @pin:
+	 *
+	 * Pin backing buffer in memory. Used by the drm_gem_map_attach() helper.
+	 *
+	 * This callback is optional.
+	 */
+	int (*pin)(struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @unpin:
-// 	 *
-// 	 * Unpin backing buffer. Used by the drm_gem_map_detach() helper.
-// 	 *
-// 	 * This callback is optional.
-// 	 */
-// 	void (*unpin)(struct drm_gem_object *obj);
+	/**
+	 * @unpin:
+	 *
+	 * Unpin backing buffer. Used by the drm_gem_map_detach() helper.
+	 *
+	 * This callback is optional.
+	 */
+	void (*unpin)(struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @get_sg_table:
-// 	 *
-// 	 * Returns a Scatter-Gather table representation of the buffer.
-// 	 * Used when exporting a buffer by the drm_gem_map_dma_buf() helper.
-// 	 * Releasing is done by calling dma_unmap_sg_attrs() and sg_free_table()
-// 	 * in drm_gem_unmap_buf(), therefore these helpers and this callback
-// 	 * here cannot be used for sg tables pointing at driver private memory
-// 	 * ranges.
-// 	 *
-// 	 * See also drm_prime_pages_to_sg().
-// 	 */
-// 	struct sg_table *(*get_sg_table)(struct drm_gem_object *obj);
+	/**
+	 * @get_sg_table:
+	 *
+	 * Returns a Scatter-Gather table representation of the buffer.
+	 * Used when exporting a buffer by the drm_gem_map_dma_buf() helper.
+	 * Releasing is done by calling dma_unmap_sg_attrs() and sg_free_table()
+	 * in drm_gem_unmap_buf(), therefore these helpers and this callback
+	 * here cannot be used for sg tables pointing at driver private memory
+	 * ranges.
+	 *
+	 * See also drm_prime_pages_to_sg().
+	 */
+	struct sg_table *(*get_sg_table)(struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @vmap:
-// 	 *
-// 	 * Returns a virtual address for the buffer. Used by the
-// 	 * drm_gem_dmabuf_vmap() helper.
-// 	 *
-// 	 * This callback is optional.
-// 	 */
-// 	void *(*vmap)(struct drm_gem_object *obj);
+	/**
+	 * @vmap:
+	 *
+	 * Returns a virtual address for the buffer. Used by the
+	 * drm_gem_dmabuf_vmap() helper.
+	 *
+	 * This callback is optional.
+	 */
+	void *(*vmap)(struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @vunmap:
-// 	 *
-// 	 * Releases the the address previously returned by @vmap. Used by the
-// 	 * drm_gem_dmabuf_vunmap() helper.
-// 	 *
-// 	 * This callback is optional.
-// 	 */
-// 	void (*vunmap)(struct drm_gem_object *obj, void *vaddr);
+	/**
+	 * @vunmap:
+	 *
+	 * Releases the the address previously returned by @vmap. Used by the
+	 * drm_gem_dmabuf_vunmap() helper.
+	 *
+	 * This callback is optional.
+	 */
+	void (*vunmap)(struct drm_gem_object *obj, void *vaddr);
 
-// 	/**
-// 	 * @vm_ops:
-// 	 *
-// 	 * Virtual memory operations used with mmap.
-// 	 *
-// 	 * This is optional but necessary for mmap support.
-// 	 */
-// 	const struct vm_operations_struct *vm_ops;
-// };
+	/**
+	 * @vm_ops:
+	 *
+	 * Virtual memory operations used with mmap.
+	 *
+	 * This is optional but necessary for mmap support.
+	 */
+	const struct vm_operations_struct *vm_ops;
+};
+#endif
 
 /**
  * struct drm_gem_object - GEM buffer object
@@ -214,17 +218,19 @@ struct drm_gem_object {
 	 */
 	struct file *filp;
 
-// 	/**
-// 	 * @vma_node:
-// 	 *
-// 	 * Mapping info for this object to support mmap. Drivers are supposed to
-// 	 * allocate the mmap offset using drm_gem_create_mmap_offset(). The
-// 	 * offset itself can be retrieved using drm_vma_node_offset_addr().
-// 	 *
-// 	 * Memory mapping itself is handled by drm_gem_mmap(), which also checks
-// 	 * that userspace is allowed to access the object.
-// 	 */
-// 	struct drm_vma_offset_node vma_node;
+#if !defined(__AROS__)
+	/**
+	 * @vma_node:
+	 *
+	 * Mapping info for this object to support mmap. Drivers are supposed to
+	 * allocate the mmap offset using drm_gem_create_mmap_offset(). The
+	 * offset itself can be retrieved using drm_vma_node_offset_addr().
+	 *
+	 * Memory mapping itself is handled by drm_gem_mmap(), which also checks
+	 * that userspace is allowed to access the object.
+	 */
+	struct drm_vma_offset_node vma_node;
+#endif
 
 	/**
 	 * @size:
@@ -295,55 +301,63 @@ struct drm_gem_object {
 	 */
 	struct dma_resv _resv;
 
-// 	/**
-// 	 * @funcs:
-// 	 *
-// 	 * Optional GEM object functions. If this is set, it will be used instead of the
-// 	 * corresponding &drm_driver GEM callbacks.
-// 	 *
-// 	 * New drivers should use this.
-// 	 *
-// 	 */
-// 	const struct drm_gem_object_funcs *funcs;
+#if !defined(__AROS__)
+	/**
+	 * @funcs:
+	 *
+	 * Optional GEM object functions. If this is set, it will be used instead of the
+	 * corresponding &drm_driver GEM callbacks.
+	 *
+	 * New drivers should use this.
+	 *
+	 */
+	const struct drm_gem_object_funcs *funcs;
+#endif
 };
 
-// /**
-//  * DEFINE_DRM_GEM_FOPS() - macro to generate file operations for GEM drivers
-//  * @name: name for the generated structure
-//  *
-//  * This macro autogenerates a suitable &struct file_operations for GEM based
-//  * drivers, which can be assigned to &drm_driver.fops. Note that this structure
-//  * cannot be shared between drivers, because it contains a reference to the
-//  * current module using THIS_MODULE.
-//  *
-//  * Note that the declaration is already marked as static - if you need a
-//  * non-static version of this you're probably doing it wrong and will break the
-//  * THIS_MODULE reference by accident.
-//  */
-// #define DEFINE_DRM_GEM_FOPS(name) \
-// 	static const struct file_operations name = {\
-// 		.owner		= THIS_MODULE,\
-// 		.open		= drm_open,\
-// 		.release	= drm_release,\
-// 		.unlocked_ioctl	= drm_ioctl,\
-// 		.compat_ioctl	= drm_compat_ioctl,\
-// 		.poll		= drm_poll,\
-// 		.read		= drm_read,\
-// 		.llseek		= noop_llseek,\
-// 		.mmap		= drm_gem_mmap,\
-// 	}
+#if !defined(__AROS__)
+/**
+ * DEFINE_DRM_GEM_FOPS() - macro to generate file operations for GEM drivers
+ * @name: name for the generated structure
+ *
+ * This macro autogenerates a suitable &struct file_operations for GEM based
+ * drivers, which can be assigned to &drm_driver.fops. Note that this structure
+ * cannot be shared between drivers, because it contains a reference to the
+ * current module using THIS_MODULE.
+ *
+ * Note that the declaration is already marked as static - if you need a
+ * non-static version of this you're probably doing it wrong and will break the
+ * THIS_MODULE reference by accident.
+ */
+#define DEFINE_DRM_GEM_FOPS(name) \
+	static const struct file_operations name = {\
+		.owner		= THIS_MODULE,\
+		.open		= drm_open,\
+		.release	= drm_release,\
+		.unlocked_ioctl	= drm_ioctl,\
+		.compat_ioctl	= drm_compat_ioctl,\
+		.poll		= drm_poll,\
+		.read		= drm_read,\
+		.llseek		= noop_llseek,\
+		.mmap		= drm_gem_mmap,\
+	}
+#endif
 
 void drm_gem_object_release(struct drm_gem_object *obj);
-// void drm_gem_object_free(struct kref *kref);
+#if !defined(__AROS__)
+void drm_gem_object_free(struct kref *kref);
+#endif
 int drm_gem_object_init(struct drm_device *dev,
 			struct drm_gem_object *obj, size_t size);
 void drm_gem_private_object_init(struct drm_device *dev,
 				 struct drm_gem_object *obj, size_t size);
-// void drm_gem_vm_open(struct vm_area_struct *vma);
-// void drm_gem_vm_close(struct vm_area_struct *vma);
-// int drm_gem_mmap_obj(struct drm_gem_object *obj, unsigned long obj_size,
-// 		     struct vm_area_struct *vma);
-// int drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
+#if !defined(__AROS__)
+void drm_gem_vm_open(struct vm_area_struct *vma);
+void drm_gem_vm_close(struct vm_area_struct *vma);
+int drm_gem_mmap_obj(struct drm_gem_object *obj, unsigned long obj_size,
+		     struct vm_area_struct *vma);
+int drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
+#endif
 
 /**
  * drm_gem_object_get - acquire a GEM buffer object reference
@@ -357,26 +371,28 @@ static inline void drm_gem_object_get(struct drm_gem_object *obj)
 	kref_get(&obj->refcount);
 }
 
-// /**
-//  * __drm_gem_object_put - raw function to release a GEM buffer object reference
-//  * @obj: GEM buffer object
-//  *
-//  * This function is meant to be used by drivers which are not encumbered with
-//  * &drm_device.struct_mutex legacy locking and which are using the
-//  * gem_free_object_unlocked callback. It avoids all the locking checks and
-//  * locking overhead of drm_gem_object_put() and drm_gem_object_put_unlocked().
-//  *
-//  * Drivers should never call this directly in their code. Instead they should
-//  * wrap it up into a ``driver_gem_object_put(struct driver_gem_object *obj)``
-//  * wrapper function, and use that. Shared code should never call this, to
-//  * avoid breaking drivers by accident which still depend upon
-//  * &drm_device.struct_mutex locking.
-//  */
-// static inline void
-// __drm_gem_object_put(struct drm_gem_object *obj)
-// {
-// 	kref_put(&obj->refcount, drm_gem_object_free);
-// }
+#if !defined(__AROS__)
+/**
+ * __drm_gem_object_put - raw function to release a GEM buffer object reference
+ * @obj: GEM buffer object
+ *
+ * This function is meant to be used by drivers which are not encumbered with
+ * &drm_device.struct_mutex legacy locking and which are using the
+ * gem_free_object_unlocked callback. It avoids all the locking checks and
+ * locking overhead of drm_gem_object_put() and drm_gem_object_put_unlocked().
+ *
+ * Drivers should never call this directly in their code. Instead they should
+ * wrap it up into a ``driver_gem_object_put(struct driver_gem_object *obj)``
+ * wrapper function, and use that. Shared code should never call this, to
+ * avoid breaking drivers by accident which still depend upon
+ * &drm_device.struct_mutex locking.
+ */
+static inline void
+__drm_gem_object_put(struct drm_gem_object *obj)
+{
+	kref_put(&obj->refcount, drm_gem_object_free);
+}
+#endif
 
 void drm_gem_object_put_unlocked(struct drm_gem_object *obj);
 void drm_gem_object_put(struct drm_gem_object *obj);
@@ -387,32 +403,36 @@ int drm_gem_handle_create(struct drm_file *file_priv,
 int drm_gem_handle_delete(struct drm_file *filp, u32 handle);
 
 
-// void drm_gem_free_mmap_offset(struct drm_gem_object *obj);
-// int drm_gem_create_mmap_offset(struct drm_gem_object *obj);
-// int drm_gem_create_mmap_offset_size(struct drm_gem_object *obj, size_t size);
+#if !defined(__AROS__)
+void drm_gem_free_mmap_offset(struct drm_gem_object *obj);
+int drm_gem_create_mmap_offset(struct drm_gem_object *obj);
+int drm_gem_create_mmap_offset_size(struct drm_gem_object *obj, size_t size);
 
-// struct page **drm_gem_get_pages(struct drm_gem_object *obj);
-// void drm_gem_put_pages(struct drm_gem_object *obj, struct page **pages,
-// 		bool dirty, bool accessed);
+struct page **drm_gem_get_pages(struct drm_gem_object *obj);
+void drm_gem_put_pages(struct drm_gem_object *obj, struct page **pages,
+		bool dirty, bool accessed);
 
-// int drm_gem_objects_lookup(struct drm_file *filp, void __user *bo_handles,
-// 			   int count, struct drm_gem_object ***objs_out);
+int drm_gem_objects_lookup(struct drm_file *filp, void __user *bo_handles,
+			   int count, struct drm_gem_object ***objs_out);
+#endif
 struct drm_gem_object *drm_gem_object_lookup(struct drm_file *filp, u32 handle);
-// long drm_gem_dma_resv_wait(struct drm_file *filep, u32 handle,
-// 				    bool wait_all, unsigned long timeout);
-// int drm_gem_lock_reservations(struct drm_gem_object **objs, int count,
-// 			      struct ww_acquire_ctx *acquire_ctx);
-// void drm_gem_unlock_reservations(struct drm_gem_object **objs, int count,
-// 				 struct ww_acquire_ctx *acquire_ctx);
-// int drm_gem_fence_array_add(struct xarray *fence_array,
-// 			    struct dma_fence *fence);
-// int drm_gem_fence_array_add_implicit(struct xarray *fence_array,
-// 				     struct drm_gem_object *obj,
-// 				     bool write);
-// int drm_gem_dumb_map_offset(struct drm_file *file, struct drm_device *dev,
-// 			    u32 handle, u64 *offset);
-// int drm_gem_dumb_destroy(struct drm_file *file,
-// 			 struct drm_device *dev,
-// 			 uint32_t handle);
+#if !defined(__AROS__)
+long drm_gem_dma_resv_wait(struct drm_file *filep, u32 handle,
+				    bool wait_all, unsigned long timeout);
+int drm_gem_lock_reservations(struct drm_gem_object **objs, int count,
+			      struct ww_acquire_ctx *acquire_ctx);
+void drm_gem_unlock_reservations(struct drm_gem_object **objs, int count,
+				 struct ww_acquire_ctx *acquire_ctx);
+int drm_gem_fence_array_add(struct xarray *fence_array,
+			    struct dma_fence *fence);
+int drm_gem_fence_array_add_implicit(struct xarray *fence_array,
+				     struct drm_gem_object *obj,
+				     bool write);
+int drm_gem_dumb_map_offset(struct drm_file *file, struct drm_device *dev,
+			    u32 handle, u64 *offset);
+int drm_gem_dumb_destroy(struct drm_file *file,
+			 struct drm_device *dev,
+			 uint32_t handle);
+#endif
 
 #endif /* __DRM_GEM_H__ */

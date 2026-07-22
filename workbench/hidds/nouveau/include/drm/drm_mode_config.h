@@ -32,7 +32,9 @@
 #else
 #endif
 
-// #include <drm/drm_modeset_lock.h>
+#if !defined(__AROS__)
+#include <drm/drm_modeset_lock.h>
+#endif
 
 struct drm_file;
 struct drm_device;
@@ -94,22 +96,24 @@ struct drm_mode_config_funcs {
 	 */
 	const struct drm_format_info *(*get_format_info)(const struct drm_mode_fb_cmd2 *mode_cmd);
 
-// 	/**
-// 	 * @output_poll_changed:
-// 	 *
-// 	 * Callback used by helpers to inform the driver of output configuration
-// 	 * changes.
-// 	 *
-// 	 * Drivers implementing fbdev emulation with the helpers can call
-// 	 * drm_fb_helper_hotplug_changed from this hook to inform the fbdev
-// 	 * helper of output changes.
-// 	 *
-// 	 * FIXME:
-// 	 *
-// 	 * Except that there's no vtable for device-level helper callbacks
-// 	 * there's no reason this is a core function.
-// 	 */
-// 	void (*output_poll_changed)(struct drm_device *dev);
+#if !defined(__AROS__)
+	/**
+	 * @output_poll_changed:
+	 *
+	 * Callback used by helpers to inform the driver of output configuration
+	 * changes.
+	 *
+	 * Drivers implementing fbdev emulation with the helpers can call
+	 * drm_fb_helper_hotplug_changed from this hook to inform the fbdev
+	 * helper of output changes.
+	 *
+	 * FIXME:
+	 *
+	 * Except that there's no vtable for device-level helper callbacks
+	 * there's no reason this is a core function.
+	 */
+	void (*output_poll_changed)(struct drm_device *dev);
+#endif
 
 	/**
 	 * @mode_valid:
@@ -371,25 +375,27 @@ struct drm_mode_config {
 	 */
 	struct mutex mutex;
 
-// 	/**
-// 	 * @connection_mutex:
-// 	 *
-// 	 * This protects connector state and the connector to encoder to CRTC
-// 	 * routing chain.
-// 	 *
-// 	 * For atomic drivers specifically this protects &drm_connector.state.
-// 	 */
-// 	struct drm_modeset_lock connection_mutex;
+#if !defined(__AROS__)
+	/**
+	 * @connection_mutex:
+	 *
+	 * This protects connector state and the connector to encoder to CRTC
+	 * routing chain.
+	 *
+	 * For atomic drivers specifically this protects &drm_connector.state.
+	 */
+	struct drm_modeset_lock connection_mutex;
 
-// 	/**
-// 	 * @acquire_ctx:
-// 	 *
-// 	 * Global implicit acquire context used by atomic drivers for legacy
-// 	 * IOCTLs. Deprecated, since implicit locking contexts make it
-// 	 * impossible to use driver-private &struct drm_modeset_lock. Users of
-// 	 * this must hold @mutex.
-// 	 */
-// 	struct drm_modeset_acquire_ctx *acquire_ctx;
+	/**
+	 * @acquire_ctx:
+	 *
+	 * Global implicit acquire context used by atomic drivers for legacy
+	 * IOCTLs. Deprecated, since implicit locking contexts make it
+	 * impossible to use driver-private &struct drm_modeset_lock. Users of
+	 * this must hold @mutex.
+	 */
+	struct drm_modeset_acquire_ctx *acquire_ctx;
+#endif
 
 	/**
 	 * @idr_mutex:
@@ -444,20 +450,22 @@ struct drm_mode_config {
 	 * &struct drm_connector_list_iter to walk this list.
 	 */
 	struct list_head connector_list;
-// 	/**
-// 	 * @connector_free_list:
-// 	 *
-// 	 * List of connector objects linked with &drm_connector.free_head.
-// 	 * Protected by @connector_list_lock. Used by
-// 	 * drm_for_each_connector_iter() and
-// 	 * &struct drm_connector_list_iter to savely free connectors using
-// 	 * @connector_free_work.
-// 	 */
-// 	struct llist_head connector_free_list;
-// 	/**
-// 	 * @connector_free_work: Work to clean up @connector_free_list.
-// 	 */
-// 	struct work_struct connector_free_work;
+#if !defined(__AROS__)
+	/**
+	 * @connector_free_list:
+	 *
+	 * List of connector objects linked with &drm_connector.free_head.
+	 * Protected by @connector_list_lock. Used by
+	 * drm_for_each_connector_iter() and
+	 * &struct drm_connector_list_iter to savely free connectors using
+	 * @connector_free_work.
+	 */
+	struct llist_head connector_free_list;
+	/**
+	 * @connector_free_work: Work to clean up @connector_free_list.
+	 */
+	struct work_struct connector_free_work;
+#endif
 
 	/**
 	 * @num_encoder:
@@ -531,9 +539,11 @@ struct drm_mode_config {
 
 	/* output poll support */
 	bool poll_enabled;
-// 	bool poll_running;
-// 	bool delayed_event;
-// 	struct delayed_work output_poll_work;
+#if !defined(__AROS__)
+	bool poll_running;
+	bool delayed_event;
+	struct delayed_work output_poll_work;
+#endif
 
 	/**
 	 * @blob_lock:
@@ -861,24 +871,26 @@ struct drm_mode_config {
 	/* dumb ioctl parameters */
 	uint32_t preferred_depth, prefer_shadow;
 
-// 	/**
-// 	 * @prefer_shadow_fbdev:
-// 	 *
-// 	 * Hint to framebuffer emulation to prefer shadow-fb rendering.
-// 	 */
-// 	bool prefer_shadow_fbdev;
+#if !defined(__AROS__)
+	/**
+	 * @prefer_shadow_fbdev:
+	 *
+	 * Hint to framebuffer emulation to prefer shadow-fb rendering.
+	 */
+	bool prefer_shadow_fbdev;
 
-// 	/**
-// 	 * @fbdev_use_iomem:
-// 	 *
-// 	 * Set to true if framebuffer reside in iomem.
-// 	 * When set to true memcpy_toio() is used when copying the framebuffer in
-// 	 * drm_fb_helper.drm_fb_helper_dirty_blit_real().
-// 	 *
-// 	 * FIXME: This should be replaced with a per-mapping is_iomem
-// 	 * flag (like ttm does), and then used everywhere in fbdev code.
-// 	 */
-// 	bool fbdev_use_iomem;
+	/**
+	 * @fbdev_use_iomem:
+	 *
+	 * Set to true if framebuffer reside in iomem.
+	 * When set to true memcpy_toio() is used when copying the framebuffer in
+	 * drm_fb_helper.drm_fb_helper_dirty_blit_real().
+	 *
+	 * FIXME: This should be replaced with a per-mapping is_iomem
+	 * flag (like ttm does), and then used everywhere in fbdev code.
+	 */
+	bool fbdev_use_iomem;
+#endif
 
 	/**
 	 * @quirk_addfb_prefer_xbgr_30bpp:
@@ -929,19 +941,21 @@ struct drm_mode_config {
 	 */
 	struct drm_property *modifiers_property;
 
-// 	/* cursor size */
-// 	uint32_t cursor_width, cursor_height;
+#if !defined(__AROS__)
+	/* cursor size */
+	uint32_t cursor_width, cursor_height;
 
-// 	/**
-// 	 * @suspend_state:
-// 	 *
-// 	 * Atomic state when suspended.
-// 	 * Set by drm_mode_config_helper_suspend() and cleared by
-// 	 * drm_mode_config_helper_resume().
-// 	 */
-// 	struct drm_atomic_state *suspend_state;
+	/**
+	 * @suspend_state:
+	 *
+	 * Atomic state when suspended.
+	 * Set by drm_mode_config_helper_suspend() and cleared by
+	 * drm_mode_config_helper_resume().
+	 */
+	struct drm_atomic_state *suspend_state;
 
-// 	const struct drm_mode_config_helper_funcs *helper_private;
+	const struct drm_mode_config_helper_funcs *helper_private;
+#endif
 };
 
 void drm_mode_config_init(struct drm_device *dev);

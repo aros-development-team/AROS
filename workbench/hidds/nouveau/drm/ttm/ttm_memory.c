@@ -46,7 +46,9 @@
 #define TTM_MEMORY_ALLOC_RETRIES 4
 
 struct ttm_mem_global ttm_mem_glob;
-// EXPORT_SYMBOL(ttm_mem_glob);
+#if !defined(__AROS__)
+EXPORT_SYMBOL(ttm_mem_glob);
+#endif
 
 struct ttm_mem_zone {
 #if !defined(__AROS__)
@@ -61,409 +63,413 @@ struct ttm_mem_zone {
 	uint64_t used_mem;
 };
 
-// static struct attribute ttm_mem_sys = {
-// 	.name = "zone_memory",
-// 	.mode = S_IRUGO
-// };
-// static struct attribute ttm_mem_emer = {
-// 	.name = "emergency_memory",
-// 	.mode = S_IRUGO | S_IWUSR
-// };
-// static struct attribute ttm_mem_max = {
-// 	.name = "available_memory",
-// 	.mode = S_IRUGO | S_IWUSR
-// };
-// static struct attribute ttm_mem_swap = {
-// 	.name = "swap_limit",
-// 	.mode = S_IRUGO | S_IWUSR
-// };
-// static struct attribute ttm_mem_used = {
-// 	.name = "used_memory",
-// 	.mode = S_IRUGO
-// };
+#if !defined(__AROS__)
+static struct attribute ttm_mem_sys = {
+	.name = "zone_memory",
+	.mode = S_IRUGO
+};
+static struct attribute ttm_mem_emer = {
+	.name = "emergency_memory",
+	.mode = S_IRUGO | S_IWUSR
+};
+static struct attribute ttm_mem_max = {
+	.name = "available_memory",
+	.mode = S_IRUGO | S_IWUSR
+};
+static struct attribute ttm_mem_swap = {
+	.name = "swap_limit",
+	.mode = S_IRUGO | S_IWUSR
+};
+static struct attribute ttm_mem_used = {
+	.name = "used_memory",
+	.mode = S_IRUGO
+};
 
-// static void ttm_mem_zone_kobj_release(struct kobject *kobj)
-// {
-// 	struct ttm_mem_zone *zone =
-// 		container_of(kobj, struct ttm_mem_zone, kobj);
+static void ttm_mem_zone_kobj_release(struct kobject *kobj)
+{
+	struct ttm_mem_zone *zone =
+		container_of(kobj, struct ttm_mem_zone, kobj);
 
-// 	pr_info("Zone %7s: Used memory at exit: %llu KiB\n",
-// 		zone->name, (unsigned long long)zone->used_mem >> 10);
-// 	kfree(zone);
-// }
+	pr_info("Zone %7s: Used memory at exit: %llu KiB\n",
+		zone->name, (unsigned long long)zone->used_mem >> 10);
+	kfree(zone);
+}
 
-// static ssize_t ttm_mem_zone_show(struct kobject *kobj,
-// 				 struct attribute *attr,
-// 				 char *buffer)
-// {
-// 	struct ttm_mem_zone *zone =
-// 		container_of(kobj, struct ttm_mem_zone, kobj);
-// 	uint64_t val = 0;
+static ssize_t ttm_mem_zone_show(struct kobject *kobj,
+				 struct attribute *attr,
+				 char *buffer)
+{
+	struct ttm_mem_zone *zone =
+		container_of(kobj, struct ttm_mem_zone, kobj);
+	uint64_t val = 0;
 
-// 	spin_lock(&zone->glob->lock);
-// 	if (attr == &ttm_mem_sys)
-// 		val = zone->zone_mem;
-// 	else if (attr == &ttm_mem_emer)
-// 		val = zone->emer_mem;
-// 	else if (attr == &ttm_mem_max)
-// 		val = zone->max_mem;
-// 	else if (attr == &ttm_mem_swap)
-// 		val = zone->swap_limit;
-// 	else if (attr == &ttm_mem_used)
-// 		val = zone->used_mem;
-// 	spin_unlock(&zone->glob->lock);
+	spin_lock(&zone->glob->lock);
+	if (attr == &ttm_mem_sys)
+		val = zone->zone_mem;
+	else if (attr == &ttm_mem_emer)
+		val = zone->emer_mem;
+	else if (attr == &ttm_mem_max)
+		val = zone->max_mem;
+	else if (attr == &ttm_mem_swap)
+		val = zone->swap_limit;
+	else if (attr == &ttm_mem_used)
+		val = zone->used_mem;
+	spin_unlock(&zone->glob->lock);
 
-// 	return snprintf(buffer, PAGE_SIZE, "%llu\n",
-// 			(unsigned long long) val >> 10);
-// }
+	return snprintf(buffer, PAGE_SIZE, "%llu\n",
+			(unsigned long long) val >> 10);
+}
+#endif
 
 static void ttm_check_swapping(struct ttm_mem_global *glob);
 
-// static ssize_t ttm_mem_zone_store(struct kobject *kobj,
-// 				  struct attribute *attr,
-// 				  const char *buffer,
-// 				  size_t size)
-// {
-// 	struct ttm_mem_zone *zone =
-// 		container_of(kobj, struct ttm_mem_zone, kobj);
-// 	int chars;
-// 	unsigned long val;
-// 	uint64_t val64;
+#if !defined(__AROS__)
+static ssize_t ttm_mem_zone_store(struct kobject *kobj,
+				  struct attribute *attr,
+				  const char *buffer,
+				  size_t size)
+{
+	struct ttm_mem_zone *zone =
+		container_of(kobj, struct ttm_mem_zone, kobj);
+	int chars;
+	unsigned long val;
+	uint64_t val64;
 
-// 	chars = sscanf(buffer, "%lu", &val);
-// 	if (chars == 0)
-// 		return size;
+	chars = sscanf(buffer, "%lu", &val);
+	if (chars == 0)
+		return size;
 
-// 	val64 = val;
-// 	val64 <<= 10;
+	val64 = val;
+	val64 <<= 10;
 
-// 	spin_lock(&zone->glob->lock);
-// 	if (val64 > zone->zone_mem)
-// 		val64 = zone->zone_mem;
-// 	if (attr == &ttm_mem_emer) {
-// 		zone->emer_mem = val64;
-// 		if (zone->max_mem > val64)
-// 			zone->max_mem = val64;
-// 	} else if (attr == &ttm_mem_max) {
-// 		zone->max_mem = val64;
-// 		if (zone->emer_mem < val64)
-// 			zone->emer_mem = val64;
-// 	} else if (attr == &ttm_mem_swap)
-// 		zone->swap_limit = val64;
-// 	spin_unlock(&zone->glob->lock);
+	spin_lock(&zone->glob->lock);
+	if (val64 > zone->zone_mem)
+		val64 = zone->zone_mem;
+	if (attr == &ttm_mem_emer) {
+		zone->emer_mem = val64;
+		if (zone->max_mem > val64)
+			zone->max_mem = val64;
+	} else if (attr == &ttm_mem_max) {
+		zone->max_mem = val64;
+		if (zone->emer_mem < val64)
+			zone->emer_mem = val64;
+	} else if (attr == &ttm_mem_swap)
+		zone->swap_limit = val64;
+	spin_unlock(&zone->glob->lock);
 
-// 	ttm_check_swapping(zone->glob);
+	ttm_check_swapping(zone->glob);
 
-// 	return size;
-// }
+	return size;
+}
 
-// static struct attribute *ttm_mem_zone_attrs[] = {
-// 	&ttm_mem_sys,
-// 	&ttm_mem_emer,
-// 	&ttm_mem_max,
-// 	&ttm_mem_swap,
-// 	&ttm_mem_used,
-// 	NULL
-// };
+static struct attribute *ttm_mem_zone_attrs[] = {
+	&ttm_mem_sys,
+	&ttm_mem_emer,
+	&ttm_mem_max,
+	&ttm_mem_swap,
+	&ttm_mem_used,
+	NULL
+};
 
-// static const struct sysfs_ops ttm_mem_zone_ops = {
-// 	.show = &ttm_mem_zone_show,
-// 	.store = &ttm_mem_zone_store
-// };
+static const struct sysfs_ops ttm_mem_zone_ops = {
+	.show = &ttm_mem_zone_show,
+	.store = &ttm_mem_zone_store
+};
 
-// static struct kobj_type ttm_mem_zone_kobj_type = {
-// 	.release = &ttm_mem_zone_kobj_release,
-// 	.sysfs_ops = &ttm_mem_zone_ops,
-// 	.default_attrs = ttm_mem_zone_attrs,
-// };
+static struct kobj_type ttm_mem_zone_kobj_type = {
+	.release = &ttm_mem_zone_kobj_release,
+	.sysfs_ops = &ttm_mem_zone_ops,
+	.default_attrs = ttm_mem_zone_attrs,
+};
 
-// static struct attribute ttm_mem_global_lower_mem_limit = {
-// 	.name = "lower_mem_limit",
-// 	.mode = S_IRUGO | S_IWUSR
-// };
+static struct attribute ttm_mem_global_lower_mem_limit = {
+	.name = "lower_mem_limit",
+	.mode = S_IRUGO | S_IWUSR
+};
 
-// static ssize_t ttm_mem_global_show(struct kobject *kobj,
-// 				 struct attribute *attr,
-// 				 char *buffer)
-// {
-// 	struct ttm_mem_global *glob =
-// 		container_of(kobj, struct ttm_mem_global, kobj);
-// 	uint64_t val = 0;
+static ssize_t ttm_mem_global_show(struct kobject *kobj,
+				 struct attribute *attr,
+				 char *buffer)
+{
+	struct ttm_mem_global *glob =
+		container_of(kobj, struct ttm_mem_global, kobj);
+	uint64_t val = 0;
 
-// 	spin_lock(&glob->lock);
-// 	val = glob->lower_mem_limit;
-// 	spin_unlock(&glob->lock);
-// 	/* convert from number of pages to KB */
-// 	val <<= (PAGE_SHIFT - 10);
-// 	return snprintf(buffer, PAGE_SIZE, "%llu\n",
-// 			(unsigned long long) val);
-// }
+	spin_lock(&glob->lock);
+	val = glob->lower_mem_limit;
+	spin_unlock(&glob->lock);
+	/* convert from number of pages to KB */
+	val <<= (PAGE_SHIFT - 10);
+	return snprintf(buffer, PAGE_SIZE, "%llu\n",
+			(unsigned long long) val);
+}
 
-// static ssize_t ttm_mem_global_store(struct kobject *kobj,
-// 				  struct attribute *attr,
-// 				  const char *buffer,
-// 				  size_t size)
-// {
-// 	int chars;
-// 	uint64_t val64;
-// 	unsigned long val;
-// 	struct ttm_mem_global *glob =
-// 		container_of(kobj, struct ttm_mem_global, kobj);
+static ssize_t ttm_mem_global_store(struct kobject *kobj,
+				  struct attribute *attr,
+				  const char *buffer,
+				  size_t size)
+{
+	int chars;
+	uint64_t val64;
+	unsigned long val;
+	struct ttm_mem_global *glob =
+		container_of(kobj, struct ttm_mem_global, kobj);
 
-// 	chars = sscanf(buffer, "%lu", &val);
-// 	if (chars == 0)
-// 		return size;
+	chars = sscanf(buffer, "%lu", &val);
+	if (chars == 0)
+		return size;
 
-// 	val64 = val;
-// 	/* convert from KB to number of pages */
-// 	val64 >>= (PAGE_SHIFT - 10);
+	val64 = val;
+	/* convert from KB to number of pages */
+	val64 >>= (PAGE_SHIFT - 10);
 
-// 	spin_lock(&glob->lock);
-// 	glob->lower_mem_limit = val64;
-// 	spin_unlock(&glob->lock);
+	spin_lock(&glob->lock);
+	glob->lower_mem_limit = val64;
+	spin_unlock(&glob->lock);
 
-// 	return size;
-// }
+	return size;
+}
 
-// static struct attribute *ttm_mem_global_attrs[] = {
-// 	&ttm_mem_global_lower_mem_limit,
-// 	NULL
-// };
+static struct attribute *ttm_mem_global_attrs[] = {
+	&ttm_mem_global_lower_mem_limit,
+	NULL
+};
 
-// static const struct sysfs_ops ttm_mem_global_ops = {
-// 	.show = &ttm_mem_global_show,
-// 	.store = &ttm_mem_global_store,
-// };
+static const struct sysfs_ops ttm_mem_global_ops = {
+	.show = &ttm_mem_global_show,
+	.store = &ttm_mem_global_store,
+};
 
-// static struct kobj_type ttm_mem_glob_kobj_type = {
-// 	.sysfs_ops = &ttm_mem_global_ops,
-// 	.default_attrs = ttm_mem_global_attrs,
-// };
+static struct kobj_type ttm_mem_glob_kobj_type = {
+	.sysfs_ops = &ttm_mem_global_ops,
+	.default_attrs = ttm_mem_global_attrs,
+};
 
-// static bool ttm_zones_above_swap_target(struct ttm_mem_global *glob,
-// 					bool from_wq, uint64_t extra)
-// {
-// 	unsigned int i;
-// 	struct ttm_mem_zone *zone;
-// 	uint64_t target;
+static bool ttm_zones_above_swap_target(struct ttm_mem_global *glob,
+					bool from_wq, uint64_t extra)
+{
+	unsigned int i;
+	struct ttm_mem_zone *zone;
+	uint64_t target;
 
-// 	for (i = 0; i < glob->num_zones; ++i) {
-// 		zone = glob->zones[i];
+	for (i = 0; i < glob->num_zones; ++i) {
+		zone = glob->zones[i];
 
-// 		if (from_wq)
-// 			target = zone->swap_limit;
-// 		else if (capable(CAP_SYS_ADMIN))
-// 			target = zone->emer_mem;
-// 		else
-// 			target = zone->max_mem;
+		if (from_wq)
+			target = zone->swap_limit;
+		else if (capable(CAP_SYS_ADMIN))
+			target = zone->emer_mem;
+		else
+			target = zone->max_mem;
 
-// 		target = (extra > target) ? 0ULL : target;
+		target = (extra > target) ? 0ULL : target;
 
-// 		if (zone->used_mem > target)
-// 			return true;
-// 	}
-// 	return false;
-// }
+		if (zone->used_mem > target)
+			return true;
+	}
+	return false;
+}
 
-// /**
-//  * At this point we only support a single shrink callback.
-//  * Extend this if needed, perhaps using a linked list of callbacks.
-//  * Note that this function is reentrant:
-//  * many threads may try to swap out at any given time.
-//  */
+/**
+ * At this point we only support a single shrink callback.
+ * Extend this if needed, perhaps using a linked list of callbacks.
+ * Note that this function is reentrant:
+ * many threads may try to swap out at any given time.
+ */
 
-// static void ttm_shrink(struct ttm_mem_global *glob, bool from_wq,
-// 			uint64_t extra, struct ttm_operation_ctx *ctx)
-// {
-// 	int ret;
+static void ttm_shrink(struct ttm_mem_global *glob, bool from_wq,
+			uint64_t extra, struct ttm_operation_ctx *ctx)
+{
+	int ret;
 
-// 	spin_lock(&glob->lock);
+	spin_lock(&glob->lock);
 
-// 	while (ttm_zones_above_swap_target(glob, from_wq, extra)) {
-// 		spin_unlock(&glob->lock);
-// 		ret = ttm_bo_swapout(glob->bo_glob, ctx);
-// 		spin_lock(&glob->lock);
-// 		if (unlikely(ret != 0))
-// 			break;
-// 	}
+	while (ttm_zones_above_swap_target(glob, from_wq, extra)) {
+		spin_unlock(&glob->lock);
+		ret = ttm_bo_swapout(glob->bo_glob, ctx);
+		spin_lock(&glob->lock);
+		if (unlikely(ret != 0))
+			break;
+	}
 
-// 	spin_unlock(&glob->lock);
-// }
+	spin_unlock(&glob->lock);
+}
 
-// static void ttm_shrink_work(struct work_struct *work)
-// {
-// 	struct ttm_operation_ctx ctx = {
-// 		.interruptible = false,
-// 		.no_wait_gpu = false
-// 	};
-// 	struct ttm_mem_global *glob =
-// 	    container_of(work, struct ttm_mem_global, work);
+static void ttm_shrink_work(struct work_struct *work)
+{
+	struct ttm_operation_ctx ctx = {
+		.interruptible = false,
+		.no_wait_gpu = false
+	};
+	struct ttm_mem_global *glob =
+	    container_of(work, struct ttm_mem_global, work);
 
-// 	ttm_shrink(glob, true, 0ULL, &ctx);
-// }
+	ttm_shrink(glob, true, 0ULL, &ctx);
+}
 
-// static int ttm_mem_init_kernel_zone(struct ttm_mem_global *glob,
-// 				    const struct sysinfo *si)
-// {
-// 	struct ttm_mem_zone *zone = kzalloc(sizeof(*zone), GFP_KERNEL);
-// 	uint64_t mem;
-// 	int ret;
+static int ttm_mem_init_kernel_zone(struct ttm_mem_global *glob,
+				    const struct sysinfo *si)
+{
+	struct ttm_mem_zone *zone = kzalloc(sizeof(*zone), GFP_KERNEL);
+	uint64_t mem;
+	int ret;
 
-// 	if (unlikely(!zone))
-// 		return -ENOMEM;
+	if (unlikely(!zone))
+		return -ENOMEM;
 
-// 	mem = si->totalram - si->totalhigh;
-// 	mem *= si->mem_unit;
+	mem = si->totalram - si->totalhigh;
+	mem *= si->mem_unit;
 
-// 	zone->name = "kernel";
-// 	zone->zone_mem = mem;
-// 	zone->max_mem = mem >> 1;
-// 	zone->emer_mem = (mem >> 1) + (mem >> 2);
-// 	zone->swap_limit = zone->max_mem - (mem >> 3);
-// 	zone->used_mem = 0;
-// 	zone->glob = glob;
-// 	glob->zone_kernel = zone;
-// 	ret = kobject_init_and_add(
-// 		&zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, zone->name);
-// 	if (unlikely(ret != 0)) {
-// 		kobject_put(&zone->kobj);
-// 		return ret;
-// 	}
-// 	glob->zones[glob->num_zones++] = zone;
-// 	return 0;
-// }
+	zone->name = "kernel";
+	zone->zone_mem = mem;
+	zone->max_mem = mem >> 1;
+	zone->emer_mem = (mem >> 1) + (mem >> 2);
+	zone->swap_limit = zone->max_mem - (mem >> 3);
+	zone->used_mem = 0;
+	zone->glob = glob;
+	glob->zone_kernel = zone;
+	ret = kobject_init_and_add(
+		&zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, zone->name);
+	if (unlikely(ret != 0)) {
+		kobject_put(&zone->kobj);
+		return ret;
+	}
+	glob->zones[glob->num_zones++] = zone;
+	return 0;
+}
 
-// #ifdef CONFIG_HIGHMEM
-// static int ttm_mem_init_highmem_zone(struct ttm_mem_global *glob,
-// 				     const struct sysinfo *si)
-// {
-// 	struct ttm_mem_zone *zone;
-// 	uint64_t mem;
-// 	int ret;
+#ifdef CONFIG_HIGHMEM
+static int ttm_mem_init_highmem_zone(struct ttm_mem_global *glob,
+				     const struct sysinfo *si)
+{
+	struct ttm_mem_zone *zone;
+	uint64_t mem;
+	int ret;
 
-// 	if (si->totalhigh == 0)
-// 		return 0;
+	if (si->totalhigh == 0)
+		return 0;
 
-// 	zone = kzalloc(sizeof(*zone), GFP_KERNEL);
-// 	if (unlikely(!zone))
-// 		return -ENOMEM;
+	zone = kzalloc(sizeof(*zone), GFP_KERNEL);
+	if (unlikely(!zone))
+		return -ENOMEM;
 
-// 	mem = si->totalram;
-// 	mem *= si->mem_unit;
+	mem = si->totalram;
+	mem *= si->mem_unit;
 
-// 	zone->name = "highmem";
-// 	zone->zone_mem = mem;
-// 	zone->max_mem = mem >> 1;
-// 	zone->emer_mem = (mem >> 1) + (mem >> 2);
-// 	zone->swap_limit = zone->max_mem - (mem >> 3);
-// 	zone->used_mem = 0;
-// 	zone->glob = glob;
-// 	glob->zone_highmem = zone;
-// 	ret = kobject_init_and_add(
-// 		&zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, "%s",
-// 		zone->name);
-// 	if (unlikely(ret != 0)) {
-// 		kobject_put(&zone->kobj);
-// 		return ret;
-// 	}
-// 	glob->zones[glob->num_zones++] = zone;
-// 	return 0;
-// }
-// #else
-// static int ttm_mem_init_dma32_zone(struct ttm_mem_global *glob,
-// 				   const struct sysinfo *si)
-// {
-// 	struct ttm_mem_zone *zone = kzalloc(sizeof(*zone), GFP_KERNEL);
-// 	uint64_t mem;
-// 	int ret;
+	zone->name = "highmem";
+	zone->zone_mem = mem;
+	zone->max_mem = mem >> 1;
+	zone->emer_mem = (mem >> 1) + (mem >> 2);
+	zone->swap_limit = zone->max_mem - (mem >> 3);
+	zone->used_mem = 0;
+	zone->glob = glob;
+	glob->zone_highmem = zone;
+	ret = kobject_init_and_add(
+		&zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, "%s",
+		zone->name);
+	if (unlikely(ret != 0)) {
+		kobject_put(&zone->kobj);
+		return ret;
+	}
+	glob->zones[glob->num_zones++] = zone;
+	return 0;
+}
+#else
+static int ttm_mem_init_dma32_zone(struct ttm_mem_global *glob,
+				   const struct sysinfo *si)
+{
+	struct ttm_mem_zone *zone = kzalloc(sizeof(*zone), GFP_KERNEL);
+	uint64_t mem;
+	int ret;
 
-// 	if (unlikely(!zone))
-// 		return -ENOMEM;
+	if (unlikely(!zone))
+		return -ENOMEM;
 
-// 	mem = si->totalram;
-// 	mem *= si->mem_unit;
+	mem = si->totalram;
+	mem *= si->mem_unit;
 
-// 	/**
-// 	 * No special dma32 zone needed.
-// 	 */
+	/**
+	 * No special dma32 zone needed.
+	 */
 
-// 	if (mem <= ((uint64_t) 1ULL << 32)) {
-// 		kfree(zone);
-// 		return 0;
-// 	}
+	if (mem <= ((uint64_t) 1ULL << 32)) {
+		kfree(zone);
+		return 0;
+	}
 
-// 	/*
-// 	 * Limit max dma32 memory to 4GB for now
-// 	 * until we can figure out how big this
-// 	 * zone really is.
-// 	 */
+	/*
+	 * Limit max dma32 memory to 4GB for now
+	 * until we can figure out how big this
+	 * zone really is.
+	 */
 
-// 	mem = ((uint64_t) 1ULL << 32);
-// 	zone->name = "dma32";
-// 	zone->zone_mem = mem;
-// 	zone->max_mem = mem >> 1;
-// 	zone->emer_mem = (mem >> 1) + (mem >> 2);
-// 	zone->swap_limit = zone->max_mem - (mem >> 3);
-// 	zone->used_mem = 0;
-// 	zone->glob = glob;
-// 	glob->zone_dma32 = zone;
-// 	ret = kobject_init_and_add(
-// 		&zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, zone->name);
-// 	if (unlikely(ret != 0)) {
-// 		kobject_put(&zone->kobj);
-// 		return ret;
-// 	}
-// 	glob->zones[glob->num_zones++] = zone;
-// 	return 0;
-// }
-// #endif
+	mem = ((uint64_t) 1ULL << 32);
+	zone->name = "dma32";
+	zone->zone_mem = mem;
+	zone->max_mem = mem >> 1;
+	zone->emer_mem = (mem >> 1) + (mem >> 2);
+	zone->swap_limit = zone->max_mem - (mem >> 3);
+	zone->used_mem = 0;
+	zone->glob = glob;
+	glob->zone_dma32 = zone;
+	ret = kobject_init_and_add(
+		&zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, zone->name);
+	if (unlikely(ret != 0)) {
+		kobject_put(&zone->kobj);
+		return ret;
+	}
+	glob->zones[glob->num_zones++] = zone;
+	return 0;
+}
+#endif
 
-// int ttm_mem_global_init(struct ttm_mem_global *glob)
-// {
-// 	struct sysinfo si;
-// 	int ret;
-// 	int i;
-// 	struct ttm_mem_zone *zone;
+int ttm_mem_global_init(struct ttm_mem_global *glob)
+{
+	struct sysinfo si;
+	int ret;
+	int i;
+	struct ttm_mem_zone *zone;
 
-// 	spin_lock_init(&glob->lock);
-// 	glob->swap_queue = create_singlethread_workqueue("ttm_swap");
-// 	INIT_WORK(&glob->work, ttm_shrink_work);
-// 	ret = kobject_init_and_add(
-// 		&glob->kobj, &ttm_mem_glob_kobj_type, ttm_get_kobj(), "memory_accounting");
-// 	if (unlikely(ret != 0)) {
-// 		kobject_put(&glob->kobj);
-// 		return ret;
-// 	}
+	spin_lock_init(&glob->lock);
+	glob->swap_queue = create_singlethread_workqueue("ttm_swap");
+	INIT_WORK(&glob->work, ttm_shrink_work);
+	ret = kobject_init_and_add(
+		&glob->kobj, &ttm_mem_glob_kobj_type, ttm_get_kobj(), "memory_accounting");
+	if (unlikely(ret != 0)) {
+		kobject_put(&glob->kobj);
+		return ret;
+	}
 
-// 	si_meminfo(&si);
+	si_meminfo(&si);
 
-// 	/* set it as 0 by default to keep original behavior of OOM */
-// 	glob->lower_mem_limit = 0;
+	/* set it as 0 by default to keep original behavior of OOM */
+	glob->lower_mem_limit = 0;
 
-// 	ret = ttm_mem_init_kernel_zone(glob, &si);
-// 	if (unlikely(ret != 0))
-// 		goto out_no_zone;
-// #ifdef CONFIG_HIGHMEM
-// 	ret = ttm_mem_init_highmem_zone(glob, &si);
-// 	if (unlikely(ret != 0))
-// 		goto out_no_zone;
-// #else
-// 	ret = ttm_mem_init_dma32_zone(glob, &si);
-// 	if (unlikely(ret != 0))
-// 		goto out_no_zone;
-// #endif
-// 	for (i = 0; i < glob->num_zones; ++i) {
-// 		zone = glob->zones[i];
-// 		pr_info("Zone %7s: Available graphics memory: %llu KiB\n",
-// 			zone->name, (unsigned long long)zone->max_mem >> 10);
-// 	}
-// 	ttm_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
-// 	ttm_dma_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
-// 	return 0;
-// out_no_zone:
-// 	ttm_mem_global_release(glob);
-// 	return ret;
-// }
+	ret = ttm_mem_init_kernel_zone(glob, &si);
+	if (unlikely(ret != 0))
+		goto out_no_zone;
+#ifdef CONFIG_HIGHMEM
+	ret = ttm_mem_init_highmem_zone(glob, &si);
+	if (unlikely(ret != 0))
+		goto out_no_zone;
+#else
+	ret = ttm_mem_init_dma32_zone(glob, &si);
+	if (unlikely(ret != 0))
+		goto out_no_zone;
+#endif
+	for (i = 0; i < glob->num_zones; ++i) {
+		zone = glob->zones[i];
+		pr_info("Zone %7s: Available graphics memory: %llu KiB\n",
+			zone->name, (unsigned long long)zone->max_mem >> 10);
+	}
+	ttm_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
+	ttm_dma_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
+	return 0;
+out_no_zone:
+	ttm_mem_global_release(glob);
+	return ret;
+}
+#endif
 
 void ttm_mem_global_release(struct ttm_mem_global *glob)
 {
@@ -538,34 +544,36 @@ void ttm_mem_global_free(struct ttm_mem_global *glob,
 }
 EXPORT_SYMBOL(ttm_mem_global_free);
 
-// /*
-//  * check if the available mem is under lower memory limit
-//  *
-//  * a. if no swap disk at all or free swap space is under swap_mem_limit
-//  * but available system mem is bigger than sys_mem_limit, allow TTM
-//  * allocation;
-//  *
-//  * b. if the available system mem is less than sys_mem_limit but free
-//  * swap disk is bigger than swap_mem_limit, allow TTM allocation.
-//  */
-// bool
-// ttm_check_under_lowerlimit(struct ttm_mem_global *glob,
-// 			uint64_t num_pages,
-// 			struct ttm_operation_ctx *ctx)
-// {
-// 	int64_t available;
+#if !defined(__AROS__)
+/*
+ * check if the available mem is under lower memory limit
+ *
+ * a. if no swap disk at all or free swap space is under swap_mem_limit
+ * but available system mem is bigger than sys_mem_limit, allow TTM
+ * allocation;
+ *
+ * b. if the available system mem is less than sys_mem_limit but free
+ * swap disk is bigger than swap_mem_limit, allow TTM allocation.
+ */
+bool
+ttm_check_under_lowerlimit(struct ttm_mem_global *glob,
+			uint64_t num_pages,
+			struct ttm_operation_ctx *ctx)
+{
+	int64_t available;
 
-// 	if (ctx->flags & TTM_OPT_FLAG_FORCE_ALLOC)
-// 		return false;
+	if (ctx->flags & TTM_OPT_FLAG_FORCE_ALLOC)
+		return false;
 
-// 	available = get_nr_swap_pages() + si_mem_available();
-// 	available -= num_pages;
-// 	if (available < glob->lower_mem_limit)
-// 		return true;
+	available = get_nr_swap_pages() + si_mem_available();
+	available -= num_pages;
+	if (available < glob->lower_mem_limit)
+		return true;
 
-// 	return false;
-// }
-// EXPORT_SYMBOL(ttm_check_under_lowerlimit);
+	return false;
+}
+EXPORT_SYMBOL(ttm_check_under_lowerlimit);
+#endif
 
 static int ttm_mem_global_reserve(struct ttm_mem_global *glob,
 				  struct ttm_mem_zone *single_zone,
@@ -643,41 +651,43 @@ int ttm_mem_global_alloc(struct ttm_mem_global *glob, uint64_t memory,
 }
 EXPORT_SYMBOL(ttm_mem_global_alloc);
 
-// int ttm_mem_global_alloc_page(struct ttm_mem_global *glob,
-// 			      struct page *page, uint64_t size,
-// 			      struct ttm_operation_ctx *ctx)
-// {
-// 	struct ttm_mem_zone *zone = NULL;
+#if !defined(__AROS__)
+int ttm_mem_global_alloc_page(struct ttm_mem_global *glob,
+			      struct page *page, uint64_t size,
+			      struct ttm_operation_ctx *ctx)
+{
+	struct ttm_mem_zone *zone = NULL;
 
-// 	/**
-// 	 * Page allocations may be registed in a single zone
-// 	 * only if highmem or !dma32.
-// 	 */
+	/**
+	 * Page allocations may be registed in a single zone
+	 * only if highmem or !dma32.
+	 */
 
-// #ifdef CONFIG_HIGHMEM
-// 	if (PageHighMem(page) && glob->zone_highmem != NULL)
-// 		zone = glob->zone_highmem;
-// #else
-// 	if (glob->zone_dma32 && page_to_pfn(page) > 0x00100000UL)
-// 		zone = glob->zone_kernel;
-// #endif
-// 	return ttm_mem_global_alloc_zone(glob, zone, size, ctx);
-// }
+#ifdef CONFIG_HIGHMEM
+	if (PageHighMem(page) && glob->zone_highmem != NULL)
+		zone = glob->zone_highmem;
+#else
+	if (glob->zone_dma32 && page_to_pfn(page) > 0x00100000UL)
+		zone = glob->zone_kernel;
+#endif
+	return ttm_mem_global_alloc_zone(glob, zone, size, ctx);
+}
 
-// void ttm_mem_global_free_page(struct ttm_mem_global *glob, struct page *page,
-// 			      uint64_t size)
-// {
-// 	struct ttm_mem_zone *zone = NULL;
+void ttm_mem_global_free_page(struct ttm_mem_global *glob, struct page *page,
+			      uint64_t size)
+{
+	struct ttm_mem_zone *zone = NULL;
 
-// #ifdef CONFIG_HIGHMEM
-// 	if (PageHighMem(page) && glob->zone_highmem != NULL)
-// 		zone = glob->zone_highmem;
-// #else
-// 	if (glob->zone_dma32 && page_to_pfn(page) > 0x00100000UL)
-// 		zone = glob->zone_kernel;
-// #endif
-// 	ttm_mem_global_free_zone(glob, zone, size);
-// }
+#ifdef CONFIG_HIGHMEM
+	if (PageHighMem(page) && glob->zone_highmem != NULL)
+		zone = glob->zone_highmem;
+#else
+	if (glob->zone_dma32 && page_to_pfn(page) > 0x00100000UL)
+		zone = glob->zone_kernel;
+#endif
+	ttm_mem_global_free_zone(glob, zone, size);
+}
+#endif
 
 size_t ttm_round_pot(size_t size)
 {
@@ -697,8 +707,10 @@ size_t ttm_round_pot(size_t size)
 }
 EXPORT_SYMBOL(ttm_round_pot);
 
-// uint64_t ttm_get_kernel_zone_memory_size(struct ttm_mem_global *glob)
-// {
-// 	return glob->zone_kernel->max_mem;
-// }
-// EXPORT_SYMBOL(ttm_get_kernel_zone_memory_size);
+#if !defined(__AROS__)
+uint64_t ttm_get_kernel_zone_memory_size(struct ttm_mem_global *glob)
+{
+	return glob->zone_kernel->max_mem;
+}
+EXPORT_SYMBOL(ttm_get_kernel_zone_memory_size);
+#endif

@@ -249,10 +249,12 @@ struct drm_private_obj {
 	 */
 	struct list_head head;
 
-	// /**
-	//  * @lock: Modeset lock to protect the state object.
-	//  */
-	// struct drm_modeset_lock lock;
+#if !defined(__AROS__)
+	/**
+	 * @lock: Modeset lock to protect the state object.
+	 */
+	struct drm_modeset_lock lock;
+#endif
 
 	/**
 	 * @state: Current atomic state for this driver private object.

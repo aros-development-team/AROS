@@ -28,7 +28,9 @@
 #include <linux/ctype.h>
 #endif
 #include <drm/drm_crtc.h>
-// #include <drm/drm_mode.h>
+#if !defined(__AROS__)
+#include <drm/drm_mode.h>
+#endif
 #include <drm/drm_mode_object.h>
 #include <drm/drm_util.h>
 
@@ -181,7 +183,9 @@ struct drm_encoder {
 
 #define obj_to_encoder(x) container_of(x, struct drm_encoder, base)
 
-// __printf(5, 6)
+#if !defined(__AROS__)
+__printf(5, 6)
+#endif
 int drm_encoder_init(struct drm_device *dev,
 		     struct drm_encoder *encoder,
 		     const struct drm_encoder_funcs *funcs,

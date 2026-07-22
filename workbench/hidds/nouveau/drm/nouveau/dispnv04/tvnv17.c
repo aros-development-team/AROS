@@ -25,7 +25,9 @@
  */
 
 #include <drm/drm_crtc_helper.h>
-// #include <drm/drm_probe_helper.h>
+#if !defined(__AROS__)
+#include <drm/drm_probe_helper.h>
+#endif
 #include "nouveau_drv.h"
 #include "nouveau_reg.h"
 #include "nouveau_encoder.h"
@@ -34,13 +36,17 @@
 #include "hw.h"
 #include "tvnv17.h"
 
-// MODULE_PARM_DESC(tv_norm, "Default TV norm.\n"
-// 		 "\t\tSupported: PAL, PAL-M, PAL-N, PAL-Nc, NTSC-M, NTSC-J,\n"
-// 		 "\t\t\thd480i, hd480p, hd576i, hd576p, hd720p, hd1080i.\n"
-// 		 "\t\tDefault: PAL\n"
-// 		 "\t\t*NOTE* Ignored for cards with external TV encoders.");
+#if !defined(__AROS__)
+MODULE_PARM_DESC(tv_norm, "Default TV norm.\n"
+		 "\t\tSupported: PAL, PAL-M, PAL-N, PAL-Nc, NTSC-M, NTSC-J,\n"
+		 "\t\t\thd480i, hd480p, hd576i, hd576p, hd720p, hd1080i.\n"
+		 "\t\tDefault: PAL\n"
+		 "\t\t*NOTE* Ignored for cards with external TV encoders.");
+#endif
 static char *nouveau_tv_norm;
-// module_param_named(tv_norm, nouveau_tv_norm, charp, 0400);
+#if !defined(__AROS__)
+module_param_named(tv_norm, nouveau_tv_norm, charp, 0400);
+#endif
 
 static uint32_t nv42_tv_sample_load(struct drm_encoder *encoder)
 {

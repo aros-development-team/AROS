@@ -42,12 +42,18 @@
 #include <drm-compat/drm_compat_dma.h>
 #endif
 #include <drm/drm_crtc.h>
-// #include <drm/drm_edid.h>
+#if !defined(__AROS__)
+#include <drm/drm_edid.h>
+#endif
 #include <drm/drm_fourcc.h>
-// #include <drm/drm_modeset_lock.h>
+#if !defined(__AROS__)
+#include <drm/drm_modeset_lock.h>
+#endif
 #include <drm/drm_atomic.h>
-// #include <drm/drm_auth.h>
-// #include <drm/drm_debugfs_crc.h>
+#if !defined(__AROS__)
+#include <drm/drm_auth.h>
+#include <drm/drm_debugfs_crc.h>
+#endif
 #include <drm/drm_drv.h>
 #include <drm/drm_print.h>
 #include <drm/drm_file.h>
@@ -55,60 +61,62 @@
 #include "drm_crtc_internal.h"
 #include "drm_internal.h"
 
-// /**
-//  * DOC: overview
-//  *
-//  * A CRTC represents the overall display pipeline. It receives pixel data from
-//  * &drm_plane and blends them together. The &drm_display_mode is also attached
-//  * to the CRTC, specifying display timings. On the output side the data is fed
-//  * to one or more &drm_encoder, which are then each connected to one
-//  * &drm_connector.
-//  *
-//  * To create a CRTC, a KMS drivers allocates and zeroes an instances of
-//  * &struct drm_crtc (possibly as part of a larger structure) and registers it
-//  * with a call to drm_crtc_init_with_planes().
-//  *
-//  * The CRTC is also the entry point for legacy modeset operations, see
-//  * &drm_crtc_funcs.set_config, legacy plane operations, see
-//  * &drm_crtc_funcs.page_flip and &drm_crtc_funcs.cursor_set2, and other legacy
-//  * operations like &drm_crtc_funcs.gamma_set. For atomic drivers all these
-//  * features are controlled through &drm_property and
-//  * &drm_mode_config_funcs.atomic_check and &drm_mode_config_funcs.atomic_check.
-//  */
+#if !defined(__AROS__)
+/**
+ * DOC: overview
+ *
+ * A CRTC represents the overall display pipeline. It receives pixel data from
+ * &drm_plane and blends them together. The &drm_display_mode is also attached
+ * to the CRTC, specifying display timings. On the output side the data is fed
+ * to one or more &drm_encoder, which are then each connected to one
+ * &drm_connector.
+ *
+ * To create a CRTC, a KMS drivers allocates and zeroes an instances of
+ * &struct drm_crtc (possibly as part of a larger structure) and registers it
+ * with a call to drm_crtc_init_with_planes().
+ *
+ * The CRTC is also the entry point for legacy modeset operations, see
+ * &drm_crtc_funcs.set_config, legacy plane operations, see
+ * &drm_crtc_funcs.page_flip and &drm_crtc_funcs.cursor_set2, and other legacy
+ * operations like &drm_crtc_funcs.gamma_set. For atomic drivers all these
+ * features are controlled through &drm_property and
+ * &drm_mode_config_funcs.atomic_check and &drm_mode_config_funcs.atomic_check.
+ */
 
-// /**
-//  * drm_crtc_from_index - find the registered CRTC at an index
-//  * @dev: DRM device
-//  * @idx: index of registered CRTC to find for
-//  *
-//  * Given a CRTC index, return the registered CRTC from DRM device's
-//  * list of CRTCs with matching index. This is the inverse of drm_crtc_index().
-//  * It's useful in the vblank callbacks (like &drm_driver.enable_vblank or
-//  * &drm_driver.disable_vblank), since that still deals with indices instead
-//  * of pointers to &struct drm_crtc."
-//  */
-// struct drm_crtc *drm_crtc_from_index(struct drm_device *dev, int idx)
-// {
-// 	struct drm_crtc *crtc;
+/**
+ * drm_crtc_from_index - find the registered CRTC at an index
+ * @dev: DRM device
+ * @idx: index of registered CRTC to find for
+ *
+ * Given a CRTC index, return the registered CRTC from DRM device's
+ * list of CRTCs with matching index. This is the inverse of drm_crtc_index().
+ * It's useful in the vblank callbacks (like &drm_driver.enable_vblank or
+ * &drm_driver.disable_vblank), since that still deals with indices instead
+ * of pointers to &struct drm_crtc."
+ */
+struct drm_crtc *drm_crtc_from_index(struct drm_device *dev, int idx)
+{
+	struct drm_crtc *crtc;
 
-// 	drm_for_each_crtc(crtc, dev)
-// 		if (idx == crtc->index)
-// 			return crtc;
+	drm_for_each_crtc(crtc, dev)
+		if (idx == crtc->index)
+			return crtc;
 
-// 	return NULL;
-// }
-// EXPORT_SYMBOL(drm_crtc_from_index);
+	return NULL;
+}
+EXPORT_SYMBOL(drm_crtc_from_index);
 
-// int drm_crtc_force_disable(struct drm_crtc *crtc)
-// {
-// 	struct drm_mode_set set = {
-// 		.crtc = crtc,
-// 	};
+int drm_crtc_force_disable(struct drm_crtc *crtc)
+{
+	struct drm_mode_set set = {
+		.crtc = crtc,
+	};
 
-// 	WARN_ON(drm_drv_uses_atomic_modeset(crtc->dev));
+	WARN_ON(drm_drv_uses_atomic_modeset(crtc->dev));
 
-// 	return drm_mode_set_config_internal(&set);
-// }
+	return drm_mode_set_config_internal(&set);
+}
+#endif
 
 static unsigned int drm_num_crtcs(struct drm_device *dev)
 {
@@ -169,46 +177,48 @@ static void drm_crtc_crc_fini(struct drm_crtc *crtc)
 #endif
 }
 
-// static const struct dma_fence_ops drm_crtc_fence_ops;
+#if !defined(__AROS__)
+static const struct dma_fence_ops drm_crtc_fence_ops;
 
-// static struct drm_crtc *fence_to_crtc(struct dma_fence *fence)
-// {
-// 	BUG_ON(fence->ops != &drm_crtc_fence_ops);
-// 	return container_of(fence->lock, struct drm_crtc, fence_lock);
-// }
+static struct drm_crtc *fence_to_crtc(struct dma_fence *fence)
+{
+	BUG_ON(fence->ops != &drm_crtc_fence_ops);
+	return container_of(fence->lock, struct drm_crtc, fence_lock);
+}
 
-// static const char *drm_crtc_fence_get_driver_name(struct dma_fence *fence)
-// {
-// 	struct drm_crtc *crtc = fence_to_crtc(fence);
+static const char *drm_crtc_fence_get_driver_name(struct dma_fence *fence)
+{
+	struct drm_crtc *crtc = fence_to_crtc(fence);
 
-// 	return crtc->dev->driver->name;
-// }
+	return crtc->dev->driver->name;
+}
 
-// static const char *drm_crtc_fence_get_timeline_name(struct dma_fence *fence)
-// {
-// 	struct drm_crtc *crtc = fence_to_crtc(fence);
+static const char *drm_crtc_fence_get_timeline_name(struct dma_fence *fence)
+{
+	struct drm_crtc *crtc = fence_to_crtc(fence);
 
-// 	return crtc->timeline_name;
-// }
+	return crtc->timeline_name;
+}
 
-// static const struct dma_fence_ops drm_crtc_fence_ops = {
-// 	.get_driver_name = drm_crtc_fence_get_driver_name,
-// 	.get_timeline_name = drm_crtc_fence_get_timeline_name,
-// };
+static const struct dma_fence_ops drm_crtc_fence_ops = {
+	.get_driver_name = drm_crtc_fence_get_driver_name,
+	.get_timeline_name = drm_crtc_fence_get_timeline_name,
+};
 
-// struct dma_fence *drm_crtc_create_fence(struct drm_crtc *crtc)
-// {
-// 	struct dma_fence *fence;
+struct dma_fence *drm_crtc_create_fence(struct drm_crtc *crtc)
+{
+	struct dma_fence *fence;
 
-// 	fence = kzalloc(sizeof(*fence), GFP_KERNEL);
-// 	if (!fence)
-// 		return NULL;
+	fence = kzalloc(sizeof(*fence), GFP_KERNEL);
+	if (!fence)
+		return NULL;
 
-// 	dma_fence_init(fence, &drm_crtc_fence_ops, &crtc->fence_lock,
-// 		       crtc->fence_context, ++crtc->fence_seqno);
+	dma_fence_init(fence, &drm_crtc_fence_ops, &crtc->fence_lock,
+		       crtc->fence_context, ++crtc->fence_seqno);
 
-// 	return fence;
-// }
+	return fence;
+}
+#endif
 
 /**
  * drm_crtc_init_with_planes - Initialise a new CRTC object with
@@ -770,18 +780,19 @@ out:
 	return ret;
 }
 
-// int drm_mode_crtc_set_obj_prop(struct drm_mode_object *obj,
-// 			       struct drm_property *property,
-// 			       uint64_t value)
-// {
-// 	int ret = -EINVAL;
-// 	struct drm_crtc *crtc = obj_to_crtc(obj);
+#if !defined(__AROS__)
+int drm_mode_crtc_set_obj_prop(struct drm_mode_object *obj,
+			       struct drm_property *property,
+			       uint64_t value)
+{
+	int ret = -EINVAL;
+	struct drm_crtc *crtc = obj_to_crtc(obj);
 
-// 	if (crtc->funcs->set_property)
-// 		ret = crtc->funcs->set_property(crtc, property, value);
-// 	if (!ret)
-// 		drm_object_property_set_value(obj, property, value);
+	if (crtc->funcs->set_property)
+		ret = crtc->funcs->set_property(crtc, property, value);
+	if (!ret)
+		drm_object_property_set_value(obj, property, value);
 
-// 	return ret;
-// }
-// #endif
+	return ret;
+}
+#endif

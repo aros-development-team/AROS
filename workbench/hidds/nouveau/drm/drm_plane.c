@@ -34,7 +34,9 @@
 #include <drm/drm_file.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_fourcc.h>
-// #include <drm/drm_vblank.h>
+#if !defined(__AROS__)
+#include <drm/drm_vblank.h>
+#endif
 
 #include "drm_crtc_internal.h"
 
@@ -390,26 +392,28 @@ void drm_plane_cleanup(struct drm_plane *plane)
 }
 EXPORT_SYMBOL(drm_plane_cleanup);
 
-// /**
-//  * drm_plane_from_index - find the registered plane at an index
-//  * @dev: DRM device
-//  * @idx: index of registered plane to find for
-//  *
-//  * Given a plane index, return the registered plane from DRM device's
-//  * list of planes with matching index. This is the inverse of drm_plane_index().
-//  */
-// struct drm_plane *
-// drm_plane_from_index(struct drm_device *dev, int idx)
-// {
-// 	struct drm_plane *plane;
+#if !defined(__AROS__)
+/**
+ * drm_plane_from_index - find the registered plane at an index
+ * @dev: DRM device
+ * @idx: index of registered plane to find for
+ *
+ * Given a plane index, return the registered plane from DRM device's
+ * list of planes with matching index. This is the inverse of drm_plane_index().
+ */
+struct drm_plane *
+drm_plane_from_index(struct drm_device *dev, int idx)
+{
+	struct drm_plane *plane;
 
-// 	drm_for_each_plane(plane, dev)
-// 		if (idx == plane->index)
-// 			return plane;
+	drm_for_each_plane(plane, dev)
+		if (idx == plane->index)
+			return plane;
 
-// 	return NULL;
-// }
-// EXPORT_SYMBOL(drm_plane_from_index);
+	return NULL;
+}
+EXPORT_SYMBOL(drm_plane_from_index);
+#endif
 
 /**
  * drm_plane_force_disable - Forcibly disable a plane
@@ -450,126 +454,128 @@ void drm_plane_force_disable(struct drm_plane *plane)
 }
 EXPORT_SYMBOL(drm_plane_force_disable);
 
-// /**
-//  * drm_mode_plane_set_obj_prop - set the value of a property
-//  * @plane: drm plane object to set property value for
-//  * @property: property to set
-//  * @value: value the property should be set to
-//  *
-//  * This functions sets a given property on a given plane object. This function
-//  * calls the driver's ->set_property callback and changes the software state of
-//  * the property if the callback succeeds.
-//  *
-//  * Returns:
-//  * Zero on success, error code on failure.
-//  */
-// int drm_mode_plane_set_obj_prop(struct drm_plane *plane,
-// 				struct drm_property *property,
-// 				uint64_t value)
-// {
-// 	int ret = -EINVAL;
-// 	struct drm_mode_object *obj = &plane->base;
+#if !defined(__AROS__)
+/**
+ * drm_mode_plane_set_obj_prop - set the value of a property
+ * @plane: drm plane object to set property value for
+ * @property: property to set
+ * @value: value the property should be set to
+ *
+ * This functions sets a given property on a given plane object. This function
+ * calls the driver's ->set_property callback and changes the software state of
+ * the property if the callback succeeds.
+ *
+ * Returns:
+ * Zero on success, error code on failure.
+ */
+int drm_mode_plane_set_obj_prop(struct drm_plane *plane,
+				struct drm_property *property,
+				uint64_t value)
+{
+	int ret = -EINVAL;
+	struct drm_mode_object *obj = &plane->base;
 
-// 	if (plane->funcs->set_property)
-// 		ret = plane->funcs->set_property(plane, property, value);
-// 	if (!ret)
-// 		drm_object_property_set_value(obj, property, value);
+	if (plane->funcs->set_property)
+		ret = plane->funcs->set_property(plane, property, value);
+	if (!ret)
+		drm_object_property_set_value(obj, property, value);
 
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_mode_plane_set_obj_prop);
+	return ret;
+}
+EXPORT_SYMBOL(drm_mode_plane_set_obj_prop);
 
-// int drm_mode_getplane_res(struct drm_device *dev, void *data,
-// 			  struct drm_file *file_priv)
-// {
-// 	struct drm_mode_get_plane_res *plane_resp = data;
-// 	struct drm_plane *plane;
-// 	uint32_t __user *plane_ptr;
-// 	int count = 0;
+int drm_mode_getplane_res(struct drm_device *dev, void *data,
+			  struct drm_file *file_priv)
+{
+	struct drm_mode_get_plane_res *plane_resp = data;
+	struct drm_plane *plane;
+	uint32_t __user *plane_ptr;
+	int count = 0;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	plane_ptr = u64_to_user_ptr(plane_resp->plane_id_ptr);
+	plane_ptr = u64_to_user_ptr(plane_resp->plane_id_ptr);
 
-// 	/*
-// 	 * This ioctl is called twice, once to determine how much space is
-// 	 * needed, and the 2nd time to fill it.
-// 	 */
-// 	drm_for_each_plane(plane, dev) {
-// 		/*
-// 		 * Unless userspace set the 'universal planes'
-// 		 * capability bit, only advertise overlays.
-// 		 */
-// 		if (plane->type != DRM_PLANE_TYPE_OVERLAY &&
-// 		    !file_priv->universal_planes)
-// 			continue;
+	/*
+	 * This ioctl is called twice, once to determine how much space is
+	 * needed, and the 2nd time to fill it.
+	 */
+	drm_for_each_plane(plane, dev) {
+		/*
+		 * Unless userspace set the 'universal planes'
+		 * capability bit, only advertise overlays.
+		 */
+		if (plane->type != DRM_PLANE_TYPE_OVERLAY &&
+		    !file_priv->universal_planes)
+			continue;
 
-// 		if (drm_lease_held(file_priv, plane->base.id)) {
-// 			if (count < plane_resp->count_planes &&
-// 			    put_user(plane->base.id, plane_ptr + count))
-// 				return -EFAULT;
-// 			count++;
-// 		}
-// 	}
-// 	plane_resp->count_planes = count;
+		if (drm_lease_held(file_priv, plane->base.id)) {
+			if (count < plane_resp->count_planes &&
+			    put_user(plane->base.id, plane_ptr + count))
+				return -EFAULT;
+			count++;
+		}
+	}
+	plane_resp->count_planes = count;
 
-// 	return 0;
-// }
+	return 0;
+}
 
-// int drm_mode_getplane(struct drm_device *dev, void *data,
-// 		      struct drm_file *file_priv)
-// {
-// 	struct drm_mode_get_plane *plane_resp = data;
-// 	struct drm_plane *plane;
-// 	uint32_t __user *format_ptr;
+int drm_mode_getplane(struct drm_device *dev, void *data,
+		      struct drm_file *file_priv)
+{
+	struct drm_mode_get_plane *plane_resp = data;
+	struct drm_plane *plane;
+	uint32_t __user *format_ptr;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	plane = drm_plane_find(dev, file_priv, plane_resp->plane_id);
-// 	if (!plane)
-// 		return -ENOENT;
+	plane = drm_plane_find(dev, file_priv, plane_resp->plane_id);
+	if (!plane)
+		return -ENOENT;
 
-// 	drm_modeset_lock(&plane->mutex, NULL);
-// 	if (plane->state && plane->state->crtc && drm_lease_held(file_priv, plane->state->crtc->base.id))
-// 		plane_resp->crtc_id = plane->state->crtc->base.id;
-// 	else if (!plane->state && plane->crtc && drm_lease_held(file_priv, plane->crtc->base.id))
-// 		plane_resp->crtc_id = plane->crtc->base.id;
-// 	else
-// 		plane_resp->crtc_id = 0;
+	drm_modeset_lock(&plane->mutex, NULL);
+	if (plane->state && plane->state->crtc && drm_lease_held(file_priv, plane->state->crtc->base.id))
+		plane_resp->crtc_id = plane->state->crtc->base.id;
+	else if (!plane->state && plane->crtc && drm_lease_held(file_priv, plane->crtc->base.id))
+		plane_resp->crtc_id = plane->crtc->base.id;
+	else
+		plane_resp->crtc_id = 0;
 
-// 	if (plane->state && plane->state->fb)
-// 		plane_resp->fb_id = plane->state->fb->base.id;
-// 	else if (!plane->state && plane->fb)
-// 		plane_resp->fb_id = plane->fb->base.id;
-// 	else
-// 		plane_resp->fb_id = 0;
-// 	drm_modeset_unlock(&plane->mutex);
+	if (plane->state && plane->state->fb)
+		plane_resp->fb_id = plane->state->fb->base.id;
+	else if (!plane->state && plane->fb)
+		plane_resp->fb_id = plane->fb->base.id;
+	else
+		plane_resp->fb_id = 0;
+	drm_modeset_unlock(&plane->mutex);
 
-// 	plane_resp->plane_id = plane->base.id;
-// 	plane_resp->possible_crtcs = drm_lease_filter_crtcs(file_priv,
-// 							    plane->possible_crtcs);
+	plane_resp->plane_id = plane->base.id;
+	plane_resp->possible_crtcs = drm_lease_filter_crtcs(file_priv,
+							    plane->possible_crtcs);
 
-// 	plane_resp->gamma_size = 0;
+	plane_resp->gamma_size = 0;
 
-// 	/*
-// 	 * This ioctl is called twice, once to determine how much space is
-// 	 * needed, and the 2nd time to fill it.
-// 	 */
-// 	if (plane->format_count &&
-// 	    (plane_resp->count_format_types >= plane->format_count)) {
-// 		format_ptr = (uint32_t __user *)(unsigned long)plane_resp->format_type_ptr;
-// 		if (copy_to_user(format_ptr,
-// 				 plane->format_types,
-// 				 sizeof(uint32_t) * plane->format_count)) {
-// 			return -EFAULT;
-// 		}
-// 	}
-// 	plane_resp->count_format_types = plane->format_count;
+	/*
+	 * This ioctl is called twice, once to determine how much space is
+	 * needed, and the 2nd time to fill it.
+	 */
+	if (plane->format_count &&
+	    (plane_resp->count_format_types >= plane->format_count)) {
+		format_ptr = (uint32_t __user *)(unsigned long)plane_resp->format_type_ptr;
+		if (copy_to_user(format_ptr,
+				 plane->format_types,
+				 sizeof(uint32_t) * plane->format_count)) {
+			return -EFAULT;
+		}
+	}
+	plane_resp->count_format_types = plane->format_count;
 
-// 	return 0;
-// }
+	return 0;
+}
+#endif
 
 int drm_plane_check_pixel_format(struct drm_plane *plane,
 				 u32 format, u64 modifier)
@@ -647,28 +653,30 @@ static int __setplane_check(struct drm_plane *plane,
 	return 0;
 }
 
-// /**
-//  * drm_any_plane_has_format - Check whether any plane supports this format and modifier combination
-//  * @dev: DRM device
-//  * @format: pixel format (DRM_FORMAT_*)
-//  * @modifier: data layout modifier
-//  *
-//  * Returns:
-//  * Whether at least one plane supports the specified format and modifier combination.
-//  */
-// bool drm_any_plane_has_format(struct drm_device *dev,
-// 			      u32 format, u64 modifier)
-// {
-// 	struct drm_plane *plane;
+#if !defined(__AROS__)
+/**
+ * drm_any_plane_has_format - Check whether any plane supports this format and modifier combination
+ * @dev: DRM device
+ * @format: pixel format (DRM_FORMAT_*)
+ * @modifier: data layout modifier
+ *
+ * Returns:
+ * Whether at least one plane supports the specified format and modifier combination.
+ */
+bool drm_any_plane_has_format(struct drm_device *dev,
+			      u32 format, u64 modifier)
+{
+	struct drm_plane *plane;
 
-// 	drm_for_each_plane(plane, dev) {
-// 		if (drm_plane_check_pixel_format(plane, format, modifier) == 0)
-// 			return true;
-// 	}
+	drm_for_each_plane(plane, dev) {
+		if (drm_plane_check_pixel_format(plane, format, modifier) == 0)
+			return true;
+	}
 
-// 	return false;
-// }
-// EXPORT_SYMBOL(drm_any_plane_has_format);
+	return false;
+}
+EXPORT_SYMBOL(drm_any_plane_has_format);
+#endif
 
 /*
  * __setplane_internal - setplane handler for internal callers
@@ -766,86 +774,88 @@ static int __setplane_atomic(struct drm_plane *plane,
 					  src_x, src_y, src_w, src_h, ctx);
 }
 
-// static int setplane_internal(struct drm_plane *plane,
-// 			     struct drm_crtc *crtc,
-// 			     struct drm_framebuffer *fb,
-// 			     int32_t crtc_x, int32_t crtc_y,
-// 			     uint32_t crtc_w, uint32_t crtc_h,
-// 			     /* src_{x,y,w,h} values are 16.16 fixed point */
-// 			     uint32_t src_x, uint32_t src_y,
-// 			     uint32_t src_w, uint32_t src_h)
-// {
-// 	struct drm_modeset_acquire_ctx ctx;
-// 	int ret;
+#if !defined(__AROS__)
+static int setplane_internal(struct drm_plane *plane,
+			     struct drm_crtc *crtc,
+			     struct drm_framebuffer *fb,
+			     int32_t crtc_x, int32_t crtc_y,
+			     uint32_t crtc_w, uint32_t crtc_h,
+			     /* src_{x,y,w,h} values are 16.16 fixed point */
+			     uint32_t src_x, uint32_t src_y,
+			     uint32_t src_w, uint32_t src_h)
+{
+	struct drm_modeset_acquire_ctx ctx;
+	int ret;
 
-// 	DRM_MODESET_LOCK_ALL_BEGIN(plane->dev, ctx,
-// 				   DRM_MODESET_ACQUIRE_INTERRUPTIBLE, ret);
+	DRM_MODESET_LOCK_ALL_BEGIN(plane->dev, ctx,
+				   DRM_MODESET_ACQUIRE_INTERRUPTIBLE, ret);
 
-// 	if (drm_drv_uses_atomic_modeset(plane->dev))
-// 		ret = __setplane_atomic(plane, crtc, fb,
-// 					crtc_x, crtc_y, crtc_w, crtc_h,
-// 					src_x, src_y, src_w, src_h, &ctx);
-// 	else
-// 		ret = __setplane_internal(plane, crtc, fb,
-// 					  crtc_x, crtc_y, crtc_w, crtc_h,
-// 					  src_x, src_y, src_w, src_h, &ctx);
+	if (drm_drv_uses_atomic_modeset(plane->dev))
+		ret = __setplane_atomic(plane, crtc, fb,
+					crtc_x, crtc_y, crtc_w, crtc_h,
+					src_x, src_y, src_w, src_h, &ctx);
+	else
+		ret = __setplane_internal(plane, crtc, fb,
+					  crtc_x, crtc_y, crtc_w, crtc_h,
+					  src_x, src_y, src_w, src_h, &ctx);
 
-// 	DRM_MODESET_LOCK_ALL_END(ctx, ret);
+	DRM_MODESET_LOCK_ALL_END(ctx, ret);
 
-// 	return ret;
-// }
+	return ret;
+}
 
-// int drm_mode_setplane(struct drm_device *dev, void *data,
-// 		      struct drm_file *file_priv)
-// {
-// 	struct drm_mode_set_plane *plane_req = data;
-// 	struct drm_plane *plane;
-// 	struct drm_crtc *crtc = NULL;
-// 	struct drm_framebuffer *fb = NULL;
-// 	int ret;
+int drm_mode_setplane(struct drm_device *dev, void *data,
+		      struct drm_file *file_priv)
+{
+	struct drm_mode_set_plane *plane_req = data;
+	struct drm_plane *plane;
+	struct drm_crtc *crtc = NULL;
+	struct drm_framebuffer *fb = NULL;
+	int ret;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	/*
-// 	 * First, find the plane, crtc, and fb objects.  If not available,
-// 	 * we don't bother to call the driver.
-// 	 */
-// 	plane = drm_plane_find(dev, file_priv, plane_req->plane_id);
-// 	if (!plane) {
-// 		DRM_DEBUG_KMS("Unknown plane ID %d\n",
-// 			      plane_req->plane_id);
-// 		return -ENOENT;
-// 	}
+	/*
+	 * First, find the plane, crtc, and fb objects.  If not available,
+	 * we don't bother to call the driver.
+	 */
+	plane = drm_plane_find(dev, file_priv, plane_req->plane_id);
+	if (!plane) {
+		DRM_DEBUG_KMS("Unknown plane ID %d\n",
+			      plane_req->plane_id);
+		return -ENOENT;
+	}
 
-// 	if (plane_req->fb_id) {
-// 		fb = drm_framebuffer_lookup(dev, file_priv, plane_req->fb_id);
-// 		if (!fb) {
-// 			DRM_DEBUG_KMS("Unknown framebuffer ID %d\n",
-// 				      plane_req->fb_id);
-// 			return -ENOENT;
-// 		}
+	if (plane_req->fb_id) {
+		fb = drm_framebuffer_lookup(dev, file_priv, plane_req->fb_id);
+		if (!fb) {
+			DRM_DEBUG_KMS("Unknown framebuffer ID %d\n",
+				      plane_req->fb_id);
+			return -ENOENT;
+		}
 
-// 		crtc = drm_crtc_find(dev, file_priv, plane_req->crtc_id);
-// 		if (!crtc) {
-// 			drm_framebuffer_put(fb);
-// 			DRM_DEBUG_KMS("Unknown crtc ID %d\n",
-// 				      plane_req->crtc_id);
-// 			return -ENOENT;
-// 		}
-// 	}
+		crtc = drm_crtc_find(dev, file_priv, plane_req->crtc_id);
+		if (!crtc) {
+			drm_framebuffer_put(fb);
+			DRM_DEBUG_KMS("Unknown crtc ID %d\n",
+				      plane_req->crtc_id);
+			return -ENOENT;
+		}
+	}
 
-// 	ret = setplane_internal(plane, crtc, fb,
-// 				plane_req->crtc_x, plane_req->crtc_y,
-// 				plane_req->crtc_w, plane_req->crtc_h,
-// 				plane_req->src_x, plane_req->src_y,
-// 				plane_req->src_w, plane_req->src_h);
+	ret = setplane_internal(plane, crtc, fb,
+				plane_req->crtc_x, plane_req->crtc_y,
+				plane_req->crtc_w, plane_req->crtc_h,
+				plane_req->src_x, plane_req->src_y,
+				plane_req->src_w, plane_req->src_h);
 
-// 	if (fb)
-// 		drm_framebuffer_put(fb);
+	if (fb)
+		drm_framebuffer_put(fb);
 
-// 	return ret;
-// }
+	return ret;
+}
+#endif
 
 static int drm_mode_cursor_universal(struct drm_crtc *crtc,
 				     struct drm_mode_cursor2 *req,
@@ -1041,207 +1051,209 @@ int drm_mode_cursor_ioctl(struct drm_device *dev,
 	return drm_mode_cursor_common(dev, &new_req, file_priv);
 }
 
-// /*
-//  * Set the cursor configuration based on user request. This implements the 2nd
-//  * version of the cursor ioctl, which allows userspace to additionally specify
-//  * the hotspot of the pointer.
-//  */
-// int drm_mode_cursor2_ioctl(struct drm_device *dev,
-// 			   void *data, struct drm_file *file_priv)
-// {
-// 	struct drm_mode_cursor2 *req = data;
+#if !defined(__AROS__)
+/*
+ * Set the cursor configuration based on user request. This implements the 2nd
+ * version of the cursor ioctl, which allows userspace to additionally specify
+ * the hotspot of the pointer.
+ */
+int drm_mode_cursor2_ioctl(struct drm_device *dev,
+			   void *data, struct drm_file *file_priv)
+{
+	struct drm_mode_cursor2 *req = data;
 
-// 	return drm_mode_cursor_common(dev, req, file_priv);
-// }
+	return drm_mode_cursor_common(dev, req, file_priv);
+}
 
-// int drm_mode_page_flip_ioctl(struct drm_device *dev,
-// 			     void *data, struct drm_file *file_priv)
-// {
-// 	struct drm_mode_crtc_page_flip_target *page_flip = data;
-// 	struct drm_crtc *crtc;
-// 	struct drm_plane *plane;
-// 	struct drm_framebuffer *fb = NULL, *old_fb;
-// 	struct drm_pending_vblank_event *e = NULL;
-// 	u32 target_vblank = page_flip->sequence;
-// 	struct drm_modeset_acquire_ctx ctx;
-// 	int ret = -EINVAL;
+int drm_mode_page_flip_ioctl(struct drm_device *dev,
+			     void *data, struct drm_file *file_priv)
+{
+	struct drm_mode_crtc_page_flip_target *page_flip = data;
+	struct drm_crtc *crtc;
+	struct drm_plane *plane;
+	struct drm_framebuffer *fb = NULL, *old_fb;
+	struct drm_pending_vblank_event *e = NULL;
+	u32 target_vblank = page_flip->sequence;
+	struct drm_modeset_acquire_ctx ctx;
+	int ret = -EINVAL;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	if (page_flip->flags & ~DRM_MODE_PAGE_FLIP_FLAGS)
-// 		return -EINVAL;
+	if (page_flip->flags & ~DRM_MODE_PAGE_FLIP_FLAGS)
+		return -EINVAL;
 
-// 	if (page_flip->sequence != 0 && !(page_flip->flags & DRM_MODE_PAGE_FLIP_TARGET))
-// 		return -EINVAL;
+	if (page_flip->sequence != 0 && !(page_flip->flags & DRM_MODE_PAGE_FLIP_TARGET))
+		return -EINVAL;
 
-// 	/* Only one of the DRM_MODE_PAGE_FLIP_TARGET_ABSOLUTE/RELATIVE flags
-// 	 * can be specified
-// 	 */
-// 	if ((page_flip->flags & DRM_MODE_PAGE_FLIP_TARGET) == DRM_MODE_PAGE_FLIP_TARGET)
-// 		return -EINVAL;
+	/* Only one of the DRM_MODE_PAGE_FLIP_TARGET_ABSOLUTE/RELATIVE flags
+	 * can be specified
+	 */
+	if ((page_flip->flags & DRM_MODE_PAGE_FLIP_TARGET) == DRM_MODE_PAGE_FLIP_TARGET)
+		return -EINVAL;
 
-// 	if ((page_flip->flags & DRM_MODE_PAGE_FLIP_ASYNC) && !dev->mode_config.async_page_flip)
-// 		return -EINVAL;
+	if ((page_flip->flags & DRM_MODE_PAGE_FLIP_ASYNC) && !dev->mode_config.async_page_flip)
+		return -EINVAL;
 
-// 	crtc = drm_crtc_find(dev, file_priv, page_flip->crtc_id);
-// 	if (!crtc)
-// 		return -ENOENT;
+	crtc = drm_crtc_find(dev, file_priv, page_flip->crtc_id);
+	if (!crtc)
+		return -ENOENT;
 
-// 	plane = crtc->primary;
+	plane = crtc->primary;
 
-// 	if (!drm_lease_held(file_priv, plane->base.id))
-// 		return -EACCES;
+	if (!drm_lease_held(file_priv, plane->base.id))
+		return -EACCES;
 
-// 	if (crtc->funcs->page_flip_target) {
-// 		u32 current_vblank;
-// 		int r;
+	if (crtc->funcs->page_flip_target) {
+		u32 current_vblank;
+		int r;
 
-// 		r = drm_crtc_vblank_get(crtc);
-// 		if (r)
-// 			return r;
+		r = drm_crtc_vblank_get(crtc);
+		if (r)
+			return r;
 
-// 		current_vblank = (u32)drm_crtc_vblank_count(crtc);
+		current_vblank = (u32)drm_crtc_vblank_count(crtc);
 
-// 		switch (page_flip->flags & DRM_MODE_PAGE_FLIP_TARGET) {
-// 		case DRM_MODE_PAGE_FLIP_TARGET_ABSOLUTE:
-// 			if ((int)(target_vblank - current_vblank) > 1) {
-// 				DRM_DEBUG("Invalid absolute flip target %u, "
-// 					  "must be <= %u\n", target_vblank,
-// 					  current_vblank + 1);
-// 				drm_crtc_vblank_put(crtc);
-// 				return -EINVAL;
-// 			}
-// 			break;
-// 		case DRM_MODE_PAGE_FLIP_TARGET_RELATIVE:
-// 			if (target_vblank != 0 && target_vblank != 1) {
-// 				DRM_DEBUG("Invalid relative flip target %u, "
-// 					  "must be 0 or 1\n", target_vblank);
-// 				drm_crtc_vblank_put(crtc);
-// 				return -EINVAL;
-// 			}
-// 			target_vblank += current_vblank;
-// 			break;
-// 		default:
-// 			target_vblank = current_vblank +
-// 				!(page_flip->flags & DRM_MODE_PAGE_FLIP_ASYNC);
-// 			break;
-// 		}
-// 	} else if (crtc->funcs->page_flip == NULL ||
-// 		   (page_flip->flags & DRM_MODE_PAGE_FLIP_TARGET)) {
-// 		return -EINVAL;
-// 	}
+		switch (page_flip->flags & DRM_MODE_PAGE_FLIP_TARGET) {
+		case DRM_MODE_PAGE_FLIP_TARGET_ABSOLUTE:
+			if ((int)(target_vblank - current_vblank) > 1) {
+				DRM_DEBUG("Invalid absolute flip target %u, "
+					  "must be <= %u\n", target_vblank,
+					  current_vblank + 1);
+				drm_crtc_vblank_put(crtc);
+				return -EINVAL;
+			}
+			break;
+		case DRM_MODE_PAGE_FLIP_TARGET_RELATIVE:
+			if (target_vblank != 0 && target_vblank != 1) {
+				DRM_DEBUG("Invalid relative flip target %u, "
+					  "must be 0 or 1\n", target_vblank);
+				drm_crtc_vblank_put(crtc);
+				return -EINVAL;
+			}
+			target_vblank += current_vblank;
+			break;
+		default:
+			target_vblank = current_vblank +
+				!(page_flip->flags & DRM_MODE_PAGE_FLIP_ASYNC);
+			break;
+		}
+	} else if (crtc->funcs->page_flip == NULL ||
+		   (page_flip->flags & DRM_MODE_PAGE_FLIP_TARGET)) {
+		return -EINVAL;
+	}
 
-// 	drm_modeset_acquire_init(&ctx, DRM_MODESET_ACQUIRE_INTERRUPTIBLE);
-// retry:
-// 	ret = drm_modeset_lock(&crtc->mutex, &ctx);
-// 	if (ret)
-// 		goto out;
-// 	ret = drm_modeset_lock(&plane->mutex, &ctx);
-// 	if (ret)
-// 		goto out;
+	drm_modeset_acquire_init(&ctx, DRM_MODESET_ACQUIRE_INTERRUPTIBLE);
+retry:
+	ret = drm_modeset_lock(&crtc->mutex, &ctx);
+	if (ret)
+		goto out;
+	ret = drm_modeset_lock(&plane->mutex, &ctx);
+	if (ret)
+		goto out;
 
-// 	if (plane->state)
-// 		old_fb = plane->state->fb;
-// 	else
-// 		old_fb = plane->fb;
+	if (plane->state)
+		old_fb = plane->state->fb;
+	else
+		old_fb = plane->fb;
 
-// 	if (old_fb == NULL) {
-// 		/* The framebuffer is currently unbound, presumably
-// 		 * due to a hotplug event, that userspace has not
-// 		 * yet discovered.
-// 		 */
-// 		ret = -EBUSY;
-// 		goto out;
-// 	}
+	if (old_fb == NULL) {
+		/* The framebuffer is currently unbound, presumably
+		 * due to a hotplug event, that userspace has not
+		 * yet discovered.
+		 */
+		ret = -EBUSY;
+		goto out;
+	}
 
-// 	fb = drm_framebuffer_lookup(dev, file_priv, page_flip->fb_id);
-// 	if (!fb) {
-// 		ret = -ENOENT;
-// 		goto out;
-// 	}
+	fb = drm_framebuffer_lookup(dev, file_priv, page_flip->fb_id);
+	if (!fb) {
+		ret = -ENOENT;
+		goto out;
+	}
 
-// 	if (plane->state) {
-// 		const struct drm_plane_state *state = plane->state;
+	if (plane->state) {
+		const struct drm_plane_state *state = plane->state;
 
-// 		ret = drm_framebuffer_check_src_coords(state->src_x,
-// 						       state->src_y,
-// 						       state->src_w,
-// 						       state->src_h,
-// 						       fb);
-// 	} else {
-// 		ret = drm_crtc_check_viewport(crtc, crtc->x, crtc->y,
-// 					      &crtc->mode, fb);
-// 	}
-// 	if (ret)
-// 		goto out;
+		ret = drm_framebuffer_check_src_coords(state->src_x,
+						       state->src_y,
+						       state->src_w,
+						       state->src_h,
+						       fb);
+	} else {
+		ret = drm_crtc_check_viewport(crtc, crtc->x, crtc->y,
+					      &crtc->mode, fb);
+	}
+	if (ret)
+		goto out;
 
-// 	if (old_fb->format != fb->format) {
-// 		DRM_DEBUG_KMS("Page flip is not allowed to change frame buffer format.\n");
-// 		ret = -EINVAL;
-// 		goto out;
-// 	}
+	if (old_fb->format != fb->format) {
+		DRM_DEBUG_KMS("Page flip is not allowed to change frame buffer format.\n");
+		ret = -EINVAL;
+		goto out;
+	}
 
-// 	if (page_flip->flags & DRM_MODE_PAGE_FLIP_EVENT) {
-// 		e = kzalloc(sizeof *e, GFP_KERNEL);
-// 		if (!e) {
-// 			ret = -ENOMEM;
-// 			goto out;
-// 		}
+	if (page_flip->flags & DRM_MODE_PAGE_FLIP_EVENT) {
+		e = kzalloc(sizeof *e, GFP_KERNEL);
+		if (!e) {
+			ret = -ENOMEM;
+			goto out;
+		}
 
-// 		e->event.base.type = DRM_EVENT_FLIP_COMPLETE;
-// 		e->event.base.length = sizeof(e->event);
-// 		e->event.vbl.user_data = page_flip->user_data;
-// 		e->event.vbl.crtc_id = crtc->base.id;
+		e->event.base.type = DRM_EVENT_FLIP_COMPLETE;
+		e->event.base.length = sizeof(e->event);
+		e->event.vbl.user_data = page_flip->user_data;
+		e->event.vbl.crtc_id = crtc->base.id;
 
-// 		ret = drm_event_reserve_init(dev, file_priv, &e->base, &e->event.base);
-// 		if (ret) {
-// 			kfree(e);
-// 			e = NULL;
-// 			goto out;
-// 		}
-// 	}
+		ret = drm_event_reserve_init(dev, file_priv, &e->base, &e->event.base);
+		if (ret) {
+			kfree(e);
+			e = NULL;
+			goto out;
+		}
+	}
 
-// 	plane->old_fb = plane->fb;
-// 	if (crtc->funcs->page_flip_target)
-// 		ret = crtc->funcs->page_flip_target(crtc, fb, e,
-// 						    page_flip->flags,
-// 						    target_vblank,
-// 						    &ctx);
-// 	else
-// 		ret = crtc->funcs->page_flip(crtc, fb, e, page_flip->flags,
-// 					     &ctx);
-// 	if (ret) {
-// 		if (page_flip->flags & DRM_MODE_PAGE_FLIP_EVENT)
-// 			drm_event_cancel_free(dev, &e->base);
-// 		/* Keep the old fb, don't unref it. */
-// 		plane->old_fb = NULL;
-// 	} else {
-// 		if (!plane->state) {
-// 			plane->fb = fb;
-// 			drm_framebuffer_get(fb);
-// 		}
-// 	}
+	plane->old_fb = plane->fb;
+	if (crtc->funcs->page_flip_target)
+		ret = crtc->funcs->page_flip_target(crtc, fb, e,
+						    page_flip->flags,
+						    target_vblank,
+						    &ctx);
+	else
+		ret = crtc->funcs->page_flip(crtc, fb, e, page_flip->flags,
+					     &ctx);
+	if (ret) {
+		if (page_flip->flags & DRM_MODE_PAGE_FLIP_EVENT)
+			drm_event_cancel_free(dev, &e->base);
+		/* Keep the old fb, don't unref it. */
+		plane->old_fb = NULL;
+	} else {
+		if (!plane->state) {
+			plane->fb = fb;
+			drm_framebuffer_get(fb);
+		}
+	}
 
-// out:
-// 	if (fb)
-// 		drm_framebuffer_put(fb);
-// 	fb = NULL;
-// 	if (plane->old_fb)
-// 		drm_framebuffer_put(plane->old_fb);
-// 	plane->old_fb = NULL;
+out:
+	if (fb)
+		drm_framebuffer_put(fb);
+	fb = NULL;
+	if (plane->old_fb)
+		drm_framebuffer_put(plane->old_fb);
+	plane->old_fb = NULL;
 
-// 	if (ret == -EDEADLK) {
-// 		ret = drm_modeset_backoff(&ctx);
-// 		if (!ret)
-// 			goto retry;
-// 	}
+	if (ret == -EDEADLK) {
+		ret = drm_modeset_backoff(&ctx);
+		if (!ret)
+			goto retry;
+	}
 
-// 	drm_modeset_drop_locks(&ctx);
-// 	drm_modeset_acquire_fini(&ctx);
+	drm_modeset_drop_locks(&ctx);
+	drm_modeset_acquire_fini(&ctx);
 
-// 	if (ret && crtc->funcs->page_flip_target)
-// 		drm_crtc_vblank_put(crtc);
+	if (ret && crtc->funcs->page_flip_target)
+		drm_crtc_vblank_put(crtc);
 
-// 	return ret;
-// }
+	return ret;
+}
+#endif

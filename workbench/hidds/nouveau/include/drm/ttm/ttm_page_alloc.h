@@ -72,7 +72,9 @@ void ttm_unmap_and_unpopulate_pages(struct device *dev, struct ttm_dma_tt *tt);
 /**
  * Output the state of pools to debugfs file
  */
-// int ttm_page_alloc_debugfs(struct seq_file *m, void *data);
+#if !defined(__AROS__)
+int ttm_page_alloc_debugfs(struct seq_file *m, void *data);
+#endif
 
 #if defined(CONFIG_SWIOTLB) || defined(CONFIG_INTEL_IOMMU)
 /**
@@ -103,10 +105,12 @@ static inline int ttm_dma_page_alloc_init(struct ttm_mem_global *glob,
 
 static inline void ttm_dma_page_alloc_fini(void) { return; }
 
-// static inline int ttm_dma_page_alloc_debugfs(struct seq_file *m, void *data)
-// {
-// 	return 0;
-// }
+#if !defined(__AROS__)
+static inline int ttm_dma_page_alloc_debugfs(struct seq_file *m, void *data)
+{
+	return 0;
+}
+#endif
 static inline int ttm_dma_populate(struct ttm_dma_tt *ttm_dma,
 				struct device *dev,
 				struct ttm_operation_ctx *ctx)

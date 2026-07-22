@@ -32,7 +32,9 @@
 #include <drm/ttm/ttm_module.h>
 #include <drm/ttm/ttm_bo_driver.h>
 #include <drm/ttm/ttm_placement.h>
-// #include <drm/drm_mm.h>
+#if !defined(__AROS__)
+#include <drm/drm_mm.h>
+#endif
 #if !defined(__AROS__)
 #include <linux/slab.h>
 #include <linux/spinlock.h>

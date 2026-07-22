@@ -469,13 +469,15 @@ int drm_mode_convert_umode(struct drm_device *dev,
 			   struct drm_display_mode *out,
 			   const struct drm_mode_modeinfo *in);
 void drm_mode_probed_add(struct drm_connector *connector, struct drm_display_mode *mode);
-// void drm_mode_debug_printmodeline(const struct drm_display_mode *mode);
-// bool drm_mode_is_420_only(const struct drm_display_info *display,
-// 			  const struct drm_display_mode *mode);
-// bool drm_mode_is_420_also(const struct drm_display_info *display,
-// 			  const struct drm_display_mode *mode);
-// bool drm_mode_is_420(const struct drm_display_info *display,
-// 		     const struct drm_display_mode *mode);
+#if !defined(__AROS__)
+void drm_mode_debug_printmodeline(const struct drm_display_mode *mode);
+bool drm_mode_is_420_only(const struct drm_display_info *display,
+			  const struct drm_display_mode *mode);
+bool drm_mode_is_420_also(const struct drm_display_info *display,
+			  const struct drm_display_mode *mode);
+bool drm_mode_is_420(const struct drm_display_info *display,
+		     const struct drm_display_mode *mode);
+#endif
 
 struct drm_display_mode *drm_cvt_mode(struct drm_device *dev,
 				      int hdisplay, int vdisplay, int vrefresh,
@@ -490,14 +492,16 @@ struct drm_display_mode *drm_gtf_mode_complex(struct drm_device *dev,
 					      int margins,
 					      int GTF_M, int GTF_2C,
 					      int GTF_K, int GTF_2J);
-// void drm_display_mode_from_videomode(const struct videomode *vm,
-// 				     struct drm_display_mode *dmode);
-// void drm_display_mode_to_videomode(const struct drm_display_mode *dmode,
-// 				   struct videomode *vm);
-// void drm_bus_flags_from_videomode(const struct videomode *vm, u32 *bus_flags);
-// int of_get_drm_display_mode(struct device_node *np,
-// 			    struct drm_display_mode *dmode, u32 *bus_flags,
-// 			    int index);
+#if !defined(__AROS__)
+void drm_display_mode_from_videomode(const struct videomode *vm,
+				     struct drm_display_mode *dmode);
+void drm_display_mode_to_videomode(const struct drm_display_mode *dmode,
+				   struct videomode *vm);
+void drm_bus_flags_from_videomode(const struct videomode *vm, u32 *bus_flags);
+int of_get_drm_display_mode(struct device_node *np,
+			    struct drm_display_mode *dmode, u32 *bus_flags,
+			    int index);
+#endif
 
 void drm_mode_set_name(struct drm_display_mode *mode);
 int drm_mode_hsync(const struct drm_display_mode *mode);
@@ -516,10 +520,12 @@ bool drm_mode_match(const struct drm_display_mode *mode1,
 		    unsigned int match_flags);
 bool drm_mode_equal(const struct drm_display_mode *mode1,
 		    const struct drm_display_mode *mode2);
-// bool drm_mode_equal_no_clocks(const struct drm_display_mode *mode1,
-// 			      const struct drm_display_mode *mode2);
-// bool drm_mode_equal_no_clocks_no_stereo(const struct drm_display_mode *mode1,
-// 					const struct drm_display_mode *mode2);
+#if !defined(__AROS__)
+bool drm_mode_equal_no_clocks(const struct drm_display_mode *mode1,
+			      const struct drm_display_mode *mode2);
+bool drm_mode_equal_no_clocks_no_stereo(const struct drm_display_mode *mode1,
+					const struct drm_display_mode *mode2);
+#endif
 
 /* for use by the crtc helper probe functions */
 enum drm_mode_status drm_mode_validate_driver(struct drm_device *dev,
@@ -534,7 +540,9 @@ void drm_mode_prune_invalid(struct drm_device *dev,
 void drm_mode_sort(struct list_head *mode_list);
 void drm_connector_list_update(struct drm_connector *connector);
 
-// /* parsing cmdline modes */
+#if !defined(__AROS__)
+/* parsing cmdline modes */
+#endif
 bool
 drm_mode_parse_command_line_for_connector(const char *mode_option,
 					  const struct drm_connector *connector,
