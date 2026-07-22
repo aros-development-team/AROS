@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 # Rules for building the grub2 boot and EFI
 # binaries for the boot ISO, using the host compiler.
 
@@ -124,20 +124,31 @@ CONFIG_OPTS += \
 endif
 
 ifeq ($(AROS_TOOLCHAIN),llvm)
+# grub's boot components (kernel.img, boot.img, etc.) must be linked as
+# plain ELF executables at fixed link addresses. The AROS clang triple
+# routes linking through collect-aros, which always emits AROS relocatable
+# modules and ignores -Ttext, producing images grub-mkimage rejects
+# ("its start address is 0x0 instead of 0x9000"). Use a bare linux triple
+# so clang generates plain ELF and drives the system linker instead.
+GRUB2_LLVM_ISA_FLAGS   := --target=$(AROS_TARGET_CPU)-pc-linux-gnu
+GRUB2_LLVM_ISA32_FLAGS := --target=$(AROS_TARGET_CPU32)-pc-linux-gnu -march=i486 -m32
 ifneq ($(AROS_TARGET_CPU32),)
 GRUB2_HOST_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU32)
 GRUB2_EFI32_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU32)
-GRUB2_HOST_ENV+=TARGET_CFLAGS="$(TARGET_ISA_32_CFLAGS)"
-GRUB2_EFI32_ENV+=TARGET_CFLAGS="$(TARGET_ISA_32_CFLAGS)"
-GRUB2_HOST_ENV+=TARGET_LDFLAGS="$(TARGET_ISA_32_LDFLAGS) -nostartfiles"
-GRUB2_EFI32_ENV+=TARGET_LDFLAGS="$(TARGET_ISA_32_LDFLAGS) -nostartfiles"
-GRUB2_HOST_ENV+=TARGET_CCASFLAGS="$(TARGET_ISA_32_AFLAGS) -Wa,--32"
-GRUB2_EFI32_ENV+=TARGET_CCASFLAGS="$(TARGET_ISA_32_AFLAGS) -Wa,--32"
+GRUB2_HOST_ENV+=TARGET_CFLAGS="$(GRUB2_LLVM_ISA32_FLAGS)"
+GRUB2_EFI32_ENV+=TARGET_CFLAGS="$(GRUB2_LLVM_ISA32_FLAGS)"
+GRUB2_HOST_ENV+=TARGET_LDFLAGS="$(GRUB2_LLVM_ISA32_FLAGS) -nostartfiles"
+GRUB2_EFI32_ENV+=TARGET_LDFLAGS="$(GRUB2_LLVM_ISA32_FLAGS) -nostartfiles"
+GRUB2_HOST_ENV+=TARGET_CCASFLAGS="$(GRUB2_LLVM_ISA32_FLAGS) -Wa,--32"
+GRUB2_EFI32_ENV+=TARGET_CCASFLAGS="$(GRUB2_LLVM_ISA32_FLAGS) -Wa,--32"
 else
 GRUB2_HOST_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU)
+GRUB2_HOST_ENV+=TARGET_CFLAGS="$(GRUB2_LLVM_ISA_FLAGS)"
+GRUB2_HOST_ENV+=TARGET_LDFLAGS="$(GRUB2_LLVM_ISA_FLAGS) -nostartfiles"
 endif
 GRUB2_EFI_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU)
-GRUB2_EFI_ENV+=TARGET_LDFLAGS="$(TARGET_ISA_LDFLAGS) -nostartfiles"
+GRUB2_EFI_ENV+=TARGET_CFLAGS="$(GRUB2_LLVM_ISA_FLAGS)"
+GRUB2_EFI_ENV+=TARGET_LDFLAGS="$(GRUB2_LLVM_ISA_FLAGS) -nostartfiles"
 endif
 
 grub2-host-touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
