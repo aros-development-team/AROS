@@ -86,7 +86,11 @@ boot16:	mov	$0, %eax
 	shr	$16, %eax
 	movb	%al, gdt32+12		# Set base address of 32-bit code segment (bits 16:23)
 	movb	%al, gdt32+20		# Set base address of 32-bit data segment (bits 16:23)
+#ifdef __clang__
+	lgdtl	gdtr32			# Load 32-bit gdt (IAS emits the addr32/data32 prefixes)
+#else
 	ADDR32 DATA32 lgdt gdtr32	# Load 32-bit gdt
+#endif
 	movl	%cr0, %eax		# Enter protected mode
 	orb	$1, %al
 	movl	%eax, %cr0
