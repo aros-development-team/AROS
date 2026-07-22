@@ -31,6 +31,9 @@ struct stdcondata
     UWORD pens[CONUNIT_PEN_MAX];
     UWORD *penmap[CONUNIT_PEN_MAX];
 
+    PLANEPTR charScratch;
+    UWORD charScratchHeight;
+
     /* Libraries */
     struct Library *scd_GfxBase;
 };
@@ -67,11 +70,16 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
             data->dri = GetScreenDrawInfo(CU(o)->cu_Window->WScreen);
             if (data->dri)
             {
+                struct Library *GfxBase = data->scd_GfxBase;
+
                 data->penmap[0] = &data->dri->dri_Pens[BACKGROUNDPEN];
                 data->penmap[1] = &data->dri->dri_Pens[TEXTPEN];
 
                 CU(o)->cu_BgPen = (BYTE)*(data->penmap[0]);
                 CU(o)->cu_FgPen = (BYTE)*(data->penmap[1]);
+
+                data->charScratchHeight = RASTPORT(o)->Font->tf_YSize;
+                data->charScratch = AllocRaster(8, data->charScratchHeight);
 
                 data->cursorvisible = TRUE;
                 Console_RenderCursor(o);
@@ -90,6 +98,10 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
 static VOID stdcon_dispose(Class *cl, Object *o, Msg msg)
 {
     struct stdcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
+
+    if (data->charScratch)
+        FreeRaster(data->charScratch, 8, data->charScratchHeight);
 
     if (data->scd_GfxBase)
         CloseLibrary(data->scd_GfxBase);
@@ -124,6 +136,22 @@ static void setstyle(struct Library *GfxBase, struct RastPort *rp,
     SetSoftStyle(rp, tflags, CON_TXTFLAGS_MASK);
 }
 
+static void stdcon_text(struct stdcondata *data, struct RastPort *rp,
+    CONST_STRPTR text, ULONG len)
+{
+    struct TmpRas *savedTmpRas = rp->TmpRas;
+    struct TmpRas charTmpRas;
+    struct Library *GfxBase = data->scd_GfxBase;
+    ULONG scratchSize = RASSIZE(8, data->charScratchHeight);
+
+    if (len == 1 && data->charScratch &&
+        (!savedTmpRas || savedTmpRas->Size < scratchSize))
+        rp->TmpRas = InitTmpRas(&charTmpRas, data->charScratch, scratchSize);
+
+    Text(rp, text, len);
+    rp->TmpRas = savedTmpRas;
+}
+
 /*********  StdCon::DoCommand()  ****************************/
 
 static VOID stdcon_docommand(Class *cl, Object *o,
@@ -155,7 +183,7 @@ static VOID stdcon_docommand(Class *cl, Object *o,
         Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
         {
             UBYTE c = params[0];
-            Text(rp, &c, 1);
+            stdcon_text(data, rp, &c, 1);
         }
 
         Console_Right(o, 1);
@@ -185,7 +213,7 @@ static VOID stdcon_docommand(Class *cl, Object *o,
                     len < remaining_space ? len : remaining_space;
 
                 Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
-                Text(rp, str, line_len);
+                stdcon_text(data, rp, str, line_len);
 
                 Console_Right(o, line_len);
 

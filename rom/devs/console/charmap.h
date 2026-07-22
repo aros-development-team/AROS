@@ -17,7 +17,8 @@ struct charmap_line
     struct charmap_line *next;
     struct charmap_line *prev;
 
-    ULONG size;
+    UWORD size;
+    UWORD capacity;
     char *text;
     BYTE *fgpen;
     BYTE *bgpen;

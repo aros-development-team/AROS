@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-CFILES  := changeextspritea movesprite setchiprev vbeampos
+CFILES  := bltclear changeextspritea movesprite setchiprev vbeampos
 AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom waitblit
 
 #MM kernel-graphics-amiga-m68k : kernel-hidd-includes kernel-graphics-includes includes-asm_h kernel-hidd-graphics-includes

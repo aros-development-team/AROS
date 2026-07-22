@@ -271,7 +271,7 @@ void * memclr(APTR, ULONG);
 
    Unfortunately this can fail with some programs, like DOpus 4.x text viewer */
 
-#define PROP_RENDER_OPTIMIZATION    	    0
+#define PROP_RENDER_OPTIMIZATION    	    1
 
 #define SINGLE_SETPOINTERPOS_PER_EVENTLOOP  1
 

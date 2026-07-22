@@ -77,6 +77,32 @@ const ULONG coltab[] =
     0xeeeeeeee, 0x00000000, 0x00000000
 };
 
+/* Built-in busy pointer in the classic two-plane sprite format. Keep this
+ * distinct from Preferences.PointerMatrix: the latter is the normal pointer
+ * and using it for both shapes makes WA_BusyPointer visually ambiguous.
+ * IPrefs may still replace this through IPREFS_TYPE_POINTER_V39. */
+static CONST UWORD IntuitionBusyPointer[] =
+{
+    0x0000, 0x0000,             /* sprite control words */
+    0x0000, 0x07c0,
+    0x07c0, 0x1ff0,
+    0x1ff0, 0x3ff8,
+    0x3078, 0x7ffc,
+    0x7efc, 0xfffe,
+    0x7dfc, 0xfffe,
+    0x707e, 0xffff,
+    0x7fc2, 0xffff,
+    0x3ff4, 0x7ffe,
+    0x1fc0, 0x3ffc,
+    0x07c0, 0x1ff0,
+    0x0000, 0x07c0,
+    0x00c0, 0x01e0,
+    0x0000, 0x01cc,
+    0x0004, 0x000e,
+    0x0000, 0x000e,
+    0x0000, 0x0000              /* sprite terminator words */
+};
+
 static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 {
     struct Library *OOPBase;
@@ -265,9 +291,9 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     (
         GetPubIBase(LIBBASE), &GetPrivIBase(LIBBASE)->ActivePreferences
     );
-    GetPrivIBase(LIBBASE)->BusyPointer = MakePointerFromPrefs
+    GetPrivIBase(LIBBASE)->BusyPointer = MakePointerFromData
     (
-        GetPubIBase(LIBBASE), &GetPrivIBase(LIBBASE)->ActivePreferences
+        GetPubIBase(LIBBASE), IntuitionBusyPointer, 0, 0, 16, 16
     );
 
     if
@@ -495,4 +521,3 @@ DECLARESET(CLASSESINIT)
 ADD2SET(InitRootClass, CLASSESINIT, -20)
 ADD2INITLIB(IntuitionInit, 0)
 ADD2OPENLIB(IntuitionOpen, 0)
-
