@@ -16,6 +16,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-commodities \
 #MM     workbench-libs-coolimages \
 #MM     workbench-libs-datatypes \
+#MM     workbench-libs-decorator \
+#MM     workbench-libs-decortheme \
 #MM     workbench-libs-diskfont \
 #MM     workbench-libs-egl \
 #MM     workbench-libs-expat \
@@ -73,6 +75,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-coolimages-includes \
 #MM     workbench-libs-cgfx-includes \
 #MM     workbench-libs-datatypes-includes \
+#MM     workbench-libs-decorator-includes \
+#MM     workbench-libs-decortheme-includes \
 #MM     workbench-libs-diskfont-includes \
 #MM     workbench-libs-egl-includes \
 #MM     workbench-libs-expat-includes \
