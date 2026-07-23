@@ -9,6 +9,8 @@
 
 #include <proto/kernel.h>
 
+extern ULONG m68k_VoluntarySwitch(void);
+
 /* See rom/kernel/switch.c for documentation */
 
 AROS_LH0(void, KrnSwitch,
@@ -16,8 +18,12 @@ AROS_LH0(void, KrnSwitch,
 {
     AROS_LIBFUNC_INIT
 
-    /* The real implementation is in Exec/Switch */
-    Supervisor(__AROS_GETVECADDR(SysBase,9));
+    /*
+     * Exec/Wait() has already queued the outgoing task.  Use the dedicated
+     * 68000 voluntary-switch entry instead of the general scheduler-policy
+     * path used by preemption and explicit rescheduling.
+     */
+    Supervisor(m68k_VoluntarySwitch);
 
     AROS_LIBFUNC_EXIT
 }

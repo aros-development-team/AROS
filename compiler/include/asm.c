@@ -86,6 +86,15 @@ int main(void) {
 
     asm volatile("\n.asciz \"/* struct ETask */\"" ::);
     DEFINE(et_Reserved, offsetof (struct ETask, et_Reserved));
+    DEFINE(et_RegFrame, offsetof (struct ETask, et_RegFrame));
+
+#ifdef __mc68000
+    asm volatile("\n.asciz \"/* m68k ExceptionContext */\"" ::);
+    DEFINE(ec_D,  offsetof (struct ExceptionContext, d));
+    DEFINE(ec_A,  offsetof (struct ExceptionContext, a));
+    DEFINE(ec_SR, offsetof (struct ExceptionContext, sr));
+    DEFINE(ec_PC, offsetof (struct ExceptionContext, pc));
+#endif
 
     asm volatile("\n.asciz \"/* struct Process */\"" ::);
     DEFINE(pr_CES        , offsetof (struct Process, pr_CES));
