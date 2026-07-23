@@ -1,6 +1,6 @@
 diff -ruN cunit-3.5.5/CUnit/Sources/Automated/AutomatedJUnitXml.c cunit-3.5.5.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c
---- cunit-3.5.5/CUnit/Sources/Automated/AutomatedJUnitXml.c	2026-05-11 06:47:57.000000000 +0000
-+++ cunit-3.5.5.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c	2026-07-01 22:34:46.498070639 +0000
+--- cunit-3.5.5/CUnit/Sources/Automated/AutomatedJUnitXml.c	2026-07-23 13:20:34.163185006 +0000
++++ cunit-3.5.5.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c	2026-07-23 13:20:05.512598652 +0000
 @@ -70,13 +70,14 @@
    return n;
  }
@@ -18,7 +18,7 @@ diff -ruN cunit-3.5.5/CUnit/Sources/Automated/AutomatedJUnitXml.c cunit-3.5.5.ar
               esc_test_name,
               CU_get_test_duration(test)
    );
-@@ -168,9 +169,11 @@
+@@ -168,13 +169,14 @@
      int all_tests = CU_count_all_tests(registry) + count_all_init_funcs(registry);
  
      CU_dstr_init(&dst, _DEFAULT_REPORT_SIZE);
@@ -26,13 +26,17 @@ diff -ruN cunit-3.5.5/CUnit/Sources/Automated/AutomatedJUnitXml.c cunit-3.5.5.ar
 +    CU_dstr_puts(&dst, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
      CU_dstr_putf(&dst,
 -            "<testsuites errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\" time=\"%f\">\n",
-+            "<testsuites id=\"%s\" name=\"%s\" errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\" time=\"%f\">\n",
++            "<testsuites id=\"%s\" name=\"%s\" errors=\"%d\" failures=\"%d\" tests=\"%d\" time=\"%f\">\n",
 +            CU_automated_package_name_get(),
 +            esc_name,
              all_errors,
              all_failures,
              all_tests,
-@@ -186,29 +189,32 @@
+-            esc_name,
+             summary->ElapsedTime
+             );
+     free(esc_name);
+@@ -186,29 +188,32 @@
          int errors = count_suite_init_errors(suite);
          int test_count = CU_count_suite_tests(suite) + count_suite_init_funcs(suite);
          int test_failures = errors + CU_count_suite_failures(suite);
