@@ -20,6 +20,10 @@ FILES := init agpclass genericbridgedeviceclass agp3bridgedeviceclass \
 
 #MM hidd-agp : includes
 
+# Link statically so libc references (e.g. compiler-emitted memcpy) resolve
+# from stdc.static - kickstart modules cannot auto-open stdc.library
+USER_LDFLAGS := -static
+
 %build_module mmake=hidd-agp modname=agp modtype=hidd \
     files="$(FILES)"
 

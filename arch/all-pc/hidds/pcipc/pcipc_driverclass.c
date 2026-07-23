@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: PCI direct bus driver, for i386/x86_64 native.
 */
@@ -240,7 +240,9 @@ static void EnumPCIIRQ(struct pcipc_staticdata *psd, struct acpiHostBridge *ahb,
         n->re_IRQPin = item->Pin + 1;
         DIRQ(bug(" INT%c", 'A' + n->re_IRQPin - 1));
 
-        if (strlen(item->ACPICARoutingSrc) > 0)
+        /* NB: no strlen() here - it would pull in the stdc.library stub,
+           and kickstart modules cannot auto-open stdc.library */
+        if (item->ACPICARoutingSrc[0] != '\0')
         {
             DIRQ(bug(" '%s'\n", item->ACPICARoutingSrc));
             FreeVec(n);
@@ -533,7 +535,7 @@ static int PCIPC_InitClass(LIBBASETYPEPTR LIBBASE)
     ACPICABase = OpenLibrary("acpica.library", 0);
     if (ACPICABase)
     {
-        AcpiGetTable(ACPI_SIG_MCFG, 1, (ACPI_TABLE_HEADER **)&_psd->pcipc_acpiMcfgTbl);
+        status = AcpiGetTable(ACPI_SIG_MCFG, 1, (ACPI_TABLE_HEADER **)&_psd->pcipc_acpiMcfgTbl);
         if (ACPI_FAILURE(status)) {
             bug("[PCIPC:Driver] %s: No ACPI MCFG table\n", __func__);
             /* not a critical failure .. */

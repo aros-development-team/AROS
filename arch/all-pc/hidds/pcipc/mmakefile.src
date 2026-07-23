@@ -9,6 +9,10 @@ USER_CPPFLAGS := \
                -D__OOP_NOMETHODBASES__ \
                -D__INLINE_ACPICA_STACKCALL__ 
 
+# Link statically so libc references resolve from stdc.static - this is a
+# kickstart module and cannot auto-open stdc.library
+USER_LDFLAGS := -static
+
 %build_module mmake=kernel-hidd-pci-pcipc \
     modname=pcipc modtype=hidd \
     files=$(FILES)
