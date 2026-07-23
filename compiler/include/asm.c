@@ -166,6 +166,7 @@ int main(void) {
     asm volatile("\n.asciz \"/* Task Flags */\"" ::);
     DEFINE(TS_RUN        , TS_RUN);
     DEFINE(TS_READY      , TS_READY);
+    DEFINE(TS_WAIT       , TS_WAIT);
     DEFINE(TF_STACKCHK   , TF_STACKCHK);
     DEFINE(TF_EXCEPT     , TF_EXCEPT);
     DEFINE(TF_SWITCH     , TF_SWITCH);
