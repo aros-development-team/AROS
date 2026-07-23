@@ -169,6 +169,45 @@ void driver_Queue(struct gfxboot_entry *boote, struct GfxBase * GfxBase)
     last->boot_next = boote;
 }
 
+/*
+ * Replay queued boot-mode drivers (registered with DDRV_BootMode) until one
+ * of them provides the default monitor. driver_Setup() queues such drivers
+ * instead of bringing them up, so a system whose only driver is a boot-mode
+ * one (e.g. hosted headlessgfx) has an empty display database until this
+ * runs. Entries that fail to instantiate are kept on the queue for a later
+ * attempt, but each entry is tried at most once per call so a failing
+ * driver cannot loop forever.
+ */
+void driver_ReplayBootQueue(struct GfxBase *GfxBase)
+{
+    struct gfxboot_entry *firstfailed = NULL;
+
+    ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
+    while (!GfxBase->default_monitor)
+    {
+        struct gfxboot_entry *boote = PrivGBase(GfxBase)->boot_first;
+
+        if (!boote || boote == firstfailed)
+            break;
+
+        PrivGBase(GfxBase)->boot_first = boote->boot_next;
+
+        if (driver_Setup(boote->boot_cfg, boote->boot_attribs, TRUE, GfxBase))
+        {
+            D(bug("[graphics.library/driver] %s: replayed queued boot driver 0x%p\n", __func__, boote->boot_cfg));
+            FreeMem(boote, sizeof(struct gfxboot_entry));
+            continue;
+        }
+
+        D(bug("[graphics.library/driver] %s: queued boot driver 0x%p failed to instantiate\n", __func__, boote->boot_cfg));
+        boote->boot_next = NULL;
+        driver_Queue(boote, GfxBase);
+        if (!firstfailed)
+            firstfailed = boote;
+    }
+    ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
+}
+
 BOOL driver_Setup(struct gfxdriver_data *cfg, struct TagItem *attrs, BOOL force, struct GfxBase * GfxBase)
 {
     if (!(cfg->drv_flags & DF_BootMode) || (force))

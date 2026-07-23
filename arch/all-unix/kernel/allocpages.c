@@ -67,17 +67,53 @@
     void   *map;
 
     /*
-     * Always map R/W. Apple Silicon refuses a writable+executable mapping even
-     * with the disable-executable-page-protection entitlement, so executable
-     * callers populate the region R/W and then flip it to R/X with
-     * KrnSetProtection() once the code is in place (see CreateSegList(),
-     * internalloadseg_elf.c). (void)flags keeps the signature contract.
+     * MEMF_EXECUTABLE allocations are mapped R/W/X directly where the host
+     * allows it, so code is runnable as soon as it has been written - the
+     * behaviour executable hunks had when they came from the (RWX) RAM pool.
+     * Apple Silicon refuses a writable+executable mapping even with the
+     * disable-executable-page-protection entitlement; there the RWX request
+     * fails, we fall back to R/W, and the caller flips the populated region
+     * to R/X with KrnSetProtection() (see CreateSegList(),
+     * internalloadseg_elf.c).
      */
-    (void)flags;
+    if (flags & MEMF_EXECUTABLE)
+        prot |= PROT_EXEC;
 
-    /* Darwin does not define MAP_ANONYMOUS, only MAP_ANON. */
-    map = iface->mmap(addr, len, prot, MAP_PRIVATE | MAP_ANON, -1, 0);
+    /*
+     * Executable regions must stay within +/-2GB of the AROS RAM block:
+     * loaded code refers to data hunks (and vice versa) through 32-bit
+     * RIP-relative relocations, which cannot span the gap between the
+     * host's default (top of address space) mmap area and the RAM block.
+     * On Linux MAP_32BIT places the mapping in the low 2GB, the same
+     * neighbourhood as the RAM block; hosts without it get the default
+     * placement (a passed-in addr is used as-is either way).
+     */
+    int flags_unix = MAP_PRIVATE | MAP_ANON;    /* Darwin has no MAP_ANONYMOUS, only MAP_ANON */
+#ifdef MAP_32BIT
+    if (flags & MEMF_EXECUTABLE)
+        flags_unix |= MAP_32BIT;
+#endif
+
+    map = iface->mmap(addr, len, prot, flags_unix, -1, 0);
     AROS_HOST_BARRIER
+
+#ifdef MAP_32BIT
+    if ((map == MAP_FAILED) && (flags_unix & MAP_32BIT))
+    {
+        /* Low-2GB area exhausted - better a far mapping than none at all */
+        flags_unix &= ~MAP_32BIT;
+        map = iface->mmap(addr, len, prot, flags_unix, -1, 0);
+        AROS_HOST_BARRIER
+    }
+#endif
+
+    if ((map == MAP_FAILED) && (prot & PROT_EXEC))
+    {
+        /* W^X host refused R/W/X - hand out R/W; the caller must flip */
+        prot &= ~PROT_EXEC;
+        map = iface->mmap(addr, len, prot, flags_unix, -1, 0);
+        AROS_HOST_BARRIER
+    }
 
     if (map == MAP_FAILED)
     {

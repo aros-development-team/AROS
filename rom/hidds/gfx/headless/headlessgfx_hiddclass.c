@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2021-2026, The AROS Development Team. All rights reserved.
 
     Desc: Class for Headless.
 */
@@ -106,6 +106,26 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
             OOP_GetAttr(XSD(cl)->headlessgfxdisplay, aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->dmenum);
     }
     ReturnPtr("HeadlessGfx::New", OOP_Object *, o);
+}
+
+VOID HeadlessGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+
+    if (IS_GFX_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+        case aoHidd_Gfx_DriverName:
+            *msg->storage = (IPTR)"Headless";
+            return;
+
+        case aoHidd_Gfx_DisplayDefault:
+            *msg->storage = (IPTR)XSD(cl)->headlessgfxdisplay;
+            return;
+        }
+    }
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 OOP_Object *HeadlessGfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)

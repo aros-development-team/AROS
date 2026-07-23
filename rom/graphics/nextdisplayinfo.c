@@ -7,6 +7,7 @@
 #include <hidd/gfx.h>
 #include <proto/oop.h>
 #include "graphics_intern.h"
+#include "graphics_driver.h"
 #include "dispinfo.h"
 
 /*****************************************************************************
@@ -54,9 +55,15 @@
     struct monitor_displaydata *mdd = NULL;
     struct DisplayInfoHandle *dh = NULL;
 
-    if(last_ID == INVALID_ID)
-        /* Start from the beginning */
+    if(last_ID == INVALID_ID) {
+        /*
+         * Start from the beginning. If the database is still empty, bring up
+         * any queued boot-mode drivers first so their modes are enumerable.
+         */
+        if (GFXPRIVATE_MONITORFIRST == NULL)
+            driver_ReplayBootQueue(GfxBase);
         mdd = GFXPRIVATE_MONITORFIRST;
+    }
     else {
         /* Find handle and driver of current mode */
         dh = FindDisplayInfo(last_ID);

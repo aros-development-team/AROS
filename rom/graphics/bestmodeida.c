@@ -251,43 +251,8 @@ static BOOL FindBestModeIDForMonitor(struct monitor_displaydata *monitor, struct
      * driver_Setup() queues such drivers instead of bringing them up; without
      * this replay the machine is left with no usable display.
      */
-    monitor = NULL;
-    while (1)
-    {
-        struct gfxboot_entry *boote;
-
-        if (GfxBase->default_monitor)
-        {
-            monitor = MonitorFromSpec(GfxBase->default_monitor, GfxBase);
-            break;
-        }
-
-        if ((boote = PrivGBase(GfxBase)->boot_first) == NULL)
-            break;
-
-        D(bug("[BestModeIDA] replaying queued boot driver entry=0x%p cfg=0x%p\n",
-            boote, boote->boot_cfg));
-
-        if (driver_Setup(boote->boot_cfg, boote->boot_attribs, TRUE, GfxBase))
-        {
-            D(bug("[BestModeIDA]   -> launched; default_monitor now 0x%p\n",
-                GfxBase->default_monitor));
-            PrivGBase(GfxBase)->boot_first = boote->boot_next;
-            FreeMem(boote, sizeof(struct gfxboot_entry));
-            continue;
-        }
-
-        D(bug("[BestModeIDA]   -> FAILED to instantiate boot driver\n"));
-        PrivGBase(GfxBase)->boot_first = boote->boot_next;
-        boote->boot_next = NULL;
-        if (PrivGBase(GfxBase)->boot_first != NULL)
-        {
-            driver_Queue(boote, GfxBase);
-            continue;
-        }
-        FreeMem(boote, sizeof(struct gfxboot_entry));
-        break;
-    }
+    driver_ReplayBootQueue(GfxBase);
+    monitor = GfxBase->default_monitor ? MonitorFromSpec(GfxBase->default_monitor, GfxBase) : NULL;
 
     /* Get defaults which can be overriden */
     while((tag = NextTagItem(&tstate))) {
