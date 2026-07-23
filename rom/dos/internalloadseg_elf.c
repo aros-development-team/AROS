@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Code to dynamically load ELF executables
 */
@@ -200,28 +200,12 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
     return 1;
 }
 
-static int __attribute__ ((noinline)) load_hunk
-(
-    BPTR                 file,
-    BPTR               **next_hunk_ptr,
-    struct sheader      *sh,
-    CONST_STRPTR         strtab,
-    SIPTR               *funcarray,
-    BOOL                 do_align,
-    struct SRBuffer     *srb,
-    struct DosLibrary   *DOSBase
-)
+/* Room a section needs inside a hunk, mirrored by the arena sizing pass.
+   The size of the hunk is the size of the section, plus the size of the
+   hunk structure, plus the size of the alignment (if necessary). */
+static ULONG elf_hunk_size(struct sheader *sh, BOOL do_align)
 {
-    struct hunk *hunk;
-    ULONG  hunk_size;
-    ULONG  memflags = 0;
-
-    if (!sh->size)
-        return 1;
-
-    /* The size of the hunk is the size of the section, plus
-       the size of the hunk structure, plus the size of the alignment (if necessary)*/
-    hunk_size = sh->size + sizeof(struct hunk);
+    ULONG hunk_size = sh->size + sizeof(struct hunk);
 
     if (do_align)
     {
@@ -231,6 +215,32 @@ static int __attribute__ ((noinline)) load_hunk
          if (sh->flags & SHF_EXECINSTR)
              hunk_size += sizeof(struct FullJumpVec);
     }
+
+    return hunk_size;
+}
+
+static int __attribute__ ((noinline)) load_hunk
+(
+    BPTR                 file,
+    BPTR               **next_hunk_ptr,
+    struct sheader      *sh,
+    CONST_STRPTR         strtab,
+    SIPTR               *funcarray,
+    BOOL                 do_align,
+    UBYTE              **arena_cur,
+    ULONG                extra_memflags,
+    struct SRBuffer     *srb,
+    struct DosLibrary   *DOSBase
+)
+{
+    struct hunk *hunk;
+    ULONG  hunk_size;
+    ULONG  memflags = extra_memflags;
+
+    if (!sh->size)
+        return 1;
+
+    hunk_size = elf_hunk_size(sh, do_align);
 
     if (strtab) {
         CONST_STRPTR nameext;
@@ -255,11 +265,24 @@ static int __attribute__ ((noinline)) load_hunk
     if (sh->flags & SHF_EXECINSTR)
         memflags |= MEMF_EXECUTABLE;
 
-    hunk = ilsAllocMem(hunk_size, memflags | MEMF_PUBLIC | (sh->type == SHT_NOBITS ? MEMF_CLEAR : 0));
+    if (arena_cur)
+    {
+        /* Carve the hunk out of the module's arena. The stored size of 0
+           makes ilsFreeVec() skip this node on UnLoadSeg(); the memory
+           belongs to the container hunk linked at the end of the chain. */
+        hunk = (struct hunk *)AROS_ROUNDUP2((IPTR)*arena_cur, AROS_WORSTALIGN);
+        *arena_cur = (UBYTE *)hunk + hunk_size;
+        hunk->next = 0;
+        hunk->size = 0;
+    }
+    else
+        hunk = ilsAllocMem(hunk_size, memflags | MEMF_PUBLIC | (sh->type == SHT_NOBITS ? MEMF_CLEAR : 0));
+
     if (hunk)
     {
         hunk->next = 0;
-        hunk->size = hunk_size;
+        if (!arena_cur)
+            hunk->size = hunk_size;
 
         /* In case we are required to honour alignment, and If this section contains
            executable code, create a trampoline to its beginning, so that even if the
@@ -307,6 +330,7 @@ static int relocate
     struct sheader    *sh,
     ULONG              shrel_idx,
     struct sheader    *symtab_shndx,
+    BOOL              *reloc_out_of_range,
     struct DosLibrary *DOSBase
 )
 {
@@ -434,16 +458,56 @@ static int relocate
 
             case R_X86_64_PLT32:
             case R_X86_64_PC32: /* PC relative 32 bit signed */
-                *(ULONG *)p = s + rel->addend - (IPTR) p;
+            {
+                /* The result must fit in a signed 32 bit displacement. If the
+                   hunks were allocated more than +/-2GB apart, refuse the load
+                   instead of silently truncating (which crashes at run time). */
+                QUAD val = (QUAD)s + (QUAD)rel->addend - (QUAD)(IPTR)p;
+                if (val != (QUAD)(LONG)val)
+                {
+                    D(bug("[ELF Loader] R_X86_64_PC32/PLT32 out of range: '%s' %p -> %p\n",
+                          (STRPTR)sh[shsymtab->link].addr + sym->name, p,
+                          (void *)(s + rel->addend)));
+                    if (reloc_out_of_range)
+                        *reloc_out_of_range = TRUE;
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                *(ULONG *)p = val;
                 break;
+            }
 
             case R_X86_64_32:
-                *(ULONG *)p = (UQUAD)s + (UQUAD)rel->addend;
+            {
+                UQUAD val = (UQUAD)s + (UQUAD)rel->addend;
+                if (val != (UQUAD)(ULONG)val)
+                {
+                    D(bug("[ELF Loader] R_X86_64_32 out of range: '%s' -> %p\n",
+                          (STRPTR)sh[shsymtab->link].addr + sym->name, (void *)val));
+                    if (reloc_out_of_range)
+                        *reloc_out_of_range = TRUE;
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                *(ULONG *)p = val;
                 break;
+            }
 
             case R_X86_64_32S:
-                *(LONG *)p = (QUAD)s + (QUAD)rel->addend;
+            {
+                QUAD val = (QUAD)s + (QUAD)rel->addend;
+                if (val != (QUAD)(LONG)val)
+                {
+                    D(bug("[ELF Loader] R_X86_64_32S out of range: '%s' -> %p\n",
+                          (STRPTR)sh[shsymtab->link].addr + sym->name, (void *)val));
+                    if (reloc_out_of_range)
+                        *reloc_out_of_range = TRUE;
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                *(LONG *)p = val;
                 break;
+            }
 
             case R_X86_64_PC64:
                 *(UQUAD *)p = (UQUAD)s + (UQUAD)rel->addend - (IPTR) p;
@@ -1059,12 +1123,12 @@ static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct DosLibrary *DOSBase)
 
 #endif
 
-BPTR InternalLoadSeg_ELF
+static BPTR load_seg_elf_int
 (
     BPTR               file,
-    BPTR               table __unused,
     SIPTR             *funcarray,
-    LONG              *stack __unused,
+    BOOL               force31,
+    BOOL              *reloc_out_of_range,
     struct DosLibrary *DOSBase
 )
 {
@@ -1081,6 +1145,10 @@ BPTR InternalLoadSeg_ELF
     BOOL   exec_hunk_seen = FALSE;
     ULONG  int_shnum;
     struct SRBuffer srb = { 0 };
+    UBYTE *arena = NULL;
+    UBYTE *arena_cursor = NULL;
+    IPTR   arena_size = 0;
+    ULONG  arena_flags = 0;
 
     /* load and validate ELF header */
     if (!load_header(file, &eh, funcarray, &srb, DOSBase))
@@ -1156,6 +1224,68 @@ BPTR InternalLoadSeg_ELF
      * load the rest of the hunks.
      */
     BOOL do_align;
+
+#if defined(__x86_64__)
+    /*
+     * Modules contain 32-bit PC-relative references between their hunks,
+     * which cannot span more than +/-2GB. Rather than restricting every
+     * hunk to 31-bit memory, allocate one arena for the whole module and
+     * carve the hunks from it: proximity is then guaranteed by
+     * construction, and the module can live anywhere in RAM. A container
+     * hunk owning the arena is linked at the end of the seg list; the
+     * carved hunks store size 0, which ilsFreeVec() skips on unload.
+     *
+     * If the module additionally contains R_X86_64_32/32S absolute
+     * relocations (which can only encode addresses below 2GB) and the
+     * arena was placed higher, the relocation pass fails with
+     * reloc_out_of_range set and the caller retries with force31.
+     */
+    for (i = 0; i < int_shnum; i++)
+    {
+        if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB || sh[i].type == SHT_SYMTAB_SHNDX)
+            continue;
+
+        if ((sh[i].flags & SHF_ALLOC) && sh[i].size)
+        {
+            if (sh[i].flags & SHF_EXECINSTR)
+            {
+                exec_hunk_seen = TRUE;
+                arena_flags |= MEMF_EXECUTABLE;
+            }
+
+            do_align = (exec_hunk_seen && sh[i].addralign >= 2) ? TRUE : FALSE;
+            arena_size += AROS_ROUNDUP2(elf_hunk_size(&sh[i], do_align), AROS_WORSTALIGN) + AROS_WORSTALIGN;
+        }
+    }
+    exec_hunk_seen = FALSE;
+
+    if (arena_size)
+    {
+        arena_size += sizeof(struct hunk) + AROS_WORSTALIGN;
+
+        arena = ilsAllocMem(arena_size,
+            arena_flags | MEMF_PUBLIC | MEMF_CLEAR | (force31 ? MEMF_31BIT : 0));
+
+        if (arena && TypeOfMem(arena) == 0)
+        {
+            /*
+             * The allocation was served by KrnAllocPages() (W^X host):
+             * pages are protection-flipped per hunk there, so mixing code
+             * and data in one arena is not possible. Free it and fall back
+             * to per-hunk allocations below.
+             */
+            ilsFreeMem(arena, arena_size);
+            arena = NULL;
+        }
+
+        if (arena)
+        {
+            /* Leave room for the container hunk at the start */
+            arena_cursor = arena + sizeof(struct hunk);
+        }
+    }
+#endif
+
     for (i = 0; i < int_shnum; i++)
     {
         /* Skip the already loaded hunks */
@@ -1176,11 +1306,35 @@ BPTR InternalLoadSeg_ELF
                     exec_hunk_seen = TRUE;
 
                 do_align = (exec_hunk_seen && sh[i].addralign >= 2) ? TRUE : FALSE;
-                if (!load_hunk(file, &next_hunk_ptr, &sh[i], strtab ? strtab->addr : NULL, funcarray, do_align, &srb, DOSBase))
+                if (!load_hunk(file, &next_hunk_ptr, &sh[i], strtab ? strtab->addr : NULL, funcarray, do_align,
+                               arena ? &arena_cursor : NULL,
+                               force31 ? MEMF_31BIT : 0, &srb, DOSBase))
                     goto error;
             }
         }
     }
+
+#if defined(__x86_64__)
+    if (arena && hunks)
+    {
+        /* Link the arena's container hunk as the last segment; freeing it
+           on unload releases the whole module. */
+        struct hunk *cont = (struct hunk *)arena;
+
+        cont->size = arena_size;
+        cont->next = 0;
+        /* next_hunk_ptr points at the last hunk's next field */
+        *next_hunk_ptr = HUNK2BPTR(cont);
+        next_hunk_ptr = (BPTR *)((IPTR)cont + offsetof(struct hunk, next));
+        arena = NULL; /* now owned by the seg list */
+    }
+    else if (arena)
+    {
+        /* No hunks were made; release the arena directly */
+        ilsFreeMem(arena, arena_size);
+        arena = NULL;
+    }
+#endif
 
     /* Relocate the sections */
     for (i = 0; i < int_shnum; i++)
@@ -1193,7 +1347,7 @@ BPTR InternalLoadSeg_ELF
         if ((sh[i].type == SHT_REL || sh[i].type == SHT_RELA) && sh[sh[i].info].addr)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, &srb, DOSBase);
-            if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))
+            if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, reloc_out_of_range, DOSBase))
                 goto error;
 
             ilsFreeMem(sh[i].addr, sh[i].size);
@@ -1207,6 +1361,16 @@ BPTR InternalLoadSeg_ELF
 error:
 
     /* There were some errors, deallocate The hunks */
+
+#if defined(__x86_64__)
+    /* If the arena has not been handed over to the seg list yet, free it
+       here; the carved hunks inside it are skipped by the unload below. */
+    if (arena)
+    {
+        ilsFreeMem(arena, arena_size);
+        arena = NULL;
+    }
+#endif
 
     InternalUnLoadSeg(hunks, (VOID_FUNC)funcarray[2]);
     hunks = 0;
@@ -1239,4 +1403,33 @@ end:
     if (srb.srb_Buffer) FreeMem(srb.srb_Buffer, LOADSEG_SMALL_READ);
 
     return hunks;
+}
+
+BPTR InternalLoadSeg_ELF
+(
+    BPTR               file,
+    BPTR               table __unused,
+    SIPTR             *funcarray,
+    LONG              *stack __unused,
+    struct DosLibrary *DOSBase
+)
+{
+    BOOL reloc_out_of_range = FALSE;
+    BPTR seg;
+
+    seg = load_seg_elf_int(file, funcarray, FALSE, &reloc_out_of_range, DOSBase);
+
+#if defined(__x86_64__)
+    if (!seg && reloc_out_of_range)
+    {
+        /*
+         * The module contains absolute 32-bit relocations and its arena was
+         * placed too high in memory: retry with the arena in 31-bit RAM.
+         */
+        D(bug("[ELF Loader] retrying load in 31-bit memory\n"));
+        seg = load_seg_elf_int(file, funcarray, TRUE, &reloc_out_of_range, DOSBase);
+    }
+#endif
+
+    return seg;
 }
