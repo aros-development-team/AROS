@@ -689,6 +689,7 @@ host_has_libelf
 host_has_lzma
 target_grub2_version
 aros_enable_mmu
+PLATFORM_EXECWXSEG
 ENABLE_EXECSMP
 PLATFORM_EXECSMP
 aros_serial_debug
@@ -10144,6 +10145,7 @@ fi
 target_bootloader="none"
 PLATFORM_EXECSMP=
 ENABLE_EXECSMP=
+PLATFORM_EXECWXSEG=
 
 #-----------------------------------------------------------------------------
 # Classic variant is possible for Amiga target.
@@ -10733,10 +10735,7 @@ case "$target_os" in
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_isa_flags="$""(ISA_X8664_FLAGS))$export_newline""ISA_32_FLAGS                  = $""(strip $""(ISA_X86_FLAGS)"
-                # CFLAGS_GENERAL_REGS_ONLY expands to the explicit
-                # -mno-mmx/-mno-sse equivalents for compilers (clang)
-                # that ignore -mgeneral-regs-only on x86
-                aros_kernel_isa_extra="$""(CFLAGS_GENERAL_REGS_ONLY)"
+                                                                aros_kernel_isa_extra="$""(CFLAGS_GENERAL_REGS_ONLY)"
                 x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
@@ -10885,14 +10884,15 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 ;;
             *aarch64* | *arm64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                                                PLATFORM_EXECWXSEG="#define __AROSPLATFORM_WXSEG__"
                 aros_target_cpu="aarch64"
                 aros_object_format="aarch64elf"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Daarch64"
                 aros_isa_flags="$""(ISA_AARCH64_FLAGS)"
                 aros_macosx_version="11.0"
-                aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__"
+                                                aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__"
-                aros_config_ldflags="$aros_config_ldflags -lstdc.static"
+                                                                                aros_config_ldflags="$aros_config_ldflags -lstdc.static"
                 default_llvm_version="20.1.0"
                 aros_kernel_isa_flags="-arch arm64"
                 aros_kernel_ldflags="-arch arm64"
@@ -19941,6 +19941,7 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # Native version related
+
 
 
 

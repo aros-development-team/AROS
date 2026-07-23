@@ -30,6 +30,11 @@
 @PLATFORM_EXECSMP@
 @ENABLE_EXECSMP@
 
+/* Defined when the host enforces W^X memory protection: executable
+   seglists must then be allocated as dedicated pages via
+   kernel.resource instead of from the general memory pool.          */
+@PLATFORM_EXECWXSEG@
+
 /* DEBUG options                                                        */
 
 // use atomic's to lock access when outputting debug

@@ -1190,6 +1190,7 @@ fi
 target_bootloader="none"
 PLATFORM_EXECSMP=
 ENABLE_EXECSMP=
+PLATFORM_EXECWXSEG=
 
 #-----------------------------------------------------------------------------
 # Classic variant is possible for Amiga target.
@@ -1761,6 +1762,9 @@ case "$target_os" in
                 ;;
             *aarch64* | *arm64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                dnl Apple Silicon hosts enforce W^X: executable seglists must be
+                dnl page-allocated via kernel.resource, not taken from the pool.
+                PLATFORM_EXECWXSEG="#define __AROSPLATFORM_WXSEG__"
                 aros_target_cpu="aarch64"
                 aros_object_format="aarch64elf"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Daarch64"
@@ -4338,6 +4342,7 @@ AC_SUBST(with_log_resource)
 AC_SUBST(aros_serial_debug)
 AC_SUBST(PLATFORM_EXECSMP)
 AC_SUBST(ENABLE_EXECSMP)
+AC_SUBST(PLATFORM_EXECWXSEG)
 
 # MMU related
 AC_SUBST(aros_enable_mmu)
