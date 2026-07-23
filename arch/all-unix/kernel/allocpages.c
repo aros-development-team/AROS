@@ -66,6 +66,21 @@
     int     prot     = PROT_READ | PROT_WRITE;
     void   *map;
 
+#if !(defined(HOST_OS_darwin) || defined(__APPLE__))
+    /*
+     * On hosts that do not enforce W^X the AROS RAM pool is already mapped
+     * R/W/X, so executable hunks can (and should) come from AllocMem() like
+     * any other hunk. Declining the request here makes LoadSeg()'s AllocFunc
+     * fall back to AllocMem(), keeping a module's code and data hunks in the
+     * same memory region. That matters on 64-bit: host mmap() places our
+     * pages in the low 2GB (MAP_32BIT) while AllocMem() may serve data from
+     * a RAM block above 4GB, and 32-bit RIP-relative relocations between the
+     * two cannot span that distance.
+     */
+    if (flags & MEMF_EXECUTABLE)
+        return NULL;
+#endif
+
     /*
      * MEMF_EXECUTABLE allocations are mapped R/W/X directly where the host
      * allows it, so code is runnable as soon as it has been written - the
