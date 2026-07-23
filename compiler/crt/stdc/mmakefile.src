@@ -805,7 +805,6 @@ STDC_MATH_STATIC_RAW := \
     math/k_tan \
     math/s_copysign \
     math/s_copysignf \
-    math/s_copysignl \
     math/s_cos \
     math/s_sin \
     math/s_tan \
