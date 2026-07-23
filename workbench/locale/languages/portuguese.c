@@ -1,16 +1,17 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: portuguese.language description file.
 */
 
 #define LANGSTR     "portuguese"        /* String version of above      */
-#define NLANGSTR    "português"         /* Native version of LANGSTR    */
+#define NLANGSTR    "portugu" ISOASCII_ecirc "s"         /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
 #define LANGREV     2                   /* Revision number of language  */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (09.06.2017)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -56,14 +57,14 @@ const STRPTR ___strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
-    "Sexta-feira", "Sábado",
+    "Domingo", "Segunda-feira", "Ter" ISOASCII_ccedil "a-feira", "Quarta-feira", "Quinta-feira",
+    "Sexta-feira", "S" ISOASCII_aacute "bado",
 
     /* Abbreviated days of the week */
     "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab",
 
     /* Months of the year */
-    "Janeiro", "Fevereiro", "Março",
+    "Janeiro", "Fevereiro", "Mar" ISOASCII_ccedil "o",
     "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro",
     "Outubro", "Novembro", "Dezembro",
@@ -73,7 +74,7 @@ const STRPTR ___strings[] =
     "Jul", "Ago", "Set", "Out", "Nov", "Dez",
 
     "Sim", /* Yes, affirmative response */
-    "Não", /* No/negative response */
+    "N" ISOASCII_atilde "o", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
     "AM", "PM",
@@ -82,7 +83,7 @@ const STRPTR ___strings[] =
     "\xAD", "-",
 
     /* Open and close quotes */
-    "«", "»",
+    ISOASCII_LGUILLEMET, ISOASCII_RGUILLEMET,
 
     /* Days: But not actual day names
        Yesterday - the day before the current
@@ -90,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ontem", "Hoje", "Amanhã", "Futuro",
+    "Ontem", "Hoje", "Amanh" ISOASCII_atilde, "Futuro",
 
     /* Native language name */
     NLANGSTR

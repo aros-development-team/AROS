@@ -1,4 +1,5 @@
 
+#include <aros/isoascii.h>
 #include "numtostr.h"
 
 #include <proto/poseidon.h>
@@ -76,7 +77,7 @@ const struct AudioIDMap audioformattypes[] =
     { UAADF_PCM8                 , "8 bit unsigned PCM" },
     { UAADF_IEEE_FLOAT           , "IEEE Floating Point" },
     { UAADF_ALAW                 , "aLaw" },
-    { UAADF_MULAW                , "µLaw" },
+    { UAADF_MULAW                , ISOASCII_MICRO "Law" },
 
     { UAADF_TYPE_II_UNDEFINED    , "Undefined Type II" },
     { UAADF_MPEG                 , "MPEG" },

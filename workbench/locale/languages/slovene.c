@@ -1,11 +1,11 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: slovene.language description file.
 */
 
 #define LANGSTR     "slovene"           /* String version of above      */
-#define NLANGSTR    "sloven¹èina"       /* Native version of LANGSTR    */
+#define NLANGSTR    "sloven" "\xB9\xE8" "ina"       /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
 #define LANGREV     0                   /* Revision number of language  */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.0 (09.07.2015)"
@@ -53,11 +53,11 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "Nedelja", "Ponedeljek", "Torek", "Sreda", "Èetrtek",
+    "Nedelja", "Ponedeljek", "Torek", "Sreda", "\xC8" "etrtek",
     "Petek",   "Sobota",
 
     /* Abbreviated days of the week */
-    "Ned", "Pon", "Tor", "Sre", "Èet", "Pet", "Sob",
+    "Ned", "Pon", "Tor", "Sre", "\xC8" "et", "Pet", "Sob",
 
     /* Months of the year */
     "Januar", "Februar", "Marec",
@@ -87,7 +87,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Vèeraj", "Danes", "Jutri", "Prihodnost",
+    "V" "\xE8" "eraj", "Danes", "Jutri", "Prihodnost",
 
     /* Native language name */
     NLANGSTR

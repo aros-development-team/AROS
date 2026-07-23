@@ -5,6 +5,7 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
+#include <aros/isoascii.h>
 #include "debug.h"
 
 #include "egalaxtouch.class.h"
@@ -919,9 +920,9 @@ static const char *MirrorStrings[] =
 static const char *RotateStrings[] =
 {
     "Off",
-    "90°",
-    "180°",
-    "270°",
+    "90" ISOASCII_DEGREE,
+    "180" ISOASCII_DEGREE,
+    "270" ISOASCII_DEGREE,
     NULL
 };
 
@@ -979,7 +980,7 @@ AROS_UFH0(void, nGUITask)
     nch->nch_App = ApplicationObject,
         MUIA_Application_Title      , (IPTR)libname,
         MUIA_Application_Version    , (IPTR)VERSION_STRING,
-        MUIA_Application_Copyright  , (IPTR)"©2004-2009 Chris Hodges",
+        MUIA_Application_Copyright  , (IPTR)ISOASCII_COPYRIGHT "2004-2009 Chris Hodges",
         MUIA_Application_Author     , (IPTR)"Chris Hodges <chrisly@platon42.de>",
         MUIA_Application_Description, (IPTR)"Settings for the egalaxtouch.class",
         MUIA_Application_Base       , (IPTR)"EGALAXTOUCH",

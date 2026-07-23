@@ -2,6 +2,7 @@
 ** AddUSBClasses by Chris Hodges <chrisly@platon42.de>
 */
 
+#include <aros/isoascii.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,7 +24,7 @@
 #define CLASSNAMEMAX    128
 
 static const char *template = "QUIET/S,REMOVE/S";
-const char *version = "$VER: AddUSBClasses 1.8 (24.05.2017) © The AROS Development Team";
+const char *version = "$VER: AddUSBClasses 1.8 (24.05.2017) " ISOASCII_COPYRIGHT " The AROS Development Team";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 

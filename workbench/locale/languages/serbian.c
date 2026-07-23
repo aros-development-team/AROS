@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: serbian.language description file.
     Char: ISO 8859-5
@@ -54,27 +54,27 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "недеља", "понедељак", "уторак", "среда", "четвртак",
-    "петак", "субота",
+    "\xDD\xD5\xD4\xD5\xF9\xD0", "\xDF\xDE\xDD\xD5\xD4\xD5\xF9\xD0\xDA", "\xE3\xE2\xDE\xE0\xD0\xDA", "\xE1\xE0\xD5\xD4\xD0", "\xE7\xD5\xE2\xD2\xE0\xE2\xD0\xDA",
+    "\xDF\xD5\xE2\xD0\xDA", "\xE1\xE3\xD1\xDE\xE2\xD0",
 
     /* Abbreviated days of the week */
-    "нед", "пон", "уто", "сре", "чет", "пет", "суб",
+    "\xDD\xD5\xD4", "\xDF\xDE\xDD", "\xE3\xE2\xDE", "\xE1\xE0\xD5", "\xE7\xD5\xE2", "\xDF\xD5\xE2", "\xE1\xE3\xD1",
 
     /* Months of the year */
-    "јануар", "фебруар", "март",
-    "април", "мај", "јун",
-    "јул", "август", "септембар",
-    "октобар", "новембар", "децембар",
+    "\xF8\xD0\xDD\xE3\xD0\xE0", "\xE4\xD5\xD1\xE0\xE3\xD0\xE0", "\xDC\xD0\xE0\xE2",
+    "\xD0\xDF\xE0\xD8\xDB", "\xDC\xD0\xF8", "\xF8\xE3\xDD",
+    "\xF8\xE3\xDB", "\xD0\xD2\xD3\xE3\xE1\xE2", "\xE1\xD5\xDF\xE2\xD5\xDC\xD1\xD0\xE0",
+    "\xDE\xDA\xE2\xDE\xD1\xD0\xE0", "\xDD\xDE\xD2\xD5\xDC\xD1\xD0\xE0", "\xD4\xD5\xE6\xD5\xDC\xD1\xD0\xE0",
 
     /* Abbreviated months of the year */
-    "јан", "феб", "мар", "апр", "мај", "јун",
-    "јул", "авг", "сеп", "окт", "нов", "дец",
+    "\xF8\xD0\xDD", "\xE4\xD5\xD1", "\xDC\xD0\xE0", "\xD0\xDF\xE0", "\xDC\xD0\xF8", "\xF8\xE3\xDD",
+    "\xF8\xE3\xDB", "\xD0\xD2\xD3", "\xE1\xD5\xDF", "\xDE\xDA\xE2", "\xDD\xDE\xD2", "\xD4\xD5\xE6",
 
-    "Да", /* Yes, affirmative response */
-    "Не", /* No/negative response */
+    "\xB4\xD0", /* Yes, affirmative response */
+    "\xBD\xD5", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "јутро", "поподне",
+    "\xF8\xE3\xE2\xE0\xDE", "\xDF\xDE\xDF\xDE\xD4\xDD\xD5",
 
     /* Soft and hard hyphens */
     "\xAD", "-",
@@ -88,7 +88,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "јуче", "данас", "сутра", "будућност",
+    "\xF8\xE3\xE7\xD5", "\xD4\xD0\xDD\xD0\xE1", "\xE1\xE3\xE2\xE0\xD0", "\xD1\xE3\xD4\xE3\xFB\xDD\xDE\xE1\xE2",
 
     /* Native language name */
     NLANGSTR

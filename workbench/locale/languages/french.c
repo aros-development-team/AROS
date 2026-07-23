@@ -1,16 +1,17 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: french.language description file.
 */
 
 #define LANGSTR     "french"            /* String version of above      */
-#define NLANGSTR    "français"          /* Native version of LANGSTR    */
+#define NLANGSTR    "fran" ISOASCII_ccedil "ais"          /* Native version of LANGSTR    */
 #define LANGVER     41          /* Version number of language   */
 #define LANGREV     2           /* Revision number of language  */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -63,14 +64,14 @@ const STRPTR ___strings[] =
     "Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam",
 
     /* Months of the year */
-    "Janvier", "Février", "Mars",
+    "Janvier", "F" ISOASCII_eacute "vrier", "Mars",
     "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre",
-    "Octobre", "Novembre", "Décembre",
+    "Juillet", "Ao" ISOASCII_ucirc "t", "Septembre",
+    "Octobre", "Novembre", "D" ISOASCII_eacute "cembre",
 
     /* Abbreviated months of the year */
-    "Jan", "Fév", "Mars", "Avr", "Mai", "Juin",
-    "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
+    "Jan", "F" ISOASCII_eacute "v", "Mars", "Avr", "Mai", "Juin",
+    "Juil", "Ao" ISOASCII_ucirc "t", "Sep", "Oct", "Nov", "D" ISOASCII_eacute "c",
 
     "Oui", /* Yes, affirmative response */
     "Non", /* No/negative response */

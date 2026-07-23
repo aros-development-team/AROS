@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: german.language description file.
 */
@@ -11,6 +11,7 @@
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.3 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -63,13 +64,13 @@ const STRPTR ___strings[] =
     "So", "Mo", "Di", "Mi", "Do", "Fr", "Sa",
 
     /* Months of the year */
-    "Januar", "Februar", "März",
+    "Januar", "Februar", "M" ISOASCII_auml "rz",
     "April", "Mai", "Juni",
     "Juli", "August", "September",
     "Oktober", "November", "Dezember",
 
     /* Abbreviated months of the year */
-    "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+    "Jan", "Feb", "M" ISOASCII_auml "r", "Apr", "Mai", "Jun",
     "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
 
     "Ja", /* Yes, affirmative response */

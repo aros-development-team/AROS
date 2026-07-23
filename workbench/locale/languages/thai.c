@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: thai.language description file.
     Char: ISO 8859-11
@@ -57,24 +57,24 @@ const STRPTR ___strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี",
-    "วันศุกร์", "วันเสาร์",
+    "\xC7\xD1\xB9\xCD\xD2\xB7\xD4\xB5\xC2\xEC", "\xC7\xD1\xB9\xA8\xD1\xB9\xB7\xC3\xEC", "\xC7\xD1\xB9\xCD\xD1\xA7\xA4\xD2\xC3", "\xC7\xD1\xB9\xBE\xD8\xB8", "\xC7\xD1\xB9\xBE\xC4\xCB\xD1\xCA\xBA\xB4\xD5",
+    "\xC7\xD1\xB9\xC8\xD8\xA1\xC3\xEC", "\xC7\xD1\xB9\xE0\xCA\xD2\xC3\xEC",
 
     /* Abbreviated days of the week */
-    "อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.",
+    "\xCD\xD2" ".", "\xA8" ".", "\xCD" ".", "\xBE" ".", "\xBE\xC4" ".", "\xC8" ".", "\xCA" ".",
 
     /* Months of the year */
-    "มกราคม", "กุมภาพันธ์", "มีนาคม",
-    "เมษายน", "พฤษภาคม", "มิถุนายน",
-    "กรกฎาคม", "สิงหาคม", "กันยายน",
-    "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+    "\xC1\xA1\xC3\xD2\xA4\xC1", "\xA1\xD8\xC1\xC0\xD2\xBE\xD1\xB9\xB8\xEC", "\xC1\xD5\xB9\xD2\xA4\xC1",
+    "\xE0\xC1\xC9\xD2\xC2\xB9", "\xBE\xC4\xC9\xC0\xD2\xA4\xC1", "\xC1\xD4\xB6\xD8\xB9\xD2\xC2\xB9",
+    "\xA1\xC3\xA1\xAE\xD2\xA4\xC1", "\xCA\xD4\xA7\xCB\xD2\xA4\xC1", "\xA1\xD1\xB9\xC2\xD2\xC2\xB9",
+    "\xB5\xD8\xC5\xD2\xA4\xC1", "\xBE\xC4\xC8\xA8\xD4\xA1\xD2\xC2\xB9", "\xB8\xD1\xB9\xC7\xD2\xA4\xC1",
 
     /* Abbreviated months of the year */
-    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+    "\xC1" "." "\xA4" ".", "\xA1" "." "\xBE" ".", "\xC1\xD5" "." "\xA4" ".", "\xE0\xC1" "." "\xC2" ".", "\xBE" "." "\xA4" ".", "\xC1\xD4" "." "\xC2" ".",
+    "\xA1" "." "\xA4" ".", "\xCA" "." "\xA4" ".", "\xA1" "." "\xC2" ".", "\xB5" "." "\xA4" ".", "\xBE" "." "\xC2" ".", "\xB8" "." "\xA4" ".",
 
-    "ใช่", /* Yes, affirmative response */
-    "ไม่", /* No/negative response */
+    "\xE3\xAA\xE8", /* Yes, affirmative response */
+    "\xE4\xC1\xE8", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
     "AM", "PM",
@@ -91,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "เมื่อวานนี้", "วันนี้", "วันพรุ่งนี้", "อนาคต",
+    "\xE0\xC1\xD7\xE8\xCD\xC7\xD2\xB9\xB9\xD5\xE9", "\xC7\xD1\xB9\xB9\xD5\xE9", "\xC7\xD1\xB9\xBE\xC3\xD8\xE8\xA7\xB9\xD5\xE9", "\xCD\xB9\xD2\xA4\xB5",
 
     /* Native language name */
     NLANGSTR

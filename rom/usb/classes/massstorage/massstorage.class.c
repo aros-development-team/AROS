@@ -5,6 +5,7 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
+#include <aros/isoascii.h>
 #include "debug.h"
 
 #include "massstorage.class.h"
@@ -5464,7 +5465,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
     ncm->ncm_App = (APTR) ApplicationObject,
         MUIA_Application_Title      , (IPTR) GM_UNIQUENAME(libname),
         MUIA_Application_Version    , (IPTR) VERSION_STRING,
-        MUIA_Application_Copyright  , (IPTR) "©2002-2009 Chris Hodges",
+        MUIA_Application_Copyright  , (IPTR) ISOASCII_COPYRIGHT "2002-2009 Chris Hodges",
         MUIA_Application_Author     , (IPTR) "Chris Hodges <chrisly@platon42.de>",
         MUIA_Application_Description, (IPTR) "Settings for the massstorage.class",
         MUIA_Application_Base       , (IPTR) "MASSSTORAGE",
@@ -6184,7 +6185,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                 }
 
                 case ID_ABOUT:
-                    MUI_RequestA(ncm->ncm_App, ncm->ncm_MainWindow, 0, NULL, "Blimey!", VERSION_STRING "\n\nCode for AutoMounting based\non work by Thore BÃ¶ckelmann.", NULL);
+                    MUI_RequestA(ncm->ncm_App, ncm->ncm_MainWindow, 0, NULL, "Blimey!", VERSION_STRING "\n\nCode for AutoMounting based\non work by Thore B" ISOASCII_Atilde ISOASCII_PARAGRAPH "ckelmann.", NULL);
                     break;
             }
             if(retid == MUIV_Application_ReturnID_Quit)

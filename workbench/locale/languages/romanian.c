@@ -1,12 +1,12 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: romanian.language description file.
     Dedicated to Eva C.
 */
 
 #define LANGSTR     "romanian"          /* String version of above      */
-#define NLANGSTR    "românã"            /* Native version of LANGSTR    */
+#define NLANGSTR    "rom" "\xE2" "n" "\xE3"            /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
 #define LANGREV     0                   /* Revision number of language  */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.0 (09.07.2015)"
@@ -54,11 +54,11 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "Duminicã", "Luni", "Marþi", "Miercuri", "Joi",
-    "Vineri", "Sâmbãtã",
+    "Duminic" "\xE3", "Luni", "Mar" "\xFE" "i", "Miercuri", "Joi",
+    "Vineri", "S" "\xE2" "mb" "\xE3" "t" "\xE3",
 
     /* Abbreviated days of the week */
-    "Du", "Lu", "Ma", "Mi", "Jo", "Vi", "Sâ",
+    "Du", "Lu", "Ma", "Mi", "Jo", "Vi", "S" "\xE2",
 
     /* Months of the year */
     "ianuarie", "februarie", "martie",
@@ -88,7 +88,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "ieri", "astãzi", "mâine", "viitor",
+    "ieri", "ast" "\xE3" "zi", "m" "\xE2" "ine", "viitor",
 
     /* Native language name */
     NLANGSTR

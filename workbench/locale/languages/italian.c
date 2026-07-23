@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: italian.language description file.
 */
@@ -11,6 +11,7 @@
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -53,8 +54,8 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì",
-    "Venerdì", "Sabato",
+    "Domenica", "Luned" ISOASCII_igrave, "Marted" ISOASCII_igrave, "Mercoled" ISOASCII_igrave, "Gioved" ISOASCII_igrave,
+    "Venerd" ISOASCII_igrave, "Sabato",
 
     /* Abbreviated days of the week */
     "Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab",

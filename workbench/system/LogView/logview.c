@@ -1,8 +1,9 @@
 /*
-    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
 */
 
 #define USE_INLINE_STDARG
+#include <aros/isoascii.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -543,7 +544,7 @@ int main(int argc, char *argv[])
     appobj = ApplicationObject,
         MUIA_Application_Title      , "LogView",
         MUIA_Application_Version    , "",
-        MUIA_Application_Copyright  , (IPTR) "©2023 The AROS Dev Team",
+        MUIA_Application_Copyright  , (IPTR) ISOASCII_COPYRIGHT "2023 The AROS Dev Team",
         MUIA_Application_Author     , (IPTR) "The AROS Dev Team",
         MUIA_Application_Description, "AROS System Log Viewer",
         MUIA_Application_Base       , "LOGVIEW",

@@ -5,6 +5,7 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
+#include <aros/isoascii.h>
 #include "debug.h"
 
 #include "bootkeyboard.class.h"
@@ -977,7 +978,7 @@ AROS_UFH0(void, bootkbd_GUITask)
     nh->nh_App = ApplicationObject,
         MUIA_Application_Title      , (IPTR)libname,
         MUIA_Application_Version    , (IPTR)VERSION_STRING,
-        MUIA_Application_Copyright  , (IPTR)"©2002-2009 Chris Hodges",
+        MUIA_Application_Copyright  , (IPTR)ISOASCII_COPYRIGHT "2002-2009 Chris Hodges",
         MUIA_Application_Author     , (IPTR)"Chris Hodges <chrisly@platon42.de>",
         MUIA_Application_Description, (IPTR)"Settings for the bootkeyboard.class",
         MUIA_Application_Base       , (IPTR)"BOOTKEYBOARD",

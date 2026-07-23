@@ -1,12 +1,12 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: slovak.language description file.
     Credits: Jaroslav Pokorný & ATO-CZ
 */
 
 #define LANGSTR     "slovak"            /* String version of above      */
-#define NLANGSTR    "slovenèina"        /* Native version of LANGSTR    */
+#define NLANGSTR    "sloven" "\xE8" "ina"        /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
 #define LANGREV     0                   /* Revision number of language  */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.0 (09.07.2015)"
@@ -54,23 +54,23 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "nedeãa", "pondelok", "utorok", "streda", "îtvrtok",
+    "nede" "\xE3" "a", "pondelok", "utorok", "streda", "\xEE" "tvrtok",
     "piatok", "sobota",
 
     /* Abbreviated days of the week */
-    "Ne", "Po", "Ut", "St", "Ît", "Pi", "So",
+    "Ne", "Po", "Ut", "St", "\xCE" "t", "Pi", "So",
 
     /* Months of the year */
-    "január", "február", "marec",
-    "apríl", "máj", "jún",
-    "júl", "august", "september",
-    "október", "november", "december",
+    "janu" "\xE1" "r", "febru" "\xE1" "r", "marec",
+    "apr" "\xED" "l", "m" "\xE1" "j", "j" "\xFA" "n",
+    "j" "\xFA" "l", "august", "september",
+    "okt" "\xF3" "ber", "november", "december",
 
     /* Abbreviated months of the year */
-    "jan", "feb", "mar", "apr", "máj", "jún",
-    "júl", "aug", "sep", "okt", "nov", "dec",
+    "jan", "feb", "mar", "apr", "m" "\xE1" "j", "j" "\xFA" "n",
+    "j" "\xFA" "l", "aug", "sep", "okt", "nov", "dec",
 
-    "Áno", /* Yes, affirmative response */
+    "\xC1" "no", /* Yes, affirmative response */
     "Nie", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
@@ -88,7 +88,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "vçera", "dnes", "zajtra", "budúcnosï",
+    "v" "\xE7" "era", "dnes", "zajtra", "bud" "\xFA" "cnos" "\xEF",
 
     /* Native language name */
     NLANGSTR

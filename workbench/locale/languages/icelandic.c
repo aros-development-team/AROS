@@ -1,16 +1,17 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: icelandic.language description file.
 */
 
 #define LANGSTR     "icelandic"         /* String version of above      */
-#define NLANGSTR    "íslenska"          /* Native version of LANGSTR    */
+#define NLANGSTR    ISOASCII_iacute "slenska"          /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
 #define LANGREV     2                   /* Revision number of language  */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -56,23 +57,23 @@ const STRPTR ___strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "Sunnudagur", "Mánudagur", "þriðjundagur", "Miðvikudagur", "Fimmtudagur",
-    "Föstudagur", "Laugardagur",
+    "Sunnudagur", "M" ISOASCII_aacute "nudagur", ISOASCII_thorn "ri" ISOASCII_eth "jundagur", "Mi" ISOASCII_eth "vikudagur", "Fimmtudagur",
+    "F" ISOASCII_ouml "studagur", "Laugardagur",
 
     /* Abbreviated days of the week */
-    "Sun", "Mán", "þri", "Mið", "Fim", "Fös", "Lau",
+    "Sun", "M" ISOASCII_aacute "n", ISOASCII_thorn "ri", "Mi" ISOASCII_eth, "Fim", "F" ISOASCII_ouml "s", "Lau",
 
     /* Months of the year */
-    "Janúar", "Febrúar", "Mars",
-    "Apríl", "Maí", "Júní",
-    "Júlí", "Ágúst", "September",
-    "Október", "Nóvember", "Desember",
+    "Jan" ISOASCII_uacute "ar", "Febr" ISOASCII_uacute "ar", "Mars",
+    "Apr" ISOASCII_iacute "l", "Ma" ISOASCII_iacute, "J" ISOASCII_uacute "n" ISOASCII_iacute,
+    "J" ISOASCII_uacute "l" ISOASCII_iacute, ISOASCII_Aacute "g" ISOASCII_uacute "st", "September",
+    "Okt" ISOASCII_oacute "ber", "N" ISOASCII_oacute "vember", "Desember",
 
     /* Abbreviated months of the year */
-    "Jan", "Feb", "Mar", "Apr", "Maí", "Jún",
-    "Júl", "Ág", "Sep", "Okt", "Nóv", "Des",
+    "Jan", "Feb", "Mar", "Apr", "Ma" ISOASCII_iacute, "J" ISOASCII_uacute "n",
+    "J" ISOASCII_uacute "l", ISOASCII_Aacute "g", "Sep", "Okt", "N" ISOASCII_oacute "v", "Des",
 
-    "Já", /* Yes, affirmative response */
+    "J" ISOASCII_aacute, /* Yes, affirmative response */
     "Nei", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
@@ -90,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Í gær", "Í dag", "Á morgun", "Framtíð",
+    ISOASCII_Iacute " g" ISOASCII_aelig "r", ISOASCII_Iacute " dag", ISOASCII_Aacute " morgun", "Framt" ISOASCII_iacute ISOASCII_eth,
 
     /* Native language name */
     NLANGSTR

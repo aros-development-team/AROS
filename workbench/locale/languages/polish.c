@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: polish.language description file.
     Char: ISO 8859-2
@@ -58,17 +58,17 @@ const STRPTR ___strings[] =
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
     // NOTICE: deadwood: I agree
 
-    "Niedziela", "Poniedzia³ek", "Wtorek", "¦roda", "Czwartek",
-    "Pi±tek", "Sobota",
+    "Niedziela", "Poniedzia" "\xB3" "ek", "Wtorek", "\xA6" "roda", "Czwartek",
+    "Pi" "\xB1" "tek", "Sobota",
 
     /* Abbreviated days of the week */
-    "Ni", "Po", "Wt", "¦r", "Cz", "Pi", "So",
+    "Ni", "Po", "Wt", "\xA6" "r", "Cz", "Pi", "So",
 
     /* Months of the year */
-    "Styczeñ", "Luty", "Marzec",
-    "Kwiecieñ", "Maj", "Czerwiec",
-    "Lipiec", "Sierpieñ", "Wrzesieñ",
-    "Pa¼dziernik", "Listopad", "Grudzieñ",
+    "Stycze" "\xF1", "Luty", "Marzec",
+    "Kwiecie" "\xF1", "Maj", "Czerwiec",
+    "Lipiec", "Sierpie" "\xF1", "Wrzesie" "\xF1",
+    "Pa" "\xBC" "dziernik", "Listopad", "Grudzie" "\xF1",
 
     /* Abbreviated months of the year */
     "I", "II", "III", "IV", "V", "VI",
@@ -78,7 +78,7 @@ const STRPTR ___strings[] =
     "Nie", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "Rano", "Po po³.",
+    "Rano", "Po po" "\xB3" ".",
 
     /* Soft and hard hyphens */
     "\xAD", "-",
@@ -92,7 +92,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Wczoraj", "Dzi¶", "Jutro", "Przysz³o¶æ",
+    "Wczoraj", "Dzi" "\xB6", "Jutro", "Przysz" "\xB3" "o" "\xB6\xE6",
 
     /* Native language name */
     NLANGSTR

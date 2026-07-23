@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: croatian.language description file.
     Char: ISO 8859-2
@@ -54,20 +54,20 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "nedelja", "ponedjeljak", "utorak", "srijeda", "èetvrtak",
+    "nedelja", "ponedjeljak", "utorak", "srijeda", "\xE8" "etvrtak",
     "petak", "subota",
 
     /* Abbreviated days of the week */
-    "ne", "po", "ut", "sr", "èt", "pe", "su",
+    "ne", "po", "ut", "sr", "\xE8" "t", "pe", "su",
 
     /* Months of the year */
-    "sijeèanj", "veljaèa", "o¾ujak",
+    "sije" "\xE8" "anj", "velja" "\xE8" "a", "o" "\xBE" "ujak",
     "travanj", "svibanj", "lipanj",
     "srpanj", "kolovoz", "rujan",
     "listopad", "studeni", "prosinac",
 
     /* Abbreviated months of the year */
-    "sij", "velj", "o¾u", "tra", "svi", "lip",
+    "sij", "velj", "o" "\xBE" "u", "tra", "svi", "lip",
     "srp", "kol", "ruj", "lis", "stu", "pro",
 
     "Da", /* Yes, affirmative response */
@@ -88,7 +88,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Juèer", "Danas", "Sutra", "Buduænost",
+    "Ju" "\xE8" "er", "Danas", "Sutra", "Budu" "\xE6" "nost",
 
     /* Native language name */
     NLANGSTR

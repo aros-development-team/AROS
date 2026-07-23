@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: maltese.language description file.
     Char: ISO 8859-3
@@ -54,21 +54,21 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "il-¡add", "it-Tnejn", "it-Tlieta", "l-Erbg±a", "il-¡amis",
-    "il-Õimg±a0", "is-Sibt",
+    "il-" "\xA1" "add", "it-Tnejn", "it-Tlieta", "l-Erbg" "\xB1" "a", "il-" "\xA1" "amis",
+    "il-" "\xD5" "img" "\xB1" "a0", "is-Sibt",
 
     /* Abbreviated days of the week */
-    "¡ad", "Tne", "Tli", "Erb", "¡am", "Õim", "Sib",
+    "\xA1" "ad", "Tne", "Tli", "Erb", "\xA1" "am", "\xD5" "im", "Sib",
 
     /* Months of the year */
     "Jannar",  "Frar",     "Marzu",
-    "April",   "Mejju",    "Õunju",
+    "April",   "Mejju",    "\xD5" "unju",
     "Lulju",   "Awissu",   "Settembru",
-    "Ottubru", "Novembru", "Diåembru",
+    "Ottubru", "Novembru", "Di" "\xE5" "embru",
 
     /* Abbreviated months of the year */
-    "Jan", "Fra", "Mar", "Apr", "Mej", "Õun",
-    "Lul", "Awi", "Set", "Ott", "Nov", "Diå",
+    "Jan", "Fra", "Mar", "Apr", "Mej", "\xD5" "un",
+    "Lul", "Awi", "Set", "Ott", "Nov", "Di" "\xE5",
 
     "Iva", /* Yes, affirmative response */
     "Le",  /* No/negative response */
@@ -88,7 +88,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ilbiera±", "Illum", "G±ada", "Fil-futur",
+    "Ilbiera" "\xB1", "Illum", "G" "\xB1" "ada", "Fil-futur",
 
     /* Native language name */
     NLANGSTR

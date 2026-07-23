@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: hungarian.language description file.
     Char: ISO 8859-2
@@ -56,17 +56,17 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "Hétfô", "Kedd", "Szerda", "Csütörtök", "Péntek",
-    "Szombat", "Vasárnap",
+    "H" "\xE9" "tf" "\xF4", "Kedd", "Szerda", "Cs" "\xFC" "t" "\xF6" "rt" "\xF6" "k", "P" "\xE9" "ntek",
+    "Szombat", "Vas" "\xE1" "rnap",
 
     /* Abbreviated days of the week */
     "H", "K", "Sz", "Cs", "P", "Szo", "V",
 
     /* Months of the year */
-    "Január", "Február", "Március",
-    "Április", "Május", "Június",
+    "Janu" "\xE1" "r", "Febru" "\xE1" "r", "M" "\xE1" "rcius",
+    "\xC1" "prilis", "M" "\xE1" "jus", "J" "\xFA" "nius",
     "Julius", "Augusztus", "Szeptember",
-    "Október", "November", "December",
+    "Okt" "\xF3" "ber", "November", "December",
 
     /* Abbreviated months of the year */
     "I", "II", "III", "IV", "V", "VI",
@@ -76,7 +76,7 @@ const STRPTR ___strings[] =
     "Nem", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "Délelôtt", "Délután",
+    "D" "\xE9" "lel" "\xF4" "tt", "D" "\xE9" "lut" "\xE1" "n",
 
     /* Soft and hard hyphens */
     "\xAD", "-",
@@ -90,7 +90,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Tegnap", "Ma", "Holnap", "Jövô",
+    "Tegnap", "Ma", "Holnap", "J" "\xF6" "v" "\xF4",
 
     /* Native language name */
     NLANGSTR

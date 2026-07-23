@@ -1,16 +1,17 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: catalan.language description file.
 */
 
 #define LANGSTR     "catalan"           /* String version of above      */
-#define NLANGSTR    "català"            /* Native version of LANGSTR    */
+#define NLANGSTR    "catal" ISOASCII_agrave            /* Native version of LANGSTR    */
 #define LANGVER     42                  /* Version number of language   */
 #define LANGREV     2                   /* Revision number of language  */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 42.2 (29.12.2020)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -63,16 +64,16 @@ const STRPTR ___strings[] =
     "Dg", "Dl", "Dt", "Dc", "Dj", "Dv", "Ds",
 
     /* Months of the year */
-    "Gener", "Febrer", "Març",
+    "Gener", "Febrer", "Mar" ISOASCII_ccedil,
     "Abril", "Maig", "Juny",
     "Juliol", "Agost", "Setembre",
     "Octubre", "Novembre", "Desembre",
 
     /* Abbreviated months of the year */
-    "Gn", "Fb", "Mç", "Ab", "Mg", "Jn",
+    "Gn", "Fb", "M" ISOASCII_ccedil, "Ab", "Mg", "Jn",
     "Jl", "Ag", "St", "Oc", "Nv", "Ds",
 
-    "Sí", /* Yes, affirmative response */
+    "S" ISOASCII_iacute, /* Yes, affirmative response */
     "No", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
@@ -90,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ahir", "Avui", "Demà", "Futur",
+    "Ahir", "Avui", "Dem" ISOASCII_agrave, "Futur",
 
     /* Native language name */
     NLANGSTR

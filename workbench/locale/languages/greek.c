@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 
     Desc: greek.language description file.
     Char: ISO 8859-7
@@ -54,27 +54,27 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "Κυριακή", "Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη",
-    "Παρασκευή", "Σάββατο",
+    "\xCA\xF5\xF1\xE9\xE1\xEA\xDE", "\xC4\xE5\xF5\xF4\xDD\xF1\xE1", "\xD4\xF1\xDF\xF4\xE7", "\xD4\xE5\xF4\xDC\xF1\xF4\xE7", "\xD0\xDD\xEC\xF0\xF4\xE7",
+    "\xD0\xE1\xF1\xE1\xF3\xEA\xE5\xF5\xDE", "\xD3\xDC\xE2\xE2\xE1\xF4\xEF",
 
     /* Abbreviated days of the week */
-    "Κυ", "Δε", "Τρ", "Τε", "Πε", "Πα", "Σα",
+    "\xCA\xF5", "\xC4\xE5", "\xD4\xF1", "\xD4\xE5", "\xD0\xE5", "\xD0\xE1", "\xD3\xE1",
 
     /* Months of the year */
-    "Ιανουάριος", "Φεβρουάριος", "Μάρτιος",
-    "Απρίλιος", "Μάιος", "Ιούνιος",
-    "Ιούλιος", "Αύγουστος", "Σεπτέμβριος",
-    "Οκτώβριος", "Νοέμβριος", "Δεκέμβριος",
+    "\xC9\xE1\xED\xEF\xF5\xDC\xF1\xE9\xEF\xF2", "\xD6\xE5\xE2\xF1\xEF\xF5\xDC\xF1\xE9\xEF\xF2", "\xCC\xDC\xF1\xF4\xE9\xEF\xF2",
+    "\xC1\xF0\xF1\xDF\xEB\xE9\xEF\xF2", "\xCC\xDC\xE9\xEF\xF2", "\xC9\xEF\xFD\xED\xE9\xEF\xF2",
+    "\xC9\xEF\xFD\xEB\xE9\xEF\xF2", "\xC1\xFD\xE3\xEF\xF5\xF3\xF4\xEF\xF2", "\xD3\xE5\xF0\xF4\xDD\xEC\xE2\xF1\xE9\xEF\xF2",
+    "\xCF\xEA\xF4\xFE\xE2\xF1\xE9\xEF\xF2", "\xCD\xEF\xDD\xEC\xE2\xF1\xE9\xEF\xF2", "\xC4\xE5\xEA\xDD\xEC\xE2\xF1\xE9\xEF\xF2",
 
     /* Abbreviated months of the year */
-    "Ιαν", "Φεβ", "Μαρ", "Απρ", "Μαι", "Ιου",
-    "Ιου", "Αυγ", "Σεπ", "Οκτ", "Νοε", "Δεκ",
+    "\xC9\xE1\xED", "\xD6\xE5\xE2", "\xCC\xE1\xF1", "\xC1\xF0\xF1", "\xCC\xE1\xE9", "\xC9\xEF\xF5",
+    "\xC9\xEF\xF5", "\xC1\xF5\xE3", "\xD3\xE5\xF0", "\xCF\xEA\xF4", "\xCD\xEF\xE5", "\xC4\xE5\xEA",
 
-    "Ναι", /* Yes, affirmative response */
-    "Όχι", /* No/negative response */
+    "\xCD\xE1\xE9", /* Yes, affirmative response */
+    "\xBC\xF7\xE9", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "πμ", "μμ",
+    "\xF0\xEC", "\xEC\xEC",
 
     /* Soft and hard hyphens */
     "-", "-",
@@ -88,7 +88,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Χθες", "Σήμερα", "Αύριο", "Μελλοντικά",
+    "\xD7\xE8\xE5\xF2", "\xD3\xDE\xEC\xE5\xF1\xE1", "\xC1\xFD\xF1\xE9\xEF", "\xCC\xE5\xEB\xEB\xEF\xED\xF4\xE9\xEA\xDC",
 
     /* Native language name */
     NLANGSTR

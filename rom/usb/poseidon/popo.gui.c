@@ -2,6 +2,7 @@
  * GUI
  */
 
+#include <aros/isoascii.h>
 #include "debug.h"
 #include "poseidon.library.h"
 
@@ -148,7 +149,7 @@ AROS_UFH0(void, pPoPoGUITask)
     po->po_AppObj = ApplicationObject,
         MUIA_Application_Title      , (IPTR)"PoPo -- Poseidon Popup Provider",
         MUIA_Application_Version    , (IPTR)VERSION_STRING,
-        MUIA_Application_Copyright  , (IPTR)"©2004-2009 Chris Hodges",
+        MUIA_Application_Copyright  , (IPTR)ISOASCII_COPYRIGHT "2004-2009 Chris Hodges",
         MUIA_Application_Author     , (IPTR)"Chris Hodges <chrisly@platon42.de>",
         MUIA_Application_Description, (IPTR)"Opens annoying windows",
         MUIA_Application_Base       , (IPTR)"POPO",

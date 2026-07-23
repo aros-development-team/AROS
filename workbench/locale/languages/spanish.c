@@ -1,16 +1,17 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: spanish.language description file.
 */
 
 #define LANGSTR     "spanish"           /* String version of above */
-#define NLANGSTR    "español"           /* Native version of LANGSTR    */
+#define NLANGSTR    "espa" ISOASCII_ntilde "ol"           /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language */
 #define LANGREV     2                   /* Revision number of language */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -56,8 +57,8 @@ const STRPTR ___strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "domingo", "lunes", "martes", "miércoles", "jueves",
-    "viernes", "sábado",
+    "domingo", "lunes", "martes", "mi" ISOASCII_eacute "rcoles", "jueves",
+    "viernes", "s" ISOASCII_aacute "bado",
 
     /* Abbreviated days of the week */
     "dom", "lun", "mar", "mie", "jue", "vie", "sab",
@@ -72,7 +73,7 @@ const STRPTR ___strings[] =
     "ene", "feb", "mar", "abr", "may", "jun",
     "jul", "ago", "sep", "oct", "nov", "dic",
 
-    "Sí", /* Yes, affirmative response */
+    "S" ISOASCII_iacute, /* Yes, affirmative response */
     "No", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
@@ -90,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ayer", "Hoy", "Mañana", "Futuro",
+    "Ayer", "Hoy", "Ma" ISOASCII_ntilde "ana", "Futuro",
 
     /* Native language name */
     NLANGSTR

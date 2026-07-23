@@ -1,6 +1,7 @@
 /* dev.c - usbstir4200.device by Chris Hodges
 */
 
+#include <aros/isoascii.h>
 #include "debug.h"
 
 #include "stir4200.class.h"
@@ -428,7 +429,7 @@ WORD cmdQueryDevice(struct IOIrDAReq *ioreq,
     }
     if((tag = FindTagItem(IRA_Copyright, taglist)))
     {
-        *((STRPTR *) tag->ti_Data) = "©2005-2009 Chris Hodges";
+        *((STRPTR *) tag->ti_Data) = ISOASCII_COPYRIGHT "2005-2009 Chris Hodges";
         count++;
     }
     if((tag = FindTagItem(IRA_Version, taglist)))

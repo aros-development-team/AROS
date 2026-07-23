@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: albanian.language description file.
 */
@@ -11,6 +11,7 @@
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -56,21 +57,21 @@ const STRPTR ___strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "e diel", "e hënë", "e martë", "e mërkurë", "e enjte",
-    "e premte", "e shtunë",
+    "e diel", "e h" ISOASCII_euml "n" ISOASCII_euml, "e mart" ISOASCII_euml, "e m" ISOASCII_euml "rkur" ISOASCII_euml, "e enjte",
+    "e premte", "e shtun" ISOASCII_euml,
 
     /* Abbreviated days of the week */
-    "Die", "Hën", "Mar", "Mër", "Enj", "Pre", "Sht",
+    "Die", "H" ISOASCII_euml "n", "Mar", "M" ISOASCII_euml "r", "Enj", "Pre", "Sht",
 
     /* Months of the year */
     "janar", "shkurt", "mars",
     "prill", "maj", "qershor",
     "korrik", "gusht", "shtator",
-    "tetor", "nëntor", "dhjetor",
+    "tetor", "n" ISOASCII_euml "ntor", "dhjetor",
 
     /* Abbreviated months of the year */
     "Jan", "Shk", "Mar", "Pri", "Maj", "Qer",
-    "Kor", "Gus", "Sht", "Tet", "Nën", "Dhj",
+    "Kor", "Gus", "Sht", "Tet", "N" ISOASCII_euml "n", "Dhj",
 
     "Po", /* Yes, affirmative response */
     "Jo", /* No/negative response */
@@ -90,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Dje", "Sot", "Nesër", "Ardhmen",
+    "Dje", "Sot", "Nes" ISOASCII_euml "r", "Ardhmen",
 
     /* Native language name */
     NLANGSTR

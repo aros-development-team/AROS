@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: finnish.language description file.
 */
@@ -11,6 +11,7 @@
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.3 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -64,25 +65,25 @@ const STRPTR ___strings[] =
 
     /* Months of the year */
     "Tammikuu", "Helmikuu", "Maaliskuu",
-    "Huhtikuu", "Toukokuu", "Kes‰kuu",
-    "Hein‰kuu", "Elokuu", "Syyskuu",
+    "Huhtikuu", "Toukokuu", "Kes" ISOASCII_auml "kuu",
+    "Hein" ISOASCII_auml "kuu", "Elokuu", "Syyskuu",
     "Lokakuu", "Marraskuu", "Joulukuu",
 
     /* Abbreviated months of the year */
     "Tam", "Hel", "Maa", "Huh", "Tou", "Kes",
     "Hei", "Elo", "Syy", "Lok", "Mar", "Jou",
 
-    "Kyll‰", /* Yes, affirmative response */
+    "Kyll" ISOASCII_auml, /* Yes, affirmative response */
     "Ei", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
     "ap", "ip",
 
     /* Soft and hard hyphens */
-    "≠", "-",
+    ISOASCII_SOFTHYPHEN, "-",
 
     /* Open and close quotes */
-    "ª", "ª",
+    ISOASCII_RGUILLEMET, ISOASCII_RGUILLEMET,
 
     /* Days: But not actual day names
        Yesterday - the day before the current
@@ -90,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Eilen", "T‰n‰‰n", "Huomenna", "Tulevaisuudessa",
+    "Eilen", "T" ISOASCII_auml "n" ISOASCII_auml ISOASCII_auml "n", "Huomenna", "Tulevaisuudessa",
 
     /* Native language name */
     NLANGSTR

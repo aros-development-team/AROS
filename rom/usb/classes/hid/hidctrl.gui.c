@@ -2,6 +2,7 @@
  * GUI
  */
 
+#include <aros/isoascii.h>
 #include "debug.h"
 #include "numtostr.h"
 
@@ -65,7 +66,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHIDCtrlGUITask))
     nch->nch_HCApp = ApplicationObject,
         MUIA_Application_Title      , (IPTR)nch->nch_CDC->cdc_HIDCtrlTitle,
         MUIA_Application_Version    , (IPTR)VERSION_STRING,
-        MUIA_Application_Copyright  , (IPTR)"©2002-2009 Chris Hodges",
+        MUIA_Application_Copyright  , (IPTR)ISOASCII_COPYRIGHT "2002-2009 Chris Hodges",
         MUIA_Application_Author     , (IPTR)"Chris Hodges <chrisly@platon42.de>",
         MUIA_Application_Description, (IPTR)"HID Device Output Control",
         MUIA_Application_Base       , (IPTR)nch->nch_CDC->cdc_HIDCtrlRexx,

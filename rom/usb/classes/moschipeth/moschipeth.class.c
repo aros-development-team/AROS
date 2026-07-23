@@ -5,6 +5,7 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
+#include <aros/isoascii.h>
 #include "debug.h"
 
 #include "moschipeth.class.h"
@@ -1706,7 +1707,7 @@ AROS_UFH0(void, nGUITask)
     ncp->ncp_App = ApplicationObject,
         MUIA_Application_Title      , (IPTR)libname,
         MUIA_Application_Version    , (IPTR)VERSION_STRING,
-        MUIA_Application_Copyright  , (IPTR)"©2008-2009 Harry Sintonen & Chris Hodges",
+        MUIA_Application_Copyright  , (IPTR)ISOASCII_COPYRIGHT "2008-2009 Harry Sintonen & Chris Hodges",
         MUIA_Application_Author     , (IPTR)"Harry Sintonen <sintonen@iki.fi> & Chris Hodges <chrisly@platon42.de>",
         MUIA_Application_Description, (IPTR)"Settings for the moschipeth.class",
         MUIA_Application_Base       , (IPTR)"MOSCHIPETH",

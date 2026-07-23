@@ -5,6 +5,7 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
+#include <aros/isoascii.h>
 #include "debug.h"
 
 #include "bootmouse.class.h"
@@ -796,7 +797,7 @@ AROS_UFH0(void, nGUITask)
     nch->nch_App = ApplicationObject,
         MUIA_Application_Title      , (IPTR)libname,
         MUIA_Application_Version    , (IPTR)VERSION_STRING,
-        MUIA_Application_Copyright  , (IPTR)"©2002-2009 Chris Hodges",
+        MUIA_Application_Copyright  , (IPTR)ISOASCII_COPYRIGHT "2002-2009 Chris Hodges",
         MUIA_Application_Author     , (IPTR)"Chris Hodges <chrisly@platon42.de>",
         MUIA_Application_Description, (IPTR)"Settings for the bootmouse.class",
         MUIA_Application_Base       , (IPTR)"BOOTMOUSE",

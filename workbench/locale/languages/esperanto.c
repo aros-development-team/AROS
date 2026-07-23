@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: esperanto.language description file.
     Char: ISO 8859-3
@@ -54,21 +54,21 @@ const STRPTR ___strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "Dimanæo", "Lundo", "Mardo", "Merkredo", "¬aýdo",
+    "Diman" "\xE6" "o", "Lundo", "Mardo", "Merkredo", "\xAC" "a" "\xFD" "do",
     "Vendredo", "Sabato",
 
     /* Abbreviated days of the week */
-    "Dim", "Lun", "Mar", "Mer", "¬aý", "Ven", "Sab",
+    "Dim", "Lun", "Mar", "Mer", "\xAC" "a" "\xFD", "Ven", "Sab",
 
     /* Months of the year */
     "Januaro", "Februaro", "Marto",
     "Aprilo", "Majo", "Junio",
-    "Julio", "Aýgusto", "Septembro",
+    "Julio", "A" "\xFD" "gusto", "Septembro",
     "Oktobro", "Novembro", "Decembro",
 
     /* Abbreviated months of the year */
     "Jan", "Feb", "Mar", "Apr", "Maj", "Jun",
-    "Jul", "Aýg", "Sep", "Okt", "Nov", "Dec",
+    "Jul", "A" "\xFD" "g", "Sep", "Okt", "Nov", "Dec",
 
     "Jes", /* Yes, affirmative response */
     "Ne", /* No/negative response */
@@ -88,7 +88,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Hieraý", "Hodiaý", "Morgaý", "Estonto",
+    "Hiera" "\xFD", "Hodia" "\xFD", "Morga" "\xFD", "Estonto",
 
     /* Native language name */
     NLANGSTR

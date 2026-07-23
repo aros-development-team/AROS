@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: swedish.language description file.
 */
@@ -11,6 +11,7 @@
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.3 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -56,11 +57,11 @@ const STRPTR ___strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "Söndag", "Måndag", "Tisdag", "Onsdag", "Torsdag",
-    "Fredag", "Lördag",
+    "S" ISOASCII_ouml "ndag", "M" ISOASCII_aring "ndag", "Tisdag", "Onsdag", "Torsdag",
+    "Fredag", "L" ISOASCII_ouml "rdag",
 
     /* Abbreviated days of the week */
-    "Sön", "Mån", "Tis", "Ons", "Tor", "Fre", "Lör",
+    "S" ISOASCII_ouml "n", "M" ISOASCII_aring "n", "Tis", "Ons", "Tor", "Fre", "L" ISOASCII_ouml "r",
 
     /* Months of the year */
     "Januari", "Februari", "Mars",
@@ -79,10 +80,10 @@ const STRPTR ___strings[] =
     "fm", "em",
 
     /* Soft and hard hyphens */
-    "­", "-",
+    ISOASCII_SOFTHYPHEN, "-",
 
     /* Open and close quotes */
-    "»", "»",
+    ISOASCII_RGUILLEMET, ISOASCII_RGUILLEMET,
 
     /* Days: But not actual day names
        Yesterday - the day before the current
@@ -90,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Igår", "Idag", "Imorgon", "Framtid",
+    "Ig" ISOASCII_aring "r", "Idag", "Imorgon", "Framtid",
 
     /* Native language name */
     NLANGSTR

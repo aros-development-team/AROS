@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: czech.language description file.
     Char: ISO 8859-2
@@ -57,21 +57,21 @@ const STRPTR ___strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "nedìle", "pondìlí", "úterý", "støeda", "ètvrtek",
-    "pátek", "sobota",
+    "ned" "\xEC" "le", "pond" "\xEC" "l" "\xED", "\xFA" "ter" "\xFD", "st" "\xF8" "eda", "\xE8" "tvrtek",
+    "p" "\xE1" "tek", "sobota",
 
     /* Abbreviated days of the week */
-    "ne", "po", "út", "st", "èt", "pá", "so",
+    "ne", "po", "\xFA" "t", "st", "\xE8" "t", "p" "\xE1", "so",
 
     /* Months of the year */
-    "leden", "únor", "bøezen",
-    "duben", "kvìten", "èerven",
-    "èervenec", "srpen", "záøí",
-    "øíjen", "listopad", "prosinec",
+    "leden", "\xFA" "nor", "b" "\xF8" "ezen",
+    "duben", "kv" "\xEC" "ten", "\xE8" "erven",
+    "\xE8" "ervenec", "srpen", "z" "\xE1\xF8\xED",
+    "\xF8\xED" "jen", "listopad", "prosinec",
 
     /* Abbreviated months of the year */
-    "led", "úno", "bøe", "dub", "kvì", "èen",
-    "èec", "srp", "záø", "øíj", "lis", "pro",
+    "led", "\xFA" "no", "b" "\xF8" "e", "dub", "kv" "\xEC", "\xE8" "en",
+    "\xE8" "ec", "srp", "z" "\xE1\xF8", "\xF8\xED" "j", "lis", "pro",
 
     "Ano", /* Yes, affirmative response */
     "Ne",  /* No/negative response */
@@ -91,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "vèera", "dnes", "zítra", "budoucnost",
+    "v" "\xE8" "era", "dnes", "z" "\xED" "tra", "budoucnost",
 
     /* Native language name */
     NLANGSTR

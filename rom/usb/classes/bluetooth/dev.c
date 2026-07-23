@@ -1,6 +1,7 @@
 /* dev.c - usbbluetooth.device by Chris Hodges
 */
 
+#include <aros/isoascii.h>
 #include "debug.h"
 
 #include "bluetooth.class.h"
@@ -467,7 +468,7 @@ WORD cmdQueryDevice(struct IOBTHCIReq *ioreq,
     }
     if((tag = FindTagItem(BTA_Copyright, taglist)))
     {
-        *((STRPTR *) tag->ti_Data) = "©2005-2009 Chris Hodges";
+        *((STRPTR *) tag->ti_Data) = ISOASCII_COPYRIGHT "2005-2009 Chris Hodges";
         count++;
     }
     if((tag = FindTagItem(BTA_Version, taglist)))

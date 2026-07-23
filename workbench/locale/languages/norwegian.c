@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: norwegian.language description file.
 */
@@ -11,6 +11,7 @@
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
+#include <aros/isoascii.h>
 #include "lang_openclose.inc"
 #include "lang_getlangstring.inc"
 
@@ -56,11 +57,11 @@ const STRPTR ___strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag",
-    "Fredag", "Lørdag",
+    "S" ISOASCII_oslash "ndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag",
+    "Fredag", "L" ISOASCII_oslash "rdag",
 
     /* Abbreviated days of the week */
-    "Søn", "Man", "Tir", "Ons", "Tor", "Fre", "Lør",
+    "S" ISOASCII_oslash "n", "Man", "Tir", "Ons", "Tor", "Fre", "L" ISOASCII_oslash "r",
 
     /* Months of the year */
     "Januar", "Februar", "Mars",
@@ -90,7 +91,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "I går", "I dag", "I morgen", "Fremtid",
+    "I g" ISOASCII_aring "r", "I dag", "I morgen", "Fremtid",
 
     /* Native language name */
     NLANGSTR
