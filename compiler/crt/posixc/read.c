@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function read().
 */
@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "__fdesc.h"
+#include "__dos64.h"
 
 /*****************************************************************************
 
@@ -63,7 +64,7 @@
         return -1;
     }
 
-    cnt = Read (fdesc->fcb->handle, buf, count);
+    cnt = __dos64_read (fdesc->fcb, buf, count);
 
     if (cnt == -1)
         errno = __stdc_ioerr2errno (IoErr ());

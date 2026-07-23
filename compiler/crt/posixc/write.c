@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function write().
 */
@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "__fdesc.h"
+#include "__dos64.h"
 
 /*****************************************************************************
 
@@ -55,7 +56,7 @@
         return -1;
     }
 
-    cnt = Write (fdesc->fcb->handle, (void *)buf, count);
+    cnt = __dos64_write (fdesc->fcb, (void *)buf, count);
 
     if (cnt == -1)
         errno = __stdc_ioerr2errno (IoErr ());

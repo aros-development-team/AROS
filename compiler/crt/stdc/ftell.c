@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function ftell()
 */
@@ -8,6 +8,7 @@
 #include <errno.h>
 
 #include "__stdio.h"
+#include "__stdcio_dos64.h"
 
 #include <aros/debug.h>
 
@@ -46,16 +47,21 @@
 
 ******************************************************************************/
 {
-    LONG cnt;
+    QUAD cnt;
     BPTR fh = stream->fh;
 
     D(bug("[%s] %s: Entering\n", STDCNAME, __func__));
 
     Flush (fh);
-    cnt = Seek (fh, 0, OFFSET_CURRENT);
+    cnt = __stdcio_getpos64 (stream);
 
     if (cnt == -1)
         errno = __stdc_ioerr2errno (IoErr ());
+    else if (cnt != (QUAD)(long)cnt)
+    {
+        errno = EOVERFLOW;
+        cnt = -1;
+    }
 
     D(bug("[%s] %s: Leaving cnt=%d\n", STDCNAME, __func__, cnt));
 

@@ -8,6 +8,7 @@
 #include <errno.h>
 
 #include "__stdio.h"
+#include "__stdcio_dos64.h"
 
 #include <aros/debug.h>
 
@@ -86,11 +87,13 @@
         return -1;
     }
 
-    if (Seek(fh, offset, mode) < 0)
+    if (__stdcio_seek64(stream, (QUAD)offset, mode) < 0)
     {
         D(bug("[%s] %s: Failed (IoErr()=%d)\n", STDCNAME, __func__, IoErr()));
         if (IoErr() == ERROR_UNKNOWN)
             errno = EINVAL;
+        else if (IoErr() == ERROR_OBJECT_TOO_LARGE)
+            errno = EOVERFLOW;
         else
             errno = __stdc_ioerr2errno(IoErr());
         return -1;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function ftruncate().
 */
@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "__fdesc.h"
+#include "__dos64.h"
 
 /*****************************************************************************
 
@@ -51,8 +52,8 @@
 
 ******************************************************************************/
 {
-    ULONG oldpos;
-    size_t size;
+    QUAD oldpos;
+    QUAD size;
 
     fdesc *fdesc = __getfdesc(fd);
 
@@ -74,35 +75,38 @@
         return -1;
     }
 
-    oldpos = Seek(fdesc->fcb->handle, 0, OFFSET_END);
-    size   = Seek(fdesc->fcb->handle, 0, OFFSET_CURRENT);
-    Seek(fdesc->fcb->handle, oldpos, OFFSET_BEGINNING);
+    oldpos = __dos64_getpos(fdesc->fcb);
+    size   = __dos64_getsize(fdesc->fcb);
 
-    if ((length = SetFileSize(fdesc->fcb->handle, length, OFFSET_BEGINNING)) == -1)
+    if (__dos64_setfilesize(fdesc->fcb, length, OFFSET_BEGINNING) == -1)
     {
-        errno = __stdc_ioerr2errno(IoErr());
+        LONG ioerr = IoErr();
+        errno = (ioerr == ERROR_OBJECT_TOO_LARGE)
+            ? EFBIG : __stdc_ioerr2errno(ioerr);
         return -1;
     }
     else
-    if (size < length)
+    if (size != -1 && size < length)
     {
         char buf[16]={0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        QUAD left = length - size;
 
-        length -= size;
+        __dos64_seek(fdesc->fcb, size, OFFSET_BEGINNING);
 
-        oldpos = Seek(fdesc->fcb->handle, size, OFFSET_BEGINNING);
-
-        while (length >= 16)
+        while (left >= 16)
         {
             FWrite(fdesc->fcb->handle, buf, 16, 1);
-            length -= 16;
+            left -= 16;
         }
-        if (length)
-            FWrite(fdesc->fcb->handle, buf, length, 1);
+        if (left)
+            FWrite(fdesc->fcb->handle, buf, left, 1);
 
         Flush(fdesc->fcb->handle);
-        Seek(fdesc->fcb->handle, oldpos, OFFSET_BEGINNING);
     }
+
+    /* Restore the original position */
+    if (oldpos != -1)
+        __dos64_seek(fdesc->fcb, oldpos, OFFSET_BEGINNING);
 
     return 0;
 }

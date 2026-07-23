@@ -2,7 +2,7 @@
 #define _STDC_ERRNO_H_
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file errno.h
@@ -57,6 +57,7 @@
 
 /* Codes used for error conversion of DOS error codes */
 #define	EACCES		13		/* Permission denied */
+#define	EOVERFLOW	84		/* Value too large to be stored in data type */
 #define ENOTBLK         15              /* Not a Block device */
 #define	EBUSY		16		/* Device busy */
 #define	EEXIST		17		/* File exists */

@@ -25,6 +25,7 @@
 #define __STDCIO_STDIO_WIDE         0x0200L   /* Stream is wide-oriented */
 #define __STDCIO_STDIO_UNGETWC      0x0400L   /* ungetwc_char contains a pushed-back wide char */
 #define __STDCIO_STDIO_BYTE         0x0800L   /* Stream is byte-oriented */
+#define __STDCIO_STDIO_FS64         0x1000L   /* Filesystem handles 64-bit packets */
 
 #endif /* ___STDIO_H */
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function fopen().
 */
@@ -14,6 +14,7 @@
 #include <aros/libcall.h>
 
 #include "__stdio.h"
+#include "__stdcio_dos64.h"
 #include "__stdcio_intbase.h"
 
 #include "debug.h"
@@ -140,6 +141,9 @@
     D(bug("[%s] %s: Open fh = 0x%p\n", STDCNAME, __func__, file->fh));
     if (!file->fh)
         goto error;
+
+    /* Detect 64-bit filesystem support once, and cache it */
+    __stdcio_probe64(file);
 
     if (file->flags & __STDCIO_STDIO_APPEND)
     {

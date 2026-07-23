@@ -631,6 +631,7 @@ STDC_COMMON := \
 STDCIO := \
     __env \
     __stdcio_assert \
+    __stdcio_dos64 \
     __stdcio_init \
     __stdcio_env \
     __stdcio_environ \

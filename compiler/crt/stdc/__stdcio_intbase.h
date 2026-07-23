@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
 
     This file defines the private part of StdCIOBase.
     This should only be used internally in stdcio.library code so
@@ -16,6 +16,9 @@
 struct StdCIOIntBase
 {
     struct StdCIOBase StdCIOBase;
+
+    /* __stdcio_dos64.c: optional dos64.library, for 64-bit file I/O */
+    struct Library *StdCIODOS64Base;
 
     /* __stdcio_environ.c; don't use this field outside that file */
     char ***environptr;

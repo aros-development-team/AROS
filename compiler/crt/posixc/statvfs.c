@@ -1,5 +1,5 @@
 /*
-    Copyright © 2025, The AROS Development Team.
+    Copyright © 2025-2026, The AROS Development Team.
     All rights reserved.
 
     POSIX.1-2008 function fstatvfs
@@ -7,6 +7,8 @@
 
 #include <aros/debug.h>
 #include <proto/dos.h>
+
+#include "__dos64.h"
 #include <errno.h>
 #include <string.h>
 #include <sys/statvfs.h>
@@ -28,8 +30,8 @@ int statvfs(const char *restrict path, struct statvfs *restrict buf)
         return -1;
     }
 
-    struct InfoData info;
-    if (!Info(lock, &info)) {
+    struct InfoData64 info;
+    if (!__dos64_info(lock, &info)) {
         UnLock(lock);
         errno = EIO;
         return -1;

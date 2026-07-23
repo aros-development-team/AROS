@@ -44,6 +44,14 @@ int __entropy_available(struct PosixCIntBase *PosixCBase)
     return PosixCBase->PosixCEntropyBase != NULL;
 }
 
+int __dos64_available(struct PosixCIntBase *PosixCBase)
+{
+    if (PosixCBase->PosixCDOS64Base == NULL)
+        PosixCBase->PosixCDOS64Base = OpenLibrary("dos64.library", 50);
+
+    return PosixCBase->PosixCDOS64Base != NULL;
+}
+
 int __optionallibs_close(struct PosixCIntBase *PosixCBase)
 {
     if (PosixCBase->PosixCUserGroupBase) {
@@ -53,6 +61,10 @@ int __optionallibs_close(struct PosixCIntBase *PosixCBase)
     if (PosixCBase->PosixCFDBase) {
         CloseLibrary(PosixCBase->PosixCFDBase);
         PosixCBase->PosixCFDBase = NULL;
+    }
+    if (PosixCBase->PosixCDOS64Base) {
+        CloseLibrary(PosixCBase->PosixCDOS64Base);
+        PosixCBase->PosixCDOS64Base = NULL;
     }
 }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -8,6 +8,8 @@
 #include <errno.h>
 #include <sys/mount.h>
 #include <proto/dos.h>
+
+#include "__dos64.h"
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include "__upath.h"
@@ -74,7 +76,7 @@ short getnixfilesystemtype(LONG id_DiskType)
     STRPTR name;
     BPTR lock;
     struct DosList *dlist;
-    struct InfoData data;
+    struct InfoData64 data;
     int fscount = 0; /* number of filesystems */
     LONG ioerr = 0;
 
@@ -111,7 +113,7 @@ short getnixfilesystemtype(LONG id_DiskType)
         /* Get filesystem data from lock */
         if((lock = Lock(name, SHARED_LOCK)))
         {
-            if(Info(lock, &data))
+            if(__dos64_info(lock, &data))
             {
                 /* Fill statfs structure */
                 buf[fscount - 1].f_type = getnixfilesystemtype(

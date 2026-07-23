@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Reposition read/write file offset.
 */
@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <clib/macros.h>
 #include "__fdesc.h"
+#include "__dos64.h"
 
 /*****************************************************************************
 
@@ -60,7 +61,7 @@
 
 ******************************************************************************/
 {
-    int  cnt;
+    QUAD cnt;
     fdesc *fdesc = __getfdesc(filedes);
 
     if (!fdesc)
@@ -88,7 +89,7 @@
             return -1;
     }
 
-    cnt = Seek (fdesc->fcb->handle, offset, whence);
+    cnt = __dos64_seek (fdesc->fcb, offset, whence);
 
     if (cnt == -1)
     {
@@ -101,40 +102,45 @@
                is written there. Since implementing it would be rather
                difficult, we simply extend the file by writing zeros
                and hope for the best. */
-            LONG abs_cur_pos = Seek(fdesc->fcb->handle, 0, OFFSET_CURRENT);
+            QUAD abs_cur_pos = __dos64_getpos(fdesc->fcb);
             if(abs_cur_pos == -1)
                 goto error;
-            LONG file_size = Seek(fdesc->fcb->handle, 0, OFFSET_END);
+            QUAD file_size = __dos64_getsize(fdesc->fcb);
             if(file_size == -1)
                 goto error;
             /* Now compute how much we have to extend the file */
-            LONG abs_new_pos = 0;
+            QUAD abs_new_pos = 0;
             switch(whence)
             {
                 case OFFSET_BEGINNING: abs_new_pos = offset; break;
                 case OFFSET_CURRENT: abs_new_pos = abs_cur_pos + offset; break;
                 case OFFSET_END: abs_new_pos = file_size + offset; break;
             }
-            if(abs_new_pos > abs_cur_pos)
+            if(abs_new_pos > file_size)
             {
                 ULONG bufsize = 4096;
                 APTR zeros = AllocMem(bufsize, MEMF_ANY | MEMF_CLEAR);
                 if(!zeros)
                 {
                     /* Restore previous position */
-                    Seek(fdesc->fcb->handle, abs_cur_pos, OFFSET_BEGINNING);
+                    __dos64_seek(fdesc->fcb, abs_cur_pos, OFFSET_BEGINNING);
                     errno = ENOMEM;
                     return -1;
                 }
-                
-                LONG towrite = abs_new_pos - abs_cur_pos;
+
+                if(__dos64_seek(fdesc->fcb, 0, OFFSET_END) == -1)
+                {
+                    FreeMem(zeros, bufsize);
+                    goto error;
+                }
+                QUAD towrite = abs_new_pos - file_size;
                 do
                 {
                     Write(fdesc->fcb->handle, zeros, MIN(towrite, bufsize));
                     towrite -= bufsize;
                 }
                 while(towrite > 0);
-                
+
                 FreeMem(zeros, bufsize);
             }
             else
@@ -149,8 +155,21 @@
             goto error;
     }
 
-    return Seek(fdesc->fcb->handle, 0, OFFSET_CURRENT);
+    cnt = __dos64_getpos(fdesc->fcb);
+    if (cnt == -1)
+        goto error;
+    if (cnt != (QUAD)(off_t)cnt)
+    {
+        errno = EOVERFLOW;
+        return (off_t) -1;
+    }
+
+    return (off_t) cnt;
 error:
-    errno = __stdc_ioerr2errno (IoErr ());
+    {
+        LONG ioerr = IoErr ();
+        errno = (ioerr == ERROR_OBJECT_TOO_LARGE)
+            ? EOVERFLOW : __stdc_ioerr2errno (ioerr);
+    }
     return (off_t) -1;
 } /* __posixc_lseek */

@@ -4,6 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM compiler-posixc : includes linklibs kernel-entropy-includes workbench-libs-fd-includes
 
 POSIXC := \
+    __dos64 \
     __exec \
     __fdesc \
     __fopen \

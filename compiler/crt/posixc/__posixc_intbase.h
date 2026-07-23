@@ -35,6 +35,7 @@ struct PosixCIntBase
     struct Library           *PosixCUserGroupBase;
     struct Library           *PosixCFDBase;
     struct Library           *PosixCEntropyBase;    /* entropy.resource, for getentropy() */
+    struct Library           *PosixCDOS64Base;      /* dos64.library, for 64-bit file I/O */
 
     /* common */
     APTR internalpool;

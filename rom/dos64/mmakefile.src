@@ -10,7 +10,7 @@ FUNCS := seek64 setfilesize64 getfileposition64 getfilesize64 \
          changefileposition64 changefilesize64 read64 write64 \
          examine64 exnext64 examinefh64 info64 \
          lockrecord64 lockrecords64 unlockrecord64 unlockrecords64 \
-         allocdosobject64 freedosobject64
+         allocdosobject64 freedosobject64 isfilesystem64
 
 FILES := dos64_packet dos64_support
 

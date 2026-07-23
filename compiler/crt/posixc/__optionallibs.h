@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 /* Functions in this include should be used in rest of posixc.library to check
@@ -9,4 +9,5 @@
 
 int __usergroup_available(struct PosixCIntBase *PosixCBase);
 int __entropy_available(struct PosixCIntBase *PosixCBase);
+int __dos64_available(struct PosixCIntBase *PosixCBase);
 int __optionallibs_close(struct PosixCIntBase *PosixCBase);
