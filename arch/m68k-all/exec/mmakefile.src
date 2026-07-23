@@ -23,6 +23,7 @@ FILES=offsets getcc preparecontext \
 
 AFILES=newstackswap stackswap \
        exitintr schedule switch dispatch \
+       wait \
        supervisor superstate userstate \
        forbid \
        cacheclearu_ cachecleare_ cachepostdma_ cachepredma_ \
