@@ -1,6 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
-     Copyright (C) 2017-2023 The AROS Dev Team
+     Copyright (C) 2017-2026 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
 
      This library is free software; you can redistribute it and/or
@@ -563,15 +563,20 @@ ReadConfig(struct AHIDevUnit *iounit,
     ahibug("[AHI:Device] %s()\n", __func__);
 
     if(iounit) {
-        /* Internal defaults for device unit */
+        /* Internal defaults for device unit. Use the same defaults the
+           preferences program writes, rather than ~0 (= "don't touch"):
+           otherwise the driver is only ever sent AHIC_InputGain/AHIC_Input/
+           AHIC_Output when a prefs file exists, and audible behaviour ends
+           up depending on whether AHI prefs has been run. MonitorVolume is
+           kept at ~0 so input monitoring is left alone unless configured. */
         iounit->AudioMode       = AHI_INVALID_ID;   // See at the end of the function!
         iounit->Frequency       = 44100;
         iounit->Channels        = 4;
         iounit->MonitorVolume   = ~0;
-        iounit->InputGain       = ~0;
+        iounit->InputGain       = 0x10000;
         iounit->OutputVolume    = 0x10000;
-        iounit->Input           = ~0;
-        iounit->Output          = ~0;
+        iounit->Input           = 0;
+        iounit->Output          = 0;
         AHIBase->ahib_ScaleMode = AHI_SCALE_FIXED_0_DB;
     } else {
         /* Internal defaults for low-level mode */

@@ -6,7 +6,7 @@ Software distributed under the License is distributed on an "AS IS" basis, WITHO
 ANY KIND, either express or implied. See the License for the specific language governing rights and
 limitations under the License.
 
-(C) Copyright 2010-2021 The AROS Dev Team
+(C) Copyright 2010-2026 The AROS Dev Team
 (C) Copyright 2009-2010 Stephen Jones.
 (C) Copyright xxxx-2009 Davy Wentzler.
 
@@ -398,6 +398,18 @@ int card_init(struct HDAudioChip *card)
     if(perform_codec_specific_settings(card) == FALSE) {
         return -1;
     }
+
+    /* Program the output amplifiers to 0 dB. After a codec reset the
+       amplifiers of some codecs (e.g. VMware's virtual codec) power up
+       at minimum gain (-64 dB); unmute_widget()/the vendor setup only
+       clear the mute bits and preserve the gain. Nothing else programs
+       the output gain unless AHIC_OutputVolume reaches the driver, which
+       only happens on the device-unit path or when an application
+       allocates with AHI_DEFAULT_ID - low-level clients that pass an
+       explicit mode ID (e.g. sound.datatype) would otherwise play into
+       an inaudible output. */
+    card->output_volume = 0x10000;
+    set_dac_gain(card, 0.0);
 
     if(dumpAll) {
         codec_discovery(card);
@@ -1514,6 +1526,14 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
 
     D(bug("[HDAudio] Unknown codec, interrogating chip...\n"));
 
+    /* Mark all ADC mixer inputs as absent until they are discovered.
+       The vendor-specific setup functions fill these in explicitly; on
+       the interrogation path they would otherwise all read as amp
+       index 0 and set_adc_input() would send bogus amp verbs. */
+    for(i = 0; i < INPUTS; i++) {
+        card->adc_mixer_indices[i] = 255;
+    }
+
     // Umute all widgets
     parm = get_parameter(card->function_group, VERB_GET_PARMS_NODE_COUNT, card);
     first_subnode = parm >> 16 & 0xFF;
@@ -1647,6 +1667,33 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
 
     if(adc != 0) {
         card->adc_nid = adc;
+
+        /* Derive the ADC gain range from the input amplifier capabilities,
+           the same way the DAC gain range is derived above. Without this
+           set_adc_gain() has no valid step size to work with. */
+        parm = get_parameter(card->adc_nid,
+                             VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+        if((parm & 0x8) != 0)
+            parm = get_parameter(card->adc_nid,
+                                 VERB_GET_PARMS_INPUT_AMP_CAPS, card);
+        else
+            parm = get_parameter(card->function_group,
+                                 VERB_GET_PARMS_INPUT_AMP_CAPS, card);
+        D(bug("[HDAudio] NID %xh: Input amp caps = %lx\n", adc, parm));
+
+        step_size = (((parm >> 16) & 0x7F) + 1) * 0.25;
+        steps = ((parm >> 8) & 0x7F);
+        offset0dB = (parm & 0x7F);
+
+        if(steps != 0) {
+            card->adc_min_gain = -(offset0dB * step_size);
+            card->adc_max_gain = card->adc_min_gain + step_size * steps;
+            card->adc_step_gain = step_size;
+            D(bug("[HDAudio] ADC gain step size = %lu * 0.25 dB,"
+                  " min gain = %d, max gain = %d\n",
+                  (((parm >> 16) & 0x7F) + 1), (int)(card->adc_min_gain),
+                  (int)(card->adc_max_gain)));
+        }
 
         card->line_in_nid = find_widget(card, 4, 8);
         D(bug("[HDAudio] Line-in NID = %xh\n", card->line_in_nid));
@@ -1964,30 +2011,50 @@ void set_monitor_volumes(struct HDAudioChip *card, double dB)
 void set_adc_input(struct HDAudioChip *card)
 {
     int i;
+    UBYTE selected;
 
     if(card->input >= INPUTS) {
         card->input = 0;
     }
 
+    if(card->adc_mixer_nid == 0) {
+        /* Codec was configured via the generic interrogation path and no
+           ADC mixer/selector was found: there is nothing valid to program.
+           Amp verbs sent to NID 0 mute the output stream on some codecs
+           (e.g. QEMU's HDA codec). */
+        D(bug("[HDAudio] set_adc_input: no ADC mixer known, skipping\n"));
+        return;
+    }
+
+    selected = card->adc_mixer_indices[card->input];
+
     if(card->adc_mixer_is_mux == TRUE) {
-        D(bug("[HDAudio] Selecting ADC input %d\n", card->adc_mixer_indices[card->input]));
+        if(selected == 255) { // input not present, fall back to first entry
+            selected = 0;
+        }
+        D(bug("[HDAudio] Selecting ADC input %d\n", selected));
         send_command_12(card->codecnr, card->adc_mixer_nid, VERB_SET_CONNECTION_SELECT,
-                        card->adc_mixer_indices[card->input], card);
+                        selected, card);
         return;
     } else {
+        /* Mute the inputs that are not selected first, then unmute the
+           selected one last: if several inputs share an amp index, a
+           single interleaved pass would re-mute the input that was just
+           unmuted. */
         for(i = 0; i < INPUTS; i++) {
-            if(card->adc_mixer_indices[i] != 255) { // input is present
-                if(i == card->input) { // unmute or select
-                    D(bug("[HDAudio] Unmuting ADC input %d\n", card->adc_mixer_indices[i]));
-                    send_command_4(card->codecnr, card->adc_mixer_nid, VERB_SET_AMP_GAIN,
-                                   INPUT_AMP_GAIN | AMP_GAIN_LR | (card->adc_mixer_indices[i] << 8), card);
-                } else { // mute
-                    D(bug("[HDAudio] Muting ADC input %d\n", card->adc_mixer_indices[i]));
-                    send_command_4(card->codecnr, card->adc_mixer_nid, VERB_SET_AMP_GAIN,
-                                   INPUT_AMP_GAIN | AMP_GAIN_LR | (card->adc_mixer_indices[i] << 8) | (1 << 7), card);
-
-                }
+            if(card->adc_mixer_indices[i] != 255 // input is present
+                    && i != card->input
+                    && card->adc_mixer_indices[i] != selected) {
+                D(bug("[HDAudio] Muting ADC input %d\n", card->adc_mixer_indices[i]));
+                send_command_4(card->codecnr, card->adc_mixer_nid, VERB_SET_AMP_GAIN,
+                               INPUT_AMP_GAIN | AMP_GAIN_LR | (card->adc_mixer_indices[i] << 8) | (1 << 7), card);
             }
+        }
+
+        if(selected != 255) { // unmute the selected input
+            D(bug("[HDAudio] Unmuting ADC input %d\n", selected));
+            send_command_4(card->codecnr, card->adc_mixer_nid, VERB_SET_AMP_GAIN,
+                           INPUT_AMP_GAIN | AMP_GAIN_LR | (selected << 8), card);
         }
     }
 }
@@ -1995,7 +2062,15 @@ void set_adc_input(struct HDAudioChip *card)
 
 void set_adc_gain(struct HDAudioChip *card, double dB)
 {
-    int dB_steps = (int)((dB - card->adc_min_gain) / card->adc_step_gain);
+    int dB_steps;
+
+    if(card->adc_nid == 0 || card->adc_step_gain <= 0.0) {
+        /* No ADC found, or no valid gain range was determined */
+        D(bug("[HDAudio] set_adc_gain: no ADC gain info, skipping\n"));
+        return;
+    }
+
+    dB_steps = (int)((dB - card->adc_min_gain) / card->adc_step_gain);
 
     if(dB_steps < 0) {
         dB_steps = 0;
