@@ -117,6 +117,8 @@ int driver_init(struct GfxBase * GfxBase)
 
         /* Init software driver, added as a driver of the gfx HW object */
         baseGfx = OOP_FindClass(CLID_Hidd_Gfx);
+        if (!baseGfx)
+            return FALSE;
         CDD(GfxBase)->mdisplay.display_gfxhidd = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, baseGfx, NULL);
 
         if (CDD(GfxBase)->mdisplay.display_gfxhidd)

@@ -74,6 +74,9 @@ struct unixio_base
     OOP_Class		  *uio_unixioclass;	/* Our class		    			*/
     OOP_Object		  *obj;			/* Our singleton	    			*/
     APTR		   irqHandle;		/* SIGIO IRQ handle	    			*/
+#ifdef HOST_OS_darwin
+    APTR		   irqHandle2;		/* Timer-tick demux handle (darwin pipe fix)	*/
+#endif
     APTR		   KernelBase;		/* Resource bases	    			*/
     APTR		   HostLibBase;
     STRPTR		   SystemArch;		/* System architecture string (cached)		*/

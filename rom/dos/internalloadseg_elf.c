@@ -251,6 +251,10 @@ static int __attribute__ ((noinline)) load_hunk
         }
     }
 
+    /* Executable code must come from executable memory (matters on W^X hosts) */
+    if (sh->flags & SHF_EXECINSTR)
+        memflags |= MEMF_EXECUTABLE;
+
     hunk = ilsAllocMem(hunk_size, memflags | MEMF_PUBLIC | (sh->type == SHT_NOBITS ? MEMF_CLEAR : 0));
     if (hunk)
     {

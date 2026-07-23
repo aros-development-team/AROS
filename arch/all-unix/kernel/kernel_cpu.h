@@ -15,6 +15,9 @@
 #ifdef __x86_64__
 #include <cpu_x86_64.h>
 #endif
+#ifdef __aarch64__
+#include <cpu_aarch64.h>
+#endif
 
 /* This macro serves as an indicator of included file */
 #ifndef EXCEPTIONS_COUNT

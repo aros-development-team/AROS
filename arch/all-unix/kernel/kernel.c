@@ -101,12 +101,23 @@ static void core_TrapHandler(int sig, regs_t *regs)
        we convert it back before returning */
     RESTOREREGS(&ctx, regs);
 
-    /* If the program counter has been modified, assume continuing in crash handling subroutine
-       after completing signal handler. Align stack as if return address was passed, so that
-       stack continues being aligned at 16 bytes. This is necessary for x86_64 and should not
-       cause issues for other architectures */
+    /*
+     * The program counter may have been redirected by the trap path into a
+     * crash handling subroutine. Fix up the stack for the redirected entry:
+     * - x86_64: the ABI expects (%rsp + 8) % 16 == 0 at a function entry (as
+     *   if a return address was just pushed), so push a fake slot.
+     * - aarch64 (and others): SP must stay 16-byte aligned at all times; any
+     *   SP-relative access faults otherwise, killing the crash handler before
+     *   it can run. Never subtract 8 here, just defensively re-align.
+     */
     if (pc != PC(regs))
+    {
+#ifdef __x86_64__
         if ((SP(regs) & 0xf) == 0x0) SP(regs) -= 8;
+#else
+        if (SP(regs) & 0xf) SP(regs) &= ~(IPTR)0xf;
+#endif
+    }
 
     SUPERVISOR_LEAVE;
 }
@@ -114,6 +125,30 @@ static void core_TrapHandler(int sig, regs_t *regs)
 static void core_IRQ(int sig, regs_t *sc)
 {
     struct KernelBase *KernelBase = getKernelBase();
+
+#ifdef HOST_OS_darwin
+    /*
+     * A process-directed signal (e.g. ITIMER_REAL's SIGALRM) can be delivered
+     * to any host thread with it unblocked, including workers that host
+     * libraries spawn behind our back. Running the scheduler there races the
+     * real AROS thread on the global supervisor state. Worse, under a
+     * CPU-bound task the host can deliver essentially every tick to such a
+     * worker, so simply dropping them disables preemption entirely. Forward
+     * the signal to AROS's thread instead: pthread_kill() is
+     * async-signal-safe, a pending classic signal coalesces (no storm), and
+     * if AROS has it masked (Disable()) it is delivered on Enable().
+     */
+    {
+        struct PlatformData *pd = KernelBase->kb_PlatformData;
+        if (pd->aros_host_thread && pd->iface->pthread_self
+            && pd->iface->pthread_self() != pd->aros_host_thread)
+        {
+            if (pd->iface->pthread_kill)
+                pd->iface->pthread_kill(pd->aros_host_thread, sig);
+            return;
+        }
+    }
+#endif
 
     SUPERVISOR_ENTER;
 
@@ -157,6 +192,9 @@ static const char *kernel_functions[] =
     "__error",
 #endif
 #endif
+#ifdef HOST_OS_darwin
+    "sys_icache_invalidate",
+#endif
 #ifdef HOST_OS_android
     "sigwait",
 #else
@@ -164,6 +202,10 @@ static const char *kernel_functions[] =
     "sigfillset",
     "sigaddset",
     "sigdelset",
+#endif
+#ifdef HOST_OS_darwin
+    "pthread_self",
+    "pthread_kill",
 #endif
     NULL
 };
@@ -207,6 +249,13 @@ int core_Start(void *libc)
     /* Cache errno pointer, for context switching */
     pd->errnoPtr = pd->iface->__error();
     AROS_HOST_BARRIER
+
+#ifdef HOST_OS_darwin
+    /* core_Start runs on AROS's host thread; remember it so core_IRQ can
+     * detect and forward ticks delivered to any other host thread. */
+    pd->aros_host_thread = pd->iface->pthread_self();
+    AROS_HOST_BARRIER
+#endif
 
 #if DEBUG
     /* Pass unhandled exceptions to the debugger, if present */

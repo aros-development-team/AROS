@@ -7,6 +7,8 @@
 #include <proto/debug.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
+#include <resources/kernel.h>
 
 #include "dos_intern.h"
 #include "internalloadseg.h"
@@ -45,17 +47,25 @@ void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *s
 {
     if (DOSBase)
     {
+        struct KernelBase *KernelBase = OpenResource("kernel.resource");
+        BOOL issuper = (KernelBase && KrnIsSuper());
         struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
         if (segnode)
         {
             segnode->ln_Name = (char *)hunks;
             segnode->ln_Type = SEGTYPE_ELF;
 
-            ObtainSemaphore(&IDosBase(DOSBase)->segsem);
+            if (issuper)
+                Forbid();
+            else
+                ObtainSemaphore(&IDosBase(DOSBase)->segsem);
             AddTail(&IDosBase(DOSBase)->segdata, segnode);
-            ReleaseSemaphore(&IDosBase(DOSBase)->segsem);
+            if (issuper)
+                Permit();
+            else
+                ReleaseSemaphore(&IDosBase(DOSBase)->segsem);
 
-            if (DebugBase)
+            if (DebugBase && !issuper)
             {
                 char *buffer = NULL;
                 char *nameptr = getname(file, &buffer, DOSBase);
@@ -75,6 +85,8 @@ void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *s
 void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBase)
 {
     struct Library *DebugBase;
+    struct KernelBase *KernelBase = OpenResource("kernel.resource");
+    BOOL issuper = (KernelBase && KrnIsSuper());
     if (DOSBase)
     {
         struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
@@ -83,15 +95,21 @@ void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBas
             segnode->ln_Name = (char *)hunks;
             segnode->ln_Type = SEGTYPE_HUNK;
 
-            ObtainSemaphore(&IDosBase(DOSBase)->segsem);
+            if (issuper)
+                Forbid();
+            else
+                ObtainSemaphore(&IDosBase(DOSBase)->segsem);
             AddTail(&IDosBase(DOSBase)->segdata, segnode);
-            ReleaseSemaphore(&IDosBase(DOSBase)->segsem);
+            if (issuper)
+                Permit();
+            else
+                ReleaseSemaphore(&IDosBase(DOSBase)->segsem);
         }
         DebugBase = IDosBase(DOSBase)->debugBase;
     }
     else
         DebugBase = OpenLibrary("debug.library", 0);
-    if (DebugBase)
+    if (DebugBase && !issuper)
     {
         char *buffer = NULL;
         char *nameptr = getname(file, &buffer, DOSBase);

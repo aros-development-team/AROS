@@ -7,8 +7,16 @@
 /*
  * Windows is a very harsh environment.
  * It requires us to Forbid() in order to call itself.
+ *
+ * Darwin needs the same: host libc locks (environ, locale, malloc) are
+ * shared with the host process' own threads. A guest task preempted in the
+ * middle of a host call keeps such a lock in its suspended context, and a
+ * host thread blocking on it deadlocks the whole process. Forbid() makes
+ * host calls run to completion. This costs nothing on the single-CPU
+ * guest: while the AROS host thread is inside a host call no other guest
+ * task can execute anyway.
  */
-#ifdef HOST_OS_mingw32
+#if defined(HOST_OS_mingw32) || defined(HOST_OS_darwin)
 #define USE_FORBID_LOCK
 #endif
 
@@ -21,7 +29,7 @@ struct HostLibBase
 #endif
 };
 
-#ifdef USE_FORBID_LOCK
+#if defined(USE_FORBID_LOCK)
 #define HOSTLIB_LOCK()   Forbid()
 #define HOSTLIB_UNLOCK() Permit()
 #else

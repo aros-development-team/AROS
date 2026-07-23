@@ -32,5 +32,13 @@ AROS_LH3I(void, KrnSetProtection,
     KernelBase->kb_PlatformData->iface->mprotect(address, length, flags_unix);
     AROS_HOST_BARRIER
 
+#ifdef HOST_OS_darwin
+    if ((flags & MAP_Executable) && address != NULL && length != 0)
+    {
+        KernelBase->kb_PlatformData->iface->sys_icache_invalidate(address, length);
+        AROS_HOST_BARRIER
+    }
+#endif
+
     AROS_LIBFUNC_EXIT
 }

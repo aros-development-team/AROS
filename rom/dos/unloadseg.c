@@ -7,6 +7,7 @@
 #include <aros/debug.h>
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <dos/dos.h>
 #include <exec/types.h>
@@ -21,7 +22,28 @@ static AROS_UFH3(void, FreeFunc,
 {
     AROS_USERFUNC_INIT
 
-    FreeMem(buffer, length);
+    /*
+     * Most segments are pool-allocated and belong to a MemHeader, so they go
+     * back through FreeMem(). On W^X hosts (e.g. Apple Silicon) executable
+     * seglists - those built by CreateSegList(), and code hunks that must be
+     * executable - are allocated as dedicated host pages via KrnAllocPages(),
+     * which live outside every MemHeader. FreeMem() can't account for those
+     * (it would fault looking for a MemHeader), so return them with
+     * KrnFreePages() instead. TypeOfMem() == 0 distinguishes the two.
+     */
+    if (TypeOfMem(buffer))
+    {
+        FreeMem(buffer, length);
+    }
+    else
+    {
+        struct KernelBase *KernelBase = OpenResource("kernel.resource");
+
+        if (KernelBase)
+            KrnFreePages(buffer, length);
+        else
+            FreeMem(buffer, length);    /* best effort, shouldn't happen */
+    }
 
     AROS_USERFUNC_EXIT
 }

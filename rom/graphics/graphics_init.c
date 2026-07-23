@@ -105,6 +105,12 @@ static int GfxInit(struct GfxBase *LIBBASE)
 
     D(bug("[graphics.library] %s: Gfx HW Root @ 0x%p\n", __func__, PrivGBase(GfxBase)->GfxRoot));
 
+    if (!PrivGBase(GfxBase)->GfxRoot)
+    {
+        bug("[graphics.library] %s: failed to create %s root\n", __func__, CLID_HW_Gfx);
+        return FALSE;
+    }
+
     D(bug("[graphics.library] %s: Initialise driver...\n", __func__));
 
     return driver_init(LIBBASE);

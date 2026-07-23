@@ -26,11 +26,22 @@
 #define INODE64_SUFFIX "$INODE64"
 #endif
 
+#elif defined(HOST_OS_darwin)
+
+/*
+ * Modern macOS (10.6+, and all of Apple Silicon) provides only 64-bit inodes:
+ * stat() is already the 64-bit-inode version, and asking for the legacy 32-bit
+ * inode_t via _DARWIN_NO_64_BIT_INODE is a hard compile error
+ * (__DARWIN_ONLY_64_BIT_INO_T). Use the native definitions; INODE64_SUFFIX stays
+ * empty so the plain "stat" symbol (the 64-bit one) is used.
+ */
+
 #else
 
 /*
- * Use 32-bit inode_t on Darwin. Otherwise we are expected to use "stat$INODE64"
- * instead of "stat" function which is available only on MacOS 10.6.
+ * Use 32-bit inode_t on legacy Darwin. Otherwise we are expected to use
+ * "stat$INODE64" instead of "stat", available only on MacOS 10.6. (No-op on
+ * Linux, where the macro is unknown.)
  */
 #define _DARWIN_NO_64_BIT_INODE
 #endif
