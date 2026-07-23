@@ -368,12 +368,12 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR LIBBASE, struct Gadget *gadg
                     sunit++;
                 }
 
-                NewRawDoFmt("%s%6s: %s [%08lx]%5d%c %4d %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
+                NewRawDoFmt("%s%6s: %s [%08lx]%5lu%c %4d %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
                     (LIBBASE->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
                     AROS_BSTR_ADDR(dn->dn_Name),
                     dostype,
                     de->de_DosType,
-                    size,
+                    (ULONG)size,
                     (*sunit),
                     bn->bn_Node.ln_Pri,
                     AROS_BSTR_ADDR(fssm->fssm_Device),
