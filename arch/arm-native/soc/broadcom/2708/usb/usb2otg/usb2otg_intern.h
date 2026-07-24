@@ -114,7 +114,7 @@ static inline void wr8be(IPTR iobase, UBYTE value) {
 static inline BOOL usb2otg_wait_ahb_idle(int timeout, const char *where)
 {
     while (!(rd32le(USB2OTG_RESET) & USB2OTG_RESET_AHBIDLE) && --timeout > 0)
-        asm volatile("mov r0, r0\n");
+        asm volatile("yield\n");
     if (timeout <= 0)
     {
         bug("[USB2OTG] AHB IDLE wait timed out (%s)\n", where);
@@ -128,7 +128,7 @@ static inline BOOL usb2otg_wait_reset_bit_clear(ULONG bit, int timeout,
     const char *what)
 {
     while ((rd32le(USB2OTG_RESET) & bit) && --timeout > 0)
-        asm volatile("mov r0, r0\n");
+        asm volatile("yield\n");
     if (timeout <= 0)
     {
         bug("[USB2OTG] %s timed out\n", what);

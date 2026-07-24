@@ -63,7 +63,7 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
             {
                 volatile int i;
                 for (i = 0; i < 100000; i++)
-                    asm volatile("mov r0, r0\n");
+                    asm volatile("yield\n");
             }
 
             /*
@@ -86,7 +86,7 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
             {
                 volatile int i;
                 for (i = 0; i < 30000000; i++)
-                    asm volatile("mov r0, r0\n");
+                    asm volatile("yield\n");
             }
 
             /* Step 4: Configure HOSTCFG (FSLSPCLKSEL) after core reset. */
@@ -206,7 +206,7 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                     {
                         int timeout = 100000;
                         while ((rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE) && --timeout > 0)
-                            asm volatile("mov r0, r0\n");
+                            asm volatile("yield\n");
                         if (timeout == 0)
                             bug("[USB2OTG] Init: Channel #%d halt timed out!\n", chan);
                     }

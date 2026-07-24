@@ -242,7 +242,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     wr32le(USB2OTG_USB, otg_RegVal);
                                     D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
                                     wr32le(USB2OTG_RESET, USB2OTG_RESET_CORESOFT);
-                                    for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
+                                    for (ns = 0; ns < 10000; ns++) { asm volatile("yield\n"); } // Wait 10ms
                                     if ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_CORESOFT) != 0)
                                         bug("[USB2OTG] %s: Reset Timed-Out!\n", __PRETTY_FUNCTION__);
 
