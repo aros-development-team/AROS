@@ -14,10 +14,10 @@ OPTIMIZATION_CFLAGS := -O2
 
 ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 
-#MM- distfiles-raspi-aarch64 : distfiles-raspi-aarch64-le
-#MM- distfiles-raspi-aarch64-quick : distfiles-raspi-aarch64-le
+#MM- distfiles-raspi-aarch64 : distfiles-raspi-aarch64le
+#MM- distfiles-raspi-aarch64-quick : distfiles-raspi-aarch64le
 
-#MM distfiles-raspi-aarch64-le : \
+#MM distfiles-raspi-aarch64le : \
 #MM kernel-raspi-aarch64 \
 #MM kernel-package-raspi-aarch64 \
 #MM distfiles-raspi-aarch64-fw
@@ -158,10 +158,10 @@ distfiles-raspi-aarch64-fw:
 	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(file))" -O "$(addprefix $(AROSDIR)/, $(file))"))
 
 #MM
-distfiles-raspi-aarch64-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+distfiles-raspi-aarch64le-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 #MM
-distfiles-raspi-aarch64-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+distfiles-raspi-aarch64le-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
 	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\ndtoverlay=disable-bt\ndtoverlay=sdhost\nenable_uart=1\narm_64bit=1\n" > $@
@@ -177,7 +177,7 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 	@cd $(TARGETDIR) && $(TARGET_OBJCOPY) -I binary -O elf64-littleaarch64 -B aarch64 core.bin $@
 
 #MM
-distfiles-raspi-aarch64-le : $(AROSDIR)/aros-aarch64-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
+distfiles-raspi-aarch64le : $(AROSDIR)/aros-aarch64-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
 	@$(ECHO) Copying RasPi AArch64 distfiles...
 	@$(CP) -R $(AROSDIR) $(DISTDIR)/
 
