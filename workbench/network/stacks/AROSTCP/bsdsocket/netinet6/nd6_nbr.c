@@ -158,7 +158,8 @@ nd6_ns_output(struct ifnet *ifp, struct in6_addr *src,
     im6o.im6o_multicast_hlim = 255;
 
     nd6stat.nd6s_snd_ns++;
-    ip6_output(m, NULL, NULL, 0, &im6o, NULL, NULL);
+    ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0, &im6o,
+               (struct ifnet **)NULL, (struct inpcb *)NULL);
 }
 
 /* ------------------------------------------------------------------
@@ -360,7 +361,8 @@ nd6_na_output(struct ifnet *ifp, struct in6_addr *dst,
     im6o.im6o_multicast_hlim = 255;
 
     nd6stat.nd6s_snd_na++;
-    ip6_output(m, NULL, NULL, 0, &im6o, NULL, NULL);
+    ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0, &im6o,
+               (struct ifnet **)NULL, (struct inpcb *)NULL);
 }
 
 /* ------------------------------------------------------------------

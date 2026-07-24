@@ -608,7 +608,8 @@ nd6_rs_output(struct ifnet *ifp)
     im6o.im6o_multicast_hlim = 255;
 
     nd6stat.nd6s_snd_rs++;
-    ip6_output(m, NULL, NULL, 0, &im6o, NULL, NULL);
+    ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0, &im6o,
+               (struct ifnet **)NULL, (struct inpcb *)NULL);
 }
 
 /* ==================================================================

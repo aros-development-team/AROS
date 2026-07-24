@@ -402,9 +402,10 @@ syncache_respond(struct syncache *sc)
     ((struct ip *)ti)->ip_ttl = sc->sc_ip_ttl ? sc->sc_ip_ttl : ip_defttl;
 
 #ifdef ENABLE_MULTICAST
-    (void) ip_output(m, NULL, NULL, 0, NULL);
+    (void) ip_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+                     (struct ip_moptions *)NULL);
 #else
-    (void) ip_output(m, NULL, NULL, 0);
+    (void) ip_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0);
 #endif
     return (0);
 }

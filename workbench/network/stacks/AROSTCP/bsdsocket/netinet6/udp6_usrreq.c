@@ -201,7 +201,8 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     if(uh->uh_sum == 0)
         uh->uh_sum = 0xffff; /* RFC 2460: UDP6 checksum must not be zero */
 
-    error = ip6_output(m, NULL, NULL, 0, inp->in6p_moptions, NULL, inp);
+    error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+                       inp->in6p_moptions, (struct ifnet **)NULL, inp);
 
     if(addr_m) {
         in6_pcbdisconnect(inp);

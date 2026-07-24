@@ -386,7 +386,8 @@ mld6_sendpkt(struct in6_multi *in6m, int type, const struct in6_addr *dst)
 	im6o.im6o_multicast_ifp  = ifp;
 	im6o.im6o_multicast_hlim = 1;		/* MLD requires hop limit = 1 */
 
-	ip6_output(m, NULL, NULL, 0, &im6o, NULL, NULL);
+	ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0, &im6o,
+	           (struct ifnet **)NULL, (struct inpcb *)NULL);
 }
 
 /* ------------------------------------------------------------------

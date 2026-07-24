@@ -529,9 +529,9 @@ struct in6_addr *laddr6, *faddr6;
         tcp_trace(TA_OUTPUT, 0, tp, ti, 0);
 #endif
 #ifdef ENABLE_MULTICAST
-    (void) ip_output(m, NULL, ro, 0, NULL);
+    (void) ip_output(m, (struct mbuf *)NULL, ro, 0, (struct ip_moptions *)NULL);
 #else
-    (void) ip_output(m, NULL, ro, 0);
+    (void) ip_output(m, (struct mbuf *)NULL, ro, 0);
 #endif
 }
 

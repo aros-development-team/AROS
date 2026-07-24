@@ -356,7 +356,9 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
 
     icmp6stat.icp6s_outhist[type]++;
 
-    ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
+    ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+               (struct ip6_moptions *)NULL, (struct ifnet **)NULL,
+               (struct inpcb *)NULL);
 }
 
 /* ------------------------------------------------------------------
@@ -393,7 +395,9 @@ icmp6_reflect(struct mbuf *m, size_t off)
                                         off, m->m_pkthdr.len - off);
     }
 
-    ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
+    ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+               (struct ip6_moptions *)NULL, (struct ifnet **)NULL,
+               (struct inpcb *)NULL);
 }
 
 /* ------------------------------------------------------------------
@@ -518,7 +522,9 @@ rip6_output(void *args, ...)
                                        sizeof(struct ip6_hdr), icmp6len);
     }
 
-    return ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
+    return ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+                      (struct ip6_moptions *)NULL, (struct ifnet **)NULL,
+                      (struct inpcb *)NULL);
 }
 
 int
