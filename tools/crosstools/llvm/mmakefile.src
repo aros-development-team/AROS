@@ -342,6 +342,7 @@ LLVM_LIBUNWIND_CMAKEOPTIONS :=                                                  
 LLVM_COMPILER_RT_CMAKEBASE :=                                                                                                           \
   $(LLVM_CONFIG_OPT)                                                                                                                    \
   -DCMAKE_SYSTEM_NAME=Generic                                                                                                           \
+  -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY                                                                                        \
   -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
