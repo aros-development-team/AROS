@@ -69,6 +69,15 @@
   ap.__ap = args;
 #endif
 
+#ifdef __aarch64__
+#define va_set(ap, args)	\
+  ap.__stack = args;		\
+  ap.__gr_top = args;		\
+  ap.__vr_top = args;		\
+  ap.__gr_offs = 0;		\
+  ap.__vr_offs = 0;
+#endif
+
 #ifndef va_set
 #define va_set(ap, args)	\
   ap = (va_list)args;
