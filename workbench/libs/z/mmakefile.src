@@ -85,6 +85,18 @@ LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_READ_64LE
 LIBZ_CPPFLAGS +=-DDEFLATE_CHUNK_WRITE_64LE
 LIBZ_CPPFLAGS +=-DCRC32_ARMV8_CRC32
 LIBZ_CPPFLAGS +=-DDEFLATE_SLIDE_HASH_NEON
+# Force-enable the ARMv8 CRC path: AROS has no getauxval for runtime
+# detection. ARMV8_OS_MACOS hardcodes arm_cpu_enable_crc32=1 and avoids the
+# getauxval/pthread machinery. Note: it also sets arm_cpu_enable_pmull=1, but
+# Pi3/Pi4 (Cortex-A53/A72) implement CRC32 without the ARMv8 crypto extension,
+# so PMULL is an undefined instruction there; zlib-aros.diff forces
+# arm_cpu_enable_pmull=0 under __AROS__ so the PMULL crc path is never taken.
+LIBZ_CPPFLAGS +=-DARMV8_OS_MACOS
+# clang 11's AArch64 backend ignores crc32_simd.c's per-function
+# __attribute__((target("arch=armv8-a+aes+crc"))), so the crc32 intrinsics
+# can't be selected. Give the whole TU the features via -march instead. The
+# PMULL code in crc32_512_simd.c still compiles (harmless; never executed).
+LIBZ_CPPFLAGS +=-march=armv8-a+crc+crypto
 FILES += \
         adler32_simd \
         contrib/optimizations/inffast_chunk \
