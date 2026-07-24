@@ -324,6 +324,95 @@ static int __attribute__ ((noinline)) load_hunk
     return 0;
 }
 
+#ifdef __aarch64__
+/*
+ * Minimal GOT for dynamically loaded modules: ADR_GOT_PAGE/LD64_GOT_LO12_NC
+ * need a GOT entry holding the symbol address. Entries live in hunk-backed
+ * blocks linked into the seglist so UnLoadSeg frees them; blocks chain when
+ * full, so there is no cap on distinct symbols. AArch64 has no arena (that is
+ * x86_64-only), so each block is an individual ilsAllocMem hunk, matching how
+ * load_hunk allocates the section hunks.
+ *
+ * The chain is owned by one relocate() call, ie. it is per relocation section
+ * rather than per module. In practice a module has GOT relocations in a single
+ * section, so this costs nothing; a symbol referenced from two sections just
+ * gets an entry in each.
+ */
+#define AARCH64_DYN_GOT_BLOCKENTRIES 64
+
+struct aarch64_got_block
+{
+    struct aarch64_got_block *next;
+    IPTR  count;
+    IPTR  entries[AARCH64_DYN_GOT_BLOCKENTRIES];
+};
+
+/*
+ * Return the GOT entry for sym_addr, allocating it (and a block if needed) on
+ * demand; NULL with IoErr set on failure. Relocs are unordered, so the ADRP
+ * and LDR of a pair share one entry via this lookup.
+ */
+static IPTR *aarch64_got_entry
+(
+    struct aarch64_got_block **got_head,
+    IPTR sym_addr,
+    SIPTR *funcarray,       /* needed by the ilsAllocMem macro */
+    BPTR **next_hunk_ptr,
+    struct DosLibrary *DOSBase
+)
+{
+    struct aarch64_got_block *blk, *last = NULL;
+
+    for (blk = *got_head; blk; blk = blk->next)
+    {
+        IPTR gi;
+        for (gi = 0; gi < blk->count; gi++)
+        {
+            if (blk->entries[gi] == sym_addr)
+                return &blk->entries[gi];
+        }
+        last = blk;
+    }
+
+    if (!last || last->count >= AARCH64_DYN_GOT_BLOCKENTRIES)
+    {
+        struct hunk *got_hunk;
+        struct aarch64_got_block *newblk;
+        /* + 8 lets us 8-byte align the block inside the hunk: the
+         * LD64_GOT_LO12_NC scaling (>>3) needs 8-byte entries. */
+        ULONG got_size = sizeof(struct hunk)
+                       + sizeof(struct aarch64_got_block) + 8;
+
+        got_hunk = ilsAllocMem(got_size, MEMF_PUBLIC | MEMF_CLEAR);
+        if (!got_hunk)
+        {
+            bug("[ELF Loader] Failed to allocate GOT block\n");
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return NULL;
+        }
+        got_hunk->next = 0;
+        got_hunk->size = got_size;
+
+        /* Link onto the end of the seglist chain via the shared pointer. */
+        BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(got_hunk);
+        *next_hunk_ptr = (APTR)((IPTR)got_hunk + offsetof(struct hunk, next));
+
+        newblk = (struct aarch64_got_block *)AROS_ROUNDUP2((IPTR)got_hunk->data, 8);
+        newblk->next = NULL;
+        newblk->count = 0;
+
+        if (last)
+            last->next = newblk;
+        else
+            *got_head = newblk;
+        last = newblk;
+    }
+
+    last->entries[last->count] = sym_addr;
+    return &last->entries[last->count++];
+}
+#endif /* __aarch64__ */
+
 static int relocate
 (
     struct elfheader  *eh,
@@ -331,6 +420,8 @@ static int relocate
     ULONG              shrel_idx,
     struct sheader    *symtab_shndx,
     BOOL              *reloc_out_of_range,
+    SIPTR             *funcarray,
+    BPTR             **next_hunk_ptr,
     struct DosLibrary *DOSBase
 )
 {
@@ -358,6 +449,10 @@ static int relocate
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG entsize = shrel->entsize;
     ULONG i;
+#ifdef __aarch64__
+    /* Chain of dynamically allocated GOT blocks, see aarch64_got_entry() */
+    struct aarch64_got_block *aarch64_got = NULL;
+#endif
 #if defined(__i386__) || defined(__x86_64__)
     IPTR got_base = 0;
 
@@ -886,6 +981,104 @@ static int relocate
                 break;
             }
 
+            /* --- relocations needed by GOT-based / large-model code --- */
+
+            /* ADRP without overflow check (companion of ADR_PREL_PG_HI21) */
+            case R_AARCH64_ADR_PREL_PG_HI21_NC:
+            {
+                IPTR x = (((s + rel->addend) & ~(IPTR)0xfff) - ((IPTR)p & ~(IPTR)0xfff)) >> 12;
+                *p = (*p & 0x9f00001fu) | ((x & 0x3) << 29) | (((x >> 2) & 0x7ffff) << 5);
+                break;
+            }
+
+            case R_AARCH64_ADR_PREL_LO21: /* S + A - P, bits [20:0] */
+            {
+                QUAD val = (QUAD)s + (QUAD)rel->addend - (QUAD)(IPTR)p;
+                if (val < -(1LL << 20) || val >= (1LL << 20)) {
+                    bug("[ELF Loader] ADR_PREL_LO21 overflow\n");
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                ULONG imm = (ULONG)val & 0x1FFFFFU;
+                *p = (*p & 0x9F00001Fu) | ((imm & 0x3u) << 29) | (((imm >> 2) & 0x7FFFFu) << 5);
+            }
+            break;
+
+            case R_AARCH64_LD_PREL_LO19: /* S + A - P, bits [20:2] */
+            {
+                QUAD val = (QUAD)s + (QUAD)rel->addend - (QUAD)(IPTR)p;
+                /* The literal must be word aligned, the low 2 bits are not
+                 * encoded and would be dropped silently. */
+                if (val & 3) {
+                    bug("[ELF Loader] LD_PREL_LO19 target misaligned\n");
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                if (val < -(1LL << 20) || val >= (1LL << 20)) {
+                    bug("[ELF Loader] LD_PREL_LO19 overflow\n");
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                *p = (*p & ~(0x7FFFFu << 5)) | ((((ULONG)(val >> 2)) & 0x7FFFFu) << 5);
+            }
+            break;
+
+            case R_AARCH64_CONDBR19: /* S + A - P, bits [20:2] */
+            {
+                QUAD offset = (QUAD)s + (QUAD)rel->addend - (QUAD)(IPTR)p;
+                if (offset < -(1LL << 20) || offset >= (1LL << 20)) {
+                    bug("[ELF Loader] CONDBR19 overflow\n");
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                *p = (*p & ~(0x7FFFFUL << 5)) | ((((ULONG)(offset >> 2)) & 0x7FFFFUL) << 5);
+            }
+            break;
+
+            case R_AARCH64_TSTBR14: /* S + A - P, bits [15:2] */
+            {
+                QUAD offset = (QUAD)s + (QUAD)rel->addend - (QUAD)(IPTR)p;
+                if (offset < -(1LL << 15) || offset >= (1LL << 15)) {
+                    bug("[ELF Loader] TSTBR14 overflow\n");
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                *p = (*p & ~(0x3FFFu << 5)) | ((((ULONG)(offset >> 2)) & 0x3FFFu) << 5);
+            }
+            break;
+
+            case R_AARCH64_ADR_GOT_PAGE: /* Page(&GOT[n]) - Page(P), ADRP */
+            {
+                IPTR *got_entry = aarch64_got_entry(&aarch64_got, s + rel->addend,
+                                                    funcarray, next_hunk_ptr, DOSBase);
+                if (!got_entry)
+                    return 0;   /* IoErr already set */
+
+                /* ADRP page offset to the GOT entry; +/-4GB reach (never
+                 * trips on <4GB systems, but keep the check symmetric). */
+                QUAD val = (QUAD)((IPTR)got_entry & ~0xFFFULL) - (QUAD)((IPTR)p & ~0xFFFULL);
+                if (val < -(1LL << 32) || val >= (1LL << 32)) {
+                    bug("[ELF Loader] ADR_GOT_PAGE overflow\n");
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                ULONG imm = (ULONG)(val >> 12) & 0x1FFFFFU;
+                *p = (*p & 0x9F00001Fu) | ((imm & 0x3u) << 29) | (((imm >> 2) & 0x7FFFFu) << 5);
+            }
+            break;
+
+            case R_AARCH64_LD64_GOT_LO12_NC: /* &GOT[n] page offset, LDR scaled by 8 */
+            {
+                IPTR *got_entry = aarch64_got_entry(&aarch64_got, s + rel->addend,
+                                                    funcarray, next_hunk_ptr, DOSBase);
+                if (!got_entry)
+                    return 0;   /* IoErr already set */
+
+                ULONG imm12 = ((ULONG)(IPTR)got_entry & 0xFFFu) >> 3;
+                *p = (*p & ~(0xFFFu << 10)) | (imm12 << 10);
+            }
+            break;
+
             case R_AARCH64_NONE:
                 break;
             #elif defined(__riscv)
@@ -1347,7 +1540,7 @@ static BPTR load_seg_elf_int
         if ((sh[i].type == SHT_REL || sh[i].type == SHT_RELA) && sh[sh[i].info].addr)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, &srb, DOSBase);
-            if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, reloc_out_of_range, DOSBase))
+            if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, reloc_out_of_range, funcarray, &next_hunk_ptr, DOSBase))
                 goto error;
 
             ilsFreeMem(sh[i].addr, sh[i].size);
