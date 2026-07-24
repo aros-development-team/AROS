@@ -20,6 +20,7 @@
 static inline void neon_copyline(UBYTE *dst, const UBYTE *src, ULONG bytes)
 {
     /* 64-byte bulk copy using NEON: vldm/vstm with 4 q-regs (d0-d7) */
+#if defined(__arm__)
     while (bytes >= 64)
     {
         asm volatile(
@@ -32,7 +33,8 @@ static inline void neon_copyline(UBYTE *dst, const UBYTE *src, ULONG bytes)
         );
         bytes -= 64;
     }
-    /* Tail: word-at-a-time */
+#endif
+    /* Tail (and full copy on non-ARM): word-at-a-time */
     while (bytes >= 4)
     {
         *(ULONG *)dst = *(const ULONG *)src;
@@ -51,6 +53,7 @@ static inline void neon_copyline_rev(UBYTE *dst, const UBYTE *src, ULONG bytes)
 {
     dst += bytes;
     src += bytes;
+#if defined(__arm__)
     while (bytes >= 64)
     {
         src -= 64;
@@ -64,6 +67,7 @@ static inline void neon_copyline_rev(UBYTE *dst, const UBYTE *src, ULONG bytes)
             : "d0","d1","d2","d3","d4","d5","d6","d7","memory"
         );
     }
+#endif
     while (bytes >= 4)
     {
         src -= 4;
@@ -85,6 +89,7 @@ static inline void neon_copyline_rev(UBYTE *dst, const UBYTE *src, ULONG bytes)
 static inline void neon_blit_mask32_row_opaque(UBYTE *dst,
     const ULONG *mask, ULONG width, ULONG fg, ULONG bg)
 {
+#if defined(__arm__)
     ULONG quads = width >> 2;
     if (quads)
     {
@@ -105,6 +110,8 @@ static inline void neon_blit_mask32_row_opaque(UBYTE *dst,
         );
     }
     width &= 3;
+#endif
+    /* Tail (and full row on non-ARM): one pixel at a time */
     while (width--)
     {
         *(ULONG *)dst = (*mask++ != 0) ? fg : bg;
@@ -114,6 +121,7 @@ static inline void neon_blit_mask32_row_opaque(UBYTE *dst,
 
 static inline void neon_fillline(UBYTE *dst, ULONG fill_val, ULONG bytes)
 {
+#if defined(__arm__)
     asm volatile(
         NEON_PREFIX
         "vdup.32 d0, %[val]\n\t"
@@ -137,6 +145,8 @@ static inline void neon_fillline(UBYTE *dst, ULONG fill_val, ULONG bytes)
         );
         bytes -= 64;
     }
+#endif
+    /* Tail (and full fill on non-ARM): word-at-a-time */
     while (bytes >= 4)
     {
         *(ULONG *)dst = fill_val;

@@ -255,7 +255,7 @@ AROS_LH2(int, DMAWaitChannel,
         (dsig = AllocSignal(-1)) >= 0)
     {
         DMABase->dma_Wait[channel].sig = dsig;
-        __asm__ __volatile__("dmb" ::: "memory");
+        __asm__ __volatile__("dmb sy" ::: "memory");
         DMABase->dma_Wait[channel].waiter = FindTask(NULL);
 
         /* One reusable timer signal for the whole wait — the safety
@@ -321,7 +321,7 @@ AROS_LH2(int, DMAWaitChannel,
         /* Stop the IRQ handler from signalling a bit we're about to free */
         Disable();
         DMABase->dma_Wait[channel].waiter = NULL;
-        __asm__ __volatile__("dmb" ::: "memory");
+        __asm__ __volatile__("dmb sy" ::: "memory");
         if (tsig >= 0)
             FreeSignal(tsig);
         FreeSignal(dsig);

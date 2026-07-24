@@ -29,7 +29,7 @@
 extern APTR KernelBase;
 APTR DMABase = NULL;
 
-static inline void vc4_dsb(void) { asm volatile("dsb" ::: "memory"); }
+static inline void vc4_dsb(void) { asm volatile("dsb sy" ::: "memory"); }
 
 /* BCM system timer ticks at 1 MHz. */
 static inline ULONG vc4_now_us(void)

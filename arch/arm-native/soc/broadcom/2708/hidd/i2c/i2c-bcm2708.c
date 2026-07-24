@@ -22,7 +22,7 @@ void METHOD(I2CBCM2708, Hidd_I2C, PutByte)
 {
     while (!(rd32le(BSC0_STATUS) & BSC_STATUS_DONE))
     {
-        asm volatile ("mov r2,r2\n");
+        asm volatile ("yield\n");
     }
 
     wr32le(BSC0_DATALEN, 1);
@@ -36,7 +36,7 @@ void METHOD(I2CBCM2708, Hidd_I2C, GetByte)
 {
     while (!(rd32le(BSC0_STATUS) & BSC_STATUS_DONE))
     {
-        asm volatile ("mov r2,r2\n");
+        asm volatile ("yield\n");
     }
 
     wr32le(BSC0_DATALEN, 1);

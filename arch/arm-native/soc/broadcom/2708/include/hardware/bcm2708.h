@@ -158,6 +158,7 @@
 #define ARMIRQ_PEND                                     (IRQ_BASE + 0x00)
 #define GPUIRQ_PEND0                                    (IRQ_BASE + 0x04)               // Pending IRQs
 #define GPUIRQ_PEND1                                    (IRQ_BASE + 0x08)
+#define ARMFIQ_CTRL                                     (IRQ_BASE + 0x0C)               // FIQ source select/enable
 #define GPUIRQ_ENBL0                                    (IRQ_BASE + 0x10)               // IRQ enable bits
 #define GPUIRQ_ENBL1                                    (IRQ_BASE + 0x14)
 #define ARMIRQ_ENBL                                     (IRQ_BASE + 0x18)

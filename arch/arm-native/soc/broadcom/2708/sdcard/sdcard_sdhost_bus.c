@@ -57,7 +57,7 @@ ULONG FNAME_SDCBUS(GetClockDiv)(ULONG speed, struct sdcard_Bus *bus)
     return 0;
 }
 
-static inline void sdhost_dsb(void) { asm volatile("dsb" ::: "memory"); }
+static inline void sdhost_dsb(void) { asm volatile("dsb sy" ::: "memory"); }
 
 /* Translate a virtual address to its bus-addressable form for the DMA
  * engine.  On Pi 3 the kernel identity-maps low memory and adds an
@@ -75,6 +75,7 @@ static inline ULONG sdhost_bus_addr(struct sdcard_Bus *bus, APTR virt)
  * alignment vldm/vstm strictly require. */
 static inline void sdhost_neon_copy(void *dst, const void *src, ULONG bytes)
 {
+#if defined(__arm__)
     ULONG chunks = bytes >> 6;          /* 64-byte chunks */
     ULONG tail   = (bytes & 0x3f) >> 2; /* trailing whole words */
     ULONG *wsrc, *wdst;
@@ -96,6 +97,14 @@ static inline void sdhost_neon_copy(void *dst, const void *src, ULONG bytes)
     wdst = (ULONG *)dst;
     while (tail--)
         *wdst++ = *wsrc++;
+#else
+    /* Non-ARM: plain word copy (clang auto-vectorises). Covers bytes
+     * rounded down to a whole word, matching the ARM path. */
+    ULONG *wsrc = (ULONG *)src, *wdst = (ULONG *)dst;
+    ULONG words = bytes >> 2;
+    while (words--)
+        *wdst++ = *wsrc++;
+#endif
 }
 
 /* ---------------------------------------------------------------------- */
