@@ -14,25 +14,23 @@ OPTIMIZATION_CFLAGS := -O2
 
 ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 
-#MM- distfiles-raspi-armhf : distfiles-raspi
-#MM- distfiles-raspi-arm : distfiles-raspi
-#MM- distfiles-raspi-armeb : distfiles-raspi-be
+#MM- distfiles-raspi-armhf : distfiles-raspi-armle
+#MM- distfiles-raspi-arm : distfiles-raspi-armle
+#MM- distfiles-raspi-armeb : distfiles-raspi-armbe
 
-#MM- distfiles-raspi-armhf-quick : distfiles-raspi
-#MM- distfiles-raspi-arm-quick : distfiles-raspi
-#MM- distfiles-raspi-armeb-quick : distfiles-raspi-be
-
-#MM- distfiles-raspi-quick : distfiles-raspi
+#MM- distfiles-raspi-armhf-quick : distfiles-raspi-armle
+#MM- distfiles-raspi-arm-quick : distfiles-raspi-armle
+#MM- distfiles-raspi-armeb-quick : distfiles-raspi-armbe
 
 
-#MM distfiles-raspi : \
+#MM distfiles-raspi-armle : \
 #MM kernel-raspi-arm \
 #MM kernel-package-raspi-arm \
 #MM workbench-devs-networks-bwfm \
 #MM distfiles-raspi-fw \
 #MM distfiles-raspi-wifi-fw
 
-#MM distfiles-raspi-be : \
+#MM distfiles-raspi-armbe : \
 #MM kernel-raspi-arm \
 #MM kernel-package-raspi-arm \
 #MM workbench-devs-networks-bwfm \
@@ -191,16 +189,16 @@ distfiles-raspi-wifi-fw:
 	done
 
 #MM
-distfiles-raspi-be-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+distfiles-raspi-armbe-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 #MM
-distfiles-raspi-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+distfiles-raspi-armle-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 #MM
-distfiles-raspi-be-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+distfiles-raspi-armbe-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 #MM
-distfiles-raspi-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+distfiles-raspi-armle-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
 	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x10000\ninitramfs $(ARM_BSP) 0x00800000\ndtoverlay=disable-bt\ndtoverlay=sdhost\narm_64bit=0\nhdmi_drive=2\n" > $@
@@ -227,12 +225,12 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 	@cd $(TARGETDIR) && $(TARGET_OBJCOPY) -I binary -O elf32-littlearm -B arm core.bin $@
 
 #MM
-distfiles-raspi-be : $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
+distfiles-raspi-armbe : $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
 	@$(ECHO) Copying RasPi-BE distfiles...
 	@$(CP) -R $(AROSDIR) $(DISTDIR)/
 
 #MM
-distfiles-raspi : $(AROSDIR)/aros-arm-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
+distfiles-raspi-armle : $(AROSDIR)/aros-arm-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
 	@$(ECHO) Copying RasPi distfiles...
 	@$(CP) -R $(AROSDIR) $(DISTDIR)/
 
