@@ -23,6 +23,19 @@ diff -ruN zlib/adler32_simd.c zlib.aros/adler32_simd.c
 diff -ruN zlib/cpu_features.c zlib.aros/cpu_features.c
 --- zlib/cpu_features.c	2025-07-31 17:05:57.714000000 +0000
 +++ zlib.aros/cpu_features.c	2025-09-18 12:12:01.548914796 +0000
+@@ -23,7 +23,11 @@
+  * runtime detection.
+  */
+ int ZLIB_INTERNAL arm_cpu_enable_crc32 = 1;
+-int ZLIB_INTERNAL arm_cpu_enable_pmull = 1;
++#if defined(__AROS__)
++int ZLIB_INTERNAL arm_cpu_enable_pmull = 0; /* Pi3/Pi4 (Cortex-A53/A72) lack the ARMv8 crypto ext (PMULL) */
++#else
++int ZLIB_INTERNAL arm_cpu_enable_pmull = 1;
++#endif
+ #else
+ int ZLIB_INTERNAL arm_cpu_enable_crc32 = 0;
+ int ZLIB_INTERNAL arm_cpu_enable_pmull = 0;
 @@ -80,7 +80,11 @@
  void ZLIB_INTERNAL cpu_check_features(void)
  {

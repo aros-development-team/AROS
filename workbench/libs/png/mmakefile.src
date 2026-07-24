@@ -45,14 +45,12 @@ FILES += \
 	intel/filter_sse2_intrinsics
 endif
 
-## Add for ARM at a later date ...
-#USER_CPPFLAGS += -DPNG_ARM_NEON
-#FILES += \
-#	arm/arm_init \
-#	arm/filter_neon_intrinsics \
-#	arm/palette_neon_intrinsics
-#AFILES += \
-#	arm/filter_neon
+ifeq ($(AROS_TARGET_CPU),aarch64)
+FILES += \
+	arm/arm_init \
+	arm/filter_neon_intrinsics \
+	arm/palette_neon_intrinsics
+endif
 
 # Clang auto-defines __ARM_NEON for armv7-a+fp even with -mfpu=vfpv3-d16,
 # which makes pngpriv.h enable PNG_ARM_NEON_OPT=2 and reference the
