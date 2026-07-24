@@ -316,9 +316,24 @@ void query_memory()
 
         if (p != NULL && p->op_length)
         {
-            uint32_t *addr = p->op_value;
-            uint32_t lower = AROS_BE2LONG(*addr++);
-            uint32_t upper = AROS_BE2LONG(*addr++);
+            /* The number of 32-bit cells making up an address and a size is
+               taken from the root node. The Pi 4 (BCM2711) uses 2 address
+               cells (addresses exceed 32 bits), unlike the Pi 2/3. */
+            of_node_t *rootn = dt_find_node("/");
+            of_property_t *acp = dt_find_property(rootn, "#address-cells");
+            of_property_t *scp = dt_find_property(rootn, "#size-cells");
+            uint32_t ac = acp ? AROS_BE2LONG(*(uint32_t *)acp->op_value) : 1;
+            uint32_t sc = scp ? AROS_BE2LONG(*(uint32_t *)scp->op_value) : 1;
+            volatile uint32_t *addr = p->op_value;
+            uint64_t base = 0, size = 0;
+
+            for (uint32_t i = 0; i < ac; i++)
+                base = (base << 32) | AROS_BE2LONG(*addr++);
+            for (uint32_t i = 0; i < sc; i++)
+                size = (size << 32) | AROS_BE2LONG(*addr++);
+
+            uint32_t lower = (uint32_t)base;
+            uint32_t upper = (uint32_t)(base + size);
 
             kprintf("[BOOT] System memory range: %08x-%08x\n", lower, upper-1);
 
@@ -376,17 +391,34 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
         if (p == NULL)
             while(1) asm volatile("wfe");
 
-        uint32_t *ranges = p->op_value;
-        int32_t len = p->op_length;
+        /* Each ranges entry is <child-address, parent-address, size>. The
+           child and size widths come from /soc, the parent width from the
+           root. On the Pi 4 the root uses 2 address cells (the peripheral
+           window sits above 4 GB in the bus map), so an entry is 4 cells
+           rather than the 3 of the Pi 2/3. Reading it with the wrong widths
+           mis-maps the MMIO window and serial dies the moment the MMU loads. */
+        of_node_t *rootn = dt_find_node("/");
+        of_property_t *cacp = dt_find_property(e, "#address-cells");
+        of_property_t *cscp = dt_find_property(e, "#size-cells");
+        of_property_t *pacp = dt_find_property(rootn, "#address-cells");
+        uint32_t child_ac = cacp ? AROS_BE2LONG(*(uint32_t *)cacp->op_value) : 1;
+        uint32_t child_sc = cscp ? AROS_BE2LONG(*(uint32_t *)cscp->op_value) : 1;
+        uint32_t parent_ac = pacp ? AROS_BE2LONG(*(uint32_t *)pacp->op_value) : 1;
+        uint32_t entry_cells = child_ac + parent_ac + child_sc;
 
-        while(len > 0)
+        volatile uint32_t *ranges = p->op_value;
+        int32_t cells = p->op_length / 4;
+
+        while (cells >= (int32_t)entry_cells)
         {
-            uint32_t addr_bus, addr_cpu;
-            uint32_t addr_len;
+            uint64_t addr_bus = 0, addr_cpu = 0, addr_len = 0;
 
-            addr_bus = AROS_BE2LONG(*ranges++);
-            addr_cpu = AROS_BE2LONG(*ranges++);
-            addr_len = AROS_BE2LONG(*ranges++);
+            for (uint32_t i = 0; i < child_ac; i++)
+                addr_bus = (addr_bus << 32) | AROS_BE2LONG(*ranges++);
+            for (uint32_t i = 0; i < parent_ac; i++)
+                addr_cpu = (addr_cpu << 32) | AROS_BE2LONG(*ranges++);
+            for (uint32_t i = 0; i < child_sc; i++)
+                addr_len = (addr_len << 32) | AROS_BE2LONG(*ranges++);
 
             (void)addr_bus;
 
@@ -400,7 +432,7 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
              * accesses on real hardware) */
             mmu_map_section(addr_cpu, addr_cpu, addr_len, 0, 0, 3, 0);
 
-            len -= 12;
+            cells -= entry_cells;
         }
     }
     else
@@ -567,17 +599,33 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
     e = dt_find_node("/chosen");
     if (e)
     {
+        /* linux,initrd-start/-end are sized like the root address cells: a
+           single 32-bit cell on the Pi 2/3, but 64-bit on the Pi 4. Read the
+           width the property actually carries. */
+        /* DT property values are only 32-bit aligned. A 64-bit cell must be
+           read as two big-endian words: the MMU is still off here, so memory
+           is Device-typed and a 64-bit load on a 4-byte boundary faults. The
+           volatile pointer stops the compiler folding the pair into one. */
+        uintptr_t initrd_start = 0, initrd_end = 0;
         of_property_t *p = dt_find_property(e, "linux,initrd-start");
         if (p)
-            pkg_image = (void*)(uintptr_t)AROS_BE2LONG((*((uint32_t *)p->op_value)));
-        else
-            pkg_image = NULL;
+        {
+            volatile uint32_t *v = p->op_value;
+            initrd_start = (p->op_length >= 8)
+                ? (((uintptr_t)AROS_BE2LONG(v[0]) << 32) | AROS_BE2LONG(v[1]))
+                : (uintptr_t)AROS_BE2LONG(v[0]);
+        }
+        pkg_image = (void *)initrd_start;
 
         p = dt_find_property(e, "linux,initrd-end");
         if (p)
-            pkg_size = AROS_BE2LONG(*((uint32_t *)p->op_value)) - (uintptr_t)pkg_image;
-        else
-            pkg_size = 0;
+        {
+            volatile uint32_t *v = p->op_value;
+            initrd_end = (p->op_length >= 8)
+                ? (((uintptr_t)AROS_BE2LONG(v[0]) << 32) | AROS_BE2LONG(v[1]))
+                : (uintptr_t)AROS_BE2LONG(v[0]);
+        }
+        pkg_size = initrd_end - initrd_start;
     }
 
     kprintf("[BOOT] BSP image: %08x-%08x\n", pkg_image, (uintptr_t)pkg_image + pkg_size - 1);
