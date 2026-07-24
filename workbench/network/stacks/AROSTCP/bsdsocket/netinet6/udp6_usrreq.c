@@ -246,6 +246,16 @@ udp6_input(void *args, ...)
     uh  = (struct udphdr *)((u_int8_t *)ip6 + off);
     len = ntohs(uh->uh_ulen);
 
+    /*
+     * Validate uh_ulen before using it as the checksum span: it must
+     * cover at least the UDP header and must not exceed the bytes
+     * actually present after the UDP header offset.
+     */
+    if(len < (int)sizeof(struct udphdr) || len > m->m_pkthdr.len - off) {
+        m_freem(m);
+        return;
+    }
+
     /* Verify UDP checksum (mandatory for UDP over IPv6, RFC 2460 §8.1) */
     if(uh->uh_sum == 0) {
         /* Zero checksum is not allowed for UDP6 — silently drop */

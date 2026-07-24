@@ -34,6 +34,16 @@ int controlaccess(struct in_addr shost, unsigned short dport)
 {
     int i;
 
+    /*
+     * NOTE: matching is intentionally first-match-wins. The ACF_CONTINUE
+     * flag is NOT honoured here as a "keep scanning" directive: addaccessent()
+     * sets ACF_CONTINUE on *every* access entry (it is used as a non-zero
+     * validity/sentinel bit so that the ai_flags == 0 terminator below marks
+     * the end of the table). Treating ACF_CONTINUE as "continue scanning"
+     * would cause every match to fall through to the default-allow below,
+     * which would silently disable all "deny" rules. Do not change this
+     * without also changing how the table sentinel is encoded.
+     */
     LOCK_R_NDB(NDB);
     for(i = 0; NDB->ndb_AccessTable[i].ai_flags; i++)
 #define AT NDB->ndb_AccessTable[i]

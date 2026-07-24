@@ -566,7 +566,17 @@ rip6_usrreq(struct socket *so, int req, struct mbuf *m,
             error = EAFNOSUPPORT;
             break;
         }
-        rp->rcb_laddr = mtod(nam, struct sockaddr *);
+        {
+            /* nam is caller-owned and freed after return, so keep our own copy */
+            struct mbuf *n6 = m_copym(nam, 0, M_COPYALL, M_WAITOK);
+            if(n6 == NULL) {
+                error = ENOBUFS;
+                break;
+            }
+            if(rp->rcb_laddr)
+                m_freem(dtom(rp->rcb_laddr));
+            rp->rcb_laddr = mtod(n6, struct sockaddr *);
+        }
         break;
     }
 
@@ -581,7 +591,17 @@ rip6_usrreq(struct socket *so, int req, struct mbuf *m,
             error = EAFNOSUPPORT;
             break;
         }
-        rp->rcb_faddr = mtod(nam, struct sockaddr *);
+        {
+            /* nam is caller-owned and freed after return, so keep our own copy */
+            struct mbuf *n6 = m_copym(nam, 0, M_COPYALL, M_WAITOK);
+            if(n6 == NULL) {
+                error = ENOBUFS;
+                break;
+            }
+            if(rp->rcb_faddr)
+                m_freem(dtom(rp->rcb_faddr));
+            rp->rcb_faddr = mtod(n6, struct sockaddr *);
+        }
         soisconnected(so);
         break;
     }

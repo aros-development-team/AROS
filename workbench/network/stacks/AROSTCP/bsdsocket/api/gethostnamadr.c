@@ -238,13 +238,23 @@ getanswer(struct SocketBase *libPtr, querybuf *answer, int anslen, int iquery,
         /*
          * Type and class are type and class of answer in returned resource
          * record. see arpa[_/]nameserver.h for more information.
+         *
+         * Guard against a truncated/malformed packet: the fixed RR header
+         * (type, class, ttl, rdlength) is 10 bytes.
          */
+        if(cp + 10 > eom)
+            break;
         type = _getshort(cp);
         cp += sizeof(u_short);
         class = _getshort(cp);
         cp += sizeof(u_short) + sizeof(u_int32_t);
         n = _getshort(cp);
         cp += sizeof(u_short);
+        /*
+         * rdlength (n) must not run past the end of the message.
+         */
+        if(cp + n > eom)
+            break;
 
         if(type == T_CNAME) {    /* canonical name (add alias names)*/
             cp += n;
@@ -332,6 +342,11 @@ getanswer(struct SocketBase *libPtr, querybuf *answer, int anslen, int iquery,
             break;
         }
         /*
+         * Do not overflow the fixed-size h_addr_ptrs[MAXADDRS+1] array.
+         */
+        if(HS->h_addr_count >= MAXADDRS)
+            break;
+        /*
          * Fill next host address in address list
          */
         bcopy(cp, *hap++ = bp, n);
@@ -399,7 +414,7 @@ struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr)
         }
 
         if(allocDataBuffer(&libPtr->hostents,
-                           sizeof(struct hostent) + 3 * sizeof(u_long) +
+                           sizeof(struct hostent) + 3 * sizeof(char *) +
                            strnlen(name, MAXDNAME) + 1) == FALSE) {
             writeErrnoValue(libPtr, ENOMEM);
             h_errno = 0;
@@ -1245,6 +1260,11 @@ void findid(ULONG *); /* defined in net/if.c */
 
 /*
  * Global host name and name length
+ *
+ * NOTE: host_name/host_namelen (and the global usens above) are shared,
+ * unsynchronised globals. Concurrent sethostname()/gethostname() callers
+ * can race on them. Locking is intentionally not added here to avoid
+ * introducing a deadlock against the callers' higher-level locks.
  */
 char host_name[MAXHOSTNAMELEN + 1] = { 0 };
 size_t host_namelen = 0;

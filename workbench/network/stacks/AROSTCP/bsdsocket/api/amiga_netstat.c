@@ -58,11 +58,12 @@ long __QueryInterfaceTagList(STRPTR name, const struct TagItem *tags, struct Soc
             case IFQ_LastStart: {
                 memcpy((void *)tag->ti_Data, &ifp->if_data.ifi_aros_ontime, sizeof(struct timeval));
                 break;
-                case IFQ_Address:
+            }
+            case IFQ_Address: {
 //				log(LOG_CRIT, "IFQ_Address is not implemented");
-                    *(STRPTR)tag->ti_Data = 0;
-                    break;
-                }
+                *(STRPTR)tag->ti_Data = 0;
+                break;
+            }
             case IFQ_DestinationAddress: {
 //				log(LOG_CRIT, "IFQ_DestinationAddress is not implemented");
                 *(STRPTR)tag->ti_Data = 0;

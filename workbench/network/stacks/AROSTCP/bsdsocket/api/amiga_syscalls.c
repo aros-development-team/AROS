@@ -266,8 +266,12 @@ AROS_LH3(LONG, accept,
     so->so_refcnt = 1;  /* pure AmiTCP addition */
 
     nam = m_get(M_WAIT, MT_SONAME);
+    if(nam == NULL) {
+        error = ENOBUFS;
+        goto Return_spl;
+    }
     (void)soaccept(so, nam);  /* is this always successful */
-    if(name) {
+    if(name && anamelen) {
         if(*anamelen > nam->m_len)
             *anamelen = nam->m_len;
         /* SHOULD COPY OUT A CHAIN HERE */
@@ -472,7 +476,7 @@ AROS_LH5(LONG, getsockopt,
     if(error = getSock(libPtr, s, &so))
         goto Return;
 
-    if(val)
+    if(val && avalsize)
         valsize = *avalsize;
     else
         valsize = 0;

@@ -226,6 +226,11 @@ AROS_LH3(long, bpf_read,
     int copylen;
     spl_t s;
 
+    if(len < 0) {
+        writeErrnoValue(libPtr, EINVAL);
+        return -1;
+    }
+
     d = bpf_lookup(handle);
     if(d == NULL) {
         writeErrnoValue(libPtr, EBADF);
@@ -281,6 +286,11 @@ AROS_LH3(long, bpf_write,
     struct ifnet *ifp;
     struct sockaddr dst;
     int error;
+
+    if(len < 0) {
+        writeErrnoValue(libPtr, EINVAL);
+        return -1;
+    }
 
     d = bpf_lookup(handle);
     if(d == NULL) {

@@ -537,6 +537,7 @@ nd6_rs_output(struct ifnet *ifp)
     struct mbuf *m;
     struct ip6_hdr *ip6;
     struct nd_router_solicit *rs;
+    struct ip6_moptions im6o;
     caddr_t mac;
     int hlen = sizeof(struct ip6_hdr);
     int icmp6len = sizeof(struct nd_router_solicit);
@@ -601,8 +602,13 @@ nd6_rs_output(struct ifnet *ifp)
     rs->nd_rs_cksum = in6_cksum(m, IPPROTO_ICMPV6,
                                 sizeof(struct ip6_hdr), icmp6len + optlen);
 
+    /* force the solicitation out of the requesting interface */
+    bzero(&im6o, sizeof(im6o));
+    im6o.im6o_multicast_ifp  = ifp;
+    im6o.im6o_multicast_hlim = 255;
+
     nd6stat.nd6s_snd_rs++;
-    ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
+    ip6_output(m, NULL, NULL, 0, &im6o, NULL, NULL);
 }
 
 /* ==================================================================
@@ -883,6 +889,7 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
             /* change gateway */
             rtrequest(RTM_DELETE, (struct sockaddr *)&dst_sa,
                       NULL, NULL, RTF_HOST, NULL);
+            rtfree(rt);         /* release the ref held by nd6_lookup */
         }
         rtrequest(RTM_ADD, (struct sockaddr *)&dst_sa,
                   (struct sockaddr *)&gw_sa, NULL,

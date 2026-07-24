@@ -433,6 +433,15 @@ in6_ifaof_ifpforlinklocal(struct ifnet *ifp)
 /* ------------------------------------------------------------------
  * in6_if_up - called when interface is brought up; configure link-local.
  * ------------------------------------------------------------------ */
+/*
+ * in6_ifaddr records are allocated from mbufs (m_getclr, MT_IFADDR) so they
+ * can later be released with m_free(dtom(ia)) (see in6.c:351).  That requires
+ * the whole structure to fit within a single mbuf's data area; assert it at
+ * compile time so growing the struct (or shrinking MSIZE) breaks the build
+ * loudly instead of silently corrupting memory.
+ */
+typedef char in6_ifaddr_fits_mbuf[(sizeof(struct in6_ifaddr) <= MLEN) ? 1 : -1];
+
 void
 in6_if_up(struct ifnet *ifp)
 {
@@ -519,6 +528,18 @@ in6_if_up(struct ifnet *ifp)
           sin6.sin6_addr.s6_addr[13],
           sin6.sin6_addr.s6_addr[14], sin6.sin6_addr.s6_addr[15]));
 
+    /*
+     * Initialise the ifaddr fields BEFORE the entry is linked into the
+     * global and per-interface lists, so any consumer walking those lists
+     * never sees a half-initialised record (e.g. a NULL ifa_addr).
+     */
+    ia->ia_ifa.ifa_addr    = (struct sockaddr *)&ia->ia_addr;
+    ia->ia_ifa.ifa_netmask = (struct sockaddr *)&ia->ia_prefixmask;
+    ia->ia_ifa.ifa_rtrequest = nd6_rtrequest;
+    ia->ia6_ifp = ifp;
+    ia->ia6_plen = 64;
+    ia->ia6_ifaflags = IN6_IFF_AUTOCONF;
+
     /* link into global and ifp lists */
     if(in6_ifaddr) {
         struct in6_ifaddr *tail;
@@ -536,13 +557,6 @@ in6_if_up(struct ifnet *ifp)
     } else {
         ifp->if_addrlist = (struct ifaddr *)ia;
     }
-
-    ia->ia_ifa.ifa_addr    = (struct sockaddr *)&ia->ia_addr;
-    ia->ia_ifa.ifa_netmask = (struct sockaddr *)&ia->ia_prefixmask;
-    ia->ia_ifa.ifa_rtrequest = nd6_rtrequest;
-    ia->ia6_ifp = ifp;
-    ia->ia6_plen = 64;
-    ia->ia6_ifaflags = IN6_IFF_AUTOCONF;
 
     D(bug("[AROSTCP:IN6] %s: calling in6_ifinit\n", __func__));
     (void)in6_ifinit(ifp, ia, &sin6, 0);

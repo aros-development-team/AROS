@@ -114,8 +114,9 @@ mld6_start_listening(struct in6_multi *in6m)
 	/* Send initial report immediately */
 	mld6_sendpkt(in6m, MLD_LISTENER_REPORT, NULL);
 
-	/* Start timer for the second unsolicited report */
-	in6m->in6m_timer = MLD_UNSOLICITED_REPORT_INTERVAL;
+	/* Start timer for the second unsolicited report.  The interval is in
+	 * seconds but in6m_timer counts fast-timer ticks (PR_FASTHZ per second). */
+	in6m->in6m_timer = MLD_UNSOLICITED_REPORT_INTERVAL * PR_FASTHZ;
 	in6m->in6m_state = MLD6_LAZY_MEMBER;
 	mld6_timer_running = 1;
 }
@@ -203,6 +204,14 @@ mld6_input(struct mbuf *m, int off, int len)
 		int maxdelay = ntohs(mld->mld_maxdelay);
 		if(maxdelay == 0)
 			maxdelay = 1;	/* RFC 2710: treat 0 as 1 */
+		/*
+		 * mld_maxdelay is in milliseconds, but in6m_timer counts
+		 * fast-timer ticks (PR_FASTHZ ticks per second).  Convert
+		 * from ms to ticks, keeping a minimum of one tick.
+		 */
+		maxdelay = (maxdelay * PR_FASTHZ) / 1000;
+		if(maxdelay == 0)
+			maxdelay = 1;
 
 		if(IN6_IS_ADDR_UNSPECIFIED(&maddr)) {
 			/* General query: set timer for every group on this interface */
@@ -313,6 +322,7 @@ mld6_sendpkt(struct in6_multi *in6m, int type, const struct in6_addr *dst)
 	struct ip6_hdr *ip6;
 	struct ifnet   *ifp = in6m->in6m_ifp;
 	struct in6_ifaddr *ia;
+	struct ip6_moptions im6o;
 	int hdrlen;
 
 	hdrlen = sizeof(struct ip6_hdr) + sizeof(struct mld_hdr);
@@ -371,7 +381,12 @@ mld6_sendpkt(struct in6_multi *in6m, int type, const struct in6_addr *dst)
 	      in6m->in6m_addr.s6_addr[0], in6m->in6m_addr.s6_addr[1],
 	      in6m->in6m_addr.s6_addr[14], in6m->in6m_addr.s6_addr[15]));
 
-	ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
+	/* force the MLD message out of the group's interface */
+	bzero(&im6o, sizeof(im6o));
+	im6o.im6o_multicast_ifp  = ifp;
+	im6o.im6o_multicast_hlim = 1;		/* MLD requires hop limit = 1 */
+
+	ip6_output(m, NULL, NULL, 0, &im6o, NULL, NULL);
 }
 
 /* ------------------------------------------------------------------

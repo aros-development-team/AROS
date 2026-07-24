@@ -284,7 +284,7 @@ struct ifnet *aifunit(register char *name)
 struct ifnet *
 aiface_find(char *name, long unit)
 {
-    struct  = sana2tag_find_exec(name, unit);
+    struct interface_parameters *sifp = sana2tag_find_exec(name, unit);
 
     /* No alias found, use defaults */
     if(sifp == NULL) {
@@ -319,43 +319,12 @@ iface_make(struct ssconfig *ifc)
         DSANA(__log(LOG_DEBUG, "Opening device %s unit %ld", ifc->args->a_dev, *ifc->args->a_unit);)
         if(OpenDevice(ifc->args->a_dev, *ifc->args->a_unit,
                       (struct IORequest *)req, 0L)) {
+            /* OpenDevice() returns non-zero on FAILURE: only report the
+             * error and clean up.  ssc stays NULL so this function returns
+             * NULL; req is released by DeleteIOSana2Req() below. */
             sana2perror("OpenDevice", req);
 
             D(bug("[AROSTCP:SANA] %s: device '%s' unit %u", __func__, ifc->args->a_dev, *ifc->args->a_unit));
-
-            /* Allocate the interface structure */
-            ssc = (struct sana_softc *)
-                  bsd_malloc(sizeof(*ssc) + strnlen(ifc->args->a_dev, FILENAME_MAX) + 1,
-                             M_IFNET, M_WAITOK);
-
-            if(!ssc) {
-                __log(LOG_ERR, "iface_find: out of memory\n");
-            } else {
-                aligned_bzero_const(ssc, sizeof(*ssc));
-
-                /* Save request pointers */
-                ssc->ss_dev     = req->ios2_Req.io_Device;
-                ssc->ss_unit    = req->ios2_Req.io_Unit;
-
-                ssc->ss_if.if_type = IFT_OTHER;
-                ssc->ss_if.if_flags &= ~(IFF_DRV_RUNNING | IFF_UP);
-
-                /* Initialize */
-
-                D(bug("[AROSTCP:SANA] %s: Current IP from config = %s\n", __func__, ifc->args[0].a_ip));
-                ifc->args[0].a_ip = "0.0.0.0";
-                D(bug("[AROSTCP:SANA] %s: IP set to 0.0.0.0\n", __func__));
-
-                ssconfig(ssc, ifc);
-
-                NewList((struct List *)&ssc->ss_freereq);
-
-                if_attach((struct ifnet *)ssc);
-                ifinit();
-
-                ssc->ss_next = ssq;
-                ssq = ssc;
-            }
         } else {
             /* Ask for our type, address length, MTU
             * Obl. bitch: nobody tells, WHO is supplying

@@ -817,7 +817,7 @@ in_arpinput(register struct sana_softc *ssc,
 
         if(at) {
             bcopy(sha, (caddr_t)at->at_hwaddr, len);
-#if o /* unused */
+#if 0 /* unused */
             if((at->at_flags & ATF_COM) == 0)
                 completed = 1;
 #endif

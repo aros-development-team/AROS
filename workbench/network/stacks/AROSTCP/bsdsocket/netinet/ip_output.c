@@ -132,7 +132,7 @@ int	STKARGFUN ip_output(void *args, ...)
     ro  = va_arg(va, struct route *);
     flags = va_arg(va, int);
 #ifdef ENABLE_MULTICAST
-    imo = v_arg(va, struct ip_moptions *);
+    imo = va_arg(va, struct ip_moptions *);
 #endif
     va_end(va);
 

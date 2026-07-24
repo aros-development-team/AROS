@@ -191,6 +191,17 @@ main(int argc, char *argv[])
     NameFromLock(db_path_lock, interfaces_path, FILENAME_MAX);
 
 #if defined(__AROS__)
+    /*
+     * ParentDir() above returned a lock we own; release it now that its
+     * name has been read (it is otherwise overwritten below and leaked).
+     * GetProgramDir()'s lock must NOT be unlocked, so this is only done on
+     * the AROS path where ParentDir() actually ran.
+     */
+    UnLock(db_path_lock);
+    db_path_lock = BNULL;
+#endif
+
+#if defined(__AROS__)
     D(bug("[AROSTCP](amiga_main.c) main: Directory tree root: %s\n", interfaces_path));
 #endif
     D(Printf("Directory tree root: %s\n", interfaces_path);)
@@ -226,7 +237,9 @@ main(int argc, char *argv[])
             strncpy(netdb_path, tmpconfigpath, FILENAME_MAX);
             strncpy(db_path, tmpconfigpath, FILENAME_MAX);
             strncpy(config_path, tmpconfigpath, FILENAME_MAX);
-            //UnLock(db_path_lock);
+            /* Done validating the path; release the lock so it isn't leaked. */
+            UnLock(db_path_lock);
+            db_path_lock = BNULL;
         }
         /* TODO: NicJA - Attempt to create chosen config location */
         /* TODO: NicJA - and copy defaults if it doesnt currently exist and is possible? */

@@ -241,8 +241,17 @@ multicast_output:
 
             /* copy IPv6 header */
             M_COPY_PKTHDR(m0, m);
+            /* the fragment payload is stored inline, so attach a cluster
+             * large enough for the header, fragment header and payload.
+             * Done after M_COPY_PKTHDR since that resets m_flags/m_data. */
+            MCLGET(m0, M_WAIT);
+            if((m0->m_flags & M_EXT) == 0) {
+                m_freem(m0);
+                error = ENOBUFS;
+                goto bad;
+            }
             m0->m_pkthdr.len = hlen + sizeof(fh) + flen;
-            m0->m_len = hlen + sizeof(fh);
+            m0->m_len = hlen + sizeof(fh) + flen;
             bcopy(mtod(m, caddr_t), mtod(m0, caddr_t), hlen);
 
             /* fill fragment header */

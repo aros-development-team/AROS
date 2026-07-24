@@ -343,7 +343,7 @@ AROS_LH0(void, ClearDynDomain,
 
     struct MinNode *node, *nnode;
 
-    if(MiamiBase->DynDomain_Locked) {
+    if(!MiamiBase->DynDomain_Locked) {
         ObtainSemaphore(&DynDB.dyn_Lock);
         MiamiBase->DynDomain_Locked = 1;
     }
@@ -365,7 +365,7 @@ AROS_LH0(void, ClearDynNameServ,
 
     struct MinNode *node, *nnode;
 
-    if(MiamiBase->DynNameServ_Locked) {
+    if(!MiamiBase->DynNameServ_Locked) {
         ObtainSemaphore(&DynDB.dyn_Lock);
         MiamiBase->DynNameServ_Locked = 1;
     }
@@ -430,7 +430,7 @@ AROS_LH1(LONG, AddDynNameServ,
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
     nsn->nsn_Ent.ns_addr.s_addr = entry->sin_addr.s_addr;
 
-    if(MiamiBase->DynNameServ_Locked) {
+    if(!MiamiBase->DynNameServ_Locked) {
         ObtainSemaphore(&DynDB.dyn_Lock);
         MiamiBase->DynNameServ_Locked = 1;
     }
@@ -461,7 +461,7 @@ AROS_LH1(LONG, AddDynDomain,
 
     memcpy((char *)(dn + 1), entry, nodesize - sizeof(*dn));
 
-    if(MiamiBase->DynDomain_Locked) {
+    if(!MiamiBase->DynDomain_Locked) {
         ObtainSemaphore(&DynDB.dyn_Lock);
         MiamiBase->DynDomain_Locked = 1;
     }

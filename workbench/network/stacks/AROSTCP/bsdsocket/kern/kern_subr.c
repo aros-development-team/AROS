@@ -73,6 +73,8 @@ u_long *nentries;
     }
     hashsize = primes[i - 1];
     hashtbl = bsd_malloc((u_long)hashsize * sizeof(*hashtbl), type, M_WAITOK);
+    if(hashtbl == NULL)
+        panic("phashinit");
     for(i = 0; i < hashsize; i++)
         LIST_INIT(&hashtbl[i]);
     *nentries = hashsize;

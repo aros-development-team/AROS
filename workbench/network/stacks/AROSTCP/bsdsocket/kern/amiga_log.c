@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -502,10 +502,10 @@ void log_msg(struct SysLogPacket *msg)
              clockdata.year,
              levels + 6 * ((msg->Level <= LOG_DEBUG) ? msg->Level : LOG_DEBUG)
             );
-    chars = strnlen(msg->String, log_cnf.log_buf_len) - 1;
-    /* Remove last newline */
-    if(msg->String[chars] == '\n') {
-        msg->String[chars] = '\0';
+    chars = strnlen(msg->String, log_cnf.log_buf_len);
+    /* Remove last newline (skip if the string is empty to avoid String[-1]) */
+    if(chars > 0 && msg->String[chars - 1] == '\n') {
+        msg->String[chars - 1] = '\0';
     }
 
     /* Replace all control chars with space */

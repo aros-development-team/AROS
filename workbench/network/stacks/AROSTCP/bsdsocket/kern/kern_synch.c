@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -247,18 +247,26 @@ tsleep_main(struct SocketBase *p, ULONG wakemask)
          * check if we got the timer reply signal and message
          */
         if(bmask & timermask &&
-                (timerReply = (struct timerequest *)GetMsg(p->timerPort)) &&
-                timerReply == p->tsleep_timer) { /* sanity check */
-            /*
-             * timeout expired.
-             *
-             * Set the node type to NT_UNKNOWN to mark that it is referenced only by
-             * the p->tsleep_timer.
-             */
-            timerReply->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
+                (timerReply = (struct timerequest *)GetMsg(p->timerPort))) {
+            if(timerReply == p->tsleep_timer) { /* sanity check */
+                /*
+                 * timeout expired.
+                 *
+                 * Set the node type to NT_UNKNOWN to mark that it is referenced only by
+                 * the p->tsleep_timer.
+                 */
+                timerReply->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
 
-            result = EWOULDBLOCK;
-            break;
+                result = EWOULDBLOCK;
+                break;
+            } else {
+                /*
+                 * A message that is not our timer request turned up on
+                 * the port. Reply it to its real owner rather than
+                 * dropping (leaking) it, then keep waiting.
+                 */
+                ReplyMessage((struct Message *)timerReply);
+            }
         }
 
     } /* for */
@@ -316,21 +324,21 @@ tsleep(struct SocketBase *p,  /* Library base through which this call came */
     extern struct Task *AROSTCP_Task;
     if(FindTask(NULL) == AROSTCP_Task) {
         log(LOG_ERR, "TCP/IP stack did tsleep() itself!");
-        return (-1);
+        return (EINVAL);
     }
 #endif
 
 #if DIAGNOSTIC
     if(p == NULL) {
         log(LOG_ERR, "tsleep() called with NULL SocketBase pointer!");
-        return (-1);
+        return (EINVAL);
     }
 #endif
 
 #if DIAGNOSTIC
     if(FindTask(NULL) != syscall_semaphore.ss_Owner) {
         log(LOG_ERR, "tsleep() called with NO syscall_semaphore!");
-        return (-1);
+        return (EINVAL);
     }
 #endif
 

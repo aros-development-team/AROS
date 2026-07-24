@@ -487,6 +487,7 @@ ip6_input(struct mbuf *m)
     struct protosw *pr;
     u_int8_t nxt;
     int off, plen;
+    int nexthdrs = 0;
 
     ip6stat.ip6s_total++;
 
@@ -598,6 +599,12 @@ ours:
         struct ip6_ext *ext;
         int extlen;
 
+        /* bound the number of extension headers we will process */
+        if(++nexthdrs > 32) {
+            ip6stat.ip6s_toomanyhdr++;
+            goto bad;
+        }
+
         switch(nxt) {
         case IPPROTO_HOPOPTS:
         case IPPROTO_ROUTING:
@@ -611,6 +618,11 @@ ours:
             extlen = (ext->ip6e_len + 1) * 8;
             nxt = ext->ip6e_nxt;
             off += extlen;
+            /* the extension header must lie within the packet */
+            if(off > m->m_pkthdr.len) {
+                ip6stat.ip6s_toosmall++;
+                goto bad;
+            }
             break;
 
         case IPPROTO_FRAGMENT:

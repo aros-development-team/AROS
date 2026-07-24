@@ -112,6 +112,24 @@ in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
         if(sin6->sin6_family != AF_INET6)
             return EAFNOSUPPORT;
 
+        /*
+         * For an explicit local port, reject a conflicting bind unless the
+         * socket permits address/port reuse.  Done before mutating inp so an
+         * error leaves the PCB unchanged (mirrors in_pcbbind()).
+         */
+        if(sin6->sin6_port != 0) {
+            struct socket *so = inp->inp_socket;
+            if((so->so_options & (SO_REUSEADDR | SO_REUSEPORT)) == 0) {
+                struct inpcbhead *head = inp->inp_pcbinfo->listhead;
+                struct in6_addr wildf;
+
+                bzero(&wildf, sizeof(wildf));
+                if(in6_pcblookup(head, &wildf, 0,
+                                 &sin6->sin6_addr, sin6->sin6_port) != NULL)
+                    return EADDRINUSE;
+            }
+        }
+
         inp->inp_laddr6 = sin6->sin6_addr;
         if(sin6->sin6_port == 0)
             /* explicit address, but port 0 means "pick an ephemeral one" */

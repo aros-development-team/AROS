@@ -436,7 +436,12 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
         memcpy(data, sa, SA_LEN(sa));
         data += SA_RLEN(sa);
 
-        ifr = (struct ifreq *)(((char *)sa) + SA_LEN(sa));
+        /* Advance exactly as the counting pass did, so the two passes
+         * iterate over the same number of entries (SA_LEN may be < sizeof). */
+        if(SA_LEN(sa) < sizeof(*sa))
+            ifr = (struct ifreq *)(((char *)sa) + sizeof(*sa));
+        else
+            ifr = (struct ifreq *)(((char *)sa) + SA_LEN(sa));
         ift = (ift->ifa_next = ift + 1);
     }
 

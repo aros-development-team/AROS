@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The AROS Dev Team
+ * Copyright (C) 2025-2026 The AROS Dev Team
  *
  * CUBIC congestion control algorithm (RFC 8312) for AROSTCP.
  *
@@ -84,9 +84,12 @@ tcp_cubic_root(u_long x)
         y = y_new;
     }
 
-    /* Verify: ensure y^3 <= x < (y+1)^3 */
-    while(y * y * y > x && y > 0)
+    /* Verify: ensure y^3 <= x < (y+1)^3 (64-bit to avoid overflow) */
+    while(y > 0 && (unsigned long long)y * y * y > (unsigned long long)x)
         y--;
+    while((unsigned long long)(y + 1) * (y + 1) * (y + 1)
+          <= (unsigned long long)x)
+        y++;
 
     return y;
 }
@@ -214,7 +217,7 @@ cubic_on_ack(struct tcpcb *tp, u_int acked)
             u_long w_est_inc = (alpha_scaled * mss / 1024)
                                * cs->ack_cnt / cs->w_est;
             if(w_est_inc > 0) {
-                cs->w_est += w_est_inc * mss;
+                cs->w_est += w_est_inc;
                 cs->ack_cnt = 0;
             }
         }

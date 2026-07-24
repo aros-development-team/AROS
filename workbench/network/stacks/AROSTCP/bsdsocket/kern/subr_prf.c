@@ -129,19 +129,18 @@ panic(const char *fmt, ...)
         va_end(ap);
 
         __log(LOG_EMERG, "panic: %s", buffer); /* Write to log */
-    }
-    in_panic--;
 
-    /*
-     * Inform user (if log system has failed...)
-     * by opening a requester to the default public screen.
-     *
-     * Open a local IntuitionBase for the EasyRequest()
-     */
-    if((IntuitionBase = OpenLibrary("intuition.library", 37L)) != NULL) {
-        EasyRequest(NULL, &panicES, NULL, (IPTR)buffer);
-        CloseLibrary(IntuitionBase);
-        IntuitionBase = NULL;
+        /*
+         * Inform user (if log system has failed...)
+         * by opening a requester to the default public screen.
+         *
+         * Open a local IntuitionBase for the EasyRequest()
+         */
+        if((IntuitionBase = OpenLibrary("intuition.library", 37L)) != NULL) {
+            EasyRequest(NULL, &panicES, NULL, (IPTR)buffer);
+            CloseLibrary(IntuitionBase);
+            IntuitionBase = NULL;
+        }
     }
 
     /*
@@ -230,11 +229,7 @@ vlog(unsigned long level, const char *tag, const char *fmt, va_list ap)
     if(msg) {
         ULONG ret;
         struct CSource cs;
-#if __WORDSIZE == 32
         if(msg->String == NULL)
-#else
-        if(msg->String == NULL || (IPTR)msg->String >> 32 != 0)  /* Safety: discard message with corrupted String pointer */
-#endif
         {
             PutMsg(&logReplyPort, &msg->Msg);
             return 0;
@@ -491,6 +486,8 @@ reswitch:
                 goto textout;
             case 's':
                 p = va_arg(ap, char *);
+                if(p == NULL)
+                    p = "(null)";
 textout:
                 /*
                  * Set width to the maximum width, if maximum width is set, and
@@ -538,9 +535,11 @@ textout:
                 goto number;
             case 'p': /* pointers */
             case 'P':
-                width = 8;
+                width = 2 * sizeof(void *);
                 padc = '0';
-            /* FALLTHROUGH */
+                ul = (u_long)va_arg(ap, IPTR);
+                base = 16;
+                goto number;
             case 'x':
             case 'X':
                 ul = lflag ? va_arg(ap, u_long) : va_arg(ap, u_int);

@@ -303,8 +303,8 @@ void gui_process_refresh()
 
 void gui_process_msg(struct SysLogPacket *msg)
 {
-    struct ifnet *ifp;
-    long state;
+    struct ifnet *ifp = NULL;
+    long state = 0;
     char ifspeed[16];
 
 #if defined(__AROS__)
@@ -333,7 +333,12 @@ void gui_process_msg(struct SysLogPacket *msg)
         }
     }
     if((msg->Level & GUICMD_MASK) == GUICMD_SET_INTERFACE_STATE) {
-        if(state & (MIAMIPANELV_AddInterface_State_Online | MIAMIPANELV_AddInterface_State_GoingOffline)) {
+        /* ifp/state are only set inside the GUI_Running block above, so
+         * (re)derive them here from the message for the DHCP handling,
+         * which must run regardless of whether the GUI is up. */
+        ifp = (struct ifnet *)msg->Time;
+        state = (long)msg->Tag;
+        if(ifp && state & (MIAMIPANELV_AddInterface_State_Online | MIAMIPANELV_AddInterface_State_GoingOffline)) {
             if(state == MIAMIPANELV_AddInterface_State_Online) {
                 if(ifp->if_data.ifi_aros_usedhcp)
                     run_dhclient(ifp);

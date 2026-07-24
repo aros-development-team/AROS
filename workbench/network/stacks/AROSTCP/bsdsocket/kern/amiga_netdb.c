@@ -189,11 +189,26 @@ alloc_netdb(struct NetDataBase *ndb)
 
     }
 
+    /*
+     * bsd_malloc() can still return NULL even with M_WAITOK; bail out
+     * before dereferencing ndb.
+     */
+    if(ndb == NULL) {
+#if defined(__AROS__)
+        D(bug("[AROSTCP](amiga_netdb.c) alloc_netdb: failed to allocate ndb\n"));
+#endif
+        return NULL;
+    }
+
     ndb->ndb_AccessCount = 0;
     if((ndb->ndb_AccessTable =
                 bsd_malloc(TMPACTSIZE, M_NETDB, M_WAITOK)) == NULL) {
         bsd_free(ndb, M_NETDB);
         ndb = NULL;
+#if defined(__AROS__)
+        D(bug("[AROSTCP](amiga_netdb.c) alloc_netdb: failed to allocate ndb_AccessTable\n"));
+#endif
+        return NULL;
     }
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_netdb.c) alloc_netdb: Allocated ndb = 0x%p, ndb_AccessTable = 0x%p\n", ndb,
@@ -921,6 +936,9 @@ bad:
             retval = RETURN_WARN;
         }
         FreeArgs(rdargs);
+    } else {
+        *errstrp = ERR_SYNTAX;
+        retval = RETURN_WARN;
     }
     return retval;
 }

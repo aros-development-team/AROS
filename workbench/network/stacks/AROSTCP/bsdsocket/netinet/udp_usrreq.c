@@ -246,7 +246,7 @@ void udp_input(void *args, ...)
              * port.  It * assumes that an application will never
              * clear these options after setting them.
              */
-            if((last->so_options & (SO_REUSEPORT | SO_REUSEADDR) == 0))
+            if((last->so_options & (SO_REUSEPORT | SO_REUSEADDR)) == 0)
                 break;
         }
 
@@ -286,7 +286,7 @@ void udp_input(void *args, ...)
             goto bad;
         }
         *ip = save_ip;
-        icmp_error(m, ICMP_UNREACH, ICMP_UNREACH_PORT, 0, 0);
+        icmp_error(m, ICMP_UNREACH, ICMP_UNREACH_PORT, zeroin_addr);
         return;
     }
 

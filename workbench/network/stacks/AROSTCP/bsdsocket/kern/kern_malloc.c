@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -64,11 +64,14 @@ malloc_deinit(void)
 #if defined(__AROS__)
     D(bug("[AROSTCP](kern_malloc.c) malloc_deinit()\n"));
 #endif
-    DeletePool(mem_pool);
+    if(initialized) {
+        DeletePool(mem_pool);
+        mem_pool = NULL;
 #if defined(__AROS__)
-    D(bug("[AROSTCP](kern_malloc.c) malloc_deinit: Pool deleted\n"));
+        D(bug("[AROSTCP](kern_malloc.c) malloc_deinit: Pool deleted\n"));
 #endif
-    initialized = FALSE;
+        initialized = FALSE;
+    }
     return;
 }
 
@@ -86,7 +89,10 @@ bsd_malloc(unsigned long size, int type, int flags)
     ObtainSemaphore(&malloc_semaphore);
     mem = AllocVecPooled(mem_pool, size);
 #ifdef DEBUG_MEM
-    *((ULONG *)mem)++ = 0xbaadab00;
+    if(mem != NULL) {
+        *((ULONG *)mem) = 0xbaadab00;
+        mem = (char *)mem + sizeof(ULONG);
+    }
 #endif
 #if defined(__AROS__)
     D(bug("[AROSTCP](kern_malloc.c) bsd_malloc: Allocated %d bytes @ 0x%p, from pool @ 0x%p\n", size, mem, mem_pool));

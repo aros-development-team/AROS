@@ -630,7 +630,7 @@ selscan(struct SocketBase *p,
             for(i = 0; i < nfd; i += NFDBITS) {
                 bits = cbits->fds_bits[i / NFDBITS];
                 while((j = ffs(bits)) && i + --j < nfd) {
-                    bits &= ~(1 << j);
+                    bits &= ~(1U << j);
                     so = p->dTable[i + j];
                     if(so == NULL) {
                         error = EBADF;
@@ -835,10 +835,15 @@ LONG __CloseSocket(LONG fd, struct SocketBase *libPtr)
      * not zero.
      */
     if(--so->so_refcnt <= 0) {
+        struct soevent *nextse;
         error = soclose(so);
         /* Remove all events associated with this socket */
         ObtainSemaphore(&libPtr->EventLock);
-        for(se = (struct soevent *)libPtr->EventList.mlh_Head; se->node.mln_Succ; se = (struct soevent *)se->node.mln_Succ) {
+        for(se = (struct soevent *)libPtr->EventList.mlh_Head;
+                se->node.mln_Succ;
+                se = nextse) {
+            /* Save the successor before a possible free (avoid UAF) */
+            nextse = (struct soevent *)se->node.mln_Succ;
             if(se->socket == so) {
                 Remove((struct Node *)se);
                 bsd_free(se, NULL);
@@ -1030,10 +1035,10 @@ AROS_LH4(LONG, ObtainSocket,
          struct SocketBase *, libPtr, 24, UL)
 {
     AROS_LIBFUNC_INIT
-    struct protosw *prp;
+    struct protosw *prp = NULL;
     struct Node *sn;
     int error = 0;
-    LONG fd;
+    LONG fd = -1;
 
     CHECK_TASK();
     DSYSCALLS(log(LOG_DEBUG, "ObtainSocket(%ld, %ld, %ld, %ld) called", id, domain, type, protocol);)
@@ -1047,8 +1052,10 @@ AROS_LH4(LONG, ObtainSocket,
             prp = pffindproto(domain, protocol, type);
         else
             prp = pffindtype(domain, type);
-        if(prp == 0)
+        if(prp == 0) {
             error = EPROTONOSUPPORT;
+            goto Return;
+        }
         if(prp->pr_type != type)
             error = EPROTOTYPE;
         if(error)

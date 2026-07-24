@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2010 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -179,6 +179,11 @@ AROS_LH1(struct Library *, Open,
               NULL,
               sizeof(struct SocketBase),
               BNULL);
+    /*
+     * Check for allocation failure before dereferencing newBase.
+     */
+    if(newBase == NULL)
+        return NULL;
 #if defined(__AROS__)
 
     ((struct Library *)newBase)->lib_Node.ln_Type = NT_LIBRARY;
@@ -373,9 +378,14 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
      * waited. The linger may be interrupted by any signal in sigIntrMask.
      */
     libPtr->fdCallback = NULL; /* don't call the callback any more */
-    for(i = 0; i < libPtr->dTableSize; i++)
-        if(libPtr->dTable[i] != NULL)
-            __CloseSocket(i, libPtr);
+    /*
+     * dTable may be NULL if Open() failed before allocating it and called
+     * us to clean up (dTableSize is set before dTable is allocated).
+     */
+    if(libPtr->dTable)
+        for(i = 0; i < libPtr->dTableSize; i++)
+            if(libPtr->dTable[i] != NULL)
+                __CloseSocket(i, libPtr);
 
     Remove((struct Node *)libPtr); /* remove this librarybase from our list
 				    of opened library bases */
@@ -459,6 +469,8 @@ BOOL api_init()
                                    NULL,
                                    sizeof(struct Library),
                                    BNULL);
+    if(MasterSocketBase == NULL)
+        return FALSE;
 #if defined(__AROS__)
     ((struct Library *)MasterSocketBase)->lib_Node.ln_Type = NT_LIBRARY;
     ((struct Library *)MasterSocketBase)->lib_Node.ln_Name = (APTR)SOCLIBNAME;
@@ -482,6 +494,8 @@ BOOL api_init()
                                   NULL,
                                   sizeof(struct Library),
                                   BNULL);
+    if(MasterMiamiBase == NULL)
+        return FALSE;
 #if defined(__AROS__)
     ((struct Library *)MasterMiamiBase)->lib_Node.ln_Type = NT_LIBRARY;
     ((struct Library *)MasterMiamiBase)->lib_Node.ln_Name = (APTR)MIAMILIBNAME;
@@ -640,6 +654,11 @@ VOID api_deinit()
         return;
 
     Forbid();
+    /*
+     * Force the real expunge (not just a delayed-expunge mark) so the base
+     * memory is actually freed instead of leaked when we drop the pointer.
+     */
+    AROSTCP_FLAG_CANEXPUNGE = TRUE;
     if(MasterMiamiBase) {
         __ELL_Expunge(MasterMiamiBase);
         MasterMiamiBase = NULL;

@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -139,6 +139,8 @@ int proto;
     if(prp->pr_type != type)
         return (EPROTOTYPE);
     MALLOC(so, struct socket *, sizeof(*so), M_SOCKET, M_WAIT);
+    if(so == NULL)
+        return (ENOBUFS);
     aligned_bzero_const((caddr_t)so, sizeof(*so));
     so->so_type = type;
 #ifndef AMITCP
@@ -394,7 +396,7 @@ static inline void uioread(caddr_t cp, int n, struct uio *uio)
         if(cnt > n)
             cnt = n;
 
-        bcopy(iov->iov_base, cp, cnt); /* wrong direction //pp */
+        bcopy(iov->iov_base, cp, cnt);
 
         iov->iov_base += cnt;
         iov->iov_len -= cnt;
@@ -508,11 +510,19 @@ restart:
             } else do {
                     if(top == 0) {
                         MGETHDR(m, M_WAIT, MT_DATA);
+                        if(m == NULL) {
+                            error = ENOBUFS;
+                            goto release;
+                        }
                         mlen = MHLEN;
                         m->m_pkthdr.len = 0;
                         m->m_pkthdr.rcvif = (struct ifnet *)0;
                     } else {
                         MGET(m, M_WAIT, MT_DATA);
+                        if(m == NULL) {
+                            error = ENOBUFS;
+                            goto release;
+                        }
                         mlen = MLEN;
                     }
                     if(resid >= mlen && space >= mbconf.mclbytes) {
@@ -679,6 +689,10 @@ int *flagsp;
         flags = 0;
     if(flags & MSG_OOB) {
         m = m_get(M_WAIT, MT_DATA);
+        if(m == NULL) {
+            error = ENOBUFS;
+            goto bad;
+        }
         error = (*pr->pr_usrreq)(so, PRU_RCVOOB,
                                  m, (struct mbuf *)(long)(flags & MSG_PEEK), (struct mbuf *)0);
         if(error)
@@ -893,8 +907,13 @@ dontblock:
             if(flags & MSG_PEEK)
                 moff += len;
             else {
-                if(mp)
+                if(mp) {
                     *mp = m_copym(m, 0, len, M_WAIT);
+                    if(*mp == NULL) {
+                        error = ENOBUFS;
+                        break;
+                    }
+                }
                 m->m_data += len;
                 m->m_len -= len;
                 so->so_rcv.sb_cc -= len;
@@ -942,8 +961,8 @@ dontblock:
         }
         if(pr->pr_flags & PR_WANTRCVD && so->so_pcb)
             (*pr->pr_usrreq)(so, PRU_RCVD, (struct mbuf *)0,
-                             (struct mbuf *)(long)flags, /* (struct mbuf *)0, */
-                             (struct mbuf *)0); /* BUG! One extra arg! */
+                             (struct mbuf *)(long)flags,
+                             (struct mbuf *)0);
     }
     if(flagsp)
         *flagsp |= flags;
@@ -977,9 +996,10 @@ register struct socket *so;
     register struct protosw *pr = so->so_proto;
     register spl_t s;
     struct sockbuf asb;
+    struct SocketBase *sb_base = FindSocketBase(FindTask(NULL));
 
     sb->sb_flags |= SB_NOINTR;
-    (void) sblock(sb, NULL);
+    (void) sblock(sb, sb_base);
     s = splimp();
     socantrcvmore(so);
     sbunlock(sb);
@@ -1150,6 +1170,8 @@ struct mbuf **mp;
             return (ENOPROTOOPT);
     } else {
         m = m_get(M_WAIT, MT_SOOPTS);
+        if(m == NULL)
+            return (ENOBUFS);
         m->m_len = sizeof(int);
 
         switch(optname) {

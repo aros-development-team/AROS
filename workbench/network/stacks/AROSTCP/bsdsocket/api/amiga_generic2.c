@@ -177,19 +177,32 @@ AROS_LH3(VOID, Syslog,
         pri |= libPtr->LogFacility;
 
     if(libPtr->LogTag) {
+        int n;
         DSYSLOG(KPrintF("LogTag: %s", libPtr->LogTag);)
         t = tag_cpy;
         t1 = tag_cpy;
-        t1 += snprintf(t1, sizeof(tag_cpy) - (t1 - tag_cpy), "%s", libPtr->LogTag);
+        /*
+         * snprintf() returns the number of characters it WOULD have written;
+         * clamp it so t1 never advances past the end of tag_cpy.
+         */
+        n = snprintf(t1, sizeof(tag_cpy), "%s", libPtr->LogTag);
+        if(n < 0)
+            n = 0;
+        else if(n > (int)sizeof(tag_cpy) - 1)
+            n = (int)sizeof(tag_cpy) - 1;
+        t1 += n;
     }
     DSYSLOG(else KPrintF("LogTag: <NULL>");)
         DSYSLOG(KPrintF(", message: %s\n", fmt);)
         if(libPtr->LogStat & LOG_PID) {
+            size_t avail;
             if(!t) {
                 t = tag_cpy;
                 t1 = tag_cpy;
             }
-            snprintf(t1, sizeof(tag_cpy) - (t1 - tag_cpy), "[%p]", libPtr->thisTask);
+            /* t1 is clamped within tag_cpy, so avail is always >= 1 */
+            avail = sizeof(tag_cpy) - (size_t)(t1 - tag_cpy);
+            snprintf(t1, avail, "[%p]", libPtr->thisTask);
         }
 
     /*
@@ -211,16 +224,22 @@ AROS_LH3(VOID, Syslog,
     {
         char ch;
         const char *t2;
+        /*
+         * Reserve two bytes: one for the terminating NUL, and one so the
+         * "%%" case (which writes two chars in a single loop iteration)
+         * cannot run past the end of fmt_cpy.
+         */
+        char *t1end = fmt_cpy + sizeof(fmt_cpy) - 2;
 
-        for(t1 = p; ch = *fmt; ++fmt) {
+        for(t1 = p; (ch = *fmt) && t1 < t1end; ++fmt) {
             if(ch == '%') {
                 if(fmt[1] == '%') {
                     ++fmt;
                     *t1++ = ch;
                 } else if(fmt[1] == 'm') {
                     ++fmt;
-                    for(t2 = __sys_errlist[saved_errno]; *t1 = *t2++; ++t1)
-                        ;
+                    for(t2 = __sys_errlist[saved_errno]; *t2 && t1 < t1end; ++t2)
+                        *t1++ = *t2;
                     continue;
                 }
             }

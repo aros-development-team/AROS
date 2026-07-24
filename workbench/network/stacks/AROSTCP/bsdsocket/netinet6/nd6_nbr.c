@@ -69,7 +69,7 @@ nd6_ns_output(struct ifnet *ifp, struct in6_addr *src,
     struct mbuf *m;
     struct ip6_hdr *ip6;
     struct nd_neighbor_solicit *nd_ns;
-    struct sockaddr_in6 dst_sa;
+    struct ip6_moptions im6o;
     int hlen = sizeof(struct ip6_hdr);
     int icmp6len = sizeof(struct nd_neighbor_solicit);
     int optlen = 0;
@@ -152,14 +152,13 @@ nd6_ns_output(struct ifnet *ifp, struct in6_addr *src,
     nd_ns->nd_ns_cksum = in6_cksum(m, IPPROTO_ICMPV6,
                                    sizeof(struct ip6_hdr), icmp6len + optlen);
 
-    /* build destination sockaddr for ip6_output */
-    bzero(&dst_sa, sizeof(dst_sa));
-    dst_sa.sin6_family = AF_INET6;
-    dst_sa.sin6_len    = sizeof(dst_sa);
-    dst_sa.sin6_addr   = ip6->ip6_dst;
+    /* force the multicast out of the requesting interface */
+    bzero(&im6o, sizeof(im6o));
+    im6o.im6o_multicast_ifp  = ifp;
+    im6o.im6o_multicast_hlim = 255;
 
     nd6stat.nd6s_snd_ns++;
-    ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
+    ip6_output(m, NULL, NULL, 0, &im6o, NULL, NULL);
 }
 
 /* ------------------------------------------------------------------
@@ -289,6 +288,7 @@ nd6_na_output(struct ifnet *ifp, struct in6_addr *dst,
     struct ip6_hdr *ip6;
     struct nd_neighbor_advert *nd_na;
     struct nd_opt_hdr *nd_opt;
+    struct ip6_moptions im6o;
     caddr_t mac;
     int icmp6len = sizeof(*nd_na);
     int optlen   = 0;
@@ -354,8 +354,13 @@ nd6_na_output(struct ifnet *ifp, struct in6_addr *dst,
     nd_na->nd_na_cksum = in6_cksum(m, IPPROTO_ICMPV6,
                                    sizeof(struct ip6_hdr), icmp6len + optlen);
 
+    /* force the advertisement out of the requesting interface */
+    bzero(&im6o, sizeof(im6o));
+    im6o.im6o_multicast_ifp  = ifp;
+    im6o.im6o_multicast_hlim = 255;
+
     nd6stat.nd6s_snd_na++;
-    ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
+    ip6_output(m, NULL, NULL, 0, &im6o, NULL, NULL);
 }
 
 /* ------------------------------------------------------------------
@@ -369,7 +374,7 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
     struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
     struct nd_neighbor_advert *nd_na;
     struct in6_addr tgt;
-    struct rtentry *rt;
+    struct rtentry *rt = NULL;
     struct llinfo_nd6 *ln;
     struct sockaddr_dl *sdl;
     struct ifnet *ifp = m->m_pkthdr.rcvif;
@@ -455,6 +460,8 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
     if(rt == NULL || (ln = (struct llinfo_nd6 *)rt->rt_llinfo) == NULL) {
         /* no existing entry — if this is a router, create one */
         if(is_router) {
+            if(rt)
+                rtfree(rt);         /* release ref before re-lookup */
             rt = nd6_lookup(&tgt, 1, ifp);
             if(rt && rt->rt_llinfo == NULL) {
                 MALLOC(ln, struct llinfo_nd6 *, sizeof(*ln),
@@ -575,10 +582,14 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
         }
     }
 
+    if(rt)
+        rtfree(rt);             /* release the ref held by nd6_lookup */
     m_freem(m);
     return;
 
 bad:
+    if(rt)
+        rtfree(rt);             /* release the ref held by nd6_lookup */
     m_freem(m);
 }
 

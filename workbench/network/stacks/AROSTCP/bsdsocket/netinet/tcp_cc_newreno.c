@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 1982, 1986, 1988, 1990, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (C) 2025 The AROS Dev Team
+ * Copyright (C) 2025-2026 The AROS Dev Team
  *
  * NewReno congestion control for AROSTCP (RFC 3782).
  *
@@ -105,11 +105,12 @@ static void
 newreno_on_loss(struct tcpcb *tp)
 {
     u_int win;
+    u_long seg = tp->t_maxseg ? tp->t_maxseg : 1;
 
-    win = MIN(tp->snd_wnd, tp->snd_cwnd) / 2 / tp->t_maxseg;
+    win = MIN(tp->snd_wnd, tp->snd_cwnd) / 2 / seg;
     if(win < 2)
         win = 2;
-    tp->snd_ssthresh = win * tp->t_maxseg;
+    tp->snd_ssthresh = win * seg;
 }
 
 /*
@@ -122,11 +123,12 @@ static void
 newreno_on_rto(struct tcpcb *tp)
 {
     u_int win;
+    u_long seg = tp->t_maxseg ? tp->t_maxseg : 1;
 
-    win = MIN(tp->snd_wnd, tp->snd_cwnd) / 2 / tp->t_maxseg;
+    win = MIN(tp->snd_wnd, tp->snd_cwnd) / 2 / seg;
     if(win < 2)
         win = 2;
-    tp->snd_ssthresh = win * tp->t_maxseg;
+    tp->snd_ssthresh = win * seg;
     tp->snd_cwnd = tp->t_maxseg;
 }
 
@@ -140,11 +142,12 @@ static void
 newreno_on_ecn(struct tcpcb *tp)
 {
     u_int ecn_win;
+    u_long seg = tp->t_maxseg ? tp->t_maxseg : 1;
 
-    ecn_win = MIN(tp->snd_wnd, tp->snd_cwnd) / 2 / tp->t_maxseg;
+    ecn_win = MIN(tp->snd_wnd, tp->snd_cwnd) / 2 / seg;
     if(ecn_win < 2)
         ecn_win = 2;
-    tp->snd_ssthresh = ecn_win * tp->t_maxseg;
+    tp->snd_ssthresh = ecn_win * seg;
     tp->snd_cwnd = tp->snd_ssthresh;
 }
 

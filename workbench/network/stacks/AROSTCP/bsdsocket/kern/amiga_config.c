@@ -183,6 +183,8 @@ getvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
                 break;
             case VAR_STRP:
                 value = ((UBYTE **)variables[var].value)[index];
+                if(value == NULL)		/* unset string variable */
+                    value = (UBYTE *)"";
                 vlen  = strnlen(value, KEYWORDLEN);
                 break;
             case VAR_INET: {
@@ -224,7 +226,7 @@ getvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
             /* prepend by space? */
             if(res->CS_CurChr)
                 res->CS_Buffer[res->CS_CurChr++] = ' ';
-            if(vlen + res->CS_CurChr > res->CS_Length) {
+            if(vlen + res->CS_CurChr >= res->CS_Length) {
                 *errstrp = ERR_TOO_LONG;
                 return RETURN_ERROR;
             }
@@ -366,6 +368,14 @@ reterr:
     }
 
 #define DONE "Done."
+    /*
+     * CS_CurChr accumulates across config lines; make sure appending the
+     * "Done." reply (plus its terminating NUL) cannot overflow CS_Buffer.
+     */
+    if(res->CS_CurChr + sizeof(DONE) >= res->CS_Length) {
+        *errstrp = ERR_TOO_LONG;
+        return RETURN_ERROR;
+    }
     bcopy(DONE, res->CS_Buffer + res->CS_CurChr, sizeof(DONE));
     res->CS_CurChr += sizeof(DONE);
     res->CS_Buffer[res->CS_CurChr] = '\0';

@@ -9,7 +9,7 @@
 /* timestamp wrap-around time */
 #define TCP_PAWS_IDLE	(24 * 24 * 60 * 60 * PR_SLOWHZ)
 
-extern int	tcp_iss;		/* tcp initial send seq # */
+extern tcp_seq	tcp_iss;		/* tcp initial send seq # */
 extern int	tcp_ccgen;		/* global connection count */
 
 /* Macro to increment a CC: skip 0 which has a special meaning */

@@ -288,7 +288,10 @@ nd6_lookup(struct in6_addr *dst, int create, struct ifnet *ifp)
                 return NULL;
             }
         }
-        rt->rt_refcnt--;
+        /*
+         * KAME semantics: return rt with its reference held (as taken
+         * by rtalloc1).  Every caller must rtfree(rt) when done.
+         */
     }
 
     return rt;
@@ -352,8 +355,12 @@ nd6_is_addr_neighbor(struct sockaddr_in6 *addr, struct ifnet *ifp)
     /* check neighbor cache */
     {
         struct rtentry *rt = nd6_lookup(&addr->sin6_addr, 0, ifp);
-        if(rt && rt->rt_llinfo)
-            return 1;
+        if(rt) {
+            int isneigh = (rt->rt_llinfo != NULL);
+            rtfree(rt);         /* release the ref held by nd6_lookup */
+            if(isneigh)
+                return 1;
+        }
     }
 
     return 0;
@@ -392,16 +399,19 @@ nd6_cache_lladdr(struct ifnet *ifp, struct in6_addr *from,
      */
     if((rt->rt_flags & (RTF_GATEWAY | RTF_LLINFO)) != RTF_LLINFO) {
         nd6_free(rt);
+        rtfree(rt);         /* release the ref held by nd6_lookup */
         return EINVAL;
     }
 
     ln = (struct llinfo_nd6 *)rt->rt_llinfo;
     if(ln == NULL) {
         nd6_free(rt);
+        rtfree(rt);         /* release the ref held by nd6_lookup */
         return EINVAL;
     }
     if(rt->rt_gateway == NULL) {
         nd6_free(rt);
+        rtfree(rt);         /* release the ref held by nd6_lookup */
         return EINVAL;
     }
 
@@ -467,6 +477,7 @@ nd6_cache_lladdr(struct ifnet *ifp, struct in6_addr *from,
         }
     }
 
+    rtfree(rt);             /* release the ref held by nd6_lookup */
     return 0;
 }
 
@@ -790,7 +801,7 @@ nd6_storelladdr(struct rtentry *rt)
         buflen = ND6_ROUNDUP(sizeof(struct sockaddr_in6));
     }
 
-    sprintf(namebuf, "%s%d", ifp->if_name, ifp->if_unit);
+    snprintf(namebuf, sizeof(namebuf), "%s%d", ifp->if_name, ifp->if_unit);
     namelen = strnlen(namebuf, sizeof(namebuf));
 
     /* sdl_len includes space for name + MAC (even though MAC is empty) */

@@ -84,7 +84,7 @@ extern int ip_defttl;		/* default TTL for TCP segments */
 
 int	tcprexmtthresh = 3;
 #if defined(__AROS__)
-int	tcp_iss;
+tcp_seq	tcp_iss;
 int	tcp_ccgen;
 #else
 tcp_seq	tcp_iss;
@@ -1302,7 +1302,8 @@ close:
                 if(tp->t_timer[TCPT_REXMT] == 0 ||
                         ti->ti_ack != tp->snd_una)
                     tp->t_dupacks = 0;
-                else if(++tp->t_dupacks == tcprexmtthresh) {
+                else if(++tp->t_dupacks == tcprexmtthresh &&
+                        !(tp->t_flagsext & TF_IN_FASTRECOV)) {
                     tcp_seq onxt = tp->snd_nxt;
 
                     CC_ON_LOSS(tp);
@@ -1834,6 +1835,8 @@ struct tcpopt *to;
         else {
             optlen = cp[1];
             if(optlen <= 0)
+                break;
+            if(optlen > cnt)
                 break;
         }
         switch(opt) {

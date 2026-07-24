@@ -159,10 +159,28 @@ LONG mb_read_stats(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 #endif
 
     for(i = 0; i < MTCOUNT; i++) {
-        p += snprintf(p, res->CS_Length - (p - res->CS_Buffer), "%ld ", (long)mbstat.m_mtypes[i]);
+        LONG remaining = res->CS_Length - (p - res->CS_Buffer);
         total += mbstat.m_mtypes[i];
+        if(remaining > 0) {
+            int ret = snprintf(p, remaining, "%ld ", (long)mbstat.m_mtypes[i]);
+            if(ret > 0) {
+                if(ret >= remaining)
+                    ret = remaining - 1;
+                p += ret;
+            }
+        }
     }
-    p += snprintf(p, res->CS_Length - (p - res->CS_Buffer), "%ld", (long)total);
+    {
+        LONG remaining = res->CS_Length - (p - res->CS_Buffer);
+        if(remaining > 0) {
+            int ret = snprintf(p, remaining, "%ld", (long)total);
+            if(ret > 0) {
+                if(ret >= remaining)
+                    ret = remaining - 1;
+                p += ret;
+            }
+        }
+    }
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](uipc_mbuf.c) mb_read_stats: %s\n", res->CS_Buffer));
@@ -192,6 +210,14 @@ mb_check_conf(void *dp, IPTR newvalue)
         if(newvalue > 32)		/* kilobytes */
             return TRUE;
     } else if(dp == &mbconf.mclbytes) {
+        /*
+         * mclbytes defines a single global cluster size that consumers
+         * cache; it must not be changed once mbinit() has run.
+         */
+        if(initialized) {
+            __log(LOG_ERR, "mb_check_conf: mclbytes cannot be changed after initialization.");
+            return FALSE;
+        }
         if(newvalue >= MINCLSIZE)
             return TRUE;
     }
@@ -266,7 +292,7 @@ mbdeinit(void)
      */
     while(mbufmem) {
 #if defined(__AROS__)
-        D(bug("[AROSTCP](uipc_mbuf.c) mbdeinit: Freeing %d bytes @ 0x%p\n", mbufmem, mbufmem->size));
+        D(bug("[AROSTCP](uipc_mbuf.c) mbdeinit: Freeing %d bytes @ 0x%p\n", mbufmem->size, mbufmem));
 #endif
         next = mbufmem->next;
         mbstat.m_memused -= mbufmem->size;
