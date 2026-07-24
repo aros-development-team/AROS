@@ -424,7 +424,7 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         {
             int timeout = 100000;
             while ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_TXFIFOFLUSH) && --timeout > 0)
-                asm volatile("mov r0, r0\n");
+                asm volatile("yield\n");
         }
     }
 
@@ -477,9 +477,9 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     {
         /*
          * HCCHAR.EC/MC = transactions per microframe; only high-bandwidth
-         * HS endpoints use >1. A low-/full-speed INT split must be EC=1
-         * (matches Linux dwc2 multi_count=1) — EC=3 makes the core expect
-         * 3 transactions and deschedule the periodic split (bare CHHLTD).
+         * HS endpoints use >1. A low-/full-speed INT split must be EC=1;
+         * EC=3 makes the core expect 3 transactions and deschedule the
+         * periodic split (bare CHHLTD).
          */
         if (req->iouh_Req.io_Command == UHCMD_ISOXFER)
             reg |= USB2OTG_HOSTCHAR_EC(3);
@@ -603,11 +603,22 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
      * full cache lines — a misaligned buffer would drag adjacent
      * unrelated bytes across the flush, which is harmless for OUT
      * but a real cache-pollution risk for IN.
+     *
+     * For IN this applies to the END as well as the START: an
+     * aligned buffer whose length is not a cache-line multiple shares
+     * its tail line with the following allocation, and the post-DMA
+     * dc-ivac (invalidate-only) then DISCARDS that neighbour's dirty
+     * data -- observed corrupting an unrelated task's stacked x29 on
+     * real Pi during lan78xx (ethernet, ~1514 B) enumeration. Bouncing
+     * moves the rounded invalidate onto the 16 KB bounce buffer's own
+     * slack, so no foreign line is touched.
      */
     otg_Unit->hu_Channel[chan].hc_OrigBuffer = NULL;
     {
         APTR dma_buf = buffer;
-        if (buffer != NULL && ((ULONG)buffer & 0x3F) && xfer_size <= DMA_BOUNCE_SIZE)
+        if (buffer != NULL
+            && (((ULONG)buffer & 0x3F) || (direction && ((ULONG)xfer_size & 0x3F)))
+            && xfer_size <= DMA_BOUNCE_SIZE)
         {
             otg_Unit->hu_Channel[chan].hc_OrigBuffer = buffer;
             otg_Unit->hu_Channel[chan].hc_BounceLen = xfer_size;
@@ -903,7 +914,7 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
                 /* ~200 µs budget — matches halt_channel_preserve_char. */
                 int timeout = 200000;
                 while ((rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE) && --timeout > 0)
-                    asm volatile("mov r0, r0\n");
+                    asm volatile("yield\n");
                 if (timeout <= 0)
                     bug("[USB2OTG] AdvanceChannel halt timeout chan=%d CHAR=%08x INTR=%08x\n",
                         chan,
@@ -963,8 +974,12 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         /* If split transaction requested limit transfer size to max packet size or 188 bytes, whichever is less */
         if (req->iouh_Flags & UHFF_SPLITTRANS)
         {
-            if (req->iouh_Req.io_Command == UHCMD_INTXFER ||
-                req->iouh_Req.io_Command == UHCMD_ISOXFER)
+            /*
+             * Must match SetupChannel: a low-/full-speed INT split needs
+             * EC=1 (EC=3 makes the core deschedule the periodic split,
+             * bare CHHLTD -> watchdog). Only ISO uses EC=3 here.
+             */
+            if (req->iouh_Req.io_Command == UHCMD_ISOXFER)
                 reg |= USB2OTG_HOSTCHAR_EC(3);
             else
                 reg |= USB2OTG_HOSTCHAR_EC(1);
@@ -1053,11 +1068,18 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
          * Misaligned buffer → bounce. Aligned direct DMA needs per-arm
          * cache flush — speculative prefetch refills stale lines
          * between continuation arms, controller sends garbage.
+         *
+         * IN also bounces when the length is not a cache-line multiple:
+         * the tail line is shared with the next allocation and the
+         * post-DMA invalidate would discard its dirty data (see the
+         * Setup path for the full rationale).
          */
         otg_Unit->hu_Channel[chan].hc_OrigBuffer = NULL;
         {
             APTR dma_buf = buffer;
-            if (buffer != NULL && ((ULONG)buffer & 0x3F) && xfer_size <= DMA_BOUNCE_SIZE)
+            if (buffer != NULL
+                && (((ULONG)buffer & 0x3F) || (direction && ((ULONG)xfer_size & 0x3F)))
+                && xfer_size <= DMA_BOUNCE_SIZE)
             {
                 otg_Unit->hu_Channel[chan].hc_OrigBuffer = buffer;
                 otg_Unit->hu_Channel[chan].hc_BounceLen = xfer_size;
@@ -1261,7 +1283,7 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
             {
                 int t = USB2OTG_BULK_OUT_THROTTLE_COUNT;
                 while (--t > 0)
-                    asm volatile("mov r0, r0\n");
+                    asm volatile("yield\n");
             }
 #endif
         }

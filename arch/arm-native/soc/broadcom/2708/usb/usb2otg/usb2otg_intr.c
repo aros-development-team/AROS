@@ -55,9 +55,8 @@ static void DumpChannelRegs(int channel)
 
 /*
  * 0 = drop PING-protocol, recover from NYET via DATA-retry with NAK
- * gate. BCM2835 DWC2 in Buffer-DMA mode does not reliably issue PING
- * tokens — channel wedges with bare-CHHLTD after every NYET. Linux
- * dwc2 and FreeBSD dwc_otg shipped without PING for years. USB 2.0
+ * gate. The DWC2 core in Buffer-DMA mode does not reliably issue PING
+ * tokens — channel wedges with bare-CHHLTD after every NYET. USB 2.0
  * §8.5.1 says SHOULD PING after NYET; in practice all MSC tested
  * tolerates plain NAK retry. Set to 1 if a strict-PING device appears.
  */
@@ -105,7 +104,7 @@ static void usb2otg_halt_channel_preserve_char(int chan)
         int timeout = 200000;
         while ((rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE)
                && --timeout > 0)
-            asm volatile("mov r0, r0\n");
+            asm volatile("yield\n");
         if (timeout <= 0)
         {
             HALT_SNAP(chan, "timeout-pre-flush");
@@ -128,7 +127,7 @@ static void usb2otg_halt_channel_preserve_char(int chan)
                 int t = 10000;
                 while ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_TXFIFOFLUSH)
                        && --t > 0)
-                    asm volatile("mov r0, r0\n");
+                    asm volatile("yield\n");
                 if (t <= 0)
                     HALT_SNAP(chan, "flush-self-timeout");
             }
@@ -138,7 +137,7 @@ static void usb2otg_halt_channel_preserve_char(int chan)
             timeout = 200000;
             while ((rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE)
                    && --timeout > 0)
-                asm volatile("mov r0, r0\n");
+                asm volatile("yield\n");
             if (timeout <= 0)
             {
                 HALT_SNAP(chan, "stuck-after-flush");
@@ -187,12 +186,12 @@ static inline void usb2otg_post_halt_bulk_out_settle(void)
         int t = 10000;
         while ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_TXFIFOFLUSH)
                && --t > 0)
-            asm volatile("mov r0, r0\n");
+            asm volatile("yield\n");
     }
     {
         int t = 1200000;
         while (--t > 0)
-            asm volatile("mov r0, r0\n");
+            asm volatile("yield\n");
     }
 }
 
@@ -225,7 +224,7 @@ static void usb2otg_escalate_hw_reset(struct USB2OTGUnit *USBUnit, int wedged_ch
     /* Wait for AHB master to idle before asserting reset, per DWC2 spec. */
     t = 100000;
     while (!(rd32le(USB2OTG_RESET) & (1UL << 31)) && --t > 0)
-        asm volatile("mov r0, r0\n");
+        asm volatile("yield\n");
     if (t <= 0)
         bug("[USB2OTG] WEDGE-RECOVERY: AHB never idled before HCLKSOFT RESET=%08x\n",
             rd32le(USB2OTG_RESET));
@@ -235,7 +234,7 @@ static void usb2otg_escalate_hw_reset(struct USB2OTGUnit *USBUnit, int wedged_ch
 
     t = 200000;
     while ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_HCLKSOFT) && --t > 0)
-        asm volatile("mov r0, r0\n");
+        asm volatile("yield\n");
 
     char_after = rd32le(USB2OTG_CHANNEL_REG(wedged_chan, CHARBASE));
     if (char_after & USB2OTG_HOSTCHAR_ENABLE)
@@ -1530,7 +1529,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                 while ((rd32le(USB2OTG_RESET)
                                                         & USB2OTG_RESET_TXFIFOFLUSH)
                                                        && --timeout > 0)
-                                                    asm volatile("mov r0, r0\n");
+                                                    asm volatile("yield\n");
                                             }
                                             bug("[USB2OTG:MSS] BARE-CHHLTD NP-TX-FIFO-FLUSH after giveup chan=%d dev=%d ep=%d\n",
                                                 chan,
@@ -2243,7 +2242,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                         /* Belt-and-braces second halt wait (~200 µs). */
                         int timeout = 200000;
                         while ((rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE) && --timeout > 0)
-                            asm volatile("mov r0, r0\n");
+                            asm volatile("yield\n");
                     }
 
                     /* If CHENA still stuck after full flush → escalate to HCLKSOFT. */
