@@ -36,6 +36,7 @@
 #include <sys/errno.h>
 #include <sys/kernel.h>
 #include <sys/synch.h>
+#include <stdio.h>
 
 #include <net/if.h>
 #include <net/if_dl.h>

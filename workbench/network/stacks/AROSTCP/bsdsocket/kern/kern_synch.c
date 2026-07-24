@@ -265,7 +265,7 @@ tsleep_main(struct SocketBase *p, ULONG wakemask)
                  * the port. Reply it to its real owner rather than
                  * dropping (leaking) it, then keep waiting.
                  */
-                ReplyMessage((struct Message *)timerReply);
+                ReplyMsg((struct Message *)timerReply);
             }
         }
 
