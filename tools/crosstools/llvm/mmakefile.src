@@ -65,6 +65,7 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 #MM- toolchain-linklibs-llvm-arm    : linklibs-arm
 #MM- toolchain-linklibs-llvm-armeb  : linklibs-armeb
 #MM- tools-crosstools-llvm-riscv    : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-aarch64  : tools-crosstools-llvm-toolchain
 #MM- tools-crosstools-llvm-m68k    : tools-crosstools-llvm-toolchain
 
 # Flags used for stages of the build
