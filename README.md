@@ -106,6 +106,19 @@
     <td style="text-align:center"> --- </td>
   </tr>
   <tr>
+    <td>raspi-aarch64</td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center">
+      <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=44&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-raspi-aarch64-llvm?branchName=master"></a>
+    </td>
+    <td style="text-align:center"> --- </td>
+  </tr>
+  <tr>
     <td>sam440-ppc</td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=20&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-sam440-ppc?branchName=master"></a>
