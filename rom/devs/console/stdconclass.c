@@ -27,6 +27,7 @@ struct stdcondata
     struct DrawInfo *dri;
     WORD rendercursorcount;
     BOOL cursorvisible;
+    BOOL windowactive;
 
     UWORD pens[CONUNIT_PEN_MAX];
     UWORD *penmap[CONUNIT_PEN_MAX];
@@ -82,6 +83,8 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
                 data->charScratch = AllocRaster(8, data->charScratchHeight);
 
                 data->cursorvisible = TRUE;
+                data->windowactive =
+                    (CU(o)->cu_Window->Flags & WFLG_WINDOWACTIVE) != 0;
                 Console_RenderCursor(o);
 
                 ReturnPtr("StdCon::New", Object *, o);
@@ -152,6 +155,14 @@ static void stdcon_text(struct stdcondata *data, struct RastPort *rp,
     rp->TmpRas = savedTmpRas;
 }
 
+/* JAM2 text replaces every pixel in the first character cell, including a
+ * rendered full-cell cursor.  Update cursor nesting without first drawing
+ * the redundant COMPLEMENT erase. */
+static void stdcon_overwritecursor(struct stdcondata *data)
+{
+    data->rendercursorcount--;
+}
+
 /*********  StdCon::DoCommand()  ****************************/
 
 static VOID stdcon_docommand(Class *cl, Object *o,
@@ -177,7 +188,7 @@ static VOID stdcon_docommand(Class *cl, Object *o,
         D(bug("Writing char %c at (%d, %d)\n",
                 params[0], CP_X(o), CP_Y(o) + rp->Font->tf_Baseline));
 
-        Console_UnRenderCursor(o);
+        stdcon_overwritecursor(data);
 
         setstyle(GfxBase, rp, o);
         Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
@@ -198,7 +209,7 @@ static VOID stdcon_docommand(Class *cl, Object *o,
                 (int)params[1], (char *)params[0], CP_X(o),
                 CP_Y(o) + rp->Font->tf_Baseline));
 
-        Console_UnRenderCursor(o);
+        stdcon_overwritecursor(data);
 
         setstyle(GfxBase, rp, o);
 
@@ -667,12 +678,34 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 }
 
 /*********  StdCon::RenderCursor()  ****************************/
+static VOID stdcon_drawcursor(Object *o, struct stdcondata *data)
+{
+    static const UWORD inactive_pattern[] = { 0xAAAA, 0x5555 };
+    struct RastPort *rp = RASTPORT(o);
+    const UWORD *oldpattern = rp->AreaPtrn;
+    BYTE oldpatternsize = rp->AreaPtSz;
+    struct Library *GfxBase = data->scd_GfxBase;
+
+    SetDrMd(rp, COMPLEMENT);
+    if (!data->windowactive)
+    {
+        rp->AreaPtrn = inactive_pattern;
+        rp->AreaPtSz = 1;
+    }
+    RectFill(rp, CP_X(o), CP_Y(o), CP_X(o) + XRSIZE - 1,
+        CP_Y(o) + YRSIZE - 1);
+    if (!data->windowactive)
+    {
+        rp->AreaPtrn = oldpattern;
+        rp->AreaPtSz = oldpatternsize;
+    }
+    SetDrMd(rp, JAM2);
+}
+
 static VOID stdcon_rendercursor(Class *cl, Object *o,
     struct P_Console_RenderCursor *msg)
 {
-    struct RastPort *rp = RASTPORT(o);
     struct stdcondata *data = INST_DATA(cl, o);
-    struct Library *GfxBase = data->scd_GfxBase;
 
     /* SetAPen(rp, data->dri->dri_Pens[FILLPEN]); */
 
@@ -680,10 +713,7 @@ static VOID stdcon_rendercursor(Class *cl, Object *o,
 
     if (data->cursorvisible && (data->rendercursorcount == 1))
     {
-        SetDrMd(rp, COMPLEMENT);
-        RectFill(rp, CP_X(o), CP_Y(o), CP_X(o) + XRSIZE - 1,
-            CP_Y(o) + YRSIZE - 1);
-        SetDrMd(rp, JAM2);
+        stdcon_drawcursor(o, data);
     }
 }
 
@@ -691,9 +721,7 @@ static VOID stdcon_rendercursor(Class *cl, Object *o,
 static VOID stdcon_unrendercursor(Class *cl, Object *o,
     struct P_Console_UnRenderCursor *msg)
 {
-    struct RastPort *rp = RASTPORT(o);
     struct stdcondata *data = INST_DATA(cl, o);
-    struct Library *GfxBase = data->scd_GfxBase;
 
     data->rendercursorcount--;
 
@@ -701,11 +729,24 @@ static VOID stdcon_unrendercursor(Class *cl, Object *o,
 
     if (data->cursorvisible && (data->rendercursorcount == 0))
     {
-        SetDrMd(rp, COMPLEMENT);
-        RectFill(rp, CP_X(o), CP_Y(o), CP_X(o) + XRSIZE - 1,
-            CP_Y(o) + YRSIZE - 1);
-        SetDrMd(rp, JAM2);
+        stdcon_drawcursor(o, data);
     }
+}
+
+static VOID stdcon_setactive(Class *cl, Object *o,
+    struct P_Console_HandleGadgets *msg)
+{
+    struct stdcondata *data = INST_DATA(cl, o);
+    BOOL active = msg->Event->ie_Class == IECLASS_ACTIVEWINDOW;
+
+    if (active == data->windowactive)
+        return;
+
+    if (data->cursorvisible && data->rendercursorcount == 1)
+        stdcon_drawcursor(o, data);
+    data->windowactive = active;
+    if (data->cursorvisible && data->rendercursorcount == 1)
+        stdcon_drawcursor(o, data);
 }
 
 /**************************
@@ -829,6 +870,11 @@ AROS_UFH3S(IPTR, dispatch_stdconclass,
 
     case M_Console_NewWindowSize:
         stdcon_newwindowsize(cl, o, (struct P_Console_NewWindowSize *)msg);
+        break;
+
+    case M_Console_HandleGadgets:
+        stdcon_setactive(cl, o,
+            (struct P_Console_HandleGadgets *)msg);
         break;
 
     default:

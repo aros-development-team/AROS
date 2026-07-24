@@ -109,6 +109,7 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
     LONG orig_towrite;
     UBYTE *allocbuf = NULL;
     ULONG accepted = towrite;
+    BOOL plainText = TRUE;
 
     EnterFunc(bug("WriteToConsole(ioreq=%p)\n"));
 
@@ -129,6 +130,20 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
     write_str = orig_write_str = (UBYTE *) buf;
     orig_towrite = towrite;
 
+    {
+        ULONG i;
+
+        for (i = 0; i < towrite; i++)
+        {
+            if ((UBYTE)buf[i] < 0x20 ||
+                ((UBYTE)buf[i] >= 0x7f && (UBYTE)buf[i] < 0xa0))
+            {
+                plainText = FALSE;
+                break;
+            }
+        }
+    }
+
     D(bug("Number of chars to write %d\n", towrite));
 
 #if DEBUG
@@ -141,6 +156,9 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
 
     }
 #endif
+    if (towrite > 0 && !plainText)
+        Console_UnRenderCursor((Object *) unit);
+
     while (towrite > 0)
     {
         if (csi_incomplete(write_str, towrite)
@@ -158,12 +176,13 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
                 param_tab, (Object *) unit, ConsoleDevice))
             break;
 
-        Console_UnRenderCursor((Object *) unit);
         Console_DoCommand((Object *) unit, command, numparams, param_tab);
-        Console_RenderCursor((Object *) unit);
 
         towrite = orig_towrite - (write_str - orig_write_str);
     } /* while (characters left to interpret) */
+
+    if (orig_towrite > 0 && !plainText)
+        Console_RenderCursor((Object *) unit);
 
     if (allocbuf)
         FreeMem(allocbuf, orig_towrite);

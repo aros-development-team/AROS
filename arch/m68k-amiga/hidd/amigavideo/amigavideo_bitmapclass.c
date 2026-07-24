@@ -977,9 +977,12 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     WORD height = msg->maxY - msg->minY + 1;
 
     CLEARCACHE;
-    /* For tiny fills the blitter setup and ownership cost exceeds the few
-     * direct planar writes performed by the optimized superclass. */
-    if (((width <= 16) && (height <= 16)) ||
+    /* For tiny copy fills the blitter setup and ownership cost exceeds the
+     * few direct planar writes performed by the optimized superclass.  Keep
+     * logical operations such as COMPLEMENT on the blitter: updating their
+     * bitplanes incrementally can expose a partially inverted object. */
+    if (((width <= 16) && (height <= 16) &&
+         (mode == vHidd_GC_DrawMode_Copy)) ||
         ((height == 1) && (width >= 256) &&
          (mode == vHidd_GC_DrawMode_Copy)) ||
         !blit_fillrect(csd, data->pbm, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode)) {
