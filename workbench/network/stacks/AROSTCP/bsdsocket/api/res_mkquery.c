@@ -142,7 +142,8 @@ int res_mkquery(struct SocketBase *libPtr,
                         (u_char **)dnptrs, (u_char **)lastdnptr)) < 0)
             return (-1);
         cp += n;
-        buflen -= n;
+        if((buflen -= n) < 0)
+            return(-1);
         __putshort(T_NULL, (u_char *)cp);
         cp += sizeof(u_short);
         __putshort(class, (u_char *)cp);
