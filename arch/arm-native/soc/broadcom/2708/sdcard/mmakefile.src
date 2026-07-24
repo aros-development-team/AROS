@@ -31,4 +31,9 @@ BCM2708BUILDFILES := $(BCM2708SDHOSTFILES)
   arch=raspi-armeb modname=sdcard \
   files="$(BCM2708BUILDFILES)"
 
+%build_archspecific \
+  mainmmake=kernel-sdcard maindir=rom/devs/sdcard \
+  arch=raspi-aarch64 modname=sdcard \
+  files="$(BCM2708BUILDFILES)"
+
 %common

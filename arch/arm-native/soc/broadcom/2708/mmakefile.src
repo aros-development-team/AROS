@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 BCM2708_SP := aros-$(AROS_TARGET_CPU)-bcm2708.rom
 
-#MM- distfiles-raspi : \
+#MM- distfiles-raspi-armle : \
 #MM kernel-package-arm-bcm2708
 
 #MM kernel-package-arm-bcm2708: \
