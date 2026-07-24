@@ -57,6 +57,8 @@
 
 #include "conf.h"
 
+#include <stddef.h>	/* offsetof */
+
 #include <dos/rdargs.h>
 #include <net/route.h>
 
@@ -177,7 +179,13 @@ struct ifnet *ifp;
     unitname = sprint_d((u_int)ifp->if_unit, workbuf, sizeof(workbuf));
     namelen = strnlen(ifp->if_name, IFNAMSIZ);
     unitlen = strnlen(unitname, sizeof(workbuf));
-#define _offsetof(t, m) ((IPTR)((caddr_t)&((t *)0)->m))
+/* Prefer the compiler builtin (no non-portable &((t*)0)->m null-deref);
+ * fall back to the standard library offsetof where it is unavailable. */
+#if defined(__GNUC__)
+#define _offsetof(t, m) __builtin_offsetof(t, m)
+#else
+#define _offsetof(t, m) offsetof(t, m)
+#endif
     socksize = _offsetof(struct sockaddr_dl, sdl_data[0]) +
                unitlen + namelen + ifp->if_addrlen;
 #define ROUNDUP(a) (1 + (((a) - 1) | (sizeof(long) - 1)))
@@ -752,8 +760,7 @@ caddr_t data;
 {
     register struct ifconf *ifc = (struct ifconf *)data;
     register struct ifnet *ifp = ifnet;
-    register struct ifaddr *ifa;
-    register char *cp, *ep;
+    register char *ep;
     struct ifreq ifr, *ifrp;
     int space = ifc->ifc_len, error = 0;
 
@@ -762,6 +769,8 @@ caddr_t data;
     ep = ifr.ifr_name + sizeof(ifr.ifr_name) - 2;
 #endif
     for(; space > sizeof(ifr) && ifp; ifp = ifp->if_next) {
+        register struct ifaddr *ifa;
+        register char *cp;
 #ifdef AMITCP
         ep = sprint_d(ifp->if_unit, ifr.ifr_name, sizeof(ifr.ifr_name));
         /* Copy the interface name into ifr */

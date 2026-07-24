@@ -414,7 +414,6 @@ struct mbuf *nam;
 {
     struct inpcb *inp = tp->t_inpcb, *oinp;
     struct socket *so = inp->inp_socket;
-    struct tcpcb *otp;
     struct sockaddr_in *sin = mtod(nam, struct sockaddr_in *);
     struct sockaddr_in *ifaddr;
     int error;
@@ -467,11 +466,12 @@ struct mbuf *nam;
                         : ifaddr->sin_addr,
                         inp->inp_lport,  0);
     if(oinp) {
+        struct tcpcb *otp;
         if(oinp != inp && (otp = intotcpcb(oinp)) != NULL &&
                 otp->t_state == TCPS_TIME_WAIT &&
                 otp->t_duration < TCPTV_MSL &&
                 (otp->t_flags & TF_RCVD_CC))
-            otp = tcp_close(otp);
+            (void) tcp_close(otp);
         else
             return EADDRINUSE;
     }

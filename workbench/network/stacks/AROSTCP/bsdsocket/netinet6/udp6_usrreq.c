@@ -91,13 +91,12 @@ static int
 udp6_output(struct inpcb *inp, struct mbuf *m,
             struct mbuf *addr_m, struct mbuf *control)
 {
-    struct sockaddr_in6 *dst6;
     struct in6_addr laddr6, faddr6;
     u_short lport, fport;
     struct udphdr *uh;
     struct ip6_hdr *ip6;
-    int len, udplen, error = 0;
-    int s = 0;
+    int len, udplen, error;
+    int s;
 
     if(control)
         m_freem(control);
@@ -107,6 +106,8 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
 
     /* ---- Resolve destination ---- */
     if(addr_m) {
+        struct sockaddr_in6 *dst6;
+
         if(addr_m->m_len < (int)sizeof(struct sockaddr_in6)) {
             error = EINVAL;
             goto release;

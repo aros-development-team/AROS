@@ -287,8 +287,6 @@ register struct ifnet *ifp;
     register struct ifaddr *ifa;
     struct in_ifaddr *oia;
     struct in_aliasreq *ifra = (struct in_aliasreq *)data;
-    struct mbuf *m;
-    struct sockaddr_in oldaddr;
     int error, hostIsNew, maskIsNew;
     u_long i;
 
@@ -305,7 +303,7 @@ register struct ifnet *ifp;
     case SIOCAIFADDR:
     case SIOCDIFADDR:
         if(ifra->ifra_addr.sin_family == AF_INET)
-            for(oia = ia; ia; ia = ia->ia_next) {
+            for(; ia; ia = ia->ia_next) {
                 if(ia->ia_ifp == ifp  &&
                         ia->ia_addr.sin_addr.s_addr ==
                         ifra->ifra_addr.sin_addr.s_addr)
@@ -323,7 +321,7 @@ register struct ifnet *ifp;
         if(ifp == 0)
             panic("in_control");
         if(ia == (struct in_ifaddr *)0) {
-            m = m_getclr(M_WAIT, MT_IFADDR);
+            struct mbuf *m = m_getclr(M_WAIT, MT_IFADDR);
             if(m == (struct mbuf *)NULL)
                 return (ENOBUFS);
             if(ia = in_ifaddr) {
@@ -404,6 +402,7 @@ register struct ifnet *ifp;
 
     case SIOCSIFDSTADDR: {
         struct sockaddr_in *ifrdst_saddr = (struct sockaddr_in *)&ifr->ifr_dstaddr;
+        struct sockaddr_in oldaddr;
         if((ifp->if_flags & IFF_POINTOPOINT) == 0)
             return (EINVAL);
         oldaddr = ia->ia_dstaddr;

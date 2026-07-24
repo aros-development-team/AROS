@@ -146,7 +146,7 @@ bsd_realloc(void *mem, unsigned long size, int type, int flags)
     ObtainSemaphore(&malloc_semaphore);
 #ifdef DEBUG_MEM
     {
-        ULONG *realmem = mem - 4;
+        ULONG *realmem = (ULONG *)mem - 1;
         unsigned long realsize = size + 4;
         if(*realmem == 0xbaadab00) {
 #else

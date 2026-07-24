@@ -873,7 +873,7 @@ struct in_addr dst;
     olen = option[IPOPT_OLEN];
 #if DIAGNOSTIC
     if(ipprintfs)
-        printf("save_rte: olen %ld\n", olen);
+        printf("save_rte: olen %ld\n", (long)olen);
 #endif
     if(olen > sizeof(ip_srcrt) - (1 + sizeof(dst)))
         return;
@@ -904,7 +904,7 @@ ip_srcroute()
                sizeof(struct ip_srcrt_opts);
 #if DIAGNOSTIC
     if(ipprintfs)
-        printf("ip_srcroute: nhops %ld mlen %ld", ip_nhops, m->m_len);
+        printf("ip_srcroute: nhops %ld mlen %ld", (long)ip_nhops, (long)m->m_len);
 #endif
 
     /*
@@ -914,7 +914,7 @@ ip_srcroute()
     *(mtod(m, struct in_addr *)) = *p--;
 #if DIAGNOSTIC
     if(ipprintfs)
-        printf(" hops %lx", ntohl(mtod(m, struct in_addr *)->s_addr));
+        printf(" hops %lx", (u_long)ntohl(mtod(m, struct in_addr *)->s_addr));
 #endif
 
     /*
@@ -934,7 +934,7 @@ ip_srcroute()
     while(p >= ip_srcrt.route) {
 #if DIAGNOSTIC
         if(ipprintfs)
-            printf(" %lx", ntohl(q->s_addr));
+            printf(" %lx", (u_long)ntohl(q->s_addr));
 #endif
         *q++ = *p--;
     }
@@ -944,7 +944,7 @@ ip_srcroute()
     *q = ip_srcrt.dst;
 #if DIAGNOSTIC
     if(ipprintfs)
-        printf(" %lx\n", ntohl(q->s_addr));
+        printf(" %lx\n", (u_long)ntohl(q->s_addr));
 #endif
     return (m);
 }
@@ -1014,8 +1014,8 @@ int srcrt;
     dest.s_addr = 0;
 #if DIAGNOSTIC
     if(ipprintfs)
-        printf("forward: src %lx dst %lx ttl %lx\n", ip->ip_src.s_addr,
-               ip->ip_dst.s_addr, ip->ip_ttl);
+        printf("forward: src %lx dst %lx ttl %lx\n", (u_long)ip->ip_src.s_addr,
+               (u_long)ip->ip_dst.s_addr, (u_long)ip->ip_ttl);
 #endif
     if(m->m_flags & M_BCAST || in_canforward(ip->ip_dst) == 0) {
         ipstat.ips_cantforward++;
@@ -1099,7 +1099,7 @@ int srcrt;
                 code = ICMP_REDIRECT_NET;
 #if DIAGNOSTIC
             if(ipprintfs)
-                printf("redirect (%ld) to %lx\n", code, dest.s_addr);
+                printf("redirect (%ld) to %lx\n", (long)code, (u_long)dest.s_addr);
 #endif
         }
     }

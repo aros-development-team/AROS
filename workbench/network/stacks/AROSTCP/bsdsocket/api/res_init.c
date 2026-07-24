@@ -33,13 +33,13 @@ struct state _res;
 
 void res_cleanup_db(struct state *state)
 {
-    char **domain = NULL;
-
 #if defined(__AROS__)
     D(bug("[AROSTCP](res_init.c) res_cleanup_db()\n"));
 #endif
 
     if(state->dnsrch) {
+        char **domain;
+
         for(domain = state->dnsrch; *domain; domain++)
             bsd_free(*domain, NULL);
         bsd_free(state->dnsrch, NULL);
@@ -52,8 +52,8 @@ void res_cleanup_db(struct state *state)
 
 int res_update_db(struct state *state)
 {
-    struct DomainentNode *domain = NULL;
-    struct NameserventNode *ns = NULL;
+    struct DomainentNode *domain;
+    struct NameserventNode *ns;
     int l;
     long opts;
     ULONG n = 1;

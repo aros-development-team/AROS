@@ -570,7 +570,6 @@ int cmd, flags;
 {
     register struct rtentry *rt;
     register struct sockaddr *dst;
-    register struct sockaddr *deldst;
     struct mbuf *m = 0;
     int error;
 
@@ -583,6 +582,8 @@ int cmd, flags;
     }
     if(cmd == RTM_DELETE) {
         if((flags & RTF_HOST) == 0 && ifa->ifa_netmask) {
+            register struct sockaddr *deldst;
+
             m = m_get(M_WAIT, MT_SONAME);
             deldst = mtod(m, struct sockaddr *);
             rt_maskedcopy(dst, deldst, ifa->ifa_netmask);

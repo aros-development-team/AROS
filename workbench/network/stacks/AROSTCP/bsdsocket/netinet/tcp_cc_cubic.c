@@ -52,7 +52,7 @@
 u_long
 tcp_cubic_root(u_long x)
 {
-    u_long y, y2;
+    u_long y;
     int i;
 
     if(x == 0)
@@ -61,7 +61,6 @@ tcp_cubic_root(u_long x)
         return 1;
 
     /* Initial estimate via bit position */
-    y = 1;
     {
         u_long tmp = x;
         int bits = 0;
@@ -75,7 +74,7 @@ tcp_cubic_root(u_long x)
     /* Newton iterations */
     for(i = 0; i < 20; i++) {
         u_long y_new;
-        y2 = y * y;
+        u_long y2 = y * y;
         if(y2 == 0)
             break;
         y_new = (2 * y + x / y2) / 3;
@@ -211,15 +210,13 @@ cubic_on_ack(struct tcpcb *tp, u_int acked)
      * alpha = 3*(1-beta)/(1+beta) ~ 0.529 → fixed-point 542/1024
      */
     cs->ack_cnt += acked;
-    {
+    if(cs->w_est > 0) {
         u_long alpha_scaled = 542;
-        if(cs->w_est > 0) {
-            u_long w_est_inc = (alpha_scaled * mss / 1024)
-                               * cs->ack_cnt / cs->w_est;
-            if(w_est_inc > 0) {
-                cs->w_est += w_est_inc;
-                cs->ack_cnt = 0;
-            }
+        u_long w_est_inc = (alpha_scaled * mss / 1024)
+                           * cs->ack_cnt / cs->w_est;
+        if(w_est_inc > 0) {
+            cs->w_est += w_est_inc;
+            cs->ack_cnt = 0;
         }
     }
 

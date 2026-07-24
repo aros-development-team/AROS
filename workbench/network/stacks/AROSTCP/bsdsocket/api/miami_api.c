@@ -89,7 +89,7 @@ AROS_LH1(struct Library *, Open,
     D(kprintf("MiamiLIB_Open: 0x%p <%s> OpenCount %ld\n",
               MasterBase,
               MasterBase->lib_Node.ln_Name,
-              MasterBase->lib_OpenCnt));
+              (long)MasterBase->lib_OpenCnt));
 
     MiamiBase = (struct MiamiBase *)MakeLibrary(Miami_UserFuncTable,
 #if !defined(__AROS__)
@@ -140,7 +140,7 @@ AROS_LH0(ULONG *, Close, struct MiamiBase *, MiamiBase, 2, Miami)
     D(kprintf("MiamiLIB_Close: 0x%p <%s> OpenCount %ld\n",
               MiamiBase,
               MasterMiamiBase->lib_Node.ln_Name,
-              MasterMiamiBase->lib_OpenCnt));
+              (long)MasterMiamiBase->lib_OpenCnt));
 
     if(MiamiBase->_UserGroupBase)
         CloseLibrary(MiamiBase->_UserGroupBase);

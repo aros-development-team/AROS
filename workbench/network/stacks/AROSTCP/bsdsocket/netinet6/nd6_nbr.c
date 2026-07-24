@@ -380,7 +380,6 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
     struct llinfo_nd6 *ln;
     struct sockaddr_dl *sdl;
     struct ifnet *ifp = m->m_pkthdr.rcvif;
-    struct mbuf *held;
     union nd_opts ndopts;
     char *lladdr = NULL;
     int lladdrlen = 0;
@@ -513,6 +512,8 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
           ? (struct sockaddr_dl *)rt->rt_gateway : NULL;
 
     if(ln->ln_state == ND6_LLINFO_INCOMPLETE) {
+        struct mbuf *held;
+
         /* entry was waiting for address resolution */
         if(lladdr == NULL)
             goto bad;	/* need TLLA for INCOMPLETE */

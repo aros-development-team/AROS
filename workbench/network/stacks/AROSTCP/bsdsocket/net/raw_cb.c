@@ -185,7 +185,6 @@ raw_bind(so, nam)
 register struct socket *so;
 struct mbuf *nam;
 {
-    struct sockaddr *addr = mtod(nam, struct sockaddr *);
     register struct rawcb *rp;
 
     if(ifnet == 0)

@@ -643,11 +643,9 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
     struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
     struct nd_router_advert *nd_ra;
     struct ifnet *ifp = m->m_pkthdr.rcvif;
-    struct nd_defrouter *dr;
     struct nd_ifinfo *ndi;
     struct in6_addr src6;
     u_int8_t *opts, *end;
-    int optlen;
 
     nd6stat.nd6s_rcv_ra++;
 
@@ -699,6 +697,7 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
 
     /* manage default router list */
     {
+        struct nd_defrouter *dr;
         u_int16_t rtlifetime = ntohs(nd_ra->nd_ra_router_lifetime);
         dr = defrouter_lookup(&src6, ifp);
         if(rtlifetime == 0 && dr) {
@@ -723,6 +722,7 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
     while(opts + 2 <= end) {
         u_int8_t otype = opts[0];
         u_int8_t olen  = opts[1];
+        int optlen;
 
         if(olen == 0) break;
         optlen = olen * 8;
@@ -820,7 +820,6 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
     struct nd_redirect *rd;
     struct ifnet *ifp = m->m_pkthdr.rcvif;
     struct in6_addr src6, tgt, reddst;
-    struct rtentry *rt;
 
     nd6stat.nd6s_rcv_redirect++;
 
@@ -873,6 +872,7 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
     /* update routing table */
     {
         struct sockaddr_in6 dst_sa, gw_sa;
+        struct rtentry *rt;
 
         bzero(&dst_sa, sizeof(dst_sa));
         dst_sa.sin6_family = AF_INET6;

@@ -339,13 +339,12 @@ int skip;
 {
     register struct radix_node *x;
     register caddr_t cp, cplim;
-    register int b, mlen, j;
+    register int b, mlen;
     int maskduplicated;
 
     mlen = *(u_char *)netmask;
     if(search) {
         x = rn_search(netmask, rn_maskhead);
-        mlen = *(u_char *)netmask;
         if(Bcmp(netmask, x->rn_key, mlen) == 0)
             return (x);
     }
@@ -367,6 +366,7 @@ int skip;
     b = (cp - netmask) << 3;
     if(cp != cplim) {
         if(*cp != 0) {
+            register int j;
             gotOddMasks = 1;
             for(j = 0x80; j; b++, j >>= 1)
                 if((j & *cp) == 0)
@@ -470,7 +470,7 @@ struct radix_node treenodes[2];
         /*
          * Skip over masks whose index is > that of new node
          */
-        for(mp = &x->rn_mklist; m = *mp; mp = &m->rm_mklist)
+        for(mp = &x->rn_mklist; (m = *mp) != 0; mp = &m->rm_mklist)
             if(m->rm_b >= b_leaf)
                 break;
         t->rn_mklist = m;

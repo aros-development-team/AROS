@@ -60,7 +60,7 @@ int controlaccess(struct in_addr shost, unsigned short dport)
                 __log(allow ? LOG_INFO : LOG_NOTICE,
                       "Access from host %ld.%ld.%ld.%ld to port %ld %s\n",
                       host >> 24 & 0xff, host >> 16 & 0xff, host >> 8 & 0xff, host & 0xff,
-                      dport, allow ? "allowed" : "denied");
+                      (long)dport, allow ? "allowed" : "denied");
 
             UNLOCK_NDB(NDB);
             return allow;

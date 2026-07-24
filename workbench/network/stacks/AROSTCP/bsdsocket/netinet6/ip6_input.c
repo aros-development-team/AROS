@@ -483,7 +483,6 @@ ip6_input(struct mbuf *m)
 {
     struct ip6_hdr *ip6;
     struct ifnet   *ifp = m->m_pkthdr.rcvif;
-    struct in6_ifaddr *ia = NULL;
     struct protosw *pr;
     u_int8_t nxt;
     int off, plen;
@@ -540,7 +539,7 @@ ip6_input(struct mbuf *m)
     }
 
     /* check if destination is one of our addresses */
-    for(ia = in6_ifaddr; ia; ia = ia->ia_next) {
+    for(struct in6_ifaddr *ia = in6_ifaddr; ia; ia = ia->ia_next) {
         if(IN6_ARE_ADDR_EQUAL(&ip6->ip6_dst, &ia->ia_addr.sin6_addr))
             goto ours;
         /* also accept solicited-node multicast for our addr */

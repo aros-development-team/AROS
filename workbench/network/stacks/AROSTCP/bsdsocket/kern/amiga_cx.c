@@ -57,8 +57,8 @@ cx_show(void)
 BOOL
 cx_hide(void)
 {
-    struct Message *msg;
     if(Broker) {
+        struct Message *msg;
         /*
          * Remove the broker from the system
          */

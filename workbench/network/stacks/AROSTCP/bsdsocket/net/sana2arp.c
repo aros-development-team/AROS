@@ -579,15 +579,13 @@ arpresolve(register struct sana_softc *ssc,
 {
     register struct arptab *at;
     register struct arptable *atb;
-    struct sockaddr_in sin;
-    register struct in_ifaddr *ia;
 
     if(m->m_flags & M_BCAST) {	/* broadcast */
         return 1;
     }
 
     /* if for us, use software loopback driver if up */
-    for(ia = in_ifaddr; ia; ia = ia->ia_next)
+    for(register struct in_ifaddr *ia = in_ifaddr; ia; ia = ia->ia_next)
         if((ia->ia_ifp == &ssc->ss_if) &&
                 (destip->s_addr == ia->ia_addr.sin_addr.s_addr)) {
             /*
@@ -601,6 +599,8 @@ arpresolve(register struct sana_softc *ssc,
              * to force traffic out to the hardware.
              */
             if(useloopback) {
+                struct sockaddr_in sin;
+
                 sin.sin_family = AF_INET;
                 sin.sin_addr = *destip;
                 (void) looutput(&loif, m, (struct sockaddr *)&sin, 0);
@@ -618,7 +618,7 @@ arpresolve(register struct sana_softc *ssc,
         /* No arp */
         __log(LOG_ERR,
               "arpresolve: can't resolve address for if %s/%ld\n",
-              ssc->ss_if.if_name, ssc->ss_if.if_unit);
+              ssc->ss_if.if_name, (long)ssc->ss_if.if_unit);
         *error = ENETUNREACH;
         m_freem(m);
         return (0);
@@ -786,7 +786,7 @@ in_arpinput(register struct sana_softc *ssc,
     if(!bcmp(sha, (caddr_t)etherbroadcastaddr, ac->ac_if.if_addrlen)) {
         __log(LOG_ERR,
               "arp: ether address is broadcast for IP address %lx!\n",
-              ntohl(isaddr.s_addr));
+              (u_long)ntohl(isaddr.s_addr));
         goto out;
     }
 #endif
@@ -795,7 +795,7 @@ in_arpinput(register struct sana_softc *ssc,
     if(isaddr.s_addr == myaddr.s_addr) {
         __log(LOG_ERR,
               "duplicate IP address %lx!! sent from hardware address: %s\n",
-              ntohl(isaddr.s_addr),
+              (u_long)ntohl(isaddr.s_addr),
               sana_sprintf(sha, len));
         itaddr = myaddr;
         if(op == ARPOP_REQUEST)

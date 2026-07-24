@@ -121,7 +121,7 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr, int dir)
         DPF(kprintf("Interface: 0x%p\n", pfh->pfil_if);)
         DPF(kprintf("Hook: 0x%p\n", pfh->pfil_hook);)
         DPF(kprintf("Function: 0x%p\n", pfh->pfil_hook->h_Entry);)
-        DPF(kprintf("CPU type: %ld\n", pfh->pfil_hooktype);)
+        DPF(kprintf("CPU type: %ld\n", (long)pfh->pfil_hooktype);)
         if(pfh->pfil_if == ifp) {
             pfil_func = (APTR)pfh->pfil_hook->h_Entry;
             DPF(kprintf("Executing packet filter routine: 0x%p\n", pfil_func);)

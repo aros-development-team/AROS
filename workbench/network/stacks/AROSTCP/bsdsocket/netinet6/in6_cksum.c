@@ -57,7 +57,6 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
     int moff;		/* offset within current mbuf */
     int mlen;		/* usable bytes in current mbuf */
     int dlen;		/* remaining data bytes to checksum */
-    u_int16_t *w;
     int byte_swapped = 0;
     union {
         char	c[2];
@@ -130,9 +129,10 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
 
     /* ---- Checksum 'len' bytes of upper-layer data ---- */
     dlen = (int)len;
-    byte_swapped = 0;
 
     while(mp != NULL && dlen > 0) {
+        u_int16_t *w;
+
         if(mp->m_len <= moff) {
             mp = mp->m_next;
             moff = 0;

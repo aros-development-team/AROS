@@ -17,10 +17,10 @@ UBYTE RC_Stopped = 1;
 void SAVEDS rc_start_process(void)
 {
     BPTR lock, oldcd;
-    struct RcentNode *rc;
 
     lock = Lock(db_path, ACCESS_READ);
     if(lock) {
+        struct RcentNode *rc;
         oldcd = CurrentDir(lock);
         LOCK_R_NDB(NDB);
         for(rc = (struct RcentNode *)NDB->ndb_Rc.mlh_Head;
@@ -43,10 +43,10 @@ void SAVEDS rc_start_process(void)
 void SAVEDS rc_stop_process(void)
 {
     BPTR lock, oldcd;
-    struct RcentNode *rc;
 
     lock = Lock(db_path, ACCESS_READ);
     if(lock) {
+        struct RcentNode *rc;
         oldcd = CurrentDir(lock);
         LOCK_R_NDB(NDB);
         for(rc = (struct RcentNode *)NDB->ndb_Rc.mlh_TailPred;

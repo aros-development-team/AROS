@@ -234,7 +234,6 @@ struct mbuf *m;
         for(sq = tp->t_segq; sq && n < MAX_SACK_BLKS;
                 sq = sq->m_nextpkt) {
             struct tcpiphdr *stip = GETTCP(sq);
-            tcp_seq sblk_start = stip->ti_seq;
             tcp_seq sblk_end = stip->ti_seq + stip->ti_len;
             /* Merge with next contiguous segments */
             while(sq->m_nextpkt) {
@@ -247,6 +246,7 @@ struct mbuf *m;
             }
             /* Only report blocks beyond rcv_nxt (OOO data) */
             if(SEQ_GT(sblk_end, tp->rcv_nxt)) {
+                tcp_seq sblk_start = stip->ti_seq;
                 if(SEQ_LT(sblk_start, tp->rcv_nxt))
                     sblk_start = tp->rcv_nxt;
                 tp->t_dsack_blks[n].start = sblk_start;
@@ -304,7 +304,6 @@ void tcp_input(void *arg, ...)
     register int tiflags;
     struct socket *so = 0;
     int todrop, acked, ourfinisacked, needoutput = 0;
-    struct in_addr laddr;
     int dropsocket = 0;
     u_long tiwin;
     struct tcpopt to;		/* options in this segment */
@@ -1652,12 +1651,6 @@ dodata:							/* XXX */
     if((ti->ti_len || (tiflags & TH_FIN)) &&
             TCPS_HAVERCVDFIN(tp->t_state) == 0) {
         TCP_REASS(tp, ti, m, so, tiflags);
-        /*
-         * Note the amount of data that peer has sent into
-         * our window, in order to estimate the sender's
-         * buffer size.
-         */
-        len = so->so_rcv.sb_hiwat - (tp->rcv_adv - tp->rcv_nxt);
     } else {
         m_freem(m);
         tiflags &= ~TH_FIN;
@@ -1824,10 +1817,10 @@ struct tcpiphdr *ti;
 struct tcpopt *to;
 {
     u_short mss = 0;
-    int opt, optlen;
+    int optlen;
 
     for(; cnt > 0; cnt -= optlen, cp += optlen) {
-        opt = cp[0];
+        int opt = cp[0];
         if(opt == TCPOPT_EOL)
             break;
         if(opt == TCPOPT_NOP)
@@ -2002,10 +1995,9 @@ tcp_xmit_timer(tp, rtt)
 register struct tcpcb *tp;
 short rtt;
 {
-    register short delta;
-
     tcpstat.tcps_rttupdated++;
     if(tp->t_srtt != 0) {
+        register short delta;
         /*
          * srtt is stored as fixed point with 3 bits after the
          * binary point (i.e., scaled by 8).  The following magic

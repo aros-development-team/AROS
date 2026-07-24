@@ -121,7 +121,7 @@ struct SocketBase *libPtr;
     cp = msg + sizeof(HEADER);
     Printf("HEADER:\n");
     Printf("\topcode = %s", _res_opcodes[hp->opcode]);
-    Printf(", id = %ld", ntohs(hp->id));
+    Printf(", id = %ld", (long)ntohs(hp->id));
     Printf(", rcode = %s\n", _res_resultcodes[hp->rcode]);
     Printf("\theader flags: ");
     if(hp->qr)
@@ -134,10 +134,10 @@ struct SocketBase *libPtr;
         Printf(" rd");
     if(hp->ra)
         Printf(" ra");
-    Printf("\n\tqdcount = %ld", ntohs(hp->qdcount));
-    Printf(", ancount = %ld", ntohs(hp->ancount));
-    Printf(", nscount = %ld", ntohs(hp->nscount));
-    Printf(", arcount = %ld\n\n", ntohs(hp->arcount));
+    Printf("\n\tqdcount = %ld", (long)ntohs(hp->qdcount));
+    Printf(", ancount = %ld", (long)ntohs(hp->ancount));
+    Printf(", nscount = %ld", (long)ntohs(hp->nscount));
+    Printf(", arcount = %ld\n\n", (long)ntohs(hp->arcount));
     /*
      * Print question records.
      */
@@ -300,7 +300,7 @@ struct SocketBase *libPtr;
         break;
 
     case T_MX:
-        Printf("\tpreference = %ld,", _getshort(cp));
+        Printf("\tpreference = %ld,", (long)_getshort(cp));
         cp += sizeof(u_short);
         Printf(" name = ");
         cp = p_cdname(cp, msg);
@@ -358,7 +358,7 @@ struct SocketBase *libPtr;
             c = *cp++;
             do {
                 if(c & 0200)
-                    Printf(" %ld", n);
+                    Printf(" %ld", (long)n);
                 c <<= 1;
             } while(++n & 07);
         }
@@ -373,7 +373,7 @@ struct SocketBase *libPtr;
 
         if(dlen < NumBytes) NumBytes = dlen;
         Printf("\tFirst %ld bytes of hex data:",
-               NumBytes);
+               (long)NumBytes);
         for(i = 0, DataPtr = cp; i < NumBytes; i++, DataPtr++)
             Printf(" %x", *DataPtr);
         PutStr("\n");
@@ -457,7 +457,7 @@ int type;
         return("UNSPEC");
 #endif /* ALLOW_T_UNSPEC */
     default:
-        (void)snprintf(nbuf, sizeof(nbuf), "%ld", type);
+        (void)snprintf(nbuf, sizeof(nbuf), "%ld", (long)type);
         return(nbuf);
     }
 }
@@ -478,7 +478,7 @@ int class;
     case C_ANY:		/* matches any class */
         return("ANY");
     default:
-        (void)snprintf(nbuf, sizeof(nbuf), "%ld", class);
+        (void)snprintf(nbuf, sizeof(nbuf), "%ld", (long)class);
         return(nbuf);
     }
 }
@@ -514,19 +514,19 @@ u_long value;
     if(hours) {
         if(value)
             *p++ = ' ';
-        (void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld hour%s", PLURALIZE(hours));
+        (void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld hour%s", PLURALIZE((long)hours));
         while(*++p);
     }
     if(mins) {
         if(value || hours)
             *p++ = ' ';
-        (void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld min%s", PLURALIZE(mins));
+        (void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld min%s", PLURALIZE((long)mins));
         while(*++p);
     }
     if(secs || !(value || hours || mins)) {
         if(value || hours || mins)
             *p++ = ' ';
-        (void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld sec%s", PLURALIZE(secs));
+        (void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld sec%s", PLURALIZE((long)secs));
     }
     return(nbuf);
 }

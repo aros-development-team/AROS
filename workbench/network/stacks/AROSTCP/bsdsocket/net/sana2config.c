@@ -260,12 +260,11 @@ ssconfig(struct sana_softc *ifp, struct ssconfig *ifc)
 {
     const struct ssc_args *args = ifc->args;
     const struct wire_defaults *wd;
-    LONG wt = ifp->ss_hwtype;
     LONG reqtotal = 0;
 #ifdef SANA2_LARGEREQALLOCS
     ULONG bps = ifp->ss_if.if_baudrate;
 
-    D(bug("[AROSTCP] ssconfig(bps=%lu)\n", bps));
+    D(bug("[AROSTCP] ssconfig(bps=%lu)\n", (u_long)bps));
 #else
     D(bug("[AROSTCP] ssconfig()\n"));
 #endif
@@ -273,6 +272,8 @@ ssconfig(struct sana_softc *ifp, struct ssconfig *ifc)
     assert(ifp != NULL);
 
     for(wd = wire_defaults; wd->wd_wiretype != 0; wd++) {
+        LONG wt = ifp->ss_hwtype;
+
         if(wt == wd->wd_wiretype)
             break;
     }

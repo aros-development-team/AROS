@@ -148,7 +148,7 @@ struct in_addr dest;
 
 #ifdef ICMPPRINTFS
     if(icmpprintfs)
-        printf("icmp_error(%lx, %ld, %ld)\n", (u_long)oip, type, code);
+        printf("icmp_error(%lx, %ld, %ld)\n", (u_long)oip, (long)type, (long)code);
 #endif
     if(type != ICMP_REDIRECT)
         icmpstat.icps_error++;
@@ -253,7 +253,7 @@ void icmp_input(void *arg, ...)
      */
 #ifdef ICMPPRINTFS
     if(icmpprintfs)
-        printf("icmp_input from %lx, len %ld\n", ip->ip_src.s_addr, icmplen);
+        printf("icmp_input from %lx, len %ld\n", (u_long)ip->ip_src.s_addr, (long)icmplen);
 #endif
     if(icmplen < ICMP_MINLEN) {
         icmpstat.icps_tooshort++;
@@ -280,8 +280,8 @@ void icmp_input(void *arg, ...)
      * Message type specific processing.
      */
     if(icmpprintfs)
-        printf("icmp_input, type %ld code %ld\n", icp->icmp_type,
-               icp->icmp_code);
+        printf("icmp_input, type %ld code %ld\n", (long)icp->icmp_type,
+               (long)icp->icmp_code);
 #endif
     if(icp->icmp_type > ICMP_MAXTYPE)
         goto raw;
@@ -323,7 +323,7 @@ deliver:
         NTOHS(icp->icmp_ip.ip_len);
 #ifdef ICMPPRINTFS
         if(icmpprintfs)
-            printf("deliver to protocol %ld\n", icp->icmp_ip.ip_p);
+            printf("deliver to protocol %ld\n", (long)icp->icmp_ip.ip_p);
 #endif
         icmpsrc.sin_addr = icp->icmp_ip.ip_dst;
         if(inetsw[ip_protox[icp->icmp_ip.ip_p]].pr_ctlinput)
@@ -394,8 +394,8 @@ reflect:
         icmpdst.sin_addr = icp->icmp_gwaddr;
 #ifdef	ICMPPRINTFS
         if(icmpprintfs)
-            printf("redirect dst %lx to %lx\n", icp->icmp_ip.ip_dst.s_addr,
-                   icp->icmp_gwaddr.s_addr);
+            printf("redirect dst %lx to %lx\n", (u_long)icp->icmp_ip.ip_dst.s_addr,
+                   (u_long)icp->icmp_gwaddr.s_addr);
 #endif
         if(code == ICMP_REDIRECT_NET || code == ICMP_REDIRECT_TOSNET) {
             u_long in_netof();
@@ -498,7 +498,7 @@ struct mbuf *m;
 #ifdef ICMPPRINTFS
             if(icmpprintfs)
                 printf("icmp_reflect optlen %ld rt %ld => ",
-                       optlen, opts->m_len);
+                       (long)optlen, (long)opts->m_len);
 #endif
             for(cnt = optlen; cnt > 0; cnt -= len, cp += len) {
                 opt = cp[IPOPT_OPTVAL];
@@ -526,7 +526,7 @@ struct mbuf *m;
             }
 #ifdef ICMPPRINTFS
             if(icmpprintfs)
-                printf("%ld\n", opts->m_len);
+                printf("%ld\n", (long)opts->m_len);
 #endif
         }
         /*
@@ -582,7 +582,7 @@ struct mbuf *opts;
     m->m_len += hlen;
 #ifdef ICMPPRINTFS
     if(icmpprintfs)
-        printf("icmp_send dst %lx src %lx\n", ip->ip_dst.s_addr, ip->ip_src.s_addr);
+        printf("icmp_send dst %lx src %lx\n", (u_long)ip->ip_dst.s_addr, (u_long)ip->ip_src.s_addr);
 #endif
     (void) ip_output(m, opts, (struct route *)0, 0);
 }

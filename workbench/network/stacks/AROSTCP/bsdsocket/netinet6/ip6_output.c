@@ -59,11 +59,8 @@ int
 ip6_output(void *args, ...)
 {
     struct mbuf *m = args;
-    struct mbuf *opt;
-    int flags;
     struct ip6_moptions *im6o;
     struct ifnet **ifpp;
-    struct inpcb *inp;
     va_list va;
 
     struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
@@ -77,12 +74,12 @@ ip6_output(void *args, ...)
     spl_t s;
 
     va_start(va, args);
-    opt   = va_arg(va, struct mbuf *);
+    (void)va_arg(va, struct mbuf *);
     ro    = va_arg(va, struct route *);
-    flags = va_arg(va, int);
+    (void)va_arg(va, int);
     im6o  = va_arg(va, struct ip6_moptions *);
     ifpp  = va_arg(va, struct ifnet **);
-    inp   = va_arg(va, struct inpcb *);
+    (void)va_arg(va, struct inpcb *);
     va_end(va);
 
     if(ro == NULL) {

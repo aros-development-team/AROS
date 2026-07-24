@@ -738,7 +738,7 @@ register struct walkarg *w;
     int n, error;
 
     for(; rn; rn = rn->rn_dupedkey) {
-        int count = 0, size = sizeof(w->w_rtm);
+        int size = sizeof(w->w_rtm);
         register struct rtentry *rt = (struct rtentry *)rn;
 
         if(rn->rn_flags & RNF_ROOT)
@@ -849,8 +849,9 @@ register int (*f)();
 struct walkarg *w;
 {
     register int (*rtwfunc)(struct radix_node *, struct walkarg *) = (int (*)(struct radix_node *, struct walkarg *))f;
-    int error;
     for(;;) {
+        int error;
+
         while(rn->rn_b >= 0)
             rn = rn->rn_l;	/* First time through node, go left */
         if(error = (*rtwfunc)(rn, w))

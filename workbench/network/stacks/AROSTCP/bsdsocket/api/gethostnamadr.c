@@ -1399,7 +1399,7 @@ LONG __gethostname(STRPTR name, LONG namelen, struct SocketBase *libPtr)
     } else host_namelen = strnlen(host_name, MAXHOSTNAMELEN);
 
 #if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) __gethostname: namelen: %d host_namelen: %d\n", namelen, host_namelen));
+    D(bug("[AROSTCP](gethostnameadr.c) __gethostname: namelen: %d host_namelen: %d\n", (int)namelen, (int)host_namelen));
 #endif
 
     /*

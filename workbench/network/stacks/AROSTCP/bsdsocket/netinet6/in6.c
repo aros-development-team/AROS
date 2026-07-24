@@ -81,10 +81,7 @@ in6_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
     struct in6_ifreq  *ifr  = (struct in6_ifreq *)data;
     struct in6_aliasreq *ifra = (struct in6_aliasreq *)data;
     struct in6_ifaddr *ia   = NULL, *oia;
-    struct ifaddr     *ifa;
-    struct mbuf       *m;
     int error = 0;
-    spl_t s;
 
     /* locate existing IPv6 address for this interface */
     if(ifp) {
@@ -113,6 +110,9 @@ in6_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
         if(ifp == NULL)
             panic("in6_control");
         if(ia == NULL) {
+            struct ifaddr *ifa;
+            struct mbuf   *m;
+
             /* allocate new address record */
             m = m_getclr(M_WAIT, MT_IFADDR);
             if(m == NULL)
@@ -860,7 +860,7 @@ in6_generate_random_iid(struct in6_addr *addr)
 int
 in6_tmpifadd(struct ifnet *ifp, struct nd_prefix *pr)
 {
-    struct in6_ifaddr *ia, *newia;
+    struct in6_ifaddr *newia;
     struct in6_aliasreq ifra;
     struct in6_addr tmpaddr;
     struct sockaddr_in6 *sin6;
@@ -879,7 +879,7 @@ in6_tmpifadd(struct ifnet *ifp, struct nd_prefix *pr)
     in6_generate_random_iid(&tmpaddr);
 
     /* check for conflicts with existing addresses */
-    for(ia = in6_ifaddr; ia; ia = ia->ia_next) {
+    for(struct in6_ifaddr *ia = in6_ifaddr; ia; ia = ia->ia_next) {
         if(IN6_ARE_ADDR_EQUAL(&ia->ia_addr.sin6_addr, &tmpaddr))
             return EEXIST;  /* collision - caller should retry */
     }

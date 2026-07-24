@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 1985, 1989 Regents of the University of California.
  * All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -123,16 +123,16 @@ res_send(struct SocketBase 	*libPtr,
                     D(bug("[AROSTCP](res_send.c) res_send: Attempt %d\n", try));
 #endif
                     nscount = 0;
-                    DRES(Printf("Retry #%ld\n", try);)
+                    DRES(Printf("Retry #%ld\n", (long)try);)
                     for(ns = _res.nsaddr_list; ns->s_addr; ns++) {
                         nscount++;
 #if defined(__AROS__)
-                        D(bug("[AROSTCP](res_send.c) res_send: Querying server #%ld address = %s\n", nscount,
+                        D(bug("[AROSTCP](res_send.c) res_send: Querying server #%ld address = %s\n", (long)nscount,
                               __inet_ntoa(ns->s_addr, libPtr)));
 #endif
 
 #ifdef RES_DEBUG
-                        Printf("Querying server #%ld address = %s\n", nscount,
+                        Printf("Querying server #%ld address = %s\n", (long)nscount,
                                __Inet_NtoA(ns->s_addr, libPtr));
 #endif /* RES_DEBUG */
                         host.sin_len = sizeof(host);

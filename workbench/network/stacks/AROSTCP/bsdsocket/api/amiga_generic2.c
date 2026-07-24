@@ -280,7 +280,7 @@ AROS_LH0(LONG, getdtablesize,
          struct SocketBase *, libPtr, 23, UL)
 {
     AROS_LIBFUNC_INIT
-    DSYSCALLS(log(LOG_DEBUG, "getdtablesize(): returned %ld", libPtr->dTableSize);)
+    DSYSCALLS(log(LOG_DEBUG, "getdtablesize(): returned %ld", (long)libPtr->dTableSize);)
     return (LONG)libPtr->dTableSize;
     AROS_LIBFUNC_EXIT
 }

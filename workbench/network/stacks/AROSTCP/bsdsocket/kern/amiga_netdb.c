@@ -1326,7 +1326,7 @@ read_netdb(struct NetDataBase *ndb, UBYTE *fname,
                     error_request("Error in NetDB file %s at line %ld, col %ld\n%s",
                                   (IPTR)fname, (IPTR)line, (IPTR)rdargs->RDA_Source.CS_CurChr, (IPTR)*errstrp);
                     __log(LOG_WARNING, "NetDB(%s) line %ld: %s before col %ld\n",
-                          fname, line, *errstrp, rdargs->RDA_Source.CS_CurChr);
+                          fname, (long)line, *errstrp, rdargs->RDA_Source.CS_CurChr);
 
                     warnval = retval;
                 }

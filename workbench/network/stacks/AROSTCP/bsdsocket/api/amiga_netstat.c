@@ -10,7 +10,6 @@
 
 long __QueryInterfaceTagList(STRPTR name, const struct TagItem *tags, struct SocketBase *libPtr)
 {
-    struct TagItem *tag;
     struct ifnet *ifp;
 
 #if defined(__AROS__)
@@ -19,6 +18,7 @@ long __QueryInterfaceTagList(STRPTR name, const struct TagItem *tags, struct Soc
 
     ifp = ifunit(name);
     if(ifp) {
+        struct TagItem *tag;
         while(tag = NextTagItem((struct TagItem **)&tags)) {
             switch(tag->ti_Tag) {
             case IFQ_HardwareAddressSize: {

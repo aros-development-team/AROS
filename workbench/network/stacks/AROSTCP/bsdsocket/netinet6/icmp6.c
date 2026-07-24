@@ -155,7 +155,6 @@ icmp6_input(void *args, ...)
     struct mbuf  *m = args;
     struct ip6_hdr   *ip6;
     struct icmp6_hdr *icmp6;
-    struct ifnet *ifp = m->m_pkthdr.rcvif;
     int off, icmp6len;
     va_list va;
 
@@ -277,7 +276,6 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
 {
     struct ip6_hdr *oip6, *nip6;
     struct icmp6_hdr *icmp6;
-    struct mbuf *n;
     int hlen, prepend;
 
     icmp6stat.icp6s_error++;
@@ -452,7 +450,6 @@ rip6_output(void *args, ...)
     struct sockaddr_in6 *dst6;
     struct ip6_hdr *ip6;
     struct route_in6 ro;
-    struct in6_ifaddr *ia;
     va_list va;
 
     va_start(va, args);
@@ -495,7 +492,7 @@ rip6_output(void *args, ...)
         ro.ro_dst.sin6_addr   = dst6->sin6_addr;
         rtalloc((struct route *)&ro);
         if(ro.ro_rt != NULL) {
-            ia = in6_ifawithifp(ro.ro_rt->rt_ifp, &dst6->sin6_addr);
+            struct in6_ifaddr *ia = in6_ifawithifp(ro.ro_rt->rt_ifp, &dst6->sin6_addr);
             if(ia)
                 ip6->ip6_src = ia->ia_addr.sin6_addr;
             RTFREE(ro.ro_rt);

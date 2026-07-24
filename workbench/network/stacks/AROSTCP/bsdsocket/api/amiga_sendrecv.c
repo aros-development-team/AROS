@@ -92,7 +92,7 @@ AROS_LH4(LONG, send,
          struct SocketBase *, libPtr, 11, UL)
 {
     AROS_LIBFUNC_INIT
-    DSYSCALLS(log(LOG_DEBUG, "send(%ld, buf, %ld, 0x%08lx) called", s, len, flags);)
+    DSYSCALLS(log(LOG_DEBUG, "send(%ld, buf, %ld, 0x%08lx) called", (long)s, (long)len, (u_long)flags);)
     return __send(s, buf, len, flags, libPtr);
     AROS_LIBFUNC_EXIT
 }
@@ -146,7 +146,7 @@ AROS_LH6(LONG, sendto,
          struct SocketBase *, libPtr, 10, UL)
 {
     AROS_LIBFUNC_INIT
-    DSYSCALLS(log(LOG_DEBUG, "sendto(%ld, buf, %ld, 0x%08lx, sockaddr_in, %ld", s, len, flags, tolen);)
+    DSYSCALLS(log(LOG_DEBUG, "sendto(%ld, buf, %ld, 0x%08lx, sockaddr_in, %ld", (long)s, (long)len, (u_long)flags, (long)tolen);)
     DSYSCALLS(dump_sockaddr_in((struct sockaddr_in *)to, libPtr);)
     return __sendto(s, buf, len, flags, to, tolen, libPtr);
     AROS_LIBFUNC_EXIT
@@ -167,7 +167,7 @@ AROS_LH3(LONG, sendmsg,
     LONG error, retval;
 
     CHECK_TASK();
-    DSYSCALLS(log(LOG_DEBUG, "sendmsg(%ld, msghdr, 0x%08lx) called", s, flags);)
+    DSYSCALLS(log(LOG_DEBUG, "sendmsg(%ld, msghdr, 0x%08lx) called", (long)s, (u_long)flags);)
     ObtainSyscallSemaphore(libPtr);
     error = sendit(libPtr, s, msg_p, flags, &retval);
     ReleaseSyscallSemaphore(libPtr);
@@ -270,7 +270,7 @@ AROS_LH4(LONG, recv,
          struct SocketBase *, libPtr, 13, UL)
 {
     AROS_LIBFUNC_INIT
-    DSYSCALLS(log(LOG_DEBUG, "recv(%ld, buf, %ld, 0x%08lx) called", s, len, flags);)
+    DSYSCALLS(log(LOG_DEBUG, "recv(%ld, buf, %ld, 0x%08lx) called", (long)s, (long)len, (u_long)flags);)
     return __recv(s, buf, len, flags, libPtr);
     AROS_LIBFUNC_EXIT
 }
@@ -298,7 +298,7 @@ AROS_LH6(LONG, recvfrom,
     LONG error, retval;
 
     CHECK_TASK();
-    DSYSCALLS(log(LOG_DEBUG, "recvfrom(%ld, buf, %ld, 0x%08lx) called", s, len, flags);)
+    DSYSCALLS(log(LOG_DEBUG, "recvfrom(%ld, buf, %ld, 0x%08lx) called", (long)s, (long)len, (u_long)flags);)
     if(fromlenaddr)
         msg.msg_namelen = *fromlenaddr;
     else
@@ -334,7 +334,7 @@ AROS_LH3(LONG, recvmsg,
     LONG error, retval;
 
     CHECK_TASK();
-    DSYSCALLS(log(LOG_DEBUG, "recvmsg(%ld, msghdr, 0x%08lx) called", s, flags);)
+    DSYSCALLS(log(LOG_DEBUG, "recvmsg(%ld, msghdr, 0x%08lx) called", (long)s, (u_long)flags);)
     ObtainSyscallSemaphore(libPtr);
     error = recvit(libPtr, s, msg_p, flags, NULL, &retval);
     ReleaseSyscallSemaphore(libPtr);

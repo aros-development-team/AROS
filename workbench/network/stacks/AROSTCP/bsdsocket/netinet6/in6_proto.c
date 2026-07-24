@@ -171,7 +171,6 @@ in6_joingroup_inp(struct inpcb *inp, struct ipv6_mreq *mreq)
     struct ip6_moptions *im6o;
     struct ifnet *ifp;
     struct in6_multi *in6m;
-    int i;
 
     im6o = ip6_getmoptions(&inp->in6p_moptions);
     if(im6o == NULL)
@@ -200,7 +199,7 @@ in6_joingroup_inp(struct inpcb *inp, struct ipv6_mreq *mreq)
     }
 
     /* check not already a member */
-    for(i = 0; i < im6o->im6o_num_memberships; i++) {
+    for(int i = 0; i < im6o->im6o_num_memberships; i++) {
         if(im6o->im6o_membership[i]->in6m_ifp == ifp &&
                 IN6_ARE_ADDR_EQUAL(&im6o->im6o_membership[i]->in6m_addr,
                                    &mreq->ipv6mr_multiaddr))
@@ -223,7 +222,6 @@ in6_leavegroup_inp(struct inpcb *inp, struct ipv6_mreq *mreq)
 {
     struct ip6_moptions *im6o = inp->in6p_moptions;
     struct ifnet *ifp;
-    int i;
 
     if(im6o == NULL)
         return EADDRNOTAVAIL;
@@ -240,7 +238,7 @@ in6_leavegroup_inp(struct inpcb *inp, struct ipv6_mreq *mreq)
             return ENXIO;
     }
 
-    for(i = 0; i < im6o->im6o_num_memberships; i++) {
+    for(int i = 0; i < im6o->im6o_num_memberships; i++) {
         if((ifp == NULL || im6o->im6o_membership[i]->in6m_ifp == ifp) &&
                 IN6_ARE_ADDR_EQUAL(&im6o->im6o_membership[i]->in6m_addr,
                                    &mreq->ipv6mr_multiaddr)) {

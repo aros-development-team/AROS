@@ -248,9 +248,9 @@ AROS_UFH3(BOOL, m_copy_to_mbuf,
             log(LOG_ERR, "m_copy_to_buff: mbuf chain short, "
                 "packet len =%lu, reserved =%lu, "
                 "wiretype =%lu, mtu =%lu",
-                totlen, to->ioip_reserved->m_pkthdr.len,
-                to->ioip_s2.ios2_PacketType,
-                (ULONG)to->ioip_if->ss_if.if_mtu);
+                (u_long)totlen, (u_long)to->ioip_reserved->m_pkthdr.len,
+                (u_long)to->ioip_s2.ios2_PacketType,
+                (u_long)to->ioip_if->ss_if.if_mtu);
             return FALSE;
         }
 #endif

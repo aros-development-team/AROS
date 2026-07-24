@@ -297,7 +297,7 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
 
 Return:
     ReleaseSyscallSemaphore(libPtr);
-    DOPTERR(if(error) log(LOG_ERR, "IoctlSocket(): error %ld on command 0x%08lx", error, cmd);)
+    DOPTERR(if(error) log(LOG_ERR, "IoctlSocket(): error %ld on command 0x%08lx", (long)error, cmd);)
         API_STD_RETURN(error, 0);
 }
 

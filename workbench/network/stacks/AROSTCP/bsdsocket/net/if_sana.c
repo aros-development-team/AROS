@@ -316,7 +316,7 @@ iface_make(struct ssconfig *ifc)
     } else {
         req->ios2_BufferManagement = buffermanagement;
 
-        DSANA(__log(LOG_DEBUG, "Opening device %s unit %ld", ifc->args->a_dev, *ifc->args->a_unit);)
+        DSANA(__log(LOG_DEBUG, "Opening device %s unit %ld", ifc->args->a_dev, (long)*ifc->args->a_unit);)
         if(OpenDevice(ifc->args->a_dev, *ifc->args->a_unit,
                       (struct IORequest *)req, 0L)) {
             /* OpenDevice() returns non-zero on FAILURE: only report the
@@ -433,7 +433,6 @@ iface_make(struct ssconfig *ifc)
 static void
 sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
 {
-    int i;
     spl_t s = splimp();
     struct IOIPReq *req, *next = ssc->ss_reqs;
 
@@ -494,7 +493,7 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
 
     if((ssc->ss_if.if_flags & IFF_DRV_RUNNING)) {
         /* Initialize ioRequests, add them into free queue */
-        for(i = 0; i < requests ; i++) {
+        for(int i = 0; i < requests ; i++) {
             if(!(req = CreateIORequest(SanaPort, sizeof(*req)))) break;
             req->ioip_s2.ios2_Req.io_Device    = ssc->ss_dev;
             req->ioip_s2.ios2_Req.io_Unit      = ssc->ss_unit;
@@ -831,7 +830,7 @@ sana_down(struct sana_softc *ssc)
     struct IOSana2Req *sreq;
     spl_t s = splimp();
     struct IOIPReq *req = ssc->ss_reqs;
-    BOOL success;
+    BOOL success = TRUE;	/* default when no S2_OFFLINE request is issued */
 
     DSANA(__log(LOG_DEBUG, "sana_down(%s%d) called", ssc->ss_if.if_name, ssc->ss_if.if_unit);)
     gui_set_interface_state(&ssc->ss_if, MIAMIPANELV_AddInterface_State_GoingOffline);
@@ -1132,10 +1131,7 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
     register struct sana_softc *ssc = (struct sana_softc *)ifp;
     ULONG type;
     int error = 0;
-    struct in_addr idst;
 
-    /* If a broadcast, send a copy to ourself too */
-    struct mbuf *mcopy = (struct mbuf *)NULL;
     struct IOIPReq *req = NULL;
     register struct mbuf *m = m0;
 
@@ -1162,8 +1158,8 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
 
     switch(dst->sa_family) {
 #if INET
-    case AF_INET:
-        idst = ((struct sockaddr_in *)dst)->sin_addr;
+    case AF_INET: {
+        struct in_addr idst = ((struct sockaddr_in *)dst)->sin_addr;
 
         /* If the address is not resolved, arpresolve
          * stores the packet to its private queue for
@@ -1187,14 +1183,16 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
 
         /* Send to loopback if we do not hear our broadcasts */
         if((ssc->ss_if.if_flags & IFF_SIMPLEX) && (m->m_flags & M_BCAST)) {
-            mcopy = m_copy(m, 0, (int)M_COPYALL);
+            /* If a broadcast, send a copy to ourself too */
+            struct mbuf *mcopy = m_copy(m, 0, (int)M_COPYALL);
             (void) looutput(&ssc->ss_if, mcopy, dst, rt);
         }
         /* Set the message priority */
         req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri =
             (IPTOS_LOWDELAY & mtod(m, struct ip *)->ip_tos) ?
             1 : 0;
-        break;
+    }
+    break;
 #endif
 #if NS
 #error NS unimplemented!!!
@@ -1215,7 +1213,6 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
 #endif
 #if INET6
     case AF_INET6: {
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)dst;
         int nd_error;
         type = ssc->ss_ip6.type;
         nd_error = nd6_resolve(ifp, rt, m, dst, req->ioip_s2.ios2_DstAddr);

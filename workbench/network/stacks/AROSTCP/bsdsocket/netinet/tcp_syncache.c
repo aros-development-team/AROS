@@ -312,9 +312,8 @@ syncache_respond(struct syncache *sc)
 {
     struct mbuf *m;
     struct tcpiphdr *ti;
-    u_char *optp;
     u_char opt[TCP_MAXOLEN];
-    int optlen = 0, tlen, win;
+    int optlen, tlen, win;
 
     /* MSS option (we advertise the Ethernet default; no per-SYN route work). */
     opt[0] = TCPOPT_MAXSEG;
@@ -587,9 +586,6 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
     struct inpcb *inp;
     struct socket *so;
     struct tcpcb *tp;
-    struct mbuf *am;
-    struct sockaddr_in *sin;
-    struct in_addr laddr;
     u_long tiwin;
 
     so = sonewconn(lso, 0);
@@ -612,6 +608,10 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
     } else
 #endif
     {
+        struct mbuf *am;
+        struct sockaddr_in *sin;
+        struct in_addr laddr;
+
         inp->inp_laddr = sc->sc_laddr;
         inp->inp_lport = sc->sc_lport;
         in_pcbrehash(inp);

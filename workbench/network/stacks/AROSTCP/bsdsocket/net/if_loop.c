@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -156,7 +156,7 @@ register struct rtentry *rt;
 {
     int isr;
     spl_t s;
-    register struct ifqueue *ifq = 0;
+    register struct ifqueue *ifq;
 
     if((m->m_flags & M_PKTHDR) == 0)
         panic("looutput no HDR");
