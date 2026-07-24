@@ -329,6 +329,12 @@ BOOL areafillpolygon(struct RastPort   *rp,
                      ULONG              bytesperrow,
                      struct GfxBase    *GfxBase);
 
+void areaoutlinepolygonmask(struct RastPort   *rp,
+                            struct Rectangle *bounds,
+                            UWORD              first_idx,
+                            UWORD              last_idx,
+                            ULONG              bytesperrow);
+
 void areafillellipse(struct RastPort    *rp,
                      struct Rectangle   *bounds,
                      UWORD              *CurVctr,
