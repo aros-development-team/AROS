@@ -56,21 +56,32 @@
             ".weak " #fname "\n"                                           \
             ".type " #fname ", %%function\n"                               \
             #fname " :\n"                                                  \
-            /* Preserve the 8 argument regs + lr across the helper call */ \
-            "\tstp  x0, x1, [sp, #-80]!\n"                                 \
-            "\tstp  x2, x3, [sp, #16]\n"                                   \
-            "\tstp  x4, x5, [sp, #32]\n"                                   \
-            "\tstp  x6, x7, [sp, #48]\n"                                   \
-            "\tstr  x30, [sp, #64]\n"                                      \
+            /* Preserve every argument-carrying register across the       \
+             * helper call: x0-x7 (integer args), q0-q7 (FP/SIMD args),   \
+             * x8 (indirect result location) and lr. AAPCS64 lets the     \
+             * callee clobber all of them. */                             \
+            "\tstp  q0, q1, [sp, #-208]!\n"                               \
+            "\tstp  q2, q3, [sp, #32]\n"                                  \
+            "\tstp  q4, q5, [sp, #64]\n"                                  \
+            "\tstp  q6, q7, [sp, #96]\n"                                  \
+            "\tstp  x0, x1, [sp, #128]\n"                                 \
+            "\tstp  x2, x3, [sp, #144]\n"                                 \
+            "\tstp  x4, x5, [sp, #160]\n"                                 \
+            "\tstp  x6, x7, [sp, #176]\n"                                 \
+            "\tstp  x8, x30, [sp, #192]\n"                                \
             "\tbl   __aros_getoffsettable\n"  /* x0 = offset table       */ \
             "\tldr  x16, 1f\n"                /* x16 = &rellib_offset    */ \
             "\tldr  x16, [x16]\n"             /* x16 = offset value      */ \
             "\tldr  x16, [x0, x16]\n"         /* x16 = libbase           */ \
-            "\tldr  x30, [sp, #64]\n"                                      \
-            "\tldp  x6, x7, [sp, #48]\n"                                   \
-            "\tldp  x4, x5, [sp, #32]\n"                                   \
-            "\tldp  x2, x3, [sp, #16]\n"                                   \
-            "\tldp  x0, x1, [sp], #80\n"                                   \
+            "\tldp  x8, x30, [sp, #192]\n"                                \
+            "\tldp  x6, x7, [sp, #176]\n"                                 \
+            "\tldp  x4, x5, [sp, #160]\n"                                 \
+            "\tldp  x2, x3, [sp, #144]\n"                                 \
+            "\tldp  x0, x1, [sp, #128]\n"                                 \
+            "\tldp  q6, q7, [sp, #96]\n"                                  \
+            "\tldp  q4, q5, [sp, #64]\n"                                  \
+            "\tldp  q2, q3, [sp, #32]\n"                                  \
+            "\tldp  q0, q1, [sp], #208\n"                                 \
             "\tmov  x17, #%c0\n"                                           \
             "\tsub  x17, x16, x17\n"          /* x17 = &JumpVec[-lvo]    */ \
             "\tldr  x17, [x17]\n"             /* x17 = function pointer  */ \
@@ -105,18 +116,28 @@
     {                                                                      \
         asm volatile(                                                      \
             "\t" __GM_STRINGIZE(libfuncname) " :\n"                        \
-            "\tstp  x0, x1, [sp, #-80]!\n"                                 \
-            "\tstp  x2, x3, [sp, #16]\n"                                   \
-            "\tstp  x4, x5, [sp, #32]\n"                                   \
-            "\tstp  x6, x7, [sp, #48]\n"                                   \
-            "\tstr  x30, [sp, #64]\n"                                      \
+            /* Preserve x0-x7, q0-q7, x8 (indirect result) and lr --      \
+             * AAPCS64 lets the callee clobber all of them. */            \
+            "\tstp  q0, q1, [sp, #-208]!\n"                               \
+            "\tstp  q2, q3, [sp, #32]\n"                                  \
+            "\tstp  q4, q5, [sp, #64]\n"                                  \
+            "\tstp  q6, q7, [sp, #96]\n"                                  \
+            "\tstp  x0, x1, [sp, #128]\n"                                 \
+            "\tstp  x2, x3, [sp, #144]\n"                                 \
+            "\tstp  x4, x5, [sp, #160]\n"                                 \
+            "\tstp  x6, x7, [sp, #176]\n"                                 \
+            "\tstp  x8, x30, [sp, #192]\n"                                \
             "\tmov  x0, x16\n"                /* arg0 = libbase          */ \
             "\tbl   __aros_setoffsettable\n"                               \
-            "\tldr  x30, [sp, #64]\n"                                      \
-            "\tldp  x6, x7, [sp, #48]\n"                                   \
-            "\tldp  x4, x5, [sp, #32]\n"                                   \
-            "\tldp  x2, x3, [sp, #16]\n"                                   \
-            "\tldp  x0, x1, [sp], #80\n"                                   \
+            "\tldp  x8, x30, [sp, #192]\n"                                \
+            "\tldp  x6, x7, [sp, #176]\n"                                 \
+            "\tldp  x4, x5, [sp, #160]\n"                                 \
+            "\tldp  x2, x3, [sp, #144]\n"                                 \
+            "\tldp  x0, x1, [sp, #128]\n"                                 \
+            "\tldp  q6, q7, [sp, #96]\n"                                  \
+            "\tldp  q4, q5, [sp, #64]\n"                                  \
+            "\tldp  q2, q3, [sp, #32]\n"                                  \
+            "\tldp  q0, q1, [sp], #208\n"                                 \
             "\tb   " #fname "\n"                                           \
         );                                                                 \
     }

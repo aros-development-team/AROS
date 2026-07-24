@@ -24,6 +24,12 @@ AROS_CDEFNAME(longjmp):
 	ldp	x25, x26, [x0, #56]
 	ldp	x27, x28, [x0, #72]
 	ldp	x29, x30, [x0, #88]
+	/*
+	 * Return via the retaddr slot rather than the x30 copy at offset 96:
+	 * for a plain setjmp the two are identical, but the vfork machinery
+	 * (posixc __vfork) patches retaddr to redirect the jump.
+	 */
+	ldr	x30, [x0, #retaddr]
 	ldr	x2, [x0, #104]
 	mov	sp, x2
 	ldp	d8,  d9,  [x0, #112]

@@ -1,0 +1,219 @@
+# $Id $
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGETDIR       := $(GENDIR)/$(CURDIR)
+FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree \
+                   bc/vars bc/font8x14 bc/screen_fb vc_fb
+USER_CFLAGS     := -Wall $(CFLAGS_NO_BUILTIN)
+KERNEL_LDFLAGS  =
+USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/openfirmware
+USER_CPPFLAGS   := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
+USER_CPPFLAGS   += -DUSE_UBOOT
+OPTIMIZATION_CFLAGS := -O2
+
+ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
+
+#MM- distfiles-raspi-aarch64 : distfiles-raspi-aarch64-le
+#MM- distfiles-raspi-aarch64-quick : distfiles-raspi-aarch64-le
+
+#MM distfiles-raspi-aarch64-le : \
+#MM kernel-raspi-aarch64 \
+#MM kernel-package-raspi-aarch64 \
+#MM distfiles-raspi-aarch64-fw
+
+#MM kernel-package-raspi-aarch64-quick: \
+#MM linklibs-stdc-static-quick \
+#MM kernel-dos-quick \
+#MM kernel-bootloader-quick \
+#MM kernel-dosboot-quick \
+#MM kernel-oop-quick \
+#MM kernel-utility-quick \
+#MM kernel-debug-quick \
+#MM kernel-expansion-quick \
+#MM kernel-openfirmware-quick \
+#MM kernel-graphics-quick \
+#MM kernel-cgxbootpic-quick \
+#MM workbench-libs-gadtools-quick \
+#MM workbench-libs-lowlevel-quick \
+#MM kernel-intuition-quick \
+#MM kernel-partition-quick \
+#MM kernel-layers-quick \
+#MM kernel-timer-quick \
+#MM kernel-lddemon-quick \
+#MM kernel-hidd-quick \
+#MM kernel-aros-quick \
+#MM kernel-misc-quick \
+#MM kernel-keymap-quick \
+#MM kernel-input-quick \
+#MM kernel-gameport-quick \
+#MM kernel-keyboard-quick \
+#MM kernel-console-quick \
+#MM kernel-shell-quick \
+#MM kernel-shellcommands-quick \
+#MM kernel-filesystem-quick \
+#MM kernel-fs-con-quick \
+#MM kernel-fs-afs-quick \
+#MM kernel-fs-cdvdfs-quick \
+#MM kernel-fs-fat-quick \
+#MM kernel-fs-sfs-quick \
+#MM kernel-fs-ram-quick \
+#MM kernel-processor-quick \
+#MM kernel-mbox-bcm2708-quick \
+#MM kernel-dma-bcm2708-quick \
+#MM kernel-hidd-bus-quick \
+#MM hidd-i2c-quick \
+#MM kernel-hidd-gfx-quick \
+#MM hidd-vc4gfx-quick \
+#MM kernel-sdcard-quick \
+#MM kernel-hidd-input-quick \
+#MM kernel-hidd-kbd-quick \
+#MM kernel-hidd-mouse-quick \
+#MM kernel-usb-nopci-quick \
+#MM kernel-usb-usb2otg-quick \
+#MM kernel-usb-romstrap-raspi-quick \
+#MM kernel-econsole-quick
+
+#MM kernel-package-raspi-aarch64: \
+#MM linklibs-stdc-static \
+#MM kernel-dos \
+#MM kernel-bootloader \
+#MM kernel-dosboot \
+#MM kernel-oop \
+#MM kernel-utility \
+#MM kernel-debug \
+#MM kernel-expansion \
+#MM kernel-openfirmware \
+#MM kernel-graphics \
+#MM kernel-cgxbootpic \
+#MM workbench-libs-gadtools \
+#MM workbench-libs-lowlevel \
+#MM kernel-intuition \
+#MM kernel-partition \
+#MM kernel-layers \
+#MM kernel-timer \
+#MM kernel-lddemon \
+#MM kernel-hidd \
+#MM kernel-aros \
+#MM kernel-misc \
+#MM kernel-keymap \
+#MM kernel-input \
+#MM kernel-gameport \
+#MM kernel-keyboard \
+#MM kernel-console \
+#MM kernel-shell \
+#MM kernel-shellcommands \
+#MM kernel-filesystem \
+#MM kernel-fs-con \
+#MM kernel-fs-afs \
+#MM kernel-fs-cdvdfs \
+#MM kernel-fs-fat \
+#MM kernel-fs-sfs \
+#MM kernel-fs-ram \
+#MM kernel-processor \
+#MM kernel-mbox-bcm2708 \
+#MM kernel-dma-bcm2708 \
+#MM kernel-sdcard \
+#MM kernel-hidd-bus \
+#MM hidd-i2c \
+#MM hidd-i2c-bcm2708 \
+#MM hidd-vc4gfx \
+#MM kernel-hidd-gfx \
+#MM kernel-hidd-input \
+#MM kernel-hidd-kbd \
+#MM kernel-hidd-mouse \
+#MM kernel-usb-nopci \
+#MM kernel-usb-usb2otg \
+#MM kernel-usb-romstrap-raspi \
+#MM kernel-econsole
+
+#MM kernel-package-raspi-aarch64-missing: \
+#MM kernel-battclock
+
+# Pin to a specific firmware release tag, not the rolling 'master' branch:
+# start.elf and fixup.dat are a version-matched pair, and fetching them from
+# master at different times (with wget -c never re-fetching) yields a mismatch
+# ("MISMATCHED FILES: start.elf and fixup.dat do not fit to each other!").
+RASPIFW_BRANCH    := 1.20260521
+RASPIFW_URI       := https://github.com/raspberrypi/firmware/raw/$(RASPIFW_BRANCH)/boot
+RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb
+
+PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic gadtools lowlevel
+PKG_LIBS_ARCH := expansion
+PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox dma
+PKG_RSRC_ARCH := processor
+PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
+PKG_DEVS_ARCH := timer
+PKG_HANDLERS  := con ram cdrom sfs fat afs
+PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus i2c i2c-bcm2708 vc4gfx
+PKG_CLASSES   := USB/hub USB/massstorage
+
+%make_package mmake=kernel-package-raspi-aarch64 file=$(AROSDIR)/$(ARM_BSP) \
+    libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
+    arch_res=$(PKG_RSRC_ARCH) devs=$(PKG_DEVS) arch_devs=$(PKG_DEVS_ARCH) \
+    handlers=$(PKG_HANDLERS) hidds=$(PKG_HIDDS) classes=$(PKG_CLASSES)
+
+#MM
+distfiles-raspi-aarch64-fw:
+	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(file))" -O "$(addprefix $(AROSDIR)/, $(file))"))
+
+#MM
+distfiles-raspi-aarch64-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+
+#MM
+distfiles-raspi-aarch64-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+
+$(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\ndtoverlay=disable-bt\ndtoverlay=sdhost\nenable_uart=1\narm_64bit=1\n" > $@
+
+$(AROSDIR)/aros-aarch64-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+	@$(ECHO) "Creating   $@"
+	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-aarch64-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -L$(CROSSTOOLSDIR)/lib/generic -lstdc.static -lclang_rt.builtins-aarch64 -o $(OSGENDIR)/boot/aros-aarch64-raspi.img.elf
+	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-aarch64-raspi.img.elf
+	@$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-aarch64-raspi.img.elf $@
+
+$(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
+	@$(CP) $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
+	@cd $(TARGETDIR) && $(TARGET_OBJCOPY) -I binary -O elf64-littleaarch64 -B aarch64 core.bin $@
+
+#MM
+distfiles-raspi-aarch64-le : $(AROSDIR)/aros-aarch64-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
+	@$(ECHO) Copying RasPi AArch64 distfiles...
+	@$(CP) -R $(AROSDIR) $(DISTDIR)/
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(TARGETDIR)/%.o : %.c
+	%compile_q
+
+$(TARGETDIR)/%.o : %.S
+	%compile_q
+
+$(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+#
+# the following rules are for testing purposes only ..
+#
+
+#MM
+distfiles-raspi-aarch64-test-imgobjects : $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
+
+#MM- distfiles-raspi-aarch64-test-imgobjects-quick : distfiles-raspi-aarch64-test-imgobjects
+
+#MM
+distfiles-raspi-aarch64-test-img : $(AROSDIR)/aros-aarch64-raspi.img
+
+#MM- distfiles-raspi-aarch64-test-img-quick : distfiles-raspi-aarch64-test-img
+
+#
+#
+#
+
+DEPS	:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+
+-include $(DEPS)
+
+%common
