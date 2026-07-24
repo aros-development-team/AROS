@@ -477,7 +477,7 @@ reswitch:
             break;
             case 'r':
                 p = va_arg(ap, char *);
-#ifdef __arm__
+#if defined(__arm__) || defined(__aarch64__)
                 vcsprintf(cs, p, va_arg(ap, va_list));
 #else
                 vcsprintf(cs, p, va_arg(ap, void *));
