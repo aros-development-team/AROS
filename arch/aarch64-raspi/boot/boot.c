@@ -415,9 +415,36 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
         kprintf("[BOOT] Booted on %s\n", model ? (const char *)model->op_value : "unknown");
     }
 
-    /* first of all, store the arch for the kernel to use .. */
+    /*
+     * Store the SoC id for the kernel's platform probe. The peripheral base
+     * itself is taken from the device tree (/soc ranges) above, so it is
+     * already correct for either SoC; here we only distinguish the interrupt
+     * controller / timer family: BCM2836/2837 (Pi 2/3, legacy controller) vs
+     * BCM2711 (Pi 4, GIC-400), by scanning the root "compatible" list.
+     */
     boottag->ti_Tag = KRN_Platform;
-    boottag->ti_Data = (IPTR)0xc43; /* BCM2837 identifier */
+    {
+        of_node_t *r = dt_find_node("/");
+        of_property_t *compat = r ? dt_find_property(r, "compatible") : NULL;
+        IPTR plat = 0xc43; /* default: BCM2836/2837 (Raspberry Pi 2/3) */
+        if (compat)
+        {
+            const char *s = (const char *)compat->op_value;
+            int n = (int)compat->op_length, i;
+            for (i = 0; i + 7 <= n; i++)
+            {
+                if (s[i] == 'b' && s[i+1] == 'c' && s[i+2] == 'm' &&
+                    s[i+3] == '2' && s[i+4] == '7' && s[i+5] == '1' &&
+                    s[i+6] == '1')
+                {
+                    plat = 0xc44; /* BCM2711 (Raspberry Pi 4) */
+                    break;
+                }
+            }
+        }
+        boottag->ti_Data = plat;
+        kprintf("[BOOT] SoC platform id 0x%x\n", (unsigned)plat);
+    }
     boottag++;
 
     /*
