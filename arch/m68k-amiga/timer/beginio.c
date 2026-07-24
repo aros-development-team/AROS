@@ -202,12 +202,35 @@ static void timer_addToWaitList(struct TimerBase *TimerBase, UWORD unit, struct 
             inc64(&iotr->tr_time);
         inc64(&iotr->tr_time);
     }
+
+    /* Requests normally arrive in deadline order. Avoid walking the whole
+     * sorted list with interrupts disabled when the new request belongs at
+     * its tail. */
+    if (!IsListEmpty((struct List *)list)) {
+        tr = (struct timerequest *)list->mlh_TailPred;
+        if (cmp64(&iotr->tr_time, &tr->tr_time)) {
+            ADDTAIL(list, iotr);
+            if (unit == UNIT_VBLANK)
+                TimerBase->tb_vblank_on = TRUE;
+            else
+                CheckTimer(TimerBase, unit);
+            return;
+        }
+    }
  
     ForeachNode(list, tr) {
         /* If the time in the new request is less than the next request */
-        if(CmpTime(&tr->tr_time, &iotr->tr_time) < 0) {
+        if (tr->tr_time.tv_secs > iotr->tr_time.tv_secs ||
+            (tr->tr_time.tv_secs == iotr->tr_time.tv_secs &&
+             tr->tr_time.tv_micro > iotr->tr_time.tv_micro)) {
             /* Add the node before the next request */
-            Insert((struct List *)list, (struct Node *)iotr, tr->tr_node.io_Message.mn_Node.ln_Pred);
+            struct Node *node = (struct Node *)iotr;
+            struct Node *pred = tr->tr_node.io_Message.mn_Node.ln_Pred;
+
+            node->ln_Succ = (struct Node *)tr;
+            node->ln_Pred = pred;
+            pred->ln_Succ = node;
+            tr->tr_node.io_Message.mn_Node.ln_Pred = node;
             added = TRUE;
             break;
         }
@@ -220,11 +243,15 @@ static void timer_addToWaitList(struct TimerBase *TimerBase, UWORD unit, struct 
     */
 
     if(!added)
-        AddTail((struct List *)list, (struct Node *)iotr);
+        ADDTAIL(list, iotr);
 
     /* recalculate timers, list was empty or was added to head of list */
-    if (!added || first)
-        CheckTimer(TimerBase, unit);
+    if (!added || first) {
+        if (unit == UNIT_VBLANK)
+            TimerBase->tb_vblank_on = TRUE;
+        else
+            CheckTimer(TimerBase, unit);
+    }
 
     D(bug("added %x: %d/%d->%d/%d\n", iotr,
         (unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_secs : TimerBase->tb_micro_count.tv_secs),

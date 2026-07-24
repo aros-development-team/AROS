@@ -148,11 +148,14 @@ static inline UWORD custom_r(ULONG reg)
 #define DECLARE_TrapCode(handler) \
     BOOL handler(VOID); \
     VOID handler##_TrapCode(ULONG Id); \
+    VOID handler##_DirectTrapCode(VOID); \
     asm ( \
             "   .global " #handler "_TrapCode\n" \
+            "   .global " #handler "_DirectTrapCode\n" \
             "   .func " #handler "_TrapCode\n" \
             #handler "_TrapCode:\n" \
             "   addq.l  #4,%sp\n"       /* Drop the ID */   \
+            #handler "_DirectTrapCode:\n" \
             "   movem.l %d0/%d1/%a0/%a1/%a5/%a6,%sp@-\n"    \
             "   jsr     " #handler "\n" \
             "   tst.w   %d0\n"          \
@@ -304,12 +307,25 @@ const struct M68KException AmigaExceptionTable[] = {
 
 void AmigaIRQInit(struct ExecBase *SysBase)
 {
+    volatile APTR *irqVector = (volatile APTR *)(25 * sizeof(APTR));
+
 	/* Disable all interrupts */
 	custom_w(INTENA, 0x7fff);
 	/* Clear any requests */
 	custom_w(INTREQ, 0x7fff);
 
 	M68KExceptionInit(AmigaExceptionTable, SysBase);
+
+    /* Hardware IRQ levels have fixed handlers. Point their vectors directly
+     * at the interrupt wrappers instead of paying the generic exception-table
+     * lookup on every interrupt. */
+    irqVector[0] = Amiga_Level_1_DirectTrapCode;
+    irqVector[1] = Amiga_Level_2_DirectTrapCode;
+    irqVector[2] = Amiga_Level_3_DirectTrapCode;
+    irqVector[3] = Amiga_Level_4_DirectTrapCode;
+    irqVector[4] = Amiga_Level_5_DirectTrapCode;
+    irqVector[5] = Amiga_Level_6_DirectTrapCode;
+    irqVector[6] = Amiga_Level_7_DirectTrapCode;
 
 	/* Enable DMA */
 	custom_w(DMACON, 0x8240);
