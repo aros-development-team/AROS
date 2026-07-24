@@ -23,8 +23,8 @@ struct ShellCommandsBase {
      * &sc_Command[i].scs_Next as the 'seglist' to add.
      */
     struct ShellCommandSeg {
-    	ULONG              scs_Size;      /* Length of segment in # of ULONGs */
-    	ULONG              scs_Next;      /* Next segment (always 0 for this) */
+    	IPTR               scs_Size;      /* Length of segment in # of ULONGs */
+    	BPTR               scs_Next;      /* Next segment (always 0 for this) */
     	struct FullJumpVec scs_Code;      /* Code to jump to shell command */
     	CONST_STRPTR __attribute__((aligned(4)))  scs_Name;      /* Name of the segment */
     } *sc_Command;
