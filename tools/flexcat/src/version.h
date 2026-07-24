@@ -65,7 +65,9 @@
 #endif
 
 // identify the CPU model
-#if defined(__arm__)
+#if defined(__aarch64__)
+  #define CPU "ARM64"
+#elif defined(__arm__)
   #define CPU "ARM"
 #elif defined(__PPC__) || defined(__powerpc__)
   #define CPU "PPC"

@@ -21,6 +21,9 @@
 #ifdef __powerpc__
 #   include <asm/ppc/cpu.h>
 #endif
+#ifdef __aarch64__
+#   include <asm/aarch64/cpu.h>
+#endif
 #ifdef __arm__
 #   if defined __thumb2__
 #       if defined __ARMEB__
