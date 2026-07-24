@@ -84,11 +84,11 @@ UBYTE i;
         volume->devicelist.dl_Type = DLT_VOLUME;
         volume->devicelist.dl_Lock = 0;
         volume->devicelist.dl_VolumeDate.ds_Days =
-                AROS_BE2LONG(rootblock->buffer[BLK_ROOT_DAYS(volume)]);
+                AROS_BE2LONG(rootblock->buffer[BLK_CREATION_DAYS(volume)]);
         volume->devicelist.dl_VolumeDate.ds_Minute =
-                AROS_BE2LONG(rootblock->buffer[BLK_ROOT_MINS(volume)]);
+                AROS_BE2LONG(rootblock->buffer[BLK_CREATION_MINS(volume)]);
         volume->devicelist.dl_VolumeDate.ds_Tick =
-                AROS_BE2LONG(rootblock->buffer[BLK_ROOT_TICKS(volume)]);
+                AROS_BE2LONG(rootblock->buffer[BLK_CREATION_TICKS(volume)]);
         volume->devicelist.dl_LockList = 0;
         volume->devicelist.dl_DiskType = volume->dostype;
         if (volume->devicelist.dl_Name != BNULL)
