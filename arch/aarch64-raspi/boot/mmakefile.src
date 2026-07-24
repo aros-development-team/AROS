@@ -168,7 +168,7 @@ $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
 
 $(AROSDIR)/aros-aarch64-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
-	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-aarch64-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -L$(CROSSTOOLSDIR)/lib/generic -lstdc.static -lclang_rt.builtins-aarch64 -o $(OSGENDIR)/boot/aros-aarch64-raspi.img.elf
+	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-aarch64-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static $(TARGET_C_LIBS) -o $(OSGENDIR)/boot/aros-aarch64-raspi.img.elf
 	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-aarch64-raspi.img.elf
 	@$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-aarch64-raspi.img.elf $@
 

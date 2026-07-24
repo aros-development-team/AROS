@@ -67,7 +67,7 @@ kernel-raspi-aarch64-quick: $(OSGENDIR)/boot/core.elf
 $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o  $(KOBJSDIR)/task_resource.o
 		@$(ECHO) "Creating   $@"
 		%mkdirs_q $(OSGENDIR)/boot
-		@$(TARGET_LD) --emit-relocs -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ -L$(AROS_LIB) -L$(CROSSTOOLSDIR)/lib/generic -larossupport -lautoinit -llibinit -lstdc.static -lclang_rt.builtins-aarch64
+		@$(TARGET_LD) --emit-relocs -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static $(TARGET_C_LIBS)
 		@$(TARGET_STRIP) --strip-debug -R .note -R .comment $@
 
 #MM kernel-kernel-raspi-aarch64 : includes
