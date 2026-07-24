@@ -16,7 +16,7 @@
 
 #include <utility/utility.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <proto/exec.h>
 #include <proto/oop.h>
@@ -28,7 +28,7 @@
 static int I2C_Init(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[I2C] Init\n"));
-    
+
     return TRUE;
 }
 

@@ -51,7 +51,7 @@ volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
         unsigned int wtry = 0x2000000;
         while ((MBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
         {
-            __asm__ __volatile__("dsb" ::: "memory");
+            __asm__ __volatile__("dsb sy" ::: "memory");
             if (--wtry == 0)
             {
                 ReleaseSemaphore(&MBoxBase->mbox_Sem);
@@ -60,7 +60,7 @@ volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
         }
     }
 
-    __asm__ __volatile__("dmb" ::: "memory");
+    __asm__ __volatile__("dmb sy" ::: "memory");
     *((volatile unsigned int *)(mb + VCMB_WRITE)) =
         AROS_LONG2LE(((unsigned int)phys_addr | chan));
 
@@ -72,14 +72,14 @@ volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
     {
         if ((MBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
         {
-            __asm__ __volatile__("dsb" ::: "memory");
+            __asm__ __volatile__("dsb sy" ::: "memory");
             try--;
             continue;
         }
 
-        __asm__ __volatile__("dmb" ::: "memory");
+        __asm__ __volatile__("dmb sy" ::: "memory");
         reply = AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_READ)));
-        __asm__ __volatile__("dmb" ::: "memory");
+        __asm__ __volatile__("dmb sy" ::: "memory");
 
         if ((reply & VCMB_CHAN_MASK) == chan)
         {
@@ -138,14 +138,14 @@ AROS_LH2(volatile unsigned int *, MBoxRead,
     {
         if ((MBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
         {
-            asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
+            asm volatile ("dsb sy" ::: "memory");
             try--;
             continue;
         }
 
-        asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
+        asm volatile ("dmb sy" ::: "memory");
         msg = AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_READ)));
-        asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
+        asm volatile ("dmb sy" ::: "memory");
 
         if ((msg & VCMB_CHAN_MASK) == chan)
         {
@@ -188,10 +188,10 @@ AROS_LH3(void, MBoxWrite,
         while ((MBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
         {
             /* Data synchronization barrier */
-            asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
+            asm volatile ("dsb sy" ::: "memory");
         }
 
-        asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
+        asm volatile ("dmb sy" ::: "memory");
 
         *((volatile unsigned int *)(mb + VCMB_WRITE)) = AROS_LONG2LE(((unsigned int)phys_addr | chan));
 
