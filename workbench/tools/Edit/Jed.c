@@ -494,10 +494,13 @@ void scroll_ydelta(Project p, LONG y)
 
 	if(pos!=p->top_line)
 	{
-		if(!p->ccp.select) inv_curs(p,FALSE);
-		scroll_xy(p, curs_visible(p,pos), pos, TRUE);
-		if(p->ccp.select) move_selection(p, p->nbrwc, p->nbl);
-		inv_curs(p,TRUE);
+        if(p->ccp.select)
+            p->ycurs-=(pos-p->top_line)*YSIZE,
+            scroll_xy(p, p->left_pos, pos, TRUE);
+        else
+            inv_curs(p,FALSE),
+            scroll_xy(p, curs_visible(p,pos), pos, TRUE),
+            inv_curs(p,TRUE);
 	}
 }
 
