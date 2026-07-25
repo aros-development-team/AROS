@@ -578,6 +578,13 @@ static int relocate
                 break;
 
             case R_68K_PC32:
+                if (shindex == SHN_ABS) {
+                    /* Needs a load-time fixup of -hunkbase, which no hunk
+                     * relocation type can express */
+                    bug("[ELF2HUNK] PC-relative relocation to absolute symbol '%s' unsupported\n", symname);
+                    set_error(EINVAL);
+                    return 0;
+                }
                 value += rel->addend - offset;
                 break;
 
@@ -701,33 +708,39 @@ static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
     int relreloc_needed = 0, written = 0;
     int i;
 
-    if (hh[h]->relocs == 0)
+    if (hh[h]->relocs == 0 && hh[h]->relrelocs == 0)
         return relreloc_failed;
 
-    /* Sort the relocations by reference hunk id */
-    qsort(hh[h]->reloc, hh[h]->relocs, sizeof(hh[h]->reloc[0]), reloc_cmp);
-    qsort(hh[h]->relreloc, hh[h]->relrelocs, sizeof(hh[h]->relreloc[0]), reloc_cmp);
+    if (hh[h]->relocs > 0) {
+        /* Sort the relocations by reference hunk id */
+        qsort(hh[h]->reloc, hh[h]->relocs, sizeof(hh[h]->reloc[0]), reloc_cmp);
 
-    wlong(hunk_fd, HUNK_RELOC32);
-    D(bug("\tHUNK_RELOC32: %d relocations\n", (int)hh[h]->relocs));
+        wlong(hunk_fd, HUNK_RELOC32);
+        D(bug("\tHUNK_RELOC32: %d relocations\n", (int)hh[h]->relocs));
 
-    for (i = 0; i < hh[h]->relocs; ) {
-        int count;
-        int shid = hh[h]->reloc[i].shid;
-        for (count = i; count < hh[h]->relocs; count++)
-            if (hh[h]->reloc[count].shid != shid)
-                break;
-        count -= i;
-        wlong(hunk_fd, count);
-        D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
-        /* Convert from ELF hunk ID to AOS hunk ID */
-        wlong(hunk_fd, hh[shid]->hunk);
-        for (; count > 0; i++, count--) {
-            D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->reloc[i].offset, hh[h]->reloc[i].symbol));
-            wlong(hunk_fd, hh[h]->reloc[i].offset);
+        for (i = 0; i < hh[h]->relocs; ) {
+            int count;
+            int shid = hh[h]->reloc[i].shid;
+            for (count = i; count < hh[h]->relocs; count++)
+                if (hh[h]->reloc[count].shid != shid)
+                    break;
+            count -= i;
+            wlong(hunk_fd, count);
+            D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
+            /* Convert from ELF hunk ID to AOS hunk ID */
+            wlong(hunk_fd, hh[shid]->hunk);
+            for (; count > 0; i++, count--) {
+                D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->reloc[i].offset, hh[h]->reloc[i].symbol));
+                wlong(hunk_fd, hh[h]->reloc[i].offset);
+            }
         }
+        wlong(hunk_fd, 0);
     }
-    wlong(hunk_fd, 0);
+
+    if (hh[h]->relrelocs == 0)
+        return relreloc_failed;
+
+    qsort(hh[h]->relreloc, hh[h]->relrelocs, sizeof(hh[h]->relreloc[0]), reloc_cmp);
 
     wlong(hunk_fd, HUNK_RELRELOC32);
     written = 4;
@@ -1079,6 +1092,8 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
                 free(hh[i]->data);
             if (hh[i]->reloc)
                 free(hh[i]->reloc);
+            if (hh[i]->relreloc)
+                free(hh[i]->relreloc);
             free(hh[i]);
         }
     }
