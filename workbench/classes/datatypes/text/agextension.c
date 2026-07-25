@@ -331,7 +331,7 @@ int HandleMouseLink(struct Text_Data *td, struct RastPort *rp, LONG x, LONG y, L
 	} else
 	{
 	    struct Line *line = NewFindLine(td, x, y, &xcur, NULL);
-	    if (line->ln_Flags & LNF_LINK)
+	    if (line && line->ln_Flags & LNF_LINK)
 	    {
 		if (td->marked_line != NULL && line != td->marked_line)
 		{
