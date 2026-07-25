@@ -831,6 +831,7 @@ static int relocate
 
             /* ADRP: 21-bit page offset, split immlo (bits 29-30) / immhi (5-23) */
             case R_AARCH64_ADR_PREL_PG_HI21:
+            case R_AARCH64_ADR_PREL_PG_HI21_NC:
             {
                 IPTR x = (((s + rel->addend) & ~(IPTR)0xfff) - ((IPTR)p & ~(IPTR)0xfff)) >> 12;
                 *p = (*p & 0x9f00001fu) | ((x & 0x3) << 29) | (((x >> 2) & 0x7ffff) << 5);
@@ -885,6 +886,69 @@ static int relocate
                 *p = (*p & 0xfc000000u) | ((ULONG)imm26 & 0x03ffffffu);
                 break;
             }
+
+            /* ADR: 21-bit signed byte offset, same immlo/immhi split as ADRP */
+            case R_AARCH64_ADR_PREL_LO21:
+            {
+                SIPTR x = (SIPTR)(s + rel->addend - (IPTR)p);
+
+                if (x < -((SIPTR)1 << 20) || x > (((SIPTR)1 << 20) - 1)) {
+                    D(bug("[ELF Loader] ADR_PREL_LO21 target out of range\n"));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+
+                *p = (*p & 0x9f00001fu) | (((ULONG)x & 0x3) << 29) | ((((ULONG)(x >> 2)) & 0x7ffff) << 5);
+                break;
+            }
+
+            /* ldr (literal) / b.cond / cbz / cbnz: signed 19-bit word offset
+               in instruction bits 5-23 */
+            case R_AARCH64_LD_PREL_LO19:
+            case R_AARCH64_CONDBR19:
+            {
+                SIPTR temp = (SIPTR)(s + rel->addend - (IPTR)p);
+                SIPTR imm19 = temp >> 2;
+
+                if ((temp & 3) || imm19 < -((SIPTR)1 << 18) || imm19 > (((SIPTR)1 << 18) - 1)) {
+                    D(bug("[ELF Loader] LO19/CONDBR19 target misaligned or out of range\n"));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+
+                *p = (*p & 0xff00001fu) | (((ULONG)imm19 & 0x7ffff) << 5);
+                break;
+            }
+
+            /* tbz/tbnz: signed 14-bit word offset in instruction bits 5-18 */
+            case R_AARCH64_TSTBR14:
+            {
+                SIPTR temp = (SIPTR)(s + rel->addend - (IPTR)p);
+                SIPTR imm14 = temp >> 2;
+
+                if ((temp & 3) || imm14 < -((SIPTR)1 << 13) || imm14 > (((SIPTR)1 << 13) - 1)) {
+                    D(bug("[ELF Loader] TSTBR14 target misaligned or out of range\n"));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+
+                *p = (*p & 0xfff8001fu) | (((ULONG)imm14 & 0x3fff) << 5);
+                break;
+            }
+
+            /*
+             * GOT-indirect references must never appear in AROS modules:
+             * LoadSeg() is a static relocator and the platform has no
+             * dynamic linker. These indicate code that was built without
+             * the platform ISA flags (-mcmodel=large, non-PIC) - fix the
+             * offending build flags rather than teaching the loader about
+             * dynamic linking.
+             */
+            case R_AARCH64_ADR_GOT_PAGE:
+            case R_AARCH64_LD64_GOT_LO12_NC:
+                D(bug("[ELF Loader] GOT relocation in module - built as PIC/small code model?\n"));
+                SetIoErr(ERROR_BAD_HUNK);
+                return 0;
 
             case R_AARCH64_NONE:
                 break;

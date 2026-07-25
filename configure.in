@@ -1292,7 +1292,7 @@ case "$target_cpu" in
         aarch64_isa_extra="ISA_AARCH64_FLAGS             = "
         case "$aros_toolchain" in
             *llvm*)
-                aarch64_isa_extra+="--target=aarch64-unknown-aros "
+                aarch64_isa_extra+="--target=aarch64-unknown-aros -fno-pic -fno-pie "
             ;;
         esac
         aarch64_isa_extra+="-mcmodel=large"
@@ -2093,6 +2093,7 @@ case "$target_os" in
                 gcc_default_fpu="neon-fp-armv8"
                 aros_object_format="aarch64elf_aros"
                 llvm_target_cpu="AArch64"
+                aros_isa_flags="$""(ISA_AARCH64_FLAGS)"
                 ;;
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"

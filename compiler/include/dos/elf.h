@@ -2,7 +2,7 @@
 #define DOS_ELF_H
 
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definition of ELF file structures.
@@ -126,7 +126,10 @@
 #define R_AARCH64_MOVW_UABS_G2      267
 #define R_AARCH64_MOVW_UABS_G2_NC   268
 #define R_AARCH64_MOVW_UABS_G3      269
+#define R_AARCH64_LD_PREL_LO19      273
+#define R_AARCH64_ADR_PREL_LO21     274
 #define R_AARCH64_ADR_PREL_PG_HI21  275
+#define R_AARCH64_ADR_PREL_PG_HI21_NC 276
 #define R_AARCH64_ADD_ABS_LO12_NC   277
 #define R_AARCH64_LDST8_ABS_LO12_NC 278
 #define R_AARCH64_JUMP26            282
@@ -134,7 +137,13 @@
 #define R_AARCH64_LDST16_ABS_LO12_NC 284
 #define R_AARCH64_LDST32_ABS_LO12_NC 285
 #define R_AARCH64_LDST64_ABS_LO12_NC 286
+#define R_AARCH64_TSTBR14           279
+#define R_AARCH64_CONDBR19          280
 #define R_AARCH64_LDST128_ABS_LO12_NC 299
+/* GOT-indirect forms: not supported by the loaders (AROS has no dynamic
+   linker); defined so they can be explicitly rejected with a diagnostic */
+#define R_AARCH64_ADR_GOT_PAGE      311
+#define R_AARCH64_LD64_GOT_LO12_NC  312
 
 #define STT_NOTYPE              0
 #define STT_OBJECT              1
