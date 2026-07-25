@@ -23,6 +23,8 @@ HUNK_DATA    = 0x3ea
 HUNK_BSS     = 0x3eb
 HUNK_RELOC32 = 0x3ec
 HUNK_END     = 0x3f2
+HUNK_RELOC32SHORT = 0x3fc
+HUNK_RELRELOC32   = 0x3fd
 
 # Dictionary of Hunk/Block names.
 hname = {
@@ -80,6 +82,66 @@ def process_relocs(target, offs):
         p = o
     relocs += bytes(-len(relocs)&1)
 
+# Parse a word-encoded relocation block (HUNK_RELOC32SHORT/HUNK_RELRELOC32),
+# leaving the file positioned after the block, including the alignment pad
+# word emitted when the block contains an odd number of 16-bit words.
+# Returns a list of (target-hunk, offsets) tuples.
+def read_short_reloc_block(f):
+    blocks = []
+    words = 0
+    while True:
+        (nr,) = struct.unpack('>H', f.read(2))
+        words += 1
+        if nr == 0:
+            break
+        (h,) = struct.unpack('>H', f.read(2))
+        offs = list(struct.unpack('>%dH' % nr, f.read(nr*2)))
+        words += 1 + nr
+        blocks.append((h, offs))
+    if words & 1:
+        f.read(2)
+    return blocks
+
+# Scan forward over the current hunk's blocks to check whether it carries
+# HUNK_RELRELOC32 relocations. The file position is restored afterwards.
+def hunk_has_relrelocs(f):
+    pos = f.tell()
+    seen_dat = False
+    found = False
+    while True:
+        raw = f.read(4)
+        if len(raw) < 4:
+            break
+        (_id,) = struct.unpack('>I', raw)
+        id = _id & 0x3fffffff
+        if id == HUNK_CODE or id == HUNK_DATA:
+            if seen_dat:
+                break
+            seen_dat = True
+            (_nr,) = struct.unpack('>I', f.read(4))
+            f.seek((_nr & 0x3fffffff) * 4, os.SEEK_CUR)
+        elif id == HUNK_BSS:
+            if seen_dat:
+                break
+            seen_dat = True
+            f.read(4)
+        elif id == HUNK_END:
+            break
+        elif id == HUNK_RELOC32:
+            while True:
+                (nr,) = struct.unpack('>I', f.read(4))
+                if nr == 0:
+                    break
+                f.seek(4 + nr*4, os.SEEK_CUR)
+        elif id == HUNK_RELOC32SHORT or id == HUNK_RELRELOC32:
+            if id == HUNK_RELRELOC32:
+                found = True
+            read_short_reloc_block(f)
+        else:
+            break
+    f.seek(pos)
+    return found
+
 # Get the (one) position-independent code hunk from an Amiga load file.
 def get_code(fragdir, name):
     with open(fragdir + name, 'rb') as f:
@@ -131,6 +193,14 @@ def process_hunk(tooldir, fragdir, tmpname, gzcmd, f, i):
     first_reloc = True # Have we seen a RELOC32 block yet?
     seen_dat = False   # Have we seen CODE/DATA/BSS yet?
     hunk = bytes() # Full encoding of this hunk
+    # A hunk with RELRELOC32 (PC-relative) relocations must keep its stored
+    # image intact: those relocations are re-emitted verbatim for LoadSeg()
+    # to apply at load time, which the depacker's later in-place work does
+    # not disturb (hunk base addresses never change).
+    relrelocs = hunk_has_relrelocs(f)
+    # ...which is impossible for the first hunk: its stored image is
+    # rewritten to prepend the depacker entry code.
+    assert not (relrelocs and i == 0)
     while True:
         (_id,) = struct.unpack('>I', f.read(4))
         id = _id & 0x3fffffff
@@ -144,7 +214,7 @@ def process_hunk(tooldir, fragdir, tmpname, gzcmd, f, i):
             raw = f.read(nr*4)
             assert alloc >= len(raw)
             (packed, crc, leeway) = pack(tooldir, tmpname, gzcmd, raw)
-            if i != 0 and nr*4 < len(packed)+MIN_COMPRESSION:
+            if i != 0 and (relrelocs or nr*4 < len(packed)+MIN_COMPRESSION):
                 # This hunk is not worth compressing. Store it as is.
                 packed = raw
                 stream_sizes.append(0) # No compression
@@ -192,6 +262,23 @@ def process_hunk(tooldir, fragdir, tmpname, gzcmd, f, i):
                     first_reloc = False
                 # Write out the target hunk number and delta-encoded offsets.
                 process_relocs(h, offs)
+        elif id == HUNK_RELOC32SHORT:
+            # Same semantics as RELOC32, word-encoded: feed the depacker.
+            for (h, offs) in read_short_reloc_block(f):
+                if first_reloc:
+                    relocs += struct.pack('>H', i)
+                    first_reloc = False
+                process_relocs(h, offs)
+        elif id == HUNK_RELRELOC32:
+            # PC-relative relocations: the depacker cannot apply these, so
+            # re-emit the block verbatim for LoadSeg() to process. This
+            # hunk's data is stored uncompressed (see above) so LoadSeg()
+            # patches the real data image.
+            start = f.tell() - 4
+            read_short_reloc_block(f)
+            end = f.tell()
+            f.seek(start)
+            hunk += f.read(end - start)
         else:
             print("Unexpected hunk %04x" % (id))
             assert False
