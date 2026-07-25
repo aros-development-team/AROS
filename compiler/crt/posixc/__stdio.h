@@ -2,7 +2,7 @@
 #define ___STDIO_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: internal header file for stdio
@@ -12,10 +12,6 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <exec/lists.h>
-
-#if !defined(__off64_t_defined)
-#define off64_t UQUAD
-#endif
 
 #include <aros/types/file_s.h>
 
@@ -38,11 +34,10 @@ typedef struct
 extern int __smode2oflags(const char *mode);
 extern int __oflags2sflags(int oflags);
 
-#if !defined(POSIXC_NOSTDIO_DECL)
-extern FILE * __fopen (const char * pathname, const char * mode, int    large);
-extern int __fseeko (FILE * stream, off_t  offset, int    whence);
+extern FILE * __fopen (const char * pathname, const char * mode, int large);
+extern int __fseeko (FILE * stream, off_t offset, int whence);
 extern off_t __ftello (FILE *stream);
-extern int __fseeko64 (FILE * stream, off64_t  offset, int    whence);
-extern off64_t __ftello64 (FILE *stream);
-#endif
+extern int __fseeko64 (FILE * stream, __off64_t offset, int whence);
+extern __off64_t __ftello64 (FILE *stream);
+
 #endif /* ___STDIO_H */

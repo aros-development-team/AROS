@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Get the position in a stream.
 */
@@ -50,12 +50,14 @@
         return -1;
     }
 
-    *pos = ftell (stream);
+    long tmp = ftell (stream);
 
-    if ( *pos < 0L )
+    if ( tmp < 0L )
     {
         return -1;
     }
+
+    *pos = (fpos_t)tmp;
 
     return 0;
 } /* fgetpos */

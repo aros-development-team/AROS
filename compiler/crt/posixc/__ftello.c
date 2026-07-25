@@ -7,8 +7,6 @@
 
 #include <proto/dos.h>
 
-#define POSIXC_NOSTDIO_DECL
-
 #include "__stdio.h"
 #include "__fdesc.h"
 #include "__dos64.h"

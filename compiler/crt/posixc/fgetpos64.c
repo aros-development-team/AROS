@@ -11,7 +11,6 @@
     NAME */
 #include <stdio.h>
 
-#define POSIXC_NOSTDIO_DECL
 #include "__stdio.h"
 
         int fgetpos64 (
@@ -53,12 +52,14 @@
         return -1;
     }
 
-    *pos = __ftello64 (stream);
+    __off64_t tmp = __ftello64 (stream);
 
-    if ( *pos < 0L )
+    if ( tmp < 0 )
     {
         return -1;
     }
+
+    *pos = (__fpos64_t)tmp;
 
     return 0;
 } /* fgetpos64 */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function fopen().
 */
@@ -8,8 +8,6 @@
 
 #include <fcntl.h>
 #include <string.h>
-
-#define POSIXC_NOSTDIO_DECL
 
 #include "__stdio.h"
 #include "__fdesc.h"

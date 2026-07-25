@@ -11,7 +11,6 @@
     NAME */
 #include <stdio.h>
 
-#define POSIXC_NOSTDIO_DECL
 #include "__stdio.h"
 
         int fsetpos64 (
