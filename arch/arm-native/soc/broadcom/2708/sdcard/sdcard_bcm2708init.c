@@ -18,8 +18,15 @@
 #include <hardware/arasan.h>
 #include <hardware/videocore.h>
 
-APTR            MBoxBase;
-IPTR            __arm_periiobase __attribute__((used)) = 0 ;
+extern APTR     MBoxBase;
+extern IPTR     __arm_periiobase;
+
+/* Does the controller in this window report a card in the slot? */
+static BOOL FNAME_BCMSDC(CardPresent)(IPTR base)
+{
+    return (AROS_LE2LONG(*(volatile ULONG *)(base + SDHCI_PRESENT_STATE)) &
+            SDHCI_PS_CARD_PRESENT) ? TRUE : FALSE;
+}
 
 /* SDHCI-specific scan-time init: set interrupt mask, clock, power, bus width */
 static void FNAME_BCMSDC(SDBusInit)(struct sdcard_Bus *bus)
@@ -72,6 +79,9 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
 {
     struct sdcard_Bus   *__BCM2708Bus;
     int                 retVal = FALSE;
+    IPTR                ctrlBase;
+    ULONG               ctrlClock, ctrlIRQ;
+    BOOL                isEMMC2;
     unsigned int *MBoxMessage_ = AllocMem(8*4+16, MEMF_PUBLIC | MEMF_CLEAR);
     unsigned int *MBoxMessage = (unsigned int *)((((IPTR)MBoxMessage_) + 15) & ~15);
 
@@ -79,11 +89,56 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
 
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
+    isEMMC2 = (__arm_periiobase == BCM2711_PERIIOBASE);
+    if (isEMMC2)
+    {
+        /*
+         * The card slot sits on EMMC2, but the legacy window is still wired
+         * up and carries the card on some implementations, so fall back to it
+         * when EMMC2 reports an empty slot.
+         */
+        if (!FNAME_BCMSDC(CardPresent)(EMMC2_BASE) &&
+             FNAME_BCMSDC(CardPresent)(ARASAN_BASE))
+        {
+            DINIT(bug("[SDCard--] %s: card is on the legacy window\n", __PRETTY_FUNCTION__));
+            isEMMC2 = FALSE;
+        }
+    }
+
+    if (isEMMC2)
+    {
+        ctrlBase  = EMMC2_BASE;
+        ctrlClock = VCCLOCK_EMMC2;
+        ctrlIRQ   = IRQ_BCM2711_SDHCI;
+    }
+    else if (__arm_periiobase == BCM2711_PERIIOBASE)
+    {
+        ctrlBase  = ARASAN_BASE;
+        ctrlClock = VCCLOCK_EMMC;
+        ctrlIRQ   = IRQ_BCM2711_SDHCI;
+    }
+    else
+    {
+        /*
+         * Earlier SoCs drive the card slot through SDHOST, which keeps this
+         * controller free for SDIO. Report success so the remaining init
+         * functions still run.
+         */
+        D(bug("[SDCard--] %s: card slot is on SDHOST for this SoC\n", __PRETTY_FUNCTION__));
+        if (MBoxMessage_)
+            FreeMem(MBoxMessage_, 8*4+16);
+        return TRUE;
+    }
+
     if ((MBoxBase = OpenResource("mbox.resource")) == NULL)
     {
         bug("[SDCard--] %s: Failed to open mbox.resource\n", __PRETTY_FUNCTION__);
         goto bcminit_fail;
     }
+
+    /* EMMC2 is powered by the firmware; only the Arasan block is switchable. */
+    if (isEMMC2)
+        goto bcminit_clock;
 
     MBoxMessage[0] = AROS_LONG2LE(8 * 4);
     MBoxMessage[1] = AROS_LONG2LE(VCTAG_REQ);
@@ -124,12 +179,13 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
         }
     }
 
+bcminit_clock:
     MBoxMessage[0] = AROS_LONG2LE(8 * 4);
     MBoxMessage[1] = AROS_LONG2LE(VCTAG_REQ);
     MBoxMessage[2] = AROS_LONG2LE(VCTAG_GETCLKRATE);
     MBoxMessage[3] = AROS_LONG2LE(8);
     MBoxMessage[4] = AROS_LONG2LE(4);
-    MBoxMessage[5] = AROS_LONG2LE(VCCLOCK_SDHCI);
+    MBoxMessage[5] = AROS_LONG2LE(ctrlClock);
     MBoxMessage[6] = 0;
 
     MBoxMessage[7] = 0; // terminate tag
@@ -144,8 +200,8 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
     if ((__BCM2708Bus = AllocPooled(SDCardBase->sdcard_MemPool, sizeof(struct sdcard_Bus))) != NULL)
     {
         __BCM2708Bus->sdcb_DeviceBase = SDCardBase;
-        __BCM2708Bus->sdcb_IOBase = (APTR)ARASAN_BASE;
-        __BCM2708Bus->sdcb_BusIRQ = IRQ_VC_ARASANSDIO;
+        __BCM2708Bus->sdcb_IOBase = (APTR)ctrlBase;
+        __BCM2708Bus->sdcb_BusIRQ = ctrlIRQ;
 
         __BCM2708Bus->sdcb_ClockMax = AROS_LE2LONG(MBoxMessage[6]);
         __BCM2708Bus->sdcb_ClockMin = BCM2708SDCLOCK_MIN;

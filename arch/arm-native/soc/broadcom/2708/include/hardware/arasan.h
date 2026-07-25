@@ -7,6 +7,18 @@
 
 #define ARASAN_BASE                     (ARM_PERIIOBASE + 0x300000)
 
+/*
+ * BCM2711 routes the card slot to a second controller with the same standard
+ * SDHCI register layout, in its own window and with its own clock and IRQ.
+ */
+#define EMMC2_BASE                      (ARM_PERIIOBASE + 0x340000)
+
+/* Both windows share one interrupt line on the BCM2711 (GIC SPI 126). */
+#define IRQ_BCM2711_SDHCI               158
+
+/* Identification clock, used until the card reports what it can take. */
+#define BCM2708SDCLOCK_MIN              400000
+
 #define ARASAN_CMD                      (ARASAN_BASE + 0x00)
 #define ARASAN_ARG	                (ARASAN_BASE + 0x04)
 #define ARASAN_TIMEOUT	                (ARASAN_BASE + 0x08)

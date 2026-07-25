@@ -4,6 +4,11 @@
 
 #include "sdcard_intern.h"
 
+/* Shared by whichever controller drivers are built into this device. */
+APTR            MBoxBase;
+APTR            DMABase;
+IPTR            __arm_periiobase __attribute__((used)) = 0;
+
 #if defined(__aarch64__)
 #define NOP() asm volatile("yield\n")
 #else
