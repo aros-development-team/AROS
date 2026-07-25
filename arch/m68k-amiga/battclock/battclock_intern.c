@@ -65,7 +65,12 @@ void resetbattclock(struct BattClockBase *Battclock)
     } else if (Battclock->clocktype == RF5C01A) {
         putreg(p, 0xd, 0); // stop
         putreg(p, 0xe, 0);
-        for (j = 0; j < 4; j++) {
+        /*
+           Only blocks 0 and 1 are the clock. Blocks 2 and 3 are battery
+           backed up memory, holding settings that belong to the user -
+           clearing them here would throw those away on every clock reset.
+        */
+        for (j = 0; j < 2; j++) {
             putreg(p, 0xd, j);
             for (i = 0; i < 12; i++)
                 putreg(p, i, 0);
