@@ -9,8 +9,6 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
-#include <string.h>
-
 #include "dos64_intern.h"
 
 /*
@@ -191,10 +189,26 @@ QUAD dos64_SetFileSize(struct Dos64Base *DOS64Base, struct FileHandle *fh,
                          fh->fh_Arg1, (LONG)offset, mode, 0, 0, NULL);
 }
 
+/* Local copy helpers: kickstart modules must not drag in the C library */
+static void dos64_bcopy(const void *src, void *dst, ULONG len)
+{
+    const UBYTE *s = src;
+    UBYTE *d = dst;
+    while (len--)
+        *d++ = *s++;
+}
+
+static void dos64_bzero(void *dst, ULONG len)
+{
+    UBYTE *d = dst;
+    while (len--)
+        *d++ = 0;
+}
+
 static void BSTR2CINLINE(char *s)
 {
     UBYTE len = s[0];
-    memmove(s, s + 1, len);
+    dos64_bcopy(s + 1, s, len);   /* forward copy is overlap-safe here */
     s[len] = 0;
 }
 
@@ -209,29 +223,29 @@ void dos64_WidenFIB(const struct FileInfoBlock32 *src, struct FileInfoBlock64 *d
 {
     dst->fib_DiskKey      = src->fib_DiskKey;
     dst->fib_DirEntryType = src->fib_DirEntryType;
-    memcpy(dst->fib_FileName, src->fib_FileName, sizeof(dst->fib_FileName));
+    dos64_bcopy(src->fib_FileName, dst->fib_FileName, sizeof(dst->fib_FileName));
     dst->fib_Protection   = src->fib_Protection;
     dst->fib_EntryType    = src->fib_EntryType;
     dst->fib_Size         = (UQUAD)(ULONG)src->fib_Size;
     dst->fib_NumBlocks    = (UQUAD)(ULONG)src->fib_NumBlocks;
     dst->fib_Date         = src->fib_Date;
-    memcpy(dst->fib_Comment, src->fib_Comment, sizeof(dst->fib_Comment));
+    dos64_bcopy(src->fib_Comment, dst->fib_Comment, sizeof(dst->fib_Comment));
     dst->fib_OwnerUID     = src->fib_OwnerUID;
     dst->fib_OwnerGID     = src->fib_OwnerGID;
-    memset(dst->fib_Reserved, 0, sizeof(dst->fib_Reserved));
+    dos64_bzero(dst->fib_Reserved, sizeof(dst->fib_Reserved));
 }
 
 void dos64_NarrowFIB(const struct FileInfoBlock64 *src, struct FileInfoBlock32 *dst)
 {
     dst->fib_DiskKey      = src->fib_DiskKey;
     dst->fib_DirEntryType = src->fib_DirEntryType;
-    memcpy(dst->fib_FileName, src->fib_FileName, sizeof(dst->fib_FileName));
+    dos64_bcopy(src->fib_FileName, dst->fib_FileName, sizeof(dst->fib_FileName));
     dst->fib_Protection   = src->fib_Protection;
     dst->fib_EntryType    = src->fib_EntryType;
     dst->fib_Size         = (LONG)src->fib_Size;
     dst->fib_NumBlocks    = (LONG)src->fib_NumBlocks;
     dst->fib_Date         = src->fib_Date;
-    memcpy(dst->fib_Comment, src->fib_Comment, sizeof(dst->fib_Comment));
+    dos64_bcopy(src->fib_Comment, dst->fib_Comment, sizeof(dst->fib_Comment));
     dst->fib_OwnerUID     = src->fib_OwnerUID;
     dst->fib_OwnerGID     = src->fib_OwnerGID;
 }

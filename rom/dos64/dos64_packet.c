@@ -84,9 +84,26 @@ QUAD dos64_SendPkt64OS4(struct Dos64Base *DOS64Base, struct MsgPort *port, LONG 
     if (WaitPkt() != dp)
         Alert(AN_AsyncPkt);
 
-    res = sp->pkt64.dp_Res1;
-    if (res2)
-        *res2 = sp->pkt64.dp_Res2;
+    /*
+     * The overlay's dp_Res0 (holding the DP64_INIT marker) shares its
+     * offset with the standard packet's dp_Res1. A handler that
+     * understands the 64-bit packet preserves the marker and answers
+     * through the overlay fields; a plain 32-bit handler answers
+     * through the standard fields, overwriting the marker. This is
+     * what tells the two reply forms apart.
+     */
+    if (sp->pkt64.dp_Res0 == DP64_INIT)
+    {
+        res = sp->pkt64.dp_Res1;
+        if (res2)
+            *res2 = sp->pkt64.dp_Res2;
+    }
+    else
+    {
+        res = dp->dp_Res1;
+        if (res2)
+            *res2 = dp->dp_Res2;
+    }
 
     FreeVec(sp);
     return res;
