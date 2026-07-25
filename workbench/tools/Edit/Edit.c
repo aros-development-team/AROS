@@ -1,7 +1,7 @@
 /******************************************************
 **  Edit.c : Implementation of 'Edit' menu commands  **
 **  (mark/cut/[un]indent/[lower|upper|toggle] case)  **
-**  © T.Pierron, C.Guillaume.                        **
+**  Â© T.Pierron, C.Guillaume.                        **
 ******************************************************/
 
 #include <exec/types.h>
@@ -330,14 +330,15 @@ void del_block(Project p)
 	p->max_lines -= nbrem;
 	p->ccp.select = 0;
 	p->ccp.xp     = (ULONG)-1;
-	if(nbrem>=1) prop_adj(p);
 
 	/* Adjust cursor's position */
 	p->edited = p->the_line;
 	nbrem     = p->nbl;
 	p->nbl    = 0;
+	if(p->top_line >= p->max_lines) p->top_line = p->max_lines > 0 ? p->max_lines-1 : 0;
 	set_cursor_line(p, nbrem, p->top_line);
 	if(p->top_line == p->nbl) p->show=p->edited;
+	if(nbdel>=1) prop_adj(p);
 
 	/* What should be redrawn? */
 	if(nbdel>1)

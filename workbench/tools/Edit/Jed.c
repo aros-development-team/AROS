@@ -486,18 +486,21 @@ void scroll_ydelta(Project p, LONG y)
 	/* Clamp values to the boundary */
 
 	if(pos<0) pos=0;
-#if 0
-	if(pos>(LONG)p->max_lines-(LONG)gui.nbline) pos=p->max_lines-gui.nbline;
-#else
-	if(pos>p->max_lines-1) pos=p->max_lines-1;
-#endif
+	if(p->max_lines > gui.nbline)
+    {
+        if(pos>(LONG)p->max_lines-(LONG)gui.nbline) pos=p->max_lines-gui.nbline;
+    }
+    else pos=0;
 
 	if(pos!=p->top_line)
 	{
-		if(!p->ccp.select) inv_curs(p,FALSE);
-		scroll_xy(p, curs_visible(p,pos), pos, TRUE);
-		if(p->ccp.select) move_selection(p, p->nbrwc, p->nbl);
-		inv_curs(p,TRUE);
+        if(p->ccp.select)
+            p->ycurs-=(pos-p->top_line)*YSIZE,
+            scroll_xy(p, p->left_pos, pos, TRUE);
+        else
+            inv_curs(p,FALSE),
+            scroll_xy(p, curs_visible(p,pos), pos, TRUE),
+            inv_curs(p,TRUE);
 	}
 }
 
