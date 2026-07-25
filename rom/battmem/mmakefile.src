@@ -1,0 +1,12 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/rom/battmem
+
+FUNCTIONS := obtainbattsemaphore releasebattsemaphore \
+	     readbattmem writebattmem
+
+%build_module mmake=kernel-battmem \
+    modname=battmem modtype=resource version=$(AROS_TARGET_PLATFORM) \
+    files="$(FUNCTIONS) battmem_init"
+
+%common

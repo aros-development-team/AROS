@@ -20,7 +20,8 @@ endif
 #MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
 #MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)
 
-FUNCTIONS := readbattclock resetbattclock writebattclock
+FUNCTIONS := readbattclock resetbattclock writebattclock \
+	     readbattclockmem writebattclockmem
 
 %build_module mmake=kernel-battclock \
     modname=battclock modtype=resource version=$(AROS_TARGET_PLATFORM) \

@@ -23,6 +23,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-ata-kobj \
 #MM     kernel-audio-kobj \
 #MM     kernel-battclock-kobj \
+#MM     kernel-battmem-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-bootloader-kobj \
 #MM     kernel-cardres-kobj \
@@ -140,7 +141,7 @@ KLIBS   := exec aros dos utility oop expansion partition debug \
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass inputclass keyboard mouse
-KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
+KRSRCS  := battclock battmem kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
 KHOOKS  := diag romboot
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
@@ -343,7 +344,7 @@ KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
 KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
 KHNDLRS := cdrom con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle bus gfx hiddclass keyboard mouse storage system p96gfx
-KRSRCS  := battclock processor task lddemon dosboot cia potgo disk \
+KRSRCS  := battclock battmem processor task lddemon dosboot cia potgo disk \
            misc shell shellcommands workbook wbtag card FileSystem
 KHOOKS  := alert romboot
 

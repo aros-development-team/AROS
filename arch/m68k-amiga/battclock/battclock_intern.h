@@ -20,6 +20,16 @@
 #define MSM6242B 1
 #define RF5C01A 2
 
+/*
+   Battery backed up memory of the RF5C01A/RP5C01. Blocks 2 and 3 are plain
+   battery RAM, 13 registers of 4 bits each: block 2 holds the high nibble of
+   a byte, block 3 the low one. Registers 0 to 11 are the storage proper,
+   register 12 holds a checksum over them.
+*/
+#define BATTMEM_REGS    13
+#define BATTMEM_BYTES   12
+#define BATTMEM_BITS    (BATTMEM_BYTES * 8)
+
 struct BattClockBase
 {
     struct Library bb_LibNode;
@@ -35,5 +45,7 @@ UBYTE getbcd(volatile UBYTE *p, UBYTE regnum);
 void putbcd(volatile UBYTE *p, UBYTE regnum, UBYTE v);
 void stopclock(struct BattClockBase *Battclock);
 void startclock(struct BattClockBase *Battclock);
+BOOL battmemload(struct BattClockBase *Battclock, UBYTE *buf);
+void battmemstore(struct BattClockBase *Battclock, UBYTE *buf);
 
 #endif //BATTCLOCK_INTERN_H
