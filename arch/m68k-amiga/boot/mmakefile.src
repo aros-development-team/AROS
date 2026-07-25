@@ -137,7 +137,7 @@ FILES=start early debug mmu
 AFILES=rom_entry rom_init cpu_detect superstack_swap
 
 KLIBS   := exec aros dos utility oop expansion partition debug \
-           keymap mathffp mathieeesingbas lowlevel
+           keymap lowlevel
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass inputclass keyboard mouse
@@ -163,6 +163,7 @@ AFILES  := ext_entry
 
 KLIBS   :=  graphics layers intuition gadtools icon workbench \
             freeanim nonvolatile nvdisk \
+            mathffp mathieeesingbas \
             setpatch
 KDEVS   := cd ata
 KHNDLRS := cdrom

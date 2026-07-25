@@ -147,6 +147,19 @@ USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNDEBUG
     files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" \
     objdir=$(GENDIR)/$(CURDIR)/static
 
+#MM- linklibs: linklibs-z-nogzip-static
+#MM linklibs-z-nogzip-static : zlib-fetch
+
+# gzip-less zlib for compress()/uncompress()-only consumers (icon.library).
+# NO_GZIP removes the crc32 references from deflate/inflate, so crc32.o's
+# ~7KB of tables and code never get pulled in - which m68k kickstart images
+# cannot afford (and their link scripts reject the DYNAMIC_CRC_TABLE bss).
+USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNDEBUG -DNO_GZIP
+
+%build_linklib mmake=linklibs-z-nogzip-static libname=z-nogzip.static \
+    files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" \
+    objdir=$(GENDIR)/$(CURDIR)/static-nogzip
+
 INCLUDE_FILES := zlib.h chromeconf.h
 %copy_includes mmake=workbench-libs-z-includes-copy dir=$(ARCHSRCDIR)
 

@@ -1,4 +1,4 @@
-# Copyright © The AROS Development Team. All rights reserved.
+# Copyright Â© The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -60,6 +60,6 @@ FUNCS := \
 %build_module mmake=workbench-libs-icon \
     modname=icon modtype=library \
     files="icon_init $(FUNCS) $(FILES)" \
-    uselibs="z.static"
+    uselibs="z-nogzip.static"
 
 %common
