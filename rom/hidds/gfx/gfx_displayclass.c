@@ -404,7 +404,6 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                 data->gfxhidd = (OOP_Object *)tag->ti_Data;
                 break;
             case aoHidd_Display_ModeTags:
-                dmtags[0].ti_Data = (IPTR)o;
                 dmtags[1].ti_Data = tag->ti_Data;
                 break;
             case aoHidd_Display_DMEnumClass:
@@ -417,15 +416,19 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             OOP_GetAttr(data->gfxhidd, aHidd_Gfx_FrameBufferType, &fbtype);
         data->fbmode = fbtype;
 
-        if (dmtags[1].ti_Data || dmenumclass)
+        /*
+         * Every display owns a mode enumerator: standard pixel formats are
+         * served through it (DMEnum::GetPixFmt), so it must exist even for
+         * displays that register no modes of their own (e.g. the default
+         * software display, which non-displayable bitmaps are attached to).
+         */
+        dmtags[0].ti_Data = (IPTR)o;
+        data->dmenum = OOP_NewObject(dmenumclass ? dmenumclass : CSD(cl)->dmenumclass, NULL, dmtags);
+        if (!data->dmenum)
         {
-            data->dmenum = OOP_NewObject(dmenumclass ? dmenumclass : CSD(cl)->dmenumclass, NULL, dmtags);
-            if (!data->dmenum)
-            {
-                OOP_MethodID dispose_mid = msg->mID - moRoot_New + moRoot_Dispose;
-                OOP_CoerceMethod(cl, o, &dispose_mid);
-                return NULL;
-            }
+            OOP_MethodID dispose_mid = msg->mID - moRoot_New + moRoot_Dispose;
+            OOP_CoerceMethod(cl, o, &dispose_mid);
+            return NULL;
         }
 
         data->gc = OOP_NewObject(CSD(cl)->gcclass, NULL, gctags);

@@ -486,6 +486,15 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
         }
     }
     
+    /*
+     * No modes supplied at all: a mode-less enumerator (e.g. that of the
+     * default software display). It still serves the standard pixel formats
+     * through GetPixFmt(), so succeed with an empty mode database - all
+     * mode queries are bounds-checked against the zero counts.
+     */
+    if (0 == numpfs && 0 == numsyncs)
+        return TRUE;
+
     if (0 == numpfs)
     {
         D(bug("!!! WE MUST AT LEAST HAVE ONE PIXFMT IN Gfx::RegisterModes() !!!\n"));
