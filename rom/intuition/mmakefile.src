@@ -192,9 +192,3 @@ FUNCS := \
 %build_module mmake=kernel-intuition \
   modname=intuition modtype=library \
   files="intuition_init $(FUNCS) $(FILES)"
-
-$(INTUITION_BUILDDIR)/shutdownscreen.d : $(INTUITION_BUILDDIR)/shutdown_image.h
-
-$(INTUITION_BUILDDIR)/shutdown_image.h : shutdown.ilbm
-	@$(ECHO) "Creating   $@..."
-	@$(ILBMTOC) $< >$@
