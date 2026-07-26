@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2026, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -28,10 +28,8 @@ RLIM_SAVED_MAX
 RLIM_SAVED_CUR
 */
 
-/* NOTIMPL
-RUSAGE_SELF
-RUSAGE_CHILDREN
-*/
+#define RUSAGE_SELF     0
+#define RUSAGE_CHILDREN (-1)
 
 struct rlimit {
     rlim_t rlim_cur; /* The current (soft) limit */
@@ -40,9 +38,13 @@ struct rlimit {
 
 #include <aros/types/timeval_s.h>
 
-/* NOTIMPL
-struct rusage
-*/
+/* POSIX.1-2008 requires only the two time fields. Note: posixc.library
+   does not implement getrusage(); the structure and constants are
+   provided for code (e.g. gnulib) that supplies its own fallback. */
+struct rusage {
+    struct timeval ru_utime; /* User time used */
+    struct timeval ru_stime; /* System time used */
+};
 
 #define RLIMIT_CORE     0	/* Limit on size of core file */
 #define RLIMIT_CPU      1	/* Limit on CPU time per process */
