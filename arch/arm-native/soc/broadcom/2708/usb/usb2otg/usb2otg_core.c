@@ -329,7 +329,8 @@ void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
             KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
             otg_Unit->hu_PIDBits[dev & 0x7f] &= ~(3UL << (2 * ep));
-            otg_Unit->hu_NakGate[dev & 0x7f] = USB2OTG_NAK_GATE_NONE;
+            otg_Unit->hu_NakGate[dev & 0x7f][0] = USB2OTG_NAK_GATE_NONE;
+            otg_Unit->hu_NakGate[dev & 0x7f][1] = USB2OTG_NAK_GATE_NONE;
             /* Also clear PING flow bit; stale PING state survives BOT
              * Reset Recovery and re-wedges on the next CBW. */
             otg_Unit->hu_PingBits[dev & 0x7f] &= ~(1UL << ep);
@@ -633,6 +634,9 @@ WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
+    /* Fresh submission — clear stale wedge/retry counters (DP1 is
+     * re-assigned with scheduling info right below). */
+    usb2otg_reset_retry_state(ioreq);
 
     /* Calculate "last time handled" and "next time to be handled" frame numbers */
     ULONG next_to_handle = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;

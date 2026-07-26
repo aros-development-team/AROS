@@ -226,7 +226,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     for (i=0; i < 128; i++)
                                     {
                                         USB2OTGBase->hd_Unit->hu_PIDBits[i] = 0;
-                                        USB2OTGBase->hd_Unit->hu_NakGate[i] = USB2OTG_NAK_GATE_NONE;
+                                        USB2OTGBase->hd_Unit->hu_NakGate[i][0] = USB2OTG_NAK_GATE_NONE;
+                                        USB2OTGBase->hd_Unit->hu_NakGate[i][1] = USB2OTG_NAK_GATE_NONE;
                                     }
                                     USB2OTGBase->hd_Unit->hu_BulkOwnerDev[0] = 0;
                                     USB2OTGBase->hd_Unit->hu_BulkOwnerDev[1] = 0;

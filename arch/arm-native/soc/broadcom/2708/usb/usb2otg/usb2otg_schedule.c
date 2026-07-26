@@ -40,13 +40,12 @@ static BOOL usb2otg_dev_has_ready_bulk(struct USB2OTGUnit *otg_Unit,
 
     if (dev_addr == 0)
         return FALSE;
-    if (usb2otg_nak_gated(otg_Unit, dev_addr))
-        return FALSE;
 
     ForeachNode(&otg_Unit->hu_BulkXFerQueue, req)
     {
         if (req->iouh_Req.io_Command == UHCMD_BULKXFER &&
-            req->iouh_DevAddr == dev_addr)
+            req->iouh_DevAddr == dev_addr &&
+            !usb2otg_nak_gated(otg_Unit, dev_addr, usb2otg_gate_dir(req)))
             return TRUE;
     }
     return FALSE;
@@ -62,7 +61,7 @@ static BOOL usb2otg_other_dev_has_ready_bulk(struct USB2OTGUnit *otg_Unit,
     {
         if (req->iouh_Req.io_Command == UHCMD_BULKXFER &&
             req->iouh_DevAddr != skip_dev &&
-            !usb2otg_nak_gated(otg_Unit, req->iouh_DevAddr))
+            !usb2otg_nak_gated(otg_Unit, req->iouh_DevAddr, usb2otg_gate_dir(req)))
             return TRUE;
     }
     return FALSE;
@@ -92,6 +91,8 @@ static int usb2otg_claim_bulk_channel(struct USB2OTGUnit *otg_Unit,
     for (i = 0; i < 2; i++)
     {
         int chan = bulk_chans[i];
+        if (otg_Unit->hu_DeadChannels & (1 << chan))
+            continue;
         if (otg_Unit->hu_BulkOwnerDev[i] != req->iouh_DevAddr)
             continue;
         if (otg_Unit->hu_Channel[chan].hc_Request != NULL)
@@ -114,6 +115,8 @@ static int usb2otg_claim_bulk_channel(struct USB2OTGUnit *otg_Unit,
         int chan = bulk_chans[i];
         UBYTE owner = otg_Unit->hu_BulkOwnerDev[i];
 
+        if (otg_Unit->hu_DeadChannels & (1 << chan))
+            continue;
         if (otg_Unit->hu_Channel[chan].hc_Request != NULL)
             continue;
         if (owner == req->iouh_DevAddr)
@@ -172,7 +175,7 @@ static struct IOUsbHWReq *usb2otg_find_schedulable_bulk_req(
         if (already_armed)
             continue;
 
-        if (usb2otg_nak_gated(otg_Unit, req->iouh_DevAddr))
+        if (usb2otg_nak_gated(otg_Unit, req->iouh_DevAddr, usb2otg_gate_dir(req)))
             continue;
         if (usb2otg_tt_in_flight(otg_Unit, req))
             continue;
@@ -316,6 +319,79 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     if (req == NULL)
         return FALSE;
 
+    /*
+     * Never reprogram a live channel: CHENA still set here means the
+     * prior halt failed and the channel FSM is wedged. Writing CHAR/
+     * TSIZE/DMAADDR now is spec-forbidden and corrupts it further.
+     * Quarantine the channel and requeue the request so the scheduler
+     * picks another one; wedge-recovery clears the quarantine.
+     */
+    {
+        ULONG live_char = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
+
+        if (live_char & USB2OTG_HOSTCHAR_ENABLE)
+        {
+            /*
+             * Completion race, not a wedge: XFERCOMPL can be processed
+             * (and the request finished) a moment before CHHLTD clears
+             * CHENA. Give the channel ~200 µs to settle before
+             * concluding it is wedged — a false quarantine stalls the
+             * queue ~1 s until the watchdog releases the channel.
+             */
+            int settle = 200000;
+            while ((rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE))
+                    & USB2OTG_HOSTCHAR_ENABLE) && --settle > 0)
+                asm volatile("yield\n");
+            live_char = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
+        }
+
+        if (live_char & USB2OTG_HOSTCHAR_ENABLE)
+        {
+            struct List *queue = NULL;
+
+            bug("[USB2OTG] SetupChannel: chan=%d still enabled (CHAR=%08x) — quarantining, requeue dev=%d ep=%d cmd=%lu\n",
+                chan, live_char,
+                (int)req->iouh_DevAddr,
+                (int)req->iouh_Endpoint,
+                (unsigned long)req->iouh_Req.io_Command);
+
+            switch (req->iouh_Req.io_Command)
+            {
+                case UHCMD_CONTROLXFER:
+                    queue = &otg_Unit->hu_CtrlXFerQueue;
+                    break;
+                case UHCMD_BULKXFER:
+                    queue = &otg_Unit->hu_BulkXFerQueue;
+                    break;
+                case UHCMD_INTXFER:
+                    queue = &otg_Unit->hu_IntXFerScheduled;
+                    break;
+                default:
+                    break;
+            }
+
+            if (queue == NULL)
+            {
+                otg_Unit->hu_DeadChannels |= (1 << chan);
+                usb2otg_finish_setup_error(otg_Unit, chan, req, UHIOERR_HOSTERROR);
+                return FALSE;
+            }
+
+            Disable();
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            otg_Unit->hu_DeadChannels |= (1 << chan);
+            otg_Unit->hu_Channel[chan].hc_Request = NULL;
+            ADDHEAD(queue, (struct Node *)req);
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
+            Enable();
+            return FALSE;
+        }
+    }
+
     /* Fresh request: clear watchdog defer counter. */
     otg_Unit->hu_Channel[chan].hc_DeferCount = 0;
     otg_Unit->hu_Channel[chan].hc_CsplitRetry = 0;
@@ -416,16 +492,29 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         pid = (otg_Unit->hu_PIDBits[req->iouh_DevAddr] >> (2 * req->iouh_Endpoint)) & 3;
     }
 
-    /* Flush non-periodic TX FIFO before programming the channel */
+    /*
+     * Flush non-periodic TX FIFO before programming the channel —
+     * but ONLY when no host channel is active. Flushing with a channel
+     * enabled corrupts the core's request-queue pointers (see
+     * usb2otg_any_channel_enabled): a control transfer arming while a
+     * bulk channel streams would wedge the bulk channel permanently.
+     * Disable() so the IRQ handler can't arm a channel (CSPLIT
+     * re-arms) between the idle check and the flush.
+     */
     if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
     {
-        wr32le(USB2OTG_RESET, USB2OTG_RESET_TXFIFOFLUSH | (0 << 6));
-        /* Wait for hardware to clear the flush bit */
+        Disable();
+        if (!usb2otg_any_channel_enabled())
         {
-            int timeout = 100000;
-            while ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_TXFIFOFLUSH) && --timeout > 0)
-                asm volatile("yield\n");
+            wr32le(USB2OTG_RESET, USB2OTG_RESET_TXFIFOFLUSH | (0 << 6));
+            /* Wait for hardware to clear the flush bit */
+            {
+                int timeout = 100000;
+                while ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_TXFIFOFLUSH) && --timeout > 0)
+                    asm volatile("yield\n");
+            }
         }
+        Enable();
     }
 
     if (req->iouh_MaxPktSize == 0)
@@ -1304,6 +1393,10 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
     if (!usb2otg_require_cpu0(USB2OTGBase, __PRETTY_FUNCTION__))
         return;
 
+    /* CTRL channel quarantined — leave the queue for wedge-recovery. */
+    if (otg_Unit->hu_DeadChannels & (1 << CHAN_CTRL))
+        return;
+
     D(bug("[USB2OTG] %s(%p)\n", __PRETTY_FUNCTION__, otg_Unit));
 
     D(
@@ -1432,6 +1525,9 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
     for (chan = CHAN_INT1; chan <= CHAN_INT_LAST; chan++)
     {
         struct IOUsbHWReq *req = NULL;
+
+        if (otg_Unit->hu_DeadChannels & (1 << chan))
+            continue;
 
         /* If channel is in use unlock Enable() and continue checking, otherwise stay in Disable() state for a while */
         Disable();

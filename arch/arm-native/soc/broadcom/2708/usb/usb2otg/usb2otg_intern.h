@@ -150,6 +150,25 @@ static inline void usb2otg_hostport_rmw(ULONG set, ULONG clear)
     wr32le(USB2OTG_HOSTPORT, v);
 }
 
+/*
+ * TRUE if any host channel has CHENA set. TxFIFO flush is only legal
+ * with AHB idle and no active channels (DWC2 programming guide);
+ * flushing with a channel enabled corrupts the core's request-queue/
+ * FIFO pointers — armed channels then never execute (CHENA stuck,
+ * INTR=0, TSIZE untouched) and their halt never completes.
+ */
+static inline BOOL usb2otg_any_channel_enabled(void)
+{
+    int chan;
+
+    for (chan = 0; chan < 8; chan++)
+    {
+        if (rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE)
+            return TRUE;
+    }
+    return FALSE;
+}
+
 /* Clear stale retry state in DriverPrivate slots at xfer-entry. */
 static inline void usb2otg_reset_retry_state(struct IOUsbHWReq *ioreq)
 {
@@ -265,12 +284,16 @@ struct USB2OTGUnit
     ULONG               hu_PingBits[128];
 
     /*
-     * Per-device bulk NAK rate gate. Stores the earliest microframe
-     * (11-bit HOSTFRAMENO) at which this device's next bulk retry may
-     * arm; 0xFFFF = no gate. Mirrors FreeBSD dwc_otg's did_nak
-     * rate-check (dwc_otg.c:1215-1250). Stops NAK-storm CPU0 burn.
+     * Per-(device, direction) bulk NAK rate gate ([0]=OUT, [1]=IN).
+     * Stores the earliest microframe (14-bit HOSTFRAMENO) at which the
+     * next bulk retry may arm; 0xFFFF = no gate. Mirrors FreeBSD
+     * dwc_otg's did_nak rate-check (dwc_otg.c:1215-1250). Stops
+     * NAK-storm CPU0 burn. Split per direction: an idle bulk-IN poll
+     * NAKs constantly, and letting that gate the whole device throttled
+     * the same device's OUT endpoint to ~1 frame per gate period
+     * (lan78xx TX starvation, 100-200 Kbit/s).
      */
-    UWORD               hu_NakGate[128];
+    UWORD               hu_NakGate[128][2];
 
     /*
      * Per-device bulk channel binding: [0]→CHAN_BULK, [1]→CHAN_BULK2.
@@ -278,6 +301,14 @@ struct USB2OTGUnit
      * each so a wedged/NAK-storming device cannot block the other.
      */
     UBYTE               hu_BulkOwnerDev[2];
+
+    /*
+     * Bitmask of quarantined channels whose CHENA is stuck (halt +
+     * HCLKSOFT + core reset all failed). Schedulers skip these so new
+     * requests aren't armed on dead hardware. Cleared after a
+     * successful wedge-recovery reset (all channel SMs reset).
+     */
+    UBYTE               hu_DeadChannels;
 
 /*
  * DMA buffers — must be in heap memory so the 0xC0000000 VC bus
@@ -361,6 +392,15 @@ struct USB2OTGDevice
 #define USB2OTG_WD_TICKS_BULK_SPLIT  10   /* LS/FS bulk through TT: 1.5 s */
 #define USB2OTG_WD_TICKS_DEFAULT      3   /* anything else */
 
+/*
+ * Consecutive watchdog-wedge retries for an INT request before it is
+ * failed with UHIOERR_TIMEOUT. A timed-out interrupt pipe makes the
+ * class drivers (hid/hub) treat the device as unplugged, so wedged
+ * INT polls are requeued instead; counter lives in iouh_DriverPrivate2
+ * and resets on any liveness (completion/NAK).
+ */
+#define USB2OTG_INT_WEDGE_RETRY_LIMIT  3
+
 /* Bulk NAK rate gate: 8 microframes = 1 ms at HS. */
 #define USB2OTG_NAK_GATE_NONE          0xFFFFU
 #define USB2OTG_BULK_NAK_GATE_UFRAMES  8
@@ -388,9 +428,15 @@ static inline ULONG usb2otg_current_uframe(void)
     return rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff;
 }
 
-static inline BOOL usb2otg_nak_gated(struct USB2OTGUnit *u, UBYTE dev)
+/* Gate-direction index for a request: [0]=OUT, [1]=IN. */
+static inline UBYTE usb2otg_gate_dir(struct IOUsbHWReq *req)
 {
-    UWORD gate = u->hu_NakGate[dev & 0x7f];
+    return (req->iouh_Dir == UHDIR_IN) ? 1 : 0;
+}
+
+static inline BOOL usb2otg_nak_gated(struct USB2OTGUnit *u, UBYTE dev, UBYTE dir)
+{
+    UWORD gate = u->hu_NakGate[dev & 0x7f][dir & 1];
     ULONG now;
     ULONG delta;
 
@@ -407,27 +453,27 @@ static inline BOOL usb2otg_nak_gated(struct USB2OTGUnit *u, UBYTE dev)
             {
                 static ULONG cleared = 0;
                 if (++cleared <= 3 || (cleared & 0x3f) == 0)
-                    bug("[USB2OTG:GATE] cleared dev=%d gate=%04x now=%04lx delta=%lu (#%lu)\n",
-                        (int)dev, (unsigned)gate, (unsigned long)now,
+                    bug("[USB2OTG:GATE] cleared dev=%d dir=%d gate=%04x now=%04lx delta=%lu (#%lu)\n",
+                        (int)dev, (int)dir, (unsigned)gate, (unsigned long)now,
                         (unsigned long)delta, (unsigned long)cleared);
             }
         )
-        u->hu_NakGate[dev & 0x7f] = USB2OTG_NAK_GATE_NONE;
+        u->hu_NakGate[dev & 0x7f][dir & 1] = USB2OTG_NAK_GATE_NONE;
         return FALSE;
     }
     return TRUE;
 }
 
 static inline void usb2otg_nak_gate_set(struct USB2OTGUnit *u, UBYTE dev,
-    ULONG uframes)
+    UBYTE dir, ULONG uframes)
 {
     UWORD new_gate = (UWORD)((usb2otg_current_uframe() + uframes) & 0x3fff);
-    u->hu_NakGate[dev & 0x7f] = new_gate;
+    u->hu_NakGate[dev & 0x7f][dir & 1] = new_gate;
     D(
         if (uframes >= 100)
         {
-            bug("[USB2OTG:GATE] set dev=%d gate=%04x uframes=%lu now=%04lx\n",
-                (int)dev, (unsigned)new_gate, (unsigned long)uframes,
+            bug("[USB2OTG:GATE] set dev=%d dir=%d gate=%04x uframes=%lu now=%04lx\n",
+                (int)dev, (int)dir, (unsigned)new_gate, (unsigned long)uframes,
                 (unsigned long)usb2otg_current_uframe());
         }
     )
