@@ -170,7 +170,7 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
         dd->cb_base = (struct BCM2708DMACB *) cb_raw;
 
         /* Align to 32 bytes */
-        cb_raw = (UBYTE *) (((ULONG) cb_raw + 31) & ~31);
+        cb_raw = (UBYTE *) (((IPTR) cb_raw + 31) & ~(IPTR)31);
         dd->cb[0] = (struct BCM2708DMACB *) cb_raw;
         dd->cb[1] = (struct BCM2708DMACB *) (cb_raw + sizeof(struct BCM2708DMACB));
 

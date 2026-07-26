@@ -16,11 +16,11 @@
 /* Register access helpers (little-endian, with ARM memory barriers) */
 static inline void __dsb(void)
 {
-    asm volatile("dsb" ::: "memory");
+    asm volatile("dsb sy" ::: "memory");
 }
 static inline void __dmb(void)
 {
-    asm volatile("dmb" ::: "memory");
+    asm volatile("dmb sy" ::: "memory");
 }
 
 static inline ULONG rd32le(ULONG addr)
