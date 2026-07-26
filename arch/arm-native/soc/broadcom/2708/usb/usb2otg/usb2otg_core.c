@@ -331,9 +331,7 @@ void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
             otg_Unit->hu_PIDBits[dev & 0x7f] &= ~(3UL << (2 * ep));
             otg_Unit->hu_NakGate[dev & 0x7f][0] = USB2OTG_NAK_GATE_NONE;
             otg_Unit->hu_NakGate[dev & 0x7f][1] = USB2OTG_NAK_GATE_NONE;
-            /* Also clear PING flow bit; stale PING state survives BOT
-             * Reset Recovery and re-wedges on the next CBW. */
-            otg_Unit->hu_PingBits[dev & 0x7f] &= ~(1UL << ep);
+            otg_Unit->hu_BulkGiveupStreak[dev & 0x7f] = 0;
 #if defined(__AROSEXEC_SMP__)
             KrnSpinUnLock(&otg_Unit->hu_Lock);
 #endif

@@ -53,15 +53,6 @@ static void DumpChannelRegs(int channel)
 /* Halt-sequence trace; set 1 for per-step register snapshots. */
 #define USB2OTG_HALT_TRACE 0
 
-/*
- * 0 = drop PING-protocol, recover from NYET via DATA-retry with NAK
- * gate. The DWC2 core in Buffer-DMA mode does not reliably issue PING
- * tokens — channel wedges with bare-CHHLTD after every NYET. USB 2.0
- * §8.5.1 says SHOULD PING after NYET; in practice all MSC tested
- * tolerates plain NAK retry. Set to 1 if a strict-PING device appears.
- */
-#define USB2OTG_USE_PING_FLOW 1
-
 #if USB2OTG_HALT_TRACE
 static void usb2otg_halt_snapshot(int chan, const char *label)
 {
@@ -118,7 +109,7 @@ static void usb2otg_halt_channel_preserve_char(int chan)
              * CHENA refuses to drop — usually a stale TX FIFO packet
              * the device isn't ACKing. Flush ALL TX FIFOs (TxFNum=16
              * per DWC2 spec); NPTXFIFO-only flush is insufficient on
-             * Pi 3B+ after WAIT-PING. Collateral: other non-periodic
+             * Pi 3B+ after flash-busy waits. Collateral: other non-periodic
              * channels lose in-flight packets — acceptable on a
              * give-up path; class drivers retry.
              */
@@ -384,9 +375,9 @@ static BOOL usb2otg_core_reset_recover(struct USB2OTGUnit *USBUnit, int wedged_c
         for (dev = 0; dev < 128; dev++)
         {
             USBUnit->hu_PIDBits[dev] = 0;
-            USBUnit->hu_PingBits[dev] = 0;
             USBUnit->hu_NakGate[dev][0] = USB2OTG_NAK_GATE_NONE;
             USBUnit->hu_NakGate[dev][1] = USB2OTG_NAK_GATE_NONE;
+            USBUnit->hu_BulkGiveupStreak[dev] = 0;
         }
         USBUnit->hu_BulkOwnerDev[0] = 0;
         USBUnit->hu_BulkOwnerDev[1] = 0;
@@ -594,9 +585,6 @@ static inline void usb2otg_bulk_out_advance_pktcnt(
         USBUnit->hu_PIDBits[req->iouh_DevAddr] ^=
             (USB2OTG_PID_DATA1 << (2 * req->iouh_Endpoint));
     req->iouh_DriverPrivate2 = (APTR)0;
-
-    /* PING setup is done at NYET sites; XactErr is bus-level and must
-     * NOT trigger PING (device awaits OUT, loops on PING-NAK). */
 
 }
 
@@ -1154,12 +1142,6 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     (req->iouh_Flags & UHFF_HIGHSPEED) &&
                                     req->iouh_Actual > act_before_helper)
                                 {
-                                    /*
-                                     * Do NOT set PingPending: XACTERR is a
-                                     * USB 2.0 §8.4.6 bus-level error, not a
-                                     * flash-busy NYET. PING-flow on XACTERR
-                                     * wedges the channel.
-                                     */
                                     usb2otg_nak_gate_set(USBUnit,
                                         req->iouh_DevAddr, 0, 4000);
                                     usb2otg_post_halt_bulk_out_settle();
@@ -1350,179 +1332,6 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 #endif
                             req = NULL;
                         }
-                        else if ((intr & USB2OTG_INTRCHAN_NOTREADY) &&
-                                 req->iouh_Req.io_Command == UHCMD_BULKXFER &&
-                                 req->iouh_Dir == UHDIR_OUT &&
-                                 !(req->iouh_Flags & UHFF_SPLITTRANS))
-                        {
-                            /*
-                             * Bulk OUT NYET (HS, non-split) — USB 2.0
-                             * §8.5.1. Device ACKed this transaction but
-                             * cannot accept the next. Handle in SW
-                             * regardless of CHHLTD; HW auto-PING starves
-                             * the device's MCU.
-                             *
-                             * PktCnt over-credits on NYET (BCM2835 quirk):
-                             * cap acked at 1 packet/NYET, matches what
-                             * the bus actually conveyed. See FreeBSD
-                             * dwc_otg.c:1841-1868 (WAIT_ANE).
-                             */
-                            wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
-                            usb2otg_halt_channel_preserve_char(chan);
-                            USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-                            {
-                                struct USB2OTGChannel *hc = &USBUnit->hu_Channel[chan];
-                                ULONG tsize_now = rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
-                                ULONG char_now  = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
-                                int initial_pktcnt =
-                                    (hc->hc_XferSize + req->iouh_MaxPktSize - 1)
-                                        / (req->iouh_MaxPktSize ? req->iouh_MaxPktSize : 1);
-                                int remaining_pktcnt;
-                                int acked_pktcnt_raw;
-                                int acked_pktcnt;
-                                ULONG accepted;
-                                ULONG act_before;
-
-                                /* Bump per-request NYET hit count so the
-                                 * WAIT-PING dump can distinguish "HW
-                                 * absorbed NYET internally, handler never
-                                 * ran" (count==0) from "handler ran but
-                                 * progress accounting clamped to 0". */
-                                if (hc->hc_NyetCount != 0xFFFF)
-                                    hc->hc_NyetCount++;
-
-                                if (initial_pktcnt == 0)
-                                    initial_pktcnt = 1;
-                                remaining_pktcnt = (tsize_now >> 19) & 0x3FF;
-                                acked_pktcnt_raw = initial_pktcnt - remaining_pktcnt;
-                                if (acked_pktcnt_raw < 0)
-                                    acked_pktcnt_raw = 0;
-
-                                /*
-                                 * BCM2835 over-reports PktCnt on NYET —
-                                 * cross-check against XferSize delta and
-                                 * use the smaller. See helper comment for
-                                 * full rationale.
-                                 */
-                                {
-                                    ULONG xfer_remaining = tsize_now & 0x7FFFF;
-                                    ULONG bytes_from_xfersize;
-                                    ULONG bytes_from_pktcnt;
-                                    ULONG bytes_acked;
-
-                                    if (xfer_remaining > (ULONG)hc->hc_XferSize)
-                                        xfer_remaining = hc->hc_XferSize;
-                                    bytes_from_xfersize = hc->hc_XferSize - xfer_remaining;
-                                    bytes_from_pktcnt = (ULONG)acked_pktcnt_raw * req->iouh_MaxPktSize;
-
-                                    bytes_acked = bytes_from_pktcnt < bytes_from_xfersize
-                                        ? bytes_from_pktcnt : bytes_from_xfersize;
-                                    bytes_acked -= bytes_acked % req->iouh_MaxPktSize;
-
-                                    accepted = bytes_acked;
-                                    if (accepted > (ULONG)hc->hc_XferSize)
-                                        accepted = hc->hc_XferSize;
-                                    if (req->iouh_Actual + accepted > req->iouh_Length)
-                                        accepted = req->iouh_Length - req->iouh_Actual;
-
-                                    acked_pktcnt = accepted / req->iouh_MaxPktSize;
-                                }
-
-                                act_before = req->iouh_Actual;
-                                req->iouh_Actual += accepted;
-
-                                if (acked_pktcnt & 1)
-                                    USBUnit->hu_PIDBits[req->iouh_DevAddr] ^=
-                                        (USB2OTG_PID_DATA1 << (2 * req->iouh_Endpoint));
-
-                                D(
-                                    {
-                                        static ULONG nyet_diag = 0;
-                                        nyet_diag++;
-                                        if (usb2otg_diag_log_rate(nyet_diag))
-                                            bug("[USB2OTG:NYET] #%lu chan=%d dev=%d ep=%d intr=%04x"
-                                                " char=%08x tsize=%08x burst=%d init=%d rem=%d"
-                                                " ackedRaw=%d acked=%d acc=%lu act=%lu->%lu/%lu pid=%u\n",
-                                                (unsigned long)nyet_diag, chan,
-                                                (int)req->iouh_DevAddr,
-                                                (int)req->iouh_Endpoint,
-                                                (unsigned int)intr,
-                                                (unsigned int)char_now,
-                                                (unsigned int)tsize_now,
-                                                (int)hc->hc_XferSize,
-                                                initial_pktcnt, remaining_pktcnt,
-                                                acked_pktcnt_raw, acked_pktcnt,
-                                                (unsigned long)accepted,
-                                                (unsigned long)act_before,
-                                                (unsigned long)req->iouh_Actual,
-                                                (unsigned long)req->iouh_Length,
-                                                (unsigned)((USBUnit->hu_PIDBits[req->iouh_DevAddr] >>
-                                                    (2 * req->iouh_Endpoint)) & 3));
-                                    }
-                                )
-                            }
-
-                            /*
-                             * Transfer complete via NYET: device ACKed
-                             * the last packet but signalled "slow down for
-                             * the next one" — except there IS no next
-                             * packet, so we're done. Without this check,
-                             * the requeue path below would re-arm with
-                             * xfer_size=0 + DoPing=1, causing immediate
-                             * bare-CHHLTD and an infinite retry loop.
-                             */
-                            if (req->iouh_Actual >= req->iouh_Length)
-                            {
-                                /* Forward progress — clear PING state for
-                                 * this endpoint so subsequent transfers
-                                 * don't unnecessarily PING. */
-                                USBUnit->hu_Channel[chan].hc_PingPending = 0;
-                                USBUnit->hu_PingBits[req->iouh_DevAddr] &=
-                                    ~(1U << req->iouh_Endpoint);
-
-                                wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
-                                usb2otg_halt_channel_preserve_char(chan);
-                                USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-
-                                req->iouh_Req.io_Error = 0;
-                                req->iouh_DriverPrivate1 = (APTR)0;
-                                req->iouh_DriverPrivate2 = (APTR)0;
-
-                                usb2otg_diag_bulk_finish(USBUnit, chan, req);
-                                usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
-                                    &USBUnit->hu_FinishedXfers, FALSE);
-                                req = NULL;
-                                continue;
-                            }
-
-                            /* NYET is forward progress — reset retry budget */
-                            req->iouh_DriverPrivate2 = (APTR)0;
-
-                            /*
-                             * USB 2.0 §8.5.1: after NYET, OUT transactions
-                             * MUST be preceded by PING. Set BOTH the
-                             * channel flag and the per-endpoint bit —
-                             * SetupChannel clears the channel flag on
-                             * requeue, so the per-ep bit restores it.
-                             */
-#if USB2OTG_USE_PING_FLOW
-                            USBUnit->hu_Channel[chan].hc_PingPending = 1;
-                            USBUnit->hu_PingBits[req->iouh_DevAddr] |=
-                                (1U << req->iouh_Endpoint);
-#endif
-
-                            /* ~500 ms NAK gate. <= ~8000 µframes to avoid
-                             * 14-bit half-wrap aliasing. */
-                            usb2otg_nak_gate_set(USBUnit, req->iouh_DevAddr, 0,
-                                                 4000);
-                            req->iouh_DriverPrivate1 = (APTR)0;
-                            usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr, "bulk-out-nyet");
-                            usb2otg_post_halt_bulk_out_settle();
-
-                            usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
-                                &USBUnit->hu_BulkXFerQueue, FALSE);
-                            req = NULL;
-                        }
                         else if ((intr & USB2OTG_INTRCHAN_HALT) && !(intr & USB2OTG_INTRCHAN_TRANSFERCOMPLETE))
                         {
                             /*
@@ -1572,91 +1381,11 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 ADDHEAD(&USBUnit->hu_CtrlXFerQueue, req);
                             else if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
                             {
-                                ULONG bulk_old_actual = req->iouh_Actual;
-                                BOOL bulk_hidden_nyet = FALSE;
-
-                                /*
-                                 * PING-only completion (PingState==2):
-                                 * NAK → keep PING, install gate, retry.
-                                 * ACK/bare → clear PING, requeue for DATA.
-                                 */
-                                if (USBUnit->hu_Channel[chan].hc_PingState == 2)
-                                {
-                                    BOOL ping_nak = (intr & USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE) != 0;
-
-                                    D(
-                                        {
-                                            static ULONG ping_done_count = 0;
-                                            BOOL ping_ack = (intr & USB2OTG_INTRCHAN_ACKNOWLEDGE) != 0;
-
-                                            ping_done_count++;
-                                            if (usb2otg_diag_log_rate(ping_done_count))
-                                            {
-                                                bug("[USB2OTG:PING] DONE #%lu chan=%d dev=%d ep=%d intr=%04x %s\n",
-                                                    (unsigned long)ping_done_count,
-                                                    chan,
-                                                    (int)req->iouh_DevAddr,
-                                                    (int)req->iouh_Endpoint,
-                                                    (unsigned)intr,
-                                                    ping_nak ? "NAK" :
-                                                    ping_ack ? "ACK" : "bare");
-                                            }
-                                        }
-                                    )
-
-                                    if (ping_nak)
-                                    {
-                                        /* Flash-busy: keep PING, gate, retry. */
-                                        USBUnit->hu_Channel[chan].hc_PingState = 0;
-                                        usb2otg_nak_gate_set(USBUnit,
-                                            req->iouh_DevAddr, 0, 4000);
-                                    }
-                                    else
-                                    {
-                                        /* ACK/bare → next arm carries DATA. */
-                                        USBUnit->hu_Channel[chan].hc_PingPending = 0;
-                                        USBUnit->hu_Channel[chan].hc_PingState = 0;
-                                        USBUnit->hu_PingBits[req->iouh_DevAddr] &=
-                                            ~(1UL << req->iouh_Endpoint);
-                                    }
-
-                                    /* PING-only carried no data; skip bare-CHHLTD bookkeeping. */
-                                    usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr,
-                                        ping_nak ? "ping-nak" : "ping-ack");
-                                    req->iouh_DriverPrivate1 = (APTR)0;
-                                    ADDTAIL(&USBUnit->hu_BulkXFerQueue, req);
-                                    goto ping_done_requeue;
-                                }
-
                                 /* Multi-packet bulk-OUT progress accounting. */
                                 usb2otg_bulk_out_advance_pktcnt(USBUnit, chan, req, chhltd_tsize);
 
-                                /*
-                                 * Hidden-NYET synthesis: HS direct bulk-OUT
-                                 * with progress but not done = device flow-
-                                 * controlled mid-burst. Some BCM2835 DWC2
-                                 * cases expose this as bare CHHLTD without
-                                 * HCINT.NYET, so next arm must set DoPing.
-                                 * Skip on XACTERR (bus-level, not flash-busy).
-                                 */
-                                if ((req->iouh_Dir == UHDIR_OUT) &&
-                                    !(req->iouh_Flags & UHFF_SPLITTRANS) &&
-                                    (req->iouh_Flags & UHFF_HIGHSPEED) &&
-                                    (req->iouh_Actual > bulk_old_actual) &&
-                                    (req->iouh_Actual < req->iouh_Length) &&
-                                    !(intr & USB2OTG_INTRCHAN_TRANSACTIONERROR))
-                                {
-#if USB2OTG_USE_PING_FLOW
-                                    USBUnit->hu_Channel[chan].hc_PingPending = 1;
-                                    USBUnit->hu_PingBits[req->iouh_DevAddr] |=
-                                        (1U << req->iouh_Endpoint);
-#endif
-                                    bulk_hidden_nyet = TRUE;
-                                }
-
                                 usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr,
-                                    bulk_hidden_nyet ? "bare-chhltd-hidden-nyet"
-                                                     : "bare-chhltd");
+                                    "bare-chhltd");
 
                                 {
                                     struct USB2OTGChannel *hc = &USBUnit->hu_Channel[chan];
@@ -1692,14 +1421,13 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                 ULONG pidbits =
                                                     (USBUnit->hu_PIDBits[req->iouh_DevAddr] >>
                                                      (2 * req->iouh_Endpoint)) & 3;
-                                                bug("[USB2OTG:MSS] BARE-CHHLTD np=%u rq=%u total=%u nyet=%u chan=%d dev=%d ep=%d dir=%s act=%lu/%lu\n"
+                                                bug("[USB2OTG:MSS] BARE-CHHLTD np=%u rq=%u total=%u chan=%d dev=%d ep=%d dir=%s act=%lu/%lu\n"
                                                     "  CHAR=%08x TSIZE=%08x DMA=%08x INTR_raw=%04x HCINT_now=%08x\n"
                                                     "  NPTXSTS=%08x HFNUM=%08x HOSTPORT=%08x\n"
                                                     "  start_hfnum=%08x ufdelta=%d coreINTR=%08x HAINT=%08x PID=%u\n",
                                                     (unsigned)np,
                                                     (unsigned)hc->hc_DiagRequeueCount,
                                                     bare_chhltd_total,
-                                                    (unsigned)hc->hc_NyetCount,
                                                     chan,
                                                     (int)req->iouh_DevAddr,
                                                     (int)req->iouh_Endpoint,
@@ -1724,38 +1452,44 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     )
 
                                     /*
-                                     * Idle bulk-IN and bulk-OUT in PING flow
-                                     * bypass the np-counter giveup (legit
-                                     * NAK pattern). Absolute cap still
-                                     * applies via hc_BareChhltdTotal.
+                                     * Idle bulk-IN bypasses the np-counter
+                                     * giveup (legit NAK pattern). Absolute
+                                     * cap still applies via
+                                     * hc_BareChhltdTotal (1500 × ~1 ms).
+                                     * After 2 consecutive no-progress
+                                     * giveups the device is likely gone
+                                     * (unplug = bare-CHHLTD storm) — fail
+                                     * fast so the class-retry loop doesn't
+                                     * hog the bus and starve the hub's
+                                     * disconnect report.
                                      */
-                                    BOOL out_ping_flow =
-                                        req->iouh_Dir == UHDIR_OUT &&
-                                        hc->hc_PingPending != 0;
-                                    /* OUT-PING: 30 × 500 ms = 15 s budget.
-                                     * Non-PING: 1500 × ~1 ms = ~1.5 s. */
-                                    ULONG total_cap = out_ping_flow ? 30 : 1500;
                                     BOOL skip_np_giveup =
-                                        (req->iouh_Dir == UHDIR_IN &&
-                                         req->iouh_Actual == 0) ||
-                                        out_ping_flow;
-                                    if ((np >= 250 && !skip_np_giveup) ||
-                                        hc->hc_BareChhltdTotal >= total_cap)
+                                        req->iouh_Dir == UHDIR_IN &&
+                                        req->iouh_Actual == 0;
+                                    ULONG np_limit =
+                                        USBUnit->hu_BulkGiveupStreak[req->iouh_DevAddr] >= 2
+                                            ? 25 : 250;
+                                    if ((np >= np_limit && !skip_np_giveup) ||
+                                        hc->hc_BareChhltdTotal >= 1500)
                                     {
-                                        bug("[USB2OTG:MSS] BARE-CHHLTD giving up after %u no-progress chan=%d dev=%d ep=%d dir=%s act=%lu/%lu\n",
-                                            (unsigned)np, chan,
-                                            (int)req->iouh_DevAddr,
-                                            (int)req->iouh_Endpoint,
-                                            req->iouh_Dir == UHDIR_IN ? "IN" : "OUT",
-                                            (unsigned long)req->iouh_Actual,
-                                            (unsigned long)req->iouh_Length);
+                                        if (req->iouh_Actual == 0 &&
+                                            USBUnit->hu_BulkGiveupStreak[req->iouh_DevAddr] < 0xFF)
+                                            USBUnit->hu_BulkGiveupStreak[req->iouh_DevAddr]++;
+                                        {
+                                            static ULONG giveup_count = 0;
+                                            giveup_count++;
+                                            if (usb2otg_diag_log_rate(giveup_count))
+                                                bug("[USB2OTG:MSS] BARE-CHHLTD giving up after %u no-progress chan=%d dev=%d ep=%d dir=%s act=%lu/%lu streak=%u (#%lu)\n",
+                                                    (unsigned)np, chan,
+                                                    (int)req->iouh_DevAddr,
+                                                    (int)req->iouh_Endpoint,
+                                                    req->iouh_Dir == UHDIR_IN ? "IN" : "OUT",
+                                                    (unsigned long)req->iouh_Actual,
+                                                    (unsigned long)req->iouh_Length,
+                                                    (unsigned)USBUnit->hu_BulkGiveupStreak[req->iouh_DevAddr],
+                                                    (unsigned long)giveup_count);
+                                        }
                                         req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
-                                        /* Defensive PING clear; some failure
-                                         * paths skip CLEAR_HALT, next CBW
-                                         * would re-wedge with DoPing=1. */
-                                        hc->hc_PingPending = 0;
-                                        USBUnit->hu_PingBits[req->iouh_DevAddr] &=
-                                            ~(1UL << req->iouh_Endpoint);
                                         /* Flush NPTxFIFO so next CBW lands clean —
                                          * only with all channels idle (flush with an
                                          * active channel corrupts the request queue). */
@@ -1771,10 +1505,16 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                        && --timeout > 0)
                                                     asm volatile("yield\n");
                                             }
-                                            bug("[USB2OTG:MSS] BARE-CHHLTD NP-TX-FIFO-FLUSH after giveup chan=%d dev=%d ep=%d\n",
-                                                chan,
-                                                (int)req->iouh_DevAddr,
-                                                (int)req->iouh_Endpoint);
+                                            {
+                                                static ULONG flush_count = 0;
+                                                flush_count++;
+                                                if (usb2otg_diag_log_rate(flush_count))
+                                                    bug("[USB2OTG:MSS] BARE-CHHLTD NP-TX-FIFO-FLUSH after giveup chan=%d dev=%d ep=%d (#%lu)\n",
+                                                        chan,
+                                                        (int)req->iouh_DevAddr,
+                                                        (int)req->iouh_Endpoint,
+                                                        (unsigned long)flush_count);
+                                            }
                                         }
                                         /* Do NOT reset PID toggle: would desync
                                          * a marginal device. Canonical recovery
@@ -1788,16 +1528,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     else
                                     {
                                         USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-                                        if (out_ping_flow)
-                                        {
-                                            /* Bare-CHHLTD in PING flow = device
-                                             * NAK-storming PING; 500 ms gate. */
-                                            usb2otg_nak_gate_set(USBUnit,
-                                                req->iouh_DevAddr, 0, 4000);
-                                            req->iouh_DriverPrivate1 = (APTR)0;
-                                            hc->hc_DiagNoProgressCount = 0;
-                                        }
-                                        else if (req->iouh_Dir == UHDIR_IN && req->iouh_Actual == 0 && np >= 250)
+                                        if (req->iouh_Dir == UHDIR_IN && req->iouh_Actual == 0 && np >= 250)
                                         {
                                             /* IN-idle long backoff. */
                                             usb2otg_nak_gate_set(USBUnit,
@@ -1810,14 +1541,11 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                 req->iouh_DevAddr,
                                                 usb2otg_gate_dir(req),
                                                 USB2OTG_BULK_NAK_GATE_UFRAMES);
-                                            if (bulk_hidden_nyet)
-                                                req->iouh_DriverPrivate1 = (APTR)0;
                                         }
                                         ADDTAIL(&USBUnit->hu_BulkXFerQueue, req);
                                     }
                                 }
                             }
-                          ping_done_requeue:
                             USBUnit->hu_Channel[chan].hc_Request = NULL;
 #if defined(__AROSEXEC_SMP__)
                             KrnSpinUnLock(&USBUnit->hu_Lock);
@@ -2279,146 +2007,64 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                     }
 
                     /*
-                     * Direct bulk OUT in PING/NAK flow control (USB 2.0
-                     * §11.17.1): TSIZE.DoPing=1 + INTR.NAK=1 = device
-                     * flash-busy, host must keep polling. Defer up to
-                     * USB2OTG_FLASH_BUSY_DEFER_CAP (~10 min).
-                     */
-                    if ((req->iouh_Req.io_Command == UHCMD_BULKXFER) &&
-                        (req->iouh_Dir == UHDIR_OUT) &&
-                        !(req->iouh_Flags & UHFF_SPLITTRANS) &&
-                        (w_tsize & USB2OTG_HOSTTSIZE_PING) &&
-                        !(w_intr & (USB2OTG_INTRCHAN_STALL |
-                                    USB2OTG_INTRCHAN_TRANSACTIONERROR |
-                                    USB2OTG_INTRCHAN_BABBLEERROR |
-                                    USB2OTG_INTRCHAN_AHBERROR)))
-                    {
-                        /* HW auto-PING active, no errors — defer. */
-                        if (otg_Unit->hu_Channel[chan].hc_DeferCount < USB2OTG_FLASH_BUSY_DEFER_CAP)
-                        {
-                            otg_Unit->hu_Channel[chan].hc_DeferCount++;
-                            otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
-
-                            D(
-                                {
-                                    struct USB2OTGChannel *hc = &otg_Unit->hu_Channel[chan];
-                                    UWORD nd = hc->hc_DeferCount;
-                                    int dump_now;
-
-                                    dump_now = (nd == 1 || nd == 2 || nd == 5 ||
-                                                nd == 10 || nd == 20 || nd == 40 ||
-                                                nd == 80 || nd == 160 ||
-                                                (nd > 160 && (nd % 80) == 0));
-
-                                    if (dump_now)
-                                    {
-                                        ULONG d_char  = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
-                                        ULONG d_intr  = rd32le(USB2OTG_CHANNEL_REG(chan, INTR));
-                                        ULONG d_tsize = rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
-                                        ULONG d_dmaa  = rd32le(USB2OTG_CHANNEL_REG(chan, DMAADDR));
-                                        ULONG d_nptx  = rd32le(USB2OTG_NONPERIFIFOSTATUS);
-                                        ULONG d_corei = rd32le(USB2OTG_INTR);
-                                        ULONG d_haint = rd32le(USB2OTG_HOSTINTR);
-                                        ULONG d_hfnum = rd32le(USB2OTG_HOSTFRAMENO);
-                                        LONG hfd = (LONG)((d_hfnum & 0x3fff) -
-                                                          (hc->hc_LastSampleHfnum & 0x3fff));
-                                        if (hfd < 0)
-                                            hfd += 0x4000;
-                                        {
-                                            UWORD  intr_chg = (UWORD)d_intr ^ hc->hc_LastSampleIntr;
-                                            ULONG  tsize_chg = d_tsize ^ hc->hc_LastSampleTsize;
-                                            LONG   actual_chg = (LONG)req->iouh_Actual -
-                                                                (LONG)hc->hc_LastSampleActual;
-                                            bug("[USB2OTG] WAIT-PING chan=%d defer=%u dev=%d ep=%d nyet=%u"
-                                                " CHAR=%08lx INTR=%04lx TSIZE=%08lx DMAA=%08lx NPTX=%08lx"
-                                                " coreINTR=%08lx HAINT=%08lx HFNUM=%08lx hfd=%ld"
-                                                " act=%lu/%lu d[intr^=%04x tsize^=%08lx act+=%ld]\n",
-                                                chan, (unsigned)nd,
-                                                (int)req->iouh_DevAddr,
-                                                (int)req->iouh_Endpoint,
-                                                (unsigned)hc->hc_NyetCount,
-                                                (unsigned long)d_char,
-                                                (unsigned long)d_intr,
-                                                (unsigned long)d_tsize,
-                                                (unsigned long)d_dmaa,
-                                                (unsigned long)d_nptx,
-                                                (unsigned long)d_corei,
-                                                (unsigned long)d_haint,
-                                                (unsigned long)d_hfnum,
-                                                (long)hfd,
-                                                (unsigned long)req->iouh_Actual,
-                                                (unsigned long)req->iouh_Length,
-                                                (unsigned)intr_chg,
-                                                (unsigned long)tsize_chg,
-                                                (long)actual_chg);
-                                        }
-
-                                        hc->hc_LastSampleHfnum  = d_hfnum;
-                                        hc->hc_LastSampleIntr   = (UWORD)d_intr;
-                                        hc->hc_LastSampleTsize  = d_tsize;
-                                        hc->hc_LastSampleActual = req->iouh_Actual;
-                                    }
-                                }
-                            )
-
-                            /*
-                             * Halt between defer cycles. HW auto-PING at
-                             * SOF rate starves device MCU; SW halt+rearm
-                             * with 500 ms NAK gate per cycle gives the
-                             * device bus-idle time. Mirrors FreeBSD
-                             * dwc_otg host_data_tx SM.
-                             */
-                            Disable();
-#if defined(__AROSEXEC_SMP__)
-                            KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
-                            if (otg_Unit->hu_Channel[chan].hc_Request != req)
-                            {
-                                KrnSpinUnLock(&otg_Unit->hu_Lock);
-                                Enable();
-                                continue;
-                            }
-#endif
-                            wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
-                            usb2otg_halt_channel_preserve_char(chan);
-                            otg_Unit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-                            otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
-
-                            /* 500 ms NAK gate; PingBits stays set so
-                             * SetupChannel re-arms with DoPing=1 next cycle. */
-                            usb2otg_nak_gate_set(otg_Unit, req->iouh_DevAddr, 0,
-                                                 4000);
-
-                            ADDTAIL(&otg_Unit->hu_BulkXFerQueue, req);
-                            otg_Unit->hu_Channel[chan].hc_Request = NULL;
-#if defined(__AROSEXEC_SMP__)
-                            KrnSpinUnLock(&otg_Unit->hu_Lock);
-#endif
-                            Enable();
-                            continue;
-                        }
-
-                        /* Cap hit → fall through to active-too-long for TIMEOUT. */
-                        bug("[USB2OTG] Watchdog: chan=%d WAIT-PING cap hit dev=%d ep=%d — surfacing UHIOERR_TIMEOUT\n",
-                            chan, req->iouh_DevAddr, req->iouh_Endpoint);
-                        otg_Unit->hu_Channel[chan].hc_DeferCount = 0;
-                        /* fall through to active-too-long halt+fail */
-                    }
-
-                    /*
-                     * Direct bulk OUT silent mid-data-phase (CHENA=1, INTR=0,
-                     * DoPing=0, Actual>0). Aborting violates MSC BOT §6.6.1
-                     * and wedges the device. Defer up to FLASH_BUSY_DEFER_CAP
+                     * Direct bulk OUT silent in-data-phase (CHENA=1,
+                     * INTR=0): the buffer-DMA core is driving NAK/NYET/
+                     * PING flow control itself while the device is
+                     * flash-busy. Aborting violates MSC BOT §6.6.1 and
+                     * wedges the device. Defer up to FLASH_BUSY_DEFER_CAP
                      * (or forever — see cap branch below).
                      */
                     if ((req->iouh_Req.io_Command == UHCMD_BULKXFER) &&
                         (req->iouh_Dir == UHDIR_OUT) &&
                         !(req->iouh_Flags & UHFF_SPLITTRANS) &&
                         (w_char & USB2OTG_HOSTCHAR_ENABLE) &&
-                        ((w_intr & USB2OTG_INTR_CLEAR_ALL) == 0) &&
-                        !(w_tsize & USB2OTG_HOSTTSIZE_PING) &&
-                        (req->iouh_Actual > 0))
+                        /* Benign NAK/NYET/ACK bits may latch during the
+                         * core's own flow control even though masked —
+                         * only real errors/completions end the wait. */
+                        ((w_intr & USB2OTG_INTR_CLEAR_ALL &
+                          ~(USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE |
+                            USB2OTG_INTRCHAN_NOTREADY |
+                            USB2OTG_INTRCHAN_ACKNOWLEDGE)) == 0))
                     {
-                        if (otg_Unit->hu_Channel[chan].hc_DeferCount < USB2OTG_FLASH_BUSY_DEFER_CAP)
+                        /*
+                         * Distinguish flash-busy from a wedged channel: an
+                         * actively retrying channel keeps entries in the
+                         * non-periodic request queue, while every observed
+                         * wedge shows queue AND FIFO completely free
+                         * (NPTX=00080100). Require the idle signature on 3
+                         * consecutive defers (~9 s) — a snapshot between
+                         * retries can transiently look idle.
+                         */
+                        BOOL wedge_sig = FALSE;
+                        {
+                            struct USB2OTGChannel *whc = &otg_Unit->hu_Channel[chan];
+                            ULONG nptxsts = rd32le(USB2OTG_NONPERIFIFOSTATUS);
+                            ULONG fifo_dwords =
+                                (rd32le(USB2OTG_NONPERIFIFOSIZE) >> 16) & 0xFFFF;
+                            ULONG q_depth =
+                                2 << USB2OTG_HW2_NPTXQDEPTH(rd32le(USB2OTG_HARDWARE2));
+                            BOOL np_idle = ((nptxsts & 0xFFFF) >= fifo_dwords) &&
+                                           (((nptxsts >> 16) & 0xFF) >= q_depth);
+
+                            if (np_idle)
+                                whc->hc_QuietIdleStreak++;
+                            else
+                                whc->hc_QuietIdleStreak = 0;
+
+                            if (whc->hc_QuietIdleStreak >= 3)
+                            {
+                                bug("[USB2OTG] Watchdog: chan=%d WAIT-QUIET wedge signature (NPTX=%08x x%u) — recovering\n",
+                                    chan, nptxsts,
+                                    (unsigned)whc->hc_QuietIdleStreak);
+                                whc->hc_QuietIdleStreak = 0;
+                                whc->hc_DeferCount = 0;
+                                wedge_sig = TRUE;
+                                /* fall through to active-too-long halt+fail */
+                            }
+                        }
+
+                        if (!wedge_sig &&
+                            otg_Unit->hu_Channel[chan].hc_DeferCount < USB2OTG_FLASH_BUSY_DEFER_CAP)
                         {
                             otg_Unit->hu_Channel[chan].hc_DeferCount++;
                             otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
@@ -2429,7 +2075,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                                     UWORD nd = hc->hc_DeferCount;
                                     int dump_now;
 
-                                    /* Same cadence as WAIT-PING — see comment there. */
+                                    /* Log cadence: dense at first, sparser later. */
                                     dump_now = (nd == 1 || nd == 2 || nd == 5 ||
                                                 nd == 10 || nd == 20 || nd == 40 ||
                                                 nd == 80 || nd == 160 ||
@@ -2452,14 +2098,13 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                                             ULONG  tsize_chg = d_tsize ^ hc->hc_LastSampleTsize;
                                             LONG   actual_chg = (LONG)req->iouh_Actual -
                                                                 (LONG)hc->hc_LastSampleActual;
-                                            bug("[USB2OTG] WAIT-QUIET chan=%d defer=%u dev=%d ep=%d nyet=%u"
+                                            bug("[USB2OTG] WAIT-QUIET chan=%d defer=%u dev=%d ep=%d"
                                                 " CHAR=%08lx INTR=%04lx TSIZE=%08lx DMAA=%08lx NPTX=%08lx"
                                                 " HFNUM=%08lx hfd=%ld act=%lu/%lu"
                                                 " d[intr^=%04x tsize^=%08lx act+=%ld]\n",
                                                 chan, (unsigned)nd,
                                                 (int)req->iouh_DevAddr,
                                                 (int)req->iouh_Endpoint,
-                                                (unsigned)hc->hc_NyetCount,
                                                 (unsigned long)d_char,
                                                 (unsigned long)d_intr,
                                                 (unsigned long)d_tsize,
@@ -2484,10 +2129,19 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                             continue;
                         }
 
-                        /* Cap reached: never give up mid-data-phase. */
-                        otg_Unit->hu_Channel[chan].hc_DeferCount = 0;
-                        otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
-                        continue;
+                        if (!wedge_sig)
+                        {
+                            /*
+                             * Cap hit (~10 min): no real device is flash-
+                             * busy this long — treat as wedged so halt/
+                             * escalate recovery runs. Class driver handles
+                             * BOT reset.
+                             */
+                            bug("[USB2OTG] Watchdog: chan=%d WAIT-QUIET cap hit dev=%d ep=%d — surfacing UHIOERR_TIMEOUT\n",
+                                chan, req->iouh_DevAddr, req->iouh_Endpoint);
+                            otg_Unit->hu_Channel[chan].hc_DeferCount = 0;
+                        }
+                        /* fall through to active-too-long halt+fail */
                     }
 
                     {
@@ -2558,11 +2212,6 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
 
                     /* Update Actual so class driver sees accurate progress. */
                     usb2otg_bulk_out_advance_pktcnt(otg_Unit, chan, req, wd_tsize);
-
-                    /* Defensive PING clear; recovery sometimes hangs. */
-                    otg_Unit->hu_Channel[chan].hc_PingPending = 0;
-                    otg_Unit->hu_PingBits[req->iouh_DevAddr] &=
-                        ~(1UL << req->iouh_Endpoint);
 
                     /*
                      * Wedged INT: requeue with fresh timing instead of

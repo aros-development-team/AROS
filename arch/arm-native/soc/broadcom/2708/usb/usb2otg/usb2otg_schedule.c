@@ -392,9 +392,10 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         }
     }
 
-    /* Fresh request: clear watchdog defer counter. */
+    /* Fresh request: clear watchdog defer counters. */
     otg_Unit->hu_Channel[chan].hc_DeferCount = 0;
     otg_Unit->hu_Channel[chan].hc_CsplitRetry = 0;
+    otg_Unit->hu_Channel[chan].hc_QuietIdleStreak = 0;
 
     /*
      * A fresh arm is always a START-split — clear any CSPLIT-pending left
@@ -405,15 +406,6 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
      */
     otg_Unit->hu_Channel[chan].hc_SplitCSplitPending = 0;
     otg_Unit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_IDLE;
-
-    /*
-     * Inherit PING state from per-EP bitmap (channel-local flag does
-     * not survive requeue; USB 2.0 §8.5.1).
-     */
-    otg_Unit->hu_Channel[chan].hc_PingPending =
-        (otg_Unit->hu_PingBits[req->iouh_DevAddr] >> req->iouh_Endpoint) & 1;
-    otg_Unit->hu_Channel[chan].hc_PingState =
-        otg_Unit->hu_Channel[chan].hc_PingPending ? 1 : 0;
 
     /* Control xfer: set up SETUP packet buffers, flush caches, direction. */
     if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
@@ -623,9 +615,10 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), 0);
 
         /*
-         * Bulk OUT: full multi-packet burst. hu_PingBits tracks PING
-         * state across requeues; WAIT-PING/WAIT-QUIET defer is
-         * unbounded, so DWC2 auto-PING during a long burst is safe.
+         * Bulk OUT: full multi-packet burst. NYET is masked for
+         * non-split transfers (StartChannel), so the core drives
+         * NAK/NYET/PING flow control itself; the watchdog WAIT-QUIET
+         * defer covers flash-busy silence.
          */
     }
 
@@ -648,40 +641,11 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         xfer_size = pkt_count * req->iouh_MaxPktSize;
     }
 
-    /*
-     * Setup the size, PID, packet count and length. OR in DoPing bit
-     * if the NYET handler set hc_PingPending — per USB 2.0 §8.5.1 we
-     * must PING after NYET until the device ACKs. HW auto-DoPing gets
-     * cleared when we re-program HCTSIZ, so we have to re-apply it
-     * explicitly on behalf of the software state machine.
-     */
-    {
-        ULONG tsize = USB2OTG_HOSTTSIZE_PID(pid) |
-                      USB2OTG_HOSTTSIZE_PKTCNT(pkt_count) |
-                      USB2OTG_HOSTTSIZE_SIZE(xfer_size);
-        if (otg_Unit->hu_Channel[chan].hc_PingPending)
-        {
-            /* HW-driven PING+DATA combined arm. HW issues PING first;
-             * on ACK it follows with the OUT data tokens; on NAK/NYET
-             * it halts and we re-arm via the requeue path. Letting HW
-             * drive the PING flow is what works on BCM2835 — software-
-             * driven PING-only arms (XferSize=0) result in bare CHHLTD
-             * with no token on the bus (verified empirically on Pi 3B+).
-             */
-            tsize |= USB2OTG_HOSTTSIZE_PING;
-            D(
-                {
-                    static ULONG ping_arm_count = 0;
-                    ping_arm_count++;
-                    if (ping_arm_count <= 3 || (ping_arm_count & 0x3f) == 0)
-                        bug("[USB2OTG:PING] ARM #%lu chan=%d dev=%d ep=%d TSIZE=%08x\n",
-                            (unsigned long)ping_arm_count, chan,
-                            (int)req->iouh_DevAddr, (int)req->iouh_Endpoint, tsize);
-                }
-            )
-        }
-        wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE), tsize);
-    }
+    /* Setup the size, PID, packet count and length. */
+    wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE),
+        USB2OTG_HOSTTSIZE_PID(pid) |
+        USB2OTG_HOSTTSIZE_PKTCNT(pkt_count) |
+        USB2OTG_HOSTTSIZE_SIZE(xfer_size));
 
     otg_Unit->hu_Channel[chan].hc_XferSize = xfer_size;
 
@@ -898,10 +862,8 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     req->iouh_Req.io_Error = 0;
     usb2otg_diag_bulk_progress(otg_Unit, chan, req, USB2OTG_INTRCHAN_TRANSFERCOMPLETE);
 
-    /* OUT ACKed → PING phase done; clear channel + per-EP bits. */
-    otg_Unit->hu_Channel[chan].hc_PingPending = 0;
-    otg_Unit->hu_PingBits[req->iouh_DevAddr] &=
-        ~(1U << req->iouh_Endpoint);
+    /* Completion = device alive; reset the dead-device giveup streak. */
+    otg_Unit->hu_BulkGiveupStreak[req->iouh_DevAddr] = 0;
 
     /* If it was CTRL channel in setup phase reset PID and iouh_Actual */
     if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
@@ -1129,27 +1091,11 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
             xfer_size = pkt_count * req->iouh_MaxPktSize;
         }
 
-        /* Size/PID/PktCnt; OR in DoPing if NYET handler set PingPending. */
-        {
-            ULONG tsize = USB2OTG_HOSTTSIZE_PID(pid) |
-                          USB2OTG_HOSTTSIZE_PKTCNT(pkt_count) |
-                          USB2OTG_HOSTTSIZE_SIZE(xfer_size);
-            if (otg_Unit->hu_Channel[chan].hc_PingPending)
-            {
-                tsize |= USB2OTG_HOSTTSIZE_PING;
-                D(
-                    {
-                        static ULONG ping_adv_count = 0;
-                        ping_adv_count++;
-                        if (ping_adv_count <= 3 || (ping_adv_count & 0x3f) == 0)
-                            bug("[USB2OTG:PING] ADV #%lu chan=%d dev=%d ep=%d TSIZE=%08x\n",
-                                (unsigned long)ping_adv_count, chan,
-                                (int)req->iouh_DevAddr, (int)req->iouh_Endpoint, tsize);
-                    }
-                )
-            }
-            wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE), tsize);
-        }
+        /* Size/PID/PktCnt. */
+        wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE),
+            USB2OTG_HOSTTSIZE_PID(pid) |
+            USB2OTG_HOSTTSIZE_PKTCNT(pkt_count) |
+            USB2OTG_HOSTTSIZE_SIZE(xfer_size));
 
         otg_Unit->hu_Channel[chan].hc_XferSize = xfer_size;
 
@@ -1247,17 +1193,27 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
             return;
 
         /*
-         * Enable HALT/XFERCOMPL/NYET/XactErr/DTERR. Intentionally NOT
+         * Enable HALT/XFERCOMPL/XactErr/DTERR. Intentionally NOT
          * ACK/NAK — they fire before CHHLTD on splits and break the
-         * CSPLIT state machine.
+         * CSPLIT state machine. NYET only for splits (CSPLIT pacing):
+         * on non-split transfers the buffer-DMA core handles NAK/NYET/
+         * PING flow control itself; unmasking NYET and halting the
+         * channel mid-burst fights the core and opens wedge windows.
          */
-        tmp = rd32le(USB2OTG_CHANNEL_REG(chan, INTRMASK));
-        tmp |= USB2OTG_INTRCHAN_HALT
-             | USB2OTG_INTRCHAN_TRANSFERCOMPLETE
-             | USB2OTG_INTRCHAN_NOTREADY              /* NYET */
-             | USB2OTG_INTRCHAN_TRANSACTIONERROR      /* XactErr */
-             | USB2OTG_INTRCHAN_DATATOGGLEERROR;      /* DTERR */
-        wr32le(USB2OTG_CHANNEL_REG(chan, INTRMASK), tmp);
+        {
+            struct IOUsbHWReq *mask_req = otg_Unit->hu_Channel[chan].hc_Request;
+
+            tmp = rd32le(USB2OTG_CHANNEL_REG(chan, INTRMASK));
+            tmp |= USB2OTG_INTRCHAN_HALT
+                 | USB2OTG_INTRCHAN_TRANSFERCOMPLETE
+                 | USB2OTG_INTRCHAN_TRANSACTIONERROR      /* XactErr */
+                 | USB2OTG_INTRCHAN_DATATOGGLEERROR;      /* DTERR */
+            if (mask_req != NULL && (mask_req->iouh_Flags & UHFF_SPLITTRANS))
+                tmp |= USB2OTG_INTRCHAN_NOTREADY;         /* NYET */
+            else
+                tmp &= ~USB2OTG_INTRCHAN_NOTREADY;
+            wr32le(USB2OTG_CHANNEL_REG(chan, INTRMASK), tmp);
+        }
         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0x7ff);
 
         /* Enable channel IRQ; HAINT is RO, cleared via per-channel INTR. */

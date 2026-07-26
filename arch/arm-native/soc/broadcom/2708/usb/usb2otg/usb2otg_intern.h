@@ -229,10 +229,8 @@ struct USB2OTGUnit
         UWORD               hc_BareChhltdTotal; /* cumulative bare-CHHLTD per request; absolute give-up cap */
         ULONG               hc_StartHfnum;    /* HFNUM at last StartChannel arm; for bulk diag timing */
         UBYTE               hc_NakParked;     /* 1 = bulk-IN parked waiting for NAK gate; SOF re-arms with quick=1 */
-        UBYTE               hc_PingPending;   /* 1 = OR in HOSTTSIZE_PING on next arm */
-        UBYTE               hc_PingState;     /* PING state machine: 0=none, 1=needs PING arm, 2=PING armed */
-        UWORD               hc_NyetCount;     /* NYET-handler hits per request; resets on new request */
-        ULONG               hc_LastSampleHfnum; /* sample snapshot for WAIT-PING/WAIT-QUIET liveness check */
+        UBYTE               hc_QuietIdleStreak; /* consecutive WAIT-QUIET defers with NPTX queue+FIFO fully idle (wedge signature) */
+        ULONG               hc_LastSampleHfnum; /* sample snapshot for WAIT-QUIET liveness check */
         ULONG               hc_LastSampleTsize;
         ULONG               hc_LastSampleActual;
         UWORD               hc_LastSampleIntr;
@@ -276,14 +274,6 @@ struct USB2OTGUnit
     ULONG               hu_PIDBits[128];        /* PID 2-bit pairs, one ULONG per device, each ULONG contains 2-bits for every endpoint */
 
     /*
-     * Per-(device, endpoint) PING-pending state (USB 2.0 §8.5.1).
-     * Channel-local hc_PingPending doesn't survive requeue, so PING
-     * state must live on the (dev, ep) pair. 1 bit per ep, 1 ULONG
-     * per dev addr.
-     */
-    ULONG               hu_PingBits[128];
-
-    /*
      * Per-(device, direction) bulk NAK rate gate ([0]=OUT, [1]=IN).
      * Stores the earliest microframe (14-bit HOSTFRAMENO) at which the
      * next bulk retry may arm; 0xFFFF = no gate. Mirrors FreeBSD
@@ -301,6 +291,17 @@ struct USB2OTGUnit
      * each so a wedged/NAK-storming device cannot block the other.
      */
     UBYTE               hu_BulkOwnerDev[2];
+
+    /*
+     * Consecutive bulk bare-CHHLTD giveups (UHIOERR_TIMEOUT) per
+     * device with no progress. An unplugged device answers every
+     * transaction with bare CHHLTD; the class keeps retrying the CBW,
+     * and each attempt would otherwise churn 250 no-progress rounds.
+     * At >= 2 the giveup threshold drops to 25 (fast fail) so the bus
+     * frees up for the hub's disconnect report. Reset on any transfer
+     * completion for the device.
+     */
+    UBYTE               hu_BulkGiveupStreak[128];
 
     /*
      * Bitmask of quarantined channels whose CHENA is stuck (halt +
@@ -406,12 +407,12 @@ struct USB2OTGDevice
 #define USB2OTG_BULK_NAK_GATE_UFRAMES  8
 
 /*
- * Flash-busy defer cap (WAIT-PING / WAIT-QUIET). Each cycle is
- * 20 ticks × 150 ms = 3 s. Cap × 3 s = total tolerated NAK+PING-storm
- * time. The halt path triggered when the cap hits can leave Pi 3B+
- * in an unrecoverable CHENA+CHDIS state (neither NPTXFIFO flush nor
- * HCLKSOFT clears it), so set high (200 × 3 s = 10 min) to tolerate
- * cheap-stick FTL GC pauses.
+ * Flash-busy defer cap (WAIT-QUIET). Each cycle is 20 ticks × 150 ms
+ * = 3 s. Cap × 3 s = total tolerated NAK-storm time. The halt path
+ * triggered when the cap hits can leave Pi 3B+ in an unrecoverable
+ * CHENA+CHDIS state (neither NPTXFIFO flush nor HCLKSOFT clears it),
+ * so set high (200 × 3 s = 10 min) to tolerate cheap-stick FTL GC
+ * pauses.
  */
 #define USB2OTG_FLASH_BUSY_DEFER_CAP   200
 
@@ -608,7 +609,6 @@ static inline void usb2otg_diag_bulk_assign(struct USB2OTGUnit *otg_Unit, int ch
         hc->hc_DiagRequeueCount = 0;
         hc->hc_DiagNoProgressCount = 0;
         hc->hc_BareChhltdTotal = 0;
-        hc->hc_NyetCount = 0;
         hc->hc_LastSampleHfnum = 0;
         hc->hc_LastSampleTsize = 0;
         hc->hc_LastSampleActual = 0;
@@ -732,7 +732,7 @@ static inline void usb2otg_diag_bulk_finish(struct USB2OTGUnit *otg_Unit, int ch
         {
             ULONG frame = usb2otg_diag_frame();
 
-            bug("[USB2OTG:DIAG] bulk-finish chan=%d dev=%d ep=%d dir=%s act=%lu/%lu err=%d rq=%u np=%u nyet=%u age=%lu last_intr=%04x split=%u\n",
+            bug("[USB2OTG:DIAG] bulk-finish chan=%d dev=%d ep=%d dir=%s act=%lu/%lu err=%d rq=%u np=%u age=%lu last_intr=%04x split=%u\n",
                 chan,
                 (int)req->iouh_DevAddr,
                 (int)req->iouh_Endpoint,
@@ -742,7 +742,6 @@ static inline void usb2otg_diag_bulk_finish(struct USB2OTGUnit *otg_Unit, int ch
                 (int)req->iouh_Req.io_Error,
                 (unsigned int)hc->hc_DiagRequeueCount,
                 (unsigned int)hc->hc_DiagNoProgressCount,
-                (unsigned int)hc->hc_NyetCount,
                 (unsigned long)((frame - hc->hc_DiagStartFrame) & 0x7ff),
                 (unsigned int)hc->hc_DiagLastIntr,
                 (unsigned int)otg_Unit->hu_Channel[chan].hc_SplitCSplitPending);
@@ -756,7 +755,6 @@ static inline void usb2otg_diag_bulk_finish(struct USB2OTGUnit *otg_Unit, int ch
     hc->hc_DiagLastIntr = 0;
     hc->hc_DiagRequeueCount = 0;
     hc->hc_DiagNoProgressCount = 0;
-    hc->hc_NyetCount = 0;
     hc->hc_LastSampleHfnum = 0;
     hc->hc_LastSampleTsize = 0;
     hc->hc_LastSampleActual = 0;
