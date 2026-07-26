@@ -41,6 +41,7 @@
 #define _POSIXC_SYS_MOUNT_H_
 
 #include <aros/features.h>
+#include <aros/system.h>
 
 #ifdef __USE_BSD
 
