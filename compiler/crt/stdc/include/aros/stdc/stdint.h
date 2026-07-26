@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: C99 header file stdint.h
           Standard fixed sized integral types.
@@ -87,8 +87,20 @@
 #  endif
 #endif
 
+#ifdef __PTRDIFF_MAX__
+#define PTRDIFF_MIN (-__PTRDIFF_MAX__ - 1)
+#define PTRDIFF_MAX __PTRDIFF_MAX__
+#else
+#if __WORDSIZE == 64
+#define PTRDIFF_MIN (-AROS_MAKE_INT64(9223372036854775807)-1)
+#define PTRDIFF_MAX (AROS_MAKE_INT64(9223372036854775807))
+#else
+#define PTRDIFF_MIN (-2147483647-1)
+#define PTRDIFF_MAX (2147483647)
+#endif
+#endif
+
 /* TODO:
-	    PTRDIFF_MIN, _MAX
 	    WCHAR_MIN, _MAX (must be <= -127 or >= 127)
 	    WINT_MIN, _MAX (must be <= -65535 or >= 65535)
 */
