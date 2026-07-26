@@ -10,6 +10,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- AHI-raspi-armhf :  kernel-dma-bcm2708-includes kernel-mbox-bcm2708-includes
 #MM- AHI-raspi-arm :  kernel-dma-bcm2708-includes kernel-mbox-bcm2708-includes
+#MM- AHI-raspi-aarch64 :  kernel-dma-bcm2708-includes kernel-mbox-bcm2708-includes
 
 #MM- AHI-standalone-prereqs : \
 #MM                         AHI-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
