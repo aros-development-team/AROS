@@ -229,7 +229,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Drive
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
 +++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-15 20:21:11.609706173 +0000
-@@ -0,0 +1,439 @@
+@@ -0,0 +1,443 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -389,6 +389,19 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +                   options::OPT_e});
 +    Args.AddLastArg(CmdArgs, options::OPT_r);
 +
++    /*
++     * -nostdlib / -nodefaultlibs suppress only the default libraries;
++     * the standard search directories remain available for explicit -l
++     * options, matching the GCC driver.
++     */
++    SmallString<128> LibPath(SysRoot);
++    if (Target.isArch32Bit() && CompilerTarget.isArch64Bit()) {
++        llvm::sys::path::append(LibPath, "lib32");
++    } else {
++        llvm::sys::path::append(LibPath, "lib");
++    }
++    CmdArgs.push_back(Args.MakeArgString(StringRef("-L") + LibPath));
++
 +    AddLinkerInputs(AROSTC, Inputs, Args, CmdArgs, JA);
 +
 +    if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
@@ -396,15 +409,6 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +        if ((jobWantsPThread = AROSTC.ShouldLinkCXXStdlib(Args))) {
 +            AROSTC.AddCXXStdlibLibArgs(Args, CmdArgs);
 +        }
-+
-+        SmallString<128> LibPath(SysRoot);
-+        if (Target.isArch32Bit() && CompilerTarget.isArch64Bit()) {
-+            llvm::sys::path::append(LibPath, "lib32");
-+        } else {
-+            llvm::sys::path::append(LibPath, "lib");
-+        }
-+
-+        CmdArgs.push_back(Args.MakeArgString(StringRef("-L") + LibPath));
 +
 +        CmdArgs.push_back("--start-group");
 +        /* Emulated TLS is the AROS default and __emutls_get_address pulls
