@@ -45,7 +45,7 @@ struct BWFMBase
     struct Node             bwfm_Node;
     struct SignalSemaphore  bwfm_Sem;
 
-    unsigned int            bwfm_periiobase;    /* for the busy-wait timer */
+    IPTR                    bwfm_periiobase;    /* for the busy-wait timer */
     uint32_t                bwfm_bar0;          /* Current backplane window base */
 
     /* Identified chip */

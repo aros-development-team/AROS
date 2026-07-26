@@ -20,7 +20,9 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM distfiles-raspi-aarch64le : \
 #MM kernel-raspi-aarch64 \
 #MM kernel-package-raspi-aarch64 \
-#MM distfiles-raspi-aarch64-fw
+#MM workbench-devs-networks-bwfm \
+#MM distfiles-raspi-aarch64-fw \
+#MM distfiles-raspi-aarch64-wifi-fw
 
 #MM kernel-package-raspi-aarch64-quick: \
 #MM linklibs-stdc-static-quick \
@@ -61,6 +63,8 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-processor-quick \
 #MM kernel-mbox-bcm2708-quick \
 #MM kernel-dma-bcm2708-quick \
+#MM kernel-sdio-bcm2708-quick \
+#MM kernel-bwfm-bcm2708-quick \
 #MM kernel-hidd-bus-quick \
 #MM hidd-i2c-quick \
 #MM kernel-hidd-gfx-quick \
@@ -113,6 +117,8 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-processor \
 #MM kernel-mbox-bcm2708 \
 #MM kernel-dma-bcm2708 \
+#MM kernel-sdio-bcm2708 \
+#MM kernel-bwfm-bcm2708 \
 #MM kernel-sdcard \
 #MM kernel-hidd-bus \
 #MM hidd-i2c \
@@ -138,9 +144,16 @@ RASPIFW_BRANCH    := 1.20260521
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/raw/$(RASPIFW_BRANCH)/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb
 
+RASPIWIFIFW_BRANCH := buster
+RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
+RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
+                     brcm/brcmfmac43455-sdio.clm_blob \
+                     brcm/brcmfmac43430-sdio.bin brcm/brcmfmac43430-sdio.txt \
+                     LICENCE.broadcom_bcm43xx
+
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic gadtools lowlevel
 PKG_LIBS_ARCH := expansion
-PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox dma
+PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox dma sdio bwfm
 PKG_RSRC_ARCH := processor
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
@@ -155,7 +168,15 @@ PKG_CLASSES   := USB/hub USB/massstorage
 
 #MM
 distfiles-raspi-aarch64-fw:
-	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(file))" -O "$(addprefix $(AROSDIR)/, $(file))"))
+	$(foreach file, $(RASPIFW_FILES), $(shell wget -4 -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(file))" -O "$(addprefix $(AROSDIR)/, $(file))"))
+
+#MM
+distfiles-raspi-aarch64-wifi-fw:
+	@$(MKDIR) $(AROSDIR)/Devs/Firmware
+	@for f in $(RASPIWIFIFW_FILES) ; do \
+	    wget -4 -t 5 -T 15 -c "$(RASPIWIFIFW_URI)/$$f?raw=true" -O "$(AROSDIR)/Devs/Firmware/$${f##*/}" \
+	        || $(ECHO) "WARNING: could not fetch WiFi firmware $$f" ; \
+	done
 
 #MM
 distfiles-raspi-aarch64le-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
