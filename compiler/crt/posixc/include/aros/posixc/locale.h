@@ -33,14 +33,14 @@ extern "C" {
    unconditionally. */
 #define LC_GLOBAL_LOCALE    ((locale_t)-1)
 
-/* POSIX.1-2008 extended locale functions */
-#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L
+/* POSIX.1-2008 extended locale functions.
+   Declared unconditionally: LC_GLOBAL_LOCALE above is visible to any
+   includer, and software that tests for it expects these too. */
 /* NOTIMPL: locale_t duplocale(locale_t); */
 void          freelocale(locale_t);
 locale_t      newlocale(int category_mask, const char *locale, locale_t base);
 locale_t      uselocale(locale_t newloc);
 struct lconv *localeconv_l(locale_t loc);
-#endif /* _POSIX_C_SOURCE >= 200809L */
 
 #ifdef __cplusplus
 }
