@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/libraries.h>
@@ -12,14 +12,11 @@
 
 #include "intuition_intern.h"
 #include "monitorclass_private.h"
-#include "shutdown_image.h"
 
 static VOID ShowShutdownScreen();
 static struct Screen *OpenFinalScreen(BYTE MinDepth, BOOL squarePixels,
     struct IntuitionBase *IntuitionBase);
 static VOID ShowPic(struct Screen *scr, struct IntuitionBase *IntuitionBase);
-static const UBYTE *UnpackByterun(const UBYTE * source, UBYTE * dest,
-    LONG unpackedsize);
 
 static const UWORD empty_pointer[1] = { 0 };
 
@@ -45,7 +42,7 @@ static VOID ShowShutdownScreen()
     struct Screen *scr = NULL;
 
     if (!IsListEmpty(&GetPrivIBase(IntuitionBase)->MonitorList))
-        scr = OpenFinalScreen(4, TRUE, IntuitionBase);
+        scr = OpenFinalScreen(2, TRUE, IntuitionBase);
 
     if (scr != NULL)
         ShowPic(scr, IntuitionBase);
@@ -123,74 +120,39 @@ static struct Screen *OpenFinalScreen(BYTE MinDepth, BOOL squarePixels,
 
 static VOID ShowPic(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
+    static const char message1[] =
+        "Please turn off your system using the power switch.";
+    static const char message2[] =
+        "You may need to press the switch for up to five seconds.";
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    UBYTE *picture;
-    UWORD x, y;
+    struct RastPort *rp = &scr->RastPort;
+    WORD xoff = ((WORD)scr->Width - 640) / 2;
+    WORD yoff = ((WORD)scr->Height - 480) / 2;
+    WORD y, x;
 
-    if ((scr->Width >= SHUTDOWN_WIDTH) && (scr->Height >= SHUTDOWN_HEIGHT)
-        && (scr->RastPort.BitMap->Depth >= SHUTDOWN_PLANES))
-    {
-        ULONG size = SHUTDOWN_WIDTH * SHUTDOWN_HEIGHT;
+    SetRGB32(&scr->ViewPort, 0, 0xffffffff, 0xffffffff, 0xffffffff);
+    SetRGB32(&scr->ViewPort, 1, 0x00000000, 0x5d5d5d5d, 0xb7b7b7b7);
+    SetRGB32(&scr->ViewPort, 2, 0xffffffff, 0x88888888, 0x00000000);
 
-        picture = AllocVec(size, MEMF_ANY);
+    SetDrMd(rp, JAM1);
+    SetAPen(rp, 0);
+    RectFill(rp, 0, 0, scr->Width - 1, scr->Height - 1);
 
-        if (picture != NULL)
-        {
-            ULONG i;
+    SetAPen(rp, 1);
+    RectFill(rp, xoff + 54, yoff + 165, xoff + 506, yoff + 205);
+    SetAPen(rp, 0);
+    x = xoff + 54 + (453 - TextLength(rp, message1,
+        sizeof(message1) - 1)) / 2;
+    y = yoff + 165 + (41 - rp->TxHeight) / 2 + rp->TxBaseline;
+    Move(rp, x, y);
+    Text(rp, message1, sizeof(message1) - 1);
 
-            UnpackByterun(shutdown_data, picture, size);
-
-            for (i = 0; i < SHUTDOWN_COLORS; i++)
-                SetRGB32(&scr->ViewPort, i,
-                    (shutdown_pal[i] << 8) & 0xFF000000,
-                    (shutdown_pal[i] << 16) & 0xFF000000,
-                    (shutdown_pal[i] << 24) & 0xFF000000);
-
-            SetAPen(&scr->RastPort, 0);
-            RectFill(&scr->RastPort, 0, 0, scr->Width, scr->Height);
-
-            x = (scr->Width - SHUTDOWN_WIDTH) >> 1;
-            y = (scr->Height - SHUTDOWN_HEIGHT) >> 1;
-            WriteChunkyPixels(&scr->RastPort, x, y,
-                x + SHUTDOWN_WIDTH - 1, y + SHUTDOWN_HEIGHT - 1,
-                picture, SHUTDOWN_WIDTH);
-
-            return;
-        }
-    }
-    return;
+    SetAPen(rp, 2);
+    RectFill(rp, xoff + 153, yoff + 230, xoff + 606, yoff + 270);
+    SetAPen(rp, 1);
+    x = xoff + 153 + (454 - TextLength(rp, message2,
+        sizeof(message2) - 1)) / 2;
+    y = yoff + 230 + (41 - rp->TxHeight) / 2 + rp->TxBaseline;
+    Move(rp, x, y);
+    Text(rp, message2, sizeof(message2) - 1);
 }
-
-static const UBYTE *UnpackByterun(const UBYTE * source, UBYTE * dest,
-    LONG unpackedsize)
-{
-    UBYTE r;
-    BYTE c;
-
-    for (;;)
-    {
-        c = (BYTE) (*source++);
-        if (c >= 0)
-        {
-            while (c-- >= 0)
-            {
-                *dest++ = *source++;
-                if (--unpackedsize <= 0)
-                    return source;
-            }
-        }
-        else if (c != -128)
-        {
-            c = -c;
-            r = *source++;
-
-            while (c-- >= 0)
-            {
-                *dest++ = r;
-                if (--unpackedsize <= 0)
-                    return source;
-            }
-        }
-    }
-}
-
