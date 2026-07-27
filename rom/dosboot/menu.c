@@ -930,6 +930,11 @@ static BOOL buttonsPressed(LIBBASETYPEPTR LIBBASE)
                             D(bug("[DOSBoot:bootmenu] %s: SPACEBAR press detected\n", __func__));
                             success = TRUE;
                     }
+                    else if (matrix[RAWKEY_HELP/8] & (1<<(RAWKEY_HELP%8)))
+                    {
+                            D(bug("[DOSBoot:bootmenu] %s: HELP press detected\n", __func__));
+                            success = TRUE;
+                    }
                 }
                 CloseDevice(io);
             }
