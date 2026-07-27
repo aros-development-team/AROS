@@ -2,12 +2,13 @@
 #define	_POSIXC_UTIME_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file utime.h
 */
 
+#include <aros/system.h>
 #include <aros/types/time_t.h>
 
 struct utimbuf {

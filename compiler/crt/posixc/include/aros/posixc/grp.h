@@ -6,6 +6,7 @@
     $Id$
 */
 
+#include <aros/system.h>
 #include <aros/types/size_t.h>
 #include <aros/types/gid_t.h>
 

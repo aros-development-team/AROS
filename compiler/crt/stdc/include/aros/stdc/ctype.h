@@ -60,8 +60,8 @@ __ctype_make_func(isalnum,  _istype(c, _ctype_alnum))
 __ctype_make_func(toupper,  ((unsigned)(c) <= 255 ? (int)(*__ctype_toupper_ptr)[(c)] : (c)))
 __ctype_make_func(tolower,  ((unsigned)(c) <= 255 ? (int)(*__ctype_tolower_ptr)[(c)] : (c)))
 
-/* POSIX and GNU Extensions */
-#if defined(_POSIX_C_SOURCE) || defined(_GNU_SOURCE)
+/* POSIX, X/Open and GNU Extensions */
+#if defined(_POSIX_C_SOURCE) || defined(_GNU_SOURCE) || defined(__USE_XOPEN)
 
 # ifndef isblank
 __ctype_make_func(isblank,  _istype(c, _ctype_blank))
