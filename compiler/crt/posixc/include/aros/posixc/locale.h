@@ -2,7 +2,7 @@
 #define _POSIXC_LOCALE_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file: locale.h
@@ -30,6 +30,8 @@ extern "C" {
 
 /* POSIX.1-2008 extended locale functions */
 #if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L
+/* The special locale_t denoting the global locale, per POSIX.1-2008 */
+#define LC_GLOBAL_LOCALE    ((locale_t)-1)
 /* NOTIMPL: locale_t duplocale(locale_t); */
 void          freelocale(locale_t);
 locale_t      newlocale(int category_mask, const char *locale, locale_t base);
