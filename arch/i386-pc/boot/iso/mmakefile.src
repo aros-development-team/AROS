@@ -7,7 +7,7 @@ TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
 
 #MM bootiso-pc-i386 : \
 #MM                              bootiso-native \
-#MM                              kernel-package-pc-i386 \
+#MM                              kernel-link-pc-i386 \
 #MM                              AROS-pc-drivers
 
 #MM
