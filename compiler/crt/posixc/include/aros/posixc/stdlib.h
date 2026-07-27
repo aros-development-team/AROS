@@ -2,7 +2,7 @@
 #define _POSIXC_STDLIB_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file stdlib.h
@@ -33,8 +33,8 @@ void srand48(long int);
 void srandom(unsigned);
 #endif
 
-/* POSIX.1-2001 */
-#if defined(_GNU_SOURCE) || (_POSIX_C_SOURCE >= 200112L)
+/* POSIX.1-2001 (also required at X/Open 6 and later, i.e. __USE_XOPEN2K) */
+#if defined(_GNU_SOURCE) || (_POSIX_C_SOURCE >= 200112L) || defined(__USE_XOPEN2K)
 int setenv(const char *, const char *, int);
 int unsetenv(const char *);
 int posix_memalign(void **memptr, size_t alignment, size_t size);
