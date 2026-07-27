@@ -238,7 +238,7 @@ ULONG PPC4xxSerUnit__Hidd_SerialUnit__Write(OOP_Class *cl, OOP_Object *o, struct
     {
       serial_outp(data, UART_TX, msg->Outbuffer[count++]);
       len--;
-    } while (len > 0 && serial_inp(data, UART_LSR & UART_LSR_TEMT));
+    } while (len > 0 && (serial_inp(data, UART_LSR) & UART_LSR_TEMT));
   }
 
   ReturnInt("SerialUnit::Write()",ULONG, count);
