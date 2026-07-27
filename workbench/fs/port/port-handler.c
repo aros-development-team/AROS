@@ -184,6 +184,7 @@ static void portSerialDefaults(struct portArgs *pa)
     pa->pa_Serial.ps_Baud = 115200;
 #endif
     /* 8N1 */
+    pa->pa_Serial.ps_LenBits = 8;
     pa->pa_Serial.ps_StopBits = 1;
     pa->pa_Serial.ps_SerFlags = 0;
     pa->pa_Serial.ps_ExtFlags = 0;
