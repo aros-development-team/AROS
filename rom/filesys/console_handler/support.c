@@ -852,11 +852,14 @@ BOOL process_input(struct filehandle *fh)
         case INP_BACKSPACE:
             if (fh->inputpos > fh->inputstart)
             {
-                do_movecursor(fh, CUR_LEFT, 1);
-
                 if (fh->inputpos == fh->inputsize)
                 {
-                    do_deletechar(fh);
+                    /* Match the classic CON: handler: submit the cursor
+                     * movement and deletion as one console.device write so
+                     * no intermediate cursor position becomes visible. */
+                    UBYTE seq[] = { 8, 0x9B, 'P' };
+
+                    do_write(fh, seq, sizeof(seq));
 
                     fh->inputsize--;
                     fh->inputpos--;
@@ -864,6 +867,8 @@ BOOL process_input(struct filehandle *fh)
                 else
                 {
                     WORD chars_right = fh->inputsize - fh->inputpos;
+
+                    do_movecursor(fh, CUR_LEFT, 1);
 
                     fh->inputsize--;
                     fh->inputpos--;

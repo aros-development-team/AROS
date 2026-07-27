@@ -371,6 +371,13 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 
                                 if (actual > 0)
                                 {
+                                    /* Let the console update input-related
+                                     * visual state (for example, dropping a
+                                     * text selection) before the character is
+                                     * handed to its reader. */
+                                    Console_HandleGadgets(cdihmsg->unit,
+                                        &cdihmsg->ie);
+
                                     /* Copy received characters to the console
                                      * unit input buffer. If the buffer is
                                      * full, then console input will be lost
@@ -401,6 +408,8 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
                     case IECLASS_GADGETUP:
                     case IECLASS_TIMER:
                     case IECLASS_RAWMOUSE:
+                    case IECLASS_ACTIVEWINDOW:
+                    case IECLASS_INACTIVEWINDOW:
                         Console_HandleGadgets(cdihmsg->unit,
                             &(cdihmsg->ie));
                         //.ie_Class, (APTR)cdihmsg->ie.ie_EventAddress);

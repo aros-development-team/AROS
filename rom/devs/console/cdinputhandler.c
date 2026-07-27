@@ -21,7 +21,8 @@
 #include <aros/debug.h>
 
 /* protos */
-static Object *obtainconunit(struct ConsoleBase *ConsoleDevice);
+static Object *obtainconunit(struct Window *window,
+    struct ConsoleBase *ConsoleDevice);
 static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 
 /*************************************************************************
@@ -76,6 +77,8 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
             || (ie->ie_Class == IECLASS_GADGETUP)
             || (ie->ie_Class == IECLASS_MENULIST)
             || (ie->ie_Class == IECLASS_RAWMOUSE)
+            || (ie->ie_Class == IECLASS_ACTIVEWINDOW)
+            || (ie->ie_Class == IECLASS_INACTIVEWINDOW)
             || (ie->ie_Class == IECLASS_TIMER))
         {
             /* What console do we send it to ? */
@@ -83,7 +86,11 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 
             D(bug("Got some event\n"));
             /* find and prevent deletion of unit */
-            unit = obtainconunit(ConsoleDevice);
+            unit = obtainconunit(
+                (ie->ie_Class == IECLASS_ACTIVEWINDOW ||
+                 ie->ie_Class == IECLASS_INACTIVEWINDOW) ?
+                    (struct Window *)ie->ie_EventAddress : NULL,
+                ConsoleDevice);
             if (unit)
             {
                 /* Hand the event to the console task asynchronously: one
@@ -135,7 +142,8 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
    not deleted while we work on it
 */
 
-static Object *obtainconunit(struct ConsoleBase *ConsoleDevice)
+static Object *obtainconunit(struct Window *window,
+    struct ConsoleBase *ConsoleDevice)
 {
     struct IntuitionBase *IntuitionBase =
         (APTR) ConsoleDevice->cb_IntuitionBase;
@@ -154,13 +162,18 @@ static Object *obtainconunit(struct ConsoleBase *ConsoleDevice)
     /* Lock the console list */
     ObtainSemaphoreShared(&ConsoleDevice->unitListLock);
 
-    /* What is the currently active window ? */
-    D(bug("Obtaining IBase\n"));
-    lock = LockIBase(0UL);
-
-    activewin = IntuitionBase->ActiveWindow;
-
-    UnlockIBase(lock);
+    /* Activation events name the affected window explicitly.  This matters
+     * for INACTIVEWINDOW, because ActiveWindow already points at the newly
+     * activated window by the time the event is delivered. */
+    if (window)
+        activewin = window;
+    else
+    {
+        D(bug("Obtaining IBase\n"));
+        lock = LockIBase(0UL);
+        activewin = IntuitionBase->ActiveWindow;
+        UnlockIBase(lock);
+    }
     D(bug("Released IBase, active win=%p\n", activewin));
 
     /* Try to find the correct unit object for taht window */

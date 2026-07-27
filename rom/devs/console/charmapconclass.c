@@ -103,6 +103,8 @@ struct charmapcondata
     struct Library *ccd_GfxBase;
 };
 
+static VOID charmapcon_clear_selection(Class *cl, Object *o);
+
 
 /* Template used to quickly fill constant fields */
 CONST struct Scroll ScrollBar = {
@@ -464,16 +466,39 @@ static VOID charmap_ascii(Class *cl, Object *o, ULONG xcp, ULONG ycp,
 {
     struct charmap_line *line = charmapcon_find_line(cl, o, ycp);
     ULONG oldsize = line->size;
+    ULONG newsize = xcp + len;
 
-    // Ensure the line has sufficient capacity.
-    if (line->size < xcp + len)
-        charmap_resize(ConsoleDevice, line, xcp + len);
+    /* Extending within the existing allocation needs no clearing here: all
+     * newly exposed cells are initialized below, including any gap between
+     * the old end and xcp.  Avoid four SetMem() calls for every appended
+     * character. */
+    if (line->size < newsize)
+    {
+        if (newsize <= line->capacity)
+            line->size = newsize;
+        else
+            charmap_resize(ConsoleDevice, line, newsize);
 
-    // .. copy the required data
-    SetMem(line->fgpen + xcp, CU(o)->cu_FgPen, len);
-    SetMem(line->bgpen + xcp, CU(o)->cu_BgPen, len);
-    SetMem(line->flags + xcp, CU(o)->cu_TxFlags, len);
-    memcpy(line->text + xcp, str, len);
+        if (line->size < newsize)
+            return;
+    }
+
+    /* A console's interactive hot path is a one-character write.  Direct
+     * stores avoid four library calls for four bytes. */
+    if (len == 1)
+    {
+        line->fgpen[xcp] = CU(o)->cu_FgPen;
+        line->bgpen[xcp] = CU(o)->cu_BgPen;
+        line->flags[xcp] = CU(o)->cu_TxFlags;
+        line->text[xcp] = str[0];
+    }
+    else
+    {
+        SetMem(line->fgpen + xcp, CU(o)->cu_FgPen, len);
+        SetMem(line->bgpen + xcp, CU(o)->cu_BgPen, len);
+        SetMem(line->flags + xcp, CU(o)->cu_TxFlags, len);
+        memcpy(line->text + xcp, str, len);
+    }
 
     // If cursor output is moved further right on the screen than
     // the last output, we need to fill the line
@@ -783,11 +808,13 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
     switch (msg->Command)
     {
     case C_ASCII:
+        charmapcon_clear_selection(cl, o);
         charmap_ascii(cl, o, XCP, YCP, (char *)&params[0], 1);
         DoSuperMethodA(cl, o, (Msg) msg);
         break;
 
     case C_ASCII_STRING:
+        charmapcon_clear_selection(cl, o);
         charmap_ascii(cl, o, XCP, YCP, (char *)params[0], (int)params[1]);
         DoSuperMethodA(cl, o, (Msg) msg);
         break;
@@ -893,6 +920,7 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
     UWORD scratchWidth = GFX_XMAX(o) - GFX_XMIN(o) + 1;
     UWORD scratchHeight = rp->Font->tf_YSize;
     ULONG scratchSize = RASSIZE(scratchWidth, scratchHeight);
+    BOOL cursor_in_range;
 
     if (fromLine < CHAR_YMIN(o))
         fromLine = CHAR_YMIN(o);
@@ -905,6 +933,8 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
     if (toLine < fromLine)
         return;
 
+    cursor_in_range = YCP >= fromLine && YCP <= toLine;
+
     if (!savedTmpRas || savedTmpRas->Size < scratchSize)
     {
         scratch = AllocRaster(scratchWidth, scratchHeight);
@@ -912,7 +942,8 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
             rp->TmpRas = InitTmpRas(&localTmpRas, scratch, scratchSize);
     }
 
-    Console_UnRenderCursor(o);
+    if (cursor_in_range)
+        Console_UnRenderCursor(o);
 
     D(bug("Rendering charmap\n"));
 
@@ -1060,7 +1091,8 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
             GFX_XMIN(o), GFX_Y(o, yc), GFX_XMAX(o), GFX_Y(o, toLine));
     }
 
-    Console_RenderCursor(o);
+    if (cursor_in_range)
+        Console_RenderCursor(o);
 
     if (scratch)
     {
@@ -1068,6 +1100,25 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
         FreeRaster(scratch, scratchWidth, scratchHeight);
     }
 
+}
+
+static VOID charmapcon_clear_selection(Class *cl, Object *o)
+{
+    struct charmapcondata *data = INST_DATA(cl, o);
+
+    if (data->select_x_min != data->select_x_max ||
+        data->select_y_min != data->select_y_max)
+    {
+        LONG fromLine = MIN(data->select_y_min, data->select_y_max);
+        LONG toLine = MAX(data->select_y_min, data->select_y_max);
+
+        data->select_x_max = data->select_x_min;
+        data->select_y_max = data->select_y_min;
+        data->select_line_max = data->select_line_min;
+        data->active_selection = FALSE;
+        data->ignore_drag = FALSE;
+        charmapcon_refresh_lines(cl, o, fromLine, toLine);
+    }
 }
 
 
@@ -1384,6 +1435,9 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o,
                     MIN(data->select_y_min, data->select_y_max);
                 LONG old_max_y =
                     MAX(data->select_y_min, data->select_y_max);
+                BOOL clear_old_selection =
+                    data->select_x_min != data->select_x_max ||
+                    data->select_y_min != data->select_y_max;
 
                 /* Yes, so start selection */
                 data->active_selection = 1;
@@ -1396,8 +1450,9 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o,
                 data->select_x_max = data->select_x_min;
                 data->select_y_max = data->select_y_min;
 
-                /* Clear */
-
+                /* Clear a previous non-empty selection.  Equal endpoints
+                 * select no cells, so refreshing that line only redraws its
+                 * contents and needlessly removes/restores the cursor. */
                 /* FIXME: Determine exactly which lines are affected, as
                    follows:
 
@@ -1407,7 +1462,8 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o,
                    - If there's been a reversal of the relative positions of
                    y_min/y_max, refresh the entire range.
                  */
-                charmapcon_refresh_lines(cl, o, old_min_y, old_max_y);
+                if (clear_old_selection)
+                    charmapcon_refresh_lines(cl, o, old_min_y, old_max_y);
 
             }
             else
@@ -1449,9 +1505,22 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o,
 {
     struct InputEvent *e = msg->Event;
 
+    if (e->ie_Class == IECLASS_ACTIVEWINDOW ||
+        e->ie_Class == IECLASS_INACTIVEWINDOW)
+    {
+        DoSuperMethodA(cl, o, (Msg)msg);
+        return;
+    }
+
     if (e->ie_Class == IECLASS_RAWMOUSE)
     {
         charmapcon_handlemouse(cl, o, msg);
+        return;
+    }
+
+    if (e->ie_Class == IECLASS_RAWKEY)
+    {
+        charmapcon_clear_selection(cl, o);
         return;
     }
 
