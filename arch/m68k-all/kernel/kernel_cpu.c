@@ -1,10 +1,10 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
-*/
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-/*
- * M68K Schedule functions
- */
+    The assembly scheduler entry saves and restores the integer context
+    directly on the task's user stack; this file retains the common scheduler
+    policy and optional CPU-context handling.
+*/
 
 #include <exec/execbase.h>
 #include <exec/alerts.h>
@@ -12,16 +12,7 @@
 #include <defines/kernel.h>
 
 #include <kernel_base.h>
-#include <kernel_debug.h>
 #include <kernel_scheduler.h>
-
-#ifndef D
-# ifdef DEBUG
-#  define D(x) x
-# else
-#  define D(x)
-# endif
-#endif
 
 extern void cpu_Exception(void);
 asm (
@@ -36,128 +27,84 @@ asm (
         "       rts\n"
 );
 
-void cpu_Switch(regs_t *regs)
+void m68k_SwitchTail(APTR frame)
 {
     struct Task *task = SysBase->ThisTask;
     struct AROSCPUContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
-    D(bug("[Kernel] %s: Switching ThisTask=0x%p '%s'\n", __func__, task, task->tc_Node.ln_Name);)
-
-    /* Actually save the context */
-    CopyMem(regs, &ctx->cpu, sizeof(regs_t));
-
-    /* If we have an FPU, save the FPU context */
     if (SysBase->AttnFlags & AFF_FPU)
-            AROS_UFC2NR(void, FpuSaveContext,
-                            AROS_UFCA(struct FpuContext *, &ctx->fpu, A0),
-                            AROS_UFCA(UWORD, (SysBase->AttnFlags & AFF_68060) ? 2 : 0, D0));
+        AROS_UFC2NR(void, FpuSaveContext,
+            AROS_UFCA(struct FpuContext *, &ctx->fpu, A0),
+            AROS_UFCA(UWORD, (SysBase->AttnFlags & AFF_68060) ? 2 : 0, D0));
 
-    /* IF we have AMMX (68080) *and* if AMMX bit in SR is set, save AMMX context */
-    if (SysBase->AttnFlags & AFF_68080) // && (ctx->cpu.sr & 0x800))
+    if (SysBase->AttnFlags & AFF_68080)
         AROS_UFC1NR(void, AMMXSaveContext,
-                            AROS_UFCA(struct AMMXContext *, &ctx->ammx, A0));
+            AROS_UFCA(struct AMMXContext *, &ctx->ammx, A0));
 
-    /* Update tc_SPReg */
-    task->tc_SPReg = (APTR)regs->a[7];
-
+    task->tc_SPReg = frame;
     core_Switch();
 }
 
-void cpu_Dispatch(regs_t *regs)
+APTR m68k_DispatchFrame(void)
 {
     struct Task *task;
     struct AROSCPUContext *ctx;
+    UBYTE *frame;
 
     for (;;) {
-        asm volatile ("ori  #0x0700, %sr\n");    // Disable CPU interrupts
+        asm volatile ("ori #0x0700, %sr\n");
 
         task = core_Dispatch();
         if (task != NULL)
             break;
-        D(
-            bug("[Kernel] %s: TASK QUEUE EMPTY!!\n", __func__);
 
-            // Dump tasks ...
-            if (SysBase->ThisTask)
-            {
-                bug("[Kernel] %s: ThisTask=0x%p '%s'\n", __func__, SysBase->ThisTask, SysBase->ThisTask->tc_Node.ln_Name);
-                bug("[Kernel] %s:     tc_Flags = %x\n", __func__, SysBase->ThisTask->tc_Flags);
-                bug("[Kernel] %s:     tc_State = %x\n", __func__, SysBase->ThisTask->tc_State);
-                bug("[Kernel] %s:     tc_SigAlloc = %x\n", __func__, SysBase->ThisTask->tc_SigAlloc);
-                bug("[Kernel] %s:     tc_SigWait = %x\n", __func__, SysBase->ThisTask->tc_SigWait);
-                bug("[Kernel] %s:     tc_SigRecv = %x\n", __func__, SysBase->ThisTask->tc_SigRecv);
-                bug("[Kernel] %s:     tc_IDNestCnt = %d\n", __func__, SysBase->ThisTask->tc_IDNestCnt);
-                bug("[Kernel] %s:     tc_TDNestCnt = %d\n", __func__, SysBase->ThisTask->tc_TDNestCnt);
-            }
-
-            ForeachNode(&SysBase->TaskReady, task)
-            {
-                bug("[Kernel] %s: Ready Task @ 0x%p '%s'\n", __func__, task, task->tc_Node.ln_Name);
-                bug("[Kernel] %s:     tc_Flags = %x\n", __func__, task->tc_Flags);
-                bug("[Kernel] %s:     tc_State = %x\n", __func__, task->tc_State);
-                bug("[Kernel] %s:     tc_SigAlloc = %x\n", __func__, task->tc_SigAlloc);
-                bug("[Kernel] %s:     tc_SigWait = %x\n", __func__, task->tc_SigWait);
-                bug("[Kernel] %s:     tc_SigRecv = %x\n", __func__, task->tc_SigRecv);
-                bug("[Kernel] %s:     tc_IDNestCnt = %d\n", __func__, task->tc_IDNestCnt);
-                bug("[Kernel] %s:     tc_TDNestCnt = %d\n", __func__, task->tc_TDNestCnt);
-            }
-            ForeachNode(&SysBase->TaskWait, task)
-            {
-                bug("[Kernel] %s: Waiting Task @ 0x%p '%s'\n", __func__, task, task->tc_Node.ln_Name);
-                bug("[Kernel] %s:     tc_Flags = %x\n", __func__, task->tc_Flags);
-                bug("[Kernel] %s:     tc_State = %x\n", __func__, task->tc_State);
-                bug("[Kernel] %s:     tc_SigAlloc = %x\n", __func__, task->tc_SigAlloc);
-                bug("[Kernel] %s:     tc_SigWait = %x\n", __func__, task->tc_SigWait);
-                bug("[Kernel] %s:     tc_SigRecv = %x\n", __func__, task->tc_SigRecv);
-                bug("[Kernel] %s:     tc_IDNestCnt = %d\n", __func__, task->tc_IDNestCnt);
-                bug("[Kernel] %s:     tc_TDNestCnt = %d\n", __func__, task->tc_TDNestCnt);
-            }
-        )
-        /* Break IDNestCnt */
         if (SysBase->IDNestCnt >= 0) {
-            SysBase->IDNestCnt=-1;
+            SysBase->IDNestCnt = -1;
             asm volatile ("move.w #0xc000,0xdff09a\n");
         }
-        asm volatile ("stop #0x2000\n"); // Wait for an interrupt
+        asm volatile ("stop #0x2000\n");
     }
-
-    D(bug("[Kernel] %s: Dispatching Task @ 0x%p '%s'\n", __func__, task, task->tc_Node.ln_Name);)
 
     ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
-    CopyMem(&ctx->cpu, regs, sizeof(regs_t));
-    regs->a[7] = (IPTR)task->tc_SPReg;
-
-    /* If we have an FPU, restore the FPU context */
     if (SysBase->AttnFlags & AFF_FPU)
-            AROS_UFC2NR(void, FpuRestoreContext,
-                            AROS_UFCA(struct FpuContext *, &ctx->fpu, A0),
-                            AROS_UFCA(UWORD, (SysBase->AttnFlags & AFF_68060) ? 2 : 0, D0));
+        AROS_UFC2NR(void, FpuRestoreContext,
+            AROS_UFCA(struct FpuContext *, &ctx->fpu, A0),
+            AROS_UFCA(UWORD, (SysBase->AttnFlags & AFF_68060) ? 2 : 0, D0));
 
-    /* IF we have AMMX (68080) *and* if AMMX bit in SR is set, save AMMX context */
-    if (SysBase->AttnFlags & AFF_68080) // && (ctx->cpu.sr & 0x800))
-            AROS_UFC1NR(void, AMMXRestoreContext,
-                            AROS_UFCA(struct AMMXContext *, &ctx->ammx, A0));
+    if (SysBase->AttnFlags & AFF_68080)
+        AROS_UFC1NR(void, AMMXRestoreContext,
+            AROS_UFCA(struct AMMXContext *, &ctx->ammx, A0));
 
-    /* Re-enable interrupts if needed */
-    if (SysBase->IDNestCnt < 0) {
+    if (SysBase->IDNestCnt < 0)
         asm volatile ("move.w #0xc000,0xdff09a\n");
-    } else {
+    else
         asm volatile ("move.w #0x4000,0xdff09a\n");
-    }
 
+    frame = task->tc_SPReg;
     if (task->tc_Flags & TF_EXCEPT) {
-        /* Exec_Exception() will Enable() */
+        ULONG originalPC = *(ULONG *)frame;
+        UBYTE *exceptionFrame = frame - sizeof(ULONG);
+        unsigned int i;
+
+        /* Exec_Exception() balances this Disable() when it returns. */
         Disable();
 
-        /* Manipulate the current CPU context so Exec_Exception gets
-         * executed after we leave Supervisor mode.
-         */
-        task->tc_SPReg -= sizeof(ULONG);        /* RTS to original PC */
-        if (task->tc_SPReg <= task->tc_SPLower)
-                Alert(AT_DeadEnd|AN_StackProbe);
-        *(ULONG *)(task->tc_SPReg) = regs->pc;
+        if (exceptionFrame <= (UBYTE *)task->tc_SPLower)
+            Alert(AT_DeadEnd | AN_StackProbe);
 
-        regs->a[7] = (IPTR)task->tc_SPReg;
-        regs->pc   = (IPTR)cpu_Exception;
+        /*
+         * Make room below the 66-byte task-stack frame.  The destination is
+         * lower than the source, so a forward byte copy is overlap-safe.
+         * Restoring this shifted frame sets USP to the word immediately after
+         * it; place the interrupted PC there for cpu_Exception's final RTS.
+         */
+        for (i = 0; i < 66; i++)
+            exceptionFrame[i] = frame[i];
+        *(ULONG *)(exceptionFrame + 66) = originalPC;
+        *(ULONG *)exceptionFrame = (ULONG)cpu_Exception;
+        task->tc_SPReg = exceptionFrame;
+        frame = exceptionFrame;
     }
+
+    return frame;
 }

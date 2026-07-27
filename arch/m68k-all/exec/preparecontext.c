@@ -1,19 +1,17 @@
-/*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
-
-    Desc: PrepareContext() - Prepare a task context for dispatch, m68k version
-*/
+/* Prepare the initial task frame in the format used by Switch/Dispatch. */
 
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <aros/m68k/cpucontext.h>
 #include <proto/kernel.h>
+#include <string.h>
 
 #include "exec_intern.h"
 #include "exec_util.h"
 
-#define _PUSH(sp, val) *--sp = (IPTR)val
+#define _PUSH(sp, val) *--sp = (IPTR)(val)
+#define M68K_TASK_FRAME_SIZE 66
 
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
                     const struct TagItem *tagList, struct ExecBase *SysBase)
@@ -22,74 +20,59 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     WORD numargs = 0;
     IPTR *sp = task->tc_SPReg;
     struct ExceptionContext *ctx;
+    UBYTE *frame;
 
     if (!(task->tc_Flags & TF_ETASK))
         return FALSE;
-  
+
     ctx = KrnCreateContext();
     task->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
     if (!ctx)
         return FALSE;
 
-    while(tagList)
-    {
-        switch(tagList->ti_Tag)
-        {
-            case TAG_MORE:
-                tagList = (const struct TagItem *)tagList->ti_Data;
-                continue;
-                
-            case TAG_SKIP:
-                tagList += tagList->ti_Data;
-                break;
-                
-            case TAG_DONE:
-                tagList = NULL;
-                break;
-                
-#define HANDLEARG(x)                                    \
-            case TASKTAG_ARG ## x:                      \
-                args[x - 1] = (IPTR)tagList->ti_Data;   \
-                if (x > numargs) numargs = x;           \
-                break;
-
-            HANDLEARG(1)
-            HANDLEARG(2)
-            HANDLEARG(3)
-            HANDLEARG(4)
-            HANDLEARG(5)
-            HANDLEARG(6)
-            HANDLEARG(7)
-            HANDLEARG(8)
+    while (tagList) {
+        switch (tagList->ti_Tag) {
+        case TAG_MORE:
+            tagList = (const struct TagItem *)tagList->ti_Data;
+            continue;
+        case TAG_SKIP:
+            tagList += tagList->ti_Data;
+            break;
+        case TAG_DONE:
+            tagList = NULL;
+            break;
+#define HANDLEARG(x) \
+        case TASKTAG_ARG ## x: \
+            args[x - 1] = (IPTR)tagList->ti_Data; \
+            if (x > numargs) numargs = x; \
+            break;
+        HANDLEARG(1)
+        HANDLEARG(2)
+        HANDLEARG(3)
+        HANDLEARG(4)
+        HANDLEARG(5)
+        HANDLEARG(6)
+        HANDLEARG(7)
+        HANDLEARG(8)
         }
-        
-        if (tagList) tagList++;
+        if (tagList)
+            tagList++;
     }
-    
-    /*
-        There is not much to do here, or at least that is how it
-        appears. Most of the work is done in the kernel_cpu.h macros.
-    */
 
-    if (numargs)
-    {
-        /* On m68k C function gets all param on stack */
-        while(numargs--)
-        {
-            _PUSH(sp, args[numargs]);
-        }
-    }
-    
-    /* First we push the return address */
+    while (numargs--)
+        _PUSH(sp, args[numargs]);
     _PUSH(sp, fallBack);
-    
-    /* Then set up the frame to be used by Dispatch() */
-    ctx->pc   = (IPTR)entryPoint;
+
+    frame = (UBYTE *)sp - M68K_TASK_FRAME_SIZE;
+    memset(frame, 0, M68K_TASK_FRAME_SIZE);
+    *(IPTR *)(frame + 0) = (IPTR)entryPoint;
+    *(UWORD *)(frame + 4) = 0;
+
+    /* Retain a conventional context for FPU/AMMX storage and diagnostics. */
+    ctx->pc = (IPTR)entryPoint;
     ctx->a[7] = (IPTR)sp;
-    ctx->sr   = 0x0000;
+    ctx->sr = 0;
 
-    /* We return the new stack pointer back to the caller. */
-    task->tc_SPReg = sp;
-
+    task->tc_SPReg = frame;
     return TRUE;
-} /* PrepareContext() */
+}

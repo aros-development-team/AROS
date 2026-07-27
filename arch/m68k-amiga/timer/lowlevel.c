@@ -256,29 +256,35 @@ AROS_INTH1(cia_vbint, struct TimerBase *, TimerBase)
 {
         AROS_INTFUNC_INIT
         
-         struct timerequest *tr, *next;
+        struct timerequest *tr;
+        struct MinList expired;
 
         if (TimerBase->tb_vblank_on == FALSE)
                 return 0;
         inc64(&TimerBase->tb_vb_count);
 
+        NEWLIST(&expired);
         Disable();
-        ForeachNodeSafe(&TimerBase->tb_Lists[UNIT_VBLANK], tr, next) {
+        while ((tr = (struct timerequest *)TimerBase->tb_Lists[UNIT_VBLANK].mlh_Head)->
+                tr_node.io_Message.mn_Node.ln_Succ) {
                 if (cmp64(&TimerBase->tb_vb_count, &tr->tr_time)) {
                         Remove((struct Node *)tr);
                         tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
                         tr->tr_node.io_Error = 0;
-                        ReplyMsg((struct Message *)tr);
-                        D(bug("vblank %x done\n", tr));
+                        AddTail((struct List *)&expired, (struct Node *)tr);
                 } else {
                         break; // first not finished, can stop searching
                 }
-                        
         }
         if (IsListEmpty(&TimerBase->tb_Lists[UNIT_VBLANK])) {
                 TimerBase->tb_vblank_on = FALSE;
         }
         Enable();
+
+        while ((tr = (struct timerequest *)RemHead((struct List *)&expired))) {
+                ReplyMsg((struct Message *)tr);
+                D(bug("vblank %x done\n", tr));
+        }
         
         return 0;
 

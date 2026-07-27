@@ -52,6 +52,7 @@ int main(void) {
     DEFINE(SMPPrivate5   , offsetof (struct ExecBase, SMPPrivate5));
 #endif
     DEFINE(TaskReady     , offsetof (struct ExecBase, TaskReady));
+    DEFINE(TaskWait      , offsetof (struct ExecBase, TaskWait));
 #if !defined(__AROSEXEC_SMP__)
     DEFINE(ThisTask      , offsetof (struct ExecBase, ThisTask));
 #else
@@ -75,6 +76,7 @@ int main(void) {
     DEFINE(tc_ExceptCode , offsetof (struct Task, tc_ExceptCode));
     DEFINE(tc_ExceptData , offsetof (struct Task, tc_ExceptData));
     DEFINE(tc_SigExcept  , offsetof (struct Task, tc_SigExcept));
+    DEFINE(tc_SigWait    , offsetof (struct Task, tc_SigWait));
     DEFINE(tc_SigRecvd   , offsetof (struct Task, tc_SigRecvd));
     DEFINE(tc_Launch     , offsetof (struct Task, tc_Launch));
     DEFINE(tc_Switch     , offsetof (struct Task, tc_Switch));
@@ -82,10 +84,20 @@ int main(void) {
     DEFINE(tc_SPLower    , offsetof (struct Task, tc_SPLower));
     DEFINE(tc_SPUpper    , offsetof (struct Task, tc_SPUpper));
     DEFINE(tc_IDNestCnt  , offsetof (struct Task, tc_IDNestCnt));
+    DEFINE(tc_TDNestCnt  , offsetof (struct Task, tc_TDNestCnt));
     DEFINE(tc_ETask      , offsetof (struct Task, tc_UnionETask.tc_ETask));
 
     asm volatile("\n.asciz \"/* struct ETask */\"" ::);
     DEFINE(et_Reserved, offsetof (struct ETask, et_Reserved));
+    DEFINE(et_RegFrame, offsetof (struct ETask, et_RegFrame));
+
+#ifdef __mc68000
+    asm volatile("\n.asciz \"/* m68k ExceptionContext */\"" ::);
+    DEFINE(ec_D,  offsetof (struct ExceptionContext, d));
+    DEFINE(ec_A,  offsetof (struct ExceptionContext, a));
+    DEFINE(ec_SR, offsetof (struct ExceptionContext, sr));
+    DEFINE(ec_PC, offsetof (struct ExceptionContext, pc));
+#endif
 
     asm volatile("\n.asciz \"/* struct Process */\"" ::);
     DEFINE(pr_CES        , offsetof (struct Process, pr_CES));
@@ -154,13 +166,16 @@ int main(void) {
     asm volatile("\n.asciz \"/* Task Flags */\"" ::);
     DEFINE(TS_RUN        , TS_RUN);
     DEFINE(TS_READY      , TS_READY);
+    DEFINE(TS_WAIT       , TS_WAIT);
     DEFINE(TF_STACKCHK   , TF_STACKCHK);
     DEFINE(TF_EXCEPT     , TF_EXCEPT);
     DEFINE(TF_SWITCH     , TF_SWITCH);
     DEFINE(TF_LAUNCH     , TF_LAUNCH);
+    DEFINE(TF_DISPATCH_SPECIAL, TF_LAUNCH | TF_EXCEPT);
 
     asm volatile("\n.asciz \"/* Exec Flags */\"" ::);
     DEFINE(AFF_FPU       , AFF_FPU);
+    DEFINE(SFF_QuantumClear, (UWORD)~SFF_QuantumOver);
 
     asm volatile("\n.asciz \"/* Exec functions */\"" ::);
     DEFINE(Supervisor    , FuncOffset (5));
