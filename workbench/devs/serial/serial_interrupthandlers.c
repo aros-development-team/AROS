@@ -151,6 +151,7 @@ ULONG WBE_InterruptHandler( ULONG unitnum, APTR userdata)
                                 writtenbytes = HIDD_SerialUnit_Write(SU->su_Unit,
                                                                      &((char *)ioserreq->IOSer.io_Data)[SU->su_NextToWrite],
                                                                      SU->su_WriteLength);
+                                ioserreq->IOSer.io_Actual += writtenbytes;
                                 /*
                                  * Check whether this was written completely.
                                  */
