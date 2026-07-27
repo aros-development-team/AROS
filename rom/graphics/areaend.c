@@ -118,19 +118,6 @@
                  * Must draw from lower y's to higher ones otherwise
                  * the fill algo does not work nicely.
                  */
-#if 1
-                if(rp->cp_y <= CurVctr[1]) {
-                    Draw(rp, CurVctr[0], CurVctr[1]);
-                } else {
-                    int _x = rp->cp_x;
-                    int _y = rp->cp_y;
-                    rp->cp_x = CurVctr[0];
-                    rp->cp_y = CurVctr[1];
-                    Draw(rp, _x, _y);
-                    rp->cp_x = CurVctr[0];
-                    rp->cp_y = CurVctr[1];
-                }
-#endif
                 CurVctr = &CurVctr[2];
                 CurFlag = &CurFlag[1];
                 /*
@@ -197,23 +184,6 @@
 
             case AREAINFOFLAG_DRAW:
                 /* Draw a line to new position */
-#if 1
-                /*
-                 * Must draw from lower y's to higher ones otherwise
-                 * the fill algo does not work nicely.
-                 */
-                if(rp->cp_y <= CurVctr[1]) {
-                    Draw(rp, CurVctr[0], CurVctr[1]);
-                } else {
-                    int _x = rp->cp_x;
-                    int _y = rp->cp_y;
-                    rp->cp_x = CurVctr[0];
-                    rp->cp_y = CurVctr[1];
-                    Draw(rp, _x, _y);
-                    rp->cp_x = CurVctr[0];
-                    rp->cp_y = CurVctr[1];
-                }
-#endif
                 if(bounds.MinX > CurVctr[0])
                     bounds.MinX = CurVctr[0];
                 if(bounds.MaxX < CurVctr[0])
@@ -241,17 +211,9 @@
                 if((ULONG)rp->TmpRas->Size < BytesPerRow * (bounds.MaxY - bounds.MinY + 1))
                     return -1;
 
-                /* Draw an Ellipse and fill it */
-                /* see how the data are stored by the second entry */
-                /* I get cx,cy,cx+a,cy+b*/
-
-                DrawEllipse(rp, CurVctr[0],
-                            CurVctr[1],
-                            CurVctr[2],
-                            CurVctr[3]);
-
-                /* area-fill the ellipse with the pattern given
-                   in rp->AreaPtrn , AreaPtSz */
+                /* Build the complete filled ellipse, including its boundary,
+                   in TmpRas.  Drawing the boundary first would expose a
+                   partially rendered ellipse before the fill is blitted. */
 
                 areafillellipse(rp,
                                 &bounds,

@@ -712,9 +712,10 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
     UBYTE i;
     UWORD shifta, shiftb;
     UWORD afwm, alwm;
-    ULONG dstoffset;
-    WORD dstwidth;
+    ULONG maskoffset = 0, dstoffset;
+    WORD width, maskwidth = 0, dstwidth;
     WORD patcnt;
+    BOOL reverse = FALSE;
 
     WORD height = pat->height;
     WORD dstx = pat->x;
@@ -726,8 +727,6 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
     if (!canblit(bm))
         return FALSE;
 
-    if (pat->mask)
-        return FALSE;
     if (pat->patterndepth != 1)
         return FALSE;
 
@@ -753,16 +752,43 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
 
     shifta = 0;
     shiftb = 0;
+    width = dstwidth;
     afwm = leftmask[dstx];
     alwm = rightmask[dstx2];
+
+    if (pat->mask) {
+        WORD maskx = pat->masksrcx;
+        WORD maskx2 = maskx + pat->width - 1;
+        BYTE shift;
+
+        maskoffset = (maskx / 16) * 2;
+        maskwidth = maskx2 / 16 - maskx / 16 + 1;
+        maskx &= 15;
+        maskx2 &= 15;
+        shift = dstx - maskx;
+
+        if (shift < 0) {
+            reverse = TRUE;
+            shift = -shift;
+            width = dstwidth >= maskwidth ? dstwidth : maskwidth;
+            shifta = shift << 12;
+            afwm = rightmask[dstx2];
+            alwm = leftmask[dstx];
+        } else {
+            width = dstwidth >= maskwidth ? dstwidth : maskwidth;
+            shifta = shift << 12;
+        }
+    }
 
     OwnBlitter();
     WaitBlit();
 
     custom->bltafwm = afwm;
     custom->bltalwm = alwm;
-    custom->bltcmod = (bm->BytesPerRow - dstwidth * 2) + bm->BytesPerRow * (pat->patternheight - 1);
-    custom->bltdmod = (bm->BytesPerRow - dstwidth * 2) + bm->BytesPerRow * (pat->patternheight - 1);
+    if (pat->mask)
+        custom->bltamod = pat->maskmodulo * pat->patternheight - width * 2;
+    custom->bltcmod = bm->BytesPerRow * pat->patternheight - width * 2;
+    custom->bltdmod = bm->BytesPerRow * pat->patternheight - width * 2;
     custom->bltadat = 0xffff;
     
     for (i = 0; i < bm->Depth; i++, fgpen >>= 1, bgpen >>= 1) {
@@ -777,23 +803,39 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
         fg = fgpen & 1;
         bg = bgpen & 1;
         
-        chmask = 0x0300;
+        chmask = pat->mask ? 0x0f00 : 0x0300;
  
         minterm = getminterm(type, fg, bg);
  
         WaitBlit();
         custom->bltcon0 = shifta | chmask | minterm;
-        custom->bltcon1 = shiftb;
+        custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftb;
 
         for(patcnt = 0, dstoffset2 = 0; patcnt < pat->patternheight; patcnt++, dstoffset2 += bm->BytesPerRow) {
             UWORD blitheight = (height - patcnt + 1) / pat->patternheight;
             UWORD pattern = ((UWORD*)pat->pattern)[(pat->patternsrcy + patcnt) & patternymask];
-            if (blitheight && pattern) {
+            UWORD patternshift = (dstx - pat->patternsrcx) & 15;
+
+            if (patternshift)
+                pattern = (pattern >> patternshift) |
+                          (pattern << (16 - patternshift));
+            if (blitheight) {
+                ULONG planeoffset = dstoffset + dstoffset2;
+                ULONG sourceoffset = maskoffset + patcnt * pat->maskmodulo;
+
+                if (reverse) {
+                    planeoffset += (blitheight - 1) * bm->BytesPerRow * pat->patternheight +
+                                   (width - 1) * 2;
+                    sourceoffset += (blitheight - 1) * pat->maskmodulo * pat->patternheight +
+                                    (width - 1) * 2;
+                }
                 WaitBlit();
                 custom->bltbdat = pattern;
-                custom->bltcpt = (APTR)(bm->Planes[i] + dstoffset + dstoffset2);
-                custom->bltdpt = (APTR)(bm->Planes[i] + dstoffset + dstoffset2);
-                startblitter(csd, dstwidth, blitheight);
+                if (pat->mask)
+                    custom->bltapt = (APTR)(pat->mask + sourceoffset);
+                custom->bltcpt = (APTR)(bm->Planes[i] + planeoffset);
+                custom->bltdpt = (APTR)(bm->Planes[i] + planeoffset);
+                startblitter(csd, width, blitheight);
             }
         }
     }

@@ -15,8 +15,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <aros/debug.h>
-
 #include "graphics_intern.h"
 
 /*
@@ -43,486 +41,195 @@ void LineInTmpRas(struct RastPort   *rp,
                   struct GfxBase    *GfxBase);
 
 
-struct BoundLine {
-    UWORD StartIndex;
-    UWORD EndIndex;
-    UWORD LeftX;
-    UWORD RightX;
-    WORD DeltaX;
-    WORD DeltaY;
-    WORD Count;
-    BOOL Valid;
-    WORD incrE;
-    WORD incrNE;
-    WORD s1;
-    WORD t;
-    WORD horiz;
-    WORD NLeftX;
-    WORD NRightX;
-};
 
-UWORD Include(UWORD lastused,
-              UWORD lastindex,
-              struct BoundLine *AreaBound,
-              UWORD scan,
-              UWORD *VctTbl)
+/* Build an even-odd polygon mask one scanline at a time.  The previous edge
+ * state machine allocated a large edge table and repeatedly sorted it while
+ * walking the polygon.  Recomputing the few active intersections is smaller
+ * and considerably faster for the small polygons used by classic software. */
+BOOL areafillpolygon(struct RastPort *rp, struct Rectangle *bounds,
+                     UWORD first_idx, UWORD last_idx, ULONG BytesPerRow,
+                     struct GfxBase *GfxBase)
 {
-    while(lastused < lastindex &&
-            VctTbl[AreaBound[lastused + 1].StartIndex + 1] == scan) {
-        /*
-            kprintf("including new one! ");
-            kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[lastused+1].StartIndex],
-                                        VctTbl[AreaBound[lastused+1].StartIndex+1],
-                                        VctTbl[AreaBound[lastused+1].EndIndex],
-                                        VctTbl[AreaBound[lastused+1].EndIndex]);
-        */
-        lastused++;
-    }
-    return lastused;
-}
+    struct AreaInfo *ai = rp->AreaInfo;
+    UWORD edges = last_idx - first_idx;
+    WORD *crossings;
+    WORD y;
 
-void FillScan(UWORD StartIndex,
-              UWORD EndIndex,
-              struct BoundLine *AreaBound,
-              UWORD scanline,
-              struct RastPort *rp,
-              struct Rectangle *bounds,
-              UWORD BytesPerRow,
-              struct GfxBase *GfxBase)
-{
-    int i = StartIndex;
-    int x1;
-    while(i < EndIndex) {
-        /* simply draw a line */
-        while(!AreaBound[i].Valid) {
-            i++;
-            if(i > EndIndex) return;
-        }
-        x1 = AreaBound[i].RightX + 1;
+    /* Filled hands, arrows, diamonds and many other classic UI shapes are
+     * convex quadrilaterals.  Drawing their four edges into TmpRas first
+     * avoids doing a signed division for every edge on every scanline. */
+    if (edges == 4) {
+        UWORD *v = &ai->VctrTbl[first_idx * 2];
+        LONG winding = 0;
+        UWORD vertex;
 
-        while(!AreaBound[i + 1].Valid) {
-            i++;
-            if(i > EndIndex) return;
-        }
+        for (vertex = 0; vertex < 4; vertex++) {
+            UWORD next = (vertex + 1) & 3;
+            UWORD after = (vertex + 2) & 3;
+            LONG ax = (WORD)v[next * 2] - (WORD)v[vertex * 2];
+            LONG ay = (WORD)v[next * 2 + 1] - (WORD)v[vertex * 2 + 1];
+            LONG bx = (WORD)v[after * 2] - (WORD)v[next * 2];
+            LONG by = (WORD)v[after * 2 + 1] - (WORD)v[next * 2 + 1];
+            LONG cross = ax * by - ay * bx;
 
-        if(x1 <= AreaBound[i + 1].LeftX - 1) {
-            LineInTmpRas(rp,
-                         bounds,
-                         BytesPerRow,
-                         x1,
-                         AreaBound[i + 1].LeftX - 1,
-                         scanline,
-                         GfxBase);
-        }
-
-        i += 2;
-    }
-}
-
-
-void XSort(UWORD StartIndex,
-           UWORD EndIndex,
-           struct BoundLine *AreaBound)
-{
-    /* a simple bubble sort */
-    struct BoundLine tmpAreaBound;
-    int i = StartIndex + 1;
-
-    //kprintf("%d,%d\n",StartIndex,EndIndex);
-
-//kprintf("%d  ",AreaBound[StartIndex].LeftX);
-
-    while(i <= EndIndex) {
-        if(AreaBound[i].LeftX < AreaBound[i - 1].LeftX) {
-            /* The one at index i needs to go more to smaller indices */
-            int i2 = i;
-            //kprintf("sorting!!\n");
-            tmpAreaBound = AreaBound[i];
-            while(TRUE) {
-                AreaBound[i2] = AreaBound[i2 - 1];
-                i2--;
-                if(i2 == StartIndex ||
-                        AreaBound[i2 - 1].LeftX <= tmpAreaBound.LeftX) {
-                    AreaBound[i2] = tmpAreaBound;
+            if (cross) {
+                if (winding && ((cross < 0) != (winding < 0)))
                     break;
-                }
+                winding = cross;
             }
         }
-        i++;
-        //kprintf("%d  ",AreaBound[i].LeftX);
 
-    }
-    //kprintf("\n");
-}
+        if (vertex == 4 && winding) {
+            LONG edge_x[4];
+            LONG edge_step[4];
+            WORD edge_min_y[4];
+            WORD edge_max_y[4];
 
+            memset(rp->TmpRas->RasPtr, 0,
+                   BytesPerRow * (bounds->MaxY - bounds->MinY + 1));
 
-UWORD UpdateXValues(UWORD StartIndex,
-                    UWORD EndIndex,
-                    UWORD scan,
-                    struct BoundLine *AreaBound,
-                    UWORD *VctTbl)
-{
-    int i = StartIndex;
-    BOOL foundvalid = FALSE;
+            for (vertex = 0; vertex < 4; vertex++) {
+                UWORD next = (vertex + 1) & 3;
+                WORD x1 = v[vertex * 2];
+                WORD y1 = v[vertex * 2 + 1];
+                WORD x2 = v[next * 2];
+                WORD y2 = v[next * 2 + 1];
 
-    while(i <= EndIndex) {
-        /* Test whether this one is still to be considered */
-        // CHANGED <= to <
-        if(VctTbl[AreaBound[i].EndIndex + 1] <=  scan ||
-                !AreaBound[i].Valid) {
-            /*
-            if (!AreaBound[i].Valid)
-              kprintf ("already marked as invalid! ");
-            else
-              kprintf("marking %d as anvalid! ",i);
-            kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
-                                        VctTbl[AreaBound[i].StartIndex+1],
-                                        VctTbl[AreaBound[i].EndIndex],
-                                        VctTbl[AreaBound[i].EndIndex+1]);
-            */
-            AreaBound[i].Valid = FALSE;
-            if(!foundvalid)
-                StartIndex += 1;
-        } else {
-            /* It is still to be considered!! */
-            foundvalid = TRUE;
-            /* calculate the new x-coordinates for the new line */
-            if(0 == AreaBound[i].DeltaX) {
-                /* a vertical line !!! easy!! */
-                i++;
-                continue;
-            }
-
-            AreaBound[i].RightX += AreaBound[i].NRightX;
-            AreaBound[i].LeftX  += AreaBound[i].NLeftX;
-            AreaBound[i].NRightX = 0;
-            AreaBound[i].NLeftX  = 0;
-            /*
-             * If we're moving more in the horizontal
-             * than in the vertical, then the line
-             * has a pure horizontal component which I
-             * must take care of by not painting over it.
-             * This means that on a y coordinate the line
-             * can go from the LeftX to the RightX.
-             */
-            if(1 == AreaBound[i].horiz) {
-                /*
-                 * More towards the horizontal than down
-                 */
-                if(AreaBound[i].s1 > 0) {
-                    AreaBound[i].LeftX  = AreaBound[i].RightX;
+                if (y1 < y2) {
+                    edge_min_y[vertex] = y1;
+                    edge_max_y[vertex] = y2;
+                    edge_x[vertex] = (LONG)x1 * 65536;
+                    edge_step[vertex] =
+                        ((LONG)(x2 - x1) * 65536) / (y2 - y1);
+                } else if (y2 < y1) {
+                    edge_min_y[vertex] = y2;
+                    edge_max_y[vertex] = y1;
+                    edge_x[vertex] = (LONG)x2 * 65536;
+                    edge_step[vertex] =
+                        ((LONG)(x1 - x2) * 65536) / (y1 - y2);
                 } else {
-                    AreaBound[i].RightX = AreaBound[i].LeftX;
+                    edge_min_y[vertex] = y1;
+                    edge_max_y[vertex] = y1;
+                    edge_x[vertex] = (LONG)x1 * 65536;
+                    edge_step[vertex] = 0;
                 }
             }
 
+            for (y = bounds->MinY; y <= bounds->MaxY; y++) {
+                LONG left = 0x7fffffff;
+                LONG right = -0x7fffffff;
 
-            while(1) {
-                if(AreaBound[i].Count <= 0) {
-                    AreaBound[i].Count += AreaBound[i].incrE;
-                    if(1 == AreaBound[i].t) {
-                        if(AreaBound[i].s1 > 0) {
-                            /*
-                             * Towards right
-                             */
-                            AreaBound[i].RightX++;
-                        } else {
-                            /*
-                             * Towards left
-                             */
-                            AreaBound[i].LeftX--;
-                        }
-                    } else {
-                        /*
-                         * Going to next Y coordinate
-                         */
-                        break;
+                for (vertex = 0; vertex < 4; vertex++) {
+                    if (y >= edge_min_y[vertex] &&
+                        y < edge_max_y[vertex]) {
+                        if (edge_x[vertex] < left)
+                            left = edge_x[vertex];
+                        if (edge_x[vertex] > right)
+                            right = edge_x[vertex];
+                        edge_x[vertex] += edge_step[vertex];
                     }
-                } else {
-                    AreaBound[i].Count += AreaBound[i].incrNE;
-                    /*
-                     * Going to next Y coordinate
-                     */
-                    if(AreaBound[i].s1 > 0) {
-                        /*
-                         * Towards right
-                         */
-                        AreaBound[i].NRightX = 1;
-                    } else {
-                        /*
-                         * Towards left
-                         */
-                        AreaBound[i].NLeftX = -1;
-                    }
-                    break;
                 }
-            } /* while (1) */
 
-            /*
-             * If we're going more vertical than horizontal
-             * then the left and right are always the same.
-             */
-            if(0 == AreaBound[i].horiz) {
-                if(AreaBound[i].s1 > 0) {
-                    /*
-                      AreaBound[i].RightX += AreaBound[i].NRightX;
-                      AreaBound[i].NRightX = 0;
-                     */
-                    AreaBound[i].LeftX  = AreaBound[i].RightX;
-                } else {
-                    /*
-                      AreaBound[i].LeftX += AreaBound[i].NLeftX;
-                      AreaBound[i].NLeftX = 0;
-                     */
-                    AreaBound[i].RightX = AreaBound[i].LeftX;
-                }
+                if (left <= right)
+                    LineInTmpRas(rp, bounds, BytesPerRow,
+                                 left >> 16, right >> 16, y, GfxBase);
             }
+
+            areaoutlinepolygonmask(rp, bounds, first_idx, last_idx,
+                                   BytesPerRow);
+            return TRUE;
         }
-        i++;
     }
 
-    return StartIndex;
-}
-
-/* functions for filling of the RastPort */
-BOOL areafillpolygon(struct RastPort   *rp,
-                     struct Rectangle *bounds,
-                     UWORD              first_idx,
-                     UWORD              last_idx,
-                     ULONG              BytesPerRow,
-                     struct GfxBase    *GfxBase)
-{
-    int i, c;
-    UWORD StartEdge = 1;
-    UWORD EndEdge = 1;
-    WORD LastIndex;
-    UWORD ymin;
-    UWORD LastEdge = last_idx - first_idx + 1; // needed later on. Don't change!!
-    struct AreaInfo *areainfo = rp->AreaInfo;
-    UWORD *StartVctTbl = &areainfo->VctrTbl[first_idx * 2];
-    UWORD scan;
-    struct BoundLine tmpAreaBound;
-    struct BoundLine *AreaBound =
-        (struct BoundLine *) AllocMem(sizeof(struct BoundLine) * LastEdge,
-                                      MEMF_CLEAR);
-
-    if(NULL == AreaBound)
+    crossings = AllocMem(sizeof(*crossings) * edges, MEMF_ANY);
+    if (!crossings)
         return FALSE;
 
-    /* first clear the buffer of the temporary rastport as far as necessary  */
-
-    memset(rp->TmpRas->RasPtr,
-           0,
+    memset(rp->TmpRas->RasPtr, 0,
            BytesPerRow * (bounds->MaxY - bounds->MinY + 1));
 
-    /*
-      kprintf("first: %d, last: %d\n",first_idx,last_idx);
-      kprintf("(%d,%d)-(%d,%d)\n",bounds->MinX,bounds->MinY,
-                                  bounds->MaxX,bounds->MaxY);
-      kprintf("width: %d, bytesperrow: %d\n",bounds->MaxX - bounds->MinX + 1,
-                                             BytesPerRow);
-    */
-    /* I need a list of sorted indices that represent the lines of the
-    ** polygon. Horizontal lines don't go into that list!!!
-    ** The lines are sorted by their start-y coordinates.
-    */
+    for (y = bounds->MinY; y <= bounds->MaxY; y++) {
+        UWORD count = 0;
+        UWORD edge;
 
-    i = -1;
-    c = 0;
+        for (edge = first_idx; edge < last_idx; edge++) {
+            WORD x1 = ai->VctrTbl[edge * 2];
+            WORD y1 = ai->VctrTbl[edge * 2 + 1];
+            WORD x2 = ai->VctrTbl[(edge + 1) * 2];
+            WORD y2 = ai->VctrTbl[(edge + 1) * 2 + 1];
 
-    /* process all points of the polygon */
-    while(c < (LastEdge - 1) * 2) {
-        int i2;
-        /* is the next one starting point of a horizontal line??? If yes,
-           then skip it */
-        /*
-            kprintf("current idx for y: %d, next idx for y: %d\n",c+1,c+3);
-        */
-        if(StartVctTbl[c + 1] == StartVctTbl[c + 3]) {
-//      kprintf("Found horizontal Line!!\n");
-            c += 2;
-            continue;
+            if (y1 == y2 || y < (y1 < y2 ? y1 : y2) ||
+                y >= (y1 > y2 ? y1 : y2))
+                continue;
+
+            crossings[count++] = x1 +
+                ((LONG)(y - y1) * (x2 - x1)) / (y2 - y1);
         }
 
-        /* which coordinate of this line has the lower y value */
-        if(StartVctTbl[c + 1] < StartVctTbl[c + 3]) {
-            tmpAreaBound.StartIndex = c;
-            tmpAreaBound.EndIndex   = c + 2;
-            ymin = StartVctTbl[c + 1];
-        } else {
-            tmpAreaBound.StartIndex = c + 2;
-            tmpAreaBound.EndIndex   = c;
-            ymin = StartVctTbl[c + 3];
-        }
-
-        /*
-            kprintf("line: (%d,%d)-(%d,%d)  ",StartVctTbl[c],
-                                              StartVctTbl[c+1],
-                                              StartVctTbl[c+2],
-                                              StartVctTbl[c+3]);
-            kprintf("miny: %d\n",ymin);
-        */
-        i2 = 0;
-        /*
-        ** search for the place where to put this entry into the sorted
-        ** (increasing start y-coordinates) list
-        */
-        if(i > -1) {
-            while(TRUE) {
-                /*
-                kprintf("ymin: %d< %d?\n",ymin,StartVctTbl[AreaBound[i2].StartIndex+1]);
-                */
-                if(ymin < StartVctTbl[AreaBound[i2].StartIndex + 1]) {
-                    int i3 = i + 1;
-                    /* found the place! */
-                    while(i3 > i2) {
-                        /*
-                        kprintf("moving!\n");
-                        */
-                        AreaBound[i3].StartIndex = AreaBound[i3 - 1].StartIndex;
-                        AreaBound[i3].EndIndex   = AreaBound[i3 - 1].EndIndex;
-                        i3--;
-                    }
-                    AreaBound[i2].StartIndex = tmpAreaBound.StartIndex;
-                    AreaBound[i2].EndIndex   = tmpAreaBound.EndIndex;
-                    break;
-                }
-                i2++;
-                if(i2 > i) {
-                    /*
-                    kprintf("at end!\n");
-                    */
-                    AreaBound[i + 1].StartIndex = tmpAreaBound.StartIndex;
-                    AreaBound[i + 1].EndIndex   = tmpAreaBound.EndIndex;
-                    break;
-                }
+        for (edge = 1; edge < count; edge++) {
+            WORD value = crossings[edge];
+            WORD pos = edge;
+            while (pos && crossings[pos - 1] > value) {
+                crossings[pos] = crossings[pos - 1];
+                pos--;
             }
-        } else { /* first one to insert into list */
-            AreaBound[0].StartIndex = tmpAreaBound.StartIndex;
-            AreaBound[0].EndIndex   = tmpAreaBound.EndIndex;
+            crossings[pos] = value;
         }
-        c += 2;
-        i++;
+
+        for (edge = 0; edge + 1 < count; edge += 2)
+            LineInTmpRas(rp, bounds, BytesPerRow,
+                         crossings[edge], crossings[edge + 1], y, GfxBase);
     }
 
-    LastIndex = i;
-    i = 0;
-
-    /*
-      {
-        int i2 = 0;
-        while (i2 <= LastIndex)
-        {
-          kprintf("%d.: index %d (%d,%d)-(%d,%d)\n",i2,AreaBound[i2].StartIndex,
-                                   StartVctTbl[AreaBound[i2].StartIndex],
-                                   StartVctTbl[AreaBound[i2].StartIndex+1],
-                                   StartVctTbl[AreaBound[i2].EndIndex],
-                                   StartVctTbl[AreaBound[i2].EndIndex+1]);
-          i2++;
-        }
-      }
-    */
-
-    while(i <= LastIndex) {
-        int StartIndex = AreaBound[i].StartIndex;
-        int EndIndex   = AreaBound[i].EndIndex;
-
-        if((StartVctTbl[EndIndex] - StartVctTbl[StartIndex]) > 0) {
-            AreaBound[i].s1 = 1;
-        } else {
-            AreaBound[i].s1 = -1;
-        }
-
-        AreaBound[i].DeltaX = abs(StartVctTbl[EndIndex] -
-                                  StartVctTbl[StartIndex]);
-
-        AreaBound[i].DeltaY = abs(StartVctTbl[EndIndex + 1] -
-                                  StartVctTbl[StartIndex + 1]);
-
-        if(AreaBound[i].DeltaX > AreaBound[i].DeltaY) {
-            AreaBound[i].horiz = 1;
-        }
-
-
-        if(AreaBound[i].DeltaX < AreaBound[i].DeltaY) {
-            WORD d = AreaBound[i].DeltaX;
-            AreaBound[i].DeltaX = AreaBound[i].DeltaY;
-            AreaBound[i].DeltaY = d;
-            AreaBound[i].t = 0;
-        } else {
-            AreaBound[i].t = 1;
-        }
-
-        AreaBound[i].Count = (AreaBound[i].DeltaY * 2) - AreaBound[i].DeltaX;
-        AreaBound[i].incrE  =  AreaBound[i].DeltaY * 2;
-        AreaBound[i].incrNE = (AreaBound[i].DeltaY - AreaBound[i].DeltaX) * 2;
-
-        AreaBound[i].LeftX = AreaBound[i].RightX = StartVctTbl[StartIndex];
-        AreaBound[i].Valid = TRUE;
-        i++;
-    }
-
-    /* indexlist now contains i+1 indices into the vector table.
-       Either the coordinate at the index as declared in the indexlist
-       contains the lower y value or the following coordinate */
-
-    scan = bounds->MinY;
-
-    LastIndex = i;
-
-    StartEdge = 0;
-    EndEdge = Include(1, LastIndex, AreaBound, scan, StartVctTbl);
-    StartEdge = UpdateXValues(StartEdge, EndEdge, scan, AreaBound, StartVctTbl);
-
-    while(scan < bounds->MaxY) {
-        XSort(StartEdge, EndEdge, AreaBound);
-
-        if(scan > bounds->MinY)
-            FillScan(StartEdge,
-                     EndEdge,
-                     AreaBound,
-                     scan,
-                     rp,
-                     bounds,
-                     BytesPerRow,
-                     GfxBase);
-
-        /*
-            kprintf("scanline: %d   StartEdge: %d, EndEdge: %d\n",scan,StartEdge,EndEdge);
-
-            {
-              int x = StartEdge;
-              while (x <= EndEdge)
-              {
-                if (AreaBound[x].Valid)
-                {
-                  kprintf("(%d,%d)-(%d,%d) currently at: Left: %d Right: %d\n",
-                              StartVctTbl[AreaBound[x].StartIndex],
-                              StartVctTbl[AreaBound[x].StartIndex+1],
-                              StartVctTbl[AreaBound[x].EndIndex],
-                              StartVctTbl[AreaBound[x].EndIndex+1],
-                              AreaBound[x].LeftX,
-                              AreaBound[x].RightX);
-                }
-                else
-                  kprintf("invalid\n");
-                x++;
-              }
-            }
-        */
-        scan++;
-        EndEdge = Include(EndEdge, LastIndex, AreaBound, scan, StartVctTbl);
-        StartEdge = UpdateXValues(StartEdge, EndEdge, scan, AreaBound, StartVctTbl);
-        /*
-            kprintf("StartEdge: %d, EndEdge: %d\n",StartEdge,EndEdge);
-        */
-    }
-
-    FreeMem(AreaBound, sizeof(struct BoundLine) * LastEdge);
-
+    FreeMem(crossings, sizeof(*crossings) * edges);
+    areaoutlinepolygonmask(rp, bounds, first_idx, last_idx, BytesPerRow);
     return TRUE;
 }
 
+/* Add the polygon boundary to the mask built by areafillpolygon().  Keeping
+ * both the interior and its edge in TmpRas lets AreaEnd apply a normal filled
+ * polygon with one BltPattern instead of rendering every edge separately. */
+void areaoutlinepolygonmask(struct RastPort *rp, struct Rectangle *bounds,
+                            UWORD first_idx, UWORD last_idx,
+                            ULONG BytesPerRow)
+{
+    UWORD *v = rp->AreaInfo->VctrTbl;
+    UWORD idx;
+
+    for (idx = first_idx; idx < last_idx; idx++) {
+        WORD x = v[idx * 2];
+        WORD y = v[idx * 2 + 1];
+        WORD x2 = v[(idx + 1) * 2];
+        WORD y2 = v[(idx + 1) * 2 + 1];
+        WORD dx = x2 >= x ? x2 - x : x - x2;
+        WORD dy = y2 >= y ? y2 - y : y - y2;
+        WORD sx = x < x2 ? 1 : -1;
+        WORD sy = y < y2 ? 1 : -1;
+        WORD error = dx - dy;
+
+        for (;;) {
+            ULONG rx = (UWORD)(x - bounds->MinX);
+            ULONG ry = (UWORD)(y - bounds->MinY);
+            UBYTE *byte = (UBYTE *)rp->TmpRas->RasPtr +
+                          ry * BytesPerRow + (rx >> 3);
+            *byte |= 0x80 >> (rx & 7);
+
+            if (x == x2 && y == y2)
+                break;
+            {
+                WORD twice = error << 1;
+                if (twice > -dy) {
+                    error -= dy;
+                    x += sx;
+                }
+                if (twice < dx) {
+                    error += dx;
+                    y += sy;
+                }
+            }
+        }
+    }
+}
 
 void areafillellipse(struct RastPort   *rp,
                      struct Rectangle *bounds,
@@ -543,28 +250,22 @@ void areafillellipse(struct RastPort   *rp,
     memset(rp->TmpRas->RasPtr,
            0x00,
            BytesPerRow * (bounds->MaxY - bounds->MinY + 1));
-    /*
-    kprintf("filled bytes: %d\n",BytesPerRow * (bounds->MaxY - bounds->MinY + 1));
-
-    kprintf("Filling ellipse with center at (%d,%d) and radius in x: %d and in y: %d\n",
-                                CurVctr[0],CurVctr[1],CurVctr[2],CurVctr[3]);
-    */
     while(d2 < 0 && y < CurVctr[3]) {
         /* draw 2 lines using symmetry */
-        if(x > 1) {
+        if(x >= 0) {
             LineInTmpRas(rp,
                          bounds,
                          BytesPerRow,
-                         CurVctr[0] - x + 1,
-                         CurVctr[0] + x - 1,
+                         CurVctr[0] - x,
+                         CurVctr[0] + x,
                          CurVctr[1] - y,
                          GfxBase);
 
             LineInTmpRas(rp,
                          bounds,
                          BytesPerRow,
-                         CurVctr[0] - x + 1,
-                         CurVctr[0] + x - 1,
+                         CurVctr[0] - x,
+                         CurVctr[0] + x,
                          CurVctr[1] + y,
                          GfxBase);
         }
@@ -588,20 +289,20 @@ void areafillellipse(struct RastPort   *rp,
         x--;         /* always move left here */
         t8 = t8 - t6;
         if(d2 < 0) { /* move up and left */
-            if(x > 1) {
+            if(x >= 0) {
                 LineInTmpRas(rp,
                              bounds,
                              BytesPerRow,
-                             CurVctr[0] - x + 1,
-                             CurVctr[0] + x - 1,
+                             CurVctr[0] - x,
+                             CurVctr[0] + x,
                              CurVctr[1] - y,
                              GfxBase);
 
                 LineInTmpRas(rp,
                              bounds,
                              BytesPerRow,
-                             CurVctr[0] - x + 1,
-                             CurVctr[0] + x - 1,
+                             CurVctr[0] - x,
+                             CurVctr[0] + x,
                              CurVctr[1] + y,
                              GfxBase);
             } else
@@ -635,14 +336,10 @@ void LineInTmpRas(struct RastPort   *rp,
     UWORD *RasPtr = (WORD *)rp->TmpRas->RasPtr;
     ULONG  shift;
 
-//kprintf("(%d/%d) to (%d/%d)\n",xleft,y,xright,y);
-
     /* adjust the coordinates */
     xleft  -= bounds->MinX;
     xright -= bounds->MinX;
     y      -= bounds->MinY;
-
-    //kprintf("line from %d to %d y = %d\n",xleft,xright,y);
 
     if(xleft > xright) return;
     /*
@@ -673,7 +370,6 @@ void LineInTmpRas(struct RastPort   *rp,
     PixelMask2 = PixelMask2 << 8 | PixelMask2 >> 8;
 #endif
     RasPtr[index] |= PixelMask2;
-//    kprintf("%x (left)\n",PixelMask2);
 
     index++;
 
@@ -705,7 +401,6 @@ fillright:
 #endif
 
         RasPtr[index] |= PixelMask2;
-//        kprintf("%x (right)\n",PixelMask2);
     }
 
 }
@@ -733,4 +428,3 @@ void areaclosepolygon(struct AreaInfo *areainfo)
         }
     }
 }
-

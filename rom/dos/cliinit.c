@@ -11,6 +11,8 @@
 #include <libraries/expansion.h>
 #include <libraries/expansionbase.h>
 #include <resources/filesysres.h>
+#include <devices/timer.h>
+#include <proto/timer.h>
 
 #include <ctype.h>
 #include <string.h>
@@ -46,6 +48,66 @@ static void PRINT_DOSTYPE(ULONG dt)
 #endif
 
 static LONG internalBootCliHandler(void);
+
+#define SECONDS_PER_DAY    (24UL * 60 * 60)
+#define SECONDS_PER_MINUTE 60UL
+#define MINUTES_PER_DAY    (24UL * 60)
+#define TICKS_PER_MINUTE   (60UL * TICKS_PER_SECOND)
+#define MAX_TIMER_DAYS     (0xffffffffUL / SECONDS_PER_DAY)
+/*
+ * Machines without a battery-backed clock start timer.device at the epoch.
+ * AmigaOS derives a useful initial time from the boot disk in that case.  Do
+ * this only for the volume selected as SYS:, before any other media is
+ * mounted.  A newer hardware clock is never moved backwards.
+ */
+static void internalSetTimeFromBootVolume(BPTR lock, struct DosLibrary *DOSBase)
+{
+    struct FileLock *filelock = (struct FileLock *)BADDR(lock);
+    struct DeviceList *volume;
+    struct DateStamp *date;
+    struct timeval now;
+    ULONG seconds;
+
+    if ((filelock == NULL) || (filelock->fl_Volume == BNULL))
+        return;
+
+    volume = (struct DeviceList *)BADDR(filelock->fl_Volume);
+    date = &volume->dl_VolumeDate;
+    if ((date->ds_Days < 0) || ((ULONG)date->ds_Days > MAX_TIMER_DAYS)
+        || (date->ds_Minute < 0)
+        || ((ULONG)date->ds_Minute >= MINUTES_PER_DAY)
+        || (date->ds_Tick < 0)
+        || ((ULONG)date->ds_Tick >= TICKS_PER_MINUTE))
+        return;
+
+    seconds = (ULONG)date->ds_Days * SECONDS_PER_DAY
+            + (ULONG)date->ds_Minute * SECONDS_PER_MINUTE
+            + (ULONG)date->ds_Tick / TICKS_PER_SECOND;
+    GetSysTime(&now);
+
+    if (seconds > now.tv_secs)
+    {
+        struct timerequest timerio;
+        struct MsgPort timermp;
+
+        SetMem(&timermp, 0, sizeof(timermp));
+        timermp.mp_Node.ln_Type = NT_MSGPORT;
+        timermp.mp_Flags = PA_SIGNAL;
+        timermp.mp_SigBit = SIGB_SINGLE;
+        timermp.mp_SigTask = FindTask(NULL);
+        NEWLIST(&timermp.mp_MsgList);
+
+        CopyMem(DOSBase->dl_TimeReq, &timerio, sizeof(timerio));
+        timerio.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+        timerio.tr_node.io_Message.mn_ReplyPort = &timermp;
+        timerio.tr_node.io_Command = TR_SETSYSTIME;
+        timerio.tr_time.tv_secs = seconds;
+        timerio.tr_time.tv_micro =
+            ((ULONG)date->ds_Tick % TICKS_PER_SECOND)
+            * (1000000UL / TICKS_PER_SECOND);
+        DoIO(&timerio.tr_node);
+    }
+}
 
 /*****************************************************************************
 
@@ -550,6 +612,8 @@ static LONG internalBootCliHandler(void)
     /* We're now at the point of no return. */
     DOSBase->dl_Root->rn_BootProc = ((struct FileLock*)BADDR(lock))->fl_Task;
     SetFileSysTask(DOSBase->dl_Root->rn_BootProc);
+
+    internalSetTimeFromBootVolume(lock, DOSBase);
 
     AssignLock("SYS", lock);
     lock = Lock("SYS:", SHARED_LOCK);
