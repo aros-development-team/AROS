@@ -85,12 +85,18 @@ int vblank_Init(struct TimerBase *LIBBASE);
 
 static int Timer_Init(struct TimerBase *TimerBase)
 {
+    unsigned int timerIRQ;
+
     D(bug("[Timer] Timer_Init: kernel.resource @ 0x%p\n", KernelBase));
 
     TimerBase->tb_Platform.tbp_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
     /* Install timer IRQ handler */
-    TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(IRQ_TIMER0 + TICK_TIMER, Timer1Tick, TimerBase, SysBase);
+    timerIRQ = IRQ_TIMER0 + TICK_TIMER;
+    if (TimerBase->tb_Platform.tbp_periiobase == BCM2711_PERIIOBASE)
+        timerIRQ += BCM2711_GPUIRQ_OFFSET;
+
+    TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(timerIRQ, Timer1Tick, TimerBase, SysBase);
     if (!TimerBase->tb_TimerIRQHandle)
         return FALSE;
 
