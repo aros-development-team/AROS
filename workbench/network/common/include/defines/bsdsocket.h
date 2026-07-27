@@ -455,7 +455,7 @@
 #define __gethostname_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(int, gethostname, \
                   AROS_LCA(char *,(__arg1),A0), \
-                  AROS_LCA(int,(__arg2),D0), \
+                  AROS_LCA(size_t,(__arg2),D0), \
         struct Library *, (__SocketBase), 47, BSDSocket)
 
 #define gethostname(arg1, arg2) \

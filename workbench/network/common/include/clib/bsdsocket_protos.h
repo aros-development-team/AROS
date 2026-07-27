@@ -254,7 +254,7 @@ AROS_LP3(int, recvmsg,
 );
 AROS_LP2(int, gethostname,
          AROS_LPA(char *, name, A0),
-         AROS_LPA(int, namelen, D0),
+         AROS_LPA(size_t, namelen, D0),
          LIBBASETYPEPTR, SocketBase, 47, BSDSocket
 );
 AROS_LP0(long, gethostid,
