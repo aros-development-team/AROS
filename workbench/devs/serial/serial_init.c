@@ -491,6 +491,7 @@ AROS_LH1(void, beginio,
           else
             SU->su_WriteLength = ioreq->IOSer.io_Length-writtenbytes;
         }
+        ioreq->IOSer.io_Actual = writtenbytes;
         /*
         ** A consistency check between the STATUS_WRITES_PENDING flag
         ** and the pointer SU->su_ActiveWrite which both have to be
