@@ -115,11 +115,16 @@ static void bcm2711_irq_disable(int irq)
     GICD(GICD_ICENABLER + 4 * (irq / 32)) = 1u << (irq % 32);
 }
 
+/*
+ * A source that is never acknowledged is re-presented as a fresh exception
+ * rather than looping inside one dispatch, so the run length has to be
+ * tracked across calls to be seen at all.
+ */
+static uint32_t irq_last = GIC_SPURIOUS;
+static unsigned int irq_repeats;
+
 static void bcm2711_irq_process(void)
 {
-    uint32_t last = GIC_SPURIOUS;
-    unsigned int repeats = 0;
-
     for (;;)
     {
         uint32_t iar = GICC(GICC_IAR);
@@ -134,22 +139,24 @@ static void bcm2711_irq_process(void)
 
         /*
          * A level-triggered source that nobody acknowledges would be
-         * re-presented forever and wedge the machine here. Mask it after
-         * it proves it is not being cleared.
+         * re-presented forever and wedge the machine. Mask it once it has
+         * proved it is not being cleared. Any other interrupt arriving in
+         * between, the timer included, clears the count.
          */
-        if (intid == last)
+        if (intid == irq_last)
         {
-            if (++repeats > 100)
+            if (++irq_repeats > 10000)
             {
                 bcm2711_irq_disable(intid);
                 bug("[Kernel] IRQ %u not cleared by its handler, masked\n", intid);
+                irq_repeats = 0;
                 break;
             }
         }
         else
         {
-            last = intid;
-            repeats = 0;
+            irq_last = intid;
+            irq_repeats = 0;
         }
     }
 }
