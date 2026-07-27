@@ -84,22 +84,22 @@ struct termios {
 #define FF1     0040000
 
 /* Baud Rate Selection */
-#define B0	(speed_t)0000000 /* hang up */
-#define B50	(speed_t)0000001
-#define B75	(speed_t)0000002
-#define B110	(speed_t)0000003
-#define B134	(speed_t)0000004
-#define B150	(speed_t)0000005
-#define B200	(speed_t)0000006
-#define B300	(speed_t)0000007
-#define B600	(speed_t)0000010
-#define B1200	(speed_t)0000011
-#define B1800	(speed_t)0000012
-#define B2400	(speed_t)0000013
-#define B4800	(speed_t)0000014
-#define B9600	(speed_t)0000015
-#define B19200	(speed_t)0000016
-#define B38400	(speed_t)0000017
+#define B0	0000000 /* hang up */
+#define B50	0000001
+#define B75	0000002
+#define B110	0000003
+#define B134	0000004
+#define B150	0000005
+#define B200	0000006
+#define B300	0000007
+#define B600	0000010
+#define B1200	0000011
+#define B1800	0000012
+#define B2400	0000013
+#define B4800	0000014
+#define B9600	0000015
+#define B19200	0000016
+#define B38400	0000017
 
 /* Control Modes */
 #define CSIZE   0000003

@@ -1,15 +1,15 @@
-#ifndef _STDC_ASSERT_H_
-#define _STDC_ASSERT_H_
-
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file assert.h
 */
 
-#include <aros/system.h>
-
+/*
+    Per C99 7.2, assert is redefined on EVERY inclusion of <assert.h>,
+    according to the current state of NDEBUG - so this part is
+    deliberately outside the include guard.
+*/
 #ifdef assert
 #undef assert
 #endif
@@ -20,6 +20,11 @@
 #else
 #define assert(expr)	(((expr)) ? (void)0 : __assert(#expr,__FILE__,__LINE__))
 #endif
+
+#ifndef _STDC_ASSERT_H_
+#define _STDC_ASSERT_H_
+
+#include <aros/system.h>
 
 #if __STDC_VERSION__ >= 201112L
 #ifndef static_assert
