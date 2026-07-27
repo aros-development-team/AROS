@@ -56,6 +56,12 @@ extern int bcm2708_ser_getc(void);
 #define GICD_ISENABLER  0x100
 #define GICD_ICENABLER  0x180
 #define GICD_IPRIORITYR 0x400
+#define GICD_ITARGETSR  0x800
+#define GICD_ICFGR      0xC00
+
+/* INTIDs below this are private to a core (SGIs and PPIs); at and above
+   it they are shared and need explicit routing and trigger configuration. */
+#define GIC_FIRST_SPI   32
 
 #define GICC_CTLR   0x000
 #define GICC_PMR    0x004
@@ -85,6 +91,22 @@ static void bcm2711_irq_init(void)
 static void bcm2711_irq_enable(int irq)
 {
     *((volatile uint8_t *)(GICD_BASE + GICD_IPRIORITYR + irq)) = 0xA0;
+
+    if (irq >= GIC_FIRST_SPI)
+    {
+        /*
+         * A shared interrupt reaches no core until it is targeted at one,
+         * and peripheral lines on this SoC are level triggered.
+         */
+        uint32_t cfg;
+
+        *((volatile uint8_t *)(GICD_BASE + GICD_ITARGETSR + irq)) = 0x01;
+
+        cfg = GICD(GICD_ICFGR + 4 * (irq / 16));
+        cfg &= ~(2u << ((irq % 16) * 2));
+        GICD(GICD_ICFGR + 4 * (irq / 16)) = cfg;
+    }
+
     GICD(GICD_ISENABLER + 4 * (irq / 32)) = 1u << (irq % 32);
 }
 
@@ -95,6 +117,9 @@ static void bcm2711_irq_disable(int irq)
 
 static void bcm2711_irq_process(void)
 {
+    uint32_t last = GIC_SPURIOUS;
+    unsigned int repeats = 0;
+
     for (;;)
     {
         uint32_t iar = GICC(GICC_IAR);
@@ -106,6 +131,26 @@ static void bcm2711_irq_process(void)
         krnRunIRQHandlers(KernelBase, intid);
 
         GICC(GICC_EOIR) = iar;
+
+        /*
+         * A level-triggered source that nobody acknowledges would be
+         * re-presented forever and wedge the machine here. Mask it after
+         * it proves it is not being cleared.
+         */
+        if (intid == last)
+        {
+            if (++repeats > 100)
+            {
+                bcm2711_irq_disable(intid);
+                bug("[Kernel] IRQ %u not cleared by its handler, masked\n", intid);
+                break;
+            }
+        }
+        else
+        {
+            last = intid;
+            repeats = 0;
+        }
     }
 }
 
