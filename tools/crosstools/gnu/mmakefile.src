@@ -257,7 +257,7 @@ tools-crosstools-mpc :
 	fi
 
 %fetch_and_build mmake=crosstools-mpc package=mpc version=$(MPC_VERSION) compiler=host \
-	package_repo="$(MPC_REPOSITORY)" suffixes="tar.gz" \
+	package_repo="$(MPC_REPOSITORY)" suffixes="tar.xz tar.gz" \
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
