@@ -8,7 +8,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM workbench-libs-freetype-module : freetype2-fetch
 
 FT2NAME         := freetype
-FT2VERS         := 2.14.1
+FT2VERS         := 2.14.3
 ARCHBASE        := $(FT2NAME)-$(FT2VERS)
 
 FT2SRCDIR       := $(PORTSDIR)/$(FT2NAME)2/$(ARCHBASE)
@@ -130,18 +130,16 @@ workbench-libs-freetype-pkgconfig : $(AROS_LIB)/pkgconfig/freetype2.pc
 $(AROS_LIB)/pkgconfig/freetype2.pc : $(FT2SRCDIR)/builds/unix/freetype2.in
 	@$(ECHO) "Generating /Developer/lib/pkgconfig/freetype2.pc ..."
 	%mkdir_q dir=$(AROS_LIB)/pkgconfig
-	@$(SED) -e 's|%FT2_EXTRA_LIBS%||' \
-	       -e 's|%LIBBZ2%||' \
-	       -e 's|%LIBZ%|-L $(AROS_LIB) -lz|' \
-	       -e 's|%exec_prefix%|$${prefix}|' \
+	@$(SED) -e 's|%exec_prefix%|$${prefix}|' \
 	       -e 's|%ft_version%|$(FT2VERS)|' \
 	       -e 's|%includedir%|$${prefix}/include|' \
 	       -e "s|includedir}/freetype2|includedir}/freetype|g" \
 	       -e 's|%libdir%|$${prefix}/lib|' \
-	       -e "s|-lfreetype|-lfreetype2|g" \
 	       -e 's|%prefix%|/Developer|' \
-	       -e "s|%REQUIRES_PRIVATE%|libpng zlib|g" \
-	       -e 's|%LIBS_PRIVATE%||' \
+	       -e 's|%PKGCONFIG_REQUIRES%||' \
+	       -e "s|%PKGCONFIG_REQUIRES_PRIVATE%|libpng zlib|g" \
+	       -e 's|%PKGCONFIG_LIBS%|-L$${libdir} -lfreetype2|' \
+	       -e "s|%PKGCONFIG_LIBS_PRIVATE%|-lpng -lz|g" \
 	       $< >$@
 
 FT2_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/*.h))
