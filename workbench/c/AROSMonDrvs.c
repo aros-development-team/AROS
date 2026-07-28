@@ -189,7 +189,7 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
     APTR pool;
     struct Library *IconBase;
     BPTR dir, olddir;
-    BOOL res = TRUE;
+    UBYTE res = RETURN_OK;
 
     D(bug("[LoadMonDrvs] Start: NOCOMPOSITION=%d ONLYCOMPOSITION=%d\n",
           SHArg(NOCOMPOSITION), SHArg(ONLYCOMPOSITION)));
@@ -226,7 +226,8 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
                 if (IconBase)
                 {
                     D(bug("[LoadMonDrvs] findMonitors ...\n"));
-                    findMonitors(&MonitorsList, DOSBase, IconBase, SysBase, pool);
+                    if (!findMonitors(&MonitorsList, DOSBase, IconBase, SysBase, pool))
+                        res = RETURN_ERROR;
                     D(bug("[LoadMonDrvs] findMonitors done, list %s\n",
                           IsListEmpty(&MonitorsList) ? "empty" : "non-empty"));
                     loadMonitors(&MonitorsList, DOSBase, SysBase);
@@ -236,12 +237,14 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
                 DeletePool(pool);
             }
             else
-                res = FALSE;
+                res = RETURN_FAIL;
         }
 
         CurrentDir(olddir);
         UnLock(dir);
     }
+    else
+        res = RETURN_WARN;
 
     D(bug("[LoadMonDrvs] Exit, res %d\n", res));
 
