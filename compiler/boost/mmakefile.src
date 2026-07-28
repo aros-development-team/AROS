@@ -6,8 +6,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM- compiler-boost-geninc-copy : compiler-boost-fetch
 #MM- compiler-boost-includes-copy : compiler-boost-fetch
 
-BOOSTVERSION=1.88.0
-BOOSTVRS=1_88_0
+BOOSTVERSION=1.89.0
+# archive name uses the version with dots replaced by underscores
+BOOSTVRS:=$(subst .,_,$(BOOSTVERSION))
 REPOSITORIES = https://archives.boost.io/release/$(BOOSTVERSION)/source
 ARCHBASE     := boost_$(BOOSTVRS)
 ARCHSUFFIX := "tar.gz"

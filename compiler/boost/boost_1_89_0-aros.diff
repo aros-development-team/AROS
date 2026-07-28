@@ -1,6 +1,6 @@
-diff -ruN boost_1_88_0/boost/assert/source_location.hpp boost_1_88_0.aros/boost/assert/source_location.hpp
---- boost_1_88_0/boost/assert/source_location.hpp	2025-04-03 11:37:23.000000000 +0000
-+++ boost_1_88_0.aros/boost/assert/source_location.hpp	2025-06-05 20:54:56.347635388 +0000
+diff -ruN boost_1_89_0/boost/assert/source_location.hpp boost_1_89_0.aros/boost/assert/source_location.hpp
+--- boost_1_89_0/boost/assert/source_location.hpp	2025-08-06 19:49:08.000000000 +0100
++++ boost_1_89_0.aros/boost/assert/source_location.hpp	2026-07-28 12:54:50.146594725 +0100
 @@ -76,7 +76,7 @@
  # pragma warning( disable: 4996 )
  #endif
