@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
  *

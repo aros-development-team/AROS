@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2019, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for native Amiga chipset.
     
@@ -262,11 +262,15 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
         };
         data->leftedge = newxoffset;
         data->topedge = newyoffset;
+        /* Non-displayable bitmaps carry no compositor - nothing to notify */
+        if (data->compositor)
+        {
 #if USE_FAST_BMPOSCHANGE
-        data->bmposchange(data->bmposchange_Class, data->compositor, (OOP_Msg)&bpcmsg.mID);
+            data->bmposchange(data->bmposchange_Class, data->compositor, (OOP_Msg)&bpcmsg.mID);
 #else
-        OOP_DoMethod(data->compositor, (OOP_Msg)&bpcmsg.mID);
+            OOP_DoMethod(data->compositor, (OOP_Msg)&bpcmsg.mID);
 #endif
+        }
     }
 
     DB2(bug("[AmigaVideo:Bitmap] %s: Exit\n", __func__));

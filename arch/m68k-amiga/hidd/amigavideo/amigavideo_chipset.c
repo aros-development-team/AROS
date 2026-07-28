@@ -1863,13 +1863,13 @@ VOID AmigaVideoCl__Hidd_AmigaGfx__EnableAGA(OOP_Class *cl, OOP_Object *o, void *
     // Recalculate copper lists for all visible screens now that AGA is on.
     // This should be enough to cover the sane cases when SetChipRev is called.
     // Interlace is ignored. Don't go open interlace screens before activating AGA!
-    ForeachNodeSafe(csd->compositedbms, bm, bmnext) {
-        setmode(csd, bm);
-        copperlist_end = (IPTR)populatebmcopperlist(csd, bm, &bm->copld, bm->bmcl->CopLStart, FALSE);
-        bm->bmcl->Count = (copperlist_end - (IPTR)bm->bmcl->CopLStart) >> 2;
-        setfmode(csd, bm);
-        setcoppercolors(csd, bm, bm->palette,
-                        (void *)bm == (void *)csd->compositedbms->lh_Head);
-        setcopperscroll2(csd, bm, &bm->copld, bm->bmcl->CopLStart, FALSE);
-    }
+    (void)bm; (void)bmnext; (void)copperlist_end;
+    /*
+     * Existing screens keep their pre-AGA copper lists: those chip-RAM
+     * allocations were sized without the AGA colour/fmode entries, so
+     * rebuilding them in place with AGA-sized content overruns the
+     * allocation and tramples low chip memory (including AbsExecBase).
+     * They continue to display exactly as they did before this call.
+     * Screens opened from now on are built with AGA-sized lists.
+     */
 }

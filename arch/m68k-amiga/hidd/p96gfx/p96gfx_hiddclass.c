@@ -91,23 +91,23 @@ HIDDT_ModeID *P96GFXDMEnum__Hidd_DMEnum__QueryModeIDs(OOP_Class *cl, OOP_Object 
         switch (tag->ti_Tag)
         {
             case tHidd_GfxMode_MinWidth:
-                minwidth = (ULONG)tag->ti_Tag;
+                minwidth = (ULONG)tag->ti_Data;
                 break;
 
             case tHidd_GfxMode_MaxWidth:
-                maxwidth = (ULONG)tag->ti_Tag;
+                maxwidth = (ULONG)tag->ti_Data;
                 break;
 
             case tHidd_GfxMode_MinHeight:
-                minheight = (ULONG)tag->ti_Tag;
+                minheight = (ULONG)tag->ti_Data;
                 break;
 
             case tHidd_GfxMode_MaxHeight:
-                maxheight = (ULONG)tag->ti_Tag;
+                maxheight = (ULONG)tag->ti_Data;
                 break;
-                
+
             case tHidd_GfxMode_PixFmts:
-                pf = (OOP_Object**)tag->ti_Tag;
+                pf = (OOP_Object**)tag->ti_Data;
                 break;
         }
     }
@@ -220,6 +220,9 @@ BOOL P96GFXDMEnum__Hidd_DMEnum__GetMode(OOP_Class *cl, OOP_Object *o, struct pHi
         }
     }
     DB2(bug("[P96Gfx] %s: FAIL\n", __func__);)
+    /* Base class contract: outputs must be NULL when the mode is not found */
+    *msg->syncPtr = NULL;
+    *msg->pixFmtPtr = NULL;
     return FALSE;
 }
 
@@ -326,7 +329,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     if (!cid || cid->initialized)
         return NULL;
 
-    /*     bug("[P96CRASH] 0 new-enter cid=%p\n", cid); /* P96CRASH-DEBUG */
+    D(bug("[P96CRASH] 0 new-enter cid=%p\n", cid));
 
     NEWLIST(&cid->rtglist);
     NEWLIST(&cid->bitmaplist);
@@ -405,7 +408,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     restags[i].ti_Tag = TAG_DONE;
     restags[i].ti_Data = 0;
 
-    /*     bug("[P96CRASH] Q reslist-done cnt=%d\n", (int)rescnt); /* P96CRASH-DEBUG */
+    D(bug("[P96CRASH] Q reslist-done cnt=%d\n", (int)rescnt));
 
     gotmodes = 0;
     k = 0;
@@ -524,9 +527,9 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     msg = &mymsg;
 
     /* Register gfxmodes */
-    /*     bug("[P96CRASH] R pre-super o=%p\n", o); /* P96CRASH-DEBUG */
+    D(bug("[P96CRASH] R pre-super o=%p\n", o));
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    /*     bug("[P96CRASH] B post-super o=%p\n", o); /* P96CRASH-DEBUG */
+    D(bug("[P96CRASH] B post-super o=%p\n", o));
     if (NULL != o)
     {
         struct TagItem displaytags[] = {
@@ -550,7 +553,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR*)&data->pfo);
         cid->spritepencnt = SPRITE_PEN_COUNT;
 
-        /*         bug("[P96CRASH] P5 pre-disp cm=%p\n", data->spriteColors); /* P96CRASH-DEBUG */
+        D(bug("[P96CRASH] P5 pre-disp cm=%p\n", data->spriteColors));
         csd->display = OOP_NewObject(csd->displayclass, NULL, displaytags);
         if (!csd->display)
         {
@@ -571,7 +574,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             }
         }
 
-        /*         bug("[P96CRASH] C disp=%p dmenum=%p o=%p\n", csd->display, csd->dmenum, o); /* P96CRASH-DEBUG */
+        D(bug("[P96CRASH] C disp=%p dmenum=%p o=%p\n", csd->display, csd->dmenum, o));
         if (!o)
             goto new_cleanup;
 
@@ -630,7 +633,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         if (midp)
             HIDD_DMEnum_ReleaseModeIDs(csd->dmenum, midp);
         cid->superforward = FALSE;
-        /*         bug("[P96CRASH] D modereg-done o=%p\n", o); /* P96CRASH-DEBUG */
+        D(bug("[P96CRASH] D modereg-done o=%p\n", o));
     }
 
 new_cleanup:
@@ -639,7 +642,7 @@ new_cleanup:
     FreeVec(pflist);
     FreeVec(modetags);
 
-    /*     bug("[P96CRASH] 2 new-done o=%p\n", o); /* P96CRASH-DEBUG */
+    D(bug("[P96CRASH] 2 new-done o=%p\n", o));
     ReturnPtr("[P96Gfx]:New", OOP_Object *, o);
 }
 
@@ -811,7 +814,7 @@ static void P96GFXDisplay__DoShow(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, 
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
-    /*     bug("[P96CRASH] 3 doshow-enter bm=%p\n", bm); /* P96CRASH-DEBUG */
+    D(bug("[P96CRASH] 3 doshow-enter bm=%p\n", bm));
 
     if (ib->FirstScreen)
         vpi = &ib->FirstScreen->ViewPort;
@@ -825,7 +828,7 @@ static void P96GFXDisplay__DoShow(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, 
         if (offonly)
             return;
 
-        /*         bug("[P96CRASH] 4 doshow-visible bm=%p\n", bm); /* P96CRASH-DEBUG */
+        D(bug("[P96CRASH] 4 doshow-visible bm=%p\n", bm));
         OOP_SetAttrs(bm, (struct TagItem *)tags);
 
         if (cid->acb)
@@ -1154,8 +1157,9 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
 
     p96sbx(csd, "CSe");
 
+    /* No hardware sprite: let the base Display class run its software cursor */
     if (!(gl(cid->boardinfo + PSSO_BoardInfo_Flags ) & BIF_HARDWARESPRITE))
-        return FALSE;
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
@@ -1268,7 +1272,7 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
     Permit();
 
     DB2(bug("[P96Gfx] %s: loading hw sprite ...\n", __func__));
-    /*     bug("[P96CRASH] 8 cursor-setimage w=%d h=%d\n", (int)width, (int)height); /* P96CRASH-DEBUG */
+    D(bug("[P96CRASH] 8 cursor-setimage w=%d h=%d\n", (int)width, (int)height));
     SetSpriteImage(cid);
 
     UNLOCK_HW
@@ -1288,6 +1292,8 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o, str
     D(bug("[P96Gfx] %s()\n", __func__));
 
     p96sbx(csd, "CPe");
+    if (!(gl(cid->boardinfo + PSSO_BoardInfo_Flags ) & BIF_HARDWARESPRITE))
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     LOCK_HW
     pw(cid->boardinfo + PSSO_BoardInfo_MouseX, msg->x + (BYTE)cid->boardinfo[PSSO_BoardInfo_MouseXOffset]);
     pw(cid->boardinfo + PSSO_BoardInfo_MouseY, msg->y + (BYTE)cid->boardinfo[PSSO_BoardInfo_MouseYOffset]);
@@ -1308,6 +1314,11 @@ VOID P96GFXDisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
     D(bug("[P96Gfx] %s()\n", __func__));
 
     p96sbx(csd, "CVe");
+    if (!(gl(cid->boardinfo + PSSO_BoardInfo_Flags ) & BIF_HARDWARESPRITE))
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
     LOCK_HW
     SetSprite(cid, msg->visible);
     UNLOCK_HW
@@ -1708,7 +1719,7 @@ BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
         mc->mc_Next = NULL;
         mc->mc_Bytes = cid->vmem->mh_Free;
     }
-    /*     bug("[P96CRASH] 9 init-vram-done retval=%d\n", retval); /* P96CRASH-DEBUG */
+    D(bug("[P96CRASH] 9 init-vram-done retval=%d\n", retval));
     if (!retval)
     {
         // We dont fail if atleast one card successfully built its resolution list.
@@ -1781,7 +1792,7 @@ BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
         }
     }
     DRTG(bug("[HiddP96Gfx] %s: P96GFX init done\n", __func__);)
-    /*     bug("[P96CRASH] 1 init-done retval=%d\n", retval); /* P96CRASH-DEBUG */
+    D(bug("[P96CRASH] 1 init-done retval=%d\n", retval));
     return retval;
 }
 

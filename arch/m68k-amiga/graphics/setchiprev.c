@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetChipRev()
 */
@@ -65,11 +65,30 @@ AROS_LH1(ULONG, SetChipRev,
         // The amigavideo HIDD should be found on this arch, but check anyway
         OOP_Class *nativeclass;
         if ((nativeclass = OOP_FindClass(CLID_Hidd_Gfx_AmigaVideo)) != NULL) {
-            OOP_Object *amigagfxhidd = (OOP_Object *)OOP_NewObject(nativeclass, NULL, NULL);
+            /*
+             * Use the driver object already registered with graphics.library.
+             * Instantiating a second driver object here tramples the chipset
+             * driver's shared state (display, compositor, mode list), and
+             * disposing it tears down state the live driver still uses -
+             * which scribbles low memory, including AbsExecBase.
+             */
+            struct monitor_displaydata *mdd;
+            OOP_Object *amigagfxhidd = NULL;
+
+            ObtainSemaphoreShared(&CDD(GfxBase)->displaydb_sem);
+            for (mdd = GFXPRIVATE_MONITORFIRST; mdd;
+                 mdd = (struct monitor_displaydata *)mdd->mdisplay.display_next) {
+                if (mdd->mdisplay.display_gfxhidd &&
+                    OOP_OCLASS(mdd->mdisplay.display_gfxhidd) == nativeclass) {
+                    amigagfxhidd = mdd->mdisplay.display_gfxhidd;
+                    break;
+                }
+            }
+            ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
+
             if (amigagfxhidd) {
                 OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
                 HIDD_AMIGAGFX_EnableAGA(amigagfxhidd);
-                OOP_DisposeObject(amigagfxhidd);
             }
         }
     }

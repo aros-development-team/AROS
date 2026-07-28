@@ -120,19 +120,19 @@ HIDDT_ModeID *AmigaVideoDMEnum__Hidd_DMEnum__QueryModeIDs(OOP_Class *cl, OOP_Obj
         switch (tag->ti_Tag)
         {
             case tHidd_GfxMode_MinWidth:
-                minwidth = (ULONG)tag->ti_Tag;
+                minwidth = (ULONG)tag->ti_Data;
                 break;
 
             case tHidd_GfxMode_MaxWidth:
-                maxwidth = (ULONG)tag->ti_Tag;
+                maxwidth = (ULONG)tag->ti_Data;
                 break;
 
             case tHidd_GfxMode_MinHeight:
-                minheight = (ULONG)tag->ti_Tag;
+                minheight = (ULONG)tag->ti_Data;
                 break;
 
             case tHidd_GfxMode_MaxHeight:
-                maxheight = (ULONG)tag->ti_Tag;
+                maxheight = (ULONG)tag->ti_Data;
                 break;
                 
             case tHidd_GfxMode_PixFmts:
@@ -331,6 +331,12 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     NewList(&csd->nativemodelist);
     tags = tagptr = AllocVec(allocsize, MEMF_PUBLIC | MEMF_REVERSE);
     buf = bufptr = AllocVec(allocsizebuf, MEMF_PUBLIC | MEMF_REVERSE);
+    if (!tags || !buf)
+    {
+        FreeVec(buf);
+        FreeVec(tags);
+        ReturnPtr("[AmigaVideo:Hidd] AGFX::New", OOP_Object *, NULL);
+    }
 
     /* build the sync tags for the standard modes */
     cnt = 0;
@@ -699,6 +705,16 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 #if USE_FAST_BMSTACKCHANGE
                 data->bmstackchange = OOP_GetMethod(data->compositor, csd->mid_BitMapStackChanged, &data->bmstackchange_Class);
 #endif
+            }
+            else
+            {
+                /* ShowViewPorts() calls the compositor unconditionally - a
+                   driver without one would jump through a NULL pointer. */
+                OOP_MethodID dispose_mid = msg->mID - moRoot_New + moRoot_Dispose;
+                FreeVec(buf);
+                FreeVec(tags);
+                OOP_CoerceMethod(cl, o, &dispose_mid);
+                ReturnPtr("[AmigaVideo:Hidd] AGFX::New", OOP_Object *, NULL);
             }
         }
     }

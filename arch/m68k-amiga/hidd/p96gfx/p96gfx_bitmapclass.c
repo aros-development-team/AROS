@@ -449,7 +449,7 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                     if (tag->ti_Data) {
                         if (cid->disp != data)
                         {
-                            OOP_Object *sync, *pf;
+                            OOP_Object *sync = NULL, *pf = NULL;
                             IPTR modeid = vHidd_ModeID_Invalid;
                             IPTR dwidth, dheight, depth, width, height;
                             struct ModeInfo *modeinfo;
@@ -457,7 +457,14 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                             width = data->width;
                             height = data->height;
                             OOP_GetAttr(o, aHidd_BitMap_ModeID , &modeid);
-                            HIDD_DMEnum_GetMode(csd->dmenum, modeid, &sync, &pf);
+                            if (!HIDD_DMEnum_GetMode(csd->dmenum, modeid, &sync, &pf))
+                            {
+                                D(bug("[P96Gfx:Bitmap] %s: no mode for id %08lx, cannot show\n", __func__, modeid));
+                                UNLOCK_HW
+                                UNLOCK_BITMAP(data)
+                                UNLOCK_MULTI_BITMAP
+                                break;
+                            }
                             OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
                             OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
                             OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
@@ -530,15 +537,15 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                             SetInterrupt(cid, FALSE);
                             SetColorArray(cid, 0, 256);
                             SetDisplay(cid, FALSE);
-                            /*                             bug("[P96CRASH] 5 pre-setgc mi=%p vdata=%p w=%d\n", modeinfo, data->VideoData, (int)width); /* P96CRASH-DEBUG */
+                            D(bug("[P96CRASH] 5 pre-setgc mi=%p vdata=%p w=%d\n", modeinfo, data->VideoData, (int)width));
                             SetGC(cid, modeinfo, 0);
                             SetClock(cid);
                             SetDAC(cid);
-                            /*                             bug("[P96CRASH] 6 pre-setpan vdata=%p\n", data->VideoData); /* P96CRASH-DEBUG */
+                            D(bug("[P96CRASH] 6 pre-setpan vdata=%p\n", data->VideoData));
                             SetPanning(cid, data->VideoData, width, 0, 0);
                             SetDisplay(cid, TRUE);
                             SetSwitch(cid, TRUE);
-                            /*                             bug("[P96CRASH] 6b show-ok\n"); /* P96CRASH-DEBUG */
+                            D(bug("[P96CRASH] 6b show-ok\n"));
                             SetInterrupt(cid, TRUE);
                             cid->disp = data;
                             cid->disp->locked++;
