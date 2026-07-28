@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-LIBPNGVERSION=1.6.48
+LIBPNGVERSION=1.6.58
 REPOSITORIES =  \
     cache:// \
     http://prdownloads.sourceforge.net/libpng \
