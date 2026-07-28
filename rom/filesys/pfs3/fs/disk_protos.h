@@ -19,6 +19,18 @@ ULONG RawRead(UBYTE * , ULONG , ULONG , globaldata * );
 
 ULONG RawWrite(UBYTE * , ULONG , ULONG , globaldata * );
 
+ULONG ReadBootBlocks(UBYTE *, ULONG, ULONG, globaldata *);
+
+ULONG WriteBootBlocks(UBYTE *, ULONG, ULONG, globaldata *);
+
+ULONG ReadRootBlocks(UBYTE *, ULONG, ULONG, globaldata *);
+
+ULONG WriteRootBlocks(UBYTE *, ULONG, ULONG, globaldata *);
+
+ULONG ReadReservedBlocks(UBYTE *, ULONG, ULONG, globaldata *);
+
+ULONG WriteReservedBlocks(UBYTE *, ULONG, ULONG, globaldata *);
+
 void UpdateAndMotorOff(globaldata * );
 
 void UpdateCache (globaldata *g);

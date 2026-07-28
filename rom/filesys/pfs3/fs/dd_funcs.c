@@ -1135,7 +1135,7 @@ static SIPTR dd_SerializeDisk(struct DosPacket *pkt, globaldata * g)
 		return DOSFALSE;
 	}
 
-	pkt->dp_Res2 = RawRead((UBYTE *)rbl, 1, ROOTBLOCK, g);
+	pkt->dp_Res2 = ReadRootBlocks((UBYTE *)rbl, 1, ROOTBLOCK, g);
 	if (pkt->dp_Res2)
 		goto inh_error;
 
@@ -1143,7 +1143,7 @@ static SIPTR dd_SerializeDisk(struct DosPacket *pkt, globaldata * g)
 	rbl->creationday = (UWORD)time.ds_Days;
 	rbl->creationminute = (UWORD)time.ds_Minute;
 	rbl->creationtick = (UWORD)time.ds_Tick + 3;
-	pkt->dp_Res2 = RawWrite((UBYTE *)rbl, 1, ROOTBLOCK, g);
+	pkt->dp_Res2 = WriteRootBlocks((UBYTE *)rbl, 1, ROOTBLOCK, g);
 	if (pkt->dp_Res2)
 		goto inh_error;
 

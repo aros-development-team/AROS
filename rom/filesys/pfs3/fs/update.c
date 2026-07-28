@@ -260,7 +260,7 @@ BOOL UpdateDisk (globaldata *g)
 		/* update root (MUST be done last) */
 		if (updateok)
 		{
-			RawWrite((UBYTE *)volume->rootblk, volume->rootblk->rblkcluster, ROOTBLOCK, g);
+			WriteRootBlocks((UBYTE *)volume->rootblk, volume->rootblk->rblkcluster, ROOTBLOCK, g);
 			volume->rootblk->datestamp++;
 			volume->rootblockchangeflag = FALSE;
 
@@ -460,7 +460,7 @@ static BOOL UpdateList (struct cachedblock *blk, globaldata *g)
 			blk2 = (struct cbitmapblock *)blk;
 			blk2->blk.datestamp = blk2->volume->rootblk->datestamp;
 			blk->oldblocknr = 0;
-			error = RawWrite ((UBYTE *)&blk->data, RESCLUSTER, blk->blocknr, g);
+			error = WriteReservedBlocks ((UBYTE *)&blk->data, RESCLUSTER, blk->blocknr, g);
 			if (error)
 				goto update_error;
 
@@ -488,7 +488,7 @@ static BOOL UpdateDirtyBlock (struct cachedblock *blk, globaldata *g)
 	{
 		FreeReservedBlock (blk->oldblocknr, g);
 		blk->oldblocknr = 0;
-		error = RawWrite ((UBYTE *)&blk->data, RESCLUSTER, blk->blocknr, g);
+		error = WriteReservedBlocks ((UBYTE *)&blk->data, RESCLUSTER, blk->blocknr, g);
 		if (error)
 		{
 			ErrorMsg (AFS_ERROR_UPDATE_FAIL, NULL, g);

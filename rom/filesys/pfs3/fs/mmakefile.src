@@ -5,6 +5,7 @@ FILES := \
 	directory \
 	dostohandlerinterface \
 	disk \
+	endian \
 	init \
 	diskchange \
 	volume \

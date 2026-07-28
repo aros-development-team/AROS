@@ -306,7 +306,7 @@ static ULONG MakeBootBlock (globaldata *g)
 
 	memset (bbl, 0, 2*BLOCKSIZE);
 	bbl->disktype = ID_PFS_DISK;
-	error = RawWrite ((UBYTE *)bbl, 2, BOOTBLOCK1, g);
+	error = WriteBootBlocks ((UBYTE *)bbl, 2, BOOTBLOCK1, g);
 	FreeBufmem (bbl, g);
 	return error;
 }

@@ -819,7 +819,7 @@ struct cbitmapblock *GetBitmapBlock(ULONG seqnr, globaldata *g)
 	DB(Trace(10,"GetBitmapBlock", "seqnr = %ld blocknr = %lx\n", seqnr, blocknr));
 
 	/* read it */
-	if (RawRead((UBYTE*)&bmb->blk, RESCLUSTER, blocknr, g) != 0)
+	if (ReadReservedBlocks((UBYTE*)&bmb->blk, RESCLUSTER, blocknr, g) != 0)
 	{
 		FreeLRU((struct cachedblock *)bmb);
 		return NULL;
@@ -870,7 +870,7 @@ cindexblock_t *GetBitmapIndex (UWORD nr, globaldata *g)
 
 	DB(Trace(10,"GetBitmapIndex", "seqnr = %ld blocknr = %lx\n", nr, blocknr));
 
-	if (RawRead((UBYTE*)&indexblk->blk, RESCLUSTER, blocknr, g) != 0) {
+	if (ReadReservedBlocks((UBYTE*)&indexblk->blk, RESCLUSTER, blocknr, g) != 0) {
 		FreeLRU((struct cachedblock *)indexblk);
 		return NULL;
 	}

@@ -517,7 +517,7 @@ static void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 		ddblk = (struct cdeldirblock *)AllocLRU(g);
 		if (ddblk)
 		{
-			if (RawRead ((UBYTE*)&ddblk->blk, RESCLUSTER, rootblock->deldir, g) == 0)
+			if (ReadReservedBlocks ((UBYTE*)&ddblk->blk, RESCLUSTER, rootblock->deldir, g) == 0)
 			{
 				if (ddblk->blk.id == DELDIRID)
 				{
@@ -630,7 +630,7 @@ struct volumedata *MakeVolumeData (struct rootblock *rootblock, globaldata *g)
 
 		rext = AllocBufmemR (sizeof(struct cachedblock) + rootblock->reserved_blksize, g);
 		memset (rext, 0, sizeof(struct cachedblock) + rootblock->reserved_blksize);
-		if (RawRead ((UBYTE *)&rext->blk, volume->rescluster, rootblock->extension, g) != 0)
+		if (ReadReservedBlocks ((UBYTE *)&rext->blk, volume->rescluster, rootblock->extension, g) != 0)
 		{
 			ErrorMsg (AFS_ERROR_READ_EXTENSION, NULL, g);
 			FreeBufmem (rext, g);
@@ -1034,7 +1034,7 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 		goto nrd_error;
 #endif
 
-	error = RawRead((UBYTE *)*rootblock, 1, BOOTBLOCK1, g);
+	error = ReadBootBlocks((UBYTE *)*rootblock, 1, BOOTBLOCK1, g);
 	g->ErrorMsg = _NormalErrorMsg;
 
 	if (!error)
@@ -1042,7 +1042,7 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 		if ((*rootblock)->disktype == ID_PFS_DISK || (*rootblock)->disktype == ID_PFS2_DISK)
 		{
 			g->disktype = ID_PFS_DISK;
-			error = RawRead((UBYTE *)*rootblock, 1, ROOTBLOCK, g);
+			error = ReadRootBlocks((UBYTE *)*rootblock, 1, ROOTBLOCK, g);
 			if (!error)
 			{
 				/* check size and read all rootblock blocks */
@@ -1060,7 +1060,7 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 
 				FreeBufmem(*rootblock, g);
 				*rootblock = AllocBufmemR (rblsize << BLOCKSHIFT, g);
-				error = RawRead((UBYTE *)*rootblock, rblsize, ROOTBLOCK, g);
+				error = ReadRootBlocks((UBYTE *)*rootblock, rblsize, ROOTBLOCK, g);
 			}
 
 			/* size check */

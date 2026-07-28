@@ -149,7 +149,7 @@ static BOOL RenameDisk (UBYTE *newname, globaldata *g)  //%4.5
 		diskname = volume->rootblk->diskname;
 		*diskname = strlen(newname);
 		CopyMem (newname, diskname+1, strlen(newname));
-		RawWrite ((UBYTE *)volume->rootblk, 1, ROOTBLOCK, g);   /* %7.2 */
+		WriteRootBlocks ((UBYTE *)volume->rootblk, 1, ROOTBLOCK, g);   /* %7.2 */
 		UpdateAndMotorOff(g);
 		volume->rootblockchangeflag = FALSE;
 		return DOSTRUE;
@@ -388,11 +388,11 @@ static void Awake (globaldata *g)
 	{
 		/* reload current rootblock  */
 		rootblock = volume->rootblk;
-		RawRead((UBYTE *)rootblock, rootblock->rblkcluster, ROOTBLOCK, g);
+		ReadRootBlocks((UBYTE *)rootblock, rootblock->rblkcluster, ROOTBLOCK, g);
 
 		/* reload rootblock extension */
 		if (rootblock->extension && (rootblock->options & MODE_EXTENSION))
-			RawRead((UBYTE *)&volume->rblkextension->blk, volume->rescluster,
+			ReadReservedBlocks((UBYTE *)&volume->rblkextension->blk, volume->rescluster,
 				rootblock->extension, g);
 
 		/* reload deldir */
