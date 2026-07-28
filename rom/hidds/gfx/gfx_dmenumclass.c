@@ -207,8 +207,8 @@ static HIDDT_ModeID *querymode(struct modequery *mq)
     syncidx = mq->syncidx;
     pfidx   = mq->pfidx;
     /* Get the pf and sync objects */
-    pf   = mq->mdb->pixfmts[syncidx];
-    sync = mq->mdb->syncs[pfidx];
+    pf   = mq->mdb->pixfmts[pfidx];
+    sync = mq->mdb->syncs[syncidx];
     
 
     /* Check that the mode is really usable */
@@ -774,19 +774,19 @@ HIDDT_ModeID *DMEnum__Hidd_DMEnum__QueryModeIDs(OOP_Class *cl, OOP_Object *o,
         switch (tag->ti_Tag)
         {
             case tHidd_GfxMode_MinWidth:
-                mq.minwidth = (ULONG)tag->ti_Tag;
+                mq.minwidth = (ULONG)tag->ti_Data;
                 break;
 
             case tHidd_GfxMode_MaxWidth:
-                mq.maxwidth = (ULONG)tag->ti_Tag;
+                mq.maxwidth = (ULONG)tag->ti_Data;
                 break;
 
             case tHidd_GfxMode_MinHeight:
-                mq.minheight = (ULONG)tag->ti_Tag;
+                mq.minheight = (ULONG)tag->ti_Data;
                 break;
 
             case tHidd_GfxMode_MaxHeight:
-                mq.maxheight = (ULONG)tag->ti_Tag;
+                mq.maxheight = (ULONG)tag->ti_Data;
                 break;
                 
             case tHidd_GfxMode_PixFmts:

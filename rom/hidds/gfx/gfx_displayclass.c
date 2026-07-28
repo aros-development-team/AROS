@@ -991,11 +991,17 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
 
                 /*
                  * Inherit the class from friend bitmap (if not already specified).
-                 * We do it because friend bitmap may be a display HIDD bitmap
+                 * We do it because friend bitmap may be a display HIDD bitmap.
+                 * A shown bitmap may be wrapped in the software-cursor CursorFB
+                 * bitmap - inherit from the real bitmap it wraps, never from the
+                 * wrapper: instantiating the wrapper class directly would produce
+                 * a CursorFB with no real bitmap behind it.
                  */
                 if (!gotclass)
                 {
-                    classptr = OOP_OCLASS(friend_bm);
+                    OOP_Object *realfriend = cursorfb_realbitmap(CSD(cl), friend_bm);
+
+                    classptr = OOP_OCLASS(realfriend ? realfriend : friend_bm);
                     gotclass  = TRUE;
 
                     D(bug("[GFX] Friend bitmap is 0x%p has class 0x%p (%s)\n", friend_bm, classptr, classptr->ClassNode.ln_Name));

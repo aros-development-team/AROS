@@ -267,8 +267,10 @@ void display_Enable(struct gfxdisplay_data *mdd, struct GfxBase *GfxBase)
     {
         D(bug("[graphics.library/display] %s: Setting default_monitor\n", __func__));
         OOP_Object *sync = HIDD_DMEnum_GetSync(mdd->display_dmenum, 0);
-        D(bug("[graphics.library/display] %s: sync @ 0x%p\n", __func__, sync));
-        OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&GfxBase->default_monitor);
+        /* A display registering no modes of its own has no sync 0 - it cannot
+           provide the default monitor */
+        if (sync)
+            OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&GfxBase->default_monitor);
     }
     mdd->display_flags |= DF_Enabled;
 }
@@ -277,7 +279,6 @@ void display_Register(OOP_Object *display, struct gfxdriver_data *cfg, BOOL forc
 {
     struct gfxdisplay_data *mdd = display_Setup(display, GfxBase);
 
-    D(bug("[graphics.library/display] %s: internal monitor display data 0x%p\n", __func__, mdd));
 
     if (mdd)
     {
