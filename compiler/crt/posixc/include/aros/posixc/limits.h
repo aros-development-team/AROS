@@ -2,7 +2,7 @@
 #define _POSIXC_LIMITS_H_
 
 /*
- *  Copyright © 2004-2017 The AROS Developmemt Team. All rights reserved.
+ *  Copyright Â© 2004-2026 The AROS Developmemt Team. All rights reserved.
  *  $Id$
  *
  *  POSIX.1-2008 header file limits.h
@@ -138,7 +138,18 @@
 
 /* Numerical Limits */
 #define LONG_BIT                                __WORDSIZE
-#define SSIZE_MAX                               _POSIX_SSIZE_MAX
+/*
+ * SSIZE_MAX must describe this implementation: ssize_t is a long (see
+ * <aros/types/ssize_t.h>), so its maximum is LONG_MAX.
+ *
+ * Do not use _POSIX_SSIZE_MAX here.  The _POSIX_* constants are the
+ * "Minimum Values" table of POSIX <limits.h> - each one is the smallest
+ * value that the like-named real limit is permitted to have, so that
+ * portable code has a floor to rely on.  Compare _POSIX_PATH_MAX (256)
+ * against a real PATH_MAX.  Defining SSIZE_MAX as the floor claimed that
+ * no read()/write() could transfer more than 32767 bytes.
+ */
+#define SSIZE_MAX                               LONG_MAX
 #define WORD_BIT                                32
 
 /* Other Invariant Values */
