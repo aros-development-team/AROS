@@ -1,8 +1,9 @@
 #   AROS metamakefile for expat
 include $(SRCDIR)/config/aros.cfg
 
-EXPATVERSION=2.7.3
-EXPATVRS=2_7_3
+EXPATVERSION=2.8.2
+# GitHub release tag form of EXPATVERSION (dots -> underscores)
+EXPATVRS=$(subst .,_,$(EXPATVERSION))
 EXPATREPOSITORIES =  \
     cache:// \
     https://github.com/libexpat/libexpat/releases/download/R_$(EXPATVRS)
