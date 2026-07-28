@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-LIBTIFFVERSION=4.7.1
+LIBTIFFVERSION=4.7.2
 REPOSITORIES =  \
     cache:// \
     http://download.osgeo.org/libtiff
