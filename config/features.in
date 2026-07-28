@@ -151,6 +151,14 @@ if test "x-$aros_cgnu17" = "x-yes" ; then
     aros_cflags_gnu17=-std=gnu17
 fi
 
+AC_MSG_CHECKING([whether ${CC} supports -fno-jump-tables])
+CFLAGS=-fno-jump-tables
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_jump_tables="yes"],[aros_no_jump_tables="no"])
+AC_MSG_RESULT($aros_no_jump_tables)
+if test "x-$aros_no_jump_tables" = "x-yes" ; then
+    aros_cflags_no_jump_tables=-fno-jump-tables
+fi
+
 save_cflags="$CFLAGS"
 AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
 CFLAGS=-fexceptions
@@ -1674,6 +1682,7 @@ AC_SUBST(aros_cflags_c11)
 AC_SUBST(aros_cflags_gnu11)
 AC_SUBST(aros_cflags_c17)
 AC_SUBST(aros_cflags_gnu17)
+AC_SUBST(aros_cflags_no_jump_tables)
 
 AC_SUBST(aros_cxxflags_cxx98)
 AC_SUBST(aros_cxxflags_gnu98)

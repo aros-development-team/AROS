@@ -42,6 +42,10 @@ CXXFLAGS_NOSTDLIBXX                     := @aros_cxxflags_nostdlibxx@
 #
 CFLAGS_EXCEPTIONS                       := @aros_cflags_exceptions@
 CFLAGS_NO_EXCEPTIONS                    := @aros_cflags_noexceptions@
+# Emit comparison chains instead of switch jump tables.  Needed on 68000,
+# where the (d8,PC,Xn) addressing mode used to index them reaches only 128
+# bytes and larger functions fail to assemble.
+CFLAGS_NO_JUMP_TABLES                   := @aros_cflags_no_jump_tables@
 
 #
 CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@
