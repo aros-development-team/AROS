@@ -87,6 +87,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     compiler-stdc \
 #MM     compiler-stdcio \
 #MM     hidd-m68k-sagagfx \
+#MM     kernel-amiga-m68k-p96gfx \
 #MM     compiler-posixc
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
