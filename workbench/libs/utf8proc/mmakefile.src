@@ -1,7 +1,7 @@
 #   AROS metamakefile for utf8proc
 include $(SRCDIR)/config/aros.cfg
 
-UTF8PROCVERSION=2.11.0
+UTF8PROCVERSION=2.11.3
 UTF8PROCREPOSITORIES = https://github.com/JuliaStrings/utf8proc/archive/refs/tags
 UTF8PROCARCHBASE     := v$(UTF8PROCVERSION)
 UTF8PROCBASEDIR     := utf8proc-$(UTF8PROCVERSION)
