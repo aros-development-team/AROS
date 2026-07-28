@@ -34,6 +34,11 @@
 
 #include <sys/cdefs.h>
 #include <bsdsocket/types.h>
+/*
+ * POSIX requires <sys/socket.h> to define the iovec structure as described
+ * in <sys/uio.h>; struct msghdr below refers to it.
+ */
+#include <aros/types/iovec_s.h>
 
 /*
  * AmiTCP asynchronous event definitions
