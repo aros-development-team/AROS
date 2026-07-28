@@ -86,10 +86,11 @@ void _Exit(int status) __noreturn;
 int at_quick_exit(void (*func)(void));
 void quick_exit(int status) __noreturn;
 
-#if !defined(__STRICT_ANSI__)
+/* getenv() and system() are ISO C (7.22.4.6, 7.22.4.8), so they must stay
+   visible in strict conformance modes too - <cstdlib> pulls them into
+   namespace std unconditionally.  */
 char *getenv(const char *name);
 int system(const char *string);
-#endif
 
 /* Searching and sorting */
 void *bsearch(const void * key, const void * base, size_t count, size_t size,
