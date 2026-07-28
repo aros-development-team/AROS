@@ -31,6 +31,13 @@ static struct Screen *OpenBootScreenType(struct DOSBootBase *DOSBootBase, BYTE M
     mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, height,
         BIDTAG_Depth, MinDepth, TAG_DONE);
     if (mode == INVALID_ID)
+        /* An NTSC-only display database (Amiga chipset without a PAL
+           monitor) has no 480-line mode, so probe again with the smallest
+           standard height. The result is only used to detect the monitor
+           type; the real height is picked below. */
+        mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, 200,
+            BIDTAG_Depth, MinDepth, TAG_DONE);
+    if (mode == INVALID_ID)
         Alert(AN_SysScrnType);
 
     /* Set PAL or NTSC default height if we are running on Amiga(tm) hardware.
