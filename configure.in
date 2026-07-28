@@ -209,6 +209,15 @@ if test "x$CMAKE" = "x"; then
     AROS_CONFIG_WARNING([cmake not found - target components built with the CMake build system (e.g. AVIF support in heic.datatype) will not be built])
 fi
 
+AC_PATH_PROG([MESON],[meson])
+if test "x$MESON" = "x"; then
+    AROS_CONFIG_WARNING([meson not found - components built with the Meson build system will not be built])
+fi
+AC_PATH_PROG([NINJA],[ninja])
+if test "x$MESON" != "x" -a "x$NINJA" = "x"; then
+    AROS_CONFIG_WARNING([ninja not found - components built with the Meson build system will not be built])
+fi
+
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
 
@@ -4175,6 +4184,33 @@ aros_kernel_objcopy=m4_normalize($aros_kernel_objcopy)
 aros_kernel_objdump=m4_normalize($aros_kernel_objdump)
 aros_kernel_ranlib=m4_normalize($aros_kernel_ranlib)
 
+# Values used to generate the meson cross file (config/conf.meson.in).
+# Meson has its own well known set of cpu_family names, so map the AROS
+# target cpu to the matching meson name.
+case "$aros_target_cpu" in
+    i386)
+        aros_target_meson_cpu_family="x86"
+        ;;
+    riscv)
+        aros_target_meson_cpu_family="riscv32"
+        ;;
+    *)
+        aros_target_meson_cpu_family="$aros_target_cpu"
+        ;;
+esac
+if test "$gcc_default_endian" = "big-endian"; then
+    aros_target_meson_endian="big"
+else
+    case "$aros_target_cpu" in
+        m68k|ppc|sparc)
+            aros_target_meson_endian="big"
+            ;;
+        *)
+            aros_target_meson_endian="little"
+            ;;
+    esac
+fi
+
 # Generic
 AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
@@ -4244,6 +4280,8 @@ AC_SUBST(aros_target_family)
 AC_SUBST(aros_target_cpu)
 AC_SUBST(aros_target_cpu32)
 AC_SUBST(aros_target_cpu_mode)
+AC_SUBST(aros_target_meson_cpu_family)
+AC_SUBST(aros_target_meson_endian)
 AC_SUBST(aros_target_platform)
 AC_SUBST(aros_target_variant)
 AC_SUBST(aros_target_suffix)
@@ -4673,6 +4711,9 @@ fi
 
 # cmake helper
 AC_CONFIG_FILES(${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in)
+
+# meson cross file
+AC_CONFIG_FILES(${aros_targetcfg_dir}/conf.meson:config/conf.meson.in)
 
 # Record any optional features that will be missing so they can be shown to
 # the user once configuration has completed. Only create the file when there

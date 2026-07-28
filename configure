@@ -765,6 +765,8 @@ aros_target_extra
 aros_target_suffix
 aros_target_variant
 aros_target_platform
+aros_target_meson_endian
+aros_target_meson_cpu_family
 aros_target_cpu_mode
 aros_target_cpu32
 aros_target_cpu
@@ -925,6 +927,8 @@ aros_host_aclocal
 aros_host_ld
 LD_BASE
 base_lld_name
+NINJA
+MESON
 CMAKE
 MMAKE
 AWK
@@ -5511,6 +5515,107 @@ fi
 
 if test "x$CMAKE" = "x"; then
     CONFIG_WARNINGS="${CONFIG_WARNINGS}  * cmake not found - target components built with the CMake build system (e.g. AVIF support in heic.datatype) will not be built
+"
+fi
+
+# Extract the first word of "meson", so it can be a program name with args.
+set dummy meson; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_MESON+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $MESON in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_MESON="$MESON" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_MESON="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+MESON=$ac_cv_path_MESON
+if test -n "$MESON"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $MESON" >&5
+printf "%s\n" "$MESON" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+if test "x$MESON" = "x"; then
+    CONFIG_WARNINGS="${CONFIG_WARNINGS}  * meson not found - components built with the Meson build system will not be built
+"
+fi
+# Extract the first word of "ninja", so it can be a program name with args.
+set dummy ninja; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_NINJA+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) case $NINJA in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_NINJA="$NINJA" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_NINJA="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac ;;
+esac
+fi
+NINJA=$ac_cv_path_NINJA
+if test -n "$NINJA"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $NINJA" >&5
+printf "%s\n" "$NINJA" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+if test "x$MESON" != "x" -a "x$NINJA" = "x"; then
+    CONFIG_WARNINGS="${CONFIG_WARNINGS}  * ninja not found - components built with the Meson build system will not be built
 "
 fi
 
@@ -19777,6 +19882,33 @@ aros_kernel_objcopy=$aros_kernel_objcopy
 aros_kernel_objdump=$aros_kernel_objdump
 aros_kernel_ranlib=$aros_kernel_ranlib
 
+# Values used to generate the meson cross file (config/conf.meson.in).
+# Meson has its own well known set of cpu_family names, so map the AROS
+# target cpu to the matching meson name.
+case "$aros_target_cpu" in
+    i386)
+        aros_target_meson_cpu_family="x86"
+        ;;
+    riscv)
+        aros_target_meson_cpu_family="riscv32"
+        ;;
+    *)
+        aros_target_meson_cpu_family="$aros_target_cpu"
+        ;;
+esac
+if test "$gcc_default_endian" = "big-endian"; then
+    aros_target_meson_endian="big"
+else
+    case "$aros_target_cpu" in
+        m68k|ppc|sparc)
+            aros_target_meson_endian="big"
+            ;;
+        *)
+            aros_target_meson_endian="little"
+            ;;
+    esac
+fi
+
 # Generic
 
 
@@ -19832,6 +19964,8 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # Target Related #########################
+
+
 
 
 
@@ -20156,6 +20290,10 @@ fi
 
 # cmake helper
 ac_config_files="$ac_config_files ${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in"
+
+
+# meson cross file
+ac_config_files="$ac_config_files ${aros_targetcfg_dir}/conf.meson:config/conf.meson.in"
 
 
 # Record any optional features that will be missing so they can be shown to
@@ -20962,6 +21100,7 @@ do
     "${aros_tools_dir}/${aros_target_cpu}-aros-pkg-config") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-aros-pkg-config:scripts/pkg-config.in" ;;
     "${aros_gendir}/arch/all-android/bootstrap/app/default.properties") CONFIG_FILES="$CONFIG_FILES ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in" ;;
     "${aros_targetcfg_dir}/conf.cmake") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in" ;;
+    "${aros_targetcfg_dir}/conf.meson") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/conf.meson:config/conf.meson.in" ;;
     "postmsg") CONFIG_COMMANDS="$CONFIG_COMMANDS postmsg" ;;
 
   *) as_fn_error $? "invalid argument: '$ac_config_target'" "$LINENO" 5;;

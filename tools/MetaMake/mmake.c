@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -22,6 +22,10 @@ Boston, MA 02111-1307, USA.  */
 //#define DEBUG_MMAKE
 
 #include "config.h"
+
+#ifndef PACKAGE_VERSION
+#   define PACKAGE_VERSION "0.8"
+#endif
 
 #ifdef PROTOTYPES
 #   define PARAMS(x) x

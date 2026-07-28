@@ -1,0 +1,32 @@
+#
+# Meson cross file used to build AROS target components.
+#
+# Compiler/linker flags are handled in make-meson.tmpl's build_with_meson
+# macro and passed on the meson command line (-Dc_args= etc.), since
+# command line options override the [built-in options] in this file.
+# The sysroot is attached directly to the compiler entries below so it is
+# always in effect, regardless of any c_args/cpp_args overrides.
+#
+# AROS configuration...
+#
+
+[binaries]
+c = ['@aros_target_cc@', '--sysroot=@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer']
+cpp = ['@aros_target_cxx@', '--sysroot=@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer']
+ar = '@aros_plain_ar@'
+strip = '@aros_target_strip@'
+pkg-config = 'pkg-config'
+
+[host_machine]
+system = 'aros'
+cpu_family = '@aros_target_meson_cpu_family@'
+cpu = '@aros_target_cpu@'
+endian = '@aros_target_meson_endian@'
+
+[properties]
+sys_root = '@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer'
+pkg_config_libdir = '@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/pkgconfig'
+
+[built-in options]
+default_library = 'static'
+prefer_static = true

@@ -1,0 +1,218 @@
+#   Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+#   Desc: genmf macros for building imported source trees that use the
+#         CMake build system. Incorporated into the build via %include
+#         from make.tmpl.
+
+#------------------------------------------------------------------------------
+# Build an imported source tree which uses cmake 
+#
+# Arguments:
+#
+#     - mmake           = the meta make target.
+#     - package         = name of the package to be built.
+#     - srcdir          = the location of the unpacked source code. Defaults
+#                         to $(SRCDIR)/$(CURDIR).
+#     - prefix          = the target directory. Must be an absolute path of the
+#                         host system. Defaults to $(AROS_CONTRIB).
+#     - aros_prefix     = set a path which is valid within the AROS filesystem.
+#                         Defaults to the value of the prefix option.
+#     - extraoptions    = additional options for the cmake script.
+#     - usecppflags     = enable the use of cpp flags. some external cmake
+#                         scripts will not set their own cppflags if it is already
+#                         set, so this allows them to be disabled (unless you can provide
+#                         all the options they would need)
+#     - cppflags        = preprocessor flags.
+#     - extracppflags      = additional preprocessor flags.
+#     - usecflags      = enable the use of the build systems C flags
+#     - cflags     = additional flags to use with the C compiler.
+#     - usecxxflags      = enable the use of the build systems C flags
+#     - cxxflags   = additional flags to use with the C++ compiler.
+#     - cflags          = flags to use with the C compiler.
+#     - cxxflags        = flags to use with the C++ compiler.
+#
+
+%define build_with_cmake mmake=/A package= srcdir="$(SRCDIR)/$(CURDIR)" gendir= prefix= \
+    aros_prefix= extraoptions= compiler=target \
+    touch=yes cmakebuildcmd= cmakeinstallcmd= cleanafterbuild=no cleandir= \
+    precmake=  postcmake= \
+    usecppflags=yes extracppflags= \
+    usecflags=yes extracflags= \
+    usecxxflags=yes extracxxflags= \
+    extraldflags= useldlinker=no \
+    usecrosstoolsdir=yes
+
+ifneq (%(prefix),)
+    %(mmake)-prefix          := %(prefix)
+else
+    %(mmake)-prefix          := $(AROS_CONTRIB)
+endif
+
+ifneq (%(aros_prefix),)
+    %(mmake)-aros_prefix     := %(aros_prefix)
+else
+    %(mmake)-aros_prefix     := $(%(mmake)-prefix)
+endif
+
+ifeq (%(compiler),host)
+    ifeq (%(usecrosstoolsdir),yes)
+    %(mmake)-cmake-env += LDFLAGS="$(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags)"
+    %(mmake)-cmake-env += CFLAGS="$(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags)"
+    %(mmake)-cmake-env += CXXFLAGS="$(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags)"
+    else
+    %(mmake)-cmake-env += LDFLAGS="$(HOST_LDFLAGS) $(USER_LDFLAGS) %(extraldflags)"
+    %(mmake)-cmake-env += CFLAGS="$(HOST_CFLAGS) %(extracflags)"
+    %(mmake)-cmake-env += CXXFLAGS="$(HOST_CXXFLAGS) %(extracxxflags)"
+    endif
+    %(mmake)-cmake-env += CPPFLAGS="$(HOST_CPPFLAGS) %(extracppflags)"
+    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix)
+ifeq (,$(findstring CMAKE_BUILD_TYPE,%(extraoptions)))
+    %(mmake)-cmake_opts      += -DCMAKE_BUILD_TYPE=Release
+endif
+    ifeq (%(usecrosstoolsdir),yes)
+    %(mmake)-cmake_opts      += -DCMAKE_LINKER="$(strip $(HOST_LD))" \
+                                -DCMAKE_EXE_LINKER_FLAGS="$(strip $(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags))"
+    else
+    %(mmake)-cmake_opts      += -DCMAKE_LINKER="$(strip $(HOST_LD))" \
+                                -DCMAKE_EXE_LINKER_FLAGS="$(strip $(HOST_LDFLAGS) $(USER_LDFLAGS) %(extraldflags))"
+    endif
+    ifeq (%(useldlinker),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_CXX_LINK_EXECUTABLE="<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>"
+    endif
+    ifneq ($(CC_PREFIX),)
+        %(mmake)-cmake_opts      += -DCMAKE_C_COMPILER="$(strip $(subst $(CC_PREFIX),,$(HOST_DEF_CC)))"
+    else
+        %(mmake)-cmake_opts      += -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
+    endif
+    ifeq (%(usecflags),yes)
+        ifeq (%(usecrosstoolsdir),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags))"
+        else
+        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(HOST_CFLAGS) %(extracflags))"
+        endif
+    endif
+    ifeq (%(usecppflags),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(HOST_CPPFLAGS) %(extracppflags))"
+    endif
+    ifneq ($(CC_PREFIX),)
+        %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(subst $(CC_PREFIX),,$(HOST_CXX)))"
+    else
+        %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(HOST_CXX))"
+    endif
+    ifeq (%(usecxxflags),yes)
+        ifeq (%(usecrosstoolsdir),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags))"
+        else
+        %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(HOST_CXXFLAGS) %(extracxxflags))"
+        endif
+    endif
+    ifeq (%(package),)
+        %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)
+    else
+        %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)/%(package)
+    endif
+else
+    %(mmake)-cmake-env += PKG_CONFIG_LIBDIR="$(AROS_DEVELOPER)/lib/pkgconfig"
+    %(mmake)-cmake-env += PKG_CONFIG_SYSROOT_DIR="$(AROSDIR)"
+    %(mmake)-cmake-env += LDFLAGS="$(strip $(TARGET_ISA_LDFLAGS) $(LDFLAGS) %(extraldflags))"
+    %(mmake)-cmake-env += CFLAGS="$(strip $(CFLAGS) %(extracflags))"
+    %(mmake)-cmake-env += CXXFLAGS="$(strip $(CXXFLAGS) %(extracxxflags))"
+    %(mmake)-cmake-env += CPPFLAGS="$(strip $(CPPFLAGS) %(extracppflags))"
+    %(mmake)-cmake_opts      := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix)
+    ifeq (%(usecflags),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(CFLAGS) %(extracflags))"
+    endif
+    ifeq (%(usecppflags),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(CPPFLAGS) %(extracppflags))"
+    endif
+    ifeq (%(usecxxflags),yes)
+        %(mmake)-cmake_opts      += -DCMAKE_CXX_FLAGS="$(strip $(CXXFLAGS) %(extracxxflags))"
+    endif
+    %(mmake)-cmake_opts  += -DCMAKE_EXE_LINKER_FLAGS="$(strip $(TARGET_ISA_LDFLAGS) $(LDFLAGS) %(extraldflags))"
+    ifeq (%(package),)
+        %(mmake)-pkgdir      := $(GENDIR)/$(CURDIR)
+    else
+        %(mmake)-pkgdir      := $(GENDIR)/$(CURDIR)/%(package)
+    endif
+endif
+ifneq (%(gendir),)
+    ifeq (%(package),)
+        %(mmake)-pkgdir      := %(gendir)
+    else
+        %(mmake)-pkgdir      := %(gendir)/%(package)
+    endif
+endif
+
+%(mmake)-cmakeflag           ?= $(%(mmake)-pkgdir)/.cmake
+%(mmake)-installflag         ?= $(%(mmake)-pkgdir)/.installed
+
+.PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
+
+#MM- %(mmake): setup includes core-linklibs %(mmake)-quick
+
+#MM- %(mmake)-quick : %(mmake)-cmake %(mmake)-build_and_install-quick
+
+#MM
+%(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
+
+ifeq (%(cmakebuildcmd),)
+%(mmake)-cmakecmdbuild := $(CMAKE) --build $(%(mmake)-pkgdir)
+else
+%(mmake)-cmakecmdbuild := %(cmakebuildcmd)
+endif
+
+ifeq (%(cmakeinstallcmd),)
+%(mmake)-cmakecmdinstall := $(CMAKE) --install $(%(mmake)-pkgdir)
+else
+%(mmake)-cmakecmdinstall := %(cmakeinstallcmd)
+endif
+
+ifeq (%(cleandir),)
+%(mmake)-cmakecleandir := $(%(mmake)-pkgdir)
+else
+%(mmake)-cmakecleandir := %(cleandir)
+endif
+
+$(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
+	$(%(mmake)-cmakecmdbuild)
+	$(%(mmake)-cmakecmdinstall)
+	$(TOUCH) $@
+	$(IF) $(TEST) "%(cleanafterbuild)" = "yes"; then \
+	    $(IF) ! $(CMAKE) --build $(%(mmake)-pkgdir) --target clean; then \
+	        $(RM) -r $(%(mmake)-cmakecleandir); \
+	    fi; \
+	fi
+
+## **********************************************************************
+## Review the following lines once breakage in contrib has been resolved.
+# Files are not touched anymore by default, add this to your mmakefile if that is necessry
+#<target>-touchfileflag := $(GENDIR)/$(CURDIR)/.files-touched
+%(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
+## **********************************************************************
+## touch= parameter is going to be removed, this is bad to touch files in
+## the source-tree as this breaks parallel builds for different targets.
+## using ripgrep to find usages in this template:
+## rg -gmmakefile.src -l %build_with_cmake . contrib/ ports/ | xargs rg touch=
+## **********************************************************************
+ifeq (%(touch),yes)
+$(%(mmake)-touchfileflag):
+	%mkdirs_q $(%(mmake)-pkgdir)
+	$(Q)true find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/CMakeLists.txt '{}' \; && \
+	$(TOUCH) $@
+endif
+
+#MM
+%(mmake)-cmake : %(precmake) $(%(mmake)-cmakeflag) %(postcmake)
+
+# cmake configure step
+$(%(mmake)-cmakeflag) : CMAKE := $(%(mmake)-cmake-env) $(CMAKE)
+$(%(mmake)-cmakeflag) : TMP_SRCDIR := $(shell $(ECHO) %(srcdir) | sed 's/^\(.\):\//\/\1\//')
+$(%(mmake)-cmakeflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
+	$(CMAKE) -B $(%(mmake)-pkgdir) $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR)
+	$(TOUCH) $@
+
+#MM
+%(mmake)-clean : %(mmake)-uninstall
+	$(Q)$(RM) $(%(mmake)-pkgdir)
+%end
+#------------------------------------------------------------------------------

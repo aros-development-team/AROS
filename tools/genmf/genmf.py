@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: iso-8859-1 -*-
-# Copyright (C) 2003-2021, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 
 import sys, re, os
 
@@ -268,21 +268,45 @@ class template:
 
 # Read in the definition of the genmf templates from the given filename
 # Return an assosiative array of the templates present in this file.
-def read_templates(filename):
+# A template file can pull in further template files with the %include
+# directive; the path is resolved relative to the including file. The
+# templates and included arguments are shared by all calls so included
+# files are only read once and templates can call each other regardless
+# of which file they are defined in.
+def read_templates(filename, templates = None, included = None):
+    if templates is None:
+        templates = {}
+    if included is None:
+        included = set()
+
+    filename = os.path.abspath(filename)
+    if filename in included:
+        return templates
+    included.add(filename)
+
     try:
-        infile = open(filename)
+        infile = open(filename, encoding = "iso-8859-15")
     except Exception:
-        print("Error reading template file: "+filename)
+        sys.exit("Error reading template file: "+filename)
 
     re_name = re.compile(r'[a-zA-Z0-9][a-zA-Z0-9_]*(?=(?:\s|$))')
     re_define = re.compile(r'%define(?=\s)')
-    
+    re_include = re.compile(r'%include(?=\s)')
+
     lines = infile.readlines()
     lineno = 0
-    templates = {}
     while lineno < len(lines):
         line = lines[lineno]
-        if re_define.match(line):
+        if re_include.match(line):
+            incname = line[8:].strip()
+            if len(incname) > 1 and incname[0] == '"' and incname[-1] == '"':
+                incname = incname[1:len(incname)-1]
+            if len(incname) == 0:
+                sys.exit("%s:%d:%%include requires a file name" % (filename, lineno+1))
+            if not os.path.isabs(incname):
+                incname = os.path.join(os.path.dirname(filename), incname)
+            read_templates(incname, templates, included)
+        elif re_define.match(line):
             while line[len(line)-2] == "\\" and lineno < len(lines):
                 lineno = lineno + 1
                 line = line[0:len(line)-2] + lines[lineno]
@@ -315,9 +339,11 @@ def read_templates(filename):
     
             if lineno == len(lines):
                 sys.exit('%s:End of file reached in a template definition' % filename)
-    
+
+            if tmplname in templates:
+                sys.stderr.write("Warning: template '%s' redefined in %s\n" % (tmplname, filename))
             templates[tmplname] = template(tmplname, args, lines[bodystart:lineno])
-            
+
         lineno = lineno+1
 
     return templates
