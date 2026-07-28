@@ -1,0 +1,25 @@
+include $(SRCDIR)/config/aros.cfg
+
+ifneq ($(AROS_TARGET_ARCH),amiga)
+EXEDIR := $(AROSDIR)/Storage/Monitors
+else
+EXEDIR := $(AROS_DEVS)/Monitors
+endif
+
+FILES := p96
+
+#MM- workbench-devs-monitors: devs-monitors-p96 devs-monitors-z3660
+#MM devs-monitors-p96 : includes linklibs
+#MM devs-monitors-z3660 : includes linklibs
+
+%build_prog mmake=devs-monitors-p96 \
+           progname=P96 targetdir=$(EXEDIR) \
+           files=$(FILES)
+
+# The same program under a board's name: with no CARD tooltype it derives
+# Picasso96/Z3660.card from the name it was installed as.
+%build_prog mmake=devs-monitors-z3660 \
+           progname=Z3660 targetdir=$(EXEDIR) \
+           files=$(FILES)
+
+%common

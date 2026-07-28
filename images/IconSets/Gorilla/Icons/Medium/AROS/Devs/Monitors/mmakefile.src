@@ -9,7 +9,7 @@ PCDEVSDIR := $(AROSDIR)/Storage/Monitors
 else
 PCDEVSDIR := $(AROS_DEVS)/Monitors
 endif
-AMIGADEVSICONS    := SAGA
+AMIGADEVSICONS    := SAGA Z3660
 ifneq ($(AROS_TARGET_ARCH),amiga)
 AMIGADEVSDIR := $(AROSDIR)/Storage/Monitors
 else
