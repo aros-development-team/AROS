@@ -15,6 +15,7 @@ struct kbd_data
 struct kbd_staticdata
 {
     OOP_AttrBase        hiddInputAB;
+    OOP_AttrBase        hwInputAB;
     OOP_AttrBase        hwAB;
     OOP_MethodID        hwMB;
     OOP_Class           *kbdClass;
@@ -34,8 +35,10 @@ struct kbdbase
 #define CSD(cl) (&((struct kbdbase *)cl->UserData)->csd)
 
 #undef HiddInputAB
+#undef HWInputAB
 #undef HWAttrBase
 #undef HWBase
 #define HiddInputAB  (CSD(cl)->hiddInputAB)
+#define HWInputAB    (CSD(cl)->hwInputAB)
 #define HWAttrBase (CSD(cl)->hwAB)
 #define HWBase     (CSD(cl)->hwMB)

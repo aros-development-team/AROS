@@ -197,6 +197,10 @@ OOP_Object *Input__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
                 if (cbList) {
                     Disable();
                     ADDTAIL(cbList, &data->ihid_node);
+                    /* Replay events which arrived before the first consumer
+                       registered (e.g. keys typed or held during boot) */
+                    InputHW_FlushPendingEvents((struct MinList *)cbList,
+                        data->ihid_callback, data->ihid_private);
                     Enable();
                 }
             }
