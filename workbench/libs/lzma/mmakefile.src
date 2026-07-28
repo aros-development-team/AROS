@@ -1,4 +1,4 @@
-# Copyright 2018-2025, The AROS Development Team. All rights reserved.
+# Copyright 2018-2026, The AROS Development Team. All rights reserved.
 # $Id: mmakefile.src 
 
 include $(SRCDIR)/config/aros.cfg
@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM workbench-libs-lzma-library : xz-fetch workbench-libs-lzma-includes
 #MM- workbench-libs-lzma-includes : workbench-libs-lzma-includes-copy
 
-VERSION := 5.8.1
+VERSION := 5.8.3
 REPOSITORIES := \
     cache:// \
     https://tukaani.org/xz
