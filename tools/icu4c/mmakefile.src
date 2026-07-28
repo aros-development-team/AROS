@@ -2,11 +2,40 @@ include $(SRCDIR)/config/aros.cfg
 
 LN ?= ln
 
+# ICU 75 and later require a C++17 compiler.  The 'auto' non-type template
+# parameters that <unicode/localpointer.h> relies on only arrived in GCC 7, so
+# older toolchains stay on the last ICU that builds for them.  This must track
+# contrib/development/libs/icu: ICU requires the host tools and the target
+# library to be the same version.
+ifeq ($(AROS_TOOLCHAIN),gnu)
+ifneq ($(findstring -,$(TARGET_GCC_VER)),)
+  ICU_GCC_MAJOR := $(firstword $(subst -, ,$(TARGET_GCC_VER)))
+else
+  ICU_GCC_MAJOR := $(shell echo "$(TARGET_GCC_VER)" | cut -d"." -f1)
+endif
+ifeq ($(shell [ $(ICU_GCC_MAJOR) -lt 7 ] && echo true),true)
+ICU_LEGACY := yes
+endif
+endif
+
+ifeq ($(ICU_LEGACY),yes)
 ICU_MAJOR := 61
 ISU_MINOR := 1
+else
+ICU_MAJOR := 78
+ISU_MINOR := 3
+endif
 ICU_VERSION := $(ICU_MAJOR).$(ISU_MINOR)
 ICU_PKGNAME := icu4c
-ICU_PKGVERSION=$(subst .,_,$(ICU_VERSION))
+# 61 ships as icu4c-61_1-src.tgz, 78 as icu4c-78.3-sources.tgz
+ifeq ($(ICU_LEGACY),yes)
+ICU_PKGVERSION := $(subst .,_,$(ICU_VERSION))
+ICU_ARCHKIND := src
+ICU_REPOSITORY := https://github.com/unicode-org/icu/releases/download/release-$(ICU_MAJOR)-$(ISU_MINOR)
+else
+ICU_PKGVERSION := $(ICU_VERSION)
+ICU_ARCHKIND := sources
+endif
 
 ICU_EXTRA_OPTS = \
         --bindir=$(TOOLDIR) \
@@ -19,8 +48,6 @@ ICU_EXTRA_OPTS = \
         --disable-samples \
         --disable-extras \
         --with-data-packaging=static
-
-ICU_REPOSITORY := https://github.com/unicode-org/icu/releases/download/release-$(ICU_MAJOR)-$(ISU_MINOR)
 
 icu-installflag := $(TOOLDIR)/.installflag-icu-$(ICU_VERSION)
 
@@ -37,7 +64,7 @@ tools-crosstools-icu :
 HOST_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(HOST_CXXFLAGS)))
 
 # specify the gendir for icu to be in HOSTDIR so can be reused
-%fetch_and_build mmake=crosstools-icu package=$(ICU_PKGNAME) version=$(ICU_PKGVERSION)-src compiler=host \
+%fetch_and_build mmake=crosstools-icu package=$(ICU_PKGNAME) version=$(ICU_PKGVERSION)-$(ICU_ARCHKIND) compiler=host \
 	package_repo="$(ICU_REPOSITORY)" suffixes="tgz" \
 	patch=yes srcdir=icu builddir=source gendir=$(TOOLDIR) basedir= \
 	prefix="$(TOOLDIR)" \

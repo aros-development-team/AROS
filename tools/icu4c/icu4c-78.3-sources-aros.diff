@@ -1,0 +1,1256 @@
+diff -ruN --strip-trailing-cr icu/source/common/Makefile.in icu.aros/source/common/Makefile.in
+--- icu/source/common/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/common/Makefile.in	2026-07-28 12:40:48.569230856 +0100
+@@ -33,7 +33,7 @@
+ TARGET_STUBNAME=$(COMMON_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++COMMONTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -51,7 +51,7 @@
+ 
+ endif   # ENABLE_SHARED
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++ALL_TARGETS = $(COMMONTARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -115,7 +115,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(COMMONTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ # For MinGW, do we want the DLL to go in the bin location?
+@@ -173,7 +173,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(COMMONTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN --strip-trailing-cr icu/source/common/putilimp.h icu.aros/source/common/putilimp.h
+--- icu/source/common/putilimp.h	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/common/putilimp.h	2026-07-28 12:40:48.569311356 +0100
+@@ -103,7 +103,7 @@
+ #if U_PLATFORM_HAS_WINUWP_API == 0
+ #   define U_TZSET _tzset
+ #endif
+-#elif U_PLATFORM == U_PF_OS400
++#elif U_PLATFORM == U_PF_OS400 || defined(__AROS__)
+    /* not defined */
+ #elif U_PLATFORM == U_PF_HAIKU
+    /* not defined */
+@@ -143,7 +143,7 @@
+ #if U_PLATFORM_HAS_WINUWP_API == 0
+ #   define U_TZNAME _tzname
+ #endif
+-#elif U_PLATFORM == U_PF_OS400
++#elif U_PLATFORM == U_PF_OS400 || defined(__AROS__)
+    /* not defined */
+ #elif U_PLATFORM == U_PF_HAIKU
+     /* not defined, (well it is but a loop back to icu) */
+diff -ruN --strip-trailing-cr icu/source/common/unicode/umachine.h icu.aros/source/common/unicode/umachine.h
+--- icu/source/common/unicode/umachine.h	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/common/unicode/umachine.h	2026-07-28 12:40:48.569375656 +0100
+@@ -343,6 +343,10 @@
+ #       define U_WCHAR_IS_UTF32
+ #   elif U_PLATFORM_HAS_WIN32_API
+ #       define U_WCHAR_IS_UTF16
++#   elif defined(__AROS__)
++#       if (U_SIZEOF_WCHAR_T==4)
++#           define U_WCHAR_IS_UTF32
++#       endif
+ #   endif
+ #endif
+ 
+diff -ruN --strip-trailing-cr icu/source/config/mh-aros icu.aros/source/config/mh-aros
+--- icu/source/config/mh-aros	1970-01-01 01:00:00.000000000 +0100
++++ icu.aros/source/config/mh-aros	2026-07-28 12:40:48.569628956 +0100
+@@ -0,0 +1,76 @@
++## AROS-specific setup
++
++## Commands to generate dependency files
++GEN_DEPS.c=  $(CC) -E -MM $(DEFS) $(CPPFLAGS)
++GEN_DEPS.cc= $(CXX) -E -MM $(DEFS) $(CPPFLAGS)
++
++## Flags for position independent code
++SHAREDLIBCFLAGS =
++SHAREDLIBCXXFLAGS =
++SHAREDLIBCPPFLAGS =
++
++## Additional flags when building libraries and with threads
++THREADSCPPFLAGS = -D_REENTRANT
++LIBCPPFLAGS =
++
++## Compiler switch to embed a runtime search path
++LD_RPATH=	
++LD_RPATH_PRE = -Wl,-rpath,
++
++## These are the library specific LDFLAGS
++LDFLAGSICUDT=-nodefaultlibs -nostdlib
++
++## Compiler switch to embed a library name
++LD_SONAME = -Wl,-soname -Wl,$(notdir $(MIDDLE_SO_TARGET))
++
++## Shared object suffix
++SO = so
++## Non-shared intermediate object suffix
++STATIC_O = ao
++
++## Compilation rules
++%.$(STATIC_O): $(srcdir)/%.c
++	$(COMPILE.c) $(STATICCPPFLAGS) $(STATICCFLAGS) -o $@ $<
++%.o: $(srcdir)/%.c
++	$(COMPILE.c) $(DYNAMICCPPFLAGS) $(DYNAMICCFLAGS) -o $@ $<
++
++%.$(STATIC_O): $(srcdir)/%.cpp
++	$(COMPILE.cc) $(STATICCPPFLAGS) $(STATICCXXFLAGS) -o $@ $<
++%.o: $(srcdir)/%.cpp
++	$(COMPILE.cc) $(DYNAMICCPPFLAGS) $(DYNAMICCXXFLAGS) -o $@ $<
++
++
++## Dependency rules
++%.d: $(srcdir)/%.c
++	@echo "generating dependency information for $<"
++	@$(SHELL) -ec '$(GEN_DEPS.c) $< \
++		| sed '\''s%\($*\)\.o[ :]*%\1.o $@ : %g'\'' > $@; \
++		[ -s $@ ] || rm -f $@'
++
++%.d: $(srcdir)/%.cpp
++	@echo "generating dependency information for $<"
++	@$(SHELL) -ec '$(GEN_DEPS.cc) $< \
++		| sed '\''s%\($*\)\.o[ :]*%\1.o $@ : %g'\'' > $@; \
++		[ -s $@ ] || rm -f $@'
++
++## Versioned libraries rules
++
++%.$(SO).$(SO_TARGET_VERSION_MAJOR): %.$(SO).$(SO_TARGET_VERSION)
++	$(RM) $@ && ln -s ${<F} $@
++%.$(SO): %.$(SO).$(SO_TARGET_VERSION_MAJOR)
++	$(RM) $@ && ln -s ${*F}.$(SO).$(SO_TARGET_VERSION) $@
++
++##  Bind internal references
++
++# LDflags that pkgdata will use
++BIR_LDFLAGS= -Wl,-Bsymbolic
++
++# Dependencies [i.e. map files] for the final library
++BIR_DEPS=
++
++## Remove shared library 's'
++STATIC_PREFIX_WHEN_USED = 
++STATIC_PREFIX = 
++
++## End AROS-specific setup
++
+diff -ruN --strip-trailing-cr icu/source/configure icu.aros/source/configure
+--- icu/source/configure	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/configure	2026-07-28 12:40:48.570152056 +0100
+@@ -5833,6 +5833,7 @@
+ *-dec-osf*) icu_cv_host_frag=mh-alpha-osf ;;
+ *-*-nto*)	icu_cv_host_frag=mh-qnx ;;
+ *-ncr-*)	icu_cv_host_frag=mh-mpras ;;
++*-*-aros)	icu_cv_host_frag=mh-aros ;;
+ *) 		icu_cv_host_frag=mh-unknown ;;
+ esac
+ 
+diff -ruN --strip-trailing-cr icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
+--- icu/source/data/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/data/Makefile.in	2026-07-28 12:40:48.591884556 +0100
+@@ -41,15 +41,18 @@
+ endif
+ endif
+ 
+-CURDIR:=$(CURR_FULL_DIR)
++# AROS passes CURDIR=<srcdir-relative path> on the make command line, which
++# overrides any assignment here and propagates to sub-makes.  Use a private
++# name so pkgdata still receives the absolute build directory.
++DATACURDIR:=$(CURR_FULL_DIR)
+ # current directory should not be blank
+-ifeq ($(CURDIR),)
+-CURDIR=.
++ifeq ($(DATACURDIR),)
++DATACURDIR=.
+ endif
+ ifeq ($(BUILD_HOST_ICU),OS390)
+-PKGDATA = $(TOOLBINDIR)/pkgdata $(PKGDATA_OPTS) -z -q -c -s $(CURDIR)/out/build/$(ICUDATA_PLATFORM_NAME) -d $(ICUPKGDATA_OUTDIR)
++PKGDATA = $(TOOLBINDIR)/pkgdata $(PKGDATA_OPTS) -z -q -c -s $(DATACURDIR)/out/build/$(ICUDATA_PLATFORM_NAME) -d $(ICUPKGDATA_OUTDIR)
+ else
+-PKGDATA = $(TOOLBINDIR)/pkgdata $(PKGDATA_OPTS) -q -c -s $(CURDIR)/out/build/$(ICUDATA_PLATFORM_NAME) -d $(ICUPKGDATA_OUTDIR)
++PKGDATA = $(TOOLBINDIR)/pkgdata $(PKGDATA_OPTS) -q -c -s $(DATACURDIR)/out/build/$(ICUDATA_PLATFORM_NAME) -d $(ICUPKGDATA_OUTDIR)
+ endif
+ 
+ # OBJDATADIR must be a short path (with ..'s) to the data.
+@@ -67,12 +70,12 @@
+ 
+ OUTTMPDIR=$(OUTDIR)/tmp
+ MAINBUILDDIR=$(OUTDIR)/build
+-BUILDDIR=$(MAINBUILDDIR)/$(ICUDATA_PLATFORM_NAME)
++DATABUILDDIR=$(MAINBUILDDIR)/$(ICUDATA_PLATFORM_NAME)
+ MISCSRCDIR=$(SRCDATADIR)/misc
+ SRCLISTDEPS=Makefile $(srcdir)/Makefile.in
+ 
+ # Variable names for rules.mk
+-OUT_DIR=$(BUILDDIR)
++OUT_DIR=$(DATABUILDDIR)
+ TMP_DIR=$(OUTTMPDIR)
+ 
+ # relative lib links from pkgdata are the same as for tmp
+@@ -184,18 +187,18 @@
+ ifeq ($(PKGDATA_MODE),dll)
+ # For MinGW, do we want the DLL to go in the bin location?
+ ifeq ($(MINGW_MOVEDLLSTOBINDIR),YES)
+-	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(BUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(DESTDIR)$(bindir)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(DESTDIR)$(bindir)
+ else
+-	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(BUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_LIBDIR)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_LIBDIR)
+ endif
+ endif
+ endif
+ ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
+ # For MinGW, do we want the DLL to go in the bin location?
+ ifeq ($(MINGW_MOVEDLLSTOBINDIR),YES)
+-	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(BUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(DESTDIR)$(bindir)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(DESTDIR)$(bindir)
+ else
+-	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(BUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_DIR)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_DIR)
+ endif
+ else
+ 	$(INSTALL_DATA) $(ICUDATA_SOURCE_ARCHIVE) $(DESTDIR)$(ICUPKGDATA_DIR)
+@@ -235,10 +238,10 @@
+ 	echo timestamp > $@
+ $(PKGDATA_LIST): $(SRCLISTDEPS) $(ICUDATA_SOURCE_ARCHIVE)
+ ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
+-	$(MKINSTALLDIRS) $(OUTTMPDIR) $(BUILDDIR)
++	$(MKINSTALLDIRS) $(OUTTMPDIR) $(DATABUILDDIR)
+ 	@echo "Unpacking $(ICUDATA_SOURCE_ARCHIVE) and generating $@ (list of data files)"
+ 	@-$(RMV) $@
+-	$(INVOKE) $(TOOLBINDIR)/icupkg -d $(BUILDDIR) --list -x \* $(ICUDATA_SOURCE_ARCHIVE) -o $@
++	$(INVOKE) $(TOOLBINDIR)/icupkg -d $(DATABUILDDIR) --list -x \* $(ICUDATA_SOURCE_ARCHIVE) -o $@
+ else
+ 	@echo "$@" > $@
+ endif
+@@ -258,9 +261,9 @@
+ 
+ # Override the normal genrb for zoneinfo to always pull from
+ # icu/source/tools/tzcode/zoneinfo64.txt
+-$(BUILDDIR)/zoneinfo64.res: $(ZONEINFO) $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
++$(DATABUILDDIR)/zoneinfo64.res: $(ZONEINFO) $(TOOLBINDIR)/genrb$(TOOLEXEEXT)
+ 	@echo Note: $(MISCSRCDIR)/zoneinfo.txt is IGNORED because $(TZDATA) is present.
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -q -i $(BUILDDIR) -d $(BUILDDIR) $(ZONEINFO)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -q -i $(DATABUILDDIR) -d $(DATABUILDDIR) $(ZONEINFO)
+ 
+ # Create the tzcode tool and zoneinfo as needed.
+ $(ZONEINFO): $(TZDATA)
+@@ -289,7 +292,7 @@
+ generate-data: packagedata $(OUTTMPDIR)/$(ICUDATA_PLATFORM_NAME).dat
+ 	mkdir -p $(OUTDIR)/icu4j/$(ICU4J_DATA_DIRNAME)
+ 	mkdir -p $(OUTDIR)/icu4j/tzdata/$(ICU4J_DATA_DIRNAME)
+-	$(INVOKE) $(TOOLBINDIR)/icupkg $(OUTTMPDIR)/$(ICUDATA_PLATFORM_NAME).dat $(OUTDIR)/icu4j/$(ICUDATA_BASENAME_VERSION)b.dat -s $(BUILDDIR) -x '*' -tb -d $(OUTDIR)/icu4j/$(ICU4J_DATA_DIRNAME)
++	$(INVOKE) $(TOOLBINDIR)/icupkg $(OUTTMPDIR)/$(ICUDATA_PLATFORM_NAME).dat $(OUTDIR)/icu4j/$(ICUDATA_BASENAME_VERSION)b.dat -s $(DATABUILDDIR) -x '*' -tb -d $(OUTDIR)/icu4j/$(ICU4J_DATA_DIRNAME)
+ 	mv $(ICU4J_TZDATA_PATHS:%=$(OUTDIR)/icu4j/%) "$(OUTDIR)/icu4j/tzdata/$(ICU4J_DATA_DIRNAME)"
+ 
+ $(OUTDIR)/icu4j/icutzdata.jar: generate-data
+diff -ruN --strip-trailing-cr icu/source/extra/uconv/Makefile.in icu.aros/source/extra/uconv/Makefile.in
+--- icu/source/extra/uconv/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/extra/uconv/Makefile.in	2026-07-28 12:40:48.570891656 +0100
+@@ -157,7 +157,7 @@
+ $(UCONVMSG_LIB): $(RESFILES) $(RESDIR)/$(RESDIR).lst pkgdata.inc
+ 	$(INVOKE) $(PKGDATA_INVOKE_OPTS) $(TOOLBINDIR)/pkgdata -p $(MSGNAME) $(PKGDATA_OPTS) -m $(PKGMODE) -s $(RESDIR) -d $(RESDIR) -T $(RESDIR) $(RESDIR)/$(RESDIR).lst
+ 
+-$(RESDIR)/$(RESDIR).lst: Makefile $(srcdir)/resfiles.mk
++$(RESDIR)/$(RESDIR).lst: Makefile $(srcdir)/resfiles.mk $(RESFILES)
+ 	@-$(RMV) $@
+ 	@for file in $(RESFILES:$(RESDIR)/%.res=%.res); do \
+ 	  echo $$file >> $@; \
+diff -ruN --strip-trailing-cr icu/source/i18n/Makefile.in icu.aros/source/i18n/Makefile.in
+--- icu/source/i18n/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/i18n/Makefile.in	2026-07-28 12:40:48.570946356 +0100
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(I18N_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++I18NTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -47,7 +47,7 @@
+ 
+ endif   # ENABLE_SHARED
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++ALL_TARGETS = $(I18NTARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -97,7 +97,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(I18NTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ # For MinGW, do we want the DLL to go in the bin location?
+@@ -147,7 +147,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(I18NTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN --strip-trailing-cr icu/source/io/Makefile.in icu.aros/source/io/Makefile.in
+--- icu/source/io/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/io/Makefile.in	2026-07-28 12:40:48.571255156 +0100
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(IO_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++IOTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -47,7 +47,7 @@
+ 
+ endif   # ENABLE_SHARED
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++ALL_TARGETS = $(IOTARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -97,7 +97,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(IOTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ # For MinGW, do we want the DLL to go in the bin location?
+@@ -147,7 +147,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(IOTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN --strip-trailing-cr icu/source/layoutex/Makefile.in icu.aros/source/layoutex/Makefile.in
+--- icu/source/layoutex/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/layoutex/Makefile.in	2026-07-28 12:40:48.571361856 +0100
+@@ -28,7 +28,7 @@
+ TARGET_STUBNAME=$(LAYOUTEX_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++LAYEXTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -46,7 +46,7 @@
+ 
+ endif   # ENABLE_SHARED
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++ALL_TARGETS = $(LAYEXTARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -108,7 +108,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(LAYEXTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ # For MinGW, do we want the DLL to go in the bin location?
+@@ -158,7 +158,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(LAYEXTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN --strip-trailing-cr icu/source/stubdata/Makefile.in icu.aros/source/stubdata/Makefile.in
+--- icu/source/stubdata/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/stubdata/Makefile.in	2026-07-28 12:40:48.571442656 +0100
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(DATA_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(STUBDATA_LIBDIR)$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++STUBTARGET = $(STUBDATA_LIBDIR)$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ 
+@@ -39,7 +39,7 @@
+ endif
+ 
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS)
++ALL_TARGETS = $(STUBTARGET) $(ALL_SO_TARGETS)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -85,7 +85,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(STUBTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ # For MinGW, do we want the DLL to go in the bin location?
+@@ -128,7 +128,7 @@
+ 	&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(STUBTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN --strip-trailing-cr icu/source/test/testdata/Makefile.in icu.aros/source/test/testdata/Makefile.in
+--- icu/source/test/testdata/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/test/testdata/Makefile.in	2026-07-28 12:40:48.591997256 +0100
+@@ -108,13 +108,16 @@
+ endif
+ endif
+ 
+-CURDIR:=$(CURR_FULL_DIR)
++# AROS passes CURDIR=<srcdir-relative path> on the make command line, which
++# overrides any assignment here and propagates to sub-makes.  Use a private
++# name so pkgdata still receives the absolute build directory.
++DATACURDIR:=$(CURR_FULL_DIR)
+ # current directory should not be blank
+-ifeq ($(CURDIR),)
+-CURDIR=.
++ifeq ($(DATACURDIR),)
++DATACURDIR=.
+ endif
+ 
+-PKGDATA = $(TOOLBINDIR)/pkgdata -q -c -s $(CURDIR)/out/build/$(ICUDATA_PLATFORM_NAME)
++PKGDATA = $(TOOLBINDIR)/pkgdata -q -c -s $(DATACURDIR)/out/build/$(ICUDATA_PLATFORM_NAME)
+ PKGDATA_INVOKE:=$(INVOKE) $(PKGDATA_INVOKE_OPTS)
+ 
+ # Contains all 'intermediate' files (and temp files) except for 'unpackaged data' below
+diff -ruN --strip-trailing-cr icu/source/tools/ctestfw/Makefile.in icu.aros/source/tools/ctestfw/Makefile.in
+--- icu/source/tools/ctestfw/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/ctestfw/Makefile.in	2026-07-28 12:40:48.571755556 +0100
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(CTESTFW_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++CTFWTARGET = $(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -37,7 +37,7 @@
+ ALL_SO_TARGETS = $(SO_TARGET) $(MIDDLE_SO_TARGET) $(FINAL_SO_TARGET) $(SHARED_OBJECT)
+ endif
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS)
++ALL_TARGETS = $(CTFWTARGET) $(ALL_SO_TARGETS)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -81,7 +81,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(CTFWTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ # For MinGW, do we want the DLL to go in the bin location?
+@@ -124,7 +124,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(CTFWTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN --strip-trailing-cr icu/source/tools/escapesrc/Makefile.in icu.aros/source/tools/escapesrc/Makefile.in
+--- icu/source/tools/escapesrc/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/escapesrc/Makefile.in	2026-07-28 12:40:48.571832156 +0100
+@@ -29,7 +29,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES) ./output-*.cpp
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++ESRCTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ #LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC)
+@@ -54,11 +54,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(ESRCTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(ESRCTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ #	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -69,24 +69,24 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(ESRCTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+ 
+ check-local: all-local
+ 	@echo Testing test-nochange.cpp
+-	@$(INVOKE) $(TARGET) $(srcdir)/test-nochange.cpp ./output-nochange.cpp
++	@$(INVOKE) $(ESRCTARGET) $(srcdir)/test-nochange.cpp ./output-nochange.cpp
+ 	@-diff -I '#line.*' $(srcdir)/test-nochange.cpp ./output-nochange.cpp || (echo >&2 'warning: diff failed or not found' ; true)
+ 	@echo Testing test-simple.cpp
+-	@$(INVOKE) $(TARGET) $(srcdir)/test-simple.cpp ./output-simple.cpp
++	@$(INVOKE) $(ESRCTARGET) $(srcdir)/test-simple.cpp ./output-simple.cpp
+ 	@-diff -I '#line.*' $(srcdir)/expect-simple.cpp ./output-simple.cpp   || (echo >&2 'warning: diff failed or not found' ; true)
+ 
+ Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(ESRCTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/genbrk/Makefile.in icu.aros/source/tools/genbrk/Makefile.in
+--- icu/source/tools/genbrk/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/genbrk/Makefile.in	2026-07-28 12:40:48.571881356 +0100
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GBRKTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GBRKTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GBRKTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GBRKTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GBRKTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/genccode/Makefile.in icu.aros/source/tools/genccode/Makefile.in
+--- icu/source/tools/genccode/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/genccode/Makefile.in	2026-07-28 12:40:48.572169256 +0100
+@@ -27,7 +27,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GCODETARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -52,11 +52,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GCODETARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(GCODETARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -66,7 +66,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GCODETARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -77,7 +77,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GCODETARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/gencfu/Makefile.in icu.aros/source/tools/gencfu/Makefile.in
+--- icu/source/tools/gencfu/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/gencfu/Makefile.in	2026-07-28 12:40:48.572226156 +0100
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GCFUTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(top_srcdir)/i18n -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GCFUTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GCFUTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GCFUTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GCFUTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/gencmn/Makefile.in icu.aros/source/tools/gencmn/Makefile.in
+--- icu/source/tools/gencmn/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/gencmn/Makefile.in	2026-07-28 12:40:48.572272956 +0100
+@@ -27,7 +27,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GCMNTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -52,11 +52,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GCMNTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(GCMNTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -66,7 +66,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GCMNTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -77,7 +77,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GCMNTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/gencnval/Makefile.in icu.aros/source/tools/gencnval/Makefile.in
+--- icu/source/tools/gencnval/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/gencnval/Makefile.in	2026-07-28 12:40:48.572538856 +0100
+@@ -27,7 +27,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GCNVALTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -52,11 +52,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GCNVALTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GCNVALTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -66,7 +66,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GCNVALTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -77,7 +77,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GCNVALTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/gendict/Makefile.in icu.aros/source/tools/gendict/Makefile.in
+--- icu/source/tools/gendict/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/gendict/Makefile.in	2026-07-28 12:40:48.572585756 +0100
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GDCTTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GDCTTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GDCTTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GDCTTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GDCTTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/gennorm2/Makefile.in icu.aros/source/tools/gennorm2/Makefile.in
+--- icu/source/tools/gennorm2/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/gennorm2/Makefile.in	2026-07-28 12:40:48.572671456 +0100
+@@ -22,7 +22,7 @@
+ CLEANFILES = *~ $(DEPS)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GNR2TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(srcdir) -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -47,17 +47,17 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET)
++all-local: $(GNR2TARGET)
+ 
+ install-local: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(GNR2TARGET) $(DESTDIR)$(sbindir)
+ 
+ dist-local:
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GNR2TARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -68,7 +68,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GNR2TARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/genrb/Makefile.in icu.aros/source/tools/genrb/Makefile.in
+--- icu/source/tools/genrb/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/genrb/Makefile.in	2026-07-28 12:40:48.572938056 +0100
+@@ -29,7 +29,7 @@
+ CLEANFILES = *~ $(MAN_FILES) $(DEPS) $(DERB_DEPS)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GRBTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ # derb depends on icuio
+ @ICUIO_TRUE@DERB = $(BINDIR)/$(DERB_STUB_NAME)$(EXEEXT)
+ 
+@@ -62,11 +62,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(DERB) $(MAN_FILES)
++all-local: $(GRBTARGET) $(DERB) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GRBTARGET) $(DESTDIR)$(bindir)
+ @ICUIO_TRUE@	$(INSTALL) $(DERB) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+@@ -77,7 +77,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(DERB) $(OBJECTS) $(DERB_OBJ)
++	$(RMV) $(GRBTARGET) $(DERB) $(OBJECTS) $(DERB_OBJ)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -88,7 +88,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GRBTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/gensprep/Makefile.in icu.aros/source/tools/gensprep/Makefile.in
+--- icu/source/tools/gensprep/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/gensprep/Makefile.in	2026-07-28 12:40:48.572985056 +0100
+@@ -27,7 +27,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GSPREPTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -52,11 +52,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GSPREPTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(GSPREPTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -66,7 +66,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GSPREPTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -77,7 +77,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GSPREPTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS) 
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/gentest/Makefile.in icu.aros/source/tools/gentest/Makefile.in
+--- icu/source/tools/gentest/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/gentest/Makefile.in	2026-07-28 12:40:48.573026456 +0100
+@@ -20,7 +20,7 @@
+ CLEANFILES = *~ $(DEPS)
+ 
+ ## Target information
+-TARGET = gentest$(EXEEXT)
++GTESTTARGET = gentest$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil -I$(top_srcdir)/tools/ctestfw 
+ CPPFLAGS+= -I$(top_srcdir)/i18n
+@@ -46,7 +46,7 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) 
++all-local: $(GTESTTARGET) 
+ 
+ install-local: all-local
+ 
+@@ -54,7 +54,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GTESTTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -65,7 +65,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GTESTTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS) 
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/icuinfo/Makefile.in icu.aros/source/tools/icuinfo/Makefile.in
+--- icu/source/tools/icuinfo/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/icuinfo/Makefile.in	2026-07-28 12:40:48.573315156 +0100
+@@ -20,7 +20,7 @@
+ CLEANFILES = *~ $(DEPS) $(PLUGIN_OBJECTS) $(PLUGINFILE) $(PLUGIN)
+ 
+ ## Target information
+-TARGET = icuinfo$(EXEEXT)
++IINFTARGET = icuinfo$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil -I$(top_srcdir)/tools/ctestfw 
+ CPPFLAGS+= -I$(top_srcdir)/i18n
+@@ -52,30 +52,30 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) 
++all-local: $(IINFTARGET) 
+ 
+ install-local: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(IINFTARGET) $(DESTDIR)$(bindir)
+ 
+ dist-local:
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(IINFTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+ 
+-check-local: $(TARGET)
+-	$(INVOKE) ./$(TARGET) $(ICUINFO_OPTS)
++check-local: $(IINFTARGET)
++	$(INVOKE) ./$(IINFTARGET) $(ICUINFO_OPTS)
+ 
+ Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ -include Makefile.local
+ 
+-$(TARGET) : $(OBJECTS)
++$(IINFTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS) 
+ 	$(POST_BUILD_STEP)
+ 
+@@ -101,7 +101,7 @@
+ plugin: $(PLUGIN)
+ 
+ plugin-check: $(PLUGIN) $(PLUGINFILE)
+-	$(INVOKE) ICU_PLUGINS="$(CURR_FULL_DIR)" ./$(TARGET) -v -L
++	$(INVOKE) ICU_PLUGINS="$(CURR_FULL_DIR)" ./$(IINFTARGET) -v -L
+ else
+ plugin plugin-check $(PLUGIN):
+ 	@echo "Plugins are disabled (use --enable-plugins to enable)"
+diff -ruN --strip-trailing-cr icu/source/tools/icupkg/Makefile.in icu.aros/source/tools/icupkg/Makefile.in
+--- icu/source/tools/icupkg/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/icupkg/Makefile.in	2026-07-28 12:40:48.573377756 +0100
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++ICUPKGTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(ICUPKGTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(ICUPKGTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -66,7 +66,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(ICUPKGTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -77,7 +77,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(ICUPKGTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/icuswap/Makefile.in icu.aros/source/tools/icuswap/Makefile.in
+--- icu/source/tools/icuswap/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/icuswap/Makefile.in	2026-07-28 12:40:48.573673156 +0100
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++ICUSWPTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(ICUSWPTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(ICUSWPTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ #	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -66,7 +66,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(ICUSWPTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -77,7 +77,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(ICUSWPTARGET) : $(OBJECTS)
+ 	echo Note: icuswap is obsolete - use icupkg instead.
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+diff -ruN --strip-trailing-cr icu/source/tools/makeconv/Makefile.in icu.aros/source/tools/makeconv/Makefile.in
+--- icu/source/tools/makeconv/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/makeconv/Makefile.in	2026-07-28 12:40:48.573765556 +0100
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++MAKECONVTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(srcdir) -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(MAKECONVTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(MAKECONVTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -66,7 +66,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(MAKECONVTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -77,7 +77,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(MAKECONVTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/pkgdata/Makefile.in icu.aros/source/tools/pkgdata/Makefile.in
+--- icu/source/tools/pkgdata/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/pkgdata/Makefile.in	2026-07-28 12:40:48.573884456 +0100
+@@ -30,7 +30,7 @@
+ endif
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++PKGDATATARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(srcdir) -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ DEFS += -DUDATA_SO_SUFFIX=\".$(SO)\" -DSTATIC_O=\"$(STATIC_O)\"
+@@ -56,11 +56,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(PKGDATATARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(PKGDATATARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -71,7 +71,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(PKGDATATARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -82,7 +82,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(PKGDATATARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN --strip-trailing-cr icu/source/tools/toolutil/Makefile.in icu.aros/source/tools/toolutil/Makefile.in
+--- icu/source/tools/toolutil/Makefile.in	2026-03-17 17:44:50.000000000 +0000
++++ icu.aros/source/tools/toolutil/Makefile.in	2026-07-28 12:40:48.575296456 +0100
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(TOOLUTIL_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++TOOLUTILTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -37,7 +37,7 @@
+ ALL_SO_TARGETS = $(SO_TARGET) $(MIDDLE_SO_TARGET) $(FINAL_SO_TARGET) $(SHARED_OBJECT)
+ endif
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS)
++ALL_TARGETS = $(TOOLUTILTARGET) $(ALL_SO_TARGETS)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -87,7 +87,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(TOOLUTILTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ # For MinGW, do we want the DLL to go in the bin location?
+@@ -130,7 +130,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(TOOLUTILTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
