@@ -20,6 +20,7 @@ static int KbdHidd_InitClass(struct kbdbase *LIBBASE)
     struct OOP_ABDescr attrbases[] =
     {
         {IID_HW,            &LIBBASE->csd.hwAB          },
+        {IID_HW_Input,      &LIBBASE->csd.hwInputAB     },
         {IID_Hidd_Input,    &LIBBASE->csd.hiddInputAB   },
         {NULL,              NULL                        }
     };
@@ -54,6 +55,7 @@ static int KbdHidd_ExpungeClass(struct kbdbase *LIBBASE)
     struct OOP_ABDescr attrbases[] =
     {
         {IID_HW,            &LIBBASE->csd.hwAB          },
+        {IID_HW_Input,      &LIBBASE->csd.hwInputAB     },
         {IID_Hidd_Input,    &LIBBASE->csd.hiddInputAB   },
         {NULL,              NULL                        }
     };

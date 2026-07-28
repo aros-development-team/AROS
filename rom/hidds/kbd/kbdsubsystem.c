@@ -69,8 +69,9 @@ OOP_Object *KBDHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
         struct TagItem new_tags[] =
         {
-            {aHW_ClassName, (IPTR)"Keyboards"},
-            {TAG_DONE     , 0                }
+            {aHW_ClassName,       (IPTR)"Keyboards"                 },
+            {aHW_Input_EventSize, sizeof(struct pHidd_Kbd_Event)    },
+            {TAG_DONE           , 0                                 }
         };
         struct pRoot_New new_msg =
         {

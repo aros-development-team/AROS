@@ -68,17 +68,61 @@
 
 *****************************************************************************************/
 
+/*
+ * Copy an event into the subsystem's pending buffer. Called (possibly in
+ * interrupt context) when an event arrives while no consumer is
+ * registered; the buffered events are replayed to the first consumer by
+ * InputHW_FlushPendingEvents(). Events beyond the buffer capacity, and
+ * events of subsystems that declared no aHW_Input_EventSize, are dropped
+ * as before.
+ */
+static void InputHW__BufferPendingEvent(struct InputHWData *hd, InputIrqData_t cbData)
+{
+    const UBYTE *src = cbData;
+    UBYTE *dst;
+    UWORD i;
+
+    if (!hd->ihd_evsize || hd->ihd_pendingcnt >= IHD_PENDING_MAX)
+        return;
+
+    dst = hd->ihd_pending[hd->ihd_pendingcnt];
+    for (i = 0; i < hd->ihd_evsize; i++)
+        dst[i] = src[i];
+    hd->ihd_pendingcnt++;
+}
+
 static void InputHW__CallBackFunc(struct MinList *cbList, InputIrqData_t cbData)
 {
+    /* cbList is &InputHWData::ihd_consumers, its first member */
+    struct InputHWData *hd = (struct InputHWData *)cbList;
     struct InputHWInstData *data;
 
     D(bug("[Input:HW] %s(0x%p)\n", __func__, cbList));
 
-    for (data = (struct InputHWInstData *)cbList->mlh_Head; data->ihid_node.mln_Succ;
+    data = (struct InputHWInstData *)cbList->mlh_Head;
+    if (!data->ihid_node.mln_Succ) {
+        /* No consumer registered yet: hold the event for replay */
+        InputHW__BufferPendingEvent(hd, cbData);
+        return;
+    }
+
+    for (; data->ihid_node.mln_Succ;
          data = (struct InputHWInstData *)data->ihid_node.mln_Succ)
     {
         data->ihid_callback(data->ihid_private, cbData);
     }
+}
+
+void InputHW_FlushPendingEvents(struct MinList *cbList, InputIrqCallBack_t callback,
+    APTR callbackdata)
+{
+    /* cbList is &InputHWData::ihd_consumers, its first member */
+    struct InputHWData *hd = (struct InputHWData *)cbList;
+    UWORD i;
+
+    for (i = 0; i < hd->ihd_pendingcnt; i++)
+        callback(callbackdata, (InputIrqData_t)hd->ihd_pending[i]);
+    hd->ihd_pendingcnt = 0;
 }
 
 OOP_Object *InputHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -88,6 +132,7 @@ OOP_Object *InputHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     struct TagItem              *tag, *tstate;
     char                        *inputSSName = NULL;
     OOP_Object                  *inputSSObj = NULL;
+    UWORD                       inputSSEvSize = 0;
 
     D(bug("[Input:HW] %s(0x%p, 0x%p, 0x%p)\n", __func__, cl, o, msg));
 
@@ -102,6 +147,13 @@ OOP_Object *InputHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                     break;
             }
         }
+        else if (IS_HWINPUT_ATTR(tag->ti_Tag, idx)) {
+            switch (idx) {
+                case aoHW_Input_EventSize:
+                    inputSSEvSize = (UWORD)tag->ti_Data;
+                    break;
+            }
+        }
     }
 
     if (inputSSName) {
@@ -111,6 +163,8 @@ OOP_Object *InputHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             struct InputHWData *hd = OOP_INST_DATA(cl, inputSSObj);
             D(bug("[Input:HW] %s: Consumer List @ 0x%p\n", __func__, &hd->ihd_consumers));
             NEWLIST(&hd->ihd_consumers);
+            hd->ihd_evsize = (inputSSEvSize <= IHD_PENDING_EVSIZE) ? inputSSEvSize : 0;
+            hd->ihd_pendingcnt = 0;
         }
     }
     D(bug("[Input:HW] %s: Returning 0x%p\n", __func__, inputSSObj));
@@ -189,6 +243,13 @@ void InputHW__HW_Input__PushEvent(OOP_Class *cl, OOP_Object *o, struct pHW_Input
     struct InputHWInstData *data;
 
     D(bug("[Input:HW] %s()\n", __func__));
+
+    data = (struct InputHWInstData *)hd->ihd_consumers.mlh_Head;
+    if (!data->ihid_node.mln_Succ) {
+        /* No consumer registered yet: hold the event for replay */
+        InputHW__BufferPendingEvent(hd, Msg->iedata);
+        return;
+    }
 
     ForeachNode(&hd->ihd_consumers, data) {
         data->ihid_callback(data->ihid_private, Msg->iedata);

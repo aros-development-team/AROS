@@ -48,11 +48,13 @@ enum {
 
 enum {
    aoHW_Input_ConsumerList,
-   
+   aoHW_Input_EventSize,
+
    num_HW_Input_Attrs
 };
 
 #define aHW_Input_ConsumerList		(aoHW_Input_ConsumerList        + HWInputAB)
+#define aHW_Input_EventSize		(aoHW_Input_EventSize           + HWInputAB)
 
 #define IS_HWINPUT_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HWInputAB, num_HW_Input_Attrs)
 
