@@ -2,7 +2,7 @@
 #define _POSIXC_STDLIB_H_
 
 /*
-    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file stdlib.h
@@ -38,6 +38,16 @@ void srandom(unsigned);
 int setenv(const char *, const char *, int);
 int unsetenv(const char *);
 int posix_memalign(void **memptr, size_t alignment, size_t size);
+#endif
+
+/*
+ * realpath() is older than POSIX.1-2001: it is an XSI extension from XPG4v2,
+ * so it is also visible at _XOPEN_SOURCE >= 500 (__USE_XOPEN_EXTENDED), which
+ * is the level <aros/features.h> falls back to when the source defines no
+ * feature test macro at all.
+ */
+#if defined(_GNU_SOURCE) || (_POSIX_C_SOURCE >= 200112L) || defined(__USE_XOPEN2K) \
+    || defined(__USE_XOPEN_EXTENDED) || defined(__USE_XOPEN2K8)
 char *realpath(const char * restrict, char * restrict);
 #endif
 
