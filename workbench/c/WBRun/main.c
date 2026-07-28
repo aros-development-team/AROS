@@ -13,6 +13,9 @@
 #include <proto/utility.h>
 
 #define DEBUG 0
+#if DEBUG
+#define SH_GLOBAL_SYSBASE 1     /* for kprintf() */
+#endif
 #include <aros/debug.h>
 
 #define SH_GLOBAL_DOSBASE TRUE

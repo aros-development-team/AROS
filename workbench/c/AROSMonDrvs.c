@@ -48,6 +48,9 @@
 ******************************************************************************/
 
 #define DEBUG 0
+#if DEBUG
+#define SH_GLOBAL_SYSBASE 1     /* for kprintf() */
+#endif
 
 #include <aros/debug.h>
 #include <dos/dosextens.h>
@@ -119,7 +122,7 @@ static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, 
         {
             struct MonitorNode *newnode;
 
-            DB2(bug("[LoadMonDrvs] Found monitor name %s\n", ap->ap_Info.fib_FileName));
+            D(bug("[LoadMonDrvs] Found monitor name %s\n", ap->ap_Info.fib_FileName));
 
             /* Software composition driver was loaded before */
             if (strcmp(ap->ap_Info.fib_FileName, COMPOSITING_NAME))
@@ -161,6 +164,7 @@ static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase,
     struct ExecBase *SysBase)
 {
     struct MonitorNode *node;
+    D(BOOL res;)
 
     D(bug("[LoadMonDrvs] Loading monitor drivers...\n"));
     D(bug(" Pri Name\n"));
@@ -168,7 +172,9 @@ static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase,
     ForeachNode(monitorsList, node)
     {
         D(bug("%4d %s\n", node->n.ln_Pri, node->Name));
-        Execute(node->Name, BNULL, BNULL);
+        D(bug("[LoadMonDrvs] Execute('%s') ...\n", node->Name));
+        D(res = ) Execute(node->Name, BNULL, BNULL);
+        D(bug("[LoadMonDrvs] Execute('%s') returned %d, IoErr %ld\n", node->Name, res, (long)IoErr()));
     }
 
     D(bug("--------------------------\n"));
@@ -183,21 +189,30 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
     APTR pool;
     struct Library *IconBase;
     BPTR dir, olddir;
-    BOOL res = TRUE;
+    UBYTE res = RETURN_OK;
+
+    D(bug("[LoadMonDrvs] Start: NOCOMPOSITION=%d ONLYCOMPOSITION=%d\n",
+          SHArg(NOCOMPOSITION), SHArg(ONLYCOMPOSITION)));
 
     dir = Lock(MONITORS_DIR, SHARED_LOCK);
     D(bug("[LoadMonDrvs] Monitors directory 0x%p\n", dir));
     if (dir)
     {
         olddir = CurrentDir(dir);
+        D(bug("[LoadMonDrvs] CurrentDir 0x%p -> 0x%p\n", olddir, dir));
 
         if (!SHArg(NOCOMPOSITION))
         {
             /* Software composition driver is run first */
+            D(BOOL cres;)
+
             D(bug("[LoadMonDrvs] Loading composition driver...\n"));
-            Execute(COMPOSITING_NAME, BNULL, BNULL);
+            D(bug("[LoadMonDrvs] Execute('%s') ...\n", COMPOSITING_NAME));
+            D(cres = ) Execute(COMPOSITING_NAME, BNULL, BNULL);
+            D(bug("[LoadMonDrvs] Execute('%s') returned %d, IoErr %ld\n",
+                  COMPOSITING_NAME, cres, (long)IoErr()));
         }
-        
+
         if (!SHArg(ONLYCOMPOSITION))
         {
             pool = CreatePool(MEMF_ANY, sizeof(struct MonitorNode) * 10, sizeof(struct MonitorNode) * 5);
@@ -210,20 +225,29 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
                 IconBase = OpenLibrary("icon.library", 0);
                 if (IconBase)
                 {
-                    findMonitors(&MonitorsList, DOSBase, IconBase, SysBase, pool);
+                    D(bug("[LoadMonDrvs] findMonitors ...\n"));
+                    if (!findMonitors(&MonitorsList, DOSBase, IconBase, SysBase, pool))
+                        res = RETURN_ERROR;
+                    D(bug("[LoadMonDrvs] findMonitors done, list %s\n",
+                          IsListEmpty(&MonitorsList) ? "empty" : "non-empty"));
                     loadMonitors(&MonitorsList, DOSBase, SysBase);
+                    D(bug("[LoadMonDrvs] loadMonitors done\n"));
                     CloseLibrary(IconBase);
                 }
                 DeletePool(pool);
             }
             else
-                res = FALSE;
+                res = RETURN_FAIL;
         }
 
         CurrentDir(olddir);
         UnLock(dir);
     }
-    
+    else
+        res = RETURN_WARN;
+
+    D(bug("[LoadMonDrvs] Exit, res %d\n", res));
+
     return res;
 
     AROS_SHCOMMAND_EXIT
