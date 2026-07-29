@@ -246,7 +246,7 @@ static void CloseVolume(void)
 int main(int argc, char *argv[])
 {
 	struct RDArgs *rdarg;
-	LONG args[ARGS_SIZE] =  { 0 };
+	SIPTR args[ARGS_SIZE] =  { 0 };
 	int cnt = 0;
 	uint32 opties;
 

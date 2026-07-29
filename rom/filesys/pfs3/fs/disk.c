@@ -1561,7 +1561,7 @@ retry:
 
 #endif /* SCSI Direct */
 
-#if TD64
+#if TRACKDISK || TD64 || NSD
 
 /*
  * Normal commands
@@ -1671,7 +1671,7 @@ retry_format:
 #endif /* TRACKDISK */
 
 
-#endif /* TD64 */
+#endif /* TRACKDISK || TD64 || NSD */
 
 ULONG RawRead(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 {
@@ -1778,6 +1778,8 @@ static BOOL testbuffer(UBYTE *buffer, UBYTE data, globaldata *g)
 	}
 	return FALSE;
 }
+
+#endif /* ACCESS_DETECT */
 
 #if SCSIDIRECT
 
@@ -1933,6 +1935,11 @@ BOOL get_scsi_geometry(globaldata *g)
 	
 	return TRUE;
 }
+
+#endif /* SCSIDIRECT */
+
+#if ACCESS_DETECT
+#if SCSIDIRECT
 
 static BOOL testread_ds2(UBYTE *buffer, globaldata *g)
 {

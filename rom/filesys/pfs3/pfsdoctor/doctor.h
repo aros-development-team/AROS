@@ -48,13 +48,15 @@
 #define max(a,b) MAX(a,b)
 #endif
 
-typedef unsigned long uint32;
-typedef unsigned short uint16;
-typedef unsigned char uint8;
-typedef long int32;
-typedef short int16;
-typedef char int8;
+typedef ULONG uint32;
+typedef UWORD uint16;
+typedef UBYTE uint8;
+typedef LONG int32;
+typedef WORD int16;
+typedef BYTE int8;
+#if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || (__STDC_VERSION__ < 202000L))
 typedef enum {false, true} bool;
+#endif
 
 // last two bytes used for extended file size
 #define DELENTRYFNSIZE 16
