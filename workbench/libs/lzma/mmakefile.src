@@ -13,7 +13,7 @@ REPOSITORIES := \
     https://tukaani.org/xz
 ARCHBASE     := xz-$(VERSION)
 ARCHSUFFIX := "tar.gz"
-##PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
 ARCHSRCDIR := $(PORTSDIR)/xz/$(ARCHBASE)
 
 USER_CFLAGS :=
@@ -31,6 +31,12 @@ USER_CPPFLAGS := \
     -DHAVE_INTTYPES_H \
     -DHAVE_STDINT_H \
     -DHAVE_STDBOOL_H
+
+# xz's own build systems provide this via configure; without it liblzma
+# builds the little-endian CRC slicing code on big-endian targets.
+ifneq (,$(filter m68k ppc,$(AROS_TARGET_CPU)))
+USER_CPPFLAGS += -DWORDS_BIGENDIAN
+endif
 
 %fetch mmake=xz-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/xz \
     location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/xz \
