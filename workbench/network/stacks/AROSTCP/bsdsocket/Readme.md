@@ -33,8 +33,8 @@ library and use the Berkeley socket API (`socket`/`bind`/`connect`/`send`/`recv`
 | `api/`      | The `bsdsocket.library` API surface: syscall layer (`amiga_syscalls.c`, `amiga_sendrecv.c`), library open/close/dispatch (`amiga_api.c`, `amiga_libcalls.c`, `amiga_generic*.c`), the resolver (`res_*.c`, `gethostnamadr.c`, `getxbyy.c`), address/interface helpers (`getifaddrs.c`, `if_name*`, `inet_*`), and the Roadshow/Miami compatibility APIs (`amiga_roadshow.c`, `miami_api.c`). |
 | `kern/`     | Kernel glue and the socket layer: `uipc_socket*.c` (socket layer), `uipc_mbuf.c` (mbufs), `kern_malloc.c` (pooled allocator), `kern_synch.c` (`spl`/`tsleep`/`wakeup`), `subr_prf.c` (kernel `printf`/`log`), `amiga_main.c` (daemon init), configuration/ARexx/GUI/DHCP integration (`amiga_config.c`, `amiga_rexx.c`, `amiga_gui.c`, `amiga_dhcp.c`), name database (`amiga_netdb.c`), access control (`accesscontrol.c`). |
 | `net/`      | Link and routing layer: routing (`route.c`, `radix.c`, `rtsock.c`), interfaces (`if.c`, `if_loop.c`), the SANA-II driver interface (`if_sana.c`, `sana2arp.c`, `sana2*.c`), BPF (`bpf*.c`), packet filter hooks (`pfil.c`, `ipfilter.c`), and the software-interrupt queue (`netisr.c`). |
-| `netinet/`  | IPv4 and the (dual-stack) TCP engine: `ip_input.c`/`ip_output.c`/`ip_icmp.c`, `in.c`/`in_pcb.c`/`in_proto.c`, the TCP engine (`tcp_input.c`, `tcp_output.c`, `tcp_subr.c`, `tcp_usrreq.c`, `tcp_timer.c`), the SYN cache (`tcp_syncache.c`), congestion control (`tcp_cc_newreno.c`, `tcp_cc_cubic.c`, `tcp_cc.h`), UDP (`udp_usrreq.c`), raw IP (`raw_ip.c`), and the Internet checksum (`in_cksum.c` / `in_cksum_sse2.c`). |
-| `netinet6/` | IPv6 (KAME-derived): `ip6_input.c`/`ip6_output.c`, `icmp6.c`, neighbour discovery (`nd6.c`, `nd6_nbr.c`, `nd6_rtr.c`), MLD (`mld6.c`), `in6.c`/`in6_pcb.c`/`in6_proto.c`, UDP6 (`udp6_usrreq.c`), and the IPv6 checksum (`in6_cksum.c` / `in6_cksum_sse2.c`). |
+| `netinet/`  | IPv4 and the (dual-stack) TCP engine: `ip_input.c`/`ip_output.c`/`ip_icmp.c`, `in.c`/`in_pcb.c`/`in_proto.c`, IGMPv2 host membership (`igmp.c`), the TCP engine (`tcp_input.c`, `tcp_output.c`, `tcp_subr.c`, `tcp_usrreq.c`, `tcp_timer.c`), the SYN cache (`tcp_syncache.c`), congestion control (`tcp_cc_newreno.c`, `tcp_cc_cubic.c`, `tcp_cc.h`), UDP (`udp_usrreq.c`), raw IP (`raw_ip.c`), and the Internet checksum (`in_cksum.c` / `in_cksum_sse2.c` / `in_cksum_neon.c`). |
+| `netinet6/` | IPv6 (KAME-derived): `ip6_input.c`/`ip6_output.c`, `icmp6.c`, neighbour discovery (`nd6.c`, `nd6_nbr.c`, `nd6_rtr.c`), MLD (`mld6.c`), `in6.c`/`in6_pcb.c`/`in6_proto.c`, UDP6 (`udp6_usrreq.c`), and the IPv6 checksum (`in6_cksum.c` / `in6_cksum_sse2.c` / `in6_cksum_neon.c`). |
 | `sys/`, `conf/` | Local system headers and the `conf.h` build configuration (`INET6`, debug gates, compiler macros). Shared protocol headers live in `AROS/workbench/network/common/include`. |
 
 ---
@@ -215,7 +215,10 @@ overlay), so header building and the state machine are shared; only the family e
   an existing PCB is rejected with `EADDRINUSE` unless `SO_REUSEADDR`/`SO_REUSEPORT` is set.
 - **UDP6** is a separate path (`udp6_usrreq`/`udp6_output`/`udp6_input`) reusing the shared `inpcb`.
   `if_loop.c loconfig()` configures `lo0` with `::1` (and `127.0.0.1`); `::1` is in `in6_ifaddr` so
-  `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip.
+  `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. With
+  `IPV6_HOPLIMIT` set (the `IN6P_HOPLIMIT` flag), `udp6_input` delivers the received hop limit as an
+  `IPPROTO_IPV6` ancillary `cmsg` built by `udp6_saveopt`, assembled before the headers are stripped
+  (RFC 3542).
 
 ### 6.1 Neighbour Discovery
 
@@ -225,6 +228,38 @@ dispatches ICMPv6, and `in6.c` performs link-local autoconfiguration and joins t
 group via `in6_addmulti` → `S2_ADDMULTICASTADDRESS`, mapping `ff02::X` → `33:33:XX:XX:XX:XX`.
 `nd6_lookup` returns a neighbour route with its reference **held** (KAME semantics); every caller
 `rtfree()`s it when done.
+
+### 6.2 Multicast Listener Discovery (MLD)
+
+`mld6.c` is the host side of MLD. `in6_addmulti`/`in6_delmulti` maintain the `in6_multihead` list
+and drive the reports. **MLDv1** (RFC 2710) answers Listener Queries with delayed Listener Reports
+and sends Done on leaving, with report suppression and the `ff02::1` exemption. **MLDv2** (RFC 3810)
+is layered on top: a Query is recognised as v2 by its length (an MLDv1 Query is exactly
+`struct mld_hdr`), the floating-point Maximum Response Code is decoded, and the pending response is
+flagged so timer expiry emits an ICMPv6 type-143 Report — a single `MODE_IS_EXCLUDE` record with no
+sources (equivalent to a plain membership) sent to `ff02::16`. A v1 querier still receives v1
+Reports. Per-source filtering is not tracked.
+
+### 6.3 Path MTU Discovery (RFC 8201)
+
+IPv6 routers never fragment, so an oversized datagram is dropped and reported with ICMPv6 Packet Too
+Big. `icmp6_input` handles that type by reading the reported next-hop MTU and the quoted packet's
+destination (copied out of the packed headers into aligned locals for strict-alignment targets) and
+calling `icmp6_update_pmtu`, which records the MTU on the destination route
+(`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only) and notifies upper layers via
+`pfctlinput(PRC_MSGSIZE)`. `ip6_output` then caps each datagram at the route's discovered PMTU (never
+above the link MTU), so subsequent traffic fits the bottleneck link instead of being black-holed.
+
+### 6.4 Extension-header processing (RFC 8200)
+
+The `ip6_input` header-skip loop enforces conformant handling of options and routing headers.
+Hop-by-Hop and Destination Options headers are pulled up in full and their TLV options walked:
+Pad1/PadN are recognised and skipped, and any unrecognised option is acted on by its two high-order
+type bits — `00` skip, `01` discard, `10` discard and send ICMPv6 Parameter Problem, `11` as `10`
+but suppressed when the destination is multicast. The Routing header is handled by Segments Left:
+zero means skip to the next header, non-zero means the routing type is unrecognised, so the packet is
+discarded with Parameter Problem pointing at the Routing Type field. Header lengths are validated
+against the packet bounds before use, and the running header count remains capped.
 
 ---
 
@@ -237,6 +272,14 @@ group via `in6_addmulti` → `S2_ADDMULTICASTADDRESS`, mapping `ff02::X` → `33
   500 ms slow-tick, keyed off the `tcp_now` clock; suppressed errors are counted in
   `icmpstat.icps_ratelimit`, bounding ICMP error amplification.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table.
+- **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
+  mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
+  `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →
+  `01:00:5e:XX:XX:XX`, `S2_ADD/DELMULTICASTADDRESS`). `igmp.c` is the IGMPv2 host (RFC 2236):
+  unsolicited Reports on join, jittered responses to general/group-specific Queries, report
+  suppression, Leave on last-reporter drop, and a Router Alert (RFC 2113) option on output; it is
+  wired into `inetsw` as `IPPROTO_IGMP` with fast/slow timers. There is no querier/router role and
+  no multicast routing.
 
 ---
 
@@ -247,6 +290,7 @@ The Internet checksum has two implementations selected by CPU at build time (mma
 
 - **x86_64:** SSE2-optimised (`in_cksum_sse2.c`, `in6_cksum_sse2.c`) — a vectorised ones-complement
   sum with explicit inter-mbuf odd-byte handling. On x86_64 this is the only implementation built.
+- **aarch64:** NEON-optimised (`in_cksum_neon.c`, `in6_cksum_neon.c`).
 - **All other architectures** (including m68k): the portable `in_cksum.c` / `in6_cksum.c`.
 
 Both variants produce identical results across even, odd-length, odd-start-address, and multi-mbuf
@@ -277,8 +321,10 @@ Properties the implementation provides:
 - **Memory-pressure safety.** Because `M_WAIT` can fail (§3.3), socket-layer and protocol
   allocation sites NULL-check and return `ENOBUFS` rather than dereferencing `NULL`.
 - **Input bounds validation.** Header and length fields are validated against the actual packet
-  bounds before use: the IPv6 extension-header walk bounds the running offset and caps the header
-  count (`ip6_input.c`), UDP6 validates `uh_ulen` before using it as the checksum span
+  bounds before use: the IPv6 extension-header walk bounds the running offset, validates each
+  option/header length against the packet, and caps the header count, rejecting or reporting
+  malformed options per RFC 8200 (§6.4, `ip6_input.c`), UDP6 validates `uh_ulen` before using it as
+  the checksum span
   (`udp6_usrreq.c`), TCP option parsing bounds each option length against the remaining bytes
   (`tcp_dooptions`), and the resolver bounds DNS answer parsing (`getanswer`: `MAXADDRS`/`eom`
   guards) and query construction (`res_mkquery`).
@@ -304,6 +350,10 @@ Properties the implementation provides:
   MTUs (Ethernet/SANA-II) but not jumbo-frame IPv6.
 - **x86_64 checksum requires SSE2.** Only the SSE2 checksum is compiled on x86_64, with no scalar
   fallback. SSE2 is baseline on all x86_64 CPUs, so this is not a practical restriction.
+- **Multicast is host-only.** IGMP (IPv4) and MLD (IPv6) implement the group-member role only —
+  there is no querier/router role and no multicast routing (mrouted). The MLDv1/MLDv2 reports do not
+  yet prepend a Hop-by-Hop Router Alert option (IGMP does), and `IPV6_PKTINFO` ancillary delivery on
+  UDP/IPv6 receive is still a TODO (`IPV6_HOPLIMIT` is delivered).
 - **Unimplemented API surface.** Several Roadshow interface-management entrypoints
   (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, `ObtainInterfaceList`, …) and Miami calls
   (`MiamiSysCtl`, `MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented".
@@ -323,6 +373,20 @@ undeclared. `tcp_input.c` and `tcp_subr.c` do not use `tcp_outflags`, so they si
 
 `tcp_iss` is typed `tcp_seq` (unsigned); its definition and the `extern` in `tcp_compat.h` are kept
 in lockstep.
+
+### Public vs. local headers
+
+Some `netinet` headers exist both as a **public** copy in `common/include/netinet/` (staged into the
+build's `Developer/include` and resolved by the compiler's `<...>` sysroot path) and as a **local**
+copy in the stack's own `netinet/`. The public copy holds definitions visible outside the stack; the
+local copy `#include <netinet/foo.h>` to pull those in and then adds kernel-internal additions
+(private structs, prototypes, macros). Because the sysroot copy always wins for an angle include,
+stack sources that need the kernel additions include the local copy by its **unprefixed** quoted
+name — e.g. `#include "in_var.h"` (a bare `"netinet/in_var.h"` would misresolve to the public copy).
+The local copy must use an **include guard distinct from the public header's** (e.g.
+`AROSTCP_NETINET_IN_VAR_H` vs `IN_VAR_H`), otherwise its `#include` of the public header is
+suppressed. `netinet/in_var.h` follows this pattern to carry the IPv4 multicast machinery
+(`struct in_multi`, `struct ip_moptions`, the membership macros, `in_addmulti`/`in_delmulti`).
 
 ---
 
