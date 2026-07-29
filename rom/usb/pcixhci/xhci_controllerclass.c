@@ -97,6 +97,8 @@ static BOOL XHCIController__Init(struct PCIController *hc)
         return FALSE;
     }
 
+    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
+
     if(hc->hc_Unit) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Initializing hardware for unit #%d" DEBUGCOLOR_RESET" \n",
                         hc->hc_Unit->hu_UnitNo);
@@ -117,7 +119,6 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     xhcic->xhc_XHCIIntR  = (APTR)((IPTR)xhciregs + AROS_LE2LONG(xhciregs->rrsoff) + 0x20);
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Interrupt Registers @ 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_XHCIIntR);
 
-    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
 
     /* Cache capability parameters once */
     ULONG hcsparams1 = AROS_LE2LONG(xhciregs->hcsparams1);
