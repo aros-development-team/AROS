@@ -135,14 +135,16 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
     _intuitionBase->IControlPrefs.ic_ReqFalse    = 'B';
 
 
-    /*
-     * Mouse default.
-     */
-    _intuitionBase->DefaultPreferences.PointerTicks = 2;
-
     CopyMem(&IntuitionDefaultPreferences,
                 &_intuitionBase->DefaultPreferences,
                 sizeof(struct Preferences));
+
+    /*
+     * Mouse default. A pointer that tracks the reported movement one to
+     * one is unusable on anything but the lowest-resolution mice.
+     */
+    _intuitionBase->DefaultPreferences.PointerTicks = 2;
+
     CopyMem(&_intuitionBase->DefaultPreferences,
             &_intuitionBase->ActivePreferences,
             sizeof(struct Preferences));
