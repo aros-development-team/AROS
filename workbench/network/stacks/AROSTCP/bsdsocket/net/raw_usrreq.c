@@ -188,7 +188,7 @@ raw_input(struct mbuf *m0,
 void
 raw_ctlinput(int cmd, struct sockaddr *arg, caddr_t arg2)
 {
-    if(cmd < 0 || cmd > PRC_NCMDS)
+    if(cmd < 0 || cmd >= PRC_NCMDS)
         return;
     /* INCOMPLETE */
 }

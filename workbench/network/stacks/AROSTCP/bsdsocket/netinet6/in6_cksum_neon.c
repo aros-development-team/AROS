@@ -11,35 +11,38 @@
  */
 
 /*
- * in6_cksum_sse2.c - SSE2-optimised IPv6 upper-layer Internet checksum.
+ * in6_cksum_neon.c - ARM/AArch64 NEON-optimised IPv6 upper-layer checksum.
  *
- * This is the x86_64 counterpart of the portable in6_cksum.c, using
- * the same SSE2 techniques as the IPv4 in_cksum_sse2.c:
+ * This is the ARM counterpart of the portable in6_cksum.c and the x86_64
+ * in6_cksum_sse2.c.  It exports the identical public entry point --
+ *   int in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
+ * -- and produces bit-identical results to both, for every input including
+ * the IPv6 pseudo-header, an 'off' that lands mid-mbuf, multi-mbuf chains and
+ * trailing odd bytes.
  *
- * 1. SSE2 inner loop  (cksum_sse2_block6)
- *    Processes 64 bytes per iteration with four independent 128-bit
- *    accumulators.  Each 128-bit vector's 8 × u16 words are zero-extended
- *    to u32 via _mm_unpacklo/hi_epi16 before accumulation, eliminating
- *    any risk of 16-bit overflow.
+ * The mbuf-walk, offset skip, inter-mbuf odd-byte bridging and final fold are
+ * the same logic as the SSE2 file (already correct, left unchanged); only the
+ * bulk-summation inner loop and the pseudo-header vector sum use NEON
+ * intrinsics instead of SSE2 intrinsics.
  *
- * 2. 64-bit scalar accumulator
- *    All partial sums are accumulated in a uint64_t, which can absorb
- *    2^32 additions of 16-bit values without overflow.  No intermediate
- *    REDUCE is needed across the mbuf chain.
+ * -- NEON inner loop (cksum_neon_block6) -----------------------------------
  *
- * 3. Branchless 64→16 fold  (cksum_fold64_v6)
- *    Three-step carry fold: 64→33→17→16 bits using pure arithmetic.
+ * A 16-byte vector is loaded with vld1q_u8 and reinterpreted as eight u16
+ * lanes.  vpaddlq_u16 sums adjacent lane pairs while widening to four u32
+ * lanes, which are accumulated in a u32x4 accumulator with vaddq_u32.  32-bit
+ * lane accumulation means no 16-bit overflow is possible.  Four independent
+ * accumulators provide instruction-level parallelism, mirroring the SSE2
+ * path's four 128-bit accumulators.
  *
- * 4. Software prefetch
- *    __builtin_prefetch 128 bytes ahead of the SSE2 read position.
+ * -- Byte-order note -------------------------------------------------------
  *
- * 5. memcpy for strict-aliasing-safe scalar word reads.
- *
- * The IPv6 pseudo-header (RFC 2460 / 8200 §8.1) is computed by summing
- * the source and destination addresses as native-endian u16 words
- * (the ones-complement checksum is byte-order invariant when all words
- * are treated consistently), plus the upper-layer length and next-header
- * fields.
+ * ARM AROS is little-endian, so reinterpreting bytes as u16 lanes treats
+ * byte[N] as the low byte and byte[N+1] as the high byte of each word -- the
+ * same convention as the u_short reads in the portable code and the
+ * _mm_unpacklo/hi_epi16 path in the SSE2 code.  The ones-complement checksum
+ * is byte-order invariant provided all words are summed consistently, which
+ * they are here.  The inter-mbuf odd-byte bridge and final pad replicate the
+ * SSE2 file's convention verbatim.
  */
 
 #include <conf.h>
@@ -54,7 +57,9 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip6.h>
 
-#include <emmintrin.h>   /* SSE2 intrinsics — requires -msse2 */
+#if defined(__aarch64__) || defined(__arm__)
+
+#include <arm_neon.h>    /* NEON intrinsics -- requires -mfpu=neon on ARMv7 */
 #include <stdint.h>
 #include <string.h>      /* memcpy */
 
@@ -64,75 +69,76 @@
 static inline uint16_t
 cksum_fold64_v6(uint64_t sum)
 {
-    /* 64 → 32 */
+    /* 64 -> 32 */
     sum = (sum >> 32) + (sum & 0xFFFFFFFFULL);
-    /* 32 → 16 (two folds to absorb carry) */
+    /* 32 -> 16 (two folds to absorb carry) */
     sum = (sum >> 16) + (sum & 0xFFFFULL);
     sum = (sum >> 16) + (sum & 0xFFFFULL);
     return (uint16_t)sum;
 }
 
 /* ------------------------------------------------------------------ */
-/* Helper: SSE2 bulk checksum over an even-length byte range.         */
+/* Helper: reduce a u32x4 accumulator to a 64-bit scalar.             */
 /*                                                                    */
-/* Identical algorithm to cksum_sse2_block in in_cksum_sse2.c:        */
-/*   64 B/iter main loop, 16 B/iter tail, scalar 8/2 B tails,        */
-/*   four independent 128-bit accumulators for ILP.                   */
+/* vpaddlq_u32 pairwise-adds the four u32 lanes to two u64 lanes,     */
+/* which are then summed as plain scalars.  vgetq_lane_u64 exists on  */
+/* both ARMv7 NEON and AArch64, avoiding AArch64-only reductions.     */
+/* ------------------------------------------------------------------ */
+static inline uint64_t
+cksum_hsum_u32x4_v6(uint32x4_t v)
+{
+    uint64x2_t w = vpaddlq_u32(v);
+    return vgetq_lane_u64(w, 0) + vgetq_lane_u64(w, 1);
+}
+
+/* ------------------------------------------------------------------ */
+/* Helper: NEON bulk checksum over an even-length byte range.         */
+/*                                                                    */
+/* Identical structure to cksum_neon_block in in_cksum_neon.c:        */
+/*   64 B/iter main loop, 16 B/iter tail, scalar 8/2 B tails,         */
+/*   four independent u32x4 accumulators for ILP.                     */
 /* ------------------------------------------------------------------ */
 static uint64_t
-cksum_sse2_block6(const uint8_t *__restrict ptr, int count)
+cksum_neon_block6(const uint8_t *__restrict ptr, int count)
 {
-    const __m128i zero = _mm_setzero_si128();
+    uint32x4_t acc0 = vdupq_n_u32(0);
+    uint32x4_t acc1 = vdupq_n_u32(0);
+    uint32x4_t acc2 = vdupq_n_u32(0);
+    uint32x4_t acc3 = vdupq_n_u32(0);
 
-    __m128i acc0 = zero;
-    __m128i acc1 = zero;
-    __m128i acc2 = zero;
-    __m128i acc3 = zero;
-
-    /* -- 64-bytes-per-iteration SSE2 main loop -- */
+    /* -- 64-bytes-per-iteration NEON main loop -- */
     while(count >= 64) {
         __builtin_prefetch(ptr + 128, 0, 1);
 
-        __m128i a = _mm_loadu_si128((const __m128i *)(ptr +  0));
-        __m128i b = _mm_loadu_si128((const __m128i *)(ptr + 16));
-        __m128i c = _mm_loadu_si128((const __m128i *)(ptr + 32));
-        __m128i d = _mm_loadu_si128((const __m128i *)(ptr + 48));
+        uint16x8_t a = vreinterpretq_u16_u8(vld1q_u8(ptr +  0));
+        uint16x8_t b = vreinterpretq_u16_u8(vld1q_u8(ptr + 16));
+        uint16x8_t c = vreinterpretq_u16_u8(vld1q_u8(ptr + 32));
+        uint16x8_t d = vreinterpretq_u16_u8(vld1q_u8(ptr + 48));
 
-        acc0 = _mm_add_epi32(acc0, _mm_unpacklo_epi16(a, zero));
-        acc0 = _mm_add_epi32(acc0, _mm_unpackhi_epi16(a, zero));
-        acc1 = _mm_add_epi32(acc1, _mm_unpacklo_epi16(b, zero));
-        acc1 = _mm_add_epi32(acc1, _mm_unpackhi_epi16(b, zero));
-        acc2 = _mm_add_epi32(acc2, _mm_unpacklo_epi16(c, zero));
-        acc2 = _mm_add_epi32(acc2, _mm_unpackhi_epi16(c, zero));
-        acc3 = _mm_add_epi32(acc3, _mm_unpacklo_epi16(d, zero));
-        acc3 = _mm_add_epi32(acc3, _mm_unpackhi_epi16(d, zero));
+        acc0 = vaddq_u32(acc0, vpaddlq_u16(a));
+        acc1 = vaddq_u32(acc1, vpaddlq_u16(b));
+        acc2 = vaddq_u32(acc2, vpaddlq_u16(c));
+        acc3 = vaddq_u32(acc3, vpaddlq_u16(d));
 
         ptr   += 64;
         count -= 64;
     }
 
-    /* -- 16-bytes-per-iteration SSE2 tail -- */
+    /* -- 16-bytes-per-iteration NEON tail -- */
     while(count >= 16) {
-        __m128i a = _mm_loadu_si128((const __m128i *)ptr);
-        acc0 = _mm_add_epi32(acc0, _mm_unpacklo_epi16(a, zero));
-        acc0 = _mm_add_epi32(acc0, _mm_unpackhi_epi16(a, zero));
+        uint16x8_t a = vreinterpretq_u16_u8(vld1q_u8(ptr));
+        acc0 = vaddq_u32(acc0, vpaddlq_u16(a));
         ptr   += 16;
         count -= 16;
     }
 
-    /* -- Horizontal fold: four 128-bit accumulators → one 64-bit scalar -- */
+    /* -- Horizontal fold: four u32x4 accumulators -> one 64-bit scalar -- */
     {
-        __m128i acc01 = _mm_add_epi32(acc0, acc1);
-        __m128i acc23 = _mm_add_epi32(acc2, acc3);
-        __m128i acc   = _mm_add_epi32(acc01, acc23);
+        uint32x4_t acc01 = vaddq_u32(acc0, acc1);
+        uint32x4_t acc23 = vaddq_u32(acc2, acc3);
+        uint32x4_t acc   = vaddq_u32(acc01, acc23);
 
-        __m128i acc_hi  = _mm_srli_si128(acc, 8);
-        __m128i acc_sum = _mm_add_epi32(acc, acc_hi);
-
-        uint32_t lo = (uint32_t)_mm_cvtsi128_si32(acc_sum);
-        uint32_t hi = (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(acc_sum, 4));
-
-        uint64_t vsum = (uint64_t)lo + (uint64_t)hi;
+        uint64_t vsum = cksum_hsum_u32x4_v6(acc);
 
         /* -- 8-byte scalar tail -- */
         while(count >= 8) {
@@ -161,48 +167,40 @@ cksum_sse2_block6(const uint8_t *__restrict ptr, int count)
 }
 
 /* ------------------------------------------------------------------ */
-/* Helper: sum the IPv6 pseudo-header using SSE2.                     */
+/* Helper: sum the IPv6 pseudo-header using NEON.                     */
 /*                                                                    */
 /* The pseudo-header consists of:                                     */
-/*   - 16-byte source address  (8 × u16)                             */
-/*   - 16-byte destination address (8 × u16)                         */
+/*   - 16-byte source address       (8 x u16)                        */
+/*   - 16-byte destination address  (8 x u16)                        */
 /*   - 32-bit upper-layer packet length (network order)               */
-/*   - 8-bit zero + 8-bit zero + 8-bit zero + 8-bit next header      */
+/*   - 24 bits zero + 8-bit next header                               */
 /*                                                                    */
-/* Addresses are loaded as 128-bit vectors and zero-extended to u32   */
-/* for accumulation, then folded to a 64-bit partial sum.             */
+/* Addresses are loaded as 16-byte vectors, pairwise-widened to u32   */
+/* and accumulated, then folded to a 64-bit partial sum.              */
 /* ------------------------------------------------------------------ */
 static inline uint64_t
 cksum_pseudo6(const struct ip6_hdr *ip6, uint8_t nxt, uint32_t ulen)
 {
-    const __m128i zero = _mm_setzero_si128();
-    __m128i acc = zero;
+    uint32x4_t acc = vdupq_n_u32(0);
 
-    /* source address: 16 bytes at ip6 + 8 */
-    __m128i src = _mm_loadu_si128((const __m128i *)&ip6->ip6_src);
-    acc = _mm_add_epi32(acc, _mm_unpacklo_epi16(src, zero));
-    acc = _mm_add_epi32(acc, _mm_unpackhi_epi16(src, zero));
+    /* source address: 16 bytes */
+    uint16x8_t src = vreinterpretq_u16_u8(vld1q_u8((const uint8_t *)&ip6->ip6_src));
+    acc = vaddq_u32(acc, vpaddlq_u16(src));
 
-    /* destination address: 16 bytes at ip6 + 24 */
-    __m128i dst = _mm_loadu_si128((const __m128i *)&ip6->ip6_dst);
-    acc = _mm_add_epi32(acc, _mm_unpacklo_epi16(dst, zero));
-    acc = _mm_add_epi32(acc, _mm_unpackhi_epi16(dst, zero));
+    /* destination address: 16 bytes */
+    uint16x8_t dst = vreinterpretq_u16_u8(vld1q_u8((const uint8_t *)&ip6->ip6_dst));
+    acc = vaddq_u32(acc, vpaddlq_u16(dst));
 
-    /* horizontal fold: 128-bit → 64-bit scalar */
-    __m128i acc_hi  = _mm_srli_si128(acc, 8);
-    __m128i acc_sum = _mm_add_epi32(acc, acc_hi);
+    uint64_t sum = cksum_hsum_u32x4_v6(acc);
 
-    uint32_t lo = (uint32_t)_mm_cvtsi128_si32(acc_sum);
-    uint32_t hi = (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(acc_sum, 4));
-
-    uint64_t sum = (uint64_t)lo + (uint64_t)hi;
-
-    /* upper-layer packet length (32-bit, network byte order → 2 × u16) */
+    /* upper-layer packet length (32-bit, network byte order -> 2 x u16) */
     {
         uint32_t ul = htonl(ulen);
-        uint16_t *p = (uint16_t *)&ul;
-        sum += p[0];
-        sum += p[1];
+        uint16_t p0, p1;
+        memcpy(&p0, (const uint8_t *)&ul + 0, 2);
+        memcpy(&p1, (const uint8_t *)&ul + 2, 2);
+        sum += p0;
+        sum += p1;
     }
 
     /* next header (zero-extended to u16, network byte order) */
@@ -212,7 +210,7 @@ cksum_pseudo6(const struct ip6_hdr *ip6, uint8_t nxt, uint32_t ulen)
 }
 
 /* ------------------------------------------------------------------
- * in6_cksum - SSE2-optimised IPv6 upper-layer Internet checksum.
+ * in6_cksum - NEON-optimised IPv6 upper-layer Internet checksum.
  *
  * Parameters:
  *   m   - mbuf chain; first mbuf must contain the IPv6 header.
@@ -232,7 +230,7 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
     int      odd_byte_valid = 0;
     struct mbuf *mp;
 
-    /* ---- IPv6 pseudo-header (RFC 2460 §8.1) ---- */
+    /* ---- IPv6 pseudo-header (RFC 2460 8.1) ---- */
     if(nxt != 0) {
         struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
         sum = cksum_pseudo6(ip6, nxt, len);
@@ -267,7 +265,7 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
 
             int even_len = mlen & ~1;
             if(even_len > 0)
-                sum += cksum_sse2_block6(ptr, even_len);
+                sum += cksum_neon_block6(ptr, even_len);
 
             if(mlen & 1) {
                 odd_byte       = ptr[even_len];
@@ -304,7 +302,7 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
         int even_len = mlen & ~1;
 
         if(even_len > 0)
-            sum += cksum_sse2_block6(ptr, even_len);
+            sum += cksum_neon_block6(ptr, even_len);
 
         if(mlen & 1) {
             odd_byte       = ptr[even_len];
@@ -326,5 +324,7 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
     /* Fold and complement */
     return (int)(uint16_t)~cksum_fold64_v6(sum);
 }
+
+#endif /* defined(__aarch64__) || defined(__arm__) */
 
 #endif /* INET6 */

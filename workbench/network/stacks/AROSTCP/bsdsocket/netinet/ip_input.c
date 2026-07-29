@@ -111,6 +111,8 @@ int	ipprintfs = IPPRINTFS;		/* this has effect only if DIAGNOSTIC */
 
 struct	ipstat	ipstat = {0};	/* ip statistics */
 struct	ipq	ipq = {0};	/* ip reass. queue */
+static int nipq = 0;		/* current number of reassembly queues */
+static int maxnipq = 64;	/* limit on reassembly queues; may be tuned */
 u_short	ip_id = {0};		/* ip packet ctr, for ids */
 struct	ifqueue	ipintrq = {0};	/* ip packet input queue */
 
@@ -443,13 +445,34 @@ register struct ipq *fp;
     m->m_len -= hlen;
 
     /*
+     * Reject any fragment whose last byte lies beyond the largest
+     * legal datagram.  ip_off has already been converted to bytes and
+     * ip_len holds the payload length.  Both fields are declared signed
+     * 16-bit in the fragment overlay, so an offset above 32767 reads
+     * back negative; interpret them as unsigned here so a crafted
+     * offset cannot slip past the bound and wrap the signed arithmetic
+     * used in the overlap/trim logic below.
+     */
+    if(((u_short)ip->ip_off + (u_short)ip->ip_len) > IP_MAXPACKET)
+        goto dropfrag;
+
+    /*
      * If first fragment to arrive, create a reassembly queue.
      */
     if(fp == 0) {
+        /*
+         * Bound the number of concurrent reassembly queues so a flood
+         * of first-fragments with distinct ids cannot exhaust memory.
+         * When at the limit, reclaim the oldest queue (the tail of the
+         * list) before creating a new one.
+         */
+        if(nipq >= maxnipq)
+            ip_freef(ipq.prev);
         if((t = m_get(M_DONTWAIT, MT_FTABLE)) == NULL)
             goto dropfrag;
         fp = mtod(t, struct ipq *);
         insque(fp, &ipq);
+        nipq++;
         fp->ipq_ttl = IPFRAGTTL;
         fp->ipq_p = ip->ip_p;
         fp->ipq_id = ip->ip_id;
@@ -542,6 +565,8 @@ insert:
     ((struct ip *)ip)->ip_dst = fp->ipq_dst;
     remque(fp);
     (void) m_free(dtom(fp));
+    if(nipq > 0)		/* queue consumed on completed reassembly */
+        nipq--;
     m = dtom(ip);
     m->m_len += (ip->ip_hl << 2);
     m->m_data -= (ip->ip_hl << 2);
@@ -577,6 +602,8 @@ struct ipq *fp;
     }
     remque(fp);
     (void) m_free(dtom(fp));
+    if(nipq > 0)
+        nipq--;
 }
 
 /*
@@ -665,7 +692,8 @@ struct mbuf *m;
     register struct ip_timestamp *ipt;
     register struct in_ifaddr *ia;
     int opt, optlen, cnt, off, code, type = ICMP_PARAMPROB, forward = 0;
-    struct in_addr *sin, dest;
+    struct in_addr *sin, dest = {0};	/* zero so no stale stack value
+					   reaches icmp_error() */
     n_time ntime;
 
     cp = (u_char *)(ip + 1);

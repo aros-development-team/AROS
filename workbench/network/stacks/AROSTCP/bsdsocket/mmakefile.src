@@ -77,6 +77,8 @@ NETINET_C:= \
 
 ifeq ($(AROS_TARGET_CPU),x86_64)
 NETINET_C += netinet/in_cksum_sse2
+else ifeq ($(AROS_TARGET_CPU),aarch64)
+NETINET_C += netinet/in_cksum_neon
 else
 NETINET_C += netinet/in_cksum
 endif
@@ -98,6 +100,8 @@ NETINET6_C= \
 
 ifeq ($(AROS_TARGET_CPU),x86_64)
 NETINET6_C += netinet6/in6_cksum_sse2
+else ifeq ($(AROS_TARGET_CPU),aarch64)
+NETINET6_C += netinet6/in6_cksum_neon
 else
 NETINET6_C += netinet6/in6_cksum
 endif
@@ -131,7 +135,7 @@ API_C=\
 	api/amiga_sendrecv api/amiga_generic api/amiga_generic2 \
 	api/amiga_libcalls api/amiga_errlists api/amiga_kernvars \
         api/amiga_ndbent api/amiga_netstat \
-	api/getxbyy api/gethostnamadr api/allocdatabuffer \
+	api/getxbyy api/gethostnamadr api/dns_cache api/allocdatabuffer \
 	api/res_comp api/res_debug api/res_init \
 	api/res_mkquery api/res_query api/res_send  \
 	api/amiga_roadshow api/miami_api api/miami_functable \
@@ -140,7 +144,7 @@ API_C=\
 
 API_H=\
 	api/amiga_raf.h api/amiga_api.h api/amiga_libcallentry.h \
-	api/allocdatabuffer.h api/gethtbynamadr.h \
+	api/allocdatabuffer.h api/dns_cache.h api/gethtbynamadr.h \
 	api/resolv.h api/sockargs.h \
 	api/apicalls.h api/miami_api.h
 

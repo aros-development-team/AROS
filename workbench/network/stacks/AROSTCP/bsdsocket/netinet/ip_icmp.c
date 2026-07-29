@@ -178,6 +178,13 @@ struct in_addr dest;
     if(m == NULL)
         goto freeit;
     icmplen = oiplen + MIN(8, oip->ip_len);
+    /*
+     * The offending packet may be a short copy (e.g. the fixed-size
+     * mbuf handed to us from ip_forward), so never quote more bytes
+     * than it actually holds or the bcopy below would read past it.
+     */
+    if(icmplen > n->m_len)
+        icmplen = n->m_len;
     m->m_len = icmplen + ICMP_MINLEN;
     MH_ALIGN(m, m->m_len);
     icp = mtod(m, struct icmp *);

@@ -44,7 +44,7 @@
  *
  * 1. SSE2 inner loop  (cksum_sse2_block)
  *    Processes 64 bytes per iteration using four _mm_loadu_si128 loads.
- *    Each 128-bit vector holds 8 × u16 words.  Words are zero-extended to
+ *    Each 128-bit vector holds 8 ï¿½ u16 words.  Words are zero-extended to
  *    u32 with _mm_unpacklo/hi_epi16 before accumulation so that no
  *    intermediate 16-bit overflow is possible, regardless of block size.
  *    Four 128-bit accumulators (acc0-acc3) are kept in parallel to hide the
@@ -108,7 +108,7 @@
  *   - the first byte of mbuf[N+1]        is the HIGH byte of the word
  *   => bridging word value = saved_byte | (new_byte << 8)
  *
- * The final odd-byte pad (RFC 1071 §3.b) places the saved byte as the low
+ * The final odd-byte pad (RFC 1071 ï¿½3.b) places the saved byte as the low
  * byte and pads with zero on the high side:
  *   => contribution = (uint16_t)odd_byte          (NOT odd_byte << 8)
  */
@@ -122,7 +122,7 @@
 
 #include <netinet/in_cksum_protos.h>
 
-#include <emmintrin.h>   /* SSE2 intrinsics – requires -msse2                */
+#include <emmintrin.h>   /* SSE2 intrinsics ï¿½ requires -msse2                */
 #include <stdint.h>
 #include <string.h>      /* memcpy                                            */
 
@@ -172,8 +172,8 @@ cksum_fold64(uint64_t sum)
  *
  *   Main loop (64 bytes / iteration):
  *     Load four 128-bit vectors (a,b,c,d) from ptr+0,+16,+32,+48.
- *     Each vector holds 8 × u16 words in memory order.
- *     Zero-extend each vector's 8 words to 8 × u32 using two
+ *     Each vector holds 8 ï¿½ u16 words in memory order.
+ *     Zero-extend each vector's 8 words to 8 ï¿½ u32 using two
  *     _mm_unpacklo/hi_epi16(v, zero) calls, then _mm_add_epi32 to the
  *     corresponding accumulator pair.  Using u32 lanes means each lane
  *     can absorb up to 65535 additions of 0xFFFF before overflowing;
@@ -190,7 +190,7 @@ cksum_fold64(uint64_t sum)
  *     steps and two _mm_cvtsi128_si32 scalar extractions.
  *
  *   8-byte scalar tail:
- *     Processes 4 × u16 per iteration using memcpy to avoid aliasing UB.
+ *     Processes 4 ï¿½ u16 per iteration using memcpy to avoid aliasing UB.
  *
  *   2-byte scalar tail:
  *     Handles any remaining whole word.
@@ -201,9 +201,9 @@ cksum_sse2_block(const uint8_t *__restrict ptr, int count)
     const __m128i zero = _mm_setzero_si128();
 
     /*
-     * Four independent 128-bit accumulators, each holding 4 × u32 partial
+     * Four independent 128-bit accumulators, each holding 4 ï¿½ u32 partial
      * sums.  Keeping four separate chains allows the CPU to execute up to
-     * four add µ-ops per cycle even when each has 1-cycle latency.
+     * four add ï¿½-ops per cycle even when each has 1-cycle latency.
      */
     __m128i acc0 = zero;
     __m128i acc1 = zero;
@@ -226,7 +226,7 @@ cksum_sse2_block(const uint8_t *__restrict ptr, int count)
 
         /*
          * _mm_unpacklo_epi16(v, zero) interleaves the lower 4 u16 lanes of
-         * v with 0, producing 4 × u32 zero-extended values in the result.
+         * v with 0, producing 4 ï¿½ u32 zero-extended values in the result.
          * _mm_unpackhi_epi16(v, zero) does the same for the upper 4 lanes.
          * Accumulating u32 rather than u16 eliminates all risk of 16-bit
          * overflow inside the loop.
@@ -274,7 +274,7 @@ cksum_sse2_block(const uint8_t *__restrict ptr, int count)
         /* Accumulate into a 64-bit scalar; no overflow possible here */
         uint64_t vsum = (uint64_t)lo + (uint64_t)hi;
 
-        /* -- 8-byte scalar tail (4 × u16 per iteration) -- */
+        /* -- 8-byte scalar tail (4 ï¿½ u16 per iteration) -- */
         while(count >= 8) {
             /*
              * Use memcpy to perform the u16 load.  Under -fstrict-aliasing
@@ -339,7 +339,7 @@ in_cksum(struct mbuf *m, int len)
      *   s_util.c[1] = new_byte;     (stored at the start of the next mbuf)
      *   sum += s_util.s;            (little-endian: c[0] is the low byte)
      *
-     * For the final odd byte (RFC 1071 §3.b zero-pad on the right):
+     * For the final odd byte (RFC 1071 ï¿½3.b zero-pad on the right):
      *   saved_byte ? low byte, high byte = 0
      *   contribution = (uint16_t)saved_byte   (NOT saved_byte << 8)
      */
@@ -393,11 +393,15 @@ in_cksum(struct mbuf *m, int len)
         }
     }
 
-    if(__builtin_expect(len != 0, 0))
-        printf("cksum: out of data\n");
+    /*
+     * A leftover len means the checksum span exceeded the mbuf data, i.e.
+     * a truncated or malformed packet.  Those missing bytes simply do not
+     * contribute to the sum; do not log the condition, as it is remotely
+     * triggerable and could be abused to flood the console.
+     */
 
     /*
-     * Final odd-byte handling (RFC 1071 §3.b):
+     * Final odd-byte handling (RFC 1071 ï¿½3.b):
      * The saved byte occupies the low byte position; the high byte is
      * implicitly zero.  The contribution is simply the byte value itself
      * cast to u16.

@@ -200,6 +200,10 @@ struct mbuf **m;
 
         case PRCO_GETOPT:
             *m = m_get(M_WAIT, MT_SOOPTS);
+            if(*m == NULL) {		/* allocator may fail here */
+                error = ENOBUFS;
+                break;
+            }
             switch(optname) {
 
             case IP_OPTIONS:

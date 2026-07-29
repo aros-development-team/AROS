@@ -635,6 +635,10 @@ struct mbuf **mp;
             case IP_OPTIONS:
             case IP_RETOPTS:
                 *mp = m = m_get(M_WAIT, MT_SOOPTS);
+                if(m == NULL) {		/* allocator may fail here */
+                    error = ENOBUFS;
+                    break;
+                }
                 if(inp->inp_options) {
                     m->m_len = inp->inp_options->m_len;
                     bcopy(mtod(inp->inp_options, caddr_t),
@@ -649,6 +653,10 @@ struct mbuf **mp;
             case IP_RECVRETOPTS:
             case IP_RECVDSTADDR:
                 *mp = m = m_get(M_WAIT, MT_SOOPTS);
+                if(m == NULL) {		/* allocator may fail here */
+                    error = ENOBUFS;
+                    break;
+                }
                 m->m_len = sizeof(int);
                 switch(optname) {
 
@@ -1055,6 +1063,8 @@ register struct mbuf **mp;
     struct in_ifaddr *ia;
 
     *mp = m_get(M_WAIT, MT_SOOPTS);
+    if(*mp == NULL)		/* allocator may fail here */
+        return (ENOBUFS);
 
     switch(optname) {
 

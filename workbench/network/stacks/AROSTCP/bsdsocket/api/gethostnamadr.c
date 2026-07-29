@@ -83,6 +83,7 @@ static char sccsid[] = "@(#)gethostnamadr.c	6.45 (Berkeley) 2/24/91";
 
 #include <api/gethtbynamadr.h>     /* prototypes (NO MORE BUGS HERE) */
 #include <api/apicalls.h>
+#include <api/dns_cache.h>         /* dns_cache_lookup/insert, dns_cache_enabled */
 #include <kern/amiga_netdb.h>      /* NDB, LOCK_R_NDB, HostentNode */
 
 #include <stdio.h>
@@ -461,11 +462,35 @@ struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr)
     }
     buf = (querybuf *)(HS + 1);
 
+    /*
+     * Cache probe: replay a stored raw response through the very same
+     * getanswer() path a fresh query would use. Any miss or parse failure
+     * simply falls through to the normal resolver query below.
+     */
+    if(dns_cache_enabled) {
+        n = dns_cache_lookup(name, T_A, buf->buf, sizeof(querybuf));
+        if(n > 0) {
+#if defined(__AROS__)
+            D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: [dns_cache] hit, %d bytes\n", n));
+#endif
+            ptr = getanswer(libPtr, buf, n, 0, T_A, HS);
+            if(ptr != NULL &&
+                    (anshost = makehostent(libPtr, HS, ptr)) != NULL) {
+                anshost->h_addrtype = HS->host.h_addrtype;
+                anshost->h_length = HS->host.h_length;
+                bsd_free(HS, M_TEMP);
+                return anshost;
+            }
+            anshost = NULL;     /* cached bytes unusable: do a real query */
+        }
+    }
+
     n = res_search(libPtr, name, C_IN, T_A, buf->buf, sizeof(querybuf));
     if(n >= 0) {
 #if defined(__AROS__)
         D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: [res_search] returns %d\n", n));
 #endif
+        dns_cache_insert(name, T_A, buf->buf, n);
         ptr = getanswer(libPtr, buf, n, 0, T_A, HS);
         if(ptr != NULL) {
 #if defined(__AROS__)
@@ -572,11 +597,34 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
     }
     buf = (querybuf *)(HS + 1);
 
+    /*
+     * Cache probe (AAAA). A hit is replayed through getanswer(); anything
+     * short of a usable answer falls through to a normal resolver query.
+     */
+    if(dns_cache_enabled) {
+        n = dns_cache_lookup(name, qtype, buf->buf, sizeof(querybuf));
+        if(n > 0) {
+#if defined(__AROS__)
+            D(bug("[AROSTCP](gethostnameadr.c) gethostbyname2: [dns_cache] hit, %d bytes\n", n));
+#endif
+            ptr = getanswer(libPtr, buf, n, 0, qtype, HS);
+            if(ptr != NULL &&
+                    (anshost = makehostent(libPtr, HS, ptr)) != NULL) {
+                anshost->h_addrtype = HS->host.h_addrtype;
+                anshost->h_length = HS->host.h_length;
+                bsd_free(HS, M_TEMP);
+                return anshost;
+            }
+            anshost = NULL;     /* cached bytes unusable: do a real query */
+        }
+    }
+
     n = res_search(libPtr, name, C_IN, qtype, buf->buf, sizeof(querybuf));
     if(n >= 0) {
 #if defined(__AROS__)
         D(bug("[AROSTCP](gethostnameadr.c) gethostbyname2: [res_search] returns %d\n", n));
 #endif
+        dns_cache_insert(name, qtype, buf->buf, n);
         ptr = getanswer(libPtr, buf, n, 0, qtype, HS);
         if(ptr != NULL) {
             if((anshost = makehostent(libPtr, HS, ptr)) != NULL) {
@@ -661,9 +709,43 @@ struct hostent *__gethostbyaddr(UBYTE *addr, int len, int type, struct SocketBas
                        ((unsigned long)addr[1] & 0xff),
                        ((unsigned long)addr[0] & 0xff));
     }
+    /*
+     * Cache probe (PTR / reverse). On a hit the stored response is run
+     * through getanswer() and the very same address-injection the live path
+     * performs; any failure falls through to a real res_query() below.
+     */
+    if(dns_cache_enabled) {
+        n = dns_cache_lookup(qbuf, T_PTR, buf->buf, sizeof(querybuf));
+        if(n > 0) {
+#if defined(__AROS__)
+            D(bug("[AROSTCP](gethostnameadr.c) __gethostbyaddr: [dns_cache] hit, %d bytes\n", n));
+#endif
+            ptr = getanswer(libPtr, buf, n, 1, T_PTR, HS);
+            if(ptr != NULL) {
+                if(HS->h_addr_count == 1) {
+                    HS->h_addr_count++;
+                    bcopy(addr, ptr, len);
+                    HS->h_addr_ptrs[0] = ptr;
+                    ptr += len;
+                } else if(HS->h_addr_count > 1) {
+                    bcopy(addr, HS->h_addr_ptrs[0], len);
+                }
+                HS->h_addr_ptrs[1] = NULL;
+                if((anshost = makehostent(libPtr, HS, ptr)) != NULL) {
+                    anshost->h_addrtype = type;
+                    anshost->h_length = len;
+                    bsd_free(HS, M_TEMP);
+                    return anshost;
+                }
+            }
+            anshost = NULL;     /* cached bytes unusable: do a real query */
+        }
+    }
+
     n = res_query(libPtr, qbuf, C_IN, T_PTR, (char *)buf, sizeof(querybuf));
 
     if(n >= 0) {
+        dns_cache_insert(qbuf, T_PTR, buf->buf, n);
         ptr = getanswer(libPtr, buf, n, 1, T_PTR, HS);
         if(ptr != NULL) {
             if(HS->h_addr_count == 1) {

@@ -270,7 +270,10 @@ int timer;
              * The retransmission will restart from snd_una.
              */
             tp->t_flagsext &= ~TF_IN_FASTRECOV;
+            tp->t_flagsext &= ~TF_PRR;
             tp->t_num_sack_blks = 0;
+            tp->snd_sacked = 0;
+            tp->snd_fack = tp->snd_una;
             tp->snd_recover = tp->snd_max;
         }
         (void) tcp_output(tp);

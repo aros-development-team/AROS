@@ -178,8 +178,12 @@ register int len;
         } else if(mlen == -1)
             s_util.c[0] = *(char *)w;
     }
-    if(len)
-        printf("cksum: out of data\n");
+    /*
+     * A checksum span longer than the mbuf data indicates a truncated
+     * or malformed packet.  The remaining bytes simply do not
+     * contribute to the sum; do not log here, as the condition is
+     * remotely triggerable and would let an attacker flood the console.
+     */
     if(mlen == -1) {
         /* The last mbuf has odd # of bytes. Follow the
            standard (the odd byte may be shifted left by 8 bits

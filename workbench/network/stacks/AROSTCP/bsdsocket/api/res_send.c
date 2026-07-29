@@ -63,9 +63,6 @@ static char sccsid[] = "@(#)res_send.c	6.27 (Berkeley) 2/24/91";
 static int res_sock = -1;	/* socket used for communications */
 #endif
 
-/* constant */
-static const struct sockaddr no_addr = { sizeof(struct sockaddr), AF_INET, { 0 } };
-
 #ifndef FD_SET
 #define	NFDBITS		32
 #define	FD_SETSIZE	32
@@ -325,65 +322,47 @@ usevc:
                              * as we wish to receive answers from the first
                              * server to respond.
                              */
-                            /* TODO*: see comment here .. */
-                            /* This piece of code still behaves slightly wrong in
-                               case of ECONNREFUSED error. On next retry socket will
-                               be in disconnected state and instead of getting
-                               ECONNREFUSED again we'll timeout in WaitSelect() and
-                               get ETIMEDOUT. However, this is not critical and is
-                               queued for future - Pavel Fedin*/
-                            if(try == 0 && nscount == 1) {
-                                    /*
-                                     * Don't use connect if we might
-                                     * still receive a response
-                                     * from another server.
-                                     */
-                                    if(connected == 0) {
-                                        if(__connect(res_sock,
-                                                     (struct sockaddr *)&host,
-                                                     sizeof(struct sockaddr),
-                                                     libPtr) < 0) {
+                            /*
+                             * Always connect the datagram socket to the
+                             * queried nameserver before sending.  A fresh
+                             * socket is created for every query (for the
+                             * source-port randomization above) and each query
+                             * is directed at exactly one server, so there is
+                             * never a need to stay unconnected in order to hear
+                             * from a second server on the same socket.
+                             *
+                             * Connecting makes the kernel discard any reply
+                             * whose source address or port does not match the
+                             * queried server.  This source-filters the
+                             * __recv() below and closes a DNS response-spoofing
+                             * exposure that an unconnected receive would leave
+                             * open, while still letting ECONNREFUSED surface a
+                             * dead nameserver without waiting for the timeout.
+                             */
+                            if(connected == 0) {
+                                if(__connect(res_sock,
+                                             (struct sockaddr *)&host,
+                                             sizeof(struct sockaddr),
+                                             libPtr) < 0) {
 #if defined(__AROS__)
-                                            D(bug("[AROSTCP](res_send.c) res_send: Error connecting\n"));
+                                    D(bug("[AROSTCP](res_send.c) res_send: Error connecting\n"));
 #endif
 #ifdef RES_DEBUG
-                                            Perror("connect (dg)");
-#endif /* RES_DEBUG */
-                                            continue;
-                                        }
-                                        connected = 1;
-                                    }
-                                    if(__send(res_sock,
-                                              buf, buflen, 0, libPtr) != buflen) {
-#if defined(__AROS__)
-                                        D(bug("[AROSTCP](res_send.c) res_send: Error sending\n"));
-#endif
-#ifdef RES_DEBUG
-                                        Perror("send (dg)");
-#endif /* RES_DEBUG */
-                                        continue;
-                                    }
-                                } else {
-                                /*
-                                 * Disconnect if we want to listen
-                                 * for responses from more than one server.
-                                 */
-                                if(connected) {
-                                    (void) __connect(res_sock, &no_addr,
-                                                     sizeof(no_addr), libPtr);
-                                    connected = 0;
-                                }
-                                if(__sendto(res_sock, buf, buflen, 0,
-                                            (struct sockaddr *)&host,
-                                            sizeof(struct sockaddr), libPtr) != buflen) {
-#if defined(__AROS__)
-                                    D(bug("[AROSTCP](res_send.c) res_send: [__sendto] Error\n"));
-#endif
-#ifdef RES_DEBUG
-                                    Perror("sendto (dg)");
+                                    Perror("connect (dg)");
 #endif /* RES_DEBUG */
                                     continue;
                                 }
+                                connected = 1;
+                            }
+                            if(__send(res_sock,
+                                      buf, buflen, 0, libPtr) != buflen) {
+#if defined(__AROS__)
+                                D(bug("[AROSTCP](res_send.c) res_send: Error sending\n"));
+#endif
+#ifdef RES_DEBUG
+                                Perror("send (dg)");
+#endif /* RES_DEBUG */
+                                continue;
                             }
 
                             /*

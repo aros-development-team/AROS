@@ -503,12 +503,18 @@ ifunit(char *name)
     for(cp = name; cp < name + IFNAMSIZ && *cp; cp++)
         if(*cp >= '0' && *cp <= '9')
             break;
-    if(*cp == '\0' || cp == name + IFNAMSIZ)
+    /*
+     * A name must terminate within IFNAMSIZ; reject one that does not.
+     * If no trailing digit is present cp now points at the terminating
+     * null, and the code below treats the unit as 0 and matches against
+     * the whole name, so a suffix-less name is still resolvable.
+     */
+    if(cp == name + IFNAMSIZ)
         return ((struct ifnet *)0);
     /*
-     * Save first char of unit, and pointer to it,
-     * so we can put a null there to avoid matching
-     * initial substrings of interface names.
+     * Save first char of unit (or the terminating null), and a pointer
+     * to it, so we can put a null there to avoid matching initial
+     * substrings of interface names.
      */
     len = cp - name + 1;
     c = *cp;

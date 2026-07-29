@@ -581,6 +581,10 @@ struct mbuf **mp;
 
     case PRCO_GETOPT:
         *mp = m = m_get(M_WAIT, MT_SOOPTS);
+        if(m == NULL) {		/* allocator may fail here */
+            error = ENOBUFS;
+            break;
+        }
         m->m_len = sizeof(int);
 
         switch(optname) {

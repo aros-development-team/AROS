@@ -92,6 +92,13 @@ tsleep_send_timeout(struct SocketBase *p,
     D(bug("[AROSTCP](kern_synch.c) tsleep_send_timeout()\n"));
 #endif
     /*
+     * A previous timeout may have left the timer port in PA_IGNORE (set by
+     * tsleep_abort_timeout() to suppress a late reply). Restore PA_SIGNAL
+     * before draining the aborted request so that the reply's port signal is
+     * delivered and the WaitIO() below completes instead of stalling.
+     */
+    p->timerPort->mp_Flags = PA_SIGNAL;
+    /*
      * Make sure that the timer message is back from the timer device
      */
     if(p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type != NT_UNKNOWN) {

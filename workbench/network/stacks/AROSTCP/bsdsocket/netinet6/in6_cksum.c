@@ -227,8 +227,12 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
         mp = mp->m_next;
     }
 
-    if(dlen > 0)
-        printf("in6_cksum: ran out of data (%d bytes left)\n", dlen);
+    /*
+     * A truncated or malformed packet whose checksum span exceeds the mbuf
+     * data leaves dlen > 0 here. This is remote-triggerable, so we do not log
+     * it: an unconditional message would let an attacker flood the console.
+     * The computed checksum is unaffected and the packet is rejected later.
+     */
 
     /* Handle trailing odd byte */
     if(mlen == -1) {

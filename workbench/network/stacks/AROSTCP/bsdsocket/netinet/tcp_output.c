@@ -100,6 +100,7 @@ register struct tcpcb *tp;
     u_char opt[TCP_MAXOLEN];
     unsigned optlen, hdrlen;
     int idle, sendalot;
+    int ecn_ect = 0;		/* set IP ECT(0) on this segment? */
     struct rmxp_tao *taop;
     struct rmxp_tao tao_noncached;
     int isipv6 = tcp_isipv6(tp->t_inpcb);
@@ -666,8 +667,12 @@ skip_sack:
             tcpstat.tcps_ecn_cwr++;
         }
         if(tp->t_flagsext & TF_ECN_SND_ECE) {
+            /*
+             * Keep echoing ECE on every ACK; the flag is cleared in
+             * tcp_input() only once the peer acknowledges the signal
+             * by setting CWR (RFC 3168).
+             */
             ti->ti_flags |= TH_ECE;
-            tp->t_flagsext &= ~TF_ECN_SND_ECE;
             tcpstat.tcps_ecn_ece++;
         }
     } else if(flags & TH_SYN) {
@@ -728,6 +733,22 @@ skip_sack:
      */
     if(tp->t_force == 0 || tp->t_timer[TCPT_PERSIST] == 0) {
         tcp_seq startseq = tp->snd_nxt;
+
+        /*
+         * ECN (RFC 3168): mark with ECT(0) only segments that carry
+         * newly transmitted data (startseq at the right edge of the
+         * send sequence space).  Retransmissions, pure ACKs, window
+         * probes and pure control segments stay Not-ECT.
+         */
+        if(len > 0 && SEQ_GEQ(startseq, tp->snd_max))
+            ecn_ect = 1;
+
+        /*
+         * PRR (RFC 6937): count every data byte transmitted during a
+         * recovery episode (new data and retransmissions alike).
+         */
+        if((tp->t_flagsext & TF_PRR) && len > 0)
+            tp->snd_prr_out += len;
 
         /*
          * Advance snd_nxt over sequence space of this segment.
@@ -825,10 +846,12 @@ skip_sack:
         ((struct ip *)ti)->ip_ttl = tp->t_inpcb->inp_ip.ip_ttl;	/* XXX */
         ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos;	/* XXX */
         /*
-         * ECN (RFC 3168): Set ECT(0) codepoint in the IP header
-         * for ECN-capable connections, except on pure SYN/RST.
+         * ECN (RFC 3168): Set the ECT(0) codepoint in the IP header
+         * for ECN-capable connections, but only on freshly transmitted
+         * data segments (ecn_ect).  Retransmissions, pure ACKs, window
+         * probes, SYN and RST are sent Not-ECT.
          */
-        if((tp->t_flagsext & TF_ECN_PERMIT) &&
+        if((tp->t_flagsext & TF_ECN_PERMIT) && ecn_ect &&
                 !(flags & (TH_SYN | TH_RST)))
             ((struct ip *)ti)->ip_tos |= IPTOS_ECN_ECT0;
 #if BSD >= 43

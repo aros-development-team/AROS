@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -355,6 +355,16 @@ caddr_t data;
     if(entry->rt_gateway.sa_len == 0)
         entry->rt_gateway.sa_len = 16;
 #endif
+    /*
+     * The legacy ortentry embeds rt_dst and rt_gateway as fixed
+     * sizeof(struct sockaddr) storage.  A caller-supplied sa_len larger
+     * than that would let rtrequest() copy past the embedded sockaddr,
+     * so clamp each length to the size that is actually present.
+     */
+    if(entry->rt_dst.sa_len > sizeof(struct sockaddr))
+        entry->rt_dst.sa_len = sizeof(struct sockaddr);
+    if(entry->rt_gateway.sa_len > sizeof(struct sockaddr))
+        entry->rt_gateway.sa_len = sizeof(struct sockaddr);
     if((entry->rt_flags & RTF_HOST) == 0)
         switch(entry->rt_dst.sa_family) {
 #if INET
@@ -585,6 +595,8 @@ int cmd, flags;
             register struct sockaddr *deldst;
 
             m = m_get(M_WAIT, MT_SONAME);
+            if(m == NULL)
+                return (ENOBUFS);
             deldst = mtod(m, struct sockaddr *);
             rt_maskedcopy(dst, deldst, ifa->ifa_netmask);
             dst = deldst;

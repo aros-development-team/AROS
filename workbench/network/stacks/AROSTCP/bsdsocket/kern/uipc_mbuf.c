@@ -190,6 +190,13 @@ LONG mb_read_stats(struct CSource *args, UBYTE **errstrp, struct CSource *res)
     return RETURN_OK;
 }
 
+/*
+ * Sane upper bound for the configurable chunk counts. This is well below the
+ * point where the per-chunk size arithmetic could overflow, while still being
+ * far larger than any reasonable configuration would ever request.
+ */
+#define MB_CHUNK_MAX	1000000
+
 int
 mb_check_conf(void *dp, IPTR newvalue)
 {
@@ -201,10 +208,14 @@ mb_check_conf(void *dp, IPTR newvalue)
         if(newvalue > 0)
             return TRUE;
     } else if(dp == &mbconf.mbufchunk) {
-        if(newvalue >= 32)
+        /*
+         * Enforce an upper bound as well as the lower one so that an absurd
+         * config value cannot overflow the size arithmetic in m_alloc().
+         */
+        if(newvalue >= 32 && newvalue <= MB_CHUNK_MAX)
             return TRUE;
     } else if(dp == &mbconf.clusterchunk) {
-        if(newvalue > 0)
+        if(newvalue > 0 && newvalue <= MB_CHUNK_MAX)
             return TRUE;
     } else if(dp == &mbconf.maxmem) {
         if(newvalue > 32)		/* kilobytes */
@@ -324,6 +335,22 @@ m_alloc(int howmany, int canwait)
     D(bug("[AROSTCP](uipc_mbuf.c) m_alloc()\n"));
 #endif
 
+    /*
+     * howmany is derived from configuration values, so guard against a
+     * request large enough to overflow the 32-bit size computation below.
+     * MSIZE * (howmany + 1) + sizeof(struct memHeader) must stay within the
+     * signed range; otherwise the size would wrap and under-allocate.
+     */
+    if(howmany <= 0
+       || (u_long)howmany > (0x7fffffffUL - sizeof(struct memHeader)) / MSIZE - 1) {
+#if defined(__AROS__)
+        D(bug("[AROSTCP](uipc_mbuf.c) m_alloc: invalid or oversized request (%d mbufs).\n",
+              howmany));
+#endif
+        __log(LOG_ERR, "m_alloc: invalid or oversized request (%d mbufs).", howmany);
+        return FALSE;
+    }
+
     size = MSIZE * (howmany + 1) + sizeof(struct memHeader);
 
     /*
@@ -397,6 +424,24 @@ m_clalloc(int ncl, int canwait)
      * Each memory block allocated is prepended by the memHeader, so size
      * must be allocted for it, too.
      */
+
+    /*
+     * ncl comes from configuration, so guard the size arithmetic against
+     * 32-bit overflow. The per-cluster stride is (sizeof(struct mcluster) +
+     * mbconf.mclbytes); a request that would make the total exceed the signed
+     * range must be rejected before it wraps and under-allocates.
+     */
+    if(ncl <= 0
+       || (u_long)ncl > (0x7fffffffUL - sizeof(struct memHeader))
+                        / (sizeof(struct mcluster) + mbconf.mclbytes)) {
+#if defined(__AROS__)
+        D(bug("[AROSTCP](uipc_mbuf.c) m_clalloc: invalid or oversized request (%d clusters).\n",
+              ncl));
+#endif
+        __log(LOG_ERR, "m_clalloc: invalid or oversized request (%d clusters).", ncl);
+        return FALSE;
+    }
+
     size = ncl * (sizeof(struct mcluster) + mbconf.mclbytes)
            + sizeof(struct memHeader);
 

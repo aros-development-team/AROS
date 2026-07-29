@@ -85,20 +85,24 @@ static inline int itimerfix(struct timeval *tv)
 }
 
 /*
- * ffs() copied directly from bsdss/server/kern/subr_xxx.c
+ * Find first (least-significant) set bit, 1-based; 0 if mask is zero.
+ * Use the compiler builtin where available -- it lowers to a single
+ * bit-scan instruction (e.g. BSF/TZCNT, RBIT+CLZ) instead of a byte-at-
+ * a-time loop -- and fall back to a portable scan otherwise.
  */
 static inline int ffs(int mask)
 {
+#if defined(__GNUC__)
+    return __builtin_ffs(mask);
+#else
     register int bit;
 
     if(!mask)
         return(0);
-    for(bit = 1;; ++bit) {
-        if(mask & 0x01)
-            return(bit);
+    for(bit = 1; (mask & 0x01) == 0; ++bit)
         mask >>= 1;
-    }
-    /* NOT REACHED */
+    return(bit);
+#endif
 }
 
 

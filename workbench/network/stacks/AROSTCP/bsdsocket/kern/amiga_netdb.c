@@ -1138,7 +1138,11 @@ addaccessent(struct NetDataBase *ndb,
                 } else if(hm[i] == '*') {
                     hm[i] = '0';
                     ls = 1;
-                    zmask ^= (0xFF000000 >> 8 * dots);
+                    /* An IPv4 address has at most 3 dots; a malformed mask
+                     * with more would shift by >= 32 bits (undefined), so
+                     * clamp the octet index before the shift. */
+                    if(dots <= 3)
+                        zmask ^= (0xFF000000 >> 8 * dots);
                 }
                 i++;
             }

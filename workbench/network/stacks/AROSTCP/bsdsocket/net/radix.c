@@ -343,6 +343,14 @@ int skip;
     int maskduplicated;
 
     mlen = *(u_char *)netmask;
+    /*
+     * Reject a mask whose declared length exceeds the key buffer we
+     * allocate below (MAXKEYLEN).  Otherwise the length byte, which is
+     * caller controlled, would drive an over-read in the Bcmp search
+     * and an overflowing Bcopy into the freshly allocated node.
+     */
+    if(mlen > MAXKEYLEN)
+        return (0);
     if(search) {
         x = rn_search(netmask, rn_maskhead);
         if(Bcmp(netmask, x->rn_key, mlen) == 0)
@@ -366,11 +374,37 @@ int skip;
     b = (cp - netmask) << 3;
     if(cp != cplim) {
         if(*cp != 0) {
-            register int j;
             gotOddMasks = 1;
-            for(j = 0x80; j; b++, j >>= 1)
-                if((j & *cp) == 0)
-                    break;
+#if defined(__GNUC__)
+            /*
+             * The loop in the #else branch walks *cp from the most
+             * significant bit and stops at the first zero bit, adding one
+             * to b for every leading one-bit.  That count is exactly the
+             * number of leading one-bits of the byte, which can be found
+             * directly: complementing *cp turns the sought first zero bit
+             * into the first one bit, and shifting that byte into the top
+             * eight bits of a 32-bit word lets __builtin_clz() report its
+             * distance from the MSB (0..7).
+             *
+             * *cp is known to be non-zero here, so the complement is at
+             * most 0xfe; the all-ones case (*cp == 0xff, complement 0) is
+             * handled explicitly and yields 8, matching the loop running
+             * all eight iterations, and keeps __builtin_clz() from ever
+             * being called with zero (which is undefined).  This produces
+             * an identical b for every byte value 0x00..0xff.
+             */
+            {
+                unsigned char nc = (unsigned char)~*cp;
+                b += nc ? __builtin_clz((unsigned)nc << 24) : 8;
+            }
+#else
+            {
+                register int j;
+                for(j = 0x80; j; b++, j >>= 1)
+                    if((j & *cp) == 0)
+                        break;
+            }
+#endif
         }
     }
     x->rn_b = -1 - b;

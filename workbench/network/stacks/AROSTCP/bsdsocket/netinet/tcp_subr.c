@@ -300,6 +300,7 @@ int	tcp_do_rfc1644 = 1;
 int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
 int	tcp_do_newreno = 1;	/* enable NewReno (RFC 3782) */
 int	tcp_do_ecn = 0;		/* enable ECN (RFC 3168) - off by default */
+int	tcp_do_prr = 0;		/* enable PRR (RFC 6937) - off by default */
 static	void tcp_cleartaocache(void);
 
 extern u_char inetctlerrmap[];
@@ -566,6 +567,13 @@ struct inpcb *inp;
     tp->t_num_dsack_blks = 0;
     tp->snd_fack = 0;
     tp->snd_awnd = 0;
+    /* PRR / SACK-recovery state (RFC 6937 / RFC 6675); bzero'd above. */
+    tp->snd_sacked = 0;
+    tp->snd_prr_out = 0;
+    tp->snd_prr_delivered = 0;
+    tp->snd_prr_recover_fs = 0;
+    tp->snd_prr_hiack = 0;
+    tp->snd_ecn_recover = 0;
     tp->t_inpcb = inp;
     /*
      * Init srtt to TCPTV_SRTTBASE (0), so we can tell that we have no

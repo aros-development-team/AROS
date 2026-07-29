@@ -534,6 +534,15 @@ u_long cc;
 
     if(cc > sb_max * mbconf.mclbytes / (MSIZE + mbconf.mclbytes))
         return (0);
+    /*
+     * Guard against a zero or absurdly small request. A misconfigured (or
+     * unset) sendspace/recvspace tunable would otherwise produce a socket
+     * buffer too small to hold even a single reasonable message, stalling
+     * all I/O on the socket. Raise anything below a small workable floor of
+     * two mbuf clusters up to that floor.
+     */
+    if(cc < 2 * mbconf.mclbytes)
+        cc = 2 * mbconf.mclbytes;
     sb->sb_hiwat = cc;
     sb->sb_mbmax = MIN(cc * 2, sb_max);
     if(sb->sb_lowat > sb->sb_hiwat)
