@@ -202,23 +202,25 @@ void SetPanning(struct p96gfx_carddata *cid, UBYTE *video, UWORD width, WORD x, 
 }
 
 BOOL DrawLine(struct p96gfx_carddata *cid, struct RenderInfo *ri,
-    struct Line * line, ULONG rgbformat)
+    struct Line * line, UBYTE mask, ULONG rgbformat)
 {
     if (cid->CardBase) {
-        AROS_CALL4(BOOL, __cardFunc(cid, PSSO_BoardInfo_DrawLine),
+        AROS_CALL5(BOOL, __cardFunc(cid, PSSO_BoardInfo_DrawLine),
             AROS_LCA(APTR, cid->boardinfo, A0),
             AROS_LCA(APTR, ri, A1),
             AROS_LCA(struct Line *, line, A2),
+            AROS_LCA(UBYTE, mask, D0),
             AROS_LCA(ULONG, rgbformat, D7),
             struct Library*, cid->CardBase);
         return gw (cid->boardinfo + PSSO_BoardInfo_AROSFlag);
     }
 #if (0)
     else
-        return P96_LC4(BOOL, cid->p96romvector, 28,
+        return P96_LC5(BOOL, cid->p96romvector, 28,
             AROS_LCA(APTR, cid->boardinfo, A0),
             AROS_LCA(APTR, ri, A1),
             AROS_LCA(struct Line *, line, A2),
+            AROS_LCA(UBYTE, mask, D0),
             AROS_LCA(ULONG, rgbformat, D7));
 #else
     return FALSE;

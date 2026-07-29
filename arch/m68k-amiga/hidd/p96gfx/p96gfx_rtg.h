@@ -441,7 +441,7 @@ SetFeatureAttrs
 
 /* Card Render Operation Stubs .. */
 BOOL DrawLine(struct p96gfx_carddata *cid, struct RenderInfo *ri,
-    struct Line *line, ULONG rgbformat);
+    struct Line *line, UBYTE mask, ULONG rgbformat);
 BOOL BlitRect(struct p96gfx_carddata *cid, struct RenderInfo *ri,
     WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 BOOL FillRect(struct p96gfx_carddata *cid, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask, ULONG rgbformat);
