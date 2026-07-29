@@ -26,7 +26,7 @@ PRIV_EXEC_INCLUDES = \
     -I$(SRCDIR)/rom/kernel
 
 CFILES          := \
-        platform_init exec_idle superstate userstate coldreboot cachepredma cachecleare \
+        platform_init exec_idle superstate userstate coldreboot cachepredma cachepostdma cachecleare \
         preparecontext
 
 #MM kernel-exec-raspi-aarch64 : kernel-kernel-aarch64-includes kernel-kernel-includes
