@@ -138,9 +138,10 @@ LONG xhciCmdSubmit(struct PCIController *hc,
         /* Wait for completion with a bounded timeout to avoid hanging */
         for(ULONG waitms = 0; waitms < 1000; waitms++) {
             if(xhcic->xhc_CmdResults[queued].status != 0xFFFFFFFF) {
-                /* Invalidate any output contexts that may have been updated */
-                if(dmaaddr) {
-                    /* For commands that update contexts, invalidate cache */
+                /* Only the context commands are handed a CPU address;
+                   Set TR Dequeue Pointer carries a bus address with the
+                   cycle state in bit 0, which is not ours to invalidate. */
+                if(dmaaddr && needs_context) {
                     CacheClearE(dmaaddr, 2048, CACRF_InvalidateD);
                 }
 
