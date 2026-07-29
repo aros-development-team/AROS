@@ -1372,6 +1372,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
     HIDDT_Color *ctab = NULL;
     ULONG bytes_per_line, lines_per_step, doing_lines, lines_done;
     IPTR mask_align, mask_bpr;
+    HIDDT_Pixel pixmask = ~0;
     UBYTE *srcbuf;
 
     OOP_GetAttr(msg->src , aHidd_BitMap_PixFmt, (IPTR *)&src_pf);
@@ -1430,6 +1431,16 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
 
     mask_align--;
     mask_bpr = ((mask_bpr + mask_align) & ~mask_align) >> 3;
+
+    /* How wide a source value is, for the ANBC minterm to complement within */
+    if (src_colmod == vHidd_ColorModel_Palette)
+    {
+        IPTR srcdepth;
+
+        OOP_GetAttr(msg->src, aHidd_BitMap_Depth, &srcdepth);
+        if (srcdepth < 32)
+            pixmask = (1UL << srcdepth) - 1;
+    }
 
     /*
      * TODO: Here we use a temporary buffer to perform the operation. This is slow and
@@ -1492,6 +1503,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
             {
             case vHidd_GC_DrawMode_Or:   /* (ABC|ABNC|ANBC) if copy source and blit thru mask */
             case vHidd_GC_DrawMode_Copy: /* (ABC|ABNC = 0xC0) - compatibility with AOS3 */
+            case vHidd_GC_DrawMode_AndInverted: /* (ANBC) if invert source and blit thru mask */
                 for (y = 0; y < doing_lines; y++)
                 {
                     for (x = 0; x < msg->width; x++)
@@ -1499,6 +1511,14 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
                         if (mask[XCOORD_TO_BYTEIDX(msg->srcX + x)] & XCOORD_TO_MASK(msg->srcX + x))
                         {
                             HIDDT_Pixel pix = *srcpixelbuf;
+
+                            /*
+                             * ANBC inverts the source. What gets complemented
+                             * is the pen, before the colormap below, not the
+                             * color the pen maps to.
+                             */
+                            if (drawmode == vHidd_GC_DrawMode_AndInverted)
+                                pix = ~pix & pixmask;
 
                             if (ctab)
                             {
@@ -1534,10 +1554,6 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
                     }
                     mask += mask_bpr;
                 }
-                break;
-
-            case vHidd_GC_DrawMode_AndInverted: /* (ANBC) if invert source and blit thru mask */
-                D(bug("CopyBoxMasked does not support ANBC minterm yet"));
                 break;
 
             default:
