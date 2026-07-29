@@ -262,7 +262,7 @@ static inline LONG xhciCmdSetTRDequeuePtr(struct PCIController *hc, ULONG slot, 
 #define xhciCmdContextEvaluate(hc,slot,dmaaddr,timerreq) \
     xhciCmdSubmit(hc, dmaaddr, (slot << 24) | TRBF_FLAG_CRTYPE_EVALUATE_CONTEXT, NULL, timerreq)
 #define xhciCmdNoOp(hc,slot,dmaaddr,timerreq) \
-    xhciCmdSubmit(hc, dmaaddr, TRBF_FLAG_TRTYPE_NOOP, NULL, timerreq)
+    xhciCmdSubmit(hc, dmaaddr, TRBF_FLAG_CRTYPE_NOOP, NULL, timerreq)
 #endif
 
 #if defined(PCIUSB_XHCI_DEBUG)

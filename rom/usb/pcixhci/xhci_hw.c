@@ -361,7 +361,7 @@ LONG xhciCmdContextEvaluate(struct PCIController *hc, ULONG slot, APTR dmaaddr,
 LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr,
                  struct timerequest *timerreq)
 {
-    ULONG flags = TRBF_FLAG_TRTYPE_NOOP;
+    ULONG flags = TRBF_FLAG_CRTYPE_NOOP;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
