@@ -2,7 +2,7 @@
 
 /* Copyright (C) 1996 by Internet Software Consortium.
  * Copyright (C) 2005 by Pavel Fedin.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -134,7 +134,7 @@ inet_pton6(const char *src, u_char *dst)
     static const char xdigits_l[] = "0123456789abcdef",
                                     xdigits_u[] = "0123456789ABCDEF";
     u_char tmp[NS_IN6ADDRSZ], *tp, *endp, *colonp;
-    const char *xdigits, *curtok;
+    const char *curtok;
     int ch, saw_xdigit;
     u_int val;
 
@@ -149,6 +149,7 @@ inet_pton6(const char *src, u_char *dst)
     saw_xdigit = 0;
     val = 0;
     while((ch = *src++) != '\0') {
+        const char *xdigits;
         const char *pch;
 
         if((pch = strchr((xdigits = xdigits_l), ch)) == NULL)

@@ -256,12 +256,11 @@ in_canforward(in)
 struct in_addr in;
 {
     register u_long i = ntohl(in.s_addr);
-    register u_long net;
 
     if(IN_EXPERIMENTAL(i))
         return (0);
     if(IN_CLASSA(i)) {
-        net = i & IN_CLASSA_NET;
+        register u_long net = i & IN_CLASSA_NET;
         if(net == 0 || net == IN_LOOPBACKNET)
             return (0);
     }
@@ -635,7 +634,6 @@ in_broadcast(in)
 struct in_addr in;
 {
     register struct in_ifaddr *ia;
-    u_long t;
 
     /*
      * Look through the list of addresses for a match
@@ -643,6 +641,7 @@ struct in_addr in;
      */
     for(ia = in_ifaddr; ia; ia = ia->ia_next)
         if(ia->ia_ifp->if_flags & IFF_BROADCAST) {
+            u_long t;
             if(ia->ia_broadaddr.sin_addr.s_addr == in.s_addr)
                 return (1);
             /*

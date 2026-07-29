@@ -137,9 +137,8 @@ dns_cache_min_ttl(const UBYTE *msg, int msglen)
 {
     const u_char *cp, *eom;
     HEADER *hp;
-    int qdcount, rrcount, i, n, type, rdlen;
+    int qdcount, rrcount, i, n, rdlen;
     long minttl = -1;
-    u_long ttl;
 
     if(msg == NULL || msglen < (int)sizeof(HEADER))
         return 0;
@@ -176,10 +175,10 @@ dns_cache_min_ttl(const UBYTE *msg, int msglen)
         cp += n;
         if(cp + 10 > eom)
             break;
-        type = _getshort((u_char *)cp);
+        int type = _getshort((u_char *)cp);
         cp += sizeof(u_short);              /* type  */
         cp += sizeof(u_short);              /* class */
-        ttl = _getlong((u_char *)cp);
+        u_long ttl = _getlong((u_char *)cp);
         cp += sizeof(u_int32_t);            /* ttl   */
         rdlen = _getshort((u_char *)cp);
         cp += sizeof(u_short);              /* rdlength */

@@ -78,6 +78,19 @@
 extern	char *tcpstates[];
 
 /*
+ * tcp_disconnect()/tcp_close()/tcp_drop()/tcp_timers()/sototcpcb() yield the
+ * resulting tcpcb (NULL once the block has been freed).  That result is read
+ * only by the TCPDEBUG trace at the end of tcp_usrreq(), so it is assigned back
+ * to tp only in debug builds -- otherwise it is a dead store when TCPDEBUG is
+ * disabled.  The wrapped call is always evaluated.
+ */
+#ifdef TCPDEBUG
+#define TP_DEBUG_ASSIGN(tp, expr)	((tp) = (expr))
+#else
+#define TP_DEBUG_ASSIGN(tp, expr)	((void)(expr))
+#endif
+
+/*
  * Process a TCP user request for TCP tb.  If this is a send request
  * then m is the mbuf chain of send data.  If this is a timer expiration
  * (called from the software clock routine), then timertype tells which timer.
@@ -150,7 +163,7 @@ struct mbuf *m, *nam, *control;
             break;
         if((so->so_options & SO_LINGER) && so->so_linger.tv_sec == 0)
             so->so_linger.tv_sec = TCP_LINGERTIME;
-        tp = sototcpcb(so);
+        TP_DEBUG_ASSIGN(tp, sototcpcb(so));
         break;
 
         /*
@@ -162,9 +175,9 @@ struct mbuf *m, *nam, *control;
          */
     case PRU_DETACH:
         if(tp->t_state > TCPS_LISTEN)
-            tp = tcp_disconnect(tp);
+            TP_DEBUG_ASSIGN(tp, tcp_disconnect(tp));
         else
-            tp = tcp_close(tp);
+            TP_DEBUG_ASSIGN(tp, tcp_close(tp));
         break;
 
         /*
@@ -314,7 +327,7 @@ struct mbuf *m, *nam, *control;
          * Abort the TCP.
          */
     case PRU_ABORT:
-        tp = tcp_drop(tp, ECONNABORTED);
+        TP_DEBUG_ASSIGN(tp, tcp_drop(tp, ECONNABORTED));
         break;
 
     case PRU_SENSE:
@@ -380,7 +393,7 @@ struct mbuf *m, *nam, *control;
          * routine for tracing's sake.
          */
     case PRU_SLOWTIMO:
-        tp = tcp_timers(tp, (long)nam);
+        TP_DEBUG_ASSIGN(tp, tcp_timers(tp, (long)nam));
 #ifdef TCPDEBUG
         req |= (int)nam << 8;		/* for debug's sake */
 #endif

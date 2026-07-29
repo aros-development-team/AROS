@@ -370,10 +370,10 @@ tcp_template(tp)
 struct tcpcb *tp;
 {
     register struct inpcb *inp = tp->t_inpcb;
-    register struct mbuf *m;
     register struct tcpiphdr *n;
 
     if((n = tp->t_template) == 0) {
+        register struct mbuf *m;
         m = m_get(M_DONTWAIT, MT_HEADER);
         if(m == NULL)
             return (0);
@@ -770,7 +770,6 @@ struct sockaddr *sa;
 void *arg;
 {
     register struct ip *ip = arg;
-    register struct tcphdr *th;
     void (*notify) __P((struct inpcb *, int)) = tcp_notify;
 
     if(cmd == PRC_QUENCH)
@@ -779,6 +778,7 @@ void *arg;
             ((unsigned)cmd > PRC_NCMDS || inetctlerrmap[cmd] == 0))
         return;
     if(ip) {
+        register struct tcphdr *th;
         th = (struct tcphdr *)((caddr_t)ip + (ip->ip_hl << 2));
         in_pcbnotify(&tcb, sa, th->th_dport, ip->ip_src, th->th_sport,
                      cmd, notify);

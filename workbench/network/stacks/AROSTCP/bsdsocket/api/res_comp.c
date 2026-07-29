@@ -163,7 +163,7 @@ dn_comp(const u_char *exp_dn, u_char *comp_dn, int length,
 {
     register u_char *cp, *dn;
     register int c, l;
-    u_char **cpp, **lpp, *sp, *eob;
+    u_char **cpp, **lpp, *eob;
     u_char *msg;
 
     dn = (u_char *)exp_dn;
@@ -193,7 +193,7 @@ dn_comp(const u_char *exp_dn, u_char *comp_dn, int length,
                 *cpp = NULL;
             }
         }
-        sp = cp++;	/* save ptr to length byte */
+        u_char *sp = cp++;	/* save ptr to length byte */
         do {
             if(c == '.') {
                 c = *dn++;
