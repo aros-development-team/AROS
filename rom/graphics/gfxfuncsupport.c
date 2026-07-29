@@ -352,8 +352,8 @@ LONG fillrect_pendrmd(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 
 BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, WORD ySrc,
                    struct BitMap *dstBitMap, OOP_Object *dstbm_obj, WORD xDest, WORD yDest,
-                   WORD xSize, WORD ySize, ULONG minterm, OOP_Object *gfxhidd, OOP_Object *gc,
-                   struct GfxBase *GfxBase)
+                   WORD xSize, WORD ySize, ULONG minterm, UBYTE mask, OOP_Object *gfxhidd,
+                   OOP_Object *gc, struct GfxBase *GfxBase)
 {
     HIDDT_DrawMode drmd;
 
@@ -364,6 +364,8 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
     BOOL dst_colmap_set = FALSE;
     BOOL success = TRUE;
     BOOL colmaps_ok = TRUE;
+    ULONG old_colmask = GC_COLMASK(gc);
+    ULONG srcdepth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
 
     drmd = MINTERM_TO_GCDRMD(minterm);
 
@@ -395,6 +397,23 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
         //bug("driver_intbltbitmap: dest is amiga bitmap\n");
         /* Amiga BM */
         dstflags |= FLG_PALETTE;
+    }
+
+    /*
+     * Only pens have planes, so neither rule below means anything on a
+     * truecolor destination, where the whole pixel is written.
+     */
+    if(!(dstflags & FLG_TRUECOLOR)) {
+        /*
+         * A blit covers min(src, dst) planes, so a source shallower than the
+         * destination leaves the planes above its own depth alone.
+         */
+        if(srcdepth < GetBitMapAttr(dstBitMap, BMA_DEPTH))
+            GC_COLMASK(gc) &= (1UL << srcdepth) - 1;
+
+        /* Likewise for the planes mask deselects. */
+        if(mask != 0xFF)
+            GC_COLMASK(gc) &= mask;
     }
 
     if((srcflags == FLG_PALETTE || srcflags == FLG_STATICPALETTE)) {
@@ -506,6 +525,9 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
 
     if(dst_colmap_set)
         HIDD_BM_SetColorMap(dstbm_obj, NULL);
+
+    /* The GC can be a cached one, so do not leave the mask behind in it. */
+    GC_COLMASK(gc) = old_colmask;
 
     ULOCK_BLIT
 
