@@ -39,7 +39,7 @@ endif
 -include $(SRCDIR)/$(CURDIR)/make.opts
 
 USER_LDFLAGS := -static
-#USER_CPPFLAGS += -DDEBUG=1
+USER_CPPFLAGS += -DDEBUG=1 -DPCIUSB_XHCI_DEBUG
 
 %build_module mmake=kernel-usb-pcixhci \
     modname=pcixhci modtype=device \

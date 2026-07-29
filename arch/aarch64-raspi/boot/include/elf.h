@@ -38,6 +38,7 @@ int loadElf(void *elf_file);
 #define R_AARCH64_MOVW_SABS_G0         270
 #define R_AARCH64_MOVW_SABS_G1         271
 #define R_AARCH64_MOVW_SABS_G2         272
+#define R_AARCH64_LD_PREL_LO19         273     /* LD-lit: S + A - P */
 #define R_AARCH64_ADR_PREL_LO21        274     /* ADR: S + A - P */
 #define R_AARCH64_ADR_PREL_PG_HI21     275     /* ADRP: Page(S+A) - Page(P) */
 #define R_AARCH64_ADR_PREL_PG_HI21_NC  276
@@ -50,6 +51,9 @@ int loadElf(void *elf_file);
 #define R_AARCH64_JUMP26        282     /* B: S + A - P */
 #define R_AARCH64_CALL26        283     /* BL: S + A - P */
 #define R_AARCH64_CONDBR19      280     /* B.cond: S + A - P */
+#define R_AARCH64_TSTBR14       279     /* TBZ/TBNZ: S + A - P */
+#define R_AARCH64_ADR_GOT_PAGE  311     /* ADRP: Page(G(S+A)) - Page(P) */
+#define R_AARCH64_LD64_GOT_LO12_NC 312  /* LD64: G(S+A) & 0xFF8 */
 
 /* ELF64 relocation macros */
 #define ELF64_R_SYM(i)         ((uint32_t)((i) >> 32))

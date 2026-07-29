@@ -26,6 +26,17 @@
    caller must provide ARM_PERIIOBASE
 */
 
+/* Peripheral window of the BCM2711, which differs from the earlier SoCs. */
+#define BCM2711_PERIIOBASE                              0xFE000000
+
+/*
+ * The BCM2711 presents the GPU interrupts of the earlier controller as
+ * GIC shared interrupts, offset by this much: GPU interrupt n arrives as
+ * INTID n + 96. Anything using an IRQ_* number below has to add it when
+ * running on that SoC.
+ */
+#define BCM2711_GPUIRQ_OFFSET                           96
+
 #define SYSTIMER_BASE                                   (ARM_PERIIOBASE + 0x003000)
 #define ARMTIMER_BASE                                   (ARM_PERIIOBASE + 0x00b000)
 #define IRQ_BASE                                        (ARM_PERIIOBASE + 0x00b200)

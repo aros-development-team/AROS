@@ -65,7 +65,7 @@ struct cpu_ipidata
 struct cpu_ipidata *bcm2708_cpuipid[4] = { 0, 0, 0, 0 };
 #endif
 
-static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
+void bcm2708_init(APTR _kernelBase, APTR _sysBase)
 {
     struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
     struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
@@ -153,7 +153,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
     }
 }
 
-static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
+void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
 {
     struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
     struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
@@ -180,7 +180,7 @@ static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
 #endif
 }
 
-static unsigned int bcm2708_get_time(void)
+unsigned int bcm2708_get_time(void)
 {
     return rd32le(SYSTIMER_CLO);
 }
@@ -206,7 +206,7 @@ static void bcm2708_irq_init(void)
     wr32le(GPUIRQ_DIBL1, ~0);
 }
 
-static void bcm2708_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
+void bcm2708_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
 {
     int cpu;
 
@@ -306,7 +306,7 @@ static void bcm2708_irq_process()
     }
 }
 
-static void bcm2708_fiq_process()
+void bcm2708_fiq_process()
 {
     int cpunum = GetCPUNumber();
     uint32_t fiq, fiq_data;
@@ -337,7 +337,7 @@ static void bcm2708_fiq_process()
     }
 }
 
-static void bcm2708_toggle_led(int LED, int state)
+void bcm2708_toggle_led(int LED, int state)
 {
     if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
@@ -453,7 +453,7 @@ static inline void bcm2708_ser_waitout()
     }
 }
 
-static void bcm2708_ser_putc(uint8_t chr)
+void bcm2708_ser_putc(uint8_t chr)
 {
     bcm2708_ser_waitout();
 
@@ -465,7 +465,7 @@ static void bcm2708_ser_putc(uint8_t chr)
     wr32le(PL011_0_BASE + PL011_DR, chr);
 }
 
-static int bcm2708_ser_getc(void)
+int bcm2708_ser_getc(void)
 {
     if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_RXFE) == 0)
         return (int)rd32le(PL011_0_BASE + PL011_DR);

@@ -128,9 +128,14 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     }
 }
 
+/* PL011 base for the early bring-up prints. The Pi 2/3 puts it at
+   0x3f201000, the Pi 4 (BCM2711) at 0xfe201000; it is selected from the
+   platform id before the first character goes out. */
+static uintptr_t dbg_uart = 0x3f201000;
+
 static inline void uart_putc(char c)
 {
-    volatile uint32_t *uart = (volatile uint32_t *)0x3f201000;
+    volatile uint32_t *uart = (volatile uint32_t *)dbg_uart;
     while (uart[0x18/4] & (1 << 5)) ; /* wait for TXFF clear */
     if (c == '\n') { uart[0] = '\r'; while (uart[0x18/4] & (1 << 5)) ; }
     uart[0] = c;
@@ -144,6 +149,10 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     struct MemHeader *mh;
     long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
     char *cmdline = NULL;
+
+    for (struct TagItem *t = msg; t->ti_Tag != TAG_DONE; t++)
+        if (t->ti_Tag == KRN_Platform && t->ti_Data == 0xc44)
+            dbg_uart = 0xfe201000;
 
     uart_puts("[Kernel] kernel_cstart entered\n");
     BootMsg = msg;

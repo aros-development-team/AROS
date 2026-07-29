@@ -54,7 +54,7 @@ CFILES := \
         font8x14 \
         devicetree
 
-PLATFILES := platform_bcm2708
+PLATFILES := platform_bcm2708 platform_bcm2711
 
 AFILES := vectors
 
