@@ -1,6 +1,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+FATDIR := $(SRCDIR)/rom/filesys/fat
+
 FILES := \
 	partition_types \
 	partition_support \
@@ -45,10 +47,11 @@ FUNCS := \
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \
 	       -DDEBUG=0
+USER_INCLUDES := -I$(FATDIR)
 USER_LDFLAGS  := -L$(GENDIR)/lib -static
 
 %build_module mmake=kernel-partition \
     modname=partition modtype=library \
-    files="partition_init $(FUNCS) $(FILES)" uselibs="debug loadseg"
+    files="partition_init $(FUNCS) $(FILES) $(FATDIR)/bpb" uselibs="debug loadseg"
 
 %common

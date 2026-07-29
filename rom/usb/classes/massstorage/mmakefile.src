@@ -1,7 +1,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+FATDIR := $(SRCDIR)/rom/filesys/fat
+
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_INCLUDES := -I$(FATDIR)
 #USER_CPPFLAGS += -DDEBUG=1
 USER_LDFLAGS := -static
 
@@ -18,7 +21,7 @@ FILES := \
 
 %build_module_library mmake=kernel-usb-classes-massstorage \
     modname=massstorage modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
+    files="$(FILES) $(FATDIR)/bpb" \
     uselibs="debug"
 
 %common

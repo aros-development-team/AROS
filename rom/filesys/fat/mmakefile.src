@@ -5,7 +5,7 @@ USER_CPPFLAGS := -D__NOLIBBASE__
 
 USER_LDFLAGS := -static
 
-FILES := cache direntry date disk fat file lock main names notify ops packet\
+FILES := bpb cache direntry date disk fat file lock main names notify ops packet\
  support timer volume
 
 #MM- kernel-fs-fat : includes linklibs

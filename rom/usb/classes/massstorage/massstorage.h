@@ -77,30 +77,6 @@ struct MasterBootRecord {
 
 #define MBR_SIGNATURE   0x55aa
 
-struct FATSuperBlock
-{
-    UBYTE fsb_Jump[3];                   // 0000
-    UBYTE fsb_Vendor[8];                 // 0003
-    UBYTE fsb_BytesPerSector[2];         // 000B
-    UBYTE fsb_SectorsPerCluster;         // 000D
-    UBYTE fsb_ReservedSectors[2];        // 000E
-    UBYTE fsb_NumberFATs;                // 0010
-    UBYTE fsb_NumberRootEntries[2];      // 0011
-    UBYTE fsb_SectorsPerVolume[2];       // 0013
-    UBYTE fsb_MediaDescriptor;           // 0015
-    UBYTE fsb_SectorsPerFAT[2];          // 0016
-    UBYTE fsb_SectorsPerTrack[2];        // 0018
-    UBYTE fsb_Heads[2];                  // 001A
-    UBYTE fsb_FirstVolumeSector[2];      // 001C
-    UBYTE fsb_pad0[13];                  // 001E
-    UBYTE fsb_Label[11];                 // 002B
-    UBYTE fsb_FileSystem[8];             // 0036
-    UBYTE fsb_pad1[9];                   // 003E
-    UBYTE fsb_Label2[11];                // 0047
-    UBYTE fsb_FileSystem2[8];            // 0052
-    UBYTE fsb_BootCode[512 - 90];        // 005A
-};
-
 #if defined(__GNUC__)
 # pragma pack()
 #endif
