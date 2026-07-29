@@ -407,8 +407,8 @@ takeownership:
     /* Scratchpad buffer count decode (Hi/Lo per spec) */
     val = hcsparams2;
     {
-        ULONG sp_lo = (val >> 21) & 0x1F;
-        ULONG sp_hi = (val >> 27) & 0x1F;
+        ULONG sp_hi = (val >> 21) & 0x1F;
+        ULONG sp_lo = (val >> 27) & 0x1F;
         xhcic->xhc_NumScratchPads = (sp_hi << 5) | sp_lo;
     }
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "SPB = %u" DEBUGCOLOR_RESET" \n", xhcic->xhc_NumScratchPads);
