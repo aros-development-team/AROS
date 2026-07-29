@@ -79,7 +79,14 @@ static inline OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *Gfx
     }
     GC_DRMD(gc)   = vHidd_GC_DrawMode_Copy;
     GC_COLEXP(gc) = 0;
-    GC_COLMASK(gc) = ~0;
+    /*
+     * rp->Mask selects bitplanes, so it only means anything where a pixel is
+     * a pen. On a truecolor bitmap the bits are color components and the mask
+     * has no counterpart, so leave every bit writable there -- as for the
+     * usual 0xFF, which drivers can then recognize as "no mask at all".
+     */
+    GC_COLMASK(gc) = (rp->Mask != 0xFF && rp->BitMap &&
+                      rp->BitMap->Depth <= 8) ? rp->Mask : ~0;
 
     /* Now set GC's DrawMode (effectively ROP) and color expansion (actually transparency) flags */
     if (rp->DrawMode & JAM2)

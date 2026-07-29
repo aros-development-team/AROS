@@ -68,25 +68,36 @@
             /* When rastport has areaptrn, let BltPattern do the job */
             BltPattern(rp, NULL, xMin, yMin, xMax, yMax, 0);
         } else {
-            OOP_Object *gc  = GetDriverData(rp, GfxBase);
-            struct Rectangle rr;
-            HIDDT_Pixel oldfg = 0;
+            /*
+             * Without an AreaPtrn the fill pattern is all ones, so INVERSVID
+             * clears it: JAM1 then writes nothing at all, and JAM2 writes
+             * BPen everywhere. COMPLEMENT inverts the destination wherever
+             * the mode writes, whichever pen it would have used.
+             */
+            BOOL inversvid = (rp->DrawMode & INVERSVID) != 0;
+            BOOL jam2 = (rp->DrawMode & JAM2) != 0;
 
-            if(rp->DrawMode & INVERSVID) {
-                oldfg = GC_FG(gc);
-                GC_FG(gc) = GC_BG(gc);
-            }
+            if(jam2 || !inversvid) {
+                OOP_Object *gc  = GetDriverData(rp, GfxBase);
+                struct Rectangle rr;
+                HIDDT_Pixel oldfg = GC_FG(gc);
 
-            /* This is the same as fillrect_pendrmd() */
+                if(inversvid) {
+                    GC_FG(gc) = GC_BG(gc);
+                }
+                if(rp->DrawMode & COMPLEMENT) {
+                    GC_DRMD(gc) = vHidd_GC_DrawMode_Invert;
+                }
 
-            rr.MinX = xMin;
-            rr.MinY = yMin;
-            rr.MaxX = xMax;
-            rr.MaxY = yMax;
+                /* This is the same as fillrect_pendrmd() */
 
-            do_render_with_gc(rp, NULL, &rr, fillrect_render, NULL, gc, TRUE, FALSE, GfxBase);
+                rr.MinX = xMin;
+                rr.MinY = yMin;
+                rr.MaxX = xMax;
+                rr.MaxY = yMax;
 
-            if(rp->DrawMode & INVERSVID) {
+                do_render_with_gc(rp, NULL, &rr, fillrect_render, NULL, gc, TRUE, FALSE, GfxBase);
+
                 GC_FG(gc) = oldfg;
             }
         }

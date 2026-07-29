@@ -1326,6 +1326,8 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
     HIDDT_Pixel fg = GC_FG(msg->gc);
     struct p96gfx_staticdata *csd = CSD(cl);
+    ULONG colmask = GC_COLMASK(msg->gc);
+    UBYTE mask = (UBYTE)colmask;
     BOOL v = FALSE;
 
     D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
@@ -1348,14 +1350,23 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 
         if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set) {
             ULONG pen = mode == vHidd_GC_DrawMode_Clear ? 0x00000000 : 0xffffffff;
-            v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, 0xff, data->rgbformat);
+            v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, mask, data->rgbformat);
         } else if (mode == vHidd_GC_DrawMode_Copy) {
-            v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, 0xff, data->rgbformat);
+            v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, mask, data->rgbformat);
         } else if (mode == vHidd_GC_DrawMode_Invert) {
-            v = InvertRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff, data->rgbformat);
+            v = InvertRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, mask, data->rgbformat);
         }
 
         UNLOCK_HW
+    }
+
+    /* The memory fallbacks below write whole pixels, so a partial mask has to
+       go to the superclass instead. */
+    if (!v && colmask != ~0)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        UNLOCK_BITMAP(data)
+        return;
     }
 
     if (!v) switch(mode)

@@ -38,7 +38,7 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
      */
     res = int_bltbitmap(brd->srcbm, brd->srcbm_obj, srcx, srcy,
                         brd->rsi.curbm, dstbm_obj, rect->MinX, rect->MinY,
-                        width, height, brd->minterm, gfxhidd, dst_gc, GfxBase);
+                        width, height, brd->minterm, 0xFF, gfxhidd, dst_gc, GfxBase);
 
     return res ? width * height : 0;
 }
