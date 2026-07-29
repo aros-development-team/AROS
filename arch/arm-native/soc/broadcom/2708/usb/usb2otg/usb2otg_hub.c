@@ -187,6 +187,10 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 
                         case UFS_PORT_RESET:
                             {
+                                D(bug("[USB2OTG:HUBDLG] SET_FEATURE(PORT_RESET) HPRT=%08x\n",
+                                    rd32le(USB2OTG_HOSTPORT));)
+                            }
+                            {
                                 struct MsgPort *port = CreateMsgPort();
                                 struct timerequest *req = (struct timerequest *)CreateIORequest(port, sizeof(struct timerequest));
                                 OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) req, 0);
@@ -222,6 +226,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 
                                 otg_RegVal = rd32le(USB2OTG_HOSTPORT);
                                 D(bug("[USB2OTG:Hub] Port reset complete, HOSTPORT=%08x\n", otg_RegVal));
+                                D(bug("[USB2OTG:HUBDLG] PORT_RESET done HPRT=%08x\n", otg_RegVal);)
 
                                 /*
                                  * Synthesize a root-hub status change so the hub
@@ -319,6 +324,17 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port #%ld Connect Change\n", idx));
 
                             newval |= USB2OTG_HOSTPORT_PRTCONNDET;
+                            D(bug("[USB2OTG:HUBDLG] CLEAR_FEATURE(C_PORT_CONNECTION) fdis=%d->phase2\n",
+                                (int)otg_Unit->hu_PortForceDisconnect);)
+                            if (otg_Unit->hu_PortForceDisconnect)
+                            {
+                                /* Phase 1 (disconnect) consumed — now
+                                 * report the reconnect. */
+                                otg_Unit->hu_PortForceDisconnect = FALSE;
+                                otg_Unit->hu_PortForceConnChange = TRUE;
+                            }
+                            else
+                                otg_Unit->hu_PortForceConnChange = FALSE;
                             cmdgood = TRUE;
 
                             break;
@@ -376,9 +392,10 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 #if defined(__AROSEXEC_SMP__)
                             KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
-                            if (postval & (USB2OTG_HOSTPORT_PRTCONNDET |
-                                           USB2OTG_HOSTPORT_PRTENCHNG |
-                                           USB2OTG_HOSTPORT_PRTOVRCURRCHNG))
+                            if ((postval & (USB2OTG_HOSTPORT_PRTCONNDET |
+                                            USB2OTG_HOSTPORT_PRTENCHNG |
+                                            USB2OTG_HOSTPORT_PRTOVRCURRCHNG)) ||
+                                otg_Unit->hu_PortForceConnChange)
                             {
                                 otg_Unit->hu_HubPortChanged = TRUE;
                             }
@@ -427,6 +444,12 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     if (oldval & USB2OTG_HOSTPORT_PRTRST)        *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
                     if (oldval & USB2OTG_HOSTPORT_PRTSUSP)       *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
 
+                    /* Recovery phase 1: report the port as vacated so
+                     * the hub class tears down the stale tree. */
+                    if (otg_Unit->hu_PortForceDisconnect)
+                        *mptr &= ~AROS_WORD2LE(UPSF_PORT_CONNECTION |
+                                               UPSF_PORT_ENABLE);
+
                     switch (USB2OTG_HOSTPORT_PRTSPD(oldval))
                     {
                         case USB2OTG_HOSTPORT_PRTSPD_HS_VAL:
@@ -448,9 +471,24 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     if (oldval & USB2OTG_HOSTPORT_PRTENCHNG)    *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
                     if (oldval & USB2OTG_HOSTPORT_PRTCONNDET)   *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
                     if (oldval & USB2OTG_HOSTPORT_PRTRES)       *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND|UPSF_PORT_ENABLE);
+                    /* Synthetic connect change from port recovery — the
+                     * recovery PRTRST W1C'd the HW detect bit. Reported
+                     * in both phases (disconnect, then reconnect). */
+                    if (otg_Unit->hu_PortForceConnChange ||
+                        otg_Unit->hu_PortForceDisconnect)
+                        *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
 
                     D(bug("[USB2OTG:Hub] GET_PORT_STATUS: status=%04x change=%04x\n",
                         AROS_LE2WORD(*(mptr-1)), AROS_LE2WORD(*mptr)));
+
+                    /* Only when something changed — those are rare and
+                     * are exactly the decision points for the hub class. */
+                    D(if (*mptr != 0)
+                        bug("[USB2OTG:HUBDLG] GET_PORT_STATUS status=%04x change=%04x HPRT=%08x (fdis=%d fcc=%d)\n",
+                            (unsigned)AROS_LE2WORD(*(mptr-1)),
+                            (unsigned)AROS_LE2WORD(*mptr), oldval,
+                            (int)otg_Unit->hu_PortForceDisconnect,
+                            (int)otg_Unit->hu_PortForceConnChange);)
 
                     ioreq->iouh_Actual = sizeof(struct UsbPortStatus);
                     return (0);

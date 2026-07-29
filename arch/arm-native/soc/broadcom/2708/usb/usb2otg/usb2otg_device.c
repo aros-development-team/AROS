@@ -6,6 +6,8 @@
 #include <aros/debug.h>
 #include <aros/atomic.h>
 
+#include <exec/errors.h>
+
 #include <proto/exec.h>
 #include <proto/kernel.h>
 #include <proto/utility.h>
@@ -101,7 +103,9 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                     wr32le(USB2OTG_AHB, otg_RegVal);
 
                     D(bug("[USB2OTG] Powering on USB controller\n"));
-                    pwron = AllocVec(9*sizeof(ULONG), MEMF_CLEAR);
+                    /* 8-ULONG message + up to 15 bytes alignment slack:
+                     * 9 ULONGs could overflow after the 16-byte round-up. */
+                    pwron = AllocVec(16*sizeof(ULONG), MEMF_CLEAR);
                     PwrOnMsg = (ULONG*)(((IPTR)pwron + 15) & ~15);
 
                     D(bug("[USB2OTG] pwron=%p, PwrOnMsg=%p\n", pwron, PwrOnMsg));
@@ -226,7 +230,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     for (i=0; i < 128; i++)
                                     {
                                         USB2OTGBase->hd_Unit->hu_PIDBits[i] = 0;
-                                        USB2OTGBase->hd_Unit->hu_NakGate[i] = USB2OTG_NAK_GATE_NONE;
+                                        USB2OTGBase->hd_Unit->hu_NakGate[i][0] = USB2OTG_NAK_GATE_NONE;
+                                        USB2OTGBase->hd_Unit->hu_NakGate[i][1] = USB2OTG_NAK_GATE_NONE;
                                     }
                                     USB2OTGBase->hd_Unit->hu_BulkOwnerDev[0] = 0;
                                     USB2OTGBase->hd_Unit->hu_BulkOwnerDev[1] = 0;
@@ -571,6 +576,89 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
     /* Is it pending? */
     if (ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)
     {
+        /*
+         * Queue-resident requests are aborted for real: removed and
+         * replied with IOERR_ABORTED (hub.class treats that as normal
+         * teardown flow). A channel-active request is left to the
+         * watchdog — halting mid-split here would wedge the core's
+         * split arbiter (the exact poison this driver recovers from).
+         */
+        struct USB2OTGUnit *unit = (struct USB2OTGUnit *)ioreq->iouh_Req.io_Unit;
+        const char *loc = "not-found";
+        int chan_at = -1;
+        BOOL aborted = FALSE;
+
+        if (unit != NULL)
+        {
+            struct List *queues[] = {
+                &unit->hu_CtrlXFerQueue,
+                &unit->hu_BulkXFerQueue,
+                &unit->hu_IntXFerQueue,
+                &unit->hu_IntXFerScheduled,
+                &unit->hu_IOPendingQueue,
+                &unit->hu_FinishedXfers,
+            };
+            static const char *const qnames[] = {
+                "ctrl-queue", "bulk-queue", "int-queue",
+                "int-scheduled", "roothub-pending", "finished",
+            };
+            struct IOUsbHWReq *cmp;
+            unsigned int q;
+            int c;
+
+            Disable();
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            for (c = 0; c < 8; c++)
+            {
+                if (unit->hu_Channel[c].hc_Request == ioreq)
+                {
+                    loc = "channel";
+                    chan_at = c;
+                    break;
+                }
+            }
+            if (chan_at < 0)
+            {
+                for (q = 0; q < sizeof(queues) / sizeof(queues[0]); q++)
+                {
+                    ForeachNode(queues[q], cmp)
+                    {
+                        if (cmp == ioreq)
+                        {
+                            Remove((struct Node *)ioreq);
+                            loc = qnames[q];
+                            aborted = TRUE;
+                            break;
+                        }
+                    }
+                    if (aborted)
+                        break;
+                }
+            }
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&unit->hu_Lock);
+#endif
+            Enable();
+        }
+
+        D(bug("[USB2OTG:ABORT] AbortIO req=%p cmd=%lu dev=%d ep=%d at=%s(%d) tick=%lu — %s\n",
+            ioreq,
+            (unsigned long)ioreq->iouh_Req.io_Command,
+            (int)ioreq->iouh_DevAddr,
+            (int)ioreq->iouh_Endpoint,
+            loc, chan_at,
+            (unsigned long)usb2otg_wd_ticks,
+            aborted ? "aborted" : "NOT aborted (channel/not-found)");)
+        (void)loc; (void)chan_at;
+
+        if (aborted)
+        {
+            ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+            FNAME_DEV(TermIO)(ioreq, USB2OTGBase);
+            return(0);
+        }
     }
     return(-1);
 
