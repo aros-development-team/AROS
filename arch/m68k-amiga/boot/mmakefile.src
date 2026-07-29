@@ -345,7 +345,7 @@ KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
            keymap graphics layers intuition gadtools icon workbench setpatch
 KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
 KHNDLRS := cdrom con afs ram
-KHIDDS  := amigakbd amigamouse amigavideo ata_gayle bus gfx hiddclass keyboard mouse storage system p96gfx
+KHIDDS  := amigakbd amigamouse amigavideo ata_gayle bus gfx hiddclass inputclass keyboard mouse storage system p96gfx
 KRSRCS  := battclock battmem processor task lddemon dosboot cia potgo disk \
            misc shell shellcommands workbook wbtag card FileSystem
 KHOOKS  := alert romboot
