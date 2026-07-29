@@ -68,38 +68,31 @@
             /* When rastport has areaptrn, let BltPattern do the job */
             BltPattern(rp, NULL, xMin, yMin, xMax, yMax, 0);
         } else {
-            /*
-             * Without an AreaPtrn the fill pattern is all ones, so INVERSVID
-             * clears it: JAM1 then writes nothing at all, and JAM2 writes
-             * BPen everywhere. COMPLEMENT inverts the destination wherever
-             * the mode writes, whichever pen it would have used.
-             */
+            /* Without an AreaPtrn, INVERSVID selects the background pen. */
             BOOL inversvid = (rp->DrawMode & INVERSVID) != 0;
-            BOOL jam2 = (rp->DrawMode & JAM2) != 0;
+            OOP_Object *gc  = GetDriverData(rp, GfxBase);
+            struct Rectangle rr;
+            HIDDT_Pixel oldfg = GC_FG(gc);
+            HIDDT_DrawMode olddrmd = GC_DRMD(gc);
 
-            if(jam2 || !inversvid) {
-                OOP_Object *gc  = GetDriverData(rp, GfxBase);
-                struct Rectangle rr;
-                HIDDT_Pixel oldfg = GC_FG(gc);
-
-                if(inversvid) {
-                    GC_FG(gc) = GC_BG(gc);
-                }
-                if(rp->DrawMode & COMPLEMENT) {
-                    GC_DRMD(gc) = vHidd_GC_DrawMode_Invert;
-                }
-
-                /* This is the same as fillrect_pendrmd() */
-
-                rr.MinX = xMin;
-                rr.MinY = yMin;
-                rr.MaxX = xMax;
-                rr.MaxY = yMax;
-
-                do_render_with_gc(rp, NULL, &rr, fillrect_render, NULL, gc, TRUE, FALSE, GfxBase);
-
-                GC_FG(gc) = oldfg;
+            if(inversvid) {
+                GC_FG(gc) = GC_BG(gc);
             }
+            if(rp->DrawMode & COMPLEMENT) {
+                GC_DRMD(gc) = vHidd_GC_DrawMode_Invert;
+            }
+
+            /* This is the same as fillrect_pendrmd() */
+
+            rr.MinX = xMin;
+            rr.MinY = yMin;
+            rr.MaxX = xMax;
+            rr.MaxY = yMax;
+
+            do_render_with_gc(rp, NULL, &rr, fillrect_render, NULL, gc, TRUE, FALSE, GfxBase);
+
+            GC_FG(gc) = oldfg;
+            GC_DRMD(gc) = olddrmd;
         }
     } /* if ((xMax >= xMin) && (yMax >= yMin)) */
 
