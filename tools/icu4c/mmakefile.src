@@ -20,21 +20,23 @@ endif
 
 ifeq ($(ICU_LEGACY),yes)
 ICU_MAJOR := 61
-ISU_MINOR := 1
+ICU_MINOR := 1
 else
 ICU_MAJOR := 78
-ISU_MINOR := 3
+ICU_MINOR := 3
 endif
-ICU_VERSION := $(ICU_MAJOR).$(ISU_MINOR)
+ICU_VERSION := $(ICU_MAJOR).$(ICU_MINOR)
 ICU_PKGNAME := icu4c
 # 61 ships as icu4c-61_1-src.tgz, 78 as icu4c-78.3-sources.tgz
 ifeq ($(ICU_LEGACY),yes)
 ICU_PKGVERSION := $(subst .,_,$(ICU_VERSION))
 ICU_ARCHKIND := src
-ICU_REPOSITORY := https://github.com/unicode-org/icu/releases/download/release-$(ICU_MAJOR)-$(ISU_MINOR)
+ICU_REPOSITORY := https://github.com/unicode-org/icu/releases/download/release-$(ICU_MAJOR)-$(ICU_MINOR)
 else
 ICU_PKGVERSION := $(ICU_VERSION)
 ICU_ARCHKIND := sources
+# releases from 78 on use a dotted tag (release-78.3), not release-78-3
+ICU_REPOSITORY := https://github.com/unicode-org/icu/releases/download/release-$(ICU_VERSION)
 endif
 
 ICU_EXTRA_OPTS = \
