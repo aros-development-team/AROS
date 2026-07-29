@@ -3270,7 +3270,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             next_dma  = (UQUAD)(IPTR)xhcic->xhc_DMAERS;
             next_dma += (UQUAD)(idx) * (UQUAD)sizeof(struct xhci_trb);
 
-            xhciSetPointer(hc, ir->erdp, (IPTR)(next_dma | (UQUAD)XHCIF_IR_ERDP_EHB));
+            xhciSetPointerMMIO(hc, ir->erdp, (IPTR)(next_dma | (UQUAD)XHCIF_IR_ERDP_EHB));
         }
 
         if(maxwork == 0) {
@@ -3390,10 +3390,10 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
 
     hcopr->config = AROS_LONG2LE(xhcic->xhc_NumSlots);
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Setting DCBAA to 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_DMADCBAA);
-    xhciSetPointer(hc, hcopr->dcbaap, xhcic->xhc_DMADCBAA);
+    xhciSetPointerMMIO(hc, hcopr->dcbaap, xhcic->xhc_DMADCBAA);
     xhciDumpStatus(AROS_LE2LONG(hcopr->usbsts));
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Setting CRCR to 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_DMAOPR);
-    xhciSetPointer(hc, hcopr->crcr, ((IPTR)xhcic->xhc_DMAOPR | 1));
+    xhciSetPointerMMIO(hc, hcopr->crcr, ((IPTR)xhcic->xhc_DMAOPR | 1));
 
     volatile struct pcisusbXHCIRing *xring = (volatile struct pcisusbXHCIRing *)xhcic->xhc_OPRp;
     xhciInitRing(hc, (struct pcisusbXHCIRing *)xring);
@@ -3409,8 +3409,8 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
     xhciir->erstsz = AROS_LONG2LE(1);
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Setting ERDP to 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_DMAERS);
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Setting ERSTBA to 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_DMAERST);
-    xhciSetPointer(hc, xhciir->erdp, ((IPTR)xhcic->xhc_DMAERS | (IPTR)XHCIF_IR_ERDP_EHB));
-    xhciSetPointer(hc, xhciir->erstba, ((IPTR)xhcic->xhc_DMAERST));
+    xhciSetPointerMMIO(hc, xhciir->erdp, ((IPTR)xhcic->xhc_DMAERS | (IPTR)XHCIF_IR_ERDP_EHB));
+    xhciSetPointerMMIO(hc, xhciir->erstba, ((IPTR)xhcic->xhc_DMAERST));
 
     xring = (volatile struct pcisusbXHCIRing *)xhcic->xhc_ERSp;
     xhciInitRing(hc, (struct pcisusbXHCIRing *)xring);

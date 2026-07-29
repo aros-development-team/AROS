@@ -363,6 +363,19 @@ void xhciDumpCC(UBYTE completioncode);
     y.addr_hi = 0
 #endif
 
+/*
+ * The 64-bit operational registers are programmed as two 32-bit
+ * accesses, low half first: not every bridge or controller carries an
+ * eight byte register write whole. Pointer fields that live in memory
+ * are not affected.
+ */
+#define xhciSetPointerMMIO(x,y,z) \
+    do { \
+        y.addr_lo = AROS_LONG2LE((ULONG)((UQUAD)(IPTR)(z) & 0xFFFFFFFF)); \
+        y.addr_hi = ((x)->hc_Flags & HCF_ADDR64) ? \
+            AROS_LONG2LE((ULONG)((UQUAD)(IPTR)(z) >> 32)) : 0; \
+    } while (0)
+
 static inline struct xhci_trb *
 xhciTRBPointer(struct PCIController *hc, volatile struct xhci_trb *trb)
 {
