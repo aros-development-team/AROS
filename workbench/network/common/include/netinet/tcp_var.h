@@ -111,6 +111,7 @@ struct tcpcb {
 #define TF_ECN_SND_CWR	0x0008		/* need to send CWR */
 #define TF_ECN_SND_ECE	0x0010		/* need to send ECE */
 #define TF_SACK_GENERATE 0x0020		/* need to generate SACK option */
+#define TF_PRR		0x0040		/* PRR engaged for this recovery */
 
 	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
@@ -190,6 +191,24 @@ struct tcpcb {
 /* Congestion control algorithm state */
 	u_char	t_cc_algo;		/* CC algorithm (TCP_CC_NEWRENO/CUBIC) */
 	struct	cubic_state t_cubic;	/* CUBIC algorithm state (RFC 8312) */
+
+/*
+ * ECN (RFC 3168): sequence marker used to limit the congestion-window
+ * reduction triggered by an echoed ECE to at most once per window of
+ * data.  Only consulted for ECN-capable connections (TF_ECN_PERMIT).
+ */
+	tcp_seq	snd_ecn_recover;	/* highest seq at last ECN cwnd cut */
+
+/*
+ * PRR (RFC 6937) proportional rate reduction state.  These fields are
+ * only touched while a connection is in fast recovery with PRR engaged
+ * (TF_PRR); they are inert for every other connection.
+ */
+	u_long	snd_prr_out;		/* bytes sent since recovery start */
+	u_long	snd_prr_delivered;	/* bytes delivered since recovery start */
+	u_long	snd_prr_recover_fs;	/* FlightSize at recovery entry */
+	tcp_seq	snd_prr_hiack;		/* highest ack accounted for delivery */
+	u_long	snd_sacked;		/* bytes SACKed above snd_una (RFC 6675) */
 
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
@@ -399,6 +418,7 @@ extern  u_short tcp_lastport;	/* last assigned port */
 extern	int tcp_do_sack;	/* enable SACK (RFC 2018) */
 extern	int tcp_do_newreno;	/* enable NewReno (RFC 3782) */
 extern	int tcp_do_ecn;		/* enable ECN (RFC 3168) */
+extern	int tcp_do_prr;		/* enable PRR (RFC 6937) */
 
 int	 tcp_attach __P((struct socket *));
 void	 tcp_canceltimers __P((struct tcpcb *));
