@@ -117,7 +117,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     srcx2 = srcx + w - 1;
     dstx2 = dstx + w - 1;
     if (copy_minterm[mode] == 0xff)
-        return blit_fillrect(data, dstbm, dstx, dsty, dstx2, dsty + h - 1, 0, mode);
+        return blit_fillrect(data, dstbm, dstx, dsty, dstx2, dsty + h - 1, 0, mode, 0xff);
 
     if (copy_minterm[mode] == 0)
         return FALSE;
@@ -422,7 +422,7 @@ static const UBYTE fill_minterm[] = { 0xca, 0x00, 0x00, 0xca, 0x00, 0x00, 0x5a, 
 // C     = source
 // D     = destination
 
-BOOL blit_fillrect(struct amigavideo_staticdata *data, struct BitMap *bm, WORD x1,WORD y1,WORD x2,WORD y2, HIDDT_Pixel pixel, HIDDT_DrawMode mode)
+BOOL blit_fillrect(struct amigavideo_staticdata *data, struct BitMap *bm, WORD x1,WORD y1,WORD x2,WORD y2, HIDDT_Pixel pixel, HIDDT_DrawMode mode, UBYTE mask)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
@@ -462,7 +462,10 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct BitMap *bm, WORD x
         pixel = 0xff;
 
     for (i = 0; i < bm->Depth; i++) {
-        if (bm->Planes[i] != (UBYTE*)0x00000000 && bm->Planes[i] != (UBYTE*)0xffffffff) {
+        /* The write mask protects the planes it clears. It is a UBYTE, so it
+           says nothing about a ninth plane and beyond: leave those writable. */
+        if ((i >= 8 || (mask & (1 << i))) &&
+            bm->Planes[i] != (UBYTE*)0x00000000 && bm->Planes[i] != (UBYTE*)0xffffffff) {
             WaitBlit();
             custom->bltbdat = (pixel & 1) ? 0xffff : 0x0000;
             custom->bltcpt = (APTR)(bm->Planes[i] + offset);

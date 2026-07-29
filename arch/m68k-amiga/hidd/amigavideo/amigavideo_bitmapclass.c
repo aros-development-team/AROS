@@ -559,7 +559,7 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
             }
         }
 
-        if (blit_fillrect(csd, data->pbm, x1, y1, x2, y2, fg, mode))
+        if (blit_fillrect(csd, data->pbm, x1, y1, x2, y2, fg, mode, GC_COLMASK(gc)))
             doSuper = FALSE;
     }
     if (doSuper)
@@ -989,7 +989,7 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
          (mode == vHidd_GC_DrawMode_Copy)) ||
         ((height == 1) && (width >= 256) &&
          (mode == vHidd_GC_DrawMode_Copy)) ||
-        !blit_fillrect(csd, data->pbm, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode)) {
+        !blit_fillrect(csd, data->pbm, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode, GC_COLMASK(msg->gc))) {
         CMDDEBUGUNIMP(bug("[AmigaVideo:Bitmap] %s()\n", __func__);)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
