@@ -1732,8 +1732,13 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
         UBYTE ival = xhciCalcInterval(interval, flags, type);
         if(ival)
             ep->ctx[0] |= ((ULONG)ival << 16);
-    } else
+    } else {
         devCtx->dc_EP0MaxPacket = maxpacket;
+        /* Average TRB Length is not optional for EP0: eight per the
+           specification. A controller that checks it rejects Address
+           Device with a parameter error. */
+        ep->length = 8;
+    }
 
     /*
      * Endpoint Context DW1 programming:
