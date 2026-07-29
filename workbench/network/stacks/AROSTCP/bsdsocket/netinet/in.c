@@ -71,10 +71,17 @@
 #include <net/if.h>
 #include <net/route.h>
 #include <netinet/in.h>
-#include <netinet/in_var.h>
+#include "in_var.h"
 
 #include <netinet/in_protos.h>
 #include <net/rtsock_protos.h>
+
+#ifdef ENABLE_MULTICAST
+#include <net/if_sana.h>
+#include <net/sana2request.h>
+#include <devices/sana2.h>
+#include <netinet/igmp.h>
+#endif
 
 #if INET
 /*
@@ -654,4 +661,169 @@ struct in_addr in;
         return (1);
     return (0);
 }
+
+#ifdef ENABLE_MULTICAST
+/*
+ * in_mcast_macaddr - compute the Ethernet multicast MAC for an IPv4 group.
+ * RFC 1112 §6.4: map a class-D address to 01:00:5e:XX:XX:XX using the low
+ * 23 bits of the group address.
+ */
+static void
+in_mcast_macaddr(struct in_addr *maddr, u_int8_t *mac)
+{
+    u_long addr = ntohl(maddr->s_addr);
+
+    mac[0] = 0x01;
+    mac[1] = 0x00;
+    mac[2] = 0x5e;
+    mac[3] = (addr >> 16) & 0x7f;
+    mac[4] = (addr >> 8) & 0xff;
+    mac[5] = addr & 0xff;
+}
+
+/*
+ * sana_add_mcast - tell the SANA-II device to accept the Ethernet multicast
+ * for an IPv4 multicast group via S2_ADDMULTICASTADDRESS, so the NIC hardware
+ * filter passes matching frames.  Mirrors sana_add_mcast6() in netinet6/in6.c.
+ */
+static int
+sana_add_mcast(struct ifnet *ifp, struct in_addr *maddr)
+{
+    struct sana_softc *ssc = (struct sana_softc *)ifp;
+    struct IOSana2Req *req;
+    u_int8_t mac[6];
+    int error = 0;
+
+    if(ifp->if_addrlen != 6)
+        return 0;  /* not Ethernet -- nothing to do */
+
+    in_mcast_macaddr(maddr, mac);
+
+    D(bug("[AROSTCP:IN] %s: %s%d registering eth mcast %02x:%02x:%02x:%02x:%02x:%02x\n",
+          __func__, ifp->if_name, ifp->if_unit,
+          mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]));
+
+    req = CreateIOSana2Req(ssc);
+    if(req == NULL)
+        return ENOBUFS;
+
+    req->ios2_Req.io_Command = S2_ADDMULTICASTADDRESS;
+    bcopy(mac, req->ios2_SrcAddr, 6);
+    DoIO((struct IORequest *)req);
+
+    if(req->ios2_Req.io_Error)
+        error = EIO;
+
+    DeleteIOSana2Req(req);
+    return error;
+}
+
+/*
+ * sana_del_mcast - stop the SANA-II device accepting an Ethernet multicast.
+ */
+static int
+sana_del_mcast(struct ifnet *ifp, struct in_addr *maddr)
+{
+    struct sana_softc *ssc = (struct sana_softc *)ifp;
+    struct IOSana2Req *req;
+    u_int8_t mac[6];
+    int error = 0;
+
+    if(ifp->if_addrlen != 6)
+        return 0;
+
+    in_mcast_macaddr(maddr, mac);
+
+    req = CreateIOSana2Req(ssc);
+    if(req == NULL)
+        return ENOBUFS;
+
+    req->ios2_Req.io_Command = S2_DELMULTICASTADDRESS;
+    bcopy(mac, req->ios2_SrcAddr, 6);
+    DoIO((struct IORequest *)req);
+
+    if(req->ios2_Req.io_Error)
+        error = EIO;
+
+    DeleteIOSana2Req(req);
+    return error;
+}
+
+/*
+ * in_addmulti - add (or refcount) an IPv4 multicast membership on an
+ * interface.  On the first reference the corresponding Ethernet multicast is
+ * registered with the SANA-II device and an unsolicited IGMP report is sent.
+ * Mirrors in6_addmulti() in netinet6/in6.c.
+ */
+struct in_multi *in_multihead = NULL;
+
+struct in_multi *
+in_addmulti(struct in_addr *maddr, struct ifnet *ifp)
+{
+    struct in_multi *inm;
+
+    /* search for an existing entry */
+    for(inm = in_multihead; inm != NULL; inm = inm->inm_next) {
+        if(inm->inm_ifp == ifp &&
+           inm->inm_addr.s_addr == maddr->s_addr) {
+            inm->inm_refcount++;
+            return inm;
+        }
+    }
+
+    /* register the Ethernet multicast address with the NIC */
+    if(sana_add_mcast(ifp, maddr) != 0) {
+        __log(LOG_ERR, "in_addmulti: S2_ADDMULTICASTADDRESS failed for %s%d\n",
+              ifp->if_name, ifp->if_unit);
+        /* continue anyway -- some drivers accept all multicast */
+    }
+
+    /* allocate a new entry */
+    MALLOC(inm, struct in_multi *, sizeof(*inm), M_IFADDR, M_WAITOK);
+    if(inm == NULL)
+        return NULL;
+    bzero(inm, sizeof(*inm));
+    inm->inm_addr     = *maddr;
+    inm->inm_ifp      = ifp;
+    inm->inm_refcount = 1;
+    inm->inm_state    = IGMP_OTHERMEMBER;
+    inm->inm_timer    = 0;
+    inm->inm_next     = in_multihead;
+    in_multihead      = inm;
+
+    /* announce our membership (unsolicited IGMP report) */
+    igmp_joingroup(inm);
+
+    return inm;
+}
+
+/*
+ * in_delmulti - drop a reference to an IPv4 multicast membership.  When the
+ * last reference is released an IGMP Leave is sent (if we were the last
+ * reporter), the Ethernet multicast is unregistered and the entry is freed.
+ * Mirrors in6_delmulti() in netinet6/in6.c.
+ */
+void
+in_delmulti(struct in_multi *inm)
+{
+    struct in_multi **p;
+
+    if(--inm->inm_refcount > 0)
+        return;
+
+    /* announce that we are leaving before removing from the list */
+    igmp_leavegroup(inm);
+
+    /* unregister the Ethernet multicast address from the NIC */
+    sana_del_mcast(inm->inm_ifp, &inm->inm_addr);
+
+    for(p = &in_multihead; *p != NULL; p = &(*p)->inm_next) {
+        if(*p == inm) {
+            *p = inm->inm_next;
+            break;
+        }
+    }
+    FREE(inm, M_IFADDR);
+}
+#endif /* ENABLE_MULTICAST */
 #endif

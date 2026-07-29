@@ -30,12 +30,6 @@ struct kernel_var kvars[] = {
 #ifdef ENABLE_IGMP
     { "_igmpstat", &igmpstat },
 #endif
-#ifdef ENABLE_MULTICAST
-    { "_ip_mrtproto", &ip_mrtptoto },
-    { "_mrtstat", &mrtstat },
-    { "_mrttable", &mrttable },
-    { "_viftable", &viftable },
-#endif
     { NULL, NULL }
 };
 

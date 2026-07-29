@@ -84,6 +84,39 @@ extern struct inpcbinfo udbinfo;
 extern u_long udp_sendspace;
 extern u_long udp_recvspace;
 
+/*
+ * Per-socket flag requesting delivery of the received hop limit as an
+ * IPV6_HOPLIMIT ancillary message (RFC 3542).  Kept consistent with the
+ * definition in <netinet6/in6_proto.c> / <netinet6/in6_var.h> without
+ * requiring that header to be modified.
+ */
+#ifndef IN6P_HOPLIMIT
+#define IN6P_HOPLIMIT	0x02		/* receive hop limit (IPV6_HOPLIMIT) */
+#endif
+
+/* ------------------------------------------------------------------ *
+ * udp6_saveopt - build a control (ancillary data) mbuf carrying a
+ * single cmsg of the given type at IPPROTO_IPV6 level, mirroring the
+ * IPv4 udp_saveopt() helper.
+ * ------------------------------------------------------------------ */
+static struct mbuf *
+udp6_saveopt(caddr_t p, int size, int type)
+{
+    struct cmsghdr *cp;
+    struct mbuf *m;
+
+    if((m = m_get(M_DONTWAIT, MT_CONTROL)) == NULL)
+        return (struct mbuf *)NULL;
+    cp = (struct cmsghdr *)mtod(m, struct cmsghdr *);
+    bcopy(p, CMSG_DATA(cp), size);
+    size += sizeof(*cp);
+    m->m_len = size;
+    cp->cmsg_len   = size;
+    cp->cmsg_level = IPPROTO_IPV6;
+    cp->cmsg_type  = type;
+    return m;
+}
+
 /* ------------------------------------------------------------------ *
  * udp6_output - build and transmit a UDP/IPv6 datagram.
  * ------------------------------------------------------------------ */
@@ -291,16 +324,31 @@ udp6_input(void *args, ...)
         return;
     }
 
-    /* Strip the IPv6 (+ extension) headers and the UDP header, leaving data. */
-    m_adj(m, off + sizeof(struct udphdr));
-
     /* Deliver to socket */
     {
         struct mbuf *opts = NULL;
+
+        /*
+         * Assemble any requested ancillary data before stripping the
+         * headers.  Only IPV6_HOPLIMIT is supported here; the receive
+         * hop limit is taken from the IPv6 header, delivered as an int
+         * cmsg using the same control-mbuf mechanism as the source
+         * address.  (IPV6_PKTINFO delivery remains a TODO.)
+         */
+        if(inp->in6p_flags & IN6P_HOPLIMIT) {
+            int hlim = ip6->ip6_hlim;
+            opts = udp6_saveopt((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT);
+        }
+
+        /* Strip the IPv6 (+ extension) and UDP headers, leaving data. */
+        m_adj(m, off + sizeof(struct udphdr));
+
         if(sbappendaddr(&inp->inp_socket->so_rcv,
                         (struct sockaddr *)&src6,
                         m, opts) == 0) {
             m_freem(m);
+            if(opts)
+                m_freem(opts);
             return;
         }
         sorwakeup(inp->inp_socket);

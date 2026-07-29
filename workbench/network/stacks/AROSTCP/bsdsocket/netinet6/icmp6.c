@@ -144,6 +144,37 @@ icmp6_ctloutput(int op, struct socket *so, int level, int optname,
 }
 
 /* ------------------------------------------------------------------
+ * icmp6_update_pmtu - record a discovered path MTU (RFC 8201).
+ *
+ * On receiving an ICMPv6 Packet Too Big, the reported next-hop MTU is stored
+ * on the route to the destination that provoked the error, so ip6_output()
+ * sizes subsequent datagrams to fit the bottleneck link instead of having them
+ * black-holed (IPv6 routers never fragment).  The MTU is clamped to the IPv6
+ * minimum and only ever lowered.
+ * ------------------------------------------------------------------ */
+static void
+icmp6_update_pmtu(struct in6_addr *dst, u_int32_t mtu)
+{
+    struct sockaddr_in6 sin6;
+    struct rtentry *rt;
+
+    if(mtu < IPV6_MMTU)
+        mtu = IPV6_MMTU;
+
+    bzero(&sin6, sizeof(sin6));
+    sin6.sin6_family = AF_INET6;
+    sin6.sin6_len    = sizeof(sin6);
+    sin6.sin6_addr   = *dst;
+
+    rt = rtalloc1((struct sockaddr *)&sin6, 0);
+    if(rt == NULL)
+        return;
+    if(rt->rt_rmx.rmx_mtu == 0 || mtu < rt->rt_rmx.rmx_mtu)
+        rt->rt_rmx.rmx_mtu = mtu;
+    rtfree(rt);
+}
+
+/* ------------------------------------------------------------------
  * icmp6_input - process an inbound ICMPv6 message.
  *
  * Called via protosw pr_input: void *args is struct mbuf *,
@@ -250,8 +281,32 @@ icmp6_input(void *args, ...)
     return;
 
     /* ----- Error messages ----- */
-    case ICMP6_DST_UNREACH:
     case ICMP6_PACKET_TOO_BIG:
+        /*
+         * Update the path MTU for the destination of the quoted packet.
+         * The original IPv6 header immediately follows the 8-byte ICMPv6
+         * header; pull it up before reading the destination.
+         */
+        if(m->m_len >= off + (int)(sizeof(struct icmp6_hdr) + sizeof(struct ip6_hdr))
+                || (m = m_pullup(m, off + sizeof(struct icmp6_hdr)
+                                 + sizeof(struct ip6_hdr))) != NULL) {
+            struct icmp6_hdr *ic6 = (struct icmp6_hdr *)(mtod(m, u_int8_t *) + off);
+            struct ip6_hdr *oip6 = (struct ip6_hdr *)((u_int8_t *)ic6
+                                                      + sizeof(struct icmp6_hdr));
+            struct in6_addr odst;
+            u_int32_t omtu;
+
+            /* Copy out of the packed headers into aligned locals so no
+             * unaligned access occurs on strict-alignment architectures. */
+            bcopy(&oip6->ip6_dst, &odst, sizeof(odst));
+            bcopy(&ic6->icmp6_mtu, &omtu, sizeof(omtu));
+            icmp6_update_pmtu(&odst, ntohl(omtu));
+            pfctlinput(PRC_MSGSIZE, (struct sockaddr *)NULL);
+            break;
+        }
+        return;			/* m_pullup freed the mbuf */
+
+    case ICMP6_DST_UNREACH:
     case ICMP6_TIME_EXCEEDED:
     case ICMP6_PARAM_PROB:
         /* notify upper layer protocols */

@@ -73,7 +73,7 @@ NETINET_C:= \
 	netinet/tcp_debug netinet/tcp_input netinet/tcp_output \
 	netinet/tcp_subr netinet/tcp_syncache netinet/tcp_timer netinet/tcp_usrreq \
 	netinet/tcp_cc_newreno netinet/tcp_cc_cubic \
-	netinet/udp_usrreq
+	netinet/udp_usrreq netinet/igmp
 
 ifeq ($(AROS_TARGET_CPU),x86_64)
 NETINET_C += netinet/in_cksum_sse2
@@ -84,7 +84,7 @@ NETINET_C += netinet/in_cksum
 endif
 
 NETINET_H= \
-	netinet/in_pcb.h netinet/in_var.h netinet/icmp_var.h  \
+	netinet/in_pcb.h netinet/in_var.h netinet/igmp.h netinet/icmp_var.h  \
 	netinet/tcpip.h netinet/tcp_debug.h netinet/tcp_fsm.h \
 	netinet/tcp_seq.h netinet/tcp_timer.h netinet/tcp_var.h \
 	netinet/tcp_cc.h \
@@ -196,6 +196,7 @@ NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWAR
 # enabling -DUSE_ALIGNED_COPIES  causes crashes..
 USER_CPPFLAGS := \
 	-DDIRECTED_BROADCAST \
+	-DENABLE_MULTICAST \
 	-DAMITCP -DKERNEL \
 	-D_XOPEN_SOURCE=600 \
 	-D__BSD_VISIBLE=1

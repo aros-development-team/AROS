@@ -71,6 +71,10 @@
 #include <netinet/in_proto_protos.h>
 #include <kern/amiga_dhcp.h>
 
+#ifdef ENABLE_MULTICAST
+#include <netinet/igmp.h>
+#endif
+
 /* IPv4 DHCP client state - one global instance for the IPv4 protocol family */
 struct aros_dhcp_state aros_dhcpv4;
 
@@ -144,6 +148,14 @@ struct protosw inetsw[] = {
         rip_usrreq,
         NULL,		NULL,		NULL,		NULL,
     },
+#ifdef ENABLE_MULTICAST
+    {
+        SOCK_RAW,	&inetdomain,	IPPROTO_IGMP,	PR_ATOMIC | PR_ADDR,
+        igmp_input,	rip_output,	NULL,		rip_ctloutput,
+        rip_usrreq,
+        igmp_init,	igmp_fasttimo,	igmp_slowtimo,	NULL,
+    },
+#endif
 #if TPIP
     {
         SOCK_SEQPACKET, &inetdomain,	IPPROTO_TP,	PR_CONNREQUIRED | PR_WANTRCVD,

@@ -64,6 +64,41 @@ int ip6_output(void *, ...);
 #define MLD_TIMER_SCALE		1000	/* ms → timer-tick divisor */
 #define MLD_UNSOLICITED_REPORT_INTERVAL	10	/* seconds */
 
+/*
+ * MLDv2 (RFC 3810) host-side support.
+ *
+ * MLDv2 is added incrementally alongside the existing MLDv1 code:
+ * an MLDv2 Query is recognised by its message length (an MLDv1 Query is
+ * exactly the 24-byte struct mld_hdr; an MLDv2 Query is at least 28
+ * bytes), and is answered with an MLDv2 Membership Report (ICMPv6 type
+ * 143).  MLDv1 Queries continue to be answered with MLDv1 Reports, so a
+ * v1 querier still sees v1 responses (RFC 3810 §8).
+ *
+ * Since per-source filtering is not tracked, each joined group is
+ * reported with a single MODE_IS_EXCLUDE record carrying no sources,
+ * which is equivalent to a plain "listening to this group" membership.
+ */
+
+/* Multicast Address Record types (RFC 3810 §5.2.12) */
+#define MLD_MODE_IS_INCLUDE	1
+#define MLD_MODE_IS_EXCLUDE	2
+
+/*
+ * Extra per-group timer state used to remember that the pending response
+ * should be an MLDv2 report rather than an MLDv1 report.  It extends the
+ * MLD6_*_MEMBER states from <netinet6/mld6.h> (which occupy 0..3).
+ */
+#define MLD6_V2_PENDING		4	/* v2 query-response timer running */
+
+/* MLDv2 Multicast Address Record (RFC 3810 §5.2), no sources / aux data */
+struct mldv2_record {
+	u_int8_t	mr_type;	/* record type */
+	u_int8_t	mr_datalen;	/* auxiliary data length (octets) */
+	u_int16_t	mr_numsrc;	/* number of sources */
+	struct in6_addr	mr_addr;	/* multicast address */
+	/* followed by source addresses and auxiliary data */
+} __packed;
+
 static int mld6_timer_running = 0;
 static u_int32_t mld6_random_seed = 1;
 
@@ -77,6 +112,7 @@ mld6_random(void)
 
 /* Forward declarations */
 static void mld6_sendpkt(struct in6_multi *, int, const struct in6_addr *);
+static void mld6_sendpkt_v2(struct in6_multi *);
 static int  mld6_timer_active(void);
 
 /* ------------------------------------------------------------------
@@ -196,22 +232,43 @@ mld6_input(struct mbuf *m, int off, int len)
 	case MLD_LISTENER_QUERY:
 	{
 		/*
-		 * Multicast Listener Query (RFC 2710 §5.1).
+		 * Multicast Listener Query (RFC 2710 §5.1 / RFC 3810 §5.1).
 		 * If the query is for a specific group we belong to,
 		 * start a report timer.  If it's a general query (all-zeros),
 		 * start timers for all groups on this interface.
+		 *
+		 * An MLDv2 Query is distinguished from an MLDv1 Query by its
+		 * length: the MLDv1 form is exactly struct mld_hdr (24 bytes),
+		 * whereas an MLDv2 Query carries additional fields.  When the
+		 * querier speaks MLDv2 the pending response is flagged so that
+		 * an MLDv2 Report is generated at timer expiry; otherwise an
+		 * MLDv1 Report is generated for backward compatibility.
 		 */
+		int mldv2 = (len > (int)sizeof(struct mld_hdr));
 		int maxdelay = ntohs(mld->mld_maxdelay);
+		u_int newstate;
+
+		/*
+		 * MLDv2 encodes a large Maximum Response Code as a
+		 * floating-point value (RFC 3810 §5.1.3).
+		 */
+		if(mldv2 && maxdelay >= 32768) {
+			int mant = maxdelay & 0x0fff;
+			int exp  = (maxdelay >> 12) & 0x7;
+			maxdelay = (mant | 0x1000) << (exp + 3);
+		}
 		if(maxdelay == 0)
 			maxdelay = 1;	/* RFC 2710: treat 0 as 1 */
 		/*
-		 * mld_maxdelay is in milliseconds, but in6m_timer counts
-		 * fast-timer ticks (PR_FASTHZ ticks per second).  Convert
-		 * from ms to ticks, keeping a minimum of one tick.
+		 * The Max Response value is in milliseconds, but in6m_timer
+		 * counts fast-timer ticks (PR_FASTHZ ticks per second).
+		 * Convert from ms to ticks, keeping a minimum of one tick.
 		 */
 		maxdelay = (maxdelay * PR_FASTHZ) / 1000;
 		if(maxdelay == 0)
 			maxdelay = 1;
+
+		newstate = mldv2 ? MLD6_V2_PENDING : MLD6_SLEEPING_MEMBER;
 
 		if(IN6_IS_ADDR_UNSPECIFIED(&maddr)) {
 			/* General query: set timer for every group on this interface */
@@ -221,7 +278,7 @@ mld6_input(struct mbuf *m, int off, int len)
 				if(in6m->in6m_timer == 0 ||
 				   in6m->in6m_timer > maxdelay) {
 					in6m->in6m_timer = 1 + (mld6_random() % maxdelay);
-					in6m->in6m_state = MLD6_SLEEPING_MEMBER;
+					in6m->in6m_state = newstate;
 					mld6_timer_running = 1;
 				}
 			}
@@ -233,7 +290,7 @@ mld6_input(struct mbuf *m, int off, int len)
 					if(in6m->in6m_timer == 0 ||
 					   in6m->in6m_timer > maxdelay) {
 						in6m->in6m_timer = 1 + (mld6_random() % maxdelay);
-						in6m->in6m_state = MLD6_SLEEPING_MEMBER;
+						in6m->in6m_state = newstate;
 						mld6_timer_running = 1;
 					}
 					break;
@@ -294,8 +351,11 @@ mld6_fasttimeo(void)
 			continue;
 
 		if(--in6m->in6m_timer == 0) {
-			/* Timer expired: send a report */
-			mld6_sendpkt(in6m, MLD_LISTENER_REPORT, NULL);
+			/* Timer expired: send a report using the querier's version */
+			if(in6m->in6m_state == MLD6_V2_PENDING)
+				mld6_sendpkt_v2(in6m);
+			else
+				mld6_sendpkt(in6m, MLD_LISTENER_REPORT, NULL);
 			in6m->in6m_state = MLD6_IDLE_MEMBER;
 		} else {
 			any_running = 1;
@@ -382,6 +442,95 @@ mld6_sendpkt(struct in6_multi *in6m, int type, const struct in6_addr *dst)
 	      in6m->in6m_addr.s6_addr[14], in6m->in6m_addr.s6_addr[15]));
 
 	/* force the MLD message out of the group's interface */
+	bzero(&im6o, sizeof(im6o));
+	im6o.im6o_multicast_ifp  = ifp;
+	im6o.im6o_multicast_hlim = 1;		/* MLD requires hop limit = 1 */
+
+	ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0, &im6o,
+	           (struct ifnet **)NULL, (struct inpcb *)NULL);
+}
+
+/* ------------------------------------------------------------------
+ * mld6_sendpkt_v2 - send an MLDv2 Membership Report (RFC 3810 §5.2).
+ *
+ * Emits an ICMPv6 type 143 report containing a single MODE_IS_EXCLUDE
+ * Multicast Address Record (with no sources), which is equivalent to a
+ * plain membership in the group.  The report is addressed to the
+ * all-MLDv2-capable-routers multicast address ff02::16.
+ *
+ * Note: like the MLDv1 path above, this does not prepend a Hop-by-Hop
+ * Router Alert option; adding it is a follow-up item.
+ * ------------------------------------------------------------------ */
+static void
+mld6_sendpkt_v2(struct in6_multi *in6m)
+{
+	struct mbuf      *m;
+	struct ip6_hdr   *ip6;
+	struct icmp6_hdr *icmp6;
+	struct mldv2_record *rec;
+	struct ifnet     *ifp = in6m->in6m_ifp;
+	struct in6_ifaddr *ia;
+	struct ip6_moptions im6o;
+	int reportlen, hdrlen;
+
+	/* header + one record (no sources, no auxiliary data) */
+	reportlen = sizeof(struct icmp6_hdr) + sizeof(struct mldv2_record);
+	hdrlen    = sizeof(struct ip6_hdr) + reportlen;
+
+	MGETHDR(m, M_DONTWAIT, MT_DATA);
+	if(m == NULL)
+		return;
+	m->m_pkthdr.rcvif = NULL;
+	m->m_pkthdr.len = m->m_len = hdrlen;
+
+	/* Build IPv6 header */
+	ip6 = mtod(m, struct ip6_hdr *);
+	bzero(ip6, sizeof(*ip6));
+	ip6->ip6_vfc  = IPV6_VERSION;
+	ip6->ip6_plen = htons(reportlen);
+	ip6->ip6_nxt  = IPPROTO_ICMPV6;
+	ip6->ip6_hlim = 1;		/* MLD requires hop limit = 1 */
+
+	/* Source: link-local address of the interface */
+	{
+		struct in6_addr dst_tmp = in6m->in6m_addr;
+		ia = in6_ifawithifp(ifp, &dst_tmp);
+	}
+	if(ia)
+		ip6->ip6_src = ia->ia_addr.sin6_addr;
+
+	/* Destination: all MLDv2-capable routers (ff02::16) */
+	bzero(&ip6->ip6_dst, sizeof(ip6->ip6_dst));
+	ip6->ip6_dst.s6_addr[0]  = 0xff;
+	ip6->ip6_dst.s6_addr[1]  = 0x02;
+	ip6->ip6_dst.s6_addr[15] = 0x16;
+
+	/* MLDv2 report header */
+	icmp6 = (struct icmp6_hdr *)(ip6 + 1);
+	bzero(icmp6, sizeof(*icmp6));
+	icmp6->icmp6_type = MLDV2_LISTENER_REPORT;
+	icmp6->icmp6_data16[0] = 0;		/* reserved */
+	icmp6->icmp6_data16[1] = htons(1);	/* one multicast address record */
+
+	/* Single MODE_IS_EXCLUDE record: no sources = plain membership */
+	rec = (struct mldv2_record *)(icmp6 + 1);
+	bzero(rec, sizeof(*rec));
+	rec->mr_type    = MLD_MODE_IS_EXCLUDE;
+	rec->mr_datalen = 0;
+	rec->mr_numsrc  = 0;
+	rec->mr_addr    = in6m->in6m_addr;
+
+	/* Compute ICMPv6 checksum */
+	icmp6->icmp6_cksum = 0;
+	icmp6->icmp6_cksum = in6_cksum(m, IPPROTO_ICMPV6,
+	                               sizeof(struct ip6_hdr), reportlen);
+
+	D(bug("[AROSTCP:MLD6] %s: sending v2 report on %s%d for %02x%02x:...:%02x%02x\n",
+	      __func__, ifp->if_name, ifp->if_unit,
+	      in6m->in6m_addr.s6_addr[0], in6m->in6m_addr.s6_addr[1],
+	      in6m->in6m_addr.s6_addr[14], in6m->in6m_addr.s6_addr[15]));
+
+	/* force the report out of the group's interface */
 	bzero(&im6o, sizeof(im6o));
 	im6o.im6o_multicast_ifp  = ifp;
 	im6o.im6o_multicast_hlim = 1;		/* MLD requires hop limit = 1 */

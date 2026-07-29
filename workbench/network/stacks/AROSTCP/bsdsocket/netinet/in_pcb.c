@@ -57,7 +57,7 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/in_pcb.h>
-#include <netinet/in_var.h>
+#include "in_var.h"
 #include <netinet/ip_var.h>
 
 extern u_char inetctlerrmap[];

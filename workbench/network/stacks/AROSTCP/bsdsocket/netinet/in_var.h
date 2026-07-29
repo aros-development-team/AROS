@@ -33,49 +33,95 @@
  *	@(#)in_var.h	7.6 (Berkeley) 6/28/90
  */
 
-#ifndef IN_VAR_H
-#define IN_VAR_H
+#ifndef AROSTCP_NETINET_IN_VAR_H
+#define AROSTCP_NETINET_IN_VAR_H
 
 /*
- * Interface address, Internet version.  One of these structures
- * is allocated for each interface with an Internet address.
- * The ifaddr structure contains the protocol-independent part
- * of the structure and is assumed to be first.
+ * Kernel-private view of <netinet/in_var.h>.  Stack sources include this
+ * local header (via -iquote) rather than the public one so that they pick
+ * up both the public interface-address definitions and the kernel-internal
+ * additions below.  The public definitions are pulled in unchanged from the
+ * shared header in common/include.
  */
-struct in_ifaddr {
-	struct	ifaddr ia_ifa;		/* protocol-independent info */
-#define	ia_ifp		ia_ifa.ifa_ifp
-#define ia_flags	ia_ifa.ifa_flags
-					/* ia_{,sub}net{,mask} in host order */
-	u_long	ia_net;			/* network number of interface */
-	u_long	ia_netmask;		/* mask of net part */
-	u_long	ia_subnet;		/* subnet number, including net */
-	u_long	ia_subnetmask;		/* mask of subnet part */
-	struct	in_addr ia_netbroadcast; /* to recognize net broadcasts */
-	struct	in_ifaddr *ia_next;	/* next in list of internet addresses */
-	struct	sockaddr_in ia_addr;	/* reserve space for interface name */
-	struct	sockaddr_in ia_dstaddr; /* reserve space for broadcast addr */
-#define	ia_broadaddr	ia_dstaddr
-	struct	sockaddr_in ia_sockmask; /* reserve space for general netmask */
-};
+#include <netinet/in_var.h>
 
-struct	in_aliasreq {
-	char	ifra_name[IFNAMSIZ];		/* if name, e.g. "en0" */
-	struct	sockaddr_in ifra_addr;
-	struct	sockaddr_in ifra_broadaddr;
-#define ifra_dstaddr ifra_broadaddr
-	struct	sockaddr_in ifra_mask;
-};
+#ifdef ENABLE_MULTICAST
 /*
- * Given a pointer to an in_ifaddr (ifaddr),
- * return a pointer to the addr as a sockaddr_in.
+ * IPv4 multicast host membership.  One in_multi is allocated for every
+ * (group, interface) pair the host has joined.  The list is walked by the
+ * output path (loopback / IGMP report suppression) and by igmp.c when
+ * servicing membership queries and report timers.  It mirrors the IPv6
+ * in6_multi list in netinet6/in6_var.h.  These types are private to the
+ * stack; applications use struct ip_mreq and the IP_*_MEMBERSHIP socket
+ * options declared in the public <netinet/in.h>.
  */
-#define	IA_SIN(ia) (&(((struct in_ifaddr *)(ia))->ia_addr))
+struct in_multi {
+	struct	in_addr inm_addr;	/* IP multicast address (network order) */
+	struct	ifnet  *inm_ifp;	/* back pointer to ifnet */
+	u_int	inm_refcount;		/* reference count */
+	struct	in_multi *inm_next;	/* linked list */
+	u_int	inm_state;		/* IGMP membership state */
+	u_int	inm_timer;		/* IGMP report delay timer (fast ticks) */
+};
 
-/*#ifdef	KERNEL*/
-#if 1
-extern struct	in_ifaddr *in_ifaddr;
-extern struct	ifqueue	ipintrq;		/* ip packet input queue */
-#endif
+extern struct in_multi *in_multihead;	/* global IPv4 multicast list */
 
-#endif /* !IN_VAR_H */
+/*
+ * Multicast options attached to an inpcb (IP_MULTICAST_* / IP_*_MEMBERSHIP).
+ */
+#define	IP_MAX_MEMBERSHIPS	20	/* max memberships per socket */
+#define	IP_DEFAULT_MULTICAST_TTL  1	/* normally limit to one subnet */
+#define	IP_DEFAULT_MULTICAST_LOOP 1	/* normally hear sends if a member */
+
+struct ip_moptions {
+	struct	ifnet *imo_multicast_ifp; /* ifp for outgoing multicasts */
+	u_char	imo_multicast_ttl;	/* TTL for outgoing multicasts */
+	u_char	imo_multicast_loop;	/* 1 => hear sends if a member */
+	u_short	imo_num_memberships;	/* no. memberships this socket */
+	struct	in_multi *imo_membership[IP_MAX_MEMBERSHIPS];
+};
+
+/*
+ * Look up the in_multi record for a given (group, interface) pair.
+ */
+#define	IN_LOOKUP_MULTI(addr, ifp, inm)					\
+{									\
+	register struct in_multi *_inm;					\
+	for(_inm = in_multihead; _inm != NULL; _inm = _inm->inm_next)	\
+		if(_inm->inm_addr.s_addr == (addr).s_addr &&		\
+		   _inm->inm_ifp == (ifp))				\
+			break;						\
+	(inm) = _inm;							\
+}
+
+/*
+ * Given a local IP address, return the interface it is configured on.
+ */
+#define	INADDR_TO_IFP(addr, ifp)					\
+{									\
+	register struct in_ifaddr *_ia;					\
+	for(_ia = in_ifaddr;						\
+	    _ia != NULL && IA_SIN(_ia)->sin_addr.s_addr != (addr).s_addr; \
+	    _ia = _ia->ia_next)						\
+		;							\
+	(ifp) = (_ia == NULL) ? NULL : _ia->ia_ifp;			\
+}
+
+/*
+ * Given an interface, return the first in_ifaddr configured on it.
+ */
+#define	IFP_TO_IA(ifp, ia)						\
+{									\
+	register struct in_ifaddr *_ia;					\
+	for(_ia = in_ifaddr;						\
+	    _ia != NULL && _ia->ia_ifp != (ifp);			\
+	    _ia = _ia->ia_next)						\
+		;							\
+	(ia) = _ia;							\
+}
+
+struct in_multi *in_addmulti(struct in_addr *, struct ifnet *);
+void in_delmulti(struct in_multi *);
+#endif /* ENABLE_MULTICAST */
+
+#endif /* !AROSTCP_NETINET_IN_VAR_H */

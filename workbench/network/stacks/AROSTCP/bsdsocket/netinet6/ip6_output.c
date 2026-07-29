@@ -169,6 +169,13 @@ multicast_output:
         ip6->ip6_hlim = ip6_defhlim;
 
     mtu = ifp->if_mtu;
+    /*
+     * Honour a path MTU discovered via ICMPv6 Packet Too Big (RFC 8201),
+     * recorded on the route by icmp6_update_pmtu().  Never exceed the link MTU.
+     */
+    if(ro->ro_rt != NULL && ro->ro_rt->rt_rmx.rmx_mtu != 0 &&
+            ro->ro_rt->rt_rmx.rmx_mtu < (u_long)mtu)
+        mtu = (int)ro->ro_rt->rt_rmx.rmx_mtu;
 
     /* packet is within MTU: send directly */
     if(m->m_pkthdr.len <= mtu) {

@@ -43,6 +43,16 @@
 struct aros_dhcp_state aros_dhcpv6;
 #endif
 
+/*
+ * Per-socket flag requesting that the received hop limit be delivered as
+ * an IPV6_HOPLIMIT ancillary message (RFC 3542).  Defined defensively so
+ * this remains consistent with IN6P_PKTINFO in <netinet6/in6_var.h>
+ * without requiring that header to be modified.
+ */
+#ifndef IN6P_HOPLIMIT
+#define IN6P_HOPLIMIT	0x02		/* receive hop limit (IPV6_HOPLIMIT) */
+#endif
+
 /* --- ANSI function declarations matching actual signatures ---
  * pr_input  must be void (*)(void *args, ...)
  * pr_output must be int  (*)(void *args, ...)
@@ -311,6 +321,17 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
                 inp->in6p_flags &= ~IN6P_PKTINFO;
             break;
 
+        case IPV6_HOPLIMIT:
+            if(*m == NULL || (*m)->m_len != sizeof(int)) {
+                error = EINVAL;
+                break;
+            }
+            if(*mtod(*m, int *))
+                inp->in6p_flags |= IN6P_HOPLIMIT;
+            else
+                inp->in6p_flags &= ~IN6P_HOPLIMIT;
+            break;
+
         case IPV6_MULTICAST_IF: {
             unsigned int ifindex;
             struct ifnet *ifp;
@@ -450,6 +471,16 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
             }
             (*m)->m_len = sizeof(int);
             *mtod(*m, int *) = (inp->in6p_flags & IN6P_PKTINFO) ? 1 : 0;
+            break;
+
+        case IPV6_HOPLIMIT:
+            *m = m_get(M_WAIT, MT_SOOPTS);
+            if(*m == NULL) {
+                error = ENOBUFS;
+                break;
+            }
+            (*m)->m_len = sizeof(int);
+            *mtod(*m, int *) = (inp->in6p_flags & IN6P_HOPLIMIT) ? 1 : 0;
             break;
 
         case IPV6_MULTICAST_IF:

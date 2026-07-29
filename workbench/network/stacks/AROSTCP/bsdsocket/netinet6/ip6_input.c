@@ -595,9 +595,6 @@ ours:
 
     /* simple extension header skip loop */
     while(1) {
-        struct ip6_ext *ext;
-        int extlen;
-
         /* bound the number of extension headers we will process */
         if(++nexthdrs > 32) {
             ip6stat.ip6s_toomanyhdr++;
@@ -606,23 +603,143 @@ ours:
 
         switch(nxt) {
         case IPPROTO_HOPOPTS:
-        case IPPROTO_ROUTING:
         case IPPROTO_DSTOPTS:
-            if(m->m_len < off + sizeof(struct ip6_ext) &&
+        {
+            /*
+             * Hop-by-Hop / Destination Options header.  Walk the
+             * contained TLV options and act on any option we do not
+             * recognise according to its high-order two type bits
+             * (RFC 8200 §4.2):
+             *   00 - skip the option and continue
+             *   01 - silently discard the packet
+             *   10 - discard and send ICMPv6 Parameter Problem (code 2)
+             *   11 - as 10, but only if the destination is not multicast
+             * Pad1/PadN are recognised and skipped.  We deliberately do
+             * not attempt to process any specific known option here.
+             */
+            struct ip6_ext *ext;
+            int hdrlen, optoff, optend;
+
+            /* need the fixed 2-byte header to read the length field */
+            if(m->m_len < off + (int)sizeof(struct ip6_ext) &&
                     (m = m_pullup(m, off + sizeof(struct ip6_ext))) == NULL) {
                 ip6stat.ip6s_tooshort++;
                 return;
             }
             ext = (struct ip6_ext *)(mtod(m, u_int8_t *) + off);
-            extlen = (ext->ip6e_len + 1) * 8;
-            nxt = ext->ip6e_nxt;
-            off += extlen;
-            /* the extension header must lie within the packet */
-            if(off > m->m_pkthdr.len) {
+            hdrlen = (ext->ip6e_len + 1) * 8;
+
+            /* the whole options header must lie within the packet */
+            if(off + hdrlen > m->m_pkthdr.len) {
                 ip6stat.ip6s_toosmall++;
                 goto bad;
             }
+
+            /* pull the entire options header up so we can walk it */
+            if(m->m_len < off + hdrlen &&
+                    (m = m_pullup(m, off + hdrlen)) == NULL) {
+                ip6stat.ip6s_tooshort++;
+                return;
+            }
+            /* m_pullup may have moved the data - refresh pointers */
+            ip6 = mtod(m, struct ip6_hdr *);
+            ext = (struct ip6_ext *)(mtod(m, u_int8_t *) + off);
+
+            optoff = off + sizeof(struct ip6_ext);
+            optend = off + hdrlen;
+            while(optoff < optend) {
+                u_int8_t otype = *(mtod(m, u_int8_t *) + optoff);
+                int olen;
+
+                if(otype == IP6OPT_PAD1) {
+                    /* single Pad1 byte */
+                    optoff++;
+                    continue;
+                }
+                /* every other option carries a length octet */
+                if(optoff + 2 > optend) {
+                    ip6stat.ip6s_badoptions++;
+                    goto bad;
+                }
+                olen = 2 + *(mtod(m, u_int8_t *) + optoff + 1);
+                if(optoff + olen > optend) {
+                    ip6stat.ip6s_badoptions++;
+                    goto bad;
+                }
+                if(otype == IP6OPT_PADN) {
+                    optoff += olen;
+                    continue;
+                }
+
+                /* unrecognised option: act on the high-order 2 bits */
+                switch(IP6OPT_TYPE(otype)) {
+                case IP6OPT_TYPE_SKIP:      /* 00 - skip */
+                    break;
+                case IP6OPT_TYPE_DISCARD:   /* 01 - discard packet */
+                    ip6stat.ip6s_badoptions++;
+                    goto bad;
+                case IP6OPT_TYPE_FORCEICMP: /* 10 - discard + Param Problem */
+                    ip6stat.ip6s_badoptions++;
+                    icmp6_error(m, ICMP6_PARAM_PROB,
+                                ICMP6_PARAMPROB_OPTION, optoff);
+                    return;     /* m consumed by icmp6_error */
+                case IP6OPT_TYPE_ICMP:      /* 11 - as above unless mcast dst */
+                    ip6stat.ip6s_badoptions++;
+                    if(IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst))
+                        goto bad;
+                    icmp6_error(m, ICMP6_PARAM_PROB,
+                                ICMP6_PARAMPROB_OPTION, optoff);
+                    return;     /* m consumed by icmp6_error */
+                }
+                optoff += olen;
+            }
+
+            /* advance to the next header */
+            nxt = ext->ip6e_nxt;
+            off += hdrlen;
             break;
+        }
+
+        case IPPROTO_ROUTING:
+        {
+            /*
+             * Routing header (RFC 8200 §4.4).  We implement no routing
+             * type.  If Segments Left is zero the header is simply
+             * skipped (accept and continue to the next header).  If
+             * Segments Left is non-zero the routing type is, by
+             * definition, unrecognised: discard the packet and send
+             * ICMPv6 Parameter Problem (code 0) pointing at the
+             * Routing Type field.
+             */
+            struct ip6_rthdr *rth;
+            int rhlen;
+
+            if(m->m_len < off + (int)sizeof(struct ip6_rthdr) &&
+                    (m = m_pullup(m, off + sizeof(struct ip6_rthdr))) == NULL) {
+                ip6stat.ip6s_tooshort++;
+                return;
+            }
+            ip6 = mtod(m, struct ip6_hdr *);
+            rth = (struct ip6_rthdr *)(mtod(m, u_int8_t *) + off);
+            rhlen = (rth->ip6r_len + 1) * 8;
+
+            if(off + rhlen > m->m_pkthdr.len) {
+                ip6stat.ip6s_toosmall++;
+                goto bad;
+            }
+
+            if(rth->ip6r_segleft == 0) {
+                nxt = rth->ip6r_nxt;
+                off += rhlen;
+                break;
+            }
+
+            /* Segments Left != 0 with an unrecognised routing type */
+            ip6stat.ip6s_badoptions++;
+            icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER,
+                        off + offsetof(struct ip6_rthdr, ip6r_type));
+            return;     /* m consumed by icmp6_error */
+        }
 
         case IPPROTO_FRAGMENT:
         {
