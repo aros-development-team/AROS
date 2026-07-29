@@ -271,6 +271,13 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                         otg_Unit->hu_HubPortChanged = TRUE;
                         D(bug("[USB2OTG] Init: HubPortChanged set to TRUE\n"));
                     }
+
+                    /* Baseline for diffing against post-recovery state. */
+                    usb2otg_dump_core_state("boot");
+
+                    /* Known-good GUSBCFG for recovery reinit — a
+                     * power-cycled core reads back defaults instead. */
+                    otg_Unit->hu_BootGusbCfg = rd32le(USB2OTG_USB);
                 }
                 else
                 {
@@ -306,6 +313,63 @@ void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
             LIBBASETYPEPTR USB2OTGBase)
 {
     /*
+     * Driver-internal Clear_TT_Buffer: nobody sent it, so it must not
+     * be replied — just release the single-in-flight slot.
+     */
+    if (USB2OTGBase->hd_Unit != NULL &&
+        ioreq == &USB2OTGBase->hd_Unit->hu_TTClearReq)
+    {
+        D(bug("[USB2OTG:TTCLEAR] completed hub=%d err=%ld\n",
+            (int)ioreq->iouh_DevAddr, (LONG)ioreq->iouh_Req.io_Error);)
+        ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+        USB2OTGBase->hd_Unit->hu_TTClearBusy = FALSE;
+        return;
+    }
+
+    /*
+     * Hub port management dialogue (class requests to "other" target:
+     * SET/CLEAR_FEATURE(PORT_*) and GET_PORT_STATUS). These go to real
+     * downstream hubs as ordinary HS control transfers, so they are
+     * invisible in the root-hub logging — yet they are what decides
+     * whether a replugged device gets reset, enabled and at which
+     * speed. Low volume, so log unconditionally with the reply data.
+     */
+    D(
+        if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+            (ioreq->iouh_SetupData.bmRequestType ==
+                 (URTF_OUT | URTF_CLASS | URTF_OTHER) ||
+             ioreq->iouh_SetupData.bmRequestType ==
+                 (URTF_IN | URTF_CLASS | URTF_OTHER)))
+        {
+            UBYTE *d = (UBYTE *)ioreq->iouh_Data;
+
+            bug("[USB2OTG:PORTDLG] hub=%d %s bReq=%02x wVal=%04x wIdx=%04x act=%lu err=%ld data=%02x%02x%02x%02x\n",
+                (int)ioreq->iouh_DevAddr,
+                (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? "IN " : "OUT",
+                (unsigned)ioreq->iouh_SetupData.bRequest,
+                (unsigned)AROS_LE2WORD(ioreq->iouh_SetupData.wValue),
+                (unsigned)AROS_LE2WORD(ioreq->iouh_SetupData.wIndex),
+                (unsigned long)ioreq->iouh_Actual,
+                (LONG)ioreq->iouh_Req.io_Error,
+                (d && ioreq->iouh_Actual > 0) ? d[0] : 0,
+                (d && ioreq->iouh_Actual > 1) ? d[1] : 0,
+                (d && ioreq->iouh_Actual > 2) ? d[2] : 0,
+                (d && ioreq->iouh_Actual > 3) ? d[3] : 0);
+        }
+    )
+
+    /* Control-pipe lifecycle diag — did queued ctrl reqs ever finish? */
+    if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+    {
+        usb2otg_ctrl_fin_count++;
+        if (ioreq->iouh_Req.io_Error != 0)
+        {
+            usb2otg_ctrl_err_count++;
+            usb2otg_ctrl_last_err = (UBYTE)ioreq->iouh_Req.io_Error;
+        }
+    }
+
+    /*
      * USB §9.4.5: CLEAR_FEATURE(ENDPOINT_HALT) resets device toggle to
      * DATA0; host must mirror or every subsequent xfer hits DATATGLERR.
      * MSC BOT reset-recovery depends on this.
@@ -332,6 +396,38 @@ void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
             otg_Unit->hu_NakGate[dev & 0x7f][0] = USB2OTG_NAK_GATE_NONE;
             otg_Unit->hu_NakGate[dev & 0x7f][1] = USB2OTG_NAK_GATE_NONE;
             otg_Unit->hu_BulkGiveupStreak[dev & 0x7f] = 0;
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
+            Enable();
+        }
+    }
+
+    /*
+     * Successful SET_ADDRESS = fresh device at that address. Drop stale
+     * per-device state from a previous occupant — unplug does no
+     * cleanup and re-enumeration reuses addresses, so a new device
+     * would inherit the old one's toggles and gates.
+     */
+    if (ioreq->iouh_Req.io_Error == 0 &&
+        ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+        ioreq->iouh_SetupData.bmRequestType ==
+            (URTF_OUT | URTF_STANDARD | URTF_DEVICE) &&
+        ioreq->iouh_SetupData.bRequest == USR_SET_ADDRESS)
+    {
+        struct USB2OTGUnit *otg_Unit = USB2OTGBase->hd_Unit;
+        UBYTE newaddr = (UBYTE)(AROS_LE2WORD(ioreq->iouh_SetupData.wValue) & 0x7f);
+
+        if (otg_Unit != NULL)
+        {
+            Disable();
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            otg_Unit->hu_PIDBits[newaddr] = 0;
+            otg_Unit->hu_NakGate[newaddr][0] = USB2OTG_NAK_GATE_NONE;
+            otg_Unit->hu_NakGate[newaddr][1] = USB2OTG_NAK_GATE_NONE;
+            otg_Unit->hu_BulkGiveupStreak[newaddr] = 0;
 #if defined(__AROSEXEC_SMP__)
             KrnSpinUnLock(&otg_Unit->hu_Lock);
 #endif
@@ -556,6 +652,13 @@ WORD FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Actual = 0;
     usb2otg_reset_retry_state(ioreq);
 
+    /* Hotplug diagnostic: SET_ADDRESS marks a fresh enumeration. */
+    D(if (ioreq->iouh_SetupData.bRequest == USR_SET_ADDRESS &&
+        ioreq->iouh_SetupData.bmRequestType ==
+            (URTF_OUT | URTF_STANDARD | URTF_DEVICE))
+        bug("[USB2OTG:ENUM] SET_ADDRESS %d\n",
+            (int)AROS_LE2WORD(ioreq->iouh_SetupData.wValue));)
+
     Disable();
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
@@ -638,7 +741,7 @@ WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
 
     /* Calculate "last time handled" and "next time to be handled" frame numbers */
     ULONG next_to_handle = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
-    ULONG last_handled = (next_to_handle - ioreq->iouh_Interval) & 0x7ff;
+    ULONG last_handled = (next_to_handle - usb2otg_clamp_interval(ioreq->iouh_Interval)) & 0x7ff;
     ioreq->iouh_DriverPrivate1 = (APTR)((last_handled << 16) | next_to_handle);
 
     Disable();
