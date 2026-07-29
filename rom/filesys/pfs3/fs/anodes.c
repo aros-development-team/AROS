@@ -289,9 +289,8 @@ void GetAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 
 	if(g->anodesplitmode)
 	{
-		anodenr_t *split = (anodenr_t *)&anodenr;
-		seqnr = split->seqnr;
-		anodeoffset = split->offset;
+		seqnr = anodenr >> 16;
+		anodeoffset = anodenr;
 	}
 	else
 	{
@@ -300,7 +299,8 @@ void GetAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 		anodeoffset  = temp >> 16;
 	}
 	
-	ablock = GetAnodeBlock(seqnr, g);
+	ablock = anodeoffset < andata.anodesperblock ?
+		GetAnodeBlock(seqnr, g) : NULL;
 	if(ablock)
 	{
 		anode->clustersize = ablock->blk.nodes[anodeoffset].clustersize;
@@ -328,9 +328,8 @@ void SaveAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 
 	if (g->anodesplitmode)
 	{
-		anodenr_t *split = (anodenr_t *)&anodenr;
-		seqnr = split->seqnr;
-		anodeoffset = split->offset;
+		seqnr = anodenr >> 16;
+		anodeoffset = anodenr;
 	}
 	else
 	{
@@ -342,6 +341,9 @@ void SaveAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 	anode->nr   = anodenr;
 
 	/* Save Anode */
+	if (anodeoffset >= andata.anodesperblock)
+		return;
+
 	ablock = GetAnodeBlock (seqnr, g);
 	if (ablock)
 	{
@@ -535,7 +537,7 @@ static struct canodeblock *big_GetAnodeBlock (UWORD seqnr, globaldata *g)
 	DBERR(ErrorTrace(10,"GetAnodeBlock", "seqnr = %lu blocknr = %lu\n", seqnr, blocknr));
 
 	/* read it */
-	if (RawRead ((UBYTE*)&ablock->blk, RESCLUSTER, blocknr, g) != 0)
+	if (ReadReservedBlocks ((UBYTE*)&ablock->blk, RESCLUSTER, blocknr, g) != 0)
 	{
 		DB(Trace(5,"GetAnodeBlock","Read ERR: seqnr = %lu blocknr = %lx\n", seqnr, blocknr));
 		FreeLRU ((struct cachedblock *)ablock);
@@ -671,7 +673,7 @@ struct cindexblock *GetIndexBlock (UWORD nr, globaldata *g)
 
 	DBERR(ErrorTrace(10,"GetIndexBlock","seqnr = %lu blocknr = %lu\n", nr, blocknr));
 
-	if (RawRead ((UBYTE*)&indexblk->blk, RESCLUSTER, blocknr, g) != 0) {
+	if (ReadReservedBlocks ((UBYTE*)&indexblk->blk, RESCLUSTER, blocknr, g) != 0) {
 		FreeLRU ((struct cachedblock *)indexblk);
 		return NULL;
 	}
@@ -798,7 +800,7 @@ struct cindexblock *GetSuperBlock (UWORD nr, globaldata *g)
 
 	DBERR(ErrorTrace(10,"GetSuperBlock","seqnr = %lu blocknr = %lu\n", nr, blocknr));
 
-	if (RawRead ((UBYTE*)&superblk->blk, RESCLUSTER, blocknr, g) != 0) {
+	if (ReadReservedBlocks ((UBYTE*)&superblk->blk, RESCLUSTER, blocknr, g) != 0) {
 		DBERR(ErrorTrace(1, "GetSuperBlock", "ERR: read error. %lu %lu\n", nr, blocknr));
 		FreeLRU ((struct cachedblock *)superblk);
 		return NULL;

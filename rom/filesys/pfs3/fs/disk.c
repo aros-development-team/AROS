@@ -171,6 +171,7 @@
 // own includes
 #include "blocks.h"
 #include "struct.h"
+#include "endian.h"
 #include "disk_protos.h"
 #include "allocation_protos.h"
 #include "volume_protos.h"
@@ -1698,6 +1699,59 @@ ULONG RawWrite(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 #else
 	return RawReadWrite_TD(TRUE, buffer, blocks, blocknr, g);
 #endif
+}
+
+static ULONG ReadMetadata(UBYTE *buffer, ULONG blocks, ULONG blocknr,
+	enum pfs3_metadata_type type, globaldata *g)
+{
+	ULONG error;
+
+	error = RawRead(buffer, blocks, blocknr, g);
+	if (!error && !PFS3MetadataToHost(buffer, blocks << BLOCKSHIFT, type))
+		error = ERROR_NOT_A_DOS_DISK;
+	return error;
+}
+
+static ULONG WriteMetadata(UBYTE *buffer, ULONG blocks, ULONG blocknr,
+	enum pfs3_metadata_type type, globaldata *g)
+{
+	ULONG error;
+
+	if (!PFS3MetadataToDisk(buffer, blocks << BLOCKSHIFT, type))
+		return ERROR_NOT_A_DOS_DISK;
+	error = RawWrite(buffer, blocks, blocknr, g);
+	PFS3MetadataToHost(buffer, blocks << BLOCKSHIFT, type);
+	return error;
+}
+
+ULONG ReadBootBlocks(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+	return ReadMetadata(buffer, blocks, blocknr, PFS3_METADATA_BOOT, g);
+}
+
+ULONG WriteBootBlocks(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+	return WriteMetadata(buffer, blocks, blocknr, PFS3_METADATA_BOOT, g);
+}
+
+ULONG ReadRootBlocks(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+	return ReadMetadata(buffer, blocks, blocknr, PFS3_METADATA_ROOT, g);
+}
+
+ULONG WriteRootBlocks(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+	return WriteMetadata(buffer, blocks, blocknr, PFS3_METADATA_ROOT, g);
+}
+
+ULONG ReadReservedBlocks(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+	return ReadMetadata(buffer, blocks, blocknr, PFS3_METADATA_RESERVED, g);
+}
+
+ULONG WriteReservedBlocks(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+	return WriteMetadata(buffer, blocks, blocknr, PFS3_METADATA_RESERVED, g);
 }
 
 #if ACCESS_DETECT

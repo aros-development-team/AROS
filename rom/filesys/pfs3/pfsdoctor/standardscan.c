@@ -95,6 +95,7 @@ static error_t GetRootBlock(void);
 static error_t CheckRootBlock(void);
 static error_t GetRext(void);
 static error_t RepairBootBlock(void);
+static error_t GetRepairBlock(cachedblock_t *block, ULONG blocknr);
 static error_t RepairDeldir(void);
 static bool dd_CheckBlock(uint32 bloknr, int seqnr);
 static error_t RepairDirTree(void);
@@ -504,7 +505,8 @@ error_t vol_GetBlock(cachedblock_t *blok, ULONG bloknr)
 	if ((error = vol_CheckBlockNr(&realbloknr)))
 		return error;
 
-	if ((error = c_GetBlock((uint8 *)blok->data, realbloknr, SIZEOF_RESBLOCK)))
+	if ((error = ReadPFS3Metadata((uint8 *)blok->data, realbloknr,
+		SIZEOF_RESBLOCK, PFS3_METADATA_RESERVED)))
 	{
 		return error;
 	}
@@ -514,6 +516,36 @@ error_t vol_GetBlock(cachedblock_t *blok, ULONG bloknr)
 		blok->blocknr = bloknr;
 		return e_none;
 	}
+}
+
+error_t vol_GetRawBlock(cachedblock_t *blok, ULONG bloknr)
+{
+	error_t error;
+	ULONG realbloknr = bloknr;
+
+	if ((error = vol_CheckBlockNr(&realbloknr)))
+		return error;
+	if ((error = c_GetBlock((uint8 *)blok->data, realbloknr,
+		SIZEOF_RESBLOCK)))
+		return error;
+
+	blok->mode = check;
+	blok->blocknr = bloknr;
+	return e_none;
+}
+
+/*
+ * Repair routines need the contents of an overwritten metadata block so they
+ * can take their wrong-ID recovery path.  A syntactically invalid metadata
+ * block is therefore readable here; actual I/O and bounds errors still fail.
+ */
+static error_t GetRepairBlock(cachedblock_t *block, ULONG blocknr)
+{
+	error_t error = volume.getblock(block, blocknr);
+
+	if (error == e_syntax_error)
+		return vol_GetRawBlock(block, blocknr);
+	return error;
 }
 
 error_t vol_WriteBlock(cachedblock_t *blok)
@@ -527,7 +559,8 @@ error_t vol_WriteBlock(cachedblock_t *blok)
 		if ((status = vol_CheckBlockNr(&bloknr)))
 			return status;
 
-		return c_WriteBlock((uint8 *)blok->data, bloknr, SIZEOF_RESBLOCK);
+		return WritePFS3Metadata((uint8 *)blok->data, bloknr,
+			SIZEOF_RESBLOCK, PFS3_METADATA_RESERVED);
 	}
 
 	return e_none;
@@ -552,7 +585,9 @@ static error_t BuildRootBlock_hub(void)
 		if (!(error = BuildRootBlock(rbl)))
 		{
 			fixederror("new rootblock build");
-			c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+			WritePFS3Metadata((uint8 *)rbl,
+				ROOTBLOCK + volume.firstblock, volume.blocksize,
+				PFS3_METADATA_ROOT);
 		}
 	}
 	else
@@ -585,7 +620,9 @@ static error_t GetRootBlock(void)
 	}
 
 	// read rootblock 
-	if ((error = c_GetBlock ((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize)))
+	if ((error = ReadPFS3Metadata((uint8 *)rbl,
+		ROOTBLOCK + volume.firstblock, volume.blocksize,
+		PFS3_METADATA_ROOT)))
 	{
 		adderror("rootblock could not be loaded");
 		return error;
@@ -885,7 +922,9 @@ static error_t CheckRootBlock(void)
 	}
 
 	if (dirty)
-		return c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+		return WritePFS3Metadata((uint8 *)rbl,
+			ROOTBLOCK + volume.firstblock, volume.blocksize,
+			PFS3_METADATA_ROOT);
 
 	return error;
 }
@@ -909,7 +948,7 @@ static error_t GetRext(void)
 
 	if (bloknr)
 	{
-		if ((error = volume.getblock((cachedblock_t *)&rext, bloknr)))
+		if ((error = GetRepairBlock((cachedblock_t *)&rext, bloknr)))
 			return error;
 	}
 
@@ -1057,8 +1096,10 @@ static error_t RepairBootBlock(void)
 	enterblock(BOOTBLOCK);
 
 	// read bootblock 
-	bootbl.data = calloc(1, MAXRESBLOCKSIZE);
-	if ((error = volume.getblock ((cachedblock_t *)&bootbl, BOOTBLOCK)))
+	bootbl.data = calloc(1, 2 * volume.blocksize);
+	if ((error = ReadPFS3Metadata((uint8 *)bootbl.data,
+		BOOTBLOCK + volume.firstblock, 2 * volume.blocksize,
+		PFS3_METADATA_BOOT)))
 	{
 		adderror("bootblock could not be loaded");
 		free (bootbl.data);
@@ -1074,7 +1115,9 @@ static error_t RepairBootBlock(void)
 		{
 			bootbl.data->bootblock.disktype = ID_PFS_DISK;
 			fixederror("bootblock had wrong ID");
-			if ((error = volume.writeblock((cachedblock_t *)&bootbl)))
+			if ((error = WritePFS3Metadata((uint8 *)bootbl.data,
+				BOOTBLOCK + volume.firstblock, 2 * volume.blocksize,
+				PFS3_METADATA_BOOT)))
 			{
 				adderror("bootblock could not be written");
 				free (bootbl.data);
@@ -1247,7 +1290,8 @@ static error_t RepairDeldir(void)
 	}
 
 	if (rootdirty)
-		c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+		WritePFS3Metadata((uint8 *)rbl, ROOTBLOCK + volume.firstblock,
+			volume.blocksize, PFS3_METADATA_ROOT);
 	if (rextdirty)
 		volume.writeblock((cachedblock_t *)&rext);
 
@@ -1924,21 +1968,8 @@ static error_t DeleteAnode(uint32 anodechain, uint32 node)
  */
 static error_t GetExtraFields(struct extrafields *extrafields, struct direntry *de)
 {
-	uint16 *extra = (uint16 *)extrafields;
-	uint16 *fields = (uint16 *)(((uint8 *)de)+de->next);
-	uint16 flags, i;
-
-	// extract extrafields from directoryentry
-	flags = *(--fields);
-	for (i=0; i < sizeof(struct extrafields)/2; i++, flags>>=1)
-		*(extra++) = (flags&1) ? *(--fields) : 0;
-
-	// check flags field
-	if (flags)
+	if (PFS3GetExtraFields(de, extrafields))
 		addfileerror("unknown extrafield flags found (ignored)");
-
-	// patch protection lower 8 bits
-	extrafields->prot |= de->protection;
 	return e_none;
 }
 
@@ -1974,40 +2005,7 @@ static error_t SetExtraFields(struct extrafields *extrafields, struct direntry *
 
 static void AddExtraFields(struct direntry *direntry, struct extrafields *extra)
 {
-	UWORD offset, *dirext;
-	UWORD array[16], i = 0, j = 0;
-	UWORD flags = 0, orvalue;
-	UWORD *fields = (UWORD *)extra;
-
-	/* patch protection lower 8 bits */
-	extra->prot &= 0xffffff00;
-	offset = (sizeof(struct direntry) + (direntry->nlength) + *FILENOTE(direntry)) & 0xfffe;
-	dirext = (UWORD *)((UBYTE *)(direntry) + (UBYTE)offset);
-
-	orvalue = 1;
-	/* fill packed field array */
-	for (i = 0; i < sizeof(struct extrafields) / 2; i++)
-	{
-		if (*fields)
-		{
-			array[j++] = *fields++;
-			flags |= orvalue;
-		}
-		else
-		{
-			fields++;
-		}
-
-		orvalue <<= 1;
-	}
-
-	/* add fields to direntry */
-	i = j;
-	while (i)
-		*dirext++ = array[--i];
-	*dirext++ = flags;
-
-	direntry->next = offset + 2 * j + 2;
+	PFS3AddExtraFields(direntry, extra);
 }
 
 
@@ -2050,7 +2048,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 				 && (linknode.nr == extra.link))
 			{
 				extra.link = 0;
-			 = { NULL} SetExtraFields(&extra, de, 0lk);
+				SetExtraFields(&extra, de, dirblk);
 			}
 		}
 
@@ -2159,7 +2157,9 @@ static error_t RepairAnodeTree(void)
 					return error;
 
 				if (rbl->idx.small.indexblocks[i] != child_blk_nr)
-					c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+					WritePFS3Metadata((uint8 *)rbl,
+						ROOTBLOCK + volume.firstblock,
+						volume.blocksize, PFS3_METADATA_ROOT);
 			}
 		}
 	}
@@ -2191,7 +2191,7 @@ error_t RepairAnodeBlock(uint32 *bloknr, uint32 seqnr)
 	ablk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (*bloknr)
 	{
-		if ((error = volume.getblock((cachedblock_t *)&ablk, *bloknr)))
+		if ((error = GetRepairBlock((cachedblock_t *)&ablk, *bloknr)))
 		{
 			free (ablk.data);
 			return error;
@@ -2269,7 +2269,9 @@ static error_t RepairBitmapTree(void)
 				return error;
 			
 			if (rbl->idx.large.bitmapindex[i] != blknr)
-				c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+				WritePFS3Metadata((uint8 *)rbl,
+					ROOTBLOCK + volume.firstblock,
+					volume.blocksize, PFS3_METADATA_ROOT);
 		}
 	}
 
@@ -2298,7 +2300,7 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 
 	if (*bloknr)
 	{
-		if ((error = volume.getblock((cachedblock_t *)&bmblk, *bloknr)))
+		if ((error = GetRepairBlock((cachedblock_t *)&bmblk, *bloknr)))
 		{
 			free (bmblk.data);
 			return error;
@@ -2373,7 +2375,7 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 
 		/* read or build indexblock
 		 */
-		if ((error = volume.getblock((cachedblock_t *)&iblk, *bloknr)))
+		if ((error = GetRepairBlock((cachedblock_t *)&iblk, *bloknr)))
 		{
 			free (iblk.data);
 			return error;
@@ -2614,28 +2616,26 @@ static error_t RepairReservedBitmap(void)
 	bool dirty = false;
 	error_t error;
 	uint32 nuba=0, ubna=0;
-	uint8 *t;
 
 	volume.status(0, "validating reserved", volume.resbitmap->lwsize/0xff);
 
 	/* first save current rootblock */
-	if ((error = c_WriteBlock ((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize)))
+	if ((error = WritePFS3Metadata((uint8 *)rbl,
+		ROOTBLOCK + volume.firstblock, volume.blocksize,
+		PFS3_METADATA_ROOT)))
 		return error;		
 	
 	/* now get reserved bitmap with rootblock in memory */
 	if (!(lrb = (rootblock_t *)AllocBufMem(volume.blocksize * rbl->rblkcluster)))
 		return e_out_of_memory;
 
-	t = (uint8 *)lrb;
-	for (i=0; i<rbl->rblkcluster; i++)
+	if ((error = ReadPFS3Metadata((uint8 *)lrb,
+		ROOTBLOCK + volume.firstblock,
+		volume.blocksize * rbl->rblkcluster, PFS3_METADATA_ROOT)))
 	{
-		if ((error = c_GetBlock (t, ROOTBLOCK + volume.firstblock + i, volume.blocksize)))
-		{
-			adderror("reserved bitmap could not be loaded");
-			FreeBufMem(lrb);
-			return error;
-		}
-		t += volume.blocksize;
+		adderror("reserved bitmap could not be loaded");
+		FreeBufMem(lrb);
+		return error;
 	}
 
 	bitmap = (bitmapblock_t *)(lrb + 1);
@@ -2724,12 +2724,10 @@ static error_t RepairReservedBitmap(void)
 	error = e_none;
 	if (dirty && !aborting)
 	{
-		t = (uint8 *)lrb;
-		for (i=0; i<lrb->rblkcluster; i++)
-		{
-			error = c_WriteBlock (t, ROOTBLOCK + volume.firstblock + i, volume.blocksize);
-			t += volume.blocksize;
-		}
+		error = WritePFS3Metadata((uint8 *)lrb,
+			ROOTBLOCK + volume.firstblock,
+			volume.blocksize * lrb->rblkcluster,
+			PFS3_METADATA_ROOT);
 		memcpy(rbl, lrb, SIZEOF_RESBLOCK);
 	}
 	
@@ -2840,7 +2838,9 @@ static error_t RepairMainBitmap(void)
 	}
 
 	if (dirty)
-		error = c_WriteBlock ((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+		error = WritePFS3Metadata((uint8 *)rbl,
+			ROOTBLOCK + volume.firstblock, volume.blocksize,
+			PFS3_METADATA_ROOT);
 	
 	if (!build)
 		free (bmb.data);
@@ -3073,4 +3073,3 @@ static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr)
 	else
 		return TRUE;
 }
-

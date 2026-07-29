@@ -8,6 +8,9 @@ If NOT WARN
     ; Perform entropy.resource stress/behaviour unit tests...
     Execute S/Test cunit/entropy/cunit-entropy
 
+    ; Perform PFS3 on-disk endian conversion unit tests...
+    Execute S/Test cunit/filesys/pfs3/cunit-pfs3-endian
+
     ; Peform basic 'C' type unit tests..
     Execute S/Test cunit/crt/stdc/cunit-crt-types
 

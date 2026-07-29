@@ -112,7 +112,9 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 					if (error)
 						*bp = 0;
 					else
-						c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+						WritePFS3Metadata((uint8 *)rbl,
+							ROOTBLOCK + volume.firstblock,
+							volume.blocksize, PFS3_METADATA_ROOT);
 				}
 			}
 			break;
@@ -151,7 +153,10 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 						if (rbl->options & MODE_SUPERINDEX)
 							volume.writeblock((cachedblock_t *)&blk);
 						else
-							c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+							WritePFS3Metadata((uint8 *)rbl,
+								ROOTBLOCK + volume.firstblock,
+								volume.blocksize,
+								PFS3_METADATA_ROOT);
 					}
 				}
 			}
@@ -226,45 +231,47 @@ static anodeblock_t *tanodeblk = (anodeblock_t*)tanodedata;
 
 bool GetAnode(canode_t *anode, uint32 anodenr, bool fix)
 {
-	anodenr_t *split = (anodenr_t *)&anodenr;
+	uint16 seqnr = anodenr >> 16;
+	uint16 offset = anodenr;
 
-	if (!(tablk.data && tanodeblk->seqnr == split->seqnr))
+	if (!(tablk.data && tanodeblk->seqnr == seqnr))
 	{
 		tablk.data = tanodeblk;
-		if (GetResBlock((cachedblock_t *)&tablk, ABLKID, split->seqnr, fix))
+		if (GetResBlock((cachedblock_t *)&tablk, ABLKID, seqnr, fix))
 		{
 			tablk.data = NULL;
 			return false;
 		}
 	}
 
-	if (split->offset > ANODES_PER_BLOCK)
+	if (offset >= ANODES_PER_BLOCK)
 		return false;
 
 	anode->nr = anodenr;
-	anode->clustersize = tablk.data->nodes[split->offset].clustersize;
-	anode->blocknr     = tablk.data->nodes[split->offset].blocknr;
-	anode->next        = tablk.data->nodes[split->offset].next;
+	anode->clustersize = tablk.data->nodes[offset].clustersize;
+	anode->blocknr     = tablk.data->nodes[offset].blocknr;
+	anode->next        = tablk.data->nodes[offset].next;
 	return true;
 }
 
 bool SaveAnode(canode_t *anode, uint32 nr)
 {
-	anodenr_t *split = (anodenr_t *)&nr;
+	uint16 seqnr = nr >> 16;
+	uint16 offset = nr;
 	c_anodeblock_t ablk;
 	uint32 buffer[MAXRESBLOCKSIZE/4];
 
 	tablk.data = NULL;			/* kill anode read cache */
 	ablk.data = (anodeblock_t *)buffer;
-	if (GetResBlock((cachedblock_t *)&ablk, ABLKID, split->seqnr, false))
+	if (GetResBlock((cachedblock_t *)&ablk, ABLKID, seqnr, false))
 		return false;
 
-	if (split->offset > ANODES_PER_BLOCK)
+	if (offset >= ANODES_PER_BLOCK)
 		return false;
 
-	ablk.data->nodes[split->offset].clustersize = anode->clustersize;
-	ablk.data->nodes[split->offset].blocknr     = anode->blocknr;
-	ablk.data->nodes[split->offset].next        = anode->next;
+	ablk.data->nodes[offset].clustersize = anode->clustersize;
+	ablk.data->nodes[offset].blocknr     = anode->blocknr;
+	ablk.data->nodes[offset].next        = anode->next;
 	volume.writeblock((cachedblock_t *)&ablk);
 	return true;
 }

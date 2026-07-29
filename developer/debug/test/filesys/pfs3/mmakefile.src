@@ -1,0 +1,29 @@
+include $(SRCDIR)/config/aros.cfg
+
+CUNITEXEDIR := $(AROS_TESTS)/cunit/filesys/pfs3
+PFS3DIR := $(SRCDIR)/rom/filesys/pfs3/fs
+
+#MM- test : test-pfs3-cunit
+#MM- test-quick : test-pfs3-cunit-quick
+
+#MM- test-cunit : test-pfs3-cunit
+#MM- test-cunit-quick : test-pfs3-cunit-quick
+
+#MM- test-pfs3-cunit : test-pfs3-$(TARGET_UNITTESTS)-cunit
+#MM- test-pfs3-cunit-quick : test-pfs3-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-pfs3-yes-cunit : includes includes-copy linklibs linklibs-cunit
+
+USER_CPPFLAGS := \
+	-DDELDIR=1 \
+	-DVERSION23=1 \
+	-DLARGE_FILE_SIZE=1
+USER_INCLUDES := \
+	-I$(AROS_CONTRIB_INCLUDES) \
+	-I$(PFS3DIR)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_prog mmake=test-pfs3-yes-cunit \
+	files="cunit-pfs3-endian cunit-pfs3-listtype $(PFS3DIR)/endian" \
+	progname=cunit-pfs3-endian targetdir=$(CUNITEXEDIR) \
+	uselibs="cunit posixc"

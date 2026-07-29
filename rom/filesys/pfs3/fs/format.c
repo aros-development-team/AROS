@@ -306,7 +306,7 @@ static ULONG MakeBootBlock (globaldata *g)
 
 	memset (bbl, 0, 2*BLOCKSIZE);
 	bbl->disktype = ID_PFS_DISK;
-	error = RawWrite ((UBYTE *)bbl, 2, BOOTBLOCK1, g);
+	error = WriteBootBlocks ((UBYTE *)bbl, 2, BOOTBLOCK1, g);
 	FreeBufmem (bbl, g);
 	return error;
 }
@@ -320,6 +320,8 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 {
   struct rootblock *rbl;
   struct DateStamp time;
+  UBYTE c_diskname[DNSIZE];
+  ULONG diskname_length;
   ULONG numreserved;
   ULONG rescluster;
   ULONG resblocksize;
@@ -385,7 +387,10 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 	rbl->alwaysfree = rbl->blocksfree/20;
 	// rbl->roving_ptr = 0;
 
-	memcpy(rbl->diskname, diskname, min(*diskname+1, DNSIZE));
+	BCPLtoCString(c_diskname, diskname);
+	diskname_length = min(strlen(c_diskname), DNSIZE - 1);
+	rbl->diskname[0] = diskname_length;
+	memcpy(rbl->diskname + 1, c_diskname, diskname_length);
 	MakeReservedBitmap(&rbl, numreserved, g);	// sets reserved_free & rblkcluster too
 	return rbl;
 }

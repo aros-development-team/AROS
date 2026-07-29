@@ -78,7 +78,9 @@ error_t AllocBuildBlocks(void)
 			{
 				case EXTENSIONID:
 					rbl->extension = blocknr;
-					c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+					WritePFS3Metadata((uint8 *)rbl,
+						ROOTBLOCK + volume.firstblock,
+						volume.blocksize, PFS3_METADATA_ROOT);
 					rext.mode = check;
 					rext.data = calloc(1, SIZEOF_RESBLOCK);
 					rext.blocknr = blocknr;
@@ -92,14 +94,19 @@ error_t AllocBuildBlocks(void)
 
 				case BMIBLKID:
 					rbl->idx.large.bitmapindex[bbl->b.data->indexblock.seqnr] = blocknr;
-					c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+					WritePFS3Metadata((uint8 *)rbl,
+						ROOTBLOCK + volume.firstblock,
+						volume.blocksize, PFS3_METADATA_ROOT);
 					break;
 
 				case IBLKID:
 					if (!(rbl->options & MODE_SUPERDELDIR))
 					{
 						rbl->idx.small.indexblocks[bbl->b.data->indexblock.seqnr] = blocknr;
-						c_WriteBlock((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+						WritePFS3Metadata((uint8 *)rbl,
+							ROOTBLOCK + volume.firstblock,
+							volume.blocksize,
+							PFS3_METADATA_ROOT);
 						break;
 					}
 					type = SBLKID;
@@ -183,7 +190,9 @@ error_t Repartition(uint32 bloknr)
 		return e_out_of_memory;
 
 	// read rootblock 
-	error = c_GetBlock ((uint8 *)rbl, ROOTBLOCK + volume.firstblock, volume.blocksize);
+	error = ReadPFS3Metadata((uint8 *)rbl,
+		ROOTBLOCK + volume.firstblock, volume.blocksize,
+		PFS3_METADATA_ROOT);
 	if (error)
 		goto ret_error;
 
@@ -216,7 +225,9 @@ error_t BuildBootBlock(void)
 	
 	memset (bbl, 0, 2*volume.blocksize);
 	bbl->disktype = ID_PFS_DISK;
-	error = c_WriteBlock ((UBYTE *)bbl, 1, BOOTBLOCK + volume.firstblock);
+	error = WritePFS3Metadata((UBYTE *)bbl,
+		BOOTBLOCK + volume.firstblock, 2 * volume.blocksize,
+		PFS3_METADATA_BOOT);
 	FreeBufMem (bbl);
 	return error;
 }
@@ -469,10 +480,10 @@ uint32 SearchLastReserved(volume_t *vol)
 			break;
 		}
 
-		if (volume.getblock(&blk, i))
+		if (vol_GetRawBlock(&blk, i))
 			goto s_ret;
 
-		switch (blk.data->id)
+		switch (PFS3DiskBlockId((uint8 *)blk.data))
 		{
 			case DBLKID:
 			case ABLKID:
@@ -528,7 +539,8 @@ uint32 SearchFileSystem(int32 startblok, int32 endblok)
 		}
 
 		// read block and check if it is a rootblock */
-		if (c_GetBlock ((uint8 *)rbl, b, volume.blocksize))
+		if (ReadPFS3Metadata((uint8 *)rbl, b, volume.blocksize,
+			PFS3_METADATA_ROOT))
 			break;
 
 		if (IsRootBlock(rbl))
@@ -692,4 +704,3 @@ error_t BuildBitmapBlock(c_bitmapblock_t *blk, uint32 seqnr)
 	volume.status(1, " ", 100);
 	return e_none;
 }
-

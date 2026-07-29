@@ -197,7 +197,7 @@ retry:
 				DB(Trace(1,"AllocLRU","ResToBeFreed %lx\n",&lrunode->cblk));
 				ResToBeFreed(lrunode->cblk.oldblocknr, g);
 				UpdateDatestamp(&lrunode->cblk, g);
-				error = RawWrite ((UBYTE *)&lrunode->cblk.data, RESCLUSTER, lrunode->cblk.blocknr, g);
+				error = WriteReservedBlocks ((UBYTE *)&lrunode->cblk.data, RESCLUSTER, lrunode->cblk.blocknr, g);
 				if (error) {
 					ULONG args[2];
 					args[0] = lrunode->cblk.blocknr;

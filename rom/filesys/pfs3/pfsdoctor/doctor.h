@@ -38,6 +38,8 @@
 
 #define __USE_SYSBASE
 
+#include "endian.h"
+
 
 
 #ifndef min
@@ -459,6 +461,10 @@ void exitblock(void);
 error_t InitCache(uint32 linesize, uint32 nolines);
 error_t c_GetBlock(uint8 *data, uint32 bloknr, uint32 bytes);
 error_t c_WriteBlock(uint8 *data, uint32 bloknr, uint32 bytes);
+error_t ReadPFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
+	enum pfs3_metadata_type type);
+error_t WritePFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
+	enum pfs3_metadata_type type);
 void UpdateCache(void);
 void FreeCache(void);
 
@@ -473,6 +479,7 @@ bool SaveAnode(canode_t *anode, uint32 nr);
 error_t StandardScan(uint32 opties);
 bool GetPFS2Revision(char *vstring);
 error_t vol_GetBlock(cachedblock_t *blok, ULONG bloknr);
+error_t vol_GetRawBlock(cachedblock_t *blok, ULONG bloknr);
 error_t vol_WriteBlock(cachedblock_t *blok);
 bool IsRootBlock(rootblock_t *r);
 error_t ResBlockUsed(uint32 bloknr);
@@ -496,4 +503,3 @@ static __inline void __chkabort(void) { };
 #if defined(__SASC)
 void __regargs __chkabort(void);
 #endif
-

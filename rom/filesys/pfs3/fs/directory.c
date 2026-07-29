@@ -243,6 +243,7 @@
 #include "debug.h"
 #include "blocks.h"
 #include "struct.h"
+#include "endian.h"
 #include "directory_protos.h"
 #include "allocation_protos.h"
 #include "volume_protos.h"
@@ -3493,7 +3494,7 @@ struct cdirblock *LoadDirBlock(ULONG blocknr, globaldata * g)
 		dirblk = (struct cdirblock *)AllocLRU(g);
 
 		DB(Trace(10, "LoadDirBlock", "loading block %lx from disk\n", blocknr));
-		if (RawRead((UBYTE *)&dirblk->blk, RESCLUSTER, blocknr, g) == 0)
+		if (ReadReservedBlocks((UBYTE *)&dirblk->blk, RESCLUSTER, blocknr, g) == 0)
 		{
 			if (dirblk->blk.id == DBLKID)
 			{
@@ -3624,16 +3625,7 @@ void SetDDFileSize(struct deldirentry *dde, FSIZE size, globaldata *g)
  */
 void GetExtraFields(struct direntry *direntry, struct extrafields *extrafields)
 {
-	UWORD *extra = (UWORD *)extrafields;
-	UWORD *fields = (UWORD *)(((UBYTE *)direntry) + direntry->next);
-	UWORD flags, i;
-
-	flags = *(--fields);
-	for (i = 0; i < sizeof(struct extrafields) / 2; i++, flags >>= 1)
-		*(extra++) = (flags & 1) ? *(--fields) : 0;
-
-	/* patch protection lower 8 bits */
-	extrafields->prot |= direntry->protection;
+	PFS3GetExtraFields(direntry, extrafields);
 }
 
 #if DELDIR
@@ -3669,40 +3661,7 @@ static void GetExtraFieldsRoot(struct extrafields *extrafields, globaldata * g)
 
 void AddExtraFields(struct direntry *direntry, struct extrafields *extra)
 {
-	UWORD offset, *dirext;
-	UWORD array[16], i = 0, j = 0;
-	UWORD flags = 0, orvalue;
-	UWORD *fields = (UWORD *)extra;
-
-	/* patch protection lower 8 bits */
-	extra->prot &= 0xffffff00;
-	offset = (sizeof(struct direntry) + (direntry->nlength) + *COMMENT(direntry)) & 0xfffe;
-	dirext = (UWORD *)((UBYTE *)(direntry) + (UBYTE)offset);
-
-	orvalue = 1;
-	/* fill packed field array */
-	for (i = 0; i < sizeof(struct extrafields) / 2; i++)
-	{
-		if (*fields)
-		{
-			array[j++] = *fields++;
-			flags |= orvalue;
-		}
-		else
-		{
-			fields++;
-		}
-
-		orvalue <<= 1;
-	}
-
-	/* add fields to direntry */
-	i = j;
-	while (i)
-		*dirext++ = array[--i];
-	*dirext++ = flags;
-
-	direntry->next = offset + 2 * j + 2;
+	PFS3AddExtraFields(direntry, extra);
 }
 
 
@@ -4285,7 +4244,7 @@ static struct cdeldirblock *GetDeldirBlock(UWORD seqnr, globaldata *g)
 	}
 
 	/* read block */
-	if (RawRead ((UBYTE*)&ddblk->blk, RESCLUSTER, blocknr, g) != 0)
+	if (ReadReservedBlocks ((UBYTE*)&ddblk->blk, RESCLUSTER, blocknr, g) != 0)
 	{
 		DB(Trace(5,"GetDeldirBlock","Read ERR: seqnr = %d blocknr = %lx\n", seqnr, blocknr));
 		FreeLRU ((struct cachedblock *)ddblk);
