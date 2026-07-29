@@ -137,6 +137,30 @@ error_t c_WriteBlock(uint8 *data, uint32 bloknr, uint32 bytes)
 	return error;
 }
 
+error_t ReadPFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
+	enum pfs3_metadata_type type)
+{
+	error_t error;
+
+	error = c_GetBlock(data, bloknr, bytes);
+	if (!error && !PFS3MetadataToHostForRecovery(data, bytes, type))
+		error = e_syntax_error;
+	return error;
+}
+
+error_t WritePFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
+	enum pfs3_metadata_type type)
+{
+	error_t error, convert_error = e_none;
+
+	if (!PFS3MetadataToDiskForRecovery(data, bytes, type))
+		return e_syntax_error;
+	error = c_WriteBlock(data, bloknr, bytes);
+	if (!PFS3MetadataToHostForRecovery(data, bytes, type))
+		convert_error = e_syntax_error;
+	return error ? error : convert_error;
+}
+
 /* (private) locale function to search a cacheline 
  */
 static struct cacheline *c_GetCacheLine(uint32 bloknr)
@@ -669,4 +693,3 @@ BOOL DetectAccessmode(UBYTE *buffer, BOOL scsidirectfirst)
 	volume.accessmode = ACCESS_STD;
 	return FALSE;
 }
-

@@ -289,9 +289,8 @@ void GetAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 
 	if(g->anodesplitmode)
 	{
-		anodenr_t *split = (anodenr_t *)&anodenr;
-		seqnr = split->seqnr;
-		anodeoffset = split->offset;
+		seqnr = anodenr >> 16;
+		anodeoffset = anodenr;
 	}
 	else
 	{
@@ -328,9 +327,8 @@ void SaveAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 
 	if (g->anodesplitmode)
 	{
-		anodenr_t *split = (anodenr_t *)&anodenr;
-		seqnr = split->seqnr;
-		anodeoffset = split->offset;
+		seqnr = anodenr >> 16;
+		anodeoffset = anodenr;
 	}
 	else
 	{

@@ -211,7 +211,7 @@ static void TestDirectoryEntriesAndExtras(void)
 	input.fsizex = 0x369c;
 	PFS3AddExtraFields(entry, &input);
 	memset(&output, 0, sizeof(output));
-	PFS3GetExtraFields(entry, &output);
+	CU_ASSERT_EQUAL(PFS3GetExtraFields(entry, &output), 0);
 	CU_ASSERT_EQUAL(output.link, 0x10203040);
 	CU_ASSERT_EQUAL(output.uid, 0x1357);
 	CU_ASSERT_EQUAL(output.gid, 0x2468);
@@ -245,6 +245,7 @@ static void TestDirectoryEntriesAndExtras(void)
 static void TestMalformedDirectoryEntry(void)
 {
 	UBYTE data[BLOCK_BYTES_1K];
+	UBYTE original[BLOCK_BYTES_1K];
 	struct dirblock *block = (struct dirblock *)data;
 	struct direntry *entry;
 
@@ -252,8 +253,62 @@ static void TestMalformedDirectoryEntry(void)
 	block->id = DBLKID;
 	entry = (struct direntry *)block->entries;
 	entry->next = 3;
+	memcpy(original, data, sizeof(data));
 	CU_ASSERT_FALSE(PFS3MetadataToDisk(data, sizeof(data),
 		PFS3_METADATA_RESERVED));
+	CU_ASSERT_EQUAL(memcmp(data, original, sizeof(data)), 0);
+}
+
+static void TestRecoveryDirectoryEntry(void)
+{
+	UBYTE data[BLOCK_BYTES_1K];
+	UBYTE original[BLOCK_BYTES_1K];
+	struct dirblock *block = (struct dirblock *)data;
+	struct direntry *entry;
+	ULONG entry_offset = offsetof(struct dirblock, entries);
+
+	memset(data, 0, sizeof(data));
+	data[0] = 'D';
+	data[1] = 'B';
+	data[offsetof(struct dirblock, anodenr)] = 0x11;
+	data[offsetof(struct dirblock, anodenr) + 1] = 0x22;
+	data[offsetof(struct dirblock, anodenr) + 2] = 0x33;
+	data[offsetof(struct dirblock, anodenr) + 3] = 0x44;
+	data[entry_offset] = sizeof(*entry) + 1;
+	data[entry_offset + offsetof(struct direntry, anode)] = 0x12;
+	data[entry_offset + offsetof(struct direntry, anode) + 1] = 0x34;
+	data[entry_offset + offsetof(struct direntry, anode) + 2] = 0x56;
+	data[entry_offset + offsetof(struct direntry, anode) + 3] = 0x78;
+	data[entry_offset + offsetof(struct direntry, nlength)] = 0xff;
+	memcpy(original, data, sizeof(data));
+
+	CU_ASSERT_FALSE(PFS3MetadataToHost(data, sizeof(data),
+		PFS3_METADATA_RESERVED));
+	CU_ASSERT_TRUE_FATAL(PFS3MetadataToHostForRecovery(data, sizeof(data),
+		PFS3_METADATA_RESERVED));
+	CU_ASSERT_EQUAL(block->anodenr, 0x11223344);
+	entry = (struct direntry *)block->entries;
+	CU_ASSERT_EQUAL(entry->anode, 0x12345678);
+	CU_ASSERT_TRUE_FATAL(PFS3MetadataToDiskForRecovery(data, sizeof(data),
+		PFS3_METADATA_RESERVED));
+	CU_ASSERT_EQUAL(memcmp(data, original, sizeof(data)), 0);
+}
+
+static void TestUnsafeRecoveryDirectoryEntry(void)
+{
+	UBYTE data[64];
+	UBYTE original[64];
+	ULONG entry_offset = offsetof(struct dirblock, entries);
+
+	memset(data, 0, sizeof(data));
+	data[0] = 'D';
+	data[1] = 'B';
+	data[entry_offset] = sizeof(data);
+	memcpy(original, data, sizeof(data));
+
+	CU_ASSERT_FALSE(PFS3MetadataToHostForRecovery(data, sizeof(data),
+		PFS3_METADATA_RESERVED));
+	CU_ASSERT_EQUAL(memcmp(data, original, sizeof(data)), 0);
 }
 
 static void TestUnknownReservedBlock(void)
@@ -287,6 +342,10 @@ int main(void)
 			TestDirectoryEntriesAndExtras) == NULL ||
 		CU_add_test(suite, "malformed directory entry",
 			TestMalformedDirectoryEntry) == NULL ||
+		CU_add_test(suite, "recovery directory entry",
+			TestRecoveryDirectoryEntry) == NULL ||
+		CU_add_test(suite, "unsafe recovery directory entry",
+			TestUnsafeRecoveryDirectoryEntry) == NULL ||
 		CU_add_test(suite, "unknown reserved block",
 			TestUnknownReservedBlock) == NULL)
 	{

@@ -235,12 +235,6 @@ typedef struct anode
     ULONG next;
 } anode_t;
 
-typedef struct
-{
-	UWORD seqnr;
-	UWORD offset;
-} anodenr_t;
-
 typedef struct anodeblock
 {
     UWORD id;               /* AB                               */

@@ -131,12 +131,6 @@ typedef struct indexblock
     LONG index[253];        /* the indices */
 } indexblock_t;
 
-typedef struct
-{
-	UWORD seqnr;
-	UWORD offset;
-} anodenr_t;
-
 typedef struct anode
 {
     ULONG clustersize;

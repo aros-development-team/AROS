@@ -18,8 +18,17 @@ enum pfs3_metadata_type
  * big-endian representation used on disk. Both operations are in-place.
  */
 BOOL PFS3MetadataToHost(UBYTE *data, ULONG bytes, enum pfs3_metadata_type type);
+/*
+ * Convert metadata for a recovery tool. Directory entries are required to be
+ * safely traversable, but semantic errors which PFSDoctor can repair are
+ * accepted.
+ */
+BOOL PFS3MetadataToHostForRecovery(UBYTE *data, ULONG bytes,
+	enum pfs3_metadata_type type);
 BOOL PFS3MetadataToDisk(UBYTE *data, ULONG bytes, enum pfs3_metadata_type type);
-void PFS3GetExtraFields(struct direntry *direntry,
+BOOL PFS3MetadataToDiskForRecovery(UBYTE *data, ULONG bytes,
+	enum pfs3_metadata_type type);
+UWORD PFS3GetExtraFields(struct direntry *direntry,
 	struct extrafields *extrafields);
 void PFS3AddExtraFields(struct direntry *direntry,
 	struct extrafields *extrafields);

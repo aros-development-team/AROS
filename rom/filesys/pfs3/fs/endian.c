@@ -30,6 +30,40 @@ static void ConvertLongs(ULONG *values, ULONG count)
 	}
 }
 
+static void ConvertUnalignedWord(UBYTE *data)
+{
+	union
+	{
+		UWORD value;
+		UBYTE bytes[sizeof(UWORD)];
+	} unaligned;
+
+	unaligned.bytes[0] = data[0];
+	unaligned.bytes[1] = data[1];
+	unaligned.value = AROS_BE2WORD(unaligned.value);
+	data[0] = unaligned.bytes[0];
+	data[1] = unaligned.bytes[1];
+}
+
+static void ConvertUnalignedLong(UBYTE *data)
+{
+	union
+	{
+		ULONG value;
+		UBYTE bytes[sizeof(ULONG)];
+	} unaligned;
+
+	unaligned.bytes[0] = data[0];
+	unaligned.bytes[1] = data[1];
+	unaligned.bytes[2] = data[2];
+	unaligned.bytes[3] = data[3];
+	unaligned.value = AROS_BE2LONG(unaligned.value);
+	data[0] = unaligned.bytes[0];
+	data[1] = unaligned.bytes[1];
+	data[2] = unaligned.bytes[2];
+	data[3] = unaligned.bytes[3];
+}
+
 static BOOL ConvertBootBlock(UBYTE *data, ULONG bytes)
 {
 	struct bootblock *block = (struct bootblock *)data;
@@ -129,7 +163,8 @@ static BOOL ConvertAnodeBlock(struct anodeblock *block, ULONG bytes)
 	return TRUE;
 }
 
-static BOOL ValidateDirEntries(struct dirblock *block, ULONG bytes)
+static BOOL ValidateDirEntries(struct dirblock *block, ULONG bytes,
+	BOOL recovery)
 {
 	struct direntry *entry;
 	ULONG offset;
@@ -140,10 +175,12 @@ static BOOL ValidateDirEntries(struct dirblock *block, ULONG bytes)
 		entry = (struct direntry *)((UBYTE *)block + offset);
 		if (entry->next == 0)
 			return TRUE;
-		if (entry->next < sizeof(*entry) || (entry->next & 1) ||
-			entry->next > bytes - offset ||
-			offsetof(struct direntry, startofname) + entry->nlength >=
-				entry->next)
+		if (entry->next < sizeof(*entry) || entry->next > bytes - offset)
+			return FALSE;
+		if (!recovery &&
+			((entry->next & 1) ||
+			 offsetof(struct direntry, startofname) + entry->nlength >=
+				entry->next))
 			return FALSE;
 
 		offset += entry->next;
@@ -151,12 +188,24 @@ static BOOL ValidateDirEntries(struct dirblock *block, ULONG bytes)
 	return TRUE;
 }
 
-static BOOL ConvertDirBlock(struct dirblock *block, ULONG bytes)
+static void ConvertDirEntry(struct direntry *entry)
+{
+	UBYTE *data = (UBYTE *)entry;
+
+	ConvertUnalignedLong(data + offsetof(struct direntry, anode));
+	ConvertUnalignedLong(data + offsetof(struct direntry, fsize));
+	ConvertUnalignedWord(data + offsetof(struct direntry, creationday));
+	ConvertUnalignedWord(data + offsetof(struct direntry, creationminute));
+	ConvertUnalignedWord(data + offsetof(struct direntry, creationtick));
+}
+
+static BOOL ConvertDirBlock(struct dirblock *block, ULONG bytes, BOOL recovery)
 {
 	struct direntry *entry;
 	ULONG offset;
 
-	if (bytes < sizeof(*block) || !ValidateDirEntries(block, bytes))
+	if (bytes < sizeof(*block) ||
+		!ValidateDirEntries(block, bytes, recovery))
 		return FALSE;
 
 	block->id = AROS_BE2WORD(block->id);
@@ -172,11 +221,7 @@ static BOOL ConvertDirBlock(struct dirblock *block, ULONG bytes)
 		entry = (struct direntry *)((UBYTE *)block + offset);
 		if (entry->next == 0)
 			return TRUE;
-		entry->anode = AROS_BE2LONG(entry->anode);
-		entry->fsize = AROS_BE2LONG(entry->fsize);
-		entry->creationday = AROS_BE2WORD(entry->creationday);
-		entry->creationminute = AROS_BE2WORD(entry->creationminute);
-		entry->creationtick = AROS_BE2WORD(entry->creationtick);
+		ConvertDirEntry(entry);
 		offset += entry->next;
 	}
 	return TRUE;
@@ -266,7 +311,8 @@ static UWORD DiskBlockId(const UBYTE *data)
 	return ((UWORD)data[0] << 8) | data[1];
 }
 
-static BOOL ConvertReservedBlock(UBYTE *data, ULONG bytes, BOOL from_disk)
+static BOOL ConvertReservedBlock(UBYTE *data, ULONG bytes, BOOL from_disk,
+	BOOL recovery)
 {
 	UWORD id;
 
@@ -285,7 +331,7 @@ static BOOL ConvertReservedBlock(UBYTE *data, ULONG bytes, BOOL from_disk)
 	case ABLKID:
 		return ConvertAnodeBlock((struct anodeblock *)data, bytes);
 	case DBLKID:
-		return ConvertDirBlock((struct dirblock *)data, bytes);
+		return ConvertDirBlock((struct dirblock *)data, bytes, recovery);
 #if DELDIR
 	case DELDIRID:
 		return ConvertDeldirBlock((struct deldirblock *)data, bytes);
@@ -300,7 +346,8 @@ static BOOL ConvertReservedBlock(UBYTE *data, ULONG bytes, BOOL from_disk)
 	}
 }
 
-BOOL PFS3MetadataToHost(UBYTE *data, ULONG bytes, enum pfs3_metadata_type type)
+static BOOL ConvertMetadata(UBYTE *data, ULONG bytes,
+	enum pfs3_metadata_type type, BOOL from_disk, BOOL recovery)
 {
 	switch (type)
 	{
@@ -309,26 +356,34 @@ BOOL PFS3MetadataToHost(UBYTE *data, ULONG bytes, enum pfs3_metadata_type type)
 	case PFS3_METADATA_ROOT:
 		return ConvertRootBlock(data, bytes);
 	case PFS3_METADATA_RESERVED:
-		return ConvertReservedBlock(data, bytes, TRUE);
+		return ConvertReservedBlock(data, bytes, from_disk, recovery);
 	}
 	return FALSE;
+}
+
+BOOL PFS3MetadataToHost(UBYTE *data, ULONG bytes, enum pfs3_metadata_type type)
+{
+	return ConvertMetadata(data, bytes, type, TRUE, FALSE);
+}
+
+BOOL PFS3MetadataToHostForRecovery(UBYTE *data, ULONG bytes,
+	enum pfs3_metadata_type type)
+{
+	return ConvertMetadata(data, bytes, type, TRUE, TRUE);
 }
 
 BOOL PFS3MetadataToDisk(UBYTE *data, ULONG bytes, enum pfs3_metadata_type type)
 {
-	switch (type)
-	{
-	case PFS3_METADATA_BOOT:
-		return ConvertBootBlock(data, bytes);
-	case PFS3_METADATA_ROOT:
-		return ConvertRootBlock(data, bytes);
-	case PFS3_METADATA_RESERVED:
-		return ConvertReservedBlock(data, bytes, FALSE);
-	}
-	return FALSE;
+	return ConvertMetadata(data, bytes, type, FALSE, FALSE);
 }
 
-void PFS3GetExtraFields(struct direntry *direntry,
+BOOL PFS3MetadataToDiskForRecovery(UBYTE *data, ULONG bytes,
+	enum pfs3_metadata_type type)
+{
+	return ConvertMetadata(data, bytes, type, FALSE, TRUE);
+}
+
+UWORD PFS3GetExtraFields(struct direntry *direntry,
 	struct extrafields *extrafields)
 {
 	UWORD values[11] = { 0 };
@@ -347,6 +402,7 @@ void PFS3GetExtraFields(struct direntry *direntry,
 	extrafields->virtualsize = ((ULONG)values[6] << 16) | values[7];
 	extrafields->rollpointer = ((ULONG)values[8] << 16) | values[9];
 	extrafields->fsizex = values[10];
+	return flags;
 }
 
 void PFS3AddExtraFields(struct direntry *direntry,
