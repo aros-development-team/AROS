@@ -2,9 +2,12 @@
     Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 
     BCM2708/2836/2837 platform support for AArch64.
+
+    SoC-common code (SMP bring-up, mailbox FIQ/IPI, system timer counter,
+    LED, PL011 serial) lives in platform_bcm27xx.c; this file provides the
+    legacy Broadcom interrupt controller and the GPU system timer heartbeat.
 */
 
-#include <aros/types/spinlock_s.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 
@@ -16,174 +19,28 @@
 #include <inttypes.h>
 #include <hardware/intbits.h>
 
-#include <strings.h>
-
 #include "kernel_intern.h"
 #include "kernel_debug.h"
 #include "kernel_cpu.h"
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
 #include "kernel_fb.h"
-#include "tls.h"
 #include "io.h"
 
 #include "exec_platform.h"
 
+#include "bcm27xx.h"
+
 #define ARM_PERIIOBASE ((IPTR)__arm_arosintern.ARMI_PeripheralBase)
 #include <hardware/bcm2708.h>
-#include <hardware/bcm2708_boot.h>
-#include <hardware/pl011uart.h>
 
 #define IRQBANK_POINTER(bank)   ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
 
 #define IRQ_BANK1       0x00000100
 #define IRQ_BANK2       0x00000200
 
-#undef D
-#define D(x) x
 #define DIRQ(x)
-#define DFIQ(x)
 #define DTIMER(x)
-
-extern void mpcore_trampoline();
-extern uint64_t mpcore_end;
-extern uint64_t mpcore_pde;
-extern uint64_t mpcore_tcr;
-extern uint64_t mpcore_mair;
-extern spinlock_t startup_lock;
-
-extern void cpu_Register(void);
-extern void aarch64_flush_cache(uintptr_t, uint32_t);
-#if defined(__AROSEXEC_SMP__)
-extern void handle_ipi(uint32_t, uint32_t);
-
-struct cpu_ipidata
-{
-    uint32_t    ipi_data[4];
-};
-
-struct cpu_ipidata *bcm2708_cpuipid[4] = { 0, 0, 0, 0 };
-#endif
-
-void bcm2708_init(APTR _kernelBase, APTR _sysBase)
-{
-    struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
-    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
-
-    KrnSpinInit(&startup_lock);
-
-    D(bug("[Kernel:BCM2708] %s()\n", __PRETTY_FUNCTION__));
-
-    if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
-    {
-#if !defined(__AROSEXEC_SMP__)
-        /*
-         * Uniprocessor build: leave the secondary cores parked in the
-         * firmware stub. Waking them here (older armstubs respond to the
-         * BCM2836 mailbox) sends a real core through the trampoline into
-         * cpu_Register with no VBAR, no scheduler and no-op spinlocks --
-         * on real hardware it runs off into the weeds and corrupts memory
-         * behind core 0's back. QEMU's stub masks this.
-         */
-        bug("[Kernel:BCM2708] Uniprocessor build - secondary cores left parked\n");
-#else
-        void *trampoline_src = mpcore_trampoline;
-        void *trampoline_dst = (void *)BOOTMEMADDR(bm_mctrampoline);
-        uint32_t trampoline_length = (uintptr_t)&mpcore_end - (uintptr_t)mpcore_trampoline;
-        uint32_t trampoline_data_offset = (uintptr_t)&mpcore_pde - (uintptr_t)mpcore_trampoline;
-        int cpu;
-        uint64_t *cpu_stack;
-        uint64_t tmp;
-        tls_t   *__tls;
-
-        bug("[Kernel:BCM2708] Initialising Multicore System\n");
-        D(bug("[Kernel:BCM2708] %s: Copy SMP trampoline from %p to %p (%d bytes)\n", __PRETTY_FUNCTION__, trampoline_src, trampoline_dst, trampoline_length));
-
-        bcopy(trampoline_src, trampoline_dst, trampoline_length);
-
-        D(bug("[Kernel:BCM2708] %s: Patching data for trampoline at offset %d\n", __PRETTY_FUNCTION__, trampoline_data_offset));
-
-        /* Read TTBR0_EL1, TCR_EL1, MAIR_EL1 for secondary cores */
-        asm volatile("mrs %0, ttbr0_el1" : "=r"(tmp));
-        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[0] = tmp; /* pde / TTBR0 */
-        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[1] = (uint64_t)cpu_Register;
-
-        /* Store TCR_EL1 and MAIR_EL1 for trampoline */
-        asm volatile("mrs %0, tcr_el1" : "=r"(tmp));
-        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[4] = tmp; /* TCR */
-        asm volatile("mrs %0, mair_el1" : "=r"(tmp));
-        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[5] = tmp; /* MAIR */
-
-        for (cpu = 1; cpu < 4; cpu++)
-        {
-            cpu_stack = (uint64_t *)AllocMem(AROS_STACKSIZE * sizeof(uint64_t), MEMF_CLEAR);
-            ((uint64_t *)(trampoline_dst + trampoline_data_offset))[2] = (uint64_t)&cpu_stack[AROS_STACKSIZE - sizeof(IPTR)];
-
-#if defined(__AROSEXEC_SMP__)
-            __tls = (tls_t *)AllocMem(sizeof(tls_t) + sizeof(struct cpu_ipidata), MEMF_CLEAR);
-#else
-            __tls = (tls_t *)AllocMem(sizeof(tls_t), MEMF_CLEAR);
-#endif
-            __tls->SysBase = _sysBase;
-            __tls->KernelBase = _kernelBase;
-            __tls->ThisTask = NULL;
-            aarch64_flush_cache(((uintptr_t)__tls) & ~63, 512);
-            ((uint64_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint64_t)__tls;
-
-            D(bug("[Kernel:BCM2708] %s: Attempting to wake CPU #%02d\n", __PRETTY_FUNCTION__, cpu));
-            D(bug("[Kernel:BCM2708] %s: CPU #%02d Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_stack, ((uint64_t *)(trampoline_dst + trampoline_data_offset))[2]));
-            D(bug("[Kernel:BCM2708] %s: CPU #%02d TLS @ 0x%p\n", __PRETTY_FUNCTION__, cpu, ((uint64_t *)(trampoline_dst + trampoline_data_offset))[3]));
-
-            aarch64_flush_cache((uintptr_t)trampoline_dst, 512);
-
-            /* Lock the startup spinlock */
-            KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
-
-            /* Wake up the cpu via mailbox */
-            wr32le(BCM2836_MAILBOX3_SET0 + (0x10 * cpu), (uint32_t)(uintptr_t)trampoline_dst);
-
-            dsb();
-            sev();
-
-            /* Wait for secondary core to be ready */
-            KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
-            KrnSpinUnLock(&startup_lock);
-        }
-#endif /* __AROSEXEC_SMP__ */
-    }
-}
-
-void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
-{
-    struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
-    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
-    (void)SysBase;
-#if defined(__AROSEXEC_SMP__)
-    tls_t   *__tls = TLS_PTR_GET();
-#endif
-    int cpunum = GetCPUNumber();
-
-    D(bug("[Kernel:BCM2708] %s(#%02d)\n", __PRETTY_FUNCTION__, cpunum));
-
-    /* Clear all pending FIQ sources on mailboxes */
-    wr32le(BCM2836_MAILBOX0_CLR0 + (16 * cpunum), 0xffffffff);
-    wr32le(BCM2836_MAILBOX1_CLR0 + (16 * cpunum), 0xffffffff);
-    wr32le(BCM2836_MAILBOX2_CLR0 + (16 * cpunum), 0xffffffff);
-    wr32le(BCM2836_MAILBOX3_CLR0 + (16 * cpunum), 0xffffffff);
-
-#if defined(__AROSEXEC_SMP__)
-    bcm2708_cpuipid[cpunum] = (struct cpu_ipidata *)((uintptr_t)__tls + sizeof(tls_t));
-    D(bug("[Kernel:BCM2708] %s: CPU #%02d IPI data @ 0x%p\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cpuipid[cpunum]));
-
-    /* Enable FIQ mailbox interrupt */
-    wr32le(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum), 0x10);
-#endif
-}
-
-unsigned int bcm2708_get_time(void)
-{
-    return rd32le(SYSTIMER_CLO);
-}
 
 static void bcm2708_irq_init(void)
 {
@@ -204,23 +61,6 @@ static void bcm2708_irq_init(void)
     wr32le(ARMIRQ_DIBL, ~0);
     wr32le(GPUIRQ_DIBL0, ~0);
     wr32le(GPUIRQ_DIBL1, ~0);
-}
-
-void bcm2708_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
-{
-    int cpu;
-
-    for (cpu = 0; cpu < 4; cpu++)
-    {
-#if defined(__AROSEXEC_SMP__)
-        int mbno = 0;
-        if ((cpumask & (1 << cpu)) && bcm2708_cpuipid[cpu])
-        {
-            bcm2708_cpuipid[cpu]->ipi_data[mbno] = ipi_data;
-            wr32le(BCM2836_MAILBOX0_SET0 + 4 * mbno + (0x10 * cpu), ipi);
-        }
-#endif
-    }
 }
 
 static void bcm2708_irq_enable(int irq)
@@ -303,61 +143,6 @@ static void bcm2708_irq_process()
                 }
             }
         }
-    }
-}
-
-void bcm2708_fiq_process()
-{
-    int cpunum = GetCPUNumber();
-    uint32_t fiq, fiq_data;
-    int mbno;
-
-    DFIQ(bug("[Kernel:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, cpunum));
-
-    fiq = rd32le(BCM2836_FIQ_PEND0 + (0x4 * cpunum));
-
-    DFIQ(bug("[Kernel:BCM2708] %s: CPU #%02d FIQ %x\n", __PRETTY_FUNCTION__, cpunum, fiq));
-
-    if (fiq)
-    {
-        for (mbno = 0; mbno < 4; mbno++)
-        {
-            if (fiq & (0x10 << mbno))
-            {
-                fiq_data = rd32le(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum));
-                (void)fiq_data;
-                DFIQ(bug("[Kernel:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, mbno, fiq_data));
-#if defined(__AROSEXEC_SMP__)
-                if (bcm2708_cpuipid[cpunum])
-                    handle_ipi(fiq_data, bcm2708_cpuipid[cpunum]->ipi_data[0]);
-#endif
-                wr32le(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum), 0xffffffff);
-            }
-        }
-    }
-}
-
-void bcm2708_toggle_led(int LED, int state)
-{
-    if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
-    {
-        int pin = 35;
-        IPTR gpiofunc = GPCLR1;
-
-        if (LED == ARM_LED_ACTIVITY)
-            pin = 47;
-
-        if (state == ARM_LED_ON)
-            gpiofunc = GPSET1;
-
-        wr32le(gpiofunc, (1 << (pin - 32)));
-    }
-    else
-    {
-        if (state)
-            wr32le(GPCLR0, (1 << 16));
-        else
-            wr32le(GPSET0, (1 << 16));
     }
 }
 
@@ -445,34 +230,6 @@ static APTR bcm2708_init_gputimer(APTR _kernelBase)
     return GPUTimerHandle;
 }
 
-static inline void bcm2708_ser_waitout()
-{
-    while (1)
-    {
-        if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
-    }
-}
-
-void bcm2708_ser_putc(uint8_t chr)
-{
-    bcm2708_ser_waitout();
-
-    if (chr == '\n')
-    {
-        wr32le(PL011_0_BASE + PL011_DR, '\r');
-        bcm2708_ser_waitout();
-    }
-    wr32le(PL011_0_BASE + PL011_DR, chr);
-}
-
-int bcm2708_ser_getc(void)
-{
-    if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_RXFE) == 0)
-        return (int)rd32le(PL011_0_BASE + PL011_DR);
-
-    return -1;
-}
-
 static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     void *bootPutC = NULL;
@@ -494,16 +251,16 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
 
     /* BCM2837 is ARMv8 (family 8) */
     krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2836_PERIPHYSBASE;
-    krnARMImpl->ARMI_InitCore = &bcm2708_init_cpu;
-    krnARMImpl->ARMI_FIQProcess = &bcm2708_fiq_process;
-    krnARMImpl->ARMI_SendIPI = &bcm2708_send_ipi;
+    krnARMImpl->ARMI_InitCore = &bcm27xx_init_cpu;
+    krnARMImpl->ARMI_FIQProcess = &bcm27xx_fiq_process;
+    krnARMImpl->ARMI_SendIPI = &bcm27xx_send_ipi;
 
-    krnARMImpl->ARMI_GetTime = &bcm2708_get_time;
+    krnARMImpl->ARMI_GetTime = &bcm27xx_get_time;
     krnARMImpl->ARMI_InitTimer = &bcm2708_init_gputimer;
-    krnARMImpl->ARMI_LED_Toggle = &bcm2708_toggle_led;
+    krnARMImpl->ARMI_LED_Toggle = &bcm27xx_toggle_led;
 
-    krnARMImpl->ARMI_SerPutChar = &bcm2708_ser_putc;
-    krnARMImpl->ARMI_SerGetChar = &bcm2708_ser_getc;
+    krnARMImpl->ARMI_SerPutChar = &bcm27xx_ser_putc;
+    krnARMImpl->ARMI_SerGetChar = &bcm27xx_ser_getc;
 
     if ((krnARMImpl->ARMI_PutChar = bootPutC) != NULL)
     {
@@ -515,7 +272,7 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     krnARMImpl->ARMI_IRQDisable = &bcm2708_irq_disable;
     krnARMImpl->ARMI_IRQProcess = &bcm2708_irq_process;
 
-    krnARMImpl->ARMI_Init = &bcm2708_init;
+    krnARMImpl->ARMI_Init = &bcm27xx_init;
 
     return TRUE;
 }

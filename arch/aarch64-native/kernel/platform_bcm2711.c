@@ -34,17 +34,10 @@
 
 #include "exec_platform.h"
 
-#define DTIMER(x)
+/* SoC-common bits shared with the Pi 2/3 (platform_bcm27xx.c) */
+#include "bcm27xx.h"
 
-/* ---- SoC-common bits reused from platform_bcm2708.c (now non-static) ---- */
-extern void bcm2708_init(APTR, APTR);
-extern void bcm2708_init_cpu(APTR, APTR);
-extern void bcm2708_fiq_process(void);
-extern void bcm2708_send_ipi(uint32_t, uint32_t, uint32_t);
-extern unsigned int bcm2708_get_time(void);
-extern void bcm2708_toggle_led(int, int);
-extern void bcm2708_ser_putc(uint8_t);
-extern int bcm2708_ser_getc(void);
+#define DTIMER(x)
 
 /* ---- GIC-400 (GICv2), Pi 4 fixed physical addresses ---- */
 #define GICD_BASE   0xFF841000UL
@@ -228,16 +221,16 @@ static IPTR bcm2711_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         return FALSE;
 
     krnARMImpl->ARMI_PeripheralBase = (APTR)0xFE000000;
-    krnARMImpl->ARMI_InitCore = &bcm2708_init_cpu;
-    krnARMImpl->ARMI_FIQProcess = &bcm2708_fiq_process;
-    krnARMImpl->ARMI_SendIPI = &bcm2708_send_ipi;
+    krnARMImpl->ARMI_InitCore = &bcm27xx_init_cpu;
+    krnARMImpl->ARMI_FIQProcess = &bcm27xx_fiq_process;
+    krnARMImpl->ARMI_SendIPI = &bcm27xx_send_ipi;
 
-    krnARMImpl->ARMI_GetTime = &bcm2708_get_time;
+    krnARMImpl->ARMI_GetTime = &bcm27xx_get_time;
     krnARMImpl->ARMI_InitTimer = &bcm2711_init_gentimer;
-    krnARMImpl->ARMI_LED_Toggle = &bcm2708_toggle_led;
+    krnARMImpl->ARMI_LED_Toggle = &bcm27xx_toggle_led;
 
-    krnARMImpl->ARMI_SerPutChar = &bcm2708_ser_putc;
-    krnARMImpl->ARMI_SerGetChar = &bcm2708_ser_getc;
+    krnARMImpl->ARMI_SerPutChar = &bcm27xx_ser_putc;
+    krnARMImpl->ARMI_SerGetChar = &bcm27xx_ser_getc;
 
     if ((krnARMImpl->ARMI_PutChar = bootPutC) != NULL)
     {
@@ -249,7 +242,7 @@ static IPTR bcm2711_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     krnARMImpl->ARMI_IRQDisable = &bcm2711_irq_disable;
     krnARMImpl->ARMI_IRQProcess = &bcm2711_irq_process;
 
-    krnARMImpl->ARMI_Init = &bcm2708_init;
+    krnARMImpl->ARMI_Init = &bcm27xx_init;
 
     return TRUE;
 }
