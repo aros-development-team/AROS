@@ -925,10 +925,17 @@ union listtype
 {
 	struct
 	{
+#if defined(AROS_BIG_ENDIAN) && !AROS_BIG_ENDIAN
+		unsigned access:2;
+		unsigned type:2;
+		unsigned dir:1;
+		unsigned pad:11;
+#else
 		unsigned pad:11;
 		unsigned dir:1;     // 0 = file; 1 = dir or volume
 		unsigned type:2;    // 0 = unknown; 3 = lock; 1 = volume; 2 = fileentry
 		unsigned access:2;  // 0 = read shared; 2 = read excl; 1,3 = write shared, excl
+#endif
 	} flags;
 
 	UWORD value;

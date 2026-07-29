@@ -479,6 +479,7 @@ bool SaveAnode(canode_t *anode, uint32 nr);
 error_t StandardScan(uint32 opties);
 bool GetPFS2Revision(char *vstring);
 error_t vol_GetBlock(cachedblock_t *blok, ULONG bloknr);
+error_t vol_GetRawBlock(cachedblock_t *blok, ULONG bloknr);
 error_t vol_WriteBlock(cachedblock_t *blok);
 bool IsRootBlock(rootblock_t *r);
 error_t ResBlockUsed(uint32 bloknr);

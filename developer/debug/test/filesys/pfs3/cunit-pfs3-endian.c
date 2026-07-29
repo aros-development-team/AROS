@@ -7,6 +7,8 @@
 #include "blocks.h"
 #include "endian.h"
 
+void TestListTypeLayout(void);
+
 #define BLOCK_BYTES_1K 1024
 #define BLOCK_BYTES_2K 2048
 #define BLOCK_BYTES_4K 4096
@@ -259,6 +261,68 @@ static void TestMalformedDirectoryEntry(void)
 	CU_ASSERT_EQUAL(memcmp(data, original, sizeof(data)), 0);
 }
 
+static void TestDirectoryEntryWithoutTerminator(void)
+{
+	UBYTE data[BLOCK_BYTES_1K];
+	UBYTE original[BLOCK_BYTES_1K];
+	struct dirblock *block = (struct dirblock *)data;
+	UBYTE lengths[] = { 254, 250, 250, 250 };
+	ULONG offset = sizeof(*block);
+	ULONG i;
+
+	memset(data, 0, sizeof(data));
+	block->id = DBLKID;
+	for (i = 0; i < sizeof(lengths) / sizeof(lengths[0]); i++)
+	{
+		struct direntry *entry = (struct direntry *)(data + offset);
+		entry->next = lengths[i];
+		entry->nlength = 0;
+		*(UBYTE *)&entry->startofname = 0;
+		offset += lengths[i];
+	}
+	CU_ASSERT_EQUAL(offset, sizeof(data));
+	memcpy(original, data, sizeof(data));
+
+	CU_ASSERT_FALSE(PFS3MetadataToDisk(data, sizeof(data),
+		PFS3_METADATA_RESERVED));
+	CU_ASSERT_EQUAL(memcmp(data, original, sizeof(data)), 0);
+	CU_ASSERT_FALSE(PFS3MetadataToDiskForRecovery(data, sizeof(data),
+		PFS3_METADATA_RESERVED));
+	CU_ASSERT_EQUAL(memcmp(data, original, sizeof(data)), 0);
+}
+
+static void TestMalformedExtraFields(void)
+{
+	UBYTE data[BLOCK_BYTES_1K];
+	UBYTE original[BLOCK_BYTES_1K];
+	struct dirblock *block = (struct dirblock *)data;
+	struct direntry *entry;
+	struct extrafields extra;
+
+	memset(data, 0, sizeof(data));
+	block->id = DBLKID;
+	entry = (struct direntry *)block->entries;
+	entry->next = sizeof(*entry) + sizeof(UWORD);
+	entry->nlength = 0;
+	*(UBYTE *)&entry->startofname = 0;
+	data[sizeof(*block) + entry->next - 2] = 0xff;
+	data[sizeof(*block) + entry->next - 1] = 0xff;
+	memcpy(original, data, sizeof(data));
+
+	CU_ASSERT_FALSE(PFS3MetadataToDisk(data, sizeof(data),
+		PFS3_METADATA_RESERVED));
+	CU_ASSERT_EQUAL(memcmp(data, original, sizeof(data)), 0);
+	memset(&extra, 0xa5, sizeof(extra));
+	CU_ASSERT_EQUAL(PFS3GetExtraFields(entry, &extra), 0xffff);
+	CU_ASSERT_EQUAL(extra.link, 0);
+	CU_ASSERT_EQUAL(extra.uid, 0);
+	CU_ASSERT_EQUAL(extra.gid, 0);
+	CU_ASSERT_EQUAL(extra.prot, 0);
+	CU_ASSERT_EQUAL(extra.virtualsize, 0);
+	CU_ASSERT_EQUAL(extra.rollpointer, 0);
+	CU_ASSERT_EQUAL(extra.fsizex, 0);
+}
+
 static void TestRecoveryDirectoryEntry(void)
 {
 	UBYTE data[BLOCK_BYTES_1K];
@@ -342,12 +406,18 @@ int main(void)
 			TestDirectoryEntriesAndExtras) == NULL ||
 		CU_add_test(suite, "malformed directory entry",
 			TestMalformedDirectoryEntry) == NULL ||
+		CU_add_test(suite, "directory entry without terminator",
+			TestDirectoryEntryWithoutTerminator) == NULL ||
+		CU_add_test(suite, "malformed extra fields",
+			TestMalformedExtraFields) == NULL ||
 		CU_add_test(suite, "recovery directory entry",
 			TestRecoveryDirectoryEntry) == NULL ||
 		CU_add_test(suite, "unsafe recovery directory entry",
 			TestUnsafeRecoveryDirectoryEntry) == NULL ||
 		CU_add_test(suite, "unknown reserved block",
-			TestUnknownReservedBlock) == NULL)
+			TestUnknownReservedBlock) == NULL ||
+		CU_add_test(suite, "list type layout",
+			TestListTypeLayout) == NULL)
 	{
 		CU_cleanup_registry();
 		return CU_get_error();

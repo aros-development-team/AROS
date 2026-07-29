@@ -166,6 +166,18 @@
 static VOID CreateInputEvent(BOOL inserted, globaldata *g);
 static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g);
 
+static UBYTE *DiskStringToCString(UBYTE *dest, const UBYTE *src)
+{
+	ULONG length = min(src[0], DNSIZE - 1);
+	UBYTE *result = dest;
+
+	src++;
+	while (length--)
+		*dest++ = *src++;
+	*dest = 0;
+	return result;
+}
+
 /**********************************************************************/
 /*                               DEBUG                                */
 /**********************************************************************/
@@ -393,7 +405,7 @@ static void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 
 	/* -I- Search new disk in volumelist */
 
-	BCPLtoCString(diskname, rootblock->diskname);
+	DiskStringToCString(diskname, rootblock->diskname);
 	di = BADDR(((struct RootNode *)DOSBase->dl_Root)->rn_Info);
 	doslist = BADDR(di->di_DevInfo);
 	
@@ -1217,7 +1229,7 @@ void RequestCurrentVolumeBack(globaldata *g)
 
 	ENTER("GetCurrentVolumeBack");
 
-	BCPLtoCString(volumename, volume->rootblk->diskname);
+	DiskStringToCString(volumename, volume->rootblk->diskname);
 
 	while(!ready)
 	{

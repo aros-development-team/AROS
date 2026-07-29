@@ -244,7 +244,7 @@ bool GetAnode(canode_t *anode, uint32 anodenr, bool fix)
 		}
 	}
 
-	if (offset > ANODES_PER_BLOCK)
+	if (offset >= ANODES_PER_BLOCK)
 		return false;
 
 	anode->nr = anodenr;
@@ -266,7 +266,7 @@ bool SaveAnode(canode_t *anode, uint32 nr)
 	if (GetResBlock((cachedblock_t *)&ablk, ABLKID, seqnr, false))
 		return false;
 
-	if (offset > ANODES_PER_BLOCK)
+	if (offset >= ANODES_PER_BLOCK)
 		return false;
 
 	ablk.data->nodes[offset].clustersize = anode->clustersize;

@@ -299,7 +299,8 @@ void GetAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 		anodeoffset  = temp >> 16;
 	}
 	
-	ablock = GetAnodeBlock(seqnr, g);
+	ablock = anodeoffset < andata.anodesperblock ?
+		GetAnodeBlock(seqnr, g) : NULL;
 	if(ablock)
 	{
 		anode->clustersize = ablock->blk.nodes[anodeoffset].clustersize;
@@ -340,6 +341,9 @@ void SaveAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 	anode->nr   = anodenr;
 
 	/* Save Anode */
+	if (anodeoffset >= andata.anodesperblock)
+		return;
+
 	ablock = GetAnodeBlock (seqnr, g);
 	if (ablock)
 	{

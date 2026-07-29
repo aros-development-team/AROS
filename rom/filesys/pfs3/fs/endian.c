@@ -1,5 +1,6 @@
 #include <exec/types.h>
 #include <stddef.h>
+#include <string.h>
 
 #ifdef __AROS__
 #include <aros/macros.h>
@@ -62,6 +63,17 @@ static void ConvertUnalignedLong(UBYTE *data)
 	data[1] = unaligned.bytes[1];
 	data[2] = unaligned.bytes[2];
 	data[3] = unaligned.bytes[3];
+}
+
+UWORD PFS3DiskBlockId(const UBYTE *data)
+{
+	return ((UWORD)data[0] << 8) | data[1];
+}
+
+static void WriteDiskWord(UBYTE *data, UWORD value)
+{
+	data[0] = value >> 8;
+	data[1] = value;
 }
 
 static BOOL ConvertBootBlock(UBYTE *data, ULONG bytes)
@@ -163,29 +175,64 @@ static BOOL ConvertAnodeBlock(struct anodeblock *block, ULONG bytes)
 	return TRUE;
 }
 
+static BOOL ValidateDirEntryLayout(const UBYTE *data, ULONG bytes,
+	UWORD *extra_flags)
+{
+	ULONG field_bytes = 0;
+	ULONG name_end;
+	ULONG packed_offset;
+	UWORD flags;
+	UWORD remaining;
+
+	if (bytes < sizeof(struct direntry))
+		return FALSE;
+
+	name_end = offsetof(struct direntry, startofname) +
+		data[offsetof(struct direntry, nlength)];
+	if (name_end >= bytes)
+		return FALSE;
+
+	packed_offset = (sizeof(struct direntry) +
+		data[offsetof(struct direntry, nlength)] + data[name_end]) & 0xfffe;
+	if (bytes < sizeof(UWORD) || packed_offset > bytes - sizeof(UWORD))
+		return FALSE;
+
+	flags = PFS3DiskBlockId(data + bytes - sizeof(UWORD));
+	remaining = flags;
+	while (remaining)
+	{
+		field_bytes += (remaining & 1) ? sizeof(UWORD) : 0;
+		remaining >>= 1;
+	}
+	if (field_bytes > bytes - sizeof(UWORD) - packed_offset)
+		return FALSE;
+
+	if (extra_flags)
+		*extra_flags = flags;
+	return TRUE;
+}
+
 static BOOL ValidateDirEntries(struct dirblock *block, ULONG bytes,
 	BOOL recovery)
 {
-	struct direntry *entry;
-	ULONG offset;
+	const UBYTE *data = (const UBYTE *)block;
+	ULONG offset = sizeof(*block);
+	UBYTE next;
 
-	offset = sizeof(*block);
 	while (offset < bytes)
 	{
-		entry = (struct direntry *)((UBYTE *)block + offset);
-		if (entry->next == 0)
+		next = data[offset + offsetof(struct direntry, next)];
+		if (next == 0)
 			return TRUE;
-		if (entry->next < sizeof(*entry) || entry->next > bytes - offset)
+		if (next < sizeof(struct direntry) || next > bytes - offset)
 			return FALSE;
-		if (!recovery &&
-			((entry->next & 1) ||
-			 offsetof(struct direntry, startofname) + entry->nlength >=
-				entry->next))
+		if (!recovery && ((next & 1) ||
+			!ValidateDirEntryLayout(data + offset, next, NULL)))
 			return FALSE;
 
-		offset += entry->next;
+		offset += next;
 	}
-	return TRUE;
+	return FALSE;
 }
 
 static void ConvertDirEntry(struct direntry *entry)
@@ -201,8 +248,9 @@ static void ConvertDirEntry(struct direntry *entry)
 
 static BOOL ConvertDirBlock(struct dirblock *block, ULONG bytes, BOOL recovery)
 {
-	struct direntry *entry;
+	UBYTE *data = (UBYTE *)block;
 	ULONG offset;
+	UBYTE next;
 
 	if (bytes < sizeof(*block) ||
 		!ValidateDirEntries(block, bytes, recovery))
@@ -218,13 +266,13 @@ static BOOL ConvertDirBlock(struct dirblock *block, ULONG bytes, BOOL recovery)
 	offset = sizeof(*block);
 	while (offset < bytes)
 	{
-		entry = (struct direntry *)((UBYTE *)block + offset);
-		if (entry->next == 0)
+		next = data[offset + offsetof(struct direntry, next)];
+		if (next == 0)
 			return TRUE;
-		ConvertDirEntry(entry);
-		offset += entry->next;
+		ConvertDirEntry((struct direntry *)(data + offset));
+		offset += next;
 	}
-	return TRUE;
+	return FALSE;
 }
 
 #if DELDIR
@@ -306,11 +354,6 @@ static BOOL ConvertRootBlockExtension(struct rootblockextension *block,
 }
 #endif
 
-static UWORD DiskBlockId(const UBYTE *data)
-{
-	return ((UWORD)data[0] << 8) | data[1];
-}
-
 static BOOL ConvertReservedBlock(UBYTE *data, ULONG bytes, BOOL from_disk,
 	BOOL recovery)
 {
@@ -319,7 +362,7 @@ static BOOL ConvertReservedBlock(UBYTE *data, ULONG bytes, BOOL from_disk,
 	if (bytes < sizeof(UWORD))
 		return FALSE;
 
-	id = from_disk ? DiskBlockId(data) : *(UWORD *)data;
+	id = from_disk ? PFS3DiskBlockId(data) : *(UWORD *)data;
 	switch (id)
 	{
 	case BMBLKID:
@@ -387,18 +430,30 @@ UWORD PFS3GetExtraFields(struct direntry *direntry,
 	struct extrafields *extrafields)
 {
 	UWORD values[11] = { 0 };
-	UWORD *source = (UWORD *)((UBYTE *)direntry + direntry->next);
+	UBYTE *data = (UBYTE *)direntry;
+	UBYTE next = data[offsetof(struct direntry, next)];
+	ULONG source;
 	UWORD flags, i;
 
-	flags = AROS_BE2WORD(*(--source));
+	memset(extrafields, 0, sizeof(*extrafields));
+	if (!ValidateDirEntryLayout(data, next, &flags))
+		return ~0;
+
+	source = next - sizeof(UWORD);
 	for (i = 0; i < sizeof(values) / sizeof(values[0]); i++, flags >>= 1)
-		values[i] = (flags & 1) ? AROS_BE2WORD(*(--source)) : 0;
+	{
+		if (flags & 1)
+		{
+			source -= sizeof(UWORD);
+			values[i] = PFS3DiskBlockId(data + source);
+		}
+	}
 
 	extrafields->link = ((ULONG)values[0] << 16) | values[1];
 	extrafields->uid = values[2];
 	extrafields->gid = values[3];
 	extrafields->prot = ((ULONG)values[4] << 16) | values[5] |
-		direntry->protection;
+		data[offsetof(struct direntry, protection)];
 	extrafields->virtualsize = ((ULONG)values[6] << 16) | values[7];
 	extrafields->rollpointer = ((ULONG)values[8] << 16) | values[9];
 	extrafields->fsizex = values[10];
@@ -408,7 +463,8 @@ UWORD PFS3GetExtraFields(struct direntry *direntry,
 void PFS3AddExtraFields(struct direntry *direntry,
 	struct extrafields *extrafields)
 {
-	UWORD offset, *destination;
+	UBYTE *data = (UBYTE *)direntry;
+	UWORD offset;
 	UWORD fields[11];
 	UWORD values[11];
 	UWORD i, count = 0;
@@ -427,9 +483,10 @@ void PFS3AddExtraFields(struct direntry *direntry,
 	fields[9] = extrafields->rollpointer;
 	fields[10] = extrafields->fsizex;
 
-	offset = (sizeof(*direntry) + direntry->nlength +
-		*((UBYTE *)&direntry->startofname + direntry->nlength)) & 0xfffe;
-	destination = (UWORD *)((UBYTE *)direntry + offset);
+	offset = (sizeof(*direntry) +
+		data[offsetof(struct direntry, nlength)] +
+		data[offsetof(struct direntry, startofname) +
+			data[offsetof(struct direntry, nlength)]]) & 0xfffe;
 
 	for (i = 0; i < sizeof(fields) / sizeof(fields[0]); i++)
 	{
@@ -443,7 +500,11 @@ void PFS3AddExtraFields(struct direntry *direntry,
 
 	i = count;
 	while (i)
-		*destination++ = AROS_WORD2BE(values[--i]);
-	*destination = AROS_WORD2BE(flags);
-	direntry->next = offset + 2 * count + 2;
+	{
+		WriteDiskWord(data + offset, values[--i]);
+		offset += sizeof(UWORD);
+	}
+	WriteDiskWord(data + offset, flags);
+	offset += sizeof(UWORD);
+	data[offsetof(struct direntry, next)] = offset;
 }

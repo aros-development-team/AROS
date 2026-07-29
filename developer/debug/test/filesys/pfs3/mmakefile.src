@@ -24,6 +24,6 @@ USER_INCLUDES := \
 USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
 %build_prog mmake=test-pfs3-yes-cunit \
-	files="cunit-pfs3-endian $(PFS3DIR)/endian" \
+	files="cunit-pfs3-endian cunit-pfs3-listtype $(PFS3DIR)/endian" \
 	progname=cunit-pfs3-endian targetdir=$(CUNITEXEDIR) \
 	uselibs="cunit posixc"

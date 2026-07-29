@@ -95,6 +95,7 @@ static error_t GetRootBlock(void);
 static error_t CheckRootBlock(void);
 static error_t GetRext(void);
 static error_t RepairBootBlock(void);
+static error_t GetRepairBlock(cachedblock_t *block, ULONG blocknr);
 static error_t RepairDeldir(void);
 static bool dd_CheckBlock(uint32 bloknr, int seqnr);
 static error_t RepairDirTree(void);
@@ -517,6 +518,36 @@ error_t vol_GetBlock(cachedblock_t *blok, ULONG bloknr)
 	}
 }
 
+error_t vol_GetRawBlock(cachedblock_t *blok, ULONG bloknr)
+{
+	error_t error;
+	ULONG realbloknr = bloknr;
+
+	if ((error = vol_CheckBlockNr(&realbloknr)))
+		return error;
+	if ((error = c_GetBlock((uint8 *)blok->data, realbloknr,
+		SIZEOF_RESBLOCK)))
+		return error;
+
+	blok->mode = check;
+	blok->blocknr = bloknr;
+	return e_none;
+}
+
+/*
+ * Repair routines need the contents of an overwritten metadata block so they
+ * can take their wrong-ID recovery path.  A syntactically invalid metadata
+ * block is therefore readable here; actual I/O and bounds errors still fail.
+ */
+static error_t GetRepairBlock(cachedblock_t *block, ULONG blocknr)
+{
+	error_t error = volume.getblock(block, blocknr);
+
+	if (error == e_syntax_error)
+		return vol_GetRawBlock(block, blocknr);
+	return error;
+}
+
 error_t vol_WriteBlock(cachedblock_t *blok)
 {
 	int status;
@@ -917,7 +948,7 @@ static error_t GetRext(void)
 
 	if (bloknr)
 	{
-		if ((error = volume.getblock((cachedblock_t *)&rext, bloknr)))
+		if ((error = GetRepairBlock((cachedblock_t *)&rext, bloknr)))
 			return error;
 	}
 
@@ -1065,9 +1096,9 @@ static error_t RepairBootBlock(void)
 	enterblock(BOOTBLOCK);
 
 	// read bootblock 
-	bootbl.data = calloc(1, MAXRESBLOCKSIZE);
+	bootbl.data = calloc(1, 2 * volume.blocksize);
 	if ((error = ReadPFS3Metadata((uint8 *)bootbl.data,
-		BOOTBLOCK + volume.firstblock, volume.blocksize,
+		BOOTBLOCK + volume.firstblock, 2 * volume.blocksize,
 		PFS3_METADATA_BOOT)))
 	{
 		adderror("bootblock could not be loaded");
@@ -1085,7 +1116,7 @@ static error_t RepairBootBlock(void)
 			bootbl.data->bootblock.disktype = ID_PFS_DISK;
 			fixederror("bootblock had wrong ID");
 			if ((error = WritePFS3Metadata((uint8 *)bootbl.data,
-				BOOTBLOCK + volume.firstblock, volume.blocksize,
+				BOOTBLOCK + volume.firstblock, 2 * volume.blocksize,
 				PFS3_METADATA_BOOT)))
 			{
 				adderror("bootblock could not be written");
@@ -2160,7 +2191,7 @@ error_t RepairAnodeBlock(uint32 *bloknr, uint32 seqnr)
 	ablk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (*bloknr)
 	{
-		if ((error = volume.getblock((cachedblock_t *)&ablk, *bloknr)))
+		if ((error = GetRepairBlock((cachedblock_t *)&ablk, *bloknr)))
 		{
 			free (ablk.data);
 			return error;
@@ -2269,7 +2300,7 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 
 	if (*bloknr)
 	{
-		if ((error = volume.getblock((cachedblock_t *)&bmblk, *bloknr)))
+		if ((error = GetRepairBlock((cachedblock_t *)&bmblk, *bloknr)))
 		{
 			free (bmblk.data);
 			return error;
@@ -2344,7 +2375,7 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 
 		/* read or build indexblock
 		 */
-		if ((error = volume.getblock((cachedblock_t *)&iblk, *bloknr)))
+		if ((error = GetRepairBlock((cachedblock_t *)&iblk, *bloknr)))
 		{
 			free (iblk.data);
 			return error;

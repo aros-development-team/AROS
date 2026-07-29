@@ -13,6 +13,8 @@ enum pfs3_metadata_type
 	PFS3_METADATA_RESERVED
 };
 
+UWORD PFS3DiskBlockId(const UBYTE *data);
+
 /*
  * Convert metadata between its native in-memory representation and the
  * big-endian representation used on disk. Both operations are in-place.

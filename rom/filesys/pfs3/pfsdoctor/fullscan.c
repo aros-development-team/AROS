@@ -226,7 +226,7 @@ error_t BuildBootBlock(void)
 	memset (bbl, 0, 2*volume.blocksize);
 	bbl->disktype = ID_PFS_DISK;
 	error = WritePFS3Metadata((UBYTE *)bbl,
-		BOOTBLOCK + volume.firstblock, volume.blocksize,
+		BOOTBLOCK + volume.firstblock, 2 * volume.blocksize,
 		PFS3_METADATA_BOOT);
 	FreeBufMem (bbl);
 	return error;
@@ -480,10 +480,10 @@ uint32 SearchLastReserved(volume_t *vol)
 			break;
 		}
 
-		if (volume.getblock(&blk, i))
+		if (vol_GetRawBlock(&blk, i))
 			goto s_ret;
 
-		switch (blk.data->id)
+		switch (PFS3DiskBlockId((uint8 *)blk.data))
 		{
 			case DBLKID:
 			case ABLKID:
