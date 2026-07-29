@@ -281,7 +281,9 @@ int stcu_d(char *out, unsigned int val);
 
 #define WITH(x) x;
 typedef unsigned char *DSTR;      /* pascal string: length, than characters     */
+#if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || (__STDC_VERSION__ < 202311L))
 typedef enum {false, true} bool;
+#endif
 
 /*****************************************************************************/
 /* Rollover info structure                                                   */
