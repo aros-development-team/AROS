@@ -79,8 +79,23 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     hc->hc_CPrivate = xhcic;
 
     /* Initialize hardware... */
-    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *)&hc->hc_RegBase);
+    {
+        IPTR barbase, barsize;
+
+        OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, &barbase);
+        OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Size0, &barsize);
+
+        /* The BAR holds a bus address, which is not the CPU address on
+           every host bridge, so let the driver translate it. */
+        hc->hc_RegBase = MAPPCI(hc, hc->hc_PCIDriverObject, (APTR)barbase, (ULONG)barsize);
+    }
     xhciregs = (volatile struct xhci_hccapr *)hc->hc_RegBase;
+
+    if (!xhciregs) {
+        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Failed to map the register area" DEBUGCOLOR_RESET" \n");
+        xhciCloseTaskTimer(&timerport, &timerreq);
+        return FALSE;
+    }
 
     if(hc->hc_Unit) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Initializing hardware for unit #%d" DEBUGCOLOR_RESET" \n",
