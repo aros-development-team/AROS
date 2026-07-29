@@ -262,7 +262,7 @@ static inline LONG xhciCmdSetTRDequeuePtr(struct PCIController *hc, ULONG slot, 
 #define xhciCmdContextEvaluate(hc,slot,dmaaddr,timerreq) \
     xhciCmdSubmit(hc, dmaaddr, (slot << 24) | TRBF_FLAG_CRTYPE_EVALUATE_CONTEXT, NULL, timerreq)
 #define xhciCmdNoOp(hc,slot,dmaaddr,timerreq) \
-    xhciCmdSubmit(hc, dmaaddr, TRBF_FLAG_TRTYPE_NOOP, NULL, timerreq)
+    xhciCmdSubmit(hc, dmaaddr, TRBF_FLAG_CRTYPE_NOOP, NULL, timerreq)
 #endif
 
 #if defined(PCIUSB_XHCI_DEBUG)
@@ -362,6 +362,19 @@ void xhciDumpCC(UBYTE completioncode);
     y.addr_lo = AROS_LONG2LE((ULONG)((IPTR)(z) & 0xFFFFFFFF)); \
     y.addr_hi = 0
 #endif
+
+/*
+ * The 64-bit operational registers are programmed as two 32-bit
+ * accesses, low half first: not every bridge or controller carries an
+ * eight byte register write whole. Pointer fields that live in memory
+ * are not affected.
+ */
+#define xhciSetPointerMMIO(x,y,z) \
+    do { \
+        y.addr_lo = AROS_LONG2LE((ULONG)((UQUAD)(IPTR)(z) & 0xFFFFFFFF)); \
+        y.addr_hi = ((x)->hc_Flags & HCF_ADDR64) ? \
+            AROS_LONG2LE((ULONG)((UQUAD)(IPTR)(z) >> 32)) : 0; \
+    } while (0)
 
 static inline struct xhci_trb *
 xhciTRBPointer(struct PCIController *hc, volatile struct xhci_trb *trb)

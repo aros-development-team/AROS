@@ -79,8 +79,25 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     hc->hc_CPrivate = xhcic;
 
     /* Initialize hardware... */
-    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *)&hc->hc_RegBase);
+    {
+        IPTR barbase, barsize;
+
+        OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, &barbase);
+        OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Size0, &barsize);
+
+        /* The BAR holds a bus address, which is not the CPU address on
+           every host bridge, so let the driver translate it. */
+        hc->hc_RegBase = MAPPCI(hc, hc->hc_PCIDriverObject, (APTR)barbase, (ULONG)barsize);
+    }
     xhciregs = (volatile struct xhci_hccapr *)hc->hc_RegBase;
+
+    if (!xhciregs) {
+        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Failed to map the register area" DEBUGCOLOR_RESET" \n");
+        xhciCloseTaskTimer(&timerport, &timerreq);
+        return FALSE;
+    }
+
+    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
 
     if(hc->hc_Unit) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Initializing hardware for unit #%d" DEBUGCOLOR_RESET" \n",
@@ -102,7 +119,6 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     xhcic->xhc_XHCIIntR  = (APTR)((IPTR)xhciregs + AROS_LE2LONG(xhciregs->rrsoff) + 0x20);
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Interrupt Registers @ 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_XHCIIntR);
 
-    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
 
     /* Cache capability parameters once */
     ULONG hcsparams1 = AROS_LE2LONG(xhciregs->hcsparams1);
@@ -391,8 +407,8 @@ takeownership:
     /* Scratchpad buffer count decode (Hi/Lo per spec) */
     val = hcsparams2;
     {
-        ULONG sp_lo = (val >> 21) & 0x1F;
-        ULONG sp_hi = (val >> 27) & 0x1F;
+        ULONG sp_hi = (val >> 21) & 0x1F;
+        ULONG sp_lo = (val >> 27) & 0x1F;
         xhcic->xhc_NumScratchPads = (sp_hi << 5) | sp_lo;
     }
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "SPB = %u" DEBUGCOLOR_RESET" \n", xhcic->xhc_NumScratchPads);
