@@ -256,6 +256,11 @@ OPENMEMERR1:
 
 
   handle->fh_Arg1= (IPTR) pipekey;     /* for identification on Read, Write, Close */
+
+  /* A pipe is a stream, so it wants a stream's line buffering rather than the
+     full buffering dos gives a file. */
+  handle->fh_Interactive= DOSTRUE;
+
   pkt->dp_Res1= 1;
   pkt->dp_Res2= 0;     /* for successful open */
 
