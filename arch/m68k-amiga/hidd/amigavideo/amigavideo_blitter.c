@@ -507,6 +507,7 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
     OOP_Object *gc = tmpl->gc;
     HIDDT_Pixel fgpen = GC_FG(tmpl->gc);
     HIDDT_Pixel bgpen = GC_BG(tmpl->gc);
+    ULONG colmask = GC_COLMASK(tmpl->gc);
 
     UBYTE type, i;
     BYTE shift;
@@ -610,6 +611,11 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
         if (bm->Planes[i] == (UBYTE*)0x00000000 || bm->Planes[i] == (UBYTE*)0xffffffff)
             continue;
 
+        /* The write mask protects the planes it clears. It is a UBYTE, so it
+           says nothing about a ninth plane and beyond: leave those writable. */
+        if (i < 8 && !(colmask & (1 << i)))
+            continue;
+
         chmask = 0x0700;
         shiftbv = shiftb;
  
@@ -711,6 +717,7 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
     UBYTE type;
     UBYTE fgpen = GC_FG(pat->gc);
     UBYTE bgpen = GC_BG(pat->gc);
+    ULONG colmask = GC_COLMASK(pat->gc);
 
     UBYTE i;
     UWORD shifta, shiftb;
@@ -803,9 +810,14 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
         if (bm->Planes[i] == (UBYTE*)0x00000000 || bm->Planes[i] == (UBYTE*)0xffffffff)
             continue;
 
+        /* The write mask protects the planes it clears. It is a UBYTE, so it
+           says nothing about a ninth plane and beyond: leave those writable. */
+        if (i < 8 && !(colmask & (1 << i)))
+            continue;
+
         fg = fgpen & 1;
         bg = bgpen & 1;
-        
+
         chmask = pat->mask ? 0x0f00 : 0x0300;
  
         minterm = getminterm(type, fg, bg);

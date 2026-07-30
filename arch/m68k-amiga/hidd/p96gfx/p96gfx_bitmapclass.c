@@ -1448,6 +1448,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     struct p96gfx_staticdata *csd = CSD(cl);
     HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_Pixel bg = GC_BG(msg->gc);
+    ULONG colmask = GC_COLMASK(msg->gc);
     struct Pattern pat;
     UBYTE drawmode;
     BOOL v = FALSE;
@@ -1526,11 +1527,20 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 
                 LOCK_HW
 
-                v = BlitPattern(cid, &ri, &pat, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
+                v = BlitPattern(cid, &ri, &pat, msg->x, msg->y, msg->width, msg->height, (UBYTE)colmask, data->rgbformat);
 
                 UNLOCK_HW
             }
         }
+    }
+
+    /* The memory fallbacks below write whole pixels, so a partial mask has to
+       go to the superclass instead. */
+    if (!v && colmask != ~0)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        UNLOCK_BITMAP(data)
+        return;
     }
 
     if (!v) switch(data->bytesperpixel)
@@ -1636,6 +1646,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     struct p96gfx_staticdata *csd = CSD(cl);
     HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_Pixel bg = GC_BG(msg->gc);
+    ULONG colmask = GC_COLMASK(msg->gc);
     BOOL v = FALSE;
 
     D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
@@ -1676,8 +1687,17 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
         tmpl.BgPen = bg;
 
         LOCK_HW
-        v = BlitTemplate(cid, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
+        v = BlitTemplate(cid, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, (UBYTE)colmask, data->rgbformat);
         UNLOCK_HW
+    }
+
+    /* The memory fallbacks below write whole pixels, so a partial mask has to
+       go to the superclass instead. */
+    if (!v && colmask != ~0)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        UNLOCK_BITMAP(data)
+        return;
     }
 
     if (!v) switch(data->bytesperpixel)
