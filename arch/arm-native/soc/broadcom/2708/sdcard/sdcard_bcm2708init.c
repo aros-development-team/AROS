@@ -211,9 +211,19 @@ bcminit_clock:
         __BCM2708Bus->sdcb_IOReadWord = FNAME_BCMSDCBUS(BCMMMIOReadWord);
         __BCM2708Bus->sdcb_IOReadLong = FNAME_BCMSDCBUS(BCMMMIOReadLong);
 
-        __BCM2708Bus->sdcb_IOWriteByte = FNAME_BCMSDCBUS(BCMMMIOWriteByte);
-        __BCM2708Bus->sdcb_IOWriteWord = FNAME_BCMSDCBUS(BCMMMIOWriteWord);
-        __BCM2708Bus->sdcb_IOWriteLong = FNAME_BCMSDCBUS(BCMMMIOWriteLong);
+        if (isEMMC2)
+        {
+            /* Only the earlier controller needs a delay between writes. */
+            __BCM2708Bus->sdcb_IOWriteByte = FNAME_BCMSDCBUS(BCMMMIODirectWriteByte);
+            __BCM2708Bus->sdcb_IOWriteWord = FNAME_BCMSDCBUS(BCMMMIODirectWriteWord);
+            __BCM2708Bus->sdcb_IOWriteLong = FNAME_BCMSDCBUS(BCMMMIODirectWriteLong);
+        }
+        else
+        {
+            __BCM2708Bus->sdcb_IOWriteByte = FNAME_BCMSDCBUS(BCMMMIOWriteByte);
+            __BCM2708Bus->sdcb_IOWriteWord = FNAME_BCMSDCBUS(BCMMMIOWriteWord);
+            __BCM2708Bus->sdcb_IOWriteLong = FNAME_BCMSDCBUS(BCMMMIOWriteLong);
+        }
 
         /* SDHCI controller-specific vtable */
         __BCM2708Bus->sdcb_SoftReset = FNAME_SDCBUS(SoftReset);
