@@ -1,5 +1,5 @@
 /*
- * fat-handler - FAT12/16/32 filesystem handler
+ * FAT BIOS Parameter Block parsing link library
  *
  * Copyright (C) 2026 The AROS Development Team
  *
@@ -7,8 +7,8 @@
  * under the same terms as AROS itself.
  */
 
-#ifndef FAT_BPB_H
-#define FAT_BPB_H
+#ifndef LINKLIBS_FATBPB_H
+#define LINKLIBS_FATBPB_H
 
 #include <exec/types.h>
 
@@ -42,4 +42,4 @@ BOOL FAT_IsBPBPlausible(const UBYTE *data, ULONG size);
 BOOL FAT_ParseBPB(const UBYTE *data, ULONG size, UQUAD media_size,
     struct FATBPBInfo *info);
 
-#endif /* FAT_BPB_H */
+#endif /* LINKLIBS_FATBPB_H */

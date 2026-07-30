@@ -1,0 +1,15 @@
+#
+#   Generate the FAT BIOS Parameter Block parsing link library.
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- linklibs : linklibs-fatbpb
+#MM linklibs-fatbpb : includes
+#MM includes-copy
+
+%copy_includes path=linklibs dir=include
+
+%build_linklib mmake=linklibs-fatbpb libname=fatbpb files=bpb
+
+%common

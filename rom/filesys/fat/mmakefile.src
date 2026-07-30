@@ -5,14 +5,14 @@ USER_CPPFLAGS := -D__NOLIBBASE__
 
 USER_LDFLAGS := -static
 
-FILES := bpb cache direntry date disk fat file lock main names notify ops packet\
+FILES := cache direntry date disk fat file lock main names notify ops packet\
  support timer volume
 
 #MM- kernel-fs-fat : includes linklibs
 
 %build_module mmake=kernel-fs-fat \
     modname=fat modtype=handler \
-    files="$(FILES)"
+    files="$(FILES)" uselibs="fatbpb"
 
 
 %common

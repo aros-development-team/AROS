@@ -1,5 +1,5 @@
 /*
- * fat-handler - FAT12/16/32 filesystem handler
+ * FAT BIOS Parameter Block parsing link library
  *
  * Copyright (C) 2026 The AROS Development Team
  *
@@ -10,7 +10,7 @@
 #include <dos/filesystemids.h>
 #include <exec/types.h>
 
-#include "bpb.h"
+#include <linklibs/fatbpb.h>
 
 #define BPB_BYTES_PER_SECTOR       11
 #define BPB_SECTORS_PER_CLUSTER    13

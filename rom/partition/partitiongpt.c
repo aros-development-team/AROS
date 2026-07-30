@@ -30,7 +30,7 @@
 
 #include <string.h>
 
-#include "bpb.h"
+#include <linklibs/fatbpb.h>
 #include "partition_support.h"
 #include "partition_types.h"
 #include "partitiongpt.h"

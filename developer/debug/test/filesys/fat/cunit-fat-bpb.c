@@ -6,7 +6,7 @@
 
 #include <string.h>
 
-#include "bpb.h"
+#include <linklibs/fatbpb.h>
 
 #define SECTOR_SIZE 512
 #define BPB_BYTES_PER_SECTOR       11

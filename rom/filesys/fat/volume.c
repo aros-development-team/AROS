@@ -27,7 +27,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "bpb.h"
+#include <linklibs/fatbpb.h>
 #include "fat_fs.h"
 #include "fat_protos.h"
 

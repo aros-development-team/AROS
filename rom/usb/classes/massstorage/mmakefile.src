@@ -1,10 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FATDIR := $(SRCDIR)/rom/filesys/fat
-
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
-USER_INCLUDES := -I$(FATDIR)
 #USER_CPPFLAGS += -DDEBUG=1
 USER_LDFLAGS := -static
 
@@ -17,11 +14,12 @@ FILES := \
     debug \
     partitions
 
-#MM- kernel-usb-classes-massstorage : kernel-usb-usbclass kernel-usb-poseidon-includes
+#MM- kernel-usb-classes-massstorage : kernel-usb-usbclass \
+#MM    kernel-usb-poseidon-includes linklibs-fatbpb
 
 %build_module_library mmake=kernel-usb-classes-massstorage \
     modname=massstorage modtype=usbclass modsuffix="class" \
-    files="$(FILES) $(FATDIR)/bpb" \
-    uselibs="debug"
+    files="$(FILES)" \
+    uselibs="debug fatbpb"
 
 %common

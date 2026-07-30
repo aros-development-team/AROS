@@ -9,7 +9,7 @@
 #include "debug.h"
 
 #include "massstorage.class.h"
-#include "bpb.h"
+#include <linklibs/fatbpb.h>
 
 #define DEF_NAKTIMEOUT  (600)
 
