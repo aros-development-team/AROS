@@ -4,6 +4,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+INCLUDE_FILES := include/fatbpb.h
+
 #MM- linklibs : linklibs-fatbpb
 #MM linklibs-fatbpb : includes
 #MM includes-copy
