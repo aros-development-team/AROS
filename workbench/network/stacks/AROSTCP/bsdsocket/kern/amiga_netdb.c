@@ -373,7 +373,7 @@ static int inline setaddr(struct sockaddr_in *sa, char *addr, u_short af)
     return __inet_aton(addr, &sa->sin_addr);
 }
 
-#ifdef INET6
+#if INET6
 /* Minimal in-kernel IPv6 address parser (adapted from KAME inet_pton6). */
 static int
 inet6_aton(const char *src, struct in6_addr *dst)
@@ -572,7 +572,7 @@ addifent(struct NetDataBase *ndb,
                     }
                 }
             }
-#ifdef INET6
+#if INET6
             /* Apply IPv6 address based on configured mode */
             if((ifp) && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_ip6) {
                 if(strncmp(ssc->args->a_ip6, "AUTO", 4) == 0) {
@@ -640,7 +640,7 @@ addifent(struct NetDataBase *ndb,
                     rtioctl(SIOCADDRT, (caddr_t)&route);
                 }
             }
-#ifdef INET6
+#if INET6
             if(ifp && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_gw6 &&
                     ssc->args->a_gw6[0] != '\0') {
                 struct sockaddr_in6 dst6, gw6;

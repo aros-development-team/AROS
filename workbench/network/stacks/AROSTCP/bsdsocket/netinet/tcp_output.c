@@ -819,6 +819,7 @@ skip_sack:
         error = tuba_output(m, tp);
     else
 #endif
+#if INET6
     if(isipv6) {
         /*
          * IPv6 send path.
@@ -841,7 +842,9 @@ skip_sack:
 
         error = tcp_v6output(m, &inp->inp_laddr6, &inp->inp_faddr6,
                              inp->in6p_hops, tlen, inp);
-    } else {
+    } else
+#endif /* INET6 */
+    {
         ((struct ip *)ti)->ip_len = m->m_pkthdr.len;
         ((struct ip *)ti)->ip_ttl = tp->t_inpcb->inp_ip.ip_ttl;	/* XXX */
         ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos;	/* XXX */
