@@ -815,7 +815,7 @@ BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
 
         AROS_BEGIN_PROFILING(Blitting loop)
 
-#if USE_OLDMoveRaster
+#if USE_OLD_MoveRaster
 
         {
             struct ClipRect *LastHiddenCR;

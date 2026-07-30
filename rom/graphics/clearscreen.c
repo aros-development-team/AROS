@@ -60,11 +60,11 @@
     ClearEOL(rp);
 
     if(height >= ymin) {
-        ULONG      oldDrMd = GetDrMd(rp);
+        UBYTE oldFgPen = rp->FgPen;
 
-        SetDrMd(rp, oldDrMd ^ INVERSVID);
+        SetAPen(rp, bgfill_pen(rp));
         RectFill(rp, 0, ymin, width - 1, height - 1);
-        SetDrMd(rp, oldDrMd);
+        SetAPen(rp, oldFgPen);
     }
 
     AROS_LIBFUNC_EXIT
