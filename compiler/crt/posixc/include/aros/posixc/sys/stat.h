@@ -2,7 +2,7 @@
 #define _POSIXC_SYS_STAT_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file sys/stat.h
@@ -141,13 +141,27 @@ __BEGIN_DECLS
 int chmod(const char *path, mode_t mode);
 int fchmod(int fildes, mode_t mode);
 int fchmodat(int dirfd, const char *pathname, mode_t mode, int flags);
+/* When _FILE_OFFSET_BITS==64 is requested, __USE_FILE_OFFSET64 widens
+ * struct stat (st_ino grows to 64 bit, shifting st_size et al). The plain
+ * stat/fstat/lstat entry points fill the narrow layout, so a caller built
+ * with the wide struct would read st_size from the wrong offset. Redirect
+ * such callers to the *64 implementations, which fill the wide struct.
+ * Older code (no __USE_FILE_OFFSET64) keeps the narrow struct and calls. */
+#if defined(__USE_FILE_OFFSET64)
+int fstat(int fd, struct stat *sb) __asm__("fstat64");
+#else
 int fstat(int fd, struct stat *sb);
+#endif
 int fstat64(int fd, struct stat64 *sb);
 
 int fstatat(int, const char *restrict, struct stat *restrict, int);
 /* NOTIMPL int futimens(int, const struct timespec [2]); */
 int lstat64(const char * restrict path, struct stat64 * restrict sb);
+#if defined(__USE_FILE_OFFSET64)
+int lstat(const char * restrict path, struct stat * restrict sb) __asm__("lstat64");
+#else
 int lstat(const char * restrict path, struct stat * restrict sb);
+#endif
 
 int mkdir(const char *path, mode_t mode);
 /* NOTIMPL int mkdirat(int, const char *, mode_t); */
@@ -155,7 +169,11 @@ int mkdir(const char *path, mode_t mode);
 /* NOTIMPL int mkfifoat(int, const char *, mode_t); */
 int mknod(const char *path, mode_t mode, dev_t dev);
 /* NOTIMPL int mknodat(int, const char *, mode_t, dev_t); */
+#if defined(__USE_FILE_OFFSET64)
+int stat(const char * restrict path, struct stat * restrict sb) __asm__("stat64");
+#else
 int stat(const char * restrict path, struct stat * restrict sb);
+#endif
 int stat64(const char * restrict path, struct stat64 * restrict sb);
 mode_t umask(mode_t numask);
 /* NOTIMPL int utimensat(int, const char *, const struct timespec [2], int); */
