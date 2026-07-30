@@ -9,6 +9,7 @@
 #include <proto/partition.h>
 #include <proto/utility.h>
 
+#include <linklibs/fatbpb.h>
 #include "partition_types.h"
 #include "partition_support.h"
 #include "partitionmbr.h"
@@ -20,101 +21,23 @@ struct MBRData {
     UBYTE position;
 };
 
-struct FATBootSector {
-    UBYTE bs_jmp_boot[3];
-    UBYTE bs_oem_name[8];
-    UWORD bpb_bytes_per_sect;
-    UBYTE bpb_sect_per_clust;
-    UWORD bpb_rsvd_sect_count;
-    UBYTE bpb_num_fats;
-    UWORD bpb_root_entries_count;
-    UWORD bpb_total_sectors_16;
-    UBYTE bpb_media;
-    UWORD bpb_fat_size_16;
-    UWORD bpb_sect_per_track;
-    UWORD bpb_num_heads;
-    ULONG bpb_hidden_sect;
-    ULONG bpb_total_sectors_32;
-
-    union {
-        struct {
-            UBYTE bs_drvnum;
-            UBYTE bs_reserved1;
-            UBYTE bs_bootsig;
-            ULONG bs_volid;
-            UBYTE bs_vollab[11];
-            UBYTE bs_filsystype[8];
-        } __packed fat16;
-
-        struct {
-            ULONG bpb_fat_size_32;
-            UWORD bpb_extflags;
-            UWORD bpb_fs_verion;
-            ULONG bpb_root_cluster;
-            UWORD bpb_fs_info;
-            UWORD bpb_back_bootsec;
-            UBYTE bpb_reserved[12];
-            UBYTE bs_drvnum;
-            UBYTE bs_reserved1;
-            UBYTE bs_bootsig;
-            ULONG bs_volid;
-            UBYTE bs_vollab[11];
-            UBYTE bs_filsystype[8];
-        } __packed fat32;
-    } type;
-    UBYTE pad[420];
-    UBYTE bpb_signature[2];
-} __packed;
-
-struct rootblock
-{
-    union
-    {
-        struct MBR mbr;
-        struct FATBootSector bs;
-    }
-    u;
-};
-
 LONG MBRCheckPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root, void *buffer)
 {
-    struct rootblock *blk = buffer;
+    struct MBR *mbr = buffer;
     LONG res = 0;
 
-    if (readBlock(PartitionBase, root, 0, blk) == 0)
+    if (readBlock(PartitionBase, root, 0, mbr) == 0 &&
+        !FAT_IsBPBPlausible(buffer, root->de.de_SizeBlock << 2))
     {
-        /* Check it doesn't look like a FAT boot sector */
-        ULONG sectorsize, clustersectors;
+        struct PCPartitionTable *pcpt = mbr->pcpt;
 
-        /* Valid sector size: 512, 1024, 2048, 4096 */
-        sectorsize = AROS_LE2WORD(blk->u.bs.bpb_bytes_per_sect);
-        if (sectorsize != 512 && sectorsize != 1024 && sectorsize != 2048 && sectorsize != 4096)
+        /* Check status bytes of all partition slots and block signature */
+        if ((AROS_LE2WORD(mbr->magic) == MBR_MAGIC) &&
+            MBR_STATUS_VALID(pcpt[0].status) &&
+            MBR_STATUS_VALID(pcpt[1].status) &&
+            MBR_STATUS_VALID(pcpt[2].status) &&
+            MBR_STATUS_VALID(pcpt[3].status))
             res = 1;
-
-        /* Valid bpb_sect_per_clust: 1, 2, 4, 8, 16, 32, 64, 128 */
-        clustersectors = blk->u.bs.bpb_sect_per_clust;
-        if ((clustersectors & (clustersectors - 1)) != 0 || clustersectors == 0 || clustersectors > 128)
-            res = 1;
-
-        /* Valid cluster size: 512, 1024, 2048, 4096, 8192, 16k, 32k, 64k */
-        if (clustersectors * sectorsize > 64 * 1024)
-            res = 1;
-
-        if (blk->u.bs.bpb_media < 0xF0)
-            res = 1;
-
-        if (res)
-        {
-            struct PCPartitionTable *pcpt = blk->u.mbr.pcpt;
-
-            /* Check status bytes of all partition slots and block signature */
-            if ((AROS_LE2WORD(blk->u.mbr.magic) != MBR_MAGIC) ||
-                (!MBR_STATUS_VALID(pcpt[0].status)) || (!MBR_STATUS_VALID(pcpt[1].status)) ||
-                (!MBR_STATUS_VALID(pcpt[2].status)) || (!MBR_STATUS_VALID(pcpt[3].status)))
-            {
-                res = 0;
-            }
-        }
     }
 
     return res;
@@ -563,4 +486,3 @@ const struct PTFunctionTable PartitionMBR =
     PartitionMBRDestroyPartitionTable,
     NULL
 };
-

@@ -30,6 +30,7 @@
 
 #include <string.h>
 
+#include <linklibs/fatbpb.h>
 #include "partition_support.h"
 #include "partition_types.h"
 #include "partitiongpt.h"
@@ -51,6 +52,7 @@ struct GPTPartitionHandle
 #define GPTH(ph) ((struct GPTPartitionHandle *)ph)
 
 static const uuid_t GPT_Type_Unused = MAKE_UUID(0x00000000, 0x0000, 0x0000, 0x0000, 0x000000000000ULL);
+static const uuid_t GPT_Type_MSBasicData = MAKE_UUID(0xEBD0A0A2, 0xB9E5, 0x4433, 0x87C0, 0x68B6B72699C7ULL);
 /*
  * This is a bit special.
  * The first four bytes (time_low) hold DOS Type ID (for simple mapping),
@@ -181,7 +183,40 @@ static void PRINT_LE_UUID(char *s, uuid_t *id)
 #define PartitionWriteBlock(base, root, blk, mem) 0
 #endif
 
-static void GPT_PatchDosEnvec(struct DosEnvec *de, struct GPTPartition *p)
+static ULONG GPT_ProbeFAT(struct Library *PartitionBase,
+    struct PartitionHandle *ph, struct GPTPartition *p)
+{
+    UQUAD start = AROS_LE2QUAD(p->StartBlock);
+    UQUAD end = AROS_LE2QUAD(p->EndBlock);
+    UQUAD blocks;
+    ULONG block_size = ph->de.de_SizeBlock << 2;
+    ULONG type = 0;
+    UBYTE *block;
+
+    if (block_size < 512 || end < start || end == ~0ULL)
+        return 0;
+
+    blocks = end - start + 1;
+    if (blocks > ~0ULL / block_size)
+        return 0;
+
+    block = AllocMem(block_size, MEMF_ANY);
+    if (block)
+    {
+        struct FATBPBInfo bpb;
+
+        if (ReadPartitionDataQ(ph, block, block_size, 0) == 0 &&
+            FAT_ParseBPB(block, block_size, blocks * block_size, &bpb))
+            type = bpb.dos_type;
+
+        FreeMem(block, block_size);
+    }
+
+    return type;
+}
+
+static void GPT_PatchDosEnvec(struct Library *PartitionBase,
+    struct PartitionHandle *ph, struct GPTPartition *p)
 {
     ULONG type   = 0;
     LONG bootpri = 0;
@@ -204,10 +239,13 @@ static void GPT_PatchDosEnvec(struct DosEnvec *de, struct GPTPartition *p)
                 break;
             }
         }
+
+        if (type == 0 && uuid_cmp_le(&p->TypeID, &GPT_Type_MSBasicData))
+            type = GPT_ProbeFAT(PartitionBase, ph, p);
     }
     
-    setDosType(de, type);
-    de->de_BootPri = bootpri;
+    setDosType(&ph->de, type);
+    ph->de.de_BootPri = bootpri;
 }
 
 static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle *root, struct GPTHeader *hdr, UQUAD block)
@@ -361,7 +399,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
                         initPartitionHandle(root, &gph->ph, startblk, endblk - startblk + 1);
 
                         /* Map UUID to a DOSType */
-                        GPT_PatchDosEnvec(&gph->ph.de, p);
+                        GPT_PatchDosEnvec(PartitionBase, &gph->ph, p);
 
                         /* Store the whole entry and convert name into ASCII form */
                         CopyMem(p, &gph[1], entrysize);
@@ -609,7 +647,7 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
             {
                 uuid_to_le(&part->TypeID, (uuid_t *)tag->ti_Data);
                 /* Update DOSType according to a new type ID */
-                GPT_PatchDosEnvec(&ph->de, part);
+                GPT_PatchDosEnvec(PartitionBase, ph, part);
             }
             break;
 

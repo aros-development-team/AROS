@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <linklibs/fatbpb.h>
 #include "fat_fs.h"
 #include "fat_protos.h"
 
@@ -75,11 +76,11 @@ LONG ReadFATSuper(struct FSSuper *sb)
     struct Globals *glob = sb->glob;
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
     LONG err = 0, td_err;
-    ULONG bsize = de->de_SizeBlock * 4, total_sectors, id;
+    ULONG bsize = de->de_SizeBlock * 4, id;
     struct FATBootSector *boot;
+    struct FATBPBInfo bpb;
     struct FATEBPB *ebpb;
     struct FATFSInfo *fsinfo;
-    BOOL invalid = FALSE;
     ULONG end;
     LONG i;
     struct DirHandle dh;
@@ -120,103 +121,53 @@ LONG ReadFATSuper(struct FSSuper *sb)
 
     D(bug("\tBoot sector:\n"));
 
-    sb->sectorsize = AROS_LE2WORD(boot->bpb_bytes_per_sect);
-    sb->sectorsize_bits = log2(sb->sectorsize);
-    D(bug("\tSectorSize = %ld\n", sb->sectorsize));
-    D(bug("\tSectorSize Bits = %ld\n", sb->sectorsize_bits));
-
-    sb->cluster_sectors = boot->bpb_sect_per_clust;
-    sb->clustersize = sb->sectorsize * boot->bpb_sect_per_clust;
-    sb->clustersize_bits = log2(sb->clustersize);
-    sb->cluster_sectors_bits = sb->clustersize_bits - sb->sectorsize_bits;
-
-    D(bug("\tSectorsPerCluster = %ld\n", (ULONG) boot->bpb_sect_per_clust));
-    D(bug("\tClusterSize = %ld\n", sb->clustersize));
-    D(bug("\tClusterSize Bits = %ld\n", sb->clustersize_bits));
-    D(bug("\tCluster Sectors Bits = %ld\n", sb->cluster_sectors_bits));
-
-    sb->first_fat_sector = AROS_LE2WORD(boot->bpb_rsvd_sect_count);
-    D(bug("\tFirst FAT Sector = %ld\n", sb->first_fat_sector));
-
-    sb->fat_count = boot->bpb_num_fats;
-    D(bug("\tNumber of FATs = %d\n", sb->fat_count));
-
-    if (boot->bpb_fat_size_16 != 0)
-        sb->fat_size = AROS_LE2WORD(boot->bpb_fat_size_16);
-    else
-        sb->fat_size = AROS_LE2LONG(boot->ebpbs.ebpb32.bpb_fat_size_32);
-    D(bug("\tFAT Size = %ld\n", sb->fat_size));
-
-    if (boot->bpb_total_sectors_16 != 0)
-        total_sectors = AROS_LE2WORD(boot->bpb_total_sectors_16);
-    else
-        total_sectors = AROS_LE2LONG(boot->bpb_total_sectors_32);
-    D(bug("\tTotal Sectors = %ld\n", sb->total_sectors));
-
-    /* Check that the boot block's sector count is the same as the
-     * partition's sector count. This stops a resized partition being
-     * mounted before reformatting */
-    /* Note: Linux can create partitions where these two values differ, but still are valid for read / write
-     * under Linux, Windows and MacOS */
-    if ((total_sectors < sb->total_sectors - 64) || (total_sectors > sb->total_sectors))
-        invalid = TRUE;
-
-    sb->rootdir_sectors = ((AROS_LE2WORD(boot->bpb_root_entries_count)
-        * sizeof(struct FATDirEntry)) + (sb->sectorsize - 1))
-        >> sb->sectorsize_bits;
-    D(bug("\tRootDir Sectors = %ld\n", sb->rootdir_sectors));
-
-    sb->data_sectors = sb->total_sectors - (sb->first_fat_sector
-        + (sb->fat_count * sb->fat_size) + sb->rootdir_sectors);
-    D(bug("\tData Sectors = %ld\n", sb->data_sectors));
-
-    sb->clusters_count = sb->data_sectors >> sb->cluster_sectors_bits;
-    D(bug("\tClusters Count = %ld\n", sb->clusters_count));
-
-    sb->first_rootdir_sector =
-        sb->first_fat_sector + (sb->fat_count * sb->fat_size);
-    D(bug("\tFirst RootDir Sector = %ld\n", sb->first_rootdir_sector));
-
-    sb->first_data_sector =
-        sb->first_fat_sector + (sb->fat_count * sb->fat_size)
-        + sb->rootdir_sectors;
-    D(bug("\tFirst Data Sector = %ld\n", sb->first_data_sector));
-
-    /* Check if disk is in fact a FAT filesystem */
-
-    /* Valid sector size: 512, 1024, 2048, 4096 */
-    if (sb->sectorsize != 512 && sb->sectorsize != 1024
-        && sb->sectorsize != 2048 && sb->sectorsize != 4096)
-        invalid = TRUE;
-
-    /* Valid bpb_sect_per_clust: 1, 2, 4, 8, 16, 32, 64, 128 */
-    if ((boot->bpb_sect_per_clust & (boot->bpb_sect_per_clust - 1)) != 0
-        || boot->bpb_sect_per_clust == 0 || boot->bpb_sect_per_clust > 128)
-        invalid = TRUE;
-
-    /* Valid cluster size: 512, 1024, 2048, 4096, 8192, 16k, 32k, 64k */
-    if (sb->clustersize > 64 * 1024)
-        invalid = TRUE;
-
-    if (sb->first_fat_sector == 0)
-        invalid = TRUE;
-
-    if (sb->fat_count == 0)
-        invalid = TRUE;
-
-    if (boot->bpb_media < 0xF0)
-        invalid = TRUE;
-
-    /* FAT "signature" */
-    if (boot->bpb_signature[0] != 0x55 || boot->bpb_signature[1] != 0xaa)
-        invalid = TRUE;
-
-    if (invalid)
+    if (!FAT_ParseBPB((const UBYTE *)boot, bsize,
+        (UQUAD)sb->total_sectors * bsize, &bpb))
     {
         D(bug("\tInvalid FAT Boot Sector\n"));
         FreeMem(boot, bsize);
         return ERROR_NOT_A_DOS_DISK;
     }
+
+    sb->sectorsize = bpb.sector_size;
+    sb->sectorsize_bits = log2(sb->sectorsize);
+    D(bug("\tSectorSize = %ld\n", sb->sectorsize));
+    D(bug("\tSectorSize Bits = %ld\n", sb->sectorsize_bits));
+
+    sb->cluster_sectors = bpb.sectors_per_cluster;
+    sb->clustersize = bpb.cluster_size;
+    sb->clustersize_bits = log2(sb->clustersize);
+    sb->cluster_sectors_bits = sb->clustersize_bits - sb->sectorsize_bits;
+
+    D(bug("\tSectorsPerCluster = %ld\n", sb->cluster_sectors));
+    D(bug("\tClusterSize = %ld\n", sb->clustersize));
+    D(bug("\tClusterSize Bits = %ld\n", sb->clustersize_bits));
+    D(bug("\tCluster Sectors Bits = %ld\n", sb->cluster_sectors_bits));
+
+    sb->first_fat_sector = bpb.reserved_sectors;
+    D(bug("\tFirst FAT Sector = %ld\n", sb->first_fat_sector));
+
+    sb->fat_count = bpb.fat_count;
+    D(bug("\tNumber of FATs = %d\n", sb->fat_count));
+
+    sb->fat_size = bpb.fat_size;
+    D(bug("\tFAT Size = %ld\n", sb->fat_size));
+    D(bug("\tTotal Sectors = %ld\n", sb->total_sectors));
+
+    sb->rootdir_sectors = bpb.root_dir_sectors;
+    D(bug("\tRootDir Sectors = %ld\n", sb->rootdir_sectors));
+
+    sb->data_sectors = bpb.data_sectors;
+    D(bug("\tData Sectors = %ld\n", sb->data_sectors));
+
+    sb->clusters_count = bpb.cluster_count;
+    D(bug("\tClusters Count = %ld\n", sb->clusters_count));
+
+    sb->first_rootdir_sector = bpb.first_root_dir_sector;
+    D(bug("\tFirst RootDir Sector = %ld\n", sb->first_rootdir_sector));
+
+    sb->first_data_sector = bpb.first_data_sector;
+    D(bug("\tFirst Data Sector = %ld\n", sb->first_data_sector));
 
     end = 0xFFFFFFFF / sb->sectorsize;
     if ((sb->first_device_sector + sb->total_sectors - 1 > end)
@@ -243,7 +194,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
         return err;
     }
 
-    if (sb->clusters_count < 4085)
+    if (bpb.dos_type == ID_FAT12_DISK)
     {
         D(bug("\tFAT12 filesystem detected\n"));
         sb->type = 12;
@@ -251,7 +202,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
         sb->func_get_fat_entry = GetFat12Entry;
         sb->func_set_fat_entry = SetFat12Entry;
     }
-    else if (sb->clusters_count < 65525)
+    else if (bpb.dos_type == ID_FAT16_DISK)
     {
         D(bug("\tFAT16 filesystem detected\n"));
         sb->type = 16;
@@ -1122,4 +1073,3 @@ void DoDiskRemove(struct Globals *glob)
         }
     }
 }
-

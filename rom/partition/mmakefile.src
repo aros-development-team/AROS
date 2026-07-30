@@ -38,8 +38,8 @@ FUNCS := \
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \
 #MM    includes-copy
-#MM kernel-partition : core-linklibs
-#MM kernel-partition-kobj : core-linklibs
+#MM kernel-partition : core-linklibs linklibs-fatbpb
+#MM kernel-partition-kobj : core-linklibs linklibs-fatbpb
 #MM- core-linklibs: linklibs-partition
 
 USER_CPPFLAGS := \
@@ -49,6 +49,6 @@ USER_LDFLAGS  := -L$(GENDIR)/lib -static
 
 %build_module mmake=kernel-partition \
     modname=partition modtype=library \
-    files="partition_init $(FUNCS) $(FILES)" uselibs="debug loadseg"
+    files="partition_init $(FUNCS) $(FILES)" uselibs="debug loadseg fatbpb"
 
 %common

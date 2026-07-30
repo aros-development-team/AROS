@@ -1,0 +1,23 @@
+include $(SRCDIR)/config/aros.cfg
+
+CUNITEXEDIR := $(AROS_TESTS)/cunit/filesys/fat
+
+#MM- test : test-fat-cunit
+#MM- test-quick : test-fat-cunit-quick
+
+#MM- test-cunit : test-fat-cunit
+#MM- test-cunit-quick : test-fat-cunit-quick
+
+#MM- test-fat-cunit : test-fat-$(TARGET_UNITTESTS)-cunit
+#MM- test-fat-cunit-quick : test-fat-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-fat-yes-cunit : includes includes-copy linklibs linklibs-cunit
+
+USER_INCLUDES := \
+	-I$(AROS_CONTRIB_INCLUDES)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_prog mmake=test-fat-yes-cunit \
+	files="cunit-fat-bpb" \
+	progname=cunit-fat-bpb targetdir=$(CUNITEXEDIR) \
+	uselibs="fatbpb cunit posixc"

@@ -9,6 +9,7 @@
 #include "debug.h"
 
 #include "massstorage.class.h"
+#include <linklibs/fatbpb.h>
 
 #define DEF_NAKTIMEOUT  (600)
 
@@ -5134,33 +5135,6 @@ void CheckPartition(struct NepClassMS *ncm)
 }
 /* \\\ */
 
-/* /// "IsFATSuperBlock()" */
-BOOL IsFATSuperBlock(struct FATSuperBlock *fsb)
-{
-    BOOL result;
-    result = (BOOL)(strncmp(fsb->fsb_Vendor, "MSDOS", 5) == 0 ||
-                    strncmp(fsb->fsb_Vendor, "MSWIN", 5) == 0 ||
-                    strncmp(fsb->fsb_FileSystem, "FAT12", 5) == 0 ||
-                    strncmp(fsb->fsb_FileSystem, "FAT16", 5) == 0 ||
-                    strncmp(fsb->fsb_FileSystem2, "FAT32", 5) == 0);
-
-    return(result);
-}
-/* \\\ */
-
-/* /// "GetFATDosType()" */
-ULONG GetFATDosType(struct FATSuperBlock *fsb)
-{
-    ULONG result = 0x46415400;
-    if(strncmp(fsb->fsb_FileSystem2, "FAT32", 5) == 0)
-        result |= 2;
-    else if(strncmp(fsb->fsb_FileSystem, "FAT16", 5) == 0)
-        result |= 1;
-
-    return(result);
-}
-/* \\\ */
-
 /* /// "CheckFATPartition()" */
 void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
 {
@@ -5169,8 +5143,8 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
     struct DosEnvec *envec;
     struct IOStdReq *stdIO = &nh->nh_IOReq;
     struct DriveGeometry *tddg = &ncm->ncm_Geometry;
+    struct FATBPBInfo bpb;
     BOOL isfat = FALSE;
-    BOOL isntfs = FALSE;
 
     mbr = (struct MasterBootRecord *) psdAllocVec(ncm->ncm_BlockSize<<1);
     if(!mbr)
@@ -5186,7 +5160,10 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
     if(!nIOCmdTunnel(ncm, stdIO))
     {
         /* do (super)floppy check */
-        if(IsFATSuperBlock((struct FATSuperBlock *) mbr))
+        if(FAT_ParseBPB((const UBYTE *)mbr, ncm->ncm_BlockSize,
+                        (UQUAD)ncm->ncm_Geometry.dg_TotalSectors *
+                            ncm->ncm_Geometry.dg_SectorSize,
+                        &bpb))
         {
             psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Media is FAT formatted!");
             isfat = TRUE;
@@ -5242,8 +5219,7 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
             envec->de_DosType = ncm->ncm_CDC->cdc_FATDosType; //0x46415401; // FAT1
             if((ncm->ncm_CDC->cdc_FATDosType & 0xffffff00) == 0x46415400)
             {
-                envec->de_DosType =
-                    GetFATDosType((struct FATSuperBlock *) mbr);
+                envec->de_DosType = bpb.dos_type;
             }
 
             // we have no FSHD and LSEG blocks
@@ -5255,7 +5231,7 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
             strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_FATFSName, 84);
             CheckPartition(ncm);
         }
-        if(!(isfat || isntfs))
+        if(!isfat)
         {
             psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                            "Media does not seem to be FAT nor NTFS formatted.");
