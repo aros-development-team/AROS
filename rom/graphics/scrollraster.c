@@ -116,13 +116,13 @@
 
     if((width < 1) || (height < 1)) return;
 
-    if((absdx >= width) || (absdy >= height)) {
-        SetABPenDrMd(rp, rp->BgPen, rp->BgPen, JAM1);
-        RectFill(rp, xMin, yMin, xMax, yMax);
-        SetABPenDrMd(rp, old_fgpen, rp->BgPen, old_drmd);
-
+    /*
+     * A distance that reaches the extent scrolls everything off, and the
+     * rectangle is then left exactly as it was: not scrolled, and not filled
+     * with BPen either.
+     */
+    if((absdx >= width) || (absdy >= height))
         return;
-    }
 
     if(!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
         return;
