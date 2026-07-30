@@ -94,6 +94,19 @@ extern u_long udp_recvspace;
 #define IN6P_HOPLIMIT	0x02		/* receive hop limit (IPV6_HOPLIMIT) */
 #endif
 
+/*
+ * Ancillary data carried by IPV6_PKTINFO / IPV6_RECVPKTINFO (RFC 3542):
+ * the datagram's destination address and the receiving interface index.
+ * Defined defensively here as the shared headers do not provide it.
+ */
+#ifndef IN6_PKTINFO_DEFINED
+#define IN6_PKTINFO_DEFINED
+struct in6_pktinfo {
+	struct in6_addr	ipi6_addr;	/* src/dst IPv6 address */
+	unsigned int	ipi6_ifindex;	/* send/recv interface index */
+};
+#endif
+
 /* ------------------------------------------------------------------ *
  * udp6_saveopt - build a control (ancillary data) mbuf carrying a
  * single cmsg of the given type at IPPROTO_IPV6 level, mirroring the
@@ -326,18 +339,31 @@ udp6_input(void *args, ...)
 
     /* Deliver to socket */
     {
-        struct mbuf *opts = NULL;
+        struct mbuf *opts = NULL, **optp = &opts;
 
         /*
          * Assemble any requested ancillary data before stripping the
-         * headers.  Only IPV6_HOPLIMIT is supported here; the receive
-         * hop limit is taken from the IPv6 header, delivered as an int
-         * cmsg using the same control-mbuf mechanism as the source
-         * address.  (IPV6_PKTINFO delivery remains a TODO.)
+         * headers, taken from the IPv6 header while it is still present.
+         * Each requested item becomes one cmsg mbuf; they are chained via
+         * m_next so sbappendaddr() delivers them together.
          */
+        if(inp->in6p_flags & IN6P_PKTINFO) {
+            struct in6_pktinfo pi6;
+
+            bzero(&pi6, sizeof(pi6));
+            pi6.ipi6_addr    = ip6->ip6_dst;
+            pi6.ipi6_ifindex = (m->m_pkthdr.rcvif != NULL)
+                               ? m->m_pkthdr.rcvif->if_index : 0;
+            *optp = udp6_saveopt((caddr_t)&pi6, sizeof(pi6), IPV6_PKTINFO);
+            if(*optp != NULL)
+                optp = &(*optp)->m_next;
+        }
         if(inp->in6p_flags & IN6P_HOPLIMIT) {
             int hlim = ip6->ip6_hlim;
-            opts = udp6_saveopt((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT);
+
+            *optp = udp6_saveopt((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT);
+            if(*optp != NULL)
+                optp = &(*optp)->m_next;
         }
 
         /* Strip the IPv6 (+ extension) and UDP headers, leaving data. */

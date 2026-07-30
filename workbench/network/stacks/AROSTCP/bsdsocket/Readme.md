@@ -215,10 +215,11 @@ overlay), so header building and the state machine are shared; only the family e
   an existing PCB is rejected with `EADDRINUSE` unless `SO_REUSEADDR`/`SO_REUSEPORT` is set.
 - **UDP6** is a separate path (`udp6_usrreq`/`udp6_output`/`udp6_input`) reusing the shared `inpcb`.
   `if_loop.c loconfig()` configures `lo0` with `::1` (and `127.0.0.1`); `::1` is in `in6_ifaddr` so
-  `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. With
-  `IPV6_HOPLIMIT` set (the `IN6P_HOPLIMIT` flag), `udp6_input` delivers the received hop limit as an
-  `IPPROTO_IPV6` ancillary `cmsg` built by `udp6_saveopt`, assembled before the headers are stripped
-  (RFC 3542).
+  `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. When the
+  `IN6P_HOPLIMIT` (`IPV6_HOPLIMIT`) or `IN6P_PKTINFO` (`IPV6_RECVPKTINFO`) flag is set, `udp6_input`
+  delivers the received hop limit and/or a `struct in6_pktinfo` (destination address + receiving
+  interface index) as `IPPROTO_IPV6` ancillary `cmsg`s built by `udp6_saveopt`, chained via `m_next`
+  and assembled before the headers are stripped (RFC 3542).
 
 ### 6.1 Neighbour Discovery
 
@@ -238,7 +239,9 @@ is layered on top: a Query is recognised as v2 by its length (an MLDv1 Query is 
 `struct mld_hdr`), the floating-point Maximum Response Code is decoded, and the pending response is
 flagged so timer expiry emits an ICMPv6 type-143 Report — a single `MODE_IS_EXCLUDE` record with no
 sources (equivalent to a plain membership) sent to `ff02::16`. A v1 querier still receives v1
-Reports. Per-source filtering is not tracked.
+Reports. Per-source filtering is not tracked. Every MLD message (v1 and v2) is emitted with a
+Hop-by-Hop Options header carrying the Router Alert option (RFC 2711, `mld6_prepend_ra`) so that
+on-link multicast routers intercept it.
 
 ### 6.3 Path MTU Discovery (RFC 8201)
 
@@ -351,9 +354,9 @@ Properties the implementation provides:
 - **x86_64 checksum requires SSE2.** Only the SSE2 checksum is compiled on x86_64, with no scalar
   fallback. SSE2 is baseline on all x86_64 CPUs, so this is not a practical restriction.
 - **Multicast is host-only.** IGMP (IPv4) and MLD (IPv6) implement the group-member role only —
-  there is no querier/router role and no multicast routing (mrouted). The MLDv1/MLDv2 reports do not
-  yet prepend a Hop-by-Hop Router Alert option (IGMP does), and `IPV6_PKTINFO` ancillary delivery on
-  UDP/IPv6 receive is still a TODO (`IPV6_HOPLIMIT` is delivered).
+  there is no querier/router role and no multicast routing (mrouted). Both carry a Router Alert
+  option on their reports, and receive-side `IPV6_HOPLIMIT`/`IPV6_PKTINFO` ancillary data is
+  delivered; per-source multicast filtering (MLDv2 INCLUDE/EXCLUDE source lists) is not tracked.
 - **Unimplemented API surface.** Several Roadshow interface-management entrypoints
   (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, `ObtainInterfaceList`, …) and Miami calls
   (`MiamiSysCtl`, `MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented".

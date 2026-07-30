@@ -110,10 +110,49 @@ mld6_random(void)
 	return (mld6_random_seed >> 16) & 0x7fff;
 }
 
+/*
+ * Every MLD message is sent with an IPv6 Hop-by-Hop Options header carrying
+ * the Router Alert option (RFC 2711), so that multicast routers intercept it
+ * even though it is addressed to a group they are not a member of.  The header
+ * is a fixed 8 octets: the 2-byte Hop-by-Hop header, the 4-byte Router Alert
+ * option, and a 2-byte PadN(0) to round up to the required 8-octet multiple.
+ */
+#define MLD6_RA_HBHLEN	8
+
 /* Forward declarations */
 static void mld6_sendpkt(struct in6_multi *, int, const struct in6_addr *);
 static void mld6_sendpkt_v2(struct in6_multi *);
 static int  mld6_timer_active(void);
+
+/* ------------------------------------------------------------------
+ * mld6_prepend_ra - write the Router Alert Hop-by-Hop Options header
+ * immediately after the IPv6 header, set ip6_nxt to IPPROTO_HOPOPTS, and
+ * return a pointer to the first byte after it (where the ICMPv6/MLD message
+ * begins).  MLD6_RA_HBHLEN bytes must already be reserved between the IPv6
+ * header and the message.
+ * ------------------------------------------------------------------ */
+static u_int8_t *
+mld6_prepend_ra(struct ip6_hdr *ip6)
+{
+	struct ip6_hbh        *hbh = (struct ip6_hbh *)(ip6 + 1);
+	struct ip6_opt_router *ra  = (struct ip6_opt_router *)(hbh + 1);
+	u_int8_t              *pad = (u_int8_t *)(ra + 1);
+	u_int16_t              rav = IP6_ALERT_MLD;	/* network byte order */
+
+	hbh->ip6h_nxt = IPPROTO_ICMPV6;
+	hbh->ip6h_len = 0;			/* (0 + 1) * 8 = 8 octets */
+
+	ra->ip6or_type = IP6OPT_ROUTER_ALERT;
+	ra->ip6or_len  = sizeof(ra->ip6or_value);	/* option data length = 2 */
+	bcopy(&rav, ra->ip6or_value, sizeof(rav));
+
+	/* PadN(0) fills the remaining 2 octets of the 8-octet header */
+	pad[0] = IP6OPT_PADN;
+	pad[1] = 0;
+
+	ip6->ip6_nxt = IPPROTO_HOPOPTS;
+	return pad + 2;
+}
 
 /* ------------------------------------------------------------------
  * mld6_init - initialize MLD subsystem.
@@ -385,7 +424,7 @@ mld6_sendpkt(struct in6_multi *in6m, int type, const struct in6_addr *dst)
 	struct ip6_moptions im6o;
 	int hdrlen;
 
-	hdrlen = sizeof(struct ip6_hdr) + sizeof(struct mld_hdr);
+	hdrlen = sizeof(struct ip6_hdr) + MLD6_RA_HBHLEN + sizeof(struct mld_hdr);
 
 	MGETHDR(m, M_DONTWAIT, MT_DATA);
 	if(m == NULL)
@@ -397,9 +436,9 @@ mld6_sendpkt(struct in6_multi *in6m, int type, const struct in6_addr *dst)
 	ip6 = mtod(m, struct ip6_hdr *);
 	bzero(ip6, sizeof(*ip6));
 	ip6->ip6_vfc  = IPV6_VERSION;
-	ip6->ip6_plen = htons(sizeof(struct mld_hdr));
-	ip6->ip6_nxt  = IPPROTO_ICMPV6;
+	ip6->ip6_plen = htons(MLD6_RA_HBHLEN + sizeof(struct mld_hdr));
 	ip6->ip6_hlim = 1;		/* MLD requires hop limit = 1 */
+	/* ip6_nxt is set to IPPROTO_HOPOPTS by mld6_prepend_ra() below */
 
 	/* Source: link-local address of the interface */
 	{
@@ -424,16 +463,16 @@ mld6_sendpkt(struct in6_multi *in6m, int type, const struct in6_addr *dst)
 		ip6->ip6_dst.s6_addr[15] = 0x02;
 	}
 
-	/* Build MLD header */
-	mld = (struct mld_hdr *)(ip6 + 1);
+	/* Router Alert Hop-by-Hop header, then the MLD message after it */
+	mld = (struct mld_hdr *)mld6_prepend_ra(ip6);
 	bzero(mld, sizeof(*mld));
 	mld->mld_type = type;
 	mld->mld_addr = in6m->in6m_addr;
 
-	/* Compute ICMPv6 checksum */
+	/* Compute ICMPv6 checksum (over the MLD message, past the HBH header) */
 	mld->mld_cksum = 0;
 	mld->mld_cksum = in6_cksum(m, IPPROTO_ICMPV6,
-	                           sizeof(struct ip6_hdr),
+	                           sizeof(struct ip6_hdr) + MLD6_RA_HBHLEN,
 	                           sizeof(struct mld_hdr));
 
 	D(bug("[AROSTCP:MLD6] %s: sending type=%d on %s%d for %02x%02x:...:%02x%02x\n",
@@ -456,10 +495,8 @@ mld6_sendpkt(struct in6_multi *in6m, int type, const struct in6_addr *dst)
  * Emits an ICMPv6 type 143 report containing a single MODE_IS_EXCLUDE
  * Multicast Address Record (with no sources), which is equivalent to a
  * plain membership in the group.  The report is addressed to the
- * all-MLDv2-capable-routers multicast address ff02::16.
- *
- * Note: like the MLDv1 path above, this does not prepend a Hop-by-Hop
- * Router Alert option; adding it is a follow-up item.
+ * all-MLDv2-capable-routers multicast address ff02::16.  The message is sent
+ * with a Router Alert Hop-by-Hop header (mld6_prepend_ra).
  * ------------------------------------------------------------------ */
 static void
 mld6_sendpkt_v2(struct in6_multi *in6m)
@@ -475,7 +512,7 @@ mld6_sendpkt_v2(struct in6_multi *in6m)
 
 	/* header + one record (no sources, no auxiliary data) */
 	reportlen = sizeof(struct icmp6_hdr) + sizeof(struct mldv2_record);
-	hdrlen    = sizeof(struct ip6_hdr) + reportlen;
+	hdrlen    = sizeof(struct ip6_hdr) + MLD6_RA_HBHLEN + reportlen;
 
 	MGETHDR(m, M_DONTWAIT, MT_DATA);
 	if(m == NULL)
@@ -487,9 +524,9 @@ mld6_sendpkt_v2(struct in6_multi *in6m)
 	ip6 = mtod(m, struct ip6_hdr *);
 	bzero(ip6, sizeof(*ip6));
 	ip6->ip6_vfc  = IPV6_VERSION;
-	ip6->ip6_plen = htons(reportlen);
-	ip6->ip6_nxt  = IPPROTO_ICMPV6;
+	ip6->ip6_plen = htons(MLD6_RA_HBHLEN + reportlen);
 	ip6->ip6_hlim = 1;		/* MLD requires hop limit = 1 */
+	/* ip6_nxt is set to IPPROTO_HOPOPTS by mld6_prepend_ra() below */
 
 	/* Source: link-local address of the interface */
 	{
@@ -505,8 +542,8 @@ mld6_sendpkt_v2(struct in6_multi *in6m)
 	ip6->ip6_dst.s6_addr[1]  = 0x02;
 	ip6->ip6_dst.s6_addr[15] = 0x16;
 
-	/* MLDv2 report header */
-	icmp6 = (struct icmp6_hdr *)(ip6 + 1);
+	/* Router Alert Hop-by-Hop header, then the MLDv2 report after it */
+	icmp6 = (struct icmp6_hdr *)mld6_prepend_ra(ip6);
 	bzero(icmp6, sizeof(*icmp6));
 	icmp6->icmp6_type = MLDV2_LISTENER_REPORT;
 	icmp6->icmp6_data16[0] = 0;		/* reserved */
@@ -520,10 +557,11 @@ mld6_sendpkt_v2(struct in6_multi *in6m)
 	rec->mr_numsrc  = 0;
 	rec->mr_addr    = in6m->in6m_addr;
 
-	/* Compute ICMPv6 checksum */
+	/* Compute ICMPv6 checksum (over the report, past the HBH header) */
 	icmp6->icmp6_cksum = 0;
 	icmp6->icmp6_cksum = in6_cksum(m, IPPROTO_ICMPV6,
-	                               sizeof(struct ip6_hdr), reportlen);
+	                               sizeof(struct ip6_hdr) + MLD6_RA_HBHLEN,
+	                               reportlen);
 
 	D(bug("[AROSTCP:MLD6] %s: sending v2 report on %s%d for %02x%02x:...:%02x%02x\n",
 	      __func__, ifp->if_name, ifp->if_unit,
