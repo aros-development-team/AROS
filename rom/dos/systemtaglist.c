@@ -468,6 +468,15 @@
                 if (WaitPkt() != dp)
                     Alert(AN_QPktFail);
 
+                /* The shell has run CliInit by the time it replies the
+                   startup packet, so its CLI number is valid here. */
+                {
+                    LONG *cliNumPtr = (LONG *)GetTagData(SYS_CliNumPtr, (IPTR)NULL, tags);
+
+                    if (cliNumPtr)
+                        *cliNumPtr = cliproc->pr_TaskNum;
+                }
+
                 if (fh && oldSignal) {
                     DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, oldSignal, 0, 0, 0);
                 }
