@@ -132,6 +132,7 @@ KERN_H= \
 # Amiga "struct Library" interface, API functions,
 API_C=\
 	api/amiga_api api/amiga_libtables api/amiga_syscalls \
+	api/amiga_fdhooks \
 	api/amiga_sendrecv api/amiga_generic api/amiga_generic2 \
 	api/amiga_libcalls api/amiga_errlists api/amiga_kernvars \
         api/amiga_ndbent api/amiga_netstat \
@@ -197,6 +198,7 @@ NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWAR
 USER_CPPFLAGS := \
 	-DDIRECTED_BROADCAST \
 	-DENABLE_MULTICAST \
+	-DENABLE_FDLIBRARY \
 	-DAMITCP -DKERNEL \
 	-D_XOPEN_SOURCE=600 \
 	-D__BSD_VISIBLE=1

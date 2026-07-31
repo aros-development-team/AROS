@@ -445,6 +445,11 @@ AROS_LH0(ULONG *, Close, struct SocketBase *, libPtr, 2, UL)
 }
 
 
+#if defined(ENABLE_FDLIBRARY)
+extern BOOL fdhooks_setup(void);        /* amiga_fdhooks.c */
+extern void fdhooks_cleanup(void);
+#endif
+
 BOOL api_init()
 {
     extern void select_init(void);
@@ -515,6 +520,12 @@ BOOL api_init()
     NewList(&socketBaseList);
     NewList(&garbageSocketBaseList);
     NewList(&releasedSocketList);
+
+#if defined(ENABLE_FDLIBRARY)
+    /* Open fd.library and publish the network operation hooks.  Failure is
+       non-fatal: sdFind() falls back to the private descriptor bitmask. */
+    fdhooks_setup();
+#endif
 
     api_state = API_INITIALIZED;
     return TRUE;
@@ -652,6 +663,10 @@ VOID api_deinit()
         api_setfunctions();
     if(api_state == API_SCRATCH)
         return;
+
+#if defined(ENABLE_FDLIBRARY)
+    fdhooks_cleanup();
+#endif
 
     Forbid();
     /*

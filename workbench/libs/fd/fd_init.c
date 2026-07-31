@@ -10,9 +10,14 @@
 
 static int FD_Init(LIBBASETYPEPTR LIBBASE)
 {
+    ULONG i;
+
     InitSemaphore(&LIBBASE->fd_Lock);
     LIBBASE->fd_Table = NULL;
     LIBBASE->fd_Slots = 0;
+
+    for (i = 0; i < FD_OWNER_MAX; i++)
+        LIBBASE->fd_OwnerHooks[i] = NULL;
 
     return TRUE;
 }

@@ -9,6 +9,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <errno.h>
+#include <libraries/fd.h>
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -51,6 +52,21 @@
 
     if (!(fdesc = __getfdesc(fd)))
     {
+        /* Not a local posixc file descriptor: dispatch to the owning
+           subsystem's close hook (e.g. a bsdsocket socket).  The owner
+           releases its own fd.library reservation. */
+        APTR data;
+        const struct fd_hooks *hooks = __getfdhooks(fd, &data);
+        if (hooks && hooks->fdh_close)
+        {
+            LONG err = 0;
+            if (hooks->fdh_close(data, fd, &err) < 0)
+            {
+                errno = err;
+                return -1;
+            }
+            return 0;
+        }
         errno = EBADF;
 
         return -1;

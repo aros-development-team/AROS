@@ -17,7 +17,6 @@
 #include "__posixc_time.h"
 
 #include <sys/stat.h>
-#include <aros/debug.h>
 
 
 static mode_t __prot_a2u(ULONG protect);

@@ -20,6 +20,7 @@ struct fd_base {
     struct SignalSemaphore fd_Lock;
     fd_entry *fd_Table;
     ULONG fd_Slots;
+    const struct fd_hooks *fd_OwnerHooks[FD_OWNER_MAX];
 };
 
 #endif /* FD_PRIVATE_H */

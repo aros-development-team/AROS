@@ -13,6 +13,7 @@
 
 #include <errno.h>
 
+#include <libraries/fd.h>
 #include "__fdesc.h"
 
 static int send_action_packet(struct MsgPort *port, BPTR arg)
@@ -167,6 +168,27 @@ static int fill_consize(APTR fd, struct winsize *ws)
     va_list args;
     struct winsize *ws;
     fdesc *desc;
+
+    /* Descriptor owned by another subsystem (e.g. a bsdsocket socket):
+       dispatch the ioctl (FIONBIO/FIONREAD/...) through its hook. */
+    if (__getfdesc(fd) == NULL)
+    {
+        APTR data;
+        const struct fd_hooks *hooks = __getfdhooks(fd, &data);
+        if (hooks && hooks->fdh_ioctl)
+        {
+            va_list ap;
+            APTR arg;
+            LONG err = 0, r;
+            va_start(ap, request);
+            arg = va_arg(ap, APTR);
+            va_end(ap);
+            r = hooks->fdh_ioctl(data, (IPTR)request, arg, &err);
+            if (r < 0)
+                errno = err;
+            return r;
+        }
+    }
 
     if(request != TIOCGWINSZ)
     {

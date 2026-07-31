@@ -48,6 +48,12 @@
 
 #include <api/apicalls.h>
 
+#if defined(ENABLE_FDLIBRARY)
+#include <libraries/fd.h>
+#include <proto/fd.h>
+extern struct Library *FDBase;      /* opened in amiga_fdhooks.c */
+#endif
+
 #include <net/if_protos.h>
 #ifdef ENABLE_PACKET_FILTER
 #include "../net/ipfilter.h"
@@ -861,6 +867,11 @@ LONG __CloseSocket(LONG fd, struct SocketBase *libPtr)
      * cleared earlier
      */
     libPtr->dTable[fd] = NULL;
+#if defined(ENABLE_FDLIBRARY)
+    /* Release the system-wide descriptor-number reservation. */
+    if(FDBase != NULL)
+        FD_Free(fd, FD_OWNER_BSDSOCKET);
+#endif
 
 Return:
     ReleaseSyscallSemaphore(libPtr);
