@@ -843,7 +843,10 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
         custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftb;
 
         for(patcnt = 0, dstoffset2 = 0; patcnt < pat->patternheight; patcnt++, dstoffset2 += bm->BytesPerRow) {
-            UWORD blitheight = (height - patcnt + 1) / pat->patternheight;
+            /* Rows patcnt, patcnt + patternheight, ... that fall inside the
+               fill: a round up, not the round to nearest that only came out
+               right for a two-row pattern. */
+            UWORD blitheight = (height - patcnt + pat->patternheight - 1) / pat->patternheight;
             UWORD pattern = ((UWORD*)pat->pattern)[(pat->patternsrcy + patcnt) & patternymask];
             UWORD patternshift = (dstx - pat->patternsrcx) & 15;
 
