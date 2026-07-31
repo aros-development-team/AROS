@@ -45,6 +45,7 @@
 
 #include "net/netdbpaths.h"
 #include <net/sana2config.h>
+#include <net/if_stf.h>
 #include <net/sana2arp.h>   /* for autoip_start() */
 #include <net/route.h>
 #include <netinet/in.h>
@@ -509,7 +510,35 @@ addifent(struct NetDataBase *ndb,
                     ssc->unit = ssc->unit * 10 + *cp++ - '0';
 
                 *ep = 0;
-                ifp = iface_make(ssc);
+#if INET6
+                if(ssc->args->a_tunnel) {
+                    /* 6in4 tunnel pseudo-interface: no SANA-II device. */
+                    struct sockaddr_in tsrc, tdst;
+                    UBYTE ttl = ssc->args->a_ttl ? (UBYTE)*ssc->args->a_ttl : 64;
+                    memset(&tsrc, 0, sizeof(tsrc));
+                    memset(&tdst, 0, sizeof(tdst));
+                    if(ssc->args->a_tdst &&
+                       setaddr(&tdst, ssc->args->a_tdst, AF_INET)) {
+                        /* TSRC is optional: when omitted (0.0.0.0) the outer
+                         * source is auto-selected from the egress interface by
+                         * ip_output - robust to DHCP and correct behind NAT. */
+                        if(ssc->args->a_tsrc)
+                            setaddr(&tsrc, ssc->args->a_tsrc, AF_INET);
+                        ifp = stf_make(ssc, tsrc.sin_addr, tdst.sin_addr, ttl);
+                    } else {
+                        __log(LOG_ERR, "addifent: tunnel %s needs a valid TDST\n",
+                              ssc->args->a_name);
+                        ifp = NULL;
+                    }
+                } else
+#endif
+                if(!ssc->args->a_dev) {
+                    __log(LOG_ERR, "addifent: interface %s has no DEVICE\n",
+                          ssc->args->a_name);
+                    ifp = NULL;
+                } else {
+                    ifp = iface_make(ssc);
+                }
                 if(!ifp) {
 #if defined(__AROS__)
                     D(bug("[AROSTCP](amiga_netdb.c) addifent: failed to create interface '%s'\n", ssc->args->a_name));
@@ -609,6 +638,13 @@ addifent(struct NetDataBase *ndb,
 
                     if(setaddr6(&in6r.ifra_addr, ssc->args->a_ip6)) {
                         setprefixmask6(&in6r.ifra_prefixmask, plen);
+                        /* For a 6in4 tunnel the IPv6 peer is GW6 - set it as
+                         * the point-to-point destination so the peer host
+                         * route (and hence the ::/0 route via it) is installed. */
+                        if(ssc->args->a_tunnel && ssc->args->a_gw6 &&
+                                ssc->args->a_gw6[0] != '\0') {
+                            setaddr6(&in6r.ifra_dstaddr, ssc->args->a_gw6);
+                        }
                         if(in6_control(NULL, SIOCAIFADDR_IN6,
                                        (caddr_t)&in6r, ifp) != 0) {
                             __log(LOG_WARNING,
@@ -643,17 +679,22 @@ addifent(struct NetDataBase *ndb,
 #if INET6
             if(ifp && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_gw6 &&
                     ssc->args->a_gw6[0] != '\0') {
-                struct sockaddr_in6 dst6, gw6;
+                struct sockaddr_in6 dst6, gw6, mask6;
                 memset(&dst6, 0, sizeof(dst6));
                 memset(&gw6,  0, sizeof(gw6));
+                memset(&mask6, 0, sizeof(mask6));
                 dst6.sin6_family = AF_INET6;
                 dst6.sin6_len    = sizeof(dst6);
                 /* dst6.sin6_addr is all-zeros = default route ::/0 */
+                /* An all-zero netmask (::) makes this a ::/0 network route,
+                 * not a host route to the unspecified address. */
+                mask6.sin6_family = AF_INET6;
+                mask6.sin6_len    = sizeof(mask6);
                 if(setaddr6(&gw6, ssc->args->a_gw6)) {
                     rtrequest(RTM_ADD,
                               (struct sockaddr *)&dst6,
                               (struct sockaddr *)&gw6,
-                              NULL,
+                              (struct sockaddr *)&mask6,
                               RTF_UP | RTF_GATEWAY,
                               NULL);
                 }

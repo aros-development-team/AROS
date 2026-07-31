@@ -31,7 +31,7 @@
 
 #define SSC_TEMPLATE \
   "NAME/A," \
-  "DEV=DEVICE/A/K," \
+  "DEV=DEVICE/K," \
   "UNIT/N/K," \
   "IP/K,NETMASK/K,UP/S," \
   "IP6/K,PREFIXLEN/N/K," \
@@ -44,7 +44,8 @@
   "NOTRACKING/S," \
   "NOARP/S," \
   "ARPHDR/N/K," \
-  "P2P=POINT2POINT/S,NOSIMPLEX/S,LOOPBACK/S"
+  "P2P=POINT2POINT/S,NOSIMPLEX/S,LOOPBACK/S," \
+  "TUNNEL/S,TSRC/K,TDST/K,TTL/N/K"
 
 struct ssc_args {
   UBYTE *a_name;
@@ -68,6 +69,10 @@ struct ssc_args {
   SIPTR   a_point2point;
   SIPTR   a_nosimplex;
   SIPTR   a_loopback;
+  SIPTR   a_tunnel;		/* 6in4 tunnel interface */
+  UBYTE  *a_tsrc;		/* tunnel outer IPv4 local endpoint */
+  UBYTE  *a_tdst;		/* tunnel outer IPv4 remote endpoint */
+  LONG   *a_ttl;		/* tunnel outer IPv4 TTL */
 };
 
 struct ssconfig {

@@ -56,7 +56,7 @@ NET_C= \
 	net/if net/if_loop net/pfil \
 	net/raw_cb net/raw_usrreq \
 	net/route net/rtsock net/radix \
-	net/if_sana net/netisr net/sana2config \
+	net/if_sana net/if_stf net/netisr net/sana2config \
 	net/sana2copybuff net/sana2arp net/sana2perror \
 	net/bpf_filter net/bpf net/ipfilter
 
