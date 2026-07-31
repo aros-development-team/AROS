@@ -28,7 +28,7 @@ struct SMFloattext_DATA
 
 IPTR SMFloattext__MUIM_DrawBackground(Class *CLASS, Object *self, struct MUIP_DrawBackground *message)
 {
-    DoMethod(_parent(self), MUIM_DrawBackground, message->left, message->top, message->width, message->height, message->xoffset, message->yoffset, message->flags);
+    return DoMethod(_parent(self), MUIM_DrawBackground, message->left, message->top, message->width, message->height, message->xoffset, message->yoffset, message->flags);
 }
 
 ZUNE_CUSTOMCLASS_1
@@ -64,9 +64,15 @@ CONST_STRPTR str_empty = "";
 CONST_STRPTR spec_displand = "3:Images:display-landscape";
 CONST_STRPTR spec_dispport = "3:Images:display-portrait";
 
-static inline Object *makeSMLabel1(char *label)
+/*
+ * Every cell of the table below is plain text, so all of them use the
+ * frameless label macros: the Label1()/LLabel1() variants are for labelling a
+ * framed gadget, and the frame they reserve costs vertical padding the table
+ * cannot afford on a 200-line screen. FixWidthTxt still aligns the columns.
+ */
+static inline Object *makeSMLabel(char *label)
 {
-    Object *labObj = MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_SingleFrame);
+    Object *labObj = MUI_MakeObject(MUIO_Label, (IPTR)(label), 0);
     if (labObj)
     {
         SET(labObj, MUIA_FixWidthTxt , (IPTR)"000000");
@@ -87,117 +93,63 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     (
         CLASS, self, NULL,
         MUIA_Group_Horiz, TRUE,
-        Child, (IPTR)VGroup,
-            Child, (IPTR)VGroup,
-                Child, (IPTR)(objDispOGrp = HGroup,
-                    Child, (IPTR)HVSpace,
-                    Child, (IPTR)(objDisp = ImageObject,
-                        MUIA_Image_Spec, (IPTR)"3:Images:display-landscape",
-                        MUIA_FixWidth, 52,
-                        MUIA_FixHeight, 48,
-                    End),
-                    Child, (IPTR)HVSpace,
+        Child, (IPTR)(objFeaturesGrp = VGroup,
+            Child, (IPTR)(objDispOGrp = HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)(objDisp = ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:display-landscape",
+                    MUIA_FixWidth, 52,
+                    MUIA_FixHeight, 48,
                 End),
-                Child, (IPTR)(objColGrp = (Object *)ColGroup(5),
-
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    
-                    Child, (IPTR)LLabel1("Aspect"),
-                    Child, (IPTR)LLabel1(": "),
-                    Child, (IPTR)(aspM = (Object *)makeSMLabel1("16368")),
-                    Child, (IPTR)Label1("(ratio:"),
-                    Child, (IPTR)(aspR = (Object *)makeSMLabel1("16384")),
-
-    
-                    Child, (IPTR)LLabel1(_(MSG_VISIBLE_SIZE)),
-                    Child, (IPTR)LLabel1(": "),
-                    Child, (IPTR)(objVisibleW = (Object *)makeSMLabel1("16368")),
-                    Child, (IPTR)Label1("x"),
-                    Child, (IPTR)(objVisibleH = (Object *)makeSMLabel1("16384")),
-
-                    Child, (IPTR)LLabel1(_(MSG_MINIMUM_SIZE)),
-                    Child, (IPTR)LLabel1(": "),
-                    Child, (IPTR)(objMinimumW = (Object *)makeSMLabel1("16368")),
-                    Child, (IPTR)Label1("x"),
-                    Child, (IPTR)(objMinimumH = (Object *)makeSMLabel1("16368")),
-
-                    Child, (IPTR)LLabel1(_(MSG_MAXIMUM_SIZE)),
-                    Child, (IPTR)LLabel1(": "),
-                    Child, (IPTR)(objMaximumW = (Object *)makeSMLabel1("16368")),
-                    Child, (IPTR)Label1("x"),
-                    Child, (IPTR)(objMaximumH = (Object *)makeSMLabel1("16368")),
-
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-
-                    Child, (IPTR)LLabel1(_(MSG_FREQUENCY)),
-                    Child, (IPTR)LLabel1(": "),
-                    Child, (IPTR)(objFreqH = (Object *)makeSMLabel1("16368")),
-                    Child, (IPTR)Label1(","),
-                    Child, (IPTR)(objFreqK = (Object *)makeSMLabel1("16368")),
-
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    Child, (IPTR)RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR)str_empty,
-                    End,
-                    
-                    Child, (IPTR)LLabel1(_(MSG_MAXIMUM_COLORS)),
-                    Child, (IPTR)LLabel1(": "),
-                    Child, (IPTR)(objMaximumColors = (Object *)LLabel1("16777216")),
-                    Child, (IPTR)RectangleObject, End,
-                    Child, (IPTR)RectangleObject, End,
-
-                End),
-                Child, (IPTR)RectangleObject,
-                End,
-            End,
-            Child, (IPTR)(objFeaturesGrp = ScrollgroupObject,
-                NoFrame,
-                MUIA_Scrollgroup_Contents, (IPTR)(objFeatures = NewObject(SMFloattext_CLASS->mcc_Class, NULL,
-                    NoFrame,
-                    MUIA_CycleChain, 1,
-                    MUIA_Floattext_Text, (IPTR)str_empty,
-                TAG_DONE)),
+                Child, (IPTR)HVSpace,
             End),
-        End,
+            Child, (IPTR)(objColGrp = (Object *)ColGroup(5),
+                MUIA_Group_VertSpacing, 0,
+
+                Child, (IPTR)LLabel("Aspect"),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(aspM = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label("(ratio:"),
+                Child, (IPTR)(aspR = (Object *)makeSMLabel("16384")),
+
+                Child, (IPTR)LLabel(_(MSG_VISIBLE_SIZE)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objVisibleW = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label("x"),
+                Child, (IPTR)(objVisibleH = (Object *)makeSMLabel("16384")),
+
+                Child, (IPTR)LLabel(_(MSG_MINIMUM_SIZE)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objMinimumW = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label("x"),
+                Child, (IPTR)(objMinimumH = (Object *)makeSMLabel("16368")),
+
+                Child, (IPTR)LLabel(_(MSG_MAXIMUM_SIZE)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objMaximumW = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label("x"),
+                Child, (IPTR)(objMaximumH = (Object *)makeSMLabel("16368")),
+
+                Child, (IPTR)LLabel(_(MSG_FREQUENCY)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objFreqH = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label(","),
+                Child, (IPTR)(objFreqK = (Object *)makeSMLabel("16368")),
+
+                Child, (IPTR)LLabel(_(MSG_MAXIMUM_COLORS)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objMaximumColors = (Object *)LLabel("16777216")),
+                Child, (IPTR)RectangleObject, End,
+                Child, (IPTR)RectangleObject, End,
+
+            End),
+            Child, (IPTR)(objFeatures = NewObject(SMFloattext_CLASS->mcc_Class, NULL,
+                NoFrame,
+                MUIA_Floattext_Text, (IPTR)str_empty,
+            TAG_DONE)),
+            Child, (IPTR)RectangleObject,
+            End,
+        End),
 
         TAG_MORE, (IPTR)message->ops_AttrList
     );

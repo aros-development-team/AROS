@@ -91,15 +91,15 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
             Child, HLeft(def_height = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)Label1(__(MSG_DEFAULT)),
                 
+            /*
+             * Depth and Autoscroll share a row: columns 3 and 4 are the
+             * checkmark and its label in the two rows above, so the autoscroll
+             * pair falls into the same columns rather than into filler.
+             */
             Child, (IPTR)Label1(__(MSG_DEPTH)),
             Child, HLeft(depth = (Object *)SliderObject, MUIA_CycleChain, TRUE, End),
-            Child, (IPTR)RectangleObject, End,
-            Child, (IPTR)RectangleObject, End,
-
-            Child, (IPTR)Label1(__(MSG_AUTOSCROLL)),
             Child, HLeft(autoscroll = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
-            Child, (IPTR)RectangleObject, End,
-            Child, (IPTR)RectangleObject, End,
+            Child, (IPTR)Label1(__(MSG_AUTOSCROLL)),
 
         End,
         
