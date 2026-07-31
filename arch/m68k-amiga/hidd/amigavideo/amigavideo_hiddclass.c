@@ -920,7 +920,7 @@ VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_
         }
 
         if (srcpbm)
-            ok = blit_copybox(csd, srcpbm, ddata->pbm, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode);
+            ok = blit_copybox(csd, srcpbm, ddata->pbm, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode, GC_COLMASK(msg->gc));
     }
     if (!ok)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
