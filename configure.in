@@ -2166,40 +2166,9 @@ case "$target_os" in
         esac
         ;;
 
-    native*)
-        aros_flavour="standalone"
-        aros_target_arch="native"
-        aros_object_format="riscvelf_aros"
-        aros_isa_flags="$""(ISA_RISCV_FLAGS)"
-        aros_shared_default="no"
-        llvm_target_cpu="RISCV"
-        case "$target_cpu" in
-            *riscv64*)
-                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
-                aros_target_cpu="riscv64"
-                gcc_default_cpu="rv64imafdc"
-                gcc_default_mode="lp64d"
-                ;;
-            *riscv*)
-                aros_target_cpu="riscv"
-                gcc_default_cpu="rv32imafdc"
-                gcc_default_mode="ilp32d"
-                ;;
-            *)
-                AC_MSG_ERROR("Unsupported CPU '$target_cpu' for RISCV")
-                ;;
-        esac
-
-        case "$aros_target_variant" in
-            *sifive_u*)
-                ;;
-        esac
-        ;;
-
     opensbi)
         aros_flavour="standalone"
         aros_target_arch="opensbi"
-        aros_object_format="riscvelf_aros"
         aros_isa_flags="$""(ISA_RISCV_FLAGS)"
         aros_shared_default="no"
         aros_serial_debug=1
@@ -2214,13 +2183,14 @@ case "$target_os" in
             *riscv64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="riscv64"
+                aros_object_format="riscv64elf_aros"
                 dnl Target the RVA22 application profile
                 gcc_default_cpu="rva22u64"
                 gcc_default_mode="lp64d"
                 ;;
             *riscv*)
-                dnl Placeholder: 32bit RISC-V is not yet supported
                 aros_target_cpu="riscv"
+                aros_object_format="riscvelf_aros"
                 gcc_default_cpu="rv32imafdc"
                 gcc_default_mode="ilp32d"
                 ;;
