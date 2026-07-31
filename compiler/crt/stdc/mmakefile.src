@@ -386,9 +386,9 @@ STDC_SCABS_MATH += math/s_cabsl
 STDC_WCABS_MATH += math/w_cabsl
 else
 #
-# Add 128bit long double support for aarch64 and riscv
+# Add 128bit long double support for aarch64 and riscv/riscv64
 #
-ifneq ($(filter $(AROS_TARGET_CPU),aarch64 riscv),)
+ifneq ($(filter $(AROS_TARGET_CPU),aarch64 riscv riscv64),)
 STDC_MATH_RAW += $(STDC_LONGDB_MATH)
 STDC_MATH_RAW += $(STDC_LONGDB128_MATH)
 USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math/ld128
@@ -729,6 +729,13 @@ USER_CPPFLAGS := \
 $(GENDIR)/$(CURDIR)/defaults:
     %mkdirs_q $@
 
+$(GENDIR)/ucd:
+    %mkdirs_q $@
+
+# The Unicode character database files come from the ports sources
+$(GENDIR)/ucd/%.txt: $(PORTSSOURCEDIR)/%.txt | $(GENDIR)/ucd
+	@$(CP) $< $@
+
 $(GENDIR)/$(CURDIR)/defaults/%.c: $(GENCTBL) $(GENDIR)/ucd/UnicodeData.txt $(GENDIR)/ucd/SpecialCasing.txt | $(GENDIR)/$(CURDIR)/defaults
 	@$(ECHO) "Generating $*.c";
 	@$(GENCTBL) $(GENDIR)/ucd $(GENDIR)/$(CURDIR)/defaults $* --emit-c;
@@ -823,7 +830,7 @@ ifneq ($(filter $(AROS_TARGET_CPU),i386 x86_64 m68k),)
 STDC_MATH_STATIC_RAW += $(STDC_LONGDB_MATH)
 STDC_MATH_STATIC_RAW += $(STDC_LONGDB80_MATH)
 else
-ifneq ($(filter $(AROS_TARGET_CPU),aarch64 riscv),)
+ifneq ($(filter $(AROS_TARGET_CPU),aarch64 riscv riscv64),)
 STDC_MATH_STATIC_RAW += $(STDC_LONGDB_MATH)
 STDC_MATH_STATIC_RAW += $(STDC_LONGDB128_MATH)
 endif

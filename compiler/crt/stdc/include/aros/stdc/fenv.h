@@ -15,7 +15,7 @@
 #   include <aros/arm/fenv.h>
 #elif defined __aarch64__
 #   include <aros/aarch64/fenv.h>
-#elif defined __riscv64
+#elif defined(__riscv) && (__riscv_xlen == 64)
 #   include <aros/riscv64/fenv.h>
 #elif defined __riscv
 #   include <aros/riscv/fenv.h>

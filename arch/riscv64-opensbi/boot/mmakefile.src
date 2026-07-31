@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# opensbi-riscv64 boot / distribution glue.
+#
+# For now the "distribution" is the early core.elf, bootable via
+#   qemu-system-riscv64 -M virt -kernel core.elf
+# or as an OpenSBI fw_payload. The full kernel package (BSP ROM with the
+# kernel modules, libraries and resources - see arch/riscv-native/boot
+# and the sifive_u variant for the intended shape) is added once the
+# riscv64 kernel.resource arch code is in place.
+#
+
+#MM- distfiles-opensbi-riscv64 : kernel-opensbi-riscv64
+#MM- distfiles-opensbi-riscv64-quick : kernel-opensbi-riscv64-quick
+
+%common

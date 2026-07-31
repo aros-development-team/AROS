@@ -1,13 +1,13 @@
 /*
-    Copyright (c) 2023-2026, The AROS Development Team. All rights reserved.
+    Copyright (c) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Create an empty usable CPU context, RISC-V version.
+    Desc: Create an empty usable CPU context, 64bit RISC-V version.
 */
 
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
-#include <aros/riscv/cpucontext.h>
+#include <aros/riscv64/cpucontext.h>
 
 #include <kernel_base.h>
 #include <kernel_objects.h>

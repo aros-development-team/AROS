@@ -1,7 +1,7 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (c) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: RISC-V CPU context parsing routines.
+    Desc: 64bit RISC-V CPU context parsing routines.
 */
 
 #include <exec/rawfmt.h>
@@ -10,14 +10,14 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-static const char *gpr_fmt = "X5=0x%08lx  X6 =0x%08lx  X7 =0x%08lx\n"
-                             "X8=0x%08lx  X9=0x%08lx  X10 =0x%08lx  X11 =0x%08lx\n"
-                             "X12=0x%08lx  X13=0x%08lx  X14=0x%08lx  X15=0x%08lx\n"
-                             "X16=0x%08lx  X17=0x%08lx  X18=0x%08lx  X19=0x%08lx\n"
-                             "X20=0x%08lx  X21=0x%08lx  X22=0x%08lx  X23=0x%08lx\n"
-                             "X24=0x%08lx  X25=0x%08lx  X26=0x%08lx  X27=0x%08lx\n"
-                             "X28=0x%08lx  X29=0x%08lx  X30=0x%08lx  X31=0x%08lx\n"
-                             "SP=0x%08lx  RA =0x%08lx  PC =0x%08lx\n";
+static const char *gpr_fmt = "X5 =0x%016lx  X6 =0x%016lx  X7 =0x%016lx\n"
+                             "X8 =0x%016lx  X9 =0x%016lx  X10=0x%016lx  X11=0x%016lx\n"
+                             "X12=0x%016lx  X13=0x%016lx  X14=0x%016lx  X15=0x%016lx\n"
+                             "X16=0x%016lx  X17=0x%016lx  X18=0x%016lx  X19=0x%016lx\n"
+                             "X20=0x%016lx  X21=0x%016lx  X22=0x%016lx  X23=0x%016lx\n"
+                             "X24=0x%016lx  X25=0x%016lx  X26=0x%016lx  X27=0x%016lx\n"
+                             "X28=0x%016lx  X29=0x%016lx  X30=0x%016lx  X31=0x%016lx\n"
+                             "SP =0x%016lx  RA =0x%016lx  PC =0x%016lx\n";
 
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase)
 {
@@ -41,7 +41,7 @@ APTR UnwindFrame(APTR fp, APTR *caller)
 {
     /*
      * The RISC-V frame pointer (s0) points to the CFA; the epilogue
-     * restores ra from fp-XLEN and the caller's fp from fp-2*XLEN.
+     * restores ra from fp-8 and the caller's fp from fp-16.
      */
     APTR *frame = fp;
 

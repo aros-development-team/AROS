@@ -1,0 +1,54 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=10 arch=opensbi-riscv64 \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+CFILES := \
+        kernel_startup
+
+PLATFILES :=
+
+AFILES := \
+        startup
+
+#MM kernel-opensbi-riscv64: kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
+#MM
+kernel-opensbi-riscv64: $(OSGENDIR)/boot/core.elf
+		$(Q)$(NOP)
+
+#MM- kernel-opensbi-riscv64-quick: kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick kernel-opensbi-riscv64
+
+ELFCORELIBS := -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static
+ifeq ("$(AROS_TOOLCHAIN)","gnu")
+ELFCORELIBS += -L$(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(TARGET_GCC_VER) -lgcc
+endif
+
+$(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/task_resource.o
+		@$(ECHO) "Creating   $@"
+		%mkdirs_q $(OSGENDIR)/boot
+		@$(KERNEL_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ $(ELFCORELIBS)
+		@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
+
+#MM kernel-kernel-opensbi-riscv64 : includes
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
+
+%build_archspecific \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=opensbi-riscv64 \
+  files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel
+
+%common

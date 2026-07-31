@@ -1,13 +1,13 @@
 /*
-    Copyright (c) 2023-2026, The AROS Development Team. All rights reserved.
+    Copyright (c) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: CPU probing and context sizing, RISC-V version.
+    Desc: CPU probing and context sizing, 64bit RISC-V version.
 */
 
 #include <aros/symbolsets.h>
 #include <exec/types.h>
 
-#include <aros/riscv/cpucontext.h>
+#include <aros/riscv64/cpucontext.h>
 #include <asm/cpu.h>
 
 #include "kernel_base.h"

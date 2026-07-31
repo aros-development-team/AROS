@@ -10597,7 +10597,7 @@ case "$target_cpu" in
     *powerpc*)
         ;;
     *riscv*)
-        riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE)"
+                        riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE) -mcmodel=medany"
         ;;
 esac
 

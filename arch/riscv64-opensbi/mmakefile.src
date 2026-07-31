@@ -1,0 +1,11 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# Platform home for the opensbi-riscv64 target. OpenSBI (the M-mode SEE)
+# hands control to AROS in S-mode; everything below runs supervisor-mode
+# on top of the SBI interface.
+
+#MM- kernel-exec-opensbi-riscv64 : kernel-exec-riscv64
+#MM- kernel-exec-opensbi-riscv64-kobj : kernel-exec-riscv64-kobj
+
+%common

@@ -24,10 +24,13 @@
 #elif __aarch64__
     /* AAPCS64 callee-saved: x19-x30, sp, NEON v8-v15, plus headroom */
 #   define _JMPLEN 31
-#elif __riscv64
-#   define _JMPLEN 12
+#elif defined(__riscv) && (__riscv_xlen == 64)
+    /* LP64D callee-saved: ra, sp, s0-s11, fs0-fs11 */
+#   define _JMPLEN 25
 #elif __riscv
-#   define _JMPLEN 12
+    /* ILP32D callee-saved: ra, sp, s0-s11 (13 slots + pad),
+       then fs0-fs11 as 12 8-byte pairs at an 8-aligned offset */
+#   define _JMPLEN 37
 #endif
 
 typedef struct __jmp_buf

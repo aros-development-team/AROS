@@ -15,7 +15,7 @@ typedef struct __sigjmp_buf
 {
     unsigned long   retaddr;
     unsigned long   regs[_JMPLEN];
-} sigjmp_buf[1];
+}  __attribute__ ((aligned (16))) sigjmp_buf[1];
 
 
 __BEGIN_DECLS

@@ -41,7 +41,7 @@
 #endif
 
 /* Use architecture-specific implementation if available */
-#if defined __riscv64 || defined __riscv || defined __aarch64__
+#if defined __riscv || defined __aarch64__
   /* 128-bit quad precision (e.g. IEEE binary128) */
   #define LDBL_MANT_DIG        113
   #define LDBL_EPSILON         1.925929944387235853055977942584927319E-34L
@@ -108,7 +108,7 @@
 #endif
 
 # if (__ISO_C_VISIBLE >= 1999)
-# if defined __riscv64 || defined __riscv || defined __aarch64__ || defined __arm__
+# if defined __riscv || defined __aarch64__ || defined __arm__
 #  define FLT_EVAL_METHOD    0
 #  define DECIMAL_DIG        17
 # else

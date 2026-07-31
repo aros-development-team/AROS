@@ -1,7 +1,7 @@
 /*
-    Copyright (c) 2023-2026, The AROS Development Team. All rights reserved.
+    Copyright (c) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: PrepareContext() - Prepare a task context for dispatch, RISC-V version.
+    Desc: PrepareContext() - Prepare a task context for dispatch, 64bit RISC-V version.
 */
 
 #include <exec/execbase.h>
@@ -9,7 +9,7 @@
 #include <utility/tagitem.h>
 #include <proto/arossupport.h>
 #include <proto/kernel.h>
-#include <aros/riscv/cpucontext.h>
+#include <aros/riscv64/cpucontext.h>
 
 #include "exec_intern.h"
 #include "exec_util.h"
@@ -32,7 +32,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         return FALSE;
 
     /*
-     * Set up function arguments. The ILP32 ABI passes the first eight
+     * Set up function arguments. The LP64 ABI passes the first eight
      * integer arguments in a0-a7, so all of TASKTAG_ARG1..8 fit in
      * registers and none go to the stack.
      */
