@@ -11,7 +11,6 @@
 #include <hidd/gfx.h>
 
 #include "amigavideo_hidd.h"
-#include "amigavideo_bitmap.h"
 #include "blitter.h"
 
 #include <aros/debug.h>
@@ -712,7 +711,9 @@ static UBYTE getminterm(UBYTE type, UBYTE fg, UBYTE bg)
             bg = tg;
             case 4: // JAM2
             if (fg && bg) {
-                minterm = (NABC | NANBC) | (ABC | ABNC);
+                /* Both pens set this plane, so the fill is solid: the pattern
+                   selects between two pens that agree here. */
+                minterm = (NABC | NANBC) | (ABC | ABNC | ANBC | ANBNC);
             } else if (!fg && !bg) {
                 minterm = (NABC | NANBC);
             } else if (fg) {
