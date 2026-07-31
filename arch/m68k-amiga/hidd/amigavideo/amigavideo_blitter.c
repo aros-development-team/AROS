@@ -77,8 +77,13 @@ static const UWORD rightmask[] = {
     0xfff8, 0xfffc, 0xfffe, 0xffff
 };
 
-static const UBYTE copy_minterm[] = { 0xff, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0xff, 0x00, 0x3a, 0x00, 0x00, 0xff };
-/* [12] = CopyInverted (D = NOT src): copy minterm 0xca with the B (source)
+static const UBYTE copy_minterm[] = { 0xff, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 0xea, 0x00, 0x00, 0xff, 0x00, 0x3a, 0x00, 0x00, 0xff };
+/* Every entry carries /AC (NABC | NANBC = 0x0a), which is what leaves the
+ * destination alone where the A channel's edge mask is zero. Without it a blit
+ * clears the pixels its first and last word mask out.
+ *
+ * [7] = Or (D = src OR dst): A(B + C) is 0xe0, so the entry is 0xea.
+ * [12] = CopyInverted (D = NOT src): copy minterm 0xca with the B (source)
  * channel inverted -> 0x3a. Used by DrawImageState for an icon's selected
  * state; without it that blit fell back to the per-pixel software CopyBox
  * (~0.8s per icon on a 68000). */
