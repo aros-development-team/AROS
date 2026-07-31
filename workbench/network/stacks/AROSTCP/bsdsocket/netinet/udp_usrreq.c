@@ -497,8 +497,10 @@ release:
 }
 
 u_long	udp_sendspace = 9216;		/* really max datagram size */
-u_long	udp_recvspace = 40 * (1024 + sizeof(struct sockaddr_in));
-/* 40 1K datagrams */
+u_long	udp_recvspace = 256 * (1024 + sizeof(struct sockaddr_in));
+/* 256 1K datagrams: a deeper socket receive buffer lets the UDP receiver
+ * absorb bursts (e.g. sockperf under-load) while the owning task is briefly
+ * off-CPU, instead of overflowing at ~40 datagrams and dropping the flood. */
 
 /*ARGSUSED*/
 int

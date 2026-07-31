@@ -119,7 +119,7 @@ struct	ifqueue	ipintrq = {0};	/* ip packet input queue */
 extern	struct domain inetdomain;
 extern	struct protosw inetsw[];
 u_char	ip_protox[IPPROTO_MAX] = {0};
-int	ipqmaxlen = IFQ_MAXLEN;
+int	ipqmaxlen = 4 * IFQ_MAXLEN;	/* deeper IP input queue to absorb receive bursts */
 struct	in_ifaddr *in_ifaddr  = NULL; /* first inet address */
 
 /*
