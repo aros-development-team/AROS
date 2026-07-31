@@ -21,6 +21,7 @@
 #include <utility/tagitem.h>
 #include <aros/kernel.h>
 #include <asm/cpu.h>
+#include <asm/riscv64/mmu.h>
 #include <proto/exec.h>
 
 #include "kernel_sbi.h"
@@ -320,7 +321,8 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
      */
     {
         struct MemHeader *mh;
-        UWORD *ranges[3];
+        UWORD *ranges[5];
+        IPTR modlow = 0, modhigh = 0;
         IPTR memlow  = ((IPTR)__kernel_end + 4095) & ~(IPTR)4095;
         IPTR memhigh = fdtinfo.mem_base + fdtinfo.mem_size;
         IPTR dtbaddr = (IPTR)fdt;
@@ -330,6 +332,52 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
         if (dtbaddr >= memlow && dtbaddr < memhigh)
             memhigh = dtbaddr & ~(IPTR)4095;
 
+        /*
+         * Load any boot modules delivered alongside the kickstart (a
+         * package placed in RAM by the loader - qemu -initrd, U-Boot
+         * or UEFI - and pointed at by /chosen). They are placed right
+         * after the kernel and become a second romtag scan range.
+         */
+        if (fdtinfo.initrd_start && fdtinfo.initrd_end > fdtinfo.initrd_start)
+        {
+            IPTR lo = 0, hi = 0, used = memlow;
+            IPTR isize = fdtinfo.initrd_end - fdtinfo.initrd_start;
+            int n;
+
+            krnSBIPutStr("modules:   package @ ");
+            krnSBIPutHex(fdtinfo.initrd_start);
+            krnSBIPutStr(" (");
+            krnSBIPutDec(isize >> 10);
+            krnSBIPutStr(" KiB)\n");
+
+            /* Keep the package itself out of the allocatable pool */
+            if (fdtinfo.initrd_start >= memlow &&
+                fdtinfo.initrd_start < (IPTR)memhigh)
+                memhigh = fdtinfo.initrd_start & ~(IPTR)4095;
+
+            n = krnLoadPackage((void *)(IPTR)fdtinfo.initrd_start, isize,
+                               memlow, memhigh, &lo, &hi, &used);
+            if (n > 0)
+            {
+                krnSBIPutStr("modules:   ");
+                krnSBIPutDec(n);
+                krnSBIPutStr(" loaded, ");
+                krnSBIPutHex(lo);
+                krnSBIPutStr(" - ");
+                krnSBIPutHex(hi);
+                krnSBIPutStr("\n");
+                /* The modules landed in what the initial map treats as
+                   data - their code has to be executable */
+                krnMMUSetPerms(lo, (hi + 4095) & ~(IPTR)4095,
+                               PTE_R | PTE_W | PTE_X);
+                modlow  = lo;
+                modhigh = hi;
+                memlow  = (used + 4095) & ~(IPTR)4095;
+            }
+            else
+                krnSBIPutStr("[boot] WARNING: no modules loaded!\n");
+        }
+
         mh = (struct MemHeader *)memlow;
         krnCreateMemHeader("System Memory", 0, (APTR)memlow,
                            memhigh - memlow,
@@ -337,7 +385,14 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
 
         ranges[0] = (UWORD *)__text_start;
         ranges[1] = (UWORD *)__kernel_end;
-        ranges[2] = (UWORD *)-1;
+        if (modhigh)
+        {
+            ranges[2] = (UWORD *)modlow;
+            ranges[3] = (UWORD *)modhigh;
+            ranges[4] = (UWORD *)-1;
+        }
+        else
+            ranges[2] = (UWORD *)-1;
 
         krnSBIPutStr("exec:      preparing ExecBase (memory ");
         krnSBIPutHex(memlow);
@@ -382,6 +437,20 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                 krnSBIPutStr("exec:      AvailMem(MEMF_ANY) = ");
                 krnSBIPutDec(AvailMem(MEMF_ANY) >> 20);
                 krnSBIPutStr(" MiB free\n");
+
+                /* Prove a package-loaded module is usable */
+                {
+                    struct Library *ub = OpenLibrary("utility.library", 0);
+                    krnSBIPutStr("modules:   OpenLibrary(utility) = ");
+                    krnSBIPutHex((uint64_t)(uintptr_t)ub);
+                    if (ub)
+                    {
+                        krnSBIPutStr(" v");
+                        krnSBIPutDec(ub->lib_Version);
+                        CloseLibrary(ub);
+                    }
+                    krnSBIPutStr("\n");
+                }
             }
 
             /* "testsched" on the command line: prove a second task can

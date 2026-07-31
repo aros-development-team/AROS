@@ -75,6 +75,8 @@ int krnParseFDT(void *dtb, struct krnFDTInfo *info)
     info->ncpus = 0;
     info->totalsize = 0;
     info->tb_freq = 0;
+    info->initrd_start = 0;
+    info->initrd_end = 0;
 
     if (!dtb || be32(hdr->magic) != FDT_MAGIC)
         return 0;
@@ -147,6 +149,18 @@ int krnParseFDT(void *dtb, struct krnFDTInfo *info)
                      str_eq(pname, "timebase-frequency") && len >= 4)
             {
                 info->tb_freq = be32(*val);
+            }
+            else if (depth == 2 && str_eq(node1, "chosen") &&
+                     str_eq(pname, "linux,initrd-start"))
+            {
+                info->initrd_start = (len >= 8) ? read_cells(val, 2)
+                                                : be32(*val);
+            }
+            else if (depth == 2 && str_eq(node1, "chosen") &&
+                     str_eq(pname, "linux,initrd-end"))
+            {
+                info->initrd_end = (len >= 8) ? read_cells(val, 2)
+                                              : be32(*val);
             }
             break;
         }

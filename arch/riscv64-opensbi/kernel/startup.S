@@ -15,7 +15,30 @@
 	.section .aros.init,"ax"
 	.globl	_start
 	.type	_start,%function
+
+/*
+ * RISC-V Linux boot image header. Real hardware (e.g. the Milk-V Titan)
+ * is booted through U-Boot/UEFI rather than by OpenSBI directly; both
+ * load a flat "Image" and enter it at offset 0 with the same register
+ * handoff we already use (a0 = hart id, a1 = DTB). The header lets them
+ * identify and place the image; the first word is the branch over it, so
+ * the ELF entry point works identically.
+ */
 _start:
+	j	_start_kernel			/* code0                     */
+	.word	0				/* code1                     */
+	.balign	8
+	.dword	0x200000			/* text_offset (2MiB)        */
+	.dword	__kernel_end - _start		/* image_size                */
+	.dword	0				/* flags: little endian      */
+	.word	0x00000002			/* version 0.2               */
+	.word	0				/* res1                      */
+	.dword	0				/* res2                      */
+	.dword	0x5643534952			/* magic "RISCV"             */
+	.word	0x05435352			/* magic2 "RSC\x05"          */
+	.word	0				/* res4 (PE/COFF offset)     */
+
+_start_kernel:
 	/* Mask S-mode interrupts until the interrupt dispatcher exists */
 	csrw	sie, zero
 

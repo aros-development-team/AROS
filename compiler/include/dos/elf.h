@@ -169,6 +169,7 @@
 #define R_RISCV_ALIGN           43
 #define R_RISCV_RVC_BRANCH      44
 #define R_RISCV_RVC_JUMP        45
+#define R_RISCV_GOT_HI20        20
 #define R_RISCV_RELAX           51
 #define R_RISCV_SUB6            52
 #define R_RISCV_SET6            53

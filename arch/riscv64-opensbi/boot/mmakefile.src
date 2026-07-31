@@ -4,15 +4,37 @@ include $(SRCDIR)/config/aros.cfg
 #
 # opensbi-riscv64 boot / distribution glue.
 #
-# For now the "distribution" is the early core.elf, bootable via
-#   qemu-system-riscv64 -M virt -kernel core.elf
-# or as an OpenSBI fw_payload. The full kernel package (BSP ROM with the
-# kernel modules, libraries and resources - see arch/riscv-native/boot
-# and the sifive_u variant for the intended shape) is added once the
-# riscv64 kernel.resource arch code is in place.
+# The kickstart (Image/core.elf) carries only kernel.resource,
+# exec.library and task.resource plus the components exec itself needs
+# to reach the resident chain. Everything else ships in a package that
+# the loader places in RAM (qemu -initrd, U-Boot or UEFI) and points at
+# through /chosen; kernel_elf.c relocates the modules into place and
+# adds them to the romtag scan.
 #
 
-#MM- distfiles-opensbi-riscv64 : kernel-opensbi-riscv64
+# TODO: battclock.resource needs an opensbi implementation (SBI has no
+# RTC service - the time source is an RTC described in the device tree,
+# goldfish-rtc on qemu virt).
+#MM kernel-bsp-opensbi-riscv64 : \
+#MM     kernel-aros \
+#MM     kernel-oop \
+#MM     kernel-utility \
+#MM     kernel-expansion \
+#MM     kernel-timer \
+#MM     kernel-processor
+
+BSP_LIBS      := aros oop utility
+BSP_LIBS_ARCH := expansion
+BSP_RSRC_ARCH := processor
+BSP_DEVS_ARCH := timer
+
+%make_package mmake=kernel-bsp-opensbi-riscv64 \
+    file=$(AROSARCHDIR)/aros-bsp.pkg \
+    libs=$(BSP_LIBS) arch_libs=$(BSP_LIBS_ARCH) \
+    arch_res=$(BSP_RSRC_ARCH) \
+    arch_devs=$(BSP_DEVS_ARCH)
+
+#MM- distfiles-opensbi-riscv64 : kernel-opensbi-riscv64 kernel-bsp-opensbi-riscv64
 #MM- distfiles-opensbi-riscv64-quick : kernel-opensbi-riscv64-quick
 
 %common

@@ -118,6 +118,38 @@ static void krnMapMega(unsigned long pa, unsigned long size, unsigned long perms
     }
 }
 
+/* Map a 1GiB-aligned region at VA == PA with gigapages (root leaves) */
+static void krnMapGiga(unsigned long pa, unsigned long size, unsigned long perms)
+{
+    unsigned long va;
+
+    for (va = pa; va < pa + size; va += GIGAPAGE_SIZE)
+        pt_root[SV39_VPN(va, 2)] = PA_TO_PTE(va) | perms | PTE_A | PTE_D |
+                                   PTE_G | PTE_V;
+}
+
+/*
+ * Re-map an already-mapped 4KiB-page range with new permissions. Used
+ * for the boot modules, which are loaded into what the initial map
+ * treats as plain RW data.
+ *
+ * TODO: modules are mapped RWX as a block; per-section W^X would need
+ * the loader to place each section on its own page.
+ */
+void krnMMUSetPerms(IPTR lo, IPTR hi, unsigned long perms)
+{
+    unsigned long va;
+
+    for (va = lo & ~(PAGE_SIZE - 1); va < hi; va += PAGE_SIZE)
+    {
+        pte_t *l0 = krnPTWalk(va);
+        l0[SV39_VPN(va, 0)] = PA_TO_PTE(va) | perms | PTE_A | PTE_D |
+                              PTE_G | PTE_V;
+    }
+
+    asm volatile("sfence.vma zero, zero" ::: "memory");
+}
+
 void krnInitMMU(struct krnFDTInfo *info)
 {
     unsigned long kimg_lo = (unsigned long)__text_start & ~(MEGAPAGE_SIZE - 1);
@@ -126,10 +158,31 @@ void krnInitMMU(struct krnFDTInfo *info)
     unsigned long mem_end = info->mem_base + info->mem_size;
     unsigned long pa;
 
+    unsigned long kgiga_lo = (unsigned long)__text_start & ~(GIGAPAGE_SIZE - 1);
+
     pt_root = krnPTAlloc();
 
-    /* RAM, skipping the kernel's megapage region */
-    for (pa = info->mem_base; pa < mem_end; pa += MEGAPAGE_SIZE)
+    /*
+     * Bulk RAM is mapped with 1GiB gigapages straight out of the root
+     * table - no second-level tables at all, so the page table pool
+     * stays tiny no matter how much RAM is fitted (the Milk-V Titan
+     * takes up to 64GiB; megapages alone would need one L1 table per
+     * GiB and exhaust the pool).
+     *
+     * The gigabyte containing the kernel is the exception: it is mapped
+     * with megapages, and the kernel's own megabytes with 4KiB pages,
+     * so per-section W^X permissions can be applied.
+     */
+    for (pa = info->mem_base & ~(GIGAPAGE_SIZE - 1); pa < mem_end;
+         pa += GIGAPAGE_SIZE)
+    {
+        if (pa == kgiga_lo)
+            continue;
+        krnMapGiga(pa, GIGAPAGE_SIZE, PTE_R | PTE_W);
+    }
+
+    /* The kernel's gigabyte, in megapages except the kernel image */
+    for (pa = kgiga_lo; pa < kgiga_lo + GIGAPAGE_SIZE; pa += MEGAPAGE_SIZE)
     {
         if (pa >= kimg_lo && pa < kimg_hi)
             continue;

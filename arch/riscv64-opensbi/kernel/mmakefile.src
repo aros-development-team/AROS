@@ -25,7 +25,8 @@ CFILES := \
         kernel_fdt \
         kernel_timer \
         kernel_mmu \
-        kernel_cpu
+        kernel_cpu \
+        kernel_elf
 
 PLATFILES :=
 
@@ -33,35 +34,45 @@ AFILES := \
         startup \
         traps
 
-# The opensbi kickstart is a single self-contained ELF, booted directly
-# by OpenSBI/qemu with no intermediate bootstrap - so, like the classic
-# m68k ROM, the BSP's core system components are linked in as kernel
-# objects and found by the resident scan. Driver/extended packages can
-# be layered via %make_package once a module loader exists.
+# The kickstart holds only the components that must exist before
+# anything can be loaded: kernel.resource, exec.library and
+# task.resource. Everything else - including utility.library, which
+# task.resource opens during its coldstart init - ships in the BSP
+# package (see ../boot), loaded and relocated at boot by kernel_elf.c
+# before the resident scan runs.
 BSP_RES  := kernel task
-BSP_LIBS := exec utility aros oop expansion
+BSP_LIBS := exec
 
 BSP_KOBJS := \
     $(addprefix $(KOBJSDIR)/, $(addsuffix _resource.o, $(BSP_RES))) \
     $(addprefix $(KOBJSDIR)/, $(addsuffix _library.o, $(BSP_LIBS)))
 
-#MM kernel-opensbi-riscv64: kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj kernel-utility-kobj kernel-aros-kobj kernel-oop-kobj kernel-expansion-kobj
+#MM kernel-opensbi-riscv64: kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
 #MM
 kernel-opensbi-riscv64: $(OSGENDIR)/boot/core.elf
 		$(Q)$(NOP)
 
-#MM- kernel-opensbi-riscv64-quick: kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick kernel-utility-kobj-quick kernel-aros-kobj-quick kernel-oop-kobj-quick kernel-expansion-kobj-quick kernel-opensbi-riscv64
+#MM- kernel-opensbi-riscv64-quick: kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick kernel-opensbi-riscv64
 
 ELFCORELIBS := -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static
 ifeq ("$(AROS_TOOLCHAIN)","gnu")
 ELFCORELIBS += -L$(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(TARGET_GCC_VER) -lgcc
 endif
 
+kernel-opensbi-riscv64: $(OSGENDIR)/boot/Image
+
 $(OSGENDIR)/boot/core.elf: $(BSP_KOBJS)
 		@$(ECHO) "Creating   $@"
 		%mkdirs_q $(OSGENDIR)/boot
 		@$(KERNEL_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ $(ELFCORELIBS)
 		@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
+
+# Flat image carrying the RISC-V boot header (see startup.S), for
+# loaders that expect a Linux-style Image - U-Boot "booti", UEFI, and
+# the qemu -kernel shorthand.
+$(OSGENDIR)/boot/Image: $(OSGENDIR)/boot/core.elf
+		@$(ECHO) "Creating   $@"
+		@$(TARGET_OBJCOPY) -O binary $< $@
 
 #MM kernel-kernel-opensbi-riscv64 : includes
 

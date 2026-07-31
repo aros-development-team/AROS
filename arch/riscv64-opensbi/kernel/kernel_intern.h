@@ -47,6 +47,8 @@ struct krnFDTInfo
     uint32_t    ncpus;      /* Number of cpu@ nodes under /cpus     */
     uint32_t    totalsize;  /* Total size of the DTB                */
     uint32_t    tb_freq;    /* /cpus timebase-frequency (Hz)        */
+    uint64_t    initrd_start;/* /chosen linux,initrd-start (or 0)    */
+    uint64_t    initrd_end;
 };
 int krnParseFDT(void *dtb, struct krnFDTInfo *info);
 
@@ -57,6 +59,11 @@ void krnTimerTick(void);
 
 /* Sv39 MMU (kernel_mmu.c) */
 void krnInitMMU(struct krnFDTInfo *info);
+void krnMMUSetPerms(IPTR lo, IPTR hi, unsigned long perms);
+
+/* Boot module loading (kernel_elf.c) */
+int krnLoadPackage(void *pkg, IPTR pkgsize, IPTR memlow, IPTR memhigh,
+                   IPTR *lo, IPTR *hi, IPTR *memused);
 
 /*
  * mhartid is an M-mode CSR and can not be read from S-mode; the boot
