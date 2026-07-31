@@ -25,6 +25,13 @@
 #define NANBC  0x02
 #define NANBNC 0x01
 
+/* BLTCON0 channel enables. A channel left disabled does not read memory: it
+   takes its data from BLTADAT or BLTBDAT instead. */
+#define USEA   0x0800
+#define USEB   0x0400
+#define USEC   0x0200
+#define USED   0x0100
+
 // Safety check for fast ram bitmaps
 static BOOL canblit(struct BitMap *bm)
 {
@@ -198,7 +205,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     custom->bltcmod = dstbm->BytesPerRow - width * 2;
     custom->bltdmod = dstbm->BytesPerRow - width * 2;
     custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftb;
-    bltcon0 = 0x0700 | copy_minterm[mode] | shifta;
+    bltcon0 = USEB | USEC | USED | copy_minterm[mode] | shifta;
     custom->bltadat = 0xffff;
     
     for (i = 0; i < dstbm->Depth; i++) {
@@ -211,10 +218,10 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
             continue;
         WaitBlit();
         if (i >= srcbm->Depth || srcbm->Planes[i] == (UBYTE*)0x00000000) {
-            bltcon0b &= ~0x0400;
+            bltcon0b &= ~USEB;
             custom->bltbdat = 0x0000;
         } else if (srcbm->Planes[i] == (UBYTE*)0xffffffff) {
-            bltcon0b &= ~0x0400;
+            bltcon0b &= ~USEB;
             custom->bltbdat = 0xffff;
         } else {
             custom->bltbpt = (APTR)(srcbm->Planes[i] + srcoffset);
@@ -360,7 +367,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
                 custom->bltafwm = 0xffff;
                 custom->bltalwm = 0xffff;
                 // AC+/AB
-                custom->bltcon0 = 0x0bac;
+                custom->bltcon0 = USEA | USEC | USED | 0xac;
                 custom->bltcon1 = 0x0000;
                 startblitter(data, srcwidth + 1, h);
                 DisownBlitter();
@@ -384,7 +391,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
     custom->bltcmod = dstbm->BytesPerRow - width * 2;
     custom->bltdmod = dstbm->BytesPerRow - width * 2;
     custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | bltshift;
-    bltcon0 = 0x0f00 | 0x00ca | bltshift;
+    bltcon0 = USEA | USEB | USEC | USED | 0xca | bltshift;
     
     for (i = 0; i < dstbm->Depth; i++) {
         UWORD bltcon0b = bltcon0;
@@ -392,10 +399,10 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
             continue;
         WaitBlit();
         if (i >= srcbm->Depth || srcbm->Planes[i] == (UBYTE*)0x00000000) {
-            bltcon0b &= ~0x0400;
+            bltcon0b &= ~USEB;
             custom->bltbdat = 0x0000;
         } else if (srcbm->Planes[i] == (UBYTE*)0xffffffff) {
-            bltcon0b &= ~0x0400;
+            bltcon0b &= ~USEB;
             custom->bltbdat = 0xffff;
         } else {
             custom->bltbpt = (APTR)(srcbm->Planes[i] + srcoffset);
@@ -457,7 +464,7 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct BitMap *bm, WORD x
     custom->bltcmod = bm->BytesPerRow - width * 2;
     custom->bltdmod = bm->BytesPerRow - width * 2;
     custom->bltcon1 = 0x0000;
-    custom->bltcon0 = 0x0300 | fill_minterm[mode];
+    custom->bltcon0 = USEC | USED | fill_minterm[mode];
     custom->bltadat = 0xffff;
     
     if (mode == vHidd_GC_DrawMode_Clear)
@@ -620,7 +627,7 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
         if (i < 8 && !(colmask & (1 << i)))
             continue;
 
-        chmask = 0x0700;
+        chmask = USEB | USEC | USED;
         shiftbv = shiftb;
  
         /* not guaranteed to be correct, last time I played with minterms
@@ -647,11 +654,11 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
             case 4: // JAM2
             if (fg && bg) {
                 minterm = (NABC | NANBC) | (ABC | ABNC);
-                chmask = 0x0300;
+                chmask = USEC | USED;
                 shiftbv = 0;
             } else if (!fg && !bg) {
                 minterm = (NABC | NANBC);
-                chmask = 0x0300;
+                chmask = USEC | USED;
                 shiftbv = 0;
             } else if (fg) {
                 minterm = (NABC | NANBC) | (ABC | ABNC);
@@ -822,7 +829,7 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
         fg = fgpen & 1;
         bg = bgpen & 1;
 
-        chmask = pat->mask ? 0x0f00 : 0x0300;
+        chmask = pat->mask ? (USEA | USEB | USEC | USED) : (USEC | USED);
  
         minterm = getminterm(type, fg, bg);
  
