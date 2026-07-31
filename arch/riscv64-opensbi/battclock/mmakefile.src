@@ -1,0 +1,8 @@
+include $(SRCDIR)/config/aros.cfg
+
+%build_archspecific \
+  mainmmake=kernel-battclock modname=battclock maindir=rom/battclock \
+  arch=opensbi-riscv64 \
+  files="battclock_init readbattclock writebattclock"
+
+%common

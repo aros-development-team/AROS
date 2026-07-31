@@ -12,20 +12,18 @@ include $(SRCDIR)/config/aros.cfg
 # adds them to the romtag scan.
 #
 
-# TODO: battclock.resource needs an opensbi implementation (SBI has no
-# RTC service - the time source is an RTC described in the device tree,
-# goldfish-rtc on qemu virt).
 #MM kernel-bsp-opensbi-riscv64 : \
 #MM     kernel-aros \
 #MM     kernel-oop \
 #MM     kernel-utility \
 #MM     kernel-expansion \
 #MM     kernel-timer \
+#MM     kernel-battclock \
 #MM     kernel-processor
 
 BSP_LIBS      := aros oop utility
 BSP_LIBS_ARCH := expansion
-BSP_RSRC_ARCH := processor
+BSP_RSRC_ARCH := battclock processor
 BSP_DEVS_ARCH := timer
 
 %make_package mmake=kernel-bsp-opensbi-riscv64 \
