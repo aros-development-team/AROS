@@ -1,18 +1,18 @@
 /*
-    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: genmodule.h include file for risc-v (RV32, ILP32D) systems.
+    Desc: genmodule.h include file for 64bit risc-v (RV64, LP64D) systems.
 
     Library-call stubs jump through the library's downward-growing vector
     table: the function for LVO n lives at (libbase - n*LIB_VECTSIZE), and
-    each JumpVec slot holds a function pointer. The stubs hand the libbase
-    to the library-side thunk in t6 - a temporary register that is never
-    used to pass arguments, so all eight integer (a0-a7) and eight FP
+    each JumpVec slot holds a 64-bit function pointer. The stubs hand the
+    libbase to the library-side thunk in t6 - a temporary register that is
+    never used to pass arguments, so all eight integer (a0-a7) and eight FP
     (fa0-fa7) argument registers stay untouched.
 */
 
-#ifndef AROS_RISCV_GENMODULE_H
-#define AROS_RISCV_GENMODULE_H
+#ifndef AROS_RISCV64_GENMODULE_H
+#define AROS_RISCV64_GENMODULE_H
 
 #include <exec/execbase.h>
 
@@ -33,10 +33,10 @@
             ".type " #fname ", %%function\n"                               \
             #fname " :\n"                                                  \
             "\tla   t6, " #libbasename "\n" /* t6 = &libbasename        */ \
-            "\tlw   t6, 0(t6)\n"            /* t6 = libbase             */ \
+            "\tld   t6, 0(t6)\n"            /* t6 = libbase             */ \
             "\tli   t0, %0\n"               /* t0 = lvo*LIB_VECTSIZE    */ \
             "\tsub  t0, t6, t0\n"           /* t0 = &JumpVec[-lvo]      */ \
-            "\tlw   t0, 0(t0)\n"            /* t0 = function pointer    */ \
+            "\tld   t0, 0(t0)\n"            /* t0 = function pointer    */ \
             "\tjr   t0\n"                                                  \
             : : "i" ((lvo)*LIB_VECTSIZE)                                   \
         );                                                                 \
@@ -57,8 +57,8 @@
             #fname " :\n"                                                  \
             /* Preserve every argument-carrying register across the        \
              * helper call: a0-a7 (integer args), fa0-fa7 (FP args) and    \
-             * ra. The ILP32D ABI lets the callee clobber all of them. */  \
-            "\taddi sp, sp, -112\n"                                        \
+             * ra. The LP64D ABI lets the callee clobber all of them. */   \
+            "\taddi sp, sp, -144\n"                                        \
             "\tfsd  fa0, 0(sp)\n"                                          \
             "\tfsd  fa1, 8(sp)\n"                                          \
             "\tfsd  fa2, 16(sp)\n"                                         \
@@ -67,29 +67,29 @@
             "\tfsd  fa5, 40(sp)\n"                                         \
             "\tfsd  fa6, 48(sp)\n"                                         \
             "\tfsd  fa7, 56(sp)\n"                                         \
-            "\tsw   a0, 64(sp)\n"                                          \
-            "\tsw   a1, 68(sp)\n"                                          \
-            "\tsw   a2, 72(sp)\n"                                          \
-            "\tsw   a3, 76(sp)\n"                                          \
-            "\tsw   a4, 80(sp)\n"                                          \
-            "\tsw   a5, 84(sp)\n"                                          \
-            "\tsw   a6, 88(sp)\n"                                          \
-            "\tsw   a7, 92(sp)\n"                                          \
-            "\tsw   ra, 96(sp)\n"                                          \
+            "\tsd   a0, 64(sp)\n"                                          \
+            "\tsd   a1, 72(sp)\n"                                          \
+            "\tsd   a2, 80(sp)\n"                                          \
+            "\tsd   a3, 88(sp)\n"                                          \
+            "\tsd   a4, 96(sp)\n"                                          \
+            "\tsd   a5, 104(sp)\n"                                         \
+            "\tsd   a6, 112(sp)\n"                                         \
+            "\tsd   a7, 120(sp)\n"                                         \
+            "\tsd   ra, 128(sp)\n"                                         \
             "\tcall __aros_getoffsettable\n" /* a0 = offset table       */ \
             "\tla   t0, 1f\n"                                              \
-            "\tlw   t0, 0(t0)\n"             /* t0 = rellib offset      */ \
+            "\tld   t0, 0(t0)\n"             /* t0 = rellib offset      */ \
             "\tadd  t0, a0, t0\n"                                          \
-            "\tlw   t6, 0(t0)\n"             /* t6 = libbase            */ \
-            "\tlw   ra, 96(sp)\n"                                          \
-            "\tlw   a7, 92(sp)\n"                                          \
-            "\tlw   a6, 88(sp)\n"                                          \
-            "\tlw   a5, 84(sp)\n"                                          \
-            "\tlw   a4, 80(sp)\n"                                          \
-            "\tlw   a3, 76(sp)\n"                                          \
-            "\tlw   a2, 72(sp)\n"                                          \
-            "\tlw   a1, 68(sp)\n"                                          \
-            "\tlw   a0, 64(sp)\n"                                          \
+            "\tld   t6, 0(t0)\n"             /* t6 = libbase            */ \
+            "\tld   ra, 128(sp)\n"                                         \
+            "\tld   a7, 120(sp)\n"                                         \
+            "\tld   a6, 112(sp)\n"                                         \
+            "\tld   a5, 104(sp)\n"                                         \
+            "\tld   a4, 96(sp)\n"                                          \
+            "\tld   a3, 88(sp)\n"                                          \
+            "\tld   a2, 80(sp)\n"                                          \
+            "\tld   a1, 72(sp)\n"                                          \
+            "\tld   a0, 64(sp)\n"                                          \
             "\tfld  fa7, 56(sp)\n"                                         \
             "\tfld  fa6, 48(sp)\n"                                         \
             "\tfld  fa5, 40(sp)\n"                                         \
@@ -98,13 +98,13 @@
             "\tfld  fa2, 16(sp)\n"                                         \
             "\tfld  fa1, 8(sp)\n"                                          \
             "\tfld  fa0, 0(sp)\n"                                          \
-            "\taddi sp, sp, 112\n"                                         \
+            "\taddi sp, sp, 144\n"                                         \
             "\tli   t0, %0\n"                /* t0 = lvo*LIB_VECTSIZE   */ \
             "\tsub  t0, t6, t0\n"            /* t0 = &JumpVec[-lvo]     */ \
-            "\tlw   t0, 0(t0)\n"             /* t0 = function pointer   */ \
+            "\tld   t0, 0(t0)\n"             /* t0 = function pointer   */ \
             "\tjr   t0\n"                                                  \
-            "\t.align 2\n"                                                 \
-            "1:\t.word __aros_rellib_offset_" #libbasename "\n"            \
+            "\t.align 3\n"                                                 \
+            "1:\t.dword __aros_rellib_offset_" #libbasename "\n"           \
             : : "i" ((lvo)*LIB_VECTSIZE)                                   \
         );                                                                 \
     }
@@ -134,9 +134,9 @@
     {                                                                      \
         asm volatile(                                                      \
             "\t" __GM_STRINGIZE(libfuncname) " :\n"                        \
-            /* Preserve a0-a7, fa0-fa7 and ra - the ILP32D ABI lets the    \
+            /* Preserve a0-a7, fa0-fa7 and ra - the LP64D ABI lets the     \
              * callee clobber all of them. */                              \
-            "\taddi sp, sp, -112\n"                                        \
+            "\taddi sp, sp, -144\n"                                        \
             "\tfsd  fa0, 0(sp)\n"                                          \
             "\tfsd  fa1, 8(sp)\n"                                          \
             "\tfsd  fa2, 16(sp)\n"                                         \
@@ -145,26 +145,26 @@
             "\tfsd  fa5, 40(sp)\n"                                         \
             "\tfsd  fa6, 48(sp)\n"                                         \
             "\tfsd  fa7, 56(sp)\n"                                         \
-            "\tsw   a0, 64(sp)\n"                                          \
-            "\tsw   a1, 68(sp)\n"                                          \
-            "\tsw   a2, 72(sp)\n"                                          \
-            "\tsw   a3, 76(sp)\n"                                          \
-            "\tsw   a4, 80(sp)\n"                                          \
-            "\tsw   a5, 84(sp)\n"                                          \
-            "\tsw   a6, 88(sp)\n"                                          \
-            "\tsw   a7, 92(sp)\n"                                          \
-            "\tsw   ra, 96(sp)\n"                                          \
+            "\tsd   a0, 64(sp)\n"                                          \
+            "\tsd   a1, 72(sp)\n"                                          \
+            "\tsd   a2, 80(sp)\n"                                          \
+            "\tsd   a3, 88(sp)\n"                                          \
+            "\tsd   a4, 96(sp)\n"                                          \
+            "\tsd   a5, 104(sp)\n"                                         \
+            "\tsd   a6, 112(sp)\n"                                         \
+            "\tsd   a7, 120(sp)\n"                                         \
+            "\tsd   ra, 128(sp)\n"                                         \
             "\tmv   a0, t6\n"                 /* arg0 = libbase         */ \
             "\tcall __aros_setoffsettable\n"                               \
-            "\tlw   ra, 96(sp)\n"                                          \
-            "\tlw   a7, 92(sp)\n"                                          \
-            "\tlw   a6, 88(sp)\n"                                          \
-            "\tlw   a5, 84(sp)\n"                                          \
-            "\tlw   a4, 80(sp)\n"                                          \
-            "\tlw   a3, 76(sp)\n"                                          \
-            "\tlw   a2, 72(sp)\n"                                          \
-            "\tlw   a1, 68(sp)\n"                                          \
-            "\tlw   a0, 64(sp)\n"                                          \
+            "\tld   ra, 128(sp)\n"                                         \
+            "\tld   a7, 120(sp)\n"                                         \
+            "\tld   a6, 112(sp)\n"                                         \
+            "\tld   a5, 104(sp)\n"                                         \
+            "\tld   a4, 96(sp)\n"                                          \
+            "\tld   a3, 88(sp)\n"                                          \
+            "\tld   a2, 80(sp)\n"                                          \
+            "\tld   a1, 72(sp)\n"                                          \
+            "\tld   a0, 64(sp)\n"                                          \
             "\tfld  fa7, 56(sp)\n"                                         \
             "\tfld  fa6, 48(sp)\n"                                         \
             "\tfld  fa5, 40(sp)\n"                                         \
@@ -173,7 +173,7 @@
             "\tfld  fa2, 16(sp)\n"                                         \
             "\tfld  fa1, 8(sp)\n"                                          \
             "\tfld  fa0, 0(sp)\n"                                          \
-            "\taddi sp, sp, 112\n"                                         \
+            "\taddi sp, sp, 144\n"                                         \
             "\ttail " #fname "\n"                                          \
         );                                                                 \
     }
@@ -192,4 +192,4 @@
 #define AROS_GM_STACKALIAS(fname, libbasename, lvo) \
     __AROS_GM_STACKALIAS(fname, AROS_SLIB_ENTRY(fname, libbasename, lvo))
 
-#endif /* AROS_RISCV_GENMODULE_H */
+#endif /* AROS_RISCV64_GENMODULE_H */

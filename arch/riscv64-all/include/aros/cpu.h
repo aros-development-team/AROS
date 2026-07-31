@@ -1,13 +1,13 @@
-#ifndef AROS_RISCV_CPU_H
-#define AROS_RISCV_CPU_H
+#ifndef AROS_RISCV64_CPU_H
+#define AROS_RISCV64_CPU_H
 
 /*
-    Copyright (c) 2023-2026, The AROS Development Team. All rights reserved.
+    Copyright (c) 2026, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
 
-    Desc: cpu.h include file for risc-v (RV32I) systems
+    Desc: cpu.h include file for risc-v (RV64, LP64D) systems
     Lang: english
 */
 
@@ -19,15 +19,15 @@ typedef	unsigned int	cpumask_t;
 #define AROS_STACK_GROWS_DOWNWARDS 1 /* Stack direction */
 #define AROS_BIG_ENDIAN 	   0 /* Big or little endian */
 #define AROS_SIZEOFULONG	   4 /* Size of an ULONG */
-#define AROS_SIZEOFPTR		   4 /* Size of a PTR */
+#define AROS_SIZEOFPTR		   8 /* Size of a PTR */
 #define AROS_WORDALIGN		   2 /* Alignment for WORD */
 #define AROS_LONGALIGN		   4 /* Alignment for LONG */
-#define AROS_QUADALIGN		   4 /* Alignment for QUAD */
-#define AROS_PTRALIGN		   4 /* Alignment for PTR */
-#define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
-#define AROS_DOUBLEALIGN	   4 /* Alignment for double */
+#define AROS_QUADALIGN		   8 /* Alignment for QUAD */
+#define AROS_PTRALIGN		   8 /* Alignment for PTR */
+#define AROS_IPTRALIGN		   8 /* Alignment for IPTR */
+#define AROS_DOUBLEALIGN	   8 /* Alignment for double */
 #define AROS_WORSTALIGN 	  16 /* Worst case alignment */
-#define AROS_STACKALIGN		  16 /* FIXME: is this really needed? */
+#define AROS_STACKALIGN		  16 /* The RISC-V psABI requires a 16-byte aligned stack */
 
 /* define this if we have no support for linear varargs in the compiler */
 #define NO_LINEAR_VARARGS       1
@@ -39,6 +39,15 @@ typedef	unsigned int	cpumask_t;
 #define AROS_SLOWSTACKFORMAT    1
 
 #define AROS_32BIT_TYPE         int
+#define AROS_64BIT_TYPE         long
+#define AROS_64BIT_STACKTYPE    long
+
+#define AROS_MAKE_INT64(i)  i ## L
+#define AROS_MAKE_UINT64(i) i ## UL
+
+#define __WORDSIZE              64
+
+#define STACKED __attribute__((aligned(8)))
 
 /* Use C pointer and string for the BCPL pointers and strings
  * For a normal ABI these should not be defined for maximum source code
@@ -64,17 +73,17 @@ register unsigned char* AROS_GET_SP __asm__("sp");
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
-    field jmp should contain the code for an absolute jmp to a 32bit
+    field jmp should contain the code for an absolute jmp to a 64bit
     address. There are also a couple of macros which you should use to
     access the vector table from C.
 */
 struct FullJumpVec
 {
-    unsigned long jmp[3];   /* auipc t0,0 ; lw t0,12(t0) ; jr t0 */
-    unsigned long vec;      /* 32-bit absolute target address    */
+    unsigned int  jmp[4];   /* auipc t0,0 ; ld t0,16(t0) ; jr t0 ; nop */
+    unsigned long vec;      /* 64-bit absolute target address          */
 };
 /* RISC-V has no full-width absolute jump instruction, so the trampoline
-   loads the target (stored in 'vec', at offset 12 from the trampoline
+   loads the target (stored in 'vec', at offset 16 from the trampoline
    start) into t0 via an AUIPC-relative load and jumps to it. The caller
    must flush the instruction cache (fence.i / CacheClearE) afterwards. */
 #define __AROS_SET_FULLJMP(v,a) \
@@ -82,8 +91,9 @@ do \
 {  \
     struct FullJumpVec *_v = (v); \
     _v->jmp[0] = 0x00000297;	/* auipc t0, 0      */	\
-    _v->jmp[1] = 0x00C2A283;	/* lw    t0, 12(t0) */	\
+    _v->jmp[1] = 0x0102B283;	/* ld    t0, 16(t0) */	\
     _v->jmp[2] = 0x00028067;	/* jr    t0         */	\
+    _v->jmp[3] = 0x00000013;	/* nop (pad)        */	\
     _v->vec    = (unsigned long)(a); \
 } while (0)
 
@@ -93,8 +103,8 @@ struct JumpVec
 };
 
 /* Use these to acces a vector table */
-#define LIB_VECTSIZE			(sizeof (struct JumpVec))
-#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n)])
+#define LIB_VECTSIZE			((int)sizeof (struct JumpVec))
+#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(long)(n)])
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GETJUMPVEC(lib,n)->vec)
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
@@ -166,4 +176,4 @@ extern void aros_not_implemented ();
 #define AROS_SWAP_BYTES_LONG_CPU(l)     __builtin_bswap32(l)
 #define AROS_SWAP_BYTES_WORD_CPU(l)     __builtin_bswap16(l)
 
-#endif /* AROS_RISCV_CPU_H */
+#endif /* AROS_RISCV64_CPU_H */

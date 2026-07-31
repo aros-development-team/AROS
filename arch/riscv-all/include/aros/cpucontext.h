@@ -2,7 +2,7 @@
 #define AROS_RISCV_CPUCONTEXT_H
 
 /*
-    Copyright © 2023, The AROS Development Team. All rights reserved.
+    Copyright (c) 2023-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU context definition for RISC-V processors
@@ -52,13 +52,17 @@ struct ExceptionContext
             ULONG t6;
         };
     };
-    ULONG pc;		                /* csrrr/mepc				    */
-    UWORD Flags;	                /* Currently reserved		    */
+    ULONG pc;		                /* sepc/mepc when trapped	    */
+    ULONG Flags;	                /* ECF_* flags			    */
+    APTR  fpuContext;               /* FPU register state, if saved   */
 };
 
-/* CPU modes */
-#define CPUMODE_MACHINE         0x13
-#define CPUMODE_SUPERVISOR      0x13
-#define CPUMODE_USER            0x10
+/* ExceptionContext Flags */
+#define ECF_FPU  0x0001 /* fpuContext is valid */
+
+/* CPU privilege modes (RISC-V privileged spec) */
+#define CPUMODE_USER            0x00
+#define CPUMODE_SUPERVISOR      0x01
+#define CPUMODE_MACHINE         0x03
 
 #endif
