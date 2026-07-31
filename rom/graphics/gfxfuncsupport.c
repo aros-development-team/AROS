@@ -659,7 +659,6 @@ LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
 /****************************************************************************************/
 
 #define ENABLE_PROFILING   0
-#define USE_OLD_MoveRaster 0
 
 #define rdtscll(val) \
      __asm__ __volatile__("rdtsc" : "=A" (val))
@@ -815,172 +814,6 @@ BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
 
         AROS_BEGIN_PROFILING(Blitting loop)
 
-#if USE_OLD_MoveRaster
-
-        {
-            struct ClipRect *LastHiddenCR;
-
-            for(LastHiddenCR = NULL, SrcCR = L->ClipRect; SrcCR; SrcCR = SrcCR->Next) {
-                SrcCR->_p1 = LastHiddenCR;
-
-                if(SrcCR->lobs)
-                    LastHiddenCR = SrcCR;
-            }
-        }
-
-
-        for(SrcCR = L->ClipRect; SrcCR; SrcCR = SrcCR->Next) {
-            int cando = 0;
-
-            if(SrcCR->lobs && (L->Flags & LAYERSIMPLE)) {
-                continue;
-            }
-
-            if(_AndRectRect(&ScrollRect, Bounds(SrcCR), &Rect)) {
-                TranslateRect(&Rect, -dx, -dy);
-
-                if(_AndRectRect(&ScrollRect, &Rect, &Rect))
-                    cando = 1;
-            }
-
-            if(cando) {
-                /* Rect.Min(X|Y) are the coordinates to wich the rectangle has to be moved
-                   Rect.Max(X|Y) - Rect.Max(X|Y) - 1 are the dimensions of this rectangle */
-                if(!SrcCR->_p1 && !SrcCR->lobs) {
-                    /* there are no hidden/obscured rectangles this recrtangle has to deal with*/
-                    BltBitMap
-                    (
-                        rp->BitMap,
-                        Rect.MinX + dx,
-                        Rect.MinY + dy,
-                        rp->BitMap,
-                        Rect.MinX,
-                        Rect.MinY,
-                        Rect.MaxX - Rect.MinX + 1,
-                        Rect.MaxY - Rect.MinY + 1,
-                        0xc0, /* copy */
-                        0xff,
-                        NULL
-                    );
-                } else {
-                    struct BitMap          *srcbm;
-                    struct RegionRectangle *rr;
-                    struct Region          *RectRegion = NewRegion();
-                    struct Rectangle        Tmp;
-                    struct ClipRect        *HiddCR;
-                    WORD                    corrsrcx, corrsrcy;
-                    BOOL   dosrcsrc;
-
-                    if(!RectRegion)
-                        goto failexit;
-
-                    if(!OrRectRegion(&Rect, RectRegion)) {
-                        DisposeRegion(RectRegion);
-                        goto failexit;
-                    }
-
-                    if(SrcCR->lobs) {
-                        if(L->Flags & LAYERSUPER) {
-                            corrsrcx = - MinX(L) - L->Scroll_X;
-                            corrsrcy = - MinY(L) - L->Scroll_Y;
-                        } else {
-                            corrsrcx = - MinX(SrcCR) + ALIGN_OFFSET(MinX(SrcCR));
-                            corrsrcy = - MinY(SrcCR);
-                        }
-                        srcbm = SrcCR->BitMap;
-                    } else {
-                        corrsrcx  = 0;
-                        corrsrcy  = 0;
-                        srcbm     = rp->BitMap;
-                    }
-
-                    for(HiddCR = SrcCR->_p1; HiddCR; HiddCR = HiddCR->_p1) {
-                        if(_AndRectRect(Bounds(RectRegion), Bounds(HiddCR), &Tmp)) {
-                            if(!(L->Flags & LAYERSIMPLE)) {
-                                WORD corrdstx, corrdsty;
-
-                                if(L->Flags & LAYERSUPER) {
-                                    corrdstx =  - MinX(L) - L->Scroll_X;
-                                    corrdsty =  - MinY(L) - L->Scroll_Y;
-                                } else {
-                                    /* Smart layer */
-                                    corrdstx =  - MinX(HiddCR) + ALIGN_OFFSET(MinX(HiddCR));
-                                    corrdsty =  - MinY(HiddCR);
-                                }
-
-
-                                BltBitMap
-                                (
-                                    srcbm,
-                                    Tmp.MinX + corrsrcx + dx,
-                                    Tmp.MinY + corrsrcy + dy,
-                                    HiddCR->BitMap,
-                                    Tmp.MinX + corrdstx,
-                                    Tmp.MinY + corrdsty,
-                                    Tmp.MaxX - Tmp.MinX + 1,
-                                    Tmp.MaxY - Tmp.MinY + 1,
-                                    0xc0, /* copy */
-                                    0xff,
-                                    NULL
-                                );
-                            }
-
-                            if(!ClearRectRegion(RectRegion, &Tmp)) {
-                                DisposeRegion(RectRegion);
-                                goto failexit;
-                            }
-                        }
-                    }
-
-                    if((dosrcsrc = _AndRectRect(Bounds(SrcCR), &Rect, &Tmp))) {
-                        if(!ClearRectRegion(RectRegion, &Tmp)) {
-                            DisposeRegion(RectRegion);
-                            goto failexit;
-                        }
-                    }
-
-                    for(rr = RectRegion->RegionRectangle; rr; rr = rr->Next) {
-                        BltBitMap
-                        (
-                            srcbm,
-                            MinX(rr) + MinX(RectRegion) + corrsrcx + dx,
-                            MinY(rr) + MinY(RectRegion) + corrsrcy + dy,
-                            rp->BitMap,
-                            MinX(rr) + MinX(RectRegion),
-                            MinY(rr) + MinY(RectRegion),
-                            Width(rr),
-                            Height(rr),
-                            0xc0, /* copy */
-                            0xff,
-                            NULL
-                        );
-                    }
-
-                    if(dosrcsrc) {
-                        BltBitMap
-                        (
-                            srcbm,
-                            Tmp.MinX + corrsrcx + dx,
-                            Tmp.MinY + corrsrcy + dy,
-                            srcbm,
-                            Tmp.MinX + corrsrcx,
-                            Tmp.MinY + corrsrcy,
-                            Tmp.MaxX - Tmp.MinX + 1,
-                            Tmp.MaxY - Tmp.MinY + 1,
-                            0xc0, /* copy */
-                            0xff,
-                            NULL
-                        );
-
-                    }
-
-                    DisposeRegion(RectRegion);
-                }
-            }
-        }
-
-#else
-
         for(SrcCR = L->ClipRect; SrcCR; SrcCR = SrcCR->Next) {
             if(_AndRectRect(&ScrollRect, Bounds(SrcCR), &Rect)) {
                 TranslateRect(&Rect, -dx, -dy);
@@ -1055,7 +888,7 @@ BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
                 }
             }
         }
-#endif
+
         AROS_END_PROFILING
 
         UnlockLayerRom(L);
