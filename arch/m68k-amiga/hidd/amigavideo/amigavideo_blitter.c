@@ -97,7 +97,7 @@ static const UBYTE copy_minterm[] = { 0xff, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 
 // 15: one (->fillrect)
 
 BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, struct BitMap *dstbm,
-    WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode)
+    WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode, UBYTE mask)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
@@ -117,7 +117,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     srcx2 = srcx + w - 1;
     dstx2 = dstx + w - 1;
     if (copy_minterm[mode] == 0xff)
-        return blit_fillrect(data, dstbm, dstx, dsty, dstx2, dsty + h - 1, 0, mode, 0xff);
+        return blit_fillrect(data, dstbm, dstx, dsty, dstx2, dsty + h - 1, 0, mode, mask);
 
     if (copy_minterm[mode] == 0)
         return FALSE;
@@ -203,6 +203,10 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     
     for (i = 0; i < dstbm->Depth; i++) {
         UWORD bltcon0b = bltcon0;
+        /* The write mask protects the planes it clears. It is a UBYTE, so it
+           says nothing about a ninth plane and beyond: leave those writable. */
+        if (i < 8 && !(mask & (1 << i)))
+            continue;
         if (dstbm->Planes[i] == (UBYTE*)0x00000000 || dstbm->Planes[i] == (UBYTE*)0xffffffff)
             continue;
         WaitBlit();
