@@ -1,7 +1,7 @@
 #ifndef AROS_CPU_H
 #define AROS_CPU_H
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     CPU independent version of the <aros/cpu.h> header. This is the one
@@ -56,7 +56,7 @@
 #   include <aros/morphos/cpu.h>
 #elif defined __powerpc__
 #   include <aros/ppc/cpu.h>
-#elif defined __riscv64
+#elif defined(__riscv) && (__riscv_xlen == 64)
 #   include <aros/riscv64/cpu.h>
 #elif defined __riscv
 #   include <aros/riscv/cpu.h>

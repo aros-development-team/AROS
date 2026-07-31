@@ -145,6 +145,38 @@
 #define R_AARCH64_ADR_GOT_PAGE      311
 #define R_AARCH64_LD64_GOT_LO12_NC  312
 
+#define R_RISCV_NONE            0
+#define R_RISCV_32              1
+#define R_RISCV_64              2
+#define R_RISCV_BRANCH          16
+#define R_RISCV_JAL             17
+#define R_RISCV_CALL            18
+#define R_RISCV_CALL_PLT        19
+#define R_RISCV_PCREL_HI20      23
+#define R_RISCV_PCREL_LO12_I    24
+#define R_RISCV_PCREL_LO12_S    25
+#define R_RISCV_HI20            26
+#define R_RISCV_LO12_I          27
+#define R_RISCV_LO12_S          28
+#define R_RISCV_ADD8            33
+#define R_RISCV_ADD16           34
+#define R_RISCV_ADD32           35
+#define R_RISCV_ADD64           36
+#define R_RISCV_SUB8            37
+#define R_RISCV_SUB16           38
+#define R_RISCV_SUB32           39
+#define R_RISCV_SUB64           40
+#define R_RISCV_ALIGN           43
+#define R_RISCV_RVC_BRANCH      44
+#define R_RISCV_RVC_JUMP        45
+#define R_RISCV_RELAX           51
+#define R_RISCV_SUB6            52
+#define R_RISCV_SET6            53
+#define R_RISCV_SET8            54
+#define R_RISCV_SET16           55
+#define R_RISCV_SET32           56
+#define R_RISCV_32_PCREL        57
+
 #define STT_NOTYPE              0
 #define STT_OBJECT              1
 #define STT_FUNC                2
@@ -411,14 +443,11 @@ struct attrs_subsection
 #define AROS_ELF_REL            SHT_RELA
 #define relo                    rela
 #endif
-#if defined(__riscv64)
+#if defined(__riscv)
+/* The RISC-V psABI uses RELA relocations for both RV32 and RV64 */
 #define AROS_ELF_MACHINE        EM_RISCV
 #define AROS_ELF_REL            SHT_RELA
 #define relo                    rela
-#elif defined(__riscv)
-#define AROS_ELF_MACHINE        EM_RISCV
-#define AROS_ELF_REL            SHT_RELA
-#define relo                    rel
 #endif
 
 #endif

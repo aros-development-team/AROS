@@ -39,6 +39,13 @@
 #       endif
 #   endif
 #endif
+#ifdef __riscv
+#   if (__riscv_xlen == 64)
+#       include <asm/riscv64/cpu.h>
+#   else
+#       include <asm/riscv/cpu.h>
+#   endif
+#endif
 
 /* Some default generic definitions. */
 #ifndef HALT
