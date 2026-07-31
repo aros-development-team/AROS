@@ -208,6 +208,9 @@ HEIFREPOSITORIES = https://github.com/strukturag/libheif/archive/refs/tags
 HEIFARCHBASE     := v$(LIBHEIFVERSION)
 HEIFARCHSUFFIX := "tar.gz"
 HEIFARCHSRCDIR := $(PORTSDIR)/libheif/libheif-$(LIBHEIFVERSION)
+# AROS environment fixes (e.g. libheif's struct Node clashing with
+# exec/nodes.h) - needed on every toolchain.
+HEIFPATCHSPEC := $(HEIFARCHBASE)-aros.diff:libheif-$(LIBHEIFVERSION):-f,-p1
 
 %fetch mmake=linklibs-heif-fetch archive=$(HEIFARCHBASE) destination=$(PORTSDIR)/libheif \
     patches_origins="$(SRCDIR)/$(CURDIR)/libheif" \
@@ -235,10 +238,10 @@ endif
 ifeq ($(shell [ $(GCC_VERSION_MAJOR) -lt 13 ] && echo true),true)
   USER_CPPFLAGS += -DLIBHEIF_USE_BOOST_OPTIONAL
   NOWARN_CXXFLAGS := $(NOWARN_ATTRIBUTES)
-  # The libde265/libheif AROS patches only address C++ standard features
-  # these older toolchains lack - newer compilers build the pristine sources.
+  # C++ standard compatibility for toolchains predating the features the
+  # updated components use - newer compilers build these sources pristine.
   DE265PATCHSPEC := $(DE265ARCHBASE)-aros.diff:libde265-$(LIBDE265VERSION):-f,-p1
-  HEIFPATCHSPEC := $(HEIFARCHBASE)-aros.diff:libheif-$(LIBHEIFVERSION):-f,-p1
+  HEIFPATCHSPEC += $(HEIFARCHBASE)-aros-cxx.diff:libheif-$(LIBHEIFVERSION):-f,-p1
 endif
 else
 ifeq ($(AROS_TOOLCHAIN),llvm)
