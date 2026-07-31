@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2008-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2008-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -31,11 +31,20 @@
 
 #define VFORK_USE_INLINECOPY
 #if defined(VFORK_USE_INLINECOPY)
+/* NB: use (IPTR)(a)/(IPTR)(b), NOT (IPTR)(&a)/(&b).  jmp_buf is an array type
+ * (struct __jmp_buf[1]), so a jmp_buf function parameter (e.g. __vfork's 'env')
+ * decays to a pointer; &env is then the address of the pointer VARIABLE (stack
+ * garbage), not the jmp_buf it points to.  An array argument decays to its data
+ * address and a pointer argument already is that address, so dropping the '&'
+ * is correct for every caller (arrays and decayed pointers alike).  With '&'
+ * the saved context copied from a decayed 'env' was corrupt, so the subsequent
+ * vfork_longjmp() jumped through a bad frame -> SP out of stack limits / SIGSEGV
+ * whenever a program (e.g. git) called fork(). */
 #define _VFORK_COPYENV(a,b) \
 ({ \
     int _i; \
     for (_i = 0; _i < sizeof(jmp_buf); _i++) \
-        *((UBYTE *)((IPTR)(&a) + _i)) = *((UBYTE *)((IPTR)(&b) + _i)); \
+        *((UBYTE *)((IPTR)(a) + _i)) = *((UBYTE *)((IPTR)(b) + _i)); \
 })
 #else
 #define _VFORK_COPYENV(a,b)      *(a) = *(b)
@@ -185,15 +194,13 @@ LONG launcher()
         {
             APTR exec_id;
 
-            D(bug("launcher: child executed\n"));
-
             child_takeover(udata);
 
             /* Filenames passed from parent obey parent's doupath */
 
             PosixCBase->doupath = udata->parent_posixcbase->doupath;
             D(bug("launcher: doupath == %d for __exec_prepare()\n", PosixCBase->doupath));
-            
+
             exec_id = udata->exec_id = __exec_prepare(
                 udata->exec_filename,
                 0,
@@ -231,7 +238,7 @@ LONG launcher()
                 D(bug("launcher: catch _exit()\n"));
                 __stdc_program_startup(exec_exitjmp, &exec_error);
 
-                D(bug("launcher: executing command\n"));
+D(bug("launcher: executing command\n"));
                 __exec_do(exec_id);
 
                 assert(0); /* Should not be reached */
@@ -432,12 +439,23 @@ static void parent_createchild(struct vfork_data *udata)
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     jmp_buf vfork_jmp;
+    struct Task *self = FindTask(NULL);
+
+    /* Inherit the parent's stack size for the child process.  An exec*()ed
+     * child runs via RunCommand() using the child CLI's cli_DefaultStack,
+     * which DOS derives from the child process's pr_StackSize (newcliproc.c).
+     * Without NP_StackSize the child gets AROS's small default stack, so a
+     * stack-hungry exec'd program (e.g. a git subprocess) overflows it even
+     * though the parent was given a large stack.  Unix exec preserves the
+     * stack, so inherit the parent's here. */
+    IPTR childstack = (IPTR)self->tc_SPUpper - (IPTR)self->tc_SPLower;
 
     _VFORK_COPYENV(vfork_jmp,udata->vfork_jmp);
 
     struct TagItem tags[] =
     {
         { NP_Entry,         (IPTR) launcher },
+        { NP_StackSize,     (IPTR) childstack },
         { NP_CloseInput,    (IPTR) FALSE },
         { NP_CloseOutput,   (IPTR) FALSE },
         { NP_CloseError,    (IPTR) FALSE },

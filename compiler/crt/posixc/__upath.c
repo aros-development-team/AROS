@@ -104,7 +104,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     }
 
     D(bug("__path_u2a: converted path \"%s\"\n", newpath));
-      
+
     return newpath;
 }
 
