@@ -7,12 +7,22 @@
 #include <inttypes.h>
 
 #include <exec/types.h>
+#include <exec/execbase.h>
 #include <aros/riscv64/cpucontext.h>
 #include <asm/cpu.h>
 
 #include "kernel_intern.h"
+#include "kernel_cpu.h"
+
+#include <kernel_intr.h>
+#include <kernel_syscall.h>
 
 #define SCAUSE_INTERRUPT    (1UL << 63)
+#define SCAUSE_BREAKPOINT   3
+
+/* a7 carries the syscall number (see krnSysCall in kernel_cpu.h) */
+#define CTX_REG_A7          14
+#define SC_MAX              0x100   /* SC_REBOOT is the highest code */
 
 static const char * const exc_names[] =
 {
@@ -57,8 +67,22 @@ static void krnDumpContext(struct ExceptionContext *ctx)
     krnSBIPutStr("\n");
 }
 
+/* Trap/interrupt nesting depth, reported through KrnIsSuper() */
+extern int __riscv64_trap_depth;
+
+static void krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
+                            unsigned long stval);
+
 void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
                     unsigned long stval)
+{
+    __riscv64_trap_depth++;
+    krnTrapDispatch(ctx, scause, stval);
+    __riscv64_trap_depth--;
+}
+
+static void krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
+                            unsigned long stval)
 {
     if (scause & SCAUSE_INTERRUPT)
     {
@@ -68,6 +92,9 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
         {
         case SCAUSE_IRQ_STI:
             krnTimerTick();
+            /* Run the scheduler on the way out if a switch is pending */
+            if (SysBase)
+                core_ExitInterrupt(ctx);
             return;
 
         case SCAUSE_IRQ_SSI:
@@ -80,6 +107,19 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
             krnSBIPutStr("\n");
             break;
         }
+    }
+    else if (scause == SCAUSE_BREAKPOINT && SysBase &&
+             ctx->x[CTX_REG_A7] <= SC_MAX)
+    {
+        /*
+         * Scheduler syscall (KrnDispatch/KrnSwitch/KrnSchedule/...):
+         * ebreak with the function code in a7 (ecall belongs to SBI,
+         * see kernel_cpu.h). Step over the ebreak - 2 bytes for the
+         * compressed form, 4 otherwise.
+         */
+        ctx->pc += (*(uint16_t *)ctx->pc == 0x9002) ? 2 : 4;
+        core_SysCall((int)ctx->x[CTX_REG_A7], ctx);
+        return;
     }
     else
     {

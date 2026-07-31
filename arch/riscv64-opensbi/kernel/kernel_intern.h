@@ -27,6 +27,7 @@ struct KernelBase;
 extern unsigned long __boot_hartid;
 
 /* Early SBI debug console (kernel_console.c) */
+void krnSBIPutC(char c);
 void krnSBIPutStr(const char *s);
 void krnSBIPutHex(uint64_t val);
 void krnSBIPutDec(uint64_t val);

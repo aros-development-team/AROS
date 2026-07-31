@@ -20,10 +20,12 @@ PRIV_KERNEL_INCLUDES = \
 CFILES := \
         kernel_startup \
         kernel_console \
+        kernel_debug \
         kernel_traps \
         kernel_fdt \
         kernel_timer \
-        kernel_mmu
+        kernel_mmu \
+        kernel_cpu
 
 PLATFILES :=
 
@@ -31,19 +33,31 @@ AFILES := \
         startup \
         traps
 
-#MM kernel-opensbi-riscv64: kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
+# The opensbi kickstart is a single self-contained ELF, booted directly
+# by OpenSBI/qemu with no intermediate bootstrap - so, like the classic
+# m68k ROM, the BSP's core system components are linked in as kernel
+# objects and found by the resident scan. Driver/extended packages can
+# be layered via %make_package once a module loader exists.
+BSP_RES  := kernel task
+BSP_LIBS := exec utility aros oop expansion
+
+BSP_KOBJS := \
+    $(addprefix $(KOBJSDIR)/, $(addsuffix _resource.o, $(BSP_RES))) \
+    $(addprefix $(KOBJSDIR)/, $(addsuffix _library.o, $(BSP_LIBS)))
+
+#MM kernel-opensbi-riscv64: kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj kernel-utility-kobj kernel-aros-kobj kernel-oop-kobj kernel-expansion-kobj
 #MM
 kernel-opensbi-riscv64: $(OSGENDIR)/boot/core.elf
 		$(Q)$(NOP)
 
-#MM- kernel-opensbi-riscv64-quick: kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick kernel-opensbi-riscv64
+#MM- kernel-opensbi-riscv64-quick: kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick kernel-utility-kobj-quick kernel-aros-kobj-quick kernel-oop-kobj-quick kernel-expansion-kobj-quick kernel-opensbi-riscv64
 
 ELFCORELIBS := -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static
 ifeq ("$(AROS_TOOLCHAIN)","gnu")
 ELFCORELIBS += -L$(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(TARGET_GCC_VER) -lgcc
 endif
 
-$(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/task_resource.o
+$(OSGENDIR)/boot/core.elf: $(BSP_KOBJS)
 		@$(ECHO) "Creating   $@"
 		%mkdirs_q $(OSGENDIR)/boot
 		@$(KERNEL_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ $(ELFCORELIBS)

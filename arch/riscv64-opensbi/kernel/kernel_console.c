@@ -11,6 +11,17 @@
 
 static int sbi_have_dbcn = -1;
 
+void krnSBIPutC(char c)
+{
+    if (sbi_have_dbcn < 0)
+        sbi_have_dbcn = sbi_probe_extension(SBI_EXT_DBCN) != 0;
+
+    if (sbi_have_dbcn)
+        sbi_debug_console_write(&c, 1);
+    else
+        sbi_console_putchar(c);
+}
+
 void krnSBIPutStr(const char *s)
 {
     unsigned long len = 0;

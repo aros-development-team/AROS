@@ -15,12 +15,21 @@
 #include <inttypes.h>
 
 #include <exec/execbase.h>
+#include <exec/memory.h>
+#include <exec/resident.h>
+#include <exec/tasks.h>
 #include <utility/tagitem.h>
 #include <aros/kernel.h>
 #include <asm/cpu.h>
+#include <proto/exec.h>
 
 #include "kernel_sbi.h"
 #include "kernel_intern.h"
+#include "kernel_romtags.h"
+
+/* rom/kernel/kernel_memory.c provides no header for this */
+void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size,
+                        ULONG flags);
 
 /* The hart we were booted on (see kernel_intern.h) */
 unsigned long __boot_hartid;
@@ -33,6 +42,47 @@ extern char __kernel_end[];
 
 #define BOOTTAG_MAX 10
 static struct TagItem BootMsg[BOOTTAG_MAX];
+
+/* "testsched" support: a second task signalling the boot task */
+static struct Task *bootTask;
+static ULONG schedSig;
+
+static void schedTestEntry(void)
+{
+    krnSBIPutStr("[testsched] second task running!\n");
+    Signal(bootTask, schedSig);
+    Wait(0);        /* sleep forever */
+}
+
+static void krnSchedTest(void)
+{
+    struct Task *t;
+    BYTE sigbit;
+    struct TagItem tags[] =
+    {
+        { TASKTAG_NAME, (IPTR)"SchedTest"          },
+        { TASKTAG_PRI,  5                          },
+        { TASKTAG_PC,   (IPTR)schedTestEntry       },
+        { TAG_DONE,     0                          }
+    };
+
+    bootTask = FindTask(NULL);
+    sigbit = AllocSignal(-1);
+    schedSig = 1UL << sigbit;
+
+    krnSBIPutStr("[testsched] creating second task...\n");
+    t = NewCreateTaskA(tags);
+    if (!t)
+    {
+        krnSBIPutStr("[testsched] FAILED to create the task!\n");
+        return;
+    }
+
+    krnSBIPutStr("[testsched] waiting for its signal...\n");
+    Wait(schedSig);
+    krnSBIPutStr("[testsched] signal received - context switching works!\n");
+    FreeSignal(sigbit);
+}
 
 struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
 {
@@ -169,10 +219,99 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
     }
 
     /*
-     * TODO: bring up the remaining harts via HSM, and hand the TagItem
-     *       list over to the kernel.resource / exec bring-up
-     *       (krnPrepareExecBase + InitCode).
+     * Hand over to exec: build the system memory header in the free RAM
+     * after the kernel image, scan the kickstart for residents, create
+     * ExecBase and run the resident init chain.
+     *
+     * TODO: bring up the remaining harts via HSM.
      */
+    {
+        struct MemHeader *mh;
+        UWORD *ranges[3];
+        IPTR memlow  = ((IPTR)__kernel_end + 4095) & ~(IPTR)4095;
+        IPTR memhigh = fdtinfo.mem_base + fdtinfo.mem_size;
+        IPTR dtbaddr = (IPTR)fdt;
+
+        /* Keep the DTB (placed near the top of RAM by qemu/OpenSBI)
+           out of the allocatable pool */
+        if (dtbaddr >= memlow && dtbaddr < memhigh)
+            memhigh = dtbaddr & ~(IPTR)4095;
+
+        mh = (struct MemHeader *)memlow;
+        krnCreateMemHeader("System Memory", 0, (APTR)memlow,
+                           memhigh - memlow,
+                           MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+
+        ranges[0] = (UWORD *)__text_start;
+        ranges[1] = (UWORD *)__kernel_end;
+        ranges[2] = (UWORD *)-1;
+
+        krnSBIPutStr("exec:      preparing ExecBase (memory ");
+        krnSBIPutHex(memlow);
+        krnSBIPutStr(" - ");
+        krnSBIPutHex(memhigh);
+        krnSBIPutStr(")\n");
+
+        if (krnPrepareExecBase(ranges, mh, msg))
+        {
+            krnSBIPutStr("exec:      SysBase @ ");
+            krnSBIPutHex((uint64_t)(uintptr_t)SysBase);
+            krnSBIPutStr("\n[boot] InitCode(RTF_SINGLETASK)\n");
+            InitCode(RTF_SINGLETASK, 0);
+
+            krnSBIPutStr("[boot] InitCode(RTF_COLDSTART)\n");
+            InitCode(RTF_COLDSTART, 0);
+
+            /*
+             * With only kernel.resource, exec.library and task.resource
+             * in the kickstart there is nothing (like dos.library) to
+             * take over the machine, so InitCode returns. Prove exec is
+             * functional with a smoke test through the LVO table.
+             */
+            {
+                struct Task *me = FindTask(NULL);
+                APTR mem;
+
+                krnSBIPutStr("exec:      ThisTask = ");
+                if (me && me->tc_Node.ln_Name)
+                    krnSBIPutStr(me->tc_Node.ln_Name);
+                else
+                    krnSBIPutStr("(unnamed)");
+                krnSBIPutStr("\n");
+
+                mem = AllocMem(64 << 10, MEMF_ANY | MEMF_CLEAR);
+                krnSBIPutStr("exec:      AllocMem(64K) = ");
+                krnSBIPutHex((uint64_t)(uintptr_t)mem);
+                krnSBIPutStr("\n");
+                if (mem)
+                    FreeMem(mem, 64 << 10);
+
+                krnSBIPutStr("exec:      AvailMem(MEMF_ANY) = ");
+                krnSBIPutDec(AvailMem(MEMF_ANY) >> 20);
+                krnSBIPutStr(" MiB free\n");
+            }
+
+            /* "testsched" on the command line: prove a second task can
+               run and signal us back */
+            if (fdtinfo.bootargs)
+            {
+                const char *s;
+                for (s = fdtinfo.bootargs; *s; s++)
+                {
+                    if (s[0] == 't' && s[1] == 'e' && s[2] == 's' &&
+                        s[3] == 't' && s[4] == 's' && s[5] == 'c' &&
+                        s[6] == 'h' && s[7] == 'e' && s[8] == 'd')
+                    {
+                        krnSchedTest();
+                        break;
+                    }
+                }
+            }
+        }
+        else
+            krnSBIPutStr("[boot] PANIC: krnPrepareExecBase failed!\n");
+    }
+
     krnSBIPutStr("early startup complete - halting.\n");
 
     for (;;)

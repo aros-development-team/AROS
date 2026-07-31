@@ -24,7 +24,7 @@ USER_CPPFLAGS := -D__AROS_EXEC_LIBRARY__
 
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=rom/kernel \
-  files="cpu_init createcontext getcpunumber" \
+  files="cpu_init createcontext getcpunumber cli sti issuper" \
   arch=riscv64
 
 %common

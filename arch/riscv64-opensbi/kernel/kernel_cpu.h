@@ -46,11 +46,18 @@
 #define goSuper() 0
 #define goUser()
 
+/*
+ * Kernel syscall entry. ecall from S-mode always traps to M-mode - it
+ * is the SBI call mechanism and OpenSBI does not (and must not)
+ * delegate it. Breakpoints ARE delegated to S-mode, so the scheduler
+ * syscalls use ebreak with the function code in a7; the trap handler
+ * distinguishes them from real breakpoints by a7.
+ */
 #undef krnSysCall
 #define krnSysCall(n) \
     asm volatile ( \
     "\taddi a7, zero, %[swi_no]\n" \
-    "\tecall\n" \
-    : : [swi_no] "I" (n) : "ra");
+    "\tebreak\n" \
+    : : [swi_no] "I" (n) : "a7", "memory");
 
 #endif /* KERNEL_CPU_RISCV64_H_ */

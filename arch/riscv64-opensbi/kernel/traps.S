@@ -100,5 +100,7 @@ __trap_entry:
 	ld	t5, 216(sp)
 	ld	t6, 224(sp)
 	ld	t0, 16(sp)
-	addi	sp, sp, 272
+	/* Load sp last, directly from the context - the dispatcher may
+	   have switched the frame to a different task */
+	ld	sp, 8(sp)
 	sret
