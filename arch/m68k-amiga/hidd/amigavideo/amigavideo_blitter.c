@@ -834,7 +834,9 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
         fg = fgpen & 1;
         bg = bgpen & 1;
 
-        chmask = pat->mask ? (USEA | USEB | USEC | USED) : (USEC | USED);
+        /* The pattern is a single word in BLTBDAT, so B is never fetched from
+           memory: enable A only when there is a mask to read. */
+        chmask = pat->mask ? (USEA | USEC | USED) : (USEC | USED);
  
         minterm = getminterm(type, fg, bg);
  
