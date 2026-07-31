@@ -53,6 +53,7 @@ struct ExceptionContext
         };
     };
     ULONG pc;		                /* sepc/mepc when trapped	    */
+    ULONG sr;		                /* sstatus/mstatus when trapped   */
     ULONG Flags;	                /* ECF_* flags			    */
     APTR  fpuContext;               /* FPU register state, if saved   */
     APTR  vecContext;               /* Vector register state, if saved */

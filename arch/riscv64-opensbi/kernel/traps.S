@@ -12,9 +12,10 @@
     Frame layout (16-byte aligned, 272 bytes):
       0-224:  x[29]  ra,sp,t0,t1,t2,fp,s1,a0-a7,s2-s11,t3-t6
       232:    pc     (sepc)
-      240:    Flags
-      248:    fpuContext
-      256:    vecContext
+      240:    sr     (sstatus - carries the per-task FS dirty state)
+      248:    Flags
+      256:    fpuContext
+      264:    vecContext
 
     gp and tp are kernel-owned and are deliberately not part of the
     context (matching RISCV_REGSAVE_CNT).
@@ -54,15 +55,17 @@ __trap_entry:
 	sd	t4, 208(sp)
 	sd	t5, 216(sp)
 	sd	t6, 224(sp)
-	/* interrupted sp and pc */
+	/* interrupted sp, pc and sstatus */
 	addi	t0, sp, 272
 	sd	t0, 8(sp)
 	csrr	t0, sepc
 	sd	t0, 232(sp)
+	csrr	t0, sstatus
+	sd	t0, 240(sp)
 	/* Flags / context pointers */
-	sw	zero, 240(sp)
-	sd	zero, 248(sp)
+	sw	zero, 248(sp)
 	sd	zero, 256(sp)
+	sd	zero, 264(sp)
 
 	mv	a0, sp			/* ctx    */
 	csrr	a1, scause
@@ -72,6 +75,10 @@ __trap_entry:
 	/* restore (the handler may have modified the context) */
 	ld	t0, 232(sp)
 	csrw	sepc, t0
+	/* restore sstatus from the context: carries the task's FS state
+	   and its SPIE (pre-trap interrupt-enable) for sret */
+	ld	t0, 240(sp)
+	csrw	sstatus, t0
 	ld	ra, 0(sp)
 	ld	t1, 24(sp)
 	ld	t2, 32(sp)

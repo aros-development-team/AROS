@@ -47,6 +47,99 @@ static struct TagItem BootMsg[BOOTTAG_MAX];
 static struct Task *bootTask;
 static ULONG schedSig;
 
+/* "testfpu" support: FP computation interleaved across two tasks */
+static ULONG fpuTaskSig;
+static volatile int fpuTaskOk = -1;
+
+static double fpuChunk(double v, double mul, double add)
+{
+    int i;
+    for (i = 0; i < 1000; i++)
+        v = v * mul + add;
+    return v;
+}
+
+static void fpuTestEntry(void)
+{
+    double v = 1.0, check = 1.0;
+    BYTE sigbit = AllocSignal(-1);
+    int round;
+
+    fpuTaskSig = 1UL << sigbit;
+    Signal(bootTask, schedSig);          /* ready */
+
+    for (round = 0; round < 4; round++)
+    {
+        Wait(fpuTaskSig);
+        v = fpuChunk(v, 1.0009765625, 0.03125);
+        Signal(bootTask, schedSig);
+    }
+
+    /* Local recompute - must match the interleaved result exactly */
+    for (round = 0; round < 4; round++)
+        check = fpuChunk(check, 1.0009765625, 0.03125);
+
+    /* Publish the verdict; the boot task polls it (a further Signal
+       would merge with the final round's still-pending bit) */
+    fpuTaskOk = (v == check);
+    Wait(0);
+}
+
+static void krnFpuTest(void)
+{
+    struct TagItem tags[] =
+    {
+        { TASKTAG_NAME, (IPTR)"FpuTest"        },
+        { TASKTAG_PRI,  5                      },
+        { TASKTAG_PC,   (IPTR)fpuTestEntry     },
+        { TAG_DONE,     0                      }
+    };
+    struct Task *t;
+    double v = 2.0, check = 2.0;
+    BYTE sigbit;
+    int round, bootOk;
+
+    bootTask = FindTask(NULL);
+    sigbit = AllocSignal(-1);
+    schedSig = 1UL << sigbit;
+
+    krnSBIPutStr("[testfpu] interleaving FP work across two tasks...\n");
+    t = NewCreateTaskA(tags);
+    if (!t)
+    {
+        krnSBIPutStr("[testfpu] FAILED to create the task!\n");
+        return;
+    }
+    Wait(schedSig);                      /* task ready, fpuTaskSig set */
+
+    for (round = 0; round < 4; round++)
+    {
+        Signal(t, fpuTaskSig);
+        v = fpuChunk(v, 0.9990234375, 0.0625);
+        Wait(schedSig);
+    }
+    /* The higher-priority task owns the CPU until it publishes its
+       verdict and sleeps; poll for it */
+    while (fpuTaskOk < 0)
+        asm volatile("" ::: "memory");
+
+    for (round = 0; round < 4; round++)
+        check = fpuChunk(check, 0.9990234375, 0.0625);
+    bootOk = (v == check);
+
+    if (bootOk && fpuTaskOk == 1)
+        krnSBIPutStr("[testfpu] PASS - FPU state preserved across switches!\n");
+    else
+    {
+        krnSBIPutStr("[testfpu] FAIL: boot ");
+        krnSBIPutDec(bootOk);
+        krnSBIPutStr(" task ");
+        krnSBIPutDec(fpuTaskOk);
+        krnSBIPutStr("\n");
+    }
+    FreeSignal(sigbit);
+}
+
 static void schedTestEntry(void)
 {
     krnSBIPutStr("[testsched] second task running!\n");
@@ -303,7 +396,12 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                         s[6] == 'h' && s[7] == 'e' && s[8] == 'd')
                     {
                         krnSchedTest();
-                        break;
+                    }
+                    if (s[0] == 't' && s[1] == 'e' && s[2] == 's' &&
+                        s[3] == 't' && s[4] == 'f' && s[5] == 'p' &&
+                        s[6] == 'u')
+                    {
+                        krnFpuTest();
                     }
                 }
             }
