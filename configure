@@ -11406,6 +11406,38 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
         esac
         ;;
 
+    opensbi)
+        aros_flavour="standalone"
+        aros_target_arch="opensbi"
+        aros_object_format="riscvelf_aros"
+        aros_isa_flags="$""(ISA_RISCV_FLAGS)"
+        aros_shared_default="no"
+        aros_serial_debug=1
+        llvm_target_cpu="RISCV"
+        aros_kernel_toolchain=$aros_toolchain
+        kernel_toolchain_c_compiler=$toolchain_c_compiler
+        kernel_toolchain_cxx_compiler=$toolchain_cxx_compiler
+        if test "$aros_kernel_toolchain" = "llvm"; then
+            aros_kernel_llvmwrapper=yes
+        fi
+        case "$target_cpu" in
+            *riscv64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                aros_target_cpu="riscv64"
+                                gcc_default_cpu="rva22u64"
+                gcc_default_mode="lp64d"
+                ;;
+            *riscv*)
+                                aros_target_cpu="riscv"
+                gcc_default_cpu="rv32imafdc"
+                gcc_default_mode="ilp32d"
+                ;;
+            *)
+                as_fn_error $? "\"Unsupported CPU '$target_cpu' for OpenSBI\"" "$LINENO" 5
+                ;;
+        esac
+        ;;
+
     stm32f7_discovery)
         aros_flavour="standalone"
         aros_target_arch="stm32f7_discovery"
@@ -12808,7 +12840,7 @@ printf "%s\n" "$aros_target_cpu_mode" >&6; }
         aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
         aros_kernel_ldflags="$aros_kernel_ldflags -m32"
         ;;
-    riscv)
+    riscv*)
         aros_isa_extra="$riscv_isa_extra$export_newline"
         ;;
 esac
@@ -19719,7 +19751,7 @@ printf "%s\n" "$aros_config_unittests" >&6; }
 
 
 case "$aros_target_cpu" in
-    riscv)
+    riscv*)
         export_target_gcccpu="yes"
         ;;
     arm)
