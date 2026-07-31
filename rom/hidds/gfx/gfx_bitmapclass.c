@@ -1747,7 +1747,10 @@ VOID BM__Hidd_BitMap__DrawLine
                 }
             }
     
-            if(d <= 0)
+            /* The Amiga blitter's line mode tests the sign bit of the same
+               error term, so it steps diagonally on a tie. Matching it keeps
+               a line identical whether a driver accelerates it or not. */
+            if(d < 0)
             {
                 if(t == 1)
                 {
