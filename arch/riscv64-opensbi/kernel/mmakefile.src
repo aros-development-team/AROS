@@ -18,12 +18,18 @@ PRIV_KERNEL_INCLUDES = \
 	-I$(SRCDIR)/rom/exec
 
 CFILES := \
-        kernel_startup
+        kernel_startup \
+        kernel_console \
+        kernel_traps \
+        kernel_fdt \
+        kernel_timer \
+        kernel_mmu
 
 PLATFILES :=
 
 AFILES := \
-        startup
+        startup \
+        traps
 
 #MM kernel-opensbi-riscv64: kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
 #MM

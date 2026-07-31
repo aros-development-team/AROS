@@ -16,17 +16,8 @@
 	.globl	_start
 	.type	_start,%function
 _start:
-	/* Mask S-mode interrupts and park traps on a safe spinner until
-	   the kernel installs a real trap handler */
+	/* Mask S-mode interrupts until the interrupt dispatcher exists */
 	csrw	sie, zero
-	la	t0, __trap_hang
-	csrw	stvec, t0
-
-	/* Enable FPU state - LP64D kernel code may use FP registers at
-	   any time. Vector state stays off; the scheduler enables and
-	   tracks it per-task (see kernel_cpu.h) */
-	li	t0, 0x2000		/* SSTATUS_FS_INITIAL */
-	csrs	sstatus, t0
 
 	/* Set up the global pointer (linker relaxation must be off while
 	   gp itself is being loaded) */
@@ -37,6 +28,16 @@ _start:
 
 	/* Boot stack */
 	la	sp, __boot_stack_end
+
+	/* Install the trap handler (needs a valid sp/gp) */
+	la	t0, __trap_entry
+	csrw	stvec, t0
+
+	/* Enable FPU state - LP64D kernel code may use FP registers at
+	   any time. Vector state stays off; the scheduler enables and
+	   tracks it per-task (see kernel_cpu.h) */
+	li	t0, 0x2000		/* SSTATUS_FS_INITIAL */
+	csrs	sstatus, t0
 
 	/* Clear .bss (the ldscript 8-aligns __bss_start/__bss_end) */
 	la	t0, __bss_start

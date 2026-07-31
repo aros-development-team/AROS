@@ -17,18 +17,23 @@ SECTIONS
         *(SORT_NONE(.aros.init*))
         *(.text*)                   /* wildcard for "gcc -ffunction-sections" */
         *(.gnu.linkonce.t.*)
+        . = ALIGN(4096);            /* section permission boundary (MMU) */
         __text_end = .;
     }
 
     .rodata : {
+        __rodata_start = .;
         *(.rodata*)                 /* read-only data (ELF only) */
         *(.srodata*)
         *(.gnu.linkonce.r.*)
+        *(.eh_frame_hdr)
+        *(.eh_frame)
+        . = ALIGN(4096);            /* section permission boundary (MMU) */
+        __rodata_end = .;
     }
 
-    . = ALIGN(4096);
-
     .data : {
+        __data_start = .;
         *(.data*)                   /* wildcard for "gcc -fdata-sections" */
         *(.gnu.linkonce.d.*)
         . = ALIGN(16);

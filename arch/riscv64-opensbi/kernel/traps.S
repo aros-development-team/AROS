@@ -1,0 +1,104 @@
+/*
+    Copyright (c) 2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: S-mode trap entry for the opensbi-riscv64 target.
+
+    Saves the interrupted state as a struct ExceptionContext
+    (see aros/riscv64/cpucontext.h) on the current stack and calls
+    krnTrapHandler(ctx, scause, stval). On return the (possibly
+    modified) context is restored and execution resumes via sret.
+
+    Frame layout (16-byte aligned, 272 bytes):
+      0-224:  x[29]  ra,sp,t0,t1,t2,fp,s1,a0-a7,s2-s11,t3-t6
+      232:    pc     (sepc)
+      240:    Flags
+      248:    fpuContext
+      256:    vecContext
+
+    gp and tp are kernel-owned and are deliberately not part of the
+    context (matching RISCV_REGSAVE_CNT).
+*/
+
+	.text
+	.balign	4
+	.globl	__trap_entry
+	.type	__trap_entry,%function
+__trap_entry:
+	addi	sp, sp, -272
+	sd	ra, 0(sp)
+	sd	t0, 16(sp)
+	sd	t1, 24(sp)
+	sd	t2, 32(sp)
+	sd	s0, 40(sp)
+	sd	s1, 48(sp)
+	sd	a0, 56(sp)
+	sd	a1, 64(sp)
+	sd	a2, 72(sp)
+	sd	a3, 80(sp)
+	sd	a4, 88(sp)
+	sd	a5, 96(sp)
+	sd	a6, 104(sp)
+	sd	a7, 112(sp)
+	sd	s2, 120(sp)
+	sd	s3, 128(sp)
+	sd	s4, 136(sp)
+	sd	s5, 144(sp)
+	sd	s6, 152(sp)
+	sd	s7, 160(sp)
+	sd	s8, 168(sp)
+	sd	s9, 176(sp)
+	sd	s10, 184(sp)
+	sd	s11, 192(sp)
+	sd	t3, 200(sp)
+	sd	t4, 208(sp)
+	sd	t5, 216(sp)
+	sd	t6, 224(sp)
+	/* interrupted sp and pc */
+	addi	t0, sp, 272
+	sd	t0, 8(sp)
+	csrr	t0, sepc
+	sd	t0, 232(sp)
+	/* Flags / context pointers */
+	sw	zero, 240(sp)
+	sd	zero, 248(sp)
+	sd	zero, 256(sp)
+
+	mv	a0, sp			/* ctx    */
+	csrr	a1, scause
+	csrr	a2, stval
+	call	krnTrapHandler
+
+	/* restore (the handler may have modified the context) */
+	ld	t0, 232(sp)
+	csrw	sepc, t0
+	ld	ra, 0(sp)
+	ld	t1, 24(sp)
+	ld	t2, 32(sp)
+	ld	s0, 40(sp)
+	ld	s1, 48(sp)
+	ld	a0, 56(sp)
+	ld	a1, 64(sp)
+	ld	a2, 72(sp)
+	ld	a3, 80(sp)
+	ld	a4, 88(sp)
+	ld	a5, 96(sp)
+	ld	a6, 104(sp)
+	ld	a7, 112(sp)
+	ld	s2, 120(sp)
+	ld	s3, 128(sp)
+	ld	s4, 136(sp)
+	ld	s5, 144(sp)
+	ld	s6, 152(sp)
+	ld	s7, 160(sp)
+	ld	s8, 168(sp)
+	ld	s9, 176(sp)
+	ld	s10, 184(sp)
+	ld	s11, 192(sp)
+	ld	t3, 200(sp)
+	ld	t4, 208(sp)
+	ld	t5, 216(sp)
+	ld	t6, 224(sp)
+	ld	t0, 16(sp)
+	addi	sp, sp, 272
+	sret

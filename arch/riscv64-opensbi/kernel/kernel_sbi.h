@@ -98,6 +98,12 @@ static inline void sbi_console_putchar(int ch)
     sbi_ecall(SBI_LEGACY_CONSOLE_PUTCHAR, 0, ch, 0, 0, 0, 0, 0);
 }
 
+/* Program the next timer interrupt (TIME extension) */
+static inline void sbi_set_timer(unsigned long stime_value)
+{
+    sbi_ecall(SBI_EXT_TIME, 0, stime_value, 0, 0, 0, 0, 0);
+}
+
 static inline void sbi_system_reset(unsigned long type, unsigned long reason)
 {
     sbi_ecall(SBI_EXT_SRST, SBI_SRST_SYSTEM_RESET, type, reason, 0, 0, 0, 0);

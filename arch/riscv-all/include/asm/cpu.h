@@ -45,6 +45,16 @@ static inline void wfi(void)      { asm volatile("wfi"); }
 #define SSTATUS_SUM         0x00040000UL
 #define SSTATUS_MXR         0x00080000UL
 
+/* sie/sip interrupt-enable/pending bits */
+#define SIE_SSIE            0x00000002UL /* Supervisor software (IPI) */
+#define SIE_STIE            0x00000020UL /* Supervisor timer          */
+#define SIE_SEIE            0x00000200UL /* Supervisor external       */
+
+/* scause interrupt codes (with the top bit set) */
+#define SCAUSE_IRQ_SSI      1
+#define SCAUSE_IRQ_STI      5
+#define SCAUSE_IRQ_SEI      9
+
 /*
  * Vector extension CSR numbers. Numeric so they assemble without V in
  * the build's -march; accessing them traps unless sstatus.VS is enabled.
