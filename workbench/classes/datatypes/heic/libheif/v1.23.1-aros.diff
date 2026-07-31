@@ -1,0 +1,713 @@
+diff -ruN libheif-1.23.1/libheif/bitstream.cc libheif-1.23.1.aros/libheif/bitstream.cc
+--- libheif-1.23.1/libheif/bitstream.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/bitstream.cc	2026-07-30 20:07:30.069974883 +0000
+@@ -29,8 +29,12 @@
+ #if !defined(HAVE_BIT)
+ #include <type_traits>
+ #else
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <bit>
+ #endif
++#endif
++#endif
+ 
+ #define MAX_UVLC_LEADING_ZEROS 20
+ 
+@@ -466,7 +470,8 @@
+ 
+   std::string str;
+   str.resize(n);
+-  get_istream()->read(str.data(), n);
++  // non-const std::string::data() is C++17; &str[0] is the C++14 spelling
++  get_istream()->read(&str[0], n);
+ 
+   return str;
+ }
+diff -ruN libheif-1.23.1/libheif/box.cc libheif-1.23.1.aros/libheif/box.cc
+--- libheif-1.23.1/libheif/box.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/box.cc	2026-07-30 20:04:09.369423286 +0000
+@@ -3015,8 +3015,11 @@
+   return range.get_error();
+ }
+ 
+-
++#if !defined(BOOST_OPTIONAL_FLC_19NOV2002_HPP)
+ template <typename T> std::ostream& operator<<(std::ostream& ostr, const std::optional<T>& value)
++#else
++template <typename T> std::ostream& operator<<(std::ostream& ostr, const boost::optional<T>& value)
++#endif
+ {
+   if (value) {
+     ostr << *value;
+@@ -4154,7 +4157,8 @@
+ }
+ 
+ 
+-static constexpr std::array supported_reference_types{
++// explicit arguments: class template argument deduction is C++17
++static constexpr std::array<uint32_t, 6> supported_reference_types{
+   fourcc("thmb"),
+   fourcc("base"),
+   fourcc("cdsc"),
+diff -ruN libheif-1.23.1/libheif/box.h libheif-1.23.1.aros/libheif/box.h
+--- libheif-1.23.1/libheif/box.h	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/box.h	2026-07-28 08:14:27.155907450 +0000
+@@ -38,7 +38,12 @@
+ #include <istream>
+ #include <bitset>
+ #include <utility>
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <optional>
++#else
++#include <boost/optional.hpp>
++#include <boost/optional/optional_io.hpp>
++#endif
+ 
+ #include "error.h"
+ #include "logging.h"
+@@ -1548,9 +1553,15 @@
+   int32_t m_ccv_primaries_x[3] {};
+   int32_t m_ccv_primaries_y[3] {};
+ 
++#if !defined(BOOST_OPTIONAL_FLC_19NOV2002_HPP)
+   std::optional<uint32_t> m_ccv_min_luminance_value;
+   std::optional<uint32_t> m_ccv_max_luminance_value;
+   std::optional<uint32_t> m_ccv_avg_luminance_value;
++#else
++  boost::optional<uint32_t> m_ccv_min_luminance_value;
++  boost::optional<uint32_t> m_ccv_max_luminance_value;
++  boost::optional<uint32_t> m_ccv_avg_luminance_value;
++#endif
+ };
+ 
+ 
+diff -ruN libheif-1.23.1/libheif/codecs/avc_boxes.cc libheif-1.23.1.aros/libheif/codecs/avc_boxes.cc
+--- libheif-1.23.1/libheif/codecs/avc_boxes.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/codecs/avc_boxes.cc	2026-07-28 09:06:59.654722935 +0000
+@@ -371,7 +371,7 @@
+   uint32_t value;
+   if (!reader.get_uvlc(&value)) { return invalidUVLC; } // SPS ID
+ 
+-  if (std::set<int>{100, 110, 122, 244, 44, 83, 86}.contains(config->AVCProfileIndication)) {
++  if (std::set<int>{100, 110, 122, 244, 44, 83, 86}.count(config->AVCProfileIndication)) {
+     if (!reader.get_uvlc(&value)) {
+       return invalidUVLC;
+     }
+diff -ruN libheif-1.23.1/libheif/codecs/decoder.h libheif-1.23.1.aros/libheif/codecs/decoder.h
+--- libheif-1.23.1/libheif/codecs/decoder.h	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/codecs/decoder.h	2026-07-30 19:58:21.338565938 +0000
+@@ -28,7 +28,9 @@
+ #include "security_limits.h"
+ 
+ #include <memory>
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <optional>
++#endif
+ #include <string>
+ #include <utility>
+ #include <vector>
+diff -ruN libheif-1.23.1/libheif/codecs/jpeg_dec.h libheif-1.23.1.aros/libheif/codecs/jpeg_dec.h
+--- libheif-1.23.1/libheif/codecs/jpeg_dec.h	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/codecs/jpeg_dec.h	2026-07-28 08:14:27.156226950 +0000
+@@ -28,7 +28,11 @@
+ 
+ #include <memory>
+ #include <vector>
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <optional>
++#else
++#include <boost/optional.hpp>
++#endif
+ 
+ class Box_jpgC;
+ 
+@@ -60,7 +64,11 @@
+     uint8_t v_sampling[3]{};
+   };
+ 
++#if !defined(BOOST_OPTIONAL_FLC_19NOV2002_HPP)
+   std::optional<ConfigInfo> m_config;
++#else
++  boost::optional<ConfigInfo> m_config;
++#endif
+ 
+   Error parse_SOF();
+ };
+diff -ruN libheif-1.23.1/libheif/codecs/uncompressed/unc_codec.h libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_codec.h
+--- libheif-1.23.1/libheif/codecs/uncompressed/unc_codec.h	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_codec.h	2026-07-30 19:58:21.338737338 +0000
+@@ -35,7 +35,9 @@
+ #include <string>
+ #include <vector>
+ #include <memory>
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <optional>
++#endif
+ 
+ class HeifContext;
+ 
+diff -ruN libheif-1.23.1/libheif/codecs/uncompressed/unc_decoder_block_component_interleave.cc libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_decoder_block_component_interleave.cc
+--- libheif-1.23.1/libheif/codecs/uncompressed/unc_decoder_block_component_interleave.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_decoder_block_component_interleave.cc	2026-07-30 20:10:06.017559900 +0000
+@@ -24,7 +24,9 @@
+ #include "unc_types.h"
+ #include "error.h"
+ 
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <bit>
++#endif
+ #include <cassert>
+ #include <cstring>
+ #include <vector>
+@@ -159,7 +161,7 @@
+           }
+           else {
+             // Store in native endian (2 bytes).
+-            if constexpr (std::endian::native == std::endian::little) {
++            if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
+               dst[0] = static_cast<uint8_t>(value & 0xFF);
+               dst[1] = static_cast<uint8_t>((value >> 8) & 0xFF);
+             }
+diff -ruN libheif-1.23.1/libheif/codecs/uncompressed/unc_decoder_block_pixel_interleave.cc libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_decoder_block_pixel_interleave.cc
+--- libheif-1.23.1/libheif/codecs/uncompressed/unc_decoder_block_pixel_interleave.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_decoder_block_pixel_interleave.cc	2026-07-30 20:10:06.017246300 +0000
+@@ -24,7 +24,9 @@
+ #include "unc_types.h"
+ #include "error.h"
+ 
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <bit>
++#endif
+ #include <cassert>
+ #include <cstring>
+ #include <vector>
+@@ -174,7 +176,7 @@
+         }
+         else {
+           // Store in native endian (2 bytes).
+-          if constexpr (std::endian::native == std::endian::little) {
++          if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
+             dst[0] = static_cast<uint8_t>(value & 0xFF);
+             dst[1] = static_cast<uint8_t>((value >> 8) & 0xFF);
+           }
+diff -ruN libheif-1.23.1/libheif/codecs/uncompressed/unc_decoder_bytealign_component_interleave.cc libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_decoder_bytealign_component_interleave.cc
+--- libheif-1.23.1/libheif/codecs/uncompressed/unc_decoder_bytealign_component_interleave.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_decoder_bytealign_component_interleave.cc	2026-07-30 20:07:30.067203783 +0000
+@@ -24,7 +24,9 @@
+ #include "unc_types.h"
+ #include "error.h"
+ 
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <bit>
++#endif
+ #include <cassert>
+ #include <cstring>
+ #include <vector>
+diff -ruN libheif-1.23.1/libheif/codecs/uncompressed/unc_decoder_legacybase.cc libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_decoder_legacybase.cc
+--- libheif-1.23.1/libheif/codecs/uncompressed/unc_decoder_legacybase.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_decoder_legacybase.cc	2026-07-30 20:07:30.066922383 +0000
+@@ -27,8 +27,10 @@
+ #if ((defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && !defined(__PGI)) && __GNUC__ < 9) || (defined(__clang__) && __clang_major__ < 10)
+ #include <type_traits>
+ #else
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <bit>
+ #endif
++#endif
+ 
+ #include "common_utils.h"
+ #include "context.h"
+@@ -75,7 +77,7 @@
+     *dst = static_cast<uint8_t>(value);
+     return;
+   }
+-  else if (std::endian::native == std::endian::big) {
++  else if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
+     for (uint32_t i = 0; i < bytes_per_sample; i++) {
+       dst[bytes_per_sample - 1 - i] = static_cast<uint8_t>((value >> (i * 8)) & 0xFF);
+     }
+diff -ruN libheif-1.23.1/libheif/codecs/uncompressed/unc_encoder_component_interleave.cc libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_encoder_component_interleave.cc
+--- libheif-1.23.1/libheif/codecs/uncompressed/unc_encoder_component_interleave.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/codecs/uncompressed/unc_encoder_component_interleave.cc	2026-07-30 20:07:30.067608883 +0000
+@@ -20,7 +20,9 @@
+ 
+ #include "unc_encoder_component_interleave.h"
+ 
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <bit>
++#endif
+ #include <cstring>
+ 
+ #include "image/pixelimage.h"
+@@ -136,7 +138,7 @@
+ 
+   m_uncC->set_interleave_type(interleave_mode_component);
+   if (m_use_memcpy) {
+-    m_uncC->set_components_little_endian(std::endian::native == std::endian::little);
++    m_uncC->set_components_little_endian(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__);
+   }
+   else {
+     // we use dense packing
+diff -ruN libheif-1.23.1/libheif/color-conversion/bayer_bilinear.cc libheif-1.23.1.aros/libheif/color-conversion/bayer_bilinear.cc
+--- libheif-1.23.1/libheif/color-conversion/bayer_bilinear.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/color-conversion/bayer_bilinear.cc	2026-07-30 20:13:20.694297345 +0000
+@@ -181,7 +181,10 @@
+           int sum = 0;
+           int count = 0;
+ 
+-          for (const auto& [dx, dy] : ch_offsets) {
++          for (const auto& ch_off : ch_offsets) {
++            // GCC 6 (AROS m68k baseline) has no structured bindings
++            const int dx = ch_off.first;
++            const int dy = ch_off.second;
+             int nx = static_cast<int>(x) + dx;
+             int ny = static_cast<int>(y) + dy;
+ 
+diff -ruN libheif-1.23.1/libheif/color-conversion/colorconversion.cc libheif-1.23.1.aros/libheif/color-conversion/colorconversion.cc
+--- libheif-1.23.1/libheif/color-conversion/colorconversion.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/color-conversion/colorconversion.cc	2026-07-28 08:14:27.156300150 +0000
+@@ -176,11 +176,11 @@
+ }
+ 
+ 
+-struct Node
++struct CCNode
+ {
+-  Node() = default;
++  CCNode() = default;
+ 
+-  Node(int prev,
++  CCNode(int prev,
+        const std::shared_ptr<ColorConversionOperation>& _op,
+       //const ColorState& _input_state,
+        const ColorState& _output_state,
+@@ -301,8 +301,8 @@
+ 
+   // --- Dijkstra search for the minimum-cost conversion pipeline
+ 
+-  std::vector<Node> processed_states;
+-  std::vector<Node> border_states;
++  std::vector<CCNode> processed_states;
++  std::vector<CCNode> border_states;
+   border_states.emplace_back(-1, nullptr, input_state, 0);
+ 
+   while (!border_states.empty()) {
+diff -ruN libheif-1.23.1/libheif/context.cc libheif-1.23.1.aros/libheif/context.cc
+--- libheif-1.23.1/libheif/context.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/context.cc	2026-07-30 20:16:14.284674012 +0000
+@@ -342,7 +342,7 @@
+ 
+ bool HeifContext::is_image(heif_item_id ID) const
+ {
+-  return m_all_images.contains(ID);
++  return m_all_images.count(ID) != 0;
+ }
+ 
+ 
+@@ -1165,7 +1165,7 @@
+     std::shared_ptr<RegionItem> region_item = std::make_shared<RegionItem>();
+     region_item->item_id = id;
+ 
+-    Result regionDataResult = m_heif_file->get_uncompressed_item_data(id);
++    Result<std::vector<uint8_t>> regionDataResult = m_heif_file->get_uncompressed_item_data(id);
+     if (!regionDataResult) {
+       return regionDataResult.error();
+     }
+@@ -1313,7 +1313,7 @@
+   uint32_t image_type = m_heif_file->get_item_type_4cc(ID);
+   if (image_type == fourcc("grid")) {
+ 
+-    Result gridDataResult = m_heif_file->get_uncompressed_item_data(ID);
++    Result<std::vector<uint8_t>> gridDataResult = m_heif_file->get_uncompressed_item_data(ID);
+     if (!gridDataResult) {
+       return false;
+     }
+@@ -1404,7 +1404,7 @@
+       id = image_references[0];
+     }
+     else {
+-      if (!m_all_images.contains(id)) {
++      if (!m_all_images.count(id)) {
+         std::stringstream sstr;
+         sstr << "Image item " << id << " referenced, but it does not exist\n";
+ 
+@@ -1430,7 +1430,7 @@
+                                                                   std::set<heif_item_id> processed_ids) const
+ {
+   std::shared_ptr<ImageItem> imgitem;
+-  if (m_all_images.contains(ID)) {
++  if (m_all_images.count(ID)) {
+     imgitem = m_all_images.find(ID)->second;
+   }
+ 
+diff -ruN libheif-1.23.1/libheif/error.h libheif-1.23.1.aros/libheif/error.h
+--- libheif-1.23.1/libheif/error.h	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/error.h	2026-07-30 20:07:30.070420783 +0000
+@@ -34,7 +34,25 @@
+ 
+ #include "libheif/heif.h"
+ #include <cassert>
++#if defined(LIBHEIF_USE_BOOST_OPTIONAL)
++// Toolchains without <variant> (AROS baseline gcc 6.5): boost.variant2
++// has the same shape for everything Result<> uses.
++#include <boost/variant2/variant.hpp>
++#include <boost/optional.hpp>
++#include <boost/optional/optional_io.hpp>
++#include <boost/core/bit.hpp>
++namespace heif_var = boost::variant2;
++// Let std::optional/std::nullopt use sites compile unchanged.
++namespace std {
++using boost::optional;
++using boost::make_optional;
++using boost::core::bit_cast;
++static const boost::none_t& nullopt = boost::none;
++}
++#else
+ #include <variant>
++namespace heif_var = std;
++#endif
+ #include <utility>
+ 
+ 
+@@ -129,7 +147,7 @@
+ 
+   Result(const Error& e) : m_data(e) {}
+ 
+-  operator bool() const { return std::holds_alternative<T>(m_data); }
++  operator bool() const { return heif_var::holds_alternative<T>(m_data); }
+ 
+   //void set(const T& v) { m_data = v; }
+ 
+@@ -137,18 +155,18 @@
+   T* operator->()
+   {
+     assert(*this); // Uses the operator bool() above
+-    return &std::get<T>(m_data);
++    return &heif_var::get<T>(m_data);
+   }
+ 
+   // Dereference access for `*r`
+   T& operator*()
+   {
+     assert(*this);
+-    return std::get<T>(m_data);
++    return heif_var::get<T>(m_data);
+   }
+ 
+   [[nodiscard]] bool is_error() const {
+-    return std::holds_alternative<Error>(m_data);
++    return heif_var::holds_alternative<Error>(m_data);
+   }
+ 
+   // Accessor for the error, if it exists
+@@ -158,7 +176,7 @@
+       return Error::Ok;
+     }
+ 
+-    return std::get<Error>(m_data);
++    return heif_var::get<Error>(m_data);
+   }
+ 
+   // Directly get the C error struct.
+@@ -168,10 +186,10 @@
+       return heif_error_success;
+     }
+ 
+-    return std::get<Error>(m_data).error_struct(error_buffer);
++    return heif_var::get<Error>(m_data).error_struct(error_buffer);
+   }
+ 
+-  std::variant<T, Error> m_data;
++  heif_var::variant<T, Error> m_data;
+ };
+ 
+ #endif
+diff -ruN libheif-1.23.1/libheif/file.cc libheif-1.23.1.aros/libheif/file.cc
+--- libheif-1.23.1/libheif/file.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/file.cc	2026-07-30 20:13:20.694514145 +0000
+@@ -350,7 +350,10 @@
+ 
+   sstr << "=== Item Data ===\n";
+ 
+-  for (const auto& [id, infe] : m_infe_boxes) {
++  for (const auto& infe_entry : m_infe_boxes) {
++    // GCC 6 (AROS m68k baseline) has no structured bindings
++    const auto& id = infe_entry.first;
++    const auto& infe = infe_entry.second;
+     uint32_t item_type = infe->get_item_type_4cc();
+ 
+     if (item_type == fourcc("grid")) {
+diff -ruN libheif-1.23.1/libheif/image/image_description.h libheif-1.23.1.aros/libheif/image/image_description.h
+--- libheif-1.23.1/libheif/image/image_description.h	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/image/image_description.h	2026-07-30 19:58:21.338654738 +0000
+@@ -30,7 +30,9 @@
+ #include <cassert>
+ #include <map>
+ #include <memory>
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <optional>
++#endif
+ #include <string>
+ #include <vector>
+ #include <algorithm>
+diff -ruN libheif-1.23.1/libheif/image/pixelimage.cc libheif-1.23.1.aros/libheif/image/pixelimage.cc
+--- libheif-1.23.1/libheif/image/pixelimage.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/image/pixelimage.cc	2026-07-30 20:22:23.807614165 +0000
+@@ -2343,7 +2343,7 @@
+ 
+   ComponentStorage plane;
+   plane.m_channel = desc->channel;
+-  plane.m_component_ids = std::vector{component_id};
++  plane.m_component_ids = std::vector<uint32_t>{component_id};
+   if (Error err = plane.alloc(desc->width, desc->height,
+                               desc->datatype, desc->bit_depth,
+                               1, limits, m_memory_handle)) {
+@@ -2369,7 +2369,7 @@
+ 
+   ComponentStorage plane;
+   plane.m_channel = map_uncompressed_component_to_channel(component_type);
+-  plane.m_component_index = std::vector{component_index};
++  plane.m_component_index = std::vector<uint32_t>{component_index};
+   if (Error err = plane.alloc(width, height, datatype, bit_depth, 1, limits, m_memory_handle)) {
+     return err;
+   }
+diff -ruN libheif-1.23.1/libheif/image-items/grid.cc libheif-1.23.1.aros/libheif/image-items/grid.cc
+--- libheif-1.23.1/libheif/image-items/grid.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/image-items/grid.cc	2026-07-30 20:18:58.324463002 +0000
+@@ -211,7 +211,7 @@
+                                                                                 bool decode_tile_only, uint32_t tile_x0, uint32_t tile_y0,
+                                                                                 std::set<heif_item_id> processed_ids) const
+ {
+-  if (processed_ids.contains(get_id())) {
++  if (processed_ids.count(get_id())) {
+     return Error{heif_error_Invalid_input,
+                  heif_suberror_Unspecified,
+                  "'iref' has cyclic references"};
+diff -ruN libheif-1.23.1/libheif/image-items/hevc.cc libheif-1.23.1.aros/libheif/image-items/hevc.cc
+--- libheif-1.23.1/libheif/image-items/hevc.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/image-items/hevc.cc	2026-07-30 20:18:58.324722202 +0000
+@@ -76,7 +76,7 @@
+ {
+   auto hvcC = get_property<Box_hvcC>();
+ 
+-  if (has_essential_property_other_than(std::set{fourcc("hvcC"),
++  if (has_essential_property_other_than(std::set<uint32_t>{fourcc("hvcC"),
+                                                  fourcc("irot"),
+                                                  fourcc("imir"),
+                                                  fourcc("clap")})) {
+diff -ruN libheif-1.23.1/libheif/image-items/iden.cc libheif-1.23.1.aros/libheif/image-items/iden.cc
+--- libheif-1.23.1/libheif/image-items/iden.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/image-items/iden.cc	2026-07-30 20:18:58.324836902 +0000
+@@ -39,7 +39,7 @@
+                                                                                 bool decode_tile_only, uint32_t tile_x0, uint32_t tile_y0,
+                                                                                 std::set<heif_item_id> processed_ids) const
+ {
+-  if (processed_ids.contains(get_id())) {
++  if (processed_ids.count(get_id())) {
+     return Error{heif_error_Invalid_input,
+                  heif_suberror_Unspecified,
+                  "'iref' has cyclic references"};
+diff -ruN libheif-1.23.1/libheif/image-items/image_item.cc libheif-1.23.1.aros/libheif/image-items/image_item.cc
+--- libheif-1.23.1/libheif/image-items/image_item.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/image-items/image_item.cc	2026-07-30 20:22:23.808146865 +0000
+@@ -607,7 +607,9 @@
+   }
+   heif_colorspace colorspace = heif_colorspace_undefined;
+   heif_chroma chroma = heif_chroma_undefined;
+-  if (Error err = get_coded_image_colorspace(&colorspace, &chroma); err) {
++  // if-with-initializer is C++17; GCC 6 (AROS m68k baseline) needs the split
++  Error cs_err = get_coded_image_colorspace(&colorspace, &chroma);
++  if (cs_err) {
+     return;
+   }
+ 
+@@ -889,7 +891,7 @@
+   // The matching insert lives inside decode_compressed_image() of derived
+   // items (grid/overlay/iden), so the current item is in processed_ids only
+   // when called from one of its own descendants.
+-  if (processed_ids.contains(m_id)) {
++  if (processed_ids.count(m_id)) {
+     return Error{heif_error_Invalid_input,
+                  heif_suberror_Unspecified,
+                  "'iref' has cyclic references"};
+@@ -1244,7 +1246,7 @@
+                                                                            bool decode_tile_only, uint32_t tile_x0, uint32_t tile_y0,
+                                                                            std::set<heif_item_id> processed_ids) const
+ {
+-  if (processed_ids.contains(m_id)) {
++  if (processed_ids.count(m_id)) {
+     return Error{heif_error_Invalid_input,
+                  heif_suberror_Unspecified,
+                  "'iref' has cyclic references"};
+diff -ruN libheif-1.23.1/libheif/image-items/overlay.cc libheif-1.23.1.aros/libheif/image-items/overlay.cc
+--- libheif-1.23.1/libheif/image-items/overlay.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/image-items/overlay.cc	2026-07-30 20:18:58.325490502 +0000
+@@ -290,7 +290,7 @@
+ Result<std::shared_ptr<HeifPixelImage>> ImageItem_Overlay::decode_overlay_image(const heif_decoding_options& options,
+                                                                                 std::set<heif_item_id> processed_ids) const
+ {
+-  if (processed_ids.contains(get_id())) {
++  if (processed_ids.count(get_id())) {
+     return Error{heif_error_Invalid_input,
+                  heif_suberror_Unspecified,
+                  "'iref' has cyclic references"};
+diff -ruN libheif-1.23.1/libheif/image-items/tiled.cc libheif-1.23.1.aros/libheif/image-items/tiled.cc
+--- libheif-1.23.1/libheif/image-items/tiled.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/image-items/tiled.cc	2026-07-30 20:18:58.325726202 +0000
+@@ -658,10 +658,12 @@
+         }
+       }
+     }
+-    std::erase_if(props, [](const std::shared_ptr<Box>& box) {
+-      uint32_t type = box->get_short_type();
+-      return type == fourcc("icef") || type == fourcc("sbpm") || type == fourcc("snuc");
+-    });
++    props.erase(std::remove_if(props.begin(), props.end(),
++                              [](const std::shared_ptr<Box>& box) {
++                                uint32_t type = box->get_short_type();
++                                return type == fourcc("icef") || type == fourcc("sbpm") || type == fourcc("snuc");
++                              }),
++               props.end());
+ #endif
+ 
+     m_tile_item->set_properties(props);
+@@ -685,10 +687,12 @@
+         }
+       }
+     }
+-    std::erase_if(tile_properties, [](const std::shared_ptr<Box>& box) {
+-      uint32_t type = box->get_short_type();
+-      return type == fourcc("icef") || type == fourcc("sbpm") || type == fourcc("snuc");
+-    });
++    tile_properties.erase(std::remove_if(tile_properties.begin(), tile_properties.end(),
++                              [](const std::shared_ptr<Box>& box) {
++                                uint32_t type = box->get_short_type();
++                                return type == fourcc("icef") || type == fourcc("sbpm") || type == fourcc("snuc");
++                              }),
++               tile_properties.end());
+ #endif
+ 
+     bool have_ispe = false;
+diff -ruN libheif-1.23.1/libheif/nclx.h libheif-1.23.1.aros/libheif/nclx.h
+--- libheif-1.23.1/libheif/nclx.h	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/nclx.h	2026-07-28 09:50:24.556719545 +0000
+@@ -125,9 +125,17 @@
+   uint16_t m_matrix_coefficients = heif_matrix_coefficients_unspecified;
+   bool m_full_range_flag = true;
+ 
+-  bool operator==(const nclx_profile& b) const = default;
++  /* Defaulted comparison operators are C++20; spell them out so that
++     older standard libraries can compile this too.  */
++  bool operator==(const nclx_profile& b) const
++  {
++    return m_colour_primaries == b.m_colour_primaries &&
++           m_transfer_characteristics == b.m_transfer_characteristics &&
++           m_matrix_coefficients == b.m_matrix_coefficients &&
++           m_full_range_flag == b.m_full_range_flag;
++  }
+ 
+-  bool operator!=(const nclx_profile& b) const = default;
++  bool operator!=(const nclx_profile& b) const { return !(*this == b); }
+ 
+   static nclx_profile undefined() { return {}; }
+ 
+diff -ruN libheif-1.23.1/libheif/security_limits.cc libheif-1.23.1.aros/libheif/security_limits.cc
+--- libheif-1.23.1/libheif/security_limits.cc	2026-06-26 08:21:07.000000000 +0000
++++ libheif-1.23.1.aros/libheif/security_limits.cc	2026-07-30 20:35:07.074262583 +0000
+@@ -24,52 +24,64 @@
+ #include <mutex>
+ 
+ 
+-heif_security_limits global_security_limits{
+-    .version = 4,
++// Designated initializers on non-trivial structs are C++20; GCC 6 (AROS
++// m68k baseline) needs explicit member assignment.
++static heif_security_limits make_global_security_limits()
++{
++  heif_security_limits limits{};
+ 
+-    // --- version 1
++  limits.version = 4;
+ 
+-    // Artificial limit to avoid allocating too much memory.
+-    // 32768^2 = 1.5 GB as YUV-4:2:0 or 4 GB as RGB32
+-    .max_image_size_pixels = 32768 * 32768,
+-    .max_number_of_tiles = 4096 * 4096,
+-    .max_bayer_pattern_pixels = 16 * 16,
+-    .max_items = 1000,
++  // --- version 1
+ 
+-    .max_color_profile_size = 100 * 1024 * 1024, // 100 MB
+-    .max_memory_block_size = UINT64_C(4) * 1024 * 1024 * 1024,  // 4 GB
++  // Artificial limit to avoid allocating too much memory.
++  // 32768^2 = 1.5 GB as YUV-4:2:0 or 4 GB as RGB32
++  limits.max_image_size_pixels = 32768 * 32768;
++  limits.max_number_of_tiles = 4096 * 4096;
++  limits.max_bayer_pattern_pixels = 16 * 16;
++  limits.max_items = 1000;
+ 
+-    .max_components = 256,
+-    .max_iloc_extents_per_item = 32,
+-    .max_size_entity_group = 64,
++  limits.max_color_profile_size = 100 * 1024 * 1024;  // 100 MB
++  limits.max_memory_block_size = UINT64_C(4) * 1024 * 1024 * 1024;  // 4 GB
+ 
+-    .max_children_per_box = 100,
++  limits.max_components = 256;
++  limits.max_iloc_extents_per_item = 32;
++  limits.max_size_entity_group = 64;
+ 
+-    // --- version 2
++  limits.max_children_per_box = 100;
+ 
+-    .max_total_memory = UINT64_C(4) * 1024 * 1024 * 1024,  // 4 GB
+-    .max_sample_description_box_entries = 1024,
+-    .max_sample_group_description_box_entries = 1024,
++  // --- version 2
+ 
+-    // --- version 3
++  limits.max_total_memory = UINT64_C(4) * 1024 * 1024 * 1024;  // 4 GB
++  limits.max_sample_description_box_entries = 1024;
++  limits.max_sample_group_description_box_entries = 1024;
+ 
+-    .max_sequence_frames = 18'000'000,  // 100 hours at 50 fps
+-    .max_number_of_file_brands = 1000,
++  // --- version 3
+ 
+-    // --- version 4
++  limits.max_sequence_frames = 18'000'000;  // 100 hours at 50 fps
++  limits.max_number_of_file_brands = 1000;
+ 
+-    .max_bad_pixels = 1000,
++  // --- version 4
+ 
+-    .max_iso23001_17_pixel_size_bytes = 256,
++  limits.max_bad_pixels = 1000;
+ 
+-    .parent = nullptr
+-};
++  limits.max_iso23001_17_pixel_size_bytes = 256;
+ 
++  limits.parent = nullptr;
++  return limits;
++}
+ 
+-heif_security_limits disabled_security_limits{
+-    .version = 4,
+-    .parent = nullptr
+-};
++heif_security_limits global_security_limits = make_global_security_limits();
++
++
++static heif_security_limits make_disabled_security_limits()
++{
++  heif_security_limits limits{};
++  limits.version = 4;
++  return limits;
++}
++
++heif_security_limits disabled_security_limits = make_disabled_security_limits();
+ 
+ 
+ uint32_t max_coding_unit_size_for_codec(heif_compression_format format)

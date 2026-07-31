@@ -26,7 +26,7 @@ include $(SRCDIR)/config/aros.cfg
 # libbrotli (decoder parts only, needed by libjxl)               #
 ##################################################################
 
-LIBBROTLIVERSION=1.1.0
+LIBBROTLIVERSION=1.2.0
 BROTLIREPOSITORIES = https://github.com/google/brotli/archive/refs/tags
 BROTLIARCHBASE     := v$(LIBBROTLIVERSION)
 BROTLIARCHSUFFIX := "tar.gz"
@@ -56,7 +56,9 @@ BROTLICFILES := \
         c/dec/bit_reader \
         c/dec/decode \
         c/dec/huffman \
-        c/dec/state
+        c/dec/prefix \
+        c/dec/state \
+        c/dec/static_init
 
 %build_linklib mmake=datatypes-jpegxl-linklibs-brotli \
     libname=brotli files="$(addprefix $(BROTLIARCHSRCDIR)/,$(BROTLICFILES))" \
@@ -66,14 +68,15 @@ BROTLICFILES := \
 # libhwy (google highway - SIMD support library used by libjxl)  #
 ##################################################################
 
-LIBHWYVERSION=1.2.0
+LIBHWYVERSION=1.4.0
 HWYREPOSITORIES = https://github.com/google/highway/archive/refs/tags
 HWYARCHBASE     := $(LIBHWYVERSION)
 HWYARCHSUFFIX := "tar.gz"
-#HWYPATCHSPEC := $(HWYARCHBASE)-aros.diff:highway-$(LIBHWYVERSION):-f,-p1
+HWYPATCHSPEC := $(HWYARCHBASE)-aros.diff:highway-$(LIBHWYVERSION):-f,-p1
 HWYARCHSRCDIR := $(PORTSDIR)/highway/highway-$(LIBHWYVERSION)
 
 %fetch mmake=linklibs-jxlhwy-fetch archive=$(HWYARCHBASE) destination=$(PORTSDIR)/highway \
+    patches_origins="$(SRCDIR)/$(CURDIR)/highway" \
     location=$(PORTSSOURCEDIR)/highway archive_origins=$(HWYREPOSITORIES) suffixes=$(HWYARCHSUFFIX) \
     patches_specs=$(HWYPATCHSPEC)
 
@@ -103,14 +106,31 @@ HWYCXXFILES := \
 # libjxl (decoder parts only)                                    #
 ##################################################################
 
-LIBJXLVERSION=0.11.1
+LIBJXLVERSION=0.12.0
+# version components for jxl/version.h
+JXL_VER_MAJOR := $(word 1,$(subst ., ,$(LIBJXLVERSION)))
+JXL_VER_MINOR := $(word 2,$(subst ., ,$(LIBJXLVERSION)))
+JXL_VER_PATCH := $(word 3,$(subst ., ,$(LIBJXLVERSION)))
 JXLREPOSITORIES = https://github.com/libjxl/libjxl/archive/refs/tags
 JXLARCHBASE     := v$(LIBJXLVERSION)
 JXLARCHSUFFIX := "tar.gz"
-#JXLPATCHSPEC := $(JXLARCHBASE)-aros.diff:libjxl-$(LIBJXLVERSION):-f,-p1
+# The libjxl AROS patch only addresses C++ standard features missing from
+# older gcc (the m68k baseline is 6.5) - newer toolchains build the
+# pristine sources.
+ifeq ($(AROS_TOOLCHAIN),gnu)
+ifneq ($(findstring -,$(TARGET_GCC_VER)),)
+  GCC_VERSION_MAJOR := $(firstword $(subst -, ,$(TARGET_GCC_VER)))
+else
+  GCC_VERSION_MAJOR = $(shell echo "$(TARGET_GCC_VER)" | cut -d"." -f1)
+endif
+ifeq ($(shell [ $(GCC_VERSION_MAJOR) -lt 13 ] && echo true),true)
+JXLPATCHSPEC := $(JXLARCHBASE)-aros.diff:libjxl-$(LIBJXLVERSION):-f,-p1
+endif
+endif
 JXLARCHSRCDIR := $(PORTSDIR)/libjxl/libjxl-$(LIBJXLVERSION)
 
 %fetch mmake=linklibs-jxl-fetch archive=$(JXLARCHBASE) destination=$(PORTSDIR)/libjxl \
+    patches_origins="$(SRCDIR)/$(CURDIR)/libjxl" \
     location=$(PORTSSOURCEDIR)/jpegxl archive_origins=$(JXLREPOSITORIES) suffixes=$(JXLARCHSUFFIX) \
     patches_specs=$(JXLPATCHSPEC)
 
@@ -148,12 +168,11 @@ LIBJXLCXXFILES := \
         lib/jxl/coeff_order \
         lib/jxl/color_encoding_internal \
         lib/jxl/compressed_dc \
-        lib/jxl/convolve_separable5 \
         lib/jxl/convolve_slow \
-        lib/jxl/convolve_symmetric3 \
         lib/jxl/convolve_symmetric5 \
         lib/jxl/dct_scales \
         lib/jxl/dec_ans \
+        lib/jxl/dec_bit_reader \
         lib/jxl/dec_cache \
         lib/jxl/dec_context_map \
         lib/jxl/dec_external_image \
@@ -187,6 +206,7 @@ LIBJXLCXXFILES := \
         lib/jxl/modular/transform/palette \
         lib/jxl/modular/transform/rct \
         lib/jxl/modular/transform/squeeze \
+        lib/jxl/modular/transform/squeeze_params \
         lib/jxl/modular/transform/transform \
         lib/jxl/opsin_params \
         lib/jxl/passes_state \
@@ -194,6 +214,7 @@ LIBJXLCXXFILES := \
         lib/jxl/quantizer \
         lib/jxl/render_pipeline/low_memory_render_pipeline \
         lib/jxl/render_pipeline/render_pipeline \
+        lib/jxl/render_pipeline/render_pipeline_stage \
         lib/jxl/render_pipeline/simple_render_pipeline \
         lib/jxl/render_pipeline/stage_blending \
         lib/jxl/render_pipeline/stage_chroma_upsampling \
@@ -218,7 +239,7 @@ LIBJXLCXXFILES := \
 $(JXLGENINCDIR)/jxl/version.h : $(JXLARCHSRCDIR)/lib/jxl/version.h.in
 	@$(ECHO) "Generating jxl/version.h ..."
 	%mkdir_q dir=$(JXLGENINCDIR)/jxl
-	@cat $< | $(SED) s/@JPEGXL_MAJOR_VERSION@/0/ | $(SED) s/@JPEGXL_MINOR_VERSION@/11/ | $(SED) s/@JPEGXL_PATCH_VERSION@/1/ > $@
+	@cat $< | $(SED) s/@JPEGXL_MAJOR_VERSION@/$(JXL_VER_MAJOR)/ | $(SED) s/@JPEGXL_MINOR_VERSION@/$(JXL_VER_MINOR)/ | $(SED) s/@JPEGXL_PATCH_VERSION@/$(JXL_VER_PATCH)/ > $@
 
 $(JXLGENINCDIR)/jxl/jxl_export.h : $(SRCDIR)/$(CURDIR)/jxl_export.h
 	@$(ECHO) "Generating jxl/jxl_export.h ..."

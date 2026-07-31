@@ -128,16 +128,18 @@ endif
 %build_with_cmake mmake=datatypes-heic-linklibs-aom package=aom srcdir=$(AOMARCHSRCDIR) \
     prefix="$(AROS_DEVELOPER)" extraoptions="$(LIBAOM_CMAKEOPTIONS)" extraldflags="$(LIBAOM_LDFLAGS)"
 
-LIBDE265VERSION=1.0.16
+LIBDE265VERSION=1.1.1
+# 0x0MMmmpp00 form of LIBDE265VERSION, as de265-version.h.in expects
+DE265_NUMERIC_VERSION=0x01010100
 DE265REPOSITORIES = https://github.com/strukturag/libde265/archive/refs/tags
 DE265ARCHBASE     := v$(LIBDE265VERSION)
 DE265ARCHSUFFIX := "tar.gz"
-#DE265PATCHSPEC := $(DE265ARCHBASE)-aros.diff:libde265-$(LIBDE265VERSION):-f,-p1
 DE265ARCHSRCDIR := $(PORTSDIR)/libde265/libde265-$(LIBDE265VERSION)
 
 %fetch mmake=linklibs-de265-fetch archive=$(DE265ARCHBASE) destination=$(PORTSDIR)/libde265 \
+    patches_origins="$(SRCDIR)/$(CURDIR)/libde265" \
     location=$(PORTSSOURCEDIR)/de265 archive_origins=$(DE265REPOSITORIES) suffixes=$(DE265ARCHSUFFIX) \
-    patches_specs=$(PATCHSPEC)
+    patches_specs=$(DE265PATCHSPEC)
 
 %create_patch mmake=linklibs-de265-create-patch \
     archive=$(DE265ARCHBASE) suffixes=$(DE265ARCHSUFFIX) \
@@ -153,13 +155,14 @@ LIBDE265CXXFILES := \
         libde265/alloc_pool \
         libde265/bitstream \
         libde265/cabac \
-        libde265/configparam \
         libde265/contextmodel \
         libde265/de265 \
         libde265/deblock \
         libde265/decctx \
         libde265/fallback \
         libde265/fallback-dct \
+        libde265/fallback-deblk \
+        libde265/fallback-intrapred \
         libde265/fallback-motion \
         libde265/dpb \
         libde265/image \
@@ -185,7 +188,7 @@ LIBDE265CXXFILES := \
         libde265/vui
 
 $(GENDIR)/$(CURDIR)/libde265/de265-version.h : $(DE265ARCHSRCDIR)/libde265/de265-version.h.in | $(GENDIR)/$(CURDIR)/libde265
-	cat $< | $(SED) s/@NUMERIC_VERSION@/0x01000500/ | $(SED) s/@PACKAGE_VERSION@/"1.0.5"/ > $@
+	cat $< | $(SED) s/@NUMERIC_VERSION@/$(DE265_NUMERIC_VERSION)/ | $(SED) s/@PACKAGE_VERSION@/"$(LIBDE265VERSION)"/ > $@
 
 %build_linklib mmake=datatypes-heic-linklibs-de265 \
     libname=de265 cxxfiles="$(addprefix $(DE265ARCHSRCDIR)/,$(LIBDE265CXXFILES))" \
@@ -196,14 +199,18 @@ $(GENDIR)/$(CURDIR)/libde265/de265-version.h : $(DE265ARCHSRCDIR)/libde265/de265
 #MM
 datatypes-heic-linklibs-de265-genfiles : $(GENDIR)/$(CURDIR)/libde265/de265-version.h
 
-LIBHEIFVERSION=1.19.8
+LIBHEIFVERSION=1.23.1
+# version components for libheif/heif_version.h
+HEIF_VER_MAJOR := $(word 1,$(subst ., ,$(LIBHEIFVERSION)))
+HEIF_VER_MINOR := $(word 2,$(subst ., ,$(LIBHEIFVERSION)))
+HEIF_VER_PATCH := $(word 3,$(subst ., ,$(LIBHEIFVERSION)))
 HEIFREPOSITORIES = https://github.com/strukturag/libheif/archive/refs/tags
 HEIFARCHBASE     := v$(LIBHEIFVERSION)
 HEIFARCHSUFFIX := "tar.gz"
-HEIFPATCHSPEC := $(HEIFARCHBASE)-aros.diff:libheif-$(LIBHEIFVERSION):-f,-p1
 HEIFARCHSRCDIR := $(PORTSDIR)/libheif/libheif-$(LIBHEIFVERSION)
 
 %fetch mmake=linklibs-heif-fetch archive=$(HEIFARCHBASE) destination=$(PORTSDIR)/libheif \
+    patches_origins="$(SRCDIR)/$(CURDIR)/libheif" \
     location=$(PORTSSOURCEDIR)/heif archive_origins=$(HEIFREPOSITORIES) suffixes=$(HEIFARCHSUFFIX) \
     patches_specs=$(HEIFPATCHSPEC)
 
@@ -228,6 +235,10 @@ endif
 ifeq ($(shell [ $(GCC_VERSION_MAJOR) -lt 13 ] && echo true),true)
   USER_CPPFLAGS += -DLIBHEIF_USE_BOOST_OPTIONAL
   NOWARN_CXXFLAGS := $(NOWARN_ATTRIBUTES)
+  # The libde265/libheif AROS patches only address C++ standard features
+  # these older toolchains lack - newer compilers build the pristine sources.
+  DE265PATCHSPEC := $(DE265ARCHBASE)-aros.diff:libde265-$(LIBDE265VERSION):-f,-p1
+  HEIFPATCHSPEC := $(HEIFARCHBASE)-aros.diff:libheif-$(LIBHEIFVERSION):-f,-p1
 endif
 else
 ifeq ($(AROS_TOOLCHAIN),llvm)
@@ -237,70 +248,136 @@ endif
 
 USER_CPPFLAGS += -DPLUGIN_AOM_DECODER -DHAVE_AOM_DECODER
 
+# ISO/IEC 23001-17 uncompressed items. libheif declares
+# map_uncompressed_component_to_channel() in unc_codec.h outside of the
+# WITH_UNCOMPRESSED_CODEC guard that pulls in unc_boxes.h, so the codec
+# cannot be compiled out without patching upstream headers.
+USER_CPPFLAGS += -DWITH_UNCOMPRESSED_CODEC=1
+
 LIBHEIFCXXFILES := \
-        libheif/bitstream \
-        libheif/box \
-        libheif/error \
-        libheif/context \
-        libheif/file \
-        libheif/file_layout \
-        libheif/pixelimage \
-        libheif/plugin_registry \
-        libheif/nclx \
-        libheif/security_limits \
-        libheif/init \
-        libheif/logging \
-        libheif/compression_brotli \
-        libheif/compression_zlib \
-        libheif/common_utils \
-        libheif/region \
         libheif/api/libheif/heif \
-        libheif/api/libheif/heif_regions \
+        libheif/api/libheif/heif_aux_images \
+        libheif/api/libheif/heif_brands \
+        libheif/api/libheif/heif_color \
+        libheif/api/libheif/heif_components \
+        libheif/api/libheif/heif_context \
+        libheif/api/libheif/heif_decoding \
+        libheif/api/libheif/heif_encoding \
+        libheif/api/libheif/heif_entity_groups \
+        libheif/api/libheif/heif_experimental \
+        libheif/api/libheif/heif_image \
+        libheif/api/libheif/heif_image_handle \
+        libheif/api/libheif/heif_items \
+        libheif/api/libheif/heif_library \
+        libheif/api/libheif/heif_metadata \
+        libheif/api/libheif/heif_omaf \
         libheif/api/libheif/heif_plugin \
         libheif/api/libheif/heif_properties \
-        libheif/api/libheif/heif_items \
-        libheif/codecs/decoder \
-        libheif/image-items/hevc \
-        libheif/codecs/hevc_boxes \
-        libheif/codecs/hevc_dec \
-        libheif/image-items/avif \
-        libheif/codecs/avif_dec \
-        libheif/codecs/avif_boxes \
-        libheif/image-items/jpeg \
-        libheif/codecs/jpeg_boxes \
-        libheif/codecs/jpeg_dec \
-        libheif/image-items/jpeg2000 \
-        libheif/codecs/jpeg2000_dec \
-        libheif/codecs/jpeg2000_boxes \
-        libheif/image-items/vvc \
-        libheif/codecs/vvc_dec \
-        libheif/codecs/vvc_boxes \
-        libheif/image-items/avc \
+        libheif/api/libheif/heif_regions \
+        libheif/api/libheif/heif_security \
+        libheif/api/libheif/heif_sequences \
+        libheif/api/libheif/heif_tai_timestamps \
+        libheif/api/libheif/heif_text \
+        libheif/api/libheif/heif_tiling \
+        libheif/api/libheif/heif_uncompressed \
+        libheif/bitstream \
+        libheif/box \
+        libheif/brands \
         libheif/codecs/avc_boxes \
         libheif/codecs/avc_dec \
-        libheif/image-items/mask_image \
-        libheif/image-items/image_item \
-        libheif/image-items/grid \
-        libheif/image-items/overlay \
-        libheif/image-items/iden \
-        libheif/image-items/tiled \
+        libheif/codecs/avc_enc \
+        libheif/codecs/avif_boxes \
+        libheif/codecs/avif_dec \
+        libheif/codecs/avif_enc \
+        libheif/codecs/decoder \
+        libheif/codecs/encoder \
+        libheif/codecs/hevc_boxes \
+        libheif/codecs/hevc_dec \
+        libheif/codecs/hevc_enc \
+        libheif/codecs/jpeg2000_boxes \
+        libheif/codecs/jpeg2000_dec \
+        libheif/codecs/jpeg2000_enc \
+        libheif/codecs/jpeg_boxes \
+        libheif/codecs/jpeg_dec \
+        libheif/codecs/jpeg_enc \
+        libheif/codecs/uncompressed/unc_boxes \
+        libheif/codecs/uncompressed/unc_codec \
+        libheif/codecs/uncompressed/unc_dec \
+        libheif/codecs/uncompressed/unc_decoder \
+        libheif/codecs/uncompressed/unc_decoder_block_component_interleave \
+        libheif/codecs/uncompressed/unc_decoder_block_pixel_interleave \
+        libheif/codecs/uncompressed/unc_decoder_bytealign_component_interleave \
+        libheif/codecs/uncompressed/unc_decoder_component_interleave \
+        libheif/codecs/uncompressed/unc_decoder_legacybase \
+        libheif/codecs/uncompressed/unc_decoder_mixed_interleave \
+        libheif/codecs/uncompressed/unc_decoder_pixel_interleave \
+        libheif/codecs/uncompressed/unc_decoder_row_interleave \
+        libheif/codecs/uncompressed/unc_enc \
+        libheif/codecs/uncompressed/unc_encoder \
+        libheif/codecs/uncompressed/unc_encoder_component_interleave \
+        libheif/codecs/uncompressed/unc_encoder_rgb_block_pixel_interleave \
+        libheif/codecs/uncompressed/unc_encoder_rgb_bytealign_pixel_interleave \
+        libheif/codecs/uncompressed/unc_encoder_rgb_pixel_interleave \
+        libheif/codecs/vvc_boxes \
+        libheif/codecs/vvc_dec \
+        libheif/codecs/vvc_enc \
+        libheif/color-conversion/alpha \
+        libheif/color-conversion/bayer_bilinear \
+        libheif/color-conversion/chroma_sampling \
         libheif/color-conversion/colorconversion \
+        libheif/color-conversion/hdr_sdr \
+        libheif/color-conversion/monochrome \
+        libheif/color-conversion/rgb2rgb \
         libheif/color-conversion/rgb2yuv \
         libheif/color-conversion/rgb2yuv_sharp \
         libheif/color-conversion/yuv2rgb \
-        libheif/color-conversion/rgb2rgb \
-        libheif/color-conversion/monochrome \
-        libheif/color-conversion/hdr_sdr \
-        libheif/color-conversion/alpha \
-        libheif/color-conversion/chroma_sampling
-
+        libheif/common_utils \
+        libheif/compression \
+        libheif/compression_brotli \
+        libheif/compression_zlib \
+        libheif/context \
+        libheif/error \
+        libheif/file \
+        libheif/file_layout \
+        libheif/id_creator \
+        libheif/image-items/avc \
+        libheif/image-items/avif \
+        libheif/image-items/grid \
+        libheif/image-items/hevc \
+        libheif/image-items/iden \
+        libheif/image-items/image_item \
+        libheif/image-items/jpeg \
+        libheif/image-items/jpeg2000 \
+        libheif/image-items/mask_image \
+        libheif/image-items/overlay \
+        libheif/image-items/tiled \
+        libheif/image-items/unc_image \
+        libheif/image-items/vvc \
+        libheif/image/image_description \
+        libheif/image/pixelimage \
+        libheif/init \
+        libheif/logging \
+        libheif/mini \
+        libheif/nclx \
+        libheif/omaf_boxes \
+        libheif/plugin_registry \
+        libheif/region \
+        libheif/security_limits \
+        libheif/sequences/chunk \
+        libheif/sequences/seq_boxes \
+        libheif/sequences/track \
+        libheif/sequences/track_metadata \
+        libheif/sequences/track_visual \
+        libheif/text
 LIBHEIFCXXFILES += \
         libheif/plugins/encoder_mask \
         libheif/plugins/decoder_libde265 \
-        libheif/plugins/decoder_aom
+        libheif/plugins/decoder_aom \
+        libheif/plugins/decoder_uncompressed \
+        libheif/plugins/encoder_uncompressed
 
 $(GENDIR)/$(CURDIR)/libheif/heif_version.h : $(HEIFARCHSRCDIR)/libheif/api/libheif/heif_version.h.in | $(GENDIR)/$(CURDIR)/libheif
-	cat $< | $(SED) s/@PROJECT_VERSION_MAJOR@/1/ | $(SED) s/@PROJECT_VERSION_MINOR@/6/ | $(SED) s/@PROJECT_VERSION_PATCH@/2/ | $(SED) s/@PROJECT_VERSION_TWEAK@/0/ > $@
+	cat $< | $(SED) s/@PROJECT_VERSION_MAJOR@/$(HEIF_VER_MAJOR)/ | $(SED) s/@PROJECT_VERSION_MINOR@/$(HEIF_VER_MINOR)/ | $(SED) s/@PROJECT_VERSION_PATCH@/$(HEIF_VER_PATCH)/ | $(SED) s/@PLUGIN_DIRECTORY@// > $@
 
 %build_linklib mmake=datatypes-heic-linklibs-heif \
     libname=heif cxxfiles="$(addprefix $(HEIFARCHSRCDIR)/,$(LIBHEIFCXXFILES))" \
