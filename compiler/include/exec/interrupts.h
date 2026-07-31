@@ -2,7 +2,7 @@
 #define EXEC_INTERRUPTS_H
 
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Interrupt structures
@@ -31,7 +31,7 @@
 #include <aros/m68k/cpucontext.h>
 #elif defined __powerpc__
 #include <aros/ppc/cpucontext.h>
-#elif defined __riscv64
+#elif defined(__riscv) && (__riscv_xlen == 64)
 #include <aros/riscv64/cpucontext.h>
 #elif defined __riscv
 #include <aros/riscv/cpucontext.h>
