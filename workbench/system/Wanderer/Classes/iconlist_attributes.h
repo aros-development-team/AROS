@@ -146,6 +146,10 @@ enum iconlist_LabelRenderModes
 #define MUIA_IconDrawerList_Drawer    (MUIB_IconDrawerList | 0x00000000)      /* Zune: V1  isg LONG     */
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconVolumeList           (MUIB_ZUNE | 0x00044000)  
+#define MUIB_IconVolumeList           (MUIB_ZUNE | 0x00044000)
+
+/*** Attributes *************************************************************/
+/* Newline separated volume or device names to leave out of the list. */
+#define MUIA_IconVolumeList_HiddenVolumes (MUIB_IconVolumeList | 0x00000000)    /* Zune: V1  .sg STRPTR   */
 
 #endif /* _MUI_CLASSES_ICONLIST_ATTRIBUTES_H */

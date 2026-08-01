@@ -471,6 +471,56 @@ IPTR IconVolumeList__OM_NEW(struct IClass *CLASS, Object * obj,
 
 ///
 
+///OM_DISPOSE()
+IPTR IconVolumeList__OM_DISPOSE(struct IClass * CLASS, Object * obj, Msg message)
+{
+    struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
+
+    D(bug("[IconVolumeList]: %s()\n", __func__));
+
+    if (data->ivld_HiddenVolumes)
+        FreeVec(data->ivld_HiddenVolumes);
+
+    return DoSuperMethodA(CLASS, obj, message);
+}
+
+///
+
+///OM_SET()
+IPTR IconVolumeList__OM_SET(struct IClass * CLASS, Object * obj,
+    struct opSet * message)
+{
+    struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
+    struct TagItem *tstate = message->ops_AttrList;
+    struct TagItem *tag;
+
+    D(bug("[IconVolumeList]: %s()\n", __func__));
+
+    while ((tag = NextTagItem((struct TagItem **)&tstate)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+        case MUIA_IconVolumeList_HiddenVolumes:
+            {
+                STRPTR names = (STRPTR) tag->ti_Data;
+                STRPTR copy = NULL;
+
+                if (names && (copy = AllocVec(strlen(names) + 1, MEMF_ANY)))
+                    strcpy(copy, names);
+
+                if (data->ivld_HiddenVolumes)
+                    FreeVec(data->ivld_HiddenVolumes);
+                data->ivld_HiddenVolumes = copy;
+            }
+            break;
+        }
+    }
+
+    return DoSuperMethodA(CLASS, obj, (Msg) message);
+}
+
+///
+
 static BOOL MatchIconlistNames(char *entryname, char *matchname)
 {
     char *enend;
@@ -489,6 +539,54 @@ static BOOL MatchIconlistNames(char *entryname, char *matchname)
 
     if ((enlen == mnlen)&& (strncasecmp(entryname, matchname, enlen) == 0))
         return TRUE;
+    return FALSE;
+}
+
+/*
+ * Is this volume named in the newline separated list of names to leave out?
+ * Either the volume name or the name of the device carrying it will do, so
+ * that a volume which has no name of its own can still be named.
+ */
+static BOOL VolumeIsHidden(CONST_STRPTR hidden, struct DOSVolumeNode *dvn)
+{
+    CONST_STRPTR entry = hidden;
+
+    if (!hidden)
+        return FALSE;
+
+    while (*entry)
+    {
+        CONST_STRPTR end = strchr(entry, '\n');
+        LONG len = end ? (LONG)(end - entry) : (LONG)strlen(entry);
+
+        /* Tolerate a trailing colon and surrounding blanks in the stored name */
+        while (len > 0 && (entry[len - 1] == ':' || entry[len - 1] == ' '
+                || entry[len - 1] == '\r' || entry[len - 1] == '\t'))
+            len--;
+        while (len > 0 && *entry == ' ')
+        {
+            entry++;
+            len--;
+        }
+
+        if (len > 0)
+        {
+            if ((dvn->dvn_VolName
+                    && strncasecmp(dvn->dvn_VolName, entry, len) == 0
+                    && (dvn->dvn_VolName[len] == ':'
+                        || dvn->dvn_VolName[len] == '\0'))
+                || (dvn->dvn_DosName
+                    && strncasecmp(dvn->dvn_DosName, entry, len) == 0
+                    && (dvn->dvn_DosName[len] == ':'
+                        || dvn->dvn_DosName[len] == '\0')))
+                return TRUE;
+        }
+
+        if (!end)
+            break;
+        entry = end + 1;
+    }
+
     return FALSE;
 }
 
@@ -522,7 +620,7 @@ MUIM_IconList_Update
 IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
     Object * obj, struct MUIP_IconList_Update * message)
 {
-    //struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
     struct IconEntry *this_Icon = NULL;
     struct DOSVolumeList *dvl = NULL;
     struct DOSVolumeNode *dvn = NULL;
@@ -554,6 +652,13 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
 
                     D(bug("[IconVolumeList] %s: DOSList Entry '%s'\n",
                             __func__, dvn->dvn_VolName));
+
+                    if (VolumeIsHidden(data->ivld_HiddenVolumes, dvn))
+                    {
+                        D(bug("[IconVolumeList] %s: '%s' is hidden\n",
+                                __func__, dvn->dvn_VolName));
+                        continue;
+                    }
 
                     if (dvn->dvn_Flags & ICONENTRY_VOL_OFFLINE)
                         devname = dvn->dvn_VolName;
@@ -783,6 +888,9 @@ IPTR IconVolumeList__OM_GET(struct IClass * CLASS, Object * obj,
     case MUIA_Revision:
         STORE = (IPTR) 3;
         return 1;
+    case MUIA_IconVolumeList_HiddenVolumes:
+        STORE = (IPTR) ((struct IconVolumeList_DATA *)INST_DATA(CLASS, obj))->ivld_HiddenVolumes;
+        return 1;
     }
 
     return DoSuperMethodA(CLASS, obj, (Msg) message);
@@ -798,6 +906,10 @@ BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, CLASS, obj, message)
     {
     case OM_NEW:
         return IconVolumeList__OM_NEW(CLASS, obj, (struct opSet *)message);
+    case OM_DISPOSE:
+        return IconVolumeList__OM_DISPOSE(CLASS, obj, message);
+    case OM_SET:
+        return IconVolumeList__OM_SET(CLASS, obj, (struct opSet *)message);
     case OM_GET:
         return IconVolumeList__OM_GET(CLASS, obj, (struct opGet *)message);
     case MUIM_IconList_Update:

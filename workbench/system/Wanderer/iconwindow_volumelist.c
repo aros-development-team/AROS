@@ -70,6 +70,8 @@ struct IconWindowVolumeList_DATA
     Object                      *iwcd_ViewPrefs_NotificationObject;
     struct Hook                 iwvcd_UpdateNetworkPrefs_hook;
 
+    struct Hook                 iwvcd_UpdateHiddenVolumes_hook;
+
     IPTR                        iwvcd_ShowNetworkBrowser;
     IPTR                        iwvcd_ShowUserFolder;
 
@@ -232,6 +234,57 @@ AROS_UFH3(
     }
     AROS_USERFUNC_EXIT
 }
+
+///IconWindowVolumeList__HookFunc_UpdateHiddenVolumesFunc()
+AROS_UFH3(
+    void, IconWindowVolumeList__HookFunc_UpdateHiddenVolumesFunc,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    Object *self = ( Object *)obj;
+    Object *prefs = NULL;
+    Class *CLASS = *( Class **)param;
+
+    SETUP_INST_DATA;
+
+    D(bug("[Wanderer:VolumeList]: %s()\n", __func__));
+
+    GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+
+    if (prefs)
+    {
+        IPTR prefs_Processing = 0;
+        IPTR current_Hidden = 0, prefs_Hidden = 0;
+
+        GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);
+
+        GET(self, MUIA_IconVolumeList_HiddenVolumes, &current_Hidden);
+        GET(prefs, MUIA_IconWindowExt_Volumes_Hidden, &prefs_Hidden);
+
+        if ((current_Hidden == 0) != (prefs_Hidden == 0)
+            || (current_Hidden && prefs_Hidden
+                && strcmp((STRPTR)current_Hidden, (STRPTR)prefs_Hidden) != 0))
+        {
+            D(bug("[Wanderer:VolumeList] %s: hidden volumes changed - updating ..\n", __func__));
+
+            SET(self, MUIA_IconVolumeList_HiddenVolumes, prefs_Hidden);
+
+            if (!prefs_Processing)
+            {
+                DoMethod(self, MUIM_IconList_Update);
+                DoMethod(self, MUIM_IconList_Sort);
+            }
+            else if (data->iwcd_IconWindow)
+                SET(data->iwcd_IconWindow, MUIA_IconWindow_Changed, TRUE);
+        }
+    }
+    AROS_USERFUNC_EXIT
+}
+///
 
 #define BDRPLINELEN_MAX 1024
 BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bdrp_direntry, struct List* entryList)
@@ -561,6 +614,23 @@ IPTR IconWindowVolumeList__MUIM_Setup
             (IPTR) self, 3,
             MUIM_CallHook, &((struct IconWindowVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook, (IPTR)CLASS
           );
+
+        ((struct IconWindowVolumeList_DATA *)data)->iwvcd_UpdateHiddenVolumes_hook.h_Entry = ( HOOKFUNC )IconWindowVolumeList__HookFunc_UpdateHiddenVolumesFunc;
+
+        DoMethod
+          (
+            prefs, MUIM_Notify, MUIA_IconWindowExt_Volumes_Hidden, MUIV_EveryTime,
+            (IPTR) self, 3,
+            MUIM_CallHook, &((struct IconWindowVolumeList_DATA *)data)->iwvcd_UpdateHiddenVolumes_hook, (IPTR)CLASS
+          );
+
+        {
+            IPTR hidden = 0;
+
+            GET(prefs, MUIA_IconWindowExt_Volumes_Hidden, &hidden);
+            if (hidden)
+                SET(self, MUIA_IconVolumeList_HiddenVolumes, hidden);
+        }
     }
 
     if (muiRenderInfo(self))
@@ -623,6 +693,11 @@ IPTR IconWindowVolumeList__MUIM_Cleanup
           (
             prefs,
             MUIM_KillNotifyObj, MUIA_IconWindowExt_NetworkBrowser_Show, (IPTR) self
+          );
+        DoMethod
+          (
+            prefs,
+            MUIM_KillNotifyObj, MUIA_IconWindowExt_Volumes_Hidden, (IPTR) self
           );
     }
     D(bug("[Wanderer:VolumeList] %s: Removing Disk Event Handler\n", __func__));

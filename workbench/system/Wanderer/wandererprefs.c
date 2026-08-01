@@ -54,6 +54,8 @@
 
 static CONST_STRPTR     wandererPrefs_PrefsFile = "ENV:SYS/Wanderer/global.prefs";
 static CONST_STRPTR     wandererPrefs_FontsPrefsFile = "ENV:SYS/Font.prefs";
+static CONST_STRPTR     wandererPrefs_HiddenVolumesFile = "ENV:SYS/Wanderer/hiddenvolumes.prefs";
+static CONST_STRPTR     wandererPrefs_HiddenVolumesVar = "SYS/Wanderer/hiddenvolumes.prefs";
 
 struct TagItem32 {
     ULONG ti_Tag;
@@ -69,6 +71,7 @@ struct WandererPrefs_DATA
     ULONG                       wpd_ShowNetwork;
     ULONG                       wpd_ShowUserFiles;
     ULONG                       wpd_ScreenTitleString[IFF_CHUNK_BUFFER_SIZE];
+    char                        wpd_HiddenVolumes[IFF_CHUNK_BUFFER_SIZE];
 
     struct List                 wpd_ViewSettings;
 
@@ -77,6 +80,9 @@ struct WandererPrefs_DATA
     
     struct NotifyRequest        wpd_FontPrefsNotifyRequest;
     struct Wanderer_FSHandler   wpd_FontPrefsFSHandler;
+
+    struct NotifyRequest        wpd_HiddenVolumesNotifyRequest;
+    struct Wanderer_FSHandler   wpd_HiddenVolumesFSHandler;
 
     BOOL                        wpd_PROCESSING;
 
@@ -442,6 +448,12 @@ IPTR WandererPrefs__HandleFSUpdate(Object *prefs, struct NotifyMessage *msg)
     return 0;
 }
 
+IPTR WandererPrefs__HandleHiddenVolumesFSUpdate(Object *prefs, struct NotifyMessage *msg)
+{
+    DoMethod(prefs, MUIM_WandererPrefs_ReloadHiddenVolumes);
+    return 0;
+}
+
 IPTR WandererPrefs__HandleFontPrefsFSUpdate(Object *prefs, struct NotifyMessage *msg)
 {
     DoMethod(prefs, MUIM_WandererPrefs_ReloadFontPrefs);
@@ -511,6 +523,29 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             }
         }
 
+        /* Setup notification on the hidden volumes prefs file -------------------*/
+        if (_wandererPrefs__FSNotifyPort != 0)
+        {
+            data->wpd_HiddenVolumesFSHandler.target                         = self;
+            data->wpd_HiddenVolumesFSHandler.fshn_Node.ln_Name              = (STRPTR)ExpandEnvName(wandererPrefs_HiddenVolumesFile);
+            data->wpd_HiddenVolumesFSHandler.HandleFSUpdate                 = WandererPrefs__HandleHiddenVolumesFSUpdate;
+            data->wpd_HiddenVolumesNotifyRequest.nr_Name                    = data->wpd_HiddenVolumesFSHandler.fshn_Node.ln_Name;
+            data->wpd_HiddenVolumesNotifyRequest.nr_Flags                   = NRF_SEND_MESSAGE;
+            data->wpd_HiddenVolumesNotifyRequest.nr_stuff.nr_Msg.nr_Port    = (struct MsgPort *)_wandererPrefs__FSNotifyPort;
+            data->wpd_HiddenVolumesNotifyRequest.nr_UserData                = (IPTR)&data->wpd_HiddenVolumesFSHandler;
+
+            if (StartNotify(&data->wpd_HiddenVolumesNotifyRequest))
+            {
+                D(bug("[Wanderer:Prefs] Wanderer__OM_NEW: Prefs-notification setup on '%s'\n", data->wpd_HiddenVolumesNotifyRequest.nr_Name));
+            }
+            else
+            {
+                D(bug("[Wanderer:Prefs] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
+                data->wpd_HiddenVolumesFSHandler.fshn_Node.ln_Name = NULL;
+                data->wpd_HiddenVolumesNotifyRequest.nr_Name = NULL;
+            }
+        }
+
         D(bug("[Wanderer:Prefs]:New - reloading\n"));
 
         NewList(&data->wpd_ViewSettings);
@@ -519,6 +554,7 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         DoMethod(self, MUIM_WandererPrefs_Reload);
         DoMethod(self, MUIM_WandererPrefs_ReloadFontPrefs);
+        DoMethod(self, MUIM_WandererPrefs_ReloadHiddenVolumes);
     }
 
     D(bug("[Wanderer:Prefs] obj = %ld\n", self));
@@ -532,6 +568,7 @@ IPTR WandererPrefs__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
   SETUP_INST_DATA;
   EndNotify(&data->wpd_PrefsNotifyRequest);
   EndNotify(&data->wpd_FontPrefsNotifyRequest);
+  EndNotify(&data->wpd_HiddenVolumesNotifyRequest);
   return DoSuperMethodA(CLASS, self, (Msg)message);
 }
 ///
@@ -561,6 +598,17 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
       case MUIA_IconWindowExt_ScreenTitle_String:
         strcpy((STRPTR)data->wpd_ScreenTitleString, (STRPTR)tag->ti_Data);
         //data->wpd_ScreenTitleString = (LONG)tag->ti_Data;
+        break;
+
+      case MUIA_IconWindowExt_Volumes_Hidden:
+        if (tag->ti_Data)
+        {
+            strncpy(data->wpd_HiddenVolumes, (STRPTR)tag->ti_Data,
+                sizeof(data->wpd_HiddenVolumes) - 1);
+            data->wpd_HiddenVolumes[sizeof(data->wpd_HiddenVolumes) - 1] = '\0';
+        }
+        else
+            data->wpd_HiddenVolumes[0] = '\0';
         break;
 
       case MUIA_IconWindow_WindowNavigationMethod:
@@ -597,6 +645,10 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 
     case MUIA_IconWindowExt_UserFiles_ShowFilesFolder:
       *store = (IPTR)data->wpd_ShowUserFiles;
+      break;
+
+    case MUIA_IconWindowExt_Volumes_Hidden:
+      *store = (IPTR)data->wpd_HiddenVolumes;
       break;
 
   case MUIA_IconWindowExt_ScreenTitle_String:
@@ -695,6 +747,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: SCREEN
   return TRUE;
 }
 ///
+
 
 ///WandererPrefs_FindViewSettingsNode()
 struct WandererPrefs_ViewSettingsNode *WandererPrefs_FindViewSettingsNode(struct WandererPrefs_DATA *data, char *node_Name)
@@ -846,6 +899,10 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload: Context 0x%p\n
 
 D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Header size ..\n"));
 
+            /* The data chunk is read into the same fixed buffer */
+            if (this_chunk_size > IFF_CHUNK_BUFFER_SIZE)
+                this_chunk_size = IFF_CHUNK_BUFFER_SIZE;
+
             if ((this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,MEMF_ANY|MEMF_CLEAR)))
             {
               strcpy(this_chunk_name, this_header->wpIFFch_ChunkType);
@@ -933,6 +990,36 @@ D(bug("[Wanderer:Prefs] Failed to open stream!, returncode %ld!\n", error));
   FreeIFF(handle);
 
   return success;
+}
+///
+
+///WandererPrefs__MUIM_WandererPrefs_ReloadHiddenVolumes()
+/*
+ * The names of the volumes to leave off the desktop are kept in an
+ * environment variable rather than the prefs file, as the toolbar setting
+ * is, so that they can be changed without a prefs editor.
+ */
+IPTR WandererPrefs__MUIM_WandererPrefs_ReloadHiddenVolumes
+(
+  Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    char buffer[IFF_CHUNK_BUFFER_SIZE];
+    LONG len;
+
+    D(bug("[Wanderer:Prefs] %s()\n", __func__));
+
+    len = GetVar((STRPTR)wandererPrefs_HiddenVolumesVar, buffer, sizeof(buffer) - 1,
+        GVF_GLOBAL_ONLY);
+
+    if (len < 0)
+        len = 0;
+    buffer[len] = '\0';
+
+    SET(self, MUIA_IconWindowExt_Volumes_Hidden, buffer);
+
+    return TRUE;
 }
 ///
 
@@ -1097,7 +1184,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttrib
 }
 ///
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_8
+ZUNE_CUSTOMCLASS_9
 (
   WandererPrefs, NULL, MUIC_Notify, NULL,
   OM_NEW,                                              struct opSet *,
@@ -1106,6 +1193,7 @@ ZUNE_CUSTOMCLASS_8
   OM_GET,                                              struct opGet *,
   MUIM_WandererPrefs_Reload,                           Msg,
   MUIM_WandererPrefs_ReloadFontPrefs,                  Msg,
+  MUIM_WandererPrefs_ReloadHiddenVolumes,              Msg,
   MUIM_WandererPrefs_ViewSettings_GetNotifyObject,     struct MUIP_WandererPrefs_ViewSettings_GetNotifyObject *,
   MUIM_WandererPrefs_ViewSettings_GetAttribute,        struct MUIP_WandererPrefs_ViewSettings_GetAttribute *
 );

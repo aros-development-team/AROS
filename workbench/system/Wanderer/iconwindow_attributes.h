@@ -79,6 +79,12 @@
 
 #define MUIA_IconWindowExt_ScreenTitle_String                   (MUIB_IconWindowExt_UserFiles | 0x00000003) /* ISG */
 
+/*** Identifier Base ********************************************************/
+#define MUIB_IconWindowExt_Volumes                              (MUIB_IconWindowExt | 0x500000)
+
+/* Newline separated volume or device names to leave off the desktop. */
+#define MUIA_IconWindowExt_Volumes_Hidden                       (MUIB_IconWindowExt_Volumes | 0x00000001) /* ISG */
+
 #define IWD_MAX_DIRECTORYPATHLEN                                1024
 
 #endif /* _ICONWINDOW_ATTRIBUTES_H_ */
