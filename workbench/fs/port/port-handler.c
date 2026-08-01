@@ -177,13 +177,14 @@ static SIPTR decodeArgs(struct portBase *pb, struct portArgs *pa, BSTR args)
 
 static void portSerialDefaults(struct portArgs *pa)
 {
-#ifdef __mc68000
-    /* 9600 */
-    pa->pa_Serial.ps_Baud = 9600;
-#else
-    /* 115200 */
+    /*
+     * 115200. On m68k this used to be 9600, from before there was a serial
+     * driver to honour it. Paula's UART is also the kernel's debug console and
+     * its one baud register is shared, so a SER: open at any other rate takes
+     * the debug output down with it; 115200 is what the bootstrap sets, and
+     * what every other architecture already defaults to.
+     */
     pa->pa_Serial.ps_Baud = 115200;
-#endif
     /* 8N1 */
     pa->pa_Serial.ps_LenBits = 8;
     pa->pa_Serial.ps_StopBits = 1;
