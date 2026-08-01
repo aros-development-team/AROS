@@ -1,4 +1,3 @@
-```yaml
 name: Validate Windows filenames
 
 on:
