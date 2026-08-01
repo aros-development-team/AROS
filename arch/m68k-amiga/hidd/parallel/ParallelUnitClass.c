@@ -36,17 +36,10 @@ void parallelunit_write_more_data();
 
 /*************************** Classes *****************************/
 
-static OOP_AttrBase HiddParallelUnitAB;
-
-static struct OOP_ABDescr attrbases[] =
-{
-    { IID_Hidd_ParallelUnit, &HiddParallelUnitAB },
-    { NULL,     NULL }
-};
-
 /******* ParallelUnit::New() ***********************************/
 OOP_Object *AmigaParUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
+        struct class_static_data *csd = CSD(cl->UserData);
         struct TagItem *tag, *tstate;
         ULONG unitnum = 0;
 
@@ -203,13 +196,21 @@ UWORD AmigaParUnit__Hidd_ParallelUnit__GetStatus(OOP_Class *cl, OOP_Object *o, s
 
 static int AmigaParUnit_Init(LIBBASETYPEPTR LIBBASE)
 {
-    ReturnInt("AmigaParUnit_Init", ULONG, OOP_ObtainAttrBases(attrbases));
+    struct class_static_data *csd = &LIBBASE->hdg_csd;
+
+    HiddParallelUnitAB = OOP_ObtainAttrBase(IID_Hidd_ParallelUnit);
+
+    ReturnInt("AmigaParUnit_Init", ULONG, HiddParallelUnitAB != 0);
 }
 
 
 static int AmigaParUnit_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    OOP_ReleaseAttrBases(attrbases);
+    struct class_static_data *csd = &LIBBASE->hdg_csd;
+
+    OOP_ReleaseAttrBase(IID_Hidd_ParallelUnit);
+    HiddParallelUnitAB = 0;
+
     ReturnInt("AmigaParUnit_Expunge", int, TRUE);
 }
 
