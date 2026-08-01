@@ -20,16 +20,13 @@
 #include <aros/debug.h>
 
 
-/*static AttrBase HiddGCAttrBase;*/
-
-static OOP_AttrBase HiddParallelUnitAB;
-
 /*** HIDDParallel::NewUnit() *********************************************************/
 
 
 OOP_Object *AmigaPar__Hidd_Parallel__NewUnit(OOP_Class *cl, OOP_Object *obj,
                                           struct pHidd_Parallel_NewUnit *msg)
 {
+        struct class_static_data *csd = CSD(cl->UserData);
         OOP_Object *su = NULL;
         struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
         ULONG unitnum = -1;
