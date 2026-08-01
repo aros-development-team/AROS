@@ -195,9 +195,13 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
 {
     struct CommandLineInterface *cli = Cli();
     BOOL haveCommand = FALSE;
+    BOOL convertFailed = FALSE;
     LONG result;
 
     result = convertLine(ss, in, out, &haveCommand);
+
+    if (result != 0)
+        convertFailed = TRUE;
 
     if (result == 0)
     {
@@ -239,10 +243,18 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
         D(bug("convertLine: error = %ld faillevel=%ld\n", result,
             cli->cli_FailLevel));
         cli->cli_Result2 = result;
+
+        /*
+         * executeLine() reports its own failures. Everything convertLine()
+         * rejects, above all a redirection whose file would not open, used to
+         * reach here and go no further than Result2, so the command simply did
+         * not run and said nothing about it.
+         */
+        if (convertFailed)
+            PrintFault(result, NULL);
     }
 
 exit:
-    /* FIXME error handling is bullshit */
 
     cliVarNum(ss, "RC", cli->cli_ReturnCode);
     cliVarNum(ss, "Result2", cli->cli_Result2);

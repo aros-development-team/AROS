@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:=	SerialClass SerialUnitClass
+
+#MM- workbench-devs-amiga-m68k: amiga-m68k-hidd-serial
+
+#USER_CPPFLAGS := -DDEBUG=1
+USER_LDFLAGS := -static
+
+%build_module mmake=amiga-m68k-hidd-serial \
+  modname=serial modtype=hidd \
+  files=$(FILES) \
+  uselibs="hiddstubs"

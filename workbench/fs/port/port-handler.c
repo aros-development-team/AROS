@@ -9,6 +9,7 @@
 
 #include <aros/debug.h>
 
+#include <exec/errors.h>
 #include <intuition/preferences.h>      /* DEVNAME_SIZE */
 #include <devices/serial.h>
 #include <devices/printer.h>
@@ -176,13 +177,14 @@ static SIPTR decodeArgs(struct portBase *pb, struct portArgs *pa, BSTR args)
 
 static void portSerialDefaults(struct portArgs *pa)
 {
-#ifdef __mc68000
-    /* 9600 */
-    pa->pa_Serial.ps_Baud = 9600;
-#else
-    /* 115200 */
+    /*
+     * 115200. On m68k this used to be 9600, from before there was a serial
+     * driver to honour it. Paula's UART is also the kernel's debug console and
+     * its one baud register is shared, so a SER: open at any other rate takes
+     * the debug output down with it; 115200 is what the bootstrap sets, and
+     * what every other architecture already defaults to.
+     */
     pa->pa_Serial.ps_Baud = 115200;
-#endif
     /* 8N1 */
     pa->pa_Serial.ps_LenBits = 8;
     pa->pa_Serial.ps_StopBits = 1;
@@ -270,6 +272,8 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
     int len = AROS_BSTR_strlen(name);
     struct ExecBase *SysBase = pb->pb_SysBase;
 
+    *err = 0;
+
     if ((pa = AllocVec(sizeof(*pa) + len + 1, MEMF_ANY))) {
         CopyMem(&pb->pb_Defaults, pa, sizeof(*pa));
 
@@ -287,7 +291,10 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
 
         if ((pa->pa_IOMsg = CreateMsgPort())) {
             if ((pa->pa_IO = (APTR)CreateIORequest(pa->pa_IOMsg, sizeof(*pa->pa_IO)))) {
-                if (0 == OpenDevice(pb->pb_DeviceName, pa->pa_DeviceUnit, (struct IORequest *)pa->pa_IO, pb->pb_DeviceFlags)) {
+                LONG ioerr;
+
+                ioerr = OpenDevice(pb->pb_DeviceName, pa->pa_DeviceUnit, (struct IORequest *)pa->pa_IO, pb->pb_DeviceFlags);
+                if (0 == ioerr) {
                     D(bug("%s: Device is open\n", __func__));
                     *err = 0;
                     if (pb->pb_Mode != PORT_SERIAL) {
@@ -313,7 +320,16 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
                         AddTail(&pb->pb_Files, &pa->pa_Node);
                         return pa;
                     }
+                    /* The device is fine, it just would not take these
+                       settings: baud rate, data length or stop bits. */
+                    *err = ERROR_BAD_NUMBER;
                     CloseDevice((struct IORequest *)pa->pa_IO);
+                } else {
+                    /* IOERR_OPENFAIL says nothing beyond "no", but a device
+                       that reports anything else has a working driver and is
+                       refusing this particular unit. */
+                    *err = (ioerr == IOERR_OPENFAIL) ? ERROR_DEVICE_NOT_MOUNTED
+                                                     : ERROR_OBJECT_IN_USE;
                 }
                 DeleteIORequest((struct IORequest *)pa->pa_IO);
             }
@@ -322,8 +338,9 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
         FreeVec(pa);
     }
 
-    D(bug("%s: Didn't open device\n", __func__));
-    *err = ERROR_NO_DISK;
+    D(bug("%s: Didn't open device, error %ld\n", __func__, *err));
+    if (*err == 0)
+        *err = ERROR_NO_FREE_STORE;
     return NULL;
 }
 
