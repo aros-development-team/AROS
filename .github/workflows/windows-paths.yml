@@ -1,0 +1,78 @@
+```yaml
+name: Validate Windows filenames
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-path-check:
+    name: Check Windows-compatible filenames
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate filenames
+        shell: pwsh
+        run: |
+          $invalid = $false
+
+          # Get all tracked paths from Git.
+          $paths = git ls-files
+
+          foreach ($path in $paths) {
+            # Windows treats each directory/file component independently.
+            $components = $path -split '/'
+
+            foreach ($component in $components) {
+
+              # Windows-invalid filename characters:
+              # < > : " / \ | ? *
+              if ($component -match '[<>:"/\\|?*]') {
+                Write-Error "Invalid Windows filename character: $path"
+                $invalid = $true
+                continue
+              }
+
+              # ASCII control characters, including DEL.
+              if ($component -match '[\x00-\x1F\x7F]') {
+                Write-Error "Control character in filename: $path"
+                $invalid = $true
+                continue
+              }
+
+              # Windows does not allow filenames ending in
+              # a space or period.
+              if ($component -match '[ .]$') {
+                Write-Error "Filename ends with a space or period: $path"
+                $invalid = $true
+                continue
+              }
+
+              # Windows reserved device names.
+              #
+              # These are reserved even when an extension is present:
+              # CON.txt, NUL.log, COM1.foo, etc.
+              $baseName = ($component -split '\.')[0]
+
+              if ($baseName -match '^(?i:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$') {
+                Write-Error "Windows reserved filename: $path"
+                $invalid = $true
+                continue
+              }
+            }
+          }
+
+          if ($invalid) {
+            Write-Host ""
+            Write-Host "One or more tracked paths are not compatible with Windows."
+            exit 1
+          }
+
+          Write-Host "All tracked filenames are Windows-compatible."
+```
