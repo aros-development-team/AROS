@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-fs-complete : workbench-fs-speak
+#MM workbench-fs-speak : linklibs-speechcore
+
+USER_LDFLAGS := -static
+USER_CPPFLAGS := -D__DOS_NOLIBBASE__
+
+FILES=speak-handler
+
+%build_module mmake=workbench-fs-speak \
+    modname=speak modtype=handler \
+    files="$(FILES)" uselibs="speechcore"
+
+%common
