@@ -90,3 +90,29 @@ void FNAME_BCMSDCBUS(BCMMMIOWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *
 {
     FNAME_BCMSDCBUS(BCM283xWriteLong)(reg, val, bus);
 }
+
+/* EMMC2 does not have the inter-write timing bug; write straight through. */
+void FNAME_BCMSDCBUS(BCMMMIODirectWriteByte)(ULONG reg, UBYTE val, struct sdcard_Bus *bus)
+{
+    ULONG currval = AROS_LE2LONG(*(volatile ULONG *)(((IPTR)bus->sdcb_IOBase + reg) & ~3));
+    ULONG shift = (reg & 3) << 3;
+    ULONG mask = 0xFF << shift;
+    ULONG newval = (currval & ~mask) | (val << shift);
+
+    *(volatile ULONG *)(((IPTR)bus->sdcb_IOBase + reg) & ~3) = AROS_LONG2LE(newval);
+}
+
+void FNAME_BCMSDCBUS(BCMMMIODirectWriteWord)(ULONG reg, UWORD val, struct sdcard_Bus *bus)
+{
+    ULONG currval = AROS_LE2LONG(*(volatile ULONG *)(((IPTR)bus->sdcb_IOBase + reg) & ~3));
+    ULONG shift = ((reg >> 1) & 1) << 4;
+    ULONG mask = 0xFFFF << shift;
+    ULONG newval = (currval & ~mask) | (val << shift);
+
+    *(volatile ULONG *)(((IPTR)bus->sdcb_IOBase + reg) & ~3) = AROS_LONG2LE(newval);
+}
+
+void FNAME_BCMSDCBUS(BCMMMIODirectWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
+{
+    *(volatile ULONG *)((IPTR)bus->sdcb_IOBase + reg) = AROS_LONG2LE(val);
+}
