@@ -1,0 +1,16 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-fs-complete : workbench-fs-aux
+
+USER_CPPFLAGS := -D__DOS_NOLIBBASE__
+
+USER_LDFLAGS := -static
+
+FILES=aux-handler
+
+%build_module mmake=workbench-fs-aux \
+    conffile=aux.conf modname=aux modtype=handler \
+    files="$(FILES)"
+
+%common
