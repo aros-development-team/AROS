@@ -7,10 +7,10 @@ USER_CPPFLAGS := -D__DOS_NOLIBBASE__
 
 USER_LDFLAGS := -static
 
-FILES=aux-handler
+FILES=aux_handler
 
 %build_module mmake=workbench-fs-aux \
-    conffile=aux.conf modname=aux modtype=handler \
+    conffile=aux_handler.conf modname=aux modtype=handler \
     files="$(FILES)"
 
 %common
