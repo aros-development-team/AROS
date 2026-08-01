@@ -6,7 +6,7 @@
 /*** Instance data **********************************************************/
 struct IconVolumeList_DATA
 {
-    int dummy;
+    STRPTR ivld_HiddenVolumes;
 };
 
 #endif /* _ICONVOLUMELIST_PRIVATE_H_ */
