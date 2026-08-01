@@ -161,8 +161,13 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     
     if (RECTFMT_LUT8 == srcformat)
     {
-        /* Actually this is the same as WriteChunkyPixels() with return value */
-        return WritePixels8(rp, src, srcmod,
+        /* Actually this is the same as WriteChunkyPixels() with return value.
+           (srcx, srcy) has to be applied here, since this returns before the
+           start_offset the other formats share below. WriteLUTPixelArray()
+           offsets its own source the same way. */
+        return WritePixels8(rp,
+                            (UBYTE *)src + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, srcmod),
+                            srcmod,
                             destx, desty,
                             destx + width - 1, desty + height - 1,
                             NULL, TRUE);
