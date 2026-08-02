@@ -238,7 +238,6 @@ void ShowFault(LONG code, const char *s, ...);
 struct DosLibrary *DOSBase;
 struct IntuitionBase *IntuitionBase;
 UtilityBase_t UtilityBase;
-struct Process *MyProcess;
 
 ULONG StartupValue;
 char *StartupString = NULL;
@@ -268,6 +267,8 @@ int main(void)
 
   if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",37))!=0)
   {
+    IsCli = (Cli() != NULL);
+
     if ((UtilityBase = (UtilityBase_t)OpenLibrary("utility.library",50)))
     {
         SetMem(&flagargs, 0, sizeof(flagargs));
