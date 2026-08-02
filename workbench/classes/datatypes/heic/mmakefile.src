@@ -242,10 +242,13 @@ ifeq ($(shell [ $(GCC_VERSION_MAJOR) -lt 13 ] && echo true),true)
   # updated components use - newer compilers build these sources pristine.
   DE265PATCHSPEC := $(DE265ARCHBASE)-aros.diff:libde265-$(LIBDE265VERSION):-f,-p1
   HEIFPATCHSPEC += $(HEIFARCHBASE)-aros-cxx.diff:libheif-$(LIBHEIFVERSION):-f,-p1
+else
+  # libheif >= 1.20 is written to C++20; gcc still defaults to gnu++17
+  USER_CXXFLAGS += $(CXXFLAGS_GNU20)
 endif
 else
 ifeq ($(AROS_TOOLCHAIN),llvm)
-  USER_CXXFLAGS += $(CXXFLAGS_GNU17)
+  USER_CXXFLAGS += $(CXXFLAGS_GNU20)
 endif
 endif
 

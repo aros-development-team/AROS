@@ -27,3 +27,16 @@ diff -ruN libheif-1.23.1/libheif/color-conversion/colorconversion.cc libheif-1.2
    border_states.emplace_back(-1, nullptr, input_state, 0);
  
    while (!border_states.empty()) {
+diff -ruN libheif-1.23.1/libheif/file.cc libheif-1.23.1.aros/libheif/file.cc
+--- libheif-1.23.1/libheif/file.cc	2026-08-02 12:50:38.545123099 +0100
++++ libheif-1.23.1.aros/libheif/file.cc	2026-08-02 12:50:38.556210499 +0100
+@@ -42,7 +42,8 @@
+ #include <cassert>
+ #include <algorithm>
+ 
+-#include "libheif/heif_cxx.h"
++/* AROS: do not pull in heif_cxx.h - it is unused here, and its throwing
++ * inline wrappers cannot be compiled on targets built with -fno-exceptions */
+ 
+ #if defined(__MINGW32__) || defined(__MINGW64__) || defined(_MSC_VER)
+ 
