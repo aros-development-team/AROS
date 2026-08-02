@@ -736,7 +736,12 @@ void Completion(struct filehandle *fh, BOOL withinfo)
 
         if (!ci->dirpart[0] && !ci->filepart[0])
         {
-            DoFileReq(fh, ci);
+            /* With nothing typed yet there is nothing to expand, and all that
+               is left to offer is a file requester. A console running over a
+               device has no window to put one over, so leave the line alone
+               rather than opening a requester somewhere the user is not. */
+            if (fh->window)
+                DoFileReq(fh, ci);
         }
         else
         {
@@ -754,8 +759,10 @@ void Completion(struct filehandle *fh, BOOL withinfo)
 
                     doprint = TRUE;
                 }
-                else if (ci->nummatchnodes > 1)
+                else if (ci->nummatchnodes > 1 && fh->window)
                 {
+                    /* Choosing between matches is a windowed requester, and it
+                       reads the screen out of fh->window. */
                     doprint = DoChooseReq(fh, ci);
                 }
 
