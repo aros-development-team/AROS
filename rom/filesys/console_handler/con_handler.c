@@ -107,8 +107,21 @@ static void MakeConsAbout(struct Window *win, struct IntuitionBase *IntuitionBas
 }
 #endif
 
+#include <devices/serial.h>
+
 #include "con_handler_intern.h"
 #include "support.h"
+
+/*
+ * Set in the startup BPTR to ask for a device instead of a console window,
+ * with the rest of the BPTR pointing at a FileSysStartupMsg naming it. A BPTR
+ * is a longword address shifted right by two, so the top bits are spare.
+ *
+ * This is the established convention between an AUX: handler stub and the
+ * console handler it hands over to, so stubs and console handlers from
+ * different sources interoperate.
+ */
+#define AUXF_DEVICE     0x40000000
 
 #if defined(CONSOLE_SHOW_MENU)
 enum
@@ -291,8 +304,51 @@ static LONG MakeConWindow(struct filehandle *fh)
     return err;
 }
 
+/*
+ * Device mode: everything above this layer only ever issues CMD_READ and
+ * CMD_WRITE, so any device answering those can stand in for console.device.
+ * console.device is the odd one out in taking a window through the IORequest
+ * at open time; a plain device takes a unit number and flags instead.
+ */
+static LONG MakeConDevice(struct filehandle *fh)
+{
+    LONG err = 0;
+
+    D(bug("[con:handler] %s: opening '%s' unit %d\n", __func__, fh->devname,
+          fh->devunit));
+
+    fh->conreadio->io_Data = NULL;
+    fh->conreadio->io_Length = 0;
+
+    if (0 == OpenDevice(fh->devname, fh->devunit, ioReq(fh->conreadio),
+                        fh->devflags)) {
+        fh->flags |= FHFLG_CONSOLEDEVICEOPEN;
+
+        fh->conwriteio = *fh->conreadio;
+        fh->conwriteio.io_Message.mn_ReplyPort = fh->conwritemp;
+        /*
+         * The read request is an IOExtSer in device mode, but this one is a
+         * plain IOStdReq embedded in the filehandle. Copying its length over
+         * would advertise storage that is not there, right in the middle of
+         * the structure.
+         */
+        fh->conwriteio.io_Message.mn_Length = sizeof(fh->conwriteio);
+
+        /* No linefeed-mode escape here: that is a console.device control
+           sequence, and a serial line would simply print it. */
+    } else {
+        D(bug("[con:handler] %s: cannot open '%s'\n", __func__, fh->devname));
+        err = ERROR_DEVICE_NOT_MOUNTED;
+    }
+
+    return err;
+}
+
 static BOOL MakeSureWinIsOpen(struct filehandle *fh)
 {
+    /* In device mode there is no window and never will be. */
+    if (fh->flags & FHFLG_DEVICEMODE)
+        return TRUE;
     if (fh->window)
         return TRUE;
     return MakeConWindow(fh) == 0;
@@ -375,6 +431,37 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     if (!fh)
         return NULL;
 
+    /*
+     * The startup is either a small number selecting CON: or RAW:, or, with
+     * AUXF_DEVICE set, a FileSysStartupMsg naming a device to run over. Only
+     * the flag can tell those apart: a startup given as a string is a valid
+     * pointer too, so no test on the value alone is enough.
+     */
+    if ((IPTR)dp->dp_Arg2 & AUXF_DEVICE) {
+        struct FileSysStartupMsg *fssm =
+            BADDR((BPTR)((IPTR)dp->dp_Arg2 & ~AUXF_DEVICE));
+
+        if (fssm && fssm->fssm_Device != BNULL) {
+            ULONG len = AROS_BSTR_strlen(fssm->fssm_Device);
+
+            /* The name may be on the caller's stack, so take a copy. */
+            if (len > 0 && len < sizeof(fh->devname)) {
+                CopyMem(AROS_BSTR_ADDR(fssm->fssm_Device), fh->devname, len);
+                fh->devname[len] = '\0';
+                fh->devunit = fssm->fssm_Unit;
+                fh->devflags = fssm->fssm_Flags;
+                fh->flags |= FHFLG_DEVICEMODE;
+            }
+        }
+
+        if (!(fh->flags & FHFLG_DEVICEMODE)) {
+            D(bug("[con:handler] bad device startup 0x%p\n", dp->dp_Arg2));
+            FreeVec(fh);
+            *perr = ERROR_BAD_STREAM_NAME;
+            return NULL;
+        }
+    }
+
     fh->intuibase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     fh->gtbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_GADTOOLS);
     fh->dosbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_DOS);
@@ -401,7 +488,10 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     Permit();
 #endif
 
-    if (!fh->intuibase || !fh->dosbase || !fh->utilbase || !fh->inputbase) {
+    /* A device-backed console has no window and no keyboard of its own, so it
+       needs neither intuition.library nor input.device. */
+    if (!fh->dosbase || !fh->utilbase ||
+        (!(fh->flags & FHFLG_DEVICEMODE) && (!fh->intuibase || !fh->inputbase))) {
         CloseLibrary((APTR) fh->utilbase);
         CloseLibrary((APTR) fh->dosbase);
         CloseLibrary((APTR) fh->intuibase);
@@ -444,7 +534,14 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
         fh->conwritemp->mp_SigTask = fh->contask;
         NEWLIST(&fh->conwritemp->mp_MsgList);
 
-        fh->conreadio = (struct IOStdReq *) CreateIORequest(fh->conreadmp, sizeof(struct IOStdReq));
+        /*
+         * A device may expect a larger request than console.device does and
+         * refuse to open with a short one: serial.device wants a whole
+         * IOExtSer. The extra fields go unused here, they just have to exist.
+         */
+        fh->conreadio = (struct IOStdReq *) CreateIORequest(fh->conreadmp,
+            (fh->flags & FHFLG_DEVICEMODE) ? sizeof(struct IOExtSer)
+                                           : sizeof(struct IOStdReq));
         if (fh->conreadio) {
             D(bug("[con:handler] conreadio created, parms '%s'\n", fn));
 
@@ -452,7 +549,12 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 #if defined(CONSOLE_SHOW_MENU)
             fh->nw.IDCMPFlags |= IDCMP_MENUPICK;
 #endif
-            if (parse_filename(fh, fn, &fh->nw)) {
+            if (fh->flags & FHFLG_DEVICEMODE) {
+                err = MakeConDevice(fh);
+                if (!err)
+                    ok = TRUE;
+            }
+            else if (parse_filename(fh, fn, &fh->nw)) {
                 if (!(fh->flags & FHFLG_AUTO)) {
                     err = MakeConWindow(fh);
                     if (!err)
@@ -464,9 +566,8 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
             else
                 err = ERROR_BAD_STREAM_NAME;
 
-            if (!ok) {
-                DeleteIORequest(ioReq(fh->conreadio));
-            }
+            /* No cleanup here: close_con() below frees the IORequest, and
+               doing it twice corrupts the allocator. */
 
         } /* if (fh->conreadio) */
         else {
@@ -478,11 +579,16 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
         err = ERROR_NO_FREE_STORE;
     }
 
-    if (dn->dn_Startup)
+    /* dn_Startup selects RAW: only when it really is the small CON/RAW
+       selector; in device mode it is the FileSysStartupMsg pointer. AUX: is a
+       cooked console, so it must not be read as RAW. */
+    if (!(fh->flags & FHFLG_DEVICEMODE) && dn->dn_Startup)
         fh->flags |= FHFLG_RAW;
 
-    if (!ok)
+    if (!ok) {
         close_con(fh);
+        fh = NULL;
+    }
 
     *perr = err;
     FreeVec(filename);
@@ -495,7 +601,14 @@ static void startread(struct filehandle *fh)
         return;
     fh->conreadio->io_Command = CMD_READ;
     fh->conreadio->io_Data = fh->consolebuffer;
-    fh->conreadio->io_Length = CONSOLEBUFFER_SIZE;
+    /*
+     * console.device completes a read as soon as it has something, so asking
+     * for a bufferful costs nothing. A plain device instead waits until the
+     * whole count has arrived, which for a console would mean no input at all
+     * until the user typed a full buffer, so ask for one character.
+     */
+    fh->conreadio->io_Length = (fh->flags & FHFLG_DEVICEMODE)
+                             ? 1 : CONSOLEBUFFER_SIZE;
     SendIO((struct IORequest*) fh->conreadio);
     fh->flags |= FHFLG_ASYNCCONSOLEREAD;
 }

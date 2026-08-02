@@ -1,7 +1,7 @@
 #ifndef __CON_HANDLER_INTERN_H
 #define __CON_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -93,6 +93,12 @@ struct filehandle
     WORD                    pastebufferpos;
     WORD                    pastebuffersize;
     STRPTR                  pastebuffer;
+    /* Device mode: what to open instead of console.device. Copied out of the
+       startup FileSysStartupMsg, which may live on the caller's stack. */
+    UBYTE                   devname[64];
+    ULONG                   devunit;
+    ULONG                   devflags;
+
     struct Device           *inputbase;
     struct IntuitionBase    *intuibase;
     struct GfxBase          *gfxbase;
@@ -115,6 +121,7 @@ struct filehandle
 #define FHFLG_EOF               256
 #define FHFLG_WAITFORCLOSE      512 /* Console with WAIT is waiting to be closed */
 #define FHFLG_BOOTCON           1024/* Special marker for boot console */
+#define FHFLG_DEVICEMODE        2048/* Driving a plain device, no window */
 
 #undef InputBase
 #undef IntuitionBase
