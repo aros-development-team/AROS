@@ -75,8 +75,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-mouse-quick \
 #MM kernel-usb-nopci-quick \
 #MM kernel-usb-usb2otg-quick \
-#MM kernel-usb-romstrap-raspi-quick \
-#MM kernel-econsole-quick
+#MM kernel-usb-romstrap-raspi-quick
 
 #MM kernel-package-raspi-aarch64: \
 #MM linklibs-stdc-static \
@@ -130,8 +129,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-mouse \
 #MM kernel-usb-nopci \
 #MM kernel-usb-usb2otg \
-#MM kernel-usb-romstrap-raspi \
-#MM kernel-econsole
+#MM kernel-usb-romstrap-raspi
 
 #MM kernel-package-raspi-aarch64-missing: \
 #MM kernel-battclock

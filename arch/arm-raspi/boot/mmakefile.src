@@ -87,8 +87,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-mouse-quick \
 #MM kernel-usb-nopci-quick \
 #MM kernel-usb-usb2otg-quick \
-#MM kernel-usb-romstrap-raspi-quick \
-#MM kernel-econsole-quick
+#MM kernel-usb-romstrap-raspi-quick
 
 #MM kernel-package-raspi-arm: \
 #MM linklibs-stdc-static \
@@ -142,8 +141,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-mouse \
 #MM kernel-usb-nopci \
 #MM kernel-usb-usb2otg \
-#MM kernel-usb-romstrap-raspi \
-#MM kernel-econsole
+#MM kernel-usb-romstrap-raspi
 
 RASPIFW_BRANCH    := master
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
