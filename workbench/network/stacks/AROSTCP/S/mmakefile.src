@@ -17,6 +17,7 @@ SFILES := \
 
 $(AROS_PACKAGES)/AROSTCP:
 	%fileactionmsg msg="Creating" file="$(AROS_PACKAGES)/AROSTCP"
+	%mkdirs_q $(AROS_PACKAGES)
 	@$(ECHO) "SYS:System/Network/AROSTCP" >$(AROS_PACKAGES)/AROSTCP
 
 #MM

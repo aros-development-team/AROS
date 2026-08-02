@@ -324,6 +324,76 @@ static int __attribute__ ((noinline)) load_hunk
     return 0;
 }
 
+#if defined(__riscv)
+
+/*
+ * A PCREL_LO12 names the auipc it pairs with rather than the target, so
+ * the offset it encodes has to be recomputed from that instruction's own
+ * place. The auipc is emitted immediately before its LO12 in all but
+ * pathological cases, so search backwards first and only then sweep
+ * forward - starting from zero every time makes the pass quadratic.
+ */
+static BOOL riscv_hi20_value(struct sheader *sh, struct sheader *toreloc,
+    struct symbol *symtab, struct sheader *symtab_shndx, UBYTE *relbase,
+    ULONG entsize, ULONG numrel, ULONG from, IPTR hiaddr,
+    IPTR *hival)
+{
+    LONG k;
+    ULONG f;
+
+    for (k = (LONG)from; k >= -1; k--)
+    {
+        struct relo   *r2;
+        struct symbol *s2;
+        ULONG          t2, shindex;
+        IPTR           v;
+
+        /* backwards pass first, then continue forwards from 'from' */
+        if (k < 0)
+        {
+            for (f = from + 1; f < numrel; f++)
+            {
+                r2 = (struct relo *)(relbase + f * entsize);
+                t2 = ELF_R_TYPE(r2->info);
+                if ((t2 == R_RISCV_PCREL_HI20 || t2 == R_RISCV_GOT_HI20) &&
+                    (IPTR)toreloc->addr + r2->offset == hiaddr)
+                    break;
+            }
+            if (f >= numrel)
+                return FALSE;
+            r2 = (struct relo *)(relbase + f * entsize);
+        }
+        else
+        {
+            r2 = (struct relo *)(relbase + k * entsize);
+            t2 = ELF_R_TYPE(r2->info);
+            if ((t2 != R_RISCV_PCREL_HI20 && t2 != R_RISCV_GOT_HI20) ||
+                (IPTR)toreloc->addr + r2->offset != hiaddr)
+                continue;
+        }
+
+        s2 = &symtab[ELF_R_SYM(r2->info)];
+        if (s2->shindex == SHN_ABS)
+            v = s2->value;
+        else
+        {
+            if (s2->shindex != SHN_XINDEX)
+                shindex = s2->shindex;
+            else if (symtab_shndx != NULL)
+                shindex = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(r2->info)];
+            else
+                return FALSE;
+            v = (IPTR)sh[shindex].addr + s2->value;
+        }
+
+        *hival = v + r2->addend - hiaddr;
+        return TRUE;
+    }
+    return FALSE;
+}
+
+#endif
+
 static int relocate
 (
     struct elfheader  *eh,
@@ -953,6 +1023,169 @@ static int relocate
             case R_AARCH64_NONE:
                 break;
             #elif defined(__riscv)
+            /*
+             * RISC-V splits a wide reference across an instruction pair,
+             * so most of these patch a field rather than write a word.
+             * IPTR keeps this correct for both rv32 and rv64. The psABI
+             * only ever emits RELA, so the addend is always in the entry.
+             */
+            case R_RISCV_NONE:
+            case R_RISCV_RELAX:     /* relaxation hint - we do not relax */
+            case R_RISCV_ALIGN:     /* alignment NOPs are already in place */
+                break;
+
+            case R_RISCV_32:
+                *(ULONG *)p = (ULONG)(s + rel->addend);
+                break;
+            case R_RISCV_64:
+                *(UQUAD *)p = (UQUAD)(s + rel->addend);
+                break;
+            case R_RISCV_32_PCREL:
+                *(ULONG *)p = (ULONG)(s + rel->addend - (IPTR)p);
+                break;
+
+            /* Label arithmetic (used by debug/exception tables) */
+            case R_RISCV_ADD8:  *(UBYTE *)p += (UBYTE)(s + rel->addend);  break;
+            case R_RISCV_ADD16: *(UWORD *)p += (UWORD)(s + rel->addend);  break;
+            case R_RISCV_ADD32: *(ULONG *)p += (ULONG)(s + rel->addend);  break;
+            case R_RISCV_ADD64: *(UQUAD *)p += (UQUAD)(s + rel->addend);  break;
+            case R_RISCV_SUB8:  *(UBYTE *)p -= (UBYTE)(s + rel->addend);  break;
+            case R_RISCV_SUB16: *(UWORD *)p -= (UWORD)(s + rel->addend);  break;
+            case R_RISCV_SUB32: *(ULONG *)p -= (ULONG)(s + rel->addend);  break;
+            case R_RISCV_SUB64: *(UQUAD *)p -= (UQUAD)(s + rel->addend);  break;
+            case R_RISCV_SET6:
+                *(UBYTE *)p = (*(UBYTE *)p & 0xC0) |
+                              ((s + rel->addend) & 0x3F);
+                break;
+            case R_RISCV_SUB6:
+                *(UBYTE *)p = (*(UBYTE *)p & 0xC0) |
+                              (((*(UBYTE *)p & 0x3F) - (s + rel->addend)) & 0x3F);
+                break;
+            case R_RISCV_SET8:  *(UBYTE *)p = (UBYTE)(s + rel->addend);   break;
+            case R_RISCV_SET16: *(UWORD *)p = (UWORD)(s + rel->addend);   break;
+            case R_RISCV_SET32: *(ULONG *)p = (ULONG)(s + rel->addend);   break;
+
+            case R_RISCV_BRANCH:
+            {
+                SIPTR off = s + rel->addend - (IPTR)p;
+
+                *(ULONG *)p = (*(ULONG *)p & 0x01FFF07F) |
+                              ((off & 0x1000) << 19) | ((off & 0x07E0) << 20) |
+                              ((off & 0x001E) << 7)  | ((off & 0x0800) >> 4);
+                break;
+            }
+
+            case R_RISCV_JAL:
+            {
+                SIPTR off = s + rel->addend - (IPTR)p;
+
+                *(ULONG *)p = (*(ULONG *)p & 0x00000FFF) |
+                              ((off & 0x100000) << 11) | ((off & 0x0007FE) << 20) |
+                              ((off & 0x000800) << 9)  | (off & 0x0FF000);
+                break;
+            }
+
+            case R_RISCV_CALL:
+            case R_RISCV_CALL_PLT:
+            {
+                SIPTR off = s + rel->addend - (IPTR)p;
+                ULONG hi  = (off + 0x800) & 0xFFFFF000;
+                ULONG lo  = (off - hi) & 0xFFF;
+
+                /* auipc + jalr pair */
+                *(ULONG *)p = (*(ULONG *)p & 0x00000FFF) | hi;
+                *((ULONG *)p + 1) = (*((ULONG *)p + 1) & 0x000FFFFF) | (lo << 20);
+                break;
+            }
+
+            case R_RISCV_PCREL_HI20:
+            {
+                SIPTR off = s + rel->addend - (IPTR)p;
+
+                *(ULONG *)p = (*(ULONG *)p & 0x00000FFF) |
+                              ((off + 0x800) & 0xFFFFF000);
+                break;
+            }
+
+            case R_RISCV_PCREL_LO12_I:
+            case R_RISCV_PCREL_LO12_S:
+            {
+                IPTR  hival = 0;
+                SIPTR hi, off;
+
+                /* 's' resolved to the paired auipc, not to the target */
+                if (!riscv_hi20_value(sh, toreloc, symtab, symtab_shndx,
+                                      relbase, entsize, numrel, i, s, &hival))
+                {
+                    D(bug("[ELF Loader] orphan PCREL_LO12 #%d\n", i));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+
+                hi  = (hival + 0x800) & ~(SIPTR)0xFFF;
+                off = hival - hi;
+
+                if (ELF_R_TYPE(rel->info) == R_RISCV_PCREL_LO12_I)
+                    *(ULONG *)p = (*(ULONG *)p & 0x000FFFFF) |
+                                  ((off & 0xFFF) << 20);
+                else
+                {
+                    ULONG v = off & 0xFFF;
+                    *(ULONG *)p = (*(ULONG *)p & 0x01FFF07F) |
+                                  ((v & 0xFE0) << 20) | ((v & 0x1F) << 7);
+                }
+                break;
+            }
+
+            case R_RISCV_HI20:
+                *(ULONG *)p = (*(ULONG *)p & 0x00000FFF) |
+                              ((s + rel->addend + 0x800) & 0xFFFFF000);
+                break;
+            case R_RISCV_LO12_I:
+                *(ULONG *)p = (*(ULONG *)p & 0x000FFFFF) |
+                              (((s + rel->addend) & 0xFFF) << 20);
+                break;
+            case R_RISCV_LO12_S:
+            {
+                ULONG v = (s + rel->addend) & 0xFFF;
+
+                *(ULONG *)p = (*(ULONG *)p & 0x01FFF07F) |
+                              ((v & 0xFE0) << 20) | ((v & 0x1F) << 7);
+                break;
+            }
+
+            case R_RISCV_RVC_BRANCH:
+            {
+                SIPTR off = s + rel->addend - (IPTR)p;
+
+                *(UWORD *)p = (*(UWORD *)p & 0xE383) |
+                              ((off & 0x100) << 4) | ((off & 0x018) << 7) |
+                              ((off & 0x0C0) >> 1) | ((off & 0x006) << 2) |
+                              ((off & 0x020) >> 3);
+                break;
+            }
+
+            case R_RISCV_RVC_JUMP:
+            {
+                SIPTR off = s + rel->addend - (IPTR)p;
+
+                *(UWORD *)p = (*(UWORD *)p & 0xE003) |
+                              ((off & 0x800) << 1) | ((off & 0x010) << 7) |
+                              ((off & 0x300) << 1) | ((off & 0x400) >> 2) |
+                              ((off & 0x040) << 1) | ((off & 0x080) >> 1) |
+                              ((off & 0x00E) << 2) | ((off & 0x020) >> 3);
+                break;
+            }
+
+            /*
+             * GOT-indirect references must never appear in AROS modules:
+             * LoadSeg() is a static relocator and there is no dynamic
+             * linker. Fix the build flags instead.
+             */
+            case R_RISCV_GOT_HI20:
+                D(bug("[ELF Loader] GOT relocation in module - built as PIC?\n"));
+                SetIoErr(ERROR_BAD_HUNK);
+                return 0;
 
             #else
             #    error Your architecture is not supported

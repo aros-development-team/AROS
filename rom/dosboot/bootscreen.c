@@ -15,7 +15,12 @@
 
 #include "dosboot_intern.h"
 
-static struct Screen *OpenBootScreenType(struct DOSBootBase *DOSBootBase, BYTE MinDepth, BYTE SquarePixels)
+/*
+ * 'quiet' asks for NULL rather than an alert when the display database
+ * has nothing to offer. AN_SysScrnType carries AT_DeadEnd, so a caller
+ * that can carry on without a screen has to be able to opt out of it.
+ */
+static struct Screen *OpenBootScreenType(struct DOSBootBase *DOSBootBase, BYTE MinDepth, BYTE SquarePixels, BOOL quiet)
 {
     UWORD height;
     ULONG mode;
@@ -38,7 +43,11 @@ static struct Screen *OpenBootScreenType(struct DOSBootBase *DOSBootBase, BYTE M
         mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, 200,
             BIDTAG_Depth, MinDepth, TAG_DONE);
     if (mode == INVALID_ID)
+    {
+        if (quiet)
+            return NULL;
         Alert(AN_SysScrnType);
+    }
 
     /* Set PAL or NTSC default height if we are running on Amiga(tm) hardware.
      * We also need to check if this is really PAL or NTSC mode because we have to
@@ -67,20 +76,25 @@ static struct Screen *OpenBootScreenType(struct DOSBootBase *DOSBootBase, BYTE M
             return scr;
     }
     /* We can't open a screen. Likely there are no display modes in the database at all */
-    Alert(AN_SysScrnType);
+    if (!quiet)
+        Alert(AN_SysScrnType);
     return NULL;
 }
 
 struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
 {
     /* Boot menu requires basic 4+ color screen */
-    return OpenBootScreenType(DOSBootBase, 2, FALSE);
+    return OpenBootScreenType(DOSBootBase, 2, FALSE, FALSE);
 }
 
 struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
 {
-    /* Boot anim requires 16+ color screen and 1:1 pixels */
-    struct Screen *scr = OpenBootScreenType(DOSBootBase, 4, TRUE);
+    /*
+     * Quiet: dosboot_Init() calls this on every pass of its retry loop,
+     * and a machine with no display driver must still keep retrying -
+     * the medium it is waiting for may not have enumerated yet.
+     */
+    struct Screen *scr = OpenBootScreenType(DOSBootBase, 4, TRUE, TRUE);
 
     if (scr)
     {

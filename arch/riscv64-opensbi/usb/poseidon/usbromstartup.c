@@ -108,11 +108,18 @@ AROS_UFH3(static IPTR, usbromstartup_init,
 
         if (msdclass)
         {
-            D(bug("[USBROMStartup] waiting for hubs..\n"));
-            psdDelayMS(1000);       /* let the hubs settle */
-            D(bug("[USBROMStartup] checking for massstorage devices..\n"));
-            psdGetAttrs(PGA_USBCLASS, msdclass, UCA_UseCount, &usecount, TAG_END);
-            D(bug("[USBROMStartup] %d massstorage device(s) found\n", usecount));
+            /*
+             * Only a moment for the hubs to settle. There is no point
+             * waiting on enumeration here: massstorage adds a boot node
+             * of its own whenever a volume turns up, and dosboot keeps
+             * retrying until something bootable does, so a device that
+             * arrives late is found anyway.
+             */
+            psdDelayMS(1000);
+            psdGetAttrs(PGA_USBCLASS, msdclass, UCA_UseCount, &usecount,
+                        TAG_END);
+            D(bug("[USBROMStartup] %d massstorage device(s) so far\n",
+                  usecount));
 
             if (usecount > 0)
             {

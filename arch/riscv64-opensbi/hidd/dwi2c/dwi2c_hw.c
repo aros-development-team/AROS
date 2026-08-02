@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 /*
     Copyright (c) 2026, The AROS Development Team. All rights reserved.
     $Id$

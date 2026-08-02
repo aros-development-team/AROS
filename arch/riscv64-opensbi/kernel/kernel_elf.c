@@ -184,6 +184,28 @@ static int krnRelocOne(ULONG type, UBYTE *loc, IPTR val, IPTR place)
    a crash dump has to be measured against */
 static IPTR mod_text;
 
+/*
+ * Test one relocation for being the HI20 half of the pair whose
+ * instruction sits at 'hiaddr', and if so hand back its value.
+ */
+static int krnMatchHi20(struct elfheader *eh, struct rela *r2,
+                        struct symbol *symtab, IPTR secaddr,
+                        IPTR hiaddr, IPTR *hival)
+{
+    ULONG t2 = ELF_R_TYPE(r2->info);
+    struct symbol *s2;
+    IPTR base;
+
+    if ((t2 != R_RISCV_PCREL_HI20 && t2 != R_RISCV_GOT_HI20) ||
+        (secaddr + r2->offset) != hiaddr)
+        return 0;
+
+    s2 = &symtab[ELF_R_SYM(r2->info)];
+    base = (s2->shindex == SHN_ABS) ? 0 : (IPTR)shdr(eh, s2->shindex)->addr;
+    *hival = base + s2->value + r2->addend;
+    return 1;
+}
+
 static int krnLoadModule(void *addr, const char *name)
 {
     struct elfheader *eh = addr;
@@ -282,25 +304,34 @@ static int krnLoadModule(void *addr, const char *name)
             if (type == R_RISCV_PCREL_LO12_I || type == R_RISCV_PCREL_LO12_S)
             {
                 IPTR hiaddr = (IPTR)(IPTR)shtarget->addr + sym->value;
-                struct rela *r2 = (struct rela *)((UBYTE *)eh + shrel->offset);
+                struct rela *relbase =
+                    (struct rela *)((UBYTE *)eh + shrel->offset);
+                IPTR secaddr = (IPTR)shtarget->addr;
                 IPTR k, hival = 0;
                 int found = 0;
 
-                for (k = 0; k < count; k++, r2++)
+                /*
+                 * The HI20 is emitted immediately before its LO12 in
+                 * all but pathological cases, so walk back from here
+                 * and only fall back to a forward sweep. Restarting at
+                 * the top for every LO12 makes this pass quadratic in
+                 * the size of the table, which costs seconds on the
+                 * larger modules.
+                 */
+                for (k = j + 1; k-- > 0; )
                 {
-                    ULONG t2 = ELF_R_TYPE(r2->info);
-
-                    if ((t2 != R_RISCV_PCREL_HI20 && t2 != R_RISCV_GOT_HI20) ||
-                        ((IPTR)shtarget->addr + r2->offset) != hiaddr)
-                        continue;
+                    if (krnMatchHi20(eh, &relbase[k], symtab, secaddr,
+                                     hiaddr, &hival))
                     {
-                        struct symbol *s2 = &symtab[ELF_R_SYM(r2->info)];
-                        IPTR base = (s2->shindex == SHN_ABS) ? 0 :
-                                    (IPTR)shdr(eh, s2->shindex)->addr;
-                        hival = base + s2->value + r2->addend;
                         found = 1;
+                        break;
                     }
-                    break;
+                }
+                for (k = j + 1; !found && k < count; k++)
+                {
+                    if (krnMatchHi20(eh, &relbase[k], symtab, secaddr,
+                                     hiaddr, &hival))
+                        found = 1;
                 }
                 if (!found)
                 {
