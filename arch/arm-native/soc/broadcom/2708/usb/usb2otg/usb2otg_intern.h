@@ -266,6 +266,7 @@ struct USB2OTGUnit
         ULONG               hc_LastSampleTsize;
         ULONG               hc_LastSampleActual;
         UWORD               hc_LastSampleIntr;
+        UBYTE               hc_GiveupStreak;  /* consecutive split give-ups; reset on completion; burn at 4 */
     }                   hu_Channel[8];
 
 /*
@@ -358,6 +359,16 @@ struct USB2OTGUnit
      * successful wedge-recovery reset (all channel SMs reset).
      */
     UBYTE               hu_DeadChannels;
+
+    /*
+     * Split-control channel, runtime: a channel whose split engine
+     * cannot be revived is retired and split control moves on. The
+     * order is INT3, INT2, INT1, then the direct-INT pool as a last
+     * resort. hu_BurnedChannels is never cleared (unlike
+     * hu_DeadChannels) — a retired channel stays retired.
+     */
+    UBYTE               hu_CtrlSplitChan;
+    UBYTE               hu_BurnedChannels;
 
 /*
  * DMA buffers — must be in heap memory so the 0xC0000000 VC bus

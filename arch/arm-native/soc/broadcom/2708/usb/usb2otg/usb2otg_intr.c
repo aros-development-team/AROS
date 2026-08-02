@@ -671,6 +671,87 @@ static void usb2otg_split_fsm_recover(struct USB2OTGUnit *USBUnit, int chan)
 }
 
 /*
+ * Reset a channel's split engine with a forced disable cycle.
+ *
+ * A split sequence that ends in anything but a clean completion
+ * leaves per-channel state inside the core that no amount of
+ * reprogramming reaches: every later SSPLIT on that channel is
+ * descheduled in its arming microframe with a bare CHHLTD, and
+ * neither a core soft reset nor a port power cycle brings it back.
+ * Driving CHENA|CHDIS even though the channel is already halted —
+ * the way FreeBSD's dwc_otg frees a channel — takes the core through
+ * its own disable path and clears that state. Must be followed by a
+ * full reprogram, so HCSPLT/HCCHAR are scrubbed here.
+ */
+static void usb2otg_exorcise_channel(int chan)
+{
+    ULONG hcchar = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
+    int spin = 200000;
+
+    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE),
+        hcchar | USB2OTG_HOSTCHAR_ENABLE | USB2OTG_HOSTCHAR_DISABLE);
+
+    while ((rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) &
+            USB2OTG_HOSTCHAR_ENABLE) && --spin > 0)
+        asm volatile("yield\n");
+
+    wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0xffffffff);
+    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), 0);
+    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
+
+    bug("[USB2OTG] split-engine reset on chan %d%s\n", chan,
+        (spin > 0) ? "" : " (halt timed out)");
+}
+
+/*
+ * Recover a channel after a split transfer was given up on. Giving up
+ * means tearing down a sequence the TT still has state for, which
+ * poisons the channel, so reset its split engine every time. Retiring
+ * the channel is only a backstop for one that keeps failing without a
+ * single completed transfer in between.
+ */
+static void usb2otg_split_giveup_recover(struct USB2OTGUnit *USBUnit, int chan)
+{
+    struct USB2OTGChannel *hc = &USBUnit->hu_Channel[chan];
+
+    if (hc->hc_GiveupStreak < 255)
+        hc->hc_GiveupStreak++;
+
+    usb2otg_exorcise_channel(chan);
+
+    if (hc->hc_GiveupStreak >= 4 &&
+        !(USBUnit->hu_BurnedChannels & (1 << chan)))
+    {
+        /*
+         * Beyond revival — retire it, and if it carried split control
+         * move that to the next candidate. INT5/INT4 come from the
+         * direct-INT pool and are a last resort: taking one shrinks
+         * the pool that serves hub status polling.
+         */
+        static const UBYTE candidates[] =
+            { CHAN_INT3, CHAN_INT2, CHAN_INT1, CHAN_INT5, CHAN_INT4 };
+        int i;
+
+        USBUnit->hu_BurnedChannels |= (1 << chan);
+        if (chan == USBUnit->hu_CtrlSplitChan)
+        {
+            for (i = 0; i < 5; i++)
+            {
+                if (!(USBUnit->hu_BurnedChannels & (1 << candidates[i])))
+                {
+                    USBUnit->hu_CtrlSplitChan = candidates[i];
+                    break;
+                }
+            }
+        }
+        bug("[USB2OTG:BURN] chan %d burned after %d giveups (mask=%02x) ctrl-split now chan %d\n",
+            chan, (int)hc->hc_GiveupStreak,
+            (unsigned)USBUnit->hu_BurnedChannels,
+            (int)USBUnit->hu_CtrlSplitChan);
+    }
+}
+
+/*
  * Non-split bulk-OUT progress accounting for mid-burst halts.
  * Reads HCTSIZ.PktCnt, advances iouh_Actual by ACKed × MaxPktSize,
  * toggles host PID, resets transient retry budget on progress.
@@ -1129,15 +1210,28 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 }
                                 else if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
                                 {
-                                    /* Split ctrl (CHAN_CTRL_SPLIT): TT result
-                                     * window gone — retry from SSPLIT with
-                                     * the usual timed backoff. */
+                                    /*
+                                     * Split ctrl: the TT result window is
+                                     * gone, so go back to the SSPLIT of
+                                     * the SAME transaction in place.
+                                     * Requeueing would restart the
+                                     * transfer from SETUP, and abandoning
+                                     * an SSPLIT-ACKed transaction that way
+                                     * wedges the channel's split engine.
+                                     */
+                                    D(bug("[USB2OTG] IRQ: ctrl csplit-nyet cap, retrying SSPLIT chan=%d dev=%d\n",
+                                        chan, (int)req->iouh_DevAddr);)
                                     usb2otg_halt_channel_preserve_char(chan);
+                                    {
+                                        ULONG splt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+
+                                        splt &= ~USB2OTG_HCSPLT_COMPLSPLT;
+                                        wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), splt);
+                                    }
                                     USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-                                    req->iouh_DriverPrivate1 =
-                                        usb2otg_ctrl_backoff(frnm);
-                                    ADDTAIL(&USBUnit->hu_CtrlXFerQueue, req);
-                                    USBUnit->hu_Channel[chan].hc_Request = NULL;
+                                    USBUnit->hu_Channel[chan].hc_CsplitRetry = 0;
+                                    USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_SS;
+                                    delayed_channel[chan] = 8;
                                     req = NULL;
                                 }
                                 else
@@ -1172,7 +1266,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                     }
                     else if ((intr == USB2OTG_INTR_HALT_NAK && do_split) &&
                         ((chan < CHAN_INT1 || chan > CHAN_INT_LAST) ||
-                         (chan == CHAN_CTRL_SPLIT &&
+                         (chan == USBUnit->hu_CtrlSplitChan &&
                           req->iouh_Req.io_Command == UHCMD_CONTROLXFER)))
                     {
                         D(
@@ -1202,11 +1296,13 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             usb2otg_ctrl_nak_requeues++;
                             if (naks > USB2OTG_CTRL_SPLIT_NAK_LIMIT)
                             {
-                                bug("[USB2OTG] IRQ: ctrl split-NAK give-up dev=%d ep=%d bReq=%02x after %lu NAKs\n",
+                                bug("[USB2OTG] IRQ: ctrl split-NAK give-up dev=%d ep=%d bReq=%02x after %lu NAKs tt=%d.%d\n",
                                     (int)req->iouh_DevAddr,
                                     (int)req->iouh_Endpoint,
                                     (unsigned)req->iouh_SetupData.bRequest,
-                                    (unsigned long)naks - 1);
+                                    (unsigned long)naks - 1,
+                                    (int)req->iouh_SplitHubAddr,
+                                    (int)req->iouh_SplitHubPort);
                                 req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
                                 /*
                                  * Core reset only when the wedge blocks a
@@ -1225,15 +1321,39 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     if (was_dev0)
                                         usb2otg_split_fsm_recover(USBUnit, chan);
                                 }
+                                /* Give-up teardown poisons the channel. */
+                                usb2otg_split_giveup_recover(USBUnit, chan);
                                 req = NULL;
                             }
                             else
                             {
+                                /*
+                                 * A NAKed CSPLIT means re-issuing the
+                                 * SSPLIT of the SAME transaction, on the
+                                 * same channel: the channel registers
+                                 * still hold the transaction and the data
+                                 * toggle. Requeueing instead would
+                                 * restart the transfer from SETUP and
+                                 * abandon a transaction the TT has state
+                                 * for, which wedges the split engine.
+                                 * The retry budget still gives up above.
+                                 */
+                                D(bug("[USB2OTG] IRQ: ctrl split-NAK %lu, retrying SSPLIT chan=%d dev=%d\n",
+                                    (unsigned long)naks, chan, (int)req->iouh_DevAddr);)
+                                {
+                                    ULONG splt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+
+                                    splt &= ~USB2OTG_HCSPLT_COMPLSPLT;
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), splt);
+                                }
+                                USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
+                                USBUnit->hu_Channel[chan].hc_CsplitRetry = 0;
+                                USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_SS;
                                 req->iouh_DriverPrivate2 = (APTR)(IPTR)naks;
-                                req->iouh_DriverPrivate1 =
-                                    usb2otg_ctrl_backoff(frnm);
-                                usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
-                                    &USBUnit->hu_CtrlXFerQueue, FALSE);
+                                /* ~1 frame pause; SOF re-arms via
+                                 * StartChannel(quick=1) while the req
+                                 * still owns the channel. */
+                                delayed_channel[chan] = 8;
                                 req = NULL;
                             }
                         }
@@ -1314,6 +1434,9 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             {
                                 D(bug("[USB2OTG] IRQ: Transfer fully done chan=%d actual=%d/%d\n",
                                     chan, req->iouh_Actual, req->iouh_Length));
+                                /* Completion proves health — reset the
+                                 * give-up streak (burn safety net). */
+                                USBUnit->hu_Channel[chan].hc_GiveupStreak = 0;
                                 /*
                                  * Hotplug diagnostic: a hub status-change
                                  * report is an INT completion with data.
@@ -1363,7 +1486,39 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             usb2otg_halt_channel_preserve_char(chan);
 
                             ULONG retries = (ULONG)req->iouh_DriverPrivate2;
-                            if ((req->iouh_Req.io_Command == UHCMD_CONTROLXFER ||
+                            if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+                                (req->iouh_Flags & UHFF_SPLITTRANS) &&
+                                retries < USB2OTG_TRANSIENT_RETRY_LIMIT)
+                            {
+                                /*
+                                 * Split ctrl: retry the SAME transaction
+                                 * in place from its SSPLIT, like the NAK
+                                 * and NYET paths. Requeueing restarts the
+                                 * transfer from SETUP, and abandoning an
+                                 * SSPLIT-ACKed transaction that way wedges
+                                 * the channel's split engine. The channel
+                                 * registers keep the transaction and the
+                                 * data toggle.
+                                 */
+                                usb2otg_ctrl_xact_retries++;
+                                D(bug("[USB2OTG] IRQ: ctrl split transient error %04x, retry %lu/%d chan=%d dev=%d\n",
+                                    (unsigned)intr, (unsigned long)retries + 1,
+                                    USB2OTG_TRANSIENT_RETRY_LIMIT, chan,
+                                    (int)req->iouh_DevAddr);)
+                                {
+                                    ULONG splt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+
+                                    splt &= ~USB2OTG_HCSPLT_COMPLSPLT;
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), splt);
+                                }
+                                USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
+                                USBUnit->hu_Channel[chan].hc_CsplitRetry = 0;
+                                USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_SS;
+                                req->iouh_DriverPrivate2 = (APTR)(IPTR)(retries + 1);
+                                delayed_channel[chan] = 8;
+                                req = NULL;
+                            }
+                            else if ((req->iouh_Req.io_Command == UHCMD_CONTROLXFER ||
                                  req->iouh_Req.io_Command == UHCMD_BULKXFER) &&
                                 retries < USB2OTG_TRANSIENT_RETRY_LIMIT)
                             {
@@ -1424,6 +1579,50 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 #endif
                                 req = NULL;
                             }
+                            else if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
+                                     retries < USB2OTG_TRANSIENT_RETRY_LIMIT)
+                            {
+                                /*
+                                 * INT transient retry. The CONTROL/BULK
+                                 * gate above used to drop INT straight to
+                                 * TIMEOUT, so a single XactErr killed the
+                                 * poll pipe and the class treated the
+                                 * device as unplugged. Requeue with the
+                                 * poll interval like the NAK path; the
+                                 * budget still fails it after 3
+                                 * consecutive errors.
+                                 */
+                                ULONG interval = usb2otg_clamp_interval(req->iouh_Interval);
+                                if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
+                                    interval = 2;
+                                ULONG next = (frnm + interval) & 0x7ff;
+
+                                D(bug("[USB2OTG] IRQ: int transient error %04x, retry %lu/%d chan=%d dev=%d ep=%d\n",
+                                    (unsigned)intr, (unsigned long)retries + 1,
+                                    USB2OTG_TRANSIENT_RETRY_LIMIT, chan,
+                                    (int)req->iouh_DevAddr, (int)req->iouh_Endpoint);)
+
+                                req->iouh_DriverPrivate1 = (APTR)((frnm << 16) | next);
+                                req->iouh_DriverPrivate2 = (APTR)((ULONG)req->iouh_DriverPrivate2 + 1);
+
+#if defined(__AROSEXEC_SMP__)
+                                KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+                                if (USBUnit->hu_Channel[chan].hc_Request != req)
+                                {
+                                    /* Watchdog already handled this request */
+                                    KrnSpinUnLock(&USBUnit->hu_Lock);
+                                }
+                                else
+                                {
+#endif
+                                ADDTAIL(&USBUnit->hu_IntXFerQueue, req);
+                                USBUnit->hu_Channel[chan].hc_Request = NULL;
+#if defined(__AROSEXEC_SMP__)
+                                KrnSpinUnLock(&USBUnit->hu_Lock);
+                                }
+#endif
+                                req = NULL;
+                            }
                             else
                             {
                                 req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
@@ -1436,6 +1635,9 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  * only cover the control endpoint).
                                  */
                                 usb2otg_queue_clear_tt_buffer(USBUnit, req);
+                                /* Give-up teardown poisons the channel. */
+                                if (req->iouh_Flags & UHFF_SPLITTRANS)
+                                    usb2otg_split_giveup_recover(USBUnit, chan);
                             }
                         }
                         else if (intr & USB2OTG_INTRCHAN_STALL)
@@ -1710,11 +1912,14 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 usb2otg_ctrl_chh_requeues++;
                                 if (chhs > USB2OTG_CTRL_SPLIT_NAK_LIMIT)
                                 {
-                                    bug("[USB2OTG] IRQ: ctrl bare-CHHLTD give-up dev=%d ep=%d bReq=%02x after %lu halts\n",
+                                    bug("[USB2OTG] IRQ: ctrl bare-CHHLTD give-up dev=%d ep=%d bReq=%02x after %lu halts tt=%d.%d chan=%d\n",
                                         (int)req->iouh_DevAddr,
                                         (int)req->iouh_Endpoint,
                                         (unsigned)req->iouh_SetupData.bRequest,
-                                        (unsigned long)chhs - 1);
+                                        (unsigned long)chhs - 1,
+                                        (int)req->iouh_SplitHubAddr,
+                                        (int)req->iouh_SplitHubPort,
+                                        chan);
                                     D(bug("[USB2OTG] IRQ: give-up chan=%d CHAR=%08x SPLT=%08x TSIZE=%08x INTR=%04x HFNUM=%04x\n",
                                         chan,
                                         rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)),
@@ -1747,6 +1952,9 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     /* Reset only for blocked enumeration — see split-NAK site. */
                                     if (req->iouh_DevAddr == 0)
                                         usb2otg_split_fsm_recover(USBUnit, chan);
+                                    /* Give-up teardown poisons the channel. */
+                                    if (req->iouh_Flags & UHFF_SPLITTRANS)
+                                        usb2otg_split_giveup_recover(USBUnit, chan);
                                 }
                                 else
                                 {
