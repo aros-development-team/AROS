@@ -431,6 +431,8 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     if (!fh)
         return NULL;
 
+    fh->dn = dn;
+
     /*
      * The startup is either a small number selecting CON: or RAW:, or, with
      * AUXF_DEVICE set, a FileSysStartupMsg naming a device to run over. Only
@@ -687,6 +689,15 @@ LONG CONMain(struct ExecBase *SysBase)
         goto end;
     }
     D(bug("[con:handler] 0x%p open\n", fh));
+
+    /*
+     * A device-backed console is a single stream, so publish the port and let
+     * everyone share this handler. CON: deliberately does not do this: leaving
+     * dn_Task clear is what gets each open its own window.
+     */
+    if (fh->flags & FHFLG_DEVICEMODE)
+        fh->dn->dn_Task = mp;
+
     replypkt(dp, DOSTRUE);
     {
 #if defined(CONSOLE_SHOW_MENU)
@@ -1080,10 +1091,28 @@ LONG CONMain(struct ExecBase *SysBase)
                         id->id_DiskType =
                                 (fh->flags & FHFLG_RAW) ? AROS_MAKE_ID('R', 'A', 'W', 0) : AROS_MAKE_ID('C', 'O', 'N', 0);
                         id->id_VolumeNode = (BPTR) fh->window;
-                        id->id_InUse = (IPTR) fh->conreadio;
+                        /* Anyone still holding a stream on us. Reporting the
+                           IORequest here made us look busy for as long as we
+                           were alive, so DISMOUNT could never proceed. */
+                        id->id_InUse = fh->usecount;
                         replypkt(dp, DOSTRUE);
                     }
                     break;
+                case ACTION_INHIBIT:
+                    /* Nothing is buffered on our side, so there is nothing to
+                       stop doing. */
+                    DACTION(bug("[con:handler] ACTION_INHIBIT %ld\n", (LONG)dp->dp_Arg1));
+                    replypkt(dp, DOSTRUE);
+                    break;
+                case ACTION_DIE:
+                    D(bug("[con:handler] ACTION_DIE (usecount %d)\n", fh->usecount));
+                    if (fh->usecount > 0) {
+                        replypkt2(dp, DOSFALSE, ERROR_OBJECT_IN_USE);
+                        break;
+                    }
+                    replypkt(dp, DOSTRUE);
+                    dp = NULL;
+                    goto end;
                 case ACTION_SEEK:
                     /* Yes, DOSTRUE. Check Guru Book for details. */
                     DACTION(bug("[con:handler] ACTION_SEEK\n"));
@@ -1100,6 +1129,22 @@ LONG CONMain(struct ExecBase *SysBase)
 end:
     D(bug("[con:handler] 0x%p closing\n", fh));
     if (fh) {
+        /* Stop DOS handing out our port before it goes away, so that the next
+           access starts a fresh handler. The node may have been dismounted
+           while we ran, so only touch it while it is still in the list. */
+        if (fh->flags & FHFLG_DEVICEMODE) {
+            struct DosList *dl = LockDosList(LDF_DEVICES | LDF_WRITE);
+
+            while ((dl = NextDosEntry(dl, LDF_DEVICES))) {
+                if (dl == (struct DosList *)fh->dn) {
+                    if (fh->dn->dn_Task == mp)
+                        fh->dn->dn_Task = NULL;
+                    break;
+                }
+            }
+            UnLockDosList(LDF_DEVICES | LDF_WRITE);
+        }
+
         D(bug("[con:handler] Cancelling read requests...\n"));
         stopread(fh, waitingdp);
 
@@ -1115,8 +1160,8 @@ end:
     }
 
     if (dp) {
-        D(bug("[con:handler] Replying packet 0x%p\n", dp));
-        replypkt(dp, DOSFALSE);
+        D(bug("[con:handler] Replying packet 0x%p, error %ld\n", dp, error));
+        replypkt2(dp, DOSFALSE, error);
     }
 
     D(bug("[con:handler] 0x%p closed\n", fh));

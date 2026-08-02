@@ -98,6 +98,7 @@ struct filehandle
     UBYTE                   devname[64];
     ULONG                   devunit;
     ULONG                   devflags;
+    struct DeviceNode       *dn;
 
     struct Device           *inputbase;
     struct IntuitionBase    *intuibase;
