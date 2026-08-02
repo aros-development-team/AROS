@@ -24,7 +24,8 @@ USER_AFLAGS	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-exec modname=exec maindir=rom/exec \
-  files="alert_cpu newstackswap preparecontext" asmfiles="execstubs stackswap" \
+  files="alert_cpu newstackswap preparecontext cachecleare cacheclearu" \
+  asmfiles="execstubs stackswap" \
   arch=riscv64
 
 %common
