@@ -476,9 +476,20 @@ static int relocate
                 break;
 
             case SHN_UNDEF:
-                if (ELF_R_TYPE(rel->info) != 0) {
-                    D(bug("[ELF Loader] Undefined symbol '%s'\n",
-                      (STRPTR)sh[shsymtab->link].addr + sym->name));
+                /*
+                 * Symbol index 0 means "no symbol" and resolves to the
+                 * null entry, which is SHN_UNDEF. RISC-V emits RELAX and
+                 * ALIGN that way - they carry only an addend - so they
+                 * are not undefined references.
+                 */
+                if (ELF_R_TYPE(rel->info) != 0
+#if defined(__riscv)
+                    && ELF_R_TYPE(rel->info) != R_RISCV_RELAX
+                    && ELF_R_TYPE(rel->info) != R_RISCV_ALIGN
+#endif
+                   ) {
+                    bug("[ELF Loader] Undefined symbol '%s'\n",
+                        (STRPTR)sh[shsymtab->link].addr + sym->name);
                     SetIoErr(ERROR_BAD_HUNK);
                     return 0;
                 }
@@ -1117,7 +1128,7 @@ static int relocate
                 if (!riscv_hi20_value(sh, toreloc, symtab, symtab_shndx,
                                       relbase, entsize, numrel, i, s, &hival))
                 {
-                    D(bug("[ELF Loader] orphan PCREL_LO12 #%d\n", i));
+                    bug("[ELF Loader] orphan PCREL_LO12 #%d\n", i);
                     SetIoErr(ERROR_BAD_HUNK);
                     return 0;
                 }
@@ -1183,7 +1194,7 @@ static int relocate
              * linker. Fix the build flags instead.
              */
             case R_RISCV_GOT_HI20:
-                D(bug("[ELF Loader] GOT relocation in module - built as PIC?\n"));
+                bug("[ELF Loader] GOT relocation in module - built as PIC?\n");
                 SetIoErr(ERROR_BAD_HUNK);
                 return 0;
 
