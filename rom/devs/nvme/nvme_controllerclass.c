@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -11,6 +11,7 @@
 
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
+#include <hardware/pci.h>
 #include <hidd/nvme.h>
 #include <hidd/storage.h>
 
@@ -147,6 +148,50 @@ static AROS_INTH1(NVME_ResetHandler, device_t, dev)
     AROS_INTFUNC_EXIT
 }
 
+/*
+ * CC.EN and CSTS.RDY are the two halves of a handshake. The controller
+ * acts on the enable bit once and moves RDY to match when it has
+ * finished; until then it is still using the admin queue registers, so
+ * they must not be written, and no command may be submitted. CAP.TO
+ * gives the deadline, in 500ms units.
+ */
+static BOOL nvme_wait_ready(device_t dev, struct IORequest *tmr, UQUAD cap, ULONG want)
+{
+    ULONG slices = NVME_CAP_TIMEOUT(cap) * 5;   /* 100ms each */
+    ULONG csts = 0;
+
+    if (slices < 5)
+        slices = 5;
+
+    for (;;)
+    {
+        csts = dev->dev_nvmeregbase->csts;
+
+        if (csts == (ULONG)~0)
+        {
+            bug("[NVME:Controller] %s: controller stopped responding\n", __func__);
+            return FALSE;
+        }
+        if (csts & NVME_CSTS_CFS)
+        {
+            bug("[NVME:Controller] %s: controller reports fatal status\n", __func__);
+            return FALSE;
+        }
+        if ((csts & NVME_CSTS_RDY) == want)
+            return TRUE;
+
+        if (slices-- == 0)
+            break;
+
+        nvme_WaitTO(tmr, 0, 100000, 0);
+    }
+
+    bug("[NVME:Controller] %s: timed out waiting for CSTS.RDY = %u (csts %08x)\n",
+        __func__, want, csts);
+
+    return FALSE;
+}
+
 /* Controller class methods */
 OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -205,15 +250,6 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 aqa = dev->dev_Queues[0]->q_depth - 1;
                 aqa |= aqa << 16;
 
-                dev->ctrl_config = NVME_CC_ENABLE | NVME_CC_CSS_NVM;
-                dev->ctrl_config |= NVME_CC_ARB_RR | NVME_CC_SHN_NONE;
-                dev->ctrl_config |= NVME_CC_IOSQES | NVME_CC_IOCQES;
-
-                dev->dev_nvmeregbase->cc = 0;
-                dev->dev_nvmeregbase->aqa = aqa;
-                dev->dev_nvmeregbase->asq = dev->dev_Queues[0]->sq_dma;
-                dev->dev_nvmeregbase->acq = dev->dev_Queues[0]->cq_dma;
-
                 /* parse capabilities ... */
                 cap = dev->dev_nvmeregbase->cap;
 
@@ -224,8 +260,43 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                                      ((cap >> 52) & 0xf) + 12);
                 dev->pagesize = 1UL << (dev->pageshift);
                 D(bug ("[NVME:Controller] %s: using pagesize %u (%u shift)\n", __func__, dev->pagesize, dev->pageshift);)
+
+                dev->ctrl_config = NVME_CC_ENABLE | NVME_CC_CSS_NVM;
+                dev->ctrl_config |= NVME_CC_ARB_RR | NVME_CC_SHN_NONE;
+                dev->ctrl_config |= NVME_CC_IOSQES | NVME_CC_IOCQES;
                 dev->ctrl_config |= (dev->pageshift - 12) << NVME_CC_MPS_SHIFT;
+
+                /*
+                 * Take the controller down before touching the admin queue
+                 * registers. Whoever ran it before us may well have left it
+                 * enabled, and its queue base can only be moved while it is
+                 * idle. Disabling also discards any completion the previous
+                 * owner never collected - one of those left behind keeps the
+                 * interrupt asserted, with nothing we can do to answer it.
+                 *
+                 * Mask at the controller as well, so the line stays quiet
+                 * until there is a handler able to service it.
+                 */
+                dev->dev_nvmeregbase->intms = ~0;
+                dev->dev_nvmeregbase->cc = 0;
+                if (!nvme_wait_ready(dev, nvmeTimer, cap, 0))
+                    goto resetfailed;
+
+                dev->dev_nvmeregbase->aqa = aqa;
+                dev->dev_nvmeregbase->asq = dev->dev_Queues[0]->sq_dma;
+                dev->dev_nvmeregbase->acq = dev->dev_Queues[0]->cq_dma;
+
                 dev->dev_nvmeregbase->cc = dev->ctrl_config;
+                if (!nvme_wait_ready(dev, nvmeTimer, cap, NVME_CSTS_RDY))
+                {
+resetfailed:
+                    nvme_free_queue(dev->dev_Queues[0]);
+                    FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
+                    dev->dev_Queues = NULL;
+                    // TODO: dispose the controller object
+                    nvme_CloseTimer(nvmeTimer);
+                    return NULL;
+                }
 
                 OOP_SetAttrs(dev->dev_Object, (struct TagItem *) pciActivateBusmaster);
                 /*
@@ -245,6 +316,9 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     nvme_CloseTimer(nvmeTimer);
                     return NULL;
                 }
+
+                /* There is someone to answer the line now - let it speak */
+                dev->dev_nvmeregbase->intmc = ~0;
 
                 buffer = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, 8192);
                 if (buffer) {
@@ -320,6 +394,36 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                         HW_AddDriver(dev->dev_Controller, NVMEBase->busClass, attrs);
                     } else {
                         bug("[NVME:Controller] %s: ERROR - failed to query controller identity!\n", __func__);
+                        {
+                            /*
+                             * Separate "the controller never ran the
+                             * command" from "it did, and we missed the
+                             * interrupt": a completion the device wrote
+                             * is visible here whether or not anything
+                             * told us about it. Also report the command
+                             * register, since a device that was never
+                             * allowed to master the bus cannot have
+                             * fetched the command at all.
+                             */
+                            volatile struct nvme_completion *cqe =
+                                &dev->dev_Queues[0]->cqba[0];
+                            IPTR cmdreg = 0, ismaster = 0;
+
+                            OOP_GetAttr(dev->dev_Object,
+                                        aHidd_PCIDevice_isMaster, &ismaster);
+                            cmdreg = HIDD_PCIDevice_ReadConfigWord(
+                                        dev->dev_Object, PCICS_COMMAND);
+
+                            bug("[NVME:Controller] %s:   cq[0] status %04x"
+                                " cid %u sqhd %u result %08x\n", __func__,
+                                AROS_LE2WORD(cqe->status),
+                                AROS_LE2WORD(cqe->command_id),
+                                AROS_LE2WORD(cqe->sq_head),
+                                AROS_LE2LONG(cqe->result));
+                            bug("[NVME:Controller] %s:   PCI command %04x,"
+                                " bus master %s\n", __func__,
+                                (UWORD)cmdreg, ismaster ? "on" : "OFF");
+                        }
                         data = NULL;
                     }
                     HIDD_PCIDriver_FreePCIMem(dev->dev_PCIDriverObject, buffer);
