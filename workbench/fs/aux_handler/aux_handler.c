@@ -33,8 +33,9 @@
 
 /*
  * Set in the startup BPTR of con-handler's startup packet to ask for a device
- * rather than a console window. A BPTR is a longword address shifted right by
- * two, so the top bits are free.
+ * rather than a console window. This only has room to live where a BPTR is a
+ * longword address shifted right by two; on a target with AROS_FAST_BPTR the
+ * BPTR is the address itself and this bit belongs to it.
  */
 #define AUXF_DEVICE             0x40000000
 
@@ -139,7 +140,7 @@ LONG aux_handler(struct ExecBase *SysBase)
                 }
             }
 
-            dp->dp_Arg2 = (BPTR)((ULONG)MKBADDR(fssm) | AUXF_DEVICE);
+            dp->dp_Arg2 = (SIPTR)((IPTR)MKBADDR(fssm) | AUXF_DEVICE);
 
             /* con-handler collects this once it starts up below. */
             PutMsg(mp, mn);
