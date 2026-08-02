@@ -87,7 +87,19 @@ HWYARCHSRCDIR := $(PORTSDIR)/highway/highway-$(LIBHWYVERSION)
 
 #MM datatypes-jpegxl-linklibs-hwy : linklibs-jxlhwy-fetch
 
+# highway only checks the compiler version for AVX10.2 support
+# (gcc >= 15.2), but assembling the instructions it then emits also
+# needs binutils >= 2.44 - which not every toolchain pairing provides.
+# Disable the AVX10.2 target when the assembler is too old.
+ifeq ($(AROS_TOOLCHAIN),gnu)
+BINUTILS_VER_MINOR := $(shell echo "$(TARGET_BINUTILS_VER)" | cut -d"." -f2)
+ifneq ($(shell [ 0$(BINUTILS_VER_MINOR) -ge 44 ] 2>/dev/null && echo true),true)
+HWY_TARGET_CPPFLAGS := -DHWY_BROKEN_AVX10_2=HWY_AVX10_2
+endif
+endif
+
 USER_INCLUDES := -I$(HWYARCHSRCDIR)
+USER_CPPFLAGS := $(HWY_TARGET_CPPFLAGS)
 
 HWYCXXFILES := \
         hwy/abort \
@@ -151,6 +163,7 @@ USER_INCLUDES := \
         -I$(BROTLIARCHSRCDIR)/c/include
 
 USER_CPPFLAGS := \
+        $(HWY_TARGET_CPPFLAGS) \
         -DJXL_INTERNAL_LIBRARY_BUILD \
         -DJXL_STATIC_DEFINE \
         -DJPEGXL_ENABLE_TRANSCODE_JPEG=0 \
