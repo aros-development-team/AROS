@@ -903,6 +903,16 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
     if (!usb2otg_require_cpu0(USB2OTGBase, __PRETTY_FUNCTION__))
         return;
 
+    /*
+     * The handler body uses Disable()/Enable() pairs it shares with
+     * task-context code. Running in IRQ context, an inner Enable()
+     * would let a second USB interrupt in mid-handler, which then
+     * completes the same channel again from stale registers and
+     * replies the same request twice. Nest everything inside one
+     * outer pair so those inner Enable()s never reach zero.
+     */
+    Disable();
+
     //static ULONG last_frame = 0;
 
     //static ULONG delayed_frnm = 0;
@@ -1950,6 +1960,9 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                 FNAME_DEV(Cause)(USBUnit->hu_USB2OTGBase, &USBUnit->hu_PendingInt);
         }
     }
+
+    /* Matches the outer Disable() at entry — see comment there. */
+    Enable();
 }
 
 
@@ -1964,6 +1977,9 @@ static BOOL usb2otg_process_pending(struct USB2OTGUnit *otg_Unit)
 //    FNAME_DEV(DoFinishedTDs)(otg_Unit);
 
     struct IOUsbHWReq * req = NULL;
+    struct IOUsbHWReq * prev_req = NULL;
+    ULONG drain_count = 0;
+    ULONG same_count = 0;
 
     for (;;)
     {
@@ -1978,6 +1994,30 @@ static BOOL usb2otg_process_pending(struct USB2OTGUnit *otg_Unit)
         Enable();
         if (!req)
             break;
+        /*
+         * Adding one request to the list twice self-links the node,
+         * so REMHEAD keeps handing back the same one and this loop
+         * never ends — a silent hang of all USB. Cheap insurance:
+         * complain and drop out instead.
+         */
+        if (req == prev_req)
+        {
+            if (++same_count > 8)
+            {
+    bug("[USB2OTG] FinishedXfers self-linked req=%p cmd=%d dev=%d, dropping\n",
+                    req, (int)req->iouh_Req.io_Command,
+                    (int)req->iouh_DevAddr);
+                break;
+            }
+        }
+        else
+            same_count = 0;
+        prev_req = req;
+        if (++drain_count > 2048)
+        {
+            bug("[USB2OTG] FinishedXfers drain runaway, last req=%p\n", req);
+            break;
+        }
         FNAME_DEV(TermIO)(req, otg_Unit->hu_USB2OTGBase);
     }
 
