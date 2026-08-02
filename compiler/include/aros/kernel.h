@@ -2,7 +2,7 @@
 #define AROS_KERNEL_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: TagItems for the kernel.resource
@@ -70,6 +70,7 @@ typedef enum
 #define KRN_KernelPhysLowest    (KRN_Dummy + 30) /* Lowest *PHYSICAL* address occupied by Kernel */
 #define KRN_Platform            (KRN_Dummy + 31) /* Arch specifc platform ID provided */
 #define KRN_FlattenedDeviceTree (KRN_Dummy + 32) /* Flattened device tree as used e.g. by linux kernels */
+#define KRN_FBAddr              (KRN_Dummy + 33) /* 64-bit framebuffer base address (GOP/MB2)		*/
 
 /* Magic value passed by the bootstrap as second parameter */
 #define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')

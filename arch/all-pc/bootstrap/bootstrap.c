@@ -87,9 +87,9 @@ const struct bootstrap_mb2_header __header_v2 __attribute__((used,section(".aros
         MB2_HEADER_TAG_FRAMEBUFFER,
         MBTF_OPTIONAL,
         sizeof(struct mb2_header_tag_framebuffer),
-        640,
-        200,
-        32
+        0,    /* width  = 0: let bootloader pick best available GOP mode */
+        0,    /* height = 0: avoids requesting modes that don't exist on UEFI */
+        0     /* depth  = 0: any color depth is acceptable */
     },
     {
         MB2_HEADER_TAG_END,

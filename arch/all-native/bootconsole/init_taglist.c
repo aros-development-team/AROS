@@ -19,6 +19,7 @@ void con_InitTagList(const struct TagItem *tags)
     struct vbe_mode *vbemode = NULL;
     /* By default we have 2.0 data (framebuffer pointer filled in) */
     unsigned short vbever = 0x0200;
+    IPTR fb_addr = 0;
 
     while ((tag = LibNextTagItem((struct TagItem **)&tags)))
     {
@@ -35,11 +36,22 @@ void con_InitTagList(const struct TagItem *tags)
         case KRN_VBEControllerInfo:
             vbever = ((struct vbe_controller *)tag->ti_Data)->version;
             break;
+
+        case KRN_FBAddr:
+            fb_addr = tag->ti_Data;
+            break;
         }
     }
 
     if (vbemode)
+    {
         con_InitVESA(vbever, vbemode);
+
+        /* Override with full 64-bit address from GOP/multiboot2.
+         * VBEModeInfo.phys_base is 32-bit and truncates on >4GB systems. */
+        if (fb_addr)
+            scr_FrameBuffer = (void *)fb_addr;
+    }
     else
         con_InitVGA();
 }
