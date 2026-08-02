@@ -16,11 +16,11 @@
 
     FORMAT
 
-        Mount <Device> <From>
-                
+        Mount <Device> <From> [SHUTDOWN]
+
     SYNOPSIS
 
-        DEVICE/M, FROM/K
+        DEVICE/M, FROM/K, SHUTDOWN/S
 
     LOCATION
 
@@ -32,19 +32,37 @@
 
     INPUTS
 
-        DEVICE -- The device type to be mounted
-        FROM   -- Search device in this mountlist
+        DEVICE   -- The device type to be mounted
+        FROM     -- Search device in this mountlist
+        SHUTDOWN -- Stop the handler behind an already mounted device,
+                    without removing the device node
 
     RESULT
 
         Standard DOS error codes.
-        
+
     NOTES
-        
+
+        SHUTDOWN leaves the device mounted, so the handler is started
+        again the next time the device is accessed. Removing the device
+        node is what Assign DISMOUNT does, so shutting a device down
+        completely takes both:
+
+            Mount HD5: SHUTDOWN
+            Assign HD5: DISMOUNT
+
+        Not every handler can be shut down. One that is still in use, or
+        that does not implement ACTION_DIE, reports an error and keeps
+        running.
+
     EXAMPLE
 
         Mount DEVS:FAT0
         (Mounts a FAT device defined in the DEVS:FAT0 file)
+
+        Mount AUX0: SHUTDOWN
+        (Tells the handler serving AUX0: to go away. AUX0: stays
+        mounted and the handler is restarted when it is next used.)
 
     BUGS
 
@@ -224,6 +242,7 @@ static const int __nocommandline __attribute__((used));
 const TEXT version[] = "\0$VER: " PROGNAME " 50.17 (" ADATE ")";
 
 ULONG CheckDevice(char *name);
+LONG ShutdownDevice(char *name);
 void  InitParams(IPTR *params);
 LONG  readfile(STRPTR name, STRPTR *mem, LONG *size);
 ULONG readmountlist(IPTR *params, STRPTR name, char *mountlist);
@@ -259,7 +278,7 @@ extern struct WBStartup *_WBenchMsg;
 
 int main(void)
 {
-  IPTR args[2];
+  IPTR args[3];
   IPTR *params;
   LONG error = RETURN_FAIL;
   struct RDArgs *rda;
@@ -277,7 +296,7 @@ int main(void)
         if (!_WBenchMsg)
         {
           SetMem(args,0,sizeof(args));
-          if ((rda = ReadArgs("DEVICE/M,FROM/K", args, NULL)))
+          if ((rda = ReadArgs("DEVICE/M,FROM/K,SHUTDOWN/S", args, NULL)))
           {
             STRPTR      *MyDevPtr;
             int         len;
@@ -291,6 +310,22 @@ int main(void)
               {
                 DEBUG_MOUNT(KPrintF("Mount: Current DevName <%s>\n",
                                    (IPTR)*MyDevPtr));
+
+                if (args[2])
+                {
+                  len = strlen(*MyDevPtr);
+                  Strlcpy(dirname, *MyDevPtr, PATHSTR_MAX);
+                  if (len && dirname[len-1] == ':')
+                    dirname[len-1] = '\0';
+
+                  error = ShutdownDevice(dirname);
+                  DEBUG_MOUNT(KPrintF("Mount: ShutdownDevice returned %ld\n", error));
+                  if (error)
+                    break;
+
+                  MyDevPtr++;
+                  continue;
+                }
 
                 if ((params = AllocVec(PARAMSLENGTH, MEMF_PUBLIC | MEMF_CLEAR)))
                 {
@@ -520,6 +555,42 @@ int main(void)
 
 /************************************************************************************************/
 /************************************************************************************************/
+/* Ask the handler behind a mounted name to go away, leaving the node in the
+   list so that the next access starts it again. A name with no handler running
+   is already shut down, and must not be started just to be told to stop. */
+LONG ShutdownDevice(char *name)
+{
+struct DosList      *dl;
+struct DeviceNode   *dn;
+struct MsgPort      *port = NULL;
+
+  DEBUG_CHECK(KPrintF("ShutdownDevice: <%s>\n", name));
+
+  dl = LockDosList(LDF_DEVICES | LDF_READ);
+  dn = (struct DeviceNode *)FindDosEntry(dl, name, LDF_DEVICES);
+  if (dn)
+    port = dn->dn_Task;
+  UnLockDosList(LDF_DEVICES | LDF_READ);
+
+  if (!dn)
+    return ERROR_OBJECT_NOT_FOUND;
+
+  if (!port)
+    return 0;
+
+  /* The lock is released first: the handler may want the list itself while it
+     shuts down. It may also have exited on its own by now, which DoPkt() to a
+     dead port cannot be told apart from a handler that refuses to die. */
+  if (!DoPkt(port, ACTION_DIE, 0, 0, 0, 0, 0))
+  {
+    LONG ioerr = IoErr();
+
+    return ioerr ? ioerr : ERROR_OBJECT_IN_USE;
+  }
+
+  return 0;
+}
+
 ULONG CheckDevice(char *name)
 {
 struct DosList  *dl;
