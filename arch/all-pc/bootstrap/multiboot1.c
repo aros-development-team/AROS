@@ -18,6 +18,51 @@
 #define str_BSMultiboot "bootstrap:multiboot"
 #endif
 
+static void mb1_fill_vbe_from_fb(const struct multiboot *mb)
+{
+    VBEModeInfo.mode_attributes             = VM_SUPPORTED|VM_COLOR|VM_GRAPHICS|VM_NO_VGA_HW|VM_NO_VGA_MEM|VM_LINEAR_FB;
+    VBEModeInfo.bytes_per_scanline          = mb->framebuffer_pitch;
+    VBEModeInfo.x_resolution                = mb->framebuffer_width;
+    VBEModeInfo.y_resolution                = mb->framebuffer_height;
+    VBEModeInfo.bits_per_pixel              = mb->framebuffer_bpp;
+    VBEModeInfo.memory_model                = VMEM_RGB;
+    VBEModeInfo.red_mask_size               = mb->framebuffer_red_mask_size;
+    VBEModeInfo.red_field_position          = mb->framebuffer_red_field_position;
+    VBEModeInfo.green_mask_size             = mb->framebuffer_green_mask_size;
+    VBEModeInfo.green_field_position        = mb->framebuffer_green_field_position;
+    VBEModeInfo.blue_mask_size              = mb->framebuffer_blue_mask_size;
+    VBEModeInfo.blue_field_position         = mb->framebuffer_blue_field_position;
+    {
+        UBYTE maxend = 0;
+        UBYTE rend = mb->framebuffer_red_field_position + mb->framebuffer_red_mask_size;
+        UBYTE gend = mb->framebuffer_green_field_position + mb->framebuffer_green_mask_size;
+        UBYTE bend = mb->framebuffer_blue_field_position + mb->framebuffer_blue_mask_size;
+        if (rend > maxend) maxend = rend;
+        if (gend > maxend) maxend = gend;
+        if (bend > maxend) maxend = bend;
+        if (mb->framebuffer_bpp > maxend)
+        {
+            VBEModeInfo.reserved_mask_size      = mb->framebuffer_bpp - maxend;
+            VBEModeInfo.reserved_field_position = maxend;
+        }
+        else
+        {
+            VBEModeInfo.reserved_mask_size      = 0;
+            VBEModeInfo.reserved_field_position = 0;
+        }
+    }
+    VBEModeInfo.phys_base                     = mb->framebuffer_addr;
+    VBEModeInfo.linear_bytes_per_scanline     = mb->framebuffer_pitch;
+    VBEModeInfo.linear_red_mask_size          = mb->framebuffer_red_mask_size;
+    VBEModeInfo.linear_red_field_position     = mb->framebuffer_red_field_position;
+    VBEModeInfo.linear_green_mask_size        = mb->framebuffer_green_mask_size;
+    VBEModeInfo.linear_green_field_position   = mb->framebuffer_green_field_position;
+    VBEModeInfo.linear_blue_mask_size         = mb->framebuffer_blue_mask_size;
+    VBEModeInfo.linear_blue_field_position    = mb->framebuffer_blue_field_position;
+    VBEModeInfo.linear_reserved_mask_size     = VBEModeInfo.reserved_mask_size;
+    VBEModeInfo.linear_reserved_field_position = VBEModeInfo.reserved_field_position;
+}
+
 unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsigned long *mmap_len)
 {
     const char *cmdline = NULL;
@@ -89,18 +134,48 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
 
     if (ParseCmdLine(cmdline))
     {
-        /* No VESA mode was set by command line arguments, supply what we already have */
-        if (mb->flags & MB_FLAGS_GFX)
+        int have_vbe = (mb->flags & MB_FLAGS_GFX) != 0;
+        struct vbe_mode *vbe_mode = have_vbe ? (struct vbe_mode *)mb->vbe_mode_info : NULL;
+        int have_graphics_vbe = vbe_mode && (vbe_mode->mode_attributes & VM_GRAPHICS);
+        int fb_rgb = ((mb->flags & MB_FLAGS_FB) && (mb->framebuffer_type == MB_FRAMEBUFFER_RGB));
+        int choose_gop = 0;
+
+        if (fb_rgb && (!have_graphics_vbe || ((mb->framebuffer_addr >> 32) != 0)))
+            choose_gop = 1;
+
+        if (choose_gop)
+        {
+            kprintf("[bootstrap:multiboot1] smartfb: using GOP framebuffer (%ux%ux%u @ 0x%016llX)%s%s\n",
+                mb->framebuffer_width,
+                mb->framebuffer_height,
+                mb->framebuffer_bpp,
+                mb->framebuffer_addr,
+                have_vbe ? " with VBE data present;" : "",
+                ((mb->framebuffer_addr >> 32) != 0) ? " FB above 4GB" : "");
+
+            mb1_fill_vbe_from_fb(mb);
+
+            tag->ti_Tag = KRN_VBEModeInfo;
+            tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
+            tag++;
+        }
+        else if (have_graphics_vbe)
         {
             /* We prefer complete VBE data if present */
             D(
                 kprintf("[%s] Got VESA display mode 0x%x from the bootstrap\n", str_BSMultiboot, mb->vbe_mode);
                 kprintf("[%s]   Mode info 0x%p, controller into 0x%p\n", str_BSMultiboot, mb->vbe_mode_info, mb->vbe_control_info);
                 kprintf("[%s]   VBE version 0x%04X\n", str_BSMultiboot, ((struct vbe_controller *)mb->vbe_control_info)->version);
-                kprintf("[%s]   Resolution %d x %d\n", str_BSMultiboot, ((struct vbe_mode  *)mb->vbe_mode_info)->x_resolution, ((struct vbe_mode  *)mb->vbe_mode_info)->y_resolution);
-                kprintf("[%s]   Mode flags 0x%04X, framebuffer 0x%p\n", str_BSMultiboot, ((struct vbe_mode  *)mb->vbe_mode_info)->mode_attributes, ((struct vbe_mode *)mb->vbe_mode_info)->phys_base);
-                kprintf("[%s]   Windows A 0x%04X B 0x%04X\n", str_BSMultiboot, ((struct vbe_mode *)mb->vbe_mode_info)->win_a_segment, ((struct vbe_mode *)mb->vbe_mode_info)->win_b_segment);
+                kprintf("[%s]   Resolution %d x %d\n", str_BSMultiboot, vbe_mode->x_resolution, vbe_mode->y_resolution);
+                kprintf("[%s]   Mode flags 0x%04X, framebuffer 0x%p\n", str_BSMultiboot, vbe_mode->mode_attributes, vbe_mode->phys_base);
+                kprintf("[%s]   Windows A 0x%04X B 0x%04X\n", str_BSMultiboot, vbe_mode->win_a_segment, vbe_mode->win_b_segment);
             )
+            kprintf("[bootstrap:multiboot1] smartfb: using VBE mode 0x%x (%ux%ux%u, fb=0x%08X)\n",
+                mb->vbe_mode,
+                vbe_mode->x_resolution,
+                vbe_mode->y_resolution,
+                vbe_mode->bits_per_pixel,
+                vbe_mode->phys_base);
 
             /*
              * We are already running in VESA mode set by the bootloader.
@@ -140,54 +215,31 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
              * pass it to the bootstrap and handle it there (how? Is it I/O port
              * address or memory-mapped I/O address?)
              */
-            if (mb->framebuffer_type == MB_FRAMEBUFFER_RGB)
+            if (fb_rgb)
             {
-                                VBEModeInfo.mode_attributes             = VM_SUPPORTED|VM_COLOR|VM_GRAPHICS|VM_NO_VGA_HW|VM_NO_VGA_MEM|VM_LINEAR_FB;
-                                VBEModeInfo.bytes_per_scanline          = mb->framebuffer_pitch;
-                                VBEModeInfo.x_resolution                = mb->framebuffer_width;
-                                VBEModeInfo.y_resolution                = mb->framebuffer_height;
-                                VBEModeInfo.bits_per_pixel              = mb->framebuffer_bpp;
-                                VBEModeInfo.memory_model                = VMEM_RGB;
-                                VBEModeInfo.red_mask_size               = mb->framebuffer_red_mask_size;
-                                VBEModeInfo.red_field_position          = mb->framebuffer_red_field_position;
-                                VBEModeInfo.green_mask_size             = mb->framebuffer_green_mask_size;
-                                VBEModeInfo.green_field_position        = mb->framebuffer_green_field_position;
-                                VBEModeInfo.blue_mask_size              = mb->framebuffer_blue_mask_size;
-                                VBEModeInfo.blue_field_position         = mb->framebuffer_blue_field_position;
-                                {
-                                    UBYTE maxend = 0;
-                                    UBYTE rend = mb->framebuffer_red_field_position + mb->framebuffer_red_mask_size;
-                                    UBYTE gend = mb->framebuffer_green_field_position + mb->framebuffer_green_mask_size;
-                                    UBYTE bend = mb->framebuffer_blue_field_position + mb->framebuffer_blue_mask_size;
-                                    if (rend > maxend) maxend = rend;
-                                    if (gend > maxend) maxend = gend;
-                                    if (bend > maxend) maxend = bend;
-                                    if (mb->framebuffer_bpp > maxend)
-                                    {
-                                        VBEModeInfo.reserved_mask_size      = mb->framebuffer_bpp - maxend;
-                                        VBEModeInfo.reserved_field_position = maxend;
-                                    }
-                                    else
-                                    {
-                                        VBEModeInfo.reserved_mask_size      = 0;
-                                        VBEModeInfo.reserved_field_position = 0;
-                                    }
-                                }
-                                VBEModeInfo.phys_base                   = mb->framebuffer_addr;
-                                VBEModeInfo.linear_bytes_per_scanline   = mb->framebuffer_pitch;
-                                VBEModeInfo.linear_red_mask_size        = mb->framebuffer_red_mask_size;
-                                VBEModeInfo.linear_red_field_position   = mb->framebuffer_red_field_position;
-                                VBEModeInfo.linear_green_mask_size      = mb->framebuffer_green_mask_size;
-                                VBEModeInfo.linear_green_field_position = mb->framebuffer_green_field_position;
-                                VBEModeInfo.linear_blue_mask_size       = mb->framebuffer_blue_mask_size;
-                                VBEModeInfo.linear_blue_field_position  = mb->framebuffer_blue_field_position;
-                                VBEModeInfo.linear_reserved_mask_size   = VBEModeInfo.reserved_mask_size;
-                                VBEModeInfo.linear_reserved_field_position = VBEModeInfo.reserved_field_position;
-                        
-                                tag->ti_Tag = KRN_VBEModeInfo;
-                                tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
-                                tag++;
-                        }
+                kprintf("[bootstrap:multiboot1] smartfb: using framebuffer-only path (%ux%ux%u @ 0x%016llX)\n",
+                    mb->framebuffer_width,
+                    mb->framebuffer_height,
+                    mb->framebuffer_bpp,
+                    mb->framebuffer_addr);
+                mb1_fill_vbe_from_fb(mb);
+                tag->ti_Tag = KRN_VBEModeInfo;
+                tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
+                tag++;
+            }
+            else
+            {
+                kprintf("[bootstrap:multiboot1] smartfb: unsupported framebuffer type %u\n",
+                    mb->framebuffer_type);
+            }
+        }
+
+        if (fb_rgb)
+        {
+            tag->ti_Tag = KRN_FBAddr;
+            tag->ti_Data = (unsigned long long)mb->framebuffer_addr;
+            tag++;
+            kprintf("[bootstrap:multiboot1] smartfb: KRN_FBAddr=0x%016llX\n", mb->framebuffer_addr);
         }
     }
 

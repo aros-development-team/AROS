@@ -127,7 +127,8 @@ static void boot_start(struct TagItem *msg)
     fb_Mirror = (void *)LibGetTagData(KRN_ProtAreaEnd, 0x101000, msg);
 
     con_InitTagList(msg);
-    boot_dump_video_info(msg);
+    while (0)
+        boot_dump_video_info(msg);
 
     kernel_cstart(msg);
 }

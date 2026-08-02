@@ -21,6 +21,51 @@ D(
 #define str_BSMultiboot2 "bootstrap:multiboot2"
 )
 
+static void mb2_fill_vbe_from_fb(const struct mb2_tag_framebuffer *fb)
+{
+    VBEModeInfo.mode_attributes             = VM_SUPPORTED|VM_COLOR|VM_GRAPHICS|VM_NO_VGA_HW|VM_NO_VGA_MEM|VM_LINEAR_FB;
+    VBEModeInfo.bytes_per_scanline          = fb->common.framebuffer_pitch;
+    VBEModeInfo.x_resolution                = fb->common.framebuffer_width;
+    VBEModeInfo.y_resolution                = fb->common.framebuffer_height;
+    VBEModeInfo.bits_per_pixel              = fb->common.framebuffer_bpp;
+    VBEModeInfo.memory_model                = VMEM_RGB;
+    VBEModeInfo.red_mask_size               = fb->framebuffer_red_mask_size;
+    VBEModeInfo.red_field_position          = fb->framebuffer_red_field_position;
+    VBEModeInfo.green_mask_size             = fb->framebuffer_green_mask_size;
+    VBEModeInfo.green_field_position        = fb->framebuffer_green_field_position;
+    VBEModeInfo.blue_mask_size              = fb->framebuffer_blue_mask_size;
+    VBEModeInfo.blue_field_position         = fb->framebuffer_blue_field_position;
+    {
+        UBYTE maxend = 0;
+        UBYTE rend = fb->framebuffer_red_field_position + fb->framebuffer_red_mask_size;
+        UBYTE gend = fb->framebuffer_green_field_position + fb->framebuffer_green_mask_size;
+        UBYTE bend = fb->framebuffer_blue_field_position + fb->framebuffer_blue_mask_size;
+        if (rend > maxend) maxend = rend;
+        if (gend > maxend) maxend = gend;
+        if (bend > maxend) maxend = bend;
+        if (fb->common.framebuffer_bpp > maxend)
+        {
+            VBEModeInfo.reserved_mask_size      = fb->common.framebuffer_bpp - maxend;
+            VBEModeInfo.reserved_field_position = maxend;
+        }
+        else
+        {
+            VBEModeInfo.reserved_mask_size      = 0;
+            VBEModeInfo.reserved_field_position = 0;
+        }
+    }
+    VBEModeInfo.phys_base                     = fb->common.framebuffer_addr;
+    VBEModeInfo.linear_bytes_per_scanline     = fb->common.framebuffer_pitch;
+    VBEModeInfo.linear_red_mask_size          = fb->framebuffer_red_mask_size;
+    VBEModeInfo.linear_red_field_position     = fb->framebuffer_red_field_position;
+    VBEModeInfo.linear_green_mask_size        = fb->framebuffer_green_mask_size;
+    VBEModeInfo.linear_green_field_position   = fb->framebuffer_green_field_position;
+    VBEModeInfo.linear_blue_mask_size         = fb->framebuffer_blue_mask_size;
+    VBEModeInfo.linear_blue_field_position    = fb->framebuffer_blue_field_position;
+    VBEModeInfo.linear_reserved_mask_size     = VBEModeInfo.reserved_mask_size;
+    VBEModeInfo.linear_reserved_field_position = VBEModeInfo.reserved_field_position;
+}
+
 /*
  * AROS expects memory map in original format. However, we won't bother
  * adding more and more new kernel tags. We convert the memory map instead.
@@ -173,14 +218,44 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
 
     if (ParseCmdLine(cmdline))
     {
-        if (vbe)
+        BOOL fb_rgb = (fb && (fb->common.framebuffer_type == MB2_FRAMEBUFFER_RGB));
+        BOOL vbe_graphics = (vbe && (vbe->vbe_mode_info.mode_attributes & VM_GRAPHICS));
+        BOOL choose_gop = FALSE;
+
+        if (fb_rgb)
+        {
+            if (!vbe_graphics || mb2_efi_systable != 0 || (fb->common.framebuffer_addr >> 32) != 0)
+                choose_gop = TRUE;
+        }
+
+        if (choose_gop)
+        {
+            kprintf("[bootstrap:multiboot2] smartfb: using GOP framebuffer (%ux%ux%u @ 0x%016llX pitch=%u)%s%s%s\n",
+                fb->common.framebuffer_width,
+                fb->common.framebuffer_height,
+                fb->common.framebuffer_bpp,
+                fb->common.framebuffer_addr,
+                fb->common.framebuffer_pitch,
+                vbe ? " with VBE data present;" : "",
+                (mb2_efi_systable != 0) ? " EFI boot;" : "",
+                ((fb->common.framebuffer_addr >> 32) != 0) ? " FB above 4GB" : "");
+
+            mb2_fill_vbe_from_fb(fb);
+
+            tag->ti_Tag  = KRN_VBEModeInfo;
+            tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
+            tag++;
+        }
+        else if (vbe_graphics)
         {
             D(kprintf("[%s] Got VESA display mode 0x%x from the bootstrap\n", str_BSMultiboot2, vbe->vbe_mode);)
+            kprintf("[bootstrap:multiboot2] smartfb: using VBE mode 0x%x (%ux%ux%u, fb=0x%08X)\n",
+                vbe->vbe_mode,
+                vbe->vbe_mode_info.x_resolution,
+                vbe->vbe_mode_info.y_resolution,
+                vbe->vbe_mode_info.bits_per_pixel,
+                vbe->vbe_mode_info.phys_base);
 
-            /*
-             * We are already running in VESA mode set by the bootloader.
-             * Pass on the mode information to AROS.
-             */
             tag->ti_Tag  = KRN_VBEModeInfo;
             tag->ti_Data = (unsigned long)&vbe->vbe_mode_info;
             tag++;
@@ -208,66 +283,39 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
              * pass it to the bootstrap and handle it there (how? Is it I/O port
              * address or memory-mapped I/O address?)
              */
-            if (fb->common.framebuffer_type == MB2_FRAMEBUFFER_RGB)
+            if (fb_rgb)
             {
-                /*
-                 * We have a framebuffer but no VBE information.
-                 * Looks like we are running on EFI machine with no VBE support (Mac).
-                 * Convert framebuffer data to VBEModeInfo and hand it to AROS.
-                 */
-                VBEModeInfo.mode_attributes             = VM_SUPPORTED|VM_COLOR|VM_GRAPHICS|VM_NO_VGA_HW|VM_NO_VGA_MEM|VM_LINEAR_FB;
-                VBEModeInfo.bytes_per_scanline          = fb->common.framebuffer_pitch;
-                VBEModeInfo.x_resolution                = fb->common.framebuffer_width;
-                VBEModeInfo.y_resolution                = fb->common.framebuffer_height;
-                VBEModeInfo.bits_per_pixel              = fb->common.framebuffer_bpp;
-                VBEModeInfo.memory_model                = VMEM_RGB;
-                VBEModeInfo.red_mask_size               = fb->framebuffer_red_mask_size;
-                VBEModeInfo.red_field_position          = fb->framebuffer_red_field_position;
-                VBEModeInfo.green_mask_size             = fb->framebuffer_green_mask_size;
-                VBEModeInfo.green_field_position        = fb->framebuffer_green_field_position;
-                VBEModeInfo.blue_mask_size              = fb->framebuffer_blue_mask_size;
-                VBEModeInfo.blue_field_position         = fb->framebuffer_blue_field_position;
-                {
-                    UBYTE maxend = 0;
-                    UBYTE rend = fb->framebuffer_red_field_position + fb->framebuffer_red_mask_size;
-                    UBYTE gend = fb->framebuffer_green_field_position + fb->framebuffer_green_mask_size;
-                    UBYTE bend = fb->framebuffer_blue_field_position + fb->framebuffer_blue_mask_size;
-                    if (rend > maxend) maxend = rend;
-                    if (gend > maxend) maxend = gend;
-                    if (bend > maxend) maxend = bend;
-                    if (fb->common.framebuffer_bpp > maxend)
-                    {
-                        VBEModeInfo.reserved_mask_size      = fb->common.framebuffer_bpp - maxend;
-                        VBEModeInfo.reserved_field_position = maxend;
-                    }
-                    else
-                    {
-                        VBEModeInfo.reserved_mask_size      = 0;
-                        VBEModeInfo.reserved_field_position = 0;
-                    }
-                }
-                VBEModeInfo.phys_base                   = fb->common.framebuffer_addr;
-                VBEModeInfo.linear_bytes_per_scanline   = fb->common.framebuffer_pitch;
-                VBEModeInfo.linear_red_mask_size        = fb->framebuffer_red_mask_size;
-                VBEModeInfo.linear_red_field_position   = fb->framebuffer_red_field_position;
-                VBEModeInfo.linear_green_mask_size      = fb->framebuffer_green_mask_size;
-                VBEModeInfo.linear_green_field_position = fb->framebuffer_green_field_position;
-                VBEModeInfo.linear_blue_mask_size       = fb->framebuffer_blue_mask_size;
-                VBEModeInfo.linear_blue_field_position  = fb->framebuffer_blue_field_position;
-                VBEModeInfo.linear_reserved_mask_size   = VBEModeInfo.reserved_mask_size;
-                VBEModeInfo.linear_reserved_field_position = VBEModeInfo.reserved_field_position;
+                kprintf("[bootstrap:multiboot2] smartfb: using framebuffer-only path (%ux%ux%u @ 0x%016llX)\n",
+                    fb->common.framebuffer_width,
+                    fb->common.framebuffer_height,
+                    fb->common.framebuffer_bpp,
+                    fb->common.framebuffer_addr);
+
+                mb2_fill_vbe_from_fb(fb);
 
                 tag->ti_Tag  = KRN_VBEModeInfo;
                 tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
                 tag++;
-
-                /* Pass full 64-bit framebuffer address via dedicated tag.
-                 * phys_base above is 32-bit and truncates on >4GB systems (ReBAR, large VRAM).
-                 * bootloader.resource uses this to override the truncated value. */
-                tag->ti_Tag  = KRN_FBAddr;
-                tag->ti_Data = (unsigned long long)fb->common.framebuffer_addr;
-                tag++;
             }
+            else
+            {
+                kprintf("[bootstrap:multiboot2] smartfb: unsupported framebuffer type %u\n",
+                    fb->common.framebuffer_type);
+            }
+        }
+
+        if (fb_rgb)
+        {
+            /*
+             * Pass full 64-bit framebuffer address regardless of whether we are using
+             * VBE data or synthesized GOP data. This allows the kernel/bootloader.resource
+             * to override 32-bit phys_base fields when framebuffer is above 4GB.
+             */
+            tag->ti_Tag  = KRN_FBAddr;
+            tag->ti_Data = (unsigned long long)fb->common.framebuffer_addr;
+            tag++;
+
+            kprintf("[bootstrap:multiboot2] smartfb: KRN_FBAddr=0x%016llX\n", fb->common.framebuffer_addr);
         }
     }
 
