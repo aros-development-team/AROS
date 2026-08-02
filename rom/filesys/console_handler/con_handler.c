@@ -1090,7 +1090,15 @@ LONG CONMain(struct ExecBase *SysBase)
                         SetMem(id, 0, sizeof(struct InfoData));
                         id->id_DiskType =
                                 (fh->flags & FHFLG_RAW) ? AROS_MAKE_ID('R', 'A', 'W', 0) : AROS_MAKE_ID('C', 'O', 'N', 0);
-                        id->id_VolumeNode = (BPTR) fh->window;
+                        /* The window we hang off, for whoever wants to put
+                           something over it. Empty means we have none just
+                           now: a console opened AUTO gets its window when
+                           something first writes to it. Driving a device
+                           there will never be one, which is -1 rather than
+                           empty so that the two can be told apart. */
+                        id->id_VolumeNode = (fh->flags & FHFLG_DEVICEMODE)
+                                                ? (BPTR)(SIPTR)-1
+                                                : (BPTR)fh->window;
                         /* Anyone still holding a stream on us. Reporting the
                            IORequest here made us look busy for as long as we
                            were alive, so DISMOUNT could never proceed. */

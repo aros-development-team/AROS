@@ -16,6 +16,44 @@
 #include "dos_newcliproc.h"
 #include "fs_driver.h"
 
+/* Point requesters at the console this shell is running on.
+ *
+ * A console handler answers ACTION_DISK_INFO with its window in id_VolumeNode,
+ * which is how a program finds the window behind its console. Without this a
+ * shell leaves pr_WindowPtr at NULL and its requesters land on the default
+ * public screen, which is the wrong one whenever the console is not there.
+ */
+static void SetWindowPtrFromConsole(struct Process *me, BPTR fh, APTR DOSBase)
+{
+    struct MsgPort *port = ((struct FileHandle *)BADDR(fh))->fh_Type;
+    struct InfoData id;
+
+    if (!port)
+        return;
+
+    /* Only a console puts a Window there. On a filesystem the field is what it
+       claims to be, a BPTR to a volume node, and following that as a pointer
+       would draw requesters over nonsense. Ask what kind of handler this is
+       rather than matching id_DiskType: CON: is not the only console around,
+       and the type is whatever a handler cares to report. */
+    if (DoPkt(port, ACTION_IS_FILESYSTEM, 0, 0, 0, 0, 0))
+        return;
+
+    if (!DoPkt(port, ACTION_DISK_INFO, (SIPTR)MKBADDR(&id), 0, 0, 0, 0))
+        return;
+
+    /* Take whatever we are given, which is either a window to put requesters
+       over or -1 for a console that will never have one, and which means the
+       same thing here as it does in pr_WindowPtr: do not ask. An empty field
+       is the one answer to ignore, since a console opened AUTO has no window
+       until something writes to it, and would get one shortly. */
+    if (id.id_VolumeNode)
+        me->pr_WindowPtr = (APTR)id.id_VolumeNode;
+
+    D(bug("%s: type 0x%08lx vol 0x%p -> pr_WindowPtr 0x%p\n", __func__,
+        (unsigned long)id.id_DiskType, (APTR)id.id_VolumeNode, me->pr_WindowPtr));
+}
+
 ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
 {
     ULONG flags = 0;
@@ -215,6 +253,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
         D(bug("%s: cli_StandardInput is interactive\n", __func__));
         fs_ChangeSignal(cli->cli_StandardInput, me, DOSBase);
         SetVBuf(cli->cli_StandardInput, NULL, BUF_LINE, -1);
+        SetWindowPtrFromConsole(me, cli->cli_StandardInput, DOSBase);
         inter_in = TRUE;
     }
     if (IsInteractive(cli->cli_StandardOutput)) {
