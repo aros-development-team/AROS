@@ -22,6 +22,7 @@
 #include "kernel_syscall.h"
 #include "kernel_ipi.h"
 #include "cpu_traps.h"
+#include "segments.h"
 #include "debug_xmm.h"
 
 #ifdef DEBUG
@@ -42,6 +43,68 @@
 #endif
 
 #define DUMP_CONTEXT
+
+/*****************************************************************************
+ * Vector ↔ IRQ mapping and allocation
+ *
+ * The IDT has 256 entries but the software IRQ array (kb_Interrupts[])
+ * can be larger (HW_IRQ_COUNT=65536) to accommodate wide software IRQ spaces.
+ * This mapping decouples IDT vectors from software IRQ numbers.
+ *****************************************************************************/
+
+ULONG apicIRQVectorMap[APIC_IRQ_MAX];   /* vector → software IRQ (0xFFFFFFFF = unmapped) */
+
+static ULONG vectorBitmap[8];           /* 256 bits — tracks allocated vectors */
+#define VECTOR_SET(v)    (vectorBitmap[(v) >> 5] |= (1U << ((v) & 31)))
+#define VECTOR_CLR(v)    (vectorBitmap[(v) >> 5] &= ~(1U << ((v) & 31)))
+#define VECTOR_ISSET(v)  (vectorBitmap[(v) >> 5] & (1U << ((v) & 31)))
+
+void apicInitVectorMap(void)
+{
+    int i;
+
+    for (i = 0; i < 8; i++)
+        vectorBitmap[i] = 0;
+    for (i = 0; i < APIC_IRQ_MAX; i++)
+        apicIRQVectorMap[i] = 0xFFFFFFFF;
+
+    /* Reserve CPU exception vectors 0-31 */
+    for (i = 0; i < X86_CPU_EXCEPT_COUNT; i++)
+        VECTOR_SET(i);
+
+    /* Reserve APIC exception vectors 246-255 */
+    for (i = APIC_CPU_EXCEPT_BASE; i < APIC_IRQ_MAX; i++)
+        VECTOR_SET(i);
+
+    /* Legacy PIC vectors 32-47 → IRQ 0-15 (always 1:1) */
+    for (i = 0; i < I8259A_IRQCOUNT; i++)
+    {
+        VECTOR_SET(HW_IRQ_BASE + i);
+        apicIRQVectorMap[HW_IRQ_BASE + i] = i;
+    }
+}
+
+void apicRegisterVector(UBYTE vector, ULONG irq)
+{
+    VECTOR_SET(vector);
+    apicIRQVectorMap[vector] = irq;
+}
+
+UBYTE apicAllocVector(ULONG irq)
+{
+    int i;
+
+    for (i = APIC_IRQ_BASE; i < APIC_CPU_EXCEPT_BASE; i++)
+    {
+        if (!VECTOR_ISSET(i))
+        {
+            VECTOR_SET(i);
+            apicIRQVectorMap[i] = irq;
+            return (UBYTE)i;
+        }
+    }
+    return 0;   /* pool exhausted */
+}
 
 //#define INTRASCII_DEBUG
 
@@ -222,10 +285,14 @@ void core_SetupIDT(apicid_t _APICID, x86vectgate_t *IGATES)
             bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): Setting default gates" DEBUGCOLOR_RESET "\n", __func__, _APICID);
         )
 
-        // Disable ALL the default gates until something takes ownership
+        /*
+         * Install the correct ISR handler for every vector but leave all gates
+         * disabled (p=0).  This ensures AP IDTs have valid handlers from the
+         * start — when EnableIRQ later sets p=1 on all CPUs the gate is ready.
+         */
         for (i=0; i < 256; i++)
         {
-            off = (uintptr_t)DEF_IRQRETFUNC;
+            off = (uintptr_t)IntrDefaultGates[i];
 
             if (!core_SetIDTGate(IGATES, i, off, FALSE, TRUE))
             {
@@ -335,11 +402,50 @@ SAVE_XMM_INTO_AREA(localarea)
                     bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): Exception error code %08X" DEBUGCOLOR_RESET "\n", __func__, int_number, error_code);
                     pdata->kb_LastException = int_number;
                     pdata->kb_LastExceptionError = error_code;
+                    if (int_number == 14)
+                    {
+                        IPTR cr2 = 0;
+                        __asm__ volatile("mov %%cr2,%0" : "=r"(cr2));
+                        bug("[PF-DBG] CR2=%p RIP=%p RSP=%p CS=%p SS=%p ERR=%08lx\n",
+                            (APTR)cr2, (APTR)regs->rip, (APTR)regs->rsp,
+                            (APTR)regs->cs, (APTR)regs->ss, error_code);
+                        bug("[PF-DBG] access=%s mode=%s present=%s rsvd=%s ifetch=%s\n",
+                            (error_code & 2) ? "write" : "read",
+                            (error_code & 4) ? "user" : "supervisor",
+                            (error_code & 1) ? "protection" : "not-present",
+                            (error_code & 8) ? "yes" : "no",
+                            (error_code & 16) ? "yes" : "no");
+                        /*
+                         * Dump the top of the faulting stack. For a call
+                         * through a NULL/garbage pointer, [RSP] holds the
+                         * caller's return address - names the culprit
+                         * without needing the alert requester's Log button.
+                         */
+                        if ((error_code & 4) && regs->rsp >= 0x1000)
+                        {
+                            IPTR *sp = (IPTR *)regs->rsp;
+                            int di;
+                            for (di = 0; di < 8; di++)
+                            {
+                                bug("[PF-STK] +%02x %p\n", di * (int)sizeof(IPTR),
+                                    (APTR)sp[di]);
+                            }
+                        }
+                    }
                     break;
             }
         }
 
         cpu_Trap(regs, error_code, exception_number);
+
+        /*
+         * Disable interrupts after cpu_Trap returns. The ACPI PM idle handler
+         * executes sti;hlt inside cpu_Trap, and SoftIntDispatch (via core_Cause)
+         * calls KrnSti(), leaving interrupts ENABLED on return. Without this cli,
+         * a nested timer interrupt can corrupt the kernel-mode IRETQ frame on the
+         * exception return path, causing #GP at garbage RIP (e.g. SMP trampoline).
+         */
+        __asm__ __volatile__("cli");
 
         DTRAP(
             bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): CPU Trap returned" DEBUGCOLOR_RESET "\n", __func__, int_number);
@@ -349,7 +455,7 @@ SAVE_XMM_INTO_AREA(localarea)
     }
     else
     {
-        UBYTE irq_number = GET_DEVICE_IRQ(int_number);
+        ULONG irq_number = apicIRQVectorMap[int_number];
 
         DIRQ(
             bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): Device IRQ #$%02X" DEBUGCOLOR_RESET "\n", __func__, int_number, irq_number);
@@ -359,7 +465,7 @@ SAVE_XMM_INTO_AREA(localarea)
         {
             pdata->kb_PDFlags |= PLATFORMF_INIRQ;
         }
-        if (KernelBase)
+        if (KernelBase && irq_number != 0xFFFFFFFF && irq_number < HW_IRQ_COUNT)
         {
             struct IntrController *irqIC;
             struct KernelInt *irqInt;

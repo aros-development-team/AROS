@@ -50,7 +50,7 @@
     AROS_LIBFUNC_INIT
 
     struct IntrNode *h = handle;
-    uint8_t irq = h->in_nr;
+    UWORD irq = h->in_nr;
 
     if (h && (h->in_type == it_interrupt))
     {

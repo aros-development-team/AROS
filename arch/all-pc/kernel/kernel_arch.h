@@ -1,7 +1,7 @@
 #ifndef _KERNEL_ARCH_H_
 #define _KERNEL_ARCH_H_
 /*
-    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Machine-specific definitions for IBM PC hardware
@@ -13,6 +13,14 @@
 #include <aros/types/spinlock_s.h>
 
 #include "apic_ia32.h"
+
+/*
+ * Software IRQ namespace size.
+ * We keep a full 16-bit IRQ ID space (0..65535) so large GSI domains and
+ * CPU-banked IRQ schemes can coexist, while IDT vectors remain 8-bit and are
+ * allocated/mapped lazily.
+ */
+#define HW_IRQ_COUNT    65536
 
 #define PAGE_SIZE	        0x1000
 #define PAGE_MASK	        0x0FFF
@@ -119,9 +127,9 @@ struct PlatformData
 */
 
 /* Interrupt controller functions */
-void ictl_enable_irq(unsigned char, struct KernelBase *);
-void ictl_disable_irq(unsigned char, struct KernelBase *);
-BOOL ictl_is_irq_enabled(unsigned char, struct KernelBase *);
+void ictl_enable_irq(UWORD, struct KernelBase *);
+void ictl_disable_irq(UWORD, struct KernelBase *);
+BOOL ictl_is_irq_enabled(UWORD, struct KernelBase *);
 
 #define IRQINTB_ENABLED 1
 #define IRQINTF_ENABLED (1 << IRQINTB_ENABLED)

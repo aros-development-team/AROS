@@ -54,8 +54,8 @@ struct APICData
 {
     IPTR	                lapicBase; 	/* Local APIC base address			        */
     ULONG	                apic_count;	/* Total number of APICs in the system		        */
-    UBYTE	                msibase;	/* starting msi IRQ                                     */
-    UBYTE	                msilast;	/* last allocated msi                                   */
+    UWORD	                msibase;	/* starting msi IRQ                                     */
+    UWORD	                msilast;	/* last allocated msi                                   */
     UWORD	                flags;	        /* See below					        */
     struct CPUData          cores[0];	/* Per-CPU data					        */
 };

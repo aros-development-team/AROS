@@ -94,6 +94,8 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KATTR_CPULoad           (TAG_USER + 0x03F00004)
 #define KATTR_CPULoad_END       (KATTR_CPULoad + 32)
 #define KATTR_ClockSource	(KATTR_CPULoad_END + 1) /* [.G] (APTR)    - Kernel ClockSource resource                                  */
+#define KATTR_CPUFrequencyKHz   (KATTR_ClockSource + 1) /* [.G] (ULONG)   - Per-CPU calibrated clock frequency in kHz                    */
+#define KATTR_CPUFrequencyKHz_END (KATTR_CPUFrequencyKHz + 32)
 
 /* Tag IDs for KrnStatMemory() */
 #define KMS_Free		(TAG_USER + 0x04000000)

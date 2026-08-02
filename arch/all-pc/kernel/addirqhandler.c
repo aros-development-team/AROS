@@ -113,7 +113,7 @@
 }
 
 /* Run IRQ handlers */
-void krnRunIRQHandlers(struct KernelBase *KernelBase, uint8_t irq)
+void krnRunIRQHandlers(struct KernelBase *KernelBase, UWORD irq)
 {
     struct IntrNode **in, *in1, *in2;
     struct PlatformData *pdata;

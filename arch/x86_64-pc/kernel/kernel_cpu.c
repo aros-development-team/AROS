@@ -5,6 +5,21 @@
 #define __KERNEL_NOLIBBASE__
 
 #include <aros/types/timespec_s.h>
+
+/*
+ * Shared stack-protector canary block. Host-toolchain binaries (gcc 15
+ * libstdc++ statics linked into ports like v8.library) read the canary
+ * from %fs:0x28; AROS tasks historically ran with FS base 0, faulting
+ * at absolute 0x28. core_LeaveInterrupt re-arms IA32_FS_BASE to this
+ * block whenever it reloads segment registers. One shared block is
+ * sufficient: the protector only requires the value to be stable.
+ */
+unsigned long long __fs_canary_block[16] = {
+    0, 0, 0, 0, 0,
+    0x00C0FFEEDEADC0DEULL,      /* [5] = offset 0x28: the canary */
+};
+unsigned long __fs_canary_base = (unsigned long)__fs_canary_block;
+
 #include <exec/lists.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>

@@ -22,7 +22,8 @@ ULONG core_APIC_AllocMSI(ULONG count)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     ULONG msiIRQ = (ULONG)-1;
-    UWORD startIRQ = (UWORD)-1, cpuIRQ = (UWORD)-1, irq;
+    UWORD startIRQ = (UWORD)-1, cpuIRQ = (UWORD)-1;
+    ULONG irq;
 
     D(
         bug("[APIC:MSI] %s(%u)\n", __func__, count);
@@ -33,7 +34,7 @@ ULONG core_APIC_AllocMSI(ULONG count)
 
     if (apicPrivate->msibase)
     {
-        UBYTE first = apicPrivate->msilast;
+        UWORD first = apicPrivate->msilast;
         if (!first)
             first = apicPrivate->msibase;
 

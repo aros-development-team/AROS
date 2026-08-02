@@ -62,6 +62,13 @@ void __clear_bss(const struct KernelBSS *bss)
 extern const APTR GM_UNIQUENAME(FuncTable)[];
 
 THIS_PROGRAM_HANDLES_SYMBOLSET(INITLIB)
+/*
+ * kernel.resource uses handwritten bootstrap code. Low-level helpers can
+ * still contribute PROGRAM_ENTRIES; this module deliberately ignores them.
+ * Mark the set handled so collect-aros can close the kernel link.
+ * AI_DECISION_CHAIN: ACD-clean-hosted-kernel-symbolset-closure
+ */
+THIS_PROGRAM_HANDLES_SYMBOLSET(PROGRAM_ENTRIES)
 DEFINESET(INITLIB)
 
 /*

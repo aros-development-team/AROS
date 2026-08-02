@@ -48,7 +48,7 @@ AROS_LH2(ULONG, KrnModifyIRQA,
         if ((irqMap = krnInterruptMapping(KernelBase, irq)) == NULL)
         {
             irqMap = AllocMem(sizeof(struct IntrMapping), MEMF_CLEAR);
-            irqMap->im_Node.ln_Pri = irq;
+            irqMap->im_DeviceIRQ = irq;
             irqMap->im_Int = irq;
             irqMap->im_CPU = KrnGetCPUNumber();
             newMp = TRUE;

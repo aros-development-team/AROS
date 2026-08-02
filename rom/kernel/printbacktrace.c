@@ -107,12 +107,11 @@ static VOID krnBacktraceSingle(APTR priv, APTR pc, KrnSymResolver_t resolver)
 
     /* Read once; ok if resolver changes during print. */
     KrnSymResolver_t resolver = KernelBase->kb_gResolver;
-    if (resolver) {
-        bug("%sBacktrace (%lu frames):\n",
-            prefix ? (char *)prefix : "[Kernel] ", (ULONG)depth);
 
-        for (ULONG i = 0; i < depth; ++i)
-            krnBacktraceSingle(KernelBase->kb_gResolvPrivate, pcs[i], resolver);
-    }
+    bug("%sBacktrace (%lu frames):\n",
+        prefix ? (char *)prefix : "[Kernel] ", (ULONG)depth);
+
+    for (ULONG i = 0; i < depth; ++i)
+        krnBacktraceSingle(KernelBase->kb_gResolvPrivate, pcs[i], resolver);
     AROS_LIBFUNC_EXIT
 }

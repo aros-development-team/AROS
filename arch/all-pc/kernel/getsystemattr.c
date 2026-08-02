@@ -64,6 +64,12 @@
         if (id < apicData->apic_count)
             retval = apicData->cores[id].cpu_Load;
     }
+    else if ((apicData) && (id >= KATTR_CPUFrequencyKHz && id < KATTR_CPUFrequencyKHz_END))
+    {
+        id -= KATTR_CPUFrequencyKHz;
+        if (id < apicData->apic_count)
+            retval = (apicData->cores[id].cpu_TSCFreq + 500) / 1000;
+    }
     else if (id == KATTR_Architecture)
     {
         retval = (intptr_t)AROS_ARCHITECTURE;

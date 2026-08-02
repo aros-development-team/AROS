@@ -12,6 +12,8 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 
+#include <proto/kernel.h>
+
 #define D(x)
 
 #undef USE_MACROS
@@ -304,8 +306,134 @@ static inline __attribute__((always_inline)) bhdr_t * MEM_TO_BHDR(void *ptr)
     return (bhdr_t *)(ptr - offsetof(bhdr_t, mem));
 }
 
-static inline __attribute__((always_inline)) void REMOVE_HEADER(tlsf_t *tlsf, bhdr_t *b, int fl, int sl)
+/* These checks turn corrupted free-list metadata into a traceable failure. */
+static BOOL tlsf_block_in_area(tlsf_t *tlsf, const bhdr_t *block)
 {
+    tlsf_area_t *area;
+
+    for (area = tlsf->memory_area; area; area = area->next)
+    {
+        bhdr_t *first = MEM_TO_BHDR(area);
+
+        first = GET_NEXT_BHDR(first, GET_SIZE(first));
+        if ((IPTR)block >= (IPTR)first && (IPTR)block < (IPTR)area->end)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static BOOL tlsf_valid_bucket(int fl, int sl)
+{
+    return fl >= 0 && fl < REAL_FLI && sl >= 0 && sl < MAX_SLI;
+}
+
+static void __attribute__((noreturn)) tlsf_fail_corruption(
+    struct MemHeaderExt *mhe, tlsf_t *tlsf, CONST_STRPTR where,
+    bhdr_t *block, int fl, int sl)
+{
+    static volatile ULONG reported;
+
+    if (!reported++)
+    {
+        bhdr_t *head = NULL;
+        bhdr_t *prev = NULL;
+        bhdr_t *next = NULL;
+        IPTR size = 0;
+        IPTR flags = 0;
+        APTR pcs[16];
+        ULONG depth;
+
+        if (tlsf_valid_bucket(fl, sl))
+            head = tlsf->matrix[fl][sl];
+
+        if (block && tlsf_block_in_area(tlsf, block))
+        {
+            size = GET_SIZE(block);
+            flags = GET_FLAGS(block);
+            prev = block->free_node.prev;
+            next = block->free_node.next;
+        }
+
+        bug("[Kernel:TLSF] free-list corruption at %s: mhe=%p requirements=0x%08lx tlsf=%p bucket=%ld/%ld block=%p size=%lu flags=0x%lx head=%p prev=%p next=%p task=%p\n",
+            where, mhe,
+            mhe ? (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First : 0,
+            tlsf, (LONG)fl, (LONG)sl, block, size, flags,
+            head, prev, next, FindTask(NULL));
+
+        depth = KrnBacktraceFromFrame((APTR)__builtin_frame_address(0), pcs, 16);
+        KrnPrintBacktrace("[Kernel:TLSF] ", pcs, depth);
+    }
+
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+static BOOL tlsf_validate_remove(tlsf_t *tlsf, bhdr_t *block, int fl, int sl)
+{
+    bhdr_t *head;
+    bhdr_t *prev;
+    bhdr_t *next;
+    int expected_fl;
+    int expected_sl;
+
+    if (!tlsf_valid_bucket(fl, sl) || !tlsf_block_in_area(tlsf, block))
+        return FALSE;
+
+    if (!FREE_BLOCK(block))
+        return FALSE;
+
+    MAPPING_INSERT(GET_SIZE(block), &expected_fl, &expected_sl);
+    if (expected_fl != fl || expected_sl != sl)
+        return FALSE;
+
+    head = tlsf->matrix[fl][sl];
+    if (!head || !tlsf_block_in_area(tlsf, head) || !FREE_BLOCK(head))
+        return FALSE;
+
+    if (head->free_node.prev)
+        return FALSE;
+
+    prev = block->free_node.prev;
+    next = block->free_node.next;
+
+    if (prev)
+    {
+        if (!tlsf_block_in_area(tlsf, prev) || prev->free_node.next != block)
+            return FALSE;
+    }
+    else if (head != block)
+        return FALSE;
+
+    if (next && (!tlsf_block_in_area(tlsf, next) || next->free_node.prev != block))
+        return FALSE;
+
+    return TRUE;
+}
+
+static BOOL tlsf_validate_insert(tlsf_t *tlsf, bhdr_t *block, int fl, int sl)
+{
+    bhdr_t *head;
+
+    if (!tlsf_valid_bucket(fl, sl) || !tlsf_block_in_area(tlsf, block))
+        return FALSE;
+
+    if (!FREE_BLOCK(block))
+        return FALSE;
+
+    head = tlsf->matrix[fl][sl];
+    if (head && (!tlsf_block_in_area(tlsf, head) || !FREE_BLOCK(head) || head->free_node.prev))
+        return FALSE;
+
+    return TRUE;
+}
+
+static inline __attribute__((always_inline)) void REMOVE_HEADER(
+    struct MemHeaderExt *mhe, tlsf_t *tlsf, bhdr_t *b, int fl, int sl)
+{
+    if (unlikely(!tlsf_validate_remove(tlsf, b, fl, sl)))
+        tlsf_fail_corruption(mhe, tlsf, "REMOVE_HEADER", b, fl, sl);
+
     if (b->free_node.next)
         b->free_node.next->free_node.prev = b->free_node.prev;
     if (b->free_node.prev)
@@ -321,11 +449,15 @@ static inline __attribute__((always_inline)) void REMOVE_HEADER(tlsf_t *tlsf, bh
     }
 }
 
-static inline __attribute__((always_inline)) void INSERT_FREE_BLOCK(tlsf_t *tlsf, bhdr_t *b)
+static inline __attribute__((always_inline)) void INSERT_FREE_BLOCK(
+    struct MemHeaderExt *mhe, tlsf_t *tlsf, bhdr_t *b)
 {
     int fl, sl;
 
     MAPPING_INSERT(GET_SIZE(b), &fl, &sl);
+
+    if (unlikely(!tlsf_validate_insert(tlsf, b, fl, sl)))
+        tlsf_fail_corruption(mhe, tlsf, "INSERT_FREE_BLOCK", b, fl, sl);
 
     b->free_node.prev = NULL;
     b->free_node.next = tlsf->matrix[fl][sl];
@@ -412,7 +544,7 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     bhdr_t *next = GET_NEXT_BHDR(b, GET_SIZE(b));
 
     /* Remove the found block from the free list */
-    REMOVE_HEADER(tlsf, b, fl, sl);
+    REMOVE_HEADER(mhe, tlsf, b, fl, sl);
 
     /* Is this block larger then requested? Try to split it then */
     if (likely(GET_SIZE(b) > (size + ROUNDUP(sizeof(hdr_t)))))
@@ -435,7 +567,7 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 
         D(nbug("[Kernel:TLSF] %s: block split, %ld bytes remaining\n", __PRETTY_FUNCTION__, GET_SIZE(sb)));
         /* Free block is inserted to free list */
-        INSERT_FREE_BLOCK(tlsf, sb);
+        INSERT_FREE_BLOCK(mhe, tlsf, sb);
     }
     else
     {
@@ -470,7 +602,8 @@ static inline __attribute__((always_inline)) void MERGE(bhdr_t *b1, bhdr_t *b2)
     SET_SIZE(b1, GET_SIZE(b1) + GET_SIZE(b2) + ROUNDUP(sizeof(hdr_t)));
 }
 
-static inline __attribute__((always_inline)) bhdr_t * MERGE_PREV(tlsf_t *tlsf, bhdr_t *block)
+static inline __attribute__((always_inline)) bhdr_t * MERGE_PREV(
+    struct MemHeaderExt *mhe, tlsf_t *tlsf, bhdr_t *block)
 {
     /* Is previous block free? */
     if (FREE_PREV_BLOCK(block))
@@ -482,7 +615,7 @@ static inline __attribute__((always_inline)) bhdr_t * MERGE_PREV(tlsf_t *tlsf, b
         MAPPING_INSERT(GET_SIZE(prev), &fl, &sl);
 
         /* Do remove the header from the list */
-        REMOVE_HEADER(tlsf, prev, fl, sl);
+        REMOVE_HEADER(mhe, tlsf, prev, fl, sl);
 
         /* Merge */
         MERGE(prev, block);
@@ -493,7 +626,8 @@ static inline __attribute__((always_inline)) bhdr_t * MERGE_PREV(tlsf_t *tlsf, b
         return block;
 }
 
-static inline __attribute__((always_inline)) bhdr_t * MERGE_NEXT(tlsf_t *tlsf, bhdr_t *block)
+static inline __attribute__((always_inline)) bhdr_t * MERGE_NEXT(
+    struct MemHeaderExt *mhe, tlsf_t *tlsf, bhdr_t *block)
 {
     bhdr_t *next = GET_NEXT_BHDR(block, GET_SIZE(block));
 
@@ -506,7 +640,7 @@ static inline __attribute__((always_inline)) bhdr_t * MERGE_NEXT(tlsf_t *tlsf, b
         MAPPING_INSERT(GET_SIZE(next), &fl, &sl);
 
         /* Remove the header from the list */
-        REMOVE_HEADER(tlsf, next, fl, sl);
+        REMOVE_HEADER(mhe, tlsf, next, fl, sl);
 
         /* merge blocks */
         MERGE(block, next);
@@ -610,12 +744,12 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
                 SET_FREE_PREV_BLOCK(aligned_bhdr);
                 SET_FREE_BLOCK(b);
 
-                b = MERGE_PREV(tlsf, b);
+                b = MERGE_PREV(mhe, tlsf, b);
 
                 D(nbug("[Kernel:TLSF] %s: block @%p, b->next %p\n", __PRETTY_FUNCTION__, b, GET_NEXT_BHDR(b, GET_SIZE(b))));
 
                 /* Insert free block into the proper list */
-                INSERT_FREE_BLOCK(tlsf, b);
+                INSERT_FREE_BLOCK(mhe, tlsf, b);
             }
 
             ptr = &aligned_bhdr->mem[0];
@@ -636,9 +770,9 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
             next->header.prev = b1;
             SET_FREE_PREV_BLOCK(next);
 
-            b1 = MERGE_NEXT(tlsf, b1);
+            b1 = MERGE_NEXT(mhe, tlsf, b1);
 
-            INSERT_FREE_BLOCK(tlsf, b1);
+            INSERT_FREE_BLOCK(mhe, tlsf, b1);
         }
     }
 
@@ -676,14 +810,11 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
     if (sem_protected)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
-    /* Double-free detection (after semaphore for SMP safety) */
-    if (FREE_BLOCK(fb))
-    {
-        D(nbug("[Kernel:TLSF] DOUBLE FREE! ptr=%p size=%llu\n", ptr, (unsigned long long)GET_SIZE(fb)));
-        if (sem_protected)
-            ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
-        return;
-    }
+    if (unlikely(!tlsf_block_in_area(tlsf, fb)))
+        tlsf_fail_corruption(mhe, tlsf, "FREE outside TLSF area", fb, -1, -1);
+
+    if (unlikely(FREE_BLOCK(fb)))
+        tlsf_fail_corruption(mhe, tlsf, "double free", fb, -1, -1);
 
     /* Mark block as free */
     SET_FREE_BLOCK(fb);
@@ -692,8 +823,8 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
     tlsf->free_size += GET_SIZE(fb);
 
     /* Try to merge with previous and next blocks (if free) */
-    fb = MERGE_PREV(tlsf, fb);
-    fb = MERGE_NEXT(tlsf, fb);
+    fb = MERGE_PREV(mhe, tlsf, fb);
+    fb = MERGE_NEXT(mhe, tlsf, fb);
 
     /* Tell next block that previous one is free. Also update the prev link in case it changed */
     next = GET_NEXT_BHDR(fb, GET_SIZE(fb));
@@ -707,7 +838,7 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
     else
     {
         /* Insert free block into the proper list */
-        INSERT_FREE_BLOCK(tlsf, fb);
+        INSERT_FREE_BLOCK(mhe, tlsf, fb);
     }
 
     if (sem_protected)
@@ -769,7 +900,7 @@ void * tlsf_realloc(struct MemHeaderExt *mhe, APTR ptr, IPTR new_size)
         tlsf->free_size += GET_SIZE(b1);
 
         /* Try to merge with next block */
-        b1 = MERGE_NEXT(tlsf, b1);
+        b1 = MERGE_NEXT(mhe, tlsf, b1);
 
         /* Tell next block that previous one is free. Also update the prev link in case it changed */
         bnext = GET_NEXT_BHDR(b1, GET_SIZE(b1));
@@ -777,7 +908,7 @@ void * tlsf_realloc(struct MemHeaderExt *mhe, APTR ptr, IPTR new_size)
         bnext->header.prev = b1;
 
         /* Insert free block into the proper list */
-        INSERT_FREE_BLOCK(tlsf, b1);
+        INSERT_FREE_BLOCK(mhe, tlsf, b1);
     }
     else
     {
@@ -789,7 +920,7 @@ void * tlsf_realloc(struct MemHeaderExt *mhe, APTR ptr, IPTR new_size)
 
             MAPPING_INSERT(GET_SIZE(bnext), &fl, &sl);
 
-            REMOVE_HEADER(tlsf, bnext, fl, sl);
+            REMOVE_HEADER(mhe, tlsf, bnext, fl, sl);
 
             if (rest_size > ROUNDUP(sizeof(hdr_t)))
             {
@@ -806,7 +937,7 @@ void * tlsf_realloc(struct MemHeaderExt *mhe, APTR ptr, IPTR new_size)
                 bnext->header.prev = b1;
                 SET_FREE_PREV_BLOCK(bnext);
 
-                INSERT_FREE_BLOCK(tlsf, b1);
+                INSERT_FREE_BLOCK(mhe, tlsf, b1);
             }
             else
             {
@@ -942,7 +1073,7 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
 
                         /* Insert b0 to free list */
                         MAPPING_INSERT(GET_SIZE(b0), &fl, &sl);
-                        INSERT_FREE_BLOCK(tlsf, b0);
+                        INSERT_FREE_BLOCK(mhe, tlsf, b0);
                     }
 
                     /* Is it necessary to split the requested region at the end? */
@@ -966,7 +1097,7 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
 
                         /* Insert newly created block to free list */
                         MAPPING_INSERT(GET_SIZE(b2), &fl, &sl);
-                        INSERT_FREE_BLOCK(tlsf, b2);
+                        INSERT_FREE_BLOCK(mhe, tlsf, b2);
                     }
 
                     tlsf->free_size -= GET_SIZE(breg);

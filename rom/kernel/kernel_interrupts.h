@@ -1,7 +1,7 @@
 #ifndef KERNEL_INTERRUPTS_H
 #define KERNEL_INTERRUPTS_H
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,6 +30,6 @@ enum intr_types
 
 /* Functions to be called by machine-specific code */
 int krnRunExceptionHandlers(struct KernelBase *, uint8_t, void *); /* Run user-supplied exception handlers */
-void krnRunIRQHandlers(struct KernelBase *, uint8_t);		   /* Run user-supplied IRQ handlers       */
+void krnRunIRQHandlers(struct KernelBase *, UWORD);		   /* Run user-supplied IRQ handlers       */
 
 #endif /* !KERNEL_INTERRUPTS_H */

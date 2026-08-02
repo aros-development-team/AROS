@@ -158,6 +158,17 @@ core_LeaveInterrupt:
     mov     %ax, %fs
     movq    reg_gs(%rdi), %rax
     mov     %ax, %gs
+    // The FS selector write above cleared IA32_FS_BASE. Host-toolchain
+    // code (gcc-15 libstdc++ statics in v8.library etc.) reads the
+    // stack-protector canary at %fs:0x28; re-arm FS base with the
+    // shared kernel canary block so those reads resolve.
+    movq    __fs_canary_base(%rip), %rax
+    testq   %rax, %rax
+    jz      noSegments
+    movq    %rax, %rdx
+    shrq    $32, %rdx
+    movl    $0xC0000100, %ecx   // IA32_FS_BASE
+    wrmsr
 noSegments:
     movq    %rdi, %rsp          // Load context pointer into SP, we will pop everything
     popq    %rax                // These were flags, just remove them
