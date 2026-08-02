@@ -1,12 +1,20 @@
 #ifndef HARDWARE_XHCI_H
 #define HARDWARE_XHCI_H
 /*
-    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
  
     Desc: xHCI USB Controllers specific definitions
 */
 
 #include <exec/types.h>
+
+/*
+ * Every field below sits at a naturally aligned offset already, so the
+ * packing changes no layout - but on its own it tells the compiler to
+ * assume nothing, and a strict alignment target then splits each access
+ * into bytes. A register written a byte at a time is not written at all.
+ */
+#define __xhci_hw                               __packed __attribute__((aligned(4)))
 
 #define ALIGN_XHCI_16                           16
 #define ALIGN_XHCI_32                           32
@@ -34,7 +42,7 @@ struct xhci_address {
             ULONG               addr_hi;
         };
     };
-}  __packed;
+}  __xhci_hw;
 
 
 /*
@@ -54,7 +62,7 @@ struct xhci_hccapr {
     ULONG                       dboff;                                      // (L) Doorbell Offset
     ULONG                       rrsoff;                                     // (L) Runtime Register Space Offset
     ULONG                       hccparams2;                                 // (L) Capability Params 2
-}  __packed;
+}  __xhci_hw;
 
 #define XHCIB_HCCPARAMS1_AC64                   0
 #define XHCIF_HCCPARAMS1_AC64                   (1 << XHCIB_HCCPARAMS1_AC64)
@@ -91,7 +99,7 @@ struct xhci_hcopr {
     // Device Context Base Address Array Pointer
     struct xhci_address         dcbaap;
     ULONG                       config;
-}  __packed;
+}  __xhci_hw;
 
 #define XHCIB_USBCMD_RS                         0
 #define XHCIF_USBCMD_RS                         (1 << XHCIB_USBCMD_RS)
@@ -139,7 +147,7 @@ struct xhci_hcopr {
 struct xhci_dbr
 {
     ULONG                       db;
-}  __packed;
+}  __xhci_hw;
 
 /*
  * Runtime Register Space
@@ -147,7 +155,7 @@ struct xhci_dbr
 struct xhci_rrs
 {
     ULONG                       mfindex;
-}  __packed;
+}  __xhci_hw;
 
 /*
  * Port Registers
@@ -161,7 +169,7 @@ struct xhci_pr
     ULONG                       portpmsc;
     ULONG                       portli;
     ULONG                       porthlpmc;
-}  __packed;
+}  __xhci_hw;
 
 #define XHCIB_PR_PORTSC_CCS                     0
 #define XHCIF_PR_PORTSC_CCS                     (1 << XHCIB_PR_PORTSC_CCS)
@@ -230,7 +238,7 @@ struct xhci_ir
     // Command Ring Control Register
     struct xhci_address         erstba;
     struct xhci_address         erdp;
-}  __packed;
+}  __xhci_hw;
 
 #define XHCIB_IR_IMAN_IP                        0
 #define XHCIF_IR_IMAN_IP                        (1 << XHCIB_IR_IMAN_IP)
@@ -297,7 +305,7 @@ struct xhci_trb
     struct xhci_address         dbp;
     ULONG                       tparams;
     ULONG                       flags;
-}  __packed;
+}  __xhci_hw;
 
 #define TRBB_FLAG_C                             0
 #define TRBF_FLAG_C                             (1 << TRBB_FLAG_C)
@@ -441,7 +449,7 @@ struct xhci_ce
     struct xhci_address         dbp;
     ULONG                       cparams;
     ULONG                       flags;
-}  __packed;
+}  __xhci_hw;
 
 /* TRB Completion Codes */
 enum {
@@ -500,7 +508,7 @@ struct xhci_slot
 {
     ULONG                       ctx[4];
     ULONG                       rsvd1[4];
-}  __packed;
+}  __xhci_hw;
 
 
 #define SLOTS_CTX_SPEED         20
@@ -549,7 +557,7 @@ struct xhci_ep
     struct xhci_address         deq;
     ULONG                       length;
     ULONG                       rsvd1[3];
-}  __packed;
+}  __xhci_hw;
 
 #define EPS_CTX_CERR            0   /* starting bit */
 #define EP_CTX_CERR_MASK        0x3 /* value 3 => 3 retries */
@@ -574,13 +582,13 @@ struct xhci_inctx
     ULONG                       dcf;
     ULONG                       acf;
     ULONG                       rsvd1[6];
-}  __packed;
+}  __xhci_hw;
 
 /* event ring segment */
 struct xhci_er_seg {
     struct xhci_address         ptr;
     ULONG                       size;
     ULONG                       rsvd1;
-} __packed;
+} __xhci_hw;
 
 #endif /* HARDWARE_XHCI_H */
