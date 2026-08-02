@@ -1,5 +1,5 @@
 /*
-    copyright © 1995-2017, the aros development team. all rights reserved.
+    copyright (C) 1995-2026, the aros development team. all rights reserved.
     $id$
 
     desc: m68k-amiga IRQ handling

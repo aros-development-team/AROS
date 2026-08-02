@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2024, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
 */
 
 #define INTUITION_NO_INLINE_STDARG

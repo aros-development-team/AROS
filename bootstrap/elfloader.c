@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2006-2023 The AROS Development Team. All rights reserved.
+ Copyright (C) 2006-2026 The AROS Development Team. All rights reserved.
  
  Desc: ELF loader extracted from our internal_load_seg_elf in dos.library.
  */

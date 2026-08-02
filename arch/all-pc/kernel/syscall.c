@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <asm/cpu.h>

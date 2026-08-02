@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
 
     Desc: RISC-V CPU context parsing routines.
 */

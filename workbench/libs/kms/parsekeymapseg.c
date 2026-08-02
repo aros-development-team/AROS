@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 
     Desc:
         Convert 68K hunk-format keymap seglists to native format.

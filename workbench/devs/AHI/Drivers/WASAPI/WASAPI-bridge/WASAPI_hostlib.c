@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2022-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>

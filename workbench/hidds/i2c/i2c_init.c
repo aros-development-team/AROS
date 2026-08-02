@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/symbolsets.h>

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <inttypes.h>

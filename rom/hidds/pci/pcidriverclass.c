@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: Base PCI driver class
 

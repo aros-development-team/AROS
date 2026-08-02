@@ -1,6 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
-     Copyright (C) 2025 The AROS Dev Team
+     Copyright (C) 2025-2026 The AROS Dev Team
 
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public

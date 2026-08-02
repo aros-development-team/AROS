@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025,
+    Copyright (C) 2025-2026,
     The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>

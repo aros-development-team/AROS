@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 
     Desc: Hellenic (Greek) PC105 Keymap
 */

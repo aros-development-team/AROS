@@ -2,7 +2,7 @@
  *----------------------------------------------------------------------------
  *                         cdceth class for poseidon
  *----------------------------------------------------------------------------
- *                   Copyright (C) 2025, The AROS Development Team.
+ *                   Copyright (C) 2025-2026, The AROS Development Team.
  */
 
 #include "debug.h"
@@ -1937,7 +1937,7 @@ AROS_UFH0(void, nGUITask)
     ncp->ncp_App = ApplicationObject,
         MUIA_Application_Title      , (IPTR)libname,
         MUIA_Application_Version    , (IPTR)VERSION_STRING,
-        MUIA_Application_Copyright  , (IPTR)"2025 The AROS Development Team.",
+        MUIA_Application_Copyright  , (IPTR)"2025-2026 The AROS Development Team.",
         MUIA_Application_Author     , (IPTR)"The AROS Development Team",
         MUIA_Application_Description, (IPTR)"Settings for the cdceth.class",
         MUIA_Application_Base       , (IPTR)"CDCETH",

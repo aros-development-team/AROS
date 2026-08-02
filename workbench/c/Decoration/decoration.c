@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2026, The AROS Development Team.
+    Copyright (C)  1995-2026, The AROS Development Team.
 */
 
 /******************************************************************************

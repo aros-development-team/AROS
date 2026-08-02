@@ -1,7 +1,7 @@
 /*
 **
 **	sound.datatype v41
-**	© 2025-2026 The AROS Dev Team.
+**	(C) 2025-2026 The AROS Dev Team.
 **	© 1998-2004 by Stephan Rupprecht
 **	all rights reserved
 **

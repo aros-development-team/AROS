@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2024, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <signal.h>

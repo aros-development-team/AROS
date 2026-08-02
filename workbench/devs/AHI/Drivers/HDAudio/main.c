@@ -6,7 +6,7 @@ Software distributed under the License is distributed on an "AS IS" basis, WITHO
 ANY KIND, either express or implied. See the License for the specific language governing rights and
 limitations under the License.
 
-(C) Copyright 2010-2021 The AROS Dev Team
+(C) Copyright 2010-2026 The AROS Dev Team
 (C) Copyright 2009-2010 Stephen Jones.
 (C) Copyright xxxx-2009 Davy Wentzler.
 
@@ -487,7 +487,7 @@ IPTR _AHIsub_GetAttr(ULONG attribute,
         return (IPTR) "Davy Wentzler";
 
     case AHIDB_Copyright:
-        return (IPTR) "(C) 2010 Stephen Jones, (C) 2010-2017 The AROS Dev Team";
+        return (IPTR) "(C) 2010 Stephen Jones, (C) 2010-2026 The AROS Dev Team";
 
     case AHIDB_Version:
         return (IPTR) LibIDString;

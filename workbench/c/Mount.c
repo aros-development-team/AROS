@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2020 The AROS Development Team
+    (C) 1995-2026 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$

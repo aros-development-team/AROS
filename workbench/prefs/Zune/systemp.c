@@ -1,5 +1,5 @@
 /*
-    Copyright  2009-2026, The AROS Development Team. All rights reserved.
+    Copyright (C)  2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/isoascii.h>

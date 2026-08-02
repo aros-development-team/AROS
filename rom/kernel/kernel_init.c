@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Desc: Main kernel.resource initialization.
 */
