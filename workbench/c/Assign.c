@@ -491,41 +491,6 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
         BOOL cancel = FALSE;
         BOOL success = TRUE;
 
-        if (dismount)
-        {
-                struct MsgPort *dp;
-                struct Process *tp;
-
-                tp=(struct Process *)FindTask(NULL);
-                tp->pr_WindowPtr = (APTR)-1;
-                dp = DeviceProc(name);
-                DEBUG_ASSIGN(Printf("doassign: dp <%08X>\n",dp));
-                if (dp)
-                {
-                        struct InfoData did;
-                        success = DoPkt(dp,ACTION_DISK_INFO,(SIPTR)MKBADDR(&did),0,0,0,0);
-                        if (!(success) || !(did.id_InUse))
-                        {
-                                success = DoPkt(dp,ACTION_INHIBIT,DOSTRUE,0,0,0,0);
-                                ioerr = IoErr();
-                                if (success)
-                                {
-                                        success = DoPkt(dp,ACTION_DIE,0,0,0,0,0);
-                                        ioerr = IoErr();
-                                        DEBUG_ASSIGN(Printf("doassign: ACTION_DIE returned %ld\n", success));
-                                        if (!(success) && (ioerr != RETURN_OK))
-                                        {
-                                               DoPkt(dp,ACTION_INHIBIT,DOSFALSE,0,0,0,0); 
-                                        }
-                                }
-                        }
-                        else
-                        {
-                                ioerr = ERROR_OBJECT_IN_USE;
-                        }
-                }
-        }
-
         colon = strchr(name, ':');
 
         *colon = '\0';        /* Remove trailing colon; name[] is changed! */
@@ -538,29 +503,34 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 
         if (dismount)
         {
-                if ((!success) && (ioerr == ERROR_ACTION_NOT_KNOWN))
+                struct DosList *dl;
+                struct DosList *fdl;
+
+                /* DISMOUNT only takes the entry out of the list, and leaves any
+                 * handler running: stopping one is a separate operation, so
+                 * that a node can be dismounted without waking its handler
+                 * just to ask it to go away.
+                 */
+                DEBUG_ASSIGN(PutStr("Removing device node\n"));
+                dl = LockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
+
+                fdl = FindDosEntry(dl, name, LDF_VOLUMES | LDF_DEVICES);
+
+                if (fdl)
                 {
-                        struct DosList *dl;
-                        struct DosList *fdl;
-
-                        DEBUG_ASSIGN(PutStr("Removing device node\n"));
-                        dl = LockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
-
-                        fdl = FindDosEntry(dl, name, LDF_VOLUMES | LDF_DEVICES);
-
-                        /* Note the ! for conversion to boolean value */
-                        if (fdl)
-                        {
-                                success = RemDosEntry(fdl);
-                                if (success)
-                                        FreeDosEntry(fdl);
-                                else
-                                        ioerr = ERROR_OBJECT_IN_USE;
-                        } else
-                                ioerr = ERROR_OBJECT_NOT_FOUND;
-
-                        UnLockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
+                        success = RemDosEntry(fdl);
+                        if (success)
+                                FreeDosEntry(fdl);
+                        else
+                                ioerr = ERROR_OBJECT_IN_USE;
                 }
+                else
+                {
+                        success = FALSE;
+                        ioerr = ERROR_OBJECT_NOT_FOUND;
+                }
+
+                UnLockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
         }
         else
         {
