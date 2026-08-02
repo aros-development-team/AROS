@@ -1,0 +1,22 @@
+/* AUX0: -- a shell over a serial line.
+ *
+ * The handler hands the stream to the console handler, so this behaves like
+ * CON: rather than like SER:: reads return on a line instead of waiting for
+ * the buffer to fill, and Ctrl-C reaches the running command.
+ *
+ * Not called AUX: a file of that name cannot be checked out on Windows, which
+ * still reserves it as a device name.
+ *
+ * EHandler rather than Handler: only that form is given a FileSysStartupMsg,
+ * so with a plain Handler the Device and Unit below would be parsed and then
+ * discarded. Further units are further mountlists, differing only in Unit.
+ */
+
+EHandler  = L:aux-handler
+Priority  = 5
+StackSize = 4096  /* con-handler runs on this stack */
+GlobVec   = -1
+Device    = serial.device
+Unit      = 0
+Baud      = 115200
+Control   = "8N1"
