@@ -225,10 +225,14 @@ static int usb2otg_endpoint_in_flight(struct USB2OTGUnit *otg_Unit,
 }
 
 /*
- * 1 if another async split is already active on the same TT
- * (SplitHubAddr+Port). Serializes async SSPLITs so two LS/FS devices
- * don't over-subscribe TT budget (NYET storm). Periodic candidates
- * bypass (USB 2.0 §11.18 separate periodic budget).
+ * 1 if another split is already active on the same TT hub: at most
+ * one split transaction of any type in flight per hub. The core's
+ * split engine is fragile enough that overlapping split streams are
+ * not worth the throughput — a failure on one of them takes the
+ * channel down (see usb2otg_exorcise_channel), and cross-device
+ * damage on a shared hub has been observed. Match on SplitHubAddr
+ * alone rather than hub+port: the hubs in play here are single-TT,
+ * so all their ports share one transaction translator.
  */
 static int usb2otg_tt_in_flight(struct USB2OTGUnit *otg_Unit,
     struct IOUsbHWReq *candidate)
@@ -238,20 +242,12 @@ static int usb2otg_tt_in_flight(struct USB2OTGUnit *otg_Unit,
     if (!(candidate->iouh_Flags & UHFF_SPLITTRANS))
         return 0;
 
-    /* Periodic candidates have their own TT budget — don't block them. */
-    if (candidate->iouh_Req.io_Command == UHCMD_INTXFER ||
-        candidate->iouh_Req.io_Command == UHCMD_ISOXFER)
-        return 0;
-
     for (scan = 0; scan < 8; scan++)
     {
         struct IOUsbHWReq *active = otg_Unit->hu_Channel[scan].hc_Request;
         if (active != NULL && active != candidate &&
             (active->iouh_Flags & UHFF_SPLITTRANS) &&
-            active->iouh_SplitHubAddr == candidate->iouh_SplitHubAddr &&
-            active->iouh_SplitHubPort == candidate->iouh_SplitHubPort &&
-            (active->iouh_Req.io_Command == UHCMD_CONTROLXFER ||
-             active->iouh_Req.io_Command == UHCMD_BULKXFER))
+            active->iouh_SplitHubAddr == candidate->iouh_SplitHubAddr)
         {
             return 1;
         }
