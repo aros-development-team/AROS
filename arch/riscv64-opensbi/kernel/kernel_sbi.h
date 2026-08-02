@@ -16,6 +16,11 @@
 #define SBI_EXT_HSM             0x48534D
 #define SBI_EXT_SRST            0x53525354
 #define SBI_EXT_DBCN            0x4442434E
+#define SBI_EXT_RFENCE          0x52464E43
+#define SBI_EXT_LEGACY_FENCE_I  0x05
+
+/* SBI_EXT_RFENCE function IDs */
+#define SBI_RFENCE_REMOTE_FENCE_I   0
 
 /* SBI_EXT_BASE function IDs */
 #define SBI_BASE_GET_SPEC_VERSION   0
@@ -124,6 +129,35 @@ static inline void sbi_set_timer(unsigned long stime_value)
 static inline void sbi_system_reset(unsigned long type, unsigned long reason)
 {
     sbi_ecall(SBI_EXT_SRST, SBI_SRST_SYSTEM_RESET, type, reason, 0, 0, 0, 0);
+}
+
+/*
+ * Make stores visible to instruction fetch, on every hart rather than
+ * only the one asking. This needs no ISA extension of ours, which is
+ * why it can be reached on a machine whose profile leaves Zifencei out.
+ *
+ * RFENCE is the v0.2 form; the v0.1 call it replaced is mandatory and
+ * still answered everywhere, so one of the two is always present.
+ */
+static inline int sbi_have_remote_fence_i(void)
+{
+    return (sbi_probe_extension(SBI_EXT_RFENCE) != 0) ||
+           (sbi_probe_extension(SBI_EXT_LEGACY_FENCE_I) != 0);
+}
+
+static inline void sbi_remote_fence_i(void)
+{
+    if (sbi_probe_extension(SBI_EXT_RFENCE))
+    {
+        /* mask 0 with base -1 addresses every hart */
+        sbi_ecall(SBI_EXT_RFENCE, SBI_RFENCE_REMOTE_FENCE_I,
+                  0, (unsigned long)-1, 0, 0, 0, 0);
+    }
+    else
+    {
+        /* v0.1 took a pointer to the mask; NULL means every hart */
+        sbi_ecall(SBI_EXT_LEGACY_FENCE_I, 0, 0, 0, 0, 0, 0, 0);
+    }
 }
 
 #endif /* KERNEL_SBI_H */

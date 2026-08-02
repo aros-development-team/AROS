@@ -10598,7 +10598,7 @@ case "$target_cpu" in
         ;;
     *riscv64*)
         if test "$gcc_default_cpu" = ""; then
-            gcc_default_cpu="rva22u64_zifencei"
+            gcc_default_cpu="rva22u64"
         fi
         if test "$gcc_default_mode" = ""; then
             gcc_default_mode="lp64d"
@@ -12276,6 +12276,18 @@ if test "$use_binutils_version" = ""; then
 else
     target_binutils_version="$use_binutils_version"
 fi
+riscv_min_gcc="16.1.0"
+riscv_min_binutils="2.47"
+case "$aros_target_cpu" in
+    riscv*)
+        if test "$(printf '%s\n' "$riscv_min_binutils" "$target_binutils_version" | sort -V | head -n1)" != "$riscv_min_binutils" ; then
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: $aros_target_cpu needs binutils $riscv_min_binutils, raising it from $target_binutils_version" >&5
+printf "%s\n" "$as_me: $aros_target_cpu needs binutils $riscv_min_binutils, raising it from $target_binutils_version" >&6;}
+            target_binutils_version="$riscv_min_binutils"
+        fi
+        ;;
+esac
+
 if test "$aros_toolchain" = "gnu" ; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $target_binutils_version" >&5
 printf "%s\n" "$target_binutils_version" >&6; }
@@ -12345,6 +12357,16 @@ printf "%s\n" "$ax_cv_gcc_version" >&6; }
 else
     target_gcc_version="$use_gcc_version"
 fi
+case "$aros_target_cpu" in
+    riscv*)
+        if test "$(printf '%s\n' "$riscv_min_gcc" "$target_gcc_version" | sort -V | head -n1)" != "$riscv_min_gcc" ; then
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: $aros_target_cpu needs gcc $riscv_min_gcc, raising it from $target_gcc_version" >&5
+printf "%s\n" "$as_me: $aros_target_cpu needs gcc $riscv_min_gcc, raising it from $target_gcc_version" >&6;}
+            target_gcc_version="$riscv_min_gcc"
+        fi
+        ;;
+esac
+
 jpegxl_toolchainsupport=""
 if test "$aros_toolchain" = "gnu" ; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $target_gcc_version" >&5

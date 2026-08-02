@@ -10,10 +10,8 @@
 #include <proto/exec.h>
 
 /*
-    See rom/exec/cacheclearu.c for the documentation.
-
-    Everything, without being told what for - see cachecleare.c for why
-    fence.i is the whole of the work here.
+    See rom/exec/cacheclearu.c for the documentation, and cachecleare.c
+    for why this does so little and what replaces it.
 */
 
 AROS_LH0(void, CacheClearU,
@@ -22,7 +20,6 @@ AROS_LH0(void, CacheClearU,
     AROS_LIBFUNC_INIT
 
     __asm__ __volatile__ ("fence rw, rw" ::: "memory");
-    __asm__ __volatile__ ("fence.i" ::: "memory");
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearU */

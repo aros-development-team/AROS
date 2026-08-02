@@ -1373,7 +1373,7 @@ case "$target_cpu" in
         dnl The RVA22 application profile. RVA is only defined for 64bit,
         dnl so it is named here and not for riscv in general.
         if test "$gcc_default_cpu" = ""; then
-            gcc_default_cpu="rva22u64_zifencei"
+            gcc_default_cpu="rva22u64"
         fi
         if test "$gcc_default_mode" = ""; then
             gcc_default_mode="lp64d"
@@ -2600,6 +2600,20 @@ if test "$use_binutils_version" = ""; then
 else
     target_binutils_version="$use_binutils_version"
 fi
+dnl riscv support in the toolchain is still improving release to release,
+dnl and these are the oldest this target is built and tested against.
+dnl Anything older is raised to them rather than left to fail later.
+riscv_min_gcc="16.1.0"
+riscv_min_binutils="2.47"
+case "$aros_target_cpu" in
+    riscv*)
+        if test "$(printf '%s\n' "$riscv_min_binutils" "$target_binutils_version" | sort -V | head -n1)" != "$riscv_min_binutils" ; then
+            AC_MSG_NOTICE([$aros_target_cpu needs binutils $riscv_min_binutils, raising it from $target_binutils_version])
+            target_binutils_version="$riscv_min_binutils"
+        fi
+        ;;
+esac
+
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_RESULT($target_binutils_version)
 fi
@@ -2645,6 +2659,16 @@ if test "$use_gcc_version" = ""; then
 else
     target_gcc_version="$use_gcc_version"
 fi
+dnl As above - the oldest this target is built and tested against
+case "$aros_target_cpu" in
+    riscv*)
+        if test "$(printf '%s\n' "$riscv_min_gcc" "$target_gcc_version" | sort -V | head -n1)" != "$riscv_min_gcc" ; then
+            AC_MSG_NOTICE([$aros_target_cpu needs gcc $riscv_min_gcc, raising it from $target_gcc_version])
+            target_gcc_version="$riscv_min_gcc"
+        fi
+        ;;
+esac
+
 jpegxl_toolchainsupport=""
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_RESULT($target_gcc_version)

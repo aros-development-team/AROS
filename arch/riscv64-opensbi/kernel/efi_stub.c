@@ -310,6 +310,62 @@ static void mem_copy(void *dst, const void *src, u64 len)
         *d++ = *s++;
 }
 
+/*
+ * Just enough SBI to reconcile the caches. The firmware above us runs in
+ * S-mode like we do, so the SEE underneath is still reachable by ecall.
+ * Spelled out here rather than included, as the stub carries no headers
+ * of its own.
+ */
+#define SBI_EXT_BASE            0x10
+#define SBI_BASE_PROBE_EXT      3
+#define SBI_EXT_RFENCE          0x52464E43
+#define SBI_EXT_LEGACY_FENCE_I  0x05
+
+struct sbi_reply { long error; long value; };
+
+static struct sbi_reply sbi_call(u64 eid, u64 fid, u64 arg0, u64 arg1)
+{
+    register u64 r_a0 asm("a0") = arg0;
+    register u64 r_a1 asm("a1") = arg1;
+    register u64 r_a6 asm("a6") = fid;
+    register u64 r_a7 asm("a7") = eid;
+    struct sbi_reply reply;
+
+    asm volatile("ecall"
+                 : "+r"(r_a0), "+r"(r_a1)
+                 : "r"(r_a6), "r"(r_a7)
+                 : "memory");
+
+    reply.error = (long)r_a0;
+    reply.value = (long)r_a1;
+    return reply;
+}
+
+static long sbi_have(u64 eid)
+{
+    struct sbi_reply reply = sbi_call(SBI_EXT_BASE, SBI_BASE_PROBE_EXT,
+                                      eid, 0);
+    return (reply.error == 0) ? reply.value : 0;
+}
+
+/*
+ * Make what was just written visible to instruction fetch, before
+ * anything jumps into it.
+ *
+ * fence.i would do it locally, but it needs Zifencei, which the profile
+ * this is built for does not include - naming it here would stop the
+ * stub running on a machine without it. Ask the SEE instead: that needs
+ * no extension of ours and covers every hart. A machine offering
+ * neither has a fetcher that does not need telling.
+ */
+static void sync_icache(void)
+{
+    if (sbi_have(SBI_EXT_RFENCE))
+        sbi_call(SBI_EXT_RFENCE, 0, 0, (u64)-1);        /* every hart */
+    else if (sbi_have(SBI_EXT_LEGACY_FENCE_I))
+        sbi_call(SBI_EXT_LEGACY_FENCE_I, 0, 0, 0);
+}
+
 struct efi_memory_desc
 {
     u32 type;
@@ -682,11 +738,7 @@ efi_status_t efi_stub_entry(efi_handle_t image, struct efi_system_table *st)
     /* Copy ourselves into place and enter the kernel */
     mem_copy((void *)target, _start, imgsize);
 
-    /* Zifencei is optional in RVA22, so name it explicitly */
-    asm volatile(".option push\n"
-                 ".option arch, +zifencei\n"
-                 "fence.i\n"
-                 ".option pop" ::: "memory");
+    sync_icache();
 
     entry(hartid, fdt);
 

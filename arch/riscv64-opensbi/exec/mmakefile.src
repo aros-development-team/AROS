@@ -2,7 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 CFILES          := \
-        superstate
+        superstate cpu_init
 
 %set_archincludes mainmmake=kernel-exec maindir=rom/exec \
   modname=exec pri=2 arch=opensbi-riscv64 \
