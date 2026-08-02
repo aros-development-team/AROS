@@ -74,4 +74,3 @@ jobs:
           }
 
           Write-Host "All tracked filenames are Windows-compatible."
-```
