@@ -97,6 +97,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     struct vbe_controller *vci = NULL;
     UWORD vmode = 0x00FF;       /* Dummy mode number by default           */
     UBYTE palette = 0;          /* By default we don't know palette width */
+    IPTR fb_addr64 = 0;         /* Full 64-bit framebuffer address from KRN_FBAddr */
 
     D(bug("[BootLdr] Init\n"));
 
@@ -137,6 +138,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
         case KRN_VBEPaletteWidth:
             palette = tag->ti_Data;
             break;
+
+        case KRN_FBAddr:
+            fb_addr64 = tag->ti_Data;
+            break;
         }
     }
 
@@ -171,6 +176,11 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
             /* Framebuffer pointer is only valid for VBE v2 and better */
             if (version >= 0x0200)
                 BootLoaderBase->Vesa->FrameBuffer = (APTR)(IPTR)vmi->phys_base;
+
+            /* Override with full 64-bit address if bootstrap provided KRN_FBAddr.
+             * VBEModeInfo.phys_base is 32-bit and truncates on >4GB systems. */
+            if (fb_addr64)
+                BootLoaderBase->Vesa->FrameBuffer = (APTR)fb_addr64;
 
             if (version >= 0x0300)
             {
