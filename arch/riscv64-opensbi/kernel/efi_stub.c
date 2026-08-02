@@ -245,10 +245,11 @@ unsigned long __efi_regions[EFI_MAX_REGIONS][2]
 
 /*
  * The command line. UEFI passes one through the loaded image's
- * LoadOptions (as UTF-16); with only the SBI console available a
- * serial Shell is the sensible default.
+ * LoadOptions (as UTF-16), and aros.cmd on the boot volume overrides
+ * that. Empty by default, so dosboot takes its normal path rather than
+ * the emergency console.
  */
-char __efi_cmdline[128] __attribute__((section(".data"))) = "econsole";
+char __efi_cmdline[128] __attribute__((section(".data"))) = "";
 
 /* The real kernel entry, past the PE header (see startup.S) */
 extern void _start_kernel(unsigned long hartid, void *fdt);

@@ -88,8 +88,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-classes-massstorage \
 #MM     kernel-usb-classes-hid \
 #MM     kernel-usb-classes-bootkeyboard \
-#MM     kernel-usb-classes-bootmouse \
-#MM     kernel-hidd-gfx-headlessgfx
+#MM     kernel-usb-classes-bootmouse
 
 # econsole: emergency CON: over the SBI console, "econsole" bootarg
 BSP_LIBS      := aros oop utility dos dos64 graphics layers intuition keymap \
@@ -104,8 +103,6 @@ BSP_DEVS_ARCH := timer
 BSP_USBCLASSES := USB/hub USB/hid USB/bootkeyboard USB/bootmouse \
                   USB/massstorage
 BSP_HANDLERS  := econsole ram con afs cdrom sfs fat
-# headlessgfx installs to Storage/Drivers, so it cannot come from hidds=
-BSP_MISC      := $(AROSDIR)/Storage/Drivers/headlessgfx.hidd
 BSP_HIDDS     := hiddclass inputclass gfx keyboard mouse bus pci pcidt \
                  storage system power telemetry ipmi dwuart i2c dwi2c \
                  acpiacad acpibattery acpifan acpibutton acpithermal \
@@ -117,9 +114,60 @@ BSP_HIDDS     := hiddclass inputclass gfx keyboard mouse bus pci pcidt \
     res=$(BSP_RSRC) arch_res=$(BSP_RSRC_ARCH) \
     devs=$(BSP_DEVS) arch_devs=$(BSP_DEVS_ARCH) \
     handlers=$(BSP_HANDLERS) hidds=$(BSP_HIDDS) \
-    classes=$(BSP_USBCLASSES) misc=$(BSP_MISC)
+    classes=$(BSP_USBCLASSES)
 
-#MM- distfiles-opensbi-riscv64 : kernel-opensbi-riscv64 kernel-bsp-opensbi-riscv64
+#
+# Bootable layout.
+#
+# The UEFI stub opens aros-bsp.pkg and aros.cmd from the root of the
+# volume it was loaded from, so both live at the top of the tree next
+# to the usual AROS directories. A firmware that boots its default path
+# finds EFI/BOOT/BOOTRISCV64.EFI without being told; startup.nsh covers
+# being dropped at an EFI shell instead.
+#
+BOOTIMAGE       := $(OSGENDIR)/boot/Image
+EFI_BOOTDIR     := $(AROSDIR)/EFI/BOOT
+EFI_AROSDIR     := $(AROSDIR)/EFI/AROS
+BOOT_CMDLINE    :=
+
+BOOTFILES       := $(EFI_BOOTDIR)/BOOTRISCV64.EFI $(EFI_AROSDIR)/Image \
+                   $(AROSDIR)/aros-bsp.pkg $(AROSDIR)/aros.cmd \
+                   $(AROSDIR)/startup.nsh
+
+#MM- boot-opensbi-riscv64 : kernel-opensbi-riscv64 kernel-bsp-opensbi-riscv64
+
+#MM
+boot-opensbi-riscv64 : $(BOOTFILES)
+
+$(EFI_BOOTDIR)/BOOTRISCV64.EFI : $(BOOTIMAGE)
+	@$(ECHO) "Creating   $@"
+	%mkdirs_q $(EFI_BOOTDIR)
+	@$(CP) $< $@
+
+$(EFI_AROSDIR)/Image : $(BOOTIMAGE)
+	@$(ECHO) "Creating   $@"
+	%mkdirs_q $(EFI_AROSDIR)
+	@$(CP) $< $@
+
+$(AROSDIR)/aros-bsp.pkg : $(AROSARCHDIR)/aros-bsp.pkg
+	@$(ECHO) "Creating   $@"
+	@$(CP) $< $@
+
+$(AROSDIR)/aros.cmd :
+	@$(ECHO) "Creating   $@"
+	@$(ECHO) "$(BOOT_CMDLINE)" > $@
+
+$(AROSDIR)/startup.nsh :
+	@$(ECHO) "Creating   $@"
+	@$(ECHO) "$(strip BOOTRISCV64.EFI $(BOOT_CMDLINE))" > $@
+
+#MM- distfiles-opensbi-riscv64 : boot-opensbi-riscv64
 #MM- distfiles-opensbi-riscv64-quick : kernel-opensbi-riscv64-quick
+
+#MM
+distfiles-opensbi-riscv64 :
+	%mkdir_q dir="$(DISTDIR)"
+	@$(ECHO) Copying opensbi-riscv64 distfiles...
+	@$(CP) -R $(AROSDIR)/* $(DISTDIR)/
 
 %common

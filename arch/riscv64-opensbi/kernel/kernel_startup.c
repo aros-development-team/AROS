@@ -416,10 +416,9 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
     }
 
     /*
-     * A device tree need not carry a command line - some do not
-     * not. Fall back to the one the UEFI stub picked up from its load
-     * options, which defaults to "econsole" because the serial console
-     * is the only one we have.
+     * A device tree need not carry a command line, and most do not.
+     * Fall back to whatever the UEFI stub was given - its load options,
+     * or aros.cmd on the boot volume.
      */
     if (!fdtinfo.bootargs && __efi_cmdline[0])
     {
