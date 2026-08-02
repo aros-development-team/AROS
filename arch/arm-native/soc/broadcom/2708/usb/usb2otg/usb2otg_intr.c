@@ -976,6 +976,69 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
             }
 
         }
+
+        /*
+         * Rescue interrupt splits the core armed but never ran. The
+         * channel sits with CHENA set, no handshake in HCINT and
+         * nothing in HAINT, so there is no interrupt coming to end it.
+         * Requeue for the next interval as soon as the split has taken
+         * too long, rather than leaving the device's reports stalled
+         * until the watchdog notices 900 ms later.
+         */
+        {
+            int chan;
+
+            for (chan = CHAN_INT1; chan <= CHAN_INT_LAST; chan++)
+            {
+                struct USB2OTGChannel *hc = &USBUnit->hu_Channel[chan];
+                struct IOUsbHWReq *sreq = hc->hc_Request;
+                ULONG elapsed;
+
+                if (sreq == NULL || delayed_channel[chan] != 0)
+                    continue;
+                if (sreq->iouh_Req.io_Command != UHCMD_INTXFER ||
+                    !(sreq->iouh_Flags & UHFF_SPLITTRANS))
+                    continue;
+                if (hc->hc_SplitState == USB2OTG_SPLIT_IDLE)
+                    continue;
+
+                elapsed = (frnm_orig - hc->hc_SplitSSUframe) & 0x3fff;
+                if (elapsed < USB2OTG_SPLIT_INT_STALL_UFRAMES)
+                    continue;
+                /* A pending interrupt gets to finish the transfer. */
+                if (rd32le(USB2OTG_CHANNEL_REG(chan, INTR)) != 0)
+                    continue;
+                if (!(rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) &
+                      USB2OTG_HOSTCHAR_ENABLE))
+                    continue;
+
+                {
+                    static ULONG stall_count = 0;
+                    ULONG interval = usb2otg_clamp_interval(sreq->iouh_Interval);
+
+                    if (interval < 2)
+                        interval = 2;
+
+                    if (++stall_count <= 5 || (stall_count & 0xff) == 0)
+                        bug("[USB2OTG] SOF: int split stalled %lu uframes chan=%d dev=%d ep=%d, requeueing (#%lu)\n",
+                            (unsigned long)elapsed, chan,
+                            (int)sreq->iouh_DevAddr, (int)sreq->iouh_Endpoint,
+                            (unsigned long)stall_count);
+
+                    wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
+                    usb2otg_halt_channel_preserve_char(chan);
+                    hc->hc_SplitCSplitPending = 0;
+                    hc->hc_SplitState = USB2OTG_SPLIT_IDLE;
+                    hc->hc_CsplitRetry = 0;
+                    hc->hc_WatchdogCount = 0;
+                    sreq->iouh_DriverPrivate1 =
+                        (APTR)((frnm << 16) | ((frnm + interval) & 0x7ff));
+                    /* Helper re-checks the owner against the watchdog. */
+                    usb2otg_irq_finish_or_requeue(USBUnit, chan, sreq,
+                        &USBUnit->hu_IntXFerQueue, FALSE);
+                }
+            }
+        }
 }
 
 void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase)
@@ -1446,18 +1509,18 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
                                     req->iouh_DevAddr < 8)
                                     usb2otg_int_comp_count[req->iouh_DevAddr]++;
-                                if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
-                                    req->iouh_Actual > 0)
-                                {
-                                    static ULONG intc_count = 0;
-                                    intc_count++;
-                                    if (intc_count <= 10 || (intc_count & 0x3f) == 0)
-                                        bug("[USB2OTG:INTC] dev=%d ep=%d len=%lu (#%lu)\n",
-                                            (int)req->iouh_DevAddr,
-                                            (int)req->iouh_Endpoint,
-                                            (unsigned long)req->iouh_Actual,
-                                            (unsigned long)intc_count);
-                                }
+                                // if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
+                                //     req->iouh_Actual > 0)
+                                // {
+                                //     static ULONG intc_count = 0;
+                                //     intc_count++;
+                                //     if (intc_count <= 10 || (intc_count & 0x3f) == 0)
+                                //         bug("[USB2OTG:INTC] dev=%d ep=%d len=%lu (#%lu)\n",
+                                //             (int)req->iouh_DevAddr,
+                                //             (int)req->iouh_Endpoint,
+                                //             (unsigned long)req->iouh_Actual,
+                                //             (unsigned long)intc_count);
+                                // }
                             }
                         }
                         else if (intr & USB2OTG_INTRCHAN_AHBERROR)
