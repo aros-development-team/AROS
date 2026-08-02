@@ -1369,9 +1369,27 @@ case "$target_cpu" in
         ;;
     *powerpc*)
         ;;
-    *riscv*)
+    *riscv64*)
+        dnl The RVA22 application profile. RVA is only defined for 64bit,
+        dnl so it is named here and not for riscv in general.
+        if test "$gcc_default_cpu" = ""; then
+            gcc_default_cpu="rva22u64_zifencei"
+        fi
+        if test "$gcc_default_mode" = ""; then
+            gcc_default_mode="lp64d"
+        fi
         dnl medany (PC-relative) code model: medlow can not reach the
         dnl kernel link address at 0x80200000
+        riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE) -mcmodel=medany"
+        ;;
+    *riscv*)
+        dnl 32bit has no profile to name, so the extensions are spelled out
+        if test "$gcc_default_cpu" = ""; then
+            gcc_default_cpu="rv32imafdc"
+        fi
+        if test "$gcc_default_mode" = ""; then
+            gcc_default_mode="ilp32d"
+        fi
         riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE) -mcmodel=medany"
         ;;
 esac
@@ -2182,19 +2200,16 @@ case "$target_os" in
             aros_kernel_llvmwrapper=yes
         fi
         case "$target_cpu" in
+            dnl The ISA and ABI come from the cpu switch further up, so
+            dnl every riscv platform is built the same way
             *riscv64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="riscv64"
                 aros_object_format="riscv64elf_aros"
-                dnl Target the RVA22 application profile
-                gcc_default_cpu="rva22u64"
-                gcc_default_mode="lp64d"
                 ;;
             *riscv*)
                 aros_target_cpu="riscv"
                 aros_object_format="riscvelf_aros"
-                gcc_default_cpu="rv32imafdc"
-                gcc_default_mode="ilp32d"
                 ;;
             *)
                 AC_MSG_ERROR("Unsupported CPU '$target_cpu' for OpenSBI")

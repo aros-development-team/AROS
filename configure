@@ -10596,8 +10596,23 @@ case "$target_cpu" in
         ;;
     *powerpc*)
         ;;
-    *riscv*)
+    *riscv64*)
+        if test "$gcc_default_cpu" = ""; then
+            gcc_default_cpu="rva22u64_zifencei"
+        fi
+        if test "$gcc_default_mode" = ""; then
+            gcc_default_mode="lp64d"
+        fi
                         riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE) -mcmodel=medany"
+        ;;
+    *riscv*)
+        if test "$gcc_default_cpu" = ""; then
+            gcc_default_cpu="rv32imafdc"
+        fi
+        if test "$gcc_default_mode" = ""; then
+            gcc_default_mode="ilp32d"
+        fi
+        riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE) -mcmodel=medany"
         ;;
 esac
 
@@ -11394,14 +11409,10 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="riscv64"
                 aros_object_format="riscv64elf_aros"
-                                gcc_default_cpu="rva22u64"
-                gcc_default_mode="lp64d"
                 ;;
             *riscv*)
                 aros_target_cpu="riscv"
                 aros_object_format="riscvelf_aros"
-                gcc_default_cpu="rv32imafdc"
-                gcc_default_mode="ilp32d"
                 ;;
             *)
                 as_fn_error $? "\"Unsupported CPU '$target_cpu' for OpenSBI\"" "$LINENO" 5
