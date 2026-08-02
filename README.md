@@ -132,6 +132,17 @@
     <td style="text-align:center"> --- </td>
   </tr>
   <tr>
+    <td>opensbi-riscv64</td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+  </tr>
+  <tr>
     <td>linux-i386</td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=21&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-i386?branchName=master"></a>
