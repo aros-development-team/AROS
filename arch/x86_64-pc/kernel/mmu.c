@@ -13,6 +13,8 @@
 #define D(x)
 #define DMMU(x)
 
+#define MMU_SPLIT_PTE_PAGE_COUNT 32
+
 void core_InitMMU(struct CPUMMUConfig *MMU)
 {
     struct PML4E *PML4;
@@ -150,8 +152,8 @@ void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop, IPTR maptop)
      * need them.
      */
     MMU->mmu_PDEPageCount = (top + (1 << 21) - 1) >> 21;
-    if (MMU->mmu_PDEPageCount < 32768)      /* keep at least 64 GiB mapped */
-        MMU->mmu_PDEPageCount = 32768;
+    if (MMU->mmu_PDEPageCount < 65536)      /* keep at least 128 GiB mapped */
+        MMU->mmu_PDEPageCount = 65536;
     if (MMU->mmu_PDEPageCount > 262144)     /* cap at 512 GiB */
         MMU->mmu_PDEPageCount = 262144;
 
@@ -207,6 +209,13 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
         struct PDE2M *pde2 = (struct PDE2M *)pde;
         intptr_t base = ((IPTR)pde2[pde_off].base_low << 13) | ((IPTR)pde2[pde_off].base_high << 32);
         int i;
+
+        if (MMU->mmu_PDEPageUsed >= MMU_SPLIT_PTE_PAGE_COUNT)
+        {
+            bug("[Kernel] core_ProtPage: split PTE pool exhausted at 0x%p\n",
+                addr);
+            return;
+        }
 
         pte = &Pages4K[512 * MMU->mmu_PDEPageUsed++];
 
