@@ -465,7 +465,7 @@ int main(void)
 
           if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
           {
-            ShowFault(error, "ERROR");
+            ShowFault(error, "Mount");
 
             error = RETURN_FAIL;
           }
@@ -497,7 +497,7 @@ int main(void)
                 error=readmountfile(params, _WBenchMsg->sm_ArgList[i].wa_Name);
                 DEBUG_MOUNT(KPrintF("Mount: readmountfile returned %ld\n", error));
                 if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
-                  ShowFault(error, "ERROR");
+                  ShowFault(error, "Mount");
 
                 (void) CurrentDir(olddir);
               }
@@ -1898,10 +1898,12 @@ void ShowFault(LONG code, const char *s, ...)
         int l;
 
         AROS_SLOWSTACKFORMAT_PRE(s);
-        l = VSNPrintf(buf, NAMESTR_MAX - 2, s, (RAWARG)AROS_SLOWSTACKFORMAT_ARG(s));
+        VSNPrintf(buf, NAMESTR_MAX - 2, s, (RAWARG)AROS_SLOWSTACKFORMAT_ARG(s));
         AROS_SLOWSTACKFORMAT_POST(s);
 
-        Strlcpy(&buf[l], ": ", NAMESTR_MAX);
+        /* VSNPrintf() counts the terminator, so ask the string itself. */
+        l = strlen(buf);
+        Strlcpy(&buf[l], ": ", NAMESTR_MAX - l);
         l += 2;
         Fault(code, NULL, &buf[l], NAMESTR_MAX - l);
         if (buf[l] == 0)
