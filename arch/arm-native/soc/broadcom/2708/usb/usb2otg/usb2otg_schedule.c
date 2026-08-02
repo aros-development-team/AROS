@@ -1556,7 +1556,7 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
          * for the poisoning rationale.
          */
         int ctrl_chan = (req->iouh_Flags & UHFF_SPLITTRANS)
-                            ? CHAN_CTRL_SPLIT : CHAN_CTRL;
+                            ? otg_Unit->hu_CtrlSplitChan : CHAN_CTRL;
 
         /* Target channel quarantined — park the request for recovery. */
         if (otg_Unit->hu_DeadChannels & (1 << ctrl_chan))
@@ -1686,11 +1686,12 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
     {
         struct IOUsbHWReq *req = NULL;
 
-        /* Reserved for split control transfers. */
-        if (chan == CHAN_CTRL_SPLIT)
+        /* Reserved for split control transfers (rotates on burn). */
+        if (chan == otg_Unit->hu_CtrlSplitChan)
             continue;
 
-        if (otg_Unit->hu_DeadChannels & (1 << chan))
+        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels) &
+            (1 << chan))
             continue;
 
         /* If channel is in use unlock Enable() and continue checking, otherwise stay in Disable() state for a while */
