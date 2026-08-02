@@ -180,6 +180,10 @@ static int krnRelocOne(ULONG type, UBYTE *loc, IPTR val, IPTR place)
  * Load one relocatable ELF module. Returns TRUE on success; the loaded
  * range is accumulated into loaded_lo/loaded_hi for the romtag scan.
  */
+/* Address of the loaded module's first executable section - what a PC in
+   a crash dump has to be measured against */
+static IPTR mod_text;
+
 static int krnLoadModule(void *addr, const char *name)
 {
     struct elfheader *eh = addr;
@@ -203,6 +207,7 @@ static int krnLoadModule(void *addr, const char *name)
     }
 
     /* Place the allocatable sections */
+    mod_text = 0;
     for (i = 0; i < eh->shnum; i++)
     {
         sh = shdr(eh, i);
@@ -232,6 +237,8 @@ static int krnLoadModule(void *addr, const char *name)
             for (n = 0; n < sh->size; n++)
                 p[n] = src[n];
             sh->addr = (elf_ptr_t)(IPTR)p;
+            if ((sh->flags & SHF_EXECINSTR) && !mod_text)
+                mod_text = (IPTR)p;
         }
     }
 
@@ -399,15 +406,20 @@ int krnLoadPackage(void *pkg, IPTR pkgsize, IPTR memlow, IPTR memhigh,
 
         krnSBIPutStr("[elf] loading ");
         krnSBIPutStr(name);
-        krnSBIPutStr("\n");
 
         if (!krnLoadModule(data, name))
         {
+            krnSBIPutStr("\n");
             krnSBIPutStr("[elf] FAILED to load ");
             krnSBIPutStr(name);
             krnSBIPutStr("\n");
             return 0;
         }
+        /* Where it ended up, so an address in a crash dump can be
+           traced back to a module and an offset within it */
+        krnSBIPutStr(" .text @ ");
+        krnSBIPutHex(mod_text);
+        krnSBIPutStr("\n");
         count++;
     }
 

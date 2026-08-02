@@ -184,6 +184,12 @@ const struct econsole_file *econsole_file_of(BSTR bname, SIPTR *errcode)
         file++;
 
     D(bug("%s: bname=%b, name=%s, file=%s\n", __func__, bname, name, file));
+
+    /* "*" is the AmigaDOS name for the current console - the Shell
+       opens it for its own input/output */
+    if (file[0] == '*' && file[1] == '\0')
+        file = "";
+
     for (i = 0; i < ARRAY_SIZE(econsole_files); i++) {
         if (strcmp(econsole_files[i].ef_Name, file) == 0) {
             FreeMem(name, blen + 1);

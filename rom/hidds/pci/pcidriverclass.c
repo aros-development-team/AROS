@@ -196,7 +196,16 @@ APTR PCIDrv__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
 {
     APTR memory = AllocVec(msg->Size + 4096 + AROS_ALIGN(sizeof(APTR)), MEMF_31BIT|MEMF_CLEAR);
     IPTR diff;
-    
+
+    /*
+     * Without this the arithmetic below turns a failed allocation into
+     * a store through a small constant address. MEMF_31BIT cannot be
+     * satisfied at all on a machine whose RAM starts at or above 2GB,
+     * so drivers there fail here rather than in AllocVec().
+     */
+    if (!memory)
+        return NULL;
+
     diff = (IPTR)memory - (AROS_ROUNDUP2((IPTR)memory + sizeof(APTR), 4096));
     *((APTR*)((IPTR)memory - diff - sizeof(APTR))) = memory;
 

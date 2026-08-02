@@ -16,6 +16,13 @@ USER_INCLUDES += -I$(SRCDIR)/rom/battclock
 ifeq ($(ARCH),pc)
     USER_LDFLAGS := -lacpica
 endif
+ifeq ($(ARCH),opensbi)
+    # the RTC is described by the device tree, so the tree parser has to
+    # be linked in; it pulls in string functions, which a kickstart
+    # module must take from stdc.static. The bus itself is reached
+    # through the i2c HIDD, which needs nothing at link time.
+    USER_LDFLAGS := -static -lfdt
+endif
 
 #MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
 #MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)

@@ -35,14 +35,27 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size,
 /* The hart we were booted on (see kernel_intern.h) */
 unsigned long __boot_hartid;
 
+/* kernel.resource publishes the boot tags through KrnGetBootInfo() */
+extern struct TagItem *BootMsg;
+
+/* Set by the UEFI stub when it loaded the BSP package itself */
+extern unsigned long __efi_initrd_start, __efi_initrd_end;
+extern unsigned long __efi_mem_start, __efi_mem_size;
+extern unsigned long __efi_nregions, __efi_regions[][2];
+extern unsigned long __efi_systab;
+extern char __efi_cmdline[];
+
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
 
 /* Linker script symbols delimiting the kernel image */
 extern char __text_start[];
 extern char __kernel_end[];
 
-#define BOOTTAG_MAX 10
-static struct TagItem BootMsg[BOOTTAG_MAX];
+/* Lowest allocatable memory answers MEMF_CHIP requests */
+#define CHIPMEM_SIZE    (16 * 1024 * 1024)
+
+#define BOOTTAG_MAX 16
+static struct TagItem BootTags[BOOTTAG_MAX];
 
 /* "testsched" support: a second task signalling the boot task */
 static struct Task *bootTask;
@@ -178,9 +191,79 @@ static void krnSchedTest(void)
     FreeSignal(sigbit);
 }
 
+/*
+ * Is word present in the command line? Matched on whole words so that
+ * "dumpdt" does not also fire on "nodumpdt".
+ */
+static int krnArgMatch(const char *args, const char *word)
+{
+    const char *s;
+
+    for (s = args; *s; s++)
+    {
+        const char *a = s, *w = word;
+
+        if (s != args && s[-1] != ' ')
+            continue;
+        while (*w && *a == *w)
+        {
+            a++;
+            w++;
+        }
+        if (!*w && (!*a || *a == ' '))
+            return 1;
+    }
+    return 0;
+}
+
+/*
+ * Every romtag in a range, as exec's scanner will see it.
+ *
+ * Modules are relocated into place by kernel_elf.c, so a romtag is
+ * only found if its self-pointer was relocated correctly - and the
+ * scanner jumps forward by rt_EndSkip after each hit, so one bad value
+ * silently swallows the modules that follow. Printing what the same
+ * walk finds is the quickest way to tell a module that failed to
+ * initialise from one that was never looked at.
+ */
+static void krnDumpResidents(UWORD *lo, UWORD *hi)
+{
+    UWORD *ptr = lo;
+
+    krnSBIPutStr("--- residents ---\n");
+
+    while (ptr < hi)
+    {
+        struct Resident *res = (struct Resident *)ptr;
+
+        if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res)
+        {
+            krnSBIPutStr("  ");
+            krnSBIPutHex((unsigned long)res);
+            krnSBIPutStr(" pri ");
+            krnSBIPutDec((unsigned char)res->rt_Pri);
+            krnSBIPutStr(" flags ");
+            krnSBIPutHex32(res->rt_Flags);
+            krnSBIPutStr(" skip ");
+            krnSBIPutHex((unsigned long)res->rt_EndSkip);
+            krnSBIPutStr(" ");
+            krnSBIPutStr((const char *)res->rt_Name);
+            krnSBIPutStr("\n");
+
+            if ((IPTR)res->rt_EndSkip > (IPTR)ptr)
+                ptr = (UWORD *)res->rt_EndSkip - 2;
+            if ((IPTR)ptr & 1)
+                ptr = (UWORD *)((IPTR)ptr + 1);
+        }
+        ptr++;
+    }
+
+    krnSBIPutStr("--- end residents ---\n");
+}
+
 struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
 {
-    struct TagItem *tag = BootMsg;
+    struct TagItem *tag = BootTags;
 
     tag->ti_Tag  = KRN_KernelBase;
     tag->ti_Data = (IPTR)__text_start;
@@ -209,10 +292,18 @@ struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
         tag->ti_Data = (IPTR)info->bootargs;
         tag++;
     }
+    /* Booted through UEFI: efi.resource hands this to acpica.library,
+       which finds the ACPI root pointer in its configuration table */
+    if (__efi_systab)
+    {
+        tag->ti_Tag  = KRN_EFISystemTable;
+        tag->ti_Data = (IPTR)__efi_systab;
+        tag++;
+    }
     tag->ti_Tag  = TAG_DONE;
     tag->ti_Data = 0;
 
-    return BootMsg;
+    return BootTags;
 }
 
 void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
@@ -246,12 +337,40 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
         krnSBIPutStr("\ntimebase:  ");
         krnSBIPutDec(fdtinfo.tb_freq);
         krnSBIPutStr(" Hz\n");
+        if (fdtinfo.nregions > 1)
+        {
+            unsigned int r;
+            for (r = 0; r < fdtinfo.nregions; r++)
+            {
+                krnSBIPutStr("  bank:    ");
+                krnSBIPutHex(fdtinfo.regions[r].base);
+                krnSBIPutStr(" - ");
+                krnSBIPutHex(fdtinfo.regions[r].base + fdtinfo.regions[r].size);
+                krnSBIPutStr("\n");
+            }
+        }
         if (fdtinfo.bootargs)
         {
             krnSBIPutStr("bootargs:  ");
             krnSBIPutStr(fdtinfo.bootargs);
             krnSBIPutStr("\n");
         }
+    }
+    else if (__efi_mem_size)
+    {
+        /* Booted through UEFI on a machine described by ACPI rather
+           than a device tree - the stub handed us the memory map */
+        krnSBIPutStr("memory:    (from EFI) ");
+        krnSBIPutHex(__efi_mem_start);
+        krnSBIPutStr(" - ");
+        krnSBIPutHex(__efi_mem_start + __efi_mem_size);
+        krnSBIPutStr("\n");
+        fdtinfo.mem_base = __efi_mem_start;
+        fdtinfo.mem_size = __efi_mem_size;
+        fdtinfo.bootargs = __efi_cmdline;
+        fdtinfo.ncpus    = 1;
+        fdtinfo.tb_freq  = 10000000;    /* the common default */
+        fdtinfo.initrd_start = fdtinfo.initrd_end = 0;
     }
     else
     {
@@ -260,11 +379,116 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
         fdtinfo.mem_size = 128 << 20;
     }
 
+
+    /*
+     * On a UEFI boot the firmware's memory map is the authoritative
+     * description of RAM - the device tree handed over can describe
+     * less than is actually fitted. Take the
+     * EFI regions in preference when we have them.
+     */
+    if (__efi_nregions)
+    {
+        unsigned int r;
+
+        fdtinfo.nregions = 0;
+        for (r = 0; r < __efi_nregions && r < KRN_MAX_MEMREGIONS; r++)
+        {
+            fdtinfo.regions[r].base = __efi_regions[r][0];
+            fdtinfo.regions[r].size = __efi_regions[r][1];
+            fdtinfo.nregions++;
+            if (__efi_regions[r][1] > fdtinfo.mem_size)
+            {
+                fdtinfo.mem_base = __efi_regions[r][0];
+                fdtinfo.mem_size = __efi_regions[r][1];
+            }
+        }
+        krnSBIPutStr("memory:    (EFI map) ");
+        krnSBIPutDec(fdtinfo.nregions);
+        krnSBIPutStr(" region(s)\n");
+        for (r = 0; r < fdtinfo.nregions; r++)
+        {
+            krnSBIPutStr("  bank:    ");
+            krnSBIPutHex(fdtinfo.regions[r].base);
+            krnSBIPutStr(" - ");
+            krnSBIPutHex(fdtinfo.regions[r].base + fdtinfo.regions[r].size);
+            krnSBIPutStr("\n");
+        }
+    }
+
+    /*
+     * A device tree need not carry a command line - some do not
+     * not. Fall back to the one the UEFI stub picked up from its load
+     * options, which defaults to "econsole" because the serial console
+     * is the only one we have.
+     */
+    if (!fdtinfo.bootargs && __efi_cmdline[0])
+    {
+        fdtinfo.bootargs = __efi_cmdline;
+        krnSBIPutStr("bootargs:  ");
+        krnSBIPutStr(fdtinfo.bootargs);
+        krnSBIPutStr(" (default)\n");
+    }
+
+    /*
+     * The UEFI stub loads the package itself when no loader placed one
+     * for us. This has to be known before the MMU is set up, because
+     * the firmware can put it outside every region the device tree
+     * describes (it can land in a bank the device tree omits, while the
+     * device tree only reports memory up to 18GiB).
+     */
+    if (!fdtinfo.initrd_start && __efi_initrd_end > __efi_initrd_start)
+    {
+        fdtinfo.initrd_start = __efi_initrd_start;
+        fdtinfo.initrd_end   = __efi_initrd_end;
+    }
+
+    /*
+     * "dumpdt" / "dumpacpi" on the command line: show what the firmware
+     * describes. Both run before the MMU is enabled, while every table
+     * the firmware left behind is still reachable by its address.
+     */
+    if (fdtinfo.bootargs)
+    {
+        if (krnArgMatch(fdtinfo.bootargs, "dumpdt"))
+            krnDumpFDT(fdt);
+        if (krnArgMatch(fdtinfo.bootargs, "dumpacpi"))
+            krnDumpACPI();
+    }
+
+    /*
+     * Build the boot tags only now: the memory layout and the command
+     * line are settled above, and kernel.resource publishes this list
+     * to everything that asks (bootloader.resource reads the command
+     * line from it).
+     */
     msg = krnPrepareBootTags(fdt, &fdtinfo);
-    (void)msg;
+    BootMsg = msg;
     krnSBIPutStr("boot tags prepared.\n");
 
     krnInitMMU(&fdtinfo);
+
+    /* The interrupt controller, now that its registers can be mapped */
+    krnPLICInit(&fdtinfo);
+
+    /*
+     * The package (and the device tree itself) can live in memory the
+     * firmware owns and the device tree never lists - the
+     * loader placed it in a bank above 32GiB. Make sure both are
+     * reachable before anything touches them.
+     */
+    if (fdtinfo.initrd_start && fdtinfo.initrd_end > fdtinfo.initrd_start)
+    {
+        krnMMUMapRegion(fdtinfo.initrd_start,
+                        fdtinfo.initrd_end - fdtinfo.initrd_start,
+                        PTE_R | PTE_W | PTE_X);
+        krnSBIPutStr("mmu:       mapped package ");
+        krnSBIPutHex(fdtinfo.initrd_start);
+        krnSBIPutStr(" - ");
+        krnSBIPutHex(fdtinfo.initrd_end);
+        krnSBIPutStr("\n");
+    }
+    if (fdt)
+        krnMMUMapRegion((IPTR)fdt, 2 << 20, PTE_R | PTE_W);
 
     /* Start the 100Hz scheduler heartbeat and enable S-mode
        interrupt delivery */
@@ -320,7 +544,7 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
      * TODO: bring up the remaining harts via HSM.
      */
     {
-        struct MemHeader *mh;
+        struct MemHeader *mh, *chipmh;
         UWORD *ranges[5];
         IPTR modlow = 0, modhigh = 0;
         IPTR memlow  = ((IPTR)__kernel_end + 4095) & ~(IPTR)4095;
@@ -378,6 +602,25 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                 krnSBIPutStr("[boot] WARNING: no modules loaded!\n");
         }
 
+        /*
+         * MEMF_CHIP has to be satisfiable by something, or every caller
+         * asking for it - sprite and audio buffers among them - gets
+         * NULL with nothing to say why. There is no separate chip bus
+         * here and all memory is equally reachable, so the lowest 16MB
+         * answers for it. It is given a lower priority than the rest so
+         * that ordinary allocations drain the fast pool first and leave
+         * it for those that actually need it.
+         */
+        chipmh = NULL;
+        if (memhigh - memlow > CHIPMEM_SIZE * 2)
+        {
+            chipmh = (struct MemHeader *)memlow;
+            krnCreateMemHeader("Chip Memory", -6, (APTR)memlow, CHIPMEM_SIZE,
+                               MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK |
+                               MEMF_LOCAL);
+            memlow += CHIPMEM_SIZE;
+        }
+
         mh = (struct MemHeader *)memlow;
         krnCreateMemHeader("System Memory", 0, (APTR)memlow,
                            memhigh - memlow,
@@ -400,8 +643,18 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
         krnSBIPutHex(memhigh);
         krnSBIPutStr(")\n");
 
+        if (fdtinfo.bootargs && krnArgMatch(fdtinfo.bootargs, "dumpres"))
+            krnDumpResidents((UWORD *)__text_start, (UWORD *)__kernel_end);
+        if (fdtinfo.bootargs && krnArgMatch(fdtinfo.bootargs, "dumpres") &&
+            modhigh > modlow)
+            krnDumpResidents((UWORD *)modlow, (UWORD *)modhigh);
+
         if (krnPrepareExecBase(ranges, mh, msg))
         {
+            /* Exec is up and owns a MemList now, so chip can join it */
+            if (chipmh)
+                Enqueue(&SysBase->MemList, &chipmh->mh_Node);
+
             krnSBIPutStr("exec:      SysBase @ ");
             krnSBIPutHex((uint64_t)(uintptr_t)SysBase);
             krnSBIPutStr("\n[boot] InitCode(RTF_SINGLETASK)\n");

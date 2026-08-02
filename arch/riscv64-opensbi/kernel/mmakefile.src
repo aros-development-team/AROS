@@ -18,15 +18,24 @@ PRIV_KERNEL_INCLUDES = \
 	-I$(SRCDIR)/rom/exec
 
 CFILES := \
+        addirqhandler \
+        _displayalert \
         kernel_startup \
         kernel_console \
         kernel_debug \
         kernel_traps \
         kernel_fdt \
+        kernel_acpi \
+        kernel_plic \
+        intr \
         kernel_timer \
         kernel_mmu \
         kernel_cpu \
-        kernel_elf
+        kernel_elf \
+        maygetchar \
+        mapglobal \
+        unmapglobal \
+        efi_stub
 
 PLATFILES :=
 
@@ -61,10 +70,10 @@ endif
 
 kernel-opensbi-riscv64: $(OSGENDIR)/boot/Image
 
-$(OSGENDIR)/boot/core.elf: $(BSP_KOBJS)
+$(OSGENDIR)/boot/core.elf: $(BSP_KOBJS) $(SRCDIR)/$(CURDIR)/ldscript.lds
 		@$(ECHO) "Creating   $@"
 		%mkdirs_q $(OSGENDIR)/boot
-		@$(KERNEL_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ $(ELFCORELIBS)
+		@$(KERNEL_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(filter %.o,$^) $(ELFCORELIBS)
 		@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
 
 # Flat image carrying the RISC-V boot header (see startup.S), for

@@ -22,6 +22,24 @@ void krnSBIPutC(char c)
         sbi_console_putchar(c);
 }
 
+/* Returns the next console character, or -1 if none is pending */
+int krnSBIGetC(void)
+{
+    if (sbi_have_dbcn < 0)
+        sbi_have_dbcn = sbi_probe_extension(SBI_EXT_DBCN) != 0;
+
+    if (sbi_have_dbcn)
+    {
+        char c;
+
+        if (sbi_debug_console_read(&c, 1) == 1)
+            return (unsigned char)c;
+        return -1;
+    }
+
+    return sbi_console_getchar();
+}
+
 void krnSBIPutStr(const char *s)
 {
     unsigned long len = 0;
@@ -54,6 +72,35 @@ void krnSBIPutHex(uint64_t val)
     for (i = 0; i < 16; i++)
         buf[2 + i] = hexchars[(val >> (60 - i * 4)) & 0xF];
     buf[18] = '\0';
+
+    krnSBIPutStr(buf);
+}
+
+/* Compact hex, for dumping cell arrays where 16 digits a cell would
+   be unreadable */
+void krnSBIPutHex32(uint32_t val)
+{
+    static const char hexchars[] = "0123456789abcdef";
+    char buf[11];
+    int i;
+
+    buf[0] = '0';
+    buf[1] = 'x';
+    for (i = 0; i < 8; i++)
+        buf[2 + i] = hexchars[(val >> (28 - i * 4)) & 0xF];
+    buf[10] = '\0';
+
+    krnSBIPutStr(buf);
+}
+
+void krnSBIPutHex8(unsigned char val)
+{
+    static const char hexchars[] = "0123456789abcdef";
+    char buf[3];
+
+    buf[0] = hexchars[(val >> 4) & 0xF];
+    buf[1] = hexchars[val & 0xF];
+    buf[2] = '\0';
 
     krnSBIPutStr(buf);
 }

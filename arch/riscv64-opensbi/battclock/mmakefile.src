@@ -1,8 +1,26 @@
 include $(SRCDIR)/config/aros.cfg
 
+#
+# The RTC hangs off an i2c controller, and only the device tree says
+# which one and at what address, so the resource needs the tree parser.
+#
+# NOTE: %build_archspecific compiles objects for rom/battclock but does
+# not link them - it has no uselibs= - so linking libfdt into the module
+# still has to be arranged in rom/battclock/mmakefile.src, with
+# uselibs="fdt" and USER_LDFLAGS := -static (the parser uses strcmp()).
+#
+USER_INCLUDES := -I$(SRCDIR)/arch/riscv-all/linklibs/fdt/include
+
+# hidd/i2c.h comes from the base class, hidd/dwi2c.h from the controller
+# driver - both are needed to build against, neither to link against
+#MM kernel-battclock-opensbi-riscv64 : linklibs-fdt hidd-i2c-includes kernel-hidd-dwi2c-includes
+
+# cppflags is passed explicitly because USER_INCLUDES is not part of the
+# flags this macro compiles with by default
 %build_archspecific \
   mainmmake=kernel-battclock modname=battclock maindir=rom/battclock \
   arch=opensbi-riscv64 \
-  files="battclock_init readbattclock writebattclock"
+  cppflags="$(CPPFLAGS) $(USER_INCLUDES)" \
+  files="battclock_init battclock_i2c readbattclock writebattclock"
 
 %common

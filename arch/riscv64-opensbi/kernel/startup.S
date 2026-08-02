@@ -17,16 +17,29 @@
 	.type	_start,%function
 
 /*
- * RISC-V Linux boot image header. Real hardware (e.g. the Milk-V Titan)
- * is booted through U-Boot/UEFI rather than by OpenSBI directly; both
- * load a flat "Image" and enter it at offset 0 with the same register
- * handoff we already use (a0 = hart id, a1 = DTB). The header lets them
- * identify and place the image; the first word is the branch over it, so
- * the ELF entry point works identically.
+ * RISC-V Linux boot image header, overlaid with a PE/COFF header so the
+ * same file serves three loaders:
+ *
+ *   - OpenSBI / qemu -kernel  : entered at _start (offset 0)
+ *   - U-Boot "booti"          : reads the RISC-V header, entered at 0
+ *   - UEFI                     : loads it as an EFI application and
+ *                               enters at efi_stub_entry
+ *
+ * The first halfword doubles as the "MZ" DOS magic UEFI looks for:
+ * "c.li s4, -13" encodes as 0x5a4d. Anything entering at offset 0 falls
+ * through to the branch over the header, exactly as before.
  */
+#define IMAGE_FILE_MACHINE_RISCV64  0x5064
+#define IMAGE_SUBSYSTEM_EFI_APP     10
+#define PE_OPT_MAGIC_PE32PLUS       0x020b
+/* CODE | READ | EXECUTE */
+#define SCN_TEXT_FLAGS              0x60000020
+/* INITIALIZED_DATA | READ | WRITE */
+#define SCN_DATA_FLAGS              0xC0000040
+
 _start:
-	j	_start_kernel			/* code0                     */
-	.word	0				/* code1                     */
+	c.li	s4, -13				/* "MZ" (code0)              */
+	j	_start_kernel			/* branch over the header    */
 	.balign	8
 	.dword	0x200000			/* text_offset (2MiB)        */
 	.dword	__kernel_end - _start		/* image_size                */
@@ -36,8 +49,85 @@ _start:
 	.dword	0				/* res2                      */
 	.dword	0x5643534952			/* magic "RISCV"             */
 	.word	0x05435352			/* magic2 "RSC\x05"          */
-	.word	0				/* res4 (PE/COFF offset)     */
+	.word	pe_header - _start		/* res4: PE header offset    */
 
+pe_header:
+	.ascii	"PE\0\0"
+coff_header:
+	.short	IMAGE_FILE_MACHINE_RISCV64	/* Machine                   */
+	.short	2				/* NumberOfSections          */
+	.long	0				/* TimeDateStamp             */
+	.long	0				/* PointerToSymbolTable      */
+	.long	0				/* NumberOfSymbols           */
+	.short	section_table - optional_header	/* SizeOfOptionalHeader      */
+	.short	0x0206				/* EXECUTABLE|LINE_NUMS_STRIPPED|DEBUG_STRIPPED */
+optional_header:
+	.short	PE_OPT_MAGIC_PE32PLUS		/* PE32+                     */
+	.byte	0x02, 0x14			/* Major/MinorLinkerVersion  */
+	.long	__rodata_end - efi_header_end	/* SizeOfCode                */
+	.long	__bss_start - __rodata_end	/* SizeOfInitializedData     */
+	.long	0				/* SizeOfUninitializedData   */
+	.long	efi_stub_entry - _start		/* AddressOfEntryPoint       */
+	.long	efi_header_end - _start		/* BaseOfCode                */
+	.quad	0				/* ImageBase                 */
+	.long	0x1000				/* SectionAlignment          */
+	.long	0x1000				/* FileAlignment             */
+	.short	0, 0				/* Major/MinorOSVersion      */
+	.short	0, 0				/* Major/MinorImageVersion   */
+	.short	0, 0				/* Major/MinorSubsysVersion  */
+	.long	0				/* Win32VersionValue         */
+	.long	__kernel_end - _start		/* SizeOfImage               */
+	.long	efi_header_end - _start		/* SizeOfHeaders             */
+	.long	0				/* CheckSum                  */
+	.short	IMAGE_SUBSYSTEM_EFI_APP		/* Subsystem                 */
+	.short	0				/* DllCharacteristics        */
+	.quad	0				/* SizeOfStackReserve        */
+	.quad	0				/* SizeOfStackCommit         */
+	.quad	0				/* SizeOfHeapReserve         */
+	.quad	0				/* SizeOfHeapCommit          */
+	.long	0				/* LoaderFlags               */
+	.long	(section_table - .) / 8		/* NumberOfRvaAndSizes       */
+
+	.quad	0				/* ExportTable               */
+	.quad	0				/* ImportTable               */
+	.quad	0				/* ResourceTable             */
+	.quad	0				/* ExceptionTable            */
+	.quad	0				/* CertificationTable        */
+	.quad	0				/* BaseRelocationTable       */
+
+	/*
+	 * Two sections: the firmware applies W^X to loaded images, so the
+	 * writable part (data and bss) must not live in the code section.
+	 */
+section_table:
+	.ascii	".text\0\0\0"
+	.long	__rodata_end - efi_header_end	/* VirtualSize               */
+	.long	efi_header_end - _start		/* VirtualAddress            */
+	.long	__rodata_end - efi_header_end	/* SizeOfRawData             */
+	.long	efi_header_end - _start		/* PointerToRawData          */
+	.long	0				/* PointerToRelocations      */
+	.long	0				/* PointerToLineNumbers      */
+	.short	0				/* NumberOfRelocations       */
+	.short	0				/* NumberOfLineNumbers       */
+	.long	SCN_TEXT_FLAGS			/* Characteristics           */
+
+	.ascii	".data\0\0\0"
+	.long	__kernel_end - __rodata_end	/* VirtualSize (incl. bss)   */
+	.long	__rodata_end - _start		/* VirtualAddress            */
+	.long	__bss_start - __rodata_end	/* SizeOfRawData             */
+	.long	__rodata_end - _start		/* PointerToRawData          */
+	.long	0				/* PointerToRelocations      */
+	.long	0				/* PointerToLineNumbers      */
+	.short	0				/* NumberOfRelocations       */
+	.short	0				/* NumberOfLineNumbers       */
+	.long	SCN_DATA_FLAGS			/* Characteristics           */
+
+	/* The image proper starts on the first section-aligned boundary */
+	.balign	4096
+efi_header_end:
+
+	.globl	_start_kernel
+	.type	_start_kernel,%function
 _start_kernel:
 	/* Mask S-mode interrupts until the interrupt dispatcher exists */
 	csrw	sie, zero

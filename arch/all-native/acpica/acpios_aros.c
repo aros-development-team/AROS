@@ -175,12 +175,19 @@ ACPI_PHYSICAL_ADDRESS AcpiOsGetRootPointer(void)
         }
     }
 
-    /* Nope, no EFI available... Scan the ROM area
+    /* Nope, no EFI available... Scan the ROM area.
+     *
+     * Only the PC has one. AcpiFindRootPointer() reads the BIOS data
+     * area and the 0xE0000-0xFFFFF ROM window directly, which on any
+     * other machine is either nothing or unmapped - on riscv64 it
+     * faults. There, EFI is the only way the root pointer arrives.
      */
+#if defined(__i386__) || defined(__x86_64__)
     if (ACPICABase->ab_RootPointer == 0) {
         AcpiFindRootPointer(&ACPICABase->ab_RootPointer);
         D(bug("[ACPI] %s: ACPI RootPointer @ 0x%p\n", __func__, ACPICABase->ab_RootPointer));
     }
+#endif
 
     return ACPICABase->ab_RootPointer;
 }
@@ -953,24 +960,49 @@ static struct SMBIOSHeader * SMBIOS_GetNextTable(struct SMBIOSHeader *table)
 static char * SMBIOS_GetProductName()
 {
     /* Use SMBIOS to find out system model */
-    char *ptr = (char *)0x000F0000;
     BOOL smbiosver = 0;
     IPTR eps = 0;
+    struct Library *EFIBase = OpenResource("efi.resource");
 
-    while (ptr <= (char *)0x000FFFFF)
+    /* On a UEFI machine the entry point is a configuration table */
+    if (EFIBase)
     {
-        if (ptr[0] == '_' && ptr[1] == 'S' && ptr[2] == 'M')
-        {
-            if (ptr[3] == '_') smbiosver = 2;
-            if (ptr[3] == '3' && ptr[4] == '_') smbiosver = 3;
-            if (smbiosver != 0)
-            {
-                eps = (IPTR)ptr;
-                break;
-            }
-        }
-        ptr += 16;
+        const uuid_t smbios3_guid = SMBIOS3_TABLE_GUID;
+        const uuid_t smbios_guid = SMBIOS_TABLE_GUID;
+
+        eps = (IPTR)EFI_FindConfigTable(&smbios3_guid);
+        if (eps)
+            smbiosver = 3;
+        else if ((eps = (IPTR)EFI_FindConfigTable(&smbios_guid)) != 0)
+            smbiosver = 2;
     }
+
+    /*
+     * Otherwise scan the ROM area for it. Only the PC has one - the
+     * 0xF0000-0xFFFFF window does not exist elsewhere, and on riscv64
+     * reading it faults.
+     */
+#if defined(__i386__) || defined(__x86_64__)
+    if (!eps)
+    {
+        char *ptr = (char *)0x000F0000;
+
+        while (ptr <= (char *)0x000FFFFF)
+        {
+            if (ptr[0] == '_' && ptr[1] == 'S' && ptr[2] == 'M')
+            {
+                if (ptr[3] == '_') smbiosver = 2;
+                if (ptr[3] == '3' && ptr[4] == '_') smbiosver = 3;
+                if (smbiosver != 0)
+                {
+                    eps = (IPTR)ptr;
+                    break;
+                }
+            }
+            ptr += 16;
+        }
+    }
+#endif
 
     if (eps != 0)
     {

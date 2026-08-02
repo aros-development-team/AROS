@@ -1,0 +1,681 @@
+/*
+    Copyright (c) 2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: PCI host bridge driver class, discovered from the device tree.
+*/
+
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+#include <proto/oop.h>
+#include <proto/kernel.h>
+#include <proto/utility.h>
+
+#include <aros/symbolsets.h>
+#include <aros/kernel.h>
+
+#include <exec/types.h>
+#include <exec/memory.h>
+#include <aros/macros.h>
+#include <hidd/pci.h>
+#include <hardware/pci.h>
+#include <utility/tagitem.h>
+
+#include <fdt.h>
+
+#include LC_LIBDEFS_FILE
+#include "pcidt.h"
+
+static CONST_STRPTR pcidtHWName = "PCI Express (device tree)";
+
+/*
+ * Bridges the device tree may describe. "pci-host-ecam-generic" is the
+ * flat window every virtual machine uses; the DesignWare entries cover
+ * the real hardware this port targets.
+ */
+static const struct
+{
+    CONST_STRPTR      compatible;
+    enum pcidt_access access;
+} pcidt_known[] =
+{
+    { "pci-host-ecam-generic",  PCIDT_ACCESS_ECAM },
+    { "pci-host-cam-generic",   PCIDT_ACCESS_ECAM },
+    { "snps,dw-pcie",           PCIDT_ACCESS_DWC  },
+    { "ultrarisc,dw-pcie",      PCIDT_ACCESS_DWC  },
+};
+
+/*
+ * Map a device's registers so they can be reached. The boot-time page
+ * tables cover RAM only, so without this every access faults.
+ */
+static BOOL pcidt_map(struct pcidt_staticdata *psd, IPTR base, IPTR size)
+{
+    APTR KernelBase = psd->kernelBase;
+
+    if (!KrnMapGlobal((APTR)base, (APTR)base, size,
+                      MAP_Readable | MAP_Writable))
+    {
+        D(bug("[PCIDT:Driver] could not map %p+%p\n", base, size);)
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*
+ * Map the address windows the bridge forwards onto the bus.
+ *
+ * A device's BARs are assigned out of these, and drivers use the
+ * addresses they read back directly - on a machine where the firmware
+ * identity maps everything that just works, but here nothing is
+ * reachable until it has been mapped.
+ *
+ * Each "ranges" entry is a PCI address (3 cells), the CPU address it
+ * appears at (2 cells) and a size (2 cells). The top byte of the PCI
+ * address says which space it is: 1 is I/O, 2 is 32-bit memory and 3
+ * is 64-bit memory.
+ */
+#define PCI_RANGE_SPACE(hi)     (((hi) >> 24) & 0x03)
+#define PCI_RANGE_IO            1
+#define PCI_RANGE_MEM32         2
+#define PCI_RANGE_MEM64         3
+
+static void pcidt_mapranges(struct pcidt_staticdata *psd, fdt_node_t node,
+                            struct pcidt_bridge *b)
+{
+    ULONG len = 0;
+    const ULONG *r = FDT_GetProp(node, "ranges", &len);
+    ULONG entries, i;
+
+    if (!r)
+        return;
+
+    /* 3 + 2 + 2 cells per entry */
+    entries = (len / 4) / 7;
+
+    for (i = 0; i < entries; i++)
+    {
+        const ULONG *e = &r[i * 7];
+        ULONG space = PCI_RANGE_SPACE(FDT_ReadCells(&e[0], 1));
+        UQUAD cpu = FDT_ReadCells(&e[3], 2);
+        UQUAD size = FDT_ReadCells(&e[5], 2);
+
+        if (!cpu || !size)
+            continue;
+
+        /*
+         * The 64-bit prefetchable window is tens of gigabytes wide.
+         * Mapping it up front would cost more page tables than the
+         * pool holds, and nothing has been assigned out of it, so
+         * leave it until something actually needs it.
+         */
+        if (space == PCI_RANGE_MEM64)
+        {
+            D(bug("[PCIDT:Driver] leaving the 64-bit window at %p (%p) "
+                  "unmapped\n", (IPTR)cpu, (IPTR)size);)
+            continue;
+        }
+
+        if (space != PCI_RANGE_IO && space != PCI_RANGE_MEM32)
+            continue;
+
+        D(bug("[PCIDT:Driver] mapping %s window %p+%p\n",
+              space == PCI_RANGE_IO ? "I/O" : "memory",
+              (IPTR)cpu, (IPTR)size);)
+
+        pcidt_map(psd, (IPTR)cpu, (IPTR)size);
+    }
+}
+
+/*
+ * Read the interrupt routing out of the tree.
+ *
+ * Each map entry is a child address (3 cells, as PCI nodes use), the
+ * child interrupt (1 cell), the controller's phandle, and the source
+ * on that controller (1 cell for the platform controller). Only the
+ * parts the mask selects take part in the comparison - on these
+ * bridges that is the pin alone, so all four INTx pins of every device
+ * land on four fixed sources.
+ */
+#define PCIDT_INTMAP_CELLS  6
+
+static void pcidt_intmap(fdt_node_t node, struct pcidt_bridge *b)
+{
+    ULONG len = 0, i, n;
+    const ULONG *map = FDT_GetProp(node, "interrupt-map", &len);
+    const ULONG *mask = FDT_GetProp(node, "interrupt-map-mask", NULL);
+
+    b->intMapCount = 0;
+
+    if (!map || !mask || (len / 4) % PCIDT_INTMAP_CELLS)
+        return;
+
+    for (i = 0; i < 4; i++)
+        b->intMask[i] = (ULONG)FDT_ReadCells(&mask[i], 1);
+
+    n = (len / 4) / PCIDT_INTMAP_CELLS;
+    if (n > PCIDT_MAX_INTMAP)
+        n = PCIDT_MAX_INTMAP;
+
+    for (i = 0; i < n; i++)
+    {
+        const ULONG *e = &map[i * PCIDT_INTMAP_CELLS];
+        ULONG c;
+
+        for (c = 0; c < 4; c++)
+            b->intMap[i].key[c] = (ULONG)FDT_ReadCells(&e[c], 1) &
+                                  b->intMask[c];
+        b->intMap[i].irq = (ULONG)FDT_ReadCells(&e[5], 1);
+    }
+
+    b->intMapCount = n;
+}
+
+/*
+ * Which source a device's interrupt pin comes out on, or 0 if the tree
+ * does not say.
+ */
+ULONG PCIDT_MapInterrupt(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
+                         UBYTE sub, UBYTE pin)
+{
+    /* The child address as a PCI node writes it */
+    ULONG key[4];
+    ULONG i, c;
+
+    if (!b->intMapCount || !pin)
+        return 0;
+
+    key[0] = ((ULONG)bus << 16) | ((ULONG)(dev & 31) << 11) |
+             ((ULONG)(sub & 7) << 8);
+    key[1] = 0;
+    key[2] = 0;
+    key[3] = pin;
+
+    for (c = 0; c < 4; c++)
+        key[c] &= b->intMask[c];
+
+    for (i = 0; i < b->intMapCount; i++)
+    {
+        for (c = 0; c < 4; c++)
+        {
+            if (b->intMap[i].key[c] != key[c])
+                break;
+        }
+        if (c == 4)
+            return b->intMap[i].irq;
+    }
+
+    return 0;
+}
+
+/*
+ * Acknowledge the controller's message interrupts.
+ *
+ * Runs ahead of the drivers on the same source, at a higher priority,
+ * because the status register has to be cleared for the line to drop -
+ * a driver that does not know about the controller cannot do it, and
+ * the source would never go quiet.
+ */
+static AROS_INTH1(pcidt_msiack, struct pcidt_bridge *, b)
+{
+    AROS_INTFUNC_INIT
+
+    PCIDT_MSIAck(b);
+
+    /* Let the drivers sharing this source look at their hardware */
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
+/*
+ * Which source the controller raises for message interrupts.
+ *
+ * The names run alongside the interrupts, so the position of "msi" in
+ * "interrupt-names" is the entry to read. Nothing else identifies it -
+ * the numbers themselves are just SoC sources.
+ */
+static void pcidt_msiirq(fdt_node_t node, struct pcidt_bridge *b)
+{
+    ULONG len = 0, off = 0, idx = 0;
+    CONST_STRPTR names = FDT_GetProp(node, "interrupt-names", &len);
+    const ULONG *irqs;
+    ULONG irqlen = 0;
+
+    b->msiIrq = 0;
+
+    if (!names || !len)
+        return;
+
+    /* The names are one after another, each terminated */
+    while (off < len)
+    {
+        CONST_STRPTR n = &names[off];
+
+        if (n[0] == 'm' && n[1] == 's' && n[2] == 'i' && n[3] == '\0')
+            break;
+
+        while (off < len && names[off])
+            off++;
+        off++;
+        idx++;
+    }
+
+    if (off >= len)
+        return;
+
+    irqs = FDT_GetProp(node, "interrupts", &irqlen);
+    if (!irqs || ((idx + 1) * 4) > irqlen)
+        return;
+
+    b->msiIrq = (ULONG)FDT_ReadCells(&irqs[idx], 1);
+
+    D(bug("[PCIDT:Driver] message interrupts arrive on source %u\n",
+          b->msiIrq);)
+
+}
+
+/* Pick the bus numbers this bridge is responsible for */
+static void pcidt_busrange(fdt_node_t node, struct pcidt_bridge *b)
+{
+    ULONG len = 0;
+    const ULONG *br = FDT_GetProp(node, "bus-range", &len);
+
+    b->busStart = 0;
+    b->busEnd = 255;
+
+    if (br && len >= 8)
+    {
+        b->busStart = (UBYTE)FDT_ReadCells(&br[0], 1);
+        b->busEnd   = (UBYTE)FDT_ReadCells(&br[1], 1);
+    }
+}
+
+/*
+ * Find every host bridge the firmware described, and record how to
+ * reach each one's configuration space.
+ */
+static ULONG pcidt_discover(struct pcidt_staticdata *psd)
+{
+    ULONG i;
+
+    for (i = 0; i < sizeof(pcidt_known) / sizeof(pcidt_known[0]); i++)
+    {
+        fdt_node_t node = FDT_NONE;
+
+        while ((node = FDT_FindCompatible(node, pcidt_known[i].compatible))
+               != FDT_NONE)
+        {
+            struct pcidt_bridge *b;
+            UQUAD addr = 0, size = 0;
+
+            if (psd->bridgeCount >= PCIDT_MAX_BRIDGES)
+            {
+                D(bug("[PCIDT:Driver] more bridges than we can hold\n");)
+                return psd->bridgeCount;
+            }
+
+            b = &psd->bridges[psd->bridgeCount];
+            b->access = pcidt_known[i].access;
+            b->index = psd->bridgeCount;
+
+            /*
+             * A DesignWare node names its windows: "dbi" is the
+             * controller's own registers, "config" the viewport. The
+             * generic bindings have a single unnamed window, which is
+             * the whole ECAM area.
+             */
+            if (FDT_GetRegNamed(node, "config", &addr, &size))
+            {
+                b->cfgBase = (IPTR)addr;
+                b->cfgSize = (IPTR)size;
+            }
+            else if (FDT_GetReg(node, 0, &addr, &size))
+            {
+                b->cfgBase = (IPTR)addr;
+                b->cfgSize = (IPTR)size;
+            }
+            else
+                continue;
+
+            if (FDT_GetRegNamed(node, "dbi", &addr, &size))
+            {
+                b->dbiBase = (IPTR)addr;
+                b->dbiSize = (IPTR)size;
+            }
+            else
+            {
+                b->dbiBase = 0;
+                b->dbiSize = 0;
+            }
+
+            /*
+             * A DesignWare controller is useless without its register
+             * block - the viewport cannot be aimed without it.
+             */
+            if (b->access == PCIDT_ACCESS_DWC && !b->dbiBase)
+            {
+                D(bug("[PCIDT:Driver] %s has no dbi window, skipping\n",
+                      FDT_NodeName(node));)
+                continue;
+            }
+
+            pcidt_busrange(node, b);
+
+            D(bug("[PCIDT:Driver] %s: cfg %p+%p dbi %p buses %d-%d (%s)\n",
+                  FDT_NodeName(node), b->cfgBase, b->cfgSize, b->dbiBase,
+                  b->busStart, b->busEnd,
+                  b->access == PCIDT_ACCESS_DWC ? "DesignWare" : "ECAM");)
+
+            if (!pcidt_map(psd, b->cfgBase, b->cfgSize))
+                continue;
+            if (b->dbiBase && !pcidt_map(psd, b->dbiBase, b->dbiSize))
+                continue;
+
+            /* The windows devices behind this bridge will answer in */
+            pcidt_mapranges(psd, node, b);
+
+            /* And how their interrupt pins are wired */
+            pcidt_intmap(node, b);
+            pcidt_msiirq(node, b);
+
+            /*
+             * Let devices behind it reach memory. The window covers
+             * the low 2GiB of RAM, which is where anything a driver
+             * allocates for a device ends up.
+             */
+            PCIDT_EnableDMA(b, 0x80000000, 0x80000000);
+
+            /*
+             * Message interrupts. The address is never used as memory -
+             * the controller claims writes to it before they get there -
+             * but it has to be one nothing else owns, so a page is
+             * allocated and kept for the purpose.
+             */
+            if (b->msiIrq)
+            {
+                APTR page = AllocMem(4096, MEMF_PUBLIC | MEMF_CLEAR);
+
+                if (page && PCIDT_MSIInit(b, (IPTR)page))
+                {
+                    b->msiAck.is_Node.ln_Name = (STRPTR)"pcidt message interrupts";
+                    b->msiAck.is_Node.ln_Pri = 100;
+                    b->msiAck.is_Node.ln_Type = NT_INTERRUPT;
+                    b->msiAck.is_Code = (VOID_FUNC)pcidt_msiack;
+                    b->msiAck.is_Data = b;
+                    AddIntServer(INTB_KERNEL + b->msiIrq, &b->msiAck);
+                }
+                else if (page)
+                    FreeMem(page, 4096);
+            }
+
+            psd->bridgeCount++;
+        }
+    }
+
+    return psd->bridgeCount;
+}
+
+OOP_Object *PCIDT__Root__New(OOP_Class *cl, OOP_Object *o,
+                             struct pRoot_New *msg)
+{
+    struct pcidt_staticdata *psd = PSD(cl);
+    OOP_Object *busObj;
+
+    D(bug("[PCIDT:Driver] %s()\n", __func__);)
+
+    busObj = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (busObj)
+    {
+        struct PCIDTBusData *data = OOP_INST_DATA(cl, busObj);
+
+        /*
+         * Take the next bridge in the list discovered at init. See the
+         * note in pcidt.h - the driver attributes are all read-only,
+         * so there is no way to be handed the bridge directly.
+         */
+        if (psd->bridgeNext < psd->bridgeCount)
+            data->bridge = psd->bridges[psd->bridgeNext++];
+
+        D(bug("[PCIDT:Driver] %s: bus object @ 0x%p, cfg @ %p\n",
+              __func__, busObj, data->bridge.cfgBase);)
+    }
+
+    return busObj;
+}
+
+void PCIDT__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    struct pcidt_staticdata *psd = PSD(cl);
+    ULONG idx;
+    BOOL handled = FALSE;
+
+    if (IS_HIDD_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+        case aoHidd_HardwareName:
+            handled = TRUE;
+            *msg->storage = (IPTR)pcidtHWName;
+            break;
+        }
+    }
+    else if (IS_PCIDRV_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+        case aoHidd_PCIDriver_DeviceClass:
+            handled = TRUE;
+            *msg->storage = (IPTR)psd->pcidtDeviceClass;
+            break;
+
+        case aoHidd_PCIDriver_DirectBus:
+            /* Addresses on the bus are the addresses the CPU uses */
+            handled = TRUE;
+            *msg->storage = (IPTR)TRUE;
+            break;
+        }
+    }
+
+    if (!handled)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+ULONG PCIDT__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_ReadConfigLong *msg)
+{
+    struct PCIDTBusData *data = OOP_INST_DATA(cl, o);
+
+    return PCIDT_ReadConfig(&data->bridge, msg->bus, msg->dev, msg->sub,
+                            msg->reg);
+}
+
+UWORD PCIDT__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_ReadConfigWord *msg)
+{
+    struct PCIDTBusData *data = OOP_INST_DATA(cl, o);
+    ULONG val = PCIDT_ReadConfig(&data->bridge, msg->bus, msg->dev,
+                                 msg->sub, msg->reg & ~3);
+
+    return (UWORD)(val >> ((msg->reg & 2) * 8));
+}
+
+UBYTE PCIDT__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_ReadConfigByte *msg)
+{
+    struct PCIDTBusData *data = OOP_INST_DATA(cl, o);
+    ULONG val = PCIDT_ReadConfig(&data->bridge, msg->bus, msg->dev,
+                                 msg->sub, msg->reg & ~3);
+    UBYTE b = (UBYTE)(val >> ((msg->reg & 3) * 8));
+
+    /*
+     * Firmware leaves the interrupt line register alone here - it has
+     * no number to put in it, because which source a pin reaches is
+     * described by the tree rather than by convention. Answer from the
+     * routing map instead, so a driver asking for the line gets
+     * something it can hand to KrnAddIRQHandler().
+     */
+    if (msg->reg == PCICS_INT_LINE && (b == 0 || b == 0xff))
+    {
+        ULONG pinval = PCIDT_ReadConfig(&data->bridge, msg->bus, msg->dev,
+                                        msg->sub, PCICS_INT_PIN & ~3);
+        UBYTE pin = (UBYTE)(pinval >> ((PCICS_INT_PIN & 3) * 8));
+        ULONG irq = PCIDT_MapInterrupt(&data->bridge, msg->bus, msg->dev,
+                                       msg->sub, pin);
+
+        if (irq)
+        {
+            D(
+                bug("[PCIDT:Driver] %02x:%02x.%x pin %d -> source %u\n",
+                    msg->bus, msg->dev, msg->sub, pin, irq);
+                /*
+                 * Everything below the bridge shares this wire, so show
+                 * the state of the whole path - the driver about to hook
+                 * the source is not necessarily what holds it down.
+                 */
+                PCIDT_DumpIntStatus(&data->bridge, 0, 0, 0);
+                if (msg->bus != 0)
+                    PCIDT_DumpIntStatus(&data->bridge, msg->bus, msg->dev,
+                                        msg->sub);
+                PCIDT_DumpInbound(&data->bridge);
+            )
+
+            return (UBYTE)irq;
+        }
+    }
+
+    return b;
+}
+
+/*
+ * A driver is taking this device, so it is now safe to let it drive
+ * its pin - devices are left masked at enumeration precisely because
+ * nothing was listening yet. Unmask before the handler goes on, or an
+ * already asserted device would have no way to be noticed.
+ */
+BOOL PCIDT__Hidd_PCIDriver__AddInterrupt(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_AddInterrupt *msg)
+{
+    struct PCIDTBusData *data = OOP_INST_DATA(cl, o);
+    struct PCIDTDeviceData *ddata =
+        OOP_INST_DATA(PSD(cl)->pcidtDeviceClass, msg->device);
+
+    PCIDT_SetINTx(&data->bridge, ddata->bus, ddata->dev, ddata->sub, TRUE);
+
+    return (BOOL)OOP_DoSuperMethod(cl, o, &msg->mID);
+}
+
+void PCIDT__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_WriteConfigLong *msg)
+{
+    struct PCIDTBusData *data = OOP_INST_DATA(cl, o);
+
+    PCIDT_WriteConfig(&data->bridge, msg->bus, msg->dev, msg->sub,
+                      msg->reg, msg->val);
+}
+
+/* Past this point there is no `cl` to resolve the library bases from */
+#undef OOPBase
+#undef UtilityBase
+
+/*
+ * Memory a bus master can reach.
+ *
+ * The base class asks for MEMF_31BIT, which on this architecture can
+ * never be satisfied - RAM starts at 2GB, so nothing lives below it.
+ * These controllers are cache coherent and their windows reach well
+ * above 4GB, so ordinary memory is what a device should be given.
+ *
+ * The layout matches the base class: the allocation is padded so the
+ * address handed out is page aligned, with the real pointer stored in
+ * the word just below it for FreePCIMem() to recover.
+ */
+APTR PCIDT__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_AllocPCIMem *msg)
+{
+    APTR memory = AllocVec(msg->Size + 4096 + AROS_ALIGN(sizeof(APTR)),
+                           MEMF_CLEAR);
+    IPTR diff;
+
+    if (!memory)
+        return NULL;
+
+    diff = (IPTR)memory - (AROS_ROUNDUP2((IPTR)memory + sizeof(APTR), 4096));
+    *((APTR *)((IPTR)memory - diff - sizeof(APTR))) = memory;
+
+    return (APTR)((IPTR)memory - diff);
+}
+
+VOID PCIDT__Hidd_PCIDriver__FreePCIMem(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_FreePCIMem *msg)
+{
+    if (msg->Address)
+        FreeVec(*(APTR *)((IPTR)msg->Address - sizeof(APTR)));
+}
+
+static int PCIDT_InitClass(LIBBASETYPEPTR LIBBASE)
+{
+    struct pcidt_staticdata *psd = &LIBBASE->psd;
+    struct Library *OOPBase = psd->OOPBase;
+    struct Library *UtilityBase = psd->utilityBase;
+    APTR KernelBase = psd->kernelBase;
+    struct pHidd_PCI_AddHardwareDriver msg, *pmsg = &msg;
+    OOP_Object *pci;
+    APTR bootinfo;
+    APTR dtb;
+    ULONG i;
+
+    D(bug("[PCIDT:Driver] %s()\n", __func__);)
+
+    psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
+    psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
+    psd->hidd_PCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+
+    if (!psd->hiddAB || !psd->hiddPCIDriverAB || !psd->hidd_PCIDeviceAB)
+    {
+        bug("[PCIDT:Driver] %s: ObtainAttrBases failed\n", __func__);
+        return FALSE;
+    }
+
+    /* The firmware's device tree, as kernel.resource recorded it */
+    bootinfo = KrnGetBootInfo();
+    dtb = (APTR)GetTagData(KRN_FlattenedDeviceTree, 0,
+                           (struct TagItem *)bootinfo);
+    if (!dtb || !FDT_Open(dtb))
+    {
+        D(bug("[PCIDT:Driver] %s: no device tree, nothing to do\n",
+              __func__);)
+        return FALSE;
+    }
+
+    if (!pcidt_discover(psd))
+    {
+        D(bug("[PCIDT:Driver] %s: no host bridges described\n", __func__);)
+        return FALSE;
+    }
+
+    pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+    if (!pci)
+        return FALSE;
+
+    msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
+    msg.driverClass = psd->pcidtDriverClass;
+    msg.instanceTags = NULL;
+
+    /* One driver instance per bridge, in the order discovered */
+    for (i = 0; i < psd->bridgeCount; i++)
+    {
+        D(bug("[PCIDT:Driver] %s: registering bridge %u\n", __func__, i);)
+        OOP_DoMethod(pci, (OOP_Msg)pmsg);
+    }
+
+    OOP_DisposeObject(pci);
+
+    D(bug("[PCIDT:Driver] %s: %u bridge(s) registered\n", __func__,
+          psd->bridgeCount);)
+
+    return TRUE;
+}
+
+ADD2INITLIB(PCIDT_InitClass, 10)

@@ -46,7 +46,13 @@ SECTIONS
         *(.sdata*)
     }
 
-    . = ALIGN(4096);
+    /*
+     * The PE section's SizeOfRawData runs to __bss_start, so the file
+     * must actually contain the padding up to that boundary - objcopy
+     * only emits bytes that exist. The trailing quad forces it out.
+     */
+    . = ALIGN(4096) - 8;
+    .pecoff_tail : { QUAD(0) }
 
     .bss : {
         . = ALIGN(8);
@@ -59,5 +65,8 @@ SECTIONS
         __bss_end = .;
     }
 
+    /* 4KiB-aligned: the PE header's SizeOfImage must be a multiple of
+       the section alignment (see startup.S) */
+    . = ALIGN(4096);
     __kernel_end = .;
 }

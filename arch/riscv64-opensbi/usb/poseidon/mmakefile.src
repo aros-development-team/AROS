@@ -1,0 +1,10 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- kernel-usb-romstrap-opensbi-riscv64 : kernel-usb-poseidon
+
+%build_module_simple mmake=kernel-usb-romstrap-opensbi-riscv64 \
+  modname=usbromstartup modtype=resource \
+  files="usbromstartup"
+
+%common

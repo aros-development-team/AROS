@@ -98,6 +98,23 @@ static inline void sbi_console_putchar(int ch)
     sbi_ecall(SBI_LEGACY_CONSOLE_PUTCHAR, 0, ch, 0, 0, 0, 0, 0);
 }
 
+/* Legacy (v0.1) console getchar; returns <0 when nothing is pending */
+static inline int sbi_console_getchar(void)
+{
+    struct sbiret ret = sbi_ecall(SBI_LEGACY_CONSOLE_GETCHAR,
+                                  0, 0, 0, 0, 0, 0, 0);
+    /* The legacy calls report their result in a0 (ret.error) */
+    return (int)ret.error;
+}
+
+/* Read from the SBI debug console (DBCN extension, SBI >= 2.0) */
+static inline long sbi_debug_console_read(char *buf, unsigned long len)
+{
+    struct sbiret ret = sbi_ecall(SBI_EXT_DBCN, SBI_DBCN_READ,
+                                  len, (unsigned long)buf, 0, 0, 0, 0);
+    return (ret.error == SBI_SUCCESS) ? ret.value : 0;
+}
+
 /* Program the next timer interrupt (TIME extension) */
 static inline void sbi_set_timer(unsigned long stime_value)
 {

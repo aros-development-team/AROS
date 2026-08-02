@@ -11,26 +11,113 @@ include $(SRCDIR)/config/aros.cfg
 # through /chosen; kernel_elf.c relocates the modules into place and
 # adds them to the romtag scan.
 #
+# Unlike the PC targets this is a single package rather than the usual
+# base/fs/usb/acpi set: the RISC-V boot protocol carries exactly one
+# initrd, so everything the system needs to reach a Workbench has to
+# travel in one file.
+#
 
 #MM kernel-bsp-opensbi-riscv64 : \
 #MM     kernel-aros \
 #MM     kernel-oop \
 #MM     kernel-utility \
+#MM     kernel-debug \
+#MM     kernel-misc \
 #MM     kernel-expansion \
 #MM     kernel-timer \
 #MM     kernel-battclock \
-#MM     kernel-processor
+#MM     kernel-processor \
+#MM     kernel-dos \
+#MM     kernel-dos64 \
+#MM     kernel-dosboot \
+#MM     kernel-bootloader \
+#MM     kernel-filesystem \
+#MM     kernel-lddemon \
+#MM     kernel-shell \
+#MM     kernel-shellcommands \
+#MM     kernel-graphics \
+#MM     kernel-layers \
+#MM     kernel-intuition \
+#MM     kernel-keymap \
+#MM     kernel-cgxbootpic \
+#MM     workbench-libs-gadtools \
+#MM     kernel-console \
+#MM     kernel-input \
+#MM     kernel-gameport \
+#MM     kernel-keyboard \
+#MM     kernel-hidd \
+#MM     kernel-hidd-gfx \
+#MM     kernel-hidd-input \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-partition \
+#MM     kernel-fs-ram \
+#MM     kernel-fs-con \
+#MM     kernel-fs-afs \
+#MM     kernel-fs-cdvdfs \
+#MM     kernel-fs-sfs \
+#MM     kernel-fs-fat \
+#MM     kernel-econsole \
+#MM     kernel-log \
+#MM     kernel-entropy \
+#MM     kernel-efi \
+#MM     kernel-acpica-sharedlib \
+#MM     kernel-nvme \
+#MM     kernel-virtio \
+#MM     kernel-hidd-bus \
+#MM     kernel-hidd-pci \
+#MM     kernel-hidd-pci-pcidt \
+#MM     kernel-hidd-dwuart \
+#MM     hidd-i2c \
+#MM     kernel-hidd-dwi2c \
+#MM     kernel-hidd-storage \
+#MM     kernel-hidd-system \
+#MM     kernel-hidd-power \
+#MM     kernel-hidd-telemetry \
+#MM     kernel-hidd-ipmi \
+#MM     kernel-hidd-acpibutton \
+#MM     kernel-hidd-acpifan \
+#MM     kernel-hidd-acpiacad \
+#MM     kernel-hidd-acpibattery \
+#MM     kernel-hidd-acpithermal \
+#MM     kernel-hidd-acpipowermeter \
+#MM     kernel-usb-poseidon \
+#MM     kernel-usb-pcixhci \
+#MM     kernel-usb-romstrap-opensbi-riscv64 \
+#MM     kernel-usb-classes-hub \
+#MM     kernel-usb-classes-massstorage \
+#MM     kernel-usb-classes-hid \
+#MM     kernel-usb-classes-bootkeyboard \
+#MM     kernel-usb-classes-bootmouse \
+#MM     kernel-hidd-gfx-headlessgfx
 
-BSP_LIBS      := aros oop utility
-BSP_LIBS_ARCH := expansion
+# econsole: emergency CON: over the SBI console, "econsole" bootarg
+BSP_LIBS      := aros oop utility dos dos64 graphics layers intuition keymap \
+                 partition cgxbootpic gadtools acpica poseidon
+BSP_LIBS_ARCH := expansion debug
+BSP_RSRC      := bootloader dosboot FileSystem lddemon misc shell \
+                 shellcommands log entropy efi usbromstartup
 BSP_RSRC_ARCH := battclock processor
+BSP_DEVS      := console input gameport keyboard nvme virtio \
+                 USBHardware/pcixhci
 BSP_DEVS_ARCH := timer
+BSP_USBCLASSES := USB/hub USB/hid USB/bootkeyboard USB/bootmouse \
+                  USB/massstorage
+BSP_HANDLERS  := econsole ram con afs cdrom sfs fat
+# headlessgfx installs to Storage/Drivers, so it cannot come from hidds=
+BSP_MISC      := $(AROSDIR)/Storage/Drivers/headlessgfx.hidd
+BSP_HIDDS     := hiddclass inputclass gfx keyboard mouse bus pci pcidt \
+                 storage system power telemetry ipmi dwuart i2c dwi2c \
+                 acpiacad acpibattery acpifan acpibutton acpithermal \
+                 acpipowermeter
 
 %make_package mmake=kernel-bsp-opensbi-riscv64 \
     file=$(AROSARCHDIR)/aros-bsp.pkg \
     libs=$(BSP_LIBS) arch_libs=$(BSP_LIBS_ARCH) \
-    arch_res=$(BSP_RSRC_ARCH) \
-    arch_devs=$(BSP_DEVS_ARCH)
+    res=$(BSP_RSRC) arch_res=$(BSP_RSRC_ARCH) \
+    devs=$(BSP_DEVS) arch_devs=$(BSP_DEVS_ARCH) \
+    handlers=$(BSP_HANDLERS) hidds=$(BSP_HIDDS) \
+    classes=$(BSP_USBCLASSES) misc=$(BSP_MISC)
 
 #MM- distfiles-opensbi-riscv64 : kernel-opensbi-riscv64 kernel-bsp-opensbi-riscv64
 #MM- distfiles-opensbi-riscv64-quick : kernel-opensbi-riscv64-quick

@@ -70,19 +70,40 @@ static void krnDumpContext(struct ExceptionContext *ctx)
 /* Trap/interrupt nesting depth, reported through KrnIsSuper() */
 extern int __riscv64_trap_depth;
 
-static void krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
-                            unsigned long stval);
+/* What the dispatcher leaves for the scheduler, once the depth is down */
+#define TRAP_DONE       0
+#define TRAP_RESCHEDULE 1
+#define TRAP_SYSCALL    2
+
+static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
+                           unsigned long stval);
 
 void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
                     unsigned long stval)
 {
+    int action;
+
     __riscv64_trap_depth++;
-    krnTrapDispatch(ctx, scause, stval);
+    action = krnTrapDispatch(ctx, scause, stval);
     __riscv64_trap_depth--;
+
+    if (!SysBase)
+        return;
+
+    /*
+     * The scheduler is only entered once the depth is back down. It may
+     * resume another task and never return here, so anything counted
+     * around it stays counted for good - and a task resumed while it
+     * still looks like trap context cannot take a semaphore.
+     */
+    if (action == TRAP_RESCHEDULE)
+        core_ExitInterrupt(ctx);
+    else if (action == TRAP_SYSCALL)
+        core_SysCall((int)ctx->x[CTX_REG_A7], ctx);
 }
 
-static void krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
-                            unsigned long stval)
+static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
+                           unsigned long stval)
 {
     if (scause & SCAUSE_INTERRUPT)
     {
@@ -93,14 +114,21 @@ static void krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
         case SCAUSE_IRQ_STI:
             krnTimerTick();
             /* Run the scheduler on the way out if a switch is pending */
-            if (SysBase)
-                core_ExitInterrupt(ctx);
-            return;
+            return TRAP_RESCHEDULE;
+
+        case SCAUSE_IRQ_SEI:
+        {
+            /*
+             * A device. Which one has to be claimed from the PLIC,
+             * and it must be completed afterwards or it never fires
+             * again. Several can be pending at once.
+             */
+            krnHandleExternalIRQ();
+            return TRAP_RESCHEDULE;
+        }
 
         case SCAUSE_IRQ_SSI:
             /* IPIs arrive here once SMP bring-up exists */
-        case SCAUSE_IRQ_SEI:
-            /* External (PLIC) interrupts, routed once drivers exist */
         default:
             krnSBIPutStr("\n[trap] unexpected interrupt, code ");
             krnSBIPutDec(irq);
@@ -118,8 +146,7 @@ static void krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
          * compressed form, 4 otherwise.
          */
         ctx->pc += (*(uint16_t *)ctx->pc == 0x9002) ? 2 : 4;
-        core_SysCall((int)ctx->x[CTX_REG_A7], ctx);
-        return;
+        return TRAP_SYSCALL;
     }
     else
     {
@@ -147,4 +174,6 @@ static void krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
     krnSBIPutStr("[trap] fatal - halting hart.\n");
     for (;;)
         asm volatile("wfi");
+
+    return TRAP_DONE;
 }

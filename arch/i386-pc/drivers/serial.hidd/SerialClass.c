@@ -129,8 +129,8 @@ OOP_Object *PCSer__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *m
   };
   if (msg->attrList)
   {
-      serhidTags[1].ti_Tag  = TAG_MORE;
-      serhidTags[1].ti_Data = (IPTR)msg->attrList;
+      serhidTags[2].ti_Tag  = TAG_MORE;
+      serhidTags[2].ti_Data = (IPTR)msg->attrList;
   }
   serhidNew.mID      = msg->mID;
   serhidNew.attrList = serhidTags;

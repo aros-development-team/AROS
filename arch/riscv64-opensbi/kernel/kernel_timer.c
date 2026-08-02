@@ -10,7 +10,14 @@
 
 #include <inttypes.h>
 
+#include <exec/execbase.h>
+#include <hardware/intbits.h>
+#include <proto/exec.h>
+
 #include <asm/cpu.h>
+
+#include <kernel_base.h>
+#include <kernel_intr.h>
 
 #include "kernel_sbi.h"
 #include "kernel_intern.h"
@@ -38,4 +45,13 @@ void krnTimerTick(void)
 {
     __timer_ticks++;
     sbi_set_timer(rdtime() + tick_interval);
+
+    /*
+     * Drive exec's periodic interrupt. timer.device hangs its request
+     * queues off this, so without it nothing that waits on a timeout
+     * ever wakes - the tick alone only serves the scheduler, which is
+     * driven straight from the trap handler.
+     */
+    if (SysBase)
+        core_Cause(INTB_VERTB, 1L << INTB_VERTB);
 }

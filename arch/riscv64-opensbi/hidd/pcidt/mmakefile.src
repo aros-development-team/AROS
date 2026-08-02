@@ -1,0 +1,34 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# PCI host bridge driver for machines described by a device tree.
+#
+# The PC's driver finds its bridges through ACPI; a RISC-V board
+# generally has none, so the same job is done from the FDT.
+#
+# It covers both flat ECAM bridges - what every virtual machine
+# provides, and what "pci-host-ecam-generic" describes - and DesignWare
+# controllers, which reach configuration space through a viewport that
+# has to be aimed with their address translation unit.
+#
+
+FILES := pcidt_init pcidt_driverclass pcidt_deviceclass pcidt_access
+
+USER_CPPFLAGS := \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__
+
+USER_INCLUDES := -I$(SRCDIR)/arch/riscv-all/linklibs/fdt/include
+
+# A kickstart module cannot auto-open stdc.library, so anything it needs
+# from libc has to come from the static one at link time
+USER_LDFLAGS := -static
+
+#MM kernel-hidd-pci-pcidt : linklibs-fdt
+
+%build_module mmake=kernel-hidd-pci-pcidt \
+    modname=pcidt modtype=hidd \
+    files=$(FILES) uselibs="fdt"
+
+%common

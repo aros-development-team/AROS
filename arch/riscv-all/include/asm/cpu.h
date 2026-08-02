@@ -18,7 +18,14 @@ extern "C" {
 static inline void fence(void)    { asm volatile("fence"      : : : "memory"); }
 static inline void fence_r(void)  { asm volatile("fence r,rw" : : : "memory"); }
 static inline void fence_w(void)  { asm volatile("fence w,rw" : : : "memory"); }
-static inline void fence_i(void)  { asm volatile("fence.i"    : : : "memory"); }
+/* Zifencei is optional in the RVA22 profile - name it explicitly */
+static inline void fence_i(void)
+{
+    asm volatile(".option push\n"
+                 ".option arch, +zifencei\n"
+                 "fence.i\n"
+                 ".option pop" : : : "memory");
+}
 static inline void wfi(void)      { asm volatile("wfi"); }
 
 /*
