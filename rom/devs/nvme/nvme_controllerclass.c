@@ -229,6 +229,12 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Base0, (IPTR *)&dev->dev_nvmeregbase);
 
             D(bug ("[NVME:Controller] %s:     NVME RegBase @ 0x%p\n", __func__, dev->dev_nvmeregbase);)
+            if (!dev->dev_nvmeregbase) {
+                /* BAR0 unassigned (no firmware PCI resource allocation) */
+                bug("[NVME:Controller] %s: BAR0 not mapped, ignoring controller\n", __func__);
+                nvme_CloseTimer(nvmeTimer);
+                return NULL;
+            }
             dev->dbs = ((void volatile *)dev->dev_nvmeregbase) + 4096;
 
             dev->dev_Queues = AllocMem(sizeof(APTR) * (KrnGetCPUCount() + 1), MEMF_CLEAR);
