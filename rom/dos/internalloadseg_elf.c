@@ -81,13 +81,28 @@ static int elf_read_block
 
         if (size <= LOADSEG_SMALL_READ)
         {
+            LONG nread;
+
             if (srb->srb_Buffer == NULL)
                 srb->srb_Buffer = AllocMem(LOADSEG_SMALL_READ, MEMF_ANY);
 
+            /* Without this the recursion below never terminates */
+            if (srb->srb_Buffer == NULL)
+                return 1;
+
             srb->srb_FileOffset = offset;
 
-            /* Fill the buffer */
-            read_block(file, srb->srb_Buffer, LOADSEG_SMALL_READ, funcarray, DOSBase);
+            /*
+             * The buffer is deliberately larger than the request, so a
+             * short read is normal near the end of a small file. Only the
+             * bytes actually asked for have to have arrived - an empty or
+             * truncated file gives fewer, and must not be served from an
+             * uninitialised buffer as though it had succeeded.
+             */
+            nread = ilsRead(file, srb->srb_Buffer, LOADSEG_SMALL_READ);
+            if (nread < (LONG)size)
+                return 1;
+
             /* Re-read, now srb will be used */
             return elf_read_block(file, offset, buffer, size, funcarray, srb, DOSBase);
         }
