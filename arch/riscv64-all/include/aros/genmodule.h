@@ -77,7 +77,7 @@
             "\tsd   a7, 120(sp)\n"                                         \
             "\tsd   ra, 128(sp)\n"                                         \
             "\tcall __aros_getoffsettable\n" /* a0 = offset table       */ \
-            "\tla   t0, 1f\n"                                              \
+            "\tla   t0, __aros_rellib_offset_" #libbasename "\n"           \
             "\tld   t0, 0(t0)\n"             /* t0 = rellib offset      */ \
             "\tadd  t0, a0, t0\n"                                          \
             "\tld   t6, 0(t0)\n"             /* t6 = libbase            */ \
@@ -103,8 +103,6 @@
             "\tsub  t0, t6, t0\n"            /* t0 = &JumpVec[-lvo]     */ \
             "\tld   t0, 0(t0)\n"             /* t0 = function pointer   */ \
             "\tjr   t0\n"                                                  \
-            "\t.align 3\n"                                                 \
-            "1:\t.dword __aros_rellib_offset_" #libbasename "\n"           \
             : : "i" ((lvo)*LIB_VECTSIZE)                                   \
         );                                                                 \
     }
