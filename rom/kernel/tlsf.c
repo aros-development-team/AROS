@@ -115,10 +115,15 @@ typedef struct {
     autogrow_get        autogrow_get_fn;
     autogrow_release    autogrow_release_fn;
 
-    UBYTE               autodestroy_self;
+    UBYTE               flags;
 
     bhdr_t *            matrix[REAL_FLI][MAX_SLI];
 } tlsf_t;
+
+#define TLSFF_AUTODESTROY     (1 << 0) /* tlsf_t was allocated separately, free it on destroy */
+/* Kickstart modules may carry no .bss/.data, so the corruption
+   once-only guard lives in the pool instead of static storage */
+#define TLSFF_CORRUPTREPORTED (1 << 1)
 
 static inline __attribute__((always_inline)) int LS(IPTR i)
 {
@@ -332,10 +337,9 @@ static void __attribute__((noreturn)) tlsf_fail_corruption(
     struct MemHeaderExt *mhe, tlsf_t *tlsf, CONST_STRPTR where,
     bhdr_t *block, int fl, int sl)
 {
-    static volatile ULONG reported;
-
-    if (!reported++)
+    if (!tlsf || !(tlsf->flags & TLSFF_CORRUPTREPORTED))
     {
+        APTR KernelBase;
         bhdr_t *head = NULL;
         bhdr_t *prev = NULL;
         bhdr_t *next = NULL;
@@ -344,10 +348,13 @@ static void __attribute__((noreturn)) tlsf_fail_corruption(
         APTR pcs[16];
         ULONG depth;
 
-        if (tlsf_valid_bucket(fl, sl))
+        if (tlsf)
+            tlsf->flags |= TLSFF_CORRUPTREPORTED;
+
+        if (tlsf && tlsf_valid_bucket(fl, sl))
             head = tlsf->matrix[fl][sl];
 
-        if (block && tlsf_block_in_area(tlsf, block))
+        if (tlsf && block && tlsf_block_in_area(tlsf, block))
         {
             size = GET_SIZE(block);
             flags = GET_FLAGS(block);
@@ -361,8 +368,14 @@ static void __attribute__((noreturn)) tlsf_fail_corruption(
             tlsf, (LONG)fl, (LONG)sl, block, size, flags,
             head, prev, next, FindTask(NULL));
 
-        depth = KrnBacktraceFromFrame((APTR)__builtin_frame_address(0), pcs, 16);
-        KrnPrintBacktrace("[Kernel:TLSF] ", pcs, depth);
+        /* Kickstart modules have no global KernelBase - look the base
+           up locally so the Krn stubs resolve on all architectures */
+        KernelBase = OpenResource("kernel.resource");
+        if (KernelBase)
+        {
+            depth = KrnBacktraceFromFrame((APTR)__builtin_frame_address(0), pcs, 16);
+            KrnPrintBacktrace("[Kernel:TLSF] ", pcs, depth);
+        }
     }
 
     __builtin_trap();
@@ -1246,7 +1259,6 @@ void * tlsf_init(struct MemHeaderExt * mhe)
         ptr += ROUNDUP(sizeof(tlsf_t));
 
         bzero(tlsf, sizeof(tlsf_t));
-        tlsf->autodestroy_self = 0;
     }
     else
     {
@@ -1256,7 +1268,7 @@ void * tlsf_init(struct MemHeaderExt * mhe)
         if (tlsf)
         {
             bzero(tlsf, sizeof(tlsf_t));
-            tlsf->autodestroy_self = 1;
+            tlsf->flags |= TLSFF_AUTODESTROY;
         }
     }
 
@@ -1298,7 +1310,7 @@ void tlsf_destroy(struct MemHeaderExt * mhe)
             }
         }
 
-        if (tlsf->autodestroy_self)
+        if (tlsf->flags & TLSFF_AUTODESTROY)
             FreeMem(tlsf, sizeof(tlsf_t));
     }
 }
