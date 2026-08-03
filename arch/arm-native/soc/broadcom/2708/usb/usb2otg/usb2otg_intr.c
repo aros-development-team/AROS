@@ -1872,6 +1872,8 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                              * clearing.
                              */
                             ULONG chhltd_tsize = rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
+                            /* Set when a retry keeps the channel's owner. */
+                            BOOL keep_channel = FALSE;
                             D(ULONG chhltd_char = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));)
                             D(ULONG chhltd_dma = rd32le(USB2OTG_CHANNEL_REG(chan, DMAADDR));)
                             D(ULONG chhltd_nptx = rd32le(USB2OTG_NONPERIFIFOSTATUS);)
@@ -2018,6 +2020,38 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     /* Give-up teardown poisons the channel. */
                                     if (req->iouh_Flags & UHFF_SPLITTRANS)
                                         usb2otg_split_giveup_recover(USBUnit, chan);
+                                }
+                                else if (req->iouh_Flags & UHFF_SPLITTRANS)
+                                {
+                                    /*
+                                     * Split control: retry the SAME
+                                     * transaction in place, exactly like
+                                     * the NAK and NYET-cap paths. Requeueing
+                                     * restarts the transfer from its SETUP
+                                     * stage and abandons a transaction the
+                                     * transaction translator still has state
+                                     * for, which wedges the channel's split
+                                     * engine — every arm after that halts
+                                     * bare in its arming microframe, so the
+                                     * first stray halt turned into all 64.
+                                     */
+                                    ULONG splt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+
+                                    splt &= ~USB2OTG_HCSPLT_COMPLSPLT;
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), splt);
+
+                                    D(bug("[USB2OTG] IRQ: ctrl bare-CHHLTD %lu, retrying SSPLIT chan=%d dev=%d\n",
+                                        (unsigned long)chhs, chan, (int)req->iouh_DevAddr);)
+
+                                    USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
+                                    USBUnit->hu_Channel[chan].hc_CsplitRetry = 0;
+                                    USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_SS;
+                                    req->iouh_DriverPrivate2 = (APTR)(IPTR)chhs;
+                                    /* ~1 frame pause; SOF re-arms via
+                                     * StartChannel(quick=1) while the req
+                                     * still owns the channel. */
+                                    delayed_channel[chan] = 8;
+                                    keep_channel = TRUE;
                                 }
                                 else
                                 {
@@ -2195,7 +2229,8 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     }
                                 }
                             }
-                            USBUnit->hu_Channel[chan].hc_Request = NULL;
+                            if (!keep_channel)
+                                USBUnit->hu_Channel[chan].hc_Request = NULL;
 #if defined(__AROSEXEC_SMP__)
                             KrnSpinUnLock(&USBUnit->hu_Lock);
                             }
