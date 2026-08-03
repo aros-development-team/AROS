@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -34,6 +34,7 @@
 #include <aros/debug.h>
 #include "misc.h"
 #include "extstrings.h"
+#include "os.h"
 #include "baseredef.h"
 #endif
 
@@ -725,22 +726,63 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
 
 /*
  * record bitmap: stores bitmap in RAM (if you redefine a little) and saves it to disk.
+ *
+ * The bitmap content is fully known in memory, so the on-disk blocks are
+ * built here and written out in runs of consecutive blocks, without first
+ * reading each block in. Bitmap data blocks are never pulled into the block
+ * cache during validation, so writing around the cache is safe.
  */
+#define BM_RECORDBATCHBYTES 65536
+
 void record_bitmap(DiskStructure *ds)
 {
-        struct BlockCache *bc;
-        ULONG *mem;
+        ULONG bmap_blk_bytes = (ds->vol->SizeBlock-1)<<2;
+        ULONG batchblocks = BM_RECORDBATCHBYTES / BLOCK_SIZE(ds->vol);
+        UBYTE *buf = NULL;
         ULONG i;
 
-        for (i=0; i<ds->bm_lastblk; i++)
+        if (batchblocks > 1)
+                buf = AllocVec(batchblocks * BLOCK_SIZE(ds->vol), MEMF_PUBLIC);
+        if (buf == NULL)
         {
-                bc = getBlock(ds->afs, ds->vol, ds->bm_blocks[i]);
-                mem = bc->buffer;
+                /* no memory for batching - write through the cache, one block at a time */
+                struct BlockCache *bc;
+                ULONG *mem;
 
-                CopyMemQuick(&((char*)ds->bitmap)[i*((ds->vol->SizeBlock-1)<<2)], &mem[1], (ds->vol->SizeBlock-1)<<2);
-                verify_bm_checksum(ds, mem);
-                bc->flags |= BCF_WRITE;
+                for (i=0; i<ds->bm_lastblk; i++)
+                {
+                        bc = getBlock(ds->afs, ds->vol, ds->bm_blocks[i]);
+                        mem = bc->buffer;
+
+                        CopyMemQuick(&((char*)ds->bitmap)[i*bmap_blk_bytes], &mem[1], bmap_blk_bytes);
+                        verify_bm_checksum(ds, mem);
+                        bc->flags |= BCF_WRITE;
+                }
+                return;
         }
+
+        i = 0;
+        while (i < ds->bm_lastblk)
+        {
+                ULONG runlen = 1;
+                ULONG n;
+
+                while ((i + runlen < ds->bm_lastblk) && (runlen < batchblocks)
+                        && (ds->bm_blocks[i + runlen] == ds->bm_blocks[i] + runlen))
+                        runlen++;
+
+                for (n = 0; n < runlen; n++)
+                {
+                        ULONG *mem = (ULONG *)(buf + n * BLOCK_SIZE(ds->vol));
+
+                        mem[0] = 0;
+                        CopyMemQuick(&((char*)ds->bitmap)[(i + n) * bmap_blk_bytes], &mem[1], bmap_blk_bytes);
+                        verify_bm_checksum(ds, mem);
+                }
+                writeDisk(ds->afs, ds->vol, ds->bm_blocks[i], runlen, buf);
+                i += runlen;
+        }
+        FreeVec(buf);
 }
 
 /*
