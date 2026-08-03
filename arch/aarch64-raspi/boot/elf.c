@@ -68,10 +68,10 @@ int checkHeader(struct elfheader *eh)
                 eh->ident[EI_CLASS], eh->ident[EI_DATA], eh->type, eh->machine));
         DELF(kprintf("[BOOT:ELF] shnum=%d\n", eh->shnum));
         DELF(kprintf("[BOOT:ELF] shstrndx=%d\n", eh->shstrndx));
-        {
+        DELF({
                 volatile uint32_t *raw = (volatile uint32_t *)((uint8_t *)eh + 40);
-                DELF(kprintf("[BOOT:ELF] shoff raw: %08x %08x\n", raw[0], raw[1]));
-        }
+                kprintf("[BOOT:ELF] shoff raw: %08x %08x\n", raw[0], raw[1]);
+        });
 
         int_shnum = eh->shnum;
         int_shstrndx = eh->shstrndx;
@@ -1207,9 +1207,8 @@ int loadElf(void *elf_file)
                 {
                         if (sh[i].type == SHT_RELA && sh[sh[i].info].addr)
                         {
-                                struct sheader *shrel = &sh[i];
-                                unsigned int numrel = (unsigned long)shrel->size / (unsigned long)shrel->entsize;
-                                DELF(kprintf("[BOOT:ELF] Relocating section %d -> %d (%d entries)\n", i, shrel->info, numrel));
+                                DELF(kprintf("[BOOT:ELF] Relocating section %d -> %d (%d entries)\n", i, sh[i].info,
+                                        (unsigned int)(sh[i].size / sh[i].entsize)));
                                 sh[i].addr = (elf_ptr_t)((uintptr_t)elf_file + sh[i].offset);
                                 if (!sh[i].addr || !relocate(eh, sh, i, virtoffset, deltas))
                                 {

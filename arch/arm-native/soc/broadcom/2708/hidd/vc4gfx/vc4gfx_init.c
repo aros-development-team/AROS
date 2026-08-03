@@ -128,7 +128,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     {
         BOOL  mbox_ok   = (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
                           != (volatile unsigned int *)-1);
-        void *vc_base   = (void*)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+        void *vc_base   = (void*)(IPTR)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
         ULONG vc_length = AROS_LE2LONG(xsd->vcsd_MBoxMessage[6]);
         VC4_MBOX_UNLOCK(xsd);
         if (mbox_ok && FNAME_SUPPORT(InitMem)(vc_base, vc_length, LIBBASE))

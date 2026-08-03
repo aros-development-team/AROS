@@ -742,7 +742,7 @@ WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
     /* Calculate "last time handled" and "next time to be handled" frame numbers */
     ULONG next_to_handle = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
     ULONG last_handled = (next_to_handle - usb2otg_clamp_interval(ioreq->iouh_Interval)) & 0x7ff;
-    ioreq->iouh_DriverPrivate1 = (APTR)((last_handled << 16) | next_to_handle);
+    ioreq->iouh_DriverPrivate1 = (APTR)(IPTR)((last_handled << 16) | next_to_handle);
 
     Disable();
 #if defined(__AROSEXEC_SMP__)

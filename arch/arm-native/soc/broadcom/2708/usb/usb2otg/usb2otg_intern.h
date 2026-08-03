@@ -1,7 +1,7 @@
 #ifndef USB2OTG_INTERN_H
 #define USB2OTG_INTERN_H
 /*
-    Copyright � 2013-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,6 +42,7 @@ extern IPTR __arm_periiobase;
 #define ARM_PERIIOBASE __arm_periiobase
 #include <hardware/bcm2708.h>
 #include <hardware/usb2otg.h>
+#include <hardware/videocore.h>
 
 /*
     Force the USB chipset to run in Host mode
@@ -62,8 +63,6 @@ extern IPTR __arm_periiobase;
 
 #define VCMB_PROPCHAN   8
 #define VCPOWER_USBHCD  3
-#define VCPOWER_STATE_ON    1
-#define VCPOWER_STATE_WAIT  2
 
 static inline ULONG rd32le(IPTR iobase) {
     ULONG val;

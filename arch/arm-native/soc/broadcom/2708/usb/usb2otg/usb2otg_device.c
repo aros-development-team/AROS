@@ -290,7 +290,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 
                                     D(bug("[USB2OTG] %s: Enabling Global Interrupts ...\n", __PRETTY_FUNCTION__));
                                     otg_RegVal = rd32le(USB2OTG_INTR);
-                                    otg_RegVal = ~0UL;
+                                    otg_RegVal = ~0U;
                                     wr32le(USB2OTG_INTR, otg_RegVal);
 
                                     otg_RegVal = rd32le(USB2OTG_INTRMASK);

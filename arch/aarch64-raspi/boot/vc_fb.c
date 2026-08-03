@@ -119,7 +119,7 @@ int vcfb_init(void)
         D(kprintf("%p, %p, %p, %p, %p\n", AROS_LE2LONG(vcmb_msg[count]), AROS_LE2LONG(vcmb_msg[count+1]), AROS_LE2LONG(vcmb_msg[count+2]),
         AROS_LE2LONG(vcmb_msg[count+3]),AROS_LE2LONG(vcmb_msg[count+4])));
 
-        if (((scr_FrameBuffer = (void *)(AROS_LE2LONG(vcmb_msg[count + 3]))) == 0) || (AROS_LE2LONG(vcmb_msg[count + 4]) == 0))
+        if (((scr_FrameBuffer = (void *)(uintptr_t)AROS_LE2LONG(vcmb_msg[count + 3])) == 0) || (AROS_LE2LONG(vcmb_msg[count + 4]) == 0))
             return 0;
 
         D(kprintf("[VCFB] scr_Framebuffer=%p, %p\n", scr_FrameBuffer, (intptr_t)scr_FrameBuffer & 0xc0000000));

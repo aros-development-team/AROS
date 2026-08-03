@@ -299,7 +299,7 @@ static void usb2otg_recover_periodic_queue(struct USB2OTGUnit *USBUnit)
             if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
                 interval = 2;
             req->iouh_DriverPrivate1 =
-                (APTR)((frnm << 16) | ((frnm + interval) & 0x7ff));
+                (APTR)(IPTR)((frnm << 16) | ((frnm + interval) & 0x7ff));
             ADDTAIL(&USBUnit->hu_IntXFerQueue, (struct Node *)req);
             USBUnit->hu_Channel[chan].hc_Request = NULL;
         }
@@ -823,8 +823,8 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
 #endif
             ForeachNodeSafe(&USBUnit->hu_IntXFerQueue, req, next)
             {
-                ULONG last_handled = (ULONG)req->iouh_DriverPrivate1 >> 16;
-                ULONG next_to_handle = (ULONG)req->iouh_DriverPrivate1 & 0x7ff;
+                ULONG last_handled = (ULONG)(IPTR)req->iouh_DriverPrivate1 >> 16;
+                ULONG next_to_handle = (ULONG)(IPTR)req->iouh_DriverPrivate1 & 0x7ff;
 
                 /*
                  * Due when the frames elapsed since last_handled reach
@@ -1062,7 +1062,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                          * half-interval, TT cache is stale → requeue with
                          * updated timing; otherwise re-arm/delay.
                          */
-                        ULONG last = (ULONG)req->iouh_DriverPrivate1 >> 16;
+                        ULONG last = (ULONG)(IPTR)req->iouh_DriverPrivate1 >> 16;
                         ULONG thresh = (last + (ULONG)req->iouh_Interval / 2) % 2047;
 
                         if ((chan >= CHAN_INT1 && chan <= CHAN_INT_LAST) &&
@@ -1083,7 +1083,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
                                     interval = 2;
                                 ULONG next = (frnm + interval) & 0x7ff;
-                                req->iouh_DriverPrivate1 = (APTR)((frnm << 16) | next);
+                                req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                                 /* CSPLIT responded = liveness — reset wedge counter. */
                                 req->iouh_DriverPrivate2 = (APTR)0;
                                 ADDHEAD(&USBUnit->hu_IntXFerQueue, req);
@@ -1137,7 +1137,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
                                         interval = 2;
                                     ULONG next = (frnm + interval) & 0x7ff;
-                                    req->iouh_DriverPrivate1 = (APTR)((frnm << 16) | next);
+                                    req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                                     /* TT responded (NYETs) = liveness — reset wedge counter. */
                                     req->iouh_DriverPrivate2 = (APTR)0;
                                     ADDHEAD(&USBUnit->hu_IntXFerQueue, req);
@@ -1352,7 +1352,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                             usb2otg_halt_channel_preserve_char(chan);
 
-                            ULONG retries = (ULONG)req->iouh_DriverPrivate2;
+                            ULONG retries = (ULONG)(IPTR)req->iouh_DriverPrivate2;
                             if ((req->iouh_Req.io_Command == UHCMD_CONTROLXFER ||
                                  req->iouh_Req.io_Command == UHCMD_BULKXFER) &&
                                 retries < USB2OTG_TRANSIENT_RETRY_LIMIT)
@@ -1373,7 +1373,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 usb2otg_bulk_out_advance_pktcnt(USBUnit, chan, req, tsize_snap);
                                 /* retry++ after helper (helper may reset budget on progress). */
                                 req->iouh_DriverPrivate2 =
-                                    (APTR)((ULONG)req->iouh_DriverPrivate2 + 1);
+                                    (APTR)((IPTR)req->iouh_DriverPrivate2 + 1);
                                 if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
                                     usb2otg_ctrl_xact_retries++;
 
@@ -1457,7 +1457,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
                                         interval = 2;
                                     ULONG next = (frnm + interval) & 0x7ff;
-                                    req->iouh_DriverPrivate1 = (APTR)((frnm << 16) | next);
+                                    req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                                 }
                                 /* NAK = liveness — reset watchdog wedge counter. */
                                 req->iouh_DriverPrivate2 = (APTR)0;
@@ -1568,7 +1568,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
                                     interval = 2;
                                 ULONG next = (frnm + interval) & 0x7ff;
-                                req->iouh_DriverPrivate1 = (APTR)((frnm << 16) | next);
+                                req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                                 /* Channel got scheduled = liveness — reset wedge counter. */
                                 req->iouh_DriverPrivate2 = (APTR)0;
                                 ADDHEAD(&USBUnit->hu_IntXFerQueue, req);
@@ -1682,7 +1682,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
                                     interval = 2;
                                 ULONG next = (frnm + interval) & 0x7ff;
-                                req->iouh_DriverPrivate1 = (APTR)((frnm << 16) | next);
+                                req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                                 /* Bare CHHLTD = liveness — reset wedge counter. */
                                 req->iouh_DriverPrivate2 = (APTR)0;
                                 ADDTAIL(&USBUnit->hu_IntXFerQueue, req);
@@ -2220,7 +2220,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
 
                         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
 
-                        req->iouh_DriverPrivate1 = (APTR)((frnm << 16) | next);
+                        req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                         /* NAK = liveness — reset watchdog wedge counter. */
                         req->iouh_DriverPrivate2 = (APTR)0;
                         ADDHEAD(&otg_Unit->hu_IntXFerQueue, req);
@@ -2257,11 +2257,11 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                             bug("[USB2OTG] Watchdog: chan=%d stuck (CHENA=0), forcing timeout for dev=%d ep=%d intr=%04x\n",
                                 chan, req->iouh_DevAddr, req->iouh_Endpoint, intr);
                             bug("[USB2OTG:STUCK] HCCHAR=%08lx HCSPLT=%08lx HCTSIZ=%08lx HFNUM=%08lx (armed@%08lx)\n",
-                                (ULONG)hcchar, (ULONG)hcsplt, (ULONG)hctsiz,
-                                (ULONG)hfnum, (ULONG)started);
+                                (unsigned long)hcchar, (unsigned long)hcsplt, (unsigned long)hctsiz,
+                                (unsigned long)hfnum, (unsigned long)started);
                             bug("[USB2OTG:STUCK] req: cmd=%d flags=%08lx mps=%u dev=%u ep=%u dir=%u splithub=%u splitport=%u csplit_pending=%u\n",
                                 (int)req->iouh_Req.io_Command,
-                                (ULONG)req->iouh_Flags,
+                                (unsigned long)req->iouh_Flags,
                                 (unsigned)req->iouh_MaxPktSize,
                                 (unsigned)req->iouh_DevAddr,
                                 (unsigned)req->iouh_Endpoint,
@@ -2415,7 +2415,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                         if (req->iouh_DevAddr < 8)
                             usb2otg_int_nak_count[req->iouh_DevAddr]++;
                         req->iouh_DriverPrivate1 =
-                            (APTR)((frnm_now << 16) |
+                            (APTR)(IPTR)((frnm_now << 16) |
                                    ((frnm_now + interval) & 0x7ff));
                         req->iouh_DriverPrivate2 = (APTR)0;
                         ADDTAIL(&otg_Unit->hu_IntXFerQueue, (struct Node *)req);
@@ -2646,7 +2646,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                      */
                     if (req->iouh_Req.io_Command == UHCMD_INTXFER)
                     {
-                        ULONG wedges = (ULONG)req->iouh_DriverPrivate2 + 1;
+                        ULONG wedges = (ULONG)(IPTR)req->iouh_DriverPrivate2 + 1;
 
                         /*
                          * An INT channel silent for the whole watchdog
@@ -2674,9 +2674,9 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                                 (unsigned long)wedges,
                                 USB2OTG_INT_WEDGE_RETRY_LIMIT);
 
-                            req->iouh_DriverPrivate2 = (APTR)wedges;
+                            req->iouh_DriverPrivate2 = (APTR)(IPTR)wedges;
                             req->iouh_DriverPrivate1 =
-                                (APTR)((frnm_now << 16) |
+                                (APTR)(IPTR)((frnm_now << 16) |
                                        ((frnm_now + interval) & 0x7ff));
                             ADDTAIL(&otg_Unit->hu_IntXFerQueue, (struct Node *)req);
 #if defined(__AROSEXEC_SMP__)
@@ -2736,8 +2736,8 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
 #endif
         ForeachNodeSafe(&otg_Unit->hu_IntXFerQueue, req, next)
         {
-            ULONG last_handled = (ULONG)req->iouh_DriverPrivate1 >> 16;
-            ULONG next_to_handle = (ULONG)req->iouh_DriverPrivate1 & 0x7ff;
+            ULONG last_handled = (ULONG)(IPTR)req->iouh_DriverPrivate1 >> 16;
+            ULONG next_to_handle = (ULONG)(IPTR)req->iouh_DriverPrivate1 & 0x7ff;
 
             q_count++;
 

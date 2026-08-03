@@ -116,7 +116,7 @@ BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
             { TAG_DONE, 0 }
         };
 
-        data->VideoData = (UBYTE *)xsd->vcsd_FBPage[nf];
+        data->VideoData = (UBYTE *)(IPTR)xsd->vcsd_FBPage[nf];
         OOP_SetAttrs(xsd->vcsd_FBObj, btags);
     }
 
@@ -200,7 +200,7 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
                 continue;
             return FALSE;
         }
-        fb_ptr = (APTR)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[23]) & 0x3fffffff);
+        fb_ptr = (APTR)(IPTR)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[23]) & 0x3fffffff);
         fb_size = AROS_LE2LONG(xsd->vcsd_MBoxMessage[24]);
 
         /* Use the firmware-reported pitch verbatim: it may align rows, or

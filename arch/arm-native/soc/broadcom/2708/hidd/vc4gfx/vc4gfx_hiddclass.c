@@ -341,7 +341,7 @@ int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
         xsd->vcsd_CurBuf = NULL;
         return FALSE;
     }
-    xsd->vcsd_CurBuf = (APTR)(xsd->vcsd_CurBufBus & 0x3fffffff);
+    xsd->vcsd_CurBuf = (APTR)(IPTR)(xsd->vcsd_CurBufBus & 0x3fffffff);
 
     if (xsd->vcsd_CurBuf == NULL)
         return FALSE;

@@ -74,7 +74,7 @@ void *FNAME_SUPPORT(Alloc)(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
         != (volatile unsigned int *)-1)
     {
-        void *res = (void*)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[7]) & 0x3fffffff);
+        void *res = (void*)(IPTR)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[7]) & 0x3fffffff);
         D(bug("[VideoCoreGfx] %s: Allocated %d bytes, memhandle @ 0x%p\n", __PRETTY_FUNCTION__,
             AROS_LE2LONG(xsd->vcsd_MBoxMessage[4]), AROS_LE2LONG(xsd->vcsd_MBoxMessage[7])));
         VC4_MBOX_UNLOCK(xsd);
@@ -102,7 +102,7 @@ void *FNAME_SUPPORT(LockMem)(struct MemHeaderExt *mhe, void *memhandle)
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_LOCKMEM);
     xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(4);
-    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG((ULONG)memhandle);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG((ULONG)(IPTR)memhandle);
 
     xsd->vcsd_MBoxMessage[5] = 0;
 
@@ -111,7 +111,7 @@ void *FNAME_SUPPORT(LockMem)(struct MemHeaderExt *mhe, void *memhandle)
     if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
         != (volatile unsigned int *)-1)
     {
-        void *res = (void*)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]) & 0x3fffffff);
+        void *res = (void*)(IPTR)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]) & 0x3fffffff);
         D(bug("[VideoCoreGfx] %s: Memory locked @ 0x%p\n", __PRETTY_FUNCTION__, AROS_LE2LONG(xsd->vcsd_MBoxMessage[5])));
         VC4_MBOX_UNLOCK(xsd);
         return res;
@@ -134,7 +134,7 @@ void *FNAME_SUPPORT(UnLockMem)(struct MemHeaderExt *mhe, void *memhandle)
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_UNLOCKMEM);
     xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(4);
-    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG((ULONG)memhandle);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG((ULONG)(IPTR)memhandle);
 
     xsd->vcsd_MBoxMessage[5] = 0;
 
@@ -143,7 +143,7 @@ void *FNAME_SUPPORT(UnLockMem)(struct MemHeaderExt *mhe, void *memhandle)
     if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
         != (volatile unsigned int *)-1)
     {
-        void *res = (void*)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+        void *res = (void*)(IPTR)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
         D(bug("[VideoCoreGfx] %s: Memory unlocked [status %08x]\n", __PRETTY_FUNCTION__, AROS_LE2LONG(xsd->vcsd_MBoxMessage[5])));
         VC4_MBOX_UNLOCK(xsd);
         return res;
@@ -171,7 +171,7 @@ void FNAME_SUPPORT(Free)(struct MemHeaderExt *mhe, APTR  memhandle, IPTR size)
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_FREEMEM);
     xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(4);
-    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG((ULONG)memhandle);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG((ULONG)(IPTR)memhandle);
 
     xsd->vcsd_MBoxMessage[5] = 0;
 

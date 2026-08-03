@@ -183,10 +183,10 @@ static struct IOUsbHWReq *usb2otg_find_schedulable_bulk_req(
             continue;
 
         /* Legacy per-request retry-delay counter (call-count, not wall time). */
-        delay = (ULONG)req->iouh_DriverPrivate1;
+        delay = (ULONG)(IPTR)req->iouh_DriverPrivate1;
         if (delay > 0)
         {
-            req->iouh_DriverPrivate1 = (APTR)(delay - 1);
+            req->iouh_DriverPrivate1 = (APTR)(IPTR)(delay - 1);
             continue;
         }
 
@@ -667,7 +667,7 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     /* Large unaligned buffers must be chunked through the bounce buffer.
      * Alignment criterion is 64 bytes (cache line) so per-buffer cache
      * flush doesn't drag in adjacent unrelated data on line boundaries. */
-    if (buffer != NULL && ((ULONG)buffer & 0x3F) && xfer_size > DMA_BOUNCE_SIZE)
+    if (buffer != NULL && ((IPTR)buffer & 0x3F) && xfer_size > DMA_BOUNCE_SIZE)
         xfer_size = DMA_BOUNCE_SIZE;
 
     /* Get packet count and adjust this and the transfer size */
@@ -710,7 +710,7 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     {
         APTR dma_buf = buffer;
         if (buffer != NULL
-            && (((ULONG)buffer & 0x3F) || (direction && ((ULONG)xfer_size & 0x3F)))
+            && (((IPTR)buffer & 0x3F) || (direction && ((ULONG)xfer_size & 0x3F)))
             && xfer_size <= DMA_BOUNCE_SIZE)
         {
             otg_Unit->hu_Channel[chan].hc_OrigBuffer = buffer;
@@ -739,7 +739,7 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
                 CacheClearE(buffer, xfer_size, CACRF_ClearD);
         }
         asm volatile("dsb sy" ::: "memory");
-        wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), 0xc0000000 | (ULONG)dma_buf);
+        wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), 0xc0000000 | (ULONG)(IPTR)dma_buf);
     }
 
     /* Dump SETUP data and DMA info for control transfers to help debug STALL/XactErr */
@@ -748,7 +748,7 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         UBYTE *p = (UBYTE *)buffer;
         D(bug("[USB2OTG] Setup: dev=%d buf=%p dma=%08x data=[%02x %02x %02x %02x %02x %02x %02x %02x]\n",
             req->iouh_DevAddr, buffer,
-            0xc0000000 | (ULONG)buffer,
+            0xc0000000 | (ULONG)(IPTR)buffer,
             p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]));
         D(bug("[USB2OTG] Setup: CHAR=%08x TSIZE=%08x pid=%d mps=%d len=%d data=%p\n",
             rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)),
@@ -1116,7 +1116,7 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
 
         /* Get packet count and adjust this and the transfer size.
          * 64-byte cache-line alignment criterion — see SetupChannel. */
-        if (buffer != NULL && ((ULONG)buffer & 0x3F) && xfer_size > DMA_BOUNCE_SIZE)
+        if (buffer != NULL && ((IPTR)buffer & 0x3F) && xfer_size > DMA_BOUNCE_SIZE)
             xfer_size = DMA_BOUNCE_SIZE;
 
         if (xfer_size > (1 << (otg_Unit->hu_XferSizeWidth - 1)))
@@ -1155,7 +1155,7 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         {
             APTR dma_buf = buffer;
             if (buffer != NULL
-                && (((ULONG)buffer & 0x3F) || (direction && ((ULONG)xfer_size & 0x3F)))
+                && (((IPTR)buffer & 0x3F) || (direction && ((ULONG)xfer_size & 0x3F)))
                 && xfer_size <= DMA_BOUNCE_SIZE)
             {
                 otg_Unit->hu_Channel[chan].hc_OrigBuffer = buffer;
@@ -1203,7 +1203,7 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
                             (unsigned long)req->iouh_Actual);
                 }
             )
-            wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), 0xc0000000 | (ULONG)dma_buf);
+            wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), 0xc0000000 | (ULONG)(IPTR)dma_buf);
         }
 
         /* Log phase transitions for control transfers */
@@ -1211,7 +1211,7 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         {
             D(bug("[USB2OTG] Advance: dev=%d dir=%d pid=%d xfer=%d buf=%p dma=%08x\n",
                 req->iouh_DevAddr, direction, pid, xfer_size, buffer,
-                0xc0000000 | (ULONG)buffer));
+                0xc0000000 | (ULONG)(IPTR)buffer));
             D(bug("[USB2OTG] Advance: CHAR=%08x TSIZE=%08x\n",
                 rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)),
                 rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE))));
@@ -1751,7 +1751,7 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
 
             ULONG last_handled = frnm;
             ULONG next_to_handle = (last_handled + interval) & 0x7ff;
-            req->iouh_DriverPrivate1 = (APTR)((last_handled << 16) | next_to_handle);
+            req->iouh_DriverPrivate1 = (APTR)(IPTR)((last_handled << 16) | next_to_handle);
 
             if (!FNAME_DEV(SetupChannel)(otg_Unit, chan))
                 continue;
