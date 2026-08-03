@@ -5926,6 +5926,64 @@ AROS_LH0(void, psdClassScan,
         return;
     }
 
+    /*
+     * Boot-protocol classes (UCCA_AfterDOSRestart, i.e. bootmouse/
+     * bootkeyboard) are placeholders bound while the full class set
+     * is still loading: AddUSBClasses adds classes in directory
+     * order, and a hub rescan between two adds can bind a boot class
+     * to an interface before hid.class has been added at all. The
+     * config-load path releases such bindings in psdParseCfg
+     * ("AfterDOS"), but a system without a poseidon.prefs never gets
+     * there — psdLoadCfgFromDisk fails before psdParseCfg is called —
+     * so the placeholder binding was permanent. Release them here
+     * instead, on any full class scan once DOS is up, and let the
+     * complete, priority-ordered class list re-arbitrate.
+     */
+    if((FindTask(NULL)->tc_Node.ln_Type == NT_PROCESS) && pHaveDOS(ps)) {
+        puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+        while(puc->puc_Node.ln_Succ) {
+            IPTR restartme = FALSE;
+
+            usbGetAttrs(UGA_CLASS, NULL,
+                        UCCA_AfterDOSRestart, &restartme,
+                        TAG_END);
+            if(restartme && puc->puc_UseCnt) {
+                struct PsdConfig *pc;
+                struct PsdInterface *pif;
+
+                /* Well, try to release the open bindings in a best effort attempt */
+                pd = NULL;
+                while((pd = psdGetNextDevice(pd))) {
+                    if(pd->pd_DevBinding && (pd->pd_ClsBinding == puc) && (!(pd->pd_Flags & PDFF_APPBINDING))) {
+                        psdUnlockPBase();
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                       "ClassScan: releasing %s %s binding to %s.",
+                                       puc->puc_ClassName, "device", pd->pd_ProductStr);
+                        psdReleaseDevBinding(pd);
+                        psdLockReadPBase();
+                        pd = NULL; /* restart */
+                        continue;
+                    }
+                    ForeachNode(&pd->pd_Configs, pc) {
+                        ForeachNode(&pc->pc_Interfaces, pif) {
+                            if(pif->pif_IfBinding && (pif->pif_ClsBinding == puc)) {
+                                psdUnlockPBase();
+                                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                               "ClassScan: releasing %s %s binding to %s.",
+                                               puc->puc_ClassName, "interface", pd->pd_ProductStr);
+                                psdReleaseIfBinding(pif);
+                                psdLockReadPBase();
+                                pd = NULL; /* restart */
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+            puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+        }
+    }
+
     phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
     while(phw->phw_Node.ln_Succ) {
         pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
