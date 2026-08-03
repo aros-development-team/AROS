@@ -400,6 +400,9 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     otg_Unit->hu_Channel[chan].hc_DeferCount = 0;
     otg_Unit->hu_Channel[chan].hc_CsplitRetry = 0;
     otg_Unit->hu_Channel[chan].hc_QuietIdleStreak = 0;
+    /* DIAG: fresh event-trace budget for this submission. */
+    otg_Unit->hu_Channel[chan].hc_TraceCount = 0;
+    otg_Unit->hu_Channel[chan].hc_TraceAnom = 0;
     /* Cancel a previous owner's pending CSPLIT re-arm on this channel. */
     usb2otg_clear_delayed_channel(chan);
 
