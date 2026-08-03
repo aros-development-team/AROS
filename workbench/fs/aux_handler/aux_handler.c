@@ -115,8 +115,10 @@ LONG aux_handler(struct ExecBase *SysBase)
             struct FileSysStartupMsg *fssm;
             void (*conentry)(void);
 
-            /* A seglist begins with the BPTR to the next segment. */
-            conentry = (void (*)(void))((ULONG *)BADDR(seg->seg_Seg) + 1);
+            /* A seglist begins with the BPTR to the next segment, which
+               is pointer sized - stepping over it as a ULONG lands four
+               bytes short of the code on a 64 bit target. */
+            conentry = (void (*)(void))((BPTR *)BADDR(seg->seg_Seg) + 1);
 
             /*
              * The mountlist may have supplied a startup naming any device and
