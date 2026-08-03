@@ -140,6 +140,16 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
         int fb_rgb = ((mb->flags & MB_FLAGS_FB) && (mb->framebuffer_type == MB_FRAMEBUFFER_RGB));
         int choose_gop = 0;
 
+#if !defined(MULTIBOOT_64BIT)
+        /* See multiboot2.c: >4GiB framebuffers are unusable on 32-bit targets */
+        if (fb_rgb && (mb->framebuffer_addr >> 32) != 0)
+        {
+            kprintf("[bootstrap:multiboot1] smartfb: framebuffer @ 0x%016llX is above 4GiB - unusable on 32-bit, skipping\n",
+                mb->framebuffer_addr);
+            fb_rgb = 0;
+        }
+#endif
+
         if (fb_rgb && (!have_graphics_vbe || ((mb->framebuffer_addr >> 32) != 0)))
             choose_gop = 1;
 

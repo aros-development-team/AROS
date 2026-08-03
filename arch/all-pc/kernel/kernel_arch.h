@@ -16,11 +16,17 @@
 
 /*
  * Software IRQ namespace size.
- * We keep a full 16-bit IRQ ID space (0..65535) so large GSI domains and
- * CPU-banked IRQ schemes can coexist, while IDT vectors remain 8-bit and are
- * allocated/mapped lazily.
+ * On x86_64 we keep a full 16-bit IRQ ID space (0..65535) so large GSI
+ * domains and CPU-banked IRQ schemes can coexist, while IDT vectors remain
+ * 8-bit and are allocated/mapped lazily. On i386 the wide ID space has no
+ * users and would grow kb_Interrupts[] (and every boot-time IRQ loop) by
+ * 256x, so the historic 256-entry space is kept there.
  */
+#if defined(__x86_64__)
 #define HW_IRQ_COUNT    65536
+#else
+#define HW_IRQ_COUNT    256
+#endif
 
 #define PAGE_SIZE	        0x1000
 #define PAGE_MASK	        0x0FFF

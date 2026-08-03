@@ -220,6 +220,20 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
     {
         BOOL fb_rgb = (fb && (fb->common.framebuffer_type == MB2_FRAMEBUFFER_RGB));
         BOOL vbe_graphics = (vbe && (vbe->vbe_mode_info.mode_attributes & VM_GRAPHICS));
+
+#if !defined(MULTIBOOT_64BIT)
+        /*
+         * A 32-bit target can never address a framebuffer above 4GiB: both
+         * VBEModeInfo.phys_base and ti_Data would truncate. Ignore such a
+         * framebuffer and fall back to VBE/VGA instead.
+         */
+        if (fb_rgb && (fb->common.framebuffer_addr >> 32) != 0)
+        {
+            kprintf("[bootstrap:multiboot2] smartfb: framebuffer @ 0x%016llX is above 4GiB - unusable on 32-bit, skipping\n",
+                fb->common.framebuffer_addr);
+            fb_rgb = FALSE;
+        }
+#endif
         BOOL choose_gop = FALSE;
 
         if (fb_rgb)

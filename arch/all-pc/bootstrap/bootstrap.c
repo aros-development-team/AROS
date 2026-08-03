@@ -609,10 +609,17 @@ static void __bootstrap(unsigned int magic, void *mb)
      */
     /*
      * Reserve extra room for kernel boot-time allocations.
-     * GOP/UEFI boots may need substantially more early memory because of
-     * larger boot data relocation and MMU/GDT/TSS setup.
+     * 64-bit GOP/UEFI boots may need substantially more early memory because
+     * of larger boot data relocation and MMU/GDT/TSS setup (large identity
+     * maps, per-core TSS). 32-bit targets keep the historic small reserve:
+     * requiring a 256MB contiguous region would make low-memory i386
+     * machines unbootable.
      */
+#ifdef MULTIBOOT_64BIT
     ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x10000000;
+#else
+    ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x80000;
+#endif
 
     /* Now locate the highest appropriate region */
     while (len >= sizeof(struct mb_mmap))

@@ -25,6 +25,15 @@
 #include "segments.h"
 #include "debug_xmm.h"
 
+/* struct ExceptionContext member names differ between i386 and x86_64 */
+#if defined(__x86_64__)
+#define EXCTX_IP(regs) ((regs)->rip)
+#define EXCTX_SP(regs) ((regs)->rsp)
+#else
+#define EXCTX_IP(regs) ((regs)->eip)
+#define EXCTX_SP(regs) ((regs)->esp)
+#endif
+
 #ifdef DEBUG
 #undef DEBUG
 #endif
@@ -272,6 +281,20 @@ void core_ReloadIDT()
 
 void core_SetupIDT(apicid_t _APICID, x86vectgate_t *IGATES)
 {
+    /*
+     * Make sure the vector->IRQ map is usable even on systems that never
+     * bring up the APIC controller (legacy PIC-only boots) - otherwise
+     * core_IRQHandle would read an all-zero map and deliver every device
+     * interrupt as IRQ 0. First caller wins; APICInt_Init re-initialises
+     * the map explicitly when it takes ownership.
+     */
+    static BOOL vecmap_ready = FALSE;
+    if (!vecmap_ready)
+    {
+        apicInitVectorMap();
+        vecmap_ready = TRUE;
+    }
+
     int i;
     uintptr_t off;
     struct segment_selector IDT_sel;
@@ -406,8 +429,8 @@ SAVE_XMM_INTO_AREA(localarea)
                     {
                         IPTR cr2 = 0;
                         __asm__ volatile("mov %%cr2,%0" : "=r"(cr2));
-                        bug("[PF-DBG] CR2=%p RIP=%p RSP=%p CS=%p SS=%p ERR=%08lx\n",
-                            (APTR)cr2, (APTR)regs->rip, (APTR)regs->rsp,
+                        bug("[PF-DBG] CR2=%p IP=%p SP=%p CS=%p SS=%p ERR=%08lx\n",
+                            (APTR)cr2, (APTR)EXCTX_IP(regs), (APTR)EXCTX_SP(regs),
                             (APTR)regs->cs, (APTR)regs->ss, error_code);
                         bug("[PF-DBG] access=%s mode=%s present=%s rsvd=%s ifetch=%s\n",
                             (error_code & 2) ? "write" : "read",
@@ -421,9 +444,9 @@ SAVE_XMM_INTO_AREA(localarea)
                          * caller's return address - names the culprit
                          * without needing the alert requester's Log button.
                          */
-                        if ((error_code & 4) && regs->rsp >= 0x1000)
+                        if ((error_code & 4) && EXCTX_SP(regs) >= 0x1000)
                         {
-                            IPTR *sp = (IPTR *)regs->rsp;
+                            IPTR *sp = (IPTR *)EXCTX_SP(regs);
                             int di;
                             for (di = 0; di < 8; di++)
                             {
