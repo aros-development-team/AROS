@@ -70,7 +70,12 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         io->io_Error = IOERR_BADADDRESS;
         return TRUE;
     } else if ((len == 0) || (len > (1 << unit->au_Bus->ab_Dev->dev_mdts) * unit->au_Bus->ab_Dev->pagesize)) {
-        bug("[NVME%02ld] %s: BADLENGTH (writing %u bytes to %x)\n", unit->au_UnitNum, __func__, len, (off64 >> unit->au_SecShift));
+        /* len == 0 is the standard TD64 capability probe (see e.g. fat-handler
+           Probe64BitSupport); reject it quietly */
+        if (len != 0)
+            bug("[NVME%02ld] %s: BADLENGTH (%s %u bytes at block %x, cmd %u, task '%s')\n", unit->au_UnitNum, __func__,
+                is_write ? "write" : "read", len, (off64 >> unit->au_SecShift), io->io_Command,
+                FindTask(NULL)->tc_Node.ln_Name ? FindTask(NULL)->tc_Node.ln_Name : "<unnamed>");
         io->io_Error = IOERR_BADLENGTH;
         return TRUE;
     }
