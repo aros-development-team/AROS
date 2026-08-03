@@ -1253,8 +1253,12 @@ void nExamineAudioDescriptors(struct NepClassAudio *nch)
                                           compare_frequencies);
                                 } else {
                                     const ULONG *freqtab = commonFreqs;
-                                    nam->nam_MinFreq = uat1f->tSamFreq0[0]|(uat1f->tSamFreq0[1]<<8)|(uat1f->tSamFreq0[2]<<16);
-                                    nam->nam_MaxFreq = uat1f->tSamFreq0[3]|(uat1f->tSamFreq0[4]<<8)|(uat1f->tSamFreq0[5]<<16);
+                                    /* Continuous range: tSamFreq0 holds the lower
+                                       bound, the following 3 descriptor bytes the
+                                       upper bound. */
+                                    const UBYTE *fptr = uat1f->tSamFreq0;
+                                    nam->nam_MinFreq = fptr[0]|(fptr[1]<<8)|(fptr[2]<<16);
+                                    nam->nam_MaxFreq = fptr[3]|(fptr[4]<<8)|(fptr[5]<<16);
                                     if(nam->nam_MaxFreq > 64000)
                                     {
                                         nam->nam_MaxFreq = 64000;
