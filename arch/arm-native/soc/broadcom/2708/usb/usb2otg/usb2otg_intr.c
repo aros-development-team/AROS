@@ -978,12 +978,17 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
         }
 
         /*
-         * Rescue interrupt splits the core armed but never ran. The
-         * channel sits with CHENA set, no handshake in HCINT and
-         * nothing in HAINT, so there is no interrupt coming to end it.
-         * Requeue for the next interval as soon as the split has taken
-         * too long, rather than leaving the device's reports stalled
-         * until the watchdog notices 900 ms later.
+         * Rescue interrupt splits the core armed but never ran: CHENA
+         * set, zero HCINT events, nothing in HAINT — no interrupt is
+         * coming to end this transfer, and the watchdog only notices
+         * after 900 ms (long enough to lose the report that releases
+         * a mouse button). Guards vs the earlier, reverted attempt:
+         * only SSPLIT state is touched (a CS-phase channel is mid-
+         * transaction and healthy — hc_SplitSSUframe is not updated
+         * past the SS arm, so CS must not be judged by it), and the
+         * channel is exorcised after the halt (halting an armed
+         * SSPLIT poisons the split engine; the forced disable cycle
+         * is the proven cure).
          */
         {
             int chan;
@@ -999,7 +1004,7 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
                 if (sreq->iouh_Req.io_Command != UHCMD_INTXFER ||
                     !(sreq->iouh_Flags & UHFF_SPLITTRANS))
                     continue;
-                if (hc->hc_SplitState == USB2OTG_SPLIT_IDLE)
+                if (hc->hc_SplitState != USB2OTG_SPLIT_SS)
                     continue;
 
                 elapsed = (frnm_orig - hc->hc_SplitSSUframe) & 0x3fff;
@@ -1020,13 +1025,15 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
                         interval = 2;
 
                     if (++stall_count <= 5 || (stall_count & 0xff) == 0)
-                        bug("[USB2OTG] SOF: int split stalled %lu uframes chan=%d dev=%d ep=%d, requeueing (#%lu)\n",
+                        bug("[USB2OTG] SOF: int split never ran, %lu uframes chan=%d dev=%d ep=%d — exorcise+requeue (#%lu)\n",
                             (unsigned long)elapsed, chan,
                             (int)sreq->iouh_DevAddr, (int)sreq->iouh_Endpoint,
                             (unsigned long)stall_count);
 
                     wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                     usb2otg_halt_channel_preserve_char(chan);
+                    /* Heal the halt-on-armed-SSPLIT poison before reuse. */
+                    usb2otg_exorcise_channel(chan);
                     hc->hc_SplitCSplitPending = 0;
                     hc->hc_SplitState = USB2OTG_SPLIT_IDLE;
                     hc->hc_CsplitRetry = 0;
@@ -1573,18 +1580,20 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
                                     req->iouh_DevAddr < 8)
                                     usb2otg_int_comp_count[req->iouh_DevAddr]++;
-                                // if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
-                                //     req->iouh_Actual > 0)
-                                // {
-                                //     static ULONG intc_count = 0;
-                                //     intc_count++;
-                                //     if (intc_count <= 10 || (intc_count & 0x3f) == 0)
-                                //         bug("[USB2OTG:INTC] dev=%d ep=%d len=%lu (#%lu)\n",
-                                //             (int)req->iouh_DevAddr,
-                                //             (int)req->iouh_Endpoint,
-                                //             (unsigned long)req->iouh_Actual,
-                                //             (unsigned long)intc_count);
-                                // }
+                                D(
+                                    if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
+                                        req->iouh_Actual > 0)
+                                    {
+                                        static ULONG intc_count = 0;
+                                        intc_count++;
+                                        if (intc_count <= 10 || (intc_count & 0x3f) == 0)
+                                            bug("[USB2OTG:INTC] dev=%d ep=%d len=%lu (#%lu)\n",
+                                                (int)req->iouh_DevAddr,
+                                                (int)req->iouh_Endpoint,
+                                                (unsigned long)req->iouh_Actual,
+                                                (unsigned long)intc_count);
+                                    }
+                                )
                             }
                         }
                         else if (intr & USB2OTG_INTRCHAN_AHBERROR)

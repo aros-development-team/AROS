@@ -538,18 +538,6 @@ extern ULONG usb2otg_ctrl_xact_retries;   /* XactErr/DTErr/BNA path */
  */
 #define USB2OTG_WD_TICKS_INT_DIRECT   3   /* HS INT direct: 450 ms */
 #define USB2OTG_WD_TICKS_INT_SPLIT    6   /* LS/FS INT through TT: 900 ms */
-
-/*
- * Microframes an interrupt split may spend between its start-split and
- * a result before the SOF handler writes it off. A healthy sequence
- * completes a few microframes after the SSPLIT; the core sometimes
- * leaves one armed and simply never runs it, with no handshake and no
- * halt to interrupt on. The 150 ms watchdog does catch that, but for a
- * device polled every millisecond it is a hole big enough to lose the
- * report that releases a mouse button, which leaves the button stuck
- * down as far as the input layer is concerned.
- */
-#define USB2OTG_SPLIT_INT_STALL_UFRAMES 24
 #define USB2OTG_WD_TICKS_CTRL         6   /* Control transfers: 900 ms */
 #define USB2OTG_WD_TICKS_BULK_DIRECT 20   /* HS bulk direct: 3 s */
 #define USB2OTG_WD_TICKS_BULK_SPLIT  10   /* LS/FS bulk through TT: 1.5 s */
@@ -608,6 +596,17 @@ extern ULONG usb2otg_ctrl_xact_retries;   /* XactErr/DTErr/BNA path */
  * control is enumeration/setup traffic only.
  */
 #define USB2OTG_CTRL_SPLIT_PACE_UFRAMES   72
+
+/*
+ * Microframes an interrupt split may sit in SSPLIT state with zero
+ * HCINT events before the SOF handler writes it off as never-run
+ * (armed with CHENA set but the core never executes it — no
+ * handshake, no halt, no interrupt coming). Only the SS state is
+ * rescued: a channel in CS phase is mid-transaction and gets its
+ * events. 24 uframes = 3 ms >> the 1-2 frames a healthy SSPLIT
+ * needs to reach the bus.
+ */
+#define USB2OTG_SPLIT_INT_STALL_UFRAMES   24
 
 /*
  * Control retry backoff in frames (ms). Encoded into DriverPrivate1
