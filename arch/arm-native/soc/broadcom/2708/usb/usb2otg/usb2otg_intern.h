@@ -591,11 +591,12 @@ extern ULONG usb2otg_ctrl_xact_retries;   /* XactErr/DTErr/BNA path */
  * binding). Empirically proven by accident: a ~9 ms serial log line
  * between every IRQ event and its re-arm made split ctrl 100%
  * reliable (and in every older trace the wedge struck exactly where
- * event logging stopped). 72 uframes reproduces that spacing
- * deliberately. Costs ~55 ms per LS control transfer — acceptable,
- * control is enumeration/setup traffic only.
+ * event logging stopped). 72 uframes reproduced that spacing
+ * deliberately; bisected down to 16 (2 ms), verified clean on
+ * hardware. Control is enumeration/setup traffic only, so the cost
+ * is a few ms per LS control transfer.
  */
-#define USB2OTG_CTRL_SPLIT_PACE_UFRAMES   72
+#define USB2OTG_CTRL_SPLIT_PACE_UFRAMES   16
 
 /*
  * Microframes an interrupt split may sit in SSPLIT state with zero
