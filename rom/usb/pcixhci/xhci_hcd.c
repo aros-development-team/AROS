@@ -3132,8 +3132,17 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 }
 
                 if(!req) {
-                    /* Avoid log storms for expected endpoint-level ISO conditions */
-                    if(trbe_ccode != TRB_CC_RING_UNDERRUN) {
+                    /*
+                     * Avoid log storms for expected endpoint-level ISO
+                     * conditions, and for the three Stopped codes: those
+                     * report what a queued TRB was doing when the endpoint
+                     * was halted, which arrives after the request it
+                     * belonged to has already been failed and reaped.
+                     */
+                    if((trbe_ccode != TRB_CC_RING_UNDERRUN) &&
+                       (trbe_ccode != TRB_CC_STOPPED) &&
+                       (trbe_ccode != TRB_CC_STOPPED_LENGTH_INVALID) &&
+                       (trbe_ccode != TRB_CC_STOPPED_SHORT_PACKET)) {
                         pciusbWarn("xHCI",
                                    DEBUGWARNCOLOR_SET
                                    "TRANSFER EVT: slot=%u epid=%u idx=%lu cc=%lu missing ioreq"
