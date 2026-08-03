@@ -143,9 +143,16 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-usb-usb2otg \
 #MM kernel-usb-romstrap-raspi
 
-RASPIFW_BRANCH    := master
+# Pin to a specific firmware release tag, not the rolling 'master' branch:
+# start.elf and fixup.dat are a version-matched pair, and fetching them from
+# master at different times (with wget -c never re-fetching) yields a mismatch
+# ("MISMATCHED FILES: start.elf and fixup.dat do not fit to each other!").
+RASPIFW_BRANCH    := 1.20260521
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
-RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2709-rpi-2-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb
+# No BCM2711 dtb here: arm-native has no Pi 4 platform, only bcm2708.
+RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf \
+                     bcm2709-rpi-2-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb \
+                     bcm2710-rpi-zero-2-w.dtb bcm2710-rpi-zero-2.dtb
 
 # Broadcom WiFi firmware for bwfm.device (loaded at runtime from DEVS:Firmware).
 # The "buster" branch keeps real files under brcm/ (newer branches symlink to
@@ -199,7 +206,7 @@ distfiles-raspi-armbe-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.im
 distfiles-raspi-armle-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
-	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x10000\ninitramfs $(ARM_BSP) 0x00800000\ndtoverlay=disable-bt\ndtoverlay=sdhost\narm_64bit=0\nhdmi_drive=2\n" > $@
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x10000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=0\nhdmi_drive=2\n" > $@
 
 $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
