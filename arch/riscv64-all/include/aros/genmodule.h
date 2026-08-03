@@ -77,11 +77,13 @@
             "\tsd   a7, 120(sp)\n"                                         \
             "\tsd   ra, 128(sp)\n"                                         \
             "\tcall __aros_getoffsettable\n" /* a0 = offset table       */ \
+            "\tli   t6, 0\n"                                               \
+            "\tbeqz a0, 1f\n"                /* no table -> guard below */ \
             "\tla   t0, __aros_rellib_offset_" #libbasename "\n"           \
             "\tld   t0, 0(t0)\n"             /* t0 = rellib offset      */ \
             "\tadd  t0, a0, t0\n"                                          \
             "\tld   t6, 0(t0)\n"             /* t6 = libbase            */ \
-            "\tld   ra, 128(sp)\n"                                         \
+            "1:\tld   ra, 128(sp)\n"                                       \
             "\tld   a7, 120(sp)\n"                                         \
             "\tld   a6, 112(sp)\n"                                         \
             "\tld   a5, 104(sp)\n"                                         \
@@ -99,10 +101,16 @@
             "\tfld  fa1, 8(sp)\n"                                          \
             "\tfld  fa0, 0(sp)\n"                                          \
             "\taddi sp, sp, 144\n"                                         \
+            "\tbeqz t6, 2f\n"                /* base unresolved -> trap */ \
             "\tli   t0, %0\n"                /* t0 = lvo*LIB_VECTSIZE   */ \
             "\tsub  t0, t6, t0\n"            /* t0 = &JumpVec[-lvo]     */ \
             "\tld   t0, 0(t0)\n"             /* t0 = function pointer   */ \
             "\tjr   t0\n"                                                  \
+            /* Deliberate illegal-instruction trap: the rellib base for  \
+             * this stub was never resolved (offset table absent or the \
+             * library not opened).  sepc names the *_relwrapper; the   \
+             * restored a0-a7/fa0-fa7 are the original arguments.       */ \
+            "2:\tunimp\n"                                                  \
             : : "i" ((lvo)*LIB_VECTSIZE)                                   \
         );                                                                 \
     }
