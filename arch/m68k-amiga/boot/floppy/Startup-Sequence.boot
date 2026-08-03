@@ -1,4 +1,4 @@
-boot/amiga/AROSBootstrap ROM boot/amiga/aros.rom.gz
+@AROS_DIR_BOOTARCH@/AROSBootstrap ROM @AROS_DIR_BOOTARCH@/aros.rom.@AROS_PACKAGE_FMT@
 
 MakeDir RAM:ENV
 MakeDir RAM:T
