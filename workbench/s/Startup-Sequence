@@ -73,16 +73,29 @@ Touch >NIL: "FONTS:__TEST__"
 If WARN
     Makedir "RAM:Fonts"
     Assign "FONTS:" "RAM:Fonts"
-    Copy >NIL: "SYS:Fonts" "FONTS:" ALL CLONE NOREQ
+
+    Makedir "FONTS:fixed"
+    Copy >NIL: "SYS:Fonts/fixed" "FONTS:fixed" ALL CLONE NOREQ
+    Makedir "FONTS:arial"
+    Copy >NIL: "SYS:Fonts/arial" "FONTS:arial" ALL CLONE NOREQ
+    Makedir "FONTS:stop"
+    Copy >NIL: "SYS:Fonts/stop" "FONTS:stop" ALL CLONE NOREQ
+    Makedir "FONTS:ttcourier"
+    Copy >NIL: "SYS:Fonts/ttcourier" "FONTS:ttcourier" ALL CLONE NOREQ
+    Makedir "FONTS:XEN"
+    Copy >NIL: "SYS:Fonts/XEN" "FONTS:XEN" ALL CLONE NOREQ
+
+    FixFonts
+    Assign >NIL: "FONTS:" "SYS:Fonts" ADD
+Else
+    If NOT EXISTS "FONTS:fixed.font"
+        FixFonts
+    EndIf
 EndIf
 Assign >NIL: "FONTS:" "FONTS:Russian" ADD
 
 If EXISTS "FONTS:__TEST__"
     Delete "FONTS:__TEST__" QUIET
-EndIf
-
-If NOT EXISTS "FONTS:fixed.font"
-    FixFonts
 EndIf
 
 AddDataTypes REFRESH QUIET
