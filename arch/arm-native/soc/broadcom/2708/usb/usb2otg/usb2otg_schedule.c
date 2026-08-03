@@ -400,6 +400,19 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     otg_Unit->hu_Channel[chan].hc_DeferCount = 0;
     otg_Unit->hu_Channel[chan].hc_CsplitRetry = 0;
     otg_Unit->hu_Channel[chan].hc_QuietIdleStreak = 0;
+    /*
+     * hc_WatchdogCount too: the watchdog increments it every tick the
+     * channel is busy and only a tick that happens to catch the
+     * channel FREE reset it. A healthy high-rate INT split pipe
+     * (mouse, interval 1 ms) re-occupies its channel within
+     * microframes of every completion, so the counter measured
+     * "channel busy streak", hit the 900 ms threshold about once a
+     * second, and the watchdog force-requeued a perfectly live
+     * transaction each time — dropping input reports. Reset at every
+     * arm so it measures what it was meant to: this ARM producing no
+     * event.
+     */
+    otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
     /* DIAG: fresh event-trace budget for this submission. */
     otg_Unit->hu_Channel[chan].hc_TraceCount = 0;
     otg_Unit->hu_Channel[chan].hc_TraceAnom = 0;

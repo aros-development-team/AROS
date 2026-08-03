@@ -2990,11 +2990,17 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                             ULONG w_hfnum = rd32le(USB2OTG_HOSTFRAMENO);
                             bug("[USB2OTG] Watchdog: chan=%d active too long dev=%d ep=%d (#%lu)\n"
                                 "  CHAR=%08x INTR=%04x SPLIT=%08x TSIZE=%08x\n"
-                                "  DMAA=%08x NPTX=%08x HPTX=%08x coreINTR=%08x HAINT=%08x HFNUM=%08x\n",
+                                "  DMAA=%08x NPTX=%08x HPTX=%08x coreINTR=%08x HAINT=%08x HFNUM=%08x\n"
+                                "  splitstate=%d ssuf=%04x delayed=%d req=%p cmd=%lu\n",
                                 chan, req->iouh_DevAddr, req->iouh_Endpoint,
                                 (unsigned long)wd_count,
                                 w_char, w_intr, w_split, w_tsize,
-                                w_dmaa, w_nptx, w_ptx, w_corei, w_haint, w_hfnum);
+                                w_dmaa, w_nptx, w_ptx, w_corei, w_haint, w_hfnum,
+                                (int)otg_Unit->hu_Channel[chan].hc_SplitState,
+                                (unsigned)otg_Unit->hu_Channel[chan].hc_SplitSSUframe,
+                                (int)delayed_channel[chan],
+                                req,
+                                (unsigned long)req->iouh_Req.io_Command);
                         }
                     }
 
