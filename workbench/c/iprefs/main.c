@@ -58,7 +58,7 @@
 
 /*********************************************************************************************/
 
-static struct libinfo
+static const struct libinfo
 {
     APTR        var;
     STRPTR      name;
@@ -118,7 +118,7 @@ static void KillNotifications(void);
 
 /*********************************************************************************************/
 
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+LONG ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 {
     struct EasyStruct es;
 
@@ -132,7 +132,7 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 }
 /*********************************************************************************************/
 
-void Cleanup(STRPTR msg)
+static void Cleanup(STRPTR msg)
 {
     if (msg)
     {
@@ -156,7 +156,7 @@ void Cleanup(STRPTR msg)
 
 static void OpenLibs(void)
 {
-    struct libinfo *li;
+    const struct libinfo *li;
 
     for (li = libtable; li->var; li++)
     {
@@ -173,7 +173,7 @@ static void OpenLibs(void)
 
 static void CloseLibs(void)
 {
-    struct libinfo *li;
+    const struct libinfo *li;
 
     for(li = libtable; li->var; li++)
     {
@@ -358,8 +358,10 @@ int main(void)
     GetENVName();
     StartNotifications();
     PreparePatches();
+
+    Detach();  // No more console I/O beyond this point.
+
     HandleNotify();
-    Detach();
     HandleAll();
     Cleanup(NULL);
 

@@ -188,8 +188,7 @@ struct IPrefsSem
 
 /* main.c */
 
-void Cleanup(STRPTR msg);
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext);
+LONG ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext);
 
 /* patches.c */
 
