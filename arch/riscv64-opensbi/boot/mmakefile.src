@@ -47,6 +47,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-keyboard \
 #MM     kernel-hidd \
 #MM     kernel-hidd-gfx \
+#MM     kernel-hidd-gfx-headlessgfx \
 #MM     kernel-hidd-input \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
@@ -57,7 +58,6 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-fs-cdvdfs \
 #MM     kernel-fs-sfs \
 #MM     kernel-fs-fat \
-#MM     kernel-econsole \
 #MM     kernel-log \
 #MM     kernel-entropy \
 #MM     kernel-efi \
@@ -90,7 +90,6 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-classes-bootkeyboard \
 #MM     kernel-usb-classes-bootmouse
 
-# econsole: emergency CON: over the SBI console, "econsole" bootarg
 BSP_LIBS      := aros oop utility dos dos64 graphics layers intuition keymap \
                  partition cgxbootpic gadtools acpica poseidon
 BSP_LIBS_ARCH := expansion debug
@@ -102,7 +101,7 @@ BSP_DEVS      := console input gameport keyboard nvme virtio \
 BSP_DEVS_ARCH := timer
 BSP_USBCLASSES := USB/hub USB/hid USB/bootkeyboard USB/bootmouse \
                   USB/massstorage
-BSP_HANDLERS  := econsole ram con afs cdrom sfs fat
+BSP_HANDLERS  := ram con afs cdrom sfs fat
 BSP_HIDDS     := hiddclass inputclass gfx keyboard mouse bus pci pcidt \
                  storage system power telemetry ipmi dwuart i2c dwi2c \
                  acpiacad acpibattery acpifan acpibutton acpithermal \
