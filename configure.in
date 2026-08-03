@@ -1634,7 +1634,6 @@ case "$target_os" in
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 with_log_resource="yes"
                 aros_target_cpu="x86_64"
-                aros_serial_debug=1
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="elf_$""(AROS_TARGET_CPU)"
                 fi
@@ -2191,7 +2190,6 @@ case "$target_os" in
         aros_target_arch="opensbi"
         aros_isa_flags="$""(ISA_RISCV_FLAGS)"
         aros_shared_default="no"
-        aros_serial_debug=1
         llvm_target_cpu="RISCV"
         aros_kernel_toolchain=$aros_toolchain
         kernel_toolchain_c_compiler=$toolchain_c_compiler
