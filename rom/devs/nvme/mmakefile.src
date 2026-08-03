@@ -2,6 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM kernel-nvme : kernel-timer-includes
+#MM kernel-nvme-includes : kernel-hidd-bus-includes
 
 INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
 %copy_includes path=hardware dir=include/hardware
