@@ -140,7 +140,15 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 # ("MISMATCHED FILES: start.elf and fixup.dat do not fit to each other!").
 RASPIFW_BRANCH    := 1.20260521
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/raw/$(RASPIFW_BRANCH)/boot
-RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb
+# start4.elf/fixup4.dat are the BCM2711 pair: the Pi 4 bootloader looks for
+# them by name and does not fall back to start.elf. The Zero 2 W ships under
+# two dtb names; which one the firmware picks depends on the board revision.
+RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf \
+                     fixup4.dat start4.elf \
+                     bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb \
+                     bcm2710-rpi-zero-2-w.dtb bcm2710-rpi-zero-2.dtb \
+                     bcm2711-rpi-4-b.dtb \
+                     bcm2712-rpi-5-b.dtb bcm2712-rpi-500.dtb
 
 RASPIWIFIFW_BRANCH := buster
 RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
@@ -183,7 +191,7 @@ distfiles-raspi-aarch64le-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 distfiles-raspi-aarch64le-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
-	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\ndtoverlay=disable-bt\ndtoverlay=sdhost\nenable_uart=1\narm_64bit=1\n" > $@
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\nenable_uart=1\narm_64bit=1\n" > $@
 
 $(AROSDIR)/aros-aarch64-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
