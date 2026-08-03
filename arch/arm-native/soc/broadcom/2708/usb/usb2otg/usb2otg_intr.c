@@ -1112,6 +1112,54 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                  */
                 req = USBUnit->hu_Channel[chan].hc_Request;
 
+                /*
+                 * DIAG: ctrl-split event trace. First 6 events of every
+                 * submission plus the first 4 anomalous events (bare
+                 * CHHLTD or error handshake) — shows the opening move
+                 * of a 64-halt give-up storm: XactErr, NAK-then-bare,
+                 * or clean progress that suddenly deschedules.
+                 */
+                if (req != NULL && chan == USBUnit->hu_CtrlSplitChan &&
+                    req->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+                    (req->iouh_Flags & UHFF_SPLITTRANS))
+                {
+                    struct USB2OTGChannel *thc = &USBUnit->hu_Channel[chan];
+                    BOOL anom = (intr == USB2OTG_INTRCHAN_HALT) ||
+                        (intr & (USB2OTG_INTRCHAN_TRANSACTIONERROR |
+                                 USB2OTG_INTRCHAN_DATATOGGLEERROR |
+                                 USB2OTG_INTRCHAN_BABBLEERROR |
+                                 USB2OTG_INTRCHAN_AHBERROR |
+                                 USB2OTG_INTRCHAN_STALL)) != 0;
+
+                    if (thc->hc_TraceCount < 0xff)
+                        thc->hc_TraceCount++;
+                    /*
+                     * Anomalies always log. Clean events only under
+                     * DEBUG: the ~9 ms UART line inside the IRQ acts
+                     * as unintended pacing and masks the timing bug
+                     * (that accident is what exposed it).
+                     */
+                    BOOL trace_this = (anom && thc->hc_TraceAnom < 4);
+                    D(if (!trace_this && thc->hc_TraceCount <= 6)
+                        trace_this = TRUE;)
+                    if (trace_this)
+                    {
+                        if (anom)
+                            thc->hc_TraceAnom++;
+                        bug("[USB2OTG:CTRC] ev#%u%s chan=%d dev=%d bReq=%02x intr=%04x SPLT=%08x TSIZE=%08x HFNUM=%04x arm=%04x\n",
+                            (unsigned)thc->hc_TraceCount,
+                            anom ? "!" : "",
+                            chan,
+                            (int)req->iouh_DevAddr,
+                            (unsigned)req->iouh_SetupData.bRequest,
+                            (unsigned)intr,
+                            rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL)),
+                            rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE)),
+                            (unsigned)(rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff),
+                            (unsigned)(USBUnit->hu_Channel[chan].hc_StartHfnum & 0x3fff));
+                    }
+                }
+
                 D(
                     if (chan == CHAN_CTRL)
                         bug("[USB2OTG:DBG] CTRL-IRQ intr=%04x dev=%d bReq=%02x wVal=%04x\n",
@@ -1172,9 +1220,13 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                          * Periodic INT split: issue the CSPLIT one microframe
                          * later (delayed_channel[] ticks per SOF) so it lands in
                          * the TT result window instead of hammering the same
-                         * uframe. Bulk keeps the immediate re-arm.
+                         * uframe. Bulk keeps the immediate re-arm. Split ctrl
+                         * gets the full inter-transaction pace — see
+                         * USB2OTG_CTRL_SPLIT_PACE_UFRAMES.
                          */
-                        if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
+                        if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+                            delayed_channel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
+                        else if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
                             delayed_channel[chan] = 1;
                         else
                             FNAME_DEV(StartChannel)(USBUnit, chan, 1);
@@ -1491,7 +1543,19 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             {
                                 cont = 1;
                                 D(bug("[USB2OTG] IRQ: Starting next phase chan=%d\n", chan));
-                                FNAME_DEV(StartChannel)(USBUnit, chan, 0);
+                                /*
+                                 * Split ctrl: pace the next phase's SSPLIT
+                                 * instead of arming it in the completion
+                                 * IRQ — an immediate arm risks the bare-
+                                 * CHHLTD deschedule poison. AdvanceChannel
+                                 * has programmed the registers; the SOF
+                                 * handler arms via StartChannel(quick=1).
+                                 */
+                                if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+                                    (req->iouh_Flags & UHFF_SPLITTRANS))
+                                    delayed_channel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
+                                else
+                                    FNAME_DEV(StartChannel)(USBUnit, chan, 0);
                             }
                             else
                             {

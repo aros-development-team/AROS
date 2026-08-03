@@ -267,6 +267,8 @@ struct USB2OTGUnit
         ULONG               hc_LastSampleActual;
         UWORD               hc_LastSampleIntr;
         UBYTE               hc_GiveupStreak;  /* consecutive split give-ups; reset on completion; burn at 4 */
+        UBYTE               hc_TraceCount;    /* DIAG: ctrl-split IRQ events since SetupChannel */
+        UBYTE               hc_TraceAnom;     /* DIAG: anomalous events logged for this submission */
     }                   hu_Channel[8];
 
 /*
@@ -592,6 +594,20 @@ extern ULONG usb2otg_ctrl_xact_retries;   /* XactErr/DTErr/BNA path */
  * UHIOERR_TIMEOUT, which feeds Poseidon's pd_DeadCount removal path.
  */
 #define USB2OTG_CTRL_SPLIT_NAK_LIMIT      64
+
+/*
+ * Inter-transaction pacing for split control, in microframes.
+ * Arming the next split transaction immediately after the previous
+ * CHHLTD event sometimes gets it descheduled with bare CHHLTD and
+ * poisons the channel's split engine (the give-up storms during HID
+ * binding). Empirically proven by accident: a ~9 ms serial log line
+ * between every IRQ event and its re-arm made split ctrl 100%
+ * reliable (and in every older trace the wedge struck exactly where
+ * event logging stopped). 72 uframes reproduces that spacing
+ * deliberately. Costs ~55 ms per LS control transfer — acceptable,
+ * control is enumeration/setup traffic only.
+ */
+#define USB2OTG_CTRL_SPLIT_PACE_UFRAMES   72
 
 /*
  * Control retry backoff in frames (ms). Encoded into DriverPrivate1
