@@ -402,9 +402,6 @@ void FreeLock(struct ExtFileLock *fl, struct Globals *glob)
         fl->node.mln_Succ = fl->node.mln_Pred = NULL;
     }
 
-    if (IsListEmpty(&fl->gl->locks) && fl->gl->node.mln_Succ == NULL)
-            fl->gl->dir_cluster, fl->gl->dir_entry);
-
     if (IsListEmpty(&fl->gl->locks) && fl->gl->node.mln_Succ != NULL)
     {
         REMOVE(fl->gl);
