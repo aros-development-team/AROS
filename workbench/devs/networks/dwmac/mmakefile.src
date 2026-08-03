@@ -1,0 +1,23 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# SANA-II driver for the DesignWare MAC, 4.x/5.x register generation.
+#
+# Only built for a target that asks for it, since the controller is
+# found through the platform's device tree rather than a probeable bus.
+#
+
+FILES := dwmac_dt dwmac_hw dwmac_unit dwmac_handler
+
+USER_INCLUDES := -I$(SRCDIR)/arch/riscv-all/linklibs/fdt/include
+
+USER_LDFLAGS := -static
+
+#MM workbench-devs-networks-dwmac-riscv64 : linklibs-fdt
+
+%build_module mmake=workbench-devs-networks-dwmac-riscv64 \
+    modname=dwmac modtype=device \
+    files="dwmac_init $(FILES)" \
+    moduledir=Devs/Networks uselibs="fdt"
+
+%common
