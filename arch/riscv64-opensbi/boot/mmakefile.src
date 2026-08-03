@@ -85,6 +85,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-pcixhci \
 #MM     kernel-usb-romstrap-opensbi-riscv64 \
 #MM     kernel-usb-classes-hub \
+#MM     kernel-usb-classes-hubss \
 #MM     kernel-usb-classes-massstorage \
 #MM     kernel-usb-classes-hid \
 #MM     kernel-usb-classes-bootkeyboard \
@@ -99,7 +100,7 @@ BSP_RSRC_ARCH := battclock processor
 BSP_DEVS      := console input gameport keyboard nvme virtio \
                  USBHardware/pcixhci
 BSP_DEVS_ARCH := timer
-BSP_USBCLASSES := USB/hub USB/hid USB/bootkeyboard USB/bootmouse \
+BSP_USBCLASSES := USB/hub USB/hubss USB/hid USB/bootkeyboard USB/bootmouse \
                   USB/massstorage
 BSP_HANDLERS  := ram con afs cdrom sfs fat
 BSP_HIDDS     := hiddclass inputclass gfx keyboard mouse bus pci pcidt \

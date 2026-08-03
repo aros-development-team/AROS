@@ -85,6 +85,10 @@ AROS_UFH3(static IPTR, usbromstartup_init,
 
         D(bug("[USBROMStartup] Adding classes...\n"));
 
+        /* Both hub classes first: nothing enumerates past the root hub
+           without them, and the only controller here is xhci, so
+           superspeed hubs are as likely as classic ones. */
+        psdAddClass("hubss.class", 0);
         psdAddClass("hub.class", 0);
         msdclass = psdAddClass("massstorage.class", 0);
         psdAddClass("hid.class", 0);
