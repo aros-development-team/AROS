@@ -63,6 +63,7 @@
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
 #include <netinet/tcp.h>
+#include <netinet/in_protos.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
@@ -114,7 +115,7 @@ struct mbuf *m, *nam, *control;
 #endif
 
     if(req == PRU_CONTROL)
-        return (in_control(so, (long)m, (caddr_t)nam,
+        return (in_control(so, (int)(long)m, (caddr_t)nam,
                            (struct ifnet *)control));
     if(control && control->m_len) {
         m_freem(control);

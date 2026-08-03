@@ -55,6 +55,7 @@ extern struct Library *FDBase;      /* opened in amiga_fdhooks.c */
 #endif
 
 #include <net/if_protos.h>
+#include <net/route_protos.h>
 #ifdef ENABLE_PACKET_FILTER
 #include "../net/ipfilter.h"
 #endif
@@ -299,7 +300,19 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
         default:
             break;	/* fall through to rtioctl */
         }
-        error = (rtioctl(cmd, data));
+        {
+            /*
+             * The library-call boundary can deliver the 32-bit cmd
+             * zero-extended, but a compiled callee trusts the ABI's
+             * canonical sign-extended form and compares the whole
+             * register. The volatile round-trip through a 32-bit slot
+             * forces a real store and sign-extending reload, which a
+             * plain cast does not - the compiler is entitled to assume
+             * the parameter was canonical already and elide it.
+             */
+            volatile LONG rtreq = (LONG)cmd;
+            error = (rtioctl(rtreq, data));
+        }
         goto Return;
     }
     error = ((*so->so_proto->pr_usrreq)(so, PRU_CONTROL,

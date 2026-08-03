@@ -62,6 +62,7 @@
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/udp.h>
+#include <netinet/in_protos.h>
 #include <netinet/udp_var.h>
 
 #include <kern/kern_subr_protos.h>
@@ -179,7 +180,7 @@ void udp_input(void *args, ...)
     }
 
     if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr)) ||
-            in_broadcast(ip->ip_dst, m->m_pkthdr.rcvif)) {
+            in_broadcast(ip->ip_dst)) {
         struct socket *last;
         /*
          * Deliver a multicast or broadcast datagram to *all* sockets
@@ -514,7 +515,7 @@ struct mbuf *m, *addr, *control;
     int s;
 
     if(req == PRU_CONTROL)
-        return (in_control(so, (long)m, (caddr_t)addr,
+        return (in_control(so, (int)(long)m, (caddr_t)addr,
                            (struct ifnet *)control));
     if(inp == NULL && req != PRU_ATTACH) {
         error = EINVAL;
