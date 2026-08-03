@@ -374,37 +374,59 @@ LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock,
 void FreeLock(struct ExtFileLock *fl, struct Globals *glob)
 {
     struct NotifyNode *nn;
+    struct FSSuper *sb;
 
     if (fl == NULL)
         return;
 
     D(bug("[fat] freeing lock 0x%08x\n", fl));
 
+    /*
+     * Everything here belongs to the volume the lock is on, which
+     * outlives glob->sb: removing a disk clears that and parks the
+     * superblock on the spare list exactly until its locks are freed.
+     */
+    sb = fl->sb;
+
     if (fl->do_notify)
         SendNotifyByLock(fl->ioh.sb, fl->gl);
 
-    REMOVE(&fl->node);
+    /*
+     * Removing a node that is no longer on a list writes through stale
+     * links and can make the list circular, which the next walker spins
+     * on forever. Clearing the links makes a second removal harmless.
+     */
+    if (fl->node.mln_Succ != NULL)
+    {
+        REMOVE(&fl->node);
+        fl->node.mln_Succ = fl->node.mln_Pred = NULL;
+    }
 
-    if (IsListEmpty(&fl->gl->locks))
+    if (IsListEmpty(&fl->gl->locks) && fl->gl->node.mln_Succ == NULL)
+            fl->gl->dir_cluster, fl->gl->dir_entry);
+
+    if (IsListEmpty(&fl->gl->locks) && fl->gl->node.mln_Succ != NULL)
     {
         REMOVE(fl->gl);
+        fl->gl->node.mln_Succ = fl->gl->node.mln_Pred = NULL;
 
-        ForeachNode(&fl->sb->info->notifies, nn)
+        ForeachNode(&sb->info->notifies, nn)
             if (nn->gl == fl->gl)
                 nn->gl = NULL;
 
-        if (fl->gl != &fl->sb->info->root_lock)
-            FreeVecPooled(glob->sb->info->mem_pool, fl->gl);
+        if (fl->gl != &sb->info->root_lock)
+            FreeVecPooled(sb->info->mem_pool, fl->gl);
 
         D(bug("[fat] freed associated global lock\n"));
     }
 
-    DumpLocks(fl->sb, glob);
+    DumpLocks(sb, glob);
     if (fl->ioh.block != NULL)
-        Cache_FreeBlock(fl->sb->cache, fl->ioh.block);
+        Cache_FreeBlock(sb->cache, fl->ioh.block);
 
-    if (fl->sb != glob->sb)
-        AttemptDestroyVolume(fl->sb);
+    FreeVecPooled(sb->info->mem_pool, fl);
 
-    FreeVecPooled(glob->sb->info->mem_pool, fl);
+    /* The volume can only follow the lock once the lock has gone */
+    if (sb != glob->sb)
+        AttemptDestroyVolume(sb);
 }
