@@ -129,12 +129,23 @@ void FontPrefs_Handler(STRPTR filename)
                                 {
                                     closed = CloseWorkBench();
                                     if (!closed)
-                                        cancel = ShowMessage("System Request",
-                                            "Intuition is attempting to reset"
-                                            " the Workbench Screen.\n"
-                                            "Please close all windows,"
-                                            " except drawers.",
-                                            "Retry|Cancel") == 0;
+                                    {
+                                        /* An initial preference load can run
+                                         * while the startup Shell still prevents
+                                         * CloseWorkBench(). Do not wedge IPrefs
+                                         * in an unanswerable requester and leave
+                                         * later preferences unapplied. Live
+                                         * changes retain the normal requester. */
+                                        if (initial_load)
+                                            cancel = TRUE;
+                                        else
+                                            cancel = ShowMessage("System Request",
+                                                "Intuition is attempting to reset"
+                                                " the Workbench Screen.\n"
+                                                "Please close all windows,"
+                                                " except drawers.",
+                                                "Retry|Cancel") == 0;
+                                    }
                                 }
                                 if (closed)
                                     OpenWorkBench();

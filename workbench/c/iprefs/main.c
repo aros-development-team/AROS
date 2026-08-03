@@ -361,7 +361,9 @@ int main(void)
 
     Detach();  // No more console I/O beyond this point.
 
+    initial_load = TRUE;
     HandleNotify();
+    initial_load = FALSE;
     HandleAll();
     Cleanup(NULL);
 
@@ -369,5 +371,3 @@ int main(void)
 }
 
 /*********************************************************************************************/
-
-
