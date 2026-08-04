@@ -50,17 +50,35 @@ static void TaskLaunch(struct Task *parent, struct Task *task, struct Hook *plHo
         (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (IntETask(task->tc_UnionETask.tc_ETask) && KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))))
     {
         parent = GET_THIS_TASK;
+        /*
+         * The task is launchable on this CPU, so run the pre-launch hook
+         * now - before the Reschedule() below can let it run. It must be
+         * called on this path and not only when we reschedule:
+         * task.resource registers the task with itself from this hook, and
+         * a task that does not preempt its creator (same CPU, priority not
+         * higher) took neither branch that called it. Such tasks were
+         * therefore never registered, leaving them absent from
+         * LockTaskList() - and so from SysMon and TaskList - for their
+         * whole lifetime.
+         */
+        if (plHook)
+        {
+            DADDTASK("TaskLaunch: Calling pre-launch hook\n");
+            CALLHOOKPKT(plHook, task, 0);
+        }
         if (
 #endif
         parent && task->tc_Node.ln_Pri > parent->tc_Node.ln_Pri &&
         parent->tc_State == TS_RUN)
     {
         DADDTASK("TaskLaunch: Rescheduling...\n");
+#if !defined(__AROSEXEC_SMP__)
         if (plHook)
         {
             DADDTASK("TaskLaunch: Calling pre-launch hook\n");
             CALLHOOKPKT(plHook, task, 0);
         }
+#endif
         /* Reschedule() will take care about disabled task switching automatically */
         Reschedule();
     }
