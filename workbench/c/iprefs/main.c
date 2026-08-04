@@ -353,6 +353,9 @@ STRPTR __detached_name = IPREFS_SEM_NAME;
 
 int main(void)
 {
+    struct Process *myproc = (struct Process *)FindTask(NULL);
+    APTR            oldwindowptr;
+
     OpenLibs();
     ReadTDPrefs();
     GetENVName();
@@ -361,9 +364,14 @@ int main(void)
 
     Detach();  // No more console I/O beyond this point.
 
-    initial_load = TRUE;
+    /* The initial load runs from the startup sequence, where there is
+       nobody to answer a requester yet. Suppress them for its duration;
+       live preference changes get them back. */
+    oldwindowptr = myproc->pr_WindowPtr;
+    myproc->pr_WindowPtr = (APTR)-1;
     HandleNotify();
-    initial_load = FALSE;
+    myproc->pr_WindowPtr = oldwindowptr;
+
     HandleAll();
     Cleanup(NULL);
 

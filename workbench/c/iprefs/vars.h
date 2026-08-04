@@ -47,4 +47,3 @@ VAR UBYTE   	    	    	pointerprefsname[256];
 VAR UBYTE   	    	    	overscanprefsname[256];
 
 VAR BOOL    	    	    	patches_installed;
-VAR BOOL    	    	    	initial_load;
