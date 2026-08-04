@@ -122,7 +122,10 @@ $(DISTDIR)/bootdisk-amiga-m68k.adf: $(GENDIR)/boot/bootdisk-amiga-m68k.adf | $(D
 	@$(CP) $< $@
 
 $(BOOT_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot | $(BOOT_DEST_DIR)/S
-	@$(CP) $< $@
+	@$(SED) \
+		-e 's|@AROS_DIR_BOOTARCH@|$(AROS_DIR_BOOTARCH)|g' \
+		-e 's|@AROS_PACKAGE_FMT@|$(AROS_PACKAGE_FMT)|g' \
+		$< > $@
 	@$(CHMOD) +x $@
 
 $(INFLATE_GENDIR)/% : $(BOOT_SRC_DIR)/% | $(INFLATE_GEN_DIRS)
