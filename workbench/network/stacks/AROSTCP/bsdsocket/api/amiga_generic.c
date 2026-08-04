@@ -48,7 +48,14 @@
 
 #include <api/apicalls.h>
 
+#if defined(ENABLE_FDLIBRARY)
+#include <libraries/fd.h>
+#include <proto/fd.h>
+extern struct Library *FDBase;      /* opened in amiga_fdhooks.c */
+#endif
+
 #include <net/if_protos.h>
+#include <net/route_protos.h>
 #ifdef ENABLE_PACKET_FILTER
 #include "../net/ipfilter.h"
 #endif
@@ -122,6 +129,22 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
      */
     CHECK_TASK();
     DSYSCALLS(log(LOG_DEBUG, "IoctlSocket(%ld, 0x%08lx, 0x%08lx) called", fdes, cmd, *(ULONG *)data);)
+
+    /*
+     * The library-call boundary can deliver the 32-bit cmd zero-extended,
+     * but compiled code trusts the ABI's canonical sign-extended form and
+     * compares whole registers - so a command with the top bit set (every
+     * _IOW one) would match nothing. The volatile round-trip through a
+     * 32-bit slot forces a real store and sign-extending reload, which a
+     * plain cast does not - the compiler is entitled to assume the
+     * parameter was canonical already and elide it. Everything below,
+     * including the rtioctl() call, relies on this normalization.
+     */
+    {
+        volatile LONG cmdslot = (LONG)cmd;
+        cmd = (ULONG)cmdslot;
+    }
+
     ObtainSyscallSemaphore(libPtr);
 
     if(error = getSock(libPtr, fdes, &so))
@@ -861,6 +884,11 @@ LONG __CloseSocket(LONG fd, struct SocketBase *libPtr)
      * cleared earlier
      */
     libPtr->dTable[fd] = NULL;
+#if defined(ENABLE_FDLIBRARY)
+    /* Release the system-wide descriptor-number reservation. */
+    if(FDBase != NULL)
+        FD_Free(fd, FD_OWNER_BSDSOCKET);
+#endif
 
 Return:
     ReleaseSyscallSemaphore(libPtr);

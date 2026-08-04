@@ -12,7 +12,7 @@ FILES := cache direntry date disk fat file lock main names notify ops packet\
 
 %build_module mmake=kernel-fs-fat \
     modname=fat modtype=handler \
-    files="$(FILES)"
+    files="$(FILES)" uselibs="fatbpb"
 
 
 %common

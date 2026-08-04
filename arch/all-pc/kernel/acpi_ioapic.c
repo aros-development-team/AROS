@@ -247,8 +247,9 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         ioapic_irqbase = ioapicData->ioapic_GSI;
         if (ioapic_irqbase >= HW_IRQ_COUNT)
         {
-            bug("[Kernel:IOAPIC] %s: IOAPIC GSI base %u at/above supported IRQ limit %u\n",
+            bug("[Kernel:IOAPIC] %s: IOAPIC GSI base %u exceeds software IRQ limit %u, skipping\n",
                 __func__, ioapic_irqbase, HW_IRQ_COUNT);
+            continue;
         }
 
         if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
@@ -316,7 +317,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             max_irq = ioapic_irqbase + ioapicData->ioapic_IRQCount;
             if (max_irq > HW_IRQ_COUNT)
             {
-                bug("[Kernel:IOAPIC] %s: IOAPIC IRQ range %u-%u exceeds supported IRQs (capping at %u)\n",
+                bug("[Kernel:IOAPIC] %s: IOAPIC IRQ range %u-%u exceeds software IRQ limit (capping at %u)\n",
                     __func__, ioapic_irqbase, max_irq, HW_IRQ_COUNT);
                 max_irq = HW_IRQ_COUNT;
             }
@@ -376,13 +377,22 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
                 if (intrTgt)
                 {
-                    irqRoute->vect = (UBYTE)intrTgt->im_Node.ln_Pri + HW_IRQ_BASE;
+                    if (intrTgt->im_DeviceIRQ < HW_IRQ_VECTORS)
+                        irqRoute->vect = (UBYTE)intrTgt->im_DeviceIRQ + HW_IRQ_BASE;
+                    else
+                        irqRoute->vect = 0;
                     if (ictl_is_irq_enabled(irq, KernelBase))
                         enabled = TRUE;
                 }
+                else if (irq < HW_IRQ_VECTORS)
+                {
+                    /* 1:1 vector mapping fits in IDT (vectors 48-245) */
+                    irqRoute->vect = irq + HW_IRQ_BASE;
+                }
                 else
                 {
-                    irqRoute->vect = irq + HW_IRQ_BASE;
+                    /* High GSI: vector allocated on demand in EnableIRQ */
+                    irqRoute->vect = 0;
                 }
                 /* setup delivery to the boot processor */
                 if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
@@ -439,7 +449,15 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
                     if (acquired)
                     {
-                        if (setgate && !core_SetIRQGate(apicPrivate->cores[0].cpu_IDT, irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq]))
+                        if (irqRoute->vect == 0)
+                        {
+                            /* High GSI: no vector yet, gate set in EnableIRQ */
+                            if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
+                            {
+                                bug("[Kernel:IOAPIC] %s: IRQ %u deferred (vector on demand)\n", __func__, irq);
+                            }
+                        }
+                        else if (setgate && !core_SetIRQGate(apicPrivate->cores[0].cpu_IDT, irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq]))
                         {
                             bug("[Kernel:IOAPIC] %s: failed to set IRQ %d's gate\n", __func__, irq);
                         }
@@ -563,8 +581,48 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
         irqRoute->dst = apicPrivate->cores[cpuNo].cpu_LocalID;
     }
 
-    irqRoute->vect = intNum + HW_IRQ_BASE;
-    /* Enable the pin */
+    /*
+     * Lazy vector allocation for high-GSI pins (vect==0).
+     * Low-GSI pins already have a 1:1 vector from init.
+     * Don't blindly overwrite vect — the init-time vector is authoritative
+     * for pins that already have one.
+     */
+    if (irqRoute->vect == 0)
+    {
+        UBYTE vector = apicAllocVector(intNum);
+        if (vector == 0)
+        {
+            bug("[Kernel:IOAPIC] %s: IRQ %u - no IDT vectors available!\n", __func__, intNum);
+            return FALSE;
+        }
+        irqRoute->vect = vector;
+
+        /* Install IDT gate for the newly allocated vector on ALL CPUs */
+        if (apicPrivate)
+        {
+            APTR ssp = NULL;
+            if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
+            {
+                int c;
+                for (c = 0; c < apicPrivate->apic_count; c++)
+                {
+                    if (apicPrivate->cores[c].cpu_IDT)
+                    {
+                        core_SetIDTGate(
+                            (x86vectgate_t *)apicPrivate->cores[c].cpu_IDT,
+                            vector,
+                            (uintptr_t)IntrDefaultGates[vector],
+                            TRUE, FALSE);
+                    }
+                }
+                if (ssp)
+                    UserState(ssp);
+            }
+        }
+        bug("[Kernel:IOAPIC] %s: IRQ %u allocated vector %u\n", __func__, intNum, vector);
+    }
+
+    /* Enable the pin (unmask) */
     irqRoute->mask = 0;
     if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
     {
@@ -745,7 +803,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_Int_Src_Parse,
 
         bug("[Kernel:ACPI-IOAPIC]    %s: new mapping node @ 0x%p\n", __func__, intrMap);
 
-        intrMap->im_Node.ln_Pri = intsrc->SourceIrq;
+        intrMap->im_DeviceIRQ = intsrc->SourceIrq;
         //intrMap->im_Node.ln_Type = IOAPICInt_IntrController->;
         intrMap->im_Int = intsrc->GlobalIrq;
 
@@ -794,7 +852,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
         newRt = TRUE;
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: new mapping node @ 0x%p\n", __func__, intrMap);)
 
-        intrMap->im_Node.ln_Pri = intsrc->SourceIrq;
+        intrMap->im_DeviceIRQ = intsrc->SourceIrq;
         intrMap->im_CPU = KrnGetCPUNumber();
     }
     else
@@ -817,7 +875,8 @@ AROS_UFH3(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
 
     if (newRt)
     {
-        pdata->kb_ACPI->acpi_interruptOverrides |= (1 << intrMap->im_Node.ln_Pri);
+        if (intrMap->im_DeviceIRQ < 32)
+            pdata->kb_ACPI->acpi_interruptOverrides |= (1 << intrMap->im_DeviceIRQ);
         Enqueue(&KernelBase->kb_InterruptMappings, &intrMap->im_Node);
     }
 
@@ -865,7 +924,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_NMI_Src_Parse,
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: updating mapping node @ 0x%p\n", __func__, intrMap);)
     }
 
-    intrMap->im_Node.ln_Pri = nmi_src->GlobalIrq;
+    intrMap->im_DeviceIRQ = nmi_src->GlobalIrq;
     intrMap->im_Int = nmi_src->GlobalIrq;
 
     if (pdata->kb_ACPI)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <asm/cpu.h>
@@ -31,6 +31,11 @@ extern void core_Kick(struct TagItem *, void *);
 extern void kernel_cstart(const struct TagItem *);
 #else
 extern IPTR core_BSPReconfigure(struct KernBootPrivate *, UWORD);
+#endif
+
+#define DEBUG_XMM 0 /* Keep the same with x86_64-pc/kernel/kernel_cpu.c !! */
+#if DEBUG_XMM
+extern UBYTE *pseudorsp;
 #endif
 
 int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2)

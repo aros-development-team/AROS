@@ -16,10 +16,15 @@
 
 #define D(x)
 
-void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
+void ictl_enable_irq(UWORD irq, struct KernelBase *KernelBase)
 {
     struct IntrController *irqIC;
-    struct KernelInt *irqInt = &KernelBase->kb_Interrupts[irq];
+    struct KernelInt *irqInt;
+
+    if (irq >= HW_IRQ_COUNT)
+        return;
+
+    irqInt = &KernelBase->kb_Interrupts[irq];
 
     D(bug("[Kernel] %s(%d)\n", __func__, irq));
 
@@ -38,10 +43,15 @@ void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
     }
 }
 
-void ictl_disable_irq(unsigned char irq, struct KernelBase *KernelBase)
+void ictl_disable_irq(UWORD irq, struct KernelBase *KernelBase)
 {
     struct IntrController *irqIC;
-    struct KernelInt *irqInt = &KernelBase->kb_Interrupts[irq];
+    struct KernelInt *irqInt;
+
+    if (irq >= HW_IRQ_COUNT)
+        return;
+
+    irqInt = &KernelBase->kb_Interrupts[irq];
 
     D(bug("[Kernel] %s(%d)\n", __func__, irq));
 
@@ -60,9 +70,14 @@ void ictl_disable_irq(unsigned char irq, struct KernelBase *KernelBase)
     }
 }
 
-BOOL ictl_is_irq_enabled(unsigned char irq, struct KernelBase *KernelBase)
+BOOL ictl_is_irq_enabled(UWORD irq, struct KernelBase *KernelBase)
 {
-    struct KernelInt *irqInt = &KernelBase->kb_Interrupts[irq];
+    struct KernelInt *irqInt;
+
+    if (irq >= HW_IRQ_COUNT)
+        return FALSE;
+
+    irqInt = &KernelBase->kb_Interrupts[irq];
 
     D(bug("[Kernel] %s(%d)\n", __func__, irq));
 

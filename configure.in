@@ -1369,8 +1369,28 @@ case "$target_cpu" in
         ;;
     *powerpc*)
         ;;
+    *riscv64*)
+        dnl The RVA22 application profile. RVA is only defined for 64bit,
+        dnl so it is named here and not for riscv in general.
+        if test "$gcc_default_cpu" = ""; then
+            gcc_default_cpu="rva22u64"
+        fi
+        if test "$gcc_default_mode" = ""; then
+            gcc_default_mode="lp64d"
+        fi
+        dnl medany (PC-relative) code model: medlow can not reach the
+        dnl kernel link address at 0x80200000
+        riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE) -mcmodel=medany"
+        ;;
     *riscv*)
-        riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE)"
+        dnl 32bit has no profile to name, so the extensions are spelled out
+        if test "$gcc_default_cpu" = ""; then
+            gcc_default_cpu="rv32imafdc"
+        fi
+        if test "$gcc_default_mode" = ""; then
+            gcc_default_mode="ilp32d"
+        fi
+        riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE) -mcmodel=medany"
         ;;
 esac
 
@@ -1614,7 +1634,6 @@ case "$target_os" in
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 with_log_resource="yes"
                 aros_target_cpu="x86_64"
-                aros_serial_debug=1
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="elf_$""(AROS_TARGET_CPU)"
                 fi
@@ -2166,32 +2185,32 @@ case "$target_os" in
         esac
         ;;
 
-    native*)
+    opensbi)
         aros_flavour="standalone"
-        aros_target_arch="native"
-        aros_object_format="riscvelf_aros"
+        aros_target_arch="opensbi"
         aros_isa_flags="$""(ISA_RISCV_FLAGS)"
         aros_shared_default="no"
         llvm_target_cpu="RISCV"
+        aros_kernel_toolchain=$aros_toolchain
+        kernel_toolchain_c_compiler=$toolchain_c_compiler
+        kernel_toolchain_cxx_compiler=$toolchain_cxx_compiler
+        if test "$aros_kernel_toolchain" = "llvm"; then
+            aros_kernel_llvmwrapper=yes
+        fi
         case "$target_cpu" in
+            dnl The ISA and ABI come from the cpu switch further up, so
+            dnl every riscv platform is built the same way
             *riscv64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="riscv64"
-                gcc_default_cpu="rv64imafdc"
-                gcc_default_mode="lp64d"
+                aros_object_format="riscv64elf_aros"
                 ;;
             *riscv*)
                 aros_target_cpu="riscv"
-                gcc_default_cpu="rv32imafdc"
-                gcc_default_mode="ilp32d"
+                aros_object_format="riscvelf_aros"
                 ;;
             *)
-                AC_MSG_ERROR("Unsupported CPU '$target_cpu' for RISCV")
-                ;;
-        esac
-
-        case "$aros_target_variant" in
-            *sifive_u*)
+                AC_MSG_ERROR("Unsupported CPU '$target_cpu' for OpenSBI")
                 ;;
         esac
         ;;
@@ -2579,6 +2598,20 @@ if test "$use_binutils_version" = ""; then
 else
     target_binutils_version="$use_binutils_version"
 fi
+dnl riscv support in the toolchain is still improving release to release,
+dnl and these are the oldest this target is built and tested against.
+dnl Anything older is raised to them rather than left to fail later.
+riscv_min_gcc="16.1.0"
+riscv_min_binutils="2.47"
+case "$aros_target_cpu" in
+    riscv*)
+        if test "$(printf '%s\n' "$riscv_min_binutils" "$target_binutils_version" | sort -V | head -n1)" != "$riscv_min_binutils" ; then
+            AC_MSG_NOTICE([$aros_target_cpu needs binutils $riscv_min_binutils, raising it from $target_binutils_version])
+            target_binutils_version="$riscv_min_binutils"
+        fi
+        ;;
+esac
+
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_RESULT($target_binutils_version)
 fi
@@ -2624,6 +2657,16 @@ if test "$use_gcc_version" = ""; then
 else
     target_gcc_version="$use_gcc_version"
 fi
+dnl As above - the oldest this target is built and tested against
+case "$aros_target_cpu" in
+    riscv*)
+        if test "$(printf '%s\n' "$riscv_min_gcc" "$target_gcc_version" | sort -V | head -n1)" != "$riscv_min_gcc" ; then
+            AC_MSG_NOTICE([$aros_target_cpu needs gcc $riscv_min_gcc, raising it from $target_gcc_version])
+            target_gcc_version="$riscv_min_gcc"
+        fi
+        ;;
+esac
+
 jpegxl_toolchainsupport=""
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_RESULT($target_gcc_version)
@@ -2956,7 +2999,7 @@ case "$aros_target_cpu" in
         aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
         aros_kernel_ldflags="$aros_kernel_ldflags -m32"
         ;;
-    riscv)
+    riscv*)
         aros_isa_extra="$riscv_isa_extra$export_newline"
         ;;
 esac
@@ -4017,7 +4060,7 @@ dnl if needed.
 dnl
 
 case "$aros_target_cpu" in
-    riscv)
+    riscv*)
         export_target_gcccpu="yes"
         ;;
     arm)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2020-2026, The AROS Development Team.  All rights reserved.
  */
 
 #ifndef _HARDWARE_NVME_H
@@ -19,7 +19,12 @@ struct nvme_registers {
     ULONG			aqa;	/* Admin Queue Attributes */
     UQUAD			asq;	/* Admin Submission Queue Base Address */
     UQUAD			acq;	/* Admin Completion Queue Base Address */
-} __packed;
+};
+/*
+ * Deliberately not packed: every member is naturally aligned, so the
+ * layout is the spec layout either way, and packing makes the compiler
+ * free to reach members bytewise - register access must be whole-width.
+ */
 
 struct nvme_id_power_state {
     UWORD			max_power;	/* centiwatts */

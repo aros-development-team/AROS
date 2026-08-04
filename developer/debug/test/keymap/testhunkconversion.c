@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, The AROS Development Team. All rights reserved.
+    Copyright (C) 2024-2026, The AROS Development Team. All rights reserved.
 
     Regression test for GitHub issue #74 - Hunk seglist 64-bit LE conversion.
     

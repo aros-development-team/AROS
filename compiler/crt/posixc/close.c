@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function close().
 */
@@ -9,6 +9,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <errno.h>
+#include <libraries/fd.h>
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -51,6 +52,21 @@
 
     if (!(fdesc = __getfdesc(fd)))
     {
+        /* Not a local posixc file descriptor: dispatch to the owning
+           subsystem's close hook (e.g. a bsdsocket socket).  The owner
+           releases its own fd.library reservation. */
+        APTR data;
+        const struct fd_hooks *hooks = __getfdhooks(fd, &data);
+        if (hooks && hooks->fdh_close)
+        {
+            LONG err = 0;
+            if (hooks->fdh_close(data, fd, &err) < 0)
+            {
+                errno = err;
+                return -1;
+            }
+            return 0;
+        }
         errno = EBADF;
 
         return -1;

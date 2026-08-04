@@ -1,7 +1,7 @@
 #ifndef APIC_IA32_H
 #define APIC_IA32_H
 /*
-    Copyright � 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IA-32 APIC hardware definitions.
@@ -39,6 +39,23 @@ enum
 #define APIC_CPU_EXCEPT_COUNT   (APIC_EXCEPT_TOP - X86_CPU_EXCEPT_COUNT)
 #define APIC_CPU_EXCEPT_BASE    (APIC_IRQ_MAX - APIC_CPU_EXCEPT_COUNT)
 #define APIC_IRQ_COUNT          (APIC_CPU_EXCEPT_BASE - APIC_IRQ_BASE)
+
+/* Maximum software IRQs that can have 1:1 IDT vector mapping */
+#define HW_IRQ_VECTORS          (APIC_CPU_EXCEPT_BASE - HW_IRQ_BASE)   /* 214 */
+
+/*
+ * Reverse mapping: IDT vector → software IRQ number.
+ * Used by interrupt dispatch to find the correct kb_Interrupts[] entry.
+ * 0xFFFFFFFF = unmapped/spurious vector.
+ */
+extern ULONG apicIRQVectorMap[APIC_IRQ_MAX];
+
+/* Initialize the vector-to-IRQ reverse mapping and allocation bitmap */
+void apicInitVectorMap(void);
+/* Register a vector ↔ IRQ mapping (marks vector as used) */
+void apicRegisterVector(UBYTE vector, ULONG irq);
+/* Allocate an IDT vector for a software IRQ. Returns 0 if pool exhausted. */
+UBYTE apicAllocVector(ULONG irq);
 
 #define APIC_CPU_EXCEPT_TO_VECTOR(num)  ((num) - X86_CPU_EXCEPT_COUNT + APIC_CPU_EXCEPT_BASE)
 #define GET_EXCEPTION_NUMBER(irq) \

@@ -32,7 +32,7 @@ library and use the Berkeley socket API (`socket`/`bind`/`connect`/`send`/`recv`
 |-------------|----------|
 | `api/`      | The `bsdsocket.library` API surface: syscall layer (`amiga_syscalls.c`, `amiga_sendrecv.c`), library open/close/dispatch (`amiga_api.c`, `amiga_libcalls.c`, `amiga_generic*.c`), the resolver (`res_*.c`, `gethostnamadr.c`, `getxbyy.c`), address/interface helpers (`getifaddrs.c`, `if_name*`, `inet_*`), and the Roadshow/Miami compatibility APIs (`amiga_roadshow.c`, `miami_api.c`). |
 | `kern/`     | Kernel glue and the socket layer: `uipc_socket*.c` (socket layer), `uipc_mbuf.c` (mbufs), `kern_malloc.c` (pooled allocator), `kern_synch.c` (`spl`/`tsleep`/`wakeup`), `subr_prf.c` (kernel `printf`/`log`), `amiga_main.c` (daemon init), configuration/ARexx/GUI/DHCP integration (`amiga_config.c`, `amiga_rexx.c`, `amiga_gui.c`, `amiga_dhcp.c`), name database (`amiga_netdb.c`), access control (`accesscontrol.c`). |
-| `net/`      | Link and routing layer: routing (`route.c`, `radix.c`, `rtsock.c`), interfaces (`if.c`, `if_loop.c`), the SANA-II driver interface (`if_sana.c`, `sana2arp.c`, `sana2*.c`), BPF (`bpf*.c`), packet filter hooks (`pfil.c`, `ipfilter.c`), and the software-interrupt queue (`netisr.c`). |
+| `net/`      | Link and routing layer: routing (`route.c`, `radix.c`, `rtsock.c`), interfaces (`if.c`, `if_loop.c`), the SANA-II driver interface (`if_sana.c`, `sana2arp.c`, `sana2*.c`), the 6in4 IPv6-in-IPv4 tunnel pseudo-interface (`if_stf.c`), BPF (`bpf*.c`), packet filter hooks (`pfil.c`, `ipfilter.c`), and the software-interrupt queue (`netisr.c`). |
 | `netinet/`  | IPv4 and the (dual-stack) TCP engine: `ip_input.c`/`ip_output.c`/`ip_icmp.c`, `in.c`/`in_pcb.c`/`in_proto.c`, IGMPv2 host membership (`igmp.c`), the TCP engine (`tcp_input.c`, `tcp_output.c`, `tcp_subr.c`, `tcp_usrreq.c`, `tcp_timer.c`), the SYN cache (`tcp_syncache.c`), congestion control (`tcp_cc_newreno.c`, `tcp_cc_cubic.c`, `tcp_cc.h`), UDP (`udp_usrreq.c`), raw IP (`raw_ip.c`), and the Internet checksum (`in_cksum.c` / `in_cksum_sse2.c` / `in_cksum_neon.c`). |
 | `netinet6/` | IPv6 (KAME-derived): `ip6_input.c`/`ip6_output.c`, `icmp6.c`, neighbour discovery (`nd6.c`, `nd6_nbr.c`, `nd6_rtr.c`), MLD (`mld6.c`), `in6.c`/`in6_pcb.c`/`in6_proto.c`, UDP6 (`udp6_usrreq.c`), and the IPv6 checksum (`in6_cksum.c` / `in6_cksum_sse2.c` / `in6_cksum_neon.c`). |
 | `sys/`, `conf/` | Local system headers and the `conf.h` build configuration (`INET6`, debug gates, compiler macros). Shared protocol headers live in `AROS/workbench/network/common/include`. |
@@ -215,10 +215,11 @@ overlay), so header building and the state machine are shared; only the family e
   an existing PCB is rejected with `EADDRINUSE` unless `SO_REUSEADDR`/`SO_REUSEPORT` is set.
 - **UDP6** is a separate path (`udp6_usrreq`/`udp6_output`/`udp6_input`) reusing the shared `inpcb`.
   `if_loop.c loconfig()` configures `lo0` with `::1` (and `127.0.0.1`); `::1` is in `in6_ifaddr` so
-  `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. With
-  `IPV6_HOPLIMIT` set (the `IN6P_HOPLIMIT` flag), `udp6_input` delivers the received hop limit as an
-  `IPPROTO_IPV6` ancillary `cmsg` built by `udp6_saveopt`, assembled before the headers are stripped
-  (RFC 3542).
+  `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. When the
+  `IN6P_HOPLIMIT` (`IPV6_HOPLIMIT`) or `IN6P_PKTINFO` (`IPV6_RECVPKTINFO`) flag is set, `udp6_input`
+  delivers the received hop limit and/or a `struct in6_pktinfo` (destination address + receiving
+  interface index) as `IPPROTO_IPV6` ancillary `cmsg`s built by `udp6_saveopt`, chained via `m_next`
+  and assembled before the headers are stripped (RFC 3542).
 
 ### 6.1 Neighbour Discovery
 
@@ -238,7 +239,9 @@ is layered on top: a Query is recognised as v2 by its length (an MLDv1 Query is 
 `struct mld_hdr`), the floating-point Maximum Response Code is decoded, and the pending response is
 flagged so timer expiry emits an ICMPv6 type-143 Report — a single `MODE_IS_EXCLUDE` record with no
 sources (equivalent to a plain membership) sent to `ff02::16`. A v1 querier still receives v1
-Reports. Per-source filtering is not tracked.
+Reports. Per-source filtering is not tracked. Every MLD message (v1 and v2) is emitted with a
+Hop-by-Hop Options header carrying the Router Alert option (RFC 2711, `mld6_prepend_ra`) so that
+on-link multicast routers intercept it.
 
 ### 6.3 Path MTU Discovery (RFC 8201)
 
@@ -261,6 +264,42 @@ zero means skip to the next header, non-zero means the routing type is unrecogni
 discarded with Parameter Problem pointing at the Routing Type field. Header lengths are validated
 against the packet bounds before use, and the running header count remains capped.
 
+### 6.5 6in4 (SIT) tunnel — IPv6 over IPv4
+
+A `gif`/`stf`-style pseudo-interface (`net/if_stf.c`, `net/if_stf.h`) carries IPv6 over an IPv4 link
+by RFC 4213 encapsulation (IPv6-in-IPv4, IP protocol 41) — e.g. a Hurricane Electric 6in4 tunnel. It
+is **deviceless**: rather than binding a SANA-II device it reuses the existing IPv4 stack for the
+outer transport (routing, ARP, source selection), so it works over whatever IPv4 interface reaches
+the tunnel server.
+
+- **Interface.** `stf_make()` allocates a `struct stf_softc` (a `struct ifnet` first, plus the outer
+  IPv4 endpoints and TTL) and `if_attach`es it as an `IFF_POINTOPOINT` interface with
+  `if_mtu = 1480` (1500 − 20), `if_type = IFT_TUNNEL`, `if_output = stf_output`. Interfaces are kept
+  on a private list for input demux. It is created from the interfaces DB, not by `OpenDevice`.
+- **Output (encapsulation).** `stf_output` receives the IPv6 datagram from `ip6_output` (routed to
+  the tunnel via the `::/0` / peer route), `M_PREPEND`s a `struct ip` (`ip_p = IPPROTO_IPV6` (41),
+  the tunnel endpoints, TTL, `ip_len` in host order), and calls `ip_output()` — which fills the
+  remaining header fields, computes the checksum, and routes the outer packet over the real IPv4
+  interface (mirrors `rip_output`). The outer source is the configured local endpoint, or, when left
+  unset (`ip_src == INADDR_ANY`), auto-selected by `ip_output` from the egress interface — correct
+  behind NAT and with DHCP. A per-softc re-entrancy guard drops the packet if the outer route would
+  loop back into the tunnel.
+- **Input (decapsulation).** A protocol-41 entry in `inetsw[]` (`netinet/in_proto.c`) makes `ipintr`
+  dispatch an inbound IPv4 proto-41 packet to `stf_input`, which matches the tunnel by its **remote
+  endpoint** (the outer source), strips the outer IPv4 header (`m_adj`), sets `rcvif`, and enqueues
+  the inner datagram on `ip6intrq` + `schednetisr(NETISR_IPV6)` — the same input path a SANA-II IPv6
+  read uses. Matching on the remote source only (not the local destination) keeps decapsulation
+  working when the outer destination has been rewritten by NAT.
+- **Addressing/routing.** The tunnel address and the peer (the gateway, typically `…::1`) are set via
+  the normal `SIOCAIFADDR_IN6` path. `in6.c` was extended to honour the point-to-point destination
+  (`ifra_dstaddr`) so `in6_ifinit` installs the peer host route — a POINTOPOINT interface previously
+  got no route at all — and `addifent()` writes the `::/0` default with a proper `::/0` netmask.
+- **Configuration.** One interfaces-DB line, e.g.
+  `sit0 TUNNEL TDST=<remote-v4> TTL=255 IP6=<local-v6> PREFIXLEN=64 GW6=<peer-v6> UP`
+  (`TSRC=<local-v4>` optional — omit to auto-source). The `TUNNEL` keyword makes `DEVICE` optional;
+  `addifent()` (`kern/amiga_netdb.c`) then creates the pseudo-interface instead of opening a device.
+  Behind NAT the router must forward inbound protocol 41 to the AROS host (double-NAT cannot work).
+
 ---
 
 ## 7. IPv4, ICMP, and UDP
@@ -271,7 +310,10 @@ against the packet bounds before use, and the running header count remains cappe
   is rate-limited by a token bucket (`icmp_ratelimit`): a burst of 10 tokens refills at 5 tokens per
   500 ms slow-tick, keyed off the `tcp_now` clock; suppressed errors are counted in
   `icmpstat.icps_ratelimit`, bounding ICMP error amplification.
-- **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table.
+- **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
+  UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
+  (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
+  before the owning task drains them, rather than dropping at the ~40-datagram default.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
   `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →
@@ -309,6 +351,9 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   SANA-II wire types to RFC 1573 interface types, and drives TX/RX. `sana2arp.c` implements IPv4
   ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp.table` under
   `ARPTAB_LOCK`).
+- **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
+  encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
+  See §6.5.
 
 ---
 
@@ -351,9 +396,9 @@ Properties the implementation provides:
 - **x86_64 checksum requires SSE2.** Only the SSE2 checksum is compiled on x86_64, with no scalar
   fallback. SSE2 is baseline on all x86_64 CPUs, so this is not a practical restriction.
 - **Multicast is host-only.** IGMP (IPv4) and MLD (IPv6) implement the group-member role only —
-  there is no querier/router role and no multicast routing (mrouted). The MLDv1/MLDv2 reports do not
-  yet prepend a Hop-by-Hop Router Alert option (IGMP does), and `IPV6_PKTINFO` ancillary delivery on
-  UDP/IPv6 receive is still a TODO (`IPV6_HOPLIMIT` is delivered).
+  there is no querier/router role and no multicast routing (mrouted). Both carry a Router Alert
+  option on their reports, and receive-side `IPV6_HOPLIMIT`/`IPV6_PKTINFO` ancillary data is
+  delivered; per-source multicast filtering (MLDv2 INCLUDE/EXCLUDE source lists) is not tracked.
 - **Unimplemented API surface.** Several Roadshow interface-management entrypoints
   (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, `ObtainInterfaceList`, …) and Miami calls
   (`MiamiSysCtl`, `MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented".

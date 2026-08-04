@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -131,9 +131,10 @@ void nvme_complete_event(struct nvme_queue *nvmeq, struct nvme_completion *cqe)
     }
 }
 
-void nvme_process_cq(struct nvme_queue *nvmeq)
+int nvme_process_cq(struct nvme_queue *nvmeq)
 {
     UWORD head, phase;
+    int processed = 0;
 
     D(bug ("[NVME:HW] %s(0x%p)\n", __func__, nvmeq);)
 
@@ -160,6 +161,7 @@ void nvme_process_cq(struct nvme_queue *nvmeq)
             phase = !phase;
         }
         nvme_complete_event(nvmeq, cqe);
+        processed++;
     }
 
     if ((head != nvmeq->cq_head) || (phase == nvmeq->cq_phase)) {
@@ -173,4 +175,6 @@ void nvme_process_cq(struct nvme_queue *nvmeq)
     }
 #endif
     D(bug ("[NVME:HW] %s: finished\n", __func__);)
+
+    return processed;
 }

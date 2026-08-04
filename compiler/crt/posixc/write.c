@@ -9,6 +9,8 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <libraries/fd.h>
+#include <aros/debug.h>
 #include "__fdesc.h"
 #include "__dos64.h"
 
@@ -52,6 +54,18 @@
     fdesc *fdesc = __getfdesc(fd);
     if (!fdesc)
     {
+        /* Not a local posixc file descriptor: dispatch to the owning
+           subsystem's hooks (e.g. a bsdsocket socket). */
+        APTR data;
+        const struct fd_hooks *hooks = __getfdhooks(fd, &data);
+        if (hooks && hooks->fdh_write)
+        {
+            LONG err = 0;
+            cnt = (ssize_t)hooks->fdh_write(data, buf, count, &err);
+            if (cnt < 0)
+                errno = err;
+            return cnt;
+        }
         errno = EBADF;
         return -1;
     }

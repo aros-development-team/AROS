@@ -109,30 +109,39 @@ static void SetBlockState(struct BlockHeader *head, IPTR first, IPTR pages, page
     } while (p > 0);
 }
 
+static struct BlockHeader *GetBlockHeader(struct MemHeader *mh)
+{
+    struct BlockHeader *head;
+
+    if (!mh)
+        return NULL;
+
+    head = (struct BlockHeader *)mh->mh_First;
+
+    /* Unconverted Exec and ROM headers are not managed by mm_linear. */
+    if (!head || head->mc.mc_Next || head->mc.mc_Bytes)
+        return NULL;
+
+    return head;
+}
+
 /* Allocate 'size' bytes from MemHeader mh */
 APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
 {
-    struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
+    struct BlockHeader *head;
     APTR addr = NULL;
-    IPTR align = head->pageSize - 1;
+    IPTR align;
     IPTR pages;
     IPTR p;
     IPTR candidate, candidate_size;
 
-    D(bug("[mm_Allocate] Request for %u bytes from BlockHeader %p, KernelBase 0x%p\n", size, head, KernelBase));
-
-    /*
-     * Safety checks.
-     * If mh_First is NULL, it's ROM header. We can't allocate from it.
-     */
+    head = GetBlockHeader(mh);
     if (!head)
         return NULL;
-    /*
-     * If either mc_Next or mc_Bytes is not zero, this MemHeader is not
-     * managed by us. We can't allocate from it.
-     */
-    if (head->mc.mc_Next || head->mc.mc_Bytes)
-        return NULL;
+
+    D(bug("[mm_Allocate] Request for %u bytes from BlockHeader %p, KernelBase 0x%p\n", size, head, KernelBase));
+
+    align = head->pageSize - 1;
 
     /* Pad up size and convert it to number of pages */
     size = (size + align) & ~align;
@@ -265,26 +274,19 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
 /* Allocate 'size' bytes starting at 'addr' from MemHeader mh */
 APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size)
 {
-    struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
-    IPTR align = head->pageSize - 1;
+    struct BlockHeader *head;
+    IPTR align;
     IPTR pages;
     IPTR start, p;
     void *ret = NULL;
 
-    D(bug("[mm_Allocate] Request for %u bytes from BlockHeader %p\n", size, head));
-
-    /*
-     * Safety checks.
-     * If mh_First is NULL, it's ROM header. We can't allocate from it.
-     */
+    head = GetBlockHeader(mh);
     if (!head)
         return NULL;
-    /*
-     * If either mc_Next or mc_Bytes is not zero, this MemHeader is not
-     * managed by us. We can't allocate from it.
-     */
-    if (head->mc.mc_Next || head->mc.mc_Bytes)
-        return NULL;
+
+    D(bug("[mm_Allocate] Request for %u bytes from BlockHeader %p\n", size, head));
+
+    align = head->pageSize - 1;
 
     /* Align starting address */
     addr = (void *)((IPTR)addr & ~align);
@@ -328,11 +330,18 @@ APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size)
 /* Free 'size' bytes starting from address 'addr' in the MemHeader mh */
 void mm_Free(struct MemHeader *mh, APTR addr, IPTR size)
 {
-    struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
-    /* Calculate number of the starting page within the region */
-    IPTR first = (addr - head->start) / head->pageSize;
-    IPTR align = head->pageSize - 1;
+    struct BlockHeader *head;
+    IPTR first;
+    IPTR align;
     IPTR pages;
+
+    head = GetBlockHeader(mh);
+    if (!head)
+        return;
+
+    /* Calculate number of the starting page within the region */
+    first = (addr - head->start) / head->pageSize;
+    align = head->pageSize - 1;
 
     /* Pad up size and convert it to number of pages */
     size = (size + align) & ~align;
@@ -427,7 +436,10 @@ void mm_Init(struct MemHeader *mh, ULONG pageSize)
  */
 void mm_Protect(struct MemHeader *mh, struct KernelBase *KernelBase)
 {
-    struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
+    struct BlockHeader *head = GetBlockHeader(mh);
+
+    if (!head)
+        return;
 
     InitSemaphore(&head->sem);
 
@@ -511,8 +523,11 @@ void mm_StatMemHeader(struct MemHeader *mh, const struct TagItem *query, struct 
 
     if (do_traverse)
     {
-        struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
+        struct BlockHeader *head = GetBlockHeader(mh);
         IPTR p;
+
+        if (!head)
+            return;
 
         ObtainSemaphoreShared(&head->sem);
 

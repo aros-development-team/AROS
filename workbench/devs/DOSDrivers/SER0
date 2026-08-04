@@ -1,4 +1,4 @@
-Handler = port-handler
+EHandler = port-handler
 Priority = 5
 GlobVec  = -1
 Device   = serial.device

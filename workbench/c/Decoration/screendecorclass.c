@@ -1,5 +1,5 @@
 /*
-    Copyright  2011-2026, The AROS Development Team.
+    Copyright (C)  2011-2026, The AROS Development Team.
 */
 
 #define DEBUG 0

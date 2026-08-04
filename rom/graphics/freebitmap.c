@@ -73,7 +73,7 @@
         if(bmobj)
             OOP_DisposeObject(bmobj);
 
-        FreeMem(bm, sizeof(struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES);
+        FreeVec(bm);
     } else {
         ULONG plane;
         ULONG width;
@@ -101,8 +101,7 @@
 
         }
 
-        FreeMem(bm, sizeof(struct BitMap) +
-                ((bm->Depth > 8) ? (bm->Depth - 8) * sizeof(PLANEPTR) : 0));
+        FreeVec(bm);
     }
 
     AROS_LIBFUNC_EXIT

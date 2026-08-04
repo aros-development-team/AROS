@@ -93,6 +93,14 @@ static BOOL XHCIController__Init(struct PCIController *hc)
 
     if (!xhciregs) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Failed to map the register area" DEBUGCOLOR_RESET" \n");
+        /*
+         * Leave nothing behind. Anything running later reaches the
+         * private through hc_CPrivate, and one that was merely
+         * allocated looks no different from one that was set up - every
+         * register pointer in it is still NULL.
+         */
+        hc->hc_CPrivate = NULL;
+        FreeMem(xhcic, sizeof(*xhcic));
         xhciCloseTaskTimer(&timerport, &timerreq);
         return FALSE;
     }

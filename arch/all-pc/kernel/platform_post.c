@@ -52,10 +52,20 @@ void PlatformPostInit(void)
 APTR PlatformAllocGDT(struct KernelBase *LIBBASE, apicid_t _APICID)
 {
     APTR GDTalloc;
-    
+#if defined(__x86_64__)
+    /* Size the GDT for the per-core TSS descriptors */
+    ULONG gdtSize = sizeof(struct gdt_64bit) +
+                    __KernBootPrivate->kbp_APIC_Max * sizeof(struct segment_tss);
+
+    GDTalloc = (APTR)AllocMem(gdtSize + 128, MEMF_24BITDMA|MEMF_CLEAR);
+    GDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)GDTalloc, 128);
+    D(bug("[Kernel] %s[%d]: GDT @ 0x%p (%u bytes for %u cores)\n",
+          __func__, _APICID, GDTalloc, gdtSize, __KernBootPrivate->kbp_APIC_Max));
+#else
     GDTalloc = (APTR)AllocMem(GDT_SIZE + 128, MEMF_24BITDMA|MEMF_CLEAR);
     GDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)GDTalloc, 128);
     D(bug("[Kernel] %s[%d]: GDT @ 0x%p\n", __func__, _APICID, GDTalloc));
+#endif
 
     return GDTalloc;
 }

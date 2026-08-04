@@ -1,7 +1,14 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
 
-    Desc: genmodule.h include file for risc-v systems
+    Desc: genmodule.h include file for risc-v (RV32, ILP32D) systems.
+
+    Library-call stubs jump through the library's downward-growing vector
+    table: the function for LVO n lives at (libbase - n*LIB_VECTSIZE), and
+    each JumpVec slot holds a function pointer. The stubs hand the libbase
+    to the library-side thunk in t6 - a temporary register that is never
+    used to pass arguments, so all eight integer (a0-a7) and eight FP
+    (fa0-fa7) argument registers stay untouched.
 */
 
 #ifndef AROS_RISCV_GENMODULE_H
@@ -14,77 +21,104 @@
 /******************* Linklib Side Thunks ******************/
 
 /* Macro: AROS_GM_LIBFUNCSTUB(functionname, libbasename, lvo)
-   This macro will generate code for a stub function for
-   the function 'functionname' of lirary with libbase
-   'libbasename' and 'lvo' number of the function in the
-   vector table. lvo has to be a constant value (not a variable)
+   Generates a stub for 'functionname' of the library whose base pointer is
+   the global 'libbasename'. It loads the base, indexes the vector table at
+   -lvo and tail-jumps to the function. lvo must be a compile-time constant.
 */
-#define __AROS_GM_LIBFUNCSTUB(fname, libbasename, lvo)                  \
-    void __ ## fname ## _ ## libbasename ## _wrapper(void)              \
-    {                                                                   \
-        asm volatile(                                                   \
-            ".weak " #fname "\n"                                        \
-            ".type " #fname ", %%function\n"                            \
-            #fname " :\n"                                               \
-            /* a7 = libbase */                                          \
-            "\tla a7, 1f\n"                                             \
-            "\tlw a7, 0(a7)\n"                                          \
-            /* Compute function address and jump */                     \
-            "\tjal a7, %0\n"                                            \
-            ".align 2\n"                                                \
-            "1: .word " #libbasename "\n"                               \
-            : : "i" ((-lvo*LIB_VECTSIZE))                               \
-        );                                                              \
+#define __AROS_GM_LIBFUNCSTUB(fname, libbasename, lvo)                     \
+    void __ ## fname ## _ ## libbasename ## _wrapper(void)                 \
+    {                                                                      \
+        asm volatile(                                                      \
+            ".weak " #fname "\n"                                           \
+            ".type " #fname ", %%function\n"                               \
+            #fname " :\n"                                                  \
+            "\tla   t6, " #libbasename "\n" /* t6 = &libbasename        */ \
+            "\tlw   t6, 0(t6)\n"            /* t6 = libbase             */ \
+            "\tli   t0, %0\n"               /* t0 = lvo*LIB_VECTSIZE    */ \
+            "\tsub  t0, t6, t0\n"           /* t0 = &JumpVec[-lvo]      */ \
+            "\tlw   t0, 0(t0)\n"            /* t0 = function pointer    */ \
+            "\tjr   t0\n"                                                  \
+            : : "i" ((lvo)*LIB_VECTSIZE)                                   \
+        );                                                                 \
     }
 #define AROS_GM_LIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_GM_LIBFUNCSTUB(fname, libbasename, lvo)
 
 /* Macro: AROS_GM_RELLIBFUNCSTUB(functionname, libbasename, lvo)
-   Same as AROS_GM_LIBFUNCSTUB but finds libbase at an offset in
-   the current libbase
+   Same as AROS_GM_LIBFUNCSTUB but resolves the libbase through the per-task
+   offset table (__aros_getoffsettable + __aros_rellib_offset_<libbasename>).
 */
-#define __AROS_GM_RELLIBFUNCSTUB(fname, libbasename, lvo)               \
-    void __ ## fname ## _ ## libbasename ## _relwrapper(IPTR args)      \
-    {                                                                   \
-        asm volatile(                                                   \
-            ".weak " #fname "\n"                                        \
-            ".type " #fname ", %%function\n"                            \
-            #fname " :\n"                                               \
-            /* return address is in ra register */                      \
-            /* Up to four parameters are in */                          \
-            /* a0 - a3 , the rest are on stack */                       \
-            "\taddi sp,sp,-20\n"                                        \
-            "\tsw a0, 16(sp)\n"                                         \
-            "\tsw a1, 12(sp)\n"                                         \
-            "\tsw a2, 8(sp)\n"                                          \
-            "\tsw a3, 4(sp)\n"                                          \
-            "\tsw ra, 0(sp)\n"                                          \
-            /* a0 = __aros_getoffsettable() */                          \
-            "\tcall  __aros_getoffsettable\n"                           \
-            /* a7 = libbase */                                          \
-            "\tla a1, 1f\n"                                             \
-            "\tlw a1, 0(a1)\n"                                          \
-            "\tadd a7, a0, a1\n"                                        \
-            /* Restore original arguments */                            \
-            "\tlw ra, 0(sp)\n"                                          \
-            "\tlw a3, 4(sp)\n"                                          \
-            "\tlw a2, 8(sp)\n"                                          \
-            "\tlw a1, 12(sp)\n"                                         \
-            "\tlw a0, 16(sp)\n"                                         \
-            "\taddi sp,sp,20\n"                                         \
-            /* Compute function address and jump */                     \
-            "\tjal a7, %0\n"                                            \
-	    "1:	.word __aros_rellib_offset_" #libbasename "\n"              \
-            "2: .word __aros_getoffsettable\n"                          \
-            : : "i" ((-lvo*LIB_VECTSIZE))                               \
-        );                                                              \
+#define __AROS_GM_RELLIBFUNCSTUB(fname, libbasename, lvo)                  \
+    void __ ## fname ## _ ## libbasename ## _relwrapper(IPTR args)         \
+    {                                                                      \
+        asm volatile(                                                      \
+            ".weak " #fname "\n"                                           \
+            ".type " #fname ", %%function\n"                               \
+            #fname " :\n"                                                  \
+            /* Preserve every argument-carrying register across the        \
+             * helper call: a0-a7 (integer args), fa0-fa7 (FP args) and    \
+             * ra. The ILP32D ABI lets the callee clobber all of them. */  \
+            "\taddi sp, sp, -112\n"                                        \
+            "\tfsd  fa0, 0(sp)\n"                                          \
+            "\tfsd  fa1, 8(sp)\n"                                          \
+            "\tfsd  fa2, 16(sp)\n"                                         \
+            "\tfsd  fa3, 24(sp)\n"                                         \
+            "\tfsd  fa4, 32(sp)\n"                                         \
+            "\tfsd  fa5, 40(sp)\n"                                         \
+            "\tfsd  fa6, 48(sp)\n"                                         \
+            "\tfsd  fa7, 56(sp)\n"                                         \
+            "\tsw   a0, 64(sp)\n"                                          \
+            "\tsw   a1, 68(sp)\n"                                          \
+            "\tsw   a2, 72(sp)\n"                                          \
+            "\tsw   a3, 76(sp)\n"                                          \
+            "\tsw   a4, 80(sp)\n"                                          \
+            "\tsw   a5, 84(sp)\n"                                          \
+            "\tsw   a6, 88(sp)\n"                                          \
+            "\tsw   a7, 92(sp)\n"                                          \
+            "\tsw   ra, 96(sp)\n"                                          \
+            "\tcall __aros_getoffsettable\n" /* a0 = offset table       */ \
+            "\tli   t6, 0\n"                                               \
+            "\tbeqz a0, 1f\n"                /* no table -> guard below */ \
+            "\tla   t0, __aros_rellib_offset_" #libbasename "\n"           \
+            "\tlw   t0, 0(t0)\n"             /* t0 = rellib offset      */ \
+            "\tadd  t0, a0, t0\n"                                          \
+            "\tlw   t6, 0(t0)\n"             /* t6 = libbase            */ \
+            "1:\tlw   ra, 96(sp)\n"                                        \
+            "\tlw   a7, 92(sp)\n"                                          \
+            "\tlw   a6, 88(sp)\n"                                          \
+            "\tlw   a5, 84(sp)\n"                                          \
+            "\tlw   a4, 80(sp)\n"                                          \
+            "\tlw   a3, 76(sp)\n"                                          \
+            "\tlw   a2, 72(sp)\n"                                          \
+            "\tlw   a1, 68(sp)\n"                                          \
+            "\tlw   a0, 64(sp)\n"                                          \
+            "\tfld  fa7, 56(sp)\n"                                         \
+            "\tfld  fa6, 48(sp)\n"                                         \
+            "\tfld  fa5, 40(sp)\n"                                         \
+            "\tfld  fa4, 32(sp)\n"                                         \
+            "\tfld  fa3, 24(sp)\n"                                         \
+            "\tfld  fa2, 16(sp)\n"                                         \
+            "\tfld  fa1, 8(sp)\n"                                          \
+            "\tfld  fa0, 0(sp)\n"                                          \
+            "\taddi sp, sp, 112\n"                                         \
+            "\tbeqz t6, 2f\n"                /* base unresolved -> trap */ \
+            "\tli   t0, %0\n"                /* t0 = lvo*LIB_VECTSIZE   */ \
+            "\tsub  t0, t6, t0\n"            /* t0 = &JumpVec[-lvo]     */ \
+            "\tlw   t0, 0(t0)\n"             /* t0 = function pointer   */ \
+            "\tjr   t0\n"                                                  \
+            /* Deliberate illegal-instruction trap: the rellib base for  \
+             * this stub was never resolved (offset table absent or the \
+             * library not opened).  sepc names the *_relwrapper; the   \
+             * restored a0-a7/fa0-fa7 are the original arguments.       */ \
+            "2:\tunimp\n"                                                  \
+            : : "i" ((lvo)*LIB_VECTSIZE)                                   \
+        );                                                                 \
     }
 #define AROS_GM_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_GM_RELLIBFUNCSTUB(fname, libbasename, lvo)
 
 /* Macro: AROS_GM_LIBFUNCALIAS(functionname, alias)
-   This macro will generate an alias 'alias' for function
-   'functionname'
+   Generates a weak alias 'alias' for 'functionname' (CPU-independent).
 */
 #define __AROS_GM_LIBFUNCALIAS(fname, alias) \
     asm(".weak " #alias "\n" \
@@ -95,42 +129,66 @@
 
 /******************* Library Side Thunks ******************/
 
-/* This macro relies upon the fact that the
- * caller to a stack function will have passed in
- * the base in %a7, since the caller will
- * have used the AROS_LIBFUNCSTUB() macro.
+/* Relies upon the caller (a LIBFUNCSTUB above) having left the libbase in
+ * t6. Records it via __aros_setoffsettable then tail-jumps to the real
+ * function.
  */
 #define __GM_STRINGIZE(x) #x
-#define __AROS_GM_STACKCALL(fname, libbasename, libfuncname)            \
-    void libfuncname(void);                                             \
-    void __ ## fname ## _stackcall(void)                                \
-    {                                                                   \
-        asm volatile(                                                   \
-            "\t" __GM_STRINGIZE(libfuncname) " :\n"                     \
-            "\taddi sp,sp,-20\n"                                        \
-            "\tsw a0, 16(sp)\n"                                         \
-            "\tsw a1, 12(sp)\n"                                         \
-            "\tsw a2, 8(sp)\n"                                          \
-            "\tsw a3, 4(sp)\n"                                          \
-            "\tsw ra, 0(sp)\n"                                          \
-            "\tmv  a0, a7\n"                                            \
-            "\tcall   __aros_setoffsettable\n"                          \
-            "\tlw ra, 0(sp)\n"                                          \
-            "\tlw a3, 4(sp)\n"                                          \
-            "\tlw a2, 8(sp)\n"                                          \
-            "\tlw a1, 12(sp)\n"                                         \
-            "\tlw a0, 16(sp)\n"                                         \
-            "\taddi sp,sp,20\n"                                         \
-            "\tjal   " #fname "\n"                                      \
-        );                                                              \
+#define __AROS_GM_STACKCALL(fname, libbasename, libfuncname)               \
+    void libfuncname(void);                                                \
+    void __ ## fname ## _stackcall(void)                                   \
+    {                                                                      \
+        asm volatile(                                                      \
+            "\t" __GM_STRINGIZE(libfuncname) " :\n"                        \
+            /* Preserve a0-a7, fa0-fa7 and ra - the ILP32D ABI lets the    \
+             * callee clobber all of them. */                              \
+            "\taddi sp, sp, -112\n"                                        \
+            "\tfsd  fa0, 0(sp)\n"                                          \
+            "\tfsd  fa1, 8(sp)\n"                                          \
+            "\tfsd  fa2, 16(sp)\n"                                         \
+            "\tfsd  fa3, 24(sp)\n"                                         \
+            "\tfsd  fa4, 32(sp)\n"                                         \
+            "\tfsd  fa5, 40(sp)\n"                                         \
+            "\tfsd  fa6, 48(sp)\n"                                         \
+            "\tfsd  fa7, 56(sp)\n"                                         \
+            "\tsw   a0, 64(sp)\n"                                          \
+            "\tsw   a1, 68(sp)\n"                                          \
+            "\tsw   a2, 72(sp)\n"                                          \
+            "\tsw   a3, 76(sp)\n"                                          \
+            "\tsw   a4, 80(sp)\n"                                          \
+            "\tsw   a5, 84(sp)\n"                                          \
+            "\tsw   a6, 88(sp)\n"                                          \
+            "\tsw   a7, 92(sp)\n"                                          \
+            "\tsw   ra, 96(sp)\n"                                          \
+            "\tmv   a0, t6\n"                 /* arg0 = libbase         */ \
+            "\tcall __aros_setoffsettable\n"                               \
+            "\tlw   ra, 96(sp)\n"                                          \
+            "\tlw   a7, 92(sp)\n"                                          \
+            "\tlw   a6, 88(sp)\n"                                          \
+            "\tlw   a5, 84(sp)\n"                                          \
+            "\tlw   a4, 80(sp)\n"                                          \
+            "\tlw   a3, 76(sp)\n"                                          \
+            "\tlw   a2, 72(sp)\n"                                          \
+            "\tlw   a1, 68(sp)\n"                                          \
+            "\tlw   a0, 64(sp)\n"                                          \
+            "\tfld  fa7, 56(sp)\n"                                         \
+            "\tfld  fa6, 48(sp)\n"                                         \
+            "\tfld  fa5, 40(sp)\n"                                         \
+            "\tfld  fa4, 32(sp)\n"                                         \
+            "\tfld  fa3, 24(sp)\n"                                         \
+            "\tfld  fa2, 16(sp)\n"                                         \
+            "\tfld  fa1, 8(sp)\n"                                          \
+            "\tfld  fa0, 0(sp)\n"                                          \
+            "\taddi sp, sp, 112\n"                                         \
+            "\ttail " #fname "\n"                                          \
+        );                                                                 \
     }
-    
+
 #define AROS_GM_STACKCALL(fname, libbasename, lvo) \
      __AROS_GM_STACKCALL(fname, libbasename, AROS_SLIB_ENTRY(fname, libbasename, lvo))
 
 /* Macro: AROS_GM_STACKALIAS(functionname, libbasename, lvo)
-   This macro will generate an alias 'alias' for function
-   'functionname'
+   Generates a weak alias for the library-side entry of 'functionname'.
 */
 #define __AROS_GM_STACKALIAS(fname, alias) \
     void alias(void); \

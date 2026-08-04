@@ -450,4 +450,17 @@ struct BlitWaitQNode {
     struct Task *task;
 };
 
+/*
+ * The pen ClearEOL() and ClearScreen() clear with: BPen in JAM2, pen 0
+ * otherwise. Not the same rule as ScrollRaster(), which always uses BPen.
+ *
+ * Callers set this as the APen and leave the draw mode alone, so COMPLEMENT
+ * still inverts, and INVERSVID still clears the implicit all-ones pattern and
+ * so writes nothing in JAM1.
+ */
+static inline UBYTE bgfill_pen(struct RastPort *rp)
+{
+    return (rp->DrawMode & JAM2) ? rp->BgPen : 0;
+}
+
 #endif /* GRAPHICS_INTERN_H */

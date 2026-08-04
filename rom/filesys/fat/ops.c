@@ -1,7 +1,7 @@
 /*
  * fat-handler - FAT12/16/32 filesystem handler
  *
- * Copyright (C) 2007-2020 The AROS Development Team
+ * Copyright (C) 2007-2026 The AROS Development Team
  * Copyright (C) 2006 Marek Szyprowski
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -26,10 +26,16 @@
 #define DEBUG DEBUG_OPS
 #include "debug.h"
 
+/*
+ * Clusters 0 and 1 are reserved - entry 0 carries the media descriptor -
+ * so an empty file, whose chain starts at 0, has nothing to free. The
+ * old lower bound was 'cluster >= 0' on an unsigned, always true, and
+ * freeing cluster 0 wrote over the media descriptor.
+ */
 #define FREE_CLUSTER_CHAIN(sb,cl)                               \
     do {                                                        \
         ULONG cluster = cl;                                     \
-        while (cluster >= 0 && cluster < sb->eoc_mark - 7) {    \
+        while (cluster >= 2 && cluster < sb->eoc_mark - 7) {    \
             ULONG next_cluster = GET_NEXT_CLUSTER(sb, cluster); \
             FreeCluster(sb, cluster);                           \
             cluster = next_cluster;                             \
@@ -395,6 +401,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     )
 
     dh.ioh.sb = NULL;
+
 
     /* Obtain a lock on the file. We need an exclusive lock as we don't want
      * to delete the file if it's in use */

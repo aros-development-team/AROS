@@ -87,6 +87,10 @@ struct aros_dhcp_state aros_dhcpv4;
 #include <netinet/ip_output_protos.h>
 #include <netinet/raw_ip_protos.h>
 
+#if INET6
+#include <net/if_stf.h>		/* stf_input: 6in4 (proto 41) decapsulation */
+#endif
+
 /*
  * IMP protocol family: raw interface.
  * Using the raw interface entry to get the timer routine
@@ -177,6 +181,15 @@ struct protosw inetsw[] = {
     {
         SOCK_RAW,	&inetdomain,	IPPROTO_IDP,	PR_ATOMIC | PR_ADDR,
         idpip_input,	rip_output,	nsip_ctlinput,	NULL,
+        rip_usrreq,
+        NULL,		NULL,		NULL,		NULL,
+    },
+#endif
+#if INET6
+    /* 6in4 tunnel: inbound IPv4 protocol 41 -> decapsulate to IPv6 input */
+    {
+        SOCK_RAW,	&inetdomain,	IPPROTO_IPV6,	PR_ATOMIC | PR_ADDR,
+        stf_input,	rip_output,	NULL,		rip_ctloutput,
         rip_usrreq,
         NULL,		NULL,		NULL,		NULL,
     },

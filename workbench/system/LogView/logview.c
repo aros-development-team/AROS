@@ -544,7 +544,7 @@ int main(int argc, char *argv[])
     appobj = ApplicationObject,
         MUIA_Application_Title      , "LogView",
         MUIA_Application_Version    , "",
-        MUIA_Application_Copyright  , (IPTR) ISOASCII_COPYRIGHT "2023 The AROS Dev Team",
+        MUIA_Application_Copyright  , (IPTR) ISOASCII_COPYRIGHT "2023-2026 The AROS Dev Team",
         MUIA_Application_Author     , (IPTR) "The AROS Dev Team",
         MUIA_Application_Description, "AROS System Log Viewer",
         MUIA_Application_Base       , "LOGVIEW",

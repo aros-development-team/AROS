@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: PosixC internal functions for Amiga<>UNIX filename conversion
 */
@@ -104,7 +104,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     }
 
     D(bug("__path_u2a: converted path \"%s\"\n", newpath));
-      
+
     return newpath;
 }
 

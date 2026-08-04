@@ -54,6 +54,12 @@
 #define VCCLOCK_SDRAM           8
 #define VCCLOCK_PIXEL           9
 #define VCCLOCK_PWM             10
+#define VCCLOCK_EMMC2           12
+
+/* Power domain ids for the VCTAG_*POWER tags */
+#define VCPOWER_SDHCI           0
+#define VCPOWER_STATE_ON        (1 << 0)
+#define VCPOWER_STATE_WAIT      (1 << 1)
 
 #define VCTAG_GETCLKSTATE       0x00030001
 #define VCTAG_GETCLKRATE        0x00030002

@@ -35,6 +35,8 @@
  *	$Id$
  */
 
+#include <conf.h>
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/kernel.h>
@@ -61,6 +63,7 @@
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
 #include <netinet/tcp.h>
+#include <netinet/in_protos.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
@@ -112,7 +115,7 @@ struct mbuf *m, *nam, *control;
 #endif
 
     if(req == PRU_CONTROL)
-        return (in_control(so, (long)m, (caddr_t)nam,
+        return (in_control(so, (int)(long)m, (caddr_t)nam,
                            (struct ifnet *)control));
     if(control && control->m_len) {
         m_freem(control);
@@ -184,10 +187,12 @@ struct mbuf *m, *nam, *control;
          * Give the socket an address.
          */
     case PRU_BIND:
+#if INET6
         if(tcp_isipv6(inp)) {
             error = in6_pcbbind(inp, nam);
             break;
         }
+#endif
         /*
          * Must check for multicast addresses and disallow binding
          * to them.
@@ -208,8 +213,12 @@ struct mbuf *m, *nam, *control;
          */
     case PRU_LISTEN:
         if(inp->inp_lport == 0)
+#if INET6
             error = tcp_isipv6(inp) ? in6_pcbbind(inp, (struct mbuf *)0)
                                     : in_pcbbind(inp, (struct mbuf *)0);
+#else
+            error = in_pcbbind(inp, (struct mbuf *)0);
+#endif
         if(error == 0)
             tp->t_state = TCPS_LISTEN;
         break;
@@ -267,9 +276,11 @@ struct mbuf *m, *nam, *control;
          * of the peer, storing through addr.
          */
     case PRU_ACCEPT:
+#if INET6
         if(tcp_isipv6(inp))
             in6_setpeeraddr(inp, nam);
         else
+#endif
             in_setpeeraddr(inp, nam);
         break;
 
@@ -375,16 +386,20 @@ struct mbuf *m, *nam, *control;
         break;
 
     case PRU_SOCKADDR:
+#if INET6
         if(tcp_isipv6(inp))
             in6_setsockaddr(inp, nam);
         else
+#endif
             in_setsockaddr(inp, nam);
         break;
 
     case PRU_PEERADDR:
+#if INET6
         if(tcp_isipv6(inp))
             in6_setpeeraddr(inp, nam);
         else
+#endif
             in_setpeeraddr(inp, nam);
         break;
 
@@ -431,6 +446,7 @@ struct mbuf *nam;
     struct sockaddr_in *ifaddr;
     int error;
 
+#if INET6
     if(tcp_isipv6(inp)) {
         /* IPv6 connect: bind an ephemeral local port/addr, then connect. */
         if(inp->inp_lport == 0) {
@@ -458,6 +474,7 @@ struct mbuf *nam;
         tp->cc_send = CC_INC(tcp_ccgen);
         return 0;
     }
+#endif /* INET6 */
 
     if(inp->inp_lport == 0) {
         error = in_pcbbind(inp, NULL);
@@ -538,7 +555,21 @@ struct mbuf **mp;
         return (ECONNRESET);
     }
     if(level != IPPROTO_TCP) {
-        error = ip_ctloutput(op, so, level, optname, mp);
+#if INET6
+        /*
+         * IPv6-level options (e.g. IPV6_V6ONLY, IPV6_UNICAST_HOPS) on a TCP6
+         * socket must go to ip6_ctloutput; the TCP6 protosw shares this
+         * ctloutput with TCP4, so route by the option level rather than always
+         * falling through to the IPv4 ip_ctloutput (which rejects IPPROTO_IPV6
+         * with EINVAL).  Requires <conf.h> (included above) for INET6.
+         */
+        extern int ip6_ctloutput(int op, struct socket *so, int level,
+                                 int optname, struct mbuf **m);
+        if(level == IPPROTO_IPV6)
+            error = ip6_ctloutput(op, so, level, optname, mp);
+        else
+#endif
+            error = ip_ctloutput(op, so, level, optname, mp);
         splx(s);
         return (error);
     }

@@ -67,9 +67,13 @@
     struct Hook     *h = LAYERS_BACKFILL;
 
     if(!LayersBase) {
-        rp->DrawMode ^= INVERSVID;
+        UBYTE oldFgPen = rp->FgPen;
+
+        /* As ScrollRaster() does: the layer path below erases to the layer's
+           background, so without one BPen is the closest equivalent. */
+        SetAPen(rp, rp->BgPen);
         RectFill(rp, xMin, yMin, xMax, yMax);
-        rp->DrawMode ^= INVERSVID;
+        SetAPen(rp, oldFgPen);
         return;
     }
 

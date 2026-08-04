@@ -17,6 +17,11 @@
 #undef base
 #define base (hc->hc_Device)
 
+#if defined(AROS_USE_LOGRES)
+#define LogHandle (hc->hc_LogRHandle)
+#define LogResBase (base->hd_LogResBase)
+#endif
+
 /* Debug functions */
 static UQUAD xhciDebugReadAddress(const volatile struct xhci_address *addr)
 {
@@ -54,6 +59,14 @@ void xhciDebugDumpDCBAAEntry(struct PCIController *hc, ULONG slotid)
                 (ULONG)(ptr >> 32),
                 (ULONG)(ptr & 0xFFFFFFFF));
 }
+
+#if defined(AROS_USE_LOGRES)
+/* No controller context here; log through the device the unit belongs to */
+#undef LogHandle
+#undef LogResBase
+#define LogHandle (((struct PCIUnit *)ioreq->iouh_Req.io_Unit)->hu_Device->hd_LogRHandle)
+#define LogResBase (((struct PCIUnit *)ioreq->iouh_Req.io_Unit)->hu_Device->hd_LogResBase)
+#endif
 
 void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
 {
@@ -393,6 +406,13 @@ void xhciDumpSlot(volatile struct xhci_slot *slot, int slotid)
     KPrintF(DEBUGCOLOR_SET "xHCI: SLOT[%d].PORT         = %02x" DEBUGCOLOR_RESET" \n", slotid, (slot->ctx[1] >> 16) & 0xFF);
     KPrintF(DEBUGCOLOR_SET "xHCI: SLOT[%d].TARGET      = %03x" DEBUGCOLOR_RESET" \n", slotid, (slot->ctx[3] >> 22) & 0x3FF);
 }
+
+#if defined(AROS_USE_LOGRES)
+#undef LogHandle
+#undef LogResBase
+#define LogHandle (hc->hc_LogRHandle)
+#define LogResBase (base->hd_LogResBase)
+#endif
 
 void xhciDebugDumpSlotContext(struct PCIController *hc, volatile struct xhci_slot *slot)
 {

@@ -1,7 +1,7 @@
 #ifndef _SDCARDBCM2708_INTERN_H
 #define _SDCARDBCM2708_INTERN_H
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -44,5 +44,9 @@ ULONG FNAME_BCMSDCBUS(BCMMMIOReadLong)(ULONG, struct sdcard_Bus *);
 void FNAME_BCMSDCBUS(BCMMMIOWriteByte)(ULONG, UBYTE, struct sdcard_Bus *);
 void FNAME_BCMSDCBUS(BCMMMIOWriteWord)(ULONG, UWORD, struct sdcard_Bus *);
 void FNAME_BCMSDCBUS(BCMMMIOWriteLong)(ULONG, ULONG, struct sdcard_Bus *);
+
+void FNAME_BCMSDCBUS(BCMMMIODirectWriteByte)(ULONG, UBYTE, struct sdcard_Bus *);
+void FNAME_BCMSDCBUS(BCMMMIODirectWriteWord)(ULONG, UWORD, struct sdcard_Bus *);
+void FNAME_BCMSDCBUS(BCMMMIODirectWriteLong)(ULONG, ULONG, struct sdcard_Bus *);
 
 #endif // _SDCARDBCM2708_INTERN_H

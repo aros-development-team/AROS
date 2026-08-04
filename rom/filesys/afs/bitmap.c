@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef DEBUG
@@ -87,12 +87,13 @@ struct BlockCache *blockbuffer;
 }
 
 /**************************************
- Name  : countUsedBlocks
- Descr.: count used blocks of a volume
+ Name  : countUsedBlocksSingle
+ Descr.: count used blocks of a volume, one bitmap block read per IO
+         (fallback when no batch buffer can be allocated)
  Input : volume  -
  Output: nr of used blocks of the volume
 ***************************************/
-ULONG countUsedBlocks(struct AFSBase *afsbase, struct Volume *volume) {
+static ULONG countUsedBlocksSingle(struct AFSBase *afsbase, struct Volume *volume) {
 UWORD i;
 ULONG blocks;
 ULONG maxinbitmap;
@@ -163,6 +164,188 @@ struct BlockCache *blockbuffer;
                 if (blocks != 0)
                         showError(afsbase, ERR_MISSING_BITMAP_BLOCKS);
         }
+        return count;
+}
+
+/* like countUsedBlocksInBitmap, but counting in an already-read block image */
+static ULONG countUsedBlocksInData
+        (
+                struct AFSBase *afsbase,
+                struct Volume *volume,
+                ULONG block,
+                ULONG *data,
+                ULONG maxcount
+        )
+{
+UWORD i=1;
+ULONG count=0,lg,bits;
+
+        if (!calcChkSum(volume->SizeBlock, data))
+        {
+                while (maxcount>=32)
+                {
+                        lg=OS_BE2LONG(data[i]);
+                        if (!lg)
+                        {
+                                count += 32;
+                        }
+                        else if (lg!=0xFFFFFFFF)
+                        {
+                                bits=1;
+                                do
+                                {
+                                        if (!(bits & lg))
+                                                count++;
+                                        bits=bits<<1;
+                                } while (bits);
+                        }
+                        maxcount -=32;
+                        i++;
+                }
+                if (maxcount)
+                {
+                        lg=OS_BE2LONG(data[i]);
+                        if (!lg)
+                        {
+                                count += maxcount;
+                        }
+                        else if (lg!=0xFFFFFFFF)
+                        {
+                                bits=1;
+                                for (;maxcount;maxcount--)
+                                {
+                                        if (!(bits & lg))
+                                                count++;
+                                        bits=bits<<1;
+                                }
+                        }
+                }
+        }
+        else
+                showError(afsbase, ERR_CHECKSUM, block);
+        return count;
+}
+
+struct bmWindow
+{
+        ULONG start;
+        ULONG avail;
+        UBYTE *buf;
+        ULONG bufblocks;
+};
+
+/* sliding read-ahead window over the (usually contiguous) bitmap area;
+   serves bitmap and extension blocks alike from one sequential sweep */
+static ULONG *bmFetchBlock
+        (
+                struct AFSBase *afsbase,
+                struct Volume *volume,
+                struct bmWindow *win,
+                ULONG blk
+        )
+{
+        if ((blk < win->start) || (blk >= win->start + win->avail))
+        {
+                ULONG chunk = win->bufblocks;
+
+                if (blk >= volume->countblocks)
+                        return NULL;
+                if (chunk > volume->countblocks - blk)
+                        chunk = volume->countblocks - blk;
+                if (readDisk(afsbase, volume, blk, chunk, win->buf) != 0)
+                        return NULL;
+                win->start = blk;
+                win->avail = chunk;
+        }
+        return (ULONG *)(win->buf + (blk - win->start) * BLOCK_SIZE(volume));
+}
+
+#define BM_COUNTBATCHBYTES 65536
+
+/**************************************
+ Name  : countUsedBlocks
+ Descr.: count used blocks of a volume; the bitmap area (bitmap and
+         extension blocks alike) is swept through a sliding read-ahead
+         window instead of one IO per block
+ Input : volume  -
+ Output: nr of used blocks of the volume
+***************************************/
+ULONG countUsedBlocks(struct AFSBase *afsbase, struct Volume *volume) {
+UWORD i;
+ULONG blocks;
+ULONG maxinbitmap;
+ULONG curblock;
+ULONG count=0;
+ULONG span;
+ULONG *data;
+ULONG *extcopy;
+struct bmWindow win = {0, 0, NULL, 0};
+
+        win.bufblocks = BM_COUNTBATCHBYTES / BLOCK_SIZE(volume);
+        if (win.bufblocks > 1)
+                win.buf = AllocVec((win.bufblocks + 1) * BLOCK_SIZE(volume), MEMF_PUBLIC);
+        if (win.buf == NULL)
+                return countUsedBlocksSingle(afsbase, volume);
+        /* extension block content must survive window refills */
+        extcopy = (ULONG *)(win.buf + win.bufblocks * BLOCK_SIZE(volume));
+
+        blocks=volume->countblocks-volume->bootblocks; /* blocks to count */
+        maxinbitmap = (volume->SizeBlock-1)*32;        /* max blocks marked in a bitmapblock */
+        /* check bitmap blocks stored in rootblock */
+        for (i=0;i<=24;i++)
+        {
+                if (volume->bitmapblockpointers[i])
+                {
+                        data = bmFetchBlock(afsbase, volume, &win, volume->bitmapblockpointers[i]);
+                        if (data == NULL)
+                                goto readfail;
+                        span = (maxinbitmap > blocks) ? blocks : maxinbitmap;
+                        count += countUsedBlocksInData(afsbase, volume,
+                                volume->bitmapblockpointers[i], data, span);
+                        blocks -= span;
+                }
+                if (blocks == 0)
+                        break;
+        }
+        /* check extension blocks if neccessary */
+        if (blocks != 0)
+        {
+                curblock = volume->bitmapextensionblock;
+                while (curblock != 0)
+                {
+                        data = bmFetchBlock(afsbase, volume, &win, curblock);
+                        if (data == NULL)
+                                goto readfail;
+                        CopyMem(data, extcopy, BLOCK_SIZE(volume));
+                        for (i=0;i<volume->SizeBlock-1;i++)
+                        {
+                                if (extcopy[i] != 0)
+                                {
+                                        ULONG bmblk = OS_BE2LONG(extcopy[i]);
+
+                                        data = bmFetchBlock(afsbase, volume, &win, bmblk);
+                                        if (data == NULL)
+                                                goto readfail;
+                                        span = (maxinbitmap > blocks) ? blocks : maxinbitmap;
+                                        count += countUsedBlocksInData(afsbase, volume, bmblk, data, span);
+                                        blocks -= span;
+                                }
+                                if (blocks == 0)
+                                        break;
+                        }
+                        if (blocks == 0)
+                                break;
+                        curblock = OS_BE2LONG(extcopy[volume->SizeBlock-1]);
+                }
+                if (blocks != 0)
+                        showError(afsbase, ERR_MISSING_BITMAP_BLOCKS);
+        }
+        FreeVec(win.buf);
+        return count;
+
+readfail:
+        showText(afsbase, "Couldn't read bitmap block\nCount used blocks failed!");
+        FreeVec(win.buf);
         return count;
 }
 

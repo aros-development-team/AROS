@@ -100,7 +100,7 @@ struct IntrMapping *krnInterruptMapping(struct KernelBase *KernelBase, icid_t ir
 
     ForeachNode(&KernelBase->kb_InterruptMappings, intrMap)
     {
-        if (intrMap->im_Node.ln_Pri == irq)
+        if (intrMap->im_DeviceIRQ == irq)
         {
             return intrMap;
         }

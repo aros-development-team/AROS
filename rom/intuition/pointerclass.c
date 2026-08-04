@@ -104,6 +104,7 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
         D(
           kprintf("[Pointer] %s: extSprite 0x%lx\n", __func__, sprite);
+          if (sprite)
           kprintf("[Pointer] %s: MoveSprite data 0x%lx, height %ld, x %ld, y %ld, num %ld, wordwidth, 0x%lx, flags 0x%lx\n",
                   __func__,
                   sprite->es_SimpleSprite.posctldata,

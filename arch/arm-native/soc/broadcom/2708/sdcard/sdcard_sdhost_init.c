@@ -34,9 +34,9 @@
 
 #define VCMB_PROPCHAN                   8
 
-APTR            MBoxBase;
-APTR            DMABase;
-IPTR            __arm_periiobase __attribute__((used)) = 0;
+extern APTR     MBoxBase;
+extern APTR     DMABase;
+extern IPTR     __arm_periiobase;
 
 
 /* GPIO Function Select: 3 bits per pin, 10 pins per register */
@@ -136,6 +136,18 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
     D(bug("[SDHost] %s()\n", __PRETTY_FUNCTION__));
 
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
+
+    /*
+     * On the BCM2711 the card slot is wired to EMMC2, not to this controller.
+     * Report success so the remaining init functions still run.
+     */
+    if (__arm_periiobase == BCM2711_PERIIOBASE)
+    {
+        D(bug("[SDHost] %s: not the card controller on this SoC\n", __PRETTY_FUNCTION__));
+        if (MBoxMessage_)
+            FreeMem(MBoxMessage_, 8*4+16);
+        return TRUE;
+    }
 
     if ((MBoxBase = OpenResource("mbox.resource")) == NULL)
     {

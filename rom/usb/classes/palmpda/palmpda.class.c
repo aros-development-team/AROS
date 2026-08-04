@@ -553,7 +553,7 @@ AROS_UFH0(void, nSerialTask)
         if(*nh->nh_CurrentCGC.cgc_Command)
         {
             BOOL launch = TRUE;
-            if(nh->nh_CurrentCGC.cgc_InhibitTask)
+            if(*nh->nh_CurrentCGC.cgc_InhibitTask)
             {
                 if(FindTask(nh->nh_CurrentCGC.cgc_InhibitTask))
                 {

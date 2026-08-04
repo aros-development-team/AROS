@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <config.h>

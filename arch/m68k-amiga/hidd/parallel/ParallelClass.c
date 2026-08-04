@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Parallel hidd class implementation.
 */
@@ -20,16 +20,13 @@
 #include <aros/debug.h>
 
 
-/*static AttrBase HiddGCAttrBase;*/
-
-static OOP_AttrBase HiddParallelUnitAB;
-
 /*** HIDDParallel::NewUnit() *********************************************************/
 
 
 OOP_Object *AmigaPar__Hidd_Parallel__NewUnit(OOP_Class *cl, OOP_Object *obj,
                                           struct pHidd_Parallel_NewUnit *msg)
 {
+        struct class_static_data *csd = CSD(cl->UserData);
         OOP_Object *su = NULL;
         struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
         ULONG unitnum = -1;

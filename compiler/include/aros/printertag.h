@@ -24,7 +24,7 @@
 #elif defined(__ppc__)
 #define AROS_PRINTER_MAGIC   0x4e800020      /* blr */
 #elif defined(__riscv)
-#define AROS_PRINTER_MAGIC   0x8082          /* ret */
+#define AROS_PRINTER_MAGIC   0x00008067      /* ret (jalr x0,0(ra)) */
 #elif defined(__aarch64__)
 #define AROS_PRINTER_MAGIC   0xd65f03c0      /* ret */
 #else

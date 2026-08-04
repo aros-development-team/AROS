@@ -1,0 +1,15 @@
+diff -ruN --strip-trailing-cr highway-1.4.0/hwy/detect_compiler_arch.h highway-1.4.0.aros/hwy/detect_compiler_arch.h
+--- highway-1.4.0/hwy/detect_compiler_arch.h	2026-04-22 17:17:25.000000000 +0100
++++ highway-1.4.0.aros/hwy/detect_compiler_arch.h	2026-07-28 10:32:45.119382061 +0100
+@@ -442,7 +442,10 @@
+ #elif HWY_ARCH_PPC || HWY_ARCH_S390X || HWY_ARCH_ARM_V7 || HWY_ARCH_ARM_OLD
+ #define HWY_ARCH_MAX_BYTES 16
+ #else
+-#error "Missing case for HWY_ARCH_*"
++/* No SIMD architecture was detected, which the check above explicitly allows.
++   Such targets (e.g. m68k) only ever use HWY_SCALAR/HWY_EMU128, whose widest
++   vector is 16 bytes.  */
++#define HWY_ARCH_MAX_BYTES 16
+ #endif
+ 
+ //------------------------------------------------------------------------------

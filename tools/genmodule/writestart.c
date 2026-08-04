@@ -765,9 +765,11 @@ static void writehandler(FILE *out, struct config *cfg)
     fprintf(out,
                "\n"
                "#include <resources/filesysres.h>\n"
+               "#include <dos/dosextens.h>\n"
                "#include <aros/system.h>\n"
                "#include <proto/arossupport.h>\n"
                "#include <proto/expansion.h>\n"
+               "#include <proto/dos.h>\n"
                "\n"
                );
 
@@ -932,6 +934,25 @@ static void writehandler(FILE *out, struct config *cfg)
                    , hl->priority
                    , hl->startup
                   );
+            if (hl->name)
+                fprintf(out,
+                   "\n"
+                   "        /* Make the handler findable by name. The list above is\n"
+                   "         * only scanned once, while dos.library initialises, so a\n"
+                   "         * module coming up after that would never be seen there.\n"
+                   "         * dos.library is opened rather than assumed, since a\n"
+                   "         * module can also come up before it exists.\n"
+                   "         */\n"
+                   "        {\n"
+                   "            struct DosLibrary *DOSBase;\n"
+                   "\n"
+                   "            DOSBase = (struct DosLibrary *)OpenLibrary(\"dos.library\", 0);\n"
+                   "            if (DOSBase) {\n"
+                   "                AddSegment(\"%s\", seg, CMD_SYSTEM);\n"
+                   "                CloseLibrary((struct Library *)DOSBase);\n"
+                   "            }\n"
+                   "        }\n"
+                   , hl->name);
             break;
         }
     }

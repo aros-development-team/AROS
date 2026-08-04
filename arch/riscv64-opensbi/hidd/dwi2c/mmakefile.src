@@ -1,0 +1,36 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# i2c bus driver for the DesignWare controller, for machines described
+# by a device tree.
+#
+# The controller does the signalling itself, so this subclasses
+# hidd.i2c and replaces its transaction methods rather than its bit
+# level ones. Clients reach a chip on the bus the ordinary way, through
+# hidd.i2c.device; see <hidd/dwi2c.h>.
+#
+
+FILES := dwi2c_init dwi2c_class dwi2c_hw
+
+INCLUDE_FILES := dwi2c.h
+
+USER_CPPFLAGS := \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__
+
+USER_INCLUDES := -I$(SRCDIR)/arch/riscv-all/linklibs/fdt/include
+
+# A kickstart module cannot auto-open stdc.library, so anything it needs
+# from libc has to come from the static one at link time
+USER_LDFLAGS := -static
+
+%copy_includes path=hidd
+
+#MM kernel-hidd-dwi2c : linklibs-fdt
+
+%build_module mmake=kernel-hidd-dwi2c \
+    modname=dwi2c modtype=hidd \
+    files=$(FILES) uselibs="fdt"
+
+%common

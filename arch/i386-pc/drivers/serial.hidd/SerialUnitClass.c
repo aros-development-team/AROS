@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Serial Unit hidd class implementation.
 */
@@ -119,8 +119,8 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
 
   if (msg->attrList)
   {
-      serunitTags[1].ti_Tag  = TAG_MORE;
-      serunitTags[1].ti_Data = (IPTR)msg->attrList;
+      serunitTags[2].ti_Tag  = TAG_MORE;
+      serunitTags[2].ti_Data = (IPTR)msg->attrList;
   }
   serunitNew.mID      = msg->mID;
   serunitNew.attrList = serunitTags;

@@ -2,7 +2,7 @@
 
 File: commands.c
 Author: Neil Cafferkey
-Copyright (C) 2008-2023 The AROS Dev Team
+Copyright (C) 2008-2026 The AROS Dev Team
 Copyright (C) 2001-2008 Neil Cafferkey
 
 This file is free software; you can redistribute it and/or modify it

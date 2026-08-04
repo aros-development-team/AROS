@@ -2,7 +2,7 @@
 #define AROS_I386_CPU_H
 
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -115,7 +115,7 @@ struct JumpVec
 #define AROS_ALIGN(x)        (((x)+AROS_WORSTALIGN-1)&-AROS_WORSTALIGN)
 
 /* Prototypes */
-extern void _aros_not_implemented ();
+extern void _aros_not_implemented (char *);
 extern void aros_not_implemented ();
 
 /*

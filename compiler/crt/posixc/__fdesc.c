@@ -95,8 +95,53 @@ fdesc *__getfdesc(register int fd)
 {
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    fdesc *local = ((PosixCBase->fd_slots>fd) && (fd>=0)) ?
+                       PosixCBase->fd_array[fd] : NULL;
 
-    return ((PosixCBase->fd_slots>fd) && (fd>=0))?PosixCBase->fd_array[fd]:NULL;
+    /* Standard streams (0..2) are always process-local. */
+    if (fd >= 0 && fd <= STDERR_FILENO)
+        return local;
+
+    /* For fd > 2 fd.library is the authority on descriptor ownership.  If it
+       says this number is owned by another subsystem (e.g. a bsdsocket
+       socket) or is free, any local fd_array entry is stale - the descriptor
+       is not a posixc file.  Returning NULL lets the caller dispatch through
+       the owner's hooks instead of acting on a wrong file. */
+    if (fd > STDERR_FILENO && __fdlib_available(PosixCBase)) {
+        struct Library *FDBase = PosixCBase->PosixCFDBase;
+        if (FD_GetOwner(fd) != FD_OWNER_POSIXC)
+            return NULL;
+    }
+
+    return local;
+}
+
+const struct fd_hooks *__getfdhooks(int fd, APTR *datap)
+{
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    struct Library *FDBase;
+    fd_owner_t owner;
+    const struct fd_hooks *hooks;
+
+    if (fd < 0 || !__fdlib_available(PosixCBase))
+        return NULL;
+
+    FDBase = PosixCBase->PosixCFDBase;
+
+    /* A plain posixc file descriptor is served from the local fd array; only
+       descriptors owned by another subsystem (e.g. bsdsocket sockets) are
+       dispatched through their registered hooks. */
+    owner = FD_GetOwner(fd);
+    hooks = (owner == FD_OWNER_NONE || owner == FD_OWNER_POSIXC)
+              ? NULL : FD_GetOwnerHooks(owner);
+    if (owner == FD_OWNER_NONE || owner == FD_OWNER_POSIXC)
+        return NULL;
+
+    if (hooks && datap)
+        *datap = FD_GetData(fd);
+
+    return hooks;
 }
 
 void __setfdesc(register int fd, fdesc *desc)
@@ -107,7 +152,11 @@ void __setfdesc(register int fd, fdesc *desc)
     /* FIXME: Check if fd is in valid range... */
     PosixCBase->fd_array[fd] = desc;
 
-    if (__fdlib_available(PosixCBase)) {
+    /* Standard streams (0..2) are inherited DOS handles kept process-local;
+       they are never published in fd.library, whose descriptor numbers are
+       system-wide.  Publishing them there would collide with the stdio of
+       other processes (and with sockets allocated by bsdsocket.library). */
+    if (fd > STDERR_FILENO && __fdlib_available(PosixCBase)) {
         struct Library *FDBase = PosixCBase->PosixCFDBase;
         if (desc)
             FD_SetData(fd, FD_OWNER_POSIXC, desc);
@@ -191,7 +240,9 @@ int __getfdslot(int wanted_fd)
         close(wanted_fd);
     }
 
-    if (__fdlib_available(PosixCBase)) {
+    /* Standard streams (0..2) stay process-local; do not reserve their
+       numbers in the system-wide fd.library table (see __setfdesc()). */
+    if (wanted_fd > STDERR_FILENO && __fdlib_available(PosixCBase)) {
         struct Library *FDBase = PosixCBase->PosixCFDBase;
         error = FD_Reserve(wanted_fd, FD_OWNER_POSIXC, NULL);
         if (error) {
@@ -264,7 +315,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
     pathname = __path_u2a(pathname);
     if (!pathname) return -1;
-    
+
     D(bug("__open: entering, wanted fd = %d, path = %s, flags = %d, mode = %d\n", wanted_fd, pathname, flags, mode));
 
     if (openmode == -1)

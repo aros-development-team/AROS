@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#include <libraries/fd.h>
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -72,6 +73,26 @@
     oldfdesc = __getfdesc(oldfd);
     if (!oldfdesc)
     {
+        /* oldfd may be owned by another subsystem (e.g. a bsdsocket socket).
+           Duplicate it through the owner's hook, which installs the same
+           object at newfd and reserves newfd in fd.library. */
+        APTR data;
+        const struct fd_hooks *hooks = __getfdhooks(oldfd, &data);
+        if (hooks && hooks->fdh_dup)
+        {
+            LONG err = 0;
+            if (oldfd == newfd)
+                return newfd;
+            /* Vacate newfd first (close a posixc file or free a reservation). */
+            if (__getfdesc(newfd))
+                close(newfd);
+            if (hooks->fdh_dup(data, newfd, &err) < 0)
+            {
+                errno = err;
+                return -1;
+            }
+            return newfd;
+        }
         errno = EBADF;
         return -1;
     }

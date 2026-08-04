@@ -25,6 +25,7 @@
 /*** Public Methods *********************************************************/
 #define MUIM_WandererPrefs_Reload                            (MUIB_WandererPrefs | 0x00000000)
 #define MUIM_WandererPrefs_ReloadFontPrefs                   (MUIB_WandererPrefs | 0x00000001)
+#define MUIM_WandererPrefs_ReloadHiddenVolumes               (MUIB_WandererPrefs | 0x00000002)
 
 #define MUIM_WandererPrefs_ViewSettings_GetNotifyObject      (MUIB_WandererPrefs | 0x000000E0) /* --G */
 #define MUIM_WandererPrefs_ViewSettings_GetAttribute         (MUIB_WandererPrefs | 0x000000E1) /* --G */

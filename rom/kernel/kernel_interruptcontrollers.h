@@ -1,7 +1,7 @@
 #ifndef KERNEL_INTERRUPTCONTROLLERS_H
 #define KERNEL_INTERRUPTCONTROLLERS_H
 /*
-    Copyright © 2017-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -14,7 +14,7 @@
 
 struct IntrInstance;
 
-typedef UBYTE   icid_t;
+typedef UWORD   icid_t;     /* UWORD: supports GSI numbers > 255 on large IOAPIC systems */
 typedef UWORD   icintrid_t;
 
 #define ICINTR_ICID(icintr)     ((icintr >> 8) & 0xFF)
@@ -43,11 +43,8 @@ struct IntrController
 
 struct IntrMapping
 {
-    /*
-     * im_Node.ln_Pri contains the Device IRQ
-     * as used by KrnAddIRQHandler();
-     */
     struct Node im_Node;
+    UWORD       im_DeviceIRQ;                                                   /* device IRQ as used by KrnAddIRQHandler()             */
     ULONG       im_Int;                                                         /* controller specific hardware interrupt to use        */
     ULONG       im_CPU;                                                         /* target CPU for interrupt delivery                    */
     UBYTE       im_Polarity;                                                    /* 0 = Default, 1 = HIGH, 2 = LOW                       */

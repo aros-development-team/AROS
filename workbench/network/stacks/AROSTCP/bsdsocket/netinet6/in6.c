@@ -208,6 +208,16 @@ in6_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 done_plen:
             ia->ia6_plen = plen;
         }
+        /*
+         * On a point-to-point interface (e.g. a 6in4 tunnel) honour the
+         * supplied destination (peer) address so in6_ifinit() installs the
+         * host route to the peer.  Without a peer, in6_ifinit() adds no route
+         * for a POINTOPOINT interface at all.
+         */
+        if((ifp->if_flags & IFF_POINTOPOINT) &&
+                ifra->ifra_dstaddr.sin6_family == AF_INET6) {
+            ia->ia_dstaddr = ifra->ifra_dstaddr;
+        }
         if(ifra->ifra_addr.sin6_family == AF_INET6) {
             error = in6_ifinit(ifp, ia, &ifra->ifra_addr, 0);
             if(error)

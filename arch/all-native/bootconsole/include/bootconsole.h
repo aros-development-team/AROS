@@ -29,6 +29,7 @@ void con_InitMultiboot(struct multiboot *mb);
 void con_InitMultiboot2(void *mb);
 void con_InitTagList(const struct TagItem *tags);
 void con_InitVESA(unsigned short version, struct vbe_mode *mode);
+void con_InitVESAEx(unsigned short version, struct vbe_mode *mode, void *fb_override);
 void con_InitVGA(void);
 void con_InitSerial(char *cmdline);
 

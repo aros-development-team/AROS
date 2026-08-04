@@ -2,7 +2,7 @@
 #define AROS_RISCV_CPUCONTEXT_H
 
 /*
-    Copyright © 2023, The AROS Development Team. All rights reserved.
+    Copyright (c) 2023-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU context definition for RISC-V processors
@@ -11,8 +11,8 @@
 
 /* 32 (x) registers, minus x0(zero), x3(gp) and x4(tp)                  */
 #define RISCV_REGSAVE_CNT   (32 - 3)
-/* How many args to pass in registers                                   */
-#define RISCV_FUNCREG_CNT   4
+/* How many args are passed in registers (a0-a7)                        */
+#define RISCV_FUNCREG_CNT   8
 
 struct ExceptionContext
 {
@@ -52,13 +52,43 @@ struct ExceptionContext
             ULONG t6;
         };
     };
-    ULONG pc;		                /* csrrr/mepc				    */
-    UWORD Flags;	                /* Currently reserved		    */
+    ULONG pc;		                /* sepc/mepc when trapped	    */
+    ULONG sr;		                /* sstatus/mstatus when trapped   */
+    ULONG Flags;	                /* ECF_* flags			    */
+    APTR  fpuContext;               /* FPU register state, if saved   */
+    APTR  vecContext;               /* Vector register state, if saved */
 };
 
-/* CPU modes */
-#define CPUMODE_MACHINE         0x13
-#define CPUMODE_SUPERVISOR      0x13
-#define CPUMODE_USER            0x10
+/* FPU register state (FLEN=64, D extension) */
+struct FpuContext
+{
+    UQUAD f[32];                    /* f0-f31                         */
+    ULONG fcsr;
+};
+
+/*
+ * Vector register state (V extension, detected at runtime). VLEN - and
+ * therefore the size of the register file - is only known at runtime
+ * (from the vlenb CSR), so the v0-v31 data follows the header as
+ * 32 * vlenb bytes.
+ */
+struct VectorContext
+{
+    ULONG vstart;
+    ULONG vtype;
+    ULONG vl;
+    ULONG vcsr;
+    ULONG vlenb;                    /* bytes per v register           */
+    UBYTE v[];                      /* 32 * vlenb bytes, 16-aligned   */
+};
+
+/* ExceptionContext Flags */
+#define ECF_FPU     0x0001 /* fpuContext is valid */
+#define ECF_VECTOR  0x0002 /* vecContext is valid */
+
+/* CPU privilege modes (RISC-V privileged spec) */
+#define CPUMODE_USER            0x00
+#define CPUMODE_SUPERVISOR      0x01
+#define CPUMODE_MACHINE         0x03
 
 #endif

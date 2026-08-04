@@ -33,6 +33,7 @@ struct class_static_data
 {
     OOP_Class		 *parallelhiddclass;
     OOP_Class		 *parallelunitclass;
+    OOP_AttrBase	 hiddParallelUnitAB;
 };
 
 struct HIDDParallelUnitData
@@ -59,6 +60,14 @@ struct IntHIDDParallelBase
 };
 
 
-#define CSD(x) ((struct class_static_data *)x)
+#define CSD(x) (&((struct IntHIDDParallelBase *)x)->hdg_csd)
+
+/*
+ * Both classes need the unit attribute base, so it lives in the class static
+ * data: a per-file static leaves whichever file never obtains it expanding to
+ * zero, which turns aHidd_ParallelUnit_Unit into TAG_DONE. Functions using the
+ * aHidd_ParallelUnit_* macros need a local named "csd".
+ */
+#define HiddParallelUnitAB (csd->hiddParallelUnitAB)
 
 #endif /* PARALLEL_HIDD_INTERN_H */

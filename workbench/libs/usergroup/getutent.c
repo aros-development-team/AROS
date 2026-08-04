@@ -5,7 +5,7 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025-2026 The AROS Dev Team.
+ * Copyright (C) 2025-2026 The AROS Dev Team.
  * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */

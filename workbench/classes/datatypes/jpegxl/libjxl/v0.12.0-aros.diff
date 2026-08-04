@@ -1,0 +1,56 @@
+diff -ruN libjxl-0.12.0/lib/jxl/ac_context.h libjxl-0.12.0.aros/lib/jxl/ac_context.h
+--- libjxl-0.12.0/lib/jxl/ac_context.h	2026-07-01 16:36:59.000000000 +0000
++++ libjxl-0.12.0.aros/lib/jxl/ac_context.h	2026-07-30 19:35:08.159576997 +0000
+@@ -111,7 +111,7 @@
+   }
+   // Non-zero context is based on number of non-zeros and block context.
+   // For better clustering, contexts with same number of non-zeros are grouped.
+-  constexpr uint32_t ZeroDensityContextsOffset(uint32_t block_ctx) const {
++  inline uint32_t ZeroDensityContextsOffset(uint32_t block_ctx) const {
+     return static_cast<uint32_t>(num_ctxs * kNonZeroBuckets +
+                                  kZeroDensityContextCount * block_ctx);
+   }
+@@ -124,7 +124,7 @@
+   //   kZeroDensityContextCount|   computed from block context,
+   //                               number of non-zeros left and
+   //                               index in scan order
+-  constexpr uint32_t NumACContexts() const {
++  inline uint32_t NumACContexts() const {
+     return static_cast<uint32_t>(num_ctxs *
+                                  (kNonZeroBuckets + kZeroDensityContextCount));
+   }
+diff -ruN libjxl-0.12.0/lib/jxl/dct_block-inl.h libjxl-0.12.0.aros/lib/jxl/dct_block-inl.h
+--- libjxl-0.12.0/lib/jxl/dct_block-inl.h	2026-07-01 16:36:59.000000000 +0000
++++ libjxl-0.12.0.aros/lib/jxl/dct_block-inl.h	2026-07-30 19:37:33.950425108 +0000
+@@ -59,7 +59,7 @@
+     return *Address(row, i);
+   }
+ 
+-  constexpr HWY_INLINE const float* Address(const size_t row,
++  HWY_INLINE const float* Address(const size_t row,
+                                             const size_t i) const {
+     return data_ + row * stride_ + i;
+   }
+@@ -90,7 +90,7 @@
+     *Address(row, i) = v;
+   }
+ 
+-  constexpr HWY_INLINE float* Address(const size_t row, const size_t i) const {
++  HWY_INLINE float* Address(const size_t row, const size_t i) const {
+     return data_ + row * stride_ + i;
+   }
+ 
+diff -ruN libjxl-0.12.0/lib/jxl/decode.cc libjxl-0.12.0.aros/lib/jxl/decode.cc
+--- libjxl-0.12.0/lib/jxl/decode.cc	2026-07-01 16:36:59.000000000 +0000
++++ libjxl-0.12.0.aros/lib/jxl/decode.cc	2026-07-30 19:39:54.509445529 +0000
+@@ -576,7 +576,9 @@
+     success = false;
+     auto it = jxlp_ooo_buffer.find(next_jxlp_index);
+     if (it == jxlp_ooo_buffer.end()) return true;
+-    auto& [data, is_last] = it->second;
++    // GCC 6 (AROS m68k baseline) has no structured bindings
++    auto& data = it->second.first;
++    auto& is_last = it->second.second;
+     size_t length = data->size();
+     JXL_RETURN_IF_ERROR(codestream_copy.append(*data));
+     if (is_last) last_codestream_seen = true;

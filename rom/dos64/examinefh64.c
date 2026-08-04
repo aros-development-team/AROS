@@ -97,7 +97,15 @@
                                        ACTION_GET_FILE_SIZE64,
                                        handle->fh_Arg1, 0, 0, &err);
 #endif
-        if (size != -1)
+        /*
+         * Only trust the 64-bit size query when it actually succeeded.
+         * A filesystem that does not implement ACTION_GET_FILE_SIZE64
+         * returns failure (size 0/garbage with err set); overwriting the
+         * correct size already produced by the 32-bit ExamineFH() with
+         * that would corrupt fib_Size (e.g. yielding a bogus multi-GB
+         * value that breaks fstat()/mmap-by-size callers such as git).
+         */
+        if (size != -1 && err == 0)
             fib->fib_Size = size;
         SetIoErr(0);
     }

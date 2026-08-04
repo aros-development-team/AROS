@@ -279,6 +279,14 @@ struct Unit *Open_Unit(struct IOUsbHWReq *ioreq,
 }
 /* \\\ */
 
+#if defined(AROS_USE_LOGRES)
+/* These helpers only receive the controller; log through its device */
+#undef LogHandle
+#undef LogResBase
+#define LogHandle (hc->hc_LogRHandle)
+#define LogResBase (hc->hc_Device->hd_LogResBase)
+#endif
+
 struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHWReq *ioreq)
 {
     struct RTIsoNode *rtn;
@@ -331,6 +339,13 @@ void pciusbFreeStdIsoNode(struct PCIController *hc, struct RTIsoNode *rtn)
 
     FreeMem(rtn, sizeof(*rtn));
 }
+
+#if defined(AROS_USE_LOGRES)
+#undef LogHandle
+#undef LogResBase
+#define LogHandle (base->hd_LogRHandle)
+#define LogResBase (base->hd_LogResBase)
+#endif
 
 /* /// "Close_Unit()" */
 void Close_Unit(struct PCIDevice *base,

@@ -2,7 +2,7 @@
 #define AROS_RISCV_CPU_H
 
 /*
-    Copyright (c) 2023, The AROS Development Team. All rights reserved.
+    Copyright (c) 2023-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -55,8 +55,11 @@ typedef	unsigned int	cpumask_t;
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
-#if defined(__GNUC__) && !defined(__clang__)
-register unsigned char* AROS_GET_SP __asm__("%sp");
+#if defined(__clang__)
+/* clang has no global "sp" register variable on RISC-V; read it inline. */
+#define AROS_GET_SP ({ unsigned char *__sp; __asm__ __volatile__("mv %0, sp" : "=r"(__sp)); __sp; })
+#elif defined(__GNUC__)
+register unsigned char* AROS_GET_SP __asm__("sp");
 #endif
 
 /*
@@ -67,15 +70,21 @@ register unsigned char* AROS_GET_SP __asm__("%sp");
 */
 struct FullJumpVec
 {
-    unsigned long jmp;
-    unsigned long vec;
+    unsigned long jmp[3];   /* auipc t0,0 ; lw t0,12(t0) ; jr t0 */
+    unsigned long vec;      /* 32-bit absolute target address    */
 };
+/* RISC-V has no full-width absolute jump instruction, so the trampoline
+   loads the target (stored in 'vec', at offset 12 from the trampoline
+   start) into t0 via an AUIPC-relative load and jumps to it. The caller
+   must flush the instruction cache (fence.i / CacheClearE) afterwards. */
 #define __AROS_SET_FULLJMP(v,a) \
 do \
 {  \
     struct FullJumpVec *_v = (v); \
-    _v->jmp = 0xe51ff004; 		/* ldr pc, [pc, #-4] */ 	\
-    _v->vec = (ULONG)(a); 		/* .word target_address */ 	\
+    _v->jmp[0] = 0x00000297;	/* auipc t0, 0      */	\
+    _v->jmp[1] = 0x00C2A283;	/* lw    t0, 12(t0) */	\
+    _v->jmp[2] = 0x00028067;	/* jr    t0         */	\
+    _v->vec    = (unsigned long)(a); \
 } while (0)
 
 struct JumpVec
@@ -107,18 +116,17 @@ struct JumpVec
 #define AROS_ALIGN(x)        (((x)+AROS_WORSTALIGN-1)&-AROS_WORSTALIGN)
 
 /* Prototypes */
-extern void _aros_not_implemented ();
-extern void aros_not_implemented ();
+extern void _aros_not_implemented (char *);
 
 /* How much stack do we need ? Lots :-) */
 #define AROS_STACKSIZE	40960
 
 /* How to map function arguments to CPU registers */
 /*
-    The ARM processor does have enough registers to map the m68k
-    register set onto them but we will ignore this and use the compiler's calling
-    convention. The library base is mapped to the last argument so that
-    it can be ignored by the function.
+    RISC-V has enough registers to map the m68k register set onto them,
+    but we will ignore this and use the compiler's calling convention.
+    The library base is mapped to the last argument so that it can be
+    ignored by the function.
 */
 
 /* What to do with the library base in header, prototype and call */

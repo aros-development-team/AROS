@@ -575,7 +575,7 @@ _AHIsub_GetAttr(ULONG attribute, LONG argument, LONG def,
         return (SIPTR) "Davy Wentzler";
 
     case AHIDB_Copyright:
-        return (SIPTR) "(C) 2011 The AROS Dev Team";
+        return (SIPTR) "(C) 2011-2026 The AROS Dev Team";
 
     case AHIDB_Version:
         return (SIPTR)LibIDString;

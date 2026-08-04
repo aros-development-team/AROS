@@ -87,9 +87,9 @@ const struct bootstrap_mb2_header __header_v2 __attribute__((used,section(".aros
         MB2_HEADER_TAG_FRAMEBUFFER,
         MBTF_OPTIONAL,
         sizeof(struct mb2_header_tag_framebuffer),
-        640,
-        200,
-        32
+        0,    /* width  = 0: let bootloader pick best available GOP mode */
+        0,    /* height = 0: avoids requesting modes that don't exist on UEFI */
+        32    /* depth  = 32: prefer truecolor GOP modes to avoid 24bpp quirks */
     },
     {
         MB2_HEADER_TAG_END,
@@ -599,7 +599,7 @@ static void __bootstrap(unsigned int magic, void *mb)
     D(kprintf("[%s] Code %u, data %u\n", str_Bootstrap, ro_size, rw_size);)
 
     /*
-     * Total kickstart size + alignment window (page size - 1) + some free space (512KB) for
+     * Total kickstart size + alignment window (page size - 1) + some free space for
      * boot-time memory allocator.
      * TODO: This is a temporary thing. Currently our kernel expects that it can use addresses beyond
      * KRN_KernelHighest to store boot-time private data, supervisor stack, segment descriptors, MMU stuff, etc.
@@ -607,7 +607,19 @@ static void __bootstrap(unsigned int magic, void *mb)
      * and can safely be marked as read-only for users.
      * Boot-time allocator needs to be smarter.
      */
+    /*
+     * Reserve extra room for kernel boot-time allocations.
+     * 64-bit GOP/UEFI boots may need substantially more early memory because
+     * of larger boot data relocation and MMU/GDT/TSS setup (large identity
+     * maps, per-core TSS). 32-bit targets keep the historic small reserve:
+     * requiring a 256MB contiguous region would make low-memory i386
+     * machines unbootable.
+     */
+#ifdef MULTIBOOT_64BIT
+    ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x10000000;
+#else
     ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x80000;
+#endif
 
     /* Now locate the highest appropriate region */
     while (len >= sizeof(struct mb_mmap))

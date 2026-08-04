@@ -58,7 +58,7 @@
 
 /*********************************************************************************************/
 
-static struct libinfo
+static const struct libinfo
 {
     APTR        var;
     STRPTR      name;
@@ -118,7 +118,7 @@ static void KillNotifications(void);
 
 /*********************************************************************************************/
 
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+LONG ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 {
     struct EasyStruct es;
 
@@ -132,7 +132,7 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 }
 /*********************************************************************************************/
 
-void Cleanup(STRPTR msg)
+static void Cleanup(STRPTR msg)
 {
     if (msg)
     {
@@ -156,7 +156,7 @@ void Cleanup(STRPTR msg)
 
 static void OpenLibs(void)
 {
-    struct libinfo *li;
+    const struct libinfo *li;
 
     for (li = libtable; li->var; li++)
     {
@@ -173,7 +173,7 @@ static void OpenLibs(void)
 
 static void CloseLibs(void)
 {
-    struct libinfo *li;
+    const struct libinfo *li;
 
     for(li = libtable; li->var; li++)
     {
@@ -353,13 +353,25 @@ STRPTR __detached_name = IPREFS_SEM_NAME;
 
 int main(void)
 {
+    struct Process *myproc = (struct Process *)FindTask(NULL);
+    APTR            oldwindowptr;
+
     OpenLibs();
     ReadTDPrefs();
     GetENVName();
     StartNotifications();
     PreparePatches();
+
+    Detach();  // No more console I/O beyond this point.
+
+    /* The initial load runs from the startup sequence, where there is
+       nobody to answer a requester yet. Suppress them for its duration;
+       live preference changes get them back. */
+    oldwindowptr = myproc->pr_WindowPtr;
+    myproc->pr_WindowPtr = (APTR)-1;
     HandleNotify();
-    Detach();
+    myproc->pr_WindowPtr = oldwindowptr;
+
     HandleAll();
     Cleanup(NULL);
 
@@ -367,5 +379,3 @@ int main(void)
 }
 
 /*********************************************************************************************/
-
-

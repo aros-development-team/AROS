@@ -1,8 +1,13 @@
 /*
-    Copyright (C) 2013-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "sdcard_intern.h"
+
+/* Shared by whichever controller drivers are built into this device. */
+APTR            MBoxBase;
+APTR            DMABase;
+IPTR            __arm_periiobase __attribute__((used)) = 0;
 
 #if defined(__aarch64__)
 #define NOP() asm volatile("yield\n")

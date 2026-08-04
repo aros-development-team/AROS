@@ -1,6 +1,6 @@
 /*
      AHI-Handler - The AUDIO: DOS device for AHI
-     Copyright (C) 2017-2023 The AROS Dev Team
+     Copyright (C) 2017-2026 The AROS Dev Team
      Copyright (C) 1997-2005 Martin Blom <martin@blom.org>
 
      This program is free software; you can redistribute it and/or

@@ -2,7 +2,7 @@
 #define ___FDESC_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: file descriptors handling internals - header file
@@ -58,5 +58,12 @@ LONG __oflags2amode(int flags);
 fdesc *__alloc_fdesc(void);
 void __free_fdesc(fdesc *fdesc);
 void __close_on_exec_fdescs(void);
+
+/* Resolve the operation hooks for a descriptor owned by another subsystem
+   (e.g. a bsdsocket.library socket) through fd.library.  Returns the hooks
+   and, via datap, the owner data to act on; returns NULL for a plain posixc
+   file descriptor (handled locally) or when fd.library is unavailable. */
+struct fd_hooks;
+const struct fd_hooks *__getfdhooks(int fd, APTR *datap);
 
 #endif /* ___FDESC_H */

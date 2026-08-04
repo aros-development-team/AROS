@@ -353,9 +353,22 @@ static void
 nd6_prefix_onlink(struct nd_prefix *pr)
 {
     struct sockaddr_in6 prefix, mask;
+    struct ifaddr *ifa;
     int i, plen;
 
     if(pr->ndpr_onlink)
+        return;
+
+    /*
+     * An interface route needs the interface's own address as its
+     * gateway. Without one the prefix cannot be made on-link yet -
+     * handing rtrequest() a null gateway takes the whole stack down
+     * inside ifa_ifwithroute().
+     */
+    for(ifa = pr->ndpr_ifp->if_addrlist; ifa; ifa = ifa->ifa_next)
+        if(ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET6)
+            break;
+    if(ifa == NULL)
         return;
 
     bzero(&prefix, sizeof(prefix));
@@ -378,7 +391,7 @@ nd6_prefix_onlink(struct nd_prefix *pr)
         prefix.sin6_addr.s6_addr[i] &= mask.sin6_addr.s6_addr[i];
 
     if(rtrequest(RTM_ADD, (struct sockaddr *)&prefix,
-                 NULL, (struct sockaddr *)&mask,
+                 ifa->ifa_addr, (struct sockaddr *)&mask,
                  RTF_UP | RTF_CLONING, NULL) == 0) {
         pr->ndpr_onlink = 1;
     }

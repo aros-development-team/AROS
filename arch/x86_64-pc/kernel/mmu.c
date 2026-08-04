@@ -13,6 +13,8 @@
 #define D(x)
 #define DMMU(x)
 
+#define MMU_SPLIT_PTE_PAGE_COUNT 32
+
 void core_InitMMU(struct CPUMMUConfig *MMU)
 {
     struct PML4E *PML4;
@@ -135,25 +137,33 @@ void core_LoadMMU(struct CPUMMUConfig *MMU)
     wrcr(cr3, MMU->mmu_PML4);
 }
 
-void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop)
+void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop, IPTR maptop)
 {
-    /*
-     * how many PDE entries shall be created? Detault is 2048 (4GB), unless more RAM
-     * is available...
-     */
-    MMU->mmu_PDEPageCount = 2048;
+    IPTR top = memtop;
 
-    /* Does RAM exceed 4GB? adjust amount of PDE pages */
-    if (((memtop + (1 << 21) - 1) >> 21) > MMU->mmu_PDEPageCount)
-        MMU->mmu_PDEPageCount = (memtop + (1 << 21) - 1) >> 21;
+    if (maptop > top)
+        top = maptop;
+
+    /*
+     * How many PDE entries shall be created?
+     * Build an identity map window large enough for physical RAM and the
+     * currently active GOP framebuffer range. This keeps high ReBAR/GOP BARs
+     * mapped while avoiding oversized early allocations on systems that don't
+     * need them.
+     */
+    MMU->mmu_PDEPageCount = (top + (1 << 21) - 1) >> 21;
+    if (MMU->mmu_PDEPageCount < 65536)      /* keep at least 128 GiB mapped */
+        MMU->mmu_PDEPageCount = 65536;
+    if (MMU->mmu_PDEPageCount > 262144)     /* cap at 512 GiB */
+        MMU->mmu_PDEPageCount = 262144;
 
     D(bug("[Kernel] core_SetupMMU: Re-creating the MMU pages for first %dMB area\n", MMU->mmu_PDEPageCount << 1));
 
     if (!MMU->mmu_PML4)
     {
         /*
-         * Allocate MMU pages and directories. Four PDE directories (PDE2M structures)
-         * are enough to map whole 4GB address space.
+         * Allocate MMU paging structures for the configured identity-mapped
+         * low physical address window.
          */
         MMU->mmu_PML4 = krnAllocBootMemAligned(sizeof(struct PML4E) * 512, PAGE_SIZE);
         MMU->mmu_PDP  = krnAllocBootMemAligned(sizeof(struct PDPE)  * 512, PAGE_SIZE);
@@ -199,6 +209,13 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
         struct PDE2M *pde2 = (struct PDE2M *)pde;
         intptr_t base = ((IPTR)pde2[pde_off].base_low << 13) | ((IPTR)pde2[pde_off].base_high << 32);
         int i;
+
+        if (MMU->mmu_PDEPageUsed >= MMU_SPLIT_PTE_PAGE_COUNT)
+        {
+            bug("[Kernel] core_ProtPage: split PTE pool exhausted at 0x%p\n",
+                addr);
+            return;
+        }
 
         pte = &Pages4K[512 * MMU->mmu_PDEPageUsed++];
 

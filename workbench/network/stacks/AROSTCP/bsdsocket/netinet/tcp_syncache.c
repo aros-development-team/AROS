@@ -380,6 +380,7 @@ syncache_respond(struct syncache *sc)
     m->m_pkthdr.len = tlen;
     m->m_pkthdr.rcvif = (struct ifnet *)0;
 
+#if INET6
     if (sc->sc_isipv6) {
         /*
          * Slide off the IPv4 ipovly overlay so the mbuf starts at the TCP
@@ -394,6 +395,7 @@ syncache_respond(struct syncache *sc)
                             sc->sc_ip_ttl, t6, NULL);
         return (0);
     }
+#endif /* INET6 */
 
     ti->ti_sum = 0;
     ti->ti_sum = in_cksum(m, tlen);

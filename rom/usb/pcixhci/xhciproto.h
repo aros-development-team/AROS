@@ -192,6 +192,7 @@ void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 LONG xhciCmdSubmit(struct PCIController *hc, APTR inctx_dma, ULONG trbflags, ULONG *resflags,
                    struct timerequest *timerreq);
 LONG xhciCmdSubmitAsync(struct PCIController *hc, APTR inctx_dma, ULONG trbflags, struct IOUsbHWReq *ioreq);
+void xhciDumpCmdTimeout(struct PCIController *hc, WORD queued);
 LONG xhciCmdSlotEnable(struct PCIController *hc, struct timerequest *timerreq);
 #if !defined(PCIUSB_INLINEXHCIOPS)
 void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value);

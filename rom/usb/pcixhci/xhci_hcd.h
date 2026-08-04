@@ -239,6 +239,8 @@ struct pciusbXHCIDevice {
     UBYTE                               dc_SlotID;
     UBYTE                               dc_DevAddr;
     UBYTE                               dc_RootPort;
+    UBYTE                               dc_HubProgrammed;                           // slot context carries the hub fields
+    UBYTE                               dc_NbrPorts;                                // from the hub descriptor, 0 until seen
 };
 
 struct pciusbXHCIEndpointCtx {

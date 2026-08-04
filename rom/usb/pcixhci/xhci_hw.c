@@ -157,8 +157,118 @@ LONG xhciCmdSubmit(struct PCIController *hc,
         pciusbError("xHCI",
                     DEBUGWARNCOLOR_SET "%s: command timed out waiting for completion" DEBUGCOLOR_RESET" \n",
                     __func__);
+        xhciDumpCmdTimeout(hc, queued);
     }
     return -1;
+}
+
+/*
+ * A command that never completes leaves three questions open: whether
+ * the controller read the ring at all, whether it wrote an event back,
+ * and whether it tried to tell us. The memory either side of it answers
+ * the first two, the interrupter the last.
+ */
+void xhciDumpCmdTimeout(struct PCIController *hc, WORD queued)
+{
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
+    volatile struct xhci_hcopr *hcopr =
+        (volatile struct xhci_hcopr *)((IPTR)xhcic->xhc_XHCIOpR);
+    volatile struct xhci_ir *ir =
+        (volatile struct xhci_ir *)((IPTR)xhcic->xhc_XHCIIntR);
+    volatile struct pcisusbXHCIRing *cring =
+        (volatile struct pcisusbXHCIRing *)((IPTR)xhcic->xhc_OPRp);
+    volatile struct pcisusbXHCIRing *ering =
+        (volatile struct pcisusbXHCIRing *)((IPTR)xhcic->xhc_ERSp);
+    ULONG i;
+
+    pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
+               "timeout: usbcmd %08lx usbsts %08lx crcr %08lx%08lx" DEBUGCOLOR_RESET" \n",
+               (unsigned long)AROS_LE2LONG(hcopr->usbcmd),
+               (unsigned long)AROS_LE2LONG(hcopr->usbsts),
+               (unsigned long)AROS_LE2LONG(hcopr->crcr.addr_hi),
+               (unsigned long)AROS_LE2LONG(hcopr->crcr.addr_lo));
+
+    pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
+               "timeout: iman %08lx imod %08lx erstsz %08lx erstba %08lx%08lx erdp %08lx%08lx"
+               DEBUGCOLOR_RESET" \n",
+               (unsigned long)AROS_LE2LONG(ir->iman),
+               (unsigned long)AROS_LE2LONG(ir->imod),
+               (unsigned long)AROS_LE2LONG(ir->erstsz),
+               (unsigned long)AROS_LE2LONG(ir->erstba.addr_hi),
+               (unsigned long)AROS_LE2LONG(ir->erstba.addr_lo),
+               (unsigned long)AROS_LE2LONG(ir->erdp.addr_hi),
+               (unsigned long)AROS_LE2LONG(ir->erdp.addr_lo));
+
+    if (cring && (queued >= 0) && (queued < XHCI_EVENT_RING_TRBS))
+    {
+        volatile struct xhci_trb *trb = &cring->ring[queued];
+
+        CacheClearE((APTR)trb, sizeof(*trb), CACRF_InvalidateD);
+        pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
+                   "timeout: cmd[%lu] @0x%p %08lx%08lx %08lx %08lx" DEBUGCOLOR_RESET" \n",
+                   (unsigned long)queued, trb,
+                   (unsigned long)AROS_LE2LONG(trb->dbp.addr_hi),
+                   (unsigned long)AROS_LE2LONG(trb->dbp.addr_lo),
+                   (unsigned long)AROS_LE2LONG(trb->tparams),
+                   (unsigned long)AROS_LE2LONG(trb->flags));
+    }
+
+    /*
+     * What the controller would have fetched: the context array it is
+     * pointed at, the scratchpad pointers hanging off entry 0, and the
+     * segment table. A bad pointer here is a DMA to nowhere, which is
+     * what a system error means.
+     */
+    {
+        volatile struct xhci_address *dcbaa =
+            (volatile struct xhci_address *)xhcic->xhc_DCBAAp;
+        volatile struct xhci_address *spba =
+            (volatile struct xhci_address *)xhcic->xhc_SPBAp;
+        volatile struct xhci_er_seg *erseg =
+            (volatile struct xhci_er_seg *)xhcic->xhc_ERSTp;
+
+        if (dcbaa)
+            pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
+                       "timeout: dcbaa @0x%p [0] %08lx%08lx [1] %08lx%08lx" DEBUGCOLOR_RESET" \n",
+                       dcbaa,
+                       (unsigned long)AROS_LE2LONG(dcbaa[0].addr_hi),
+                       (unsigned long)AROS_LE2LONG(dcbaa[0].addr_lo),
+                       (unsigned long)AROS_LE2LONG(dcbaa[1].addr_hi),
+                       (unsigned long)AROS_LE2LONG(dcbaa[1].addr_lo));
+        if (spba)
+            pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
+                       "timeout: spba  @0x%p [0] %08lx%08lx [30] %08lx%08lx" DEBUGCOLOR_RESET" \n",
+                       spba,
+                       (unsigned long)AROS_LE2LONG(spba[0].addr_hi),
+                       (unsigned long)AROS_LE2LONG(spba[0].addr_lo),
+                       (unsigned long)AROS_LE2LONG(spba[30].addr_hi),
+                       (unsigned long)AROS_LE2LONG(spba[30].addr_lo));
+        if (erseg)
+            pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
+                       "timeout: erst  @0x%p ptr %08lx%08lx size %08lx" DEBUGCOLOR_RESET" \n",
+                       erseg,
+                       (unsigned long)AROS_LE2LONG(erseg->ptr.addr_hi),
+                       (unsigned long)AROS_LE2LONG(erseg->ptr.addr_lo),
+                       (unsigned long)AROS_LE2LONG(erseg->size));
+    }
+
+    if (ering)
+    {
+        CacheClearE((APTR)ering->ring, sizeof(struct xhci_trb) * 4,
+                    CACRF_InvalidateD);
+        for (i = 0; i < 4; i++)
+        {
+            volatile struct xhci_trb *trb = &ering->ring[i];
+
+            pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
+                       "timeout: evt[%lu] %08lx%08lx %08lx %08lx" DEBUGCOLOR_RESET" \n",
+                       (unsigned long)i,
+                       (unsigned long)AROS_LE2LONG(trb->dbp.addr_hi),
+                       (unsigned long)AROS_LE2LONG(trb->dbp.addr_lo),
+                       (unsigned long)AROS_LE2LONG(trb->tparams),
+                       (unsigned long)AROS_LE2LONG(trb->flags));
+        }
+    }
 }
 
 LONG xhciCmdSubmitAsync(struct PCIController *hc,

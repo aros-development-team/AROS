@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2019-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>

@@ -44,8 +44,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-hidd-gfx-quick \
 #MM kernel-hidd-kbd-quick \
 #MM kernel-hidd-mouse-quick \
-#MM kernel-usb-nopci-quick \
-#MM kernel-econsole-quick
+#MM kernel-usb-nopci-quick
 
 #MM- kernel-package-native-riscv: \
 #MM kernel-dos \
@@ -85,8 +84,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-hidd-gfx \
 #MM kernel-hidd-kbd \
 #MM kernel-hidd-mouse \
-#MM kernel-usb-nopci \
-#MM kernel-econsole
+#MM kernel-usb-nopci
 
 #MM kernel-package-native-riscv-missing: \
 #MM kernel-battclock

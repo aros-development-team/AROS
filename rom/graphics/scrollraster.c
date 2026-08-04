@@ -67,7 +67,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG old_drmd = GetDrMd(rp);
+    UBYTE old_fgpen = rp->FgPen;
+    UBYTE old_drmd = rp->DrawMode;
     LONG width, height, absdx, absdy;
 
     FIX_GFXCOORD(xMin);
@@ -115,13 +116,13 @@
 
     if((width < 1) || (height < 1)) return;
 
-    if((absdx >= width) || (absdy >= height)) {
-        SetDrMd(rp, old_drmd ^ INVERSVID);
-        RectFill(rp, xMin, yMin, xMax, yMax);
-        SetDrMd(rp, old_drmd);
-
+    /*
+     * A distance that reaches the extent scrolls everything off, and the
+     * rectangle is then left exactly as it was: not scrolled, and not filled
+     * with BPen either.
+     */
+    if((absdx >= width) || (absdy >= height))
         return;
-    }
 
     if(!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
         return;
@@ -131,7 +132,12 @@
        RectFill()
      */
 
-    SetDrMd(rp, old_drmd ^ INVERSVID);
+    /*
+     * The vacated strip is BPen whatever the caller's draw mode: JAM1 with no
+     * AreaPtrn writes APen everywhere, and selecting it drops COMPLEMENT and
+     * INVERSVID with it.
+     */
+    SetABPenDrMd(rp, rp->BgPen, rp->BgPen, JAM1);
 
     /* was it scrolled left or right? */
     if(0 != dx) {
@@ -170,7 +176,7 @@
         }
     }
 
-    SetDrMd(rp, old_drmd);
+    SetABPenDrMd(rp, old_fgpen, rp->BgPen, old_drmd);
 
     AROS_LIBFUNC_EXIT
 } /* ScrollRaster */

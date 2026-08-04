@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #undef SDEBUG
@@ -107,8 +107,21 @@ static void MakeConsAbout(struct Window *win, struct IntuitionBase *IntuitionBas
 }
 #endif
 
+#include <devices/serial.h>
+
 #include "con_handler_intern.h"
 #include "support.h"
+
+/*
+ * Set in the startup BPTR to ask for a device instead of a console window,
+ * with the rest of the BPTR pointing at a FileSysStartupMsg naming it. A BPTR
+ * is a longword address shifted right by two, so the top bits are spare.
+ *
+ * This is the established convention between an AUX: handler stub and the
+ * console handler it hands over to, so stubs and console handlers from
+ * different sources interoperate.
+ */
+#define AUXF_DEVICE     0x40000000
 
 #if defined(CONSOLE_SHOW_MENU)
 enum
@@ -291,8 +304,51 @@ static LONG MakeConWindow(struct filehandle *fh)
     return err;
 }
 
+/*
+ * Device mode: everything above this layer only ever issues CMD_READ and
+ * CMD_WRITE, so any device answering those can stand in for console.device.
+ * console.device is the odd one out in taking a window through the IORequest
+ * at open time; a plain device takes a unit number and flags instead.
+ */
+static LONG MakeConDevice(struct filehandle *fh)
+{
+    LONG err = 0;
+
+    D(bug("[con:handler] %s: opening '%s' unit %d\n", __func__, fh->devname,
+          fh->devunit));
+
+    fh->conreadio->io_Data = NULL;
+    fh->conreadio->io_Length = 0;
+
+    if (0 == OpenDevice(fh->devname, fh->devunit, ioReq(fh->conreadio),
+                        fh->devflags)) {
+        fh->flags |= FHFLG_CONSOLEDEVICEOPEN;
+
+        fh->conwriteio = *fh->conreadio;
+        fh->conwriteio.io_Message.mn_ReplyPort = fh->conwritemp;
+        /*
+         * The read request is an IOExtSer in device mode, but this one is a
+         * plain IOStdReq embedded in the filehandle. Copying its length over
+         * would advertise storage that is not there, right in the middle of
+         * the structure.
+         */
+        fh->conwriteio.io_Message.mn_Length = sizeof(fh->conwriteio);
+
+        /* No linefeed-mode escape here: that is a console.device control
+           sequence, and a serial line would simply print it. */
+    } else {
+        D(bug("[con:handler] %s: cannot open '%s'\n", __func__, fh->devname));
+        err = ERROR_DEVICE_NOT_MOUNTED;
+    }
+
+    return err;
+}
+
 static BOOL MakeSureWinIsOpen(struct filehandle *fh)
 {
+    /* In device mode there is no window and never will be. */
+    if (fh->flags & FHFLG_DEVICEMODE)
+        return TRUE;
     if (fh->window)
         return TRUE;
     return MakeConWindow(fh) == 0;
@@ -375,6 +431,39 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     if (!fh)
         return NULL;
 
+    fh->dn = dn;
+
+    /*
+     * The startup is either a small number selecting CON: or RAW:, or, with
+     * AUXF_DEVICE set, a FileSysStartupMsg naming a device to run over. Only
+     * the flag can tell those apart: a startup given as a string is a valid
+     * pointer too, so no test on the value alone is enough.
+     */
+    if ((IPTR)dp->dp_Arg2 & AUXF_DEVICE) {
+        struct FileSysStartupMsg *fssm =
+            BADDR((BPTR)((IPTR)dp->dp_Arg2 & ~AUXF_DEVICE));
+
+        if (fssm && fssm->fssm_Device != BNULL) {
+            ULONG len = AROS_BSTR_strlen(fssm->fssm_Device);
+
+            /* The name may be on the caller's stack, so take a copy. */
+            if (len > 0 && len < sizeof(fh->devname)) {
+                CopyMem(AROS_BSTR_ADDR(fssm->fssm_Device), fh->devname, len);
+                fh->devname[len] = '\0';
+                fh->devunit = fssm->fssm_Unit;
+                fh->devflags = fssm->fssm_Flags;
+                fh->flags |= FHFLG_DEVICEMODE;
+            }
+        }
+
+        if (!(fh->flags & FHFLG_DEVICEMODE)) {
+            D(bug("[con:handler] bad device startup 0x%p\n", dp->dp_Arg2));
+            FreeVec(fh);
+            *perr = ERROR_BAD_STREAM_NAME;
+            return NULL;
+        }
+    }
+
     fh->intuibase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     fh->gtbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_GADTOOLS);
     fh->dosbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_DOS);
@@ -401,7 +490,10 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     Permit();
 #endif
 
-    if (!fh->intuibase || !fh->dosbase || !fh->utilbase || !fh->inputbase) {
+    /* A device-backed console has no window and no keyboard of its own, so it
+       needs neither intuition.library nor input.device. */
+    if (!fh->dosbase || !fh->utilbase ||
+        (!(fh->flags & FHFLG_DEVICEMODE) && (!fh->intuibase || !fh->inputbase))) {
         CloseLibrary((APTR) fh->utilbase);
         CloseLibrary((APTR) fh->dosbase);
         CloseLibrary((APTR) fh->intuibase);
@@ -444,7 +536,14 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
         fh->conwritemp->mp_SigTask = fh->contask;
         NEWLIST(&fh->conwritemp->mp_MsgList);
 
-        fh->conreadio = (struct IOStdReq *) CreateIORequest(fh->conreadmp, sizeof(struct IOStdReq));
+        /*
+         * A device may expect a larger request than console.device does and
+         * refuse to open with a short one: serial.device wants a whole
+         * IOExtSer. The extra fields go unused here, they just have to exist.
+         */
+        fh->conreadio = (struct IOStdReq *) CreateIORequest(fh->conreadmp,
+            (fh->flags & FHFLG_DEVICEMODE) ? sizeof(struct IOExtSer)
+                                           : sizeof(struct IOStdReq));
         if (fh->conreadio) {
             D(bug("[con:handler] conreadio created, parms '%s'\n", fn));
 
@@ -452,7 +551,12 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 #if defined(CONSOLE_SHOW_MENU)
             fh->nw.IDCMPFlags |= IDCMP_MENUPICK;
 #endif
-            if (parse_filename(fh, fn, &fh->nw)) {
+            if (fh->flags & FHFLG_DEVICEMODE) {
+                err = MakeConDevice(fh);
+                if (!err)
+                    ok = TRUE;
+            }
+            else if (parse_filename(fh, fn, &fh->nw)) {
                 if (!(fh->flags & FHFLG_AUTO)) {
                     err = MakeConWindow(fh);
                     if (!err)
@@ -464,9 +568,8 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
             else
                 err = ERROR_BAD_STREAM_NAME;
 
-            if (!ok) {
-                DeleteIORequest(ioReq(fh->conreadio));
-            }
+            /* No cleanup here: close_con() below frees the IORequest, and
+               doing it twice corrupts the allocator. */
 
         } /* if (fh->conreadio) */
         else {
@@ -478,11 +581,16 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
         err = ERROR_NO_FREE_STORE;
     }
 
-    if (dn->dn_Startup)
+    /* dn_Startup selects RAW: only when it really is the small CON/RAW
+       selector; in device mode it is the FileSysStartupMsg pointer. AUX: is a
+       cooked console, so it must not be read as RAW. */
+    if (!(fh->flags & FHFLG_DEVICEMODE) && dn->dn_Startup)
         fh->flags |= FHFLG_RAW;
 
-    if (!ok)
+    if (!ok) {
         close_con(fh);
+        fh = NULL;
+    }
 
     *perr = err;
     FreeVec(filename);
@@ -495,7 +603,14 @@ static void startread(struct filehandle *fh)
         return;
     fh->conreadio->io_Command = CMD_READ;
     fh->conreadio->io_Data = fh->consolebuffer;
-    fh->conreadio->io_Length = CONSOLEBUFFER_SIZE;
+    /*
+     * console.device completes a read as soon as it has something, so asking
+     * for a bufferful costs nothing. A plain device instead waits until the
+     * whole count has arrived, which for a console would mean no input at all
+     * until the user typed a full buffer, so ask for one character.
+     */
+    fh->conreadio->io_Length = (fh->flags & FHFLG_DEVICEMODE)
+                             ? 1 : CONSOLEBUFFER_SIZE;
     SendIO((struct IORequest*) fh->conreadio);
     fh->flags |= FHFLG_ASYNCCONSOLEREAD;
 }
@@ -553,7 +668,8 @@ static void stopread(struct filehandle *fh, struct DosPacket *waitingdp)
 
 LONG CONMain(struct ExecBase *SysBase)
 {
-    struct MsgPort *mp;
+    struct MsgPort *mp = NULL;
+    struct MsgPort *procmp;
     struct DosPacket *dp;
     struct Message *mn;
     struct FileHandle *dosfh;
@@ -563,10 +679,22 @@ LONG CONMain(struct ExecBase *SysBase)
     struct DosPacket *waitingdp = NULL;
 
     D(bug("[con:handler] started\n"));
-    mp = &((struct Process*) FindTask(NULL))->pr_MsgPort;
-    WaitPort(mp);
-    dp = (struct DosPacket*) GetMsg(mp)->mn_Node.ln_Name;
-    D(bug("[con:handler] startup message received. port=0x%p path='%b'\n", mp, dp->dp_Arg1));
+    procmp = &((struct Process*) FindTask(NULL))->pr_MsgPort;
+    WaitPort(procmp);
+    dp = (struct DosPacket*) GetMsg(procmp)->mn_Node.ln_Name;
+    D(bug("[con:handler] startup message received. port=0x%p path='%b'\n", procmp, dp->dp_Arg1));
+
+    /* Clients get a port of their own. The process port cannot serve both,
+     * because DoPkt() replies land there too: TAB completion looks up
+     * directories, and a client packet arriving during one of those lookups
+     * would be taken for the reply and alerted as AN_AsyncPkt.
+     */
+    mp = CreateMsgPort();
+    if (!mp) {
+        error = ERROR_NO_FREE_STORE;
+        D(bug("[con:handler] no packet port\n"));
+        goto end;
+    }
 
     fh = open_con(dp, &error);
     if (!fh) {
@@ -574,6 +702,15 @@ LONG CONMain(struct ExecBase *SysBase)
         goto end;
     }
     D(bug("[con:handler] 0x%p open\n", fh));
+
+    /*
+     * A device-backed console is a single stream, so publish the port and let
+     * everyone share this handler. CON: deliberately does not do this: leaving
+     * dn_Task clear is what gets each open its own window.
+     */
+    if (fh->flags & FHFLG_DEVICEMODE)
+        fh->dn->dn_Task = mp;
+
     replypkt(dp, DOSTRUE);
     {
 #if defined(CONSOLE_SHOW_MENU)
@@ -581,7 +718,7 @@ LONG CONMain(struct ExecBase *SysBase)
 #endif
         ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
         ULONG timermask = 1L << fh->timermp->mp_SigBit;
-        ULONG packetmask = 1L << mp->mp_SigBit;
+        ULONG packetmask = (1L << mp->mp_SigBit) | (1L << procmp->mp_SigBit);
         ULONG winmask = fh->window ? 1L << fh->window->UserPort->mp_SigBit : 0L;
         ULONG appwindowmask = fh->appmsgport ? 1L << fh->appmsgport->mp_SigBit : 0L;
         ULONG i, insertedlen;
@@ -798,6 +935,13 @@ LONG CONMain(struct ExecBase *SysBase)
                     startread(fh);
             }
 
+            /* DOS addresses a handler by the port it was started on until
+             * it has a file handle to go by, so the first open still turns
+             * up here. Move those over and serve everything from one place.
+             */
+            while ((mn = GetMsg(procmp)))
+                PutMsg(mp, mn);
+
             while ((mn = GetMsg(mp))) {
                 dp = (struct DosPacket*) mn->mn_Node.ln_Name;
                 dp->dp_Res2 = 0;
@@ -823,6 +967,8 @@ LONG CONMain(struct ExecBase *SysBase)
                     dosfh = BADDR(dp->dp_Arg1);
                     dosfh->fh_Interactive = DOSTRUE;
                     dosfh->fh_Arg1 = (SIPTR) fh;
+                    /* Talk to us here from now on, not on the process port. */
+                    dosfh->fh_Type = mp;
                     fh->usecount++;
                     fh->breaktask = dp->dp_Port->mp_SigTask;
                     DACTION(bug("[con:handler] Find fh=%x. Usecount=%d\n", dosfh, fh->usecount));
@@ -966,18 +1112,49 @@ LONG CONMain(struct ExecBase *SysBase)
                         SetMem(id, 0, sizeof(struct InfoData));
                         id->id_DiskType =
                                 (fh->flags & FHFLG_RAW) ? AROS_MAKE_ID('R', 'A', 'W', 0) : AROS_MAKE_ID('C', 'O', 'N', 0);
-                        id->id_VolumeNode = (BPTR) fh->window;
-                        id->id_InUse = (IPTR) fh->conreadio;
+                        /* The window we hang off, for whoever wants to put
+                           something over it. Empty means we have none just
+                           now: a console opened AUTO gets its window when
+                           something first writes to it. Driving a device
+                           there will never be one, which is -1 rather than
+                           empty so that the two can be told apart. */
+                        id->id_VolumeNode = (fh->flags & FHFLG_DEVICEMODE)
+                                                ? (BPTR)(SIPTR)-1
+                                                : (BPTR)fh->window;
+                        /* Anyone still holding a stream on us. Reporting the
+                           IORequest here made us look busy for as long as we
+                           were alive, so DISMOUNT could never proceed. */
+                        id->id_InUse = fh->usecount;
                         replypkt(dp, DOSTRUE);
                     }
                     break;
+                case ACTION_INHIBIT:
+                    /* Nothing is buffered on our side, so there is nothing to
+                       stop doing. */
+                    DACTION(bug("[con:handler] ACTION_INHIBIT %ld\n", (LONG)dp->dp_Arg1));
+                    replypkt(dp, DOSTRUE);
+                    break;
+                case ACTION_DIE:
+                    D(bug("[con:handler] ACTION_DIE (usecount %d)\n", fh->usecount));
+                    if (fh->usecount > 0) {
+                        replypkt2(dp, DOSFALSE, ERROR_OBJECT_IN_USE);
+                        break;
+                    }
+                    replypkt(dp, DOSTRUE);
+                    dp = NULL;
+                    goto end;
                 case ACTION_SEEK:
                     /* Yes, DOSTRUE. Check Guru Book for details. */
                     DACTION(bug("[con:handler] ACTION_SEEK\n"));
                     replypkt2(dp, DOSTRUE, ERROR_ACTION_NOT_KNOWN);
                     break;
                 default:
-                    bug("[con:handler] unknown action %d\n", dp->dp_Type);
+                    /* Saying no is a normal answer here: capability probes
+                     * ask for actions a console has no use for. */
+                    DACTION(bug("[con:handler] unknown action %d from '%s'\n",
+                            dp->dp_Type, dp->dp_Port && dp->dp_Port->mp_SigTask
+                                ? dp->dp_Port->mp_SigTask->tc_Node.ln_Name
+                                : "?"));
                     replypkt2(dp, DOSFALSE, ERROR_ACTION_NOT_KNOWN);
                     break;
                 }
@@ -987,6 +1164,22 @@ LONG CONMain(struct ExecBase *SysBase)
 end:
     D(bug("[con:handler] 0x%p closing\n", fh));
     if (fh) {
+        /* Stop DOS handing out our port before it goes away, so that the next
+           access starts a fresh handler. The node may have been dismounted
+           while we ran, so only touch it while it is still in the list. */
+        if (fh->flags & FHFLG_DEVICEMODE) {
+            struct DosList *dl = LockDosList(LDF_DEVICES | LDF_WRITE);
+
+            while ((dl = NextDosEntry(dl, LDF_DEVICES))) {
+                if (dl == (struct DosList *)fh->dn) {
+                    if (fh->dn->dn_Task == mp)
+                        fh->dn->dn_Task = NULL;
+                    break;
+                }
+            }
+            UnLockDosList(LDF_DEVICES | LDF_WRITE);
+        }
+
         D(bug("[con:handler] Cancelling read requests...\n"));
         stopread(fh, waitingdp);
 
@@ -1002,9 +1195,12 @@ end:
     }
 
     if (dp) {
-        D(bug("[con:handler] Replying packet 0x%p\n", dp));
-        replypkt(dp, DOSFALSE);
+        D(bug("[con:handler] Replying packet 0x%p, error %ld\n", dp, error));
+        replypkt2(dp, DOSFALSE, error);
     }
+
+    if (mp)
+        DeleteMsgPort(mp);
 
     D(bug("[con:handler] 0x%p closed\n", fh));
     return 0;

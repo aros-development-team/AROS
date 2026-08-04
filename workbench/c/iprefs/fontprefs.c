@@ -115,6 +115,7 @@ void FontPrefs_Handler(STRPTR filename)
                         case FP_SCREENFONT:
                             if ((font = OpenDiskFont(&ta)))
                             {
+                                struct Process *myproc = (struct Process *)FindTask(NULL);
                                 BOOL closed = FALSE, cancel = FALSE;
                                 TEXT screen_name[MAXPUBSCREENNAME + 1];
 
@@ -129,12 +130,22 @@ void FontPrefs_Handler(STRPTR filename)
                                 {
                                     closed = CloseWorkBench();
                                     if (!closed)
-                                        cancel = ShowMessage("System Request",
-                                            "Intuition is attempting to reset"
-                                            " the Workbench Screen.\n"
-                                            "Please close all windows,"
-                                            " except drawers.",
-                                            "Retry|Cancel") == 0;
+                                    {
+                                        /* The initial load can run while the
+                                         * startup Shell still prevents
+                                         * CloseWorkBench(). Do not wedge IPrefs
+                                         * in an unanswerable requester and leave
+                                         * later preferences unapplied. */
+                                        if (myproc->pr_WindowPtr == (APTR)-1)
+                                            cancel = TRUE;
+                                        else
+                                            cancel = ShowMessage("System Request",
+                                                "Intuition is attempting to reset"
+                                                " the Workbench Screen.\n"
+                                                "Please close all windows,"
+                                                " except drawers.",
+                                                "Retry|Cancel") == 0;
+                                    }
                                 }
                                 if (closed)
                                     OpenWorkBench();

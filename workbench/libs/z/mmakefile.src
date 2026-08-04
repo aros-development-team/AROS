@@ -107,19 +107,18 @@ FILES += \
 LIBZ_HAVE_SIMD=yes
 endif
 
+# The RVV code paths are disabled for riscv64: the RVV intrinsics can not
+# be compiled without the V extension in -march (the base profile is
+# RVA22U64), and cpu_features.c's runtime dispatch relies on the Linux
+# getauxval interface. Revisit once AROS-side feature detection exists.
 ifneq (,$(findstring riscv64,$(AROS_TARGET_CPU)))
-LIBZ_CPPFLAGS +=-DRISCV_RVV
-LIBZ_CPPFLAGS +=-DDEFLATE_SLIDE_HASH_RVV
-LIBZ_CPPFLAGS +=-DADLER32_SIMD_RVV
 LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_GENERIC
 LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_READ_64LE
 LIBZ_CPPFLAGS +=-DDEFLATE_CHUNK_WRITE_64LE
 
 FILES += \
-        adler32_simd \
         contrib/optimizations/inffast_chunk \
-        contrib/optimizations/inflate \
-        cpu_features
+        contrib/optimizations/inflate
 LIBZ_HAVE_SIMD=yes
 endif
 

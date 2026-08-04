@@ -53,8 +53,6 @@
 #define CONFIG_LEGACY
 #endif
 
-#define FORCE_PIT_CALIB
-
 #define	APIC_CRMAXVAL	0XFFFFFFFFUL
 
 extern int core_APICErrorHandle(struct ExceptionContext *, void *, void *);
@@ -82,14 +80,24 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     APTR ssp;
     int irq, msibase = 0, count = 0, msiavailable = 0;
+    /*
+     * Cap the loop at HW_IRQ_VECTORS (214) to prevent IDT overrun.
+     * With large HW_IRQ_COUNT, HW_IRQ_BASE + irq can exceed the 256-entry
+     * IDT and IntrDefaultGates[] for irq >= 224. IRQs beyond this cap
+     * are handled by IOAPIC with lazy vector allocation.
+     */
+    int irq_idt_max = HW_IRQ_COUNT < HW_IRQ_VECTORS ? HW_IRQ_COUNT : HW_IRQ_VECTORS;
 
     DINT(bug("[Kernel:APIC-IA32] %s(%d)\n", __func__, instanceCount));
+
+    /* Initialize the vector-to-IRQ reverse mapping */
+    apicInitVectorMap();
 
     /* It's not fatal to fail on these IRQs */
     if ((ssp = SuperState()) != NULL)
     {
         /* Set up the APIC IRQs for CPU #0 */
-        for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < HW_IRQ_COUNT; irq++)
+        for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < irq_idt_max; irq++)
         {
             if ((KERNELIRQ_LIST(irq).lh_Type != KBL_INTERNAL) || (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0)))
             {
@@ -115,6 +123,8 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 }
                 else 
                 {
+                    /* Register the 1:1 vector mapping */
+                    apicRegisterVector(HW_IRQ_BASE + irq, irq);
                     if ((count++ > 31) && (msibase == 0))
                         msibase = irq + 1 - count;
                 }
@@ -164,14 +174,19 @@ BOOL APICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     x86vectgate_t *IGATES;
     APTR ssp = NULL;
     BOOL retVal = FALSE;
+    int c;
 
     DINT(bug("[Kernel:APIC-IA32.%03u] %s(#$%02X)\n", cpuNum, __func__, intNum));
 
-    IGATES = (x86vectgate_t *)apicPrivate->cores[cpuNum].cpu_IDT;
-
     if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
     {
-        IGATES[HW_IRQ_BASE + intNum].p = 0;
+        /* Disable the IDT gate on ALL CPUs (symmetric with EnableIRQ) */
+        for (c = 0; c < apicPrivate->apic_count; c++)
+        {
+            IGATES = (x86vectgate_t *)apicPrivate->cores[c].cpu_IDT;
+            if (IGATES)
+                IGATES[HW_IRQ_BASE + intNum].p = 0;
+        }
         retVal = TRUE;
 
         if (ssp)
@@ -189,14 +204,28 @@ BOOL APICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     x86vectgate_t *IGATES;
     APTR ssp = NULL;
     BOOL retVal = FALSE;
+    int c;
 
     DINT(bug("[Kernel:APIC-IA32.%03u] %s(#$%02X)\n", cpuNum, __func__, intNum));
 
-    IGATES = (x86vectgate_t *)apicPrivate->cores[cpuNum].cpu_IDT;
+    /* Bounds check: vector must fit in IDT below APIC exception range */
+    if (HW_IRQ_BASE + intNum >= APIC_CPU_EXCEPT_BASE)
+        return FALSE;
 
     if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
     {
-        IGATES[HW_IRQ_BASE + intNum].p = 1;
+        /*
+         * Enable the IDT gate on ALL CPUs so the interrupt is handled
+         * regardless of which core the IOAPIC routes it to.
+         * core_SetupIDT already installed the correct handler; we just
+         * need to flip the present bit.
+         */
+        for (c = 0; c < apicPrivate->apic_count; c++)
+        {
+            IGATES = (x86vectgate_t *)apicPrivate->cores[c].cpu_IDT;
+            if (IGATES)
+                IGATES[HW_IRQ_BASE + intNum].p = 1;
+        }
         retVal = TRUE;
 
         if (ssp)
@@ -292,6 +321,34 @@ static ULONG ia32_ipi_send(IPTR __APICBase, ULONG target, ULONG cmd)
  * before and after our actual delay (PIT setup also takes up some time, so LAPIC will count away from its
  * initial value).  We run it 10 times to make up for cache setup discrepancies.
  */
+
+/*
+ * Check for invariant TSC support via CPUID 0x80000007 EDX bit 8.
+ * When set, TSC frequency is constant across all cores and P-states —
+ * AP cores can safely inherit the BSP's calibrated value instead of
+ * attempting PIT-based calibration (which fails on large SMP systems
+ * because the PIT is a single shared legacy device).
+ */
+static BOOL ia32_tsc_invariant(void)
+{
+    ULONG eax, ebx, ecx, edx;
+
+    asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x80000000));
+    if (eax < 0x80000007)
+        return FALSE;
+
+    asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x80000007));
+    return (edx & (1 << 8)) ? TRUE : FALSE;
+}
+
+static BOOL ia32_running_under_hypervisor(void)
+{
+    ULONG eax, ebx, ecx, edx;
+
+    eax = ebx = ecx = edx = 0;
+    asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000001));
+    return (ecx & 0x80000000UL) ? TRUE : FALSE;
+}
 
 #define PIT_SAMPLECOUNT     10
 #define PIT_WAITTICKS       11931
@@ -418,6 +475,55 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
     return calibrated_tsc;
 }
 
+#define UDELAY_SAMPLECOUNT 8
+#define UDELAY_WAITUS      10000
+
+static UQUAD ia32_tsc_calibrate_udelay(apicid_t cpuNum)
+{
+    UQUAD tsc_initial, tsc_final;
+    UQUAD sum = 0;
+    UQUAD min = ~0ULL;
+    UQUAD max = 0;
+    int valid = 0;
+    int i;
+
+    for (i = 0; i < UDELAY_SAMPLECOUNT; i++)
+    {
+        UQUAD delta;
+
+        tsc_initial = rdtsc_start();
+        krnClockSourceUdelay(UDELAY_WAITUS);
+        tsc_final = rdtsc_end();
+
+        delta = tsc_final - tsc_initial;
+        if (delta == 0)
+            continue;
+
+        if (delta < min) min = delta;
+        if (delta > max) max = delta;
+        sum += delta;
+        valid++;
+    }
+
+    if (valid < 3)
+    {
+        bug("[Kernel:APIC-IA32.%03u] %s: calibration failed (%d valid samples)\n",
+            cpuNum, __func__, valid);
+        return 0;
+    }
+
+    /* Drop one min and one max sample for stability. */
+    sum -= min;
+    sum -= max;
+    valid -= 2;
+
+    if (valid <= 0)
+        return 0;
+
+    /* Average ticks per UDELAY_WAITUS then scale to Hz. */
+    return (sum * 1000000ULL) / ((UQUAD)valid * (UQUAD)UDELAY_WAITUS);
+}
+
 static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
 {
     UQUAD lapic_initial, lapic_final, calibrated_lapic = 0;
@@ -491,42 +597,88 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
 
 static UQUAD ia32_tsc_calibrate(apicid_t cpuNum)
 {
-#if !defined(FORCE_PIT_CALIB)
     ULONG eax, ebx, ecx, edx;
+    UQUAD freq = 0;
+
+    eax = ebx = ecx = edx = 0;
     asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000000));
-    if ((ebx == 0x756e6547) &&
-         (ecx == 0x6c65746e) &&
-         (edx == 0x49656e69 ))
+    if (eax >= 0x15)
     {
-        if (eax >= 0x15)
+        ULONG numerator, denominator;
+        eax = ebx = ecx = edx = 0;
+        asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000015));
+        denominator = eax;
+        numerator = ebx;
+        if ((denominator != 0) && (numerator != 0) && (ecx != 0))
+        {
+            freq = ((UQUAD)ecx * (UQUAD)numerator) / (UQUAD)denominator;
+            if (freq > 1000000ULL)
+                return freq;
+        }
+    }
+
+    /* Intel model-specific CPUID.15 crystal fallback. */
+    if ((ebx == 0x756e6547) && (ecx == 0x6c65746e) && (edx == 0x49656e69))
+    {
+        ULONG maxleaf = eax;
+        if (maxleaf >= 0x15)
         {
             ULONG numerator, denominator;
+            ULONG crystal = 0;
+            ULONG model;
+
             eax = ebx = ecx = edx = 0;
             asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000015));
-            DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: numerator = %u, denominator = %u\n", cpuNum, __func__, ebx, eax);)
-            if (((denominator = eax) != 0) && ((numerator = ebx) != 0))
+            denominator = eax;
+            numerator = ebx;
+            crystal = ecx;
+            if ((denominator != 0) && (numerator != 0))
             {
-                if ((ecx / 1000) != 0)
-                    return ecx * numerator / denominator;
-                ULONG model;
-                eax = ebx = ecx = edx = 0;
-                asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000001));
-                model = ((eax & 0xF00000) >>14) | ((eax & 0xF0) >> 4);
-                DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: model = %02x\n", cpuNum, __func__, model);)
-                if (model == 0x4E || model == 0x5E)
-                    return 24000000 * numerator / denominator; // 24.0 MHz
-                else if (model == 0x5C)
-                    return 19200000 * numerator / denominator; // 19.2 MHz
+                if (crystal == 0)
+                {
+                    eax = ebx = ecx = edx = 0;
+                    asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000001));
+                    model = ((eax & 0xF00000) >> 14) | ((eax & 0xF0) >> 4);
+                    if (model == 0x4E || model == 0x5E)
+                        crystal = 24000000; /* 24.0 MHz */
+                    else if (model == 0x5C)
+                        crystal = 19200000; /* 19.2 MHz */
+                }
+                if (crystal != 0)
+                {
+                    freq = ((UQUAD)crystal * (UQUAD)numerator) / (UQUAD)denominator;
+                    if (freq > 1000000ULL)
+                        return freq;
+                }
             }
         }
     }
-#endif
-    return ia32_tsc_calibrate_pit(cpuNum);
+
+    /* CPUID.16 base MHz fallback (mostly Intel, but harmless to try generally). */
+    eax = ebx = ecx = edx = 0;
+    asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000000));
+    if (eax >= 0x16)
+    {
+        eax = ebx = ecx = edx = 0;
+        asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000016));
+        if (eax > 0)
+        {
+            freq = (UQUAD)eax * 1000000ULL;
+            return freq;
+        }
+    }
+
+    /* Legacy fallback. */
+    freq = ia32_tsc_calibrate_pit(cpuNum);
+    if (freq > 0)
+        return freq;
+
+    /* Last-resort fallback that avoids PIT contention on virtualized SMP hosts. */
+    return ia32_tsc_calibrate_udelay(cpuNum);
 }
 
 static UQUAD ia32_lapic_calibrate(apicid_t cpuNum, IPTR __APICBase)
 {
-#if !defined(FORCE_PIT_CALIB)
     ULONG eax, ebx, ecx, edx;
     asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000000));
     if ((ebx == 0x756e6547) &&
@@ -542,7 +694,6 @@ static UQUAD ia32_lapic_calibrate(apicid_t cpuNum, IPTR __APICBase)
                 return (eax * 1000000);
         }
     }
-#endif
     return ia32_lapic_calibrate_pit(cpuNum, __APICBase);
 }
 
@@ -684,12 +835,33 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
 
     if (!apic->cores[cpuNum].cpu_TSCFreq)
     {
-        UQUAD calib_tsc;
-        int count = 10;
+        /*
+         * On SMP systems, AP cores inherit the BSP's TSC frequency when
+         * invariant TSC is supported (CPUID 0x80000007 EDX bit 8).
+         * PIT-based calibration fails on APs of large systems (128+ cores)
+         * because the PIT is a single shared legacy I/O device.
+         */
+        if ((cpuNum > 0) &&
+            (apic->cores[0].cpu_TSCFreq > 100) &&
+            (ia32_tsc_invariant() || ia32_running_under_hypervisor()))
+        {
+            BOOL inv_tsc = ia32_tsc_invariant();
+            BOOL hyp = ia32_running_under_hypervisor();
+            apic->cores[cpuNum].cpu_TSCFreq = apic->cores[0].cpu_TSCFreq;
+            bug("[Kernel:APIC-IA32.%03u] %s: TSC freq inherited from BSP (%llu kHz)%s%s\n",
+                cpuNum, __func__, (UQUAD)((apic->cores[cpuNum].cpu_TSCFreq + 500) / 1000),
+                inv_tsc ? " [invariant TSC]" : "",
+                hyp ? " [hypervisor]" : "");
+        }
+        else
+        {
+            UQUAD calib_tsc;
+            int count = 10;
 
-        DCALIB(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating TSC...\n", cpuNum, __func__);)
-        while(((calib_tsc = ia32_tsc_calibrate(cpuNum)) == 0) && (count-- > 0));
-        apic->cores[cpuNum].cpu_TSCFreq = calib_tsc;
+            DCALIB(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating TSC...\n", cpuNum, __func__);)
+            while(((calib_tsc = ia32_tsc_calibrate(cpuNum)) == 0) && (count-- > 0));
+            apic->cores[cpuNum].cpu_TSCFreq = calib_tsc;
+        }
     }
     if (apic->cores[cpuNum].cpu_TSCFreq < 100)
     {
@@ -699,11 +871,30 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
 
     if (!apic->cores[cpuNum].cpu_TimerFreq)
     {
-        ULONG calib_lapic;
+        /*
+         * AP cores inherit BSP's LAPIC timer frequency when invariant TSC is
+         * present (implies uniform bus clock). Same PIT contention issue.
+         */
+        if ((cpuNum > 0) &&
+            (apic->cores[0].cpu_TimerFreq > 100) &&
+            (ia32_tsc_invariant() || ia32_running_under_hypervisor()))
+        {
+            BOOL inv_tsc = ia32_tsc_invariant();
+            BOOL hyp = ia32_running_under_hypervisor();
+            apic->cores[cpuNum].cpu_TimerFreq = apic->cores[0].cpu_TimerFreq;
+            bug("[Kernel:APIC-IA32.%03u] %s: LAPIC timer freq inherited from BSP (%u Hz)%s%s\n",
+                cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq,
+                inv_tsc ? " [invariant TSC]" : "",
+                hyp ? " [hypervisor]" : "");
+        }
+        else
+        {
+            ULONG calib_lapic;
 
-        DCALIB(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating LAPIC...\n", cpuNum, __func__);)
-        calib_lapic = ia32_lapic_calibrate(cpuNum, __APICBase);
-        apic->cores[cpuNum].cpu_TimerFreq = calib_lapic;
+            DCALIB(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating LAPIC...\n", cpuNum, __func__);)
+            calib_lapic = ia32_lapic_calibrate(cpuNum, __APICBase);
+            apic->cores[cpuNum].cpu_TimerFreq = calib_lapic;
+        }
     }
     if (apic->cores[cpuNum].cpu_TimerFreq < 100)
     {

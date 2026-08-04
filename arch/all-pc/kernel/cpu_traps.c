@@ -77,7 +77,15 @@ static const char AmigaTraps[AMIGATRAP_COUNT] =
     -1
 };
 
-extern BOOL IsKernelBaseReady(struct ExecBase *SysBase);
+/*
+ * Weak default: used only when kernel.resource is linked standalone
+ * (without exec). The kickstart link overrides this with exec's strong
+ * definition, which reports readiness from IntExecBase->KernelBase.
+ */
+BOOL __attribute__((weak)) IsKernelBaseReady(struct ExecBase *SysBase)
+{
+    return FALSE;
+}
 
 void cpu_Trap(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {

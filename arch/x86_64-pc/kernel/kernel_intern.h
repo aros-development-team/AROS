@@ -81,7 +81,7 @@ void PlatformPostInit(void);
 /** CPU Related Functions **/
 void core_SetupGDT(struct KernBootPrivate *, apicid_t, APTR, APTR, APTR);
 
-void core_SetupMMU(struct CPUMMUConfig *, IPTR memtop);
+void core_SetupMMU(struct CPUMMUConfig *, IPTR memtop, IPTR maptop);
 void core_InitMMU(struct CPUMMUConfig *);
 void core_LoadMMU(struct CPUMMUConfig *);
 

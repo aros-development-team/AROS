@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Gfx BitMap class implementation.
 */
@@ -1747,7 +1747,10 @@ VOID BM__Hidd_BitMap__DrawLine
                 }
             }
     
-            if(d <= 0)
+            /* The Amiga blitter's line mode tests the sign bit of the same
+               error term, so it steps diagonally on a tie. Matching it keeps
+               a line identical whether a driver accelerates it or not. */
+            if(d < 0)
             {
                 if(t == 1)
                 {
@@ -3194,6 +3197,14 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
 
 *****************************************************************************************/
 
+/*
+ * Merge a rendered pixel into the destination through the GC's plane write
+ * mask. keepmask is just ~colmask, kept alongside it so the inner loops below
+ * do not have to compute it per pixel.
+ */
+#define PUTMASKED(dst, val, d) \
+    ((dst) = (((val) & (d)->colmask) | ((dst) & (d)->keepmask)))
+
 struct ptb_data
 {
     void *bitarray;
@@ -3201,6 +3212,8 @@ struct ptb_data
     ULONG modulo;
     ULONG fg;
     ULONG bg;
+    ULONG colmask;
+    ULONG keepmask;
     UWORD invert;
 };
 
@@ -3217,7 +3230,7 @@ static void JAM1TemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD h
         for (x = 0; x < width; x++)
         {
             if ((bitword & mask) == (data->invert & mask))
-                xbuf[x] = data->fg;
+                PUTMASKED(xbuf[x], data->fg, data);
 
             mask >>= 1;
             if (!mask)
@@ -3246,7 +3259,7 @@ static void ComplementTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, U
         for (x = 0; x < width; x++)
         {
             if ((bitword & mask) == (data->invert & mask))
-                 xbuf[x] = ~xbuf[x];
+                 PUTMASKED(xbuf[x], ~xbuf[x], data);
 
             mask >>= 1;
             if (!mask)
@@ -3275,9 +3288,9 @@ static void JAM2TemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD h
         for (x = 0; x < width; x++)
         {
             if ((bitword & mask) == (data->invert & mask))
-                xbuf[x] = data->fg;
+                PUTMASKED(xbuf[x], data->fg, data);
             else
-                xbuf[x] = data->bg;
+                PUTMASKED(xbuf[x], data->bg, data);
 
             mask >>= 1;
             if (!mask)
@@ -3325,7 +3338,13 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     data.modulo   = msg->modulo;
     data.fg       = GC_FG(msg->gc);
     data.bg       = GC_BG(msg->gc);
+    data.colmask  = GC_COLMASK(gc);
+    data.keepmask = ~data.colmask;
     data.invert   = msg->inverttemplate ? 0 : 0xFFFF;
+
+    /* Preserving the masked-out planes means having to read them first. */
+    if (data.colmask != ~0)
+        get = TRUE;
 
     DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_Native32, (VOID_FUNC)op, &data);
 
@@ -3579,6 +3598,8 @@ struct ppb_data
     ULONG  maskmodulo;
     ULONG  fg;
     ULONG  bg;
+    ULONG  colmask;
+    ULONG  keepmask;
     UWORD  patmask;
     UWORD  maskmask;
     UWORD  patterndepth;
@@ -3603,7 +3624,7 @@ static void JAM1PatternBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD he
             if (maskword & mmask)
             {
                 if ((patword & pmask) == (data->invert & pmask))
-                    xbuf[x] = data->fg;
+                    PUTMASKED(xbuf[x], data->fg, data);
             }
 
             if (marray)
@@ -3648,7 +3669,7 @@ static void ComplementPatternBuffered(ULONG *xbuf, UWORD starty, UWORD width, UW
             if (maskword & mmask)
             {
                 if ((patword & pmask) == (data->invert & pmask))
-                    xbuf[x] = ~xbuf[x];
+                    PUTMASKED(xbuf[x], ~xbuf[x], data);
             }
 
             if (marray)
@@ -3693,9 +3714,9 @@ static void JAM2PatternBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD he
             if (maskword & mmask)
             {
                 if ((patword & pmask) == (data->invert & pmask))
-                    xbuf[x] = data->fg;
+                    PUTMASKED(xbuf[x], data->fg, data);
                 else
-                    xbuf[x] = data->bg;
+                    PUTMASKED(xbuf[x], data->bg, data);
             }
 
             if (marray)
@@ -3754,7 +3775,7 @@ static void ColorPatternBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD h
                 if (data->patternlut)
                     pixel = data->patternlut[pixel];
 
-                xbuf[x] = pixel;
+                PUTMASKED(xbuf[x], pixel, data);
             }
 
             if (marray)
@@ -3828,7 +3849,13 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     data.maskmodulo    = msg->maskmodulo;
     data.fg            = GC_FG(msg->gc);
     data.bg            = GC_BG(msg->gc);
+    data.colmask       = GC_COLMASK(msg->gc);
+    data.keepmask      = ~data.colmask;
     data.invert        = msg->invertpattern ? 0 : 0xFFFF;
+
+    /* Preserving the masked-out planes means having to read them first. */
+    if (data.colmask != ~0)
+        get = TRUE;
 
     if (data.maskarray)
     {

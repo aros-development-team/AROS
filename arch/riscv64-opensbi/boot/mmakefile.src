@@ -1,0 +1,173 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# opensbi-riscv64 boot / distribution glue.
+#
+# The kickstart (Image/core.elf) carries only kernel.resource,
+# exec.library and task.resource plus the components exec itself needs
+# to reach the resident chain. Everything else ships in a package that
+# the loader places in RAM (qemu -initrd, U-Boot or UEFI) and points at
+# through /chosen; kernel_elf.c relocates the modules into place and
+# adds them to the romtag scan.
+#
+# Unlike the PC targets this is a single package rather than the usual
+# base/fs/usb/acpi set: the RISC-V boot protocol carries exactly one
+# initrd, so everything the system needs to reach a Workbench has to
+# travel in one file.
+#
+
+#MM kernel-bsp-opensbi-riscv64 : \
+#MM     kernel-aros \
+#MM     kernel-oop \
+#MM     kernel-utility \
+#MM     kernel-debug \
+#MM     kernel-misc \
+#MM     kernel-expansion \
+#MM     kernel-timer \
+#MM     kernel-battclock \
+#MM     kernel-processor \
+#MM     kernel-dos \
+#MM     kernel-dos64 \
+#MM     kernel-dosboot \
+#MM     kernel-bootloader \
+#MM     kernel-filesystem \
+#MM     kernel-lddemon \
+#MM     kernel-shell \
+#MM     kernel-shellcommands \
+#MM     kernel-graphics \
+#MM     kernel-layers \
+#MM     kernel-intuition \
+#MM     kernel-keymap \
+#MM     kernel-cgxbootpic \
+#MM     workbench-libs-gadtools \
+#MM     kernel-console \
+#MM     kernel-input \
+#MM     kernel-gameport \
+#MM     kernel-keyboard \
+#MM     kernel-hidd \
+#MM     kernel-hidd-gfx \
+#MM     kernel-hidd-gfx-headlessgfx \
+#MM     kernel-hidd-input \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-partition \
+#MM     kernel-fs-ram \
+#MM     kernel-fs-con \
+#MM     kernel-fs-afs \
+#MM     kernel-fs-cdvdfs \
+#MM     kernel-fs-sfs \
+#MM     kernel-fs-fat \
+#MM     kernel-log \
+#MM     kernel-entropy \
+#MM     kernel-efi \
+#MM     kernel-acpica-sharedlib \
+#MM     kernel-nvme \
+#MM     kernel-virtio \
+#MM     kernel-hidd-bus \
+#MM     kernel-hidd-pci \
+#MM     kernel-hidd-pci-pcidt \
+#MM     kernel-hidd-dwuart \
+#MM     hidd-i2c \
+#MM     kernel-hidd-dwi2c \
+#MM     kernel-hidd-storage \
+#MM     kernel-hidd-system \
+#MM     kernel-hidd-power \
+#MM     kernel-hidd-telemetry \
+#MM     kernel-hidd-ipmi \
+#MM     kernel-hidd-acpibutton \
+#MM     kernel-hidd-acpifan \
+#MM     kernel-hidd-acpiacad \
+#MM     kernel-hidd-acpibattery \
+#MM     kernel-hidd-acpithermal \
+#MM     kernel-hidd-acpipowermeter \
+#MM     kernel-usb-poseidon \
+#MM     kernel-usb-pcixhci \
+#MM     kernel-usb-romstrap-opensbi-riscv64 \
+#MM     kernel-usb-classes-hub \
+#MM     kernel-usb-classes-hubss \
+#MM     kernel-usb-classes-massstorage \
+#MM     kernel-usb-classes-hid \
+#MM     kernel-usb-classes-bootkeyboard \
+#MM     kernel-usb-classes-bootmouse
+
+BSP_LIBS      := aros oop utility dos dos64 graphics layers intuition keymap \
+                 partition cgxbootpic gadtools acpica poseidon
+BSP_LIBS_ARCH := expansion debug
+BSP_RSRC      := bootloader dosboot FileSystem lddemon misc shell \
+                 shellcommands log entropy efi usbromstartup
+BSP_RSRC_ARCH := battclock processor
+BSP_DEVS      := console input gameport keyboard nvme virtio \
+                 USBHardware/pcixhci
+BSP_DEVS_ARCH := timer
+BSP_USBCLASSES := USB/hub USB/hubss USB/hid USB/bootkeyboard USB/bootmouse \
+                  USB/massstorage
+BSP_HANDLERS  := ram con afs cdrom sfs fat
+BSP_HIDDS     := hiddclass inputclass gfx keyboard mouse bus pci pcidt \
+                 storage system power telemetry ipmi dwuart i2c dwi2c \
+                 acpiacad acpibattery acpifan acpibutton acpithermal \
+                 acpipowermeter
+
+%make_package mmake=kernel-bsp-opensbi-riscv64 \
+    file=$(AROSARCHDIR)/aros-bsp.pkg \
+    libs=$(BSP_LIBS) arch_libs=$(BSP_LIBS_ARCH) \
+    res=$(BSP_RSRC) arch_res=$(BSP_RSRC_ARCH) \
+    devs=$(BSP_DEVS) arch_devs=$(BSP_DEVS_ARCH) \
+    handlers=$(BSP_HANDLERS) hidds=$(BSP_HIDDS) \
+    classes=$(BSP_USBCLASSES)
+
+#
+# Bootable layout.
+#
+# The UEFI stub opens aros-bsp.pkg and aros.cmd from the root of the
+# volume it was loaded from, so both live at the top of the tree next
+# to the usual AROS directories. A firmware that boots its default path
+# finds EFI/BOOT/BOOTRISCV64.EFI without being told; startup.nsh covers
+# being dropped at an EFI shell instead.
+#
+BOOTIMAGE       := $(OSGENDIR)/boot/Image
+EFI_BOOTDIR     := $(AROSDIR)/EFI/BOOT
+EFI_AROSDIR     := $(AROSDIR)/EFI/AROS
+BOOT_CMDLINE    :=
+
+BOOTFILES       := $(EFI_BOOTDIR)/BOOTRISCV64.EFI $(EFI_AROSDIR)/Image \
+                   $(AROSDIR)/aros-bsp.pkg $(AROSDIR)/aros.cmd \
+                   $(AROSDIR)/startup.nsh
+
+#MM- boot-opensbi-riscv64 : kernel-opensbi-riscv64 kernel-bsp-opensbi-riscv64
+
+#MM
+boot-opensbi-riscv64 : $(BOOTFILES)
+
+$(EFI_BOOTDIR)/BOOTRISCV64.EFI : $(BOOTIMAGE)
+	@$(ECHO) "Creating   $@"
+	%mkdirs_q $(EFI_BOOTDIR)
+	@$(CP) $< $@
+
+$(EFI_AROSDIR)/Image : $(BOOTIMAGE)
+	@$(ECHO) "Creating   $@"
+	%mkdirs_q $(EFI_AROSDIR)
+	@$(CP) $< $@
+
+$(AROSDIR)/aros-bsp.pkg : $(AROSARCHDIR)/aros-bsp.pkg
+	@$(ECHO) "Creating   $@"
+	@$(CP) $< $@
+
+$(AROSDIR)/aros.cmd :
+	@$(ECHO) "Creating   $@"
+	@$(ECHO) "$(BOOT_CMDLINE)" > $@
+
+$(AROSDIR)/startup.nsh :
+	@$(ECHO) "Creating   $@"
+	@$(ECHO) "$(strip BOOTRISCV64.EFI $(BOOT_CMDLINE))" > $@
+
+#MM- distfiles-opensbi-riscv64 : boot-opensbi-riscv64
+#MM- distfiles-opensbi-riscv64-quick : kernel-opensbi-riscv64-quick
+
+#MM
+distfiles-opensbi-riscv64 :
+	%mkdir_q dir="$(DISTDIR)"
+	@$(ECHO) Copying opensbi-riscv64 distfiles...
+	@$(CP) -R $(AROSDIR)/* $(DISTDIR)/
+
+%common

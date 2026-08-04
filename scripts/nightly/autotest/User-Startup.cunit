@@ -11,6 +11,9 @@ If NOT WARN
     ; Perform PFS3 on-disk endian conversion unit tests...
     Execute S/Test cunit/filesys/pfs3/cunit-pfs3-endian
 
+    ; Perform FAT BIOS Parameter Block parsing unit tests...
+    Execute S/Test cunit/filesys/fat/cunit-fat-bpb
+
     ; Peform basic 'C' type unit tests..
     Execute S/Test cunit/crt/stdc/cunit-crt-types
 

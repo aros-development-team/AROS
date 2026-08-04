@@ -419,8 +419,15 @@ p_sockaddr(sa, flags, width)
 	    {
 		register struct sockaddr_dl *sdl = (struct sockaddr_dl *)sa;
 
-		if (sdl->sdl_nlen == 0 && sdl->sdl_alen == 0 &&
-		    sdl->sdl_slen == 0)
+		/*
+		 * With no link-layer address (alen == 0) there is nothing to
+		 * format as a hardware address -- this is the common case for
+		 * interface/cloning routes whose gateway is the link itself
+		 * (it may still carry an interface name, nlen > 0).  Show it as
+		 * "link#<index>"; falling through to the type switch below would
+		 * leave workbuf uninitialised (the alen loop never runs).
+		 */
+		if (sdl->sdl_alen == 0)
 			(void) sprintf(workbuf, "link#%d", sdl->sdl_index);
 		else switch (sdl->sdl_type) {
 		case IFT_ETHER:

@@ -4,6 +4,7 @@
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
  * Copyright (C) 2005 Pavel Fedin
+ * Copyright (C) 2005-2026, The AROS Development Team.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -48,6 +49,12 @@
 #include <kern/uipc_socket_protos.h>
 #include <kern/uipc_socket2_protos.h>
 
+#if defined(ENABLE_FDLIBRARY)
+#include <libraries/fd.h>
+#include <proto/fd.h>
+extern struct Library *FDBase;      /* opened in amiga_fdhooks.c */
+#endif
+
 #ifdef DEBUG_SYSCALLS
 void dump_sockaddr_in(struct sockaddr_in *name, struct SocketBase *libPtr)
 {
@@ -90,6 +97,12 @@ LONG __socket(LONG domain, LONG type, LONG protocol, struct SocketBase *libPtr)
             libPtr->dTable[fd] = so;
             so->so_pgid = libPtr;
             FD_SET(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
+#if defined(ENABLE_FDLIBRARY)
+            /* Publish the socket as this descriptor's fd.library owner data,
+               so posixc's read()/write()/close() hooks can act on it. */
+            if(FDBase != NULL)
+                FD_SetData(fd, FD_OWNER_BSDSOCKET, so);
+#endif
 #if defined(__AROS__)
             D(bug("[AROSTCP](amiga_syscalls.c) __socket: created socket 0x%p fd = %ld libPtr = 0x%p\n", so, fd, libPtr));
 #endif
@@ -264,6 +277,12 @@ AROS_LH3(LONG, accept,
     libPtr->dTable[fd] = so;
     FD_SET(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
     so->so_refcnt = 1;  /* pure AmiTCP addition */
+#if defined(ENABLE_FDLIBRARY)
+    if(FDBase != NULL) {
+        so->so_pgid = libPtr;
+        FD_SetData(fd, FD_OWNER_BSDSOCKET, so);
+    }
+#endif
 
     nam = m_get(M_WAIT, MT_SONAME);
     if(nam == NULL) {
@@ -640,6 +659,35 @@ LONG sdFind(struct SocketBase *libPtr, LONG *fdp)
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_syscalls.c) sdFind()\n"));
+#endif
+
+#if defined(ENABLE_FDLIBRARY)
+    /*
+     * When fd.library is available it is the system-wide descriptor-number
+     * authority (shared with posixc.library), so take the number from it
+     * rather than from our private per-task bitmask.  The descriptor still
+     * lives in dTable[fd]/the used-socket bitmask for internal use, so it
+     * must fall inside the current table; grow-on-demand is not yet wired
+     * up, so fail cleanly if it would not.
+     */
+    if (FDBase != NULL) {
+        LONG fd, error;
+
+        /* Start at 3: the standard streams (0..2) are kept process-local by
+           posixc and are never placed in the system-wide fd.library table,
+           so they must not be handed out to sockets either. */
+        error = FD_Alloc(3, FD_OWNER_BSDSOCKET, NULL, &fd);
+        if (error)
+            return EMFILE;
+
+        if ((ULONG)fd >= libPtr->dTableSize) {
+            FD_Free(fd, FD_OWNER_BSDSOCKET);
+            return EMFILE;
+        }
+
+        *fdp = fd;
+        return 0;
+    }
 #endif
 
     moffset = 0, smaskp = (ULONG *)(libPtr->dTable + libPtr->dTableSize);

@@ -62,6 +62,7 @@
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/udp.h>
+#include <netinet/in_protos.h>
 #include <netinet/udp_var.h>
 
 #include <kern/kern_subr_protos.h>
@@ -179,7 +180,7 @@ void udp_input(void *args, ...)
     }
 
     if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr)) ||
-            in_broadcast(ip->ip_dst, m->m_pkthdr.rcvif)) {
+            in_broadcast(ip->ip_dst)) {
         struct socket *last;
         /*
          * Deliver a multicast or broadcast datagram to *all* sockets
@@ -497,8 +498,10 @@ release:
 }
 
 u_long	udp_sendspace = 9216;		/* really max datagram size */
-u_long	udp_recvspace = 40 * (1024 + sizeof(struct sockaddr_in));
-/* 40 1K datagrams */
+u_long	udp_recvspace = 256 * (1024 + sizeof(struct sockaddr_in));
+/* 256 1K datagrams: a deeper socket receive buffer lets the UDP receiver
+ * absorb bursts (e.g. sockperf under-load) while the owning task is briefly
+ * off-CPU, instead of overflowing at ~40 datagrams and dropping the flood. */
 
 /*ARGSUSED*/
 int
@@ -512,7 +515,7 @@ struct mbuf *m, *addr, *control;
     int s;
 
     if(req == PRU_CONTROL)
-        return (in_control(so, (long)m, (caddr_t)addr,
+        return (in_control(so, (int)(long)m, (caddr_t)addr,
                            (struct ifnet *)control));
     if(inp == NULL && req != PRU_ATTACH) {
         error = EINVAL;

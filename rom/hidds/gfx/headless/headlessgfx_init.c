@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2021-2026, The AROS Development Team. All rights reserved.
 
     Desc: Headless Gfx Hidd
 */

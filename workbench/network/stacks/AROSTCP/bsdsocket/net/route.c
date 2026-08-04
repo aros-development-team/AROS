@@ -411,6 +411,12 @@ int	flags;
 struct sockaddr	*dst, *gateway;
 {
     register struct ifaddr *ifa;
+
+    /* A route always names a gateway; refuse quietly rather than
+       dereferencing a hole where one should have been */
+    if(gateway == NULL)
+        return ((struct ifaddr *)0);
+
     if((flags & RTF_GATEWAY) == 0) {
         /*
          * If we are adding a route to an interface,

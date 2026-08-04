@@ -112,6 +112,15 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
 #endif
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+
+        /*
+         * CRITICAL: Disable interrupts before returning to cpu_Trap/core_IRQHandle.
+         * SoftIntDispatch calls KrnSti() which leaves interrupts ENABLED.
+         * Without this cli, a timer interrupt can fire during the exception
+         * return sequence (between cpu_Trap return and IRETQ), potentially
+         * corrupting the kernel-mode IRETQ frame.
+         */
+        __asm__ __volatile__("cli");
     }
     else
     {

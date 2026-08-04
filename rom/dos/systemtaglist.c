@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -467,6 +467,15 @@
                 SendPkt(dp, &cliproc->pr_MsgPort, &me->pr_MsgPort);
                 if (WaitPkt() != dp)
                     Alert(AN_QPktFail);
+
+                /* The shell has run CliInit by the time it replies the
+                   startup packet, so its CLI number is valid here. */
+                {
+                    LONG *cliNumPtr = (LONG *)GetTagData(SYS_CliNumPtr, (IPTR)NULL, tags);
+
+                    if (cliNumPtr)
+                        *cliNumPtr = cliproc->pr_TaskNum;
+                }
 
                 if (fh && oldSignal) {
                     DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, oldSignal, 0, 0, 0);

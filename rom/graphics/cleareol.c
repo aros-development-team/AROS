@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ClearEOL()
 */
@@ -53,13 +53,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG oldDrMd = GetDrMd(rp);;
+    UBYTE oldFgPen = rp->FgPen;
     ULONG width = GetBitMapAttr(rp->BitMap, BMA_WIDTH);
 
-    SetDrMd(rp, oldDrMd ^ INVERSVID);
+    SetAPen(rp, bgfill_pen(rp));
     RectFill(rp, rp->cp_x, rp->cp_y - rp->TxBaseline, width - 1,
              rp->cp_y - rp->TxBaseline + rp->Font->tf_YSize - 1);
-    SetDrMd(rp, oldDrMd);
+    SetAPen(rp, oldFgPen);
 
     AROS_LIBFUNC_EXIT
 } /* ClearEOL */

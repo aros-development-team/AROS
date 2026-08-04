@@ -11,8 +11,10 @@ extern struct icmpstat icmpstat;
 extern struct rtstat rtstat;
 extern struct radix_node_head *rt_tables[];
 
+#if INET6
 extern struct ip6stat ip6stat;
 extern struct icmp6stat icmp6stat;
+#endif
 
 struct kernel_var kvars[] = {
     { "_mbstat", &mbstat },
@@ -25,8 +27,10 @@ struct kernel_var kvars[] = {
     { "_icmpstat", &icmpstat },
     { "_rtstat", &rtstat },
     { "_rt_tables", &rt_tables },
+#if INET6
     { "_ip6stat", &ip6stat },
     { "_icmp6stat", &icmp6stat },
+#endif
 #ifdef ENABLE_IGMP
     { "_igmpstat", &igmpstat },
 #endif

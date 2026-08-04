@@ -138,7 +138,11 @@ def pack( destination, files ):
         print('» %s (%d bytes)' % (path, os.path.getsize( path )))
         
         input = open( path, 'rb' )
-        writeFile( output, path, input.read() )
+        # Record the name the file is known by, never the path it
+        # happened to be built at - an absolute path is a property of
+        # the build machine, not of the package.
+        name = os.path.basename( path ) if os.path.isabs( path ) else path
+        writeFile( output, name, input.read() )
         input.close()
     
     os.chdir( oldwd )

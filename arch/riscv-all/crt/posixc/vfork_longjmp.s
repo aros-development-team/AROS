@@ -1,7 +1,19 @@
 /*
- * Copyright © 2023, The AROS Development Team. All rights reserved.
- * $Id$
- */
+    Copyright (c) 2023-2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: vfork_longjmp() - like longjmp but without the val check
+    Lang: english
+
+    Returns via the retaddr slot - __vfork() patches it to redirect the
+    jump (this is the whole point of vfork_longjmp).
+
+    ILP32D layout (see aros/stdc/setjmp.h, _JMPLEN 37):
+      0:      ra (retaddr)
+      4-48:   s0-s11
+      52:     sp
+      56-144: fs0-fs11 (8 bytes each, 8-aligned)
+*/
 
 #include "aros/riscv/asm.h"
 
@@ -11,7 +23,8 @@
 	.type	AROS_CDEFNAME(vfork_longjmp),%function
 
 AROS_CDEFNAME(vfork_longjmp):
-	lw	ra, 0(a0)
+	/* a0 = pointer to jmp_buf, a1 = return value */
+	lw	ra, 0(a0)					/* return via the retaddr slot */
 	lw	s0, 1*4(a0)
 	lw	s1, 2*4(a0)
 	lw	s2, 3*4(a0)
@@ -24,11 +37,20 @@ AROS_CDEFNAME(vfork_longjmp):
 	lw	s9, 10*4(a0)
 	lw	s10, 11*4(a0)
 	lw	s11, 12*4(a0)
+	lw	sp, 13*4(a0)
+	fld	fs0, 56(a0)
+	fld	fs1, 64(a0)
+	fld	fs2, 72(a0)
+	fld	fs3, 80(a0)
+	fld	fs4, 88(a0)
+	fld	fs5, 96(a0)
+	fld	fs6, 104(a0)
+	fld	fs7, 112(a0)
+	fld	fs8, 120(a0)
+	fld	fs9, 128(a0)
+	fld	fs10, 136(a0)
+	fld	fs11, 144(a0)
 
-	beq a1, zero, vflongjmp_1
-	mv a0, a1
-	ret
-
-vflongjmp_1:
-	li a0, 1
+	/* No zero-check on val (unlike longjmp) */
+	mv	a0, a1
 	ret

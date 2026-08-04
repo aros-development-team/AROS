@@ -667,6 +667,31 @@ static inline UBYTE xhciEndpointState(volatile struct xhci_ep *epctx)
     return (UBYTE)(AROS_LE2LONG(epctx->ctx[0]) & 0x7U);
 }
 
+/*
+ * The state an endpoint is in decides which command it will accept:
+ * Reset Endpoint only from Halted, Stop Endpoint only from Running or
+ * Stopped. The wrong one earns a Context State Error and leaves the
+ * endpoint exactly as it was.
+ */
+static UBYTE xhciEndpointStateOf(struct PCIController *hc,
+                                 struct pciusbXHCIDevice *devCtx, UBYTE epid)
+{
+    const UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
+    volatile struct xhci_ep *epctx;
+
+    if(!hc || !devCtx || !devCtx->dc_SlotCtx.dmaa_Ptr ||
+       (epid >= MAX_DEVENDPOINTS))
+        return XHCI_EP_STATE_DISABLED;
+
+    epctx = (volatile struct xhci_ep *)
+            ((volatile UBYTE *)devCtx->dc_SlotCtx.dmaa_Ptr +
+             ((UWORD)epid * ctxsize));
+
+    CacheClearE((APTR)epctx, ctxsize, CACRF_InvalidateD);
+
+    return xhciEndpointState(epctx);
+}
+
 static const char *xhciEPStateName(UBYTE st)
 {
     switch(st) {
@@ -1272,6 +1297,74 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     inctx->acf = 0;
     inctx->acf |= 0x01;       /* Slot context */
     inctx->acf |= (1UL << 1); /* EP0 context */
+
+    /*
+     * A low or full speed device behind a high speed hub is reached with
+     * split transactions, which the controller runs against the hub's
+     * transaction translator. Name the hub in the child's slot context,
+     * and make sure the hub's own slot says it is a hub first: nothing
+     * did when that slot was created, the device was only discovered to
+     * be a hub afterwards.
+     */
+    if(flags & UHFF_SPLITTRANS) {
+        ULONG parentRoute = route & SLOT_CTX_ROUTE_MASK;
+        ULONG ttport = 0;
+        int nib;
+
+        for(nib = 4; nib >= 0; nib--) {
+            ULONG v = (parentRoute >> (nib * 4)) & 0xF;
+            if(v) {
+                ttport = v;
+                parentRoute &= ~(0xFUL << (nib * 4));
+                break;
+            }
+        }
+
+        struct pciusbXHCIDevice *parentCtx =
+            xhciFindRouteDevice(hc, parentRoute, rootPortIndex);
+
+        if(parentCtx && parentCtx->dc_SlotID) {
+            if(!parentCtx->dc_HubProgrammed) {
+                volatile struct xhci_inctx *pin =
+                    (volatile struct xhci_inctx *)parentCtx->dc_IN.dmaa_Ptr;
+                volatile struct xhci_slot *pslot_in = xhciInputSlotCtx(pin, ctxoff);
+                volatile struct xhci_slot *pslot_out =
+                    (volatile struct xhci_slot *)parentCtx->dc_SlotCtx.dmaa_Ptr;
+                LONG hubcc;
+                ULONG nports = parentCtx->dc_NbrPorts;
+
+                /* A hub whose descriptor was never seen gets the field's
+                   maximum rather than a guess. */
+                if(!nports)
+                    nports = 255;
+
+                /* Update the slot context alone: current state plus the
+                   hub fields. */
+                pin->dcf = 0;
+                pin->acf = AROS_LONG2LE(0x01);
+                memcpy((void *)pslot_in, (const void *)pslot_out, 32);
+                pslot_in->ctx[0] |= AROS_LONG2LE(1UL << 26);
+                pslot_in->ctx[1] = AROS_LONG2LE(
+                    (AROS_LE2LONG(pslot_in->ctx[1]) & 0x00FFFFFF) | (nports << 24));
+                CacheClearE((APTR)parentCtx->dc_IN.dmaa_Ptr, inctx_size, CACRF_ClearD);
+
+                hubcc = xhciCmdEndpointConfigure(hc, parentCtx->dc_SlotID,
+                                                 parentCtx->dc_IN.dmaa_Ptr, timerreq);
+                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "hub slot %u update cc=%ld"
+                                DEBUGCOLOR_RESET" \n",
+                                (unsigned)parentCtx->dc_SlotID, (long)hubcc);
+                if(hubcc == TRB_CC_SUCCESS)
+                    parentCtx->dc_HubProgrammed = TRUE;
+            }
+
+            islot->ctx[2] &= ~0xFFFFUL;
+            islot->ctx[2] |= ((ULONG)parentCtx->dc_SlotID << SLOT_CTX_TT_SLOT_SHIFT) |
+                             (ttport << SLOT_CTX_TT_PORT_SHIFT);
+        } else
+            pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "no parent hub context for route %05x port %u"
+                       DEBUGCOLOR_RESET" \n", (unsigned)route, (unsigned)rootPortIndex);
+    }
+
     CacheClearE((APTR)devCtx->dc_IN.dmaa_Ptr, inctx_size, CACRF_ClearD);
 
     /* ---- Address Device ---- */
@@ -2500,6 +2593,21 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
                         (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)) {
                     xhciHandleClearFeatureEndpointHalt(hc, ioreq, clear_dev, timerreq);
                     uhwCheckSpecialCtrlTransfers(hc, ioreq);
+
+                    /*
+                     * A hub descriptor going by names the hub's port count,
+                     * which the slot context needs when a split-transaction
+                     * child is addressed through this hub later.
+                     */
+                    if(clear_dev && clear_dev != XHCI_ROOT_HUB_HANDLE &&
+                            ioreq->iouh_SetupData.bmRequestType ==
+                                (URTF_IN | URTF_CLASS | URTF_DEVICE) &&
+                            ioreq->iouh_SetupData.bRequest == USR_GET_DESCRIPTOR &&
+                            ioreq->iouh_Data && ioreq->iouh_Actual >= 3) {
+                        UWORD dtype = AROS_LE2WORD(ioreq->iouh_SetupData.wValue) >> 8;
+                        if(dtype == UDT_HUB || dtype == UDT_SSHUB)
+                            clear_dev->dc_NbrPorts = ((UBYTE *)ioreq->iouh_Data)[2];
+                    }
                 }
                 ReplyMsg(&ioreq->iouh_Req.io_Message);
             }
@@ -3024,8 +3132,17 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 }
 
                 if(!req) {
-                    /* Avoid log storms for expected endpoint-level ISO conditions */
-                    if(trbe_ccode != TRB_CC_RING_UNDERRUN) {
+                    /*
+                     * Avoid log storms for expected endpoint-level ISO
+                     * conditions, and for the three Stopped codes: those
+                     * report what a queued TRB was doing when the endpoint
+                     * was halted, which arrives after the request it
+                     * belonged to has already been failed and reaped.
+                     */
+                    if((trbe_ccode != TRB_CC_RING_UNDERRUN) &&
+                       (trbe_ccode != TRB_CC_STOPPED) &&
+                       (trbe_ccode != TRB_CC_STOPPED_LENGTH_INVALID) &&
+                       (trbe_ccode != TRB_CC_STOPPED_SHORT_PACKET)) {
                         pciusbWarn("xHCI",
                                    DEBUGWARNCOLOR_SET
                                    "TRANSFER EVT: slot=%u epid=%u idx=%lu cc=%lu missing ioreq"
@@ -3363,13 +3480,35 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
                    (status & XHCIF_USBSTS_HCE) ? " HCE" : "",
                    (status & XHCIF_USBSTS_HSE) ? " HSE" : "");
 
+    /*
+     * Stop it before resetting it. A controller taken over from
+     * firmware still holds that firmware's queue pointers, and one that
+     * is reset while it is running keeps fetching through them - into
+     * memory that has since been reclaimed.
+     */
+    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Halting Controller..." DEBUGCOLOR_RESET" \n");
+    hcopr->usbcmd = AROS_LONG2LE(0);
+    cnt = 100;
+    while(!(AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_HCH) && (--cnt > 0))
+        uhwDelayMS(1, timerreq);
+    if(!(AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_HCH))
+        pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "Controller will not halt (USBSTS $%08x)" DEBUGCOLOR_RESET" \n",
+                   AROS_LE2LONG(hcopr->usbsts));
+
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Resetting Controller..." DEBUGCOLOR_RESET" \n");
     hcopr->usbcmd = AROS_LONG2LE(XHCIF_USBCMD_HCRST);
 
-    // Wait for the command to be accepted..
+    /*
+     * Wait before looking, not after. The reset bit does not read back
+     * as set the instant it is written, so a poll that reads first sees
+     * a reset that has not started yet as one already finished - and
+     * everything programmed after that is discarded by the reset when
+     * it does begin.
+     */
     cnt = 100;
-    while((AROS_LE2LONG(hcopr->usbcmd) & XHCIF_USBCMD_HCRST) && (--cnt > 0))
+    do {
         uhwDelayMS(2, timerreq);
+    } while((AROS_LE2LONG(hcopr->usbcmd) & XHCIF_USBCMD_HCRST) && (--cnt > 0));
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "COMMAND = $%08x, after %ums" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->usbcmd),
                     (100 - cnt) << 1);
@@ -3382,10 +3521,11 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
                    (status & XHCIF_USBSTS_HCE) ? " HCE" : "",
                    (status & XHCIF_USBSTS_HSE) ? " HSE" : "");
 
-    // Wait for the reset to complete..
+    /* Same again for "controller not ready" - delay, then look */
     cnt = 100;
-    while((AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_CNR) && (--cnt > 0))
+    do {
         uhwDelayMS(2, timerreq);
+    } while((AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_CNR) && (--cnt > 0));
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "USBSTS = $%08x, after %ums" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->usbsts),
                     (100 - cnt) << 1);
@@ -3410,6 +3550,15 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
 
     erseg->size = AROS_LONG2LE(XHCI_EVENT_RING_TRBS);
 
+    /*
+     * The segment has to be ready before ERSTBA is written - that write
+     * is what sends the controller to fetch the table and start using
+     * the ring, so anything done to it afterwards is done underneath a
+     * controller already reading it.
+     */
+    xring = (volatile struct pcisusbXHCIRing *)xhcic->xhc_ERSp;
+    xhciInitRing(hc, (struct pcisusbXHCIRing *)xring);
+
     volatile struct xhci_ir *xhciir = (volatile struct xhci_ir *)((IPTR)xhcic->xhc_XHCIIntR);
     xhciir->erstsz = AROS_LONG2LE(1);
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Setting ERDP to 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_DMAERS);
@@ -3417,8 +3566,17 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
     xhciSetPointerMMIO(hc, xhciir->erdp, ((IPTR)xhcic->xhc_DMAERS | (IPTR)XHCIF_IR_ERDP_EHB));
     xhciSetPointerMMIO(hc, xhciir->erstba, ((IPTR)xhcic->xhc_DMAERST));
 
-    xring = (volatile struct pcisusbXHCIRing *)xhcic->xhc_ERSp;
-    xhciInitRing(hc, (struct pcisusbXHCIRing *)xring);
+    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+               "readback: erstsz %08lx erstba %08lx%08lx erdp %08lx%08lx dcbaap %08lx%08lx usbsts %08lx"
+               DEBUGCOLOR_RESET" \n",
+               (unsigned long)AROS_LE2LONG(xhciir->erstsz),
+               (unsigned long)AROS_LE2LONG(xhciir->erstba.addr_hi),
+               (unsigned long)AROS_LE2LONG(xhciir->erstba.addr_lo),
+               (unsigned long)AROS_LE2LONG(xhciir->erdp.addr_hi),
+               (unsigned long)AROS_LE2LONG(xhciir->erdp.addr_lo),
+               (unsigned long)AROS_LE2LONG(hcopr->dcbaap.addr_hi),
+               (unsigned long)AROS_LE2LONG(hcopr->dcbaap.addr_lo),
+               (unsigned long)AROS_LE2LONG(hcopr->usbsts));
     /*
      * MSI/MSI-X is edge-triggered in practice: if IP/EINT are already set
      * when USBCMD.INTE becomes 1, some controllers will not emit a new MSI.
@@ -3442,6 +3600,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     ULONG val;
     ULONG cnt;
+    ULONG attempt;
 
 
     struct Library *ps;
@@ -3449,6 +3608,17 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
         return FALSE;
     }
     if(!xhcic) {
+        CloseLibrary(ps);
+        return FALSE;
+    }
+
+    /*
+     * Controllers are set up one at a time but taken from the unit's
+     * list as a whole, so one that failed to map its registers still
+     * arrives here - and everything below reaches through that mapping.
+     */
+    if(!hc->hc_RegBase || !xhcic->xhc_XHCIOpR) {
+        pciusbWarn("xHCI", DEBUGCOLOR_SET "Controller @ 0x%p has no register mapping - skipping" DEBUGCOLOR_RESET" \n", hc);
         CloseLibrary(ps);
         return FALSE;
     }
@@ -3598,13 +3768,80 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
     volatile struct xhci_ir *xhciir = (volatile struct xhci_ir *)((IPTR)xhcic->xhc_XHCIIntR);
     xhciir->iman = AROS_LONG2LE(XHCIF_IR_IMAN_IE);
 
-    /* Finally, set the "run" bit */
-    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Starting controller run state..." DEBUGCOLOR_RESET" \n");
-    val = AROS_LE2LONG(hcopr->usbcmd);
-    val |= XHCIF_USBCMD_RS | XHCIF_USBCMD_INTE;
-    hcopr->usbcmd = AROS_LONG2LE(val);
-    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "USBCMD = $%08x..." DEBUGCOLOR_RESET" \n",
-                    AROS_LE2LONG(hcopr->usbcmd));
+    /*
+     * Start it, and be prepared to start it again.
+     *
+     * A controller handed over from firmware that was driving it does
+     * not always come out of reset settled, and the first transaction
+     * it issues can be answered with an error. That latches HSE and
+     * halts it for good - which then looks like a dead controller,
+     * although a further reset clears it and the next attempt succeeds.
+     */
+    for (attempt = 0; ; attempt++)
+    {
+        if (attempt)
+        {
+            pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "Restarting after a failed start (attempt %u)" DEBUGCOLOR_RESET" \n",
+                       attempt + 1);
+            /* The error bits are write-one-to-clear */
+            hcopr->usbsts = AROS_LONG2LE(XHCIF_USBSTS_HSE | XHCIF_USBSTS_HCE);
+            uhwDelayMS(20, timerreq);
+
+            xhciReset(hc, hu, timerreq);
+            xhciir->iman = AROS_LONG2LE(XHCIF_IR_IMAN_IE);
+        }
+
+        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Starting controller run state..." DEBUGCOLOR_RESET" \n");
+        val = AROS_LE2LONG(hcopr->usbcmd);
+        val |= XHCIF_USBCMD_RS | XHCIF_USBCMD_INTE;
+        hcopr->usbcmd = AROS_LONG2LE(val);
+        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "USBCMD = $%08x..." DEBUGCOLOR_RESET" \n",
+                        AROS_LE2LONG(hcopr->usbcmd));
+
+        /*
+         * Running is what the controller says it is, not what was asked
+         * for. HCH drops only once it has actually started, and one that
+         * will not leave the halted state executes nothing queued
+         * afterwards - every command then fails by timing out, a long
+         * way from the cause.
+         */
+        cnt = 100;
+        while((AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_HCH) && (--cnt > 0))
+            uhwDelayMS(2, timerreq);
+
+        val = AROS_LE2LONG(hcopr->usbsts);
+        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "USBSTS = $%08x, after %ums" DEBUGCOLOR_RESET" \n",
+                        val, (100 - cnt) << 1);
+        xhciDumpStatus(val);
+
+        if(!(val & XHCIF_USBSTS_HCH) || attempt >= 2)
+            break;
+    }
+
+    if(val & XHCIF_USBSTS_HCH) {
+        pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "Controller will not leave the halted state (USBCMD $%08x, USBSTS $%08x)%s%s" DEBUGCOLOR_RESET" \n",
+                   AROS_LE2LONG(hcopr->usbcmd), val,
+                   (val & XHCIF_USBSTS_HCE) ? " HCE" : "",
+                   (val & XHCIF_USBSTS_HSE) ? " HSE" : "");
+        /*
+         * HSE is raised for an error response to one of the
+         * controller's own transactions, so what the function recorded
+         * about that transaction says far more than the halt does.
+         */
+        {
+            UWORD cmd = READCONFIGWORD(hc, hc->hc_PCIDeviceObject, 0x04);
+            UWORD sts = READCONFIGWORD(hc, hc->hc_PCIDeviceObject, 0x06);
+
+            pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "  PCI command $%04x status $%04x -%s%s%s%s%s" DEBUGCOLOR_RESET" \n",
+                       cmd, sts,
+                       (cmd & (1 << 2)) ? " busmaster" : " NO-BUSMASTER",
+                       (sts & (1 << 13)) ? " master-abort" : "",
+                       (sts & (1 << 12)) ? " target-abort" : "",
+                       (sts & (1 << 14)) ? " system-error" : "",
+                       (sts & (1 << 15)) ? " parity-error" : "");
+        }
+        return FALSE;
+    }
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xhciInit returns TRUE..." DEBUGCOLOR_RESET" \n");
     return TRUE;
@@ -3642,8 +3879,17 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
          * This avoids controllers/emulators fetching TRBs from freed memory.
          */
         if(stopEndpoint && devCtx->dc_SlotID) {
-            (void)xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, TRUE, timerreq);
-            (void)xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, timerreq);
+            UBYTE epstate = xhciEndpointStateOf(hc, devCtx, epid);
+
+            /*
+             * Both commands land the endpoint in Stopped, but only one
+             * of them is legal from where it is now - a device pulled
+             * mid-transfer leaves its endpoints Halted, not Running.
+             */
+            if(epstate == XHCI_EP_STATE_HALTED)
+                (void)xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, timerreq);
+            else if(epstate == XHCI_EP_STATE_RUNNING)
+                (void)xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, TRUE, timerreq);
 
             /*
              * EP0 (EPID=1) is mandatory and must not be dropped via Configure

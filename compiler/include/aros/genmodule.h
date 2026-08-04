@@ -27,7 +27,7 @@
 #   include <aros/morphos/genmodule.h>
 #elif defined __powerpc__
 #   include <aros/ppc/genmodule.h>
-#elif defined __riscv64
+#elif defined(__riscv) && (__riscv_xlen == 64)
 #   include <aros/riscv64/genmodule.h>
 #elif defined __riscv
 #   include <aros/riscv/genmodule.h>

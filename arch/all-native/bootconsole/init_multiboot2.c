@@ -45,24 +45,39 @@ void con_InitMultiboot2(void *mb)
 
     if (fb)
     {
-        /* Framebuffer was given, use it */
-        scr_FrameBuffer = (void *)fb->framebuffer_addr;
+        /*
+         * Bootconsole runs as 32-bit code — pointers are 32-bit.
+         * If framebuffer is above 4 GiB (common on UEFI with ReBAR/large VRAM),
+         * skip it here. The 64-bit kernel vesagfx driver will use KRN_FBAddr.
+         */
+#ifdef MULTIBOOT_64BIT
+        int fb_reachable = (fb->framebuffer_addr <= 0xFFFFFFFFULL);
+#else
+        int fb_reachable = (fb->framebuffer_addr_high == 0);
+#endif
 
-        switch (fb->framebuffer_type)
+        if (fb_reachable)
         {
-        case MB2_FRAMEBUFFER_TEXT:
-            /* Text framebuffer, size in characters */
-            scr_Width  = fb->framebuffer_width;
-            scr_Height = fb->framebuffer_height;
-            scr_Type   = SCR_TEXT;
-            txt_Clear();
-            break;
+            /* Framebuffer was given and fits in 32-bit pointer, use it */
+            scr_FrameBuffer = (void *)(unsigned long)fb->framebuffer_addr;
 
-        default:
-            /* Graphical framebuffer, size in pixels */
-            scr_Type = SCR_GFX;
-            fb_Init(fb->framebuffer_width, fb->framebuffer_height, fb->framebuffer_bpp, fb->framebuffer_pitch);
+            switch (fb->framebuffer_type)
+            {
+            case MB2_FRAMEBUFFER_TEXT:
+                /* Text framebuffer, size in characters */
+                scr_Width  = fb->framebuffer_width;
+                scr_Height = fb->framebuffer_height;
+                scr_Type   = SCR_TEXT;
+                txt_Clear();
+                break;
+
+            default:
+                /* Graphical framebuffer, size in pixels */
+                scr_Type = SCR_GFX;
+                fb_Init(fb->framebuffer_width, fb->framebuffer_height, fb->framebuffer_bpp, fb->framebuffer_pitch);
+            }
         }
+        /* else: >4GB framebuffer — no early bootconsole display */
     }
     else if (vbe)
         con_InitVESA(vbe->vbe_control_info.version, &vbe->vbe_mode_info);
