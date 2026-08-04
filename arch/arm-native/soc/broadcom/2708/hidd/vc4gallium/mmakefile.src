@@ -1,0 +1,242 @@
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+CUR_MESADIR = src/gallium
+CUR_GALLIUMDIR = drivers/vc4
+GALLIUM_PATH = $(top_srcdir)/$(CUR_MESADIR)
+
+#
+# Only build for ARM targets
+#
+#MM- workbench-hidds : hidd-vc4gallium-$(AROS_TARGET_CPU)
+#MM- hidd-vc4gallium-arm : hidd-vc4gallium
+#MM- hidd-vc4gallium-aarch64 : hidd-vc4gallium
+
+#MM hidd-vc4gallium : includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic linklibs-gallium_vc4 linklibs-gallium_vc4-gca kernel-mbox-bcm2708-includes kernel-dma-bcm2708-includes
+#MM linklibs-gallium_vc4 : mesa3dgl-linklibs linklibs-gallium_vc4-gen-cle
+#MM linklibs-gallium_vc4-gca : linklibs-gallium_vc4 mesa3dgl-linklibs
+#MM linklibs-galliumcoreapi : linklibs-gallium_vc4-gca
+
+#
+# VC4 Gallium driver sources from Mesa
+#
+
+include $(GALLIUM_PATH)/$(CUR_GALLIUMDIR)/Makefile.sources
+
+# Mesa VC4 driver C sources (filter .c files, exclude .h files)
+MESA3D_VC4_C_SOURCES := $(filter %.c, $(C_SOURCES))
+
+# Remove simulator and kernel files (guarded by USE_VC4_SIMULATOR)
+MESA3D_VC4_C_SOURCES := $(filter-out vc4_simulator.c, $(MESA3D_VC4_C_SOURCES))
+MESA3D_VC4_C_SOURCES := $(filter-out kernel/%, $(MESA3D_VC4_C_SOURCES))
+
+# NEON tiling variant (upstream meson builds this; the target is compiled
+# -mfpu=neon-vfpv4 so __ARM_NEON is already defined and the runtime
+# has_neon check passes)
+MESA3D_VC4_C_SOURCES += vc4_tiling_lt_neon.c
+
+# Full paths for linklib build
+VC4_DRIVER_SOURCES := \
+    $(addprefix $(GALLIUM_PATH)/drivers/vc4/, $(MESA3D_VC4_C_SOURCES:.c=))
+
+#
+# AROS-specific HIDD sources. Since the runtime-binding rework the hidd
+# also carries the winsys/present half (aros_drm_vc4.c) and the driver's
+# libc environment: the POSIX/libdrm shims and the malloc->AllocMem
+# override, both shared with mesa3dgl (compiled once per module).
+#
+VC4GALLIUM_HIDD_SOURCES := \
+    vc4_galliumclass \
+    vc4_init \
+    vc4_v3d \
+    vc4_aros_bridge \
+    vc4_drm_aros \
+    $(SRCDIR)/workbench/libs/mesa/aros_drm_shim \
+    $(SRCDIR)/workbench/libs/mesa/emul_arosc
+
+#
+# Include paths
+#
+# drm_compat/ must come FIRST to override system xf86drm.h, sys/mman.h, etc.
+#
+USER_INCLUDES := \
+    $(USER_INCLUDES) \
+    -I$(SRCDIR)/$(CURDIR)/drm_compat \
+    -I$(SRCDIR)/$(CURDIR) \
+    -I$(top_builddir)/galliumglue \
+    -iquote $(GALLIUM_PATH)/drivers \
+    -iquote $(GALLIUM_PATH)/drivers/vc4 \
+    -iquote $(GALLIUM_PATH)/include \
+    -iquote $(GALLIUM_PATH)/auxiliary \
+    -iquote $(top_srcdir)/src \
+    -iquote $(top_builddir)/src \
+    -iquote $(top_srcdir)/src/broadcom \
+    -iquote $(top_builddir)/src/broadcom \
+    -iquote $(top_srcdir)/src/compiler/nir \
+    -iquote $(top_builddir)/src/compiler/nir \
+    -I$(SRCDIR)/arch/arm-native/soc/broadcom/2708/include
+
+#
+# Compiler flags
+#
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING) $(NOWARN_MAYBE_UNINITIALIZED)
+USER_CFLAGS += $(NOWARN_FLAGS) -std=gnu99
+
+USER_CPPFLAGS += \
+    -DGALLIUM_VC4 \
+    -DHAVE_STRUCT_TIMESPEC \
+    -DUSE_ARM_ASM \
+    -DGCA_CONSUMER_MODULE
+
+#
+# Link flags. Mesa linklibs moved to mesa3dgl; vc4gallium has no Mesa
+# code, only the AROS HW bridge. Keep the C runtime for stdcio.
+#
+USER_LDFLAGS := -L$(top_libdir) -lstdcio -lstdc
+
+#
+# Generate broadcom CLE pack headers from XML definitions
+# (Mesa's meson build does this via custom_target; we do it manually here)
+#
+CLE_SRCDIR := $(top_srcdir)/src/broadcom/cle
+CLE_GENDIR := $(top_builddir)/src/broadcom/cle
+CLE_GENSCRIPT := $(CLE_SRCDIR)/gen_pack_header.py
+
+$(CLE_GENDIR)/v3d_packet_v21_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v21.xml
+	%mkdir_q dir="$(CLE_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 21 > $@
+
+$(CLE_GENDIR)/v3d_packet_v33_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v33.xml
+	%mkdir_q dir="$(CLE_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 33 > $@
+
+$(CLE_GENDIR)/v3d_packet_v41_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v33.xml
+	%mkdir_q dir="$(CLE_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 41 > $@
+
+$(CLE_GENDIR)/v3d_packet_v42_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v33.xml
+	%mkdir_q dir="$(CLE_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 42 > $@
+
+CLE_GEN_HEADERS := \
+    $(CLE_GENDIR)/v3d_packet_v21_pack.h \
+    $(CLE_GENDIR)/v3d_packet_v33_pack.h \
+    $(CLE_GENDIR)/v3d_packet_v41_pack.h \
+    $(CLE_GENDIR)/v3d_packet_v42_pack.h
+
+#MM
+linklibs-gallium_vc4-gen-cle : $(CLE_GEN_HEADERS)
+
+#
+# Build the VC4 driver linklib from Mesa sources
+#
+%build_linklib mmake=linklibs-gallium_vc4 libname=gallium_vc4 \
+    libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR)/$(CUR_GALLIUMDIR) \
+    files="$(VC4_DRIVER_SOURCES)"
+
+#
+# GalliumCoreAPI glue (runtime pipe-driver binding).
+#
+# galliumglue.py computes the driver's Mesa-core import set (nm of
+# libgallium_vc4.a intersected with the mesa3dgl core linklibs) and
+# generates a versioned function-pointer table plus ARM trampolines and
+# an objcopy rename map. The driver archive is rewritten so every
+# imported core function call routes through __gca_local[], bound by
+# gca_bind() at CreatePipeScreen. Two artefacts come out:
+#   libgallium_vc4_gca.a  - consumer: rewritten driver + bind + glue +
+#                           private data objects; linked into THIS hidd
+#   libgalliumcoreapi.a   - provider: the populated table; linked into
+#                           mesa3dgl.library
+#
+GCA_GENDIR   := $(top_builddir)/galliumglue
+GCA_TOOL     := $(SRCDIR)/workbench/libs/mesa/galliumglue.py
+GCA_NM       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-nm
+GCA_OBJCOPY  := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-objcopy
+GCA_AR       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-ar
+GCA_CORELIBS := $(addprefix $(top_libdir)/lib, \
+    compiler.a galliumauxiliary.a mesautil.a mesa.a glapi.a mesadevutil.a)
+GCA_GENFILES := gallium_core_api.h gca_table.c gca_bind.c gca_glue.S \
+    gca_redefs.txt gca_private.list
+
+# NOTE: a regenerated table only reaches applications when BOTH modules
+# are redeployed — a new hidd against an old mesa3dgl (or vice versa)
+# refuses to bind at CreatePipeScreen (clean GL failure, serial log says
+# why). After driver or Mesa changes rebuild mesa3dgl-library AND
+# hidd-vc4gallium.
+GCA_ABI_FLAGS := $(TARGET_ISA_CFLAGS) $(USER_CPPFLAGS)
+
+$(GCA_GENDIR)/.gca.stamp : $(top_libdir)/libgallium_vc4.a $(GCA_CORELIBS) $(GCA_TOOL)
+	%mkdir_q dir="$(GCA_GENDIR)"
+	$(Q)$(ECHO) "Generating GalliumCoreAPI glue"
+	$(Q)$(PYTHON) $(GCA_TOOL) --nm $(GCA_NM) --ar $(GCA_AR) \
+		--consumer $(top_libdir)/libgallium_vc4.a \
+		--providers $(GCA_CORELIBS) \
+		--private-data nir_intrinsic_infos nir_op_infos util_cpu_caps \
+		--mesa-version $(MESAGLVERSION) --arch $(AROS_TARGET_CPU) \
+		--abi-flags "$(strip $(GCA_ABI_FLAGS))" \
+		--abi-files $(SRCDIR)/workbench/libs/mesa/mesa-$(MESAGLVERSION)-aros.diff \
+		--outdir $(GCA_GENDIR)
+	$(Q)touch $@
+
+$(addprefix $(GCA_GENDIR)/, $(GCA_GENFILES)) : $(GCA_GENDIR)/.gca.stamp
+
+$(GCA_GENDIR)/gca_table.o : $(GCA_GENDIR)/gca_table.c $(GCA_GENDIR)/gallium_core_api.h
+	%compile_q
+
+$(GCA_GENDIR)/gca_bind.o : $(GCA_GENDIR)/gca_bind.c $(GCA_GENDIR)/gallium_core_api.h
+	%compile_q
+
+$(GCA_GENDIR)/gca_glue.o : $(GCA_GENDIR)/gca_glue.S $(GCA_GENDIR)/.gca.stamp
+	%compile_q
+
+# The winsys/present half dereferences Mesa vc4 types via inline headers
+# (vc4_bo_unreference -> util_hash_table_remove etc.), so its core calls
+# must route through the trampolines exactly like the driver archive's:
+# compile with the driver's flags, then apply the same symbol rewrite.
+# Hand-rolled rule = no Makedepend; list the local headers explicitly so
+# editing them rebuilds this object instead of leaving it silently stale.
+$(GCA_GENDIR)/aros_drm_vc4_raw.o : $(SRCDIR)/$(CURDIR)/aros_drm_vc4.c \
+        $(GCA_GENDIR)/.gca.stamp \
+        $(SRCDIR)/$(CURDIR)/vc4_aros_bridge.h \
+        $(SRCDIR)/$(CURDIR)/vc4gallium_intern.h
+	%compile_q opt="$(strip $(CFLAGS) $(USER_CFLAGS) $(CPPFLAGS) $(USER_CPPFLAGS) $(USER_INCLUDES))"
+
+$(GCA_GENDIR)/aros_drm_vc4.o : $(GCA_GENDIR)/aros_drm_vc4_raw.o $(GCA_GENDIR)/gca_redefs.txt
+	$(Q)$(GCA_OBJCOPY) --redefine-syms=$(GCA_GENDIR)/gca_redefs.txt $< $@
+
+$(top_libdir)/libgallium_vc4_gca.a : $(top_libdir)/libgallium_vc4.a \
+        $(GCA_GENDIR)/gca_redefs.txt $(GCA_GENDIR)/gca_bind.o \
+        $(GCA_GENDIR)/gca_glue.o $(GCA_GENDIR)/aros_drm_vc4.o
+	$(Q)$(ECHO) "Rewriting gallium_vc4 through the GalliumCoreAPI table"
+	$(Q)$(GCA_OBJCOPY) --redefine-syms=$(GCA_GENDIR)/gca_redefs.txt \
+		$(top_libdir)/libgallium_vc4.a $@
+	$(Q)$(GCA_AR) rs $@ $(GCA_GENDIR)/gca_bind.o $(GCA_GENDIR)/gca_glue.o \
+		$(GCA_GENDIR)/aros_drm_vc4.o
+	$(Q)cat $(GCA_GENDIR)/gca_private.list | xargs $(GCA_AR) rs $@
+
+$(top_libdir)/libgalliumcoreapi.a : $(GCA_GENDIR)/gca_table.o
+	$(Q)$(ECHO) "Creating GalliumCoreAPI provider table linklib"
+	$(Q)$(GCA_AR) rcs $@ $(GCA_GENDIR)/gca_table.o
+
+#MM
+linklibs-gallium_vc4-gca : $(top_libdir)/libgallium_vc4_gca.a
+
+#MM
+linklibs-galliumcoreapi : $(top_libdir)/libgalliumcoreapi.a
+
+#
+# Build the HIDD module. gallium_vc4_gca is the rewritten pipe driver
+# (all Mesa-core calls through the GalliumCoreAPI trampolines); pthread
+# covers the driver's mutex/once usage.
+#
+%build_module mmake=hidd-vc4gallium modname=vc4gallium modtype=hidd \
+    files="$(VC4GALLIUM_HIDD_SOURCES)" alwayscxxlink=yes \
+    uselibs="gallium_vc4_gca pthread" \
+    objdir="$(OBJDIR)/$(MESAGLVERSION)"
+
+%common
