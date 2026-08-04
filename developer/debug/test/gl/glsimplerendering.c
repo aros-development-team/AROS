@@ -21,6 +21,7 @@
 #include <GL/gla.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #define SHOW_FPS
 
@@ -37,6 +38,11 @@ struct MsgPort      timeport;
 struct Library *    CyberGfxBase = NULL;
 BOOL                fullscreen = FALSE, trace = FALSE;
 #define DOTRACE(x)      ({ if (trace) { x } });
+
+/* Drawable size: VISIBLE_* in windowed mode, the screen size in
+ * fullscreen. Set up in main() before initgl(). */
+LONG                scrw = 0, scrh = 0;
+int                 fps_value = 0;
 GLuint              fragmentShader = 0;
 GLuint              vertexShader = 0;
 GLuint              shaderProgram = 0;
@@ -56,6 +62,14 @@ PFNGLDELETESHADERPROC       glDeleteShader          = NULL;
 PFNGLDELETEPROGRAMPROC      glDeleteProgram         = NULL;
 PFNGLUNIFORM1FPROC          glUniform1f             = NULL;
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation    = NULL;
+PFNGLGETSHADERIVPROC        glGetShaderiv           = NULL;
+
+#ifndef GL_COMPILE_STATUS
+#define GL_COMPILE_STATUS 0x8B81
+#endif
+#ifndef GL_SHADING_LANGUAGE_VERSION
+#define GL_SHADING_LANGUAGE_VERSION 0x8B8C
+#endif
 
 CONST_STRPTR version = "$VER: glsimplerendering 1.0 (28.04.2019) \xA9 2010-2019 The AROS Development Team";
 
@@ -95,7 +109,7 @@ void prepare_shader_program()
     glCompileShader(fragmentShader);
     glGetShaderInfoLog(fragmentShader, BUFFER_LEN, &len, buffer);
     printf("Fragment shader compile output: %s\n", buffer);
-    
+
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
@@ -193,7 +207,7 @@ void render_cube()
 void render_triangle()
 {
     DOTRACE(bug("\n[GLSimpeRend] Render Triangle ...\n");)
-   
+
     glBegin(GL_TRIANGLES);
         glColor4f(1.0, 0.0, 0.0, 1.0);
         glVertex3f(-0.25, -0.25, 0.0);
@@ -205,6 +219,72 @@ void render_triangle()
 
     DOTRACE(bug("\n[GLSimpeRend] Render Triangle finished\n");)
 }
+
+#if defined(SHOW_FPS)
+/* Minimal 3x5 bitmap font (digits only); each row is 3 bits, MSB = leftmost
+ * column. Used for the on-screen FPS readout. */
+static const UBYTE fps_digits[10][5] =
+{
+    { 0x7,0x5,0x5,0x5,0x7 },  /* 0 */
+    { 0x2,0x6,0x2,0x2,0x7 },  /* 1 */
+    { 0x7,0x1,0x7,0x4,0x7 },  /* 2 */
+    { 0x7,0x1,0x7,0x1,0x7 },  /* 3 */
+    { 0x5,0x5,0x7,0x1,0x1 },  /* 4 */
+    { 0x7,0x4,0x7,0x1,0x7 },  /* 5 */
+    { 0x7,0x4,0x7,0x5,0x7 },  /* 6 */
+    { 0x7,0x1,0x1,0x1,0x1 },  /* 7 */
+    { 0x7,0x5,0x7,0x5,0x7 },  /* 8 */
+    { 0x7,0x5,0x7,0x1,0x7 },  /* 9 */
+};
+
+/* Draw fps_value as white pixel-quads in the top-left corner, in a screen-
+ * space orthographic overlay. */
+static void draw_fps_overlay(void)
+{
+    char buf[16];
+    int n, i, r, c;
+    const GLfloat px = 3.0f;        /* pixel cell size */
+    const GLfloat x = 8.0f, y = 8.0f;
+
+    snprintf(buf, sizeof(buf), "%d", fps_value);
+    n = strlen(buf);
+
+    glUseProgram(0);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0.0, (GLdouble)scrw, (GLdouble)scrh, 0.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glBegin(GL_QUADS);
+    for (i = 0; i < n; i++)
+    {
+        const UBYTE *g = fps_digits[buf[i] - '0'];
+        GLfloat dx = x + i * 4 * px;    /* 3 columns + 1 gap */
+
+        for (r = 0; r < 5; r++)
+            for (c = 0; c < 3; c++)
+                if ((g[r] >> (2 - c)) & 1)
+                {
+                    GLfloat qx = dx + c * px, qy = y + r * px;
+                    glVertex2f(qx,      qy);
+                    glVertex2f(qx + px, qy);
+                    glVertex2f(qx + px, qy + px);
+                    glVertex2f(qx,      qy + px);
+                }
+    }
+    glEnd();
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glUseProgram(shaderProgram);
+}
+#endif
 
 void render()
 {
@@ -235,6 +315,10 @@ void render()
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
 
+#if defined(SHOW_FPS)
+    draw_fps_overlay();
+#endif
+
     glASwapBuffers(glcont);
 
     DOTRACE(bug("\n[GLSimpeRend] Render finished\n");)
@@ -259,40 +343,79 @@ static void initextensions()
     glDeleteProgram         = (PFNGLDELETEPROGRAMPROC)glAGetProcAddress("glDeleteProgram");
     glUniform1f             = (PFNGLUNIFORM1FPROC)glAGetProcAddress("glUniform1f");
     glGetUniformLocation    = (PFNGLGETUNIFORMLOCATIONPROC)glAGetProcAddress("glGetUniformLocation");
+    glGetShaderiv           = (PFNGLGETSHADERIVPROC)glAGetProcAddress("glGetShaderiv");
+}
+
+/* Probe: does this driver's GLSL compiler accept a #version directive?
+ * eduke32/Polymost shaders failed to compile on AROS/VC4 with any #version
+ * line (identical shader without it compiled). This isolates that behaviour
+ * from SDL/eduke32. Prints compile status + info log for each variant. */
+static void probe_version_shaders(void)
+{
+    static const char * const probe_src[3] =
+    {
+        "#version 120\nvoid main(){ gl_Position = vec4(0.0); }",
+        "#version 110\nvoid main(){ gl_Position = vec4(0.0); }",
+        "void main(){ gl_Position = vec4(0.0); }",
+    };
+    static const char * const probe_name[3] =
+    {
+        "#version 120", "#version 110", "no #version",
+    };
+    int i;
+
+    printf("[GLVerProbe] GL_VERSION                 : %s\n", (const char *)glGetString(GL_VERSION));
+    printf("[GLVerProbe] GL_SHADING_LANGUAGE_VERSION: %s\n", (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
+    bug("[GLVerProbe] GLSL version: %s\n", (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+    for (i = 0; i < 3; i++)
+    {
+        char  log[512] = {0};
+        int   loglen = 0;
+        GLint status = 0;
+        GLuint s = glCreateShader(GL_VERTEX_SHADER);
+
+        glShaderSource(s, 1, &probe_src[i], NULL);
+        glCompileShader(s);
+        glGetShaderiv(s, GL_COMPILE_STATUS, &status);
+        glGetShaderInfoLog(s, sizeof(log), &loglen, log);
+
+        printf("[GLVerProbe] %-12s : compile status=%d  log=%s\n",
+               probe_name[i], (int)status, log);
+        bug("[GLVerProbe] %s: status=%d log=%s\n", probe_name[i], (int)status, log);
+
+        glDeleteShader(s);
+    }
 }
 
 void initgl()
 {
-    struct TagItem attributes [ 14 ]; /* 14 should be more than enough :) */
+    struct TagItem attributes [ 14 ];
     int i = 0;
     GLfloat h = 0.0f;
-    
+
     attributes[i].ti_Tag = GLA_Window;      attributes[i++].ti_Data = (IPTR)win;
     attributes[i].ti_Tag = GLA_Left;        attributes[i++].ti_Data = win->BorderLeft;
     attributes[i].ti_Tag = GLA_Top;         attributes[i++].ti_Data = win->BorderTop;
     attributes[i].ti_Tag = GLA_Bottom;      attributes[i++].ti_Data = win->BorderBottom;
     attributes[i].ti_Tag = GLA_Right;       attributes[i++].ti_Data = win->BorderRight;
 
-    // double buffer ?
     attributes[i].ti_Tag = GLA_DoubleBuf;   attributes[i++].ti_Data = GL_TRUE;
 
-    // RGB(A) Mode ?
     attributes[i].ti_Tag = GLA_RGBMode;     attributes[i++].ti_Data = GL_TRUE;
-    
-    /* Stencil/Accum */
+
     attributes[i].ti_Tag = GLA_NoStencil;   attributes[i++].ti_Data = GL_TRUE;
     attributes[i].ti_Tag = GLA_NoAccum;     attributes[i++].ti_Data = GL_TRUE;
-    
-    // done...
+
     attributes[i].ti_Tag    = TAG_DONE;
 
     glcont = glACreateContext(attributes);
     if (glcont)
     {
         glAMakeCurrent(glcont);
-        h = (GLfloat)VISIBLE_HEIGHT / (GLfloat)VISIBLE_WIDTH ;
+        h = (GLfloat)scrh / (GLfloat)scrw;
 
-        glViewport(0, 0, (GLint) VISIBLE_WIDTH, (GLint) VISIBLE_HEIGHT);
+        glViewport(0, 0, (GLint)scrw, (GLint)scrh);
 #if USE_PERSPECTIVE == 1
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
@@ -300,6 +423,7 @@ void initgl()
         glMatrixMode(GL_MODELVIEW);
 #endif
         initextensions();
+        probe_version_shaders();
         prepare_shader_program();
         glUseProgram(shaderProgram);
         angleLocation = glGetUniformLocation(shaderProgram, "angle");
@@ -401,9 +525,6 @@ void get_arguments(void)
     }
 }
 
-/*
-** Open a simple window using OpenWindowTagList()
-*/
 int main(void)
 {
     ULONG framecnt = 0;
@@ -412,16 +533,16 @@ int main(void)
     struct Screen * pubscreen = NULL;
     struct Screen * customscreen = NULL;
     LONG modeid;
-    
+
     struct timeval tv;
     UQUAD lastmicrosecs = 0L;
     UQUAD currmicrosecs = 0L;
     UQUAD fpsmicrosecs = 0L;
-    
+
     get_arguments();
-    
+
     init_timerbase();
-    
+
 #if defined(SHOW_FPS)
     GetSysTime(&tv);
     lastmicrosecs = tv.tv_secs * 1000000 + tv.tv_micro;
@@ -430,35 +551,62 @@ int main(void)
 
     if (fullscreen)
     {
+        LONG reqw, reqh;
+
         CyberGfxBase = OpenLibrary("cybergraphics.library", 0L);
-        
-        modeid = BestCModeIDTags(CYBRBIDTG_NominalWidth, VISIBLE_WIDTH,
-                                    CYBRBIDTG_NominalHeight, VISIBLE_HEIGHT,
+
+        /* Match the current desktop resolution so the GL surface is truly
+         * full-screen (and the native panel mode on the Pi). */
+        if ((pubscreen = LockPubScreen(NULL)) != NULL)
+        {
+            reqw = pubscreen->Width;
+            reqh = pubscreen->Height;
+            UnlockPubScreen(NULL, pubscreen);
+            pubscreen = NULL;
+        }
+        else
+        {
+            reqw = 640;
+            reqh = 480;
+        }
+
+        modeid = BestCModeIDTags(CYBRBIDTG_NominalWidth, reqw,
+                                    CYBRBIDTG_NominalHeight, reqh,
                                     TAG_DONE);
-        
+
         customscreen = OpenScreenTags(NULL,
                             SA_Type,        CUSTOMSCREEN,
-                            SA_DisplayID,   modeid,
-                            SA_Width,       VISIBLE_WIDTH,
-                            SA_Height,      VISIBLE_HEIGHT,
+                            modeid != INVALID_ID ? SA_DisplayID : TAG_IGNORE, modeid,
+                            SA_Width,       reqw,
+                            SA_Height,      reqh,
+                            SA_Depth,       24,
                             SA_ShowTitle,   FALSE,
                             SA_Quiet,       TRUE,
                             TAG_DONE);
 
-        win = OpenWindowTags(NULL,
-                WA_Left,            0,
-                WA_Top,             200,
-                WA_InnerWidth,      VISIBLE_WIDTH,
-                WA_InnerHeight,     VISIBLE_HEIGHT,
-                WA_CustomScreen,    (IPTR)customscreen,
-                WA_Flags,           WFLG_ACTIVATE | WFLG_BACKDROP | WFLG_BORDERLESS | WFLG_RMBTRAP,
-                WA_IDCMP,           IDCMP_VANILLAKEY,
-                TAG_DONE);
+        if (customscreen)
+        {
+            scrw = customscreen->Width;
+            scrh = customscreen->Height;
+
+            win = OpenWindowTags(NULL,
+                    WA_Left,            0,
+                    WA_Top,             0,
+                    WA_InnerWidth,      scrw,
+                    WA_InnerHeight,     scrh,
+                    WA_CustomScreen,    (IPTR)customscreen,
+                    WA_Flags,           WFLG_ACTIVATE | WFLG_BACKDROP | WFLG_BORDERLESS | WFLG_RMBTRAP,
+                    WA_IDCMP,           IDCMP_VANILLAKEY,
+                    TAG_DONE);
+        }
     }
     else
     {
         if ((pubscreen = LockPubScreen(NULL)) == NULL) return 1;
-        
+
+        scrw = VISIBLE_WIDTH;
+        scrh = VISIBLE_HEIGHT;
+
         win = OpenWindowTags(0,
                             WA_Title, (IPTR)"GLSimpleRendering",
                             WA_PubScreen, pubscreen,
@@ -475,10 +623,10 @@ int main(void)
                             WA_NoCareRefresh, TRUE,
                             WA_IDCMP, IDCMP_VANILLAKEY | IDCMP_CLOSEWINDOW,
                             TAG_DONE);
-        
+
         UnlockPubScreen(NULL, pubscreen);
     }
-                   
+
     initgl();
 //    finished = TRUE;
     while(!finished)
@@ -495,7 +643,8 @@ int main(void)
         if (currmicrosecs - fpsmicrosecs > 1000000)
         {
             /* FPS counting is naive! */
-            sprintf(title, "GLSimpleRendering, FPS: %d", (int)((framecnt * 1000000)/(currmicrosecs - fpsmicrosecs)));
+            fps_value = (int)((framecnt * 1000000)/(currmicrosecs - fpsmicrosecs));
+            sprintf(title, "GLSimpleRendering, FPS: %d", fps_value);
             fpsmicrosecs = currmicrosecs;
             framecnt = 0;
 
@@ -505,7 +654,7 @@ int main(void)
 
         angle_inc = ((double)(currmicrosecs - lastmicrosecs) / 1000000.0) * DEGREES_PER_SECOND;
         lastmicrosecs = currmicrosecs;
-        
+
         framecnt++;
 #endif
         render();
@@ -514,16 +663,16 @@ int main(void)
 //        Delay(10);
 //        if (exitcounter > 0) finished = TRUE;
     }
-    
+
     deinitgl();
-    
+
     deinit_timerbase();
-      
+
     CloseWindow(win);
-    
+
     if (customscreen) CloseScreen(customscreen);
-    
+
     if (CyberGfxBase) CloseLibrary(CyberGfxBase);
-    
+
     return 0;
 }
