@@ -10,7 +10,8 @@
 #include <stdbool.h>
 
 #include "pipe/p_shader_tokens.h"
-#if defined(TGSI_SEMANTIC_VIEWPORT_MASK)
+/* Mesa 21.0+ renamed state_tracker/ -> frontend/. */
+#if defined(__has_include) && __has_include("frontend/sw_winsys.h")
 #include "frontend/sw_winsys.h"
 #else
 #include "state_tracker/sw_winsys.h"
@@ -23,13 +24,13 @@ struct HiddGalliumData
     APTR  pad;
 };
 
-struct galliumstaticdata 
+struct galliumstaticdata
 {
     OOP_Class       *galliumclass;
     OOP_AttrBase    galliumAttrBase;
 };
 
-LIBBASETYPE 
+LIBBASETYPE
 {
     struct Library              LibNode;
     struct galliumstaticdata    sd;

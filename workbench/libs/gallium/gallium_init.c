@@ -34,6 +34,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     /* cache method id's that we use ..  */
     LIBBASE->galliumMId_UpdateRect = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect);
     LIBBASE->galliumMId_DisplayResource = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplayResource);
+    LIBBASE->galliumMId_DisplayResourceRP = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplayResourceRP);
 
     return TRUE;
 }
