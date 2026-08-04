@@ -129,6 +129,22 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
      */
     CHECK_TASK();
     DSYSCALLS(log(LOG_DEBUG, "IoctlSocket(%ld, 0x%08lx, 0x%08lx) called", fdes, cmd, *(ULONG *)data);)
+
+    /*
+     * The library-call boundary can deliver the 32-bit cmd zero-extended,
+     * but compiled code trusts the ABI's canonical sign-extended form and
+     * compares whole registers - so a command with the top bit set (every
+     * _IOW one) would match nothing. The volatile round-trip through a
+     * 32-bit slot forces a real store and sign-extending reload, which a
+     * plain cast does not - the compiler is entitled to assume the
+     * parameter was canonical already and elide it. Everything below,
+     * including the rtioctl() call, relies on this normalization.
+     */
+    {
+        volatile LONG cmdslot = (LONG)cmd;
+        cmd = (ULONG)cmdslot;
+    }
+
     ObtainSyscallSemaphore(libPtr);
 
     if(error = getSock(libPtr, fdes, &so))
@@ -300,19 +316,7 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
         default:
             break;	/* fall through to rtioctl */
         }
-        {
-            /*
-             * The library-call boundary can deliver the 32-bit cmd
-             * zero-extended, but a compiled callee trusts the ABI's
-             * canonical sign-extended form and compares the whole
-             * register. The volatile round-trip through a 32-bit slot
-             * forces a real store and sign-extending reload, which a
-             * plain cast does not - the compiler is entitled to assume
-             * the parameter was canonical already and elide it.
-             */
-            volatile LONG rtreq = (LONG)cmd;
-            error = (rtioctl(rtreq, data));
-        }
+        error = (rtioctl(cmd, data));
         goto Return;
     }
     error = ((*so->so_proto->pr_usrreq)(so, PRU_CONTROL,
