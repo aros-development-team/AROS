@@ -1149,7 +1149,12 @@ LONG CONMain(struct ExecBase *SysBase)
                     replypkt2(dp, DOSTRUE, ERROR_ACTION_NOT_KNOWN);
                     break;
                 default:
-                    bug("[con:handler] unknown action %d\n", dp->dp_Type);
+                    /* Saying no is a normal answer here: capability probes
+                     * ask for actions a console has no use for. */
+                    DACTION(bug("[con:handler] unknown action %d from '%s'\n",
+                            dp->dp_Type, dp->dp_Port && dp->dp_Port->mp_SigTask
+                                ? dp->dp_Port->mp_SigTask->tc_Node.ln_Name
+                                : "?"));
                     replypkt2(dp, DOSFALSE, ERROR_ACTION_NOT_KNOWN);
                     break;
                 }
