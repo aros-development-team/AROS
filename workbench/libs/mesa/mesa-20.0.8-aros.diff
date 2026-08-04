@@ -962,3 +962,236 @@ diff -ruN mesa-20.0.8/src/util/u_thread.h mesa-20.0.8.aros/src/util/u_thread.h
     struct timespec ts;
     clockid_t cid;
  
+diff -ruN mesa-20.0.8/src/mesa/main/scissor.c mesa-20.0.8.aros/src/mesa/main/scissor.c
+--- mesa-20.0.8/src/mesa/main/scissor.c	2020-06-12 03:21:18
++++ mesa-20.0.8.aros/src/mesa/main/scissor.c	2026-07-10 20:27:09
+@@ -79,7 +79,23 @@
+ 
+    if (ctx->Driver.Scissor)
+       ctx->Driver.Scissor(ctx);
++}
++
++#ifdef __AROS__
++/* AROS vc4 render-scale: scissor rects are in window units and are
++ * divided ONLY while the window-system framebuffer (fb 0) is bound —
++ * application FBOs are unscaled, same rule as viewport.c. */
++extern unsigned int mesa3dgl_render_scale __attribute__((weak));
++static inline int _aros_rscale_sc(struct gl_context *ctx, int v)
++{
++   if (&mesa3dgl_render_scale && mesa3dgl_render_scale > 1
++       && ctx->DrawBuffer && ctx->DrawBuffer->Name == 0)
++      return v / (int)mesa3dgl_render_scale;
++   return v;
+ }
++#else
++#define _aros_rscale_sc(ctx, v) (v)
++#endif
+ 
+ /**
+  * Called via glScissor
+@@ -88,7 +104,8 @@
+ _mesa_Scissor_no_error(GLint x, GLint y, GLsizei width, GLsizei height)
+ {
+    GET_CURRENT_CONTEXT(ctx);
+-   scissor(ctx, x, y, width, height);
++   scissor(ctx, _aros_rscale_sc(ctx, x), _aros_rscale_sc(ctx, y),
++           _aros_rscale_sc(ctx, width), _aros_rscale_sc(ctx, height));
+ }
+ 
+ void GLAPIENTRY
+@@ -104,7 +121,8 @@
+       return;
+    }
+ 
+-   scissor(ctx, x, y, width, height);
++   scissor(ctx, _aros_rscale_sc(ctx, x), _aros_rscale_sc(ctx, y),
++           _aros_rscale_sc(ctx, width), _aros_rscale_sc(ctx, height));
+ }
+ 
+ 
+diff -ruN mesa-20.0.8/src/mesa/main/viewport.c mesa-20.0.8.aros/src/mesa/main/viewport.c
+--- mesa-20.0.8/src/mesa/main/viewport.c	2020-06-12 03:21:18
++++ mesa-20.0.8.aros/src/mesa/main/viewport.c	2026-07-10 20:27:09
+@@ -116,6 +116,25 @@
+       ctx->Driver.Viewport(ctx);
+ }
+ 
++#ifdef __AROS__
++/* AROS vc4 render-scale (ENV:VC4_RENDER_SCALE, set up in mesa3dgl):
++ * only the window-system framebuffer is HVS-scaled (drawable is 1/N of
++ * the window), so viewport rects — given in window units — are divided
++ * at the API boundary ONLY while fb 0 is bound. Application FBOs render
++ * at full size; their viewports must pass through untouched (else an
++ * FBO-heavy renderer would confine its scene to a 1/N corner). */
++extern unsigned int mesa3dgl_render_scale __attribute__((weak));
++static inline int _aros_rscale(struct gl_context *ctx, int v)
++{
++   if (&mesa3dgl_render_scale && mesa3dgl_render_scale > 1
++       && ctx->DrawBuffer && ctx->DrawBuffer->Name == 0)
++      return v / (int)mesa3dgl_render_scale;
++   return v;
++}
++#else
++#define _aros_rscale(ctx, v) (v)
++#endif
++
+ /**
+  * Set the viewport.
+  * \sa Called via glViewport() or display list execution.
+@@ -127,7 +146,8 @@
+ _mesa_Viewport_no_error(GLint x, GLint y, GLsizei width, GLsizei height)
+ {
+    GET_CURRENT_CONTEXT(ctx);
+-   viewport(ctx, x, y, width, height);
++   viewport(ctx, _aros_rscale(ctx, x), _aros_rscale(ctx, y),
++            _aros_rscale(ctx, width), _aros_rscale(ctx, height));
+ }
+ 
+ void GLAPIENTRY
+@@ -144,7 +164,8 @@
+       return;
+    }
+ 
+-   viewport(ctx, x, y, width, height);
++   viewport(ctx, _aros_rscale(ctx, x), _aros_rscale(ctx, y),
++            _aros_rscale(ctx, width), _aros_rscale(ctx, height));
+ }
+ 
+ 
+diff -ruN mesa-20.0.8/src/mesa/state_tracker/st_extensions.c mesa-20.0.8.aros/src/mesa/state_tracker/st_extensions.c
+--- mesa-20.0.8/src/mesa/state_tracker/st_extensions.c	2020-06-12 01:21:18.000000000 +0000
++++ mesa-20.0.8.aros/src/mesa/state_tracker/st_extensions.c	2026-07-12 11:15:00.000000000 +0000
+@@ -817,10 +817,6 @@
+       { { o(EXT_texture_integer) },
+         { PIPE_FORMAT_R32G32B32A32_UINT,
+           PIPE_FORMAT_R32G32B32A32_SINT } },
+-
+-      { { o(ARB_texture_rg) },
+-        { PIPE_FORMAT_R8_UNORM,
+-          PIPE_FORMAT_R8G8_UNORM } },
+ 
+       { { o(EXT_texture_norm16) },
+         { PIPE_FORMAT_R16_UNORM,
+@@ -851,6 +847,16 @@
+ 
+    /* Required: sampler support */
+    static const struct st_extension_format_mapping texture_mapping[] = {
++      /* AROS: moved here from the render-target list. On vc4 R8/RG8 are
++       * samplable but not renderable, which hid the whole extension and
++       * made GL_RED an invalid internalformat (indexed-colour textures
++       * went undefined -> black screen). Sampling R8 returns
++       * spec-correct (R,0,0,1); RED framebuffer attachments still fail
++       * cleanly via the separate renderability validation. */
++      { { o(ARB_texture_rg) },
++        { PIPE_FORMAT_R8_UNORM,
++          PIPE_FORMAT_R8G8_UNORM } },
++
+       { { o(ARB_texture_compression_rgtc) },
+         { PIPE_FORMAT_RGTC1_UNORM,
+           PIPE_FORMAT_RGTC1_SNORM,
+diff -ruN mesa-20.0.8/src/gallium/drivers/vc4/vc4_qir.h mesa-20.0.8.aros/src/gallium/drivers/vc4/vc4_qir.h
+--- mesa-20.0.8/src/gallium/drivers/vc4/vc4_qir.h	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/vc4/vc4_qir.h	2026-07-14 10:30:00.000000000 +0000
+@@ -312,6 +312,13 @@
+                                 unsigned wrap_s:3;
+                                 unsigned wrap_t:3;
+                                 bool force_first_level:1;
++                                /* NPOT texture with REPEAT wrap: the TMU
++                                 * wraps at power-of-two bounds only, so the
++                                 * shader must fract() the coordinate (and
++                                 * the P1 wrap field is forced to clamp).
++                                 */
++                                unsigned npot_s:1;
++                                unsigned npot_t:1;
+                         };
+                         struct {
+                                 uint16_t msaa_width, msaa_height;
+diff -ruN mesa-20.0.8/src/gallium/drivers/vc4/vc4_program.c mesa-20.0.8.aros/src/gallium/drivers/vc4/vc4_program.c
+--- mesa-20.0.8/src/gallium/drivers/vc4/vc4_program.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/vc4/vc4_program.c	2026-07-14 10:30:00.000000000 +0000
+@@ -408,6 +408,9 @@
+                                        qir_UNPACK_8_F(c, tex, i));
+         }
+ }
++
++static struct qreg
++ntq_ffract(struct vc4_compile *c, struct qreg src);
+ 
+ static void
+ ntq_emit_tex(struct vc4_compile *c, nir_tex_instr *instr)
+@@ -481,6 +484,17 @@
+                              qir_uniform(c, QUNIFORM_TEXRECT_SCALE_X, unit));
+                 t = qir_FMUL(c, t,
+                              qir_uniform(c, QUNIFORM_TEXRECT_SCALE_Y, unit));
++        }
++
++        /* The TMU only wraps REPEAT coordinates at power-of-two bounds, so
++         * for NPOT textures the wrap is done here instead (the P1 wrap
++         * field is forced to clamp in write_texture_p1).
++         */
++        if (instr->sampler_dim != GLSL_SAMPLER_DIM_CUBE) {
++                if (c->key->tex[unit].npot_s)
++                        s = ntq_ffract(c, s);
++                if (c->key->tex[unit].npot_t)
++                        t = ntq_ffract(c, t);
+         }
+ 
+         if (instr->sampler_dim == GLSL_SAMPLER_DIM_CUBE || is_txl) {
+@@ -2696,6 +2710,18 @@
+                         key->tex[i].wrap_t = sampler_state->wrap_t;
+                         key->tex[i].force_first_level =
+                                 vc4_sampler->force_first_level;
++                        /* The TMU wraps REPEAT coordinates at power-of-two
++                         * bounds only; NPOT + REPEAT samples the (stale)
++                         * POT padding.  Flag it so the shader fract()s the
++                         * coordinate instead (see ntq_emit_tex), and
++                         * write_texture_p1 forces the axis to clamp.
++                         */
++                        key->tex[i].npot_s =
++                                sampler_state->wrap_s == PIPE_TEX_WRAP_REPEAT &&
++                                !util_is_power_of_two_or_zero(sampler->texture->width0);
++                        key->tex[i].npot_t =
++                                sampler_state->wrap_t == PIPE_TEX_WRAP_REPEAT &&
++                                !util_is_power_of_two_or_zero(sampler->texture->height0);
+                 }
+         }
+ 
+diff -ruN mesa-20.0.8/src/gallium/drivers/vc4/vc4_uniforms.c mesa-20.0.8.aros/src/gallium/drivers/vc4/vc4_uniforms.c
+--- mesa-20.0.8/src/gallium/drivers/vc4/vc4_uniforms.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/vc4/vc4_uniforms.c	2026-07-14 10:30:00.000000000 +0000
+@@ -23,6 +23,7 @@
+ 
+ #include "util/u_pack_color.h"
+ #include "util/u_upload_mgr.h"
++#include "util/u_math.h"
+ #include "util/format_srgb.h"
+ 
+ #include "vc4_context.h"
+@@ -51,8 +52,26 @@
+                 vc4_sampler_view(texstate->textures[unit]);
+         struct vc4_sampler_state *sampler =
+                 vc4_sampler_state(texstate->samplers[unit]);
++        uint32_t p1 = sview->texture_p1 | sampler->texture_p1;
+ 
+-        cl_aligned_u32(uniforms, sview->texture_p1 | sampler->texture_p1);
++        /* The TMU only wraps REPEAT coordinates at power-of-two bounds.
++         * For NPOT + REPEAT the shader fract()s the coordinate into [0, 1)
++         * (see ntq_emit_tex), so clamp here to keep the filter's neighbour
++         * fetches inside the actually-written texels instead of the POT
++         * padding.
++         */
++        if (sampler->base.wrap_s == PIPE_TEX_WRAP_REPEAT &&
++            !util_is_power_of_two_or_zero(sview->base.texture->width0)) {
++                p1 = (p1 & ~VC4_TEX_P1_WRAP_S_MASK) |
++                     VC4_SET_FIELD(1, VC4_TEX_P1_WRAP_S);
++        }
++        if (sampler->base.wrap_t == PIPE_TEX_WRAP_REPEAT &&
++            !util_is_power_of_two_or_zero(sview->base.texture->height0)) {
++                p1 = (p1 & ~VC4_TEX_P1_WRAP_T_MASK) |
++                     VC4_SET_FIELD(1, VC4_TEX_P1_WRAP_T);
++        }
++
++        cl_aligned_u32(uniforms, p1);
+ }
+ 
+ static void
