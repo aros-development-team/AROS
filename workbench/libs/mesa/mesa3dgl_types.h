@@ -7,7 +7,9 @@
 
 #include <GL/gla.h>
 #include "main/mtypes.h"
-#if defined(GL_PACK_REVERSE_ROW_ORDER_ANGLE)
+/* Mesa 21.0+ renamed st_api.h -> frontend/api.h. __has_include is
+ * reliable here; a #define probe may not be pulled in yet. */
+#if defined(__has_include) && __has_include("frontend/api.h")
 #include "frontend/api.h"
 #else
 #include "state_tracker/st_api.h"

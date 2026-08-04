@@ -8,11 +8,96 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
+#include <proto/dos.h>
+#include <proto/icon.h>
+
+#include <workbench/workbench.h>
 
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/rpattr.h>
 
 #include "mesa3dgl_support.h"
+
+/* Render-scale divisor (ENV:VC4_RENDER_SCALE, 1-4): GL renders at 1/N
+ * of the drawable size and the vc4 present path shows it through the
+ * HVS hardware scaler — fragment cost drops by N^2. Only honoured when
+ * the vc4 shim is linked in (weak marker below); elsewhere the fallback
+ * blit can't scale and would draw a small image in the corner. */
+ULONG mesa3dgl_render_scale = 1;
+
+/* Marker: the GalliumCoreAPI table exists only in builds that carry a
+ * runtime-bound hw driver (raspi/vc4) — the render-scale feature is
+ * driver-side scaling, so gate on it. */
+#ifdef MESA3DGL_HAVE_COREAPI
+extern const void *gallium_core_get_api(void);
+#else
+static inline const void *gallium_core_get_api(void) { return (const void *)0; }
+#endif
+
+/* Per-program override: VC4_RENDER_SCALE tooltype in the program's icon
+ * (.info next to the executable). Runs in the caller's process context,
+ * so GetProgramDir() and the process name identify the right program. */
+static BOOL MESA3DGLReadScaleToolType(ULONG *scale)
+{
+    struct Library *IconBase;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct DiskObject *dob;
+    BPTR progdir, olddir;
+    TEXT name[108];
+    STRPTR val;
+    BOOL found = FALSE;
+
+    if (me->pr_Task.tc_Node.ln_Type != NT_PROCESS)
+        return FALSE;
+
+    progdir = GetProgramDir();
+    if (progdir == BNULL)
+        return FALSE;
+
+    if (GetProgramName(name, sizeof(name)) == DOSFALSE || name[0] == '\0')
+    {
+        /* WB-launched: no CLI name set, the process carries the tool name */
+        name[sizeof(name) - 1] = '\0';
+        strncpy(name, me->pr_Task.tc_Node.ln_Name, sizeof(name) - 1);
+    }
+
+    IconBase = OpenLibrary("icon.library", 0);
+    if (!IconBase)
+        return FALSE;
+
+    olddir = CurrentDir(progdir);
+    dob = GetDiskObject(FilePart(name));
+    if (dob)
+    {
+        val = FindToolType(dob->do_ToolTypes, "VC4_RENDER_SCALE");
+        if (val && val[0] >= '1' && val[0] <= '4' && val[1] == '\0')
+        {
+            *scale = val[0] - '0';
+            found = TRUE;
+        }
+        FreeDiskObject(dob);
+    }
+    CurrentDir(olddir);
+    CloseLibrary(IconBase);
+
+    return found;
+}
+
+static VOID MESA3DGLReadRenderScale(VOID)
+{
+    TEXT buf[8];
+
+    mesa3dgl_render_scale = 1;
+    if (!gallium_core_get_api())
+        return;
+
+    if (GetVar("VC4_RENDER_SCALE", buf, sizeof(buf), 0) > 0
+        && buf[0] >= '1' && buf[0] <= '4')
+        mesa3dgl_render_scale = buf[0] - '0';
+
+    /* Icon tooltype (per program) overrides the env variable (global) */
+    MESA3DGLReadScaleToolType(&mesa3dgl_render_scale);
+}
 
 VOID MESA3DGLSelectRastPort(struct mesa3dgl_context * ctx, struct TagItem * tagList)
 {
@@ -70,6 +155,24 @@ VOID MESA3DGLSelectRastPort(struct mesa3dgl_context * ctx, struct TagItem * tagL
     }
 
     D(bug("[MESA3DGL] %s: Using RastPort @ 0x%p\n", __func__, ctx->visible_rp));
+
+    /* Window/layer geometry at context creation: a fresh SDL window's
+     * layer coming up collapsed (~1px) shows here. */
+    D({
+        struct Layer *l = ctx->visible_rp ? ctx->visible_rp->Layer : NULL;
+
+        bug("[MESA3DGL] ctx: win=%p rp=%p layer=%p", ctx->window,
+            ctx->visible_rp, l);
+        if (ctx->window)
+            bug(" win %ldx%ld at %ld,%ld", (LONG)ctx->window->Width,
+                (LONG)ctx->window->Height, (LONG)ctx->window->LeftEdge,
+                (LONG)ctx->window->TopEdge);
+        if (l)
+            bug(" layer bounds %ld,%ld..%ld,%ld", (LONG)l->bounds.MinX,
+                (LONG)l->bounds.MinY, (LONG)l->bounds.MaxX,
+                (LONG)l->bounds.MaxY);
+        bug("\n");
+    })
 }
 
 BOOL MESA3DGLStandardInit(struct mesa3dgl_context * ctx, struct TagItem *tagList)
@@ -80,6 +183,8 @@ BOOL MESA3DGLStandardInit(struct mesa3dgl_context * ctx, struct TagItem *tagList
     LONG defaultright = 0, defaultbottom = 0;
 
     D(bug("[MESA3DGL] %s(ctx @ 0x%p, taglist @ 0x%p)\n", __func__, ctx, tagList));
+
+    MESA3DGLReadRenderScale();
 
     /* Set the defaults based on window information */
     if (ctx->window)
@@ -165,23 +270,48 @@ VOID MESA3DGLRecalculateBufferWidthHeight(struct mesa3dgl_context * ctx)
     ULONG newheight = 0;
     
     D(bug("[MESA3DGL] %s(0x%p)\n", __func__, ctx));
-    
+
     ctx->visible_rp_width =
         ctx->visible_rp->Layer->bounds.MaxX - ctx->visible_rp->Layer->bounds.MinX + 1;
 
     ctx->visible_rp_height =
         ctx->visible_rp->Layer->bounds.MaxY - ctx->visible_rp->Layer->bounds.MinY + 1;
 
+    /* NOTE: when a window's layer bounds read ~1px while the window
+     * itself is fully sized, faking the framebuffer size here does NOT
+     * help — AROS clips all rendering/blitting to the layer, so
+     * presentation stays confined to those few pixels. Such a bug has to
+     * be fixed where the window and its layer are created, not here.
+     * Left as the plain layer read. */
+
 
     newwidth = ctx->visible_rp_width - ctx->left - ctx->right;
     newheight = ctx->visible_rp_height - ctx->top - ctx->bottom;
-    
+
     if (newwidth < 0) newwidth = 0;
     if (newheight < 0) newheight = 0;
+
+    /* Render-scale: draw at 1/N, present through the HVS scaler. Even
+     * width keeps pixel formats happy; the present path upscales by
+     * the exact src/dest ratio so rounding never skews the aspect. */
+    if (mesa3dgl_render_scale > 1)
+    {
+        newwidth = (newwidth / mesa3dgl_render_scale) & ~1;
+        newheight = newheight / mesa3dgl_render_scale;
+        if (newwidth < 2) newwidth = 2;
+        if (newheight < 2) newheight = 2;
+    }
     
     
     if ((newwidth != ctx->framebuffer->width) || (newheight != ctx->framebuffer->height))
     {
+        /* rp_w/h are pre-scale/pre-border. */
+        D(bug("[MESA3DGL] fb resize: %lux%lu -> %lux%lu (rp %lux%lu, scale %lu)\n",
+            (ULONG)ctx->framebuffer->width, (ULONG)ctx->framebuffer->height,
+            (ULONG)newwidth, (ULONG)newheight,
+            (ULONG)ctx->visible_rp_width, (ULONG)ctx->visible_rp_height,
+            (ULONG)mesa3dgl_render_scale));
+
         /* The drawing area size has changed. Buffer must change */
         D(bug("[MESA3DGL] %s: current height    =   %d\n", __func__, ctx->framebuffer->height));
         D(bug("[MESA3DGL] %s: current width     =   %d\n", __func__, ctx->framebuffer->width));
@@ -222,3 +352,4 @@ VOID MESA3DGLFreeContext(struct mesa3dgl_context * ctx)
         FreeVec(ctx);
     }
 }
+

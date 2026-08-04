@@ -15,9 +15,20 @@
 
 #include <proto/exec.h>
 #include <proto/gallium.h>
+#include <proto/oop.h>
 
 #include "mesa3dgl_support.h"
 #include "mesa3dgl_gallium.h"
+
+/* GalliumCoreAPI table provider (generated gca_table.c). Passed to the
+ * pipe hidd via CPS_GalliumCoreAPI so a runtime-bound pipe driver can
+ * call mesa3dgl's one Mesa compiler core. Builds without a table pass 0;
+ * table-less drivers (softpipe) never look. */
+#ifdef MESA3DGL_HAVE_COREAPI
+extern const void *gallium_core_get_api(void);
+#else
+static inline const void *gallium_core_get_api(void) { return (const void *)0; }
+#endif
 
 /*****************************************************************************
 
@@ -106,6 +117,7 @@
     {
             { CPS_PipeFriendBitMap,     0       },
             { CPS_PipeScreenDriver,     0       },
+            { CPS_GalliumCoreAPI,       0       },
             { TAG_DONE,                 0       }
     };
     struct pipe_screen * pscreen = NULL;
@@ -114,7 +126,6 @@
 
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    /* Allocate MESA3DGL context */
     if (!(ctx = (struct mesa3dgl_context *)AllocVec(sizeof(struct mesa3dgl_context), MEMF_PUBLIC | MEMF_CLEAR)))
     {
         bug("%s: ERROR - failed to allocate GLAContext\n", __func__);
@@ -137,9 +148,12 @@
 
     MESA3DGLStandardInit(ctx, tagList);
 
+    pscreen_tags[2].ti_Data = (IPTR)gallium_core_get_api();
+
     if (CreatePipeV(pscreen_tags))
     {
         pscreen = CreatePipeScreen(ctx->driver);
+
         if (!pscreen)
         {
             bug("%s: ERROR -  failed to create gallium pipe screen\n", __func__);

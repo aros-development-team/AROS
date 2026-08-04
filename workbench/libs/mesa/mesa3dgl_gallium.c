@@ -4,6 +4,12 @@
 
 #include <aros/debug.h>
 
+/* aros/debug.h always leaves DEBUG defined (to 0 if unset), which trips
+ * Mesa's u_debug_refcnt.h — it uses `#if defined(DEBUG)` and so emits
+ * refs to debug_reference_slowpath even under -DNDEBUG. Drop the symbol
+ * before pulling in the gallium pipe/util headers. */
+#undef DEBUG
+
 #include <proto/utility.h>
 #include <proto/exec.h>
 #include <proto/gallium.h>
@@ -32,7 +38,6 @@ static BOOL MESA3DGLSelectColorFormat(enum pipe_format * colorFormat,
 
     if (bpp == 16)
     {
-        /* Try PIPE_FORMAT_B5G6R5_UNORM */
         if (screen->is_format_supported(screen,
             PIPE_FORMAT_B5G6R5_UNORM,
             PIPE_TEXTURE_2D,
@@ -47,7 +52,6 @@ static BOOL MESA3DGLSelectColorFormat(enum pipe_format * colorFormat,
     
     if (bpp == 32)
     {
-        /* Try PIPE_FORMAT_B8G8R8A8_UNORM */
         if (screen->is_format_supported(screen,
             PIPE_FORMAT_B8G8R8A8_UNORM,
             PIPE_TEXTURE_2D,
@@ -68,13 +72,11 @@ static BOOL MESA3DGLSelectDepthStencilFormat(enum pipe_format * depthStencilForm
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    /* Defeaul values */
     *depthStencilFormat = PIPE_FORMAT_NONE;
     
     if (noDepth)
         return TRUE;
     
-    /* Try PIPE_FORMAT_S8_UINT_Z24_UNORM */
     if(!noStencil && (screen->is_format_supported(screen,
             PIPE_FORMAT_S8_UINT_Z24_UNORM,
             PIPE_TEXTURE_2D,
@@ -86,7 +88,6 @@ static BOOL MESA3DGLSelectDepthStencilFormat(enum pipe_format * depthStencilForm
         return TRUE;
     }
     
-    /* Try PIPE_FORMAT_X8Z24_UNORM */
     if(noStencil && (screen->is_format_supported(screen,
             PIPE_FORMAT_X8Z24_UNORM,
             PIPE_TEXTURE_2D,
@@ -98,7 +99,6 @@ static BOOL MESA3DGLSelectDepthStencilFormat(enum pipe_format * depthStencilForm
         return TRUE;
     }
 
-    /* Try PIPE_FORMAT_Z24X8_UNORM */
     if(noStencil && (screen->is_format_supported(screen,
             PIPE_FORMAT_Z24X8_UNORM,
             PIPE_TEXTURE_2D,
@@ -110,7 +110,6 @@ static BOOL MESA3DGLSelectDepthStencilFormat(enum pipe_format * depthStencilForm
         return TRUE;
     }
     
-    /* Try PIPE_FORMAT_Z16_UNORM */
     if(screen->is_format_supported(screen,
             PIPE_FORMAT_Z16_UNORM,
             PIPE_TEXTURE_2D,
@@ -142,21 +141,18 @@ BOOL MESA3DGLFillVisual(struct st_visual * stvis, struct pipe_screen * screen, i
     stvis->render_buffer = ST_ATTACHMENT_FRONT_LEFT;
     stvis->samples = 1;
 
-    /* Color buffer */
     if (!MESA3DGLSelectColorFormat(&stvis->color_format, screen, bpp))
     {
         D(bug("[MESA3DGL] %s: ERROR - No supported color format found\n", __func__));
         return FALSE;
     }
 
-    /* Z-buffer / Stencil buffer */
     if (!MESA3DGLSelectDepthStencilFormat(&stvis->depth_stencil_format, screen, noDepth, noStencil))
     {
         D(bug("[MESA3DGL] %s: ERROR - No supported depth/stencil format found\n", __func__));
         return FALSE;
     }
 
-    /* Accum buffer */
     if (noAccum)
         stvis->accum_format = PIPE_FORMAT_NONE;
     else
@@ -165,7 +161,7 @@ BOOL MESA3DGLFillVisual(struct st_visual * stvis, struct pipe_screen * screen, i
         stvis->buffer_mask |= ST_ATTACHMENT_ACCUM;
     }
 
-    /* Buffers */ /* MESA3DGL uses front buffer as back buffer */
+    /* MESA3DGL uses front buffer as back buffer */
     if (!noDepth || !noStencil)
     stvis->buffer_mask |= ST_ATTACHMENT_DEPTH_STENCIL_MASK;
     
@@ -197,17 +193,23 @@ static VOID MESA3DGLFrameBufferCreateResource(struct mesa3dgl_framebuffer * amfb
     case ST_ATTACHMENT_FRONT_RIGHT:
     case ST_ATTACHMENT_BACK_RIGHT:
         templ.format    = amfb->stvis.color_format;
-        templ.bind      = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SAMPLER_VIEW;
+        /* LINEAR + SCANOUT keep the swap target linear instead of the
+         * GPU's native T-tile: the AROS present path (DisplayResource ->
+         * DMA blit) needs a linear source and can't detile. Drivers that
+         * ignore the flags (or default to linear) are unaffected. */
+        templ.bind      = PIPE_BIND_RENDER_TARGET
+                        | PIPE_BIND_SAMPLER_VIEW
+                        | PIPE_BIND_LINEAR
+                        | PIPE_BIND_SCANOUT;
         break;
     case ST_ATTACHMENT_DEPTH_STENCIL:
         templ.format    = amfb->stvis.depth_stencil_format;
         templ.bind      = PIPE_BIND_DEPTH_STENCIL;
         break;
     default:
-        return; /* Failure */
+        return;
     }
     
-    /* Create resource */
     amfb->textures[statt] = amfb->screen->resource_create(amfb->screen, &templ);
 }
 
@@ -222,19 +224,15 @@ static bool MESA3DGLFrameBufferValidate(struct st_context_iface *stctx,
 
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    /* Check for resize */
     if (amfb->resized)
     {
         amfb->resized = FALSE;
-        /* Detach "front surface" */
         pipe_resource_reference(&amfb->render_resource, NULL);
 
-        /* Detach all resources */
         for (i = 0; i < ST_ATTACHMENT_COUNT; i++)
             pipe_resource_reference(&amfb->textures[i], NULL);
     }
     
-    /* Create new resources */
     for (i = 0; i < count; i++)
     {
         if (amfb->textures[statts[i]] == NULL)
@@ -265,7 +263,6 @@ static bool MESA3DGLFrameBufferFlushFront(struct st_context_iface *stctx,
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    /* No Op */
     return TRUE;
 }
 
@@ -318,7 +315,11 @@ VOID MESA3DGLCheckAndUpdateBufferSize(struct mesa3dgl_context * ctx)
     MESA3DGLRecalculateBufferWidthHeight(ctx);
     if (ctx->framebuffer->resized)
     {
-        p_atomic_set(&ctx->framebuffer->base.stamp, 1);
+        /* The state tracker revalidates the framebuffer only when the
+         * stamp DIFFERS from the one it cached at the last validate.
+         * Setting it to a constant made every resize after the first
+         * invisible — increment instead. */
+        p_atomic_inc(&ctx->framebuffer->base.stamp);
     }
 }
 
