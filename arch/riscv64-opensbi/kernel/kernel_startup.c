@@ -654,6 +654,82 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
             if (chipmh)
                 Enqueue(&SysBase->MemList, &chipmh->mh_Node);
 
+            /*
+             * The bootstrap heap above is only the slice of one bank
+             * below the DTB - enough to bring exec up, but a real
+             * machine has more banks and tens of GiB more in this one.
+             * Every firmware region is already mapped; now exec can
+             * hold further MemHeaders, add each usable span that the
+             * bootstrap heap, the chip pool, the kernel image, the boot
+             * package and the DTB do not already cover.
+             */
+            {
+                IPTR ex_lo[8], ex_hi[8];
+                IPTR kern_hi = ((IPTR)__kernel_end + 4095) & ~(IPTR)4095;
+                int nx = 0, r, i, j;
+
+                /* Spans already in use, that a new header must not cover.
+                   Anything below the kernel - where the boot/exception
+                   stack lives and grows down - is kept out by clamping
+                   each region's start to kern_hi below, not listed here. */
+                ex_lo[nx] = (IPTR)mh;       ex_hi[nx] = memhigh;              nx++;
+                if (chipmh) { ex_lo[nx] = (IPTR)chipmh;
+                              ex_hi[nx] = (IPTR)chipmh + CHIPMEM_SIZE;        nx++; }
+                if (modhigh > modlow) {
+                    ex_lo[nx] = modlow & ~(IPTR)4095;
+                    ex_hi[nx] = (modhigh + 4095) & ~(IPTR)4095;              nx++; }
+                /* The boot package image is still where the loader left
+                   it. Its modules were relocated out, but keep it whole
+                   until boot is done rather than let it be handed out. */
+                if (fdtinfo.initrd_start &&
+                    fdtinfo.initrd_end > fdtinfo.initrd_start) {
+                    ex_lo[nx] = fdtinfo.initrd_start & ~(IPTR)4095;
+                    ex_hi[nx] = (fdtinfo.initrd_end + 4095) & ~(IPTR)4095;   nx++; }
+                if (dtbaddr) {
+                    ex_lo[nx] = dtbaddr & ~(IPTR)4095;
+                    ex_hi[nx] = (dtbaddr + (2 << 20) + 4095) & ~(IPTR)4095;  nx++; }
+
+                /* Sort the exclusions by start so one pass can subtract
+                   them from each region. */
+                for (i = 1; i < nx; i++) {
+                    IPTR a = ex_lo[i], b = ex_hi[i];
+                    for (j = i; j > 0 && ex_lo[j-1] > a; j--) {
+                        ex_lo[j] = ex_lo[j-1]; ex_hi[j] = ex_hi[j-1];
+                    }
+                    ex_lo[j] = a; ex_hi[j] = b;
+                }
+
+                for (r = 0; r < (int)fdtinfo.nregions; r++) {
+                    IPTR rs = (fdtinfo.regions[r].base + 4095) & ~(IPTR)4095;
+                    IPTR re = (fdtinfo.regions[r].base +
+                               fdtinfo.regions[r].size) & ~(IPTR)4095;
+                    /* Never hand out anything below the kernel */
+                    IPTR p = (rs < kern_hi) ? kern_hi : rs;
+
+                    for (i = 0; i <= nx; i++) {
+                        IPTR elo = (i < nx) ? ex_lo[i] : re;
+                        IPTR ehi = (i < nx) ? ex_hi[i] : re;
+                        IPTR glo = p, ghi = (elo < re) ? elo : re;
+
+                        if (ghi > glo && (ghi - glo) >= (1 << 20)) {
+                            struct MemHeader *xmh = (struct MemHeader *)glo;
+                            krnCreateMemHeader("System Memory", 0, (APTR)glo,
+                                               ghi - glo, MEMF_FAST |
+                                               MEMF_PUBLIC | MEMF_KICK |
+                                               MEMF_LOCAL);
+                            Enqueue(&SysBase->MemList, &xmh->mh_Node);
+                            krnSBIPutStr("mem:       added bank ");
+                            krnSBIPutHex(glo);
+                            krnSBIPutStr(" - ");
+                            krnSBIPutHex(ghi);
+                            krnSBIPutStr("\n");
+                        }
+                        if (i < nx && ehi > p) p = ehi;
+                        if (p >= re) break;
+                    }
+                }
+            }
+
             krnSBIPutStr("exec:      SysBase @ ");
             krnSBIPutHex((uint64_t)(uintptr_t)SysBase);
             krnSBIPutStr("\n[boot] InitCode(RTF_SINGLETASK)\n");
