@@ -28,6 +28,10 @@
 
 #define DATTR(x)
 
+#if defined(__x86_64__) || defined(__arm__) || defined(__aarch64__)
+#define ELF_MODULE_ARENA 1
+#endif
+
 struct hunk
 {
     ULONG size;
@@ -1548,7 +1552,7 @@ static BPTR load_seg_elf_int
      */
     BOOL do_align;
 
-#if defined(__x86_64__)
+#if defined(ELF_MODULE_ARENA)
     /*
      * Modules contain 32-bit PC-relative references between their hunks,
      * which cannot span more than +/-2GB. Rather than restricting every
@@ -1637,7 +1641,7 @@ static BPTR load_seg_elf_int
         }
     }
 
-#if defined(__x86_64__)
+#if defined(ELF_MODULE_ARENA)
     if (arena && hunks)
     {
         /* Link the arena's container hunk as the last segment; freeing it
@@ -1685,7 +1689,7 @@ error:
 
     /* There were some errors, deallocate The hunks */
 
-#if defined(__x86_64__)
+#if defined(ELF_MODULE_ARENA)
     /* If the arena has not been handed over to the seg list yet, free it
        here; the carved hunks inside it are skipped by the unload below. */
     if (arena)
