@@ -67,29 +67,41 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd_Sync,
     IID_Hidd,
     IID_Hidd_Display,
-    IID_Hidd_DMEnum
+    IID_Hidd_DMEnum,
+    IID_Hidd_Gfx_Headless
 };
 
 static int HeadlessGfx_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct HeadlessGfx_staticdata *xsd = &LIBBASE->vsd;
-    struct GfxBase *GfxBase;
-    ULONG err;
-    int res = FALSE;
+
+    if (!GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
+        return FALSE;
+
+    xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
+    D(bug("[HeadlessGfx] BitMap class @ 0x%p\n", xsd->basebm));
 
     /*
-     * Open graphics.library ourselves because we will close it
-     * after adding the driver.
-     * Autoinit code would close it only upon driver expunge.
+     * When this module is part of the kickstart there is no monitor
+     * loader to register the driver, so it has to add itself. When it
+     * lives on disk, DEVS:Monitors/Headless performs the registration
+     * and passes the user's depth configuration from its icon; adding
+     * ourselves here as well would create the driver object before the
+     * loader could supply those tags.
      */
-    GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
-    if (GfxBase)
+    if (FindResident(MOD_NAME_STRING))
     {
-        if (GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
-        {
-            xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
-            D(bug("[HeadlessGfx] BitMap class @ 0x%p\n", xsd->basebm));
+        struct GfxBase *GfxBase;
+        ULONG err = (ULONG)-1;
 
+        /*
+         * Open graphics.library ourselves because we will close it
+         * after adding the driver.
+         * Autoinit code would close it only upon driver expunge.
+         */
+        GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+        if (GfxBase)
+        {
             /*
              * It is unknown (and no way to know) what hardware part this driver uses.
              * In order to avoid conflicts with disk-based native-mode hardware
@@ -100,20 +112,21 @@ static int HeadlessGfx_Init(LIBBASETYPEPTR LIBBASE)
             err = AddDisplayDriver(xsd->headlessgfxclass, NULL, DDRV_BootMode, TRUE, TAG_DONE);
 
             D(bug("[HeadlessGfx] AddDisplayDriver() result: %u\n", err));
-            if (!err)
-            {
-                /* expunge protection */
-                LIBBASE->library.lib_OpenCnt = 1;
-                res = TRUE;
-            }
+            CloseLibrary(&GfxBase->LibNode);
         }
-        CloseLibrary(&GfxBase->LibNode);
+        else
+        {
+            D(bug("[HeadlessGfx] Failed to open graphics.library!\n"));
+        }
+
+        if (err)
+            return FALSE;
+
+        /* expunge protection */
+        LIBBASE->library.lib_OpenCnt = 1;
     }
-    else
-    {
-        D(bug("[HeadlessGfx] Failed to open graphics.library!\n"));
-    }
-    return res;
+
+    return TRUE;
 }
 
 ADD2INITLIB(HeadlessGfx_Init, 0)

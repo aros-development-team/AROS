@@ -29,25 +29,106 @@
 
 OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct TagItem pftags[] =
+    /*
+     * Pixel formats for every depth this display can expose. This
+     * display has no hardware of its own - it exists to be read back
+     * and served over VNC - so the deepest format is a 32-bit
+     * true-colour surface giving the remote viewer full colour, with
+     * shallower formats available for clients that want to trade
+     * colour for bandwidth. All shift/mask values are the canonical
+     * little-endian layouts from rom/hidds/gfx/stdpixfmts_le.h, so the
+     * colour conversion tables agree with what is registered here.
+     */
+    struct TagItem pftags_lut8[] =
     {
-        { aHidd_PixFmt_RedShift     , 0                       }, /* 0 */
-        { aHidd_PixFmt_GreenShift   , 0                       }, /* 1 */
-        { aHidd_PixFmt_BlueShift    , 0                       }, /* 2 */
-        { aHidd_PixFmt_AlphaShift   , 0                       }, /* 3 */
-        { aHidd_PixFmt_RedMask      , 0x000000FC              }, /* 4 */
-        { aHidd_PixFmt_GreenMask    , 0x0000FC00              }, /* 5 */
-        { aHidd_PixFmt_BlueMask     , 0x00FC0000              }, /* 6 */
-        { aHidd_PixFmt_AlphaMask    , 0x00000000              }, /* 7 */
-        { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette}, /* 8 */
-        { aHidd_PixFmt_Depth        , 4                       }, /* 9 */
-        { aHidd_PixFmt_BytesPerPixel, 1                       }, /* 10 */
-        { aHidd_PixFmt_BitsPerPixel , 4                       }, /* 11 */
-        { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_LUT8    }, /* 12 */
-        { aHidd_PixFmt_CLUTShift    , 0                       }, /* 13 */
-        { aHidd_PixFmt_CLUTMask     , 0x0f                    }, /* 14 */
-        { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky }, /* 15 */
+        { aHidd_PixFmt_RedShift     , 0                       },
+        { aHidd_PixFmt_GreenShift   , 0                       },
+        { aHidd_PixFmt_BlueShift    , 0                       },
+        { aHidd_PixFmt_AlphaShift   , 0                       },
+        { aHidd_PixFmt_RedMask      , 0x000000FF              },
+        { aHidd_PixFmt_GreenMask    , 0x0000FF00              },
+        { aHidd_PixFmt_BlueMask     , 0x00FF0000              },
+        { aHidd_PixFmt_AlphaMask    , 0x00000000              },
+        { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette},
+        { aHidd_PixFmt_Depth        , 8                       },
+        { aHidd_PixFmt_BytesPerPixel, 1                       },
+        { aHidd_PixFmt_BitsPerPixel , 8                       },
+        { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_LUT8    },
+        { aHidd_PixFmt_CLUTShift    , 0                       },
+        { aHidd_PixFmt_CLUTMask     , 0x000000FF              },
+        { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky },
         { TAG_DONE                  , 0UL                     }
+    };
+    struct TagItem pftags_rgb15[] =
+    {
+        { aHidd_PixFmt_RedShift     , 17                      },
+        { aHidd_PixFmt_GreenShift   , 22                      },
+        { aHidd_PixFmt_BlueShift    , 27                      },
+        { aHidd_PixFmt_AlphaShift   , 0                       },
+        { aHidd_PixFmt_RedMask      , 0x00007C00              },
+        { aHidd_PixFmt_GreenMask    , 0x000003E0              },
+        { aHidd_PixFmt_BlueMask     , 0x0000001F              },
+        { aHidd_PixFmt_AlphaMask    , 0x00000000              },
+        { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor},
+        { aHidd_PixFmt_Depth        , 15                      },
+        { aHidd_PixFmt_BytesPerPixel, 2                       },
+        { aHidd_PixFmt_BitsPerPixel , 15                      },
+        { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_RGB15_LE},
+        { aHidd_PixFmt_CLUTShift    , 0                       },
+        { aHidd_PixFmt_CLUTMask     , 0                       },
+        { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky },
+        { TAG_DONE                  , 0UL                     }
+    };
+    struct TagItem pftags_rgb16[] =
+    {
+        { aHidd_PixFmt_RedShift     , 16                      },
+        { aHidd_PixFmt_GreenShift   , 21                      },
+        { aHidd_PixFmt_BlueShift    , 27                      },
+        { aHidd_PixFmt_AlphaShift   , 0                       },
+        { aHidd_PixFmt_RedMask      , 0x0000F800              },
+        { aHidd_PixFmt_GreenMask    , 0x000007E0              },
+        { aHidd_PixFmt_BlueMask     , 0x0000001F              },
+        { aHidd_PixFmt_AlphaMask    , 0x00000000              },
+        { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor},
+        { aHidd_PixFmt_Depth        , 16                      },
+        { aHidd_PixFmt_BytesPerPixel, 2                       },
+        { aHidd_PixFmt_BitsPerPixel , 16                      },
+        { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_RGB16_LE},
+        { aHidd_PixFmt_CLUTShift    , 0                       },
+        { aHidd_PixFmt_CLUTMask     , 0                       },
+        { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky },
+        { TAG_DONE                  , 0UL                     }
+    };
+    struct TagItem pftags_bgra32[] =
+    {
+        { aHidd_PixFmt_RedShift     , 8                       },
+        { aHidd_PixFmt_GreenShift   , 16                      },
+        { aHidd_PixFmt_BlueShift    , 24                      },
+        { aHidd_PixFmt_AlphaShift   , 0                       },
+        { aHidd_PixFmt_RedMask      , 0x00FF0000              },
+        { aHidd_PixFmt_GreenMask    , 0x0000FF00              },
+        { aHidd_PixFmt_BlueMask     , 0x000000FF              },
+        { aHidd_PixFmt_AlphaMask    , 0xFF000000              },
+        { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor},
+        { aHidd_PixFmt_Depth        , 24                      },
+        { aHidd_PixFmt_BytesPerPixel, 4                       },
+        { aHidd_PixFmt_BitsPerPixel , 32                      },
+        { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_BGRA32  },
+        { aHidd_PixFmt_CLUTShift    , 0                       },
+        { aHidd_PixFmt_CLUTMask     , 0                       },
+        { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky },
+        { TAG_DONE                  , 0UL                     }
+    };
+    const struct
+    {
+        ULONG           depth;
+        struct TagItem  *pftags;
+    } depths[] =
+    {
+        {  8, pftags_lut8   },
+        { 15, pftags_rgb15  },
+        { 16, pftags_rgb16  },
+        { 24, pftags_bgra32 }
     };
     struct TagItem sync_mode[] =
     {
@@ -60,12 +141,10 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         {aHidd_Sync_Description,        (IPTR)"Headless:%hx%v"  },
         {TAG_DONE,                      0UL                     }
     };
-    struct TagItem modetags[] =
-    {
-        {aHidd_DMEnum_PixFmtTags, (IPTR)pftags},
-        {aHidd_DMEnum_SyncTags,   (IPTR)sync_mode},
-        {TAG_DONE, 0UL}
-    };
+    /* Up to one PixFmtTags entry per depth, one SyncTags entry, TAG_DONE */
+    struct TagItem modetags[sizeof(depths)/sizeof(depths[0]) + 2];
+    ULONG maxdepth, fixeddepth;
+    ULONG i, nmodetags = 0;
     struct TagItem msgNewTags[] =
     {
         { aHidd_Name            , (IPTR)"headlessgfx.hidd"     },
@@ -81,6 +160,53 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
        create one more Headless driver */
     if (XSD(cl)->headlessgfxhidd)
         return NULL;
+
+    /*
+     * Depth configuration, normally supplied by the monitor loader
+     * from its icon's tooltypes. FixedDepth restricts the driver to a
+     * single depth; otherwise every supported depth up to MaxDepth is
+     * registered - except 15, which is only exposed when asked for
+     * directly, so the default set is 8, 16 and 24. 32 is accepted as
+     * a synonym for the 24-bit (32bpp) format.
+     */
+    maxdepth   = GetTagData(aHidd_Gfx_Headless_MaxDepth, 24, msg->attrList);
+    fixeddepth = GetTagData(aHidd_Gfx_Headless_FixedDepth, 0, msg->attrList);
+    if (maxdepth >= 24)
+        maxdepth = 24;
+    if (fixeddepth >= 24)
+        fixeddepth = 24;
+
+    for (i = 0; i < sizeof(depths)/sizeof(depths[0]); i++)
+    {
+        if (fixeddepth ? (depths[i].depth == fixeddepth)
+                       : ((depths[i].depth <= maxdepth) &&
+                          ((depths[i].depth != 15) || (maxdepth == 15))))
+        {
+            modetags[nmodetags].ti_Tag  = aHidd_DMEnum_PixFmtTags;
+            modetags[nmodetags].ti_Data = (IPTR)depths[i].pftags;
+            nmodetags++;
+        }
+    }
+    if (nmodetags == 0)
+    {
+        /* Bad configuration must not leave the system displayless */
+        D(bug("HeadlessGfx::New: no depth matches MaxDepth %u/FixedDepth %u, using defaults\n", maxdepth, fixeddepth));
+        for (i = 0; i < sizeof(depths)/sizeof(depths[0]); i++)
+        {
+            if (depths[i].depth == 15)
+                continue;
+            modetags[nmodetags].ti_Tag  = aHidd_DMEnum_PixFmtTags;
+            modetags[nmodetags].ti_Data = (IPTR)depths[i].pftags;
+            nmodetags++;
+        }
+        maxdepth = 24;
+        fixeddepth = 0;
+    }
+    modetags[nmodetags].ti_Tag  = aHidd_DMEnum_SyncTags;
+    modetags[nmodetags].ti_Data = (IPTR)sync_mode;
+    nmodetags++;
+    modetags[nmodetags].ti_Tag  = TAG_DONE;
+    modetags[nmodetags].ti_Data = 0;
 
     if ((msgNewTags[3].ti_Data = (IPTR)msg->attrList) == 0)
         msgNewTags[3].ti_Tag = TAG_DONE;
@@ -98,6 +224,11 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
             { TAG_DONE,               0              }
         };
 
+        struct HeadlessGfxHiddData *data = OOP_INST_DATA(cl, o);
+
+        data->maxDepth   = fixeddepth ? fixeddepth : maxdepth;
+        data->fixedDepth = fixeddepth;
+
         D(bug("Got object from super\n"));
         XSD(cl)->headlessgfxhidd = o;
 
@@ -110,9 +241,23 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 
 VOID HeadlessGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
+    struct HeadlessGfxHiddData *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    if (IS_GFX_ATTR(msg->attrID, idx))
+    if (IS_HEADLESSGFX_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+        case aoHidd_Gfx_Headless_MaxDepth:
+            *msg->storage = data->maxDepth;
+            return;
+
+        case aoHidd_Gfx_Headless_FixedDepth:
+            *msg->storage = data->fixedDepth;
+            return;
+        }
+    }
+    else if (IS_GFX_ATTR(msg->attrID, idx))
     {
         switch (idx)
         {

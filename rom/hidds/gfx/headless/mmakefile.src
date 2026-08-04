@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-hidd-gfx-headlessgfx-monitor : kernel-hidd-gfx-includes
 
 DRIVERDIR := Storage/Drivers
-MONITORDIR := Storage/Monitors
+MONITORDIR := $(AROSDIR)/Storage/Monitors
 
 %build_prog mmake=kernel-hidd-gfx-headlessgfx-monitor \
     progname=Headless targetdir=$(MONITORDIR) \
