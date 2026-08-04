@@ -56,11 +56,13 @@ static AROS_INTH1(NVME_AdminIntCode, struct nvme_queue *, nvmeq)
 
     D(bug ("[NVME:Controller] %s(0x%p)\n", __func__, nvmeq);)
 
-    nvme_process_cq(nvmeq);
+    int processed = nvme_process_cq(nvmeq);
 
     D(bug ("[NVME:Controller] %s: finished\n", __func__);)
 
-    return TRUE;
+    /* Claim the interrupt only if it was ours - the io queues share
+       the line when the device signals with a pin */
+    return (processed != 0);
 
     AROS_INTFUNC_EXIT
 }

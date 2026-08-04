@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved
 */
 
 
@@ -45,8 +45,11 @@
 #endif
 
 #define NVME_CMD_PSDT_MASK      (3 << 6)
-#define NVME_CMD_PSDT_SGL       (2 << 6)
+/* 01b: SGLs describe the data; MPTR is a plain metadata address */
+#define NVME_CMD_PSDT_SGL       (1 << 6)
 #define NVME_SGL_DESC_TYPE_DATA_BLOCK   0x00
+/* SGL identifier byte of a Last Segment descriptor (type 3h, subtype 0) */
+#define NVME_SGL_ID_LAST_SEGMENT        0x3ULL
 
 struct nvme_sgl_descriptor {
     UQUAD address;
@@ -152,7 +155,17 @@ BOOL nvme_initsgl(struct nvme_command *cmdio, struct completionevent_handler *io
         flags = (is_write ? DMAFLAGS_PREWRITE : DMAFLAGS_PREREAD) | DMA_Continue;
     }
 
-    {
+    /*
+     * SGL1 in the command is itself a descriptor, not a pointer to one.
+     * A transfer one Data Block descriptor can describe goes inline;
+     * anything longer gets a Last Segment descriptor aiming at the
+     * array built above.
+     */
+    cmdio->rw.op.flags = (cmdio->rw.op.flags & ~NVME_CMD_PSDT_MASK) | NVME_CMD_PSDT_SGL;
+    if (descriptor_count == 1) {
+        cmdio->rw.prp1 = sgl[0].address;
+        cmdio->rw.prp2 = AROS_QUAD2LE((UQUAD)len);
+    } else {
         ULONG sgl_bytes = descriptor_count * sizeof(struct nvme_sgl_descriptor);
         APTR sgl_phys = CachePreDMA(sgl, &sgl_bytes, DMAFLAGS_PREWRITE);
 
@@ -162,15 +175,15 @@ BOOL nvme_initsgl(struct nvme_command *cmdio, struct completionevent_handler *io
             return FALSE;
         }
 
-        if (!nvme_dma_append(ioehandle, sgl, descriptor_count * sizeof(struct nvme_sgl_descriptor), DMAFLAGS_PREWRITE)) {
+        if (!nvme_dma_append(ioehandle, sgl, sgl_bytes, DMAFLAGS_PREWRITE)) {
             FreeMem(ioehandle->ceh_IOMem.me_Un.meu_Addr, ioehandle->ceh_IOMem.me_Length);
             ioehandle->ceh_IOMem.me_Un.meu_Addr = NULL;
             return FALSE;
         }
 
-        cmdio->rw.op.flags = (cmdio->rw.op.flags & ~NVME_CMD_PSDT_MASK) | NVME_CMD_PSDT_SGL;
         cmdio->rw.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, sgl_phys));
-        cmdio->rw.prp2 = 0;
+        cmdio->rw.prp2 = AROS_QUAD2LE((UQUAD)sgl_bytes |
+                                      (NVME_SGL_ID_LAST_SEGMENT << 60));
     }
 
     return TRUE;
