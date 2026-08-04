@@ -668,7 +668,8 @@ static void stopread(struct filehandle *fh, struct DosPacket *waitingdp)
 
 LONG CONMain(struct ExecBase *SysBase)
 {
-    struct MsgPort *mp;
+    struct MsgPort *mp = NULL;
+    struct MsgPort *procmp;
     struct DosPacket *dp;
     struct Message *mn;
     struct FileHandle *dosfh;
@@ -678,10 +679,22 @@ LONG CONMain(struct ExecBase *SysBase)
     struct DosPacket *waitingdp = NULL;
 
     D(bug("[con:handler] started\n"));
-    mp = &((struct Process*) FindTask(NULL))->pr_MsgPort;
-    WaitPort(mp);
-    dp = (struct DosPacket*) GetMsg(mp)->mn_Node.ln_Name;
-    D(bug("[con:handler] startup message received. port=0x%p path='%b'\n", mp, dp->dp_Arg1));
+    procmp = &((struct Process*) FindTask(NULL))->pr_MsgPort;
+    WaitPort(procmp);
+    dp = (struct DosPacket*) GetMsg(procmp)->mn_Node.ln_Name;
+    D(bug("[con:handler] startup message received. port=0x%p path='%b'\n", procmp, dp->dp_Arg1));
+
+    /* Clients get a port of their own. The process port cannot serve both,
+     * because DoPkt() replies land there too: TAB completion looks up
+     * directories, and a client packet arriving during one of those lookups
+     * would be taken for the reply and alerted as AN_AsyncPkt.
+     */
+    mp = CreateMsgPort();
+    if (!mp) {
+        error = ERROR_NO_FREE_STORE;
+        D(bug("[con:handler] no packet port\n"));
+        goto end;
+    }
 
     fh = open_con(dp, &error);
     if (!fh) {
@@ -705,7 +718,7 @@ LONG CONMain(struct ExecBase *SysBase)
 #endif
         ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
         ULONG timermask = 1L << fh->timermp->mp_SigBit;
-        ULONG packetmask = 1L << mp->mp_SigBit;
+        ULONG packetmask = (1L << mp->mp_SigBit) | (1L << procmp->mp_SigBit);
         ULONG winmask = fh->window ? 1L << fh->window->UserPort->mp_SigBit : 0L;
         ULONG appwindowmask = fh->appmsgport ? 1L << fh->appmsgport->mp_SigBit : 0L;
         ULONG i, insertedlen;
@@ -922,6 +935,13 @@ LONG CONMain(struct ExecBase *SysBase)
                     startread(fh);
             }
 
+            /* DOS addresses a handler by the port it was started on until
+             * it has a file handle to go by, so the first open still turns
+             * up here. Move those over and serve everything from one place.
+             */
+            while ((mn = GetMsg(procmp)))
+                PutMsg(mp, mn);
+
             while ((mn = GetMsg(mp))) {
                 dp = (struct DosPacket*) mn->mn_Node.ln_Name;
                 dp->dp_Res2 = 0;
@@ -947,6 +967,8 @@ LONG CONMain(struct ExecBase *SysBase)
                     dosfh = BADDR(dp->dp_Arg1);
                     dosfh->fh_Interactive = DOSTRUE;
                     dosfh->fh_Arg1 = (SIPTR) fh;
+                    /* Talk to us here from now on, not on the process port. */
+                    dosfh->fh_Type = mp;
                     fh->usecount++;
                     fh->breaktask = dp->dp_Port->mp_SigTask;
                     DACTION(bug("[con:handler] Find fh=%x. Usecount=%d\n", dosfh, fh->usecount));
@@ -1171,6 +1193,9 @@ end:
         D(bug("[con:handler] Replying packet 0x%p, error %ld\n", dp, error));
         replypkt2(dp, DOSFALSE, error);
     }
+
+    if (mp)
+        DeleteMsgPort(mp);
 
     D(bug("[con:handler] 0x%p closed\n", fh));
     return 0;
