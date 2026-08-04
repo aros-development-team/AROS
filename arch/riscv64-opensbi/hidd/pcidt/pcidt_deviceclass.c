@@ -104,6 +104,36 @@ OOP_Object *PCIDTDev__Root__New(OOP_Class *cl, OOP_Object *o,
 
 
 /*
+ * A driver switching its device on is taking ownership - for one that
+ * hooks the interrupt with AddIntServer() directly, rather than
+ * through the driver's AddInterrupt, this is the only signal given.
+ * Let its pin through again; devices were masked at enumeration only
+ * because nothing was listening yet. Message interrupts stay in
+ * charge where a driver obtained vectors.
+ */
+VOID PCIDTDev__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct pcidt_staticdata *psd = PSD(cl);
+    struct PCIDTDeviceData *data = OOP_INST_DATA(cl, o);
+    struct TagItem *tag, *tstate = msg->attrList;
+    BOOL claimed = FALSE;
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+        if ((tag->ti_Tag == aHidd_PCIDevice_isIO ||
+             tag->ti_Tag == aHidd_PCIDevice_isMEM ||
+             tag->ti_Tag == aHidd_PCIDevice_isMaster) && tag->ti_Data)
+            claimed = TRUE;
+    }
+
+    if (claimed && data->msiVector < 0 && data->bridge < psd->bridgeCount)
+        PCIDT_SetINTx(&psd->bridges[data->bridge], data->bus, data->dev,
+                      data->sub, TRUE);
+}
+
+/*
  * Message interrupts for one device.
  *
  * There is a single source per controller and a status register saying

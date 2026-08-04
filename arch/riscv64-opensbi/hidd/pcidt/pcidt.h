@@ -75,6 +75,18 @@ struct pcidt_bridge
     struct pcidt_intmap intMap[PCIDT_MAX_INTMAP];
     ULONG               intMapCount;
 
+    /* The 64-bit window, when the tree describes one */
+    IPTR                mem64PciBase;
+    IPTR                mem64CpuBase;
+    IPTR                mem64Size;
+
+    /* The 32-bit memory and I/O windows, for handing out space
+       firmware did not */
+    IPTR                mem32PciBase;
+    IPTR                mem32Size;
+    IPTR                ioPciBase;
+    IPTR                ioSize;
+
     /*
      * The controller's own message interrupt. Everything signalled by
      * a message arrives on this one source and is told apart by the

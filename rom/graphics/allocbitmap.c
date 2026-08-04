@@ -329,7 +329,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
         SET_TAG(bm_tags, 7, TAG_DONE, 0);
 
         /* Allocate an extra planes for HIDD bitmap info */
-        nbm = AllocMem(sizeof(struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES, MEMF_ANY | MEMF_CLEAR);
+        nbm = AllocVec(sizeof(struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES, MEMF_ANY | MEMF_CLEAR);
         D(bug("[AllocBitMap] Allocated bitmap structure: 0x%p\n", nbm));
 
         if(nbm) {
@@ -477,13 +477,18 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
                 OOP_DisposeObject(bm_obj);
             } /* if (bitmap object allocated) */
 
-            FreeMem(nbm, sizeof(struct BitMap));
+            FreeVec(nbm);
             nbm = NULL;
 
         } /* if (nbm) */
 
     } else { /* Otherwise init a plain Amiga bitmap. TODO: BMF_INTERLEAVED support */
-        nbm = AllocMem(sizeof(struct BitMap) + ((depth > 8) ? (depth - 8) * sizeof(PLANEPTR) : 0),
+        /* Planes[] holds 8 entries, so a deeper bitmap needs room for the
+         * rest. AllocVec() remembers how much, so the cleanup paths below
+         * do not have to repeat the sum and cannot get it wrong.
+         */
+        nbm = AllocVec(sizeof(struct BitMap)
+                       + ((depth > 8) ? (depth - 8) * sizeof(PLANEPTR) : 0),
                        MEMF_ANY | MEMF_CLEAR);
 
         if(nbm) {
@@ -512,7 +517,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
                         }
                     } else {
                         /* Failed to allocate plane data storage ... */
-                        FreeMem(nbm, sizeof(struct BitMap));
+                        FreeVec(nbm);
                         nbm = NULL;
                     }
                 } else {
@@ -531,7 +536,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
                             if(nbm->Planes[plane])
                                 FreeRaster(nbm->Planes[plane], sizex, sizey);
 
-                        FreeMem(nbm, sizeof(struct BitMap));
+                        FreeVec(nbm);
                         nbm = NULL;
                     } else {
                         /* Clear remaining entries.. */

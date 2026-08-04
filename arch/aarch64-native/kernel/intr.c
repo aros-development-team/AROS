@@ -168,6 +168,56 @@ void handle_serror(regs_t *regs)
 }
 
 /*
+ * Dump the instruction stream around a faulting PC, and a few stack
+ * words.
+ *
+ * The usual reason we get here is a branch through a stale or unrelocated
+ * function pointer, so pc can be any value at all. The naive version
+ * indexed pc[-4] and faulted in the handler itself when pc was a small
+ * integer - the nested Data Abort then replaced the very diagnostic it
+ * was printing. Stay inside pc's own page: the instruction fetch at pc
+ * succeeded (otherwise this would be an instruction abort), so that page
+ * is mapped, while the one below or above need not be.
+ */
+static void dump_code_around(uint64_t pc, uint64_t lr, uint64_t sp)
+{
+    uint64_t page = pc & ~0xfffULL;
+    uint64_t a, e;
+
+    if (pc & 3)
+    {
+        bug("[Kernel]    pc 0x%016lx is unaligned, no code dump\n", pc);
+    }
+    else
+    {
+        a = (pc - page >= 16) ? pc - 16 : page;
+        e = (page + 0x1000 - pc > 16) ? pc + 16 : page + 0x1000;
+
+        bug("[Kernel]    code @ 0x%016lx:", a);
+        for (; a < e; a += 4)
+            bug("%s %08x", (a == pc) ? " >" : "", *(uint32_t *)a);
+        bug("   (> = pc)\n");
+    }
+
+    bug("[Kernel]    lr=0x%016lx sp=0x%016lx\n", lr, sp);
+
+    if (sp & 7)
+    {
+        bug("[Kernel]    sp is unaligned, no stack dump\n");
+    }
+    else
+    {
+        uint64_t stop = (sp & ~0xfffULL) + 0x1000;
+        int i;
+
+        bug("[Kernel]    stack:");
+        for (i = 0; i < 8 && sp + 8 <= stop; i++, sp += 8)
+            bug(" %016lx", *(uint64_t *)sp);
+        bug("\n");
+    }
+}
+
+/*
  * handle_undef: Unknown/undefined instruction handler.
  */
 void handle_undef(regs_t *regs, uint64_t esr)
@@ -178,27 +228,12 @@ void handle_undef(regs_t *regs, uint64_t esr)
         esr, (uint32_t)((esr >> 26) & 0x3f), regs->pc);
 
     /*
-     * Bring-up diagnostic: dump the instruction stream around PC (the
-     * faulting page is mapped, or we would have taken an instruction
-     * abort instead). The byte pattern distinguishes a jump into
-     * non-code (zeroes/data) from a mis-relocated or genuinely
-     * unsupported instruction. Also dump lr and a few stack words to
-     * locate the caller within the seglist.
+     * Bring-up diagnostic: the byte pattern around PC distinguishes a
+     * jump into non-code (zeroes/data) from a mis-relocated or genuinely
+     * unsupported instruction, and lr plus the top stack words locate
+     * the caller within the seglist.
      */
-    {
-        uint32_t *pc_addr = (uint32_t *)regs->pc;
-        uint64_t *sp_addr = (uint64_t *)regs->sp;
-        int i;
-
-        bug("[Kernel]    code @ pc-16:");
-        for (i = -4; i <= 3; i++)
-            bug(" %08x", pc_addr[i]);
-        bug("\n[Kernel]    lr=0x%016lx sp=0x%016lx\n", regs->lr, regs->sp);
-        bug("[Kernel]    stack:");
-        for (i = 0; i < 8; i++)
-            bug(" %016lx", sp_addr[i]);
-        bug("\n");
-    }
+    dump_code_around(regs->pc, regs->lr, regs->sp);
 
     if (krnRunExceptionHandlers(KernelBase, 4, regs))
         return;
@@ -229,13 +264,9 @@ void handle_dataabort(regs_t *regs, uint64_t esr)
     bug("[Kernel]    exception #2 (Bus Error)\n");
     bug("[Kernel]    ESR_EL1=0x%016lx FAR_EL1=0x%016lx PC=0x%016lx\n", esr, far, regs->pc);
 
-    /* Dump faulting instruction context */
-    {
-        uint32_t *pc_addr = (uint32_t *)(regs->pc);
-        bug("[Kernel]    Faulting instruction: 0x%08x\n", *pc_addr);
-        bug("[Kernel]    PC-8: %08x  PC-4: %08x  PC: %08x  PC+4: %08x  PC+8: %08x\n",
-            pc_addr[-2], pc_addr[-1], pc_addr[0], pc_addr[1], pc_addr[2]);
-    }
+    /* Dump faulting instruction context (page-clamped: a data abort can
+     * also be taken with a wild pc, e.g. when the stack was corrupted). */
+    dump_code_around(regs->pc, regs->lr, regs->sp);
 
     cpu_DumpRegs(regs);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: PCI device class
 */
@@ -661,32 +661,43 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 dev->strClass, dev->strSubClass, dev->strInterface));
             D(bug("[PCIDevice] > IRQ %u INT %u\n", dev->IRQLine, dev->INTLine));
 
-            /* Read two first base addresses */
-            for (i = 0; i < 2; i++)
+            /*
+                Read the base addresses. Bridges specify only the first two.
+                A 64-bit base register occupies two consecutive slots; the
+                second holds the upper half of the address, not a base
+                address of its own.
+            */
+            for (i = 0; i < (dev->isBridge ? 2 : 6); i++)
             {
-                dev->BaseReg[i].addr = getLong(cl, o, PCICS_BAR0 + (i << 2));
+                ULONG lo = getLong(cl, o, PCICS_BAR0 + (i << 2));
+
+                dev->BaseReg[i].addr = lo;
                 dev->BaseReg[i].size = sizePCIBaseReg(driver, PSD(cl), dev, dev->bus,
                         dev->dev, dev->sub, i);
+
+                if (((lo & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_MMAP) &&
+                    ((lo & PCIBAR_MEMTYPE_MASK) == PCIBAR_MEMTYPE_64BIT) &&
+                    (i + 1 < (dev->isBridge ? 2 : 6)))
+                {
+                    ULONG hi = getLong(cl, o, PCICS_BAR0 + ((i + 1) << 2));
+
+#if (__WORDSIZE == 64)
+                    dev->BaseReg[i].addr |= (IPTR)hi << 32;
+#else
+                    /* The address cannot be represented; leave it unmapped */
+                    if (hi)
+                        dev->BaseReg[i].addr = 0;
+#endif
+                    dev->BaseReg[i + 1].addr = 0;
+                    dev->BaseReg[i + 1].size = 0;
+                    i++;
+                }
             }
 
             /* Address and size of ROM */
             dev->RomBase = getLong(cl, o, PCICS_EXPROM_BASE);
             dev->RomSize = sizePCIBaseReg(driver, PSD(cl), dev, dev->bus,
                         dev->dev, dev->sub, (PCICS_EXPROM_BASE - PCICS_BAR0) >> 2);
-            
-            /*
-                Bridges specify only first two base addresses. If not bridge,
-                check the rest now
-            */
-            if (! dev->isBridge)
-            {
-                for (i = 2; i < 6; i++)
-                {
-                    dev->BaseReg[i].addr = getLong(cl, o, PCICS_BAR0 + (i << 2));
-                    dev->BaseReg[i].size = sizePCIBaseReg(driver, PSD(cl), dev, dev->bus,
-                        dev->dev, dev->sub, i);
-                }
-            }
         }
     }
 
@@ -806,13 +817,14 @@ static void dispatch_base(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     if ((dev->BaseReg[id].addr & PCIBAR_MASK_TYPE)==PCIBAR_TYPE_IO)
     {
         IPTR IOBase = 0;
-        *msg->storage &= PCIBAR_MASK_IO;
+        /* PCIBAR_MASK_xxx are 32-bit; widen so 64-bit addresses survive */
+        *msg->storage &= ~(IPTR)0x3;
         OOP_GetAttr(dev->driver, aHidd_PCIDriver_IOBase, &IOBase);
         *msg->storage += IOBase;
     }
     else
     {
-        *msg->storage &= PCIBAR_MASK_MEM;
+        *msg->storage &= ~(IPTR)0xf;
     }
 }
 

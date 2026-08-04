@@ -107,11 +107,14 @@ static void pcidt_mapranges(struct pcidt_staticdata *psd, fdt_node_t node,
         /*
          * The 64-bit prefetchable window is tens of gigabytes wide.
          * Mapping it up front would cost more page tables than the
-         * pool holds, and nothing has been assigned out of it, so
-         * leave it until something actually needs it.
+         * pool holds, so remember where it is and map only the
+         * regions firmware actually assigned out of it, afterwards.
          */
         if (space == PCI_RANGE_MEM64)
         {
+            b->mem64PciBase = (IPTR)FDT_ReadCells(&e[1], 2);
+            b->mem64CpuBase = (IPTR)cpu;
+            b->mem64Size    = (IPTR)size;
             D(bug("[PCIDT:Driver] leaving the 64-bit window at %p (%p) "
                   "unmapped\n", (IPTR)cpu, (IPTR)size);)
             continue;
@@ -120,11 +123,290 @@ static void pcidt_mapranges(struct pcidt_staticdata *psd, fdt_node_t node,
         if (space != PCI_RANGE_IO && space != PCI_RANGE_MEM32)
             continue;
 
+        if (space == PCI_RANGE_IO)
+        {
+            b->ioPciBase = (IPTR)FDT_ReadCells(&e[1], 2);
+            b->ioSize    = (IPTR)size;
+        }
+        else
+        {
+            b->mem32PciBase = (IPTR)FDT_ReadCells(&e[1], 2);
+            b->mem32Size    = (IPTR)size;
+        }
+
         D(bug("[PCIDT:Driver] mapping %s window %p+%p\n",
               space == PCI_RANGE_IO ? "I/O" : "memory",
               (IPTR)cpu, (IPTR)size);)
 
         pcidt_map(psd, (IPTR)cpu, (IPTR)size);
+    }
+}
+
+/*
+ * Size one base register (or pair) the usual way. Returns the size and
+ * leaves the register as it was found.
+ */
+static UQUAD pcidt_sizebar(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
+                           UBYTE sub, ULONG reg, BOOL is64)
+{
+    ULONG lo, hi = 0, szlo, szhi = 0xffffffff;
+    UQUAD size;
+
+    lo = PCIDT_ReadConfig(b, bus, dev, sub, reg);
+    PCIDT_WriteConfig(b, bus, dev, sub, reg, 0xffffffff);
+    szlo = PCIDT_ReadConfig(b, bus, dev, sub, reg);
+    PCIDT_WriteConfig(b, bus, dev, sub, reg, lo);
+
+    if (is64)
+    {
+        hi = PCIDT_ReadConfig(b, bus, dev, sub, reg + 4);
+        PCIDT_WriteConfig(b, bus, dev, sub, reg + 4, 0xffffffff);
+        szhi = PCIDT_ReadConfig(b, bus, dev, sub, reg + 4);
+        PCIDT_WriteConfig(b, bus, dev, sub, reg + 4, hi);
+    }
+
+    if ((lo & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO)
+        size = ~(((UQUAD)szhi << 32) | (szlo & ~(UQUAD)0x3)) + 1;
+    else
+        size = ~(((UQUAD)szhi << 32) | (szlo & ~(UQUAD)0xf)) + 1;
+
+    if (!szlo || szlo == 0xffffffff)
+        size = 0;
+
+    return size;
+}
+
+/*
+ * Give out address space firmware did not. A firmware that only sets
+ * up its boot path leaves everything else with empty base registers
+ * and decode turned off; nothing behind the bridge is reachable until
+ * someone finishes the job.
+ */
+static void pcidt_assignbars(struct pcidt_staticdata *psd,
+                             struct pcidt_bridge *b)
+{
+    UQUAD memNext, memLimit, ioNext, ioLimit;
+    UBYTE bus;
+
+    if (!b->mem32Size)
+        return;
+
+    memNext = b->mem32PciBase;
+    memLimit = b->mem32PciBase + b->mem32Size;
+    /* Keep clear of legacy ports at the bottom of the window */
+    ioNext = b->ioPciBase + 0x1000;
+    ioLimit = b->ioPciBase + b->ioSize;
+
+    for (bus = b->busStart; ; bus++)
+    {
+        UBYTE dev;
+
+        for (dev = 0; dev < 32; dev++)
+        {
+            UBYTE sub, nfunc = 1;
+
+            for (sub = 0; sub < nfunc; sub++)
+            {
+                ULONG hdr, reg, lastreg;
+
+                if (PCIDT_ReadConfig(b, bus, dev, sub, 0x00) == 0xffffffff)
+                    continue;
+
+                hdr = (PCIDT_ReadConfig(b, bus, dev, sub, 0x0c) >> 16) & 0xff;
+                if (sub == 0 && (hdr & 0x80))
+                    nfunc = 8;
+                if ((hdr & 0x7f) != 0)
+                    continue;
+                lastreg = 0x24;
+
+                /* First move past whatever is already assigned */
+                for (reg = 0x10; reg <= lastreg; reg += 4)
+                {
+                    ULONG lo = PCIDT_ReadConfig(b, bus, dev, sub, reg);
+                    BOOL is64 = ((lo & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_MMAP) &&
+                                ((lo & PCIBAR_MEMTYPE_MASK) == PCIBAR_MEMTYPE_64BIT);
+                    UQUAD addr, size;
+
+                    if ((lo & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO)
+                    {
+                        addr = lo & ~(UQUAD)0x3;
+                        if (addr)
+                        {
+                            size = pcidt_sizebar(b, bus, dev, sub, reg, FALSE);
+                            if (addr + size > ioNext &&
+                                addr < ioLimit)
+                                ioNext = addr + size;
+                        }
+                        continue;
+                    }
+
+                    addr = lo & ~(UQUAD)0xf;
+                    if (is64)
+                    {
+                        addr |= (UQUAD)PCIDT_ReadConfig(b, bus, dev, sub,
+                                                        reg + 4) << 32;
+                    }
+                    if (addr >= b->mem32PciBase && addr < memLimit)
+                    {
+                        size = pcidt_sizebar(b, bus, dev, sub, reg, is64);
+                        if (addr + size > memNext)
+                            memNext = addr + size;
+                    }
+                    if (is64)
+                        reg += 4;
+                }
+
+                /* Then hand space to whatever has none */
+                for (reg = 0x10; reg <= lastreg; reg += 4)
+                {
+                    ULONG lo = PCIDT_ReadConfig(b, bus, dev, sub, reg);
+                    BOOL is64 = ((lo & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_MMAP) &&
+                                ((lo & PCIBAR_MEMTYPE_MASK) == PCIBAR_MEMTYPE_64BIT);
+                    BOOL isio = ((lo & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO);
+                    UQUAD addr, size;
+
+                    addr = isio ? (lo & ~(UQUAD)0x3) : (lo & ~(UQUAD)0xf);
+                    if (is64)
+                        addr |= (UQUAD)PCIDT_ReadConfig(b, bus, dev, sub,
+                                                        reg + 4) << 32;
+
+                    if (!addr)
+                    {
+                        size = pcidt_sizebar(b, bus, dev, sub, reg, is64);
+                        if (size)
+                        {
+                            if (isio)
+                            {
+                                UQUAD a = (ioNext + size - 1) & ~(size - 1);
+                                if (a + size <= ioLimit)
+                                {
+                                    PCIDT_WriteConfig(b, bus, dev, sub, reg,
+                                        (ULONG)a | (lo & 0x3));
+                                    ioNext = a + size;
+                                    D(bug("[PCIDT:Driver] %02x:%02x.%x "
+                                          "io bar %02x -> %p (%p)\n", bus,
+                                          dev, sub, reg, (IPTR)a, (IPTR)size);)
+                                }
+                            }
+                            else
+                            {
+                                UQUAD a = (memNext + size - 1) & ~(size - 1);
+                                if (a + size <= memLimit)
+                                {
+                                    PCIDT_WriteConfig(b, bus, dev, sub, reg,
+                                        (ULONG)a | (lo & 0xf));
+                                    if (is64)
+                                        PCIDT_WriteConfig(b, bus, dev, sub,
+                                                          reg + 4, 0);
+                                    memNext = a + size;
+                                    D(bug("[PCIDT:Driver] %02x:%02x.%x "
+                                          "mem bar %02x -> %p (%p)\n", bus,
+                                          dev, sub, reg, (IPTR)a, (IPTR)size);)
+                                }
+                            }
+                        }
+                    }
+                    if (is64)
+                        reg += 4;
+                }
+
+                /* Let the device answer in the space it was given */
+                {
+                    ULONG cmd = PCIDT_ReadConfig(b, bus, dev, sub, 0x04);
+                    PCIDT_WriteConfig(b, bus, dev, sub, 0x04,
+                                      (cmd & 0xffff0000) | ((cmd & 0xffff) | 0x0003));
+                }
+            }
+        }
+
+        if (bus == b->busEnd)
+            break;
+    }
+}
+
+/*
+ * Map whatever firmware assigned out of the 64-bit window. Walk the
+ * devices and map just the regions their base registers point into it,
+ * sized the way anything sizes a base register - write ones, read the
+ * mask back, restore.
+ */
+static void pcidt_map64bars(struct pcidt_staticdata *psd,
+                            struct pcidt_bridge *b)
+{
+    UBYTE bus;
+
+    if (!b->mem64Size)
+        return;
+
+    for (bus = b->busStart; ; bus++)
+    {
+        UBYTE dev;
+
+        for (dev = 0; dev < 32; dev++)
+        {
+            UBYTE sub, nfunc = 1;
+
+            for (sub = 0; sub < nfunc; sub++)
+            {
+                ULONG hdr, reg, lastreg;
+
+                if (PCIDT_ReadConfig(b, bus, dev, sub, 0x00) == 0xffffffff)
+                    continue;
+
+                hdr = (PCIDT_ReadConfig(b, bus, dev, sub, 0x0c) >> 16) & 0xff;
+                if (sub == 0 && (hdr & 0x80))
+                    nfunc = 8;
+
+                /* Type 0 headers have six base registers, bridges two */
+                lastreg = ((hdr & 0x7f) == 0) ? 0x24 : 0x14;
+
+                for (reg = 0x10; reg <= lastreg; reg += 4)
+                {
+                    ULONG lo, hi, szlo, szhi;
+                    UQUAD addr, size;
+
+                    lo = PCIDT_ReadConfig(b, bus, dev, sub, reg);
+                    if ((lo & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO)
+                        continue;
+                    if ((lo & PCIBAR_MEMTYPE_MASK) != PCIBAR_MEMTYPE_64BIT)
+                        continue;
+                    if (reg == lastreg)
+                        break;
+
+                    hi = PCIDT_ReadConfig(b, bus, dev, sub, reg + 4);
+                    addr = ((UQUAD)hi << 32) | (lo & 0xfffffff0);
+                    reg += 4;
+
+                    if (!hi)
+                        continue;
+                    if (addr <  b->mem64PciBase ||
+                        addr >= b->mem64PciBase + b->mem64Size)
+                        continue;
+
+                    PCIDT_WriteConfig(b, bus, dev, sub, reg - 4, 0xffffffff);
+                    PCIDT_WriteConfig(b, bus, dev, sub, reg,     0xffffffff);
+                    szlo = PCIDT_ReadConfig(b, bus, dev, sub, reg - 4);
+                    szhi = PCIDT_ReadConfig(b, bus, dev, sub, reg);
+                    PCIDT_WriteConfig(b, bus, dev, sub, reg - 4, lo);
+                    PCIDT_WriteConfig(b, bus, dev, sub, reg,     hi);
+
+                    size = ~(((UQUAD)szhi << 32) | (szlo & 0xfffffff0)) + 1;
+                    if (!size)
+                        continue;
+
+                    D(bug("[PCIDT:Driver] %02x:%02x.%x 64-bit region "
+                          "%p (%p)\n", bus, dev, sub,
+                          (APTR)(IPTR)addr, (APTR)(IPTR)size);)
+
+                    pcidt_map(psd,
+                        (IPTR)(addr - b->mem64PciBase) + b->mem64CpuBase,
+                        (IPTR)size);
+                }
+            }
+        }
+
+        if (bus == b->busEnd)
+            break;
     }
 }
 
@@ -375,6 +657,8 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
 
             /* The windows devices behind this bridge will answer in */
             pcidt_mapranges(psd, node, b);
+            pcidt_assignbars(psd, b);
+            pcidt_map64bars(psd, b);
 
             /* And how their interrupt pins are wired */
             pcidt_intmap(node, b);
