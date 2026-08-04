@@ -106,6 +106,9 @@ struct MUI_ApplicationData
     struct DiskObject       *app_DefaultDiskObject; /* This is complete
                                                      * object managed by
                                                      * the class */
+    struct MsgPort          *app_CfgNotifyPort;   /* notification of changes to the prefs file */
+    struct NotifyRequest    app_CfgNotifyRequest;
+    STRPTR                  app_CfgNotifyName;
 };
 
 struct timerequest_ext
@@ -316,6 +319,61 @@ static Object *find_application_by_base(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
+ Config file notification
+
+ ENV:zune/<appbase>.prefs is watched. Whenever it is written (e.g. by the
+ MUI Settings window, sys:prefs/Zune) a fresh Configdata is built from it
+ and handed to the application, so the new settings are applied
+ immediately without restarting the application.
+**************************************************************************/
+static void Application_ReloadConfigdata(struct IClass *cl, Object *obj)
+{
+    Object *cfg;
+
+    cfg = MUI_NewObject(MUIC_Configdata,
+        MUIA_Configdata_Application, obj, TAG_DONE);
+    if (cfg)
+        set(obj, MUIA_Application_Configdata, cfg);
+}
+
+static void Application_SetupConfigNotify(struct IClass *cl, Object *obj)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    char name[255];
+
+    if (!data->app_Base)
+        return;
+
+    data->app_CfgNotifyName = NULL;
+    data->app_CfgNotifyPort = CreateMsgPort();
+    if (!data->app_CfgNotifyPort)
+        return;
+
+    snprintf(name, sizeof(name), "ENV:zune/%s.prefs", data->app_Base);
+    data->app_CfgNotifyName = StrDup(name);
+    if (!data->app_CfgNotifyName)
+    {
+        DeleteMsgPort(data->app_CfgNotifyPort);
+        data->app_CfgNotifyPort = NULL;
+        return;
+    }
+
+    memset(&data->app_CfgNotifyRequest, 0, sizeof(struct NotifyRequest));
+    data->app_CfgNotifyRequest.nr_Name = data->app_CfgNotifyName;
+    data->app_CfgNotifyRequest.nr_Flags = NRF_SEND_MESSAGE;
+    data->app_CfgNotifyRequest.nr_stuff.nr_Msg.nr_Port =
+        data->app_CfgNotifyPort;
+
+    if (!StartNotify(&data->app_CfgNotifyRequest))
+    {
+        FreeVec(data->app_CfgNotifyName);
+        data->app_CfgNotifyName = NULL;
+        DeleteMsgPort(data->app_CfgNotifyPort);
+        data->app_CfgNotifyPort = NULL;
+    }
+}
+
+/**************************************************************************
  OM_NEW
 **************************************************************************/
 static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
@@ -422,6 +480,9 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
     }
     get(data->app_GlobalInfo.mgi_Configdata, MUIA_Configdata_ZunePrefs,
         &data->app_GlobalInfo.mgi_Prefs);
+
+    /* watch the prefs file so settings changes are applied live */
+    Application_SetupConfigNotify(cl, obj);
 
 //    D(bug("muimaster.library/application.c: Message Port created at 0x%p\n",
 //    data->app_GlobalInfo.mgi_WindowPort));
@@ -867,6 +928,15 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
 
         DeleteMsgPort(data->app_AppPort);
     }
+
+    if (data->app_CfgNotifyPort)
+    {
+        EndNotify(&data->app_CfgNotifyRequest);
+        DeleteMsgPort(data->app_CfgNotifyPort);
+    }
+
+    if (data->app_CfgNotifyName)
+        FreeVec(data->app_CfgNotifyName);
 
     if (data->app_GlobalInfo.mgi_Configdata)
         MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
@@ -1497,6 +1567,9 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
     if (data->app_AppPort)
         signalmask |= (1L << data->app_AppPort->mp_SigBit);
 
+    if (data->app_CfgNotifyPort)
+        signalmask |= (1L << data->app_CfgNotifyPort->mp_SigBit);
+
     if (signal == 0)
     {
         /* Stupid app which (always) passes 0 in signals. It's impossible to
@@ -1677,6 +1750,27 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
             }
         }
 
+        if (data->app_CfgNotifyPort
+            && (signal & (1L << data->app_CfgNotifyPort->mp_SigBit)))
+        {
+            struct NotifyMessage *nmsg;
+
+            /* only act if a notification really happened */
+            if ((nmsg =
+                    (struct NotifyMessage *)GetMsg(data->app_CfgNotifyPort)))
+            {
+                /* reply (and thereby free) all notification messages */
+                do {
+                    ReplyMsg((struct Message *)nmsg);
+                } while ((nmsg =
+                        (struct NotifyMessage *)GetMsg(data->app_CfgNotifyPort)));
+
+                /* the prefs file has been rewritten (e.g. by the MUI Settings
+                 * window) - rebuild the configdata from it and apply it */
+                Application_ReloadConfigdata(cl, obj);
+            }
+        }
+
         if (data->app_AppPort
             && (signal & (1L << data->app_AppPort->mp_SigBit)))
         {
@@ -1763,6 +1857,8 @@ static IPTR Application__MUIM_Input(struct IClass *cl, Object *obj,
     if (data->app_AppPort)
         signal |= (1L << data->app_AppPort->mp_SigBit);
 
+    if (data->app_CfgNotifyPort)
+        signal |= (1L << data->app_CfgNotifyPort->mp_SigBit);
 
     *msg->signal = signal;
     return Application__MUIM_NewInput(cl, obj, (APTR) msg);
@@ -2154,7 +2250,7 @@ static IPTR Application__MUIM_OpenConfigWindow(struct IClass *cl,
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct TagItem tags[] = {
-        {SYS_Asynch, FALSE},
+        {SYS_Asynch, TRUE},
         {SYS_Input, 0},
         {SYS_Output, 0},
         {NP_StackSize, AROS_STACKSIZE},
@@ -2168,14 +2264,6 @@ static IPTR Application__MUIM_OpenConfigWindow(struct IClass *cl,
     if (SystemTagList(cmd, tags) == -1)
     {
         return 0;
-    }
-    Delay(50);
-
-    if (data->app_Base)
-    {
-        snprintf(cmd, 255, "ENV:zune/%s.prefs", data->app_Base);
-        DoMethod(data->app_GlobalInfo.mgi_Configdata, MUIM_Configdata_Load,
-            (IPTR) cmd);
     }
 
     return 1;
