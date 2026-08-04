@@ -57,7 +57,12 @@ LONG fs_Open(struct FileHandle *handle, struct MsgPort *port, BPTR lock, LONG mo
     status = dopacket3(DOSBase, &error, port, action, MKBADDR(handle), lock, bstrname);
     FREEC2BSTR(bstrname);
 
-    handle->fh_Type = port;
+    /* A handler that serves its clients on a port other than the one we
+     * found it on says so by filling in fh_Type itself. Handlers that do
+     * not care leave it alone and keep talking on the port we used here.
+     */
+    if (!handle->fh_Type)
+        handle->fh_Type = port;
     return status ? 0 : error;
 }
 
