@@ -731,6 +731,15 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
         if (positionmode >= 1)
         {
             snprintf(filename, 255, "ENV:zune/%s.prefs", data->app_Base);
+            /*
+             * The config window (sys:prefs/Zune) is launched asynchronously,
+             * so we may not have refreshed our in-memory Configdata when it
+             * was opened. Reload the latest settings it has written before
+             * saving, so we don't overwrite the user's changes with our
+             * stale copy. Window positions are still persisted by Save.
+             */
+            DoMethod(data->app_GlobalInfo.mgi_Configdata,
+                MUIM_Configdata_Load, (IPTR) filename);
             DoMethod(data->app_GlobalInfo.mgi_Configdata,
                 MUIM_Configdata_Save, (IPTR) filename);
         }
