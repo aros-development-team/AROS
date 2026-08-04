@@ -13,6 +13,7 @@ FILES	:=	\
 	vc4gfx_sdtv \
 	vc4gfx_hdmi \
 	vc4gfx_hardware \
+	vc4gfx_hvs \
 	vc4gfx_pixfmts \
 	vc4gfx_onbitmap \
 	vc4gfx_offbitmap

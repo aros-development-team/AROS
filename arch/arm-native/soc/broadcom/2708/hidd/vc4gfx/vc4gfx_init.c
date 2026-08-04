@@ -93,6 +93,10 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     KernelBase = OpenResource("kernel.resource");
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
+    /* PV2 vsync IRQ handler; the source stays masked until the HVS
+     * takeover arms it (vc4gfx_hvs.c). */
+    vc4_hvs_init(xsd);
+
     if (!FNAME_SUPPORT(GetAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM))
         goto failure;
 

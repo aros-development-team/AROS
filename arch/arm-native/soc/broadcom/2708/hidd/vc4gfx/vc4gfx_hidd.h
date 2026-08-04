@@ -15,6 +15,7 @@
 #include <hardware/bcm2708_dma.h>
 
 #include "vc4gfx_hardware.h"
+#include "vc4gfx_hvs.h"
 
 /* vcsd_MBoxMessage is one shared buffer for every mailbox round-trip;
  * take vcsd_GPUMemLock around each pack-write-read sequence. */
@@ -109,6 +110,11 @@ struct VideoCoreGfx_staticdata {
         ULONG                   vcsd_FBPageHeight;  /* Rows per page */
         UBYTE                   vcsd_FBPages;       /* 1 or 2 */
         UBYTE                   vcsd_FBFront;       /* Currently scanned-out page */
+
+        /* HVS display-list ownership (vc4gfx_hvs.c). While hvs_Active,
+         * flips and cursor updates go through our own display list and
+         * the firmware display mailbox tags must not be used. */
+        struct vc4_hvs_state    vcsd_HVS;
 };
 
 /* DMA has a per-call setup + poll cost; below these sizes NEON wins.

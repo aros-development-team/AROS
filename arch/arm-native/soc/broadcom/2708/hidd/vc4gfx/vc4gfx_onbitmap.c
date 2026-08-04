@@ -24,6 +24,7 @@
 
 #include "vc4gfx_bitmap.h"
 #include "vc4gfx_hidd.h"
+#include "vc4gfx_hvs.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -98,9 +99,13 @@ BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
     VC4_MBOX_LOCK(xsd);
 
     nf = 1 - xsd->vcsd_FBFront;
-    if (!vc4_set_voffset(xsd, nf * xsd->vcsd_FBPageHeight))
+    if (!vc4_hvs_flip_page(xsd, xsd->vcsd_FBPage[nf])
+        && !vc4_set_voffset(xsd, nf * xsd->vcsd_FBPageHeight))
     {
-        /* Firmware refused — disable flipping for good. */
+        /* Firmware refused — disable flipping for good. Loud: a GL
+         * client that already wrapped the scanout pages keeps rendering
+         * to the back page and the screen freezes on the front one. */
+        bug("[VideoCoreGfx] flip: SETVOFFSET refused, flipping disabled\n");
         xsd->vcsd_FBPages = 1;
         VC4_MBOX_UNLOCK(xsd);
         return FALSE;
@@ -138,6 +143,13 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     APTR fb_ptr = NULL;
     ULONG fb_pitch = 0, fb_size = 0;
     int pages;
+
+    /* Mode is changing: the FBALLOC sequence below makes the firmware
+     * rebuild its display list and repoint the channel, so give up list
+     * ownership first; it is re-taken once the new framebuffer is up. */
+    VC4_MBOX_LOCK(xsd);
+    xsd->vcsd_HVS.hvs_Active = FALSE;
+    VC4_MBOX_UNLOCK(xsd);
 
     for (pages = 2; pages >= 1; pages--)
     {
@@ -258,6 +270,15 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     D(bug("[VideoCoreGfx] %s: %d page(s) @ 0x%p, pitch %d\n",
         __PRETTY_FUNCTION__, (int)xsd->vcsd_FBPages, fb_ptr, (int)fb_pitch));
 
+    /* Phase-1 HVS bring-up: dump the firmware's live display list and PV
+     * timing for this mode (read-only, self-skips on QEMU). */
+    vc4_hvs_dump(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch, aligned_width, height);
+
+    /* Phase 2: own the display list from here on. Flips and cursor
+     * updates become dlist repoints; falls back to the firmware paths
+     * (and returns FALSE) if the live list can't be inherited. */
+    vc4_hvs_takeover(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch);
+
     *fb_ptr_out   = fb_ptr;
     *fb_pitch_out = fb_pitch;
     return TRUE;
@@ -269,6 +290,12 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
 static VOID vc4_restore_cursor(struct VideoCoreGfx_staticdata *xsd)
 {
     if (!xsd->vcsd_CurBuf || !xsd->vcsd_CurWidth || !xsd->vcsd_CurHeight)
+        return;
+
+    /* Owning the display list: the takeover already baked the current
+     * cursor state into our list, and the firmware cursor tags would
+     * make the firmware rebuild its list and steal the channel back. */
+    if (xsd->vcsd_HVS.hvs_Active)
         return;
 
     VC4_MBOX_LOCK(xsd);
@@ -472,6 +499,14 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
              * blit to the back page). */
             if (tag->ti_Data)
                 vc4_fb_flip(xsd);
+            return TRUE;
+        }
+        else if (IS_VideoCoreGfxBM_ATTR(tag->ti_Tag, idx)
+                 && idx == aoHidd_VideoCoreGfxBitMap_Overlay)
+        {
+            /* Zero-copy overlay plane (vc4gallium windowed GL). Success
+             * is reported via a Get on the same attribute. */
+            vc4_hvs_overlay(xsd, (const struct vc4gfx_overlay *)tag->ti_Data);
             return TRUE;
         }
     }
