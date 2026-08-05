@@ -1785,6 +1785,18 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                             usb2otg_halt_channel_preserve_char(chan);
                             req->iouh_Req.io_Error = UHIOERR_STALL;
+                            /*
+                             * A split sequence ending in STALL poisons the
+                             * channel's split engine like any other unclean
+                             * ending — every later SSPLIT is descheduled in
+                             * its arming microframe with a bare CHHLTD.
+                             * Reset it here, but keep this off the give-up
+                             * streak: STALL is the device answering (e.g.
+                             * an unsupported HID SET_IDLE), not a driver
+                             * failure, and must not burn the channel.
+                             */
+                            if (req->iouh_Flags & UHFF_SPLITTRANS)
+                                usb2otg_exorcise_channel(chan);
                         }
                         else if (intr & USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE)
                         {
