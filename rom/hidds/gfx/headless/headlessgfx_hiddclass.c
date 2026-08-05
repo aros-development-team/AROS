@@ -27,6 +27,16 @@
 
 #include LC_LIBDEFS_FILE
 
+/* Geometry of the single sync this driver registers. The defaults can be
+   overridden from the monitor icon's tooltypes; the bounds keep a typo
+   there from producing a display nothing can allocate a bitmap for. */
+#define HEADLESS_DEF_WIDTH   1024
+#define HEADLESS_DEF_HEIGHT  768
+#define HEADLESS_MIN_WIDTH   320
+#define HEADLESS_MIN_HEIGHT  200
+#define HEADLESS_MAX_WIDTH   16384      /* HMax/VMax advertised in the sync */
+#define HEADLESS_MAX_HEIGHT  16384
+
 OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     /*
@@ -132,18 +142,24 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
     };
     struct TagItem sync_mode[] =
     {
+        /* HTotal/HDisp/VDisp are patched below from the tooltypes -
+           keep them at indices 1..3 */
         {aHidd_Sync_PixelClock,         0                       },
-        {aHidd_Sync_HTotal,             1024                    },
-        {aHidd_Sync_HDisp,              1024                    },
-        {aHidd_Sync_VDisp,              768                     },
-        {aHidd_Sync_HMax,               16384                   },
-        {aHidd_Sync_VMax,               16384                   },
+        {aHidd_Sync_HTotal,             HEADLESS_DEF_WIDTH      },
+        {aHidd_Sync_HDisp,              HEADLESS_DEF_WIDTH      },
+        {aHidd_Sync_VDisp,              HEADLESS_DEF_HEIGHT     },
+        {aHidd_Sync_HMax,               HEADLESS_MAX_WIDTH      },
+        {aHidd_Sync_VMax,               HEADLESS_MAX_HEIGHT     },
         {aHidd_Sync_Description,        (IPTR)"Headless:%hx%v"  },
         {TAG_DONE,                      0UL                     }
     };
     /* Up to one PixFmtTags entry per depth, one SyncTags entry, TAG_DONE */
     struct TagItem modetags[sizeof(depths)/sizeof(depths[0]) + 2];
-    ULONG maxdepth, fixeddepth;
+    ULONG maxdepth, fixeddepth, nominaldepth;
+    ULONG width, height;
+    /* The depths actually registered, ascending */
+    ULONG regdepth[sizeof(depths)/sizeof(depths[0])];
+    ULONG nregdepth = 0;
     ULONG i, nmodetags = 0;
     struct TagItem msgNewTags[] =
     {
@@ -185,6 +201,7 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
             modetags[nmodetags].ti_Tag  = aHidd_DMEnum_PixFmtTags;
             modetags[nmodetags].ti_Data = (IPTR)depths[i].pftags;
             nmodetags++;
+            regdepth[nregdepth++] = depths[i].depth;
         }
     }
     if (nmodetags == 0)
@@ -198,10 +215,61 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
             modetags[nmodetags].ti_Tag  = aHidd_DMEnum_PixFmtTags;
             modetags[nmodetags].ti_Data = (IPTR)depths[i].pftags;
             nmodetags++;
+            regdepth[nregdepth++] = depths[i].depth;
         }
         maxdepth = 24;
         fixeddepth = 0;
     }
+
+    /*
+     * Nominal geometry, also from the loader's tooltypes. This is what
+     * NominalDimensions() reports, and it decides which mode the system
+     * opens its first display in: BestModeIDA() takes the depth as a
+     * minimum and then settles on the smallest mode meeting it, so
+     * without this the build-time AROS_NOMINAL_* values would be used
+     * and the shallowest registered depth would win.
+     */
+    width  = GetTagData(aHidd_Gfx_Headless_Width, HEADLESS_DEF_WIDTH, msg->attrList);
+    height = GetTagData(aHidd_Gfx_Headless_Height, HEADLESS_DEF_HEIGHT, msg->attrList);
+    if (width < HEADLESS_MIN_WIDTH)
+        width = HEADLESS_MIN_WIDTH;
+    if (width > HEADLESS_MAX_WIDTH)
+        width = HEADLESS_MAX_WIDTH;
+    if (height < HEADLESS_MIN_HEIGHT)
+        height = HEADLESS_MIN_HEIGHT;
+    if (height > HEADLESS_MAX_HEIGHT)
+        height = HEADLESS_MAX_HEIGHT;
+    /* The sync is the display - keep the two in step */
+    sync_mode[1].ti_Data = width;    /* HTotal */
+    sync_mode[2].ti_Data = width;    /* HDisp  */
+    sync_mode[3].ti_Data = height;   /* VDisp  */
+
+    /*
+     * A requested nominal depth must be one this driver actually
+     * exposes: with FixedDepth there is only one to have, otherwise
+     * take the shallowest registered depth that still satisfies the
+     * request (BestModeIDA() treats it as a minimum) - which also
+     * caps it at MaxDepth. Unset means "the deepest we registered".
+     */
+    nominaldepth = GetTagData(aHidd_Gfx_Headless_NominalDepth, 0, msg->attrList);
+    if (fixeddepth || !nominaldepth || nominaldepth > regdepth[nregdepth - 1])
+        nominaldepth = regdepth[nregdepth - 1];
+    else
+    {
+        for (i = 0; i < nregdepth; i++)
+        {
+            if (regdepth[i] >= nominaldepth)
+            {
+                nominaldepth = regdepth[i];
+                break;
+            }
+        }
+    }
+
+    XSD(cl)->nominalwidth  = width;
+    XSD(cl)->nominalheight = height;
+    XSD(cl)->nominaldepth  = nominaldepth;
+    D(bug("HeadlessGfx::New: nominal %ux%ux%u\n", width, height, nominaldepth));
     modetags[nmodetags].ti_Tag  = aHidd_DMEnum_SyncTags;
     modetags[nmodetags].ti_Data = (IPTR)sync_mode;
     nmodetags++;
@@ -316,4 +384,23 @@ OOP_Object *HeadlessGfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Ob
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     ReturnPtr("HeadlessGfx::CreateObject", OOP_Object *, object);
+}
+
+VOID HeadlessGfxDisplay__Hidd_Display__NominalDimensions(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Display_NominalDimensions *msg)
+{
+    /*
+     * Report what this driver actually offers. The base class answers
+     * with the build-time AROS_NOMINAL_* values, which say nothing about
+     * the modes registered here - and since BestModeIDA() takes the
+     * depth as a minimum and then settles on the smallest mode meeting
+     * it, a nominal depth below our shallowest format would open the
+     * display in that format rather than the deepest one available.
+     */
+    if (msg->width)
+        *(msg->width) = XSD(cl)->nominalwidth;
+    if (msg->height)
+        *(msg->height) = XSD(cl)->nominalheight;
+    if (msg->depth)
+        *(msg->depth) = XSD(cl)->nominaldepth;
 }

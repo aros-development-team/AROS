@@ -36,6 +36,12 @@ struct HeadlessGfx_staticdata
     OOP_Object      	    *headlessgfxhidd;
     OOP_Object      	    *headlessgfxdisplay;
     OOP_Object      	    *dmenum;
+
+    /* What NominalDimensions() reports: the sync this driver registers,
+       and the deepest pixel format configured for it */
+    UWORD                   nominalwidth;
+    UWORD                   nominalheight;
+    UBYTE                   nominaldepth;
 #if (0)
     OOP_Object       	    *visible;		/* Currently visible bitmap */
     struct HWData   	    data;

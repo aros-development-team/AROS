@@ -46,8 +46,9 @@ int main(void)
     BPTR olddir = BNULL;
     STRPTR myname;
     ULONG maxdepth = 0, forcedepth = 0;
+    ULONG width = 0, height = 0, nominaldepth = 0;
     ULONG err;
-    struct TagItem attrs[3];
+    struct TagItem attrs[6];
     ULONG nattrs = 0;
     struct TagItem ddtags[] =
     {
@@ -95,12 +96,25 @@ int main(void)
         if (str)
             forcedepth = atoi(str);
 
+        str = FindToolType(icon->do_ToolTypes, "WIDTH");
+        if (str)
+            width = atoi(str);
+
+        str = FindToolType(icon->do_ToolTypes, "HEIGHT");
+        if (str)
+            height = atoi(str);
+
+        str = FindToolType(icon->do_ToolTypes, "DEPTH");
+        if (str)
+            nominaldepth = atoi(str);
+
         FreeDiskObject(icon);
     }
     if (olddir)
         CurrentDir(olddir);
 
-    D(bug("[HeadlessGfx:Disk] MAXDEPTH %u, FORCEDEPTH %u\n", maxdepth, forcedepth));
+    D(bug("[HeadlessGfx:Disk] MAXDEPTH %u, FORCEDEPTH %u, WIDTH %u, HEIGHT %u, DEPTH %u\n",
+          maxdepth, forcedepth, width, height, nominaldepth));
 
     HeadlessGfxBase = OpenLibrary("headlessgfx.hidd", 0);
     if (HeadlessGfxBase == NULL)
@@ -134,6 +148,24 @@ int main(void)
     {
         attrs[nattrs].ti_Tag  = aHidd_Gfx_Headless_FixedDepth;
         attrs[nattrs].ti_Data = forcedepth;
+        nattrs++;
+    }
+    if (width)
+    {
+        attrs[nattrs].ti_Tag  = aHidd_Gfx_Headless_Width;
+        attrs[nattrs].ti_Data = width;
+        nattrs++;
+    }
+    if (height)
+    {
+        attrs[nattrs].ti_Tag  = aHidd_Gfx_Headless_Height;
+        attrs[nattrs].ti_Data = height;
+        nattrs++;
+    }
+    if (nominaldepth)
+    {
+        attrs[nattrs].ti_Tag  = aHidd_Gfx_Headless_NominalDepth;
+        attrs[nattrs].ti_Data = nominaldepth;
         nattrs++;
     }
     attrs[nattrs].ti_Tag  = TAG_DONE;

@@ -24,12 +24,19 @@ enum
 {
     aoHidd_Gfx_Headless_MaxDepth,   /* [I.G] (ULONG) Deepest mode to expose: 8, 15, 16 or 24 (default 24) */
     aoHidd_Gfx_Headless_FixedDepth, /* [I.G] (ULONG) Expose only this depth; overrides MaxDepth           */
+    aoHidd_Gfx_Headless_Width,      /* [I.G] (ULONG) Display width  (default 1024)                       */
+    aoHidd_Gfx_Headless_Height,     /* [I.G] (ULONG) Display height (default 768)                        */
+    aoHidd_Gfx_Headless_NominalDepth, /* [I.G] (ULONG) Depth to prefer when opening a display; clamped
+                                              to the depths actually exposed (default: the deepest)      */
 
     num_Hidd_Gfx_Headless_Attrs
 };
 
 #define aHidd_Gfx_Headless_MaxDepth   (HiddGfxHeadlessAttrBase + aoHidd_Gfx_Headless_MaxDepth)
 #define aHidd_Gfx_Headless_FixedDepth (HiddGfxHeadlessAttrBase + aoHidd_Gfx_Headless_FixedDepth)
+#define aHidd_Gfx_Headless_Width      (HiddGfxHeadlessAttrBase + aoHidd_Gfx_Headless_Width)
+#define aHidd_Gfx_Headless_Height     (HiddGfxHeadlessAttrBase + aoHidd_Gfx_Headless_Height)
+#define aHidd_Gfx_Headless_NominalDepth (HiddGfxHeadlessAttrBase + aoHidd_Gfx_Headless_NominalDepth)
 
 #define IS_HEADLESSGFX_ATTR(attr, idx) \
     (((idx) = (attr) - HiddGfxHeadlessAttrBase) < num_Hidd_Gfx_Headless_Attrs)
