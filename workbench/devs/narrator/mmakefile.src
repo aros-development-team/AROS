@@ -1,0 +1,12 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM- workbench-devs-complete : workbench-devs-narrator
+#MM workbench-devs-narrator : includes linklibs-speechcore workbench-devs-speech-resource
+
+%build_module mmake=workbench-devs-narrator \
+    modname=narrator modtype=device files="narrator" \
+    uselibs="speechcore"
+
+%common
