@@ -1398,6 +1398,32 @@ IPTR IconWindow__MUIM_IconWindow_UnselectAll
 }
 ///
 
+///IconWindow__MUIM_IconWindow_RequestClose()
+IPTR IconWindow__MUIM_IconWindow_RequestClose
+(
+  Class *CLASS, Object *self, Msg message
+)
+{
+  SETUP_ICONWINDOW_INST_DATA;
+
+  D(bug("[Wanderer:IconWindow]: %s()\n", __PRETTY_FUNCTION__));
+
+  /* The window closes on a pushed method, so it stays open and keeps
+   * asking until the application gets round to it. Queue one removal
+   * only: a second would dispose an object that is already gone.
+   */
+  if (data->iwd_Flags & IWDFLAG_CLOSING)
+    return TRUE;
+
+  data->iwd_Flags |= IWDFLAG_CLOSING;
+
+  DoMethod(_app(self), MUIM_Application_PushMethod,
+           (IPTR)self, 1, MUIM_IconWindow_Remove);
+
+  return TRUE;
+}
+///
+
 ///IconWindow__MUIM_IconWindow_Remove()
 IPTR IconWindow__MUIM_IconWindow_Remove
 (
@@ -1675,6 +1701,7 @@ ICONWINDOW_CUSTOMCLASS
   MUIM_IconWindow_Clicked,                    Msg,
   MUIM_IconWindow_DirectoryUp,                Msg,
   MUIM_IconWindow_AppWindowDrop,              Msg,
+  MUIM_IconWindow_RequestClose,               Msg,
   MUIM_IconWindow_Remove,                     Msg,
   MUIM_IconWindow_RateLimitRefresh,           Msg,
   MUIM_IconWindow_Snapshot,                   struct MUIP_IconWindow_Snapshot *,
