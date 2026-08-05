@@ -140,7 +140,7 @@ USER_LDFLAGS     := -static
     files=$(SH_FILES) targetdir=$(AROS_C) \
     usestartup=no
 
-#MM workbench-c-say : includes linklibs-speechcore
+#MM workbench-c-say : includes workbench-libs-translator-includes linklibs-speechcore
 %build_prog mmake=workbench-c-say progname=Say \
     files="Say SayArgs" targetdir=$(AROS_C) uselibs="speechcore"
 
