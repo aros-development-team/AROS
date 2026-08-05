@@ -6620,6 +6620,32 @@ AROS_LH3(void, psdSendEvent,
 
 /* *** Configuration *** */
 
+/* /// "pRdBE32()/pWrBE32()" */
+/*
+    IFF only pads chunks to even addresses, so a chunk or form header inside a
+    config buffer can sit two bytes off a longword boundary. Access those
+    headers bytewise: the compiler is otherwise free to merge neighbouring
+    longword accesses into an LDRD/LDM (or STRD/STM) pair, which faults on ARM
+    regardless of how the alignment check is configured.
+*/
+static ULONG pRdBE32(APTR ptr)
+{
+    UBYTE *b = ptr;
+
+    return(((ULONG) b[0]<<24)|((ULONG) b[1]<<16)|((ULONG) b[2]<<8)|(ULONG) b[3]);
+}
+
+static void pWrBE32(APTR ptr, ULONG val)
+{
+    UBYTE *b = ptr;
+
+    b[0] = val>>24;
+    b[1] = val>>16;
+    b[2] = val>>8;
+    b[3] = val;
+}
+/* \\\ */
+
 /* /// "psdReadCfg()" */
 AROS_LH2(BOOL, psdReadCfg,
          AROS_LHA(struct PsdIFFContext *, pic, A0),
@@ -6642,7 +6668,7 @@ AROS_LH2(BOOL, psdReadCfg,
             return(FALSE);
         }
     }
-    if((AROS_LONG2BE(*buf) != ID_FORM) || (AROS_LONG2BE(buf[2]) != pic->pic_FormID)) {
+    if((pRdBE32(buf) != ID_FORM) || (pRdBE32(&buf[2]) != pic->pic_FormID)) {
         psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Tried to replace a cfg form with a chunk or with an alien form!");
         pUnlockSem(ps, &ps->ps_ConfigLock);
         return(FALSE);
@@ -6653,13 +6679,13 @@ AROS_LH2(BOOL, psdReadCfg,
         subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
     }
     pic->pic_ChunksLen = 0;
-    len = (AROS_LONG2BE(buf[1]) - 3) & ~1UL;
+    len = (pRdBE32(&buf[1]) - 3) & ~1UL;
     buf += 3;
     while(len >= 8) {
         if(!(pAddCfgChunk(ps, pic, buf))) {
             break;
         }
-        chlen = (AROS_LONG2BE(buf[1]) + 9) & ~1UL;
+        chlen = (pRdBE32(&buf[1]) + 9) & ~1UL;
         len -= chlen;
         buf = (ULONG *) (((UBYTE *) buf) + chlen);
     }
@@ -7031,9 +7057,11 @@ AROS_LH2(APTR, psdGetCfgChunk,
     pUpdateGlobalCfg(ps, pic);
     chnk = pFindCfgChunk(ps, pic, chnkid);
     if(chnk) {
-        res = psdAllocVec(AROS_LONG2BE(chnk[1])+8);
+        ULONG chnklen = pRdBE32(&chnk[1]) + 8;
+
+        res = psdAllocVec(chnklen);
         if(res) {
-            memcpy(res, chnk, AROS_LONG2BE(chnk[1])+8);
+            memcpy(res, chnk, chnklen);
         }
     }
     pUnlockSem(ps, &ps->ps_ConfigLock);
@@ -7984,11 +8012,11 @@ APTR pFindCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chnkid)
     KPRINTF(10, ("pFindCfgChunk(%p, %p)\n", pic, chnkid));
 
     while(len) {
-        if(AROS_LONG2BE(*buf) == chnkid) {
+        if(pRdBE32(buf) == chnkid) {
             KPRINTF(10, ("Found at %p\n", buf));
             return(buf);
         }
-        chlen = (AROS_LONG2BE(buf[1]) + 9) & ~1UL;
+        chlen = (pRdBE32(&buf[1]) + 9) & ~1UL;
         len -= chlen;
         buf = (ULONG *) (((UBYTE *) buf) + chlen);
     }
@@ -8006,8 +8034,8 @@ BOOL pRemCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chnkid)
     KPRINTF(10, ("pRemCfgChunk(%p, %p)\n", pic, chnkid));
 
     while(len) {
-        chlen = ((AROS_LONG2BE(buf[1])) + 9) & ~1UL;
-        if(AROS_LONG2BE(*buf) == chnkid) {
+        chlen = (pRdBE32(&buf[1]) + 9) & ~1UL;
+        if(pRdBE32(buf) == chnkid) {
             len -= chlen;
             if(len) {
                 memcpy(buf, &((UBYTE *) buf)[chlen], (size_t) len);
@@ -8033,17 +8061,17 @@ struct PsdIFFContext * pAddCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic
     ULONG *newbuf;
     struct PsdIFFContext *subpic;
     KPRINTF(10, ("pAddCfgChunk(%p, %p)\n", pic, chunk));
-    if(AROS_LONG2BE(*buf) == ID_FORM) {
+    if(pRdBE32(buf) == ID_FORM) {
         buf++;
-        len = ((AROS_LONG2BE(*buf)) - 3) & ~1UL;
+        len = (pRdBE32(buf) - 3) & ~1UL;
         buf++;
-        if((subpic = pAllocForm(ps, pic, AROS_LONG2BE(*buf)))) {
+        if((subpic = pAllocForm(ps, pic, pRdBE32(buf)))) {
             buf++;
             while(len >= 8) {
                 if(!(pAddCfgChunk(ps, subpic, buf))) {
                     break;
                 }
-                chlen = (AROS_LONG2BE(buf[1]) + 9) & ~1UL;
+                chlen = (pRdBE32(&buf[1]) + 9) & ~1UL;
                 len -= chlen;
                 buf = (ULONG *) (((UBYTE *) buf) + chlen);
             }
@@ -8056,8 +8084,8 @@ struct PsdIFFContext * pAddCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic
         }
         return(subpic);
     } else {
-        pRemCfgChunk(ps, pic, AROS_LONG2BE(*buf));
-        len = (AROS_LONG2BE(buf[1]) + 9) & ~1UL;
+        pRemCfgChunk(ps, pic, pRdBE32(buf));
+        len = (pRdBE32(&buf[1]) + 9) & ~1UL;
         if(pic->pic_ChunksLen+len > pic->pic_BufferLen) {
             KPRINTF(10, ("expanding buffer from %ld to %ld to fit %ld bytes\n", pic->pic_BufferLen, (pic->pic_ChunksLen+len)<<1, pic->pic_ChunksLen+len));
 
@@ -8085,9 +8113,9 @@ ULONG * pInternalWriteForm(struct PsdIFFContext *pic, ULONG *buf)
 {
     struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
     //KPRINTF(10, ("pInternalWriteForm(%p, %p)", pic, buf));
-    *buf++ = AROS_LONG2BE(ID_FORM);
-    *buf++ = AROS_LONG2BE(pic->pic_FormLength);
-    *buf++ = AROS_LONG2BE(pic->pic_FormID);
+    pWrBE32(buf++, ID_FORM);
+    pWrBE32(buf++, pic->pic_FormLength);
+    pWrBE32(buf++, pic->pic_FormID);
     if(pic->pic_ChunksLen) {
         memcpy(buf, pic->pic_Chunks, (size_t) pic->pic_ChunksLen);
         buf = (ULONG *) (((UBYTE *) buf) + pic->pic_ChunksLen);
@@ -8148,7 +8176,7 @@ BOOL pCheckCfgChanged(LIBBASETYPEPTR ps)
         /* Get Global config */
         if((subpic = psdFindCfgForm(pic, IFFFORM_STACKCFG))) {
             if((chnk = pFindCfgChunk(ps, subpic, IFFCHNK_GLOBALCFG))) {
-                CopyMem(&chnk[2], ((UBYTE *) ps->ps_GlobalCfg) + 8, min(AROS_LONG2BE(chnk[1]), AROS_LONG2BE(ps->ps_GlobalCfg->pgc_Length)));
+                CopyMem(&chnk[2], ((UBYTE *) ps->ps_GlobalCfg) + 8, min(pRdBE32(&chnk[1]), AROS_LONG2BE(ps->ps_GlobalCfg->pgc_Length)));
             }
             if(!pMatchStringChunk(ps, subpic, IFFCHNK_INSERTSND, ps->ps_PoPo.po_InsertSndFile)) {
                 if((tmpstr = pGetStringChunk(ps, subpic, IFFCHNK_INSERTSND))) {
@@ -8199,7 +8227,7 @@ BOOL pMatchStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunk
     STRPTR srcptr;
     if((chunk = pFindCfgChunk(ps, pic, chunkid))) {
         srcptr = (STRPTR) &chunk[2];
-        len = AROS_LONG2BE(chunk[1]);
+        len = pRdBE32(&chunk[1]);
         while(len-- && *srcptr) {
             if(*str++ != *srcptr++) {
                 return(FALSE);
@@ -8219,8 +8247,10 @@ STRPTR pGetStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunk
     ULONG *chunk;
     STRPTR str;
     if((chunk = pFindCfgChunk(ps, pic, chunkid))) {
-        if((str = (STRPTR) psdAllocVec(AROS_LONG2BE(chunk[1]) + 1))) {
-            memcpy(str, &chunk[2], (size_t) AROS_LONG2BE(chunk[1]));
+        ULONG len = pRdBE32(&chunk[1]);
+
+        if((str = (STRPTR) psdAllocVec(len + 1))) {
+            memcpy(str, &chunk[2], (size_t) len);
             return(str);
         }
     }
