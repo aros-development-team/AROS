@@ -34,7 +34,11 @@
 #define PAGESHIFT 12
 #endif
 
+#if defined(DEBUG) && (DEBUG > 0)
+#define DIRQ(x) x
+#else
 #define DIRQ(x)
+#endif
 
 extern const char GM_UNIQUENAME(LibName)[];
 

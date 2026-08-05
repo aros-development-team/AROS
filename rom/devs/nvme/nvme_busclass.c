@@ -45,7 +45,11 @@
 #if defined(DEBUG) && (DEBUG > 1)
 #define NVME_DUMP_READS
 #endif
+#if defined(DEBUG) && (DEBUG > 0)
+#define DIRQ(x) x
+#else
 #define DIRQ(x)
+#endif
 #define DIO(x)
 //#define NVME_DUMP_READS
 
