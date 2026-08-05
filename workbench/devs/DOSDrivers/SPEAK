@@ -1,0 +1,4 @@
+Handler = speak-handler
+Priority = 5
+GlobVec = -1
+StackSize = 8192

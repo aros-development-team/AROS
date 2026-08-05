@@ -690,6 +690,9 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
                     bug("[MM] Chunk allocator error\n");
                     bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
                     bug("[MM] Block overlaps (1) with chunk 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
+                    bug("[MM] %s() called from 0x%p by '%s'\n",
+                        tp ? tp->function : "?", tp ? tp->caller : NULL,
+                        FindTask(NULL)->tc_Node.ln_Name);
 
                     Alert(AN_FreeTwice);
                     return;
@@ -715,6 +718,9 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
                 bug("[MM] Chunk allocator error\n");
                 bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
                 bug("[MM] Block overlaps (2) with chunk 0x%p (%u bytes)\n", p1, p1->mc_Bytes);
+                bug("[MM] %s() called from 0x%p by '%s'\n",
+                    tp ? tp->function : "?", tp ? tp->caller : NULL,
+                    FindTask(NULL)->tc_Node.ln_Name);
 
                 Alert(AN_FreeTwice);
                 return;

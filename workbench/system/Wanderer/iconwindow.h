@@ -2,7 +2,7 @@
 #define _ICONWINDOW_H_
 
 /*
-    Copyright © 2004 - 2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004 - 2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,6 +28,7 @@
 #define MUIM_IconWindow_Remove                             (MUIB_IconWindow | 0x00000007)
 #define MUIM_IconWindow_RateLimitRefresh                   (MUIB_IconWindow | 0x00000008)
 #define MUIM_IconWindow_Snapshot                           (MUIB_IconWindow | 0x00000009)
+#define MUIM_IconWindow_RequestClose                       (MUIB_IconWindow | 0x0000000a)
 
 #define MUIM_IconWindow_BackFill_Register                  (MUIB_IconWindow | 0x00000010)
 #define MUIM_IconWindow_BackFill_Setup                     (MUIB_IconWindow | 0x00000012)
@@ -131,6 +132,7 @@ struct IconWindow_DATA
 #define IWDFLAG_NEEDSUPDATE             (1<<1)
 #define IWDFLAG_ISROOT                  (1<<4)
 #define IWDFLAG_ISBACKDROP              (1<<5)
+#define IWDFLAG_CLOSING                 (1<<6)
     UBYTE                                iwd_Flags;
     UBYTE                                iwd_VolViewMode;
 };
@@ -173,7 +175,8 @@ and temporarily placed here */
                            m18, m18_msg_type,                        \
                            m19, m19_msg_type,                        \
                            m20, m20_msg_type,                        \
-                           m21, m21_msg_type)                        \
+                           m21, m21_msg_type,                       \
+                           m22, m22_msg_type)                       \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
@@ -196,6 +199,7 @@ and temporarily placed here */
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type); \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type); \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type); \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type); \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 IPTR IconWindow__MUIM_IconWindow_BackFill_Register(Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Register *message);

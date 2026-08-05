@@ -350,6 +350,109 @@ LONG fillrect_pendrmd(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 
 /****************************************************************************************/
 
+/*
+ * A minterm over pens, for a source that carries them and a destination that
+ * does not.
+ *
+ * The pens are what the operation is defined over: it is applied to the
+ * source's index and to the index the destination's colour stands for, and
+ * the pen that comes out is then resolved through the palette. Combining the
+ * resolved colours instead gives a different answer for anything that
+ * inverts, because a palette holds nowhere near every colour its entries can
+ * make between them.
+ *
+ * A destination colour the palette does not name has no index to offer, and
+ * pen 0 is what stands in.
+ */
+static UBYTE pen_from_pixel(HIDDT_Pixel *pixtab, HIDDT_Pixel pixel)
+{
+    ULONG i;
+
+    /* The whole palette: the source's depth bounds the pen it can carry,
+     * but says nothing about the one the destination is showing.
+     */
+    for (i = 0; i < AROS_PALETTE_SIZE; i++) {
+        if (pixtab[i] == pixel)
+            return i;
+    }
+
+    return 0;
+}
+
+static UBYTE pen_minterm(ULONG minterm, UBYTE src, UBYTE dst)
+{
+    UBYTE res = 0;
+    UBYTE bit;
+
+    for (bit = 0; bit < 8; bit++) {
+        UBYTE s = (src >> bit) & 1;
+        UBYTE d = (dst >> bit) & 1;
+
+        if (minterm & (0x10 << ((s << 1) | d)))
+            res |= 1 << bit;
+    }
+
+    return res;
+}
+
+static BOOL bltbitmap_pens(struct BitMap *dstBitMap, OOP_Object *srcbm_obj,
+                           WORD xSrc, WORD ySrc, OOP_Object *dstbm_obj,
+                           WORD xDest, WORD yDest, WORD xSize, WORD ySize,
+                           ULONG minterm, ULONG srcdepth, OOP_Object *gc,
+                           struct GfxBase *GfxBase)
+{
+    HIDDT_Pixel     *pixtab = HIDD_BM_PIXTAB(dstBitMap);
+    HIDDT_PixelLUT   pixlut;
+    UBYTE           *srcpens;
+    HIDDT_Pixel     *dstpix;
+    ULONG            pens = (srcdepth >= 8) ? 256 : (1UL << srcdepth);
+    WORD             x, y;
+
+    if (!pixtab)
+        return FALSE;
+
+    srcpens = AllocVec((ULONG)xSize * ySize, MEMF_ANY);
+    if (!srcpens)
+        return FALSE;
+
+    dstpix = AllocVec((ULONG)xSize * ySize * sizeof(HIDDT_Pixel), MEMF_ANY);
+    if (!dstpix) {
+        FreeVec(srcpens);
+        return FALSE;
+    }
+
+    pixlut.entries = pens;
+    pixlut.pixels  = pixtab;
+
+    HIDD_BM_GetImageLUT(srcbm_obj, srcpens, xSize, xSrc, ySrc, xSize, ySize,
+                        &pixlut);
+    HIDD_BM_GetImage(dstbm_obj, (UBYTE *)dstpix, xSize * sizeof(HIDDT_Pixel),
+                     xDest, yDest, xSize, ySize, vHidd_StdPixFmt_Native32);
+
+    for (y = 0; y < ySize; y++) {
+        UBYTE       *srow = srcpens + (ULONG)y * xSize;
+        HIDDT_Pixel *drow = dstpix  + (ULONG)y * xSize;
+
+        for (x = 0; x < xSize; x++) {
+            UBYTE dpen = pen_from_pixel(pixtab, drow[x]);
+
+            /* A pen is a byte and the table holds one entry for each, so
+             * an inverted result needs no folding to stay in range.
+             */
+            drow[x] = pixtab[pen_minterm(minterm, srow[x], dpen)];
+        }
+    }
+
+    HIDD_BM_PutImage(dstbm_obj, gc, (UBYTE *)dstpix,
+                     xSize * sizeof(HIDDT_Pixel), xDest, yDest, xSize, ySize,
+                     vHidd_StdPixFmt_Native32);
+
+    FreeVec(dstpix);
+    FreeVec(srcpens);
+
+    return TRUE;
+}
+
 BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, WORD ySrc,
                    struct BitMap *dstBitMap, OOP_Object *dstbm_obj, WORD xDest, WORD yDest,
                    WORD xSize, WORD ySize, ULONG minterm, UBYTE mask, OOP_Object *gfxhidd,
@@ -492,6 +595,20 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
             frtags[0].ti_Data = old_fg;
             frtags[1].ti_Data = old_drmd;
 
+        } else if ((srcflags & FLG_TRUECOLOR) == 0
+                   && (dstflags & (FLG_TRUECOLOR | FLG_HASCOLMAP))
+                       == (FLG_TRUECOLOR | FLG_HASCOLMAP)
+                   && drmd != vHidd_GC_DrawMode_Copy
+                   && drmd != vHidd_GC_DrawMode_NoOp
+                   && drmd != vHidd_GC_DrawMode_Invert
+                   && bltbitmap_pens(dstBitMap, srcbm_obj, xSrc, ySrc,
+                                     dstbm_obj, xDest, yDest, xSize, ySize,
+                                     minterm, srcdepth, gc, GfxBase)) {
+            /*
+             * Done over pens. Copy needs no help, and the two modes that
+             * leave the source out - dst untouched, and dst inverted - are
+             * about the destination's colour rather than the pen behind it.
+             */
         } else {
             HIDDT_DrawMode old_drmd;
 

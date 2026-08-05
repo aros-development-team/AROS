@@ -46,6 +46,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/battclock.h>
+#include <proto/timer.h>
 
 #include <hardware/intbits.h>
 
@@ -97,23 +98,43 @@ void udelay(LONG usec)
 
 struct timerequest timerio;
 struct MsgPort *timermp;
-static struct SignalSemaphore timersem;
 static BOOL timeropen;
 
+/*
+ * Microsecond busy-wait.
+ *
+ * The previous implementation issued DoIO() on a single shared timer
+ * request. That request's reply port (timermp) was created by init_timer()
+ * in the device-init task, so its mp_SigTask/mp_SigBit belong to that task -
+ * but udelay() is called from each unit's own process task. Waiting on
+ * another task's port signal raced with timer.device's ReplyMsg(), leaving
+ * the reply list half-linked; a subsequent GetMsg()/RemHead() then stored
+ * through a stale node pointer into read-only kernel memory and halted the
+ * hart (an intermittent boot crash in rtl8139.<n>.task).
+ *
+ * GetSysTime() reads the system clock purely through a library call - no
+ * message port, no per-task signal - so it is safe to spin on from any task
+ * and needs no serialisation. Comparing elapsed time never under-waits: if
+ * the clock resolution is coarser than a microsecond the loop simply rounds
+ * the delay up, which is always safe for hardware settling times.
+ */
 void udelay(LONG usec)
 {
-	/* The timerequest is shared by all units - serialise its use */
-	ObtainSemaphore(&timersem);
-	timerio.tr_node.io_Command = TR_ADDREQUEST;
-	timerio.tr_time.tv_secs = usec / 1000000;
-	timerio.tr_time.tv_micro = usec % 1000000;
-	DoIO(&timerio.tr_node);
-	ReleaseSemaphore(&timersem);
+	struct Device *TimerBase = timerio.tr_node.io_Device;
+	struct timeval start, now;
+
+	if (!TimerBase || usec <= 0)
+		return;
+
+	GetSysTime(&start);
+	do {
+		GetSysTime(&now);
+	} while (((LONG)(now.tv_secs  - start.tv_secs) * 1000000L +
+	          (LONG)(now.tv_micro - start.tv_micro)) < usec);
 }
 
 int init_timer(void)
 {
-	InitSemaphore(&timersem);
 	if ((timermp = CreateMsgPort())) {
 		timerio.tr_node.io_Message.mn_Node.ln_Type=NT_MESSAGE;
 		timerio.tr_node.io_Message.mn_ReplyPort = timermp;

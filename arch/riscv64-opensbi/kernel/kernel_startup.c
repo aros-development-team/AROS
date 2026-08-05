@@ -27,6 +27,7 @@
 #include "kernel_sbi.h"
 #include "kernel_intern.h"
 #include "kernel_romtags.h"
+#include "tlsf.h"
 
 /* rom/kernel/kernel_memory.c provides no header for this */
 void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size,
@@ -544,6 +545,8 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
      */
     {
         struct MemHeader *mh, *chipmh;
+        IPTR chiplow = 0, bootlow;
+        BOOL use_tlsf;
         UWORD *ranges[5];
         IPTR modlow = 0, modhigh = 0;
         IPTR memlow  = ((IPTR)__kernel_end + 4095) & ~(IPTR)4095;
@@ -610,20 +613,49 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
          * that ordinary allocations drain the fast pool first and leave
          * it for those that actually need it.
          */
+        /*
+         * Use the TLSF allocator for all memory headers, like the other
+         * modern ports; "notlsf" on the command line falls back to exec's
+         * classic first-fit lists. Note krnConvertMemHeaderToTLSF() places
+         * the new header at the first free chunk, so the returned pointer
+         * is not the region base - the bases are kept separately for the
+         * bank-exclusion arithmetic below.
+         */
+        use_tlsf = !(fdtinfo.bootargs &&
+                     krnArgMatch(fdtinfo.bootargs, "notlsf"));
+        if (use_tlsf)
+            krnSBIPutStr("mem:       TLSF allocator enabled\n");
+
         chipmh = NULL;
         if (memhigh - memlow > CHIPMEM_SIZE * 2)
         {
+            chiplow = memlow;
             chipmh = (struct MemHeader *)memlow;
             krnCreateMemHeader("Chip Memory", -6, (APTR)memlow, CHIPMEM_SIZE,
                                MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK |
                                MEMF_LOCAL);
+            if (use_tlsf)
+            {
+                struct MemHeader *tmh = krnConvertMemHeaderToTLSF(chipmh);
+                if (tmh)
+                    chipmh = tmh;
+            }
             memlow += CHIPMEM_SIZE;
         }
 
+        bootlow = memlow;
         mh = (struct MemHeader *)memlow;
         krnCreateMemHeader("System Memory", 0, (APTR)memlow,
                            memhigh - memlow,
                            MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+        if (use_tlsf)
+        {
+            struct MemHeader *tmh = krnConvertMemHeaderToTLSF(mh);
+            if (tmh)
+                mh = tmh;
+            else
+                use_tlsf = FALSE;   /* stay consistent for the banks below */
+        }
 
         ranges[0] = (UWORD *)__text_start;
         ranges[1] = (UWORD *)__kernel_end;
@@ -653,6 +685,88 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
             /* Exec is up and owns a MemList now, so chip can join it */
             if (chipmh)
                 Enqueue(&SysBase->MemList, &chipmh->mh_Node);
+
+            /*
+             * The bootstrap heap above is only the slice of one bank
+             * below the DTB - enough to bring exec up, but a real
+             * machine has more banks and tens of GiB more in this one.
+             * Every firmware region is already mapped; now exec can
+             * hold further MemHeaders, add each usable span that the
+             * bootstrap heap, the chip pool, the kernel image, the boot
+             * package and the DTB do not already cover.
+             */
+            {
+                IPTR ex_lo[8], ex_hi[8];
+                IPTR kern_hi = ((IPTR)__kernel_end + 4095) & ~(IPTR)4095;
+                int nx = 0, r, i, j;
+
+                /* Spans already in use, that a new header must not cover.
+                   Anything below the kernel - where the boot/exception
+                   stack lives and grows down - is kept out by clamping
+                   each region's start to kern_hi below, not listed here. */
+                ex_lo[nx] = bootlow;        ex_hi[nx] = memhigh;              nx++;
+                if (chipmh) { ex_lo[nx] = chiplow;
+                              ex_hi[nx] = chiplow + CHIPMEM_SIZE;             nx++; }
+                if (modhigh > modlow) {
+                    ex_lo[nx] = modlow & ~(IPTR)4095;
+                    ex_hi[nx] = (modhigh + 4095) & ~(IPTR)4095;              nx++; }
+                /* The boot package image is still where the loader left
+                   it. Its modules were relocated out, but keep it whole
+                   until boot is done rather than let it be handed out. */
+                if (fdtinfo.initrd_start &&
+                    fdtinfo.initrd_end > fdtinfo.initrd_start) {
+                    ex_lo[nx] = fdtinfo.initrd_start & ~(IPTR)4095;
+                    ex_hi[nx] = (fdtinfo.initrd_end + 4095) & ~(IPTR)4095;   nx++; }
+                if (dtbaddr) {
+                    ex_lo[nx] = dtbaddr & ~(IPTR)4095;
+                    ex_hi[nx] = (dtbaddr + (2 << 20) + 4095) & ~(IPTR)4095;  nx++; }
+
+                /* Sort the exclusions by start so one pass can subtract
+                   them from each region. */
+                for (i = 1; i < nx; i++) {
+                    IPTR a = ex_lo[i], b = ex_hi[i];
+                    for (j = i; j > 0 && ex_lo[j-1] > a; j--) {
+                        ex_lo[j] = ex_lo[j-1]; ex_hi[j] = ex_hi[j-1];
+                    }
+                    ex_lo[j] = a; ex_hi[j] = b;
+                }
+
+                for (r = 0; r < (int)fdtinfo.nregions; r++) {
+                    IPTR rs = (fdtinfo.regions[r].base + 4095) & ~(IPTR)4095;
+                    IPTR re = (fdtinfo.regions[r].base +
+                               fdtinfo.regions[r].size) & ~(IPTR)4095;
+                    /* Never hand out anything below the kernel */
+                    IPTR p = (rs < kern_hi) ? kern_hi : rs;
+
+                    for (i = 0; i <= nx; i++) {
+                        IPTR elo = (i < nx) ? ex_lo[i] : re;
+                        IPTR ehi = (i < nx) ? ex_hi[i] : re;
+                        IPTR glo = p, ghi = (elo < re) ? elo : re;
+
+                        if (ghi > glo && (ghi - glo) >= (1 << 20)) {
+                            struct MemHeader *xmh = (struct MemHeader *)glo;
+                            krnCreateMemHeader("System Memory", 0, (APTR)glo,
+                                               ghi - glo, MEMF_FAST |
+                                               MEMF_PUBLIC | MEMF_KICK |
+                                               MEMF_LOCAL);
+                            if (use_tlsf) {
+                                struct MemHeader *tmh =
+                                    krnConvertMemHeaderToTLSF(xmh);
+                                if (tmh)
+                                    xmh = tmh;
+                            }
+                            Enqueue(&SysBase->MemList, &xmh->mh_Node);
+                            krnSBIPutStr("mem:       added bank ");
+                            krnSBIPutHex(glo);
+                            krnSBIPutStr(" - ");
+                            krnSBIPutHex(ghi);
+                            krnSBIPutStr("\n");
+                        }
+                        if (i < nx && ehi > p) p = ehi;
+                        if (p >= re) break;
+                    }
+                }
+            }
 
             krnSBIPutStr("exec:      SysBase @ ");
             krnSBIPutHex((uint64_t)(uintptr_t)SysBase);

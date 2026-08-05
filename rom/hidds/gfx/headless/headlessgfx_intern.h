@@ -2,7 +2,7 @@
 #define HeadlessGFX_INTERN_H
 
 /*
-    Copyright � 2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2021-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Headless Gfx private data.
@@ -24,7 +24,7 @@
 #include <hidd/hidd.h>
 #include <hidd/gfx.h>
 
-#define ATTRBASES_NUM 8
+#define ATTRBASES_NUM 9
 
 struct HeadlessGfx_staticdata
 {
@@ -64,6 +64,7 @@ struct HeadlessGfxBase
 #undef HiddAttrBase
 #undef HiddDisplayAttrBase
 #undef HiddDMEnumAttrBase
+#undef HiddGfxHeadlessAttrBase
 
 /* These must stay in the same order as interfaces[] array in headlessgfx_init.c */
 #define HiddChunkyBMAttrBase	  XSD(cl)->attrBases[0]
@@ -74,5 +75,6 @@ struct HeadlessGfxBase
 #define HiddAttrBase		  XSD(cl)->attrBases[5]
 #define HiddDisplayAttrBase	  XSD(cl)->attrBases[6]
 #define HiddDMEnumAttrBase	  XSD(cl)->attrBases[7]
+#define HiddGfxHeadlessAttrBase	  XSD(cl)->attrBases[8]
 
 #endif /* HeadlessGFX_INTERN_H */

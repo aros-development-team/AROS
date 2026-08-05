@@ -1,0 +1,11 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- linklibs : linklibs-speechcore
+#MM linklibs-speechcore : includes
+
+%build_linklib mmake=linklibs-speechcore libname=speechcore \
+    files="core speech_pitch translate synth synth_front synth_prosody synth_frames synth_contour synth_interpolate synth_render resource speech_data speech_voice aros_resource"
+
+%copy_includes path=libraries includes="speechcore.h aros_resource.h"
+
+%common
