@@ -2,7 +2,7 @@
 #define AROS_X86_64_CPU_H
 
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -37,9 +37,13 @@ typedef  void *cpumask_t;
 #define AROS_WORSTALIGN           16 /* Worst case alignment */
 #define AROS_STACKALIGN           16 /* Clean stack alignment */
 
-/* Cache-line isolation for spinlocks (Intel guidance, 128 B). The allocator
- * must honour this for any heap-allocated container that embeds spinlock_t. */
-#define AROS_SPINLOCK_ALIGN __attribute__((__aligned__(128)))
+/* Cache-line isolation for spinlocks (Intel guidance, 128 B). Done by
+ * padding, not by an aligned attribute: AllocMem delivers at most
+ * AROS_WORSTALIGN and OOP instance data only pointer alignment, so a
+ * declared 128-byte alignment is a promise memory does not keep - and
+ * gcc acts on it with aligned SSE stores that #GP at runtime (the x86
+ * equivalent of the NEON traps that removed the attribute on ARM). */
+#define AROS_SPINLOCK_ISOLATION  128
 
 /* define this if we have no support for linear varargs in the compiler */
 #define NO_LINEAR_VARARGS       1

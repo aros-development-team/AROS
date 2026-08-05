@@ -4,16 +4,25 @@
 #include <aros/cpu.h>
 #include <exec/types.h>
 
-/* AROS_SPINLOCK_ALIGN is defined by <aros/cpu.h> (per-arch). Arches that
- * want cache-line isolation between locks (e.g. x86 per Intel guidance)
- * set it to __attribute__((__aligned__(N))); the default is empty so
- * spinlock_t gets natural alignment. AROS_PLATFORM_SMP unconditionally
- * embeds spinlock_t as padding in struct MsgPort and SemaphoreRequest,
- * so any container -- including library bases like IconBase -- inherits
- * the alignment. On arches where AllocMem cannot deliver that alignment
- * (e.g. arm-native), an over-aligned spinlock_t makes Clang emit
- * udf-trap checks before every field access. Keep this empty unless
- * the arch's allocator can honour the alignment at runtime.
+/* AROS_SPINLOCK_ALIGN is defined by <aros/cpu.h> (per-arch). Arches
+ * whose allocators can hand out suitably aligned memory may set it to
+ * __attribute__((__aligned__(N))) for cache-line isolation between
+ * locks; the default is empty so spinlock_t gets natural alignment.
+ * AROS_PLATFORM_SMP unconditionally embeds spinlock_t as padding in
+ * struct MsgPort and SemaphoreRequest, so any container -- including
+ * library bases like IconBase -- inherits the alignment. AllocMem
+ * delivers only AROS_WORSTALIGN and OOP instance data even less, so a
+ * declared alignment above that is a promise the compiler will act on
+ * (Clang emits udf-trap checks on ARM, gcc emits aligned SSE stores on
+ * x86) but memory does not keep. Keep it empty unless the arch's
+ * allocator honours the alignment at runtime.
+ *
+ * AROS_SPINLOCK_ISOLATION (bytes, also from <aros/cpu.h>) provides the
+ * false-sharing mitigation that alignment was meant for in a way that
+ * cannot be miscompiled: the lock is padded to that size, keeping other
+ * (hot) data off the lock's cache lines by distance rather than by
+ * placement. Set it to the arch's cache-line isolation size (e.g. 128
+ * on x86 per Intel guidance).
  */
 #ifndef AROS_SPINLOCK_ALIGN
 #define AROS_SPINLOCK_ALIGN
@@ -35,6 +44,9 @@ typedef struct {
     // The field s_Owner is set either to task owning the lock,
     // or NULL if the lock is free/read mode or was acquired in interrupt/supervisor mode
     void * s_Owner;
+#if defined(AROS_SPINLOCK_ISOLATION)
+    unsigned char s_Isolation[AROS_SPINLOCK_ISOLATION - (2 * sizeof(void *))];
+#endif
 } AROS_SPINLOCK_ALIGN spinlock_t;
 
 #define SPINLOCK_UNLOCKED               0
