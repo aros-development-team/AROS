@@ -27,6 +27,7 @@
 #include "kernel_sbi.h"
 #include "kernel_intern.h"
 #include "kernel_romtags.h"
+#include "tlsf.h"
 
 /* rom/kernel/kernel_memory.c provides no header for this */
 void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size,
@@ -544,6 +545,8 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
      */
     {
         struct MemHeader *mh, *chipmh;
+        IPTR chiplow = 0, bootlow;
+        BOOL use_tlsf;
         UWORD *ranges[5];
         IPTR modlow = 0, modhigh = 0;
         IPTR memlow  = ((IPTR)__kernel_end + 4095) & ~(IPTR)4095;
@@ -610,20 +613,49 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
          * that ordinary allocations drain the fast pool first and leave
          * it for those that actually need it.
          */
+        /*
+         * Use the TLSF allocator for all memory headers, like the other
+         * modern ports; "notlsf" on the command line falls back to exec's
+         * classic first-fit lists. Note krnConvertMemHeaderToTLSF() places
+         * the new header at the first free chunk, so the returned pointer
+         * is not the region base - the bases are kept separately for the
+         * bank-exclusion arithmetic below.
+         */
+        use_tlsf = !(fdtinfo.bootargs &&
+                     krnArgMatch(fdtinfo.bootargs, "notlsf"));
+        if (use_tlsf)
+            krnSBIPutStr("mem:       TLSF allocator enabled\n");
+
         chipmh = NULL;
         if (memhigh - memlow > CHIPMEM_SIZE * 2)
         {
+            chiplow = memlow;
             chipmh = (struct MemHeader *)memlow;
             krnCreateMemHeader("Chip Memory", -6, (APTR)memlow, CHIPMEM_SIZE,
                                MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK |
                                MEMF_LOCAL);
+            if (use_tlsf)
+            {
+                struct MemHeader *tmh = krnConvertMemHeaderToTLSF(chipmh);
+                if (tmh)
+                    chipmh = tmh;
+            }
             memlow += CHIPMEM_SIZE;
         }
 
+        bootlow = memlow;
         mh = (struct MemHeader *)memlow;
         krnCreateMemHeader("System Memory", 0, (APTR)memlow,
                            memhigh - memlow,
                            MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+        if (use_tlsf)
+        {
+            struct MemHeader *tmh = krnConvertMemHeaderToTLSF(mh);
+            if (tmh)
+                mh = tmh;
+            else
+                use_tlsf = FALSE;   /* stay consistent for the banks below */
+        }
 
         ranges[0] = (UWORD *)__text_start;
         ranges[1] = (UWORD *)__kernel_end;
@@ -672,9 +704,9 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                    Anything below the kernel - where the boot/exception
                    stack lives and grows down - is kept out by clamping
                    each region's start to kern_hi below, not listed here. */
-                ex_lo[nx] = (IPTR)mh;       ex_hi[nx] = memhigh;              nx++;
-                if (chipmh) { ex_lo[nx] = (IPTR)chipmh;
-                              ex_hi[nx] = (IPTR)chipmh + CHIPMEM_SIZE;        nx++; }
+                ex_lo[nx] = bootlow;        ex_hi[nx] = memhigh;              nx++;
+                if (chipmh) { ex_lo[nx] = chiplow;
+                              ex_hi[nx] = chiplow + CHIPMEM_SIZE;             nx++; }
                 if (modhigh > modlow) {
                     ex_lo[nx] = modlow & ~(IPTR)4095;
                     ex_hi[nx] = (modhigh + 4095) & ~(IPTR)4095;              nx++; }
@@ -717,6 +749,12 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                                                ghi - glo, MEMF_FAST |
                                                MEMF_PUBLIC | MEMF_KICK |
                                                MEMF_LOCAL);
+                            if (use_tlsf) {
+                                struct MemHeader *tmh =
+                                    krnConvertMemHeaderToTLSF(xmh);
+                                if (tmh)
+                                    xmh = tmh;
+                            }
                             Enqueue(&SysBase->MemList, &xmh->mh_Node);
                             krnSBIPutStr("mem:       added bank ");
                             krnSBIPutHex(glo);

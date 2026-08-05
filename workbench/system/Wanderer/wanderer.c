@@ -4014,7 +4014,7 @@ D(bug("[Wanderer] %s: isWorkbenchWindow\n", __func__));
             DoMethod
             (
                 window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-                (IPTR)_app(self), 4, MUIM_Application_PushMethod, (IPTR)window, 1, MUIM_IconWindow_Remove
+                (IPTR)window, 1, MUIM_IconWindow_RequestClose
             );
         }
 
