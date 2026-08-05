@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_NOTIFY_H
 
 /*
-    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
