@@ -70,7 +70,19 @@ static ULONG vectorBitmap[8];           /* 256 bits — tracks allocated vectors
 
 void apicInitVectorMap(void)
 {
+    static BOOL mapInitialized = FALSE;
     int i;
+
+    /*
+     * One-shot: called from core_SetupIDT (so PIC-only boots get a usable
+     * map) and from APICInt_Init - which can run AFTER IOAPICInt_Init has
+     * already registered vectors for its pins. Controller init order is
+     * not fixed, so re-initialising here would wipe live registrations
+     * and silently drop every interrupt arriving on those vectors.
+     */
+    if (mapInitialized)
+        return;
+    mapInitialized = TRUE;
 
     for (i = 0; i < 8; i++)
         vectorBitmap[i] = 0;
@@ -285,15 +297,11 @@ void core_SetupIDT(apicid_t _APICID, x86vectgate_t *IGATES)
      * Make sure the vector->IRQ map is usable even on systems that never
      * bring up the APIC controller (legacy PIC-only boots) - otherwise
      * core_IRQHandle would read an all-zero map and deliver every device
-     * interrupt as IRQ 0. First caller wins; APICInt_Init re-initialises
-     * the map explicitly when it takes ownership.
+     * interrupt as IRQ 0. The map initialisation itself is one-shot, so
+     * repeat calls (per-CPU IDT setup, APICInt_Init) cannot wipe vectors
+     * registered by the interrupt controllers.
      */
-    static BOOL vecmap_ready = FALSE;
-    if (!vecmap_ready)
-    {
-        apicInitVectorMap();
-        vecmap_ready = TRUE;
-    }
+    apicInitVectorMap();
 
     int i;
     uintptr_t off;

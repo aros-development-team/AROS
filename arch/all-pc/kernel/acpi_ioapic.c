@@ -378,7 +378,10 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 if (intrTgt)
                 {
                     if (intrTgt->im_DeviceIRQ < HW_IRQ_VECTORS)
+                    {
                         irqRoute->vect = (UBYTE)intrTgt->im_DeviceIRQ + HW_IRQ_BASE;
+                        apicRegisterVector(irqRoute->vect, intrTgt->im_DeviceIRQ);
+                    }
                     else
                         irqRoute->vect = 0;
                     if (ictl_is_irq_enabled(irq, KernelBase))
@@ -388,6 +391,14 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 {
                     /* 1:1 vector mapping fits in IDT (vectors 48-245) */
                     irqRoute->vect = irq + HW_IRQ_BASE;
+                    /*
+                     * Register the vector in the dispatch map. Legacy IRQs
+                     * 0-15 are premapped by apicInitVectorMap(), but pins
+                     * 16 and up (PCIe INTx GSIs) are not - without this,
+                     * core_IRQHandle sees an unmapped vector and drops the
+                     * interrupt, deadlocking any driver waiting on it.
+                     */
+                    apicRegisterVector(irqRoute->vect, irq);
                 }
                 else
                 {
