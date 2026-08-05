@@ -85,6 +85,33 @@ in_pcbisipv6(struct inpcb *inp)
     return (0);
 }
 
+/*
+ * Mirror an AF_INET6 PCB's IPv4 four-tuple into its IPv6 address fields
+ * as IPv4-mapped addresses (::ffff:a.b.c.d), so getpeername()/getsockname()
+ * on a dual-stack socket describe the connection the way the application
+ * expects. Harmless for AF_INET PCBs, which never read those fields.
+ */
+void
+in_pcbsetv4mapped(struct inpcb *inp)
+{
+#if INET6
+    if(!in_pcbisipv6(inp))
+        return;
+
+    bzero(&inp->inp_laddr6, sizeof(inp->inp_laddr6));
+    inp->inp_laddr6.s6_addr[10] = 0xff;
+    inp->inp_laddr6.s6_addr[11] = 0xff;
+    bcopy(&inp->inp_laddr, &inp->inp_laddr6.s6_addr[12],
+          sizeof(inp->inp_laddr));
+
+    bzero(&inp->inp_faddr6, sizeof(inp->inp_faddr6));
+    inp->inp_faddr6.s6_addr[10] = 0xff;
+    inp->inp_faddr6.s6_addr[11] = 0xff;
+    bcopy(&inp->inp_faddr, &inp->inp_faddr6.s6_addr[12],
+          sizeof(inp->inp_faddr));
+#endif
+}
+
 int
 in_pcballoc(so, pcbinfo)
 struct socket *so;
@@ -100,7 +127,7 @@ struct inpcbinfo *pcbinfo;
     inp->inp_pcbinfo = pcbinfo;
     inp->inp_socket = so;
 #if INET6
-    /* No IPv4-mapped addresses, so AF_INET6 sockets are always v6-only */
+    /* Default AF_INET6 sockets to v6-only; IPV6_V6ONLY can clear it */
     if(so != NULL && so->so_proto != NULL && so->so_proto->pr_domain != NULL &&
             so->so_proto->pr_domain->dom_family == AF_INET6)
         inp->in6p_v6only = 1;
@@ -550,7 +577,7 @@ int flags;
     for(inp = head->lh_first; inp != NULL; inp = inp->inp_list.le_next) {
         if(inp->inp_lport != lport)
             continue;
-        if(in_pcbisipv6(inp))
+        if(in_pcbisipv6(inp) && inp->in6p_v6only)
             continue;
         wildcard = 0;
         if(inp->inp_faddr.s_addr != INADDR_ANY) {
@@ -612,7 +639,7 @@ u_int fport_arg, lport_arg;
                 inp->inp_lport != lport ||
                 inp->inp_laddr.s_addr != laddr.s_addr)
             continue;
-        if(in_pcbisipv6(inp))
+        if(in_pcbisipv6(inp) && inp->in6p_v6only)
             continue;
         /*
          * Move PCB to head of this hash chain so that it can be

@@ -76,9 +76,6 @@ struct inpcb {
 #endif
 };
 
-/* TRUE when the PCB belongs to an AF_INET6 socket (netinet/in_pcb.c) */
-int	in_pcbisipv6(struct inpcb *);
-
 struct inpcbinfo {
 	struct inpcbhead *listhead;
 	struct inpcbhead *hashbase;

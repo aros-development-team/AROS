@@ -89,8 +89,18 @@ tcp_isipv6(struct inpcb *inp)
 {
 #if INET6
     if(inp && inp->inp_socket && inp->inp_socket->so_proto &&
-            inp->inp_socket->so_proto->pr_domain)
-        return (inp->inp_socket->so_proto->pr_domain->dom_family == AF_INET6);
+            inp->inp_socket->so_proto->pr_domain) {
+        if(inp->inp_socket->so_proto->pr_domain->dom_family != AF_INET6)
+            return (0);
+        /*
+         * A dual-stack socket holding an IPv4-mapped peer is carrying an
+         * IPv4 connection - it must be framed and routed as IPv4, even
+         * though the socket itself is AF_INET6.
+         */
+        if(IN6_IS_ADDR_V4MAPPED(&inp->inp_faddr6))
+            return (0);
+        return (1);
+    }
 #endif
     return (0);
 }

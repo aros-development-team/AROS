@@ -38,6 +38,9 @@
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
 #include <netinet/in_pcb.h>
+
+/* netinet/in_pcb.c - stack internal, not part of the public in_pcb.h */
+void in_pcbsetv4mapped(struct inpcb *);
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
 #include <netinet/in_cksum_protos.h>
@@ -641,6 +644,13 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
             return (NULL);
         }
         (void) m_free(am);
+#if INET6
+        /*
+         * An IPv4 connection accepted by a dual-stack AF_INET6 listener:
+         * describe it to the application as an IPv4-mapped address.
+         */
+        in_pcbsetv4mapped(inp);
+#endif
     }
 
     tp = intotcpcb(inp);

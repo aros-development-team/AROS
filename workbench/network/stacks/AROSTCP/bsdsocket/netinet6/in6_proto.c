@@ -300,17 +300,15 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
                 break;
             }
             /*
-             * AF_INET6 sockets here are always IPv6-only: there is no
-             * IPv4-mapped address support, and the PCB lookups keep
-             * IPv4 traffic away from them (see in_pcbisipv6()). Report
-             * an attempt to turn the option off rather than accept it
-             * and then not honour it.
+             * Only meaningful before the socket is bound - afterwards the
+             * PCB lookups have already been deciding which traffic may
+             * reach it (see in_pcbisipv6()).
              */
-            if(*mtod(*m, int *) == 0) {
+            if(inp->inp_lport || !IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
                 error = EINVAL;
                 break;
             }
-            inp->in6p_v6only = 1;
+            inp->in6p_v6only = (*mtod(*m, int *) != 0);
             break;
 
         case IPV6_TCLASS:

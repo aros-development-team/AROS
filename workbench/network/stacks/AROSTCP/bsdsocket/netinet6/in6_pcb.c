@@ -59,6 +59,9 @@
 struct inpcb *in6_pcblookup(struct inpcbhead *, struct in6_addr *, u_int,
                             struct in6_addr *, u_int);
 
+/* netinet/in_pcb.c - stack internal, not part of the public in_pcb.h */
+int in_pcbisipv6(struct inpcb *);
+
 /* ------------------------------------------------------------------ *
  * in6_pcballoclport - allocate an unused ephemeral local port for inp.
  *
