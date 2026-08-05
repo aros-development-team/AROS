@@ -17,12 +17,29 @@ enum {
     aoHidd_VideoCoreGfxBitMap_Drawable,
     aoHidd_VideoCoreGfxBitMap_BackDrawable,    /* [G..] back page phys addr, 0 = no flipping */
     aoHidd_VideoCoreGfxBitMap_Flip,            /* [.S.] set TRUE to flip front/back page */
+    aoHidd_VideoCoreGfxBitMap_Overlay,         /* [GS.] set: struct vc4gfx_overlay * (NULL
+                                                * clears); get: 1 while an overlay is shown */
     num_Hidd_VideoCoreGfxBitMap_Attrs
 };
 
 #define aHidd_VideoCoreGfxBitMap_Drawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Drawable)
 #define aHidd_VideoCoreGfxBitMap_BackDrawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_BackDrawable)
 #define aHidd_VideoCoreGfxBitMap_Flip	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Flip)
+#define aHidd_VideoCoreGfxBitMap_Overlay	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Overlay)
+
+/* Descriptor passed via aoHidd_VideoCoreGfxBitMap_Overlay: an opaque
+ * 32bpp plane scanned straight from GPU memory, composited by the HVS
+ * above the framebuffer (below the cursor). x/y are fb coordinates.
+ * Mirrored by hand on the vc4gallium side, like the attr indices. */
+struct vc4gfx_overlay
+{
+    ULONG ovl_Phys;                 /* ARM phys of the pixel data */
+    ULONG ovl_Pitch;                /* bytes per row */
+    ULONG ovl_Width, ovl_Height;    /* source pixels */
+    LONG  ovl_X, ovl_Y;             /* position in fb coordinates */
+    ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
+                                     * = unscaled, larger = HVS upscale */
+};
 
 /* This structure is used for both onscreen and offscreen bitmaps !! */
 

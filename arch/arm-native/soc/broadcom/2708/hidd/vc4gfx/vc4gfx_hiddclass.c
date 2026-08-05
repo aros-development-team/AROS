@@ -384,6 +384,11 @@ BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Di
     {
         /* Hide and forget the current shape. */
         xsd->vcsd_CurVisible = FALSE;
+        if (xsd->vcsd_HVS.hvs_Active)
+        {
+            vc4_hvs_update_cursor(xsd);
+            return TRUE;
+        }
         VC4_MBOX_LOCK(xsd);
         xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
         xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
@@ -413,6 +418,14 @@ BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Di
     xsd->vcsd_CurHeight = height;
     xsd->vcsd_CurHotX   = msg->xoffset;
     xsd->vcsd_CurHotY   = msg->yoffset;
+
+    if (xsd->vcsd_HVS.hvs_Active)
+    {
+        /* Our cursor plane reads vcsd_CurBuf directly; the new geometry
+         * is picked up by the list rebuild. */
+        vc4_hvs_update_cursor(xsd);
+        return TRUE;
+    }
 
     /* SETCURSORINFO: width, height, format(0), buf, hot_x, hot_y */
     VC4_MBOX_LOCK(xsd);
@@ -458,6 +471,12 @@ BOOL MNAME_DISPLAY(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Disp
     if (!xsd->vcsd_CurVisible)
         return TRUE;
 
+    if (xsd->vcsd_HVS.hvs_Active)
+    {
+        vc4_hvs_update_cursor(xsd);
+        return TRUE;
+    }
+
     VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
@@ -483,6 +502,12 @@ VOID MNAME_DISPLAY(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_
         return;
 
     xsd->vcsd_CurVisible = msg->visible ? TRUE : FALSE;
+
+    if (xsd->vcsd_HVS.hvs_Active)
+    {
+        vc4_hvs_update_cursor(xsd);
+        return;
+    }
 
     VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);

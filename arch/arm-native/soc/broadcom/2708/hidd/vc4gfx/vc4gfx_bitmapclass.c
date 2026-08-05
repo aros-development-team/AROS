@@ -320,6 +320,13 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_VideoCoreGfxBitMap_Flip:
             *msg->storage = 0;
             break;
+        case aoHidd_VideoCoreGfxBitMap_Overlay:
+#ifdef OnBitmap
+            *msg->storage = XSD(cl)->vcsd_HVS.hvs_OvlActive ? 1 : 0;
+#else
+            *msg->storage = 0;
+#endif
+            break;
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
