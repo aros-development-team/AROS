@@ -98,6 +98,33 @@ static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
 {
     AROS_LIBFUNC_INIT
 
+    /*
+     * COMPLEMENT inverts the destination and uses neither pen, and JAM2 asks
+     * for both phases of the pattern to be drawn. Together they invert the
+     * whole area, and the pattern has nothing left to say. Under JAM1 only
+     * the pattern's set bits are drawn, so only those invert, which the
+     * pattern path below already gets right.
+     */
+    if((rp->DrawMode & (COMPLEMENT | JAM2)) == (COMPLEMENT | JAM2)) {
+        if(mask) {
+            ULONG old_drawmode = GetDrMd(rp);
+
+            /* JAM1 leaves COMPLEMENT to reach the driver, so the template's
+             * set bits, and only those, invert. */
+            SetDrMd(rp, JAM1 | COMPLEMENT);
+            BltTemplate(mask, 0, byteCnt, rp, xMin, yMin,
+                        xMax - xMin + 1, yMax - yMin + 1);
+            SetDrMd(rp, old_drawmode);
+        } else {
+            OOP_Object *gc = GetDriverData(rp, GfxBase);
+
+            fillrect_pendrmd(rp, xMin, yMin, xMax, yMax, GC_FG(gc),
+                             vHidd_GC_DrawMode_Invert, TRUE, GfxBase);
+        }
+
+        return;
+    }
+
     if(rp->AreaPtrn) {
         BOOL solidpattern = FALSE;
 
