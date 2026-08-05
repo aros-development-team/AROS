@@ -40,6 +40,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-package-raspi-arm-quick: \
 #MM linklibs-stdc-static-quick \
 #MM kernel-dos-quick \
+#MM kernel-dos64-quick \
 #MM kernel-bootloader-quick \
 #MM kernel-dosboot-quick \
 #MM kernel-oop-quick \
@@ -51,6 +52,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-cgxbootpic-quick \
 #MM workbench-libs-gadtools-quick \
 #MM workbench-libs-lowlevel-quick \
+#MM workbench-libs-fd-quick \
 #MM kernel-intuition-quick \
 #MM kernel-partition-quick \
 #MM kernel-layers-quick \
@@ -92,6 +94,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-package-raspi-arm: \
 #MM linklibs-stdc-static \
 #MM kernel-dos \
+#MM kernel-dos64 \
 #MM kernel-battclock \
 #MM kernel-bootloader \
 #MM kernel-dosboot \
@@ -104,6 +107,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-cgxbootpic \
 #MM workbench-libs-gadtools \
 #MM workbench-libs-lowlevel \
+#MM workbench-libs-fd \
 #MM kernel-intuition \
 #MM kernel-partition \
 #MM kernel-layers \
@@ -166,7 +170,7 @@ RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
                      brcm/brcmfmac43430-sdio.bin brcm/brcmfmac43430-sdio.txt \
                      LICENCE.broadcom_bcm43xx
 
-PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic gadtools lowlevel
+PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos dos64 poseidon cgxbootpic gadtools lowlevel fd
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox dma sdio bwfm
 PKG_RSRC_ARCH := processor battclock
