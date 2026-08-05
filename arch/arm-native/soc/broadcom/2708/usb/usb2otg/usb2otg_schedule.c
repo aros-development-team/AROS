@@ -225,10 +225,14 @@ static int usb2otg_endpoint_in_flight(struct USB2OTGUnit *otg_Unit,
 }
 
 /*
- * 1 if another async split is already active on the same TT
- * (SplitHubAddr+Port). Serializes async SSPLITs so two LS/FS devices
- * don't over-subscribe TT budget (NYET storm). Periodic candidates
- * bypass (USB 2.0 §11.18 separate periodic budget).
+ * 1 if another split is already active on the same TT hub: at most
+ * one split transaction of any type in flight per hub. The core's
+ * split engine is fragile enough that overlapping split streams are
+ * not worth the throughput — a failure on one of them takes the
+ * channel down (see usb2otg_exorcise_channel), and cross-device
+ * damage on a shared hub has been observed. Match on SplitHubAddr
+ * alone rather than hub+port: the hubs in play here are single-TT,
+ * so all their ports share one transaction translator.
  */
 static int usb2otg_tt_in_flight(struct USB2OTGUnit *otg_Unit,
     struct IOUsbHWReq *candidate)
@@ -238,20 +242,12 @@ static int usb2otg_tt_in_flight(struct USB2OTGUnit *otg_Unit,
     if (!(candidate->iouh_Flags & UHFF_SPLITTRANS))
         return 0;
 
-    /* Periodic candidates have their own TT budget — don't block them. */
-    if (candidate->iouh_Req.io_Command == UHCMD_INTXFER ||
-        candidate->iouh_Req.io_Command == UHCMD_ISOXFER)
-        return 0;
-
     for (scan = 0; scan < 8; scan++)
     {
         struct IOUsbHWReq *active = otg_Unit->hu_Channel[scan].hc_Request;
         if (active != NULL && active != candidate &&
             (active->iouh_Flags & UHFF_SPLITTRANS) &&
-            active->iouh_SplitHubAddr == candidate->iouh_SplitHubAddr &&
-            active->iouh_SplitHubPort == candidate->iouh_SplitHubPort &&
-            (active->iouh_Req.io_Command == UHCMD_CONTROLXFER ||
-             active->iouh_Req.io_Command == UHCMD_BULKXFER))
+            active->iouh_SplitHubAddr == candidate->iouh_SplitHubAddr)
         {
             return 1;
         }
@@ -404,6 +400,22 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     otg_Unit->hu_Channel[chan].hc_DeferCount = 0;
     otg_Unit->hu_Channel[chan].hc_CsplitRetry = 0;
     otg_Unit->hu_Channel[chan].hc_QuietIdleStreak = 0;
+    /*
+     * hc_WatchdogCount too: the watchdog increments it every tick the
+     * channel is busy and only a tick that happens to catch the
+     * channel FREE reset it. A healthy high-rate INT split pipe
+     * (mouse, interval 1 ms) re-occupies its channel within
+     * microframes of every completion, so the counter measured
+     * "channel busy streak", hit the 900 ms threshold about once a
+     * second, and the watchdog force-requeued a perfectly live
+     * transaction each time — dropping input reports. Reset at every
+     * arm so it measures what it was meant to: this ARM producing no
+     * event.
+     */
+    otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
+    /* DIAG: fresh event-trace budget for this submission. */
+    otg_Unit->hu_Channel[chan].hc_TraceCount = 0;
+    otg_Unit->hu_Channel[chan].hc_TraceAnom = 0;
     /* Cancel a previous owner's pending CSPLIT re-arm on this channel. */
     usb2otg_clear_delayed_channel(chan);
 
@@ -1560,7 +1572,7 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
          * for the poisoning rationale.
          */
         int ctrl_chan = (req->iouh_Flags & UHFF_SPLITTRANS)
-                            ? CHAN_CTRL_SPLIT : CHAN_CTRL;
+                            ? otg_Unit->hu_CtrlSplitChan : CHAN_CTRL;
 
         /* Target channel quarantined — park the request for recovery. */
         if (otg_Unit->hu_DeadChannels & (1 << ctrl_chan))
@@ -1690,11 +1702,12 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
     {
         struct IOUsbHWReq *req = NULL;
 
-        /* Reserved for split control transfers. */
-        if (chan == CHAN_CTRL_SPLIT)
+        /* Reserved for split control transfers (rotates on burn). */
+        if (chan == otg_Unit->hu_CtrlSplitChan)
             continue;
 
-        if (otg_Unit->hu_DeadChannels & (1 << chan))
+        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels) &
+            (1 << chan))
             continue;
 
         /* If channel is in use unlock Enable() and continue checking, otherwise stay in Disable() state for a while */

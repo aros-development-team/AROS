@@ -265,6 +265,9 @@ struct USB2OTGUnit
         ULONG               hc_LastSampleTsize;
         ULONG               hc_LastSampleActual;
         UWORD               hc_LastSampleIntr;
+        UBYTE               hc_GiveupStreak;  /* consecutive split give-ups; reset on completion; burn at 4 */
+        UBYTE               hc_TraceCount;    /* DIAG: ctrl-split IRQ events since SetupChannel */
+        UBYTE               hc_TraceAnom;     /* DIAG: anomalous events logged for this submission */
     }                   hu_Channel[8];
 
 /*
@@ -357,6 +360,16 @@ struct USB2OTGUnit
      * successful wedge-recovery reset (all channel SMs reset).
      */
     UBYTE               hu_DeadChannels;
+
+    /*
+     * Split-control channel, runtime: a channel whose split engine
+     * cannot be revived is retired and split control moves on. The
+     * order is INT3, INT2, INT1, then the direct-INT pool as a last
+     * resort. hu_BurnedChannels is never cleared (unlike
+     * hu_DeadChannels) — a retired channel stays retired.
+     */
+    UBYTE               hu_CtrlSplitChan;
+    UBYTE               hu_BurnedChannels;
 
 /*
  * DMA buffers — must be in heap memory so the 0xC0000000 VC bus
@@ -568,6 +581,32 @@ extern ULONG usb2otg_ctrl_xact_retries;   /* XactErr/DTErr/BNA path */
  * UHIOERR_TIMEOUT, which feeds Poseidon's pd_DeadCount removal path.
  */
 #define USB2OTG_CTRL_SPLIT_NAK_LIMIT      64
+
+/*
+ * Inter-transaction pacing for split control, in microframes.
+ * Arming the next split transaction immediately after the previous
+ * CHHLTD event sometimes gets it descheduled with bare CHHLTD and
+ * poisons the channel's split engine (the give-up storms during HID
+ * binding). Empirically proven by accident: a ~9 ms serial log line
+ * between every IRQ event and its re-arm made split ctrl 100%
+ * reliable (and in every older trace the wedge struck exactly where
+ * event logging stopped). 72 uframes reproduced that spacing
+ * deliberately; bisected down to 16 (2 ms), verified clean on
+ * hardware. Control is enumeration/setup traffic only, so the cost
+ * is a few ms per LS control transfer.
+ */
+#define USB2OTG_CTRL_SPLIT_PACE_UFRAMES   16
+
+/*
+ * Microframes an interrupt split may sit in SSPLIT state with zero
+ * HCINT events before the SOF handler writes it off as never-run
+ * (armed with CHENA set but the core never executes it — no
+ * handshake, no halt, no interrupt coming). Only the SS state is
+ * rescued: a channel in CS phase is mid-transaction and gets its
+ * events. 24 uframes = 3 ms >> the 1-2 frames a healthy SSPLIT
+ * needs to reach the bus.
+ */
+#define USB2OTG_SPLIT_INT_STALL_UFRAMES   24
 
 /*
  * Control retry backoff in frames (ms). Encoded into DriverPrivate1

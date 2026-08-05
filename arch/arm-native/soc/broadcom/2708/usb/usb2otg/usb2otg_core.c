@@ -47,6 +47,9 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
         {
             otg_Unit->hu_UnitAllocated = TRUE;
 
+            otg_Unit->hu_CtrlSplitChan = CHAN_CTRL_SPLIT;
+            otg_Unit->hu_BurnedChannels = 0;
+
             D(bug("[USB2OTG] %s: Enabling Power ..\n", __PRETTY_FUNCTION__));
             wr32le(USB2OTG_POWER, 0);
 
