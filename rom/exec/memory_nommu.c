@@ -241,6 +241,9 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, s
     bug("[MM] Chunk allocator error\n");
     bug("[MM] Attempt to free %u bytes at 0x%p\n", byteSize, memoryBlock);
     bug("[MM] The block does not belong to any MemHeader\n");
+    bug("[MM] %s() called from 0x%p by '%s'\n",
+        loc ? loc->function : "?", loc ? loc->caller : NULL,
+        FindTask(NULL)->tc_Node.ln_Name);
 
     Alert(AN_BadFreeAddr);
 #endif
@@ -320,7 +323,7 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
                         /*  2. The end (+1) of the current MemChunk must be lower than the start of the next one. */
                 if (mc->mc_Next && ((UBYTE *)mc + mc->mc_Bytes >= (UBYTE *)mc->mc_Next))
                 {
-                    bug("[MM] Chunk allocator error in MemHeader 0x%p\n");
+                    bug("[MM] Chunk allocator error in MemHeader 0x%p\n", mh);
                     bug("[MM] Overlapping chunks 0x%p (%u bytes) and 0x%p (%u bytes)\n", mc, mc->mc_Bytes, mc->mc_Next, mc->mc_Next->mc_Bytes);
 
                     Alert(AN_MemoryInsane|AT_DeadEnd);
