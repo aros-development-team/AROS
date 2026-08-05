@@ -865,10 +865,10 @@ VOID P96GFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
                                     - (horizontal ? adx : ady);
         renderLine.LinePtrn = GC_LINEPAT(msg->gc);
         /*
-         * The Amiga pattern counter selects a bit from the top down and P96
-         * counts from the bottom, so the two run in opposite directions.
+         * PatternShift is a bit number counted from the bottom: the first
+         * pixel of the line takes pattern bit (1 << PatternShift).
          */
-        renderLine.PatternShift = 15 - (GC_LINEPATCNT(msg->gc) & 15);
+        renderLine.PatternShift = GC_LINEPATCNT(msg->gc) & 15;
         renderLine.FgPen = GC_FG(msg->gc);
         renderLine.BgPen = GC_BG(msg->gc);
         renderLine.Horizontal = horizontal;
