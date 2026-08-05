@@ -853,6 +853,47 @@
 #define gethostbyaddr_r(arg1, arg2, arg3, arg4, arg5, arg6, arg7) \
     __gethostbyaddr_r_WB(SocketBase, (arg1), (arg2), (arg3), (arg4), (arg5), (arg6), (arg7))
 
+#define __freeaddrinfo_WB(__SocketBase, __arg1) \
+        AROS_LC1NR(void, RS_freeaddrinfo, \
+                  AROS_LCA(struct addrinfo *,(__arg1),A0), \
+        struct Library *, (__SocketBase), 135, BSDSocket)
+
+#define freeaddrinfo(arg1) \
+    __freeaddrinfo_WB(SocketBase, (arg1))
+
+#define __getaddrinfo_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4) \
+        AROS_LC4(LONG, RS_getaddrinfo, \
+                  AROS_LCA(const char *,(__arg1),A0), \
+                  AROS_LCA(const char *,(__arg2),A1), \
+                  AROS_LCA(const struct addrinfo *,(__arg3),A2), \
+                  AROS_LCA(struct addrinfo **,(__arg4),A3), \
+        struct Library *, (__SocketBase), 136, BSDSocket)
+
+#define getaddrinfo(arg1, arg2, arg3, arg4) \
+    __getaddrinfo_WB(SocketBase, (arg1), (arg2), (arg3), (arg4))
+
+#define __gai_strerror_WB(__SocketBase, __arg1) \
+        AROS_LC1(STRPTR, RS_gai_strerror, \
+                  AROS_LCA(LONG,(__arg1),D0), \
+        struct Library *, (__SocketBase), 137, BSDSocket)
+
+#define gai_strerror(arg1) \
+    __gai_strerror_WB(SocketBase, (arg1))
+
+#define __getnameinfo_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6, __arg7) \
+        AROS_LC7(LONG, RS_getnameinfo, \
+                  AROS_LCA(struct sockaddr *,(__arg1),A0), \
+                  AROS_LCA(LONG,(__arg2),D0), \
+                  AROS_LCA(char *,(__arg3),A1), \
+                  AROS_LCA(LONG,(__arg4),D1), \
+                  AROS_LCA(char *,(__arg5),A2), \
+                  AROS_LCA(LONG,(__arg6),D2), \
+                  AROS_LCA(LONG,(__arg7),D3), \
+        struct Library *, (__SocketBase), 138, BSDSocket)
+
+#define getnameinfo(arg1, arg2, arg3, arg4, arg5, arg6, arg7) \
+    __getnameinfo_WB(SocketBase, (arg1), (arg2), (arg3), (arg4), (arg5), (arg6), (arg7))
+
 #endif /* __CONFIG_ROADSHOW__ */
 
 #ifdef PTHREAD_H

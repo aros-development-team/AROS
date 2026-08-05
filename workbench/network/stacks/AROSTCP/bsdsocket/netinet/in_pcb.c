@@ -64,6 +64,27 @@ extern u_char inetctlerrmap[];
 
 struct	in_addr zeroin_addr;
 
+/*
+ * IPv4 and IPv6 PCBs share one list, and an IPv6 PCB leaves the IPv4
+ * address fields zeroed, so a wildcard-bound IPv6 socket would look to
+ * in_pcblookup() like a wildcard IPv4 one and take IPv4 connections
+ * meant for the AF_INET socket on the same port. Match on the socket's
+ * address family instead; in6_pcblookup() applies the mirror test.
+ * This is also what makes IPV6_V6ONLY real - IPv4-mapped addresses are
+ * not implemented, so an AF_INET6 socket is always IPv6-only here.
+ */
+int
+in_pcbisipv6(struct inpcb *inp)
+{
+#if INET6
+    struct socket *so = inp->inp_socket;
+
+    if(so != NULL && so->so_proto != NULL && so->so_proto->pr_domain != NULL)
+        return (so->so_proto->pr_domain->dom_family == AF_INET6);
+#endif
+    return (0);
+}
+
 int
 in_pcballoc(so, pcbinfo)
 struct socket *so;
@@ -78,6 +99,12 @@ struct inpcbinfo *pcbinfo;
     bzero((caddr_t)inp, sizeof(*inp));
     inp->inp_pcbinfo = pcbinfo;
     inp->inp_socket = so;
+#if INET6
+    /* No IPv4-mapped addresses, so AF_INET6 sockets are always v6-only */
+    if(so != NULL && so->so_proto != NULL && so->so_proto->pr_domain != NULL &&
+            so->so_proto->pr_domain->dom_family == AF_INET6)
+        inp->in6p_v6only = 1;
+#endif
     s = splnet();
     LIST_INSERT_HEAD(pcbinfo->listhead, inp, inp_list);
     in_pcbinshash(inp);
@@ -523,6 +550,8 @@ int flags;
     for(inp = head->lh_first; inp != NULL; inp = inp->inp_list.le_next) {
         if(inp->inp_lport != lport)
             continue;
+        if(in_pcbisipv6(inp))
+            continue;
         wildcard = 0;
         if(inp->inp_faddr.s_addr != INADDR_ANY) {
             if(faddr.s_addr == INADDR_ANY)
@@ -582,6 +611,8 @@ u_int fport_arg, lport_arg;
                 inp->inp_fport != fport ||
                 inp->inp_lport != lport ||
                 inp->inp_laddr.s_addr != laddr.s_addr)
+            continue;
+        if(in_pcbisipv6(inp))
             continue;
         /*
          * Move PCB to head of this hash chain so that it can be

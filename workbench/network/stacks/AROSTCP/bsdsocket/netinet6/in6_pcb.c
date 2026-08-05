@@ -264,6 +264,10 @@ in6_pcblookup(struct inpcbhead *head,
     LIST_FOREACH(inp, head, inp_list) {
         if(inp->inp_lport != lport)
             continue;
+        /* IPv4 PCBs share this list and leave the IPv6 addresses zeroed,
+           which would make them look like wildcard IPv6 sockets here */
+        if(!in_pcbisipv6(inp))
+            continue;
 
         int wildcard = 0;
 
