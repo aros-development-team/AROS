@@ -72,8 +72,9 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         OOP_GetAttr(o, aHidd_BitMap_Height, &height);
 
         data->own_buffer = TRUE;
-        data->buffer = AllocVec(height * bytesperrow, MEMF_ANY | MEMF_CLEAR);
-        
+        data->bufsize    = height * bytesperrow;
+        data->buffer = AllocVec(data->bufsize, MEMF_ANY | MEMF_CLEAR);
+
         if (data->buffer)
             return o;
     }
@@ -997,6 +998,7 @@ VOID CBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
                     {
                         FreeVec(data->buffer);
                         data->own_buffer = FALSE;
+                        data->bufsize    = 0;
                     }
                     data->buffer = (UBYTE *)tag->ti_Data;
                     D(bug("[CBM] New buffer now 0x%p\n", data->buffer));
@@ -1017,9 +1019,49 @@ VOID CBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
     if (refresh_bpr)
     {
-        IPTR bpr = 0;
+        IPTR bpr = 0, height = 0;
+        OOP_Object *pf = NULL;
+
         OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bpr);
         if (bpr)
+        {
+            /* A ModeID change brings a new pixelformat with it, so the
+             * cached pixel size has to follow the row size - the rest of
+             * this class addresses the buffer with both. */
+            OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
+            if (pf)
+            {
+                IPTR bpp = 0;
+
+                OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bpp);
+                if (bpp)
+                    data->bytesperpixel = bpp;
+            }
+
+            /* Our buffer was sized for the mode we are leaving. Growing
+             * into a deeper one needs more of it, and every access below
+             * uses the new row size - keeping the old allocation would
+             * write past its end. */
+            OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+            if (data->own_buffer && height && (height * bpr > data->bufsize))
+            {
+                ULONG newsize = height * bpr;
+                UBYTE *newbuf = AllocVec(newsize, MEMF_ANY | MEMF_CLEAR);
+
+                if (!newbuf)
+                {
+                    /* Leave the bitmap describing what it can actually
+                     * hold rather than a buffer we do not have. */
+                    D(bug("[CBM] cannot grow buffer to %u bytes\n",
+                          (unsigned)newsize));
+                    return;
+                }
+                FreeVec(data->buffer);
+                data->buffer  = newbuf;
+                data->bufsize = newsize;
+            }
+
             data->bytesperrow = bpr;
+        }
     }
 }

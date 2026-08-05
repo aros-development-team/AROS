@@ -4457,8 +4457,11 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
              */
             data->width       = OOP_GET(sync, aHidd_Sync_HDisp);
             data->height      = OOP_GET(sync, aHidd_Sync_VDisp);
-            data->bytesPerRow = GetBytesPerRow(data, CSD(cl));
+            /* The new pixelformat must be in place first - GetBytesPerRow()
+               reads its BytesPerPixel, so computing the row size before the
+               assignment sizes the rows for the mode we are leaving. */
             data->prot.pixfmt = pixfmt;
+            data->bytesPerRow = GetBytesPerRow(data, CSD(cl));
         }
         else
         {

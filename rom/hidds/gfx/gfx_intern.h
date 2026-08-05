@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef GFX_HIDD_INTERN_H
@@ -81,6 +81,7 @@ struct chunkybm_data
     ULONG	bytesperrow;	/* Cached for faster access 			*/
     UWORD	bytesperpixel;
     BOOL	own_buffer;	/* Whether the buffer was allocated by us	*/
+    ULONG	bufsize;	/* Size of an owned buffer, in bytes		*/
 };
 
 struct sync_data
