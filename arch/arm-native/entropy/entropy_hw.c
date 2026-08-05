@@ -1,0 +1,114 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+    Desc: Broadcom RNG back-end for entropy.resource on Raspberry Pi.
+
+    The BCM2835 family provides a hardware random-number generator at
+    peripheral offset 0x104000. The same block is present on the Pi SoCs
+    supported by the arm and aarch64 RasPi targets. Raw values are only folded
+    into entropy.resource's ChaCha20 state; they are never exposed directly.
+*/
+
+#include <aros/macros.h>
+#include <exec/types.h>
+#include <proto/exec.h>
+#include <proto/kernel.h>
+
+#include "entropy_intern.h"
+
+#define BCM_RNG_OFFSET          0x104000
+#define BCM_RNG_CTRL            0x00
+#define BCM_RNG_STATUS          0x04
+#define BCM_RNG_DATA            0x08
+#define BCM_RNG_INT_MASK        0x10
+
+#define BCM_RNG_CTRL_ENABLE     (1U << 0)
+#define BCM_RNG_INT_DISABLE     (1U << 0)
+#define BCM_RNG_STATUS_COUNT    0xff000000U
+#define BCM_RNG_STATUS_SHIFT    24
+
+/* Do not make GetEntropy() wait for hardware: the software source remains
+   available whenever the FIFO is temporarily empty. */
+#define BCM_RNG_POLLS           1024
+
+/* KrnGetSystemAttr() is an interface of kernel.resource. */
+APTR KernelBase __attribute__((used)) = NULL;
+
+static ULONG bcm_rng_read(volatile UBYTE *base, ULONG offset)
+{
+    return AROS_LE2LONG(*(volatile ULONG *)(base + offset));
+}
+
+static void bcm_rng_write(volatile UBYTE *base, ULONG offset, ULONG value)
+{
+    *(volatile ULONG *)(base + offset) = AROS_LONG2LE(value);
+}
+
+static ULONG bcm_rng_gather(struct EntropyBase *EntropyBase,
+                            UBYTE *buffer, ULONG length)
+{
+    volatile UBYTE *base = (volatile UBYTE *)EntropyBase->eb_HWData;
+    ULONG got = 0;
+    ULONG polls = BCM_RNG_POLLS;
+
+    while (got < length && polls--)
+    {
+        ULONG available = (bcm_rng_read(base, BCM_RNG_STATUS) &
+                           BCM_RNG_STATUS_COUNT) >> BCM_RNG_STATUS_SHIFT;
+
+        while (available-- && got < length)
+        {
+            ULONG value = bcm_rng_read(base, BCM_RNG_DATA);
+            ULONG take = length - got;
+            ULONG i;
+
+            if (take > sizeof(value))
+                take = sizeof(value);
+
+            for (i = 0; i < take; i++)
+                buffer[got + i] = (UBYTE)(value >> (i * 8));
+            got += take;
+        }
+    }
+
+    return got;
+}
+
+void Entropy_HW_Init(struct EntropyBase *EntropyBase)
+{
+    IPTR peripheral_base;
+    volatile UBYTE *base;
+    UBYTE probe[sizeof(ULONG)];
+
+    EntropyBase->eb_HWGather = NULL;
+    EntropyBase->eb_HWData = NULL;
+    EntropyBase->eb_Flags |= EIF_SOFTWARE;
+
+    KernelBase = OpenResource("kernel.resource");
+    if (KernelBase == NULL)
+        return;
+
+    peripheral_base = KrnGetSystemAttr(KATTR_PeripheralBase);
+    if (peripheral_base == 0 || peripheral_base == -1)
+        return;
+
+    base = (volatile UBYTE *)peripheral_base + BCM_RNG_OFFSET;
+
+    /* Keep the RNG interrupt masked: this resource polls the small FIFO. */
+    bcm_rng_write(base, BCM_RNG_INT_MASK, BCM_RNG_INT_DISABLE);
+    bcm_rng_write(base, BCM_RNG_CTRL,
+                  bcm_rng_read(base, BCM_RNG_CTRL) | BCM_RNG_CTRL_ENABLE);
+
+    /* Confirm that the block produces data before advertising it. */
+    EntropyBase->eb_HWData = (APTR)base;
+    if (bcm_rng_gather(EntropyBase, probe, sizeof(probe)) == 0)
+    {
+        EntropyBase->eb_HWData = NULL;
+        Entropy_Wipe(probe, sizeof(probe));
+        return;
+    }
+
+    Entropy_Wipe(probe, sizeof(probe));
+    EntropyBase->eb_HWGather = bcm_rng_gather;
+    EntropyBase->eb_Flags |= EIF_HARDWARE;
+}
