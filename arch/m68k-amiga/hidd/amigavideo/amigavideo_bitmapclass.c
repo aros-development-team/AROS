@@ -766,6 +766,10 @@ VOID AmigaVideoBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     
     data = OOP_INST_DATA(cl, o);
 
+    /* Reading the planes straight out, so anything a previous draw left
+     * sitting in the pixel cache has to reach them first. */
+    CLEARCACHE;
+
     D(bug("[AmigaVideo:Bitmap] %s: Get %dx%d to %dx%d from %d planes to buffer at %p\n",
                         __func__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1, data->depth, msg->pixels));
 
