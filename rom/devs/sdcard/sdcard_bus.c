@@ -896,7 +896,35 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
 
     if (bus->sdcb_Task == FindTask(NULL))
     {
-        Wait(1L << bus->sdcb_CommandSig);
+        /*
+         * Sleep for the completion interrupt once the controller has shown
+         * that it delivers them. Until then, poll instead: a controller whose
+         * interrupt never arrives would otherwise wedge the boot here rather
+         * than report a timeout.
+         */
+        if (bus->sdcb_BusFlags & AF_Bus_IRQSeen)
+        {
+            Wait(1L << bus->sdcb_CommandSig);
+        }
+        else
+        {
+            ULONG waited = initialTimeout ? initialTimeout : 1000;
+
+            /*
+             * Nothing will service the controller if its interrupt does not
+             * reach us, and a data transfer needs servicing to move the bytes
+             * at all, so run the handler from here while polling.
+             */
+            while (waited--)
+            {
+                bus->sdcb_BusIRQHandler(bus, NULL);
+
+                if (SetSignal(0, 0) & (1L << bus->sdcb_CommandSig))
+                    break;
+                sdcard_Udelay(1000);
+            }
+            SetSignal(0, 1L << bus->sdcb_CommandSig);
+        }
     }
     else
     {
@@ -1065,6 +1093,13 @@ ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *buf, ULONG offset, const ULONG len)
 
 #undef DIRQ
 #define DIRQ(x) /* x */
+
+/* Only a real interrupt records that the controller delivers them. */
+static void FNAME_SDCBUS(BusIRQEntry)(struct sdcard_Bus *bus, void *data)
+{
+    bus->sdcb_BusFlags |= AF_Bus_IRQSeen;
+    FNAME_SDCBUS(BusIRQ)(bus, data);
+}
 
 void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 {
@@ -1262,7 +1297,7 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
     /* Install IRQ handler (controller-specific) */
     if (bus->sdcb_BusIRQHandler)
     {
-        if ((bus->sdcb_IRQHandle = KrnAddIRQHandler(bus->sdcb_BusIRQ, bus->sdcb_BusIRQHandler, bus, NULL)) != NULL)
+        if ((bus->sdcb_IRQHandle = KrnAddIRQHandler(bus->sdcb_BusIRQ, FNAME_SDCBUS(BusIRQEntry), bus, NULL)) != NULL)
         {
             DINIT(bug("[SDBus%02u] %s: IRQHandle @ 0x%p for IRQ#%ld\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_IRQHandle, bus->sdcb_BusIRQ));
         }
