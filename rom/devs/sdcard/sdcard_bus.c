@@ -917,7 +917,8 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
              */
             while (waited--)
             {
-                bus->sdcb_BusIRQHandler(bus, NULL);
+                if (bus->sdcb_BusIRQHandler)
+                    bus->sdcb_BusIRQHandler(bus, NULL);
 
                 if (SetSignal(0, 0) & (1L << bus->sdcb_CommandSig))
                     break;
@@ -1098,7 +1099,12 @@ ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *buf, ULONG offset, const ULONG len)
 static void FNAME_SDCBUS(BusIRQEntry)(struct sdcard_Bus *bus, void *data)
 {
     bus->sdcb_BusFlags |= AF_Bus_IRQSeen;
-    FNAME_SDCBUS(BusIRQ)(bus, data);
+
+    /* Dispatch through the bus's own handler: not every controller uses the
+       SDHCI register layout, and the SDHOST bus leaves the accessors this
+       one reads through set to NULL. */
+    if (bus->sdcb_BusIRQHandler)
+        bus->sdcb_BusIRQHandler(bus, data);
 }
 
 void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
