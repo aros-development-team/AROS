@@ -1984,12 +1984,11 @@ static void Application__CloseWindows(struct IClass *cl, Object *obj)
     if (children)
     {
         cstate = (Object *) children->mlh_Head;
-        if ((child = NextObject(&cstate)))
+        while ((child = NextObject(&cstate)))
         {
             D(bug("[MUI:App] %s: closing window %p\n", __func__, child));
 
             set(child, MUIA_Window_Open, FALSE);
-
         }
     }
 }
@@ -2133,7 +2132,7 @@ static IPTR Application__MUIM_OpenWindows(struct IClass *cl, Object *obj,
         return 0;
 
     cstate = (Object *) children->mlh_Head;
-    if ((child = NextObject(&cstate)))
+    while ((child = NextObject(&cstate)))
     {
         set(child, MUIA_Window_Open, TRUE);
     }
