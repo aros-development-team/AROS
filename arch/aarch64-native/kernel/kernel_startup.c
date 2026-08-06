@@ -335,7 +335,12 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     else
     {
         /* Initialize TLSF memory allocator */
-        krnCreateTLSFMemHeader("System Memory", 0, mh, (memupper - memlower), MEMF_CHIP | MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+        /*
+         * One pool, and it is not chip memory: flagging it MEMF_CHIP as well
+         * made AvailMem() report the same RAM under both headings. The 32-bit
+         * RasPi port describes the identical SoC the same way.
+         */
+        krnCreateTLSFMemHeader("System Memory", 0, mh, (memupper - memlower), MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
         if (memlower < protlower)
         {
             ((struct MemHeaderExt *)mh)->mhe_AllocAbs((struct MemHeaderExt *)mh, protupper-protlower, (void *)protlower);
