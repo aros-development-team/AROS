@@ -204,7 +204,14 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
     if(interval > 255)
         interval = 255;
 
-    return (UBYTE)interval;
+    ULONG microf = (ULONG)interval * 8; /* desired interval in microframes */
+    UBYTE exp;
+
+    for(exp = 0; exp < 11; exp++)
+        if((1UL << exp) >= microf)
+            break;
+
+    return exp;
 }
 
 void xhciInitRing(struct PCIController *hc, struct pcisusbXHCIRing *ring)
