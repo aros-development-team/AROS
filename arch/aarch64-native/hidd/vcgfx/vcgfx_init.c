@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: VCFB Gfx Hidd for standalone i386 AROS
+    Desc: VideoCore framebuffer graphics HIDD
 */
 
 #include <proto/exec.h>
@@ -22,7 +22,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*

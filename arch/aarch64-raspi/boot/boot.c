@@ -566,6 +566,24 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
         boottag->ti_Tag = KRN_FuncPutC;
         boottag->ti_Data = (IPTR)fb_Putc;
         boottag++;
+
+        /* Hand the linear framebuffer to the kernel/graphics HIDD. The
+           surface lives in the VideoCore region, which query_vmem() maps. */
+        boottag->ti_Tag = KRN_FBAddr;
+        boottag->ti_Data = (IPTR)vcfb_base;
+        boottag++;
+        boottag->ti_Tag = KRN_FrameBufferWidth;
+        boottag->ti_Data = vcfb_width;
+        boottag++;
+        boottag->ti_Tag = KRN_FrameBufferHeight;
+        boottag->ti_Data = vcfb_height;
+        boottag++;
+        boottag->ti_Tag = KRN_FrameBufferDepth;
+        boottag->ti_Data = vcfb_depth;
+        boottag++;
+        boottag->ti_Tag = KRN_FrameBufferPitch;
+        boottag->ti_Data = vcfb_pitch;
+        boottag++;
     }
 
     DBOOT({

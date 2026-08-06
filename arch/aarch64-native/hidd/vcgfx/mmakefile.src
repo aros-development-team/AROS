@@ -10,6 +10,8 @@ FILES	:=	\
 	vcgfx_support \
 	vcgfx_bitmapclass
 
+USER_LDFLAGS := -static
+
 USER_CPPFLAGS := \
                -D__OOP_NOATTRBASES__
 

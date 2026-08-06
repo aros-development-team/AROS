@@ -32,6 +32,7 @@
 #include "kernel_intern.h"
 #include "kernel_debug.h"
 #include "kernel_romtags.h"
+#include "kernel_fb.h"
 
 #include "exec_platform.h"
 
@@ -149,6 +150,8 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     struct MemHeader *mh;
     long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
     char *cmdline = NULL;
+    uint64_t fb_base = 0;
+    uint32_t fb_w = 0, fb_h = 0, fb_depth = 0, fb_pitch = 0;
 
     for (struct TagItem *t = msg; t->ti_Tag != TAG_DONE; t++)
         if (t->ti_Tag == KRN_Platform && t->ti_Data == 0xc44)
@@ -169,6 +172,9 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         msg++;
     }
     msg = BootMsg;
+
+    /* Record the framebuffer so the graphics HIDD can wrap it later. */
+    krn_fb_set(fb_base, fb_w, fb_h, fb_depth, fb_pitch);
 
     uart_puts("[Kernel] calling cpu_Probe\n");
     /* Probe the CPU */
@@ -227,6 +233,21 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             protupper = (msg->ti_Data + 4095) & ~4095;
             break;
         case KRN_KernelBase:
+            break;
+        case KRN_FBAddr:
+            fb_base = msg->ti_Data;
+            break;
+        case KRN_FrameBufferWidth:
+            fb_w = msg->ti_Data;
+            break;
+        case KRN_FrameBufferHeight:
+            fb_h = msg->ti_Data;
+            break;
+        case KRN_FrameBufferDepth:
+            fb_depth = msg->ti_Data;
+            break;
+        case KRN_FrameBufferPitch:
+            fb_pitch = msg->ti_Data;
             break;
         }
         msg++;

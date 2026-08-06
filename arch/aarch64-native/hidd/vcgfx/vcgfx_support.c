@@ -1,42 +1,43 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: VideoCore framebuffer gfx HIDD hardware support. The kernel already
-          brings up the mailbox framebuffer (arch/aarch64-native/kernel/fb.c);
-          this driver reuses that linear surface (both are linked into the one
-          kickstart image, so the symbols resolve directly).
+    Desc: VideoCore framebuffer gfx HIDD hardware support. The bootstrap brings
+          the mailbox framebuffer up and hands its geometry to the kernel; this
+          driver wraps that linear surface, querying it via KrnGetSystemAttr.
 */
 
 #define DEBUG 0
 #include <aros/debug.h>
+#include <aros/kernel.h>
 #include <proto/exec.h>
+
+/* kernel.resource is a resource, not a library: open it explicitly rather
+   than letting the module's autoinit try to OpenLibrary() it. */
+#define __NOLIBBASE__
+#include <proto/kernel.h>
 #include <string.h>
 
 #include "vcgfx_intern.h"
 #include "vcgfx_hidd.h"
 
-/* Provided by the kickstart kernel (fb.c). */
-extern int krn_fb_init(unsigned int w, unsigned int h);
-extern unsigned int krn_fb_width(void);
-extern unsigned int krn_fb_height(void);
-extern unsigned int krn_fb_pitch(void);
-extern unsigned long long krn_fb_base(void);
-
 BOOL initVCGfxHW(struct HWData *data)
 {
-    if (!krn_fb_base())
+    struct KernelBase *KernelBase = OpenResource("kernel.resource");
+    IPTR fb = KernelBase ? (IPTR)KrnGetSystemAttr(KATTR_FrameBuffer) : 0;
+
+    /* KrnGetSystemAttr() answers -1 for anything it does not know, so a
+       kernel without the framebuffer attributes hands back a pointer that
+       is not NULL but is not memory either. */
+    if (fb == 0 || fb == (IPTR)-1)
     {
-        if (!krn_fb_init(640, 480))
-        {
-            D(bug("[VCGfx] HwInit: framebuffer not available\n"));
-            return FALSE;
-        }
+        D(bug("[VCGfx] HwInit: framebuffer not available\n"));
+        return FALSE;
     }
 
-    data->framebuffer  = (APTR)(IPTR)krn_fb_base();
-    data->width        = krn_fb_width();
-    data->height       = krn_fb_height();
-    data->bytesperline = krn_fb_pitch();
+    data->framebuffer  = (APTR)fb;
+    data->width        = KrnGetSystemAttr(KATTR_FrameBufferWidth);
+    data->height       = KrnGetSystemAttr(KATTR_FrameBufferHeight);
+    data->bytesperline = KrnGetSystemAttr(KATTR_FrameBufferPitch);
     data->depth        = 32;
     data->bitsperpixel = 32;
     data->bytesperpixel = 4;

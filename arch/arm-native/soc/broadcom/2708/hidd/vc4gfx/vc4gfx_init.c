@@ -93,6 +93,19 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     KernelBase = OpenResource("kernel.resource");
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
+    /*
+     * This driver talks to the BCM283x VideoCore directly - HVS display
+     * lists, pixel valves, V3D. BCM2711 rearranges all of it, so leave that
+     * SoC to vcgfx, which only paints into the framebuffer the bootstrap
+     * already set up. Bowing out here, before the first register touch,
+     * keeps one kickstart usable on both boards.
+     */
+    if (__arm_periiobase == BCM2711_PERIIOBASE)
+    {
+        D(bug("[VideoCoreGfx] %s: BCM2711 - leaving the display to vcgfx\n", __PRETTY_FUNCTION__));
+        return FALSE;
+    }
+
     /* PV2 vsync IRQ handler; the source stays masked until the HVS
      * takeover arms it (vc4gfx_hvs.c). */
     vc4_hvs_init(xsd);
