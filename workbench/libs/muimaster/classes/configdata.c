@@ -1254,6 +1254,8 @@ IPTR Configdata__MUIM_Load(struct IClass *cl, Object *obj,
                 StopChunk(iff, MAKE_ID('P', 'R', 'E', 'F'), MAKE_ID('M',
                         'U', 'I', 'C'));
 
+                DoMethod(obj, MUIM_Dataspace_Clear);
+
                 while (!ParseIFF(iff, IFFPARSE_SCAN))
                 {
                     struct ContextNode *cn;
