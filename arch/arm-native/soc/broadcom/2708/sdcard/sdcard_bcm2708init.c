@@ -204,6 +204,31 @@ bcminit_clock:
         __BCM2708Bus->sdcb_BusIRQ = ctrlIRQ;
 
         __BCM2708Bus->sdcb_ClockMax = AROS_LE2LONG(MBoxMessage[6]);
+
+        /*
+         * GETCLKRATE answers with the rate the clock is running at, and on
+         * BCM2711 the EMMC2 clock is parked until something asks for it, so
+         * the answer is zero and the card never gets clocked. Ask what the
+         * clock can do instead.
+         */
+        if (__BCM2708Bus->sdcb_ClockMax == 0)
+        {
+            MBoxMessage[0] = AROS_LONG2LE(8 * 4);
+            MBoxMessage[1] = AROS_LONG2LE(VCTAG_REQ);
+            MBoxMessage[2] = AROS_LONG2LE(VCTAG_GETMAXCLKRATE);
+            MBoxMessage[3] = AROS_LONG2LE(8);
+            MBoxMessage[4] = AROS_LONG2LE(4);
+            MBoxMessage[5] = AROS_LONG2LE(ctrlClock);
+            MBoxMessage[6] = 0;
+            MBoxMessage[7] = 0;
+
+            MBoxWrite((APTR)VCMB_BASE, VCMB_PROPCHAN, MBoxMessage);
+            if (MBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) == MBoxMessage)
+                __BCM2708Bus->sdcb_ClockMax = AROS_LE2LONG(MBoxMessage[6]);
+
+            DINIT(bug("[SDCard--] %s: clock was parked, max rate %d Hz\n",
+                      __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax));
+        }
         __BCM2708Bus->sdcb_ClockMin = BCM2708SDCLOCK_MIN;
 
         __BCM2708Bus->sdcb_LEDCtrl = (BYTE (*)(int))FNAME_BCMSDCBUS(BCMLEDCtrl);
