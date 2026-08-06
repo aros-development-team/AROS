@@ -77,6 +77,7 @@ int krnParseFDT(void *dtb, struct krnFDTInfo *info)
     info->nregions = 0;
     info->bootargs = (void *)0;
     info->ncpus = 0;
+    info->boot_cpu = 0;
     info->totalsize = 0;
     info->tb_freq = 0;
     info->initrd_start = 0;
@@ -176,8 +177,15 @@ int krnParseFDT(void *dtb, struct krnFDTInfo *info)
                      str_prefix(node2, "cpu@") && str_eq(pname, "reg") &&
                      len >= 4)
             {
-                if (read_cells(val, 1) == __boot_hartid)
+                uint64_t hartid = read_cells(val, len / 4);
+
+                if (info->ncpus - 1 < KRN_MAX_HARTS)
+                    info->hartids[info->ncpus - 1] = hartid;
+                if (hartid == __boot_hartid)
+                {
                     boot_cpu_index = (int)info->ncpus - 1;
+                    info->boot_cpu = boot_cpu_index;
+                }
             }
             else if (depth == 3 && str_prefix(node2, "plic@") &&
                      str_eq(pname, "reg"))

@@ -8,6 +8,8 @@
 #include <aros/debug.h>
 
 #include <exec/types.h>
+#include <aros/kernel.h>
+#include <proto/kernel.h>
 #include <resources/processor.h>
 
 #include "processor_intern.h"
@@ -165,7 +167,11 @@ VOID Processor_AnswerTag(struct ProcessorBase *ProcessorBase, ULONG coreNo,
         *((UQUAD *)tag->ti_Data) = 0;
         break;
     case GCIT_ProcessorLoad:
-        *((ULONG *)tag->ti_Data) = 0;
+        {
+            intptr_t load = KrnGetCPUAttr(KATTR_CPULoad, coreNo);
+
+            *((ULONG *)tag->ti_Data) = (load == -1) ? 0 : (ULONG)load;
+        }
         break;
     case GCIT_PackageID:
         *((ULONG *)tag->ti_Data) = entry ? entry->pte_PackageID : 0;

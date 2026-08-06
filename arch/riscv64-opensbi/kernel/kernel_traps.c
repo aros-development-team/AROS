@@ -4,18 +4,24 @@
     Desc: S-mode trap handling for the opensbi-riscv64 target.
 */
 
+#define __KERNEL_NOLIBBASE__
+
 #include <inttypes.h>
 
 #include <exec/types.h>
 #include <exec/execbase.h>
+#include <proto/exec.h>
 #include <aros/riscv64/cpucontext.h>
 #include <asm/cpu.h>
 
 #include "kernel_intern.h"
 #include "kernel_cpu.h"
 
+#include <kernel_globals.h>
 #include <kernel_intr.h>
 #include <kernel_syscall.h>
+
+#include <proto/kernel.h>
 
 #define SCAUSE_INTERRUPT    (1UL << 63)
 #define SCAUSE_BREAKPOINT   3
@@ -69,6 +75,59 @@ static void krnDumpContext(struct ExceptionContext *ctx)
 
 /* Trap/interrupt nesting depth, reported through KrnIsSuper() */
 extern int __riscv64_trap_depth;
+
+/* Instruction-side faults: sepc itself may not be readable */
+#define SCAUSE_IS_IFETCH(c) ((c) == 0 || (c) == 1 || (c) == 12)
+
+/*
+ * The instruction stream around sepc, as 16-bit units (the parcel size
+ * both compressed and full-size instructions are built from), with the
+ * faulting parcel marked. Enough to disassemble the crash site offline
+ * without the binary at hand.
+ */
+static void krnDumpCode(struct ExceptionContext *ctx)
+{
+    unsigned char *pc = (unsigned char *)(ctx->pc & ~(IPTR)1);
+    int i;
+
+    if (!pc)
+        return;
+
+    krnSBIPutStr("[trap] code  ");
+    for (i = -16; i < 16; i++)
+    {
+        if (i == 0)
+            krnSBIPutStr("\n[trap] sepc> ");
+        krnSBIPutHex8(pc[i]);
+        if ((i & 1) && i != 15)
+            krnSBIPutStr(" ");
+    }
+    krnSBIPutStr("\n");
+}
+
+/*
+ * Name sepc, ra and every stack word the symbol resolver can attribute
+ * to a module. With no frame chain to walk (this port omits frame
+ * pointers) the scan overreports, but the real call chain is in there,
+ * each entry as module+symbol+offset - no load-address log needed.
+ */
+static void krnDumpBacktrace(struct ExceptionContext *ctx)
+{
+    struct KernelBase *kbase = getKernelBase();
+    APTR pcs[34];
+    ULONG n = 0;
+
+    if (!kbase)
+        return;
+
+    pcs[n++] = (APTR)ctx->pc;
+    if (ctx->x[0] && ctx->x[0] != ctx->pc)
+        pcs[n++] = (APTR)ctx->x[0];         /* ra */
+
+    n += KrnBacktraceFromFrame((APTR)ctx->x[1], &pcs[n], 32 - n);
+
+    KrnPrintBacktrace("[trap] ", pcs, n);
+}
 
 /* What the dispatcher leaves for the scheduler, once the depth is down */
 #define TRAP_DONE       0
@@ -170,6 +229,39 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
     }
 
     krnDumpContext(ctx);
+
+    /* Name the faulting task so a crash can be attributed to its owner
+     * (e.g. a driver process vs. the network stack). FindTask(NULL) is
+     * the SMP-safe way to get the running task. */
+    if (SysBase)
+    {
+        struct Task *t = FindTask(NULL);
+        if (t)
+        {
+            krnSBIPutStr("[trap] task '");
+            krnSBIPutStr(t->tc_Node.ln_Name ? t->tc_Node.ln_Name :
+                         "<unnamed>");
+            krnSBIPutStr("' @ ");
+            krnSBIPutHex((IPTR)t);
+            krnSBIPutStr("\n");
+
+            /* The owner's stack bounds, and whether sp had left them -
+             * a runaway stack explains a trap frame landing anywhere */
+            krnSBIPutStr("[trap] stack ");
+            krnSBIPutHex((IPTR)t->tc_SPLower);
+            krnSBIPutStr(" - ");
+            krnSBIPutHex((IPTR)t->tc_SPUpper);
+            krnSBIPutStr(" sp ");
+            krnSBIPutHex(ctx->x[1]);            /* regnames[1] is sp */
+            krnSBIPutStr(((IPTR)ctx->x[1] < (IPTR)t->tc_SPLower ||
+                          (IPTR)ctx->x[1] > (IPTR)t->tc_SPUpper)
+                         ? " OUTSIDE\n" : " in bounds\n");
+        }
+    }
+
+    if (!SCAUSE_IS_IFETCH(scause))
+        krnDumpCode(ctx);
+    krnDumpBacktrace(ctx);
 
     krnSBIPutStr("[trap] fatal - halting hart.\n");
     for (;;)

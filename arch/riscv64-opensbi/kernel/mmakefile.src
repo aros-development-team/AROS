@@ -32,6 +32,8 @@ CFILES := \
         kernel_cpu \
         kernel_elf \
         getcpucount \
+        getcpuattr \
+        platform_init \
         maygetchar \
         mapglobal \
         unmapglobal \

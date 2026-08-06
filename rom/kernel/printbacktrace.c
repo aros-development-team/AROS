@@ -32,11 +32,13 @@ static VOID krnBacktraceSingle(APTR priv, APTR pc, KrnSymResolver_t resolver)
                 info.seg_name ? ":" : "",
                 info.seg_name ? (char *)info.seg_name : "");
         } else if (info.mod_name) {
-            bug("[Kernel]  %p  (%s%s%s)\n",
+            /* No symbol - the segment offset is what addr2line needs */
+            bug("[Kernel]  %p  (%s%s%s+0x%lx)\n",
                 pc,
                 info.mod_name,
                 info.seg_name ? ":" : "",
-                info.seg_name ? (char *)info.seg_name : "");
+                info.seg_name ? (char *)info.seg_name : "",
+                info.seg_start ? (ULONG)((IPTR)pc - (IPTR)info.seg_start) : 0);
         } else {
             bug("[Kernel]  %p\n", pc);
         }

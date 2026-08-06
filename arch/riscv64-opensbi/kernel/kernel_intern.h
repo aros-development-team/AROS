@@ -29,6 +29,25 @@ extern unsigned long __boot_hartid;
 /* Harts described by the device tree (kernel_startup.c) */
 extern unsigned long __ncpus;
 
+/* Index of the boot hart among the cpu@ nodes (kernel_startup.c) */
+extern int __boot_cpu_index;
+
+/* The S-mode time CSR - counts at the /cpus timebase-frequency */
+static inline uint64_t krnReadTime(void)
+{
+    uint64_t v;
+    asm volatile("rdtime %0" : "=r"(v));
+    return v;
+}
+
+/* CPU load accounting (kernel_timer.c): time the boot hart spent in
+   the dispatcher's wfi, and the load computed from it once a second */
+extern volatile uint64_t __cpu_sleeptime;
+extern volatile uint32_t __cpu_load;
+
+/* /cpus timebase-frequency, for time <-> seconds (kernel_timer.c) */
+extern uint64_t __timebase_freq;
+
 /* Early SBI debug console (kernel_console.c) */
 void krnSBIPutC(char c);
 int  krnSBIGetC(void);
@@ -48,8 +67,38 @@ struct ExceptionContext;
 void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
                     unsigned long stval);
 
+/*
+ * Per-hart data, modeled on the x86 APICData/CPUData pair: one entry
+ * per hart the device tree describes, filled at boot so the secondary
+ * harts can be brought up from it in due course. Reached through
+ * KernelBase->kb_PlatformData.
+ */
+struct HartData
+{
+    uint64_t    hd_HartID;          /* SBI hart id (the cpu@ reg value)     */
+    int         hd_PLICContext;     /* Supervisor context in the PLIC, or
+                                       -1 when the tree describes none      */
+    uint32_t    hd_Flags;
+    /* Load accounting (kernel_timer.c) */
+    uint64_t    hd_SleepTime;
+    uint64_t    hd_LastLoadTime;
+    uint32_t    hd_Load;
+};
+
+#define HARTF_BOOT      (1 << 0)    /* The hart AROS booted on              */
+#define HARTF_ONLINE    (1 << 1)    /* Executing AROS                       */
+
+struct PlatformData
+{
+    uint32_t        kb_HartCount;
+    int             kb_BootHart;    /* Index into kb_Harts                  */
+    uint32_t        kb_TimebaseFreq;/* /cpus timebase-frequency, Hz         */
+    struct HartData kb_Harts[0];
+};
+
 /* Early flattened device tree parsing (kernel_fdt.c) */
 #define KRN_MAX_MEMREGIONS  8
+#define KRN_MAX_HARTS       16
 
 struct krnMemRegion
 {
@@ -67,6 +116,9 @@ struct krnFDTInfo
     unsigned int nregions;
     const char *bootargs;   /* /chosen bootargs, or NULL            */
     uint32_t    ncpus;      /* Number of cpu@ nodes under /cpus     */
+    int         boot_cpu;   /* Index of the boot hart among them    */
+    /* The hart id of each cpu@ node, in tree order */
+    uint64_t    hartids[KRN_MAX_HARTS];
     uint32_t    totalsize;  /* Total size of the DTB                */
     uint32_t    tb_freq;    /* /cpus timebase-frequency (Hz)        */
     uint64_t    initrd_start;/* /chosen linux,initrd-start (or 0)    */
@@ -95,6 +147,10 @@ struct krnFDTInfo
 };
 int krnParseFDT(void *dtb, struct krnFDTInfo *info);
 void krnDumpFDT(void *dtb);
+
+/* What the boot parse found, kept for the platform init to read
+   (kernel_startup.c) */
+extern struct krnFDTInfo *__bootfdtinfo;
 void krnDumpACPI(void);
 
 /* Platform interrupt controller (kernel_plic.c) */
@@ -120,6 +176,10 @@ void krnMMUMapRegion(IPTR base, IPTR size, unsigned long perms);
 /* Boot module loading (kernel_elf.c) */
 int krnLoadPackage(void *pkg, IPTR pkgsize, IPTR memlow, IPTR memhigh,
                    IPTR *lo, IPTR *hi, IPTR *memused);
+
+/* Loaded-module descriptor chain for the KRN_DebugInfo boot tag
+   (kernel_elf.c) */
+extern void *__ks_debuginfo;
 
 /*
  * mhartid is an M-mode CSR and can not be read from S-mode; the boot

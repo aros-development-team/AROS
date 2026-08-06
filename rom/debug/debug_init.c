@@ -54,6 +54,9 @@ static int Debug_Init(struct DebugBase *DebugBase)
         RegisterModule_ELF(kmod->Name, BNULL, kmod->eh, kmod->sh, (struct Library *)DebugBase);
     }
 
+    /* Let the kernel's backtraces and trap handlers name addresses */
+    KrnRegisterSymResolver(Debug_SymResolver, DebugBase);
+
 #if AROS_MODULES_DEBUG
     HostIFace = (APTR)LibGetTagData(KRN_HostInterface, 0, bootMsg);
     /*

@@ -20,6 +20,8 @@
 #include <kernel_debug.h>
 #include <kernel_scheduler.h>
 
+#include "etask.h"
+
 #include "kernel_intern.h"
 #include "kernel_cpu.h"
 
@@ -125,6 +127,31 @@ void cpu_Switch(regs_t *regs)
     /* TODO: save the vector state here when VS reads dirty (the
        VectorContext layout is ready, see kernel_cpu.h) */
 
+    /*
+     * Account the run segment that just ended: cycles for the usage
+     * window (normalized in krnTimerTick), and wall time for the
+     * task's cumulative CPU time.
+     */
+    if ((task->tc_Flags & TF_ETASK) && task->tc_UnionETask.tc_ETask &&
+        __timebase_freq)
+    {
+        struct IntETask *iet = IntETask(task->tc_UnionETask.tc_ETask);
+        uint64_t ran = krnReadTime() - iet->iet_private1;
+        uint64_t ns;
+
+        iet->iet_private2 += ran;
+
+        ns = (ran / __timebase_freq) * 1000000000ULL +
+             ((ran % __timebase_freq) * 1000000000ULL) / __timebase_freq;
+        iet->iet_CpuTime.tv_nsec += ns % 1000000000ULL;
+        iet->iet_CpuTime.tv_sec += ns / 1000000000ULL;
+        while (iet->iet_CpuTime.tv_nsec >= 1000000000)
+        {
+            iet->iet_CpuTime.tv_nsec -= 1000000000;
+            iet->iet_CpuTime.tv_sec++;
+        }
+    }
+
     core_Switch();
 }
 
@@ -138,9 +165,14 @@ void cpu_Dispatch(regs_t *regs)
          * Nothing to run. Interrupts are masked inside the trap
          * handler, so wait for one and service a pending timer tick by
          * hand; the wakeup it causes (via Signal from a future
-         * interrupt handler) makes a task ready.
+         * interrupt handler) makes a task ready. The time spent waiting
+         * is what the load accounting counts as idle.
          */
+        uint64_t idlefrom = krnReadTime();
+
         asm volatile("wfi");
+        __cpu_sleeptime += krnReadTime() - idlefrom;
+
         if (csr_read(sip) & SIE_STIE)
             krnTimerTick();
     }
@@ -160,6 +192,10 @@ void cpu_Dispatch(regs_t *regs)
         else
             krnInitFPU();
     }
+
+    /* The task starts running now - stamp its launch time */
+    if ((task->tc_Flags & TF_ETASK) && task->tc_UnionETask.tc_ETask)
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = krnReadTime();
 
     /* Handle task's flags */
     if (task->tc_Flags & TF_EXCEPT)

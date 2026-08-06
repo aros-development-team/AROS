@@ -14,6 +14,7 @@
 
 #include <exec/types.h>
 #include <dos/elf.h>
+#include <libraries/debug.h>
 
 #include "kernel_intern.h"
 
@@ -22,6 +23,17 @@
 /* Bump allocator over the free RAM the loader was given */
 static IPTR alloc_ptr, alloc_end;
 static IPTR loaded_lo, loaded_hi;
+
+/*
+ * Chain of loaded-module descriptors, published through the
+ * KRN_DebugInfo boot tag so debug.library can register the kickstart
+ * modules - names, segments and symbols - and crash addresses resolve
+ * without any load-address logging. The names, headers and symbol
+ * tables all live in the package region, which stays mapped and out of
+ * the allocatable pool for good.
+ */
+void *__ks_debuginfo;
+static struct ELF_ModuleInfo *mod_chain_tail;
 
 static void *krnBumpAlloc(IPTR size, IPTR align)
 {
@@ -451,6 +463,43 @@ int krnLoadPackage(void *pkg, IPTR pkgsize, IPTR memlow, IPTR memhigh,
         krnSBIPutStr(" .text @ ");
         krnSBIPutHex(mod_text);
         krnSBIPutStr("\n");
+
+        {
+            struct ELF_ModuleInfo *mi = krnBumpAlloc(sizeof(*mi), 8);
+
+            if (mi)
+            {
+                struct elfheader *eh = (struct elfheader *)data;
+                unsigned int s;
+
+                /*
+                 * The loader only placed the SHF_ALLOC sections; the
+                 * symbol and string tables debug.library will read
+                 * still have no address. They live in the package
+                 * image, which stays resident - point at them there.
+                 */
+                for (s = 0; s < eh->shnum; s++)
+                {
+                    struct sheader *s_h = shdr(eh, s);
+
+                    if (!(s_h->flags & SHF_ALLOC) &&
+                        s_h->type != SHT_NOBITS && s_h->size && !s_h->addr)
+                        s_h->addr = (elf_ptr_t)(IPTR)((UBYTE *)eh +
+                                                      s_h->offset);
+                }
+
+                mi->Next = NULL;
+                mi->Name = name;
+                mi->Type = DEBUG_ELF;
+                mi->eh = eh;
+                mi->sh = shdr(eh, 0);
+                if (mod_chain_tail)
+                    mod_chain_tail->Next = mi;
+                else
+                    __ks_debuginfo = mi;
+                mod_chain_tail = mi;
+            }
+        }
         count++;
     }
 

@@ -16,6 +16,11 @@ AROS_LH0(unsigned int, KrnGetCPUCount,
 {
     AROS_LIBFUNC_INIT
 
+    struct PlatformData *pdata = KernelBase->kb_PlatformData;
+
+    if (pdata)
+        return pdata->kb_HartCount;
+
     return (unsigned int)__ncpus;
 
     AROS_LIBFUNC_EXIT

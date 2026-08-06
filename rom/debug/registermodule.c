@@ -185,6 +185,10 @@ static inline char *getstrtab(struct sheader *sh)
 {
     char *str;
 
+    /* A table that was never loaded has no address to copy from */
+    if (!sh->addr)
+        return NULL;
+
     str = AllocVec(sh->size, MEMF_PUBLIC);
     if (str)
         CopyMem(sh->addr, str, sh->size);

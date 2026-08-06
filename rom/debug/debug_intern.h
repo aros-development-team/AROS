@@ -69,3 +69,7 @@ struct DebugBase
 
 void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
         struct Library *DebugBase);
+
+/* Trap-context symbol resolver registered with kernel.resource (symresolver.c) */
+struct KrnSymInfo;
+LONG Debug_SymResolver(APTR priv, APTR addr, struct KrnSymInfo *out);

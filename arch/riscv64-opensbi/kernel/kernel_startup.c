@@ -38,6 +38,7 @@ unsigned long __boot_hartid;
 /* Harts described by the device tree; only the boot hart runs AROS
    until SMP bring-up exists, but the count is real */
 unsigned long __ncpus = 1;
+int __boot_cpu_index;
 
 /* kernel.resource publishes the boot tags through KrnGetBootInfo() */
 extern struct TagItem *BootMsg;
@@ -290,6 +291,10 @@ struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
     tag->ti_Tag  = KRN_BootLoader;
     tag->ti_Data = (IPTR)"OpenSBI";
     tag++;
+    /* Filled in once the module package has been loaded */
+    tag->ti_Tag  = KRN_DebugInfo;
+    tag->ti_Data = 0;
+    tag++;
     if (info->bootargs)
     {
         tag->ti_Tag  = KRN_CmdLine;
@@ -310,9 +315,12 @@ struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
     return BootTags;
 }
 
+/* Kept static so the platform init can read it once exec is up */
+static struct krnFDTInfo fdtinfo;
+struct krnFDTInfo *__bootfdtinfo = &fdtinfo;
+
 void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
 {
-    struct krnFDTInfo fdtinfo;
     struct TagItem *msg;
 
     __boot_hartid = hartid;
@@ -385,6 +393,7 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
 
     if (fdtinfo.ncpus)
         __ncpus = fdtinfo.ncpus;
+    __boot_cpu_index = fdtinfo.boot_cpu;
 
 
     /*
@@ -605,6 +614,20 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                 modlow  = lo;
                 modhigh = hi;
                 memlow  = (used + 4095) & ~(IPTR)4095;
+
+                /* Now the module descriptor chain exists */
+                {
+                    struct TagItem *tag;
+
+                    for (tag = BootTags; tag->ti_Tag != TAG_DONE; tag++)
+                    {
+                        if (tag->ti_Tag == KRN_DebugInfo)
+                        {
+                            tag->ti_Data = (IPTR)__ks_debuginfo;
+                            break;
+                        }
+                    }
+                }
             }
             else
                 krnSBIPutStr("[boot] WARNING: no modules loaded!\n");
