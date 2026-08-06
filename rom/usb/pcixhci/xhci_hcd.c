@@ -2588,7 +2588,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
                                DEBUGCOLOR_RESET"\n",
                                ioreq->iouh_DevAddr, epid);
 
-                    xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, timerreq);
+                    xhciResetEndpointSequence(hc, devCtx, epid, timerreq);
                 }
             }
 
