@@ -168,16 +168,21 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
         return 0;
 
     /*
-     * xHCI EP Context Interval semantics depend on speed and endpoint type:
+     * xHCI EP Context service interval semantics depend on speed and endpoint type:
      *
-     * - HS/SS Interrupt & Isoch: Interval is an exponent in microframes, where
+     * - HS/SS Interrupt & Isoch: bInterval is an exponent in microframes, where
      *   the service interval is 2^(Interval) microframes.  USB bInterval is in
      *   the range 1..16 and directly encodes that exponent (bInterval - 1).
+     *   Valid bInterval: 1..16, Valid service interval: 0-15
      *
      * - FS Isoch: bInterval is 1..16 and encodes 2^(bInterval-1) frames.
      *   Convert frames to microframes (x8) => exponent = (bInterval - 1) + 3.
+     *   Valid bInterval: 1..16, Valid service interval: 3-18
      *
-     * - FS/LS Interrupt: Interval is the frame count 1..255.
+     * - FS/LS Interrupt: bInterval is the frame count 1..255.
+     *   Valid bInterval: 1..255, Valid service interval: 3-10
+     *
+     *   (xHCI spec table 6-12)
      */
     if(superspeed || highspeed) {
         if(interval > 16)
@@ -192,8 +197,6 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
             interval = 16;
 
         exp = (interval - 1) + 3; /* frames -> microframes */
-        if(exp > 15)
-            exp = 15;
 
         return (UBYTE)exp;
     }
@@ -201,7 +204,14 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
     if(interval > 255)
         interval = 255;
 
-    return (UBYTE)interval;
+    ULONG microf = (ULONG)interval * 8; /* desired interval in microframes */
+    UBYTE exp;
+
+    for(exp = 0; exp < 11; exp++)
+        if((1UL << exp) >= microf)
+            break;
+
+    return exp;
 }
 
 void xhciInitRing(struct PCIController *hc, struct pcisusbXHCIRing *ring)
@@ -2241,67 +2251,9 @@ static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
     }
 }
 
-static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
-        struct IOUsbHWReq *ioreq,
-        struct pciusbXHCIDevice *devCtx,
-        struct timerequest *timerreq)
+static void xhciResetEndpointSequence(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
+    const UBYTE epid, struct timerequest *timerreq)
 {
-    if(!hc || !ioreq || !devCtx)
-        return;
-
-    if(ioreq->iouh_Req.io_Command != UHCMD_CONTROLXFER)
-        return;
-
-    if(ioreq->iouh_Req.io_Error != UHIOERR_NO_ERROR)
-        return;
-
-    const UBYTE bmRequestType = ioreq->iouh_SetupData.bmRequestType;
-    const UBYTE bRequest = ioreq->iouh_SetupData.bRequest;
-    const UWORD wValue = AROS_LE2WORD(ioreq->iouh_SetupData.wValue);
-    const UWORD wIndex = AROS_LE2WORD(ioreq->iouh_SetupData.wIndex);
-
-    if((bmRequestType != (URTF_STANDARD | URTF_ENDPOINT)) ||
-            (bRequest != USR_CLEAR_FEATURE) ||
-            (wValue != UFS_ENDPOINT_HALT))
-        return;
-
-    if(devCtx == XHCI_ROOT_HUB_HANDLE)
-        return;
-
-    const UBYTE epid = xhciEndpointIDFromIndex(wIndex);
-    if(epid == 0 || epid >= MAX_DEVENDPOINTS)
-        return;
-
-    /* Complete any IOReq still stuck on this endpoint (stall event may not
-     * have been delivered if the event ring was full or the controller
-     * didn't send a Transfer Event).  xhciHandleFinishedTDs would normally
-     * reply the stalled request when it processes the STALL completion code,
-     * so by the time we reach here hu_DevBusyReq is usually already NULL.
-     * Guard the ReplyMsg with a NULL check to avoid double-reply. */
-    {
-        struct PCIUnit *unit = hc->hc_Unit;
-        UWORD devadrep = (devCtx->dc_DevAddr << 5) + (wIndex & 0x0F);
-        if(wIndex & 0x80) devadrep |= 0x10;
-
-        struct IOUsbHWReq *pending = unit->hu_DevBusyReq[devadrep];
-        if(pending) {
-            pending->iouh_Req.io_Error = UHIOERR_STALL;
-            pending->iouh_Actual = 0;
-            xhciFinishRequest(hc, unit, pending);
-            ReplyMsg(&pending->iouh_Req.io_Message);
-        }
-    }
-
-    pciusbXHCIDebugV("xHCI",
-                     DEBUGCOLOR_SET "CLEAR_FEATURE(ENDPOINT_HALT) completed: dev=%u wIndex=0x%04x -> EPID=%u"
-                     DEBUGCOLOR_RESET" \n",
-                     (unsigned)devCtx->dc_DevAddr,
-                     (unsigned)wIndex,
-                     (unsigned)epid);
-
-    if(!devCtx->dc_SlotCtx.dmaa_Ptr)
-        return;
-
     const UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
     volatile UBYTE *obase = (volatile UBYTE *)devCtx->dc_SlotCtx.dmaa_Ptr;
     volatile struct xhci_ep *epctx = (volatile struct xhci_ep *)(obase + (epid * ctxsize));
@@ -2364,6 +2316,70 @@ static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
                    DEBUGCOLOR_RESET"\n");
         return;
     }
+}
+
+static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
+        struct IOUsbHWReq *ioreq,
+        struct pciusbXHCIDevice *devCtx,
+        struct timerequest *timerreq)
+{
+    if(!hc || !ioreq || !devCtx)
+        return;
+
+    if(ioreq->iouh_Req.io_Command != UHCMD_CONTROLXFER)
+        return;
+
+    if(ioreq->iouh_Req.io_Error != UHIOERR_NO_ERROR)
+        return;
+
+    const UBYTE bmRequestType = ioreq->iouh_SetupData.bmRequestType;
+    const UBYTE bRequest = ioreq->iouh_SetupData.bRequest;
+    const UWORD wValue = AROS_LE2WORD(ioreq->iouh_SetupData.wValue);
+    const UWORD wIndex = AROS_LE2WORD(ioreq->iouh_SetupData.wIndex);
+
+    if((bmRequestType != (URTF_STANDARD | URTF_ENDPOINT)) ||
+            (bRequest != USR_CLEAR_FEATURE) ||
+            (wValue != UFS_ENDPOINT_HALT))
+        return;
+
+    if(devCtx == XHCI_ROOT_HUB_HANDLE)
+        return;
+
+    const UBYTE epid = xhciEndpointIDFromIndex(wIndex);
+    if(epid == 0 || epid >= MAX_DEVENDPOINTS)
+        return;
+
+    /* Complete any IOReq still stuck on this endpoint (stall event may not
+     * have been delivered if the event ring was full or the controller
+     * didn't send a Transfer Event).  xhciHandleFinishedTDs would normally
+     * reply the stalled request when it processes the STALL completion code,
+     * so by the time we reach here hu_DevBusyReq is usually already NULL.
+     * Guard the ReplyMsg with a NULL check to avoid double-reply. */
+    {
+        struct PCIUnit *unit = hc->hc_Unit;
+        UWORD devadrep = (devCtx->dc_DevAddr << 5) + (wIndex & 0x0F);
+        if(wIndex & 0x80) devadrep |= 0x10;
+
+        struct IOUsbHWReq *pending = unit->hu_DevBusyReq[devadrep];
+        if(pending) {
+            pending->iouh_Req.io_Error = UHIOERR_STALL;
+            pending->iouh_Actual = 0;
+            xhciFinishRequest(hc, unit, pending);
+            ReplyMsg(&pending->iouh_Req.io_Message);
+        }
+    }
+
+    pciusbXHCIDebugV("xHCI",
+                     DEBUGCOLOR_SET "CLEAR_FEATURE(ENDPOINT_HALT) completed: dev=%u wIndex=0x%04x -> EPID=%u"
+                     DEBUGCOLOR_RESET" \n",
+                     (unsigned)devCtx->dc_DevAddr,
+                     (unsigned)wIndex,
+                     (unsigned)epid);
+
+    if(!devCtx->dc_SlotCtx.dmaa_Ptr)
+        return;
+
+    xhciResetEndpointSequence(hc, devCtx, epid, timerreq);
 
     /* Recovery complete: endpoint is in Stopped state and ready to accept
      * new TRBs.  The next doorbell ring (when a transfer is submitted) will
@@ -2582,7 +2598,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
                                DEBUGCOLOR_RESET"\n",
                                ioreq->iouh_DevAddr, epid);
 
-                    xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, timerreq);
+                    xhciResetEndpointSequence(hc, devCtx, epid, timerreq);
                 }
             }
 
