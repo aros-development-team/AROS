@@ -794,16 +794,29 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
         maskx2 &= 15;
         shift = dstx - maskx;
 
+        /*
+         * The word masks trim channel A, which carries the mask and is read
+         * before the shifter, so they have to be expressed where A's words
+         * are - in the mask's coordinates, not the destination's. The two
+         * differ by exactly the shift. Trimming there covers the destination
+         * as well: where A is clear the minterm leaves D as C, so a bit the
+         * mask does not reach is a bit the blit does not write.
+         *
+         * Whichever operand spans more words sets the blit's width, and when
+         * that is the destination the final word has no mask behind it. There
+         * is nothing to keep from it, and reading past the mask would shift
+         * whatever follows into the pixels after the rectangle.
+         */
+        width = dstwidth >= maskwidth ? dstwidth : maskwidth;
+        shifta = shift < 0 ? (-shift) << 12 : shift << 12;
+
         if (shift < 0) {
             reverse = TRUE;
-            shift = -shift;
-            width = dstwidth >= maskwidth ? dstwidth : maskwidth;
-            shifta = shift << 12;
-            afwm = rightmask[dstx2];
-            alwm = leftmask[dstx];
+            afwm = rightmask[maskx2];
+            alwm = width > maskwidth ? 0 : leftmask[maskx];
         } else {
-            width = dstwidth >= maskwidth ? dstwidth : maskwidth;
-            shifta = shift << 12;
+            afwm = leftmask[maskx];
+            alwm = width > maskwidth ? 0 : rightmask[maskx2];
         }
     }
 
