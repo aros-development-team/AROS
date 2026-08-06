@@ -2,20 +2,20 @@
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
-#ifndef VCFBGFX_BITMAP_H
-#define VCFBGFX_BITMAP_H
+#ifndef FBGFX_BITMAP_H
+#define FBGFX_BITMAP_H
 
 #include <hidd/gfx.h>
 
-#define CLID_Hidd_BitMap_VCFB        "hidd.bitmap.vcfb"
-#define IID_Hidd_BitMap_VCFB         "hidd.bitmap.vcfb"
+#define CLID_Hidd_BitMap_FB        "hidd.bitmap.vcfb"
+#define IID_Hidd_BitMap_FB         "hidd.bitmap.vcfb"
 
 #define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 
 /*
    This structure is used as instance data for the bitmap class.
 */
-struct VCGfxBitMapData
+struct FBGfxBitMapData
 {
     UBYTE   	    	*VideoData;	/* Pointing to video data */
     LONG		width;		/* Bitmap size */
@@ -33,4 +33,4 @@ struct VCGfxBitMapData
     LONG		yoffset;
 };
 
-#endif /* VCFBGFX_BITMAP_H */
+#endif /* FBGFX_BITMAP_H */

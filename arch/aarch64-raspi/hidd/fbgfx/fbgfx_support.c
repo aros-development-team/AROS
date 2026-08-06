@@ -1,9 +1,12 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: VideoCore framebuffer gfx HIDD hardware support. The bootstrap brings
-          the mailbox framebuffer up and hands its geometry to the kernel; this
-          driver wraps that linear surface, querying it via KrnGetSystemAttr.
+    Desc: Linear framebuffer gfx HIDD. The bootstrap brings the VideoCore
+          framebuffer up and hands its geometry to the kernel; this driver
+          wraps that surface, querying it via KrnGetSystemAttr. It touches no
+          VideoCore register itself - the one board-specific thing left is the
+          pixel byte order below, which the firmware fixes and no attribute
+          reports.
 */
 
 #define DEBUG 0
@@ -17,10 +20,10 @@
 #include <proto/kernel.h>
 #include <string.h>
 
-#include "vcgfx_intern.h"
-#include "vcgfx_hidd.h"
+#include "fbgfx_intern.h"
+#include "fbgfx_hidd.h"
 
-BOOL initVCGfxHW(struct HWData *data)
+BOOL initFBGfxHW(struct HWData *data)
 {
     struct KernelBase *KernelBase = OpenResource("kernel.resource");
     IPTR fb = KernelBase ? (IPTR)KrnGetSystemAttr(KATTR_FrameBuffer) : 0;
@@ -30,7 +33,7 @@ BOOL initVCGfxHW(struct HWData *data)
        is not NULL but is not memory either. */
     if (fb == 0 || fb == (IPTR)-1)
     {
-        D(bug("[VCGfx] HwInit: framebuffer not available\n"));
+        D(bug("[FBGfx] HwInit: framebuffer not available\n"));
         return FALSE;
     }
 
@@ -54,7 +57,7 @@ BOOL initVCGfxHW(struct HWData *data)
     data->palettewidth = 8;
     data->fbsize = data->height * data->bytesperline;
 
-    D(bug("[VCGfx] HwInit: %ux%ux%u linear FB @ 0x%p, pitch %u\n",
+    D(bug("[FBGfx] HwInit: %ux%ux%u linear FB @ 0x%p, pitch %u\n",
           data->width, data->height, data->depth,
           data->framebuffer, data->bytesperline));
 
@@ -63,7 +66,7 @@ BOOL initVCGfxHW(struct HWData *data)
 }
 
 /* Copy the (possibly partial) bitmap buffer to the visible framebuffer. */
-void vcfbDoRefreshArea(struct HWData *hwdata, struct VCGfxBitMapData *data,
+void fbDoRefreshArea(struct HWData *hwdata, struct FBGfxBitMapData *data,
                        LONG x1, LONG y1, LONG x2, LONG y2)
 {
     UBYTE *src, *dst;
@@ -108,7 +111,7 @@ void vcfbDoRefreshArea(struct HWData *hwdata, struct VCGfxBitMapData *data,
 }
 
 /* Truecolor only: no hardware palette to load. */
-void DACLoad(struct VCGfx_staticdata *xsd, UBYTE *DAC, unsigned char first, int num)
+void DACLoad(struct FBGfx_staticdata *xsd, UBYTE *DAC, unsigned char first, int num)
 {
     (void)xsd; (void)DAC; (void)first; (void)num;
 }

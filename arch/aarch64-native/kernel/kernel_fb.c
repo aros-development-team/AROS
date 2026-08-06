@@ -3,7 +3,7 @@
 
     Desc: Linear framebuffer accessor. The bootstrap allocates the VideoCore
           framebuffer and passes its geometry in the kernel boot taglist;
-          kernel_startup records it here and the graphics HIDD (vcgfx) reads
+          kernel_startup records it here and the graphics HIDD (fbgfx) reads
           it back. The surface lives in the VideoCore region, which is
           identity mapped, so the physical base doubles as the CPU address.
 */

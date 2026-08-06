@@ -1,5 +1,5 @@
-#ifndef VCFBGFX_SUPPORT_H
-#define VCFBGFX_SUPPORT_H
+#ifndef FBGFX_SUPPORT_H
+#define FBGFX_SUPPORT_H
 
 #include <exec/types.h>
 #include <oop/oop.h>
@@ -34,13 +34,13 @@ struct HWData
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase sd->pciDeviceAttrBase
 
-struct VCGfx_staticdata;
-struct VCGfxBitMapData;
+struct FBGfx_staticdata;
+struct FBGfxBitMapData;
 
-BOOL initVCGfxHW(struct HWData *);
-void DACLoad(struct VCGfx_staticdata *, UBYTE *, unsigned char, int);
+BOOL initFBGfxHW(struct HWData *);
+void DACLoad(struct FBGfx_staticdata *, UBYTE *, unsigned char, int);
 void ClearBuffer(struct HWData *data);
-void vcfbDoRefreshArea(struct HWData *hwdata, struct VCGfxBitMapData *data,
+void fbDoRefreshArea(struct HWData *hwdata, struct FBGfxBitMapData *data,
 		       LONG x1, LONG y1, LONG x2, LONG y2);
 
-#endif /* VCFBGFX_SUPPORT_H */
+#endif /* FBGFX_SUPPORT_H */

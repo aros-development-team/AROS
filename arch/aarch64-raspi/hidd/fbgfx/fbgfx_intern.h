@@ -1,10 +1,10 @@
-#ifndef VCFBGFX_INTERN_H
-#define VCFBGFX_INTERN_H
+#ifndef FBGFX_INTERN_H
+#define FBGFX_INTERN_H
 
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: VCFB Gfx private data.
+    Desc: FB Gfx private data.
     Lang: English.
 */
 
@@ -22,18 +22,18 @@
 
 #include <hidd/gfx.h>
 
-#include "vcgfx_support.h"
+#include "fbgfx_support.h"
 
 #define ATTRBASES_NUM 8
 
-struct VCGfx_staticdata
+struct FBGfx_staticdata
 {
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
     
-    OOP_Class 	    	    *vcgfxclass;
+    OOP_Class 	    	    *fbgfxclass;
     OOP_Class 	    	    *displayclass;
     OOP_Class 	    	    *bmclass;
-    OOP_Object      	    *vcgfxhidd;
+    OOP_Object      	    *fbgfxhidd;
     OOP_Object      	    *vcfbdisplay;
     OOP_Object       	    *visible;		/* Currently visible bitmap */
     struct HWData   	    data;
@@ -43,16 +43,16 @@ struct VCGfx_staticdata
     OOP_AttrBase	    attrBases[ATTRBASES_NUM];
 };
 
-struct VCGfxBase
+struct FBGfxBase
 {
     struct Library library;
-    struct VCGfx_staticdata vsd;
+    struct FBGfx_staticdata vsd;
 };
 
 #define LOCK_FRAMEBUFFER(xsd)	ObtainSemaphore(&xsd->framebufferlock)
 #define UNLOCK_FRAMEBUFFER(xsd) ReleaseSemaphore(&xsd->framebufferlock)
 
-#define XSD(cl)	(&((struct VCGfxBase *)cl->UserData)->vsd)
+#define XSD(cl)	(&((struct FBGfxBase *)cl->UserData)->vsd)
 
 #undef HiddChunkyBMAttrBase
 #undef HiddBitMapAttrBase
@@ -63,7 +63,7 @@ struct VCGfxBase
 #undef HiddDisplayAttrBase
 #undef HiddDMEnumAttrBase
 
-/* These must stay in the same order as interfaces[] array in vcgfx_init.c */
+/* These must stay in the same order as interfaces[] array in fbgfx_init.c */
 #define HiddChunkyBMAttrBase	  XSD(cl)->attrBases[0]
 #define HiddBitMapAttrBase	  XSD(cl)->attrBases[1]
 #define HiddGfxAttrBase		  XSD(cl)->attrBases[2]
@@ -73,4 +73,4 @@ struct VCGfxBase
 #define HiddDisplayAttrBase	  XSD(cl)->attrBases[6]
 #define HiddDMEnumAttrBase	  XSD(cl)->attrBases[7]
 
-#endif /* VCFBGFX_INTERN_H */
+#endif /* FBGFX_INTERN_H */

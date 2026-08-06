@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: Bitmap class for VCFB Gfx hidd.
+    Desc: Bitmap class for FB Gfx hidd.
 */
 
 #include <proto/oop.h>
@@ -19,23 +19,23 @@
 
 #include <string.h>
 
-#include "vcgfx_hidd.h"
+#include "fbgfx_hidd.h"
 
 #include LC_LIBDEFS_FILE
 
-#define MNAME_ROOT(x) VCGfxBM__Root__ ## x
-#define MNAME_BM(x) VCGfxBM__Hidd_BitMap__ ## x
+#define MNAME_ROOT(x) FBGfxBM__Root__ ## x
+#define MNAME_BM(x) FBGfxBM__Hidd_BitMap__ ## x
 
 /*********** BitMap::New() *************************************/
 OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    EnterFunc(bug("VCGfx.BitMap::New()\n"));
+    EnterFunc(bug("FBGfx.BitMap::New()\n"));
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
         OOP_MethodID       disp_mid;
-        struct VCGfxBitMapData *data;
+        struct FBGfxBitMapData *data;
         HIDDT_ModeID       modeid;
         OOP_Object        *sync, *pf, *dmenum;
 
@@ -58,17 +58,17 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         data->disp_width   = OOP_GET(sync, aHidd_Sync_HDisp);
         data->disp_height  = OOP_GET(sync, aHidd_Sync_VDisp);
 
-        D(bug("[VCGfx:BitMap] Bitmap %ld x %ld, %u bytes per pixel, %u bytes per line\n",
+        D(bug("[FBGfx:BitMap] Bitmap %ld x %ld, %u bytes per pixel, %u bytes per line\n",
               data->width, data->height, data->bytesperpix, data->bytesperline));
-        D(bug("[VCGfx:BitMap] Video data at 0x%p (%u bytes)\n", data->VideoData, data->bytesperline * data->height));
+        D(bug("[FBGfx:BitMap] Video data at 0x%p (%u bytes)\n", data->VideoData, data->bytesperline * data->height));
 
         if (OOP_GET(data->pixfmtobj, aHidd_PixFmt_ColorModel) != vHidd_ColorModel_Palette)
-            ReturnPtr("VCGfx.BitMap::New()", OOP_Object *, o);
+            ReturnPtr("FBGfx.BitMap::New()", OOP_Object *, o);
 
         data->DAC = AllocMem(768, MEMF_ANY);
-        D(bug("[VCGfx:BitMap] Palette data at 0x%p\n", data->DAC));
+        D(bug("[FBGfx:BitMap] Palette data at 0x%p\n", data->DAC));
         if (data->DAC)
-            ReturnPtr("VCGfx.BitMap::New()", OOP_Object *, o);
+            ReturnPtr("FBGfx.BitMap::New()", OOP_Object *, o);
 
         disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
@@ -76,29 +76,29 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         o = NULL;
     } /* if created object */
 
-    ReturnPtr("VCGfx.BitMap::New()", OOP_Object *, o);
+    ReturnPtr("FBGfx.BitMap::New()", OOP_Object *, o);
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
 VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct VCGfxBitMapData *data = OOP_INST_DATA(cl, o);
+    struct FBGfxBitMapData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[VCGfx:BitMap] Dispose(0x%p)\n", o));
+    D(bug("[FBGfx:BitMap] Dispose(0x%p)\n", o));
 
     if (data->DAC)
         FreeMem(data->DAC, 768);
 
     OOP_DoSuperMethod(cl, o, msg);
 
-    ReturnVoid("VCGfx.BitMap::Dispose");
+    ReturnVoid("FBGfx.BitMap::Dispose");
 }
 
 /*** BitMap::Get() *******************************************/
 
 VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct VCGfxBitMapData *data = OOP_INST_DATA(cl, o);
+    struct FBGfxBitMapData *data = OOP_INST_DATA(cl, o);
     ULONG              idx;
 
     if (IS_BM_ATTR(msg->attrID, idx))
@@ -117,7 +117,7 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
-    struct VCGfxBitMapData *data = OOP_INST_DATA(cl, o);
+    struct FBGfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG           idx;
     IPTR xoffset = data->xoffset;
@@ -131,7 +131,7 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             switch(idx)
             {
             case aoHidd_BitMap_Visible:
-                D(bug("[VCGfx:BitMap] Setting Visible to %d\n", tag->ti_Data));
+                D(bug("[FBGfx:BitMap] Setting Visible to %d\n", tag->ti_Data));
                 data->disp = tag->ti_Data;
                 if (data->disp) {
                     if (data->DAC)
@@ -150,14 +150,14 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
     if ((xoffset != data->xoffset) || (yoffset != data->yoffset))
     {
-        D(bug("[VCGfx:BitMap] Scroll to (%d, %d)\n", xoffset, yoffset));
+        D(bug("[FBGfx:BitMap] Scroll to (%d, %d)\n", xoffset, yoffset));
         data->xoffset = xoffset;
         data->yoffset = yoffset;
 
         if (data->disp)
         {
             LOCK_FRAMEBUFFER(XSD(cl));
-            vcfbDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
+            fbDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
             UNLOCK_FRAMEBUFFER(XSD(cl));
         }
     }
@@ -167,16 +167,16 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
 BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
-    struct VCGfxBitMapData *data = OOP_INST_DATA(cl, o);
+    struct FBGfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct HWData *hwdata = &XSD(cl)->data;
     ULONG xc_i, col_i;
     UBYTE p_shift;
     UWORD red, green, blue;
 
-    D(bug("[VCGfx:BitMap] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
+    D(bug("[FBGfx:BitMap] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
 
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) {
-        D(bug("[VCGfx:BitMap] DoSuperMethod() failed\n"));
+        D(bug("[FBGfx:BitMap] DoSuperMethod() failed\n"));
         return FALSE;
     }
 
@@ -207,12 +207,12 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 
 VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
-    struct VCGfxBitMapData *data = OOP_INST_DATA(cl, o);
+    struct FBGfxBitMapData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[VCGfx:BitMap] UpdateRect(%d, %d, %d, %d), bitmap 0x%p\n", msg->x, msg->y, msg->width, msg->height, o));
+    D(bug("[FBGfx:BitMap] UpdateRect(%d, %d, %d, %d), bitmap 0x%p\n", msg->x, msg->y, msg->width, msg->height, o));
     if (data->disp) {
         LOCK_FRAMEBUFFER(XSD(cl));
-        vcfbDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);
+        fbDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);
         UNLOCK_FRAMEBUFFER(XSD(cl));
     }
 }
