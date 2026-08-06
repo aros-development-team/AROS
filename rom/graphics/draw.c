@@ -70,13 +70,15 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
     RESULT
 
     NOTES
+        Move() sets FRST_DOT and this clears it, so a run of Draw() calls
+        paints the vertex between two segments once rather than twice. Only
+        COMPLEMENT can see the difference - drawing the same pen twice looks
+        the same as drawing it once - and there it is the difference between
+        a vertex and a hole.
+
         Not yet implemented:
 
           - handle layer->Scroll_X/Scroll_Y.
-
-          - handle FRST_DOT which indicates whether to draw
-            or to don't draw first pixel of line. Important
-            for COMPLEMENT drawmode.
 
     EXAMPLE
 
@@ -138,6 +140,22 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
           GC_BG(gc)));
 
     do_render_with_gc(rp, NULL, &rr, draw_render, &drd, gc, TRUE, FALSE, GfxBase);
+
+    /*
+     * FRST_DOT clear means the starting point belongs to the segment before
+     * this one, which has already drawn it. Complementing it a second time
+     * would take it back to the background, so undo that dot - but only if
+     * the line pattern actually laid it down.
+     */
+    if(!(rp->Flags & FRST_DOT)
+            && (rp->DrawMode & COMPLEMENT)
+            && (GC_LINEPAT(gc) & (1 << (GC_LINEPATCNT(gc) & 15)))) {
+        fillrect_pendrmd(rp, x1, y1, x1, y1, GC_FG(gc),
+                         vHidd_GC_DrawMode_Invert, TRUE, GfxBase);
+    }
+
+    /* Whatever comes next continues from this segment's end point. */
+    rp->Flags &= ~FRST_DOT;
 
     dx = (drd.x2 > drd.y2) ? drd.x2 : drd.y2;
 
