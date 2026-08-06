@@ -2,7 +2,7 @@
     Copyright (C) 2008-2014, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <inttypes.h>
 #include <aros/kernel.h>
@@ -54,6 +54,8 @@ AROS_LH1(void *, OF_OpenKey,
 
         while(*Key)
         {
+                of_node_t *found = NULL;
+
                 Key++;
                 for (i=0; i < 63; i++)
                 {
@@ -63,6 +65,10 @@ AROS_LH1(void *, OF_OpenKey,
                         Key++;
                 }
 
+                /* A trailing slash, or "/" alone, names the node itself. */
+                if (i == 0)
+                        break;
+
                 ptrbuf[i] = 0;
 
                 D(bug("[OF] looking for child '%s'\n", ptrbuf));
@@ -71,10 +77,23 @@ AROS_LH1(void *, OF_OpenKey,
                 {
                         if (!my_strcmp(node->on_name, ptrbuf))
                         {
-                                root = node;
+                                found = node;
                                 break;
                         }
                 }
+
+                /*
+                 * A path component that is not there means the caller asked
+                 * for a node this machine does not have. Say so, rather than
+                 * handing back the deepest ancestor that did match - which
+                 * reads as success and leaves the caller inspecting the
+                 * wrong node. dt_find_node() in the kernel answers the same
+                 * way.
+                 */
+                if (!found)
+                        return NULL;
+
+                root = found;
         }
     }
 

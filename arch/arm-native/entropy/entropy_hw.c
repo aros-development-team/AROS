@@ -67,8 +67,8 @@ static BOOL bcm_rng_present(void)
     if (key == NULL)
         return FALSE;
 
-    /* OF_OpenKey() returns the deepest node it did find, so the compatible
-       string is what confirms this is the RNG and not one of its ancestors. */
+    /* Which generation: this file implements the BCM2835 layout, BCM2711
+       answers at the same address with an RNG200. */
     prop = OF_FindProperty(key, "compatible");
     if (prop == NULL)
         return FALSE;
