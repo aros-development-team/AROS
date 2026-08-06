@@ -772,18 +772,14 @@ AROS_UFH3(void, RTL8139_Schedular,
     struct RTL8139Unit		*unit = sm_UD->rtl8139sm_Unit;
 
 	LIBBASETYPEPTR			LIBBASE = unit->rtl8139u_device;
-	struct MsgPort 			*reply_port = NULL, *input = NULL;
+	struct MsgPort 			*input = NULL;
 	struct Message			*msg = &sm_UD->rtl8139sm_Msg;
 	BOOL					setupOK = FALSE, timer_open = FALSE;
 
 RTLD(bug("[%s] RTL8139_Schedular()\n", taskSelf->tc_Node.ln_Name))
 RTLD(bug("[%s] RTL8139_Schedular: Setting up device '%s'\n", taskSelf->tc_Node.ln_Name, unit->rtl8139u_name))
 
-	if ((reply_port = CreateMsgPort()) == NULL)
-	{
-RTLD(bug("[%s] RTL8139_Schedular: Failed to create Reply message port\n", taskSelf->tc_Node.ln_Name))
-	}
-	else if ((input = CreateMsgPort()) == NULL)
+	if ((input = CreateMsgPort()) == NULL)
 	{
 RTLD(bug("[%s] RTL8139_Schedular: Failed to create Input message port\n", taskSelf->tc_Node.ln_Name))
 	}
@@ -830,17 +826,22 @@ RTLD(bug("[%s] RTL8139_Schedular: Setup failed\n", taskSelf->tc_Node.ln_Name))
 	}
 
 	/* Handshake with CreateUnit(). The message lives in the parent-owned
-	   startup structure - sm_UD must not be touched after it is replied. */
-	msg->mn_ReplyPort = reply_port;
+	   startup structure, which the parent frees as soon as the handshake
+	   completes. It must therefore never travel back through a message
+	   port: a ReplyMsg() would queue this very node on our port, and the
+	   parent's FreeMem() would race our GetMsg() with freed memory (seen
+	   as boot-time heap corruption in whatever reused the chunk). The
+	   parent wakes us with SIGF_SINGLE instead - a signal carries no
+	   storage. ln_Name carries our task pointer to Signal(). */
+	msg->mn_ReplyPort = NULL;
+	msg->mn_Node.ln_Name = (char *)taskSelf;
 	msg->mn_Length = sizeof(struct Message);
 
 RTLD(bug("[%s] RTL8139_Schedular: Setup complete. Sending handshake\n", taskSelf->tc_Node.ln_Name))
+	SetSignal(0, SIGF_SINGLE);
 	PutMsg(sm_UD->rtl8139sm_SyncPort, msg);
-	if (reply_port != NULL)
-	{
-		WaitPort(reply_port);
-		GetMsg(reply_port);
-	}
+	Wait(SIGF_SINGLE);
+	/* sm_UD and msg are gone now - the parent freed them */
 
 	if (setupOK)
 	{
@@ -868,7 +869,6 @@ RTLD(bug("[%s] RTL8139_Schedular: entering forever loop ... \n", taskSelf->tc_No
 				DeleteIORequest((struct IORequest *)unit->rtl8139u_TimerSlowReq);
 				DeleteMsgPort(unit->rtl8139u_TimerSlowPort);
 				DeleteMsgPort(input);
-				DeleteMsgPort(reply_port);
 
 RTLD(bug("[%s] RTL8139_Schedular: Process shutdown.\n", taskSelf->tc_Node.ln_Name))
 				return;
@@ -911,8 +911,6 @@ RTLD(bug("[%s] RTL8139_Schedular: Handle incomming signal.\n", taskSelf->tc_Node
 		DeleteMsgPort(input);
 		unit->rtl8139u_input_port = NULL;
 	}
-	if (reply_port != NULL)
-		DeleteMsgPort(reply_port);
 
 	AROS_USERFUNC_EXIT
 }
@@ -1104,8 +1102,11 @@ RTLD(bug("[%s] CreateUnit:   PCI_BaseMem @ 0x%p\n", unit->rtl8139u_name, unit->r
 									/* The unit process clears rtl8139sm_Unit
 									   if its setup failed */
 									procOK = (sm_UD->rtl8139sm_Unit != NULL);
-									if (msg->mn_ReplyPort != NULL)
-										ReplyMsg(msg);
+									/* Wake the unit process directly - see the
+									   note at the handshake in RTL8139_Schedular
+									   for why this must not be a ReplyMsg() */
+									Signal((struct Task *)msg->mn_Node.ln_Name,
+									       SIGF_SINGLE);
 								}
 								DeleteMsgPort(sm_UD->rtl8139sm_SyncPort);
 								FreeMem(sm_UD, sizeof(struct RTL8139Startup));
