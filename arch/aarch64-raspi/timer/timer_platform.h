@@ -12,6 +12,7 @@ struct PlatformTimer
     struct timeval tbp_TickRate;	/* Our periodic timer interval   */
     unsigned int tbp_CLO;
     unsigned int tbp_CHI;
+    struct Interrupt tbp_MicroHZInt;	/* BCM2711: microhz tick off VBlank */
 };
 
 #undef KernelBase
