@@ -18,7 +18,6 @@
 
 #include "entropy_intern.h"
 
-#define BCM_RNG_DT_PATH         "/soc/rng@7e104000"
 #define BCM_RNG_COMPATIBLE      "brcm,bcm2835-rng"
 
 #define BCM_RNG_OFFSET          0x104000
@@ -58,35 +57,16 @@ static BOOL bcm_rng_present(void)
     void *OpenFirmwareBase = OpenResource("openfirmware.resource");
     void *key, *prop;
     CONST_STRPTR value;
-    ULONG len, i;
 
     if (OpenFirmwareBase == NULL)
         return FALSE;
 
-    key = OF_OpenKey(BCM_RNG_DT_PATH);
+    /* Look the block up by its binding, not by a path: the unit address in
+       a node name is a bus address and moves between SoC generations. The
+       BCM2711 and later carry an RNG200 with different registers, and it
+       does not answer to this name. */
+    key = OF_FindNodeByCompatible(NULL, BCM_RNG_COMPATIBLE);
     if (key == NULL)
-        return FALSE;
-
-    /* Which generation: this file implements the BCM2835 layout, BCM2711
-       answers at the same address with an RNG200. */
-    prop = OF_FindProperty(key, "compatible");
-    if (prop == NULL)
-        return FALSE;
-
-    value = OF_GetPropValue(prop);
-    len = OF_GetPropLen(prop);
-    if (value == NULL)
-        return FALSE;
-
-    /* A compatible property holds a list of NUL terminated strings. */
-    for (i = 0; i < len; i++)
-    {
-        if (bcm_rng_streq(&value[i], BCM_RNG_COMPATIBLE))
-            break;
-        while (i < len && value[i] != '\0')
-            i++;
-    }
-    if (i >= len)
         return FALSE;
 
     prop = OF_FindProperty(key, "status");

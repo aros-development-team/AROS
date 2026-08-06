@@ -21,7 +21,7 @@
 
 #define DEVNAME         "usb2otg.device"
 
-#define USB2OTG_DT_PATH "/soc/usb@7e980000"
+#define USB2OTG_DT_COMPATIBLE "brcm,bcm2708-usb"
 
 const char devname[]    = MOD_NAME_STRING;
 
@@ -56,9 +56,13 @@ static BOOL FNAME_DEV(DTEnabled)(void)
     if (OpenFirmwareBase == NULL)
         return TRUE;
 
-    key = OF_OpenKey(USB2OTG_DT_PATH);
+    /* By binding, not by path: the unit address in a node name is a bus
+       address and moves between SoC generations. A populated tree with no
+       such node means this machine has no OTG core of ours - BCM2712 puts a
+       different controller somewhere else entirely. */
+    key = OF_FindNodeByCompatible(NULL, USB2OTG_DT_COMPATIBLE);
     if (key == NULL)
-        return TRUE;
+        return FALSE;
 
     prop = OF_FindProperty(key, "status");
     if (prop == NULL)
