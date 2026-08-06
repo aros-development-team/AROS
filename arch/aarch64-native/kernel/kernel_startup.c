@@ -149,6 +149,11 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     struct MinList memList;
     struct MemHeader *mh;
     long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
+    /* The bootstrap emits a KRN_MEMLower/KRN_MEMUpper pair per range the
+       device tree describes. The first is the one the kernel was loaded into
+       and becomes the primary header; any others are added afterwards. */
+    struct { long unsigned int lower, upper; } memranges[KRN_MAXMEMRANGES];
+    int nmemranges = 0, memrange;
     char *cmdline = NULL;
     uint64_t fb_base = 0;
     uint32_t fb_w = 0, fb_h = 0, fb_depth = 0, fb_pitch = 0;
@@ -172,9 +177,6 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         msg++;
     }
     msg = BootMsg;
-
-    /* Record the framebuffer so the graphics HIDD can wrap it later. */
-    krn_fb_set(fb_base, fb_w, fb_h, fb_depth, fb_pitch);
 
     uart_puts("[Kernel] calling cpu_Probe\n");
     /* Probe the CPU */
@@ -221,10 +223,12 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             cmdline = (char *)msg->ti_Data;
             break;
         case KRN_MEMLower:
-            memlower = msg->ti_Data;
+            if (nmemranges < KRN_MAXMEMRANGES)
+                memranges[nmemranges].lower = msg->ti_Data;
             break;
         case KRN_MEMUpper:
-            memupper = msg->ti_Data;
+            if (nmemranges < KRN_MAXMEMRANGES)
+                memranges[nmemranges++].upper = msg->ti_Data;
             break;
         case KRN_ProtAreaStart:
             protlower = msg->ti_Data;
@@ -253,6 +257,9 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         msg++;
     }
     msg = BootMsg;
+
+    /* Record the framebuffer so the graphics HIDD can wrap it later. */
+    krn_fb_set(fb_base, fb_w, fb_h, fb_depth, fb_pitch);
 
     /* Allocate TLS from the protected area */
     __tls = (void *)protupper;
@@ -305,7 +312,13 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     if (__arm_arosintern.ARMI_LED_Toggle)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
 
-    D(bug("[Kernel] Preparing memory 0x%p -> 0x%p\n", memlower, memupper));
+    if (nmemranges > 0)
+    {
+        memlower = memranges[0].lower;
+        memupper = memranges[0].upper;
+    }
+
+    D(bug("[Kernel] Preparing memory 0x%p -> 0x%p (%d range(s))\n", memlower, memupper, nmemranges));
     D(bug("[Kernel] - protected area 0x%p -> 0x%p)\n", protlower, protupper));
 
     NEWLIST(&memList);
@@ -322,7 +335,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     else
     {
         /* Initialize TLSF memory allocator */
-        krnCreateTLSFMemHeader("System Memory", 0, mh, (memupper - memlower), MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+        krnCreateTLSFMemHeader("System Memory", 0, mh, (memupper - memlower), MEMF_CHIP | MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
         if (memlower < protlower)
         {
             ((struct MemHeaderExt *)mh)->mhe_AllocAbs((struct MemHeaderExt *)mh, protupper-protlower, (void *)protlower);
@@ -338,6 +351,27 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     __tls->SysBase = SysBase;
     D(bug("[Kernel] SysBase @ 0x%p\n", SysBase));
+
+    /*
+     * Now that there is a SysBase to hang them off, give the remaining ranges
+     * a header each. Multitasking has not started, so the list needs no
+     * arbitration yet.
+     */
+    for (memrange = 1; memrange < nmemranges; memrange++)
+    {
+        struct MemHeader *emh = (struct MemHeader *)memranges[memrange].lower;
+        IPTR esize = memranges[memrange].upper - memranges[memrange].lower;
+
+        if (esize < 4096)
+            continue;
+
+        krnCreateTLSFMemHeader("System Memory", 0, emh, esize,
+            MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+        ADDTAIL(&SysBase->MemList, &emh->mh_Node);
+
+        D(bug("[Kernel] Added memory range %d: 0x%p -> 0x%p\n", memrange,
+              memranges[memrange].lower, memranges[memrange].upper));
+    }
 
     D(bug("[Kernel] InitCode(RTF_SINGLETASK) ... \n"));
     InitCode(RTF_SINGLETASK, 0);

@@ -76,6 +76,13 @@ typedef enum
 #define KRN_FrameBufferDepth    (KRN_Dummy + 36) /* Framebuffer bits per pixel			*/
 #define KRN_FrameBufferPitch    (KRN_Dummy + 37) /* Framebuffer bytes per line			*/
 
+/*
+ * KRN_MEMLower/KRN_MEMUpper may appear more than once, one pair per physical
+ * memory range the bootstrap found, lower first. The first pair describes the
+ * range the kernel itself was loaded into.
+ */
+#define KRN_MAXMEMRANGES        8
+
 /* Magic value passed by the bootstrap as second parameter */
 #define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')
 
