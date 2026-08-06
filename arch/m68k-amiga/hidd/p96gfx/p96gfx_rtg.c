@@ -17,8 +17,13 @@
 #include "p96gfx_rtg.h"
 #include "p96call.h"
 
+/*
+ * GC drawmode back to the minterm's truth table. MINTERM_TO_GCDRMD() built
+ * the drawmode by reversing the minterm's four bits, and reversing is its own
+ * inverse, so entry i is i with its bits reversed.
+ */
 const UBYTE modetable[16] =
-        {  0, 8, 4, 12,  2, 10, 6, 14,  7, 9, 5, 13,  3, 11, 1, 15 };
+        {  0, 8, 4, 12,  2, 10, 6, 14,  1, 9, 5, 13,  3, 11, 7, 15 };
 
 static AROS_UFH1(ULONG, RTGCall_Default,
     AROS_UFHA(APTR, boardinfo, A0))
