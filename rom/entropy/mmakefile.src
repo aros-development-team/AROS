@@ -14,7 +14,7 @@ USER_INCLUDES += -I$(SRCDIR)/rom/entropy
 FUNCTIONS := getentropy addentropy getentropyinfo
 FILES     := entropy_init entropy_chacha entropy_software entropy_hw
 
-#MM- kernel-entropy : includes linklibs kernel-entropy-$(ARCH)-$(CPU)
+#MM- kernel-entropy : includes linklibs kernel-openfirmware-includes kernel-entropy-$(ARCH)-$(CPU)
 
 %build_module mmake=kernel-entropy \
     modname=entropy modtype=resource \
