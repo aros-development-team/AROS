@@ -168,16 +168,21 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
         return 0;
 
     /*
-     * xHCI EP Context Interval semantics depend on speed and endpoint type:
+     * xHCI EP Context service interval semantics depend on speed and endpoint type:
      *
-     * - HS/SS Interrupt & Isoch: Interval is an exponent in microframes, where
+     * - HS/SS Interrupt & Isoch: bInterval is an exponent in microframes, where
      *   the service interval is 2^(Interval) microframes.  USB bInterval is in
      *   the range 1..16 and directly encodes that exponent (bInterval - 1).
+     *   Valid bInterval: 1..16, Valid service interval: 0-15
      *
      * - FS Isoch: bInterval is 1..16 and encodes 2^(bInterval-1) frames.
      *   Convert frames to microframes (x8) => exponent = (bInterval - 1) + 3.
+     *   Valid bInterval: 1..16, Valid service interval: 3-18
      *
-     * - FS/LS Interrupt: Interval is the frame count 1..255.
+     * - FS/LS Interrupt: bInterval is the frame count 1..255.
+     *   Valid bInterval: 1..255, Valid service interval: 3-10
+     *
+     *   (xHCI spec table 6-12)
      */
     if(superspeed || highspeed) {
         if(interval > 16)
@@ -192,8 +197,6 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
             interval = 16;
 
         exp = (interval - 1) + 3; /* frames -> microframes */
-        if(exp > 15)
-            exp = 15;
 
         return (UBYTE)exp;
     }
