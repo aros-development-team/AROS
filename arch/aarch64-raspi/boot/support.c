@@ -35,6 +35,83 @@ void aarch64_icache_invalidate(uintptr_t addr, uintptr_t length)
         __asm__ __volatile__("isb" ::: "memory");
 }
 
+/*
+ * The bootstrap runs with the MMU off, where every access is treated as
+ * Device memory and must be aligned. The C library memset/memcpy use NEON
+ * STP Q stores and unaligned accesses that fault in that state, so the
+ * bootstrap carries its own alignment-safe versions. optnone keeps the
+ * compiler from recognising the loops and calling the routines recursively
+ * or re-vectorising them.
+ */
+__attribute__((optnone))
+void *memset(void *dst, int c, size_t n)
+{
+    unsigned char *d = dst;
+    uint64_t fill = (unsigned char)c;
+
+    fill |= fill << 8;
+    fill |= fill << 16;
+    fill |= fill << 32;
+
+    while (n && ((uintptr_t)d & 7))
+    {
+        *d++ = c;
+        n--;
+    }
+    while (n >= 8)
+    {
+        *(uint64_t *)d = fill;
+        d += 8;
+        n -= 8;
+    }
+    while (n--)
+        *d++ = c;
+
+    return dst;
+}
+
+__attribute__((optnone))
+void *memcpy(void *dst, const void *src, size_t n)
+{
+    unsigned char *d = dst;
+    const unsigned char *s = src;
+
+    if ((((uintptr_t)d ^ (uintptr_t)s) & 7) == 0)
+    {
+        while (n && ((uintptr_t)d & 7))
+        {
+            *d++ = *s++;
+            n--;
+        }
+        while (n >= 8)
+        {
+            *(uint64_t *)d = *(const uint64_t *)s;
+            d += 8;
+            s += 8;
+            n -= 8;
+        }
+    }
+    while (n--)
+        *d++ = *s++;
+
+    return dst;
+}
+
+__attribute__((optnone))
+void *memmove(void *dst, const void *src, size_t n)
+{
+    unsigned char *d = dst;
+    const unsigned char *s = src;
+
+    if (d <= s || d >= s + n)
+        return memcpy(dst, src, n);
+
+    while (n--)
+        d[n] = s[n];
+
+    return dst;
+}
+
 void *malloc(size_t size)
 {
         void *ret = NULL;
