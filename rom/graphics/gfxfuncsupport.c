@@ -398,8 +398,8 @@ static UBYTE pen_minterm(ULONG minterm, UBYTE src, UBYTE dst)
 static BOOL bltbitmap_pens(struct BitMap *dstBitMap, OOP_Object *srcbm_obj,
                            WORD xSrc, WORD ySrc, OOP_Object *dstbm_obj,
                            WORD xDest, WORD yDest, WORD xSize, WORD ySize,
-                           ULONG minterm, ULONG srcdepth, OOP_Object *gc,
-                           struct GfxBase *GfxBase)
+                           ULONG minterm, UBYTE mask, ULONG srcdepth,
+                           OOP_Object *gc, struct GfxBase *GfxBase)
 {
     HIDDT_Pixel     *pixtab = HIDD_BM_PIXTAB(dstBitMap);
     HIDDT_PixelLUT   pixlut;
@@ -436,10 +436,15 @@ static BOOL bltbitmap_pens(struct BitMap *dstBitMap, OOP_Object *srcbm_obj,
         for (x = 0; x < xSize; x++) {
             UBYTE dpen = pen_from_pixel(pixtab, drow[x]);
 
-            /* A pen is a byte and the table holds one entry for each, so
+            /* The mask deselects planes of the source, before the minterm.
+             * It does not protect planes of the destination: the result is
+             * written whole. That is the write mask's job, and a blit can
+             * carry one of each.
+             *
+             * A pen is a byte and the table holds one entry for each, so
              * an inverted result needs no folding to stay in range.
              */
-            drow[x] = pixtab[pen_minterm(minterm, srow[x], dpen)];
+            drow[x] = pixtab[pen_minterm(minterm, srow[x] & mask, dpen)];
         }
     }
 
@@ -503,8 +508,10 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
     }
 
     /*
-     * Only pens have planes, so neither rule below means anything on a
-     * truecolor destination, where the whole pixel is written.
+     * Only pens have planes, so neither rule below reaches a truecolor
+     * destination through the GC, which writes whole pixels. A pen-carrying
+     * source still has planes to mask there, and bltbitmap_pens() does that
+     * itself.
      */
     if(!(dstflags & FLG_TRUECOLOR)) {
         /*
@@ -598,16 +605,18 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
         } else if ((srcflags & FLG_TRUECOLOR) == 0
                    && (dstflags & (FLG_TRUECOLOR | FLG_HASCOLMAP))
                        == (FLG_TRUECOLOR | FLG_HASCOLMAP)
-                   && drmd != vHidd_GC_DrawMode_Copy
                    && drmd != vHidd_GC_DrawMode_NoOp
                    && drmd != vHidd_GC_DrawMode_Invert
+                   && (drmd != vHidd_GC_DrawMode_Copy || mask != 0xFF)
                    && bltbitmap_pens(dstBitMap, srcbm_obj, xSrc, ySrc,
                                      dstbm_obj, xDest, yDest, xSize, ySize,
-                                     minterm, srcdepth, gc, GfxBase)) {
+                                     minterm, mask, srcdepth, gc, GfxBase)) {
             /*
-             * Done over pens. Copy needs no help, and the two modes that
-             * leave the source out - dst untouched, and dst inverted - are
-             * about the destination's colour rather than the pen behind it.
+             * Done over pens. The two modes that leave the source out - dst
+             * untouched, and dst inverted - are about the destination's
+             * colour rather than the pen behind it, and a mask cannot change
+             * that when there is no source to deselect planes of. Copy needs
+             * no help either until a mask gives it a pen to alter.
              */
         } else {
             HIDDT_DrawMode old_drmd;
