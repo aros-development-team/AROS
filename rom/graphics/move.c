@@ -58,6 +58,9 @@
     rp->cp_y = y;
     rp->linpatcnt = 15;
 
+    /* A fresh line, so the next Draw() owns its starting point. */
+    rp->Flags |= FRST_DOT;
+
     AROS_LIBFUNC_EXIT
 
 } /* Move */
