@@ -37,6 +37,17 @@ BOOL initFBGfxHW(struct HWData *data)
         return FALSE;
     }
 
+#if !defined(DEBUGDISPLAY)
+    /*
+     * Detach the bootstrap's framebuffer console before handing this surface
+     * on. 0x03 to RawPutChar drops ARMI_PutChar (krnPutC in
+     * arch/aarch64-native/kernel/kernel_debug.c), leaving debug output on the
+     * serial line; without it every bug() keeps drawing characters into the
+     * screen Workbench is using.
+     */
+    RawPutChar(0x03);
+#endif
+
     data->framebuffer  = (APTR)fb;
     data->width        = KrnGetSystemAttr(KATTR_FrameBufferWidth);
     data->height       = KrnGetSystemAttr(KATTR_FrameBufferHeight);
