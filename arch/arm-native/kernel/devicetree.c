@@ -1,3 +1,6 @@
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <aros/macros.h>
 #include <exec/nodes.h>
 #include <exec/lists.h>
@@ -62,13 +65,13 @@ void * dt_find_node(char *key)
     int i;
     of_node_t *node, *ret = NULL;
 
-    bug("[Kernel] dt_find_node('%s')\n", key);
+    D(bug("[Kernel] dt_find_node('%s')\n", key);)
 
     if (*key == '/')
     {
         ret = root;
 
-        bug("[Kernel] root=%p\n", root);
+        D(bug("[Kernel] root=%p\n", root);)
 
         while(*key)
         {
@@ -89,10 +92,10 @@ void * dt_find_node(char *key)
 
             ptrbuf[i] = 0;
             struct List *c = (struct List *)&ret->on_children;
-            bug("[Kernel] ptrbuf='%s'\n", ptrbuf);
+            D(bug("[Kernel] ptrbuf='%s'\n", ptrbuf);)
             ForeachNode(c, node)
             {
-                bug("[Kernel] node=%p\n", node);
+                D(bug("[Kernel] node=%p\n", node);)
                 if (!my_strcmp(node->on_name, ptrbuf))
                 {
                     ret = node;
