@@ -43,9 +43,33 @@
                                  about choosen processor is provided. If this
                                  tag is missing or this tag has invalid value,
                                  information about first processor is returned.
+                                 New code should use GetCoreInfo() instead of
+                                 this tag.
 
-        GCIT_NumberOfProcessors - (ULONG *) Provides the number of processors
+        GCIT_NumberOfProcessors - (ULONG *) Provides the number of logical
+                                 processors present in the system.
+
+        GCIT_NumberOfPackages - (ULONG *) Provides the number of physical
+                                 processor packages present in the system.
+
+        GCIT_NumberOfClusters - (ULONG *) Provides the number of core clusters
                                  present in the system.
+
+        GCIT_NumberOfCores - (ULONG *) Provides the number of physical cores
+                                 present in the system.
+
+        GCIT_ThreadsPerCore - (ULONG *) Provides the maximum number of SMT
+                                 threads per physical core.
+
+        GCIT_PackageID, GCIT_ClusterID, GCIT_CoreID, GCIT_ThreadID,
+        GCIT_PhysicalID - (ULONG *) The position of the selected processor
+                                 in the system topology, and its hardware ID.
+                                 See GetCoreInfo().
+
+        GCIT_ISAString - (CONST_STRPTR *) Provides a textual description of
+                                 the instruction set architecture of the
+                                 selected processor. The string is considered
+                                 read-only.
 
         GCIT_ModelString - (CONST_STRPTR *) Provides the name of the model of the
                             processor. The string is considered read-only.
@@ -123,12 +147,14 @@
         None
 
     NOTES
-    
+
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+
+        GetCoreInfo(), GetCPUTopology()
 
     INTERNALS
 
@@ -137,10 +163,18 @@
     AROS_LIBFUNC_INIT
 
     struct TagItem * passedTag = NULL;
+    const struct ProcessorTopology *topo = ProcessorBase->Topology;
+    const struct ProcessorTopologyEntry *entry = NULL;
+    ULONG selected;
 
-    
     /* This is the default implementation */
-        
+
+    selected = (ULONG)GetTagData(GCIT_SelectedProcessor, 0, tagList);
+    if (selected >= ProcessorBase->cpucount)
+        selected = 0;
+    if (topo && selected < topo->pt_Count)
+        entry = &topo->pt_Entries[selected];
+
     while ((passedTag = NextTagItem(&tagList)) != NULL)
     {
         if ((passedTag->ti_Tag > GCIT_FeaturesBase) &&
@@ -156,7 +190,37 @@
         case(GCIT_NumberOfProcessors):
             *((ULONG *)passedTag->ti_Data) = ProcessorBase->cpucount;
             break;
+        case(GCIT_NumberOfPackages):
+            *((ULONG *)passedTag->ti_Data) = topo ? topo->pt_Packages : 1;
+            break;
+        case(GCIT_NumberOfClusters):
+            *((ULONG *)passedTag->ti_Data) = topo ? topo->pt_Clusters : 1;
+            break;
+        case(GCIT_NumberOfCores):
+            *((ULONG *)passedTag->ti_Data) = topo ? topo->pt_Cores : ProcessorBase->cpucount;
+            break;
+        case(GCIT_ThreadsPerCore):
+            *((ULONG *)passedTag->ti_Data) = topo ? topo->pt_ThreadsPerCore : 1;
+            break;
+        case(GCIT_PackageID):
+            *((ULONG *)passedTag->ti_Data) = entry ? entry->pte_PackageID : 0;
+            break;
+        case(GCIT_ClusterID):
+            *((ULONG *)passedTag->ti_Data) = entry ? entry->pte_ClusterID : 0;
+            break;
+        case(GCIT_CoreID):
+            *((ULONG *)passedTag->ti_Data) = entry ? entry->pte_CoreID : selected;
+            break;
+        case(GCIT_ThreadID):
+            *((ULONG *)passedTag->ti_Data) = entry ? entry->pte_ThreadID : 0;
+            break;
+        case(GCIT_PhysicalID):
+            *((ULONG *)passedTag->ti_Data) = entry ? entry->pte_PhysicalID : selected;
+            break;
         case(GCIT_ModelString):
+            *((CONST_STRPTR *)passedTag->ti_Data) = "Unknown";
+            break;
+        case(GCIT_ISAString):
             *((CONST_STRPTR *)passedTag->ti_Data) = "Unknown";
             break;
         case(GCIT_Family):

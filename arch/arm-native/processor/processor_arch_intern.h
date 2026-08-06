@@ -7,6 +7,9 @@
 
 #include <exec/types.h>
 
+struct ProcessorBase;
+struct TagItem;
+
 struct ARMProcessorInformation
 {
     ULONG           VendorID;
@@ -25,14 +28,25 @@ struct ARMProcessorInformation
     ULONG           L2CacheSize;
     ULONG           CacheLineSize;  /* Min. of L1, L2 */
 
-    
+
     /* Frequency information */
     UQUAD           MaxCPUFrequency;
+
+    /* Multiprocessor Affinity Register; 0 when not implemented */
+    ULONG           MPIDR;
 };
 
 VOID ReadProcessorInformation(struct ARMProcessorInformation * info);
 VOID ReadMaxFrequencyInformation(struct ARMProcessorInformation * info);
 UQUAD GetCurrentProcessorFrequency(struct ARMProcessorInformation * info);
+VOID Processor_FillTopology(struct ProcessorBase * ProcessorBase);
+VOID ARM_AnswerTag(struct ProcessorBase * ProcessorBase, ULONG coreNo, struct TagItem * tag);
+
+#define MPIDR_VALID(mpidr)      ((mpidr) & 0x80000000)
+#define MPIDR_MT(mpidr)         ((mpidr) & (1 << 24))
+#define MPIDR_AFF0(mpidr)       ((mpidr) & 0xFF)
+#define MPIDR_AFF1(mpidr)       (((mpidr) >> 8) & 0xFF)
+#define MPIDR_AFF2(mpidr)       (((mpidr) >> 16) & 0xFF)
 
 /* Flags */
 #define FEATB_THUMB             0

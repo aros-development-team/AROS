@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Desc: GetCPUInfo() - Provides information about installed CPUs
 */
@@ -28,8 +28,7 @@ AROS_LH1(void, GetCPUInfo,
     AROS_LIBFUNC_INIT
 
     struct TagItem * passedTag = NULL;
-    struct X86ProcessorInformation * processor = NULL;
-    struct X86ProcessorInformation **sysprocs = ProcessorBase->Private1;
+    const struct ProcessorTopology *topo = ProcessorBase->Topology;
     ULONG selectedprocessor = 0;
 
     D(bug("[processor.x86] :%s()\n", __func__));
@@ -43,80 +42,127 @@ AROS_LH1(void, GetCPUInfo,
     if (selectedprocessor >= ProcessorBase->cpucount)
         selectedprocessor = 0;
 
-    processor = sysprocs[selectedprocessor];
-
     /* Go over each passed tag and fill apprioprate data */
     while ((passedTag = NextTagItem(&tagList)) != NULL)
     {
-        if ((passedTag->ti_Tag > GCIT_FeaturesBase) &&
-            (passedTag->ti_Tag <= GCIT_FeaturesLast))
+        switch (passedTag->ti_Tag)
         {
-            ProcessFeaturesTag(processor, passedTag);
-        }
-        else
-        {
-        switch(passedTag->ti_Tag)
-        {
-        case(GCIT_NumberOfProcessors):
+        case GCIT_NumberOfProcessors:
             *((ULONG *)passedTag->ti_Data) = ProcessorBase->cpucount;
             break;
-        case(GCIT_ModelString):
-            *((CONST_STRPTR *)passedTag->ti_Data) = processor->BrandString;
+        case GCIT_NumberOfPackages:
+            *((ULONG *)passedTag->ti_Data) = topo ? topo->pt_Packages : 1;
             break;
-        case(GCIT_Family):
-            *((ULONG *)passedTag->ti_Data) = processor->Family;
+        case GCIT_NumberOfClusters:
+            *((ULONG *)passedTag->ti_Data) = topo ? topo->pt_Clusters : 1;
             break;
-        case(GCIT_VectorUnit):
-            *((ULONG *)passedTag->ti_Data) = processor->VectorUnit;
-            break;
-        case(GCIT_L1CacheSize):
+        case GCIT_NumberOfCores:
             *((ULONG *)passedTag->ti_Data) =
-                (processor->L1DataCacheSize + processor->L1InstructionCacheSize);
+                topo ? topo->pt_Cores : ProcessorBase->cpucount;
             break;
-        case(GCIT_L1DataCacheSize):
-            *((ULONG *)passedTag->ti_Data) = processor->L1DataCacheSize;
+        case GCIT_ThreadsPerCore:
+            *((ULONG *)passedTag->ti_Data) =
+                topo ? topo->pt_ThreadsPerCore : 1;
             break;
-        case(GCIT_L1InstructionCacheSize):
-            *((ULONG *)passedTag->ti_Data) = processor->L1InstructionCacheSize;
+        case GCIT_SelectedProcessor:
             break;
-        case(GCIT_L2CacheSize):
-            *((ULONG *)passedTag->ti_Data) = processor->L2CacheSize;
+        default:
+            X86_AnswerTag(ProcessorBase, selectedprocessor, passedTag);
             break;
-        case(GCIT_L3CacheSize):
-            *((ULONG *)passedTag->ti_Data) = processor->L3CacheSize;
-            break;
-        case(GCIT_CacheLineSize):
-            *((ULONG *)passedTag->ti_Data) = processor->CacheLineSize;
-            break;
-        case(GCIT_Architecture):
-            *((ULONG *)passedTag->ti_Data) = PROCESSORARCH_X86;
-            break;
-        case(GCIT_Endianness):
-            *((ULONG *)passedTag->ti_Data) = ENDIANNESS_LE;
-            break;
-        case(GCIT_ProcessorSpeed):
-            *((UQUAD *)passedTag->ti_Data) = GetCurrentProcessorFrequency(ProcessorBase, processor);
-            break;
-        case(GCIT_ProcessorLoad):
-#if defined(__AROSEXEC_SMP__)
-            *((ULONG *)passedTag->ti_Data) = KrnGetSystemAttr(KATTR_CPULoad + selectedprocessor);
-#else
-            *((ULONG *)passedTag->ti_Data) = 0; /* TODO: IMPLEMENT */
-#endif
-            break;
-        case(GCIT_FrontsideSpeed):
-            *((UQUAD *)passedTag->ti_Data) = processor->MaxFSBFrequency;
-            break;
-
-        case GCIT_Vendor:
-            *((ULONG *)passedTag->ti_Data) = processor->Vendor;
-            break;
-        }
         }
     }
 
     AROS_LIBFUNC_EXIT
 } /* GetCPUInfo() */
+
+VOID X86_AnswerTag(struct ProcessorBase * ProcessorBase, ULONG coreNo, struct TagItem * tag)
+{
+    struct X86ProcessorInformation **sysprocs = ProcessorBase->Private1;
+    struct X86ProcessorInformation * processor = sysprocs[coreNo];
+
+    if ((tag->ti_Tag > GCIT_FeaturesBase) &&
+        (tag->ti_Tag <= GCIT_FeaturesLast))
+    {
+        ProcessFeaturesTag(processor, tag);
+        return;
+    }
+
+    switch (tag->ti_Tag)
+    {
+    case(GCIT_ModelString):
+        *((CONST_STRPTR *)tag->ti_Data) = processor->BrandString;
+        break;
+    case(GCIT_ISAString):
+        *((CONST_STRPTR *)tag->ti_Data) = (processor->Features3 & FEATF_AMD64)
+            ? (CONST_STRPTR)"x86-64" : (CONST_STRPTR)"x86";
+        break;
+    case(GCIT_Family):
+        *((ULONG *)tag->ti_Data) = processor->Family;
+        break;
+    case(GCIT_Model):
+        *((ULONG *)tag->ti_Data) = processor->Model;
+        break;
+    case(GCIT_VectorUnit):
+        *((ULONG *)tag->ti_Data) = processor->VectorUnit;
+        break;
+    case(GCIT_L1CacheSize):
+        *((ULONG *)tag->ti_Data) =
+            (processor->L1DataCacheSize + processor->L1InstructionCacheSize);
+        break;
+    case(GCIT_L1DataCacheSize):
+        *((ULONG *)tag->ti_Data) = processor->L1DataCacheSize;
+        break;
+    case(GCIT_L1InstructionCacheSize):
+        *((ULONG *)tag->ti_Data) = processor->L1InstructionCacheSize;
+        break;
+    case(GCIT_L2CacheSize):
+        *((ULONG *)tag->ti_Data) = processor->L2CacheSize;
+        break;
+    case(GCIT_L3CacheSize):
+        *((ULONG *)tag->ti_Data) = processor->L3CacheSize;
+        break;
+    case(GCIT_CacheLineSize):
+        *((ULONG *)tag->ti_Data) = processor->CacheLineSize;
+        break;
+    case(GCIT_Architecture):
+        *((ULONG *)tag->ti_Data) = PROCESSORARCH_X86;
+        break;
+    case(GCIT_Endianness):
+        *((ULONG *)tag->ti_Data) = ENDIANNESS_LE;
+        break;
+    case(GCIT_ProcessorSpeed):
+        *((UQUAD *)tag->ti_Data) = GetCurrentProcessorFrequency(ProcessorBase, processor);
+        break;
+    case(GCIT_ProcessorLoad):
+        {
+            intptr_t load = KrnGetCPUAttr(KATTR_CPULoad, coreNo);
+
+            *((ULONG *)tag->ti_Data) = (load == -1) ? 0 : (ULONG)load;
+        }
+        break;
+    case(GCIT_FrontsideSpeed):
+        *((UQUAD *)tag->ti_Data) = processor->MaxFSBFrequency;
+        break;
+    case GCIT_Vendor:
+        *((ULONG *)tag->ti_Data) = processor->Vendor;
+        break;
+    case GCIT_PackageID:
+        *((ULONG *)tag->ti_Data) = processor->PackageID;
+        break;
+    case GCIT_ClusterID:
+        *((ULONG *)tag->ti_Data) = 0;
+        break;
+    case GCIT_CoreID:
+        *((ULONG *)tag->ti_Data) = processor->CoreID;
+        break;
+    case GCIT_ThreadID:
+        *((ULONG *)tag->ti_Data) = processor->ThreadID;
+        break;
+    case GCIT_PhysicalID:
+        *((ULONG *)tag->ti_Data) = processor->APICID;
+        break;
+    }
+}
 
 static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct TagItem * tag)
 {

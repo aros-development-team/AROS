@@ -92,6 +92,8 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     }
 #endif
 
+    Processor_FillTopology(ProcessorBase);
+
     DUMPINFO(
     bug("[processor.ARM] Processor Details -:\n");
         for (i = 0; i < ProcessorBase->cpucount; i++)

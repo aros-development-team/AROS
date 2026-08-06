@@ -37,9 +37,8 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
     ULONG part    = 0;
     ULONG version = 0;
     BOOL flags[FLAGS_NUM];
-    struct TagItem tags [FLAGS_NUM + 5] =
+    struct TagItem tags [FLAGS_NUM + 4] =
     {
-        {GCIT_SelectedProcessor     , i               },
         {GCIT_Model                 , (IPTR)&part     },
         {GCIT_Version               , (IPTR)&version  },
         {GCIT_Vendor                , (IPTR)&vendor   },
@@ -51,7 +50,8 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
         {TAG_DONE                   , 0               }
     };
 
-    GetCPUInfo(tags);
+    if (!GetCoreInfo(i, tags))
+        return;
 
     found = FALSE;
     for (i = 0; vendors[i]; i++)

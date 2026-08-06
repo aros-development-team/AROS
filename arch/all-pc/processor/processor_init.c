@@ -21,6 +21,7 @@ struct PQData
 {
     struct ProcessorBase *ProcessorBase;
     struct X86ProcessorInformation *pqd_ProcInfo;
+    ULONG pqd_CPUNo;
 };
 
 static void Processor_QueryTask(struct ExecBase *SysBase)
@@ -48,7 +49,11 @@ static void Processor_QueryTask(struct ExecBase *SysBase)
     )
 
     if (pqData->pqd_ProcInfo)
+    {
         ReadProcessorInformation(ProcessorBase, pqData->pqd_ProcInfo);
+        Processor_UpdateTopology(ProcessorBase, pqData->pqd_CPUNo,
+                                 pqData->pqd_ProcInfo);
+    }
     else
     {
         bug("[processor.x86] %s: ERROR: procinfo missing!\n", __func__);
@@ -116,6 +121,7 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
                         struct PQData *pqData = (struct PQData *)ml->ml_ME[1].me_Addr;
                         pqData->pqd_ProcInfo = sysprocs[cpuNo];
                         pqData->ProcessorBase = ProcessorBase;
+                        pqData->pqd_CPUNo = cpuNo;
                         processorQueryTaskName = (char *)ml->ml_ME[0].me_Addr;
 
                         RawDoFmt("Processor #%03u Query", (RAWARG)cpuNameArg, RAWFMTFUNC_STRING, processorQueryTaskName);

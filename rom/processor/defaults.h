@@ -21,6 +21,9 @@
 #ifdef __arm__
 #define PROCESSORARCH_DEF PROCESSORARCH_ARM
 #endif
+#ifdef __riscv
+#define PROCESSORARCH_DEF PROCESSORARCH_RISCV
+#endif
 #ifdef __aarch64__
 /* AArch64 is the 64-bit execution state of the ARM architecture. There is no
    separate PROCESSORARCH_ value, so report it as ARM (the architecture family);

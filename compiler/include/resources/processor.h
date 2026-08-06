@@ -2,7 +2,7 @@
 #define RESOURCES_PROCESSOR_H
 
 /*
-    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2010-2020, The AROS Development Team. All rights reserved.
         
     Tags and defines for processors information queries
 */
@@ -16,10 +16,27 @@
 /*
  * Tags.
  *
+ * System-wide tags (GetCPUInfo): GCIT_NumberOfProcessors,
+ * GCIT_NumberOfPackages, GCIT_NumberOfClusters, GCIT_NumberOfCores,
+ * GCIT_ThreadsPerCore.
+ *
+ * Per-core tags (GetCoreInfo): everything else - identification,
+ * caches, speeds, load, topology position and the boolean feature tags.
+ * Cores of a heterogeneous system may answer differently.
+ *
+ * For compatibility GetCPUInfo() also answers every per-core tag, for
+ * the core named by the GCIT_SelectedProcessor control tag (first core
+ * when absent); new code should use GetCoreInfo() instead.
+ *
  * ARM-specific implementation:
  * 1. GCIT_Model   manufacturer-specific part number
  * 2. GCIT_Version manufacturer-specific revision and variant numbers (see macros below)
  * 3. GCIT_Vendor  implementer ID as defined by ARM Ltd.
+ *
+ * RISC-V-specific implementation:
+ * 1. GCIT_Model   low 32 bits of marchid
+ * 2. GCIT_Version low 32 bits of mimpid
+ * 3. GCIT_Vendor  mvendorid (JEDEC manufacturer ID)
  */
 #define GCIT_NumberOfProcessors     (TAG_USER +   1)
 #define GCIT_NumberOfCPUs           GCIT_NumberOfProcessors
@@ -46,6 +63,25 @@
 #define GCIT_Endianness             (TAG_USER + 105)
 #define GCIT_ProcessorLoad          (TAG_USER + 106)
 #define GCIT_Vendor                 (TAG_USER + 107)
+#define GCIT_ISAString              (TAG_USER + 108)
+
+/*
+ * Topology. A "processor" as counted by GCIT_NumberOfProcessors is a
+ * logical processor (hardware thread). Logical processors group into
+ * cores, cores into clusters, clusters into packages. On hardware with
+ * no such level the counts report 1 and the IDs 0.
+ */
+#define GCIT_NumberOfPackages       (TAG_USER + 109)
+#define GCIT_NumberOfClusters       (TAG_USER + 110)
+#define GCIT_NumberOfCores          (TAG_USER + 111)
+#define GCIT_ThreadsPerCore         (TAG_USER + 112)
+/* Position of the selected processor within the topology */
+#define GCIT_PackageID              (TAG_USER + 113)
+#define GCIT_ClusterID              (TAG_USER + 114)
+#define GCIT_CoreID                 (TAG_USER + 115)
+#define GCIT_ThreadID               (TAG_USER + 116)
+/* Hardware ID of the selected processor (APIC ID / MPIDR / hart id) */
+#define GCIT_PhysicalID             (TAG_USER + 117)
 
 /* Space [TAG_USER + 200, TAG_USER + 499] is reserved for boolean feature
    tags. Do no introduce non boolean, non feature tags in this space. */
@@ -93,6 +129,23 @@
 #define GCIT_SupportsAVX            (GCIT_FeaturesBase +  41)
 #define GCIT_SupportsAES            (GCIT_FeaturesBase +  42)
 #define GCIT_Virtualized            (GCIT_FeaturesBase +  100)
+/* RISC-V ISA extensions. The full ISA string is available via
+   GCIT_ISAString; these cover the extensions of general interest. */
+#define GCIT_SupportsRVM            (GCIT_FeaturesBase + 120)
+#define GCIT_SupportsRVA            (GCIT_FeaturesBase + 121)
+#define GCIT_SupportsRVF            (GCIT_FeaturesBase + 122)
+#define GCIT_SupportsRVD            (GCIT_FeaturesBase + 123)
+#define GCIT_SupportsRVC            (GCIT_FeaturesBase + 124)
+#define GCIT_SupportsRVV            (GCIT_FeaturesBase + 125)
+#define GCIT_SupportsZba            (GCIT_FeaturesBase + 126)
+#define GCIT_SupportsZbb            (GCIT_FeaturesBase + 127)
+#define GCIT_SupportsZbc            (GCIT_FeaturesBase + 128)
+#define GCIT_SupportsZbs            (GCIT_FeaturesBase + 129)
+#define GCIT_SupportsZfh            (GCIT_FeaturesBase + 130)
+#define GCIT_SupportsZicbom         (GCIT_FeaturesBase + 131)
+#define GCIT_SupportsZicboz         (GCIT_FeaturesBase + 132)
+#define GCIT_SupportsSstc           (GCIT_FeaturesBase + 133)
+#define GCIT_SupportsSvpbmt         (GCIT_FeaturesBase + 134)
 #define GCIT_FeaturesLast           (TAG_USER + 499)
 
 /* Processor family defines */
@@ -121,6 +174,9 @@
 #define CPUFAMILY_ARM_5TEJ          126
 #define CPUFAMILY_ARM_6             127
 #define CPUFAMILY_ARM_7             128
+#define CPUFAMILY_RISCV             130    /* Unknown/other RISC-V */
+#define CPUFAMILY_RISCV_RV32        131
+#define CPUFAMILY_RISCV_RV64        132
 
 /* Vector unit type */
 #define VECTORTYPE_NONE               0
@@ -141,6 +197,7 @@
 #define VECTORTYPE_VFP              120
 #define VECTORTYPE_VFPv3            121
 #define VECTORTYPE_NEON             122
+#define VECTORTYPE_RVV              130
 #define VECTORTYPE_AMMX             200
 
 /* Processor architecture defines */
@@ -149,6 +206,7 @@
 #define PROCESSORARCH_PPC             2
 #define PROCESSORARCH_X86             3
 #define PROCESSORARCH_ARM             4
+#define PROCESSORARCH_RISCV           5
 
 /* Endianness */
 #define ENDIANNESS_UNKNOWN            0
@@ -181,4 +239,39 @@
 #define ARM_REVISION(x)     ((x >> 16) & 0xFFFF)
 #define ARM_VARIANT(x)      (x & 0xFFFF)
 
-#endif /* EXEC_PROCESSORS_H */
+/*
+ * RISC-V vendor IDs (JEDEC manufacturer ID as reported in mvendorid).
+ * GCIT_Vendor returns the raw mvendorid value on RISC-V.
+ */
+#define RISCV_VENDOR_ANDES          0x31E
+#define RISCV_VENDOR_SIFIVE         0x489
+#define RISCV_VENDOR_THEAD          0x5B7
+
+/*
+ * System processor topology, as returned by GetCPUTopology(). The table
+ * is owned by processor.resource and is read-only; it is valid for the
+ * lifetime of the system. Entries are indexed by logical processor and
+ * pte_LogicalID may be used with GCIT_SelectedProcessor.
+ */
+struct ProcessorTopologyEntry
+{
+    ULONG pte_LogicalID;    /* Index of the logical processor           */
+    ULONG pte_PhysicalID;   /* Hardware ID (APIC ID / MPIDR / hart id)  */
+    UWORD pte_PackageID;
+    UWORD pte_ClusterID;
+    UWORD pte_CoreID;       /* Within the package                       */
+    UWORD pte_ThreadID;     /* SMT thread within the core               */
+    UWORD pte_Pad;
+};
+
+struct ProcessorTopology
+{
+    ULONG pt_Count;         /* Logical processors described             */
+    ULONG pt_Packages;
+    ULONG pt_Clusters;
+    ULONG pt_Cores;         /* Physical cores in the system             */
+    ULONG pt_ThreadsPerCore;/* Maximum SMT threads per core             */
+    const struct ProcessorTopologyEntry *pt_Entries;
+};
+
+#endif /* RESOURCES_PROCESSOR_H */

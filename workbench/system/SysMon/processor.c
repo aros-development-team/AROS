@@ -104,12 +104,11 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
 #else
         struct TagItem tags [] =
         {
-            { GCIT_SelectedProcessor, (IPTR)i },
             { GCIT_ProcessorSpeed, (IPTR)&frequency },
             { TAG_DONE, TAG_DONE }
         };
 
-        GetCPUInfo(tags);
+        GetCoreInfo(i, tags);
 
         frequency /= 1000000;
 #endif
@@ -138,12 +137,11 @@ VOID UpdateProcessorStaticInformation(struct SysMonData * smdata)
 #else
         struct TagItem tags [] =
         {
-            { GCIT_SelectedProcessor, (IPTR)i },
             { GCIT_ModelString, (IPTR)&modelstring },
             { TAG_DONE, TAG_DONE }
         };
 
-        GetCPUInfo(tags);
+        GetCoreInfo(i, tags);
 #endif
         __sprintf(buffer, (STRPTR)_(MSG_PROCESSOR), i + 1, modelstring);
         set(smdata->cpufreqlabels[i], MUIA_Text_Contents, buffer);

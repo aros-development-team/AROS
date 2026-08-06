@@ -6,7 +6,13 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-processor: includes
 
 USER_LDFLAGS := -static
+ifneq (,$(filter riscv riscv64,$(CPU)))
+    # The harts are described by the device tree, so the tree parser has
+    # to be linked in; it pulls in string functions, which a kickstart
+    # module must take from stdc.static.
+    USER_LDFLAGS := -static -lfdt
+endif
 
 %build_module mmake=kernel-processor modname=processor modtype=resource \
-    version=$(AROS_TARGET_PLATFORM) files="init getcpuinfo" \
+    version=$(AROS_TARGET_PLATFORM) files="init getcpuinfo getcoreinfo gettopology" \
     archspecific=yes

@@ -35,6 +35,9 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size,
 
 /* The hart we were booted on (see kernel_intern.h) */
 unsigned long __boot_hartid;
+/* Harts described by the device tree; only the boot hart runs AROS
+   until SMP bring-up exists, but the count is real */
+unsigned long __ncpus = 1;
 
 /* kernel.resource publishes the boot tags through KrnGetBootInfo() */
 extern struct TagItem *BootMsg;
@@ -379,6 +382,9 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
         fdtinfo.mem_base = 0x80000000UL;
         fdtinfo.mem_size = 128 << 20;
     }
+
+    if (fdtinfo.ncpus)
+        __ncpus = fdtinfo.ncpus;
 
 
     /*

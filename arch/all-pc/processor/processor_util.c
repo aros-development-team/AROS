@@ -4,6 +4,7 @@
 
 #include <aros/debug.h>
 
+#include <proto/exec.h>
 #include <proto/utility.h>
 
 #include <resources/processor.h>
@@ -463,6 +464,146 @@ static void ReadMSRSupportInformation(struct X86ProcessorInformation * info)
     }
 }
 
+static ULONG CeilLog2(ULONG n)
+{
+    ULONG bits = 0;
+
+    while ((1UL << bits) < n)
+        bits++;
+    return bits;
+}
+
+static void ReadTopologyInformation(struct X86ProcessorInformation * info)
+{
+    ULONG eax, ebx, ecx, edx;
+    ULONG apicid = 0, smtshift = 0, coreshift = 0;
+    BOOL haveleafb = FALSE;
+
+    D(bug("[processor.x86] :%s()\n", __func__));
+
+    if (info->CPUIDHighestStandardFunction >= 0x0000000b)
+    {
+        ULONG level;
+
+        for (level = 0; level < 4; level++)
+        {
+            ULONG type;
+
+            cpuid_sub(0x0000000b, level);
+            type = (ecx >> 8) & 0xff;
+            if (type == 0)
+                break;
+            haveleafb = TRUE;
+            apicid = edx;
+            if (type == 1)
+                smtshift = eax & 0x1f;
+            else if (type == 2)
+                coreshift = eax & 0x1f;
+        }
+    }
+
+    if (!haveleafb)
+    {
+        ULONG logical = 1, cores = 1;
+
+        cpuid(0x00000001);
+        apicid = (ebx >> 24) & 0xff;
+
+        if (info->Features1 & FEATF_HTT)
+        {
+            logical = (ebx >> 16) & 0xff;
+            if (!logical)
+                logical = 1;
+
+            if ((info->Vendor == VENDOR_INTEL) &&
+                (info->CPUIDHighestStandardFunction >= 0x00000004))
+            {
+                cpuid_sub(0x00000004, 0);
+                cores = ((eax >> 26) & 0x3f) + 1;
+            }
+            else if ((info->Vendor == VENDOR_AMD) &&
+                     (info->CPUIDHighestExtendedFunction >= 0x80000008))
+            {
+                cpuid(0x80000008);
+                cores = (ecx & 0xff) + 1;
+            }
+            if (cores > logical)
+                cores = logical;
+        }
+
+        smtshift = CeilLog2(logical / cores);
+        coreshift = smtshift + CeilLog2(cores);
+    }
+    else if (coreshift < smtshift)
+        coreshift = smtshift;
+
+    info->APICID = apicid;
+    info->ThreadID = apicid & ((1UL << smtshift) - 1);
+    info->CoreID = (apicid >> smtshift) &
+                   ((1UL << (coreshift - smtshift)) - 1);
+    info->PackageID = apicid >> coreshift;
+}
+
+VOID Processor_UpdateTopology(struct ProcessorBase * ProcessorBase, ULONG cpuNo, struct X86ProcessorInformation * info)
+{
+    struct ProcessorTopology *topo = ProcessorBase->Topology;
+    struct ProcessorTopologyEntry *entries;
+    ULONG i, j;
+    ULONG pkgs = 0, cores = 0, tpc = 1;
+
+    if (!topo || cpuNo >= topo->pt_Count)
+        return;
+    entries = (struct ProcessorTopologyEntry *)topo->pt_Entries;
+
+    entries[cpuNo].pte_PhysicalID = info->APICID;
+    entries[cpuNo].pte_PackageID = info->PackageID;
+    entries[cpuNo].pte_ClusterID = 0;
+    entries[cpuNo].pte_CoreID = info->CoreID;
+    entries[cpuNo].pte_ThreadID = info->ThreadID;
+
+    /*
+     * Recompute the aggregates over the whole table. Query tasks fill
+     * their entries concurrently, so the table is walked under Forbid;
+     * whichever task finishes last leaves the totals right.
+     */
+    Forbid();
+    for (i = 0; i < topo->pt_Count; i++)
+    {
+        ULONG threads = 1;
+        BOOL firstofcore = TRUE, firstofpkg = TRUE;
+
+        for (j = 0; j < i; j++)
+        {
+            if (entries[j].pte_PackageID == entries[i].pte_PackageID)
+            {
+                firstofpkg = FALSE;
+                if (entries[j].pte_CoreID == entries[i].pte_CoreID)
+                    firstofcore = FALSE;
+            }
+        }
+        if (firstofpkg)
+            pkgs++;
+        if (firstofcore)
+        {
+            cores++;
+            for (j = 0; j < topo->pt_Count; j++)
+            {
+                if (j != i &&
+                    entries[j].pte_PackageID == entries[i].pte_PackageID &&
+                    entries[j].pte_CoreID == entries[i].pte_CoreID)
+                    threads++;
+            }
+            if (threads > tpc)
+                tpc = threads;
+        }
+    }
+    topo->pt_Packages = pkgs ? pkgs : 1;
+    topo->pt_Clusters = topo->pt_Packages;
+    topo->pt_Cores = cores ? cores : topo->pt_Count;
+    topo->pt_ThreadsPerCore = tpc;
+    Permit();
+}
+
 VOID ReadProcessorInformation(struct ProcessorBase *ProcessorBase, struct X86ProcessorInformation * info)
 {
     D(bug("[processor.x86] :%s()\n", __func__));
@@ -474,5 +615,6 @@ VOID ReadProcessorInformation(struct ProcessorBase *ProcessorBase, struct X86Pro
     ReadCacheInformation(info);
     ReadMSRSupportInformation(info);
     ReadMaxFrequencyInformation(info);
+    ReadTopologyInformation(info);
 }
 

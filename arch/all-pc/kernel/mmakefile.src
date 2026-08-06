@@ -42,6 +42,7 @@ FUNCS	 := \
              spinunlock \
              schedulecpu \
              getsystemattr \
+             getcpuattr \
              timestamp \
              obtaininput
 

@@ -31,6 +31,7 @@ CFILES := \
         kernel_mmu \
         kernel_cpu \
         kernel_elf \
+        getcpucount \
         maygetchar \
         mapglobal \
         unmapglobal \

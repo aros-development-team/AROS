@@ -17,12 +17,16 @@
 #include <utility/utility.h>
 #endif
 
+struct ProcessorTopology;
+
 struct ProcessorBase
 {
     struct Library pb_LibNode;
     unsigned int cpucount;
     APTR kernelBase;
     APTR Private1;    /* Pointer to arch-specific implementation data */
+    /* Filled with flat defaults at init; arch code refines the entries */
+    struct ProcessorTopology *Topology;
 };
 
 #define KernelBase ProcessorBase->kernelBase

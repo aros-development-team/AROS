@@ -34,9 +34,8 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
 {
     BOOL nothing = TRUE;
     BOOL flags[FLAGS_NUM];
-    struct TagItem tags [FLAGS_NUM + 2] =
+    struct TagItem tags [FLAGS_NUM + 1] =
     {
-        {GCIT_SelectedProcessor, i},
         {GCIT_SupportsFPU	    , (IPTR)&flags[0 ]},
         {GCIT_SupportsMMX	    , (IPTR)&flags[1 ]},
         {GCIT_SupportsMMXEXT	    , (IPTR)&flags[2 ]},
@@ -57,7 +56,8 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
         {TAG_DONE                   , 0               }
     };
 
-    GetCPUInfo(tags);
+    if (!GetCoreInfo(i, tags))
+        return;
 
     printf("\t\tFeatures: ");
 

@@ -312,6 +312,9 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
                     case CPUFAMILY_INTEL_PENTIUM_PRO: result = "INTEL_PENTIUM_PRO"; break;
                     case CPUFAMILY_INTEL_PENTIUM4: result = "INTEL_PENTIUM4"; break;
                     case CPUFAMILY_MOTOROLA_68000: result = "MOTOROLA_68000"; break;
+                    case CPUFAMILY_RISCV: result = "RISCV"; break;
+                    case CPUFAMILY_RISCV_RV32: result = "RISCV_RV32"; break;
+                    case CPUFAMILY_RISCV_RV64: result = "RISCV_RV64"; break;
                     default: result = "unknown"; break;
                 }
             }

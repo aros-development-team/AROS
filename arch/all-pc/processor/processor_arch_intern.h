@@ -7,6 +7,9 @@
 
 #include <exec/types.h>
 
+struct ProcessorBase;
+struct TagItem;
+
 struct X86ProcessorInformation
 {
     TEXT    VendorID[13]; /* 12 + \0 */
@@ -35,14 +38,23 @@ struct X86ProcessorInformation
     
     /* MSR Support */
     BOOL    APERFMPERF;
-    
+
     /* Frequency information */
     UQUAD   MaxCPUFrequency;
     UQUAD   MaxFSBFrequency;
+
+    /* Topology (CPUID leaf 0Bh, or the leaf 1/4/80000008h fallback) */
+    ULONG   APICID;
+    ULONG   PackageID;
+    ULONG   CoreID;
+    ULONG   ThreadID;
 };
 
 #define cpuid(num) \
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
+
+#define cpuid_sub(num, sub) \
+    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num),"c"(sub)); } while(0)
 
 static inline void __attribute__((always_inline)) rdmsr(ULONG msr_no, ULONG *ret_lo, ULONG *ret_hi)
 {
@@ -63,6 +75,8 @@ static inline ULONG __attribute__((always_inline)) rdmsri(ULONG msr_no)
 VOID ReadProcessorInformation(struct ProcessorBase *ProcessorBase, struct X86ProcessorInformation * info);
 UQUAD GetCurrentProcessorFrequency(struct ProcessorBase *ProcessorBase, struct X86ProcessorInformation * info);
 VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info);
+VOID Processor_UpdateTopology(struct ProcessorBase * ProcessorBase, ULONG cpuNo, struct X86ProcessorInformation * info);
+VOID X86_AnswerTag(struct ProcessorBase * ProcessorBase, ULONG coreNo, struct TagItem * tag);
 
 /* EDX 00000001 Flags */
 #define FEATB_FPU       0

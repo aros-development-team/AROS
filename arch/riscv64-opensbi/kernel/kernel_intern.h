@@ -26,6 +26,9 @@ struct KernelBase;
 /* The hart we were booted on, as handed over by OpenSBI */
 extern unsigned long __boot_hartid;
 
+/* Harts described by the device tree (kernel_startup.c) */
+extern unsigned long __ncpus;
+
 /* Early SBI debug console (kernel_console.c) */
 void krnSBIPutC(char c);
 int  krnSBIGetC(void);

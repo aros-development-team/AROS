@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "processor_intern.h"
 #include "processor_arch_intern.h"
 
 #define DPROBE(a)
@@ -142,6 +143,13 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 
     if (scp_reg & (1 << 31))
         info->Features1 |= FEATF_BIGEND;
+
+    if (info->Family >= CPUFAMILY_ARM_7)
+    {
+        DPROBE(bug("[processor.ARM] %s: Checking Multiprocessor Affinity Register..\n", __PRETTY_FUNCTION__));
+        asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 5" : [scp_reg] "=r" (scp_reg) );
+        info->MPIDR = scp_reg;
+    }
 
     DPROBE(bug("[processor.ARM] %s: Checking Cache Type Register..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[cache_reg], c0, c0, 1" : [cache_reg] "=r" (cache_reg) );
@@ -295,4 +303,81 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
         info->FamilyString = ARMCPUFamilies[info->Family - CPUFAMILY_ARM_3];
 
     D(bug("[processor.ARM] %s: CPU Details Read\n", __PRETTY_FUNCTION__));
+}
+
+/*
+ * Arrange the cores by their MPIDR affinity fields: Aff1 is the
+ * cluster and Aff0 the core within it - unless the MT bit says Aff0
+ * numbers hardware threads, moving everything up one level.
+ */
+VOID Processor_FillTopology(struct ProcessorBase * ProcessorBase)
+{
+    struct ARMProcessorInformation **sysprocs = ProcessorBase->Private1;
+    struct ProcessorTopology *topo = ProcessorBase->Topology;
+    struct ProcessorTopologyEntry *entries;
+    ULONG i, j;
+    ULONG clusters = 0, cores = 0, tpc = 1;
+
+    if (!topo)
+        return;
+    entries = (struct ProcessorTopologyEntry *)topo->pt_Entries;
+
+    for (i = 0; i < topo->pt_Count; i++)
+    {
+        ULONG mpidr = sysprocs[i] ? sysprocs[i]->MPIDR : 0;
+
+        entries[i].pte_PackageID = 0;
+        if (MPIDR_VALID(mpidr))
+        {
+            entries[i].pte_PhysicalID = mpidr & 0x00FFFFFF;
+            if (MPIDR_MT(mpidr))
+            {
+                entries[i].pte_ClusterID = MPIDR_AFF2(mpidr);
+                entries[i].pte_CoreID = MPIDR_AFF1(mpidr);
+                entries[i].pte_ThreadID = MPIDR_AFF0(mpidr);
+            }
+            else
+            {
+                entries[i].pte_ClusterID = MPIDR_AFF1(mpidr);
+                entries[i].pte_CoreID = MPIDR_AFF0(mpidr);
+                entries[i].pte_ThreadID = 0;
+            }
+        }
+    }
+
+    for (i = 0; i < topo->pt_Count; i++)
+    {
+        ULONG threads = 1;
+        BOOL firstofcluster = TRUE, firstofcore = TRUE;
+
+        for (j = 0; j < i; j++)
+        {
+            if (entries[j].pte_ClusterID == entries[i].pte_ClusterID)
+            {
+                firstofcluster = FALSE;
+                if (entries[j].pte_CoreID == entries[i].pte_CoreID)
+                    firstofcore = FALSE;
+            }
+        }
+        if (firstofcluster)
+            clusters++;
+        if (firstofcore)
+        {
+            cores++;
+            for (j = 0; j < topo->pt_Count; j++)
+            {
+                if (j != i &&
+                    entries[j].pte_ClusterID == entries[i].pte_ClusterID &&
+                    entries[j].pte_CoreID == entries[i].pte_CoreID)
+                    threads++;
+            }
+            if (threads > tpc)
+                tpc = threads;
+        }
+    }
+
+    topo->pt_Packages = 1;
+    topo->pt_Clusters = clusters ? clusters : 1;
+    topo->pt_Cores = cores ? cores : topo->pt_Count;
+    topo->pt_ThreadsPerCore = tpc;
 }

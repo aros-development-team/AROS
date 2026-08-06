@@ -1,0 +1,13 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/rom/processor \
+                 -I$(SRCDIR)/arch/riscv64-all/processor
+
+#MM kernel-processor-opensbi-riscv64 : includes
+
+%build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \
+    arch=opensbi-riscv64 cppflags="$(CPPFLAGS) $(USER_INCLUDES)" files="processor_sbi"
+
+%common

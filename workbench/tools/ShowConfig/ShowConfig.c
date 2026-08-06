@@ -99,7 +99,8 @@ struct
     { PROCESSORARCH_PPC, "PowerPC" },
     { PROCESSORARCH_X86, "X86" },
     { PROCESSORARCH_ARM, "ARM" },
-    { 0, NULL }   
+    { PROCESSORARCH_RISCV, "RISC-V" },
+    { 0, NULL }
 };
 
 struct
@@ -114,6 +115,25 @@ struct
     { 0, NULL}
 };
 
+static VOID PrintTopologyInformation()
+{
+    const struct ProcessorTopology *topo = GetCPUTopology();
+
+    if (!topo)
+        return;
+
+    /* One line only when there is a structure worth describing */
+    if (topo->pt_Packages > 1 || topo->pt_Clusters > 1 ||
+        topo->pt_ThreadsPerCore > 1 || topo->pt_Cores != topo->pt_Count)
+    {
+        printf("TOPOLOGY:\t%u package(s), %u cluster(s), %u core(s), %u thread(s) per core\n",
+               (unsigned int)topo->pt_Packages,
+               (unsigned int)topo->pt_Clusters,
+               (unsigned int)topo->pt_Cores,
+               (unsigned int)topo->pt_ThreadsPerCore);
+    }
+}
+
 static VOID PrintProcessorInformation()
 {
     ULONG count = GetProcessorsCount();
@@ -122,20 +142,21 @@ static VOID PrintProcessorInformation()
     ULONG architecture, endianness;
     CONST_STRPTR architecturestring = "", endiannessstring = "";
     UQUAD cpuspeed;
-    
+
+    PrintTopologyInformation();
+
     for (i = 0; i < count; i++)
     {
         struct TagItem tags [] =
         {
-            {GCIT_SelectedProcessor, i},
             {GCIT_ModelString, (IPTR)&modelstring},
             {GCIT_Architecture, (IPTR)&architecture},
             {GCIT_Endianness, (IPTR)&endianness},
             {GCIT_ProcessorSpeed, (IPTR)&cpuspeed},
             {TAG_DONE, TAG_DONE}
         };
-        
-        GetCPUInfo(tags);
+
+        GetCoreInfo(i, tags);
 
         j = 0;
         while(ProcessorArchitecture[j].Description != NULL)

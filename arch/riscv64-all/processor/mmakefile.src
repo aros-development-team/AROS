@@ -1,0 +1,21 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/rom/processor \
+                 -I$(SRCDIR)/arch/riscv-all/linklibs/fdt/include
+
+FILES := \
+    processor_init \
+    processor_util \
+    getcpuinfo \
+    getcoreinfo
+
+# The harts are described by the device tree, so the tree parser is
+# needed; linking it in is arranged in rom/processor/mmakefile.src.
+#MM kernel-processor-riscv64 : includes linklibs-fdt
+
+%build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \
+    arch=riscv64 cppflags="$(CPPFLAGS) $(USER_INCLUDES)" files=$(FILES)
+
+%common

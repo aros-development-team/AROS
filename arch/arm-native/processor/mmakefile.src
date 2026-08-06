@@ -6,6 +6,7 @@ USER_INCLUDES := -I$(SRCDIR)/rom/processor
 
 FILES := \
     getcpuinfo \
+    getcoreinfo \
     processor_init \
     processor_util \
     processor_frequency

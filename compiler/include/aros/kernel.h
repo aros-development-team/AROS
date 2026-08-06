@@ -91,9 +91,16 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KATTR_PeripheralBase	(TAG_USER + 0x03F00001) /* [.G] (IPTR)    - SoC Peripheral IO base address (on relevant hardware)       */
 #define KATTR_AffinityMask	(TAG_USER + 0x03F00002) /* [.G] (IPTR)    - */
 #define KATTR_SystemLoad        (TAG_USER + 0x03F00003)
+/*
+ * KATTR_CPULoad names the attribute for KrnGetCPUAttr(), which takes
+ * the CPU number as its own argument. The KATTR_CPULoad + n range for
+ * KrnGetSystemAttr() is the legacy form, capped at 32 CPUs - new code
+ * should use KrnGetCPUAttr().
+ */
 #define KATTR_CPULoad           (TAG_USER + 0x03F00004)
 #define KATTR_CPULoad_END       (KATTR_CPULoad + 32)
 #define KATTR_ClockSource	(KATTR_CPULoad_END + 1) /* [.G] (APTR)    - Kernel ClockSource resource                                  */
+#define KATTR_CPUFrequencyKHz   (KATTR_ClockSource + 1) /* [.G] (IPTR)    - Current core clock in kHz, per CPU via KrnGetCPUAttr()       */
 
 /* Tag IDs for KrnStatMemory() */
 #define KMS_Free		(TAG_USER + 0x04000000)

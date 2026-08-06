@@ -134,13 +134,12 @@ IPTR ProcessorGauge__MUIM_ProcessorGrp_Update(Class *CLASS, Object *self, Msg me
 #else
         struct TagItem tags [] =
         {
-            { GCIT_SelectedProcessor, (IPTR)i },
             { GCIT_ProcessorLoad, (IPTR)&usage },
             { TAG_DONE, TAG_DONE }
         };
 
         usage = 0;
-        GetCPUInfo(tags);
+        GetCoreInfo(i, tags);
         usage = ((usage >> 16) * 1000) >> 16;
 #endif
         __sprintf(buffer, "CPU %d\n%d.%d %%", i, usage / 10, usage % 10);
