@@ -14,11 +14,14 @@
 
 #include <proto/alib.h>
 #include <proto/mbox.h>
+#include <proto/openfirmware.h>
 #include <hardware/videocore.h>
 
 #include "usb2otg_intern.h"
 
 #define DEVNAME         "usb2otg.device"
+
+#define USB2OTG_DT_PATH "/soc/usb@7e980000"
 
 const char devname[]    = MOD_NAME_STRING;
 
@@ -26,6 +29,47 @@ AROS_INTP(FNAME_DEV(PendingInt));
 AROS_INTP(FNAME_DEV(NakTimeoutInt));
 
 IPTR    __arm_periiobase __attribute__((used)) = 0 ;
+
+static BOOL FNAME_DEV(StrEq)(CONST_STRPTR a, CONST_STRPTR b)
+{
+    while (*a && *a == *b)
+    {
+        a++;
+        b++;
+    }
+    return (*a == *b);
+}
+
+/*
+ * The OTG core is wired to a usable port on the BCM283x boards only. On
+ * BCM2711 it serves the USB-C socket and the firmware leaves it powered down
+ * - the USB-A ports hang off a PCIe XHCI controller instead - so the device
+ * tree marks the node disabled. Driving it there hangs the core.
+ */
+static BOOL FNAME_DEV(DTEnabled)(void)
+{
+    void *OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    CONST_STRPTR status;
+
+    /* Without a device tree, behave as before and probe the core. */
+    if (OpenFirmwareBase == NULL)
+        return TRUE;
+
+    key = OF_OpenKey(USB2OTG_DT_PATH);
+    if (key == NULL)
+        return TRUE;
+
+    prop = OF_FindProperty(key, "status");
+    if (prop == NULL)
+        return TRUE;
+
+    status = OF_GetPropValue(prop);
+    if (status == NULL)
+        return TRUE;
+
+    return (FNAME_DEV(StrEq)(status, "okay") || FNAME_DEV(StrEq)(status, "ok"));
+}
 
 /*
  *===========================================================
@@ -46,6 +90,12 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 
     D(bug("[USB2OTG] %s: USB2OTGBase @ 0x%p, SysBase @ 0x%p\n",
                  __PRETTY_FUNCTION__, USB2OTGBase, SysBase));
+
+    if (!FNAME_DEV(DTEnabled)())
+    {
+        D(bug("[USB2OTG] %s: disabled in the device tree\n", __PRETTY_FUNCTION__));
+        return FALSE;
+    }
 
     otg_RegVal = rd32le(USB2OTG_VENDORID);
 
