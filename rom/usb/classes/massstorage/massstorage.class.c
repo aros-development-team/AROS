@@ -46,6 +46,21 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
     nh->nh_UtilityBase = OpenLibrary("utility.library", 39);
     if(UtilityBase)
     {
+        /*
+         * Opened here once and closed in libExpunge. The removable task and
+         * the partition scanner both reach these through the class base, and
+         * the unit task blocks until the removable task reports ready.
+         *
+         * Built into ROM, this class can be the driver for the very volume
+         * those libraries would be loaded from, so opening them from the
+         * removable task would leave the unit task waiting on a disk it is
+         * itself the one serving. Loaded from disk the volume is already up
+         * and the same opens are harmless, but the code has to suit both.
+         */
+        nh->nh_ExpansionBase = OpenLibrary("expansion.library", 37);
+        nh->nh_PartitionBase = OpenLibrary("partition.library", 1);
+        nh->nh_PsdBase = OpenLibrary("poseidon.library", 4);
+
         /* Initialize device node & library struct */
         KPRINTF(1, ("UtilityOkay\n"));
         NewList(&nh->nh_Units);
@@ -58,7 +73,8 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
         strcpy(ncm->ncm_LUNNumStr, "All");
         ncm->ncm_CDC = cdc = AllocVec(sizeof(struct ClsDevCfg), MEMF_PUBLIC|MEMF_CLEAR);
         ncm->ncm_CUC = cuc = AllocVec(sizeof(struct ClsUnitCfg), MEMF_PUBLIC|MEMF_CLEAR);
-        if(cdc && cuc)
+        if(cdc && cuc &&
+           nh->nh_ExpansionBase && nh->nh_PartitionBase && nh->nh_PsdBase)
         {
             KPRINTF(1, ("MakeLibrary\n"));
             if((nh->nh_DevBase = (struct NepMSDevBase *) MakeLibrary((APTR) GM_UNIQUENAME(DevFuncTable), NULL, (APTR) GM_UNIQUENAME(devInit),
@@ -82,6 +98,9 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
     {
         FreeVec(cdc);
         FreeVec(cuc);
+        CloseLibrary(nh->nh_PsdBase);
+        CloseLibrary(nh->nh_PartitionBase);
+        CloseLibrary(nh->nh_ExpansionBase);
         CloseLibrary(UtilityBase);
     }
     KPRINTF(10, ("libInit: Ok\n"));
@@ -147,6 +166,23 @@ static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh)
         ncm = &nh->nh_DummyNCM;
         FreeVec(ncm->ncm_CDC);
         FreeVec(ncm->ncm_CUC);
+
+        /* Opened in libInit and held for the life of the class. */
+        if(nh->nh_ExpansionBase)
+        {
+            CloseLibrary(nh->nh_ExpansionBase);
+            nh->nh_ExpansionBase = NULL;
+        }
+        if(nh->nh_PartitionBase)
+        {
+            CloseLibrary(nh->nh_PartitionBase);
+            nh->nh_PartitionBase = NULL;
+        }
+        if(nh->nh_PsdBase)
+        {
+            CloseLibrary(nh->nh_PsdBase);
+            nh->nh_PsdBase = NULL;
+        }
 
         nh->nh_DevBase->np_Library.lib_OpenCnt--;
         RemDevice((struct Device *) nh->nh_DevBase);
@@ -4078,23 +4114,11 @@ struct NepMSBase * GM_UNIQUENAME(nAllocRT)(void)
 #define ExpansionBase nh->nh_ExpansionBase
 #undef PartitionBase
 #define PartitionBase nh->nh_PartitionBase
+    /* expansion, partition and poseidon are the class's, opened in libInit -
+       acquiring them here could mean waiting on a volume this class is the
+       driver for. */
     do
     {
-        if(!(ExpansionBase = OpenLibrary("expansion.library", 37)))
-        {
-            Alert(AG_OpenLib | AO_ExpansionLib);
-            break;
-        }
-        if(!(PartitionBase = OpenLibrary("partition.library", 1)))
-        {
-            Alert(AG_OpenLib | AO_Unknown);
-            break;
-        }
-        if(!(ps = OpenLibrary("poseidon.library", 4)))
-        {
-            Alert(AG_OpenLib | AO_Unknown);
-            break;
-        }
         if(!(nh->nh_IOMsgPort = CreateMsgPort()))
         {
             break;
@@ -4120,21 +4144,6 @@ struct NepMSBase * GM_UNIQUENAME(nAllocRT)(void)
         nh->nh_RemovableTask = thistask;
         return(nh);
     } while(FALSE);
-    if(ExpansionBase)
-    {
-        CloseLibrary(ExpansionBase);
-        ExpansionBase = NULL;
-    }
-    if(PartitionBase)
-    {
-        CloseLibrary(PartitionBase);
-        PartitionBase = NULL;
-    }
-    if(ps)
-    {
-        CloseLibrary(ps);
-        ps = NULL;
-    }
 
     if(nh->nh_TimerIOReq)
     {
@@ -4178,12 +4187,8 @@ void GM_UNIQUENAME(nFreeRT)(struct NepMSBase *nh)
         CloseLibrary(nh->nh_DOSBase);
         nh->nh_DOSBase = NULL;
     }
-    CloseLibrary(ExpansionBase);
-    ExpansionBase = NULL;
-    CloseLibrary(PartitionBase);
-    PartitionBase = NULL;
-    CloseLibrary(ps);
-    ps = NULL;
+    /* expansion, partition and poseidon belong to the class, not to this
+       task - libInit opened them, libExpunge gives them back. */
 
     AbortIO((struct IORequest *) nh->nh_TimerIOReq);
     WaitIO((struct IORequest *) nh->nh_TimerIOReq);
