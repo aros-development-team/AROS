@@ -1185,17 +1185,24 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
         // TODO: Calculate histogram of image and choose best colors
     }
 
+    /*
+     * The sprite goes to the board at its own width. BIF_HIRESSPRITE halves
+     * the width the board is told and says the data is twice as dense, which
+     * describes a sprite over a lores native display; on a screen the board
+     * scans out itself the two are the same pixels, and a board that took the
+     * flag at face value would read a 32 pixel row as 16.
+     */
     flags = gl(cid->boardinfo + PSSO_BoardInfo_Flags);
     flags &= ~BIF_HIRESSPRITE;
     hiressprite = 1;
-    if (width > 16) {
-        flags |= BIF_HIRESSPRITE;
-        hiressprite = 2;
-    }
     pl(cid->boardinfo + PSSO_BoardInfo_Flags, flags);
 
     pb(cid->boardinfo + PSSO_BoardInfo_MouseWidth, width / hiressprite);
     pb(cid->boardinfo + PSSO_BoardInfo_MouseHeight, height);
+
+    /* Words a plane needs for one row, which is also the step from a row's
+       first plane to its second. */
+    const WORD spritewords = (width + 15) / 16;
 
     Forbid();
     DB2(bug("[P96Gfx] %s: filling planar buffer ...\n", __func__);)
@@ -1209,32 +1216,41 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
             UNLOCK_HW
             return FALSE;
         }
+        /*
+         * A row is the first plane's words and then the second's, both
+         * covering the same pixels, so a pen's two bits land one word apart.
+         * Built a whole word at a time and assigned rather than or'ed in: a
+         * sprite of unchanged size keeps its buffer, and the pixels the new
+         * shape leaves clear have to clear the old one's.
+         */
         pw += 2 * hiressprite;
         for(y = 0; y < height; y++) {
-            UWORD pix1 = 0, pix2 = 0, xcnt = 0;
-            for(x = 0; x < width; x++) {
-                UBYTE c;
-                if (bmcmod != vHidd_ColorModel_TrueColor)
-                    c = HIDD_BM_GetPixel(msg->shape, x, y);
-                else
-                {
-                    HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
-                    if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
-                        c = P96GFXCl__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF), data->spriteColors);
-                    else c = 0;
+            for(WORD w = 0; w < spritewords; w++) {
+                UWORD pix1 = 0, pix2 = 0;
+
+                for(WORD b = 0; b < 16; b++) {
+                    UBYTE c = 0;
+
+                    x = w * 16 + b;
+                    if (x < width)
+                    {
+                        if (bmcmod != vHidd_ColorModel_TrueColor)
+                            c = HIDD_BM_GetPixel(msg->shape, x, y);
+                        else
+                        {
+                            HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
+                            if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
+                                c = P96GFXCl__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF), data->spriteColors);
+                            else c = 0;
+                        }
+                    }
+                    pix1 = (pix1 << 1) | ((c & 1) ? 1 : 0);
+                    pix2 = (pix2 << 1) | ((c & 2) ? 1 : 0);
                 }
-                pix1 <<= 1;
-                pix2 <<= 1;
-                pix1 |= (c & 1) ? 1 : 0;
-                pix2 |= (c & 2) ? 1 : 0;
-                xcnt++;
-                if (xcnt == 15) {
-                    xcnt = 0;
-                    pw[x / 16] = pix1;
-                    pw[width / 16 + x / 16] = pix2;
-                }
+                pw[w] = pix1;
+                pw[spritewords + w] = pix2;
             }
-            pw += (width / 16) * 2;
+            pw += spritewords * 2;
         }
     }
 
