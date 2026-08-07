@@ -769,6 +769,7 @@ AROS_UFH0(void, xhciPortTask)
                                                  route,
                                                  flags,
                                                  mps0,
+                                                 0, 0,
                                                  xhcic->xhc_PortTask.xpt_TimerReq);
                     if(devCtx) {
                         /* Root port "device" lives on this controller */

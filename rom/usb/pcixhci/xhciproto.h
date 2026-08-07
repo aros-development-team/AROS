@@ -23,7 +23,7 @@ struct IOUsbHWReq;
 struct timerequest;
 struct pciusbXHCIDevice *
 xhciCreateDeviceCtx(struct PCIController *hc, UWORD rootPortIndex, ULONG route, ULONG flags, UWORD mps0,
-                    struct timerequest *timerreq);
+                    UWORD ttHubAddr, UWORD ttHubPort, struct timerequest *timerreq);
 WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
 LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq);
 void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq);

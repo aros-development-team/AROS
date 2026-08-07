@@ -7831,8 +7831,10 @@ AROS_LH2(STRPTR, psdGetStringChunk,
  */
 ULONG pBuildRouteString(struct PsdDevice *pd)
 {
+    UWORD ports[5];
     ULONG route = 0;
     int   depth = 0;
+    int   nib;
 
     if (!pd)
         return 0;
@@ -7850,16 +7852,19 @@ ULONG pBuildRouteString(struct PsdDevice *pd)
      * Therefore, we stop when pd->pd_Hub->pd_Hub becomes NULL.
      */
     while (pd && pd->pd_Hub && pd->pd_Hub->pd_Hub && depth < 5) {
-        UWORD port = pd->pd_HubPort & 0x0F;
-
-        /* nibble 'depth' = port on hub at depth+1 below root.
-           First iteration (depth 0) => first hub below root. */
-        route |= ((ULONG)port << (depth * 4));
-        depth++;
+        ports[depth++] = pd->pd_HubPort & 0x0F;
 
         /* Move up one level: this hub becomes the new device */
         pd = pd->pd_Hub;
     }
+
+    /*
+     * The walk collected the ports leaf-first, but the route string is
+     * root-first: nibble 0 is the port on the first hub below root, and
+     * the leaf's port lands in the highest used nibble.
+     */
+    for (nib = 0; nib < depth; nib++)
+        route |= ((ULONG)ports[depth - 1 - nib]) << (nib * 4);
 
     return route;
 }

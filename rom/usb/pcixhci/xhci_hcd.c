@@ -1133,6 +1133,8 @@ xhciCreateDeviceCtx(struct PCIController *hc,
                     ULONG route,           /* 20-bit route string (0 for root) */
                     ULONG flags,           /* UHFF_* speed / hub flags */
                     UWORD mps0,            /* initial EP0 max packet size */
+                    UWORD ttHubAddr,       /* TT hub USB address (0 if n/a) */
+                    UWORD ttHubPort,       /* port on the TT hub */
                     struct timerequest *timerreq)
 {
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
@@ -1234,6 +1236,15 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     islot->ctx[0] &= ~(0xFUL << SLOTS_CTX_SPEED);
     islot->ctx[0] &= ~SLOTF_CTX_MTT;
 
+    /*
+     * A device reached through a transaction translator runs at low or full
+     * speed by definition; if it is also flagged high speed the flags are
+     * contradictory and naming the higher speed here costs a transaction
+     * error on the first transfer.
+     */
+    if(flags & UHFF_SPLITTRANS)
+        flags &= ~(UHFF_SUPERSPEED | UHFF_HIGHSPEED);
+
     if(flags & UHFF_SUPERSPEED)
         islot->ctx[0] |= SLOTF_CTX_SUPERSPEED;
     else if(flags & UHFF_HIGHSPEED)
@@ -1292,6 +1303,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
                      0,
                      flags);
 
+
     /*
      * Address Device requires the input EP0 EPSTATE to be Disabled (0) and
      * the Input Control Context add flags to include Slot+EP0. Be explicit
@@ -1317,21 +1329,36 @@ xhciCreateDeviceCtx(struct PCIController *hc,
      * be a hub afterwards.
      */
     if(flags & UHFF_SPLITTRANS) {
-        ULONG parentRoute = route & SLOT_CTX_ROUTE_MASK;
+        struct pciusbXHCIDevice *parentCtx = NULL;
         ULONG ttport = 0;
-        int nib;
+        ULONG ttt = (flags >> UHFS_THINKTIME) & 0x3;
 
-        for(nib = 4; nib >= 0; nib--) {
-            ULONG v = (parentRoute >> (nib * 4)) & 0xF;
-            if(v) {
-                ttport = v;
-                parentRoute &= ~(0xFUL << (nib * 4));
-                break;
-            }
+        /*
+         * Poseidon names the hub owning the TT directly: the nearest high
+         * speed hub above the device, which is not the immediate parent
+         * when the device sits behind a full speed hub. Fall back to
+         * deriving the immediate parent from the route string.
+         */
+        if(ttHubAddr) {
+            parentCtx = xhciFindDeviceCtx(hc, ttHubAddr);
+            ttport = ttHubPort & 0xFF;
         }
 
-        struct pciusbXHCIDevice *parentCtx =
-            xhciFindRouteDevice(hc, parentRoute, rootPortIndex);
+        if(!parentCtx) {
+            ULONG parentRoute = route & SLOT_CTX_ROUTE_MASK;
+            int nib;
+
+            for(nib = 4; nib >= 0; nib--) {
+                ULONG v = (parentRoute >> (nib * 4)) & 0xF;
+                if(v) {
+                    ttport = v;
+                    parentRoute &= ~(0xFUL << (nib * 4));
+                    break;
+                }
+            }
+
+            parentCtx = xhciFindRouteDevice(hc, parentRoute, rootPortIndex);
+        }
 
         if(parentCtx && parentCtx->dc_SlotID) {
             if(!parentCtx->dc_HubProgrammed) {
@@ -1360,16 +1387,17 @@ xhciCreateDeviceCtx(struct PCIController *hc,
 
                 hubcc = xhciCmdEndpointConfigure(hc, parentCtx->dc_SlotID,
                                                  parentCtx->dc_IN.dmaa_Ptr, timerreq);
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "hub slot %u update cc=%ld"
+                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "hub slot %lu update cc=%ld"
                                 DEBUGCOLOR_RESET" \n",
-                                (unsigned)parentCtx->dc_SlotID, (long)hubcc);
+                                (ULONG)parentCtx->dc_SlotID, (long)hubcc);
                 if(hubcc == TRB_CC_SUCCESS)
                     parentCtx->dc_HubProgrammed = TRUE;
             }
 
-            islot->ctx[2] &= ~0xFFFFUL;
+            islot->ctx[2] &= ~0x3FFFFUL;
             islot->ctx[2] |= ((ULONG)parentCtx->dc_SlotID << SLOT_CTX_TT_SLOT_SHIFT) |
-                             (ttport << SLOT_CTX_TT_PORT_SHIFT);
+                             (ttport << SLOT_CTX_TT_PORT_SHIFT) |
+                             (ttt << SLOT_CTX_TTT_SHIFT);
         } else
             pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "no parent hub context for route %05x port %u"
                        DEBUGCOLOR_RESET" \n", (unsigned)route, (unsigned)rootPortIndex);
@@ -1579,9 +1607,21 @@ xhciObtainDeviceCtx(struct PCIController *hc,
     const BOOL forceScan = (ioreq->iouh_RootPort == 0);
     const BOOL haveSpeed = (flags & (UHFF_SUPERSPEED | UHFF_HIGHSPEED | UHFF_LOWSPEED)) != 0;
 
-    if(!haveSpeed || (mps0 == 0) || forceScan) {
+    if(!haveSpeed || (mps0 == 0) || forceScan)
         (void)xhciDerivePortFlagsAndMps0(hc, &rootPortIndex, &flags, &mps0, forceScan);
+
+    /*
+     * PORTSC describes whatever is attached to the root port, so for a device
+     * behind a hub it reports the hub's speed. That is right for a child
+     * sharing the hub's link, and wrong for one reached through a transaction
+     * translator - which by definition runs at low or full speed.
+     */
+    if(flags & UHFF_SPLITTRANS) {
+        flags &= ~(UHFF_SUPERSPEED | UHFF_HIGHSPEED);
+        if(mps0 > 64)
+            mps0 = 64;
     }
+
     if(mps0 == 0)
         mps0 = 8;
 
@@ -1590,6 +1630,8 @@ xhciObtainDeviceCtx(struct PCIController *hc,
                                route,
                                flags,
                                mps0,
+                               ioreq->iouh_SplitHubAddr,
+                               ioreq->iouh_SplitHubPort,
                                timerreq);
 }
 
@@ -1689,6 +1731,11 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
         ULONG route = (ULONG)(ioreq->iouh_RouteString & SLOT_CTX_ROUTE_MASK);
 
         slotctx0 |= route;
+
+        /* A device behind a transaction translator is low or full speed. */
+        if(flags & UHFF_SPLITTRANS)
+            flags &= ~(UHFF_SUPERSPEED | UHFF_HIGHSPEED);
+
         if(flags & UHFF_SUPERSPEED)
             slotctx0 |= SLOTF_CTX_SUPERSPEED;
         else if(flags & UHFF_HIGHSPEED)
@@ -1711,11 +1758,22 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
         islot->ctx[1] |= ((ULONG)(ioreq->iouh_RootPort & 0xFF) << 16);
 
         if(flags & UHFF_SPLITTRANS) {
-            ULONG ttinfo = 0;
+            /*
+             * The slot context wants the TT hub's slot ID, but
+             * iouh_SplitHubAddr carries its USB address - resolve it. If
+             * the lookup fails, keep the TT fields Address Device already
+             * committed (mirrored from the output context above).
+             */
+            ULONG ttinfo = islot->ctx[2] &
+                ((0xFFUL << SLOT_CTX_TT_SLOT_SHIFT) | (0xFFUL << SLOT_CTX_TT_PORT_SHIFT));
             UWORD ttt = (UWORD)((flags >> UHFS_THINKTIME) & 0x3);
+            struct pciusbXHCIDevice *ttCtx =
+                xhciFindDeviceCtx(hc, ioreq->iouh_SplitHubAddr);
 
-            ttinfo |= ((ULONG)(ioreq->iouh_SplitHubAddr & 0xFF) << SLOT_CTX_TT_SLOT_SHIFT);
-            ttinfo |= ((ULONG)(ioreq->iouh_SplitHubPort & 0xFF) << SLOT_CTX_TT_PORT_SHIFT);
+            if(ttCtx && ttCtx->dc_SlotID) {
+                ttinfo = ((ULONG)ttCtx->dc_SlotID << SLOT_CTX_TT_SLOT_SHIFT) |
+                         ((ULONG)(ioreq->iouh_SplitHubPort & 0xFF) << SLOT_CTX_TT_PORT_SHIFT);
+            }
             ttinfo |= ((ULONG)ttt << SLOT_CTX_TTT_SHIFT);
 
             islot->ctx[2] = ttinfo;
@@ -2191,6 +2249,17 @@ static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
         if((ioreq->iouh_Req.io_Command == UHCMD_INTXFER) &&
                 (ioreq->iouh_Actual == 0))
             ioreq->iouh_Actual = ioreq->iouh_Length;
+        break;
+
+    case TRB_CC_SHORT_PACKET:
+        /*
+         * A device answering with less than was asked for is how a device
+         * says "that is all", not a failure - a boot mouse reporting four
+         * bytes into an eight byte request ends here every time. The
+         * transfer event carried the residual and the completion path has
+         * already recorded what arrived, so leave iouh_Actual alone.
+         */
+        ioreq->iouh_Req.io_Error = UHIOERR_NO_ERROR;
         break;
 
     case TRB_CC_BABBLE_DETECTED_ERROR:                          /* Data Buffer Error / Babble */
@@ -2677,8 +2746,8 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
 
         driprivate->dpCC = ccode;
 
-        /* Avoid log storms for expected ISO conditions */
-        if((ccode != TRB_CC_SUCCESS) &&
+        /* Avoid log storms for expected ISO conditions and short packets */
+        if((ccode != TRB_CC_SUCCESS) && (ccode != TRB_CC_SHORT_PACKET) &&
                 !(ccode == TRB_CC_RING_UNDERRUN && (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER))) {
             pciusbWarn("xHCI",
                        DEBUGWARNCOLOR_SET
@@ -2691,7 +2760,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
          * This is particularly useful to spot endpoints that remain HALTED /
          * STOPPED while new TDs are being submitted.
          */
-        if((ccode != TRB_CC_SUCCESS) &&
+        if((ccode != TRB_CC_SUCCESS) && (ccode != TRB_CC_SHORT_PACKET) &&
                 !(ccode == TRB_CC_RING_UNDERRUN && (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER))) {
             xhciDiagDumpEndpointBrief(hc, driprivate->dpDevice, (UBYTE)driprivate->dpEPID, "completion-error");
             xhciDumpEndpointCtx(hc, driprivate->dpDevice, driprivate->dpEPID, "completion-error");
@@ -3190,6 +3259,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 }
 
                 if(trbe_ccode != TRB_CC_SUCCESS &&
+                        trbe_ccode != TRB_CC_SHORT_PACKET &&
                         trbe_slot < USB_DEV_MAX && trbe_epid < MAX_DEVENDPOINTS &&
                         devCtx && ring && have_idx) {
                     UBYTE *cnt = &xhci_diag_cc_err[trbe_slot][trbe_epid];
