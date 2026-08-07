@@ -959,7 +959,21 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                                     KPRINTF(1, ("PORT_POWER for port %ld failed %ld!\n", num, ioerr));
                                                 }
                                             }
-                                            psdDelayMS((ULONG) nch->nch_PwrGoodTime + 15);
+                                            {
+                                                /* A device has 100ms to draw power and signal
+                                                   attach, and the hub debounces the connection
+                                                   for that long before reporting it. Hubs that
+                                                   claim a power-good time shorter than that -
+                                                   including the ones claiming zero - still owe
+                                                   the device those 100ms, and scanning sooner
+                                                   silently misses whatever is slowest to come
+                                                   up, usually the largest device present. */
+                                                ULONG settle = (ULONG) nch->nch_PwrGoodTime;
+
+                                                if(settle < 100)
+                                                    settle = 100;
+                                                psdDelayMS(settle + 15);
+                                            }
 
                                             psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                                            "Hub with %ld ports successfully configured.",
