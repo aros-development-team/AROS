@@ -1711,6 +1711,10 @@ BOOL xhciUpdateEP0MaxPacket(struct PCIController *hc,
                             struct IOUsbHWReq *ioreq,
                             struct timerequest *timerreq)
 {
+    volatile struct xhci_slot *oslot;
+    ULONG oldmps;
+    LONG cc;
+
     if(!devCtx || (devCtx == XHCI_ROOT_HUB_HANDLE) || !ioreq)
         return TRUE;
 
@@ -1720,22 +1724,22 @@ BOOL xhciUpdateEP0MaxPacket(struct PCIController *hc,
     if((ULONG)ioreq->iouh_MaxPktSize == devCtx->dc_EP0MaxPacket)
         return TRUE;
 
+    if(!devCtx->dc_SlotCtx.dmaa_Ptr || !devCtx->dc_IN.dmaa_Ptr)
+        return TRUE;
+
     /*
      * Full Speed is the only speed that leaves the size open. Everywhere else
      * the link fixes it, and the request cannot be trusted to agree: a High
      * Speed device behind a hub has been seen asking for 8 - which is why the
      * slot context, not the request, decides who is allowed to change it.
      */
-    if(!devCtx->dc_SlotCtx.dmaa_Ptr)
-        return TRUE;
-
-    volatile struct xhci_slot *oslot = (volatile struct xhci_slot *)devCtx->dc_SlotCtx.dmaa_Ptr;
+    oslot = (volatile struct xhci_slot *)devCtx->dc_SlotCtx.dmaa_Ptr;
     CacheClearE((APTR)oslot, sizeof(*oslot), CACRF_InvalidateD);
 
     if(((AROS_LE2LONG(oslot->ctx[0]) >> SLOTS_CTX_SPEED) & 0xF) != SLOT_CTX_FULLSPEED)
         return TRUE;
 
-    const ULONG oldmps = devCtx->dc_EP0MaxPacket;
+    oldmps = devCtx->dc_EP0MaxPacket;
 
     pciusbXHCIDebugEP("xHCI",
                       DEBUGCOLOR_SET "Updating EP0 MPS: %lu -> %u (DevAddr=%u, Slot=%ld)" DEBUGCOLOR_RESET"\n",
@@ -1744,24 +1748,24 @@ BOOL xhciUpdateEP0MaxPacket(struct PCIController *hc,
                       ioreq->iouh_DevAddr,
                       devCtx->dc_SlotID);
 
-    if(!xhciInitEP(hc, devCtx,
-                   ioreq,
-                   0, 0,
-                   UHCMD_CONTROLXFER,
-                   ioreq->iouh_MaxPktSize,
-                   0,
-                   ioreq->iouh_Flags)) {
+    if(!xhciInitEP(hc, devCtx, ioreq, 0, 0, UHCMD_CONTROLXFER,
+                   ioreq->iouh_MaxPktSize, 0, ioreq->iouh_Flags)) {
         devCtx->dc_EP0MaxPacket = oldmps;
         return FALSE;
     }
 
-    LONG cc = xhciCmdContextEvaluate(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
-                                     timerreq);
+    cc = xhciCmdContextEvaluate(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
+                                timerreq);
     if(cc != TRB_CC_SUCCESS) {
         pciusbWarn("xHCI",
                    DEBUGWARNCOLOR_SET "EP0 Evaluate Context failed (cc=%ld)" DEBUGCOLOR_RESET"\n",
                    (LONG)cc);
-        devCtx->dc_EP0MaxPacket = oldmps;
+
+        /* Put the input context back to the size the controller is still
+           using, so it describes the endpoint as it actually stands rather
+           than one the command refused. xhciInitEP owns dc_EP0MaxPacket. */
+        (void)xhciInitEP(hc, devCtx, ioreq, 0, 0, UHCMD_CONTROLXFER,
+                         oldmps, 0, ioreq->iouh_Flags);
         return FALSE;
     }
 
@@ -2136,12 +2140,6 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
         return UHIOERR_HOSTERROR;
     }
 
-    /*
-     * EP0 max packet size can change after the initial 8-byte device descriptor
-     * read (FS: 8/16/32/64). We must update the EP0 endpoint context when the
-     * stack learns the real bMaxPacketSize0, otherwise subsequent control
-     * transfers may complete with incorrect/empty data.
-     */
     if(!xhciUpdateEP0MaxPacket(hc, devCtx, ioreq, timerreq)) {
         if(epctx_allocated) {
             xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
