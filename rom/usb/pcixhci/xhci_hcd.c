@@ -4037,6 +4037,24 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
         return FALSE;
     }
 
+    /*
+     * A port can already be populated before we ever touch the
+     * controller. Firmware that booted from USB leaves the device
+     * attached and running, and the change it announced itself with
+     * was answered long ago - resetting and acknowledging the stale
+     * change bits leaves the port sitting in a steady connected state
+     * with nothing further to report, so the port task would wait on
+     * an event that has already been and gone. Ask it for one pass
+     * now. It has to be here rather than at the head of the task:
+     * enumeration issues commands, and a command written to the ring
+     * while the controller is still halted is discarded with the
+     * doorbell that announced it.
+     */
+    if(xhcic->xhc_PortTask.xpt_Task && xhcic->xhc_PortTask.xpt_PortChangeSignal != -1) {
+        Signal(xhcic->xhc_PortTask.xpt_Task,
+               1L << xhcic->xhc_PortTask.xpt_PortChangeSignal);
+    }
+
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xhciInit returns TRUE..." DEBUGCOLOR_RESET" \n");
     return TRUE;
 
