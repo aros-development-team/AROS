@@ -429,13 +429,13 @@ void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *dev
     xhciAbortDeviceQueue(hc, unit, &hc->hc_TDQueue, devCtx, FALSE);
     xhciAbortDeviceQueue(hc, unit, &hc->hc_PeriodicTDQueue, devCtx, TRUE);
 
-    if(devCtx->dc_DevAddr < USB_DEV_MAX &&
+    /* Release the address this device owned. Index 0 is deliberately left
+       alone: it is the default-address mapping every enumeration starts
+       from, not this device's property, and clearing it would strand the
+       next device on a port that sends no reset. */
+    if(devCtx->dc_DevAddr && devCtx->dc_DevAddr < USB_DEV_MAX &&
             unit->hu_DevControllers[devCtx->dc_DevAddr] == hc) {
         unit->hu_DevControllers[devCtx->dc_DevAddr] = NULL;
-    }
-    if(devCtx->dc_RouteString == 0 &&
-            unit->hu_DevControllers[0] == hc) {
-        unit->hu_DevControllers[0] = NULL;
     }
 
     xhciFreeDeviceCtx(hc, devCtx, TRUE, timerreq);

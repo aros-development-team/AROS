@@ -1088,7 +1088,9 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
 
     hc = unit->hu_DevControllers[ioreq->iouh_DevAddr];
     if(!hc) {
-        KPRINTF(20, "No Host controller assigned to device address %ld\n", ioreq->iouh_DevAddr);
+        pciusbWarn("UHW",
+                   DEBUGWARNCOLOR_SET "No host controller assigned to device address %lu"
+                   DEBUGCOLOR_RESET "\n", (ULONG)ioreq->iouh_DevAddr);
         return(UHIOERR_HOSTERROR);
     }
 
@@ -1145,7 +1147,9 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq,
 
     hc = unit->hu_DevControllers[ioreq->iouh_DevAddr];
     if(!hc) {
-        KPRINTF(20, "No Host controller assigned to device address %ld\n", ioreq->iouh_DevAddr);
+        pciusbWarn("UHW",
+                   DEBUGWARNCOLOR_SET "No host controller assigned to device address %lu"
+                   DEBUGCOLOR_RESET "\n", (ULONG)ioreq->iouh_DevAddr);
         return(UHIOERR_HOSTERROR);
     }
 
@@ -1202,7 +1206,9 @@ WORD cmdIsoXFer(struct IOUsbHWReq *ioreq,
 
     hc = unit->hu_DevControllers[ioreq->iouh_DevAddr];
     if(!hc) {
-        KPRINTF(20, "No Host controller assigned to device address %ld\n", ioreq->iouh_DevAddr);
+        pciusbWarn("UHW",
+                   DEBUGWARNCOLOR_SET "No host controller assigned to device address %lu"
+                   DEBUGCOLOR_RESET "\n", (ULONG)ioreq->iouh_DevAddr);
         return(UHIOERR_HOSTERROR);
     }
 
@@ -1260,7 +1266,9 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
 
     hc = unit->hu_DevControllers[ioreq->iouh_DevAddr];
     if(!hc) {
-        KPRINTF(20, "No Host controller assigned to device address %ld\n", ioreq->iouh_DevAddr);
+        pciusbWarn("UHW",
+                   DEBUGWARNCOLOR_SET "No host controller assigned to device address %lu"
+                   DEBUGCOLOR_RESET "\n", (ULONG)ioreq->iouh_DevAddr);
         return(UHIOERR_HOSTERROR);
     }
 
@@ -1934,8 +1942,13 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
         for(epnum = 0; epnum < 31; epnum++) {
             unit->hu_DevDataToggle[adr + epnum] = 0;
         }
-        // transfer host controller ownership
-        unit->hu_DevControllers[ioreq->iouh_DevAddr] = NULL;
+        /* Transfer host controller ownership. The request still carries the
+           default address, and index 0 belongs to no single device: dropping
+           it here leaves the next device to enumerate with no controller at
+           all until a hub port reset re-arms it below, which a SuperSpeed
+           port that has already trained its link never sends. */
+        if(ioreq->iouh_DevAddr)
+            unit->hu_DevControllers[ioreq->iouh_DevAddr] = NULL;
         unit->hu_DevControllers[adr >> 5] = hc;
     } else if((ioreq->iouh_SetupData.bmRequestType == (URTF_CLASS | URTF_OTHER)) &&
               (ioreq->iouh_SetupData.bRequest == USR_SET_FEATURE) &&
