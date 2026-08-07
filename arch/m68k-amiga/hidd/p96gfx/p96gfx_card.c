@@ -437,15 +437,28 @@ BOOL SetSprite(struct p96gfx_carddata *cid, BOOL activate)
         AROS_LCA(ULONG, *cid->rgbformat, D7));
 }
 
+/*
+ * The position goes in D0/D1 as well as in the BoardInfo. A card driver is
+ * free to take it from the registers - both the ZZ9000 and the Z3660 do, and
+ * then write it back over the BoardInfo's copy - so leaving them unset puts
+ * the sprite wherever the registers happened to point.
+ */
 BOOL SetSpritePosition(struct p96gfx_carddata *cid)
 {
+    WORD x = (WORD)gw(cid->boardinfo + PSSO_BoardInfo_MouseX);
+    WORD y = (WORD)gw(cid->boardinfo + PSSO_BoardInfo_MouseY);
+
     if (cid->CardBase)
-        return AROS_CALL2(BOOL, __cardFunc(cid, PSSO_BoardInfo_SetSpritePosition),
+        return AROS_CALL4(BOOL, __cardFunc(cid, PSSO_BoardInfo_SetSpritePosition),
             AROS_LCA(APTR, cid->boardinfo, A0),
+            AROS_LCA(WORD, x, D0),
+            AROS_LCA(WORD, y, D1),
             AROS_LCA(ULONG, *cid->rgbformat, D7),
             struct Library*, cid->CardBase);
-    return P96_LC2(BOOL, cid->p96romvector, 37,
+    return P96_LC4(BOOL, cid->p96romvector, 37,
         AROS_LCA(APTR, cid->boardinfo, A0),
+        AROS_LCA(WORD, x, D0),
+        AROS_LCA(WORD, y, D1),
         AROS_LCA(ULONG, *cid->rgbformat, D7));
 }
 
