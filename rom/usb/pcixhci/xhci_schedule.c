@@ -181,6 +181,19 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
                                  __func__, (LONG)cc);
                 return FALSE;
             }
+        } else if(!xhciUpdateEP0MaxPacket(hc, devCtx, ioreq, timerreq)) {
+            /*
+             * Enumeration learns the real bMaxPacketSize0 between two control
+             * transfers, and this is the only path every transfer takes -
+             * xhciPrepareEndpoint is called once per endpoint by the stack, and
+             * never for EP0 while a device is still being enumerated.
+             */
+            ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+
+            pciusbXHCIDebugV("xHCI",
+                             "Leaving %s early: EP0 max packet size update failed\n",
+                             __func__);
+            return FALSE;
         }
     } else if((txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
         ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;

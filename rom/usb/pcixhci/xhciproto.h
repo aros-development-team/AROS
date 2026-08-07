@@ -174,6 +174,8 @@ WORD xhciQueueData_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing 
 
 ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, struct IOUsbHWReq *ioreq, UBYTE endpoint,
                  UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
+BOOL xhciUpdateEP0MaxPacket(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
+                            struct IOUsbHWReq *ioreq, struct timerequest *timerreq);
 void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG txtype);
 void xhciScheduleIntTDs(struct PCIController *hc);
 void xhciScheduleIsoTDs(struct PCIController *hc);
