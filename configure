@@ -12274,7 +12274,7 @@ if test "$use_binutils_version" = ""; then
 else
     target_binutils_version="$use_binutils_version"
 fi
-riscv_min_gcc="16.1.0"
+riscv_min_gcc="16.2.0"
 riscv_min_binutils="2.47"
 case "$aros_target_cpu" in
     riscv*)

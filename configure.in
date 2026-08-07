@@ -2601,7 +2601,7 @@ fi
 dnl riscv support in the toolchain is still improving release to release,
 dnl and these are the oldest this target is built and tested against.
 dnl Anything older is raised to them rather than left to fail later.
-riscv_min_gcc="16.1.0"
+riscv_min_gcc="16.2.0"
 riscv_min_binutils="2.47"
 case "$aros_target_cpu" in
     riscv*)
