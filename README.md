@@ -30,7 +30,7 @@
     <td style="text-align:center">10.5.0</td>
     <td style="text-align:center">13.4.0</td>
     <td style="text-align:center">15.2.0</td>
-    <td style="text-align:center">16.1.0</td>
+    <td style="text-align:center">16.2.0</td>
     <td style="text-align:center">11.0.0</td>
     <td style="text-align:center">20.1.0</td>
   </tr>
