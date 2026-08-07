@@ -601,7 +601,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                                                      USR_CLEAR_FEATURE, UFS_C_PORT_OVER_CURRENT, (ULONG) num);
                                         psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
                                     }
-                                    if(uhps.wPortChange & UPSF_PORT_SUSPEND)
+                                    /* A SuperSpeed hub has no suspend change
+                                       bit; bit 2 is reserved there and the
+                                       link state carries U1/U2/U3 instead. */
+                                    if(!nch->nch_SSPortProto &&
+                                       (uhps.wPortChange & UPSF_PORT_SUSPEND))
                                     {
                                         if((!(uhps.wPortStatus & UPSF_PORT_SUSPEND)) && pd)
                                         {
@@ -736,6 +740,15 @@ struct NepClassHubSS * GM_UNIQUENAME(nAllocHub)(void) {
         nch->nch_IsRootHub = (parenthub ? FALSE : TRUE);
         nch->nch_IsUSB30 = issuperspeed;
 
+        /*
+         * A real SuperSpeed hub answers GET_PORT_STATUS in the USB 3 format
+         * and stalls the USB 2.0 port features. The root hub is emulated by
+         * the host controller driver, which reports the USB 2.0 layout with
+         * a synthetic superspeed flag and covers both its USB 2 and USB 3
+         * ports, so it keeps the older decoding.
+         */
+        nch->nch_SSPortProto = (issuperspeed && !nch->nch_IsRootHub);
+
         if(!nch->nch_Interface) {
             nch->nch_Interface = psdFindInterface(nch->nch_Device, NULL, IFA_Class, HUB_CLASSCODE, TAG_END);
         }
@@ -834,6 +847,43 @@ struct NepClassHubSS * GM_UNIQUENAME(nAllocHub)(void) {
                                                     (ULONG)nch->nch_Removable));
 
                                         psdFreeVec(usshd);
+
+                                        /*
+                                         * A SuperSpeed hub needs to be told how
+                                         * far down the tree it sits before it
+                                         * can work out which nibble of a route
+                                         * string names one of its own ports.
+                                         * Depth counts the hubs between it and
+                                         * the root hub, so a hub on a root port
+                                         * is depth zero.
+                                         */
+                                        if(nch->nch_SSPortProto) {
+                                            struct PsdDevice *uphub = (struct PsdDevice *)parenthub;
+                                            ULONG hubdepth = 0;
+
+                                            while(uphub) {
+                                                IPTR next = (IPTR)NULL;
+
+                                                psdGetAttrs(PGA_DEVICE, uphub,
+                                                            DA_HubDevice, &next, TAG_END);
+                                                if(!next)
+                                                    break;
+
+                                                hubdepth++;
+                                                uphub = (struct PsdDevice *)next;
+                                            }
+
+                                            psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_DEVICE,
+                                                         USR_SET_HUB_DEPTH, hubdepth, 0);
+                                            if((ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0))) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                                               "SET_HUB_DEPTH(%ld) failed: %s (%ld)",
+                                                               hubdepth,
+                                                               psdNumToStr(NTS_IOERR, ioerr, "unknown"),
+                                                               ioerr);
+                                            }
+                                            KPRINTF(2, ("SET_HUB_DEPTH(%ld) -> %ld\n", hubdepth, ioerr));
+                                        }
 
                                         psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_DEVICE, USR_GET_STATUS, 0, 0);
                                         ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhhs, sizeof(struct UsbHubStatus));
@@ -1025,26 +1075,45 @@ LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHubSS *nch, UWORD port)
         if(!firsterr) firsterr = ioerr;
     }
 
-    psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
-                 USR_CLEAR_FEATURE, UFS_C_PORT_ENABLE, (ULONG)port);
-    if((ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0))) {
-        psdAddErrorMsg(RETURN_WARN, (STRPTR)libname,
-                       "CLEAR_PORT_FEATURE (C_PORT_ENABLE) failed: %s (%ld)",
-                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-        KPRINTF(10, ("error occurred clearing UFS_C_PORT_ENABLE!\n"));
-        if(!firsterr) firsterr = ioerr;
-    }
+    /*
+     * C_PORT_ENABLE and C_PORT_SUSPEND do not exist on a SuperSpeed hub and
+     * are stalled by it; the link state change bits take their place.
+     */
+    if(nch->nch_SSPortProto) {
+        static const UWORD ssfeatures[] = {
+            UFS_C_BH_PORT_RESET, UFS_C_PORT_LINK_STATE, UFS_C_PORT_CONFIG_ERROR
+        };
+        UWORD i;
 
-    /* Some USB3 hubs/controllers may not implement/signal this the same way.
-       Keep it best-effort and do not treat failures as fatal. */
-    psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
-                 USR_CLEAR_FEATURE, UFS_C_PORT_SUSPEND, (ULONG)port);
-    if((ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0))) {
-        psdAddErrorMsg(RETURN_WARN, (STRPTR)libname,
-                       "CLEAR_PORT_FEATURE (C_PORT_SUSPEND) failed: %s (%ld)",
-                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-        KPRINTF(10, ("error occurred clearing UFS_C_PORT_SUSPEND!\n"));
-        if(!firsterr) firsterr = ioerr;
+        for(i = 0; i < (UWORD)(sizeof(ssfeatures) / sizeof(ssfeatures[0])); i++) {
+            psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                         USR_CLEAR_FEATURE, ssfeatures[i], (ULONG)port);
+            if((ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0))) {
+                KPRINTF(10, ("error occurred clearing SS change feature %ld!\n",
+                             (ULONG)ssfeatures[i]));
+                if(!firsterr) firsterr = ioerr;
+            }
+        }
+    } else {
+        psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                     USR_CLEAR_FEATURE, UFS_C_PORT_ENABLE, (ULONG)port);
+        if((ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0))) {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR)libname,
+                           "CLEAR_PORT_FEATURE (C_PORT_ENABLE) failed: %s (%ld)",
+                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            KPRINTF(10, ("error occurred clearing UFS_C_PORT_ENABLE!\n"));
+            if(!firsterr) firsterr = ioerr;
+        }
+
+        psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                     USR_CLEAR_FEATURE, UFS_C_PORT_SUSPEND, (ULONG)port);
+        if((ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0))) {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR)libname,
+                           "CLEAR_PORT_FEATURE (C_PORT_SUSPEND) failed: %s (%ld)",
+                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            KPRINTF(10, ("error occurred clearing UFS_C_PORT_SUSPEND!\n"));
+            if(!firsterr) firsterr = ioerr;
+        }
     }
 
     psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
@@ -1068,9 +1137,62 @@ LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHubSS *nch, UWORD port)
 }
 
 
+/* /// "nDecodePortStatus()" */
+/*
+ * wPortStatus means different things on a USB 2.0 hub and on a SuperSpeed
+ * one - power moves from bit 8 to bit 9, the link state replaces the suspend
+ * bit and the speed becomes a field. Decode it once here so the port logic
+ * does not have to care which kind of hub answered.
+ */
+struct HubSSPortState {
+    BOOL  hps_Connected;
+    BOOL  hps_Enabled;
+    BOOL  hps_Powered;
+    BOOL  hps_InReset;
+    BOOL  hps_OverCurrent;
+    BOOL  hps_SuperSpeed;
+    BOOL  hps_HighSpeed;
+    BOOL  hps_LowSpeed;
+    UWORD hps_LinkState;
+};
+
+static void GM_UNIQUENAME(nDecodePortStatus)(struct NepClassHubSS *nch,
+                                             UWORD status,
+                                             struct HubSSPortState *hps)
+{
+    hps->hps_HighSpeed = FALSE;
+    hps->hps_LowSpeed  = FALSE;
+
+    if(nch->nch_SSPortProto) {
+        hps->hps_Connected   = (status & UPS3F_PORT_CONNECTION) ? TRUE : FALSE;
+        hps->hps_Enabled     = (status & UPS3F_PORT_ENABLE) ? TRUE : FALSE;
+        hps->hps_Powered     = (status & UPS3F_PORT_POWER) ? TRUE : FALSE;
+        hps->hps_InReset     = (status & UPS3F_PORT_RESET) ? TRUE : FALSE;
+        hps->hps_OverCurrent = (status & UPS3F_PORT_OVER_CURRENT) ? TRUE : FALSE;
+        hps->hps_LinkState   = (status & UPS3M_PORT_LINK_STATE) >> UPS3S_PORT_LINK_STATE;
+
+        /* Every downstream port of a SuperSpeed hub runs at SuperSpeed;
+           anything slower is attached to the companion USB 2.0 hub. */
+        hps->hps_SuperSpeed  = TRUE;
+    } else {
+        hps->hps_Connected   = (status & UPSF_PORT_CONNECTION) ? TRUE : FALSE;
+        hps->hps_Enabled     = (status & UPSF_PORT_ENABLE) ? TRUE : FALSE;
+        hps->hps_Powered     = (status & UPSF_PORT_POWER) ? TRUE : FALSE;
+        hps->hps_InReset     = (status & UPSF_PORT_RESET) ? TRUE : FALSE;
+        hps->hps_OverCurrent = (status & UPSF_PORT_OVER_CURRENT) ? TRUE : FALSE;
+        hps->hps_SuperSpeed  = (status & UPSF_PORT_SUPER_SPEED) ? TRUE : FALSE;
+        hps->hps_HighSpeed   = (status & UPSF_PORT_HIGH_SPEED) ? TRUE : FALSE;
+        hps->hps_LowSpeed    = (status & UPSF_PORT_LOW_SPEED) ? TRUE : FALSE;
+        hps->hps_LinkState   = (status & UPSF_PORT_SUSPEND) ? UPS3_PLS_U3 : UPS3_PLS_U0;
+    }
+}
+/* \\\ */
+
 /* /// "nConfigurePort()" */
 struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWORD port)
 {
+    struct HubSSPortState hps;
+
     LONG ioerr;
     LONG delayretries;
     LONG resetretries;
@@ -1097,7 +1219,18 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWOR
     if(!ioerr) {
         KPRINTF(2, ("Status 0x%04x, change 0x%04x\n", uhps.wPortStatus, uhps.wPortChange));
 
-        if(uhps.wPortStatus & UPSF_PORT_ENABLE) {
+        GM_UNIQUENAME(nDecodePortStatus)(nch, uhps.wPortStatus, &hps);
+
+        /*
+         * An enabled USB2 port is disabled first so the device is addressed
+         * from a known state. A SuperSpeed link cannot be treated that way:
+         * disabling the port puts the link into Disabled, and a port reset
+         * does not bring it back - the device stops answering entirely. A
+         * port already reporting connected and enabled at SuperSpeed has
+         * trained its own link and is ready to address as it stands, and
+         * PORT_ENABLE is not even a feature such a hub accepts.
+         */
+        if(hps.hps_Enabled && !hps.hps_SuperSpeed) {
             KPRINTF(2, ("Disabling port %u\n", port));
 
             KPRINTF(1, ("%s: USR_CLEAR_FEATURE:UFS_PORT_ENABLE\n", __func__));
@@ -1115,7 +1248,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWOR
             }
         }
 
-        if(uhps.wPortStatus & UPSF_PORT_CONNECTION) {
+        if(hps.hps_Connected) {
             KPRINTF(2, ("There's something at port %ld!\n", port));
 
             Forbid();
@@ -1130,18 +1263,47 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWOR
                             DA_AtHubPortNumber, port,
                             TAG_END);
 
-                if(uhps.wPortStatus & UPSF_PORT_LOW_SPEED) {
+                if(hps.hps_LowSpeed) {
                     psdSetAttrs(PGA_DEVICE, pd, DA_IsLowspeed, TRUE, TAG_END);
                     KPRINTF(2, ("    It's a lowspeed device!\n"));
                     islowspeed = TRUE;
                 }
-                if(uhps.wPortStatus & UPSF_PORT_SUPER_SPEED) {
+                if(hps.hps_SuperSpeed) {
                     psdSetAttrs(PGA_DEVICE, pd, DA_IsSuperspeed, TRUE, TAG_END);
                     KPRINTF(2, ("    It's a superspeed device!\n"));
                 }
 
                 ObtainSemaphore(&nch->nch_HubBase->nh_Adr0Sema);
 
+                /*
+                 * A SuperSpeed port that already reads connected and enabled
+                 * with its link in U0 has trained itself and left the device
+                 * ready to address. The reset below belongs to USB2
+                 * enumeration, where it is what makes a device answer at all;
+                 * asking for it here only drives the port into reset, which
+                 * it never leaves.
+                 */
+                if(hps.hps_SuperSpeed && hps.hps_Enabled &&
+                   (hps.hps_LinkState == UPS3_PLS_U0))
+                {
+                    KPRINTF(2, ("    SuperSpeed link already up, skipping reset\n"));
+
+                    GM_UNIQUENAME(nClearPortStatus)(nch, port);
+                    psdDelayMS(100);
+
+                    if((pp = psdAllocPipe(pd, nch->nch_TaskMsgPort, NULL))) {
+                        if(psdEnumerateDevice(pp)) {
+                            KPRINTF(2, ("  Device successfully added!\n"));
+                            psdFreePipe(pp);
+                            psdUnlockDevice(pd);
+                            psdSendEvent(EHMB_ADDDEVICE, pd, NULL);
+                            ReleaseSemaphore(&nch->nch_HubBase->nh_Adr0Sema);
+                            return pd;
+                        }
+                        psdFreePipe(pp);
+                    }
+                    resetretries = 3;
+                } else
                 for(resetretries = 0; resetretries < 3; resetretries++) {
                     psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
                                  USR_SET_FEATURE, UFS_PORT_RESET, (ULONG)port);
@@ -1182,19 +1344,20 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWOR
                         KPRINTF(2, ("After reset: status 0x%04x, change 0x%04x\n",
                                     uhps.wPortStatus, uhps.wPortChange));
 
-                        if(!(uhps.wPortStatus & UPSF_PORT_CONNECTION)) {
+                        GM_UNIQUENAME(nDecodePortStatus)(nch, uhps.wPortStatus, &hps);
+
+                        if(!hps.hps_Connected) {
                             break;
                         }
 
-                        if((uhps.wPortStatus &
-                            (UPSF_PORT_RESET|UPSF_PORT_CONNECTION|UPSF_PORT_ENABLE|
-                             UPSF_PORT_POWER|UPSF_PORT_OVER_CURRENT))
-                           == (UPSF_PORT_CONNECTION|UPSF_PORT_ENABLE|UPSF_PORT_POWER))
+                        if(hps.hps_Connected && hps.hps_Enabled && hps.hps_Powered &&
+                           !hps.hps_InReset && !hps.hps_OverCurrent &&
+                           (!hps.hps_SuperSpeed || (hps.hps_LinkState == UPS3_PLS_U0)))
                         {
-                            if(uhps.wPortStatus & UPSF_PORT_SUPER_SPEED) {
+                            if(hps.hps_SuperSpeed) {
                                 psdSetAttrs(PGA_DEVICE, pd, DA_IsSuperspeed, TRUE, TAG_END);
                                 KPRINTF(2, ("    It's a superspeed device!\n"));
-                            } else if((uhps.wPortStatus & UPSF_PORT_HIGH_SPEED) || washighspeed) {
+                            } else if(hps.hps_HighSpeed || washighspeed) {
                                 psdSetAttrs(PGA_DEVICE, pd, DA_IsHighspeed, TRUE, TAG_END);
                                 washighspeed = TRUE;
                                 KPRINTF(2, ("    It's a highspeed device!\n"));
@@ -1202,7 +1365,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWOR
                                 IPTR needssplit = 0;
 
                                 /* Some hubs report speed correctly only after reset */
-                                if(uhps.wPortStatus & UPSF_PORT_LOW_SPEED) {
+                                if(hps.hps_LowSpeed) {
                                     psdSetAttrs(PGA_DEVICE, pd, DA_IsLowspeed, TRUE, TAG_END);
                                     KPRINTF(2, ("    It's a lowspeed device!\n"));
                                     islowspeed = TRUE;
@@ -1232,7 +1395,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWOR
                             }
                             break;
                         } else {
-                            if(!(uhps.wPortStatus & UPSF_PORT_RESET)) {
+                            if(!hps.hps_InReset) {
                                 psdAddErrorMsg(RETURN_ERROR, (STRPTR)libname,
                                                "Wrong port status %04lx for port %ld!",
                                                uhps.wPortStatus, port);
@@ -1246,7 +1409,12 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWOR
                         }
                     }
 
-                    if((uhps.wPortStatus &
+                    /* A low speed device that will not come up is worth a
+                       power cycle. The test reads USB 2.0 status bits and
+                       clears PORT_ENABLE, neither of which a SuperSpeed hub
+                       has, so it stays on the USB 2.0 path. */
+                    if(!nch->nch_SSPortProto &&
+                       (uhps.wPortStatus &
                         (UPSF_PORT_RESET|UPSF_PORT_CONNECTION|UPSF_PORT_ENABLE|
                          UPSF_PORT_POWER|UPSF_PORT_OVER_CURRENT|UPSF_PORT_LOW_SPEED))
                        == (UPSF_PORT_CONNECTION|UPSF_PORT_POWER|UPSF_PORT_LOW_SPEED))
