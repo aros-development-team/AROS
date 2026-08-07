@@ -15,6 +15,8 @@
 #include <proto/exec.h>
 
 #define __NOLIBBASE__
+/* Use the variadic macro NewObject - the stub pulls in IntuitionBase */
+#define INTUITION_INLINE_NEWOBJECT
 #include <proto/alib.h>
 #include <proto/muimaster.h>
 #include <proto/dos.h>
