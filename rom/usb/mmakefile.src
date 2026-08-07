@@ -53,6 +53,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-usb-sam440-ppc : \
 #MM         kernel-usb
 
+#MM- kernel-usb-opensbi-riscv64 : \
+#MM         kernel-usb-trident
+
 # This is kickstart package contents
 USB_CLASSES := USB/bootkeyboard USB/bootmouse USB/hubss USB/hub USB/hid USB/massstorage
 USB_DEVS    := USBHardware/pciusb USBHardware/pcixhci
