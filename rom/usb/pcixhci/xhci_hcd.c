@@ -160,6 +160,9 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
 {
     const BOOL superspeed = (flags & UHFF_SUPERSPEED) != 0;
     const BOOL highspeed  = (flags & UHFF_HIGHSPEED)  != 0;
+    ULONG microframes;
+    UBYTE maxexp;
+    UBYTE exp;
 
     if((type != UHCMD_INTXFER) && (type != UHCMD_ISOXFER))
         return 0;
@@ -168,48 +171,38 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
         return 0;
 
     /*
-     * xHCI EP Context service interval semantics depend on speed and endpoint type:
+     * The service interval is always an exponent: the endpoint is serviced
+     * every 2^Interval microframes of 125us. What differs per speed and
+     * endpoint type is only the legal range (xHCI spec table 6-12):
      *
-     * - HS/SS Interrupt & Isoch: bInterval is an exponent in microframes, where
-     *   the service interval is 2^(Interval) microframes.  USB bInterval is in
-     *   the range 1..16 and directly encodes that exponent (bInterval - 1).
-     *   Valid bInterval: 1..16, Valid service interval: 0-15
+     * - HS/SS Interrupt & Isoch: 0..15
+     * - FS Isoch:                3..18
+     * - FS/LS Interrupt:         3..10
      *
-     * - FS Isoch: bInterval is 1..16 and encodes 2^(bInterval-1) frames.
-     *   Convert frames to microframes (x8) => exponent = (bInterval - 1) + 3.
-     *   Valid bInterval: 1..16, Valid service interval: 3-18
-     *
-     * - FS/LS Interrupt: bInterval is the frame count 1..255.
-     *   Valid bInterval: 1..255, Valid service interval: 3-10
-     *
-     *   (xHCI spec table 6-12)
+     * Note that iouh_Interval is not the raw bInterval. poseidon.library
+     * normalises it when it builds the endpoint, and hands us a service
+     * interval count: microframes for HS/SS, frames for FS/LS.
      */
-    if(superspeed || highspeed) {
-        if(interval > 16)
-            interval = 16;
-        return (UBYTE)(interval - 1); /* 0..15 */
-    }
+    microframes = (superspeed || highspeed) ? (ULONG)interval : ((ULONG)interval * 8);
 
-    if(type == UHCMD_ISOXFER) {
-        UWORD exp;
+    if(superspeed || highspeed)
+        maxexp = 15;
+    else if(type == UHCMD_ISOXFER)
+        maxexp = 18;
+    else
+        maxexp = 10;
 
-        if(interval > 16)
-            interval = 16;
+    /*
+     * Round down. bInterval states the longest the device tolerates between
+     * services, so the next power of two below it is safe where the one above
+     * it is not - a mouse asking for 10ms polled every 16ms is the jerky
+     * movement this is meant to avoid.
+     */
+    for(exp = 0; (exp < maxexp) && ((2UL << exp) <= microframes); exp++)
+        ;
 
-        exp = (interval - 1) + 3; /* frames -> microframes */
-
-        return (UBYTE)exp;
-    }
-
-    if(interval > 255)
-        interval = 255;
-
-    ULONG microf = (ULONG)interval * 8; /* desired interval in microframes */
-    UBYTE exp;
-
-    for(exp = 0; exp < 11; exp++)
-        if((1UL << exp) >= microf)
-            break;
+    if(!superspeed && !highspeed && (exp < 3))
+        exp = 3;
 
     return exp;
 }
