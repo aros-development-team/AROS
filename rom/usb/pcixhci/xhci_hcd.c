@@ -1127,6 +1127,81 @@ ULONG xhciPageSize(struct PCIController *hc)
     return 0;
 }
 
+/*
+ * Tell the controller that a device is a hub, and how many ports it has.
+ *
+ * A slot context is built when the device first appears, long before the
+ * stack has read a descriptor and knows it is looking at a hub, so the hub
+ * fields are always zero at that point. They have to be right before any
+ * device behind the hub is addressed through it (xHCI 6.2.2), which is the
+ * one moment this can be done for every kind of hub - a SuperSpeed hub
+ * needs it as much as a USB 2.0 one, and only the latter ever announces
+ * itself by way of a split transaction.
+ *
+ * Must be called from a task context: it issues a command and waits.
+ */
+static BOOL xhciProgramHubSlot(struct PCIController *hc,
+                               struct pciusbXHCIDevice *hubCtx,
+                               struct timerequest *timerreq)
+{
+    volatile struct xhci_inctx *in;
+    volatile struct xhci_slot *islot;
+    volatile struct xhci_slot *oslot;
+    const UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
+    UWORD ctxoff = (hc->hc_Flags & HCF_CTX64) ? 2 : 1;
+    ULONG nports;
+    LONG cc;
+
+    if(!hubCtx || (hubCtx == XHCI_ROOT_HUB_HANDLE) || !hubCtx->dc_SlotID)
+        return FALSE;
+
+    if(hubCtx->dc_HubProgrammed)
+        return TRUE;
+
+    if(!hubCtx->dc_IN.dmaa_Ptr || !hubCtx->dc_SlotCtx.dmaa_Ptr)
+        return FALSE;
+
+    in    = (volatile struct xhci_inctx *)hubCtx->dc_IN.dmaa_Ptr;
+    islot = xhciInputSlotCtx((struct xhci_inctx *)in, ctxoff);
+    oslot = (volatile struct xhci_slot *)hubCtx->dc_SlotCtx.dmaa_Ptr;
+
+    /* A hub whose descriptor was never seen gets the field's maximum
+       rather than a guess. */
+    nports = hubCtx->dc_NbrPorts;
+    if(!nports)
+        nports = 255;
+
+    /* Evaluate the slot context alone: its current state plus the hub
+       fields. */
+    CacheClearE((APTR)oslot, ctxsize, CACRF_InvalidateD);
+
+    in->dcf = 0;
+    in->acf = AROS_LONG2LE(0x01);
+    CopyMem((const void *)oslot, (void *)(APTR)islot, ctxsize);
+    islot->ctx[0] |= AROS_LONG2LE(1UL << 26);
+    islot->ctx[1] = AROS_LONG2LE(
+        (AROS_LE2LONG(islot->ctx[1]) & 0x00FFFFFF) | (nports << 24));
+
+    CacheClearE((APTR)in, hubCtx->dc_IN.dmaa_Entry.me_Length, CACRF_ClearD);
+
+    cc = xhciCmdEndpointConfigure(hc, hubCtx->dc_SlotID,
+                                  hubCtx->dc_IN.dmaa_Ptr, timerreq);
+
+    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "hub slot %lu (%lu ports) update cc=%ld"
+                    DEBUGCOLOR_RESET" \n",
+                    (ULONG)hubCtx->dc_SlotID, nports, (long)cc);
+
+    if(cc != TRB_CC_SUCCESS) {
+        pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
+                   "hub slot %lu update failed (cc=%ld)" DEBUGCOLOR_RESET" \n",
+                   (ULONG)hubCtx->dc_SlotID, (long)cc);
+        return FALSE;
+    }
+
+    hubCtx->dc_HubProgrammed = TRUE;
+    return TRUE;
+}
+
 struct pciusbXHCIDevice *
 xhciCreateDeviceCtx(struct PCIController *hc,
                     UWORD rootPortIndex,   /* 0-based */
@@ -1328,6 +1403,29 @@ xhciCreateDeviceCtx(struct PCIController *hc,
      * did when that slot was created, the device was only discovered to
      * be a hub afterwards.
      */
+    /*
+     * Whatever the speed, a device named by a route string is reached
+     * through a hub, and that hub's slot has to say so before this one is
+     * addressed. Only USB 2.0 hubs announce themselves below by owning a
+     * transaction translator; a SuperSpeed hub would otherwise never be
+     * described to the controller at all.
+     */
+    if(route & SLOT_CTX_ROUTE_MASK) {
+        ULONG parentRoute = route & SLOT_CTX_ROUTE_MASK;
+        int nib;
+
+        for(nib = 4; nib >= 0; nib--) {
+            if((parentRoute >> (nib * 4)) & 0xF) {
+                parentRoute &= ~(0xFUL << (nib * 4));
+                break;
+            }
+        }
+
+        (void)xhciProgramHubSlot(hc,
+                                 xhciFindRouteDevice(hc, parentRoute, rootPortIndex),
+                                 timerreq);
+    }
+
     if(flags & UHFF_SPLITTRANS) {
         struct pciusbXHCIDevice *parentCtx = NULL;
         ULONG ttport = 0;
@@ -1361,38 +1459,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
         }
 
         if(parentCtx && parentCtx->dc_SlotID) {
-            if(!parentCtx->dc_HubProgrammed) {
-                volatile struct xhci_inctx *pin =
-                    (volatile struct xhci_inctx *)parentCtx->dc_IN.dmaa_Ptr;
-                volatile struct xhci_slot *pslot_in = xhciInputSlotCtx(pin, ctxoff);
-                volatile struct xhci_slot *pslot_out =
-                    (volatile struct xhci_slot *)parentCtx->dc_SlotCtx.dmaa_Ptr;
-                LONG hubcc;
-                ULONG nports = parentCtx->dc_NbrPorts;
-
-                /* A hub whose descriptor was never seen gets the field's
-                   maximum rather than a guess. */
-                if(!nports)
-                    nports = 255;
-
-                /* Update the slot context alone: current state plus the
-                   hub fields. */
-                pin->dcf = 0;
-                pin->acf = AROS_LONG2LE(0x01);
-                memcpy((void *)pslot_in, (const void *)pslot_out, 32);
-                pslot_in->ctx[0] |= AROS_LONG2LE(1UL << 26);
-                pslot_in->ctx[1] = AROS_LONG2LE(
-                    (AROS_LE2LONG(pslot_in->ctx[1]) & 0x00FFFFFF) | (nports << 24));
-                CacheClearE((APTR)parentCtx->dc_IN.dmaa_Ptr, inctx_size, CACRF_ClearD);
-
-                hubcc = xhciCmdEndpointConfigure(hc, parentCtx->dc_SlotID,
-                                                 parentCtx->dc_IN.dmaa_Ptr, timerreq);
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "hub slot %lu update cc=%ld"
-                                DEBUGCOLOR_RESET" \n",
-                                (ULONG)parentCtx->dc_SlotID, (long)hubcc);
-                if(hubcc == TRB_CC_SUCCESS)
-                    parentCtx->dc_HubProgrammed = TRUE;
-            }
+            (void)xhciProgramHubSlot(hc, parentCtx, timerreq);
 
             islot->ctx[2] &= ~0x3FFFFUL;
             islot->ctx[2] |= ((ULONG)parentCtx->dc_SlotID << SLOT_CTX_TT_SLOT_SHIFT) |
