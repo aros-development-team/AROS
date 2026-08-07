@@ -482,7 +482,13 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
 
     krnInitMMU(&fdtinfo);
 
-    /* The interrupt controller, now that its registers can be mapped */
+    /*
+     * The interrupt controller, now that its registers can be mapped.
+     * The device tree is asked first and stays authoritative; a machine
+     * that handed over no tree is described by the MADT instead.
+     */
+    if (!fdtinfo.plic_base)
+        krnACPIPLICInfo(&fdtinfo);
     krnPLICInit(&fdtinfo);
 
     /*

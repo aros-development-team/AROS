@@ -12,12 +12,14 @@ include $(SRCDIR)/config/aros.cfg
 # has to be aimed with their address translation unit.
 #
 
-FILES := pcidt_init pcidt_driverclass pcidt_deviceclass pcidt_access
+FILES := pcidt_init pcidt_driverclass pcidt_deviceclass pcidt_access \
+         pcidt_acpi
 
 USER_CPPFLAGS := \
                -D__OOP_NOLIBBASE__ \
                -D__OOP_NOATTRBASES__ \
-               -D__OOP_NOMETHODBASES__
+               -D__OOP_NOMETHODBASES__ \
+               -D__INLINE_ACPICA_STACKCALL__
 
 USER_INCLUDES := -I$(SRCDIR)/arch/riscv-all/linklibs/fdt/include
 

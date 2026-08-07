@@ -152,6 +152,9 @@ void krnDumpFDT(void *dtb);
    (kernel_startup.c) */
 extern struct krnFDTInfo *__bootfdtinfo;
 void krnDumpACPI(void);
+/* Describe the interrupt controller from the MADT when there is no
+   device tree; returns 0 when ACPI says nothing about it */
+int  krnACPIPLICInfo(struct krnFDTInfo *info);
 
 /* Platform interrupt controller (kernel_plic.c) */
 int krnPLICInit(struct krnFDTInfo *info);

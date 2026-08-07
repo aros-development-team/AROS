@@ -50,7 +50,7 @@ static const struct
  * Map a device's registers so they can be reached. The boot-time page
  * tables cover RAM only, so without this every access faults.
  */
-static BOOL pcidt_map(struct pcidt_staticdata *psd, IPTR base, IPTR size)
+BOOL PCIDT_Map(struct pcidt_staticdata *psd, IPTR base, IPTR size)
 {
     APTR KernelBase = psd->kernelBase;
 
@@ -138,7 +138,7 @@ static void pcidt_mapranges(struct pcidt_staticdata *psd, fdt_node_t node,
               space == PCI_RANGE_IO ? "I/O" : "memory",
               (IPTR)cpu, (IPTR)size);)
 
-        pcidt_map(psd, (IPTR)cpu, (IPTR)size);
+        PCIDT_Map(psd, (IPTR)cpu, (IPTR)size);
     }
 }
 
@@ -398,7 +398,7 @@ static void pcidt_map64bars(struct pcidt_staticdata *psd,
                           "%p (%p)\n", bus, dev, sub,
                           (APTR)(IPTR)addr, (APTR)(IPTR)size);)
 
-                    pcidt_map(psd,
+                    PCIDT_Map(psd,
                         (IPTR)(addr - b->mem64PciBase) + b->mem64CpuBase,
                         (IPTR)size);
                 }
@@ -650,9 +650,9 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
                   b->busStart, b->busEnd,
                   b->access == PCIDT_ACCESS_DWC ? "DesignWare" : "ECAM");)
 
-            if (!pcidt_map(psd, b->cfgBase, b->cfgSize))
+            if (!PCIDT_Map(psd, b->cfgBase, b->cfgSize))
                 continue;
-            if (b->dbiBase && !pcidt_map(psd, b->dbiBase, b->dbiSize))
+            if (b->dbiBase && !PCIDT_Map(psd, b->dbiBase, b->dbiSize))
                 continue;
 
             /* The windows devices behind this bridge will answer in */
@@ -926,14 +926,20 @@ static int PCIDT_InitClass(LIBBASETYPEPTR LIBBASE)
     bootinfo = KrnGetBootInfo();
     dtb = (APTR)GetTagData(KRN_FlattenedDeviceTree, 0,
                            (struct TagItem *)bootinfo);
-    if (!dtb || !FDT_Open(dtb))
-    {
-        D(bug("[PCIDT:Driver] %s: no device tree, nothing to do\n",
-              __func__);)
-        return FALSE;
-    }
+    if (dtb && FDT_Open(dtb))
+        pcidt_discover(psd);
+    else
+        D(bug("[PCIDT:Driver] %s: no device tree\n", __func__);)
 
-    if (!pcidt_discover(psd))
+    /*
+     * A UEFI machine describes its bridges with ACPI instead. The tree
+     * comes first and stays authoritative - this only runs when it
+     * named nothing, so a board that has one is unaffected.
+     */
+    if (!psd->bridgeCount)
+        PCIDT_DiscoverACPI(psd);
+
+    if (!psd->bridgeCount)
     {
         D(bug("[PCIDT:Driver] %s: no host bridges described\n", __func__);)
         return FALSE;

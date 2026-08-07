@@ -58,6 +58,12 @@ struct acpi_madt_entry
     uint8_t     length;
 } __attribute__((packed));
 
+/* MADT entry types this port cares about */
+#define ACPI_MADT_TYPE_RISCV_INTC   24
+#define ACPI_MADT_TYPE_RISCV_IMSIC  25
+#define ACPI_MADT_TYPE_RISCV_APLIC  26
+#define ACPI_MADT_TYPE_RISCV_PLIC   27
+
 /* Type 24: RINTC - one per hart on RISC-V */
 struct acpi_madt_rintc
 {
@@ -70,6 +76,21 @@ struct acpi_madt_rintc
     uint32_t                ext_intc_id;
     uint64_t                imsic_addr;
     uint32_t                imsic_size;
+} __attribute__((packed));
+
+/* Type 27: PLIC - the platform interrupt controller itself */
+struct acpi_madt_plic
+{
+    struct acpi_madt_entry  entry;
+    uint8_t                 version;
+    uint8_t                 id;
+    uint8_t                 hardware_id[8];
+    uint16_t                nsources;
+    uint16_t                max_priority;
+    uint32_t                flags;
+    uint32_t                size;
+    uint64_t                base;
+    uint32_t                gsi_base;
 } __attribute__((packed));
 
 struct acpi_mcfg_alloc
@@ -183,7 +204,8 @@ static void dump_madt(const struct acpi_madt *madt)
         if (e->length < sizeof(*e))
             break;
 
-        if (e->type == 24 && e->length >= sizeof(struct acpi_madt_rintc))
+        if (e->type == ACPI_MADT_TYPE_RISCV_INTC &&
+            e->length >= sizeof(struct acpi_madt_rintc))
         {
             const struct acpi_madt_rintc *r =
                 (const struct acpi_madt_rintc *)p;
@@ -191,6 +213,10 @@ static void dump_madt(const struct acpi_madt *madt)
             krnSBIPutStr("      RINTC hart ");
             put_dec(r->hart_id);
             krnSBIPutStr(r->flags & 1 ? " (enabled)" : " (disabled)");
+            krnSBIPutStr(" uid ");
+            put_dec(r->uid);
+            krnSBIPutStr(" extintc ");
+            krnSBIPutHex32(r->ext_intc_id);
             if (r->imsic_addr)
             {
                 krnSBIPutStr(" imsic ");
@@ -198,16 +224,177 @@ static void dump_madt(const struct acpi_madt *madt)
             }
             krnSBIPutStr("\n");
         }
+        else if (e->type == ACPI_MADT_TYPE_RISCV_PLIC &&
+                 e->length >= sizeof(struct acpi_madt_plic))
+        {
+            const struct acpi_madt_plic *pl =
+                (const struct acpi_madt_plic *)p;
+
+            krnSBIPutStr("      PLIC id ");
+            put_dec(pl->id);
+            krnSBIPutStr(" base ");
+            krnSBIPutHex(pl->base);
+            krnSBIPutStr(" size ");
+            krnSBIPutHex32(pl->size);
+            krnSBIPutStr(" sources ");
+            put_dec(pl->nsources);
+            krnSBIPutStr(" gsibase ");
+            put_dec(pl->gsi_base);
+            krnSBIPutStr("\n");
+        }
         else
         {
-            /* 25 APLIC, 26 PLIC, 27 IMSIC on RISC-V */
+            /* 24 RINTC, 25 IMSIC, 26 APLIC, 27 PLIC on RISC-V */
             krnSBIPutStr("      entry type ");
             put_dec(e->type);
+            krnSBIPutStr(" length ");
+            put_dec(e->length);
             krnSBIPutStr("\n");
         }
 
         p += e->length;
     }
+}
+
+/*
+ * Find a table by signature, walking the XSDT (or the RSDT on a
+ * revision 1 pointer). Returns NULL when the firmware left no tables.
+ */
+static const struct acpi_header *acpi_find(const char *sig)
+{
+    const struct acpi_rsdp *rsdp = (const struct acpi_rsdp *)__efi_rsdp;
+    const struct acpi_header *root;
+    uint32_t entries, i;
+    int wide;
+
+    if (!__efi_rsdp)
+        return NULL;
+
+    wide = (rsdp->revision >= 2) && rsdp->xsdt_address;
+    root = (const struct acpi_header *)(unsigned long)
+           (wide ? rsdp->xsdt_address : (uint64_t)rsdp->rsdt_address);
+    if (!root || root->length <= sizeof(*root))
+        return NULL;
+
+    entries = (root->length - sizeof(*root)) / (wide ? 8 : 4);
+
+    for (i = 0; i < entries; i++)
+    {
+        const struct acpi_header *h;
+        unsigned long addr;
+
+        if (wide)
+        {
+            /* The array is only 4-byte aligned, so read it in halves */
+            const uint32_t *e = (const uint32_t *)((const uint8_t *)(root + 1) + i * 8);
+
+            addr = (unsigned long)e[0] | ((unsigned long)e[1] << 32);
+        }
+        else
+            addr = (unsigned long)((const uint32_t *)(root + 1))[i];
+
+        h = (const struct acpi_header *)addr;
+        if (h && h->signature[0] == sig[0] && h->signature[1] == sig[1] &&
+            h->signature[2] == sig[2] && h->signature[3] == sig[3])
+            return h;
+    }
+
+    return NULL;
+}
+
+/*
+ * Describe the interrupt controller from the MADT.
+ *
+ * A UEFI machine may hand over no device tree at all, and the tree is
+ * the only thing krnPLICInit() knows how to read. The same facts are
+ * in the MADT: one PLIC structure says where the controller is and how
+ * many sources it has, and one RINTC per hart carries the PLIC context
+ * that hart's supervisor mode claims from.
+ *
+ * Filling the same krnFDTInfo fields keeps this to a source of facts -
+ * the controller is still brought up by the one function, the same way,
+ * whichever description it came from.
+ *
+ * Returns 0 when there is nothing to find, leaving info untouched.
+ */
+int krnACPIPLICInfo(struct krnFDTInfo *info)
+{
+    const struct acpi_header *madt = acpi_find("APIC");
+    const uint8_t *p, *end;
+    int found = 0;
+
+    if (!madt)
+        return 0;
+
+    p = (const uint8_t *)madt + sizeof(struct acpi_madt);
+    end = (const uint8_t *)madt + madt->length;
+
+    info->plic_ncontexts = 0;
+
+    while (p + sizeof(struct acpi_madt_entry) <= end)
+    {
+        const struct acpi_madt_entry *e = (const struct acpi_madt_entry *)p;
+
+        if (e->length < sizeof(*e))
+            break;
+
+        if (e->type == ACPI_MADT_TYPE_RISCV_PLIC &&
+            e->length >= sizeof(struct acpi_madt_plic))
+        {
+            const struct acpi_madt_plic *pl = (const struct acpi_madt_plic *)p;
+
+            /*
+             * Only the first controller is taken. Everything this port
+             * drives hangs off one PLIC, and a second would need the
+             * sources renumbered by its GSI base to tell them apart.
+             */
+            if (!info->plic_base)
+            {
+                info->plic_base = pl->base;
+                info->plic_size = pl->size;
+                info->plic_ndev = pl->nsources;
+                found = 1;
+            }
+        }
+        else if (e->type == ACPI_MADT_TYPE_RISCV_INTC &&
+                 e->length >= sizeof(struct acpi_madt_rintc))
+        {
+            const struct acpi_madt_rintc *r = (const struct acpi_madt_rintc *)p;
+
+            /*
+             * The low half of the external interrupt controller id is
+             * the PLIC context this hart's supervisor mode uses; the
+             * top byte names the controller, and only the first one is
+             * described here. A hart the firmware marked disabled has
+             * no usable context.
+             */
+            if ((r->flags & 1) && ((r->ext_intc_id >> 24) == 0) &&
+                info->plic_ncontexts < KRN_MAX_PLIC_CONTEXTS)
+            {
+                info->plic_contexts[info->plic_ncontexts++] =
+                    (int)(r->ext_intc_id & 0xffff);
+            }
+        }
+
+        p += e->length;
+    }
+
+    if (!found)
+        return 0;
+
+    /*
+     * krnPLICInit() enables on every context it is given and claims
+     * from whichever answers, so the one named here only has to be a
+     * real context - the boot hart's is the obvious choice.
+     */
+    if (info->plic_ncontexts)
+        info->plic_context = info->plic_contexts[0];
+
+    krnSBIPutStr("plic:      described by ACPI, ");
+    put_dec(info->plic_ncontexts);
+    krnSBIPutStr(" supervisor context(s)\n");
+
+    return 1;
 }
 
 static void dump_mcfg(const struct acpi_header *h)

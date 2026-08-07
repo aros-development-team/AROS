@@ -50,7 +50,12 @@ enum pcidt_access
  * here leaves the interrupt line register unprogrammed, so this is the
  * only description of the wiring there is.
  */
-#define PCIDT_MAX_INTMAP 16
+/*
+ * A tree's interrupt-map masks the device away and lists four entries,
+ * one per pin. An ACPI _PRT names every device separately, so the same
+ * four sources arrive as one entry per device and pin.
+ */
+#define PCIDT_MAX_INTMAP 192
 
 struct pcidt_intmap
 {
@@ -169,6 +174,19 @@ struct PCIDTBase
 };
 
 #define PSD(cl) (&((struct PCIDTBase *)cl->UserData)->psd)
+
+/*
+ * Map a region so the CPU can reach it - the boot-time page tables
+ * cover RAM only, so nothing device-side answers until this is done.
+ */
+BOOL  PCIDT_Map(struct pcidt_staticdata *psd, IPTR base, IPTR size);
+
+/*
+ * The other way a machine can describe its host bridges. Reached only
+ * when the device tree named none: a board described by a tree never
+ * gets here, and one without ACPI tables finds nothing.
+ */
+ULONG PCIDT_DiscoverACPI(struct pcidt_staticdata *psd);
 
 /* Config access, shared by the driver class methods */
 ULONG PCIDT_ReadConfig(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
