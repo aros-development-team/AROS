@@ -58,9 +58,29 @@ static AROS_INTH1(NVME_AdminIntCode, struct nvme_queue *, nvmeq)
 {
     AROS_INTFUNC_INIT
 
+    device_t dev = nvmeq->dev;
+    ULONG q;
+
     D(bug ("[NVME:Controller] %s(0x%p)\n", __func__, nvmeq);)
 
     int processed = nvme_process_cq(nvmeq);
+
+    /*
+     * Every queue shares the pin, and the controller holds it asserted
+     * until they are all drained. A completion left behind keeps the
+     * line down with no further edge to report it, so the io queues are
+     * swept here too rather than waiting for an interrupt that cannot
+     * arrive. Harmless when they signal by message instead - a queue
+     * with nothing in it costs a read of its phase bit.
+     */
+    if (dev && dev->dev_Queues)
+    {
+        for (q = 1; q <= dev->queuecnt; q++)
+        {
+            if (dev->dev_Queues[q])
+                processed += nvme_process_cq(dev->dev_Queues[q]);
+        }
+    }
 
     D(bug ("[NVME:Controller] %s: finished\n", __func__);)
 
@@ -331,6 +351,21 @@ resetfailed:
 
                 /* There is someone to answer the line now - let it speak */
                 dev->dev_nvmeregbase->intmc = ~0;
+
+                /*
+                 * Retire anything the previous owner left asserted.
+                 *
+                 * Taking the controller down discards the completions
+                 * themselves, but not necessarily its assertion of the
+                 * line - firmware that used the controller to boot can
+                 * leave it held, and a pin already held reports nothing
+                 * when it is asserted again. Acknowledging the empty
+                 * admin queue drops it, so the first real completion is
+                 * seen as the change it needs to be. Writing the head
+                 * it already has is a no-op to the controller itself.
+                 */
+                dev->dev_Queues[0]->q_db[1 << dev->db_stride] =
+                    dev->dev_Queues[0]->cq_head;
 
                 buffer = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, 8192);
                 if (buffer) {

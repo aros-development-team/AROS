@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -70,6 +70,29 @@ int nvme_submit_admincmd(device_t dev, struct nvme_command *cmd, struct completi
             nvme_dma_release(handler, TRUE);
         }
         nvme_release_cmdid(dev->dev_Queues[0], cmdid);
+    }
+    else if (handler)
+    {
+        /*
+         * Collect the answer here if it is already waiting.
+         *
+         * The controller shares one level-triggered pin with every
+         * queue behind the bridge, and an assertion made while the
+         * line is already down reports nothing new - a completion can
+         * arrive with no interrupt to announce it, and the caller
+         * would wait out its timeout for an answer that is already in
+         * the queue. Looking before sleeping costs a read of the phase
+         * bit and removes that dependency; the queue is drained under
+         * Disable(), so a real interrupt arriving meanwhile cannot
+         * take the same entry twice.
+         */
+        ULONG spins = 4096;
+
+        while (spins-- && !(SetSignal(0, 0) & handler->ceh_SigSet))
+        {
+            if (nvme_process_cq(dev->dev_Queues[0]) > 0)
+                break;
+        }
     }
 
     return retval;

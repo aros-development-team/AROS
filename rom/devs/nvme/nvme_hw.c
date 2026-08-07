@@ -138,17 +138,27 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
 
     D(bug ("[NVME:HW] %s(0x%p)\n", __func__, nvmeq);)
 
-    head = nvmeq->cq_head;
-    phase = nvmeq->cq_phase;
-
-    D(bug ("[NVME:HW] %s: head=%u, phase=%u\n", __func__, head, phase);)
-
+    /*
+     * The queue is drained both by the interrupt and by the tasks that
+     * poll while they wait, so the walk has to be atomic against them
+     * - the same protection the submission side already takes. Losing
+     * it lets two walkers consume the same entry and leaves our idea
+     * of the head disagreeing with the controller's, which on a shared
+     * pin means it keeps the line asserted for a completion nobody
+     * will ever collect.
+     */
+    Disable();
 #if defined(__AROSEXEC_SMP__)
     {
         struct NVMEBase *NVMEBase = nvmeq->dev->dev_NVMEBase;
         (void)NVMEBase;
         KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
+
+    head = nvmeq->cq_head;
+    phase = nvmeq->cq_phase;
+
+    D(bug ("[NVME:HW] %s: head=%u, phase=%u\n", __func__, head, phase);)
     for (;;) {
         struct nvme_completion *cqe = (struct nvme_completion *)&nvmeq->cqba[head];
 
@@ -174,6 +184,8 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
         KrnSpinUnLock(&nvmeq->q_lock);
     }
 #endif
+    Enable();
+
     D(bug ("[NVME:HW] %s: finished\n", __func__);)
 
     return processed;

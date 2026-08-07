@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved
 */
 
 #include <proto/exec.h>
@@ -36,6 +36,7 @@
 #include "nvme_debug.h"
 #include "nvme_intern.h"
 #include "nvme_queue_io.h"
+#include "nvme_hw.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -141,6 +142,21 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         nvme_dma_release(&ioehandle, TRUE);
         io->io_Error = IOERR_ABORTED;
         return TRUE;
+    }
+
+    /*
+     * Collect it here if the controller has already answered, for the
+     * same reason the admin queue does: one pin is shared by every
+     * queue, and a completion posted while the line is still down
+     * announces itself with nothing. Draining now hands the reply to
+     * the queue's task exactly as the interrupt would have, and the
+     * queue is walked under Disable() so the two cannot collide.
+     */
+    {
+        ULONG spins = 4096;
+
+        while (spins-- && nvme_process_cq(nvmeq) == 0)
+            ;
     }
 
     return FALSE;
