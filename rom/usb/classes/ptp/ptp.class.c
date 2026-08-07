@@ -218,50 +218,45 @@ struct NepClassPTP * usbForceInterfaceBinding(struct NepPTPBase *nh, struct PsdI
         {
             nch->nch_ClsBase = nh;
             nch->nch_CDC = AllocVec(sizeof(struct ClsDevCfg), MEMF_PUBLIC|MEMF_CLEAR);
-            if(!nch->nch_CDC)
+            if(nch->nch_CDC)
             {
-                FreeVec(nch);
-                CloseLibrary(ps);
-                return(NULL);
-            }
-            NewList(&nch->nch_Storages);
-            NewList(&nch->nch_FHs);
-            nch->nch_Device = pd;
-            nch->nch_Interface = pif;
-            nch->nch_DevIDString = devidstr;
-            nch->nch_IfIDString = ifidstr;
-            nch->nch_IfNum = ifnum;
+                NewList(&nch->nch_Storages);
+                NewList(&nch->nch_FHs);
+                nch->nch_Device = pd;
+                nch->nch_Interface = pif;
+                nch->nch_DevIDString = devidstr;
+                nch->nch_IfIDString = ifidstr;
+                nch->nch_IfNum = ifnum;
 
-            nLoadBindingConfig(nch);
+                nLoadBindingConfig(nch);
 
-            psdSafeRawDoFmt(buf, 64, "ptp.class<%08lx>", nch);
-            nch->nch_ReadySignal = SIGB_SINGLE;
-            nch->nch_ReadySigTask = FindTask(NULL);
-            SetSignal(0, SIGF_SINGLE);
-            if((tmptask = psdSpawnSubTask(buf, nPTPTask, nch)))
-            {
-                psdBorrowLocksWait(tmptask, 1UL<<nch->nch_ReadySignal);
-                if(nch->nch_Task)
+                psdSafeRawDoFmt(buf, 64, "ptp.class<%08lx>", nch);
+                nch->nch_ReadySignal = SIGB_SINGLE;
+                nch->nch_ReadySigTask = FindTask(NULL);
+                SetSignal(0, SIGF_SINGLE);
+                if((tmptask = psdSpawnSubTask(buf, nPTPTask, nch)))
                 {
-                    nch->nch_ReadySigTask = NULL;
-                    //FreeSignal(nch->nch_ReadySignal);
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                                   "Hold still for images from for '%s'!",
-                                   devname);
+                    psdBorrowLocksWait(tmptask, 1UL<<nch->nch_ReadySignal);
+                    if(nch->nch_Task)
+                    {
+                        nch->nch_ReadySigTask = NULL;
+                        //FreeSignal(nch->nch_ReadySignal);
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                                       "Hold still for images from for '%s'!",
+                                       devname);
 
-                    Forbid();
-                    AddTail(&nh->nh_Bindings, &nch->nch_Node);
-                    Permit();
-                    CloseLibrary(ps);
-                    return(nch);
+                        Forbid();
+                        AddTail(&nh->nh_Bindings, &nch->nch_Node);
+                        Permit();
+                        CloseLibrary(ps);
+                        return(nch);
+                    }
                 }
+                nch->nch_ReadySigTask = NULL;
+                //FreeSignal(nch->nch_ReadySignal);
+                FreeVec(nch->nch_CDC);
             }
-            nch->nch_ReadySigTask = NULL;
-            //FreeSignal(nch->nch_ReadySignal);
-            FreeVec(nch->nch_CDC);
             FreeVec(nch);
-            CloseLibrary(ps);
-            return(NULL);
         }
         CloseLibrary(ps);
     }
