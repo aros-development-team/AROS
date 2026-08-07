@@ -160,6 +160,9 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
 {
     const BOOL superspeed = (flags & UHFF_SUPERSPEED) != 0;
     const BOOL highspeed  = (flags & UHFF_HIGHSPEED)  != 0;
+    ULONG microframes;
+    UBYTE maxexp;
+    UBYTE exp;
 
     if((type != UHCMD_INTXFER) && (type != UHCMD_ISOXFER))
         return 0;
@@ -168,48 +171,38 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
         return 0;
 
     /*
-     * xHCI EP Context service interval semantics depend on speed and endpoint type:
+     * The service interval is always an exponent: the endpoint is serviced
+     * every 2^Interval microframes of 125us. What differs per speed and
+     * endpoint type is only the legal range (xHCI spec table 6-12):
      *
-     * - HS/SS Interrupt & Isoch: bInterval is an exponent in microframes, where
-     *   the service interval is 2^(Interval) microframes.  USB bInterval is in
-     *   the range 1..16 and directly encodes that exponent (bInterval - 1).
-     *   Valid bInterval: 1..16, Valid service interval: 0-15
+     * - HS/SS Interrupt & Isoch: 0..15
+     * - FS Isoch:                3..18
+     * - FS/LS Interrupt:         3..10
      *
-     * - FS Isoch: bInterval is 1..16 and encodes 2^(bInterval-1) frames.
-     *   Convert frames to microframes (x8) => exponent = (bInterval - 1) + 3.
-     *   Valid bInterval: 1..16, Valid service interval: 3-18
-     *
-     * - FS/LS Interrupt: bInterval is the frame count 1..255.
-     *   Valid bInterval: 1..255, Valid service interval: 3-10
-     *
-     *   (xHCI spec table 6-12)
+     * Note that iouh_Interval is not the raw bInterval. poseidon.library
+     * normalises it when it builds the endpoint, and hands us a service
+     * interval count: microframes for HS/SS, frames for FS/LS.
      */
-    if(superspeed || highspeed) {
-        if(interval > 16)
-            interval = 16;
-        return (UBYTE)(interval - 1); /* 0..15 */
-    }
+    microframes = (superspeed || highspeed) ? (ULONG)interval : ((ULONG)interval * 8);
 
-    if(type == UHCMD_ISOXFER) {
-        UWORD exp;
+    if(superspeed || highspeed)
+        maxexp = 15;
+    else if(type == UHCMD_ISOXFER)
+        maxexp = 18;
+    else
+        maxexp = 10;
 
-        if(interval > 16)
-            interval = 16;
+    /*
+     * Round down. bInterval states the longest the device tolerates between
+     * services, so the next power of two below it is safe where the one above
+     * it is not - a mouse asking for 10ms polled every 16ms is the jerky
+     * movement this is meant to avoid.
+     */
+    for(exp = 0; (exp < maxexp) && ((2UL << exp) <= microframes); exp++)
+        ;
 
-        exp = (interval - 1) + 3; /* frames -> microframes */
-
-        return (UBYTE)exp;
-    }
-
-    if(interval > 255)
-        interval = 255;
-
-    ULONG microf = (ULONG)interval * 8; /* desired interval in microframes */
-    UBYTE exp;
-
-    for(exp = 0; exp < 11; exp++)
-        if((1UL << exp) >= microf)
-            break;
+    if(!superspeed && !highspeed && (exp < 3))
+        exp = 3;
 
     return exp;
 }
@@ -1702,6 +1695,79 @@ xhciObtainDeviceCtx(struct PCIController *hc,
                                timerreq);
 }
 
+/*
+ * Full Speed devices only reveal bMaxPacketSize0 in the first eight bytes of
+ * their device descriptor, so enumeration opens EP0 at the mandatory minimum
+ * of 8. Once the stack knows the real size the endpoint context has to follow,
+ * or the device answers the next control transfer with packets larger than the
+ * controller expects and the transfer ends in a babble.
+ *
+ * Evaluate Context is the command for this: it is what the specification
+ * defines for a changed Max Packet Size on the default control endpoint
+ * (xHCI 1.2, section 4.6.7). Configure Endpoint does not cover EP0.
+ */
+BOOL xhciUpdateEP0MaxPacket(struct PCIController *hc,
+                            struct pciusbXHCIDevice *devCtx,
+                            struct IOUsbHWReq *ioreq,
+                            struct timerequest *timerreq)
+{
+    if(!devCtx || (devCtx == XHCI_ROOT_HUB_HANDLE) || !ioreq)
+        return TRUE;
+
+    if((ioreq->iouh_Endpoint != 0) || (ioreq->iouh_MaxPktSize == 0))
+        return TRUE;
+
+    if((ULONG)ioreq->iouh_MaxPktSize == devCtx->dc_EP0MaxPacket)
+        return TRUE;
+
+    /*
+     * Full Speed is the only speed that leaves the size open. Everywhere else
+     * the link fixes it, and the request cannot be trusted to agree: a High
+     * Speed device behind a hub has been seen asking for 8 - which is why the
+     * slot context, not the request, decides who is allowed to change it.
+     */
+    if(!devCtx->dc_SlotCtx.dmaa_Ptr)
+        return TRUE;
+
+    volatile struct xhci_slot *oslot = (volatile struct xhci_slot *)devCtx->dc_SlotCtx.dmaa_Ptr;
+    CacheClearE((APTR)oslot, sizeof(*oslot), CACRF_InvalidateD);
+
+    if(((AROS_LE2LONG(oslot->ctx[0]) >> SLOTS_CTX_SPEED) & 0xF) != SLOT_CTX_FULLSPEED)
+        return TRUE;
+
+    const ULONG oldmps = devCtx->dc_EP0MaxPacket;
+
+    pciusbXHCIDebugEP("xHCI",
+                      DEBUGCOLOR_SET "Updating EP0 MPS: %lu -> %u (DevAddr=%u, Slot=%ld)" DEBUGCOLOR_RESET"\n",
+                      oldmps,
+                      ioreq->iouh_MaxPktSize,
+                      ioreq->iouh_DevAddr,
+                      devCtx->dc_SlotID);
+
+    if(!xhciInitEP(hc, devCtx,
+                   ioreq,
+                   0, 0,
+                   UHCMD_CONTROLXFER,
+                   ioreq->iouh_MaxPktSize,
+                   0,
+                   ioreq->iouh_Flags)) {
+        devCtx->dc_EP0MaxPacket = oldmps;
+        return FALSE;
+    }
+
+    LONG cc = xhciCmdContextEvaluate(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
+                                     timerreq);
+    if(cc != TRB_CC_SUCCESS) {
+        pciusbWarn("xHCI",
+                   DEBUGWARNCOLOR_SET "EP0 Evaluate Context failed (cc=%ld)" DEBUGCOLOR_RESET"\n",
+                   (LONG)cc);
+        devCtx->dc_EP0MaxPacket = oldmps;
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
                  struct IOUsbHWReq *ioreq,
                  UBYTE endpoint,
@@ -2076,35 +2142,12 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
      * stack learns the real bMaxPacketSize0, otherwise subsequent control
      * transfers may complete with incorrect/empty data.
      */
-    if((ioreq->iouh_Endpoint == 0) &&
-            (ioreq->iouh_MaxPktSize != 0) &&
-            ((ULONG)ioreq->iouh_MaxPktSize != devCtx->dc_EP0MaxPacket)) {
-        pciusbXHCIDebugEP("xHCI",
-                          DEBUGCOLOR_SET "Updating EP0 MPS: %lu -> %u (DevAddr=%u, Slot=%ld)" DEBUGCOLOR_RESET"\n",
-                          devCtx->dc_EP0MaxPacket,
-                          ioreq->iouh_MaxPktSize,
-                          ioreq->iouh_DevAddr,
-                          devCtx->dc_SlotID);
-
-        (void)xhciInitEP(hc, devCtx,
-                         ioreq,
-                         0, 0,
-                         UHCMD_CONTROLXFER,
-                         ioreq->iouh_MaxPktSize,
-                         0,
-                         ioreq->iouh_Flags);
-
-        LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
-                                           timerreq);
-        if(cc != TRB_CC_SUCCESS) {
-            pciusbWarn("xHCI",
-                       DEBUGWARNCOLOR_SET "EP0 reconfigure failed (cc=%d)" DEBUGCOLOR_RESET"\n", cc);
-            if(epctx_allocated) {
-                xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
-                FreeMem(epctx, sizeof(*epctx));
-            }
-            return UHIOERR_HOSTERROR;
+    if(!xhciUpdateEP0MaxPacket(hc, devCtx, ioreq, timerreq)) {
+        if(epctx_allocated) {
+            xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+            FreeMem(epctx, sizeof(*epctx));
         }
+        return UHIOERR_HOSTERROR;
     }
 
     ULONG epid = xhciEndpointID(ioreq->iouh_Endpoint,
