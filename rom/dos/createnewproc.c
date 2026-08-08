@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Create a new process
 */
@@ -188,7 +188,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
      * Additionally, it's horribly bad practice to support broken software this way.
      */
 #if __WORDSIZE > 32
-    process = AllocMem(sizeof(struct Process), MEMF_PUBLIC | MEMF_31BIT | MEMF_CLEAR);
+    /* MEMF_NO_EXPUNGE: on machines with no 31-bit memory at all this
+       first try can never succeed, and without the flag every process
+       ever created would wake the low-memory handlers once - flushing
+       innocent libraries - before taking the fallback below. */
+    process = AllocMem(sizeof(struct Process), MEMF_PUBLIC | MEMF_31BIT | MEMF_CLEAR | MEMF_NO_EXPUNGE);
     if (!process)
 #endif
     process = AllocMem(sizeof(struct Process), MEMF_PUBLIC | MEMF_CLEAR);
