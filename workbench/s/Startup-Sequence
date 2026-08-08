@@ -85,11 +85,11 @@ If WARN
     Makedir "FONTS:XEN"
     Copy >NIL: "SYS:Fonts/XEN" "FONTS:XEN" ALL CLONE NOREQ
 
-    FixFonts
+    FixFonts >NIL:
     Assign >NIL: "FONTS:" "SYS:Fonts" ADD
 Else
     If NOT EXISTS "FONTS:fixed.font"
-        FixFonts
+        FixFonts >NIL:
     EndIf
 EndIf
 Assign >NIL: "FONTS:" "FONTS:Russian" ADD
@@ -99,7 +99,7 @@ If EXISTS "FONTS:__TEST__"
 EndIf
 
 AddDataTypes REFRESH QUIET
-IPrefs
+
 If EXISTS "C:PsdStackLoader"
     PsdStackLoader >NIL:
 EndIf
@@ -115,6 +115,8 @@ If EXISTS "C:Decoration"
         C:Decoration <NIL: >NIL:
     EndIf
 EndIf
+
+IPrefs
 
 Assign EXISTS "Extras:" >NIL:
 If WARN
