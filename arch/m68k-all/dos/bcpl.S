@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: BCPL stubs that call into Exec and Dos libraries.
@@ -2002,13 +2002,37 @@ BCPL settime        /* 200, void, @DateStamp */
      */
 BCPL CliInit         /* 214, APTR, @DosPacket */
     tst.l       %d1
-    beq.s       .L_CliInit_exit
+    beq.s       .L_CliInit_gv_exit
 
     lsl.l       #2,%d1
     move.l      %a0@(dp_Res1,%d1),%d2
     tst.l       %d2
-    beq.s       .L_CliInit_Run
+    beq.s       0f
+    move.l      #(155*-6),%d2   /* CliInitNewcli */
+    bra.s       1f
+0:
+    move.l      #(156*-6),%d2   /* CliInitRun */
+1:
+    movem.l     %a0-%a1/%a6,%sp@-
+    move.l      %d1,%a0
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr         %a6@(%d2)
+    movem.l     %sp@+,%a0-%a1/%a6
+    /* AROS CliInit*() returns FNF_#? flags (bit 31 = FNF_VALIDFLAGS).
+     * A genuine BCPL Shell-Seg - the only caller of this global vector
+     * entry - follows the AOS contract: CliInit returns zero on success
+     * and the Shell-Seg replies the startup packet itself. */
+    tst.l       %d0
+    bpl.s       .L_CliInit_gv_exit
+    moveq.l     #0,%d0
+.L_CliInit_gv_exit:
+    BRTS
 
+    /*
+     * Entered from the BCPL_CliInit_* thunks SystemTagList plants in
+     * dp_Type for AROS shells. These callers consume the FNF_#? flags,
+     * so no translation may happen here.
+     */
 .L_CliInit_Newcli:
     /* CliInitNewcli */
     move.l      #(155*-6),%d2
