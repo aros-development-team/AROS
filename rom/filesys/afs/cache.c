@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #undef DEBUG
@@ -103,7 +103,7 @@ struct BlockCache *bestcache=NULL;
 BOOL found = FALSE;
 
         /* Check if block is already cached, or else reuse least-recently-used buffer */
-        D(bug("[afs]    getCacheBlock: getting cacheblock %lu\n",blocknum));
+        D(bug("[afs]    getCacheBlock: getting cacheblock %u\n",blocknum));
         cache = volume->blockcache;
         while ((cache != NULL) && !found)
         {
@@ -111,7 +111,7 @@ BOOL found = FALSE;
                 {
                         if (!(cache->flags & BCF_USED))
                         {
-                                D(bug("[afs]    getCacheBlock: already cached (counter=%lu)\n",
+                                D(bug("[afs]    getCacheBlock: already cached (counter=%u)\n",
                                         cache->newness));
                                 bestcache = cache;
                                 found = TRUE;
@@ -122,7 +122,7 @@ BOOL found = FALSE;
                                 {
                                         /*      should only occur while using setBitmap()
                                                 ->that's ok (see setBitmap()) */
-                                        D(bug("Concurrent access on block %lu!\n",blocknum));
+                                        D(bug("Concurrent access on block %u!\n",blocknum));
                                 }
                                 else
                                 {

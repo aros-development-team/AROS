@@ -570,7 +570,7 @@ ULONG bblock,togo,maxinbitmap;
 LONG markBlock(struct AFSBase *afsbase, struct Volume *volume, ULONG block, ULONG mode) {
 ULONG bitnr, longnr;
 
-        D(bug("[afs]    markBlock: block=%lu mode=%lu\n",block,mode));
+        D(bug("[afs]    markBlock: block=%u mode=%u\n",block,mode));
         if (block>=volume->countblocks)
         {
             showText(afsbase, "Illegal Block - %lu >= %lu", block, volume->countblocks);
@@ -733,7 +733,7 @@ ULONG block;
         block = getFreeBlock(afsbase, volume);
         if (block != 0)
         {
-                D(bug("[afs]    allocBlock: found a free block on %lu\n", block));
+                D(bug("[afs]    allocBlock: found a free block on %u\n", block));
                 if (!markBlock(afsbase, volume,block,0))
                         block = 0;
         }
