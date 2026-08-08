@@ -192,7 +192,7 @@ static void ImageBackFill_CopyTiledBitMap
   struct BitMap *Src = SrcRast->BitMap;
   struct BitMap *Dst = DstRast->BitMap;
 
-  #if defined(DEBUG)
+  #if DEBUG
   int xcount;
   int ycount;
   #endif
@@ -268,13 +268,13 @@ D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", bli
       }
     }
 
-#if defined(DEBUG)
+#if DEBUG
     xcount = 2;
 #endif
     //Generates the first row of the tiles ....
     for (PosX = DstFillBounds->MinX + SrcSizeX, SizeX = MIN(SrcSizeX, (DstFillBounds->MaxX - PosX) + 1);PosX <= DstFillBounds->MaxX;)
     {
-#if defined(DEBUG)
+#if DEBUG
       D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: Row 1 Tile %d @ %d,%d [%d x %d]\n", xcount, PosX, DstFillBounds->MinY, SizeX, MIN(SrcSizeY, RECTSIZEY(DstFillBounds))));
       xcount++;
 #endif
@@ -289,13 +289,13 @@ D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", bli
       SizeX = MIN(SrcSizeX, (DstFillBounds->MaxX - PosX) + 1);
     }
 
-#if defined(DEBUG)
+#if DEBUG
     ycount = 2;
 #endif
     // .. now Blit the first row down several times to fill the whole dest rect
     for (PosY = DstFillBounds->MinY + SrcSizeY, SizeY = MIN(SrcSizeY, (DstFillBounds->MaxY - PosY) + 1);PosY <= DstFillBounds->MaxY;)
     {
-#if defined(DEBUG)
+#if DEBUG
       D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: Row %d @ %d,%d [%d x %d]\n", ycount, DstFillBounds->MinX, PosY, MIN(SrcSizeX, RECTSIZEX(DstFillBounds)), SizeY));
       ycount++;
 #endif
@@ -384,12 +384,10 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 
   GET(_IconWindows_PrefsObj, MUIA_WandererPrefs_Processing, &prefs_processing);
 
-#if defined(DEBUG)
   if (prefs_processing)
   {
     D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Wanderer Prefs (re)loading detected\n"));
   }
-#endif
   
   GET(_IconWindows_WindowObj, MUIA_IconWindow_BackgroundAttrib, &BackGround_Attrib);
   
@@ -515,36 +513,30 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
       /* Failed to Layout datatype object */
     }
     /* Failed to open datatype object */
-#if defined(DEBUG)
     if (!this_BFI->bfi_Source->bfsir_DTRastPort)
     {
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource RastPort\n"));
     }
-#endif
     
     if (this_BFI->bfi_Source->bfsir_DTBitMap)
     {
       FreeBitMap(this_BFI->bfi_Source->bfsir_DTBitMap);
       this_BFI->bfi_Source->bfsir_DTBitMap = NULL;
     }
-#if defined(DEBUG)
     else
     {
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource BitMap\n"));
     }
-#endif
 
     if (this_BFI->bfi_Source->bfsir_DTPictureObject)
     {
       DisposeDTObject(this_BFI->bfi_Source->bfsir_DTPictureObject);
       this_BFI->bfi_Source->bfsir_DTPictureObject = NULL;
     }
-#if defined(DEBUG)
     else
     {
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource Datatype Object\n"));
     }
-#endif
     D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource Record\n"));
     FreeVec(this_BFI->bfi_Source->bfsir_SourceImage);
     FreeMem(this_BFI->bfi_Source, sizeof(struct BackFillSourceImageRecord));
