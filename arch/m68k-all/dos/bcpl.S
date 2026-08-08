@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: BCPL stubs that call into Exec and Dos libraries.
@@ -2024,6 +2024,14 @@ BCPL CliInit         /* 214, APTR, @DosPacket */
     move.l	%a2@(GV_DOSBase),%a6
     jsr         %a6@(%d2)
     movem.l      %sp@+,%a0-%a1/%a6
+    /* AROS CliInit*() returns FNF_#? flags (bit 31 = FNF_VALIDFLAGS).
+     * A BCPL Shell-Seg follows the AOS contract: CliInit returns zero
+     * on success and the Shell-Seg replies the startup packet itself.
+     * Only genuine BCPL callers come through this global vector entry,
+     * so translating here leaves the AROS Shell's flags intact. */
+    tst.l       %d0
+    bpl.s       .L_CliInit_exit
+    moveq.l     #0,%d0
 .L_CliInit_exit:
     BRTS
 
