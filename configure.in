@@ -841,7 +841,7 @@ AC_MSG_NOTICE([Performing target configuration...])
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([which prefs set to use])
-AC_ARG_WITH(aros-prefs,AS_HELP_STRING([--with-aros-prefs=PREFSSET],[Use the preferences from the set defined by PREFSSET (defaults to AROS normal config, 'classic' provides a config more like traditional workbench - and better suited to weaker systems)]),config_prefs_set="$withval",config_prefs_set="")
+AC_ARG_WITH(aros-prefs,AS_HELP_STRING([--with-aros-prefs=PREFSSET],[Use the preferences from the set PREFSSET. Defaults to the standard AROS look, or 'classic' on m68k-amiga, which is better suited to weaker systems.]),config_prefs_set="$withval",config_prefs_set="")
 if test "$config_prefs_set" != "" ; then
     msg_result=$config_prefs_set
 else
@@ -1189,6 +1189,12 @@ AC_MSG_RESULT($enableval)
 
 # Target variant "classic" implies aros-prefs "classic" if it is not set.
 if test "$target_variant" = "classic" -a "$config_prefs_set" = ""; then
+    config_prefs_set="classic"
+fi
+
+# So does the m68k Amiga, whichever variant it is built as: the AROS set asks
+# more of the display than those machines have to give.
+if test "$target_os" = "amiga" -a "$target_cpu" = "m68k" -a "$config_prefs_set" = ""; then
     config_prefs_set="classic"
 fi
 
