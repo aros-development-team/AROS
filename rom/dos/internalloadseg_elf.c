@@ -1095,6 +1095,45 @@ static int relocate
             case R_RISCV_SET16: *(UWORD *)p = (UWORD)(s + rel->addend);   break;
             case R_RISCV_SET32: *(ULONG *)p = (ULONG)(s + rel->addend);   break;
 
+            /*
+             * ULEB128 label arithmetic (C++ .gcc_except_table call-site
+             * entries). The pair targets the same location: SET stores
+             * S+A, SUB then subtracts its S+A from the stored value.
+             * The result must be re-encoded in exactly the byte count
+             * the assembler reserved, taken from the existing encoding.
+             */
+            case R_RISCV_SET_ULEB128:
+            case R_RISCV_SUB_ULEB128:
+            {
+                UBYTE *up = (UBYTE *)p;
+                UQUAD v = 0;
+                int len = 0, shift = 0, n;
+
+                do
+                {
+                    v |= (UQUAD)(up[len] & 0x7F) << shift;
+                    shift += 7;
+                } while (up[len++] & 0x80);
+
+                if (ELF_R_TYPE(rel->info) == R_RISCV_SET_ULEB128)
+                    v = s + rel->addend;
+                else
+                    v -= s + rel->addend;
+
+                for (n = 0; n < len; n++)
+                {
+                    up[n] = (v & 0x7F) | ((n < len - 1) ? 0x80 : 0);
+                    v >>= 7;
+                }
+                if (v)
+                {
+                    D(bug("[ELF Loader] ULEB128 relocation overflows its %d byte field\n", len));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                break;
+            }
+
             case R_RISCV_BRANCH:
             {
                 SIPTR off = s + rel->addend - (IPTR)p;
@@ -1125,6 +1164,21 @@ static int relocate
                 /* auipc + jalr pair */
                 *(ULONG *)p = (*(ULONG *)p & 0x00000FFF) | hi;
                 *((ULONG *)p + 1) = (*((ULONG *)p + 1) & 0x000FFFFF) | (lo << 20);
+
+                /* Diagnostic: decode the pair back and compare, so a
+                 * bad fixup is caught here rather than as a wild jump
+                 * later (an IPrefs boot crash jumped 2.4MB below
+                 * .text through one of these). Silent when correct.
+                 * Temporary - not for staging. */
+                {
+                    SIPTR dec = (SIPTR)(LONG)(*(ULONG *)p & 0xFFFFF000) +
+                                ((SIPTR)(LONG)(*((ULONG *)p + 1) & 0xFFF00000) >> 20);
+
+                    if ((IPTR)p + dec != s + rel->addend)
+                        bug("[ELF Loader] CALL fixup mismatch @ 0x%p: 0x%p != 0x%p ('%s')\n",
+                            p, (APTR)((IPTR)p + dec), (APTR)(s + rel->addend),
+                            (STRPTR)sh[shsymtab->link].addr + sym->name);
+                }
                 break;
             }
 
