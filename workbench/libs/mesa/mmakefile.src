@@ -34,9 +34,8 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 # Per-arch gallium core linklibs, mirroring MESA3DGL_GALLIUMCORE in
 # mesa.cfg. Declare each one's build-order dependency so mmake builds the
 # linklib before mesa3dgl-library consumes it.
-ifeq ($(AROS_TARGET_ARCH),raspi)
-#MM mesa3dgl-library : linklibs-galliumcoreapi
-endif
+#MM- mesa3dgl-library : mesa3dgl-galliumcore-$(AROS_TARGET_ARCH)
+#MM- mesa3dgl-galliumcore-raspi : linklibs-galliumcoreapi
 
 SHARED_LIB_SOURCES = \
             emul_arosc \
