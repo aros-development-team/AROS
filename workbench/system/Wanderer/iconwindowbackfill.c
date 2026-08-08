@@ -405,6 +405,8 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
                   BackGround_Attrib, MUIA_IconWindowExt_ImageBackFill_BGRenderMode)) == -1)
     BackGround_RenderMode = IconWindowExt_ImageBackFill_RenderMode_Tiled;
 
+  this_BFI->bfi_ImageFailed = FALSE;
+
   this_bgtype    = (UBYTE *)BackGround_Base;
   this_ImageName = (char *)(BackGround_Base + 2);
   
@@ -547,6 +549,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
     FreeVec(this_BFI->bfi_Source->bfsir_SourceImage);
     FreeMem(this_BFI->bfi_Source, sizeof(struct BackFillSourceImageRecord));
     this_BFI->bfi_Source = NULL;
+    this_BFI->bfi_ImageFailed = TRUE;
     return FALSE;
   }
   else
@@ -874,6 +877,31 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: BackF
               blit_MODE_Clip);
 
       return (IPTR)TRUE;
+    }
+
+    /*
+     * A background naming a picture that will not load is the one case
+     * nothing else covers: the window class draws a colour or a pattern
+     * itself, but it cannot draw this one either, and an area no one paints
+     * keeps whatever the bitmap held. Lay down the screen's background pen so
+     * it is at least a background.
+     */
+    if ((this_BFI->bfi_ImageFailed) && (this_BFI->bfi_RastPort) && (this_BFI->bfi_Screen))
+    {
+      struct DrawInfo *dri = GetScreenDrawInfo(this_BFI->bfi_Screen);
+
+      if (dri)
+      {
+        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: image unavailable, filling with the background pen\n"));
+
+        SetABPenDrMd(this_BFI->bfi_RastPort, dri->dri_Pens[BACKGROUNDPEN], 0, JAM1);
+        RectFill(this_BFI->bfi_RastPort,
+                 message->draw_BFM->DrawBounds.MinX, message->draw_BFM->DrawBounds.MinY,
+                 message->draw_BFM->DrawBounds.MaxX, message->draw_BFM->DrawBounds.MaxY);
+
+        FreeScreenDrawInfo(this_BFI->bfi_Screen, dri);
+        return (IPTR)TRUE;
+      }
     }
   }
   D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Causing parent to render .. \n"));
