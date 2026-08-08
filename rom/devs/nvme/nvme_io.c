@@ -151,12 +151,21 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
      * announces itself with nothing. Draining now hands the reply to
      * the queue's task exactly as the interrupt would have, and the
      * queue is walked under Disable() so the two cannot collide.
+     *
+     * Wait on the request just submitted rather than on finding work,
+     * so this ends the moment it is answered - by us where nothing
+     * announced it, and immediately where the handler got there first.
+     * Watching for work instead would run the count out every time on
+     * a controller whose interrupt is doing its job, since the queue
+     * it is looking at has already been emptied.
      */
     {
+        struct completionevent_handler *slot =
+            &nvmeq->ce_entries[cmdio.common.op.command_id];
         ULONG spins = 4096;
 
-        while (spins-- && nvme_process_cq(nvmeq) == 0)
-            ;
+        while (spins-- && !slot->ceh_Reply)
+            nvme_process_cq(nvmeq);
     }
 
     return FALSE;
