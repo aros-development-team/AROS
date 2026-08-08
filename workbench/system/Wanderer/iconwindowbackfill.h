@@ -71,6 +71,11 @@ struct BackFillInfo
     struct BackFillSourceImageRecord    *bfi_Source;
     struct BackFillSourceImageBuffer    *bfi_Buffer;
     struct BackFillOptions                bfi_Options;
+
+    /* The preference asked for a picture and it could not be loaded. Without
+       a picture this cannot draw, and the background still names one, so MUI
+       cannot draw it either and the area would keep whatever it held. */
+    BOOL                                   bfi_ImageFailed;
 };
 
 #endif /* _ICONWINDOWBACKFILL_H_ */

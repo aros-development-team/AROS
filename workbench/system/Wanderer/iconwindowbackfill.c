@@ -192,7 +192,7 @@ static void ImageBackFill_CopyTiledBitMap
   struct BitMap *Src = SrcRast->BitMap;
   struct BitMap *Dst = DstRast->BitMap;
 
-  #if defined(DEBUG)
+  #if DEBUG
   int xcount;
   int ycount;
   #endif
@@ -268,13 +268,13 @@ D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", bli
       }
     }
 
-#if defined(DEBUG)
+#if DEBUG
     xcount = 2;
 #endif
     //Generates the first row of the tiles ....
     for (PosX = DstFillBounds->MinX + SrcSizeX, SizeX = MIN(SrcSizeX, (DstFillBounds->MaxX - PosX) + 1);PosX <= DstFillBounds->MaxX;)
     {
-#if defined(DEBUG)
+#if DEBUG
       D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: Row 1 Tile %d @ %d,%d [%d x %d]\n", xcount, PosX, DstFillBounds->MinY, SizeX, MIN(SrcSizeY, RECTSIZEY(DstFillBounds))));
       xcount++;
 #endif
@@ -289,13 +289,13 @@ D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", bli
       SizeX = MIN(SrcSizeX, (DstFillBounds->MaxX - PosX) + 1);
     }
 
-#if defined(DEBUG)
+#if DEBUG
     ycount = 2;
 #endif
     // .. now Blit the first row down several times to fill the whole dest rect
     for (PosY = DstFillBounds->MinY + SrcSizeY, SizeY = MIN(SrcSizeY, (DstFillBounds->MaxY - PosY) + 1);PosY <= DstFillBounds->MaxY;)
     {
-#if defined(DEBUG)
+#if DEBUG
       D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: Row %d @ %d,%d [%d x %d]\n", ycount, DstFillBounds->MinX, PosY, MIN(SrcSizeX, RECTSIZEX(DstFillBounds)), SizeY));
       ycount++;
 #endif
@@ -384,12 +384,10 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 
   GET(_IconWindows_PrefsObj, MUIA_WandererPrefs_Processing, &prefs_processing);
 
-#if defined(DEBUG)
   if (prefs_processing)
   {
     D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Wanderer Prefs (re)loading detected\n"));
   }
-#endif
   
   GET(_IconWindows_WindowObj, MUIA_IconWindow_BackgroundAttrib, &BackGround_Attrib);
   
@@ -404,6 +402,8 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
   if ((BackGround_RenderMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
                   BackGround_Attrib, MUIA_IconWindowExt_ImageBackFill_BGRenderMode)) == -1)
     BackGround_RenderMode = IconWindowExt_ImageBackFill_RenderMode_Tiled;
+
+  this_BFI->bfi_ImageFailed = FALSE;
 
   this_bgtype    = (UBYTE *)BackGround_Base;
   this_ImageName = (char *)(BackGround_Base + 2);
@@ -513,40 +513,35 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
       /* Failed to Layout datatype object */
     }
     /* Failed to open datatype object */
-#if defined(DEBUG)
     if (!this_BFI->bfi_Source->bfsir_DTRastPort)
     {
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource RastPort\n"));
     }
-#endif
     
     if (this_BFI->bfi_Source->bfsir_DTBitMap)
     {
       FreeBitMap(this_BFI->bfi_Source->bfsir_DTBitMap);
       this_BFI->bfi_Source->bfsir_DTBitMap = NULL;
     }
-#if defined(DEBUG)
     else
     {
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource BitMap\n"));
     }
-#endif
 
     if (this_BFI->bfi_Source->bfsir_DTPictureObject)
     {
       DisposeDTObject(this_BFI->bfi_Source->bfsir_DTPictureObject);
       this_BFI->bfi_Source->bfsir_DTPictureObject = NULL;
     }
-#if defined(DEBUG)
     else
     {
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource Datatype Object\n"));
     }
-#endif
     D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource Record\n"));
     FreeVec(this_BFI->bfi_Source->bfsir_SourceImage);
     FreeMem(this_BFI->bfi_Source, sizeof(struct BackFillSourceImageRecord));
     this_BFI->bfi_Source = NULL;
+    this_BFI->bfi_ImageFailed = TRUE;
     return FALSE;
   }
   else
@@ -874,6 +869,31 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: BackF
               blit_MODE_Clip);
 
       return (IPTR)TRUE;
+    }
+
+    /*
+     * A background naming a picture that will not load is the one case
+     * nothing else covers: the window class draws a colour or a pattern
+     * itself, but it cannot draw this one either, and an area no one paints
+     * keeps whatever the bitmap held. Lay down the screen's background pen so
+     * it is at least a background.
+     */
+    if ((this_BFI->bfi_ImageFailed) && (this_BFI->bfi_RastPort) && (this_BFI->bfi_Screen))
+    {
+      struct DrawInfo *dri = GetScreenDrawInfo(this_BFI->bfi_Screen);
+
+      if (dri)
+      {
+        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: image unavailable, filling with the background pen\n"));
+
+        SetABPenDrMd(this_BFI->bfi_RastPort, dri->dri_Pens[BACKGROUNDPEN], 0, JAM1);
+        RectFill(this_BFI->bfi_RastPort,
+                 message->draw_BFM->DrawBounds.MinX, message->draw_BFM->DrawBounds.MinY,
+                 message->draw_BFM->DrawBounds.MaxX, message->draw_BFM->DrawBounds.MaxY);
+
+        FreeScreenDrawInfo(this_BFI->bfi_Screen, dri);
+        return (IPTR)TRUE;
+      }
     }
   }
   D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Causing parent to render .. \n"));
