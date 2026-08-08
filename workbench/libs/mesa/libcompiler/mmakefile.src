@@ -172,7 +172,10 @@ $(top_builddir)/$(CUR_MESADIR)/glsl/ir_expression_operation_strings.h:  $(top_sr
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $< strings > $@
 
-ifeq ($(shell test -f $(top_srcdir)/src/util/xxd.py && echo -n yes),yes)
+## Mesa 21.0+ moved xxd.py from src/compiler/glsl/ to src/util/. Use
+## $(wildcard); $(shell test … && echo -n yes) is unreliable as some
+## hosts' shell doesn't strip -n, leaving CHK as "-n yes" (wrong branch).
+ifneq ($(wildcard $(top_srcdir)/src/util/xxd.py),)
 FLOAT64DEP=$(top_srcdir)/src/util/xxd.py
 else
 FLOAT64DEP=$(top_srcdir)/$(CUR_MESADIR)/glsl/xxd.py

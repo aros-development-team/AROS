@@ -9,12 +9,23 @@
 
 #include <hidd/gfx.h>
 
-#include <stdio.h>
-
 #include "gallium_intern.h"
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase GB(GalliumBase)->galliumAttrBase
+
+/* Base-free string join. This library is resident; going through the
+ * stdc sprintf stub would cache the FIRST caller task's per-task
+ * StdCBase in our globals and use that dead base from every later
+ * process (2nd-GL-app crash). */
+static void galliumstrjoin(char *dst, const char *a, const char *b)
+{
+    while (*a)
+        *dst++ = *a++;
+    while (*b)
+        *dst++ = *b++;
+    *dst = '\0';
+}
 
 /*****************************************************************************
 
@@ -59,6 +70,7 @@
     struct TagItem galliumTags[] =
     {
         { aHidd_Gallium_InterfaceVersion,       0 },
+        { aHidd_Gallium_CoreAPI,                0 },
         { TAG_DONE,                             0 }
     };
     OOP_Object                                  *_driver = NULL;
@@ -67,6 +79,7 @@
     struct Screen                               *pubscreen = NULL;
 
     galliumTags[0].ti_Data = GetTagData(CPS_GalliumInterfaceVersion, -1, tags);
+    galliumTags[1].ti_Data = GetTagData(CPS_GalliumCoreAPI, 0, tags);
     friendbm = (struct BitMap *)GetTagData(CPS_PipeFriendBitMap, 0, tags);
     driver = (OOP_Object **)GetTagData(CPS_PipeScreenDriver, (IPTR)&_driver, tags);
 
@@ -105,7 +118,7 @@
         char tmpname[128];
         if (!GB(GalliumBase)->fallbackmodule)
         {
-            sprintf(tmpname, "%s.hidd", GB(GalliumBase)->fallback);
+            galliumstrjoin(tmpname, GB(GalliumBase)->fallback, ".hidd");
 
             D(bug("[Gallium] %s: trying fallback '%s' ...\n", __PRETTY_FUNCTION__, tmpname));
 
@@ -116,7 +129,7 @@
 
         if (GB(GalliumBase)->fallbackmodule)
         {
-            sprintf(tmpname, "hidd.gallium.%s", GB(GalliumBase)->fallback);
+            galliumstrjoin(tmpname, "hidd.gallium.", GB(GalliumBase)->fallback);
 
             *driver = OOP_NewObject(NULL, tmpname, galliumTags);
 

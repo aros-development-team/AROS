@@ -43,6 +43,7 @@ enum
     moHidd_Gallium_CreatePipeScreen = 0,
     moHidd_Gallium_DestroyPipeScreen,
     moHidd_Gallium_DisplayResource,
+    moHidd_Gallium_DisplayResourceRP,
 
     NUM_GALLIUM_METHODS
 };
@@ -50,11 +51,13 @@ enum
 enum
 {
     aoHidd_Gallium_InterfaceVersion = 0,
+    aoHidd_Gallium_CoreAPI,
 
     num_Hidd_Gallium_Attrs
 };
 
 #define aHidd_Gallium_InterfaceVersion  (HiddGalliumAttrBase + aoHidd_Gallium_InterfaceVersion)
+#define aHidd_Gallium_CoreAPI  (HiddGalliumAttrBase + aoHidd_Gallium_CoreAPI)
 #define aHidd_Gallium_WinSys  (HiddGalliumAttrBase + aoHidd_Gallium_WinSys)
 
 #define IS_GALLIUM_ATTR(attr, idx) \
@@ -83,6 +86,25 @@ struct pHidd_Gallium_DisplayResource
     STACKED ULONG                   dsty;
     STACKED ULONG                   width;
     STACKED ULONG                   height;
+};
+
+/* Whole-window present into a RastPort. A driver that can present the
+ * resource itself (zero-copy overlay, scanout flip, or its own DMA blit)
+ * overrides this and returns TRUE. The base class returns FALSE and the
+ * caller (gallium.library BltPipeResourceRastPort) falls back to the
+ * per-cliprect DisplayResource loop. */
+struct pHidd_Gallium_DisplayResourceRP
+{
+    STACKED OOP_MethodID            mID;
+    STACKED APTR                    resource; // struct pipe_resource
+    STACKED LONG                    srcx;
+    STACKED LONG                    srcy;
+
+    STACKED struct RastPort         *rastport;
+    STACKED LONG                    dstx;
+    STACKED LONG                    dsty;
+    STACKED LONG                    width;
+    STACKED LONG                    height;
 };
 
 #endif

@@ -4,7 +4,11 @@ include $(SRCDIR)/config/aros.cfg
 
 GLTESTFILES 	    := \
         glsimplerendering \
-        glgetprocaddress
+        glgetprocaddress \
+        glclear \
+        glcustomscreen \
+        gltri \
+        gltexfbo
 
 EXEDIR      := $(AROS_TESTS)/graphics/gl
 

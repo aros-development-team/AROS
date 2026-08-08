@@ -52,6 +52,7 @@ struct GalliumBase
     /* methods we use .. */
     OOP_MethodID                galliumMId_UpdateRect;
     OOP_MethodID                galliumMId_DisplayResource;
+    OOP_MethodID                galliumMId_DisplayResourceRP;
 };
 
 #define GB(lb)  ((struct GalliumBase *)lb)

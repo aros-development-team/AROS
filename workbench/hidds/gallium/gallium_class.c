@@ -51,7 +51,6 @@ VOID METHOD(HiddGallium, Root, Get)
         }
     }
 
-    /* Use parent class for all other properties */
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -91,5 +90,13 @@ VOID METHOD(HiddGallium, Hidd_Gallium, DisplaySurface)
 VOID METHOD(HiddGallium, Hidd_Gallium, DisplayResource)
 {
     D(bug ("[Gallium] %s()\n", __func__));
+}
+
+IPTR METHOD(HiddGallium, Hidd_Gallium, DisplayResourceRP)
+{
+    /* Default: not handled. gallium.library falls back to the
+     * per-cliprect DisplayResource loop. */
+    D(bug ("[Gallium] %s()\n", __func__));
+    return FALSE;
 }
 

@@ -12,6 +12,11 @@
 #define CPS_GalliumInterfaceVersion     (CPS_Dummy + 1)
 #define CPS_PipeFriendBitMap            (CPS_Dummy + 2)
 #define CPS_PipeScreenDriver            (CPS_Dummy + 3)
+/* mesa3dgl's GalliumCoreAPI table (struct GalliumCoreAPI *). Forwarded to
+ * the pipe hidd as aHidd_Gallium_CoreAPI so a runtime-bound pipe driver
+ * can call the one Mesa compiler core. 0 when the build carries no
+ * table; drivers that need it refuse CreatePipeScreen. */
+#define CPS_GalliumCoreAPI              (CPS_Dummy + 4)
 
 /* A special version of CreatePipe function with version embeded in call */
 #define CreatePipeV(tags)                                               \

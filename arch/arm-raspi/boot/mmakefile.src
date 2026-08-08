@@ -211,8 +211,11 @@ distfiles-raspi-armbe-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.im
 #MM
 distfiles-raspi-armle-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
+# gpu_mem: the vc4 GL stack needs headroom in VideoCore RAM (full-res
+# framebuffer + overlay page ring + BO pools); 64 (the firmware default)
+# runs out during a full-screen GL session. 128 is the working minimum.
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
-	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x10000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=0\nhdmi_drive=2\n" > $@
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x10000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=0\nhdmi_drive=2\ngpu_mem=128\n" > $@
 
 $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"

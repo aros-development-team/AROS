@@ -20,6 +20,7 @@
 #include "mesa3dgl_gallium.h"
 
 
+
 /*****************************************************************************
 
     NAME */
@@ -56,10 +57,14 @@
         /* Flush rendering cache before blitting */
         _ctx->st->flush(_ctx->st, ST_FLUSH_FRONT, NULL, NULL, NULL);
 
+        /* gallium.library tries the whole-window DisplayResourceRP method
+         * first (vc4 presents zero-copy there) and falls back to the
+         * per-cliprect DisplayResource loop (softpipe). */
         BltPipeResourceRastPort(_ctx->driver, _ctx->framebuffer->render_resource, 0, 0,
             _ctx->visible_rp, _ctx->left, _ctx->top,
             _ctx->framebuffer->width, _ctx->framebuffer->height);
     }
+
 
     MESA3DGLCheckAndUpdateBufferSize(_ctx);
 }

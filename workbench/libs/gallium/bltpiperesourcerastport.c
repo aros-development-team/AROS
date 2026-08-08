@@ -63,6 +63,26 @@
     if (!IsLayerVisible(L))
         return;
 
+    {
+        /* Whole-window present: a driver that can flip/overlay/blit the
+         * resource itself handles this and returns TRUE. FALSE falls
+         * through to the per-cliprect DisplayResource loop below. */
+        struct pHidd_Gallium_DisplayResourceRP rpmsg = {
+            .mID      = ((struct GalliumBase *)GalliumBase)->galliumMId_DisplayResourceRP,
+            .resource = srcPipeResource,
+            .srcx     = xSrc,
+            .srcy     = ySrc,
+            .rastport = destRP,
+            .dstx     = xDest,
+            .dsty     = yDest,
+            .width    = xSize,
+            .height   = ySize,
+        };
+
+        if (OOP_DoMethod((OOP_Object *)pipe, (OOP_Msg)&rpmsg))
+            return;
+    }
+
     struct Rectangle renderableLayerRect;
     struct pHidd_Gallium_DisplayResource drmsg = {
         .mID      = ((struct GalliumBase *)GalliumBase)->galliumMId_DisplayResource,

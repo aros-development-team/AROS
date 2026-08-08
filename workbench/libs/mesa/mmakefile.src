@@ -31,9 +31,35 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 
 #MM mesa3dgl-library : includes workbench-libs-dxtn-includes linklibs-galliumauxiliary workbench-libs-gallium-linklib mesa3dgl-linklibs mesa3dgl-library-env
 
+# Per-arch gallium core linklibs, mirroring MESA3DGL_GALLIUMCORE in
+# mesa.cfg. Declare each one's build-order dependency so mmake builds the
+# linklib before mesa3dgl-library consumes it.
+ifeq ($(AROS_TARGET_ARCH),raspi)
+#MM mesa3dgl-library : linklibs-galliumcoreapi
+endif
+
 SHARED_LIB_SOURCES = \
             emul_arosc \
             tls
+
+# raspi: the vc4 pipe driver lives in vc4gallium.hidd (runtime-bound via
+# the GalliumCoreAPI table in MESA3DGL_GALLIUMCORE). aros_drm_shim.c stays
+# here for its libc side — the fprintf/stderr intercepts and the per-task
+# StdCBase resolver that st/mesa and the compiler core need — and for the
+# gallium_core_get_api link anchor. Its drm/posix shims are inert in this
+# module (aros_drm_bridge stays NULL); the hidd compiles its own copy.
+# Gated on arch AND cpu: AROS_TARGET_ARCH is "raspi" for the aarch64
+# target too, where the vc4 hidd (and with it the core table this file
+# anchors) is not built. Excluded elsewhere so libc symbols stay
+# untouched.
+ifeq ($(AROS_TARGET_ARCH),raspi)
+SHARED_LIB_SOURCES += aros_drm_shim
+# Bridge ABI header (shared with the hidd), needed by aros_drm_shim.c.
+USER_INCLUDES += -I$(SRCDIR)/arch/arm-native/soc/broadcom/2708/hidd/vc4gallium
+# The GalliumCoreAPI table linklib exists (galliumcoreapi in
+# MESA3DGL_GALLIUMCORE) — let the sources take a real reference to it.
+USER_CPPFLAGS += -DMESA3DGL_HAVE_COREAPI
+endif
 
 MESA3DGL_SOURCES = \
             mesa3dgl_support \
@@ -81,7 +107,8 @@ USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) -L$(top_libdir)
   conffile="$(SRCDIR)/workbench/libs/gl/gl.conf" \
   confoverride="$(top_srcdir)/mesa3dgl.conf" objdir="$(OBJDIR)/$(MESAGLVERSION)" \
   files="$(MESAGL_LIBRARY_SOURCES_C)" \
-  alwayscxxlink=yes uselibs="glapi mesa mesa-sse41 compiler galliumauxiliary gallium mesautil pthread"
+  alwayscxxlink=yes \
+  uselibs="glapi mesa mesa-sse41 compiler galliumauxiliary gallium mesautil pthread $(MESA3DGL_GALLIUMCORE)"
 
 $(AROS_ENVARC)/SYS:
 	%mkdir_q dir=$@

@@ -5,12 +5,104 @@
 #include <aros/debug.h>
 
 #include <proto/dos.h>
+#include <proto/exec.h>
 #include <proto/timer.h>
 
+#include <errno.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #define IMPLEMENT()  bug("------IMPLEMENT(%s)\n", __func__)
+
+/*
+ * malloc/free/calloc/realloc overrides via Exec AllocMem/FreeMem.
+ *
+ * Each module has its own StdCBase mempool, so a ralloc object allocated
+ * in one module and freed in another corrupts the wrong pool's freelist.
+ * Going straight to AllocMem/FreeMem makes the allocator pool-independent;
+ * the magic cookie lets free() safely no-op a foreign pointer (e.g. one
+ * libc allocated before this override took effect).
+ *
+ * Since the vc4gallium refactor the vc4 driver lives in mesa3dgl.library,
+ * so this is only needed mesa-side; vc4gallium.hidd uses AllocMem directly.
+ */
+#define AROSC_MALLOC_MAGIC  0xCA113EDCu
+
+struct aros_malloc_hdr
+{
+    ULONG  magic;
+    ULONG  total;     /* allocation size including header */
+    size_t user_size; /* size requested by caller */
+};
+
+#define HDR_BYTES AROS_ALIGN(sizeof(struct aros_malloc_hdr))
+
+void *malloc(size_t size)
+{
+    ULONG total = HDR_BYTES + size;
+    UBYTE *raw = (UBYTE *)AllocMem(total, MEMF_ANY);
+    if (!raw)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
+    struct aros_malloc_hdr *h = (struct aros_malloc_hdr *)raw;
+    h->magic = AROSC_MALLOC_MAGIC;
+    h->total = total;
+    h->user_size = size;
+    return raw + HDR_BYTES;
+}
+
+void free(void *ptr)
+{
+    if (!ptr)
+        return;
+    struct aros_malloc_hdr *h = (struct aros_malloc_hdr *)((UBYTE *)ptr - HDR_BYTES);
+    if (h->magic != AROSC_MALLOC_MAGIC)
+        return;
+    h->magic = 0;
+    FreeMem((UBYTE *)h, h->total);
+}
+
+void *calloc(size_t nmemb, size_t size)
+{
+    size_t user = nmemb * size;
+    ULONG total = HDR_BYTES + user;
+    UBYTE *raw = (UBYTE *)AllocMem(total, MEMF_ANY | MEMF_CLEAR);
+    if (!raw)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
+    struct aros_malloc_hdr *h = (struct aros_malloc_hdr *)raw;
+    h->magic = AROSC_MALLOC_MAGIC;
+    h->total = total;
+    h->user_size = user;
+    return raw + HDR_BYTES;
+}
+
+void *realloc(void *ptr, size_t size)
+{
+    if (!ptr)
+        return malloc(size);
+    if (size == 0)
+    {
+        free(ptr);
+        return NULL;
+    }
+    struct aros_malloc_hdr *h = (struct aros_malloc_hdr *)((UBYTE *)ptr - HDR_BYTES);
+    if (h->magic != AROSC_MALLOC_MAGIC)
+        return NULL;
+    size_t old = h->user_size;
+    void *np = malloc(size);
+    if (np)
+    {
+        memcpy(np, ptr, old < size ? old : size);
+        free(ptr);
+    }
+    return np;
+}
  
 /*
     The purpose of this file is to provide implementation for C functions part
@@ -52,24 +144,13 @@ int usleep (useconds_t usec)
 }
 
 /*
-    This implementation of atexit is different than the definition of atexit
-    function due to how libraries work in AROS.
-   
-    Under Linux, when an .so file is used by an application, the library's code
-    is being shared but the library's data (global, static variables) are COPIED for
-    each process. Then, an atexit call inside .so will only operate on COPY of data
-    and thus can for example free memory allocated by one process without
-    influencing other processes.
-   
-    Under AROS, when a .library file is used by an application, library code AND
-    library data is shared. This means, an atexit call inside .library which was
-    initially coded under Linux cannot be executed when process is finishing
-    (for example at CloseLibrary) because such call will most likely free shared
-    data which will make other processes crash. The best approximation of atexit
-    in case of .library is to call the atexit functions at library expunge/exit.
+    atexit differs from the standard definition because AROS .library code
+    AND data is shared across processes (unlike a shared object on a paging
+    OS, whose data is per-process). Running atexit handlers at CloseLibrary
+    would free shared data and crash other users, so we defer them to
+    library expunge/exit.
 
-    TODO: Check atexit() usage and determine best time to call atexit registered
-    functions.
+    TODO: Check atexit() usage and determine best time to call the handlers.
 */
 
 static struct exit_list {

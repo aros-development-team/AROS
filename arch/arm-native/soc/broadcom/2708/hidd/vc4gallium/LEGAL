@@ -1,0 +1,52 @@
+:License information for the VC4 Gallium 3D HIDD:
+
+All files in this directory and its subdirectories are original work of
+The AROS Development Team and are licensed under the APL license, with the
+exceptions noted below.
+
+(MIT-derived portions)
+
+The following file contains portions derived from the VC4 kernel-side
+validation sources authored by Broadcom:
+
+    vc4_drm_aros.c
+
+The derived portions are the V3D packet definitions, the command-list
+processing, the shader-record relocation, the render-control-list
+generation, and the QPU shader scan. They are based on these Broadcom
+sources:
+
+    vc4_packet.h, vc4_validate.c, vc4_render_cl.c,
+    vc4_validate_shaders.c, vc4_qpu_defines.h
+
+All of those files are licensed under the MIT license:
+
+    Copyright (C) 2014-2015 Broadcom
+
+They are published under the MIT license in both Mesa
+(src/gallium/drivers/vc4/kernel/ and src/gallium/drivers/vc4/) and the
+Linux kernel (drivers/gpu/drm/vc4/); every one carries the Broadcom
+copyright together with the MIT permission notice. The full Broadcom
+MIT copyright and permission notice is reproduced at the top of
+vc4_drm_aros.c, as required by the MIT license.
+
+(Hardware register and initialisation facts)
+
+vc4_v3d.h and vc4_v3d.c implement the V3D register map and the hardware
+initialisation / interrupt sequence from Broadcom's public hardware
+documentation, the VideoCore IV 3D Architecture Reference Guide
+(VideoCoreIV-AG100-R). Register offsets, bit-field positions and the
+required register writes are hardware facts taken from that guide and are
+not copyrightable expression.
+
+(DRM ABI)
+
+vc4_drm_aros.h mirrors the Linux DRM UAPI for VC4 (ioctl numbers and
+structure layouts) by ABI only, so the unmodified Mesa VC4 driver can
+call into this HIDD. That UAPI header (include/uapi/drm/vc4_drm.h) is
+itself MIT licensed; only the interface — not its source — is relied
+upon, and the structures here are re-expressed using AROS types.
+
+The remaining files reference the Mesa VC4 driver (which is itself MIT
+licensed) and implement the hardware access against AROS interfaces; they
+are original APL-licensed work.
