@@ -562,8 +562,11 @@ void doColdCapture(void)
           "a0", "a1", "a2", "a3", "a4", "a5", "a6");
 }
 
-/* 0x1111 marker is not required. Some expansions (for example GVP 1230 Turbo+)
- * does not have 0x1111 but has ROMTAG.
+/* Lets us skip the romtag scan of the 0xF00000 window
+ * when no expansion/diagnostic ROM is mapped there.
+ * 0x1111 marker is not required. Some expansions (for example GVP 1230 Turbo+)
+ * do not have 0x1111 but has romtag(s).
+ * Check if 0x1111 exists or if first few words have non-static pattern.
  */
 static BOOL rom_present(IPTR rom)
 {
@@ -572,8 +575,10 @@ static BOOL rom_present(IPTR rom)
     	return TRUE;
     }
     UWORD w = p[0];
-    if (w != p[1] || w != p[2] || w != p[3]) {
-    	return TRUE;
+    for (UWORD i = 1; i < 16; i++) {
+	    if (w != p[i]) {
+	    	return TRUE;
+	    }
     }
     return FALSE;
 }
