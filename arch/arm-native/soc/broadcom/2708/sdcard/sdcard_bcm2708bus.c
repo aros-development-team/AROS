@@ -29,8 +29,17 @@ ULONG FNAME_SDCBUS(GetClockDiv)(ULONG speed, struct sdcard_Bus *bus)
 {
     ULONG __BCMClkDiv;
 
-    for (__BCMClkDiv = 0; __BCMClkDiv < V300_MAXCLKDIV; __BCMClkDiv++) {
-        if ((bus->sdcb_ClockMax / (__BCMClkDiv + 1)) <= speed)
+    /*
+     * The value programmed into CLOCK_CONTROL is not a divisor: SDHCI runs
+     * the card at base/(2*N), and N of zero is the special case that passes
+     * the base clock straight through. V300_MAXCLKDIV is the largest divisor,
+     * so the largest N is half of it.
+     */
+    if (speed >= bus->sdcb_ClockMax)
+        return 0;
+
+    for (__BCMClkDiv = 1; __BCMClkDiv < (V300_MAXCLKDIV / 2); __BCMClkDiv++) {
+        if ((bus->sdcb_ClockMax / (__BCMClkDiv * 2)) <= speed)
                 break;
     }
 

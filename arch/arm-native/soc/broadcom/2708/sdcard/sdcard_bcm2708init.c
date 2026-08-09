@@ -286,9 +286,6 @@ bcminit_clock:
 
             FNAME_SDCBUS(SoftReset)(SDHCI_RESET_ALL, __BCM2708Bus);
 
-            DINIT(bug("[SDCard--] %s: SDHC Max Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax / 1000000));
-            DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMin));
-
             __BCM2708Bus->sdcb_Version = FNAME_BCMSDCBUS(BCMMMIOReadWord)(SDHCI_HOST_VERSION, __BCM2708Bus);
             __BCM2708Bus->sdcb_Capabilities = FNAME_BCMSDCBUS(BCMMMIOReadLong)(SDHCI_CAPABILITIES, __BCM2708Bus);
             __BCM2708Bus->sdcb_Quirks = AB_Quirk_MissingCapabilities|AF_Quirk_AtomicTMAndCMD;
@@ -297,6 +294,30 @@ bcminit_clock:
             DINIT(bug("[SDCard--] %s: SDHCI Host Vers      : %d [SD Host Spec %d]\n", __PRETTY_FUNCTION__, ((__BCM2708Bus->sdcb_Version & 0xFF00) >> 8), (__BCM2708Bus->sdcb_Version & 0xFF) + 1));
             DINIT(bug("[SDCard--] %s: SDHCI Capabilities   : 0x%08x\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_Capabilities));
             DINIT(bug("[SDCard--] %s: SDHCI Voltages       : 0x%08x (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_Power));
+
+            /*
+             * The mailbox reports what the clock could be turned up to, which
+             * is not what the divider divides. The controller knows its own
+             * base clock, so believe that instead: on the BCM2711 the mailbox
+             * says 500MHz while the block actually runs off 100MHz, and using
+             * the wrong one clocks the card five times too slowly.
+             */
+            {
+                ULONG sdcClockBase;
+
+                if ((__BCM2708Bus->sdcb_Version & SDHCI_HVERS_SPEC_MASK) >= 2)
+                    sdcClockBase = (__BCM2708Bus->sdcb_Capabilities & SDHCI_CLOCK_V3_BASE_MASK) >> SDHCI_CLOCK_BASE_SHIFT;
+                else
+                    sdcClockBase = (__BCM2708Bus->sdcb_Capabilities & SDHCI_CLOCK_BASE_MASK) >> SDHCI_CLOCK_BASE_SHIFT;
+
+                if (sdcClockBase)
+                    __BCM2708Bus->sdcb_ClockMax = sdcClockBase * 1000000;
+                else
+                    DINIT(bug("[SDCard--] %s: controller reports no base clock, keeping the mailbox rate\n", __PRETTY_FUNCTION__));
+            }
+
+            DINIT(bug("[SDCard--] %s: SDHC Base Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax / 1000000));
+            DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMin));
 
             __BCM2708Bus->sdcb_Private = (IPTR)sdcard_CurrentTime();
 

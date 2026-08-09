@@ -509,6 +509,7 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 {
     ULONG       sdcClkDiv, timeout;
     UWORD       sdcClkCtrlCur, sdcClkCtrl;
+    BOOL        sdcReprogram = FALSE;
 
     DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
@@ -519,7 +520,29 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
     sdcClkCtrl = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
     sdcClkCtrl |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
 
-    if (sdcClkCtrl != (sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_INT_STABLE|SDHCI_CLOCK_CARD_EN)))
+    /*
+     * Past 25MHz the controller has to sample with high speed timing, and the
+     * bit that selects it may only be touched while the card clock is stopped.
+     */
+    if (bus->sdcb_Capabilities & SDHCI_CAN_DO_HISPD)
+    {
+        UBYTE sdcCtrlCur = bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, bus);
+        UBYTE sdcCtrlNew = (speed > 25000000) ? (sdcCtrlCur | SDHCI_HCTRL_HISPD)
+                                              : (sdcCtrlCur & ~SDHCI_HCTRL_HISPD);
+
+        if (sdcCtrlNew != sdcCtrlCur)
+        {
+            D(bug("[SDBus%02u] %s: %s high speed timing\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__,
+                  (sdcCtrlNew & SDHCI_HCTRL_HISPD) ? "Enabling" : "Disabling"));
+
+            bus->sdcb_IOWriteWord(SDHCI_CLOCK_CONTROL, 0, bus);
+            bus->sdcb_IOWriteByte(SDHCI_HOST_CONTROL, sdcCtrlNew, bus);
+            sdcReprogram = TRUE;
+        }
+    }
+
+    if (sdcReprogram ||
+        (sdcClkCtrl != (sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_INT_STABLE|SDHCI_CLOCK_CARD_EN))))
     {
         bus->sdcb_IOWriteWord(SDHCI_CLOCK_CONTROL, 0, bus);
 
