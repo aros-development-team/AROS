@@ -38,7 +38,8 @@ static void FNAME_BCMSDC(SDBusInit)(struct sdcard_Bus *bus)
             SDHCI_INT_END_BIT | SDHCI_INT_CRC | SDHCI_INT_TIMEOUT |
             SDHCI_INT_CARD_REMOVE | SDHCI_INT_CARD_INSERT |
             SDHCI_INT_DATA_AVAIL | SDHCI_INT_SPACE_AVAIL |
-            SDHCI_INT_DATA_END | SDHCI_INT_RESPONSE;
+            SDHCI_INT_DATA_END | SDHCI_INT_RESPONSE |
+            SDHCI_INT_ADMA_ERROR;
 
     FNAME_SDCBUS(SetClock)(bus->sdcb_ClockMin, bus);
     FNAME_SDCBUS(SetPowerLevel)(bus->sdcb_Power, FALSE, bus);
@@ -318,6 +319,8 @@ bcminit_clock:
 
             DINIT(bug("[SDCard--] %s: SDHC Base Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax / 1000000));
             DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMin));
+
+            FNAME_SDCBUS(ADMAAlloc)(__BCM2708Bus);
 
             __BCM2708Bus->sdcb_Private = (IPTR)sdcard_CurrentTime();
 
