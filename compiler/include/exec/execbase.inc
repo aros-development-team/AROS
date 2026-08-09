@@ -179,6 +179,7 @@ struct ExecBase
 #define EXECDEBUGF_INITRESIDENT     0x00000001  /* Single resident initialization       */
 #define EXECDEBUGF_INITCODE         0x00000002  /* Kickstart initialization             */
 #define EXECDEBUGF_FINDRESIDENT     0x00000004  /* Resident search                      */
+#define EXECDEBUGF_SHELL            0x00000008  /* Shell command invocation (AROS specific) */
 #define EXECDEBUGF_CREATELIBRARY    0x00000010  /* Library creation                     */
 #define EXECDEBUGF_SETFUNCTION      0x00000020  /* Library function patching            */
 #define EXECDEBUGF_NEWSETFUNCTION   0x00000040

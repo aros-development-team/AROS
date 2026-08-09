@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2022-2026, The AROS Development Team. All rights reserved.
 
     Desc: Runtime debug flag support
 */
@@ -16,7 +16,7 @@ const char * const ExecFlagNames[] =
     "InitResident",
     "InitCode",
     "FindResident",
-    (char *)-1,         /* Reserved bit         */
+    "Shell",            /* Reserved bit         */
     "CreateLibrary",
     "SetFunction",
     "NewSetFunction",

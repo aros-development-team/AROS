@@ -224,6 +224,22 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
         if (echo)
             cliEcho(ss, out->buf);
 
+        if (SysBase->ex_DebugFlags & EXECDEBUGF_SHELL)
+        {
+            /* name every command on the debug output, the only
+               output a machine with no display can show */
+            char tmpchr = 0;
+
+            if (out->len > 0)
+            {
+                tmpchr = out->buf[out->len - 1];
+                out->buf[out->len - 1] = 0;
+            }
+            bug("[Shell] %s %s\n", ss->command + 2, out->buf);
+            if (out->len > 0)
+                out->buf[out->len - 1] = tmpchr;
+        }
+
         /* OK, we've got a command. Let's execute it! */
         result = executeLine(ss, out->buf);
     }
