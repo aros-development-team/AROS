@@ -6499,11 +6499,11 @@ static void sdlhtask(void) {
                 Permit();
 
                 for(;;) {
-                    struct DosList *dol;
+                    struct DosList *doslist, *dol;
 
                     WaitPort(port);
 
-                    dol = LockDosList(LDF_WRITE | LDF_VOLUMES);
+                    doslist = LockDosList(LDF_WRITE | LDF_VOLUMES);
 
                     while((sfsm = (struct SFSMessage *)GetMsg(port)) != 0) {
                         if(sfsm->command == SFSM_ADD_VOLUMENODE) {
@@ -6521,6 +6521,18 @@ static void sdlhtask(void) {
                         } else if(sfsm->command == SFSM_REMOVE_VOLUMENODE) {
                             struct DosList *vn = (struct DosList *)sfsm->data;
 
+                            /* Restart the scan from the list head for every
+                               message. The scan cursor used to be shared
+                               across the whole batch, so a second remove in
+                               one batch started from wherever the first one
+                               stopped - either the end of the list or the
+                               node that had just been freed. The node was
+                               then never found, RemDosEntry() was skipped,
+                               and FreeDosEntry() below released a volume
+                               node that was still linked into the DOS list,
+                               leaving allocator data where dol_Next/dol_Type
+                               should be. */
+                            dol = doslist;
                             while((dol = NextDosEntry(dol, LDF_VOLUMES)) != 0) {
                                 if(dol == vn) {
                                     RemDosEntry(dol);
