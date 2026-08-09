@@ -573,6 +573,57 @@ diff -ruN binutils-2.47/ld/emulparams/riscvelf_aros.sh binutils-2.47.aros/ld/emu
 +++ binutils-2.47.aros/ld/emulparams/riscvelf_aros.sh	2026-07-31 15:53:11.711038998 +0100
 @@ -0,0 +1 @@
 +. ${srcdir}/emulparams/elf32lriscv.sh
+diff -ruN binutils-2.47/ld/plugin.c binutils-2.47.aros/ld/plugin.c
+--- binutils-2.47/ld/plugin.c	2026-07-26 00:00:00.000000000 +0100
++++ binutils-2.47.aros/ld/plugin.c	2026-07-27 22:30:55.860898377 +0100
+@@ -207,13 +207,46 @@
+   return 0;
+ }
+ 
+-#endif /* !defined (HAVE_DLFCN_H) && defined (HAVE_WINDOWS_H)  */
++#elif !defined (HAVE_DLFCN_H)
++
++/* Hosts such as AmigaOS and AROS have no dlopen-style runtime loader
++   at all, so a plugin can never be loaded.  Stub the interface out so
++   that ld still builds, and let plugin_opt_plugin() report the failure
++   through the usual path when one is actually requested.  */
++
++#define PLUGIN_NO_DYNAMIC_LOADING 1
++
++#define RTLD_NOW 0	/* Dummy value.  */
++
++static void *
++dlopen (const char *file ATTRIBUTE_UNUSED, int mode ATTRIBUTE_UNUSED)
++{
++  return NULL;
++}
++
++static void *
++dlsym (void *handle ATTRIBUTE_UNUSED, const char *name ATTRIBUTE_UNUSED)
++{
++  return NULL;
++}
++
++static int
++dlclose (void *handle ATTRIBUTE_UNUSED)
++{
++  return 0;
++}
++
++#endif /* !defined (HAVE_DLFCN_H)  */
+ 
+ #ifndef HAVE_DLFCN_H
+ static const char *
+ dlerror (void)
+ {
++#ifdef PLUGIN_NO_DYNAMIC_LOADING
++  return "dynamic loading of plugins is not supported on this host";
++#else
+   return "";
++#endif
+ }
+ #endif
+ 
 diff -ruN binutils-2.47/ld/Makefile.am binutils-2.47.aros/ld/Makefile.am
 --- binutils-2.47/ld/Makefile.am	2026-07-26 00:00:00.000000000 +0100
 +++ binutils-2.47.aros/ld/Makefile.am	2026-07-31 15:53:11.712393198 +0100
