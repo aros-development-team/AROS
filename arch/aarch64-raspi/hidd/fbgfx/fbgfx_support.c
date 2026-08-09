@@ -1,42 +1,57 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: VideoCore framebuffer gfx HIDD hardware support. The kernel already
-          brings up the mailbox framebuffer (arch/aarch64-native/kernel/fb.c);
-          this driver reuses that linear surface (both are linked into the one
-          kickstart image, so the symbols resolve directly).
+    Desc: Linear framebuffer gfx HIDD. The bootstrap brings the VideoCore
+          framebuffer up and hands its geometry to the kernel; this driver
+          wraps that surface, querying it via KrnGetSystemAttr. It touches no
+          VideoCore register itself - the one board-specific thing left is the
+          pixel byte order below, which the firmware fixes and no attribute
+          reports.
 */
 
 #define DEBUG 0
 #include <aros/debug.h>
+#include <aros/kernel.h>
 #include <proto/exec.h>
+
+/* kernel.resource is a resource, not a library: open it explicitly rather
+   than letting the module's autoinit try to OpenLibrary() it. */
+#define __NOLIBBASE__
+#include <proto/kernel.h>
 #include <string.h>
 
-#include "vcgfx_intern.h"
-#include "vcgfx_hidd.h"
+#include "fbgfx_intern.h"
+#include "fbgfx_hidd.h"
 
-/* Provided by the kickstart kernel (fb.c). */
-extern int krn_fb_init(unsigned int w, unsigned int h);
-extern unsigned int krn_fb_width(void);
-extern unsigned int krn_fb_height(void);
-extern unsigned int krn_fb_pitch(void);
-extern unsigned long long krn_fb_base(void);
-
-BOOL initVCGfxHW(struct HWData *data)
+BOOL initFBGfxHW(struct HWData *data)
 {
-    if (!krn_fb_base())
+    struct KernelBase *KernelBase = OpenResource("kernel.resource");
+    IPTR fb = KernelBase ? (IPTR)KrnGetSystemAttr(KATTR_FrameBuffer) : 0;
+
+    /* KrnGetSystemAttr() answers -1 for anything it does not know, so a
+       kernel without the framebuffer attributes hands back a pointer that
+       is not NULL but is not memory either. */
+    if (fb == 0 || fb == (IPTR)-1)
     {
-        if (!krn_fb_init(640, 480))
-        {
-            D(bug("[VCGfx] HwInit: framebuffer not available\n"));
-            return FALSE;
-        }
+        D(bug("[FBGfx] HwInit: framebuffer not available\n"));
+        return FALSE;
     }
 
-    data->framebuffer  = (APTR)(IPTR)krn_fb_base();
-    data->width        = krn_fb_width();
-    data->height       = krn_fb_height();
-    data->bytesperline = krn_fb_pitch();
+#if !defined(DEBUGDISPLAY)
+    /*
+     * Detach the bootstrap's framebuffer console before handing this surface
+     * on. 0x03 to RawPutChar drops ARMI_PutChar (krnPutC in
+     * arch/aarch64-native/kernel/kernel_debug.c), leaving debug output on the
+     * serial line; without it every bug() keeps drawing characters into the
+     * screen Workbench is using.
+     */
+    RawPutChar(0x03);
+#endif
+
+    data->framebuffer  = (APTR)fb;
+    data->width        = KrnGetSystemAttr(KATTR_FrameBufferWidth);
+    data->height       = KrnGetSystemAttr(KATTR_FrameBufferHeight);
+    data->bytesperline = KrnGetSystemAttr(KATTR_FrameBufferPitch);
     data->depth        = 32;
     data->bitsperpixel = 32;
     data->bytesperpixel = 4;
@@ -53,7 +68,7 @@ BOOL initVCGfxHW(struct HWData *data)
     data->palettewidth = 8;
     data->fbsize = data->height * data->bytesperline;
 
-    D(bug("[VCGfx] HwInit: %ux%ux%u linear FB @ 0x%p, pitch %u\n",
+    D(bug("[FBGfx] HwInit: %ux%ux%u linear FB @ 0x%p, pitch %u\n",
           data->width, data->height, data->depth,
           data->framebuffer, data->bytesperline));
 
@@ -62,7 +77,7 @@ BOOL initVCGfxHW(struct HWData *data)
 }
 
 /* Copy the (possibly partial) bitmap buffer to the visible framebuffer. */
-void vcfbDoRefreshArea(struct HWData *hwdata, struct VCGfxBitMapData *data,
+void fbDoRefreshArea(struct HWData *hwdata, struct FBGfxBitMapData *data,
                        LONG x1, LONG y1, LONG x2, LONG y2)
 {
     UBYTE *src, *dst;
@@ -107,7 +122,7 @@ void vcfbDoRefreshArea(struct HWData *hwdata, struct VCGfxBitMapData *data,
 }
 
 /* Truecolor only: no hardware palette to load. */
-void DACLoad(struct VCGfx_staticdata *xsd, UBYTE *DAC, unsigned char first, int num)
+void DACLoad(struct FBGfx_staticdata *xsd, UBYTE *DAC, unsigned char first, int num)
 {
     (void)xsd; (void)DAC; (void)first; (void)num;
 }

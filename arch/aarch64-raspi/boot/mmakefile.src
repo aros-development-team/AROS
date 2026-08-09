@@ -72,6 +72,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM hidd-i2c-quick \
 #MM kernel-hidd-gfx-quick \
 #MM hidd-vc4gfx-quick \
+#MM hidd-fbgfx-quick \
 #MM kernel-sdcard-quick \
 #MM kernel-hidd-input-quick \
 #MM kernel-hidd-kbd-quick \
@@ -130,6 +131,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM hidd-i2c-bcm2708 \
 #MM hidd-vc4gfx \
 #MM kernel-hidd-gfx \
+#MM hidd-fbgfx \
 #MM kernel-hidd-input \
 #MM kernel-hidd-kbd \
 #MM kernel-hidd-mouse \
@@ -170,7 +172,9 @@ PKG_RSRC_ARCH := processor
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
-PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus i2c i2c-bcm2708 vc4gfx
+# vc4gfx drives the BCM283x VideoCore directly and bows out on BCM2711;
+# fbgfx takes over there, painting into the framebuffer the bootstrap set up.
+PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus i2c i2c-bcm2708 vc4gfx fbgfx
 PKG_CLASSES   := USB/hub USB/massstorage
 
 %make_package mmake=kernel-package-raspi-aarch64 file=$(AROSDIR)/$(ARM_BSP) \

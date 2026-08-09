@@ -12,6 +12,7 @@
 
 #define DEBUG 0
 
+#include <aros/asmcall.h>
 #include <aros/bootloader.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -30,31 +31,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Timer 1 (EClock) interrupt handler */
-static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
+/*
+ * Advance the clock by however much the free-running system timer counter has
+ * moved since we last looked, then expire whatever that made due. Reading the
+ * counter rather than assuming a fixed period means it does not matter which
+ * interrupt brought us here, or how punctual it was.
+ */
+static void timer_ProcessTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
     unsigned int last_CLO;
     D(unsigned int last_CHI);
 
-    D(bug("[Timer] Timer1Tick()\n"));
-
-    if (!(TimerBase) || !(SysBase))
-    {
-        bug("[Timer] Timer1Tick: Bad Params!\n");
-        return;
-    }
-
     D(last_CHI = TimerBase->tb_Platform.tbp_CHI);
     last_CLO = TimerBase->tb_Platform.tbp_CLO;
 
-    /* Aknowledge and update our timer interrupt */
-    *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << TICK_TIMER); //TimerBase->tb_Platform.tbp_cs;
     TimerBase->tb_Platform.tbp_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
     TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
 
-    D(bug("[Timer] Timer1Tick: Updating EClock..\n"));
-    D(bug("[Timer] Timer1Tick:   diff_CHI = %d\n", (TimerBase->tb_Platform.tbp_CHI - last_CHI)));
-    D(bug("[Timer] Timer1Tick:   diff_CLO = %d\n", (TimerBase->tb_Platform.tbp_CLO - last_CLO)));
+    D(bug("[Timer] %s: Updating EClock..\n", __func__));
+    D(bug("[Timer] %s:   diff_CHI = %d\n", __func__, (TimerBase->tb_Platform.tbp_CHI - last_CHI)));
+    D(bug("[Timer] %s:   diff_CLO = %d\n", __func__, (TimerBase->tb_Platform.tbp_CLO - last_CLO)));
 
     TimerBase->tb_Platform.tbp_TickRate.tv_secs  = 0;
     if ((TimerBase->tb_Platform.tbp_CLO - last_CLO) > 0)
@@ -67,10 +63,27 @@ static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
     ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_Platform.tbp_TickRate);
     TimerBase->tb_ticks_total++;
 
-    D(bug("[Timer] Timer1Tick: Processing events.. \n"));
+    D(bug("[Timer] %s: Processing events.. \n", __func__));
 
     handleMicroHZ(TimerBase, SysBase);
 //    handleEClock(TimerBase, SysBase);
+}
+
+/* Timer 1 (EClock) interrupt handler */
+static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
+{
+    D(bug("[Timer] Timer1Tick()\n"));
+
+    if (!(TimerBase) || !(SysBase))
+    {
+        bug("[Timer] Timer1Tick: Bad Params!\n");
+        return;
+    }
+
+    /* Aknowledge our timer interrupt */
+    *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << TICK_TIMER); //TimerBase->tb_Platform.tbp_cs;
+
+    timer_ProcessTick(TimerBase, SysBase);
 
     D(bug("[Timer] Timer1Tick: Reconfiguring interrupt..\n"));
 
@@ -78,6 +91,26 @@ static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
     *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = (TimerBase->tb_Platform.tbp_CLO + (1000000 / TimerBase->tb_eclock_rate));
 
     D(bug("[Timer] Timer1Tick: Done..\n"));
+}
+
+/*
+ * BCM2711 only. The system timer's compare match is not delivered here - the
+ * SoC routes GPU interrupts through the GIC, and the vendor device tree marks
+ * the block disabled, so nothing arms that path. The kernel already runs the
+ * ARM generic timer as its heartbeat and causes INTB_VERTB from it, so take
+ * the tick from there instead. The counter itself is fine and keeps the clock
+ * honest; only the interrupt is missing.
+ */
+AROS_INTH1(MicroHZVBlankInt, struct TimerBase *, TimerBase)
+{
+    AROS_INTFUNC_INIT
+
+    timer_ProcessTick(TimerBase, SysBase);
+
+    /* exec should continue with other servers */
+    return 0;
+
+    AROS_INTFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -145,6 +178,19 @@ static int Timer_Init(struct TimerBase *TimerBase)
     Permit();
 
     vblank_Init(TimerBase);
+
+    if (TimerBase->tb_Platform.tbp_periiobase == BCM2711_PERIIOBASE)
+    {
+        TimerBase->tb_Platform.tbp_MicroHZInt.is_Node.ln_Pri  = 0;
+        TimerBase->tb_Platform.tbp_MicroHZInt.is_Node.ln_Type = NT_INTERRUPT;
+        TimerBase->tb_Platform.tbp_MicroHZInt.is_Node.ln_Name = TimerBase->tb_Device.dd_Library.lib_Node.ln_Name;
+        TimerBase->tb_Platform.tbp_MicroHZInt.is_Code         = (VOID_FUNC)MicroHZVBlankInt;
+        TimerBase->tb_Platform.tbp_MicroHZInt.is_Data         = TimerBase;
+
+        AddIntServer(INTB_VERTB, &TimerBase->tb_Platform.tbp_MicroHZInt);
+
+        D(bug("[Timer] Timer_Init: microhz driven from VBlank (BCM2711)\n"));
+    }
 
     D(bug("[Timer] Timer_Init: configured GPU timer %d\n", TICK_TIMER));
 

@@ -70,7 +70,18 @@ typedef enum
 #define KRN_KernelPhysLowest    (KRN_Dummy + 30) /* Lowest *PHYSICAL* address occupied by Kernel */
 #define KRN_Platform            (KRN_Dummy + 31) /* Arch specifc platform ID provided */
 #define KRN_FlattenedDeviceTree (KRN_Dummy + 32) /* Flattened device tree as used e.g. by linux kernels */
-#define KRN_FBAddr              (KRN_Dummy + 33) /* 64-bit framebuffer base address (GOP/MB2)		*/
+#define KRN_FBAddr              (KRN_Dummy + 33) /* 64-bit framebuffer base address (GOP/MB2/VideoCore)	*/
+#define KRN_FrameBufferWidth    (KRN_Dummy + 34) /* Framebuffer width in pixels			*/
+#define KRN_FrameBufferHeight   (KRN_Dummy + 35) /* Framebuffer height in pixels			*/
+#define KRN_FrameBufferDepth    (KRN_Dummy + 36) /* Framebuffer bits per pixel			*/
+#define KRN_FrameBufferPitch    (KRN_Dummy + 37) /* Framebuffer bytes per line			*/
+
+/*
+ * KRN_MEMLower/KRN_MEMUpper may appear more than once, one pair per physical
+ * memory range the bootstrap found, lower first. The first pair describes the
+ * range the kernel itself was loaded into.
+ */
+#define KRN_MAXMEMRANGES        8
 
 /* Magic value passed by the bootstrap as second parameter */
 #define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')
@@ -101,6 +112,11 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KATTR_CPULoad_END       (KATTR_CPULoad + 32)
 #define KATTR_ClockSource	(KATTR_CPULoad_END + 1) /* [.G] (APTR)    - Kernel ClockSource resource                                  */
 #define KATTR_CPUFrequencyKHz   (KATTR_ClockSource + 1) /* [.G] (IPTR)    - Current core clock in kHz, per CPU via KrnGetCPUAttr()       */
+#define KATTR_FrameBuffer       (KATTR_CPULoad_END + 3) /* [.G] (APTR)    - Linear framebuffer base address (embedded targets)          */
+#define KATTR_FrameBufferWidth  (KATTR_CPULoad_END + 4) /* [.G] (IPTR)    - Framebuffer width in pixels                                 */
+#define KATTR_FrameBufferHeight (KATTR_CPULoad_END + 5) /* [.G] (IPTR)    - Framebuffer height in pixels                                */
+#define KATTR_FrameBufferDepth  (KATTR_CPULoad_END + 6) /* [.G] (IPTR)    - Framebuffer bits per pixel                                  */
+#define KATTR_FrameBufferPitch  (KATTR_CPULoad_END + 7) /* [.G] (IPTR)    - Framebuffer bytes per line                                  */
 
 /* Tag IDs for KrnStatMemory() */
 #define KMS_Free		(TAG_USER + 0x04000000)

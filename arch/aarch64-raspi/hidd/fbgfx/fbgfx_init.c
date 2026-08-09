@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: VCFB Gfx Hidd for standalone i386 AROS
+    Desc: VideoCore framebuffer graphics HIDD
 */
 
 #include <proto/exec.h>
@@ -17,12 +17,12 @@
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
 
-#include "vcgfx_support.h"
-#include "vcgfx_hidd.h"
+#include "fbgfx_support.h"
+#include "fbgfx_hidd.h"
 
 #include LC_LIBDEFS_FILE
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*
@@ -57,7 +57,7 @@ static BOOL GetAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
     return TRUE;
 }
 
-/* These must stay in the same order as attrBases[] entries assignment in vcgfxclass.h */
+/* These must stay in the same order as attrBases[] entries assignment in fbgfxclass.h */
 static const STRPTR interfaces[ATTRBASES_NUM] =
 {
     IID_Hidd_ChunkyBM,
@@ -70,9 +70,9 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd_DMEnum
 };
 
-static int VCGfx_Init(LIBBASETYPEPTR LIBBASE)
+static int FBGfx_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct VCGfx_staticdata *xsd = &LIBBASE->vsd;
+    struct FBGfx_staticdata *xsd = &LIBBASE->vsd;
     struct GfxBase *GfxBase;
     ULONG err;
     int res = FALSE;
@@ -85,18 +85,18 @@ static int VCGfx_Init(LIBBASETYPEPTR LIBBASE)
     GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     if (GfxBase)
     {
-        if (initVCGfxHW(&xsd->data))
+        if (initFBGfxHW(&xsd->data))
         {
             if (GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
             {
                 xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
                 xsd->mid_Dispose = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-                D(bug("[VCGfx] BitMap class @ 0x%p\n", xsd->basebm));
+                D(bug("[FBGfx] BitMap class @ 0x%p\n", xsd->basebm));
 
                 InitSemaphore(&xsd->framebufferlock);
                 InitSemaphore(&xsd->HW_acc);
 
-                D(bug("[VCGfx] Init: Everything OK, installing driver\n"));
+                D(bug("[FBGfx] Init: Everything OK, installing driver\n"));
                 
                 /*
                  * It is unknown (and no way to know) what hardware part this driver uses.
@@ -105,9 +105,9 @@ static int VCGfx_Init(LIBBASETYPEPTR LIBBASE)
                  * is installed.
                  * This is done by graphics.library if DDRV_BootMode is set to TRUE.
                  */
-                err = AddDisplayDriver(xsd->vcgfxclass, NULL, DDRV_BootMode, TRUE, TAG_DONE);
+                err = AddDisplayDriver(xsd->fbgfxclass, NULL, DDRV_BootMode, TRUE, TAG_DONE);
 
-                D(bug("[VCGfx] AddDisplayDriver() result: %u\n", err));
+                D(bug("[FBGfx] AddDisplayDriver() result: %u\n", err));
                 if (!err)
                 {
                     /* expunge protection */
@@ -120,9 +120,9 @@ static int VCGfx_Init(LIBBASETYPEPTR LIBBASE)
     }
     else
     {
-        D(bug("[VCGfx] Failed to open graphics.library!\n"));
+        D(bug("[FBGfx] Failed to open graphics.library!\n"));
     }
     return res;
 }
 
-ADD2INITLIB(VCGfx_Init, 0)
+ADD2INITLIB(FBGfx_Init, 0)

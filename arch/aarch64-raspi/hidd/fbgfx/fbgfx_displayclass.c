@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2016-2026, The AROS Development Team. All rights reserved.
 
-    Desc: Display class for VCFB.
+    Desc: Display class for FB.
     Lang: English.
 */
 
@@ -27,12 +27,12 @@
 #define __OOP_NOATTRBASES__
 #endif
 
-#include "vcgfx_hidd.h"
-#include "vcgfx_support.h"
+#include "fbgfx_hidd.h"
+#include "fbgfx_support.h"
 
 #include LC_LIBDEFS_FILE
 
-OOP_Object *VCGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *FBGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags[] =
     {
@@ -62,7 +62,7 @@ OOP_Object *VCGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         {aHidd_Sync_VDisp,              0                       },
         {aHidd_Sync_HMax,               16384                   },
         {aHidd_Sync_VMax,               16384                   },
-        {aHidd_Sync_Description,        (IPTR)"VCFB:%hx%v"      },
+        {aHidd_Sync_Description,        (IPTR)"FB:%hx%v"      },
         {TAG_DONE,                      0UL                     }
     };
     struct TagItem modetags[] =
@@ -78,7 +78,7 @@ OOP_Object *VCGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     };
     struct pRoot_New newdispMsg;
 
-    D(bug("[VCGfx:Display] %s()\n", __func__));
+    D(bug("[FBGfx:Display] %s()\n", __func__));
 
     /* Do not allow more than one object instance to be created */
     if (XSD(cl)->vcfbdisplay)
@@ -109,18 +109,18 @@ OOP_Object *VCGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&newdispMsg);
 
-    D(bug("[VCGfx:Display] %s: obj @ 0x%p\n", __func__, o));
+    D(bug("[FBGfx:Display] %s: obj @ 0x%p\n", __func__, o));
     return o;
 }
 
-VOID VCGfxDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID FBGfxDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
 
     Hidd_Switch (msg->attrID, idx)
     {
     case aoHidd_Name:
-        *msg->storage = (IPTR)"VCFB Display";
+        *msg->storage = (IPTR)"FB Display";
         return;
     }
 
@@ -129,13 +129,13 @@ VOID VCGfxDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
 /*********  Display::CreateObject()  ***************************/
 
-OOP_Object *VCGfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
+OOP_Object *FBGfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
-    D(bug("[VCGfx:Display] %s()\n", __func__));
-    D(bug("[VCGfx:Display] %s: requested class 0x%p\n", __func__, msg->cl));
-    D(bug("[VCGfx:Display] %s: base bitmap class 0x%p\n", __func__, XSD(cl)->basebm));
+    D(bug("[FBGfx:Display] %s()\n", __func__));
+    D(bug("[FBGfx:Display] %s: requested class 0x%p\n", __func__, msg->cl));
+    D(bug("[FBGfx:Display] %s: base bitmap class 0x%p\n", __func__, XSD(cl)->basebm));
 
     if (msg->cl == XSD(cl)->basebm)
     {
@@ -175,40 +175,40 @@ OOP_Object *VCGfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    ReturnPtr("VCGfx.Display::CreateObject", OOP_Object *, object);
+    ReturnPtr("FBGfx.Display::CreateObject", OOP_Object *, object);
 }
 
 /*********  Display::Show()  ***************************/
 
-OOP_Object *VCGfxDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
+OOP_Object *FBGfxDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
 {
-    struct VCGfx_staticdata *data = XSD(cl);
+    struct FBGfx_staticdata *data = XSD(cl);
     struct TagItem tags[] = {
         {aHidd_BitMap_Visible, FALSE},
         {TAG_DONE            , 0    }
     };
 
-    D(bug("[VCGfx:Display] Show(0x%p), old visible 0x%p\n", msg->bitMap, data->visible));
+    D(bug("[FBGfx:Display] Show(0x%p), old visible 0x%p\n", msg->bitMap, data->visible));
 
     LOCK_FRAMEBUFFER(data);
 
     /* Remove old bitmap from the screen */
     if (data->visible)
     {
-        D(bug("[VCGfx:Display] Hiding old bitmap\n"));
+        D(bug("[FBGfx:Display] Hiding old bitmap\n"));
         OOP_SetAttrs(data->visible, tags);
     }
 
     if (msg->bitMap)
     {
         /* If we have a bitmap to show, set it as visible */
-        D(bug("[VCGfx:Display] Showing new bitmap\n"));
+        D(bug("[FBGfx:Display] Showing new bitmap\n"));
         tags[0].ti_Data = TRUE;
         OOP_SetAttrs(msg->bitMap, tags);
     }
     else
     {
-        D(bug("[VCGfx:Display] Blanking screen\n"));
+        D(bug("[FBGfx:Display] Blanking screen\n"));
         /* Otherwise simply clear the framebuffer */
         ClearBuffer(&data->data);
     }
@@ -216,6 +216,6 @@ OOP_Object *VCGfxDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struc
     data->visible = msg->bitMap;
     UNLOCK_FRAMEBUFFER(data);
 
-    D(bug("[VCGfx:Display] Show() done\n"));
+    D(bug("[FBGfx:Display] Show() done\n"));
     return msg->bitMap;
 }

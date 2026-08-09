@@ -4,17 +4,21 @@
     Desc: Broadcom RNG back-end for entropy.resource on Raspberry Pi.
 
     The BCM2835 family provides a hardware random-number generator at
-    peripheral offset 0x104000. The same block is present on the Pi SoCs
-    supported by the arm and aarch64 RasPi targets. Raw values are only folded
-    into entropy.resource's ChaCha20 state; they are never exposed directly.
+    peripheral offset 0x104000. BCM2711 and later put an RNG200 with a
+    different register layout at that address, so the device tree decides
+    whether this back-end drives it at all. Raw values are only folded into
+    entropy.resource's ChaCha20 state; they are never exposed directly.
 */
 
 #include <aros/macros.h>
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
+#include <proto/openfirmware.h>
 
 #include "entropy_intern.h"
+
+#define BCM_RNG_COMPATIBLE      "brcm,bcm2835-rng"
 
 #define BCM_RNG_OFFSET          0x104000
 #define BCM_RNG_CTRL            0x00
@@ -33,6 +37,49 @@
 
 /* KrnGetSystemAttr() is an interface of kernel.resource. */
 APTR KernelBase __attribute__((used)) = NULL;
+
+static BOOL bcm_rng_streq(CONST_STRPTR a, CONST_STRPTR b)
+{
+    while (*a && *a == *b)
+    {
+        a++;
+        b++;
+    }
+    return (*a == *b);
+}
+
+/* The device tree says what really sits at 0x104000. An RNG200 answers there
+   on BCM2711 and later, and a machine whose firmware disabled the node may
+   not decode the address at all - QEMU's Pi 4 aborts the first access. Only
+   drive the block whose register layout this file implements. */
+static BOOL bcm_rng_present(void)
+{
+    void *OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    CONST_STRPTR value;
+
+    if (OpenFirmwareBase == NULL)
+        return FALSE;
+
+    /* Look the block up by its binding, not by a path: the unit address in
+       a node name is a bus address and moves between SoC generations. The
+       BCM2711 and later carry an RNG200 with different registers, and it
+       does not answer to this name. */
+    key = OF_FindNodeByCompatible(NULL, BCM_RNG_COMPATIBLE);
+    if (key == NULL)
+        return FALSE;
+
+    prop = OF_FindProperty(key, "status");
+    if (prop != NULL)
+    {
+        value = OF_GetPropValue(prop);
+        if (value != NULL && !bcm_rng_streq(value, "okay") &&
+            !bcm_rng_streq(value, "ok"))
+            return FALSE;
+    }
+
+    return TRUE;
+}
 
 static ULONG bcm_rng_read(volatile UBYTE *base, ULONG offset)
 {
@@ -90,6 +137,9 @@ void Entropy_HW_Init(struct EntropyBase *EntropyBase)
 
     peripheral_base = KrnGetSystemAttr(KATTR_PeripheralBase);
     if (peripheral_base == 0 || peripheral_base == -1)
+        return;
+
+    if (!bcm_rng_present())
         return;
 
     base = (volatile UBYTE *)peripheral_base + BCM_RNG_OFFSET;

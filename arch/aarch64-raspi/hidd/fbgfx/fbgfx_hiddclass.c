@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: Class for VCFB.
+    Desc: Class for FB.
 */
 
 #include <aros/asmcall.h>
@@ -22,8 +22,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include "vcgfx_hidd.h"
-#include "vcgfx_support.h"
+#include "fbgfx_hidd.h"
+#include "fbgfx_support.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -38,22 +38,22 @@ AROS_INTH1(ResetHandler, struct HWData *, hwdata)
     AROS_INTFUNC_EXIT
 }
 
-OOP_Object *VCGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *FBGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem msgNewTags[] =
     {
-        { aHidd_Name            , (IPTR)"vcgfx.hidd"                 },
-        { aHidd_HardwareName    , (IPTR)"VCFB Compatible Controller"   },
+        { aHidd_Name            , (IPTR)"fbgfx.hidd"                 },
+        { aHidd_HardwareName    , (IPTR)"FB Compatible Controller"   },
         { aHidd_ProducerName    , (IPTR)"vcfb.org"                     },
         {TAG_MORE, 0UL}
     };
     struct pRoot_New msgNew;
 
-    EnterFunc(bug("VCGfx::New()\n"));
+    EnterFunc(bug("FBGfx::New()\n"));
 
     /* Protect against some stupid programmer wishing to
-       create one more VCFB driver */
-    if (XSD(cl)->vcgfxhidd)
+       create one more FB driver */
+    if (XSD(cl)->fbgfxhidd)
         return NULL;
 
     if ((msgNewTags[3].ti_Data = (IPTR)msg->attrList) == 0)
@@ -65,7 +65,7 @@ OOP_Object *VCGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&msgNew);
     if (o)
     {
-        struct VCGfxHiddData *data = OOP_INST_DATA(cl, o);
+        struct FBGfxHiddData *data = OOP_INST_DATA(cl, o);
         struct TagItem displaytags[] =
         {
             { aHidd_Display_GfxHidd, (IPTR)o },
@@ -77,8 +77,8 @@ OOP_Object *VCGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         XSD(cl)->vcfbdisplay = OOP_NewObject(XSD(cl)->displayclass, NULL, displaytags);
         if (XSD(cl)->vcfbdisplay)
         {
-            D(bug("[VCGfx:Driver] %s: display @ 0x%p\n", __func__, XSD(cl)->vcfbdisplay));
-            XSD(cl)->vcgfxhidd = o;
+            D(bug("[FBGfx:Driver] %s: display @ 0x%p\n", __func__, XSD(cl)->vcfbdisplay));
+            XSD(cl)->fbgfxhidd = o;
 
             data->ResetInterrupt.is_Node.ln_Name = cl->ClassNode.ln_Name;
             data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
@@ -92,19 +92,19 @@ OOP_Object *VCGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
             o = NULL;
         }
     }
-    ReturnPtr("VCGfx::New", OOP_Object *, o);
+    ReturnPtr("FBGfx::New", OOP_Object *, o);
 }
 
-VOID VCGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID FBGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct VCGfxHiddData *data = OOP_INST_DATA(cl, o);
+    struct FBGfxHiddData *data = OOP_INST_DATA(cl, o);
 
     RemResetCallback(&data->ResetInterrupt);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    XSD(cl)->vcgfxhidd = NULL;
+    XSD(cl)->fbgfxhidd = NULL;
 }
 
-VOID VCGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID FBGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
 

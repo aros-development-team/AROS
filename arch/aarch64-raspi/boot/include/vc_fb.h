@@ -10,6 +10,10 @@
 extern int vcfb_init(void);
 extern void fb_Putc(char chr);
 
+/* Framebuffer base and geometry set by vcfb_init(), consumed by the kernel taglist. */
+extern void *vcfb_base;
+extern unsigned int vcfb_width, vcfb_height, vcfb_depth, vcfb_pitch;
+
 #if !defined(KRN_Dummy)
 #define KRN_Dummy               (TAG_USER + 0x03d00000)
 #endif

@@ -325,36 +325,60 @@ void query_memory()
             uint32_t ac = acp ? AROS_BE2LONG(*(uint32_t *)acp->op_value) : 1;
             uint32_t sc = scp ? AROS_BE2LONG(*(uint32_t *)scp->op_value) : 1;
             volatile uint32_t *addr = p->op_value;
-            uint64_t base = 0, size = 0;
+            uint32_t cells = p->op_length / 4;
+            uint32_t used = 0;
+            int ranges = 0;
 
-            for (uint32_t i = 0; i < ac; i++)
-                base = (base << 32) | AROS_BE2LONG(*addr++);
-            for (uint32_t i = 0; i < sc; i++)
-                size = (size << 32) | AROS_BE2LONG(*addr++);
+            /*
+             * "reg" holds a list of (address, size) tuples, not just one: the
+             * Pi 4 firmware describes anything past the first GB as a separate
+             * entry, so a board with more than 1GB loses everything above it if
+             * only the first tuple is read. Emit a tag pair per range - the
+             * kernel builds one memory header from each.
+             */
+            while (used + ac + sc <= cells)
+            {
+                uint64_t base = 0, size = 0;
+                uint32_t i;
 
-            uint32_t lower = (uint32_t)base;
-            uint32_t upper = (uint32_t)(base + size);
+                for (i = 0; i < ac; i++)
+                    base = (base << 32) | AROS_BE2LONG(*addr++);
+                for (i = 0; i < sc; i++)
+                    size = (size << 32) | AROS_BE2LONG(*addr++);
+                used += ac + sc;
 
-            kprintf("[BOOT] System memory range: %08x-%08x\n", lower, upper-1);
+                if (size == 0)
+                    continue;
 
-            if (((upper - lower) >> 20) < 256) {
-                kprintf("[BOOT] MISMATCHED FILES: start.elf and fixup.dat do not fit to each other!\n");
-                while(1) asm volatile("wfi");
+                uint64_t lower = base;
+                uint64_t upper = base + size;
+
+                kprintf("[BOOT] System memory range %d: %p-%p\n", ranges, lower, upper - 1);
+
+                /* Only the range the kernel is placed in has to be sizeable. */
+                if (ranges == 0 && ((upper - lower) >> 20) < 256) {
+                    kprintf("[BOOT] MISMATCHED FILES: start.elf and fixup.dat do not fit to each other!\n");
+                    while(1) asm volatile("wfi");
+                }
+
+                boottag->ti_Tag = KRN_MEMLower;
+                if ((boottag->ti_Data = lower) < sizeof(struct bcm2708bootmem))
+                    boottag->ti_Data = sizeof(struct bcm2708bootmem);
+
+                boottag++;
+                boottag->ti_Tag = KRN_MEMUpper;
+                boottag->ti_Data = upper;
+
+                /* The kernel is loaded at the top of the first range, and the
+                   loader lowers that tag in place as it does so. */
+                if (ranges == 0)
+                    mem_upper = &boottag->ti_Data;
+
+                boottag++;
+                ranges++;
+
+                mmu_map_section(lower, lower, upper - lower, 1, 1, 3, 1);
             }
-
-            boottag->ti_Tag = KRN_MEMLower;
-            if ((boottag->ti_Data = lower) < sizeof(struct bcm2708bootmem))
-                boottag->ti_Data = sizeof(struct bcm2708bootmem);
-
-            boottag++;
-            boottag->ti_Tag = KRN_MEMUpper;
-            boottag->ti_Data = upper;
-
-            mem_upper = &boottag->ti_Data;
-
-            boottag++;
-
-            mmu_map_section(lower, lower, upper - lower, 1, 1, 3, 1);
         }
     }
 }
@@ -565,6 +589,24 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
     {
         boottag->ti_Tag = KRN_FuncPutC;
         boottag->ti_Data = (IPTR)fb_Putc;
+        boottag++;
+
+        /* Hand the linear framebuffer to the kernel/graphics HIDD. The
+           surface lives in the VideoCore region, which query_vmem() maps. */
+        boottag->ti_Tag = KRN_FBAddr;
+        boottag->ti_Data = (IPTR)vcfb_base;
+        boottag++;
+        boottag->ti_Tag = KRN_FrameBufferWidth;
+        boottag->ti_Data = vcfb_width;
+        boottag++;
+        boottag->ti_Tag = KRN_FrameBufferHeight;
+        boottag->ti_Data = vcfb_height;
+        boottag++;
+        boottag->ti_Tag = KRN_FrameBufferDepth;
+        boottag->ti_Data = vcfb_depth;
+        boottag++;
+        boottag->ti_Tag = KRN_FrameBufferPitch;
+        boottag->ti_Data = vcfb_pitch;
         boottag++;
     }
 

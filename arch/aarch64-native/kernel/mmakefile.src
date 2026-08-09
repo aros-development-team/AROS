@@ -51,6 +51,7 @@ CFILES := \
         unmapglobal \
         vars \
         screen_fb \
+        kernel_fb \
         font8x14 \
         devicetree
 
