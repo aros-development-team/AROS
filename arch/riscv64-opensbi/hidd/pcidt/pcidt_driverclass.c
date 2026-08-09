@@ -126,11 +126,13 @@ static void pcidt_mapranges(struct pcidt_staticdata *psd, fdt_node_t node,
         if (space == PCI_RANGE_IO)
         {
             b->ioPciBase = (IPTR)FDT_ReadCells(&e[1], 2);
+            b->ioCpuBase = (IPTR)cpu;
             b->ioSize    = (IPTR)size;
         }
         else
         {
             b->mem32PciBase = (IPTR)FDT_ReadCells(&e[1], 2);
+            b->mem32CpuBase = (IPTR)cpu;
             b->mem32Size    = (IPTR)size;
         }
 
@@ -657,6 +659,7 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
 
             /* The windows devices behind this bridge will answer in */
             pcidt_mapranges(psd, node, b);
+            PCIDT_DropBootCfgWindows(b);
             pcidt_assignbars(psd, b);
             pcidt_map64bars(psd, b);
 

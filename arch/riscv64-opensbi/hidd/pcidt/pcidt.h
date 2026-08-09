@@ -88,8 +88,10 @@ struct pcidt_bridge
     /* The 32-bit memory and I/O windows, for handing out space
        firmware did not */
     IPTR                mem32PciBase;
+    IPTR                mem32CpuBase;
     IPTR                mem32Size;
     IPTR                ioPciBase;
+    IPTR                ioCpuBase;
     IPTR                ioSize;
 
     /*
@@ -193,6 +195,7 @@ ULONG PCIDT_ReadConfig(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
                        UBYTE sub, UWORD reg);
 void  PCIDT_WriteConfig(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
                         UBYTE sub, UWORD reg, ULONG val);
+void  PCIDT_DropBootCfgWindows(struct pcidt_bridge *b);
 void  PCIDT_EnableDMA(struct pcidt_bridge *b, IPTR base, IPTR size);
 void  PCIDT_DisableMSI(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
                        UBYTE sub);

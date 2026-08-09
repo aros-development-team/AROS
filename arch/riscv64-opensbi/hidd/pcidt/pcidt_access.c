@@ -152,6 +152,83 @@ static void dwc_setup_dma(struct pcidt_bridge *b, IPTR base, IPTR size)
     (void)mmio_read32(atu + DWC_ATU_CTRL2);
 }
 
+/*
+ * Drop the boot firmware's outbound config windows that shadow the
+ * memory and I/O windows the device tree describes.
+ *
+ * Some firmwares hand over with ECAM-style config windows programmed
+ * into the outbound regions, parked inside those windows - here they
+ * overlay the start of the 64-bit prefetch window, where a
+ * framebuffer BAR lives. A memory access that lands in one becomes a
+ * config transaction: a wide store is malformed there and the
+ * completion never comes, which stalls the hart with no trap.
+ *
+ * The device tree is the authority on the address map on this path,
+ * and config access goes through our own viewport (see dwc_setup), so
+ * a CFG-type region contradicting the tree is broken handoff state:
+ * disable it. Regions elsewhere, and every memory and I/O region, are
+ * left exactly as the firmware set them - on a clean handoff this
+ * routine changes nothing. An address matching no region passes
+ * through untranslated, which is what the identity ranges describe.
+ */
+#define DWC_ATU_BOOT_REGIONS    8
+
+static int dwc_overlaps(IPTR rbase, IPTR rend, IPTR wbase, IPTR wsize)
+{
+    if (!wsize)
+        return 0;
+    return (rbase <= wbase + wsize - 1) && (rend >= wbase);
+}
+
+void PCIDT_DropBootCfgWindows(struct pcidt_bridge *b)
+{
+    unsigned int i;
+
+    if (b->access != PCIDT_ACCESS_DWC || !b->dbiBase)
+        return;
+
+    /* Also settles atuUnroll before the first config access */
+    dwc_probe_atu(b);
+
+    for (i = 0; i < DWC_ATU_BOOT_REGIONS; i++)
+    {
+        IPTR atu, base, end;
+        ULONG type, ctrl2;
+
+        if (b->atuUnroll)
+            atu = b->dbiBase + DWC_ATU_REGION(i);
+        else
+        {
+            dwc_vp_select(b, i, 0);
+            atu = b->dbiBase + DWC_ATU_VP_CTRL1 - DWC_ATU_CTRL1;
+        }
+
+        ctrl2 = mmio_read32(atu + DWC_ATU_CTRL2);
+        type  = mmio_read32(atu + DWC_ATU_CTRL1) & 0x1f;
+
+        if (!(ctrl2 & DWC_ATU_ENABLE) ||
+            (type != DWC_ATU_TYPE_CFG0 && type != DWC_ATU_TYPE_CFG1))
+            continue;
+
+        /* The limit register carries the low 32 bits; a config window
+           never crosses a 4GiB boundary */
+        base = ((IPTR)mmio_read32(atu + DWC_ATU_UPPER_BASE) << 32) |
+               mmio_read32(atu + DWC_ATU_LOWER_BASE);
+        end  = (base & ~(IPTR)0xffffffff) |
+               mmio_read32(atu + DWC_ATU_LIMIT);
+
+        if (!dwc_overlaps(base, end, b->mem64CpuBase, b->mem64Size) &&
+            !dwc_overlaps(base, end, b->mem32CpuBase, b->mem32Size) &&
+            !dwc_overlaps(base, end, b->ioCpuBase, b->ioSize))
+            continue;
+
+        mmio_write32(atu + DWC_ATU_CTRL2, 0);
+        (void)mmio_read32(atu + DWC_ATU_CTRL2);
+        D(bug("[PCIDT] dbi %p: dropped boot config window %u (%p-%p)\n",
+              b->dbiBase, i, base, end);)
+    }
+}
+
 void PCIDT_EnableDMA(struct pcidt_bridge *b, IPTR base, IPTR size)
 {
     IPTR atu;
