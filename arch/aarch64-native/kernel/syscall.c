@@ -124,8 +124,27 @@ void cache_clear_e(void *addr, uint64_t length, uint64_t flags)
     }
     else if (flags & CACRF_InvalidateD)
     {
+        /*
+         * A pure invalidate operates on whole lines, so a range that does
+         * not start and end on a line boundary would discard dirty bytes
+         * outside it: the partial head and tail lines also cover unrelated
+         * data, and any writeback pending there is lost (seen on real
+         * hardware as unrelated allocations reverting to stale contents).
+         * Promote just those two lines to clean+invalidate, the way the
+         * arm implementation does.
+         */
+        uintptr_t head_line = ((uintptr_t)addr & 63)
+                                ? (uintptr_t)start : (uintptr_t)-1;
+        uintptr_t tail_line = (((uintptr_t)addr + length) & 63)
+                                ? ((uintptr_t)end - 64) : (uintptr_t)-1;
+
         for (p = start; p < end; p += 64)
-            asm volatile("dc ivac, %0" :: "r"(p));
+        {
+            if (((uintptr_t)p == head_line) || ((uintptr_t)p == tail_line))
+                asm volatile("dc civac, %0" :: "r"(p));
+            else
+                asm volatile("dc ivac, %0" :: "r"(p));
+        }
     }
     asm volatile("dsb ish" ::: "memory");
 
