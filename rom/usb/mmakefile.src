@@ -54,7 +54,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM         kernel-usb
 
 #MM- kernel-usb-opensbi-riscv64 : \
-#MM         kernel-usb-trident
+#MM         kernel-usb-trident \
+#MM         kernel-usb-classes-common \
+#MM         poseidon-usb-shellcommands
 
 # This is kickstart package contents
 USB_CLASSES := USB/bootkeyboard USB/bootmouse USB/hubss USB/hub USB/hid USB/massstorage
