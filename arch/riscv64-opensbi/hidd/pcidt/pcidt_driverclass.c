@@ -866,10 +866,12 @@ void PCIDT__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 /*
  * Memory a bus master can reach.
  *
- * The base class asks for MEMF_31BIT, which on this architecture can
- * never be satisfied - RAM starts at 2GB, so nothing lives below it.
- * These controllers are cache coherent and their windows reach well
- * above 4GB, so ordinary memory is what a device should be given.
+ * The base class asks for MEMF_31BIT. RAM here starts at 2GB, so only
+ * the banks below 4GB that kernel_startup declares with that flag could
+ * serve it - a pool better left to the consumers that genuinely need
+ * 32-bit addresses (hunk relocation, 32-bit DMA bounce buffers). These
+ * controllers are cache coherent and their windows reach well above
+ * 4GB, so ordinary memory is what a device should be given.
  *
  * The layout matches the base class: the allocation is padded so the
  * address handed out is page aligned, with the real pointer stored in

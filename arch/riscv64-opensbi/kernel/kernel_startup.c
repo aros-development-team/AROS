@@ -59,6 +59,18 @@ extern char __kernel_end[];
 /* Lowest allocatable memory answers MEMF_CHIP requests */
 #define CHIPMEM_SIZE    (16 * 1024 * 1024)
 
+/*
+ * RAM here begins at 2GB, so exec's below-2GB rule never marks a bank
+ * MEMF_31BIT - yet hunk relocation (AmigaOS font and keymap files) and
+ * 32-bit DMA bounce buffers all allocate with that flag, and without a
+ * bank carrying it every such allocation fails outright. Any bank that
+ * stays fully below 4GB satisfies what those consumers actually need
+ * (32-bit addressability), so declare the flag on those banks.
+ * "end" is the exclusive upper bound of the bank.
+ */
+#define MEMF_BELOW4G(end) \
+    ((((IPTR)(end) - 1) <= 0xFFFFFFFFUL) ? MEMF_31BIT : 0)
+
 #define BOOTTAG_MAX 16
 static struct TagItem BootTags[BOOTTAG_MAX];
 
@@ -668,7 +680,8 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
             chipmh = (struct MemHeader *)memlow;
             krnCreateMemHeader("Chip Memory", -6, (APTR)memlow, CHIPMEM_SIZE,
                                MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK |
-                               MEMF_LOCAL);
+                               MEMF_LOCAL |
+                               MEMF_BELOW4G(memlow + CHIPMEM_SIZE));
             if (use_tlsf)
             {
                 struct MemHeader *tmh = krnConvertMemHeaderToTLSF(chipmh);
@@ -682,7 +695,8 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
         mh = (struct MemHeader *)memlow;
         krnCreateMemHeader("System Memory", 0, (APTR)memlow,
                            memhigh - memlow,
-                           MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+                           MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL |
+                           MEMF_BELOW4G(memhigh));
         if (use_tlsf)
         {
             struct MemHeader *tmh = krnConvertMemHeaderToTLSF(mh);
@@ -783,7 +797,8 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                             krnCreateMemHeader("System Memory", 0, (APTR)glo,
                                                ghi - glo, MEMF_FAST |
                                                MEMF_PUBLIC | MEMF_KICK |
-                                               MEMF_LOCAL);
+                                               MEMF_LOCAL |
+                                               MEMF_BELOW4G(ghi));
                             if (use_tlsf) {
                                 struct MemHeader *tmh =
                                     krnConvertMemHeaderToTLSF(xmh);
@@ -800,6 +815,31 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                         if (i < nx && ehi > p) p = ehi;
                         if (p >= re) break;
                     }
+                }
+            }
+
+            /* Diagnostic: dump Exec's actual MemHeader list (name, range,
+             * free bytes and mh_Attributes flags) so the free pool and the
+             * MEMF_* flags of every bank can be verified. Temporary. */
+            {
+                struct MemHeader *dmh;
+                krnSBIPutStr("mem: exec MemList (name lower - upper"
+                             " free attr):\n");
+                for (dmh = (struct MemHeader *)SysBase->MemList.lh_Head;
+                     dmh->mh_Node.ln_Succ;
+                     dmh = (struct MemHeader *)dmh->mh_Node.ln_Succ) {
+                    krnSBIPutStr("  MH '");
+                    krnSBIPutStr(dmh->mh_Node.ln_Name ?
+                                 dmh->mh_Node.ln_Name : "?");
+                    krnSBIPutStr("' ");
+                    krnSBIPutHex((IPTR)dmh->mh_Lower);
+                    krnSBIPutStr(" - ");
+                    krnSBIPutHex((IPTR)dmh->mh_Upper);
+                    krnSBIPutStr(" free=");
+                    krnSBIPutHex((IPTR)dmh->mh_Free);
+                    krnSBIPutStr(" attr=");
+                    krnSBIPutHex((IPTR)dmh->mh_Attributes);
+                    krnSBIPutStr("\n");
                 }
             }
 
