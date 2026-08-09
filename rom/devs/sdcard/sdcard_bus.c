@@ -40,6 +40,16 @@
 
 /* Generic "Bus Unit" Functions */
 
+/* How long a single block may keep the PIO transfer waiting */
+#define SDHCI_DATA_TIMEOUT_US   1000000
+
+/*
+ * How often the controller is re-examined while waiting on it. Waiting a
+ * millisecond at a time costs more than the work being waited for: a 64K
+ * transfer only takes about 2.7ms, so a single overshoot is a quarter of it.
+ */
+#define SDHCI_POLL_US           25
+
 static const char *str_mmc0 = "MMC0";
 
 BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
@@ -156,6 +166,9 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
                 }
             }
         }
+
+        /* Prove the controller's own transfers land where we think they do. */
+        FNAME_SDCBUS(ADMAVerify)(sdcUnit);
     }
 
     D(bug("[SDCard%02ld] %s: Done.\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
@@ -509,6 +522,7 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 {
     ULONG       sdcClkDiv, timeout;
     UWORD       sdcClkCtrlCur, sdcClkCtrl;
+    BOOL        sdcReprogram = FALSE;
 
     DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
@@ -519,7 +533,29 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
     sdcClkCtrl = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
     sdcClkCtrl |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
 
-    if (sdcClkCtrl != (sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_INT_STABLE|SDHCI_CLOCK_CARD_EN)))
+    /*
+     * Past 25MHz the controller has to sample with high speed timing, and the
+     * bit that selects it may only be touched while the card clock is stopped.
+     */
+    if (bus->sdcb_Capabilities & SDHCI_CAN_DO_HISPD)
+    {
+        UBYTE sdcCtrlCur = bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, bus);
+        UBYTE sdcCtrlNew = (speed > 25000000) ? (sdcCtrlCur | SDHCI_HCTRL_HISPD)
+                                              : (sdcCtrlCur & ~SDHCI_HCTRL_HISPD);
+
+        if (sdcCtrlNew != sdcCtrlCur)
+        {
+            D(bug("[SDBus%02u] %s: %s high speed timing\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__,
+                  (sdcCtrlNew & SDHCI_HCTRL_HISPD) ? "Enabling" : "Disabling"));
+
+            bus->sdcb_IOWriteWord(SDHCI_CLOCK_CONTROL, 0, bus);
+            bus->sdcb_IOWriteByte(SDHCI_HOST_CONTROL, sdcCtrlNew, bus);
+            sdcReprogram = TRUE;
+        }
+    }
+
+    if (sdcReprogram ||
+        (sdcClkCtrl != (sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_INT_STABLE|SDHCI_CLOCK_CARD_EN))))
     {
         bus->sdcb_IOWriteWord(SDHCI_CLOCK_CONTROL, 0, bus);
 
@@ -596,6 +632,225 @@ void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, BOOL lowest, struct sdcard
 #define DTRANS(x) /*x*/
 #undef D
 #define D(x) /*x*/
+
+/********** ADMA2 **************/
+
+/*
+ * The address the controller puts on the bus. The EMMC2 block is an ARM side
+ * master and sees plain physical addresses, unlike the VideoCore DMA engine
+ * the SDHOST driver drives, which needs the 0xC0000000 alias. A controller
+ * that needs a different view should have it applied here and nowhere else.
+ */
+static IPTR FNAME_SDCBUS(ADMAPhys)(struct sdcard_Bus *bus, APTR virt)
+{
+    struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
+
+    return (IPTR)KrnVirtualToPhysical(virt);
+}
+
+BOOL FNAME_SDCBUS(ADMAAlloc)(struct sdcard_Bus *bus)
+{
+    APTR desc, bounce;
+
+    if (!(bus->sdcb_Capabilities & SDHCI_CAN_DO_ADMA2))
+    {
+        bug("[SDBus%02u] controller has no ADMA2, transfers will use PIO\n", bus->sdcb_BusNum);
+        return FALSE;
+    }
+
+    /*
+     * Both live below 2GB because the controller cannot address more, and
+     * both are padded out to whole cache lines: cache maintenance works a
+     * line at a time and would otherwise reach into whatever shares them.
+     */
+    desc = AllocMem((ADMA2_MAX_DESC * sizeof(struct sdcard_ADMADesc)) + 64,
+                    MEMF_PUBLIC | MEMF_CLEAR | MEMF_31BIT);
+    bounce = AllocMem(ADMA2_BOUNCE_SIZE + 64, MEMF_PUBLIC | MEMF_31BIT);
+
+    if (!desc || !bounce)
+    {
+        bug("[SDBus%02u] no memory for ADMA2, transfers will use PIO\n", bus->sdcb_BusNum);
+        if (desc)
+            FreeMem(desc, (ADMA2_MAX_DESC * sizeof(struct sdcard_ADMADesc)) + 64);
+        if (bounce)
+            FreeMem(bounce, ADMA2_BOUNCE_SIZE + 64);
+        return FALSE;
+    }
+
+    bus->sdcb_ADMADesc = (APTR)(((IPTR)desc + 63) & ~63);
+    bus->sdcb_ADMABounce = (APTR)(((IPTR)bounce + 63) & ~63);
+    bus->sdcb_ADMABounceSize = ADMA2_BOUNCE_SIZE;
+    bus->sdcb_BusFlags |= AF_Bus_DMA;
+
+    D(bug("[SDBus%02u] ADMA2 descriptors @ 0x%p, bounce @ 0x%p\n", bus->sdcb_BusNum,
+          bus->sdcb_ADMADesc, bus->sdcb_ADMABounce));
+
+    return TRUE;
+}
+
+/*
+ * Describe the caller's buffer to the controller. Returns FALSE to leave the
+ * transfer to PIO, which is always a valid thing to fall back on.
+ */
+static BOOL FNAME_SDCBUS(ADMASetup)(struct sdcard_Bus *bus, APTR data, ULONG len, BOOL isWrite)
+{
+    struct sdcard_ADMADesc      *desc = bus->sdcb_ADMADesc;
+    UBYTE                       *pos;
+    ULONG                       remaining;
+    UBYTE                       sdcHostCtrl;
+    UWORD                       n = 0;
+
+    if (!(bus->sdcb_BusFlags & AF_Bus_DMA) || (data == NULL) || (len == 0))
+        return FALSE;
+
+    bus->sdcb_BusFlags &= ~AF_Bus_DMABounced;
+
+    /*
+     * Cache maintenance works a line at a time, so a buffer that starts or
+     * ends mid line would drag its neighbours along. Anything unaligned goes
+     * through the bounce buffer instead.
+     */
+    if (((IPTR)data | (IPTR)len) & 63)
+    {
+        if (len > bus->sdcb_ADMABounceSize)
+            return FALSE;
+
+        bus->sdcb_BusFlags |= AF_Bus_DMABounced;
+    }
+
+    bus->sdcb_ADMAData = data;
+    bus->sdcb_ADMALen = len;
+
+    pos = (bus->sdcb_BusFlags & AF_Bus_DMABounced) ? bus->sdcb_ADMABounce : data;
+
+    if ((bus->sdcb_BusFlags & AF_Bus_DMABounced) && isWrite)
+        CopyMem(data, pos, len);
+
+    /*
+     * Walk the buffer a page at a time, merging pages that turn out to be
+     * physically adjacent. On a flat mapping that collapses to one descriptor,
+     * and where it does not, ADMA2 handles the scatter for us.
+     */
+    remaining = len;
+    while (remaining > 0)
+    {
+        IPTR    phys = FNAME_SDCBUS(ADMAPhys)(bus, pos);
+        ULONG   run = 4096 - ((ULONG)((IPTR)pos & 4095));
+
+        if (run > remaining)
+            run = remaining;
+
+        while ((run < remaining) && (run < ADMA2_MAX_XFER) &&
+               (FNAME_SDCBUS(ADMAPhys)(bus, pos + run) == (phys + run)))
+        {
+            ULONG more = ((remaining - run) > 4096) ? 4096 : (remaining - run);
+
+            if ((run + more) > ADMA2_MAX_XFER)
+                more = ADMA2_MAX_XFER - run;
+
+            run += more;
+        }
+
+        /* Out of the controller's reach, or too fragmented to describe. */
+        if ((n >= ADMA2_MAX_DESC) || (((UQUAD)phys + run) > 0x100000000ULL))
+        {
+            DTRANS(bug("[SDBus%02u] %s: buffer needs PIO (desc %d, phys 0x%p)\n",
+                       bus->sdcb_BusNum, __PRETTY_FUNCTION__, n, (APTR)phys));
+            return FALSE;
+        }
+
+        desc[n].ad_Attr    = AROS_WORD2LE(ADMA2_ATTR_VALID | ADMA2_ATTR_ACT_TRAN);
+        desc[n].ad_Length  = AROS_WORD2LE((UWORD)run);
+        desc[n].ad_Address = AROS_LONG2LE((ULONG)phys);
+        n++;
+
+        pos += run;
+        remaining -= run;
+    }
+
+    /* The last one closes the list and raises the completion interrupt. */
+    desc[n - 1].ad_Attr = AROS_WORD2LE(ADMA2_ATTR_VALID | ADMA2_ATTR_END |
+                                       ADMA2_ATTR_INT | ADMA2_ATTR_ACT_TRAN);
+
+    /*
+     * Push the descriptors and, for a write, the data out of the cache so the
+     * controller reads what we just wrote. For a read this also drops any
+     * dirty lines that would otherwise be written back over the result.
+     */
+    CacheClearE(bus->sdcb_ADMADesc, n * sizeof(struct sdcard_ADMADesc), CACRF_ClearD);
+    CacheClearE((bus->sdcb_BusFlags & AF_Bus_DMABounced) ? bus->sdcb_ADMABounce : data,
+                len, CACRF_ClearD);
+
+    bus->sdcb_IOWriteLong(SDHCI_ADMA_ADDRESS,
+        (ULONG)FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMADesc), bus);
+
+    sdcHostCtrl = bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, bus);
+    sdcHostCtrl = (sdcHostCtrl & ~SDHCI_HCTRL_DMA_MASK) | SDHCI_HCTRL_ADMA32;
+    bus->sdcb_IOWriteByte(SDHCI_HOST_CONTROL, sdcHostCtrl, bus);
+
+    bus->sdcb_BusFlags |= AF_Bus_DMAActive;
+
+    DTRANS(bug("[SDBus%02u] %s: %d descriptor(s) for %d bytes%s\n", bus->sdcb_BusNum,
+               __PRETTY_FUNCTION__, n, len,
+               (bus->sdcb_BusFlags & AF_Bus_DMABounced) ? " (bounced)" : ""));
+
+    return TRUE;
+}
+
+/*
+ * Read the same sectors twice, once each way, and compare. Getting the address
+ * translation wrong would otherwise show up as quietly corrupted data rather
+ * than as an error, so prove it once at startup and fall back to PIO for good
+ * if the two disagree.
+ */
+void FNAME_SDCBUS(ADMAVerify)(struct sdcard_Unit *sdcUnit)
+{
+    struct sdcard_Bus   *bus = sdcUnit->sdcu_Bus;
+    ULONG               len = 4 << bus->sdcb_SectorShift;
+    UBYTE               *viaDMA, *viaPIO;
+    ULONG               act = 0;
+    BYTE                err;
+
+    if (!(bus->sdcb_BusFlags & AF_Bus_DMA))
+        return;
+
+    viaDMA = AllocMem(len, MEMF_PUBLIC | MEMF_CLEAR | MEMF_31BIT);
+    viaPIO = AllocMem(len, MEMF_PUBLIC | MEMF_CLEAR | MEMF_31BIT);
+
+    if (!viaDMA || !viaPIO)
+    {
+        if (viaDMA)
+            FreeMem(viaDMA, len);
+        if (viaPIO)
+            FreeMem(viaPIO, len);
+        return;
+    }
+
+    err = (sdcUnit->sdcu_Flags & AF_Card_HighCapacity)
+            ? sdcUnit->sdcu_Read64(sdcUnit, 0, 4, viaDMA, &act)
+            : sdcUnit->sdcu_Read32(sdcUnit, 0, 4, viaDMA, &act);
+
+    bus->sdcb_BusFlags &= ~AF_Bus_DMA;
+
+    if (err == 0)
+        err = (sdcUnit->sdcu_Flags & AF_Card_HighCapacity)
+                ? sdcUnit->sdcu_Read64(sdcUnit, 0, 4, viaPIO, &act)
+                : sdcUnit->sdcu_Read32(sdcUnit, 0, 4, viaPIO, &act);
+
+    if ((err == 0) && (memcmp(viaDMA, viaPIO, len) == 0))
+    {
+        bus->sdcb_BusFlags |= AF_Bus_DMA;
+        bug("[SDBus%02u] ADMA2 verified against PIO, using DMA for transfers\n", bus->sdcb_BusNum);
+    }
+    else
+    {
+        bug("[SDBus%02u] ADMA2 self test FAILED (err %ld) - staying on PIO\n",
+            bus->sdcb_BusNum, (LONG)err);
+    }
+
+    FreeMem(viaDMA, len);
+    FreeMem(viaPIO, len);
+}
 
 ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 {
@@ -679,6 +934,18 @@ D(bug("SendCmd(%d,%d)\n", sdCommand, sdDataLen));
 
         if (sdDataFlags == MMC_DATA_READ)
             sdcTransMode |= SDHCI_TRANSMOD_READ;
+
+        /*
+         * Let the controller fetch the data itself where it can. PIO reads a
+         * block at a time from inside the interrupt handler, which holds the
+         * machine for as long as the transfer lasts.
+         */
+        bus->sdcb_BusFlags &= ~AF_Bus_DMAActive;
+        if (FNAME_SDCBUS(ADMASetup)(bus, (APTR)GetTagData(SDCARD_TAG_DATA, 0, CmdTags),
+                                    sdDataLen, (sdDataFlags != MMC_DATA_READ)))
+        {
+            sdcTransMode |= SDHCI_TRANSMOD_DMA;
+        }
 
         if (!(bus->sdcb_Quirks & AF_Quirk_AtomicTMAndCMD))
         {
@@ -770,9 +1037,10 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
 {
     DTRANS(UWORD        sdCommand = (UWORD)GetTagData(SDCARD_TAG_CMD, 0, DataTags));
     ULONG               sdcStateMask, sdCommandMask,
-                        sdData, sdDataMode, sdDataLen, sdcReg = 0;
+                        sdData, sdDataMode = MMC_DATA_READ, sdDataLen, sdcReg = 0;
     struct TagItem      *sdDataLenTag = NULL;
-    ULONG               timeout = 1000;
+    ULONG               waitStart = 0;
+    BOOL                waiting = FALSE;
     ULONG               retVal = 0;
 
     DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
@@ -796,6 +1064,36 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
             }
         }
     };
+
+    /*
+     * When the controller did the transfer there is nothing to move; the bytes
+     * are already in memory. All that is left is to make them visible to the
+     * CPU and, if it went the long way round, to copy them back.
+     */
+    if (bus->sdcb_BusFlags & AF_Bus_DMAActive)
+    {
+        bus->sdcb_BusFlags &= ~AF_Bus_DMAActive;
+
+        CacheClearE((bus->sdcb_BusFlags & AF_Bus_DMABounced)
+                        ? bus->sdcb_ADMABounce : bus->sdcb_ADMAData,
+                    bus->sdcb_ADMALen, CACRF_ClearD);
+
+        if (bus->sdcb_BusFlags & AF_Bus_DMABounced)
+        {
+            if (sdDataMode == MMC_DATA_READ)
+                CopyMem(bus->sdcb_ADMABounce, bus->sdcb_ADMAData, bus->sdcb_ADMALen);
+
+            bus->sdcb_BusFlags &= ~AF_Bus_DMABounced;
+        }
+
+        if (bus->sdcb_LEDCtrl)
+            bus->sdcb_LEDCtrl(LED_OFF);
+
+        DTRANS(bug("[SDBus%02u] %s: ADMA2 moved %d bytes\n", bus->sdcb_BusNum,
+                   __PRETTY_FUNCTION__, bus->sdcb_ADMALen));
+
+        return 0;
+    }
 
     if (sdData)
     {
@@ -830,12 +1128,24 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
                 }
                 sdData += tranlen;
                 sdDataLen -= tranlen;
+                waiting = FALSE;
             }
             else if (!(bus->sdcb_BusStatus & SDHCI_INT_DATA_END))
             {
-                sdcard_Udelay(1000);
+                /*
+                 * The card needs about 20us to put the next block in the
+                 * buffer, so poll at that scale: waiting a millisecond for
+                 * each block of a multi-block transfer costs more time than
+                 * the transfer itself.
+                 */
+                if (!waiting)
+                {
+                    waitStart = sdcard_CurrentTime();
+                    waiting = TRUE;
+                }
+                sdcard_Udelay(1);
 
-                if (timeout-- <= 0)
+                if ((sdcard_CurrentTime() - waitStart) > SDHCI_DATA_TIMEOUT_US)
                 {
                     bug("[SDBus%02u] %s:    Timeout!\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
                     retVal = -1;
@@ -892,19 +1202,49 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
 #if defined(__AROSEXEC_SMP__)
     struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
 #endif
-    ULONG initialTimeout = timeout;
+    /* Callers count their timeout in milliseconds. */
+    ULONG waitStart = sdcard_CurrentTime();
+    ULONG waitLimit = (timeout ? timeout : 1000) * 1000;
+    BOOL  timedOut = FALSE;
 
     if (bus->sdcb_Task == FindTask(NULL))
     {
-        Wait(1L << bus->sdcb_CommandSig);
+        /*
+         * Sleep for the completion interrupt once the controller has shown
+         * that it delivers them. Until then, poll instead: a controller whose
+         * interrupt never arrives would otherwise wedge the boot here rather
+         * than report a timeout.
+         */
+        if (bus->sdcb_BusFlags & AF_Bus_IRQSeen)
+        {
+            Wait(1L << bus->sdcb_CommandSig);
+        }
+        else
+        {
+            /*
+             * Nothing will service the controller if its interrupt does not
+             * reach us, and a data transfer needs servicing to move the bytes
+             * at all, so run the handler from here while polling.
+             */
+            while ((sdcard_CurrentTime() - waitStart) < waitLimit)
+            {
+                if (bus->sdcb_BusIRQHandler)
+                    bus->sdcb_BusIRQHandler(bus, NULL);
+
+                if (SetSignal(0, 0) & (1L << bus->sdcb_CommandSig))
+                    break;
+                sdcard_Udelay(SDHCI_POLL_US);
+            }
+            SetSignal(0, 1L << bus->sdcb_CommandSig);
+        }
     }
     else
     {
-        sdcard_Udelay(1000);
+        sdcard_Udelay(SDHCI_POLL_US);
     }
 
     while (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & mask) {
-        sdcard_Udelay(1000);
+        sdcard_Udelay(SDHCI_POLL_US);
 
         /*
          * Lost interrupt recovery for data transfers.
@@ -964,12 +1304,13 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
         if ((bus->sdcb_BusStatus & SDHCI_INT_ERROR) == SDHCI_INT_ERROR)
             break;
 
-        if (--timeout <= 0)
+        if ((sdcard_CurrentTime() - waitStart) > waitLimit)
         {
             bug("[SDBus%02u] WaitCmd: TIMEOUT! PS=%08x BS=%08x DL=%p\n",
                 bus->sdcb_BusNum,
                 bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus),
                 bus->sdcb_BusStatus, bus->sdcb_DataListener);
+            timedOut = TRUE;
             break;
         }
     }
@@ -1039,7 +1380,7 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
         }
     }
 
-    if ((timeout <= 0) || (bus->sdcb_BusStatus & SDHCI_INT_ERROR))
+    if (timedOut || (bus->sdcb_BusStatus & SDHCI_INT_ERROR))
     {
         return -1;
     }
@@ -1065,6 +1406,21 @@ ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *buf, ULONG offset, const ULONG len)
 
 #undef DIRQ
 #define DIRQ(x) /* x */
+
+/* Only a real interrupt records that the controller delivers them. */
+static void FNAME_SDCBUS(BusIRQEntry)(struct sdcard_Bus *bus, void *data)
+{
+    if (!(bus->sdcb_BusFlags & AF_Bus_IRQSeen))
+        bug("[SDBus%02u] controller interrupt is being delivered\n", bus->sdcb_BusNum);
+
+    bus->sdcb_BusFlags |= AF_Bus_IRQSeen;
+
+    /* Dispatch through the bus's own handler: not every controller uses the
+       SDHCI register layout, and the SDHOST bus leaves the accessors this
+       one reads through set to NULL. */
+    if (bus->sdcb_BusIRQHandler)
+        bus->sdcb_BusIRQHandler(bus, data);
+}
 
 void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 {
@@ -1151,12 +1507,19 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
         if (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK)
         {
             struct TagItem *dataListener;
+            /*
+             * An ADMA2 transfer never reports a buffer ready - the controller
+             * is doing the moving - so its completion is the transfer end.
+             */
+            ULONG claimMask = (bus->sdcb_BusFlags & AF_Bus_DMAActive)
+                                ? SDHCI_INT_DATA_END
+                                : (SDHCI_INT_DATA_AVAIL | SDHCI_INT_SPACE_AVAIL);
 
 #if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
             dataListener = bus->sdcb_DataListener;
-            if ((bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)) && dataListener)
+            if ((bus->sdcb_BusStatus & claimMask) && dataListener)
                 bus->sdcb_DataListener = NULL;
             else
                 dataListener = NULL;
@@ -1262,7 +1625,7 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
     /* Install IRQ handler (controller-specific) */
     if (bus->sdcb_BusIRQHandler)
     {
-        if ((bus->sdcb_IRQHandle = KrnAddIRQHandler(bus->sdcb_BusIRQ, bus->sdcb_BusIRQHandler, bus, NULL)) != NULL)
+        if ((bus->sdcb_IRQHandle = KrnAddIRQHandler(bus->sdcb_BusIRQ, FNAME_SDCBUS(BusIRQEntry), bus, NULL)) != NULL)
         {
             DINIT(bug("[SDBus%02u] %s: IRQHandle @ 0x%p for IRQ#%ld\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_IRQHandle, bus->sdcb_BusIRQ));
         }

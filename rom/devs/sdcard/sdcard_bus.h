@@ -89,6 +89,18 @@ struct sdcard_Bus
     void                                (*sdcb_BusInit)(struct sdcard_Bus *);  /* Scan-time HW init (clock, power, bus width) */
     void                                (*sdcb_BusPostIRQInit)(struct sdcard_Bus *);  /* Post-IRQ init (enable interrupts, card detect) */
 
+    /*
+     * ADMA2 scatter/gather. The controller masters the transfer itself, so
+     * the descriptor table and any bounce buffer have to live where it can
+     * reach them: the capabilities register says whether it can address more
+     * than 32 bits, and on the BCM2711 it cannot.
+     */
+    APTR                                sdcb_ADMADesc;       /* descriptor table */
+    APTR                                sdcb_ADMABounce;     /* used when the caller's buffer will not do */
+    ULONG                               sdcb_ADMABounceSize;
+    APTR                                sdcb_ADMAData;       /* caller's buffer, for the copy back */
+    ULONG                               sdcb_ADMALen;
+
     /* Bus Instance Private/Internal */
     IPTR                                sdcb_Private;
 
@@ -101,12 +113,41 @@ struct sdcard_Bus
 #define AB_Bus_MediaPresent             30     /* media available */
 #define AB_Bus_MediaChanged             29     /* media changed */
 #define AB_Bus_SPI                      28
+#define AB_Bus_IRQSeen                  27     /* controller has delivered an interrupt */
+#define AB_Bus_DMA                      26     /* ADMA2 is available and trusted */
+#define AB_Bus_DMAActive                25     /* the transfer in flight is being done by ADMA2 */
+#define AB_Bus_DMABounced               24     /* that transfer went through the bounce buffer */
 #define AB_Bus_Active                   1
 
 #define AF_Bus_MediaPresent             (1 << AB_Bus_MediaPresent)
 #define AF_Bus_MediaChanged             (1 << AB_Bus_MediaChanged)
 #define AF_Bus_SPI                      (1 << AB_Bus_SPI)
+#define AF_Bus_IRQSeen                  (1 << AB_Bus_IRQSeen)
+#define AF_Bus_DMA                      (1 << AB_Bus_DMA)
+#define AF_Bus_DMAActive                (1 << AB_Bus_DMAActive)
+#define AF_Bus_DMABounced               (1 << AB_Bus_DMABounced)
 #define AF_Bus_Active                   (1 << AB_Bus_Active)
+
+/*
+ * ADMA2 descriptor. Two byte attribute and length fields followed by a 32bit
+ * address; a length of zero means the maximum, 65536 bytes.
+ */
+struct sdcard_ADMADesc
+{
+    UWORD                               ad_Attr;
+    UWORD                               ad_Length;
+    ULONG                               ad_Address;
+};
+
+#define ADMA2_ATTR_VALID                (1 << 0)
+#define ADMA2_ATTR_END                  (1 << 1)
+#define ADMA2_ATTR_INT                  (1 << 2)
+#define ADMA2_ATTR_ACT_TRAN             (2 << 4)
+
+/* Kept well under the 65536 a descriptor can hold, and a multiple of any sector size */
+#define ADMA2_MAX_XFER                  32768
+#define ADMA2_MAX_DESC                  32
+#define ADMA2_BOUNCE_SIZE               (128 * 1024)
 
 BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *);
 BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *);
@@ -120,6 +161,9 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG, ULONG, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(FinishCmd)(struct TagItem *, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(FinishData)(struct TagItem *, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *, ULONG, const ULONG);
+
+BOOL FNAME_SDCBUS(ADMAAlloc)(struct sdcard_Bus *);
+void FNAME_SDCBUS(ADMAVerify)(struct sdcard_Unit *);
 
 void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *, void *);
 void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *);
