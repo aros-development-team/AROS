@@ -40,6 +40,16 @@
 
 /* Generic "Bus Unit" Functions */
 
+/* How long a single block may keep the PIO transfer waiting */
+#define SDHCI_DATA_TIMEOUT_US   1000000
+
+/*
+ * How often the controller is re-examined while waiting on it. Waiting a
+ * millisecond at a time costs more than the work being waited for: a 64K
+ * transfer only takes about 2.7ms, so a single overshoot is a quarter of it.
+ */
+#define SDHCI_POLL_US           25
+
 static const char *str_mmc0 = "MMC0";
 
 BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
@@ -793,9 +803,9 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
 {
     DTRANS(UWORD        sdCommand = (UWORD)GetTagData(SDCARD_TAG_CMD, 0, DataTags));
     ULONG               sdcStateMask, sdCommandMask,
-                        sdData, sdDataMode, sdDataLen, sdcReg = 0;
     struct TagItem      *sdDataLenTag = NULL;
-    ULONG               timeout = 1000;
+    ULONG               waitStart = 0;
+    BOOL                waiting = FALSE;
     ULONG               retVal = 0;
 
     DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
@@ -853,12 +863,24 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
                 }
                 sdData += tranlen;
                 sdDataLen -= tranlen;
+                waiting = FALSE;
             }
             else if (!(bus->sdcb_BusStatus & SDHCI_INT_DATA_END))
             {
-                sdcard_Udelay(1000);
+                /*
+                 * The card needs about 20us to put the next block in the
+                 * buffer, so poll at that scale: waiting a millisecond for
+                 * each block of a multi-block transfer costs more time than
+                 * the transfer itself.
+                 */
+                if (!waiting)
+                {
+                    waitStart = sdcard_CurrentTime();
+                    waiting = TRUE;
+                }
+                sdcard_Udelay(1);
 
-                if (timeout-- <= 0)
+                if ((sdcard_CurrentTime() - waitStart) > SDHCI_DATA_TIMEOUT_US)
                 {
                     bug("[SDBus%02u] %s:    Timeout!\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
                     retVal = -1;
@@ -915,7 +937,10 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
 #if defined(__AROSEXEC_SMP__)
     struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
 #endif
-    ULONG initialTimeout = timeout;
+    /* Callers count their timeout in milliseconds. */
+    ULONG waitStart = sdcard_CurrentTime();
+    ULONG waitLimit = (timeout ? timeout : 1000) * 1000;
+    BOOL  timedOut = FALSE;
 
     if (bus->sdcb_Task == FindTask(NULL))
     {
@@ -931,32 +956,30 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
         }
         else
         {
-            ULONG waited = initialTimeout ? initialTimeout : 1000;
-
             /*
              * Nothing will service the controller if its interrupt does not
              * reach us, and a data transfer needs servicing to move the bytes
              * at all, so run the handler from here while polling.
              */
-            while (waited--)
+            while ((sdcard_CurrentTime() - waitStart) < waitLimit)
             {
                 if (bus->sdcb_BusIRQHandler)
                     bus->sdcb_BusIRQHandler(bus, NULL);
 
                 if (SetSignal(0, 0) & (1L << bus->sdcb_CommandSig))
                     break;
-                sdcard_Udelay(1000);
+                sdcard_Udelay(SDHCI_POLL_US);
             }
             SetSignal(0, 1L << bus->sdcb_CommandSig);
         }
     }
     else
     {
-        sdcard_Udelay(1000);
+        sdcard_Udelay(SDHCI_POLL_US);
     }
 
     while (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & mask) {
-        sdcard_Udelay(1000);
+        sdcard_Udelay(SDHCI_POLL_US);
 
         /*
          * Lost interrupt recovery for data transfers.
@@ -1016,12 +1039,13 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
         if ((bus->sdcb_BusStatus & SDHCI_INT_ERROR) == SDHCI_INT_ERROR)
             break;
 
-        if (--timeout <= 0)
+        if ((sdcard_CurrentTime() - waitStart) > waitLimit)
         {
             bug("[SDBus%02u] WaitCmd: TIMEOUT! PS=%08x BS=%08x DL=%p\n",
                 bus->sdcb_BusNum,
                 bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus),
                 bus->sdcb_BusStatus, bus->sdcb_DataListener);
+            timedOut = TRUE;
             break;
         }
     }
@@ -1091,7 +1115,7 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
         }
     }
 
-    if ((timeout <= 0) || (bus->sdcb_BusStatus & SDHCI_INT_ERROR))
+    if (timedOut || (bus->sdcb_BusStatus & SDHCI_INT_ERROR))
     {
         return -1;
     }
