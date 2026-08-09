@@ -59,16 +59,21 @@
     struct MemHeader *mh;
 
     /*
-     * If the end is less than (1 << 31), MEMF_31BIT is implied. An
-     * explicitly requested MEMF_31BIT is honoured as long as the region
-     * stays fully 32-bit addressable (see kernel.resource
+     * If the end is less than (1 << 31), MEMF_31BIT is implied. On 64-bit
+     * systems an explicitly requested MEMF_31BIT is honoured as long as
+     * the region stays fully 32-bit addressable (see kernel.resource
      * krnCreateMemHeader()); it is only stripped when the region extends
      * beyond 4GB.
      */
     if (((IPTR)base+size) < (1UL << 31))
         attributes |= MEMF_31BIT;
+#if (__WORDSIZE > 32)
     else if (((IPTR)base+size-1) > 0xFFFFFFFFUL)
         attributes &= ~MEMF_31BIT;
+#else
+    else
+        attributes &= ~MEMF_31BIT;
+#endif
 
     /* Do I have to look here if it matches some other MemHeader? */
     mh=(struct MemHeader *)base;

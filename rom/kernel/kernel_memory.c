@@ -29,17 +29,24 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULON
 
     /*
      * If the last available address is less than (1 << 31), MEMF_31BIT is
-     * implied. An explicitly requested MEMF_31BIT is honoured as long as the
-     * region stays fully 32-bit addressable: machines whose RAM begins at or
-     * above 2GB have no memory the implication can ever mark, yet their
-     * 32-bit consumers (hunk RELOC32, DMA bounce buffers) are satisfied by
-     * anything below 4GB, so such ports declare the flag on those banks
-     * themselves. It is only stripped when the region extends beyond 4GB.
+     * implied. On 64-bit systems an explicitly requested MEMF_31BIT is
+     * honoured as long as the region stays fully 32-bit addressable:
+     * machines whose RAM begins at or above 2GB have no memory the
+     * implication can ever mark, yet their 32-bit consumers (hunk RELOC32,
+     * DMA bounce buffers) are satisfied by anything below 4GB, so such
+     * ports declare the flag on those banks themselves. It is only
+     * stripped when the region extends beyond 4GB. On 32-bit systems the
+     * flag has no meaning and is always stripped, as before.
      */
     if (((IPTR)start+size-1) < (1UL << 31))
         flags |= MEMF_31BIT;
+#if (__WORDSIZE > 32)
     else if (((IPTR)start+size-1) > 0xFFFFFFFFUL)
         flags &= ~MEMF_31BIT;
+#else
+    else
+        flags &= ~MEMF_31BIT;
+#endif
 
     mh->mh_Node.ln_Succ    = NULL;
     mh->mh_Node.ln_Pred    = NULL;
