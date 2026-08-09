@@ -562,13 +562,20 @@ void doColdCapture(void)
           "a0", "a1", "a2", "a3", "a4", "a5", "a6");
 }
 
-/* Returns TRUE if a Kickstart-format ROM image is present at 'rom'.
- * Uses the standard ROM header signature (top 12 bits == 0x111), the same
- * check as AMiGAROM_IsValid(). Lets us skip the romtag scan of the
- * 0xF00000 window when no expansion/diagnostic ROM is mapped there. */
+/* 0x1111 marker is not required. Some expansions (for example GVP 1230 Turbo+)
+ * does not have 0x1111 but has ROMTAG.
+ */
 static BOOL rom_present(IPTR rom)
 {
-    return (*(volatile ULONG *)rom & 0xFFF00000) == 0x11100000;
+    volatile UWORD *p = (volatile UWORD*)rom;
+    if (p[0] == 0x1111) {
+    	return TRUE;
+    }
+    UWORD w = p[0];
+    if (w != p[1] || w != p[2] || w != p[3]) {
+    	return TRUE;
+    }
+    return FALSE;
 }
 
 static void RomInfo(IPTR rom)
