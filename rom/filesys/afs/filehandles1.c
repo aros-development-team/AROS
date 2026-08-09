@@ -168,7 +168,7 @@ UBYTE buffer[32];
         }
         *block = dirah->header_block;
 
-        D(bug("[afs]    findBlock: startblock=%ld\n",*block));
+        D(bug("[afs]    findBlock: startblock=%d\n",*block));
         /* get first entry (root or filelock refers to) */
         blockbuffer = getBlock(afsbase, dirah->volume, *block);
         if (blockbuffer == NULL)
@@ -268,7 +268,7 @@ UBYTE buffer[32];
         }
         D(
                 if (blockbuffer != NULL)
-                        bug("[afs]   findBlock: block=%ld\n",blockbuffer->blocknum);
+                        bug("[afs]   findBlock: block=%d\n",blockbuffer->blocknum);
                 else
                         bug("[afs]   findBlock: error\n");
         );
@@ -286,9 +286,9 @@ void addHandle(struct AfsHandle *ah) {
 void remHandle(struct AFSBase *afsbase, struct AfsHandle *ah) {
 struct AfsHandle *old = NULL;
 
-        D(bug("[afs 0x%08lX] Removing handle 0x%08lX\n", ah->volume, ah));
+        D(bug("[afs 0x%p] Removing handle 0x%p\n", ah->volume, ah));
         if (ah->volume->volumenode == ah->volumenode) {
-            D(bug("[afs 0x%08lX] Lock's volume is online\n", ah->volume));
+            D(bug("[afs 0x%p] Lock's volume is online\n", ah->volume));
             if (ah->volume->locklist==ah)
                 ah->volume->locklist=ah->next;
             else
@@ -398,7 +398,7 @@ struct AfsHandle *ah;
 
         D(bug
                 (
-                        "[afs]    getHandle: trying to get handle for block %lu\n",
+                        "[afs]    getHandle: trying to get handle for block %u\n",
                         fileblock->blocknum)
                 );
 
@@ -453,7 +453,7 @@ struct AfsHandle *ah = NULL;
 struct BlockCache *fileblock;
 ULONG block;
 
-        D(bug("[afs] openf(%ld,%s,0x%8lx)\n",dirah->header_block,filename,mode));
+        D(bug("[afs] openf(%d,%s,0x%8x)\n",dirah->header_block,filename,mode));
         fileblock = findBlock(afsbase, dirah, filename, &block, error);
         if (fileblock != NULL)
                 ah = getHandle(afsbase, dirah->volume, fileblock, mode, error);
@@ -489,7 +489,7 @@ ULONG fileblocknum = -1;
         /*
          * nicely say what's going on
          */
-        D(bug("[afs] openfile(%lu,%s,0x%lx,%lu)\n", dirah->header_block,name,mode,protection));
+        D(bug("[afs] openfile(%u,%s,0x%x,%u)\n", dirah->header_block,name,mode,protection));
         *error = 0;
         
         /*
@@ -514,7 +514,7 @@ ULONG fileblocknum = -1;
                 if ((OS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]) == ST_USERDIR) ||
                         (OS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]) == ST_ROOT))
                 {
-                        D(bug("[afs]    parent of %s is on block %lu\n", name, dirblock->blocknum));
+                        D(bug("[afs]    parent of %s is on block %u\n", name, dirblock->blocknum));
 
                         /*
                          * get the header block of the file to open
@@ -593,7 +593,7 @@ ULONG fileblocknum = -1;
 ************************************/
 void closef(struct AFSBase *afsbase, struct AfsHandle *ah) {
 
-        D(bug("[afs] closef(%lu)\n",ah->header_block));
+        D(bug("[afs] closef(%u)\n",ah->header_block));
         remHandle(afsbase, ah);
         FreeMem(ah,sizeof(struct AfsHandle));
 }
@@ -627,7 +627,7 @@ char *source;
         {
                 length = ah->filesize-ah->current.offset; /* we can't read more bytes than left in file! */
         }
-        D(bug("[afs]   readData: offset=%ld\n", ah->current.offset));
+        D(bug("[afs]   readData: offset=%d\n", ah->current.offset));
         extensionbuffer = getBlock(afsbase, ah->volume, ah->current.block);
         if (extensionbuffer == NULL)
         {
@@ -637,7 +637,7 @@ char *source;
         extensionbuffer->flags |= BCF_USED; /* don't overwrite that cache block! */
         while (length != 0)
         {
-                D(bug("[afs]   readData: bytes left=%ld\n",length));
+                D(bug("[afs]   readData: bytes left=%d\n",length));
                 /*
                         block, filekey always point to the next block
                         so update them if we have read a whole block
@@ -649,7 +649,7 @@ char *source;
                                 OS_BE2LONG(extensionbuffer->buffer[BLK_EXTENSION(ah->volume)]);
                         ah->current.filekey = BLK_TABLE_END(ah->volume);
                         extensionbuffer->flags &= ~BCF_USED;            //we can now overwrite that cache block
-                        D(bug("[afs]   readData: reading extensionblock=%ld\n",ah->current.block));
+                        D(bug("[afs]   readData: reading extensionblock=%d\n",ah->current.block));
                         if (ah->current.block != 0)
                         {
                                 extensionbuffer = getBlock(afsbase, ah->volume,ah->current.block);
@@ -666,15 +666,15 @@ D(
                                         bug
                                                 (
                                                         "Shit, out of extensionblocks!\n"
-                                                        "Bytes left: %ld\n"
-                                                        "Last extensionblock: %ld\n",
+                                                        "Bytes left: %d\n"
+                                                        "Last extensionblock: %d\n",
                                                         length,extensionbuffer->blocknum
                                                 );
 );
                 }
                 D(bug
                         (
-                                "[afs]   readData: reading datablock %ld\n",
+                                "[afs]   readData: reading datablock %d\n",
                                 OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey]))
                         );
                 databuffer = getBlock
@@ -723,7 +723,7 @@ LONG readf
 {
 LONG readbytes;
 
-        D(bug("[afs]   read(%ld,buffer,%ld)\n", ah->header_block, length));
+        D(bug("[afs]   read(%d,buffer,%d)\n", ah->header_block, length));
         readbytes = readData(afsbase, ah,buffer,length, error);
         if (readbytes != ENDSTREAMCH)
                 ah->current.offset = ah->current.offset+readbytes;
@@ -783,7 +783,7 @@ LONG writtenbytes = 0, sumoffset;
 char *destination;
 BOOL extensionModified = FALSE;
 
-        D(bug("[afs]   writeData: offset=%ld\n", ah->current.offset));
+        D(bug("[afs]   writeData: offset=%d\n", ah->current.offset));
         extensionbuffer = getBlock(afsbase, ah->volume, ah->current.block);
         if (extensionbuffer == NULL)
         {
@@ -801,7 +801,7 @@ BOOL extensionModified = FALSE;
                 {
                         lastblock = OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey+1]);
                         D(bug
-                                ("[afs]   writeData: for OFS last datablock was %lu\n", lastblock));
+                                ("[afs]   writeData: for OFS last datablock was %u\n", lastblock));
                 }
                 /*
                         block, filekey always point to the last block
@@ -857,7 +857,7 @@ BOOL extensionModified = FALSE;
                 {
                         D(bug
                                 (
-                                        "[afs]   writeData: using old datablock %lu\n",
+                                        "[afs]   writeData: using old datablock %u\n",
                                         OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey]))
                                 );
                         /* Only get the block's old contents if some of it won't be overwritten
@@ -905,7 +905,7 @@ BOOL extensionModified = FALSE;
                         extensionbuffer->buffer[ah->current.filekey] = OS_LONG2BE(block);
                         if ((ah->volume->dosflags==0) && (lastblock != 0))
                         {
-                                D(bug("[afs]   writeData: OFS->fill in %ld BLK_NEXT_DATA\n",lastblock));
+                                D(bug("[afs]   writeData: OFS->fill in %d BLK_NEXT_DATA\n",lastblock));
                                 /*
                                          we allocated a new block
                                         so there MUST be an initialized lastblock
@@ -1001,7 +1001,7 @@ BOOL extensionModified = FALSE;
                         );
         }
         extensionbuffer->flags &= ~BCF_USED;
-        D(bug("[afs]   writeData=%ld\n", writtenbytes));
+        D(bug("[afs]   writeData=%d\n", writtenbytes));
         return writtenbytes;
 }
 
@@ -1012,7 +1012,7 @@ struct BlockCache *headerblock;
 LONG writtenbytes;
 struct DateStamp ds;
 
-        D(bug("[afs] write(ah,buffer,%ld)\n", length));
+        D(bug("[afs] write(ah,buffer,%d)\n", length));
         if (0 == checkValid(afsbase, ah->volume))
         {
                 *error = ERROR_DISK_WRITE_PROTECTED;
@@ -1053,7 +1053,7 @@ UWORD blocksize, tablesize;
 ULONG newoffset;
 struct BlockCache *blockbuffer;
 
-        D(bug("[afs] seek(%ld,%ld,%ld)\n", ah->header_block, offset, mode));
+        D(bug("[afs] seek(%d,%d,%d)\n", ah->header_block, offset, mode));
         *error = ERROR_SEEK_ERROR;
         if (mode == OFFSET_BEGINNING)
         {
@@ -1141,7 +1141,7 @@ struct AfsHandle *ah2;
         }
 
         /* Get absolute new length */
-        D(bug("[afs] setfilesize(%ld,%ld,%ld)\n", ah->header_block, size, mode));
+        D(bug("[afs] setfilesize(%d,%d,%d)\n", ah->header_block, size, mode));
         *error = ERROR_SEEK_ERROR;
         if (mode == OFFSET_BEGINNING)
         {

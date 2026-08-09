@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -66,7 +66,7 @@ UBYTE dosflags;
                 OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT ||
                 OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]) != ST_ROOT)
         {
-                D(bug("[afs] newMedium: incorrect checksum or root block type (%ld)\n",
+                D(bug("[afs] newMedium: incorrect checksum or root block type (%d)\n",
                         OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)])));
                 volume->dostype = ID_NOT_REALLY_DOS;
                 return ERROR_NOT_A_DOS_DISK;
@@ -84,7 +84,7 @@ UBYTE dosflags;
         }
         if ((dostype != ID_DOS_DISK) && (dostype != ID_DOS_muFS_DISK))
         {
-                D(bug("[afs] newMedium: incorrect DOS type (0x%lx)\n",
+                D(bug("[afs] newMedium: incorrect DOS type (0x%x)\n",
                         volume->dostype));
                 volume->dostype = ID_NOT_REALLY_DOS;
                 return ERROR_NOT_A_DOS_DISK;
@@ -129,7 +129,9 @@ UBYTE dosflags;
         if (blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
         {
                 blockbuffer->flags |= BCF_USED; // won't be cleared until volume is ejected
+                D(bug("[afs] counting used blocks...\n"));
                 volume->usedblockscount=countUsedBlocks(afsbase, volume);
+                D(bug("[afs] %u blocks in use\n", volume->usedblockscount));
                 volume->state = diskWritable(afsbase, &volume->ioh) ?
                         ID_VALIDATED : ID_WRITE_PROTECTED;
         }
@@ -225,7 +227,7 @@ struct Volume *initVolume
                                 if ((*error == 0) || (*error == ERROR_NOT_A_DOS_DISK))
                                 {
                                         D(bug("[afs] initVolume: BootBlocks=%d\n",volume->bootblocks));
-                                        D(bug("[afs] initVolume: RootBlock=%ld\n",volume->rootblock));
+                                        D(bug("[afs] initVolume: RootBlock=%d\n",volume->rootblock));
                                         volume->ah.header_block = volume->rootblock;
                                         return volume;
                                 }
@@ -271,7 +273,7 @@ LONG writeprotectVolume(struct AFSBase *afsbase, struct Volume *volume, BOOL on,
     if(on && (volume->state == ID_WRITE_PROTECTED))
     { // Already write protected
         error = ERROR_DISK_WRITE_PROTECTED;
-        D(bug("[AFS] Volume: Already write protected (%l)\n", error));
+        D(bug("[AFS] Volume: Already write protected (%d)\n", error));
     } else {
         if(on)
         { // Attempt to write protect
@@ -291,7 +293,7 @@ LONG writeprotectVolume(struct AFSBase *afsbase, struct Volume *volume, BOOL on,
                     volume->key = 0;
                 } else { // Key is incorrect
                     error = ERROR_INVALID_COMPONENT_NAME;
-                    D(bug("[AFS] Volume: Wrong key (%l)\n", error));
+                    D(bug("[AFS] Volume: Wrong key (%d)\n", error));
                     return error;
                 }
             } else { // There is no key

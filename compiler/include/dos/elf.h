@@ -177,6 +177,8 @@
 #define R_RISCV_SET16           55
 #define R_RISCV_SET32           56
 #define R_RISCV_32_PCREL        57
+#define R_RISCV_SET_ULEB128     60
+#define R_RISCV_SUB_ULEB128     61
 
 #define STT_NOTYPE              0
 #define STT_OBJECT              1

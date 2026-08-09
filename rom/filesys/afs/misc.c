@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 /*
  * -date------ -name------------------- -description-----------------------------
@@ -94,12 +94,12 @@ LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
  Output: 0 = no error
 ********************************************/
 LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
-        D(bug("[afs 0x%08lX] inhibit(%ld)\n", volume, forbid));
+        D(bug("[afs 0x%p] inhibit(%d)\n", volume, forbid));
         if (forbid)
         {
                 if (volume->inhibitcounter++ == 0)
                 {
-                        D(bug("[afs 0x%08lX] inhibiting\n", volume));
+                        D(bug("[afs 0x%p] inhibiting\n", volume));
 /*              if (exclusiveLocks(&volume->locklist)) return DOSFALSE; */
                         if (mediumPresent(&volume->ioh))
                         {
@@ -112,10 +112,10 @@ LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
         {
                 if (--volume->inhibitcounter == 0)
                 {
-                        D(bug("[afs 0x%08lX] uninhibiting\n", volume));
+                        D(bug("[afs 0x%p] uninhibiting\n", volume));
                         if (diskPresent(afsbase, &volume->ioh))
                         {
-                                D(bug("[afs 0x%08lX] media inserted\n", volume));
+                                D(bug("[afs 0x%p] media inserted\n", volume));
                                 newMedium(afsbase, volume);
                                 volume->ioh.ioflags |= IOHF_DISK_IN;
                         }

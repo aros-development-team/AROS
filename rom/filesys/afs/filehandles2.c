@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 /*
  * -date------ -name------------------- -description-----------------------------
@@ -44,7 +44,7 @@ ULONG setHeaderDate
 
         D(bug
                 (
-                        "[afs] setHeaderDate: for headerblock %lu\n",
+                        "[afs] setHeaderDate: for headerblock %u\n",
                         blockbuffer->blocknum)
                 );
         blockbuffer->buffer[BLK_DAYS(volume)] = OS_LONG2BE(ds->ds_Days);
@@ -109,7 +109,7 @@ ULONG block;
 struct BlockCache *blockbuffer;
 SIPTR error;
 
-        D(bug("[afs] setProtect(ah,%s,%ld)\n", name, mask));
+        D(bug("[afs] setProtect(ah,%s,%d)\n", name, mask));
         if (0 == checkValid(afsbase, ah->volume))
                 return ERROR_DISK_WRITE_PROTECTED;
         blockbuffer = findBlock(afsbase, ah, name, &block, &error);
@@ -173,7 +173,7 @@ void unLinkBlock
 {
 ULONG key;
 
-        D(bug("[afs] unlinkBlock: unlinking %lu\n", entry->blocknum));
+        D(bug("[afs] unlinkBlock: unlinking %u\n", entry->blocknum));
         /* find the "member" where entry is linked
                 ->linked into hashchain or hashtable */
         key = BLK_HASHCHAIN(volume);
@@ -259,7 +259,7 @@ SIPTR error;
         {
                 for (;;)
                 {
-                        D(bug("[afs]   extensionblock=%lu\n", blockbuffer->blocknum));
+                        D(bug("[afs]   extensionblock=%u\n", blockbuffer->blocknum));
                         for
                                 (
                                         key = BLK_TABLE_END(ah->volume);
@@ -325,7 +325,7 @@ struct BlockCache *blockbuffer;
 
         while (TRUE)
         {
-                D(bug("[afs]   extensionblock=%lu\n", blockbuffer->blocknum));
+                D(bug("[afs]   extensionblock=%u\n", blockbuffer->blocknum));
                 while (key >= BLK_TABLE_START && blockbuffer->buffer[key] != 0)
                 {
                         markBlock(afsbase, ah->volume,
@@ -388,7 +388,7 @@ CONST_FSBSTR name;
 
         SetMem(buffer, 0, volume->FNameMax + 1);
         file->buffer[BLK_PARENT(volume)] = OS_LONG2BE(dir->blocknum);
-        D(bug("[afs] linkNewBlock: linking block %ld\n", file->blocknum));
+        D(bug("[afs] linkNewBlock: linking block %d\n", file->blocknum));
         name = (CONST_FSBSTR)((char *)file->buffer+(BLK_FILENAME_START(volume)*4));
         StrCpyFromBstr(name, buffer, sizeof(buffer) - 1);
 
@@ -483,14 +483,14 @@ ULONG block,dirblocknum,lastblock;
 UBYTE newentryname[34];
 SIPTR error;
 
-        D(bug("[afs] rename(%ld,%s,%s)\n", dirah->header_block, oname, newname));
+        D(bug("[afs] rename(%d,%s,%s)\n", dirah->header_block, oname, newname));
         if (0 == checkValid(afsbase, dirah->volume))
                 return ERROR_DISK_WRITE_PROTECTED;
         dirblock = getDirBlockBuffer(afsbase, dirah, newname, newentryname, &error);
         if (dirblock == NULL)
                 return error;
         dirblocknum = dirblock->blocknum;
-        D(bug("[afs]    dir is on block %ld\n", dirblocknum));
+        D(bug("[afs]    dir is on block %d\n", dirblocknum));
         oldfile = findBlock(afsbase, dirah, oname, &lastblock, &error);
         if (oldfile == NULL)
                 return error;
@@ -649,7 +649,7 @@ struct BlockCache *newblock;
 struct DateStamp ds;
 ULONG i;
 
-        D(bug("[afs] createNewEntry(%ld, %s)\n", dirblock->blocknum, entryname));
+        D(bug("[afs] createNewEntry(%d, %s)\n", dirblock->blocknum, entryname));
         dirblock->flags |= BCF_USED;
         if (getHeaderBlock(afsbase, volume, entryname, dirblock, &i, error) != NULL)
         {
@@ -745,7 +745,7 @@ struct AfsHandle *ah = NULL;
 struct BlockCache *dirblock;
 char dirname[34];
 
-        D(bug("[afs] createDir(ah,%s,%ld)\n", filename, protection));
+        D(bug("[afs] createDir(ah,%s,%d)\n", filename, protection));
         if (0 == checkValid(afsbase, dirah->volume))
         {
                 *error = ERROR_DISK_WRITE_PROTECTED;
@@ -754,7 +754,7 @@ char dirname[34];
         dirblock = getDirBlockBuffer(afsbase, dirah, filename, dirname, error);
         if (dirblock != NULL)
         {
-                D(bug("[afs]    dir is on block %ld\n", dirblock->blocknum));
+                D(bug("[afs]    dir is on block %d\n", dirblock->blocknum));
                 dirblock = createNewEntry
                         (afsbase, dirah->volume, ST_USERDIR, dirname, dirblock, protection, error);
                 if (dirblock != NULL)

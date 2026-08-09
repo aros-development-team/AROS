@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: MungWall memory anti-trashing checker
 */
@@ -187,6 +187,25 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
         header = memoryBlock - MUNGWALL_BLOCK_SHIFT;
 
         /*
+         * A block allocated before mungwall was switched on has no
+         * header - what sits below it is whatever the allocator or the
+         * caller put there. Remove() on that walks two garbage node
+         * pointers and takes the machine down inside the checker
+         * itself, so the ID has to be believed before anything trusts
+         * the rest of the header. Such a block is handed back as it
+         * came: freeing it unshifted and unmunged is exactly what
+         * FreeMem() would have done with mungwall off.
+         */
+        if (header->mwh_magicid != MUNGWALL_HEADER_ID)
+        {
+            bug("[MungWall] FreeMem(0x%p, %lu) from %s: no mungwall header"
+                " (pre-mungwall or foreign allocation) - freeing as-is\n",
+                memoryBlock, (unsigned long)byteSize,
+                loc && loc->function ? loc->function : "<unknown>");
+            return memoryBlock;
+        }
+
+        /*
          * Remove from PrivExecBase->AllocMemList.
          * Do it before checking, otherwise AvailMem() can hit into it and cause a deadlock
          * while the alert is displayed.
@@ -213,7 +232,10 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
          * the stack to some safe place and make sure that task structure is not
          * accessed after freeing it.
          */
-        if (GET_THIS_TASK->tc_State != TS_REMOVED)
+        /* Before multitasking starts there is no task at all, and the
+           whole reason for looking is a quirk of RemTask() - so no task
+           simply means the block is safe to munge. */
+        if ((GET_THIS_TASK == NULL) || (GET_THIS_TASK->tc_State != TS_REMOVED))
                 MUNGE_BLOCK(memoryBlock, MEMFILL_FREE, byteSize);
 
         /* Return real start of the block to deallocate */
