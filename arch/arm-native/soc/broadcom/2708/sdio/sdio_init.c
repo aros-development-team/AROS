@@ -327,14 +327,15 @@ static void sdio_wifi_clock(struct SDIOBase *SDIOBase)
  */
 static void sdio_wifi_power(struct SDIOBase *SDIOBase)
 {
-    unsigned int *raw = AllocMem(16 * 4 + 16, MEMF_PUBLIC | MEMF_CLEAR);
+    /* Own our cache lines; see <proto/mbox.h>. */
+    unsigned int *raw = AllocMem(MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1), MEMF_PUBLIC | MEMF_CLEAR);
     unsigned int *msg;
     unsigned int gpio = RPI_EXP_GPIO_BASE + RPI_EXP_GPIO_WL_ON;
     int state;
 
     if (!raw)
         return;
-    msg = (unsigned int *)((((IPTR)raw) + 15) & ~15);
+    msg = (unsigned int *)((((IPTR)raw) + (MBOX_MSG_ALIGN - 1)) & ~(IPTR)(MBOX_MSG_ALIGN - 1));
 
     /* Configure the expander pin as an output (initial level low) */
     msg[0] = AROS_LONG2LE(12 * 4);
@@ -383,7 +384,7 @@ static void sdio_wifi_power(struct SDIOBase *SDIOBase)
     D(bug("[SDIO] GET_GPIO_STATE gpio %u -> state %u (tag 0x%08x)\n",
           gpio, AROS_LE2LONG(msg[6]), AROS_LE2LONG(msg[4])));
 
-    FreeMem(raw, 16 * 4 + 16);
+    FreeMem(raw, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
 
     D(bug("[SDIO] WL_REG_ON sequence done\n"));
 }
@@ -393,8 +394,9 @@ static void sdio_wifi_power(struct SDIOBase *SDIOBase)
 
 static int sdio_mbox_setup(struct SDIOBase *SDIOBase)
 {
-    unsigned int *raw = AllocMem(8 * 4 + 16, MEMF_PUBLIC | MEMF_CLEAR);
-    unsigned int *msg = (unsigned int *)((((IPTR)raw) + 15) & ~15);
+    /* Own our cache lines; see <proto/mbox.h>. */
+    unsigned int *raw = AllocMem(MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1), MEMF_PUBLIC | MEMF_CLEAR);
+    unsigned int *msg = (unsigned int *)((((IPTR)raw) + (MBOX_MSG_ALIGN - 1)) & ~(IPTR)(MBOX_MSG_ALIGN - 1));
     int ok = FALSE;
 
     if (!raw)
@@ -444,7 +446,7 @@ static int sdio_mbox_setup(struct SDIOBase *SDIOBase)
         ok = (SDIOBase->sdio_ClockMax != 0);
     }
 
-    FreeMem(raw, 8 * 4 + 16);
+    FreeMem(raw, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
     return ok;
 }
 

@@ -42,6 +42,12 @@ volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
     if ((((unsigned int)msg & VCMB_CHAN_MASK) != 0) || (chan > VCMB_CHAN_MAX))
         return (volatile unsigned int *)-1;
 
+    /* Messages must own their cache lines; see <proto/mbox.h> for why. */
+    if (((IPTR)msg & (MBOX_MSG_ALIGN - 1)) != 0)
+        bug("[MBox] WARNING: message @ 0x%p not cache-line aligned — "
+            "reply invalidate will clip neighbouring memory (caller %p)\n",
+            msg, __builtin_return_address(0));
+
     length = AROS_LE2LONG(((ULONG *)msg)[0]);
     phys_addr = CachePreDMA(msg, &length, DMA_ReadFromRAM);
 
@@ -153,6 +159,11 @@ AROS_LH2(volatile unsigned int *, MBoxRead,
             uint32_t len = AROS_LE2LONG(addr[0]);
 
             ReleaseSemaphore(&MBoxBase->mbox_Sem);
+
+            /* See mbox_call_locked: the invalidate clips whole lines. */
+            if (((IPTR)addr & 63) != 0)
+                bug("[MBox] WARNING: reply @ 0x%p not cache-line aligned — "
+                    "invalidate will clip neighbouring memory\n", addr);
 
             CacheClearE(addr, len, CACRF_InvalidateD);
 

@@ -83,8 +83,9 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
     IPTR                ctrlBase;
     ULONG               ctrlClock, ctrlIRQ;
     BOOL                isEMMC2;
-    unsigned int *MBoxMessage_ = AllocMem(8*4+16, MEMF_PUBLIC | MEMF_CLEAR);
-    unsigned int *MBoxMessage = (unsigned int *)((((IPTR)MBoxMessage_) + 15) & ~15);
+    /* Own our cache lines; see <proto/mbox.h>. */
+    unsigned int *MBoxMessage_ = AllocMem(MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1), MEMF_PUBLIC | MEMF_CLEAR);
+    unsigned int *MBoxMessage = (unsigned int *)((((IPTR)MBoxMessage_) + (MBOX_MSG_ALIGN - 1)) & ~(IPTR)(MBOX_MSG_ALIGN - 1));
 
     DINIT(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
@@ -127,7 +128,7 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
          */
         D(bug("[SDCard--] %s: card slot is on SDHOST for this SoC\n", __PRETTY_FUNCTION__));
         if (MBoxMessage_)
-            FreeMem(MBoxMessage_, 8*4+16);
+            FreeMem(MBoxMessage_, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
         return TRUE;
     }
 
@@ -336,7 +337,7 @@ bcminit_clock:
 bcminit_fail:
 
     if (MBoxMessage_)
-        FreeMem(MBoxMessage_, 8*4+16);
+        FreeMem(MBoxMessage_, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
 
     return retVal;
 }

@@ -130,8 +130,9 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
     struct sdcard_Bus       *bus;
     struct sdhost_private   *priv;
     int                     retVal = FALSE;
-    unsigned int *MBoxMessage_ = AllocMem(8*4+16, MEMF_PUBLIC | MEMF_CLEAR);
-    unsigned int *MBoxMessage = (unsigned int *)((((IPTR)MBoxMessage_) + 15) & ~15);
+    /* Own our cache lines; see <proto/mbox.h>. */
+    unsigned int *MBoxMessage_ = AllocMem(MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1), MEMF_PUBLIC | MEMF_CLEAR);
+    unsigned int *MBoxMessage = (unsigned int *)((((IPTR)MBoxMessage_) + (MBOX_MSG_ALIGN - 1)) & ~(IPTR)(MBOX_MSG_ALIGN - 1));
 
     D(bug("[SDHost] %s()\n", __PRETTY_FUNCTION__));
 
@@ -145,7 +146,7 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
     {
         D(bug("[SDHost] %s: not the card controller on this SoC\n", __PRETTY_FUNCTION__));
         if (MBoxMessage_)
-            FreeMem(MBoxMessage_, 8*4+16);
+            FreeMem(MBoxMessage_, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
         return TRUE;
     }
 
@@ -331,7 +332,7 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
 
 sdhost_fail:
     if (MBoxMessage_)
-        FreeMem(MBoxMessage_, 8*4+16);
+        FreeMem(MBoxMessage_, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
 
     return retVal;
 }

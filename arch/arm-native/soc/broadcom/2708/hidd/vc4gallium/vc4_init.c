@@ -181,7 +181,7 @@ static int HiddVC4Gallium_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 
     if (LIBBASE->sd.mbox_msg_raw)
     {
-        FreeMem(LIBBASE->sd.mbox_msg_raw, 256 + 16);
+        FreeMem(LIBBASE->sd.mbox_msg_raw, 256 + (MBOX_MSG_ALIGN - 1));
         LIBBASE->sd.mbox_msg_raw = NULL;
         LIBBASE->sd.mbox_msg = NULL;
     }
@@ -230,10 +230,8 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    /* Allocate 16-byte aligned mailbox message buffer.
-     * MBoxWrite silently fails if the address isn't 16-byte aligned
-     * (lower 4 bits encode channel number). */
-    LIBBASE->sd.mbox_msg_raw = AllocMem(256 + 16, MEMF_PUBLIC | MEMF_CLEAR);
+    /* Own our cache lines; see <proto/mbox.h>. */
+    LIBBASE->sd.mbox_msg_raw = AllocMem(256 + (MBOX_MSG_ALIGN - 1), MEMF_PUBLIC | MEMF_CLEAR);
     if (!LIBBASE->sd.mbox_msg_raw)
     {
         bug("[VC4Gallium] Failed to alloc mailbox buffer\n");
@@ -241,7 +239,7 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
         CloseLibrary(LIBBASE->sd.UtilityBase);
         return FALSE;
     }
-    LIBBASE->sd.mbox_msg = (volatile ULONG *)(((IPTR)LIBBASE->sd.mbox_msg_raw + 0xF) & ~0xF);
+    LIBBASE->sd.mbox_msg = (volatile ULONG *)(((IPTR)LIBBASE->sd.mbox_msg_raw + (MBOX_MSG_ALIGN - 1)) & ~(IPTR)(MBOX_MSG_ALIGN - 1));
 
     InitSemaphore(&LIBBASE->sd.bo_lock);
     InitSemaphore(&LIBBASE->sd.mbox_lock);
