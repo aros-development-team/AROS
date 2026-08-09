@@ -48,6 +48,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-hidd \
 #MM     kernel-hidd-gfx \
 #MM     kernel-hidd-gfx-headlessgfx \
+#MM     kernel-hidd-efigfx \
 #MM     kernel-hidd-input \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
@@ -103,7 +104,7 @@ BSP_DEVS_ARCH := timer
 BSP_USBCLASSES := USB/hub USB/hubss USB/hid USB/bootkeyboard USB/bootmouse \
                   USB/massstorage
 BSP_HANDLERS  := ram con afs cdrom sfs fat
-BSP_HIDDS     := hiddclass inputclass gfx keyboard mouse bus pci pcidt \
+BSP_HIDDS     := hiddclass inputclass gfx efigfx keyboard mouse bus pci pcidt \
                  storage system power telemetry ipmi dwuart i2c dwi2c \
                  acpiacad acpibattery acpifan acpibutton acpithermal \
                  acpipowermeter

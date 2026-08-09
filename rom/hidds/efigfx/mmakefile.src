@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-hidd-efigfx : kernel-hidd-gfx-includes
+
+FILES	:=	\
+	efigfx_init \
+	efigfx_hiddclass \
+	efigfx_displayclass \
+	efigfx_support \
+	efigfx_bitmapclass
+
+USER_CPPFLAGS := \
+               -D__OOP_NOATTRBASES__
+
+%build_module mmake=kernel-hidd-efigfx \
+  modname=efigfx modtype=hidd \
+  files=$(FILES)
