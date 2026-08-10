@@ -22,12 +22,16 @@ static inline UBYTE bms_mask_nbits(ULONG nbits)
     return (UBYTE)m;
 }
 
-/* Helper: clamp v into [lo, hi] (inclusive). */
-static inline ULONG bms_clamp_ul(ULONG v, ULONG lo, ULONG hi)
+/* Destination pixel i samples source pixel (i*sf + c) / df, where the phase
+   c is (sf-1)/2 when enlarging and df/2 when reducing. This is the
+   established sampling convention for BitMapScale(); p96cts pins it
+   pixel-exact against independent implementations. */
+static inline ULONG bms_srcpos(ULONG i, ULONG sf, ULONG df, ULONG srcsize)
 {
-    if(v < lo) return lo;
-    if(v > hi) return v;
-    return v;
+    const ULONG c = sf < df ? (sf - 1) / 2 : df / 2;
+    const ULONG pos = (i * sf + c) / df;
+
+    return pos < srcsize ? pos : srcsize - 1;
 }
 
 /*****************************************************************************
@@ -266,27 +270,14 @@ static inline ULONG bms_clamp_ul(ULONG v, ULONG lo, ULONG hi)
                 goto out;
 
             {
-                ULONG ys0 = (ULONG)bitScaleArgs->bsa_SrcY;
-                ULONG ys  = ys0;
-                ULONG count = 0;
-                ULONG dyd = (ULONG)bitScaleArgs->bsa_DestHeight;
-                ULONG dys = (ULONG)bitScaleArgs->bsa_SrcHeight;
-                LONG  accuys = (LONG)dyd;
-                LONG  accuyd = -((LONG)dys >> 1);
+                const ULONG ys0 = (ULONG)bitScaleArgs->bsa_SrcY;
+                ULONG count;
 
-                /* Highest valid sampled Y (inclusive). */
-                ULONG y_max = ys0 + (ULONG)bitScaleArgs->bsa_SrcHeight - 1;
-
-                while(count < DestHeight) {
-                    accuyd += (LONG)dys;
-                    while(accuyd > accuys) {
-                        ys++;
-                        accuys += (LONG)dyd;
-                    }
-
-                    LinePattern[count] = bms_clamp_ul(ys, ys0, y_max);
-                    count++;
-                }
+                for(count = 0; count < DestHeight; count++)
+                    LinePattern[count] = ys0 + bms_srcpos(count,
+                                                          bitScaleArgs->bsa_YSrcFactor,
+                                                          bitScaleArgs->bsa_YDestFactor,
+                                                          bitScaleArgs->bsa_SrcHeight);
             }
 
             /* Scale */
@@ -301,26 +292,14 @@ static inline ULONG bms_clamp_ul(ULONG v, ULONG lo, ULONG hi)
                 ULONG DestWidthEnd = (ULONG)bitScaleArgs->bsa_DestWidth + destX0;
                 ULONG count = destX0;
 
-                ULONG dxd = (ULONG)bitScaleArgs->bsa_DestWidth;
-                ULONG dxs = (ULONG)bitScaleArgs->bsa_SrcWidth;
-
-                LONG accuxs = (LONG)dxd;
-                LONG accuxd = -((LONG)dxs >> 1);
-
-                /* Highest valid sampled X (inclusive). */
-                ULONG x_max = srcX0 + (ULONG)bitScaleArgs->bsa_SrcWidth - 1;
-
                 while(count < DestWidthEnd) {
-                    ULONG xs;
                     ULONG possible_columns, columncounter, this_x;
 
                     /* DDA: map dest x -> source x */
-                    accuxd += (LONG)dxs;
-                    while(accuxd > accuxs) {
-                        accuxs += (LONG)dxd;
-                    }
-                    xs = srcX0 + ((accuxs - accuxd + (LONG)dxs - 1) / (LONG)dxd);
-                    xs = bms_clamp_ul(xs, srcX0, x_max);
+                    ULONG xs = srcX0 + bms_srcpos(count - destX0,
+                                                  bitScaleArgs->bsa_XSrcFactor,
+                                                  bitScaleArgs->bsa_XDestFactor,
+                                                  bitScaleArgs->bsa_SrcWidth);
 
                     /*
                      * Try to group adjacent columns which map to adjacent source columns
@@ -339,32 +318,21 @@ static inline ULONG bms_clamp_ul(ULONG v, ULONG lo, ULONG hi)
                     this_x = xs;
 
                     {
-                        LONG  accuxd_tmp = accuxd;
-                        LONG  accuxs_tmp = accuxs;
-                        ULONG next_x = xs;
                         ULONG count2 = count + 1;
 
                         while(possible_columns > 0 && count2 < DestWidthEnd) {
                             /* where's the next x-source-coordinate going to be? */
-                            accuxd_tmp += (LONG)dxs;
-                            while(accuxd_tmp > accuxs_tmp) {
-                                next_x++;
-                                accuxs_tmp += (LONG)dxd;
-                            }
-                            if(next_x > x_max)
-                                next_x = x_max;
+                            ULONG next_x = srcX0 + bms_srcpos(count2 - destX0,
+                                                              bitScaleArgs->bsa_XSrcFactor,
+                                                              bitScaleArgs->bsa_XDestFactor,
+                                                              bitScaleArgs->bsa_SrcWidth);
 
-                            if(this_x + 1 == next_x) {
-                                columncounter++;
-                                this_x++;
-                                count2++;
-                                /* Always advance accumulators when we consume a column */
-                                accuxd = accuxd_tmp;
-                                accuxs = accuxs_tmp;
-                            } else {
+                            if(this_x + 1 != next_x)
                                 break;
-                            }
 
+                            columncounter++;
+                            this_x++;
+                            count2++;
                             possible_columns--;
                         }
                     }
