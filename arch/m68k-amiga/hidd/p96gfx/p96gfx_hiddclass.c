@@ -1197,8 +1197,9 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
 
     p96sbx(csd, "CSe");
 
-    /* No hardware sprite: let the base Display class run its software cursor */
-    if (!(gl(cid->boardinfo + PSSO_BoardInfo_Flags ) & BIF_HARDWARESPRITE))
+    /* No hardware sprite: let the base Display class run its software cursor.
+       Must agree with aoHidd_Gfx_SupportsHWCursor or two pointers are drawn */
+    if (!cid->hardwaresprite)
         return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
@@ -1226,23 +1227,29 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
     }
 
     /*
-     * The sprite goes to the board at its own width. BIF_HIRESSPRITE halves
-     * the width the board is told and says the data is twice as dense, which
-     * describes a sprite over a lores native display; on a screen the board
-     * scans out itself the two are the same pixels, and a board that took the
-     * flag at face value would read a 32 pixel row as 16.
+     * A sprite row carries one plane 0 entry followed by one plane 1
+     * entry of 16 pixels per word each. Plain sprite data is one word
+     * per plane; BIF_HIRESSPRITE doubles that to 32 pixels. A shape too
+     * wide for the sprite is clipped to what the row can carry.
      */
     flags = gl(cid->boardinfo + PSSO_BoardInfo_Flags);
-    flags &= ~BIF_HIRESSPRITE;
-    hiressprite = 1;
+    if (cid->hiressprite && (width > 16))
+    {
+        hiressprite = 2;
+        flags |= BIF_HIRESSPRITE;
+    }
+    else
+    {
+        hiressprite = 1;
+        flags &= ~BIF_HIRESSPRITE;
+    }
     pl(cid->boardinfo + PSSO_BoardInfo_Flags, flags);
 
-    pb(cid->boardinfo + PSSO_BoardInfo_MouseWidth, width / hiressprite);
-    pb(cid->boardinfo + PSSO_BoardInfo_MouseHeight, height);
+    if (width > 16 * hiressprite)
+        width = 16 * hiressprite;
 
-    /* Words a plane needs for one row, which is also the step from a row's
-       first plane to its second. */
-    const WORD spritewords = (width + 15) / 16;
+    pb(cid->boardinfo + PSSO_BoardInfo_MouseWidth, width);
+    pb(cid->boardinfo + PSSO_BoardInfo_MouseHeight, height);
 
     Forbid();
     DB2(bug("[P96Gfx] %s: filling planar buffer ...\n", __func__);)
@@ -1257,15 +1264,14 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
             return FALSE;
         }
         /*
-         * A row is the first plane's words and then the second's, both
-         * covering the same pixels, so a pen's two bits land one word apart.
-         * Built a whole word at a time and assigned rather than or'ed in: a
-         * sprite of unchanged size keeps its buffer, and the pixels the new
-         * shape leaves clear have to clear the old one's.
+         * Built a whole word at a time and assigned rather than or'ed
+         * in: a sprite of unchanged size keeps its buffer, and the
+         * pixels the new shape leaves clear have to clear the old
+         * one's.
          */
         pw += 2 * hiressprite;
         for(y = 0; y < height; y++) {
-            for(WORD w = 0; w < spritewords; w++) {
+            for(WORD w = 0; w < hiressprite; w++) {
                 UWORD pix1 = 0, pix2 = 0;
 
                 for(WORD b = 0; b < 16; b++) {
@@ -1288,9 +1294,9 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
                     pix2 = (pix2 << 1) | ((c & 2) ? 1 : 0);
                 }
                 pw[w] = pix1;
-                pw[spritewords + w] = pix2;
+                pw[hiressprite + w] = pix2;
             }
-            pw += spritewords * 2;
+            pw += hiressprite * 2;
         }
     }
 
@@ -1348,7 +1354,7 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o, str
     D(bug("[P96Gfx] %s()\n", __func__));
 
     p96sbx(csd, "CPe");
-    if (!(gl(cid->boardinfo + PSSO_BoardInfo_Flags ) & BIF_HARDWARESPRITE))
+    if (!cid->hardwaresprite)
         return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     LOCK_HW
     pw(cid->boardinfo + PSSO_BoardInfo_MouseX, msg->x + (BYTE)cid->boardinfo[PSSO_BoardInfo_MouseXOffset]);
@@ -1370,7 +1376,7 @@ VOID P96GFXDisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
     D(bug("[P96Gfx] %s()\n", __func__));
 
     p96sbx(csd, "CVe");
-    if (!(gl(cid->boardinfo + PSSO_BoardInfo_Flags ) & BIF_HARDWARESPRITE))
+    if (!cid->hardwaresprite)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         return;
@@ -1664,6 +1670,7 @@ static BOOL P96GFX__InitCard(struct p96gfx_staticdata *csd, struct Library *lib)
             AddTail(&csd->foundCards, &cid->p96gfx_Node);
             P96GFX__PopulateResolutionsList(csd, cid);
             cid->hardwaresprite = gl(cid->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE);
+            cid->hiressprite = (gl(cid->boardinfo + PSSO_BoardInfo_Flags) & BIF_HIRESSPRITE) != 0;
             return TRUE;
         }
     }
@@ -1735,7 +1742,8 @@ BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
             }
             D(bug("[HiddP96Gfx] %s: P96 FindCard done\n", __func__);)
             InitCard(cid);
-            cid->hardwaresprite = (gl(cid->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE)) && SetSprite(cid, FALSE);
+            cid->hardwaresprite = gl(cid->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE);
+            cid->hiressprite = (gl(cid->boardinfo + PSSO_BoardInfo_Flags) & BIF_HIRESSPRITE) != 0;
             AddTail(&csd->foundCards, &cid->p96gfx_Node);
         }
     }
