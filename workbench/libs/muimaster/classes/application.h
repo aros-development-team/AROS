@@ -176,6 +176,7 @@ struct MUIP_Application_SetConfigdata
 struct MUIP_Application_OpenWindows
 {
     STACKED ULONG MethodID;
+    STACKED struct List *windows;    /* windows to open, NULL = all */
 };
 
 struct MUIP_Application_UpdateMenus
