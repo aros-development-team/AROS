@@ -1415,7 +1415,7 @@ diff -ruN gcc-16.2.0/gcc/system.h gcc-16.2.0.aros/gcc/system.h
  /* Define this so that inttypes.h defines the PRI?64 macros even
     when compiling with a C++ compiler.  Define it here so in the
     event inttypes.h gets pulled in by another header it is already
-@@ -733,9 +738,13 @@
+@@ -733,9 +738,14 @@
  #include "libiberty.h"
  
  #undef FFS  /* Some systems predefine this symbol; don't let it interfere.  */
@@ -1426,6 +1426,7 @@ diff -ruN gcc-16.2.0/gcc/system.h gcc-16.2.0.aros/gcc/system.h
  #undef ABS /* Likewise.  */
  #undef PC /* Likewise.  */
 +#undef CONST /* Likewise.  */
++#undef VOID /* Likewise.  */
  
  /* Provide a default for the HOST_BIT_BUCKET.
     This suffices for POSIX-like hosts.  */
