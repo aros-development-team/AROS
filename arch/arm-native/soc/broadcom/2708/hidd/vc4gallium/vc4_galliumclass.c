@@ -421,26 +421,17 @@ void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd)
      * Beyond the nap window, fall back to CPU-free vblank blocking. */
     BYTE wsig = vc4_wait_enter(sd);
     ULONG ticks = 0;
-    ULONG budget = (wsig >= 0) ? 60 : 3500000;
+    /* Both paths bound the wait to roughly the same wall clock: vblank
+     * ticks are ~20 ms, the signal-less fallback paces itself at
+     * VC4_GPUWAIT_NAP_US. The fallback used to poll flat out with a
+     * 3.5M budget — seconds of spinning while holding render_lock, which
+     * is what a stalled frame looked like from the outside. */
+    ULONG budget = (wsig >= 0) ? 60 : (60 * 20000 / VC4_GPUWAIT_NAP_US);
     ULONG spin_start = gallium_now_us();
 
     while (v3d->finished_seqno < v3d->seqno && ticks < budget)
     {
-        ULONG bfc = V3D_READ(v3d, V3D_BFC) & 0xff;
-        ULONG rfc = V3D_READ(v3d, V3D_RFC) & 0xff;
-        ULONG bdelta = (bfc - v3d->last_bfc) & 0xff;
-        ULONG rdelta = (rfc - v3d->last_rfc) & 0xff;
-        v3d->last_bfc = bfc;
-        v3d->last_rfc = rfc;
-        v3d->bfc_completed += bdelta;
-        v3d->rfc_completed += rdelta;
-        if (v3d->pending_render && v3d->bfc_completed >= v3d->seqno)
-            vc4_v3d_kick_pending_render(v3d, "BFC");
-        {
-            ULONG done = v3d->rfc_completed;
-            if (done > v3d->seqno) done = v3d->seqno;
-            v3d->finished_seqno = done;
-        }
+        vc4_v3d_advance_counters(v3d);
         if (v3d->finished_seqno >= v3d->seqno)
             break;
 
@@ -486,9 +477,12 @@ void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd)
 
         ticks++;
         /* Block until the next vblank (~20 ms, CPU-free) on the registered
-         * path; spin otherwise (no free signal — rare). */
+         * path. With no free signal (the task has none left to allocate)
+         * blocking is impossible, so pace the poll instead of spinning. */
         if (wsig >= 0)
             Wait(1UL << wsig);
+        else
+            vc4_gpu_nap(sd, VC4_GPUWAIT_NAP_US);
     }
 
     vc4_wait_leave(sd, wsig);
@@ -742,7 +736,11 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         ReleaseSemaphore(&sd->bo_lock);
         return -1;
     }
-    if (prev && prev != src_bo_handle)
+    /* Release the pin the previous present took — including when the same
+     * BO is shown twice in a row: we added a fresh pin above, so skipping
+     * this would strand one reference per repeat and the BO could never be
+     * freed. */
+    if (prev)
         vc4_aros_bo_unref_locked(sd, prev);
     ReleaseSemaphore(&sd->bo_lock);
     return 0;

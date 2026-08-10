@@ -53,6 +53,7 @@ struct vc4_bo_entry
     ULONG   gpu_handle;     /* Mailbox memory handle for free */
     ULONG   size;
     ULONG   refcount;
+    ULONG   seqno;          /* Last submission that referenced this BO (0 = never) */
     BOOL    is_shader;      /* Immutable shader BO */
     BOOL    external;       /* Wraps memory we don't own (scanout page) */
     BOOL    cpu_mapped;     /* MMAP_BO was called — CPU may hold dirty lines */
@@ -146,6 +147,15 @@ struct vc4galliumstaticdata
     struct vc4_bo_entry     bo_table[VC4_MAX_BOS];
     ULONG                   bo_next_handle;
     struct SignalSemaphore  bo_lock;
+
+    /* Firmware heap accounting: every ALLOCMEM/FREEMEM pair updates these
+     * so an allocation failure can report what the driver itself holds
+     * versus how big the VideoCore partition is (gpu_mem= in config.txt).
+     * vcram_size 0 = not queried yet. */
+    ULONG                   gpu_mem_bytes;
+    ULONG                   gpu_mem_allocs;
+    ULONG                   vcram_base;
+    ULONG                   vcram_size;
 
     /* Mailbox message buffer (16-byte aligned) */
     APTR                    mbox_msg_raw;   /* Raw allocation for FreeMem */

@@ -254,7 +254,80 @@ static ULONG bo_alloc_handle(struct vc4galliumstaticdata *sd)
     return 0;
 }
 
+/*
+ * Report what the driver holds in the VideoCore heap when an allocation
+ * fails. The firmware only ever answers "handle 0" — it never says how
+ * much is left — so the useful numbers are the partition size (gpu_mem=
+ * in config.txt) against our own running total. A large gap between the
+ * two means someone else (firmware framebuffer, another client, or a BO
+ * we forgot to free) owns the difference.
+ *
+ * Must be called WITHOUT mbox_lock held: it takes bo_lock, and the rest
+ * of the driver locks bo_lock before mbox_lock.
+ */
+static void gpu_mem_report(struct vc4galliumstaticdata *sd, ULONG failed_size)
+{
+    static ULONG report_n = 0;
+    ULONG pool_bytes = 0, bo_bytes = 0, bo_live = 0;
+    int i;
+
+    /* Rate-limit: the first few failures carry the information, the rest
+     * would drown the log (Mesa retries every draw). */
+    if (++report_n > 3 && (report_n & 63) != 0)
+        return;
+
+    if (sd->vcram_size == 0)
+    {
+        ObtainSemaphore(&sd->mbox_lock);
+        sd->mbox_msg[0] = AROS_LE2LONG(9 * 4);
+        sd->mbox_msg[1] = AROS_LE2LONG(VCTAG_REQ);
+        sd->mbox_msg[2] = AROS_LE2LONG(VCTAG_GETVCRAM);
+        sd->mbox_msg[3] = AROS_LE2LONG(4 * 2);      /* value buffer size = 8 */
+        sd->mbox_msg[4] = 0;                        /* request length = 0 */
+        sd->mbox_msg[5] = 0;
+        sd->mbox_msg[6] = 0;
+        sd->mbox_msg[7] = 0;                        /* end tag */
+        sd->mbox_msg[8] = 0;
+
+        if (MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, (APTR)sd->mbox_msg)
+            != (volatile unsigned int *)-1)
+        {
+            sd->vcram_base = AROS_LE2LONG(sd->mbox_msg[5]);
+            sd->vcram_size = AROS_LE2LONG(sd->mbox_msg[6]);
+        }
+        ReleaseSemaphore(&sd->mbox_lock);
+    }
+
+    for (i = 0; i < VC4_NUM_POOL_SETS; i++)
+        pool_bytes += sd->pool[i].tile.size + sd->pool[i].exec.size +
+                      sd->pool[i].rcl.size + sd->pool[i].binoverflow.size;
+
+    ObtainSemaphore(&sd->bo_lock);
+    {
+        ULONG h;
+        for (h = 1; h < VC4_MAX_BOS; h++)
+        {
+            if (sd->bo_table[h].refcount > 0 && sd->bo_table[h].gpu_handle)
+            {
+                bo_live++;
+                bo_bytes += sd->bo_table[h].size;
+            }
+        }
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+
+    bug("[VC4Gallium] OOM: %u KB request failed. VC partition %u KB at "
+        "0x%08x; driver holds %u KB in %u allocs (pools %u KB, %u BOs "
+        "%u KB)\n",
+        failed_size / 1024, sd->vcram_size / 1024, sd->vcram_base,
+        sd->gpu_mem_bytes / 1024, sd->gpu_mem_allocs,
+        pool_bytes / 1024, bo_live, bo_bytes / 1024);
+}
+
 /* Allocate GPU memory via mailbox; returns physical address (0x3fffffff masked). */
+static void gpu_mem_free(struct vc4galliumstaticdata *sd, ULONG gpu_handle,
+                         ULONG size);
+
 static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG align, ULONG flags, ULONG *out_handle)
 {
     APTR phys = NULL;
@@ -293,6 +366,7 @@ static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG ali
     {
         bug("[VC4Gallium] gpu_mem_alloc: ALLOCMEM MBoxCall failed\n");
         ReleaseSemaphore(&sd->mbox_lock);
+        gpu_mem_report(sd, size);
         return NULL;
     }
 
@@ -305,6 +379,7 @@ static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG ali
     {
         bug("[VC4Gallium] gpu_mem_alloc: firmware returned handle=0 for %d bytes (OOM?)\n", size);
         ReleaseSemaphore(&sd->mbox_lock);
+        gpu_mem_report(sd, size);
         return NULL;
     }
 
@@ -323,6 +398,9 @@ static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG ali
     {
         bug("[VC4Gallium] gpu_mem_alloc: LOCKMEM MBoxCall failed\n");
         ReleaseSemaphore(&sd->mbox_lock);
+        /* The ALLOCMEM above succeeded — hand the handle back or those
+         * bytes stay committed in the firmware heap until reboot. */
+        gpu_mem_free(sd, gpu_handle, 0);
         return NULL;
     }
 
@@ -330,6 +408,9 @@ static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG ali
 
     D(bug("[VC4Gallium] gpu_mem_alloc: LOCKMEM response: msg[4]=0x%08x msg[5]=0x%08x -> phys=0x%08x\n",
         AROS_LE2LONG(sd->mbox_msg[4]), AROS_LE2LONG(sd->mbox_msg[5]), (ULONG)phys));
+
+    sd->gpu_mem_bytes += size;
+    sd->gpu_mem_allocs++;
 
     ReleaseSemaphore(&sd->mbox_lock);
 
@@ -342,7 +423,10 @@ static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG ali
     return phys;
 }
 
-static void gpu_mem_free(struct vc4galliumstaticdata *sd, ULONG gpu_handle)
+/* size is what was passed to gpu_mem_alloc (0 = don't touch the accounting,
+ * for a handle freed before it was ever counted). */
+static void gpu_mem_free(struct vc4galliumstaticdata *sd, ULONG gpu_handle,
+                         ULONG size)
 {
     D(bug("[VC4Gallium] gpu_mem_free: gpu_handle=0x%08x\n", gpu_handle));
 
@@ -369,6 +453,12 @@ static void gpu_mem_free(struct vc4galliumstaticdata *sd, ULONG gpu_handle)
     sd->mbox_msg[7] = 0;
 
     MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, (APTR)sd->mbox_msg);
+
+    if (size)
+    {
+        sd->gpu_mem_bytes -= size;
+        sd->gpu_mem_allocs--;
+    }
 
     ReleaseSemaphore(&sd->mbox_lock);
 }
@@ -407,7 +497,7 @@ static void gpu_mem_reclaim(struct vc4galliumstaticdata *sd)
                     i, (p == 0) ? "tile" : (p == 1) ? "exec" :
                        (p == 2) ? "rcl" : "binoverflow",
                     pools[p]->size));
-                gpu_mem_free(sd, pools[p]->gpu_handle);
+                gpu_mem_free(sd, pools[p]->gpu_handle, pools[p]->size);
                 pools[p]->vaddr = NULL;
                 pools[p]->bus_addr = 0;
                 pools[p]->gpu_handle = 0;
@@ -746,6 +836,7 @@ static int ioctl_create_bo(struct vc4galliumstaticdata *sd, struct drm_vc4_creat
     sd->bo_table[handle].gpu_handle = gpu_handle;
     sd->bo_table[handle].size = args->size;
     sd->bo_table[handle].refcount = 1;
+    sd->bo_table[handle].seqno = 0;
     sd->bo_table[handle].is_shader = FALSE;
     sd->bo_table[handle].cpu_mapped = FALSE;
     sd->bo_table[handle].tiling_modifier = 0; /* DRM_FORMAT_MOD_LINEAR */
@@ -807,6 +898,7 @@ static int ioctl_create_shader_bo(struct vc4galliumstaticdata *sd, struct drm_vc
     sd->bo_table[handle].gpu_handle = gpu_handle;
     sd->bo_table[handle].size = args->size;
     sd->bo_table[handle].refcount = 1;
+    sd->bo_table[handle].seqno = 0;
     sd->bo_table[handle].is_shader = TRUE;
     sd->bo_table[handle].cpu_mapped = FALSE;
     sd->bo_table[handle].tiling_modifier = 0; /* DRM_FORMAT_MOD_LINEAR */
@@ -859,11 +951,13 @@ void vc4_aros_bo_unref_locked(struct vc4galliumstaticdata *sd, ULONG handle)
     if (sd->bo_table[handle].refcount == 0)
     {
         if (sd->bo_table[handle].gpu_handle)
-            gpu_mem_free(sd, sd->bo_table[handle].gpu_handle);
+            gpu_mem_free(sd, sd->bo_table[handle].gpu_handle,
+                         sd->bo_table[handle].size);
         sd->bo_table[handle].vaddr = NULL;
         sd->bo_table[handle].bus_addr = 0;
         sd->bo_table[handle].gpu_handle = 0;
         sd->bo_table[handle].size = 0;
+        sd->bo_table[handle].seqno = 0;
         sd->bo_table[handle].tiling_modifier = 0;
         sd->bo_table[handle].is_shader = FALSE;
         sd->bo_table[handle].external = FALSE;
@@ -919,6 +1013,7 @@ static int ioctl_gem_open(struct vc4galliumstaticdata *sd, struct drm_gem_open *
     sd->bo_table[handle].gpu_handle = 0;
     sd->bo_table[handle].size = sd->scanout_size;
     sd->bo_table[handle].refcount = 1;
+    sd->bo_table[handle].seqno = 0;
     sd->bo_table[handle].is_shader = FALSE;
     sd->bo_table[handle].external = TRUE;
     sd->bo_table[handle].cpu_mapped = FALSE;
@@ -1022,29 +1117,9 @@ void v3d_dump_last_submit(void)
     }
 }
 
-/*
- * Sample BFC/RFC and advance v3d->bfc_completed / rfc_completed
- * by the (mod-256) delta since the last sample.
- */
-static void v3d_advance_counters(struct vc4_v3d_state *v3d)
-{
-    ULONG bfc = V3D_READ(v3d, V3D_BFC) & 0xff;
-    ULONG rfc = V3D_READ(v3d, V3D_RFC) & 0xff;
-    ULONG bdelta = (bfc - v3d->last_bfc) & 0xff;
-    ULONG rdelta = (rfc - v3d->last_rfc) & 0xff;
-    v3d->last_bfc = bfc;
-    v3d->last_rfc = rfc;
-    v3d->bfc_completed += bdelta;
-    v3d->rfc_completed += rdelta;
-
-    if (v3d->pending_render && v3d->bfc_completed >= v3d->seqno)
-        vc4_v3d_kick_pending_render(v3d, "BFC");
-
-    ULONG done = v3d->rfc_completed;
-    if (done > v3d->seqno)
-        done = v3d->seqno;
-    v3d->finished_seqno = done;
-}
+/* Counter advance lives in vc4_v3d.c (shared with the galliumclass wait
+ * loop, and Disable()-protected — see vc4_v3d_advance_counters). */
+#define v3d_advance_counters(v3d) vc4_v3d_advance_counters(v3d)
 
 /*
  * Poll V3D until the given seqno has completed.
@@ -1066,7 +1141,12 @@ static int v3d_wait_seqno(struct vc4galliumstaticdata *sd, ULONG seqno, ULONG ti
      * every wait to ~20 ms; pure spinning starves the mouse. */
     BYTE wsig = vc4_wait_enter(sd);
     ULONG ticks = 0;
-    ULONG budget = (wsig >= 0) ? (timeout_loops / 70000 + 4) : timeout_loops;
+    /* Both paths bound the wait to the same wall clock: a vblank tick is
+     * ~20 ms, the signal-less fallback paces itself at VC4_GPUWAIT_NAP_US
+     * instead of polling flat out for timeout_loops iterations. */
+    ULONG budget = (wsig >= 0) ? (timeout_loops / 70000 + 4)
+                               : (timeout_loops / 70000 * 20000
+                                    / VC4_GPUWAIT_NAP_US + 4);
     ULONG spin_start = v3d_now_us();
 
     while (v3d->finished_seqno < seqno)
@@ -1190,7 +1270,19 @@ static int ioctl_wait_seqno(struct vc4galliumstaticdata *sd, struct drm_vc4_wait
 static int ioctl_wait_bo(struct vc4galliumstaticdata *sd, struct drm_vc4_wait_bo *args)
 {
     struct drm_vc4_wait_seqno wait;
-    wait.seqno = sd->v3d.seqno;
+
+    /* An unknown handle counts as idle. Reporting an error here would be
+     * fatal: vc4_bo_wait() abort()s the client on any errno but ETIME. */
+    if (args->handle == 0 || args->handle >= VC4_MAX_BOS ||
+        sd->bo_table[args->handle].refcount == 0)
+        return 0;
+
+    /* The BO's OWN last user, not the newest job in flight: a BO no
+     * submission has touched since, or never touched at all, is idle no
+     * matter what the GPU is doing now. */
+    wait.seqno = sd->bo_table[args->handle].seqno;
+    if (wait.seqno == 0)
+        return 0;
     wait.timeout_ns = args->timeout_ns;
     return ioctl_wait_seqno(sd, &wait);
 }
@@ -1210,7 +1302,7 @@ static APTR pool_bo_get(struct vc4galliumstaticdata *sd,
 
     if (pool->vaddr)
     {
-        gpu_mem_free(sd, pool->gpu_handle);
+        gpu_mem_free(sd, pool->gpu_handle, pool->size);
         pool->vaddr = NULL;
         pool->size = 0;
     }
@@ -2574,6 +2666,22 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
     /* Tag this pool set with the seqno so we know when it's safe to reuse */
     sd->pool[pi].seqno = seqno;
 
+    /* Tag every referenced BO with it too: WAIT_BO answers from this, and
+     * Mesa's BO cache probes each candidate with a zero-timeout WAIT_BO
+     * before reusing it. Answering from the newest job instead made every
+     * cached BO look busy, so the cache never hit and every frame
+     * allocated fresh buffers until the firmware heap ran dry. */
+    {
+        ULONG bi;
+        for (bi = 0; bi < args->bo_handle_count; bi++)
+        {
+            ULONG bh = bo_handles[bi];
+
+            if (bh && bh < VC4_MAX_BOS && sd->bo_table[bh].refcount)
+                sd->bo_table[bh].seqno = seqno;
+        }
+    }
+
     sd->pool_idx = (pi + 1) % VC4_NUM_POOL_SETS;
 
     D(bug("[VC4Gallium] submit_cl: submitted seqno=%d on pool %d\n", seqno, pi));
@@ -2916,12 +3024,14 @@ void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd)
         if (sd->bo_table[i].refcount > 0)
         {
             if (sd->bo_table[i].gpu_handle)
-                gpu_mem_free(sd, sd->bo_table[i].gpu_handle);
+                gpu_mem_free(sd, sd->bo_table[i].gpu_handle,
+                             sd->bo_table[i].size);
             sd->bo_table[i].vaddr = NULL;
             sd->bo_table[i].bus_addr = 0;
             sd->bo_table[i].gpu_handle = 0;
             sd->bo_table[i].size = 0;
             sd->bo_table[i].refcount = 0;
+            sd->bo_table[i].seqno = 0;
             sd->bo_table[i].tiling_modifier = 0;
             sd->bo_table[i].is_shader = FALSE;
             sd->bo_table[i].external = FALSE;
@@ -2942,7 +3052,7 @@ void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd)
         {
             if (pools[p]->vaddr && pools[p]->gpu_handle)
             {
-                gpu_mem_free(sd, pools[p]->gpu_handle);
+                gpu_mem_free(sd, pools[p]->gpu_handle, pools[p]->size);
                 pools[p]->vaddr = NULL;
                 pools[p]->bus_addr = 0;
                 pools[p]->gpu_handle = 0;
