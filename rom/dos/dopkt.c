@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -75,6 +75,22 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
         /* NIL: */
         D(bug("NULL port => handling NIL:\n"));
         return handleNIL(action, arg1, arg2, arg3);
+    }
+
+    /*
+     * A packet aimed at a damaged or freed port pointer (a stale handler
+     * reference, or a corrupted FileHandle/DeviceNode field) would PutMsg
+     * into garbage and fault inside exec. Catch it here, name the caller
+     * and target, and fail the request instead.
+     */
+    if (TypeOfMem(port) == 0 || port->mp_Node.ln_Type != NT_MSGPORT)
+    {
+        bug("[DoPkt] task '%s': BAD handler port 0x%p (action %ld)"
+            " - failing request\n",
+            me->pr_Task.tc_Node.ln_Name, port, (LONG)action);
+        if (res2)
+            *res2 = ERROR_OBJECT_WRONG_TYPE;
+        return DOSFALSE;
     }
 
     /* First I create a regular dos packet */

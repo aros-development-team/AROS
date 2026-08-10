@@ -55,6 +55,7 @@ struct hunk
 struct SRBuffer
 {
     ULONG   srb_FileOffset;
+    ULONG   srb_Len;
     APTR    srb_Buffer;
 };
 
@@ -72,7 +73,7 @@ static int elf_read_block
     D(bug("[ELF Loader] elf_read_block (offset=%d, size=%d)\n", offset, size));
 
     if (size <= LOADSEG_SMALL_READ && (offset >= srb->srb_FileOffset) &&
-            ((offset + size) <= (srb->srb_FileOffset + LOADSEG_SMALL_READ)) &&
+            ((offset + size) <= (srb->srb_FileOffset + srb->srb_Len)) &&
             srb->srb_Buffer != NULL)
     {
         CopyMem(srb->srb_Buffer + (offset - srb->srb_FileOffset), buffer, size);
@@ -85,6 +86,7 @@ static int elf_read_block
 
         if (size <= LOADSEG_SMALL_READ)
         {
+            ULONG total = 0;
             LONG nread;
 
             if (srb->srb_Buffer == NULL)
@@ -95,16 +97,27 @@ static int elf_read_block
                 return 1;
 
             srb->srb_FileOffset = offset;
+            srb->srb_Len = 0;
 
             /*
-             * The buffer is deliberately larger than the request, so a
-             * short read is normal near the end of a small file. Only the
-             * bytes actually asked for have to have arrived - an empty or
-             * truncated file gives fewer, and must not be served from an
-             * uninitialised buffer as though it had succeeded.
+             * The buffer deliberately over-reads, so hitting end-of-file
+             * short of a full buffer is normal. A handler may also return
+             * less than asked mid-file, so keep reading until the buffer
+             * is full or the file ends. Only the bytes that actually
+             * arrived may be served - srb_Len guards the cache above -
+             * and an empty or truncated file must not satisfy the
+             * caller's request from uninitialised memory.
              */
-            nread = ilsRead(file, srb->srb_Buffer, LOADSEG_SMALL_READ);
-            if (nread < (LONG)size)
+            do
+            {
+                nread = ilsRead(file, srb->srb_Buffer + total, LOADSEG_SMALL_READ - total);
+                if (nread < 0)
+                    return 1;
+                total += nread;
+            } while (nread != 0 && total < LOADSEG_SMALL_READ);
+
+            srb->srb_Len = total;
+            if (total < size)
                 return 1;
 
             /* Re-read, now srb will be used */

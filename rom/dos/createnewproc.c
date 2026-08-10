@@ -682,7 +682,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
         struct LocalVar *varNode;
         struct LocalVar *newVar;
         
-        /* We use the same strategy as in the ***Var() functions */
+        /* We use the same strategy as in the ***Var() functions */
         ForeachNode(&fromProcess->pr_LocalVars, varNode)
         {
             LONG  copyLength = strlen(varNode->lv_Node.ln_Name) + 1 +
@@ -719,6 +719,32 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
         }
     }
 
+    return TRUE;
+}
+
+/*
+ * A dying handler process was seen closing its saved NIL streams with the
+ * FileHandle overwritten (wild fh_Type), sending the close packet's message
+ * into garbage and taking the machine down inside PutMsg(). Validate the
+ * handle before closing; a damaged one is reported with task attribution
+ * and leaked - losing a FileHandle is recoverable, the wild store is not.
+ */
+static BOOL streamSane(BPTR file, CONST_STRPTR which, struct DosLibrary *DOSBase)
+{
+    struct FileHandle *fh = BADDR(file);
+
+    if (fh == NULL)
+        return TRUE;    /* Close(BNULL) is a no-op */
+
+    if (TypeOfMem(fh) == 0 || fh->fh_Func3 == -1 ||
+        (fh->fh_Type != NULL && TypeOfMem(fh->fh_Type) == 0))
+    {
+        bug("[DosEntry] task '%s': %s stream handle 0x%p damaged"
+            " (fh_Type 0x%p fh_Func3 0x%p) - not closing\n",
+            FindTask(NULL)->tc_Node.ln_Name, which, fh,
+            fh->fh_Type, (APTR)fh->fh_Func3);
+        return FALSE;
+    }
     return TRUE;
 }
 
@@ -812,21 +838,24 @@ static void DosEntry(void)
 
     if (me->pr_Flags & PRF_CLOSEINPUT)
     {
-        Close(cis);
+        if (streamSane(cis, "input", DOSBase))
+            Close(cis);
     }
 
     D(bug("Closing output stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEOUTPUT)
     {
-        Close(cos);
+        if (streamSane(cos, "output", DOSBase))
+            Close(cos);
     }
 
     D(bug("Closing error stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEERROR)
     {
-        Close(ces);
+        if (streamSane(ces, "error", DOSBase))
+            Close(ces);
     }
 
     D(bug("Freeing arguments\n"));
