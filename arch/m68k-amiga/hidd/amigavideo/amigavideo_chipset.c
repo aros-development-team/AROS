@@ -1858,6 +1858,8 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     COPPEROUT(c, 0x0106, csd->bplcon3)  // Push the display bplcon3 again
     COPPEROUT(c, 0xffff, 0xfffe)
 
+    GfxBase->LOFlist = GfxBase->SHFlist = csd->copper2_backup;
+
     custom->cop1lc = (ULONG)csd->copper1;
     custom->cop2lc = (ULONG)csd->copper2_backup;
 
