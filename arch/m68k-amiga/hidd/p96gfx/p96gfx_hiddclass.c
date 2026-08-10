@@ -50,8 +50,6 @@
 /* REMOVE-ME: 4MB Hack (used for easier debug of vram <-> ram swapping) !!!!*/
 /*#define USE_VRAM_HACK*/
 
-static void p96sbx(struct p96gfx_staticdata *csd, const char *t);   /* SBGUARD temp debug, defined below */
-
 static struct P96GfxData *P96GFX__GetGfxDataFromDisplay(OOP_Class *cl, OOP_Object *o, OOP_Object **gfx)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
@@ -940,14 +938,12 @@ ULONG P96GFXDisplay__Hidd_Display__ShowViewPorts(OOP_Class *cl, OOP_Object *o, s
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
-    p96sbx(csd, "SVe");
     if (vpd) {
         bm = vpd->Bitmap;
         if (vpd->vpe)
             vp = vpd->vpe->ViewPort;
     }
     P96GFXDisplay__DoShow(cl, o, bm, vp, FALSE);
-    p96sbx(csd, "SVx");
     return TRUE;
 }
 
@@ -1114,17 +1110,6 @@ BOOL P96GFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHid
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-/* SBGUARD (temp debug): detect corruption of the SysBase region. ln_Type should
-   stay NT_LIBRARY and SysStkUpper should remain a high RAMSEY address. */
-static void p96sbx(struct p96gfx_staticdata *csd, const char *t)
-{
-    struct ExecBase *sb = SysBase;
-    if (sb->LibNode.lib_Node.ln_Type != NT_LIBRARY ||
-        (IPTR)sb->SysStkUpper < 0x07000000 || (IPTR)sb->SysStkUpper > 0x08000000)
-        bug("[SBX]%s lt=%d su=%p sl=%p\n", t, sb->LibNode.lib_Node.ln_Type,
-            sb->SysStkUpper, sb->SysStkLower);
-}
-
 static UBYTE *P96GFXCl__PrepareSprite(OOP_Class *cl, OOP_Object *o, ULONG store, ULONG size, ULONG width, ULONG height, struct pHidd_Display_SetCursorShape *msg)
 {
     OOP_Object *gfx = NULL;
@@ -1195,7 +1180,6 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
 
     D(bug("[P96Gfx] %s()\n", __func__);)
 
-    p96sbx(csd, "CSe");
 
     /* No hardware sprite: let the base Display class run its software cursor.
        Must agree with aoHidd_Gfx_SupportsHWCursor or two pointers are drawn */
@@ -1340,7 +1324,6 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, s
     UNLOCK_HW
     DB2(bug("[P96Gfx] %s: hw sprite loaded\n", __func__));
 
-    p96sbx(csd, "CSx");
     return TRUE;
 }
                              
@@ -1353,7 +1336,6 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o, str
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
-    p96sbx(csd, "CPe");
     if (!cid->hardwaresprite)
         return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     LOCK_HW
@@ -1362,7 +1344,6 @@ BOOL P96GFXDisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o, str
     SetSpritePosition(cid);
     UNLOCK_HW
 
-    p96sbx(csd, "CPx");
     return TRUE;
 }
 
@@ -1375,7 +1356,6 @@ VOID P96GFXDisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
 
     D(bug("[P96Gfx] %s()\n", __func__));
 
-    p96sbx(csd, "CVe");
     if (!cid->hardwaresprite)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -1384,7 +1364,6 @@ VOID P96GFXDisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
     LOCK_HW
     SetSprite(cid, msg->visible);
     UNLOCK_HW
-    p96sbx(csd, "CVx");
 }
 
 VOID P96GFXCl__Hidd_P96Gfx__SetCursorPen(OOP_Class *cl, OOP_Object *o, struct pHidd_P96Gfx_SetCursorPen *msg)
