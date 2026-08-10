@@ -15,6 +15,7 @@
 
 #include <exec/types.h>
 #include <libraries/mui.h>
+#include <intuition/classes.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -195,7 +196,7 @@ static IPTR Net4Win__MUIM_PAWin_ModeChanged(Class *cl, Object *obj,
 }
 
 /*---------------------------------------------------------------------------*/
-static IPTR Net4Win_Dispatch(Class *cl, Object *obj, Msg msg)
+BOOPSI_DISPATCHER(IPTR, Net4Win_Dispatch, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -214,6 +215,7 @@ static IPTR Net4Win_Dispatch(Class *cl, Object *obj, Msg msg)
             return DoSuperMethodA(cl, obj, msg);
     }
 }
+BOOPSI_DISPATCHER_END
 
 /*---------------------------------------------------------------------------*/
 BOOL Net4Win_InitClass(struct MUI_CustomClass *PAWinCl)

@@ -11,6 +11,7 @@
 
 #include <exec/types.h>
 #include <libraries/mui.h>
+#include <intuition/classes.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -286,7 +287,7 @@ static IPTR PAWin__MUIM_PAWin_ModeChanged(Class *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-static IPTR PAWin_Dispatch(Class *cl, Object *obj, Msg msg)
+BOOPSI_DISPATCHER(IPTR, PAWin_Dispatch, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -307,6 +308,7 @@ static IPTR PAWin_Dispatch(Class *cl, Object *obj, Msg msg)
             return DoSuperMethodA(cl, obj, msg);
     }
 }
+BOOPSI_DISPATCHER_END
 
 BOOL PAWin_InitClass(void)
 {
