@@ -92,11 +92,10 @@ diff -ruN binutils-2.47/bfd/elf32-arm.c binutils-2.47.aros/bfd/elf32-arm.c
  #include "elf/arm.h"
  #include "elf32-arm.h"
  #include "cpu-arm.h"
-@@ -20253,6 +20254,78 @@
+@@ -20253,6 +20254,77 @@
  #define ELF_COMMONPAGESIZE		0x1000
  
  
-+++ bfd/elf32-arm.c	2025-07-26 23:00:00.000000000 +0000
 +/* AROS target */
 +
 +#undef TARGET_LITTLE_SYM
@@ -166,12 +165,12 @@ diff -ruN binutils-2.47/bfd/elf32-arm.c binutils-2.47.aros/bfd/elf32-arm.c
 +#undef elf_backend_begin_write_processing
 +#define elf_backend_begin_write_processing elf32_arm_begin_write_processing
 +#undef bfd_elf32_bfd_final_link
-+#define bfd_elf32_bfd_final_link        bfd_elf_final_link
++#define bfd_elf32_bfd_final_link	elf32_arm_final_link
 +
  /* FDPIC Targets.  */
  
  #undef  TARGET_LITTLE_SYM
-@@ -20342,6 +20415,7 @@
+@@ -20342,6 +20414,7 @@
  #undef	TARGET_BIG_NAME
  #define TARGET_BIG_NAME			"elf32-bigarm-vxworks"
  
@@ -271,7 +270,7 @@ diff -ruN binutils-2.47/bfd/elf-aros.c binutils-2.47.aros/bfd/elf-aros.c
 +{
 +  link_info->emitrelocations = 1;
 +  link_info->output_bfd->flags &= ~D_PAGED;
-+  return bfd_elf_final_link(abfd, link_info);
++  return _bfd_elf_final_link(abfd, link_info);
 +}
 diff -ruN binutils-2.47/bfd/elf-aros.h binutils-2.47.aros/bfd/elf-aros.h
 --- binutils-2.47/bfd/elf-aros.h	1970-01-01 01:00:00.000000000 +0100
