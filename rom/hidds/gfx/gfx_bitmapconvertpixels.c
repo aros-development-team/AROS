@@ -1,9 +1,11 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
 
+#include <proto/exec.h>
+#include <exec/memory.h>
 #include <hidd/gfx.h>
 #include "gfx_intern.h"
 
@@ -245,12 +247,33 @@ static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
 
     D(bug("[ConvertPixels] true_to_pal(): pixlut is 0x%p, colormap is 0x%p\n", lut, cmap));
 
+    UWORD *invlut = NULL;
+
     if (lut)
         cols = lut->entries;
     else if (cmap)
         cols = cmap->entries;
     else
         cols = 0;
+
+    /*
+     * The nearest-colour search below visits every palette entry for
+     * every pixel. Resolved colours are remembered in a table keyed by
+     * the top five bits of each component, so each distinct colour is
+     * searched only once. The cache belongs to the bitmap's palette;
+     * SetColors() invalidates it. A caller-supplied pixlut has no such
+     * lifetime, so it stays uncached.
+     */
+    if (!lut && cmap && cols && (cols < 0xFFFF))
+    {
+        if (!data->invlut)
+        {
+            data->invlut = AllocVec(32768 * sizeof(UWORD), MEMF_ANY);
+            if (data->invlut)
+                memset(data->invlut, 0xFF, 32768 * sizeof(UWORD));
+        }
+        invlut = data->invlut;
+    }
 
     for (y = 0; y < msg->height; y ++)
     {
@@ -264,12 +287,23 @@ static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
             HIDDT_Pixel dstpix = 0;
             ULONG best_distance = (ULONG)-1;
             ULONG a, r, g, b;
+            ULONG key = 0;
 
             GET_TRUE_PIX(s, srcpix, srcfmt);
             a = ALPHA_COMP(srcpix, srcfmt);
             r =   RED_COMP(srcpix, srcfmt);
             g = GREEN_COMP(srcpix, srcfmt);
             b =  BLUE_COMP(srcpix, srcfmt);
+
+            if (invlut)
+            {
+                key = ((r & 0xF800) >> 1) | ((g & 0xF800) >> 6) | ((b & 0xF800) >> 11);
+                if (invlut[key] != 0xFFFF)
+                {
+                    PUT_PAL_PIX(d, invlut[key], dstfmt);
+                    continue;
+                }
+            }
 
             D(bug("[ConvertPixels] Find best match for 0x%08X\n", srcpix));
             for (c = 0; c < cols; c++)
@@ -305,6 +339,8 @@ static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
             }
 
             D(bug("[ConvertPixels] Found color %u\n", dstpix));
+            if (invlut)
+                invlut[key] = dstpix;
             PUT_PAL_PIX(d, dstpix, dstfmt);
         }
         src += msg->srcMod;

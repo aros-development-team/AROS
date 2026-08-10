@@ -198,6 +198,7 @@ struct HIDDBitMapData
     OOP_Object            *display_obj;   /* Owning display                                */
     OOP_Object            *dmenum;        /* Owning display's mode enumerator             */
     OOP_Object            *colmap;        /* Colormap                                      */
+    UWORD                 *invlut;        /* RGB555 to pen cache for truecolor sources     */
     OOP_Object            *gc;            /* Shared GC for copy operations                 */
     HIDDT_ModeID           modeid;        /* Display mode ID		                   */
 

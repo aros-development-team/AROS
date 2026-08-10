@@ -1144,6 +1144,8 @@ void BM__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
     if (NULL != data->colmap)
         OOP_DisposeObject(data->colmap);
 
+    FreeVec(data->invlut);
+
     D(bug("Calling super\n"));
 
     /* Release the previously registered pixel format */
@@ -1338,6 +1340,10 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     {
         return FALSE;
     }
+
+    /* The changed palette invalidates any cached nearest-colour results */
+    if (data->invlut)
+        memset(data->invlut, 0xFF, 32768 * sizeof(UWORD));
 
     /* We may need to duplicate changes on framebuffer if running in mirrored mode */
     if (data->visible)
