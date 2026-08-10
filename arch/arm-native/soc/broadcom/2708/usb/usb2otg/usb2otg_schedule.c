@@ -368,11 +368,11 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
 
             if (queue == NULL)
             {
-                usb2otg_quar_set_tick[chan] = usb2otg_wd_ticks;
+                otg_Unit->hu_QuarSetTick[chan] = otg_Unit->hu_WdTicks;
                 otg_Unit->hu_DeadChannels |= (1 << chan);
                 D(if (chan == CHAN_CTRL)
                     bug("[USB2OTG:QUAR] CTRL BLACKOUT BEGINS (setup, no queue) tick=%lu\n",
-                        (unsigned long)usb2otg_wd_ticks);)
+                        (unsigned long)otg_Unit->hu_WdTicks);)
                 usb2otg_finish_setup_error(otg_Unit, chan, req, UHIOERR_HOSTERROR);
                 return FALSE;
             }
@@ -381,11 +381,11 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
 #if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
-            usb2otg_quar_set_tick[chan] = usb2otg_wd_ticks;
+            otg_Unit->hu_QuarSetTick[chan] = otg_Unit->hu_WdTicks;
             otg_Unit->hu_DeadChannels |= (1 << chan);
             D(if (chan == CHAN_CTRL)
                 bug("[USB2OTG:QUAR] CTRL BLACKOUT BEGINS (setup, requeued) tick=%lu\n",
-                    (unsigned long)usb2otg_wd_ticks);)
+                    (unsigned long)otg_Unit->hu_WdTicks);)
             otg_Unit->hu_Channel[chan].hc_Request = NULL;
             ADDHEAD(queue, (struct Node *)req);
 #if defined(__AROSEXEC_SMP__)
@@ -417,7 +417,7 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     otg_Unit->hu_Channel[chan].hc_TraceCount = 0;
     otg_Unit->hu_Channel[chan].hc_TraceAnom = 0;
     /* Cancel a previous owner's pending CSPLIT re-arm on this channel. */
-    usb2otg_clear_delayed_channel(chan);
+    usb2otg_clear_delayed_channel(otg_Unit, chan);
 
     /*
      * Channel FSM reset before programming ctrl/split arms: a channel
@@ -1519,8 +1519,8 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
 
                 bug("[USB2OTG:QUAR] CTRL blackout: scheduling skipped (n=%lu) qdepth=%d dark=%lu ticks\n",
                     (unsigned long)ctrl_blackout_skips, depth,
-                    (unsigned long)(usb2otg_wd_ticks
-                        - usb2otg_quar_set_tick[CHAN_CTRL]));
+                    (unsigned long)(otg_Unit->hu_WdTicks
+                        - otg_Unit->hu_QuarSetTick[CHAN_CTRL]));
             }
         )
         return;
@@ -1563,7 +1563,7 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
                  * not park the request forever.
                  */
                 if ((((now - due) & 0x7ff) >= 0x400) &&
-                    (((usb2otg_wd_ticks - parked_tick) & 0xff) < 3))
+                    (((otg_Unit->hu_WdTicks - parked_tick) & 0xff) < 3))
                 {
                     ADDTAIL(&otg_Unit->hu_CtrlXFerQueue, req);
                     KrnSpinUnLock(&otg_Unit->hu_Lock);
@@ -1616,7 +1616,7 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
                         holder ? (unsigned)holder->iouh_SetupData.bRequest : 0,
                         (int)req->iouh_DevAddr,
                         (unsigned)req->iouh_SetupData.bRequest,
-                        (unsigned long)usb2otg_wd_ticks);
+                        (unsigned long)otg_Unit->hu_WdTicks);
             )
             ADDHEAD(&otg_Unit->hu_CtrlXFerQueue, req);
             KrnSpinUnLock(&otg_Unit->hu_Lock);
@@ -1637,7 +1637,7 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
             (unsigned)AROS_LE2WORD(req->iouh_SetupData.wValue),
             (unsigned)AROS_LE2WORD(req->iouh_SetupData.wIndex),
             (unsigned long)req->iouh_Length));
-        usb2otg_ctrl_arm_count++;
+        otg_Unit->hu_CtrlArmCount++;
         if (FNAME_DEV(SetupChannel)(otg_Unit, ctrl_chan))
             FNAME_DEV(StartChannel)(otg_Unit, ctrl_chan, 0);
     }
@@ -1797,7 +1797,7 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
             otg_Unit->hu_Channel[chan].hc_Request = req;
             otg_Unit->hu_Channel[chan].hc_ArmedRole = new_role;
             if (req->iouh_DevAddr < 8)
-                usb2otg_int_poll_count[req->iouh_DevAddr]++;
+                otg_Unit->hu_IntPollCount[req->iouh_DevAddr]++;
             KrnSpinUnLock(&otg_Unit->hu_Lock);
 
             /*
@@ -1820,7 +1820,7 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
                     old_role == USB2OTG_CHANROLE_SPLIT ? "split" : "direct",
                     new_role == USB2OTG_CHANROLE_SPLIT ? "split" : "direct",
                     (int)req->iouh_DevAddr, (int)req->iouh_Endpoint,
-                    (unsigned long)usb2otg_wd_ticks));
+                    (unsigned long)otg_Unit->hu_WdTicks));
                 usb2otg_exorcise_channel(chan);
                 otg_Unit->hu_Channel[chan].hc_OddfrmFlip = 0;
             }
@@ -1848,9 +1848,9 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
             /* Hotplug diagnostic: snapshot arm time + CHAR as written. */
             if (req->iouh_DevAddr < 8)
             {
-                usb2otg_int_arm_hfnum[req->iouh_DevAddr] =
+                otg_Unit->hu_IntArmHfnum[req->iouh_DevAddr] =
                     rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff;
-                usb2otg_int_arm_char[req->iouh_DevAddr] =
+                otg_Unit->hu_IntArmChar[req->iouh_DevAddr] =
                     rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
             }
         }
