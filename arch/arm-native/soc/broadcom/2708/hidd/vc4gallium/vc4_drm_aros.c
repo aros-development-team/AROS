@@ -1022,29 +1022,9 @@ void v3d_dump_last_submit(void)
     }
 }
 
-/*
- * Sample BFC/RFC and advance v3d->bfc_completed / rfc_completed
- * by the (mod-256) delta since the last sample.
- */
-static void v3d_advance_counters(struct vc4_v3d_state *v3d)
-{
-    ULONG bfc = V3D_READ(v3d, V3D_BFC) & 0xff;
-    ULONG rfc = V3D_READ(v3d, V3D_RFC) & 0xff;
-    ULONG bdelta = (bfc - v3d->last_bfc) & 0xff;
-    ULONG rdelta = (rfc - v3d->last_rfc) & 0xff;
-    v3d->last_bfc = bfc;
-    v3d->last_rfc = rfc;
-    v3d->bfc_completed += bdelta;
-    v3d->rfc_completed += rdelta;
-
-    if (v3d->pending_render && v3d->bfc_completed >= v3d->seqno)
-        vc4_v3d_kick_pending_render(v3d, "BFC");
-
-    ULONG done = v3d->rfc_completed;
-    if (done > v3d->seqno)
-        done = v3d->seqno;
-    v3d->finished_seqno = done;
-}
+/* Counter advance lives in vc4_v3d.c (shared with the galliumclass wait
+ * loop, and Disable()-protected — see vc4_v3d_advance_counters). */
+#define v3d_advance_counters(v3d) vc4_v3d_advance_counters(v3d)
 
 /*
  * Poll V3D until the given seqno has completed.
@@ -1066,7 +1046,12 @@ static int v3d_wait_seqno(struct vc4galliumstaticdata *sd, ULONG seqno, ULONG ti
      * every wait to ~20 ms; pure spinning starves the mouse. */
     BYTE wsig = vc4_wait_enter(sd);
     ULONG ticks = 0;
-    ULONG budget = (wsig >= 0) ? (timeout_loops / 70000 + 4) : timeout_loops;
+    /* Both paths bound the wait to the same wall clock: a vblank tick is
+     * ~20 ms, the signal-less fallback paces itself at VC4_GPUWAIT_NAP_US
+     * instead of polling flat out for timeout_loops iterations. */
+    ULONG budget = (wsig >= 0) ? (timeout_loops / 70000 + 4)
+                               : (timeout_loops / 70000 * 20000
+                                    / VC4_GPUWAIT_NAP_US + 4);
     ULONG spin_start = v3d_now_us();
 
     while (v3d->finished_seqno < seqno)

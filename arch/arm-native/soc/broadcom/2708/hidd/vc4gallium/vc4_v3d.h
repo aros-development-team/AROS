@@ -131,5 +131,6 @@ extern IPTR __arm_periiobase;
 BOOL vc4_v3d_init(struct vc4_v3d_state *v3d);
 void vc4_v3d_service_interrupts(struct vc4_v3d_state *v3d);
 void vc4_v3d_kick_pending_render(struct vc4_v3d_state *v3d, const char *reason);
+void vc4_v3d_advance_counters(struct vc4_v3d_state *v3d);
 
 #endif /* _VC4_V3D_H */
