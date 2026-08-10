@@ -736,7 +736,11 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         ReleaseSemaphore(&sd->bo_lock);
         return -1;
     }
-    if (prev && prev != src_bo_handle)
+    /* Release the pin the previous present took — including when the same
+     * BO is shown twice in a row: we added a fresh pin above, so skipping
+     * this would strand one reference per repeat and the BO could never be
+     * freed. */
+    if (prev)
         vc4_aros_bo_unref_locked(sd, prev);
     ReleaseSemaphore(&sd->bo_lock);
     return 0;
