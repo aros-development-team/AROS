@@ -98,7 +98,9 @@ struct gfxdisplay_data {
     ULONG                       display_idbase;	/* Card ID (part of display mode ID)		  */
     ULONG                       display_mask;	/* Mask of mode ID				  */
     UWORD                       display_flags;	/* Flags, see below				  */
-    UWORD                       display_private;
+    WORD                        display_pri;	/* Mode enumeration priority (higher preferred).
+							   Occupies the 'pad' slot of the public
+							   struct MonitorHandle mirror - do not grow  */
     OOP_Object                  *display_obj;	/* display object to use			  */
     OOP_Object                  *display_gfxhidd;/* displays graphics driver object		  */
     OOP_Object                  *display_compositor;	/* screen composition object		  */
@@ -144,6 +146,7 @@ struct monitor_displaydata {
 /* software rasterizer, and common monitor data */
 struct gfxsoftrast_data {
     struct gfxdisplay_data      mdisplay;	/* Display chain head (must be first)		*/
+    WORD                        default_monitor_pri; /* display_pri of the default monitor's display */
 
     APTR(*DriverNotify)(APTR obj, BOOL add, APTR userdata);  /* Display driver notification callback */
     struct SignalSemaphore      displaydb_sem;	/* Display mode database semaphore */

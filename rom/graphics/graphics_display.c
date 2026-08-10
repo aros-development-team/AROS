@@ -98,6 +98,12 @@ struct gfxdisplay_data *display_Setup(OOP_Object *displayhidd, struct GfxBase *G
     }
 
     mdd->mdisplay.display_dmenum = dmenum;
+
+    {
+        IPTR pri = 0;
+        OOP_GetAttr(dmenum, aHidd_DMEnum_Priority, &pri);
+        mdd->mdisplay.display_pri = (WORD)pri;
+    }
     D(bug("[graphics.library/display] %s: GfxHidd at 0x%p\n", __func__, mdd->mdisplay.display_gfxhidd));
 
     /*
@@ -229,7 +235,12 @@ void display_Queue(struct gfxdisplay_data *mdd, struct gfxdisplay_data *last, st
     for (; last->display_next; last = last->display_next)
     {
         D(bug("[graphics.library/display] %s: Current 0x%p, next 0x%p, ID 0x%08lX\n", __func__, last, last->display_next, last->display_next->display_idbase));
-        if (mdd->display_idbase < last->display_next->display_idbase)
+        /* Higher-priority displays enumerate first; equal priorities
+           keep the historical monitor ID ordering */
+        if (mdd->display_pri > last->display_next->display_pri)
+            break;
+        if ((mdd->display_pri == last->display_next->display_pri) &&
+            (mdd->display_idbase < last->display_next->display_idbase))
             break;
     }
 
@@ -263,14 +274,18 @@ void display_Enable(struct gfxdisplay_data *mdd, struct GfxBase *GfxBase)
     if (mdd->display_cfg->drv_idstore)
         *mdd->display_cfg->drv_idstore = mdd->display_cfg->drv_idbase;
 
-    if (!GfxBase->default_monitor)
+    if ((!GfxBase->default_monitor) ||
+        (mdd->display_pri > CDD(GfxBase)->default_monitor_pri))
     {
         D(bug("[graphics.library/display] %s: Setting default_monitor\n", __func__));
         OOP_Object *sync = HIDD_DMEnum_GetSync(mdd->display_dmenum, 0);
         /* A display registering no modes of its own has no sync 0 - it cannot
            provide the default monitor */
         if (sync)
+        {
             OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&GfxBase->default_monitor);
+            CDD(GfxBase)->default_monitor_pri = mdd->display_pri;
+        }
     }
     mdd->display_flags |= DF_Enabled;
 }

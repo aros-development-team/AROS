@@ -158,6 +158,7 @@ struct HiddGfxData
 struct HIDDDMEnumData
 {
 	OOP_Object *display;        /* The display object this enumerator belongs to */
+	LONG        pri;            /* Mode enumeration priority of the display      */
 
 	/* Gfx mode "database" */
 	struct mode_db mdb;

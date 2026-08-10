@@ -291,7 +291,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         { TAG_MORE,             (IPTR)msg->attrList     }
     };
     struct pRoot_New mymsg;
-    ULONG allocsize = 3000, allocsizebuf = 1000;
+    ULONG allocsize = 3200, allocsizebuf = 1000;
     WORD x, y, cnt, i, j;
 
     UBYTE *buf, *bufptr;
@@ -462,6 +462,9 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
         mode_tags_aga = tagptr;
 
+        /* Chipset modes enumerate after RTG modes (if any) */
+        ADDTAG(aHidd_DMEnum_Priority,   (IPTR)-1);
+
         ADDTAG(aHidd_Sync_VMin,         1);
         ADDTAG(aHidd_Sync_HMax,         16384);
         ADDTAG(aHidd_Sync_VMax,         16384);
@@ -523,6 +526,9 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         tagptr = (APTR)((IPTR)tagptr + (17 << 3));
 
         mode_tags_ecs = tagptr;
+
+        /* Chipset modes enumerate after RTG modes (if any) */
+        ADDTAG(aHidd_DMEnum_Priority,   (IPTR)-1);
 
         ADDTAG(aHidd_Sync_VMin,         1);
         ADDTAG(aHidd_Sync_HMax,         csd->ecs_agnus ? 16384 : 1008);
