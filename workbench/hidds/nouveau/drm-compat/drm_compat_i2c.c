@@ -120,19 +120,9 @@ NOT_IMPLEMENTED_STOP
     }
 
     /* Go through supported cases */
-    if ((num == 2) && (msgs[0].addr == 0x50) && (msgs[1].addr == 0x50) && (msgs[0].len == 1) && (msgs[1].len == 1))
+    if ((num == 2) && (msgs[0].addr == msgs[1].addr) && (msgs[0].len == 1) && (msgs[1].len == 1) && (msgs[0].flags == 0) && (msgs[1].flags == I2C_M_RD))
     {
-        /* This is probing for DDC */
-        D(bug("i2c_transfer - probing for DDC\n"));
-        if (HIDD_I2C_ProbeAddress((OOP_Object *)adap->i2cdriver, msgs[0].addr << 1)) /* AROS has shifted addresses (<< 1) */
-            ret = 2;
-        else
-            ret = 0;
-    }
-    else if ((num == 2) && (msgs[0].addr == 0x4c) && (msgs[1].addr == 0x4c) && (msgs[0].len == 1) && (msgs[1].len == 1))
-    {
-        /* G96 probing monitoring devices */
-        D(bug("i2c_transfer - G96 probing for monitoring devices \n"));
+        bug("i2c_transfer: generic PROBE call at addr 0x%x\n", msgs[0].addr);
         if (HIDD_I2C_ProbeAddress((OOP_Object *)adap->i2cdriver, msgs[0].addr << 1)) /* AROS has shifted addresses (<< 1) */
             ret = 2;
         else
