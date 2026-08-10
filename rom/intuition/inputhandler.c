@@ -1321,11 +1321,21 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
             if (GetPrivIBase(IntuitionBase)->ActivePreferences.EnableCLI & MOUSE_ACCEL)
             {
-                /* Acceleration */
-                if (ABS(iihdata->DeltaMouseX) > ACCELERATOR_THRESH)
+                /*
+                 * Acceleration. Decide on the speed of the movement and
+                 * then scale both axes by the same factor, so the
+                 * direction of travel survives.
+                 */
+                LONG speed = ABS(iihdata->DeltaMouseX);
+
+                if (ABS(iihdata->DeltaMouseY) > speed)
+                    speed = ABS(iihdata->DeltaMouseY);
+
+                if (speed > ACCELERATOR_THRESH)
+                {
                     iihdata->DeltaMouseX *= ACCELERATOR_MULTI;
-                if (ABS(iihdata->DeltaMouseY) > ACCELERATOR_THRESH)
                     iihdata->DeltaMouseY *= ACCELERATOR_MULTI;
+                }
             }
 
             switch (GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks)
