@@ -720,7 +720,7 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
             (int)ioreq->iouh_DevAddr,
             (int)ioreq->iouh_Endpoint,
             loc, chan_at,
-            (unsigned long)usb2otg_wd_ticks,
+            (unsigned long)unit->hu_WdTicks,
             aborted ? "aborted" : "NOT aborted (channel/not-found)");)
         (void)loc; (void)chan_at;
 

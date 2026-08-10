@@ -374,6 +374,55 @@ struct USB2OTGUnit
     UBYTE               hu_BulkGiveupStreak[128];
 
     /*
+     * Microframes still to wait before a channel's pending CSPLIT is
+     * re-armed, counted down by the SOF handler. 0 = nothing pending.
+     */
+    LONG                hu_DelayedChannel[8];
+
+    /* Frame the SOF handler last acted on, for wrap detection. */
+    ULONG               hu_LastSOFFrame;
+
+    ULONG               hu_IntStatsTicks;   /* ticks until the next INT stats dump */
+    ULONG               hu_LastResetTick;   /* tick of the last core-reset attempt */
+
+    /*
+     * Rate limiters for log lines that are emitted outside D(), so they
+     * cannot become a serial flood on a wedged bus.
+     */
+    ULONG               hu_LogStallCount;
+    ULONG               hu_LogGiveupCount;
+    ULONG               hu_LogFlushCount;
+    ULONG               hu_LogWdCount;
+
+    /* 150 ms watchdog ticks since init; the driver's coarse clock. */
+    ULONG               hu_WdTicks;
+
+    /*
+     * Observability counters. Debug builds print them; nothing acts on
+     * them. Per unit rather than module-global so a second unit would
+     * not silently share one set.
+     */
+    ULONG               hu_IntPollCount[8];     /* INT arms, per device address */
+    ULONG               hu_IntCompCount[8];     /* INT completions */
+    ULONG               hu_IntNakCount[8];      /* INT polls answered with NAK */
+    ULONG               hu_IntChhCount[8];      /* bare-CHHLTD silent requeues */
+    ULONG               hu_IntChhLastIntr[8];   /* most recent intr on that path */
+    ULONG               hu_IntChhSeenIntr[8];   /* OR of every intr seen there */
+    ULONG               hu_IntArmHfnum[8];      /* HFNUM at the last INT arm */
+    ULONG               hu_IntArmChar[8];       /* HCCHAR as armed (ODDFRM visible) */
+    ULONG               hu_IntHltHfnum[8];      /* HFNUM at the last bare-CHHLTD halt */
+    ULONG               hu_CtrlArmCount;        /* control transfers armed */
+    ULONG               hu_CtrlFinCount;        /* control transfers finished */
+    ULONG               hu_CtrlErrCount;        /* control transfers failed */
+    ULONG               hu_CtrlNakRequeues;     /* split-NAK retry path */
+    ULONG               hu_CtrlChhRequeues;     /* bare-CHHLTD retry path */
+    ULONG               hu_CtrlXactRetries;     /* XactErr/DTErr/BNA retry path */
+    UBYTE               hu_CtrlLastErr;         /* io_Error of the last failure */
+
+    /* Watchdog tick a channel was quarantined at, to log the dark time. */
+    ULONG               hu_QuarSetTick[8];
+
+    /*
      * Bitmask of quarantined channels whose CHENA is stuck (halt +
      * HCLKSOFT + core reset all failed). Schedulers skip these so new
      * requests aren't armed on dead hardware. Cleared after a
@@ -431,34 +480,10 @@ struct USB2OTGDevice
 #define FNAME_DEV(x)            USB2OTG__Dev__ ## x
 #define FNAME_ROOTHUB(x)        USB2OTG__RootHub__ ## x
 
-void                    usb2otg_clear_delayed_channel(int chan);
+void                    usb2otg_clear_delayed_channel(struct USB2OTGUnit *unit,
+                            int chan);
 void                    usb2otg_exorcise_channel(int chan);
 
-/* INT-pipe activity counters (usb2otg_intr.c) — hotplug diagnostics. */
-extern ULONG usb2otg_int_poll_count[8];
-extern ULONG usb2otg_int_comp_count[8];
-extern ULONG usb2otg_int_arm_hfnum[8];
-extern ULONG usb2otg_int_arm_char[8];
-extern ULONG usb2otg_int_hlt_hfnum[8];
-
-/*
- * Quarantine/blackout instrumentation (usb2otg_intr.c). wd_ticks is
- * the 150 ms watchdog tick counter; quar_set_tick records when each
- * channel was quarantined so releases can log the dark time.
- */
-extern ULONG usb2otg_wd_ticks;
-extern ULONG usb2otg_quar_set_tick[8];
-
-/* Control-pipe lifecycle counters (usb2otg_intr.c). */
-extern ULONG usb2otg_ctrl_arm_count;
-extern ULONG usb2otg_ctrl_fin_count;
-extern ULONG usb2otg_ctrl_err_count;
-extern UBYTE usb2otg_ctrl_last_err;
-
-/* Control failure-mode counters: which requeue path ctrl reqs cycle through. */
-extern ULONG usb2otg_ctrl_nak_requeues;   /* split-NAK path */
-extern ULONG usb2otg_ctrl_chh_requeues;   /* bare-CHHLTD path */
-extern ULONG usb2otg_ctrl_xact_retries;   /* XactErr/DTErr/BNA path */
 
 #define USB2OTG_WORK_PENDING    (1U << 0)
 #define USB2OTG_WORK_NAKTIMEOUT (1U << 1)
@@ -722,10 +747,11 @@ extern ULONG usb2otg_ctrl_xact_retries;   /* XactErr/DTErr/BNA path */
  * frame comparison alone would park the request forever; the
  * watchdog tick keeps counting regardless.
  */
-static inline APTR usb2otg_ctrl_backoff(ULONG frnm)
+static inline APTR usb2otg_ctrl_backoff(struct USB2OTGUnit *unit,
+    ULONG frnm)
 {
     return (APTR)(IPTR)(USB2OTG_CTRL_BACKOFF_FLAG |
-        ((usb2otg_wd_ticks & 0xff) << 12) |
+        ((unit->hu_WdTicks & 0xff) << 12) |
         ((frnm + USB2OTG_CTRL_RETRY_BACKOFF_FRAMES) & 0x7ff));
 }
 

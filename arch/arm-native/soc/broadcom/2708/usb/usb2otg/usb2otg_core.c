@@ -372,14 +372,17 @@ void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
         }
     )
 
-    /* Control-pipe lifecycle diag — did queued ctrl reqs ever finish? */
-    if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+    /* Control-pipe lifecycle counters - did queued ctrl reqs finish? */
+    if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+        USB2OTGBase->hd_Unit != NULL)
     {
-        usb2otg_ctrl_fin_count++;
+        struct USB2OTGUnit *unit = USB2OTGBase->hd_Unit;
+
+        unit->hu_CtrlFinCount++;
         if (ioreq->iouh_Req.io_Error != 0)
         {
-            usb2otg_ctrl_err_count++;
-            usb2otg_ctrl_last_err = (UBYTE)ioreq->iouh_Req.io_Error;
+            unit->hu_CtrlErrCount++;
+            unit->hu_CtrlLastErr = (UBYTE)ioreq->iouh_Req.io_Error;
         }
     }
 
