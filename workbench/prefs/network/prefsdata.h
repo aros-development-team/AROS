@@ -25,6 +25,7 @@
 #define MAXATCOMMANDS 5
 
 #define DEFAULTNAME "net0"
+#define DEFAULTTUNNELNAME "sit0"
 #define DEFAULTIP "192.168.0.188"
 #define DEFAULTMASK "255.255.255.0"
 #define DEFAULTGATE "192.168.0.1"
@@ -87,6 +88,14 @@ struct Interface
     TEXT device[NAMEBUFLEN];
     LONG unit;
     BOOL up;
+    /* 6in4 (SIT) tunnel pseudo-interface.  When isTunnel is TRUE the interface
+     * has no SANA-II device; the outer IPv4 endpoints below carry the tunnel,
+     * while ip6/ip6prefix (IP6/PREFIXLEN) and gate6 (GW6) describe the inner
+     * IPv6 address and peer.  See AROSTCP SSC_TEMPLATE (TUNNEL/TSRC/TDST/TTL). */
+    BOOL isTunnel;
+    TEXT tunnelRemote[IPBUFLEN]; /* TDST - outer IPv4 remote endpoint (required) */
+    TEXT tunnelLocal[IPBUFLEN];  /* TSRC - outer IPv4 local endpoint (optional)  */
+    LONG tunnelTTL;              /* TTL  - outer IPv4 TTL (0 = default)           */
 };
 
 struct Host
@@ -149,6 +158,7 @@ struct TCPPrefs
 
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save);
 void InitInterface(struct Interface *iface);
+void InitTunnel(struct Interface *iface);
 enum ErrorCode SaveNetworkPrefs();
 enum ErrorCode UseNetworkPrefs();
 
@@ -167,6 +177,10 @@ STRPTR GetGate6(struct Interface *iface);
 STRPTR GetDevice(struct Interface *iface);
 LONG   GetUnit(struct Interface *iface);
 BOOL   GetUp(struct Interface *iface);
+BOOL   GetIsTunnel(struct Interface *iface);
+STRPTR GetTunnelRemote(struct Interface *iface);
+STRPTR GetTunnelLocal(struct Interface *iface);
+LONG   GetTunnelTTL(struct Interface *iface);
 
 BOOL   GetDHCP(void);
 STRPTR GetDNS(LONG m);
@@ -195,6 +209,10 @@ void SetGate6(struct Interface *iface, STRPTR w);
 void SetDevice(struct Interface *iface, STRPTR w);
 void SetUnit(struct Interface *iface, LONG w);
 void SetUp(struct Interface *iface, BOOL w);
+void SetIsTunnel(struct Interface *iface, BOOL w);
+void SetTunnelRemote(struct Interface *iface, STRPTR w);
+void SetTunnelLocal(struct Interface *iface, STRPTR w);
+void SetTunnelTTL(struct Interface *iface, LONG w);
 
 void SetDHCP(BOOL w);
 void SetDNS(LONG m, STRPTR w);

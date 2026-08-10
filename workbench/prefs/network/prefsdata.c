@@ -259,6 +259,28 @@ void InitInterface(struct Interface *iface)
     SetDevice(iface, DEFAULTDEVICE);
     SetUnit(iface, 0);
     SetUp(iface, FALSE);
+    SetIsTunnel(iface, FALSE);
+    SetTunnelRemote(iface, "");
+    SetTunnelLocal(iface, "");
+    SetTunnelTTL(iface, 0);
+}
+
+/* Initialise an interface as a 6in4 (SIT) tunnel pseudo-interface. */
+void InitTunnel(struct Interface *iface)
+{
+    InitInterface(iface);
+    SetName(iface, DEFAULTTUNNELNAME);
+    SetIsTunnel(iface, TRUE);
+    iface->device[0] = '\0';    /* a tunnel has no SANA-II device */
+    /* A tunnel carries IPv6 only; give it a manual inner v6 address by default
+     * and no IPv4 address of its own. */
+    SetIPMode(iface, IP_MODE_MANUAL);
+    SetIP(iface, "");
+    SetMask(iface, "");
+    SetIP6Mode(iface, IP_MODE_MANUAL);
+    SetIP6Prefix(iface, 64);
+    SetTunnelTTL(iface, 64);
+    SetUp(iface, TRUE);
 }
 
 /* Returns TRUE if directory has been created or already existed */
@@ -396,6 +418,29 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     {
         iface = GetInterface(i);
 
+        if (GetIsTunnel(iface))
+        {
+            /* 6in4 (SIT) tunnel pseudo-interface: no SANA-II device.  The outer
+             * IPv4 endpoints go in TDST/TSRC/TTL; the inner IPv6 address/peer
+             * reuse IP6/PREFIXLEN/GW6.  TSRC is optional (auto-select egress). */
+            CONST_STRPTR upstr = GetUp(iface) ? "UP" : "";
+
+            fprintf(ConfFile, "%s TUNNEL", GetName(iface));
+            if (GetTunnelRemote(iface)[0] != '\0')
+                fprintf(ConfFile, " TDST=%s", GetTunnelRemote(iface));
+            if (GetTunnelLocal(iface)[0] != '\0')
+                fprintf(ConfFile, " TSRC=%s", GetTunnelLocal(iface));
+            if (GetTunnelTTL(iface) > 0)
+                fprintf(ConfFile, " TTL=%d", (int)GetTunnelTTL(iface));
+            if (GetIP6(iface)[0] != '\0')
+                fprintf(ConfFile, " IP6=%s PREFIXLEN=%d",
+                    GetIP6(iface), (int)GetIP6Prefix(iface));
+            if (GetGate6(iface)[0] != '\0')
+                fprintf(ConfFile, " GW6=%s", GetGate6(iface));
+            fprintf(ConfFile, " %s\n", upstr);
+            continue;
+        }
+
         /* Write interface line using registered protocol handlers */
         {
             CONST_STRPTR notrack = GetNoTracking(iface) ? "NOTRACKING" : "";
@@ -446,6 +491,9 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         else if (strstr(GetDevice(iface), "ppp.device") != NULL)
             SetMobile_Autostart(TRUE);
     }
+
+    /* Tunnel interfaces are written natively in the loop above (GetIsTunnel). */
+
     fclose(ConfFile);
 
     CombinePath2P(filename, filenamelen, destdbdir, "netdb-myhost");
@@ -1140,6 +1188,26 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                     tstring = strchr(tok.token, '=');
                     SetGate6(iface, tstring + 1);
                 }
+                else if (strncmp(tok.token, "TUNNEL", 6) == 0)
+                {
+                    /* 6in4 (SIT) tunnel pseudo-interface flag */
+                    SetIsTunnel(iface, TRUE);
+                }
+                else if (strncmp(tok.token, "TDST=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetTunnelRemote(iface, tstring + 1);
+                }
+                else if (strncmp(tok.token, "TSRC=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetTunnelLocal(iface, tstring + 1);
+                }
+                else if (strncmp(tok.token, "TTL=", 4) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetTunnelTTL(iface, atol(tstring + 1));
+                }
                 else if (strncmp(tok.token, "UP", 2) == 0)
                 {
                     SetUp(iface, TRUE);
@@ -1682,6 +1750,26 @@ BOOL GetUp(struct Interface *iface)
     return iface->up;
 }
 
+BOOL GetIsTunnel(struct Interface *iface)
+{
+    return iface->isTunnel;
+}
+
+STRPTR GetTunnelRemote(struct Interface *iface)
+{
+    return iface->tunnelRemote;
+}
+
+STRPTR GetTunnelLocal(struct Interface *iface)
+{
+    return iface->tunnelLocal;
+}
+
+LONG GetTunnelTTL(struct Interface *iface)
+{
+    return iface->tunnelTTL;
+}
+
 STRPTR GetDNS(LONG m)
 {
     return prefs.DNS[m];
@@ -1828,6 +1916,30 @@ void SetUnit(struct Interface *iface, LONG w)
 void SetUp(struct Interface *iface, BOOL w)
 {
     iface->up = w;
+}
+
+void SetIsTunnel(struct Interface *iface, BOOL w)
+{
+    iface->isTunnel = w;
+}
+
+void SetTunnelRemote(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL)
+        w = "";
+    strlcpy(iface->tunnelRemote, w, IPBUFLEN);
+}
+
+void SetTunnelLocal(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL)
+        w = "";
+    strlcpy(iface->tunnelLocal, w, IPBUFLEN);
+}
+
+void SetTunnelTTL(struct Interface *iface, LONG w)
+{
+    iface->tunnelTTL = w;
 }
 
 void SetDNS(LONG m, STRPTR w)
