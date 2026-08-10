@@ -437,6 +437,16 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 
                     D(bug("[USB2OTG:Hub] GET_PORT_STATUS: HOSTPORT=%08x\n", oldval));
 
+                    /* Only on change — the hub class polls this forever. */
+                    {
+                        static ULONG last_hprt = ~0U;
+
+                        if (oldval != last_hprt)
+                        {
+                            last_hprt = oldval;
+                        }
+                    }
+
                     *mptr = 0;
                     if (oldval & USB2OTG_HOSTPORT_PRTPWR)        *mptr |= AROS_WORD2LE(UPSF_PORT_POWER);
                     if (oldval & USB2OTG_HOSTPORT_PRTENA)        *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
