@@ -1110,10 +1110,12 @@ static int relocate
 
             /*
              * ULEB128 label arithmetic (C++ .gcc_except_table call-site
-             * entries). The pair targets the same location: SET stores
-             * S+A, SUB then subtracts its S+A from the stored value.
-             * The result must be re-encoded in exactly the byte count
-             * the assembler reserved, taken from the existing encoding.
+             * entries). The psABI emits SET immediately followed by SUB at
+             * the same offset to encode a label difference. The pair MUST
+             * be applied as one operation: the field is only sized for the
+             * final difference, so staging the SET's absolute address in it
+             * first would overflow encodings the assembler emitted for the
+             * (small) link-time value.
              */
             case R_RISCV_SET_ULEB128:
             case R_RISCV_SUB_ULEB128:
@@ -1129,9 +1131,37 @@ static int relocate
                 } while (up[len++] & 0x80);
 
                 if (ELF_R_TYPE(rel->info) == R_RISCV_SET_ULEB128)
+                {
                     v = s + rel->addend;
+
+                    if (i + 1 < numrel)
+                    {
+                        struct relo *rel2 = (struct relo *)(relbase + (i + 1) * entsize);
+
+                        if (ELF_R_TYPE(rel2->info) == R_RISCV_SUB_ULEB128 &&
+                            rel2->offset == rel->offset)
+                        {
+                            struct symbol *sym2 = &symtab[ELF_R_SYM(rel2->info)];
+                            IPTR s2;
+
+                            if (sym2->shindex == SHN_ABS)
+                                s2 = sym2->value;
+                            else
+                            {
+                                ULONG shindex2 = sym2->shindex;
+
+                                if (shindex2 == SHN_XINDEX && symtab_shndx != NULL)
+                                    shindex2 = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(rel2->info)];
+                                s2 = (IPTR)sh[shindex2].addr + sym2->value;
+                            }
+
+                            v -= s2 + rel2->addend;
+                            i++; /* pair consumed */
+                        }
+                    }
+                }
                 else
-                    v -= s + rel->addend;
+                    v -= s + rel->addend; /* unpaired SUB */
 
                 for (n = 0; n < len; n++)
                 {
@@ -1140,7 +1170,7 @@ static int relocate
                 }
                 if (v)
                 {
-                    D(bug("[ELF Loader] ULEB128 relocation overflows its %d byte field\n", len));
+                    bug("[ELF Loader] ULEB128 relocation overflows its %d byte field\n", len);
                     SetIoErr(ERROR_BAD_HUNK);
                     return 0;
                 }
