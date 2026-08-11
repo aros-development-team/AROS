@@ -39,7 +39,8 @@ struct HIDDDisplayData
 	 * cursor moves or is hidden.
 	 */
 	OOP_Object  *cursor_bm;        /* bitmap the cursor is composited onto       */
-	OOP_Object  *cursor_backup;    /* save-under bitmap (cursor sized)           */
+	UBYTE       *cursor_backup;    /* save-under pixels, target's native format  */
+	ULONG        cursor_backup_bpp;/* bytes per pixel of the save-under target   */
 	UBYTE       *cursor_argb;      /* extracted ARGB32 cursor image              */
 	UWORD        cursor_w;         /* cursor image width                         */
 	UWORD        cursor_h;         /* cursor image height                        */

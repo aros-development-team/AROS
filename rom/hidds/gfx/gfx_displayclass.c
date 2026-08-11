@@ -110,9 +110,13 @@ static void cursor_Erase(OOP_Class *cl, OOP_Object *o)
     if (!data->cursor_drawn || !data->cursor_bm || !data->cursor_backup)
         return;
 
-    HIDD_Gfx_CopyBox(data->gfxhidd, data->cursor_backup, 0, 0,
-                     data->cursor_bm, data->cursor_backupX, data->cursor_backupY,
-                     data->cursor_backupW, data->cursor_backupH, data->gc);
+    /* Raw native-format restore: a colour-space CopyBox on a palettized
+       target degrades to a nearest-colour search per pixel */
+    HIDD_BM_PutImage(data->cursor_bm, data->gc, data->cursor_backup,
+                     data->cursor_backupW * data->cursor_backup_bpp,
+                     data->cursor_backupX, data->cursor_backupY,
+                     data->cursor_backupW, data->cursor_backupH,
+                     vHidd_StdPixFmt_Native);
     HIDD_BM_UpdateRect(data->cursor_bm, data->cursor_backupX, data->cursor_backupY,
                        data->cursor_backupW, data->cursor_backupH);
 
@@ -169,8 +173,9 @@ static void cursor_Draw(OOP_Class *cl, OOP_Object *o)
         return;
 
     /* Save the pixels we are about to overwrite */
-    HIDD_Gfx_CopyBox(data->gfxhidd, data->cursor_bm, x, y,
-                     data->cursor_backup, 0, 0, w, h, data->gc);
+    HIDD_BM_GetImage(data->cursor_bm, data->cursor_backup,
+                     w * data->cursor_backup_bpp,
+                     x, y, w, h, vHidd_StdPixFmt_Native);
     data->cursor_backupX = x;
     data->cursor_backupY = y;
     data->cursor_backupW = w;
@@ -205,24 +210,26 @@ static BOOL cursor_AllocBackup(OOP_Class *cl, OOP_Object *o)
 {
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
-    struct TagItem bmtags[] =
-    {
-        {aHidd_BitMap_Width , data->cursor_w     },
-        {aHidd_BitMap_Height, data->cursor_h     },
-        {aHidd_BitMap_Friend, (IPTR)data->cursor_bm},
-        {TAG_DONE           , 0                  }
-    };
+    OOP_Object *pf = NULL;
+    IPTR bpp = 0;
 
     if (data->cursor_backup)
     {
-        OOP_DisposeObject(data->cursor_backup);
+        FreeVec(data->cursor_backup);
         data->cursor_backup = NULL;
     }
 
     if (!data->cursor_bm || !data->cursor_w || !data->cursor_h)
         return FALSE;
 
-    data->cursor_backup = HIDD_Display_CreateObject(o, CSD(cl)->bitmapclass, bmtags);
+    OOP_GetAttr(data->cursor_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    if (pf)
+        OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bpp);
+    if (!bpp)
+        return FALSE;
+
+    data->cursor_backup_bpp = bpp;
+    data->cursor_backup = AllocVec(data->cursor_w * data->cursor_h * bpp, MEMF_ANY);
     return (data->cursor_backup != NULL);
 }
 
@@ -452,7 +459,7 @@ VOID Display__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (NULL != data->dmenum)
         OOP_DisposeObject(data->dmenum);
     if (NULL != data->cursor_backup)
-        OOP_DisposeObject(data->cursor_backup);
+        FreeVec(data->cursor_backup);
     if (NULL != data->cursor_argb)
         FreeVec(data->cursor_argb);
 
