@@ -97,6 +97,10 @@ static VOID cursorfb_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     if (data->realbm)
     {
+        /* A bitmap disposed while still carrying the pointer (the screen
+           closed with no successor shown, so nothing hid it first) would
+           leave the software cursor operating on freed objects */
+        GfxDisplay_CursorUntarget(CSD(cl), data->display, data->realbm);
         OOP_DisposeObject(data->realbm);
         data->realbm = NULL;
     }
