@@ -85,6 +85,17 @@ struct pcidt_bridge
     IPTR                mem64CpuBase;
     IPTR                mem64Size;
 
+    /*
+     * Sv39 cannot identity-map a CPU address with bit 38 set, and the
+     * Titan's 64-bit window sits at 256GB exactly. Regions assigned out
+     * of such a window are mapped linearly into a canonical window
+     * instead (the same one the kernel remaps the boot framebuffer
+     * into), and the driver's MapPCI/PCItoCPU/CPUtoPCI translate.
+     * mem64Va is that window's base, equal to mem64CpuBase when the
+     * window is identity-mappable.
+     */
+    IPTR                mem64Va;
+
     /* The 32-bit memory and I/O windows, for handing out space
        firmware did not */
     IPTR                mem32PciBase;
@@ -182,6 +193,15 @@ struct PCIDTBase
  * cover RAM only, so nothing device-side answers until this is done.
  */
 BOOL  PCIDT_Map(struct pcidt_staticdata *psd, IPTR base, IPTR size);
+BOOL  PCIDT_MapAt(struct pcidt_staticdata *psd, IPTR va, IPTR pa, IPTR size);
+
+/*
+ * Sv39 identity mapping only reaches the lower 256GB; windows above it
+ * are remapped at this canonical base, matching the kernel's boot
+ * framebuffer convention (see krnFBAddr() in kernel_startup.c).
+ */
+#define PCIDT_SV39_IDENTITY_LIMIT   (1UL << 38)
+#define PCIDT_HIGH_WINDOW           0x2000000000UL
 
 /*
  * The other way a machine can describe its host bridges. Reached only
