@@ -7,11 +7,9 @@ CUR_GALLIUMDIR = drivers/vc4
 GALLIUM_PATH = $(top_srcdir)/$(CUR_MESADIR)
 
 #
-# Only build for ARM targets
+# Only build for RasPi targets
 #
-#MM- workbench-hidds : hidd-vc4gallium-$(AROS_TARGET_CPU)
-#MM- hidd-vc4gallium-arm : hidd-vc4gallium
-#MM- hidd-vc4gallium-aarch64 : hidd-vc4gallium
+#MM- workbench-hidds-raspi : hidd-vc4gallium
 
 #MM hidd-vc4gallium : includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic linklibs-gallium_vc4 linklibs-gallium_vc4-gca kernel-mbox-bcm2708-includes kernel-dma-bcm2708-includes
 #MM linklibs-gallium_vc4 : mesa3dgl-linklibs linklibs-gallium_vc4-gen-cle
