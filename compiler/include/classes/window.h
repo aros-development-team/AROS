@@ -89,6 +89,10 @@
 
 #define WINDOW_HintInfo         (WINDOW_Dummy + 43) /* struct HintInfo * — array of gadget help hints */
 
+#define WINDOW_NewMenu          (WINDOW_Dummy + 44) /* struct NewMenu * — menu strip created via GadTools and attached while open */
+
+#define WINDOW_IconNoDispose    (WINDOW_Dummy + 45) /* BOOL — never dispose the WINDOW_Icon DiskObject */
+
 #define WINDOW_InterpretIDCMPHook   (WINDOW_Dummy + 46) /* BOOL — process IDCMPHook return values */
 
 #define WINDOW_PreRefreshHook   (WINDOW_Dummy + 48) /* struct Hook * — invoked before RefreshGList() */
@@ -96,6 +100,8 @@
 #define WINDOW_PostRefreshHook  (WINDOW_Dummy + 49) /* struct Hook * — invoked after RefreshGList() */
 
 #define WINDOW_AppWindowPtr     (WINDOW_Dummy + 50) /* struct AppWindow * — gettable pointer from AddAppWindow() */
+
+#define WINDOW_Qualifier        (WINDOW_Dummy + 51) /* UWORD - input qualifiers of the last handled IDCMP message (get only) */
 
 /* Private */
 #define WINDOW_VertProp         (WINDOW_Dummy + 27) /* BOOL — enable vertical border scroller */

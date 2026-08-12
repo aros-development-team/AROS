@@ -202,11 +202,11 @@ struct ColumnInfo
 };
 
 /* ColumnInfo flags */
-#define CIF_WEIGHTED        0
-#define CIF_FIXED           1
-#define CIF_DRAGGABLE       2
-#define CIF_NOSEPARATORS    4
-#define CIF_SORTABLE        8
+#define CIF_WEIGHTED        (1<<0)
+#define CIF_FIXED           (1<<1)
+#define CIF_DRAGGABLE       (1<<2)
+#define CIF_NOSEPARATORS    (1<<3)
+#define CIF_SORTABLE        (1<<4)
 
 /* ColumnInfo attributes (V45) - using LBNA_Dummy base */
 #define LBCIA_MemPool       (LBNA_Dummy + 50)   /* MemPool for ColumnInfo */
@@ -215,6 +215,11 @@ struct ColumnInfo
 #define LBCIA_Weight        (LBNA_Dummy + 53)   /* Column weight */
 #define LBCIA_Width         (LBNA_Dummy + 54)   /* Column pixel width */
 #define LBCIA_Flags         (LBNA_Dummy + 55)   /* Column flags (CIF_*) */
+#define LBCIA_DraggableSeparator (LBNA_Dummy + 56) /* (BOOL) Separator can be dragged */
+#define LBCIA_Sortable      (LBNA_Dummy + 57)   /* (BOOL) Column can be sorted */
+#define LBCIA_SortArrow     (LBNA_Dummy + 58)   /* (BOOL) Show sort direction arrow */
+#define LBCIA_AutoSort      (LBNA_Dummy + 59)   /* (BOOL) Sort on title click */
+#define LBCIA_CompareHook   (LBNA_Dummy + 60)   /* (struct Hook *) Node compare hook */
 
 /*****************************************************************************/
 
@@ -277,8 +282,14 @@ struct ColumnInfo
 #define LISTBROWSER_FastRender      (LISTBROWSER_Dummy + 53) /* Use mask planes */
 #define LISTBROWSER_TotalVisibleNodes (LISTBROWSER_Dummy + 54) /* Visible node count */
 #define LISTBROWSER_WrapText        (LISTBROWSER_Dummy + 55) /* Enable word wrap */
+#define LISTBROWSER_SortColumn      (LISTBROWSER_Dummy + 56) /* Column to sort by (-1 = none) */
+#define LISTBROWSER_Striping        (LISTBROWSER_Dummy + 57) /* Backfill striping (LBS_*) */
 
 /*****************************************************************************/
+
+/* Values for LISTBROWSER_Striping */
+#define LBS_NONE            0
+#define LBS_ROWS            1
 
 /* Values for LISTBROWSER_Position */
 #define LBP_LINEUP          1

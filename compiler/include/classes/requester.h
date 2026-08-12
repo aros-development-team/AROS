@@ -126,8 +126,10 @@ struct orRequest
 #define REQIMAGE_INSERTDISK 5   /* insert-disk icon */
 
 /* Useful macros */
-#ifndef RequesterObject
+#ifndef OpenRequester
 #define OpenRequester(obj, win) DoMethod(obj, RM_OPENREQ, NULL, win, NULL, TAG_DONE)
+#endif
+#ifndef RequesterObject
 #define RequesterObject         NewObject(REQUESTER_GetClass(), NULL
 #endif
 
