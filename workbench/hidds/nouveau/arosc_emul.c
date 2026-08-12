@@ -1,5 +1,5 @@
 /*
-    Copyright 2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 /* Workaround for standard streams being bound DOS files of first opener of library */
