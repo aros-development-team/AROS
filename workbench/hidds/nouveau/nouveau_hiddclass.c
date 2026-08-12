@@ -835,7 +835,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
 
     OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
     gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
-        
+
     if (msg->shape == NULL)
     {
         /* Hide cursor */
@@ -905,7 +905,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
         UNLOCK_ENGINE
     }
 
-    return TRUE;   
+    return TRUE;
 }
 
 BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorPos)

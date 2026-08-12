@@ -210,19 +210,6 @@ nv84_fence_create(struct nouveau_drm *drm)
 		if (ret == 0) {
 			ret = nouveau_bo_map(priv->bo);
 
-#if 1
-bug("----------- VRAM TEST START\n");
-for (int i = 0; i < 1024; i++)
-{
-nouveau_bo_wr32(priv->bo, i, 0xFFFFFFFF);
-ULONG xxx = nouveau_bo_rd32(priv->bo, i);
-if (xxx != 0xFFFFFFFF)
-{
-    bug("%04d: 0x%x\n", i, xxx);
-}
-}
-bug("----------- TEST END\n");
-#endif
 			if (ret)
 				nouveau_bo_unpin(priv->bo);
 		}

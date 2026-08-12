@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
+    Copyright 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <drm-compat/drm_compat_funcs.h>
@@ -243,7 +243,7 @@ struct agp_bridge_data * agp_find_bridge(void * dev)
     if(agpbus)
     {
         struct pHidd_AGP_GetBridgeDevice gbdmsg = {
-        .mID  = OOP_GetMethodID(IID_Hidd_AGP, moHidd_AGP_GetBridgeDevice)
+        mID : OOP_GetMethodID(IID_Hidd_AGP, moHidd_AGP_GetBridgeDevice)
         };
         OOP_Object * bridgedevice = NULL;
 
@@ -279,8 +279,8 @@ void agp_enable(struct agp_bridge_data * bridge, u32 mode)
         return;
 
     struct pHidd_AGPBridgeDevice_Enable emsg = {
-    .mID =          OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_Enable),
-    .requestedmode = mode
+    mID:            OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_Enable),
+    requestedmode:  mode
     };
     
     OOP_DoMethod((OOP_Object *)bridge->agpbridgedevice, (OOP_Msg)&emsg);
@@ -307,11 +307,11 @@ int agp_bind_memory(struct agp_memory * mem, off_t offset)
     /* TODO: Move flush/map into bind call on the side of agp.hidd */
 
     struct pHidd_AGPBridgeDevice_BindMemory bmmsg = {
-    .mID =      OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_BindMemory),
-    .address =  (IPTR)(mem->pages[0]->address),
-    .size =     mem->page_count * PAGE_SIZE,
-    .offset =   offset,
-    .type =     (mem->type == AGP_USER_MEMORY ? vHidd_AGP_NormalMemory : vHidd_AGP_CachedMemory)
+    mID:        OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_BindMemory),
+    address:    (IPTR)(mem->pages[0]->address),
+    size:       mem->page_count * PAGE_SIZE,
+    offset:     offset,
+    type:       (mem->type == AGP_USER_MEMORY ? vHidd_AGP_NormalMemory : vHidd_AGP_CachedMemory)
     };
     
     OOP_DoMethod((OOP_Object *)global_agp_bridge->agpbridgedevice, (OOP_Msg)&bmmsg);
@@ -327,9 +327,9 @@ int agp_unbind_memory(struct agp_memory * mem)
         return -EINVAL;
 
     struct pHidd_AGPBridgeDevice_UnBindMemory ubmmsg = {
-    .mID =      OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_UnBindMemory),
-    .offset =   mem->pg_start,
-    .size =     mem->page_count * PAGE_SIZE,
+    mID:        OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_UnBindMemory),
+    offset:     mem->pg_start,
+    size:       mem->page_count * PAGE_SIZE,
     };
     
     OOP_DoMethod((OOP_Object *)global_agp_bridge->agpbridgedevice, (OOP_Msg)&ubmmsg);
@@ -347,7 +347,7 @@ void agp_flush_chipset(struct agp_bridge_data * bridge)
         return;
 
     struct pHidd_AGPBridgeDevice_FlushChipset fcmsg = {
-    .mID =      OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushChipset),
+    mID:        OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushChipset),
     };
     
     OOP_DoMethod((OOP_Object *)bridge->agpbridgedevice, (OOP_Msg)&fcmsg);

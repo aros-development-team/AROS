@@ -11,14 +11,28 @@
 
 #include "drm_compat_types.h"
 
-#define writeq(val, addr)               (*(volatile UQUAD*)(addr) = (val))
-#define readq(addr)                     (*(volatile UQUAD*)(addr)
-#define writel(val, addr)               (*(volatile ULONG*)(addr) = (val))
-#define readl(addr)                     (*(volatile ULONG*)(addr))
-#define writew(val, addr)               (*(volatile UWORD*)(addr) = (val))
-#define readw(addr)                     (*(volatile UWORD*)(addr))
-#define writeb(val, addr)               (*(volatile UBYTE*)(addr) = (val))
-#define readb(addr)                     (*(volatile UBYTE*)(addr))
+/*
+ * MMIO needs explicit ordering on riscv: a write into a DMA buffer must
+ * be visible to the device before the doorbell that makes it fetch, and
+ * a read must complete before dependent code runs. These are the fences
+ * Linux uses in its riscv io.h; x86 orders such accesses in hardware.
+ */
+#if defined(__riscv)
+#define __io_bw()                       __asm__ __volatile__ ("fence w,o" : : : "memory")
+#define __io_ar()                       __asm__ __volatile__ ("fence i,r" : : : "memory")
+#else
+#define __io_bw()                       do { } while (0)
+#define __io_ar()                       do { } while (0)
+#endif
+
+#define writeq(val, addr)               ({ __io_bw(); *(volatile UQUAD*)(addr) = (val); })
+#define readq(addr)                     ({ UQUAD __ioq = *(volatile UQUAD*)(addr); __io_ar(); __ioq; })
+#define writel(val, addr)               ({ __io_bw(); *(volatile ULONG*)(addr) = (val); })
+#define readl(addr)                     ({ ULONG __iol = *(volatile ULONG*)(addr); __io_ar(); __iol; })
+#define writew(val, addr)               ({ __io_bw(); *(volatile UWORD*)(addr) = (val); })
+#define readw(addr)                     ({ UWORD __iow = *(volatile UWORD*)(addr); __io_ar(); __iow; })
+#define writeb(val, addr)               ({ __io_bw(); *(volatile UBYTE*)(addr) = (val); })
+#define readb(addr)                     ({ UBYTE __iob = *(volatile UBYTE*)(addr); __io_ar(); __iob; })
 #define capable(p)                      TRUE
 #define lower_32_bits(n)                ((u32)(n))
 #define upper_32_bits(n)                ((u32)(((n) >> 16) >> 16))
@@ -30,9 +44,17 @@
 #define mutex_destroy(x)
 #define likely(x)                       __builtin_expect((IPTR)(x),1)
 #define unlikely(x)                     __builtin_expect((IPTR)(x),0)
+#if defined(__i386__) || defined(__x86_64__)
 #define mb()                            __asm __volatile("lock; addl $0,0(%%esp)" : : : "memory");
 #define rmb()                           __asm __volatile("" : : : "memory");
 #define wmb()                           __asm __volatile("" : : : "memory");
+#else
+/* Weakly-ordered architectures need real fences; __sync_synchronize()
+   emits a full fence (fence iorw,iorw on riscv64) */
+#define mb()                            __sync_synchronize();
+#define rmb()                           __sync_synchronize();
+#define wmb()                           __sync_synchronize();
+#endif
 #define smp_rmb()                       rmb()
 #define smp_wmb()                       wmb()
 #define fls_long(x)                     ((sizeof(x) * 8) - __builtin_clzl(x))
@@ -127,8 +149,8 @@ static inline VOID memcpy_fromio(APTR dst, CONST_APTR src, ULONG size)
 #include <proto/dos.h>
 
 /* Kernel debug */
-#define CONFIG_NOUVEAU_DEBUG            4 /* NV_DGB_DEBUG */
-#define CONFIG_NOUVEAU_DEBUG_DEFAULT    4
+#define CONFIG_NOUVEAU_DEBUG            3 /* NV_DBG_INFO */
+#define CONFIG_NOUVEAU_DEBUG_DEFAULT    3
 #define KERN_CRIT
 #define KERN_ERR
 #define KERN_DEBUG

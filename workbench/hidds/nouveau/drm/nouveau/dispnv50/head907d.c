@@ -217,12 +217,9 @@ void
 head907d_olut_load(struct drm_color_lut *in, int size, void __iomem *mem)
 {
 	for (; size--; in++, mem += 8) {
-NOT_IMPLEMENTED_STOP
-#if 0
 		writew(drm_color_lut_extract(in->  red, 14) + 0x6000, mem + 0);
 		writew(drm_color_lut_extract(in->green, 14) + 0x6000, mem + 2);
 		writew(drm_color_lut_extract(in-> blue, 14) + 0x6000, mem + 4);
-#endif
 	}
 
 	/* INTERPOLATE modes require a "next" entry to interpolate with,

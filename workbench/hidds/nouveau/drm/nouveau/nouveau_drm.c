@@ -87,7 +87,7 @@ module_param_named(config, nouveau_config, charp, 0400);
 
 MODULE_PARM_DESC(debug, "debug string to pass to driver core");
 #endif
-static char *nouveau_debug = "debug";
+static char *nouveau_debug = "info";
 #if !defined(__AROS__)
 module_param_named(debug, nouveau_debug, charp, 0400);
 

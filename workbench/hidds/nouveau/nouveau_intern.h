@@ -186,7 +186,7 @@ struct staticdata
     OOP_Object      *compositor;
     OOP_Object      *dmenum;
 
-    OOP_AttrBase    hiddAttrBase;    
+    OOP_AttrBase    hiddAttrBase;
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
     OOP_AttrBase    displayAttrBase;
@@ -250,10 +250,20 @@ LIBBASETYPE
 
 #define IS_NOUVEAU_BM_CLASS(x)      ((x) == SD(cl)->bmclass)
 
-#define writel(val, addr)           (*(volatile ULONG*)(addr) = (val))
-#define readl(addr)                 (*(volatile ULONG*)(addr))
-#define writew(val, addr)           (*(volatile UWORD*)(addr) = (val))
-#define readw(addr)                 (*(volatile UWORD*)(addr))
+/* Same ordering rules as the drm-compat accessors: riscv MMIO needs
+   explicit fences, see include/drm-compat/drm_compat_funcs.h */
+#if defined(__riscv)
+#define __nv_io_bw()                __asm__ __volatile__ ("fence w,o" : : : "memory")
+#define __nv_io_ar()                __asm__ __volatile__ ("fence i,r" : : : "memory")
+#else
+#define __nv_io_bw()                do { } while (0)
+#define __nv_io_ar()                do { } while (0)
+#endif
+
+#define writel(val, addr)           ({ __nv_io_bw(); *(volatile ULONG*)(addr) = (val); })
+#define readl(addr)                 ({ ULONG __iol = *(volatile ULONG*)(addr); __nv_io_ar(); __iol; })
+#define writew(val, addr)           ({ __nv_io_bw(); *(volatile UWORD*)(addr) = (val); })
+#define readw(addr)                 ({ UWORD __iow = *(volatile UWORD*)(addr); __nv_io_ar(); __iow; })
 
 enum DMAObjects 
 {

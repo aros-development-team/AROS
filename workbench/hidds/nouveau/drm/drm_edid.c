@@ -3832,12 +3832,12 @@ static void drm_parse_y420cmdb_bitmap(struct drm_connector *connector,
 	u8 count;
 	u64 map = 0;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (map_len == 0) {
 		/* All CEA modes support ycbcr420 sampling also.*/
 		hdmi->y420_cmdb_map = U64_MAX;
+#if !defined(__AROS__)
 		info->color_formats |= DRM_COLOR_FORMAT_YCRCB420;
+#endif
 		return;
 	}
 
@@ -3859,11 +3859,12 @@ NOT_IMPLEMENTED_STOP
 	for (count = 0; count < map_len; count++)
 		map |= (u64)db[2 + count] << (8 * count);
 
+#if !defined(__AROS__)
 	if (map)
 		info->color_formats |= DRM_COLOR_FORMAT_YCRCB420;
+#endif
 
 	hdmi->y420_cmdb_map = map;
-#endif
 }
 
 static int
@@ -3990,9 +3991,9 @@ static uint8_t hdr_metadata_type(const u8 *edid_ext)
 static void
 drm_parse_hdr_metadata_block(struct drm_connector *connector, const u8 *db)
 {
+#if !defined(__AROS__)
 	u16 len;
-NOT_IMPLEMENTED_STOP
-#if 0
+
 	len = cea_db_payload_len(db);
 
 	connector->hdr_sink_metadata.hdmi_type1.eotf =
@@ -4006,6 +4007,11 @@ NOT_IMPLEMENTED_STOP
 		connector->hdr_sink_metadata.hdmi_type1.max_fall = db[5];
 	if (len >= 6)
 		connector->hdr_sink_metadata.hdmi_type1.min_cll = db[6];
+#else
+	/* struct hdr_sink_metadata is not part of this port and nothing
+	   consumes it - the block is valid to ignore */
+	(void)connector;
+	(void)db;
 #endif
 }
 
@@ -4463,10 +4469,13 @@ static void drm_parse_vcdb(struct drm_connector *connector, const u8 *db)
 
 	DRM_DEBUG_KMS("CEA VCDB 0x%02x\n", db[2]);
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	if (db[2] & EDID_CEA_VCDB_QS)
 		info->rgb_quant_range_selectable = true;
+#else
+	/* rgb_quant_range_selectable is not part of this port and has no
+	   consumer - the block is valid to ignore */
+	(void)info;
 #endif
 }
 

@@ -1,40 +1,24 @@
 /*
-    Copyright 2009-2013, The AROS Development Team. All rights reserved.
+    Copyright 2026, The AROS Development Team. All rights reserved.
 */
 
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/timer.h>
+/* Workaround for standard streams being bound DOS files of first opener of library */
 
-/* 
-    The purpose of this file is to provide implementation for C functions part
-    of arosnixc.library in code where one does not want to use this library.
-*/
+#include <unistd.h>
 
-struct timezone;
-
-int gettimeofday (struct timeval * tv,struct timezone * tz)
+struct hackFILE
 {
-    struct MsgPort * timerport = CreateMsgPort();
-    struct timerequest * timereq = (struct timerequest *)CreateIORequest(timerport, sizeof(*timereq));
+    int fd;
+    int flags;
+};
 
+typedef struct hackFILE FILE;
 
-    if (timereq)
-    {
-        if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)timereq, 0) == 0)
-        {
-            #define TimerBase ((struct Device *)timereq->tr_node.io_Device)
+static int __putc(int c, void *fh);
 
-            GetSysTime(tv);
-            
-            #undef TimerBase
-            
-            CloseDevice((struct IORequest *)timereq);
-        }
-    }
-    
-    DeleteIORequest((struct IORequest *)timereq);
-    DeleteMsgPort(timerport);
-
-    return 0;
+FILE *__stdio_getstderr(void)
+{
+    static struct hackFILE tmp;
+    tmp.fd = -STDERR_FILENO;
+    return &tmp;
 }

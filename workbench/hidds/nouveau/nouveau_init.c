@@ -4,6 +4,9 @@
 
 #include "nouveau_intern.h"
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
@@ -36,8 +39,13 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
 
     InitSemaphore(&globalLock);
 
+    D(bug("[Nouveau] %s: library init entered\n", __func__));
+
     if (!OOP_ObtainAttrBases(attrbases))
+    {
+        D(bug("[Nouveau] %s: OOP_ObtainAttrBases failed\n", __func__));
         return FALSE;
+    }
 
     LIBBASE->sd.basegc = OOP_FindClass(CLID_Hidd_GC);
     LIBBASE->sd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
@@ -67,6 +75,8 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->sd.multibitmapsemaphore);
 
     NouveauMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 32 * 1024, 16 * 1024);
+
+    D(bug("[Nouveau] Nouveau_Init: done, pool 0x%p\n", NouveauMemPool));
 
     return TRUE;
 }

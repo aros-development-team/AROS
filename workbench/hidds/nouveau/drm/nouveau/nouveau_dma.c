@@ -101,6 +101,21 @@ nv50_dma_push(struct nouveau_channel *chan, u64 offset, int length)
 	/* Flush writes. */
 	nouveau_bo_rd32(pb, 0);
 
+#if defined(__AROS__) && defined(__riscv)
+	/* The GPU fetches the ring and inline data from RAM by DMA, which
+	   is not coherent with the CPU caches here - push everything out
+	   before it is told to look */
+	{
+		bool is_iomem;
+		void *mem = ttm_kmap_obj_virtual(&pb->kmap, &is_iomem);
+
+		if (mem && !is_iomem) {
+			ULONG len = pb->bo.mem.num_pages << PAGE_SHIFT;
+			CachePreDMA(mem, &len, DMA_ReadFromRAM);
+		}
+	}
+#endif
+
 	nvif_wr32(&chan->user, 0x8c, chan->dma.ib_put);
 	if (user->func && user->func->doorbell)
 		user->func->doorbell(user, chan->token);

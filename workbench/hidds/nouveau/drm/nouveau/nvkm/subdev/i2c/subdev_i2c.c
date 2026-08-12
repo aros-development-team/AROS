@@ -1,6 +1,6 @@
 /* Auto-generated: subdev/i2c */
 #include "anx9805.c"
-#include "aux.c"
+#include "auxch.c"
 #include "auxg94.c"
 #include "auxgf119.c"
 #include "auxgm200.c"

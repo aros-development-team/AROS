@@ -567,7 +567,10 @@ nouveau_bo_sync_for_device(struct nouveau_bo *nvbo)
 					   PAGE_SIZE, DMA_TO_DEVICE);
 #else
  #if !defined(__x86_64__) && !defined(__i386__)
- #error DMA<->CPU coherency
+	for (i = 0; i < ttm_dma->ttm.num_pages; i++) {
+		ULONG length = PAGE_SIZE;
+		CachePreDMA(ttm_dma->ttm.pages[i]->address, &length, DMA_ReadFromRAM);
+	}
  #endif
 #endif
 }
@@ -592,7 +595,10 @@ nouveau_bo_sync_for_cpu(struct nouveau_bo *nvbo)
 					PAGE_SIZE, DMA_FROM_DEVICE);
 #else
  #if !defined(__x86_64__) && !defined(__i386__)
- #error DMA<->CPU coherency
+	for (i = 0; i < ttm_dma->ttm.num_pages; i++) {
+		ULONG length = PAGE_SIZE;
+		CachePostDMA(ttm_dma->ttm.pages[i]->address, &length, 0);
+	}
  #endif
 #endif
 }

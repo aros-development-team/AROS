@@ -1229,10 +1229,13 @@ drm_mode_validate_ycbcr420(const struct drm_display_mode *mode,
 	struct drm_hdmi_info *hdmi = &connector->display_info.hdmi;
 
 	if (test_bit(vic, hdmi->y420_vdb_modes)) {
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 		if (!connector->ycbcr_420_allowed)
 			status = MODE_NO_420;
+#else
+		/* This port has no ycbcr420 output path, so 420-only
+		   modes are always filtered */
+		status = MODE_NO_420;
 #endif
 	}
 
