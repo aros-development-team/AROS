@@ -448,7 +448,16 @@ fetchlock()
                 echo "$$" > "$lockfile"
                 break
             else
-                local pid=$(<"$lockfile")
+                local pid=$(tr -d '\0' < "$lockfile")
+                case "$pid" in
+                    ""|*[!0-9]*)
+                        # No valid PID recorded (empty or corrupt lockfile):
+                        # waiting on it can never succeed, so reclaim the lock.
+                        echo "fetch.sh: removing corrupt lockfile (no valid PID): $lockfile"
+                        fetchunlock "$location" "$archive"
+                        continue
+                        ;;
+                esac
                 if [ -n "$localbuild" ]; then
                     if ! kill -0 "$pid" 2>/dev/null; then
                         echo "fetch.sh: removing stale lockfile (no process with PID: $pid)"
