@@ -72,12 +72,14 @@
   #define CPU "x86"
 #elif defined(__x86_64__)
   #define CPU "x86_64"
-#elif defined(__riscv64)
+#elif defined(__riscv) && (__riscv_xlen == 64)
   #define CPU "RISC-V 64bit"
 #elif defined(__riscv)
   #define CPU "RISC-V"
 #elif defined(__arm__)
   #define CPU "ARM"
+#elif defined(__aarch64__)
+  #define CPU "AArch64"
 #else
   #warning "Unsupported CPU model - check CPU define"
   #define CPU "???"
