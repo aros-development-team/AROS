@@ -1167,7 +1167,14 @@ diff -ruN gcc-16.2.0/gcc/config.gcc gcc-16.2.0.aros/gcc/config.gcc
 diff -ruN gcc-16.2.0/gcc/config.host gcc-16.2.0.aros/gcc/config.host
 --- gcc-16.2.0/gcc/config.host	2026-08-07 07:46:05.819684556 +0000
 +++ gcc-16.2.0.aros/gcc/config.host	2020-12-27 16:58:14.310000000 +0000
-@@ -108,7 +108,7 @@
+@@ -102,13 +102,13 @@
+   aarch64*-*-freebsd* | aarch64*-*-linux* | aarch64*-*-fuchsia* |\
+-  aarch64*-*-darwin*)
++  aarch64*-*-darwin* | aarch64*-*-aros*)
+     case ${target} in
+       aarch64*-*-*)
+ 	host_extra_gcc_objs="driver-aarch64.o"
+ 	host_xmake_file="${host_xmake_file} aarch64/x-aarch64"
  	;;
      esac
      ;;
