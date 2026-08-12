@@ -282,6 +282,12 @@
 		<td>&lt;aros@aros.org&gt;</td>
 	</tr>
 	<tr>
+		<td>45</td>
+		<td>NVHDMI/AROS</td>
+		<td>The AROS Dev Team</td>
+		<td>&lt;aros@aros.org&gt;</td>
+	</tr>
+	<tr>
 		<td>200</td>
 		<td>via-ac97/AROS</td>
 		<td>Davy Wentzler</td>

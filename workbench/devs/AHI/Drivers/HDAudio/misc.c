@@ -29,27 +29,19 @@ All Rights Reserved.
 #include <math.h>
 
 #include "library.h"
-#include "regs.h"
 #include "interrupt.h"
 #include "misc.h"
-#include "pci_wrapper.h"
+#include "hda_hidd.h"
 
 
 /* Public functions in main.c */
-static void perform_controller_specific_settings(struct HDAudioChip *card);
 int card_init(struct HDAudioChip *card);
 void card_cleanup(struct HDAudioChip *card);
-static BOOL allocate_corb(struct HDAudioChip *card);
-static BOOL allocate_rirb(struct HDAudioChip *card);
-static BOOL allocate_pos_buffer(struct HDAudioChip *card);
-static BOOL alloc_streams(struct HDAudioChip *card);
 static BOOL perform_codec_specific_settings(struct HDAudioChip *card);
 static void determine_frequencies(struct HDAudioChip *card);
 static void determine_bitsizes(struct HDAudioChip *card);
 static void set_frequency_info(struct Freq *freq, UWORD bitnr);
-static BOOL reset_chip(struct HDAudioChip *card);
 static void codec_discovery(struct HDAudioChip *card);
-static ULONG get_response(struct HDAudioChip *card);
 static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device);
 static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device);
 static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device);
@@ -65,14 +57,12 @@ struct MsgPort *replymp = NULL;
 static BOOL forceQuery = FALSE;
 static BOOL dumpAll = FALSE;
 static int force_speaker_nid = 0;
-void AddResetHandler(struct HDAudioChip *card);
 
 
 #ifdef __AROS__
 #define DebugPrintF bug
 INTGW(static, void,  playbackinterrupt, PlaybackInterrupt);
 INTGW(static, void,  recordinterrupt,   RecordInterrupt);
-INTGW(static, ULONG, cardinterrupt,  CardInterrupt);
 #endif
 
 void micro_delay(unsigned int val)
@@ -115,10 +105,9 @@ void micro_delay(unsigned int val)
 ** DriverData allocation ******************************************************
 ******************************************************************************/
 
-struct HDAudioChip *AllocDriverData(APTR dev, struct DriverBase *AHIsubBase)
+struct HDAudioChip *AllocDriverData(APTR controller, struct DriverBase *AHIsubBase)
 {
     struct HDAudioChip *card;
-    UWORD command_word;
     BOOL success = TRUE;
 
     D(bug("[HDAudio] %s()\n", __func__));
@@ -131,16 +120,6 @@ struct HDAudioChip *AllocDriverData(APTR dev, struct DriverBase *AHIsubBase)
     }
 
     card->ahisubbase = AHIsubBase;
-
-    card->interrupt.is_Node.ln_Type = IRQTYPE;
-    card->interrupt.is_Node.ln_Pri  = 0;
-    card->interrupt.is_Node.ln_Name = (char *) LibName;
-#ifdef __AROS__
-    card->interrupt.is_Code         = (void(*)(void)) &cardinterrupt;
-#else
-    card->interrupt.is_Code         = (void(*)(void)) CardInterrupt;
-#endif
-    card->interrupt.is_Data         = (APTR) card;
 
     card->playback_interrupt.is_Node.ln_Type = IRQTYPE;
     card->playback_interrupt.is_Node.ln_Pri  = 0;
@@ -162,44 +141,20 @@ struct HDAudioChip *AllocDriverData(APTR dev, struct DriverBase *AHIsubBase)
 #endif
     card->record_interrupt.is_Data         = (APTR) card;
 
-    command_word = inw_config(PCI_COMMAND, dev);
-    command_word |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER;
-    outw_config(PCI_COMMAND, command_word, dev);
+    card->hda_ctrl = controller;
 
-    card->pci_dev = dev;
-    card->pci_master_enabled = TRUE;
-
-    card->iobase  = ahi_pci_get_base_address(0, dev);
-    card->length  = ahi_pci_get_base_size(0, dev);
-    card->chiprev = inb_config(PCI_REVISION_ID, dev);
-    card->model   = inb_config(PCI_SUBSYSTEM_ID, dev);
-
-    perform_controller_specific_settings(card);
-
-    /* Initialize chip */
-    success = ahi_pci_add_intserver(&card->interrupt, dev);
-    if(success) {
-        if(card_init(card) < 0) {
-            D(bug("[HDAudio] Unable to initialize Card subsystem.\n"));
-
-            success = FALSE;
-        }
-
-        card->interrupt_added = TRUE;
-
+    if(card_init(card) < 0) {
+        D(bug("[HDAudio] Unable to initialize Card subsystem.\n"));
+        success = FALSE;
+    } else {
         card->card_initialized = TRUE;
         card->input          = 0;
         card->output         = 0;
         card->monitor_volume = (Fixed)(0x10000 * pow(10.0, -6.0 / 20.0));   // -6 dB
         card->input_gain     = 0x10000; // 0dB
         card->output_volume  = 0x10000; // 0dB
-    } else {
-        D(bug("[HDAudio] Failed to register interrupt handler.\n"));
-    }
 
-    if(success) {
         set_monitor_volumes(card, -6.0); // -6dB monitor volume
-        AddResetHandler(card);
     }
 
     if(!success) {
@@ -218,118 +173,15 @@ struct HDAudioChip *AllocDriverData(APTR dev, struct DriverBase *AHIsubBase)
 void FreeDriverData(struct HDAudioChip *card, struct DriverBase  *AHIsubBase)
 {
     if(card != NULL) {
-        if(card->pci_dev != NULL) {
-            if(card->card_initialized) {
-                card_cleanup(card);
-            }
-
-            if(card->pci_master_enabled) {
-                UWORD cmd;
-
-                cmd = inw_config(PCI_COMMAND, card->pci_dev);
-                cmd &= ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
-                outw_config(PCI_COMMAND, cmd, card->pci_dev);
-            }
+        if(card->card_initialized) {
+            card_cleanup(card);
         }
 
-        if(card->interrupt_added) {
-            ahi_pci_rem_intserver(&card->interrupt, card->pci_dev);
-        }
-
-        if (card->reset_handler_added)
-        {
-            RemResetCallback(&card->reset_handler);
+        if(card->hda_ctrl != NULL) {
+            ahi_hda_release_controller(card->hda_ctrl);
         }
 
         FreeVec(card);
-    }
-}
-
-#define CNT_VEN_ID_ATI_SB       0x437B1002
-#define CNT_VEN_ID_ATI_SB2      0x43831002
-#define CNT_VEN_ID_ATI_HUDSON   0x780D1022
-#define CNT_VEN_ID_NVIDIA       0x10DE
-
-static const UWORD intel_no_snoop_list[] = {
-    0x2668,
-    0x27d8,
-    0x269a,
-    0x284b,
-    0x293e,
-    0x293f,
-    0x3a3e,
-    0x3a6e,
-    0
-};
-
-/* This is the controller specific portion, for fixes to southbridge */
-static void perform_controller_specific_settings(struct HDAudioChip *card)
-{
-    ULONG data, subsystem;
-    ULONG mask = (1 << 16) - 1;
-    UWORD i, vendor_id, product_id;
-    BOOL snoop = TRUE;
-
-    /* Get vendor/product/subsystem IDs */
-    data = inl_config(0x0, card->pci_dev);
-    vendor_id = inw_config(0x0, card->pci_dev);
-    product_id = inw_config(0x2, card->pci_dev);
-    D(bug("DEBUG: Controller Vendor ID: %x\n", data));
-    subsystem = inl_config(0x2C, card->pci_dev);
-
-    /* Check for Intel controllers that need snoop */
-    if(vendor_id == 0x8086) {
-        D(bug("[HDAudio] Intel controller detected, checking if snooping needed\n"));
-        for(i = 0; intel_no_snoop_list[i] != 0; i++) {
-            if(intel_no_snoop_list[i] == product_id) {
-                snoop = FALSE;
-            }
-        }
-
-        if(snoop) {
-            D(bug("[HDAudio] Enabling snooping\n"));
-            data = inw_config(0x78, card->pci_dev);
-            data &= ~0x800;
-            outw_config(0x78, data, card->pci_dev);
-        }
-    }
-
-    /* Check for ATI Southbridge or AMD Hudson controller */
-    if(data == CNT_VEN_ID_ATI_SB || data == CNT_VEN_ID_ATI_SB2 || data == CNT_VEN_ID_ATI_HUDSON) {
-        D(bug("[HDAudio] ATI SB/AMD Hudson controller detected, setting snoop to on.\n"));
-        data = inb_config(0x42, card->pci_dev);
-        data &= ~0x07;
-        data |= 0x02;
-        outb_config(0x42, data, card->pci_dev);
-    }
-
-    /* Check for NVidia MCP controller */
-    if((data & mask) == CNT_VEN_ID_NVIDIA) {
-        D(bug("[HDAudio] NVidia MCP controller detected, setting snoop to on.\n"));
-        data = inb_config(0x4E, card->pci_dev);
-        data |= 0x0F;
-        outb_config(0x4E, data, card->pci_dev);
-
-        data = inb_config(0x4D, card->pci_dev);
-        data |= 0x01;
-        outb_config(0x4D, data, card->pci_dev);
-
-        data = inb_config(0x4C, card->pci_dev);
-        data |= 0x01;
-        outb_config(0x4C, data, card->pci_dev);
-    }
-
-    /* Check for HP Compaq laptops with incorrect IRQ number */
-    if(subsystem == 0x30aa103c) {
-        D(bug("[HDAudio] HP Compaq nc6320 laptop detected, correcting IRQ\n"));
-        data = inb_config(0x3C, card->pci_dev);
-        if(data == 10)
-            outb_config(0x3C, 11, card->pci_dev);
-    } else if(subsystem == 0x30c0103c) {
-        D(bug("[HDAudio] HP Compaq 6710b laptop detected, correcting IRQ\n"));
-        data = inb_config(0x3C, card->pci_dev);
-        if(data == 10)
-            outb_config(0x3C, 5, card->pci_dev);
     }
 }
 
@@ -337,13 +189,9 @@ int card_init(struct HDAudioChip *card)
 {
     int i;
 
-    if(reset_chip(card) == FALSE) {
-        D(bug("[HDAudio] Reset chip failed\n"));
-        return -1;
-    }
-
-    // 4.3 Codec discovery: 15 codecs can be connected, bits that are on indicate a codec
-    card->codecbits = pci_inw(HD_STATESTS, card);
+    /* The controller has been reset and initialized by the hidd */
+    card->codecbits = (UWORD)ahi_hda_get_attr(card->hda_ctrl,
+                                              aHidd_HDA_CodecMask);
 
     if(card->codecbits == 0) {
         D(bug("[HDAudio] No codecs found!\n"));
@@ -351,38 +199,6 @@ int card_init(struct HDAudioChip *card)
     }
 
     D(bug("[HDAudio] codecs %08x\n", card->codecbits));
-
-    if(alloc_streams(card) == FALSE) {
-        D(bug("[HDAudio] Allocating streams failed!\n"));
-        return -1;
-    }
-
-    if(allocate_corb(card) == FALSE) {
-        D(bug("[HDAudio] Allocating CORB failed!\n"));
-        return -1;
-    }
-
-    if(allocate_rirb(card) == FALSE) {
-        D(bug("[HDAudio] Allocating RIRB failed!\n"));
-        return -1;
-    }
-
-    if(allocate_pos_buffer(card) == FALSE) {
-        D(bug("[HDAudio] Allocating position buffer failed!\n"));
-        return -1;
-    }
-
-    D(bug("[HDAudio] Clearing wake enable bits for codecs ..\n"));
-    pci_outw(0, HD_WAKEEN, card);
-
-    D(bug("[HDAudio] Clearing pending interrupts ..\n"));
-    pci_outb(0xFF, HD_INTSTS, card);
-
-    D(bug("[HDAudio] Enabling interrupts ..\n"));
-
-    // enable interrupts
-    pci_outl(HD_INTCTL_CIE | HD_INTCTL_GIE, HD_INTCTL, card);
-    udelay(200);
 
     D(bug("[HDAudio] Finding codec ..\n"));
 
@@ -423,79 +239,6 @@ int card_init(struct HDAudioChip *card)
 
 void card_cleanup(struct HDAudioChip *card)
 {
-}
-
-
-static BOOL reset_chip(struct HDAudioChip *card)
-{
-    int counter = 0;
-    UBYTE ubval = 0;
-    UBYTE tcsel;
-
-    /*
-        Intel® HIgh Definition Audio Traffic Class Assignment (TCSEL), bits 0:2 -> 000 = TC0
-        This register assigned the value to be placed in the TC field. CORB and RIRB data will always be
-        assigned TC0.
-    */
-#define TCSEL_PCIREG 0x44
-    tcsel = inb_config(TCSEL_PCIREG, card->pci_dev);
-    tcsel &= ~0x07;
-    outb_config(TCSEL_PCIREG, tcsel, card->pci_dev);
-
-    pci_outb(0, HD_CORBCTL, card);
-    pci_outb(0, HD_RIRBCTL, card);
-
-    // Clear STATESTS just to be sure. After reset, this register holds the ID's of the connected codecs
-    pci_outb(0xFF, HD_STATESTS, card);
-
-    // Transition to reset state
-    outl_clearbits(1, HD_GCTL, card);
-
-    // Wait for bit 0 to read 0
-    for(counter = 0; counter < 1000; counter++) {
-        ubval = pci_inb(HD_GCTL, card);
-
-        if((ubval & 0x1) == 0) {
-            break;
-        }
-
-        udelay(100);
-    }
-
-    if(counter == 1000) {
-        D(bug("[HDAudio] Couldn't reset chip!\n"));
-        return FALSE;
-    }
-
-    udelay(100);
-    // 4.2.2. Take controller out of reset
-    outl_setbits(1, HD_GCTL, card);
-
-
-    // Wait for bit 0 to read 1
-    for(counter = 0; counter < 1000; counter++) {
-        ubval = pci_inb(HD_GCTL, card);
-
-        if((ubval & 0x1) == 1) {
-            D(bug("[HDAudio] Codec came out of reset!\n"));
-            break;
-        }
-
-        udelay(100);
-    }
-
-    if(counter == 1000) {
-        D(bug("[HDAudio] Couldn't reset chip!\n"));
-        return FALSE;
-    }
-
-    // The software must wait 250 microseconds after reading CRST as 1, but it's suggested to wait longer
-    udelay(1000);
-
-    // do not accept unsolicited events for now (jack sense etc.)
-    //outl_setbits((1 << 8), HD_GCTL, card); // accept unsolicited events
-
-    return TRUE;
 }
 
 
@@ -648,35 +391,6 @@ static BOOL power_up_all_nodes(struct HDAudioChip *card)
 }
 
 
-// allocates memory on the given boundary. Returns the aligned memory address and the non-aligned memory address
-// in NonAlignedAddress, if not NULL.
-void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int boundary)
-{
-    void *address;
-    unsigned long a;
-
-    address = (void *) AllocVec(size + boundary, MEMF_PUBLIC | MEMF_CLEAR);
-
-    if(NonAlignedAddress) {
-        *NonAlignedAddress = address;
-    }
-
-    if(address != NULL) {
-        a = (unsigned long) address;
-        a = (a + boundary - 1) & ~((unsigned long)boundary - 1);
-        address = (void *) a;
-    }
-
-    return address;
-}
-
-
-void pci_free_consistent(void *addr)
-{
-    FreeVec(addr);
-}
-
-
 ULONG get_parameter(UBYTE node, UBYTE parameter, struct HDAudioChip *card)
 {
     return send_command_12(card->codecnr, node, VERB_GET_PARMS, parameter, card);
@@ -685,303 +399,13 @@ ULONG get_parameter(UBYTE node, UBYTE parameter, struct HDAudioChip *card)
 
 ULONG send_command_4(UBYTE codec, UBYTE node, UBYTE verb, UWORD payload, struct HDAudioChip *card)
 {
-    UWORD wp = pci_inw(HD_CORBWP, card) & 0xFF;
-    ULONG data = (codec << 28) | (node << 20) | (verb << 16) | payload;
-
-    if(wp == card->corb_entries - 1) {
-        wp = 0;
-    } else {
-        wp++;
-    }
-
-    //bug("Sending command %lx\n", data);
-
-    card->corb[wp] = data;
-    pci_outw(wp, HD_CORBWP, card);
-
-    return get_response(card);
+    return hda_command(card->hda_ctrl, HDA_COMMAND_4(codec, node, verb, payload));
 }
 
 
 ULONG send_command_12(UBYTE codec, UBYTE node, UWORD verb, UBYTE payload, struct HDAudioChip *card)
 {
-    UWORD wp = pci_inw(HD_CORBWP, card) & 0xFF;
-    ULONG data = (codec << 28) | (node << 20) | (verb << 8) | payload;
-
-    if(wp == card->corb_entries - 1) {
-        wp = 0;
-    } else {
-        wp++;
-    }
-
-    //bug("Sending command %lx\n", data);
-
-    card->corb[wp] = data;
-    pci_outw(wp, HD_CORBWP, card);
-
-    return get_response(card);
-}
-
-
-ULONG get_response(struct HDAudioChip *card)
-{
-    int timeout = 10000;
-    int i;
-    UBYTE rirb_wp;
-
-    udelay(20); //
-
-    // wait for interrupt
-    for(i = 0; i < timeout; i++) {
-        if(card->rirb_irq > 0) {
-            card->rirb_irq--;
-            break;
-        }
-        udelay(10);
-    }
-
-    if(i == timeout) {
-        D(bug("[HDAudio] No IRQ!\n"));
-    }
-
-    for(i = 0; i < timeout; i++) {
-        rirb_wp = pci_inb(HD_RIRBWP, card);
-
-        if(rirb_wp == card->rirb_rp) { // strange, we expect the wp to have increased
-            D(bug("[HDAudio] WP has not increased! rirb_wp = %u, rirb_rp = %lu\n", rirb_wp, card->rirb_rp));
-            udelay(5000);
-        } else {
-            if(((rirb_wp > card->rirb_rp) &&
-                    ((rirb_wp - card->rirb_rp) >= 2)) ||
-
-                    ((rirb_wp < card->rirb_rp) &&
-                     (((int) rirb_wp) + card->rirb_entries) - card->rirb_rp >= 2)) {
-                D(bug("[HDAudio] Write pointer is more than 1 step ahead!\n"));
-            }
-
-            ULONG addr;
-            ULONG response, response_ex; // 3.6.5 Response Input Ring Buffer
-
-            card->rirb_rp = rirb_wp;
-            addr = card->rirb_rp;
-            addr *= 2; // 64-bit entries
-
-            response = card->rirb[addr];
-            response_ex = card->rirb[addr + 1];
-            if(response_ex & 0x10) { // unsolicited
-                D(bug("[HDAudio] Unsolicited response! Skipping!\n"));
-            } else {
-                //bug("Response is %lx\n", response);
-                return response;
-            }
-        }
-    }
-
-    D(bug("[HDAudio] ERROR in get_response() card->rirb_rp = %u!rirb_wp = %u\n", card->rirb_rp, rirb_wp));
-    return 0;
-}
-
-
-static BOOL allocate_corb(struct HDAudioChip *card)
-{
-    UBYTE corbsize_reg;
-
-    // 4.4.1.3 Initialize the CORB
-
-    // stop the DMA
-    outb_clearbits(HD_CORBRUN, HD_CORBCTL, card);
-
-    // set CORB size
-    corbsize_reg = pci_inb(HD_CORBSIZE, card);
-    if(corbsize_reg & (1 << 6)) {
-        pci_outb(0x2, HD_CORBSIZE, card);
-        card->corb_entries = 256;
-    } else if(corbsize_reg & (1 << 5)) {
-        pci_outb(0x1, HD_CORBSIZE, card);
-        card->corb_entries = 16;
-    } else if(corbsize_reg & (1 << 4)) {
-        pci_outb(0x0, HD_CORBSIZE, card);
-        card->corb_entries = 2;
-    }
-
-    // Allocate CORB memory
-    card->corb = pci_alloc_consistent(4 * card->corb_entries, NULL, 128); // todo: virtual
-
-    // Set CORB base
-#if defined(__AROS__) && (__WORDSIZE==64)
-    pci_outl((ULONG)((IPTR)card->corb & 0xFFFFFFFF), HD_CORB_LOW, card);
-    pci_outl((ULONG)(((IPTR)card->corb >> 32) & 0xFFFFFFFF), HD_CORB_HIGH, card);
-#else
-    pci_outl((ULONG) card->corb, HD_CORB_LOW, card);
-    pci_outl(0, HD_CORB_HIGH, card);
-#endif
-
-    //bug("Before reset rp: corbrp = %x\n", pci_inw(0x4A, card));
-
-    // Reset read pointer: if we set this, the CORB will not work??
-    //outw_setbits(HD_CORBRPRST, HD_CORBRP, card);
-
-    //bug("After reset rp: corbrp = %x\n", pci_inw(0x4A, card));
-
-    // Write a 0 to the write pointer to clear
-    pci_outw(0, HD_CORBWP, card);
-
-    // run it
-    outb_setbits(HD_CORBRUN, HD_CORBCTL, card);
-
-    if(card->corb) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-
-static BOOL allocate_rirb(struct HDAudioChip *card)
-{
-    UBYTE rirbsize_reg;
-
-    // 4.4.2.2 Initialize the RIRB
-
-    // stop the DMA
-    outb_clearbits(HD_RIRBRUN, HD_RIRBCTL, card);
-
-    // set rirb size
-    rirbsize_reg = pci_inb(HD_RIRBSIZE, card);
-    if(rirbsize_reg & (1 << 6)) {
-        pci_outb(0x2, HD_RIRBSIZE, card);
-        card->rirb_entries = 256;
-    } else if(rirbsize_reg & (1 << 5)) {
-        pci_outb(0x1, HD_RIRBSIZE, card);
-        card->rirb_entries = 16;
-    } else if(rirbsize_reg & (1 << 4)) {
-        pci_outb(0x0, HD_RIRBSIZE, card);
-        card->rirb_entries = 2;
-    }
-
-    card->rirb_irq = 0;
-
-    // Allocate rirb memory
-    card->rirb = pci_alloc_consistent(4 * 2 * card->rirb_entries, NULL, 128); // todo: virtual
-    card->rirb_rp = 0;
-
-    // Set rirb base
-#if defined(__AROS__) && (__WORDSIZE==64)
-    pci_outl((ULONG)((IPTR)card->rirb & 0xFFFFFFFF), HD_RIRB_LOW, card);
-    pci_outl((ULONG)(((IPTR)card->rirb >> 32) & 0xFFFFFFFF), HD_RIRB_HIGH, card);
-#else
-    pci_outl((ULONG) card->rirb, HD_RIRB_LOW, card);
-    pci_outl(0, HD_RIRB_HIGH, card);
-#endif
-
-    // Reset read pointer: if we set this, it will not come out of reset??
-    //outw_setbits(HD_RIRBWPRST, HD_RIRBWP, card);
-
-    // Set N=1, which generates an interrupt for every response
-    pci_outw(1, HD_RINTCNT, card);
-
-    pci_outb(0x5, HD_RIRBSTS, card);
-
-    // run it and enable IRQ
-    outb_setbits(HD_RIRBRUN | HD_RINTCTL | 0x4, HD_RIRBCTL, card);
-
-    if(card->rirb) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-
-
-static BOOL allocate_pos_buffer(struct HDAudioChip *card)
-{
-    card->dma_position_buffer = pci_alloc_consistent(sizeof(APTR) * 36, NULL, 128);
-
-//warning: DMA poition buffer is unused?
-#if defined(__AROS__) && (__WORDSIZE==64)
-    pci_outl(0, HD_DPLBASE, card);
-    pci_outl(0, HD_DPUBASE, card);
-#else
-    //pci_outl((ULONG) card->dma_position_buffer | HD_DPLBASE_ENABLE, HD_DPLBASE, card);
-    pci_outl(0, HD_DPLBASE, card);
-    pci_outl(0, HD_DPUBASE, card);
-#endif
-
-    if(card->dma_position_buffer) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-
-static BOOL alloc_streams(struct HDAudioChip *card)
-{
-    int i;
-    card->nr_of_input_streams = (pci_inw(HD_GCAP, card) & HD_GCAP_ISS_MASK) >> 8;
-    card->nr_of_output_streams = (pci_inw(HD_GCAP, card) & HD_GCAP_OSS_MASK) >> 12;
-    card->nr_of_streams = card->nr_of_input_streams + card->nr_of_output_streams;
-    //bug("Streams in = %d, out = %d\n", card->nr_of_input_streams, card->nr_of_output_streams);
-
-    card->streams = (struct Stream *) AllocVec(sizeof(struct Stream) * card->nr_of_streams, MEMF_PUBLIC | MEMF_CLEAR);
-
-    for(i = 0; i < card->nr_of_streams; i++) {
-        card->streams[i].bdl = NULL;
-        card->streams[i].bdl_nonaligned_addresses = NULL;
-        card->streams[i].sd_reg_offset = HD_SD_BASE_OFFSET + HD_SD_DESCRIPTOR_SIZE * i;
-        card->streams[i].index = i;
-        card->streams[i].tag = i + 1;
-        card->streams[i].fifo_size = pci_inw(card->streams[i].sd_reg_offset + HD_SD_OFFSET_FIFO_SIZE, card);
-
-        // clear the descriptor error, fifo error and buffer completion interrupt status flags
-        pci_outb(HD_SD_STATUS_MASK, card->streams[i].sd_reg_offset + HD_SD_OFFSET_STATUS, card);
-    }
-
-    if(card->streams) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-
-#ifdef __AMIGAOS4__
-static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct HDAudioChip *card)
-#else
-static ULONG ResetHandler(struct HDAudioChip *card)
-#endif
-{
-    pci_outl(0, HD_INTCTL, card);
-
-    if(card->is_playing) {
-        struct Stream *output_stream = &(card->streams[card->nr_of_input_streams]);
-        outl_clearbits(HD_SD_CONTROL_STREAM_RUN, output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
-    }
-
-    if(card->is_recording) {
-        struct Stream *input_stream = &(card->streams[0]);
-        outl_clearbits(HD_SD_CONTROL_STREAM_RUN, input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
-    }
-
-    return 0UL;
-}
-
-
-void AddResetHandler(struct HDAudioChip *card)
-{
-    struct Interrupt *handler = &card->reset_handler;
-    handler->is_Code = (void (*)())ResetHandler;
-    handler->is_Data = (APTR) card;
-    handler->is_Node.ln_Pri = 0;
-#ifdef __AMIGAOS4__
-    handler->is_Node.ln_Type = NT_EXTINTERRUPT;
-#else
-    handler->is_Node.ln_Type = NT_INTERRUPT;
-#endif
-    handler->is_Node.ln_Name = "HDAudio reset handler";
-
-    card->reset_handler_added = AddResetCallback(handler);
+    return hda_command(card->hda_ctrl, HDA_COMMAND_12(codec, node, verb, payload));
 }
 
 
@@ -1808,7 +1232,7 @@ static void determine_bitsizes(struct HDAudioChip *card)
     ULONG bitsizes = 0;
 
     if(bitsize_flags == 0) {
-        verb = get_parameter(0x1, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+        verb = get_parameter(card->function_group, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
         bitsize_flags = (verb & PCM_SIZE_RATE_BITSIZE_MASK) >> 16;
         D(bug("[HDAudio] dac_nid didn't have a list of sample rates, trying AFG node\n"));
     }
@@ -1855,7 +1279,7 @@ static void determine_frequencies(struct HDAudioChip *card)
     BOOL default_freq_found = FALSE;
 
     if(samplerate_flags == 0) {
-        verb = get_parameter(0x1, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+        verb = get_parameter(card->function_group, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
         samplerate_flags = verb & PCM_SIZE_RATE_RATE_MASK;
         D(bug("[HDAudio] dac_nid didn't have a list of sample rates, trying AFG node\n"));
     }

@@ -6,11 +6,7 @@ Software distributed under the License is distributed on an "AS IS" basis, WITHO
 ANY KIND, either express or implied. See the License for the specific language governing rights and
 limitations under the License.
 
-(C) Copyright 2010-2026 The AROS Dev Team.
-(C) Copyright 2009-2010 Stephen Jones.
-(C) Copyright xxxx-2009 Davy Wentzler.
-
-The Initial Developer of the Original Code is Davy Wentzler.
+(C) Copyright 2026 The AROS Dev Team.
 
 All Rights Reserved.
 */
@@ -21,20 +17,17 @@ All Rights Reserved.
 
 #include <config.h>
 
-#include <proto/expansion.h>
 #include <libraries/ahi_sub.h>
 #include <proto/exec.h>
 #include <stddef.h>
 #include "library.h"
 #include "interrupt.h"
-#include "misc.h"
+#include "hdmi.h"
 #include "hda_hidd.h"
-
-#define min(a,b) ((a)<(b)?(a):(b))
 
 /*
     The hardware interrupt lives in hdaudio.hidd; it Cause()s the
-    interrupts below when a stream buffer completes.
+    interrupt below when a stream buffer completes.
 */
 
 /******************************************************************************
@@ -43,10 +36,10 @@ All Rights Reserved.
 
 #ifdef __AMIGAOS4__
 void
-PlaybackInterrupt(struct ExceptionContext *pContext, struct ExecBase *SysBase, struct HDAudioChip *card)
+PlaybackInterrupt(struct ExceptionContext *pContext, struct ExecBase *SysBase, struct NVHDMIChip *card)
 #else
 void
-PlaybackInterrupt(struct HDAudioChip *card)
+PlaybackInterrupt(struct NVHDMIChip *card)
 #endif
 {
     struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
@@ -104,70 +97,10 @@ PlaybackInterrupt(struct HDAudioChip *card)
             }
         }
 
-        /* Note: other combinations of mixing buffer and hardware format are not supported at this moment */
-
         /* Make the DMA buffer visible to the controller */
         hda_stream_sync(card->hda_ctrl, card->output_stream,
                         (card->current_buffer == card->playback_buffer1) ? 0 : 1);
 
         CallHookPkt(AudioCtrl->ahiac_PostTimerFunc, (Object *) AudioCtrl, 0);
-    }
-}
-
-
-/******************************************************************************
-** Record interrupt handler ***************************************************
-******************************************************************************/
-
-#ifdef __AMIGAOS4__
-void
-RecordInterrupt(struct ExceptionContext *pContext, struct ExecBase *SysBase, struct HDAudioChip *card)
-#else
-void
-RecordInterrupt(struct HDAudioChip *card)
-#endif
-{
-    struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
-    struct DriverBase  *AHIsubBase = (struct DriverBase *) card->ahisubbase;
-
-    /* A buffer has completed; hand it over while the other one records */
-    if(card->recflip == 1) {
-        card->recflip = 0;
-        card->current_record_buffer = card->record_buffer1;
-    } else {
-        card->recflip = 1;
-        card->current_record_buffer = card->record_buffer2;
-    }
-
-    if(card->current_record_buffer == NULL || !card->is_recording) {
-        return;
-    }
-
-    /* Pick up the controller's writes before the CPU reads them */
-    hda_stream_sync(card->hda_ctrl, card->input_stream,
-                    (card->current_record_buffer == card->record_buffer1) ? 0 : 1);
-
-    {
-        struct AHIRecordMessage rm = {
-            AHIST_S16S,
-            card->current_record_buffer,
-            RECORD_BUFFER_SAMPLES
-        };
-#ifdef __AMIGAOS4__
-        int i = 0;
-        int frames = card->current_record_bytesize / 2;
-        WORD *src = card->current_record_buffer;
-        WORD *dst = card->current_record_buffer;
-
-        while(i < frames) {
-            *dst = ((*src & 0x00FF) << 8) | ((*src & 0xFF00) >> 8);
-
-            ++i;
-            ++src;
-            ++dst;
-        }
-#endif
-
-        CallHookPkt(AudioCtrl->ahiac_SamplerFunc, (Object *) AudioCtrl, &rm);
     }
 }

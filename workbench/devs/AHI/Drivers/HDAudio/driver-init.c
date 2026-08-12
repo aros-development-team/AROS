@@ -33,38 +33,29 @@ struct Library *StdCBase = NULL;
 
 #include "library.h"
 #include "version.h"
-#include "pci_wrapper.h"
+#include "hda_hidd.h"
 #include "misc.h"
 
 
 
 struct DriverBase *AHIsubBase;
 
-
-struct VendorDevice {
-    UWORD vendor;
-    UWORD device;
-};
-
-
-struct VendorDevice *vendor_device_list = NULL;
-static int vendor_device_list_size = 0;
-
 static void parse_config_file(void);
 static int hex_char_to_int(char c);
-#define MAX_DEVICE_VENDORS 512
 
 
 /******************************************************************************
 ** Custom driver init *********************************************************
 ******************************************************************************/
 
+#define MAX_CARDS 8
+
 BOOL DriverInit(struct DriverBase *ahisubbase)
 {
     struct HDAudioBase *card_base = (struct HDAudioBase *) ahisubbase;
-    struct PCIDevice *dev;
+    APTR controllers[MAX_CARDS];
+    ULONG count, i;
     int card_no;
-    int i;
 
     D(bug("[HDAudio] %s()\n", __func__));
     AHIsubBase = ahisubbase;
@@ -84,77 +75,62 @@ BOOL DriverInit(struct DriverBase *ahisubbase)
     }
 #endif
 
-    if(!ahi_pci_init(ahisubbase)) {
+    if(!ahi_hda_init(ahisubbase)) {
         return FALSE;
     }
 
     InitSemaphore(&card_base->semaphore);
 
-    /*** Count cards ***********************************************************/
-
-    vendor_device_list = (struct VendorDevice *) AllocVec(sizeof(struct VendorDevice) * MAX_DEVICE_VENDORS,
-                         MEMF_PUBLIC | MEMF_CLEAR);
-
-    // Add Intel ICH7 (used in iMica)
-    vendor_device_list[0].vendor = 0x8086;
-    vendor_device_list[0].device = 0x27D8;
-    vendor_device_list_size++;
-
-    // Then parse the hdaudio.config file, if available in ENV:
+    // Parse the hdaudio.config file for QUERY/speaker overrides, if present
     parse_config_file();
 
-    D(bug("[HDAudio] vendor_device_list_size = %ld\n", vendor_device_list_size));
+    /*
+        Claim every controller that is not the audio function of a
+        display adapter; those are handled by display-audio drivers
+        such as nvhdmi.audio.
 
-    card_base->cards_found = 0;
-    dev = NULL;
-
-    for(i = 0; i < vendor_device_list_size; i++) {
-        dev = ahi_pci_find_device(vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
-
-        if(dev != NULL) {
-            D(bug("[HDAudio] Found device with vendor ID = %x, device ID = %x!(i = %d)\n", vendor_device_list[i].vendor,
-                  vendor_device_list[i].device, i));
-            ++card_base->cards_found;
-            break; // stop at first found controller
-        }
-    }
-
-
-    FreeVec(vendor_device_list);
-
-    // Fail if no hardware (prevents the audio modes from being added to
-    // the database if the driver cannot be used).
-
-    if(card_base->cards_found == 0) {
+        Fail if no hardware (prevents the audio modes from being added to
+        the database if the driver cannot be used).
+    */
+    count = ahi_hda_obtain_controllers(FALSE, 0, controllers, MAX_CARDS);
+    if(count == 0) {
         D(bug("[HDAudio] No HDaudio controller found! :-(\n"));
         return FALSE;
     }
 
-
-    /*** Allocate and init all cards *******************************************/
+    /*** Allocate and init all cards ******************************************/
 
     card_base->driverdatas = (struct HDAudioChip **) AllocVec(
-                                 sizeof(*card_base->driverdatas) * card_base->cards_found,
+                                 sizeof(*card_base->driverdatas) * count,
                                  MEMF_PUBLIC | MEMF_CLEAR);
 
     if(card_base->driverdatas == NULL) {
         D(bug("[HDAudio] Out of memory.\n"));
+        for(i = 0; i < count; i++) {
+            ahi_hda_release_controller(controllers[i]);
+        }
         return FALSE;
     }
 
     card_no = 0;
+    for(i = 0; i < count; i++) {
+        struct HDAudioChip *card = AllocDriverData(controllers[i], AHIsubBase);
 
-    if(dev) {
-        card_base->driverdatas[card_no] = AllocDriverData(dev, AHIsubBase);
-        if(card_base->driverdatas[card_no] == NULL) {
-            FreeVec(card_base->driverdatas);
-            return FALSE;
+        if(card != NULL) {
+            card_base->driverdatas[card_no++] = card;
         }
-
-        ++card_no;
     }
 
-    D(bug("[HDAudio] exit init\n"));
+    card_base->cards_found = card_no;
+
+    if(card_no == 0) {
+        D(bug("[HDAudio] No usable codec on any controller!\n"));
+        FreeVec(card_base->driverdatas);
+        card_base->driverdatas = NULL;
+        return FALSE;
+    }
+
+    D(bug("[HDAudio] exit init (%d cards)\n", card_no));
     return TRUE;
 }
 
@@ -168,13 +144,15 @@ VOID DriverCleanup(struct DriverBase *AHIsubBase)
     struct HDAudioBase *card_base = (struct HDAudioBase *) AHIsubBase;
     int i;
 
-    for(i = 0; i < card_base->cards_found; ++i) {
-        FreeDriverData(card_base->driverdatas[i], AHIsubBase);
+    if(card_base->driverdatas) {
+        for(i = 0; i < card_base->cards_found; ++i) {
+            FreeDriverData(card_base->driverdatas[i], AHIsubBase);
+        }
+
+        FreeVec(card_base->driverdatas);
     }
 
-    FreeVec(card_base->driverdatas);
-
-    ahi_pci_exit();
+    ahi_hda_exit();
 
 #ifdef __AROS__
     if(StdCBase) {
@@ -226,36 +204,8 @@ static void parse_config_file(void)
                     ret[8] == '0' &&
                     ret[9] == 'x' &&
                     ret[15] == '\0') {
-                int value;
-                UWORD vendor, device;
-                char *tmp = (char *) AllocVec(16, MEMF_CLEAR);
-                char *tmp2 = (char *) AllocVec(4, MEMF_CLEAR);
-
-                CopyMem(line + 2, tmp, 4);
-                tmp[4] = '\0';
-
-                // convert hex to decimal
-                value = hex_char_to_int(tmp[0]) * 16 * 16 * 16 + hex_char_to_int(tmp[1]) * 16 * 16 + hex_char_to_int(
-                            tmp[2]) * 16 + hex_char_to_int(tmp[3]);
-                vendor = (UWORD) value;
-
-                CopyMem(line + 10, tmp, 4);
-                value = hex_char_to_int(tmp[0]) * 16 * 16 * 16 + hex_char_to_int(tmp[1]) * 16 * 16 + hex_char_to_int(
-                            tmp[2]) * 16 + hex_char_to_int(tmp[3]);
-                device = (UWORD) value;
-                //bug("Adding vendor = %x, device = %x to list, size = %ld\n", vendor, device, vendor_device_list_size);
-
-                vendor_device_list[vendor_device_list_size].vendor = vendor;
-                vendor_device_list[vendor_device_list_size].device = device;
-                vendor_device_list_size++;
-
-                if(vendor_device_list_size >= MAX_DEVICE_VENDORS) {
-                    bug("Exceeded MAX_DEVICE_VENDORS\n");
-                    break;
-                }
-
-                FreeVec(tmp);
-                FreeVec(tmp2);
+                /* Vendor/device ID lines are obsolete: controllers are
+                   discovered by PCI class through hdaudio.hidd. */
             } else if(ret[0] == 'Q' && ret[1] == 'U' && ret[2] == 'E' && ret[3] == 'R' && ret[4] == 'Y') {
                 bug("QUERY found!\n");
                 setForceQuery();
