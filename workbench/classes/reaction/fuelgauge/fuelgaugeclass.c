@@ -181,6 +181,30 @@ IPTR FuelGauge__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 /******************************************************************************/
 
+IPTR FuelGauge__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
+{
+    struct TextFont *font = NULL;
+    WORD h = 14;
+
+    /* Tall enough for the gadget text in the UI font */
+    if (msg->gpd_GInfo && msg->gpd_GInfo->gi_DrInfo)
+        font = msg->gpd_GInfo->gi_DrInfo->dri_Font;
+    if (!font && msg->gpd_RPort)
+        font = msg->gpd_RPort->Font;
+
+    if (font && font->tf_YSize + 6 > h)
+        h = font->tf_YSize + 6;
+
+    msg->gpd_Domain.Left   = 0;
+    msg->gpd_Domain.Top    = 0;
+    msg->gpd_Domain.Width  = 40;
+    msg->gpd_Domain.Height = h;
+
+    return TRUE;
+}
+
+/******************************************************************************/
+
 IPTR FuelGauge__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     D(bug("[FuelGauge] GM_RENDER: redraw=%d\n", msg->gpr_Redraw));

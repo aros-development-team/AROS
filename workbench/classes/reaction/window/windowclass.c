@@ -635,6 +635,9 @@ IPTR Window__WM_HANDLEINPUT(Class *cl, Object *o, Msg msg)
                     TAG_DONE);
                 RefreshGList((struct Gadget *)data->wcd_Layout, data->wcd_Window, NULL, -1);
             }
+            /* Repaint the borders - after shrinking they contain stale
+             * pixels from the previously larger interior */
+            RefreshWindowFrame(data->wcd_Window);
             break;
 
         case IDCMP_REFRESHWINDOW:

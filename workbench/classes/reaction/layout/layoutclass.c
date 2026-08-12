@@ -164,6 +164,15 @@ static void layout_set(Class *cl, Object *o, struct opSet *msg)
 
             case LAYOUT_VertAlignment:
                 data->ld_VertAlignment = tag->ti_Data;
+                data->ld_VertAlignSet = TRUE;
+                break;
+
+            case LAYOUT_BevelState:
+                data->ld_BevelState = tag->ti_Data;
+                break;
+
+            case LAYOUT_FillPen:
+                data->ld_FillPen = (LONG)tag->ti_Data;
                 break;
 
             case LAYOUT_Label:
@@ -278,6 +287,7 @@ IPTR Layout__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
         /* BVS_NONE is not 0 (0 is BVS_THIN) - default to no bevel */
         data->ld_BevelStyle = BVS_NONE;
+        data->ld_FillPen = -1;
 
         /* Consult live UIPrefs (published by reaction.library). The
          * semaphore is found by name; cap_Semaphore is its first member,
@@ -755,9 +765,12 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
                     childW = mainSize;
                     /* Cross-axis: gadgets fill the group; only image
                      * children keep their natural height (labels/glyphs
-                     * shouldn't be stretched). */
+                     * shouldn't be stretched). An explicit
+                     * LAYOUT_VertAlignment keeps natural heights too so
+                     * there is something to align. */
                     childH = availH;
-                    if (lc->lc_IsImage && lc->lc_NatHeight && childH > lc->lc_NatHeight
+                    if ((lc->lc_IsImage || data->ld_VertAlignSet)
+                        && lc->lc_NatHeight && childH > lc->lc_NatHeight
                         && (lc->lc_MaxHeight == 0 || lc->lc_MaxHeight >= lc->lc_NatHeight))
                     {
                         childH = lc->lc_NatHeight;
@@ -786,6 +799,15 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
 
                 lc->lc_Left   = x;
                 lc->lc_Top    = y;
+
+                /* Align non-filling children on the cross axis */
+                if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ &&
+                    data->ld_VertAlignSet && childH < availH &&
+                    data->ld_VertAlignment == LALIGN_BOTTOM)
+                {
+                    lc->lc_Top = y + (WORD)(availH - childH);
+                }
+
                 lc->lc_Width  = (UWORD)childW;
                 lc->lc_Height = (UWORD)childH;
 
@@ -800,8 +822,8 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
                     if (lc->lc_IsImage)
                     {
                         SetAttrs(lc->lc_Object,
-                            IA_Left,   x,
-                            IA_Top,    y,
+                            IA_Left,   lc->lc_Left,
+                            IA_Top,    lc->lc_Top,
                             IA_Width,  (UWORD)childW,
                             IA_Height, (UWORD)childH,
                             TAG_DONE);
@@ -811,8 +833,8 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
                         struct gpLayout gpl;
 
                         SetAttrs(lc->lc_Object,
-                            GA_Left,   x,
-                            GA_Top,    y,
+                            GA_Left,   lc->lc_Left,
+                            GA_Top,    lc->lc_Top,
                             GA_Width,  (UWORD)childW,
                             GA_Height, (UWORD)childH,
                             TAG_DONE);
@@ -859,6 +881,19 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
         struct Gadget *gad = G(o);
 
+        /* Erase the group's box first so content rendered at previous
+         * positions (e.g. before a window resize shrank us) doesn't
+         * survive; the bevel and the children repaint over this. */
+        if (dri && gad->Width > 0 && gad->Height > 0)
+        {
+            SetDrMd(rp, JAM1);
+            SetAPen(rp, data->ld_FillPen >= 0 ? (UWORD)data->ld_FillPen
+                                              : dri->dri_Pens[BACKGROUNDPEN]);
+            RectFill(rp, gad->LeftEdge, gad->TopEdge,
+                gad->LeftEdge + gad->Width - 1,
+                gad->TopEdge + gad->Height - 1);
+        }
+
         /* Draw bevel frame if requested. cap_3DLook=FALSE in UIPrefs
          * suppresses the frame. */
         if (data->ld_BevelStyle != BVS_NONE && dri && data->ld_3DLook)
@@ -869,6 +904,8 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                     BEVEL_Style, data->ld_BevelStyle,
                     data->ld_Label ? BEVEL_Label : TAG_IGNORE,
                     data->ld_Label,
+                    data->ld_FillPen >= 0 ? BEVEL_FillPen : TAG_IGNORE,
+                    data->ld_FillPen,
                     TAG_END);
             }
             if (data->ld_BevelImage)
@@ -878,7 +915,7 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                 idmsg.imp_RPort        = rp;
                 idmsg.imp_Offset.X     = gad->LeftEdge;
                 idmsg.imp_Offset.Y     = gad->TopEdge;
-                idmsg.imp_State        = IDS_NORMAL;
+                idmsg.imp_State        = data->ld_BevelState;
                 idmsg.imp_DrInfo       = dri;
                 idmsg.imp_Dimensions.Width  = gad->Width;
                 idmsg.imp_Dimensions.Height = gad->Height;
