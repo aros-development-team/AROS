@@ -10,12 +10,7 @@
 #include <hidd/i2c.h>
 #include <hidd/gallium.h>
 
-// #include "util/u_simple_screen.h"
-#include "nouveau/nouveau_drmif.h"
-#include "nouveau/nouveau_bo.h"
-#include "nouveau/nouveau_channel.h"
-#include "nouveau/nouveau_notifier.h"
-#include "nouveau/nouveau_grobj.h"
+#include <nouveau.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -75,11 +70,17 @@ struct HIDDNouveauBitMapData
                                     state. This state however can only be changed
                                     when lock is held on bitmap */
 
-    ULONG   height;         /* Height of bitmap in pixels */
-    ULONG   width;          /* Width of bitmap in pixels */
     ULONG   pitch;          /* Width of single data row in bytes */
     UBYTE   bytesperpixel;  /* In bytes, how many bytes to store a pixel */
-    UBYTE   depth;          /* In bits, how many bits used to represt the color */
+    struct
+    {
+        ULONG height;           /* Height of bitmap in pixels */
+        ULONG width;            /* Width of bitmap in pixels */
+        UBYTE bitsPerPixel;     /* In bits, how many bits used to represt the color */
+        UBYTE depth;            /* In bits, how many bits used to represt the color */
+        APTR  pScreen;          /* Pointer to CardData */
+    } drawable;
+
     BOOL    displayable;    /* Can bitmap be displayed on screen */
     
     /* Information connected with display */
@@ -102,52 +103,67 @@ extern OOP_AttrBase HiddI2CNouveauAttrBase;
 
 enum
 {
-    aoHidd_I2C_Nouveau_Chan,                /* [I..] The nouveau_i2c_chan object */
+    aoHidd_I2C_Nouveau_Adapter,     /* [I..] The i2c_adapter object */
     
     num_Hidd_I2C_Nouveau_Attrs
 };
 
-#define aHidd_I2C_Nouveau_Chan          (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Chan)
+#define aHidd_I2C_Nouveau_Adapter          (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Adapter)
 
 #define IS_I2CNOUVEAU_ATTR(attr, idx) \
     (((idx) = (attr) - HiddI2CNouveauAttrBase) < num_Hidd_I2C_Nouveau_Attrs)
 
 struct HIDDNouveauI2CData
 {
-    IPTR    i2c_chan;
+    IPTR i2c_adapter;
 };
 
 #define CLID_Hidd_Gallium_Nouveau       "hidd.gallium.nouveau"
 
 struct HIDDGalliumNouveauData
 {
-    // struct pipe_winsys nouveau_winsys;
-    OOP_Object *nouveau_obj;
+    ULONG dummy;
 };
 
 struct CardData
 {
     /* Card controlling objects */
-    ULONG                   architecture;
+    ULONG                   Architecture;
     BOOL                    IsPCIE;
-    struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
-    struct nouveau_channel  *chan;
 
-    struct nouveau_notifier *notify0;
-    struct nouveau_notifier *vblank_sem;
-    
-    struct nouveau_grobj    *NvImageBlit;
-    struct nouveau_grobj    *NvContextSurfaces;
-    struct nouveau_grobj    *NvRop;
-    struct nouveau_grobj    *NvImagePattern;
-    struct nouveau_grobj    *NvRectangle;
-    struct nouveau_grobj    *NvMemFormat;
-    struct nouveau_grobj    *Nv2D;
-    struct nouveau_grobj    *Nv3D;
-    struct nouveau_grobj    *NvSW;
-    struct nouveau_bo       *shader_mem;
-    struct nouveau_bo       *tesla_scratch;
-    
+    LONG                    currentRop;
+
+    struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
+    struct nouveau_client   *client;
+
+    struct nouveau_object   *channel;
+    struct nouveau_pushbuf  *pushbuf;
+    struct nouveau_bufctx   *bufctx;
+    struct nouveau_object   *notify0;
+
+    struct nouveau_object   *vblank_sem;
+    struct nouveau_object   *NvNull;
+    struct nouveau_object   *NvContextSurfaces;
+    struct nouveau_object   *NvImagePattern;
+    struct nouveau_object   *NvRop;
+    struct nouveau_object   *NvRectangle;
+    struct nouveau_object   *NvImageBlit;
+    struct nouveau_object   *NvMemFormat;
+    struct nouveau_object   *Nv2D;
+    struct nouveau_object   *Nv3D;
+    struct nouveau_object   *NvSW;
+    struct nouveau_object   *NvCOPY;
+    struct nouveau_bo       *scratch;
+
+    BOOL ce_enabled;
+    struct nouveau_object   *ce_channel;
+    struct nouveau_pushbuf  *ce_pushbuf;
+    struct nouveau_object   *NvCopy;
+    BOOL (*ce_rect)(struct nouveau_pushbuf *, struct nouveau_object *,
+            int, int, int,
+            struct nouveau_bo *, uint32_t, int, int, int, int, int,
+            struct nouveau_bo *, uint32_t, int, int, int, int, int);
+
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
     struct SignalSemaphore  gartsemaphore;
 };
@@ -230,11 +246,7 @@ LIBBASETYPE
 #define LOCK_MULTI_BITMAP           { ObtainSemaphore(&(SD(cl))->multibitmapsemaphore); }
 #define UNLOCK_MULTI_BITMAP         { ReleaseSemaphore(&(SD(cl))->multibitmapsemaphore); }
 
-#define UNMAP_BUFFER                { if (bmdata->bo->map) nouveau_bo_unmap(bmdata->bo); }
-#define UNMAP_BUFFER_BM(bmdata)     { if ((bmdata)->bo->map) nouveau_bo_unmap((bmdata)->bo); }
-
-#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR); }
-#define MAP_BUFFER_BM(bmdata)       { if (!(bmdata)->bo->map) nouveau_bo_map((bmdata)->bo, NOUVEAU_BO_RDWR); }
+#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); }
 
 #define IS_NOUVEAU_BM_CLASS(x)      ((x) == SD(cl)->bmclass)
 
@@ -273,8 +285,11 @@ enum DMAObjects
 #define NV_ARCH_20  0x20
 #define NV_ARCH_30  0x30
 #define NV_ARCH_40  0x40
-#define NV_ARCH_50  0x50
-#define NV_ARCH_C0  0xC0
+#define NV_TESLA    0x50
+#define NV_FERMI    0xc0
+#define NV_KEPLER   0xe0
+#define NV_MAXWELL  0x110
+#define NV_PASCAL   0x130
 
 #define BLENDOP_SOLID           1
 #define BLENDOP_ALPHA_PREMULT   3
@@ -282,13 +297,14 @@ enum DMAObjects
 
 /* nv_accel_common.c */
 BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata);
-VOID HIDDNouveauAccelFree(struct CardData * carddata);
+BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch,
+    struct nouveau_bo **bo);
 
 BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNouveauBitMapData * bmdata, LONG *fmt_ret);
 
 /* nv04_exa.c */
 VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
-		  LONG pat0, LONG pat1);
+    LONG pat0, LONG pat1);
 BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color);

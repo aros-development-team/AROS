@@ -1,0 +1,47 @@
+/*
+    Copyright 2009-2026, The AROS Development Team. All rights reserved.
+*/
+
+#ifndef _DRM_COMPAT_MEM_
+#define _DRM_COMPAT_MEM_
+
+#include "drm_compat_types.h"
+
+VOID HIDDNouveauFree(APTR memory);
+APTR HIDDNouveauAlloc(ULONG size);
+IPTR HIDDNouveauAllocSize(CONST_APTR memory);
+
+#define gfp_t           ULONG
+#define GFP_KERNEL      (1UL << 0)
+#define __GFP_ZERO      (1UL << 1)
+#define GFP_DMA32       (1UL << 2)
+#define GFP_HIGHUSER    (1UL << 3)
+#define GFP_USER        (1UL << 4)
+#define GFP_NOWAIT      (1UL << 5)
+#define GFP_ATOMIC      (1UL << 6)
+
+
+#define kcalloc(count, size, flags)     HIDDNouveauAlloc((count) * (size))
+#define kzalloc(size, flags)            HIDDNouveauAlloc(size)
+#define kmalloc_array(n, size, flags)   kmalloc((n) * (size), flags)
+#define kfree(objp)                     HIDDNouveauFree((APTR)objp)
+#define ksize(objp)                     HIDDNouveauAllocSize(objp)
+
+#define vmalloc_user(size)              HIDDNouveauAlloc(size)
+#define vmalloc(size)                   HIDDNouveauAlloc(size)
+#define vzalloc(size)                   vmalloc(size)
+#define vfree(objp)                     HIDDNouveauFree(objp)
+
+#define kvmalloc(size, flags)           HIDDNouveauAlloc(size)
+#define kvcalloc(count, size, flags)    HIDDNouveauAlloc((count) * (size))
+#define kvmalloc_array(n, size, flags)  kvmalloc((n) * (size), flags)
+#define kvzalloc(size, flags)           kvmalloc(size, flags | __GFP_ZERO)
+#define kvfree(objp)                    HIDDNouveauFree(objp)
+
+void *kmalloc(size_t size, gfp_t flags);
+void *krealloc(const void *ptr, size_t size, gfp_t flags);
+
+char *kvasprintf(gfp_t, const char *, va_list);
+char *kasprintf(gfp_t, const char *, ...);
+
+#endif /* _DRM_COMPAT_MEM_ */

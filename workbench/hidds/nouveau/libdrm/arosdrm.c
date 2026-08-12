@@ -1,0 +1,243 @@
+/*
+    Copyright 2010-2026, The AROS Development Team. All rights reserved.
+*/
+
+#include <aros/debug.h>
+
+#include <libdrm/arosdrm.h>
+
+#include <drm-compat/drm_compat_funcs.h>
+#include <drm/drm_drv.h>
+#include <drm/drm_gem.h>
+#include <drm/drm_file.h>
+
+void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t handle, VOID (*unmapped)(APTR), APTR data);
+void drm_gem_nouveau_munmap(struct drm_device *dev, struct drm_file *f, uint32_t handle);
+
+#include "drm_crtc_internal.h"
+#include "drm_internal.h"
+
+APTR HIDDNouveauAlloc(ULONG size);
+VOID HIDDNouveauFree(APTR memory);
+
+extern struct drm_device *current_drm_device;
+
+static struct drm_file * drm_files[128] = {NULL};
+
+int 
+drmCommandNone(int fd, unsigned long drmCommandIndex)
+{
+    struct drm_driver *drv = current_drm_device->driver;
+
+    if (!drm_files[fd])
+        return -EINVAL;
+
+    if (!drv || !drv->ioctls)
+        return -EINVAL;
+
+    return drv->ioctls[drmCommandIndex].func(current_drm_device, NULL, drm_files[fd]);
+}
+
+int
+drmCommandRead(int fd, unsigned long drmCommandIndex, void *data, unsigned long size)
+{
+    struct drm_driver *drv = current_drm_device->driver;
+
+    if (!drm_files[fd])
+        return -EINVAL;
+
+    if (!drv || !drv->ioctls)
+        return -EINVAL;
+
+    return drv->ioctls[drmCommandIndex].func(current_drm_device, data, drm_files[fd]);
+}
+
+int
+drmCommandWrite(int fd, unsigned long drmCommandIndex, void *data, unsigned long size)
+{
+    struct drm_driver *drv = current_drm_device->driver;
+
+    if (!drm_files[fd])
+        return -EINVAL;
+
+    if (!drv || !drv->ioctls)
+        return -EINVAL;
+    
+    return drv->ioctls[drmCommandIndex].func(current_drm_device, data, drm_files[fd]);
+}
+
+int
+drmCommandWriteRead(int fd, unsigned long drmCommandIndex, void *data, unsigned long size)
+{
+    struct drm_driver *drv = current_drm_device->driver;
+
+    if (!drm_files[fd])
+        return -EINVAL;
+    
+    if (!drv || !drv->ioctls)
+        return -EINVAL;
+    
+    return drv->ioctls[drmCommandIndex].func(current_drm_device, data, drm_files[fd]);
+}
+
+int
+drmOpen(const char *name, const char *busid)
+{
+    int i;
+
+    for (i = 0; i < 128; i++)
+    {
+        if (drm_files[i] == NULL)
+        {
+            drm_files[i] = HIDDNouveauAlloc(sizeof(struct drm_file));
+            spin_lock_init(&drm_files[i]->table_lock);
+            INIT_LIST_HEAD(&drm_files[i]->fbs);
+            mutex_init(&drm_files[i]->fbs_lock);
+
+            if (drm_core_check_feature(current_drm_device, DRIVER_GEM))
+                drm_gem_open(current_drm_device, drm_files[i]);
+
+            if (current_drm_device->driver->open)
+                current_drm_device->driver->open(current_drm_device, drm_files[i]);
+            return i;
+        }
+    }
+    
+    return -EINVAL;
+}
+
+int
+drmClose(int fd)
+{
+    struct drm_file * f = NULL;
+
+bug("FIXME drmClose\n"); while(1);
+#if 0
+    if (!(f = drm_files[fd]))
+        return 0;
+    
+    drm_files[fd] = NULL;
+    
+    if (current_drm_driver->preclose)
+        current_drm_driver->preclose(current_drm_driver->dev, f);
+
+    if (current_drm_driver->postclose)
+        current_drm_driver->postclose(current_drm_driver->dev, f);
+
+    HIDDNouveauFree(f);
+#endif
+    return 0;
+}
+
+drmVersionPtr
+drmGetVersion(int fd)
+{
+    static drmVersion ver;
+    if (current_drm_device->driver)
+    {
+        ver.version_patchlevel = current_drm_device->driver->patchlevel;
+        ver.version_major = current_drm_device->driver->major;
+    }
+    else
+    {
+        ver.version_patchlevel = 0;
+        ver.version_major = 0;
+    }
+
+    return &ver;
+}
+
+void
+drmFreeVersion(drmVersionPtr ptr)
+{
+    /* This is a no-op for now */
+}
+
+int
+drmCreateContext(int fd, drm_context_t * handle)
+{
+    /* No Op */
+    return 0;
+}
+
+int
+drmDestroyContext(int fd, drm_context_t handle)
+{
+    /* No Op */
+    return 0;
+}
+
+int drmIoctl(int fd, unsigned long request, void *arg)
+{
+    int ret = -EINVAL;
+    
+    if (!drm_files[fd])
+        return ret;
+
+    do
+    {
+        switch(request)
+        {
+            case(DRM_IOCTL_GEM_CLOSE):
+                ret = drm_gem_close_ioctl(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_GEM_OPEN):
+                ret = drm_gem_open_ioctl(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_GEM_FLINK):
+                ret = drm_gem_flink_ioctl(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_MODE_ADDFB):
+                ret = drm_mode_addfb(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_MODE_RMFB):
+                ret = drm_mode_rmfb_ioctl(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_MODE_SETCRTC):
+                ret = drm_mode_setcrtc(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_MODE_GETCRTC):
+                ret = drm_mode_getcrtc(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_MODE_GETRESOURCES):
+                ret = drm_mode_getresources(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_MODE_GETCONNECTOR):
+                ret = drm_mode_getconnector(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_MODE_CURSOR):
+                ret = drm_mode_cursor_ioctl(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_MODE_GETENCODER):
+                ret = drm_mode_getencoder(current_drm_device, arg, drm_files[fd]);
+                break;
+            default:
+                bug("NOT IMPLEMENTED IOCTL %d\n", request); while(1);
+        }
+        /* FIXME: It is possible that -ERESTARTSYS needs to be translated to -EAGAIN here */
+    } while (ret == -EINTR || ret == -EAGAIN);
+    
+    return ret;
+}
+
+void *drmMalloc(int size)
+{
+    return HIDDNouveauAlloc(size);
+}
+
+void drmFree(void *pt)
+{
+    HIDDNouveauFree(pt);
+}
+
+void *drmMMap(int fd, uint32_t handle, VOID (*unmapped)(APTR), APTR data)
+{
+    struct drm_file *f = drm_files[fd];
+    return drm_gem_nouveau_mmap(current_drm_device, f, handle, unmapped, data);
+}
+
+void drmMUnmap(int fd, uint32_t handle)
+{
+    struct drm_file *f = drm_files[fd];
+    drm_gem_nouveau_munmap(current_drm_device, f, handle);
+}

@@ -22,7 +22,6 @@
  */
 
 #include "nouveau_intern.h"
-#include "nouveau_class.h"
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <stdlib.h>
@@ -864,16 +863,17 @@ static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata,
 
     /* Wrap GART */
     srcdata.bo = carddata->GART;
-    srcdata.width = width;
-    srcdata.height = height;
-    srcdata.depth = 32;
+    srcdata.drawable.width = width;
+    srcdata.drawable.height = height;
+    srcdata.drawable.depth = srcdata.drawable.bitsPerPixel = 32;
+    srcdata.drawable.pScreen = carddata;
     srcdata.bytesperpixel = 4;
     srcdata.pitch = gartpitch;
 
     LOCK_ENGINE
 
     /* Render using 3D engine */
-    switch(carddata->architecture)
+    switch(carddata->Architecture)
     {
     case(NV_ARCH_40):
         HIDDNouveauNV403DCopyBox(carddata,
@@ -923,7 +923,7 @@ BOOL HiddNouveauAccelARGBUpload3D(
             line_count = height;
 
         /* Upload to GART */
-        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR))
+        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR, carddata->client))
             return FALSE;
         dst = carddata->GART->map;
 
@@ -972,7 +972,6 @@ BOOL HiddNouveauAccelARGBUpload3D(
 #endif
 
         src += srcpitch * line_count;
-        nouveau_bo_unmap(carddata->GART);
 
         HiddNouveau3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
 
@@ -1011,7 +1010,7 @@ BOOL HiddNouveauAccelAPENUpload3D(
             line_count = height;
 
         /* Upload to GART */
-        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR))
+        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR, carddata->client))
             return FALSE;
         dst = carddata->GART->map;
 
@@ -1042,9 +1041,7 @@ BOOL HiddNouveauAccelAPENUpload3D(
                 dst += line_len;
             }
         }
-        
-        nouveau_bo_unmap(carddata->GART);
-        
+
         HiddNouveau3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
 
         height -= line_count;

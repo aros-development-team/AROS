@@ -1,0 +1,1557 @@
+diff -ru ./xf86-video-nouveau-1.0.16/nouveau_copy.c ./xf86-video-nouveau/nouveau_copy.c
+--- ./xf86-video-nouveau-1.0.16/nouveau_copy.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nouveau_copy.c	2026-07-07 18:31:09.000000000 +0200
+@@ -55,11 +55,13 @@
+ 	NVPtr pNv = NVPTR(pScrn);
+ 	int ret;
+ 
++#if !defined(__AROS__)
+ 	if (pNv->AccelMethod == NONE) {
+ 		xf86DrvMsg(pScrn->scrnIndex, X_CONFIG,
+ 			   "[COPY] acceleration disabled\n");
+ 		return FALSE;
+ 	}
++#endif
+ 
+ 	switch (pNv->Architecture) {
+ 	case NV_TESLA:
+diff -ru ./xf86-video-nouveau-1.0.16/nouveau_exa.c ./xf86-video-nouveau/nouveau_exa.c
+--- ./xf86-video-nouveau-1.0.16/nouveau_exa.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nouveau_exa.c	2026-07-07 18:31:09.000000000 +0200
+@@ -21,7 +21,9 @@
+  */
+ 
+ #include "nv_include.h"
++#if !defined(__AROS__)
+ #include "exa.h"
++#endif
+ 
+ #include "hwdefs/nv_m2mf.xml.h"
+ 
+@@ -73,6 +75,7 @@
+ 	return FALSE;
+ }
+ 
++#if !defined(__AROS__)
+ static int
+ nouveau_exa_mark_sync(ScreenPtr pScreen)
+ {
+@@ -154,6 +157,7 @@
+ 	nouveau_bo_ref(NULL, &nvpix->bo);
+ 	free(nvpix);
+ }
++#endif
+ 
+ #ifdef NOUVEAU_PIXMAP_SHARING
+ static Bool
+@@ -196,7 +200,7 @@
+ }
+ #endif
+ 
+-bool
++Bool
+ nv50_style_tiled_pixmap(PixmapPtr ppix)
+ {
+ 	ScrnInfoPtr pScrn = xf86ScreenToScrn(ppix->drawable.pScreen);
+@@ -206,6 +210,7 @@
+ 	       nouveau_pixmap_bo(ppix)->config.nv50.memtype;
+ }
+ 
++#if !defined(__AROS__)
+ static int
+ nouveau_exa_scratch(NVPtr pNv, int size, struct nouveau_bo **pbo, int *off)
+ {
+@@ -532,3 +537,135 @@
+ 	pNv->Flush = nouveau_exa_flush;
+ 	return TRUE;
+ }
++#endif
++
++/* AROS CODE */
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes lock on GART object is already made */
++/* NOTE: Assumes buffer is not mapped */
++BOOL HiddNouveauNVAccelUploadM2MF(
++    UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
++    LONG x, LONG y, LONG width, LONG height,
++    OOP_Class *cl, OOP_Object *o)
++{
++    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
++    struct CardData * carddata = &(SD(cl)->carddata);
++
++    PixmapPtr pdpix = bmdata;
++    ScrnInfoPtr pScrn = carddata;
++    NVPtr pNv = carddata;
++
++    int dst_pitch, tmp_pitch, cpp;
++    char *dst;
++    Bool ret;
++
++    cpp = pdpix->drawable.depth > 16 ? 4 : 2;
++    dst_pitch  = exaGetPixmapPitch(pdpix);
++    tmp_pitch = width * cpp;
++
++    /* try hostdata transfer */
++    if (srcPixFmt == vHidd_StdPixFmt_Native || (srcPixFmt == vHidd_StdPixFmt_Native32 && cpp == 4))
++    if (width * height * cpp < 16*1024) /* heuristic */
++    {
++        if (pNv->Architecture < NV_TESLA) {
++            if (NV04EXAUploadIFC(pScrn, srcpixels, srcpitch, pdpix,
++                            x, y, width, height, cpp)) {
++                return TRUE;
++            }
++        } else
++        if (pNv->Architecture < NV_FERMI) {
++            if (NV50EXAUploadSIFC(srcpixels, srcpitch, pdpix,
++                            x, y, width, height, cpp)) {
++                return TRUE;
++            }
++        } else {
++            if (NVC0EXAUploadSIFC(srcpixels, srcpitch, pdpix,
++                            x, y, width, height, cpp)) {
++                return TRUE;
++            }
++        }
++    }
++
++    while (height) {
++        const int lines = (height > 2047) ? 2047 : height;
++        int tmp_offset = 0;
++
++        /* RAM -> CPU -> GART */
++        nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
++
++        if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR, pNv->client))
++            return FALSE;
++        dst = pNv->GART->map;
++
++        HiddNouveauWriteFromRAM( (APTR)srcpixels, srcpitch, srcPixFmt, dst, tmp_pitch,
++            width, lines, cl, o);
++        srcpixels += srcpitch * lines;
++
++        /* GART -> GPU -> VRAM */
++        if (!NVAccelM2MF(pNv, width, lines, cpp, tmp_offset, 0, pNv->GART,
++                    NOUVEAU_BO_GART, tmp_pitch, lines, 0, 0,
++                    nouveau_pixmap_bo(pdpix), NOUVEAU_BO_VRAM,
++                    dst_pitch, pdpix->drawable.height, x, y))
++            return FALSE;
++
++        /* next! */
++        height -= lines;
++        y += lines;
++    }
++
++    return TRUE;
++}
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes lock on GART object is already made */
++/* NOTE: Assumes buffer is not mapped */
++BOOL HiddNouveauNVAccelDownloadM2MF(
++    UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
++    LONG x, LONG y, LONG width, LONG height,
++    OOP_Class *cl, OOP_Object *o)
++{
++    struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(cl, o);
++    struct CardData *carddata = &(SD(cl)->carddata);
++
++    PixmapPtr pspix = bmdata;
++    NVPtr pNv = carddata;
++
++    int src_pitch, tmp_pitch, cpp;
++    char *src;
++    Bool ret;
++
++    cpp = pspix->drawable.depth > 16 ? 4 : 2;
++    src_pitch  = exaGetPixmapPitch(pspix);
++    tmp_pitch = width * cpp;
++
++    while (height) {
++        const int lines = (height > 2047) ? 2047 : height;
++        int tmp_offset = 0;
++
++        /* VRAM -> GPU -> GART */
++        if (!NVAccelM2MF(pNv, width, lines, cpp, 0, tmp_offset,
++                    nouveau_pixmap_bo(pspix), NOUVEAU_BO_VRAM,
++                    src_pitch, pspix->drawable.height, x, y,
++                    pNv->GART, NOUVEAU_BO_GART, tmp_pitch,
++                    lines, 0, 0))
++            return FALSE;
++
++        nouveau_bo_wait(pNv->GART, NOUVEAU_BO_RD, pNv->client);
++
++        /* GART -> CPU -> RAM */
++        if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_RD, pNv->client))
++            return FALSE;
++        src = pNv->GART->map;
++
++        HiddNouveauReadIntoRAM(src, tmp_pitch, dstpixels, dstpitch,
++            dstPixFmt, width, lines, cl, o);
++        dstpixels += dstpitch * lines;
++
++        /* next! */
++        height -= lines;
++        y += lines;
++    }
++
++    return TRUE;
++}
+\ No newline at end of file
+diff -ru ./xf86-video-nouveau-1.0.16/nouveau_local.h ./xf86-video-nouveau/nouveau_local.h
+--- ./xf86-video-nouveau-1.0.16/nouveau_local.h	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nouveau_local.h	2026-07-07 18:31:08.000000000 +0200
+@@ -23,8 +23,10 @@
+ #ifndef __NOUVEAU_LOCAL_H__
+ #define __NOUVEAU_LOCAL_H__
+ 
++#if !defined(__AROS__)
+ #include "compiler.h"
+ #include "xf86_OSproc.h"
++#endif
+ 
+ #include <nouveau.h>
+ 
+@@ -43,6 +45,13 @@
+ } while(0)
+ #endif
+ 
++#if defined(__AROS__)
++#include <proto/dos.h>
++#include <aros/debug.h>
++#define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED STOP %s, %d\n", __func__, __LINE__); while(1){Delay(1);}; }
++#define NOT_IMPLEMENTED_CONTINUE        { bug("NOT IMPLEMENTED %s, %d\n", __func__, __LINE__); }
++#endif
++
+ #define NOUVEAU_ALIGN(x,bytes) (((x) + ((bytes) - 1)) & ~((bytes) - 1))
+ 
+ #define NV50_TILE_PITCH(m) (64 << ((m) & 0xf))
+diff -ru ./xf86-video-nouveau-1.0.16/nouveau_xv.c ./xf86-video-nouveau/nouveau_xv.c
+--- ./xf86-video-nouveau-1.0.16/nouveau_xv.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nouveau_xv.c	2026-07-07 18:31:08.000000000 +0200
+@@ -20,7 +20,7 @@
+  * SOFTWARE.
+  */
+ 
+-
++#if !defined(__AROS__)
+ #ifdef HAVE_CONFIG_H
+ #include "config.h"
+ #endif
+@@ -40,6 +40,10 @@
+ #include "nv_dma.h"
+ 
+ #include "vl_hwmc.h"
++#else
++#include "nv_include.h"
++typedef signed char int8_t;
++#endif
+ 
+ #include "hwdefs/nv_m2mf.xml.h"
+ 
+@@ -75,6 +79,7 @@
+ 
+ #define MAKE_ATOM(a) MakeAtom(a, sizeof(a) - 1, TRUE)
+ 
++#if !defined(__AROS__)
+ Atom xvBrightness, xvContrast, xvColorKey, xvSaturation;
+ Atom xvHue, xvAutopaintColorKey, xvSetDefaults, xvDoubleBuffer;
+ Atom xvITURBT709, xvSyncToVBlank, xvOnCRTCNb;
+@@ -2271,6 +2276,7 @@
+ 				 pNv->textureAdaptor[1]->pPortPrivates[0].ptr);
+ 	}
+ }
++#endif
+ 
+ /* The filtering function used for video scaling. We use a cubic filter as
+  * defined in  "Reconstruction Filters in Computer Graphics" Mitchell &
+diff -ru ./xf86-video-nouveau-1.0.16/nv04_exa.c ./xf86-video-nouveau/nv04_exa.c
+--- ./xf86-video-nouveau-1.0.16/nv04_exa.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nv04_exa.c	2026-07-07 18:31:09.000000000 +0200
+@@ -134,12 +134,14 @@
+ 		return FALSE;
+ 	}
+ 
++#if !defined(__AROS__)
+ 	pNv->fg_colour = fg;
++#endif
+ 	return TRUE;
+ }
+ 
+ void
+-NV04EXASolid (PixmapPtr pPixmap, int x, int y, int x2, int y2)
++NV04EXASolid (PixmapPtr pPixmap, int x, int y, int x2, int y2, Pixel fg)
+ {
+ 	ScrnInfoPtr pScrn = xf86ScreenToScrn(pPixmap->drawable.pScreen);
+ 	NVPtr pNv = NVPTR(pScrn);
+@@ -151,7 +153,11 @@
+ 		return;
+ 
+ 	BEGIN_NV04(push, NV04_RECT(COLOR1_A), 1);
++#if !defined(__AROS__)
+ 	PUSH_DATA (push, pNv->fg_colour);
++#else
++	PUSH_DATA (push, fg);
++#endif
+ 	BEGIN_NV04(push, NV04_RECT(UNCLIPPED_RECTANGLE_POINT(0)), 2);
+ 	PUSH_DATA (push, (x << 16) | y);
+ 	PUSH_DATA (push, (w << 16) | h);
+@@ -205,9 +211,11 @@
+ 		return FALSE;
+ 	}
+ 
++#if !defined(__AROS__)
+ 	pNv->pspix = pspix;
+ 	pNv->pmpix = NULL;
+ 	pNv->pdpix = pdpix;
++#endif
+ 	return TRUE;
+ }
+ 
+@@ -224,6 +232,7 @@
+ 	if (nouveau_pushbuf_space(push, 16, 2, 0))
+ 		return;
+ 
++#if !defined(__AROS__)
+ 	if ((width * height) >= 200000 && pNv->pspix != pNv->pdpix &&
+ 	    (dstY > srcY || dstX > srcX) && split_height < height) {
+ 		/*
+@@ -251,12 +260,14 @@
+ 		dstY = 0;
+ 		pNv->pmpix = pdpix;
+ 	}
++#endif
+ 
+ 	BEGIN_NV04(push, NV01_BLIT(POINT_IN), 3);
+ 	PUSH_DATA (push, (srcY << 16) | srcX);
+ 	PUSH_DATA (push, (dstY << 16) | dstX);
+ 	PUSH_DATA (push, (height  << 16) | width);
+ 
++#if !defined(__AROS__)
+ 	if (pNv->pmpix) {
+ 		struct nouveau_bo *dst_bo = nouveau_pixmap_bo(pdpix);
+ 
+@@ -264,6 +275,7 @@
+ 		PUSH_RELOC(push, dst_bo, 0, NOUVEAU_BO_LOW, 0, 0);
+ 		pNv->pmpix = NULL;
+ 	}
++#endif
+ 
+ 	if ((width * height) >= 512)
+ 		PUSH_KICK(push);
+@@ -280,6 +292,7 @@
+ NV04EXAUploadIFC(ScrnInfoPtr pScrn, const char *src, int src_pitch,
+ 		 PixmapPtr pdpix, int x, int y, int w, int h, int cpp)
+ {
++#if !defined(__AROS__)
+ 	NVPtr pNv = NVPTR(pScrn);
+ 	ScreenPtr pScreen = pdpix->drawable.pScreen;
+ 	struct nouveau_bo *bo = nouveau_pixmap_bo(pdpix);
+@@ -380,6 +393,9 @@
+ 	if (pdpix == pScreen->GetScreenPixmap(pScreen))
+ 		PUSH_KICK(push);
+ 	return ret;
++#else
++	return FALSE;
++#endif
+ }
+ 
+ Bool
+@@ -432,3 +448,44 @@
+ 
+ 	return TRUE;
+ }
++
++/* AROS CODE */
++
++VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
++		  LONG pat0, LONG pat1)
++{
++    NV04EXASetPattern(carddata, clr0, clr1, pat0, pat1);
++}
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
++    LONG maxY, ULONG drawmode, ULONG color)
++{
++    if (NV04EXAPrepareSolid(bmdata, drawmode, ~0, color))
++    {
++        NV04EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1, color);
++        NV04EXADoneSolid(bmdata);
++        return TRUE;
++    }
++
++    return FALSE;
++}
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
++    ULONG drawmode)
++{
++    if (NV04EXAPrepareCopy(srcdata, destdata, 0, 0, drawmode, ~0))
++    {
++        NV04EXACopy(destdata, srcX, srcY, destX, destY, width, height);
++        NV04EXADoneCopy(destdata);
++        return TRUE;
++    }
++
++    return FALSE;
++}
+diff -ru ./xf86-video-nouveau-1.0.16/nv10_exa.c ./xf86-video-nouveau/nv10_exa.c
+--- ./xf86-video-nouveau-1.0.16/nv10_exa.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nv10_exa.c	2026-07-07 18:31:08.000000000 +0200
+@@ -141,6 +141,7 @@
+ 	return mask && mask->componentAlpha && PICT_FORMAT_RGB(mask->format);
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ check_texture(NVPtr pNv, PicturePtr pict)
+ {
+@@ -373,6 +374,7 @@
+ 	print_fallback_info("Accelerating", op, src, mask, dst);
+ 	return TRUE;
+ }
++#endif
+ 
+ static Bool
+ setup_texture(NVPtr pNv, int unit, PicturePtr pict, PixmapPtr pixmap)
+@@ -417,6 +419,7 @@
+ 	else
+ 		PUSH_DATA(push, NV10_3D_TEX_FILTER_MAGNIFY_LINEAR |
+ 				NV10_3D_TEX_FILTER_MINIFY_LINEAR);
++#if !defined(__AROS__)
+ 	if (pict->transform) {
+ 		BEGIN_NV04(push, NV10_3D(TEX_MATRIX_ENABLE(unit)), 1);
+ 		PUSH_DATA (push, 1);
+@@ -438,6 +441,9 @@
+ 		PUSH_DATAf(push, 0.0f);
+ 		PUSH_DATAf(push, xFixedToFloat(pict->transform->matrix[2][2]));
+ 	} else {
++#else
++	{ // we are not doing any transformations
++#endif
+ 		BEGIN_NV04(push, NV10_3D(TEX_MATRIX_ENABLE(unit)), 1);
+ 		PUSH_DATA (push, 0);
+ 	}
+@@ -512,9 +518,12 @@
+ 		source = RCSRC_TEX(unit);
+ 	} else
+ 	if (pict) {
++NOT_IMPLEMENTED_STOP
++#if 0
+ 		BEGIN_NV04(push, NV10_3D(RC_COLOR(unit)), 1);
+ 		PUSH_DATA (push, pict->pSourcePict->solidFill.color);
+ 		source = RCSRC_COL(unit);
++#endif
+ 	}
+ 
+ 	if (pict && PICT_FORMAT_RGB(pict->format))
+@@ -584,8 +593,10 @@
+ 		return FALSE;
+ 	}
+ 
++#if !defined(__AROS__)
+ 	pNv->pspict = pict_src;
+ 	pNv->pmpict = pict_mask;
++#endif
+ 	return TRUE;
+ }
+ 
+@@ -884,3 +895,32 @@
+ 
+ 	return TRUE;
+ }
++
++/* AROS CODE */
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++/* NOTE: Allows different formats of source and destination */
++BOOL HIDDNouveauNV103DCopyBox(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
++    ULONG blendop)
++{
++    struct Picture sPict, dPict;
++    LONG maskX = 0; LONG maskY = 0;
++
++    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);
++    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
++
++    if (NV10EXAPrepareComposite(blendop,
++        &sPict, NULL, &dPict, srcdata, NULL, destdata))
++    {
++        NV10EXAComposite(destdata, srcX, srcY,
++				      maskX, maskY,
++				      destX , destY,
++				      width, height);
++        return TRUE;
++    }
++
++    return FALSE;
++}
+\ No newline at end of file
+diff -ru ./xf86-video-nouveau-1.0.16/nv30_exa.c ./xf86-video-nouveau/nv30_exa.c
+--- ./xf86-video-nouveau-1.0.16/nv30_exa.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nv30_exa.c	2026-07-07 18:31:08.000000000 +0200
+@@ -292,6 +292,7 @@
+ 			  NV30_3D_TEX_NPOT_SIZE_W__SHIFT) |
+ 			 pPix->drawable.height);
+ 	PUSH_DATA (push, 0x00000000); /* border ARGB */
++#if !defined(__AROS__)
+ 	if (pPict->transform) {
+ 		BEGIN_NV04(push, NV30_3D(TEX_MATRIX_ENABLE(unit)), 1);
+ 		PUSH_DATA (push, 1);
+@@ -313,6 +314,9 @@
+ 		PUSH_DATAf(push, 0.0f);
+ 		PUSH_DATAf(push, xFixedToFloat(pPict->transform->matrix[2][2]));
+ 	} else {
++#else
++	{ // we are not doing any transformations
++#endif
+ 		BEGIN_NV04(push, NV30_3D(TEX_MATRIX_ENABLE(unit)), 1);
+ 		PUSH_DATA (push, 0);
+ 	}
+@@ -342,8 +346,11 @@
+ 		source = RCSRC_TEX(unit);
+ 	} else
+ 	if (pPict) {
++NOT_IMPLEMENTED_STOP
++#if 0
+ 		*solid = pPict->pSourcePict->solidFill.color;
+ 		source = RCSRC_COL(unit);
++#endif
+ 	}
+ 
+ 	if (pPict && PICT_FORMAT_RGB(pPict->format))
+@@ -388,6 +395,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV30EXACheckCompositeTexture(PicturePtr pPict, PicturePtr pdPict, int op)
+ {
+@@ -461,6 +469,7 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
+ Bool
+ NV30EXAPrepareComposite(int op, PicturePtr psPict,
+@@ -963,3 +972,32 @@
+ 
+ 	return TRUE;
+ }
++
++/* AROS CODE */
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++/* NOTE: Allows different formats of source and destination */
++BOOL HIDDNouveauNV303DCopyBox(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
++    ULONG blendop)
++{
++    struct Picture sPict, dPict;
++    LONG maskX = 0; LONG maskY = 0;
++
++    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);
++    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
++
++    if (NV30EXAPrepareComposite(blendop,
++        &sPict, NULL, &dPict, srcdata, NULL, destdata))
++    {
++        NV30EXAComposite(destdata, srcX, srcY,
++				      maskX, maskY,
++				      destX , destY,
++				      width, height);
++        return TRUE;
++    }
++
++    return FALSE;
++}
+\ No newline at end of file
+diff -ru ./xf86-video-nouveau-1.0.16/nv40_exa.c ./xf86-video-nouveau/nv40_exa.c
+--- ./xf86-video-nouveau-1.0.16/nv40_exa.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nv40_exa.c	2026-07-07 18:31:08.000000000 +0200
+@@ -180,6 +180,7 @@
+ 	}
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV40EXAPictSolid(NVPtr pNv, PicturePtr pPict, int unit)
+ {
+@@ -229,6 +230,7 @@
+ 	PUSH_DATAf(push, 0.0);
+ 	return TRUE;
+ }
++#endif
+ 
+ static Bool
+ NV40EXAPictGradient(NVPtr pNv, PicturePtr pPict, int unit)
+@@ -298,6 +300,7 @@
+ 
+ 	BEGIN_NV04(push, NV30_3D(VP_UPLOAD_CONST_ID), 17);
+ 	PUSH_DATA (push, unit * 4);
++#if !defined(__AROS__)
+ 	if (pPict->transform) {
+ 		PUSH_DATAf(push, xFixedToFloat(pPict->transform->matrix[0][0]));
+ 		PUSH_DATAf(push, xFixedToFloat(pPict->transform->matrix[0][1]));
+@@ -312,6 +315,9 @@
+ 		PUSH_DATAf(push, xFixedToFloat(pPict->transform->matrix[2][2]));
+ 		PUSH_DATAf(push, 0);
+ 	} else {
++#else
++	{ // we are not doing any transformations
++#endif
+ 		PUSH_DATAf(push, 1.0);
+ 		PUSH_DATAf(push, 0.0);
+ 		PUSH_DATAf(push, 0.0);
+@@ -339,6 +345,8 @@
+ 	if (ppict->pDrawable)
+ 		return NV40EXAPictTexture(pNv, ppix, ppict, unit);
+ 
++NOT_IMPLEMENTED_STOP
++#if 0
+ 	switch (ppict->pSourcePict->type) {
+ 	case SourcePictTypeSolidFill:
+ 		return NV40EXAPictSolid(pNv, ppict, unit);
+@@ -347,6 +355,7 @@
+ 	default:
+ 		break;
+ 	}
++#endif
+ 
+ 	return FALSE;
+ }
+@@ -374,6 +383,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV40EXACheckCompositeTexture(PicturePtr pPict, PicturePtr pdPict, int op)
+ {
+@@ -447,6 +457,7 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
+ Bool
+ NV40EXAPrepareComposite(int op, PicturePtr psPict,
+@@ -1013,3 +1024,32 @@
+ 	PUSH_DATAs(push, 0x00000000);
+ 	return TRUE;
+ }
++
++/* AROS CODE */
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++/* NOTE: Allows different formats of source and destination */
++BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
++    ULONG blendop)
++{
++    struct Picture sPict, dPict;
++    LONG maskX = 0; LONG maskY = 0;
++
++    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);
++    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
++
++    if (NV40EXAPrepareComposite(blendop,
++        &sPict, NULL, &dPict, srcdata, NULL, destdata))
++    {
++        NV40EXAComposite(destdata, srcX, srcY,
++				      maskX, maskY,
++				      destX , destY,
++				      width, height);
++        return TRUE;
++    }
++
++    return FALSE;
++}
+diff -ru ./xf86-video-nouveau-1.0.16/nv50_accel.c ./xf86-video-nouveau/nv50_accel.c
+--- ./xf86-video-nouveau-1.0.16/nv50_accel.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nv50_accel.c	2026-07-07 18:31:08.000000000 +0200
+@@ -27,6 +27,7 @@
+ #include "hwdefs/nv50_2d.xml.h"
+ #include "hwdefs/nv50_3d.xml.h"
+ 
++#if !defined(__AROS__)
+ void
+ NV50SyncToVBlank(PixmapPtr ppix, BoxPtr box)
+ {
+@@ -61,6 +62,7 @@
+ 	BEGIN_NV04(push, SUBC_NVSW(0x0068), 1);
+ 	PUSH_DATA (push, 0x11111111);
+ }
++#endif
+ 
+ Bool
+ NVAccelInitM2MF_NV50(ScrnInfoPtr pScrn)
+diff -ru ./xf86-video-nouveau-1.0.16/nv50_exa.c ./xf86-video-nouveau/nv50_exa.c
+--- ./xf86-video-nouveau-1.0.16/nv50_exa.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nv50_exa.c	2026-07-07 18:31:09.000000000 +0200
+@@ -94,11 +94,17 @@
+ {
+ 	NV50EXA_LOCALS(ppix);
+ 	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
++#if !defined(__AROS__)
+ 	struct nouveau_pixmap *nvpix = nouveau_pixmap(ppix);
++#endif
+ 	int mthd = is_src ? NV50_2D_SRC_FORMAT : NV50_2D_DST_FORMAT;
+ 	uint32_t bo_flags;
+ 
++#if !defined(__AROS__)
+ 	bo_flags = nvpix->shared ? NOUVEAU_BO_GART : NOUVEAU_BO_VRAM;
++#else
++	bo_flags = NOUVEAU_BO_VRAM; /* AROS allocates all bitmaps in VRAM only */
++#endif
+ 	bo_flags |= is_src ? NOUVEAU_BO_RD : NOUVEAU_BO_WR;
+ 
+ 	if (!nv50_style_tiled_pixmap(ppix)) {
+@@ -378,7 +384,9 @@
+ 	ret = TRUE;
+ out:
+ 	nouveau_pushbuf_bufctx(push, NULL);
++#if !defined(__AROS__)
+ 	if (pdpix == pScreen->GetScreenPixmap(pScreen))
++#endif
+ 		PUSH_KICK(push);
+ 	return ret;
+ }
+@@ -461,6 +469,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV50EXACheckTexture(PicturePtr ppict, PicturePtr pdpict, int op)
+ {
+@@ -525,11 +534,13 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
+ #define _(X1,X2,X3,X4,FMT) (NV50TIC_0_0_TYPER_UNORM | NV50TIC_0_0_TYPEG_UNORM | NV50TIC_0_0_TYPEB_UNORM | NV50TIC_0_0_TYPEA_UNORM | \
+ 			    NV50TIC_0_0_MAP##X1 | NV50TIC_0_0_MAP##X2 | NV50TIC_0_0_MAP##X3 | NV50TIC_0_0_MAP##X4 | \
+ 			    NV50TIC_0_0_FMT_##FMT)
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV50EXAPictSolid(NVPtr pNv, PicturePtr ppict, unsigned unit)
+ {
+@@ -563,6 +574,7 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
+ static Bool
+ NV50EXAPictGradient(NVPtr pNv, PicturePtr ppict, unsigned unit)
+@@ -705,6 +717,7 @@
+ 	PUSH_DATA (push, 0x00000000);
+ 
+ 	PUSH_DATAu(push, pNv->scratch, PVP_DATA + (unit * 11 * 4), 11);
++#if !defined(__AROS__)
+ 	if (ppict->transform) {
+ 		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[0][0]));
+ 		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[0][1]));
+@@ -716,6 +729,9 @@
+ 		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[2][1]));
+ 		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[2][2]));
+ 	} else {
++#else
++	{ // we are not doing any transformations
++#endif
+ 		PUSH_DATAf(push, 1.0);
+ 		PUSH_DATAf(push, 0.0);
+ 		PUSH_DATAf(push, 0.0);
+@@ -737,6 +753,8 @@
+ 	if (ppict->pDrawable)
+ 		return NV50EXAPictTexture(pNv, ppix, ppict, unit);
+ 
++NOT_IMPLEMENTED_STOP
++#if 0
+ 	switch (ppict->pSourcePict->type) {
+ 	case SourcePictTypeSolidFill:
+ 		return NV50EXAPictSolid(pNv, ppict, unit);
+@@ -745,10 +763,12 @@
+ 	default:
+ 		break;
+ 	}
++#endif
+ 
+ 	return FALSE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV50EXACheckBlend(int op)
+ {
+@@ -756,6 +776,7 @@
+ 		NOUVEAU_FALLBACK("unsupported blend op %d\n", op);
+ 	return TRUE;
+ }
++#endif
+ 
+ static void
+ NV50EXABlend(PixmapPtr ppix, PicturePtr ppict, int op, int component_alpha)
+@@ -800,6 +821,7 @@
+ 	}
+ }
+ 
++#if !defined(__AROS__)
+ Bool
+ NV50EXACheckComposite(int op,
+ 		      PicturePtr pspict, PicturePtr pmpict, PicturePtr pdpict)
+@@ -826,6 +848,7 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
+ Bool
+ NV50EXAPrepareComposite(int op,
+@@ -1013,3 +1036,73 @@
+ 
+ 	return TRUE;
+ }
++
++/* AROS CODE */
++
++VOID HIDDNouveauNV50SetPattern(struct CardData *carddata, LONG col0, LONG col1, LONG pat0, LONG pat1)
++{
++    struct HIDDNouveauBitMapData fake;
++    fake.drawable.pScreen = carddata;
++    NV50EXASetPattern(&fake, col0, col1, pat0, pat1);
++}
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
++    LONG maxY, ULONG drawmode, ULONG color)
++{
++    if (NV50EXAPrepareSolid(bmdata, drawmode, ~0, color))
++    {
++        NV50EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
++        NV50EXADoneSolid(bmdata);
++        return TRUE;
++    }
++
++    return FALSE;
++}
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
++    ULONG drawmode)
++{
++    if (NV50EXAPrepareCopy(srcdata, destdata, 0, 0, drawmode, ~0))
++    {
++        NV50EXACopy(destdata, srcX, srcY, destX , destY, width, height);
++        NV50EXADoneCopy(destdata);
++        return TRUE;
++    }
++
++    return FALSE;
++}
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++/* NOTE: Allows different formats of source and destination */
++BOOL HIDDNouveauNV503DCopyBox(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
++    ULONG blendop)
++{
++    struct Picture sPict, dPict;
++    ULONG maskX = 0; ULONG maskY = 0;
++
++    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);
++    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
++
++    if (NV50EXAPrepareComposite(blendop,
++        &sPict, NULL, &dPict, srcdata, NULL, destdata))
++    {
++        NV50EXAComposite(destdata, srcX, srcY,
++                        maskX, maskY,
++                        destX , destY,
++                        width, height);
++        NV50EXADoneComposite(destdata);
++        return TRUE;
++    }
++
++    return FALSE;
++}
+diff -ru ./xf86-video-nouveau-1.0.16/nv_accel_common.c ./xf86-video-nouveau/nv_accel_common.c
+--- ./xf86-video-nouveau-1.0.16/nv_accel_common.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nv_accel_common.c	2026-07-07 18:31:09.000000000 +0200
+@@ -20,6 +20,11 @@
+  * SOFTWARE.
+  */
+ 
++#if defined(__AROS__)
++#include <aros/debug.h>
++#define max(x, y) ((x) > (y) ? (x) : (y))
++#endif
++
+ #include "nv_include.h"
+ 
+ #include "hwdefs/nv_object.xml.h"
+@@ -33,8 +38,8 @@
+ 			 int usage_hint, int *pitch, struct nouveau_bo **bo)
+ {
+ 	NVPtr pNv = NVPTR(scrn);
+-	Bool scanout = (usage_hint & NOUVEAU_CREATE_PIXMAP_SCANOUT);
+-	Bool tiled = (usage_hint & NOUVEAU_CREATE_PIXMAP_TILED);
++	Bool scanout = (usage_hint & NOUVEAU_CREATE_PIXMAP_SCANOUT) ? 1 : 0;
++	Bool tiled = (usage_hint & NOUVEAU_CREATE_PIXMAP_TILED) ? 1 : 0;
+ 	Bool shared = FALSE;
+ 	union nouveau_bo_config cfg = {};
+ 	int flags = NOUVEAU_BO_MAP | (bpp >= 8 ? NOUVEAU_BO_VRAM : 0);
+@@ -48,8 +53,10 @@
+ 	if (bpp >= 8)
+ 		flags |= shared ? NOUVEAU_BO_GART : NOUVEAU_BO_VRAM;
+ 
++#if !defined(__AROS__)
+ 	if (scanout && pNv->tiled_scanout)
+ 		tiled = TRUE;
++#endif
+ 
+ 	if (pNv->Architecture >= NV_TESLA) {
+ 		if (!scanout && bpp >= 8 && !shared)
+@@ -122,6 +129,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ void
+ NV11SyncToVBlank(PixmapPtr ppix, BoxPtr box)
+ {
+@@ -154,6 +162,7 @@
+ 	BEGIN_NV04(push, NV15_BLIT(FLIP_WAIT), 1);
+ 	PUSH_DATA (push, 0);
+ }
++#endif
+ 
+ static Bool
+ NVAccelInitDmaNotifier0(ScrnInfoPtr pScrn)
+@@ -209,6 +218,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NVAccelInitContextBeta1(ScrnInfoPtr pScrn)
+ {
+@@ -249,6 +259,7 @@
+ 	PUSH_DATA (push, 0xffff0000);
+ 	return TRUE;
+ }
++#endif
+ 
+ Bool
+ NVAccelGetCtxSurf2DFormatFromPixmap(PixmapPtr pPix, int *fmt_ret)
+@@ -276,6 +287,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ Bool
+ NVAccelGetCtxSurf2DFormatFromPicture(PicturePtr pPict, int *fmt_ret)
+ {
+@@ -308,6 +320,7 @@
+ 	else
+ 		return (PixmapPtr) pDraw;
+ }
++#endif
+ 
+ static Bool
+ NVAccelInitImagePattern(ScrnInfoPtr pScrn)
+@@ -438,6 +451,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NVAccelInitScaledImage(ScrnInfoPtr pScrn)
+ {
+@@ -507,6 +521,7 @@
+ 	PUSH_DATA (push, pNv->NvNull->handle);
+ 	return TRUE;
+ }
++#endif
+ 
+ static Bool
+ NVAccelInitMemFormat(ScrnInfoPtr pScrn)
+@@ -528,6 +543,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NVAccelInitImageFromCpu(ScrnInfoPtr pScrn)
+ {
+@@ -577,6 +593,7 @@
+ 	PUSH_DATA (push, NV01_IFC_OPERATION_SRCCOPY);
+ 	return TRUE;
+ }
++#endif
+ 
+ #define INIT_CONTEXT_OBJECT(name) do {                                        \
+ 	ret = NVAccelInit##name(pScrn);                                       \
+@@ -597,15 +614,19 @@
+ 	nouveau_object_del(&pNv->vblank_sem);
+ 
+ 	nouveau_object_del(&pNv->NvContextSurfaces);
++#if !defined(__AROS__)
+ 	nouveau_object_del(&pNv->NvContextBeta1);
+ 	nouveau_object_del(&pNv->NvContextBeta4);
++#endif
+ 	nouveau_object_del(&pNv->NvImagePattern);
+ 	nouveau_object_del(&pNv->NvRop);
+ 	nouveau_object_del(&pNv->NvRectangle);
+ 	nouveau_object_del(&pNv->NvImageBlit);
++#if !defined(__AROS__)
+ 	nouveau_object_del(&pNv->NvScaledImage);
+ 	nouveau_object_del(&pNv->NvClipRectangle);
+ 	nouveau_object_del(&pNv->NvImageFromCpu);
++#endif
+ 	nouveau_object_del(&pNv->Nv2D);
+ 	nouveau_object_del(&pNv->NvMemFormat);
+ 	nouveau_object_del(&pNv->NvSW);
+@@ -689,15 +710,19 @@
+ 	/* 2D engine */
+ 	if (pNv->Architecture < NV_TESLA) {
+ 		INIT_CONTEXT_OBJECT(ContextSurfaces);
++#if !defined(__AROS__)
+ 		INIT_CONTEXT_OBJECT(ContextBeta1);
+ 		INIT_CONTEXT_OBJECT(ContextBeta4);
++#endif
+ 		INIT_CONTEXT_OBJECT(ImagePattern);
+ 		INIT_CONTEXT_OBJECT(RasterOp);
+ 		INIT_CONTEXT_OBJECT(Rectangle);
+ 		INIT_CONTEXT_OBJECT(ImageBlit);
++#if !defined(__AROS__)
+ 		INIT_CONTEXT_OBJECT(ScaledImage);
+ 		INIT_CONTEXT_OBJECT(ClipRectangle);
+ 		INIT_CONTEXT_OBJECT(ImageFromCpu);
++#endif
+ 	} else
+ 	if (pNv->Architecture < NV_FERMI) {
+ 		INIT_CONTEXT_OBJECT(2D_NV50);
+@@ -746,3 +771,23 @@
+ 	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Channel setup complete.\n");
+ 	return TRUE;
+ }
++
++/* AROS CODE */
++#include "nouveau_copy.h"
++
++BOOL HIDDNouveauAccelCommonInit(struct CardData *carddata)
++{
++    if (NVAccelCommonInit(carddata))
++    {
++        if (nouveau_copy_init(carddata))
++            carddata->ce_enabled = TRUE;
++        return TRUE;
++    }
++
++    return FALSE;
++}
++
++BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch, struct nouveau_bo **bo)
++{
++    return nouveau_allocate_surface(carddata, width, height, bpp, NOUVEAU_CREATE_PIXMAP_SCANOUT, pitch, bo);
++}
+\ No newline at end of file
+diff -ru ./xf86-video-nouveau-1.0.16/nvc0_accel.c ./xf86-video-nouveau/nvc0_accel.c
+--- ./xf86-video-nouveau-1.0.16/nvc0_accel.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nvc0_accel.c	2026-07-07 18:31:08.000000000 +0200
+@@ -69,6 +69,7 @@
+ 	PUSH_DATAp((pNv)->pushbuf, (code), size);                              \
+ } while(0)
+ 
++#if !defined(__AROS__)
+ void
+ NVC0SyncToVBlank(PixmapPtr ppix, BoxPtr box)
+ {
+@@ -110,6 +111,7 @@
+ 	PUSH_DATA (push, 0x11111111);
+ 	PUSH_DATA (push, NV84_SUBCHAN_SEMAPHORE_TRIGGER_ACQUIRE_EQUAL);
+ }
++#endif
+ 
+ Bool
+ NVAccelInitM2MF_NVC0(ScrnInfoPtr pScrn)
+diff -ru ./xf86-video-nouveau-1.0.16/nvc0_exa.c ./xf86-video-nouveau/nvc0_exa.c
+--- ./xf86-video-nouveau-1.0.16/nvc0_exa.c	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nvc0_exa.c	2026-07-07 18:31:09.000000000 +0200
+@@ -96,11 +96,17 @@
+ {
+ 	NVC0EXA_LOCALS(ppix);
+ 	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
++#if !defined(__AROS__)
+ 	struct nouveau_pixmap *nvpix = nouveau_pixmap(ppix);
++#endif
+ 	int mthd = is_src ? NV50_2D_SRC_FORMAT : NV50_2D_DST_FORMAT;
+ 	uint32_t bo_flags;
+ 
++#if !defined(__AROS__)
+ 	bo_flags = nvpix->shared ? NOUVEAU_BO_GART : NOUVEAU_BO_VRAM;
++#else
++	bo_flags = NOUVEAU_BO_VRAM; /* AROS allocates all bitmaps in VRAM only */
++#endif
+ 	bo_flags |= is_src ? NOUVEAU_BO_RD : NOUVEAU_BO_WR;
+ 
+ 	if (!nv50_style_tiled_pixmap(ppix)) {
+@@ -380,7 +386,9 @@
+ 	ret = TRUE;
+ out:
+ 	nouveau_pushbuf_bufctx(push, NULL);
++#if !defined(__AROS__)
+ 	if (pdpix == pScreen->GetScreenPixmap(pScreen))
++#endif
+ 		PUSH_KICK(push);
+ 	return ret;
+ }
+@@ -457,6 +465,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NVC0EXACheckTexture(PicturePtr ppict, PicturePtr pdpict, int op)
+ {
+@@ -521,6 +530,7 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
+ #define _(X1, X2, X3, X4, FMT)						\
+ 	(NV50TIC_0_0_TYPER_UNORM | NV50TIC_0_0_TYPEG_UNORM |		\
+@@ -529,6 +539,7 @@
+ 	 NV50TIC_0_0_MAP##X3 | NV50TIC_0_0_MAP##X4 |			\
+ 	 NV50TIC_0_0_FMT_##FMT)
+ 
++#if !defined(__AROS__)
+ static Bool
+ NVC0EXAPictSolid(NVPtr pNv, PicturePtr ppict, unsigned unit)
+ {
+@@ -555,6 +566,7 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
+ static Bool
+ NVC0EXAPictGradient(NVPtr pNv, PicturePtr ppict, unsigned unit)
+@@ -693,6 +705,7 @@
+ 	PUSH_DATA (push, 0x00000000);
+ 
+ 	PUSH_DATAu(push, pNv->scratch, PVP_DATA + (unit * 11 * 4), 11);
++#if !defined(__AROS__)
+ 	if (ppict->transform) {
+ 		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[0][0]));
+ 		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[0][1]));
+@@ -704,6 +717,9 @@
+ 		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[2][1]));
+ 		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[2][2]));
+ 	} else {
++#else
++	{ // we are not doing any transformations
++#endif
+ 		PUSH_DATAf(push, 1.0);
+ 		PUSH_DATAf(push, 0.0);
+ 		PUSH_DATAf(push, 0.0);
+@@ -725,6 +741,8 @@
+ 	if (ppict->pDrawable)
+ 		return NVC0EXAPictTexture(pNv, ppix, ppict, unit);
+ 
++NOT_IMPLEMENTED_STOP
++#if 0
+ 	switch (ppict->pSourcePict->type) {
+ 	case SourcePictTypeSolidFill:
+ 		return NVC0EXAPictSolid(pNv, ppict, unit);
+@@ -733,9 +751,12 @@
+ 	default:
+ 		break;
+ 	}
++#endif
+ 
+ 	return FALSE;
+ }
++
++#if !defined(__AROS__)
+ static Bool
+ NVC0EXACheckBlend(int op)
+ {
+@@ -743,6 +764,7 @@
+ 		NOUVEAU_FALLBACK("unsupported blend op %d\n", op);
+ 	return TRUE;
+ }
++#endif
+ 
+ static void
+ NVC0EXABlend(PixmapPtr ppix, PicturePtr ppict, int op, int component_alpha)
+@@ -787,6 +809,7 @@
+ 	}
+ }
+ 
++#if !defined(__AROS__)
+ Bool
+ NVC0EXACheckComposite(int op,
+ 		      PicturePtr pspict, PicturePtr pmpict, PicturePtr pdpict)
+@@ -813,6 +836,7 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
+ Bool
+ NVC0EXAPrepareComposite(int op,
+@@ -1065,3 +1089,45 @@
+ 				     src_h, src_x, src_y, dst, dst_off,
+ 				     dst_dom, dst_pitch, dst_h, dst_x, dst_y);
+ }
++
++/* AROS CODE */
++
++VOID HIDDNouveauNVC0SetPattern(struct CardData *carddata, LONG clr0, LONG clr1, LONG pat0, LONG pat1)
++{
++    struct HIDDNouveauBitMapData fake;
++    fake.drawable.pScreen = carddata;
++    NVC0EXASetPattern(&fake, clr0, clr1, pat0, pat1);
++}
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
++    LONG maxY, ULONG drawmode, ULONG color)
++{
++    if (NVC0EXAPrepareSolid(bmdata, drawmode, ~0, color))
++    {
++        NVC0EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
++        NVC0EXADoneSolid(bmdata);
++        return TRUE;
++    }
++
++    return FALSE;
++}
++
++/* NOTE: Assumes lock on both bitmaps is already made */
++/* NOTE: Assumes both buffers are not mapped */
++BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
++    ULONG drawmode)
++{
++    if (NVC0EXAPrepareCopy(srcdata, destdata, 0, 0, drawmode, ~0))
++    {
++        NVC0EXACopy(destdata, srcX, srcY, destX , destY, width, height);
++        NVC0EXADoneCopy(destdata);
++        return TRUE;
++    }
++
++    return FALSE;
++}
+\ No newline at end of file
+diff -ru ./xf86-video-nouveau-1.0.16/nv_include.h ./xf86-video-nouveau/nv_include.h
+--- ./xf86-video-nouveau-1.0.16/nv_include.h	2019-01-29 05:25:58.000000000 +0100
++++ ./xf86-video-nouveau/nv_include.h	2026-07-07 18:31:09.000000000 +0200
+@@ -1,74 +1,214 @@
+ #ifndef __NV_INCLUDE_H__
+ #define __NV_INCLUDE_H__
+-
+-#ifdef HAVE_CONFIG_H
+-#include "config.h"
+-#endif
++/*
++    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
++    $Id$
++*/
+ 
+ #include <string.h>
+ #include <math.h>
+-#include <errno.h>
+-#include <unistd.h>
+-#include <stdlib.h>
+-
+-/* All drivers should typically include these */
+-#include "xf86.h"
+-#include "xf86_OSproc.h"
+-#define PPC_MMIO_IS_BE
+-#include "compiler.h"
+-
+-/* Drivers that need to access the PCI config space directly need this */
+-#include "xf86Pci.h"
+-
+-#ifdef XSERVER_PLATFORM_BUS
+-#include "xf86platformBus.h"
+-#endif
+-
+-/* All drivers initialising the SW cursor need this */
+-#include "mipointer.h"
+-
+-#include "micmap.h"
+-
+-#include "xf86DDC.h"
+-
+-#include "xf86RandR12.h"
+-
+-#include "nv_const.h"
++#include <aros/debug.h>
+ 
+-#include "dixstruct.h"
+-#include "scrnintstr.h"
++#include "nouveau_intern.h"
+ 
+-#include "fb.h"
++/* Some overriding defines for AROS */
++#define Bool                        BOOL
++#define ScrnInfoPtr                 struct CardData *
++#define ScreenPtr                   struct CardData *
++#define NVPTR(x)                    (x)
++#define xf86ScreenToScrn(x)         (x)
++#define NVPtr                       struct CardData *
++#define PixmapPtr                   struct HIDDNouveauBitMapData *
++#define xf86DrvMsg(a, b, fmt, ...)  bug(fmt, ##__VA_ARGS__)
++#define ErrorF(msg, ...)            bug(msg, ##__VA_ARGS__)
++#define PictFormatShort             LONG
++#define PictTransformPtr            APTR
++#define Pixel                       HIDDT_Pixel
++#define CARD32                      LONG
++#define BoxPtr                      APTR
+ 
+-#include "xf86cmap.h"
+-#include "shadowfb.h"
+-
+-#include "xf86xv.h"
+-#include <X11/extensions/Xv.h>
+-
+-#include "xf86Cursor.h"
+-#include "xf86DDC.h"
+-
+-#include "region.h"
+-
+-#include <X11/extensions/randr.h>
+-
+-#ifdef HAVE_XEXTPROTO_71
+-#include <X11/extensions/dpmsconst.h>
+-#else
+-#define DPMS_SERVER
+-#include <X11/extensions/dpms.h>
+-#endif
+-
+-#define NV_DMA_DEBUG 0
++#include "nouveau_local.h"
+ 
+-#include "compat-api.h"
+ 
+-#include "nouveau_local.h"
++#define nouveau_pixmap_bo(x)    (x->bo)
++#define exaGetPixmapPitch(x)    (x->pitch)
+ 
+-#include "nv_type.h"
+-#include "nv_proto.h"
+-#include "nv_dma.h"
+-#include "sarea.h"
++#define PictOpSaturate          14
++#define GXcopy                  0x03
++#define EXA_PM_IS_SOLID(a, b)   1
++
++void NVXVComputeBicubicFilter(struct nouveau_bo *, unsigned, unsigned);
++
++Bool NV04EXAUploadIFC(ScrnInfoPtr, const char *src, int src_pitch,
++             PixmapPtr pdPix, int x, int y, int w, int h, int cpp);
++Bool NV04EXARectM2MF(NVPtr pNv, int, int, int,
++             struct nouveau_bo *, uint32_t, int, int, int, int, int,
++             struct nouveau_bo *, uint32_t, int, int, int, int, int);
++
++Bool NVAccelInitNV40TCL(ScrnInfoPtr pScrn);
++Bool NVAccelInitNV30TCL(ScrnInfoPtr pScrn);
++Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
++
++Bool NVAccelInitM2MF_NV50(ScrnInfoPtr pScrn);
++Bool NVAccelInit2D_NV50(ScrnInfoPtr pScrn);
++Bool NVAccelInitNV50TCL(ScrnInfoPtr pScrn);
++Bool NV50EXAUploadSIFC(const char *src, int src_pitch,
++             PixmapPtr pdPix, int x, int y, int w, int h, int cpp);
++Bool NV50EXARectM2MF(NVPtr pNv, int, int, int,
++             struct nouveau_bo *, uint32_t, int, int, int, int, int,
++             struct nouveau_bo *, uint32_t, int, int, int, int, int);
++
++Bool NVAccelInitM2MF_NVC0(ScrnInfoPtr pScrn);
++Bool NVAccelInit2D_NVC0(ScrnInfoPtr pScrn);
++Bool NVAccelInit3D_NVC0(ScrnInfoPtr pScrn);
++Bool NVC0EXAUploadSIFC(const char *src, int src_pitch,
++             PixmapPtr pdPix, int x, int y, int w, int h, int cpp);
++Bool NVC0EXARectM2MF(NVPtr pNv, int, int, int,
++             struct nouveau_bo *, uint32_t, int, int, int, int, int,
++             struct nouveau_bo *, uint32_t, int, int, int, int, int);
++
++Bool NVAccelInitP2MF_NVE0(ScrnInfoPtr pScrn);
++Bool NVAccelInitCOPY_NVE0(ScrnInfoPtr pScrn);
++Bool NVE0EXARectCopy(NVPtr pNv, int, int, int,
++             struct nouveau_bo *, uint32_t, int, int, int, int, int,
++             struct nouveau_bo *, uint32_t, int, int, int, int, int);
++
++Bool nv50_style_tiled_pixmap(PixmapPtr ppix);
++
++
++#define NOUVEAU_CREATE_PIXMAP_ZETA      0x10000000
++#define NOUVEAU_CREATE_PIXMAP_TILED     0x20000000
++#define NOUVEAU_CREATE_PIXMAP_SCANOUT   0x40000000
++
++struct Picture
++{
++    LONG format;
++    BOOL componentAlpha;
++    LONG filter;
++    BOOL repeat;
++    LONG repeatType;
++
++    struct
++    {
++        ULONG width;
++        ULONG height;
++    } *pDrawable, drawableAREA;
++};
++
++typedef struct Picture * PicturePtr;
++
++#define PictFilterNearest   1
++#define PictFilterBilinear  2
++
++#define RepeatNone          0 /* This must be zero/FALSE, see nv10_exa for usage against ppict->repeat which is BOOL */
++#define RepeatNormal        1
++#define RepeatReflect       2
++#define RepeatPad           3
++
++#define PICT_UNKNOWN        0
++#define PICT_a8r8g8b8       1
++#define PICT_x8r8g8b8       2
++#define PICT_a8b8g8r8       3
++#define PICT_x8b8g8r8       4
++#define PICT_b8g8r8a8       5
++#define PICT_b8g8r8x8       6
++#define PICT_a2b10g10r10    7
++#define PICT_x2b10g10r10    8
++#define PICT_a2r10g10b10    9
++#define PICT_x2r10g10b10    10
++#define PICT_a1r5g5b5       11
++#define PICT_x1r5g5b5       12
++#define PICT_a1b5g5r5       13
++#define PICT_x1b5g5r5       14
++#define PICT_x4r4g4b4       15
++#define PICT_a4r4g4b4       16
++#define PICT_x4b4g4r4       17
++#define PICT_a4b4g4r4       18
++#define PICT_r5g6b5         19
++#define PICT_b5g6r5         20
++#define PICT_a8             21
++
++static inline BOOL PICT_FORMAT_A(int format)
++{
++    switch(format)
++    {
++    case(PICT_a8r8g8b8):
++    case(PICT_a8b8g8r8):
++    case(PICT_b8g8r8a8):
++    case(PICT_a2b10g10r10):
++    case(PICT_a2r10g10b10):
++    case(PICT_a1r5g5b5):
++    case(PICT_a1b5g5r5):
++    case(PICT_a4r4g4b4):
++    case(PICT_a4b4g4r4):
++    case(PICT_a8):
++        return TRUE;
++    }
++
++    return FALSE;
++}
++
++static inline BOOL PICT_FORMAT_RGB(int format)
++{
++    switch(format)
++    {
++    case(PICT_a8r8g8b8):
++    case(PICT_x8r8g8b8):
++    case(PICT_x8b8g8r8):
++    case(PICT_a8b8g8r8):
++    case(PICT_b8g8r8a8):
++    case(PICT_b8g8r8x8):
++    case(PICT_a2b10g10r10):
++    case(PICT_x2b10g10r10):
++    case(PICT_a2r10g10b10):
++    case(PICT_x2r10g10b10):
++    case(PICT_a1r5g5b5):
++    case(PICT_x1r5g5b5):
++    case(PICT_a1b5g5r5):
++    case(PICT_x1b5g5r5):
++    case(PICT_x4r4g4b4):
++    case(PICT_a4r4g4b4):
++    case(PICT_x4b4g4r4):
++    case(PICT_a4b4g4r4):
++    case(PICT_r5g6b5):
++    case(PICT_b5g6r5):
++        return TRUE;
++    }
++
++    return FALSE;
++}
++
++
++static inline VOID HIDDNouveauFillPictureFromBitMapData(struct Picture * pPict, 
++    struct HIDDNouveauBitMapData * bmdata)
++{
++    /* pPict->format */
++    if (bmdata->drawable.depth == 32)
++        pPict->format = PICT_a8r8g8b8;
++    else if (bmdata->drawable.depth == 24)
++        pPict->format = PICT_x8r8g8b8;
++    else if (bmdata->drawable.depth == 16)
++        pPict->format = PICT_r5g6b5;
++    else
++        pPict->format = PICT_UNKNOWN;
++
++    /* pPict->componentAlpha - keep this always as FALSE, used when mask
++       bitmap would be present (which is not the case in AROS */
++    pPict->componentAlpha = FALSE;
++    
++    /* pPict->filter - keep this always as PictFilterNearest, unless you want
++       bi-linear (probably slower and might give weird effects */
++    pPict->filter = PictFilterNearest;
++    
++    /* pPict->repeat - keep this always as FALSE */
++    pPict->repeat = FALSE;
++    /* pPict->repeatType - value does not matter as long as repeat is FALSE */
++    pPict->repeatType = RepeatNone;
++
++    /* pPict->pDrawable - copy width and height to minize source code changes */
++    pPict->pDrawable = &pPict->drawableAREA;
++    pPict->pDrawable->width = bmdata->drawable.width;
++    pPict->pDrawable->height = bmdata->drawable.height;
++}
+ 
+ #endif /* __NV_INCLUDE_H__ */

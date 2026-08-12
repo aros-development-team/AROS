@@ -139,8 +139,8 @@ static int PCIMock_InitClass(LIBBASETYPEPTR LIBBASE)
         LIBBASE->sd.mockHardwareBus0[i] = NULL;
 
     ADD_DEVICE((&LIBBASE->sd), 0, CLID_Hidd_PCIMockHardware_SIS661FX);
-    ADD_DEVICE((&LIBBASE->sd), 2, CLID_Hidd_PCIMockHardware_NV44A);
-//    ADD_DEVICE((&LIBBASE->sd), 3, CLID_Hidd_PCIMockHardware_NVG86);
+    // ADD_DEVICE((&LIBBASE->sd), 2, CLID_Hidd_PCIMockHardware_NV44A);
+   ADD_DEVICE((&LIBBASE->sd), 3, CLID_Hidd_PCIMockHardware_NVG86);
 //    ADD_DEVICE((&LIBBASE->sd), 4, CLID_Hidd_PCIMockHardware_NVGTS250);
 //    ADD_DEVICE((&LIBBASE->sd), 5, CLID_Hidd_PCIMockHardware_NVGF100);
 

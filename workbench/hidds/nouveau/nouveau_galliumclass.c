@@ -12,27 +12,13 @@
 
 #include "util/u_memory.h"
 #include "util/u_inlines.h"
+#include "nouveau_screen.h"
+#include "nouveau_winsys.h"
 #include "nv50/nv50_resource.h"
-#include "nvfx/nvfx_resource.h"
-#include "nvc0/nvc0_resource.h"
+#include "nv30/nv30_resource.h"
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
-
-static VOID
-HIDDNouveauFlushFrontBuffer( struct pipe_screen *screen,
-                              struct pipe_resource *resource,
-                              unsigned level, unsigned layer,
-                              void *winsys_drawable_handle  )
-{
-    /* No Op */
-}
-
-static VOID
-HIDDNouveauDestroyWinSys(struct pipe_winsys *ws)
-{
-    /* No Op */
-}
 
 /* Wraps the nouveau_bo from resource into 2D bitmap class data */
 static BOOL
@@ -43,20 +29,20 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
     ULONG pitch = 0; ULONG depth = 0;
 
     /* Get buffer object and pitch */
-    switch(carddata->architecture)
+    switch(carddata->Architecture)
     {
         case NV_ARCH_30:
         case NV_ARCH_40:
-            bo = nvfx_resource(resource)->bo;
-            pitch = ((struct nvfx_miptree *)resource)->linear_pitch;
+            bo = nv30_miptree(resource)->base.bo;
+            pitch = nv30_miptree(resource)->level[0].pitch;
             break;
-        case NV_ARCH_50:
+        case NV_TESLA:
+        case NV_FERMI:
+        case NV_KEPLER:
+        case NV_MAXWELL:
+        case NV_PASCAL:
             bo = nv50_miptree(resource)->base.bo;
             pitch = nv50_miptree(resource)->level[0].pitch;
-            break;
-        case NV_ARCH_C0:
-            bo = nvc0_miptree(resource)->base.bo;
-            pitch = nvc0_miptree(resource)->level[0].pitch;
             break;
     }
     
@@ -89,10 +75,11 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
     
     /* Set all fields */
     bmdata->bo = bo;
-    bmdata->width = resource->width0;
-    bmdata->height = resource->height0;
-    bmdata->depth = depth;
-    if (bmdata->depth == 16)
+    bmdata->drawable.width = resource->width0;
+    bmdata->drawable.height = resource->height0;
+    bmdata->drawable.depth = bmdata->drawable.bitsPerPixel = depth;
+    bmdata->drawable.pScreen = carddata;
+    if (bmdata->drawable.depth == 16)
         bmdata->bytesperpixel = 2;
     else
         bmdata->bytesperpixel = 4;
@@ -126,13 +113,6 @@ OOP_Object *METHOD(NouveauGallium, Root, New)
         }
     }
 
-    if (o)
-    {
-        struct HIDDGalliumNouveauData *data = OOP_INST_DATA(cl, o);
-        data->nouveau_winsys.destroy = HIDDNouveauDestroyWinSys;
-        data->nouveau_obj = o;
-    }
-
     return o;
 }
 
@@ -159,24 +139,30 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
 {
     struct HIDDGalliumNouveauData *data = OOP_INST_DATA(cl, o);
     struct nouveau_device *dev = SD(cl)->carddata.dev;
-    struct pipe_screen *(*init)(struct pipe_winsys *,
-                    struct nouveau_device *);
-    struct pipe_screen *screen = NULL;
+    struct nouveau_screen *(*init)(struct nouveau_device *);
+    struct nouveau_screen *screen = NULL;
 
-    switch (dev->chipset & 0xf0) 
+    switch (dev->chipset & 0xff0)
     {
-    case 0x30:
-    case 0x40:
-    case 0x60:
-        init = nvfx_screen_create;
+    case 0x030:
+    case 0x040:
+    case 0x060:
+        init = nv30_screen_create;
         break;
-    case 0x50:
-    case 0x80:
-    case 0x90:
-    case 0xa0:
+    case 0x050:
+    case 0x080:
+    case 0x090:
+    case 0x0a0:
         init = nv50_screen_create;
         break;
-    case 0xc0:
+    case 0x0c0:
+    case 0x0d0:
+    case 0x0e0:
+    case 0x0f0:
+    case 0x100:
+    case 0x110:
+    case 0x120:
+    case 0x130:
         init = nvc0_screen_create;
         break;
     default:
@@ -187,13 +173,11 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
 
     LOCK_ENGINE
 
-    screen = init(&data->nouveau_winsys, dev);
+    screen = init(dev);
     if (!screen) {
         UNLOCK_ENGINE
         return NULL;
     }
-
-    screen->flush_frontbuffer = HIDDNouveauFlushFrontBuffer;
 
     UNLOCK_ENGINE
 
@@ -225,11 +209,11 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
     mapping, the blitting is jittering with high frame frames. Probably some
     flush is missing somewhere and doing a mapping executes this missing flush 
     */
-    MAP_BUFFER_BM(dstdata)
-    /* XXX HACK XXX */
-    UNMAP_BUFFER_BM(dstdata)
+    // MAP_BUFFER_BM(dstdata)
+    // /* XXX HACK XXX */
+    // UNMAP_BUFFER_BM(dstdata)
 
-    switch(carddata->architecture)
+    switch(carddata->Architecture)
     {
     case NV_ARCH_30:
     case NV_ARCH_40:
@@ -237,20 +221,25 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
             msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
         break;
-    case NV_ARCH_50:
+    case NV_TESLA:
         HIDDNouveauNV50CopySameFormat(carddata, &srcdata, dstdata, 
             msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
-        break;    
-    case NV_ARCH_C0:
+        break;
+    case NV_FERMI:
+    case NV_KEPLER:
+    case NV_MAXWELL:
+    case NV_PASCAL:
         HIDDNouveauNVC0CopySameFormat(carddata, &srcdata, dstdata, 
             msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
+        break;
     default:
         /* TODO: Report error */
         break;
     }
 
+nouveau_bo_wait(dstdata->bo, NOUVEAU_BO_RD, carddata->client);
 
     UNLOCK_BITMAP_BM(dstdata)
 

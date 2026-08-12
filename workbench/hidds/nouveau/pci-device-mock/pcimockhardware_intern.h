@@ -36,7 +36,7 @@ struct HIDDPCIMockHardwareData
 #define ALLOC_ASR(hwdata, n, size)                                                  \
     {                                                                               \
         hwdata->Regions[n].Size = size;                                             \
-        hwdata->Regions[n].Address = (IPTR)AllocVec(size, MEMF_ANY | MEMF_CLEAR);   \
+        hwdata->Regions[n].Address = (IPTR)AllocVec(size, MEMF_31BIT | MEMF_CLEAR); \
     }                                                                               \
 
 #define ALLOC_ASR_NULL(hwdata, n)                                               \

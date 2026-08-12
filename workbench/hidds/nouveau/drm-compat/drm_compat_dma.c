@@ -1,0 +1,429 @@
+/*
+    Copyright 2026, The AROS Development Team. All rights reserved.
+*/
+
+#include <drm-compat/drm_compat_funcs.h>
+#include <drm-compat/drm_compat_dma.h>
+#include <drm-compat/drm_compat_mem.h>
+#include <linux/bitops.h>
+
+static void dma_fence_free_kref(struct kref *kref)
+{
+    struct dma_fence *fence = container_of(kref, struct dma_fence, refcount);
+    if (fence->ops && fence->ops->release)
+        fence->ops->release(fence);
+}
+
+struct dma_fence *dma_fence_get(struct dma_fence *fence)
+{
+    if (fence)
+        kref_get(&fence->refcount);
+    return fence;
+}
+
+void dma_fence_init(struct dma_fence *fence, const struct dma_fence_ops *ops,
+                    spinlock_t *lock, u64 context, u64 seqno)
+{
+    kref_init(&fence->refcount);
+    fence->ops = ops;
+    fence->lock = lock;
+    fence->context = context;
+    fence->seqno = seqno;
+    fence->flags = 0;
+    INIT_LIST_HEAD(&fence->cb_list);
+}
+
+void dma_fence_put(struct dma_fence *fence)
+{
+    if (fence)
+        kref_put(&fence->refcount, dma_fence_free_kref);
+}
+
+int dma_fence_signal_locked(struct dma_fence *fence)
+{
+    struct dma_fence_cb *cb, *tmp;
+
+    if (test_and_set_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
+        return -EINVAL;
+
+    list_for_each_entry_safe(cb, tmp, &fence->cb_list, node)
+    {
+        list_del(&cb->node);
+        cb->func(fence, cb);
+    }
+
+    return 0;
+}
+
+int dma_fence_add_callback(struct dma_fence *fence, struct dma_fence_cb *cb,
+                           dma_fence_func_t func)
+{
+    unsigned long flags = 0;
+    int ret = 0;
+
+    if (!fence || !cb || !func)
+        return -EINVAL;
+
+    spin_lock_irqsave(fence->lock, flags);
+    if (dma_fence_is_signaled(fence))
+    {
+        ret = -ENOENT;
+    }
+    else
+    {
+        cb->func = func;
+        list_add_tail(&cb->node, &fence->cb_list);
+        dma_fence_enable_sw_signaling(fence);
+    }
+    spin_unlock_irqrestore(fence->lock, flags);
+
+    return ret;
+}
+
+bool dma_fence_is_signaled_locked(struct dma_fence *fence)
+{
+    if (test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
+        return TRUE;
+
+    if (fence->ops && fence->ops->signaled && fence->ops->signaled(fence))
+    {
+        dma_fence_signal_locked(fence);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+bool dma_fence_is_signaled(struct dma_fence *fence)
+{
+    return dma_fence_is_signaled_locked(fence);
+}
+
+void dma_fence_free(struct dma_fence *fence)
+{
+    kfree(fence);
+}
+
+void dma_fence_enable_sw_signaling(struct dma_fence *fence)
+{
+    if (fence->ops && fence->ops->enable_signaling &&
+        !dma_fence_is_signaled(fence))
+        fence->ops->enable_signaling(fence);
+}
+
+signed long dma_fence_wait(struct dma_fence *fence, bool intr)
+{
+    signed long ret;
+
+    ret = dma_fence_wait_timeout(fence, intr, LONG_MAX);
+    if (ret > 0)
+        return 0;
+    return ret;
+}
+
+long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long timeout)
+{
+    if (fence->ops && fence->ops->wait)
+        return fence->ops->wait(fence, intr, timeout);
+
+    dma_fence_enable_sw_signaling(fence);
+
+    if (dma_fence_is_signaled(fence))
+        return timeout ? timeout : 1;
+
+    unsigned int usecs = jiffies_to_usecs(timeout);
+    unsigned int pstep = 5; /* progressive sleep step in us */
+
+    while (usecs > 0)
+    {
+        unsigned int sleep = usecs > pstep ? pstep : usecs;
+        udelay(sleep);
+        usecs -= sleep;
+
+        if (dma_fence_is_signaled(fence))
+            return timeout;
+
+        if (pstep == 5) pstep = 20;
+        else if (pstep == 20) pstep = 40;
+
+#if 0
+        if (intr && (SetSignal(0, 0) & SIGBREAKF_CTRL_C))
+            return -ERESTARTSYS;
+#endif
+    }
+
+    return 0;
+}
+
+u64 dma_fence_context_alloc(unsigned int num)
+{
+    static u64 context_counter = 0;
+    u64 ret;
+
+    ret = context_counter;
+    context_counter += num;
+    return ret;
+}
+
+/* DMA RESV */
+
+struct dma_fence *dma_resv_get_excl(struct dma_resv *resv)
+{
+    return resv ? resv->fence_excl : NULL;
+}
+
+struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv)
+{
+    return dma_fence_get(dma_resv_get_excl(resv));
+}
+
+void dma_resv_add_excl_fence(struct dma_resv *resv, struct dma_fence *fence)
+{
+    dma_fence_get(fence);
+    dma_fence_put(resv->fence_excl);
+    resv->fence_excl = fence;
+}
+
+bool dma_resv_test_signaled_rcu(struct dma_resv *resv, bool test_all)
+{
+    if (!resv->fence_excl)
+        return 1;
+    return dma_fence_is_signaled(resv->fence_excl);
+}
+
+static bool dma_resv_all_fences_signaled(struct dma_resv *resv, bool wait_all)
+{
+    if (resv->fence_excl && !dma_fence_is_signaled(resv->fence_excl))
+        return 0;
+    if (wait_all && resv->fences_shared)
+    {
+        int i;
+        for (i = 0; i < resv->fences_shared->shared_count; i++)
+        {
+            struct dma_fence *fence = resv->fences_shared->shared[i];
+            if (fence && !dma_fence_is_signaled(fence))
+                return 0;
+        }
+    }
+    return 1;
+}
+
+long dma_resv_wait_timeout_rcu(struct dma_resv *resv, bool wait_all,
+                               bool intr, unsigned long timeout)
+{
+    int i;
+
+    if (resv->fence_excl)
+        dma_fence_enable_sw_signaling(resv->fence_excl);
+    if (wait_all && resv->fences_shared)
+    {
+        for (i = 0; i < resv->fences_shared->shared_count; i++)
+        {
+            struct dma_fence *fence = resv->fences_shared->shared[i];
+            if (fence)
+                dma_fence_enable_sw_signaling(fence);
+        }
+    }
+
+    if (dma_resv_all_fences_signaled(resv, wait_all))
+        return timeout ? timeout : 1;
+
+    unsigned int usecs = jiffies_to_usecs(timeout);
+    unsigned int pstep = 5; /* progressive sleep step in us */
+
+    while (usecs > 0)
+    {
+        unsigned long sleep = usecs > pstep ? pstep : usecs;
+        udelay(sleep);
+        usecs -= sleep;
+
+        if (dma_resv_all_fences_signaled(resv, wait_all))
+            return timeout;
+
+        if (pstep == 5) pstep = 20;
+        else if (pstep == 20) pstep = 40;
+
+    }
+
+    return 0;
+}
+
+struct dma_resv_list *dma_resv_get_list(struct dma_resv *resv)
+{
+    return resv ? resv->fences_shared : NULL;
+}
+
+void dma_resv_init(struct dma_resv *resv)
+{
+    resv->fence_excl = NULL;
+    resv->fences_shared = NULL;
+    resv->locked = 0;
+    resv->locking_ctx = NULL;
+}
+
+void dma_resv_fini(struct dma_resv *resv)
+{
+    dma_fence_put(resv->fence_excl);
+    resv->fence_excl = NULL;
+
+    if (resv->fences_shared)
+    {
+        int i;
+        for (i = 0; i < resv->fences_shared->shared_count; i++)
+            dma_fence_put(resv->fences_shared->shared[i]);
+        kfree(resv->fences_shared);
+    }
+    resv->fences_shared = NULL;
+    resv->locked = 0;
+    resv->locking_ctx = NULL;
+}
+
+int dma_resv_trylock(struct dma_resv *resv)
+{
+    if (__sync_val_compare_and_swap(&resv->locked, 0, 1) == 0)
+    {
+        resv->locking_ctx = NULL;
+        return 1;
+    }
+    return 0;
+}
+
+int dma_resv_lock(struct dma_resv *resv, struct ww_acquire_ctx *ctx)
+{
+    while (__sync_val_compare_and_swap(&resv->locked, 0, 1) != 0)
+    {
+        udelay(1);
+    }
+    resv->locking_ctx = ctx;
+    return 0;
+}
+
+int dma_resv_lock_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx)
+{
+    while (__sync_val_compare_and_swap(&resv->locked, 0, 1) != 0)
+    {
+#if 0
+        if (SetSignal(0, 0) & SIGBREAKF_CTRL_C)
+            return -EINTR;
+#endif
+        udelay(1);
+    }
+    resv->locking_ctx = ctx;
+    return 0;
+}
+
+void dma_resv_unlock(struct dma_resv *resv)
+{
+    resv->locking_ctx = NULL;
+    resv->locked = 0;
+}
+
+struct ww_acquire_ctx *dma_resv_locking_ctx(struct dma_resv *resv)
+{
+    return resv->locking_ctx;
+}
+
+bool dma_resv_held(struct dma_resv *resv)
+{
+    return resv->locked != 0;
+}
+
+void dma_resv_lock_slow(struct dma_resv *resv, struct ww_acquire_ctx *ctx)
+{
+    dma_resv_lock(resv, ctx);
+}
+
+int dma_resv_lock_slow_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx)
+{
+    return dma_resv_lock_interruptible(resv, ctx);
+}
+
+int dma_resv_reserve_shared(struct dma_resv *resv, unsigned int num)
+{
+    struct dma_resv_list *old_list, *new_list;
+    unsigned int i, j, max;
+
+    if (!resv)
+        return 0;
+
+    WARN_ON(!dma_resv_held(resv));
+
+    old_list = resv->fences_shared;
+    if (old_list)
+    {
+        if (old_list->shared_max - old_list->shared_count >= num)
+            return 0; /* There is enough space */
+        max = old_list->shared_count + num;
+        if (max < old_list->shared_max * 2)
+            max = old_list->shared_max * 2; /* Double the size */
+    }
+    else
+        max = num;
+
+    new_list = kmalloc(sizeof(*new_list) + max * sizeof(struct dma_fence *), GFP_KERNEL);
+    if (!new_list)
+        return -ENOMEM;
+
+    j = 0;
+    if (old_list)
+    {
+        for (i = 0; i < old_list->shared_count; i++)
+        {
+            struct dma_fence *fence = old_list->shared[i];
+            if (fence)
+                new_list->shared[j++] = fence;
+        }
+        kfree(old_list);
+    }
+
+    new_list->shared_count = j;
+    new_list->shared_max = max;
+    for (i = j; i < max; i++)
+        new_list->shared[i] = NULL;
+
+    resv->fences_shared = new_list;
+    return 0;
+}
+
+void dma_resv_add_shared_fence(struct dma_resv *resv, struct dma_fence *fence)
+{
+    struct dma_resv_list *list;
+    unsigned int i, count;
+
+    if (!resv || !fence)
+        return;
+
+    WARN_ON(!dma_resv_held(resv));
+
+    list = resv->fences_shared;
+    if (!list || list->shared_count >= list->shared_max)
+    {
+        bug("BUG: dma_resv_add_shared called without space in shared fences array");
+        return;
+    }
+
+    count = list->shared_count;
+    for (i = 0; i < count; i++)
+    {
+        if (!list->shared[i])
+            break;
+
+        /* Re-use slot from a signaled fence, thus removing it from list */
+        if (dma_fence_is_signaled(list->shared[i]))
+        {
+// FIXME: casues freeze during gfxbench after LUT_8 WPA. Possibly semaphore deadlock? (memory is allocated
+// from semapahore synchronized pool)
+#if 0
+            dma_fence_put(list->shared[i]);
+#endif
+            list->shared[i] = NULL;
+            break;
+        }
+    }
+
+    dma_fence_get(fence);
+
+    list->shared[i] = fence;
+    if (i == count)
+        list->shared_count++;
+}

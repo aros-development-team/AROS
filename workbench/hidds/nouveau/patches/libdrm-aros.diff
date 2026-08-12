@@ -1,0 +1,210 @@
+diff -ru ./libdrm-2.4.101/nouveau/abi16.c ./libdrm/nouveau/abi16.c
+--- ./libdrm-2.4.101/nouveau/abi16.c	2020-04-03 13:39:47.000000000 +0200
++++ ./libdrm/nouveau/abi16.c	2026-07-07 18:31:08.000000000 +0200
+@@ -31,6 +31,49 @@
+ 
+ #include "nvif/class.h"
+ 
++#if defined(__AROS__)
++struct drm_nouveau_channel_alloc {
++	uint32_t     fb_ctxdma_handle;
++	uint32_t     tt_ctxdma_handle;
++
++	int          channel;
++	uint32_t     pushbuf_domains;
++
++	/* Notifier memory */
++	uint32_t     notifier_handle;
++
++	/* DRM-enforced subchannel assignments */
++	struct {
++		uint32_t handle;
++		uint32_t grclass;
++	} subchan[8];
++	uint32_t nr_subchan;
++};
++
++struct drm_nouveau_channel_free {
++	int channel;
++};
++
++struct drm_nouveau_grobj_alloc {
++	int      channel;
++	uint32_t handle;
++	int      class;
++};
++
++struct drm_nouveau_notifierobj_alloc {
++	uint32_t channel;
++	uint32_t handle;
++	uint32_t size;
++	uint32_t offset;
++};
++
++struct drm_nouveau_gpuobj_free {
++	int      channel;
++	uint32_t handle;
++};
++
++#endif
++
+ static int
+ abi16_chan_nv04(struct nouveau_object *obj)
+ {
+diff -ru ./libdrm-2.4.101/nouveau/nouveau.c ./libdrm/nouveau/nouveau.c
+--- ./libdrm-2.4.101/nouveau/nouveau.c	2020-04-03 13:39:47.000000000 +0200
++++ ./libdrm/nouveau/nouveau.c	2026-07-22 17:38:58.000000000 +0200
+@@ -32,11 +32,19 @@
+ #include <errno.h>
+ #include <fcntl.h>
+ 
++#if !defined(__AROS__)
+ #include <xf86drm.h>
+ #include <xf86atomic.h>
+ #include "libdrm_macros.h"
+ #include "libdrm_lists.h"
+ #include "nouveau_drm.h"
++#else
++#include <libdrm/arosdrm.h>
++#include "libdrm_lists.h"
++#include <uapi/drm/nouveau_drm.h>
++#include <linux/bitops.h>
++#include <drm-compat/drm_compat_funcs.h>
++#endif
+ 
+ #include "nouveau.h"
+ #include "private.h"
+@@ -47,7 +55,7 @@
+ #include "nvif/unpack.h"
+ 
+ #ifdef DEBUG
+-drm_private uint32_t nouveau_debug = 0;
++drm_private uint32_t libdrm_nouveau_debug = 0;
+ 
+ static void
+ debug_init(char *args)
+@@ -55,7 +63,7 @@
+ 	if (args) {
+ 		int n = strtol(args, NULL, 0);
+ 		if (n >= 0)
+-			nouveau_debug = n;
++			libdrm_nouveau_debug = n;
+ 	}
+ }
+ #endif
+@@ -613,8 +621,13 @@
+ 	} else {
+ 		drmIoctl(drm->fd, DRM_IOCTL_GEM_CLOSE, &req);
+ 	}
++#if !defined(__AROS__)
+ 	if (bo->map)
+ 		drm_munmap(bo->map, bo->size);
++#else
++	if (bo->map)
++		drmMUnmap(drm->fd, bo->handle);
++#endif
+ 	free(nvbo);
+ }
+ 
+@@ -786,6 +799,7 @@
+ 	*pref = bo;
+ }
+ 
++#if !defined(__AROS__)
+ drm_public int
+ nouveau_bo_prime_handle_ref(struct nouveau_device *dev, int prime_fd,
+ 			    struct nouveau_bo **bo)
+@@ -820,6 +834,7 @@
+ 	nouveau_bo_make_global(nvbo);
+ 	return 0;
+ }
++#endif
+ 
+ drm_public int
+ nouveau_bo_wait(struct nouveau_bo *bo, uint32_t access,
+@@ -856,6 +871,16 @@
+ 	return ret;
+ }
+ 
++
++#if defined(__AROS__)
++static VOID unmapped_callback(APTR data)
++{
++    struct nouveau_bo *bo = (struct nouveau_bo *)data;
++    /* Trigger remapping with next access */
++    bo->map = NULL;
++}
++#endif
++
+ drm_public int
+ nouveau_bo_map(struct nouveau_bo *bo, uint32_t access,
+ 	       struct nouveau_client *client)
+@@ -863,12 +888,18 @@
+ 	struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
+ 	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
+ 	if (bo->map == NULL) {
++#if !defined(__AROS__)
+ 		bo->map = drm_mmap(0, bo->size, PROT_READ | PROT_WRITE,
+ 			       MAP_SHARED, drm->fd, nvbo->map_handle);
+ 		if (bo->map == MAP_FAILED) {
+ 			bo->map = NULL;
+ 			return -errno;
+ 		}
++#else
++		bo->map = drmMMap(drm->fd, bo->handle, unmapped_callback, bo);
++		if (bo->map == NULL)
++			return -EINVAL;
++#endif
+ 	}
+ 	return nouveau_bo_wait(bo, access, client);
+ }
+diff -ru ./libdrm-2.4.101/nouveau/private.h ./libdrm/nouveau/private.h
+--- ./libdrm-2.4.101/nouveau/private.h	2020-04-03 13:39:47.000000000 +0200
++++ ./libdrm/nouveau/private.h	2026-07-22 17:39:28.000000000 +0200
+@@ -1,17 +1,22 @@
+ #ifndef __NOUVEAU_LIBDRM_PRIVATE_H__
+ #define __NOUVEAU_LIBDRM_PRIVATE_H__
+ 
++#if !defined(__AROS__)
+ #include <libdrm_macros.h>
+ #include <xf86drm.h>
+ #include <xf86atomic.h>
+-#include <pthread.h>
+ #include "nouveau_drm.h"
++#else
++#include <libdrm/arosdrm.h>
++#include <pthread.h>
++#include <uapi/drm/nouveau_drm.h>
++#endif
+ 
+ #include "nouveau.h"
+ 
+ #ifdef DEBUG
+-drm_private uint32_t nouveau_debug;
+-#define dbg_on(lvl) (nouveau_debug & (1 << lvl))
++drm_private extern uint32_t libdrm_nouveau_debug;
++#define dbg_on(lvl) (libdrm_nouveau_debug & (1 << lvl))
+ #define dbg(lvl, fmt, args...) do {                                            \
+ 	if (dbg_on((lvl)))                                                     \
+ 		fprintf(stderr, "nouveau: "fmt, ##args);                       \
+diff -ru ./libdrm-2.4.101/nouveau/pushbuf.c ./libdrm/nouveau/pushbuf.c
+--- ./libdrm-2.4.101/nouveau/pushbuf.c	2020-04-03 13:39:47.000000000 +0200
++++ ./libdrm/nouveau/pushbuf.c	2026-07-07 18:31:08.000000000 +0200
+@@ -30,10 +30,17 @@
+ #include <assert.h>
+ #include <errno.h>
+ 
++#if !defined(__AROS__)
+ #include <xf86drm.h>
+ #include <xf86atomic.h>
+ #include "libdrm_lists.h"
+ #include "nouveau_drm.h"
++#else
++#include <libdrm/arosdrm.h>
++#include "libdrm_lists.h"
++#include <uapi/drm/nouveau_drm.h>
++#include <drm-compat/drm_compat_funcs.h>
++#endif
+ 
+ #include "nouveau.h"
+ #include "private.h"

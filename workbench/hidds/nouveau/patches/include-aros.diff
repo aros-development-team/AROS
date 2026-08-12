@@ -1,0 +1,2367 @@
+diff -ur ./include-5.4.302/drm/drm_atomic.h ./include/drm/drm_atomic.h
+--- ./include-5.4.302/drm/drm_atomic.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_atomic.h	2026-07-22 19:07:12.000000000 +0200
+@@ -84,6 +84,7 @@
+ 	 */
+ 	struct kref ref;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @flip_done:
+ 	 *
+@@ -120,6 +121,7 @@
+ 	 * of the buffer cleanup too much.
+ 	 */
+ 	struct completion cleanup_done;
++#endif
+ 
+ 	/**
+ 	 * @commit_entry:
+@@ -247,10 +249,12 @@
+ 	 */
+ 	struct list_head head;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @lock: Modeset lock to protect the state object.
+ 	 */
+ 	struct drm_modeset_lock lock;
++#endif
+ 
+ 	/**
+ 	 * @state: Current atomic state for this driver private object.
+diff -ur ./include-5.4.302/drm/drm_atomic_state_helper.h ./include/drm/drm_atomic_state_helper.h
+--- ./include-5.4.302/drm/drm_atomic_state_helper.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_atomic_state_helper.h	2026-07-22 17:58:29.000000000 +0200
+@@ -24,7 +24,9 @@
+  * Daniel Vetter <daniel.vetter@ffwll.ch>
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
++#endif
+ 
+ struct drm_crtc;
+ struct drm_crtc_state;
+diff -ur ./include-5.4.302/drm/drm_blend.h ./include/drm/drm_blend.h
+--- ./include-5.4.302/drm/drm_blend.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_blend.h	2026-07-22 17:58:29.000000000 +0200
+@@ -24,8 +24,10 @@
+ #define __DRM_BLEND_H__
+ 
+ #include <linux/list.h>
++#if !defined(__AROS__)
+ #include <linux/ctype.h>
+ #include <drm/drm_mode.h>
++#endif
+ 
+ #define DRM_MODE_BLEND_PREMULTI		0
+ #define DRM_MODE_BLEND_COVERAGE		1
+diff -ur ./include-5.4.302/drm/drm_bridge.h ./include/drm/drm_bridge.h
+--- ./include-5.4.302/drm/drm_bridge.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_bridge.h	2026-07-22 17:58:29.000000000 +0200
+@@ -24,13 +24,16 @@
+ #define __DRM_BRIDGE_H__
+ 
+ #include <linux/list.h>
++#if !defined(__AROS__)
+ #include <linux/ctype.h>
++#endif
+ #include <drm/drm_mode_object.h>
+ #include <drm/drm_modes.h>
+ 
+ struct drm_bridge;
+ struct drm_bridge_timings;
+ struct drm_panel;
++struct drm_atomic_state;
+ 
+ /**
+  * struct drm_bridge_funcs - drm_bridge control functions
+@@ -405,7 +408,9 @@
+ 
+ void drm_bridge_add(struct drm_bridge *bridge);
+ void drm_bridge_remove(struct drm_bridge *bridge);
++#ifdef CONFIG_OF
+ struct drm_bridge *of_drm_find_bridge(struct device_node *np);
++#endif
+ int drm_bridge_attach(struct drm_encoder *encoder, struct drm_bridge *bridge,
+ 		      struct drm_bridge *previous);
+ 
+diff -ur ./include-5.4.302/drm/drm_connector.h ./include/drm/drm_connector.h
+--- ./include-5.4.302/drm/drm_connector.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_connector.h	2026-07-22 19:07:12.000000000 +0200
+@@ -24,14 +24,20 @@
+ #define __DRM_CONNECTOR_H__
+ 
+ #include <linux/list.h>
++#if !defined(__AROS__)
+ #include <linux/llist.h>
+ #include <linux/ctype.h>
++#else
++#include <drm-compat/drm_compat_macros.h>
++#endif
+ #include <linux/hdmi.h>
++
+ #include <drm/drm_mode_object.h>
+ #include <drm/drm_util.h>
+ 
+ #include <uapi/drm/drm_mode.h>
+ 
++struct drm_connector;
+ struct drm_connector_helper_funcs;
+ struct drm_modeset_acquire_ctx;
+ struct drm_device;
+@@ -254,6 +260,7 @@
+ 	DRM_MODE_PANEL_ORIENTATION_RIGHT_UP,
+ };
+ 
++#if !defined(__AROS__)
+ /*
+  * This is a consolidated colorimetry list supported by HDMI and
+  * DP protocol standard. The respective connectors will register
+@@ -346,6 +353,7 @@
+ 	DRM_BUS_FLAG_SYNC_SAMPLE_NEGEDGE = DRM_BUS_FLAG_SYNC_POSEDGE,
+ 	DRM_BUS_FLAG_SHARP_SIGNALS = BIT(8),
+ };
++#endif
+ 
+ /**
+  * struct drm_display_info - runtime data about the connected sink
+@@ -379,10 +387,12 @@
+ 	 */
+ 	enum subpixel_order subpixel_order;
+ 
++#if !defined(__AROS__)
+ #define DRM_COLOR_FORMAT_RGB444		(1<<0)
+ #define DRM_COLOR_FORMAT_YCRCB444	(1<<1)
+ #define DRM_COLOR_FORMAT_YCRCB422	(1<<2)
+ #define DRM_COLOR_FORMAT_YCRCB420	(1<<3)
++#endif
+ 
+ 	/**
+ 	 * @panel_orientation: Read only connector property for built-in panels,
+@@ -393,6 +403,7 @@
+ 	 */
+ 	int panel_orientation;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @color_formats: HDMI Color formats, selects between RGB and YCrCb
+ 	 * modes. Used DRM_COLOR_FORMAT\_ defines, which are _not_ the same ones
+@@ -400,6 +411,7 @@
+ 	 * match the formats in @bus_formats which are shared with v4l.
+ 	 */
+ 	u32 color_formats;
++#endif
+ 
+ 	/**
+ 	 * @bus_formats: Pixel data format on the wire, somewhat redundant with
+@@ -407,6 +419,7 @@
+ 	 * MEDIA_BUS_FMT\_ defines shared with v4l and media drivers.
+ 	 */
+ 	const u32 *bus_formats;
++#if !defined(__AROS__)
+ 	/**
+ 	 * @num_bus_formats: Size of @bus_formats array.
+ 	 */
+@@ -418,6 +431,7 @@
+ 	 * DRM_BUS_FLAGS\_.
+ 	 */
+ 	u32 bus_flags;
++#endif
+ 
+ 	/**
+ 	 * @max_tmds_clock: Maximum TMDS clock rate supported by the
+@@ -435,11 +449,13 @@
+ 	 */
+ 	bool has_hdmi_infoframe;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @rgb_quant_range_selectable: Does the sink support selecting
+ 	 * the RGB quantization range?
+ 	 */
+ 	bool rgb_quant_range_selectable;
++#endif
+ 
+ 	/**
+ 	 * @edid_hdmi_dc_modes: Mask of supported hdmi deep color modes. Even
+@@ -463,9 +479,11 @@
+ 	bool non_desktop;
+ };
+ 
++#if !defined(__AROS__)
+ int drm_display_info_set_bus_formats(struct drm_display_info *info,
+ 				     const u32 *formats,
+ 				     unsigned int num_formats);
++#endif
+ 
+ /**
+  * struct drm_connector_tv_margins - TV connector related margins
+@@ -571,6 +589,7 @@
+ 	/** @tv: TV connector state */
+ 	struct drm_tv_connector_state tv;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @self_refresh_aware:
+ 	 *
+@@ -584,6 +603,7 @@
+ 	 * handle self_refresh requests.
+ 	 */
+ 	bool self_refresh_aware;
++#endif
+ 
+ 	/**
+ 	 * @picture_aspect_ratio: Connector property to control the
+@@ -627,6 +647,7 @@
+ 	 */
+ 	u32 colorspace;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @writeback_job: Writeback job for writeback connectors
+ 	 *
+@@ -639,6 +660,7 @@
+ 	 * drm_writeback_signal_completion()
+ 	 */
+ 	struct drm_writeback_job *writeback_job;
++#endif
+ 
+ 	/**
+ 	 * @max_requested_bpc: Connector property to limit the maximum bit
+@@ -646,11 +668,13 @@
+ 	 */
+ 	u8 max_requested_bpc;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @max_bpc: Connector max_bpc based on the requested max_bpc property
+ 	 * and the connector bpc limitations obtained from edid.
+ 	 */
+ 	u8 max_bpc;
++#endif
+ 
+ 	/**
+ 	 * @hdr_output_metadata:
+@@ -939,6 +963,7 @@
+ 				   struct drm_property *property,
+ 				   uint64_t *val);
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @atomic_print_state:
+ 	 *
+@@ -950,6 +975,7 @@
+ 	 */
+ 	void (*atomic_print_state)(struct drm_printer *p,
+ 				   const struct drm_connector_state *state);
++#endif
+ };
+ 
+ /**
+@@ -1084,8 +1110,10 @@
+ 	struct drm_device *dev;
+ 	/** @kdev: kernel device for sysfs attributes */
+ 	struct device *kdev;
++#if !defined(__AROS__)
+ 	/** @attr: sysfs attributes */
+ 	struct device_attribute *attr;
++#endif
+ 
+ 	/**
+ 	 * @head:
+@@ -1144,6 +1172,7 @@
+ 	 */
+ 	bool stereo_allowed;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @ycbcr_420_allowed : This bool indicates if this connector is
+ 	 * capable of handling YCBCR 420 output. While parsing the EDID
+@@ -1151,6 +1180,7 @@
+ 	 * handling YCBCR 420 outputs.
+ 	 */
+ 	bool ycbcr_420_allowed;
++#endif
+ 
+ 	/**
+ 	 * @registration_state: Is this connector initializing, exposed
+@@ -1212,6 +1242,7 @@
+ 	 */
+ 	struct drm_property *scaling_mode_property;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @vrr_capable_property: Optional property to help userspace
+ 	 * query hardware support for variable refresh rate on a connector.
+@@ -1222,6 +1253,7 @@
+ 	 * drm_connector_set_vrr_capable_property().
+ 	 */
+ 	struct drm_property *vrr_capable_property;
++#endif
+ 
+ 	/**
+ 	 * @colorspace_property: Connector property to set the suitable
+@@ -1319,6 +1351,7 @@
+ 	 */
+ 	int audio_latency[2];
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @ddc: associated ddc adapter.
+ 	 * A connector usually has its associated ddc adapter. If a driver uses
+@@ -1329,6 +1362,7 @@
+ 	 * The field should be set by calling drm_connector_init_with_ddc().
+ 	 */
+ 	struct i2c_adapter *ddc;
++#endif
+ 
+ 	/**
+ 	 * @null_edid_counter: track sinks that give us all zeros for the EDID.
+@@ -1346,8 +1380,10 @@
+ 	 */
+ 	bool edid_corrupt;
+ 
++#if !defined(__AROS__)
+ 	/** @debugfs_entry: debugfs directory for this connector */
+ 	struct dentry *debugfs_entry;
++#endif
+ 
+ 	/**
+ 	 * @state:
+@@ -1365,7 +1401,9 @@
+ 	 */
+ 	struct drm_connector_state *state;
+ 
++#if !defined(__AROS__)
+ 	/* DisplayID bits. FIXME: Extract into a substruct? */
++#endif
+ 
+ 	/**
+ 	 * @tile_blob_ptr:
+@@ -1399,6 +1437,7 @@
+ 	/** @tile_v_size: vertical size of this tile. */
+ 	uint16_t tile_h_size, tile_v_size;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @free_node:
+ 	 *
+@@ -1410,6 +1449,7 @@
+ 
+ 	/** @hdr_sink_metadata: HDR Metadata Information read from sink */
+ 	struct hdr_sink_metadata hdr_sink_metadata;
++#endif
+ };
+ 
+ #define obj_to_connector(x) container_of(x, struct drm_connector, base)
+@@ -1418,11 +1458,13 @@
+ 		       struct drm_connector *connector,
+ 		       const struct drm_connector_funcs *funcs,
+ 		       int connector_type);
++#if !defined(__AROS__)
+ int drm_connector_init_with_ddc(struct drm_device *dev,
+ 				struct drm_connector *connector,
+ 				const struct drm_connector_funcs *funcs,
+ 				int connector_type,
+ 				struct i2c_adapter *ddc);
++#endif
+ void drm_connector_attach_edid_property(struct drm_connector *connector);
+ int drm_connector_register(struct drm_connector *connector);
+ void drm_connector_unregister(struct drm_connector *connector);
+@@ -1500,6 +1542,7 @@
+ 		DRM_CONNECTOR_UNREGISTERED;
+ }
+ 
++#if !defined(__AROS__)
+ const char *drm_get_connector_status_name(enum drm_connector_status status);
+ const char *drm_get_subpixel_order_name(enum subpixel_order order);
+ const char *drm_get_dpms_name(int val);
+@@ -1509,14 +1552,20 @@
+ const char *drm_get_tv_select_name(int val);
+ const char *drm_get_content_protection_name(int val);
+ const char *drm_get_hdcp_content_type_name(int val);
++#endif
+ 
+ int drm_mode_create_dvi_i_properties(struct drm_device *dev);
++#if !defined(__AROS__)
+ int drm_mode_create_tv_margin_properties(struct drm_device *dev);
++#endif
+ int drm_mode_create_tv_properties(struct drm_device *dev,
+ 				  unsigned int num_modes,
+ 				  const char * const modes[]);
++#if !defined(__AROS__)
+ void drm_connector_attach_tv_margin_properties(struct drm_connector *conn);
++#endif
+ int drm_mode_create_scaling_mode_property(struct drm_device *dev);
++#if !defined(__AROS__)
+ int drm_connector_attach_content_type_property(struct drm_connector *dev);
+ int drm_connector_attach_scaling_mode_property(struct drm_connector *connector,
+ 					       u32 scaling_mode_mask);
+@@ -1529,20 +1578,25 @@
+ 					 const struct drm_connector_state *conn_state);
+ 
+ int drm_mode_create_suggested_offset_properties(struct drm_device *dev);
++#endif
+ 
+ int drm_connector_set_path_property(struct drm_connector *connector,
+ 				    const char *path);
+ int drm_connector_set_tile_property(struct drm_connector *connector);
+ int drm_connector_update_edid_property(struct drm_connector *connector,
+ 				       const struct edid *edid);
++#if !defined(__AROS__)
+ void drm_connector_set_link_status_property(struct drm_connector *connector,
+ 					    uint64_t link_status);
+ void drm_connector_set_vrr_capable_property(
+ 		struct drm_connector *connector, bool capable);
++#endif
+ int drm_connector_init_panel_orientation_property(
+ 	struct drm_connector *connector, int width, int height);
++#if !defined(__AROS__)
+ int drm_connector_attach_max_bpc_property(struct drm_connector *connector,
+ 					  int min, int max);
++#endif
+ 
+ /**
+  * struct drm_tile_group - Tile group metadata
+@@ -1589,8 +1643,10 @@
+ drm_connector_list_iter_next(struct drm_connector_list_iter *iter);
+ void drm_connector_list_iter_end(struct drm_connector_list_iter *iter);
+ 
++#if !defined(__AROS__)
+ bool drm_connector_has_possible_encoder(struct drm_connector *connector,
+ 					struct drm_encoder *encoder);
++#endif
+ 
+ /**
+  * drm_for_each_connector_iter - connector_list iterator macro
+diff -ur ./include-5.4.302/drm/drm_crtc.h ./include/drm/drm_crtc.h
+--- ./include-5.4.302/drm/drm_crtc.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_crtc.h	2026-07-22 19:07:12.000000000 +0200
+@@ -25,15 +25,21 @@
+ #ifndef __DRM_CRTC_H__
+ #define __DRM_CRTC_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/i2c.h>
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
+ #include <linux/fb.h>
+ #include <linux/hdmi.h>
+ #include <linux/media-bus-format.h>
++#else
++#include <linux/compiler_attributes.h>
++#endif
+ #include <uapi/drm/drm_mode.h>
+ #include <uapi/drm/drm_fourcc.h>
++#if !defined(__AROS__)
+ #include <drm/drm_modeset_lock.h>
++#endif
+ #include <drm/drm_rect.h>
+ #include <drm/drm_mode_object.h>
+ #include <drm/drm_framebuffer.h>
+@@ -45,8 +51,10 @@
+ #include <drm/drm_edid.h>
+ #include <drm/drm_plane.h>
+ #include <drm/drm_blend.h>
++#if !defined(__AROS__)
+ #include <drm/drm_color_mgmt.h>
+ #include <drm/drm_debugfs_crc.h>
++#endif
+ #include <drm/drm_mode_config.h>
+ 
+ struct drm_device;
+@@ -69,7 +77,7 @@
+ }
+ 
+ struct drm_crtc;
+-struct drm_pending_vblank_event;
++struct drm_pending_vblank_event { ULONG dummy; };
+ struct drm_plane;
+ struct drm_bridge;
+ struct drm_atomic_state;
+@@ -171,6 +179,7 @@
+ 	 */
+ 	bool color_mgmt_changed : 1;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @no_vblank:
+ 	 *
+@@ -206,6 +215,7 @@
+ 	 * writeback job is complete.
+ 	 */
+ 	bool no_vblank : 1;
++#endif
+ 
+ 	/**
+ 	 * @plane_mask: Bitmask of drm_plane_mask(plane) of planes attached to
+@@ -289,6 +299,7 @@
+ 	 */
+ 	struct drm_property_blob *gamma_lut;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @target_vblank:
+ 	 *
+@@ -296,6 +307,7 @@
+ 	 * should take effect.
+ 	 */
+ 	u32 target_vblank;
++#endif
+ 
+ 	/**
+ 	 * @async_flip:
+@@ -587,6 +599,7 @@
+ 			 uint32_t flags,
+ 			 struct drm_modeset_acquire_ctx *ctx);
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @page_flip_target:
+ 	 *
+@@ -622,6 +635,7 @@
+ 	 */
+ 	int (*set_property)(struct drm_crtc *crtc,
+ 			    struct drm_property *property, uint64_t val);
++#endif
+ 
+ 	/**
+ 	 * @atomic_duplicate_state:
+@@ -762,6 +776,7 @@
+ 	 */
+ 	void (*early_unregister)(struct drm_crtc *crtc);
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @set_crc_source:
+ 	 *
+@@ -888,6 +903,7 @@
+ 	 * new drivers as the replacement of &drm_driver.disable_vblank hook.
+ 	 */
+ 	void (*disable_vblank)(struct drm_crtc *crtc);
++#endif
+ };
+ 
+ /**
+@@ -913,6 +929,7 @@
+ 	/** @name: human readable name, can be overwritten by the driver */
+ 	char *name;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @mutex:
+ 	 *
+@@ -924,6 +941,7 @@
+ 	 * For atomic drivers specifically this protects @state.
+ 	 */
+ 	struct drm_modeset_lock mutex;
++#endif
+ 
+ 	/** @base: base KMS object for ID tracking etc. */
+ 	struct drm_mode_object base;
+@@ -1081,6 +1099,7 @@
+ 	 */
+ 	spinlock_t commit_lock;
+ 
++#if !defined(__AROS__)
+ #ifdef CONFIG_DEBUG_FS
+ 	/**
+ 	 * @debugfs_entry:
+@@ -1096,6 +1115,7 @@
+ 	 * Configuration settings of CRC capture.
+ 	 */
+ 	struct drm_crtc_crc crc;
++#endif
+ 
+ 	/**
+ 	 * @fence_context:
+@@ -1110,6 +1130,7 @@
+ 	 * spinlock to protect the fences in the fence_context.
+ 	 */
+ 	spinlock_t fence_lock;
++#if !defined(__AROS__)
+ 	/**
+ 	 * @fence_seqno:
+ 	 *
+@@ -1117,6 +1138,7 @@
+ 	 * created on the CRTC's timeline.
+ 	 */
+ 	unsigned long fence_seqno;
++#endif
+ 
+ 	/**
+ 	 * @timeline_name:
+@@ -1125,12 +1147,14 @@
+ 	 */
+ 	char timeline_name[32];
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @self_refresh_data: Holds the state for the self refresh helpers
+ 	 *
+ 	 * Initialized via drm_self_refresh_helper_init().
+ 	 */
+ 	struct drm_self_refresh_data *self_refresh_data;
++#endif
+ };
+ 
+ /**
+@@ -1160,7 +1184,9 @@
+ 
+ #define obj_to_crtc(x) container_of(x, struct drm_crtc, base)
+ 
++#if !defined(__AROS__)
+ __printf(6, 7)
++#endif
+ int drm_crtc_init_with_planes(struct drm_device *dev,
+ 			      struct drm_crtc *crtc,
+ 			      struct drm_plane *primary,
+@@ -1194,7 +1220,9 @@
+ }
+ 
+ int drm_mode_set_config_internal(struct drm_mode_set *set);
++#if !defined(__AROS__)
+ struct drm_crtc *drm_crtc_from_index(struct drm_device *dev, int idx);
++#endif
+ 
+ /**
+  * drm_crtc_find - look up a CRTC object from its ID
+diff -ur ./include-5.4.302/drm/drm_crtc_helper.h ./include/drm/drm_crtc_helper.h
+--- ./include-5.4.302/drm/drm_crtc_helper.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_crtc_helper.h	2026-07-22 19:07:12.000000000 +0200
+@@ -33,29 +33,37 @@
+ #ifndef __DRM_CRTC_HELPER_H__
+ #define __DRM_CRTC_HELPER_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
+ #include <linux/idr.h>
+ 
+ #include <linux/fb.h>
++#endif
+ 
+ #include <drm/drm_crtc.h>
+ #include <drm/drm_modeset_helper_vtables.h>
+ #include <drm/drm_modeset_helper.h>
+ 
++#if !defined(__AROS__)
+ void drm_helper_disable_unused_functions(struct drm_device *dev);
++#endif
+ int drm_crtc_helper_set_config(struct drm_mode_set *set,
+ 			       struct drm_modeset_acquire_ctx *ctx);
+ bool drm_crtc_helper_set_mode(struct drm_crtc *crtc,
+ 			      struct drm_display_mode *mode,
+ 			      int x, int y,
+ 			      struct drm_framebuffer *old_fb);
++#if !defined(__AROS__)
+ bool drm_helper_crtc_in_use(struct drm_crtc *crtc);
+ bool drm_helper_encoder_in_use(struct drm_encoder *encoder);
++#endif
+ 
+ int drm_helper_connector_dpms(struct drm_connector *connector, int mode);
+ 
++#if !defined(__AROS__)
+ void drm_helper_resume_force_mode(struct drm_device *dev);
+ int drm_helper_force_disable_all(struct drm_device *dev);
++#endif
+ 
+ #endif
+diff -ur ./include-5.4.302/drm/drm_damage_helper.h ./include/drm/drm_damage_helper.h
+--- ./include-5.4.302/drm/drm_damage_helper.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_damage_helper.h	2026-07-22 19:07:12.000000000 +0200
+@@ -82,6 +82,7 @@
+ 				     struct drm_plane_state *state,
+ 				     struct drm_rect *rect);
+ 
++#if !defined(__AROS__)
+ /**
+  * drm_helper_get_plane_damage_clips - Returns damage clips in &drm_rect.
+  * @state: Plane state.
+@@ -98,5 +99,6 @@
+ {
+ 	return (struct drm_rect *)drm_plane_get_damage_clips(state);
+ }
++#endif
+ 
+ #endif
+diff -ur ./include-5.4.302/drm/drm_device.h ./include/drm/drm_device.h
+--- ./include-5.4.302/drm/drm_device.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_device.h	2026-07-22 19:07:12.000000000 +0200
+@@ -2,27 +2,36 @@
+ #define _DRM_DEVICE_H_
+ 
+ #include <linux/list.h>
++#if !defined(__AROS__)
+ #include <linux/kref.h>
+ #include <linux/mutex.h>
++#endif
+ #include <linux/idr.h>
+ 
++#if !defined(__AROS__)
+ #include <drm/drm_hashtab.h>
++#endif
+ #include <drm/drm_mode_config.h>
+ 
+ struct drm_driver;
++#if !defined(__AROS__)
+ struct drm_minor;
+ struct drm_master;
+ struct drm_device_dma;
+ struct drm_vblank_crtc;
+ struct drm_sg_mem;
+ struct drm_local_map;
++#endif
+ struct drm_vma_offset_manager;
++#if !defined(__AROS__)
+ struct drm_vram_mm;
+ struct drm_fb_helper;
+ 
+ struct inode;
++#endif
+ 
+ struct pci_dev;
++#if !defined(__AROS__)
+ struct pci_controller;
+ 
+ 
+@@ -43,6 +52,7 @@
+ 	/** @DRM_SWITCH_POWER_DYNAMIC_OFF: Suspended */
+ 	DRM_SWITCH_POWER_DYNAMIC_OFF = 3,
+ };
++#endif
+ 
+ /**
+  * struct drm_device - DRM device structure
+@@ -51,6 +61,7 @@
+  * may contain multiple heads.
+  */
+ struct drm_device {
++#if !defined(__AROS__)
+ 	/**
+ 	 * @legacy_dev_list:
+ 	 *
+@@ -65,6 +76,7 @@
+ 	struct kref ref;
+ 
+ 	/** @dev: Device structure of bus-device */
++#endif
+ 	struct device *dev;
+ 
+ 	/** @driver: DRM driver managing the device */
+@@ -79,11 +91,13 @@
+ 	 */
+ 	void *dev_private;
+ 
++#if !defined(__AROS__)
+ 	/** @primary: Primary node */
+ 	struct drm_minor *primary;
+ 
+ 	/** @render: Render node */
+ 	struct drm_minor *render;
++#endif
+ 
+ 	/**
+ 	 * @registered:
+@@ -92,6 +106,7 @@
+ 	 */
+ 	bool registered;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @master:
+ 	 *
+@@ -99,6 +114,7 @@
+ 	 * Protected by &master_mutex
+ 	 */
+ 	struct drm_master *master;
++#endif
+ 
+ 	/**
+ 	 * @driver_features: per-device driver features
+@@ -110,6 +126,7 @@
+ 	 */
+ 	u32 driver_features;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @unplugged:
+ 	 *
+@@ -123,6 +140,7 @@
+ 
+ 	/** @unique: Unique name of the device */
+ 	char *unique;
++#endif
+ 
+ 	/**
+ 	 * @struct_mutex:
+@@ -131,6 +149,7 @@
+ 	 */
+ 	struct mutex struct_mutex;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @master_mutex:
+ 	 *
+@@ -176,6 +195,7 @@
+ 	 * List of in-kernel clients. Protected by &clientlist_mutex.
+ 	 */
+ 	struct list_head clientlist;
++#endif
+ 
+ 	/**
+ 	 * @irq_enabled:
+@@ -186,6 +206,7 @@
+ 	 */
+ 	bool irq_enabled;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @irq: Used by the drm_irq_install() and drm_irq_unistall() helpers.
+ 	 */
+@@ -264,16 +285,19 @@
+ 
+ 	/** @agp: AGP data */
+ 	struct drm_agp_head *agp;
++#endif
+ 
+ 	/** @pdev: PCI device structure */
+ 	struct pci_dev *pdev;
+ 
++#if !defined(__AROS__)
+ #ifdef __alpha__
+ 	/** @hose: PCI hose, only used on ALPHA platforms. */
+ 	struct pci_controller *hose;
+ #endif
+ 	/** @num_crtcs: Number of CRTCs on this device */
+ 	unsigned int num_crtcs;
++#endif
+ 
+ 	/** @mode_config: Current mode config */
+ 	struct drm_mode_config mode_config;
+@@ -287,6 +311,7 @@
+ 	/** @vma_offset_manager: GEM information */
+ 	struct drm_vma_offset_manager *vma_offset_manager;
+ 
++#if !defined(__AROS__)
+ 	/** @vram_mm: VRAM MM memory manager */
+ 	struct drm_vram_mm *vram_mm;
+ 
+@@ -358,6 +383,7 @@
+ 	/* Scatter gather memory */
+ 	struct drm_sg_mem *sg;
+ #endif
++#endif
+ };
+ 
+ #endif
+diff -ur ./include-5.4.302/drm/drm_dp_helper.h ./include/drm/drm_dp_helper.h
+--- ./include-5.4.302/drm/drm_dp_helper.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_dp_helper.h	2026-07-22 19:07:12.000000000 +0200
+@@ -23,9 +23,15 @@
+ #ifndef _DRM_DP_HELPER_H_
+ #define _DRM_DP_HELPER_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
+ #include <linux/i2c.h>
+ #include <linux/delay.h>
++#else
++#include <drm-compat/drm_compat_types.h>
++#include <drm-compat/drm_compat_i2c.h>
++#include <linux/bitops.h>
++#endif
+ 
+ /*
+  * Unless otherwise noted, all values are from the DP 1.1a spec.  Note that
+@@ -1244,7 +1250,9 @@
+ 	struct cec_adapter *adap;
+ 	const char *name;
+ 	struct device *parent;
++#if !defined(__AROS__)
+ 	struct delayed_work unregister_work;
++#endif
+ };
+ 
+ /**
+@@ -1374,8 +1382,10 @@
+ int drm_dp_downstream_max_bpc(const u8 dpcd[DP_RECEIVER_CAP_SIZE],
+ 			      const u8 port_cap[4]);
+ int drm_dp_downstream_id(struct drm_dp_aux *aux, char id[6]);
++#if !defined(__AROS__)
+ void drm_dp_downstream_debug(struct seq_file *m, const u8 dpcd[DP_RECEIVER_CAP_SIZE],
+ 			     const u8 port_cap[4], struct drm_dp_aux *aux);
++#endif
+ 
+ void drm_dp_aux_init(struct drm_dp_aux *aux);
+ int drm_dp_aux_register(struct drm_dp_aux *aux);
+diff -ur ./include-5.4.302/drm/drm_dp_mst_helper.h ./include/drm/drm_dp_mst_helper.h
+--- ./include-5.4.302/drm/drm_dp_mst_helper.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_dp_mst_helper.h	2026-07-22 19:07:12.000000000 +0200
+@@ -22,7 +22,9 @@
+ #ifndef _DRM_DP_MST_HELPER_H_
+ #define _DRM_DP_MST_HELPER_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
++#endif
+ #include <drm/drm_dp_helper.h>
+ #include <drm/drm_atomic.h>
+ 
+@@ -637,8 +639,10 @@
+ 
+ int drm_dp_check_act_status(struct drm_dp_mst_topology_mgr *mgr);
+ 
++#if !defined(__AROS__)
+ void drm_dp_mst_dump_topology(struct seq_file *m,
+ 			      struct drm_dp_mst_topology_mgr *mgr);
++#endif
+ 
+ void drm_dp_mst_topology_mgr_suspend(struct drm_dp_mst_topology_mgr *mgr);
+ int __must_check
+diff -ur ./include-5.4.302/drm/drm_drv.h ./include/drm/drm_drv.h
+--- ./include-5.4.302/drm/drm_drv.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_drv.h	2026-07-22 19:07:12.000000000 +0200
+@@ -27,19 +27,26 @@
+ #ifndef _DRM_DRV_H_
+ #define _DRM_DRV_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/list.h>
+ #include <linux/irqreturn.h>
++#else
++#include <linux/idr.h>
++#endif
+ 
+ #include <drm/drm_device.h>
++#include <drm/drm_ioctl.h>
+ 
+ struct drm_file;
+ struct drm_gem_object;
++#if !defined(__AROS__)
+ struct drm_master;
+ struct drm_minor;
+ struct dma_buf_attachment;
+ struct drm_display_mode;
+ struct drm_mode_create_dumb;
+ struct drm_printer;
++#endif
+ 
+ /**
+  * enum drm_driver_feature - feature flags
+@@ -78,6 +85,7 @@
+ 	 * set this flag.
+ 	 */
+ 	DRIVER_ATOMIC			= BIT(4),
++#if !defined(__AROS__)
+ 	/**
+ 	 * @DRIVER_SYNCOBJ:
+ 	 *
+@@ -148,6 +156,7 @@
+ 	 * userspace.  Do not use.
+ 	 */
+ 	DRIVER_KMS_LEGACY_CONTEXT	= BIT(31),
++#endif
+ };
+ 
+ /**
+@@ -160,6 +169,7 @@
+  * structure for GEM drivers.
+  */
+ struct drm_driver {
++#if !defined(__AROS__)
+ 	/**
+ 	 * @load:
+ 	 *
+@@ -178,6 +188,7 @@
+ 	 * Zero on success, non-zero value on failure.
+ 	 */
+ 	int (*load) (struct drm_device *, unsigned long flags);
++#endif
+ 
+ 	/**
+ 	 * @open:
+@@ -199,6 +210,7 @@
+ 	 */
+ 	int (*open) (struct drm_device *, struct drm_file *);
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @postclose:
+ 	 *
+@@ -491,6 +503,7 @@
+ 	 * Allows drivers to create driver-specific debugfs files.
+ 	 */
+ 	int (*debugfs_init)(struct drm_minor *minor);
++#endif
+ 
+ 	/**
+ 	 * @gem_free_object: deconstructor for drm_gem_objects
+@@ -528,6 +541,7 @@
+ 	 */
+ 	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @gem_print_info:
+ 	 *
+@@ -722,19 +736,24 @@
+ 	 * &drm_gem_object_funcs.vm_ops.
+ 	 */
+ 	const struct vm_operations_struct *gem_vm_ops;
++#endif
+ 
+ 	/** @major: driver major number */
+ 	int major;
++#if !defined(__AROS__)
+ 	/** @minor: driver minor number */
+ 	int minor;
++#endif
+ 	/** @patchlevel: driver patch level */
+ 	int patchlevel;
++#if !defined(__AROS__)
+ 	/** @name: driver name */
+ 	char *name;
+ 	/** @desc: driver description */
+ 	char *desc;
+ 	/** @date: driver date */
+ 	char *date;
++#endif
+ 
+ 	/**
+ 	 * @driver_features:
+@@ -756,6 +775,7 @@
+ 	/** @num_ioctls: Number of entries in @ioctls. */
+ 	int num_ioctls;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @fops:
+ 	 *
+@@ -776,8 +796,10 @@
+ 	int (*dma_quiescent) (struct drm_device *);
+ 	int (*context_dtor) (struct drm_device *dev, int context);
+ 	int dev_priv_size;
++#endif
+ };
+ 
++#if !defined(__AROS__)
+ extern unsigned int drm_debug;
+ 
+ int drm_dev_init(struct drm_device *dev,
+@@ -787,14 +809,18 @@
+ 		      struct drm_device *dev,
+ 		      struct drm_driver *driver);
+ void drm_dev_fini(struct drm_device *dev);
++#endif
+ 
+ struct drm_device *drm_dev_alloc(struct drm_driver *driver,
+ 				 struct device *parent);
+ int drm_dev_register(struct drm_device *dev, unsigned long flags);
++#if !defined(__AROS__)
+ void drm_dev_unregister(struct drm_device *dev);
++#endif
+ 
+ void drm_dev_get(struct drm_device *dev);
+ void drm_dev_put(struct drm_device *dev);
++#if !defined(__AROS__)
+ void drm_put_dev(struct drm_device *dev);
+ bool drm_dev_enter(struct drm_device *dev, int *idx);
+ void drm_dev_exit(int idx);
+@@ -824,6 +850,7 @@
+ 
+ 	return true;
+ }
++#endif
+ 
+ /**
+  * drm_core_check_feature - check driver feature flags
+@@ -855,7 +882,9 @@
+ }
+ 
+ 
++#if !defined(__AROS__)
+ int drm_dev_set_unique(struct drm_device *dev, const char *name);
++#endif
+ 
+ 
+ #endif
+diff -ur ./include-5.4.302/drm/drm_edid.h ./include/drm/drm_edid.h
+--- ./include-5.4.302/drm/drm_edid.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_edid.h	2026-07-22 19:07:12.000000000 +0200
+@@ -25,7 +25,12 @@
+ 
+ #include <linux/types.h>
+ #include <linux/hdmi.h>
++#if defined(__AROS__)
++#include <linux/err.h>
++#endif
++#if !defined(__AROS__)
+ #include <drm/drm_mode.h>
++#endif
+ 
+ struct drm_device;
+ struct i2c_adapter;
+@@ -363,6 +368,7 @@
+ 					    struct drm_connector *connector,
+ 					    const struct drm_display_mode *mode);
+ 
++#if !defined(__AROS__)
+ void
+ drm_hdmi_avi_infoframe_colorspace(struct hdmi_avi_infoframe *frame,
+ 				  const struct drm_connector_state *conn_state);
+@@ -376,6 +382,7 @@
+ int
+ drm_hdmi_infoframe_set_hdr_metadata(struct hdmi_drm_infoframe *frame,
+ 				    const struct drm_connector_state *conn_state);
++#endif
+ 
+ /**
+  * drm_eld_mnl - Get ELD monitor name length in bytes.
+diff -ur ./include-5.4.302/drm/drm_encoder.h ./include/drm/drm_encoder.h
+--- ./include-5.4.302/drm/drm_encoder.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_encoder.h	2026-07-22 19:07:12.000000000 +0200
+@@ -24,9 +24,13 @@
+ #define __DRM_ENCODER_H__
+ 
+ #include <linux/list.h>
++#if !defined(__AROS__)
+ #include <linux/ctype.h>
++#endif
+ #include <drm/drm_crtc.h>
++#if !defined(__AROS__)
+ #include <drm/drm_mode.h>
++#endif
+ #include <drm/drm_mode_object.h>
+ #include <drm/drm_util.h>
+ 
+@@ -179,7 +183,9 @@
+ 
+ #define obj_to_encoder(x) container_of(x, struct drm_encoder, base)
+ 
++#if !defined(__AROS__)
+ __printf(5, 6)
++#endif
+ int drm_encoder_init(struct drm_device *dev,
+ 		     struct drm_encoder *encoder,
+ 		     const struct drm_encoder_funcs *funcs,
+diff -ur ./include-5.4.302/drm/drm_encoder_slave.h ./include/drm/drm_encoder_slave.h
+--- ./include-5.4.302/drm/drm_encoder_slave.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_encoder_slave.h	2026-07-22 19:07:12.000000000 +0200
+@@ -27,6 +27,10 @@
+ #ifndef __DRM_ENCODER_SLAVE_H__
+ #define __DRM_ENCODER_SLAVE_H__
+ 
++#if defined(__AROS__)
++#include <drm-compat/drm_compat_i2c.h>
++#endif
++
+ #include <drm/drm_crtc.h>
+ #include <drm/drm_encoder.h>
+ 
+@@ -137,6 +141,7 @@
+ 	return (struct i2c_client *)to_encoder_slave(encoder)->bus_priv;
+ }
+ 
++#if !defined(__AROS__)
+ /**
+  * drm_i2c_encoder_register - Register an I2C encoder driver
+  * @owner:	Module containing the driver.
+@@ -156,6 +161,7 @@
+ {
+ 	i2c_del_driver(&driver->i2c_driver);
+ }
++#endif
+ 
+ void drm_i2c_encoder_destroy(struct drm_encoder *encoder);
+ 
+diff -ur ./include-5.4.302/drm/drm_fb_helper.h ./include/drm/drm_fb_helper.h
+--- ./include-5.4.302/drm/drm_fb_helper.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_fb_helper.h	2026-07-22 19:07:12.000000000 +0200
+@@ -32,11 +32,16 @@
+ 
+ struct drm_fb_helper;
+ 
++#if !defined(__AROS__)
+ #include <drm/drm_client.h>
++#else
+ #include <drm/drm_crtc.h>
+ #include <drm/drm_device.h>
++#endif
++#if !defined(__AROS__)
+ #include <linux/kgdb.h>
+ #include <linux/vgaarb.h>
++#endif
+ 
+ enum mode_set_atomic {
+ 	LEAVE_ATOMIC_MODE_SET,
+@@ -93,6 +98,7 @@
+ 			struct drm_fb_helper_surface_size *sizes);
+ };
+ 
++#if !defined(__AROS__)
+ /**
+  * struct drm_fb_helper - main structure to emulate fbdev on top of KMS
+  * @fb: Scanout framebuffer object
+@@ -193,6 +199,7 @@
+ {
+ 	return container_of(client, struct drm_fb_helper, client);
+ }
++#endif
+ 
+ /**
+  * define DRM_FB_HELPER_DEFAULT_OPS - helper define for drm drivers
+@@ -290,6 +297,7 @@
+ {
+ }
+ 
++#if !defined(__AROS__)
+ static inline int drm_fb_helper_init(struct drm_device *dev,
+ 		       struct drm_fb_helper *helper,
+ 		       int max_conn)
+@@ -328,6 +336,7 @@
+ {
+ 	return 0;
+ }
++#endif
+ 
+ static inline int
+ drm_fb_helper_restore_fbdev_mode_unlocked(struct drm_fb_helper *fb_helper)
+@@ -352,11 +361,13 @@
+ {
+ }
+ 
++#if !defined(__AROS__)
+ static inline int drm_fb_helper_setcmap(struct fb_cmap *cmap,
+ 					struct fb_info *info)
+ {
+ 	return 0;
+ }
++#endif
+ 
+ static inline int drm_fb_helper_ioctl(struct fb_info *info, unsigned int cmd,
+ 				      unsigned long arg)
+@@ -392,6 +403,7 @@
+ 	return -ENODEV;
+ }
+ 
++#if !defined(__AROS__)
+ static inline void drm_fb_helper_sys_fillrect(struct fb_info *info,
+ 					      const struct fb_fillrect *rect)
+ {
+@@ -421,6 +433,7 @@
+ 					       const struct fb_image *image)
+ {
+ }
++#endif
+ 
+ static inline void drm_fb_helper_set_suspend(struct drm_fb_helper *fb_helper,
+ 					     bool suspend)
+@@ -453,6 +466,7 @@
+ 	return 0;
+ }
+ 
++#if !defined(__AROS__)
+ static inline int
+ drm_fb_helper_fbdev_setup(struct drm_device *dev,
+ 			  struct drm_fb_helper *fb_helper,
+@@ -470,6 +484,7 @@
+ {
+ 	dev->fb_helper = NULL;
+ }
++#endif
+ 
+ static inline void drm_fb_helper_lastclose(struct drm_device *dev)
+ {
+@@ -515,6 +530,7 @@
+ 	return 0;
+ }
+ 
++#if !defined(__AROS__)
+ /**
+  * drm_fb_helper_remove_conflicting_framebuffers - remove firmware-configured framebuffers
+  * @a: memory range, users of which are to be removed
+@@ -566,5 +582,6 @@
+ 		ret = vga_remove_vgacon(pdev);
+ 	return ret;
+ }
++#endif
+ 
+ #endif
+diff -ur ./include-5.4.302/drm/drm_file.h ./include/drm/drm_file.h
+--- ./include-5.4.302/drm/drm_file.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_file.h	2026-07-22 20:11:44.000000000 +0200
+@@ -30,6 +30,7 @@
+ #ifndef _DRM_FILE_H_
+ #define _DRM_FILE_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
+ #include <linux/completion.h>
+ #include <linux/idr.h>
+@@ -386,5 +387,9 @@
+ 			   struct drm_pending_event *p);
+ void drm_send_event_locked(struct drm_device *dev, struct drm_pending_event *e);
+ void drm_send_event(struct drm_device *dev, struct drm_pending_event *e);
++#else
++#include <drm/drm_lease.h>
++#include <drm-compat/drm_file.h>
++#endif
+ 
+ #endif /* _DRM_FILE_H_ */
+diff -ur ./include-5.4.302/drm/drm_fourcc.h ./include/drm/drm_fourcc.h
+--- ./include-5.4.302/drm/drm_fourcc.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_fourcc.h	2026-07-22 17:58:29.000000000 +0200
+@@ -22,7 +22,11 @@
+ #ifndef __DRM_FOURCC_H__
+ #define __DRM_FOURCC_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
++#else
++#include <drm-compat/drm_compat_types.h>
++#endif
+ #include <uapi/drm/drm_fourcc.h>
+ 
+ /*
+diff -ur ./include-5.4.302/drm/drm_framebuffer.h ./include/drm/drm_framebuffer.h
+--- ./include-5.4.302/drm/drm_framebuffer.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_framebuffer.h	2026-07-22 17:58:29.000000000 +0200
+@@ -23,9 +23,14 @@
+ #ifndef __DRM_FRAMEBUFFER_H__
+ #define __DRM_FRAMEBUFFER_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/ctype.h>
+ #include <linux/list.h>
+ #include <linux/sched.h>
++#else
++#include <linux/list.h>
++#include <drm-compat/drm_compat_funcs.h>
++#endif
+ 
+ #include <drm/drm_mode_object.h>
+ 
+@@ -130,10 +135,12 @@
+ 	 */
+ 	struct drm_mode_object base;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @comm: Name of the process allocating the fb, used for fb dumping.
+ 	 */
+ 	char comm[TASK_COMM_LEN];
++#endif
+ 
+ 	/**
+ 	 * @format: framebuffer format information
+diff -ur ./include-5.4.302/drm/drm_gem.h ./include/drm/drm_gem.h
+--- ./include-5.4.302/drm/drm_gem.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_gem.h	2026-07-22 19:07:12.000000000 +0200
+@@ -34,13 +34,22 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/kref.h>
+ #include <linux/dma-resv.h>
++#else
++#include <drm-compat/drm_compat_funcs.h>
++#include <drm-compat/drm_compat_dma.h>
++struct drm_file;
++#endif
+ 
++#if !defined(__AROS__)
+ #include <drm/drm_vma_manager.h>
++#endif
+ 
+ struct drm_gem_object;
+ 
++#if !defined(__AROS__)
+ /**
+  * struct drm_gem_object_funcs - GEM object functions
+  */
+@@ -159,6 +168,7 @@
+ 	 */
+ 	const struct vm_operations_struct *vm_ops;
+ };
++#endif
+ 
+ /**
+  * struct drm_gem_object - GEM buffer object
+@@ -208,6 +218,7 @@
+ 	 */
+ 	struct file *filp;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @vma_node:
+ 	 *
+@@ -219,6 +230,7 @@
+ 	 * that userspace is allowed to access the object.
+ 	 */
+ 	struct drm_vma_offset_node vma_node;
++#endif
+ 
+ 	/**
+ 	 * @size:
+@@ -237,6 +249,7 @@
+ 	 */
+ 	int name;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @dma_buf:
+ 	 *
+@@ -268,6 +281,7 @@
+ 	 * simply leave it as NULL.
+ 	 */
+ 	struct dma_buf_attachment *import_attach;
++#endif
+ 
+ 	/**
+ 	 * @resv:
+@@ -287,6 +301,7 @@
+ 	 */
+ 	struct dma_resv _resv;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @funcs:
+ 	 *
+@@ -297,8 +312,10 @@
+ 	 *
+ 	 */
+ 	const struct drm_gem_object_funcs *funcs;
++#endif
+ };
+ 
++#if !defined(__AROS__)
+ /**
+  * DEFINE_DRM_GEM_FOPS() - macro to generate file operations for GEM drivers
+  * @name: name for the generated structure
+@@ -324,18 +341,23 @@
+ 		.llseek		= noop_llseek,\
+ 		.mmap		= drm_gem_mmap,\
+ 	}
++#endif
+ 
+ void drm_gem_object_release(struct drm_gem_object *obj);
++#if !defined(__AROS__)
+ void drm_gem_object_free(struct kref *kref);
++#endif
+ int drm_gem_object_init(struct drm_device *dev,
+ 			struct drm_gem_object *obj, size_t size);
+ void drm_gem_private_object_init(struct drm_device *dev,
+ 				 struct drm_gem_object *obj, size_t size);
++#if !defined(__AROS__)
+ void drm_gem_vm_open(struct vm_area_struct *vma);
+ void drm_gem_vm_close(struct vm_area_struct *vma);
+ int drm_gem_mmap_obj(struct drm_gem_object *obj, unsigned long obj_size,
+ 		     struct vm_area_struct *vma);
+ int drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
++#endif
+ 
+ /**
+  * drm_gem_object_get - acquire a GEM buffer object reference
+@@ -349,6 +371,7 @@
+ 	kref_get(&obj->refcount);
+ }
+ 
++#if !defined(__AROS__)
+ /**
+  * __drm_gem_object_put - raw function to release a GEM buffer object reference
+  * @obj: GEM buffer object
+@@ -369,6 +392,7 @@
+ {
+ 	kref_put(&obj->refcount, drm_gem_object_free);
+ }
++#endif
+ 
+ void drm_gem_object_put_unlocked(struct drm_gem_object *obj);
+ void drm_gem_object_put(struct drm_gem_object *obj);
+@@ -379,6 +403,7 @@
+ int drm_gem_handle_delete(struct drm_file *filp, u32 handle);
+ 
+ 
++#if !defined(__AROS__)
+ void drm_gem_free_mmap_offset(struct drm_gem_object *obj);
+ int drm_gem_create_mmap_offset(struct drm_gem_object *obj);
+ int drm_gem_create_mmap_offset_size(struct drm_gem_object *obj, size_t size);
+@@ -389,7 +414,9 @@
+ 
+ int drm_gem_objects_lookup(struct drm_file *filp, void __user *bo_handles,
+ 			   int count, struct drm_gem_object ***objs_out);
++#endif
+ struct drm_gem_object *drm_gem_object_lookup(struct drm_file *filp, u32 handle);
++#if !defined(__AROS__)
+ long drm_gem_dma_resv_wait(struct drm_file *filep, u32 handle,
+ 				    bool wait_all, unsigned long timeout);
+ int drm_gem_lock_reservations(struct drm_gem_object **objs, int count,
+@@ -406,5 +433,6 @@
+ int drm_gem_dumb_destroy(struct drm_file *file,
+ 			 struct drm_device *dev,
+ 			 uint32_t handle);
++#endif
+ 
+ #endif /* __DRM_GEM_H__ */
+diff -ur ./include-5.4.302/drm/drm_ioctl.h ./include/drm/drm_ioctl.h
+--- ./include-5.4.302/drm/drm_ioctl.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_ioctl.h	2026-07-22 17:58:29.000000000 +0200
+@@ -32,10 +32,15 @@
+ #ifndef _DRM_IOCTL_H_
+ #define _DRM_IOCTL_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
+ #include <linux/bitops.h>
+ 
+ #include <asm/ioctl.h>
++#else
++#include <linux/bitops.h>
++#define _IOC_NR(cmd) ((cmd) & 0xff)
++#endif
+ 
+ struct drm_device;
+ struct drm_file;
+diff -ur ./include-5.4.302/drm/drm_lease.h ./include/drm/drm_lease.h
+--- ./include-5.4.302/drm/drm_lease.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_lease.h	2026-07-22 20:14:28.000000000 +0200
+@@ -1,37 +1 @@
+-/* SPDX-License-Identifier: GPL-2.0-or-later */
+-/*
+- * Copyright © 2017 Keith Packard <keithp@keithp.com>
+- */
+-
+-#ifndef _DRM_LEASE_H_
+-#define _DRM_LEASE_H_
+-
+-struct drm_file;
+-struct drm_device;
+-struct drm_master;
+-
+-struct drm_master *drm_lease_owner(struct drm_master *master);
+-
+-void drm_lease_destroy(struct drm_master *lessee);
+-
+-bool drm_lease_held(struct drm_file *file_priv, int id);
+-
+-bool _drm_lease_held(struct drm_file *file_priv, int id);
+-
+-void drm_lease_revoke(struct drm_master *master);
+-
+-uint32_t drm_lease_filter_crtcs(struct drm_file *file_priv, uint32_t crtcs);
+-
+-int drm_mode_create_lease_ioctl(struct drm_device *dev,
+-				void *data, struct drm_file *file_priv);
+-
+-int drm_mode_list_lessees_ioctl(struct drm_device *dev,
+-				void *data, struct drm_file *file_priv);
+-
+-int drm_mode_get_lease_ioctl(struct drm_device *dev,
+-			     void *data, struct drm_file *file_priv);
+-
+-int drm_mode_revoke_lease_ioctl(struct drm_device *dev,
+-				void *data, struct drm_file *file_priv);
+-
+-#endif /* _DRM_LEASE_H_ */
++#include <drm-compat/drm_lease.h>
+diff -ur ./include-5.4.302/drm/drm_legacy.h ./include/drm/drm_legacy.h
+--- ./include-5.4.302/drm/drm_legacy.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_legacy.h	2026-07-22 19:07:12.000000000 +0200
+@@ -33,6 +33,7 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include <drm/drm.h>
+ #include <drm/drm_auth.h>
+ #include <drm/drm_hashtab.h>
+@@ -195,5 +196,6 @@
+ void drm_legacy_ioremap(struct drm_local_map *map, struct drm_device *dev);
+ void drm_legacy_ioremap_wc(struct drm_local_map *map, struct drm_device *dev);
+ void drm_legacy_ioremapfree(struct drm_local_map *map, struct drm_device *dev);
++#endif
+ 
+ #endif /* __DRM_DRM_LEGACY_H__ */
+diff -ur ./include-5.4.302/drm/drm_mode_config.h ./include/drm/drm_mode_config.h
+--- ./include-5.4.302/drm/drm_mode_config.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_mode_config.h	2026-07-22 19:07:12.000000000 +0200
+@@ -23,13 +23,18 @@
+ #ifndef __DRM_MODE_CONFIG_H__
+ #define __DRM_MODE_CONFIG_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/mutex.h>
+ #include <linux/types.h>
+ #include <linux/idr.h>
+ #include <linux/workqueue.h>
+ #include <linux/llist.h>
++#else
++#endif
+ 
++#if !defined(__AROS__)
+ #include <drm/drm_modeset_lock.h>
++#endif
+ 
+ struct drm_file;
+ struct drm_device;
+@@ -91,6 +96,7 @@
+ 	 */
+ 	const struct drm_format_info *(*get_format_info)(const struct drm_mode_fb_cmd2 *mode_cmd);
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @output_poll_changed:
+ 	 *
+@@ -107,6 +113,7 @@
+ 	 * there's no reason this is a core function.
+ 	 */
+ 	void (*output_poll_changed)(struct drm_device *dev);
++#endif
+ 
+ 	/**
+ 	 * @mode_valid:
+@@ -368,6 +375,7 @@
+ 	 */
+ 	struct mutex mutex;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @connection_mutex:
+ 	 *
+@@ -387,6 +395,7 @@
+ 	 * this must hold @mutex.
+ 	 */
+ 	struct drm_modeset_acquire_ctx *acquire_ctx;
++#endif
+ 
+ 	/**
+ 	 * @idr_mutex:
+@@ -441,6 +450,7 @@
+ 	 * &struct drm_connector_list_iter to walk this list.
+ 	 */
+ 	struct list_head connector_list;
++#if !defined(__AROS__)
+ 	/**
+ 	 * @connector_free_list:
+ 	 *
+@@ -455,6 +465,7 @@
+ 	 * @connector_free_work: Work to clean up @connector_free_list.
+ 	 */
+ 	struct work_struct connector_free_work;
++#endif
+ 
+ 	/**
+ 	 * @num_encoder:
+@@ -528,9 +539,11 @@
+ 
+ 	/* output poll support */
+ 	bool poll_enabled;
++#if !defined(__AROS__)
+ 	bool poll_running;
+ 	bool delayed_event;
+ 	struct delayed_work output_poll_work;
++#endif
+ 
+ 	/**
+ 	 * @blob_lock:
+@@ -858,6 +871,7 @@
+ 	/* dumb ioctl parameters */
+ 	uint32_t preferred_depth, prefer_shadow;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @prefer_shadow_fbdev:
+ 	 *
+@@ -876,6 +890,7 @@
+ 	 * flag (like ttm does), and then used everywhere in fbdev code.
+ 	 */
+ 	bool fbdev_use_iomem;
++#endif
+ 
+ 	/**
+ 	 * @quirk_addfb_prefer_xbgr_30bpp:
+@@ -926,6 +941,7 @@
+ 	 */
+ 	struct drm_property *modifiers_property;
+ 
++#if !defined(__AROS__)
+ 	/* cursor size */
+ 	uint32_t cursor_width, cursor_height;
+ 
+@@ -939,6 +955,7 @@
+ 	struct drm_atomic_state *suspend_state;
+ 
+ 	const struct drm_mode_config_helper_funcs *helper_private;
++#endif
+ };
+ 
+ void drm_mode_config_init(struct drm_device *dev);
+diff -ur ./include-5.4.302/drm/drm_mode_object.h ./include/drm/drm_mode_object.h
+--- ./include-5.4.302/drm/drm_mode_object.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_mode_object.h	2026-07-22 17:58:29.000000000 +0200
+@@ -23,8 +23,10 @@
+ #ifndef __DRM_MODESET_H__
+ #define __DRM_MODESET_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/kref.h>
+ #include <drm/drm_lease.h>
++#endif
+ struct drm_object_properties;
+ struct drm_property;
+ struct drm_device;
+diff -ur ./include-5.4.302/drm/drm_modeset_helper_vtables.h ./include/drm/drm_modeset_helper_vtables.h
+--- ./include-5.4.302/drm/drm_modeset_helper_vtables.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_modeset_helper_vtables.h	2026-07-22 19:07:12.000000000 +0200
+@@ -355,6 +355,7 @@
+ 	int (*atomic_check)(struct drm_crtc *crtc,
+ 			    struct drm_crtc_state *state);
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @atomic_begin:
+ 	 *
+@@ -450,6 +451,7 @@
+ 	 */
+ 	void (*atomic_disable)(struct drm_crtc *crtc,
+ 			       struct drm_crtc_state *old_crtc_state);
++#endif
+ };
+ 
+ /**
+@@ -622,6 +624,7 @@
+ 			 struct drm_display_mode *mode,
+ 			 struct drm_display_mode *adjusted_mode);
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @atomic_mode_set:
+ 	 *
+@@ -644,6 +647,7 @@
+ 	void (*atomic_mode_set)(struct drm_encoder *encoder,
+ 				struct drm_crtc_state *crtc_state,
+ 				struct drm_connector_state *conn_state);
++#endif
+ 
+ 	/**
+ 	 * @get_crtc:
+diff -ur ./include-5.4.302/drm/drm_modes.h ./include/drm/drm_modes.h
+--- ./include-5.4.302/drm/drm_modes.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_modes.h	2026-07-22 19:07:12.000000000 +0200
+@@ -469,6 +469,7 @@
+ 			   struct drm_display_mode *out,
+ 			   const struct drm_mode_modeinfo *in);
+ void drm_mode_probed_add(struct drm_connector *connector, struct drm_display_mode *mode);
++#if !defined(__AROS__)
+ void drm_mode_debug_printmodeline(const struct drm_display_mode *mode);
+ bool drm_mode_is_420_only(const struct drm_display_info *display,
+ 			  const struct drm_display_mode *mode);
+@@ -476,6 +477,7 @@
+ 			  const struct drm_display_mode *mode);
+ bool drm_mode_is_420(const struct drm_display_info *display,
+ 		     const struct drm_display_mode *mode);
++#endif
+ 
+ struct drm_display_mode *drm_cvt_mode(struct drm_device *dev,
+ 				      int hdisplay, int vdisplay, int vrefresh,
+@@ -490,6 +492,7 @@
+ 					      int margins,
+ 					      int GTF_M, int GTF_2C,
+ 					      int GTF_K, int GTF_2J);
++#if !defined(__AROS__)
+ void drm_display_mode_from_videomode(const struct videomode *vm,
+ 				     struct drm_display_mode *dmode);
+ void drm_display_mode_to_videomode(const struct drm_display_mode *dmode,
+@@ -498,6 +501,7 @@
+ int of_get_drm_display_mode(struct device_node *np,
+ 			    struct drm_display_mode *dmode, u32 *bus_flags,
+ 			    int index);
++#endif
+ 
+ void drm_mode_set_name(struct drm_display_mode *mode);
+ int drm_mode_hsync(const struct drm_display_mode *mode);
+@@ -516,10 +520,12 @@
+ 		    unsigned int match_flags);
+ bool drm_mode_equal(const struct drm_display_mode *mode1,
+ 		    const struct drm_display_mode *mode2);
++#if !defined(__AROS__)
+ bool drm_mode_equal_no_clocks(const struct drm_display_mode *mode1,
+ 			      const struct drm_display_mode *mode2);
+ bool drm_mode_equal_no_clocks_no_stereo(const struct drm_display_mode *mode1,
+ 					const struct drm_display_mode *mode2);
++#endif
+ 
+ /* for use by the crtc helper probe functions */
+ enum drm_mode_status drm_mode_validate_driver(struct drm_device *dev,
+@@ -534,7 +540,9 @@
+ void drm_mode_sort(struct list_head *mode_list);
+ void drm_connector_list_update(struct drm_connector *connector);
+ 
++#if !defined(__AROS__)
+ /* parsing cmdline modes */
++#endif
+ bool
+ drm_mode_parse_command_line_for_connector(const char *mode_option,
+ 					  const struct drm_connector *connector,
+diff -ur ./include-5.4.302/drm/drm_plane.h ./include/drm/drm_plane.h
+--- ./include-5.4.302/drm/drm_plane.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_plane.h	2026-07-22 19:07:12.000000000 +0200
+@@ -24,11 +24,18 @@
+ #define __DRM_PLANE_H__
+ 
+ #include <linux/list.h>
++#if !defined(__AROS__)
+ #include <linux/ctype.h>
++#endif
+ #include <drm/drm_mode_object.h>
++#include <drm/drm_property.h>
++#if !defined(__AROS__)
+ #include <drm/drm_color_mgmt.h>
++#endif
+ #include <drm/drm_rect.h>
++#if !defined(__AROS__)
+ #include <drm/drm_modeset_lock.h>
++#endif
+ #include <drm/drm_util.h>
+ 
+ struct drm_crtc;
+@@ -159,6 +166,7 @@
+ 	 */
+ 	unsigned int normalized_zpos;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @color_encoding:
+ 	 *
+@@ -172,6 +180,7 @@
+ 	 * Color range for non RGB formats
+ 	 */
+ 	enum drm_color_range color_range;
++#endif
+ 
+ 	/**
+ 	 * @fb_damage_clips:
+@@ -569,6 +578,7 @@
+ 	/** @name: human readable name, can be overwritten by the driver */
+ 	char *name;
+ 
++#if !defined(__AROS__)
+ 	/**
+ 	 * @mutex:
+ 	 *
+@@ -579,6 +589,7 @@
+ 	 * For atomic drivers specifically this protects @state.
+ 	 */
+ 	struct drm_modeset_lock mutex;
++#endif
+ 
+ 	/** @base: base mode object */
+ 	struct drm_mode_object base;
+@@ -709,7 +720,9 @@
+ 
+ #define obj_to_plane(x) container_of(x, struct drm_plane, base)
+ 
++#if !defined(__AROS__)
+ __printf(9, 10)
++#endif
+ int drm_universal_plane_init(struct drm_device *dev,
+ 			     struct drm_plane *plane,
+ 			     uint32_t possible_crtcs,
+@@ -755,6 +768,7 @@
+ 				       struct drm_property *property,
+ 				       uint64_t value);
+ 
++#if !defined(__AROS__)
+ /**
+  * drm_plane_find - find a &drm_plane
+  * @dev: DRM device
+@@ -772,6 +786,7 @@
+ 	mo = drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_PLANE);
+ 	return mo ? obj_to_plane(mo) : NULL;
+ }
++#endif
+ 
+ /**
+  * drm_for_each_plane_mask - iterate over planes specified by bitmask
+diff -ur ./include-5.4.302/drm/drm_print.h ./include/drm/drm_print.h
+--- ./include-5.4.302/drm/drm_print.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_print.h	2026-07-22 20:16:42.000000000 +0200
+@@ -26,6 +26,7 @@
+ #ifndef DRM_PRINT_H_
+ #define DRM_PRINT_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/compiler.h>
+ #include <linux/printk.h>
+ #include <linux/seq_file.h>
+@@ -479,4 +480,9 @@
+ #define DRM_DEBUG_PRIME_RATELIMITED(fmt, ...)				\
+ 	DRM_DEV_DEBUG_PRIME_RATELIMITED(NULL, fmt, ##__VA_ARGS__)
+ 
++#else
++#include <uapi/drm/drm.h>
++#include <drm-compat/drm_print.h>
++#endif
++
+ #endif /* DRM_PRINT_H_ */
+diff -ur ./include-5.4.302/drm/drm_probe_helper.h ./include/drm/drm_probe_helper.h
+--- ./include-5.4.302/drm/drm_probe_helper.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_probe_helper.h	2026-07-22 20:15:35.000000000 +0200
+@@ -3,7 +3,9 @@
+ #ifndef __DRM_PROBE_HELPER_H__
+ #define __DRM_PROBE_HELPER_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
++#endif
+ 
+ struct drm_connector;
+ struct drm_device;
+diff -ur ./include-5.4.302/drm/drm_property.h ./include/drm/drm_property.h
+--- ./include-5.4.302/drm/drm_property.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_property.h	2026-07-22 17:58:29.000000000 +0200
+@@ -24,7 +24,9 @@
+ #define __DRM_PROPERTY_H__
+ 
+ #include <linux/list.h>
++#if !defined(__AROS__)
+ #include <linux/ctype.h>
++#endif
+ #include <drm/drm_mode_object.h>
+ 
+ #include <uapi/drm/drm_mode.h>
+diff -ur ./include-5.4.302/drm/drm_scdc_helper.h ./include/drm/drm_scdc_helper.h
+--- ./include-5.4.302/drm/drm_scdc_helper.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_scdc_helper.h	2026-07-22 17:58:29.000000000 +0200
+@@ -24,8 +24,12 @@
+ #ifndef DRM_SCDC_HELPER_H
+ #define DRM_SCDC_HELPER_H
+ 
++#if !defined(__AROS__)
+ #include <linux/i2c.h>
+ #include <linux/types.h>
++#else
++#include <drm-compat/drm_compat_i2c.h>
++#endif
+ 
+ #define SCDC_SINK_VERSION 0x01
+ 
+diff -ur ./include-5.4.302/drm/drm_util.h ./include/drm/drm_util.h
+--- ./include-5.4.302/drm/drm_util.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_util.h	2026-07-22 19:07:12.000000000 +0200
+@@ -32,10 +32,12 @@
+  * Macros and inline functions that does not naturally belong in other places
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/interrupt.h>
+ #include <linux/kgdb.h>
+ #include <linux/preempt.h>
+ #include <linux/smp.h>
++#endif
+ 
+ /*
+  * Use EXPORT_SYMBOL_FOR_TESTS_ONLY() for functions that shall
+@@ -62,6 +64,7 @@
+  */
+ #define for_each_if(condition) if (!(condition)) {} else
+ 
++#if !defined(__AROS__)
+ /**
+  * drm_can_sleep - returns true if currently okay to sleep
+  *
+@@ -79,5 +82,6 @@
+ 		return false;
+ 	return true;
+ }
++#endif
+ 
+ #endif
+diff -ur ./include-5.4.302/drm/drm_utils.h ./include/drm/drm_utils.h
+--- ./include-5.4.302/drm/drm_utils.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_utils.h	2026-07-22 17:58:29.000000000 +0200
+@@ -10,7 +10,9 @@
+ #ifndef __DRM_UTILS_H__
+ #define __DRM_UTILS_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
++#endif
+ 
+ int drm_get_panel_orientation_quirk(int width, int height);
+ 
+diff -ur ./include-5.4.302/drm/drm_vma_manager.h ./include/drm/drm_vma_manager.h
+--- ./include-5.4.302/drm/drm_vma_manager.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/drm_vma_manager.h	2026-07-22 20:18:03.000000000 +0200
+@@ -23,6 +23,7 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include <drm/drm_mm.h>
+ #include <linux/mm.h>
+ #include <linux/rbtree.h>
+@@ -242,5 +243,8 @@
+ {
+ 	return drm_vma_node_is_allowed(node, tag) ? 0 : -EACCES;
+ }
++#else
++#include <drm-compat/drm_vma_manager.h>
++#endif
+ 
+ #endif /* __DRM_VMA_MANAGER_H__ */
+diff -ur ./include-5.4.302/drm/ttm/ttm_bo_api.h ./include/drm/ttm/ttm_bo_api.h
+--- ./include-5.4.302/drm/ttm/ttm_bo_api.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/ttm/ttm_bo_api.h	2026-07-22 19:07:12.000000000 +0200
+@@ -32,8 +32,11 @@
+ #define _TTM_BO_API_H_
+ 
+ #include <drm/drm_gem.h>
++#if !defined(__AROS__)
+ #include <drm/drm_hashtab.h>
++#endif
+ #include <drm/drm_vma_manager.h>
++#if !defined(__AROS__)
+ #include <linux/kref.h>
+ #include <linux/list.h>
+ #include <linux/wait.h>
+@@ -41,6 +44,9 @@
+ #include <linux/mm.h>
+ #include <linux/bitmap.h>
+ #include <linux/dma-resv.h>
++#else
++#include <linux/list.h>
++#endif
+ 
+ struct ttm_bo_global;
+ 
+@@ -303,6 +309,7 @@
+  *
+  * Returns: @bo if the referencing was successful, NULL otherwise.
+  */
++#if !defined(__AROS__)
+ static inline __must_check struct ttm_buffer_object *
+ ttm_bo_get_unless_zero(struct ttm_buffer_object *bo)
+ {
+@@ -310,6 +317,7 @@
+ 		return NULL;
+ 	return bo;
+ }
++#endif
+ 
+ /**
+  * ttm_bo_wait - wait for buffer idle.
+@@ -719,7 +727,9 @@
+  * This function is intended to be called by the fbdev mmap method
+  * if the fbdev address space is to be backed by a bo.
+  */
++#if !defined(__AROS__)
+ int ttm_fbdev_mmap(struct vm_area_struct *vma, struct ttm_buffer_object *bo);
++#endif
+ 
+ /**
+  * ttm_bo_mmap - mmap out of the ttm device address space.
+@@ -731,8 +741,10 @@
+  * This function is intended to be called by the device mmap method.
+  * if the device address space is to be backed by the bo manager.
+  */
++#if !defined(__AROS__)
+ int ttm_bo_mmap(struct file *filp, struct vm_area_struct *vma,
+ 		struct ttm_bo_device *bdev);
++#endif
+ 
+ void *ttm_kmap_atomic_prot(struct page *page, pgprot_t prot);
+ 
+diff -ur ./include-5.4.302/drm/ttm/ttm_bo_driver.h ./include/drm/ttm/ttm_bo_driver.h
+--- ./include-5.4.302/drm/ttm/ttm_bo_driver.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/ttm/ttm_bo_driver.h	2026-07-22 19:07:12.000000000 +0200
+@@ -30,12 +30,18 @@
+ #ifndef _TTM_BO_DRIVER_H_
+ #define _TTM_BO_DRIVER_H_
+ 
++#if !defined(__AROS__)
+ #include <drm/drm_mm.h>
+ #include <drm/drm_vma_manager.h>
++#endif
++#if !defined(__AROS__)
+ #include <linux/workqueue.h>
+ #include <linux/fs.h>
+ #include <linux/spinlock.h>
+ #include <linux/dma-resv.h>
++#else
++#include <drm-compat/drm_compat_types.h>
++#endif
+ 
+ #include "ttm_bo_api.h"
+ #include "ttm_memory.h"
+@@ -422,8 +428,10 @@
+ 	 * Constant after init.
+ 	 */
+ 
++#if !defined(__AROS__)
+ 	struct kobject kobj;
+ 	struct ttm_mem_global *mem_glob;
++#endif
+ 	struct page *dummy_read_page;
+ 	spinlock_t lru_lock;
+ 
+@@ -632,6 +640,9 @@
+ void ttm_bo_del_sub_from_lru(struct ttm_buffer_object *bo);
+ void ttm_bo_add_to_lru(struct ttm_buffer_object *bo);
+ 
++#if defined(__AROS__)
++struct ww_acquire_ctx;
++#endif
+ /**
+  * __ttm_bo_reserve:
+  *
+@@ -727,7 +738,9 @@
+ {
+ 	int ret;
+ 
++#if !defined(__AROS__)
+ 	WARN_ON(!kref_read(&bo->kref));
++#endif
+ 
+ 	ret = __ttm_bo_reserve(bo, interruptible, no_wait, ticket);
+ 	if (likely(ret == 0))
+diff -ur ./include-5.4.302/drm/ttm/ttm_memory.h ./include/drm/ttm/ttm_memory.h
+--- ./include-5.4.302/drm/ttm/ttm_memory.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/ttm/ttm_memory.h	2026-07-22 17:58:29.000000000 +0200
+@@ -28,6 +28,7 @@
+ #ifndef TTM_MEMORY_H
+ #define TTM_MEMORY_H
+ 
++#if !defined(__AROS__)
+ #include <linux/workqueue.h>
+ #include <linux/spinlock.h>
+ #include <linux/bug.h>
+@@ -35,6 +36,7 @@
+ #include <linux/errno.h>
+ #include <linux/kobject.h>
+ #include <linux/mm.h>
++#endif
+ #include "ttm_bo_api.h"
+ 
+ /**
+@@ -64,10 +66,14 @@
+ #define TTM_MEM_MAX_ZONES 2
+ struct ttm_mem_zone;
+ extern struct ttm_mem_global {
++#if !defined(__AROS__)
+ 	struct kobject kobj;
++#endif
+ 	struct ttm_bo_global *bo_glob;
+ 	struct workqueue_struct *swap_queue;
++#if !defined(__AROS__)
+ 	struct work_struct work;
++#endif
+ 	spinlock_t lock;
+ 	uint64_t lower_mem_limit;
+ 	struct ttm_mem_zone *zones[TTM_MEM_MAX_ZONES];
+diff -ur ./include-5.4.302/drm/ttm/ttm_module.h ./include/drm/ttm/ttm_module.h
+--- ./include-5.4.302/drm/ttm/ttm_module.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/ttm/ttm_module.h	2026-07-22 17:58:29.000000000 +0200
+@@ -31,10 +31,14 @@
+ #ifndef _TTM_MODULE_H_
+ #define _TTM_MODULE_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/kernel.h>
+ struct kobject;
++#endif
+ 
+ #define TTM_PFX "[TTM] "
++#if !defined(__AROS__)
+ extern struct kobject *ttm_get_kobj(void);
++#endif
+ 
+ #endif /* _TTM_MODULE_H_ */
+diff -ur ./include-5.4.302/drm/ttm/ttm_page_alloc.h ./include/drm/ttm/ttm_page_alloc.h
+--- ./include-5.4.302/drm/ttm/ttm_page_alloc.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/ttm/ttm_page_alloc.h	2026-07-22 19:07:12.000000000 +0200
+@@ -72,7 +72,9 @@
+ /**
+  * Output the state of pools to debugfs file
+  */
++#if !defined(__AROS__)
+ int ttm_page_alloc_debugfs(struct seq_file *m, void *data);
++#endif
+ 
+ #if defined(CONFIG_SWIOTLB) || defined(CONFIG_INTEL_IOMMU)
+ /**
+@@ -103,10 +105,12 @@
+ 
+ static inline void ttm_dma_page_alloc_fini(void) { return; }
+ 
++#if !defined(__AROS__)
+ static inline int ttm_dma_page_alloc_debugfs(struct seq_file *m, void *data)
+ {
+ 	return 0;
+ }
++#endif
+ static inline int ttm_dma_populate(struct ttm_dma_tt *ttm_dma,
+ 				struct device *dev,
+ 				struct ttm_operation_ctx *ctx)
+diff -ur ./include-5.4.302/drm/ttm/ttm_placement.h ./include/drm/ttm/ttm_placement.h
+--- ./include-5.4.302/drm/ttm/ttm_placement.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/ttm/ttm_placement.h	2026-07-22 17:58:29.000000000 +0200
+@@ -31,7 +31,9 @@
+ #ifndef _TTM_PLACEMENT_H_
+ #define _TTM_PLACEMENT_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
++#endif
+ 
+ /*
+  * Memory regions for data placement.
+diff -ur ./include-5.4.302/drm/ttm/ttm_set_memory.h ./include/drm/ttm/ttm_set_memory.h
+--- ./include-5.4.302/drm/ttm/ttm_set_memory.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/ttm/ttm_set_memory.h	2026-07-22 17:58:29.000000000 +0200
+@@ -31,7 +31,9 @@
+ #ifndef TTM_SET_MEMORY
+ #define TTM_SET_MEMORY
+ 
++#if !defined(__AROS__)
+ #include <linux/mm.h>
++#endif
+ 
+ #ifdef CONFIG_X86
+ 
+@@ -71,7 +73,7 @@
+ 
+ #else /* for CONFIG_X86 */
+ 
+-#if IS_ENABLED(CONFIG_AGP)
++#if 0//IS_ENABLED(CONFIG_AGP)
+ 
+ #include <asm/agp.h>
+ 
+diff -ur ./include-5.4.302/drm/ttm/ttm_tt.h ./include/drm/ttm/ttm_tt.h
+--- ./include-5.4.302/drm/ttm/ttm_tt.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/drm/ttm/ttm_tt.h	2026-07-22 17:58:29.000000000 +0200
+@@ -27,7 +27,9 @@
+ #ifndef _TTM_TT_H_
+ #define _TTM_TT_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
++#endif
+ 
+ struct ttm_tt;
+ struct ttm_mem_reg;
+@@ -109,7 +111,11 @@
+ 	uint32_t page_flags;
+ 	unsigned long num_pages;
+ 	struct sg_table *sg; /* for SG objects via dma-buf */
++#if !defined(__AROS__)
+ 	struct file *swap_storage;
++#else
++	APTR allocated_buffer;
++#endif
+ 	enum ttm_caching_state caching_state;
+ 	enum {
+ 		tt_bound,
+@@ -247,6 +253,7 @@
+  */
+ void ttm_tt_unpopulate(struct ttm_tt *ttm);
+ 
++#if 0
+ #if IS_ENABLED(CONFIG_AGP)
+ #include <linux/agp_backend.h>
+ 
+@@ -268,5 +275,6 @@
+ int ttm_agp_tt_populate(struct ttm_tt *ttm, struct ttm_operation_ctx *ctx);
+ void ttm_agp_tt_unpopulate(struct ttm_tt *ttm);
+ #endif
++#endif
+ 
+ #endif
+diff -ur ./include-5.4.302/libdrm/nouveau/nouveau.h ./include/libdrm/nouveau/nouveau.h
+--- ./include-5.4.302/libdrm/nouveau/nouveau.h	2020-04-03 13:39:47.000000000 +0200
++++ ./include/libdrm/nouveau/nouveau.h	2026-07-22 17:58:29.000000000 +0200
+@@ -134,6 +134,11 @@
+ 	union nouveau_bo_config config;
+ };
+ 
++#if defined(__AROS__)
++#define nouveau_bo_new                      libdrm_nouveau_bo_new
++#define nouveau_bo_map                      libdrm_nouveau_bo_map
++#endif
++
+ int nouveau_bo_new(struct nouveau_device *, uint32_t flags, uint32_t align,
+ 		   uint64_t size, union nouveau_bo_config *,
+ 		   struct nouveau_bo **);
+diff -ur ./include-5.4.302/uapi/drm/drm.h ./include/uapi/drm/drm.h
+--- ./include-5.4.302/uapi/drm/drm.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/uapi/drm/drm.h	2026-07-22 17:58:29.000000000 +0200
+@@ -51,8 +51,13 @@
+ #else /* One of the BSDs */
+ 
+ #include <stdint.h>
++#if !defined(__AROS__)
+ #include <sys/ioccom.h>
+ #include <sys/types.h>
++#else
++#include <sys/ioctl.h>
++#include <drm-compat/drm_compat_types.h>
++#endif
+ typedef int8_t   __s8;
+ typedef uint8_t  __u8;
+ typedef int16_t  __s16;
+diff -ur ./include-5.4.302/uapi/drm/nouveau_drm.h ./include/uapi/drm/nouveau_drm.h
+--- ./include-5.4.302/uapi/drm/nouveau_drm.h	2025-12-03 12:45:22.000000000 +0100
++++ ./include/uapi/drm/nouveau_drm.h	2026-07-22 19:07:12.000000000 +0200
+@@ -25,7 +25,9 @@
+ #ifndef __NOUVEAU_DRM_H__
+ #define __NOUVEAU_DRM_H__
+ 
++#if !defined(__AROS__)
+ #define DRM_NOUVEAU_EVENT_NVIF                                       0x80000000
++#endif
+ 
+ #include "drm.h"
+ 
+@@ -33,6 +35,37 @@
+ extern "C" {
+ #endif
+ 
++#if defined(__AROS__)
++#define NOUVEAU_GETPARAM_PCI_VENDOR      3
++#define NOUVEAU_GETPARAM_PCI_DEVICE      4
++#define NOUVEAU_GETPARAM_BUS_TYPE        5
++#define NOUVEAU_GETPARAM_FB_PHYSICAL     6
++#define NOUVEAU_GETPARAM_AGP_PHYSICAL    7
++#define NOUVEAU_GETPARAM_FB_SIZE         8
++#define NOUVEAU_GETPARAM_AGP_SIZE        9
++#define NOUVEAU_GETPARAM_PCI_PHYSICAL    10
++#define NOUVEAU_GETPARAM_CHIPSET_ID      11
++#define NOUVEAU_GETPARAM_VM_VRAM_BASE    12
++#define NOUVEAU_GETPARAM_GRAPH_UNITS     13
++#define NOUVEAU_GETPARAM_PTIMER_TIME     14
++#define NOUVEAU_GETPARAM_HAS_BO_USAGE    15
++#define NOUVEAU_GETPARAM_HAS_PAGEFLIP    16
++#define NOUVEAU_GETPARAM_VRAM_SIZE       128
++#define NOUVEAU_GETPARAM_GART_SIZE       129
++#define NOUVEAU_GETPARAM_VRAM_FREE       130
++#define NOUVEAU_GETPARAM_GART_FREE       131
++
++struct drm_nouveau_getparam {
++	uint64_t param;
++	uint64_t value;
++};
++
++struct drm_nouveau_setparam {
++	uint64_t param;
++	uint64_t value;
++};
++#endif
++
+ #define NOUVEAU_GEM_DOMAIN_CPU       (1 << 0)
+ #define NOUVEAU_GEM_DOMAIN_VRAM      (1 << 1)
+ #define NOUVEAU_GEM_DOMAIN_GART      (1 << 2)

@@ -1,0 +1,17 @@
+/* Auto-generated: subdev/pci */
+#if !defined(__AROS__)
+#include "agp.c"
+#endif
+#include "base.c"
+#include "g84.c"
+#include "g92.c"
+#include "g94.c"
+#include "gf100.c"
+#include "gf106.c"
+#include "gk104.c"
+#include "gp100.c"
+#include "nv04.c"
+#include "nv40.c"
+#include "nv46.c"
+#include "nv4c.c"
+#include "pcie.c"
