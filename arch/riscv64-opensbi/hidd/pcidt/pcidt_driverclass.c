@@ -242,6 +242,38 @@ static void pcidt_assignbars(struct pcidt_staticdata *psd,
                 hdr = (PCIDT_ReadConfig(b, bus, dev, sub, 0x0c) >> 16) & 0xff;
                 if (sub == 0 && (hdr & 0x80))
                     nfunc = 8;
+                if ((hdr & 0x7f) == 1)
+                {
+                    /*
+                     * A bridge only forwards upstream memory requests
+                     * with bus mastering enabled on it; firmware does
+                     * not necessarily leave it set. Devices behind it
+                     * enable their own mastering, but without this bit
+                     * their transactions die at the bridge.
+                     */
+                    ULONG cmd = PCIDT_ReadConfig(b, bus, dev, sub, 0x04);
+                    PCIDT_WriteConfig(b, bus, dev, sub, 0x04, cmd | 0x0007);
+                    D(bug("[PCIDT:Driver] %02x:%02x.%x bridge command %04x -> %04x\n",
+                        bus, dev, sub, cmd & 0xffff,
+                        PCIDT_ReadConfig(b, bus, dev, sub, 0x04) & 0xffff);)
+                    if (bus == b->busStart)
+                    {
+                        /*
+                         * The root port's own base registers claim
+                         * upstream traffic into the bridge; whatever
+                         * range firmware left in them is a hole no
+                         * device can master through. Linux clears them
+                         * unconditionally (dw_pcie_setup_rc) - do the
+                         * same.
+                         */
+                        D(bug("[PCIDT:Driver] %02x:%02x.%x root bars %08x %08x -> cleared\n",
+                            bus, dev, sub,
+                            PCIDT_ReadConfig(b, bus, dev, sub, 0x10),
+                            PCIDT_ReadConfig(b, bus, dev, sub, 0x14));)
+                        PCIDT_WriteConfig(b, bus, dev, sub, 0x10, 0x00000004);
+                        PCIDT_WriteConfig(b, bus, dev, sub, 0x14, 0x00000000);
+                    }
+                }
                 if ((hdr & 0x7f) != 0)
                     continue;
                 lastreg = 0x24;
@@ -342,6 +374,41 @@ static void pcidt_assignbars(struct pcidt_staticdata *psd,
                     ULONG cmd = PCIDT_ReadConfig(b, bus, dev, sub, 0x04);
                     PCIDT_WriteConfig(b, bus, dev, sub, 0x04,
                                       (cmd & 0xffff0000) | ((cmd & 0xffff) | 0x0003));
+                }
+
+                /*
+                 * Forbid no-snoop transactions. Nothing here can flush
+                 * caches by hand, so DMA is only correct if every
+                 * transfer takes part in coherency - a device using
+                 * the no-snoop attribute (the enable bit is set by
+                 * default) reads stale memory behind the CPU's cache.
+                 */
+                {
+                    ULONG sts = PCIDT_ReadConfig(b, bus, dev, sub, 0x04);
+                    UBYTE ptr;
+
+                    if (sts & (0x10UL << 16))
+                    {
+                        ptr = PCIDT_ReadConfig(b, bus, dev, sub, 0x34) & 0xfc;
+                        while (ptr)
+                        {
+                            ULONG cap = PCIDT_ReadConfig(b, bus, dev, sub, ptr);
+                            if ((cap & 0xff) == 0x10)
+                            {
+                                ULONG devctl = PCIDT_ReadConfig(b, bus, dev, sub, ptr + 8);
+                                if (devctl & 0x0800)
+                                {
+                                    PCIDT_WriteConfig(b, bus, dev, sub, ptr + 8,
+                                                      devctl & ~0x0800UL);
+                                    D(bug("[PCIDT:Driver] %02x:%02x.%x no-snoop disabled (devctl %04x -> %04x)\n",
+                                        bus, dev, sub, devctl & 0xffff,
+                                        PCIDT_ReadConfig(b, bus, dev, sub, ptr + 8) & 0xffff);)
+                                }
+                                break;
+                            }
+                            ptr = (cap >> 8) & 0xfc;
+                        }
+                    }
                 }
             }
         }
@@ -689,6 +756,7 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
             /* The windows devices behind this bridge will answer in */
             pcidt_mapranges(psd, node, b);
             PCIDT_DropBootCfgWindows(b);
+            PCIDT_SetupOutboundWindows(b);
             pcidt_assignbars(psd, b);
             pcidt_map64bars(psd, b);
 

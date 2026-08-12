@@ -216,6 +216,7 @@ ULONG PCIDT_ReadConfig(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
 void  PCIDT_WriteConfig(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
                         UBYTE sub, UWORD reg, ULONG val);
 void  PCIDT_DropBootCfgWindows(struct pcidt_bridge *b);
+void  PCIDT_SetupOutboundWindows(struct pcidt_bridge *b);
 void  PCIDT_EnableDMA(struct pcidt_bridge *b, IPTR base, IPTR size);
 void  PCIDT_DisableMSI(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
                        UBYTE sub);
