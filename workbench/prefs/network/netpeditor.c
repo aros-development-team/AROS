@@ -43,6 +43,7 @@ static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
 static CONST_STRPTR ServiceTypeCycle[] = { NULL, NULL };
+static CONST_STRPTR TunnelTypeCycle[] = { "6in4", NULL };
 static const TEXT max_ip_str[] = "255.255.255.255 ";
 
 /* -----------------------------------------------------------------------
@@ -130,8 +131,9 @@ struct NetPEditor_DATA
             *netped_applyButton,
             *netped_closeButton;
 
-    // 6in4 tunnel window
+    // tunnel window
     Object  *netped_tunnelWindow,
+            *netped_tunTypeCycle,
             *netped_tunNameString,
             *netped_tunRemoteString,
             *netped_tunLocalString,
@@ -222,9 +224,8 @@ AROS_UFHA(struct Interface *, entry, A1))
     if (entry)
     {
         static char namebuffer[NAMEBUFLEN + 32]; /* room for \33O[ptr] prefix */
-        static char unitbuffer[20];
         static char addrbuffer[12 + IPBUFLEN + 2 + IP6BUFLEN + 1];
-        static char devbuffer[8 + IPBUFLEN];
+        static char devbuffer[NAMEBUFLEN + IPBUFLEN + 8];
         CONST_STRPTR ip4, ip6;
 
         switch (entry->ipMode)
@@ -239,8 +240,6 @@ AROS_UFHA(struct Interface *, entry, A1))
             case IP_MODE_AUTO:   ip6 = _(MSG_IP6_MODE_AUTO); break;
             default:             ip6 = entry->ip6[0] ? entry->ip6 : NULL; break;
         }
-
-        sprintf(unitbuffer, "%d", (int)entry->unit);
 
         /* Prepend icon to interface name if available */
         if (hook->h_Data)
@@ -259,14 +258,13 @@ AROS_UFHA(struct Interface *, entry, A1))
             else
                 strcpy(devbuffer, "6in4");
             *array++ = devbuffer;
-            *array++ = "";          /* a tunnel is a pseudo-interface: no unit */
             sprintf(addrbuffer, "%s (IP6)", ip6 ? ip6 : entry->ip6);
             *array = addrbuffer;
         }
         else
         {
-            *array++ = FilePart(entry->device);
-            *array++ = unitbuffer;
+            sprintf(devbuffer, "%s/%d", FilePart(entry->device), (int)entry->unit);
+            *array++ = devbuffer;
 
             /* Build combined IPv4 / IPv6 address string */
             if (ip6)
@@ -281,7 +279,6 @@ AROS_UFHA(struct Interface *, entry, A1))
         *array++ = (STRPTR)_(MSG_IFNAME);
         *array++ = (STRPTR)_(MSG_UP);
         *array++ = (STRPTR)_(MSG_DEVICE);
-        *array++ = (STRPTR)_(MSG_UNIT);
         *array = (STRPTR)_(MSG_IP);
     }
 
@@ -885,10 +882,10 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *unitString, *nameString, *upState,
             *ifWindow, *applyButton, *closeButton;
 
-    // 6in4 tunnel window
-    Object  *tunnelWindow, *tunNameString, *tunRemoteString, *tunLocalString,
-            *tunTTLString, *tunIP6String, *tunPrefixString, *tunGate6String,
-            *tunUpState, *tunApplyButton, *tunCloseButton;
+    // tunnel window
+    Object  *tunnelWindow, *tunTypeCycle, *tunNameString, *tunRemoteString,
+            *tunLocalString, *tunTTLString, *tunIP6String, *tunPrefixString,
+            *tunGate6String, *tunUpState, *tunApplyButton, *tunCloseButton;
 
     // host window
     Object  *hostNamesString, *hostAddressString, *hostWindow,
@@ -955,7 +952,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Listview_List, (IPTR)(interfaceList = (Object *)ListObject,
                             ReadListFrame,
                             MUIA_List_Title, TRUE,
-                            MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,BAR,",
+                            MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,",
                             MUIA_List_ConstructHook, (IPTR)&netpeditor_constructHook,
                             MUIA_List_DestructHook, (IPTR)&netpeditor_destructHook,
                             MUIA_List_DisplayHook, (IPTR)&netpeditor_displayHook,
@@ -1259,6 +1256,16 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         End,
     End;
 
+    /* The outer/inner frame and endpoint labels name the carried protocols,
+       which depend on the tunnel type (6in4 carries IPv6 over IPv4). */
+    static char tunOuterFrame[64], tunInnerFrame[64],
+                tunRemoteLabel[64], tunLocalLabel[64];
+    CONST_STRPTR outerProto = _(MSG_PROTO_IPV4), innerProto = _(MSG_PROTO_IPV6);
+    snprintf(tunOuterFrame,  sizeof(tunOuterFrame),  _(MSG_TUN_OUTER),  outerProto);
+    snprintf(tunInnerFrame,  sizeof(tunInnerFrame),  _(MSG_TUN_INNER),  innerProto);
+    snprintf(tunRemoteLabel, sizeof(tunRemoteLabel), _(MSG_TUN_REMOTE), outerProto);
+    snprintf(tunLocalLabel,  sizeof(tunLocalLabel),  _(MSG_TUN_LOCAL),  outerProto);
+
     tunnelWindow = (Object *)WindowObject,
         MUIA_Window_Title, __(MSG_TUNWINDOW_TITLE),
         MUIA_Window_ID, MAKE_ID('T', 'U', 'N', 'W'),
@@ -1275,7 +1282,14 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, (IPTR)HVSpace,
             End,
             Child, (IPTR)ColGroup(2),
-                GroupFrameT(__(MSG_TUN_OUTER)),
+                Child, (IPTR)Label2(_(MSG_TUN_TYPE)),
+                Child, (IPTR)(tunTypeCycle = (Object *)CycleObject,
+                    MUIA_CycleChain, 1,
+                    MUIA_Cycle_Entries, (IPTR)TunnelTypeCycle,
+                End),
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrameT((IPTR)tunOuterFrame),
                 Child, (IPTR)Label2(_(MSG_IFNAME)),
                 Child, (IPTR)HGroup,
                     Child, (IPTR)(tunNameString = (Object *)StringObject,
@@ -1287,13 +1301,13 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR)Label2(_(MSG_UP)),
                     Child, (IPTR)HVSpace,
                 End,
-                Child, (IPTR)Label2(_(MSG_TUN_REMOTE)),
+                Child, (IPTR)Label2(tunRemoteLabel),
                 Child, (IPTR)(tunRemoteString = (Object *)StringObject,
                     StringFrame,
                     MUIA_String_Accept, (IPTR)IPCHARS,
                     MUIA_CycleChain, 1,
                 End),
-                Child, (IPTR)Label2(_(MSG_TUN_LOCAL)),
+                Child, (IPTR)Label2(tunLocalLabel),
                 Child, (IPTR)(tunLocalString = (Object *)StringObject,
                     StringFrame,
                     MUIA_String_Accept, (IPTR)IPCHARS,
@@ -1311,7 +1325,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
             End,
             Child, (IPTR)ColGroup(2),
-                GroupFrameT(__(MSG_TUN_INNER)),
+                GroupFrameT((IPTR)tunInnerFrame),
                 Child, (IPTR)Label2(_(MSG_IP6)),
                 Child, (IPTR)(tunIP6String = (Object *)StringObject,
                     StringFrame,
@@ -1555,8 +1569,9 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_applyButton   = applyButton;
         data->netped_closeButton   = closeButton;
 
-        // 6in4 tunnel window
+        // tunnel window
         data->netped_tunnelWindow    = tunnelWindow;
+        data->netped_tunTypeCycle    = tunTypeCycle;
         data->netped_tunNameString   = tunNameString;
         data->netped_tunRemoteString = tunRemoteString;
         data->netped_tunLocalString  = tunLocalString;
@@ -1673,7 +1688,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR)self, 2, MUIM_NetPEditor_EditEntry, FALSE
         );
 
-        // 6in4 tunnel window
+        // tunnel window
         DoMethod
         (
             tunUpState, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
