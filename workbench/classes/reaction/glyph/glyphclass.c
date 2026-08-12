@@ -271,6 +271,19 @@ IPTR Glyph__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         }
 
         glyph_set(cl, (Object *)retval, msg);
+
+        /* Give the image a sensible natural size if the application did
+         * not specify one - the imageclass default of 80x40 is far too
+         * big for a glyph and makes layouts/buttons balloon */
+        {
+            struct Image *im = (struct Image *)retval;
+            struct TagItem *tags = msg->ops_AttrList;
+
+            if (!FindTagItem(IA_Width, tags))
+                im->Width = 16;
+            if (!FindTagItem(IA_Height, tags))
+                im->Height = 16;
+        }
     }
 
     return retval;

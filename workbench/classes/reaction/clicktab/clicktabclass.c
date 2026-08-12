@@ -152,6 +152,9 @@ static void clicktab_compute_widths(struct ClickTabData *data,
             struct ClickTabNode *tn = (struct ClickTabNode *)node;
             UWORD w = TAB_PADDING_H * 2;
 
+            if (tn->tn_CloseGadget)
+                w += 14;
+
             if (tn->tn_Text && rp)
             {
                 w += clicktab_label_width(rp, tn->tn_Text);
@@ -291,7 +294,12 @@ static void clicktab_set(Class *cl, Object *o, struct opSet *msg)
         switch (tag->ti_Tag)
         {
             case CLICKTAB_Labels:
-                data->td_Labels = (struct List *)tag->ti_Data;
+                /* ~0 is the ClassAct "detach list" sentinel, used while the
+                 * application modifies the list */
+                if (tag->ti_Data == (IPTR)~0)
+                    data->td_Labels = NULL;
+                else
+                    data->td_Labels = (struct List *)tag->ti_Data;
                 data->td_NumTabs = clicktab_count_tabs(data->td_Labels);
                 clicktab_free_widths(data);
                 /* Caller-owned list overrides any GA_Text auto list. */
@@ -321,6 +329,26 @@ static void clicktab_set(Class *cl, Object *o, struct opSet *msg)
                 break;
             case CLICKTAB_PageGroup:
                 data->td_PageGroup = (Object *)tag->ti_Data;
+                break;
+            case CLICKTAB_MinorLabelChange:
+                /* Label texts changed but tab layout is retained; the
+                   cached widths stay valid so nothing to do beyond a
+                   redraw by the caller. */
+                break;
+            case CLICKTAB_LabelTruncate:
+                data->td_LabelTruncate = (BOOL)tag->ti_Data;
+                break;
+            case CLICKTAB_CloseImage:
+                data->td_CloseImage = (Object *)tag->ti_Data;
+                break;
+            case CLICKTAB_FlagImage:
+                data->td_FlagImage = (Object *)tag->ti_Data;
+                break;
+            case CLICKTAB_AutoFit:
+                data->td_AutoFit = (BOOL)tag->ti_Data;
+                break;
+            case CLICKTAB_EvenSize:
+                data->td_EvenSize = (BOOL)tag->ti_Data;
                 break;
         }
     }
@@ -412,6 +440,10 @@ IPTR ClickTab__OM_GET(Class *cl, Object *o, struct opGet *msg)
             *msg->opg_Storage = (IPTR)clicktab_get_node(data->td_Labels,
                                                          data->td_Current);
             return TRUE;
+
+        case CLICKTAB_NodeClosed:
+            *msg->opg_Storage = (IPTR)data->td_NodeClosed;
+            return TRUE;
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
@@ -421,8 +453,10 @@ IPTR ClickTab__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 static void clicktab_draw_tab(struct RastPort *rp, struct DrawInfo *dri,
                               WORD x, WORD y, WORD w, WORD h,
-                              STRPTR text, BOOL selected, BOOL disabled)
+                              STRPTR text, BOOL selected, BOOL disabled,
+                              struct ClickTabNode *tn, Object *closeimage)
 {
+    WORD closeoff = 0;
     UWORD shine   = dri ? dri->dri_Pens[SHINEPEN]      : 2;
     UWORD shadow  = dri ? dri->dri_Pens[SHADOWPEN]     : 1;
     UWORD bg      = dri ? dri->dri_Pens[BACKGROUNDPEN] : 0;
@@ -464,11 +498,48 @@ static void clicktab_draw_tab(struct RastPort *rp, struct DrawInfo *dri,
         Draw(rp, x + w - 2, y + h - 1);
     }
 
+    /* Close gadget on the left side of the tab */
+    if (tn && tn->tn_CloseGadget)
+    {
+        WORD cs = h - 6;
+        WORD cx = x + 4;
+        WORD cy = y + 3;
+
+        if (cs > 10) cs = 10;
+
+        if (closeimage)
+        {
+            struct Image *cim = (struct Image *)closeimage;
+
+            if (cim->Width > cs + 2 || cim->Height > cs + 2)
+            {
+                SetAttrs(closeimage,
+                    IA_Width,  cs + 2,
+                    IA_Height, cs + 2,
+                    TAG_DONE);
+            }
+            DrawImageState(rp, cim, cx, cy, IDS_NORMAL, dri);
+        }
+        else
+        {
+            /* Built-in: small recessed box with an X */
+            SetAPen(rp, shadow);
+            Move(rp, cx, cy + cs); Draw(rp, cx, cy); Draw(rp, cx + cs, cy);
+            SetAPen(rp, shine);
+            Draw(rp, cx + cs, cy + cs); Draw(rp, cx + 1, cy + cs);
+            SetAPen(rp, textpen);
+            Move(rp, cx + 2, cy + 2); Draw(rp, cx + cs - 2, cy + cs - 2);
+            Move(rp, cx + cs - 2, cy + 2); Draw(rp, cx + 2, cy + cs - 2);
+        }
+
+        closeoff = cs + 4;
+    }
+
     /* Draw label */
     if (text)
     {
         UWORD lblW = clicktab_label_width(rp, text);
-        WORD tx = x + (w - lblW) / 2;
+        WORD tx = x + closeoff + (w - closeoff - lblW) / 2;
         WORD ty = y + TAB_PADDING_V + rp->TxBaseline;
 
         if (!selected)
@@ -551,7 +622,7 @@ IPTR ClickTab__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
             clicktab_draw_tab(rp, dri, tx, y,
                               data->td_TabWidths[i], data->td_TabHeight,
-                              label, FALSE, disabled);
+                              label, FALSE, disabled, tn, data->td_CloseImage);
         }
         tx += data->td_TabWidths[i] - TAB_OVERLAP;
     }
@@ -571,7 +642,7 @@ IPTR ClickTab__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         clicktab_draw_tab(rp, dri, tx, y,
                           data->td_TabWidths[data->td_Current],
                           data->td_TabHeight,
-                          label, TRUE, FALSE);
+                          label, TRUE, FALSE, tn, data->td_CloseImage);
     }
 
 done:
@@ -632,6 +703,42 @@ IPTR ClickTab__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
                 my >= 0 && my < (WORD)data->td_TabHeight)
             {
                 LONG hit = clicktab_hit_test(data, mx);
+
+                /* Close gadget hit? The close box sits in the first
+                 * TAB_PADDING_H + ~14 pixels of a closable tab */
+                if (hit >= 0)
+                {
+                    struct ClickTabNode *ctn =
+                        clicktab_get_node(data->td_Labels, hit);
+
+                    if (ctn && ctn->tn_CloseGadget)
+                    {
+                        WORD tabx = 0;
+                        LONG t;
+
+                        for (t = 0; t < hit; t++)
+                            tabx += data->td_TabWidths[t] - TAB_OVERLAP;
+
+                        if (mx >= tabx + 2 && mx <= tabx + 16)
+                        {
+                            struct TagItem nt[3];
+
+                            data->td_NodeClosed = (struct Node *)ctn;
+
+                            nt[0].ti_Tag  = GA_ID;
+                            nt[0].ti_Data = gad->GadgetID;
+                            nt[1].ti_Tag  = CLICKTAB_NodeClosed;
+                            nt[1].ti_Data = (IPTR)ctn;
+                            nt[2].ti_Tag  = TAG_DONE;
+
+                            DoMethod(o, OM_NOTIFY, (IPTR)nt,
+                                (IPTR)msg->gpi_GInfo, 0);
+
+                            *msg->gpi_Termination = data->td_Current;
+                            return GMR_NOREUSE | GMR_VERIFY;
+                        }
+                    }
+                }
 
                 if (hit >= 0 && hit != data->td_Current)
                 {

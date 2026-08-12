@@ -373,11 +373,19 @@ IPTR Label__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
 
     SetDrMd(rp, JAM1);
 
-    /* Draw the optional image first */
+    /* Draw the optional image first, vertically centred; the text is
+     * shifted right so it doesn't overdraw the image */
+    WORD textOffset = 0;
+
     if (data->ld_Image)
     {
-        DrawImageState(rp, (struct Image *)data->ld_Image,
-            x, y, msg->imp_State, dri);
+        struct Image *lim = (struct Image *)data->ld_Image;
+
+        DrawImageState(rp, lim,
+            x, y + (h > lim->Height ? (h - lim->Height) / 2 : 0),
+            msg->imp_State, dri);
+
+        textOffset = lim->Width + 4;
     }
 
     /* Draw text label */
@@ -435,7 +443,7 @@ IPTR Label__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
 
             case LJ_LEFT:
             default:
-                textX = x;
+                textX = x + textOffset;
                 break;
         }
 

@@ -9,6 +9,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
+#include <proto/gadtools.h>
 #include <proto/layers.h>
 #include <proto/alib.h>
 
@@ -71,6 +72,14 @@ static void window_set(Class *cl, Object *o, struct opSet *msg)
 
             case WINDOW_MenuStrip:
                 data->wcd_MenuStrip = (struct Menu *)tag->ti_Data;
+                break;
+
+            case WINDOW_NewMenu:
+                data->wcd_NewMenu = (struct NewMenu *)tag->ti_Data;
+                break;
+
+            case WINDOW_IconNoDispose:
+                data->wcd_IconNoDispose = (BOOL)tag->ti_Data;
                 break;
 
             case WINDOW_Position:
@@ -190,6 +199,53 @@ IPTR Window__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
+/* Detach a shared IDCMP port before closing the window, discarding any
+ * pending messages that belong to this window (CloseWindowSafely) */
+static void window_detach_sharedport(struct WindowClassData *data)
+{
+    if (data->wcd_UserPort && data->wcd_Window &&
+        data->wcd_Window->UserPort == data->wcd_UserPort)
+    {
+        struct IntuiMessage *imsg;
+        struct Node *succ;
+
+        Forbid();
+
+        imsg = (struct IntuiMessage *)data->wcd_UserPort->mp_MsgList.lh_Head;
+        while ((succ = imsg->ExecMessage.mn_Node.ln_Succ))
+        {
+            if (imsg->IDCMPWindow == data->wcd_Window)
+            {
+                Remove((struct Node *)imsg);
+                ReplyMsg((struct Message *)imsg);
+            }
+            imsg = (struct IntuiMessage *)succ;
+        }
+
+        data->wcd_Window->UserPort = NULL;
+        ModifyIDCMP(data->wcd_Window, 0);
+
+        Permit();
+    }
+}
+
+/* Free a menu strip built from WINDOW_NewMenu, if any */
+static void window_freemenus(struct WindowClassData *data)
+{
+    if (data->wcd_MenuCreated)
+    {
+        if (data->wcd_MenuStrip)
+            FreeMenus(data->wcd_MenuStrip);
+        data->wcd_MenuStrip = NULL;
+        data->wcd_MenuCreated = FALSE;
+    }
+    if (data->wcd_VisualInfo)
+    {
+        FreeVisualInfo(data->wcd_VisualInfo);
+        data->wcd_VisualInfo = NULL;
+    }
+}
+
 IPTR Window__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct WindowClassData *data = INST_DATA(cl, o);
@@ -202,9 +258,12 @@ IPTR Window__OM_DISPOSE(Class *cl, Object *o, Msg msg)
         if (data->wcd_MenuStrip)
             ClearMenuStrip(data->wcd_Window);
 
+        window_detach_sharedport(data);
         CloseWindow(data->wcd_Window);
         data->wcd_Window = NULL;
     }
+
+    window_freemenus(data);
 
     /* Dispose the root layout */
     if (data->wcd_Layout)
@@ -257,6 +316,10 @@ IPTR Window__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
         case WINDOW_GadgetUserData:
             *msg->opg_Storage = data->wcd_GadgetUserData;
+            return TRUE;
+
+        case WINDOW_Qualifier:
+            *msg->opg_Storage = data->wcd_Qualifier;
             return TRUE;
     }
 
@@ -400,6 +463,13 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
                          IDCMP_INACTIVEWINDOW,
         WA_NewLookMenus, TRUE,
         WA_SizeBBottom, TRUE,
+        /* Without explicit limits Intuition caps resizing at the opening
+         * size; allow growing up to the full screen and shrinking down
+         * to the layout minimum */
+        WA_MinWidth,  (layoutMinW && layoutMinW < width) ? layoutMinW : width,
+        WA_MinHeight, (layoutMinH && layoutMinH < height) ? layoutMinH : height,
+        WA_MaxWidth,  ~0,
+        WA_MaxHeight, ~0,
         TAG_DONE);
 
     if (!data->wcd_Screen)
@@ -407,6 +477,18 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
 
     if (data->wcd_Window)
     {
+        /* Route IDCMP through the application's shared port
+         * (WINDOW_SharedPort) so its Wait() mask sees our messages */
+        if (data->wcd_UserPort && data->wcd_Window->UserPort &&
+            data->wcd_Window->UserPort != data->wcd_UserPort)
+        {
+            ULONG idcmp = data->wcd_Window->IDCMPFlags;
+
+            ModifyIDCMP(data->wcd_Window, 0);
+            data->wcd_Window->UserPort = data->wcd_UserPort;
+            ModifyIDCMP(data->wcd_Window, idcmp);
+        }
+
         /* Attach layout gadget */
         if (data->wcd_Layout)
         {
@@ -423,6 +505,33 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
              * each child. The layout itself is the head of that chain. */
             DoMethod(data->wcd_Layout, LM_ADDTOWINDOW,
                 (IPTR)data->wcd_Window, (IPTR)NULL);
+        }
+
+        /* Build a menu strip from a GadTools NewMenu array if no
+         * ready-made strip was provided (WINDOW_NewMenu) */
+        if (!data->wcd_MenuStrip && data->wcd_NewMenu)
+        {
+            data->wcd_VisualInfo = GetVisualInfoA(data->wcd_Window->WScreen, NULL);
+            if (data->wcd_VisualInfo)
+            {
+                data->wcd_MenuStrip = CreateMenusA(data->wcd_NewMenu, NULL);
+                if (data->wcd_MenuStrip)
+                {
+                    struct TagItem lmtags[] = { { GTMN_NewLookMenus, TRUE }, { TAG_DONE, 0 } };
+                    if (LayoutMenusA(data->wcd_MenuStrip, data->wcd_VisualInfo, lmtags))
+                        data->wcd_MenuCreated = TRUE;
+                    else
+                    {
+                        FreeMenus(data->wcd_MenuStrip);
+                        data->wcd_MenuStrip = NULL;
+                    }
+                }
+                if (!data->wcd_MenuCreated)
+                {
+                    FreeVisualInfo(data->wcd_VisualInfo);
+                    data->wcd_VisualInfo = NULL;
+                }
+            }
         }
 
         /* Attach menu strip */
@@ -452,9 +561,13 @@ IPTR Window__WM_CLOSE(Class *cl, Object *o, Msg msg)
         if (data->wcd_MenuStrip)
             ClearMenuStrip(data->wcd_Window);
 
+        window_detach_sharedport(data);
         CloseWindow(data->wcd_Window);
         data->wcd_Window = NULL;
     }
+
+    /* Recreated on the (possibly different) screen at the next WM_OPEN */
+    window_freemenus(data);
 
     return TRUE;
 }
@@ -480,6 +593,8 @@ IPTR Window__WM_HANDLEINPUT(Class *cl, Object *o, Msg msg)
 
     if (code)
         *code = imsg->Code;
+
+    data->wcd_Qualifier = imsg->Qualifier;
 
     switch (imsg->Class)
     {

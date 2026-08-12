@@ -41,6 +41,7 @@ struct LBColumnEntry
     UBYTE   lbce_Editable;
     UWORD   lbce_MaxChars;
     BOOL    lbce_CopyText;      /* TRUE if text was copied (needs freeing) */
+    BOOL    lbce_HasInteger;    /* TRUE if lbce_Integer holds a value */
 };
 
 /* Extended list browser node */
@@ -53,6 +54,7 @@ struct ListBrowserNode
     UWORD               lbn_Generation;     /* Hierarchy depth */
     BOOL                lbn_Selected;
     BOOL                lbn_Checked;
+    BOOL                lbn_HasCheckBox;
     BOOL                lbn_Hidden;         /* Hidden by hierarchy */
     struct MinList      lbn_Children;       /* Child nodes for hierarchical */
     struct LBColumnEntry lbn_ColumnData[1]; /* Variable length column data */
@@ -81,6 +83,15 @@ struct ListBrowserData
     struct DrawInfo    *lbd_DrawInfo;
     LONG                lbd_RelEvent;
     struct ListBrowserNode *lbd_SelectedNode;
+    LONG                lbd_SortColumn;     /* LISTBROWSER_SortColumn */
+    LONG                lbd_Striping;       /* LISTBROWSER_Striping (LBS_*) */
+    ULONG               lbd_LastSecs;       /* double click detection */
+    ULONG               lbd_LastMicros;
+    LONG                lbd_LastRow;
+    BOOL                lbd_VProp;          /* LISTBROWSER_VerticalProp */
+    BOOL                lbd_HProp;          /* LISTBROWSER_HorizontalProp */
+    BOOL                lbd_TitleClickable; /* LISTBROWSER_TitleClickable */
+    LONG                lbd_RelColumn;      /* LISTBROWSER_RelColumn */
 };
 
 #endif /* LISTBROWSER_INTERN_H */

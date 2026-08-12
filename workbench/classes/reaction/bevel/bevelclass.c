@@ -339,6 +339,9 @@ static void bevel_render(struct BevelData *data, struct RastPort *rp,
     if (w < 2 || h < 2)
         return;
 
+    D(bug("[Bevel] render: (%d,%d) %dx%d style=%ld layer=%p\n",
+        (int)x, (int)y, (int)w, (int)h, (LONG)data->bd_Style, rp->Layer));
+
     /* Erase the interior unless the caller explicitly asked us not to.
      * Selected state uses FILLPEN to give pressed/active feedback; the
      * BEVEL_FillPen attribute (when set) overrides the default. */

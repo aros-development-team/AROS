@@ -11,6 +11,7 @@
 #include <proto/graphics.h>
 #include <proto/alib.h>
 
+#include <graphics/gfxmacros.h>
 #include <intuition/intuition.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
@@ -41,6 +42,9 @@ static void button_set(Class *cl, Object *o, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+            case BUTTON_TextPadding:
+                /* Accepted; extra text padding is not implemented yet */
+                break;
             case BUTTON_PushButton:
                 data->bd_PushButton = (BOOL)tag->ti_Data;
                 break;
@@ -305,6 +309,10 @@ IPTR Button__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     h = gad->Height;
     selected = (gad->Flags & GFLG_SELECTED) || data->bd_PushButton;
     disabled = (gad->Flags & GFLG_DISABLED) != 0;
+
+    D(bug("[Button] GM_RENDER: obj=%p geom (%d,%d) %dx%d dis=%d rimg=%p layer=%p\n",
+        (void *)o, (int)x, (int)y, (int)w, (int)h, (int)disabled,
+        gad->GadgetRender, rp->Layer));
     state = disabled ? IDS_DISABLED : (selected ? IDS_SELECTED : IDS_NORMAL);
 
     /* Lazily create a private bevel.image for the frame. We render via
@@ -391,6 +399,24 @@ IPTR Button__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
             SetFont(rp, prevFont);
     }
 
+    /* Draw the application supplied render image (GA_Image /
+     * BUTTON_RenderImage), or the select image when selected */
+    if (dri)
+    {
+        struct Image *rim = (struct Image *)gad->GadgetRender;
+
+        if (selected && gad->SelectRender)
+            rim = (struct Image *)gad->SelectRender;
+
+        if (rim)
+        {
+            DrawImageState(rp, rim,
+                x + (w - rim->Width) / 2,
+                y + (h - rim->Height) / 2,
+                state, dri);
+        }
+    }
+
     /* Draw glyph image if present (auto-button) */
     if (data->bd_Glyph && dri)
     {
@@ -398,6 +424,18 @@ IPTR Button__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
             x + (w - ((struct Image *)data->bd_Glyph)->Width) / 2,
             y + (h - ((struct Image *)data->bd_Glyph)->Height) / 2,
             state, dri);
+    }
+
+    /* Ghost the button when disabled */
+    if (disabled && dri)
+    {
+        static CONST UWORD ghost_pattern[] = { 0x4444, 0x1111 };
+
+        SetDrMd(rp, JAM1);
+        SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+        SetAfPt(rp, (UWORD *)ghost_pattern, 1);
+        RectFill(rp, x + 1, y + 1, x + w - 2, y + h - 2);
+        SetAfPt(rp, NULL, 0);
     }
 
     if (!msg->gpr_RPort && msg->gpr_GInfo)
@@ -486,6 +524,20 @@ IPTR Button__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
         TextExtent(msg->gpd_RPort, text, strlen(text), &te);
         minW = textPixelW   + 16;
         minH = te.te_Height + 6;
+    }
+
+    /* Image buttons: make room for the render image plus frame */
+    {
+        struct Image *rim = (struct Image *)gad->GadgetRender;
+        if (!rim)
+            rim = (struct Image *)data->bd_Glyph;
+        if (rim)
+        {
+            if (rim->Width + 12 > minW || !text)
+                minW = rim->Width + 12;
+            if (rim->Height + 8 > minH)
+                minH = rim->Height + 8;
+        }
     }
 
     msg->gpd_Domain.Left   = 0;

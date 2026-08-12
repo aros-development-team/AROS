@@ -126,11 +126,17 @@
 
     if (gadget && window)
     {
-        /* Set new dimensions based on window inner area */
-        SetAttrs((Object *)gadget,
-            GA_Width,  window->Width - window->BorderLeft - window->BorderRight,
-            GA_Height, window->Height - window->BorderTop - window->BorderBottom,
-            TAG_DONE);
+        /* Only a root layout (top/left of the window inner area) tracks
+         * the window size; nested groups keep the bounds their parent
+         * assigned and just get relaid out on refresh */
+        if (gadget->LeftEdge <= window->BorderLeft &&
+            gadget->TopEdge <= window->BorderTop)
+        {
+            SetAttrs((Object *)gadget,
+                GA_Width,  window->Width - window->BorderLeft - window->BorderRight,
+                GA_Height, window->Height - window->BorderTop - window->BorderBottom,
+                TAG_DONE);
+        }
 
         if (refresh)
         {

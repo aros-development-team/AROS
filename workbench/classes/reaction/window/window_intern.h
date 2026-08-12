@@ -48,6 +48,8 @@ struct WindowClassData
     struct MsgPort      *wcd_AppPort;       /* AppWindow port */
     Object              *wcd_Layout;        /* Root layout object */
     struct Menu         *wcd_MenuStrip;     /* Window menus */
+    struct NewMenu      *wcd_NewMenu;       /* NewMenu array to build menus from */
+    APTR                wcd_VisualInfo;     /* GadTools VisualInfo for created menus */
     struct Hook         *wcd_IDCMPHook;     /* Custom IDCMP hook */
     struct Hook         *wcd_AppMsgHook;    /* AppWindow message hook */
     struct DiskObject   *wcd_Icon;          /* Iconify icon */
@@ -70,10 +72,13 @@ struct WindowClassData
     BOOL                wcd_LockWidth;      /* Lock width */
     BOOL                wcd_LockHeight;     /* Lock height */
     BOOL                wcd_IconifyGadget;  /* Show iconify gadget */
+    BOOL                wcd_MenuCreated;    /* Menu strip was created from wcd_NewMenu */
+    BOOL                wcd_IconNoDispose;  /* Never dispose wcd_Icon */
 
     /* IDCMP message processing */
     struct IntuiMessage *wcd_CurrentMsg;    /* Current message being processed */
     ULONG               wcd_MsgClass;       /* Current message class */
+    UWORD               wcd_Qualifier;      /* Qualifiers of last message */
     UWORD               wcd_MsgCode;        /* Current message code */
     APTR                wcd_MsgIAddress;    /* Current message IAddress */
 };

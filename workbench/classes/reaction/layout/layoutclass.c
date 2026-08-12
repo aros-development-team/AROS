@@ -63,6 +63,11 @@ static void process_child_tags(struct LayoutChild *lc, struct TagItem *tags)
 
     while ((tag = NextTagItem(&tags)))
     {
+        /* CHILD_ tags apply to the most recently added child only; stop
+         * at the next child so its tags don't leak back into this one */
+        if (tag->ti_Tag == LAYOUT_AddChild || tag->ti_Tag == LAYOUT_AddImage)
+            break;
+
         switch (tag->ti_Tag)
         {
             case CHILD_MinWidth:
@@ -270,6 +275,9 @@ IPTR Layout__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
         memset(data, 0, sizeof(struct LayoutData));
         NewList((struct List *)&data->ld_Children);
+
+        /* BVS_NONE is not 0 (0 is BVS_THIN) - default to no bevel */
+        data->ld_BevelStyle = BVS_NONE;
 
         /* Consult live UIPrefs (published by reaction.library). The
          * semaphore is found by name; cap_Semaphore is its first member,
@@ -745,18 +753,14 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
                 if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
                 {
                     childW = mainSize;
-                    /* Cross-axis: fill, but cap at MaxHeight/NatHeight when
-                     * gadget is image-like and shouldn't stretch. */
+                    /* Cross-axis: gadgets fill the group; only image
+                     * children keep their natural height (labels/glyphs
+                     * shouldn't be stretched). */
                     childH = availH;
-                    if (lc->lc_NatHeight && childH > lc->lc_NatHeight
+                    if (lc->lc_IsImage && lc->lc_NatHeight && childH > lc->lc_NatHeight
                         && (lc->lc_MaxHeight == 0 || lc->lc_MaxHeight >= lc->lc_NatHeight))
                     {
-                        /* Don't stretch a child past its natural height when
-                         * no explicit larger MaxHeight requested. This stops
-                         * single-row buttons from being squashed/stretched
-                         * into oversized rectangles. */
-                        if (lc->lc_NatHeight > 0)
-                            childH = lc->lc_NatHeight;
+                        childH = lc->lc_NatHeight;
                     }
                 }
                 else
