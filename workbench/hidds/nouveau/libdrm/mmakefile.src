@@ -15,5 +15,5 @@ LIBDRM_C_SOURCES := \
             nouveau/pushbuf \
             nouveau/abi16
 
-%build_linklib mmake=hidd-nouveau-libdrm libname=libdrm_nouveau files="$(LIBDRM_C_SOURCES)" sdk=drm usesdks="config"
+%build_linklib mmake=hidd-nouveau-libdrm libname=libdrm_nouveau files="$(LIBDRM_C_SOURCES)"
 

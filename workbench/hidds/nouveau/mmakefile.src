@@ -54,8 +54,8 @@ TMP_GALLIUM_NOUVEAU_CXX_SOURCES := \
 GALLIUM_NOUVEAU_CXX_SOURCES := \
                 $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(TMP_GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
 
-%build_linklib mmake=hidd-nouveau-gallium libname=gallium_nouveau sdk=mesa objdir=$(GENDIR)/$(CURDIR)/gallium \
-    files="$(GALLIUM_NOUVEAU_C_SOURCES)" cxxfiles="$(GALLIUM_NOUVEAU_CXX_SOURCES)" usesdks="config private"
+%build_linklib mmake=hidd-nouveau-gallium libname=gallium_nouveau objdir=$(GENDIR)/$(CURDIR)/gallium \
+    files="$(GALLIUM_NOUVEAU_C_SOURCES)" cxxfiles="$(GALLIUM_NOUVEAU_CXX_SOURCES)"
 
 ###############################################
 # drm, drm-aros, drm-compat -> libdrm_nouveau.a
@@ -72,7 +72,7 @@ NOUVEAU_DRM_C_SOURCES := \
             $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_DRM_NVIDIA_SOURCES)) \
             $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_DRM_CORE_SOURCES))
 
-%build_linklib mmake=hidd-nouveau-drm libname=drm_nouveau files="$(NOUVEAU_DRM_C_SOURCES)" sdk=drm usesdks="config private"
+%build_linklib mmake=hidd-nouveau-drm libname=drm_nouveau files="$(NOUVEAU_DRM_C_SOURCES)"
 
 #################################################
 # xf86-video-nouveau + hidd codes -> nouveau.hidd
