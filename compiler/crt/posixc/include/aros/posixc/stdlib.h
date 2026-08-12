@@ -80,6 +80,9 @@ long random(void);
 
 /* Deprecated POSIX (still implemented) */
 char *setstate(char *);
+/* Marked obsolescent by XPG4v2 and dropped from POSIX.1-2008, but posixc
+   still provides it. */
+char *gcvt(double number, int ndigit, char *buf);
 
 /* POSIX.1-2008 / XSI-7 / GNU extensions */
 #if defined(_GNU_SOURCE) || (_XOPEN_SOURCE >= 700) || (_POSIX_C_SOURCE >= 200809L)
