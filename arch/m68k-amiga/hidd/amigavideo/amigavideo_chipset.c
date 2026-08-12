@@ -261,10 +261,13 @@ static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_d
     x = bm->leftedge;
     y = csd->starty + (bm->topedge >> bm->interlace);
 
+    /* A screen positioned above the view top is scrolled, not moved: pin the
+       display window at the top and turn the surplus into a bitplane offset,
+       so the lower part of an oversized bitmap comes into view. */
     yscroll = 0;
-    if (y < 10) {
-        yscroll = y - 10;
-        y = 10;
+    if (y < csd->starty) {
+        yscroll = y - csd->starty;
+        y = csd->starty;
     }
 
     xmaxscroll = 1 << (1 + csd->fmode_bpl);
@@ -898,7 +901,10 @@ VOID setspritevisible(struct amigavideo_staticdata *csd, BOOL visible)
             struct amigabm_data *bm;
             ForeachNode(csd->compositedbms, bm)
             {
-                if (csd->spritey < ((bm->topedge + bm->displayheight) >> bm->interlace))
+                /* A scrolled screen (negative topedge) starts its display band at the top */
+                WORD bmtop = bm->topedge < 0 ? 0 : bm->topedge;
+
+                if (csd->spritey < ((bmtop + bm->displayheight) >> bm->interlace))
                 {
                     setfmode(csd, bm);
                     break;
@@ -923,7 +929,10 @@ VOID new_setspritevisible(struct amigavideo_staticdata *csd, BOOL visible, int s
             struct amigabm_data *bm;
             ForeachNode(csd->compositedbms, bm)
             {
-                if (csd->new_spritey[spritenum] < ((bm->topedge + bm->displayheight) >> bm->interlace))
+                /* A scrolled screen (negative topedge) starts its display band at the top */
+                WORD bmtop = bm->topedge < 0 ? 0 : bm->topedge;
+
+                if (csd->new_spritey[spritenum] < ((bmtop + bm->displayheight) >> bm->interlace))
                 {
                     setfmode(csd, bm);
                     break;

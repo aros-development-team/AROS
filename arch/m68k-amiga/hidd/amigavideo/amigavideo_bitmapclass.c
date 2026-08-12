@@ -234,8 +234,10 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    if (newyoffset < 0)
-        newyoffset = 0;
+    /* Negative offsets scroll an oversized screen: the surplus becomes a
+       bitplane offset in setcopperscroll(). Keep at least one line in view. */
+    if (newyoffset <= -data->height)
+        newyoffset = -(data->height - 1);
     if (newyoffset >= data->height)
         newyoffset = data->height - 1;
 
