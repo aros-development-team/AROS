@@ -45,7 +45,7 @@
 #define likely(x)                       __builtin_expect((IPTR)(x),1)
 #define unlikely(x)                     __builtin_expect((IPTR)(x),0)
 #if defined(__i386__) || defined(__x86_64__)
-#define mb()                            __asm __volatile("lock; addl $0,0(%%esp)" : : : "memory");
+#define mb()                            __asm __volatile("mfence" : : : "memory");
 #define rmb()                           __asm __volatile("" : : : "memory");
 #define wmb()                           __asm __volatile("" : : : "memory");
 #else
