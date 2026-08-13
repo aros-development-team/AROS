@@ -708,28 +708,6 @@ gk104_fifo_intr_pbdma_0(struct gk104_fifo *fifo, int unit)
 	nvkm_wr32(device, 0x0400c0 + (unit * 0x2000), 0x80600008);
 
 	if (show) {
-#if defined(__AROS__)
-		/* A fault the PBDMA cannot get past refires forever and
-		   floods the log; after enough identical repeats stop
-		   listening to those bits - the channel is dead anyway */
-		static u32 storm_stat[8], storm_count[8];
-
-		if (unit < 8) {
-			if (storm_stat[unit] == show) {
-				if (++storm_count[unit] > 16) {
-					nvkm_error(subdev, "PBDMA%d: masking storming intr %08x\n",
-						   unit, show);
-					nvkm_wr32(device, 0x04010c + (unit * 0x2000),
-						  mask & ~show);
-					nvkm_wr32(device, 0x040108 + (unit * 0x2000), stat);
-					return;
-				}
-			} else {
-				storm_stat[unit] = show;
-				storm_count[unit] = 0;
-			}
-		}
-#endif
 		nvkm_snprintbf(msg, sizeof(msg), gk104_fifo_pbdma_intr_0, show);
 		chan = nvkm_fifo_chan_chid(&fifo->base, chid, &flags);
 		nvkm_error(subdev, "PBDMA%d: %08x [%s] ch %d [%010llx %s] "
