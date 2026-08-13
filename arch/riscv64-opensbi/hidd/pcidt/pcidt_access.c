@@ -354,7 +354,6 @@ void PCIDT_EnableDMA(struct pcidt_bridge *b, IPTR base, IPTR size)
 #define DWC_MSI_ADDR_HI         0x824
 #define DWC_MSI_INTR0_ENABLE    0x828
 #define DWC_MSI_INTR0_MASK      0x82c
-#define DWC_MSI_INTR0_STATUS    0x830
 
 /*
  * Point the controller at an address and let every vector through.
@@ -419,12 +418,13 @@ LONG PCIDT_MSIEnable(struct pcidt_bridge *b, UBYTE bus, UBYTE dev, UBYTE sub)
     if (!b->msiReady)
         return -1;
 
-    for (vector = 0; vector < 32; vector++)
+    /* Only the vectors sources were found for can be handed out */
+    for (vector = 0; vector < (LONG)b->msiVectors; vector++)
     {
         if (!(b->msiUsed & (1UL << vector)))
             break;
     }
-    if (vector >= 32)
+    if (vector >= (LONG)b->msiVectors)
         return -1;
 
     cs = PCIDT_ReadConfig(b, bus, dev, sub, 0x04);
