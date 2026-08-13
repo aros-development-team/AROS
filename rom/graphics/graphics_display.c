@@ -31,6 +31,8 @@
 
 #include <intuition/intuition.h>
 
+#include <hidd/hidd.h>
+
 #include <cybergraphx/cybergraphics.h>
 
 #include <stdio.h>
@@ -202,18 +204,40 @@ struct gfxdisplay_data *display_Setup(OOP_Object *displayhidd, struct GfxBase *G
 }
 
 /*
- * Completely remove a driver from the OS.
+ * Completely remove a display from the OS: unlinked from the display
+ * chain, Intuition told to drop its monitor object, mode database freed,
+ * and - once the last of its displays has gone - the driver object it
+ * belongs to removed from the HW root as well.
  *
- * mdd - Driver structure to remove.
+ * mdd - Display structure to remove.
  *
- * Note that removing a driver is very unsafe operation. You must be
- * sure that no bitmaps of this driver exist at the moment. Perhaps
- * something should be done with it.
+ * Note that removing a display is an unsafe operation. You must be sure
+ * that nothing is displayed on it and that no bitmaps of its driver exist
+ * at the moment; only the caller can know that.
  *
+ * Caller holds displaydb_sem.
  */
 
 void display_Expunge(struct monitor_displaydata *mdd, struct GfxBase *GfxBase)
 {
+    struct gfxdisplay_data *pred, *scan;
+    OOP_Object *gfxhidd = mdd->mdisplay.display_gfxhidd;
+    BOOL lastdisplay = TRUE;
+
+    /*
+     * Unlink first: everything below can re-enter graphics.library, and
+     * from here on nothing may find this display any more.
+     */
+    for (pred = (struct gfxdisplay_data *)CDD(GfxBase); pred; pred = pred->display_next)
+    {
+        if (pred->display_next == (struct gfxdisplay_data *)mdd)
+        {
+            pred->display_next = mdd->mdisplay.display_next;
+            break;
+        }
+    }
+    mdd->mdisplay.display_next = NULL;
+
     /* Notify Intuition */
     if (CDD(GfxBase)->DriverNotify)
 	CDD(GfxBase)->DriverNotify(mdd->mdisplay.display_userdata, FALSE, CDD(GfxBase)->mdisplay.display_userdata);
@@ -227,7 +251,56 @@ void display_Expunge(struct monitor_displaydata *mdd, struct GfxBase *GfxBase)
     /* Dispose driver object. This will take care about syncs etc */
     OOP_DisposeObject(mdd->mdisplay.display_obj);
 
+    /*
+     * A driver can expose several displays. Only when its last one has
+     * been removed does the driver object itself go - which is what
+     * actually stops a boot-mode driver touching the hardware.
+     */
+    for (scan = (struct gfxdisplay_data *)CDD(GfxBase); scan; scan = scan->display_next)
+    {
+        if (scan->display_gfxhidd == gfxhidd)
+        {
+            lastdisplay = FALSE;
+            break;
+        }
+    }
+
+    if (lastdisplay && gfxhidd && (gfxhidd != CDD(GfxBase)->mdisplay.display_gfxhidd))
+    {
+        D(bug("[graphics.library/display] %s: removing driver object 0x%p\n", __func__, gfxhidd));
+        HW_RemoveDriver(PrivGBase(GfxBase)->GfxRoot, gfxhidd);
+    }
+
     FreeVec(mdd);
+
+    /*
+     * The default monitor may have been provided by the display just
+     * removed, and its modes may have been the ones that pushed the next
+     * free ID up. Rebuild both from what is left.
+     */
+    GfxBase->default_monitor = NULL;
+    CDD(GfxBase)->default_monitor_pri = 0;
+
+    for (scan = CDD(GfxBase)->mdisplay.display_next; scan; scan = scan->display_next)
+    {
+        OOP_Object *sync;
+
+        if (!(scan->display_flags & DF_Enabled))
+            continue;
+
+        sync = HIDD_DMEnum_GetSync(scan->display_dmenum, 0);
+        if (!sync)
+            continue;
+
+        if ((!GfxBase->default_monitor) ||
+            (scan->display_pri > CDD(GfxBase)->default_monitor_pri))
+        {
+            OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&GfxBase->default_monitor);
+            CDD(GfxBase)->default_monitor_pri = scan->display_pri;
+        }
+    }
+
+    D(bug("[graphics.library/display] %s: default monitor is now 0x%p\n", __func__, GfxBase->default_monitor));
 }
 
 void display_Queue(struct gfxdisplay_data *mdd, struct gfxdisplay_data *last, struct GfxBase *GfxBase)

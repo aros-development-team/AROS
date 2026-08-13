@@ -66,6 +66,23 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd_DMEnum
 };
 
+/*
+ * The hardware this driver writes to: the firmware framebuffer, and
+ * nothing else. graphics.library matches it against the apertures of
+ * native drivers as they arrive, so that this driver is taken down by
+ * the one that claims the same hardware - and only by that one.
+ *
+ * That matters because the GOP surface is not necessarily memory the
+ * firmware owns. On the Milk-V Titan it is the GM107's BAR1, so once
+ * nouveau installs its own BAR1 page tables the pages behind this
+ * pointer stop existing and every redraw lands in whatever the new
+ * owner put there instead.
+ *
+ * Static because graphics.library keeps the pointer for the lifetime of
+ * the driver.
+ */
+static struct DisplayRange efigfx_ranges[2];
+
 static int EFIGfx_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct EFIGfx_staticdata *xsd = &LIBBASE->vsd;
@@ -98,10 +115,22 @@ static int EFIGfx_Init(LIBBASETYPEPTR LIBBASE)
                  * The framebuffer belongs to whatever display hardware the
                  * firmware drove. In order to avoid conflicts with native-mode
                  * hardware drivers the driver is removed from the system when
-                 * some other driver is installed.
-                 * This is done by graphics.library if DDRV_BootMode is set to TRUE.
+                 * a driver claiming that same hardware is installed.
+                 * This is done by graphics.library, on behalf of the incoming
+                 * driver, from DDRV_BootMode plus the ranges below.
                  */
-                err = AddDisplayDriver(xsd->efigfxclass, NULL, DDRV_BootMode, TRUE, TAG_DONE);
+                efigfx_ranges[0].dr_Base = xsd->data.framebuffer;
+                efigfx_ranges[0].dr_Size = xsd->data.fbsize;
+                efigfx_ranges[1].dr_Base = NULL;
+                efigfx_ranges[1].dr_Size = 0;
+
+                D(bug("[EFIGfx] framebuffer aperture @ 0x%p, %lu bytes\n",
+                      efigfx_ranges[0].dr_Base, (unsigned long)efigfx_ranges[0].dr_Size));
+
+                err = AddDisplayDriver(xsd->efigfxclass, NULL,
+                                       DDRV_BootMode, TRUE,
+                                       DDRV_HWRanges, (IPTR)efigfx_ranges,
+                                       TAG_DONE);
 
                 D(bug("[EFIGfx] AddDisplayDriver() result: %u\n", err));
                 if (!err)

@@ -42,6 +42,12 @@ struct pci_dev
 #define pci_unmap_page(a, b, c, d)      
 resource_size_t pci_resource_start(struct pci_dev * pdev, unsigned int barnum);
 unsigned long pci_resource_len(struct pci_dev * pdev, unsigned int barnum);
+/*
+ * Where a bus address is reachable from the CPU. Unlike ioremap() this
+ * only translates - it never establishes a mapping - so it is safe to
+ * ask about apertures the driver has no intention of touching.
+ */
+void * pci_resource_cpu_addr(resource_size_t busaddr);
 void * pci_get_bus_and_slot(unsigned int bus, unsigned int dev, unsigned int fun);
 int pci_read_config_word(struct pci_dev * pdev, int where, u16 *val);
 int pci_read_config_dword(struct pci_dev * pdev, int where, u32 *val);

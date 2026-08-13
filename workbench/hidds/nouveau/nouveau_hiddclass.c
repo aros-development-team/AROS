@@ -11,6 +11,7 @@
 #include "compositor.h"
 
 #include <graphics/displayinfo.h>
+#include <graphics/driver.h>
 #include <proto/utility.h>
 
 #define DEBUG 0
@@ -19,6 +20,7 @@
 
 #include <libdrm/arosdrmmode.h>
 #include <uapi/drm/nouveau_drm.h>
+#include <drm-compat/drm_compat_pci.h>
 
 #undef HiddAttrBase
 #undef HiddPixFmtAttrBase
@@ -406,6 +408,91 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     return TRUE;
 }
 
+/*
+ * Retire whatever the firmware left driving this card.
+ *
+ * A boot-mode display driver - a GOP or VESA console - keeps writing to
+ * the aperture the firmware handed it. That is harmless while the
+ * aperture is plain memory, and fatal when it is one of this card's
+ * BARs: on the Milk-V Titan the GOP framebuffer *is* BAR1, so once the
+ * probe below installs nouveau's own BAR1 page tables, the console's
+ * next redraw sweeps the channels' USERD and the fence buffer instead of
+ * a screen.
+ *
+ * So we describe our apertures to graphics.library and let it hand back
+ * the boot displays that overlap them, one at a time, for shutdown. A
+ * boot driver on a different card overlaps nothing and is left running.
+ *
+ * Returns FALSE if a display that shares this card could not be shut
+ * down. The caller must then abandon the whole probe: the card has not
+ * been touched yet, so refusing to load leaves a working firmware
+ * console on screen, where carrying on regardless would leave two
+ * drivers writing to the same hardware - which is the failure this
+ * whole mechanism exists to prevent.
+ */
+static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
+    struct DisplayHandover *handover)
+{
+    struct DisplayRange ranges[7];
+    ULONG count = 0;
+    ULONG bar;
+    APTR handle;
+
+    for (bar = 0; bar < 6; bar++)
+    {
+        resource_size_t start = pci_resource_start(pdev, bar);
+        unsigned long len = pci_resource_len(pdev, bar);
+        APTR cpu;
+
+        if ((start == 0) || (len == 0))
+            continue;
+
+        /*
+         * Boot drivers describe their framebuffer by the pointer they
+         * write through, so the comparison has to happen in CPU
+         * addresses. Translating rather than ioremap()ing keeps this
+         * side-effect free - we are only asking where these apertures
+         * would be, not asking for them to be mapped.
+         */
+        cpu = pci_resource_cpu_addr(start);
+        if ((cpu == NULL) || (cpu == (APTR)-1))
+        {
+            D(bug("[Nouveau] BAR%lu (0x%p) has no CPU address, cannot match it\n",
+                  (unsigned long)bar, (APTR)(IPTR)start));
+            continue;
+        }
+
+        ranges[count].dr_Base = cpu;
+        ranges[count].dr_Size = len;
+        D(bug("[Nouveau] BAR%lu occupies 0x%p, %lu bytes\n",
+              (unsigned long)bar, cpu, len));
+        count++;
+    }
+
+    ranges[count].dr_Base = NULL;
+    ranges[count].dr_Size = 0;
+
+    /*
+     * With nothing describable to match on, fall back to "conflicts with
+     * everything". Losing a boot display we could have kept costs a
+     * screen; keeping one we should have lost corrupts this card.
+     */
+    while ((handle = handover->dho_FindDisplay(handover->dho_Context,
+                                               count ? ranges : NULL)))
+    {
+        if (!handover->dho_ExpungeDisplay(handover->dho_Context, handle))
+        {
+            bug("[Nouveau] boot display 0x%p shares this card and is still in"
+                " use - not taking the card over\n", handle);
+            return FALSE;
+        }
+
+        D(bug("[Nouveau] boot display 0x%p released this card\n", handle));
+    }
+
+    return TRUE;
+}
+
 /* PUBLIC METHODS */
 OOP_Object * METHOD(Nouveau, Root, New)
 {
@@ -415,10 +502,31 @@ OOP_Object * METHOD(Nouveau, Root, New)
     struct nouveau_client *nvclient = NULL;
     struct TagItem * syncs = NULL;
     struct CardData * carddata = &(SD(cl)->carddata);
+    struct DisplayHandover *handover;
+    struct pci_dev *pdev;
     LONG ret;
     ULONG selectedcrtcid;
 
-    if (nouveau_init() < 0)
+    pdev = nouveau_init_findcard();
+    if (!pdev)
+        return NULL;
+
+    /*
+     * Between finding the card and touching it: take down anything the
+     * firmware left driving it. graphics.library only offers the
+     * handover here, in New(), where it holds the display database for
+     * us - the interface must not be kept for later.
+     */
+    handover = (struct DisplayHandover *)GetTagData(DDRVA_Handover, 0, msg->attrList);
+    if (handover)
+    {
+        if (!HIDDNouveauReleaseBootDisplays(pdev, handover))
+            return NULL;
+    }
+    else
+        D(bug("[Nouveau] no handover offered, boot drivers left alone\n"));
+
+    if (nouveau_init_probe(pdev) < 0)
         return NULL;
 
     LOCK_ENGINE

@@ -45,6 +45,21 @@ void iounmap(void * addr)
     }
 }
 
+void * pci_resource_cpu_addr(resource_size_t busaddr)
+{
+    if (pciDriver)
+    {
+        struct pHidd_PCIDriver_PCItoCPU pcitocpu, *msg = &pcitocpu;
+
+        pcitocpu.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_PCItoCPU);
+        pcitocpu.address = (APTR)busaddr;
+
+        return (APTR)OOP_DoMethod(pciDriver, (OOP_Msg)msg);
+    }
+
+    return (APTR)busaddr;
+}
+
 resource_size_t pci_resource_start(struct pci_dev * pdev, unsigned int resource)
 {
     APTR start = (APTR)NULL;

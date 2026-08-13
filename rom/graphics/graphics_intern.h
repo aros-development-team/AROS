@@ -21,6 +21,7 @@
 #include <exec/lists.h>
 #include <exec/nodes.h>
 #include <exec/semaphores.h>
+#include <graphics/driver.h>
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
 #include <graphics/rastport.h>
@@ -84,6 +85,7 @@ struct gfxdriver_data {
     ULONG                       drv_idcnt;
     ULONG                       drv_idmask;
     UWORD                       drv_flags;
+    const struct DisplayRange   *drv_ranges;	/* Hardware written by this driver, or NULL if it did not say */
 };
 
 struct gfxboot_entry {
@@ -142,6 +144,9 @@ struct monitor_displaydata {
 #define DF_DirectFB     (1 << 3)	/* Driver uses a direct-mode framebuffer	*/
 #define DF_BootSurvive  (1 << 15)	/* Boot mode driver that shouldnt be flushed	*/
 #define DF_BootMode     (1 << 14)	/* Boot mode driver				*/
+#define DF_KeepBoot     (1 << 13)	/* Driver asked not to be given the handover	*/
+#define DF_HandoverFail (1 << 12)	/* Expunge was attempted and refused: do not
+					   offer this display for handover again	*/
 
 /* software rasterizer, and common monitor data */
 struct gfxsoftrast_data {
@@ -150,6 +155,10 @@ struct gfxsoftrast_data {
 
     APTR(*DriverNotify)(APTR obj, BOOL add, APTR userdata);  /* Display driver notification callback */
     struct SignalSemaphore      displaydb_sem;	/* Display mode database semaphore */
+    BOOL                        handover_refused;	/* A driver being added asked to take a boot
+							   display down and was refused. Set under
+							   displaydb_sem, read and cleared by
+							   AddDisplayDriverA()			   */
 
     ObjectCache                 *gc_cache;	/* GC cache			   */
     ObjectCache                 *planarbm_cache;/* Planar bitmaps cache		   */

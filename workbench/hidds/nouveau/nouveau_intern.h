@@ -1,7 +1,7 @@
 #ifndef _NOUVEAU_INTERN_H
 #define _NOUVEAU_INTERN_H
 /*
-    Copyright � 2010-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -409,7 +409,10 @@ VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
 VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset);
 
-/* Declaration of nouveau initialization function */
+/* Declaration of nouveau initialization functions */
+struct pci_dev;
+extern struct pci_dev *nouveau_init_findcard(void);
+extern int nouveau_init_probe(struct pci_dev *pdev);
 extern int nouveau_init(void);
 
 /* Commom memory allocation */

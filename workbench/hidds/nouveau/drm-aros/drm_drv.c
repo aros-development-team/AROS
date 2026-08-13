@@ -90,15 +90,25 @@ int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent, st
 struct drm_device *current_drm_device;
 BOOL workqueue_init();
 
-int nouveau_init()
+/*
+ * Bring-up is split in two so that the caller gets a look at the card -
+ * and in particular at its BARs - after it has been found but before it
+ * has been touched. Whoever the firmware left driving this hardware has
+ * to be shut down in that gap: nouveau_init_probe() reprograms the card,
+ * and any boot-mode driver still writing through the old apertures
+ * afterwards writes into the new owner's state.
+ */
+struct pci_dev *nouveau_init_findcard(void)
 {
-    struct pci_dev *pdev;
-    struct pci_device_id dummy;
-
     if (drm_aros_pci_init())
-        return -1;
+        return NULL;
 
-    pdev = drm_aros_pci_find_supported_video_card();
+    return drm_aros_pci_find_supported_video_card();
+}
+
+int nouveau_init_probe(struct pci_dev *pdev)
+{
+    struct pci_device_id dummy;
 
     if (!pdev)
         return -1;
@@ -110,6 +120,11 @@ int nouveau_init()
 
     if (nouveau_drm_probe(pdev, &dummy, &current_drm_device))
         return -1;
-    
+
     return 0;
+}
+
+int nouveau_init()
+{
+    return nouveau_init_probe(nouveau_init_findcard());
 }
