@@ -1241,10 +1241,24 @@ OOP_Object *Display__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHi
      */
     if (oldheight) /* width and height can be zero only together, check one of them */
     {
+        IPTR fbwidth = 0, fbheight = 0;
+
+        /*
+         * The mode switch above may have resized the framebuffer itself.
+         * Clamp to what the framebuffer is now; for a driver whose
+         * framebuffer keeps a fixed size this changes nothing.
+         */
+        OOP_GetAttr(data->framebuffer, aHidd_BitMap_Width, &fbwidth);
+        OOP_GetAttr(data->framebuffer, aHidd_BitMap_Height, &fbheight);
+        if (oldwidth > fbwidth)
+            oldwidth = fbwidth;
+        if (oldheight > fbheight)
+            oldheight = fbheight;
+
         if (newwidth < oldwidth)
             HIDD_BM_FillRect(data->framebuffer, data->gc, newwidth, 0, oldwidth - 1, oldheight - 1);
         if ((newheight < oldheight) && newwidth)
-            HIDD_BM_FillRect(data->framebuffer, data->gc, 0, newheight, newwidth - 1, oldheight);
+            HIDD_BM_FillRect(data->framebuffer, data->gc, 0, newheight, newwidth - 1, oldheight - 1);
     }
 
     /* Remember new displayed bitmap */
