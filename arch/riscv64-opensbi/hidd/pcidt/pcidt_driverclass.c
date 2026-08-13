@@ -376,40 +376,6 @@ static void pcidt_assignbars(struct pcidt_staticdata *psd,
                                       (cmd & 0xffff0000) | ((cmd & 0xffff) | 0x0003));
                 }
 
-                /*
-                 * Forbid no-snoop transactions. Nothing here can flush
-                 * caches by hand, so DMA is only correct if every
-                 * transfer takes part in coherency - a device using
-                 * the no-snoop attribute (the enable bit is set by
-                 * default) reads stale memory behind the CPU's cache.
-                 */
-                {
-                    ULONG sts = PCIDT_ReadConfig(b, bus, dev, sub, 0x04);
-                    UBYTE ptr;
-
-                    if (sts & (0x10UL << 16))
-                    {
-                        ptr = PCIDT_ReadConfig(b, bus, dev, sub, 0x34) & 0xfc;
-                        while (ptr)
-                        {
-                            ULONG cap = PCIDT_ReadConfig(b, bus, dev, sub, ptr);
-                            if ((cap & 0xff) == 0x10)
-                            {
-                                ULONG devctl = PCIDT_ReadConfig(b, bus, dev, sub, ptr + 8);
-                                if (devctl & 0x0800)
-                                {
-                                    PCIDT_WriteConfig(b, bus, dev, sub, ptr + 8,
-                                                      devctl & ~0x0800UL);
-                                    D(bug("[PCIDT:Driver] %02x:%02x.%x no-snoop disabled (devctl %04x -> %04x)\n",
-                                        bus, dev, sub, devctl & 0xffff,
-                                        PCIDT_ReadConfig(b, bus, dev, sub, ptr + 8) & 0xffff);)
-                                }
-                                break;
-                            }
-                            ptr = (cap >> 8) & 0xfc;
-                        }
-                    }
-                }
             }
         }
 
