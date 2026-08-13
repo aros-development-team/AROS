@@ -33,6 +33,9 @@ CFILES := \
         kernel_elf \
         getcpucount \
         getcpuattr \
+        allocirq \
+        freeirq \
+        modifyirq \
         platform_init \
         maygetchar \
         mapglobal \

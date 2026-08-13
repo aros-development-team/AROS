@@ -166,10 +166,45 @@ void krnPLICDumpState(unsigned int irq);
 /* Hardware interrupt dispatch (intr.c) */
 void krnHandleExternalIRQ(void);
 
-/* Timer tick (kernel_timer.c) */
+/* Per-source delivery counts (intr.c), sized for the largest PLIC
+   riscv,ndev seen plus the unused source 0 */
+#define KRN_MAX_IRQ_SOURCES 161
+extern ULONG __irq_counts[KRN_MAX_IRQ_SOURCES];
+
+/* How many sources the interrupt controller drives (kernel_plic.c) */
+unsigned int krnPLICSourceCount(void);
+
+/*
+ * A controller collecting interrupts onto one of the platform's
+ * sources - the message controller of a PCIe bridge (modifyirq.c).
+ * Servicing that source reads its pending register and runs the
+ * handlers of the sources its vectors were given.
+ */
+#define KRN_MAX_MSI_CONTROLLERS 4
+struct krnMSIController
+{
+    unsigned int    irq;        /* the source it raises          */
+    IPTR            status;     /* its pending register          */
+    unsigned int    base;       /* source given to vector 0      */
+    unsigned int    count;      /* how many vectors it has       */
+};
+extern struct krnMSIController __msi_ctrl[KRN_MAX_MSI_CONTROLLERS];
+struct krnMSIController *krnFindMSIController(unsigned int irq);
+
+/*
+ * Sources above the controller's own, for interrupts with no wire -
+ * see allocirq.c. One byte per number between the last real source
+ * and HW_IRQ_COUNT.
+ */
+extern UBYTE __virq_used[];
+ULONG krnAllocVirtualIRQ(ULONG count);
+void krnFreeVirtualIRQ(ULONG start, ULONG count);
+
+/* Timer tick (kernel_timer.c). The context is the interrupted state,
+   for the serial debug poke; NULL when called from the idle loop. */
 extern volatile uint64_t __timer_ticks;
 void krnTimerInit(uint32_t timebase_hz, uint32_t tick_hz);
-void krnTimerTick(void);
+void krnTimerTick(struct ExceptionContext *ctx);
 
 /* Sv39 MMU (kernel_mmu.c) */
 void krnInitMMU(struct krnFDTInfo *info);

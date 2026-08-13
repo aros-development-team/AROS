@@ -39,6 +39,12 @@ static unsigned long plic_base;
 static int           plic_context = -1;
 static unsigned int  plic_ndev;
 
+
+unsigned int krnPLICSourceCount(void)
+{
+    return plic_ndev;
+}
+
 /*
  * Every supervisor context, and the one a claim last came from.
  *
