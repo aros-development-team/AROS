@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -113,7 +113,7 @@
 }
 
 /* Run IRQ handlers */
-void krnRunIRQHandlers(struct KernelBase *KernelBase, UWORD irq)
+void krnRunIRQHandlers(struct KernelBase *KernelBase, irqid_t irq)
 {
     struct IntrNode **in, *in1, *in2;
     struct PlatformData *pdata;

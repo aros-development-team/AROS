@@ -67,10 +67,13 @@ struct pcidt_intmap
    to the DesignWare register block */
 #define DWC_MSI_INTR0_STATUS    0x830
 
-/* The controller has 32; the sources for them come out of a range
-   shared with every other bridge, so ask for a sensible block and
-   settle for less when several are present */
-#define PCIDT_MSI_VECTORS   8
+/* The controller has 32, which is also as many as DWC_MSI_INTR0_STATUS
+   can report in one word. The sources for them come out of a range
+   shared with every other bridge, so ask for the whole set and settle
+   for less when several are present - the request is halved until it
+   fits. With HW_IRQ_COUNT at 1024 there is now room for three bridges
+   to have all 32 rather than 8 apiece. */
+#define PCIDT_MSI_VECTORS   32
 
 struct pcidt_bridge
 {

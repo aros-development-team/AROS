@@ -18,6 +18,21 @@
 #define X86_CPU_EXCEPT_COUNT    32
 #define HW_IRQ_BASE     X86_CPU_EXCEPT_COUNT
 
+/*
+ * Interrupt identity widths - see rom/kernel/kernel_irqtypes.h.
+ * Stated rather than defaulted, because the narrowness is deliberate:
+ * i386 keeps the historic 256-entry IRQ space (kernel_arch.h), and the
+ * wide controller id/instance split x86_64 uses has no users here while
+ * it would grow kb_Interrupts[] on the machines that have least to spare.
+ *
+ * The source number stays 16-bit even though only 256 sources exist, so
+ * that the "irq >= HW_IRQ_COUNT" guards in ictl.c can still fail - an
+ * 8-bit irqid_t would make them unable to reject anything.
+ */
+#define KRN_IRQID_BITS          16
+#define KRN_ICID_BITS           8
+#define KRN_ICINST_BITS         8
+
 typedef  unsigned char cpuid_t;
 typedef  unsigned char apicid_t;
 typedef  void *cpumask_t;

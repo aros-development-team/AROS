@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 
     Desc: Intel 8259A "Legacy" PIC driver.
 */
@@ -37,14 +37,14 @@ icid_t i8259a_Register(struct KernelBase *KernelBase)
 
     /* if we have been disabled, fail to register */
     if (i8259a_IntrController.ic_Flags & ICF_DISABLED)
-        return (icid_t)-1;
+        return KRN_ICID_INVALID;
 
     i8259a_IntrController.ic_Flags |= ICF_ACKENABLE;
 
-    return (icid_t)i8259a_IntrController.ic_Node.ln_Type;
+    return i8259a_IntrController.ic_Id;
 }
 
-BOOL i8259a_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
+BOOL i8259a_DisableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 {
     struct i8259a_Private *xtpicPriv= (struct i8259a_Private *)icPrivate;
     struct i8259a_Instance *xtPic = (struct i8259a_Instance *)&xtpicPriv->irq_ic[icInstance];
@@ -68,7 +68,7 @@ BOOL i8259a_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     return TRUE;
 }
 
-BOOL i8259a_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_t *irqmask)
+BOOL i8259a_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum) // uint16_t *irqmask)
 {
     struct i8259a_Private *xtpicPriv= (struct i8259a_Private *)icPrivate;
     struct i8259a_Instance *xtPic = (struct i8259a_Instance *)&xtpicPriv->irq_ic[icInstance];
@@ -97,7 +97,7 @@ BOOL i8259a_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint1
  * Careful! The 8259A is a fragile beast, it pretty much _has_ to be done exactly like this (mask it
  * first, _then_ send the EOI, and the order of EOI to the two 8259s is important!
  */
-BOOL i8259a_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_t *irqmask)
+BOOL i8259a_AckIntr(APTR icPrivate, icinstid_t icInstance, irqid_t intNum) // uint16_t *irqmask)
 {
     struct i8259a_Private *xtpicPriv= (struct i8259a_Private *)icPrivate;
     struct i8259a_Instance *xtPic = (struct i8259a_Instance *)&xtpicPriv->irq_ic[icInstance];
@@ -123,7 +123,7 @@ BOOL i8259a_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_
 }
 
 
-BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
+BOOL i8259a_Init(struct KernelBase *KernelBase, icinstid_t instanceCount)
 {
     struct i8259a_Private *xtpicPriv;
     struct i8259a_Instance *xtPic;
@@ -166,7 +166,7 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                     /* Take over the first 8259A's IRQs */
                     for (irq = instIRQBase; irq < (instIRQBase + I8259A_IRQCOUNT); irq++)
                     {
-                        if (!krnInitInterrupt(KernelBase, irq, i8259a_IntrController.ic_Node.ln_Type, instance))
+                        if (!krnInitInterrupt(KernelBase, irq, i8259a_IntrController.ic_Id, instance))
                         {
                             D(bug("[Kernel:i8259a] %s: failed to acquire IRQ #%d\n", __func__, irq);)
                         }
@@ -223,15 +223,15 @@ struct IntrController i8259a_IntrController =
         .ln_Name = "8259A PIC",
         .ln_Pri = 0
     },
-    0,
-    IIC_ID_I8259A,
-    0,
-    NULL,
-    i8259a_Register,
-    i8259a_Init,
-    i8259a_EnableIRQ,
-    i8259a_DisableIRQ,
-    i8259a_AckIntr,
+    .ic_Count       = 0,
+    .ic_Type        = IIC_ID_I8259A,
+    .ic_Flags       = 0,
+    .ic_Private     = NULL,
+    .ic_Register    = i8259a_Register,
+    .ic_Init        = i8259a_Init,
+    .ic_IntrEnable  = i8259a_EnableIRQ,
+    .ic_IntrDisable = i8259a_DisableIRQ,
+    .ic_IntrAck     = i8259a_AckIntr,
 };
 
 void i8259a_Disable()

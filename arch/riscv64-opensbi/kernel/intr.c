@@ -38,14 +38,14 @@ ULONG __irq_counts[KRN_MAX_IRQ_SOURCES];
  * been serviced. Handing one to the controller is not an error, it
  * simply is not its source, so say nothing and leave it alone.
  */
-void ictl_enable_irq(uint8_t irq, struct KernelBase *kb)
+void ictl_enable_irq(irqid_t irq, struct KernelBase *kb)
 {
     irqKernelBase = kb;
     if (irq <= krnPLICSourceCount())
         krnPLICEnable(irq, 1);
 }
 
-void ictl_disable_irq(uint8_t irq, struct KernelBase *kb)
+void ictl_disable_irq(irqid_t irq, struct KernelBase *kb)
 {
     if (irq <= krnPLICSourceCount())
         krnPLICEnable(irq, 0);
@@ -100,12 +100,12 @@ void krnHandleExternalIRQ(void)
                         pending &= ~(1UL << vector);
                         if (vector < mc->count)
                             krnRunIRQHandlers(irqKernelBase,
-                                              (UWORD)(mc->base + vector));
+                                              (irqid_t)(mc->base + vector));
                     }
                 }
             }
             else
-                krnRunIRQHandlers(irqKernelBase, (uint8_t)src);
+                krnRunIRQHandlers(irqKernelBase, (irqid_t)src);
         }
         krnPLICComplete(src);
 

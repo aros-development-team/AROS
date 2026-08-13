@@ -3,7 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 
 INCLUDE_FILES := $(call WILDCARD, asm/*.[hi])
 
-#MM- includes-copy-pc-i386 : includes-common-i386
+#MM- includes-copy-pc-i386 : includes-common-i386 compiler-includes-pc
 
 %copy_includes mmake=includes-copy-pc-i386
 

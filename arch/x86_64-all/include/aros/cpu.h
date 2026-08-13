@@ -18,6 +18,19 @@
 #define X86_CPU_EXCEPT_COUNT    32
 #define HW_IRQ_BASE     X86_CPU_EXCEPT_COUNT
 
+/*
+ * Interrupt identity widths - see rom/kernel/kernel_irqtypes.h.
+ * The source number is the GSI, so it uses the full 16-bit space that
+ * kb_Interrupts[] is sized for. The controller id and instance are split
+ * 16/16 rather than the default 8/8: a large IOAPIC machine can present
+ * more controller instances than a byte can name, and aliasing two of them
+ * points an IRQ at the wrong piece of hardware rather than merely running
+ * out of room.
+ */
+#define KRN_IRQID_BITS          16
+#define KRN_ICID_BITS           16
+#define KRN_ICINST_BITS         16
+
 typedef  unsigned char cpuid_t;
 typedef  unsigned char apicid_t;
 typedef  void *cpumask_t;

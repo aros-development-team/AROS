@@ -10,6 +10,8 @@
 
 #include <exec/nodes.h>
 #include <exec/lists.h>
+
+#include <kernel_irqtypes.h>   /* irqid_t - this header may be reached without kernel_base.h */
 #include <aros/types/spinlock_s.h>
 
 #include "apic_ia32.h"
@@ -133,9 +135,9 @@ struct PlatformData
 */
 
 /* Interrupt controller functions */
-void ictl_enable_irq(UWORD, struct KernelBase *);
-void ictl_disable_irq(UWORD, struct KernelBase *);
-BOOL ictl_is_irq_enabled(UWORD, struct KernelBase *);
+void ictl_enable_irq(irqid_t, struct KernelBase *);
+void ictl_disable_irq(irqid_t, struct KernelBase *);
+BOOL ictl_is_irq_enabled(irqid_t, struct KernelBase *);
 
 #define IRQINTB_ENABLED 1
 #define IRQINTF_ENABLED (1 << IRQINTB_ENABLED)

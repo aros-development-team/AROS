@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/kernel.h>
@@ -41,7 +41,7 @@ ULONG core_APIC_AllocMSI(ULONG count)
         for (irq = first; irq < ((APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
         {
             D(bug("[APIC:MSI] %s: trying #%u\n", __func__, irq);)
-            if (KERNELIRQ_LIST(irq).lh_Type == APICInt_IntrController.ic_Node.ln_Type)
+            if (KERNELIRQ_ICID(irq) == APICInt_IntrController.ic_Id)
             {
                 D(bug("[APIC:MSI] %s:     .. apic IRQ ..\n", __func__);)
                 if (startIRQ == (UWORD)-1)

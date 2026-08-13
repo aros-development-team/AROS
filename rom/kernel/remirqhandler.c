@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -50,7 +50,7 @@
     AROS_LIBFUNC_INIT
 
     struct IntrNode *h = handle;
-    UWORD irq = h->in_nr;
+    irqid_t irq = h->in_nr;
 
     if (h && (h->in_type == it_interrupt))
     {

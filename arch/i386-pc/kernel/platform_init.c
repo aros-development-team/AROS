@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -42,7 +42,8 @@ static int PlatformInit(struct KernelBase *KernelBase)
     for (i = 0; i < HW_IRQ_COUNT; i++)
     {
         KernelBase->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
-        KernelBase->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
+        KernelBase->kb_Interrupts[i].ki_ICId = KBL_INTERNAL;
+        KernelBase->kb_Interrupts[i].ki_ICInst = 0;
     }
 
     data = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);

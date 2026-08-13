@@ -128,7 +128,7 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
 
     /* if we have been disabled, fail to register */
     if (IOAPICInt_IntrController.ic_Flags & ICF_DISABLED)
-        return (icid_t)-1;
+        return KRN_ICID_INVALID;
 
     /*
      * Inform ACPI/BIOS that we want to use IOAPIC mode...
@@ -143,18 +143,18 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
                                 NULL);
 	if (status == AE_NOT_FOUND)
 	{
-        return (icid_t)-1;
+        return KRN_ICID_INVALID;
 	}
     if (ACPI_FAILURE(status))
     {
         bug("[Kernel:IOAPIC] %s: Error evaluating _PIC: %s\n", __func__, AcpiFormatException(status));
-        return (icid_t)-1;
+        return KRN_ICID_INVALID;
     }
 
     bug("[Kernel:IOAPIC] ACPI IOAPIC Mode Enabled\n");
     DINT(bug("[Kernel:IOAPIC] %s: mode enable status=%08X\n", __func__, status));
 
-    return (icid_t)IOAPICInt_IntrController.ic_Node.ln_Type;
+    return IOAPICInt_IntrController.ic_Id;
 }
 
 /*
@@ -195,7 +195,7 @@ void IOAPIC_IntDeliveryOptions(ULONG base, UBYTE pin, UBYTE pol, UBYTE trig, UBY
 }
 
 static BOOL IOAPIC_IntToPin(struct IOAPICCfgData *ioapicData,
-    struct IntrMapping *intrMap, icid_t intNum, UBYTE *ioapic_pin)
+    struct IntrMapping *intrMap, irqid_t intNum, UBYTE *ioapic_pin)
 {
     ULONG intGsi = intrMap ? intrMap->im_Int : (ULONG)intNum;
 
@@ -212,7 +212,7 @@ static BOOL IOAPIC_IntToPin(struct IOAPICCfgData *ioapicData,
     return TRUE;
 }
 
-BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
+BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icinstid_t instanceCount)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct IOAPICCfgData *ioapicData;
@@ -440,21 +440,21 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
                 {
                     BOOL  acquired = TRUE, setgate = TRUE;
-                    if ((!krnInitInterrupt(KernelBase, irq, IOAPICInt_IntrController.ic_Node.ln_Type, instance)) &&
-                        !(KERNELIRQ_LIST(irq).lh_Type == APICInt_IntrController.ic_Node.ln_Type))
+                    if ((!krnInitInterrupt(KernelBase, irq, IOAPICInt_IntrController.ic_Id, instance)) &&
+                        !(KERNELIRQ_ICID(irq) == APICInt_IntrController.ic_Id))
                     {
                         bug("[Kernel:IOAPIC] %s: Failed to acquire IRQ #$%02X\n", __func__, irq);
                         acquired = FALSE;
                     }
-                    else if ((KERNELIRQ_LIST(irq).lh_Type == APICInt_IntrController.ic_Node.ln_Type) ||
-                                ((xtpicIC) && (KERNELIRQ_LIST(irq).lh_Type == xtpicIC->ic_Node.ln_Type)))
+                    else if ((KERNELIRQ_ICID(irq) == APICInt_IntrController.ic_Id) ||
+                                ((xtpicIC) && (KERNELIRQ_ICID(irq) == xtpicIC->ic_Id)))
                     {
                         if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
                         {
                             bug("[Kernel:IOAPIC] %s: Taking ownership of IRQ #$%02X\n", __func__, irq);
                         }
-                        KERNELIRQ_LIST(irq).lh_Type = APICInt_IntrController.ic_Node.ln_Type;
-                        KERNELIRQ_LIST(irq).l_pad = instance;
+                        KERNELIRQ_ICID(irq) = APICInt_IntrController.ic_Id;
+                        KERNELIRQ_ICINST(irq) = instance;
                         setgate = FALSE;
                     }
 
@@ -506,7 +506,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     return TRUE;
 }
 
-BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
+BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 {
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
@@ -543,7 +543,7 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     return TRUE;
 }
 
-BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
+BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
@@ -654,7 +654,7 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     return TRUE;
 }
 
-BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
+BOOL IOAPICInt_AckIntr(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
@@ -729,15 +729,15 @@ struct IntrController IOAPICInt_IntrController =
         .ln_Name = "82093AA IO-APIC",
         .ln_Pri = 50
     },
-    0,
-    IIC_ID_IOAPIC,
-    0,
-    NULL,
-    IOAPICInt_Register,
-    IOAPICInt_Init,
-    IOAPICInt_EnableIRQ,
-    IOAPICInt_DisableIRQ,
-    IOAPICInt_AckIntr
+    .ic_Count       = 0,
+    .ic_Type        = IIC_ID_IOAPIC,
+    .ic_Flags       = 0,
+    .ic_Private     = NULL,
+    .ic_Register    = IOAPICInt_Register,
+    .ic_Init        = IOAPICInt_Init,
+    .ic_IntrEnable  = IOAPICInt_EnableIRQ,
+    .ic_IntrDisable = IOAPICInt_DisableIRQ,
+    .ic_IntrAck     = IOAPICInt_AckIntr
 };
  
  /********************************************************************/
@@ -985,7 +985,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
         bug("[Kernel:ACPI-IOAPIC] Registering IO-APIC #%u [ID=%03u] @ %p [GSI = %u]\n",
             pdata->kb_IOAPIC->ioapic_count + 1, ioapic->Id, ioapic->Address, ioapic->GlobalIrqBase);
 
-        if ((ioapicICInstID = krnAddInterruptController(KernelBase, &IOAPICInt_IntrController)) != (icintrid_t)-1)
+        if ((ioapicICInstID = krnAddInterruptController(KernelBase, &IOAPICInt_IntrController)) != KRN_ICINTR_INVALID)
         {
             struct IOAPICCfgData *ioapicData = (struct IOAPICCfgData *)&pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count];
 

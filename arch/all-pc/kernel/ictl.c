@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/arossupport.h>
@@ -16,7 +16,7 @@
 
 #define D(x)
 
-void ictl_enable_irq(UWORD irq, struct KernelBase *KernelBase)
+void ictl_enable_irq(irqid_t irq, struct KernelBase *KernelBase)
 {
     struct IntrController *irqIC;
     struct KernelInt *irqInt;
@@ -28,9 +28,9 @@ void ictl_enable_irq(UWORD irq, struct KernelBase *KernelBase)
 
     D(bug("[Kernel] %s(%d)\n", __func__, irq));
 
-    if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_List.lh_Type)) != NULL)
+    if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_ICId)) != NULL)
     {
-        if ((irqIC->ic_IntrEnable) && (irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq)))
+        if ((irqIC->ic_IntrEnable) && (irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_ICInst, irq)))
         {
             D(bug("[Kernel] %s: controller enabled\n", __func__));
             irqInt->ki_Priv |= IRQINTF_ENABLED;
@@ -43,7 +43,7 @@ void ictl_enable_irq(UWORD irq, struct KernelBase *KernelBase)
     }
 }
 
-void ictl_disable_irq(UWORD irq, struct KernelBase *KernelBase)
+void ictl_disable_irq(irqid_t irq, struct KernelBase *KernelBase)
 {
     struct IntrController *irqIC;
     struct KernelInt *irqInt;
@@ -55,9 +55,9 @@ void ictl_disable_irq(UWORD irq, struct KernelBase *KernelBase)
 
     D(bug("[Kernel] %s(%d)\n", __func__, irq));
 
-    if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_List.lh_Type)) != NULL)
+    if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_ICId)) != NULL)
     {
-        if ((irqIC->ic_IntrDisable) && (irqIC->ic_IntrDisable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq)))
+        if ((irqIC->ic_IntrDisable) && (irqIC->ic_IntrDisable(irqIC->ic_Private, irqInt->ki_ICInst, irq)))
         {
             D(bug("[Kernel] %s: controller disabled\n", __func__));
             irqInt->ki_Priv &= ~IRQINTF_ENABLED;
@@ -70,7 +70,7 @@ void ictl_disable_irq(UWORD irq, struct KernelBase *KernelBase)
     }
 }
 
-BOOL ictl_is_irq_enabled(UWORD irq, struct KernelBase *KernelBase)
+BOOL ictl_is_irq_enabled(irqid_t irq, struct KernelBase *KernelBase)
 {
     struct KernelInt *irqInt;
 

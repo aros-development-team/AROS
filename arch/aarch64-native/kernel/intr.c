@@ -38,13 +38,13 @@ void krnCheckExcStack(regs_t *regs);
 void handle_dataabort(regs_t *regs, uint64_t esr);
 void handle_prefetchabort(regs_t *regs, uint64_t esr);
 
-void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
+void ictl_enable_irq(irqid_t irq, struct KernelBase *KernelBase)
 {
     if (__arm_arosintern.ARMI_IRQEnable)
         __arm_arosintern.ARMI_IRQEnable(irq);
 }
 
-void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
+void ictl_disable_irq(irqid_t irq, struct KernelBase *KernelBase)
 {
     if (__arm_arosintern.ARMI_IRQDisable)
         __arm_arosintern.ARMI_IRQDisable(irq);

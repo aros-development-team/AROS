@@ -114,7 +114,7 @@ struct krnMSIController *krnFindMSIController(unsigned int irq)
              * so there is nothing else to unmask it, and until it is
              * the controller can receive messages that never arrive.
              */
-            ictl_enable_irq((uint8_t)irq, KernelBase);
+            ictl_enable_irq(irq, KernelBase);
 
             D(bug("[KRN] %s: source %u collects %u vector(s) from %u\n",
                   __func__, irq, __msi_ctrl[i].count, __msi_ctrl[i].base);)

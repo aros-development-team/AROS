@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -19,8 +19,8 @@
 /*
  * Interrupt controller functions. Actually have the following prototypes:
  *
- * void ictl_enable_irq(uint8_t num);
- * void ictl_disable_irq(uint8_t num);
+ * void ictl_enable_irq(irqid_t num);
+ * void ictl_disable_irq(irqid_t num);
  */
 
 #define ictl_enable_irq(irq, base)

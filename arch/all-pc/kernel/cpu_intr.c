@@ -503,10 +503,10 @@ SAVE_XMM_INTO_AREA(localarea)
 
             irqInt = &KernelBase->kb_Interrupts[irq_number];
 
-            if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_List.lh_Type)) != NULL)
+            if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_ICId)) != NULL)
             {
                 if (irqIC->ic_IntrAck)
-                    irqIC->ic_IntrAck(irqIC->ic_Private, irqInt->ki_List.l_pad, irq_number);
+                    irqIC->ic_IntrAck(irqIC->ic_Private, irqInt->ki_ICInst, irq_number);
 
                 if (irqInt->ki_Priv & IRQINTF_ENABLED)
                 {
@@ -515,7 +515,7 @@ SAVE_XMM_INTO_AREA(localarea)
 
                     if ((irqIC->ic_Flags & ICF_ACKENABLE) &&
                         (irqIC->ic_IntrEnable))
-                        irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq_number);
+                        irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_ICInst, irq_number);
                 }
             }
 
