@@ -236,7 +236,31 @@ int pci_set_master(struct pci_dev *pdev)
 
 int pci_enable_msi(struct pci_dev *pdev)
 {
-    NOT_IMPLEMENTED_STOP;
+    struct TagItem vectreqs[] =
+    {
+        { tHidd_PCIVector_Min,  1 },
+        { tHidd_PCIVector_Max,  1 },
+        { TAG_DONE,             0 }
+    };
+    struct TagItem vecattrs[] =
+    {
+        { tHidd_PCIVector_Int,  (IPTR)-1 },
+        { TAG_DONE,             0        }
+    };
+
+    if (!pdev->oopdev)
+        return -ENODEV;
+
+    if (!HIDD_PCIDevice_ObtainVectors(pdev->oopdev, vectreqs))
+        return -ENODEV;
+
+    HIDD_PCIDevice_GetVectorAttribs(pdev->oopdev, 0, vecattrs);
+    if (vecattrs[0].ti_Data == (IPTR)-1)
+        return -ENODEV;
+
+    /* What the driver hooks from here on; the pin is no longer ours */
+    pdev->irq = (UWORD)vecattrs[0].ti_Data;
+
     return 0;
 }
 
