@@ -1700,21 +1700,6 @@ VOID initcustom(struct amigavideo_staticdata *csd)
 
     D(bug("[AmigaVideo] %s()\n", __func__));
 
-#if (1)
-    /* TODO: This shouldnt be done in the gfx driver!
-     * move to somewhere more appropriate */
-
-    /* Reset audio registers to values that help emulation
-     * if some program enables audio DMA without setting period
-     * or length. Very high period emulation is very CPU intensive.
-     */
-    for (i = 0; i < 4; i++) {
-        custom->aud[i].ac_vol = 0;
-        custom->aud[i].ac_per = 100;
-        custom->aud[i].ac_len = 1000;
-    }
-#endif
-
     /* csd->cs_OOPBase was already set up.
      * See amigavideo.conf's 'oopbase_field' config
      */

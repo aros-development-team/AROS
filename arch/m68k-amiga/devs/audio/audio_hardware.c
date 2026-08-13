@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Paula audio.device
 */
@@ -192,9 +192,21 @@ void audiohw_start(struct AudioBase *ab, UWORD mask)
 
 void audiohw_init(struct AudioBase *ab)
 {
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
     UBYTE ch;
 
     audiohw_reset(ab, CH_MASK);
+
+    /*
+     * A program that turns audio DMA on without saying how long the
+     * sample is gets whatever length was left behind, and zero means
+     * the longest one Paula can play. Leave something short and quiet
+     * here, so the channels are harmless until somebody sets them up
+     * properly. It costs an emulator a great deal to pretend to play
+     * a very fast, very long sample nobody asked for.
+     */
+    for (ch = 0; ch < NR_CH; ch++)
+        custom->aud[ch].ac_len = 1000;
     for (ch = 0; ch < NR_CH; ch++) {
         struct AudioInterrupt *inter = &ab->audint[ch];
         inter->audint.is_Code = (APTR)audio_int;
