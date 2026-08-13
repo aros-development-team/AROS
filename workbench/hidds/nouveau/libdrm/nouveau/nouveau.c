@@ -423,8 +423,14 @@ nouveau_device_new(struct nouveau_object *parent, int32_t oclass,
 		ret = nouveau_getparam(dev, NOUVEAU_GETPARAM_HAS_BO_USAGE, &v);
 		if (ret == 0)
 			nvdev->have_bo_usage = (v != 0);
-	} else
-		return -ENOSYS;
+	} else {
+		/* Asked for a device this cannot address. Leave by the same
+		   door as every other failure, so the half-built device is
+		   freed and *pdev is not left naming it. ret has been
+		   written by nvif_unpack() and says nothing about this. */
+		ret = -ENOSYS;
+		goto done;
+	}
 
 	ret = nouveau_getparam(dev, NOUVEAU_GETPARAM_FB_SIZE, &v);
 	if (ret)
