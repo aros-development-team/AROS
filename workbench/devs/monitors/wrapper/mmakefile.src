@@ -3,6 +3,12 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES      := wrapper
 STORAGEDIR := $(AROSDIR)/Storage/Monitors
+# Cards on a PCI bus can be fitted to any machine that has one
+ifeq ($(filter pc opensbi,$(AROS_TARGET_ARCH)),)
+PCIDEVSDIR := $(STORAGEDIR)
+else
+PCIDEVSDIR := $(AROS_DEVS)/Monitors
+endif
 ifneq ($(AROS_TARGET_ARCH),pc)
 PCDEVSDIR := $(STORAGEDIR)
 else
@@ -24,16 +30,16 @@ endif
 
 #MM
 devs-monitors-wrapper-copy: \
-			    $(PCDEVSDIR)/ATI \
-			    $(PCDEVSDIR)/NVidia \
+			    $(PCIDEVSDIR)/ATI \
+			    $(PCIDEVSDIR)/NVidia \
 			    $(PCDEVSDIR)/VMWare \
 			    $(AMIGADEVSDIR)/SAGA
 
-$(PCDEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(PCDEVSDIR)
+$(PCIDEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
 	%fileactionmsg msg="Creating   " file="$@" elipses="..."
 	@$(CP) -f $< $@
 
-$(PCDEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper | $(PCDEVSDIR)
+$(PCIDEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
 	%fileactionmsg msg="Creating   " file="$@" elipses="..."
 	@$(CP) -f $< $@
 

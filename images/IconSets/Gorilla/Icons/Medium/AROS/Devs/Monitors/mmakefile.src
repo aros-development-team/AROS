@@ -1,9 +1,18 @@
-# Copyright (C) 2010-2023, The AROS Development Team. All rights reserved.
+# Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
-STORAGEICONS := Wrapper
-PCDEVSICONS    := ATI IntelGMA NVidia VMWare
+# Headless stays in Storage/ on every target - it is moved into Devs/ by
+# hand, only on machines that actually want a display-less driver.
+STORAGEICONS := Wrapper Headless
+PCIDEVSICONS   := ATI NVidia
+PCDEVSICONS    := IntelGMA VMWare
+# Cards on a PCI bus can be fitted to any machine that has one
+ifeq ($(filter pc opensbi,$(AROS_TARGET_ARCH)),)
+PCIDEVSDIR := $(AROSDIR)/Storage/Monitors
+else
+PCIDEVSDIR := $(AROS_DEVS)/Monitors
+endif
 ifneq ($(AROS_TARGET_ARCH),pc)
 PCDEVSDIR := $(AROSDIR)/Storage/Monitors
 else
@@ -19,8 +28,11 @@ endif
 #MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-devs-monitors-clean iconset-Gorilla-wbench-icons-storage-monitors-clean
 #MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-devs-monitors iconset-Gorilla-wbench-icons-storage-monitors
 
-#MM- iconset-Gorilla-wbench-icons-devs-monitors : iconset-Gorilla-wbench-icons-devs-monitors-pc iconset-Gorilla-wbench-icons-devs-monitors-amiga
-#MM- iconset-Gorilla-wbench-icons-devs-monitors-clean : iconset-Gorilla-wbench-icons-devs-monitors-pc-clean iconset-Gorilla-wbench-icons-devs-monitors-amiga-clean
+#MM- iconset-Gorilla-wbench-icons-devs-monitors : iconset-Gorilla-wbench-icons-devs-monitors-pci iconset-Gorilla-wbench-icons-devs-monitors-pc iconset-Gorilla-wbench-icons-devs-monitors-amiga
+#MM- iconset-Gorilla-wbench-icons-devs-monitors-clean : iconset-Gorilla-wbench-icons-devs-monitors-pci-clean iconset-Gorilla-wbench-icons-devs-monitors-pc-clean iconset-Gorilla-wbench-icons-devs-monitors-amiga-clean
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-pci icons=$(PCIDEVSICONS) image=Wrapper.png \
+             dir=$(PCIDEVSDIR)
 
 %build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-pc icons=$(PCDEVSICONS) image=Wrapper.png \
              dir=$(PCDEVSDIR)
@@ -30,6 +42,10 @@ endif
 
 %build_icons mmake=iconset-Gorilla-wbench-icons-storage-monitors icons=$(STORAGEICONS) image=Wrapper.png \
              dir=$(AROS_STORAGE)/Monitors
+
+#MM- icons-wbench-devs-monitors : gorilla-icons-wbench-devs-monitors-pci
+%build_icons mmake=gorilla-icons-wbench-devs-monitors-pci icons=$(PCIDEVSICONS) image=Wrapper.png \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_STORAGE)/Monitors
 
 #MM- icons-wbench-devs-monitors : gorilla-icons-wbench-devs-monitors-pc
 %build_icons mmake=gorilla-icons-wbench-devs-monitors-pc icons=$(PCDEVSICONS) image=Wrapper.png \
