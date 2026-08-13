@@ -383,6 +383,7 @@ void query_memory()
     }
 }
 
+
 void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3)
 {
     uint64_t tmp;
@@ -461,6 +462,52 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
     }
     else
         while(1) asm volatile("wfe");
+
+    /*
+     * The Pi 4 describes additional MMIO windows on the /scb bus: the full
+     * 0xFC000000 peripheral block (which contains the PCIe host bridge
+     * registers at 0xFD500000) and the 1GB PCIe outbound window at
+     * 0x6_0000_0000. Map the MMIO entries as device memory and skip the
+     * RAM alias. Pi 2/3 device trees have no /scb node.
+     */
+    e = dt_find_node("/scb");
+    if (e)
+    {
+        of_property_t *p = dt_find_property(e, "ranges");
+        if (p)
+        {
+            of_node_t *rootn = dt_find_node("/");
+            of_property_t *cacp = dt_find_property(e, "#address-cells");
+            of_property_t *cscp = dt_find_property(e, "#size-cells");
+            of_property_t *pacp = dt_find_property(rootn, "#address-cells");
+            uint32_t child_ac = cacp ? AROS_BE2LONG(*(uint32_t *)cacp->op_value) : 1;
+            uint32_t child_sc = cscp ? AROS_BE2LONG(*(uint32_t *)cscp->op_value) : 1;
+            uint32_t parent_ac = pacp ? AROS_BE2LONG(*(uint32_t *)pacp->op_value) : 1;
+            uint32_t entry_cells = child_ac + parent_ac + child_sc;
+
+            volatile uint32_t *ranges = p->op_value;
+            int32_t cells = p->op_length / 4;
+
+            while (cells >= (int32_t)entry_cells)
+            {
+                uint64_t addr_bus = 0, addr_cpu = 0, addr_len = 0;
+
+                for (uint32_t i = 0; i < child_ac; i++)
+                    addr_bus = (addr_bus << 32) | AROS_BE2LONG(*ranges++);
+                for (uint32_t i = 0; i < parent_ac; i++)
+                    addr_cpu = (addr_cpu << 32) | AROS_BE2LONG(*ranges++);
+                for (uint32_t i = 0; i < child_sc; i++)
+                    addr_len = (addr_len << 32) | AROS_BE2LONG(*ranges++);
+
+                (void)addr_bus;
+
+                if (addr_cpu >= 0xFC000000UL)
+                    mmu_map_section(addr_cpu, addr_cpu, addr_len, 0, 0, 3, 0);
+
+                cells -= entry_cells;
+            }
+        }
+    }
 
     serInit();
 

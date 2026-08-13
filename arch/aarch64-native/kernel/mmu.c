@@ -54,9 +54,10 @@
     (0x44UL << (MAIR_IDX_NORMAL_NC * 8))   \
 )
 
-/* TCR_EL1 configuration: 4KB granule, 32-bit VA (T0SZ=32), 36-bit PA */
+/* TCR_EL1 configuration: 4KB granule, 35-bit VA (T0SZ=29), 36-bit PA.
+   Must match the boot MMU setup. */
 #define TCR_VALUE ( \
-    (32UL << 0)      | /* T0SZ = 32 (4GB VA space) */ \
+    (29UL << 0)      | /* T0SZ = 29 (32GB VA space) */ \
     (0UL  << 7)      | /* EPD0 = 0 (TTBR0 enabled) */ \
     (1UL  << 8)      | /* IRGN0 = Write-Back */ \
     (1UL  << 10)     | /* ORGN0 = Write-Back */ \
