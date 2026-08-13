@@ -486,11 +486,10 @@ static void prepare_message(unsigned long kick_start, unsigned long kick_base, v
     tag->ti_Tag = TAG_DONE;
 }
 
-void panic(const char *str)
+/* Stop the machine. Out of line because HALT needs the CPU header,
+   which not every caller of panic() has */
+void bootstrap_halt(void)
 {
-    kprintf("%s\n", str);
-    kprintf("*** SYSTEM PANIC!!! ***\n");
-
     for(;;)
         HALT;
 }
@@ -671,7 +670,7 @@ static void __bootstrap(unsigned int magic, void *mb)
     if (!kbase)
     {
         panic("Failed to find %u bytes for the kickstart.\n"
-              "Your system doesn't have enough memory.");
+              "Your system doesn't have enough memory.", (unsigned)ksize);
     }
 
     D(kprintf("[%s] Loading kickstart, data 0x%p, code 0x%p...\n", str_Bootstrap, kstart, kbase);)

@@ -2,11 +2,13 @@
 #define _BOOTSTRAP_H
 
 /*
-    Copyright (C) 2006-2020 The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026 The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/multiboot.h>
+
+#include "support.h"
 
 #if defined(DEBUG) && (DEBUG > 0)
 #define D(x)    x
@@ -64,7 +66,19 @@ void AllocFB(void);
 void Hello(void);
 int ParseCmdLine(const char *cmdline);
 struct mb_mmap *mmap_make(unsigned long *len, unsigned long mem_lower, unsigned long long mem_upper);
-void panic(const char *str);
+/*
+ * Say why, then stop. A macro, so the message is formatted by kprintf()
+ * itself: the arguments need no second pass through a va_list, and are
+ * checked as they would be in any other kprintf().
+ */
+void bootstrap_halt(void) __attribute__((noreturn));
+
+#define panic(...)                                  \
+    do {                                            \
+        kprintf(__VA_ARGS__);                       \
+        kprintf("\n*** SYSTEM PANIC!!! ***\n");     \
+        bootstrap_halt();                           \
+    } while (0)
 unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsigned long *mmap_len);
 unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mmap_len);
 void setupVESA(char *str);
