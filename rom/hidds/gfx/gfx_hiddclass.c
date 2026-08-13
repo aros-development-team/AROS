@@ -1281,12 +1281,26 @@ VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx
     }
 
     /* De-masquerade the operands so the implementation sees real bitmaps */
-    if (realsrc)
-        msg->src = realsrc;
-    if (realdst)
-        msg->dest = realdst;
+    if (realsrc || realdst)
+    {
+        if (realsrc)
+            msg->src = realsrc;
+        if (realdst)
+            msg->dest = realdst;
 
-    copybox_impl(cl, obj, msg);
+        /*
+         * Offer the unwrapped operands back to the driver. We are here
+         * because it did not recognise the wrapper as one of its own
+         * bitmaps and passed the call up, so its accelerated path never
+         * ran - on a palettized display that costs a per-pixel loop for
+         * every blit the moment a software pointer exists. A driver that
+         * refuses these too lands here again with nothing left to unwrap
+         * and takes the branch below, so this cannot recurse.
+         */
+        OOP_DoMethod(obj, (OOP_Msg)msg);
+    }
+    else
+        copybox_impl(cl, obj, msg);
 
     if (display)
     {
@@ -1615,12 +1629,18 @@ IPTR GFXHIDD__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *obj, struct pHi
             GfxDisplay_CursorRemove(CSD(cl), display);
     }
 
-    if (realsrc)
-        msg->src = realsrc;
-    if (realdst)
-        msg->dest = realdst;
+    /* See CopyBox: give the driver a chance at its own bitmaps */
+    if (realsrc || realdst)
+    {
+        if (realsrc)
+            msg->src = realsrc;
+        if (realdst)
+            msg->dest = realdst;
 
-    ret = copyboxmasked_impl(cl, obj, msg);
+        ret = OOP_DoMethod(obj, (OOP_Msg)msg);
+    }
+    else
+        ret = copyboxmasked_impl(cl, obj, msg);
 
     if (display)
     {
