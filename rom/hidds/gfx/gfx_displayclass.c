@@ -46,17 +46,17 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
     IPTR                    numentries;
     OOP_Object              *src_colmap;
     APTR                    psrc_colmap = &src_colmap;
-    
+
     data = OOP_INST_DATA(cl, o);
-    
+
     /* We have to copy the colormap into the framebuffer bitmap */
     OOP_GetAttr(src_bm, aHidd_BitMap_ColorMap, (IPTR *)psrc_colmap);
     OOP_GetAttr(src_colmap, aHidd_ColorMap_NumEntries, &numentries);
-        
+
     for (i = 0; i < numentries; i ++)
     {
         HIDDT_Color col;
-        
+
         HIDD_CM_GetColor(src_colmap, i, &col);
         HIDD_BM_SetColors(dst_bm, &col, i, 1);
     }
@@ -707,7 +707,7 @@ VOID Display__Hidd_Display__NominalDimensions(OOP_Class *cl, OOP_Object *o, stru
                 should be created using the driver's own class or one of the system classes.
 
                 A typical implementation should pay attention to the following bitmap attributes:
-    
+
                 aHIDD_BitMap_ModeID - If this attribute is supplied, the bitmap needs to be
                               either displayable by this driver, or be a friend of a
                               displayable bitmap. A friend bitmap usually repeats the
@@ -843,23 +843,23 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                     case aoHidd_BitMap_Displayable:
                         displayable = tag->ti_Data;
                         break;
-            
+
                     case aoHidd_BitMap_FrameBuffer:
                         framebuffer = tag->ti_Data;
                         break;
-            
+
                     case aoHidd_BitMap_Width:
                         got_width = TRUE;
                         break;
-            
+
                     case aoHidd_BitMap_Height:
                         got_height = TRUE;
                         break;
-            
+
                     case aoHidd_BitMap_Depth:
                         got_depth = TRUE;
                         break;
-            
+
                     case aoHidd_BitMap_ModeID:
                         /* Make sure it is a valid mode, and retrieve sync/pixelformat data */
                         if (!HIDD_DMEnum_GetMode(data->dmenum, tag->ti_Data, &sync, &pf))
@@ -868,24 +868,24 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                             return NULL;
                         }
                         break;
-            
+
                     case aoHidd_BitMap_Friend:
                         friend_bm = (OOP_Object *)tag->ti_Data;
                         break;
-                        
+
                     case aoHidd_BitMap_PixFmt:
                         D(bug("!!! Gfx::CreateObject: USER IS NOT ALLOWED TO PASS aHidd_BitMap_PixFmt !!!\n"));
                         return NULL;
-            
+
                     case aoHidd_BitMap_StdPixFmt:
                         pixfmt = tag->ti_Data;
                         break;
-            
+
                     case aoHidd_BitMap_ClassPtr:
                         classptr = (OOP_Class *)tag->ti_Data;
                         gotclass = TRUE;
                         break;
-            
+
                     case aoHidd_BitMap_ClassID:
                         classid  = (STRPTR)tag->ti_Data;
                         gotclass = TRUE;
@@ -902,7 +902,7 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                 COPY_BM_TAG(bmtags, 2, Width, friend_bm);
                 got_width = TRUE;
             }
-            
+
             if (!got_height)
             {
                 COPY_BM_TAG(bmtags, 3, Height, friend_bm);
