@@ -25,12 +25,12 @@
 #define __OOP_NOATTRBASES__
 #endif
 
-#include "efigfx_hidd.h"
-#include "efigfx_support.h"
+#include "efifbgfx_hidd.h"
+#include "efifbgfx_support.h"
 
 #include LC_LIBDEFS_FILE
 
-OOP_Object *EFIGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *EFIFBGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags[] =
     {
@@ -76,7 +76,7 @@ OOP_Object *EFIGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_
     };
     struct pRoot_New newdispMsg;
 
-    D(bug("[EFIGfx:Display] %s()\n", __func__));
+    D(bug("[EFIFBGfx:Display] %s()\n", __func__));
 
     /* Do not allow more than one object instance to be created */
     if (XSD(cl)->efidisplay)
@@ -107,11 +107,11 @@ OOP_Object *EFIGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&newdispMsg);
 
-    D(bug("[EFIGfx:Display] %s: obj @ 0x%p\n", __func__, o));
+    D(bug("[EFIFBGfx:Display] %s: obj @ 0x%p\n", __func__, o));
     return o;
 }
 
-VOID EFIGfxDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID EFIFBGfxDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
 
@@ -127,11 +127,11 @@ VOID EFIGfxDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *ms
 
 /*********  Display::CreateObject()  ***************************/
 
-OOP_Object *EFIGfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
+OOP_Object *EFIFBGfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
-    D(bug("[EFIGfx:Display] %s()\n", __func__));
+    D(bug("[EFIFBGfx:Display] %s()\n", __func__));
 
     if (msg->cl == XSD(cl)->basebm)
     {
@@ -171,20 +171,20 @@ OOP_Object *EFIGfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object 
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    ReturnPtr("EFIGfx.Display::CreateObject", OOP_Object *, object);
+    ReturnPtr("EFIFBGfx.Display::CreateObject", OOP_Object *, object);
 }
 
 /*********  Display::Show()  ***************************/
 
-OOP_Object *EFIGfxDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
+OOP_Object *EFIFBGfxDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
 {
-    struct EFIGfx_staticdata *data = XSD(cl);
+    struct EFIFBGfx_staticdata *data = XSD(cl);
     struct TagItem tags[] = {
         {aHidd_BitMap_Visible, FALSE},
         {TAG_DONE            , 0    }
     };
 
-    D(bug("[EFIGfx:Display] Show(0x%p), old visible 0x%p\n", msg->bitMap, data->visible));
+    D(bug("[EFIFBGfx:Display] Show(0x%p), old visible 0x%p\n", msg->bitMap, data->visible));
 
     LOCK_FRAMEBUFFER(data);
 
@@ -209,6 +209,6 @@ OOP_Object *EFIGfxDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, stru
     data->visible = msg->bitMap;
     UNLOCK_FRAMEBUFFER(data);
 
-    D(bug("[EFIGfx:Display] Show() done\n"));
+    D(bug("[EFIFBGfx:Display] Show() done\n"));
     return msg->bitMap;
 }

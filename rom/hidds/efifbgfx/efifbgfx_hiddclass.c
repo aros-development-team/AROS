@@ -21,8 +21,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include "efigfx_hidd.h"
-#include "efigfx_support.h"
+#include "efifbgfx_hidd.h"
+#include "efifbgfx_support.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -37,21 +37,21 @@ AROS_INTH1(ResetHandler, struct HWData *, hwdata)
     AROS_INTFUNC_EXIT
 }
 
-OOP_Object *EFIGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *EFIFBGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem msgNewTags[] =
     {
-        { aHidd_Name            , (IPTR)"efigfx.hidd"                },
+        { aHidd_Name            , (IPTR)"efifbgfx.hidd"                },
         { aHidd_HardwareName    , (IPTR)"EFI Framebuffer"            },
         { aHidd_ProducerName    , (IPTR)"UEFI"                       },
         {TAG_MORE, 0UL}
     };
     struct pRoot_New msgNew;
 
-    EnterFunc(bug("EFIGfx::New()\n"));
+    EnterFunc(bug("EFIFBGfx::New()\n"));
 
     /* There is one firmware framebuffer; refuse a second driver object */
-    if (XSD(cl)->efigfxhidd)
+    if (XSD(cl)->efifbgfxhidd)
         return NULL;
 
     if ((msgNewTags[3].ti_Data = (IPTR)msg->attrList) == 0)
@@ -63,7 +63,7 @@ OOP_Object *EFIGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&msgNew);
     if (o)
     {
-        struct EFIGfxHiddData *data = OOP_INST_DATA(cl, o);
+        struct EFIFBGfxHiddData *data = OOP_INST_DATA(cl, o);
         struct TagItem displaytags[] =
         {
             { aHidd_Display_GfxHidd, (IPTR)o },
@@ -75,8 +75,8 @@ OOP_Object *EFIGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         XSD(cl)->efidisplay = OOP_NewObject(XSD(cl)->displayclass, NULL, displaytags);
         if (XSD(cl)->efidisplay)
         {
-            D(bug("[EFIGfx:Driver] %s: display @ 0x%p\n", __func__, XSD(cl)->efidisplay));
-            XSD(cl)->efigfxhidd = o;
+            D(bug("[EFIFBGfx:Driver] %s: display @ 0x%p\n", __func__, XSD(cl)->efidisplay));
+            XSD(cl)->efifbgfxhidd = o;
 
             data->ResetInterrupt.is_Node.ln_Name = cl->ClassNode.ln_Name;
             data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
@@ -90,19 +90,19 @@ OOP_Object *EFIGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             o = NULL;
         }
     }
-    ReturnPtr("EFIGfx::New", OOP_Object *, o);
+    ReturnPtr("EFIFBGfx::New", OOP_Object *, o);
 }
 
-VOID EFIGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID EFIFBGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct EFIGfxHiddData *data = OOP_INST_DATA(cl, o);
+    struct EFIFBGfxHiddData *data = OOP_INST_DATA(cl, o);
 
     RemResetCallback(&data->ResetInterrupt);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    XSD(cl)->efigfxhidd = NULL;
+    XSD(cl)->efifbgfxhidd = NULL;
 }
 
-VOID EFIGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID EFIFBGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
 

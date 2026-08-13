@@ -2,20 +2,20 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
-#ifndef EFIGFX_BITMAP_H
-#define EFIGFX_BITMAP_H
+#ifndef EFIFBGFX_BITMAP_H
+#define EFIFBGFX_BITMAP_H
 
 #include <hidd/gfx.h>
 
-#define CLID_Hidd_BitMap_EFI        "hidd.bitmap.efi"
-#define IID_Hidd_BitMap_EFI         "hidd.bitmap.efi"
+#define CLID_Hidd_BitMap_EFIFB        "hidd.bitmap.efifb"
+#define IID_Hidd_BitMap_EFIFB         "hidd.bitmap.efifb"
 
 #define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 
 /*
    This structure is used as instance data for the bitmap class.
 */
-struct EFIGfxBitMapData
+struct EFIFBGfxBitMapData
 {
     UBYTE   	    	*VideoData;	/* Pointing to video data */
     LONG		width;		/* Bitmap size */
@@ -33,4 +33,4 @@ struct EFIGfxBitMapData
     LONG		yoffset;
 };
 
-#endif /* EFIGFX_BITMAP_H */
+#endif /* EFIFBGFX_BITMAP_H */

@@ -17,8 +17,8 @@
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
 
-#include "efigfx_support.h"
-#include "efigfx_hidd.h"
+#include "efifbgfx_support.h"
+#include "efifbgfx_hidd.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -53,7 +53,7 @@ static BOOL GetAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
     return TRUE;
 }
 
-/* These must stay in the same order as attrBases[] entries assignment in efigfx_intern.h */
+/* These must stay in the same order as attrBases[] entries assignment in efifbgfx_intern.h */
 static const STRPTR interfaces[ATTRBASES_NUM] =
 {
     IID_Hidd_ChunkyBM,
@@ -81,11 +81,11 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
  * Static because graphics.library keeps the pointer for the lifetime of
  * the driver.
  */
-static struct DisplayRange efigfx_ranges[2];
+static struct DisplayRange efifbgfx_ranges[2];
 
-static int EFIGfx_Init(LIBBASETYPEPTR LIBBASE)
+static int EFIFBGfx_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct EFIGfx_staticdata *xsd = &LIBBASE->vsd;
+    struct EFIFBGfx_staticdata *xsd = &LIBBASE->vsd;
     struct GfxBase *GfxBase;
     ULONG err;
     int res = FALSE;
@@ -98,18 +98,18 @@ static int EFIGfx_Init(LIBBASETYPEPTR LIBBASE)
     GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     if (GfxBase)
     {
-        if (initEFIGfxHW(&xsd->data))
+        if (initEFIFBGfxHW(&xsd->data))
         {
             if (GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
             {
                 xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
                 xsd->mid_Dispose = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-                D(bug("[EFIGfx] BitMap class @ 0x%p\n", xsd->basebm));
+                D(bug("[EFIFBGfx] BitMap class @ 0x%p\n", xsd->basebm));
 
                 InitSemaphore(&xsd->framebufferlock);
                 InitSemaphore(&xsd->HW_acc);
 
-                D(bug("[EFIGfx] Init: Everything OK, installing driver\n"));
+                D(bug("[EFIFBGfx] Init: Everything OK, installing driver\n"));
 
                 /*
                  * The framebuffer belongs to whatever display hardware the
@@ -119,20 +119,20 @@ static int EFIGfx_Init(LIBBASETYPEPTR LIBBASE)
                  * This is done by graphics.library, on behalf of the incoming
                  * driver, from DDRV_BootMode plus the ranges below.
                  */
-                efigfx_ranges[0].dr_Base = xsd->data.framebuffer;
-                efigfx_ranges[0].dr_Size = xsd->data.fbsize;
-                efigfx_ranges[1].dr_Base = NULL;
-                efigfx_ranges[1].dr_Size = 0;
+                efifbgfx_ranges[0].dr_Base = xsd->data.framebuffer;
+                efifbgfx_ranges[0].dr_Size = xsd->data.fbsize;
+                efifbgfx_ranges[1].dr_Base = NULL;
+                efifbgfx_ranges[1].dr_Size = 0;
 
-                D(bug("[EFIGfx] framebuffer aperture @ 0x%p, %lu bytes\n",
-                      efigfx_ranges[0].dr_Base, (unsigned long)efigfx_ranges[0].dr_Size));
+                D(bug("[EFIFBGfx] framebuffer aperture @ 0x%p, %lu bytes\n",
+                      efifbgfx_ranges[0].dr_Base, (unsigned long)efifbgfx_ranges[0].dr_Size));
 
-                err = AddDisplayDriver(xsd->efigfxclass, NULL,
+                err = AddDisplayDriver(xsd->efifbgfxclass, NULL,
                                        DDRV_BootMode, TRUE,
-                                       DDRV_HWRanges, (IPTR)efigfx_ranges,
+                                       DDRV_HWRanges, (IPTR)efifbgfx_ranges,
                                        TAG_DONE);
 
-                D(bug("[EFIGfx] AddDisplayDriver() result: %u\n", err));
+                D(bug("[EFIFBGfx] AddDisplayDriver() result: %u\n", err));
                 if (!err)
                 {
                     /* expunge protection */
@@ -145,9 +145,9 @@ static int EFIGfx_Init(LIBBASETYPEPTR LIBBASE)
     }
     else
     {
-        D(bug("[EFIGfx] Failed to open graphics.library!\n"));
+        D(bug("[EFIFBGfx] Failed to open graphics.library!\n"));
     }
     return res;
 }
 
-ADD2INITLIB(EFIGfx_Init, 0)
+ADD2INITLIB(EFIFBGfx_Init, 0)

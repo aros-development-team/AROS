@@ -16,10 +16,10 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
-#include "efigfx_intern.h"
-#include "efigfx_hidd.h"
+#include "efifbgfx_intern.h"
+#include "efifbgfx_hidd.h"
 
-BOOL initEFIGfxHW(struct HWData *data)
+BOOL initEFIFBGfxHW(struct HWData *data)
 {
     struct BootLoaderBase *BootLoaderBase;
     struct VesaInfo *vi;
@@ -29,7 +29,7 @@ BOOL initEFIGfxHW(struct HWData *data)
 
     if (!(vi = (struct VesaInfo *)GetBootInfo(BL_Video)))
     {
-        D(bug("[EFIGfx] HwInit: no video information from the bootloader\n"));
+        D(bug("[EFIFBGfx] HwInit: no video information from the bootloader\n"));
         return FALSE;
     }
 
@@ -75,10 +75,10 @@ BOOL initEFIGfxHW(struct HWData *data)
 
     data->fbsize = data->height * data->bytesperline;
 
-    D(bug("[EFIGfx] HwInit: %ux%ux%u linear FB @ 0x%p, pitch %u\n",
+    D(bug("[EFIFBGfx] HwInit: %ux%ux%u linear FB @ 0x%p, pitch %u\n",
           data->width, data->height, data->depth,
           data->framebuffer, data->bytesperline));
-    D(bug("[EFIGfx] HwInit: Masks R %08x<<%2d G %08x<<%2d B %08x<<%2d\n",
+    D(bug("[EFIFBGfx] HwInit: Masks R %08x<<%2d G %08x<<%2d B %08x<<%2d\n",
           data->redmask, data->redshift,
           data->greenmask, data->greenshift,
           data->bluemask, data->blueshift));
@@ -88,12 +88,16 @@ BOOL initEFIGfxHW(struct HWData *data)
 }
 
 /* Copy the (possibly partial) bitmap buffer to the visible framebuffer. */
-void efiDoRefreshArea(struct HWData *hwdata, struct EFIGfxBitMapData *data,
+void efifbDoRefreshArea(struct HWData *hwdata, struct EFIFBGfxBitMapData *data,
                       LONG x1, LONG y1, LONG x2, LONG y2)
 {
     UBYTE *src, *dst;
     ULONG srcmod, dstmod;
     LONG y, w, h, sx, sy;
+
+    /* Hardware released to a native driver: nothing to copy to */
+    if (!hwdata->framebuffer)
+        return;
 
     x1 += data->xoffset; y1 += data->yoffset;
     x2 += data->xoffset; y2 += data->yoffset;
@@ -134,7 +138,7 @@ void efiDoRefreshArea(struct HWData *hwdata, struct EFIGfxBitMapData *data,
 }
 
 /* The GOP framebuffer is truecolor: no hardware palette to load. */
-void DACLoad(struct EFIGfx_staticdata *xsd, UBYTE *DAC, unsigned char first, int num)
+void DACLoad(struct EFIFBGfx_staticdata *xsd, UBYTE *DAC, unsigned char first, int num)
 {
     (void)xsd; (void)DAC; (void)first; (void)num;
 }

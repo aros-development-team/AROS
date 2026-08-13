@@ -1,5 +1,5 @@
-#ifndef EFIGFX_SUPPORT_H
-#define EFIGFX_SUPPORT_H
+#ifndef EFIFBGFX_SUPPORT_H
+#define EFIFBGFX_SUPPORT_H
 
 #include <exec/types.h>
 #include <oop/oop.h>
@@ -23,13 +23,13 @@ struct HWData
     UBYTE	 palettewidth;
 };
 
-struct EFIGfx_staticdata;
-struct EFIGfxBitMapData;
+struct EFIFBGfx_staticdata;
+struct EFIFBGfxBitMapData;
 
-BOOL initEFIGfxHW(struct HWData *);
-void DACLoad(struct EFIGfx_staticdata *, UBYTE *, unsigned char, int);
+BOOL initEFIFBGfxHW(struct HWData *);
+void DACLoad(struct EFIFBGfx_staticdata *, UBYTE *, unsigned char, int);
 void ClearBuffer(struct HWData *data);
-void efiDoRefreshArea(struct HWData *hwdata, struct EFIGfxBitMapData *data,
+void efifbDoRefreshArea(struct HWData *hwdata, struct EFIFBGfxBitMapData *data,
 		      LONG x1, LONG y1, LONG x2, LONG y2);
 
-#endif /* EFIGFX_SUPPORT_H */
+#endif /* EFIFBGFX_SUPPORT_H */

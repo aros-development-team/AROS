@@ -1,5 +1,5 @@
-#ifndef EFIGFX_INTERN_H
-#define EFIGFX_INTERN_H
+#ifndef EFIFBGFX_INTERN_H
+#define EFIFBGFX_INTERN_H
 
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
@@ -21,18 +21,18 @@
 
 #include <hidd/gfx.h>
 
-#include "efigfx_support.h"
+#include "efifbgfx_support.h"
 
 #define ATTRBASES_NUM 8
 
-struct EFIGfx_staticdata
+struct EFIFBGfx_staticdata
 {
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
 
-    OOP_Class 	    	    *efigfxclass;
+    OOP_Class 	    	    *efifbgfxclass;
     OOP_Class 	    	    *displayclass;
     OOP_Class 	    	    *bmclass;
-    OOP_Object      	    *efigfxhidd;
+    OOP_Object      	    *efifbgfxhidd;
     OOP_Object      	    *efidisplay;
     OOP_Object       	    *visible;		/* Currently visible bitmap */
     struct HWData   	    data;
@@ -42,16 +42,16 @@ struct EFIGfx_staticdata
     OOP_AttrBase	    attrBases[ATTRBASES_NUM];
 };
 
-struct EFIGfxBase
+struct EFIFBGfxBase
 {
     struct Library library;
-    struct EFIGfx_staticdata vsd;
+    struct EFIFBGfx_staticdata vsd;
 };
 
 #define LOCK_FRAMEBUFFER(xsd)	ObtainSemaphore(&xsd->framebufferlock)
 #define UNLOCK_FRAMEBUFFER(xsd) ReleaseSemaphore(&xsd->framebufferlock)
 
-#define XSD(cl)	(&((struct EFIGfxBase *)cl->UserData)->vsd)
+#define XSD(cl)	(&((struct EFIFBGfxBase *)cl->UserData)->vsd)
 
 #undef HiddChunkyBMAttrBase
 #undef HiddBitMapAttrBase
@@ -62,7 +62,7 @@ struct EFIGfxBase
 #undef HiddDisplayAttrBase
 #undef HiddDMEnumAttrBase
 
-/* These must stay in the same order as interfaces[] array in efigfx_init.c */
+/* These must stay in the same order as interfaces[] array in efifbgfx_init.c */
 #define HiddChunkyBMAttrBase	  XSD(cl)->attrBases[0]
 #define HiddBitMapAttrBase	  XSD(cl)->attrBases[1]
 #define HiddGfxAttrBase		  XSD(cl)->attrBases[2]
@@ -72,4 +72,4 @@ struct EFIGfxBase
 #define HiddDisplayAttrBase	  XSD(cl)->attrBases[6]
 #define HiddDMEnumAttrBase	  XSD(cl)->attrBases[7]
 
-#endif /* EFIGFX_INTERN_H */
+#endif /* EFIFBGFX_INTERN_H */
