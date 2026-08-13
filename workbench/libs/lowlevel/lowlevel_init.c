@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Init of workbench.library
 */
@@ -80,6 +80,8 @@ BOOL LowLevelInputInit(LIBBASETYPEPTR LowLevelBase)
     if ((LowLevelBase->ll_InputMP = CreateMsgPort()))
     {
         D(bug("[lowlevel] %s: Input MsgPort @ 0x%p\n", __func__, LowLevelBase->ll_InputMP);)
+        FreeSignal(LowLevelBase->ll_InputMP->mp_SigBit);
+        LowLevelBase->ll_InputMP->mp_SigBit = -1;
 
         if ((LowLevelBase->ll_InputIO = (struct IOStdReq *)CreateIORequest(LowLevelBase->ll_InputMP, sizeof (struct IOStdReq))))
         {

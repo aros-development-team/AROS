@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -46,6 +46,7 @@ static inline ULONG llPollGameCtrl(int port)
     UWORD pot;
     ULONG bits = 0;
     UWORD joydat;
+    UWORD ciaddra;
     int i;
     UBYTE cmask = (port == 0) ? (1 << 6) : (1 << 7);
 
@@ -54,6 +55,13 @@ static inline ULONG llPollGameCtrl(int port)
     pot &= ~((port == 0) ? (3 << 8) : (3 << 12));
     custom->potgo = pot | (port == 0) ? (2 << 8) : (2 << 12);
     cia->ciapra  &= ~cmask;
+    /*
+     * Clocking the buttons out means driving pin 5, so the line has to
+     * become an output for the duration. Remember how the port was set
+     * up: a pin left driving afterwards reads as a button held down,
+     * and a game polling it never sees the player let go.
+     */
+    ciaddra = cia->ciaddra;
     cia->ciaddra |= cmask;
 
     /* Shift in the button values */
@@ -69,6 +77,7 @@ static inline ULONG llPollGameCtrl(int port)
 
     cia->ciapra &= ~cmask;
     custom->potgo = pot;
+    cia->ciaddra = ciaddra;
 
     if ((bits & 3) != 2) {
         /* Stuck bits? Probably not a game controller */
