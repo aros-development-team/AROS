@@ -3,6 +3,11 @@
 */
 
 #include "nouveau_intern.h"
+
+/* The mode the display says it was built for (uapi/drm/drm_mode.h) */
+#ifndef DRM_MODE_TYPE_PREFERRED
+#define DRM_MODE_TYPE_PREFERRED     (1 << 3)
+#endif
 #include "compositor.h"
 
 #include <graphics/displayinfo.h>
@@ -134,6 +139,25 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
 
 #include <stdio.h>
 
+/*
+ * How suitable a mode is as the automatic choice for its size: the one
+ * the display asked for first, then whatever sits closest to 60Hz.
+ * Lower is better.
+ */
+static LONG HIDDNouveauModeRank(drmModeModeInfoPtr mode)
+{
+    LONG off;
+
+    if (mode->type & DRM_MODE_TYPE_PREFERRED)
+        return -1;
+
+    off = (LONG)mode->vrefresh - 60;
+    if (off < 0)
+        off = -off;
+
+    return off;
+}
+
 static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, drmModeConnectorPtr connector)
 {
     struct TagItem * syncs = NULL;
@@ -146,6 +170,51 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
     /* Allocate enough structures */
     syncs = HIDDNouveauAlloc(sizeof(struct TagItem) * modescount);
     
+    /*
+     * The list arrives ordered the way a display driver likes it -
+     * biggest first, and within a size the fastest first. Left that
+     * way, the mode picked for a screen of a given size is the highest
+     * rate the display claims, which is the one it is least likely to
+     * hold. Reorder within each size so the mode the display prefers
+     * leads, and otherwise the one nearest 60Hz. Everything stays
+     * available; only which is chosen by default changes.
+     */
+    {
+        ULONG start;
+
+        for (start = 0; start < modescount; )
+        {
+            ULONG end, j, best;
+
+            /* Modes of one size are already adjacent */
+            for (end = start + 1; end < modescount; end++)
+            {
+                if ((connector->modes[end].hdisplay !=
+                     connector->modes[start].hdisplay) ||
+                    (connector->modes[end].vdisplay !=
+                     connector->modes[start].vdisplay))
+                    break;
+            }
+
+            best = start;
+            for (j = start + 1; j < end; j++)
+            {
+                if (HIDDNouveauModeRank(&connector->modes[j]) <
+                    HIDDNouveauModeRank(&connector->modes[best]))
+                    best = j;
+            }
+
+            if (best != start)
+            {
+                drmModeModeInfo tmp = connector->modes[start];
+                connector->modes[start] = connector->modes[best];
+                connector->modes[best] = tmp;
+            }
+
+            start = end;
+        }
+    }
+
     for (i = 0; i < modescount; i++)
     {
         struct TagItem * sync = HIDDNouveauAlloc(sizeof(struct TagItem) * 15);
@@ -951,12 +1020,52 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, ModeProperties)
     return len;
 }
 
+/*
+ * What size of screen to open when nothing asks for a particular one.
+ *
+ * The monitor says which timing it was built for, and that is the one
+ * it displays without complaint; anything else it merely tolerates, if
+ * at all. Take its dimensions from that mode rather than from a fixed
+ * pair, so the default screen is the one the display actually wants.
+ */
 VOID METHOD(NouveauDisplay, Hidd_Display, NominalDimensions)
 {
+    OOP_Object *gfx = NULL;
+    ULONG width = 1024, height = 768;
+
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+    if (gfx)
+    {
+        struct HIDDNouveauData *gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
+        drmModeConnectorPtr connector = (drmModeConnectorPtr)gfxdata->selectedconnector;
+
+        if (connector && connector->count_modes > 0)
+        {
+            drmModeModeInfoPtr mode = &connector->modes[0];
+            int i;
+
+            for (i = 0; i < connector->count_modes; i++)
+            {
+                if (connector->modes[i].type & DRM_MODE_TYPE_PREFERRED)
+                {
+                    mode = &connector->modes[i];
+                    break;
+                }
+            }
+
+            /* Nothing marked preferred: the list is ordered best first */
+            width = mode->hdisplay;
+            height = mode->vdisplay;
+
+            D(bug("[Nouveau] Nominal dimensions %ux%u from '%s'\n",
+                  width, height, mode->name));
+        }
+    }
+
     if (msg->width)
-        *(msg->width) = 1024;
+        *(msg->width) = width;
     if (msg->height)
-        *(msg->height) = 768;
+        *(msg->height) = height;
     if (msg->depth)
         *(msg->depth) = 24;
 }
