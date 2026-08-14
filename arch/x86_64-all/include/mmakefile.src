@@ -7,5 +7,8 @@ INCLUDE_FILES := $(call WILDCARD, aros/*.h)
 INCLUDE_FILES := $(call WILDCARD, asm/*.h)
 %copy_includes mmake=compiler-includes path=asm/x86_64 dir=asm
 
+# aros/irqtypes.h is shared with i386 and lives in arch/i386-all/include
+#MM- includes-copy-x86_64 : includes-copy-i386
+
 
 %common

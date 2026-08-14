@@ -7,6 +7,15 @@ INCLUDE_FILES := $(call WILDCARD, aros/*.h)
 INCLUDE_FILES := $(call WILDCARD, asm/*.h)
 %copy_includes mmake=compiler-includes path=asm/i386 dir=asm
 
+#
+# aros/irqtypes.h is shared by both x86 CPUs: exec/interrupts.h includes it
+# for __i386__ and __x86_64__ alike, so every x86 build needs it whatever the
+# platform. It lives here, with the 32-bit CPU, and x86_64-all takes it as a
+# dependency - the same shape as jmpdefs.h in arch/m68k-all/include.
+#
+INCLUDE_FILES := irqtypes.h
+%copy_includes mmake=includes-copy-i386 path=aros
+
 #MM- compiler-includes: includes-generated-i386-libcall
 
 #MM includes-generated-i386-libcall
