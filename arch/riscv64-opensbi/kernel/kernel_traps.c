@@ -144,21 +144,25 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
 
     __riscv64_trap_depth++;
     action = krnTrapDispatch(ctx, scause, stval);
-    __riscv64_trap_depth--;
-
-    if (!SysBase)
-        return;
 
     /*
-     * The scheduler is only entered once the depth is back down. It may
-     * resume another task and never return here, so anything counted
-     * around it stays counted for good - and a task resumed while it
-     * still looks like trap context cannot take a semaphore.
+     * Only the outermost trap enters the scheduler, the same rule other
+     * ports get from the hardware privilege level they were interrupted
+     * from: a trap taken while the kernel is already in a trap - which
+     * includes one taken while the dispatcher itself is idling - must
+     * not reschedule, or it re-enters the dispatcher from inside itself.
+     * The depth is held across the call so that nesting stays visible to
+     * it, and released once it is done.
      */
-    if (action == TRAP_RESCHEDULE)
-        core_ExitInterrupt(ctx);
-    else if (action == TRAP_SYSCALL)
-        core_SysCall((int)ctx->x[CTX_REG_A7], ctx);
+    if (SysBase && (__riscv64_trap_depth == 1))
+    {
+        if (action == TRAP_RESCHEDULE)
+            core_ExitInterrupt(ctx);
+        else if (action == TRAP_SYSCALL)
+            core_SysCall((int)ctx->x[CTX_REG_A7], ctx);
+    }
+
+    __riscv64_trap_depth--;
 }
 
 static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
