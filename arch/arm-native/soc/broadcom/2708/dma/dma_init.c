@@ -242,6 +242,8 @@ AROS_LH2(int, DMAWaitChannel,
     BYTE dsig = -1;
     BYTE tsig = -1;
     int ret = -1;
+    BOOL do_reset = FALSE;
+    const char *reason = NULL;
 
     if ((channel < 0) || (channel > 14) ||
         !(DMABase->dma_InUse & (1 << channel)))
@@ -297,12 +299,14 @@ AROS_LH2(int, DMAWaitChannel,
         }
         if (!(v & DMA_CS_ACTIVE))
         {
-            *cs = AROS_LONG2LE(DMA_CS_RESET);
+            reason = "stopped";
+            do_reset = TRUE;
             break;
         }
         if ((dma_now_us(DMABase) - start) > timeout_us)
         {
-            *cs = AROS_LONG2LE(DMA_CS_RESET);
+            reason = "timeout";
+            do_reset = TRUE;
             break;
         }
 
@@ -335,6 +339,27 @@ AROS_LH2(int, DMAWaitChannel,
             WaitIO((struct IORequest *)&tr);
         }
         /* else: bounded poll until END/timeout */
+    }
+
+    /* Drain the reset: while RESET is asserted the channel ignores CONBLK_AD
+     * writes, so the next transfer would silently run the old control block. */
+    if (do_reset)
+    {
+        int try = 10000;
+
+        /* Before the reset wipes them. DEBUG bit 0 READ_LAST_NOT_SET, 1
+         * FIFO_ERROR, 2 READ_ERROR; CS bit 0 ACTIVE, 1 END, 8 ERROR. */
+        bug("[DMA] channel %d %s after %uus: cs=0x%08x debug=0x%08x\n",
+            channel, reason, timeout_us, AROS_LE2LONG(*cs),
+            AROS_LE2LONG(*(volatile ULONG *)DMA_DEBUG(channel)));
+
+        *cs = AROS_LONG2LE(DMA_CS_RESET);
+        while (try-- > 0)
+        {
+            if (!(AROS_LE2LONG(*cs) & DMA_CS_RESET))
+                break;
+        }
+        *cs = AROS_LONG2LE(DMA_CS_INT | DMA_CS_END);
     }
 
     if (dsig >= 0)

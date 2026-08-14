@@ -17,8 +17,19 @@
 
 #define NEON_PREFIX ".fpu neon\n\t"
 
+/* vldm/vstm and the word loops fault on unaligned operands whatever SCTLR.A
+ * says. PutImage/GetImage pass the caller's pixel buffer, so check. */
+#define NEON_UNALIGNED(a, b) ((((IPTR)(a)) | ((IPTR)(b))) & 3)
+
 static inline void neon_copyline(UBYTE *dst, const UBYTE *src, ULONG bytes)
 {
+    if (NEON_UNALIGNED(dst, src))
+    {
+        while (bytes--)
+            *dst++ = *src++;
+        return;
+    }
+
     /* 64-byte bulk copy using NEON: vldm/vstm with 4 q-regs (d0-d7) */
 #if defined(__arm__)
     while (bytes >= 64)
@@ -53,6 +64,15 @@ static inline void neon_copyline_rev(UBYTE *dst, const UBYTE *src, ULONG bytes)
 {
     dst += bytes;
     src += bytes;
+
+    /* Descending, so it is the end addresses that must be aligned. */
+    if (NEON_UNALIGNED(dst, src))
+    {
+        while (bytes--)
+            *--dst = *--src;
+        return;
+    }
+
 #if defined(__arm__)
     while (bytes >= 64)
     {
