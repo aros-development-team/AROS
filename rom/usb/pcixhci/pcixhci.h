@@ -51,7 +51,7 @@
 /* Magic cookie, don't set error fields & don't reply the ioreq */
 #define RC_DONTREPLY                    -1
 
-#define MAX_ROOT_PORTS                  16
+#define MAX_ROOT_PORTS                  20
 #define MAX_ENDPOINTS                   MAX_ROOT_PORTS
 #define MAX_DEVENDPOINTS                (MAX_ROOT_PORTS << 1)
 
@@ -131,7 +131,7 @@ struct PCIUnit {
 
     UWORD                       hu_RootHubPorts;
     UWORD                       hu_RootHubAddr;                     /* Root Hub Address                                             */
-    UWORD                       hu_RootPortChanges;                 /* Merged root hub changes                                      */
+    ULONG                       hu_RootPortChanges;                 /* Bitmap of merged root hub changes                            */
     struct List                 hu_RHIOQueue;                       /* Root Hub Pending IO Requests                                 */
 
     UBYTE                       hu_ProductName[80];                 /* for Query device                                             */
@@ -267,6 +267,10 @@ struct PCIController {
 #define HCF_ADDR64	                    (1 << HCB_ADDR64)
 #define HCB_CTX64	                    15	                    /* 64Byte context               */
 #define HCF_CTX64	                    (1 << HCB_CTX64)
+
+/* hc_Quirks */
+#define HCQB_LYNXPOINT                  0
+#define HCQF_LYNXPOINT                  (1 << HCQB_LYNXPOINT)
 
 /*
  * The device node - private
