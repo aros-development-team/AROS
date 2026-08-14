@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -17,6 +17,10 @@
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 
+extern BYTE _rom_start;
+extern BYTE _rom_end;
+extern BYTE _ext_start;
+extern BYTE _ext_end;
 
 #define ROMSIZE2MB              (1 << 21)
 #define ROMSIZE1MB              (1 << 20)
@@ -64,9 +68,11 @@ static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
     D(bug("[Kernel:Am68k] %s: platformdata @ 0x%p\n", __func__, pd);)
 
     id = (UBYTE)ReadGayle();
-    if ((id > 0) &&
+    if (((id > 0) &&
         AMiGAROM_IsValid((APTR)0xA80000) &&
-        !AMiGAROM_MatchWords((APTR)0xA80000, (APTR)0xF80000))
+        !AMiGAROM_MatchWords((APTR)0xA80000, (APTR)0xF80000)) ||
+        (((UWORD*)&_rom_start >= (UWORD*)0xA80000 && (UWORD*)&_rom_start <(UWORD*)0xB80000) ||
+        ((UWORD*)&_ext_start >= (UWORD*)0xA80000 && (UWORD*)&_ext_start < (UWORD*)0xB80000)))
     {
         bug("ROMInfo: 2MiB ROM detected\n");
         romsize = ROMSIZE2MB;
@@ -83,7 +89,7 @@ static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
     {
         bug("ROMInfo: 512KiB ROM detected\n");
         romsize = ROMSIZE512;
-        imgcnt = 2;
+        imgcnt = 1;
     }
 
     if (pd->mmu_type)
