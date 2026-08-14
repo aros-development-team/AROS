@@ -939,10 +939,17 @@ static int sdio_do_probe(struct SDIOBase *SDIOBase)
      * The sdio_Present guard above ensures this runs only once. */
     if (SDIOBase->sdio_IRQHandle == NULL)
     {
-        SDIOBase->sdio_IRQHandle = KrnAddIRQHandler(IRQ_VC_ARASANSDIO,
+        /* BCM2711 presents the legacy GPU interrupts a fixed distance up
+         * through the GIC: the card lands on INTID 158, not 62. */
+        unsigned int irq = IRQ_VC_ARASANSDIO;
+
+        if (SDIOBase->sdio_periiobase == BCM2711_PERIIOBASE)
+            irq += BCM2711_GPUIRQ_OFFSET;
+
+        SDIOBase->sdio_IRQHandle = KrnAddIRQHandler(irq,
                                                     sdio_irq_handler, SDIOBase, NULL);
         D(bug("[SDIO] card IRQ handler %p on irq %u\n",
-              SDIOBase->sdio_IRQHandle, IRQ_VC_ARASANSDIO));
+              SDIOBase->sdio_IRQHandle, irq));
     }
     return TRUE;
 }
@@ -951,21 +958,21 @@ static int sdio_do_probe(struct SDIOBase *SDIOBase)
 /* Card interrupt (SDIO DAT1) -> consumer task                             */
 
 /*
- * INT_ENABLE value with the card interrupt suppressed. On the BCM2835 Arasan
- * the card interrupt reaches the ARM whenever it is SET in INT_STATUS, which
- * is gated by INT_ENABLE (0x34) - NOT by SIGNAL_ENABLE (0x38). So masking via
- * SIGNAL_ENABLE does nothing (a storm); we mask/arm the card int by toggling
- * it in INT_ENABLE with constant writes (no read-modify-write race with the
- * handler). The other (command/data) bits stay enabled for the polled path.
+ * INT_ENABLE (0x34) decides which conditions show up in INT_STATUS - the
+ * polled command path reads those, so it wants them all. SIGNAL_ENABLE (0x38)
+ * decides which of them drive int_to_arm, and that is what gates the card
+ * interrupt. Enabling everything there storms: the command path leaves
+ * CMD_COMPLETE and DATA_END set until its own wait loop clears them, so the
+ * level-triggered line re-enters the handler without end.
  */
 #define SDIO_INTEN_BASE  (SDHCI_INT_ALL_MASK & ~SDHCI_INT_CARD_INT)
 
 /*
- * Arasan IRQ handler. The only source we arm is the SDIO card interrupt (the
- * chip pulls DAT1 low when SDPCMD_INTSTATUS has an enabled bit). Mask it here
- * (drop CARD_INT from INT_ENABLE) so it cannot re-fire, and signal the bwfm RX
- * pump. The pump clears the chip's SDPCMD_INTSTATUS - which releases DAT1 -
- * drains its frames, then re-arms via SDIOAckInterrupt().
+ * Arasan IRQ handler. The only armed source is the SDIO card interrupt (the
+ * chip pulls DAT1 low when SDPCMD_INTSTATUS has an enabled bit). Clear
+ * SIGNAL_ENABLE so it cannot re-fire while DAT1 is still low, then signal the
+ * bwfm RX pump: it clears SDPCMD_INTSTATUS, releasing DAT1, drains its frames
+ * and re-arms via SDIOAckInterrupt().
  */
 static void sdio_irq_handler(void *data1, void *data2)
 {
@@ -973,7 +980,7 @@ static void sdio_irq_handler(void *data1, void *data2)
 
     if (sdio_rl(SDIOBase, SDHCI_INT_STATUS) & SDHCI_INT_CARD_INT)
     {
-        sdio_wl(SDIOBase, SDHCI_INT_ENABLE, SDIO_INTEN_BASE);
+        sdio_wl(SDIOBase, SDHCI_SIGNAL_ENABLE, 0);
         if (SDIOBase->sdio_IRQTask)
             Signal(SDIOBase->sdio_IRQTask, SDIOBase->sdio_IRQSig);
     }
@@ -1267,8 +1274,9 @@ AROS_LH2(int, SDIOSetInterrupt,
                          SDIO_CCCR_IEN_MASTER | SDIO_CCCR_IEN_FUNC1, NULL);
     ReleaseSemaphore(&SDIOBase->sdio_Sem);
 
-    /* Arm the card interrupt (gated by INT_ENABLE on this controller). */
+    /* Let the card interrupt reach INT_STATUS, and only it drive int_to_arm. */
     sdio_wl(SDIOBase, SDHCI_INT_ENABLE, SDIO_INTEN_BASE | SDHCI_INT_CARD_INT);
+    sdio_wl(SDIOBase, SDHCI_SIGNAL_ENABLE, SDHCI_INT_CARD_INT);
 
     D(bug("[SDIO] card interrupt armed (CCCR err %d)\n", err));
     return err;
@@ -1285,7 +1293,7 @@ AROS_LH0(void, SDIOAckInterrupt,
 {
     AROS_LIBFUNC_INIT
 
-    sdio_wl(SDIOBase, SDHCI_INT_ENABLE, SDIO_INTEN_BASE | SDHCI_INT_CARD_INT);
+    sdio_wl(SDIOBase, SDHCI_SIGNAL_ENABLE, SDHCI_INT_CARD_INT);
 
     AROS_LIBFUNC_EXIT
 }
