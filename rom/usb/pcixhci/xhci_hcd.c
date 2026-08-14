@@ -3788,6 +3788,54 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
     xhciDumpIR(xhciir);
 }
 
+static void xhciLynxPointQuirk(struct PCIController *hc, struct timerequest *timerreq)
+{
+     /*
+     * Warm-reset all SuperSpeed ports to fully activate the SS PHY.
+     */
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
+    volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)xhcic->xhc_XHCIPorts);
+    UWORD hciport;
+
+    pciusbWarn("xHCI", DEBUGCOLOR_SET "Intel LynxPoint Quirk!" DEBUGCOLOR_RESET" \n");
+
+    for(hciport = 0; hciport < hc->hc_NumPorts; hciport++) {
+        if(xhcic->xhc_PortProtocol[hciport] != XHCI_PORT_PROTOCOL_USB3)
+            continue;
+
+        ULONG portsc = AROS_LE2LONG(xhciports[hciport].portsc);
+        UWORD cnt;
+
+        /* Port must be powered */
+        if(!(portsc & XHCIF_PR_PORTSC_PP))
+            continue;
+
+        /*
+            * If the link is already in U0 the PHY is active and a warm
+            * reset is unnecessary (and disruptive).  Skip it.
+            */
+        if(xhciUsb3Operational(portsc))
+            continue;
+
+        /* Issue the warm reset */
+        xhciports[hciport].portsc = AROS_LONG2LE(portsc | XHCIF_PR_PORTSC_WPR);
+        (void)AROS_LE2LONG(xhciports[hciport].portsc);
+
+        /* Wait for the controller to report reset complete (WRC) */
+        cnt = 200;
+        while(--cnt > 0) {
+            uhwDelayMS(5, timerreq);
+            portsc = AROS_LE2LONG(xhciports[hciport].portsc);
+            if(portsc & XHCIF_PR_PORTSC_WRC)
+                break;
+        }
+
+        /* Allow link training time to settle */
+        uhwDelayMS(50, timerreq);
+    }
+
+}
+
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
               struct timerequest *timerreq)
 {
@@ -3885,6 +3933,9 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
 
     /* Ensure ports are powered per xHCI spec before enabling interrupts */
     xhciPowerOnRootPorts(hc, hu, timerreq);
+
+    if(hc->hc_Quirks & HCQF_LYNXPOINT)
+        xhciLynxPointQuirk(hc, timerreq);
 
     /* Enable interrupts in the xhci */
     {

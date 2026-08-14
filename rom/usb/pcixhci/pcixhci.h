@@ -268,6 +268,10 @@ struct PCIController {
 #define HCB_CTX64	                    15	                    /* 64Byte context               */
 #define HCF_CTX64	                    (1 << HCB_CTX64)
 
+/* hc_Quirks */
+#define HCQB_LYNXPOINT                  0
+#define HCQF_LYNXPOINT                  (1 << HCQB_LYNXPOINT)
+
 /*
  * The device node - private
  */
