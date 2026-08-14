@@ -29,6 +29,13 @@
 #define DMA_POOL_LITE   ((1 << 8) | (1 << 9) | (1 << 10) | (1 << 11) | \
                          (1 << 12))
 
+/*
+ * BCM2711 keeps more for itself: brcm,dma-channel-mask 0x7f5 against 0x7f35,
+ * so 11, 12 and the full engine 5 are the firmware's, not ours.
+ */
+#define DMA_POOL_FULL_BCM2711  ((1 << 2) | (1 << 4))
+#define DMA_POOL_LITE_BCM2711  ((1 << 8) | (1 << 9) | (1 << 10))
+
 APTR KernelBase __attribute__((used)) = NULL;
 
 static int dma_init(struct DMABase *DMABase)
@@ -75,6 +82,13 @@ static void dma_irq_handler(void *data1, void *data2)
     {
         struct Task *t;
 
+        /*
+         * Fine for DMAWaitChannel - its transfer is done by now - but this
+         * write also clears ACTIVE and the AXI priorities, which share the
+         * register. A caller chaining control blocks wants BCM2708_DMA_CS_ACK
+         * instead (see bcm2708_dma.h), which is why the AHI drivers run their
+         * own handlers.
+         */
         *cs = AROS_LONG2LE(DMA_CS_INT);
         t = DMABase->dma_Wait[channel].waiter;
         if (t)
@@ -114,15 +128,21 @@ AROS_LH1(int, DMAAllocChannel,
 
     ObtainSemaphore(&DMABase->dma_Sem);
 
-    /* Prefer lite channels so the scarce full engines stay available
-     * for users that need TDMODE. */
-    if (flags & DMACHF_TDMODE)
-        avail = DMA_POOL_FULL & ~DMABase->dma_InUse;
-    else
     {
-        avail = DMA_POOL_LITE & ~DMABase->dma_InUse;
-        if (avail == 0)
-            avail = DMA_POOL_FULL & ~DMABase->dma_InUse;
+        int is2711 = (DMABase->dma_periiobase == BCM2711_PERIIOBASE);
+        ULONG full = is2711 ? DMA_POOL_FULL_BCM2711 : DMA_POOL_FULL;
+        ULONG lite = is2711 ? DMA_POOL_LITE_BCM2711 : DMA_POOL_LITE;
+
+        /* Prefer lite channels so the scarce full engines stay available
+         * for users that need TDMODE. */
+        if (flags & DMACHF_TDMODE)
+            avail = full & ~DMABase->dma_InUse;
+        else
+        {
+            avail = lite & ~DMABase->dma_InUse;
+            if (avail == 0)
+                avail = full & ~DMABase->dma_InUse;
+        }
     }
 
     if (avail != 0)
@@ -147,7 +167,8 @@ AROS_LH1(int, DMAAllocChannel,
         DMABase->dma_Wait[channel].irq_handle = NULL;
         if (flags & DMACHF_IRQ)
             DMABase->dma_Wait[channel].irq_handle =
-                KrnAddIRQHandler(IRQ_DMA0 + channel, dma_irq_handler,
+                KrnAddIRQHandler(BCM2708_DMA_IRQ(DMABase->dma_periiobase, channel),
+                                 dma_irq_handler,
                                  DMABase, (void *)(IPTR)channel);
     }
 

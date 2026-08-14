@@ -39,8 +39,64 @@ struct BCM2708DMACB
     ULONG   reserved[2];
 };
 
-/* System RAM must be presented to the DMA engine through the uncached
- * VideoCore bus alias. */
-#define BCM2708_DMA_BUS_ADDR(x)     (0xC0000000 | (ULONG)(x))
+/*
+ * The uncached VideoCore bus alias covers the first gigabyte only. Above that
+ * the cast drops the high bits and the engine reads elsewhere, so check first.
+ */
+#define BCM2708_DMA_MAX_ADDR        0x40000000UL
+#define BCM2708_DMA_ADDRESSABLE(x)  (((IPTR)(x)) < BCM2708_DMA_MAX_ADDR)
+#define BCM2708_DMA_BUS_ADDR(x)     (0xC0000000 | (ULONG)(IPTR)(x))
+
+/*
+ * CS for a channel carrying a real-time stream: active, plus the AXI
+ * priorities it needs to win arbitration while its FIFO runs dry.
+ *
+ * Acknowledge with CS_ACK, not a bare ACTIVE|INT|END - the priority fields
+ * share the register, so a bare write drops the channel to the bottom of the
+ * bus for the rest of the session. Nor a read-modify-write: CS carries status
+ * bits (PAUSED, DREQ_STOPS_DMA) that must not be written back.
+ *
+ * Prefixed because the AHI drivers keep their own DMA_CS_* for single bits.
+ */
+#define BCM2708_DMA_CS_PRIORITY         8
+#define BCM2708_DMA_CS_PANIC_PRIORITY   15
+
+#define BCM2708_DMA_CS_RUN  ((1UL << 28) /* wait for outstanding writes */ | \
+                             ((ULONG)BCM2708_DMA_CS_PANIC_PRIORITY << 20)  | \
+                             ((ULONG)BCM2708_DMA_CS_PRIORITY << 16)        | \
+                             (1UL << 0)  /* active */)
+
+/* ... and with the write-1-to-clear completion flags added. */
+#define BCM2708_DMA_CS_ACK  (BCM2708_DMA_CS_RUN | (1UL << 2) /* int */ | \
+                                                  (1UL << 1) /* end */)
+
+/*
+ * Where a channel's completion arrives. Channel n is GPU IRQ 16+n, which the
+ * BCM2711 presents through the GIC 96 higher - but not one line per channel:
+ * 7 and 8 share, as do 9 and 10, so arithmetic is wrong from channel 8 on and
+ * a handler there waits on a line the engine never raises.
+ *
+ * Self-contained (no ARM_PERIIOBASE) so the AHI drivers, which learn their
+ * peripheral base at run time, can use it too. Sharing a line is safe as long
+ * as a handler checks its own channel's CS.INT.
+ */
+#define BCM2708_DMA_IRQ_BASE        16          /* GPU IRQ of channel 0 */
+#define BCM2708_DMA_PERIIOBASE_2711 0xFE000000
+#define BCM2708_DMA_GPUIRQ_OFFSET   96
+
+static inline unsigned int BCM2708_DMA_IRQ(IPTR periiobase, unsigned int channel)
+{
+    /* The SPI each channel raises on the BCM2711, in channel order. */
+    static const UBYTE spi[] = { 80, 81, 82, 83, 84, 85, 86, 87, 87, 88, 88 };
+
+    if (periiobase != BCM2708_DMA_PERIIOBASE_2711)
+        return BCM2708_DMA_IRQ_BASE + channel;
+
+    if (channel < sizeof(spi) / sizeof(spi[0]))
+        return 32 + spi[channel];   /* the GIC presents SPI n as INTID 32+n */
+
+    /* Not a channel this SoC hands out; keep the arithmetic answer. */
+    return BCM2708_DMA_IRQ_BASE + channel + BCM2708_DMA_GPUIRQ_OFFSET;
+}
 
 #endif /* HARDWARE_BCM2708_DMA_H */

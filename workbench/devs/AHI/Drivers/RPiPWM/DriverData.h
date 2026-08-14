@@ -16,7 +16,17 @@
 struct RPiPWMBase {
     struct DriverBase driverbase;
     struct DosLibrary *dosbase;
-    ULONG periiobase;
+    IPTR periiobase;
+
+    /*
+     * The output bias outlives a play session: toggling PWEN moves the pin
+     * whatever the duty, so it is torn down only in AHIsub_FreeAudio.
+     * bias_target is the rate the clock was last programmed for - an unchanged
+     * one lets the clock keep running, since stopping it freezes the pin.
+     */
+    BOOL bias_up;
+    ULONG bias_range;
+    ULONG bias_target;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof(struct RPiPWMBase))
@@ -37,8 +47,9 @@ struct RPiPWMData {
     struct RPiPWMBase *ahisubbase;
 
     /* Hardware state */
-    ULONG periiobase;
+    IPTR periiobase;
     LONG dma_channel;     /* Allocated from dma.resource, -1 = none */
+    ULONG dreq;           /* Only used by the disabled dma_probe_dreq() */
 
     /* DMA control blocks (32-byte aligned) */
     struct BCM2708DMACB *cb_base; /* Allocated block (for free) */
