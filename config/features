@@ -736,6 +736,8 @@ aros_nowarnflags_unused_label
 aros_warnflags_unused_label
 aros_nowarnflags_unused
 aros_warnflags_unused
+aros_nowarnflags_register
+aros_warnflags_register
 aros_nowarnflags_nonnull_compare
 aros_warnflags_nonnull_compare
 aros_nowarnflags_misleading_indentation
@@ -6515,6 +6517,7 @@ CFLAGS="$save_cflags"
 #  -Wunused-local-typedefs
 #  -Wmissing-braces
 #  -Wconversion-null
+#  -Wregister
 #  -Wnarrowing
 #  -Wvolatile-register-var
 #  -Wsizeof-pointer-memaccess
@@ -8792,6 +8795,35 @@ if test "x-$aros_conversion_null" = "x-yes" ; then
     aros_nowarnflags_conversion_null=-Wno-conversion-null
 fi
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} accepts -Wregister" >&5
+printf %s "checking whether ${CXX} accepts -Wregister... " >&6; }
+CXXFLAGS=-Wregister
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_register="yes"
+else case e in #(
+  e) aros_register="no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_register" >&5
+printf "%s\n" "$aros_register" >&6; }
+if test "x-$aros_register" = "x-yes" ; then
+    aros_warnflags_register=-Wregister
+    aros_nowarnflags_register=-Wno-register
+fi
+
 CXXFLAGS="$save_cxxflags"
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} accepts -nostdlib++" >&5
@@ -9140,6 +9172,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # ...and warning flags...
 #
+
+
 
 
 
