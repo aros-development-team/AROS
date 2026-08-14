@@ -23,7 +23,10 @@ typedef struct _RBOps
 {
 	struct _RBOps *prev;
 	UWORD          size;						/* Nb. of bytes in the array data */
-	UBYTE          data[ UNDO_CHUNK ];	/* Buffer for operation data */
+	/* Would start at offset 6. The records hold pointers, and stm/ldrd of
+	** adjacent ones faults unless the array is naturally aligned. */
+	UBYTE          data[ UNDO_CHUNK ]	/* Buffer for operation data */
+	               __attribute__((aligned(sizeof(APTR))));
 }	*RBOps;
 
 /** Rollback segment (text) **/
