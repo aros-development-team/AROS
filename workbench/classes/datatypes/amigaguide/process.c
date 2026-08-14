@@ -1,7 +1,7 @@
 /*
 ** $PROJECT: amigaguide.datatype
 **
-** $VER: process.c 50.1 (14.06.03)
+** $VER: process.c 50.2 (14.08.26)
 **
 ** $AUTHOR: Stefan Ruppert <stefan@ruppert-it.de>
 **
@@ -286,13 +286,18 @@ RegCall GetA4 void asyncmethodfunc(void)
 
                      if(data->ag_Flags.GotoLine)
                      {
-                        /* set possible new vertical top position. */
-                        SetAttrs(obj, DTA_TopVert, data->ag_ActualObject->ago_TopVert, TAG_DONE);
-                        /* and also tell others... */
-                        NotifyAttrs(obj, &msg->agm_GInfo, 0,
-               	                    GA_ID,       CAST_GAD(obj)->GadgetID,
-                                    DTA_TopVert, data->ag_ActualObject->ago_TopVert,
-                                    TAG_DONE);
+                        /* ag_ActualObject stays NULL if the goto failed,
+                           ie. if no node could be activated at all. */
+                        if(data->ag_ActualObject != NULL)
+                        {
+                           /* set possible new vertical top position. */
+                           SetAttrs(obj, DTA_TopVert, data->ag_ActualObject->ago_TopVert, TAG_DONE);
+                           /* and also tell others... */
+                           NotifyAttrs(obj, &msg->agm_GInfo, 0,
+                  	                 GA_ID,       CAST_GAD(obj)->GadgetID,
+                                       DTA_TopVert, data->ag_ActualObject->ago_TopVert,
+                                       TAG_DONE);
+                        }
                         data->ag_Flags.GotoLine = FALSE;
                      }
                      BOOL redraw = data->ag_Flags.Redraw;
