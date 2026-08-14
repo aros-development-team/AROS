@@ -137,6 +137,14 @@ BOOTFILES       := $(EFI_BOOTDIR)/BOOTRISCV64.EFI $(EFI_AROSDIR)/Image \
 
 #MM- boot-opensbi-riscv64 : kernel-opensbi-riscv64 kernel-bsp-opensbi-riscv64
 
+#
+# The disk-based hardware drivers. "workbench" resolves to
+# workbench-$(ARCH)-$(CPU), so without this nothing asks for them and the
+# monitor wrappers installed in Devs/Monitors have no driver to load.
+#
+#MM- workbench-opensbi-riscv64 : \
+#MM-     workbench-drivers
+
 #MM
 boot-opensbi-riscv64 : $(BOOTFILES)
 
