@@ -12,19 +12,30 @@ diff -ruN libcxx-20.1.0.src/include/CMakeLists.txt libcxx-20.1.0.src.aros/includ
  # Generate the IWYU mapping. This depends on all header files but it's also considered as an
  # "include" for dependency tracking.
  add_custom_command(OUTPUT "${LIBCXX_GENERATED_INCLUDE_DIR}/libcxx.imp"
-diff -ruN libcxx-20.1.0.src/include/cstdio libcxx-20.1.0.src.aros/include/cstdio
---- libcxx-20.1.0.src/include/cstdio	2025-03-04 19:51:43.000000000 +0000
-+++ libcxx-20.1.0.src.aros/include/cstdio	2025-07-17 00:31:51.127593065 +0000
-@@ -117,7 +117,9 @@
+diff -ruN libcxx-20.1.0.src/include/__config libcxx-20.1.0.src.aros/include/__config
+--- libcxx-20.1.0.src/include/__config	2025-03-04 19:51:43.000000000 +0000
++++ libcxx-20.1.0.src.aros/include/__config	2026-08-14 12:00:00.000000000 +0000
+@@ -907,7 +907,7 @@
+ #    define _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION 0
+ #  endif
  
- _LIBCPP_BEGIN_NAMESPACE_STD
+-#  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
++#  if defined(__AROS__) || defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||   \
+       _LIBCPP_HAS_MUSL_LIBC || defined(__OpenBSD__) || defined(__LLVM_LIBC__)
+ #    define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
+ #  endif
+diff -ruN libcxx-20.1.0.src/include/__cxx03/__config libcxx-20.1.0.src.aros/include/__cxx03/__config
+--- libcxx-20.1.0.src/include/__cxx03/__config	2025-03-04 19:51:43.000000000 +0000
++++ libcxx-20.1.0.src.aros/include/__cxx03/__config	2026-08-14 12:00:00.000000000 +0000
+@@ -889,7 +889,7 @@
+ #    define _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION
+ #  endif
  
-+#if !defined(__AROS__) || !defined(_STDC_STDIO_H_)
- using ::FILE _LIBCPP_USING_IF_EXISTS;
-+#endif
- using ::fpos_t _LIBCPP_USING_IF_EXISTS;
- 
- using ::fclose _LIBCPP_USING_IF_EXISTS;
+-#  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
++#  if defined(__AROS__) || defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||   \
+       defined(_LIBCPP_HAS_MUSL_LIBC) || defined(__OpenBSD__)
+ #    define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
+ #  endif
 diff -ruN libcxx-20.1.0.src/src/chrono.cpp libcxx-20.1.0.src.aros/src/chrono.cpp
 --- libcxx-20.1.0.src/src/chrono.cpp	2025-03-04 19:51:43.000000000 +0000
 +++ libcxx-20.1.0.src.aros/src/chrono.cpp	2025-07-17 00:42:39.744932735 +0000

@@ -268,12 +268,12 @@ LLVM_LIBCXXABI_CMAKEOPTIONS +=                                                  
   -DLLVM_ENABLE_RUNTIMES="libunwind"                                                                                                    \
 
 LLVM_LIBCXX_CMAKEOPTIONS +=                                                                                                             \
-  -DLIBCXX_ENABLE_LOCALIZATION=OFF                                                                                                      \
+  -DLIBCXX_ENABLE_LOCALIZATION=ON                                                                                                       \
   -DLIBCXX_ENABLE_WIDE_CHARACTERS=ON                                                                                                    \
   -D_LIBCPP_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE=ON                                                                                       \
   -DLIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY=ON                                                                                     \
   -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON                                                                                                 \
-  -DLIBCXX_ENABLE_FILESYSTEM=OFF
+  -DLIBCXX_ENABLE_FILESYSTEM=ON
 
 endif
 
