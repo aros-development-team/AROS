@@ -29,8 +29,8 @@ struct tm;
 #define WEOF		((wint_t)-1)
 #endif
 
-/*  wchar.h should not include stdio.h */
-struct __sFILE;
+/*  wchar.h declares FILE but should not include stdio.h */
+#include <aros/types/file_t.h>
 
 
 __BEGIN_DECLS
@@ -124,28 +124,28 @@ size_t wcsrtombs(char * restrict dst, const wchar_t ** restrict src,
  * stdcio.library
  */
 /* Formatted wide-character input/output functions */
-int fwprintf(struct __sFILE * restrict stream,
+int fwprintf(FILE * restrict stream,
         const wchar_t * restrict format, ...);
-int vfwprintf(struct __sFILE * restrict stream,
+int vfwprintf(FILE * restrict stream,
 	const wchar_t * restrict format, va_list arg);
-int fwscanf(struct __sFILE * restrict stream,
+int fwscanf(FILE * restrict stream,
         const wchar_t * restrict format, ...);
-int vfwscanf(struct __sFILE * restrict stream,
+int vfwscanf(FILE * restrict stream,
 	const wchar_t * restrict format, va_list arg);
 
 /* Wide-character input/output functions. */
 wint_t getwchar(void);
 wint_t putwchar(wchar_t c);
-wint_t ungetwc(wint_t c, struct __sFILE *stream);
+wint_t ungetwc(wint_t c, FILE *stream);
 
-wint_t fgetwc(struct __sFILE *stream);
+wint_t fgetwc(FILE *stream);
 wchar_t *fgetws(wchar_t * restrict s,
-	int n, struct __sFILE * restrict stream);
-wint_t fputwc(wint_t c, struct __sFILE *stream);
-wint_t fputws(const wchar_t *ws, struct __sFILE * restrict stream);
-int fwide(struct __sFILE *stream, int mode);
-wint_t getwc(struct __sFILE *stream);
-wint_t putwc(wchar_t c, struct __sFILE *stream);
+	int n, FILE * restrict stream);
+wint_t fputwc(wint_t c, FILE *stream);
+wint_t fputws(const wchar_t *ws, FILE * restrict stream);
+int fwide(FILE *stream, int mode);
+wint_t getwc(FILE *stream);
+wint_t putwc(wchar_t c, FILE *stream);
 
 #if defined(_GNU_SOURCE) || defined(__BSD_VISIBLE)
 wchar_t *wcswcs(const wchar_t *haystack, const wchar_t *needle);

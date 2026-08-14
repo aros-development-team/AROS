@@ -2,7 +2,7 @@
 #define _STDC_STDIO_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS implementation of the C Standard Input and Output Header (C89/C99/GNU)
@@ -30,12 +30,9 @@
 #define L_tmpnam FILENAME_MAX
 #define TMP_MAX 10240
 
-__BEGIN_DECLS
+#include <aros/types/file_t.h>
 
-#ifndef _AROS_TYPES_FILE_S_H
-struct __sFILE;
-#endif
-typedef struct __sFILE FILE;
+__BEGIN_DECLS
 
 #if defined(_POSIXC_STDIO_H_)
 FILE *__posixc_getstdin(void);
