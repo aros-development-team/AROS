@@ -496,7 +496,9 @@ void dma_setup(ULONG peribase, ULONG channel, ULONG cb_bus_addr)
     udelay(peribase, 10);
     wr32le(dma_base + 0x00, DMA_CS_INT | DMA_CS_END);
     wr32le(dma_base + 0x04, cb_bus_addr);
-    wr32le(dma_base + 0x00, DMA_CS_WAIT_FOR_WRITES | DMA_CS_PANIC_PRI(15) | DMA_CS_PRI(8) | DMA_CS_ACTIVE);
+    /* The handler re-writes this with the W1C flags added, so the priorities
+     * survive the session; see bcm2708_dma.h. */
+    wr32le(dma_base + 0x00, BCM2708_DMA_CS_RUN);
     udelay(peribase, 10);
 }
 

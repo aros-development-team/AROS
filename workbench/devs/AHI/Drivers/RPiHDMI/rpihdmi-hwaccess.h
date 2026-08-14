@@ -128,12 +128,11 @@ static inline void wr32le(ULONG addr, ULONG val)
 #define DMA_TI_NO_WIDE_BURSTS  (1 << 26)
 
 /* DMA CS bits */
+/* Run state and acknowledge live in bcm2708_dma.h, shared with the other
+ * DMA-driven AHI driver - they have to agree. */
 #define DMA_CS_ACTIVE          (1 << 0)
 #define DMA_CS_END             (1 << 1)
 #define DMA_CS_INT             (1 << 2)
-#define DMA_CS_WAIT_FOR_WRITES (1 << 28)
-#define DMA_CS_PANIC_PRI(x)    (((x) & 0xF) << 20)
-#define DMA_CS_PRI(x)          (((x) & 0xF) << 16)
 #define DMA_CS_ABORT           (1 << 30)
 #define DMA_CS_RESET           (1 << 31)
 

@@ -44,7 +44,9 @@ void dma_irq_handler(struct RPiHDMIData *data, void *data2)
     ULONG cs = rd32le(dma_base + 0x00);
 
     if (cs & DMA_CS_INT) {
-        wr32le(dma_base + 0x00, DMA_CS_INT | DMA_CS_END | DMA_CS_ACTIVE);
+        /* Must carry the run state, not just ACTIVE: the AXI priorities
+         * share the register. See bcm2708_dma.h. */
+        wr32le(dma_base + 0x00, BCM2708_DMA_CS_ACK);
 
         if (data->slavetask != NULL && data->slavesignal != -1) {
             Signal((struct Task *) data->slavetask, 1L << data->slavesignal);
