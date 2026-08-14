@@ -218,6 +218,26 @@ void handle_dataabort(regs_t *regs)
         ((dfsr >> 6) & 0x10) | (dfsr & 0x0f),
         (dfsr >> 11) & 1);
 
+    /* The trap has no symbols, so matching these words against the module
+     * images is the only way to name the code that faulted. Clamped to PC's
+     * own page: a second abort while still in ABT mode dies silently. */
+    {
+        unsigned int pc = regs->pc & ~3;
+        unsigned int first = pc - 16, last = pc + 12;
+        unsigned int page = pc & ~0xfffU;
+        unsigned int a;
+
+        if (first < page)
+            first = page;
+        if (last > page + 0xffc)
+            last = page + 0xffc;
+
+        bug("[Kernel]    code at 0x%p (faulting word 0x%p):", first, pc);
+        for (a = first; a <= last; a += 4)
+            bug(" %08x", *(unsigned int *)a);
+        bug("\n");
+    }
+
     cpu_DumpRegs(regs);
 
     if (krnRunExceptionHandlers(KernelBase, 2, regs))
