@@ -36,6 +36,8 @@ struct HIDDNouveauData
 
 struct HIDDNouveauDisplayData
 {
+    BOOL                nameasked;
+    char                name[14];   /* EDID monitor descriptor: 13 chars + NUL */
 };
 
 #define CLID_Hidd_Display_Nouveau       "hidd.display.nouveau"

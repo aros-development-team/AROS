@@ -7,6 +7,7 @@
 #include "nouveau_drv.h"
 #include "nouveau_bo.h"
 #include "nouveau_gem.h"
+#include "nouveau_connector.h"
 
 void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t handle, VOID (*unmapped)(APTR), APTR data)
 {
@@ -81,6 +82,43 @@ void drm_gem_nouveau_munmap(struct drm_device *dev, struct drm_file *f, uint32_t
     mutex_lock(&dev->struct_mutex);
     drm_gem_object_put(gem_object);
     mutex_unlock(&dev->struct_mutex);
+}
+
+/*
+    The name the monitor gives for itself, from the descriptor block in its
+    EDID. Not every display fills that block in, so this can succeed in
+    reaching the connector and still have no name to report.
+*/
+BOOL drm_nouveau_get_monitor_name(struct drm_device *dev, uint32_t connector_id,
+    char *name, int namelen)
+{
+    struct drm_connector *connector;
+    struct drm_connector_list_iter conn_iter;
+    BOOL found = FALSE;
+
+    if (!dev || !name || (namelen < 2))
+        return FALSE;
+
+    name[0] = '\0';
+
+    drm_connector_list_iter_begin(dev, &conn_iter);
+    drm_for_each_connector_iter(connector, &conn_iter)
+    {
+        struct nouveau_connector *nv_connector;
+
+        if (connector->base.id != connector_id)
+            continue;
+
+        nv_connector = nouveau_connector(connector);
+        if (nv_connector->edid)
+            drm_edid_get_monitor_name(nv_connector->edid, name, namelen);
+
+        found = (name[0] != '\0');
+        break;
+    }
+    drm_connector_list_iter_end(&conn_iter);
+
+    return found;
 }
 
 /*

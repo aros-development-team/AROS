@@ -4072,7 +4072,6 @@ static int get_monitor_name(struct edid *edid, char name[13])
 	return mnl;
 }
 
-#if !defined(__AROS__)
 /**
  * drm_edid_get_monitor_name - fetch the monitor name from the edid
  * @edid: monitor EDID information
@@ -4093,7 +4092,6 @@ void drm_edid_get_monitor_name(struct edid *edid, char *name, int bufsize)
 	name[name_length] = '\0';
 }
 EXPORT_SYMBOL(drm_edid_get_monitor_name);
-#endif
 
 static void clear_eld(struct drm_connector *connector)
 {

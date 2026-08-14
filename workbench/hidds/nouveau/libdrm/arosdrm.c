@@ -13,6 +13,7 @@
 
 void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t handle, VOID (*unmapped)(APTR), APTR data);
 void drm_gem_nouveau_munmap(struct drm_device *dev, struct drm_file *f, uint32_t handle);
+BOOL drm_nouveau_get_monitor_name(struct drm_device *dev, uint32_t connector_id, char *name, int namelen);
 
 #include "drm_crtc_internal.h"
 #include "drm_internal.h"
@@ -240,4 +241,12 @@ void drmMUnmap(int fd, uint32_t handle)
 {
     struct drm_file *f = drm_files[fd];
     drm_gem_nouveau_munmap(current_drm_device, f, handle);
+}
+
+BOOL drmGetMonitorName(int fd, uint32_t connector_id, char *name, int namelen)
+{
+    if (!drm_files[fd])
+        return FALSE;
+
+    return drm_nouveau_get_monitor_name(current_drm_device, connector_id, name, namelen);
 }

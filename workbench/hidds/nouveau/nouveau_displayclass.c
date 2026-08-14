@@ -12,6 +12,7 @@
 #include <aros/debug.h>
 #include <proto/oop.h>
 
+#include <libdrm/arosdrm.h>
 #include <libdrm/arosdrmmode.h>
 
 #undef HiddAttrBase
@@ -213,10 +214,63 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     return TRUE;
 }
 
+/*
+ * What the monitor calls itself, asked for once and remembered. A display
+ * that leaves the name descriptor out of its EDID has none to give, and
+ * then the base class answers instead of us inventing one.
+ */
+static CONST_STRPTR HIDDNouveauDisplayName(OOP_Class * cl, OOP_Object * o)
+{
+    struct HIDDNouveauDisplayData * data = OOP_INST_DATA(cl, o);
+
+    if (!data->nameasked)
+    {
+        struct CardData * carddata = &(SD(cl)->carddata);
+        OOP_Object * gfx = NULL;
+
+        data->nameasked = TRUE;
+
+        OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+        if (gfx && carddata->dev)
+        {
+            struct HIDDNouveauData * gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
+            drmModeConnectorPtr connector =
+                (drmModeConnectorPtr)gfxdata->selectedconnector;
+
+            if (connector)
+            {
+                LOCK_ENGINE
+                drmGetMonitorName(carddata->dev->fd, connector->connector_id,
+                    data->name, sizeof(data->name));
+                UNLOCK_ENGINE
+
+                D(bug("[Nouveau] display names itself '%s'\n", data->name));
+            }
+        }
+    }
+
+    return data->name[0] ? (CONST_STRPTR)data->name : NULL;
+}
+
 /* PUBLIC METHODS */
 VOID METHOD(NouveauDisplay, Root, Get)
 {
     ULONG idx;
+
+    Hidd_Switch(msg->attrID, idx)
+    {
+    case aoHidd_Name:
+        {
+            CONST_STRPTR name = HIDDNouveauDisplayName(cl, o);
+
+            if (name)
+            {
+                *msg->storage = (IPTR)name;
+                return;
+            }
+        }
+        break;
+    }
 
     Hidd_Display_Switch(msg->attrID, idx)
     {
