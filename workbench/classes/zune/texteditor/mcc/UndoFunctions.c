@@ -377,7 +377,7 @@ BOOL AddToUndoBuffer(struct InstData *data, enum EventType eventtype, void *even
       data->usedUndoSteps--;
 
       // shift all remaining actions one step to the front
-      memmove(&data->undoSteps[0], &data->undoSteps[1], sizeof(data->undoSteps[0]) * data->maxUndoSteps);
+      memmove(&data->undoSteps[0], &data->undoSteps[1], sizeof(data->undoSteps[0]) * (data->maxUndoSteps - 1));
 
       // signal the user that something in the undo buffer was lost
       setFlag(data->flags, FLG_UndoLost);
