@@ -29,6 +29,7 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/bwfm.h>
+#include <proto/openfirmware.h>
 
 #include "bwfm.h"
 
@@ -131,8 +132,15 @@ static void str_append(char **p, const char *s)
         *(*p)++ = *s++;
 }
 
-/* Build "DEVS:Firmware/brcmfmac<id>-sdio<ext>" for the detected chip. */
-static int fw_filename(char *out, ULONG chip, const char *ext)
+#define BWFM_FW_BOARD_MAX       48
+
+/*
+ * Build "DEVS:Firmware/brcmfmac<id>-sdio[.<board>]<ext>". The board component
+ * separates machines carrying the same part: a Pi 3B+ and a Pi 4 both answer
+ * as a BCM43455 but need different nvram. Named after the device tree's root
+ * compatible string, as brcmfmac does, so its blobs drop in unrenamed.
+ */
+static int fw_filename(char *out, ULONG chip, const char *board, const char *ext)
 {
     const char *id;
     char *p = out;
@@ -147,9 +155,46 @@ static int fw_filename(char *out, ULONG chip, const char *ext)
     str_append(&p, BWFM_FW_DIR "brcmfmac");
     str_append(&p, id);
     str_append(&p, "-sdio");
+    if (board)
+    {
+        *p++ = '.';
+        str_append(&p, board);
+    }
     str_append(&p, ext);
     *p = '\0';
     return 0;
+}
+
+/*
+ * The most specific entry of the tree's root compatible list, e.g.
+ * "raspberrypi,4-model-b". NULL with no tree, or a name too long to build a
+ * filename from; the caller then falls back to the unsuffixed one.
+ */
+static const char *fw_board_name(void)
+{
+    void *OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *node, *prop;
+    const char *value;
+    ULONG len, i;
+
+    if (OpenFirmwareBase == NULL)
+        return NULL;
+
+    node = OF_OpenKey("/");
+    prop = node ? OF_FindProperty(node, "compatible") : NULL;
+    value = prop ? OF_GetPropValue(prop) : NULL;
+    if (value == NULL)
+        return NULL;
+
+    /* A compatible list is a run of NUL-terminated strings, most specific
+     * first, so the first one names the board itself. */
+    len = OF_GetPropLen(prop);
+    for (i = 0; i < len && i < BWFM_FW_BOARD_MAX; i++)
+    {
+        if (value[i] == '\0')
+            return value;
+    }
+    return NULL;
 }
 
 /* Read a whole file into a freshly AllocVec'd buffer. */
@@ -542,7 +587,7 @@ static void tx_request(struct bwfm_unit *unit, struct IOSana2Req *req)
 /* One-time chip firmware bring-up. Returns TRUE on success. */
 static int load_firmware(LIBBASETYPEPTR LIBBASE)
 {
-    char name[64];
+    char name[sizeof(BWFM_FW_DIR "brcmfmac00000-sdio.") + BWFM_FW_BOARD_MAX + 16];
     APTR fw = NULL, nvtxt = NULL, nvbin = NULL;
     ULONG fwlen = 0, nvtxtlen = 0, nvbinlen = 0;
     ULONG chip;
@@ -562,7 +607,7 @@ static int load_firmware(LIBBASETYPEPTR LIBBASE)
     }
 
     chip = BWFMChipID();
-    if (chip == 0 || fw_filename(name, chip, ".bin"))
+    if (chip == 0 || fw_filename(name, chip, NULL, ".bin"))
     {
         D(bug("[bwfm.device] no firmware mapping for chip %x\n", chip));
         return FALSE;
@@ -575,11 +620,17 @@ static int load_firmware(LIBBASETYPEPTR LIBBASE)
         goto out;
     }
 
-    if (fw_filename(name, chip, ".txt") == 0)
     {
-        nvtxt = read_file(name, &nvtxtlen);
+        const char *board = fw_board_name();
+
+        if (board && fw_filename(name, chip, board, ".txt") == 0)
+            nvtxt = read_file(name, &nvtxtlen);
+        if (!nvtxt && fw_filename(name, chip, NULL, ".txt") == 0)
+            nvtxt = read_file(name, &nvtxtlen);
         if (nvtxt)
             nvbin = nvram_convert(nvtxt, nvtxtlen, &nvbinlen);
+        D(else bug("[bwfm.device] no nvram for board '%s'\n",
+                   board ? board : "(unknown)"));
     }
 
     D(bug("[bwfm.device] starting firmware (%u bytes, nvram %u bytes)\n",
@@ -603,7 +654,7 @@ static int load_firmware(LIBBASETYPEPTR LIBBASE)
          * the radio has no valid channels and scanning fails (NOTUP). The
          * Pi 3 (43430) firmware has built-in regulatory and ships no blob, so
          * a missing file is not an error. */
-        if (fw_filename(name, chip, ".clm_blob") == 0)
+        if (fw_filename(name, chip, NULL, ".clm_blob") == 0)
         {
             ULONG clmlen = 0;
             APTR clm = read_file(name, &clmlen);
