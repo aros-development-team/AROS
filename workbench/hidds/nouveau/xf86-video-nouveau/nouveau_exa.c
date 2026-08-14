@@ -588,8 +588,12 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     }
 
     while (height) {
-        const int lines = (height > 2047) ? 2047 : height;
+        int lines = (height > 2047) ? 2047 : height;
         int tmp_offset = 0;
+
+        /* Limit transfer to GART buffer size */
+        if ((unsigned)lines > pNv->GART->size / tmp_pitch)
+            lines = pNv->GART->size / tmp_pitch;
 
         /* RAM -> CPU -> GART */
         nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
@@ -640,8 +644,12 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     tmp_pitch = width * cpp;
 
     while (height) {
-        const int lines = (height > 2047) ? 2047 : height;
+        int lines = (height > 2047) ? 2047 : height;
         int tmp_offset = 0;
+
+        /* Limit transfer to GART buffer size */
+        if ((unsigned)lines > pNv->GART->size / tmp_pitch)
+            lines = pNv->GART->size / tmp_pitch;
 
         /* VRAM -> GPU -> GART */
         if (!NVAccelM2MF(pNv, width, lines, cpp, 0, tmp_offset,
