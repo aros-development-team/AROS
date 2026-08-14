@@ -182,7 +182,7 @@ void cpu_Dispatch(regs_t *regs)
         __cpu_sleeptime += krnReadTime() - idlefrom;
 
         if (csr_read(sip) & SIE_STIE)
-            krnTimerTick();
+            krnTimerTick(NULL);
     }
 
     copyContext(regs, task->tc_UnionETask.tc_ETask->et_RegFrame);

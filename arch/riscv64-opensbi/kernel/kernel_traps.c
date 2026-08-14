@@ -175,7 +175,7 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
         switch (irq)
         {
         case SCAUSE_IRQ_STI:
-            krnTimerTick();
+            krnTimerTick(ctx);
             /* Run the scheduler on the way out if a switch is pending */
             return TRAP_RESCHEDULE;
 
