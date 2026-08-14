@@ -1701,13 +1701,24 @@ BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
     }
     Permit();
 
-    /* if none where found create the p96 romvector entry if available */
+    /* if none where found create UAE p96 romvector entry if available */
     if (IsListEmpty(&csd->foundCards)) {
         cid = P96GFX__AllocCID(csd);
         if (cid)
         {
-            cid->p96romvector = (APTR)(0xf00000 + 0xff60);
-            if ((gl(cid->p96romvector) & 0xff00ffff) != 0xa0004e75) {
+            /* New UAE Boot ROM p96romvector query */
+            APTR *res = OpenResource("uae.resource");
+            if (res) {
+                cid->p96romvector = AROS_LVO_CALL1(APTR, AROS_LCA(UBYTE*, "uaelib_demux", A0), APTR, res, 1,);
+            }
+        		if (!cid->p96romvector) {
+        		    /* Old F00000 UAE Boot ROM p96romvector check */
+	              cid->p96romvector = (APTR)(0xf00000 + 0xff60);
+	              if ((gl(cid->p96romvector) & 0xff00ffff) != 0xa0004e75) {
+	                  cid->p96romvector = NULL;
+	              }
+	          }
+            if (!cid->p96romvector) {
                 D(bug("[HiddP96Gfx] %s: P96 boot ROM entry point not found. P96GFX not enabled.\n", __func__);)
                 P96GFX__FreeCID(csd, cid);
                 P96GFX__ClosePrivateLibs(csd);
