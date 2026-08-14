@@ -101,6 +101,7 @@ XF86_NOUVEAU_PATH = $(SRCDIR)/$(CURDIR)/xf86-video-nouveau/
 NOUVEAU_HIDD_C_SOURCES := \
             arosc_emul \
             nouveau_hiddclass \
+            nouveau_displayclass \
             nouveau_init \
             nouveau_bitmapclass \
             nouveau_accel \
