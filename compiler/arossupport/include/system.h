@@ -2,7 +2,7 @@
 #define AROS_SYSTEM_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Analyse the current kind of system and compiler.
@@ -149,7 +149,7 @@
 # elif __has_attribute(fallthrough) && (__GNUC__ >= 7)
     # define __fallthrough __attribute__((fallthrough))
 # else
-    /* Older compilers or no support — define as empty */
+    /* Older compilers or no support (C) define as empty */
     # define __fallthrough ((void)0)
 # endif
 #endif
@@ -325,6 +325,21 @@
 	     int a[sizeof(__CONCAT(__you_must_first_make_asym_, asym))]; \
 	 };                                                              \
          asm("\n.globl " __AROS_STR(asym) "\n")
+#endif
+
+/* As AROS_EXPORT_ASM_SYM, but for symbols that several compilation units of the
+   same module are expected to define identically. GNU ld happens to accept the
+   repeated absolute definitions a .globl would produce, lld rejects them as
+   duplicate symbols - so export them weakly instead. A weak definition still
+   satisfies an EXTERN() reference and still pulls its member out of an archive
+   with both linkers.  */
+#if !defined AROS_EXPORT_WEAK_ASM_SYM
+#    define AROS_EXPORT_WEAK_ASM_SYM(asym)                               \
+         struct __CONCAT(___you_must_first_make_asym_, asym)             \
+	 {                                                               \
+	     int a[sizeof(__CONCAT(__you_must_first_make_asym_, asym))]; \
+	 };                                                              \
+         asm("\n.weak " __AROS_STR(asym) "\n")
 #endif
 
 #endif /* AROS_SYSTEM_H */

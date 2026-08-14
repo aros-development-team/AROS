@@ -2,7 +2,7 @@
 #define _AROS_SYMBOLSETS_H
 
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Symbol sets support
@@ -150,10 +150,14 @@ ADD2SET(__aros_rellibset_##bname, RELLIBS, 0)
 AROS_LIBSET(name, btype, bname)           \
 const LONG __aros_libreq_##bname = ver;
 
+/* The marker is emitted by every translation unit that calls into the
+   library, so the same absolute symbol turns up in many objects. It has to
+   be weak: GNU ld happens to tolerate repeated absolute definitions, but
+   lld rejects them as duplicate symbols. */
 #ifndef AROS_LIBREQ
 #define AROS_LIBREQ(bname, ver) \
     asm volatile ( \
-                  ".global __aros_libreq_" #bname "." #ver "\n" \
+                  ".weak __aros_libreq_" #bname "." #ver "\n" \
                   "__aros_libreq_" #bname "." #ver "=" #ver);
 #endif
 
@@ -184,7 +188,7 @@ for                                                                          \
    properly initialized. */
 #define THIS_PROGRAM_HANDLES_SYMBOLSET(x) \
     AROS_MAKE_ASM_SYM(int, __##x##__symbol_set_handler_missing, __##x##__symbol_set_handler_missing, 0); \
-    AROS_EXPORT_ASM_SYM(__##x##__symbol_set_handler_missing);
+    AROS_EXPORT_WEAK_ASM_SYM(__##x##__symbol_set_handler_missing);
     
 #endif
 
