@@ -28,12 +28,13 @@ endif
     progname=Wrapper targetdir=$(STORAGEDIR) \
     files=$(FILES)
 
+WRAPPER_MONITORS := $(PCIDEVSDIR)/ATI $(PCIDEVSDIR)/NVidia $(PCDEVSDIR)/VMWare
+ifeq ($(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU),amiga-m68k)
+WRAPPER_MONITORS += $(AMIGADEVSDIR)/SAGA
+endif
+
 #MM
-devs-monitors-wrapper-copy: \
-			    $(PCIDEVSDIR)/ATI \
-			    $(PCIDEVSDIR)/NVidia \
-			    $(PCDEVSDIR)/VMWare \
-			    $(AMIGADEVSDIR)/SAGA
+devs-monitors-wrapper-copy: $(WRAPPER_MONITORS)
 
 $(PCIDEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
 	%fileactionmsg msg="Creating   " file="$@" elipses="..."
