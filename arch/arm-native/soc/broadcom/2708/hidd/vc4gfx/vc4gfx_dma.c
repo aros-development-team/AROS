@@ -89,9 +89,26 @@ int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
     return TRUE;
 }
 
+/*
+ * A flat deadline does not work: a full-window scroll moves ~4 MB each way,
+ * which takes on the order of 100 ms once the HVS competes for the SDRAM.
+ * Budget a pessimistic 25 MB/s, capped so a wedged channel is noticed.
+ *
+ * 128-bit SRC_WIDTH/DEST_WIDTH would be several times faster but needs the
+ * row length a multiple of 16; what the engine does with the trailing
+ * partial write otherwise is unverified.
+ */
+static ULONG vc4_dma_timeout_us(ULONG bytes)
+{
+    ULONG us = 50000 + bytes / 25;
+
+    return us > 300000 ? 300000 : us;
+}
+
 /* Kick the prepared CB and wait for completion. Must be called with
  * vcsd_DMALock held. Returns FALSE (after a channel reset) on timeout. */
-static BOOL vc4_dma_run(struct VideoCoreGfx_staticdata *xsd, const char *op)
+static BOOL vc4_dma_run(struct VideoCoreGfx_staticdata *xsd, const char *op,
+                        ULONG bytes)
 {
     volatile ULONG *dma_cs = (volatile ULONG *)DMA_CS(xsd->vcsd_DMAChannel);
     volatile ULONG *dma_cb = (volatile ULONG *)DMA_CONBLK_AD(xsd->vcsd_DMAChannel);
@@ -122,10 +139,19 @@ static BOOL vc4_dma_run(struct VideoCoreGfx_staticdata *xsd, const char *op)
 
     /* IRQ-driven wait via dma.resource (INTEN set in the CBs): sleeps the
      * task, handles the wedge-safe timeout, resets the channel on failure. */
-    if (DMAWaitChannel(xsd->vcsd_DMAChannel, 100000) == 0)
+    if (DMAWaitChannel(xsd->vcsd_DMAChannel, vc4_dma_timeout_us(bytes)) == 0)
         return TRUE;
 
-    bug("[VideoCoreGfx] DMA %s timeout\n", op);
+    /* Unconditional - rare, and the damage is visible. CS/DEBUG come from
+     * dma.resource, which samples them before resetting the channel. */
+    bug("[VideoCoreGfx] DMA %s failed after %uus: "
+        "ti=0x%08x len=0x%08x stride=0x%08x src=0x%08x dst=0x%08x\n",
+        op, (unsigned)vc4_dma_timeout_us(bytes),
+        AROS_LE2LONG(xsd->vcsd_DMACB->ti),
+        AROS_LE2LONG(xsd->vcsd_DMACB->txfr_len),
+        AROS_LE2LONG(xsd->vcsd_DMACB->stride),
+        AROS_LE2LONG(xsd->vcsd_DMACB->source_ad),
+        AROS_LE2LONG(xsd->vcsd_DMACB->dest_ad));
     return FALSE;
 }
 
@@ -177,7 +203,8 @@ BOOL vc4_dma_copy(struct VideoCoreGfx_staticdata *xsd,
     cb->reserved[0] = 0;
     cb->reserved[1] = 0;
 
-    ok = vc4_dma_run(xsd, bottom_up ? "copy^" : "copy");
+    ok = vc4_dma_run(xsd, bottom_up ? "copy^" : "copy",
+                     width_bytes * height);
 
     ReleaseSemaphore(&xsd->vcsd_DMALock);
     return ok;
@@ -232,7 +259,7 @@ BOOL vc4_dma_put(struct VideoCoreGfx_staticdata *xsd,
     cb->reserved[0] = 0;
     cb->reserved[1] = 0;
 
-    ok = vc4_dma_run(xsd, "put");
+    ok = vc4_dma_run(xsd, "put", width_bytes * height);
 
     ReleaseSemaphore(&xsd->vcsd_DMALock);
     return ok;
@@ -291,7 +318,7 @@ BOOL vc4_dma_get(struct VideoCoreGfx_staticdata *xsd,
         cb->reserved[0] = 0;
         cb->reserved[1] = 0;
 
-        ok = vc4_dma_run(xsd, "get");
+        ok = vc4_dma_run(xsd, "get", width_bytes * n);
 
         if (ok)
         {
@@ -351,7 +378,7 @@ BOOL vc4_dma_fill(struct VideoCoreGfx_staticdata *xsd,
     cb->reserved[0] = 0;
     cb->reserved[1] = 0;
 
-    ok = vc4_dma_run(xsd, "fill");
+    ok = vc4_dma_run(xsd, "fill", width_bytes * height);
 
     ReleaseSemaphore(&xsd->vcsd_DMALock);
     return ok;

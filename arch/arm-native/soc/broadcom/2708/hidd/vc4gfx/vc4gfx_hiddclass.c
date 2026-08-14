@@ -630,6 +630,16 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
                          (ULONG)(IPTR)drow_base, dst_pitch,
                          row_bytes, msg->height, (y_step < 0)))
             return;
+
+        /* A failed DMA already overwrote part of the destination. Where the
+         * rectangles alias (a scroll) the clobbered source rows are gone, so
+         * the row loop below would paint garbage over the rows the engine did
+         * get right. Stale pixels repaint on the next damage pass. */
+        if (src_buf == dst_buf && msg->destY != msg->srcY
+            && (ULONG)(msg->destY > msg->srcY ? msg->destY - msg->srcY
+                                              : msg->srcY - msg->destY)
+               < (ULONG)msg->height)
+            return;
     }
 
     for (y = y_start; y != y_end; y += y_step)
