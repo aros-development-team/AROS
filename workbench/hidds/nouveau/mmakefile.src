@@ -16,7 +16,8 @@ include $(SRCDIR)/$(CURDIR)/sources.drm.mak
 #MM- hidd-nouveau-i386 : hidd-nouveau
 #MM- hidd-nouveau-x86_64 : hidd-nouveau
 #MM- hidd-nouveau-riscv64 : hidd-nouveau
-#MM hidd-nouveau : hidd-nouveau-libdrm hidd-nouveau-drm hidd-nouveau-gallium hidd-i2c hidd-agp-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) hidd-gallium
+#MM hidd-nouveau : hidd-nouveau-libdrm hidd-nouveau-drm hidd-nouveau-gallium hidd-i2c hidd-agp-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) hidd-gallium mesa3dgl-linklibs linklibs-libatomic
+#MM hidd-nouveau-gallium : mesa3dgl-linklibs
 
 USER_INCLUDES := \
             -iquote $(GALLIUM_PATH)/include \

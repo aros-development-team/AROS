@@ -3,11 +3,6 @@
 */
 
 #include "nouveau_intern.h"
-
-/* The mode the display says it was built for (uapi/drm/drm_mode.h) */
-#ifndef DRM_MODE_TYPE_PREFERRED
-#define DRM_MODE_TYPE_PREFERRED     (1 << 3)
-#endif
 #include "compositor.h"
 
 #include <graphics/displayinfo.h>
