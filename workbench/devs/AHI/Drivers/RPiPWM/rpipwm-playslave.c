@@ -19,6 +19,9 @@
 #include <libraries/ahi_sub.h>
 #include <aros/macros.h>
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include "DriverData.h"
 #include "library.h"
 #include "rpipwm-hwaccess.h"
@@ -75,14 +78,15 @@ void dma_irq_handler(struct RPiPWMData *data, void *data2)
     ULONG dma_base = data->periiobase + 0x007000 + data->dma_channel * 0x100;
     ULONG cs = rd32le(dma_base + 0x00);
 
+    /*
+     * Never log from here: bug() polls the serial port for milliseconds,
+     * delaying the refill past the buffer period - a click caused by watching
+     * for it.
+     */
     if (cs & DMA_CS_INT) {
-        /*
-         * Acknowledge the interrupt by writing only the W1C bits
-         * plus ACTIVE to keep the DMA running. Don't write back the
-         * read value — read-only bits like PAUSED can confuse the
-         * DMA state machine.
-         */
-        wr32le(dma_base + 0x00, DMA_CS_INT | DMA_CS_END | DMA_CS_ACTIVE);
+        /* Must carry the run state, not just ACTIVE: the AXI priorities
+         * share the register. See bcm2708_dma.h. */
+        wr32le(dma_base + 0x00, BCM2708_DMA_CS_ACK);
 
         /* Signal the slave task to refill a buffer */
         if (data->slavetask != NULL && data->slavesignal != -1) {
@@ -129,6 +133,7 @@ void Slave(struct ExecBase *SysBase)
     struct DriverBase *AHIsubBase;
     BOOL running;
     ULONG signals;
+    ULONG refills = 0;
 
     /*
      * On SMP the master may not have set tc_UserData yet when we start
@@ -157,6 +162,15 @@ void Slave(struct ExecBase *SysBase)
         /* Flush silence data from cache to physical RAM for DMA */
         CacheClearE(dd->dmabuf[0], dd->dmabuf_size, CACRF_ClearD);
         CacheClearE(dd->dmabuf[1], dd->dmabuf_size, CACRF_ClearD);
+
+        D(bug("[RPiPWM] slave: BuffType %u, BuffSamples %u, MaxBuffSamples %u,"
+            " BuffSize %u, MixFreq %u, range %u, dmabuf_samples %u\n",
+            (unsigned)AudioCtrl->ahiac_BuffType,
+            (unsigned)AudioCtrl->ahiac_BuffSamples,
+            (unsigned)AudioCtrl->ahiac_MaxBuffSamples,
+            (unsigned)AudioCtrl->ahiac_BuffSize,
+            (unsigned)AudioCtrl->ahiac_MixFreq,
+            (unsigned)dd->pwm_range, (unsigned)dd->dmabuf_samples));
 
         /* Tell the master we're alive */
         Signal((struct Task *) dd->mastertask, 1L << dd->mastersignal);
@@ -210,6 +224,30 @@ void Slave(struct ExecBase *SysBase)
 
                     convert_mix_to_pwm(
                         (WORD *) dd->mixbuffer, dd->dmabuf[fillbuf], frames, dd->pwm_range);
+
+                    /*
+                     * The span separates a mixer handing us silence from one
+                     * whose format we are misreading: mid-range constant is DC,
+                     * full-scale span is real audio. First few buffers only -
+                     * one serial write costs more than a buffer period.
+                     */
+                    if (DEBUG && refills < 3) {
+                        ULONG lo = ~0U, hi = 0, n;
+
+                        for (n = 0; n < frames * 2; n++) {
+                            ULONG v = AROS_LE2LONG(dd->dmabuf[fillbuf][n]);
+
+                            if (v < lo) lo = v;
+                            if (v > hi) hi = v;
+                        }
+                        bug("[RPiPWM] refill %u: buf %u, %u frames, pwm %u..%u"
+                            " (mid %u), src[0..3] %d %d %d %d\n",
+                            refills, (unsigned)fillbuf, (unsigned)frames,
+                            (unsigned)lo, (unsigned)hi, (unsigned)(dd->pwm_range / 2),
+                            ((WORD *)dd->mixbuffer)[0], ((WORD *)dd->mixbuffer)[1],
+                            ((WORD *)dd->mixbuffer)[2], ((WORD *)dd->mixbuffer)[3]);
+                        refills++;
+                    }
 
                     /* Flush converted data to physical RAM for DMA */
                     CacheClearE(dd->dmabuf[fillbuf], frames * 2 * sizeof(ULONG), CACRF_ClearD);
