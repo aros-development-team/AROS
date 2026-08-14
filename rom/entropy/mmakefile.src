@@ -10,6 +10,7 @@ ifneq ($(FAMILY),)
     USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/entropy
 endif
 USER_INCLUDES += -I$(SRCDIR)/rom/entropy
+USER_LDFLAGS := -static
 
 FUNCTIONS := getentropy addentropy getentropyinfo
 FILES     := entropy_init entropy_chacha entropy_software entropy_hw
