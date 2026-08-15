@@ -8,8 +8,11 @@ endif
 
 FILES := p96
 
-#MM- workbench-devs-monitors: devs-monitors-p96-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-#MM- devs-monitors-p96-amiga-m68k : devs-monitors-p96 devs-monitors-z3660 devs-monitors-zz9000
+#MM- workbench-devs-monitors-amiga-m68k : \
+#MM        devs-monitors-p96 \
+#MM        devs-monitors-z3660 \
+#MM        devs-monitors-zz9000
+
 #MM devs-monitors-p96 : includes linklibs
 #MM devs-monitors-z3660 : includes linklibs
 #MM devs-monitors-zz9000 : includes linklibs

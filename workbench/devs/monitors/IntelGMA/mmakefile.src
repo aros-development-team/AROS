@@ -38,7 +38,6 @@ USER_LDFLAGS := $(TARGET_CXX_LDFLAGS) \
 NOWARN_FLAGS := -Wno-unused-value -Wno-unused-variable
 USER_CFLAGS += $(NOWARN_FLAGS)
 
-#MM- workbench-devs-monitors: devs-monitors-intelgma
 #MM devs-monitors-intelgma : hidd-i2c hidd-gallium intelgma-linklibs-gallium_i915 linklibs-galliumauxiliary
 
 %build_prog mmake=devs-monitors-intelgma \
