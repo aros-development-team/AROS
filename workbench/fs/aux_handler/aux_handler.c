@@ -28,6 +28,8 @@
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
 
+#include <aros/asmcall.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -113,12 +115,12 @@ LONG aux_handler(struct ExecBase *SysBase)
         if (seg && seg->seg_UC == CMD_SYSTEM)
         {
             struct FileSysStartupMsg *fssm;
-            void (*conentry)(void);
+            LONG_FUNC conentry;
 
             /* A seglist begins with the BPTR to the next segment, which
                is pointer sized - stepping over it as a ULONG lands four
                bytes short of the code on a 64 bit target. */
-            conentry = (void (*)(void))((BPTR *)BADDR(seg->seg_Seg) + 1);
+            conentry = (LONG_FUNC)((BPTR *)BADDR(seg->seg_Seg) + 1);
 
             /*
              * The mountlist may have supplied a startup naming any device and
@@ -150,7 +152,19 @@ LONG aux_handler(struct ExecBase *SysBase)
             Permit();
             CloseLibrary((struct Library *)DOSBase);
 
-            conentry();
+            /*
+             * A handler entry point is an AROS_PROCH(), so it expects its
+             * three arguments the way DOS's CallEntry() supplies them -
+             * argptr in A0, argsize in D0 and SysBase in A6. Calling it as
+             * a plain no-argument function leaves SysBase holding whatever
+             * happened to be in that register, and the entry dereferences
+             * it immediately (SysBase->lib_Version). con-handler ignores
+             * argptr/argsize, so an empty argument string will do.
+             */
+            AROS_UFC3(ULONG, conentry,
+                      AROS_UFCA(STRPTR, NULL, A0),
+                      AROS_UFCA(ULONG, 0, D0),
+                      AROS_UFCA(struct ExecBase *, SysBase, A6));
 
             return RETURN_OK;
         }
