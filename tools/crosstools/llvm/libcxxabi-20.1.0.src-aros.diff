@@ -98,3 +98,20 @@ diff -ruN libcxxabi-20.1.0.src/src/cxa_demangle.cpp libcxxabi-20.1.0.src.aros/sr
  
    if (AST == nullptr)
      InternalStatus = demangle_invalid_mangled_name;
+diff -ruN libcxxabi-20.1.0.src/src/cxa_exception_storage.cpp libcxxabi-20.1.0.src.aros/src/cxa_exception_storage.cpp
+--- libcxxabi-20.1.0.src/src/cxa_exception_storage.cpp	2025-03-04 19:51:43.000000000 +0000
++++ libcxxabi-20.1.0.src.aros/src/cxa_exception_storage.cpp	2026-08-15 00:00:00.000000000 +0000
+@@ -24,7 +24,12 @@
+ } // extern "C"
+ } // namespace __cxxabiv1
+ 
+-#elif __has_feature(cxx_thread_local)
++// AROS: __has_feature(cxx_thread_local) is a *language* feature test, and clang
++// always answers yes - but the AROS ELF loader implements no TLS relocations
++// (R_X86_64_TPOFF32 and friends), so every module linking this object fails to
++// load. Fall through to the __libcpp_tls_* implementation below, which is what
++// libc++abi 11 used here (it tested the build-system macro HAS_THREAD_LOCAL).
++#elif __has_feature(cxx_thread_local) && !defined(__AROS__)
+ 
+ namespace __cxxabiv1 {
+ namespace {
