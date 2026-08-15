@@ -229,7 +229,8 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 if (matstate)
                 {
                     struct TagItem *matag;
-                    IPTR memsize = (IPTR)(XSD(cl)->vcsd_GPUMemManage.mhe_MemHeader.mh_Upper - XSD(cl)->vcsd_GPUMemManage.mhe_MemHeader.mh_Lower);
+                    struct MemHeaderExt *gpumem = &XSD(cl)->vcsd_GPUMemManage;
+                    IPTR memsize = (IPTR)(gpumem->mhe_MemHeader.mh_Upper - gpumem->mhe_MemHeader.mh_Lower);
                     while ((matag = NextTagItem(&matstate)))
                     {
                         switch(matag->ti_Tag)
@@ -237,6 +238,16 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                         case tHidd_Gfx_MemTotal:
                         case tHidd_Gfx_MemAddressableTotal:
                             matag->ti_Data = memsize;
+                            break;
+
+                        /*
+                         * All of the GPU heap is CPU addressable here, so
+                         * the addressable figures match the plain ones.
+                         */
+                        case tHidd_Gfx_MemFree:
+                        case tHidd_Gfx_MemAddressableFree:
+                            matag->ti_Data = gpumem->mhe_Avail ?
+                                gpumem->mhe_Avail(gpumem, MEMF_ANY) : 0;
                             break;
                         }
                     }
