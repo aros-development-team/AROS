@@ -23,8 +23,12 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
     struct MemHeader *mh;
     ULONG requirements = flags & MEMF_PHYSICAL_MASK;
 
-    /* Protect memory list against other tasks */
-    MEM_LOCK;
+    /*
+     * Hold MemListSpinLock in shared mode for the list walk. Per-MemHeader
+     * mutations are serialized by mh_SpinLock inside stdAlloc.
+     * AddMemList still takes the exclusive lock.
+     */
+    MEM_LOCK_SHARED;
 
     /* Loop over MemHeader structures */
     ForeachNode(&SysBase->MemList, mh)
@@ -43,7 +47,30 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
             if (mhe->mhe_Alloc)
+            {
+                /*
+                 * The managed allocator (e.g. TLSF) only serialises itself
+                 * when the header is MEMF_SEM_PROTECTED. The system heap is
+                 * not, so take the per-MemHeader spinlock here - exactly as
+                 * stdAlloc does for the plain path below - otherwise
+                 * concurrent AllocMem/FreeMem from other cores corrupt the
+                 * free list. MemListSpinLock is held shared, so the list walk
+                 * stays parallel; this only serialises this one header.
+                 * SEM_PROTECTED headers obtain a semaphore internally and
+                 * may Wait(), so they must NOT be entered with a spinlock
+                 * held (also as stdAlloc does).
+                 */
+#if defined(__AROSEXEC_SMP__)
+                if (!((IPTR)mh->mh_First & MEMF_SEM_PROTECTED))
+                {
+                    EXEC_SPINLOCK_LOCK(&mh->mh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+                    res = mhe->mhe_Alloc(mhe, byteSize, &flags);
+                    EXEC_SPINLOCK_UNLOCK(&mh->mh_SpinLock);
+                }
+                else
+#endif
                 res = mhe->mhe_Alloc(mhe, byteSize, &flags);
+            }
         }
         else
         {
@@ -77,7 +104,26 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
             {
                 if (mhe->mhe_AllocAbs)
                 {
-                    APTR ret = mhe->mhe_AllocAbs(mhe, byteSize, location);
+                    APTR ret;
+
+                    /*
+                     * Same rule as nommu_Alloc above: the managed allocator
+                     * only serialises itself when MEMF_SEM_PROTECTED, which
+                     * the system heap is not. MEM_LOCK alone does not help -
+                     * the alloc/free paths hold MemListSpinLock shared only.
+                     * SEM_PROTECTED headers may Wait() internally - never
+                     * enter them with the spinlock held.
+                     */
+#if defined(__AROSEXEC_SMP__)
+                    if (!((IPTR)mh->mh_First & MEMF_SEM_PROTECTED))
+                    {
+                        EXEC_SPINLOCK_LOCK(&mh->mh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+                        ret = mhe->mhe_AllocAbs(mhe, byteSize, location);
+                        EXEC_SPINLOCK_UNLOCK(&mh->mh_SpinLock);
+                    }
+                    else
+#endif
+                    ret = mhe->mhe_AllocAbs(mhe, byteSize, location);
 
                     MEM_UNLOCK;
 
@@ -204,8 +250,11 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, s
 
     blockEnd = memoryBlock + byteSize;
 
-    /* Protect the memory list from access by other tasks. */
-    MEM_LOCK;
+    /*
+     * Shared lock for the list walk; stdDealloc serializes the per-mh write
+     * via mh_SpinLock.
+     */
+    MEM_LOCK_SHARED;
 
     ForeachNode(&SysBase->MemList, mh)
     {
@@ -218,7 +267,22 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, s
                 continue;
 
             if (mhe->mhe_Free)
+            {
+                /* See nommu_AllocMem: serialise the unprotected managed
+                 * heap against concurrent alloc/free on other cores.
+                 * SEM_PROTECTED headers serialise themselves and may
+                 * Wait() - never enter them with the spinlock held. */
+#if defined(__AROSEXEC_SMP__)
+                if (!((IPTR)mh->mh_First & MEMF_SEM_PROTECTED))
+                {
+                    EXEC_SPINLOCK_LOCK(&mh->mh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+                    mhe->mhe_Free(mhe, memoryBlock, byteSize);
+                    EXEC_SPINLOCK_UNLOCK(&mh->mh_SpinLock);
+                }
+                else
+#endif
                 mhe->mhe_Free(mhe, memoryBlock, byteSize);
+            }
 
         }
         else
@@ -277,6 +341,23 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
             continue;
         }
 
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * Read this header's free list / managed state under its spinlock
+         * in shared mode (we don't mutate) so a concurrent alloc/free on
+         * another core can't change the chunk list mid-walk. This is the
+         * reader counterpart to the WRITE-mode lock nommu_AllocMem and
+         * stdAlloc take around mutations. SEM_PROTECTED managed headers
+         * serialise themselves and may Wait() in mhe_Avail - do not hold
+         * the spinlock around them.
+         */
+        BOOL lockmh = !(IsManagedMem(mh) &&
+                        ((IPTR)mh->mh_First & MEMF_SEM_PROTECTED));
+
+        if (lockmh)
+            EXEC_SPINLOCK_LOCK(&mh->mh_SpinLock, NULL, SPINLOCK_MODE_READ);
+#endif
+
         if (IsManagedMem(mh))
         {
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
@@ -293,6 +374,10 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
                 else
                     ret += val;
 
+#if defined(__AROSEXEC_SMP__)
+                if (lockmh)
+                    EXEC_SPINLOCK_UNLOCK(&mh->mh_SpinLock);
+#endif
                 continue;
             }
         }
@@ -339,6 +424,11 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
         else
             /* Sum up free memory. */
             ret += mh->mh_Free;
+
+#if defined(__AROSEXEC_SMP__)
+        if (lockmh)
+            EXEC_SPINLOCK_UNLOCK(&mh->mh_SpinLock);
+#endif
     }
 
     /* All done */

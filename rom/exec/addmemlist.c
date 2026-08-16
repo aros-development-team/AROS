@@ -88,6 +88,10 @@
     mh->mh_Upper=(APTR)((UBYTE *)base+size);
     mh->mh_Free=mh->mh_First->mc_Bytes;
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&mh->mh_SpinLock);
+#endif
+
     /* Protect the memory list. */
     MEM_LOCK;
 
