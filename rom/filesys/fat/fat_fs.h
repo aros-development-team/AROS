@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright (C) 2006 Marek Szyprowski
- * Copyright (C) 2007-2018 The AROS Development Team
+ * Copyright (C) 2007-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -267,6 +267,7 @@ struct Globals
     UWORD writecmd;
     BOOL timer_active;
     BOOL restart_timer;
+    UWORD timer_deferred;       /* flushes postponed by continuing activity */
 
     /* volumes */
     struct FSSuper *sb;    /* current sb */
