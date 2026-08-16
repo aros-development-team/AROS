@@ -113,6 +113,11 @@ struct IntETask *FindETask(struct List *, ULONG id, struct ExecBase *SysBase);
 
 BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase);
 
+#if defined(__AROSEXEC_SMP__)
+void Exec_CancelSignalIPIs(struct Task *task, struct ExecBase *SysBase);
+#define CancelSignalIPIs(t) Exec_CancelSignalIPIs(t,SysBase)
+#endif
+
 STRPTR Alert_AddString(STRPTR dest, CONST_STRPTR src);
 STRPTR Alert_GetTitle(ULONG alertNum);
 STRPTR Alert_GetString(ULONG alertnum, STRPTR buf);

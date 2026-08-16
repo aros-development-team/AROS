@@ -270,21 +270,41 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
            to TRUE */
         if(parent != NULL)
         {
+            BOOL notify = (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS) &&
+                          (((struct Process*) task)->pr_Flags & PRF_NOTIFYONDEATH);
+
 #if defined(__AROSEXEC_SMP__)
+            /*
+             * Move the child from et_Children to the parent's message
+             * port in one step, so a concurrent ChildStatus/ChildFree
+             * scan cannot find it on neither list. Signal() afterwards,
+             * since it must not run under a spinlock.
+             */
             EXEC_SPINLOCK_LOCK(&IntETask(parent)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
             REMOVE(et);
-#if defined(__AROSEXEC_SMP__)
+            if (notify)
+            {
+                EXEC_SPINLOCK_LOCK(&parent->et_TaskMsgPort.mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+                ADDTAIL(&parent->et_TaskMsgPort.mp_MsgList, (struct Node *)et);
+                EXEC_SPINLOCK_UNLOCK(&parent->et_TaskMsgPort.mp_SpinLock);
+            }
             EXEC_SPINLOCK_UNLOCK(&IntETask(parent)->iet_TaskLock);
-#endif
-            if(
-               (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS) &&
-               (((struct Process*) task)->pr_Flags & PRF_NOTIFYONDEATH)
-            )
+
+            if (notify)
+            {
+                if (parent->et_TaskMsgPort.mp_SigTask)
+                    Signal((struct Task *)parent->et_TaskMsgPort.mp_SigTask,
+                           1UL << parent->et_TaskMsgPort.mp_SigBit);
+                expunge = FALSE;
+            }
+#else
+            REMOVE(et);
+            if (notify)
             {
                 PutMsg(&parent->et_TaskMsgPort, (struct Message *)et);
                 expunge = FALSE;
             }
+#endif
         }
     }
     else
@@ -325,75 +345,92 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     if (!task)
         return FALSE;
 
-    Forbid();
 #if defined(__AROSEXEC_SMP__)
+    /*
+     * Disable(), not Forbid(): the FIQ-delivered IPI takes these same
+     * locks for writing, and a writer spins while a reader holds them.
+     * Only Disable() masks that FIQ.
+     */
+    Disable();
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
     {
         if (task == t)
         {
             EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-            Permit();
+            Enable();
             return TRUE;
         }
     }
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-    Permit();
-    Forbid();
+    Enable();
+    Disable();
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
     ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
     {
         if (task == t)
         {
             EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
-            Permit();
+            Enable();
             return TRUE;
         }
     }
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
-    Permit();
-    Forbid();
+    Enable();
+    Disable();
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
+    ForeachNode(&SysBase->TaskReady, t)
+    {
+        if (task == t)
+        {
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
+            Enable();
+            return TRUE;
+        }
+    }
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    Enable();
+    Disable();
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
+    ForeachNode(&SysBase->TaskWait, t)
+    {
+        if (task == t)
+        {
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+            Enable();
+            return TRUE;
+        }
+    }
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+    Enable();
+
+    return FALSE;
 #else
+    Forbid();
     if (task == GET_THIS_TASK)
     {
         Permit();
         return TRUE;
     }
-#endif
 
     ForeachNode(&SysBase->TaskReady, t)
     {
         if (task == t)
         {
-#if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
-#endif
             Permit();
             return TRUE;
         }
     }
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
-    Permit();
-    Forbid();
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
-#endif
     ForeachNode(&SysBase->TaskWait, t)
     {
         if (task == t)
         {
-#if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
-#endif
             Permit();
             return TRUE;
         }
     }
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
-#endif
     Permit();
 
     return FALSE;
+#endif
 }
