@@ -19,12 +19,19 @@ extern void Exec_TaskSpinUnlock(spinlock_t *);
 extern void Kernel_40_KrnSpinInit(spinlock_t *, void *);
 #define EXEC_SPINLOCK_INIT(a) Kernel_40_KrnSpinInit((a), NULL)
 extern spinlock_t *Kernel_43_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
-#define EXEC_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), NULL, (b), NULL)
+/* (lock, failhook, mode) - rom/exec passes all three. */
+#define EXEC_SPINLOCK_LOCK(a,b,c) Kernel_43_KrnSpinLock((a), (b), (c), NULL)
 #define EXECTASK_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), &Exec_TaskSpinLockFailHook, (b), NULL)
 extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
 #define EXEC_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock((a), NULL)
 #define EXECTASK_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock((a), NULL); \
             Exec_TaskSpinUnlock((a))
+
+/*
+ * Store-store barrier for publishing a freshly built structure to readers
+ * that walk it without taking a lock.
+ */
+#define EXEC_MEMORY_BARRIER()   asm volatile("fence w,w" ::: "memory")
 
 #endif
 
