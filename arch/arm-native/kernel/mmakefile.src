@@ -35,9 +35,15 @@ CFILES := \
         platform_init \
         kernel_debug \
         getsystemattr \
+        timestamp \
         getcpucount \
+        alloccpumask \
+        clearcpumask \
+        cpuinmask \
+        freecpumask \
         getcpumask \
         getcpunumber \
+        schedulecpu \
         maygetchar \
         tags \
         intr \
