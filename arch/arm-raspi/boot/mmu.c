@@ -54,9 +54,9 @@ void mmu_load()
     DMMU(kprintf("[BOOT] control register %08x\n", tmp));
     tmp |= 1;           /* Enable MMU */
     tmp |= 1 << 23;     /* v6 page tables, subpages disabled */
-    asm volatile ("mcr  p15, 0, %[r], c7, c10, 4" : : [r] "r" (0)); /* dsb */
+    asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0)); /* dsb */
     asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(tmp));
-    asm volatile ("mcr  p15, 0, %[r], c7, c5, 4" : : [r] "r" (0)); /* isb */
+    asm volatile ("mcr p15, 0, %[r], c7, c5, 4" : : [r] "r" (0)); /* isb */
     DMMU(kprintf("[BOOT] mmu up\n"));
 }
 
@@ -99,6 +99,9 @@ void mmu_map_section(uint32_t phys, uint32_t virt, uint32_t length, int b, int c
         s.raw |= (ap & 3) << 10;
         s.raw |= (tex) << 12;
         s.raw |= ((ap >> 2) & 1) << 15;
+        /* S bit - Inner Shareable once ACTLR.SMP is set. No-op with
+         * ACTLR.SMP=0 (ARMv7-A ARM B3.5.7), so safe on non-SMP too. */
+        s.raw |= 1 << 16;
         s.raw |= phys << 20;
 #if 0
         s.section.type = PDE_TYPE_SECTION;

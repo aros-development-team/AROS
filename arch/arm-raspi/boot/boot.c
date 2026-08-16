@@ -328,6 +328,10 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     boottag->ti_Data = (IPTR)arch;
     boottag++;
 
+    boottag->ti_Tag = KRN_PeripheralBase;
+    boottag->ti_Data = (IPTR)__arm_periiobase;
+    boottag++;
+
     /*
         Check if device tree contains /soc/local_intc entry. In this case assume RasPi 2 or 3 with smp setup.
         Neither PiZero nor classic Pi provide this entry.
