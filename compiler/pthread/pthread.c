@@ -133,6 +133,11 @@ BOOL OpenTimerDevice(struct IORequest *io, struct MsgPort *mp, struct Task *task
     DB2(bug("%s(%p,%p,%p)\n", __FUNCTION__, io, mp, task));
 
     // prepare MsgPort
+    // Zero the whole struct first: on SMP AROS a MsgPort carries an
+    // mp_SpinLock that InternalPutMsg()/ReplyMsg() lock. The callers pass a
+    // stack MsgPort, so leaving the spinlock as uninitialised garbage makes
+    // the timer reply spin forever and hang the system.
+    memset(mp, 0, sizeof(*mp));
     mp->mp_Node.ln_Type = NT_MSGPORT;
     mp->mp_Node.ln_Pri = 0;
     mp->mp_Node.ln_Name = NULL;
