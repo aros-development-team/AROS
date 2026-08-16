@@ -10,6 +10,7 @@
 
 #include <inttypes.h>
 
+#include <aros/platformtimer.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
@@ -20,6 +21,7 @@
 
 #include <kernel_base.h>
 #include <kernel_globals.h>
+#include <kernel_interrupts.h>
 #include <kernel_intr.h>
 
 #include <proto/kernel.h>
@@ -50,6 +52,13 @@ uint64_t __timebase_freq;
 
 static uint64_t tick_interval;
 static uint64_t last_load_time;
+
+/*
+ * The timer as seen by timer.device (KATTR_PlatformTimer): the tick
+ * lives here, timer.device adds one earlier deadline of its own and
+ * takes over INTB_VERTB once it has claimed the timer.
+ */
+struct KrnPlatformTimer __platform_timer;
 
 /*
  * Close a task's accounting window: its share of the elapsed second,
@@ -242,16 +251,48 @@ void krnTimerInit(uint32_t timebase_hz, uint32_t tick_hz)
     __timebase_freq = timebase_hz;
     last_load_time = krnReadTime();
 
-    sbi_set_timer(krnReadTime() + tick_interval);
+    __platform_timer.kpt_Frequency = timebase_hz;
+    __platform_timer.kpt_Deadline = 0;
+    __platform_timer.kpt_IRQ = krnAllocVirtualIRQ(1);
+    __platform_timer.kpt_NextTick = krnReadTime() + tick_interval;
+
+    sbi_set_timer(__platform_timer.kpt_NextTick);
     csr_set(sie, SIE_STIE);
 }
 
+/*
+ * The one S-mode timer serves the periodic tick and timer.device's
+ * next deadline: whichever is due is handled, then the hardware is
+ * armed for the earlier of the two again.
+ */
 void krnTimerTick(struct ExceptionContext *ctx)
 {
+    struct KrnPlatformTimer *kpt = &__platform_timer;
     uint64_t now = krnReadTime();
+    uint64_t next;
+
+    if (kpt->kpt_Deadline && (int64_t)(now - kpt->kpt_Deadline) >= 0)
+    {
+        struct KernelBase *kbase = getKernelBase();
+
+        kpt->kpt_Deadline = 0;
+        if (kbase && kpt->kpt_IRQ != (ULONG)-1)
+            krnRunIRQHandlers(kbase, (irqid_t)kpt->kpt_IRQ);
+        now = krnReadTime();
+    }
+
+    if ((int64_t)(now - kpt->kpt_NextTick) < 0)
+    {
+        KrnPlatformTimerArm(kpt);
+        return;
+    }
 
     __timer_ticks++;
-    sbi_set_timer(now + tick_interval);
+    next = kpt->kpt_NextTick + tick_interval;
+    if ((int64_t)(next - now) <= 0)
+        next = now + tick_interval;
+    kpt->kpt_NextTick = next;
+    KrnPlatformTimerArm(kpt);
 
 #if defined(KRNDEBUG_POKE)
     {
@@ -319,6 +360,6 @@ void krnTimerTick(struct ExceptionContext *ctx)
      * ever wakes - the tick alone only serves the scheduler, which is
      * driven straight from the trap handler.
      */
-    if (SysBase)
+    if (SysBase && !(kpt->kpt_Flags & KPTF_CLAIMED))
         core_Cause(INTB_VERTB, 1L << INTB_VERTB);
 }

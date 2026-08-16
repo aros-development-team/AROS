@@ -117,6 +117,7 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KATTR_FrameBufferHeight (KATTR_CPULoad_END + 5) /* [.G] (IPTR)    - Framebuffer height in pixels                                */
 #define KATTR_FrameBufferDepth  (KATTR_CPULoad_END + 6) /* [.G] (IPTR)    - Framebuffer bits per pixel                                  */
 #define KATTR_FrameBufferPitch  (KATTR_CPULoad_END + 7) /* [.G] (IPTR)    - Framebuffer bytes per line                                  */
+#define KATTR_PlatformTimer     (KATTR_CPULoad_END + 8) /* [.G] (APTR)    - Kernel tick timer shared with timer.device (platform specific) */
 
 /* Tag IDs for KrnStatMemory() */
 #define KMS_Free		(TAG_USER + 0x04000000)
