@@ -143,7 +143,7 @@ static APTR HDAPCI__Hidd_HDA__HWInit(OOP_Class *cl, OOP_Object *o,
 {
     struct HDAPCIData *hpd = OOP_INST_DATA(cl, o);
     OOP_Object *dev = hpd->pciDevice;
-    IPTR mmio = 0, val = 0;
+    IPTR mmio = 0, val = 0, barsize = 0;
     UWORD vendor, product, command;
 
     OOP_GetAttr(dev, aHidd_PCIDevice_VendorID, &val);
@@ -160,9 +160,18 @@ static APTR HDAPCI__Hidd_HDA__HWInit(OOP_Class *cl, OOP_Object *o,
     HDAPCI_Quirks(dev, vendor, product);
 
     OOP_GetAttr(dev, aHidd_PCIDevice_Base0, &mmio);
+    OOP_GetAttr(dev, aHidd_PCIDevice_Size0, &barsize);
     if (!mmio)
     {
         D(bug("[" DRIVER "] No BAR0!\n"));
+        return NULL;
+    }
+
+    /* A BAR outside the identity mapped window has no CPU mapping yet */
+    mmio = (IPTR)HIDD_PCIDriver_MapPCI(hpd->pciDriver, (APTR)mmio, (ULONG)barsize);
+    if (!mmio)
+    {
+        D(bug("[" DRIVER "] Failed to map BAR0!\n"));
         return NULL;
     }
 

@@ -1568,7 +1568,10 @@ void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu)
 {
     struct OhciHCPrivate *ohcihcp;
-    struct PCIDevice *hd = hu->hu_Device;
+    IPTR barsize = 0;
+#ifndef base
+    struct PCIDevice *base = hu->hu_Device;
+#endif
 
     struct OhciED *oed;
     struct OhciED *predoed;
@@ -1743,7 +1746,15 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu)
 
         // time to initialize hardware...
         OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &hc->hc_RegBase);
+        OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Size0, &barsize);
         hc->hc_RegBase = (APTR) (((IPTR) hc->hc_RegBase) & (~0xf));
+
+        /* A BAR outside the identity mapped window has no CPU mapping yet */
+        hc->hc_RegBase = MAPPCI(hc, hc->hc_PCIDriverObject, (APTR) hc->hc_RegBase, (ULONG) barsize);
+        if (!hc->hc_RegBase) {
+            pciusbOHCIDebug("OHCI", "Failed to map the register area\n");
+            return FALSE;
+        }
         pciusbOHCIDebug("OHCI", "RegBase = 0x%p\n", hc->hc_RegBase);
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // enable memory
 
@@ -1856,7 +1867,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu)
 
         // make sure the ports are on with chipset quirk workaround
         hubdesca = READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA);
-        if (hd->hd_Flags & HDF_FORCEPOWER)
+        if (base->hd_Flags & HDF_FORCEPOWER)
             hubdesca |= OHAF_NOPOWERSWITCH;     /* Required for some IntelMacs */
         else
             hubdesca |= OHAF_NOOVERCURRENT;
