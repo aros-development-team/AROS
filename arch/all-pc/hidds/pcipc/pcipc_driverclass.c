@@ -7,6 +7,7 @@
 #include <aros/debug.h>
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <proto/acpica.h>
@@ -27,6 +28,10 @@
 
 #define DMMIO(x)
 #define DIRQ(x)
+
+/* Guaranteed identity mapped by core_SetupMMU(), and its page granularity */
+#define PCIPC_IDENTITYMAPPED    (128ULL << 30)
+#define PCIPC_MAPPAGESIZE       (2 * 1024 * 1024)
 
 #if defined(ACPI_CA_VERSION) && (ACPI_CA_VERSION >= 0x20250404)
 #define ACPICARoutingSrc Source
@@ -214,6 +219,40 @@ void PCIPC__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
         */
         PSD(cl)->WriteConfigLong(msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
     }
+}
+
+/*
+    PCIDriver::MapPCI(Address, Length) - core_SetupMMU() identity maps at
+    least the first 128GB, but firmware with Above-4G decoding can put a BAR
+    anywhere in the 64bit space. Map anything beyond the window, or the
+    caller faults on the first access.
+*/
+APTR PCIPC__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
+                                   struct pHidd_PCIDriver_MapPCI *msg)
+{
+    APTR cpuaddr = (APTR)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+#if (__WORDSIZE == 64)
+    if ((cpuaddr) && (cpuaddr != (APTR)-1) &&
+        (((UQUAD)(IPTR)cpuaddr + msg->Length) > PCIPC_IDENTITYMAPPED))
+    {
+        IPTR start = (IPTR)cpuaddr & ~(IPTR)(PCIPC_MAPPAGESIZE - 1);
+        IPTR end = ((IPTR)cpuaddr + msg->Length + PCIPC_MAPPAGESIZE - 1) &
+                    ~(IPTR)(PCIPC_MAPPAGESIZE - 1);
+
+        DMMIO(bug("[PCIPC:Driver] %s: mapping 0x%p (%u bytes)\n", __func__,
+                  cpuaddr, msg->Length);)
+
+        if (KrnMapGlobal((APTR)start, (APTR)start, end - start,
+                         MAP_Readable | MAP_Writable | MAP_CacheInhibit) != 0)
+        {
+            bug("[PCIPC:Driver] %s: failed to map BAR @ 0x%p\n", __func__, cpuaddr);
+            return NULL;
+        }
+    }
+#endif
+
+    return cpuaddr;
 }
 
 #undef _psd
