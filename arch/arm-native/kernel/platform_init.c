@@ -81,12 +81,42 @@ static int platform_PostInit(struct KernelBase *KernelBase)
 
     D(bug("[Kernel] platform_PostInit: Performing Post Init..\n"));
 
+#if defined(__AROSEXEC_SMP__)
+    /* Pin the boot task to CPU 0 before ARMI_Init wakes the secondaries.
+     * Exec_ARMCPUSMPInit does this too, but runs after us - until then
+     * affinity is NULL ("run anywhere") and a secondary could dispatch
+     * the boot task mid-coldstart, which is not migration-safe. */
+    {
+        struct Task *bootTask = FindTask(NULL);
+        struct IntETask *iet = bootTask ? (struct IntETask *)GetETask(bootTask) : NULL;
+
+        if (iet && !iet->iet_CpuAffinity)
+        {
+            void *bootAff = KrnAllocCPUMask();
+            if (bootAff)
+            {
+                KrnGetCPUMask(0, bootAff);
+                iet->iet_CpuAffinity = bootAff;
+                iet->iet_CpuNumber = 0;
+            }
+        }
+    }
+#endif
+
     if (__arm_arosintern.ARMI_Init)
         __arm_arosintern.ARMI_Init(KernelBase, SysBase);
     
     D(bug("[Kernel] platform_PostInit: Registering Heartbeat timer..\n"));
 
     KrnAddSysTimerHandler(KernelBase);
+
+#if defined(__AROSEXEC_SMP__)
+    /* Every core expires its quantum from its own CNTP heartbeat, not
+     * the VBlank. Arm the boot CPU here; secondaries do it in
+     * cpu_Register. */
+    if (__arm_arosintern.ARMI_InitTimerCore)
+        __arm_arosintern.ARMI_InitTimerCore();
+#endif
 
     D(bug("[Kernel] platform_PostInit: Done..\n"));
 
