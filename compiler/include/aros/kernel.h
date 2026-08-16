@@ -75,6 +75,7 @@ typedef enum
 #define KRN_FrameBufferHeight   (KRN_Dummy + 35) /* Framebuffer height in pixels			*/
 #define KRN_FrameBufferDepth    (KRN_Dummy + 36) /* Framebuffer bits per pixel			*/
 #define KRN_FrameBufferPitch    (KRN_Dummy + 37) /* Framebuffer bytes per line			*/
+#define KRN_PeripheralBase      (KRN_Dummy + 38) /* SoC peripheral IO physical base address */
 
 /*
  * KRN_MEMLower/KRN_MEMUpper may appear more than once, one pair per physical
