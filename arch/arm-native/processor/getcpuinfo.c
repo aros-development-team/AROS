@@ -9,6 +9,8 @@
 
 #include <aros/libcall.h>
 #include <resources/processor.h>
+#include <aros/kernel.h>
+#include <proto/kernel.h>
 #include <proto/utility.h>
 
 #include "processor_intern.h"
@@ -134,10 +136,14 @@ VOID ARM_AnswerTag(struct ProcessorBase * ProcessorBase, ULONG coreNo, struct Ta
             *((ULONG *)tag->ti_Data) = ENDIANNESS_LE;
         break;
     case(GCIT_ProcessorSpeed):
-        *((UQUAD *)tag->ti_Data) = GetCurrentProcessorFrequency(processor);
+        *((UQUAD *)tag->ti_Data) = GetCurrentProcessorFrequency(ProcessorBase, processor);
         break;
     case(GCIT_ProcessorLoad):
+#if defined(__AROSEXEC_SMP__)
+        *((ULONG *)tag->ti_Data) = KrnGetSystemAttr(KATTR_CPULoad + coreNo);
+#else
         *((ULONG *)tag->ti_Data) = 0; /* TODO: IMPLEMENT */
+#endif
         break;
     case GCIT_Vendor:
         *((CONST_STRPTR *)tag->ti_Data) = processor->Vendor;
