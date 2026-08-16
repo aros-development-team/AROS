@@ -16,6 +16,7 @@
 
 extern void render_tile(int w, int h, int samps, int tile_x, int tile_y, ULONG *buffer, struct Task *gfx);
 extern void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort, struct MsgPort **myPort);
+extern void ConfigureSmallPTScene(int explicit_mode);
 
 struct Worker {
     struct Task *   task;
@@ -61,7 +62,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
     D(bug("[SMP-Smallpt-Renderer] Renderer started, ParentMailBox = %p\n", ParentMailbox));
 
     port = CreateMsgPort();
-    
+
     if (port)
     {
         struct Message startup;
@@ -79,14 +80,14 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
         /* Prepare initial message and wait for startup msg */
         startup.mn_Length = sizeof(startup);
         startup.mn_ReplyPort = port;
- 
+
         D(bug("[SMP-Smallpt-Renderer] Sending welcome msg to parent\n"));
         PutMsg(ParentMailbox, &startup);
 
         while(width == 0)
         {
             struct MyMessage *msg;
-            
+
             WaitPort(port);
 
             while ((msg = (struct MyMessage *)GetMsg(port)))
@@ -141,6 +142,8 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
 
         D(bug("[SMP-Smallpt-Renderer] worker stack size : %d bytes\n", workerStack));
 
+        ConfigureSmallPTScene(expl_mode);
+
         for (ULONG i=0; i < numberOfCores; i++)
         {
             void *coreAffinity = KrnAllocCPUMask();
@@ -158,6 +161,12 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                                     TASKTAG_ARG3,           &workers[i].port,
                                     TASKTAG_STACKSIZE,      workerStack,
                                     TAG_DONE);
+        }
+
+        for (ULONG i=0; i < numberOfCores; i++)
+        {
+            while (workers[i].port == NULL)
+                Wait(1 << port->mp_SigBit);
         }
         cores_alive = numberOfCores;
 
@@ -210,7 +219,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                         struct MsgPort *workerPort = msg->mm_Message.mn_ReplyPort;
                         ReplyMsg(&msg->mm_Message);
 
-                        if (!IsMinListEmpty(&workList))
+                        if (!deathMessage && !IsMinListEmpty(&workList))
                         {
                             struct MyMessage *m = AllocMyMessage(&msgPool);
 
@@ -238,9 +247,12 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                     {
                         struct tileWork *work = msg->mm_Body.RenderTile.tile;
                         ReplyMsg(&msg->mm_Message);
-                        ADDHEAD(&doneList, work);
-                        tasks_out++;
-                        tasks_work--;
+                        if (work)
+                        {
+                            ADDHEAD(&doneList, work);
+                            tasks_out++;
+                            tasks_work--;
+                        }
                     }
                     if (deathMessage == NULL)
                     {

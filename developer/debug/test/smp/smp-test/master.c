@@ -54,7 +54,7 @@ void SMPTestMaster(struct ExecBase *SysBase)
                 workMsg->smpwm_End = workMsg->smpwm_Start + msgWork - 1;
                 if  ((((workMaster->smpm_Width * workMaster->smpm_Height)/ msgWork) <= (msgNo + 1)) &&
                       (workMsg->smpwm_End < (workMaster->smpm_Width * workMaster->smpm_Height)))
-                    workMsg->smpwm_End = workMaster->smpm_Width * workMaster->smpm_Height;
+                    workMsg->smpwm_End = workMaster->smpm_Width * workMaster->smpm_Height - 1;
 
                 /* send out the work to an available worker... */
                 do {
