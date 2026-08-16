@@ -8,6 +8,8 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#include <asm/arm/cpu.h>
+
 //#include <kernel_base.h>
 struct KernelBase;
 #include <kernel_debug.h>
@@ -29,6 +31,56 @@ struct KernelBase;
 
 #define DSCHED(x)
 
+#if defined(__AROSEXEC_SMP__)
+/*
+ * iet_CpuAffinity is a pointer to a cpumask buffer (from KrnAllocCPUMask)
+ * or the TASKAFFINITY_ANY sentinel - never a raw bitmask. A NULL pointer
+ * means no affinity was assigned, which is treated as "run anywhere".
+ * cpunum < 4 so the affinity word index is always 0.
+ */
+static inline BOOL core_AffinityMatch(struct Task *t, uint32_t cpumask)
+{
+    void *aff = (void *)(IPTR)GetIntETask(t)->iet_CpuAffinity;
+
+    if (!aff || (IPTR)aff == TASKAFFINITY_ANY)
+        return TRUE;
+
+    return (((uint32_t *)aff)[0] & cpumask) != 0;
+}
+
+/*
+ * Single-attempt write acquire. The dispatcher scans TaskReady holding
+ * TaskReadySpinLock and must take each candidate's tc_SpinLock before
+ * pulling it off the list - but every other tc_SpinLock user acquires
+ * task-lock FIRST, list-lock second, so a blocking acquire here (list
+ * before task) would be an AB-BA deadlock. Try once and skip the
+ * candidate on contention instead.
+ */
+static inline BOOL core_TrySpinLockWrite(spinlock_t *lock)
+{
+    unsigned long lock_value, result;
+
+    asm volatile(
+            "1:     ldrex   %0, [%2]        \n\t"   // Load the lock value, gaining exclusive access
+            "       teq     %0, #0          \n\t"   // Is the lock free?
+            "       bne     2f              \n\t"   // No - fail without spinning
+            "       strex   %1, %3, [%2]    \n\t"   // Try to exclusively write the lock value
+            "       teq     %1, #0          \n\t"   // Did it succeed?
+            "       bne     1b              \n\t"   // Exclusive access lost - re-examine the lock
+            "2:     clrex                   \n\t"   // Drop any dangling exclusive monitor
+            : "=&r"(lock_value), "=&r"(result)
+            : "r"(&lock->lock), "r"(0x80000000)
+            : "cc"
+    );
+
+    if (lock_value != 0)
+        return FALSE;
+
+    dmb();
+    return TRUE;
+}
+#endif
+
 /* Check if the currently running task on this cpu should be rescheduled */
 BOOL core_Schedule(void)
 {
@@ -47,6 +99,9 @@ BOOL core_Schedule(void)
     if (!(task->tc_Flags & TF_EXCEPT))
     {
 #if defined(__AROSEXEC_SMP__)
+        /* FIQ off: an IPI re-entering this read lock as a write would
+         * self-deadlock this CPU. See EXEC_FIQ_DISABLE in exec_platform.h. */
+        unsigned int __fiq = EXEC_FIQ_DISABLE();
         KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                     SPINLOCK_MODE_READ);
 #endif
@@ -67,7 +122,7 @@ BOOL core_Schedule(void)
             for (nexttask = (struct Task *)GetHead(&SysBase->TaskReady); nexttask != NULL; nexttask = (struct Task *)GetSucc(nexttask))
             {
 #if defined(__AROSEXEC_SMP__)
-                if (((IPTR)GetIntETask(nexttask)->iet_CpuAffinity & cpumask) == cpumask)
+                if (core_AffinityMatch(nexttask, cpumask))
                 {
 #endif
                     if (nexttask->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
@@ -84,6 +139,7 @@ BOOL core_Schedule(void)
         }
 #if defined(__AROSEXEC_SMP__)
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+        EXEC_FIQ_RESTORE(__fiq);
 #endif
     }
 
@@ -103,6 +159,9 @@ void core_Switch(void)
     int cpunum = GetCPUNumber();
 #endif
     struct Task *task = GET_THIS_TASK;
+#if defined(__AROSEXEC_SMP__)
+    unsigned int __fiq;
+#endif
 
     DSCHED(bug("[Kernel:%02d] core_Switch(%08x)\n", cpunum, task->tc_State));
 
@@ -115,10 +174,18 @@ void core_Switch(void)
     {
         DSCHED(bug("[Kernel:%02d] Switching away from '%s' @ 0x%p\n", cpunum, task->tc_Node.ln_Name, task));
 #if defined(__AROSEXEC_SMP__)
-        KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
-                    SPINLOCK_MODE_WRITE);
-        Remove(&task->tc_Node);
-        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+        /*
+         * Hold tc_SpinLock across the RUN->READY (state, list) transition.
+         * Without it, an observer on another CPU (SetTaskPri, ReschedTask)
+         * that locks tc_SpinLock can see TS_READY while the task is not
+         * yet on TaskReady and Remove() a node that is on no list.
+         * Order: task-lock outer, list-locks inner, as everywhere else.
+         * FIQ masked for the whole hold: the IPI's signal_hook takes this
+         * same tc_SpinLock and would self-deadlock this CPU.
+         */
+        __fiq = EXEC_FIQ_DISABLE();
+        KrnSpinLock(&task->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+        exec_TaskRemoveRunning(task);
 #endif
         task->tc_State = TS_READY;
 
@@ -131,12 +198,9 @@ void core_Switch(void)
             task->tc_SigWait    = 0;
             task->tc_State      = TS_WAIT;
 #if defined(__AROSEXEC_SMP__)
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
-                        SPINLOCK_MODE_WRITE);
-#endif
+            exec_TaskEnqueueWait(task);
+#else
             Enqueue(&SysBase->TaskWait, &task->tc_Node);
-#if defined(__AROSEXEC_SMP__)
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 #endif
 
             Alert(AN_StackProbe);
@@ -149,14 +213,15 @@ void core_Switch(void)
         {
             DSCHED(bug("[Kernel:%02d] Setting '%s' @ 0x%p as ready\n", cpunum, task->tc_Node.ln_Name, task));
 #if defined(__AROSEXEC_SMP__)
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
-                    SPINLOCK_MODE_WRITE);
-#endif
+            exec_TaskEnqueueReady(task);
+#else
             Enqueue(&SysBase->TaskReady, &task->tc_Node);
-#if defined(__AROSEXEC_SMP__)
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
         }
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&task->tc_SpinLock);
+        EXEC_FIQ_RESTORE(__fiq);
+#endif
     }
 }
 
@@ -165,34 +230,64 @@ struct Task *core_Dispatch(void)
 {
     struct Task *newtask;
     struct Task *task = GET_THIS_TASK;
+    BOOL taskStateLocked = FALSE;
 #if defined(__AROSEXEC_SMP__) || defined(DEBUG)
     int cpunum = GetCPUNumber();
     (void)cpunum;
 #endif
 #if defined(__AROSEXEC_SMP__)
     uint32_t cpumask = (1 << cpunum);
+    BOOL sawContended;
+    /* FIQ off for the whole dispatch: it holds TaskReadySpinLock,
+     * tc_SpinLock, TaskWait/Spinning and (via SET_THIS_TASK) TaskRunning -
+     * an IPI re-entering any of these on this CPU self-deadlocks. Nestable
+     * across the recursive call below. */
+    unsigned int __fiq = EXEC_FIQ_DISABLE();
 #endif
 
     DSCHED(bug("[Kernel:%02d] core_Dispatch()\n", cpunum));
 
 #if defined(__AROSEXEC_SMP__)
+dispatch_rescan:
+    sawContended = FALSE;
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
 #endif
     for (newtask = (struct Task *)GetHead(&SysBase->TaskReady); newtask != NULL; newtask = (struct Task *)GetSucc(newtask))
     {
 #if defined(__AROSEXEC_SMP__)
-        if (((IPTR)GetIntETask(newtask)->iet_CpuAffinity & cpumask) == cpumask)
+        if (core_AffinityMatch(newtask, cpumask))
         {
-#endif
+            /*
+             * Take tc_SpinLock before pulling the task off TaskReady so
+             * the (state, list) transition is atomic to SetTaskPri /
+             * Exec_ReschedTask, which trust tc_State under tc_SpinLock.
+             * See core_TrySpinLockWrite for why this must be a trylock.
+             */
+            if (!core_TrySpinLockWrite(&newtask->tc_SpinLock))
+            {
+                sawContended = TRUE;
+                continue;
+            }
+            taskStateLocked = TRUE;
             Remove(&newtask->tc_Node);
             break;
-#if defined(__AROSEXEC_SMP__)
         }
+#else
+        Remove(&newtask->tc_Node);
+        break;
 #endif
     }
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+
+    /*
+     * Every candidate we saw was locked by another CPU (Signal /
+     * SetTaskPri hold it only for a few instructions). Rescan rather
+     * than going idle with runnable work on the list.
+     */
+    if (!newtask && sawContended)
+        goto dispatch_rescan;
 #endif
 
     if ((!newtask) && (task) && (task->tc_State != TS_WAIT))
@@ -214,35 +309,52 @@ struct Task *core_Dispatch(void)
             /* Check the stack of the task we are about to launch. */
             if ((newtask->tc_SPReg <= newtask->tc_SPLower) ||
                 (newtask->tc_SPReg > newtask->tc_SPUpper))
+            {
+#if defined(__AROSEXEC_SMP__)
+                if (!taskStateLocked)
+                {
+                    KrnSpinLock(&newtask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+                    taskStateLocked = TRUE;
+                }
+#endif
                 newtask->tc_State     = TS_WAIT;
+            }
             else
                 newtask->tc_State     = TS_RUN;
         }
 
         BOOL launchtask = TRUE;
-#if defined(__AROSEXEC_SMP__)
-        if (newtask->tc_State == TS_SPIN)
-        {
-            /* move it to the spinning list */
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
-                SPINLOCK_MODE_WRITE);
-            AddHead(&PrivExecBase(SysBase)->TaskSpinning, &newtask->tc_Node);
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
-            launchtask = FALSE;
-        }
-#endif
         if (newtask->tc_State == TS_WAIT)
         {
+#if defined(__AROSEXEC_SMP__)
+            if (!taskStateLocked)
+            {
+                KrnSpinLock(&newtask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+                taskStateLocked = TRUE;
+            }
+#endif
 #if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
                         SPINLOCK_MODE_WRITE);
 #endif
-            Enqueue(&SysBase->TaskWait, &task->tc_Node);
+            Enqueue(&SysBase->TaskWait, &newtask->tc_Node);
 #if defined(__AROSEXEC_SMP__)
             KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+            KrnSpinUnLock(&newtask->tc_SpinLock);
+            taskStateLocked = FALSE;
 #endif
             launchtask = FALSE;
         }
+
+#if defined(__AROSEXEC_SMP__)
+        /* Covers the launch path; the TS_WAIT block has already dropped
+         * the lock itself. */
+        if (taskStateLocked)
+        {
+            KrnSpinUnLock(&newtask->tc_SpinLock);
+            taskStateLocked = FALSE;
+        }
+#endif
 
         if (!launchtask)
         {
@@ -270,5 +382,8 @@ struct Task *core_Dispatch(void)
         FLAG_SCHEDSWITCH_SET;
     }
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_FIQ_RESTORE(__fiq);
+#endif
     return newtask;
 }

@@ -29,12 +29,15 @@
 
 #include "kernel_intern.h"
 #include "kernel_debug.h"
+#include "kernel_fb.h"
 #include "kernel_romtags.h"
 
 #include "exec_platform.h"
 
 #undef KernelBase
 #include "tls.h"
+
+extern struct MemHeader *krnCreateROMHeader(CONST_STRPTR name, APTR start, APTR end);
 
 extern struct TagItem *BootMsg;
 
@@ -180,24 +183,18 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
     }
 
-    cpu_Init(&__arm_arosintern, msg);
-
-    if (__arm_arosintern.ARMI_LED_Toggle)
-    {
-        if (__arm_arosintern.ARMI_Delay)
-            __arm_arosintern.ARMI_Delay(100000);
-        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
-    }
-
-    /* NB: the bootstrap has conveniently setup the framebuffer
-            and initialised the serial port and led for us */
-
+    /*
+     * Parse memory ranges and allocate per-CPU TLS before cpu_Init.
+     * cpu_Init -> GetCPUNumber() reads TPIDRURO and dereferences it as
+     * a tls_t *, so TPIDRURO must point at a valid tls_t with CPUNumber
+     * set before any code inside cpu_Init runs. On real silicon TPIDRURO
+     * is 0 out of reset, so calling cpu_Init first faults silently.
+     */
     while(msg->ti_Tag != TAG_DONE)
     {
         switch (msg->ti_Tag)
         {
         case KRN_CmdLine:
-//            RelocateStringData(tag);
             cmdline = (char *)msg->ti_Data;
             break;
         case KRN_MEMLower:
@@ -210,18 +207,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             protlower = msg->ti_Data;
             break;
         case KRN_ProtAreaEnd:
-            // Page align
             protupper = (msg->ti_Data + 4095) & ~4095;
-            break;
-        case KRN_KernelBase:
-            /*
-             * KRN_KernelBase is actually a border between read-only
-             * (code) and read-write (data) sections of the kickstart.
-             * read-write section goes to lower addresses from this one,
-             * so we align it upwards in order not to make part of RW data
-             * read-only.
-             */
-//            addr = AROS_ROUNDUP2(msg->ti_Data, PAGE_SIZE);
             break;
         }
         msg++;
@@ -234,6 +220,21 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     __tls->KernelBase = NULL;
     __tls->SysBase = NULL;
     __tls->ThisTask = NULL;
+    __tls->CPUNumber = 0;               /* boot CPU is always logical 0 */
+
+    asm volatile("mcr p15, 0, %0, c13, c0, 3" : : "r"(__tls));
+
+    cpu_Init(&__arm_arosintern, msg);
+
+    if (__arm_arosintern.ARMI_LED_Toggle)
+    {
+        if (__arm_arosintern.ARMI_Delay)
+            __arm_arosintern.ARMI_Delay(100000);
+        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+    }
+
+    /* NB: the bootstrap has conveniently setup the framebuffer
+            and initialised the serial port and led for us */
 
     D(bug("[Kernel] AROS ARM Native Kernel built on %s\n", __DATE__));
     if (dt_find_node("/")) {
@@ -241,8 +242,6 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     }
 
     D(bug("[Kernel] Entered kernel_cstart @ 0x%p, BootMsg @ 0x%p\n", kernel_cstart, BootMsg));
-
-    asm volatile("mcr p15, 0, %0, c13, c0, 3" : : "r"(__tls));
 
     D(
         if (__arm_arosintern.ARMI_PutChar)
@@ -306,6 +305,14 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     __tls->SysBase = SysBase;
     D(bug("[Kernel] SysBase @ 0x%p\n", SysBase));
+
+    /*
+     * Register the kickstart ROM region so TypeOfMem() recognizes pointers
+     * to ROM-resident static data (attrLists, IORequest templates, etc.).
+     * Without this, ASSERT_VALID_PTR fires on every such pointer when ADEBUG
+     * is enabled, storming Alert() through hot I/O paths.
+     */
+    krnCreateROMHeader("Kickstart ROM", ranges[0], ranges[1]);
 
     /*
      * Make kickstart code area read-only.

@@ -43,8 +43,15 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
         return NULL;
     }
 
-    /* allocate some stack space for user mode .. */
-    ml->ml_ME[1].me_Length = 15 + (sizeof(IPTR) * 128);
+    /*
+     * Allocate some stack space for user mode. cpu_Register runs Permit()
+     * and Enable() (library calls) on this stack before parking, and it
+     * stays the core's context until the first real dispatch - so keep
+     * enough headroom that an overflow cannot silently corrupt the
+     * adjacent MemList allocation.
+     */
+#define BOOTSTRAP_STACKWORDS 1024
+    ml->ml_ME[1].me_Length = 15 + (sizeof(IPTR) * BOOTSTRAP_STACKWORDS);
     if ((ml->ml_ME[1].me_Addr = AllocMem(ml->ml_ME[1].me_Length, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
         bug("[Kernel:%02d] FATAL : Failed to allocate stack for bootstrap task", cpunum);
@@ -53,7 +60,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
         return NULL;
     }
     bstask->tc_SPLower = (APTR)(((unsigned int )ml->ml_ME[1].me_Addr + 15) & ~0xF);
-    bstask->tc_SPUpper = bstask->tc_SPLower + (sizeof(IPTR) * 128);
+    bstask->tc_SPUpper = bstask->tc_SPLower + (sizeof(IPTR) * BOOTSTRAP_STACKWORDS);
 
     AddHead(&bstask->tc_MemEntry, &ml->ml_Node);
 
@@ -77,7 +84,14 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
         sprintf(bstask->tc_Node.ln_Name, "CPU #%02d Bootstrap", cpunum);
     }
     bstask->tc_Node.ln_Type = NT_TASK;
-    bstask->tc_Node.ln_Pri  = 0;
+    /*
+     * Idle priority (below the per-CPU "CPU #xx Idle" task at -127). The
+     * bootstrap task only provides a valid context for this core during
+     * bring-up; once the scheduler runs it must yield to the real idle
+     * task and to any task dispatched here, so it must be the lowest
+     * priority runnable thing on the core.
+     */
+    bstask->tc_Node.ln_Pri  = -128;
     bstask->tc_State        = TS_READY;
     bstask->tc_SigAlloc     = 0xFFFF;
 
@@ -93,9 +107,18 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     }
     bstask->tc_UnionETask.tc_ETask->et_RegFrame = bsctx;
 
-    /* the bootstrap can only run on this CPU */
+    /*
+     * The bootstrap task can only run on this CPU. iet_CpuAffinity is a
+     * cpumask buffer pointer (consumed by KrnCPUInMask / core_Dispatch),
+     * not a raw bitmask - allocate one and set this CPU's bit.
+     */
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpunum;
-    IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = (1 << cpunum);
+    {
+        void *aff = KrnAllocCPUMask();
+        if (aff)
+            KrnGetCPUMask(cpunum, aff);
+        IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = aff;
+    }
 
     bsctx->r[11] = 0;
     bsctx->lr = SysBase->TaskExitCode;
