@@ -27,7 +27,8 @@
 #if !defined(AROSDRM_H)
 #define AROSDRM_H
 
-#include <drm-compat/drm_compat_types.h>
+#include <exec/types.h>
+#include <stdint.h>
 #include <uapi/drm/drm.h>
 
 typedef unsigned int  drmSize,     *drmSizePtr;     /**< For mapped regions */

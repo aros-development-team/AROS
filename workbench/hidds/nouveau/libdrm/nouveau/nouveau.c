@@ -32,19 +32,11 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#if !defined(__AROS__)
 #include <xf86drm.h>
 #include <xf86atomic.h>
 #include "libdrm_macros.h"
 #include "libdrm_lists.h"
 #include "nouveau_drm.h"
-#else
-#include <libdrm/arosdrm.h>
-#include "libdrm_lists.h"
-#include <uapi/drm/nouveau_drm.h>
-#include <linux/bitops.h>
-#include <drm-compat/drm_compat_funcs.h>
-#endif
 
 #include "nouveau.h"
 #include "private.h"
@@ -54,19 +46,35 @@
 #include "nvif/ioctl.h"
 #include "nvif/unpack.h"
 
-#ifdef DEBUG
+drm_private FILE *libdrm_nouveau_out = NULL;
 drm_private uint32_t libdrm_nouveau_debug = 0;
 
 static void
-debug_init(char *args)
+debug_init(void)
 {
-	if (args) {
-		int n = strtol(args, NULL, 0);
+	static bool once = false;
+	char *debug, *out;
+
+	if (once)
+		return;
+	once = true;
+
+	debug = getenv("NOUVEAU_LIBDRM_DEBUG");
+	if (debug) {
+		int n = strtol(debug, NULL, 0);
 		if (n >= 0)
 			libdrm_nouveau_debug = n;
+
+	}
+
+	libdrm_nouveau_out = stderr;
+	out = getenv("NOUVEAU_LIBDRM_OUT");
+	if (out) {
+		FILE *fout = fopen(out, "w");
+		if (fout)
+			libdrm_nouveau_out = fout;
 	}
 }
-#endif
 
 static int
 nouveau_object_ioctl(struct nouveau_object *obj, void *data, uint32_t size)
@@ -335,9 +343,7 @@ nouveau_drm_new(int fd, struct nouveau_drm **pdrm)
 	struct nouveau_drm *drm;
 	drmVersionPtr ver;
 
-#ifdef DEBUG
-	debug_init(getenv("NOUVEAU_LIBDRM_DEBUG"));
-#endif
+	debug_init();
 
 	if (!(drm = calloc(1, sizeof(*drm))))
 		return -ENOMEM;
@@ -423,14 +429,8 @@ nouveau_device_new(struct nouveau_object *parent, int32_t oclass,
 		ret = nouveau_getparam(dev, NOUVEAU_GETPARAM_HAS_BO_USAGE, &v);
 		if (ret == 0)
 			nvdev->have_bo_usage = (v != 0);
-	} else {
-		/* Asked for a device this cannot address. Leave by the same
-		   door as every other failure, so the half-built device is
-		   freed and *pdev is not left naming it. ret has been
-		   written by nvif_unpack() and says nothing about this. */
-		ret = -ENOSYS;
-		goto done;
-	}
+	} else
+		return -ENOSYS;
 
 	ret = nouveau_getparam(dev, NOUVEAU_GETPARAM_FB_SIZE, &v);
 	if (ret)
@@ -607,7 +607,6 @@ nouveau_bo_del(struct nouveau_bo *bo)
 	struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
 	struct nouveau_device_priv *nvdev = nouveau_device(bo->device);
 	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
-	struct drm_gem_close req = { .handle = bo->handle };
 
 	if (nvbo->head.next) {
 		pthread_mutex_lock(&nvdev->lock);
@@ -621,11 +620,11 @@ nouveau_bo_del(struct nouveau_bo *bo)
 			 * might cause the bo to be closed accidentally while
 			 * re-importing.
 			 */
-			drmIoctl(drm->fd, DRM_IOCTL_GEM_CLOSE, &req);
+			drmCloseBufferHandle(drm->fd, bo->handle);
 		}
 		pthread_mutex_unlock(&nvdev->lock);
 	} else {
-		drmIoctl(drm->fd, DRM_IOCTL_GEM_CLOSE, &req);
+		drmCloseBufferHandle(drm->fd, bo->handle);
 	}
 #if !defined(__AROS__)
 	if (bo->map)
@@ -717,7 +716,7 @@ nouveau_bo_wrap_locked(struct nouveau_device *dev, uint32_t handle,
 }
 
 static void
-nouveau_bo_make_global(struct nouveau_bo_priv *nvbo)
+nouveau_nvbo_make_global(struct nouveau_bo_priv *nvbo)
 {
 	if (!nvbo->head.next) {
 		struct nouveau_device_priv *nvdev = nouveau_device(nvbo->base.device);
@@ -726,6 +725,14 @@ nouveau_bo_make_global(struct nouveau_bo_priv *nvbo)
 			DRMLISTADD(&nvbo->head, &nvdev->bo_list);
 		pthread_mutex_unlock(&nvdev->lock);
 	}
+}
+
+drm_public void
+nouveau_bo_make_global(struct nouveau_bo *bo)
+{
+    struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
+
+    nouveau_nvbo_make_global(nvbo);
 }
 
 drm_public int
@@ -786,7 +793,7 @@ nouveau_bo_name_get(struct nouveau_bo *bo, uint32_t *name)
 		}
 		nvbo->name = *name = req.name;
 
-		nouveau_bo_make_global(nvbo);
+		nouveau_nvbo_make_global(nvbo);
 	}
 	return 0;
 }
@@ -837,9 +844,10 @@ nouveau_bo_set_prime(struct nouveau_bo *bo, int *prime_fd)
 	if (ret)
 		return ret;
 
-	nouveau_bo_make_global(nvbo);
+	nouveau_nvbo_make_global(nvbo);
 	return 0;
 }
+
 #endif
 
 drm_public int
@@ -877,13 +885,13 @@ nouveau_bo_wait(struct nouveau_bo *bo, uint32_t access,
 	return ret;
 }
 
-
 #if defined(__AROS__)
-static VOID unmapped_callback(APTR data)
+/* the object moved: the mapping is stale until the next map request */
+static void
+nouveau_bo_unmapped(void *data)
 {
-    struct nouveau_bo *bo = (struct nouveau_bo *)data;
-    /* Trigger remapping with next access */
-    bo->map = NULL;
+	struct nouveau_bo *bo = data;
+	bo->map = NULL;
 }
 #endif
 
@@ -902,7 +910,7 @@ nouveau_bo_map(struct nouveau_bo *bo, uint32_t access,
 			return -errno;
 		}
 #else
-		bo->map = drmMMap(drm->fd, bo->handle, unmapped_callback, bo);
+		bo->map = drmMMap(drm->fd, bo->handle, nouveau_bo_unmapped, bo);
 		if (bo->map == NULL)
 			return -EINVAL;
 #endif

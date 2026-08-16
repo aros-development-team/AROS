@@ -177,7 +177,7 @@ nvbios_shadow(struct nvkm_bios *bios)
 	struct shadow mthds[] = {
 		{ 0, &nvbios_of },
 		{ 0, &nvbios_ramin },
-		{ 0, &nvbios_rom },
+		{ 0, &nvbios_prom },
 		{ 0, &nvbios_acpi_fast },
 		{ 4, &nvbios_acpi_slow },
 		{ 1, &nvbios_pcirom },
@@ -191,7 +191,6 @@ nvbios_shadow(struct nvkm_bios *bios)
 	/* handle user-specified bios source */
 	optarg = nvkm_stropt(device->cfgopt, "NvBios", &optlen);
 	source = optarg ? kstrndup(optarg, optlen, GFP_KERNEL) : NULL;
-#if !defined(MOCK_HARDWARE)
 	if (source) {
 		/* try to match one of the built-in methods */
 		for (mthd = mthds; mthd->func; mthd++) {
@@ -239,10 +238,6 @@ nvbios_shadow(struct nvkm_bios *bios)
 		nvkm_error(subdev, "unable to locate usable image\n");
 		return -EINVAL;
 	}
-#else
-	best = &mthds[2];
-	shadow_method(bios, best, NULL);
-#endif
 
 	nvkm_debug(subdev, "using image from %s\n", best->func ?
 		   best->func->name : source);

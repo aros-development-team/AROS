@@ -21,34 +21,43 @@
  *
  * Authors: Ben Skeggs <bskeggs@redhat.com>
  */
-
 #include <nvif/device.h>
+#include <nvif/client.h>
 
 u64
 nvif_device_time(struct nvif_device *device)
 {
-	struct nv_device_time_v0 args = {};
-	int ret = nvif_object_mthd(&device->object, NV_DEVICE_V0_TIME,
-				   &args, sizeof(args));
-	WARN_ON_ONCE(ret != 0);
-	return args.time;
-}
+	if (!device->user.func) {
+		struct nv_device_time_v0 args = {};
+		int ret = nvif_object_mthd(&device->object, NV_DEVICE_V0_TIME,
+					   &args, sizeof(args));
+		WARN_ON_ONCE(ret != 0);
+		return args.time;
+	}
 
-void
-nvif_device_fini(struct nvif_device *device)
-{
-	nvif_user_fini(device);
-	kfree(device->runlist);
-	device->runlist = NULL;
-	nvif_object_fini(&device->object);
+	return device->user.func->time(&device->user);
 }
 
 int
-nvif_device_init(struct nvif_object *parent, u32 handle, s32 oclass,
-		 void *data, u32 size, struct nvif_device *device)
+nvif_device_map(struct nvif_device *device)
 {
-	int ret = nvif_object_init(parent, handle, oclass, data, size,
-				   &device->object);
+	return nvif_object_map(&device->object, NULL, 0);
+}
+
+void
+nvif_device_dtor(struct nvif_device *device)
+{
+	nvif_user_dtor(device);
+	kfree(device->runlist);
+	device->runlist = NULL;
+	nvif_object_dtor(&device->object);
+}
+
+int
+nvif_device_ctor(struct nvif_client *client, const char *name, struct nvif_device *device)
+{
+	int ret = nvif_object_ctor(&client->object, name ? name : "nvifDevice", 0,
+				   0x0080, NULL, 0, &device->object);
 	device->runlist = NULL;
 	device->user.func = NULL;
 	if (ret == 0) {

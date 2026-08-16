@@ -82,7 +82,7 @@ gf100_bar_bar2_init(struct nvkm_bar *base)
 
 static int
 gf100_bar_oneinit_bar(struct gf100_bar *bar, struct gf100_barN *bar_vm,
-		      struct lock_class_key *key, int bar_nr)
+		      struct lock_class_key *key, enum nvkm_bar_id bar_id)
 {
 	struct nvkm_device *device = bar->base.subdev.device;
 	resource_size_t bar_len;
@@ -93,14 +93,14 @@ gf100_bar_oneinit_bar(struct gf100_bar *bar, struct gf100_barN *bar_vm,
 	if (ret)
 		return ret;
 
-	bar_len = device->func->resource_size(device, bar_nr);
+	bar_len = device->func->resource_size(device, bar_id);
 	if (!bar_len)
 		return -ENOMEM;
-	if (bar_nr == 3 && bar->bar2_halve)
+	if (bar_id == NVKM_BAR2_INST && bar->bar2_halve)
 		bar_len >>= 1;
 
 	ret = nvkm_vmm_new(device, 0, bar_len, NULL, 0, key,
-			   (bar_nr == 3) ? "bar2" : "bar1", &bar_vm->vmm);
+			   (bar_id == NVKM_BAR2_INST) ? "bar2" : "bar1", &bar_vm->vmm);
 	if (ret)
 		return ret;
 
@@ -110,7 +110,7 @@ gf100_bar_oneinit_bar(struct gf100_bar *bar, struct gf100_barN *bar_vm,
 	/*
 	 * Bootstrap page table lookup.
 	 */
-	if (bar_nr == 3) {
+	if (bar_id == NVKM_BAR2_INST) {
 		ret = nvkm_vmm_boot(bar_vm->vmm);
 		if (ret)
 			return ret;
@@ -129,7 +129,7 @@ gf100_bar_oneinit(struct nvkm_bar *base)
 
 	/* BAR2 */
 	if (bar->base.func->bar2.init) {
-		ret = gf100_bar_oneinit_bar(bar, &bar->bar[0], &bar2_lock, 3);
+		ret = gf100_bar_oneinit_bar(bar, &bar->bar[0], &bar2_lock, NVKM_BAR2_INST);
 		if (ret)
 			return ret;
 
@@ -138,7 +138,7 @@ gf100_bar_oneinit(struct nvkm_bar *base)
 	}
 
 	/* BAR1 */
-	ret = gf100_bar_oneinit_bar(bar, &bar->bar[1], &bar1_lock, 1);
+	ret = gf100_bar_oneinit_bar(bar, &bar->bar[1], &bar1_lock, NVKM_BAR1_FB);
 	if (ret)
 		return ret;
 
@@ -162,12 +162,12 @@ gf100_bar_dtor(struct nvkm_bar *base)
 
 int
 gf100_bar_new_(const struct nvkm_bar_func *func, struct nvkm_device *device,
-	       int index, struct nvkm_bar **pbar)
+	       enum nvkm_subdev_type type, int inst, struct nvkm_bar **pbar)
 {
 	struct gf100_bar *bar;
 	if (!(bar = kzalloc(sizeof(*bar), GFP_KERNEL)))
 		return -ENOMEM;
-	nvkm_bar_ctor(func, device, index, &bar->base);
+	nvkm_bar_ctor(func, device, type, inst, &bar->base);
 	bar->bar2_halve = nvkm_boolopt(device->cfgopt, "NvBar2Halve", false);
 	*pbar = &bar->base;
 	return 0;
@@ -189,7 +189,8 @@ gf100_bar_func = {
 };
 
 int
-gf100_bar_new(struct nvkm_device *device, int index, struct nvkm_bar **pbar)
+gf100_bar_new(struct nvkm_device *device, enum nvkm_subdev_type type, int inst,
+	      struct nvkm_bar **pbar)
 {
-	return gf100_bar_new_(&gf100_bar_func, device, index, pbar);
+	return gf100_bar_new_(&gf100_bar_func, device, type, inst, pbar);
 }

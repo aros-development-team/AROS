@@ -40,12 +40,10 @@ nvif_object_ioctl(struct nvif_object *object, void *data, u32 size, void **hack)
 			args->v0.object = nvif_handle(object);
 		else
 			args->v0.object = 0;
-		args->v0.owner = NVIF_IOCTL_V0_OWNER_ANY;
 	} else
 		return -ENOSYS;
 
-	return client->driver->ioctl(client->object.priv, client->super,
-				     data, size, hack);
+	return client->driver->ioctl(client->object.priv, data, size, hack);
 }
 
 void
@@ -59,7 +57,7 @@ int
 nvif_object_sclass_get(struct nvif_object *object, struct nvif_sclass **psclass)
 {
 	struct {
-		struct nvif_ioctl_v0 ioctl;
+		struct nvif_ioctl_v0_hdr ioctl;
 		struct nvif_ioctl_sclass_v0 sclass;
 	} *args = NULL;
 	int ret, cnt = 0, i;
@@ -99,55 +97,23 @@ nvif_object_sclass_get(struct nvif_object *object, struct nvif_sclass **psclass)
 	return ret;
 }
 
-u32
-nvif_object_rd(struct nvif_object *object, int size, u64 addr)
-{
-	struct {
-		struct nvif_ioctl_v0 ioctl;
-		struct nvif_ioctl_rd_v0 rd;
-	} args = {
-		.ioctl.type = NVIF_IOCTL_V0_RD,
-		.rd.size = size,
-		.rd.addr = addr,
-	};
-	int ret = nvif_object_ioctl(object, &args, sizeof(args), NULL);
-	if (ret) {
-		/*XXX: warn? */
-		return 0;
-	}
-	return args.rd.data;
-}
-
-void
-nvif_object_wr(struct nvif_object *object, int size, u64 addr, u32 data)
-{
-	struct {
-		struct nvif_ioctl_v0 ioctl;
-		struct nvif_ioctl_wr_v0 wr;
-	} args = {
-		.ioctl.type = NVIF_IOCTL_V0_WR,
-		.wr.size = size,
-		.wr.addr = addr,
-		.wr.data = data,
-	};
-	int ret = nvif_object_ioctl(object, &args, sizeof(args), NULL);
-	if (ret) {
-		/*XXX: warn? */
-	}
-}
-
 int
 nvif_object_mthd(struct nvif_object *object, u32 mthd, void *data, u32 size)
 {
 	struct {
-		struct nvif_ioctl_v0 ioctl;
+		struct nvif_ioctl_v0_hdr ioctl;
 		struct nvif_ioctl_mthd_v0 mthd;
 	} *args;
+	u32 args_size;
 	u8 stack[128];
 	int ret;
 
-	if (sizeof(*args) + size > sizeof(stack)) {
-		if (!(args = kmalloc(sizeof(*args) + size, GFP_KERNEL)))
+	if (check_add_overflow(sizeof(*args), size, &args_size))
+		return -ENOMEM;
+
+	if (args_size > sizeof(stack)) {
+		args = kmalloc(args_size, GFP_KERNEL);
+		if (!args)
 			return -ENOMEM;
 	} else {
 		args = (void *)stack;
@@ -158,7 +124,7 @@ nvif_object_mthd(struct nvif_object *object, u32 mthd, void *data, u32 size)
 	args->mthd.method = mthd;
 
 	memcpy(args->mthd.data, data, size);
-	ret = nvif_object_ioctl(object, args, sizeof(*args) + size, NULL);
+	ret = nvif_object_ioctl(object, args, args_size, NULL);
 	memcpy(data, args->mthd.data, size);
 	if (args != (void *)stack)
 		kfree(args);
@@ -169,7 +135,7 @@ void
 nvif_object_unmap_handle(struct nvif_object *object)
 {
 	struct {
-		struct nvif_ioctl_v0 ioctl;
+		struct nvif_ioctl_v0_hdr ioctl;
 		struct nvif_ioctl_unmap unmap;
 	} args = {
 		.ioctl.type = NVIF_IOCTL_V0_UNMAP,
@@ -183,7 +149,7 @@ nvif_object_map_handle(struct nvif_object *object, void *argv, u32 argc,
 		       u64 *handle, u64 *length)
 {
 	struct {
-		struct nvif_ioctl_v0 ioctl;
+		struct nvif_ioctl_v0_hdr ioctl;
 		struct nvif_ioctl_map_v0 map;
 	} *args;
 	u32 argn = sizeof(*args) + argc;
@@ -242,16 +208,16 @@ nvif_object_map(struct nvif_object *object, void *argv, u32 argc)
 }
 
 void
-nvif_object_fini(struct nvif_object *object)
+nvif_object_dtor(struct nvif_object *object)
 {
 	struct {
-		struct nvif_ioctl_v0 ioctl;
+		struct nvif_ioctl_v0_hdr ioctl;
 		struct nvif_ioctl_del del;
 	} args = {
 		.ioctl.type = NVIF_IOCTL_V0_DEL,
 	};
 
-	if (!object->client)
+	if (!nvif_object_constructed(object))
 		return;
 
 	nvif_object_unmap(object);
@@ -260,39 +226,47 @@ nvif_object_fini(struct nvif_object *object)
 }
 
 int
-nvif_object_init(struct nvif_object *parent, u32 handle, s32 oclass,
-		 void *data, u32 size, struct nvif_object *object)
+nvif_object_ctor(struct nvif_object *parent, const char *name, u32 handle,
+		 s32 oclass, void *data, u32 size, struct nvif_object *object)
 {
 	struct {
-		struct nvif_ioctl_v0 ioctl;
+		struct nvif_ioctl_v0_hdr ioctl;
 		struct nvif_ioctl_new_v0 new;
 	} *args;
 	int ret = 0;
 
 	object->client = NULL;
+	object->name = name ? name : "nvifObject";
 	object->handle = handle;
 	object->oclass = oclass;
 	object->map.ptr = NULL;
 	object->map.size = 0;
 
 	if (parent) {
-		if (!(args = kmalloc(sizeof(*args) + size, GFP_KERNEL))) {
-			nvif_object_fini(object);
+		u32 args_size;
+
+		if (check_add_overflow(sizeof(*args), size, &args_size)) {
+			nvif_object_dtor(object);
 			return -ENOMEM;
 		}
+
+		args = kmalloc(args_size, GFP_KERNEL);
+		if (!args) {
+			nvif_object_dtor(object);
+			return -ENOMEM;
+		}
+
+		object->parent = parent->parent;
 
 		args->ioctl.version = 0;
 		args->ioctl.type = NVIF_IOCTL_V0_NEW;
 		args->new.version = 0;
-		args->new.route = parent->client->route;
-		args->new.token = nvif_handle(object);
 		args->new.object = nvif_handle(object);
 		args->new.handle = handle;
 		args->new.oclass = oclass;
 
 		memcpy(args->new.data, data, size);
-		ret = nvif_object_ioctl(parent, args, sizeof(*args) + size,
-					&object->priv);
+		ret = nvif_object_ioctl(parent, args, args_size, &object->priv);
 		memcpy(data, args->new.data, size);
 		kfree(args);
 		if (ret == 0)
@@ -300,6 +274,6 @@ nvif_object_init(struct nvif_object *parent, u32 handle, s32 oclass,
 	}
 
 	if (ret)
-		nvif_object_fini(object);
+		nvif_object_dtor(object);
 	return ret;
 }

@@ -31,8 +31,6 @@ nv1a_ram_new(struct nvkm_fb *fb, struct nvkm_ram **pram)
 	int domain = 0;
 	struct pci_dev *pdev = NULL;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (dev_is_pci(fb->subdev.device->dev))
 		pdev = to_pci_dev(fb->subdev.device->dev);
 
@@ -52,7 +50,6 @@ NOT_IMPLEMENTED_STOP
 		pci_read_config_dword(bridge, 0x84, &mem);
 		mib = ((mem >> 4) & 127) + 1;
 	}
-#endif
 
 	return nvkm_ram_new_(&nv04_ram_func, fb, NVKM_RAM_TYPE_STOLEN,
 			     mib * 1024 * 1024, pram);

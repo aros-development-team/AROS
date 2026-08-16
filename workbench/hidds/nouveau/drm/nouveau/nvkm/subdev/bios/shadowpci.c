@@ -62,6 +62,7 @@ pcirom_init(struct nvkm_bios *bios, const char *name)
 		pdev = device->func->pci(device)->pdev;
 	else
 		return ERR_PTR(-ENODEV);
+
 	if (!(ret = pci_enable_rom(pdev))) {
 		if (ret = -ENOMEM,
 		    (priv = kmalloc(sizeof(*priv), GFP_KERNEL))) {

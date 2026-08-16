@@ -24,10 +24,8 @@
 #define __DRM_BLEND_H__
 
 #include <linux/list.h>
-#if !defined(__AROS__)
 #include <linux/ctype.h>
 #include <drm/drm_mode.h>
-#endif
 
 #define DRM_MODE_BLEND_PREMULTI		0
 #define DRM_MODE_BLEND_COVERAGE		1

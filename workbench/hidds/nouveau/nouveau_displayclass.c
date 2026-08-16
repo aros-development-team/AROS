@@ -96,6 +96,11 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
     ret = drmModeSetCrtc(nvdev->fd, gfxdata->selectedcrtcid,
             bmdata->fbid, -bmdata->xoffset, -bmdata->yoffset, output_ids,
             output_count, gfxdata->selectedmode);
+    nvlog("[Nouveau] setcrtc crtc %lu fb %lu conn %lu mode %s (%dx%d@%d) offset %ld,%ld pitch %ld bpp %ld: %ld\n",
+        (unsigned long)gfxdata->selectedcrtcid, (unsigned long)bmdata->fbid, (unsigned long)output_ids[0],
+        ((drmModeModeInfoPtr)gfxdata->selectedmode)->name, ((drmModeModeInfoPtr)gfxdata->selectedmode)->hdisplay,
+        ((drmModeModeInfoPtr)gfxdata->selectedmode)->vdisplay, ((drmModeModeInfoPtr)gfxdata->selectedmode)->vrefresh,
+        (long)-bmdata->xoffset, (long)-bmdata->yoffset, (long)bmdata->pitch, (long)bmdata->bytesperpixel * 8, (long)ret);
 
     UNLOCK_BITMAP
     UNLOCK_ENGINE
@@ -135,7 +140,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
 
     if (modeid == vHidd_ModeID_Invalid)
     {
-        D(bug("[Nouveau] Invalid ModeID\n"));
+        nvlog("[Nouveau] SwitchToVideoMode: bitmap %p has no ModeID\n", bm);
         UNLOCK_ENGINE
         return FALSE;
     }
@@ -153,8 +158,9 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     OOP_GetAttr(sync, aHidd_Sync_HTotal,        &htotal);
     OOP_GetAttr(sync, aHidd_Sync_VTotal,        &vtotal);    
     
-    D(bug("[Nouveau] Sync: %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
-    pixel, hdisp, hstart, hend, htotal, vdisp, vstart, vend, vtotal));
+    nvlog("[Nouveau] SwitchToVideoMode: modeid %08lx sync %ld kHz %ldx%ld (%ld %ld %ld / %ld %ld %ld)\n",
+        (unsigned long)modeid, (long)pixel, (long)hdisp, (long)vdisp, (long)hstart, (long)hend, (long)htotal,
+        (long)vstart, (long)vend, (long)vtotal);
 
     D(bug("[Nouveau] Connector %d, CRTC %d\n", 
         selectedconnector->connector_id, gfxdata->selectedcrtcid));
@@ -176,7 +182,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     
     if (!gfxdata->selectedmode)
     {
-        D(bug("[Nouveau] Not able to select mode\n"));
+        nvlog("[Nouveau] SwitchToVideoMode: no connector mode matches\n");
         UNLOCK_ENGINE
         return FALSE;
     }
@@ -193,7 +199,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
 	                bmdata->pitch, bmdata->bo->handle, &bmdata->fbid);
         if (ret)
         {
-            D(bug("[Nouveau] Not able to add framebuffer\n"));
+            nvlog("[Nouveau] Not able to add framebuffer, %ld\n", (long)ret);
             UNLOCK_ENGINE
             return FALSE;
         }
@@ -203,7 +209,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     /* Switch mode */
     if (!HIDDNouveauShowBitmapForSelectedMode(bm))
     {
-        D(bug("[Nouveau] Not able to set crtc\n"));
+        nvlog("[Nouveau] SwitchToVideoMode: setcrtc failed\n");
         UNLOCK_ENGINE
         return FALSE;        
     }
@@ -351,7 +357,7 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, ShowViewPorts)
         .data  = msg->Data
     };
 
-    D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", (msg->Data ? (msg->Data->Bitmap) : NULL)));
+    nvlog("[Nouveau] ShowViewPorts, top bitmap %p\n", (msg->Data ? (msg->Data->Bitmap) : NULL));
 
     OOP_DoMethod(SD(cl)->compositor, (OOP_Msg)&bscmsg);
 
@@ -432,7 +438,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
             for (x = 0; x < width; x++)
             {
                 ULONG offset = y * 64 + x;
-                writel(curimage[offset], ((ULONG *)gfxdata->cursor->map) + (offset));
+                hidd_writel(curimage[offset], ((ULONG *)gfxdata->cursor->map) + (offset));
             }
 
         /* Show updated cursor */

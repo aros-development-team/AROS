@@ -1,76 +1,57 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2013-2015 Mellanox Technologies, Ltd.
- * Copyright (c) 2014-2015 François Tigeot
- * Copyright (c) 2016 Matt Macy <mmacy@FreeBSD.org>
- * Copyright (c) 2019 Johannes Lundberg <johalun@FreeBSD.org>
- * Copyright (c) 2023 Serenity Cyber Security, LLC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-#ifndef _LINUXKPI_LINUX_MATH_H_
-#define	_LINUXKPI_LINUX_MATH_H_
-
-#include <linux/types.h>
-
 /*
- * This looks more complex than it should be. But we need to
- * get the type for the ~ right in round_down (it needs to be
- * as wide as the result!), and we want to evaluate the macro
- * arguments just once each.
- */
-#define	__round_mask(x, y)	((__typeof__(x))((y)-1))
-#define	round_up(x, y)		((((x)-1) | __round_mask(x, y))+1)
-#define	round_down(x, y)	((x) & ~__round_mask(x, y))
+    Copyright 2026, The AROS Development Team. All rights reserved.
+*/
 
-#define	DIV_ROUND_UP(x, n)	howmany(x, n)
-#define	DIV_ROUND_UP_ULL(x, n)	DIV_ROUND_UP((unsigned long long)(x), (n))
-#define	DIV_ROUND_DOWN_ULL(x, n) ((unsigned long long)(x) / (n))
+#ifndef _LINUX_MATH_H_
+#define _LINUX_MATH_H_
 
-#define	DIV_ROUND_CLOSEST(x, divisor)	(((x) + ((divisor) / 2)) / (divisor))
-#define	DIV_ROUND_CLOSEST_ULL(x, divisor) ({		\
-	__typeof(divisor) __d = (divisor);		\
-	unsigned long long __ret = (x) + (__d) / 2;	\
-	__ret /= __d;					\
-	__ret;						\
-})
+#include <stdlib.h>
+#include <linux/types.h>
+#include <linux/compiler.h>
+#include <linux/const.h>
 
-#if !defined(LINUXKPI_VERSION) || (LINUXKPI_VERSION >= 60600)
-#define abs_diff(x, y) ({		\
-	__typeof(x) _x = (x);		\
-	__typeof(y) _y = (y);		\
-	_x > _y ? _x - _y : _y - _x;	\
-})
-#endif
+#define DIV_ROUND_UP(n, d)          (((n) + (d) - 1) / (d))
+#define __KERNEL_DIV_ROUND_UP(n, d) DIV_ROUND_UP(n, d)
+#define DIV_ROUND_UP_ULL(ll, d)     ({ unsigned long long _tmp = (ll) + (d) - 1; do_div_u64_by_u32(&_tmp, (d)); _tmp; })
+#define DIV_ROUND_DOWN_ULL(ll, d)   ({ unsigned long long _tmp = (ll); do_div_u64_by_u32(&_tmp, (d)); _tmp; })
+#define DIV_ROUND_UP_SECTOR_T(ll, d) DIV_ROUND_UP_ULL(ll, d)
+#define DIV_ROUND_CLOSEST(x, divisor) ({                                \
+    typeof(x) __x = x; typeof(divisor) __d = divisor;                   \
+    (((typeof(x))-1) > 0 || ((typeof(divisor))-1) > 0 || (((__x) > 0) == ((__d) > 0))) ? \
+        (((__x) + ((__d) / 2)) / (__d)) : (((__x) - ((__d) / 2)) / (__d)); })
+#define DIV_ROUND_CLOSEST_ULL(x, divisor) ({                            \
+    typeof(divisor) __d = divisor;                                      \
+    unsigned long long _tmp = (x) + (__d) / 2;                          \
+    do_div_u64_by_u32(&_tmp, __d); _tmp; })
+#undef roundup
+#undef rounddown
+#define roundup(x, y)   ({ typeof(y) __y = y; (((x) + (__y - 1)) / __y) * __y; })
+#define rounddown(x, y) ({ typeof(x) __x = (x); __x - (__x % (y)); })
+#define mult_frac(x, n, d) ({ typeof(x) q = (x) / (d); typeof(x) r = (x) % (d); q * (n) + r * (n) / (d); })
+#define abs(x)          ({ typeof(x) __x = (x); __x < 0 ? -__x : __x; })
+#define abs_diff(a, b)  ({ typeof(a) __a = (a); typeof(b) __b = (b); __a > __b ? (__a - __b) : (__b - __a); })
+#define sector_div(a, b) do_div(a, b)
 
-static inline uintmax_t
-mult_frac(uintmax_t x, uintmax_t multiplier, uintmax_t divisor)
+static inline u32 do_div_u64_by_u32(unsigned long long *n, u32 base)
 {
-	uintmax_t q = (x / divisor);
-	uintmax_t r = (x % divisor);
-
-	return ((q * multiplier) + ((r * multiplier) / divisor));
+    u32 rem = (u32)(*n % base);
+    *n = *n / base;
+    return rem;
 }
+#define do_div(n, base) ({ u32 __base = (base); u32 __rem; __rem = ((u64)(n)) % __base; (n) = ((u64)(n)) / __base; __rem; })
 
-#endif /* _LINUXKPI_LINUX_MATH_H_ */
+static inline u32 reciprocal_scale(u32 val, u32 ep_ro) { return (u32)(((u64)val * ep_ro) >> 32); }
+static inline unsigned long gcd(unsigned long a, unsigned long b)
+{
+    while (b) { unsigned long t = a % b; a = b; b = t; }
+    return a;
+}
+static inline u64 int_pow(u64 base, unsigned int exp)
+{
+    u64 result = 1;
+    while (exp) { if (exp & 1) result *= base; exp >>= 1; base *= base; }
+    return result;
+}
+unsigned long int_sqrt(unsigned long);
+
+#endif /* _LINUX_MATH_H_ */

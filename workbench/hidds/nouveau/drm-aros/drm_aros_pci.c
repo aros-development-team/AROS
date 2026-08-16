@@ -10,12 +10,13 @@
 #include <hidd/pci.h>
 #include <hidd/hidd.h>
 
-#include <drm-compat/drm_compat_pci.h>
+#include <linux/kernel.h>
+#include <linux/pci.h>
+#include <linux/slab.h>
 #include <drm-aros/drm_aros_pci.h>
 
-APTR HIDDNouveauAlloc(ULONG size);
-
 OOP_AttrBase HiddPCIDeviceAttrBase  = 0;
+OOP_AttrBase HiddPCIDriverAttrBase  = 0;
 OOP_Object *pciDriver               = NULL;
 OOP_Object *pciBus                  = NULL;
 
@@ -31,6 +32,7 @@ AROS_UFH3(void, Enumerator,
     IPTR SubSystemProductID;
     IPTR SubSystemVendorID;
     IPTR INTLine;
+    IPTR Bus = 0, Dev = 0, Sub = 0, Class = 0, SubClass = 0, Interface = 0, Revision = 0;
     OOP_Object *driver;
     IPTR AGPCap = 0, PCIECap = 0;
     struct pci_dev **ppdev = (struct pci_dev **)hook->h_Data;
@@ -68,7 +70,17 @@ AROS_UFH3(void, Enumerator,
 
     D(bug("Found!\n"));
 
-    pdev = (struct pci_dev *)HIDDNouveauAlloc(sizeof(struct pci_dev));
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Bus,        &Bus);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev,        &Dev);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub,        &Sub);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Class,      &Class);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_SubClass,   &SubClass);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Interface,  &Interface);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_RevisionID, &Revision);
+
+    pdev = kzalloc(sizeof(struct pci_dev), GFP_KERNEL);
+    if (!pdev)
+        return;
 
     /* Filling out device properties */
     pdev->vendor            = (UWORD)VendorID;
@@ -77,6 +89,17 @@ AROS_UFH3(void, Enumerator,
     pdev->subsystem_device  = (UWORD)SubSystemProductID;
     pdev->irq               = (UWORD)INTLine;
     pdev->oopdev            = pciDevice;
+    pdev->class             = (Class << 16) | (SubClass << 8) | Interface;
+    pdev->revision          = (u8)Revision;
+    pdev->devfn             = PCI_DEVFN(Dev, Sub);
+    pdev->bus               = &pdev->bus_storage;
+    pdev->bus->number       = (UBYTE)Bus;
+    pdev->dev.is_pci        = true;
+    pdev->dev.dma_mask      = &pdev->dev.dma_mask_storage;
+    pdev->dev.dma_mask_storage = ~0ULL;
+    pdev->dev.coherent_dma_mask = ~0ULL;
+    snprintf(pdev->name, sizeof(pdev->name), "0000:%02x:%02x.%d", (int)Bus, (int)Dev, (int)Sub);
+    snprintf(pdev->dev.name, sizeof(pdev->dev.name), "%s", pdev->name);
 
     /*
         Fix PCI device attributes (perhaps already set, but if the
@@ -94,6 +117,8 @@ AROS_UFH3(void, Enumerator,
 
     pdev->isAGP = (AGPCap != 0);
     pdev->isPCIE = (PCIECap != 0);
+    pdev->is_pcie = (PCIECap != 0);
+    pdev->pcie_cap = (u32)PCIECap;
 
     D(bug("Acquired pcidriver\n"));
 
@@ -166,6 +191,7 @@ struct pci_dev *drm_aros_pci_find_supported_video_card()
 LONG drm_aros_pci_init()
 {
     HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+    HiddPCIDriverAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
 
     if (!pciBus)
     {
@@ -192,6 +218,11 @@ VOID drm_aros_pci_shutdown()
     {
         OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
         HiddPCIDeviceAttrBase = 0;
+    }
+    if (HiddPCIDriverAttrBase != 0)
+    {
+        OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
+        HiddPCIDriverAttrBase = 0;
     }
 }
 

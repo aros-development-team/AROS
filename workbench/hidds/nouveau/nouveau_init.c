@@ -176,37 +176,43 @@ VOID HIDDNouveauFree(APTR memory)
     FreeVecPooled(NouveauMemPool, start);
 }
 #else
+/*
+ * Straight exec allocations rather than a semaphore-protected pool: the
+ * drm code allocates under its "spinlocks" (Forbid sections), and a pool
+ * semaphore that has to wait there would let other tasks into the section.
+ * The 16-byte header keeps the size and the alignment kmalloc callers expect.
+ */
+#define NOUVEAU_ALLOC_HEADER    16
+
 APTR HIDDNouveauAlloc(ULONG size)
 {
-    size += sizeof(IPTR);
-    IPTR *memory = AllocPooled(NouveauMemPool, size);
+    IPTR total = (IPTR)size + NOUVEAU_ALLOC_HEADER;
+    IPTR *memory = AllocMem(total, MEMF_PUBLIC | MEMF_CLEAR);
 
-    if (memory != NULL)
-        *memory++ = size;
+    if (memory == NULL)
+        return NULL;
 
-    return (APTR)memory;
+    memory[0] = total;
+    return (APTR)((UBYTE *)memory + NOUVEAU_ALLOC_HEADER);
 }
 
 VOID HIDDNouveauFree(APTR memory)
 {
     if (memory != NULL)
     {
-        IPTR *real = (IPTR *)memory;
-        IPTR size  = *--real;
-
-        FreePooled(NouveauMemPool, real, size);
+        IPTR *real = (IPTR *)((UBYTE *)memory - NOUVEAU_ALLOC_HEADER);
+        FreeMem(real, real[0]);
     }
 }
 
 IPTR HIDDNouveauAllocSize(CONST_APTR memory)
 {
-    IPTR size = 0;
     if (memory != NULL)
     {
-        IPTR *real = (IPTR *)memory;
-        size  = *--real;
+        IPTR *real = (IPTR *)((UBYTE *)memory - NOUVEAU_ALLOC_HEADER);
+        return real[0] - NOUVEAU_ALLOC_HEADER;
     }
-    return size;
+    return 0;
 }
 #endif
 

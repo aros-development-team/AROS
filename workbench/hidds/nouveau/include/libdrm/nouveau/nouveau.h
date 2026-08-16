@@ -135,13 +135,16 @@ struct nouveau_bo {
 };
 
 #if defined(__AROS__)
+/* both halves of the driver link into one binary; keep the names apart */
 #define nouveau_bo_new                      libdrm_nouveau_bo_new
 #define nouveau_bo_map                      libdrm_nouveau_bo_map
+#define nouveau_bo_wait                     libdrm_nouveau_bo_wait
 #endif
 
 int nouveau_bo_new(struct nouveau_device *, uint32_t flags, uint32_t align,
 		   uint64_t size, union nouveau_bo_config *,
 		   struct nouveau_bo **);
+void nouveau_bo_make_global(struct nouveau_bo *);
 int nouveau_bo_wrap(struct nouveau_device *, uint32_t handle,
 		    struct nouveau_bo **);
 int nouveau_bo_name_ref(struct nouveau_device *v, uint32_t name,
@@ -278,4 +281,8 @@ struct nv04_notify {
 	uint32_t offset;
 	uint32_t length;
 };
+
+bool
+nouveau_check_dead_channel(struct nouveau_drm *, struct nouveau_object *chan);
+
 #endif

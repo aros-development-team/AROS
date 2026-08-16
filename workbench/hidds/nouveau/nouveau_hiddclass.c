@@ -58,7 +58,7 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
     drmmode = drmModeGetResources(fd);
     if (!drmmode)
     {
-        D(bug("[Nouveau] Not able to get resources information\n"));
+        nvlog("[Nouveau] Not able to get resources information\n");
         UNLOCK_ENGINE
         return FALSE;
     }
@@ -70,6 +70,8 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
 
         if (connector)
         {
+            nvlog("[Nouveau] connector %u type %u status %u modes %d\n", connector->connector_id,
+                connector->connector_type, connector->connection, connector->count_modes);
             if (connector->connection == DRM_MODE_CONNECTED)
             {
                 /* Found connected connector */
@@ -79,11 +81,13 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
             
             drmModeFreeConnector(connector);
         }
+        else
+            nvlog("[Nouveau] connector %u: no information\n", drmmode->connectors[i]);
     }
     
     if (!(*selectedconnector))
     {
-        D(bug("[Nouveau] No connected connector\n"));
+        nvlog("[Nouveau] no connected connector (%d connectors, %d crtcs)\n", drmmode->count_connectors, drmmode->count_crtcs);
         drmModeFreeResources(drmmode);
         UNLOCK_ENGINE
         return FALSE;
@@ -98,7 +102,7 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
     *selectedcrtc = drmModeGetCrtc(fd, crtc_id);
     if (!(*selectedcrtc))
     {
-        D(bug("[Nouveau] Not able to get crtc information for crtc_id %d\n", crtc_id));
+        nvlog("[Nouveau] Not able to get crtc information for crtc_id %d\n", crtc_id);
         drmModeFreeConnector(*selectedconnector);
         *selectedconnector = NULL;
         drmModeFreeResources(drmmode);
@@ -301,7 +305,7 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
     {
         if (!handover->dho_ExpungeDisplay(handover->dho_Context, handle))
         {
-            bug("[Nouveau] boot display 0x%p shares this card and is still in"
+            nvlog("[Nouveau] boot display 0x%p shares this card and is still in"
                 " use - not taking the card over\n", handle);
             return FALSE;
         }
@@ -323,7 +327,6 @@ OOP_Object * METHOD(Nouveau, Root, New)
     struct CardData * carddata = &(SD(cl)->carddata);
     struct DisplayHandover *handover;
     struct pci_dev *pdev;
-    LONG ret;
     ULONG selectedcrtcid;
 
     pdev = nouveau_init_findcard();
@@ -358,7 +361,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     /* Select crtc and connector */
     if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc))
     {
-        D(bug("[Nouveau] Not able to select connector and crtc\n"));
+        nvlog("[Nouveau] Not able to select connector and crtc\n");
 
         UNLOCK_ENGINE
 
@@ -372,7 +375,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     syncs = HIDDNouveauCreateSyncTagsFromConnector(cl, selectedconnector);
     if (syncs == NULL)
     {
-        D(bug("[Nouveau] Not able to read any sync modes\n"));
+        nvlog("[Nouveau] Not able to read any sync modes\n");
         UNLOCK_ENGINE
         return NULL;
     }
@@ -508,6 +511,25 @@ OOP_Object * METHOD(Nouveau, Root, New)
             case 0x130:
                 carddata->Architecture = NV_PASCAL;
                 break;
+            case 0x140:
+                carddata->Architecture = NV_VOLTA;
+                break;
+            case 0x160:
+                carddata->Architecture = NV_TURING;
+                break;
+            case 0x170:
+                carddata->Architecture = NV_AMPERE;
+                break;
+            case 0x180:
+                carddata->Architecture = NV_HOPPER;
+                break;
+            case 0x190:
+                carddata->Architecture = NV_ADA;
+                break;
+            case 0x1a0:
+            case 0x1b0:
+                carddata->Architecture = NV_BLACKWELL;
+                break;
             default:
                 bug("Unrecognized chipset: 0x%x, exiting.\n", carddata->dev->chipset);
                 UNLOCK_ENGINE
@@ -526,11 +548,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
             /* Initialize acceleration objects */
         
-            ret = HIDDNouveauAccelCommonInit(carddata);
-            if (ret < 0)
-            {
-                /* TODO: Check ret, how to handle ? */
-            }
+            if (!HIDDNouveauAccelCommonInit(carddata))
+                nvlog("[Nouveau] acceleration setup failed, running unaccelerated\n");
 
             /* Allocate GART scratch buffer */
             if (carddata->dev->gart_size > GART_BUFFER_SIZE)
@@ -545,7 +564,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
             InitSemaphore(&carddata->gartsemaphore);
             
             /* Set initial pattern (else 16-bit ROPs are not working) */
-            switch(carddata->Architecture)
+            if (carddata->channel) switch(carddata->Architecture)
             {
             case(NV_ARCH_03):
             case(NV_ARCH_04):
@@ -562,6 +581,12 @@ OOP_Object * METHOD(Nouveau, Root, New)
             case(NV_KEPLER):
             case(NV_MAXWELL):
             case(NV_PASCAL):
+            case(NV_VOLTA):
+            case(NV_TURING):
+            case(NV_AMPERE):
+            case(NV_HOPPER):
+            case(NV_ADA):
+            case(NV_BLACKWELL):
                 HIDDNouveauNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
             }
@@ -636,6 +661,12 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         case(NV_KEPLER):
         case(NV_MAXWELL):
         case(NV_PASCAL):
+        case(NV_VOLTA):
+        case(NV_TURING):
+        case(NV_AMPERE):
+        case(NV_HOPPER):
+        case(NV_ADA):
+        case(NV_BLACKWELL):
             ret = HIDDNouveauNVC0CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));

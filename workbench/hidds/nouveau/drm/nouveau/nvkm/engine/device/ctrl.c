@@ -31,8 +31,6 @@
 #include <nvif/ioctl.h>
 #include <nvif/unpack.h>
 
-#include <stdio.h>
-
 static int
 nvkm_control_mthd_pstate_info(struct nvkm_control *ctrl, void *data, u32 size)
 {

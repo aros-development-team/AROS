@@ -1052,6 +1052,9 @@ BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color)
 {
+    if (!carddata->channel)
+        return FALSE;
+
     if (NV50EXAPrepareSolid(bmdata, drawmode, ~0, color))
     {
         NV50EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
@@ -1069,6 +1072,9 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode)
 {
+    if (!carddata->channel)
+        return FALSE;
+
     if (NV50EXAPrepareCopy(srcdata, destdata, 0, 0, drawmode, ~0))
     {
         NV50EXACopy(destdata, srcX, srcY, destX , destY, width, height);

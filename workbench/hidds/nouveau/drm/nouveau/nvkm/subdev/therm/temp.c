@@ -73,10 +73,7 @@ nvkm_therm_sensor_get_threshold_state(struct nvkm_therm *therm,
 static void
 nv_poweroff_work(struct work_struct *work)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	orderly_poweroff(true);
-#endif
 	kfree(work);
 }
 

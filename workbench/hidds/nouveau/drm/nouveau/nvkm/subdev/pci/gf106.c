@@ -25,10 +25,9 @@
 
 static const struct nvkm_pci_func
 gf106_pci_func = {
+	.cfg = { .addr = 0x088000, .size = 0x1000 },
+
 	.init = g84_pci_init,
-	.rd32 = nv40_pci_rd32,
-	.wr08 = nv40_pci_wr08,
-	.wr32 = nv40_pci_wr32,
 	.msi_rearm = nv40_pci_msi_rearm,
 
 	.pcie.init = gf100_pcie_init,
@@ -43,7 +42,8 @@ gf106_pci_func = {
 };
 
 int
-gf106_pci_new(struct nvkm_device *device, int index, struct nvkm_pci **ppci)
+gf106_pci_new(struct nvkm_device *device, enum nvkm_subdev_type type, int inst,
+	      struct nvkm_pci **ppci)
 {
-	return nvkm_pci_new_(&gf106_pci_func, device, index, ppci);
+	return nvkm_pci_new_(&gf106_pci_func, device, type, inst, ppci);
 }

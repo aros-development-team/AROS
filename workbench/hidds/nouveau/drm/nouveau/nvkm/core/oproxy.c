@@ -47,43 +47,12 @@ nvkm_oproxy_map(struct nvkm_object *object, void *argv, u32 argc,
 static int
 nvkm_oproxy_unmap(struct nvkm_object *object)
 {
-	return nvkm_object_unmap(nvkm_oproxy(object)->object);
-}
+	struct nvkm_oproxy *oproxy = nvkm_oproxy(object);
 
-static int
-nvkm_oproxy_rd08(struct nvkm_object *object, u64 addr, u8 *data)
-{
-	return nvkm_object_rd08(nvkm_oproxy(object)->object, addr, data);
-}
+	if (unlikely(!oproxy->object))
+		return 0;
 
-static int
-nvkm_oproxy_rd16(struct nvkm_object *object, u64 addr, u16 *data)
-{
-	return nvkm_object_rd16(nvkm_oproxy(object)->object, addr, data);
-}
-
-static int
-nvkm_oproxy_rd32(struct nvkm_object *object, u64 addr, u32 *data)
-{
-	return nvkm_object_rd32(nvkm_oproxy(object)->object, addr, data);
-}
-
-static int
-nvkm_oproxy_wr08(struct nvkm_object *object, u64 addr, u8 data)
-{
-	return nvkm_object_wr08(nvkm_oproxy(object)->object, addr, data);
-}
-
-static int
-nvkm_oproxy_wr16(struct nvkm_object *object, u64 addr, u16 data)
-{
-	return nvkm_object_wr16(nvkm_oproxy(object)->object, addr, data);
-}
-
-static int
-nvkm_oproxy_wr32(struct nvkm_object *object, u64 addr, u32 data)
-{
-	return nvkm_object_wr32(nvkm_oproxy(object)->object, addr, data);
+	return nvkm_object_unmap(oproxy->object);
 }
 
 static int
@@ -106,7 +75,19 @@ nvkm_oproxy_sclass(struct nvkm_object *object, int index,
 }
 
 static int
-nvkm_oproxy_fini(struct nvkm_object *object, bool suspend)
+nvkm_oproxy_uevent(struct nvkm_object *object, void *argv, u32 argc,
+		   struct nvkm_uevent *uevent)
+{
+	struct nvkm_oproxy *oproxy = nvkm_oproxy(object);
+
+	if (!oproxy->object->func->uevent)
+		return -ENOSYS;
+
+	return oproxy->object->func->uevent(oproxy->object, argv, argc, uevent);
+}
+
+static int
+nvkm_oproxy_fini(struct nvkm_object *object, enum nvkm_suspend_state suspend)
 {
 	struct nvkm_oproxy *oproxy = nvkm_oproxy(object);
 	int ret;
@@ -180,14 +161,9 @@ nvkm_oproxy_func = {
 	.ntfy = nvkm_oproxy_ntfy,
 	.map = nvkm_oproxy_map,
 	.unmap = nvkm_oproxy_unmap,
-	.rd08 = nvkm_oproxy_rd08,
-	.rd16 = nvkm_oproxy_rd16,
-	.rd32 = nvkm_oproxy_rd32,
-	.wr08 = nvkm_oproxy_wr08,
-	.wr16 = nvkm_oproxy_wr16,
-	.wr32 = nvkm_oproxy_wr32,
 	.bind = nvkm_oproxy_bind,
 	.sclass = nvkm_oproxy_sclass,
+	.uevent = nvkm_oproxy_uevent,
 };
 
 void

@@ -29,7 +29,8 @@
 
 #include <aros/debug.h>
 
-#include <drm-compat/drm_compat_mem.h>
+#include <linux/kernel.h>
+#include <linux/slab.h>
 #include <linux/rbtree.h>
 #include <linux/list.h>
 #include <string.h>
@@ -43,53 +44,15 @@ int
 panic_cmp(struct rb_node *one, struct rb_node *two)
 {
 	bug("no cmp in rbtree");
+	return 0;
 }
 
 RB_GENERATE(linux_root, rb_node, __entry, panic_cmp);
 
-#include <stdio.h>
-
-static char *
-devm_kvasprintf(struct device *dev, gfp_t gfp, const char *fmt, va_list ap)
-{
-	unsigned int len;
-	char *p;
-	va_list aq;
-
-	va_copy(aq, ap);
-	len = vsnprintf(NULL, 0, fmt, aq);
-	va_end(aq);
-
-	p = kmalloc(len + 1, gfp);
-	if (p != NULL)
-		vsnprintf(p, len + 1, fmt, ap);
-
-	return (p);
-}
-
-char *
-kvasprintf(gfp_t gfp, const char *fmt, va_list ap)
-{
-
-	return (devm_kvasprintf(NULL, gfp, fmt, ap));
-}
-
-char *
-kasprintf(gfp_t gfp, const char *fmt, ...)
-{
-	va_list ap;
-	char *p;
-
-	va_start(ap, fmt);
-	p = kvasprintf(gfp, fmt, ap);
-	va_end(ap);
-
-	return (p);
-}
+#include <linux/list_sort.h>
 
 void
-list_sort(void *priv, struct list_head *head, int (*cmp)(void *priv,
-    struct list_head *a, struct list_head *b))
+list_sort(void *priv, struct list_head *head, list_cmp_func_t cmp)
 {
     struct list_head *p, *q;
     int swapped;
@@ -112,37 +75,3 @@ list_sort(void *priv, struct list_head *head, int (*cmp)(void *priv,
     } while (swapped);
 }
 
-void *
-krealloc(const void *ptr, size_t size, gfp_t flags)
-{
-	void *nptr;
-	size_t osize;
-
-	/*
-	 * First handle invariants based on function arguments.
-	 */
-	if (ptr == NULL)
-		return (kmalloc(size, flags));
-
-	if (size == 0) {
-#if !defined(__AROS__)
-		kfree(ptr);
-		return (ZERO_SIZE_PTR);
-#else
-bug("FIXME: krealloc: implemented ZERO_SIZE_PTR\n");
-		size = 1;
-#endif
-	}
-
-	osize = ksize(ptr);
-	if (size <= osize)
-		return (__DECONST(void *, ptr));
-
-	nptr = kmalloc(size, flags);
-	if (nptr == NULL)
-		return (NULL);
-
-	memcpy(nptr, ptr, osize);
-	kfree(ptr);
-	return (nptr);
-}

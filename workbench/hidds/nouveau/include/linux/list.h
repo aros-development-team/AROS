@@ -75,11 +75,11 @@
 #include <vm/vm_object.h>
 #include <vm/pmap.h>
 #else
-#include <linux/bitops.h>
-struct list_head {
-	struct list_head *next;
-	struct list_head *prev;
-};
+#include <linux/types.h>
+#include <linux/kernel.h>
+#include <linux/stddef.h>
+#include <linux/poison.h>
+#include <linux/const.h>
 #endif
 #endif
 
@@ -346,13 +346,6 @@ list_splice_tail_init(struct list_head *list, struct list_head *head)
 #undef LIST_HEAD
 #define LIST_HEAD(name)	struct list_head name = { &(name), &(name) }
 
-struct hlist_head {
-	struct hlist_node *first;
-};
-
-struct hlist_node {
-	struct hlist_node *next, **pprev;
-};
 #define	HLIST_HEAD_INIT { }
 #define	HLIST_HEAD(name) struct hlist_head name = HLIST_HEAD_INIT
 #define	INIT_HLIST_HEAD(head) (head)->first = NULL
@@ -527,11 +520,39 @@ list_count_nodes(const struct list_head *list)
 	     pos = hlist_entry_safe(n, typeof(*(pos)), member))
 
 #if defined(LINUXKPI_VERSION) && LINUXKPI_VERSION >= 51300
-extern void list_sort(void *priv, struct list_head *head, int (*cmp)(void *priv,
-    const struct list_head *a, const struct list_head *b));
 #else
-extern void list_sort(void *priv, struct list_head *head, int (*cmp)(void *priv,
-    struct list_head *a, struct list_head *b));
 #endif
+
+
+/* AROS additions to the linuxkpi list */
+static inline void list_del_init_careful(struct list_head *entry) { list_del_init(entry); }
+static inline void list_rotate_left(struct list_head *head)
+{
+	if (!list_empty(head))
+		list_move_tail(head->next, head);
+}
+static inline void list_cut_before(struct list_head *list, struct list_head *head, struct list_head *entry)
+{
+	if (head->next == entry) {
+		INIT_LIST_HEAD(list);
+		return;
+	}
+	list->next = head->next;
+	list->next->prev = list;
+	list->prev = entry->prev;
+	list->prev->next = list;
+	head->next = entry;
+	entry->prev = head;
+}
+#define list_for_each_continue(pos, head) for (pos = pos->next; pos != (head); pos = pos->next)
+#define list_for_each_entry_safe_continue(pos, n, head, member)			for (pos = list_next_entry(pos, member), n = list_next_entry(pos, member); 	     &pos->member != (head); pos = n, n = list_next_entry(n, member))
+#define hlist_for_each_entry_rcu_notrace(pos, head, member) hlist_for_each_entry(pos, head, member)
+static inline void hlist_add_fake(struct hlist_node *n) { n->pprev = &n->next; }
+static inline bool hlist_fake(struct hlist_node *h) { return h->pprev == &h->next; }
+#define hlist_del_init_rcu(n) hlist_del_init(n)
+
+#define list_last_entry_or_null(ptr, type, member) (!list_empty(ptr) ? list_last_entry(ptr, type, member) : NULL)
+#define list_prev_entry_circular(pos, head, member) (list_is_first(&(pos)->member, head) ? list_last_entry(head, typeof(*(pos)), member) : list_prev_entry(pos, member))
+#define list_next_entry_circular(pos, head, member) (list_is_last(&(pos)->member, head) ? list_first_entry(head, typeof(*(pos)), member) : list_next_entry(pos, member))
 
 #endif /* _LINUXKPI_LINUX_LIST_H_ */

@@ -1,92 +1,47 @@
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2010 iX Systems, Inc.
- * Copyright (c) 2010 Panasas, Inc.
- * Copyright (c) 2013-2015 Mellanox Technologies, Ltd.
- * Copyright (c) 2014-2015 François Tigeot
- * Copyright (c) 2015 Hans Petter Selasky <hselasky@FreeBSD.org>
- * Copyright (c) 2016 Matt Macy <mmacy@FreeBSD.org>
- * Copyright (c) 2023 Serenity Cyber Security, LLC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+/*
+    Copyright 2026, The AROS Development Team. All rights reserved.
+*/
 
-#ifndef _LINUXKPI_LINUX_MINMAX_H_
-#define	_LINUXKPI_LINUX_MINMAX_H_
+#ifndef _LINUX_MINMAX_H_
+#define _LINUX_MINMAX_H_
 
-#if !defined(__AROS__)
+#include <linux/types.h>
 #include <linux/build_bug.h>
 #include <linux/compiler.h>
-#include <linux/types.h>
-#endif
+#include <linux/const.h>
 
-#define	min(x, y)	((x) < (y) ? (x) : (y))
-#define	max(x, y)	((x) > (y) ? (x) : (y))
+#define __cmp_op_min <
+#define __cmp_op_max >
+#define __cmp(op, x, y)     ((x) __cmp_op_##op (y) ? (x) : (y))
+#define __cmp_once(op, x, y) ({ typeof(x) __x = (x); typeof(y) __y = (y); __cmp(op, __x, __y); })
+#define __cmp_once_t(op, type, x, y) ({ type __x = (x); type __y = (y); __cmp(op, __x, __y); })
 
-#define	min3(a, b, c)	min(a, min(b, c))
-#define	max3(a, b, c)	max(a, max(b, c))
+#define min(x, y)               __cmp_once(min, x, y)
+#define max(x, y)               __cmp_once(max, x, y)
+#define umin(x, y)              __cmp_once_t(min, u64, x, y)
+#define umax(x, y)              __cmp_once_t(max, u64, x, y)
+#define min_t(type, x, y)       __cmp_once_t(min, type, x, y)
+#define max_t(type, x, y)       __cmp_once_t(max, type, x, y)
+#define MIN(a, b)               (((a) < (b)) ? (a) : (b))
+#define MAX(a, b)               (((a) > (b)) ? (a) : (b))
+#define MIN_T(type, a, b)       MIN((type)(a), (type)(b))
+#define MAX_T(type, a, b)       MAX((type)(a), (type)(b))
+#define min3(x, y, z)           min((typeof(x))min(x, y), z)
+#define max3(x, y, z)           max((typeof(x))max(x, y), z)
+#define min_not_zero(x, y) ({ typeof(x) __x = (x); typeof(y) __y = (y); __x == 0 ? __y : ((__y == 0) ? __x : min(__x, __y)); })
+#define clamp(val, lo, hi)      min(max(val, lo), hi)
+#define clamp_t(type, val, lo, hi) min_t(type, max_t(type, val, lo), hi)
+#define clamp_val(val, lo, hi)  clamp_t(typeof(val), val, lo, hi)
+#define swap(a, b)              do { typeof(a) __tmp = (a); (a) = (b); (b) = __tmp; } while (0)
+#define __minmax_array(op, array, len) ({                               \
+    typeof(&(array)[0]) __array = (array);                              \
+    typeof(len) __len = (len);                                          \
+    typeof(__array[0]) __element = __array[--__len];                    \
+    while (__len--)                                                     \
+        __element = op(__element, __array[__len]);                      \
+    __element; })
+#define min_array(array, len)   __minmax_array(min, array, len)
+#define max_array(array, len)   __minmax_array(max, array, len)
+#define in_range(val, start, len) ((val) >= (start) && (val) < (start) + (len))
 
-#define min_not_zero(x, y) ({						\
-	__typeof(x) __min1 = (x);					\
-	__typeof(y) __min2 = (y);					\
-	__min1 == 0 ? __min2 : ((__min2 == 0) ? __min1 : min(__min1, __min2));\
-})
-
-#define	min_t(type, x, y) ({			\
-	type __min1 = (x);			\
-	type __min2 = (y);			\
-	__min1 < __min2 ? __min1 : __min2; })
-
-#define	max_t(type, x, y) ({			\
-	type __max1 = (x);			\
-	type __max2 = (y);			\
-	__max1 > __max2 ? __max1 : __max2; })
-
-#define	MIN_T(type, x, y)	MIN((type)(x), (type)(y))
-#define	MAX_T(type, x, y)	MAX((type)(x), (type)(y))
-
-#define	clamp_t(type, _x, min, max)	min_t(type, max_t(type, _x, min), max)
-#define	clamp(x, lo, hi)		min(max(x, lo), hi)
-#define	clamp_val(val, lo, hi)	clamp_t(typeof(val), val, lo, hi)
-
-/* Swap values of a and b */
-#define swap(a, b) do {			\
-	__typeof(a) _swap_tmp = a;	\
-	a = b;				\
-	b = _swap_tmp;			\
-} while (0)
-
-/* XXX would have to make sure both are unsigned. */
-#define	umin(x, y)			MIN(x, y)
-
-/* This macro assumes that the array has elements inside. */
-#define	__minmax_array(op, array, len) ({		\
-	typeof(array[0]) __val = array[0];		\
-	for (typeof(len) __i = 1; __i < len; __i++)	\
-		__val = op(__val, array[__i]);		\
-	__val; })
-
-#define	min_array(array, len) __minmax_array(min, array, len)
-#define	max_array(array, len) __minmax_array(max, array, len)
-
-#endif /* _LINUXKPI_LINUX_MINMAX_H_ */
+#endif /* _LINUX_MINMAX_H_ */

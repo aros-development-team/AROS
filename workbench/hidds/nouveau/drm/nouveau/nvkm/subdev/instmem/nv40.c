@@ -99,9 +99,9 @@ static void *
 nv40_instobj_dtor(struct nvkm_memory *memory)
 {
 	struct nv40_instobj *iobj = nv40_instobj(memory);
-	mutex_lock(&iobj->imem->base.subdev.mutex);
+	mutex_lock(&iobj->imem->base.mutex);
 	nvkm_mm_free(&iobj->imem->heap, &iobj->node);
-	mutex_unlock(&iobj->imem->base.subdev.mutex);
+	mutex_unlock(&iobj->imem->base.mutex);
 	nvkm_instobj_dtor(&iobj->imem->base, &iobj->base);
 	return iobj;
 }
@@ -132,10 +132,9 @@ nv40_instobj_new(struct nvkm_instmem *base, u32 size, u32 align, bool zero,
 	iobj->base.memory.ptrs = &nv40_instobj_ptrs;
 	iobj->imem = imem;
 
-	mutex_lock(&imem->base.subdev.mutex);
-	ret = nvkm_mm_head(&imem->heap, 0, 1, size, size,
-			   align ? align : 1, &iobj->node);
-	mutex_unlock(&imem->base.subdev.mutex);
+	mutex_lock(&imem->base.mutex);
+	ret = nvkm_mm_head(&imem->heap, 0, 1, size, size, align ? align : 1, &iobj->node);
+	mutex_unlock(&imem->base.mutex);
 	return ret;
 }
 
@@ -236,25 +235,19 @@ nv40_instmem = {
 };
 
 int
-nv40_instmem_new(struct nvkm_device *device, int index,
+nv40_instmem_new(struct nvkm_device *device, enum nvkm_subdev_type type, int inst,
 		 struct nvkm_instmem **pimem)
 {
 	struct nv40_instmem *imem;
-	int bar;
 
 	if (!(imem = kzalloc(sizeof(*imem), GFP_KERNEL)))
 		return -ENOMEM;
-	nvkm_instmem_ctor(&nv40_instmem, device, index, &imem->base);
+	nvkm_instmem_ctor(&nv40_instmem, device, type, inst, &imem->base);
 	*pimem = &imem->base;
 
 	/* map bar */
-	if (device->func->resource_size(device, 2))
-		bar = 2;
-	else
-		bar = 3;
-
-	imem->iomem = ioremap_wc(device->func->resource_addr(device, bar),
-				 device->func->resource_size(device, bar));
+	imem->iomem = ioremap_wc(device->func->resource_addr(device, NVKM_BAR2_INST),
+				 device->func->resource_size(device, NVKM_BAR2_INST));
 	if (!imem->iomem) {
 		nvkm_error(&imem->base.subdev, "unable to map PRAMIN BAR\n");
 		return -EFAULT;

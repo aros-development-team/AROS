@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
-#if !defined(__AROS__)
 #include <drm/drm_mode.h>
-#endif
 #include "nouveau_drv.h"
 #include "nouveau_reg.h"
 #include "nouveau_crtc.h"

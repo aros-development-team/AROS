@@ -33,7 +33,9 @@
 #include <linux/rcupdate.h>
 #include <linux/types.h>
 #else
-#include <drm-compat/drm_compat_mem.h>
+#include <linux/types.h>
+#include <linux/slab.h>
+#include <sys/_param.h>
 #endif
 
 #define	RADIX_TREE_MAP_SHIFT	6

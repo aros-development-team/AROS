@@ -248,6 +248,9 @@ LIBBASETYPE
 #define LOCK_MULTI_BITMAP           { ObtainSemaphore(&(SD(cl))->multibitmapsemaphore); }
 #define UNLOCK_MULTI_BITMAP         { ReleaseSemaphore(&(SD(cl))->multibitmapsemaphore); }
 
+void nouveau_compat_log(const char *fmt, ...);
+#define nvlog nouveau_compat_log
+
 #define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); }
 
 #define IS_NOUVEAU_BM_CLASS(x)      ((x) == SD(cl)->bmclass)
@@ -262,10 +265,10 @@ LIBBASETYPE
 #define __nv_io_ar()                do { } while (0)
 #endif
 
-#define writel(val, addr)           ({ __nv_io_bw(); *(volatile ULONG*)(addr) = (val); })
-#define readl(addr)                 ({ ULONG __iol = *(volatile ULONG*)(addr); __nv_io_ar(); __iol; })
-#define writew(val, addr)           ({ __nv_io_bw(); *(volatile UWORD*)(addr) = (val); })
-#define readw(addr)                 ({ UWORD __iow = *(volatile UWORD*)(addr); __nv_io_ar(); __iow; })
+#define hidd_writel(val, addr)      ({ __nv_io_bw(); *(volatile ULONG*)(IPTR)(addr) = (val); })
+#define hidd_readl(addr)            ({ ULONG __iol = *(volatile ULONG*)(IPTR)(addr); __nv_io_ar(); __iol; })
+#define hidd_writew(val, addr)      ({ __nv_io_bw(); *(volatile UWORD*)(IPTR)(addr) = (val); })
+#define hidd_readw(addr)            ({ UWORD __iow = *(volatile UWORD*)(IPTR)(addr); __nv_io_ar(); __iow; })
 
 enum DMAObjects 
 {
@@ -302,6 +305,12 @@ enum DMAObjects
 #define NV_KEPLER   0xe0
 #define NV_MAXWELL  0x110
 #define NV_PASCAL   0x130
+#define NV_VOLTA    0x140
+#define NV_TURING   0x160
+#define NV_AMPERE   0x170
+#define NV_HOPPER   0x180
+#define NV_ADA      0x190
+#define NV_BLACKWELL 0x1a0
 
 #define BLENDOP_SOLID           1
 #define BLENDOP_ALPHA_PREMULT   3

@@ -1,6 +1,5 @@
-diff -ru ./xf86-video-nouveau-1.0.16/nouveau_copy.c ./xf86-video-nouveau/nouveau_copy.c
---- ./xf86-video-nouveau-1.0.16/nouveau_copy.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nouveau_copy.c	2026-07-07 18:31:09.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nouveau_copy.c
++++ ./xf86-video-nouveau/nouveau_copy.c
 @@ -55,11 +55,13 @@
  	NVPtr pNv = NVPTR(pScrn);
  	int ret;
@@ -15,9 +14,21 @@ diff -ru ./xf86-video-nouveau-1.0.16/nouveau_copy.c ./xf86-video-nouveau/nouveau
  
  	switch (pNv->Architecture) {
  	case NV_TESLA:
-diff -ru ./xf86-video-nouveau-1.0.16/nouveau_exa.c ./xf86-video-nouveau/nouveau_exa.c
---- ./xf86-video-nouveau-1.0.16/nouveau_exa.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nouveau_exa.c	2026-07-07 18:31:09.000000000 +0200
+@@ -86,6 +88,12 @@
+ 	case NV_KEPLER:
+ 	case NV_MAXWELL:
+ 	case NV_PASCAL:
++	case NV_VOLTA:
++	case NV_TURING:
++	case NV_AMPERE:
++	case NV_HOPPER:
++	case NV_ADA:
++	case NV_BLACKWELL:
+ 		ret = nouveau_object_new(&pNv->dev->object, 0,
+ 					 NOUVEAU_FIFO_CHANNEL_CLASS,
+ 					 &(struct nve0_fifo) {
+--- ./xf86-video-nouveau-1.0.16/nouveau_exa.c
++++ ./xf86-video-nouveau/nouveau_exa.c
 @@ -21,7 +21,9 @@
   */
  
@@ -61,7 +72,7 @@ diff -ru ./xf86-video-nouveau-1.0.16/nouveau_exa.c ./xf86-video-nouveau/nouveau_
  static int
  nouveau_exa_scratch(NVPtr pNv, int size, struct nouveau_bo **pbo, int *off)
  {
-@@ -532,3 +537,135 @@
+@@ -532,3 +537,143 @@
  	pNv->Flush = nouveau_exa_flush;
  	return TRUE;
  }
@@ -116,8 +127,12 @@ diff -ru ./xf86-video-nouveau-1.0.16/nouveau_exa.c ./xf86-video-nouveau/nouveau_
 +    }
 +
 +    while (height) {
-+        const int lines = (height > 2047) ? 2047 : height;
++        int lines = (height > 2047) ? 2047 : height;
 +        int tmp_offset = 0;
++
++        /* Limit transfer to GART buffer size */
++        if ((unsigned)lines > pNv->GART->size / tmp_pitch)
++            lines = pNv->GART->size / tmp_pitch;
 +
 +        /* RAM -> CPU -> GART */
 +        nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
@@ -168,8 +183,12 @@ diff -ru ./xf86-video-nouveau-1.0.16/nouveau_exa.c ./xf86-video-nouveau/nouveau_
 +    tmp_pitch = width * cpp;
 +
 +    while (height) {
-+        const int lines = (height > 2047) ? 2047 : height;
++        int lines = (height > 2047) ? 2047 : height;
 +        int tmp_offset = 0;
++
++        /* Limit transfer to GART buffer size */
++        if ((unsigned)lines > pNv->GART->size / tmp_pitch)
++            lines = pNv->GART->size / tmp_pitch;
 +
 +        /* VRAM -> GPU -> GART */
 +        if (!NVAccelM2MF(pNv, width, lines, cpp, 0, tmp_offset,
@@ -198,9 +217,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nouveau_exa.c ./xf86-video-nouveau/nouveau_
 +    return TRUE;
 +}
 \ No newline at end of file
-diff -ru ./xf86-video-nouveau-1.0.16/nouveau_local.h ./xf86-video-nouveau/nouveau_local.h
---- ./xf86-video-nouveau-1.0.16/nouveau_local.h	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nouveau_local.h	2026-07-07 18:31:08.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nouveau_local.h
++++ ./xf86-video-nouveau/nouveau_local.h
 @@ -23,8 +23,10 @@
  #ifndef __NOUVEAU_LOCAL_H__
  #define __NOUVEAU_LOCAL_H__
@@ -226,9 +244,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nouveau_local.h ./xf86-video-nouveau/nouvea
  #define NOUVEAU_ALIGN(x,bytes) (((x) + ((bytes) - 1)) & ~((bytes) - 1))
  
  #define NV50_TILE_PITCH(m) (64 << ((m) & 0xf))
-diff -ru ./xf86-video-nouveau-1.0.16/nouveau_xv.c ./xf86-video-nouveau/nouveau_xv.c
---- ./xf86-video-nouveau-1.0.16/nouveau_xv.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nouveau_xv.c	2026-07-07 18:31:08.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nouveau_xv.c
++++ ./xf86-video-nouveau/nouveau_xv.c
 @@ -20,7 +20,7 @@
   * SOFTWARE.
   */
@@ -265,9 +282,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nouveau_xv.c ./xf86-video-nouveau/nouveau_x
  
  /* The filtering function used for video scaling. We use a cubic filter as
   * defined in  "Reconstruction Filters in Computer Graphics" Mitchell &
-diff -ru ./xf86-video-nouveau-1.0.16/nv04_exa.c ./xf86-video-nouveau/nv04_exa.c
---- ./xf86-video-nouveau-1.0.16/nv04_exa.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nv04_exa.c	2026-07-07 18:31:09.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nv04_exa.c
++++ ./xf86-video-nouveau/nv04_exa.c
 @@ -134,12 +134,14 @@
  		return FALSE;
  	}
@@ -402,9 +418,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nv04_exa.c ./xf86-video-nouveau/nv04_exa.c
 +
 +    return FALSE;
 +}
-diff -ru ./xf86-video-nouveau-1.0.16/nv10_exa.c ./xf86-video-nouveau/nv10_exa.c
---- ./xf86-video-nouveau-1.0.16/nv10_exa.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nv10_exa.c	2026-07-07 18:31:08.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nv10_exa.c
++++ ./xf86-video-nouveau/nv10_exa.c
 @@ -141,6 +141,7 @@
  	return mask && mask->componentAlpha && PICT_FORMAT_RGB(mask->format);
  }
@@ -497,9 +512,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nv10_exa.c ./xf86-video-nouveau/nv10_exa.c
 +    return FALSE;
 +}
 \ No newline at end of file
-diff -ru ./xf86-video-nouveau-1.0.16/nv30_exa.c ./xf86-video-nouveau/nv30_exa.c
---- ./xf86-video-nouveau-1.0.16/nv30_exa.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nv30_exa.c	2026-07-07 18:31:08.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nv30_exa.c
++++ ./xf86-video-nouveau/nv30_exa.c
 @@ -292,6 +292,7 @@
  			  NV30_3D_TEX_NPOT_SIZE_W__SHIFT) |
  			 pPix->drawable.height);
@@ -580,9 +594,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nv30_exa.c ./xf86-video-nouveau/nv30_exa.c
 +    return FALSE;
 +}
 \ No newline at end of file
-diff -ru ./xf86-video-nouveau-1.0.16/nv40_exa.c ./xf86-video-nouveau/nv40_exa.c
---- ./xf86-video-nouveau-1.0.16/nv40_exa.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nv40_exa.c	2026-07-07 18:31:08.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nv40_exa.c
++++ ./xf86-video-nouveau/nv40_exa.c
 @@ -180,6 +180,7 @@
  	}
  }
@@ -683,9 +696,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nv40_exa.c ./xf86-video-nouveau/nv40_exa.c
 +
 +    return FALSE;
 +}
-diff -ru ./xf86-video-nouveau-1.0.16/nv50_accel.c ./xf86-video-nouveau/nv50_accel.c
---- ./xf86-video-nouveau-1.0.16/nv50_accel.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nv50_accel.c	2026-07-07 18:31:08.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nv50_accel.c
++++ ./xf86-video-nouveau/nv50_accel.c
 @@ -27,6 +27,7 @@
  #include "hwdefs/nv50_2d.xml.h"
  #include "hwdefs/nv50_3d.xml.h"
@@ -702,9 +714,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nv50_accel.c ./xf86-video-nouveau/nv50_acce
  
  Bool
  NVAccelInitM2MF_NV50(ScrnInfoPtr pScrn)
-diff -ru ./xf86-video-nouveau-1.0.16/nv50_exa.c ./xf86-video-nouveau/nv50_exa.c
---- ./xf86-video-nouveau-1.0.16/nv50_exa.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nv50_exa.c	2026-07-07 18:31:09.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nv50_exa.c
++++ ./xf86-video-nouveau/nv50_exa.c
 @@ -94,11 +94,17 @@
  {
  	NV50EXA_LOCALS(ppix);
@@ -901,9 +912,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nv50_exa.c ./xf86-video-nouveau/nv50_exa.c
 +
 +    return FALSE;
 +}
-diff -ru ./xf86-video-nouveau-1.0.16/nv_accel_common.c ./xf86-video-nouveau/nv_accel_common.c
---- ./xf86-video-nouveau-1.0.16/nv_accel_common.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nv_accel_common.c	2026-07-07 18:31:09.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nv_accel_common.c
++++ ./xf86-video-nouveau/nv_accel_common.c
 @@ -20,6 +20,11 @@
   * SOFTWARE.
   */
@@ -1083,9 +1093,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nv_accel_common.c ./xf86-video-nouveau/nv_a
 +    return nouveau_allocate_surface(carddata, width, height, bpp, NOUVEAU_CREATE_PIXMAP_SCANOUT, pitch, bo);
 +}
 \ No newline at end of file
-diff -ru ./xf86-video-nouveau-1.0.16/nvc0_accel.c ./xf86-video-nouveau/nvc0_accel.c
---- ./xf86-video-nouveau-1.0.16/nvc0_accel.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nvc0_accel.c	2026-07-07 18:31:08.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nvc0_accel.c
++++ ./xf86-video-nouveau/nvc0_accel.c
 @@ -69,6 +69,7 @@
  	PUSH_DATAp((pNv)->pushbuf, (code), size);                              \
  } while(0)
@@ -1102,9 +1111,42 @@ diff -ru ./xf86-video-nouveau-1.0.16/nvc0_accel.c ./xf86-video-nouveau/nvc0_acce
  
  Bool
  NVAccelInitM2MF_NVC0(ScrnInfoPtr pScrn)
-diff -ru ./xf86-video-nouveau-1.0.16/nvc0_exa.c ./xf86-video-nouveau/nvc0_exa.c
---- ./xf86-video-nouveau-1.0.16/nvc0_exa.c	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nvc0_exa.c	2026-07-07 18:31:09.000000000 +0200
+@@ -138,7 +140,8 @@
+ {
+ 	NVPtr pNv = NVPTR(pScrn);
+ 	struct nouveau_pushbuf *push = pNv->pushbuf;
+-	uint32_t class = (pNv->dev->chipset < 0xf0) ? 0xa040 : 0xa140;
++	uint32_t class = (pNv->dev->chipset < 0xf0) ? 0xa040 :
++			 (pNv->dev->chipset < 0x1a0) ? 0xa140 : 0xcd40;
+ 	int ret;
+ 
+ 	ret = nouveau_object_new(pNv->channel, class, class, NULL, 0,
+@@ -163,8 +166,22 @@
+ 		class = 0xa0b5;
+ 	else if (pNv->dev->chipset < 0x130)
+ 		class = 0xb0b5;
+-	else
++	else if (pNv->dev->chipset < 0x140)
+ 		class = 0xc0b5;
++	else if (pNv->dev->chipset < 0x160)
++		class = 0xc3b5;
++	else if (pNv->dev->chipset < 0x170)
++		class = 0xc5b5;
++	else if (pNv->dev->chipset < 0x180)
++		class = 0xc7b5;
++	else if (pNv->dev->chipset < 0x190)
++		class = 0xc8b5;
++	else if (pNv->dev->chipset < 0x1a0)
++		class = 0xc7b5;
++	else if (pNv->dev->chipset < 0x1b0)
++		class = 0xc9b5;
++	else
++		class = 0xcab5;
+ 
+ 	ret = nouveau_object_new(pNv->channel, class, class,
+ 				 NULL, 0, &pNv->NvCOPY);
+--- ./xf86-video-nouveau-1.0.16/nvc0_exa.c
++++ ./xf86-video-nouveau/nvc0_exa.c
 @@ -96,11 +96,17 @@
  {
  	NVC0EXA_LOCALS(ppix);
@@ -1276,9 +1318,8 @@ diff -ru ./xf86-video-nouveau-1.0.16/nvc0_exa.c ./xf86-video-nouveau/nvc0_exa.c
 +    return FALSE;
 +}
 \ No newline at end of file
-diff -ru ./xf86-video-nouveau-1.0.16/nv_include.h ./xf86-video-nouveau/nv_include.h
---- ./xf86-video-nouveau-1.0.16/nv_include.h	2019-01-29 05:25:58.000000000 +0100
-+++ ./xf86-video-nouveau/nv_include.h	2026-07-07 18:31:09.000000000 +0200
+--- ./xf86-video-nouveau-1.0.16/nv_include.h
++++ ./xf86-video-nouveau/nv_include.h
 @@ -1,74 +1,214 @@
  #ifndef __NV_INCLUDE_H__
  #define __NV_INCLUDE_H__

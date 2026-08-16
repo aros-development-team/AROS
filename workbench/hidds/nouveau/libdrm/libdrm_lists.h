@@ -96,19 +96,19 @@ typedef struct _drmMMListHead
 	     (__item) = (__temp), (__temp) = (__item)->prev)
 
 #define DRMLISTFOREACHENTRY(__item, __list, __head)                            \
-	for ((__item) = DRMLISTENTRY(typeof(*__item), (__list)->next, __head); \
-	     &(__item)->__head != (__list);                                    \
-	     (__item) = DRMLISTENTRY(typeof(*__item),                          \
-				     (__item)->__head.next, __head))
+	for ((__item) = DRMLISTENTRY(__typeof__(*__item), (__list)->next, __head); \
+	     &(__item)->__head != (__list);                                        \
+	     (__item) = DRMLISTENTRY(__typeof__(*__item),                          \
+	                             (__item)->__head.next, __head))
 
 #define DRMLISTFOREACHENTRYSAFE(__item, __temp, __list, __head)                \
-	for ((__item) = DRMLISTENTRY(typeof(*__item), (__list)->next, __head), \
-	     (__temp) = DRMLISTENTRY(typeof(*__item),                          \
-				     (__item)->__head.next, __head);           \
-	     &(__item)->__head != (__list);                                    \
-	     (__item) = (__temp),                                              \
-	     (__temp) = DRMLISTENTRY(typeof(*__item),                          \
-				     (__temp)->__head.next, __head))
+	for ((__item) = DRMLISTENTRY(__typeof__(*__item), (__list)->next, __head), \
+	     (__temp) = DRMLISTENTRY(__typeof__(*__item),                          \
+	                             (__item)->__head.next, __head);               \
+	     &(__item)->__head != (__list);                                        \
+	     (__item) = (__temp),                                                  \
+	     (__temp) = DRMLISTENTRY(__typeof__(*__item),                          \
+	                             (__temp)->__head.next, __head))
 
 #define DRMLISTJOIN(__list, __join) if (!DRMLISTEMPTY(__list)) {	\
 	(__list)->next->prev = (__join);				\

@@ -27,18 +27,14 @@
  ******************************************************************************/
 
 #include <core/client.h>
-#include <core/notify.h>
 #include <core/ioctl.h>
 
 #include <nvif/client.h>
 #include <nvif/driver.h>
-#include <nvif/notify.h>
 #include <nvif/event.h>
 #include <nvif/ioctl.h>
 
 #include "nouveau_drv.h"
-struct drm_file;
-#include "nouveau_usif.h"
 
 static void
 nvkm_client_unmap(void *priv, void __iomem *ptr, u32 size)
@@ -53,9 +49,9 @@ nvkm_client_map(void *priv, u64 handle, u32 size)
 }
 
 static int
-nvkm_client_ioctl(void *priv, bool super, void *data, u32 size, void **hack)
+nvkm_client_ioctl(void *priv, void *data, u32 size, void **hack)
 {
-	return nvkm_ioctl(priv, super, data, size, hack);
+	return nvkm_ioctl(priv, data, size, hack);
 }
 
 static int
@@ -66,48 +62,35 @@ nvkm_client_resume(void *priv)
 }
 
 static int
-nvkm_client_suspend(void *priv)
+nvkm_client_suspend(void *priv, bool runtime)
 {
 	struct nvkm_client *client = priv;
-	return nvkm_object_fini(&client->object, true);
+	enum nvkm_suspend_state state;
+
+	if (runtime)
+		state = NVKM_RUNTIME_SUSPEND;
+	else
+		state = NVKM_SUSPEND;
+	return nvkm_object_fini(&client->object, state);
 }
 
 static int
-nvkm_client_ntfy(const void *header, u32 length, const void *data, u32 size)
+nvkm_client_event(u64 token, void *repv, u32 repc)
 {
-	const union {
-		struct nvif_notify_req_v0 v0;
-	} *args = header;
-	u8 route;
+	struct nvif_object *object = (void *)(unsigned long)token;
+	struct nvif_event *event = container_of(object, typeof(*event), object);
 
-	if (length == sizeof(args->v0) && args->v0.version == 0) {
-		route = args->v0.route;
-	} else {
-		WARN_ON(1);
-		return NVKM_NOTIFY_DROP;
-	}
+	if (event->func(event, repv, repc) == NVIF_EVENT_KEEP)
+		return NVKM_EVENT_KEEP;
 
-	switch (route) {
-	case NVDRM_NOTIFY_NVIF:
-		return nvif_notify(header, length, data, size);
-	case NVDRM_NOTIFY_USIF:
-NOT_IMPLEMENTED_STOP
-#if 0
-		return usif_notify(header, length, data, size);
-#endif
-	default:
-		WARN_ON(1);
-		break;
-	}
-
-	return NVKM_NOTIFY_DROP;
+	return NVKM_EVENT_DROP;
 }
 
 static int
 nvkm_client_driver_init(const char *name, u64 device, const char *cfg,
 			const char *dbg, void **ppriv)
 {
-	return nvkm_client_new(name, device, cfg, dbg, nvkm_client_ntfy,
+	return nvkm_client_new(name, device, cfg, dbg, nvkm_client_event,
 			       (struct nvkm_client **)ppriv);
 }
 
@@ -120,5 +103,4 @@ nvif_driver_nvkm = {
 	.ioctl = nvkm_client_ioctl,
 	.map = nvkm_client_map,
 	.unmap = nvkm_client_unmap,
-	.keep = false,
 };

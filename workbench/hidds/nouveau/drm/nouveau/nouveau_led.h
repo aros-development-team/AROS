@@ -27,26 +27,22 @@
 
 #include "nouveau_drv.h"
 
-struct led_classdev;
+#include <linux/leds.h>
 
 struct nouveau_led {
 	struct drm_device *dev;
 
-#if !defined(__AROS)
 	struct led_classdev led;
-#endif
 };
 
-#if !defined(__AROS__)
 static inline struct nouveau_led *
 nouveau_led(struct drm_device *dev)
 {
 	return nouveau_drm(dev)->led;
 }
-#endif
 
 /* nouveau_led.c */
-#if 0 //IS_REACHABLE(CONFIG_LEDS_CLASS)
+#if IS_REACHABLE(CONFIG_LEDS_CLASS)
 int  nouveau_led_init(struct drm_device *dev);
 void nouveau_led_suspend(struct drm_device *dev);
 void nouveau_led_resume(struct drm_device *dev);

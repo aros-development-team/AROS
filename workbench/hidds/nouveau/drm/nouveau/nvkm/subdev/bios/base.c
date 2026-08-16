@@ -46,6 +46,14 @@ nvbios_addr(struct nvkm_bios *bios, u32 *addr, u8 size)
 	return true;
 }
 
+void *
+nvbios_pointer(struct nvkm_bios *bios, u32 addr)
+{
+	if (likely(nvbios_addr(bios, &addr, 0)))
+		return &bios->data[addr];
+	return NULL;
+}
+
 u8
 nvbios_rd08(struct nvkm_bios *bios, u32 addr)
 {
@@ -140,7 +148,8 @@ nvkm_bios = {
 };
 
 int
-nvkm_bios_new(struct nvkm_device *device, int index, struct nvkm_bios **pbios)
+nvkm_bios_new(struct nvkm_device *device, enum nvkm_subdev_type type, int inst,
+	      struct nvkm_bios **pbios)
 {
 	struct nvkm_bios *bios;
 	struct nvbios_image image;
@@ -149,7 +158,7 @@ nvkm_bios_new(struct nvkm_device *device, int index, struct nvkm_bios **pbios)
 
 	if (!(bios = *pbios = kzalloc(sizeof(*bios), GFP_KERNEL)))
 		return -ENOMEM;
-	nvkm_subdev_ctor(&nvkm_bios, device, index, &bios->subdev);
+	nvkm_subdev_ctor(&nvkm_bios, device, type, inst, &bios->subdev);
 
 	ret = nvbios_shadow(bios);
 	if (ret)

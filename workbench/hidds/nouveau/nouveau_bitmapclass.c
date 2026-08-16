@@ -4,6 +4,9 @@
 
 #include "nouveau_intern.h"
 
+unsigned long nouveau_compat_irq_count(void);
+unsigned long nouveau_compat_usecs(void);
+
 #define DEBUG 0
 #include <aros/debug.h>
 #include <proto/oop.h>
@@ -96,11 +99,15 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     if (bmdata->compositor == NULL)
         goto exit_fail;
 
+    if (displayable)
+        nvlog("[Nouveau] displayable bitmap %p: %ldx%ld depth %ld pitch %ld bo %p\n", o,
+              (long)width, (long)height, (long)depth, (long)bmdata->pitch, bmdata->bo);
+
     return o;
 
 exit_fail:
 
-    bug("[Nouveau]: Failed to create bitmap %dx%d %d %d\n", width, height, depth, stdfmt);
+    nvlog("[Nouveau]: Failed to create bitmap %dx%d %d %d\n", width, height, depth, stdfmt);
 
     if (o)
     {
@@ -238,10 +245,10 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
         /* Not supported */
         break;
     case(2):
-        writew(msg->pixel, (APTR)addr);
+        hidd_writew(msg->pixel, (APTR)addr);
         break;
     case(4):
-        writel(msg->pixel, (APTR)addr);
+        hidd_writel(msg->pixel, (APTR)addr);
         break;
     }
 
@@ -276,10 +283,10 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
         /* Not supported */
         break;
     case(2):
-        pixel = readw((APTR)addr);
+        pixel = hidd_readw((APTR)addr);
         break;
     case(4):
-        pixel = readl((APTR)addr);
+        pixel = hidd_readl((APTR)addr);
         break;
     }
     
@@ -318,6 +325,12 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
     case(NV_KEPLER):
     case(NV_MAXWELL):
     case(NV_PASCAL):
+    case(NV_VOLTA):
+    case(NV_TURING):
+    case(NV_AMPERE):
+    case(NV_HOPPER):
+    case(NV_ADA):
+    case(NV_BLACKWELL):
         ret = HIDDNouveauNVC0FillSolidRect(carddata, bmdata, 
                     0, 0, bmdata->drawable.width - 1, bmdata->drawable.height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
         break;
@@ -368,12 +381,57 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
     case(NV_KEPLER):
     case(NV_MAXWELL):
     case(NV_PASCAL):
+    case(NV_VOLTA):
+    case(NV_TURING):
+    case(NV_AMPERE):
+    case(NV_HOPPER):
+    case(NV_ADA):
+    case(NV_BLACKWELL):
         ret = HIDDNouveauNVC0FillSolidRect(carddata, bmdata, 
                     msg->minX, msg->minY, msg->maxX, msg->maxY, GC_DRMD(msg->gc), GC_FG(msg->gc));
         break;
     }
 
-nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
+    if (ret)
+    {
+        /* TEMPORARY DIAGNOSTIC: is the engine executing, and how long does a wait take */
+        static LONG diag_left = 3;
+        unsigned long t0, t1;
+        LONG w;
+
+        t0 = nouveau_compat_usecs();
+        w = nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
+        t1 = nouveau_compat_usecs();
+        if (diag_left > 0 && (msg->maxX - msg->minX) > 8 && (msg->maxY - msg->minY) > 8)
+        {
+            ULONG got0 = 0xdeadbeef, got1 = 0xdeadbeef;
+            IPTR map;
+
+            diag_left--;
+            MAP_BUFFER
+            map = (IPTR)bmdata->bo->map;
+            if (map)
+            {
+                __nv_io_ar();
+                if (bmdata->bytesperpixel == 4)
+                {
+                    got0 = *(volatile ULONG *)(map + msg->minY * bmdata->pitch + msg->minX * 4);
+                    got1 = *(volatile ULONG *)(map + msg->maxY * bmdata->pitch + msg->maxX * 4);
+                }
+                else if (bmdata->bytesperpixel == 2)
+                {
+                    got0 = *(volatile UWORD *)(map + msg->minY * bmdata->pitch + msg->minX * 2);
+                    got1 = *(volatile UWORD *)(map + msg->maxY * bmdata->pitch + msg->maxX * 2);
+                }
+            }
+            nvlog("[Nouveau] diag fill %ldx%ld@%ld,%ld fg %08lx bpp %ld pitch %ld: wait %ld in %ldus, map %p, pixels %08lx %08lx, irqs %lu\n",
+                (long)(msg->maxX - msg->minX + 1), (long)(msg->maxY - msg->minY + 1), (long)msg->minX, (long)msg->minY,
+                (unsigned long)GC_FG(msg->gc), (long)bmdata->bytesperpixel, (long)bmdata->pitch, (long)w,
+                (long)(t1 - t0),
+                (APTR)map, (unsigned long)got0, (unsigned long)got1, (unsigned long)nouveau_compat_irq_count());
+        }
+    }
+
 
     UNLOCK_BITMAP
 

@@ -21,10 +21,16 @@
 #ifndef howmany
 #define howmany(x, y)	(((x)+((y)-1))/(y))
 #endif
+#ifndef rounddown
 #define	rounddown(x, y)	(((x)/(y))*(y))
+#endif
 #define	rounddown2(x, y) __align_down(x, y) /* if y is power of two */
+#ifndef roundup
 #define	roundup(x, y)	((((x)+((y)-1))/(y))*(y))  /* to any y */
+#endif
 #define	roundup2(x, y)	__align_up(x, y) /* if y is powers of two */
+#ifndef powerof2
 #define powerof2(x)	((((x)-1)&(x))==0)
+#endif
 
 #endif /* _SYS__PARAM_H_ */

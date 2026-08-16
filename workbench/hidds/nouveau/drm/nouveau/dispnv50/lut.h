@@ -1,25 +1,9 @@
 #ifndef __NV50_KMS_LUT_H__
 #define __NV50_KMS_LUT_H__
 #include <nvif/mem.h>
-#include <linux/minmax.h>
-#include <uapi/drm/drm_mode.h>
 struct drm_property_blob;
+struct drm_color_lut;
 struct nv50_disp;
-
-/* drm_color_mgmt.h's helper: a 16-bit LUT component scaled and rounded
- * to the hardware's bit depth (the header is not part of this port) */
-static inline u32 drm_color_lut_extract(u32 user_input, u32 bit_precision)
-{
-	u32 val = user_input;
-	u32 max = 0xffff >> (16 - bit_precision);
-
-	if (bit_precision < 16) {
-		val += 1UL << (16 - bit_precision - 1);
-		val >>= 16 - bit_precision;
-	}
-
-	return clamp_val(val, 0, max);
-}
 
 struct nv50_lut {
 	struct nvif_mem mem[2];

@@ -29,18 +29,12 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <inttypes.h>
 
-#if !defined(__AROS__)
 #include <xf86drm.h>
 #include <xf86atomic.h>
 #include "libdrm_lists.h"
 #include "nouveau_drm.h"
-#else
-#include <libdrm/arosdrm.h>
-#include "libdrm_lists.h"
-#include <uapi/drm/nouveau_drm.h>
-#include <drm-compat/drm_compat_funcs.h>
-#endif
 
 #include "nouveau.h"
 #include "private.h"
@@ -281,9 +275,10 @@ pushbuf_dump(struct nouveau_pushbuf_krec *krec, int krec_id, int chid)
 
 	kref = krec->buffer;
 	for (i = 0; i < krec->nr_buffer; i++, kref++) {
-		err("ch%d: buf %08x %08x %08x %08x %08x\n", chid, i,
+		bo = (void *)(uintptr_t)kref->user_priv;
+		err("ch%d: buf %08x %08x %08x %08x %08x %p 0x%"PRIx64" 0x%"PRIx64"\n", chid, i,
 		    kref->handle, kref->valid_domains,
-		    kref->read_domains, kref->write_domains);
+		    kref->read_domains, kref->write_domains, bo->map, bo->offset, bo->size);
 	}
 
 	krel = krec->reloc;
@@ -299,11 +294,14 @@ pushbuf_dump(struct nouveau_pushbuf_krec *krec, int krec_id, int chid)
 		kref = krec->buffer + kpsh->bo_index;
 		bo = (void *)(unsigned long)kref->user_priv;
 		bgn = (uint32_t *)((char *)bo->map + kpsh->offset);
-		end = bgn + (kpsh->length /4);
+		end = bgn + ((kpsh->length & 0x7fffff) /4);
 
-		err("ch%d: psh %08x %010llx %010llx\n", chid, kpsh->bo_index,
+		err("ch%d: psh %s%08x %010llx %010llx\n", chid,
+		    bo->map ? "" : "(unmapped) ", kpsh->bo_index,
 		    (unsigned long long)kpsh->offset,
 		    (unsigned long long)(kpsh->offset + kpsh->length));
+		if (!bo->map)
+			continue;
 		while (bgn < end)
 			err("\t0x%08x\n", *bgn++);
 	}
@@ -343,6 +341,8 @@ pushbuf_submit(struct nouveau_pushbuf *push, struct nouveau_object *chan)
 		req.suffix0 = nvpb->suffix0;
 		req.suffix1 = nvpb->suffix1;
 		req.vram_available = 0; /* for valgrind */
+		if (dbg_on(1))
+			req.vram_available |= NOUVEAU_GEM_PUSHBUF_SYNC;
 		req.gart_available = 0;
 
 		if (dbg_on(0))
@@ -781,4 +781,20 @@ nouveau_pushbuf_kick(struct nouveau_pushbuf *push, struct nouveau_object *chan)
 		return pushbuf_submit(push, chan);
 	pushbuf_flush(push);
 	return pushbuf_validate(push, false);
+}
+
+drm_public bool
+nouveau_check_dead_channel(struct nouveau_drm *drm, struct nouveau_object *chan)
+{
+	struct drm_nouveau_gem_pushbuf req = {};
+	struct nouveau_fifo *fifo = chan->data;
+	int ret;
+
+	req.channel = fifo->channel;
+	req.nr_push = 0;
+
+	ret = drmCommandWriteRead(drm->fd, DRM_NOUVEAU_GEM_PUSHBUF,
+				  &req, sizeof(req));
+	/* nouveau returns ENODEV once the channel was killed */
+	return ret == -ENODEV;
 }

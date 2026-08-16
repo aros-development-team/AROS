@@ -76,7 +76,7 @@ nvkm_xtensa_intr(struct nvkm_engine *engine)
 }
 
 static int
-nvkm_xtensa_fini(struct nvkm_engine *engine, bool suspend)
+nvkm_xtensa_fini(struct nvkm_engine *engine, enum nvkm_suspend_state suspend)
 {
 	struct nvkm_xtensa *xtensa = nvkm_xtensa(engine);
 	struct nvkm_device *device = xtensa->engine.subdev.device;
@@ -85,7 +85,7 @@ nvkm_xtensa_fini(struct nvkm_engine *engine, bool suspend)
 	nvkm_wr32(device, base + 0xd84, 0); /* INTR_EN */
 	nvkm_wr32(device, base + 0xd94, 0); /* FIFO_CTRL */
 
-	if (!suspend)
+	if (suspend == NVKM_POWEROFF)
 		nvkm_memory_unref(&xtensa->gpu_fw);
 	return 0;
 }
@@ -175,9 +175,9 @@ nvkm_xtensa = {
 };
 
 int
-nvkm_xtensa_new_(const struct nvkm_xtensa_func *func,
-		 struct nvkm_device *device, int index, bool enable,
-		 u32 addr, struct nvkm_engine **pengine)
+nvkm_xtensa_new_(const struct nvkm_xtensa_func *func, struct nvkm_device *device,
+		 enum nvkm_subdev_type type, int inst, bool enable, u32 addr,
+		 struct nvkm_engine **pengine)
 {
 	struct nvkm_xtensa *xtensa;
 
@@ -187,6 +187,5 @@ nvkm_xtensa_new_(const struct nvkm_xtensa_func *func,
 	xtensa->addr = addr;
 	*pengine = &xtensa->engine;
 
-	return nvkm_engine_ctor(&nvkm_xtensa, device, index,
-				enable, &xtensa->engine);
+	return nvkm_engine_ctor(&nvkm_xtensa, device, type, inst, enable, &xtensa->engine);
 }

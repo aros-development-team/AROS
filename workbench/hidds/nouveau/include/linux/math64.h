@@ -1,190 +1,98 @@
-/*-
- * Copyright (c) 2007 Cisco Systems, Inc.  All rights reserved.
- * Copyright (c) 2014-2015 Mellanox Technologies, Ltd. All rights reserved.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+/*
+    Copyright 2026, The AROS Development Team. All rights reserved.
+*/
 
-#ifndef _LINUXKPI_LINUX_MATH64_H
-#define	_LINUXKPI_LINUX_MATH64_H
+#ifndef _LINUX_MATH64_H_
+#define _LINUX_MATH64_H_
 
-#if !defined(__AROS__)
-#include <sys/stdint.h>
-#include <sys/systm.h>
+#include <linux/types.h>
+#include <linux/math.h>
+#include <linux/types.h>
+#include <linux/asm.h>
+
+static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
+{
+    *remainder = (u32)(dividend % divisor);
+    return dividend / divisor;
+}
+static inline s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
+{
+    *remainder = (s32)(dividend % divisor);
+    return dividend / divisor;
+}
+static inline u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
+{
+    *remainder = dividend % divisor;
+    return dividend / divisor;
+}
+static inline u64 div64_u64(u64 dividend, u64 divisor) { return dividend / divisor; }
+static inline s64 div64_s64(s64 dividend, s64 divisor) { return dividend / divisor; }
+static inline u64 div_u64(u64 dividend, u32 divisor)   { return dividend / divisor; }
+static inline s64 div_s64(s64 dividend, s32 divisor)   { return dividend / divisor; }
+static inline u64 mul_u32_u32(u32 a, u32 b)            { return (u64)a * b; }
+#if defined(__SIZEOF_INT128__)
+static inline u64 mul_u64_u32_shr(u64 a, u32 mul, unsigned int shift)
+{
+    return (u64)(((unsigned __int128)a * mul) >> shift);
+}
+static inline u64 mul_u64_u64_shr(u64 a, u64 mul, unsigned int shift)
+{
+    return (u64)(((unsigned __int128)a * mul) >> shift);
+}
+static inline u64 mul_u64_u32_div(u64 a, u32 mul, u32 divisor)
+{
+    return (u64)(((unsigned __int128)a * mul) / divisor);
+}
+static inline u64 mul_u64_u64_div_u64(u64 a, u64 mul, u64 div)
+{
+    return (u64)(((unsigned __int128)a * mul) / div);
+}
+static inline u64 mul_u64_u32_div_u64(u64 a, u32 mul, u64 div)
+{
+    return (u64)(((unsigned __int128)a * mul) / div);
+}
+static inline u64 mul_u64_add_u64_div_u64(u64 a, u64 mul, u64 add, u64 div)
+{
+    return (u64)(((unsigned __int128)a * mul + add) / div);
+}
+#else
+/* 32-bit targets: split multiplications, good enough for the clock maths */
+static inline u64 mul_u64_u32_shr(u64 a, u32 mul, unsigned int shift)
+{
+    u32 ah = (u32)(a >> 32), al = (u32)a;
+    u64 ret = mul_u32_u32(al, mul) >> shift;
+    if (ah)
+        ret += mul_u32_u32(ah, mul) << (32 - shift);
+    return ret;
+}
+static inline u64 mul_u64_u64_shr(u64 a, u64 mul, unsigned int shift)
+{
+    return mul_u64_u32_shr(a, (u32)mul, shift);
+}
+u64 mul_u64_u64_div_u64(u64 a, u64 mul, u64 div);
+static inline u64 mul_u64_u32_div(u64 a, u32 mul, u32 divisor)
+{
+    return mul_u64_u64_div_u64(a, mul, divisor);
+}
+static inline u64 mul_u64_u32_div_u64(u64 a, u32 mul, u64 div)
+{
+    return mul_u64_u64_div_u64(a, mul, div);
+}
+static inline u64 mul_u64_add_u64_div_u64(u64 a, u64 mul, u64 add, u64 div)
+{
+    return mul_u64_u64_div_u64(a, mul, div) + add / div;
+}
 #endif
-
-#define	do_div(n, base) ({			\
-	uint32_t __base = (base);		\
-	uint32_t __rem;				\
-	__rem = ((uint64_t)(n)) % __base;	\
-	(n) = ((uint64_t)(n)) / __base;		\
-	__rem;					\
-})
-
-static inline uint64_t
-div64_u64_rem(uint64_t dividend, uint64_t divisor, uint64_t *remainder)
+static inline u64 iter_div_u64_rem(u64 dividend, u32 divisor, u64 *remainder)
 {
-
-	*remainder = dividend % divisor;
-	return (dividend / divisor);
+    u32 r;
+    u64 q = div_u64_rem(dividend, divisor, &r);
+    *remainder = r;
+    return q;
 }
+#define DIV64_U64_ROUND_UP(ll, d)       ({ u64 _tmp = (d); div64_u64((ll) + _tmp - 1, _tmp); })
+#define DIV64_U64_ROUND_CLOSEST(ll, d)  ({ u64 _tmp = (d); div64_u64((ll) + _tmp / 2, _tmp); })
+#define DIV_U64_ROUND_CLOSEST(ll, d)    ({ u32 _tmp = (d); div_u64((ll) + _tmp / 2, _tmp); })
+#define DIV_S64_ROUND_CLOSEST(ll, d)    ({ s64 __ll = (ll); s32 __d = (d); ((__ll > 0) == (__d > 0)) ? div_s64(__ll + __d / 2, __d) : div_s64(__ll - __d / 2, __d); })
 
-static inline int64_t
-div64_s64(int64_t dividend, int64_t divisor)
-{
-
-	return (dividend / divisor);
-}
-
-static inline uint64_t
-div64_u64(uint64_t dividend, uint64_t divisor)
-{
-
-	return (dividend / divisor);
-}
-
-#define	div64_ul(x, y)	div64_u64((x), (y))
-
-static inline uint64_t
-div_u64_rem(uint64_t dividend, uint32_t divisor, uint32_t *remainder)
-{
-
-	*remainder = dividend % divisor;
-	return (dividend / divisor);
-}
-
-static inline int64_t
-div_s64(int64_t dividend, int32_t divisor)
-{
-
-	return (dividend / divisor);
-}
-
-static inline uint64_t
-div_u64(uint64_t dividend, uint32_t divisor)
-{
-
-	return (dividend / divisor);
-}
-
-static inline uint64_t
-mul_u32_u32(uint32_t a, uint32_t b)
-{
-
-	return ((uint64_t)a * b);
-}
-
-static inline uint64_t
-div_u64_round_up(uint64_t dividend, uint32_t divisor)
-{
-	return ((dividend + divisor - 1) / divisor);
-}
-
-static inline uint64_t
-div64_u64_round_up(uint64_t dividend, uint64_t divisor)
-{
-	return ((dividend + divisor - 1) / divisor);
-}
-
-static inline uint64_t
-roundup_u64(uint64_t x1, uint32_t x2)
-{
-	return (div_u64(x1 + x2 - 1, x2) * x2);
-}
-
-#define	DIV_U64_ROUND_UP(...) \
-	div_u64_round_up(__VA_ARGS__)
-
-#define	DIV64_U64_ROUND_UP(...) \
-	div64_u64_round_up(__VA_ARGS__)
-
-static inline uint64_t
-mul_u64_u32_div(uint64_t x, uint32_t y, uint32_t div)
-{
-	const uint64_t rem = x % div;
-
-	return ((x / div) * y + (rem * y) / div);
-}
-
-static inline uint64_t
-mul_u64_u64_div_u64(uint64_t x, uint64_t y, uint64_t z)
-{
-	uint64_t res, rem;
-	uint64_t x1, y1, y1z;
-
-	res = rem = 0;
-	x1 = x;
-	y1z = y / z;
-	y1 = y - y1z * z;
-
-	/*
-	 * INVARIANT: x * y = res * z + rem + (y1 + y1z * z) * x1
-	 * INVARIANT: y1 < z
-	 * INVARIANT: rem < z
-	 */
-	while (x1 > 0) {
-		/* Handle low bit. */
-		if (x1 & 1) {
-			x1 &= ~1;
-			res += y1z;
-			rem += y1;
-			if ((rem < y1) || (rem >= z)) {
-				res += 1;
-				rem -= z;
-			}
-		}
-
-		/* Shift x1 right and (y1 + y1z * z) left */
-		x1 >>= 1;
-		if ((y1 * 2 < y1) || (y1 * 2 >= z)) {
-			y1z = y1z * 2 + 1;
-			y1 = y1 * 2 - z;
-		} else {
-			y1z *= 2;
-			y1 *= 2;
-		}
-	}
-
-#if !defined(__AROS__)
-	KASSERT(res * z + rem == x * y, ("%s: res %ju * z %ju + rem %ju != "
-	    "x %ju * y %ju", __func__, (uintmax_t)res, (uintmax_t)z,
-	    (uintmax_t)rem, (uintmax_t)x, (uintmax_t)y));
-	KASSERT(rem < z, ("%s: rem %ju >= z %ju\n", __func__,
-	    (uintmax_t)rem, (uintmax_t)z));
-#endif
-
-	return (res);
-}
-
-static inline uint64_t
-mul_u64_u32_shr(uint64_t x, uint32_t y, unsigned int shift)
-{
-	uint32_t hi, lo;
-	hi = x >> 32;
-	lo = x & 0xffffffff;
-
-	return (mul_u32_u32(lo, y) >> shift) +
-		(mul_u32_u32(hi, y) << (32 - shift));
-}
-
-#endif /* _LINUXKPI_LINUX_MATH64_H */
+#endif /* _LINUX_MATH64_H_ */

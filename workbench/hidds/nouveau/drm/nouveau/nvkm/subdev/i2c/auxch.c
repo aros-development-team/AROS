@@ -21,6 +21,9 @@
  *
  * Authors: Ben Skeggs
  */
+
+#include <linux/string_helpers.h>
+
 #include "auxch.h"
 #include "pad.h"
 
@@ -94,7 +97,7 @@ void
 nvkm_i2c_aux_monitor(struct nvkm_i2c_aux *aux, bool monitor)
 {
 	struct nvkm_i2c_pad *pad = aux->pad;
-	AUX_TRACE(aux, "monitor: %s", monitor ? "yes" : "no");
+	AUX_TRACE(aux, "monitor: %s", str_yes_no(monitor));
 	if (monitor)
 		nvkm_i2c_pad_mode(pad, NVKM_I2C_PAD_AUX);
 	else
@@ -193,12 +196,10 @@ nvkm_i2c_aux_ctor(const struct nvkm_i2c_aux_func *func,
 	list_add_tail(&aux->head, &pad->i2c->aux);
 	AUX_TRACE(aux, "ctor");
 
-#if !defined(__AROS__)
 	snprintf(aux->i2c.name, sizeof(aux->i2c.name), "nvkm-%s-aux-%04x",
 		 dev_name(device->dev), id);
 	aux->i2c.owner = THIS_MODULE;
 	aux->i2c.dev.parent = device->dev;
-#endif
 	aux->i2c.algo = &nvkm_i2c_aux_i2c_algo;
 	return i2c_add_adapter(&aux->i2c);
 }

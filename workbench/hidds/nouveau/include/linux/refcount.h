@@ -1,97 +1,72 @@
-/*-
- * Copyright (c) 2020 The FreeBSD Foundation
- *
- * This software was developed by Emmanuel Vadot under sponsorship
- * from the FreeBSD Foundation.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+/*
+    Copyright 2009-2026, The AROS Development Team. All rights reserved.
+*/
 
-#ifndef _LINUXKPI_LINUX_REFCOUNT_H
-#define _LINUXKPI_LINUX_REFCOUNT_H
+#ifndef _LINUX_REFCOUNT_H_
+#define _LINUX_REFCOUNT_H_
 
-#if !defined(__AROS__)
 #include <linux/atomic.h>
+#include <linux/bug.h>
+#include <linux/compiler.h>
+#include <linux/limits.h>
 #include <linux/spinlock.h>
-#endif
+#include <linux/mutex.h>
 
-typedef atomic_t refcount_t;
+typedef struct refcount_struct {
+    atomic_t refs;
+} refcount_t;
 
-static inline void
-refcount_set(refcount_t *ref, unsigned int i)
+#define REFCOUNT_INIT(n)        { .refs = ATOMIC_INIT(n), }
+#define REFCOUNT_MAX            INT_MAX
+#define REFCOUNT_SATURATED      (INT_MIN / 2)
+
+static inline void refcount_set(refcount_t *r, int n)              { atomic_set(&r->refs, n); }
+static inline unsigned int refcount_read(const refcount_t *r)     { return (unsigned int)atomic_read(&r->refs); }
+static inline bool refcount_add_not_zero(int i, refcount_t *r)     { return atomic_add_unless(&r->refs, i, 0); }
+static inline void refcount_add(int i, refcount_t *r)              { atomic_add(i, &r->refs); }
+static inline void refcount_inc(refcount_t *r)                     { atomic_inc(&r->refs); }
+static inline bool refcount_inc_not_zero(refcount_t *r)            { return refcount_add_not_zero(1, r); }
+static inline bool refcount_sub_and_test(int i, refcount_t *r)     { return atomic_sub_and_test(i, &r->refs); }
+static inline bool refcount_dec_and_test(refcount_t *r)            { return atomic_dec_and_test(&r->refs); }
+static inline void refcount_dec(refcount_t *r)                     { atomic_dec(&r->refs); }
+static inline bool refcount_dec_not_one(refcount_t *r)
 {
-	atomic_set(ref, i);
+    int c = atomic_read(&r->refs);
+    do {
+        if (c == 1)
+            return false;
+    } while (!atomic_try_cmpxchg(&r->refs, &c, c - 1));
+    return true;
+}
+static inline bool refcount_dec_if_one(refcount_t *r)
+{
+    int c = 1;
+    return atomic_try_cmpxchg(&r->refs, &c, 0);
 }
 
-static inline void
-refcount_inc(refcount_t *ref)
+static inline bool refcount_dec_and_lock(refcount_t *r, spinlock_t *lock)
 {
-	atomic_inc(ref);
+    spin_lock(lock);
+    if (refcount_dec_and_test(r))
+        return true;
+    spin_unlock(lock);
+    return false;
+}
+static inline bool refcount_dec_and_lock_irqsave(refcount_t *r, spinlock_t *lock, unsigned long *flags)
+{
+    spin_lock_irqsave(lock, *flags);
+    if (refcount_dec_and_test(r))
+        return true;
+    spin_unlock_irqrestore(lock, *flags);
+    return false;
+}
+static inline bool refcount_dec_and_mutex_lock(refcount_t *r, struct mutex *lock)
+{
+    mutex_lock(lock);
+    if (refcount_dec_and_test(r))
+        return true;
+    mutex_unlock(lock);
+    return false;
 }
 
-static inline bool
-refcount_inc_not_zero(refcount_t *ref)
-{
-	return (atomic_inc_not_zero(ref));
-}
-
-static inline void
-refcount_dec(refcount_t *ref)
-{
-	atomic_dec(ref);
-}
-
-static inline unsigned int
-refcount_read(refcount_t *ref)
-{
-	return atomic_read(ref);
-}
-
-static inline bool
-refcount_dec_and_lock_irqsave(refcount_t *ref, spinlock_t *lock,
-    unsigned long *flags)
-{
-	if (atomic_dec_and_test(ref) == true) {
-		spin_lock_irqsave(lock, flags);
-		return (true);
-	}
-	return (false);
-}
-
-static inline bool
-refcount_dec_and_test(refcount_t *r)
-{
-
-	return (atomic_dec_and_test(r));
-}
-
-static inline bool
-refcount_dec_and_mutex_lock(refcount_t *ref, struct mutex *lock)
-{
-	if (atomic_dec_and_test(ref) == true) {
-		mutex_lock(lock);
-		return (true);
-	}
-	return (false);
-}
-
-#endif /* __LINUXKPI_LINUX_REFCOUNT_H__ */
+#endif /* _LINUX_REFCOUNT_H_ */

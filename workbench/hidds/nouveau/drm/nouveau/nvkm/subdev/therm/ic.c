@@ -34,12 +34,10 @@ probe_monitoring_device(struct nvkm_i2c_bus *bus,
 	struct nvbios_therm_sensor *sensor = &therm->bios_sensor;
 	struct i2c_client *client;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	request_module("%s%s", I2C_MODULE_PREFIX, info->type);
 
-	client = i2c_new_device(&bus->i2c, info);
-	if (!client)
+	client = i2c_new_client_device(&bus->i2c, info);
+	if (IS_ERR(client))
 		return false;
 
 	if (!client->dev.driver ||
@@ -53,13 +51,11 @@ NOT_IMPLEMENTED_STOP
 		   "temp offset %+i C)\n",
 		   info->type, info->addr, sensor->offset_constant);
 	therm->ic = client;
-#endif
 	return true;
 }
 
 static struct nvkm_i2c_bus_probe
 nv_board_infos[] = {
-#if 0
 	{ { I2C_BOARD_INFO("w83l785ts", 0x2d) }, 0 },
 	{ { I2C_BOARD_INFO("w83781d", 0x2d) }, 0  },
 	{ { I2C_BOARD_INFO("adt7473", 0x2e) }, 40  },
@@ -80,7 +76,6 @@ nv_board_infos[] = {
 	{ { I2C_BOARD_INFO("adm1021", 0x4e) }, 0  },
 	{ { I2C_BOARD_INFO("lm63", 0x18) }, 0  },
 	{ { I2C_BOARD_INFO("lm63", 0x4e) }, 0  },
-#endif
 	{ }
 };
 

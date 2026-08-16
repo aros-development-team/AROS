@@ -88,6 +88,12 @@ nouveau_copy_init(ScreenPtr pScreen)
 	case NV_KEPLER:
 	case NV_MAXWELL:
 	case NV_PASCAL:
+	case NV_VOLTA:
+	case NV_TURING:
+	case NV_AMPERE:
+	case NV_HOPPER:
+	case NV_ADA:
+	case NV_BLACKWELL:
 		ret = nouveau_object_new(&pNv->dev->object, 0,
 					 NOUVEAU_FIFO_CHANNEL_CLASS,
 					 &(struct nve0_fifo) {

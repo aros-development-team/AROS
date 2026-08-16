@@ -140,7 +140,8 @@ NVAccelInitP2MF_NVE0(ScrnInfoPtr pScrn)
 {
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_pushbuf *push = pNv->pushbuf;
-	uint32_t class = (pNv->dev->chipset < 0xf0) ? 0xa040 : 0xa140;
+	uint32_t class = (pNv->dev->chipset < 0xf0) ? 0xa040 :
+			 (pNv->dev->chipset < 0x1a0) ? 0xa140 : 0xcd40;
 	int ret;
 
 	ret = nouveau_object_new(pNv->channel, class, class, NULL, 0,
@@ -165,8 +166,22 @@ NVAccelInitCOPY_NVE0(ScrnInfoPtr pScrn)
 		class = 0xa0b5;
 	else if (pNv->dev->chipset < 0x130)
 		class = 0xb0b5;
-	else
+	else if (pNv->dev->chipset < 0x140)
 		class = 0xc0b5;
+	else if (pNv->dev->chipset < 0x160)
+		class = 0xc3b5;
+	else if (pNv->dev->chipset < 0x170)
+		class = 0xc5b5;
+	else if (pNv->dev->chipset < 0x180)
+		class = 0xc7b5;
+	else if (pNv->dev->chipset < 0x190)
+		class = 0xc8b5;
+	else if (pNv->dev->chipset < 0x1a0)
+		class = 0xc7b5;
+	else if (pNv->dev->chipset < 0x1b0)
+		class = 0xc9b5;
+	else
+		class = 0xcab5;
 
 	ret = nouveau_object_new(pNv->channel, class, class,
 				 NULL, 0, &pNv->NvCOPY);

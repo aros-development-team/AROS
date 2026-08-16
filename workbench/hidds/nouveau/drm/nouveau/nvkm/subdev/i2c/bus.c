@@ -165,7 +165,6 @@ nvkm_i2c_bus_probe(struct nvkm_i2c_bus *bus, const char *what,
 	for (i = 0; info[i].dev.addr; i++) {
 		u8 orig_udelay = 0;
 
-#if !defined(__AROS__)
 		if ((bus->i2c.algo == &i2c_bit_algo) && (info[i].udelay != 0)) {
 			struct i2c_algo_bit_data *algo = bus->i2c.algo_data;
 			BUS_DBG(bus, "%dms delay instead of %dms",
@@ -173,7 +172,6 @@ nvkm_i2c_bus_probe(struct nvkm_i2c_bus *bus, const char *what,
 			orig_udelay = algo->udelay;
 			algo->udelay = info[i].udelay;
 		}
-#endif
 
 		if (nvkm_probe_i2c(&bus->i2c, info[i].dev.addr) &&
 		    (!match || match(bus, &info[i].dev, data))) {
@@ -182,12 +180,10 @@ nvkm_i2c_bus_probe(struct nvkm_i2c_bus *bus, const char *what,
 			return i;
 		}
 
-#if !defined(__AROS__)
 		if (orig_udelay) {
 			struct i2c_algo_bit_data *algo = bus->i2c.algo_data;
 			algo->udelay = orig_udelay;
 		}
-#endif
 	}
 
 	BUS_DBG(bus, "no devices found.");
@@ -229,21 +225,16 @@ nvkm_i2c_bus_ctor(const struct nvkm_i2c_bus_func *func,
 	list_add_tail(&bus->head, &pad->i2c->bus);
 	BUS_TRACE(bus, "ctor");
 
-#if !defined(__AROS__)
 	snprintf(bus->i2c.name, sizeof(bus->i2c.name), "nvkm-%s-bus-%04x",
 		 dev_name(device->dev), id);
 	bus->i2c.owner = THIS_MODULE;
 	bus->i2c.dev.parent = device->dev;
-#endif
 
 	if ( bus->func->drive_scl &&
 	    !nvkm_boolopt(device->cfgopt, "NvI2C", internal)) {
 		if (!(bit = kzalloc(sizeof(*bit), GFP_KERNEL)))
 			return -ENOMEM;
-bug("CHECKME: I2C\n");
-#if !defined(__AROS__)
 		bit->udelay = 10;
-#endif
 		bit->timeout = usecs_to_jiffies(2200);
 		bit->data = bus;
 		bit->pre_xfer = nvkm_i2c_bus_pre_xfer;

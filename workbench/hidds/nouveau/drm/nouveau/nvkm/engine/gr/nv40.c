@@ -89,7 +89,7 @@ nv40_gr_chan_bind(struct nvkm_object *object, struct nvkm_gpuobj *parent,
 }
 
 static int
-nv40_gr_chan_fini(struct nvkm_object *object, bool suspend)
+nv40_gr_chan_fini(struct nvkm_object *object, enum nvkm_suspend_state suspend)
 {
 	struct nv40_gr_chan *chan = nv40_gr_chan(object);
 	struct nv40_gr *gr = chan->gr;
@@ -101,7 +101,7 @@ nv40_gr_chan_fini(struct nvkm_object *object, bool suspend)
 	nvkm_mask(device, 0x400720, 0x00000001, 0x00000000);
 
 	if (nvkm_rd32(device, 0x40032c) == inst) {
-		if (suspend) {
+		if (suspend != NVKM_POWEROFF) {
 			nvkm_wr32(device, 0x400720, 0x00000000);
 			nvkm_wr32(device, 0x400784, inst);
 			nvkm_mask(device, 0x400310, 0x00000020, 0x00000020);
@@ -145,7 +145,7 @@ nv40_gr_chan = {
 };
 
 int
-nv40_gr_chan_new(struct nvkm_gr *base, struct nvkm_fifo_chan *fifoch,
+nv40_gr_chan_new(struct nvkm_gr *base, struct nvkm_chan *fifoch,
 		 const struct nvkm_oclass *oclass, struct nvkm_object **pobject)
 {
 	struct nv40_gr *gr = nv40_gr(base);
@@ -275,8 +275,8 @@ nv40_gr_intr(struct nvkm_gr *base)
 				   "nstatus %08x [%s] ch %d [%08x %s] subc %d "
 				   "class %04x mthd %04x data %08x\n",
 			   show, msg, nsource, src, nstatus, sta,
-			   chan ? chan->fifo->chid : -1, inst << 4,
-			   chan ? chan->fifo->object.client->name : "unknown",
+			   chan ? chan->fifo->id : -1, inst << 4,
+			   chan ? chan->fifo->name : "unknown",
 			   subc, class, mthd, data);
 	}
 
@@ -386,7 +386,7 @@ nv40_gr_init(struct nvkm_gr *base)
 	}
 
 	/* begin RAM config */
-	vramsz = device->func->resource_size(device, 1) - 1;
+	vramsz = device->func->resource_size(device, NVKM_BAR1_FB) - 1;
 	switch (device->chipset) {
 	case 0x40:
 		nvkm_wr32(device, 0x4009A4, nvkm_rd32(device, 0x100200));
@@ -429,7 +429,7 @@ nv40_gr_init(struct nvkm_gr *base)
 
 int
 nv40_gr_new_(const struct nvkm_gr_func *func, struct nvkm_device *device,
-	     int index, struct nvkm_gr **pgr)
+	     enum nvkm_subdev_type type, int inst, struct nvkm_gr **pgr)
 {
 	struct nv40_gr *gr;
 
@@ -438,7 +438,7 @@ nv40_gr_new_(const struct nvkm_gr_func *func, struct nvkm_device *device,
 	*pgr = &gr->base;
 	INIT_LIST_HEAD(&gr->chan);
 
-	return nvkm_gr_ctor(func, device, index, true, &gr->base);
+	return nvkm_gr_ctor(func, device, type, inst, true, &gr->base);
 }
 
 static const struct nvkm_gr_func
@@ -470,7 +470,7 @@ nv40_gr = {
 };
 
 int
-nv40_gr_new(struct nvkm_device *device, int index, struct nvkm_gr **pgr)
+nv40_gr_new(struct nvkm_device *device, enum nvkm_subdev_type type, int inst, struct nvkm_gr **pgr)
 {
-	return nv40_gr_new_(&nv40_gr, device, index, pgr);
+	return nv40_gr_new_(&nv40_gr, device, type, inst, pgr);
 }

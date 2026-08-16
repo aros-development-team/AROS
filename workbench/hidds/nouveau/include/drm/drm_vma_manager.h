@@ -23,7 +23,6 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#if !defined(__AROS__)
 #include <drm/drm_mm.h>
 #include <linux/mm.h>
 #include <linux/rbtree.h>
@@ -54,7 +53,7 @@ struct drm_vma_offset_node {
 	rwlock_t vm_lock;
 	struct drm_mm_node vm_node;
 	struct rb_root vm_files;
-	bool readonly:1;
+	void *driver_private;
 };
 
 struct drm_vma_offset_manager {
@@ -75,6 +74,7 @@ void drm_vma_offset_remove(struct drm_vma_offset_manager *mgr,
 			   struct drm_vma_offset_node *node);
 
 int drm_vma_node_allow(struct drm_vma_offset_node *node, struct drm_file *tag);
+int drm_vma_node_allow_once(struct drm_vma_offset_node *node, struct drm_file *tag);
 void drm_vma_node_revoke(struct drm_vma_offset_node *node,
 			 struct drm_file *tag);
 bool drm_vma_node_is_allowed(struct drm_vma_offset_node *node,
@@ -243,8 +243,5 @@ static inline int drm_vma_node_verify_access(struct drm_vma_offset_node *node,
 {
 	return drm_vma_node_is_allowed(node, tag) ? 0 : -EACCES;
 }
-#else
-#include <drm-compat/drm_vma_manager.h>
-#endif
 
 #endif /* __DRM_VMA_MANAGER_H__ */

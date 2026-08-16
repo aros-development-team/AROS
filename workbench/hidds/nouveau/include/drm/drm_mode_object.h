@@ -23,10 +23,8 @@
 #ifndef __DRM_MODESET_H__
 #define __DRM_MODESET_H__
 
-#if !defined(__AROS__)
 #include <linux/kref.h>
 #include <drm/drm_lease.h>
-#endif
 struct drm_object_properties;
 struct drm_property;
 struct drm_device;
@@ -37,7 +35,7 @@ struct drm_file;
  * @id: userspace visible identifier
  * @type: type of the object, one of DRM_MODE_OBJECT\_\*
  * @properties: properties attached to this object, including values
- * @refcount: reference count for objects which with dynamic lifetime
+ * @refcount: reference count for objects with dynamic lifetime
  * @free_cb: free function callback, only set for objects with dynamic lifetime
  *
  * Base structure for modeset objects visible to userspace. Objects can be
@@ -62,7 +60,7 @@ struct drm_mode_object {
 	void (*free_cb)(struct kref *kref);
 };
 
-#define DRM_OBJECT_MAX_PROPERTY 24
+#define DRM_OBJECT_MAX_PROPERTY 64
 /**
  * struct drm_object_properties - property tracking for &drm_mode_object
  */
@@ -100,6 +98,10 @@ struct drm_object_properties {
 	 * Hence atomic drivers should not use drm_object_property_set_value()
 	 * and drm_object_property_get_value() on mutable objects, i.e. those
 	 * without the DRM_MODE_PROP_IMMUTABLE flag set.
+	 *
+	 * For atomic drivers the default value of properties is stored in this
+	 * array, so drm_object_property_get_default_value can be used to
+	 * retrieve it.
 	 */
 	uint64_t values[DRM_OBJECT_MAX_PROPERTY];
 };
@@ -128,6 +130,9 @@ int drm_object_property_set_value(struct drm_mode_object *obj,
 int drm_object_property_get_value(struct drm_mode_object *obj,
 				  struct drm_property *property,
 				  uint64_t *value);
+int drm_object_property_get_default_value(struct drm_mode_object *obj,
+					  struct drm_property *property,
+					  uint64_t *val);
 
 void drm_object_attach_property(struct drm_mode_object *obj,
 				struct drm_property *property,

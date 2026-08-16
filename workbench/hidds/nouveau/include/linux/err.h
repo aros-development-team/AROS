@@ -37,13 +37,15 @@
 #define MAX_ERRNO	4095
 #else
 #include <linux/types.h>
-typedef IPTR __uintptr_t;
+#include <linux/compiler.h>
+#undef MAX_ERRNO
+#define MAX_ERRNO	4095
 #ifndef	__DECONST
-#define	__DECONST(type, var)	((type)(__uintptr_t)(const void *)(var))
+#define	__DECONST(type, var)	((type)(IPTR)(const void *)(var))
 #endif
 #endif
 
-#define IS_ERR_VALUE(x) __builtin_expect((IPTR)((x) >= (uintptr_t)-MAX_ERRNO), 0)
+#define IS_ERR_VALUE(x) __builtin_expect((IPTR)(x) >= (IPTR)-MAX_ERRNO, 0)
 
 static inline void *
 ERR_PTR(long error)

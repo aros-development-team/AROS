@@ -1,31 +1,29 @@
 #ifndef __NOUVEAU_LIBDRM_PRIVATE_H__
 #define __NOUVEAU_LIBDRM_PRIVATE_H__
 
-#if !defined(__AROS__)
+#include <stdio.h>
+
 #include <libdrm_macros.h>
 #include <xf86drm.h>
 #include <xf86atomic.h>
-#include "nouveau_drm.h"
-#else
-#include <libdrm/arosdrm.h>
 #include <pthread.h>
-#include <uapi/drm/nouveau_drm.h>
-#endif
+#include "nouveau_drm.h"
 
 #include "nouveau.h"
 
-#ifdef DEBUG
+/*
+ * 0x00000001 dump all pushbuffers
+ * 0x00000002 submit pushbuffers synchronously
+ * 0x80000000 if compiled with SIMULATE return -EINVAL for all pb submissions
+ */
 drm_private extern uint32_t libdrm_nouveau_debug;
+drm_private extern FILE *libdrm_nouveau_out;
 #define dbg_on(lvl) (libdrm_nouveau_debug & (1 << lvl))
 #define dbg(lvl, fmt, args...) do {                                            \
 	if (dbg_on((lvl)))                                                     \
-		fprintf(stderr, "nouveau: "fmt, ##args);                       \
+		fprintf(libdrm_nouveau_out, "nouveau: "fmt, ##args);                       \
 } while(0)
-#else
-#define dbg_on(lvl) (0)
-#define dbg(lvl, fmt, args...)
-#endif
-#define err(fmt, args...) fprintf(stderr, "nouveau: "fmt, ##args)
+#define err(fmt, args...) fprintf(libdrm_nouveau_out, "nouveau: "fmt, ##args)
 
 struct nouveau_client_kref {
 	struct drm_nouveau_gem_pushbuf_bo *kref;

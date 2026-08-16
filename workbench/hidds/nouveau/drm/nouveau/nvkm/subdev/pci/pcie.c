@@ -29,7 +29,6 @@ static char *nvkm_pcie_speeds[] = {
 	"8.0GT/s",
 };
 
-#if 0
 static enum nvkm_pcie_speed
 nvkm_pcie_speed(enum pci_bus_speed speed)
 {
@@ -47,7 +46,6 @@ nvkm_pcie_speed(enum pci_bus_speed speed)
 		return -1;
 	}
 }
-#endif
 
 static int
 nvkm_pcie_get_version(struct nvkm_pci *pci)
@@ -116,20 +114,17 @@ nvkm_pcie_init(struct nvkm_pci *pci)
 int
 nvkm_pcie_set_link(struct nvkm_pci *pci, enum nvkm_pcie_speed speed, u8 width)
 {
-	struct nvkm_subdev *subdev = &pci->subdev;
+	struct nvkm_subdev *subdev;
 	enum nvkm_pcie_speed cur_speed, max_speed;
-	struct pci_bus *pbus;
 	int ret;
-NOT_IMPLEMENTED_STOP
-#if 0
 
 	if (!pci || !pci_is_pcie(pci->pdev))
 		return 0;
-	pbus = pci->pdev->bus;
 
 	if (!pci->func->pcie.set_link)
 		return -ENOSYS;
 
+	subdev = &pci->subdev;
 	nvkm_trace(subdev, "requested %s\n", nvkm_pcie_speeds[speed]);
 
 	if (pci->func->pcie.version(pci) < 2) {
@@ -138,9 +133,8 @@ NOT_IMPLEMENTED_STOP
 	}
 
 	cur_speed = pci->func->pcie.cur_speed(pci);
-	max_speed = min(nvkm_pcie_speed(pbus->max_bus_speed),
+	max_speed = min(nvkm_pcie_speed(pci->pdev->bus->max_bus_speed),
 			pci->func->pcie.max_speed(pci));
-#endif
 
 	nvkm_trace(subdev, "current speed: %s\n", nvkm_pcie_speeds[cur_speed]);
 

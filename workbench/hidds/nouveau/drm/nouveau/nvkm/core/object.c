@@ -30,7 +30,10 @@ nvkm_object_search(struct nvkm_client *client, u64 handle,
 		   const struct nvkm_object_func *func)
 {
 	struct nvkm_object *object;
+	unsigned long flags;
+
 	if (handle) {
+		spin_lock_irqsave(&client->obj_lock, flags);
 		struct rb_node *node = client->objroot.rb_node;
 		while (node) {
 			object = rb_entry(node, typeof(*object), node);
@@ -39,9 +42,12 @@ nvkm_object_search(struct nvkm_client *client, u64 handle,
 			else
 			if (handle > object->object)
 				node = node->rb_right;
-			else
+			else {
+				spin_unlock_irqrestore(&client->obj_lock, flags);
 				goto done;
+			}
 		}
+		spin_unlock_irqrestore(&client->obj_lock, flags);
 		return ERR_PTR(-ENOENT);
 	} else {
 		object = &client->object;
@@ -56,30 +62,39 @@ done:
 void
 nvkm_object_remove(struct nvkm_object *object)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&object->client->obj_lock, flags);
 	if (!RB_EMPTY_NODE(&object->node))
 		rb_erase(&object->node, &object->client->objroot);
+	spin_unlock_irqrestore(&object->client->obj_lock, flags);
 }
 
 bool
 nvkm_object_insert(struct nvkm_object *object)
 {
-	struct rb_node **ptr = &object->client->objroot.rb_node;
+	struct rb_node **ptr;
 	struct rb_node *parent = NULL;
+	unsigned long flags;
 
+	spin_lock_irqsave(&object->client->obj_lock, flags);
+	ptr = &object->client->objroot.rb_node;
 	while (*ptr) {
 		struct nvkm_object *this = rb_entry(*ptr, typeof(*this), node);
 		parent = *ptr;
-		if (object->object < this->object)
+		if (object->object < this->object) {
 			ptr = &parent->rb_left;
-		else
-		if (object->object > this->object)
+		} else if (object->object > this->object) {
 			ptr = &parent->rb_right;
-		else
+		} else {
+			spin_unlock_irqrestore(&object->client->obj_lock, flags);
 			return false;
+		}
 	}
 
 	rb_link_node(&object->node, parent, ptr);
 	rb_insert_color(&object->node, &object->client->objroot);
+	spin_unlock_irqrestore(&object->client->obj_lock, flags);
 	return true;
 }
 
@@ -118,54 +133,6 @@ nvkm_object_unmap(struct nvkm_object *object)
 }
 
 int
-nvkm_object_rd08(struct nvkm_object *object, u64 addr, u8 *data)
-{
-	if (likely(object->func->rd08))
-		return object->func->rd08(object, addr, data);
-	return -ENODEV;
-}
-
-int
-nvkm_object_rd16(struct nvkm_object *object, u64 addr, u16 *data)
-{
-	if (likely(object->func->rd16))
-		return object->func->rd16(object, addr, data);
-	return -ENODEV;
-}
-
-int
-nvkm_object_rd32(struct nvkm_object *object, u64 addr, u32 *data)
-{
-	if (likely(object->func->rd32))
-		return object->func->rd32(object, addr, data);
-	return -ENODEV;
-}
-
-int
-nvkm_object_wr08(struct nvkm_object *object, u64 addr, u8 data)
-{
-	if (likely(object->func->wr08))
-		return object->func->wr08(object, addr, data);
-	return -ENODEV;
-}
-
-int
-nvkm_object_wr16(struct nvkm_object *object, u64 addr, u16 data)
-{
-	if (likely(object->func->wr16))
-		return object->func->wr16(object, addr, data);
-	return -ENODEV;
-}
-
-int
-nvkm_object_wr32(struct nvkm_object *object, u64 addr, u32 data)
-{
-	if (likely(object->func->wr32))
-		return object->func->wr32(object, addr, data);
-	return -ENODEV;
-}
-
-int
 nvkm_object_bind(struct nvkm_object *object, struct nvkm_gpuobj *gpuobj,
 		 int align, struct nvkm_gpuobj **pgpuobj)
 {
@@ -175,22 +142,34 @@ nvkm_object_bind(struct nvkm_object *object, struct nvkm_gpuobj *gpuobj,
 }
 
 int
-nvkm_object_fini(struct nvkm_object *object, bool suspend)
+nvkm_object_fini(struct nvkm_object *object, enum nvkm_suspend_state suspend)
 {
-	const char *action = suspend ? "suspend" : "fini";
+	const char *action;
 	struct nvkm_object *child;
 	s64 time;
 	int ret;
 
-	nvif_trace(object, "%s children...\n", action);
+	switch (suspend) {
+	case NVKM_POWEROFF:
+	default:
+		action = "fini";
+		break;
+	case NVKM_SUSPEND:
+		action = "suspend";
+		break;
+	case NVKM_RUNTIME_SUSPEND:
+		action = "runtime";
+		break;
+	}
+	nvif_debug(object, "%s children...\n", action);
 	time = ktime_to_us(ktime_get());
-	list_for_each_entry(child, &object->tree, head) {
+	list_for_each_entry_reverse(child, &object->tree, head) {
 		ret = nvkm_object_fini(child, suspend);
 		if (ret && suspend)
 			goto fail_child;
 	}
 
-	nvif_trace(object, "%s running...\n", action);
+	nvif_debug(object, "%s running...\n", action);
 	if (object->func->fini) {
 		ret = object->func->fini(object, suspend);
 		if (ret) {
@@ -201,7 +180,7 @@ nvkm_object_fini(struct nvkm_object *object, bool suspend)
 	}
 
 	time = ktime_to_us(ktime_get()) - time;
-	nvif_trace(object, "%s completed in %lldus\n", action, time);
+	nvif_debug(object, "%s completed in %lldus\n", action, time);
 	return 0;
 
 fail:
@@ -224,7 +203,7 @@ nvkm_object_init(struct nvkm_object *object)
 	s64 time;
 	int ret;
 
-	nvif_trace(object, "init running...\n");
+	nvif_debug(object, "init running...\n");
 	time = ktime_to_us(ktime_get());
 	if (object->func->init) {
 		ret = object->func->init(object);
@@ -232,7 +211,7 @@ nvkm_object_init(struct nvkm_object *object)
 			goto fail;
 	}
 
-	nvif_trace(object, "init children...\n");
+	nvif_debug(object, "init children...\n");
 	list_for_each_entry(child, &object->tree, head) {
 		ret = nvkm_object_init(child);
 		if (ret)
@@ -240,16 +219,16 @@ nvkm_object_init(struct nvkm_object *object)
 	}
 
 	time = ktime_to_us(ktime_get()) - time;
-	nvif_trace(object, "init completed in %lldus\n", time);
+	nvif_debug(object, "init completed in %lldus\n", time);
 	return 0;
 
 fail_child:
 	list_for_each_entry_continue_reverse(child, &object->tree, head)
-		nvkm_object_fini(child, false);
+		nvkm_object_fini(child, NVKM_POWEROFF);
 fail:
 	nvif_error(object, "init failed with %d\n", ret);
 	if (object->func->fini)
-		object->func->fini(object, false);
+		object->func->fini(object, NVKM_POWEROFF);
 	return ret;
 }
 
@@ -260,19 +239,19 @@ nvkm_object_dtor(struct nvkm_object *object)
 	void *data = object;
 	s64 time;
 
-	nvif_trace(object, "destroy children...\n");
+	nvif_debug(object, "destroy children...\n");
 	time = ktime_to_us(ktime_get());
 	list_for_each_entry_safe(child, ctemp, &object->tree, head) {
 		nvkm_object_del(&child);
 	}
 
-	nvif_trace(object, "destroy running...\n");
+	nvif_debug(object, "destroy running...\n");
 	nvkm_object_unmap(object);
 	if (object->func->dtor)
 		data = object->func->dtor(object);
 	nvkm_engine_unref(&object->engine);
 	time = ktime_to_us(ktime_get()) - time;
-	nvif_trace(object, "destroy completed in %lldus...\n", time);
+	nvif_debug(object, "destroy completed in %lldus...\n", time);
 	return data;
 }
 
@@ -298,8 +277,6 @@ nvkm_object_ctor(const struct nvkm_object_func *func,
 	object->engine = nvkm_engine_ref(oclass->engine);
 	object->oclass = oclass->base.oclass;
 	object->handle = oclass->handle;
-	object->route  = oclass->route;
-	object->token  = oclass->token;
 	object->object = oclass->object;
 	INIT_LIST_HEAD(&object->head);
 	INIT_LIST_HEAD(&object->tree);

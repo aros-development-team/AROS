@@ -25,9 +25,6 @@
  *
  */
 #include <core/enum.h>
-#if defined(__AROS__)
-#include <linux/kernel.h>
-#endif
 
 const struct nvkm_enum *
 nvkm_enum_find(const struct nvkm_enum *en, u32 value)

@@ -7,11 +7,9 @@
 #include <linux/limits.h>
 #include <linux/const.h>
 #else
-#include <linux/compiler_attributes.h>
-#include <linux/compiler_types.h>
-#define	__must_be_array(a)	__same_type(a, &(a)[0])
-#define	__is_constexpr(x) \
-	__builtin_constant_p(x)
+#include <linux/compiler.h>
+#include <linux/limits.h>
+#include <linux/const.h>
 #endif
 
 /*

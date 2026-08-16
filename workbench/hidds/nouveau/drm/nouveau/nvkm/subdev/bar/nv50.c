@@ -127,7 +127,7 @@ nv50_bar_oneinit(struct nvkm_bar *base)
 
 	/* BAR2 */
 	start = 0x0100000000ULL;
-	size = device->func->resource_size(device, 3);
+	size = device->func->resource_size(device, NVKM_BAR2_INST);
 	if (!size)
 		return -ENOMEM;
 	limit = start + size;
@@ -167,7 +167,7 @@ nv50_bar_oneinit(struct nvkm_bar *base)
 
 	/* BAR1 */
 	start = 0x0000000000ULL;
-	size = device->func->resource_size(device, 1);
+	size = device->func->resource_size(device, NVKM_BAR1_FB);
 	if (!size)
 		return -ENOMEM;
 	limit = start + size;
@@ -220,12 +220,12 @@ nv50_bar_dtor(struct nvkm_bar *base)
 
 int
 nv50_bar_new_(const struct nvkm_bar_func *func, struct nvkm_device *device,
-	      int index, u32 pgd_addr, struct nvkm_bar **pbar)
+	      enum nvkm_subdev_type type, int inst, u32 pgd_addr, struct nvkm_bar **pbar)
 {
 	struct nv50_bar *bar;
 	if (!(bar = kzalloc(sizeof(*bar), GFP_KERNEL)))
 		return -ENOMEM;
-	nvkm_bar_ctor(func, device, index, &bar->base);
+	nvkm_bar_ctor(func, device, type, inst, &bar->base);
 	bar->pgd_addr = pgd_addr;
 	*pbar = &bar->base;
 	return 0;
@@ -248,7 +248,8 @@ nv50_bar_func = {
 };
 
 int
-nv50_bar_new(struct nvkm_device *device, int index, struct nvkm_bar **pbar)
+nv50_bar_new(struct nvkm_device *device, enum nvkm_subdev_type type, int inst,
+	     struct nvkm_bar **pbar)
 {
-	return nv50_bar_new_(&nv50_bar_func, device, index, 0x1400, pbar);
+	return nv50_bar_new_(&nv50_bar_func, device, type, inst, 0x1400, pbar);
 }

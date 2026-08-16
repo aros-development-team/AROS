@@ -41,6 +41,12 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
         case NV_KEPLER:
         case NV_MAXWELL:
         case NV_PASCAL:
+        case NV_VOLTA:
+        case NV_TURING:
+        case NV_AMPERE:
+        case NV_HOPPER:
+        case NV_ADA:
+        case NV_BLACKWELL:
             bo = nv50_miptree(resource)->base.bo;
             pitch = nv50_miptree(resource)->level[0].pitch;
             break;
@@ -230,6 +236,12 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
     case NV_KEPLER:
     case NV_MAXWELL:
     case NV_PASCAL:
+    case NV_VOLTA:
+    case NV_TURING:
+    case NV_AMPERE:
+    case NV_HOPPER:
+    case NV_ADA:
+    case NV_BLACKWELL:
         HIDDNouveauNVC0CopySameFormat(carddata, &srcdata, dstdata, 
             msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);

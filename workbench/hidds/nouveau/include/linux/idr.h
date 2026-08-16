@@ -40,6 +40,15 @@
 #if !defined(__AROS__)
 #include <linux/gpf.h>
 #include <linux/types.h>
+#else
+#include <linux/types.h>
+#include <linux/spinlock.h>
+#include <linux/radix-tree.h>
+#include <linux/gfp.h>
+#include <linux/percpu.h>
+#include <linux/gfp.h>
+#include <aros/symbolsets.h>
+#include <sys/_param.h>
 #endif
 
 #define	IDR_BITS	5
@@ -68,6 +77,7 @@ struct idr {
 	int			next_cyclic_id;
 };
 
+#if !defined(__AROS__)
 /* NOTE: It is the applications responsibility to destroy the IDR */
 #define	DEFINE_IDR(name)						\
 	struct idr name;						\
@@ -79,6 +89,16 @@ struct idr {
 	struct ida name;						\
 	SYSINIT(name##_ida_sysinit, SI_SUB_DRIVERS, SI_ORDER_FIRST,	\
 	    ida_init, &(name))
+#else
+#define	DEFINE_IDR(name)						\
+	struct idr name;						\
+	static int __init_idr_##name(void) { idr_init(&name); return 1; }	\
+	ADD2INIT(__init_idr_##name, 0)
+#define	DEFINE_IDA(name)						\
+	struct ida name;						\
+	static int __init_ida_##name(void) { ida_init(&name); return 1; }	\
+	ADD2INIT(__init_ida_##name, 0)
+#endif
 
 void	idr_preload(gfp_t gfp_mask);
 void	idr_preload_end(void);
@@ -100,6 +120,14 @@ int	idr_for_each(struct idr *idp, int (*fn)(int id, void *p, void *data), void *
 static inline void idr_init_base(struct idr *idp, int base)
 {
     idr_init(idp);
+}
+static inline int idr_alloc_u32(struct idr *idp, void *ptr, u32 *nextid, unsigned long max, gfp_t gfp)
+{
+    int id = idr_alloc(idp, ptr, *nextid, max == U32_MAX ? 0 : (int)max + 1, gfp);
+    if (id < 0)
+        return id;
+    *nextid = id;
+    return 0;
 }
 
 #define	idr_for_each_entry(idp, entry, id)	\

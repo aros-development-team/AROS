@@ -1105,6 +1105,9 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color)
 {
+    if (!carddata->channel)
+        return FALSE;
+
     if (NVC0EXAPrepareSolid(bmdata, drawmode, ~0, color))
     {
         NVC0EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
@@ -1122,6 +1125,9 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode)
 {
+    if (!carddata->channel)
+        return FALSE;
+
     if (NVC0EXAPrepareCopy(srcdata, destdata, 0, 0, drawmode, ~0))
     {
         NVC0EXACopy(destdata, srcX, srcY, destX , destY, width, height);
