@@ -59,8 +59,11 @@
 
     if (thisTask)
     {
-        /* Protect the signal mask against access by other tasks. */
+        /* Disable() also masks the FIQ that would re-enter tc_SpinLock. */
         Disable();
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&thisTask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
         /* Get address */
         sig = &thisTask->tc_SigRecvd;
@@ -69,6 +72,9 @@
         old = *sig;
         *sig = (old & ~signalSet) | (newSignals & signalSet);
 
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&thisTask->tc_SpinLock);
+#endif
         Enable();
     }
 

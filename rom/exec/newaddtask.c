@@ -36,7 +36,10 @@ static void TaskLaunch(struct Task *parent, struct Task *task, struct Hook *plHo
     Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #else
     task->tc_State = TS_INVALID;
+    /* Disable() masks the FIQ that would re-enter the scheduler locks. */
+    Disable();
     krnSysCallReschedTask(task, TS_READY);
+    Enable();
 #endif
 
     /*
@@ -103,7 +106,9 @@ static void TaskLaunch(struct Task *parent, struct Task *task, struct Hook *plHo
     {
        bug("[Exec] TaskLaunch: Unable to Launch on the selected CPU\n");
         // TODO: Free up all the task data ..
+        Disable();
         krnSysCallReschedTask(task, TS_REMOVED);
+        Enable();
         if (GetETask(task))
             KrnDeleteContext(GetETask(task)->et_RegFrame);
         CleanupETask(task);
@@ -236,6 +241,10 @@ static void TaskLaunch(struct Task *parent, struct Task *task, struct Hook *plHo
     task->tc_SigWait = 0;
     task->tc_SigRecvd = 0;
     task->tc_SigExcept = 0;
+
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&task->tc_SpinLock);
+#endif
 
     /* Signals default to all system signals allocated. */
     if (task->tc_SigAlloc == 0)

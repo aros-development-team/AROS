@@ -60,10 +60,10 @@
     struct Task *thisTask = GET_THIS_TASK;
     ULONG old;
 
-    /* Protect mask of sent signals and task lists */
+    /* Disable() also masks the FIQ that would re-enter tc_SpinLock. */
     Disable();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_LOCK_WRITE(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    EXEC_SPINLOCK_LOCK(&thisTask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
 
     /* Get returncode */
@@ -82,7 +82,7 @@
         Reschedule();
     }
 #if defined(__AROSEXEC_SMP__)
-    EXEC_UNLOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    EXEC_SPINLOCK_UNLOCK(&thisTask->tc_SpinLock);
 #endif
     Enable();
 

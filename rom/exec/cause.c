@@ -5,6 +5,7 @@
 */
 
 #include <aros/asmcall.h>
+#include <aros/atomic.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 
@@ -90,12 +91,22 @@
         pri = (softint->is_Node.ln_Pri + 0x20)>>4;
 
         /* We are accessing an Exec list, protect ourselves. */
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&SysBase->SoftInts[pri].sh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         ADDTAIL(&SysBase->SoftInts[pri].sh_List, &softint->is_Node);
         softint->is_Node.ln_Type = NT_SOFTINT;
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&SysBase->SoftInts[pri].sh_SpinLock);
+#endif
     }
 
     /* Signal pending software interrupt condition */
+#if defined(__AROSEXEC_SMP__)
+    __AROS_ATOMIC_OR_W(SysBase->SysFlags, SFF_SoftInt);
+#else
     SysBase->SysFlags |= SFF_SoftInt;
+#endif
 
     /*
      * Quick soft int request. For optimal performance m68k-amiga
@@ -140,7 +151,11 @@ AROS_INTH0(SoftIntDispatch)
     if( SysBase->SysFlags & SFF_SoftInt )
     {
         /* Clear Software interrupt pending flag. */
+#if defined(__AROSEXEC_SMP__)
+        __AROS_ATOMIC_AND_W(SysBase->SysFlags, ~SFF_SoftInt);
+#else
         SysBase->SysFlags &= ~(SFF_SoftInt);
+#endif
 
         for(;;)
         {
@@ -151,7 +166,13 @@ AROS_INTH0(SoftIntDispatch)
                  * been executed. In this case interrupts have been enabled before calling the handler.
                  */
                 KrnCli();
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_LOCK(&SysBase->SoftInts[i].sh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
                 intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List);
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_UNLOCK(&SysBase->SoftInts[i].sh_SpinLock);
+#endif
 
                 if (intr)
                 {
