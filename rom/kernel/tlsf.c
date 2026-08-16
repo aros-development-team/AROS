@@ -1499,6 +1499,11 @@ void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, 
     mhe->mhe_MemHeader.mh_Upper           = start + size;
     mhe->mhe_MemHeader.mh_Free            = size;
 
+#if defined(__AROSEXEC_SMP__)
+    mhe->mhe_MemHeader.mh_SpinLock.lock    = SPINLOCK_UNLOCKED;
+    mhe->mhe_MemHeader.mh_SpinLock.s_Owner = NULL;
+#endif
+
     D(nbug("[Kernel:TLSF] %s: 0x%p -> 0x%p\n", __PRETTY_FUNCTION__, mhe->mhe_MemHeader.mh_Lower, mhe->mhe_MemHeader.mh_Upper));
 
     tlsf_init(mhe);

@@ -110,6 +110,11 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     for (i=0; i < HW_IRQ_COUNT; i++)
         NEWLIST(&KERNELIRQ_LIST(i));
 
+#if defined(__AROSEXEC_SMP__)
+    KernelBase->kb_IntrSpinLock.lock    = SPINLOCK_UNLOCKED;
+    KernelBase->kb_IntrSpinLock.s_Owner = NULL;
+#endif
+
     /*
      * Everything is ok, add our resource.
      * exec.library catches this call and sets up its memory management.

@@ -93,11 +93,19 @@
             handle->in_nr = irq;
 
             Disable();
-
+#if defined(__AROSEXEC_SMP__)
+            /*
+             * Disable() only stops this CPU; another core may be walking
+             * this chain in krnRunIRQHandlers() right now.
+             */
+            KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
             ADDHEAD(&KERNELIRQ_LIST(irq), &handle->in_Node);
 
             ictl_enable_irq(irq, KernelBase);
-
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
             Enable();
         }
 
@@ -114,10 +122,22 @@ void krnRunIRQHandlers(struct KernelBase *KernelBase, irqid_t irq)
 {
     struct IntrNode *in, *in2;
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Hold the chain in READ mode so a concurrent KrnAdd/RemIRQHandler()
+     * on another CPU cannot mutate it mid-walk. Consequence: a handler
+     * must not add/remove IRQ handlers from within itself - that would
+     * self-deadlock on the WRITE acquire.
+     */
+    KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_READ);
+#endif
     ForeachNodeSafe(&KERNELIRQ_LIST(irq), in, in2)
     {
         irqhandler_t h = in->in_Handler;
 
         h(in->in_HandlerData, in->in_HandlerData2);
     }
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
 }
