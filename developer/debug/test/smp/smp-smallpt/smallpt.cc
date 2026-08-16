@@ -78,6 +78,21 @@ Sphere spheres[] = {//Scene: radius, position, emission, color, material
 
 const int numSpheres = sizeof(spheres)/sizeof(Sphere);
 
+/*
+ * Explicit light sampling wants a small bright light where the naive
+ * integrator wants a large dim one, so spheres[0] differs between the two.
+ * Every worker used to rewrite it on each tile, which races once the
+ * workers really run at the same time on different cores - the renderer
+ * calls this once instead, before any worker exists.
+ */
+extern "C" void ConfigureSmallPTScene(int explicit_mode)
+{
+    if (explicit_mode)
+        spheres[0] = Sphere(5, Vec(50,81.6-16.5,81.6),Vec(4,4,4)*20,  Vec(), DIFF);
+    else
+        spheres[0] = Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF);
+}
+
 inline double clamp(double x)
 {
     return x<0 ? 0 : x>1 ? 1 : x;
@@ -308,6 +323,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
     struct MsgPort *syncPort = CreateMsgPort();
     struct MinList msgPool;
     struct Task *me = FindTask(NULL);
+    int pendingMsgs = 0;
 
     c = (Vec *)AllocMem(sizeof(Vec) * TILE_SIZE * TILE_SIZE, MEMF_ANY | MEMF_CLEAR);
 
@@ -330,7 +346,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
         ULONG signals;
         BOOL doWork = TRUE;
         BOOL redraw = TRUE;
-        
+
         m = AllocMsg(&msgPool);
         if (m)
         {
@@ -338,6 +354,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
             m->mm_Message.mn_ReplyPort = port;
             m->mm_Type = MSG_HUNGRY;
             PutMsg(masterPort, &m->mm_Message);
+            pendingMsgs++;
         }
         
         D(bug("[SMP-SmallPT-Task] Just told renderer I'm hungry\n"));
@@ -356,7 +373,10 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                 {
                     if (m->mm_Message.mn_Node.ln_Type == NT_REPLYMSG)
                     {
+                        if (pendingMsgs > 0)
+                            pendingMsgs--;
                         FreeMsg(&msgPool, m);
+                        redraw = TRUE;
                         continue;
                     }
                     else
@@ -377,11 +397,6 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                             int tile_y = m->mm_Body.RenderTile.tile->y;
                             struct MsgPort *guiPort = m->mm_Body.RenderTile.guiPort;
                             int explicit_mode = m->mm_Body.RenderTile.explicitMode;
-
-                            if (explicit_mode)
-                                spheres[0] = Sphere(5, Vec(50,81.6-16.5,81.6),Vec(4,4,4)*20,  Vec(), DIFF);
-                            else
-                                spheres[0] = Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF);
 
                             ReplyMsg(&m->mm_Message);
 
@@ -464,6 +479,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                                 m->mm_Body.RedrawTile.TileX = tile_x;
                                 m->mm_Body.RedrawTile.TileY = tile_y;
                                 PutMsg(guiPort, &m->mm_Message);
+                                pendingMsgs++;
                                 
                                 redraw = TRUE;
                             }
@@ -475,6 +491,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                                 m->mm_Type = MSG_RENDERREADY;
                                 m->mm_Body.RenderTile.tile = tile;
                                 PutMsg(masterPort, &m->mm_Message);
+                                pendingMsgs++;
                             }
 
                             m = AllocMsg(&msgPool);
@@ -483,17 +500,32 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                                 m->mm_Message.mn_ReplyPort = port;
                                 m->mm_Type = MSG_HUNGRY;
                                 PutMsg(masterPort, &m->mm_Message);
+                                pendingMsgs++;
                             }
                         }
                     }
                 }
             }
 
-            if (signals & SIGBREAKB_CTRL_C)
+            if (signals & SIGBREAKF_CTRL_C)
                 doWork = FALSE;
 
         } while(doWork);
+
+        while (pendingMsgs > 0)
+        {
+            WaitPort(port);
+            while ((m = (struct MyMessage *)GetMsg(port)))
+            {
+                if (m->mm_Message.mn_Node.ln_Type == NT_REPLYMSG)
+                {
+                    pendingMsgs--;
+                    FreeMsg(&msgPool, m);
+                }
+            }
+        }
     }
+
     D(bug("[SMP-SmallPT-Task] cleaning up stuff\n"));
     FreeMem(msg, sizeof(struct MyMessage) * 20);
     DeleteMsgPort(port);

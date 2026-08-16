@@ -182,7 +182,7 @@ int main()
 
         if (max_cpus > 0 && coreCount > max_cpus)
             coreCount = max_cpus;
-        
+
         if (max_iter == 0)
             max_iter = 16;
 
@@ -267,7 +267,7 @@ int main()
         cmd.mm_Body.Startup.explicitMode = explicit_mode;
 
         D(bug("[SMP-Smallpt] %s: renderer alive. sending startup message\n", __func__);)
-        
+
         PutMsg(rendererPort, &cmd.mm_Message);
         WaitPort(mainPort);
         GetMsg(mainPort);
@@ -343,12 +343,12 @@ int main()
                                             displayWin->BorderLeft + msg->mm_Body.RedrawTile.TileX * TILE_SIZE, displayWin->BorderTop + msg->mm_Body.RedrawTile.TileY * TILE_SIZE,
                                             TILE_SIZE, TILE_SIZE, 0xC0);
                                 break;
-                            
+
                             case MSG_STATS:
                                 tasksWork = msg->mm_Body.Stats.tasksWork;
                                 tasksIn = msg->mm_Body.Stats.tasksIn;
                                 tasksOut = msg->mm_Body.Stats.tasksOut;
-                                
+
                                 GetSysTime(&now);
                                 SubTime(&now, &start_time);
                                 NewRawDoFmt("SMP-Smallpt renderer (%d in work, %d waiting, %d done): %d:%02d:%02d", RAWFMTFUNC_STRING,
@@ -394,8 +394,16 @@ int main()
             WaitPort(mainPort);
             struct MyMessage *msg;
             while ((msg = (struct MyMessage *)GetMsg(mainPort)))
+            {
                 if (msg->mm_Type == MSG_DIE)
+                {
                     can_quit = 1;
+                }
+                else if (msg->mm_Message.mn_Length == sizeof(struct MyMessage))
+                {
+                    ReplyMsg(&msg->mm_Message);
+                }
+            }
         } while(!can_quit);
 
         DeleteMsgPort(mainPort);
