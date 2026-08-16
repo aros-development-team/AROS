@@ -85,9 +85,16 @@ AROS_UFH3(int, CleanMem,
     AROS_USERFUNC_INIT
     
     struct DiskFontHeader *dfh, *dfh2;
+    struct SignalSemaphore *fontsem;
 
     D(bug("Inside CleanMem\n"));
-    
+
+    /* Unlinking needs the font semaphore, but low-memory-handler context
+     * (Forbid, possibly inside an allocator) must never block on it. */
+    fontsem = GetFontSemaphore();
+    if (!AttemptSemaphore(fontsem))
+        return MEM_DID_NOTHING;
+
     ForeachNodeSafe(&LIBBASE->diskfontlist, dfh, dfh2)
     {
         if (dfh->dfh_TF.tf_Accessors < 1)
@@ -109,8 +116,10 @@ AROS_UFH3(int, CleanMem,
         }
     }
     
+    ReleaseSemaphore(fontsem);
+
     D(bug("CleanMem Finished\n"));
-    
+
     return MEM_ALL_DONE;
     
     AROS_USERFUNC_EXIT

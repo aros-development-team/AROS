@@ -39,10 +39,11 @@ APTR MF_IteratorInit(struct DiskfontBase *DiskfontBase)
     mfdata = AllocVec(sizeof(struct MFData), MEMF_ANY|MEMF_CLEAR);
     if (mfdata == NULL)
         return NULL;
-    
-    /* To prevent race conditions */
-    Forbid();
-                                        
+
+    /* Held until MF_IteratorFree; Forbid() alone does not exclude
+     * AddFont/RemFont on another core. */
+    ObtainSemaphore(GetFontSemaphore());
+
     /* Get the first font */
     mfdata->CurrentFont = (struct TextFont*)GetHead(&GfxBase->TextFonts);
 
@@ -96,9 +97,13 @@ struct TTextAttr *MF_IteratorGetNext(APTR iterator, struct DiskfontBase *Diskfon
 VOID MF_IteratorFree(APTR iterator, struct DiskfontBase *DiskfontBase)
 {
     struct MFData *mfdata = (struct MFData *)iterator;
-    
+
+    /* Init only takes the semaphore when it returns non-NULL. */
+    if (mfdata == NULL)
+        return;
+
     FreeVec(mfdata);
-    Permit();
+    ReleaseSemaphore(GetFontSemaphore());
 }
 
 /****************************************************************************************/
