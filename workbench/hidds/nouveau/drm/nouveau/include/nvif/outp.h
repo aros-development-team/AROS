@@ -52,6 +52,11 @@ struct nvif_outp {
 	struct {
 		int id;
 		int link;
+		/* Whether this acquisition asked RM for an audio-capable OR.
+		 * An OR taken over by nvif_outp_inherit() has not, so the
+		 * enable path must re-acquire before HDMI audio can work.
+		 */
+		bool hda;
 	} or;
 };
 

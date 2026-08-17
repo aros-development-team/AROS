@@ -1781,6 +1781,14 @@ nv50_sor_atomic_enable(struct drm_encoder *encoder, struct drm_atomic_state *sta
 	    nv_connector->base.display_info.has_audio)
 		hda = true;
 
+	/* An OR taken over by nvif_outp_inherit() was assigned by whoever lit the
+	 * display before us, so RM never saw AUDIO=OPTIMAL for it and there is no
+	 * audio path behind it - an ELD pushed later is accepted and ignored.
+	 * Release it so the acquire below asks for one that has the audio path.
+	 */
+	if (nvif_outp_acquired(outp) && hda && !outp->or.hda)
+		nvif_outp_release(outp);
+
 	if (!nvif_outp_acquired(outp))
 		nvif_outp_acquire_sor(outp, hda);
 

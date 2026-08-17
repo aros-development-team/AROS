@@ -296,6 +296,7 @@ nvif_outp_release(struct nvif_outp *outp)
 	int ret = nvif_mthd(&outp->object, NVIF_OUTP_V0_RELEASE, NULL, 0);
 	NVIF_ERRON(ret, &outp->object, "[RELEASE]");
 	outp->or.id = -1;
+	outp->or.hda = false;
 }
 
 static inline int
@@ -312,6 +313,7 @@ nvif_outp_acquire(struct nvif_outp *outp, u8 type, struct nvif_outp_acquire_v0 *
 
 	outp->or.id = args->or;
 	outp->or.link = args->link;
+	outp->or.hda = false;
 	return 0;
 }
 
@@ -336,6 +338,8 @@ nvif_outp_acquire_sor(struct nvif_outp *outp, bool hda)
 
 	ret = nvif_outp_acquire(outp, NVIF_OUTP_ACQUIRE_V0_SOR, &args);
 	NVIF_ERRON(ret, &outp->object, "[ACQUIRE SOR] or:%d link:%d", args.or, args.link);
+	if (!ret)
+		outp->or.hda = hda;
 	return ret;
 }
 
@@ -367,6 +371,10 @@ nvif_outp_inherit(struct nvif_outp *outp,
 
 	outp->or.id = args->or;
 	outp->or.link = args->link;
+	/* An inherited OR was assigned by whoever lit the display before us,
+	 * without AUDIO=OPTIMAL. Record that so the enable path re-acquires.
+	 */
+	outp->or.hda = false;
 	*proto_out = args->proto;
 	return 0;
 }
@@ -552,5 +560,6 @@ nvif_outp_ctor(struct nvif_disp *disp, const char *name, int id, struct nvif_out
 	outp->info.conn = args.conn;
 
 	outp->or.id = -1;
+	outp->or.hda = false;
 	return 0;
 }
