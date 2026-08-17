@@ -36,7 +36,6 @@ and no jacks - just digital converters routed to HDMI/DP pins.
 #define MAX_NODES 32
 
 int card_init(struct NVHDMIChip *card);
-static BOOL setup_hdmi_codec(struct NVHDMIChip *card);
 static void determine_frequencies(struct NVHDMIChip *card);
 static void determine_bitsizes(struct NVHDMIChip *card);
 static void set_frequency_info(struct Freq *freq, UWORD bitnr);
@@ -271,7 +270,7 @@ static void setup_infoframe(struct NVHDMIChip *card)
 }
 
 
-static BOOL setup_hdmi_codec(struct NVHDMIChip *card)
+BOOL setup_hdmi_codec(struct NVHDMIChip *card)
 {
     ULONG subnode_count_response = get_parameter(card->function_group,
                                                  VERB_GET_PARMS_NODE_COUNT, card);
@@ -284,6 +283,7 @@ static BOOL setup_hdmi_codec(struct NVHDMIChip *card)
     ULONG connections, entry;
     UWORD i, j;
     BOOL pin_has_presence = FALSE;
+    ULONG chosen_caps = 0;
 
     /* Collect the digital output converters and the HDMI/DP pins */
     for(i = 0; i < subnode_count; i++) {
@@ -329,6 +329,7 @@ static BOOL setup_hdmi_codec(struct NVHDMIChip *card)
         if(sense & PIN_SENSE_PRESENCE) {
             pin = pins[i];
             pin_has_presence = TRUE;
+            chosen_caps = pin_caps[i];
 
             if(sense & PIN_SENSE_ELD_VALID) {
                 /* Monitor with a valid ELD - best candidate */
@@ -340,6 +341,7 @@ static BOOL setup_hdmi_codec(struct NVHDMIChip *card)
     if(pin == 0) {
         D(bug("[NVHDMI] No pin reports presence, using first pin\n"));
         pin = pins[0];
+        chosen_caps = pin_caps[0];
     }
     card->pin_nid = pin;
 
@@ -385,8 +387,8 @@ static BOOL setup_hdmi_codec(struct NVHDMIChip *card)
 
         if(eld_valid && ((conn >> 2) & 0x3) == 1) {
             card->pin_is_dp = TRUE;
-        } else if(!eld_valid && (pin_caps[0] & PIN_CAPS_DP) &&
-                  !(pin_caps[0] & PIN_CAPS_HDMI)) {
+        } else if(!eld_valid && (chosen_caps & PIN_CAPS_DP) &&
+                  !(chosen_caps & PIN_CAPS_HDMI)) {
             card->pin_is_dp = TRUE;
         }
     }

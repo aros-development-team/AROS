@@ -214,6 +214,19 @@ ULONG _AHIsub_Start(ULONG flags,
         card->playback_buffer1 = card->output_info.si_Buffers[0];
         card->playback_buffer2 = card->output_info.si_Buffers[1];
 
+        /*
+            Re-select the pin and converter now. At DriverInit time no pin
+            reports presence yet - the display link is not necessarily up, and
+            the HDA link reset performed as this driver initialises clears the
+            presence/ELD state the display driver had programmed - so the
+            init-time choice falls back to the first pin, which is usually not
+            the one the display is on.
+        */
+        if(!setup_hdmi_codec(card)) {
+            D(bug("[NVHDMI] No usable HDMI/DP route at playback start,"
+                  " keeping the one chosen at init.\n"));
+        }
+
         send_command_4(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_FORMAT, get_hda_format(card), card);
 
         // set stream ID and channel for the converter

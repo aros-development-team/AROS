@@ -22,4 +22,11 @@ ULONG get_parameter(UBYTE node, UBYTE parameter, struct NVHDMIChip *card);
 
 UWORD get_hda_format(struct NVHDMIChip *card);
 
+/* Pick the HDMI/DP pin that has a sink on it and route a digital converter
+   to it. Run at init AND at every playback start: the pins do not report
+   presence or a valid ELD until the display link is up, and the HDA link
+   reset this driver performs when it initialises clears what the display
+   driver had programmed. Selecting once at init picks the wrong pin. */
+BOOL setup_hdmi_codec(struct NVHDMIChip *card);
+
 #endif /* AHI_Drivers_NVHDMI_hdmi_h */
