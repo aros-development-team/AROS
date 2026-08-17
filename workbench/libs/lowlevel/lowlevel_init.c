@@ -80,8 +80,6 @@ BOOL LowLevelInputInit(LIBBASETYPEPTR LowLevelBase)
     if ((LowLevelBase->ll_InputMP = CreateMsgPort()))
     {
         D(bug("[lowlevel] %s: Input MsgPort @ 0x%p\n", __func__, LowLevelBase->ll_InputMP);)
-        FreeSignal(LowLevelBase->ll_InputMP->mp_SigBit);
-        LowLevelBase->ll_InputMP->mp_SigBit = -1;
 
         if ((LowLevelBase->ll_InputIO = (struct IOStdReq *)CreateIORequest(LowLevelBase->ll_InputMP, sizeof (struct IOStdReq))))
         {
@@ -104,6 +102,24 @@ BOOL LowLevelInputInit(LIBBASETYPEPTR LowLevelBase)
                     LowLevelBase->ll_InputIO->io_Data = (APTR)LowLevelBase->ll_InputHandler;
                     LowLevelBase->ll_InputIO->io_Command = IND_ADDHANDLER;
                     DoIO((struct IORequest *)LowLevelBase->ll_InputIO);
+
+                    /*
+                     * input.device does not complete IND_ADDHANDLER quick, it
+                     * queues the request to its own task, so the DoIO() above
+                     * waits on this port and needs the signal to get back out
+                     * of WaitIO() again.
+                     *
+                     * That reply is the last thing the port ever sees: the
+                     * handler stays registered for as long as we are here and
+                     * CloseDevice() does not go through the port. So give the
+                     * signal back now, and say the port no longer wants one -
+                     * left asking, it would name a bit that is gone and a task
+                     * that only happened to be the one to open us.
+                     */
+                    FreeSignal(LowLevelBase->ll_InputMP->mp_SigBit);
+                    LowLevelBase->ll_InputMP->mp_SigBit = -1;
+                    LowLevelBase->ll_InputMP->mp_Flags =
+                        (LowLevelBase->ll_InputMP->mp_Flags & ~PF_ACTION) | PA_IGNORE;
                 }
             }
             else
@@ -147,8 +163,16 @@ BOOL LowLevelTimerInit(LIBBASETYPEPTR LowLevelBase)
     if ((LowLevelBase->ll_TimerMP = CreateMsgPort()))
     {
         D(bug("[lowlevel] %s: Timer MsgPort @ 0x%p\n", __func__, LowLevelBase->ll_TimerMP);)
+        /*
+         * Nothing is ever sent here. The port only exists to own the request
+         * that carries TimerBase for ReadEClock(), which is a plain call, so
+         * the signal can go back right away - but the port has to stop asking
+         * to be signalled along with it.
+         */
         FreeSignal(LowLevelBase->ll_TimerMP->mp_SigBit);
         LowLevelBase->ll_TimerMP->mp_SigBit = -1;
+        LowLevelBase->ll_TimerMP->mp_Flags =
+            (LowLevelBase->ll_TimerMP->mp_Flags & ~PF_ACTION) | PA_IGNORE;
 
         if ((LowLevelBase->ll_TimerIO = (struct IOStdReq *)CreateIORequest(LowLevelBase->ll_TimerMP, sizeof (struct IOStdReq))))
         {
