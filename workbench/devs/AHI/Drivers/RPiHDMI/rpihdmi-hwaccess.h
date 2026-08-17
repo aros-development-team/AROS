@@ -163,10 +163,4 @@ void dma_build_control_blocks(struct RPiHDMIData *dd, ULONG peribase);
 /* DMA interrupt handler (called from KrnAddIRQHandler) */
 void dma_irq_handler(struct RPiHDMIData *data, void *data2);
 
-/* IEC958/SPDIF channel status setup (separate L/R per IEC 60958-3) */
-void spdif_setup_channel_status(UBYTE *cs_left, UBYTE *cs_right, ULONG samplerate);
-
-/* IEC958 sample conversion */
-void convert_mix_to_iec958(WORD *src, ULONG *dst, ULONG frames, UBYTE *cs_left, UBYTE *cs_right, ULONG *frame_counter);
-
 #endif /* AHI_Drivers_RPiHDMI_hwaccess_h */

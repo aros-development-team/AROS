@@ -23,6 +23,7 @@
 #include "DriverData.h"
 #include "library.h"
 #include "rpihdmi-hwaccess.h"
+#include "rpihdmi-iec958.h"
 
 #define dd ((struct RPiHDMIData *) AudioCtrl->ahiac_DriverData)
 
