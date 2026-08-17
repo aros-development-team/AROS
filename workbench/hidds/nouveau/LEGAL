@@ -46,4 +46,4 @@ libdrm 2.4.134 nouveau (MIT); arosdrm.c/arosdrmmode.c APL. Local changes:
 patches/libdrm-aros.diff.
 
 (h)
-xf86-video-nouveau 1.0.16 (MIT). Local changes: patches/xf86-video-nouveau-aros.diff.
+xf86-video-nouveau 1.0.18 (MIT). Local changes: patches/xf86-video-nouveau-aros.diff.

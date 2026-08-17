@@ -161,7 +161,7 @@ nouveau_exa_destroy_pixmap(ScreenPtr pScreen, void *priv)
 
 #ifdef NOUVEAU_PIXMAP_SHARING
 static Bool
-nouveau_exa_share_pixmap_backing(PixmapPtr ppix, ScreenPtr slave, void **handle_p)
+nouveau_exa_share_pixmap_backing(PixmapPtr ppix, ScreenPtr secondary, void **handle_p)
 {
 	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
 	struct nouveau_pixmap *nvpix = nouveau_pixmap(ppix);

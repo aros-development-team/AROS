@@ -1,4 +1,4 @@
---- ./xf86-video-nouveau-1.0.16/nouveau_copy.c
+--- ./xf86-video-nouveau-1.0.18/nouveau_copy.c
 +++ ./xf86-video-nouveau/nouveau_copy.c
 @@ -55,11 +55,13 @@
  	NVPtr pNv = NVPTR(pScrn);
@@ -27,7 +27,7 @@
  		ret = nouveau_object_new(&pNv->dev->object, 0,
  					 NOUVEAU_FIFO_CHANNEL_CLASS,
  					 &(struct nve0_fifo) {
---- ./xf86-video-nouveau-1.0.16/nouveau_exa.c
+--- ./xf86-video-nouveau-1.0.18/nouveau_exa.c
 +++ ./xf86-video-nouveau/nouveau_exa.c
 @@ -21,7 +21,9 @@
   */
@@ -217,7 +217,7 @@
 +    return TRUE;
 +}
 \ No newline at end of file
---- ./xf86-video-nouveau-1.0.16/nouveau_local.h
+--- ./xf86-video-nouveau-1.0.18/nouveau_local.h
 +++ ./xf86-video-nouveau/nouveau_local.h
 @@ -23,8 +23,10 @@
  #ifndef __NOUVEAU_LOCAL_H__
@@ -244,7 +244,7 @@
  #define NOUVEAU_ALIGN(x,bytes) (((x) + ((bytes) - 1)) & ~((bytes) - 1))
  
  #define NV50_TILE_PITCH(m) (64 << ((m) & 0xf))
---- ./xf86-video-nouveau-1.0.16/nouveau_xv.c
+--- ./xf86-video-nouveau-1.0.18/nouveau_xv.c
 +++ ./xf86-video-nouveau/nouveau_xv.c
 @@ -20,7 +20,7 @@
   * SOFTWARE.
@@ -274,7 +274,7 @@
  Atom xvBrightness, xvContrast, xvColorKey, xvSaturation;
  Atom xvHue, xvAutopaintColorKey, xvSetDefaults, xvDoubleBuffer;
  Atom xvITURBT709, xvSyncToVBlank, xvOnCRTCNb;
-@@ -2271,6 +2276,7 @@
+@@ -2352,6 +2357,7 @@
  				 pNv->textureAdaptor[1]->pPortPrivates[0].ptr);
  	}
  }
@@ -282,7 +282,7 @@
  
  /* The filtering function used for video scaling. We use a cubic filter as
   * defined in  "Reconstruction Filters in Computer Graphics" Mitchell &
---- ./xf86-video-nouveau-1.0.16/nv04_exa.c
+--- ./xf86-video-nouveau-1.0.18/nv04_exa.c
 +++ ./xf86-video-nouveau/nv04_exa.c
 @@ -134,12 +134,14 @@
  		return FALSE;
@@ -373,7 +373,7 @@
  }
  
  Bool
-@@ -432,3 +448,44 @@
+@@ -432,3 +448,50 @@
  
  	return TRUE;
  }
@@ -392,6 +392,9 @@
 +    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
 +    LONG maxY, ULONG drawmode, ULONG color)
 +{
++    if (!carddata->channel)
++        return FALSE;
++
 +    if (NV04EXAPrepareSolid(bmdata, drawmode, ~0, color))
 +    {
 +        NV04EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1, color);
@@ -409,6 +412,9 @@
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG drawmode)
 +{
++    if (!carddata->channel)
++        return FALSE;
++
 +    if (NV04EXAPrepareCopy(srcdata, destdata, 0, 0, drawmode, ~0))
 +    {
 +        NV04EXACopy(destdata, srcX, srcY, destX, destY, width, height);
@@ -418,7 +424,7 @@
 +
 +    return FALSE;
 +}
---- ./xf86-video-nouveau-1.0.16/nv10_exa.c
+--- ./xf86-video-nouveau-1.0.18/nv10_exa.c
 +++ ./xf86-video-nouveau/nv10_exa.c
 @@ -141,6 +141,7 @@
  	return mask && mask->componentAlpha && PICT_FORMAT_RGB(mask->format);
@@ -512,7 +518,7 @@
 +    return FALSE;
 +}
 \ No newline at end of file
---- ./xf86-video-nouveau-1.0.16/nv30_exa.c
+--- ./xf86-video-nouveau-1.0.18/nv30_exa.c
 +++ ./xf86-video-nouveau/nv30_exa.c
 @@ -292,6 +292,7 @@
  			  NV30_3D_TEX_NPOT_SIZE_W__SHIFT) |
@@ -594,7 +600,7 @@
 +    return FALSE;
 +}
 \ No newline at end of file
---- ./xf86-video-nouveau-1.0.16/nv40_exa.c
+--- ./xf86-video-nouveau-1.0.18/nv40_exa.c
 +++ ./xf86-video-nouveau/nv40_exa.c
 @@ -180,6 +180,7 @@
  	}
@@ -696,7 +702,7 @@
 +
 +    return FALSE;
 +}
---- ./xf86-video-nouveau-1.0.16/nv50_accel.c
+--- ./xf86-video-nouveau-1.0.18/nv50_accel.c
 +++ ./xf86-video-nouveau/nv50_accel.c
 @@ -27,6 +27,7 @@
  #include "hwdefs/nv50_2d.xml.h"
@@ -714,7 +720,7 @@
  
  Bool
  NVAccelInitM2MF_NV50(ScrnInfoPtr pScrn)
---- ./xf86-video-nouveau-1.0.16/nv50_exa.c
+--- ./xf86-video-nouveau-1.0.18/nv50_exa.c
 +++ ./xf86-video-nouveau/nv50_exa.c
 @@ -94,11 +94,17 @@
  {
@@ -838,7 +844,7 @@
  
  Bool
  NV50EXAPrepareComposite(int op,
-@@ -1013,3 +1036,73 @@
+@@ -1013,3 +1036,79 @@
  
  	return TRUE;
  }
@@ -858,6 +864,9 @@
 +    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
 +    LONG maxY, ULONG drawmode, ULONG color)
 +{
++    if (!carddata->channel)
++        return FALSE;
++
 +    if (NV50EXAPrepareSolid(bmdata, drawmode, ~0, color))
 +    {
 +        NV50EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
@@ -875,6 +884,9 @@
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG drawmode)
 +{
++    if (!carddata->channel)
++        return FALSE;
++
 +    if (NV50EXAPrepareCopy(srcdata, destdata, 0, 0, drawmode, ~0))
 +    {
 +        NV50EXACopy(destdata, srcX, srcY, destX , destY, width, height);
@@ -912,7 +924,7 @@
 +
 +    return FALSE;
 +}
---- ./xf86-video-nouveau-1.0.16/nv_accel_common.c
+--- ./xf86-video-nouveau-1.0.18/nv_accel_common.c
 +++ ./xf86-video-nouveau/nv_accel_common.c
 @@ -20,6 +20,11 @@
   * SOFTWARE.
@@ -1093,7 +1105,7 @@
 +    return nouveau_allocate_surface(carddata, width, height, bpp, NOUVEAU_CREATE_PIXMAP_SCANOUT, pitch, bo);
 +}
 \ No newline at end of file
---- ./xf86-video-nouveau-1.0.16/nvc0_accel.c
+--- ./xf86-video-nouveau-1.0.18/nvc0_accel.c
 +++ ./xf86-video-nouveau/nvc0_accel.c
 @@ -69,6 +69,7 @@
  	PUSH_DATAp((pNv)->pushbuf, (code), size);                              \
@@ -1145,7 +1157,7 @@
  
  	ret = nouveau_object_new(pNv->channel, class, class,
  				 NULL, 0, &pNv->NvCOPY);
---- ./xf86-video-nouveau-1.0.16/nvc0_exa.c
+--- ./xf86-video-nouveau-1.0.18/nvc0_exa.c
 +++ ./xf86-video-nouveau/nvc0_exa.c
 @@ -96,11 +96,17 @@
  {
@@ -1271,7 +1283,7 @@
  
  Bool
  NVC0EXAPrepareComposite(int op,
-@@ -1065,3 +1089,45 @@
+@@ -1065,3 +1089,51 @@
  				     src_h, src_x, src_y, dst, dst_off,
  				     dst_dom, dst_pitch, dst_h, dst_x, dst_y);
  }
@@ -1291,6 +1303,9 @@
 +    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
 +    LONG maxY, ULONG drawmode, ULONG color)
 +{
++    if (!carddata->channel)
++        return FALSE;
++
 +    if (NVC0EXAPrepareSolid(bmdata, drawmode, ~0, color))
 +    {
 +        NVC0EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
@@ -1308,6 +1323,9 @@
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG drawmode)
 +{
++    if (!carddata->channel)
++        return FALSE;
++
 +    if (NVC0EXAPrepareCopy(srcdata, destdata, 0, 0, drawmode, ~0))
 +    {
 +        NVC0EXACopy(destdata, srcX, srcY, destX , destY, width, height);
@@ -1318,9 +1336,9 @@
 +    return FALSE;
 +}
 \ No newline at end of file
---- ./xf86-video-nouveau-1.0.16/nv_include.h
+--- ./xf86-video-nouveau-1.0.18/nv_include.h
 +++ ./xf86-video-nouveau/nv_include.h
-@@ -1,74 +1,214 @@
+@@ -1,73 +1,214 @@
  #ifndef __NV_INCLUDE_H__
  #define __NV_INCLUDE_H__
 -
@@ -1416,7 +1434,6 @@
 -#include "nv_type.h"
 -#include "nv_proto.h"
 -#include "nv_dma.h"
--#include "sarea.h"
 +#define PictOpSaturate          14
 +#define GXcopy                  0x03
 +#define EXA_PM_IS_SOLID(a, b)   1

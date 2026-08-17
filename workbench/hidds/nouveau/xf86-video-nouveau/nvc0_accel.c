@@ -82,9 +82,9 @@ NVC0SyncToVBlank(PixmapPtr ppix, BoxPtr box)
 	if (!pNv->NvSW || !nouveau_exa_pixmap_is_onscreen(ppix))
 		return;
 
-	crtc = nouveau_pick_best_crtc(pScrn, FALSE, box->x1, box->y1,
-                                  box->x2 - box->x1,
-                                  box->y2 - box->y1);
+	crtc = nouveau_pick_best_crtc(pScrn, box->x1, box->y1,
+				      box->x2 - box->x1,
+				      box->y2 - box->y1);
 	if (!crtc)
 		return;
 

@@ -208,44 +208,164 @@ static XF86ImageRec NVImages[NUM_IMAGES_ALL] =
 };
 
 static void
-nouveau_box_intersect(BoxPtr dest, BoxPtr a, BoxPtr b)
+box_intersect(BoxPtr dest, BoxPtr a, BoxPtr b)
 {
-    dest->x1 = a->x1 > b->x1 ? a->x1 : b->x1;
-    dest->x2 = a->x2 < b->x2 ? a->x2 : b->x2;
-    dest->y1 = a->y1 > b->y1 ? a->y1 : b->y1;
-    dest->y2 = a->y2 < b->y2 ? a->y2 : b->y2;
+	dest->x1 = a->x1 > b->x1 ? a->x1 : b->x1;
+	dest->x2 = a->x2 < b->x2 ? a->x2 : b->x2;
+	if (dest->x1 >= dest->x2) {
+		dest->x1 = dest->x2 = dest->y1 = dest->y2 = 0;
+		return;
+	}
 
-    if (dest->x1 >= dest->x2 || dest->y1 >= dest->y2)
-	dest->x1 = dest->x2 = dest->y1 = dest->y2 = 0;
-}
-
-static void
-nouveau_crtc_box(xf86CrtcPtr crtc, BoxPtr crtc_box)
-{
-    if (crtc->enabled) {
-	crtc_box->x1 = crtc->x;
-	crtc_box->x2 = crtc->x + xf86ModeWidth(&crtc->mode, crtc->rotation);
-	crtc_box->y1 = crtc->y;
-	crtc_box->y2 = crtc->y + xf86ModeHeight(&crtc->mode, crtc->rotation);
-    } else
-	crtc_box->x1 = crtc_box->x2 = crtc_box->y1 = crtc_box->y2 = 0;
+	dest->y1 = a->y1 > b->y1 ? a->y1 : b->y1;
+	dest->y2 = a->y2 < b->y2 ? a->y2 : b->y2;
+	if (dest->y1 >= dest->y2)
+		dest->x1 = dest->x2 = dest->y1 = dest->y2 = 0;
 }
 
 static int
-nouveau_box_area(BoxPtr box)
+box_area(BoxPtr box)
 {
     return (int) (box->x2 - box->x1) * (int) (box->y2 - box->y1);
 }
 
+static void
+rr_crtc_box(RRCrtcPtr crtc, BoxPtr crtc_box)
+{
+	if (crtc->mode) {
+		crtc_box->x1 = crtc->x;
+		crtc_box->y1 = crtc->y;
+		switch (crtc->rotation) {
+		case RR_Rotate_0:
+		case RR_Rotate_180:
+		default:
+			crtc_box->x2 = crtc->x + crtc->mode->mode.width;
+			crtc_box->y2 = crtc->y + crtc->mode->mode.height;
+			break;
+		case RR_Rotate_90:
+		case RR_Rotate_270:
+			crtc_box->x2 = crtc->x + crtc->mode->mode.height;
+			crtc_box->y2 = crtc->y + crtc->mode->mode.width;
+			break;
+		}
+	} else
+		crtc_box->x1 = crtc_box->x2 = crtc_box->y1 = crtc_box->y2 = 0;
+}
+
+static Bool
+rr_crtc_on(RRCrtcPtr crtc, Bool crtc_is_xf86_hint)
+{
+	if (!crtc) {
+		return FALSE;
+	}
+	if (crtc_is_xf86_hint && crtc->devPrivate) {
+		return xf86_crtc_on(crtc->devPrivate);
+	} else {
+		return !!crtc->mode;
+	}
+}
+
+/*
+ * Return the crtc covering 'box'. If two crtcs cover a portion of
+ * 'box', then prefer the crtc with greater coverage.
+ */
+static RRCrtcPtr
+rr_crtc_covering_box(ScreenPtr pScreen, BoxPtr box, Bool screen_is_xf86_hint)
+{
+	rrScrPrivPtr pScrPriv;
+	RRCrtcPtr crtc, best_crtc, primary_crtc;
+	int coverage, best_coverage;
+	int c;
+	BoxRec crtc_box, cover_box;
+	RROutputPtr primary_output;
+
+	best_crtc = NULL;
+	best_coverage = 0;
+	primary_crtc = NULL;
+	primary_output = NULL;
+
+	if (!dixPrivateKeyRegistered(rrPrivKey))
+		return NULL;
+
+	pScrPriv = rrGetScrPriv(pScreen);
+
+	if (!pScrPriv)
+		return NULL;
+
+	primary_output = RRFirstOutput(pScreen);
+	if (primary_output && primary_output->crtc)
+		primary_crtc = primary_output->crtc->devPrivate;
+
+	for (c = 0; c < pScrPriv->numCrtcs; c++) {
+		crtc = pScrPriv->crtcs[c];
+
+		/* If the CRTC is off, treat it as not covering */
+		if (!rr_crtc_on(crtc, screen_is_xf86_hint))
+			continue;
+
+		rr_crtc_box(crtc, &crtc_box);
+		box_intersect(&cover_box, &crtc_box, box);
+		coverage = box_area(&cover_box);
+		if (coverage > best_coverage ||
+		   (crtc == primary_crtc && coverage == best_coverage)) {
+			best_crtc = crtc;
+			best_coverage = coverage;
+		}
+	}
+
+	return best_crtc;
+}
+
+#if ABI_VIDEODRV_VERSION >= SET_ABI_VERSION(23, 0)
+static RRCrtcPtr
+rr_crtc_covering_box_on_secondary(ScreenPtr pScreen, BoxPtr box)
+{
+	if (!pScreen->isGPU) {
+		ScreenPtr secondary;
+		RRCrtcPtr crtc = NULL;
+
+		xorg_list_for_each_entry(secondary, &pScreen->secondary_list, secondary_head) {
+			if (!secondary->is_output_secondary)
+				continue;
+
+			crtc = rr_crtc_covering_box(secondary, box, FALSE);
+			if (crtc)
+				return crtc;
+		}
+	}
+
+	return NULL;
+}
+#endif
+
+RRCrtcPtr
+randr_crtc_covering_drawable(DrawablePtr pDraw)
+{
+	ScreenPtr pScreen = pDraw->pScreen;
+	RRCrtcPtr crtc = NULL;
+	BoxRec box;
+
+	box.x1 = pDraw->x;
+	box.y1 = pDraw->y;
+	box.x2 = box.x1 + pDraw->width;
+	box.y2 = box.y1 + pDraw->height;
+
+	crtc = rr_crtc_covering_box(pScreen, &box, TRUE);
+#if ABI_VIDEODRV_VERSION >= SET_ABI_VERSION(23, 0)
+	if (!crtc) {
+		crtc = rr_crtc_covering_box_on_secondary(pScreen, &box);
+	}
+#endif
+	return crtc;
+}
+
 xf86CrtcPtr
-nouveau_pick_best_crtc(ScrnInfoPtr pScrn, Bool consider_disabled,
+nouveau_pick_best_crtc(ScrnInfoPtr pScrn,
                        int x, int y, int w, int h)
 {
-    xf86CrtcConfigPtr   xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
-    int                 coverage, best_coverage, c;
-    BoxRec              box, crtc_box, cover_box;
-    RROutputPtr         primary_output = NULL;
-    xf86CrtcPtr         best_crtc = NULL, primary_crtc = NULL;
+    ScreenPtr pScreen = pScrn->pScreen;
+    RRCrtcPtr crtc = NULL;
+    BoxRec box;
 
     if (!pScrn->vtSema)
 	return NULL;
@@ -254,51 +374,12 @@ nouveau_pick_best_crtc(ScrnInfoPtr pScrn, Bool consider_disabled,
     box.x2 = x + w;
     box.y1 = y;
     box.y2 = y + h;
-    best_coverage = 0;
 
-    /* Prefer the CRTC of the primary output */
-#ifdef HAS_DIXREGISTERPRIVATEKEY
-    if (dixPrivateKeyRegistered(rrPrivKey))
-#endif
-    {
-	primary_output = RRFirstOutput(pScrn->pScreen);
+    crtc = rr_crtc_covering_box(pScreen, &box, TRUE);
+    if (crtc) {
+	return crtc->devPrivate;
     }
-    if (primary_output && primary_output->crtc)
-	primary_crtc = primary_output->crtc->devPrivate;
-
-    /* first consider only enabled CRTCs */
-    for (c = 0; c < xf86_config->num_crtc; c++) {
-	xf86CrtcPtr crtc = xf86_config->crtc[c];
-
-	if (!crtc->enabled)
-	    continue;
-
-	nouveau_crtc_box(crtc, &crtc_box);
-	nouveau_box_intersect(&cover_box, &crtc_box, &box);
-	coverage = nouveau_box_area(&cover_box);
-	if (coverage > best_coverage ||
-	    (coverage == best_coverage && crtc == primary_crtc)) {
-	    best_crtc = crtc;
-	    best_coverage = coverage;
-	}
-    }
-    if (best_crtc || !consider_disabled)
-	return best_crtc;
-
-    /* if we found nothing, repeat the search including disabled CRTCs */
-    for (c = 0; c < xf86_config->num_crtc; c++) {
-	xf86CrtcPtr crtc = xf86_config->crtc[c];
-
-	nouveau_crtc_box(crtc, &crtc_box);
-	nouveau_box_intersect(&cover_box, &crtc_box, &box);
-	coverage = nouveau_box_area(&cover_box);
-	if (coverage > best_coverage ||
-	    (coverage == best_coverage && crtc == primary_crtc)) {
-	    best_crtc = crtc;
-	    best_coverage = coverage;
-	}
-    }
-    return best_crtc;
+    return NULL;
 }
 
 unsigned int
@@ -311,7 +392,7 @@ nv_window_belongs_to_crtc(ScrnInfoPtr pScrn, int x, int y, int w, int h)
 	for (i = 0; i < xf86_config->num_crtc; i++) {
 		xf86CrtcPtr crtc = xf86_config->crtc[i];
 
-		if (!drmmode_crtc_on(crtc))
+		if (!xf86_crtc_on(crtc))
 			continue;
 
 		if ((x < (crtc->x + crtc->mode.HDisplay)) &&
