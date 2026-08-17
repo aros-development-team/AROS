@@ -43,39 +43,39 @@ static inline void wr32le(ULONG addr, ULONG val)
  * HDMI HD register block (MAI control)
  */
 #define HDMI_MAI_CTL(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + 0x14)
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_ctl))
 #define HDMI_MAI_THR(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + 0x18)
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_thr))
 #define HDMI_MAI_FMT(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + 0x1C)
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_fmt))
 #define HDMI_MAI_DATA(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + 0x20)
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_data))
 #define HDMI_MAI_SMP(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + 0x2c)
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_smp))
 
 /*
  * HDMI register block
  */
 #define HDMI_MAI_CHANNEL_MAP(dd) \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x090)
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.mai_channel_map))
 #define HDMI_MAI_CONFIG(dd)      \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x094)
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.mai_config))
 #define HDMI_AUDIO_PKT_CFG(dd)   \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x09C)
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.audio_packet_cfg))
 #define HDMI_RAM_PKT_CFG(dd)     \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x0A0)
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.ram_packet_cfg))
 #define HDMI_RAM_PKT_STATUS(dd)  \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x0A4)
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.ram_packet_status))
 #define HDMI_CRP_CFG(dd)         \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x0A8)
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.crp_cfg))
 #define HDMI_CTS_0(dd)           \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x0AC)
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.cts_0))
 #define HDMI_CTS_1(dd)           \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x0B0)
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.cts_1))
 #define HDMI_SCHEDULER_CONTROL(dd) \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x0C0)
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.scheduler_control))
 #define HDMI_RAM_PKT_START(dd)   \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + 0x400)
+    ((dd->periiobase) + (dd->soc->packet_base) + (dd->soc->regs.packet_start))
 
 /* MAI_CTL bits */
 #define MAI_CTL_RESET    (1 << 0)

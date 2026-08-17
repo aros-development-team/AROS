@@ -143,7 +143,7 @@ static UBYTE srate_to_cea_sf(ULONG samplerate)
 
 static void hdmi_write_audio_infoframe(struct RPiHDMIData *dd)
 {
-    ULONG slot_base = dd->periiobase + dd->soc->hdmi_base + 0x400 + 4 * 0x24;
+    ULONG slot_base = HDMI_RAM_PKT_START(dd) + 4 * 0x24;
     UBYTE infoframe[14];
     UBYTE checksum;
     int i;
