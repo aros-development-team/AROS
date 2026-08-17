@@ -25,6 +25,7 @@
 #include "DriverData.h"
 #include "library.h"
 #include "rpihdmi-hwaccess.h"
+#include "rpihdmi-dma.h"
 
 #define dd ((struct RPiHDMIData *) AudioCtrl->ahiac_DriverData)
 
@@ -69,6 +70,7 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, s
         dd->ahisubbase = RPiHDMIBase;
         dd->periiobase = RPiHDMIBase->periiobase;
         dd->dma_channel = DMAAllocChannel(0);
+        dd->soc = RPiHDMIBase->soc;
     } else {
         return AHISF_ERROR;
     }
@@ -174,16 +176,16 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
         dd->cb[0] = (struct BCM2708DMACB *) cb_raw;
         dd->cb[1] = (struct BCM2708DMACB *) (cb_raw + sizeof(struct BCM2708DMACB));
 
+        /* Initialize HDMI MAI audio */
+        dd->soc->init(dd);
+
         /* Build the DMA control block chain */
-        dma_build_control_blocks(dd, dd->periiobase);
+        dma_build_control_blocks(dd);
 
         /* Flush DMA control blocks and buffers from ARM data cache */
         CacheClearE(dd->cb[0], sizeof(struct BCM2708DMACB) * 2, CACRF_ClearD);
         CacheClearE(dd->dmabuf[0], buf_bytes, CACRF_ClearD);
         CacheClearE(dd->dmabuf[1], buf_bytes, CACRF_ClearD);
-
-        /* Initialize HDMI MAI audio */
-        hdmi_mai_init(dd);
 
         /*
          * Start slave task.
@@ -219,9 +221,9 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
          * The slave has allocated slavesignal and pre-filled both
          * DMA buffers, so IRQ signals won't be lost.
          */
-        dd->irq_handle = KrnAddIRQHandler(BCM_IRQ_DMA0 + dd->dma_channel, dma_irq_handler, dd, SysBase);
+        dd->irq_handle = KrnAddIRQHandler(BCM2708_DMA_IRQ(dd->periiobase, dd->dma_channel), dma_irq_handler, dd, SysBase);
 
-        dma_setup(dd->periiobase, dd->dma_channel, GPU_BUS_ADDR(dd->cb[0]));
+        dma_setup(dd);
     }
 
     if (flags & AHISF_RECORD) {
@@ -262,8 +264,9 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverB
         }
 
         /* Stop hardware */
-        dma_stop(dd->periiobase, dd->dma_channel);
-        hdmi_mai_stop(dd);
+        dma_stop(dd);
+
+        dd->soc->stop(dd);
 
         dd->slavesignal = -1;
 

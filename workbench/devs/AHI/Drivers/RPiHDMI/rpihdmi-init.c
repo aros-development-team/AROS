@@ -7,6 +7,7 @@
 
 #include "library.h"
 #include "DriverData.h"
+#include "rpihdmi-soc.h"
 
 APTR KernelBase = NULL;
 APTR DMABase = NULL;
@@ -21,7 +22,8 @@ BOOL DriverInit(struct DriverBase *AHIsubBase)
 
     RPiHDMIBase->dosbase = (struct DosLibrary *) OpenLibrary(DOSNAME, 37);
 
-    if (RPiHDMIBase->dosbase == NULL) {
+    if (RPiHDMIBase->dosbase == NULL)
+    {
         Req("Unable to open 'dos.library' version 37.\n");
         return FALSE;
     }
@@ -35,15 +37,33 @@ BOOL DriverInit(struct DriverBase *AHIsubBase)
 
     DMABase = OpenResource("dma.resource");
 
-    if (DMABase == NULL) {
+    if (DMABase == NULL)
+    {
         Req("Unable to open 'dma.resource'.\n");
         return FALSE;
     }
 
     RPiHDMIBase->periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
-    if (RPiHDMIBase->periiobase == 0) {
+    if (RPiHDMIBase->periiobase == 0)
+    {
         Req("No BCM283x peripheral base found.\n");
+        return FALSE;
+    }
+
+    if (RPiHDMIBase->periiobase == BCM2708_DMA_PERIIOBASE_2711)
+    {
+        Req("Unsupported Raspberry Pi HDMI audio hardware. P4 not yet implemented\n");
+        return FALSE;
+        //RPiHDMIBase->soc = &rpihdmi_bcm2711_soc;
+    }
+    else
+    {
+        RPiHDMIBase->soc = &rpihdmi_bcm283x_soc;
+    }
+
+    if (RPiHDMIBase->soc == NULL) {
+        Req("Unsupported Raspberry Pi HDMI audio hardware.\n");
         return FALSE;
     }
 

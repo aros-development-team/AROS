@@ -19,15 +19,9 @@
 #include <exec/types.h>
 #include <aros/macros.h>
 
+#include "DriverData.h"
 #include "rpihdmi-hwaccess.h"
 #include "rpihdmi-iec958.h"
-
-/*
- * HDMI State Machine (HSM) clock feeding the MAI sample-rate divider.
- * Owned by the firmware and not queryable here; measured on Pi 3B+ at
- * ~163.68 MHz (the 216 MHz assumed before gave 0.7578x playback speed).
- */
-#define HDMI_HSM_CLOCK 163680000
 
 /*
  * Microsecond delay using a busy loop on the system timer.
@@ -147,9 +141,9 @@ static UBYTE srate_to_cea_sf(ULONG samplerate)
     }
 }
 
-static void hdmi_write_audio_infoframe(ULONG pb, ULONG samplerate)
+static void hdmi_write_audio_infoframe(struct RPiHDMIData *dd)
 {
-    ULONG slot_base = pb + HDMI_OFFSET + 0x400 + 4 * 0x24;
+    ULONG slot_base = dd->periiobase + dd->soc->hdmi_base + 0x400 + 4 * 0x24;
     UBYTE infoframe[14];
     UBYTE checksum;
     int i;
@@ -162,7 +156,7 @@ static void hdmi_write_audio_infoframe(ULONG pb, ULONG samplerate)
     /* Data bytes */
     infoframe[3] = 0x00;                                      /* Checksum (computed below) */
     infoframe[4] = 0x11;                                      /* CC=1 (2ch), CT=1 (L-PCM) */
-    infoframe[5] = (srate_to_cea_sf(samplerate) << 2) | 0x01; /* SF | SS=16bit */
+    infoframe[5] = (srate_to_cea_sf(dd->samplerate) << 2) | 0x01; /* SF | SS=16bit */
     infoframe[6] = 0x00;                                      /* Format dependent */
     infoframe[7] = 0x00;                                      /* CA = 0 (FL/FR) */
     infoframe[8] = 0x00;                                      /* DM_INH=0, LSV=0 */
@@ -191,7 +185,7 @@ static void hdmi_write_audio_infoframe(ULONG pb, ULONG samplerate)
     }
 
     /* Enable the audio infoframe packet (bit 4 = packet_id 4) */
-    wr32le(HDMI_RAM_PKT_CFG(pb), rd32le(HDMI_RAM_PKT_CFG(pb)) | (1 << 4));
+    wr32le(HDMI_RAM_PKT_CFG(dd), rd32le(HDMI_RAM_PKT_CFG(dd)) | (1 << 4));
 }
 
 
@@ -223,25 +217,25 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
      * Three separate writes: RESET, then clear ERRORF, then FLUSH.
      * This resets the internal channel counter and FIFO state.
      */
-    wr32le(HDMI_MAI_CTL(pb), MAI_CTL_RESET);
+    wr32le(HDMI_MAI_CTL(dd), MAI_CTL_RESET);
     udelay(pb, 100);
-    wr32le(HDMI_MAI_CTL(pb), MAI_CTL_ERRORF);
-    wr32le(HDMI_MAI_CTL(pb), MAI_CTL_FLUSH);
+    wr32le(HDMI_MAI_CTL(dd), MAI_CTL_ERRORF);
+    wr32le(HDMI_MAI_CTL(dd), MAI_CTL_FLUSH);
     udelay(pb, 100);
 
     /* Set audio format: PCM at bits 23:16, sample rate at bits 15:8 */
-    wr32le(HDMI_MAI_FMT(pb), MAI_FMT_FORMAT_PCM | MAI_FMT_RATE(srate_enum));
+    wr32le(HDMI_MAI_FMT(dd), MAI_FMT_FORMAT_PCM | MAI_FMT_RATE(srate_enum));
 
     /*
      * FIFO thresholds (all 0x10).
      */
-    wr32le(HDMI_MAI_THR(pb), MAI_THR_DREQL(0x10) | MAI_THR_DREQH(0x10) | MAI_THR_PANICL(0x10) | MAI_THR_PANICH(0x10));
+    wr32le(HDMI_MAI_THR(dd), MAI_THR_DREQL(0x10) | MAI_THR_DREQH(0x10) | MAI_THR_PANICL(0x10) | MAI_THR_PANICH(0x10));
 
     /* MAI_CONFIG: BIT_REVERSE | FORMAT_REVERSE | channel_mask=0x03 (stereo) */
-    wr32le(HDMI_MAI_CONFIG(pb), MAI_CONFIG_BIT_REVERSE | MAI_CONFIG_FORMAT_REVERSE | MAI_CONFIG_CHANNEL_MASK(0x03));
+    wr32le(HDMI_MAI_CONFIG(dd), MAI_CONFIG_BIT_REVERSE | MAI_CONFIG_FORMAT_REVERSE | MAI_CONFIG_CHANNEL_MASK(0x03));
 
     /* Channel map for stereo: 3-bit fields at bits 2:0 (ch0) and 6:4 (ch1) */
-    wr32le(HDMI_MAI_CHANNEL_MAP(pb), 0x08);
+    wr32le(HDMI_MAI_CHANNEL_MAP(dd), 0x08);
 
     /*
      * Audio packet config:
@@ -250,7 +244,7 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
      *   ZERO_DATA_ON_INACTIVE_CHANNELS
      *   ZERO_DATA_ON_SAMPLE_FLAT
      */
-    wr32le(HDMI_AUDIO_PKT_CFG(pb),
+    wr32le(HDMI_AUDIO_PKT_CFG(dd),
            AUDIO_PKT_ZERO_DATA_ON_FLAT | AUDIO_PKT_ZERO_DATA_ON_INACTIVE | AUDIO_PKT_B_FRAME_ID(0x8) |
                AUDIO_PKT_CEA_MASK(0x03));
 
@@ -260,8 +254,8 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
      * Clock ratio = N / (M+1) = hsm_clock / samplerate. Round N (rather than
      * truncate) to halve the residual rate error.
      */
-    wr32le(HDMI_MAI_SMP(pb),
-           ((HDMI_HSM_CLOCK + dd->samplerate / 2) / dd->samplerate) << 8);
+    wr32le(HDMI_MAI_SMP(dd),
+           ((dd->soc->hsm_clock + dd->samplerate / 2) / dd->samplerate) << 8);
 
     /*
      * CTS/N audio clock recovery.
@@ -272,20 +266,20 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
      * RPi 3B+ default pixel clock ≈ 148500 kHz (1080p60) or 74250 kHz (720p60).
      * We read CTS_0 first to get the hardware-derived value, then write it back.
      */
-    wr32le(HDMI_CRP_CFG(pb), CRP_CFG_EXTERNAL_CTS_EN | CRP_CFG_N(n_value));
+    wr32le(HDMI_CRP_CFG(dd), CRP_CFG_EXTERNAL_CTS_EN | CRP_CFG_N(n_value));
 
     {
-        ULONG cts = rd32le(HDMI_CTS_0(pb));
+        ULONG cts = rd32le(HDMI_CTS_0(dd));
         if (cts == 0) {
             /* Fallback: compute CTS assuming 148500 kHz pixel clock */
             cts = (148500UL * n_value) / (128 * (dd->samplerate / 1000));
         }
-        wr32le(HDMI_CTS_0(pb), cts);
-        wr32le(HDMI_CTS_1(pb), cts);
+        wr32le(HDMI_CTS_0(dd), cts);
+        wr32le(HDMI_CTS_1(dd), cts);
     }
 
     /* Write Audio InfoFrame to RAM packet memory */
-    hdmi_write_audio_infoframe(pb, dd->samplerate);
+    hdmi_write_audio_infoframe(dd);
 
     /*
      * Enable MAI.
@@ -294,7 +288,7 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
      * Note: DLATE/ERRORE/ERRORF are deliberately left cleared at
      * enable time.
      */
-    wr32le(HDMI_MAI_CTL(pb), MAI_CTL_CHALIGN | MAI_CTL_WHOLSMP | MAI_CTL_CHNUM(2) | MAI_CTL_ENABLE);
+    wr32le(HDMI_MAI_CTL(dd), MAI_CTL_CHALIGN | MAI_CTL_WHOLSMP | MAI_CTL_CHNUM(2) | MAI_CTL_ENABLE);
 
     /* Initialize IEC958 channel status for this sample rate (separate L/R) */
     spdif_setup_channel_status(dd->channel_status_l, dd->channel_status_r, dd->samplerate);
@@ -306,61 +300,7 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
  */
 void hdmi_mai_stop(struct RPiHDMIData *dd)
 {
-    ULONG pb = dd->periiobase;
+    wr32le(HDMI_MAI_CTL(dd), MAI_CTL_FLUSH | MAI_CTL_DLATE | MAI_CTL_ERRORE | MAI_CTL_ERRORF);
 
-    wr32le(HDMI_MAI_CTL(pb), MAI_CTL_FLUSH | MAI_CTL_DLATE | MAI_CTL_ERRORE | MAI_CTL_ERRORF);
-
-    udelay(pb, 100);
-}
-
-
-/******************************************************************************
-** DMA setup ******************************************************************
-******************************************************************************/
-
-void dma_build_control_blocks(struct RPiHDMIData *dd, ULONG peribase)
-{
-    int i;
-
-    for (i = 0; i < 2; i++) {
-        struct BCM2708DMACB *cb = dd->cb[i];
-
-        cb->ti = DMA_TI_INTEN | DMA_TI_WAIT_RESP | DMA_TI_DEST_DREQ | DMA_TI_SRC_INC | DMA_TI_BURST_LENGTH(2) |
-                 DMA_TI_PERMAP(DMA_DREQ_HDMI) | DMA_TI_NO_WIDE_BURSTS;
-
-        cb->source_ad = GPU_BUS_ADDR(dd->dmabuf[i]);
-        cb->dest_ad = HDMI_MAI_DATA_BUS;
-        cb->txfr_len = dd->dmabuf_size;
-        cb->stride = 0;
-        cb->nextconbk = GPU_BUS_ADDR(dd->cb[1 - i]);
-        cb->reserved[0] = 0;
-        cb->reserved[1] = 0;
-    }
-}
-
-void dma_setup(ULONG peribase, ULONG channel, ULONG cb_bus_addr)
-{
-    ULONG dma_base = peribase + 0x007000 + channel * 0x100;
-
-    /* The channel is already enabled by dma.resource at allocation. */
-    wr32le(dma_base + 0x00, DMA_CS_RESET);
-    udelay(peribase, 10);
-    wr32le(dma_base + 0x00, DMA_CS_INT | DMA_CS_END);
-    wr32le(dma_base + 0x04, cb_bus_addr);
-    /* The handler re-writes this with the W1C flags added, so the priorities
-     * survive the session; see bcm2708_dma.h. */
-    wr32le(dma_base + 0x00, BCM2708_DMA_CS_RUN);
-    udelay(peribase, 10);
-}
-
-void dma_stop(ULONG peribase, ULONG channel)
-{
-    ULONG dma_base = peribase + 0x007000 + channel * 0x100;
-
-    wr32le(dma_base + 0x00, 0);
-    udelay(peribase, 50);
-    wr32le(dma_base + 0x00, DMA_CS_RESET);
-    udelay(peribase, 100);
-    wr32le(dma_base + 0x04, 0);
-    wr32le(dma_base + 0x00, DMA_CS_INT | DMA_CS_END);
+    udelay(dd->periiobase, 100);
 }

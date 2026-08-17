@@ -10,6 +10,8 @@
 /* Shared BCM2835 DMA control block layout (32-byte aligned). */
 #include <hardware/bcm2708_dma.h>
 
+#include "rpihdmi-soc.h"
+
 /*
  * Driver library base
  */
@@ -17,6 +19,8 @@ struct RPiHDMIBase {
     struct DriverBase driverbase;
     struct DosLibrary *dosbase;
     ULONG periiobase;
+
+    const struct RPiHDMISoc *soc; /* Pointer to underlaying SOC implementation */
 };
 
 #define DRIVERBASE_SIZEOF (sizeof(struct RPiHDMIBase))
@@ -60,6 +64,8 @@ struct RPiHDMIData {
     UBYTE channel_status_l[24]; /* Left channel status block (192 bits) */
     UBYTE channel_status_r[24]; /* Right channel status block (192 bits) */
     ULONG frame_counter;        /* Current frame within IEC958 block (0-191) */
+
+    const struct RPiHDMISoc *soc; /* Pointer to underlaying SOC implementation */
 };
 
 #endif /* AHI_Drivers_RPiHDMI_DriverData_h */
