@@ -15,6 +15,9 @@ struct HIDDDisplayData
 	OOP_Object  *dmenum;        /* The display mode enumerator object            */
 	OOP_Object  *compositor;    /* The display's compositor object (if any)      */
 
+	ULONG        connectortype; /* vHidd_ConnectorType_*, 0 = unknown            */
+	ULONG        connectorid;   /* connector instance (per type), 0 = unknown    */
+
 	/* Framebuffer control stuff */
 	OOP_Object  *framebuffer;
 	OOP_Object  *shownbm;

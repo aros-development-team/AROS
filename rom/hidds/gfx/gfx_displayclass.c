@@ -416,6 +416,12 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             case aoHidd_Display_DMEnumClass:
                 dmenumclass = (OOP_Class *)tag->ti_Data;
                 break;
+            case aoHidd_Display_ConnectorType:
+                data->connectortype = tag->ti_Data;
+                break;
+            case aoHidd_Display_ConnectorID:
+                data->connectorid = tag->ti_Data;
+                break;
             }
         }
 
@@ -494,6 +500,12 @@ VOID Display__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         return;
     case aoHidd_Display_SupportsGamma:
         *msg->storage = 0;
+        return;
+    case aoHidd_Display_ConnectorType:
+        *msg->storage = data->connectortype;
+        return;
+    case aoHidd_Display_ConnectorID:
+        *msg->storage = data->connectorid;
         return;
     case aoHidd_Display_SpriteTypes:
         {
@@ -1209,10 +1221,7 @@ OOP_Object *Display__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHi
         ReleaseSemaphore(&data->fbsem);
 
         return data->framebuffer;
-    }
-
-    if (bm)
-    {
+    } else if (bm) {
         IPTR modeid;
 
         /*
