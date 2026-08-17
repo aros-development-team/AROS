@@ -34,7 +34,6 @@ AROS_UFH3(void, Enumerator,
     IPTR INTLine;
     IPTR Bus = 0, Dev = 0, Sub = 0, Class = 0, SubClass = 0, Interface = 0, Revision = 0;
     OOP_Object *driver;
-    IPTR AGPCap = 0, PCIECap = 0;
     struct pci_dev **ppdev = (struct pci_dev **)hook->h_Data;
     struct pci_dev *pdev;
 
@@ -98,8 +97,7 @@ AROS_UFH3(void, Enumerator,
     pdev->dev.dma_mask      = &pdev->dev.dma_mask_storage;
     pdev->dev.dma_mask_storage = ~0ULL;
     pdev->dev.coherent_dma_mask = ~0ULL;
-    snprintf(pdev->name, sizeof(pdev->name), "0000:%02x:%02x.%d", (int)Bus, (int)Dev, (int)Sub);
-    snprintf(pdev->dev.name, sizeof(pdev->dev.name), "%s", pdev->name);
+    snprintf(pdev->dev.name, sizeof(pdev->dev.name), "0000:%02x:%02x.%d", (int)Bus, (int)Dev, (int)Sub);
 
     /*
         Fix PCI device attributes (perhaps already set, but if the
@@ -111,14 +109,9 @@ AROS_UFH3(void, Enumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&driver);
     pciDriver = driver;
 
-    /* Check AGP/PCIE capabilities */
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_CapabilityAGP, (APTR)&AGPCap);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_CapabilityPCIE, (APTR)&PCIECap);
-
-    pdev->isAGP = (AGPCap != 0);
-    pdev->isPCIE = (PCIECap != 0);
-    pdev->is_pcie = (PCIECap != 0);
-    pdev->pcie_cap = (u32)PCIECap;
+    pdev->pcie_cap = pci_find_capability(pdev, PCI_CAP_ID_EXP);
+    pdev->is_pcie = (pdev->pcie_cap != 0);
+    pdev->pm_cap = pci_find_capability(pdev, PCI_CAP_ID_PM);
 
     D(bug("Acquired pcidriver\n"));
 
@@ -173,11 +166,10 @@ struct pci_dev *drm_aros_pci_find_supported_video_card()
     /* If objects are set, detection was successful */
     if (pciBus && pciDriver && pdev)
     {
-        D(bug("Detected card: 0x%x/0x%x - %s%s%s\n",
+        D(bug("Detected card: 0x%x/0x%x - %s\n",
             pdev->vendor, pdev->device,
-            (!pdev->isAGP) && (!pdev->isPCIE) ? "PCI" : "",
-            pdev->isAGP ? "AGP" : "",
-            pdev->isPCIE ? "PCIe" : ""));
+            pci_is_pcie(pdev) ? "PCIe" :
+            pci_find_capability(pdev, PCI_CAP_ID_AGP) ? "AGP" : "PCI"));
         return pdev;
     }
     else

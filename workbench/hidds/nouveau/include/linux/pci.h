@@ -57,15 +57,11 @@ struct pci_dev {
     unsigned int is_pcie:1;
     unsigned int msi_enabled:1;
     unsigned int is_busmaster:1;
-    unsigned int isAGP:1;
-    unsigned int isPCIE:1;
     void *oopdev;
-    char name[32];
-    IPTR rom;
-    size_t romlen;
-    u32 pcie_cap;
+    u8 pcie_cap;
     u8 pm_cap;
-    void *driver_data;
+    unsigned long rom;      /* platform-provided ROM shadow, if any */
+    size_t romlen;
 };
 
 struct pci_device_id {
@@ -117,7 +113,7 @@ struct pci_driver {
 #define pci_is_bridge(pdev)         (0)
 #define pci_is_thunderbolt_attached(pdev) (0)
 #define pci_is_vga(pdev)            (((pdev)->class >> 8) == PCI_CLASS_DISPLAY_VGA)
-#define pci_find_capability(pdev, c) (0)
+u8 pci_find_capability(struct pci_dev *pdev, int cap);
 #define pci_find_ext_capability(pdev, c) (0)
 #define pci_pcie_cap(pdev)          ((pdev)->pcie_cap)
 #define pci_msi_enabled()           (1)
@@ -223,6 +219,7 @@ typedef int pci_power_t;
 #define PCI_COMMAND_MASTER              0x4
 #define PCI_COMMAND_IO                  0x1
 #define PCI_STATUS                      0x06
+#define PCI_STATUS_CAP_LIST             0x10
 #define PCI_REVISION_ID                 0x08
 #define PCI_CLASS_REVISION              0x08
 #define PCI_CLASS_DEVICE                0x0a
@@ -238,6 +235,8 @@ typedef int pci_power_t;
 #define PCI_CAPABILITY_LIST             0x34
 #define PCI_INTERRUPT_LINE              0x3c
 #define PCI_INTERRUPT_PIN               0x3d
+#define PCI_CAP_LIST_ID                 0
+#define PCI_CAP_LIST_NEXT               1
 #define PCI_CAP_ID_PM                   0x01
 #define PCI_CAP_ID_AGP                  0x02
 #define PCI_CAP_ID_MSI                  0x05

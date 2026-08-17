@@ -26,10 +26,8 @@ const char *dev_name(const struct device *dev)
 {
     if (!dev)
         return "nouveau";
-    if (dev->is_pci) {
-        const struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
-        return pdev->name;
-    }
+    if (dev->name[0])
+        return dev->name;
     if (dev->init_name)
         return dev->init_name;
     return "nouveau";
@@ -234,6 +232,30 @@ int pci_bus_write_config_dword(struct pci_bus *bus, unsigned int devfn, int wher
     return 0;
 }
 
+u8 pci_find_capability(struct pci_dev *pdev, int cap)
+{
+    u16 status;
+    u8 pos, id;
+    int ttl = 48;
+
+    if (!pdev || !pdev->oopdev)
+        return 0;
+    pci_read_config_word(pdev, PCI_STATUS, &status);
+    if (!(status & PCI_STATUS_CAP_LIST))
+        return 0;
+    pci_read_config_byte(pdev, PCI_CAPABILITY_LIST, &pos);
+    while (ttl-- && pos >= 0x40) {
+        pos &= ~3;
+        pci_read_config_byte(pdev, pos + PCI_CAP_LIST_ID, &id);
+        if (id == 0xff)
+            break;
+        if (id == cap)
+            return pos;
+        pci_read_config_byte(pdev, pos + PCI_CAP_LIST_NEXT, &pos);
+    }
+    return 0;
+}
+
 int pcie_capability_read_word(struct pci_dev *pdev, int pos, u16 *val)
 {
     if (!pdev->pcie_cap) {
@@ -377,8 +399,6 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
     OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_RomSize, &romsize);
     if (!rom || !romsize)
         return NULL;
-    pdev->rom = rom;
-    pdev->romlen = romsize;
     *size = romsize;
     return ioremap(rom, romsize);
 }
