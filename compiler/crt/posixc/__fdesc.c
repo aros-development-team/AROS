@@ -244,10 +244,17 @@ int __getfdslot(int wanted_fd)
        numbers in the system-wide fd.library table (see __setfdesc()). */
     if (wanted_fd > STDERR_FILENO && __fdlib_available(PosixCBase)) {
         struct Library *FDBase = PosixCBase->PosixCFDBase;
-        error = FD_Reserve(wanted_fd, FD_OWNER_POSIXC, NULL);
-        if (error) {
-            __set_errno(PosixCBase, error);
-            return -1;
+        /* A vfork child inherits the parent's descriptor table (__copy_fdarray);
+           those fd numbers are already reserved system-wide by the parent as
+           FD_OWNER_POSIXC and are shared, not re-created.  Re-reserving them
+           would fail and abort the child's posixc OpenLib (seen as a spurious
+           ENOMEM from fork()).  Only reserve numbers not already owned by us. */
+        if (FD_GetOwner(wanted_fd) != FD_OWNER_POSIXC) {
+            error = FD_Reserve(wanted_fd, FD_OWNER_POSIXC, NULL);
+            if (error) {
+                __set_errno(PosixCBase, error);
+                return -1;
+            }
         }
     }
 
@@ -510,11 +517,13 @@ fdesc *__alloc_fdesc(void)
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     fdesc * desc;
-    
+
     desc = AllocPooled(PosixCBase->internalpool, sizeof(fdesc));
-    
+    if (desc)
+        desc->allocpool = PosixCBase->internalpool;
+
     D(bug("Allocated fdesc %x from %x pool\n", desc, PosixCBase->internalpool));
-    
+
     return desc;
 }
 
@@ -522,9 +531,12 @@ void __free_fdesc(fdesc *desc)
 {
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    /* A descriptor table can cross posixc instances during vfork/launcher
+       handoff; free each fdesc to the pool that actually allocated it. */
+    APTR pool = desc->allocpool ? desc->allocpool : PosixCBase->internalpool;
 
-    D(bug("Freeing fdesc %x from %x pool\n", desc, PosixCBase->internalpool));
-    FreePooled(PosixCBase->internalpool, desc, sizeof(fdesc));
+    D(bug("Freeing fdesc %x from %x pool\n", desc, pool));
+    FreePooled(pool, desc, sizeof(fdesc));
 }
 
 static void stderrlogic(struct Process *me, fcb *fcb)

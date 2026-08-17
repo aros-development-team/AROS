@@ -157,8 +157,16 @@ LONG launcher()
     if (PosixCBase)
     {
         PosixCBase->PosixCBase.StdCBase = (struct StdCBase *)OpenLibrary((STRPTR) "stdc.library", 0);
-        if (!PosixCBase->PosixCBase.StdCBase)
+        /* posixc_startup wires StdCIOBase for regularly-started programs; this
+           launcher Task has no such startup, and __exec_prepare reaches it via
+           __posixc_get_environptr (which crashed on a NULL StdCIOBase). */
+        PosixCBase->PosixCBase.StdCIOBase = (struct StdCIOBase *)OpenLibrary((STRPTR) "stdcio.library", 0);
+        if (!PosixCBase->PosixCBase.StdCBase || !PosixCBase->PosixCBase.StdCIOBase)
         {
+            if (PosixCBase->PosixCBase.StdCIOBase)
+                CloseLibrary((struct Library *)PosixCBase->PosixCBase.StdCIOBase);
+            if (PosixCBase->PosixCBase.StdCBase)
+                CloseLibrary((struct Library *)PosixCBase->PosixCBase.StdCBase);
             CloseLibrary((struct Library *)PosixCBase);
             PosixCBase = NULL;
         }
@@ -263,12 +271,15 @@ D(bug("launcher: executing command\n"));
     {
         /* child exited */
         D(bug("launcher: catched _exit(), errno=%d\n", exec_error));
+        /* Return the exec'd program's status to the parent. */
+        ret = exec_error;
     }
 
     D(bug("launcher: freeing child_signal\n"));
     FreeSignal(child_signal);
 
     D(bug("launcher: closing libraries\n"));
+    CloseLibrary((struct Library *)PosixCBase->PosixCBase.StdCIOBase);
     CloseLibrary((struct Library *)PosixCBase->PosixCBase.StdCBase);
     CloseLibrary((struct Library *)PosixCBase);
     
@@ -440,6 +451,7 @@ static void parent_createchild(struct vfork_data *udata)
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     jmp_buf vfork_jmp;
     struct Task *self = FindTask(NULL);
+    struct Process *parent = (struct Process *)self;
 
     /* Inherit the parent's stack size for the child process.  An exec*()ed
      * child runs via RunCommand() using the child CLI's cli_DefaultStack,
@@ -459,6 +471,13 @@ static void parent_createchild(struct vfork_data *udata)
         { NP_CloseInput,    (IPTR) FALSE },
         { NP_CloseOutput,   (IPTR) FALSE },
         { NP_CloseError,    (IPTR) FALSE },
+        /* The launcher opens a fresh posixc.library instance before the
+           pretend-child descriptor table is installed; its OpenLib stdio hook
+           needs valid DOS streams on the new Process itself.  CreateNewProc
+           does not infer them for this custom NP_Entry launcher. */
+        { NP_Input,         (IPTR) Input() },
+        { NP_Output,        (IPTR) Output() },
+        { NP_Error,         (IPTR) parent->pr_CES },
         { NP_Cli,           (IPTR) TRUE },
         { NP_Name,          (IPTR) "vfork()" },
         { NP_UserData,      (IPTR) udata },

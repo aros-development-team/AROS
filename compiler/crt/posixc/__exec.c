@@ -528,7 +528,7 @@ static void __exec_do_regular(struct PosixCIntBase *PosixCBase)
         oldin = SelectInput(in->fcb->handle);
         inchanged = 1;
     }
-    if(out && in->fcb->handle != Output())
+    if(out && out->fcb->handle != Output())
     {
         oldout = SelectOutput(out->fcb->handle);
         outchanged = 1;
@@ -556,7 +556,11 @@ static void __exec_do_regular(struct PosixCIntBase *PosixCBase)
     D(bug("[__exec_do_regular] Running program, PosixCBase=%x\n", PosixCBase));
     returncode = RunCommand(
         PosixCBase->exec_seglist,
-        cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
+        /* Launcher tasks (vfork children via CreateNewProc) may have no CLI;
+           Cli()==NULL here would be dereferenced at the stack-size argument.
+           Fall back to a generous fixed stack in that case. */
+        (cli ? cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT
+             : 1024 * 1024),
         (STRPTR)PosixCBase->exec_args,
         strlen(PosixCBase->exec_args)
     );

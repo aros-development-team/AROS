@@ -2,7 +2,7 @@
 #define ___FDESC_H
 
 /*
-    Copyright � 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: file descriptors handling internals - header file
@@ -41,6 +41,10 @@ typedef struct _fdesc
 {
     fcb  *fcb;
     int  fdflags;
+    APTR allocpool;   /* pool this fdesc was allocated from; a descriptor
+                         table can cross posixc.library instances during
+                         vfork/launcher handoff, so free it to the allocator
+                         it came from rather than the current base's pool. */
 } fdesc;
 
 struct PosixCIntBase;
