@@ -21,6 +21,8 @@
           per-core heartbeat.
 */
 
+#include <aros/config.h>
+
 #include <exec/memory.h>
 #include <exec/tasks.h>
 #include <utility/tagitem.h>
@@ -33,6 +35,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__AROSEXEC_SMP__)
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -208,3 +211,9 @@ int main(void)
 
     return fail ? RETURN_FAIL : RETURN_OK;
 }
+#else
+int main(void)
+{
+    return RETURN_FAIL;
+}
+#endif

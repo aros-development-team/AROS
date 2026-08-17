@@ -6,6 +6,8 @@
           and software interrupts from multiple tasks pinned across CPUs.
 */
 
+#include <aros/config.h>
+
 #include <exec/semaphores.h>
 #include <exec/memory.h>
 #include <exec/ports.h>
@@ -23,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__AROSEXEC_SMP__)
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -1114,3 +1117,9 @@ int main(int argc, char **argv)
 
     return failed ? RETURN_ERROR : RETURN_OK;
 }
+#else
+int main(void)
+{
+    return RETURN_FAIL;
+}
+#endif

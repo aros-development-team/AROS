@@ -6,6 +6,8 @@
           concurrently.  Logs progress so hangs are easy to localize.
 */
 
+#include <aros/config.h>
+
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <exec/tasks.h>
@@ -19,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__AROSEXEC_SMP__)
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -207,3 +210,9 @@ int main(void)
     bug("[smptrace] exit\n");
     return RETURN_OK;
 }
+#else
+int main(void)
+{
+    return RETURN_FAIL;
+}
+#endif
