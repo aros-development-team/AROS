@@ -738,4 +738,122 @@ typedef struct
 #define NV50VAIO_CHANNELDMA_ALLOCATION_FLAGS_CONNECT_PB_AT_GRAB_NO             0x00000001
 
 } NV50VAIO_CHANNELDMA_ALLOCATION_PARAMETERS;
+typedef struct NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 newDevices;
+    NvU32 properties;
+    NvU32 enable;
+} NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_END                 (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_START               (0x00000001U)
+#define NV0073_CTRL_CMD_SPECIFIC_DISPLAY_CHANGE                 (0x7302a4U)
+
+
+/* NVC372_DISPLAY_SW: RM's display-software object, home of IMP */
+#define NVC372_DISPLAY_SW                                    (0xc372U)
+#define NVC372_CTRL_CMD_IS_MODE_POSSIBLE                     (0xc3720101U)
+#define NVC372_CTRL_MAX_POSSIBLE_HEADS                       8
+#define NVC372_CTRL_MAX_POSSIBLE_WINDOWS                     32
+#define NVC372_CTRL_MAX_POSSIBLE_TILES                       8
+#define NVC372_CTRL_IMP_LUT_USAGE_NONE                       0
+#define NVC372_CTRL_IMP_LUT_USAGE_257                        1
+#define NVC372_CTRL_IMP_LUT_USAGE_1025                       2
+#define NVC372_CTRL_IMP_LUT_USAGE_HW_MAX                     3
+#define NVC372_CTRL_FORMAT_RGB_PACKED_1_BPP                  (0x00000001)
+#define NVC372_CTRL_FORMAT_RGB_PACKED_2_BPP                  (0x00000002)
+#define NVC372_CTRL_FORMAT_RGB_PACKED_4_BPP                  (0x00000004)
+#define NVC372_CTRL_FORMAT_RGB_PACKED_8_BPP                  (0x00000008)
+#define NVC372_CTRL_LAYOUT_PITCH                             1
+#define NV_DISP_LOCK_PIN_UNSPECIFIED                         0x10
+#define NV_DISP_LOCK_MODE_NO_LOCK                            0x0
+
+typedef struct NVC372_CTRL_CMD_BASE_PARAMS {
+    NvU32 subdeviceIndex;
+} NVC372_CTRL_CMD_BASE_PARAMS;
+
+typedef struct NVC372_CTRL_IMP_HEAD {
+    NvU8  headIndex;
+    NvU32 maxPixelClkKHz;
+    struct { NvU32 width; NvU32 height; } rasterSize;
+    struct { NvU32 X; NvU32 Y; } rasterBlankStart;
+    struct { NvU32 X; NvU32 Y; } rasterBlankEnd;
+    struct { NvU32 yStart; NvU32 yEnd; } rasterVertBlank2;
+    struct {
+        NvU32 masterLockMode;
+        NvU32 masterLockPin;
+        NvU32 slaveLockMode;
+        NvU32 slaveLockPin;
+    } control;
+    NvU32  maxDownscaleFactorH;
+    NvU32  maxDownscaleFactorV;
+    NvU8   outputScalerVerticalTaps;
+    NvBool bUpscalingAllowedV;
+    NvBool bOverfetchEnabled;
+    NvBool bLtmAllowed;
+    struct { NvU16 leadingRasterLines; NvU16 trailingRasterLines; } minFrameIdle;
+    NvU8   lut;
+    NvU8   cursorSize32p;
+    NvU8   tileMask;
+    NvBool bEnableDsc;
+    NvU16  dscTargetBppX16;
+    NvU32  possibleDscSliceCountMask;
+    NvU32  maxDscSliceWidth;
+    NvBool bYUV420Format;
+    NvBool bIs2Head1Or;
+    NvBool bGetOSLDOutput;
+    NvBool bDisableMidFrameAndDWCFWatermark;
+} NVC372_CTRL_IMP_HEAD;
+
+typedef struct NVC372_CTRL_IMP_WINDOW {
+    NvU32  windowIndex;
+    NvU32  owningHead;
+    NvU32  formatUsageBound;
+    NvU32  rotatedFormatUsageBound;
+    NvU32  maxPixelsFetchedPerLine;
+    NvU32  maxDownscaleFactorH;
+    NvU32  maxDownscaleFactorV;
+    NvU8   inputScalerVerticalTaps;
+    NvBool bUpscalingAllowedV;
+    NvBool bOverfetchEnabled;
+    NvU8   lut;
+    NvU8   tmoLut;
+    NvU8   surfaceLayout;
+} NVC372_CTRL_IMP_WINDOW;
+
+typedef struct NVC372_TILING_ASSIGNMENT {
+    NvU8 numTiles;
+} NVC372_TILING_ASSIGNMENT;
+
+typedef struct NVC372_TILE_ENTRY {
+    NvU8 head;
+    NvU8 headDscSlices;
+} NVC372_TILE_ENTRY;
+
+typedef struct NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS {
+    NVC372_CTRL_CMD_BASE_PARAMS base;
+    NvU8                        numHeads;
+    NvU8                        numWindows;
+    NVC372_CTRL_IMP_HEAD        head[NVC372_CTRL_MAX_POSSIBLE_HEADS];
+    NVC372_CTRL_IMP_WINDOW      window[NVC372_CTRL_MAX_POSSIBLE_WINDOWS];
+    NvU32                       options;
+    NvU32                       testMclkFreqKHz;
+    NvBool                      bIsPossible;
+    NvBool                      bIsOSLDPossible[NVC372_CTRL_MAX_POSSIBLE_HEADS];
+    NvU32                       minImpVPState;
+    NvU32                       minPState;
+    NvU32                       minRequiredBandwidthKBPS;
+    NvU32                       floorBandwidthKBPS;
+    NvU32                       minRequiredHubclkKHz;
+    NvU32                       vblankIncreaseInLinesForOSLDMode[NVC372_CTRL_MAX_POSSIBLE_HEADS];
+    NvU32                       wakeUpRgLineForOSLDMode[NVC372_CTRL_MAX_POSSIBLE_HEADS];
+    NvU32                       worstCaseMargin;
+    NvU32                       dispClkKHz;
+    NvU32                       numTilingAssignments;
+    NVC372_TILING_ASSIGNMENT    tilingAssignments[NVC372_CTRL_MAX_POSSIBLE_TILES];
+    NVC372_TILE_ENTRY           tileList[NVC372_CTRL_MAX_POSSIBLE_TILES];
+    char                        worstCaseDomain[8];
+    NvBool                      bUseCachedPerfState;
+} NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS;
+
 #endif

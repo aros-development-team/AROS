@@ -146,8 +146,9 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
     if (modescount == 0)
         return NULL;
         
-    /* Allocate enough structures */
-    syncs = HIDDNouveauAlloc(sizeof(struct TagItem) * modescount);
+    /* One entry per mode plus the terminator: the list is consumed
+       via TAG_MORE, so it must end in TAG_DONE. */
+    syncs = HIDDNouveauAlloc(sizeof(struct TagItem) * (modescount + 1));
     
     /*
      * The list arrives ordered the way a display driver likes it -
@@ -228,7 +229,10 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
         syncs[i].ti_Tag = aHidd_DMEnum_SyncTags;
         syncs[i].ti_Data = (IPTR)sync;
     }
-    
+
+    syncs[modescount].ti_Tag = TAG_DONE;
+    syncs[modescount].ti_Data = 0;
+
     return syncs;
 }
 
@@ -254,6 +258,8 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
  * drivers writing to the same hardware - which is the failure this
  * whole mechanism exists to prevent.
  */
+bool nouveau_aros_boot_display;
+
 static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
     struct DisplayHandover *handover)
 {
@@ -281,15 +287,15 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
         cpu = pci_resource_cpu_addr(start);
         if ((cpu == NULL) || (cpu == (APTR)-1))
         {
-            D(bug("[Nouveau] BAR%lu (0x%p) has no CPU address, cannot match it\n",
-                  (unsigned long)bar, (APTR)(IPTR)start));
+            bug("[Nouveau] BAR%lu (0x%p) has no CPU address, cannot match it\n",
+                  (unsigned long)bar, (APTR)(IPTR)start);
             continue;
         }
 
         ranges[count].dr_Base = cpu;
         ranges[count].dr_Size = len;
-        D(bug("[Nouveau] BAR%lu occupies 0x%p, %lu bytes\n",
-              (unsigned long)bar, cpu, len));
+        bug("[Nouveau] BAR%lu occupies 0x%p, %lu bytes\n",
+              (unsigned long)bar, cpu, len);
         count++;
     }
 
@@ -304,6 +310,7 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
     while ((handle = handover->dho_FindDisplay(handover->dho_Context,
                                                count ? ranges : NULL)))
     {
+        nouveau_aros_boot_display = TRUE;
         if (!handover->dho_ExpungeDisplay(handover->dho_Context, handle))
         {
             nvlog("[Nouveau] boot display 0x%p shares this card and is still in"
@@ -311,9 +318,11 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
             return FALSE;
         }
 
-        D(bug("[Nouveau] boot display 0x%p released this card\n", handle));
+        bug("[Nouveau] boot display 0x%p released this card\n", handle);
     }
 
+    bug("[Nouveau] handover: done (evicted %s)\n",
+        nouveau_aros_boot_display ? "boot display(s)" : "nothing");
     return TRUE;
 }
 

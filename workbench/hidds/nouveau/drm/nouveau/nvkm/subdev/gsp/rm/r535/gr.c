@@ -294,7 +294,7 @@ r535_gr_oneinit(struct nvkm_gr *base)
 	if (ret)
 		goto done;
 
-	ret = r535_mmu_vaspace_new(golden.vmm, NVKM_RM_VASPACE, false);
+	ret = gsp->rm->api->vmm->vaspace_new(golden.vmm, NVKM_RM_VASPACE, false);
 	if (ret)
 		goto done;
 

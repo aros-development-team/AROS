@@ -39,6 +39,8 @@ struct nvkm_rm_api {
 		void (*drop_send_user_shared_data)(struct nvkm_gsp *);
 		void (*drop_post_nocat_record)(struct nvkm_gsp *);
 		u32 (*sr_data_size)(struct nvkm_gsp *);
+		int (*intr_get_table)(struct nvkm_gsp *);
+		int (*msg_os_error_log)(void *priv, u32 fn, void *repv, u32 repc);
 	} *gsp;
 
 	const struct nvkm_rm_api_rpc {
@@ -115,8 +117,13 @@ struct nvkm_rm_api {
 				     u64 inst_addr, u64 userd_addr, u64 mthdbuf_addr,
 				     struct nvkm_vmm *, u64 gpfifo_offset, u32 gpfifo_length,
 				     struct nvkm_gsp_object *);
+			int (*schedule)(struct nvkm_gsp_object *, bool enable);
 		} chan;
 	} *fifo;
+
+	const struct nvkm_rm_api_vmm {
+		int (*vaspace_new)(struct nvkm_vmm *, u32 handle, bool external);
+	} *vmm;
 
 	const struct nvkm_rm_api_engine {
 		int (*alloc)(struct nvkm_gsp_object *chan, u32 handle, u32 class, int inst,
@@ -151,6 +158,10 @@ extern const struct nvkm_rm_api_client r535_client;
 void r535_gsp_client_dtor(struct nvkm_gsp_client *);
 extern const struct nvkm_rm_api_device r535_device;
 int r535_mmu_vaspace_new(struct nvkm_vmm *, u32 handle, bool external);
+extern const struct nvkm_rm_api_vmm r535_vmm;
+int r535_gsp_intr_get_table(struct nvkm_gsp *);
+int r535_gsp_msg_os_error_log(void *priv, u32 fn, void *repv, u32 repc);
+int r535_chan_schedule(struct nvkm_gsp_object *, bool enable);
 void r535_mmu_vaspace_del(struct nvkm_vmm *);
 extern const struct nvkm_rm_api_fbsr r535_fbsr;
 void r535_fbsr_resume(struct nvkm_gsp *);
@@ -185,6 +196,23 @@ extern const struct nvkm_rm_api_fbsr r570_fbsr;
 extern const struct nvkm_rm_api_disp r570_disp;
 extern const struct nvkm_rm_api_fifo r570_fifo;
 extern const struct nvkm_rm_api_gr r570_gr;
+
+extern const struct nvkm_rm_impl r580_rm_tu102;
+extern const struct nvkm_rm_impl r580_rm_ga102;
+extern const struct nvkm_rm_impl r580_rm_gh100;
+extern const struct nvkm_rm_impl r580_rm_gb10x;
+extern const struct nvkm_rm_impl r580_rm_gb20x;
+extern const struct nvkm_rm_api_gsp r580_gsp;
+extern const struct nvkm_rm_api_ctrl r580_ctrl;
+extern const struct nvkm_rm_api_client r580_client;
+extern const struct nvkm_rm_api_fbsr r580_fbsr;
+extern const struct nvkm_rm_api_disp r580_disp;
+extern const struct nvkm_rm_api_fifo r580_fifo;
+extern const struct nvkm_rm_api_gr r580_gr;
+extern const struct nvkm_rm_api_engine r580_ofa;
+extern const struct nvkm_rm_api_vmm r580_vmm;
+int r580_gr_gpc_mask(struct nvkm_gsp *, u32 *mask);
+int r580_gr_tpc_mask(struct nvkm_gsp *, int gpc, u32 *mask);
 int r570_gr_gpc_mask(struct nvkm_gsp *, u32 *mask);
 int r570_gr_tpc_mask(struct nvkm_gsp *, int gpc, u32 *mask);
 extern const struct nvkm_rm_api_engine r570_ofa;

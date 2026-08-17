@@ -138,11 +138,6 @@ nouveau_fence_update(struct nouveau_channel *chan, struct nouveau_fence_chan *fc
 		nvif_event_block(&fctx->event);
 }
 
-#if defined(__AROS__)
-/* TEMPORARY DIAGNOSTIC: how often the non-stall event and its work run */
-unsigned long nouveau_fence_uevent_calls, nouveau_fence_uevent_works;
-#endif
-
 static void
 nouveau_fence_uevent_work(struct work_struct *work)
 {
@@ -152,9 +147,6 @@ nouveau_fence_uevent_work(struct work_struct *work)
 	struct nouveau_fence *fence;
 	unsigned long flags;
 
-#if defined(__AROS__)
-	nouveau_fence_uevent_works++;
-#endif
 	spin_lock_irqsave(&fctx->lock, flags);
 	fence = list_first_entry_or_null(&fctx->pending, typeof(*fence), head);
 	if (fence) {
@@ -168,9 +160,6 @@ static int
 nouveau_fence_wait_uevent_handler(struct nvif_event *event, void *repv, u32 repc)
 {
 	struct nouveau_fence_chan *fctx = container_of(event, typeof(*fctx), event);
-#if defined(__AROS__)
-	nouveau_fence_uevent_calls++;
-#endif
 	schedule_work(&fctx->uevent_work);
 	return NVIF_EVENT_KEEP;
 }

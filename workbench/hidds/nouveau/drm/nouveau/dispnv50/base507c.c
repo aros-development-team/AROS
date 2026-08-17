@@ -147,20 +147,15 @@ int
 base507c_ntfy_wait_begun(struct nouveau_bo *bo, u32 offset,
 			 struct nvif_device *device)
 {
-#if defined(__AROS__)
-	ktime_t t0 = ktime_get();
-#endif
 	s64 time = nvif_msec(device, 2000ULL,
 		if (NVBO_TD32(bo, offset, NV_DISP_BASE_NOTIFIER_1, _0, STATUS, ==, BEGUN))
 			break;
+		nv50_disp_sv_release(device);
 		usleep_range(1, 2);
 	);
 #if defined(__AROS__)
-	if (time < 0) {
-		printk(KERN_WARNING "[nouveau] base ntfy timeout after %lld us: bo offset %llx ntfy@%x = %08x %08x\n",
-		       (long long)((ktime_get() - t0) / 1000), (unsigned long long)bo->offset, offset,
-		       nouveau_bo_rd32(bo, offset / 4), nouveau_bo_rd32(bo, offset / 4 + 1));
-	}
+	if (time < 0)
+		printk(KERN_ERR "[nouveau] base notifier timeout\n");
 #endif
 	return time < 0 ? time : 0;
 }

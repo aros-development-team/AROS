@@ -150,6 +150,19 @@ r535_chan_alloc(struct nvkm_gsp_device *device, u32 handle, u32 nv2080_engine_ty
 	return nvkm_gsp_rm_alloc_wr(chan, args);
 }
 
+int
+r535_chan_schedule(struct nvkm_gsp_object *object, bool enable)
+{
+	NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS *ctrl;
+
+	ctrl = nvkm_gsp_rm_ctrl_get(object, NVA06F_CTRL_CMD_GPFIFO_SCHEDULE, sizeof(*ctrl));
+	if (WARN_ON(IS_ERR(ctrl)))
+		return PTR_ERR(ctrl);
+
+	ctrl->bEnable = enable;
+	return nvkm_gsp_rm_ctrl_wr(object, ctrl);
+}
+
 static int
 r535_chan_ramfc_write(struct nvkm_chan *chan, u64 offset, u64 length, u32 devm, bool priv)
 {
@@ -189,8 +202,6 @@ r535_chan_ramfc_write(struct nvkm_chan *chan, u64 offset, u64 length, u32 devm, 
 		return ret;
 
 	if (1) {
-		NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS *ctrl;
-
 		if (1) {
 			NVA06F_CTRL_BIND_PARAMS *ctrl;
 
@@ -206,13 +217,8 @@ r535_chan_ramfc_write(struct nvkm_chan *chan, u64 offset, u64 length, u32 devm, 
 				return ret;
 		}
 
-		ctrl = nvkm_gsp_rm_ctrl_get(&chan->rm.object,
-					    NVA06F_CTRL_CMD_GPFIFO_SCHEDULE, sizeof(*ctrl));
-		if (WARN_ON(IS_ERR(ctrl)))
-			return PTR_ERR(ctrl);
-
-		ctrl->bEnable = 1;
-		ret = nvkm_gsp_rm_ctrl_wr(&chan->rm.object, ctrl);
+		ret = (rmapi->fifo->chan.schedule ? rmapi->fifo->chan.schedule :
+		       r535_chan_schedule)(&chan->rm.object, true);
 	}
 
 	return ret;

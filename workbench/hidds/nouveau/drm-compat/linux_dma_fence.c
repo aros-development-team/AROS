@@ -371,7 +371,6 @@ dma_fence_default_wait(struct dma_fence *fence, bool intr, signed long timeout)
 		const signed long maxslice = msecs_to_jiffies(10) ? msecs_to_jiffies(10) : 1;
 		signed long slice = 1;
 		signed long waited = 0;
-		bool polled = false;
 
 		/*
 		 * The engine may already be done, or be about to be: most 2D
@@ -383,10 +382,8 @@ dma_fence_default_wait(struct dma_fence *fence, bool intr, signed long timeout)
 			int spins;
 
 			for (spins = 0; spins < 12; spins++) {
-				if (dma_fence_is_signaled(fence)) {
-					polled = true;
+				if (dma_fence_is_signaled(fence))
 					break;
-				}
 				udelay(spins < 4 ? 5 : 20);
 			}
 		}
@@ -410,31 +407,12 @@ dma_fence_default_wait(struct dma_fence *fence, bool intr, signed long timeout)
 			if (rv < 0)
 				rv = 0;
 
-			if (!test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags) &&
-			    dma_fence_is_signaled(fence))
-				polled = true;
-
 			spin_lock(fence->lock);
 			if (rv > 0 && intr && signal_pending(current))
 				rv = -ERESTARTSYS;
 		}
 		if (rv <= 0 && waited && timeout != MAX_SCHEDULE_TIMEOUT)
 			rv = 0;
-		if (waited >= msecs_to_jiffies(500) || (polled && waited)) {
-			static int reports;
-			extern unsigned long nouveau_compat_irq_count(void);
-			extern unsigned long nouveau_fence_uevent_calls, nouveau_fence_uevent_works;
-
-			if (reports < 8) {
-				reports++;
-				printk(KERN_WARNING "[nouveau] fence %llu:%llu wait %ld ms: %s (irqs %lu, uevents %lu/%lu)\n",
-				       (unsigned long long)fence->context, (unsigned long long)fence->seqno,
-				       (long)jiffies_to_msecs(waited),
-				       test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags) ?
-				       (polled ? "completed, found by polling" : "completed by interrupt") : "timed out",
-				       nouveau_compat_irq_count(), nouveau_fence_uevent_calls, nouveau_fence_uevent_works);
-			}
-		}
 		if (rv > 0 || test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
 			if (rv <= 0)
 				rv = 1;

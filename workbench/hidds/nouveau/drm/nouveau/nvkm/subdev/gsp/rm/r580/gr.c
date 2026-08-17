@@ -13,7 +13,7 @@
 #include "nvrm/engine.h"
 
 int
-r570_gr_tpc_mask(struct nvkm_gsp *gsp, int gpc, u32 *pmask)
+r580_gr_tpc_mask(struct nvkm_gsp *gsp, int gpc, u32 *pmask)
 {
 	NV2080_CTRL_GPU_GET_FERMI_TPC_INFO_PARAMS *ctrl;
 	int ret;
@@ -36,7 +36,7 @@ r570_gr_tpc_mask(struct nvkm_gsp *gsp, int gpc, u32 *pmask)
 }
 
 int
-r570_gr_gpc_mask(struct nvkm_gsp *gsp, u32 *pmask)
+r580_gr_gpc_mask(struct nvkm_gsp *gsp, u32 *pmask)
 {
 	NV2080_CTRL_GPU_GET_FERMI_GPC_INFO_PARAMS *ctrl;
 
@@ -52,7 +52,7 @@ r570_gr_gpc_mask(struct nvkm_gsp *gsp, u32 *pmask)
 }
 
 static int
-r570_gr_scrubber_ctrl(struct r535_gr *gr, bool teardown)
+r580_gr_scrubber_ctrl(struct r535_gr *gr, bool teardown)
 {
 	NV2080_CTRL_INTERNAL_GR_INIT_BUG4208224_WAR_PARAMS *ctrl;
 
@@ -68,11 +68,11 @@ r570_gr_scrubber_ctrl(struct r535_gr *gr, bool teardown)
 }
 
 static void
-r570_gr_scrubber_fini(struct r535_gr *gr)
+r580_gr_scrubber_fini(struct r535_gr *gr)
 {
 	/* Teardown scrubber channel on RM. */
 	if (gr->scrubber.enabled) {
-		WARN_ON(r570_gr_scrubber_ctrl(gr, true));
+		WARN_ON(r580_gr_scrubber_ctrl(gr, true));
 		gr->scrubber.enabled = false;
 	}
 
@@ -90,7 +90,7 @@ r570_gr_scrubber_fini(struct r535_gr *gr)
 }
 
 static int
-r570_gr_scrubber_init(struct r535_gr *gr)
+r580_gr_scrubber_init(struct r535_gr *gr)
 {
 	struct nvkm_subdev *subdev = &gr->base.engine.subdev;
 	struct nvkm_device *device = subdev->device;
@@ -150,7 +150,7 @@ r570_gr_scrubber_init(struct r535_gr *gr)
 		goto done;
 
 	/* Initialise scrubber channel on RM. */
-	ret = r570_gr_scrubber_ctrl(gr, false);
+	ret = r580_gr_scrubber_ctrl(gr, false);
 	if (ret)
 		goto done;
 
@@ -158,13 +158,13 @@ r570_gr_scrubber_init(struct r535_gr *gr)
 
 done:
 	if (ret)
-		r570_gr_scrubber_fini(gr);
+		r580_gr_scrubber_fini(gr);
 
 	return ret;
 }
 
 static int
-r570_gr_get_ctxbufs_info(struct r535_gr *gr)
+r580_gr_get_ctxbufs_info(struct r535_gr *gr)
 {
 	NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS *info;
 	struct nvkm_subdev *subdev = &gr->base.engine.subdev;
@@ -184,8 +184,8 @@ r570_gr_get_ctxbufs_info(struct r535_gr *gr)
 }
 
 const struct nvkm_rm_api_gr
-r570_gr = {
-	.get_ctxbufs_info = r570_gr_get_ctxbufs_info,
-	.scrubber.init = r570_gr_scrubber_init,
-	.scrubber.fini = r570_gr_scrubber_fini,
+r580_gr = {
+	.get_ctxbufs_info = r580_gr_get_ctxbufs_info,
+	.scrubber.init = r580_gr_scrubber_init,
+	.scrubber.fini = r580_gr_scrubber_fini,
 };

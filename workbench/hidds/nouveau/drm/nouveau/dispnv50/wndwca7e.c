@@ -156,7 +156,8 @@ static int
 wndwca7e_ntfy_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 {
 	struct nv50_disp *disp = nv50_disp(wndw->plane.dev);
-	const u64 ntfy_addr = disp->sync->offset + asyw->ntfy.offset;
+	u32 ntfy_target;
+	const u64 ntfy_addr = nv50_disp_sync_addr(disp, asyw->ntfy.offset, &ntfy_target);
 	const u32 ntfy_hi = upper_32_bits(ntfy_addr);
 	const u32 ntfy_lo = lower_32_bits(ntfy_addr);
 	struct nvif_push *push = &wndw->wndw.push;
@@ -170,7 +171,7 @@ wndwca7e_ntfy_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 
 				SET_SURFACE_ADDRESS_LO_NOTIFIER,
 		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_NOTIFIER, ADDRESS_LO, ntfy_lo >> 4) |
-		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_NOTIFIER, TARGET, PHYSICAL_NVM) |
+		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_NOTIFIER, TARGET, ntfy_target) |
 		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_NOTIFIER, ENABLE, ENABLE));
 
 	PUSH_MTHD(push, NVCA7E, SET_NOTIFIER_CONTROL,

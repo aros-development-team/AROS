@@ -648,6 +648,16 @@ AROS_DRM_NVIDIA_SOURCES = \
             drm/nouveau/nvkm/subdev/gsp/rm/r570/gsp \
             drm/nouveau/nvkm/subdev/gsp/rm/r570/ofa \
             drm/nouveau/nvkm/subdev/gsp/rm/r570/rm \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/client \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/ctrl \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/disp \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/fbsr \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/fifo \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/gr \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/gsp \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/ofa \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/rm \
+            drm/nouveau/nvkm/subdev/gsp/rm/r580/vmm \
             drm/nouveau/nvkm/subdev/gsp/rm/tu1xx \
             drm/nouveau/nvkm/subdev/gsp/tu102 \
             drm/nouveau/nvkm/subdev/gsp/tu116 \

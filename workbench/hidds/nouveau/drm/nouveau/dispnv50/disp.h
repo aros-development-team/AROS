@@ -13,6 +13,10 @@ struct nv50_disp {
 	struct nvif_disp *disp;
 	struct nv50_core *core;
 	struct nvif_object caps;
+	bool sync_host;
+	bool change_open;
+	u32 change_mask;
+	struct drm_device *drm_dev;
 
 #define NV50_DISP_SYNC(c, o)                                ((c) * 0x040 + (o))
 #define NV50_DISP_CORE_NTFY                       NV50_DISP_SYNC(0      , 0x00)
@@ -105,4 +109,17 @@ extern const u64 disp50xx_modifiers[];
 extern const u64 disp90xx_modifiers[];
 extern const u64 wndwc57e_modifiers[];
 extern const u64 wndwca7e_modifiers[];
+
+/* Blackwell display addresses the sync area directly: VRAM (PHYSICAL_NVM)
+ * unless the area lives in system memory (PHYSICAL_PCI_COHERENT). */
+u64 nv50_disp_sync_addr(struct nv50_disp *, u32 offset, u32 *target);
+extern int nv50_disp_sync_host_param;
+int nv50_disp_sync_host_param_get(void);
+/* GB20x: release display supervisor events GSP-RM leaves pending. */
+struct nvkm_disp_imp_head;
+struct nvkm_disp_imp_result;
+int nv50_disp_imp(struct nv50_disp *, const struct nvkm_disp_imp_head *, int,
+		  struct nvkm_disp_imp_result *);
+extern bool nv50_disp_sv_release_enabled;
+void nv50_disp_sv_release(struct nvif_device *);
 #endif

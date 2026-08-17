@@ -131,7 +131,7 @@ r535_gsp_xlat_mc_engine_idx(u32 mc_engine_idx, enum nvkm_subdev_type *ptype, int
 	}
 }
 
-static int
+int
 r535_gsp_intr_get_table(struct nvkm_gsp *gsp)
 {
 	NV2080_CTRL_INTERNAL_INTR_GET_KERNEL_TABLE_PARAMS *ctrl;
@@ -305,7 +305,7 @@ r535_gsp_postinit(struct nvkm_gsp *gsp)
 
 	INIT_WORK(&gsp->msgq.work, r535_gsp_msgq_work);
 
-	ret = r535_gsp_intr_get_table(gsp);
+	ret = (rmapi->gsp->intr_get_table ? rmapi->gsp->intr_get_table : r535_gsp_intr_get_table)(gsp);
 	if (WARN_ON(ret))
 		return ret;
 
@@ -931,7 +931,7 @@ r535_gsp_set_system_info(struct nvkm_gsp *gsp)
 	return nvkm_gsp_rpc_wr(gsp, info, NVKM_GSP_RPC_REPLY_NOSEQ);
 }
 
-static int
+int
 r535_gsp_msg_os_error_log(void *priv, u32 fn, void *repv, u32 repc)
 {
 	struct nvkm_gsp *gsp = priv;
@@ -2177,7 +2177,9 @@ r535_gsp_oneinit(struct nvkm_gsp *gsp)
 	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_RC_TRIGGERED, rmapi->fifo->rc_triggered, gsp);
 	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_MMU_FAULT_QUEUED,
 			      r535_gsp_msg_mmu_fault_queued, gsp);
-	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_OS_ERROR_LOG, r535_gsp_msg_os_error_log, gsp);
+	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_OS_ERROR_LOG,
+			      gsp->rm->api->gsp->msg_os_error_log ?
+			      gsp->rm->api->gsp->msg_os_error_log : r535_gsp_msg_os_error_log, gsp);
 	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_PERF_BRIDGELESS_INFO_UPDATE, NULL, NULL);
 	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_UCODE_LIBOS_PRINT, NULL, NULL);
 	if (rmapi->gsp->drop_send_user_shared_data)

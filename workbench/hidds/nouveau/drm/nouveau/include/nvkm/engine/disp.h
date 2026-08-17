@@ -17,6 +17,7 @@ struct nvkm_disp {
 
 		struct nvkm_gsp_object objcom;
 		struct nvkm_gsp_object object;
+		struct nvkm_gsp_object imp;
 
 #define NVKM_DPYID_PLUG   BIT(0)
 #define NVKM_DPYID_UNPLUG BIT(1)
@@ -87,4 +88,25 @@ int gp102_disp_new(struct nvkm_device *, enum nvkm_subdev_type, int inst, struct
 int gv100_disp_new(struct nvkm_device *, enum nvkm_subdev_type, int inst, struct nvkm_disp **);
 int tu102_disp_new(struct nvkm_device *, enum nvkm_subdev_type, int inst, struct nvkm_disp **);
 int ga102_disp_new(struct nvkm_device *, enum nvkm_subdev_type, int inst, struct nvkm_disp **);
+int r535_disp_display_change(struct nvkm_disp *, bool start, u32 display_mask);
+
+/* RM "is mode possible" (IMP) query; on Blackwell RM assigns tiles by it. */
+struct nvkm_disp_imp_head {
+	int head;
+	u32 pclk_khz;
+	u32 raster_w, raster_h;
+	u32 blank_start_x, blank_start_y;
+	u32 blank_end_x, blank_end_y;
+	u32 vblank2_start, vblank2_end;
+	u32 view_w, view_h;
+	u8 tile_mask;         /* 0 = let RM assign */
+};
+struct nvkm_disp_imp_result {
+	bool possible;
+	u32 dispclk_khz;
+	u8 tiles[8];          /* required tile count per head */
+	u32 minbw_kbps;
+};
+int r535_disp_imp(struct nvkm_disp *, const struct nvkm_disp_imp_head *heads, int nheads,
+		  struct nvkm_disp_imp_result *res);
 #endif

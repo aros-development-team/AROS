@@ -85,6 +85,7 @@ corec37d_ntfy_wait_done(struct nouveau_bo *bo, u32 offset,
 	s64 time = nvif_msec(device, 2000ULL,
 		if (NVBO_TD32(bo, offset, NV_DISP_NOTIFIER, _0, STATUS, ==, FINISHED))
 			break;
+		nv50_disp_sv_release(device);
 		usleep_range(1, 2);
 	);
 	return time < 0 ? time : 0;

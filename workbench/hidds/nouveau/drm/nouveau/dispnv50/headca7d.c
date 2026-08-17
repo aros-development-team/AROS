@@ -5,6 +5,8 @@
 #include "head.h"
 #include "atom.h"
 #include "core.h"
+#include "disp.h"
+#include <nvkm/engine/disp.h>
 
 #include <nvif/pushc97b.h>
 
@@ -222,9 +224,95 @@ headca7d_mode(struct nv50_head *head, struct nv50_head_atom *asyh)
 	const int i = head->base.index;
 	int ret;
 
-	ret = PUSH_WAIT(push, 11);
+	ret = PUSH_WAIT(push, 11 + 2 + 4 + 16 + 2 + 10);
 	if (ret)
 		return ret;
+
+	/* RM's mode-possible query for this head (its tiles are ours to keep). */
+	{
+		struct nvkm_disp_imp_head ih = {
+			.head = i,
+			.pclk_khz = m->clock,
+			.raster_w = m->h.active,
+			.raster_h = m->v.active,
+			.blank_start_x = m->h.blanks,
+			.blank_start_y = m->v.blanks,
+			.blank_end_x = m->h.blanke,
+			.blank_end_y = m->v.blanke,
+			.vblank2_start = m->v.blank2s,
+			.vblank2_end = m->v.blank2e,
+			.view_w = asyh->view.oW,
+			.view_h = asyh->view.oH,
+			.tile_mask = coreca7d_armed(head->disp->core, NVCA7D_HEAD_SET_TILE_MASK(i)) & 0xff,
+		};
+		struct nvkm_disp_imp_result res;
+
+		nv50_disp_imp(head->disp, &ih, 1, &res);
+	}
+
+	/*
+	 * A head being lit needs a tile and its windows need physical windows;
+	 * keep whatever it already owns (the firmware's assignment), else take
+	 * ones no live head owns. The active width is split across its tiles.
+	 */
+	{
+		struct nv50_core *core = head->disp->core;
+		const u32 hactive = m->h.blanks - m->h.blanke;
+		u32 active, tiles, phywins, mine, w, n, start = 0, t, x;
+
+		coreca7d_owned(core, &active, &tiles, &phywins);
+
+		/* Bounds for this head and its windows (deferred from init). */
+		PUSH_MTHD(push, NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS(i),
+			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, CURSOR, USAGE_W256_H256) |
+			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, OLUT_ALLOWED, TRUE) |
+			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, OUTPUT_SCALER_TAPS, TAPS_2) |
+			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, UPSCALING_ALLOWED, TRUE));
+		for (w = i * 2; w < i * 2 + 2; w++) {
+			PUSH_MTHD(push, NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS(w),
+				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED1BPP, TRUE) |
+				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED2BPP, TRUE) |
+				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED4BPP, TRUE) |
+				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED8BPP, TRUE),
+
+						WINDOW_SET_WINDOW_ROTATED_FORMAT_USAGE_BOUNDS(w), 0x00000000);
+
+			PUSH_MTHD(push, NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS(w),
+				  NVVAL(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, MAX_PIXELS_FETCHED_PER_LINE, 0x7fff) |
+				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, ILUT_ALLOWED, TRUE) |
+				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, INPUT_SCALER_TAPS, TAPS_2) |
+				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, UPSCALING_ALLOWED, FALSE));
+		}
+		mine = coreca7d_armed(core, NVCA7D_HEAD_SET_TILE_MASK(i)) & 0xff;
+		if (!mine) {
+			for (t = 0; t < 8 && (tiles & BIT((i + t) & 7)); t++);
+			mine = BIT((i + t) & 7);
+			PUSH_MTHD(push, NVCA7D, HEAD_SET_TILE_MASK(i), mine);
+		}
+
+		for (w = i * 2; w < i * 2 + 2; w++) {
+			u32 pw = coreca7d_armed(core, NVCA7D_WINDOW_SET_PHYSICAL(w)) & 0xff;
+			if (pw)
+				continue;
+			for (t = 0; t < 8 && (phywins & BIT((w + t) & 7)); t++);
+			pw = BIT((w + t) & 7);
+			phywins |= pw;
+			PUSH_MTHD(push, NVCA7D, WINDOW_SET_PHYSICAL(w), pw);
+		}
+
+		n = hweight32(mine);
+		x = 0;
+		for (t = 0; t < 8; t++) {
+			u32 width;
+			if (!(mine & BIT(t)))
+				continue;
+			width = (++x < n) ? DIV_ROUND_UP(hactive, n) : hactive - start;
+			PUSH_MTHD(push, NVCA7D, TILE_SET_TILE_SIZE(t),
+				  NVVAL(NVCA7D, TILE_SET_TILE_SIZE, START, start) |
+				  NVVAL(NVCA7D, TILE_SET_TILE_SIZE, WIDTH, width));
+			start += width;
+		}
+	}
 
 	PUSH_MTHD(push, NVCA7D, HEAD_SET_RASTER_SIZE(i),
 		  NVVAL(NVCA7D, HEAD_SET_RASTER_SIZE, WIDTH, m->h.active) |

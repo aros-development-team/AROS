@@ -62,24 +62,14 @@ int
 core507d_ntfy_wait_done(struct nouveau_bo *bo, u32 offset,
 			struct nvif_device *device)
 {
-#if defined(__AROS__)
-	ktime_t t0 = ktime_get();
-#endif
 	s64 time = nvif_msec(device, 2000ULL,
 		if (NVBO_TD32(bo, offset, NV_DISP_CORE_NOTIFIER_1, COMPLETION_0, DONE, ==, TRUE))
 			break;
 		usleep_range(1, 2);
 	);
 #if defined(__AROS__)
-	if (time < 0) {
-		bool is_iomem;
-		void *virt = ttm_kmap_obj_virtual(&bo->kmap, &is_iomem);
-		printk(KERN_WARNING "[nouveau] core ntfy timeout after %lld us (gpu time %llu): bo offset %llx map %p iomem %d, ntfy[0..3] %08x %08x %08x %08x\n",
-		       (long long)((ktime_get() - t0) / 1000), (unsigned long long)nvif_device_time(device),
-		       (unsigned long long)bo->offset, virt, is_iomem,
-		       nouveau_bo_rd32(bo, offset / 4), nouveau_bo_rd32(bo, offset / 4 + 1),
-		       nouveau_bo_rd32(bo, offset / 4 + 2), nouveau_bo_rd32(bo, offset / 4 + 3));
-	}
+	if (time < 0)
+		printk(KERN_ERR "[nouveau] core notifier timeout\n");
 #endif
 	return time < 0 ? time : 0;
 }

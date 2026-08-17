@@ -1,6 +1,20 @@
 --- ./xf86-video-nouveau-1.0.18/nouveau_copy.c
 +++ ./xf86-video-nouveau/nouveau_copy.c
-@@ -55,11 +55,13 @@
+@@ -42,6 +42,13 @@
+ 		int engine;
+ 		Bool (*init)(NVPtr);
+ 	} methods[] = {
++		{ 0xcab5, 0, nouveau_copya0b5_init },
++		{ 0xc9b5, 0, nouveau_copya0b5_init },
++		{ 0xc8b5, 0, nouveau_copya0b5_init },
++		{ 0xc7b5, 0, nouveau_copya0b5_init },
++		{ 0xc6b5, 0, nouveau_copya0b5_init },
++		{ 0xc5b5, 0, nouveau_copya0b5_init },
++		{ 0xc3b5, 0, nouveau_copya0b5_init },
+ 		{ 0xc1b5, 0, nouveau_copya0b5_init },
+ 		{ 0xc0b5, 0, nouveau_copya0b5_init },
+ 		{ 0xb0b5, 0, nouveau_copya0b5_init },
+@@ -55,11 +62,13 @@
  	NVPtr pNv = NVPTR(pScrn);
  	int ret;
  
@@ -14,7 +28,7 @@
  
  	switch (pNv->Architecture) {
  	case NV_TESLA:
-@@ -86,6 +88,12 @@
+@@ -86,6 +95,12 @@
  	case NV_KEPLER:
  	case NV_MAXWELL:
  	case NV_PASCAL:
@@ -27,6 +41,21 @@
  		ret = nouveau_object_new(&pNv->dev->object, 0,
  					 NOUVEAU_FIFO_CHANNEL_CLASS,
  					 &(struct nve0_fifo) {
+@@ -114,8 +129,13 @@
+ 	}
+ 
+ 	while (method->init) {
++		/*
++		 * The handle must not collide with the main channel's copy
++		 * object (whose handle is the class): on GSP-RM parts every
++		 * object handle is unique per client, not per channel.
++		 */
+ 		ret = nouveau_object_new(pNv->ce_channel,
+-					 method->engine << 16 | method->oclass,
++					 0x0ce00000 | method->engine << 16 | method->oclass,
+ 					 method->oclass, NULL, 0,
+ 					 &pNv->NvCopy);
+ 		if (ret == 0) {
 --- ./xf86-video-nouveau-1.0.18/nouveau_exa.c
 +++ ./xf86-video-nouveau/nouveau_exa.c
 @@ -21,7 +21,9 @@

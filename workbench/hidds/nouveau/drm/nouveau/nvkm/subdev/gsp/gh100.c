@@ -10,7 +10,7 @@
 #include <subdev/fb.h>
 #include <subdev/fsp.h>
 
-#include <rm/r570/nvrm/gsp.h>
+#include <rm/r580/nvrm/gsp.h>
 
 #include <nvhw/drf.h>
 #include <nvhw/ref/gh100/dev_falcon_v4.h>
@@ -630,15 +630,62 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 		}
 	}
 	compat_dma_sync_all_coherent();
-#endif
+	/*
+	 * The FMC/ACR occasionally refuses the first boot on this platform
+	 * (mailbox 0xb) although a fresh attempt a moment later succeeds;
+	 * give it a few tries before giving up.
+	 */
+	{
+		int attempt;
+
+		for (attempt = 0; attempt < 4; attempt++) {
+			if (attempt) {
+				nvkm_warn(subdev, "GSP-FMC boot retry %d\n", attempt);
+				/* the mailbox keeps the last verdict; clear it so a
+				   fresh answer (or none) is what we wait for */
+				nvkm_falcon_wr32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX0, 0);
+				nvkm_falcon_wr32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX1, 0);
+				msleep(1000);
+				compat_dma_sync_all_coherent();
+			}
+			ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
+						    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
+			if (ret) {
+				nvkm_error(subdev, "GSP-FMC boot request failed: %d\n", ret);
+				continue;
+			}
+
+			time = 4000;
+			mbox0 = 0;
+			do {
+				if (gh100_gsp_lockdown_released(gsp, &mbox0))
+					break;
+				usleep_range(1000, 2000);
+			} while (time--);
+
+			if (time < 0) {
+				nvkm_error(subdev, "GSP-FMC boot timed out\n");
+				ret = -ETIMEDOUT;
+				continue;
+			}
+			if (mbox0) {
+				nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x)\n", mbox0);
+				ret = -EIO;
+				continue;
+			}
+			ret = 0;
+			break;
+		}
+		if (ret) {
+			gh100_gsp_aros_dumpfiles(gsp);
+			return ret;
+		}
+	}
+#else
 	ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
 				    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
-	if (ret) {
-#if defined(__AROS__)
-		gh100_gsp_aros_dumpfiles(gsp);
-#endif
+	if (ret)
 		return ret;
-	}
 
 	do {
 		if (gh100_gsp_lockdown_released(gsp, &mbox0))
@@ -649,27 +696,16 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 
 	if (time < 0) {
 		nvkm_error(subdev, "GSP-FMC boot timed out\n");
-#if defined(__AROS__)
-		gh100_gsp_aros_dumpfiles(gsp);
-#endif
 		return -ETIMEDOUT;
 	}
 
 	if (mbox0) {
 		nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x)\n", mbox0);
-#if defined(__AROS__)
-		gh100_gsp_aros_dumpfiles(gsp);
-#endif
 		return -EIO;
 	}
-
-#if defined(__AROS__)
-	ret = r535_gsp_init(gsp);
-	gh100_gsp_aros_dumpfiles(gsp);
-	return ret;
-#else
-	return r535_gsp_init(gsp);
 #endif
+
+	return r535_gsp_init(gsp);
 }
 
 static int
@@ -889,6 +925,7 @@ done:
 
 static struct nvkm_gsp_fwif
 gh100_gsps[] = {
+	{ 2, gh100_gsp_load, &gh100_gsp, &r580_rm_gh100, "580.178.04" },
 	{ 0, gh100_gsp_load, &gh100_gsp, &r570_rm_gh100, "570.144" },
 	{}
 };
@@ -901,3 +938,4 @@ gh100_gsp_new(struct nvkm_device *device, enum nvkm_subdev_type type, int inst,
 }
 
 NVKM_GSP_FIRMWARE_FMC(gh100, 570.144);
+NVKM_GSP_FIRMWARE_FMC(gh100, 580.178.04);

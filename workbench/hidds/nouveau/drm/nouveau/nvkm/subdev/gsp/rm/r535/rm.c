@@ -37,6 +37,7 @@ r535_api = {
 	.nvenc = &r535_nvenc,
 	.nvjpg = &r535_nvjpg,
 	.ofa = &r535_ofa,
+	.vmm = &r535_vmm,
 };
 
 const struct nvkm_rm_impl

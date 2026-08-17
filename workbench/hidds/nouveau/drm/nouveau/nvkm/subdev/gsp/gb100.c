@@ -20,6 +20,7 @@ gb100_gsp = {
 
 static struct nvkm_gsp_fwif
 gb100_gsps[] = {
+	{ 2, gh100_gsp_load, &gb100_gsp, &r580_rm_gb10x, "580.178.04" },
 	{ 0, gh100_gsp_load, &gb100_gsp, &r570_rm_gb10x, "570.144" },
 	{}
 };
@@ -33,3 +34,6 @@ gb100_gsp_new(struct nvkm_device *device, enum nvkm_subdev_type type, int inst,
 
 NVKM_GSP_FIRMWARE_FMC(gb100, 570.144);
 NVKM_GSP_FIRMWARE_FMC(gb102, 570.144);
+
+NVKM_GSP_FIRMWARE_FMC(gb100, 580.178.04);
+NVKM_GSP_FIRMWARE_FMC(gb102, 580.178.04);

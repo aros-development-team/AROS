@@ -62,11 +62,89 @@
 #include <nvhw/class/cl917d.h>
 
 #include "nouveau_drv.h"
+#include <nvkm/engine/disp.h>
+#include <nvhw/class/clc37d.h>
 #include "nouveau_dma.h"
 #include "nouveau_gem.h"
 #include "nouveau_connector.h"
 #include "nouveau_encoder.h"
 #include "nouveau_fence.h"
+#include <drm/ttm/ttm_tt.h>
+
+/*
+ * GB20x display channels can address the notifier in either video or host
+ * memory (no ctxdma). NOUVEAU_DISP_SYNC_HOST=1 keeps the sync buffer in
+ * host memory as an experiment; the default is VRAM.
+ */
+int nv50_disp_sync_host_param = 0;
+bool nv50_disp_sv_release_enabled = false;
+
+int
+nv50_disp_sync_host_param_get(void)
+{
+	return nv50_disp_sync_host_param;
+}
+
+u64
+nv50_disp_sync_addr(struct nv50_disp *disp, u32 offset, u32 *target)
+{
+	struct nouveau_bo *bo = disp->sync;
+
+	if (disp->sync_host) {
+		struct ttm_tt *tt = bo->bo.ttm;
+
+		if (tt && tt->dma_address) {
+			*target = 3; /* PHYSICAL_PCI_COHERENT */
+			return tt->dma_address[0] + offset;
+		}
+	}
+
+	*target = 1; /* PHYSICAL_NVM */
+	return bo->offset + offset;
+}
+
+/*
+ * On Blackwell with GSP-RM 580 the display engine raises its supervisor
+ * events and nobody services them, so an UPDATE never completes; releasing
+ * the pending event lets it proceed. Only touched while a wait would
+ * otherwise time out, so a firmware that does service them is unaffected.
+ */
+/* Ask RM whether the given head configuration is possible (Blackwell). */
+int
+nv50_disp_imp(struct nv50_disp *disp, const struct nvkm_disp_imp_head *heads, int nheads,
+	      struct nvkm_disp_imp_result *res)
+{
+	struct nouveau_drm *drm = nouveau_drm(disp->drm_dev);
+	struct nvkm_device *device = nvxx_device(drm);
+
+	if (!device->disp)
+		return -ENODEV;
+
+	return r535_disp_imp(device->disp, heads, nheads, res);
+}
+
+void
+nv50_disp_sv_release(struct nvif_device *device)
+{
+	u32 sv;
+
+	if (!nv50_disp_sv_release_enabled)
+		return;
+
+	/*
+	 * GB20x: GSP-RM does not run the display supervisor for a client-driven
+	 * update. Service it ourselves - reset the pending SUPERVISOR event and
+	 * trigger SUPERVISOR_MAIN.RESTART - so the FE advances through its
+	 * phases and the update completes. (Register semantics from NVIDIA's
+	 * open-gpu-doc Ampere display manual: 0x611860 = EVT_STAT_CTRL_DISP,
+	 * bits 0-2 = SUPERVISOR1-3; 0x6107a8 = SUPERVISOR_MAIN, bit31 = RESTART.)
+	 */
+	sv = nvif_rd32(&device->object, 0x611860) & 0x7;
+	if (sv) {
+		nvif_wr32(&device->object, 0x611860, sv);
+		nvif_wr32(&device->object, 0x006107a8, 0x80000000);
+	}
+}
 #include "nv50_display.h"
 
 /******************************************************************************
@@ -2140,8 +2218,9 @@ nv50_disp_atomic_commit_core(struct drm_atomic_state *state, u32 *interlock)
 	core->func->ntfy_init(disp->sync, NV50_DISP_CORE_NTFY);
 	core->func->update(core, interlock, true);
 	if (core->func->ntfy_wait_done(disp->sync, NV50_DISP_CORE_NTFY,
-				       disp->core->chan.base.device))
+				       disp->core->chan.base.device)) {
 		NV_ERROR(drm, "core notifier timeout\n");
+	}
 
 	for_each_new_mst_mgr_in_state(state, mgr, mst_state, i) {
 		mstm = nv50_mstm(mgr);
@@ -2543,7 +2622,8 @@ nv50_disp_outp_atomic_check_clr(struct nv50_atom *atom,
 			return PTR_ERR(outp);
 
 		if (outp->encoder->encoder_type == DRM_MODE_ENCODER_DPMST ||
-		    nouveau_encoder(outp->encoder)->dcb->type == DCB_OUTPUT_DP)
+		    nouveau_encoder(outp->encoder)->dcb->type == DCB_OUTPUT_DP ||
+		    nv50_disp(atom->state.dev)->disp->object.oclass >= GB202_DISP)
 			atom->flush_disable = true;
 		outp->clr.ctrl = true;
 		atom->lock_core = true;
@@ -2868,11 +2948,26 @@ nv50_display_create(struct drm_device *dev)
 	dev->mode_config.normalize_zpos = true;
 
 	/* small shared memory area we use for notifiers and semaphores */
-	ret = nouveau_bo_new_map(&drm->client, NOUVEAU_GEM_DOMAIN_VRAM, PAGE_SIZE, &disp->sync);
+	disp->drm_dev = dev;
+	disp->sync_host = nv50_disp_sync_host_param && disp->disp->object.oclass >= GB202_DISP;
+	nv50_disp_sv_release_enabled = disp->disp->object.oclass >= GB202_DISP;
+	ret = nouveau_bo_new_map(&drm->client, disp->sync_host ? NOUVEAU_GEM_DOMAIN_GART :
+							 NOUVEAU_GEM_DOMAIN_VRAM, PAGE_SIZE, &disp->sync);
 	if (ret)
 		goto out;
 
 	/* allocate master evo channel */
+	if (disp->disp->object.oclass >= GB202_DISP) {
+		struct nvif_object *dev = &drm->client.device.object;
+		/*
+		 * The FE fires its GSP-target events on a vector nothing
+		 * services on GB20x; point it at RM's display vector so the
+		 * supervisor events reach GSP-RM (see nv50_disp_sv_release
+		 * for the phase servicing).
+		 */
+		nvif_wr32(dev, 0x611fa0, 0x4000009a);
+	}
+
 	ret = nv50_core_new(drm, &disp->core);
 	if (ret)
 		goto out;

@@ -392,47 +392,6 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
         break;
     }
 
-    if (ret)
-    {
-        /* TEMPORARY DIAGNOSTIC: is the engine executing, and how long does a wait take */
-        static LONG diag_left = 3;
-        unsigned long t0, t1;
-        LONG w;
-
-        t0 = nouveau_compat_usecs();
-        w = nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
-        t1 = nouveau_compat_usecs();
-        if (diag_left > 0 && (msg->maxX - msg->minX) > 8 && (msg->maxY - msg->minY) > 8)
-        {
-            ULONG got0 = 0xdeadbeef, got1 = 0xdeadbeef;
-            IPTR map;
-
-            diag_left--;
-            MAP_BUFFER
-            map = (IPTR)bmdata->bo->map;
-            if (map)
-            {
-                __nv_io_ar();
-                if (bmdata->bytesperpixel == 4)
-                {
-                    got0 = *(volatile ULONG *)(map + msg->minY * bmdata->pitch + msg->minX * 4);
-                    got1 = *(volatile ULONG *)(map + msg->maxY * bmdata->pitch + msg->maxX * 4);
-                }
-                else if (bmdata->bytesperpixel == 2)
-                {
-                    got0 = *(volatile UWORD *)(map + msg->minY * bmdata->pitch + msg->minX * 2);
-                    got1 = *(volatile UWORD *)(map + msg->maxY * bmdata->pitch + msg->maxX * 2);
-                }
-            }
-            nvlog("[Nouveau] diag fill %ldx%ld@%ld,%ld fg %08lx bpp %ld pitch %ld: wait %ld in %ldus, map %p, pixels %08lx %08lx, irqs %lu\n",
-                (long)(msg->maxX - msg->minX + 1), (long)(msg->maxY - msg->minY + 1), (long)msg->minX, (long)msg->minY,
-                (unsigned long)GC_FG(msg->gc), (long)bmdata->bytesperpixel, (long)bmdata->pitch, (long)w,
-                (long)(t1 - t0),
-                (APTR)map, (unsigned long)got0, (unsigned long)got1, (unsigned long)nouveau_compat_irq_count());
-        }
-    }
-
-
     UNLOCK_BITMAP
 
     UNLOCK_ENGINE

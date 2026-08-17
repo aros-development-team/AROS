@@ -76,4 +76,6 @@ extern const struct nv50_outp_func sorc37d;
 int corec57d_new(struct nouveau_drm *, s32, struct nv50_core **);
 
 int coreca7d_new(struct nouveau_drm *, s32, struct nv50_core **);
+u32 coreca7d_armed(struct nv50_core *, u32 mthd);
+void coreca7d_owned(struct nv50_core *, u32 *active, u32 *tiles, u32 *phywins);
 #endif

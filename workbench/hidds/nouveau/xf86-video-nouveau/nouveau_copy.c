@@ -42,6 +42,13 @@ nouveau_copy_init(ScreenPtr pScreen)
 		int engine;
 		Bool (*init)(NVPtr);
 	} methods[] = {
+		{ 0xcab5, 0, nouveau_copya0b5_init },
+		{ 0xc9b5, 0, nouveau_copya0b5_init },
+		{ 0xc8b5, 0, nouveau_copya0b5_init },
+		{ 0xc7b5, 0, nouveau_copya0b5_init },
+		{ 0xc6b5, 0, nouveau_copya0b5_init },
+		{ 0xc5b5, 0, nouveau_copya0b5_init },
+		{ 0xc3b5, 0, nouveau_copya0b5_init },
 		{ 0xc1b5, 0, nouveau_copya0b5_init },
 		{ 0xc0b5, 0, nouveau_copya0b5_init },
 		{ 0xb0b5, 0, nouveau_copya0b5_init },
@@ -122,8 +129,13 @@ nouveau_copy_init(ScreenPtr pScreen)
 	}
 
 	while (method->init) {
+		/*
+		 * The handle must not collide with the main channel's copy
+		 * object (whose handle is the class): on GSP-RM parts every
+		 * object handle is unique per client, not per channel.
+		 */
 		ret = nouveau_object_new(pNv->ce_channel,
-					 method->engine << 16 | method->oclass,
+					 0x0ce00000 | method->engine << 16 | method->oclass,
 					 method->oclass, NULL, 0,
 					 &pNv->NvCopy);
 		if (ret == 0) {

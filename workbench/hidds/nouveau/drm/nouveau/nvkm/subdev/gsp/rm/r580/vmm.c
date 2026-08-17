@@ -24,33 +24,8 @@
 #include <nvhw/drf.h>
 #include "nvrm/vmm.h"
 
-void
-r535_mmu_vaspace_del(struct nvkm_vmm *vmm)
-{
-	if (vmm->rm.external) {
-		NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS *ctrl;
-
-		ctrl = nvkm_gsp_rm_ctrl_get(&vmm->rm.device.object,
-					    NV0080_CTRL_CMD_DMA_UNSET_PAGE_DIRECTORY,
-					    sizeof(*ctrl));
-		if (!IS_ERR(ctrl)) {
-			ctrl->hVASpace = vmm->rm.object.handle;
-
-			WARN_ON(nvkm_gsp_rm_ctrl_wr(&vmm->rm.device.object, ctrl));
-		}
-
-		vmm->rm.external = false;
-	}
-
-	nvkm_gsp_rm_free(&vmm->rm.object);
-	nvkm_gsp_device_dtor(&vmm->rm.device);
-	nvkm_gsp_client_dtor(&vmm->rm.client);
-
-	nvkm_vmm_put(vmm, &vmm->rm.rsvd);
-}
-
 int
-r535_mmu_vaspace_new(struct nvkm_vmm *vmm, u32 handle, bool external)
+r580_mmu_vaspace_new(struct nvkm_vmm *vmm, u32 handle, bool external)
 {
 	NV_VASPACE_ALLOCATION_PARAMETERS *args;
 	int ret;
@@ -151,46 +126,7 @@ r535_mmu_vaspace_new(struct nvkm_vmm *vmm, u32 handle, bool external)
 	return ret;
 }
 
-static int
-r535_mmu_promote_vmm(struct nvkm_vmm *vmm)
-{
-	return vmm->mmu->subdev.device->gsp->rm->api->vmm->vaspace_new(vmm, NVKM_RM_VASPACE, true);
-}
-
-static void
-r535_mmu_dtor(struct nvkm_mmu *mmu)
-{
-	kfree(mmu->func);
-}
-
-int
-r535_mmu_new(const struct nvkm_mmu_func *hw,
-	     struct nvkm_device *device, enum nvkm_subdev_type type, int inst,
-	     struct nvkm_mmu **pmmu)
-{
-	struct nvkm_mmu_func *rm;
-	int ret;
-
-	if (!(rm = kzalloc(sizeof(*rm), GFP_KERNEL)))
-		return -ENOMEM;
-
-	rm->dtor = r535_mmu_dtor;
-	rm->dma_bits = hw->dma_bits;
-	rm->mmu = hw->mmu;
-	rm->mem = hw->mem;
-	rm->vmm = hw->vmm;
-	rm->kind = hw->kind;
-	rm->kind_sys = hw->kind_sys;
-	rm->promote_vmm = r535_mmu_promote_vmm;
-
-	ret = nvkm_mmu_new_(rm, device, type, inst, pmmu);
-	if (ret)
-		kfree(rm);
-
-	return ret;
-}
-
 const struct nvkm_rm_api_vmm
-r535_vmm = {
-	.vaspace_new = r535_mmu_vaspace_new,
+r580_vmm = {
+	.vaspace_new = r580_mmu_vaspace_new,
 };

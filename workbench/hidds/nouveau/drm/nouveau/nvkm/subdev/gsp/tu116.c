@@ -44,6 +44,7 @@ tu116_gsp = {
 
 static struct nvkm_gsp_fwif
 tu116_gsps[] = {
+	{  2, tu102_gsp_load, &tu116_gsp, &r580_rm_tu102, "580.178.04" },
 	{  1, tu102_gsp_load, &tu116_gsp, &r570_rm_tu102, "570.144" },
 	{  0, tu102_gsp_load, &tu116_gsp, &r535_rm_tu102, "535.113.01" },
 	{ -1, gv100_gsp_nofw, &gv100_gsp },
@@ -62,3 +63,6 @@ NVKM_GSP_FIRMWARE_BOOTER(tu117, 535.113.01);
 
 NVKM_GSP_FIRMWARE_BOOTER(tu116, 570.144);
 NVKM_GSP_FIRMWARE_BOOTER(tu117, 570.144);
+
+NVKM_GSP_FIRMWARE_BOOTER(tu116, 580.178.04);
+NVKM_GSP_FIRMWARE_BOOTER(tu117, 580.178.04);

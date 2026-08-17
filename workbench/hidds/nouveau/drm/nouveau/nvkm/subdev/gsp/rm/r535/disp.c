@@ -261,6 +261,141 @@ r535_core = {
 	.user = 0,
 };
 
+
+/*
+ * NVIDIA's display driver asks RM whether a mode is possible before every
+ * modeset; on Blackwell RM also hands back the tile assignment it expects
+ * (and its supervisor relies on the state this leaves behind).
+ */
+int
+r535_disp_imp(struct nvkm_disp *disp, const struct nvkm_disp_imp_head *heads, int nheads,
+	      struct nvkm_disp_imp_result *res)
+{
+	struct nvkm_subdev *subdev = &disp->engine.subdev;
+	NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *ctrl;
+	int ret, i, w = 0;
+
+	memset(res, 0, sizeof(*res));
+
+	if (!disp->rm.imp.client) {
+		ret = nvkm_gsp_rm_alloc(&disp->rm.device.object, NVC372_DISPLAY_SW << 16,
+					NVC372_DISPLAY_SW, 0, &disp->rm.imp);
+		if (ret) {
+			nvkm_error(subdev, "imp: NVC372 alloc failed: %d\n", ret);
+			return ret;
+		}
+	}
+
+	ctrl = nvkm_gsp_rm_ctrl_get(&disp->rm.imp, NVC372_CTRL_CMD_IS_MODE_POSSIBLE, sizeof(*ctrl));
+	if (IS_ERR(ctrl))
+		return PTR_ERR(ctrl);
+
+	ctrl->base.subdeviceIndex = 0;
+	for (i = 0; i < nheads && i < NVC372_CTRL_MAX_POSSIBLE_HEADS; i++) {
+		const struct nvkm_disp_imp_head *h = &heads[i];
+		NVC372_CTRL_IMP_HEAD *ih = &ctrl->head[ctrl->numHeads++];
+		u32 active_h = h->blank_start_y - h->blank_end_y;
+		u32 overscan = (active_h / 2) - (h->view_h / 2);
+		u32 leading = h->blank_end_y + overscan + 1;
+		int j;
+
+		ih->headIndex = h->head;
+		ih->maxPixelClkKHz = h->pclk_khz;
+		ih->rasterSize.width = h->raster_w;
+		ih->rasterSize.height = h->raster_h;
+		ih->rasterBlankStart.X = h->blank_start_x;
+		ih->rasterBlankStart.Y = h->blank_start_y;
+		ih->rasterBlankEnd.X = h->blank_end_x;
+		ih->rasterBlankEnd.Y = h->blank_end_y;
+		ih->rasterVertBlank2.yStart = h->vblank2_start;
+		ih->rasterVertBlank2.yEnd = h->vblank2_end;
+		ih->control.masterLockMode = NV_DISP_LOCK_MODE_NO_LOCK;
+		ih->control.masterLockPin = NV_DISP_LOCK_PIN_UNSPECIFIED;
+		ih->control.slaveLockMode = NV_DISP_LOCK_MODE_NO_LOCK;
+		ih->control.slaveLockPin = NV_DISP_LOCK_PIN_UNSPECIFIED;
+		ih->maxDownscaleFactorH = 1024;
+		ih->maxDownscaleFactorV = 1024;
+		ih->outputScalerVerticalTaps = 2;
+		ih->bUpscalingAllowedV = 1;
+		ih->minFrameIdle.leadingRasterLines = leading;
+		ih->minFrameIdle.trailingRasterLines = h->raster_h - (leading + h->view_h);
+		ih->lut = NVC372_CTRL_IMP_LUT_USAGE_1025;
+		ih->cursorSize32p = 256 / 32;
+		ih->tileMask = h->tile_mask;
+
+		/* the two windows this driver gives every head */
+		for (j = 0; j < 2 && w < NVC372_CTRL_MAX_POSSIBLE_WINDOWS; j++, w++) {
+			NVC372_CTRL_IMP_WINDOW *iw = &ctrl->window[w];
+
+			iw->windowIndex = h->head * 2 + j;
+			iw->owningHead = h->head;
+			iw->formatUsageBound = NVC372_CTRL_FORMAT_RGB_PACKED_1_BPP |
+					       NVC372_CTRL_FORMAT_RGB_PACKED_2_BPP |
+					       NVC372_CTRL_FORMAT_RGB_PACKED_4_BPP |
+					       NVC372_CTRL_FORMAT_RGB_PACKED_8_BPP;
+			iw->maxPixelsFetchedPerLine = (((h->view_w + 14) * 1024 + 1023) >> 10) + 8;
+			iw->maxDownscaleFactorH = 1024;
+			iw->maxDownscaleFactorV = 1024;
+			iw->inputScalerVerticalTaps = 2;
+			iw->bUpscalingAllowedV = 0;
+			iw->lut = NVC372_CTRL_IMP_LUT_USAGE_1025;
+			iw->tmoLut = NVC372_CTRL_IMP_LUT_USAGE_1025;
+			iw->surfaceLayout = NVC372_CTRL_LAYOUT_PITCH;
+		}
+	}
+	ctrl->numWindows = w;
+
+	ret = nvkm_gsp_rm_ctrl_push(&disp->rm.imp, &ctrl, sizeof(*ctrl));
+	if (ret) {
+		nvkm_error(subdev, "imp: control failed: %d\n", ret);
+		return ret;
+	}
+
+	res->possible = ctrl->bIsPossible;
+	res->dispclk_khz = ctrl->dispClkKHz;
+	res->minbw_kbps = ctrl->minRequiredBandwidthKBPS;
+	if (ctrl->numTilingAssignments) {
+		for (i = 0; i < ctrl->tilingAssignments[0].numTiles && i < 8; i++) {
+			u8 h = ctrl->tileList[i].head;
+
+			if (h < ctrl->numHeads && ctrl->head[h].headIndex < 8)
+				res->tiles[ctrl->head[h].headIndex]++;
+		}
+	}
+	nvkm_debug(subdev, "imp: possible %d dispclk %u kHz bw %u assignments %u tiles/head0 %d\n",
+		   res->possible, res->dispclk_khz, res->minbw_kbps, ctrl->numTilingAssignments,
+		   res->tiles[0]);
+
+	nvkm_gsp_rm_ctrl_done(&disp->rm.imp, ctrl);
+	return 0;
+}
+
+/*
+ * Bracket a modeset for RM the way its own display driver does
+ * (NV0073_CTRL_CMD_SPECIFIC_DISPLAY_CHANGE START/END).
+ */
+int
+r535_disp_display_change(struct nvkm_disp *disp, bool start, u32 display_mask)
+{
+	NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *ctrl;
+
+	if (!disp->rm.objcom.client)
+		return -ENODEV;
+
+	ctrl = nvkm_gsp_rm_ctrl_get(&disp->rm.objcom,
+				    NV0073_CTRL_CMD_SPECIFIC_DISPLAY_CHANGE, sizeof(*ctrl));
+	if (IS_ERR(ctrl))
+		return PTR_ERR(ctrl);
+
+	ctrl->subDeviceInstance = 0;
+	ctrl->newDevices = display_mask;
+	ctrl->properties = 0;
+	ctrl->enable = start ? NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_START :
+			       NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_END;
+
+	return nvkm_gsp_rm_ctrl_wr(&disp->rm.objcom, ctrl);
+}
+
 static int
 r535_bl_ctrl(struct nvkm_disp *disp, unsigned display_id, bool set, int *pval)
 {
@@ -1443,6 +1578,7 @@ r535_disp_fini(struct nvkm_disp *disp, bool suspend)
 	if (!disp->engine.subdev.use.enabled)
 		return;
 
+	nvkm_gsp_rm_free(&disp->rm.imp);
 	nvkm_gsp_rm_free(&disp->rm.object);
 
 	if (!suspend) {

@@ -1524,7 +1524,7 @@ MODULE_LICENSE("GPL and additional rights");
 #include <proto/dos.h>
 
 /* module parameters come from environment variables of the same name */
-static char *
+char *
 nouveau_aros_getenv(const char *name)
 {
 	char buf[256];
@@ -1554,6 +1554,11 @@ nouveau_aros_params(void)
 	if ((v = nouveau_aros_getenv("NOUVEAU_REGISTRY"))) {
 		extern char *NVreg_RegistryDwords;
 		NVreg_RegistryDwords = v;
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_DISP_SYNC_HOST"))) {
+		extern int nv50_disp_sync_host_param;
+		nv50_disp_sync_host_param = (*v != '0');
+		kfree(v);
 	}
 	if ((v = nouveau_aros_getenv("NOUVEAU_VRAM_PUSHBUF"))) {
 		extern int nouveau_vram_pushbuf;

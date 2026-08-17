@@ -177,6 +177,7 @@ ga102_gsp = {
 
 static struct nvkm_gsp_fwif
 ga102_gsps[] = {
+	{  2, tu102_gsp_load, &ga102_gsp_r535, &r580_rm_ga102, "580.178.04" },
 	{  1, tu102_gsp_load, &ga102_gsp_r535, &r570_rm_ga102, "570.144" },
 	{  0, tu102_gsp_load, &ga102_gsp_r535, &r535_rm_ga102, "535.113.01" },
 	{ -1, gv100_gsp_nofw, &ga102_gsp },
@@ -201,3 +202,9 @@ NVKM_GSP_FIRMWARE_BOOTER(ga103, 570.144);
 NVKM_GSP_FIRMWARE_BOOTER(ga104, 570.144);
 NVKM_GSP_FIRMWARE_BOOTER(ga106, 570.144);
 NVKM_GSP_FIRMWARE_BOOTER(ga107, 570.144);
+
+NVKM_GSP_FIRMWARE_BOOTER(ga102, 580.178.04);
+NVKM_GSP_FIRMWARE_BOOTER(ga103, 580.178.04);
+NVKM_GSP_FIRMWARE_BOOTER(ga104, 580.178.04);
+NVKM_GSP_FIRMWARE_BOOTER(ga106, 580.178.04);
+NVKM_GSP_FIRMWARE_BOOTER(ga107, 580.178.04);
