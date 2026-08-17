@@ -10,6 +10,7 @@ void dma_setup(struct RPiHDMIData *dd);
 void dma_stop(struct RPiHDMIData *dd);
 void dma_irq_handler(struct RPiHDMIData *data, void *data2);
 
+ULONG dma_probe_dreq(struct RPiHDMIData *dd, ULONG expect);
 /* The audio DMA channel is allocated at runtime from dma.resource. */
 
 /* DMA control block TI bits */

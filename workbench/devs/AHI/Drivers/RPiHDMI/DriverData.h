@@ -43,6 +43,7 @@ struct RPiHDMIData {
     /* Hardware state */
     ULONG periiobase;
     LONG dma_channel;     /* Allocated from dma.resource, -1 = none */
+    ULONG dma_dreq;
 
     /* DMA control blocks (32-byte aligned) */
     struct BCM2708DMACB *cb_base; /* Allocated block (for free) */

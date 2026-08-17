@@ -71,6 +71,7 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, s
         dd->periiobase = RPiHDMIBase->periiobase;
         dd->dma_channel = DMAAllocChannel(0);
         dd->soc = RPiHDMIBase->soc;
+        dd->dma_dreq = dd->soc->dma_dreq;
     } else {
         return AHISF_ERROR;
     }
@@ -178,6 +179,11 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
 
         /* Initialize HDMI MAI audio */
         dd->soc->init(dd);
+
+        ULONG expect = AudioCtrl->ahiac_MixFreq * 2 / 100;
+        ULONG dreq = dma_probe_dreq(dd, expect);
+
+        dd->dma_dreq = dreq;
 
         /* Build the DMA control block chain */
         dma_build_control_blocks(dd);

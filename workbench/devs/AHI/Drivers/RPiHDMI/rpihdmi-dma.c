@@ -1,3 +1,4 @@
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <aros/macros.h>
 
@@ -32,7 +33,7 @@ void dma_build_control_blocks(struct RPiHDMIData *dd)
         struct BCM2708DMACB *cb = dd->cb[i];
 
         cb->ti = DMA_TI_INTEN | DMA_TI_WAIT_RESP | DMA_TI_DEST_DREQ | DMA_TI_SRC_INC | DMA_TI_BURST_LENGTH(2) |
-                 DMA_TI_PERMAP(soc->dma_dreq) | DMA_TI_NO_WIDE_BURSTS;
+                 DMA_TI_PERMAP(dd->dma_dreq) | DMA_TI_NO_WIDE_BURSTS;
 
         cb->source_ad = GPU_BUS_ADDR(dd->dmabuf[i]);
         cb->dest_ad = soc->mai_data_bus;
@@ -101,4 +102,64 @@ void dma_irq_handler(struct RPiHDMIData *data, void *data2)
             Signal((struct Task *) data->slavetask, 1L << data->slavesignal);
         }
     }
+}
+
+ULONG dma_probe_dreq(struct RPiHDMIData *dd, ULONG expect)
+{
+    IPTR peribase = dd->periiobase;
+    IPTR dma_base = peribase + 0x007000 + dd->dma_channel * 0x100;
+    ULONG len = dd->dmabuf_size;
+    ULONG best = 0;
+    ULONG best_err = ~0U;
+    ULONG n;
+
+    for (n = 1; n < 32; n++) {
+        ULONG left, moved, err;
+
+        wr32le(dma_base + 0x00, DMA_CS_RESET);
+        udelay(peribase, 100);
+
+        dd->cb[0]->ti = DMA_TI_WAIT_RESP | DMA_TI_DEST_DREQ | DMA_TI_SRC_INC |
+                        DMA_TI_PERMAP(n) | DMA_TI_NO_WIDE_BURSTS;
+
+        dd->cb[0]->source_ad = GPU_BUS_ADDR(dd->dmabuf[0]);
+        dd->cb[0]->dest_ad = dd->soc->mai_data_bus;
+        dd->cb[0]->txfr_len = len;
+        dd->cb[0]->stride = 0;
+        dd->cb[0]->nextconbk = 0;
+
+        CacheClearE(dd->cb[0], sizeof(struct BCM2708DMACB), CACRF_ClearD);
+
+        wr32le(dma_base + 0x04, GPU_BUS_ADDR(dd->cb[0]));
+        wr32le(dma_base + 0x00, DMA_CS_ACTIVE);
+
+        udelay(peribase, 10000);
+
+        left = rd32le(dma_base + 0x14);          /* TXFR_LEN, counts down */
+        wr32le(dma_base + 0x00, DMA_CS_RESET);
+
+        moved = (left < len) ? (len - left) / sizeof(ULONG) : 0;
+        if (moved == 0)
+            continue;
+
+        err = (moved > expect) ? (moved - expect) : (expect - moved);
+        bug("[RPiHDMI] dreq probe: permap %u moved %u words in 10 ms (want ~%u)\n",
+            n, moved, expect);
+
+        if (err < best_err) {
+            best_err = err;
+            best = n;
+        }
+    }
+
+    /* Within a quarter of the expected rate is the paced one; anything else is
+     * some other peripheral's request line and no use to us. */
+    if (best_err > expect / 4) {
+        bug("[RPiHDMI] dreq probe: nothing paced at ~%u words/10 ms, keeping %u\n",
+            expect, dd->soc->dma_dreq);
+        best = dd->soc->dma_dreq;
+    } else
+        bug("[RPiHDMI] dreq probe: using permap %u\n", best);
+
+    return best;
 }
