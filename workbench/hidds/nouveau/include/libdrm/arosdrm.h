@@ -87,5 +87,6 @@ extern void          drmFree(void *pt);
 extern void *       drmMMap(int fd, uint32_t handle, VOID (*unmapped)(APTR), APTR data);
 extern void         drmMUnmap(int fd, uint32_t handle);
 extern BOOL         drmGetMonitorName(int fd, uint32_t connector_id, char *name, int namelen);
+extern BOOL         drmGetChipName(int fd, char *name, int namelen);
 
 #endif

@@ -330,7 +330,8 @@ int scnprintk(char *buf, size_t size, const char *fmt, ...)
 /*
  * Where a line goes. Everything is appended to a ring buffer that a
  * helper process writes to a log file (NOUVEAU_LOGFILE, default
- * SYS:nouveau.log, "off" to disable). The serial console only gets
+ * SYS:nouveau.log, or T:nouveau.log when SYS: cannot be written -
+ * read-only boot media; "off" to disable). The serial console only gets
  * lines up to KERN_NOTICE unless NOUVEAU_SERIAL is set to "all"; the
  * driver's debug chatter would otherwise overrun a serial capture.
  */
@@ -397,7 +398,7 @@ static void nlog_flusher(void)
     nlog.flusher = self;
 
     if (GetVar("NOUVEAU_LOGFILE", name, sizeof(name), GVF_GLOBAL_ONLY) <= 0)
-        strcpy(name, "SYS:nouveau.log");
+        name[0] = '\0';
     if (GetVar("NOUVEAU_SERIAL", var, sizeof(var), GVF_GLOBAL_ONLY) > 0 && var[0] == 'a')
         nlog.serial_all = TRUE;
 
@@ -421,11 +422,29 @@ static void nlog_flusher(void)
         if (nlog.head == nlog.tail)
             continue;
 
-        fh = Open(name, created ? MODE_READWRITE : MODE_NEWFILE);
+        /*
+         * Default location is SYS:, but the boot media may be read-only
+         * (or the disk write-protected); fall back to T: then.
+         */
+        if (!created && name[0] == '\0')
+        {
+            strcpy(name, "SYS:nouveau.log");
+            fh = Open(name, MODE_NEWFILE);
+            if (!fh)
+            {
+                strcpy(name, "T:nouveau.log");
+                fh = Open(name, MODE_NEWFILE);
+            }
+        }
+        else
+            fh = Open(name, created ? MODE_READWRITE : MODE_NEWFILE);
         if (!fh)
         {
             if (++idle == 1 || (idle % 50) == 0)
                 bug("[nouveau] cannot open %s (%ld), retrying\n", name, (long)IoErr());
+            /* neither location usable yet: try SYS: again next round */
+            if (!created && !strcmp(name, "T:nouveau.log"))
+                name[0] = '\0';
             Delay(25);
             Signal(self, 1UL << nlog.sigbit);
             continue;

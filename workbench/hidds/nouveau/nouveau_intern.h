@@ -172,6 +172,7 @@ struct CardData
 
 struct staticdata
 {
+    char hardwarename[64];
     OOP_Class       *basegc;            /* baseclass for CreateObject */
     OOP_Class       *basebm;            /* baseclass for CreateObject */
     OOP_Class       *basegallium;            /* baseclass for CreateObject */

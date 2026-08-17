@@ -242,6 +242,16 @@ void drmMUnmap(int fd, uint32_t handle)
     drm_gem_nouveau_munmap(current_drm_device, drm_files[fd], handle);
 }
 
+BOOL drm_nouveau_get_chip_name(struct drm_device *dev, char *name, int namelen);
+
+BOOL drmGetChipName(int fd, char *name, int namelen)
+{
+    if (fd < 0 || fd >= MAX_DRM_FILES || !drm_files[fd])
+        return FALSE;
+
+    return drm_nouveau_get_chip_name(current_drm_device, name, namelen);
+}
+
 BOOL drmGetMonitorName(int fd, uint32_t connector_id, char *name, int namelen)
 {
     if (fd < 0 || fd >= MAX_DRM_FILES || !drm_files[fd])

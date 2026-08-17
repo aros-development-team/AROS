@@ -91,6 +91,25 @@ void drm_nouveau_check_userspace_mapped(struct ttm_buffer_object *bo)
     }
 }
 
+/* The chip's own name ("GB207") as nvkm identified it. */
+BOOL drm_nouveau_get_chip_name(struct drm_device *dev, char *name, int namelen)
+{
+    struct nouveau_drm *drm;
+    struct nvkm_device *device;
+
+    if (!dev || !name || (namelen < 2))
+        return FALSE;
+
+    drm = nouveau_drm(dev);
+    device = nvxx_device(drm);
+    if (!device || !device->chip || !device->chip->name)
+        return FALSE;
+
+    strncpy(name, device->chip->name, namelen - 1);
+    name[namelen - 1] = '\0';
+    return TRUE;
+}
+
 /*
     The name the monitor gives for itself, from the descriptor block in its
     EDID. Not every display fills that block in, so this can succeed in

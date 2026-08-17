@@ -13,6 +13,7 @@
 #include <aros/debug.h>
 #include <proto/oop.h>
 
+#include <libdrm/arosdrm.h>
 #include <libdrm/arosdrmmode.h>
 #include <uapi/drm/nouveau_drm.h>
 #include <drm-compat/drm_compat_pci.h>
@@ -317,6 +318,32 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
 }
 
 /* PUBLIC METHODS */
+/* DRM connector type -> vHidd_ConnectorType_* (0 = unknown) */
+static ULONG HIDDNouveauConnectorType(uint32_t drmtype)
+{
+    switch (drmtype)
+    {
+    case DRM_MODE_CONNECTOR_VGA:         return vHidd_ConnectorType_VGA;
+    case DRM_MODE_CONNECTOR_DVII:
+    case DRM_MODE_CONNECTOR_DVID:
+    case DRM_MODE_CONNECTOR_DVIA:        return vHidd_ConnectorType_DVI;
+    case DRM_MODE_CONNECTOR_HDMIA:
+    case DRM_MODE_CONNECTOR_HDMIB:       return vHidd_ConnectorType_HDMI;
+    case DRM_MODE_CONNECTOR_DisplayPort: return vHidd_ConnectorType_DisplayPort;
+    case DRM_MODE_CONNECTOR_eDP:         return vHidd_ConnectorType_eDP;
+    case DRM_MODE_CONNECTOR_LVDS:        return vHidd_ConnectorType_LVDS;
+    case DRM_MODE_CONNECTOR_Composite:
+    case DRM_MODE_CONNECTOR_SVIDEO:
+    case DRM_MODE_CONNECTOR_Component:
+    case DRM_MODE_CONNECTOR_9PinDIN:
+    case DRM_MODE_CONNECTOR_TV:          return vHidd_ConnectorType_TV;
+    case DRM_MODE_CONNECTOR_DSI:         return vHidd_ConnectorType_DSI;
+    case DRM_MODE_CONNECTOR_VIRTUAL:     return vHidd_ConnectorType_Virtual;
+    case DRM_MODE_CONNECTOR_USB:         return vHidd_ConnectorType_USBC;
+    default:                             return vHidd_ConnectorType_Unknown;
+    }
+}
+
 OOP_Object * METHOD(Nouveau, Root, New)
 {
     drmModeCrtcPtr selectedcrtc = NULL;
@@ -426,9 +453,53 @@ OOP_Object * METHOD(Nouveau, Root, New)
 	    { TAG_DONE, 0UL }
         };
 
+        /* Name the adapter after the chip that was actually found */
+        {
+            char chip[24];
+            const char *family;
+
+            switch (nvdev->chipset & 0xff0)
+            {
+            case 0x050: case 0x080: case 0x090: case 0x0a0:
+                family = "Tesla"; break;
+            case 0x0c0: case 0x0d0:
+                family = "Fermi"; break;
+            case 0x0e0: case 0x0f0: case 0x100:
+                family = "Kepler"; break;
+            case 0x110: case 0x120:
+                family = "Maxwell"; break;
+            case 0x130:
+                family = "Pascal"; break;
+            case 0x140:
+                family = "Volta"; break;
+            case 0x160:
+                family = "Turing"; break;
+            case 0x170:
+                family = "Ampere"; break;
+            case 0x180:
+                family = "Hopper"; break;
+            case 0x190:
+                family = "Ada"; break;
+            case 0x1a0: case 0x1b0:
+                family = "Blackwell"; break;
+            default:
+                family = NULL; break;
+            }
+
+            if (!drmGetChipName(nvdev->fd, chip, sizeof(chip)))
+                sprintf(chip, "NV%X", (unsigned)nvdev->chipset);
+
+            if (family)
+                snprintf(SD(cl)->hardwarename, sizeof(SD(cl)->hardwarename),
+                         "NVIDIA %s (%s) Gfx Adaptor", chip, family);
+            else
+                snprintf(SD(cl)->hardwarename, sizeof(SD(cl)->hardwarename),
+                         "NVIDIA %s Gfx Adaptor", chip);
+        }
+
         struct TagItem mytags[] = {
             { aHidd_Name            , (IPTR)"Nouveau"     },
-            { aHidd_HardwareName    , (IPTR)"Nvidia Gfx Adaptor"   },
+            { aHidd_HardwareName    , (IPTR)SD(cl)->hardwarename },
             { aHidd_ProducerName    , (IPTR)"Nvidia Corporation"  },
 	    { TAG_MORE, (IPTR)msg->attrList }
         };
@@ -461,9 +532,12 @@ OOP_Object * METHOD(Nouveau, Root, New)
             {
                 struct TagItem displaytags[] =
                 {
-                    { aHidd_Display_GfxHidd,  (IPTR)o        },
-                    { aHidd_Display_ModeTags, (IPTR)modetags },
-                    { TAG_DONE,               0              }
+                    { aHidd_Display_GfxHidd,       (IPTR)o        },
+                    { aHidd_Display_ModeTags,      (IPTR)modetags },
+                    { aHidd_Display_ConnectorType,
+                      HIDDNouveauConnectorType(selectedconnector->connector_type) },
+                    { aHidd_Display_ConnectorID,   selectedconnector->connector_type_id },
+                    { TAG_DONE,                    0              }
                 };
                 SD(cl)->display = OOP_NewObject(SD(cl)->displayclass, NULL, displaytags);
                 if (SD(cl)->display)
