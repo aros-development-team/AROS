@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder
+    Author: Fabian Schmieder (@metaneutrons)
 
     Host-side test: full Moira execution of m68k code.
     Tests the complete path: memory setup → load code → execute → trap → exit.

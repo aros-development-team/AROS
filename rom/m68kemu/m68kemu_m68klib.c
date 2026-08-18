@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder
+    Author: Fabian Schmieder (@metaneutrons)
 */
 /* m68kemu_m68klib.c — Load m68k .library files into containment */
 

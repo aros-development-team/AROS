@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder
+    Author: Fabian Schmieder (@metaneutrons)
 */
 /* Stubs for C library functions Moira needs in kernel context */
 #include <aros/debug.h>

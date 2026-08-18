@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
-# Author: Fabian Schmieder
+# Author: Fabian Schmieder (@metaneutrons)
 """
 m68kemu thunk generator — reads Amiga FD files + NDK clib protos for type info.
 

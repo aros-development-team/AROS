@@ -1,5 +1,5 @@
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
-# Author: Fabian Schmieder
+# Author: Fabian Schmieder (@metaneutrons)
 #
 # m68kemu.library — Transparent M68K emulation for AmigaOS hunk binaries
 # Uses Moira (MIT license) as the CPU core

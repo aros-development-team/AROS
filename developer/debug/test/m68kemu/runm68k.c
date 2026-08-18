@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder
+    Author: Fabian Schmieder (@metaneutrons)
 
     RunM68K — run an m68k binary via m68kemu.library
     Usage: RunM68K <filename> [args]

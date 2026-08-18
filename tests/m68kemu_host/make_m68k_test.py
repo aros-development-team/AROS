@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
-# Author: Fabian Schmieder
+# Author: Fabian Schmieder (@metaneutrons)
 """Generate minimal m68k Amiga hunk test binaries."""
 import struct, sys
 

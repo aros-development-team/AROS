@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder
+    Author: Fabian Schmieder (@metaneutrons)
     m68kemu.library — native thunk implementations for exec and dos
 */
 #include <stdio.h>

@@ -1,10 +1,6 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder
-*/
-/*
-    Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder
+    Author: Fabian Schmieder (@metaneutrons)
     m68kemu.library internals — full containment memory model
 */
 #ifndef M68KEMU_INTERN_H

@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder
+    Author: Fabian Schmieder (@metaneutrons)
 
     m68kemu_offsets.h — Named constants for m68k struct offsets, opcodes,
     and hardware constants used throughout the m68kemu codebase.

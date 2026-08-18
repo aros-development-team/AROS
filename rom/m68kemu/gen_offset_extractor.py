@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
-# Author: Fabian Schmieder
+# Author: Fabian Schmieder (@metaneutrons)
 """Scan NDK headers, generate C that emits offsets — recurse into embedded structs."""
 import re, os
 

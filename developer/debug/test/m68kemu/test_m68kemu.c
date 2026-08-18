@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder
+    Author: Fabian Schmieder (@metaneutrons)
 
     On-target test for m68kemu.library.
     Writes a tiny m68k program (MOVEQ #42,D0; RTS) to T:,
