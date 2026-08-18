@@ -1,0 +1,17 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := vbthci_device vbthci_unit vbthci_peer
+
+USER_INCLUDES := -I$(SRCDIR)/rom/bluetooth/stack/include
+
+#MM kernel-bluetooth-hardware-vbthci : kernel-bluetooth-library-includes linklibs-btcore
+#MM- kernel-bluetooth-hardware : kernel-bluetooth-hardware-vbthci
+#MM- kernel-bluetooth-hardware-clean : kernel-bluetooth-hardware-vbthci-clean
+
+%build_module mmake=kernel-bluetooth-hardware-vbthci \
+    modname=vbthci modtype=device \
+    moduledir=Devs/Bluetooth \
+    files="$(FILES)" \
+    uselibs="btcore"
+
+%common

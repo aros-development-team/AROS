@@ -1,0 +1,14 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/rom/bluetooth/stack/include
+
+FILES := bthid.class
+
+#MM- kernel-bluetooth-classes-bthid : kernel-bluetooth-btclass kernel-bluetooth-library-includes linklibs-btcore
+
+%build_module_library mmake=kernel-bluetooth-classes-bthid \
+    modname=bthid modtype=btclass modsuffix="class" \
+    files="$(FILES)" uselibs="btcore"
+
+%common

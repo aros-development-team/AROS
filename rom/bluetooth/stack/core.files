@@ -1,0 +1,30 @@
+# Source list shared by the AROS mmakefile (libbtcore.a) and Makefile.host.
+BTCORE_FILES := \
+    core/buffer/endian \
+    core/buffer/buffer \
+    core/event/queue \
+    core/timer/timer \
+    core/controller/command_queue \
+    core/controller/controller \
+    core/transport/h4 \
+    core/manager/manager \
+    core/addr/addr \
+    core/device/device_registry \
+    core/security/bond_store \
+    core/security/smp_crypto \
+    core/security/smp_pairing \
+    core/security/smp_manager \
+    core/hid/report_parser \
+    core/hid/input \
+    protocols/hci/hci \
+    protocols/l2cap/l2cap \
+    protocols/l2cap/signaling \
+    protocols/l2cap/channel_manager \
+    protocols/sdp/sdp \
+    protocols/sdp/sdp_client \
+    protocols/att/att \
+    protocols/gatt/gatt_client \
+    protocols/smp/smp \
+    protocols/vendor_init/dummy/dummy_vendor_init \
+    profiles/hogp/hogp_client \
+    aros/input_bridge

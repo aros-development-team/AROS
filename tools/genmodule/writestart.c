@@ -700,6 +700,7 @@ static void writeresident(FILE *out, struct config *cfg)
         case IMAGE:
         case DATATYPE:
         case USBCLASS:
+        case BTCLASS:
         case HIDD:
             fprintf(out, "    NT_LIBRARY,\n");
             break;

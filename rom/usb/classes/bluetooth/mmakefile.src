@@ -6,7 +6,7 @@ USER_LDFLAGS := -static
 
 FILES :=    bluetooth.class dev debug
 
-#MM- kernel-usb-classes-bluetooth : kernel-usb-usbclass kernel-usb-poseidon-includes
+#MM- kernel-usb-classes-bluetooth : kernel-usb-usbclass kernel-usb-poseidon-includes kernel-bluetooth-library-includes
 
 %build_module_library mmake=kernel-usb-classes-bluetooth \
     modname=bluetooth modtype=usbclass modsuffix="class" \

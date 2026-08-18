@@ -120,7 +120,7 @@ void print_help(void)
             "  writeskel: Generate skeleton implementation of the module.\n"
             "  writethunk: Generate thunk file for the module.\n"
             "\nModtypes: datatype, device, gadget, handler, hidd, hook, image, library"
-            ", mcc, mcp, mui, resource, usbclass\n\n"
+            ", mcc, mcp, mui, resource, usbclass, btclass\n\n"
             );
 }
 
@@ -306,6 +306,16 @@ struct config *initconfig(int argc, char **argv)
             hassuffix = 1;
         }
     }
+    else if (strcmp(argv[optind+2], "btclass")==0)
+    {
+        cfg->modtype = BTCLASS;
+        cfg->moddir = "Classes/Bluetooth";
+        if(!hassuffix)
+        {
+            cfg->suffix = "class";
+            hassuffix = 1;
+        }
+    }
     else if (strcmp(argv[optind+2], "hidd")==0)
     {
         cfg->modtype = HIDD;
@@ -460,6 +470,7 @@ static void readconfig(struct config *cfg)
     case DEVICE:
     case RESOURCE:
     case USBCLASS:
+    case BTCLASS:
     case HANDLER:
         break;
 
@@ -488,6 +499,7 @@ static void readconfig(struct config *cfg)
         break;
     case LIBRARY:
     case USBCLASS:
+    case BTCLASS:
     case HIDD:
         cfg->firstlvo = 5;
         break;
@@ -710,6 +722,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
             case MUI:
             case MCP:
             case USBCLASS:
+            case BTCLASS:
                 cfg->options |= (
                     (cfg->funclist != NULL)
                     || (cfg->cdeflines != NULL)
@@ -764,6 +777,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
             case MCP:
             case HIDD:
             case USBCLASS:
+            case BTCLASS:
                 cfg->options |= OPTION_NOSTUBS;
                 break;
 
@@ -797,6 +811,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
             case MCP:
             case HIDD:
             case USBCLASS:
+            case BTCLASS:
                 cfg->options |= OPTION_NOAUTOINIT;
                 break;
 
@@ -1226,6 +1241,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                     cl->classtype = DATATYPE;
                 else if (strcmp(s, "usbclass")==0)
                     cl->classtype = USBCLASS;
+                else if (strcmp(s, "btclass")==0)
+                    cl->classtype = BTCLASS;
                 else if (strcmp(s, "class")==0)
                     cl->classtype = CLASS;
                 else if (strcmp(s, "hidd")==0)
@@ -1376,6 +1393,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
             case IMAGE:
             case DATATYPE:
             case USBCLASS:
+            case BTCLASS:
             case HIDD:
                 cfg->libbasetypeptrextern = "struct Library *";
                 break;
@@ -1433,7 +1451,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
             {
                 char s[256] = "";
 
-                if (cl->classtype == GADGET || cl->classtype == IMAGE || cl->classtype == CLASS || cl->classtype == USBCLASS)
+                if (cl->classtype == GADGET || cl->classtype == IMAGE || cl->classtype == CLASS || cl->classtype == USBCLASS || cl->classtype == BTCLASS)
                 {
                     sprintf(s, "\"%sclass\"", inclass ? cl->basename : cfg->modulename);
                 }

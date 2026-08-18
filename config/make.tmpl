@@ -2081,6 +2081,9 @@ ifeq ($(%(mmake)_MODDIR),)
   ifeq (%(modtype),usbclass)
     %(mmake)_MODDIR  := $(AROS_CLASSES)/USB
   endif
+  ifeq (%(modtype),btclass)
+    %(mmake)_MODDIR  := $(AROS_CLASSES)/Bluetooth
+  endif
   ifeq (%(modtype),hidd)
     %(mmake)_MODDIR  := $(AROS_DRIVERS)
   endif

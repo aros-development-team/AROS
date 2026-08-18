@@ -1,0 +1,312 @@
+#include "test_smp_crypto.h"
+#include "../support/test.h"
+
+#include <btcore/smp_crypto.h>
+
+#include <string.h>
+
+struct aes_vector
+{
+    const uint8_t *key;
+    const uint8_t *plaintext;
+    const uint8_t *ciphertext;
+};
+
+struct fake_aes
+{
+    const struct aes_vector *vectors;
+    size_t count;
+    size_t calls;
+};
+
+static bt_status_t vector_aes(void *context, const uint8_t key[16],
+                              const uint8_t plaintext[16], uint8_t ciphertext[16])
+{
+    struct fake_aes *fake = (struct fake_aes *)context;
+    size_t i;
+
+    for (i = 0; i < fake->count; ++i)
+    {
+        if (memcmp(key, fake->vectors[i].key, 16) == 0 &&
+            memcmp(plaintext, fake->vectors[i].plaintext, 16) == 0)
+        {
+            memcpy(ciphertext, fake->vectors[i].ciphertext, 16);
+            ++fake->calls;
+            return BT_OK;
+        }
+    }
+    return BT_ERR_INVALID_ARGUMENT;
+}
+
+static void test_c1_official_sample(void)
+{
+    static const uint8_t zero[16] = {0};
+    static const uint8_t random[16] = {0x57, 0x83, 0xD5, 0x21, 0x56, 0xAD, 0x6F, 0x0E,
+                                        0x63, 0x88, 0x27, 0x4E, 0xC6, 0x70, 0x2E, 0xE0};
+    static const uint8_t preq[7] = {0x07, 0x07, 0x10, 0x00, 0x00, 0x01, 0x01};
+    static const uint8_t pres[7] = {0x05, 0x00, 0x08, 0x00, 0x00, 0x03, 0x02};
+    static const uint8_t ia[6] = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6};
+    static const uint8_t ra[6] = {0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6};
+    static const uint8_t first_plain[16] = {
+        0x52, 0x83, 0xDD, 0x21, 0x56, 0xAE, 0x6D, 0x09,
+        0x64, 0x98, 0x27, 0x4E, 0xC7, 0x71, 0x2E, 0xE1};
+    static const uint8_t first_cipher[16] = {
+        0x02, 0xC7, 0xAA, 0x2A, 0x98, 0x57, 0xAC, 0x86,
+        0x6F, 0xF9, 0x12, 0x32, 0xDF, 0x0E, 0x3C, 0x95};
+    static const uint8_t second_plain[16] = {
+        0x02, 0xC7, 0xAA, 0x2A, 0x39, 0xF5, 0x0F, 0x22,
+        0xCA, 0x5F, 0xA3, 0x80, 0x6C, 0xBA, 0x89, 0x23};
+    static const uint8_t expected[16] = {
+        0x1E, 0x1E, 0x3F, 0xEF, 0x87, 0x89, 0x88, 0xEA,
+        0xD2, 0xA7, 0x4D, 0xC5, 0xBE, 0xF1, 0x3B, 0x86};
+    const struct aes_vector vectors[] = {
+        {zero, first_plain, first_cipher}, {zero, second_plain, expected}};
+    struct fake_aes fake = {vectors, 2, 0};
+    struct bt_smp_aes128 aes = {vector_aes, &fake};
+    uint8_t actual[16];
+
+    BT_CHECK(bt_smp_crypto_c1(&aes, zero, random, preq, pres, 1, 0, ia, ra, actual) == BT_OK);
+    BT_CHECK(fake.calls == 2);
+    BT_CHECK(memcmp(actual, expected, 16) == 0);
+}
+
+static void test_s1_official_sample(void)
+{
+    static const uint8_t zero[16] = {0};
+    static const uint8_t r1[16] = {0x00, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09,
+                                    0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    static const uint8_t r2[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                                    0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
+    static const uint8_t plaintext[16] = {
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+        0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
+    static const uint8_t expected[16] = {
+        0x9A, 0x1F, 0xE1, 0xF0, 0xE8, 0xB0, 0xF4, 0x9B,
+        0x5B, 0x42, 0x16, 0xAE, 0x79, 0x6D, 0xA0, 0x62};
+    const struct aes_vector vectors[] = {{zero, plaintext, expected}};
+    struct fake_aes fake = {vectors, 1, 0};
+    struct bt_smp_aes128 aes = {vector_aes, &fake};
+    uint8_t actual[16];
+
+    BT_CHECK(bt_smp_crypto_s1(&aes, zero, r1, r2, actual) == BT_OK);
+    BT_CHECK(fake.calls == 1);
+    BT_CHECK(memcmp(actual, expected, 16) == 0);
+}
+
+static void test_ah_official_sample(void)
+{
+    static const uint8_t irk[16] = {
+        0xEC, 0x02, 0x34, 0xA3, 0x57, 0xC8, 0xAD, 0x05,
+        0x34, 0x10, 0x10, 0xA6, 0x0A, 0x39, 0x7D, 0x9B};
+    static const uint8_t prand[3] = {0x70, 0x81, 0x94};
+    static const uint8_t plaintext[16] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x70, 0x81, 0x94};
+    static const uint8_t encrypted[16] = {
+        0x15, 0x9D, 0x5F, 0xB7, 0x2E, 0xBE, 0x23, 0x11,
+        0xA4, 0x8C, 0x1B, 0xDC, 0xC4, 0x0D, 0xFB, 0xAA};
+    const struct aes_vector vectors[] = {{irk, plaintext, encrypted}};
+    struct fake_aes fake = {vectors, 1, 0};
+    struct bt_smp_aes128 aes = {vector_aes, &fake};
+    uint8_t hash[3];
+
+    BT_CHECK(bt_smp_crypto_ah(&aes, irk, prand, hash) == BT_OK);
+    BT_CHECK(hash[0] == 0x0D && hash[1] == 0xFB && hash[2] == 0xAA);
+}
+
+static void test_cmac_aes128_rfc4493(void)
+{
+    static const uint8_t key[16] = {
+        0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6,
+        0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C};
+    static const uint8_t zero[16] = {0};
+    static const uint8_t l[16] = {
+        0x7D, 0xF7, 0x6B, 0x0C, 0x1A, 0xB8, 0x99, 0xB3,
+        0x3E, 0x42, 0xF0, 0x47, 0xB9, 0x1B, 0x54, 0x6F};
+    static const uint8_t empty_final[16] = {
+        0x77, 0xDD, 0xAC, 0x30, 0x6A, 0xE2, 0x66, 0xCC,
+        0xF9, 0x0B, 0xC1, 0x1E, 0xE4, 0x6D, 0x51, 0x3B};
+    static const uint8_t empty_mac[16] = {
+        0xBB, 0x1D, 0x69, 0x29, 0xE9, 0x59, 0x37, 0x28,
+        0x7F, 0xA3, 0x7D, 0x12, 0x9B, 0x75, 0x67, 0x46};
+    static const uint8_t message[16] = {
+        0x6B, 0xC1, 0xBE, 0xE2, 0x2E, 0x40, 0x9F, 0x96,
+        0xE9, 0x3D, 0x7E, 0x11, 0x73, 0x93, 0x17, 0x2A};
+    static const uint8_t full_final[16] = {
+        0x90, 0x2F, 0x68, 0xFA, 0x1B, 0x31, 0xAC, 0xF0,
+        0x95, 0xB8, 0x9E, 0x9E, 0x01, 0xA5, 0xBF, 0xF4};
+    static const uint8_t full_mac[16] = {
+        0x07, 0x0A, 0x16, 0xB4, 0x6B, 0x4D, 0x41, 0x44,
+        0xF7, 0x9B, 0xDD, 0x9D, 0xD0, 0x4A, 0x28, 0x7C};
+    const struct aes_vector vectors[] = {
+        {key, zero, l}, {key, empty_final, empty_mac}, {key, full_final, full_mac}};
+    struct fake_aes fake = {vectors, 3, 0};
+    struct bt_smp_aes128 aes = {vector_aes, &fake};
+    struct bt_smp_cmac_aes128 cmac_context;
+    uint8_t actual[16];
+
+    bt_smp_cmac_aes128_init(&cmac_context, &aes);
+    BT_CHECK(bt_smp_cmac_aes128_calculate(&cmac_context, key, NULL, 0, actual) == BT_OK);
+    BT_CHECK(memcmp(actual, empty_mac, 16) == 0);
+    BT_CHECK(bt_smp_cmac_aes128_calculate(&cmac_context, key, message, sizeof(message),
+                                          actual) == BT_OK);
+    BT_CHECK(memcmp(actual, full_mac, 16) == 0);
+    BT_CHECK(fake.calls == 4); /* subkey generation happens once per calculation */
+}
+
+struct cmac_vector
+{
+    const uint8_t *key;
+    const uint8_t *message;
+    size_t message_len;
+    const uint8_t *mac;
+};
+
+struct fake_cmac
+{
+    const struct cmac_vector *vectors;
+    size_t count;
+    size_t calls;
+};
+
+static bt_status_t vector_cmac(void *context, const uint8_t key[16], const uint8_t *message,
+                               size_t message_len, uint8_t mac[16])
+{
+    struct fake_cmac *fake = (struct fake_cmac *)context;
+    size_t i;
+
+    for (i = 0; i < fake->count; ++i)
+    {
+        if (message_len == fake->vectors[i].message_len &&
+            memcmp(key, fake->vectors[i].key, 16) == 0 &&
+            memcmp(message, fake->vectors[i].message, message_len) == 0)
+        {
+            memcpy(mac, fake->vectors[i].mac, 16);
+            ++fake->calls;
+            return BT_OK;
+        }
+    }
+    return BT_ERR_INVALID_ARGUMENT;
+}
+
+static const uint8_t sc_u[32] = {
+    0x20, 0xB0, 0x03, 0xD2, 0xF2, 0x97, 0xBE, 0x2C, 0x5E, 0x2C, 0x83, 0xA7, 0xE9, 0xF9, 0xA5, 0xB9,
+    0xEF, 0xF4, 0x91, 0x11, 0xAC, 0xF4, 0xFD, 0xDB, 0xCC, 0x03, 0x01, 0x48, 0x0E, 0x35, 0x9D, 0xE6};
+static const uint8_t sc_v[32] = {
+    0x55, 0x18, 0x8B, 0x3D, 0x32, 0xF6, 0xBB, 0x9A, 0x90, 0x0A, 0xFC, 0xFB, 0xEE, 0xD4, 0xE7, 0x2A,
+    0x59, 0xCB, 0x9A, 0xC2, 0xF1, 0x9D, 0x7C, 0xFB, 0x6B, 0x4F, 0xDD, 0x49, 0xF4, 0x7F, 0xC5, 0xFD};
+static const uint8_t sc_x[16] = {
+    0xD5, 0xCB, 0x84, 0x54, 0xD1, 0x77, 0x73, 0x3E, 0xFF, 0xFF, 0xB2, 0xEC, 0x71, 0x2B, 0xAE, 0xAB};
+static const uint8_t sc_y[16] = {
+    0xA6, 0xE8, 0xE7, 0xCC, 0x25, 0xA7, 0x5F, 0x6E, 0x21, 0x65, 0x83, 0xF7, 0xFF, 0x3D, 0xC4, 0xCF};
+
+static void test_secure_connections_single_cmac_functions(void)
+{
+    uint8_t f4_message[65];
+    uint8_t g2_message[80];
+    static const uint8_t f4_mac[16] = {
+        0xF2, 0xC9, 0x16, 0xF1, 0x07, 0xA9, 0xBD, 0x1C,
+        0xF1, 0xED, 0xA1, 0xBE, 0xA9, 0x74, 0x87, 0x2D};
+    static const uint8_t g2_mac[16] = {
+        0x15, 0x36, 0xD1, 0x8D, 0xE3, 0xD2, 0x0D, 0xF9,
+        0x9B, 0x70, 0x44, 0xC1, 0x2F, 0x9E, 0xD5, 0xBA};
+    static const uint8_t h_key[16] = {
+        0xEC, 0x02, 0x34, 0xA3, 0x57, 0xC8, 0xAD, 0x05,
+        0x34, 0x10, 0x10, 0xA6, 0x0A, 0x39, 0x7D, 0x9B};
+    static const uint8_t h6_id[4] = {0x6C, 0x65, 0x62, 0x72};
+    static const uint8_t h6_mac[16] = {
+        0x2D, 0x9A, 0xE1, 0x02, 0xE7, 0x6D, 0xC9, 0x1C,
+        0xE8, 0xD3, 0xA9, 0xE2, 0x80, 0xB1, 0x63, 0x99};
+    static const uint8_t h7_salt[16] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x74, 0x6D, 0x70, 0x31};
+    static const uint8_t h7_mac[16] = {
+        0xFB, 0x17, 0x35, 0x97, 0xC6, 0xA3, 0xC0, 0xEC,
+        0xD2, 0x99, 0x8C, 0x2A, 0x75, 0xA5, 0x70, 0x11};
+    uint8_t out[16];
+    uint32_t number;
+
+    memcpy(f4_message, sc_u, 32);
+    memcpy(f4_message + 32, sc_v, 32);
+    f4_message[64] = 0;
+    memcpy(g2_message, sc_u, 32);
+    memcpy(g2_message + 32, sc_v, 32);
+    memcpy(g2_message + 64, sc_y, 16);
+    {
+        const struct cmac_vector vectors[] = {
+            {sc_x, f4_message, sizeof(f4_message), f4_mac},
+            {sc_x, g2_message, sizeof(g2_message), g2_mac},
+            {h_key, h6_id, sizeof(h6_id), h6_mac},
+            {h7_salt, h_key, 16, h7_mac}};
+        struct fake_cmac fake = {vectors, 4, 0};
+        struct bt_smp_aes_cmac cmac = {vector_cmac, &fake};
+
+        BT_CHECK(bt_smp_crypto_f4(&cmac, sc_u, sc_v, sc_x, 0, out) == BT_OK);
+        BT_CHECK(memcmp(out, f4_mac, 16) == 0);
+        BT_CHECK(bt_smp_crypto_g2(&cmac, sc_u, sc_v, sc_x, sc_y, &number) == BT_OK);
+        BT_CHECK(number == UINT32_C(0x2F9ED5BA));
+        BT_CHECK(bt_smp_crypto_h6(&cmac, h_key, h6_id, out) == BT_OK);
+        BT_CHECK(memcmp(out, h6_mac, 16) == 0);
+        BT_CHECK(bt_smp_crypto_h7(&cmac, h7_salt, h_key, out) == BT_OK);
+        BT_CHECK(memcmp(out, h7_mac, 16) == 0);
+        BT_CHECK(fake.calls == 4);
+    }
+}
+
+static void test_f5_and_f6_official_samples(void)
+{
+    static const uint8_t w[32] = {
+        0xEC, 0x02, 0x34, 0xA3, 0x57, 0xC8, 0xAD, 0x05, 0x34, 0x10, 0x10, 0xA6, 0x0A, 0x39, 0x7D, 0x9B,
+        0x99, 0x79, 0x6B, 0x13, 0xB4, 0xF8, 0x66, 0xF1, 0x86, 0x8D, 0x34, 0xF3, 0x73, 0xBF, 0xA6, 0x98};
+    static const uint8_t salt[16] = {
+        0x6C, 0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38, 0x60, 0x37, 0x0B, 0xDB, 0x5A, 0x60, 0x83, 0xBE};
+    static const uint8_t t[16] = {
+        0x3C, 0x12, 0x8F, 0x20, 0xDE, 0x88, 0x32, 0x88, 0x97, 0x62, 0x4B, 0xDB, 0x8D, 0xAC, 0x69, 0x89};
+    static const uint8_t a1[7] = {0x00, 0x56, 0x12, 0x37, 0x37, 0xBF, 0xCE};
+    static const uint8_t a2[7] = {0x00, 0xA7, 0x13, 0x70, 0x2D, 0xCF, 0xC1};
+    static const uint8_t mac_key[16] = {
+        0x29, 0x65, 0xF1, 0x76, 0xA1, 0x08, 0x4A, 0x02, 0xFD, 0x3F, 0x6A, 0x20, 0xCE, 0x63, 0x6E, 0x20};
+    static const uint8_t ltk[16] = {
+        0x69, 0x86, 0x79, 0x11, 0x69, 0xD7, 0xCD, 0x23, 0x98, 0x05, 0x22, 0xB5, 0x94, 0x75, 0x0A, 0x38};
+    static const uint8_t r[16] = {
+        0x12, 0xA3, 0x34, 0x3B, 0xB4, 0x53, 0xBB, 0x54, 0x08, 0xDA, 0x42, 0xD2, 0x0C, 0x2D, 0x0F, 0xC8};
+    static const uint8_t io_cap[3] = {0x01, 0x01, 0x02};
+    static const uint8_t f6_mac[16] = {
+        0xE3, 0xC4, 0x73, 0x98, 0x9C, 0xD0, 0xE8, 0xC5, 0xD2, 0x6C, 0x0B, 0x09, 0xDA, 0x95, 0x8F, 0x61};
+    uint8_t m0[53], m1[53], f6_message[65], actual_mac_key[16], actual_ltk[16], out[16];
+
+    m0[0] = 0;
+    memcpy(m0 + 1, "btle", 4);
+    memcpy(m0 + 5, sc_x, 16);
+    memcpy(m0 + 21, sc_y, 16);
+    memcpy(m0 + 37, a1, 7);
+    memcpy(m0 + 44, a2, 7);
+    m0[51] = 1; m0[52] = 0;
+    memcpy(m1, m0, sizeof(m0)); m1[0] = 1;
+    memcpy(f6_message, sc_x, 16); memcpy(f6_message + 16, sc_y, 16);
+    memcpy(f6_message + 32, r, 16); memcpy(f6_message + 48, io_cap, 3);
+    memcpy(f6_message + 51, a1, 7); memcpy(f6_message + 58, a2, 7);
+    {
+        const struct cmac_vector vectors[] = {
+            {salt, w, 32, t}, {t, m0, 53, mac_key}, {t, m1, 53, ltk},
+            {mac_key, f6_message, 65, f6_mac}};
+        struct fake_cmac fake = {vectors, 4, 0};
+        struct bt_smp_aes_cmac cmac = {vector_cmac, &fake};
+
+        BT_CHECK(bt_smp_crypto_f5(&cmac, w, sc_x, sc_y, a1, a2,
+                                  actual_mac_key, actual_ltk) == BT_OK);
+        BT_CHECK(memcmp(actual_mac_key, mac_key, 16) == 0);
+        BT_CHECK(memcmp(actual_ltk, ltk, 16) == 0);
+        BT_CHECK(bt_smp_crypto_f6(&cmac, mac_key, sc_x, sc_y, r, io_cap, a1, a2, out) == BT_OK);
+        BT_CHECK(memcmp(out, f6_mac, 16) == 0);
+        BT_CHECK(fake.calls == 4);
+    }
+}
+
+void run_smp_crypto_tests(void)
+{
+    test_c1_official_sample();
+    test_s1_official_sample();
+    test_ah_official_sample();
+    test_cmac_aes128_rfc4493();
+    test_secure_connections_single_cmac_functions();
+    test_f5_and_f6_official_samples();
+}

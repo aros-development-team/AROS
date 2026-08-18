@@ -64,6 +64,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM	kernel-bestcomm-chrp-ppc-efika-includes \
 #MM	kernel-rtas-chrp-ppc-includes \
 #MM     kernel-usb-includes
+#MM     kernel-bluetooth-includes
 
 # A shortcut for minimal set of BSP modules.
 # All these components are machine-specific.
