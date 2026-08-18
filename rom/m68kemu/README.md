@@ -1,5 +1,7 @@
 # m68kemu.library — Motorola 680x0 Emulation for AROS
 
+**Author:** Fabian Schmieder ([metaneutrons](https://github.com/metaneutrons))
+
 A transparent emulation layer that allows classic AmigaOS m68k binaries to run
 on any AROS port (x86_64, aarch64, etc.) by emulating the m68k CPU and routing
 AmigaOS API calls to native AROS implementations.
@@ -478,6 +480,10 @@ make test-m68kemu
 - [INTERNALS.md](INTERNALS.md) — Deep technical reference: memory model, shadow
   engine internals, complete struct layout list, thunk generator details, device
   I/O analysis, and known bugs.
+
+## Author
+
+- **Fabian Schmieder** ([@metaneutrons](https://github.com/metaneutrons)) — Architecture, design, implementation, and AROS system integration.
 
 ## Acknowledgments
 

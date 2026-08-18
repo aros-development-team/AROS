@@ -1,5 +1,7 @@
 # m68kemu Internals
 
+**Author:** Fabian Schmieder ([@metaneutrons](https://github.com/metaneutrons))
+
 Deep technical reference for the m68kemu.library implementation. For an overview,
 see [README.md](README.md).
 
@@ -519,7 +521,7 @@ Two generators exist:
 - No tests for hunk loader (LoadHunksFromMemory)
 - No tests for heap alignment or exhaustion
 - No tests for out-of-bounds memory access
-- Makefile only builds test_m68kemu; Moira-based tests require manual compilation
+- Makefile builds and runs all host tests (`test_m68kemu`, `test_moira_exec`, `test_hello_thunks`) via `make test`
 
 ## Known Bugs
 
