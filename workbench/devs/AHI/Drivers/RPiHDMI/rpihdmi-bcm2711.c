@@ -46,6 +46,8 @@ struct RPiHDMISoc rpihdmi_bcm2711_hdmi0_soc = {
 
     .mai_dreq_threshold  = 0x1C,
     .mai_panic_threshold = 0x10,
+    .hdmi_mai_channel_map = 0x10,
+    .name = "HDMI 0",
 
     .init         = hdmi_mai_init,
     .stop         = hdmi_mai_stop
@@ -81,6 +83,7 @@ struct RPiHDMISoc rpihdmi_bcm2711_hdmi1_soc = {
     .mai_dreq_threshold = 0x1C,
     .mai_panic_threshold = 0x10,
     .hdmi_mai_channel_map = 0x10,
+    .name = "HDMI 1",
 
     .init         = hdmi_mai_init,
     .stop         = hdmi_mai_stop

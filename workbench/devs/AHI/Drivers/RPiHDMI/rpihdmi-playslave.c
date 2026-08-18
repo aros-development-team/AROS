@@ -18,6 +18,8 @@
 #include <exec/execbase.h>
 #include <libraries/ahi_sub.h>
 #include <aros/macros.h>
+
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "DriverData.h"

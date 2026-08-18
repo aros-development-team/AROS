@@ -1,3 +1,4 @@
+#define DEBUG 0
 #include <aros/debug.h>
 #include <config.h>
 
@@ -8,6 +9,7 @@
 #include <aros/macros.h>
 #include <string.h>
 
+#include "hardware/bcm2708.h"
 #include "library.h"
 #include "DriverData.h"
 #include "rpihdmi-soc.h"
@@ -91,7 +93,7 @@ static LONG find_element_index(struct DriverBase *AHIsubBase, void *node, char *
     return -1;
 }
 
-static void fill_reg_values(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc, void *node, char *compatible) {
+static BOOL fill_reg_values(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc, void *node, char *compatible) {
     LONG hdmi_index =
         find_element_index(AHIsubBase, node, "reg-names", "hdmi");
     LONG hd_index =
@@ -101,7 +103,7 @@ static void fill_reg_values(struct DriverBase *AHIsubBase, struct RPiHDMISoc *so
 
     if (hdmi_index < 0 || hd_index < 0 || packet_index < 0) {
         bug("[RPiHDMI] Missing HDMI register block, using fallback\n");
-        return;
+        return FALSE;
     }
 
     ULONG packet_base =
@@ -113,7 +115,7 @@ static void fill_reg_values(struct DriverBase *AHIsubBase, struct RPiHDMISoc *so
 
     if (hdmi_base == 0 || packet_base == 0 || mai_base == 0) {
         bug("[RPiHDMI] Missing HDMI register values, using fallback\n");
-        return;
+        return FALSE;
     }
 
     soc->hdmi_base = hdmi_base - BCM2711_BUS_PERIIOBASE;
@@ -126,27 +128,35 @@ static void fill_reg_values(struct DriverBase *AHIsubBase, struct RPiHDMISoc *so
         (ULONG)soc->packet_base));
 
     soc->mai_data_bus = mai_base + soc->regs.mai_data;
+    return TRUE;
 }
 
-static void fill_dreq_value(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc, void *node, char *compatible) {
+static BOOL fill_dreq_value(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc, void *node, char *compatible) {
     ULONG dreq_found = find_dreq(AHIsubBase, node);
     if (dreq_found > 0) {
         soc->dma_dreq = dreq_found;
     } else {
         bug("[RPiHDMI] Couldn't find DREQ device tree value, using fallback\n");
+        return FALSE;
     }
+    return TRUE;
 }
 
-static void travers_device_tree_and_fill_soc(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc)
+static BOOL travers_device_tree_and_fill_soc(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc, char *compatible)
 {
-    char *compatible = "brcm,bcm2711-hdmi0";
     void *node = find_hdmi_node(AHIsubBase, compatible);
 
     if (node != NULL) {
-        fill_reg_values(AHIsubBase, soc, node, compatible);
-        fill_dreq_value(AHIsubBase, soc, node, compatible);
+        if (!fill_reg_values(AHIsubBase, soc, node, compatible)) {
+            return FALSE;
+        }
+        if (!fill_dreq_value(AHIsubBase, soc, node, compatible)) {
+            return FALSE;
+        }
+        return TRUE;
     } else {
         bug("[RPiHDMI] Failed to find hdmi node in device tree for %s, using fallback\n", compatible);
+        return FALSE;
     }
 }
 
@@ -189,7 +199,7 @@ BOOL DriverInit(struct DriverBase *AHIsubBase)
         return FALSE;
     }
 
-    if (RPiHDMIBase->periiobase == BCM2708_DMA_PERIIOBASE_2711)
+    if (RPiHDMIBase->periiobase == BCM2711_PERIIOBASE)
     {
         OpenFirmwareBase = OpenResource("openfirmware.resource");
 
@@ -197,18 +207,29 @@ BOOL DriverInit(struct DriverBase *AHIsubBase)
             Req("Unable to open 'openfirmware.resource'.\n");
             return FALSE;
         }
-        RPiHDMIBase->soc = &rpihdmi_bcm2711_hdmi0_soc;
-        travers_device_tree_and_fill_soc(AHIsubBase, RPiHDMIBase->soc);
 
-        // Req("Unsupported Raspberry Pi HDMI audio hardware. P4 not yet implemented\n");
-        // return FALSE;
+        UWORD num = 0;
+
+        if (travers_device_tree_and_fill_soc(AHIsubBase, &rpihdmi_bcm2711_hdmi0_soc, "brcm,bcm2711-hdmi0"))
+            RPiHDMIBase->soc[num++] = &rpihdmi_bcm2711_hdmi0_soc;
+
+        if (travers_device_tree_and_fill_soc(AHIsubBase, &rpihdmi_bcm2711_hdmi1_soc, "brcm,bcm2711-hdmi1"))
+            RPiHDMIBase->soc[num++] = &rpihdmi_bcm2711_hdmi1_soc;
+
+        RPiHDMIBase->num_outputs = num;
+
+        if (num == 0) {
+            Req("Unsupported Raspberry Pi HDMI audio hardware.\n");
+            return FALSE;
+        }
+    }
+    else if (RPiHDMIBase->periiobase == BCM2836_PERIPHYSBASE || RPiHDMIBase->periiobase == BCM2835_PERIPHYSBASE)
+    {
+        RPiHDMIBase->soc[0] = &rpihdmi_bcm283x_soc;
+        RPiHDMIBase->num_outputs = 1;
     }
     else
     {
-        RPiHDMIBase->soc = &rpihdmi_bcm283x_soc;
-    }
-
-    if (RPiHDMIBase->soc == NULL) {
         Req("Unsupported Raspberry Pi HDMI audio hardware.\n");
         return FALSE;
     }

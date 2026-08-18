@@ -1,3 +1,4 @@
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <aros/macros.h>
@@ -63,10 +64,10 @@ void dma_setup(struct RPiHDMIData *dd)
     wr32le(dma_base + 0x00, BCM2708_DMA_CS_RUN);
     udelay(peribase, 10);
 
-    bug("[RPiHDMI] DMA after setup: CS=%08lx CB=%08lx TXFR=%08lx\n",
+    D(bug("[RPiHDMI] DMA after setup: CS=%08lx CB=%08lx TXFR=%08lx\n",
         rd32le(dma_base + 0x00),
         rd32le(dma_base + 0x04),
-        rd32le(dma_base + 0x14));
+        rd32le(dma_base + 0x14)));
 }
 
 void dma_stop(struct RPiHDMIData *dd)
@@ -99,18 +100,7 @@ void dma_irq_handler(struct RPiHDMIData *data, void *data2)
     ULONG dma_base = data->periiobase + 0x007000 + data->dma_channel * 0x100;
     ULONG cs = rd32le(dma_base + 0x00);
 
-    static ULONG debug_irq_count;
-
     if (cs & DMA_CS_INT) {
-        // if (debug_irq_count < 10) {
-        //     bug("[RPiHDMI] DMA IRQ: CS=%08lx CB=%08lx TXFR=%08lx\n",
-        //         cs,
-        //         rd32le(dma_base + 0x04),
-        //         rd32le(dma_base + 0x14));
-
-        //     debug_irq_count++;
-        // }
-
         /* Must carry the run state, not just ACTIVE: the AXI priorities
          * share the register. See bcm2708_dma.h. */
         wr32le(dma_base + 0x00, BCM2708_DMA_CS_ACK);
@@ -160,8 +150,8 @@ ULONG dma_probe_dreq(struct RPiHDMIData *dd, ULONG expect)
             continue;
 
         err = (moved > expect) ? (moved - expect) : (expect - moved);
-        bug("[RPiHDMI] dreq probe: permap %u moved %u words in 10 ms (want ~%u)\n",
-            n, moved, expect);
+        D(bug("[RPiHDMI] dreq probe: permap %u moved %u words in 10 ms (want ~%u)\n",
+            n, moved, expect));
 
         if (err < best_err) {
             best_err = err;
@@ -172,11 +162,11 @@ ULONG dma_probe_dreq(struct RPiHDMIData *dd, ULONG expect)
     /* Within a quarter of the expected rate is the paced one; anything else is
      * some other peripheral's request line and no use to us. */
     if (best_err > expect / 4) {
-        bug("[RPiHDMI] dreq probe: nothing paced at ~%u words/10 ms, keeping %u\n",
-            expect, dd->soc->dma_dreq);
+        D(bug("[RPiHDMI] dreq probe: nothing paced at ~%u words/10 ms, keeping %u\n",
+            expect, dd->soc->dma_dreq));
         best = dd->soc->dma_dreq;
     } else
-        bug("[RPiHDMI] dreq probe: using permap %u\n", best);
+        D(bug("[RPiHDMI] dreq probe: using permap %u\n", best));
 
     return best;
 }

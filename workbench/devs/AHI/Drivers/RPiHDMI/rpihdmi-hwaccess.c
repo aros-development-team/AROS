@@ -18,6 +18,8 @@
 
 #include <exec/types.h>
 #include <aros/macros.h>
+
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "DriverData.h"
@@ -259,10 +261,10 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
            AUDIO_PKT_ZERO_DATA_ON_FLAT | AUDIO_PKT_ZERO_DATA_ON_INACTIVE | AUDIO_PKT_B_FRAME_ID(0x8) |
                AUDIO_PKT_CEA_MASK(0x03));
 
-    bug("[RPiHDMI] channel: MAP=%08lx CONFIG=%08lx AUDIO=%08lx\n",
+    D(bug("[RPiHDMI] channel: MAP=%08lx CONFIG=%08lx AUDIO=%08lx\n",
         rd32le(HDMI_MAI_CHANNEL_MAP(dd)),
         rd32le(HDMI_MAI_CONFIG(dd)),
-        rd32le(HDMI_AUDIO_PKT_CFG(dd)));
+        rd32le(HDMI_AUDIO_PKT_CFG(dd))));
     /*
      * Sample rate clock divider.
      * MAI_SMP register: bits 31:8 = N (numerator), bits 7:0 = M (denominator-1).

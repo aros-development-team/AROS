@@ -41,6 +41,8 @@ struct RPiHDMISoc {
 
     struct RPiHDMIRegs regs;
 
+    const char *name;
+
     void (*init)(struct RPiHDMIData *dd);
     void (*stop)(struct RPiHDMIData *dd);
 };

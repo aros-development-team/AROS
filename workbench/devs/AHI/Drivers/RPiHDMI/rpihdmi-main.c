@@ -8,6 +8,7 @@
 
 #include <config.h>
 
+#define DEBUG 0
 #include <aros/debug.h>
 #include <devices/ahi.h>
 #include <dos/dostags.h>
@@ -24,6 +25,7 @@
 #include <string.h>
 
 #include "DriverData.h"
+#include "hardware/bcm2708.h"
 #include "library.h"
 #include "rpihdmi-hwaccess.h"
 #include "rpihdmi-dma.h"
@@ -71,7 +73,8 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, s
         dd->ahisubbase = RPiHDMIBase;
         dd->periiobase = RPiHDMIBase->periiobase;
         dd->dma_channel = DMAAllocChannel(0);
-        dd->soc = RPiHDMIBase->soc;
+        dd->soc = RPiHDMIBase->soc[0];
+        dd->output = 0;
         dd->dma_dreq = dd->soc->dma_dreq;
     } else {
         return AHISF_ERROR;
@@ -140,14 +143,14 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
 
         dd->samplerate = AudioCtrl->ahiac_MixFreq;
 
-        bug("[RPiHDMI] start: rate=%lu frames=%lu dma_channel=%ld\n",
+        D(bug("[RPiHDMI] start: rate=%lu frames=%lu dma_channel=%ld\n",
             dd->samplerate,
             AudioCtrl->ahiac_MaxBuffSamples,
-            dd->dma_channel);
-        bug("[RPiHDMI] start: mai_data_bus=%08lx dreq=%lu hsm=%lu\n",
+            dd->dma_channel));
+        D(bug("[RPiHDMI] start: mai_data_bus=%08lx dreq=%lu hsm=%lu\n",
             dd->soc->mai_data_bus,
             dd->soc->dma_dreq,
-            dd->soc->hsm_clock);
+            dd->soc->hsm_clock));
 
         /*
          * Calculate DMA buffer size.
@@ -190,23 +193,23 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
         /* Initialize HDMI MAI audio */
         dd->soc->init(dd);
 
-        bug("[RPiHDMI] MAI after init: CTL=%08lx THR=%08lx FMT=%08lx\n",
+        D(bug("[RPiHDMI] MAI after init: CTL=%08lx THR=%08lx FMT=%08lx\n",
             rd32le(HDMI_MAI_CTL(dd)),
             rd32le(HDMI_MAI_THR(dd)),
-            rd32le(HDMI_MAI_FMT(dd)));
-        bug("[RPiHDMI] HDMI after init: CFG=%08lx PKT_CFG=%08lx CRP=%08lx\n",
+            rd32le(HDMI_MAI_FMT(dd))));
+        D(bug("[RPiHDMI] HDMI after init: CFG=%08lx PKT_CFG=%08lx CRP=%08lx\n",
             rd32le(HDMI_MAI_CONFIG(dd)),
             rd32le(HDMI_RAM_PKT_CFG(dd)),
-            rd32le(HDMI_CRP_CFG(dd)));
+            rd32le(HDMI_CRP_CFG(dd))));
 
         ULONG expect = AudioCtrl->ahiac_MixFreq * 2 / 100;
 
         dd->dma_dreq = dd->soc->dma_dreq;
 
-        bug("[RPiHDMI] DMA: selected dreq=%lu dest=%08lx bytes=%lu\n",
+        D(bug("[RPiHDMI] DMA: selected dreq=%lu dest=%08lx bytes=%lu\n",
             dd->dma_dreq,
             dd->soc->mai_data_bus,
-            dd->dmabuf_size);
+            dd->dmabuf_size));
 
         /* Build the DMA control block chain */
         dma_build_control_blocks(dd);
@@ -342,6 +345,12 @@ IPTR _AHIsub_GetAttr(ULONG attribute,
     case AHIDB_Frequency:
         return (LONG) frequencies[argument];
 
+    case AHIDB_Outputs:
+        {
+            struct RPiHDMIBase *RPiHDMIBase = (struct RPiHDMIBase *) AHIsubBase;
+            return RPiHDMIBase->num_outputs;
+        }
+
     case AHIDB_Index:
         if (argument <= frequencies[0]) {
             return 0;
@@ -378,11 +387,12 @@ IPTR _AHIsub_GetAttr(ULONG attribute,
     case AHIDB_Realtime:
         return TRUE;
 
-    case AHIDB_Outputs:
-        return 1;
-
-    case AHIDB_Output:
-        return (IPTR) "HDMI Audio";
+    case AHIDB_Output: {
+        struct RPiHDMIBase *RPiHDMIBase = (struct RPiHDMIBase *) AHIsubBase;
+        if (argument >= 0 && argument < RPiHDMIBase->num_outputs)
+            return (IPTR) RPiHDMIBase->soc[argument]->name;
+        return def;
+    }
 
     default:
         return def;
@@ -399,5 +409,22 @@ _AHIsub_HardwareControl(ULONG attribute,
                         struct AHIAudioCtrlDrv *AudioCtrl,
                         struct DriverBase *AHIsubBase)
 {
+    switch(attribute) {
+        case AHIC_Output: {
+            struct RPiHDMIBase *RPiHDMIBase = (struct RPiHDMIBase*) AHIsubBase;
+            if (RPiHDMIBase->num_outputs >= argument && argument < RPiHDMIBase->num_outputs && argument >= 0) {
+                dd->soc = RPiHDMIBase->soc[argument];
+                dd->dma_dreq = RPiHDMIBase->soc[argument]->dma_dreq;
+                dd->output = argument;
+                return TRUE;
+            } else {
+                return FALSE;
+            }
+        }
+
+        case AHIC_Output_Query:
+            return dd->output;
+    }
+
     return 0;
 }
