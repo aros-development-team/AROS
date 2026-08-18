@@ -89,7 +89,7 @@ struct M68KEmuContext
     BOOL    running;
     LONG    exit_code;
     /* Shadow struct mapping: m68k addr <-> native ptr */
-    #define M68KEMU_MAX_SHADOWS 64
+    #define M68KEMU_MAX_SHADOWS 256
     struct { ULONG m68k_addr; void *native_ptr; UWORD type; } shadow_map[M68KEMU_MAX_SHADOWS];
     UWORD num_shadows;
 

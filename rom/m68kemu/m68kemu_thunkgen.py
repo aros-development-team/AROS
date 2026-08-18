@@ -519,19 +519,19 @@ def gen_thunk(libname, funcname, bias, args, regs, protos):
     if is_void:
         lines.append(f"    {call};")
         for ta in taglist_args:
-            lines.append(f"    if (arg_{ta}) FreeMem(arg_{ta}, 0);")
+            lines.append(f"    if (arg_{ta}) FreeVec(arg_{ta});")
         lines.append("    return 0;")
     elif shadow_ret:
         lines.append(f"    void *_ret = (void *){call};")
         for ta in taglist_args:
-            lines.append(f"    if (arg_{ta}) FreeMem(arg_{ta}, 0);")
+            lines.append(f"    if (arg_{ta}) FreeVec(arg_{ta});")
         lines.append(f"    if (!_ret) return 0;")
         lines.append(f'    return shadow_create_by_name(ctx, "{shadow_ret}", _ret);')
     else:
         if needs_taglist_free:
             lines.append(f"    IPTR _ret = (IPTR){call};")
             for ta in taglist_args:
-                lines.append(f"    if (arg_{ta}) FreeMem(arg_{ta}, 0);")
+                lines.append(f"    if (arg_{ta}) FreeVec(arg_{ta});")
             lines.append(f"    return _ret;")
         else:
             lines.append(f"    return (IPTR){call};")

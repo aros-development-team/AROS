@@ -134,7 +134,7 @@ ULONG shadow_create_by_name(struct M68KEmuContext *ctx,
 
 /* Convert m68k TagItem list (8 bytes per entry) to native (16 bytes on 64-bit).
    String-valued tags are resolved to host pointers.
-   Caller must FreeMem the returned array. Returns NULL on failure. */
+   Caller must free_native_taglist / FreeVec the returned array. Returns NULL on failure. */
 struct TagItem *m68k_to_native_taglist(struct M68KEmuContext *ctx, ULONG m68k_addr)
 {
     if (!m68k_addr) return NULL;
@@ -145,7 +145,7 @@ struct TagItem *m68k_to_native_taglist(struct M68KEmuContext *ctx, ULONG m68k_ad
     while (m68k_read32(ctx, p) != TAG_DONE) { n++; p += 8; }
     n++; /* include TAG_DONE */
 
-    struct TagItem *ht = (struct TagItem *)AllocMem(n * sizeof(struct TagItem), MEMF_CLEAR);
+    struct TagItem *ht = (struct TagItem *)AllocVec(n * sizeof(struct TagItem), MEMF_CLEAR);
     if (!ht) return NULL;
 
     p = m68k_addr;
@@ -162,9 +162,9 @@ struct TagItem *m68k_to_native_taglist(struct M68KEmuContext *ctx, ULONG m68k_ad
     return ht;
 }
 
-void free_native_taglist(struct TagItem *tags, int count)
+void free_native_taglist(struct TagItem *tags)
 {
-    if (tags) FreeMem(tags, count * sizeof(struct TagItem));
+    if (tags) FreeVec(tags);
 }
 
 /* Translate an m68k struct to a native struct using a layout table.

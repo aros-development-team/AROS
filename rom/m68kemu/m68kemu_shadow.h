@@ -65,7 +65,7 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
 
 /* m68k→native translation */
 struct TagItem *m68k_to_native_taglist(struct M68KEmuContext *ctx, ULONG m68k_addr);
-void free_native_taglist(struct TagItem *tags, int count);
+void free_native_taglist(struct TagItem *tags);
 void *m68k_to_native_struct(struct M68KEmuContext *ctx,
                             const char *struct_name, ULONG m68k_addr);
 

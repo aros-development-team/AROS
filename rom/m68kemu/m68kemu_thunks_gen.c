@@ -67,7 +67,7 @@ static IPTR thunk_asl_AllocAslRequest(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_reqType = THUNK_D(0);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(0));
     IPTR _ret = (IPTR)AllocAslRequest(arg_reqType, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -85,7 +85,7 @@ static IPTR thunk_asl_AslRequest(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_requester = THUNK_D(0);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)AslRequest(arg_requester, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -361,7 +361,7 @@ static IPTR thunk_cybergraphics_BestCModeIDTagList(struct M68KEmuContext *ctx, v
 {
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(0));
     IPTR _ret = (IPTR)BestCModeIDTagList(arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -370,7 +370,7 @@ static IPTR thunk_cybergraphics_AllocCModeListTagList(struct M68KEmuContext *ctx
 {
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)AllocCModeListTagList(arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -508,7 +508,7 @@ static IPTR thunk_cybergraphics_DoCDrawMethodTagList(struct M68KEmuContext *ctx,
     APTR arg_rp = THUNK_PTR(1);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(2));
     DoCDrawMethodTagList(arg_hook, arg_rp, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return 0;
 }
 
@@ -518,7 +518,7 @@ static IPTR thunk_cybergraphics_CVideoCtrlTagList(struct M68KEmuContext *ctx, vo
     APTR arg_vp = THUNK_PTR(0);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     CVideoCtrlTagList(arg_vp, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return 0;
 }
 
@@ -528,7 +528,7 @@ static IPTR thunk_cybergraphics_LockBitMapTagList(struct M68KEmuContext *ctx, vo
     APTR arg_bitmap = THUNK_PTR(0);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)LockBitMapTagList(arg_bitmap, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -546,7 +546,7 @@ static IPTR thunk_cybergraphics_UnLockBitMapTagList(struct M68KEmuContext *ctx, 
     APTR arg_Handle = THUNK_PTR(0);
     struct TagItem *arg_Tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     UnLockBitMapTagList(arg_Handle, arg_Tags);
-    if (arg_Tags) FreeMem(arg_Tags, 0);
+    if (arg_Tags) FreeVec(arg_Tags);
     return 0;
 }
 
@@ -623,7 +623,7 @@ static IPTR thunk_cybergraphics_ProcessPixelArray(struct M68KEmuContext *ctx, vo
     ULONG arg_value = THUNK_D(5);
     struct TagItem *arg_taglist = m68k_to_native_taglist(ctx, THUNK_A(2));
     ProcessPixelArray(arg_rp, arg_destX, arg_destY, arg_sizeX, arg_sizeY, arg_operation, arg_value, arg_taglist);
-    if (arg_taglist) FreeMem(arg_taglist, 0);
+    if (arg_taglist) FreeVec(arg_taglist);
     return 0;
 }
 
@@ -636,7 +636,7 @@ static IPTR thunk_datatypes_ObtainDataTypeA(struct M68KEmuContext *ctx, void *cp
     ULONG arg_handle = THUNK_D(0);
     struct TagItem *arg_attrs = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)ObtainDataTypeA(arg_type, arg_handle, arg_attrs);
-    if (arg_attrs) FreeMem(arg_attrs, 0);
+    if (arg_attrs) FreeVec(arg_attrs);
     return _ret;
 }
 
@@ -654,7 +654,7 @@ static IPTR thunk_datatypes_NewDTObjectA(struct M68KEmuContext *ctx, void *cpu)
     CONST_STRPTR arg_name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_D(0));
     struct TagItem *arg_attrs = m68k_to_native_taglist(ctx, THUNK_A(0));
     IPTR _ret = (IPTR)NewDTObjectA(arg_name, arg_attrs);
-    if (arg_attrs) FreeMem(arg_attrs, 0);
+    if (arg_attrs) FreeVec(arg_attrs);
     return _ret;
 }
 
@@ -674,7 +674,7 @@ static IPTR thunk_datatypes_SetDTAttrsA(struct M68KEmuContext *ctx, void *cpu)
     struct Requester *arg_req = (struct Requester *)m68k_to_host_or_shadow(ctx, THUNK_A(2));
     struct TagItem *arg_attrs = m68k_to_native_taglist(ctx, THUNK_A(3));
     IPTR _ret = (IPTR)SetDTAttrsA(arg_o, arg_win, arg_req, arg_attrs);
-    if (arg_attrs) FreeMem(arg_attrs, 0);
+    if (arg_attrs) FreeVec(arg_attrs);
     return _ret;
 }
 
@@ -684,7 +684,7 @@ static IPTR thunk_datatypes_GetDTAttrsA(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_o = THUNK_PTR(0);
     struct TagItem *arg_attrs = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)GetDTAttrsA(arg_o, arg_attrs);
-    if (arg_attrs) FreeMem(arg_attrs, 0);
+    if (arg_attrs) FreeVec(arg_attrs);
     return _ret;
 }
 
@@ -706,7 +706,7 @@ static IPTR thunk_datatypes_RefreshDTObjectA(struct M68KEmuContext *ctx, void *c
     struct Requester *arg_req = (struct Requester *)m68k_to_host_or_shadow(ctx, THUNK_A(2));
     struct TagItem *arg_attrs = m68k_to_native_taglist(ctx, THUNK_A(3));
     RefreshDTObjectA(arg_object, arg_window, arg_req, arg_attrs);
-    if (arg_attrs) FreeMem(arg_attrs, 0);
+    if (arg_attrs) FreeVec(arg_attrs);
     return 0;
 }
 
@@ -885,7 +885,7 @@ static IPTR thunk_datatypes_SaveDTObjectA(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_saveicon = THUNK_D(1);
     struct TagItem *arg_attrs = m68k_to_native_taglist(ctx, THUNK_A(4));
     IPTR _ret = (IPTR)SaveDTObjectA(arg_o, arg_win, arg_req, arg_file, arg_mode, arg_saveicon, arg_attrs);
-    if (arg_attrs) FreeMem(arg_attrs, 0);
+    if (arg_attrs) FreeVec(arg_attrs);
     return _ret;
 }
 
@@ -1831,7 +1831,7 @@ static IPTR thunk_dos_GetSegListInfo(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_seglist = THUNK_D(0);
     struct TagItem *arg_taglist = m68k_to_native_taglist(ctx, THUNK_A(0));
     IPTR _ret = (IPTR)GetSegListInfo(arg_seglist, arg_taglist);
-    if (arg_taglist) FreeMem(arg_taglist, 0);
+    if (arg_taglist) FreeVec(arg_taglist);
     return _ret;
 }
 
@@ -2476,7 +2476,7 @@ static IPTR thunk_exec_NewCreateTaskA(struct M68KEmuContext *ctx, void *cpu)
 {
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(0));
     IPTR _ret = (IPTR)NewCreateTaskA(arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -2521,7 +2521,7 @@ static IPTR thunk_exec_NewAddTask(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_finalPC = THUNK_PTR(3);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(4));
     IPTR _ret = (IPTR)NewAddTask(arg_task, arg_initialPC, arg_finalPC, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -2729,7 +2729,7 @@ static IPTR thunk_gadtools_GT_SetGadgetAttrsA(struct M68KEmuContext *ctx, void *
     struct Requester *arg_req = (struct Requester *)m68k_to_host_or_shadow(ctx, THUNK_A(2));
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(3));
     GT_SetGadgetAttrsA(arg_gad, arg_win, arg_req, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return 0;
 }
 
@@ -2739,7 +2739,7 @@ static IPTR thunk_gadtools_CreateMenusA(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_newmenu = THUNK_PTR(0);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(1));
     void *_ret = (void *)CreateMenusA(arg_newmenu, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     if (!_ret) return 0;
     return shadow_create_by_name(ctx, "Menu", _ret);
 }
@@ -2759,7 +2759,7 @@ static IPTR thunk_gadtools_LayoutMenuItemsA(struct M68KEmuContext *ctx, void *cp
     ULONG arg_vi = THUNK_D(1);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)LayoutMenuItemsA(arg_menuitem, arg_vi, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -2770,7 +2770,7 @@ static IPTR thunk_gadtools_LayoutMenusA(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_vi = THUNK_D(1);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)LayoutMenusA(arg_menu, arg_vi, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -2854,7 +2854,7 @@ static IPTR thunk_gadtools_DrawBevelBoxA(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_height = THUNK_D(3);
     struct TagItem *arg_taglist = m68k_to_native_taglist(ctx, THUNK_A(1));
     DrawBevelBoxA(arg_rport, arg_left, arg_top, arg_width, arg_height, arg_taglist);
-    if (arg_taglist) FreeMem(arg_taglist, 0);
+    if (arg_taglist) FreeVec(arg_taglist);
     return 0;
 }
 
@@ -2864,7 +2864,7 @@ static IPTR thunk_gadtools_GetVisualInfoA(struct M68KEmuContext *ctx, void *cpu)
     struct Screen *arg_screen = (struct Screen *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)GetVisualInfoA(arg_screen, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -2884,7 +2884,7 @@ static IPTR thunk_gadtools_GT_GetGadgetAttrsA(struct M68KEmuContext *ctx, void *
     struct Requester *arg_req = (struct Requester *)m68k_to_host_or_shadow(ctx, THUNK_A(2));
     struct TagItem *arg_taglist = m68k_to_native_taglist(ctx, THUNK_A(3));
     IPTR _ret = (IPTR)GT_GetGadgetAttrsA(arg_gad, arg_win, arg_req, arg_taglist);
-    if (arg_taglist) FreeMem(arg_taglist, 0);
+    if (arg_taglist) FreeVec(arg_taglist);
     return _ret;
 }
 
@@ -3724,7 +3724,7 @@ static IPTR thunk_graphics_AddDisplayDriverA(struct M68KEmuContext *ctx, void *c
     APTR arg_attrs = THUNK_PTR(1);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)AddDisplayDriverA(arg_gfxhidd, arg_attrs, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -3823,7 +3823,7 @@ static IPTR thunk_graphics_VideoControl(struct M68KEmuContext *ctx, void *cpu)
     struct ColorMap *arg_cm = (struct ColorMap *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)VideoControl(arg_cm, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -3989,7 +3989,7 @@ static IPTR thunk_graphics_ExtendFont(struct M68KEmuContext *ctx, void *cpu)
     struct TextFont *arg_font = (struct TextFont *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
     struct TagItem *arg_fontTags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)ExtendFont(arg_font, arg_fontTags);
-    if (arg_fontTags) FreeMem(arg_fontTags, 0);
+    if (arg_fontTags) FreeVec(arg_fontTags);
     return _ret;
 }
 
@@ -4026,7 +4026,7 @@ static IPTR thunk_graphics_ObtainBestPenA(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_b = THUNK_D(3);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)ObtainBestPenA(arg_cm, arg_r, arg_g, arg_b, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -4124,7 +4124,7 @@ static IPTR thunk_graphics_GetExtSpriteA(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_sprite = THUNK_PTR(2);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)GetExtSpriteA(arg_sprite, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -4260,7 +4260,7 @@ static IPTR thunk_graphics_AllocSpriteDataA(struct M68KEmuContext *ctx, void *cp
     struct BitMap *arg_bitmap = (struct BitMap *)m68k_to_host_or_shadow(ctx, THUNK_A(2));
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)AllocSpriteDataA(arg_bitmap, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -4272,7 +4272,7 @@ static IPTR thunk_graphics_ChangeExtSpriteA(struct M68KEmuContext *ctx, void *cp
     APTR arg_newsprite = THUNK_PTR(2);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(3));
     IPTR _ret = (IPTR)ChangeExtSpriteA(arg_vp, arg_oldsprite, arg_newsprite, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -4290,7 +4290,7 @@ static IPTR thunk_graphics_SetRPAttrsA(struct M68KEmuContext *ctx, void *cpu)
     struct RastPort *arg_rp = resolve_rp(ctx, THUNK_A(0));
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     SetRPAttrsA(arg_rp, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return 0;
 }
 
@@ -4300,7 +4300,7 @@ static IPTR thunk_graphics_GetRPAttrsA(struct M68KEmuContext *ctx, void *cpu)
     struct RastPort *arg_rp = resolve_rp(ctx, THUNK_A(0));
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     GetRPAttrsA(arg_rp, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return 0;
 }
 
@@ -4309,7 +4309,7 @@ static IPTR thunk_graphics_BestModeIDA(struct M68KEmuContext *ctx, void *cpu)
 {
     struct TagItem *arg_TagItems = m68k_to_native_taglist(ctx, THUNK_A(0));
     IPTR _ret = (IPTR)BestModeIDA(arg_TagItems);
-    if (arg_TagItems) FreeMem(arg_TagItems, 0);
+    if (arg_TagItems) FreeVec(arg_TagItems);
     return _ret;
 }
 
@@ -4599,7 +4599,7 @@ static IPTR thunk_icon_DupDiskObjectA(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_icon = THUNK_PTR(0);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)DupDiskObjectA(arg_icon, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -4609,7 +4609,7 @@ static IPTR thunk_icon_IconControlA(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_icon = THUNK_PTR(0);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)IconControlA(arg_icon, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -4624,7 +4624,7 @@ static IPTR thunk_icon_DrawIconStateA(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_state = THUNK_D(2);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(3));
     DrawIconStateA(arg_rp, arg_icon, arg_label, arg_leftEdge, arg_topEdge, arg_state, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return 0;
 }
 
@@ -4637,7 +4637,7 @@ static IPTR thunk_icon_GetIconRectangleA(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_rectangle = THUNK_PTR(3);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(4));
     IPTR _ret = (IPTR)GetIconRectangleA(arg_rp, arg_icon, arg_label, arg_rectangle, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -4654,7 +4654,7 @@ static IPTR thunk_icon_GetIconTagList(struct M68KEmuContext *ctx, void *cpu)
     CONST_STRPTR arg_name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(0));
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)GetIconTagList(arg_name, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -4665,7 +4665,7 @@ static IPTR thunk_icon_PutIconTagList(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_icon = THUNK_PTR(1);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)PutIconTagList(arg_name, arg_icon, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -4676,7 +4676,7 @@ static IPTR thunk_icon_LayoutIconA(struct M68KEmuContext *ctx, void *cpu)
     struct Screen *arg_screen = (struct Screen *)m68k_to_host_or_shadow(ctx, THUNK_A(1));
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)LayoutIconA(arg_icon, arg_screen, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -5804,7 +5804,7 @@ static IPTR thunk_intuition_NewObjectA(struct M68KEmuContext *ctx, void *cpu)
     CONST_STRPTR arg_classID = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(1));
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)NewObjectA(arg_classPtr, arg_classID, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -5822,7 +5822,7 @@ static IPTR thunk_intuition_SetAttrsA(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_object = THUNK_D(0);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(1));
     SetAttrsA(arg_object, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return 0;
 }
 
@@ -5843,7 +5843,7 @@ static IPTR thunk_intuition_SetGadgetAttrsA(struct M68KEmuContext *ctx, void *cp
     struct Requester *arg_requester = (struct Requester *)m68k_to_host_or_shadow(ctx, THUNK_A(2));
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(3));
     IPTR _ret = (IPTR)SetGadgetAttrsA(arg_gadget, arg_window, arg_requester, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -6009,7 +6009,7 @@ static IPTR thunk_intuition_SetWindowPointerA(struct M68KEmuContext *ctx, void *
     struct Window *arg_window = (struct Window *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
     struct TagItem *arg_taglist = m68k_to_native_taglist(ctx, THUNK_A(1));
     SetWindowPointerA(arg_window, arg_taglist);
-    if (arg_taglist) FreeMem(arg_taglist, 0);
+    if (arg_taglist) FreeVec(arg_taglist);
     return 0;
 }
 
@@ -6127,7 +6127,7 @@ static IPTR thunk_intuition_StartScreenNotifyTagList(struct M68KEmuContext *ctx,
 {
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(0));
     IPTR _ret = (IPTR)StartScreenNotifyTagList(arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -6154,7 +6154,7 @@ static IPTR thunk_intuition_WindowAction(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_action = THUNK_D(0);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     WindowAction(arg_window, arg_action, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return 0;
 }
 
@@ -6180,7 +6180,7 @@ static IPTR thunk_intuition_SetPointerBounds(struct M68KEmuContext *ctx, void *c
     ULONG arg_reserved = THUNK_D(0);
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)SetPointerBounds(arg_screen, arg_rect, arg_reserved, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -6189,7 +6189,7 @@ static IPTR thunk_intuition_GetMonitorList(struct M68KEmuContext *ctx, void *cpu
 {
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)GetMonitorList(arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -6563,7 +6563,7 @@ static IPTR thunk_layers_ScaleLayer(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_l = THUNK_PTR(0);
     struct TagItem *arg_taglist = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)ScaleLayer(arg_l, arg_taglist);
-    if (arg_taglist) FreeMem(arg_taglist, 0);
+    if (arg_taglist) FreeVec(arg_taglist);
     return _ret;
 }
 
@@ -6579,7 +6579,7 @@ static IPTR thunk_layers_CreateUpfrontLayerTagList(struct M68KEmuContext *ctx, v
     ULONG arg_flags = THUNK_D(4);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)CreateUpfrontLayerTagList(arg_li, arg_bm, arg_x0, arg_y0, arg_x1, arg_y1, arg_flags, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -6595,7 +6595,7 @@ static IPTR thunk_layers_CreateBehindLayerTagList(struct M68KEmuContext *ctx, vo
     ULONG arg_flags = THUNK_D(4);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)CreateBehindLayerTagList(arg_li, arg_bm, arg_x0, arg_y0, arg_x1, arg_y1, arg_flags, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -6799,7 +6799,7 @@ static IPTR thunk_locale_OpenCatalogA(struct M68KEmuContext *ctx, void *cpu)
     CONST_STRPTR arg_name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(1));
     struct TagItem *arg_tags = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)OpenCatalogA(arg_locale, arg_name, arg_tags);
-    if (arg_tags) FreeMem(arg_tags, 0);
+    if (arg_tags) FreeVec(arg_tags);
     return _ret;
 }
 
@@ -6929,7 +6929,7 @@ static IPTR thunk_utility_FindTagItem(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_tagValue = THUNK_D(0);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(0));
     void *_ret = (void *)FindTagItem(arg_tagValue, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     if (!_ret) return 0;
     return shadow_create_by_name(ctx, "TagItem", _ret);
 }
@@ -6941,7 +6941,7 @@ static IPTR thunk_utility_GetTagData(struct M68KEmuContext *ctx, void *cpu)
     ULONG arg_defaultVal = THUNK_D(1);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(0));
     IPTR _ret = (IPTR)GetTagData(arg_tagValue, arg_defaultVal, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -6952,8 +6952,8 @@ static IPTR thunk_utility_PackBoolTags(struct M68KEmuContext *ctx, void *cpu)
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(0));
     struct TagItem *arg_boolMap = m68k_to_native_taglist(ctx, THUNK_A(1));
     IPTR _ret = (IPTR)PackBoolTags(arg_initialFlags, arg_tagList, arg_boolMap);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
-    if (arg_boolMap) FreeMem(arg_boolMap, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
+    if (arg_boolMap) FreeVec(arg_boolMap);
     return _ret;
 }
 
@@ -6962,7 +6962,7 @@ static IPTR thunk_utility_NextTagItem(struct M68KEmuContext *ctx, void *cpu)
 {
     struct TagItem *arg_tagListPtr = m68k_to_native_taglist(ctx, THUNK_A(0));
     void *_ret = (void *)NextTagItem(arg_tagListPtr);
-    if (arg_tagListPtr) FreeMem(arg_tagListPtr, 0);
+    if (arg_tagListPtr) FreeVec(arg_tagListPtr);
     if (!_ret) return 0;
     return shadow_create_by_name(ctx, "TagItem", _ret);
 }
@@ -6974,8 +6974,8 @@ static IPTR thunk_utility_FilterTagChanges(struct M68KEmuContext *ctx, void *cpu
     struct TagItem *arg_originalList = m68k_to_native_taglist(ctx, THUNK_A(1));
     ULONG arg_apply = THUNK_D(0);
     FilterTagChanges(arg_changeList, arg_originalList, arg_apply);
-    if (arg_changeList) FreeMem(arg_changeList, 0);
-    if (arg_originalList) FreeMem(arg_originalList, 0);
+    if (arg_changeList) FreeVec(arg_changeList);
+    if (arg_originalList) FreeVec(arg_originalList);
     return 0;
 }
 
@@ -6986,8 +6986,8 @@ static IPTR thunk_utility_MapTags(struct M68KEmuContext *ctx, void *cpu)
     struct TagItem *arg_mapList = m68k_to_native_taglist(ctx, THUNK_A(1));
     ULONG arg_mapType = THUNK_D(0);
     MapTags(arg_tagList, arg_mapList, arg_mapType);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
-    if (arg_mapList) FreeMem(arg_mapList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
+    if (arg_mapList) FreeVec(arg_mapList);
     return 0;
 }
 
@@ -7003,7 +7003,7 @@ static IPTR thunk_utility_CloneTagItems(struct M68KEmuContext *ctx, void *cpu)
 {
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(0));
     IPTR _ret = (IPTR)CloneTagItems(arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -7012,7 +7012,7 @@ static IPTR thunk_utility_FreeTagItems(struct M68KEmuContext *ctx, void *cpu)
 {
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(0));
     FreeTagItems(arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return 0;
 }
 
@@ -7022,8 +7022,8 @@ static IPTR thunk_utility_RefreshTagItemClones(struct M68KEmuContext *ctx, void 
     struct TagItem *arg_clone = m68k_to_native_taglist(ctx, THUNK_A(0));
     struct TagItem *arg_original = m68k_to_native_taglist(ctx, THUNK_A(1));
     RefreshTagItemClones(arg_clone, arg_original);
-    if (arg_clone) FreeMem(arg_clone, 0);
-    if (arg_original) FreeMem(arg_original, 0);
+    if (arg_clone) FreeVec(arg_clone);
+    if (arg_original) FreeVec(arg_original);
     return 0;
 }
 
@@ -7042,7 +7042,7 @@ static IPTR thunk_utility_FilterTagItems(struct M68KEmuContext *ctx, void *cpu)
     APTR arg_filterArray = THUNK_PTR(1);
     ULONG arg_logic = THUNK_D(0);
     IPTR _ret = (IPTR)FilterTagItems(arg_tagList, arg_filterArray, arg_logic);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -7147,8 +7147,8 @@ static IPTR thunk_utility_ApplyTagChanges(struct M68KEmuContext *ctx, void *cpu)
     struct TagItem *arg_list = m68k_to_native_taglist(ctx, THUNK_A(0));
     struct TagItem *arg_changelist = m68k_to_native_taglist(ctx, THUNK_A(1));
     ApplyTagChanges(arg_list, arg_changelist);
-    if (arg_list) FreeMem(arg_list, 0);
-    if (arg_changelist) FreeMem(arg_changelist, 0);
+    if (arg_list) FreeVec(arg_list);
+    if (arg_changelist) FreeVec(arg_changelist);
     return 0;
 }
 
@@ -7175,7 +7175,7 @@ static IPTR thunk_utility_PackStructureTags(struct M68KEmuContext *ctx, void *cp
     APTR arg_packTable = THUNK_PTR(1);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)PackStructureTags(arg_pack, arg_packTable, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -7186,7 +7186,7 @@ static IPTR thunk_utility_UnpackStructureTags(struct M68KEmuContext *ctx, void *
     APTR arg_packTable = THUNK_PTR(1);
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(2));
     IPTR _ret = (IPTR)UnpackStructureTags(arg_pack, arg_packTable, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     return _ret;
 }
 
@@ -7204,7 +7204,7 @@ static IPTR thunk_utility_AllocNamedObjectA(struct M68KEmuContext *ctx, void *cp
     CONST_STRPTR arg_name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(0));
     struct TagItem *arg_tagList = m68k_to_native_taglist(ctx, THUNK_A(1));
     void *_ret = (void *)AllocNamedObjectA(arg_name, arg_tagList);
-    if (arg_tagList) FreeMem(arg_tagList, 0);
+    if (arg_tagList) FreeVec(arg_tagList);
     if (!_ret) return 0;
     return shadow_create_by_name(ctx, "NamedObject", _ret);
 }

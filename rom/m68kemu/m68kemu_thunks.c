@@ -945,7 +945,7 @@ static IPTR thunk_dos_AllocDosObject(struct M68KEmuContext *ctx, void *cpu)
     ULONG type = THUNK_D(1);
     struct TagItem *tags = m68k_to_native_taglist(ctx, THUNK_D(2));
     APTR obj = AllocDosObject(type, tags);
-    if (tags) FreeMem(tags, 0);
+    if (tags) FreeVec(tags);
     if (!obj) return 0;
     if (type == DOS_FIB) return shadow_create_by_name(ctx, "FileInfoBlock", obj);
     return (IPTR)obj;
@@ -970,7 +970,7 @@ static IPTR thunk_dos_SystemTagList(struct M68KEmuContext *ctx, void *cpu)
     CONST_STRPTR cmd = (CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1));
     struct TagItem *tags = m68k_to_native_taglist(ctx, THUNK_D(2));
     LONG rc = SystemTagList(cmd, tags);
-    if (tags) FreeMem(tags, 0);
+    if (tags) FreeVec(tags);
     return rc;
 }
 
@@ -986,7 +986,7 @@ static IPTR thunk_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
 {
     struct TagItem *tags = m68k_to_native_taglist(ctx, THUNK_D(1));
     struct Process *p = CreateNewProc(tags);
-    if (tags) FreeMem(tags, 0);
+    if (tags) FreeVec(tags);
     if (!p) return 0;
     return shadow_create_by_name(ctx, "Process", p);
 }
@@ -1029,7 +1029,7 @@ static IPTR thunk_dos_NewLoadSeg(struct M68KEmuContext *ctx, void *cpu)
     CONST_STRPTR file = (CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1));
     struct TagItem *tags = m68k_to_native_taglist(ctx, THUNK_D(2));
     BPTR seg = NewLoadSeg(file, tags);
-    if (tags) FreeMem(tags, 0);
+    if (tags) FreeVec(tags);
     return (IPTR)seg;
 }
 
