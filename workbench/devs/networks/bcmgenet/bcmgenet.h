@@ -1,9 +1,31 @@
-/*
-    Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Broadcom GENETv5 (BCM2711 / Raspberry Pi 4) SANA-II driver,
-          private definitions.
-*/
+/* $OpenBSD: bcmgenetreg.h,v 1.1 2020/04/14 21:02:39 kettenis Exp $ */
+/* $NetBSD: bcmgenetreg.h,v 1.2 2020/02/22 13:41:41 jmcneill Exp $ */
+
+/*
+ * Copyright (c) 2020 Jared McNeill <jmcneill@invisible.ca>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' ...
+ */
+
+/*
+ * Copyright (C) 2026, The AROS Development Team.
+ *
+ * Portions adapted for AROS from OpenBSD/NetBSD bcmgenet sources.
+ *
+ * Desc: Broadcom GENETv5 (BCM2711 / Raspberry Pi 4) SANA-II driver,
+ *       private definitions.
+ */
 
 #ifndef BCMGENET_H
 #define BCMGENET_H
