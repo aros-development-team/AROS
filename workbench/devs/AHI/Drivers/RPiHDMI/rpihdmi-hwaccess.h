@@ -41,30 +41,41 @@ static inline void wr32le(ULONG addr, ULONG val)
 
 /*
  * HDMI HD register block (MAI control)
- * Bus address: 0x7E808000, ARM offset from peribase: 0x808000
  */
-#define HD_OFFSET         0x808000
-#define HDMI_MAI_CTL(pb)  ((pb) + HD_OFFSET + 0x14)
-#define HDMI_MAI_THR(pb)  ((pb) + HD_OFFSET + 0x18)
-#define HDMI_MAI_FMT(pb)  ((pb) + HD_OFFSET + 0x1C)
-#define HDMI_MAI_DATA(pb) ((pb) + HD_OFFSET + 0x20)
-#define HDMI_MAI_SMP(pb)  ((pb) + HD_OFFSET + 0x2C)
+#define HDMI_MAI_CTL(dd) \
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_ctl))
+#define HDMI_MAI_THR(dd) \
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_thr))
+#define HDMI_MAI_FMT(dd) \
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_fmt))
+#define HDMI_MAI_DATA(dd) \
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_data))
+#define HDMI_MAI_SMP(dd) \
+    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_smp))
 
 /*
- * HDMI register block — BCM2835 offsets.
- * Bus address: 0x7E902000, ARM offset from peribase: 0x902000
+ * HDMI register block
  */
-#define HDMI_OFFSET                0x902000
-#define HDMI_MAI_CHANNEL_MAP(pb)   ((pb) + HDMI_OFFSET + 0x090)
-#define HDMI_MAI_CONFIG(pb)        ((pb) + HDMI_OFFSET + 0x094)
-#define HDMI_AUDIO_PKT_CFG(pb)     ((pb) + HDMI_OFFSET + 0x09C)
-#define HDMI_RAM_PKT_CFG(pb)       ((pb) + HDMI_OFFSET + 0x0A0)
-#define HDMI_RAM_PKT_STATUS(pb)    ((pb) + HDMI_OFFSET + 0x0A4)
-#define HDMI_CRP_CFG(pb)           ((pb) + HDMI_OFFSET + 0x0A8)
-#define HDMI_CTS_0(pb)             ((pb) + HDMI_OFFSET + 0x0AC)
-#define HDMI_CTS_1(pb)             ((pb) + HDMI_OFFSET + 0x0B0)
-#define HDMI_SCHEDULER_CONTROL(pb) ((pb) + HDMI_OFFSET + 0x0C0)
-#define HDMI_RAM_PKT_START(pb)     ((pb) + HDMI_OFFSET + 0x400)
+#define HDMI_MAI_CHANNEL_MAP(dd) \
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.mai_channel_map))
+#define HDMI_MAI_CONFIG(dd)      \
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.mai_config))
+#define HDMI_AUDIO_PKT_CFG(dd)   \
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.audio_packet_cfg))
+#define HDMI_RAM_PKT_CFG(dd)     \
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.ram_packet_cfg))
+#define HDMI_RAM_PKT_STATUS(dd)  \
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.ram_packet_status))
+#define HDMI_CRP_CFG(dd)         \
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.crp_cfg))
+#define HDMI_CTS_0(dd)           \
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.cts_0))
+#define HDMI_CTS_1(dd)           \
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.cts_1))
+#define HDMI_SCHEDULER_CONTROL(dd) \
+    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.scheduler_control))
+#define HDMI_RAM_PKT_START(dd)   \
+    ((dd->periiobase) + (dd->soc->packet_base) + (dd->soc->regs.packet_start))
 
 /* MAI_CTL bits */
 #define MAI_CTL_RESET    (1 << 0)
@@ -104,10 +115,6 @@ static inline void wr32le(ULONG addr, ULONG val)
 #define CRP_CFG_EXTERNAL_CTS_EN (1 << 24)
 #define CRP_CFG_N(x)            ((x) & 0xFFFFF)
 
-/* The audio DMA channel is allocated at runtime from dma.resource. */
-
-/* DMA DREQ peripheral map ID for HDMI audio */
-#define DMA_DREQ_HDMI 17
 
 /* Bus address of MAI DATA register (DMA destination) */
 #define HDMI_MAI_DATA_BUS 0x7E808020
@@ -117,24 +124,6 @@ static inline void wr32le(ULONG addr, ULONG val)
  * DMA channel N uses GPU IRQ (16 + N).
  */
 #define BCM_IRQ_DMA0 16
-
-/* DMA control block TI bits */
-#define DMA_TI_INTEN           (1 << 0)
-#define DMA_TI_WAIT_RESP       (1 << 3)
-#define DMA_TI_DEST_DREQ       (1 << 6)
-#define DMA_TI_SRC_INC         (1 << 8)
-#define DMA_TI_BURST_LENGTH(x) (((x) & 0xF) << 12)
-#define DMA_TI_PERMAP(x)       (((x) & 0x1F) << 16)
-#define DMA_TI_NO_WIDE_BURSTS  (1 << 26)
-
-/* DMA CS bits */
-/* Run state and acknowledge live in bcm2708_dma.h, shared with the other
- * DMA-driven AHI driver - they have to agree. */
-#define DMA_CS_ACTIVE          (1 << 0)
-#define DMA_CS_END             (1 << 1)
-#define DMA_CS_INT             (1 << 2)
-#define DMA_CS_ABORT           (1 << 30)
-#define DMA_CS_RESET           (1 << 31)
 
 /* Sample rate enum values for MAI_FMT */
 #define SRATE_8000   1
@@ -154,19 +143,5 @@ static inline void wr32le(ULONG addr, ULONG val)
 /* Hardware setup/teardown functions */
 void hdmi_mai_init(struct RPiHDMIData *dd);
 void hdmi_mai_stop(struct RPiHDMIData *dd);
-
-/* DMA functions */
-void dma_setup(ULONG peribase, ULONG channel, ULONG cb_bus_addr);
-void dma_stop(ULONG peribase, ULONG channel);
-void dma_build_control_blocks(struct RPiHDMIData *dd, ULONG peribase);
-
-/* DMA interrupt handler (called from KrnAddIRQHandler) */
-void dma_irq_handler(struct RPiHDMIData *data, void *data2);
-
-/* IEC958/SPDIF channel status setup (separate L/R per IEC 60958-3) */
-void spdif_setup_channel_status(UBYTE *cs_left, UBYTE *cs_right, ULONG samplerate);
-
-/* IEC958 sample conversion */
-void convert_mix_to_iec958(WORD *src, ULONG *dst, ULONG frames, UBYTE *cs_left, UBYTE *cs_right, ULONG *frame_counter);
 
 #endif /* AHI_Drivers_RPiHDMI_hwaccess_h */
