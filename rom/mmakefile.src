@@ -7,6 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-dos \
 #MM     kernel-dos64 \
 #MM	kernel-debug \
+#MM	kernel-m68kemu \
 #MM	kernel-fs-con \
 #MM     kernel-graphics \
 #MM     kernel-hidd-gfx \
@@ -84,6 +85,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-dos \
 #MM     kernel-dos64 \
 #MM	kernel-debug \
+#MM	kernel-m68kemu \
 #MM     kernel-dosboot \
 #MM	kernel-filesystem \
 #MM     kernel-graphics \
@@ -115,6 +117,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-dos64 \
 #MM	kernel-dosboot \
 #MM	kernel-debug \
+#MM	kernel-m68kemu \
 #MM	kernel-filesystem \
 #MM	kernel-fs-ram \
 #MM     kernel-fs-con \
