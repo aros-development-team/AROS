@@ -10,6 +10,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <dos/dostags.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "m68kemu_intern.h"
 #include "m68kemu_shadow.h"
@@ -70,8 +72,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
 
     if (programName)
     {
-        strncpy(ctx->program_name, programName, 255);
-        ctx->program_name[255] = 0;
+        snprintf(ctx->program_name, sizeof(ctx->program_name), "%s", programName);
     }
 
     /* Init ExecBase shadow data fields */

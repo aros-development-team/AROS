@@ -20,7 +20,7 @@ class AROSMoira : public Moira
 public:
     struct M68KEmuContext *ctx;
 
-    AROSMoira(struct M68KEmuContext *c) : ctx(c) {}
+    explicit AROSMoira(struct M68KEmuContext *c) : ctx(c) {}
 
     /* ── Custom chip register emulation ──────────────────────────── */
 
@@ -232,7 +232,7 @@ public:
 
                         /* Run the thunk */
                         bug("[m68kemu] CALL %s LVO -%lu\n", lib->name, lvo_offset);
-                        IPTR ret = lib->thunks[j].thunk(ctx, (void *)this);
+                        IPTR ret = lib->thunks[j].thunk(ctx, static_cast<void *>(this));
 
                         if (ctx->sv_redirect)
                         {
@@ -262,7 +262,7 @@ public:
                         u32 ret_addr = m68k_read32(ctx, sp);
                         setA(7, sp + 4);
                         bug("[m68kemu] GEN %s LVO -%lu\n", lib->name, lvo_offset);
-                        IPTR ret = lib->gen_thunks[j].thunk(ctx, (void *)this);
+                        IPTR ret = lib->gen_thunks[j].thunk(ctx, static_cast<void *>(this));
 
                         if (ctx->sv_redirect)
                         {
@@ -303,13 +303,13 @@ public:
 
 extern "C" {
 
-ULONG M68KEmu_GetD(void *cpu, int n) { return ((AROSMoira *)cpu)->getD(n); }
-ULONG M68KEmu_GetA(void *cpu, int n) { return ((AROSMoira *)cpu)->getA(n); }
-void  M68KEmu_SetD(void *cpu, int n, ULONG val) { ((AROSMoira *)cpu)->setD(n, (u32)val); }
-void  M68KEmu_SetA(void *cpu, int n, ULONG val) { ((AROSMoira *)cpu)->setA(n, (u32)val); }
-UWORD M68KEmu_GetSR(void *cpu) { return ((AROSMoira *)cpu)->getSR(); }
-void  M68KEmu_SetSR(void *cpu, UWORD val) { ((AROSMoira *)cpu)->setSR((u16)val); }
-void  M68KEmu_SetPC(void *cpu, ULONG val) { ((AROSMoira *)cpu)->setPC((u32)val); }
+ULONG M68KEmu_GetD(void *cpu, int n) { return static_cast<AROSMoira *>(cpu)->getD(n); }
+ULONG M68KEmu_GetA(void *cpu, int n) { return static_cast<AROSMoira *>(cpu)->getA(n); }
+void  M68KEmu_SetD(void *cpu, int n, ULONG val) { static_cast<AROSMoira *>(cpu)->setD(n, (u32)val); }
+void  M68KEmu_SetA(void *cpu, int n, ULONG val) { static_cast<AROSMoira *>(cpu)->setA(n, (u32)val); }
+UWORD M68KEmu_GetSR(void *cpu) { return static_cast<AROSMoira *>(cpu)->getSR(); }
+void  M68KEmu_SetSR(void *cpu, UWORD val) { static_cast<AROSMoira *>(cpu)->setSR((u16)val); }
+void  M68KEmu_SetPC(void *cpu, ULONG val) { static_cast<AROSMoira *>(cpu)->setPC((u32)val); }
 
 LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
 {

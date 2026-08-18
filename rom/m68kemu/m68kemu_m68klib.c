@@ -118,8 +118,8 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
     ULONG dataInit  = m68k_read32(ctx, rt_Init + M68K_AUTOINIT_DATAINIT);
     ULONG initFunc  = m68k_read32(ctx, rt_Init + M68K_AUTOINIT_INITFUNC);
 
-    bug("[m68kemu] m68klib: dataSize=%lu funcTable=0x%lx initFunc=0x%lx\n",
-        (unsigned long)dataSize, (unsigned long)funcTable, (unsigned long)initFunc);
+    bug("[m68kemu] m68klib: dataSize=%lu funcTable=0x%lx dataInit=0x%lx initFunc=0x%lx\n",
+        (unsigned long)dataSize, (unsigned long)funcTable, (unsigned long)dataInit, (unsigned long)initFunc);
 
     if (!funcTable) return 0;
 

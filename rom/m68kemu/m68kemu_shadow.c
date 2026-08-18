@@ -272,7 +272,7 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
                         /* cli_CommandName — BPTR to BCPL string */
                         if (ctx->program_name[0])
                         {
-                            ULONG len = strlen(ctx->program_name);
+                            ULONG len = (ULONG)strnlen(ctx->program_name, sizeof(ctx->program_name) - 1);
                             ULONG m68k_name = M68KEmu_HeapAlloc(ctx, len + 2, 0);
                             if (m68k_name)
                             {

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
 # Author: Fabian Schmieder (@metaneutrons)
-"""Generate m68kemu_shadow_layouts.h from compiler-produced offset files.
+"""
+Generate m68kemu_shadow_layouts.h from compiler-produced offset files.
 
 Usage: gen_shadow_layouts.py m68k.txt aros.txt > m68kemu_shadow_layouts.h
 
@@ -66,8 +67,8 @@ def main():
         print(f"static const struct M68KFieldMap shadow_fields_{sname}[] = {{")
         for m_off, a_off, ft, fname in entries:
             print(f"    {{ {m_off:4d}, {a_off:4d}, {ft:8s}, 0, 0, NULL }},  /* {fname} */")
-        print(f"    {{    0,    0, SF_END  , 0, 0, NULL }}")
-        print(f"}};\n")
+        print("    {    0,    0, SF_END  , 0, 0, NULL }")
+        print("};\n")
 
         emitted.append((sname, shadow_type, m68k_sizes.get(sname, 0)))
         shadow_type += 1
@@ -77,8 +78,8 @@ def main():
     print("static const struct M68KStructLayout shadow_gen_layouts[] = {")
     for sname, stype, m68k_sz in emitted:
         print(f"    {{ \"{sname}\", {m68k_sz}, {stype}, shadow_fields_{sname} }},")
-    print(f"    {{ NULL, 0, 0, NULL }}")
-    print(f"}};\n")
+    print("    { NULL, 0, 0, NULL }")
+    print("};\n")
     print(f"#define SHADOW_GEN_LAYOUT_COUNT {len(emitted)}")
 
     print("\n#endif /* M68KEMU_SHADOW_LAYOUTS_H */")

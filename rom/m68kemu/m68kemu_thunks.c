@@ -150,7 +150,7 @@ static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
                 /* cli_CommandName — BPTR to BCPL string */
                 if (ctx->program_name[0])
                 {
-                    ULONG len = strlen(ctx->program_name);
+                    ULONG len = (ULONG)strnlen(ctx->program_name, sizeof(ctx->program_name) - 1);
                     ULONG m68k_name = M68KEmu_HeapAlloc(ctx, len + 2, 0);
                     if (m68k_name)
                     {
@@ -784,7 +784,7 @@ static IPTR thunk_dos_GetProgramName(struct M68KEmuContext *ctx, void *cpu)
     LONG len = (LONG)THUNK_D(2);
     if (!buf || len <= 0) return 0;
     if (ctx->program_name[0]) {
-        LONG slen = strlen(ctx->program_name);
+        LONG slen = (LONG)strnlen(ctx->program_name, sizeof(ctx->program_name) - 1);
         if (slen >= len) slen = len - 1;
         memcpy(buf, ctx->program_name, slen);
         ((char *)buf)[slen] = 0;

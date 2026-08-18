@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <dos/bptr.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "m68kemu_intern.h"
 #include "m68kemu_offsets.h"
@@ -229,16 +230,14 @@ ULONG M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
     ctx->libs[ctx->num_libs].num_gen_thunks = num_gen_thunks;
     if (name)
     {
-        strncpy(ctx->libs[ctx->num_libs].name, name, 31);
-        ctx->libs[ctx->num_libs].name[31] = 0;
+        snprintf(ctx->libs[ctx->num_libs].name, sizeof(ctx->libs[ctx->num_libs].name), "%s", name);
     }
     ctx->num_libs++;
 
     /* Register in libmap for OpenLibrary lookups */
     if (name && ctx->num_libmap < M68KEMU_MAX_LIBMAP)
     {
-        strncpy(ctx->libmap[ctx->num_libmap].name, name, 31);
-        ctx->libmap[ctx->num_libmap].name[31] = 0;
+        snprintf(ctx->libmap[ctx->num_libmap].name, sizeof(ctx->libmap[ctx->num_libmap].name), "%s", name);
         ctx->libmap[ctx->num_libmap].m68k_base = base_addr;
         ctx->num_libmap++;
     }

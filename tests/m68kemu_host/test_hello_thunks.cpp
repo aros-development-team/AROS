@@ -9,7 +9,7 @@
 
 static IPTR thunk_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
 {
-    const char *name = (const char *)m68k_to_host(ctx, M68KEmu_GetA(cpu, 1));
+    const char *name = static_cast<const char *>(m68k_to_host(ctx, M68KEmu_GetA(cpu, 1)));
     printf("  [THUNK] OpenLibrary(\"%s\")\n", name ? name : "NULL");
     ULONG base = M68KEmu_FindLibBase(ctx, name);
     printf("  [THUNK] -> 0x%08X\n", base);
@@ -18,7 +18,7 @@ static IPTR thunk_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
 
 static IPTR thunk_PutStr(struct M68KEmuContext *ctx, void *cpu)
 {
-    const char *str = (const char *)m68k_to_host(ctx, M68KEmu_GetD(cpu, 1));
+    const char *str = static_cast<const char *>(m68k_to_host(ctx, M68KEmu_GetD(cpu, 1)));
     printf("  [THUNK] PutStr(\"%s\")\n", str ? str : "NULL");
     return 0;
 }

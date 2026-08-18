@@ -88,7 +88,8 @@ for d in DIRS:
 
 
 def get_leaf_fields(sname, prefix, depth=0):
-    """Recursively get leaf (scalar/pointer) fields with their access paths.
+    """
+    Recursively get leaf (scalar/pointer) fields with their access paths.
 
     For each field, yields (field_display_name, c_access_path) where:
     - field_display_name is the leaf field name (e.g. "io_Command")
