@@ -544,8 +544,7 @@ $(llvm-installflag): $(LLLVM_EXTRA_DEPS)
 	fi
 
 %build_with_cmake mmake=crosstools-llvm-toolchain package=llvm srcdir=$(LLVM_BUILDBASE)                                                 \
-    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host                                                         \
-    extracflags="-g0" extracxxflags="-g0" usecppflags=no usecrosstoolsdir=no
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host usecppflags=no usecrosstoolsdir=no
 
 #
 # Rules to setup the monotree

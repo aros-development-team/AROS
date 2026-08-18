@@ -17,9 +17,14 @@ HOST_CPP                 := @aros_host_cpp@
 HOST_CPPFLAGS            := @aros_host_cppflags@
 HOST_DEF_CC              := $(CC_PREFIX)@aros_host_def_cc@
 HOST_CC                  := $(CC_PREFIX)@aros_host_cc@
-HOST_CFLAGS              := @aros_host_cflags@
+# autoconf's AC_PROG_CC defaults CFLAGS to "-g -O2" when the user supplies
+# none, so every host tool - and the whole LLVM crosstools build - was compiled
+# with full debug info nobody asked for. Debugging host code is served by
+# HOST_DEBUG below and by DEBUG=yes (which appends DEBUG_CFLAGS), so drop the
+# stray -g here rather than carrying it into every object.
+HOST_CFLAGS              := $(filter-out -g,@aros_host_cflags@)
 HOST_CXX                 := $(CC_PREFIX)@aros_host_cxx@
-HOST_CXXFLAGS            := @aros_host_cxxflags@
+HOST_CXXFLAGS            := $(filter-out -g,@aros_host_cxxflags@)
 HOST_LD                  := @aros_host_ld@
 HOST_MAKE                := @aros_host_make@
 HOST_LDFLAGS             := @aros_host_ldflags@
