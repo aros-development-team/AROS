@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
 # Author: Fabian Schmieder (@metaneutrons)
-"""
-Generate m68kemu_shadow_layouts.h from compiler-produced offset files.
-
-Usage: gen_shadow_layouts.py m68k.txt aros.txt > m68kemu_shadow_layouts.h
-
-Input lines:  OFF|Struct|field|offset|size|   SIZ|Struct|size|
-"""
+"""Generate m68kemu_shadow_layouts.h from compiler-produced offset files."""
+#
+# Usage: gen_shadow_layouts.py m68k.txt aros.txt > m68kemu_shadow_layouts.h
+# Input lines:  OFF|Struct|field|offset|size|   SIZ|Struct|size|
 import sys
 
 def parse(path):

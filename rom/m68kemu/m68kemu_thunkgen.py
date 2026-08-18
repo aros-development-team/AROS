@@ -222,160 +222,151 @@ SHADOW_LOOKUP_TYPES = {
     "RastPort", "ViewPort", "Screen", "Window", "ColorMap", "BitMap",
     "Layer", "Region", "TextFont", "GadgetInfo", "DrawInfo", "Menu",
     "Gadget", "Requester", "IntuiMessage", "MsgPort", "IORequest",
-    "Library", "Device", "Task", "Process", "SignalSemaphore",
+    "Window", "Screen", "MsgPort", "RastPort", "ViewPort",
+    "Gadget", "Menu", "MenuItem", "Requester", "IntuiMessage",
+    "IORequest", "DiskObject", "IFFHandle", "FileRequester",
 }
 
-# Input structs needing field-by-field translation — these MUST be manual thunks
-# because m68k and native struct layouts differ (pointer sizes, alignment).
-# CopyMem from m68k memory to native struct is NOT correct.
-INPUT_STRUCT_TYPES = {"NewWindow", "NewScreen", "TextAttr", "EasyStruct",
-                      "NewGadget", "Border", "IntuiText"}
+# ── Types that are input structs needing manual thunks ──
+INPUT_STRUCT_TYPES = {
+    "NewWindow", "NewScreen", "EasyStruct", "ExtNewScreen",
+}
 
-# String types
-STRING_TYPES = {"STRPTR", "CONST_STRPTR", "UBYTE *", "char *", "const char *"}
+STRING_TYPES = {"STRPTR", "CONST_STRPTR", "char *", "const char *", "UBYTE *", "CONST UBYTE *"}
 
-# Scalar/passthrough types
 SCALAR_TYPES = {"ULONG", "LONG", "WORD", "UWORD", "BOOL", "UBYTE", "BYTE",
                 "BPTR", "BSTR", "Tag", "APTR", "CONST_APTR", "PLANEPTR"}
 
-# ── Proto file parser ──
+DPTR_OVERRIDES = {
+    "DrawImage": {"d0"},
+    "DrawBorder": {"d0"},
+    "PrintIText": {"d0"},
+    "GetDTMethods": {"d0"},
+    "GetDTTriggerMethods": {"d0"},
+}
+
+
+def parse_param(p):
+    """Parse individual parameter string."""
+    p = p.strip()
+    if not p or p == "VOID":
+        return None
+    if "(" in p:
+        return ("APTR", "funcptr")
+    m = re.match(r"^(.*?)\s*(\**)(\w+)$", p)
+    if m:
+        base_type = m.group(1).strip()
+        stars = m.group(2)
+        name = m.group(3)
+        full_type = base_type + " " + stars if (stars and base_type) else (stars or base_type)
+        return (full_type.strip(), name)
+    return ("ULONG", p)
+
+
+def parse_proto_chunk(chunk):
+    """Parse a single C prototype chunk."""
+    m = re.search(
+        r"((?:CONST\s+)?(?:struct\s+\w+\s*\*|[\w]+(?:\s*\*)?)\s*)"
+        r"__stdargs\s+(\w+)\s*\(\s*(.*?)\s*\)",
+        chunk,
+    )
+    if not m:
+        return None
+    ret_type, func_name, params_str = m.group(1).strip(), m.group(2).strip(), m.group(3).strip()
+    if "..." in params_str:
+        return None
+    params = []
+    if params_str and params_str != "VOID":
+        for p in params_str.split(","):
+            res = parse_param(p)
+            if res:
+                params.append(res)
+    return func_name, (ret_type, params)
+
 
 def parse_clib_protos(clib_dir):
-    """Parse all *_protos.h files, return dict: funcname -> (return_type, [(param_type, param_name), ...])."""
+    """Parse all *_protos.h files in clib_dir."""
     protos = {}
     if not clib_dir or not os.path.isdir(clib_dir):
         return protos
-
-    # Match individual parameter: type + name (handle * in type or attached to name)
-    def parse_param(p):
-        """Parse 'CONST struct Foo *bar' -> ('CONST struct Foo *', 'bar')."""
-        p = p.strip()
-        if not p or p == "VOID":
-            return None
-        if '(' in p:
-            return ("APTR", "funcptr")
-        # Try: name is last \w+ token, possibly preceded by *
-        m = re.match(r'^(.*?)\s*(\**)(\w+)$', p)
-        if m:
-            base_type = m.group(1).strip()
-            stars = m.group(2)
-            name = m.group(3)
-            if stars:
-                full_type = base_type + ' ' + stars if base_type else stars
-            else:
-                full_type = base_type
-            return (full_type.strip(), name)
-        return ("ULONG", p)
-
     for proto_file in sorted(glob.glob(os.path.join(clib_dir, "*_protos.h"))):
-        with open(proto_file, encoding='latin-1') as f:
+        with open(proto_file, encoding="latin-1") as f:
             text = f.read()
-
-        # Remove C comments and preprocessor lines
-        text = re.sub(r'/\*.*?\*/', ' ', text, flags=re.DOTALL)
-        text = re.sub(r'#[^\n]*', ' ', text)
-        text = re.sub(r'\\\n', ' ', text)
-        text = re.sub(r'\s+', ' ', text)
-
-        # Split on semicolons, find __stdargs declarations
-        for chunk in text.split(';'):
-            m = re.search(
-                r'((?:CONST\s+)?(?:struct\s+\w+\s*\*|[\w]+(?:\s*\*)?)\s*)'
-                r'__stdargs\s+(\w+)\s*\(\s*(.*?)\s*\)',
-                chunk
-            )
-            if not m:
-                continue
-            ret_type = m.group(1).strip()
-            func_name = m.group(2).strip()
-            params_str = m.group(3).strip()
-
-            if '...' in params_str:
-                continue
-
-            params = []
-            if params_str and params_str != "VOID":
-                for p in params_str.split(','):
-                    p = p.strip()
-                    if not p:
-                        continue
-                    result = parse_param(p)
-                    if result:
-                        params.append(result)
-
-            protos[func_name] = (ret_type, params)
-
+        text = re.sub(r"/\*.*?\*/", " ", text, flags=re.DOTALL)
+        text = re.sub(r"#[^\n]*", " ", text)
+        text = re.sub(r"\\\n", " ", text)
+        text = re.sub(r"\s+", " ", text)
+        for chunk in text.split(";"):
+            entry = parse_proto_chunk(chunk)
+            if entry:
+                protos[entry[0]] = entry[1]
     return protos
 
 
 def classify_type(ptype):
-    """
-    Classify a C type string into a category for thunk generation.
-
-    Returns: ('shadow', struct_name), ('input_struct', struct_name),
-             ('string',), ('taglist',), ('scalar',), ('pointer',).
-    """
+    """Classify a C type string into a category for thunk generation."""
     ptype = ptype.strip()
-
-    # Remove CONST qualifier
-    clean = re.sub(r'\bCONST\b', '', ptype).strip()
-    clean = re.sub(r'\bconst\b', '', clean).strip()
-
-    # Check for string types
+    clean = re.sub(r"\bCONST\b|\bconst\b", "", ptype).strip()
     if clean in STRING_TYPES or ptype in STRING_TYPES:
-        return ('string',)
-
-    # Check for struct pointer
-    sm = re.match(r'struct\s+(\w+)\s*\*', clean)
+        return ("string",)
+    sm = re.match(r"struct\s+(\w+)\s*\*", clean)
     if sm:
         sname = sm.group(1)
         if sname == "TagItem":
-            return ('taglist',)
+            return ("taglist",)
         if sname in SHADOW_LOOKUP_TYPES:
-            return ('shadow', sname)
+            return ("shadow", sname)
         if sname in INPUT_STRUCT_TYPES:
-            return ('input_struct', sname)
-        return ('pointer',)
-
-    # Check scalar
-    base = clean.rstrip(' *')
-    if base in SCALAR_TYPES or clean in SCALAR_TYPES:
-        if '*' in clean:
-            return ('pointer',)
-        return ('scalar',)
-
-    # Anything with a pointer is a generic pointer
-    if '*' in clean:
-        return ('pointer',)
-
-    # Default: scalar
-    return ('scalar',)
+            return ("input_struct", sname)
+        return ("pointer",)
+    base = clean.rstrip(" *")
+    if base in SCALAR_TYPES or clean in SCALAR_TYPES or "*" not in clean:
+        return ("pointer",) if "*" in clean else ("scalar",)
+    return ("pointer",)
 
 
 def classify_return_type(rtype):
-    """Classify return type. Returns: ('shadow_create', struct_name), ('plain',), ('void',)."""
+    """Classify return type."""
     rtype = rtype.strip()
-    if rtype == "VOID" or rtype == "void":
-        return ('void',)
-
-    clean = re.sub(r'\bCONST\b', '', rtype).strip()
-    clean = re.sub(r'\bconst\b', '', clean).strip()
-
-    sm = re.match(r'struct\s+(\w+)\s*\*', clean)
+    if rtype.lower() == "void":
+        return ("void",)
+    clean = re.sub(r"\bCONST\b|\bconst\b", "", rtype).strip()
+    sm = re.match(r"struct\s+(\w+)\s*\*", clean)
     if sm:
         sname = sm.group(1)
-        # Only shadow_create for types we know how to shadow
-        if sname in SHADOW_LOOKUP_TYPES:
-            return ('shadow_create', sname)
-    return ('plain',)
+        if sname in SHADOW_RETURNS.values():
+            return ("shadow_create", sname)
+    return ("plain",)
 
 
-# ── FD parser ──
+def parse_fd_line(line):
+    """Parse a single FD entry line."""
+    m = re.match(r"(\w+)\(([^)]*)\)\(([^)]*)\)", line)
+    if not m:
+        return None
+    name = m.group(1)
+    args = [a.strip() for a in m.group(2).split(",") if a.strip()]
+    regs = [r.strip().lower() for r in m.group(3).split(",") if r.strip()]
+    return name, args, regs
+
+
+def parse_fd_directive(line, base_name, bias, public):
+    """Handle ## directive in FD line."""
+    if line.startswith("##base"):
+        return line.split()[1].lstrip("_"), bias, public
+    if line.startswith("##bias"):
+        return base_name, int(line.split()[1]), public
+    if line == "##public":
+        return base_name, bias, True
+    if line == "##private":
+        return base_name, bias, False
+    return base_name, bias, public
+
 
 def parse_fd(filename):
-    """Parse an Amiga FD file, return (base_name, list of (name, bias, args, regs))."""
+    """Parse an FD file, returning (base_name, list of (name, bias, args, regs))."""
     funcs = []
-    bias = 0
+    bias = 30
     public = True
     base_name = None
 
@@ -384,139 +375,82 @@ def parse_fd(filename):
             line = line.strip()
             if not line or line.startswith("*"):
                 continue
-            if line.startswith("##base"):
-                base_name = line.split()[1].lstrip("_")
-                continue
-            if line.startswith("##bias"):
-                bias = int(line.split()[1])
-                continue
-            if line == "##public":
-                public = True
-                continue
-            if line == "##private":
-                public = False
-                continue
             if line.startswith("##"):
+                base_name, bias, public = parse_fd_directive(line, base_name, bias, public)
                 continue
-            if not public:
-                bias += 6
-                continue
-            m = re.match(r'(\w+)\(([^)]*)\)\(([^)]*)\)', line)
-            if m:
-                name = m.group(1)
-                args = [a.strip() for a in m.group(2).split(",") if a.strip()]
-                regs = [r.strip().lower() for r in m.group(3).split(",") if r.strip()]
-                funcs.append((name, bias, args, regs))
+            if public:
+                entry = parse_fd_line(line)
+                if entry:
+                    funcs.append((entry[0], bias, entry[1], entry[2]))
             bias += 6
 
     return base_name, funcs
 
 
-def gen_thunk(libname, funcname, bias, args, regs, protos):
-    """Generate a C thunk function. Returns None if skipped."""
-    if funcname in SKIP_FUNCTIONS:
-        return None
-
+def validate_regs(regs):
+    """Validate register names."""
     for reg in regs:
         if len(reg) != 2 or reg[0] not in ("a", "d") or not reg[1].isdigit():
-            return None
+            return False
+    return True
 
-    proto = protos.get(funcname)
+
+def get_func_properties(funcname, proto):
+    """Determine void status and shadow return type for a function."""
     is_void = funcname in VOID_FUNCTIONS
-
-    # If we have proto info, check return type for void
-    if proto and not is_void:
-        ret_class = classify_return_type(proto[0])
-        if ret_class[0] == 'void':
-            is_void = True
-
-    # Determine shadow return from proto if not already in SHADOW_RETURNS
     shadow_ret = SHADOW_RETURNS.get(funcname)
-    if not shadow_ret and proto and not is_void:
+    if proto:
         ret_class = classify_return_type(proto[0])
-        if ret_class[0] == 'shadow_create':
+        if not is_void and ret_class[0] == "void":
+            is_void = True
+        if not shadow_ret and not is_void and ret_class[0] == "shadow_create":
             shadow_ret = ret_class[1]
+    return is_void, shadow_ret
 
+
+def gen_typed_param(ctype, arg, rtype, rnum, sname):
+    """Generate C code line for typed parameter."""
+    if ctype == "shadow":
+        if sname == "RastPort":
+            return f"    struct RastPort *arg_{arg} = resolve_rp(ctx, THUNK_A({rnum}));", False
+        macro = f"THUNK_A({rnum})" if rtype == "a" else f"THUNK_D({rnum})"
+        return f"    struct {sname} *arg_{arg} = (struct {sname} *)m68k_to_host_or_shadow(ctx, {macro});", False
+    if ctype == "input_struct":
+        return None, False
+    if ctype == "taglist":
+        return f"    struct TagItem *arg_{arg} = m68k_to_native_taglist(ctx, THUNK_A({rnum}));", True
+    if ctype == "string":
+        macro = f"THUNK_A({rnum})" if rtype == "a" else f"THUNK_D({rnum})"
+        return f"    CONST_STRPTR arg_{arg} = (CONST_STRPTR)m68k_to_host(ctx, {macro});", False
+    if ctype == "pointer":
+        macro = "THUNK_PTR" if rtype == "a" else "THUNK_DPTR"
+        return f"    APTR arg_{arg} = {macro}({rnum});", False
+    return f"    ULONG arg_{arg} = THUNK_D({rnum});", False
+
+
+def gen_param_line(funcname, arg, reg, ptype):
+    """Generate C code line for one parameter."""
+    rtype = reg[0]
+    rnum = int(reg[1])
+    cls = classify_type(ptype) if ptype else None
+
+    if cls:
+        sname = cls[1] if len(cls) > 1 else None
+        return gen_typed_param(cls[0], arg, rtype, rnum, sname)
+
+    dptr = DPTR_OVERRIDES.get(funcname, set())
+    if (rtype == "a") or (reg in dptr):
+        if arg.lower() in ("taglist", "tags", "tagitems"):
+            return f"    struct TagItem *arg_{arg} = m68k_to_native_taglist(ctx, THUNK_A({rnum}));", True
+        macro = "THUNK_PTR" if rtype == "a" else "THUNK_DPTR"
+        return f"    APTR arg_{arg} = {macro}({rnum});", False
+
+    return f"    ULONG arg_{arg} = THUNK_D({rnum});", False
+
+
+def gen_return_block(call, is_void, shadow_ret, needs_taglist_free, taglist_args):
+    """Generate return and cleanup statements for thunk."""
     lines = []
-    sig_parts = ", ".join(f"{a}={r}" for a, r in zip(args, regs))
-    lines.append(f"/* -{bias}: {funcname}({sig_parts}) */")
-    lines.append(f"static IPTR thunk_{libname}_{funcname}(struct M68KEmuContext *ctx, void *cpu)")
-    lines.append("{")
-
-    call_args = []
-    needs_taglist_free = False
-    taglist_args = []
-
-    # Match FD params to proto params by position
-    proto_params = proto[1] if proto and len(proto) > 1 else None
-
-    for i, (arg, reg) in enumerate(zip(args, regs)):
-        rtype = reg[0]
-        rnum = int(reg[1])
-
-        # Get type info from proto if available
-        ptype = None
-        if proto_params and i < len(proto_params):
-            ptype = proto_params[i][0]
-
-        if ptype:
-            cls = classify_type(ptype)
-        else:
-            cls = None
-
-        if cls and cls[0] == 'shadow':
-            sname = cls[1]
-            if sname == "RastPort":
-                lines.append(f"    struct RastPort *arg_{arg} = resolve_rp(ctx, THUNK_A({rnum}));")
-            else:
-                macro = f"THUNK_A({rnum})" if rtype == "a" else f"THUNK_D({rnum})"
-                lines.append(f"    struct {sname} *arg_{arg} = (struct {sname} *)m68k_to_host_or_shadow(ctx, {macro});")
-            call_args.append(f"arg_{arg}")
-
-        elif cls and cls[0] == 'input_struct':
-            # Functions with input struct parameters need manual thunks
-            # because m68k and native struct layouts differ
-            return None
-
-        elif cls and cls[0] == 'taglist':
-            lines.append(f"    struct TagItem *arg_{arg} = m68k_to_native_taglist(ctx, THUNK_A({rnum}));")
-            needs_taglist_free = True
-            taglist_args.append(arg)
-            call_args.append(f"arg_{arg}")
-
-        elif cls and cls[0] == 'string':
-            if rtype == "a":
-                lines.append(f"    CONST_STRPTR arg_{arg} = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A({rnum}));")
-            else:
-                lines.append(f"    CONST_STRPTR arg_{arg} = (CONST_STRPTR)m68k_to_host(ctx, THUNK_D({rnum}));")
-            call_args.append(f"arg_{arg}")
-
-        elif cls and cls[0] == 'pointer':
-            macro = "THUNK_PTR" if rtype == "a" else "THUNK_DPTR"
-            lines.append(f"    APTR arg_{arg} = {macro}({rnum});")
-            call_args.append(f"arg_{arg}")
-
-        elif cls and cls[0] == 'scalar':
-            lines.append(f"    ULONG arg_{arg} = THUNK_D({rnum});")
-            call_args.append(f"arg_{arg}")
-
-        else:
-            # No proto info — use fallback (original behavior)
-            dptr = DPTR_OVERRIDES.get(funcname, set())
-            is_ptr = (rtype == "a") or (reg in dptr)
-            if is_ptr:
-                if arg.lower() in ("taglist", "tags", "tagitems"):
-                    lines.append(f"    struct TagItem *arg_{arg} = m68k_to_native_taglist(ctx, THUNK_A({rnum}));")
-                    needs_taglist_free = True
-                    taglist_args.append(arg)
-                else:
-                    macro = "THUNK_PTR" if rtype == "a" else "THUNK_DPTR"
-                    lines.append(f"    APTR arg_{arg} = {macro}({rnum});")
-            else:
-                lines.append(f"    ULONG arg_{arg} = THUNK_D({rnum});")
-            call_args.append(f"arg_{arg}")
-
-    call = f"{funcname}({', '.join(call_args)})"
     if is_void:
         lines.append(f"    {call};")
         for ta in taglist_args:
@@ -528,24 +462,56 @@ def gen_thunk(libname, funcname, bias, args, regs, protos):
             lines.append(f"    if (arg_{ta}) FreeVec(arg_{ta});")
         lines.append("    if (!_ret) return 0;")
         lines.append(f'    return shadow_create_by_name(ctx, "{shadow_ret}", _ret);')
+    elif needs_taglist_free:
+        lines.append(f"    IPTR _ret = (IPTR){call};")
+        for ta in taglist_args:
+            lines.append(f"    if (arg_{ta}) FreeVec(arg_{ta});")
+        lines.append("    return _ret;")
     else:
-        if needs_taglist_free:
-            lines.append(f"    IPTR _ret = (IPTR){call};")
-            for ta in taglist_args:
-                lines.append(f"    if (arg_{ta}) FreeVec(arg_{ta});")
-            lines.append("    return _ret;")
-        else:
-            lines.append(f"    return (IPTR){call};")
+        lines.append(f"    return (IPTR){call};")
+    return lines
 
-    lines.append("}")
-    lines.append("")
+
+def gen_thunk(libname, funcname, bias, args, regs, protos):
+    """Generate a C thunk function. Returns None if skipped."""
+    if funcname in SKIP_FUNCTIONS or not validate_regs(regs):
+        return None
+
+    proto = protos.get(funcname)
+    is_void, shadow_ret = get_func_properties(funcname, proto)
+    proto_params = proto[1] if proto and len(proto) > 1 else None
+
+    sig_parts = ", ".join(f"{a}={r}" for a, r in zip(args, regs))
+    lines = [
+        f"/* -{bias}: {funcname}({sig_parts}) */",
+        f"static IPTR thunk_{libname}_{funcname}(struct M68KEmuContext *ctx, void *cpu)",
+        "{",
+    ]
+
+    call_args = []
+    needs_taglist_free = False
+    taglist_args = []
+
+    for i, (arg, reg) in enumerate(zip(args, regs)):
+        ptype = proto_params[i][0] if proto_params and i < len(proto_params) else None
+        param_code, is_taglist = gen_param_line(funcname, arg, reg, ptype)
+        if param_code is None:
+            return None
+        lines.append(param_code)
+        if is_taglist:
+            needs_taglist_free = True
+            taglist_args.append(arg)
+        call_args.append(f"arg_{arg}")
+
+    call = f"{funcname}({', '.join(call_args)})"
+    lines.extend(gen_return_block(call, is_void, shadow_ret, needs_taglist_free, taglist_args))
+    lines.append("}\n")
     return "\n".join(lines)
 
 
 def libname_from_fd(fd_path):
     """Extract library name from FD filename."""
-    base = os.path.basename(fd_path)
-    return base.replace("_lib.fd", "")
+    return os.path.basename(fd_path).replace("_lib.fd", "")
 
 
 def proto_header(libname):
@@ -553,7 +519,84 @@ def proto_header(libname):
     return f"#include <proto/{libname}.h>"
 
 
+def load_libraries(fd_dir):
+    """Load valid library FD files."""
+    libraries = {}
+    for fd_path in sorted(glob.glob(os.path.join(fd_dir, "*_lib.fd"))):
+        libname = libname_from_fd(fd_path)
+        if libname not in SKIP_LIBRARIES:
+            base_name, funcs = parse_fd(fd_path)
+            if funcs:
+                libraries[libname] = (base_name, funcs)
+    return libraries
+
+
+def emit_c_headers(libraries, protos):
+    """Emit top C headers and stubs."""
+    proto_doc = " + NDK clib protos" if protos else ""
+    print("/* Auto-generated by m68kemu_thunkgen.py — DO NOT EDIT */")
+    print(f"/* Generated from AROS FD files{proto_doc} */\n")
+    print("#include <exec/types.h>")
+    print("#include <exec/memory.h>")
+    print("#include <string.h>\n")
+    for libname in sorted(libraries.keys()):
+        print(proto_header(libname))
+    print("\n#include \"m68kemu_intern.h\"")
+    print("#include \"m68kemu_thunks.h\"")
+    print("#include \"m68kemu_shadow.h\"\n")
+    if protos:
+        print("/* shadow_lookup is defined in m68kemu_thunks.c */")
+        print("extern void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);\n")
+        print("/* Shadow-aware RastPort lookup (mirrors m68kemu_thunks.c) */")
+        print("static struct RastPort *resolve_rp(struct M68KEmuContext *ctx, ULONG m68k_rp)")
+        print("{\n    struct RastPort *rp = (struct RastPort *)shadow_lookup(ctx, m68k_rp);")
+        print("    if (rp) return rp;\n    return (struct RastPort *)m68k_to_host(ctx, m68k_rp);\n}\n")
+
+
+def generate_all_thunks(libraries, protos):
+    """Generate thunk functions for all libraries."""
+    all_tables = {}
+    total = 0
+    for libname in sorted(libraries.keys()):
+        _, funcs = libraries[libname]
+        thunks = []
+        table = []
+        for name, bias, args, regs in funcs:
+            code = gen_thunk(libname, name, bias, args, regs, protos)
+            if code:
+                thunks.append(code)
+                table.append((bias, f"thunk_{libname}_{name}"))
+        if thunks:
+            print(f"/* ── {libname}.library ({len(thunks)} thunks) ── */\n")
+            for t in thunks:
+                print(t)
+            all_tables[libname] = table
+            total += len(thunks)
+    return all_tables, total
+
+
+def emit_thunk_tables(all_tables, total):
+    """Emit table registrations."""
+    print("/* ── Thunk tables ── */\n")
+    for libname in sorted(all_tables.keys()):
+        table = all_tables[libname]
+        print(f"const struct M68KThunkEntry m68kemu_thunks_{libname}_gen[] = {{")
+        for bias, func in table:
+            print(f"    {{ {bias}, {func} }},")
+        print("    { 0, NULL }\n};")
+        print(f"const ULONG m68kemu_thunks_{libname}_gen_count = {len(table)};\n")
+
+    print("/* ── Library registration table ── */")
+    print("const struct M68KLibThunkSet m68kemu_all_gen_libs[] = {")
+    for libname in sorted(all_tables.keys()):
+        print(f'    {{ "{libname}.library", m68kemu_thunks_{libname}_gen, m68kemu_thunks_{libname}_gen_count }},')
+    print("    { NULL, NULL, 0 }\n};")
+    print(f"const ULONG m68kemu_all_gen_libs_count = {len(all_tables)};\n")
+    print(f"/* Total: {total} auto-generated thunks across {len(all_tables)} libraries */")
+
+
 def main():
+    """Main entry point."""
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} <fd_directory> [<ndk_clib_directory>]", file=sys.stderr)
         sys.exit(1)
@@ -561,101 +604,14 @@ def main():
     fd_dir = sys.argv[1]
     clib_dir = sys.argv[2] if len(sys.argv) > 2 else None
 
-    # Parse proto files for type info
     protos = parse_clib_protos(clib_dir)
     if protos:
         print(f"/* Parsed {len(protos)} prototypes from {clib_dir} */", file=sys.stderr)
 
-    fd_files = sorted(glob.glob(os.path.join(fd_dir, "*_lib.fd")))
-
-    libraries = {}
-    for fd_path in fd_files:
-        libname = libname_from_fd(fd_path)
-        if libname in SKIP_LIBRARIES:
-            continue
-        base_name, funcs = parse_fd(fd_path)
-        if funcs:
-            libraries[libname] = (base_name, funcs)
-
-    # Emit header
-    print("/* Auto-generated by m68kemu_thunkgen.py — DO NOT EDIT */")
-    print("/* Generated from AROS FD files" + (" + NDK clib protos" if protos else "") + " */")
-    print("")
-    print("#include <exec/types.h>")
-    print("#include <exec/memory.h>")
-    print("#include <string.h>")
-    print("")
-
-    for libname in sorted(libraries.keys()):
-        print(proto_header(libname))
-    print("")
-
-    print('#include "m68kemu_intern.h"')
-    print('#include "m68kemu_thunks.h"')
-    print('#include "m68kemu_shadow.h"')
-    print("")
-
-    # resolve_rp and shadow_lookup for proto-aware thunks
-    if protos:
-        print("/* shadow_lookup is defined in m68kemu_thunks.c */")
-        print("extern void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);")
-        print("")
-        print("/* Shadow-aware RastPort lookup (mirrors m68kemu_thunks.c) */")
-        print("static struct RastPort *resolve_rp(struct M68KEmuContext *ctx, ULONG m68k_rp)")
-        print("{")
-        print("    struct RastPort *rp = (struct RastPort *)shadow_lookup(ctx, m68k_rp);")
-        print("    if (rp) return rp;")
-        print("    return (struct RastPort *)m68k_to_host(ctx, m68k_rp);")
-        print("}")
-        print("")
-
-    # Generate thunks per library
-    all_tables = {}
-    total = 0
-
-    for libname in sorted(libraries.keys()):
-        base_name, funcs = libraries[libname]
-        thunks = []
-        table = []
-
-        for name, bias, args, regs in funcs:
-            code = gen_thunk(libname, name, bias, args, regs, protos)
-            if code:
-                thunks.append(code)
-                table.append((bias, f"thunk_{libname}_{name}"))
-
-        if thunks:
-            print(f"/* ── {libname}.library ({len(thunks)} thunks) ── */")
-            print("")
-            for t in thunks:
-                print(t)
-            all_tables[libname] = table
-            total += len(thunks)
-
-    # Emit per-library tables
-    print("/* ── Thunk tables ── */")
-    print("")
-
-    for libname in sorted(all_tables.keys()):
-        table = all_tables[libname]
-        print(f"const struct M68KThunkEntry m68kemu_thunks_{libname}_gen[] = {{")
-        for bias, func in table:
-            print(f"    {{ {bias}, {func} }},")
-        print("    { 0, NULL }")
-        print("};")
-        print(f"const ULONG m68kemu_thunks_{libname}_gen_count = {len(table)};")
-        print("")
-
-    # Emit master registration table
-    print("/* ── Library registration table ── */")
-    print("const struct M68KLibThunkSet m68kemu_all_gen_libs[] = {")
-    for libname in sorted(all_tables.keys()):
-        print(f'    {{ "{libname}.library", m68kemu_thunks_{libname}_gen, m68kemu_thunks_{libname}_gen_count }},')
-    print("    { NULL, NULL, 0 }")
-    print("};")
-    print(f"const ULONG m68kemu_all_gen_libs_count = {len(all_tables)};")
-    print("")
-    print(f"/* Total: {total} auto-generated thunks across {len(all_tables)} libraries */")
+    libraries = load_libraries(fd_dir)
+    emit_c_headers(libraries, protos)
+    all_tables, total = generate_all_thunks(libraries, protos)
+    emit_thunk_tables(all_tables, total)
 
 
 if __name__ == "__main__":

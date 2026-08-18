@@ -88,15 +88,7 @@ for d in DIRS:
 
 
 def get_leaf_fields(sname, prefix, depth=0):
-    """
-    Recursively get leaf (scalar/pointer) fields with their access paths.
-
-    For each field, yields (field_display_name, c_access_path) where:
-    - field_display_name is the leaf field name (e.g. "io_Command")
-    - c_access_path is the C expression for offsetof/sizeof (e.g. "io_Message.mn_Node.ln_Succ")
-
-    Embedded structs are recursed into. Pointers, scalars, and arrays are leaf fields.
-    """
+    """Recursively get leaf (scalar/pointer) fields with their access paths."""
     if sname not in structs or depth > 4:
         return
     _, fields = structs[sname]
