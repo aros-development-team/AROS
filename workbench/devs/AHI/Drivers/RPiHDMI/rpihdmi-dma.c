@@ -47,11 +47,12 @@ void dma_build_control_blocks(struct RPiHDMIData *dd)
 
 void dma_setup(struct RPiHDMIData *dd)
 {
+    struct DriverBase *AHIsubBase =
+        (struct DriverBase *) dd->ahisubbase;
     ULONG peribase = dd->periiobase;
     ULONG channel = dd->dma_channel;
     ULONG cb_bus_addr = GPU_BUS_ADDR(dd->cb[0]);
     ULONG dma_base = peribase + 0x007000 + channel * 0x100;
-
     /* The channel is already enabled by dma.resource at allocation. */
     wr32le(dma_base + 0x00, DMA_CS_RESET);
     udelay(peribase, 10);
@@ -61,6 +62,11 @@ void dma_setup(struct RPiHDMIData *dd)
      * survive the session; see bcm2708_dma.h. */
     wr32le(dma_base + 0x00, BCM2708_DMA_CS_RUN);
     udelay(peribase, 10);
+
+    bug("[RPiHDMI] DMA after setup: CS=%08lx CB=%08lx TXFR=%08lx\n",
+        rd32le(dma_base + 0x00),
+        rd32le(dma_base + 0x04),
+        rd32le(dma_base + 0x14));
 }
 
 void dma_stop(struct RPiHDMIData *dd)
@@ -93,7 +99,18 @@ void dma_irq_handler(struct RPiHDMIData *data, void *data2)
     ULONG dma_base = data->periiobase + 0x007000 + data->dma_channel * 0x100;
     ULONG cs = rd32le(dma_base + 0x00);
 
+    static ULONG debug_irq_count;
+
     if (cs & DMA_CS_INT) {
+        // if (debug_irq_count < 10) {
+        //     bug("[RPiHDMI] DMA IRQ: CS=%08lx CB=%08lx TXFR=%08lx\n",
+        //         cs,
+        //         rd32le(dma_base + 0x04),
+        //         rd32le(dma_base + 0x14));
+
+        //     debug_irq_count++;
+        // }
+
         /* Must carry the run state, not just ACTIVE: the AXI priorities
          * share the register. See bcm2708_dma.h. */
         wr32le(dma_base + 0x00, BCM2708_DMA_CS_ACK);

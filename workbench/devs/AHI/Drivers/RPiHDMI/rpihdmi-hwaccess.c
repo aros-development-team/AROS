@@ -18,10 +18,13 @@
 
 #include <exec/types.h>
 #include <aros/macros.h>
+#include <aros/debug.h>
 
 #include "DriverData.h"
 #include "rpihdmi-hwaccess.h"
 #include "rpihdmi-iec958.h"
+
+#define RPIHDMI_CHANNEL_MASK 0x03
 
 /*
  * Microsecond delay using a busy loop on the system timer.
@@ -97,9 +100,6 @@ static ULONG srate_to_n(ULONG samplerate)
         return 128 * samplerate / 1000;
     }
 }
-
-
-
 
 /******************************************************************************
 ** HDMI Audio InfoFrame *******************************************************
@@ -208,6 +208,9 @@ static void hdmi_write_audio_infoframe(struct RPiHDMIData *dd)
  */
 void hdmi_mai_init(struct RPiHDMIData *dd)
 {
+    struct DriverBase *AHIsubBase =
+        (struct DriverBase *) dd->ahisubbase;
+
     ULONG pb = dd->periiobase;
     ULONG srate_enum = srate_to_mai_enum(dd->samplerate);
     ULONG n_value = srate_to_n(dd->samplerate);
@@ -227,15 +230,23 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
     wr32le(HDMI_MAI_FMT(dd), MAI_FMT_FORMAT_PCM | MAI_FMT_RATE(srate_enum));
 
     /*
-     * FIFO thresholds (all 0x10).
+     * FIFO thresholds.
      */
-    wr32le(HDMI_MAI_THR(dd), MAI_THR_DREQL(0x10) | MAI_THR_DREQH(0x10) | MAI_THR_PANICL(0x10) | MAI_THR_PANICH(0x10));
+    ULONG dreq_threshold = dd->soc->mai_dreq_threshold;
+    ULONG panic_threshold = dd->soc->mai_panic_threshold;
 
-    /* MAI_CONFIG: BIT_REVERSE | FORMAT_REVERSE | channel_mask=0x03 (stereo) */
-    wr32le(HDMI_MAI_CONFIG(dd), MAI_CONFIG_BIT_REVERSE | MAI_CONFIG_FORMAT_REVERSE | MAI_CONFIG_CHANNEL_MASK(0x03));
+    wr32le(HDMI_MAI_THR(dd), MAI_THR_DREQL(dreq_threshold) | MAI_THR_DREQH(dreq_threshold) | MAI_THR_PANICL(panic_threshold) | MAI_THR_PANICH(panic_threshold));
 
-    /* Channel map for stereo: 3-bit fields at bits 2:0 (ch0) and 6:4 (ch1) */
-    wr32le(HDMI_MAI_CHANNEL_MAP(dd), 0x08);
+    /* MAI_CONFIG: temporarily test one MAI channel at a time. */
+    wr32le(HDMI_MAI_CONFIG(dd),
+           MAI_CONFIG_BIT_REVERSE |
+           MAI_CONFIG_FORMAT_REVERSE |
+           MAI_CONFIG_CHANNEL_MASK(RPIHDMI_CHANNEL_MASK));
+
+    /* Channel map for stereo: bcm283x :3-bit fields at bits 2:0 (ch0) and 6:4 (ch1)
+     *                         bcm2711 :4-bit fields
+     */
+    wr32le(HDMI_MAI_CHANNEL_MAP(dd), dd->soc->hdmi_mai_channel_map);
 
     /*
      * Audio packet config:
@@ -248,6 +259,10 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
            AUDIO_PKT_ZERO_DATA_ON_FLAT | AUDIO_PKT_ZERO_DATA_ON_INACTIVE | AUDIO_PKT_B_FRAME_ID(0x8) |
                AUDIO_PKT_CEA_MASK(0x03));
 
+    bug("[RPiHDMI] channel: MAP=%08lx CONFIG=%08lx AUDIO=%08lx\n",
+        rd32le(HDMI_MAI_CHANNEL_MAP(dd)),
+        rd32le(HDMI_MAI_CONFIG(dd)),
+        rd32le(HDMI_AUDIO_PKT_CFG(dd)));
     /*
      * Sample rate clock divider.
      * MAI_SMP register: bits 31:8 = N (numerator), bits 7:0 = M (denominator-1).

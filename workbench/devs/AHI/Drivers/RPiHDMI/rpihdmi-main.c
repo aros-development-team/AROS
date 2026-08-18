@@ -8,6 +8,7 @@
 
 #include <config.h>
 
+#include <aros/debug.h>
 #include <devices/ahi.h>
 #include <dos/dostags.h>
 #include <exec/memory.h>
@@ -139,6 +140,15 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
 
         dd->samplerate = AudioCtrl->ahiac_MixFreq;
 
+        bug("[RPiHDMI] start: rate=%lu frames=%lu dma_channel=%ld\n",
+            dd->samplerate,
+            AudioCtrl->ahiac_MaxBuffSamples,
+            dd->dma_channel);
+        bug("[RPiHDMI] start: mai_data_bus=%08lx dreq=%lu hsm=%lu\n",
+            dd->soc->mai_data_bus,
+            dd->soc->dma_dreq,
+            dd->soc->hsm_clock);
+
         /*
          * Calculate DMA buffer size.
          * Each frame = 2 channels * 4 bytes (32-bit SPDIF subframes) = 8 bytes.
@@ -180,10 +190,23 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
         /* Initialize HDMI MAI audio */
         dd->soc->init(dd);
 
-        ULONG expect = AudioCtrl->ahiac_MixFreq * 2 / 100;
-        ULONG dreq = dma_probe_dreq(dd, expect);
+        bug("[RPiHDMI] MAI after init: CTL=%08lx THR=%08lx FMT=%08lx\n",
+            rd32le(HDMI_MAI_CTL(dd)),
+            rd32le(HDMI_MAI_THR(dd)),
+            rd32le(HDMI_MAI_FMT(dd)));
+        bug("[RPiHDMI] HDMI after init: CFG=%08lx PKT_CFG=%08lx CRP=%08lx\n",
+            rd32le(HDMI_MAI_CONFIG(dd)),
+            rd32le(HDMI_RAM_PKT_CFG(dd)),
+            rd32le(HDMI_CRP_CFG(dd)));
 
-        dd->dma_dreq = dreq;
+        ULONG expect = AudioCtrl->ahiac_MixFreq * 2 / 100;
+
+        dd->dma_dreq = dd->soc->dma_dreq;
+
+        bug("[RPiHDMI] DMA: selected dreq=%lu dest=%08lx bytes=%lu\n",
+            dd->dma_dreq,
+            dd->soc->mai_data_bus,
+            dd->dmabuf_size);
 
         /* Build the DMA control block chain */
         dma_build_control_blocks(dd);

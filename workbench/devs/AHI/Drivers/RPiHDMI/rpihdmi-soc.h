@@ -35,6 +35,10 @@ struct RPiHDMISoc {
     ULONG dma_dreq;
     ULONG hsm_clock;
 
+    ULONG mai_dreq_threshold;
+    ULONG mai_panic_threshold;
+    ULONG hdmi_mai_channel_map;
+
     struct RPiHDMIRegs regs;
 
     void (*init)(struct RPiHDMIData *dd);

@@ -8,9 +8,6 @@
 #include <aros/macros.h>
 #include <string.h>
 
-#include "Drivers/RPiPWM/rpipwm-hwaccess.h"
-#include "inline/exec.h"
-#include "inline/openfirmware.h"
 #include "library.h"
 #include "DriverData.h"
 #include "rpihdmi-soc.h"
@@ -94,56 +91,62 @@ static LONG find_element_index(struct DriverBase *AHIsubBase, void *node, char *
     return -1;
 }
 
+static void fill_reg_values(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc, void *node, char *compatible) {
+    LONG hdmi_index =
+        find_element_index(AHIsubBase, node, "reg-names", "hdmi");
+    LONG hd_index =
+        find_element_index(AHIsubBase, node, "reg-names", "hd");
+    LONG packet_index =
+        find_element_index(AHIsubBase, node, "reg-names", "packet");
+
+    if (hdmi_index < 0 || hd_index < 0 || packet_index < 0) {
+        bug("[RPiHDMI] Missing HDMI register block, using fallback\n");
+        return;
+    }
+
+    ULONG packet_base =
+        get_device_tree_reg_value(AHIsubBase, node, packet_index);
+    ULONG hdmi_base =
+        get_device_tree_reg_value(AHIsubBase, node, hdmi_index);
+    ULONG mai_base =
+        get_device_tree_reg_value(AHIsubBase, node, hd_index);
+
+    if (hdmi_base == 0 || packet_base == 0 || mai_base == 0) {
+        bug("[RPiHDMI] Missing HDMI register values, using fallback\n");
+        return;
+    }
+
+    soc->hdmi_base = hdmi_base - BCM2711_BUS_PERIIOBASE;
+    soc->mai_base = mai_base - BCM2711_BUS_PERIIOBASE;
+    soc->packet_base = packet_base - BCM2711_BUS_PERIIOBASE;
+
+    D(bug("[RPiHDMI] hdmi_base=%08x mai_base=%08x packet_base=%08x\n",
+        (ULONG)soc->hdmi_base,
+        (ULONG)soc->mai_base,
+        (ULONG)soc->packet_base));
+
+    soc->mai_data_bus = mai_base + soc->regs.mai_data;
+}
+
+static void fill_dreq_value(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc, void *node, char *compatible) {
+    ULONG dreq_found = find_dreq(AHIsubBase, node);
+    if (dreq_found > 0) {
+        soc->dma_dreq = dreq_found;
+    } else {
+        bug("[RPiHDMI] Couldn't find DREQ device tree value, using fallback\n");
+    }
+}
+
 static void travers_device_tree_and_fill_soc(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc)
 {
     char *compatible = "brcm,bcm2711-hdmi0";
     void *node = find_hdmi_node(AHIsubBase, compatible);
 
     if (node != NULL) {
-        LONG hdmi_index =
-            find_element_index(AHIsubBase, node, "reg-names", "hdmi");
-        LONG hd_index =
-            find_element_index(AHIsubBase, node, "reg-names", "hd");
-        LONG packet_index =
-            find_element_index(AHIsubBase, node, "reg-names", "packet");
-
-        if (hdmi_index < 0 || hd_index < 0 || packet_index < 0) {
-            bug("[RPiHDMI] Missing required HDMI register block\n");
-            return;
-        }
-
-        ULONG packet_base =
-            get_device_tree_reg_value(AHIsubBase, node, packet_index);
-        ULONG hdmi_base =
-            get_device_tree_reg_value(AHIsubBase, node, hdmi_index);
-        ULONG mai_base =
-            get_device_tree_reg_value(AHIsubBase, node, hd_index);
-
-        if (hdmi_base == 0 || packet_base == 0 || mai_base == 0) {
-            bug("[RPiHDMI] Missing required HDMI register values\n");
-            return;
-        }
-
-        soc->hdmi_base = hdmi_base - BCM2711_BUS_PERIIOBASE;
-        soc->mai_base = mai_base - BCM2711_BUS_PERIIOBASE;
-        soc->packet_base = packet_base - BCM2711_BUS_PERIIOBASE;
-
-        bug("[RPiHDMI] hdmi_base=%08x mai_base=%08x packet_base=%08x\n",
-            (ULONG)soc->hdmi_base,
-            (ULONG)soc->mai_base,
-            (ULONG)soc->packet_base);
-
-        soc->mai_data_bus = BCM2711_BUS_PERIIOBASE + mai_base + 0x20;
+        fill_reg_values(AHIsubBase, soc, node, compatible);
+        fill_dreq_value(AHIsubBase, soc, node, compatible);
     } else {
-        bug("[RPiHDMI] Failed to find hdmi node in device tree for %s\n", compatible);
-    }
-
-    if (node != NULL) {
-        ULONG dreq_found = find_dreq(AHIsubBase, node);
-        if (dreq_found > 0) {
-            bug("[RPiHDMI] Found DREQ for %s: %d\n", compatible, dreq_found);
-            soc->dma_dreq = dreq_found;
-        }
+        bug("[RPiHDMI] Failed to find hdmi node in device tree for %s, using fallback\n", compatible);
     }
 }
 
@@ -197,8 +200,8 @@ BOOL DriverInit(struct DriverBase *AHIsubBase)
         RPiHDMIBase->soc = &rpihdmi_bcm2711_hdmi0_soc;
         travers_device_tree_and_fill_soc(AHIsubBase, RPiHDMIBase->soc);
 
-        Req("Unsupported Raspberry Pi HDMI audio hardware. P4 not yet implemented\n");
-        return FALSE;
+        // Req("Unsupported Raspberry Pi HDMI audio hardware. P4 not yet implemented\n");
+        // return FALSE;
     }
     else
     {

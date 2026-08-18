@@ -28,6 +28,10 @@ const struct RPiHDMISoc rpihdmi_bcm283x_soc = {
         .packet_start      = 0x400,
     },
 
+    .mai_dreq_threshold = 0x10,
+    .mai_panic_threshold = 0x10,
+    .hdmi_mai_channel_map = 0x08,
+
     .init         = hdmi_mai_init,
     .stop         = hdmi_mai_stop
 };
