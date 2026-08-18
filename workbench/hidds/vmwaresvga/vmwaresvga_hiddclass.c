@@ -616,6 +616,13 @@ BOOL VMWareSVGADisplay__Hidd_Display__SetGamma(OOP_Class *cl, OOP_Object *o, str
     return TRUE;
 }
 
+static inline BOOL VMWareSVGA_IsOwnBitMap(struct VMWareSVGA_staticdata *xsd, OOP_Object *bm)
+{
+    OOP_Class *bmcl = OOP_OCLASS(bm);
+
+    return (bmcl == xsd->vmwaresvgaonbmclass) || (bmcl == xsd->vmwaresvgaoffbmclass);
+}
+
 VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     UBYTE *src = NULL;
@@ -629,8 +636,16 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     ObtainSemaphore(&hwdata->damage_control);
 
     mode = GC_DRMD(msg->gc);
-    OOP_GetAttr(msg->src, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&src);
-    OOP_GetAttr(msg->dest, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&dst);
+    /*
+     * Only bitmaps of our own classes carry our instance data. A wrapper
+     * such as the software-pointer framebuffer forwards the Drawable
+     * attribute of the bitmap it wraps, so the attribute alone must not
+     * be taken as proof of ownership.
+     */
+    if (VMWareSVGA_IsOwnBitMap(XSD(cl), msg->src))
+        OOP_GetAttr(msg->src, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&src);
+    if (VMWareSVGA_IsOwnBitMap(XSD(cl), msg->dest))
+        OOP_GetAttr(msg->dest, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&dst);
     if (((dst == NULL) || (src == NULL))) /* no vmwaregfx bitmap */
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
