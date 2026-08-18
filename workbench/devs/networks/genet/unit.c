@@ -28,8 +28,7 @@ APTR KernelBase = NULL;
 
 static void genet_IRQHandler(struct GENETUnit *unit, void *data2)
 {
-    struct ExecBase *SysBase = (struct ExecBase *)data2;
-
+    (void)data2;
     if (unit->gn_Task && unit->gn_IntSig != (ULONG)-1)
         Signal(unit->gn_Task, 1 << unit->gn_IntSig);
 }
@@ -156,7 +155,7 @@ static void genet_TxPackets(struct GENETUnit *unit)
 void genet_UnitTask(void)
 {
     struct GENETUnit *unit;
-    ULONG sigmask, signals;
+    ULONG sigmask;
 
     unit = (struct GENETUnit *)FindTask(NULL)->tc_UserData;
     D(bug("[genet] UnitTask started for unit %ld\n", unit->gn_UnitNum));
@@ -173,7 +172,7 @@ void genet_UnitTask(void)
     unit->gn_IRQHandle = KrnAddIRQHandler(GENET_IRQ_0, genet_IRQHandler, unit, SysBase);
 
     for (;;) {
-        signals = Wait(sigmask);
+        ULONG signals = Wait(sigmask);
 
         if (signals & SIGBREAKF_CTRL_C)
             break;
