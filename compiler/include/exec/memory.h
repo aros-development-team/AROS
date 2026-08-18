@@ -9,8 +9,13 @@
     Lang: english
 */
 
+#include <aros/config.h>
+
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
+#endif
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
 #endif
 
 struct MemHeader
@@ -21,6 +26,13 @@ struct MemHeader
     APTR              mh_Lower;
     APTR              mh_Upper;
     IPTR              mh_Free;
+#if defined(__AROSPLATFORM_SMP__)
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t        mh_SpinLock;          /* SMP per-memheader lock (mh_First, mh_Free) */
+#else
+    spinlock_t        mh_Pad;
+#endif
+#endif
 };
 
 struct MemChunk

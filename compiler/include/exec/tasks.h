@@ -9,6 +9,8 @@
     Lang: english
 */
 
+#include <aros/config.h>
+
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
 #endif
@@ -20,6 +22,9 @@
 #endif
 #ifndef UTILITY_TAGITEM_H
 #   include <utility/tagitem.h>
+#endif
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
 #endif
 
 struct ETask;
@@ -56,6 +61,13 @@ struct Task
     VOID            (* tc_Launch)();                        /* Task gets CPU */
     struct List     tc_MemEntry;                            /* Allocated memory. Freed by RemTask(). */
     APTR            tc_UserData;                            /* For use by the task; no restrictions! */
+#if defined(__AROSPLATFORM_SMP__)
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t      tc_SpinLock;                            /* SMP per-task lock (tc_State, tc_Sig*, tc_Flags, tc_MemEntry) */
+#else
+    spinlock_t      tc_Pad;
+#endif
+#endif
 };
 
 #define tc_TrapAlloc                tc_UnionETask.tc_ETrap.tc_ETrapAlloc

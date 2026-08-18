@@ -9,8 +9,13 @@
     Lang: english
 */
 
+#include <aros/config.h>
+
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
+#endif
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
 #endif
 
 /* Library constants
@@ -47,6 +52,13 @@ struct Library {
     UWORD   lib_OpenCnt;        /* how many people use us right now? */
 #ifdef AROS_NEED_LONG_ALIGN
     UWORD   lib_pad2;           /* make sure it is longword aligned */
+#endif
+#if defined(__AROSPLATFORM_SMP__)
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t lib_SpinLock;    /* SMP per-library lock (lib_OpenCnt, lib_Flags, vectors) */
+#else
+    spinlock_t lib_Pad;
+#endif
 #endif
 };
 
