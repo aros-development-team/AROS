@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
 # Author: Fabian Schmieder (@metaneutrons)
-"""m68kemu thunk generator — reads Amiga FD files + NDK clib protos for type info.
-
-Usage: python3 m68kemu_thunkgen.py <fd_directory> [<ndk_clib_directory>] > m68kemu_thunks_gen.c
-
-If clib directory is provided, function prototypes are parsed for accurate
-parameter types (shadow lookups, string translation, struct translation, etc.).
-Without it, falls back to generic APTR/ULONG behavior.
-"""
+"""m68kemu thunk generator for AROS."""
+# Usage: python3 m68kemu_thunkgen.py <fd_directory> [<ndk_clib_directory>] > m68kemu_thunks_gen.c
+#
+# If clib directory is provided, function prototypes are parsed for accurate
+# parameter types (shadow lookups, string translation, struct translation, etc.).
+# Without it, falls back to generic APTR/ULONG behavior.
 
 import sys, os, re, glob
 

@@ -776,6 +776,7 @@ static void DosEntry(void)
 
     D(bug("[DosEntry %p] entry=%p, CIS=%p, COS=%p, argsize=%d, arguments=\"%s\"\n", me, initialPC, BADDR(me->pr_CIS), BADDR(me->pr_COS), argSize, me->pr_Arguments));
 
+#if !defined(__mc68000__)
     /* Check if this is an m68k hunk binary and route through emulator */
     {
         IPTR hunkinfo = 0;
@@ -793,6 +794,7 @@ static void DosEntry(void)
             }
         }
     }
+#endif
 
     /* Call entry point of our process, remembering stack in its pr_ReturnAddr */
     result = CallEntry(me->pr_Arguments, argSize, initialPC, me);
