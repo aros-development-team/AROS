@@ -155,7 +155,12 @@ LLVM_CMAKEOPTIONS       := -Wno-dev                                             
     -DLLVM_INCLUDE_DOCS=OFF                                                                                                             \
     -DLLVM_INCLUDE_TESTS=OFF                                                                                                            \
     -DLLVM_INCLUDE_EXAMPLES=OFF                                                                                                         \
-    -DLLVM_INCLUDE_BENCHMARKS=OFF
+    -DLLVM_INCLUDE_BENCHMARKS=OFF                                                                                                       \
+    -DLLVM_INCLUDE_UTILS=OFF                                                                                                            \
+    -DLLVM_ENABLE_ZSTD=OFF                                                                                                              \
+    -DLLVM_ENABLE_LIBXML2=OFF                                                                                                           \
+    -DCLANG_ENABLE_STATIC_ANALYZER=OFF                                                                                                  \
+    -DCLANG_ENABLE_ARCMT=OFF
 ifeq ($(shell test $(LLVM_VERSION_MAJOR) -lt 20; echo $$?),0)
 LLVM_CMAKEOPTIONS       +=                                                                                                              \
     -DLLVM_ENABLE_TERMINFO=OFF
@@ -182,7 +187,7 @@ LLVM_CMAKEOPTIONS +=                                                            
     -DBUILD_SHARED_LIBS=OFF
 else
 LLVM_CMAKEOPTIONS +=                                                                                                                    \
-    -DLLVM_BUILD_LLVM_DYLIB=ON
+    -DLLVM_BUILD_LLVM_DYLIB=ON                                                                                                          \
     -DBUILD_SHARED_LIBS=ON                                                                                                              \
     -DLLVM_ENABLE_LTO=ON
 endif
@@ -539,7 +544,8 @@ $(llvm-installflag): $(LLLVM_EXTRA_DEPS)
 	fi
 
 %build_with_cmake mmake=crosstools-llvm-toolchain package=llvm srcdir=$(LLVM_BUILDBASE)                                                 \
-    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host usecppflags=no usecrosstoolsdir=no
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host                                                         \
+    extracflags="-g0" extracxxflags="-g0" usecppflags=no usecrosstoolsdir=no
 
 #
 # Rules to setup the monotree
