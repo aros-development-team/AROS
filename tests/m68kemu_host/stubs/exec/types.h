@@ -7,5 +7,9 @@ typedef const char *CONST_STRPTR;
 #define TRUE 1
 #define FALSE 0
 #ifndef NULL
+#ifdef __cplusplus
+#define NULL nullptr
+#else
 #define NULL ((void*)0)
+#endif
 #endif

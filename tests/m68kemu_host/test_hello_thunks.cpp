@@ -29,9 +29,14 @@ const ULONG m68kemu_thunks_exec_count = 1;
 const struct M68KThunkEntry m68kemu_thunks_dos[] = { { 948, thunk_PutStr }, { 0, NULL } };
 const ULONG m68kemu_thunks_dos_count = 1;
 
+extern "C" {
+ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *, const char *) { return 0; }
+ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *, const char *) { return 0; }
+}
+
 #include "../../rom/m68kemu/m68kemu_memory.c"
-#include "../../rom/m68kemu/Moira/Moira.cpp"
-#include "../../rom/m68kemu/Moira/MoiraDebugger.cpp"
+#include "../../rom/m68kemu/Moira/Moira/Moira.cpp"
+#include "../../rom/m68kemu/Moira/Moira/MoiraDebugger.cpp"
 #include "../../rom/m68kemu/m68kemu_moira.cpp"
 
 int main()
@@ -40,10 +45,10 @@ int main()
     struct M68KEmuLibBase base = {};
     auto *ctx = M68KEmu_CreateContext(&base);
 
-    ULONG sysbase = M68KEmu_SetupLibBase(ctx, 0, "exec.library", 512, m68kemu_thunks_exec, 1);
+    ULONG sysbase = M68KEmu_SetupLibBase(ctx, 0, "exec.library", 512, m68kemu_thunks_exec, 1, nullptr, 0);
     printf("ExecBase=0x%08X jt_start=0x%08X\n", sysbase, ctx->libs[0].jt_start);
 
-    ULONG dosbase = M68KEmu_SetupLibBase(ctx, 1, "dos.library", 512, m68kemu_thunks_dos, 1);
+    ULONG dosbase = M68KEmu_SetupLibBase(ctx, 1, "dos.library", 512, m68kemu_thunks_dos, 1, nullptr, 0);
     printf("DOSBase=0x%08X jt_start=0x%08X\n", dosbase, ctx->libs[1].jt_start);
 
     m68k_write32(ctx, 4, sysbase);
@@ -117,7 +122,7 @@ int main()
 
     printf("Executing...\n");
     LONG result = M68KEmu_Execute(ctx);
-    printf("Result: %ld\n", result);
+    printf("Result: %d\n", (int)result);
 
     M68KEmu_DestroyContext(ctx);
     return 0;
