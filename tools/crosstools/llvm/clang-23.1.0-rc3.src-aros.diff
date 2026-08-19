@@ -1,6 +1,6 @@
 diff -ruN llvm-project-23.1.0-rc3.src/clang/include/clang/Options/Options.td llvm-project-23.1.0-rc3.src.aros/clang/include/clang/Options/Options.td
 --- llvm-project-23.1.0-rc3.src/clang/include/clang/Options/Options.td	2026-08-19 13:30:01.442416792 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/clang/include/clang/Options/Options.td	2026-08-19 13:30:01.438925292 +0100
++++ llvm-project-23.1.0-rc3.src.aros/clang/include/clang/Options/Options.td	2026-08-19 18:33:50.358803745 +0100
 @@ -1516,6 +1516,10 @@
    HelpText<"Path to libomptarget-nvptx bitcode library">;
  def libomptarget_spirv_bc_path_EQ : Joined<["--"], "libomptarget-spirv-bc-path=">, Group<i_Group>,
@@ -23,7 +23,7 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/include/clang/Options/Options.td llv
  def canonical_prefixes : Flag<["-"], "canonical-prefixes">,
    Flags<[HelpHidden]>, Visibility<[ClangOption, CLOption, DXCOption]>,
    HelpText<"Use absolute paths for invoking subcommands (default)">;
-@@ -6478,6 +6486,19 @@
+@@ -6478,11 +6486,25 @@
  def nolibc : Flag<["-"], "nolibc">;
  def nomultidefs : Flag<["-"], "nomultidefs">;
  def nopie : Flag<["-"], "nopie">, Visibility<[ClangOption, FlangOption]>, Flags<[TargetSpecific]>; // OpenBSD
@@ -43,7 +43,13 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/include/clang/Options/Options.td llv
  def noprebind : Flag<["-"], "noprebind">;
  def noprofilelib : Flag<["-"], "noprofilelib">;
  def noseglinkedit : Flag<["-"], "noseglinkedit">;
-@@ -6499,6 +6520,7 @@
+ def nostartfiles : Flag<["-"], "nostartfiles">, Group<Link_Group>;
+ def startfiles : Flag<["-"], "startfiles">, Group<Link_Group>;
++def nostdc : Flag<["-"], "nostdc">, Alias<no_stdc>;
+ def nostdinc : Flag<["-"], "nostdinc">,
+   Visibility<[ClangOption, CLOption, DXCOption]>, Group<IncludePath_Group>,
+   HelpText<"Disable both standard system #include directories and builtin #include directories">;
+@@ -6499,6 +6521,7 @@
    Visibility<[ClangOption, FlangOption]>,
    Group<Link_Group>;
  def nostdlibxx : Flag<["-"], "nostdlib++">;
@@ -51,7 +57,7 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/include/clang/Options/Options.td llv
  def object : Flag<["-"], "object">;
  def o : JoinedOrSeparate<["-"], "o">,
    Flags<[NoXarchOption]>,
-@@ -6526,6 +6548,10 @@
+@@ -6526,6 +6549,10 @@
    MarshallingInfoFlag<CodeGenOpts<"InstrumentForProfiling">>;
  def pipe : Flag<["-", "--"], "pipe">,
    HelpText<"Use pipes between commands, when possible">;
@@ -62,7 +68,7 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/include/clang/Options/Options.td llv
  def prebind__all__twolevel__modules : Flag<["-"], "prebind_all_twolevel_modules">;
  def prebind : Flag<["-"], "prebind">;
  def preload : Flag<["-"], "preload">;
-@@ -6592,6 +6618,10 @@
+@@ -6592,6 +6619,10 @@
    NegFlag<SetFalse>,
    BothFlags<[], [ClangOption, CC1Option, FlangOption, FC1Option]>>;
  def static_pie : Flag<["-"], "static-pie">, Group<Link_Group>;
