@@ -250,8 +250,6 @@ struct eth_frame
 };
 
 /* Ring geometry. A buffer holds one whole frame; no chaining. */
-#define GENET_TXDESC                    32
-#define GENET_RXDESC                    32
 #define GENET_BUFSIZE                   1536 /* Ethernet header, MTU, and spare room */
 
 /*
@@ -352,6 +350,15 @@ struct AddressRange
  * buffer this slot's DMA address points at, plus where the ring is up
  * to - not a descriptor struct to keep in sync with the engine.
  */
+#define GENET_DMA_RING_BUF_SIZE_DESC_COUNT_SHIFT  16
+#define GENET_DMA_RING_BUF_SIZE_DESC_COUNT_MASK   0xffff0000
+#define GENET_DMA_RING_BUF_SIZE_BUF_LENGTH_SHIFT  0
+#define GENET_DMA_RING_BUF_SIZE_BUF_LENGTH_MASK   0x0000ffff
+#define GENET_RX_DMA_XON_XOFF_THRES_LO_SHIFT  16
+#define GENET_RX_DMA_XON_XOFF_THRES_LO_MASK   0xffff0000
+#define GENET_RX_DMA_XON_XOFF_THRES_HI_SHIFT  0
+#define GENET_RX_DMA_XON_XOFF_THRES_HI_MASK   0x0000ffff
+
 struct bcmgenet_ring
 {
     APTR                bufmem;         /* one allocation, N * GENET_BUFSIZE */
@@ -359,6 +366,7 @@ struct bcmgenet_ring
     UBYTE              *buf[GENET_DMA_DESC_COUNT]; /* slot -> buffer pointer */
     ULONG               cidx;           /* consumer index                   */
     ULONG               pidx;           /* producer index                   */
+    ULONG               next;
 };
 
 struct BCMGENETUnit

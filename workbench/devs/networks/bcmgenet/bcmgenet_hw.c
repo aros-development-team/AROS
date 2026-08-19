@@ -26,9 +26,10 @@
     uses instead of the __BIT()/__BITS() macros OpenBSD/NetBSD define.
 */
 
+#include "exec/memory.h"
 #define DEBUG 1
 #include <aros/debug.h>
-
+#include <memory.h>
 #include <aros/macros.h>
 
 #define ARM_PERIIOBASE BCM2711_PERIIOBASE
@@ -178,19 +179,18 @@ static void bcmgenet_disable_dma(struct BCMGENETUnit *unit)
  * TODO: port genet_reset() (bcmgenet.c:469). UMAC_CMD_SW_RESET, flush
  * ctrl on RX/TX buffers, MIB reset, wait for the bits to self-clear.
  */
+
 BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit)
 {
     struct bcmgenet_hw *hw = unit->bgu_HW;
-    D(bug("[bcmgenet] reset start\n");)
     ULONG cmd;
-
     /*
-     * The RBUF block is flushed and reset before UniMAC is touched at all:
-     * on the BCM2711 a read of GENET_UMAC_CMD before this point takes an
-     * external abort (SError, GISB slave error), so the OpenBSD order -
-     * genet_disable_dma() first - cannot be used here. Nothing is running
-     * yet at this point anyway, so there is no DMA to stop.
-     */
+        * The RBUF block is flushed and reset before UniMAC is touched at all:
+        * on the BCM2711 a read of GENET_UMAC_CMD before this point takes an
+        * external abort (SError, GISB slave error), so the OpenBSD order -
+        * genet_disable_dma() first - cannot be used here. Nothing is running
+        * yet at this point anyway, so there is no DMA to stop.
+        */
 
     /* Request that GENET flush and reset the receive-buffer block (RBUF) */
     cmd = BCMGENET_Read(hw, GENET_SYS_RBUF_FLUSH_CTRL);
@@ -207,28 +207,24 @@ BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit)
     BCMGENET_Write(hw, GENET_SYS_RBUF_FLUSH_CTRL, 0);
     bcmgenet_wait(unit, 10);
 
-    D(bug("[bcmgenet] reset: rbuf flush\n");)
-
-    D(bug("[bcmgenet] reset: umac reset\n");)
     /* Disable UniMAC completely before its software reset. This clears
-     * any previous RX, TX, or link configuration */
+        * any previous RX, TX, or link configuration */
     BCMGENET_Write(hw, GENET_UMAC_CMD, 0);
 
     /* Start the UniMAC software reset */
     BCMGENET_Write(hw, GENET_UMAC_CMD,
-                   GENET_UMAC_CMD_LCL_LOOP_EN |
-                   GENET_UMAC_CMD_SW_RESET);
+        GENET_UMAC_CMD_LCL_LOOP_EN |
+        GENET_UMAC_CMD_SW_RESET);
     bcmgenet_wait(unit, 10);
 
     /* Take UniMAC out of reset while leaving RX and TX disabled */
     BCMGENET_Write(hw, GENET_UMAC_CMD, 0);
 
-    D(bug("[bcmgenet] reset: mib/config\n");)
     /* Reset the hardware MIB statistics: TX, RX, and runt-frame counters */
     BCMGENET_Write(hw, GENET_UMAC_MIB_CTRL,
-                   GENET_UMAC_MIB_RESET_RUNT |
-                   GENET_UMAC_MIB_RESET_RX |
-                   GENET_UMAC_MIB_RESET_TX);
+        GENET_UMAC_MIB_RESET_RUNT |
+        GENET_UMAC_MIB_RESET_RX |
+        GENET_UMAC_MIB_RESET_TX);
 
     /* Deassert the MIB reset bits */
     BCMGENET_Write(hw, GENET_UMAC_MIB_CTRL, 0);
@@ -237,7 +233,7 @@ BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit)
     BCMGENET_Write(hw, GENET_UMAC_MAX_FRAME_LEN, GENET_BUFSIZE);
 
     /* Request a two-byte offset for received data. This provides the
-     * desired alignment for Ethernet frames in receive buffers */
+        * desired alignment for Ethernet frames in receive buffers */
     cmd = BCMGENET_Read(hw, GENET_RBUF_CTRL);
     cmd |= GENET_RBUF_ALIGN_2B;
     BCMGENET_Write(hw, GENET_RBUF_CTRL, cmd);
@@ -256,17 +252,135 @@ BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit)
  * size/desc count, start/end address, enable RX_DMA_CTRL / TX_DMA_CTRL.
  * Called once from BCMGENET_CreateUnit() after the rings are allocated.
  */
-static BOOL bcmgenet_init_rings() {
+BOOL bcmgenet_fill_rx_ring(struct BCMGENETUnit *unit, ULONG qid)
+{
+    struct bcmgenet_ring *rx = &unit->bgu_RX;
+    struct bcmgenet_hw *hw = unit->bgu_HW;
 
+    for (ULONG i = 0; i < GENET_DMA_DESC_COUNT; i++) {
+        UQUAD dma = (UQUAD)(IPTR)rx->buf[i];
+
+        /* Drop anything stale before the engine writes into the buffer */
+        CacheClearE(rx->buf[i], GENET_BUFSIZE, CACRF_ClearD);
+
+        BCMGENET_Write(hw, GENET_RX_DESC_ADDRESS_LO(i), (ULONG)dma);
+        BCMGENET_Write(hw, GENET_RX_DESC_ADDRESS_HI(i), (ULONG)(dma >> 32));
+    }
+
+    rx->cidx = GENET_DMA_DESC_COUNT;
+    BCMGENET_Write(hw, GENET_RX_DMA_CONS_INDEX(qid), rx->cidx);
+
+    return TRUE;
 }
 
-static BOOL bcmgenet_setup_dma() {
+static BOOL bcmgenet_init_rings(struct BCMGENETUnit *unit, ULONG qid) {
+    struct bcmgenet_hw *hw = unit->bgu_HW;
 
+    unit->bgu_TX.next = 0;
+    unit->bgu_TX.cidx = 0;
+    unit->bgu_TX.pidx = 0;
+
+    BCMGENET_Write(hw, GENET_TX_SCB_BURST_SIZE, 0x08);
+   	BCMGENET_Write(hw, GENET_TX_DMA_READ_PTR_LO(qid), 0);
+	BCMGENET_Write(hw, GENET_TX_DMA_READ_PTR_HI(qid), 0);
+	BCMGENET_Write(hw, GENET_TX_DMA_CONS_INDEX(qid), unit->bgu_TX.cidx);
+	BCMGENET_Write(hw, GENET_TX_DMA_PROD_INDEX(qid), unit->bgu_TX.pidx);
+	BCMGENET_Write(hw, GENET_TX_DMA_RING_BUF_SIZE(qid),
+	((GENET_DMA_DESC_COUNT << GENET_DMA_RING_BUF_SIZE_DESC_COUNT_SHIFT) &
+      GENET_DMA_RING_BUF_SIZE_DESC_COUNT_MASK) |
+	((GENET_BUFSIZE << GENET_DMA_RING_BUF_SIZE_BUF_LENGTH_SHIFT) &
+      GENET_DMA_RING_BUF_SIZE_BUF_LENGTH_MASK));
+	BCMGENET_Write(hw, GENET_TX_DMA_START_ADDR_LO(qid), 0);
+	BCMGENET_Write(hw, GENET_TX_DMA_START_ADDR_HI(qid), 0);
+	BCMGENET_Write(hw, GENET_TX_DMA_END_ADDR_LO(qid),
+	    GENET_DMA_DESC_COUNT * GENET_DMA_DESC_SIZE / 4 - 1);
+	BCMGENET_Write(hw, GENET_TX_DMA_END_ADDR_HI(qid), 0);
+	BCMGENET_Write(hw, GENET_TX_DMA_MBUF_DONE_THRES(qid), 1);
+	BCMGENET_Write(hw, GENET_TX_DMA_FLOW_PERIOD(qid), 0);
+	BCMGENET_Write(hw, GENET_TX_DMA_WRITE_PTR_LO(qid), 0);
+	BCMGENET_Write(hw, GENET_TX_DMA_WRITE_PTR_HI(qid), 0);
+
+	BCMGENET_Write(hw, GENET_TX_DMA_RING_CFG, 1UL << qid);
+
+	ULONG cmd = BCMGENET_Read(hw, GENET_TX_DMA_CTRL);
+	cmd |= GENET_TX_DMA_CTRL_EN;
+	cmd |= GENET_TX_DMA_CTRL_RBUF_EN(qid);
+	BCMGENET_Write(hw,  GENET_TX_DMA_CTRL, cmd);
+
+	unit->bgu_RX.next = 0;
+    unit->bgu_RX.cidx = 0;
+    unit->bgu_RX.pidx = GENET_DMA_DESC_COUNT;
+
+	BCMGENET_Write(hw,  GENET_RX_SCB_BURST_SIZE, 0x08);
+
+	BCMGENET_Write(hw,  GENET_RX_DMA_WRITE_PTR_LO(qid), 0);
+	BCMGENET_Write(hw, GENET_RX_DMA_WRITE_PTR_HI(qid), 0);
+	BCMGENET_Write(hw,  GENET_RX_DMA_PROD_INDEX(qid), unit->bgu_RX.pidx);
+	BCMGENET_Write(hw,  GENET_RX_DMA_CONS_INDEX(qid), unit->bgu_RX.cidx);
+
+	BCMGENET_Write(hw, GENET_RX_DMA_RING_BUF_SIZE(qid),
+    ((GENET_DMA_DESC_COUNT << GENET_DMA_RING_BUF_SIZE_DESC_COUNT_SHIFT) &
+     GENET_DMA_RING_BUF_SIZE_DESC_COUNT_MASK) |
+    (GENET_BUFSIZE & GENET_DMA_RING_BUF_SIZE_BUF_LENGTH_MASK));
+
+	BCMGENET_Write(hw,  GENET_RX_DMA_START_ADDR_LO(qid), 0);
+	BCMGENET_Write(hw,  GENET_RX_DMA_START_ADDR_HI(qid), 0);
+	BCMGENET_Write(hw, GENET_RX_DMA_END_ADDR_LO(qid),
+	    GENET_DMA_DESC_COUNT * GENET_DMA_DESC_SIZE / 4 - 1);
+	BCMGENET_Write(hw,  GENET_RX_DMA_END_ADDR_HI(qid), 0);
+
+	BCMGENET_Write(hw, GENET_RX_DMA_XON_XOFF_THRES(qid),
+    ((5 << GENET_RX_DMA_XON_XOFF_THRES_LO_SHIFT) &
+     GENET_RX_DMA_XON_XOFF_THRES_LO_MASK) |
+    (((GENET_DMA_DESC_COUNT >> 4) <<
+      GENET_RX_DMA_XON_XOFF_THRES_HI_SHIFT) &
+     GENET_RX_DMA_XON_XOFF_THRES_HI_MASK));
+
+	BCMGENET_Write(hw,  GENET_RX_DMA_READ_PTR_LO(qid), 0);
+	BCMGENET_Write(hw, GENET_RX_DMA_READ_PTR_HI(qid), 0);
+
+	BCMGENET_Write(hw,  GENET_RX_DMA_RING_CFG, 1UL << qid);
+
+	bcmgenet_fill_rx_ring(unit, qid);
+
+	cmd = BCMGENET_Read(hw, GENET_RX_DMA_CTRL);
+	cmd |= GENET_RX_DMA_CTRL_EN;
+	cmd |= GENET_RX_DMA_CTRL_RBUF_EN(qid);
+	BCMGENET_Write(hw,  GENET_RX_DMA_CTRL, cmd);
+
+	return TRUE;
+}
+
+BOOL bcmgenet_setup_rxbuf(struct bcmgenet_hw *hw, ULONG index)
+{
+    /*
+	int error;
+
+	error = bus_dmamap_load_mbuf(sc->sc_rx.buf_tag,
+	    sc->sc_rx.buf_map[index].map, m, BUS_DMA_READ | BUS_DMA_NOWAIT);
+	if (error != 0)
+		return error;
+
+	bus_dmamap_sync(sc->sc_rx.buf_tag, sc->sc_rx.buf_map[index].map,
+	    0, sc->sc_rx.buf_map[index].map->dm_mapsize,
+	    BUS_DMASYNC_PREREAD);
+
+	sc->sc_rx.buf_map[index].mbuf = m;
+	genet_setup_rxdesc(sc, index,
+	    sc->sc_rx.buf_map[index].map->dm_segs[0].ds_addr,
+	    sc->sc_rx.buf_map[index].map->dm_segs[0].ds_len);
+*/
+	return 0;
 }
 
 BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit)
 {
-    return FALSE;
+    ULONG qid = GENET_DMA_DEFAULT_QUEUE;
+
+    if (!bcmgenet_init_rings(unit, qid))
+        return FALSE;
+
+    return TRUE;
 }
 
 /*

@@ -53,14 +53,6 @@ static enum genet_phy_mode bcmgenet_phymode(APTR node)
     return GENET_PHY_MODE_RGMII_RXID;
 }
 
-/*
- * The cell widths "reg" and "ranges" are encoded with. They are not fixed:
- * different firmware revisions describe /scb with #size-cells of 1 or 2,
- * and hardcoding either silently misreads the tree. Read them the way
- * arch/aarch64-raspi/boot/boot.c does - a "reg" entry on the scb bus is
- * child_ac + child_sc cells, a "ranges" entry child_ac + parent_ac +
- * child_sc, where the parent width comes from the root node.
- */
 struct genet_cells
 {
     ULONG child_ac;

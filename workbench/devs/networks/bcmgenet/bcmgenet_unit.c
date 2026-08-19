@@ -212,6 +212,35 @@ BOOL BCMGENET_AddressFilter(struct BCMGENETBase *base, struct BCMGENETUnit *unit
     return FALSE;
 }
 
+#define GENET_DMA_ALIGN                 64
+
+static BOOL bcmgenet_alloc_ring(struct bcmgenet_ring *ring)
+{
+    IPTR base;
+    ULONG i;
+
+    ring->bufmemsize = GENET_DMA_DESC_COUNT * GENET_BUFSIZE + GENET_DMA_ALIGN - 1;
+    ring->bufmem = AllocMem(ring->bufmemsize, MEMF_PUBLIC | MEMF_CLEAR);
+    if (!ring->bufmem)
+        return FALSE;
+
+    base = ((IPTR)ring->bufmem + GENET_DMA_ALIGN - 1) & ~(IPTR)(GENET_DMA_ALIGN - 1);
+
+    for (i = 0; i < GENET_DMA_DESC_COUNT; i++)
+        ring->buf[i] = (UBYTE *)(base + i * GENET_BUFSIZE);
+
+    return TRUE;
+}
+
+static void bcmgenet_free_ring(struct bcmgenet_ring *ring)
+{
+    if (ring->bufmem)
+    {
+        FreeMem(ring->bufmem, ring->bufmemsize);
+        ring->bufmem = NULL;
+    }
+}
+
 /* == unit lifecycle ======================================================= */
 
 /*
@@ -285,6 +314,10 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
 
     bug("[bcmgenet] hardware reset succeeded\n");
 
+    /* Initialise ring buffer elements */
+    if (!bcmgenet_alloc_ring(&unit->bgu_RX) ||
+        !bcmgenet_alloc_ring(&unit->bgu_TX))
+        goto fail;
     /* TODO: BCMGENET_HWReset(), ring allocation, BCMGENET_HWInit(),
      * BCMGENET_PHYInit(), IRQ handler registration. Free 'unit' and
      * return NULL on any failure past this point. */
@@ -304,6 +337,8 @@ void BCMGENET_DeleteUnit(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
     /* TODO: tear down in the reverse order of BCMGENET_CreateUnit():
      * remove IRQ handlers, stop RX/TX (BCMGENET_GoOffline), free the
      * ring buffers. */
+    bcmgenet_free_ring(&unit->bgu_RX);
+    bcmgenet_free_ring(&unit->bgu_TX);
 
     FreeMem(unit, sizeof(struct BCMGENETUnit));
 }
