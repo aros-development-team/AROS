@@ -1,0 +1,2 @@
+USER_CPPFLAGS += -DPCIXHCI_PLATFORM_PROBE
+FILES += $(SRCDIR)/arch/arm-raspi/usb/pcixhci/pcixhci_platform
