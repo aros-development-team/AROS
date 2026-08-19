@@ -258,10 +258,11 @@ BOOL bcmgenet_fill_rx_ring(struct BCMGENETUnit *unit, ULONG qid)
     struct bcmgenet_hw *hw = unit->bgu_HW;
 
     for (ULONG i = 0; i < GENET_DMA_DESC_COUNT; i++) {
-        UQUAD dma = (UQUAD)(IPTR)rx->buf[i];
-
-        /* Drop anything stale before the engine writes into the buffer */
-        CacheClearE(rx->buf[i], GENET_BUFSIZE, CACRF_ClearD);
+        /* Cleans the buffer out of the D-cache and yields the address the
+         * engine has to be given. Identity on aarch64 today, but this is
+         * the only place that stays correct if that ever changes. */
+        ULONG len = GENET_BUFSIZE;
+        UQUAD dma = (UQUAD)(IPTR)CachePreDMA(rx->buf[i], &len, 0);
 
         BCMGENET_Write(hw, GENET_RX_DESC_ADDRESS_LO(i), (ULONG)dma);
         BCMGENET_Write(hw, GENET_RX_DESC_ADDRESS_HI(i), (ULONG)(dma >> 32));
@@ -384,11 +385,41 @@ BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit)
 }
 
 /*
- * TODO: write UMAC_MAC0 (bytes 0-3) / UMAC_MAC1 (bytes 4-5, high half)
- * and the matching MDF_ADDR0/1(0) exact-match filter entry.
+ * Port of genet_setup_rxfilter_mdf() (bcmgenet.c:379). The exact-match
+ * filter splits an address the opposite way from UMAC_MAC0/MAC1: the
+ * first two bytes go in ADDR0, the last four in ADDR1.
+ */
+static void bcmgenet_setup_rxfilter_mdf(struct bcmgenet_hw *hw, ULONG n,
+                                        const UBYTE *addr)
+{
+    BCMGENET_Write(hw, GENET_UMAC_MDF_ADDR0(n),
+                   ((ULONG)addr[0] << 8) | addr[1]);
+    BCMGENET_Write(hw, GENET_UMAC_MDF_ADDR1(n),
+                   ((ULONG)addr[2] << 24) | ((ULONG)addr[3] << 16) |
+                   ((ULONG)addr[4] << 8) | addr[5]);
+}
+
+/*
+ * Port of the station-address half of genet_init() (bcmgenet.c:601) plus
+ * the two fixed filter entries genet_setup_rxfilter() (bcmgenet.c:389)
+ * always programs: broadcast in entry 0, our own address in entry 1.
+ * Multicast groups start at entry 2 and are not handled here - see the
+ * note in BCMGENET_AddMulticastRange().
  */
 void BCMGENET_SetMACAddress(struct bcmgenet_hw *hw, const UBYTE *addr)
 {
+    static const UBYTE broadcast[ETH_ADDRESSSIZE] =
+        { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+
+    BCMGENET_Write(hw, GENET_UMAC_MAC0,
+                   ((ULONG)addr[0] << 24) | ((ULONG)addr[1] << 16) |
+                   ((ULONG)addr[2] << 8) | addr[3]);
+    BCMGENET_Write(hw, GENET_UMAC_MAC1,
+                   ((ULONG)addr[4] << 8) | addr[5]);
+
+    bcmgenet_setup_rxfilter_mdf(hw, 0, broadcast);
+    bcmgenet_setup_rxfilter_mdf(hw, 1, addr);
+    BCMGENET_Write(hw, GENET_UMAC_MDF_CTRL, GENET_MDF_CTRL_ENABLE(2));
 }
 
 /*

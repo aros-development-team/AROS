@@ -121,6 +121,10 @@
 #define GENET_UMAC_MDF_CTRL             0xe50
 #define GENET_UMAC_MDF_ADDR0(n)         (0xe54 + (n) * 0x8)
 #define GENET_UMAC_MDF_ADDR1(n)         (0xe58 + (n) * 0x8)
+/* 17 exact-match entries, enabled from the top bit down: entry n is
+ * bit (GENET_MAX_MDF_FILTER - 1 - n) of GENET_UMAC_MDF_CTRL. */
+#define GENET_MAX_MDF_FILTER            17
+#define GENET_MDF_CTRL_ENABLE(n)        ((((1UL << (n)) - 1)) << (GENET_MAX_MDF_FILTER - (n)))
 
 /* DMA rings share one descriptor pool per direction, indexed 0-15 plus
  * a 17th "default" queue (16) that this driver is the only user of. */

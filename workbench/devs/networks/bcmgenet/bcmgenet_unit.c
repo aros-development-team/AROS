@@ -318,7 +318,13 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
     if (!bcmgenet_alloc_ring(&unit->bgu_RX) ||
         !bcmgenet_alloc_ring(&unit->bgu_TX))
         goto fail;
-    /* TODO: BCMGENET_HWReset(), ring allocation, BCMGENET_HWInit(),
+
+    BCMGENET_SetMACAddress(unit->bgu_HW, unit->bgu_DevAddr);
+
+    if (!BCMGENET_HWInit(unit))
+        goto fail;
+
+    /* TODO:
      * BCMGENET_PHYInit(), IRQ handler registration. Free 'unit' and
      * return NULL on any failure past this point. */
 
