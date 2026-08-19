@@ -21,7 +21,8 @@ FUNCS	:= \
 	setjoyportattrsa \
 	starttimerint \
 	stoptimerint \
-	systemcontrola
+	systemcontrola \
+	systemrequesters
 
 #MM workbench-libs-lowlevel-includes : \
 #MM     kernel-exec-includes \
