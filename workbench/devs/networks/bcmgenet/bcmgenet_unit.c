@@ -255,11 +255,28 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
 
     CopyMem(unit->bgu_DevAddr, unit->bgu_OrgAddr, ETH_ADDRESSSIZE);
 
+    unit->bgu_TimerPort = CreateMsgPort();
+    if (!unit->bgu_TimerPort)
+        goto fail;
+
+    unit->bgu_TimerReq = (struct timerequest *)
+        CreateIORequest(unit->bgu_TimerPort, sizeof(*unit->bgu_TimerReq));
+    if (!unit->bgu_TimerReq)
+        goto fail;
+
+    if (OpenDevice(TIMERNAME, UNIT_MICROHZ,
+                   (struct IORequest *)unit->bgu_TimerReq, 0) != 0)
+        goto fail;
+
+    bug("[bcmgenet] before hardware reset\n");
+
+    ULONG rev = BCMGENET_Read(unit->bgu_HW, GENET_SYS_REV_CTRL);
+    D(bug("[bcmgenet] SYS_REV_CTRL = %08lx\n", rev);)
     /*
      * Read the firmware-programmed station address before reset: UniMAC
      * reset may clear the MAC address registers.
      */
-    if (!BCMGENET_HWReset(unit->bgu_HW))
+    if (!BCMGENET_HWReset(unit))
     {
         D(bug("[bcmgenet] hardware reset failed\n");)
         FreeMem(unit, sizeof(*unit));
@@ -273,6 +290,10 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
      * return NULL on any failure past this point. */
 
     return unit;
+
+fail:
+    bug("[bcmgenet] timer setup failed");
+    return 0;
 }
 
 void BCMGENET_DeleteUnit(struct BCMGENETBase *base, struct BCMGENETUnit *unit)

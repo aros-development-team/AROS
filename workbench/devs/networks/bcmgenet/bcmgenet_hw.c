@@ -50,16 +50,14 @@
 static inline void __dsb(void) { asm volatile("dsb sy" ::: "memory"); }
 static inline void __dmb(void) { asm volatile("dmb sy" ::: "memory"); }
 
-static inline ULONG bcmgenet_now_us(void)
-{
-    return AROS_LE2LONG(*(volatile ULONG *)SYSTIMER_CLO);
-}
+static void bcmgenet_wait(struct BCMGENETUnit *unit, ULONG usec) {
+    struct timerequest *timer = unit->bgu_TimerReq;
 
-static void bcmgenet_wait(ULONG usec) {
-    ULONG start = bcmgenet_now_us();
+    timer->tr_node.io_Command = TR_ADDREQUEST;
+    timer->tr_time.tv_secs = 0;
+    timer->tr_time.tv_micro = usec;
 
-    while ((ULONG)(bcmgenet_now_us() - start) < usec)
-        ;
+    DoIO((struct IORequest *)timer);
 }
 
 ULONG BCMGENET_Read(struct bcmgenet_hw *hw, ULONG reg)
@@ -130,30 +128,45 @@ BOOL BCMGENET_MDIOWrite(struct bcmgenet_hw *hw, ULONG phy, ULONG reg, UWORD val)
     return FALSE;
 }
 
-static void bcmgenet_disable_dma(struct bcmgenet_hw *hw)
+static void bcmgenet_disable_dma(struct BCMGENETUnit *unit)
 {
     ULONG cmd;
+    struct bcmgenet_hw *hw = unit->bgu_HW;
 
+    D(bug("[bcmgenet] Turn off UniMAC RX\n");)
     /* Turn off UniMAC RX */
+    D(bug("[bcmgenet] read UMAC_CMD\n");)
     cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
+    D(bug("[bcmgenet] UMAC_CMD = %08lx\n", cmd);)
+
     cmd &= ~GENET_UMAC_CMD_RXEN;
+
+    D(bug("[bcmgenet] write UMAC_CMD = %08lx\n", cmd);)
     BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
 
+    /* Diagnostic only: make a deferred MMIO write fault appear here. */
+    asm volatile("dsb sy" ::: "memory");
+
+    D(bug("[bcmgenet] UMAC_CMD write completed\n");)
+
+    D(bug("[bcmgenet] Turn off RX DMA and queue 16\n");)
     /* Turn off RX DMA and queue 16 */
     cmd = BCMGENET_Read(hw, GENET_RX_DMA_CTRL);
     cmd &= ~GENET_RX_DMA_CTRL_EN;
     cmd &= ~GENET_RX_DMA_CTRL_RBUF_EN(GENET_DMA_DEFAULT_QUEUE);
     BCMGENET_Write(hw, GENET_RX_DMA_CTRL, cmd);
 
+    D(bug("[bcmgenet] Turn off TX DMA and queue 16\n");)
     /* Turn off TX DMA and queue 16 */
     cmd = BCMGENET_Read(hw, GENET_TX_DMA_CTRL);
     cmd &= ~GENET_TX_DMA_CTRL_EN;
     cmd &= ~GENET_TX_DMA_CTRL_RBUF_EN(GENET_DMA_DEFAULT_QUEUE);
     BCMGENET_Write(hw, GENET_TX_DMA_CTRL, cmd);
 
+    D(bug("[bcmgenet] Flush TX FIFO\n");)
     /* Flush TX FIFO */
     BCMGENET_Write(hw, GENET_UMAC_TX_FLUSH, 1);
-    bcmgenet_wait(10);
+    bcmgenet_wait(unit, 10);
     BCMGENET_Write(hw, GENET_UMAC_TX_FLUSH, 0);
 
     cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
@@ -165,27 +178,38 @@ static void bcmgenet_disable_dma(struct bcmgenet_hw *hw)
  * TODO: port genet_reset() (bcmgenet.c:469). UMAC_CMD_SW_RESET, flush
  * ctrl on RX/TX buffers, MIB reset, wait for the bits to self-clear.
  */
-BOOL BCMGENET_HWReset(struct bcmgenet_hw *hw)
+BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit)
 {
+    struct bcmgenet_hw *hw = unit->bgu_HW;
+    D(bug("[bcmgenet] reset start\n");)
     ULONG cmd;
 
-    bcmgenet_disable_dma(hw);
+    /*
+     * The RBUF block is flushed and reset before UniMAC is touched at all:
+     * on the BCM2711 a read of GENET_UMAC_CMD before this point takes an
+     * external abort (SError, GISB slave error), so the OpenBSD order -
+     * genet_disable_dma() first - cannot be used here. Nothing is running
+     * yet at this point anyway, so there is no DMA to stop.
+     */
 
     /* Request that GENET flush and reset the receive-buffer block (RBUF) */
     cmd = BCMGENET_Read(hw, GENET_SYS_RBUF_FLUSH_CTRL);
     cmd |= GENET_SYS_RBUF_FLUSH_RESET;
     BCMGENET_Write(hw, GENET_SYS_RBUF_FLUSH_CTRL, cmd);
-    bcmgenet_wait(10);
+    bcmgenet_wait(unit, 10);
 
     /* Deassert RBUF reset */
     cmd &= ~GENET_SYS_RBUF_FLUSH_RESET;
     BCMGENET_Write(hw, GENET_SYS_RBUF_FLUSH_CTRL, cmd);
-    bcmgenet_wait(10);
+    bcmgenet_wait(unit, 10);
 
     /* Leave the flush control register in a known empty state */
     BCMGENET_Write(hw, GENET_SYS_RBUF_FLUSH_CTRL, 0);
-    bcmgenet_wait(10);
+    bcmgenet_wait(unit, 10);
 
+    D(bug("[bcmgenet] reset: rbuf flush\n");)
+
+    D(bug("[bcmgenet] reset: umac reset\n");)
     /* Disable UniMAC completely before its software reset. This clears
      * any previous RX, TX, or link configuration */
     BCMGENET_Write(hw, GENET_UMAC_CMD, 0);
@@ -194,11 +218,12 @@ BOOL BCMGENET_HWReset(struct bcmgenet_hw *hw)
     BCMGENET_Write(hw, GENET_UMAC_CMD,
                    GENET_UMAC_CMD_LCL_LOOP_EN |
                    GENET_UMAC_CMD_SW_RESET);
-    bcmgenet_wait(10);
+    bcmgenet_wait(unit, 10);
 
     /* Take UniMAC out of reset while leaving RX and TX disabled */
     BCMGENET_Write(hw, GENET_UMAC_CMD, 0);
 
+    D(bug("[bcmgenet] reset: mib/config\n");)
     /* Reset the hardware MIB statistics: TX, RX, and runt-frame counters */
     BCMGENET_Write(hw, GENET_UMAC_MIB_CTRL,
                    GENET_UMAC_MIB_RESET_RUNT |
@@ -220,6 +245,8 @@ BOOL BCMGENET_HWReset(struct bcmgenet_hw *hw)
     /* Select GENET's expected transmit-buffer size mode */
     BCMGENET_Write(hw, GENET_RBUF_TBUF_SIZE_CTRL, 1);
 
+    /* just for diag */
+    BCMGENET_Read(hw, GENET_UMAC_CMD);
     return TRUE;
 }
 
@@ -229,6 +256,14 @@ BOOL BCMGENET_HWReset(struct bcmgenet_hw *hw)
  * size/desc count, start/end address, enable RX_DMA_CTRL / TX_DMA_CTRL.
  * Called once from BCMGENET_CreateUnit() after the rings are allocated.
  */
+static BOOL bcmgenet_init_rings() {
+
+}
+
+static BOOL bcmgenet_setup_dma() {
+
+}
+
 BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit)
 {
     return FALSE;

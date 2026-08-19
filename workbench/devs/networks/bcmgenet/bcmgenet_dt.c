@@ -53,28 +53,188 @@ static enum genet_phy_mode bcmgenet_phymode(APTR node)
     return GENET_PHY_MODE_RGMII_RXID;
 }
 
+/*
+ * The cell widths "reg" and "ranges" are encoded with. They are not fixed:
+ * different firmware revisions describe /scb with #size-cells of 1 or 2,
+ * and hardcoding either silently misreads the tree. Read them the way
+ * arch/aarch64-raspi/boot/boot.c does - a "reg" entry on the scb bus is
+ * child_ac + child_sc cells, a "ranges" entry child_ac + parent_ac +
+ * child_sc, where the parent width comes from the root node.
+ */
+struct genet_cells
+{
+    ULONG child_ac;
+    ULONG child_sc;
+    ULONG parent_ac;
+};
+
+static ULONG genet_cellcount(APTR OpenFirmwareBase, APTR node, char *name)
+{
+    APTR prop = OF_FindProperty(node, name);
+
+    if (prop && OF_GetPropLen(prop) >= sizeof(ULONG))
+        return AROS_BE2LONG(*(const ULONG *)OF_GetPropValue(prop));
+
+    return 1;
+}
+
+static void genet_getcells(APTR OpenFirmwareBase, struct genet_cells *c)
+{
+    APTR node;
+
+    c->child_ac = 1;
+    c->child_sc = 1;
+    c->parent_ac = 1;
+
+    node = OF_OpenKey("/scb");
+    if (node)
+    {
+        c->child_ac = genet_cellcount(OpenFirmwareBase, node, "#address-cells");
+        c->child_sc = genet_cellcount(OpenFirmwareBase, node, "#size-cells");
+        OF_CloseKey(node);
+    }
+
+    node = OF_OpenKey("/");
+    if (node)
+    {
+        c->parent_ac = genet_cellcount(OpenFirmwareBase, node, "#address-cells");
+        OF_CloseKey(node);
+    }
+}
+
+/* Consume 'count' big-endian cells, most significant first */
+static UQUAD genet_readcells(const ULONG **cells, ULONG count)
+{
+    UQUAD val = 0;
+
+    while (count--)
+        val = (val << 32) | AROS_BE2LONG(*(*cells)++);
+
+    return val;
+}
+
+static BOOL genet_reg(APTR OpenFirmwareBase, APTR node,
+                      const struct genet_cells *c,
+                      UQUAD *busaddr, UQUAD *size)
+{
+    APTR prop;
+    const ULONG *cells;
+    ULONG len;
+
+    prop = OF_FindProperty(node, "reg");
+    if (!prop)
+    {
+        D(bug("[bcmgenet] GENET node has no reg property\n");)
+        return FALSE;
+    }
+
+    len = OF_GetPropLen(prop);
+    D(bug("[bcmgenet] GENET reg length = %lu\n", len);)
+
+    if (len < (c->child_ac + c->child_sc) * sizeof(ULONG))
+    {
+        D(bug("[bcmgenet] GENET reg is too short\n");)
+        return FALSE;
+    }
+
+    cells = OF_GetPropValue(prop);
+
+    *busaddr = genet_readcells(&cells, c->child_ac);
+    *size = genet_readcells(&cells, c->child_sc);
+
+    return TRUE;
+}
+static BOOL bcmgenet_translate_scb(APTR OpenFirmwareBase,
+                                   const struct genet_cells *c,
+                                   UQUAD busaddr, UQUAD size,
+                                   IPTR *phys)
+{
+    APTR scb, prop;
+    const ULONG *cells;
+    ULONG entry_cells = c->child_ac + c->parent_ac + c->child_sc;
+    LONG count;
+    BOOL found = FALSE;
+
+    scb = OF_OpenKey("/scb");
+    if (!scb)
+    {
+        D(bug("[bcmgenet] no /scb node\n");)
+        return FALSE;
+    }
+
+    prop = OF_FindProperty(scb, "ranges");
+    if (!prop)
+    {
+        D(bug("[bcmgenet] /scb has no ranges property\n");)
+        OF_CloseKey(scb);
+        return FALSE;
+    }
+
+    cells = OF_GetPropValue(prop);
+    count = OF_GetPropLen(prop) / sizeof(*cells);
+
+    while (count >= (LONG)entry_cells)
+    {
+        UQUAD child_base;
+        UQUAD parent_base;
+        UQUAD range_size;
+        UQUAD offset;
+
+        child_base = genet_readcells(&cells, c->child_ac);
+        parent_base = genet_readcells(&cells, c->parent_ac);
+        range_size = genet_readcells(&cells, c->child_sc);
+
+        count -= entry_cells;
+
+        if (busaddr < child_base)
+            continue;
+
+        offset = busaddr - child_base;
+
+        /* The complete GENET register window must fit in this range. */
+        if (offset <= range_size && size <= range_size - offset)
+        {
+            *phys = (IPTR)(parent_base + offset);
+            found = TRUE;
+            break;
+        }
+    }
+
+    OF_CloseKey(scb);
+    return found;
+}
+
+
 BOOL BCMGENET_Discover(struct BCMGENETBase *base, struct bcmgenet_hw *hw)
 {
     APTR OpenFirmwareBase = base->bgm_OpenFirmwareBase;
     APTR node, mdio_node, prop;
-    ULONG len;
+    struct genet_cells cells;
+    UQUAD busaddr, size;
 
     node = OF_FindNodeByCompatible(NULL, GENET_COMPATIBLE);
-    if (!node)
-    {
+    if (!node) {
         D(bug("[bcmgenet] no \"%s\" node in the device tree\n", GENET_COMPATIBLE);)
         return FALSE;
     }
 
-    /*
-     * TODO: read "reg" (two address cells + one size cell on the scb
-     * bus - NOT the single-cell layout RPiHDMI's get_device_tree_reg_value()
-     * expects) and translate it through scb's "ranges". Until that is
-     * written, fall back to the known Pi 4 address.
-     */
-    hw->phys = GENET_PHYS_BASE;
-    hw->size = GENET_PHYS_SIZE;
-    hw->base = hw->phys;
+    genet_getcells(OpenFirmwareBase, &cells);
+
+    if (genet_reg(OpenFirmwareBase, node, &cells, &busaddr, &size) &&
+        bcmgenet_translate_scb(OpenFirmwareBase, &cells, busaddr, size,
+                               &hw->phys)) {
+        hw->size = (IPTR)size;
+        hw->base = hw->phys;
+
+        D(bug("[bcmgenet] DT translated %08lx:%08lx -> %p+%p\n",
+              (ULONG)(busaddr >> 32), (ULONG)busaddr,
+              (APTR)hw->phys, (APTR)hw->size);)
+    } else {
+        D(bug("Failed to find reg property values\n");)
+        hw->phys = GENET_PHYS_BASE;
+        hw->size = GENET_PHYS_SIZE;
+        hw->base = hw->phys;
+    }
 
     /*
      * TODO: read both cells of "interrupts" (RXDMA and TXDMA are
@@ -84,7 +244,7 @@ BOOL BCMGENET_Discover(struct BCMGENETBase *base, struct bcmgenet_hw *hw)
     hw->irq[0] = GIC_SPI_BASE + 157;
     hw->irq[1] = GIC_SPI_BASE + 158;
 
-    mdio_node = OF_FindNodeByCompatible(node, GENET_MDIO_COMPATIBLE);
+    mdio_node = OF_FindNodeByCompatible(NULL, GENET_MDIO_COMPATIBLE);
     hw->phyAddr = mdio_node ? bcmgenet_phyaddress(mdio_node) : 1;
     hw->phyMode = bcmgenet_phymode(node);
 

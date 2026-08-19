@@ -38,6 +38,7 @@
 #include <exec/tasks.h>
 #include <devices/sana2.h>
 #include <devices/sana2specialstats.h>
+#include <devices/timer.h>
 
 /*
  * The register map below is the GENETv5 block as wired up on the
@@ -392,6 +393,9 @@ struct BCMGENETUnit
 
     struct bcmgenet_ring bgu_TX;
     struct bcmgenet_ring bgu_RX;
+
+    struct MsgPort     *bgu_TimerPort;
+    struct timerequest *bgu_TimerReq;
 };
 
 struct BCMGENETBase
@@ -418,7 +422,7 @@ ULONG BCMGENET_Read(struct bcmgenet_hw *hw, ULONG reg);
 void BCMGENET_Write(struct bcmgenet_hw *hw, ULONG reg, ULONG val);
 LONG BCMGENET_MDIORead(struct bcmgenet_hw *hw, ULONG phy, ULONG reg);
 BOOL BCMGENET_MDIOWrite(struct bcmgenet_hw *hw, ULONG phy, ULONG reg, UWORD val);
-BOOL BCMGENET_HWReset(struct bcmgenet_hw *hw);
+BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit);
 BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit);
 void BCMGENET_SetMACAddress(struct bcmgenet_hw *hw, const UBYTE *addr);
 BOOL BCMGENET_GetMACAddress(struct bcmgenet_hw *hw, UBYTE *addr);

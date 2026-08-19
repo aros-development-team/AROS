@@ -60,9 +60,6 @@ static int BCMGENET_Init(LIBBASETYPEPTR LIBBASE)
     /* Smoketest */
     LONG id1, id2;
 
-    if (!BCMGENET_Discover(LIBBASE, hw))
-        return FALSE;
-
     id1 = BCMGENET_MDIORead(hw, hw->phyAddr, MII_PHYSID1);
     id2 = BCMGENET_MDIORead(hw, hw->phyAddr, MII_PHYSID2);
 
