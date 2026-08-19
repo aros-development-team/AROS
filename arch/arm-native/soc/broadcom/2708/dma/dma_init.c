@@ -36,6 +36,12 @@
 #define DMA_POOL_FULL_BCM2711  ((1 << 2) | (1 << 4))
 #define DMA_POOL_LITE_BCM2711  ((1 << 8) | (1 << 9) | (1 << 10))
 
+/*
+ * BCM2712 DMA channel allocation.
+ */
+#define DMA_POOL_FULL_BCM2712  ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3))
+#define DMA_POOL_LITE_BCM2712  ((1 << 4) | (1 << 5) | (1 << 6) | (1 << 7))
+
 APTR KernelBase __attribute__((used)) = NULL;
 
 static int dma_init(struct DMABase *DMABase)
@@ -130,8 +136,9 @@ AROS_LH1(int, DMAAllocChannel,
 
     {
         int is2711 = (DMABase->dma_periiobase == BCM2711_PERIIOBASE);
-        ULONG full = is2711 ? DMA_POOL_FULL_BCM2711 : DMA_POOL_FULL;
-        ULONG lite = is2711 ? DMA_POOL_LITE_BCM2711 : DMA_POOL_LITE;
+        int is2712 = (DMABase->dma_periiobase == BCM2712_PERIIOBASE);
+        ULONG full = is2712 ? DMA_POOL_FULL_BCM2712 : (is2711 ? DMA_POOL_FULL_BCM2711 : DMA_POOL_FULL);
+        ULONG lite = is2712 ? DMA_POOL_LITE_BCM2712 : (is2711 ? DMA_POOL_LITE_BCM2711 : DMA_POOL_LITE);
 
         /* Prefer lite channels so the scarce full engines stay available
          * for users that need TDMODE. */
