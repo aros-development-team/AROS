@@ -1,0 +1,145 @@
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+MESA_V3D_DIR = $(top_srcdir)/src/gallium/drivers/v3d
+MESA_BROADCOM_DIR = $(top_srcdir)/src/broadcom
+MESA_GALLIUM_DIR = $(top_srcdir)/src/gallium
+
+# V3D Gallium driver sources (excluding simulator)
+V3D_SOURCES := \
+    $(MESA_V3D_DIR)/v3d_blit \
+    $(MESA_V3D_DIR)/v3d_bufmgr \
+    $(MESA_V3D_DIR)/v3d_cl \
+    $(MESA_V3D_DIR)/v3d_context \
+    $(MESA_V3D_DIR)/v3d_fence \
+    $(MESA_V3D_DIR)/v3d_formats \
+    $(MESA_V3D_DIR)/v3d_job \
+    $(MESA_V3D_DIR)/v3d_program \
+    $(MESA_V3D_DIR)/v3d_query \
+    $(MESA_V3D_DIR)/v3d_resource \
+    $(MESA_V3D_DIR)/v3d_screen \
+    $(MESA_V3D_DIR)/v3d_tiling \
+    $(MESA_V3D_DIR)/v3d_uniforms
+
+# V3D per-version sources (v42 for BCM2711)
+V3DX_SOURCES := \
+    $(MESA_V3D_DIR)/v3dx_draw \
+    $(MESA_V3D_DIR)/v3dx_emit \
+    $(MESA_V3D_DIR)/v3dx_format_table \
+    $(MESA_V3D_DIR)/v3dx_job \
+    $(MESA_V3D_DIR)/v3dx_rcl \
+    $(MESA_V3D_DIR)/v3dx_state
+
+# Broadcom compiler sources
+BROADCOM_COMPILER_SOURCES := \
+    $(MESA_BROADCOM_DIR)/compiler/nir_to_vir \
+    $(MESA_BROADCOM_DIR)/compiler/vir \
+    $(MESA_BROADCOM_DIR)/compiler/vir_dump \
+    $(MESA_BROADCOM_DIR)/compiler/vir_live_variables \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_copy_propagate \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_dead_code \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_redundant_flags \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_small_immediates \
+    $(MESA_BROADCOM_DIR)/compiler/vir_register_allocate \
+    $(MESA_BROADCOM_DIR)/compiler/vir_to_qpu \
+    $(MESA_BROADCOM_DIR)/compiler/qpu_schedule \
+    $(MESA_BROADCOM_DIR)/compiler/qpu_validate \
+    $(MESA_BROADCOM_DIR)/compiler/v3d40_tex \
+    $(MESA_BROADCOM_DIR)/compiler/v3d33_tex \
+    $(MESA_BROADCOM_DIR)/compiler/v3d33_vpm_setup \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_io \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_image_load_store \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_logic_ops \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_scratch \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_txf_ms
+
+# Broadcom common sources
+BROADCOM_COMMON_SOURCES := \
+    $(MESA_BROADCOM_DIR)/common/v3d_debug \
+    $(MESA_BROADCOM_DIR)/common/v3d_device_info
+
+# V3D HIDD sources
+V3D_HIDD_SOURCES := \
+    v3d_init \
+    v3d_hw \
+    v3d_galliumclass \
+    v3d_drm_shim \
+    $(SRCDIR)/workbench/libs/mesa/emul_arosc
+
+USER_INCLUDES := \
+    $(USER_INCLUDES) \
+    -I$(top_builddir)/galliumglue \
+    -iquote $(SRCDIR)/$(CURDIR) \
+    -iquote $(SRCDIR)/$(CURDIR)/drm-stubs \
+    -isystem $(top_srcdir)/include \
+    -isystem $(MESA_BROADCOM_DIR)/cle \
+    -isystem $(MESA_BROADCOM_DIR) \
+    -isystem $(MESA_V3D_DIR) \
+    -I $(MESA_GALLIUM_DIR)/include \
+    -I $(MESA_GALLIUM_DIR)/auxiliary \
+    -I $(MESA_GALLIUM_DIR)/drivers \
+    -I $(top_srcdir)/src \
+    -I $(top_srcdir)/src/compiler/nir \
+    -I $(top_builddir)/src/compiler/nir
+
+USER_CPPFLAGS += \
+    -DV3D_VERSION=42 \
+    -DUSING_V3D_SIMULATOR=0 \
+    -Dusing_v3d_simulator=0 \
+    -UHAVE_VALGRIND \
+    -DGCA_CONSUMER_MODULE \
+    -include $(SRCDIR)/$(CURDIR)/v3d_aros_override.h
+
+NOWARN_CFLAGS := $(NOWARN_MAYBE_UNINITIALIZED) $(NOWARN_MISSING_FIELD_INITIALIZERS)
+USER_CFLAGS += $(NOWARN_CFLAGS)
+
+# Build combined Mesa V3D driver archive
+COMBINED_V3D_SOURCES := $(V3D_SOURCES) $(V3DX_SOURCES) $(BROADCOM_COMPILER_SOURCES) $(BROADCOM_COMMON_SOURCES)
+
+%build_linklib mmake=linklibs-gallium_v3d libname=gallium_v3d libdir=$(top_libdir) \
+    objdir=$(top_builddir)/gallium_v3d files="$(COMBINED_V3D_SOURCES)"
+
+# GalliumCoreAPI runtime binding
+GCA_GENDIR   := $(top_builddir)/galliumglue
+GCA_TOOL     := $(SRCDIR)/workbench/libs/mesa/galliumglue.py
+GCA_NM       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-nm
+GCA_OBJCOPY  := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-objcopy
+GCA_AR       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-ar
+GCA_CORELIBS := $(addprefix $(top_libdir)/lib, \
+    compiler.a galliumauxiliary.a mesautil.a mesa.a glapi.a mesadevutil.a)
+GCA_ABI_FLAGS := $(TARGET_ISA_CFLAGS) $(USER_CPPFLAGS)
+
+$(GCA_GENDIR)/.gca_v3d.stamp : $(top_libdir)/libgallium_v3d.a $(GCA_CORELIBS) $(GCA_TOOL)
+	%mkdir_q dir="$(GCA_GENDIR)"
+	$(Q)$(ECHO) "Generating GalliumCoreAPI glue for V3D"
+	$(Q)$(PYTHON) $(GCA_TOOL) --nm $(GCA_NM) --ar $(GCA_AR) \
+		--consumer $(top_libdir)/libgallium_v3d.a \
+		--providers $(GCA_CORELIBS) \
+		--private-data nir_intrinsic_infos nir_op_infos util_cpu_caps \
+		--mesa-version $(MESAGLVERSION) --arch $(AROS_TARGET_CPU) \
+		--abi-flags "$(strip $(GCA_ABI_FLAGS))" \
+		--abi-files $(SRCDIR)/workbench/libs/mesa/mesa-$(MESAGLVERSION)-aros.diff \
+		--outdir $(GCA_GENDIR)
+	$(Q)touch $@
+
+$(top_libdir)/libgallium_v3d_gca.a : $(top_libdir)/libgallium_v3d.a $(GCA_GENDIR)/.gca_v3d.stamp
+	$(Q)$(ECHO) "Rewriting gallium_v3d through GalliumCoreAPI table"
+	$(Q)$(GCA_OBJCOPY) --redefine-syms=$(GCA_GENDIR)/gca_redefs.txt \
+		$(top_libdir)/libgallium_v3d.a $@
+	$(Q)$(GCA_AR) rs $@ $(GCA_GENDIR)/gca_bind.o $(GCA_GENDIR)/gca_glue.o
+	$(Q)cat $(GCA_GENDIR)/gca_private.list | xargs $(GCA_AR) rs $@
+
+#MM
+linklibs-gallium_v3d-gca : $(top_libdir)/libgallium_v3d_gca.a
+
+USER_LDFLAGS := -L$(top_libdir) -lstdcio -lstdc
+
+#MM hidd-v3d: includes hidd-gallium mesa3dgl-linklibs linklibs-gallium_v3d linklibs-gallium_v3d-gca
+
+%build_module mmake=hidd-v3d modname=v3d modtype=hidd \
+    files="$(V3D_HIDD_SOURCES)" alwayscxxlink=yes \
+    uselibs="gallium_v3d_gca pthread" \
+    objdir="$(OBJDIR)/$(MESAGLVERSION)"
+
+%common
