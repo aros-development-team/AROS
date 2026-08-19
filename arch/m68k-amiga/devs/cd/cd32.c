@@ -147,12 +147,17 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
     };
     ULONG status;
     UBYTE rxtail;
+    BOOL claimed = FALSE;
 
     AROS_INTFUNC_INIT
 
     status = readl(AKIKO_CDINTREQ);
     if (!status)
         return FALSE;
+
+    if (status & AKIKO_CDINT_TXDMA) {
+        CD32_IntDisable(cu, AKIKO_CDINT_TXDMA);
+    }
 
     if (status & AKIKO_CDINT_RXDMA) {
         rxtail = readb(AKIKO_CDRXINX);
@@ -163,15 +168,13 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
                 D(bug("%s: Insane response byte 0x%02x\n", cu->cu_Misc->Response[cu->cu_RxHead]));
             }
             writeb(cu->cu_RxHead+len+1, AKIKO_CDRXCMP);
-            return TRUE;
+            claimed = TRUE;
+        } else {
+            CD32_IntDisable(cu, AKIKO_CDINT_RXDMA);
+            D(bug("%s: Signal %p\n", __func__, cu->cu_Task));
+            if (cu->cu_Task)
+                Signal(cu->cu_Task, SIGF_SINGLE);
         }
-        CD32_IntDisable(cu, AKIKO_CDINT_RXDMA);
-        D(bug("%s: Signal %p\n", __func__, cu->cu_Task));
-        Signal(cu->cu_Task, SIGF_SINGLE);
-    }
-
-    if (status & AKIKO_CDINT_TXDMA) {
-        CD32_IntDisable(cu, AKIKO_CDINT_TXDMA);
     }
 
 #if 0
@@ -184,11 +187,11 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
     if (status & AKIKO_CDINT_PBX) {
         UWORD pbx = readw(AKIKO_CDPBX);
         writew(0, AKIKO_CDPBX);
-        if (pbx < 0x000f)
+        if (pbx < 0x000f && cu->cu_Task)
             Signal(cu->cu_Task, SIGF_SINGLE);
     }
 
-    return FALSE;
+    return claimed;
 
     AROS_INTFUNC_EXIT
 }
@@ -253,14 +256,20 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
 
     cu->cu_Misc->Command[cu->cu_TxHead++] = ~csum;
 
-    /* Just wait for the RX to complete of the status */
-    CD32_IntEnable(cu, AKIKO_CDINT_RXDMA | AKIKO_CDINT_TXDMA);
-    writel(AKIKO_CDFLAG_TXD | AKIKO_CDFLAG_RXD | AKIKO_CDFLAG_CAS | AKIKO_CDFLAG_PBX | AKIKO_CDFLAG_MSB, AKIKO_CDFLAG);
-
-    /* Trigger the command by updating AKIKO_CDTXCMP */
+    /* CDINTREQ completion bits stay latched until the matching index
+     * register is written: CDRXCMP clears RXDMADONE, CDTXCMP clears
+     * TXDMADONE. Clear the previous command's stale latches before
+     * enabling their interrupts - enabling on top of a stale latch
+     * fires the handler at once, which disables RXDMA again and
+     * consumes the completion signal before this command has run.
+     */
     SetSignal(0, SIGF_SINGLE);
     writeb((cu->cu_RxHead + 1) & 0xff, AKIKO_CDRXCMP);
     writeb(cu->cu_TxHead, AKIKO_CDTXCMP);
+    CD32_IntEnable(cu, AKIKO_CDINT_RXDMA | AKIKO_CDINT_TXDMA);
+
+    /* Let the transfers run; this triggers the command */
+    writel(AKIKO_CDFLAG_TXD | AKIKO_CDFLAG_RXD | AKIKO_CDFLAG_CAS | AKIKO_CDFLAG_PBX | AKIKO_CDFLAG_MSB, AKIKO_CDFLAG);
 
     for (;;) {
         UBYTE RxHead = cu->cu_RxHead;
@@ -337,7 +346,12 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
             return CDERR_InvalidState;
         }
 
+        /* Re-open the receive window and re-enable RXDMA for the next
+         * response; the interrupt handler disabled RXDMA when it
+         * signalled this one.
+         */
         writeb((RxTail + 1) & 0xff, AKIKO_CDRXCMP);
+        CD32_IntEnable(cu, AKIKO_CDINT_RXDMA);
     }
 
     D(bug("%s: Found expected: 0x%02x (%d)\n", __func__, cu->cu_Misc->Response[cu->cu_RxHead], (RxTail + 256 - cu->cu_RxHead) & 0xff));
