@@ -1,0 +1,41 @@
+#   AROS metamakefile for mbedTLS
+include $(SRCDIR)/config/aros.cfg
+
+MBEDTLS_VERSION := 3.6.7
+MBEDTLS_ARCHBASE := mbedtls-$(MBEDTLS_VERSION)
+MBEDTLS_SUFFIXES := tar.bz2
+MBEDTLS_REPOSITORIES := https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$(MBEDTLS_VERSION)/
+
+MBEDTLS_SRCDIR := $(PORTSDIR)/mbedtls/$(MBEDTLS_ARCHBASE)
+MBEDTLS_INCDIR := $(MBEDTLS_SRCDIR)/include
+MBEDTLS_LIBDIR := $(GENDIR)/$(CURDIR)/lib
+
+#MM- workbench-libs-mbedtls : mbedtls-fetch mbedtls-build
+
+%fetch mmake=mbedtls-fetch archive=$(MBEDTLS_ARCHBASE) \
+    destination=$(PORTSDIR)/mbedtls suffixes=$(MBEDTLS_SUFFIXES) \
+    location=$(PORTSSOURCEDIR) archive_origins=$(MBEDTLS_REPOSITORIES)
+
+MBEDTLS_SRCS := $(wildcard $(MBEDTLS_SRCDIR)/library/*.c)
+
+# Build mbedTLS as static libraries
+MBEDTLS_CFLAGS := -I$(MBEDTLS_INCDIR) -I$(SRCDIR)/$(CURDIR) \
+    -DMBEDTLS_CONFIG_FILE=\"mbedtls_aros_config.h\" \
+    -O2 -ffunction-sections -fdata-sections
+
+#MM
+mbedtls-build : $(MBEDTLS_LIBDIR)/libmbedtls.a
+
+$(MBEDTLS_LIBDIR)/libmbedtls.a : | mbedtls-fetch
+	@$(MKDIR) $(MBEDTLS_LIBDIR)
+	@$(ECHO) "Building mbedTLS $(MBEDTLS_VERSION)..."
+	@cd $(MBEDTLS_SRCDIR) && \
+	    $(AROS_CROSSTOOL_PREFIX)gcc $(MBEDTLS_CFLAGS) -c library/*.c && \
+	    $(AROS_CROSSTOOL_PREFIX)ar rcs $(MBEDTLS_LIBDIR)/libmbedcrypto.a library/*.o && \
+	    rm -f library/*.o && \
+	    $(AROS_CROSSTOOL_PREFIX)gcc $(MBEDTLS_CFLAGS) -c library/ssl*.c library/x509*.c library/pk*.c library/rsa*.c library/ecdsa*.c library/ecdh*.c library/dhm*.c && \
+	    $(AROS_CROSSTOOL_PREFIX)ar rcs $(MBEDTLS_LIBDIR)/libmbedtls.a library/*.o && \
+	    rm -f library/*.o
+	@$(ECHO) "mbedTLS built: $(MBEDTLS_LIBDIR)/libmbedtls.a"
+
+%common
