@@ -1,0 +1,113 @@
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+MESA_V3D_DIR = $(top_srcdir)/src/gallium/drivers/v3d
+MESA_BROADCOM_DIR = $(top_srcdir)/src/broadcom
+MESA_GALLIUM_DIR = $(top_srcdir)/src/gallium
+
+# V3D Gallium driver sources (excluding simulator)
+V3D_SOURCES := \
+    $(MESA_V3D_DIR)/v3d_blit \
+    $(MESA_V3D_DIR)/v3d_bufmgr \
+    $(MESA_V3D_DIR)/v3d_cl \
+    $(MESA_V3D_DIR)/v3d_context \
+    $(MESA_V3D_DIR)/v3d_fence \
+    $(MESA_V3D_DIR)/v3d_formats \
+    $(MESA_V3D_DIR)/v3d_job \
+    $(MESA_V3D_DIR)/v3d_program \
+    $(MESA_V3D_DIR)/v3d_query \
+    $(MESA_V3D_DIR)/v3d_resource \
+    $(MESA_V3D_DIR)/v3d_screen \
+    $(MESA_V3D_DIR)/v3d_tiling \
+    $(MESA_V3D_DIR)/v3d_uniforms
+
+# V3D per-version sources (v42 for BCM2711)
+V3DX_SOURCES := \
+    $(MESA_V3D_DIR)/v3dx_draw \
+    $(MESA_V3D_DIR)/v3dx_emit \
+    $(MESA_V3D_DIR)/v3dx_format_table \
+    $(MESA_V3D_DIR)/v3dx_job \
+    $(MESA_V3D_DIR)/v3dx_rcl \
+    $(MESA_V3D_DIR)/v3dx_state
+
+# Broadcom compiler sources
+BROADCOM_COMPILER_SOURCES := \
+    $(MESA_BROADCOM_DIR)/compiler/nir_to_vir \
+    $(MESA_BROADCOM_DIR)/compiler/vir \
+    $(MESA_BROADCOM_DIR)/compiler/vir_dump \
+    $(MESA_BROADCOM_DIR)/compiler/vir_live_variables \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_copy_propagate \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_dead_code \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_redundant_flags \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_small_immediates \
+    $(MESA_BROADCOM_DIR)/compiler/vir_register_allocate \
+    $(MESA_BROADCOM_DIR)/compiler/vir_to_qpu \
+    $(MESA_BROADCOM_DIR)/compiler/qpu_schedule \
+    $(MESA_BROADCOM_DIR)/compiler/qpu_validate \
+    $(MESA_BROADCOM_DIR)/compiler/v3d40_tex \
+    $(MESA_BROADCOM_DIR)/compiler/v3d33_tex \
+    $(MESA_BROADCOM_DIR)/compiler/v3d33_vpm_setup \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_io \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_image_load_store \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_logic_ops \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_scratch \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_txf_ms
+
+# Broadcom common sources
+BROADCOM_COMMON_SOURCES := \
+    $(MESA_BROADCOM_DIR)/common/v3d_debug \
+    $(MESA_BROADCOM_DIR)/common/v3d_device_info
+
+# V3D HIDD sources (our code)
+V3D_HIDD_SOURCES := \
+    v3d_init \
+    v3d_hw \
+    v3d_galliumclass \
+    v3d_drm_shim
+
+USER_INCLUDES := \
+    $(USER_INCLUDES) \
+    -iquote $(SRCDIR)/$(CURDIR) \
+    -iquote $(SRCDIR)/$(CURDIR)/drm-stubs \
+    -isystem $(top_srcdir)/include \
+    -isystem $(MESA_BROADCOM_DIR)/cle \
+    -isystem $(MESA_BROADCOM_DIR) \
+    -isystem $(MESA_V3D_DIR) \
+    -I $(MESA_GALLIUM_DIR)/include \
+    -I $(MESA_GALLIUM_DIR)/auxiliary \
+    -I $(MESA_GALLIUM_DIR)/drivers \
+    -I $(top_srcdir)/src \
+    -I $(top_srcdir)/src/compiler/nir \
+    -I $(top_builddir)/src/compiler/nir
+
+USER_CPPFLAGS += \
+    -DV3D_VERSION=41 \
+    -DUSING_V3D_SIMULATOR=0 \
+    -Dusing_v3d_simulator=0 \
+    -UHAVE_VALGRIND \
+    -include $(SRCDIR)/$(CURDIR)/v3d_aros_override.h
+
+NOWARN_CFLAGS := $(NOWARN_MAYBE_UNINITIALIZED) $(NOWARN_MISSING_FIELD_INITIALIZERS)
+USER_CFLAGS += $(NOWARN_CFLAGS)
+
+USER_LDFLAGS := \
+    -L$(top_libdir) \
+    -Wl,--start-group -lgallium_v3d -lbroadcom_compiler -lcompiler -lgalliumauxiliary -lmesautil \
+    -lpthread -lposixc_rel -lstdc_rel \
+    -Wl,--end-group
+
+#MM hidd-v3d: includes hidd-gallium mesa3dgl-linklibs linklibs-gallium_v3d linklibs-broadcom_compiler
+#MM linklibs-gallium_v3d : mesa3dgl-linklibs
+#MM linklibs-broadcom_compiler : mesa3dgl-linklibs
+
+%build_module mmake=hidd-v3d modname=v3d modtype=hidd \
+    files="$(V3D_HIDD_SOURCES)" alwayscxxlink=yes uselibs="" objdir="$(OBJDIR)/$(MESAGLVERSION)"
+
+%build_linklib mmake=linklibs-gallium_v3d libname=gallium_v3d libdir=$(top_libdir) \
+    objdir=$(top_builddir)/gallium_v3d files="$(V3D_SOURCES) $(V3DX_SOURCES)"
+
+%build_linklib mmake=linklibs-broadcom_compiler libname=broadcom_compiler libdir=$(top_libdir) \
+    objdir=$(top_builddir)/broadcom_compiler files="$(BROADCOM_COMPILER_SOURCES) $(BROADCOM_COMMON_SOURCES)"
+
+%common
