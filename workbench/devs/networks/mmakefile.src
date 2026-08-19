@@ -19,7 +19,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-devs-networks-rtl8139 \
 #MM     workbench-devs-networks-rtl8168-$(AROS_TARGET_CPU) \
 #MM     workbench-devs-networks-rtl8169-$(AROS_TARGET_CPU) \
-#MM     workbench-devs-networks-sis900-$(AROS_TARGET_CPU)
+#MM     workbench-devs-networks-sis900-$(AROS_TARGET_CPU) \
+#MM     workbench-devs-networks-genet-$(AROS_TARGET_CPU)
 
 #MM- workbench-devs-networks-gnu: \
 #MM     workbench-devs-networks-atheros5000
