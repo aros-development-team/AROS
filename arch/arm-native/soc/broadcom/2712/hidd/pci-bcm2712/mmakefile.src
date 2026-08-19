@@ -1,0 +1,11 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM- kernel-pcie-bcm2712 : kernel-pcie-bcm2712-module
+
+%build_module mmake=kernel-pcie-bcm2712-module \
+  modname=pcibcm2712 modtype=hidd \
+  files="pcie2712_init driverclass"
+
+%common
