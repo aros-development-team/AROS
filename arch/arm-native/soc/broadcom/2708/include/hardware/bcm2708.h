@@ -29,6 +29,9 @@
 /* Peripheral window of the BCM2711, which differs from the earlier SoCs. */
 #define BCM2711_PERIIOBASE                              0xFE000000
 
+/* Peripheral window of the BCM2712 (Raspberry Pi 5). */
+#define BCM2712_PERIIOBASE                              0x107C000000ULL
+
 /*
  * The BCM2711 presents the GPU interrupts of the earlier controller as
  * GIC shared interrupts, offset by this much: GPU interrupt n arrives as
