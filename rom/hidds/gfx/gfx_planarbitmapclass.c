@@ -187,6 +187,9 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
             if (NULL == data->bitmap->Planes[i])
             {
+                D(bug("[PlanarBM] %s: plane %d allocation failed (%lu bytes, flags 0x%lx)\n",
+                      __func__, i, (unsigned long)(height * bytesperrow),
+                      (unsigned long)planeflags));
                 ok = FALSE;
                 break;
             }
