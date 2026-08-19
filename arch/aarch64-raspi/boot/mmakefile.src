@@ -82,6 +82,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-usb-romstrap-raspi-quick \
 #MM kernel-hidd-pci-quick \
 #MM kernel-pcie-bcm2711-quick \
+#MM kernel-pcie-bcm2712-quick \
 #MM kernel-usb-pcixhci-quick \
 #MM kernel-usb-classes-hubss-quick
 
@@ -144,6 +145,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-usb-romstrap-raspi \
 #MM kernel-hidd-pci \
 #MM kernel-pcie-bcm2711 \
+#MM kernel-pcie-bcm2712 \
 #MM kernel-usb-pcixhci \
 #MM kernel-usb-classes-hubss
 
