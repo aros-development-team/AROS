@@ -386,9 +386,26 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
             break;
 
         default:
-            D(bug("%s: Command mismatch: got 0x%02x, expected 0x%02x\n", __func__, cu->cu_Misc->Response[RxHead], cmd[0]));
-            err = CDERR_InvalidState;
-            goto out;
+            /* The drive volunteers play status with the MULTI command
+             * nibble and a zero sequence nibble: byte 1 carries the
+             * CHERR_PLAYING state (play started / play finished).
+             */
+            if (cu->cu_Misc->Response[RxHead] == CHCD_MULTI) {
+                if (cu->cu_Misc->Response[(UBYTE)(RxHead + 1)] & CHERR_PLAYING)
+                    cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
+                else
+                    cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED);
+                break;
+            }
+            /* Anything else that passed the checksum is drive chatter
+             * this driver does not know; skip it and keep waiting.
+             * Aborting the in-flight command here desynchronises the
+             * whole exchange one packet late, permanently - every
+             * later command then errors on its predecessor's reply.
+             */
+            D(bug("%s: skipping unexpected packet 0x%02x\n", __func__,
+                  cu->cu_Misc->Response[RxHead]));
+            break;
         }
 
         /* Re-open the receive window and re-enable RXDMA for the next
