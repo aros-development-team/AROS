@@ -157,6 +157,7 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
 
     if (status & AKIKO_CDINT_TXDMA) {
         CD32_IntDisable(cu, AKIKO_CDINT_TXDMA);
+        claimed = TRUE;
     }
 
     if (status & AKIKO_CDINT_RXDMA) {
@@ -189,6 +190,7 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
         writew(0, AKIKO_CDPBX);
         if (pbx < 0x000f && cu->cu_Task)
             Signal(cu->cu_Task, SIGF_SINGLE);
+        claimed = TRUE;
     }
 
     return claimed;
@@ -245,6 +247,11 @@ static VOID CD32_UpdateTOC(struct CD32Unit *cu)
  * interrupt handler uses - so a drive that stops answering turns
  * into a normal wakeup with an empty response ring, which the
  * checksum paths already reject, instead of an eternal Wait().
+ *
+ * The request lives in the device base and is deliberately shared
+ * without locking: every user - these timeouts and cdDelayMS() in the
+ * TOC loop - runs on the one unit task, which owns all drive I/O. A
+ * second backend with its own unit task would need a per-unit request.
  */
 static VOID cd32TimeoutStart(struct CD32Unit *cu, ULONG ms)
 {
@@ -473,6 +480,10 @@ static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, voi
         cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
         Wait(SIGF_SINGLE);
         cd32TimeoutEnd(cu);
+        /* Nobody waits for sectors past this point: a late PBX
+         * interrupt must not signal the task under some later Wait().
+         */
+        CD32_IntDisable(cu, AKIKO_CDINT_PBX);
 
         CD32_Cmd(cu, cmd_pause, 1, resp, sizeof(resp));
         CD32_Led(cu, FALSE);
