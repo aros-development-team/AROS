@@ -839,8 +839,8 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             cmd[3] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Frame;
             if (last > cu->cu_CDTOC[0].Summary.LastTrack) {
                 cmd[4] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Minute;
-                cmd[5] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Minute;
-                cmd[6] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Minute;
+                cmd[5] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Second;
+                cmd[6] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Frame;
             } else {
                 cmd[4] = cu->cu_CDTOC[last].Entry.Position.MSF.Minute;
                 cmd[5] = cu->cu_CDTOC[last].Entry.Position.MSF.Second;
@@ -889,10 +889,13 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         CD32_Status(cu);
         break;
     case CD_ATTENUATE:
-        io->io_Actual = cu->cu_Muted ? 0 : 0x7fff;
-        if (io->io_Offset > 0 && io->io_Offset < 0x7fff) {
+        /* AudioPrecision is 1 (mute only): 0 mutes, anything above
+         * unmutes, -1 queries. io_Actual returns the resulting volume.
+         * The fade duration in io_Length collapses to a step.
+         */
+        if ((LONG)io->io_Offset >= 0)
             CD32_Mute(cu, io->io_Offset == 0);
-        }
+        io->io_Actual = cu->cu_Muted ? 0 : 0x7fff;
         err = 0;
         break;
     default:
