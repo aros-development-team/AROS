@@ -267,6 +267,8 @@ struct PCIController {
 #define HCF_ADDR64	                    (1 << HCB_ADDR64)
 #define HCB_CTX64	                    15	                    /* 64Byte context               */
 #define HCF_CTX64	                    (1 << HCB_CTX64)
+#define HCB_PLATFORM                    31                      /* Non-PCI platform device      */
+#define HCF_PLATFORM                    (1 << HCB_PLATFORM)
 
 /* hc_Quirks */
 #define HCQB_LYNXPOINT                  0
