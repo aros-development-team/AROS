@@ -230,6 +230,7 @@ static int Init(LIBBASETYPEPTR LowLevelBase)
 
     NEWLIST(&LowLevelBase->ll_KBInterrupts);
     LowLevelBase->ll_LastKey = 0xFF;
+    LowLevelBase->ll_SysReqNest = -1;
 
     if ((LowLevelBase->ll_UtilityBase = OpenLibrary("utility.library", 0)))
     {
@@ -258,10 +259,12 @@ static int Init(LIBBASETYPEPTR LowLevelBase)
 static int Expunge(LIBBASETYPEPTR LowLevelBase)
 {
     D(bug("[lowlevel] %s()\n", __func__);)
+    llSysReq_Cleanup(LowLevelBase);
     LowLevelTimerClose(LowLevelBase);
     LowLevelInputClose(LowLevelBase);
     if (LowLevelBase->ll_UtilityBase)
         CloseLibrary(LowLevelBase->ll_UtilityBase);
+    return TRUE;
 }
 
 ADD2INITLIB(Init, 0);

@@ -53,7 +53,7 @@ static inline ULONG llPollGameCtrl(int port)
     /* Set Pin 5 as output, shift mode */
     pot = custom->potinp;
     pot &= ~((port == 0) ? (3 << 8) : (3 << 12));
-    custom->potgo = pot | (port == 0) ? (2 << 8) : (2 << 12);
+    custom->potgo = pot | ((port == 0) ? (2 << 8) : (2 << 12));
     cia->ciapra  &= ~cmask;
     /*
      * Clocking the buttons out means driving pin 5, so the line has to
