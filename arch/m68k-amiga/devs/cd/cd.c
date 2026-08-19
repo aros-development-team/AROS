@@ -87,7 +87,11 @@ static BOOL cdRegisterVolume(struct cdUnit *unit, const struct DosEnvec *de)
         pp[2]                   = unit->cu_Unit;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
         pp[DE_BOOTPRI      + 4] = -10;
-        pp[DE_DOSTYPE      + 4] = AROS_MAKE_ID('C','D','F','S');
+        /* Must match the DosType the ROM's CD filesystem registers in
+         * FileSystem.resource (CDVDFS, 'CDVD'); CliInit only falls back
+         * to handler-name matching when the DosType is zero.
+         */
+        pp[DE_DOSTYPE      + 4] = AROS_MAKE_ID('C','D','V','D');
         pp[DE_CONTROL      + 4] = 0;
         pp[DE_BOOTBLOCKS   + 4] = 0;
     
