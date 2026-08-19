@@ -6,10 +6,13 @@
 
 #include <aros/debug.h>
 
-#include <exec/memory.h>
 #include <proto/exec.h>
-#include <utility/tagitem.h>
 #include <proto/dos.h>
+#define __M68KEMU_NOLIBBASE__
+#include <proto/m68kemu.h>
+
+#include <exec/memory.h>
+#include <utility/tagitem.h>
 #include <dos/stdio.h>
 
 #include "dos_intern.h"
@@ -101,15 +104,11 @@
         {
 #if !defined(__mc68000__)
             /* Route m68k hunk binaries through emulator */
-            if (hunkinfo)
-            {
-                struct Library *emubase = OpenLibrary("m68kemu.library", 0);
-                if (emubase)
-                {
-                    LONG (*RunHunk)(BPTR, ULONG, CONST_STRPTR, ULONG) =
-                        (LONG (*)(BPTR, ULONG, CONST_STRPTR, ULONG))__AROS_GETVECADDR(emubase, 5);
+            if (hunkinfo) {
+                struct Library *M68KEmuBase = OpenLibrary("m68kemu.library", 0);
+                if (M68KEmuBase) {
                     LONG m68k_ret = RunHunk(segList, stacksize, argptr, argsize);
-                    CloseLibrary(emubase);
+                    CloseLibrary(M68KEmuBase);
                     return m68k_ret;
                 }
             }

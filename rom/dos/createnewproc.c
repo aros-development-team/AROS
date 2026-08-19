@@ -19,6 +19,9 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#define __M68KEMU_NOLIBBASE__
+#include <proto/m68kemu.h>
+
 #include "dos_intern.h"
 #include LC_LIBDEFS_FILE
 #include <string.h>
@@ -776,6 +779,23 @@ static void DosEntry(void)
 
     D(bug("[DosEntry %p] entry=%p, CIS=%p, COS=%p, argsize=%d, arguments=\"%s\"\n", me, initialPC, BADDR(me->pr_CIS), BADDR(me->pr_COS), argSize, me->pr_Arguments));
 
+    /* Get our own private DOSBase. We'll need it for our
+     * cleanup routines.
+     *
+     * We don't want to use the parent's DOSBase, since they
+     * may have closed their handle long ago.
+     *
+     * With the current DOSBase implementation, this isn't a
+     * big deal, but if DOSBase moved to a per-opener library
+     * in the future, this would be a very subtle issue, so
+     * we're going to plan ahead and do it right.
+     */
+    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+    if (DOSBase == NULL) {
+        D(bug("[DosEntry %p] Can't open DOS library\n", me));
+        Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
+    }
+
 #if !defined(__mc68000__)
     /* Check if this is an m68k hunk binary and route through emulator */
     {
@@ -783,13 +803,10 @@ static void DosEntry(void)
         struct TagItem htags[] = { { GSLI_68KHUNK, (IPTR)&hunkinfo }, { TAG_DONE, 0 } };
         if (segArray[3] && GetSegListInfo(segArray[3], htags) && hunkinfo)
         {
-            struct Library *emubase = OpenLibrary("m68kemu.library", 0);
-            if (emubase)
-            {
-                LONG (*RunHunk)(BPTR, ULONG, CONST_STRPTR, ULONG) =
-                    (LONG (*)(BPTR, ULONG, CONST_STRPTR, ULONG))__AROS_GETVECADDR(emubase, 5);
+            struct Library *M68KEmuBase = OpenLibrary("m68kemu.library", 0);
+            if (M68KEmuBase) {
                 result = RunHunk(segArray[3], me->pr_StackSize, me->pr_Arguments, argSize);
-                CloseLibrary(emubase);
+                CloseLibrary(M68KEmuBase);
                 goto skip_native_entry;
             }
         }
@@ -831,23 +848,6 @@ skip_native_entry:
          void (*doExitCode)(IPTR, IPTR) = (void (*)(IPTR, IPTR))me->pr_ExitCode;
         doExitCode(result, me->pr_ExitData);
 #endif
-    }
-
-    /* Get our own private DOSBase. We'll need it for our
-     * cleanup routines.
-     *
-     * We don't want to use the parent's DOSBase, since they
-     * may have closed their handle long ago.
-     *
-     * With the current DOSBase implementation, this isn't a
-     * big deal, but if DOSBase moved to a per-opener library
-     * in the future, this would be a very subtle issue, so
-     * we're going to plan ahead and do it right.
-     */
-    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
-    if (DOSBase == NULL) {
-        D(bug("[DosEntry %p] Can't open DOS library\n", me));
-        Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
     }
 
     D(bug("Deleting local variables\n"));
