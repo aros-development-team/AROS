@@ -351,7 +351,22 @@ static BOOL MakeSureWinIsOpen(struct filehandle *fh)
         return TRUE;
     if (fh->window)
         return TRUE;
-    return MakeConWindow(fh) == 0;
+    if (fh->flags & FHFLG_NOWINDOW)
+        return FALSE;
+    if (MakeConWindow(fh) == 0)
+        return TRUE;
+    if (fh->flags & FHFLG_BOOTCON) {
+        /* The boot console could not get its window - typically the
+         * screen's bitmap allocation failing on a chip-RAM-only machine
+         * whose memory the booted program already owns. Latch it:
+         * without this every packet re-attempts the whole screen open
+         * (40 KB of chip for a Workbench screen) forever. The callers
+         * turn a latched boot console into a sink: writes are
+         * swallowed, reads see end-of-file.
+         */
+        fh->flags |= FHFLG_NOWINDOW;
+    }
+    return FALSE;
 }
 
 static void close_con(struct filehandle *fh)
@@ -1022,7 +1037,10 @@ LONG CONMain(struct ExecBase *SysBase)
                 case ACTION_READ:
                     DACTION(bug("[con:handler] ACTION_READ\n"));
                     if (!MakeSureWinIsOpen(fh)) {
-                        replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                        if (fh->flags & FHFLG_NOWINDOW)
+                            replypkt(dp, 0); /* sink: end-of-file */
+                        else
+                            replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
                         break;
                     }
                     fh->breaktask = dp->dp_Port->mp_SigTask;
@@ -1039,7 +1057,10 @@ LONG CONMain(struct ExecBase *SysBase)
                 case ACTION_WRITE:
                     DACTION(bug("[con:handler] ACTION_WRITE\n"));
                     if (!MakeSureWinIsOpen(fh)) {
-                        replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                        if (fh->flags & FHFLG_NOWINDOW)
+                            replypkt(dp, dp->dp_Arg3); /* sink: swallowed */
+                        else
+                            replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
                         break;
                     }
                     fh->breaktask = dp->dp_Port->mp_SigTask;
@@ -1078,7 +1099,10 @@ LONG CONMain(struct ExecBase *SysBase)
                     {
                         DACTION(bug("[con:handler] ACTION_WAIT_CHAR\n"));
                         if (!MakeSureWinIsOpen(fh)) {
-                            replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                            if (fh->flags & FHFLG_NOWINDOW)
+                                replypkt(dp, DOSFALSE); /* sink: never a char */
+                            else
+                                replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
                             break;
                         }
                         if (fh->inputsize > 0) {
