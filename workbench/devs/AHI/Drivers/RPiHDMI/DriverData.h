@@ -1,16 +1,32 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+    Author: Fabian Schmieder (@metaneutrons)
+
+    Raspberry Pi HDMI Audio AHI Sub-Driver Data Structures
+*/
+
 #ifndef AHI_Drivers_RPiHDMI_DriverData_h
 #define AHI_Drivers_RPiHDMI_DriverData_h
 
+#include <exec/types.h>
 #include <exec/libraries.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
 
 #include "DriverBase.h"
 
-/* Shared BCM2835 DMA control block layout (32-byte aligned). */
-#include <hardware/bcm2708_dma.h>
-
-#include "rpihdmi-soc.h"
+/*
+ * BCM DMA Control Block - 32-byte aligned
+ */
+struct DMAControlBlock {
+    ULONG ti;          /* Transfer Information */
+    ULONG source_ad;   /* Source physical bus address */
+    ULONG dest_ad;     /* Destination physical bus address */
+    ULONG txfr_len;    /* Transfer length in bytes */
+    ULONG stride;      /* 2D stride (0 for linear) */
+    ULONG nextconbk;   /* Next CB address (0 = stop) */
+    ULONG reserved[2]; /* 32-byte alignment padding */
+};
 
 /*
  * Driver library base
@@ -18,14 +34,11 @@
 struct RPiHDMIBase {
     struct DriverBase driverbase;
     struct DosLibrary *dosbase;
-    ULONG periiobase;
-
-    struct RPiHDMISoc *soc[2]; /* Pointers to underlaying SOC implementation */
-    UBYTE num_outputs;
+    IPTR periiobase;
+    IPTR hdmi_base;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof(struct RPiHDMIBase))
-
 #define DOSBase (*(struct DosLibrary **) &RPiHDMIBase->dosbase)
 
 /*
@@ -41,34 +54,25 @@ struct RPiHDMIData {
     struct Process *slavetask;
     struct RPiHDMIBase *ahisubbase;
 
-    /* Hardware state */
-    ULONG periiobase;
-    LONG dma_channel;     /* Allocated from dma.resource, -1 = none */
-    ULONG dma_dreq;
+    /* Hardware MMIO bases & DMA channel */
+    IPTR periiobase;
+    IPTR hdmi_base;
+    ULONG dma_channel;
 
-    /* DMA control blocks (32-byte aligned) */
-    struct BCM2708DMACB *cb_base; /* Allocated block (for free) */
-    struct BCM2708DMACB *cb[2];   /* Aligned pointers to CB A and CB B */
+    /* DMA control blocks */
+    struct DMAControlBlock *cb_base;
+    struct DMAControlBlock *cb[2];
 
-    /* Audio buffers */
-    APTR mixbuffer;       /* AHI mix buffer (signed 16-bit) */
-    ULONG *dmabuf[2];     /* SPDIF DMA buffers (32-bit subframes) */
-    ULONG dmabuf_size;    /* Size of each DMA buffer in bytes */
-    ULONG dmabuf_samples; /* Number of sample frames per buffer */
+    /* Sample buffers */
+    APTR mixbuffer;
+    ULONG *dmabuf[2];
+    ULONG dmabuf_size;
+    ULONG dmabuf_samples;
 
-    /* IRQ */
+    /* IRQ & Config */
     APTR irq_handle;
-
-    /* Configuration */
     ULONG samplerate;
-
-    /* IEC958 state — separate channel status for L and R per IEC 60958-3 */
-    UBYTE channel_status_l[24]; /* Left channel status block (192 bits) */
-    UBYTE channel_status_r[24]; /* Right channel status block (192 bits) */
-    ULONG frame_counter;        /* Current frame within IEC958 block (0-191) */
-
-    struct RPiHDMISoc *soc; /* Pointer to underlaying SOC implementation */
-    UBYTE output;
+    ULONG channels;
 };
 
 #endif /* AHI_Drivers_RPiHDMI_DriverData_h */

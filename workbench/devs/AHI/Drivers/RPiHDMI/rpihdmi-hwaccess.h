@@ -1,147 +1,64 @@
-#ifndef AHI_Drivers_RPiHDMI_hwaccess_h
-#define AHI_Drivers_RPiHDMI_hwaccess_h
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+    Author: Fabian Schmieder (@metaneutrons)
+
+    Raspberry Pi HDMI MAI Audio Register Definitions & Access Macros
+*/
+
+#ifndef AHI_Drivers_RPiHDMI_rpihdmi_hwaccess_h
+#define AHI_Drivers_RPiHDMI_rpihdmi_hwaccess_h
 
 #include <exec/types.h>
-#include <aros/macros.h>
-
 #include "DriverData.h"
 
 /*
- * GPU bus address for uncached DMA access.
- * On BCM2835/2836, ARM physical 0x00000000 maps to GPU bus 0xC0000000
- * (uncached alias).
+ * Broadcom HDMI MAI Audio Registers
  */
-#define GPU_BUS_ADDR(x) BCM2708_DMA_BUS_ADDR(x)
+#define HDMI_MAI_CTL            0x010UL
+#define HDMI_MAI_DATA           0x014UL
+#define HDMI_MAI_STATUS         0x018UL
+#define HDMI_MAI_FMT            0x01CUL
+#define HDMI_AUDIO_PACKET       0x020UL
+#define HDMI_RAM_PACKET_CONFIG  0x0A0UL
+#define HDMI_RAM_PACKET_STATUS  0x0A4UL
 
-/* Register access helpers (little-endian, with ARM memory barriers) */
-static inline void __dsb(void)
-{
-    asm volatile("dsb sy" ::: "memory");
-}
-static inline void __dmb(void)
-{
-    asm volatile("dmb sy" ::: "memory");
-}
+/* MAI_CTL Bits */
+#define MAI_CTL_ENABLE          (1 << 0)
+#define MAI_CTL_CHANNELS_2      (1 << 1)
+#define MAI_CTL_FORMAT_16BIT    (0 << 4)
+#define MAI_CTL_FORMAT_24BIT    (1 << 4)
+#define MAI_CTL_FLUSH           (1 << 7)
+#define MAI_CTL_DREQ_EN         (1 << 8)
 
-static inline ULONG rd32le(ULONG addr)
-{
-    ULONG val;
-    __dmb();
-    val = AROS_LE2LONG(*(volatile ULONG *) addr);
-    __dsb();
-    return val;
-}
+/* MAI_STATUS Bits */
+#define MAI_STATUS_BUSY         (1 << 0)
+#define MAI_STATUS_EMPTY        (1 << 1)
+#define MAI_STATUS_FULL         (1 << 2)
 
-static inline void wr32le(ULONG addr, ULONG val)
-{
-    __dsb();
-    *(volatile ULONG *) addr = AROS_LONG2LE(val);
-    __dmb();
-}
+/* DMA DREQ line for HDMI Audio */
+#define DMA_DREQ_HDMI_MAI       10
 
-/*
- * HDMI HD register block (MAI control)
- */
-#define HDMI_MAI_CTL(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_ctl))
-#define HDMI_MAI_THR(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_thr))
-#define HDMI_MAI_FMT(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_fmt))
-#define HDMI_MAI_DATA(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_data))
-#define HDMI_MAI_SMP(dd) \
-    ((dd->periiobase) + (dd->soc->mai_base) + (dd->soc->regs.mai_smp))
+/* DMA Control Block Transfer Information (TI) */
+#define DMA_TI_INTEN            (1 << 0)
+#define DMA_TI_TDMODE           (0 << 1)
+#define DMA_TI_WAIT_RESP        (1 << 3)
+#define DMA_TI_DEST_DREQ        (1 << 6)
+#define DMA_TI_SRC_INC          (1 << 8)
+#define DMA_TI_DEST_INC         (0 << 4)
+#define DMA_TI_PERMAP(x)        (((x) & 0x1F) << 16)
 
-/*
- * HDMI register block
- */
-#define HDMI_MAI_CHANNEL_MAP(dd) \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.mai_channel_map))
-#define HDMI_MAI_CONFIG(dd)      \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.mai_config))
-#define HDMI_AUDIO_PKT_CFG(dd)   \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.audio_packet_cfg))
-#define HDMI_RAM_PKT_CFG(dd)     \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.ram_packet_cfg))
-#define HDMI_RAM_PKT_STATUS(dd)  \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.ram_packet_status))
-#define HDMI_CRP_CFG(dd)         \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.crp_cfg))
-#define HDMI_CTS_0(dd)           \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.cts_0))
-#define HDMI_CTS_1(dd)           \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.cts_1))
-#define HDMI_SCHEDULER_CONTROL(dd) \
-    ((dd->periiobase) + (dd->soc->hdmi_base) + (dd->soc->regs.scheduler_control))
-#define HDMI_RAM_PKT_START(dd)   \
-    ((dd->periiobase) + (dd->soc->packet_base) + (dd->soc->regs.packet_start))
+/* DMA Channel Control/Status (CS) */
+#define DMA_CS_ACTIVE           (1 << 0)
+#define DMA_CS_END              (1 << 1)
+#define DMA_CS_INT              (1 << 2)
+#define DMA_CS_DREQ             (1 << 3)
+#define DMA_CS_RESET            (1 << 31)
 
-/* MAI_CTL bits */
-#define MAI_CTL_RESET    (1 << 0)
-#define MAI_CTL_ERRORF   (1 << 1)
-#define MAI_CTL_ERRORE   (1 << 2)
-#define MAI_CTL_ENABLE   (1 << 3)
-#define MAI_CTL_CHNUM(x) (((x) & 0xF) << 4)
-#define MAI_CTL_PAREN    (1 << 8)
-#define MAI_CTL_FLUSH    (1 << 9)
-#define MAI_CTL_WHOLSMP  (1 << 12)
-#define MAI_CTL_CHALIGN  (1 << 13)
-#define MAI_CTL_DLATE    (1 << 15)
+/* Hardware Function Prototypes */
+BOOL rpihdmi_hw_init(struct RPiHDMIData *dd, ULONG rate);
+void rpihdmi_hw_cleanup(struct RPiHDMIData *dd);
+void rpihdmi_hw_start_dma(struct RPiHDMIData *dd);
+void rpihdmi_hw_stop_dma(struct RPiHDMIData *dd);
+ULONG rpihdmi_hw_irq_handler(struct RPiHDMIData *dd);
 
-/* MAI_THR: DREQ and panic thresholds */
-#define MAI_THR_DREQL(x)  (((x) & 0x3F) << 0)
-#define MAI_THR_DREQH(x)  (((x) & 0x3F) << 8)
-#define MAI_THR_PANICL(x) (((x) & 0x3F) << 16)
-#define MAI_THR_PANICH(x) (((x) & 0x3F) << 24)
-
-/* MAI_FMT: sample rate and audio format */
-#define MAI_FMT_RATE(x)    (((x) & 0xFF) << 8)
-#define MAI_FMT_FORMAT(x)  (((x) & 0xFF) << 16)
-#define MAI_FMT_FORMAT_PCM MAI_FMT_FORMAT(2)
-
-/* MAI_CONFIG bits (HDMI block) */
-#define MAI_CONFIG_BIT_REVERSE     (1 << 26)
-#define MAI_CONFIG_FORMAT_REVERSE  (1 << 27)
-#define MAI_CONFIG_CHANNEL_MASK(x) ((x) & 0xFFFF)
-
-/* Audio packet config bits (HDMI block) */
-#define AUDIO_PKT_CEA_MASK(x)           ((x) & 0xFF)
-#define AUDIO_PKT_B_FRAME_ID(x)         (((x) & 0xF) << 10)
-#define AUDIO_PKT_ZERO_DATA_ON_INACTIVE (1 << 24)
-#define AUDIO_PKT_ZERO_DATA_ON_FLAT     (1 << 29)
-
-/* CRP_CFG bits */
-#define CRP_CFG_EXTERNAL_CTS_EN (1 << 24)
-#define CRP_CFG_N(x)            ((x) & 0xFFFFF)
-
-
-/* Bus address of MAI DATA register (DMA destination) */
-#define HDMI_MAI_DATA_BUS 0x7E808020
-
-/*
- * BCM2835 DMA IRQ numbers.
- * DMA channel N uses GPU IRQ (16 + N).
- */
-#define BCM_IRQ_DMA0 16
-
-/* Sample rate enum values for MAI_FMT */
-#define SRATE_8000   1
-#define SRATE_11025  2
-#define SRATE_12000  3
-#define SRATE_16000  4
-#define SRATE_22050  5
-#define SRATE_24000  6
-#define SRATE_32000  7
-#define SRATE_44100  8
-#define SRATE_48000  9
-#define SRATE_88200  10
-#define SRATE_96000  12
-#define SRATE_176400 14
-#define SRATE_192000 15
-
-/* Hardware setup/teardown functions */
-void hdmi_mai_init(struct RPiHDMIData *dd);
-void hdmi_mai_stop(struct RPiHDMIData *dd);
-
-#endif /* AHI_Drivers_RPiHDMI_hwaccess_h */
+#endif /* AHI_Drivers_RPiHDMI_rpihdmi_hwaccess_h */

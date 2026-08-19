@@ -1,198 +1,60 @@
 /*
- *  Slave process for RPiHDMI AHI driver.
- *
- *  This process runs in a loop:
- *  1. Call the AHI PlayerFunc (timing)
- *  2. Call the AHI MixerFunc to fill the mix buffer with signed 16-bit samples
- *  3. Encode the mixed samples as IEC958/SPDIF subframes for DMA buffer
- *  4. Wait for the DMA interrupt signaling buffer consumption
- *
- *  The DMA runs autonomously via two chained control blocks (ping-pong).
- *  When a CB completes, the DMA IRQ fires and we get signaled to refill
- *  the consumed buffer while the other buffer plays.
- */
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+    Author: Fabian Schmieder (@metaneutrons)
 
-#include <config.h>
+    Raspberry Pi HDMI Audio AHI Playback Engine & DMA Interrupt Slave
+*/
 
-#include <devices/ahi.h>
-#include <exec/execbase.h>
-#include <libraries/ahi_sub.h>
-#include <aros/macros.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
+#include <exec/types.h>
+#include <exec/interrupts.h>
+#include <proto/exec.h>
+#include <proto/ahi_sub.h>
 
 #include "DriverData.h"
-#include "library.h"
 #include "rpihdmi-hwaccess.h"
-#include "rpihdmi-iec958.h"
-#include "rpihdmi-dma.h"
 
-#undef SysBase
-
-#define dd ((struct RPiHDMIData *) AudioCtrl->ahiac_DriverData)
-
-/******************************************************************************
-** The slave process **********************************************************
-******************************************************************************/
-
-void Slave(struct ExecBase *SysBase);
-
-#if defined(__AROS__)
-
-#include <aros/asmcall.h>
-
-AROS_UFH3(void,
-          SlaveEntry,
-          AROS_UFHA(STRPTR, argPtr, A0),
-          AROS_UFHA(ULONG, argSize, D0),
-          AROS_UFHA(struct ExecBase *, SysBase, A6))
+void rpihdmi_fill_buffer(struct RPiHDMIData *dd, ULONG buf_idx)
 {
-    AROS_USERFUNC_INIT
-    Slave(SysBase);
-    AROS_USERFUNC_EXIT
-}
+    ULONG *dst = dd->dmabuf[buf_idx];
+    WORD *src = (WORD *)dd->mixbuffer;
+    ULONG samples = dd->dmabuf_samples;
+    ULONG i;
 
-#else
-
-void SlaveEntry(void)
-{
-    struct ExecBase *SysBase = *((struct ExecBase **) 4);
-    Slave(SysBase);
-}
-
-#endif
-
-void Slave(struct ExecBase *SysBase)
-{
-    struct AHIAudioCtrlDrv *AudioCtrl;
-    struct DriverBase *AHIsubBase;
-    BOOL running;
-    ULONG signals;
-
-    /*
-     * On SMP the master may not have set tc_UserData yet when we start
-     * running on another CPU.  Spin until it's visible.
-     */
-    while ((AudioCtrl = (struct AHIAudioCtrlDrv *) FindTask(NULL)->tc_UserData) == NULL)
-        __sync_synchronize();
-
-    AHIsubBase = (struct DriverBase *) dd->ahisubbase;
-
-    dd->slavesignal = AllocSignal(-1);
-
-    D(bug("[HDMI] Slave: slavesignal=%ld\n", dd->slavesignal));
-
-    if (dd->slavesignal != -1) {
-        /*
-         * Pre-fill both DMA buffers with silent IEC958 subframes.
-         * Silence still needs valid Z/M/W preambles and channel status bits.
-         * Encode the full DMA buffer width so the MAI never sees zero
-         * (invalid) subframes in the tail.
-         */
-        ULONG i;
-
-        for (i = 0; i < dd->dmabuf_samples * 2; i++)
-            ((WORD *) dd->mixbuffer)[i] = 0;
-
-        convert_mix_to_iec958((WORD *) dd->mixbuffer,
-                              dd->dmabuf[0],
-                              dd->dmabuf_samples,
-                              dd->channel_status_l,
-                              dd->channel_status_r,
-                              &dd->frame_counter);
-        convert_mix_to_iec958((WORD *) dd->mixbuffer,
-                              dd->dmabuf[1],
-                              dd->dmabuf_samples,
-                              dd->channel_status_l,
-                              dd->channel_status_r,
-                              &dd->frame_counter);
-
-        /* Flush silence data from cache to physical RAM for DMA */
-        CacheClearE(dd->dmabuf[0], dd->dmabuf_size, CACRF_ClearD);
-        CacheClearE(dd->dmabuf[1], dd->dmabuf_size, CACRF_ClearD);
-
-        /* Tell the master we're alive */
-        Signal((struct Task *) dd->mastertask, 1L << dd->mastersignal);
-
-        running = TRUE;
-
-        while (running) {
-            signals = Wait(SIGBREAKF_CTRL_C | (1L << dd->slavesignal));
-
-            if (signals & (SIGBREAKF_CTRL_C | (1L << dd->slavesignal))) {
-                if (signals & SIGBREAKF_CTRL_C) {
-                    running = FALSE;
-                    continue;
-                }
-
-                /* Call the player hook (timing) */
-                CallHookPkt(AudioCtrl->ahiac_PlayerFunc, AudioCtrl, NULL);
-
-                /* Call the mixer to fill our mix buffer */
-                CallHookPkt(AudioCtrl->ahiac_MixerFunc, AudioCtrl, dd->mixbuffer);
-
-                /*
-                 * Convert mixed audio to SPDIF subframes and write
-                 * to the DMA buffer that is NOT currently being read.
-                 *
-                 * Read the DMA CBADDR register to find which control block
-                 * is active.  The active CB's source buffer is busy — fill
-                 * the OTHER one.  This avoids the blind curbuf toggle which
-                 * has a 50% chance of starting out of phase with the DMA
-                 * (and staying out of phase permanently).
-                 */
-                {
-                    ULONG dma_base = dd->periiobase + 0x007000 + dd->dma_channel * 0x100;
-                    ULONG cbaddr = rd32le(dma_base + 0x04);
-                    ULONG fillbuf;
-                    ULONG frames = AudioCtrl->ahiac_BuffSamples;
-
-                    /* The mix buffer holds at most MaxBuffSamples frames. */
-                    if (frames == 0 || frames > AudioCtrl->ahiac_MaxBuffSamples)
-                        frames = AudioCtrl->ahiac_MaxBuffSamples;
-
-                    if (cbaddr == GPU_BUS_ADDR(dd->cb[0]))
-                        fillbuf = 1; /* DMA on CB[0] → fill dmabuf[1] */
-                    else
-                        fillbuf = 0; /* DMA on CB[1] → fill dmabuf[0] */
-
-                    /*
-                     * Encode exactly the frames the mixer produced (the
-                     * DMA length below is shortened to match) — padding
-                     * the tail with silence stretched playback.
-                     * frame_counter advances by 'frames', keeping the
-                     * 192-frame IEC958 block continuous.
-                     */
-                    convert_mix_to_iec958((WORD *) dd->mixbuffer,
-                                          dd->dmabuf[fillbuf],
-                                          frames,
-                                          dd->channel_status_l,
-                                          dd->channel_status_r,
-                                          &dd->frame_counter);
-
-                    /* Flush converted data to physical RAM for DMA */
-                    CacheClearE(dd->dmabuf[fillbuf], frames * 2 * sizeof(ULONG), CACRF_ClearD);
-
-                    /* Play exactly the encoded frames (see PWM driver notes). */
-                    dd->cb[fillbuf]->txfr_len = frames * 2 * sizeof(ULONG);
-                    CacheClearE(dd->cb[fillbuf], sizeof(struct BCM2708DMACB), CACRF_ClearD);
-                }
-            }
+    /* Request next chunk of audio from AHI client */
+    if (dd->driverdata.ahiac_PlayerFunc) {
+        /* Mix signed 16-bit stereo samples into mixbuffer */
+        CallHookPkt(dd->driverdata.ahiac_PlayerFunc, &dd->driverdata, dd->mixbuffer);
+    } else {
+        /* Silence */
+        for (i = 0; i < samples * 2; i++) {
+            src[i] = 0;
         }
     }
 
-    Forbid();
+    /* Convert/pack 16-bit stereo (L + R) into 32-bit MAI FIFO words */
+    for (i = 0; i < samples; i++) {
+        uint16_t left  = (uint16_t)src[i * 2];
+        uint16_t right = (uint16_t)src[i * 2 + 1];
+        dst[i] = ((uint32_t)right << 16) | (uint32_t)left;
+    }
+}
 
-    /*
-     * Clear slavetask with a barrier so the IRQ handler on other CPUs
-     * stops signaling us before we die.  Don't FreeSignal — the signal
-     * belongs to this dying task; the master clears slavesignal after
-     * removing the IRQ handler.
-     */
-    dd->slavetask = NULL;
-    __sync_synchronize();
+AROS_UFH3(void, rpihdmi_interrupt_handler,
+          AROS_UFHA(struct ExceptionContext *, ctx, A0),
+          AROS_UFHA(struct ExecBase *, sysBase, A6),
+          AROS_UFHA(struct RPiHDMIData *, dd, A1))
+{
+    AROS_USERFUNC_INIT
 
-    /* Tell the master we're dying */
-    Signal((struct Task *) dd->mastertask, 1L << dd->mastersignal);
+    (void)ctx;
+    (void)sysBase;
+
+    if (rpihdmi_hw_irq_handler(dd)) {
+        /* Toggle active buffer and refill */
+        static ULONG current_buf = 0;
+        current_buf ^= 1;
+        rpihdmi_fill_buffer(dd, current_buf);
+    }
+
+    AROS_USERFUNC_EXIT
 }
