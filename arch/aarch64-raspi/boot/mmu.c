@@ -118,6 +118,17 @@ void mmu_init(void)
     pud[2] = (uint64_t)(uintptr_t)&pmd[2 * 512] | DESC_TABLE;
     pud[3] = (uint64_t)(uintptr_t)&pmd[3 * 512] | DESC_TABLE;
     pud[BCM2711_PCIE_WIN_BASE >> 30] = (uint64_t)(uintptr_t)pmd_hi | DESC_TABLE;
+
+    /*
+     * Raspberry Pi 5 (BCM2712): Map BCM2712 peripheral space (0x107C000000)
+     * and RP1 PCIe peripheral window (0x1F00000000) as 1GB device blocks.
+     */
+    pud[0x107C000000UL >> 30] = DESC_BLOCK | (0x1040000000UL) |
+                                 ATTR_DEVICE | ATTR_AF | ATTR_AP_RW_EL1 |
+                                 ATTR_SH_NON | ATTR_PXN | ATTR_UXN;
+    pud[0x1F00000000UL >> 30] = DESC_BLOCK | (0x1F00000000UL) |
+                                 ATTR_DEVICE | ATTR_AF | ATTR_AP_RW_EL1 |
+                                 ATTR_SH_NON | ATTR_PXN | ATTR_UXN;
 }
 
 /*
