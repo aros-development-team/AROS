@@ -1,4 +1,9 @@
 USER_LDFLAGS+=-static-libstdc++
+
+# Cocoa display backend for darwin-aarch64 (pre-compiled ObjC)
+USER_LDFLAGS += $(GENDIR)/arch/all-darwin/bootstrap/cocoa_display.o
+USER_LDFLAGS += -framework Cocoa -framework IOSurface -framework QuartzCore
+
 ifeq ("$(HOST_TOOLCHAIN)","gnu")
 KERNEL_GCC_VERSION=`$(KERNEL_CC) --version 2>/dev/null`
 KERNEL_GCC_IS_CLANG=`echo $KERNEL_GCC_VERSION | grep -i -c -E 'LLVM|clang'`
