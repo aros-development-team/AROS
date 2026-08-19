@@ -218,7 +218,7 @@ IPTR Dataspace__MUIM_ReadIFF(struct IClass *cl, Object *obj,
 
     p = buffer;
 
-    while (p < buffer + read)
+    while (p + 8 <= buffer + read)
     {
         /* Since data can be stored on uneven addresses we must read
          ** them byte by byte as MC68000 doesn't like this
@@ -229,6 +229,11 @@ IPTR Dataspace__MUIM_ReadIFF(struct IClass *cl, Object *obj,
         p += 4;
 
         /* p might be uneven but MUIM_Dataspace_Add use CopyMem() */
+
+        /* Guard against a corrupted/truncated file - do not read past
+         ** the chunk if the length field is bogus */
+        if (len > (ULONG)(buffer + read - p))
+            break;
 
         /* Now add the data */
         DoMethod(obj, MUIM_Dataspace_Add, (IPTR) p, len, id);
