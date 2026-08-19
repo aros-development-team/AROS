@@ -86,11 +86,11 @@ endif
 
 #
 # Raspberry Pi audio drivers (ARM targets, require the BCM2708 DMA resource includes)
-#
 ifneq ($(strip $(HAVE_DMA_H)),)
 ifneq ($(filter arm aarch64,$(host_cpu)),)
 SUBDIRS		+= RPiPWM
 SUBDIRS		+= RPiHDMI
+SUBDIRS		+= RPiI2S
 endif
 endif
 
