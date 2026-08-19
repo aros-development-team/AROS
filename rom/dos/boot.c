@@ -138,8 +138,16 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
         cis = Open("ECON:", MODE_OLDFILE);
     }
 
-    if (cis == BNULL)
-        cis = Open("CON:////AROS/AUTO/CLOSE/SMART/BOOT", MODE_OLDFILE);
+    if (cis == BNULL) {
+        if (BootFlags & BF_NO_BOOT_REQUESTERS) {
+            /* Appliance boot (CD): no boot console window either - the
+             * CD32 Kickstart never opens one, and the console's window
+             * is what would drag in a Workbench screen.
+             */
+            cis = Open("NIL:", MODE_OLDFILE);
+        } else
+            cis = Open("CON:////AROS/AUTO/CLOSE/SMART/BOOT", MODE_OLDFILE);
+    }
 
     if (cis) {
         BPTR cos = OpenFromLock(DupLockFromFH(cis));
@@ -167,6 +175,9 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 
             if (SystemTags(NULL,
                            NP_Name, "Initial CLI",
+                           NP_WindowPtr,
+                               (BootFlags & BF_NO_BOOT_REQUESTERS)
+                                   ? (IPTR)-1 : (IPTR)0,
                            SYS_Background, FALSE,
                            SYS_Asynch, FALSE,
                            SYS_Input, cis,
