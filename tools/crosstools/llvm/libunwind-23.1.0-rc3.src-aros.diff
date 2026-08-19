@@ -1,0 +1,34 @@
+diff -ruN llvm-project-23.1.0-rc3.src/libunwind/CMakeLists.txt llvm-project-23.1.0-rc3.src.aros/libunwind/CMakeLists.txt
+--- llvm-project-23.1.0-rc3.src/libunwind/CMakeLists.txt	2026-08-19 13:30:01.523845592 +0100
++++ llvm-project-23.1.0-rc3.src.aros/libunwind/CMakeLists.txt	2026-08-19 13:30:01.520813592 +0100
+@@ -13,6 +13,14 @@
+ 
+ set(LLVM_SUBPROJECT_TITLE "libunwind")
+ 
++# libunwind carries no project() of its own - it expects to be configured
++# through runtimes/, which declares the ASM language for it. When it is
++# configured directly CMake's implicit project enables only C and CXX, and
++# the UnwindRegisters*.S sources are then dropped without a word, leaving
++# __unw_getcontext and __libunwind_Registers_<arch>_jumpto undefined.
++# enable_language() is a no-op when ASM is already on, so this is safe either way.
++enable_language(ASM)
++
+ set(LLVM_COMMON_CMAKE_UTILS "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+ 
+ # Add path for custom modules
+diff -ruN llvm-project-23.1.0-rc3.src/libunwind/src/config.h llvm-project-23.1.0-rc3.src.aros/libunwind/src/config.h
+--- llvm-project-23.1.0-rc3.src/libunwind/src/config.h	2026-08-19 13:30:01.529561092 +0100
++++ llvm-project-23.1.0-rc3.src.aros/libunwind/src/config.h	2026-08-19 13:30:01.526752392 +0100
+@@ -31,6 +31,12 @@
+   #if defined(__aarch64__) || defined(__arm64__) || defined(__arm64e__)
+     #define _LIBUNWIND_TRACE_RET_INJECT 1
+   #endif
++#elif defined(__AROS__)
++  #define _LIBUNWIND_IS_BAREMETAL
++  #define _LIBUNWIND_SUPPORT_DWARF_UNWIND   1
++  #ifdef _LIBUNWIND_USE_DLADDR
++  #undef _LIBUNWIND_USE_DLADDR
++  #endif
+ #elif defined(_WIN32)
+   #ifdef __SEH__
+     #define _LIBUNWIND_SUPPORT_SEH_UNWIND 1

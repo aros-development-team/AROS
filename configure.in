@@ -963,6 +963,10 @@ case "$aros_toolchain" in
         aros_target_cflags=""
         aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
         toolchain_ld_fmtbinary="--oformat binary"
+        dnl lld 23 refuses to emit a raw binary whose sections sit below the
+        dnl default image base (0x200000 on x86-64), so it has to be stated.
+        dnl The link rule appends the same address it passes to -Ttext.
+        toolchain_ld_imagebase="--image-base"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
     *gnu*)
@@ -2784,6 +2788,23 @@ if test "$aros_toolchain" = "llvm" ; then
     aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
 fi
 
+dnl From llvm 23 libcxx, libcxxabi and libunwind refuse to configure on their
+dnl own - each aborts unless the others are named in LLVM_ENABLE_RUNTIMES - so
+dnl they have to be built together through the runtimes/ umbrella. Earlier
+dnl versions keep the three separate builds. This is decided here rather than
+dnl in tools/crosstools/llvm.cfg because metamake resolves #MM dependencies
+dnl using only host.cfg and target.cfg, and never reads the toolchain config.
+target_llvm_runtimes_style="separate"
+if test "$aros_toolchain" = "llvm" ; then
+    target_llvm_version_major=`echo "$target_llvm_version" | cut -d. -f1`
+    if test -n "$target_llvm_version_major" ; then
+        if test "$target_llvm_version_major" -gt 22 2>/dev/null ; then
+            target_llvm_runtimes_style="umbrella"
+        fi
+    fi
+fi
+AC_SUBST(target_llvm_runtimes_style)
+
 AC_MSG_CHECKING([whether to enable Objective-C suppport])
 AC_ARG_ENABLE(objc,AS_HELP_STRING([--enable-objc],[Enable Objectve-C support (default=no)]),objc="$enableval",objc="no")
 AC_MSG_RESULT($objc)
@@ -4359,6 +4380,7 @@ AC_SUBST(orig_target_ld)
 AC_SUBST(aros_target_ld)
 AC_SUBST(aros_kernel_ld)
 AC_SUBST(toolchain_ld_fmtbinary)
+AC_SUBST(toolchain_ld_imagebase)
 AC_SUBST(aros_target_cc_includes)
 AC_SUBST(aros_target_cc_path)
 AC_SUBST(aros_target_objdump)

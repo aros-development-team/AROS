@@ -1,0 +1,33 @@
+diff -ruN llvm-project-23.1.0-rc3.src/llvm/include/llvm/TargetParser/Triple.h llvm-project-23.1.0-rc3.src.aros/llvm/include/llvm/TargetParser/Triple.h
+--- llvm-project-23.1.0-rc3.src/llvm/include/llvm/TargetParser/Triple.h	2026-08-19 13:30:01.429765692 +0100
++++ llvm-project-23.1.0-rc3.src.aros/llvm/include/llvm/TargetParser/Triple.h	2026-08-19 13:30:01.426542992 +0100
+@@ -298,6 +298,7 @@
+   enum OSType {
+     UnknownOS,
+ 
++    AROS,
+     Darwin,
+     DragonFly,
+     FreeBSD,
+@@ -663,6 +664,10 @@
+     return getOSVersion() >= Other.getOSVersion();
+   }
+ 
++  bool isAROS() const {
++    return getOS() == Triple::AROS;
++  }
++
+   /// Comparison function for checking OS X version compatibility, which handles
+   /// supporting skewed version numbering schemes used by the "darwin" triples.
+   LLVM_ABI bool isMacOSXVersionLT(unsigned Major, unsigned Minor = 0,
+diff -ruN llvm-project-23.1.0-rc3.src/llvm/include/llvm/TargetParser/TripleName.def llvm-project-23.1.0-rc3.src.aros/llvm/include/llvm/TargetParser/TripleName.def
+--- llvm-project-23.1.0-rc3.src/llvm/include/llvm/TargetParser/TripleName.def	2026-08-19 13:30:01.435048292 +0100
++++ llvm-project-23.1.0-rc3.src.aros/llvm/include/llvm/TargetParser/TripleName.def	2026-08-19 13:30:01.432316392 +0100
+@@ -29,6 +29,7 @@
+ #define TRIPLE_OS_ALIAS(Enum, AliasName)
+ #endif
+ 
++TRIPLE_OS(AROS, "aros")
+ TRIPLE_OS(Darwin, "darwin")
+ TRIPLE_OS(DragonFly, "dragonfly")
+ TRIPLE_OS(FreeBSD, "freebsd")
