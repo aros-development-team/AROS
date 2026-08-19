@@ -371,6 +371,8 @@ struct bcmgenet_ring
     ULONG               cidx;           /* consumer index                   */
     ULONG               pidx;           /* producer index                   */
     ULONG               next;
+
+    struct IOSana2Req *request[GENET_DMA_DESC_COUNT];
 };
 
 struct BCMGENETUnit
@@ -408,6 +410,9 @@ struct BCMGENETUnit
 
     struct MsgPort     *bgu_TimerPort;
     struct timerequest *bgu_TimerReq;
+
+    struct Task *bgu_Task;
+    struct Task *bgu_DeathWatch;
 };
 
 struct BCMGENETBase
@@ -438,11 +443,12 @@ BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit);
 BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit);
 void BCMGENET_SetMACAddress(struct bcmgenet_hw *hw, const UBYTE *addr);
 BOOL BCMGENET_GetMACAddress(struct bcmgenet_hw *hw, UBYTE *addr);
-BOOL BCMGENET_PHYInit(struct bcmgenet_hw *hw);
+BOOL BCMGENET_PHYInit(struct BCMGENETUnit *unit);
 BOOL BCMGENET_PHYGetLink(struct bcmgenet_hw *hw, ULONG *mbps, BOOL *fullduplex);
 
 /* bcmgenet_unit.c */
 struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base);
+BOOL BCMGENET_CheckLink(struct BCMGENETBase *base, struct BCMGENETUnit *unit);
 void BCMGENET_DeleteUnit(struct BCMGENETBase *base, struct BCMGENETUnit *unit);
 void BCMGENET_GoOnline(struct BCMGENETBase *base, struct BCMGENETUnit *unit);
 void BCMGENET_GoOffline(struct BCMGENETBase *base, struct BCMGENETUnit *unit);

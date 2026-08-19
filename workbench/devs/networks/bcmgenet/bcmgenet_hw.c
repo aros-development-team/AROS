@@ -41,13 +41,6 @@
 
 #define GENET_MDIO_TIMEOUT 100000
 
-/*
- * On real aarch64 Raspberry Pi hardware (not just under QEMU, which
- * hides the difference) a plain volatile access to Device-mapped MMIO
- * still needs an explicit barrier around it, or accesses can be
- * reordered past whatever the caller does next. See RPiHDMI/RPiPWM's
- * rd32le()/wr32le() for the precedent this mirrors.
- */
 static inline void __dsb(void) { asm volatile("dsb sy" ::: "memory"); }
 static inline void __dmb(void) { asm volatile("dmb sy" ::: "memory"); }
 
@@ -79,10 +72,6 @@ void BCMGENET_Write(struct bcmgenet_hw *hw, ULONG reg, ULONG val)
     __dmb();
 }
 
-/*
- * Write PMD/REG/READ into GENET_MDIO_CMD | GENET_MDIO_START_BUSY,
- * poll START_BUSY clear, return the low 16 bits.
- */
 LONG BCMGENET_MDIORead(struct bcmgenet_hw *hw, ULONG phy, ULONG reg)
 {
     ULONG val;
@@ -105,9 +94,6 @@ LONG BCMGENET_MDIORead(struct bcmgenet_hw *hw, ULONG phy, ULONG reg)
     return -1;
 }
 
-/*
- * Same as above with GENET_MDIO_WRITE and the value to write in the low 16 bits.
- */
 BOOL BCMGENET_MDIOWrite(struct bcmgenet_hw *hw, ULONG phy, ULONG reg, UWORD val)
 {
     ULONG cmd;
@@ -175,22 +161,17 @@ static void bcmgenet_disable_dma(struct BCMGENETUnit *unit)
     BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
 }
 
-/*
- * TODO: port genet_reset() (bcmgenet.c:469). UMAC_CMD_SW_RESET, flush
- * ctrl on RX/TX buffers, MIB reset, wait for the bits to self-clear.
- */
-
 BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit)
 {
     struct bcmgenet_hw *hw = unit->bgu_HW;
     ULONG cmd;
     /*
-        * The RBUF block is flushed and reset before UniMAC is touched at all:
-        * on the BCM2711 a read of GENET_UMAC_CMD before this point takes an
-        * external abort (SError, GISB slave error), so the OpenBSD order -
-        * genet_disable_dma() first - cannot be used here. Nothing is running
-        * yet at this point anyway, so there is no DMA to stop.
-        */
+     * The RBUF block is flushed and reset before UniMAC is touched at all:
+     * on the BCM2711 a read of GENET_UMAC_CMD before this point takes an
+     * external abort (SError, GISB slave error), so the OpenBSD order -
+     * genet_disable_dma() first - cannot be used here. Nothing is running
+     * yet at this point anyway, so there is no DMA to stop.
+    */
 
     /* Request that GENET flush and reset the receive-buffer block (RBUF) */
     cmd = BCMGENET_Read(hw, GENET_SYS_RBUF_FLUSH_CTRL);
@@ -246,12 +227,6 @@ BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit)
     return TRUE;
 }
 
-/*
- * TODO: port genet_init_rings() + genet_setup_dma() (bcmgenet.c:508,
- * 887) for the default queue (GENET_DMA_DEFAULT_QUEUE): ring buffer
- * size/desc count, start/end address, enable RX_DMA_CTRL / TX_DMA_CTRL.
- * Called once from BCMGENET_CreateUnit() after the rings are allocated.
- */
 BOOL bcmgenet_fill_rx_ring(struct BCMGENETUnit *unit, ULONG qid)
 {
     struct bcmgenet_ring *rx = &unit->bgu_RX;
@@ -384,11 +359,6 @@ BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit)
     return TRUE;
 }
 
-/*
- * Port of genet_setup_rxfilter_mdf() (bcmgenet.c:379). The exact-match
- * filter splits an address the opposite way from UMAC_MAC0/MAC1: the
- * first two bytes go in ADDR0, the last four in ADDR1.
- */
 static void bcmgenet_setup_rxfilter_mdf(struct bcmgenet_hw *hw, ULONG n,
                                         const UBYTE *addr)
 {
@@ -399,13 +369,6 @@ static void bcmgenet_setup_rxfilter_mdf(struct bcmgenet_hw *hw, ULONG n,
                    ((ULONG)addr[4] << 8) | addr[5]);
 }
 
-/*
- * Port of the station-address half of genet_init() (bcmgenet.c:601) plus
- * the two fixed filter entries genet_setup_rxfilter() (bcmgenet.c:389)
- * always programs: broadcast in entry 0, our own address in entry 1.
- * Multicast groups start at entry 2 and are not handled here - see the
- * note in BCMGENET_AddMulticastRange().
- */
 void BCMGENET_SetMACAddress(struct bcmgenet_hw *hw, const UBYTE *addr)
 {
     static const UBYTE broadcast[ETH_ADDRESSSIZE] =
@@ -422,13 +385,6 @@ void BCMGENET_SetMACAddress(struct bcmgenet_hw *hw, const UBYTE *addr)
     BCMGENET_Write(hw, GENET_UMAC_MDF_CTRL, GENET_MDF_CTRL_ENABLE(2));
 }
 
-/*
- * Port of genet_lladdr_read() (bcmgenet.c:996): the bootloader/firmware
- * programs the station address into UMAC_MAC0/MAC1 before the OS ever
- * runs, so reading it back is normally enough - but do this *before*
- * BCMGENET_HWReset(), which may clear it. Prefer hw->macAddr from the
- * device tree ("local-mac-address") when BCMGENET_Discover() found one.
- */
 BOOL BCMGENET_GetMACAddress(struct bcmgenet_hw *hw, UBYTE *addr)
 {
     ULONG maclo, machi;
@@ -446,27 +402,151 @@ BOOL BCMGENET_GetMACAddress(struct bcmgenet_hw *hw, UBYTE *addr)
     return TRUE;
 }
 
-/*
- * TODO: port the mii_attach()/genet_mii_statchg() side of genet_attach()
- * (bcmgenet.c:922, 183) without the generic mii(4) layer: probe
- * hw->phyAddr with MII_PHYSID1/2, then bring it up with BMCR_RESET and
- * BMCR_ANENABLE|BMCR_ANRESTART.
- */
-BOOL BCMGENET_PHYInit(struct bcmgenet_hw *hw)
+BOOL BCMGENET_PHYInit(struct BCMGENETUnit *unit)
 {
-    return FALSE;
+    struct bcmgenet_hw *hw = unit->bgu_HW;
+    LONG id1, id2, val;
+    ULONG spins;
+
+    id1 = BCMGENET_MDIORead(hw, hw->phyAddr, MII_PHYSID1);
+    id2 = BCMGENET_MDIORead(hw, hw->phyAddr, MII_PHYSID2);
+
+    if (id1 < 0 || id2 < 0)
+        return FALSE;
+
+    D(bug("[bcmgenet] PHY %lu: id %04lx:%04lx\n", hw->phyAddr, (ULONG)id1, (ULONG)id2);)
+
+    if (!BCMGENET_MDIOWrite(hw, hw->phyAddr, MII_BMCR, BMCR_RESET))
+        return FALSE;
+
+    for (spins = 50000; spins > 0; spins--)
+    {
+        val = BCMGENET_MDIORead(hw, hw->phyAddr, MII_BMCR);
+        if (val < 0)
+            return FALSE;
+
+        if ((val & BMCR_RESET) == 0)
+            break;
+
+        bcmgenet_wait(unit, 10);
+    }
+
+    if (spins == 0)
+    {
+        D(bug("[bcmgenet] PHY reset timeout\n");)
+        return FALSE;
+    }
+
+    /* Announce support for 10, 100 Mbit, half and full duplex */
+    if (!BCMGENET_MDIOWrite(hw, hw->phyAddr, MII_ANAR,
+            ANAR_CSMA |
+            ANAR_10HD | ANAR_10FD |
+            ANAR_100HD | ANAR_100FD))
+        return FALSE;
+
+    /* Announce support for 1000 Mbit, half and full duplex */
+    if (!BCMGENET_MDIOWrite(hw, hw->phyAddr, MII_GBCR,
+            GBCR_1000HD | GBCR_1000FD))
+        return FALSE;
+
+    if (!BCMGENET_MDIOWrite(hw, hw->phyAddr, MII_BMCR, BMCR_ANENABLE | BMCR_ANRESTART))
+        return FALSE;
+
+    return TRUE;
 }
 
-/*
- * TODO: port genet_update_link() (bcmgenet.c:152). Read BMSR for
- * link/autoneg-done, GBSR/ANLPAR for the negotiated speed/duplex, and
- * push EXT_RGMII_OOB_CTRL + UMAC_CMD's speed/duplex bits to match -
- * the MAC does not follow the PHY automatically.
- */
+static void bcmgenet_set_link_down(struct bcmgenet_hw *hw)
+{
+    ULONG val = BCMGENET_Read(hw, GENET_EXT_RGMII_OOB_CTRL);
+
+    val &= ~GENET_EXT_RGMII_OOB_RGMII_LINK;
+    BCMGENET_Write(hw, GENET_EXT_RGMII_OOB_CTRL, val);
+}
+
+
 BOOL BCMGENET_PHYGetLink(struct bcmgenet_hw *hw, ULONG *mbps, BOOL *fullduplex)
 {
+    LONG bmsr, gbsr, anlpar;
+    ULONG speed, val;
+
     *mbps = 0;
     *fullduplex = FALSE;
 
-    return FALSE;
+    /*
+     * BMSR link status latches low: the first read tells whether the link
+     * has been down at any point since it was last read, the second what
+     * the state is now. Only the second answers the question asked here.
+     */
+    if (BCMGENET_MDIORead(hw, hw->phyAddr, MII_BMSR) < 0)
+        return FALSE;
+
+    bmsr = BCMGENET_MDIORead(hw, hw->phyAddr, MII_BMSR);
+    if (bmsr < 0)
+        return FALSE;
+
+    if ((bmsr & (BMSR_LSTATUS | BMSR_ANEGCOMPLETE)) !=
+        (BMSR_LSTATUS | BMSR_ANEGCOMPLETE)) {
+        bcmgenet_set_link_down(hw);
+        return FALSE;
+    }
+
+    gbsr = BCMGENET_MDIORead(hw, hw->phyAddr, MII_GBSR);
+    anlpar = BCMGENET_MDIORead(hw, hw->phyAddr, MII_ANLPAR);
+    if (gbsr < 0 || anlpar < 0)
+        return FALSE;
+
+    /*
+     * Highest mode both ends offered wins. BCMGENET_PHYInit() advertises
+     * every mode, so what the link partner announced settles it on its
+     * own. ANLPAR carries the same bit layout as ANAR, which is why the
+     * ANAR_* masks are used against it.
+     */
+    if (gbsr & (GBSR_LP1000FD | GBSR_LP1000HD))
+    {
+        *mbps = 1000;
+        *fullduplex = (gbsr & GBSR_LP1000FD) ? TRUE : FALSE;
+        speed = GENET_UMAC_CMD_SPEED_1000;
+    }
+    else if (anlpar & (ANAR_100FD | ANAR_100HD))
+    {
+        *mbps = 100;
+        *fullduplex = (anlpar & ANAR_100FD) ? TRUE : FALSE;
+        speed = GENET_UMAC_CMD_SPEED_100;
+    }
+    else if (anlpar & (ANAR_10FD | ANAR_10HD))
+    {
+        *mbps = 10;
+        *fullduplex = (anlpar & ANAR_10FD) ? TRUE : FALSE;
+        speed = GENET_UMAC_CMD_SPEED_10;
+    }
+    else {
+        bcmgenet_set_link_down(hw);
+        return FALSE;
+    }
+
+    /*
+     * UniMAC does not follow the PHY on its own. Tell the RGMII block the
+     * link is up and hand UniMAC the speed. ID_MODE_DISABLE turns off the
+     * internal clock delay and is wanted only for plain "rgmii" - the
+     * Pi 4B straps RXID, so there the delay has to stay on.
+     */
+    val = BCMGENET_Read(hw, GENET_EXT_RGMII_OOB_CTRL);
+    val &= ~GENET_EXT_RGMII_OOB_OOB_DISABLE;
+    val |= GENET_EXT_RGMII_OOB_RGMII_LINK;
+    val |= GENET_EXT_RGMII_OOB_RGMII_MODE_EN;
+    if (hw->phyMode == GENET_PHY_MODE_RGMII)
+        val |= GENET_EXT_RGMII_OOB_ID_MODE_DISABLE;
+    else
+        val &= ~GENET_EXT_RGMII_OOB_ID_MODE_DISABLE;
+    BCMGENET_Write(hw, GENET_EXT_RGMII_OOB_CTRL, val);
+
+    val = BCMGENET_Read(hw, GENET_UMAC_CMD);
+    val &= ~GENET_UMAC_CMD_SPEED_MASK;
+    val |= (speed << GENET_UMAC_CMD_SPEED_SHIFT) & GENET_UMAC_CMD_SPEED_MASK;
+    BCMGENET_Write(hw, GENET_UMAC_CMD, val);
+
+    D(bug("[bcmgenet] link up: %lu Mbit, %s duplex\n", *mbps,
+          *fullduplex ? "full" : "half");)
+
+    return TRUE;
 }
