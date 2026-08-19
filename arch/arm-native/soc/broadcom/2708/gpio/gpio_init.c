@@ -130,4 +130,75 @@ AROS_LH2(void, GPIOSetFunc,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LH1(unsigned int, GPIOGet,
+                AROS_LHA( unsigned int, pin, D0),
+                struct GPIOBase *, GPIOBase, 3, Gpio)
+{
+    AROS_LIBFUNC_INIT
+
+    unsigned int val = 0;
+
+    D(bug("[GPIO] %s(#%d)\n", __PRETTY_FUNCTION__, pin));
+
+    if (GPIOBase->gpio_rp1_bar1 && (pin <= 27))
+    {
+        /* RP1 SYS_RIO0: IN is at offset 0x00 */
+        IPTR rio_in = GPIOBase->gpio_rp1_bar1 + 0x0E0000;
+        unsigned int reg_val = AROS_LE2LONG(*(volatile unsigned int *)rio_in);
+        val = (reg_val >> pin) & 1;
+    }
+    else if (GPIOBase->gpio_periiobase && (pin <= 53))
+    {
+        IPTR reg = GPLEV0 + ((pin >> 5) << 2);
+        unsigned int reg_val = AROS_LE2LONG(*(volatile unsigned int *)reg);
+        val = (reg_val >> (pin & 0x1F)) & 1;
+    }
+
+    AROS_LIBFUNC_EXIT
+
+    return val;
+}
+
+AROS_LH2(void, GPIOSetPull,
+                AROS_LHA( unsigned int, pin, D0),
+                AROS_LHA( unsigned int, pull, D1),
+                struct GPIOBase *, GPIOBase, 4, Gpio)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[GPIO] %s(#%d,%d)\n", __PRETTY_FUNCTION__, pin, pull));
+
+    if (GPIOBase->gpio_rp1_bar1 && (pin <= 27))
+    {
+        /* RP1 PADS_BANK0: offset 0x0F0000 + (pin * 4) + 4 */
+        IPTR pad_reg = GPIOBase->gpio_rp1_bar1 + 0x0F0000 + (pin * 4) + 4;
+        unsigned int val = AROS_LE2LONG(*(volatile unsigned int *)pad_reg);
+
+        /* Bit 2 = PullUp (PUE), Bit 3 = PullDown (PDE) */
+        val &= ~(0x0C);
+        if (pull == 1) val |= (1 << 2);      /* Pull-Up */
+        else if (pull == 2) val |= (1 << 3); /* Pull-Down */
+
+        ObtainSemaphore(&GPIOBase->gpio_Sem);
+        *(volatile unsigned int *)pad_reg = AROS_LONG2LE(val);
+        ReleaseSemaphore(&GPIOBase->gpio_Sem);
+    }
+    else if (GPIOBase->gpio_periiobase && (pin <= 53))
+    {
+        /* BCM2711 / BCM2835 Pull configuration */
+        IPTR gppup_reg = GPIO_BASE + 0xE4 + ((pin >> 4) << 2); /* GPPUPPDN0..3 on BCM2711 */
+        unsigned int shift = (pin & 0x0F) << 1;
+        unsigned int pull_val = (pull == 1) ? 1 : ((pull == 2) ? 2 : 0);
+
+        ObtainSemaphore(&GPIOBase->gpio_Sem);
+        unsigned int cur = AROS_LE2LONG(*(volatile unsigned int *)gppup_reg);
+        cur &= ~(3 << shift);
+        cur |= (pull_val << shift);
+        *(volatile unsigned int *)gppup_reg = AROS_LONG2LE(cur);
+        ReleaseSemaphore(&GPIOBase->gpio_Sem);
+    }
+
+    AROS_LIBFUNC_EXIT
+}
+
 ADD2INITLIB(gpio_init, 0)

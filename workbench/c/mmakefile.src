@@ -17,6 +17,7 @@ FILES := \
     DiskChange \
     Eject \
     Filenote \
+    GPIO \
     IconX \
     Info \
     Install \
