@@ -845,6 +845,7 @@ aros_kernel_ld
 aros_kernel_cxx
 aros_kernel_cc
 aros_kernel_cpp
+target_llvm_runtimes_style
 target_llvm_version
 gcc_float_cpu
 gcc_soft_cpu
@@ -12430,6 +12431,17 @@ if test "$aros_toolchain" = "llvm" ; then
 printf '%s\n' "$target_llvm_version" >&6; }
     aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
 fi
+
+target_llvm_runtimes_style="separate"
+if test "$aros_toolchain" = "llvm" ; then
+    target_llvm_version_major=`echo "$target_llvm_version" | cut -d. -f1`
+    if test -n "$target_llvm_version_major" ; then
+        if test "$target_llvm_version_major" -gt 22 2>/dev/null ; then
+            target_llvm_runtimes_style="umbrella"
+        fi
+    fi
+fi
+
 
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking whether to enable Objective-C suppport" >&5
 printf %s "checking whether to enable Objective-C suppport... " >&6; }

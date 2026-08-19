@@ -2784,6 +2784,23 @@ if test "$aros_toolchain" = "llvm" ; then
     aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
 fi
 
+dnl From llvm 23 libcxx, libcxxabi and libunwind refuse to configure on their
+dnl own - each aborts unless the others are named in LLVM_ENABLE_RUNTIMES - so
+dnl they have to be built together through the runtimes/ umbrella. Earlier
+dnl versions keep the three separate builds. This is decided here rather than
+dnl in tools/crosstools/llvm.cfg because metamake resolves #MM dependencies
+dnl using only host.cfg and target.cfg, and never reads the toolchain config.
+target_llvm_runtimes_style="separate"
+if test "$aros_toolchain" = "llvm" ; then
+    target_llvm_version_major=`echo "$target_llvm_version" | cut -d. -f1`
+    if test -n "$target_llvm_version_major" ; then
+        if test "$target_llvm_version_major" -gt 22 2>/dev/null ; then
+            target_llvm_runtimes_style="umbrella"
+        fi
+    fi
+fi
+AC_SUBST(target_llvm_runtimes_style)
+
 AC_MSG_CHECKING([whether to enable Objective-C suppport])
 AC_ARG_ENABLE(objc,AS_HELP_STRING([--enable-objc],[Enable Objectve-C support (default=no)]),objc="$enableval",objc="no")
 AC_MSG_RESULT($objc)
