@@ -1,0 +1,88 @@
+diff -ruN llvm-project-23.1.0-rc3.src/libcxx/include/CMakeLists.txt llvm-project-23.1.0-rc3.src.aros/libcxx/include/CMakeLists.txt
+--- llvm-project-23.1.0-rc3.src/libcxx/include/CMakeLists.txt	2026-08-19 13:30:01.483894292 +0100
++++ llvm-project-23.1.0-rc3.src.aros/libcxx/include/CMakeLists.txt	2026-08-19 13:30:01.480931292 +0100
+@@ -1709,6 +1709,10 @@
+   list(APPEND _all_includes "${dst}")
+ endforeach()
+ 
++if(NOT Python3_EXECUTABLE)
++  find_package(Python3 REQUIRED)
++endif()
++
+ # Generate the IWYU mapping. This depends on all header files but it's also considered as an
+ # "include" for dependency tracking.
+ add_custom_command(OUTPUT "${LIBCXX_GENERATED_INCLUDE_DIR}/libcxx.imp"
+diff -ruN llvm-project-23.1.0-rc3.src/libcxx/include/__config llvm-project-23.1.0-rc3.src.aros/libcxx/include/__config
+--- llvm-project-23.1.0-rc3.src/libcxx/include/__config	2026-08-19 13:30:01.488928292 +0100
++++ llvm-project-23.1.0-rc3.src.aros/libcxx/include/__config	2026-08-19 13:30:01.486405292 +0100
+@@ -297,7 +297,7 @@
+ #    define _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION 0
+ #  endif
+ 
+-#  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
++#  if defined(__AROS__) || defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||   \
+       _LIBCPP_HAS_MUSL_LIBC || defined(__OpenBSD__) || _LIBCPP_LIBC_LLVM_LIBC
+ #    define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
+ #  endif
+diff -ruN llvm-project-23.1.0-rc3.src/libcxx/include/__cxx03/__config llvm-project-23.1.0-rc3.src.aros/libcxx/include/__cxx03/__config
+--- llvm-project-23.1.0-rc3.src/libcxx/include/__cxx03/__config	2026-08-19 13:30:01.494733392 +0100
++++ llvm-project-23.1.0-rc3.src.aros/libcxx/include/__cxx03/__config	2026-08-19 13:30:01.491774892 +0100
+@@ -749,7 +749,7 @@
+ #    define _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION
+ #  endif
+ 
+-#  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
++#  if defined(__AROS__) || defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||   \
+       defined(_LIBCPP_HAS_MUSL_LIBC) || defined(__OpenBSD__)
+ #    define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
+ #  endif
+diff -ruN llvm-project-23.1.0-rc3.src/libcxx/include/__locale_dir/locale_base_api.h llvm-project-23.1.0-rc3.src.aros/libcxx/include/__locale_dir/locale_base_api.h
+--- llvm-project-23.1.0-rc3.src/libcxx/include/__locale_dir/locale_base_api.h	2026-08-19 15:37:15.664463931 +0100
++++ llvm-project-23.1.0-rc3.src.aros/libcxx/include/__locale_dir/locale_base_api.h	2026-08-19 15:37:15.666201131 +0100
+@@ -134,7 +134,13 @@
+ //       (by providing global non-reserved names) and the new API. As we move individual platforms
+ //       towards the new way of defining the locale base API, this should disappear since each platform
+ //       will define those directly.
+-#    include <__locale_dir/locale_base_api/ibm.h>
++// AROS: this bridge header redeclares the C library entry points with an
++// abi_tag, which clashes with AROS's own declarations. libc++ 20 reached this
++// point with no platform header included at all and worked from the generic
++// declarations below, so keep doing that.
++#    ifndef __AROS__
++#      include <__locale_dir/locale_base_api/ibm.h>
++#    endif
+ 
+ #    include <__locale_dir/locale_base_api/bsd_locale_fallbacks.h>
+ 
+diff -ruN llvm-project-23.1.0-rc3.src/libcxx/src/chrono.cpp llvm-project-23.1.0-rc3.src.aros/libcxx/src/chrono.cpp
+--- llvm-project-23.1.0-rc3.src/libcxx/src/chrono.cpp	2026-08-19 13:30:01.500159892 +0100
++++ llvm-project-23.1.0-rc3.src.aros/libcxx/src/chrono.cpp	2026-08-19 13:30:01.497401292 +0100
+@@ -36,7 +36,7 @@
+ 
+ // OpenBSD and GPU do not have a fully conformant suite of POSIX timers, but
+ // it does have clock_gettime and CLOCK_MONOTONIC which is all we need.
+-#if defined(__APPLE__) || defined(__gnu_hurd__) || defined(__OpenBSD__) || defined(__AMDGPU__) ||                      \
++#if defined(__AROS__) || defined(__APPLE__) || defined(__gnu_hurd__) || defined(__OpenBSD__) || defined(__AMDGPU__) ||                      \
+     defined(__NVPTX__) || (defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0)
+ #  define _LIBCPP_HAS_CLOCK_GETTIME
+ #endif
+diff -ruN llvm-project-23.1.0-rc3.src/libcxx/src/CMakeLists.txt llvm-project-23.1.0-rc3.src.aros/libcxx/src/CMakeLists.txt
+--- llvm-project-23.1.0-rc3.src/libcxx/src/CMakeLists.txt	2026-08-19 13:30:01.506224892 +0100
++++ llvm-project-23.1.0-rc3.src.aros/libcxx/src/CMakeLists.txt	2026-08-19 13:30:01.503248592 +0100
+@@ -4,7 +4,6 @@
+   any.cpp
+   bind.cpp
+   call_once.cpp
+-  charconv.cpp
+   chrono.cpp
+   error_category.cpp
+   exception.cpp
+@@ -60,6 +59,8 @@
+   verbose_abort.cpp
+   )
+ 
++#  list(APPEND LIBCXX_SOURCES charconv.cpp)
++
+ if (LIBCXX_ENABLE_THREADS)
+   list(APPEND LIBCXX_SOURCES
+     atomic.cpp
