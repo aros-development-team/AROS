@@ -148,7 +148,7 @@ static int fw_filename(char *out, ULONG chip, const char *board, const char *ext
     switch (chip)
     {
     case 43430:     id = "43430"; break;        /* Pi 3 / 3B (BCM43430) */
-    case 0x4345:    id = "43455"; break;        /* Pi 3B+ / 4 (BCM43455) */
+    case 0x4345:    id = "43455"; break;        /* Pi 3B+ / 4 / 5 (BCM43455 / CYW43455) */
     default:        return -1;
     }
 

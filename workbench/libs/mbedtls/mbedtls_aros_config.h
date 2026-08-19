@@ -39,6 +39,9 @@
 #define MBEDTLS_SSL_TLS_C
 #define MBEDTLS_SSL_PROTO_TLS1_2
 #define MBEDTLS_SSL_PROTO_TLS1_3
+/* TLS 1.3 derives its key schedule through PSA and keeps the peer cert */
+#define MBEDTLS_PSA_CRYPTO_C
+#define MBEDTLS_SSL_KEEP_PEER_CERTIFICATE
 
 /* X.509 */
 #define MBEDTLS_X509_CRT_PARSE_C
@@ -80,13 +83,18 @@
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
 
+/* mbedTLS has no millisecond clock for AROS - see mbedtls_platform_aros.c */
+#define MBEDTLS_PLATFORM_MS_TIME_ALT
+
+/* AROS declares inet_pton() but does not expose it to a plain compile, and a
+ * certificate parser should not need the network stack - use mbedTLS's own. */
+#define MBEDTLS_TEST_SW_INET_PTON
+
 /* Misc */
 #define MBEDTLS_PKCS1_V15
 #define MBEDTLS_PKCS1_V21
 #define MBEDTLS_ERROR_C
 #define MBEDTLS_HKDF_C
 #define MBEDTLS_VERSION_C
-
-#include "mbedtls/check_config.h"
 
 #endif /* MBEDTLS_AROS_CONFIG_H */

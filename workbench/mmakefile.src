@@ -26,7 +26,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM         workbench-printers \
 #MM	    workbench-network \
 #MM         workbench-rexxc \
-#MM         kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM         kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
 #MM         kernel-bluetooth-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 # These are disk-based hardware drivers.

@@ -13,8 +13,12 @@
  */
 #define EMMC2_BASE                      (ARM_PERIIOBASE + 0x340000)
 
+/* BCM2712 (Raspberry Pi 5) eMMC2 controller */
+#define BCM2712_EMMC2_BASE              (ARM_PERIIOBASE + 0x100000)
+
 /* Both windows share one interrupt line on the BCM2711 (GIC SPI 126). */
 #define IRQ_BCM2711_SDHCI               158
+#define IRQ_BCM2712_SDHCI               300
 
 /* Identification clock, used until the card reports what it can take. */
 #define BCM2708SDCLOCK_MIN              400000

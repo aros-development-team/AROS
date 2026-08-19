@@ -1,0 +1,12 @@
+#   AROS metamakefile for DesignWare I2C HIDD (RP1 / Raspberry Pi 5)
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM- hidd-i2c-dw-bcm2712 : hidd-i2c-dw-bcm2712-module
+
+%build_module mmake=hidd-i2c-dw-bcm2712-module \
+    modname=i2cdw modtype=hidd \
+    files="i2c_dw"
+
+%common

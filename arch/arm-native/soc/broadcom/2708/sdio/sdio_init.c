@@ -1002,7 +1002,10 @@ static int sdio_init(struct SDIOBase *SDIOBase)
         return FALSE;
 
     InitSemaphore(&SDIOBase->sdio_Sem);
-    SDIOBase->sdio_iobase = SDIOBase->sdio_periiobase + 0x300000;       /* ARASAN_BASE */
+    if (SDIOBase->sdio_periiobase == BCM2712_PERIIOBASE)
+        SDIOBase->sdio_iobase = SDIOBase->sdio_periiobase + 0x100000;
+    else
+        SDIOBase->sdio_iobase = SDIOBase->sdio_periiobase + 0x300000;       /* ARASAN_BASE */
     SDIOBase->sdio_LastWrite = sdio_now(SDIOBase);
 
     if (!sdio_mbox_setup(SDIOBase))
