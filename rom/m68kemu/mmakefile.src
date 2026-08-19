@@ -12,9 +12,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-M68KEMU_CPUS := x86_64 aarch64 riscv64
-
-ifneq ($(filter $(AROS_TARGET_CPU),$(M68KEMU_CPUS)),)
+#MM- kernel-m68kemu : kernel-m68kemu-$(AROS_TARGET_CPU)
+#MM- kernel-m68kemu-x86_64 : kernel-m68kemu-library
+#MM- kernel-m68kemu-aarch64 : kernel-m68kemu-library
+#MM- kernel-m68kemu-riscv64 : kernel-m68kemu-library
 
 USER_CPPFLAGS := -DNO_INLINE_STDARG -I$(SRCDIR)/$(CURDIR)/Moira
 USER_CXXFLAGS := -std=c++20
@@ -35,15 +36,13 @@ M68KEMU_CXXFILES := \
     Moira/Moira/Moira \
     Moira/Moira/MoiraDebugger
 
-%build_module mmake=kernel-m68kemu \
+%build_module mmake=kernel-m68kemu-library \
     modname=m68kemu modtype=library \
     files="$(M68KEMU_FILES)" \
     cxxfiles="$(M68KEMU_CXXFILES)" \
     uselibs="stdc++ stdcio stdc posixc"
 
 %common
-
-endif # ifneq M68KEMU_CPUS
 
 # ── Shadow layout regeneration (needed for any new target architecture) ──
 # The checked-in m68kemu_shadow_layouts.h was generated for x86_64.
