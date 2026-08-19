@@ -37,6 +37,14 @@ static VOID cdTask(IPTR base, IPTR unit)
     struct IOStdReq *io;
 
     D(bug("%s.%d Task, Port %p\n", cu->cu_UnitOps->uo_Name, cu->cu_Unit, cu->cu_MsgPort));
+
+    /* Blocking drive probes belong here, not in resident init: a
+     * misbehaving drive must cost a failed mount, not a wedged boot
+     * task. I/O queued by early openers is served after this returns.
+     */
+    if (cu->cu_UnitOps->uo_Init)
+        cu->cu_UnitOps->uo_Init(cu->cu_Private);
+
     do {
         WaitPort(cu->cu_MsgPort);
         io = (struct IOStdReq *)GetMsg(cu->cu_MsgPort);

@@ -834,10 +834,19 @@ static VOID CD32_Expunge(APTR priv)
     FreeVec(cu);
 }
 
+static VOID CD32_UnitInit(APTR priv)
+{
+    struct CD32Unit *cu = priv;
+
+    cu->cu_Task = FindTask(NULL);
+    CD32_IsCDROM(cu);
+}
+
 static const struct cdUnitOps CD32Ops = {
     .uo_Name = "CD32 (Akiko)",
     .uo_Expunge = CD32_Expunge,
     .uo_DoIO = CD32_DoIO,
+    .uo_Init = CD32_UnitInit,
 };
 
 static const struct DosEnvec CD32Envec = {
@@ -900,7 +909,6 @@ static int CD32_InitLib(LIBBASETYPE *cb)
                 priv->cu_CDInfo.ReadSpeed = 150;
                 priv->cu_CDInfo.ReadXLSpeed = 150;
                 priv->cu_CDInfo.AudioPrecision = 1;
-                CD32_IsCDROM(priv);
 
                 unit = cdAddUnit(cb, &CD32Ops, priv, &CD32Envec);
                 if (unit >= 0) {
