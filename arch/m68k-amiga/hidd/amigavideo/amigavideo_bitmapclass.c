@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <exec/alerts.h>
@@ -82,6 +83,9 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     {
         struct TagItem  *tag, *tstate;
         bug("[AmigaVideo:Bitmap] %s: superclass failed to instantiate a suitable bitmap...!!\n", __func__);
+        bug("[AmigaVideo:Bitmap] %s: chip free %lu, largest %lu\n", __func__,
+            (unsigned long)AvailMem(MEMF_CHIP),
+            (unsigned long)AvailMem(MEMF_CHIP | MEMF_LARGEST));
         bug("[AmigaVideo:Bitmap] %s: tags @ 0x%p\n", __func__, msg->attrList);
         tstate = msg->attrList;
         while((tag = NextTagItem(&tstate)))
