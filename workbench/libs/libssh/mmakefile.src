@@ -1,0 +1,50 @@
+include $(SRCDIR)/config/aros.cfg
+
+LIBSSH_VERSION := 0.12.0
+LIBSSH_ARCHBASE := libssh-$(LIBSSH_VERSION)
+LIBSSH_SUFFIXES := tar.xz
+LIBSSH_REPOSITORIES := https://www.libssh.org/files/0.12/
+
+LIBSSH_SRCDIR := $(PORTSDIR)/libssh/$(LIBSSH_ARCHBASE)
+LIBSSH_LIBDIR := $(GENDIR)/$(CURDIR)/lib
+LIBSSH_INCDIR := $(LIBSSH_SRCDIR)/include
+
+MBEDTLS_INCDIR := $(PORTSDIR)/mbedtls/mbedtls-3.6.6/include
+MBEDTLS_LIBDIR := $(GENDIR)/workbench/libs/mbedtls/lib
+
+#MM- workbench-libs-libssh : mbedtls-build libssh-fetch libssh-build
+
+%fetch mmake=libssh-fetch archive=$(LIBSSH_ARCHBASE) \
+    destination=$(PORTSDIR)/libssh suffixes=$(LIBSSH_SUFFIXES) \
+    location=$(PORTSSOURCEDIR) archive_origins=$(LIBSSH_REPOSITORIES)
+
+LIBSSH_CFLAGS := -I$(LIBSSH_INCDIR) -I$(LIBSSH_SRCDIR)/src \
+    -I$(MBEDTLS_INCDIR) -I$(SRCDIR)/workbench/libs/mbedtls \
+    -DWITH_MBEDTLS -DHAVE_SELECT -DHAVE_SYS_SOCKET_H \
+    -DHAVE_NETINET_IN_H -DHAVE_ARPA_INET_H -DHAVE_UNISTD_H \
+    -DGLOBAL_CLIENT_CONFIG=\"ENVARC:SSH/ssh_config\" \
+    -O2
+
+#MM
+libssh-build : $(LIBSSH_LIBDIR)/libssh.a
+
+$(LIBSSH_LIBDIR)/libssh.a : | libssh-fetch mbedtls-build
+	@$(MKDIR) $(LIBSSH_LIBDIR)
+	@$(ECHO) "Building libssh $(LIBSSH_VERSION) with mbedTLS..."
+	@cd $(LIBSSH_SRCDIR)/src && \
+	    $(AROS_CROSSTOOL_PREFIX)gcc $(LIBSSH_CFLAGS) -c \
+	        session.c channels.c kex.c auth.c pki.c pki_mbedcrypto.c \
+	        packet.c socket.c connect.c buffer.c \
+	        messages.c server.c bind.c bind_config.c \
+	        scp.c sftp.c knownhosts.c config.c \
+	        dh.c dh-gex.c ecdh.c ecdh_mbedcrypto.c \
+	        crypto_common.c mbedcrypto_missing.c \
+	        wrapper.c misc.c error.c string.c \
+	        options.c log.c match.c \
+	        token.c callbacks.c poll.c \
+	    2>&1 | grep -v 'note:' | head -5; \
+	    $(AROS_CROSSTOOL_PREFIX)ar rcs $(LIBSSH_LIBDIR)/libssh.a *.o 2>/dev/null; \
+	    rm -f *.o
+	@$(ECHO) "libssh built: $(LIBSSH_LIBDIR)/libssh.a"
+
+%common

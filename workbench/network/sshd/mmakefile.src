@@ -1,0 +1,27 @@
+include $(SRCDIR)/config/aros.cfg
+
+LIBSSH_INCDIR := $(PORTSDIR)/libssh/libssh-0.12.0/include
+LIBSSH_LIBDIR := $(GENDIR)/workbench/libs/libssh/lib
+MBEDTLS_INCDIR := $(PORTSDIR)/mbedtls/mbedtls-3.6.6/include
+MBEDTLS_LIBDIR := $(GENDIR)/workbench/libs/mbedtls/lib
+
+USER_INCLUDES := -I$(LIBSSH_INCDIR) -I$(MBEDTLS_INCDIR)
+USER_CFLAGS := -std=c99
+USER_LDFLAGS := -L$(LIBSSH_LIBDIR) -L$(MBEDTLS_LIBDIR) \
+    -lssh -lmbedtls -lmbedx509 -lmbedcrypto
+
+#MM- workbench-network-sshd : workbench-libs-libssh workbench-libs-mbedtls
+
+%build_prog mmake=workbench-network-sshd \
+    progname=sshd targetdir=$(AROS_C) \
+    files="sshd"
+
+%build_prog mmake=workbench-network-ssh \
+    progname=ssh targetdir=$(AROS_C) \
+    files="ssh"
+
+%build_prog mmake=workbench-network-ssh-keygen \
+    progname=ssh-keygen targetdir=$(AROS_C) \
+    files="ssh-keygen"
+
+%common
