@@ -252,7 +252,21 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
         CopyMem(unit->bgu_HW->macAddr, unit->bgu_DevAddr, ETH_ADDRESSSIZE);
     else
         BCMGENET_GetMACAddress(unit->bgu_HW, unit->bgu_DevAddr);
+
     CopyMem(unit->bgu_DevAddr, unit->bgu_OrgAddr, ETH_ADDRESSSIZE);
+
+    /*
+     * Read the firmware-programmed station address before reset: UniMAC
+     * reset may clear the MAC address registers.
+     */
+    if (!BCMGENET_HWReset(unit->bgu_HW))
+    {
+        D(bug("[bcmgenet] hardware reset failed\n");)
+        FreeMem(unit, sizeof(*unit));
+        return NULL;
+    }
+
+    bug("[bcmgenet] hardware reset succeeded\n");
 
     /* TODO: BCMGENET_HWReset(), ring allocation, BCMGENET_HWInit(),
      * BCMGENET_PHYInit(), IRQ handler registration. Free 'unit' and

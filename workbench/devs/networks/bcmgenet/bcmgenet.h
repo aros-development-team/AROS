@@ -251,7 +251,7 @@ struct eth_frame
 /* Ring geometry. A buffer holds one whole frame; no chaining. */
 #define GENET_TXDESC                    32
 #define GENET_RXDESC                    32
-#define GENET_BUFSIZE                   1536
+#define GENET_BUFSIZE                   1536 /* Ethernet header, MTU, and spare room */
 
 /*
  * How the PHY is strapped to the MAC. The Pi 4B ties RXID (the RX

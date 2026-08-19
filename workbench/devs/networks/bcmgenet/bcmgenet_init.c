@@ -57,6 +57,26 @@ static int BCMGENET_Init(LIBBASETYPEPTR LIBBASE)
     if (!BCMGENET_Discover(LIBBASE, hw))
         return FALSE;
 
+    /* Smoketest */
+    LONG id1, id2;
+
+    if (!BCMGENET_Discover(LIBBASE, hw))
+        return FALSE;
+
+    id1 = BCMGENET_MDIORead(hw, hw->phyAddr, MII_PHYSID1);
+    id2 = BCMGENET_MDIORead(hw, hw->phyAddr, MII_PHYSID2);
+
+    if (id1 < 0 || id2 < 0 ||
+        (id1 == 0 && id2 == 0) ||
+        (id1 == 0xffff && id2 == 0xffff))
+    {
+        D(bug("[bcmgenet] PHY %lu did not answer MDIO\n", hw->phyAddr);)
+        return FALSE;
+    }
+
+    D(bug("[bcmgenet] PHY %lu: id %04lx:%04lx\n",
+          hw->phyAddr, id1, id2);)
+
     /*
      * TODO: once BCMGENET_Read()/BCMGENET_HWReset() are written, sanity
      * check GENET_SYS_REV_CTRL here the way DWMAC_Init() checks
