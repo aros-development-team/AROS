@@ -293,7 +293,15 @@ static LONG MakeConWindow(struct filehandle *fh)
         else
             err = ERROR_INVALID_RESIDENT_LIBRARY;
         if (err)
+        {
+            /* The pointer must not survive the close: MakeSureWinIsOpen
+             * treats a non-NULL window as an open one, so a stale pointer
+             * both bypasses the FHFLG_NOWINDOW latch and hands console
+             * I/O a freed window.
+             */
             CloseWindow(fh->window);
+            fh->window = NULL;
+        }
 
     } /* if (fh->window) */
     else {
