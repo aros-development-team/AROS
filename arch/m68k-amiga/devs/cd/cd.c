@@ -74,7 +74,8 @@ static BOOL cdRegisterVolume(struct cdUnit *unit, const struct DosEnvec *de)
     {
         IPTR pp[24];
         
-        CopyMem((IPTR *)de, &pp[4], sizeof(IPTR)*de->de_TableSize);
+        /* de_TableSize is the highest valid index, not a count */
+        CopyMem((IPTR *)de, &pp[4], sizeof(IPTR)*(de->de_TableSize + 1));
 
         /* This should be dealt with using some sort of volume manager or such. */
         if (unit->cu_Unit < 10)
@@ -92,6 +93,7 @@ static BOOL cdRegisterVolume(struct cdUnit *unit, const struct DosEnvec *de)
          * to handler-name matching when the DosType is zero.
          */
         pp[DE_DOSTYPE      + 4] = AROS_MAKE_ID('C','D','V','D');
+        pp[DE_BAUD         + 4] = 0;
         pp[DE_CONTROL      + 4] = 0;
         pp[DE_BOOTBLOCKS   + 4] = 0;
     
