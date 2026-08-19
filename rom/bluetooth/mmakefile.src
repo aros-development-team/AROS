@@ -7,13 +7,15 @@ include $(SRCDIR)/config/aros.cfg
 #MM      kernel-bluetooth-library \
 #MM      kernel-bluetooth-classes \
 #MM      bluetooth-shellcommands \
-#MM      kernel-bluetooth-hardware
+#MM      kernel-bluetooth-hardware \
+#MM      kernel-bluetooth-prefs
 
 #MM- kernel-bluetooth-clean : \
 #MM      kernel-bluetooth-library-clean \
 #MM      kernel-bluetooth-classes-clean \
 #MM      bluetooth-shellcommands-clean \
-#MM      kernel-bluetooth-hardware-clean
+#MM      kernel-bluetooth-hardware-clean \
+#MM      kernel-bluetooth-prefs-clean
 
 # Build SDK
 #MM- kernel-bluetooth-includes : \
