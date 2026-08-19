@@ -24,7 +24,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-oop \
 #MM     kernel-hidd-pci \
 #MM     kernel-layers \
-#MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
+#MM     kernel-bluetooth-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 # This metatarget represents all includes for SDK.
 # Note that it includes also some machine-specific modules (hostlib.resource,
@@ -64,7 +65,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM	kernel-pc-acpi-includes \
 #MM	kernel-bestcomm-chrp-ppc-efika-includes \
 #MM	kernel-rtas-chrp-ppc-includes \
-#MM     kernel-usb-includes
+#MM     kernel-usb-includes \
 #MM     kernel-bluetooth-includes
 
 # A shortcut for minimal set of BSP modules.

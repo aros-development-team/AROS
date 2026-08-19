@@ -538,6 +538,13 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
             {
                 if (s[i] == 'b' && s[i+1] == 'c' && s[i+2] == 'm' &&
                     s[i+3] == '2' && s[i+4] == '7' && s[i+5] == '1' &&
+                    s[i+6] == '2')
+                {
+                    plat = 0x2712; /* BCM2712 (Raspberry Pi 5) */
+                    break;
+                }
+                if (s[i] == 'b' && s[i+1] == 'c' && s[i+2] == 'm' &&
+                    s[i+3] == '2' && s[i+4] == '7' && s[i+5] == '1' &&
                     s[i+6] == '1')
                 {
                     plat = 0xc44; /* BCM2711 (Raspberry Pi 4) */

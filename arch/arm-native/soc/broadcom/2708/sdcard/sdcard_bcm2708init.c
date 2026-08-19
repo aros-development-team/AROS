@@ -91,8 +91,8 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
 
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
-    isEMMC2 = (__arm_periiobase == BCM2711_PERIIOBASE);
-    if (isEMMC2)
+    isEMMC2 = (__arm_periiobase == BCM2711_PERIIOBASE || __arm_periiobase == BCM2712_PERIIOBASE);
+    if (__arm_periiobase == BCM2711_PERIIOBASE)
     {
         /*
          * The card slot sits on EMMC2, but the legacy window is still wired
@@ -107,7 +107,13 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
         }
     }
 
-    if (isEMMC2)
+    if (__arm_periiobase == BCM2712_PERIIOBASE)
+    {
+        ctrlBase  = BCM2712_EMMC2_BASE;
+        ctrlClock = VCCLOCK_EMMC2;
+        ctrlIRQ   = IRQ_BCM2712_SDHCI;
+    }
+    else if (isEMMC2)
     {
         ctrlBase  = EMMC2_BASE;
         ctrlClock = VCCLOCK_EMMC2;
@@ -227,6 +233,9 @@ bcminit_clock:
             MBoxWrite((APTR)VCMB_BASE, VCMB_PROPCHAN, MBoxMessage);
             if (MBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) == MBoxMessage)
                 __BCM2708Bus->sdcb_ClockMax = AROS_LE2LONG(MBoxMessage[6]);
+
+            if (__BCM2708Bus->sdcb_ClockMax == 0)
+                __BCM2708Bus->sdcb_ClockMax = 200000000;
 
             DINIT(bug("[SDCard--] %s: clock was parked, max rate %d Hz\n",
                       __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax));

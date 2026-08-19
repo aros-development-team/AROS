@@ -1,11 +1,16 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Locale_RawDoFmt - locale.library's private replacement
           of exec.library/RawDoFmt function. IPrefs will install
           the patch.
 
 */
+
+/* alloca() is only declared when a translation unit opts in, and the header
+ * is guarded - do it before anything else can pull it in without the flag. */
+#define __AROS_ENABLE_ALLOCA__
+#include <aros/posixc/alloca.h>
 
 #include <exec/rawfmt.h>
 #include <exec/types.h>
@@ -14,7 +19,6 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 #include <stdarg.h>
-#include <alloca.h>
 
 AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     AROS_UFHA(struct Hook *, hook, A0),

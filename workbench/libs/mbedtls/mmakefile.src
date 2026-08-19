@@ -1,41 +1,183 @@
 #   AROS metamakefile for mbedTLS
 include $(SRCDIR)/config/aros.cfg
 
+#MM- workbench-libs-mbedtls : \
+#MM     linklibs-mbedcrypto \
+#MM     linklibs-mbedx509 \
+#MM     linklibs-mbedtls \
+#MM     workbench-libs-mbedtls-includes
+
+#MM linklibs-mbedcrypto : mbedtls-fetch workbench-libs-mbedtls-includes
+#MM linklibs-mbedx509 : mbedtls-fetch workbench-libs-mbedtls-includes
+#MM linklibs-mbedtls : mbedtls-fetch workbench-libs-mbedtls-includes
+
+#MM- workbench-libs-mbedtls-includes : workbench-libs-mbedtls-includes-copy
+#MM workbench-libs-mbedtls-includes-copy : mbedtls-fetch
+
 MBEDTLS_VERSION := 3.6.7
 MBEDTLS_ARCHBASE := mbedtls-$(MBEDTLS_VERSION)
 MBEDTLS_SUFFIXES := tar.bz2
-MBEDTLS_REPOSITORIES := https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$(MBEDTLS_VERSION)/
+MBEDTLS_REPOSITORIES := \
+    cache:// \
+    https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$(MBEDTLS_VERSION)/
 
 MBEDTLS_SRCDIR := $(PORTSDIR)/mbedtls/$(MBEDTLS_ARCHBASE)
 MBEDTLS_INCDIR := $(MBEDTLS_SRCDIR)/include
-MBEDTLS_LIBDIR := $(GENDIR)/$(CURDIR)/lib
-
-#MM- workbench-libs-mbedtls : mbedtls-fetch mbedtls-build
+MBEDTLS_LIBSRC := $(MBEDTLS_SRCDIR)/library
+MBEDTLS_OBJDIR := $(GENDIR)/$(CURDIR)
 
 %fetch mmake=mbedtls-fetch archive=$(MBEDTLS_ARCHBASE) \
     destination=$(PORTSDIR)/mbedtls suffixes=$(MBEDTLS_SUFFIXES) \
     location=$(PORTSSOURCEDIR) archive_origins=$(MBEDTLS_REPOSITORIES)
 
-MBEDTLS_SRCS := $(wildcard $(MBEDTLS_SRCDIR)/library/*.c)
+USER_INCLUDES := -I$(MBEDTLS_INCDIR) -I$(SRCDIR)/$(CURDIR)
+USER_CPPFLAGS := -DMBEDTLS_CONFIG_FILE='"mbedtls_aros_config.h"'
 
-# Build mbedTLS as static libraries
-MBEDTLS_CFLAGS := -I$(MBEDTLS_INCDIR) -I$(SRCDIR)/$(CURDIR) \
-    -DMBEDTLS_CONFIG_FILE=\"mbedtls_aros_config.h\" \
-    -O2 -ffunction-sections -fdata-sections
+# The file lists are the OBJS_CRYPTO/OBJS_X509/OBJS_TLS sets of mbedTLS's own
+# library/Makefile. net_sockets is left out - mbedtls_net_aros.c replaces it.
+MBEDTLS_CRYPTO_FILES := \
+    aes \
+    aesni \
+    aesce \
+    aria \
+    asn1parse \
+    asn1write \
+    base64 \
+    bignum \
+    bignum_core \
+    bignum_mod \
+    bignum_mod_raw \
+    block_cipher \
+    camellia \
+    ccm \
+    chacha20 \
+    chachapoly \
+    cipher \
+    cipher_wrap \
+    cmac \
+    constant_time \
+    ctr_drbg \
+    des \
+    dhm \
+    ecdh \
+    ecdsa \
+    ecjpake \
+    ecp \
+    ecp_curves \
+    entropy \
+    entropy_poll \
+    error \
+    gcm \
+    hkdf \
+    hmac_drbg \
+    lmots \
+    lms \
+    md \
+    md5 \
+    memory_buffer_alloc \
+    nist_kw \
+    oid \
+    padlock \
+    pem \
+    pk \
+    pk_ecc \
+    pk_wrap \
+    pkcs12 \
+    pkcs5 \
+    pkparse \
+    pkwrite \
+    platform \
+    platform_util \
+    poly1305 \
+    psa_crypto \
+    psa_crypto_aead \
+    psa_crypto_cipher \
+    psa_crypto_client \
+    psa_crypto_driver_wrappers_no_static \
+    psa_crypto_ecp \
+    psa_crypto_ffdh \
+    psa_crypto_hash \
+    psa_crypto_mac \
+    psa_crypto_pake \
+    psa_crypto_random \
+    psa_crypto_rsa \
+    psa_crypto_se \
+    psa_crypto_slot_management \
+    psa_crypto_storage \
+    psa_its_file \
+    psa_util \
+    ripemd160 \
+    rsa \
+    rsa_alt_helpers \
+    sha1 \
+    sha256 \
+    sha512 \
+    sha3 \
+    threading \
+    timing \
+    version \
+    version_features
 
-#MM
-mbedtls-build : $(MBEDTLS_LIBDIR)/libmbedtls.a
+MBEDTLS_X509_FILES := \
+    x509 \
+    x509_create \
+    x509_crl \
+    x509_crt \
+    x509_csr \
+    x509write \
+    x509write_crt \
+    x509write_csr \
+    pkcs7
 
-$(MBEDTLS_LIBDIR)/libmbedtls.a : | mbedtls-fetch
-	@$(MKDIR) $(MBEDTLS_LIBDIR)
-	@$(ECHO) "Building mbedTLS $(MBEDTLS_VERSION)..."
-	@cd $(MBEDTLS_SRCDIR) && \
-	    $(AROS_CROSSTOOL_PREFIX)gcc $(MBEDTLS_CFLAGS) -c library/*.c && \
-	    $(AROS_CROSSTOOL_PREFIX)ar rcs $(MBEDTLS_LIBDIR)/libmbedcrypto.a library/*.o && \
-	    rm -f library/*.o && \
-	    $(AROS_CROSSTOOL_PREFIX)gcc $(MBEDTLS_CFLAGS) -c library/ssl*.c library/x509*.c library/pk*.c library/rsa*.c library/ecdsa*.c library/ecdh*.c library/dhm*.c && \
-	    $(AROS_CROSSTOOL_PREFIX)ar rcs $(MBEDTLS_LIBDIR)/libmbedtls.a library/*.o && \
-	    rm -f library/*.o
-	@$(ECHO) "mbedTLS built: $(MBEDTLS_LIBDIR)/libmbedtls.a"
+MBEDTLS_TLS_FILES := \
+    debug \
+    mps_reader \
+    mps_trace \
+    ssl_cache \
+    ssl_ciphersuites \
+    ssl_client \
+    ssl_cookie \
+    ssl_debug_helpers_generated \
+    ssl_msg \
+    ssl_ticket \
+    ssl_tls \
+    ssl_tls12_client \
+    ssl_tls12_server \
+    ssl_tls13_keys \
+    ssl_tls13_client \
+    ssl_tls13_server \
+    ssl_tls13_generic
+
+# AROS platform adapters: entropy source, millisecond clock and bsdsocket I/O
+MBEDTLS_AROS_CRYPTO_FILES := \
+    mbedtls_entropy_aros \
+    mbedtls_platform_aros
+
+MBEDTLS_AROS_TLS_FILES := \
+    mbedtls_net_aros
+
+%build_linklib mmake=linklibs-mbedcrypto libname=mbedcrypto \
+    files="$(addprefix $(MBEDTLS_LIBSRC)/,$(MBEDTLS_CRYPTO_FILES)) $(MBEDTLS_AROS_CRYPTO_FILES)" \
+    objdir=$(MBEDTLS_OBJDIR)/libmbedcrypto
+
+%build_linklib mmake=linklibs-mbedx509 libname=mbedx509 \
+    files="$(addprefix $(MBEDTLS_LIBSRC)/,$(MBEDTLS_X509_FILES))" \
+    objdir=$(MBEDTLS_OBJDIR)/libmbedx509
+
+%build_linklib mmake=linklibs-mbedtls libname=mbedtls \
+    files="$(addprefix $(MBEDTLS_LIBSRC)/,$(MBEDTLS_TLS_FILES)) $(MBEDTLS_AROS_TLS_FILES)" \
+    objdir=$(MBEDTLS_OBJDIR)/libmbedtls
+
+MBEDTLS_HEADERS := $(sort $(wildcard $(MBEDTLS_INCDIR)/mbedtls/*.h))
+MBEDTLS_INCLUDE_FILES := $(patsubst $(MBEDTLS_INCDIR)/mbedtls/%,%,$(MBEDTLS_HEADERS))
+%copy_includes mmake=workbench-libs-mbedtls-includes-copy dir=$(MBEDTLS_INCDIR)/mbedtls \
+    includes=$(MBEDTLS_INCLUDE_FILES) path=mbedtls
+
+PSA_HEADERS := $(sort $(wildcard $(MBEDTLS_INCDIR)/psa/*.h))
+PSA_INCLUDE_FILES := $(patsubst $(MBEDTLS_INCDIR)/psa/%,%,$(PSA_HEADERS))
+%copy_includes mmake=workbench-libs-mbedtls-includes-copy dir=$(MBEDTLS_INCDIR)/psa \
+    includes=$(PSA_INCLUDE_FILES) path=psa
+
+#MM- ports-includes : workbench-libs-mbedtls-includes-copy
 
 %common
