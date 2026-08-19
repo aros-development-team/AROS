@@ -733,6 +733,7 @@ aros_target_objcopy
 aros_target_objdump
 aros_target_cc_path
 aros_target_cc_includes
+toolchain_ld_imagebase
 toolchain_ld_fmtbinary
 aros_target_ld
 aros_target_as
@@ -9719,6 +9720,7 @@ case "$aros_toolchain" in
                                 aros_target_cflags=""
         aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
         toolchain_ld_fmtbinary="--oformat binary"
+                                toolchain_ld_imagebase="--image-base"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
     *gnu*)
@@ -19908,6 +19910,7 @@ fi
 
 
 # Target Related #########################
+
 
 
 

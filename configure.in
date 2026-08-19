@@ -963,6 +963,10 @@ case "$aros_toolchain" in
         aros_target_cflags=""
         aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
         toolchain_ld_fmtbinary="--oformat binary"
+        dnl lld 23 refuses to emit a raw binary whose sections sit below the
+        dnl default image base (0x200000 on x86-64), so it has to be stated.
+        dnl The link rule appends the same address it passes to -Ttext.
+        toolchain_ld_imagebase="--image-base"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
     *gnu*)
@@ -4376,6 +4380,7 @@ AC_SUBST(orig_target_ld)
 AC_SUBST(aros_target_ld)
 AC_SUBST(aros_kernel_ld)
 AC_SUBST(toolchain_ld_fmtbinary)
+AC_SUBST(toolchain_ld_imagebase)
 AC_SUBST(aros_target_cc_includes)
 AC_SUBST(aros_target_cc_path)
 AC_SUBST(aros_target_objdump)

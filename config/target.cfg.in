@@ -152,6 +152,9 @@ DETACH_LDFLAGS                := $(strip @aros_target_detach_ldflags@)
 NOSTDLIB_LDFLAGS              := $(strip @aros_target_nostdlib_ldflags@)
 
 FMTBINARY_LDFLAGS             := @toolchain_ld_fmtbinary@
+# Empty unless the linker needs the image base stating for raw binary
+# output; the link rule appends the same address it gives to -Ttext.
+IMAGEBASE_LDFLAGS             := @toolchain_ld_imagebase@
 
 AR                            = $(strip @aros_target_ar@)
 AR_PLAIN                      = $(strip @aros_plain_ar@)
