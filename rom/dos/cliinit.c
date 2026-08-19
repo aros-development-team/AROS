@@ -718,7 +718,7 @@ static LONG internalBootCliHandler(void)
      * execute with this pr_WindowPtr, and on a CD boot it must stay -1
      * for the whole run, like the CD32 Kickstart behaves.
      */
-    if (!(IntExpBase(ExpansionBase)->BootFlags & BF_NO_BOOT_REQUESTERS))
+    if (!(BootFlags & BF_NO_BOOT_REQUESTERS))
         bootProc->pr_WindowPtr = bootWin;
 
     /* Init all the RTF_AFTERDOS code, since we now have SYS:, the dos devices, and all the other assigns */

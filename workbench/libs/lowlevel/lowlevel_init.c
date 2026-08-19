@@ -259,10 +259,12 @@ static int Init(LIBBASETYPEPTR LowLevelBase)
 static int Expunge(LIBBASETYPEPTR LowLevelBase)
 {
     D(bug("[lowlevel] %s()\n", __func__);)
+    llSysReq_Cleanup(LowLevelBase);
     LowLevelTimerClose(LowLevelBase);
     LowLevelInputClose(LowLevelBase);
     if (LowLevelBase->ll_UtilityBase)
         CloseLibrary(LowLevelBase->ll_UtilityBase);
+    return TRUE;
 }
 
 ADD2INITLIB(Init, 0);

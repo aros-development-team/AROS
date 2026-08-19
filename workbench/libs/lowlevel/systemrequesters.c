@@ -56,6 +56,26 @@ AROS_LH4(LONG, llEasyRequestGate,
     AROS_LIBFUNC_EXIT
 }
 
+/* Expunge-time cleanup: put intuition's vector back and drop our
+ * reference. If something else SetFunction()ed EasyRequestArgs() after
+ * us this un-hooks it too, but leaving the vector pointing into an
+ * expunged library would be worse.
+ */
+VOID llSysReq_Cleanup(struct LowLevelBase *LowLevelBase)
+{
+    if (LowLevelBase->ll_EasyRequestOrig != NULL)
+    {
+        SetFunction(LowLevelBase->ll_IntuitionBase, EASYREQUESTARGS_LVO,
+                    LowLevelBase->ll_EasyRequestOrig);
+        LowLevelBase->ll_EasyRequestOrig = NULL;
+    }
+    if (LowLevelBase->ll_IntuitionBase != NULL)
+    {
+        CloseLibrary(LowLevelBase->ll_IntuitionBase);
+        LowLevelBase->ll_IntuitionBase = NULL;
+    }
+}
+
 /*****************************************************************************
 
     NAME */
@@ -92,10 +112,11 @@ AROS_LH4(LONG, llEasyRequestGate,
 
     INTERNALS
 
-    The first call opens intuition.library and diverts the
-    EasyRequestArgs() vector through a gate with SetFunction(); the gate
-    stays installed for the library's lifetime and later calls only flip
-    the nest count it tests.
+    The first successful call opens intuition.library and diverts the
+    EasyRequestArgs() vector through a gate with SetFunction(); a failed
+    installation is retried on the next call. Once in, the gate stays
+    for the library's lifetime (expunge restores the vector) and further
+    calls only move the nest count it tests.
 
 *****************************************************************************/
 {
@@ -103,8 +124,13 @@ AROS_LH4(LONG, llEasyRequestGate,
 
     ObtainSemaphore(&LowLevelBase->ll_Lock);
 
-    if (LowLevelBase->ll_SysReqNest++ == -1 &&
-        LowLevelBase->ll_EasyRequestOrig == NULL)
+    LowLevelBase->ll_SysReqNest++;
+
+    /* Keep trying until the gate is in: a failed first attempt (say,
+     * intuition was not openable yet) must not block the feature for
+     * the rest of the session while the nest count is already raised.
+     */
+    if (LowLevelBase->ll_EasyRequestOrig == NULL)
     {
         if (LowLevelBase->ll_IntuitionBase == NULL)
             LowLevelBase->ll_IntuitionBase = OpenLibrary("intuition.library", 0);

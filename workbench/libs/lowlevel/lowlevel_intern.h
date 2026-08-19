@@ -71,6 +71,10 @@ struct LowLevelBase
     struct llArchData           ll_Arch;
 };
 
+/* systemrequesters.c: restore the EasyRequestArgs() vector and close
+ * intuition on expunge. */
+VOID llSysReq_Cleanup(struct LowLevelBase *LowLevelBase);
+
 /*
  * Defintion of internal structures.
  */
