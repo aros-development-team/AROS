@@ -791,22 +791,47 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
         positionmode = data->app_GlobalInfo.mgi_Prefs->window_position;
         if (positionmode >= 1)
         {
-            snprintf(filename, 255, "ENV:zune/%s.prefs", data->app_Base);
             /*
-             * The config window (sys:prefs/Zune) is launched asynchronously,
-             * so we may not have refreshed our in-memory Configdata when it
-             * was opened. Reload the latest settings it has written before
-             * saving, so we don't overwrite the user's changes with our
-             * stale copy. Window positions are still persisted by Save.
+             * Capture the final window positions. Windows that are closed
+             * by the application before disposing it (e.g. FryingPan) are
+             * already snapshotted in UndisplayWindow, but apps that just
+             * dispose the application with its windows still open (e.g.
+             * iGame) would otherwise lose their position. MUIM_Window_
+             * Snapshot stores the position in the app's winpos array,
+             * which Configdata_SetWindowPos re-adds during Save.
              */
-            DoMethod(data->app_GlobalInfo.mgi_Configdata,
-                MUIM_Configdata_Load, (IPTR) filename);
+            {
+                struct MinList *children = NULL;
+                Object *cstate;
+                Object *child;
+
+                get(data->app_WindowFamily, MUIA_Family_List, &children);
+                if (children)
+                {
+                    cstate = (Object *) children->mlh_Head;
+                    while ((child = NextObject(&cstate)))
+                        DoMethod(child, MUIM_Window_Snapshot, 1);
+                }
+            }
+
+            snprintf(filename, 255, "ENV:zune/%s.prefs", data->app_Base);
             DoMethod(data->app_GlobalInfo.mgi_Configdata,
                 MUIM_Configdata_Save, (IPTR) filename);
         }
         if (positionmode == 2)
         {
+            /*
+             * ENVARC holds the settings that survive a reboot, i.e. the
+             * ones from the last "Save" in the config window. "Use" only
+             * applies the settings for the current session, so do not
+             * write the session settings here. Reload the persistent
+             * ENVARC content and save it again, which updates only the
+             * window positions (Configdata_SetWindowPos re-adds them
+             * during Save).
+             */
             snprintf(filename, 255, "ENVARC:zune/%s.prefs", data->app_Base);
+            DoMethod(data->app_GlobalInfo.mgi_Configdata,
+                MUIM_Configdata_Load, (IPTR) filename);
             DoMethod(data->app_GlobalInfo.mgi_Configdata,
                 MUIM_Configdata_Save, (IPTR) filename);
         }
