@@ -94,6 +94,8 @@ static LONG find_element_index(struct DriverBase *AHIsubBase, void *node, char *
 }
 
 static BOOL fill_reg_values(struct DriverBase *AHIsubBase, struct RPiHDMISoc *soc, void *node, char *compatible) {
+    struct RPiHDMIBase *RPiHDMIBase = (struct RPiHDMIBase *) AHIsubBase;
+    ULONG bus_peribase = (RPiHDMIBase->periiobase == BCM2712_PERIIOBASE) ? BCM2712_BUS_PERIIOBASE : BCM2711_BUS_PERIIOBASE;
     LONG hdmi_index =
         find_element_index(AHIsubBase, node, "reg-names", "hdmi");
     LONG hd_index =
@@ -118,9 +120,9 @@ static BOOL fill_reg_values(struct DriverBase *AHIsubBase, struct RPiHDMISoc *so
         return FALSE;
     }
 
-    soc->hdmi_base = hdmi_base - BCM2711_BUS_PERIIOBASE;
-    soc->mai_base = mai_base - BCM2711_BUS_PERIIOBASE;
-    soc->packet_base = packet_base - BCM2711_BUS_PERIIOBASE;
+    soc->hdmi_base = hdmi_base - bus_peribase;
+    soc->mai_base = mai_base - bus_peribase;
+    soc->packet_base = packet_base - bus_peribase;
 
     D(bug("[RPiHDMI] hdmi_base=%08x mai_base=%08x packet_base=%08x\n",
         (ULONG)soc->hdmi_base,
@@ -199,7 +201,31 @@ BOOL DriverInit(struct DriverBase *AHIsubBase)
         return FALSE;
     }
 
-    if (RPiHDMIBase->periiobase == BCM2711_PERIIOBASE)
+    if (RPiHDMIBase->periiobase == BCM2712_PERIIOBASE)
+    {
+        OpenFirmwareBase = OpenResource("openfirmware.resource");
+
+        if (OpenFirmwareBase == NULL) {
+            Req("Unable to open 'openfirmware.resource'.\n");
+            return FALSE;
+        }
+
+        UWORD num = 0;
+
+        if (travers_device_tree_and_fill_soc(AHIsubBase, &rpihdmi_bcm2712_hdmi0_soc, "brcm,bcm2712-hdmi0"))
+            RPiHDMIBase->soc[num++] = &rpihdmi_bcm2712_hdmi0_soc;
+
+        if (travers_device_tree_and_fill_soc(AHIsubBase, &rpihdmi_bcm2712_hdmi1_soc, "brcm,bcm2712-hdmi1"))
+            RPiHDMIBase->soc[num++] = &rpihdmi_bcm2712_hdmi1_soc;
+
+        RPiHDMIBase->num_outputs = num;
+
+        if (num == 0) {
+            Req("Unsupported Raspberry Pi HDMI audio hardware.\n");
+            return FALSE;
+        }
+    }
+    else if (RPiHDMIBase->periiobase == BCM2711_PERIIOBASE)
     {
         OpenFirmwareBase = OpenResource("openfirmware.resource");
 

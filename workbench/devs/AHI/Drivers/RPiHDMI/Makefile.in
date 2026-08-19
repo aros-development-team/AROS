@@ -9,6 +9,6 @@ srcdir		= @srcdir@
 DRIVER		= rpihdmi.audio
 MODEFILE	= RPIHDMI
 
-OBJECTS		= rpihdmi-init.o rpihdmi-main.o rpihdmi-playslave.o rpihdmi-accel.o rpihdmi-hwaccess.o rpihdmi-iec958.o rpihdmi-dma.o rpihdmi-bcm283x.o rpihdmi-bcm2711.o
+OBJECTS		= rpihdmi-init.o rpihdmi-main.o rpihdmi-playslave.o rpihdmi-accel.o rpihdmi-hwaccess.o rpihdmi-iec958.o rpihdmi-dma.o rpihdmi-bcm283x.o rpihdmi-bcm2711.o rpihdmi-bcm2712.o
 
 include ../Common/Makefile.common

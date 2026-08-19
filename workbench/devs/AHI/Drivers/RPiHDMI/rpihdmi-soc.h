@@ -50,7 +50,10 @@ struct RPiHDMISoc {
 extern const struct RPiHDMISoc rpihdmi_bcm283x_soc;
 extern struct RPiHDMISoc rpihdmi_bcm2711_hdmi0_soc;
 extern struct RPiHDMISoc rpihdmi_bcm2711_hdmi1_soc;
+extern struct RPiHDMISoc rpihdmi_bcm2712_hdmi0_soc;
+extern struct RPiHDMISoc rpihdmi_bcm2712_hdmi1_soc;
 
 #define BCM2711_BUS_PERIIOBASE 0x7E000000UL
+#define BCM2712_BUS_PERIIOBASE 0x7C000000UL
 
 #endif

@@ -18,7 +18,7 @@
 struct RPiHDMIBase {
     struct DriverBase driverbase;
     struct DosLibrary *dosbase;
-    ULONG periiobase;
+    IPTR periiobase;
 
     struct RPiHDMISoc *soc[2]; /* Pointers to underlaying SOC implementation */
     UBYTE num_outputs;
@@ -42,7 +42,7 @@ struct RPiHDMIData {
     struct RPiHDMIBase *ahisubbase;
 
     /* Hardware state */
-    ULONG periiobase;
+    IPTR periiobase;
     LONG dma_channel;     /* Allocated from dma.resource, -1 = none */
     ULONG dma_dreq;
 

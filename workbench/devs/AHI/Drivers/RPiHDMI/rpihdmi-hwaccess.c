@@ -31,9 +31,9 @@
 /*
  * Microsecond delay using a busy loop on the system timer.
  */
-static void udelay(ULONG peribase, ULONG us)
+static void udelay(IPTR peribase, ULONG us)
 {
-    volatile ULONG *clo = (volatile ULONG *) (ULONG) (peribase + 0x003004);
+    volatile ULONG *clo = (volatile ULONG *) (peribase + 0x003004);
     ULONG start = AROS_LE2LONG(*clo);
 
     while ((AROS_LE2LONG(*clo) - start) < us)

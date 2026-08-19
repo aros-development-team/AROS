@@ -11,9 +11,9 @@
 /*
  * Microsecond delay using a busy loop on the system timer.
  */
-static void udelay(ULONG peribase, ULONG us)
+static void udelay(IPTR peribase, ULONG us)
 {
-    volatile ULONG *clo = (volatile ULONG *) (ULONG) (peribase + 0x003004);
+    volatile ULONG *clo = (volatile ULONG *) (peribase + 0x003004);
     ULONG start = AROS_LE2LONG(*clo);
 
     while ((AROS_LE2LONG(*clo) - start) < us)
@@ -50,10 +50,10 @@ void dma_setup(struct RPiHDMIData *dd)
 {
     struct DriverBase *AHIsubBase =
         (struct DriverBase *) dd->ahisubbase;
-    ULONG peribase = dd->periiobase;
+    IPTR peribase = dd->periiobase;
     ULONG channel = dd->dma_channel;
     ULONG cb_bus_addr = GPU_BUS_ADDR(dd->cb[0]);
-    ULONG dma_base = peribase + 0x007000 + channel * 0x100;
+    IPTR dma_base = peribase + 0x007000 + channel * 0x100;
     /* The channel is already enabled by dma.resource at allocation. */
     wr32le(dma_base + 0x00, DMA_CS_RESET);
     udelay(peribase, 10);
@@ -72,9 +72,9 @@ void dma_setup(struct RPiHDMIData *dd)
 
 void dma_stop(struct RPiHDMIData *dd)
 {
-    ULONG peribase = dd->periiobase;
+    IPTR peribase = dd->periiobase;
     ULONG channel = dd->dma_channel;
-    ULONG dma_base = peribase + 0x007000 + channel * 0x100;
+    IPTR dma_base = peribase + 0x007000 + channel * 0x100;
 
     wr32le(dma_base + 0x00, 0);
     udelay(peribase, 50);
@@ -97,7 +97,7 @@ void dma_stop(struct RPiHDMIData *dd)
 void dma_irq_handler(struct RPiHDMIData *data, void *data2)
 {
     struct ExecBase *SysBase = (struct ExecBase *) data2;
-    ULONG dma_base = data->periiobase + 0x007000 + data->dma_channel * 0x100;
+    IPTR dma_base = data->periiobase + 0x007000 + data->dma_channel * 0x100;
     ULONG cs = rd32le(dma_base + 0x00);
 
     if (cs & DMA_CS_INT) {
