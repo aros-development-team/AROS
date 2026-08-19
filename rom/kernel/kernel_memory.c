@@ -67,6 +67,11 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULON
     mh->mh_Lower           = start;
     mh->mh_Upper           = start + size;
     mh->mh_Free            = mh->mh_First->mc_Bytes;
+
+#if defined(__AROSEXEC_SMP__)
+    mh->mh_SpinLock.lock    = SPINLOCK_UNLOCKED;
+    mh->mh_SpinLock.s_Owner = NULL;
+#endif
 }
 
 /*
@@ -91,6 +96,10 @@ struct MemHeader *krnCreateROMHeader(CONST_STRPTR name, APTR start, APTR end)
         mh->mh_Lower = start;
         mh->mh_Upper = end + 1;                 /* end is the last valid address of the region */
         mh->mh_Free = 0;                        /* Never allocate from this chunk! */
+#if defined(__AROSEXEC_SMP__)
+        mh->mh_SpinLock.lock    = SPINLOCK_UNLOCKED;
+        mh->mh_SpinLock.s_Owner = NULL;
+#endif
         Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
 

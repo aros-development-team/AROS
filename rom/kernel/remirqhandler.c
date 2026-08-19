@@ -57,11 +57,17 @@
         (void)goSuper();
 
         Disable();
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         REMOVE(h);
         if (IsListEmpty(&KERNELIRQ_LIST(irq)))
         {
                 ictl_disable_irq(irq, KernelBase);
         }
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
         Enable();
 
         krnFreeIntrNode(h);

@@ -30,7 +30,8 @@ PRIV_EXEC_INCLUDES = \
     -I$(SRCDIR)/rom/kernel
 
 CFILES          := \
-        platform_init exec_idle superstate userstate coldreboot cachepredma cachecleare
+        platform_init exec_idle superstate userstate coldreboot cachepredma cachecleare \
+        intserver_vblank
 
 ##exec_init
 

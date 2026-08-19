@@ -163,7 +163,30 @@ void handle_irq(regs_t *regs)
     entered in FIQ mode.
 */
 
-__attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
+asm (
+    ".set       MODE_SYSTEM, 0x1f              \n"
+
+    ".globl __vectorhand_fiq                   \n"
+    ".type __vectorhand_fiq,%function          \n"
+    "__vectorhand_fiq:                         \n"
+    "           sub     lr, lr, #4             \n" // adjust lr_fiq (FIQ return = lr - 4)
+    VECTCOMMON_START
+    "           bl      handle_fiq             \n"
+    "           mov     r0, sp                 \n"
+    "           ldr     r1, [r0, #16*4]        \n" // saved spsr of interrupted context
+    "           tst     r1, #0x80              \n" // were IRQs disabled (Disable())?
+    "           bne     1f                     \n" // yes - defer; Enable() reschedules later
+    "           and     r1, r1, #31            \n" // mask processor mode
+    "           cmp     r1, #0x10              \n" // returning to user mode?
+    "           cmpne   r1, #0x1f              \n" // or system mode?
+    "           bne     1f                     \n" // no - nested interrupt, don't reschedule
+    "           mov     fp, #0                 \n" // clear fp
+    "           bl      core_ExitInterrupt     \n"
+    "1:                                        \n"
+    VECTCOMMON_END
+    );
+
+void handle_fiq(regs_t *regs)
 {
     DIRQ(bug("[Kernel] ## FIQ ##\n"));
 

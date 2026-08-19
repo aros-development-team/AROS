@@ -11,6 +11,10 @@ typedef struct tls
     BYTE                TDNestCnt;
     UWORD               Quantum;
     UWORD               Elapsed;
+    ULONG               CPUNumber;      /* Logical CPU id, set by boot CPU. The
+                                         * BCM2836 MPIDR/VMPIDR view is unreliable
+                                         * across cores on some Pi 3 armstubs, so
+                                         * GetCPUNumber() reads this instead. */
 } tls_t;
 
 #define TLSSF_Quantum   (1 << 0)

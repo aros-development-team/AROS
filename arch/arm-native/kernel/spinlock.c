@@ -56,6 +56,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
     }
 
     dmb();
+
     return lock;
 
     AROS_LIBFUNC_EXIT

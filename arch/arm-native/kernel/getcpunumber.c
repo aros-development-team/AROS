@@ -6,48 +6,42 @@
 #include <aros/libcall.h>
 
 #include "kernel_base.h"
+#include "kernel_cpu.h"
 #include "kernel_intern.h"
+#include "kernel_syscall.h"
 
+/*
+ * Caller's mode matters: MRC to MPIDR (c0,c0,5) is privileged on
+ * ARMv7-A and undefined in user mode. The previous implementation
+ * always took a SC_SUPERSTATE trip, which has the side effect of
+ * leaving the caller in SYSTEM mode and then forcibly cps'ing back
+ * to USER - silently flipping SVC callers to USER and breaking any
+ * subsequent privileged ops (inline GetCPUNumber, etc).
+ *
+ * Branch on the actual mode: in USER, SWI to a dedicated handler
+ * (SC_GETCPUNUMBER) that reads MPIDR in SVC and returns the value.
+ * In any privileged mode, do the MRC inline - no mode change.
+ */
 AROS_LH0(cpuid_t, KrnGetCPUNumber,
          struct KernelBase *, KernelBase, 41, Kernel)
 {
     AROS_LIBFUNC_INIT
 
-    register unsigned int superSP;
-    uint32_t tmp;
+    uint32_t cpsr;
 
-    asm volatile (
-        "       stmfd   sp!, {lr}               \n"
-        "       mov     r1, sp                  \n"
-        "       swi     %[swi_no]               \n"
-        "       mov     %[superSP], sp          \n"
-        "       mov     sp, r1                  \n"
-        "       ldmfd   sp!, {lr}               \n"
-        : [superSP] "=r" (superSP)
-        : [swi_no] "I" (6 /*SC_SUPERSTATE*/) : "r1"
-    );
+    asm volatile ("mrs %0, cpsr" : "=r" (cpsr));
 
-    asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
-
-    if (superSP)
+    if ((cpsr & 0x1f) == 0x10)
     {
-        asm volatile (
-            "       stmfd   sp!, {lr}               \n"
-            "       mov     r1, sp                  \n"
-            "       mov     sp, %[superSP]          \n"
-            "       cpsie   i, %[mode_user]         \n"
-            "       mov     sp, r1                  \n"
-            "       ldmfd   sp!, {lr}               \n"
-            : : [superSP] "r" (superSP), [mode_user] "I" (CPUMODE_USER) : "r1" );
+        register cpuid_t ret asm("r0");
+        asm volatile ("swi %[swi_no]"
+            : "=r" (ret)
+            : [swi_no] "I" (SC_GETCPUNUMBER)
+            : "lr", "memory");
+        return ret;
     }
 
-    if (tmp & (2 << 30))
-    {
-        return (cpuid_t)(((tmp & 0xF00) >> 4) | (tmp & 0xF));
-    }
-
-    // Uniprocessor System
-    return (cpuid_t)0;
+    return (cpuid_t)GetCPUNumber();
 
     AROS_LIBFUNC_EXIT
 }

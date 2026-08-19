@@ -65,6 +65,13 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
 #define EXEC_SPINLOCK_LOCK(a,b,c) Kernel_52_KrnSpinLock((a), (b), (c), NULL)
 #define EXEC_SPINLOCK_UNLOCK(a) Kernel_53_KrnSpinUnLock((a), NULL)
 
+/*
+ * Store-store barrier for publishing a freshly built structure to readers
+ * that walk it without taking a lock. x86 does not reorder stores, so
+ * keeping the compiler from doing it is enough.
+ */
+#define EXEC_MEMORY_BARRIER()   asm volatile("" ::: "memory")
+
 #if defined(AROS_NO_ATOMIC_OPERATIONS)
 #define IDNESTCOUNT_INC \
     do { \
@@ -188,6 +195,15 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
             __AROS_ATOMIC_OR_L(__schd->ScheduleFlags, TLSSF_Dispatch); \
     } while(0)
 #endif /* !AROS_NO_ATOMIC_OPERATIONS */
+/*
+ * Block IRQ-exit dispatch without going through Forbid()/Permit() (Permit's
+ * decrement can trigger Reschedule() which yields - exactly what we don't
+ * want while holding a scheduler list spinlock). Used by the scheduler-list
+ * helpers in rom/exec/exec_intern.h. Maps to the per-CPU task-dispatch nest
+ * count, mirroring arm-native's EXEC_BLOCK_DISPATCH_INC/DEC.
+ */
+#define EXEC_BLOCK_DISPATCH_INC         TDNESTCOUNT_INC
+#define EXEC_BLOCK_DISPATCH_DEC         TDNESTCOUNT_DEC
 #define SCHEDQUANTUM_SET(val) \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
