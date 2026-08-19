@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder (@metaneutrons)
 
     VideoCore VI (V3D 4.2) GPU Internal Definitions
 */
@@ -139,6 +138,7 @@ struct V3DData {
     struct Task     *irq_task;
     ULONG           irq_signal;
 
+    APTR            coreapi;        /* GalliumCoreAPI table from mesa3dgl */
     BOOL            powered;
 };
 

@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder (@metaneutrons)
 
     VideoCore VI (V3D 4.2) GPU — Hardware initialization and job submission
 */

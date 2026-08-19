@@ -6,7 +6,6 @@
  */
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder (@metaneutrons)
 
     V3D Mesa AROS DRM Override
 */

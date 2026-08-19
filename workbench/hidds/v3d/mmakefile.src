@@ -59,15 +59,17 @@ BROADCOM_COMMON_SOURCES := \
     $(MESA_BROADCOM_DIR)/common/v3d_debug \
     $(MESA_BROADCOM_DIR)/common/v3d_device_info
 
-# V3D HIDD sources (our code)
+# V3D HIDD sources
 V3D_HIDD_SOURCES := \
     v3d_init \
     v3d_hw \
     v3d_galliumclass \
-    v3d_drm_shim
+    v3d_drm_shim \
+    $(SRCDIR)/workbench/libs/mesa/emul_arosc
 
 USER_INCLUDES := \
     $(USER_INCLUDES) \
+    -I$(top_builddir)/galliumglue \
     -iquote $(SRCDIR)/$(CURDIR) \
     -iquote $(SRCDIR)/$(CURDIR)/drm-stubs \
     -isystem $(top_srcdir)/include \
@@ -82,32 +84,62 @@ USER_INCLUDES := \
     -I $(top_builddir)/src/compiler/nir
 
 USER_CPPFLAGS += \
-    -DV3D_VERSION=41 \
+    -DV3D_VERSION=42 \
     -DUSING_V3D_SIMULATOR=0 \
     -Dusing_v3d_simulator=0 \
     -UHAVE_VALGRIND \
+    -DGCA_CONSUMER_MODULE \
     -include $(SRCDIR)/$(CURDIR)/v3d_aros_override.h
 
 NOWARN_CFLAGS := $(NOWARN_MAYBE_UNINITIALIZED) $(NOWARN_MISSING_FIELD_INITIALIZERS)
 USER_CFLAGS += $(NOWARN_CFLAGS)
 
-USER_LDFLAGS := \
-    -L$(top_libdir) \
-    -Wl,--start-group -lgallium_v3d -lbroadcom_compiler -lcompiler -lgalliumauxiliary -lmesautil \
-    -lpthread -lposixc_rel -lstdc_rel \
-    -Wl,--end-group
-
-#MM hidd-v3d: includes hidd-gallium mesa3dgl-linklibs linklibs-gallium_v3d linklibs-broadcom_compiler
-#MM linklibs-gallium_v3d : mesa3dgl-linklibs
-#MM linklibs-broadcom_compiler : mesa3dgl-linklibs
-
-%build_module mmake=hidd-v3d modname=v3d modtype=hidd \
-    files="$(V3D_HIDD_SOURCES)" alwayscxxlink=yes uselibs="" objdir="$(OBJDIR)/$(MESAGLVERSION)"
+# Build combined Mesa V3D driver archive
+COMBINED_V3D_SOURCES := $(V3D_SOURCES) $(V3DX_SOURCES) $(BROADCOM_COMPILER_SOURCES) $(BROADCOM_COMMON_SOURCES)
 
 %build_linklib mmake=linklibs-gallium_v3d libname=gallium_v3d libdir=$(top_libdir) \
-    objdir=$(top_builddir)/gallium_v3d files="$(V3D_SOURCES) $(V3DX_SOURCES)"
+    objdir=$(top_builddir)/gallium_v3d files="$(COMBINED_V3D_SOURCES)"
 
-%build_linklib mmake=linklibs-broadcom_compiler libname=broadcom_compiler libdir=$(top_libdir) \
-    objdir=$(top_builddir)/broadcom_compiler files="$(BROADCOM_COMPILER_SOURCES) $(BROADCOM_COMMON_SOURCES)"
+# GalliumCoreAPI runtime binding
+GCA_GENDIR   := $(top_builddir)/galliumglue
+GCA_TOOL     := $(SRCDIR)/workbench/libs/mesa/galliumglue.py
+GCA_NM       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-nm
+GCA_OBJCOPY  := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-objcopy
+GCA_AR       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-ar
+GCA_CORELIBS := $(addprefix $(top_libdir)/lib, \
+    compiler.a galliumauxiliary.a mesautil.a mesa.a glapi.a mesadevutil.a)
+GCA_ABI_FLAGS := $(TARGET_ISA_CFLAGS) $(USER_CPPFLAGS)
+
+$(GCA_GENDIR)/.gca_v3d.stamp : $(top_libdir)/libgallium_v3d.a $(GCA_CORELIBS) $(GCA_TOOL)
+	%mkdir_q dir="$(GCA_GENDIR)"
+	$(Q)$(ECHO) "Generating GalliumCoreAPI glue for V3D"
+	$(Q)$(PYTHON) $(GCA_TOOL) --nm $(GCA_NM) --ar $(GCA_AR) \
+		--consumer $(top_libdir)/libgallium_v3d.a \
+		--providers $(GCA_CORELIBS) \
+		--private-data nir_intrinsic_infos nir_op_infos util_cpu_caps \
+		--mesa-version $(MESAGLVERSION) --arch $(AROS_TARGET_CPU) \
+		--abi-flags "$(strip $(GCA_ABI_FLAGS))" \
+		--abi-files $(SRCDIR)/workbench/libs/mesa/mesa-$(MESAGLVERSION)-aros.diff \
+		--outdir $(GCA_GENDIR)
+	$(Q)touch $@
+
+$(top_libdir)/libgallium_v3d_gca.a : $(top_libdir)/libgallium_v3d.a $(GCA_GENDIR)/.gca_v3d.stamp
+	$(Q)$(ECHO) "Rewriting gallium_v3d through GalliumCoreAPI table"
+	$(Q)$(GCA_OBJCOPY) --redefine-syms=$(GCA_GENDIR)/gca_redefs.txt \
+		$(top_libdir)/libgallium_v3d.a $@
+	$(Q)$(GCA_AR) rs $@ $(GCA_GENDIR)/gca_bind.o $(GCA_GENDIR)/gca_glue.o
+	$(Q)cat $(GCA_GENDIR)/gca_private.list | xargs $(GCA_AR) rs $@
+
+#MM
+linklibs-gallium_v3d-gca : $(top_libdir)/libgallium_v3d_gca.a
+
+USER_LDFLAGS := -L$(top_libdir) -lstdcio -lstdc
+
+#MM hidd-v3d: includes hidd-gallium mesa3dgl-linklibs linklibs-gallium_v3d linklibs-gallium_v3d-gca
+
+%build_module mmake=hidd-v3d modname=v3d modtype=hidd \
+    files="$(V3D_HIDD_SOURCES)" alwayscxxlink=yes \
+    uselibs="gallium_v3d_gca pthread" \
+    objdir="$(OBJDIR)/$(MESAGLVERSION)"
 
 %common

@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder (@metaneutrons)
 
     VideoCore VI (V3D) — Gallium HIDD class
 */
@@ -23,6 +22,11 @@ struct renderonly;
 extern struct pipe_screen *v3d_screen_create(int fd,
     const struct pipe_screen_config *config, struct renderonly *ro);
 
+/* Forward declaration — from GalliumCoreAPI */
+struct GalliumCoreAPI;
+extern int gca_bind(const struct GalliumCoreAPI *api);
+extern const char *gca_slot_name(unsigned int slot);
+
 /* Global V3DData pointer for the DRM shim to access */
 struct V3DData *g_v3d_data = NULL;
 
@@ -32,6 +36,10 @@ struct V3DData *g_v3d_data = NULL;
 OOP_Object *HiddV3D__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (o)
+    {
+        SD(cl)->coreapi = (APTR)GetTagData(aHidd_Gallium_CoreAPI, 0, msg->attrList);
+    }
     return o;
 }
 
@@ -50,6 +58,26 @@ OOP_Object *HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o
 
     if (!sd->powered) {
         D(bug("[V3D] GPU not powered\n"));
+        return NULL;
+    }
+
+    /*
+     * Bind the driver's Mesa-core trampolines to mesa3dgl's
+     * GalliumCoreAPI table before any driver code runs.
+     */
+    if (!sd->coreapi) {
+        bug("[V3D] GalliumCoreAPI table missing (old mesa3dgl?)\n");
+        return NULL;
+    }
+
+    int bres = gca_bind((const struct GalliumCoreAPI *)sd->coreapi);
+    if (bres > 0) {
+        bug("[V3D] GalliumCoreAPI bind refused: slot %d is not '%s'\n",
+            bres - 1, gca_slot_name((unsigned int)(bres - 1)));
+        return NULL;
+    }
+    if (bres < 0) {
+        bug("[V3D] GalliumCoreAPI bind refused (code %d)\n", bres);
         return NULL;
     }
 

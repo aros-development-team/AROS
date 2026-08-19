@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
-    Author: Fabian Schmieder (@metaneutrons)
 
     VideoCore VI (V3D) — HIDD initialization
 */
