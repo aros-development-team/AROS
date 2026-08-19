@@ -34,6 +34,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-lowlevel \
 #MM     workbench-libs-lzma \
 #MM     workbench-libs-mathffp \
+#MM     workbench-libs-mbedtls \
 #MM     workbench-libs-mathieeesingbas \
 #MM     workbench-libs-mathieeesingtrans \
 #MM     workbench-libs-mathtrans \
