@@ -48,6 +48,9 @@ static const char strProductHostController[] = " Host Controller";
 static const char strEmpty[] = "";
 
 extern int XHCIControllerOOPStartup(struct PCIDevice *hd);
+#if defined(PCIXHCI_PLATFORM_PROBE)
+void pcixhci_probe_platform(struct PCIDevice *hd);
+#endif
 
 AROS_UFH3(void, pciEnumerator,
           AROS_UFHA(struct Hook *, hook, A0),
@@ -199,32 +202,10 @@ BOOL pciInit(struct PCIDevice *hd)
     XHCIControllerOOPStartup(hd);
     pciusbDebug("PCI", "xHCI USB Controller class @  0x%p\n", hd->hd_USBXHCIControllerClass);
 
-    /* Probe platform xHCI controllers (RP1 on RPi5) */
-    {
-        struct Library *rp1usb = OpenResource("rp1usb.resource");
-        if (rp1usb) {
-            IPTR *fields = (IPTR *)((UBYTE *)rp1usb + sizeof(struct Library));
-            if (fields[2]) { /* present */
-                IPTR bases[2] = { fields[0], fields[1] }; /* usb0, usb1 */
-                int i;
-                for (i = 0; i < 2; i++) {
-                    if (bases[i]) {
-                        struct PCIController *hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
-                        if (hc) {
-                            hc->hc_Device = hd;
-                            hc->hc_RegBase = (volatile APTR)bases[i];
-                            hc->hc_Flags = HCF_PLATFORM;
-                            hc->hc_FunctionNum = i;
-                            hc->hc_PCIIntLine = 0;
-                            hc->hc_DevID = 0x1DE40001 + i;
-                            AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
-                            pciusbDebug("PCI", "RP1 platform xHCI%d @ 0x%p\n", i, (APTR)bases[i]);
-                        }
-                    }
-                }
-            }
-        }
-    }
+#if defined(PCIXHCI_PLATFORM_PROBE)
+    /* Probe platform xHCI controllers (implemented via arch-specific override) */
+    pcixhci_probe_platform(hd);
+#endif
 
     // Create units with a list of host controllers having the same bus and device number.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ) {
