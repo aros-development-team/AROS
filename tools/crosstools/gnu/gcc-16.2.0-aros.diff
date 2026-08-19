@@ -2823,3 +2823,16 @@ diff -ruN gcc-16.2.0/libstdc++-v3/include/std/ratio gcc-16.2.0.aros/libstdc++-v3
        static constexpr int __shift = __builtin_clzll(__d);
        static constexpr int __coshift_ = sizeof(uintmax_t) * 8 - __shift;
        static constexpr int __coshift = (__shift != 0) ? __coshift_ : 0;
+diff -ruN gcc-16.2.0/libcody/buffer.cc gcc-16.2.0.aros/libcody/buffer.cc
+--- gcc-16.2.0/libcody/buffer.cc	2026-08-07 07:46:10.000000000 +0000
++++ gcc-16.2.0.aros/libcody/buffer.cc	2026-05-10 20:00:00.000000000 +0000
+@@ -1,5 +1,9 @@
+ // CODYlib		-*- mode:c++ -*-
+ // Copyright (C) 2020 Nathan Sidwell, nathan@acm.org
++#if __cpp_char8_t >= 201811L
++// Fix for host GCC with char8_t enabled: provide conversion
++inline char S2C(char8_t c) { return static_cast<char>(c); }
++#endif
+ // License: Apache v2.0
+ 
+ #include "cody.hh"
