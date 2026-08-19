@@ -164,7 +164,10 @@ static int cd_Init(LIBBASETYPE *cb)
     NEWLIST(&cb->cb_Units);
     InitSemaphore(&cb->cb_UnitsLock);
 
-    /* Hand-hacked port for timer responses */
+    /* Hand-hacked port for timer responses. ReplyMsg() enqueues on
+     * mp_MsgList before signalling, so it must be a valid empty list.
+     */
+    NEWLIST(&cb->cb_TimerPort.mp_MsgList);
     cb->cb_TimerPort.mp_SigBit = SIGB_SINGLE;
     cb->cb_TimerPort.mp_Flags = PA_SIGNAL;
     cb->cb_TimerPort.mp_SigTask = FindTask(NULL);
