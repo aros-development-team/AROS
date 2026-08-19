@@ -43,6 +43,10 @@ SKIP_FUNCTIONS = {
     "Seek", "SetABPenDrMd", "SetAPen", "SetBPen", "SetDrMd", "SetFont",
     "SetIoErr", "SetSignal", "Text", "TextLength", "TypeOfMem", "UnLock",
     "VPrintf", "WaitPort", "Write",
+    # AROS keeps these LVOs private - no public C prototype exists for them
+    "AddDisplayData", "AddDisplayInfoData", "SetDisplayInfoData",
+    "LocRawDoFmt", "LocStrnicmp", "LocStricmp", "LocToLower", "LocToUpper",
+    "LocDateToStr", "LocStrToDate", "LocDosGetLocalizedString", "LocVNewRawDoFmt",
     "AVL_AddNode", "AVL_FindNode", "AVL_RemNodeByAddress", "AddDevice",
     "AddIntServer", "AddLibrary", "AddMemHandler", "AddMemList",
     "AddResetCallback", "Alert", "AllocDosObject", "CachePostDMA",
@@ -233,7 +237,14 @@ INPUT_STRUCT_TYPES = {
 STRING_TYPES = {"STRPTR", "CONST_STRPTR", "char *", "const char *", "UBYTE *", "CONST UBYTE *"}
 
 SCALAR_TYPES = {"ULONG", "LONG", "WORD", "UWORD", "BOOL", "UBYTE", "BYTE",
-                "BPTR", "BSTR", "Tag", "APTR", "CONST_APTR", "PLANEPTR"}
+                "Tag", "IPTR", "SIPTR", "int", "long"}
+
+# BCPL pointers are passed through untranslated, like the hand written thunks do
+BPTR_TYPES = {"BPTR", "BSTR"}
+
+# pointer typedefs that carry no '*' of their own
+POINTER_TYPES = {"APTR", "CONST_APTR", "PLANEPTR", "Msg", "VOID_FUNC",
+                 "DisplayInfoHandle"}
 
 DPTR_OVERRIDES = {
     "DrawImage": {"d0"},
@@ -305,8 +316,17 @@ def classify_type(ptype):
     """Classify a C type string into a category for thunk generation."""
     ptype = ptype.strip()
     clean = re.sub(r"\bCONST\b|\bconst\b", "", ptype).strip()
+    if clean.count("*") > 1:
+        return ("unsupported",)     # pointer to pointer - needs write back to m68k memory
     if clean in STRING_TYPES or ptype in STRING_TYPES:
         return ("string",)
+    base = clean.rstrip(" *")
+    if base in BPTR_TYPES:
+        return ("bptr",)
+    if base == "RAWARG":
+        return ("rawarg",)
+    if base in POINTER_TYPES:
+        return ("pointer",)
     sm = re.match(r"struct\s+(\w+)\s*\*", clean)
     if sm:
         sname = sm.group(1)
@@ -317,7 +337,6 @@ def classify_type(ptype):
         if sname in INPUT_STRUCT_TYPES:
             return ("input_struct", sname)
         return ("pointer",)
-    base = clean.rstrip(" *")
     if base in SCALAR_TYPES or clean in SCALAR_TYPES or "*" not in clean:
         return ("pointer",) if "*" in clean else ("scalar",)
     return ("pointer",)
@@ -413,8 +432,11 @@ def gen_typed_param(ctype, arg, rtype, rnum, sname):
             return f"    struct RastPort *arg_{arg} = resolve_rp(ctx, THUNK_A({rnum}));", False
         macro = f"THUNK_A({rnum})" if rtype == "a" else f"THUNK_D({rnum})"
         return f"    struct {sname} *arg_{arg} = (struct {sname} *)m68k_to_host_or_shadow(ctx, {macro});", False
-    if ctype == "input_struct":
+    if ctype in ("input_struct", "unsupported"):
         return None, False
+    if ctype == "bptr":
+        macro = f"THUNK_A({rnum})" if rtype == "a" else f"THUNK_D({rnum})"
+        return f"    BPTR arg_{arg} = (BPTR){macro};", False
     if ctype == "taglist":
         return f"    struct TagItem *arg_{arg} = m68k_to_native_taglist(ctx, THUNK_A({rnum}));", True
     if ctype == "string":
@@ -423,7 +445,8 @@ def gen_typed_param(ctype, arg, rtype, rnum, sname):
     if ctype == "pointer":
         macro = "THUNK_PTR" if rtype == "a" else "THUNK_DPTR"
         return f"    APTR arg_{arg} = {macro}({rnum});", False
-    return f"    ULONG arg_{arg} = THUNK_D({rnum});", False
+    macro = f"THUNK_A({rnum})" if rtype == "a" else f"THUNK_D({rnum})"
+    return f"    ULONG arg_{arg} = {macro};", False
 
 
 def gen_param_line(funcname, arg, reg, ptype):
@@ -446,24 +469,21 @@ def gen_param_line(funcname, arg, reg, ptype):
     return f"    ULONG arg_{arg} = THUNK_D({rnum});", False
 
 
-def gen_return_block(call, is_void, shadow_ret, needs_taglist_free, taglist_args):
+def gen_return_block(call, is_void, shadow_ret, cleanup):
     """Generate return and cleanup statements for thunk."""
     lines = []
     if is_void:
         lines.append(f"    {call};")
-        for ta in taglist_args:
-            lines.append(f"    if (arg_{ta}) FreeVec(arg_{ta});")
+        lines.extend(cleanup)
         lines.append("    return 0;")
     elif shadow_ret:
         lines.append(f"    void *_ret = (void *){call};")
-        for ta in taglist_args:
-            lines.append(f"    if (arg_{ta}) FreeVec(arg_{ta});")
+        lines.extend(cleanup)
         lines.append("    if (!_ret) return 0;")
         lines.append(f'    return shadow_create_by_name(ctx, "{shadow_ret}", _ret);')
-    elif needs_taglist_free:
+    elif cleanup:
         lines.append(f"    IPTR _ret = (IPTR){call};")
-        for ta in taglist_args:
-            lines.append(f"    if (arg_{ta}) FreeVec(arg_{ta});")
+        lines.extend(cleanup)
         lines.append("    return _ret;")
     else:
         lines.append(f"    return (IPTR){call};")
@@ -487,22 +507,36 @@ def gen_thunk(libname, funcname, bias, args, regs, protos):
     ]
 
     call_args = []
-    needs_taglist_free = False
-    taglist_args = []
+    cleanup = []
+    fmt_var = None
 
     for i, (arg, reg) in enumerate(zip(args, regs)):
         ptype = proto_params[i][0] if proto_params and i < len(proto_params) else None
+        cls = classify_type(ptype) if ptype else None
+
+        if cls and cls[0] == "rawarg":
+            # a m68k RawDoFmt datastream is packed by specifier - repack it natively
+            if not fmt_var:
+                return None
+            macro = f"THUNK_A({reg[1]})" if reg[0] == "a" else f"THUNK_D({reg[1]})"
+            lines.append(f"    ULONG _{arg}_size;")
+            lines.append(f"    APTR arg_{arg} = m68k_to_native_fmt_stream(ctx, {fmt_var}, {macro}, &_{arg}_size);")
+            cleanup.append(f"    if (arg_{arg}) FreeMem(arg_{arg}, _{arg}_size);")
+            call_args.append(f"(RAWARG)arg_{arg}")
+            continue
+
         param_code, is_taglist = gen_param_line(funcname, arg, reg, ptype)
         if param_code is None:
             return None
         lines.append(param_code)
         if is_taglist:
-            needs_taglist_free = True
-            taglist_args.append(arg)
+            cleanup.append(f"    if (arg_{arg}) FreeVec(arg_{arg});")
+        if cls and cls[0] == "string":
+            fmt_var = f"arg_{arg}"
         call_args.append(f"arg_{arg}")
 
     call = f"{funcname}({', '.join(call_args)})"
-    lines.extend(gen_return_block(call, is_void, shadow_ret, needs_taglist_free, taglist_args))
+    lines.extend(gen_return_block(call, is_void, shadow_ret, cleanup))
     lines.append("}\n")
     return "\n".join(lines)
 
@@ -587,7 +621,9 @@ def emit_thunk_tables(all_tables, total):
     print("/* ── Library registration table ── */")
     print("const struct M68KLibThunkSet m68kemu_all_gen_libs[] = {")
     for libname in sorted(all_tables.keys()):
-        print(f'    {{ "{libname}.library", m68kemu_thunks_{libname}_gen, m68kemu_thunks_{libname}_gen_count }},')
+        # a const variable is not a constant expression in C - size the table instead
+        print(f'    {{ "{libname}.library", m68kemu_thunks_{libname}_gen, '
+              f'sizeof(m68kemu_thunks_{libname}_gen) / sizeof(struct M68KThunkEntry) - 1 }},')
     print("    { NULL, NULL, 0 }\n};")
     print(f"const ULONG m68kemu_all_gen_libs_count = {len(all_tables)};\n")
     print(f"/* Total: {total} auto-generated thunks across {len(all_tables)} libraries */")

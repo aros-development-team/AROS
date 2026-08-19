@@ -5,10 +5,16 @@
 # Uses Moira (MIT license) as the CPU core
 #
 # Skip on m68k targets — no need to emulate m68k on m68k
+#
+# The checked-in m68kemu_shadow_layouts.h holds the native struct offsets of a
+# 64bit build (an_Parent is at 8 there, but at 4 on a 32bit target), so only
+# build where those are valid until the layouts are generated per target.
 
 include $(SRCDIR)/config/aros.cfg
 
-ifneq ($(AROS_TARGET_CPU),m68k)
+M68KEMU_CPUS := x86_64 aarch64 riscv64
+
+ifneq ($(filter $(AROS_TARGET_CPU),$(M68KEMU_CPUS)),)
 
 USER_CPPFLAGS := -DNO_INLINE_STDARG -I$(SRCDIR)/$(CURDIR)/Moira
 USER_CXXFLAGS := -std=c++20
@@ -37,10 +43,14 @@ M68KEMU_CXXFILES := \
 
 %common
 
-endif # ifneq m68k
+endif # ifneq M68KEMU_CPUS
 
-# ── Shadow layout regeneration (optional, for new target architectures) ──
-# The checked-in m68kemu_shadow_layouts.h works for x86_64.
-# To regenerate for a different target:
-#   make kernel-m68kemu-shadows
-# Requires: python3, host gcc, AROS SDK headers built
+# ── Shadow layout regeneration (needed for any new target architecture) ──
+# The checked-in m68kemu_shadow_layouts.h was generated for x86_64.
+# To regenerate it, compile the probe gen_offset_extractor.py writes with both
+# the m68k and the target compiler, then feed the two offset dumps to
+#   gen_shadow_layouts.py m68k.txt aros.txt > m68kemu_shadow_layouts.h
+# Requires: python3 and the AmigaOS NDK headers for the m68k side.
+# Note that gen_shadow_layouts.py only treats a field as a pointer when the
+# native one is 8 bytes wide, so it needs fixing before it can serve a
+# 32bit target.

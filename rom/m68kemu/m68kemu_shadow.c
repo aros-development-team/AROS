@@ -10,6 +10,7 @@
 #include <exec/execbase.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <string.h>
 #include <stddef.h>
 

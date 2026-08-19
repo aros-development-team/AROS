@@ -235,6 +235,86 @@ static IPTR *translate_fmt_args(struct M68KEmuContext *ctx, const char *fmt, ULO
     return native;
 }
 
+/*
+ * Build a native RawDoFmt() datastream from the m68k one.
+ *
+ * RawDoFmt() fetches each argument at the width its specifier implies -
+ * a WORD for %d, a LONG for %ld and a pointer for %s - and advances the
+ * stream by exactly that much (see fetch_mem_arg() in rom/exec/rawdofmt.c).
+ * An array of uniformly sized slots is therefore not a datastream: on
+ * 64-bit every pointer slot is twice the size of the LONG the reader
+ * expects, and on 32-bit a WORD is read from a slot twice its size, so
+ * the reader loses sync with the second argument onwards.
+ *
+ * The size a slot takes is the same on both ABIs for %d (2) and %ld (4),
+ * and follows the pointer for %s, so packing by specifier is correct for
+ * 32-bit and 64-bit alike.
+ *
+ * Returns the stream, and its size through out_size for FreeMem().
+ */
+APTR m68k_to_native_fmt_stream(struct M68KEmuContext *ctx, const char *fmt, ULONG m68k_args, ULONG *out_size)
+{
+    *out_size = 0;
+
+    if (!fmt || !m68k_args)
+        return NULL;
+
+    int nargs = 0;
+    for (const char *f = fmt; *f; f++)
+        if (*f == '%' && f[1] && f[1] != '%') nargs++;
+    if (!nargs)
+        return NULL;
+
+    /* A pointer is the widest slot any one argument can take */
+    ULONG size = nargs * sizeof(APTR);
+    UBYTE *stream = (UBYTE *)AllocMem(size, MEMF_CLEAR);
+    if (!stream)
+        return NULL;
+
+    UBYTE *src = (UBYTE *)m68k_to_host(ctx, m68k_args);
+    UBYTE *dst = stream;
+    int ai = 0;
+
+    for (const char *f = fmt; *f && ai < nargs; f++) {
+        if (*f != '%') continue;
+        f++;
+        if (*f == '%') continue;
+        while (*f == '-' || *f == '+' || *f == ' ' || *f == '0' || (*f >= '1' && *f <= '9') || *f == '.') f++;
+        int is_long = 0;
+        if (*f == 'l') { is_long = 1; f++; }
+
+        if (*f == 's' || *f == 'b') {
+            /* m68k passes a 32bit address - hand over the host one */
+            ULONG p = ((ULONG)src[0]<<24)|((ULONG)src[1]<<16)|((ULONG)src[2]<<8)|src[3];
+            src += 4;
+            APTR hostptr = (*f == 's') ? m68k_to_host(ctx, p) : (APTR)(IPTR)p;
+            CopyMem(&hostptr, dst, sizeof(APTR));
+            dst += sizeof(APTR);
+        } else if (*f == 'd' || *f == 'u' || *f == 'x' || *f == 'c') {
+            if (is_long) {
+                ULONG v = ((ULONG)src[0]<<24)|((ULONG)src[1]<<16)|((ULONG)src[2]<<8)|src[3];
+                src += 4;
+                CopyMem(&v, dst, sizeof(ULONG));
+                dst += sizeof(ULONG);
+            } else {
+                UWORD v = (UWORD)((src[0]<<8)|src[1]);
+                src += 2;
+                CopyMem(&v, dst, sizeof(UWORD));
+                dst += sizeof(UWORD);
+            }
+        } else {
+            ULONG v = ((ULONG)src[0]<<24)|((ULONG)src[1]<<16)|((ULONG)src[2]<<8)|src[3];
+            src += 4;
+            CopyMem(&v, dst, sizeof(ULONG));
+            dst += sizeof(ULONG);
+        }
+        ai++;
+    }
+
+    *out_size = size;
+    return stream;
+}
+
 /* -522: RawDoFmt(A0=fmt, A1=dataStream, A2=putProc, A3=putData) -> D0=result */
 static IPTR thunk_exec_RawDoFmt(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -1065,10 +1145,10 @@ static IPTR thunk_dos_VPrintf(struct M68KEmuContext *ctx, void *cpu)
 {
     const char *fmt = (const char *)m68k_to_host(ctx, THUNK_D(1));
     if (!fmt) return -1;
-    int n;
-    IPTR *args = translate_fmt_args(ctx, fmt, THUNK_D(2), &n);
-    LONG ret = VPrintf(fmt, args);
-    if (args) FreeMem(args, n * sizeof(IPTR));
+    ULONG size;
+    APTR args = m68k_to_native_fmt_stream(ctx, fmt, THUNK_D(2), &size);
+    LONG ret = VPrintf(fmt, (RAWARG)args);
+    if (args) FreeMem(args, size);
     return (IPTR)ret;
 }
 
@@ -1076,10 +1156,10 @@ static IPTR thunk_dos_VFPrintf(struct M68KEmuContext *ctx, void *cpu)
 {
     const char *fmt = (const char *)m68k_to_host(ctx, THUNK_D(2));
     if (!fmt) return -1;
-    int n;
-    IPTR *args = translate_fmt_args(ctx, fmt, THUNK_D(3), &n);
-    LONG ret = VFPrintf((BPTR)THUNK_D(1), fmt, args);
-    if (args) FreeMem(args, n * sizeof(IPTR));
+    ULONG size;
+    APTR args = m68k_to_native_fmt_stream(ctx, fmt, THUNK_D(3), &size);
+    LONG ret = VFPrintf((BPTR)THUNK_D(1), fmt, (RAWARG)args);
+    if (args) FreeMem(args, size);
     return (IPTR)ret;
 }
 
@@ -1087,10 +1167,10 @@ static IPTR thunk_dos_VFWritef(struct M68KEmuContext *ctx, void *cpu)
 {
     const char *fmt = (const char *)m68k_to_host(ctx, THUNK_D(2));
     if (!fmt) return 0;
-    int n;
-    IPTR *args = translate_fmt_args(ctx, fmt, THUNK_D(3), &n);
-    VFWritef((BPTR)THUNK_D(1), fmt, args);
-    if (args) FreeMem(args, n * sizeof(IPTR));
+    ULONG size;
+    APTR args = m68k_to_native_fmt_stream(ctx, fmt, THUNK_D(3), &size);
+    VFWritef((BPTR)THUNK_D(1), fmt, (RAWARG)args);
+    if (args) FreeMem(args, size);
     return 0;
 }
 

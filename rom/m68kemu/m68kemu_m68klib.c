@@ -4,6 +4,7 @@
 */
 /* m68kemu_m68klib.c — Load m68k .library files into containment */
 
+#include <stdio.h>
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <proto/dos.h>
