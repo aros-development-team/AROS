@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
-FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree \
+FILES           := startup64 boot mmu kprintf support vc_mb serialdebug elf devicetree \
                    bc/vars bc/font8x14 bc/screen_fb vc_fb
 USER_CFLAGS     := -Wall $(CFLAGS_NO_BUILTIN)
 KERNEL_LDFLAGS  =
