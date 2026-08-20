@@ -51,6 +51,7 @@ void _AHIsub_Disable(struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsu
 void _AHIsub_Enable(struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase) { Enable(); }
 
 ULONG _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase) {
+    struct RPiI2SBase *RPiI2SBase = (struct RPiI2SBase *)AHIsubBase;
     if (flags & AHISF_PLAY) {
         struct TagItem proctags[] = {{NP_Entry,(IPTR)&SlaveEntry},{NP_Name,(IPTR)LibName},{NP_Priority,50},{TAG_DONE,0}};
         ULONG buf_frames = AudioCtrl->ahiac_MaxBuffSamples;
