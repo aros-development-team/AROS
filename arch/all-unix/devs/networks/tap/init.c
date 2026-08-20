@@ -1,7 +1,7 @@
 /*
  * tap - TUN/TAP network driver for AROS
  * Copyright (C) 2007 Robert Norris. All rights reserved.
- * Copyright (C) 2010-2019 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2026 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -10,10 +10,39 @@
 #include <hidd/unixio.h>
 #include <proto/alib.h>
 #include <proto/oop.h>
+#include <proto/dos.h>
 
 #include <string.h>
 
 #include "tap.h"
+
+/* Read this unit's configured MTU from ENV:SYS/Net/tap<unit>/MTU, falling back
+ * to standard Ethernet.  Uses the existing environment-variable mechanism; no
+ * new device API is introduced.  Out-of-range values are ignored. */
+static ULONG tap_read_mtu(struct tap_unit *unit)
+{
+    ULONG mtu = TAP_DEFAULT_MTU;
+    struct Library *DOSBase = OpenLibrary("dos.library", 36);
+
+    if (DOSBase != NULL)
+    {
+        char varname[64], value[16];
+
+        __sprintf(varname, TAP_ENV_MTU_FORMAT, (long)unit->num);
+        if (GetVar(varname, value, sizeof(value), LV_VAR) > 0)
+        {
+            LONG v = 0;
+            if (StrToLong(value, &v) > 0 && v >= 576 && v <= TAP_MAX_MTU)
+                mtu = (ULONG)v;
+            else
+                kprintf("[tap] [%d] ignoring out-of-range %s='%s' (valid 576..%d)\n",
+                        unit->num, varname, value, TAP_MAX_MTU);
+        }
+        CloseLibrary(DOSBase);
+    }
+
+    return mtu;
+}
 
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR LIBBASE)
 {
@@ -164,12 +193,28 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
         {
             char iotask_name[32];
 
+            /* pick up the configured MTU and size the frame buffers to match */
+            unit->mtu       = tap_read_mtu(unit);
+            unit->frame_max = TAP_FRAME_MAX(unit->mtu);
+
+            unit->rxbuf = AllocVec(unit->frame_max, MEMF_PUBLIC);
+            unit->txbuf = AllocVec(unit->frame_max, MEMF_PUBLIC);
+            if (unit->rxbuf == NULL || unit->txbuf == NULL)
+            {
+                kprintf("[tap] [%d] couldn't allocate %d-byte frame buffers\n",
+                        unit->num, (int)unit->frame_max);
+                error = IOERR_OPENFAIL;
+            }
+            else
+                kprintf("[tap] [%d] MTU %d (frame buffer %d bytes)\n",
+                        unit->num, (int)unit->mtu, (int)unit->frame_max);
+
             /* we're faking a 10Mbit ethernet card here */
             unit->info.SizeAvailable = unit->info.SizeSupplied = sizeof(struct Sana2DeviceQuery);
             unit->info.DevQueryFormat = 0;
             unit->info.DeviceLevel = 0;
             unit->info.AddrFieldSize = 48;
-            unit->info.MTU = 1500;
+            unit->info.MTU = unit->mtu;
             unit->info.BPS = 10000000;
             unit->info.HardwareType = S2WireType_Ethernet;
 
@@ -190,25 +235,29 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             /* and for the trackers */
             NEWLIST(&(unit->trackers));
 
-            /* a port to sync actions with the iotask */
-            unit->iosyncport = CreateMsgPort();
+            /* only bring the io task up if the buffers were allocated */
+            if (error == 0)
+            {
+                /* a port to sync actions with the iotask */
+                unit->iosyncport = CreateMsgPort();
 
-            /* make a unique name for this unit */
-            __sprintf(iotask_name, TAP_TASK_FORMAT, unit->num);
+                /* make a unique name for this unit */
+                __sprintf(iotask_name, TAP_TASK_FORMAT, unit->num);
 
-            /* make it fly */
-            unit->iotask = NewCreateTask(TASKTAG_PC  , tap_iotask,
-                                         TASKTAG_NAME, iotask_name,
-                                         TASKTAG_PRI , 50,
-                                         TASKTAG_ARG1, LIBBASE,
-                                         TASKTAG_ARG2, unit,
-                                         TAG_DONE);
+                /* make it fly */
+                unit->iotask = NewCreateTask(TASKTAG_PC  , tap_iotask,
+                                             TASKTAG_NAME, iotask_name,
+                                             TASKTAG_PRI , 50,
+                                             TASKTAG_ARG1, LIBBASE,
+                                             TASKTAG_ARG2, unit,
+                                             TAG_DONE);
 
-            /* wait until its ready to go */
-            WaitPort(unit->iosyncport);
-            ReplyMsg(GetMsg(unit->iosyncport));
+                /* wait until its ready to go */
+                WaitPort(unit->iosyncport);
+                ReplyMsg(GetMsg(unit->iosyncport));
 
-            D(bug("[tap] [%d] unit created and running\n", unit->num));
+                D(bug("[tap] [%d] unit created and running\n", unit->num));
+            }
         }
     }
 
@@ -248,6 +297,10 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             /* close the nic */
             if (unit->fd > 0)
                 Hidd_UnixIO_CloseFile(LIBBASE->unixio, unit->fd, NULL);
+
+            /* release the frame buffers before we wipe the unit */
+            FreeVec(unit->rxbuf);
+            FreeVec(unit->txbuf);
 
             /* fastest way to kill it */
             memset(unit, 0, sizeof(struct tap_unit));
@@ -299,6 +352,10 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
         /* kill trackers */
         ForeachNodeSafe(&(unit->trackers), tracker, tracker_next)
             FreeVec(tracker);
+
+        /* release the frame buffers */
+        FreeVec(unit->rxbuf);
+        FreeVec(unit->txbuf);
 
         /* fastest way to kill it */
         memset(unit, 0, sizeof(struct tap_unit));

@@ -1,7 +1,7 @@
 /*
  * tap - TUN/TAP network driver for AROS
  * Copyright (C) 2007 Robert Norris. All rights reserved.
- * Copyright (C) 2010-2011 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2026 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -61,6 +61,15 @@ extern int rand(void);
 #define TAP_IFACE_FORMAT "aros%ld"
 #define TAP_TASK_FORMAT "TAP IO: unit %d"
 
+/* Per-unit MTU is read at open time from an environment variable, defaulting
+ * to standard Ethernet.  Set e.g. ENV:SYS/Net/tap/unit0/MTU to 9000 (and raise
+ * the host tap's MTU to match) to exercise jumbo frames.  The on-wire frame the
+ * host TUN/TAP delivers has no FCS, so the frame buffer is header + MTU. */
+#define TAP_DEFAULT_MTU  1500
+#define TAP_MAX_MTU      9000
+#define TAP_ENV_MTU_FORMAT "SYS/Net/tap/unit%ld/MTU"
+#define TAP_FRAME_MAX(mtu) (ETH_HLEN + (mtu))
+
 
 struct tap_opener {
     struct MinNode              node;
@@ -91,6 +100,11 @@ struct tap_unit
     unsigned char               hwaddr[ETH_ALEN];
 
     struct Sana2DeviceQuery     info;
+
+    ULONG                       mtu;            /* protocol MTU (info.MTU)     */
+    ULONG                       frame_max;      /* header + MTU (rx/tx buffer) */
+    UBYTE                       *rxbuf;         /* frame_max receive buffer    */
+    UBYTE                       *txbuf;         /* frame_max transmit buffer   */
 
     ULONG                       flags;
 
