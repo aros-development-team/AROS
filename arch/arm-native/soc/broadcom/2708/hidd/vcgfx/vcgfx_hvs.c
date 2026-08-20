@@ -29,6 +29,7 @@
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
 #include "vcgfx_hvs.h"
+#include "vcgfx_hvs5.h"
 
 /* Set to 0 to silence the dump / skip the probe / leave the firmware
  * in control of the display list (kill switch) / leave the PV2 vsync
@@ -1073,8 +1074,7 @@ void vc4_hvs_dump(struct VideoCoreGfx_staticdata *xsd,
 
     if (!hvs_hw_known(xsd))
     {
-        bug("[VC4HVS] BCM2711 - HVS5 not supported yet, staying on the "
-            "firmware display\n");
+        vc4_hvs5_dump(xsd, fb_phys, fb_pitch, fb_width, fb_height);
         return;
     }
 

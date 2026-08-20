@@ -14,6 +14,7 @@ FILES	:=	\
 	vcgfx_hdmi \
 	vcgfx_hardware \
 	vcgfx_hvs \
+	vcgfx_hvs5 \
 	vcgfx_pixfmts \
 	vcgfx_onbitmap \
 	vcgfx_offbitmap
