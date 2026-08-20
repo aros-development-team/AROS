@@ -167,8 +167,13 @@ RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf \
 # firmware is redistributable under LICENCE.broadcom_bcm43xx (shipped too).
 RASPIWIFIFW_BRANCH := buster
 RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
+# 43455 and 43456 are both chip id 0x4345 and cannot share a blob: bwfm.device
+# picks by chip revision (9 = CYW43456, on the Pi 400 and CM4), so both sets
+# have to be on the card.
 RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
                      brcm/brcmfmac43455-sdio.clm_blob \
+                     brcm/brcmfmac43456-sdio.bin brcm/brcmfmac43456-sdio.txt \
+                     brcm/brcmfmac43456-sdio.clm_blob \
                      brcm/brcmfmac43430-sdio.bin brcm/brcmfmac43430-sdio.txt \
                      LICENCE.broadcom_bcm43xx
 

@@ -117,8 +117,9 @@ struct bwfm_bcdc_dcmd_hdr
 #define BWFM_BCDC_FLAG_PROTO_VER                2
 #define BWFM_BCDC_FLAG_VER(x)                   (((x) & 0xf) << 4)
 
-/* BWFMRxFrame() *info flags (low byte = SDPCM channel) */
+/* BWFMRxFrame() *info flags (low byte = SDPCM channel, bits 16+ = event type) */
 #define BWFM_RX_EVENT                           0x100
+#define BWFM_RX_EVENT_LINKUP                    0x200   /* event flags bit 0 */
 
 /*
  * Blob download header for the "clmload" iovar (regulatory CLM data). The blob
@@ -159,10 +160,26 @@ struct bwfm_dload_data
 #define BWFM_AUTH_OPEN                          0
 #define BWFM_MFP_NONE                           0
 #define BWFM_WPA_AUTH_DISABLED                  0
+#define BWFM_WPA_AUTH_NONE                      (1 << 0)
+#define BWFM_WPA_AUTH_WPA_UNSPECIFIED           (1 << 1)
+#define BWFM_WPA_AUTH_WPA_PSK                   (1 << 2)
+#define BWFM_WPA_AUTH_WPA2_UNSPECIFIED          (1 << 6)
 #define BWFM_WPA_AUTH_WPA2_PSK                  (1 << 7)
+#define BWFM_WPA_AUTH_WPA2_1X_SHA256            (1 << 12)
+#define BWFM_WPA_AUTH_WPA2_PSK_SHA256           (1 << 15)
 #define BWFM_WSEC_NONE                          0
+#define BWFM_WSEC_WEP                           (1 << 0)
+#define BWFM_WSEC_TKIP                          (1 << 1)
 #define BWFM_WSEC_AES                           (1 << 2)
 #define BWFM_WSEC_PASSPHRASE                    (1 << 0)
+
+/* Key slot algorithm + flags for the "wsec_key" iovar (OpenBSD bwfmreg.h) */
+#define BWFM_CRYPTO_ALGO_OFF                    0
+#define BWFM_CRYPTO_ALGO_WEP1                   1
+#define BWFM_CRYPTO_ALGO_TKIP                   2
+#define BWFM_CRYPTO_ALGO_WEP128                 3
+#define BWFM_CRYPTO_ALGO_AES_CCM                4
+#define BWFM_WSEC_PRIMARY_KEY                   (1 << 1)
 
 /* E_LINK event_msg flags: bit0 = link up */
 #define BWFM_EVENT_FLAG_LINK_UP                 (1 << 0)

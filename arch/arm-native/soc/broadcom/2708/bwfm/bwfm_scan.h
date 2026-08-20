@@ -95,7 +95,37 @@ struct bwfm_join_params       /* legacy BWFM_C_SET_SSID fallback */
     struct bwfm_assoc_params assoc;
 } __attribute__((packed));
 
-/* Passphrase/PMK for the firmware-internal WPA supplicant (BWFM_C_SET_WSEC_PMK) */
+/*
+ * One key slot for the "wsec_key" iovar. The padding is part of the firmware
+ * ABI - the fields have to land at these offsets - so it is spelled out the
+ * same way OpenBSD's bwfmreg.h does.
+ */
+struct bwfm_wsec_key
+{
+    uint32_t    index;
+    uint32_t    len;
+    uint8_t     data[32];
+    uint32_t    pad_1[18];
+    uint32_t    algo;
+    uint32_t    flags;
+    uint32_t    pad_2[3];
+    uint32_t    iv_initialized;
+    uint32_t    pad_3;
+    struct
+    {
+        uint32_t    hi;
+        uint16_t    lo;
+        uint16_t    pad_4;
+    }           rxiv;
+    uint32_t    pad_5[2];
+    uint8_t     ea[ETHER_ADDR_LEN];
+};
+
+/* Not decoration: a buffer even one byte short of the firmware's own layout is
+ * refused outright with BCME_BUFTOOSHORT, so pin the size the padding produces. */
+_Static_assert(sizeof(struct bwfm_wsec_key) == 164, "wsec_key ABI size changed");
+
+/* Passphrase for the firmware-internal WPA supplicant (BWFM_C_SET_WSEC_PMK) */
 struct bwfm_wsec_pmk
 {
     uint16_t    key_len;
@@ -207,8 +237,10 @@ struct bwfm_bcdc_data_hdr
 #define BWFM_E_AUTH             3
 #define BWFM_E_DEAUTH           5
 #define BWFM_E_ASSOC            7
+#define BWFM_E_REASSOC          9
 #define BWFM_E_DISASSOC         11
 #define BWFM_E_LINK             16
+#define BWFM_E_ROAM             19
 #define BWFM_E_EAPOL_MSG        25
 #define BWFM_E_IF               54
 #define BWFM_E_ESCAN_RESULT     69
