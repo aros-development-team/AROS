@@ -1739,10 +1739,19 @@ diff -ruN gcc-16.2.0/libgcc/config.host gcc-16.2.0.aros/libgcc/config.host
  m68k-*-elf* | fido-*-elf)
  	tmake_file="$tmake_file m68k/t-floatlib"
  	;;
-@@ -1574,6 +1583,9 @@
+@@ -1574,6 +1583,18 @@
  	tmake_file="$tmake_file nvptx/t-nvptx"
  	extra_parts="crt0.o"
  	;;
++aarch64*-*-aros*)
++	# AROS has no signal frames; the generic aarch64 unwinder is the
++	# one declaring the helpers unwind-dw2-execute_cfa.h calls.
++	md_unwind_def_header=aarch64/aarch64-unwind-def.h
++	md_unwind_header=aarch64/aarch64-unwind.h
++	# Out-of-line atomics and TFmode soft float. The generic aros case
++	# below leaves tmake_file empty, which is not enough on aarch64.
++	tmake_file="${tmake_file} ${cpu_type}/t-lse ${cpu_type}/t-softfp t-softfp"
++	;;
 +*-*-aros*)
 +	tmake_file=
 +	;;
