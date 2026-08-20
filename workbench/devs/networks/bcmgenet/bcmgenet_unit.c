@@ -512,11 +512,23 @@ void BCMGENET_GoOnline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
     BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR_MASK,
                    GENET_IRQ_TXDMA_DONE | GENET_IRQ_RXDMA_DONE);
 
+    /*
+     * DIAGNOSTIC: promiscuous mode bypasses the MDF filter entirely
+     * (the OpenBSD promisc arm, bcmgenet.c:415: PROMISC + MDF_CTRL=0).
+     * RX prod moving with this in = the MDF entries are wrong; still
+     * stuck = the frames die before UniMAC (RGMII input path).
+     * Remove once RX works.
+     */
+    BCMGENET_Write(hw, GENET_UMAC_MDF_CTRL, 0);
+
     cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
-    cmd |= GENET_UMAC_CMD_TXEN | GENET_UMAC_CMD_RXEN;
+    cmd |= GENET_UMAC_CMD_TXEN | GENET_UMAC_CMD_RXEN |
+           GENET_UMAC_CMD_PROMISC;
     BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
 
-    unit->bgu_Flags |= IFF_UP;
+    /* DIAGNOSTIC: let the software filter pass everything too, so the
+     * dispatch log shows every frame that reaches the ring. */
+    unit->bgu_Flags |= IFF_UP | IFF_PROMISC;
 }
 
 void BCMGENET_GoOffline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
@@ -833,6 +845,14 @@ static void bcmgenet_rx_packet(struct BCMGENETBase *base,
         opener = (APTR)opener->node.mln_Succ;
     }
 
+    /* Diagnostic while bringing RX up; remove with the PROMISC diag */
+    D(bug("[bcmgenet] RX type %04x len %lu dst %02x:%02x:%02x:%02x:%02x:%02x %s\n",
+          packet_type, length,
+          frame->eth_packet_dest[0], frame->eth_packet_dest[1],
+          frame->eth_packet_dest[2], frame->eth_packet_dest[3],
+          frame->eth_packet_dest[4], frame->eth_packet_dest[5],
+          is_orphan ? "ORPHAN" : "accepted");)
+
     if (is_orphan)
     {
         unit->bgu_Stats.UnknownTypesReceived++;
@@ -901,7 +921,6 @@ static void bcmgenet_rx_process(struct BCMGENETBase *base,
              */
             bcmgenet_rx_packet(base, unit,
                                (struct eth_frame *)(buf + 2), len - 2);
-            unit->bgu_Stats.PacketsReceived++;
         }
         else
             unit->bgu_Stats.BadData++;
@@ -1012,9 +1031,16 @@ static void BCMGENET_UnitTask(void)
                     SendIO((struct IORequest *)timerreq);
                     timerpending = TRUE;
 
-                    D(bug("[bcmgenet] TX hw prod=%08lx cons=%08lx\n",
+                    D(bug("[bcmgenet] TX prod=%04lx cons=%04lx | "
+                          "RX prod=%04lx cons=%04lx | "
+                          "STAT=%08lx MASK=%08lx CMD=%08lx\n",
                           BCMGENET_Read(unit->bgu_HW, GENET_TX_DMA_PROD_INDEX(GENET_DMA_DEFAULT_QUEUE)),
-                          BCMGENET_Read(unit->bgu_HW, GENET_TX_DMA_CONS_INDEX(GENET_DMA_DEFAULT_QUEUE)));)
+                          BCMGENET_Read(unit->bgu_HW, GENET_TX_DMA_CONS_INDEX(GENET_DMA_DEFAULT_QUEUE)),
+                          BCMGENET_Read(unit->bgu_HW, GENET_RX_DMA_PROD_INDEX(GENET_DMA_DEFAULT_QUEUE)),
+                          BCMGENET_Read(unit->bgu_HW, GENET_RX_DMA_CONS_INDEX(GENET_DMA_DEFAULT_QUEUE)),
+                          BCMGENET_Read(unit->bgu_HW, GENET_INTRL2_CPU_STAT),
+                          BCMGENET_Read(unit->bgu_HW, GENET_INTRL2_CPU_STAT_MASK),
+                          BCMGENET_Read(unit->bgu_HW, GENET_UMAC_CMD));)
                 }
             }
         }
