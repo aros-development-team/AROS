@@ -115,6 +115,9 @@ struct VideoCoreGfx_staticdata {
          * flips and cursor updates go through our own display list and
          * the firmware display mailbox tags must not be used. */
         struct vc4_hvs_state    vcsd_HVS;
+
+        /* Keeps every HVS path off; see vcgfx_hvs.c. */
+        BOOL                    vcsd_IsBCM2711;
 };
 
 /* DMA has a per-call setup + poll cost; below these sizes NEON wins.
