@@ -123,6 +123,13 @@ static int Cardres_Init(struct CardResource *CardResource)
         TASKTAG_PC, CardTask,
         TASKTAG_NAME, CardResource->crb_LibNode.lib_Node.ln_Name,
         TASKTAG_PRI, 15,
+        /*
+         * The card task waits for status-change signals and calls the
+         * registered client hooks; measured peak stack use is a few
+         * hundred bytes, and its stack is chip RAM on an unexpanded
+         * machine.
+         */
+        TASKTAG_STACKSIZE, 4096,
         TASKTAG_ARG1, FindTask(0),
         TASKTAG_ARG2, CardResource,
         TAG_DONE);

@@ -223,6 +223,15 @@ BOOL InitDefaultMenuHandler(struct IntuitionBase *IntuitionBase)
 
     task = NewCreateTask(TASKTAG_NAME, "Intuition menu handler",
                  TASKTAG_PC  , DefaultMenuHandler,
+#ifdef __mc68000
+                 /*
+                  * Menu rendering peaks well under 1 KB of stack on
+                  * m68k; 4 KB keeps several times that in headroom
+                  * without pinning 16 KB of chip RAM for the machine's
+                  * whole lifetime.
+                  */
+                 TASKTAG_STACKSIZE, 4096,
+#endif
                  TASKTAG_ARG1, &params,
                  TAG_DONE);
 

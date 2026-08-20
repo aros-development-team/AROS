@@ -195,6 +195,14 @@ LONG cdAddUnit(struct cdBase *cb, const struct cdUnitOps *ops, APTR priv, const 
         cu->cu_Unit    = cb->cb_MaxUnit++;
         cu->cu_Task = NewCreateTask(TASKTAG_PC, cdTask,
                                     TASKTAG_NAME, ops->uo_Name,
+                                    /*
+                                     * The unit task runs the drive
+                                     * protocol and sector delivery;
+                                     * measured peak stack use is well
+                                     * under 1 KB, and its stack is
+                                     * chip RAM on a stock CD32.
+                                     */
+                                    TASKTAG_STACKSIZE, 8192,
                                     TASKTAG_ARG1, cb,
                                     TASKTAG_ARG2, cu,
                                     TASKTAG_TASKMSGPORT, &cu->cu_MsgPort,
