@@ -375,6 +375,8 @@ struct bcmgenet_ring
     struct IOSana2Req *request[GENET_DMA_DESC_COUNT];
 };
 
+#define GENET_NUM_IRQ_HANDLERS 2
+
 struct BCMGENETUnit
 {
     struct BCMGENETBase *bgu_Base;
@@ -391,8 +393,8 @@ struct BCMGENETUnit
     struct MsgPort     *bgu_InputPort;
     struct MsgPort     *bgu_RequestPorts[REQUEST_QUEUE_COUNT];
 
-    struct Interrupt    bgu_IRQHandler[2];
-    BOOL                bgu_IRQAdded[2];
+    struct Interrupt    bgu_IRQHandler[GENET_NUM_IRQ_HANDLERS];
+    BOOL                bgu_IRQAdded[GENET_NUM_IRQ_HANDLERS];
 
     UBYTE               bgu_DevAddr[ETH_ADDRESSSIZE];
     UBYTE               bgu_OrgAddr[ETH_ADDRESSSIZE];
@@ -413,6 +415,9 @@ struct BCMGENETUnit
 
     struct Task *bgu_Task;
     struct Task *bgu_DeathWatch;
+
+    volatile ULONG bgu_IRQPending;
+    ULONG bgu_IRQSignal;
 };
 
 struct BCMGENETBase

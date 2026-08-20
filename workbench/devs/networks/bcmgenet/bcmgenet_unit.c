@@ -1,11 +1,12 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Broadcom GENETv5 SANA-II driver, the unit: address bookkeeping
+    Desc: Broadcom GENETv5 SANAII driver, the unit: address bookkeeping
           is generic SANA-II ceremony and fully implemented below; the
           ring/interrupt/hardware pieces are left as TODOs for the port
           from OpenBSD's bcmgenet.c.
 */
+#include "exec/tasks.h"
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -245,7 +246,29 @@ static void bcmgenet_free_ring(struct bcmgenet_ring *ring)
 }
 
 /* == unit lifecycle ======================================================= */
+static AROS_INTH1(BCMGENET_TXIntHandler, struct BCMGENETUnit *, unit)
+{
+    struct bcmgenet_hw *hw = unit->bgu_HW;
+    ULONG status;
 
+    AROS_INTFUNC_INIT
+
+    status = BCMGENET_Read(hw, GENET_INTRL2_CPU_STAT);
+    status &= ~BCMGENET_Read(hw, GENET_INTRL2_CPU_STAT_MASK);
+
+    if ((status & GENET_IRQ_TXDMA_DONE) != 0)
+    {
+        BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR,
+                       GENET_IRQ_TXDMA_DONE);
+
+        D(bug("[bcmgenet] TX IRQ\n");)
+        unit->bgu_IRQPending |= GENET_IRQ_TXDMA_DONE;
+        Signal(unit->bgu_Task, unit->bgu_IRQSignal);
+    }
+
+    return FALSE;
+    AROS_INTFUNC_EXIT
+}
 /*
  * TODO: this is the shape of the thing, not a working driver yet.
  * BCMGENET_BeginIO() refuses every request until bgu_InputPort is set
@@ -277,6 +300,13 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
 
     unit->bgu_Base = base;
     unit->bgu_HW = &base->bgm_HW;
+    unit->bgu_Sana2Info.SizeAvailable = sizeof(struct Sana2DeviceQuery);
+    unit->bgu_Sana2Info.SizeSupplied = sizeof(struct Sana2DeviceQuery);
+    unit->bgu_Sana2Info.DevQueryFormat = 0;
+    unit->bgu_Sana2Info.DeviceLevel = 0;
+    unit->bgu_Sana2Info.AddrFieldSize = 8 * ETH_ADDRESSSIZE;
+    unit->bgu_Sana2Info.MTU = ETH_MTU;
+    unit->bgu_Sana2Info.HardwareType = S2WireType_Ethernet;
 
     InitSemaphore(&unit->bgu_Lock);
     NEWLIST((struct List *)&unit->bgu_Openers);
@@ -336,7 +366,19 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
     /* TODO:
      * IRQ handler registration. Free 'unit' and
      * return NULL on any failure past this point. */
-
+    /*
+     * irq[0] (INTRL2_0) carries the default queue's TXDMA/RXDMA_DONE -
+     * the bits the 0x200 register block exposes. irq[1] (INTRL2_1) is
+     * only the per-ring bits for priority queues 0-15, which this
+     * driver never enables.
+     */
+    unit->bgu_IRQHandler[0].is_Node.ln_Type = NT_INTERRUPT;
+    unit->bgu_IRQHandler[0].is_Node.ln_Name = "bcmgenet";
+    unit->bgu_IRQHandler[0].is_Code = (VOID_FUNC)BCMGENET_TXIntHandler;
+    unit->bgu_IRQHandler[0].is_Data = unit;
+    AddIntServer(INTB_KERNEL + unit->bgu_HW->irq[0],
+        &unit->bgu_IRQHandler[0]);
+    unit->bgu_IRQAdded[0] = TRUE;
 
     /*
      * The service task. Its stack and control block ride on
@@ -421,15 +463,24 @@ fail:
 void BCMGENET_DeleteUnit(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
 {
     BOOL alive;
+
     if (!unit)
         return;
 
-    /* TODO: tear down in the reverse order of BCMGENET_CreateUnit():
-     * remove IRQ handlers, stop RX/TX (BCMGENET_GoOffline), free the
-     * ring buffers. */
-    bcmgenet_free_ring(&unit->bgu_RX);
-    bcmgenet_free_ring(&unit->bgu_TX);
+    /* The IRQ handler keeps a pointer to unit in is_Data. */
+    BCMGENET_Write(unit->bgu_HW, GENET_INTRL2_CPU_SET_MASK,
+                   GENET_IRQ_TXDMA_DONE);
+    BCMGENET_Write(unit->bgu_HW, GENET_INTRL2_CPU_CLEAR,
+                   GENET_IRQ_TXDMA_DONE);
 
+    if (unit->bgu_IRQAdded[0])
+    {
+        RemIntServer(INTB_KERNEL + unit->bgu_HW->irq[0],
+                     &unit->bgu_IRQHandler[0]);
+        unit->bgu_IRQAdded[0] = FALSE;
+    }
+
+    /* The task may still be using the timer, queues, and DMA rings. */
     unit->bgu_DeathWatch = FindTask(NULL);
     Forbid();
     alive = (unit->bgu_Task != NULL);
@@ -437,15 +488,22 @@ void BCMGENET_DeleteUnit(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
         Signal(unit->bgu_Task, SIGBREAKF_CTRL_C);
     Permit();
 
+    if (alive)
+        Wait(SIGF_SINGLE);
+
+    /* No task or interrupt handler can access these after this point. */
     for (ULONG i = 0; i < REQUEST_QUEUE_COUNT; i++)
     {
         if (unit->bgu_RequestPorts[i])
+        {
             FreeMem(unit->bgu_RequestPorts[i],
                     sizeof(*unit->bgu_RequestPorts[i]));
+            unit->bgu_RequestPorts[i] = NULL;
+        }
     }
 
-    if (alive)
-        Wait(SIGF_SINGLE);
+    bcmgenet_free_ring(&unit->bgu_RX);
+    bcmgenet_free_ring(&unit->bgu_TX);
 
     FreeMem(unit, sizeof(struct BCMGENETUnit));
 }
@@ -454,6 +512,21 @@ void BCMGENET_DeleteUnit(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
  * (bcmgenet.c:583, 632). */
 void BCMGENET_GoOnline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
 {
+    struct bcmgenet_hw *hw = unit->bgu_HW;
+    ULONG cmd;
+
+    /* Fjern eventuelle gamle, latchede TX-avbrudd før unmaskering. */
+    BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR, GENET_IRQ_TXDMA_DONE);
+
+    /* Aktiver bare TX-completion-avbrudd. */
+    BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR_MASK,
+                   GENET_IRQ_TXDMA_DONE);
+
+    /* TX-MAC må være på for at GENET faktisk skal sende. */
+    cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
+    cmd |= GENET_UMAC_CMD_TXEN;
+    BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
+
     unit->bgu_Flags |= IFF_UP;
 }
 
@@ -467,10 +540,9 @@ void BCMGENET_GoOffline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
  * single request. The frame is copied into the slot's own buffer, so
  * nothing depends on the caller's data once this returns.
  *
- * Returns TRUE when the request is finished with - either handed to the
- * engine or failed with io_Error/ios2_WireError set - and FALSE only when
- * the ring is full and it should be retried later. Replying is the
- * caller's job in both cases.
+ * Returns TRUE when the request is consumed - handed to the engine (the
+ * TX-done path replies it) or failed and replied here - and FALSE only
+ * when the ring is full and it should be retried later.
  */
 BOOL BCMGENET_SendPacket(struct BCMGENETBase *base, struct BCMGENETUnit *unit,
                          struct IOSana2Req *request)
@@ -517,6 +589,7 @@ BOOL BCMGENET_SendPacket(struct BCMGENETBase *base, struct BCMGENETUnit *unit,
         request->ios2_WireError = S2WERR_BUFF_ERROR;
         BCMGENET_ReportEvents(base, unit, S2EVENT_ERROR | S2EVENT_SOFTWARE |
                               S2EVENT_BUFF | S2EVENT_TX);
+        ReplyMsg(&request->ios2_Req.io_Message);
         return TRUE;
     }
 
@@ -550,6 +623,12 @@ BOOL BCMGENET_SendPacket(struct BCMGENETBase *base, struct BCMGENETUnit *unit,
     BCMGENET_Write(hw, GENET_TX_DMA_PROD_INDEX(GENET_DMA_DEFAULT_QUEUE),
                    tx->pidx);
 
+    D(bug("[bcmgenet] TX hw prod=%08lx cons=%08lx\n",
+          BCMGENET_Read(hw, GENET_TX_DMA_PROD_INDEX(GENET_DMA_DEFAULT_QUEUE)),
+          BCMGENET_Read(hw, GENET_TX_DMA_CONS_INDEX(GENET_DMA_DEFAULT_QUEUE)));)
+    D(bug("[bcmgenet] TX slot %lu, len %lu, prod %lu\n",
+          index, packet_size, tx->pidx);)
+
     unit->bgu_Stats.PacketsSent++;
     tracker = BCMGENET_FindTypeStats(&unit->bgu_TypeTrackers, packet_type);
     if (tracker)
@@ -561,6 +640,41 @@ BOOL BCMGENET_SendPacket(struct BCMGENETBase *base, struct BCMGENETUnit *unit,
     return TRUE;
 }
 
+/*
+ * Push queued write requests into the ring until it fills or the queue
+ * runs dry. Runs only in the unit task; CmdWrite may execute in the
+ * caller's context (BeginIO's AttemptSemaphore path) but only ever
+ * PutMsg()s here, and the port's PA_SIGNAL wakes the task.
+ */
+static void bcmgenet_tx_drain(struct BCMGENETBase *base,
+                              struct BCMGENETUnit *unit)
+{
+    struct MsgPort *port = unit->bgu_RequestPorts[WRITE_QUEUE];
+    struct IOSana2Req *request;
+
+    while ((request = (struct IOSana2Req *)GetMsg(port)) != NULL)
+    {
+        ObtainSemaphore(&unit->bgu_Lock);
+
+        if (!BCMGENET_SendPacket(base, unit, request))
+        {
+            /*
+             * Ring full. Back at the *head* - PutMsg would reorder the
+             * stream and, with PA_SIGNAL, re-wake the task into a spin.
+             * The TX-done interrupt gets the queue moving again.
+             */
+            Disable();
+            AddHead(&port->mp_MsgList,
+                    &request->ios2_Req.io_Message.mn_Node);
+            Enable();
+            ReleaseSemaphore(&unit->bgu_Lock);
+            break;
+        }
+
+        ReleaseSemaphore(&unit->bgu_Lock);
+    }
+}
+
 static void bcmgenet_tx_complete(struct BCMGENETBase *base,
                                  struct BCMGENETUnit *unit, ULONG qid)
 {
@@ -569,7 +683,7 @@ static void bcmgenet_tx_complete(struct BCMGENETBase *base,
     ULONG queued, index;
     struct IOSana2Req *request;
 
-    queued = (BCMGENET_Read(hw, GENET_TX_DMA_PROD_INDEX(qid)) -
+    queued = (BCMGENET_Read(hw, GENET_TX_DMA_CONS_INDEX(qid)) -
               tx->cidx) & 0xffff;
 
     while (queued-- != 0)
@@ -612,11 +726,28 @@ static void BCMGENET_UnitTask(void)
                    (struct IORequest *)timerreq, 0) == 0)
         timeropen = TRUE;
 
+    LONG irqbit = AllocSignal(-1);
+    if (irqbit >= 0) {
+        unit->bgu_IRQSignal = 1UL << irqbit;
+    }
+
     if (input && timeropen)
     {
+        struct MsgPort *writeport = unit->bgu_RequestPorts[WRITE_QUEUE];
+
         unit->bgu_InputPort = input;
         inputsig = 1UL << input->mp_SigBit;
         timersig = 1UL << timerport->mp_SigBit;
+
+        /*
+         * CmdWrite queues here from whatever context BeginIO ran in.
+         * Sharing the input port's signal means one Wait() mask covers
+         * both; the drain below runs on either.
+         */
+        writeport->mp_SigTask = FindTask(NULL);
+        writeport->mp_SigBit = input->mp_SigBit;
+        writeport->mp_Flags = PA_SIGNAL;
+
         running = TRUE;
 
         timerreq->tr_node.io_Command = TR_ADDREQUEST;
@@ -630,7 +761,7 @@ static void BCMGENET_UnitTask(void)
 
     while (running)
     {
-        sigs = Wait(inputsig | timersig | SIGBREAKF_CTRL_C);
+        sigs = Wait(inputsig | timersig | unit->bgu_IRQSignal | SIGBREAKF_CTRL_C);
 
         if (sigs & SIGBREAKF_CTRL_C)
             running = FALSE;
@@ -642,6 +773,8 @@ static void BCMGENET_UnitTask(void)
                 ObtainSemaphore(&unit->bgu_Lock);
                 BCMGENET_HandleRequest(base, request);
             }
+
+            bcmgenet_tx_drain(base, unit);
         }
 
         if (sigs & timersig)
@@ -661,7 +794,28 @@ static void BCMGENET_UnitTask(void)
                     timerreq->tr_time.tv_micro = 0;
                     SendIO((struct IORequest *)timerreq);
                     timerpending = TRUE;
+
+                    D(bug("[bcmgenet] TX hw prod=%08lx cons=%08lx\n",
+                          BCMGENET_Read(unit->bgu_HW, GENET_TX_DMA_PROD_INDEX(GENET_DMA_DEFAULT_QUEUE)),
+                          BCMGENET_Read(unit->bgu_HW, GENET_TX_DMA_CONS_INDEX(GENET_DMA_DEFAULT_QUEUE)));)
                 }
+            }
+        }
+
+        if (sigs & unit->bgu_IRQSignal)
+        {
+            ULONG pending;
+
+            Disable();
+            pending = unit->bgu_IRQPending;
+            unit->bgu_IRQPending = 0;
+            Enable();
+
+            if (pending & GENET_IRQ_TXDMA_DONE)
+            {
+                bcmgenet_tx_complete(base, unit, GENET_DMA_DEFAULT_QUEUE);
+                /* Freed slots may unblock requests parked on a full ring */
+                bcmgenet_tx_drain(base, unit);
             }
         }
     }
@@ -690,6 +844,8 @@ static void BCMGENET_UnitTask(void)
         }
         DeleteMsgPort(input);
     }
+    if (irqbit >= 0)
+        FreeSignal(irqbit);
 
     /*
      * The stack and task structure are on tc_MemEntry, so returning -
@@ -728,8 +884,13 @@ BOOL BCMGENET_CheckLink(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
     {
         unit->bgu_SpeedMbps = mbps;
         unit->bgu_FullDuplex = fullduplex;
-    }
 
+        unit->bgu_Sana2Info.BPS = mbps * 1000000UL;
+    }
+    else
+    {
+        unit->bgu_Sana2Info.BPS = 0;
+    }
     D(bug("[bcmgenet] link %s, %lu Mbit %s duplex\n", up ? "up" : "down",
           mbps, fullduplex ? "full" : "half");)
 

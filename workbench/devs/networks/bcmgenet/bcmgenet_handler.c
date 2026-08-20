@@ -116,7 +116,18 @@ static BOOL CmdWrite(struct BCMGENETBase *base, struct IOSana2Req *request)
     }
 
     request->ios2_Req.io_Flags &= ~IOF_QUICK;
+
+
+    D(bug("[bcmgenet] CmdWrite: len %lu, flags %08lx, unit flags %08lx\n",
+          request->ios2_DataLength,
+          request->ios2_Req.io_Flags,
+          unit->bgu_Flags);)
+
     PutMsg(unit->bgu_RequestPorts[WRITE_QUEUE], (struct Message *)request);
+
+    D(bug("[bcmgenet] CmdWrite: queued TX request\n");)
+    if (unit->bgu_Task && unit->bgu_IRQSignal)
+        Signal(unit->bgu_Task, unit->bgu_IRQSignal);
 
     return FALSE;
 }
