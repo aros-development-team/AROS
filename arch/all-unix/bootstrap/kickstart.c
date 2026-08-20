@@ -8,6 +8,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#ifdef __linux__
+#include <sys/prctl.h>
+#include <signal.h>
+#endif
+
 #if defined(__APPLE__) && defined(__aarch64__)
 /* Forward-declare pthread to avoid conflict with AROS pthread.h */
 typedef struct _opaque_pthread_t *pthread_t_host;
@@ -111,7 +116,10 @@ int kick(kernel_entry_fun_t addr, struct TagItem *msg)
 int kick(kernel_entry_fun_t addr, struct TagItem *msg)
 {
     int i;
-    
+#ifdef __linux__
+    pid_t bootstrap_pid = getpid();
+#endif
+
     do
     {
         pid_t child = fork();
@@ -123,6 +131,15 @@ int kick(kernel_entry_fun_t addr, struct TagItem *msg)
             return -1;
 
         case 0:
+#ifdef __linux__
+            /* The AROS kernel runs in this child; if the bootstrap parent is
+             * killed the child must not linger as an orphan.  Ask the kernel to
+             * SIGKILL us when the parent dies, and bail out immediately if it
+             * already died in the fork() window. */
+            prctl(PR_SET_PDEATHSIG, SIGKILL);
+            if (getppid() != bootstrap_pid)
+                _exit(0);
+#endif
             fprintf(stderr, "[Bootstrap] Entering kernel at %p...\n", addr);
             Host_PreBoot();
             i = addr(msg, AROS_BOOT_MAGIC);
