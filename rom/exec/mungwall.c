@@ -67,7 +67,13 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
         memset(res + origSize, 0xDB, MUNGWALL_SIZE);
 
         Forbid();
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->AllocMemListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         AddHead((struct List *)&PrivExecBase(SysBase)->AllocMemList, (struct Node *)&header->mwh_node);
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->AllocMemListSpinLock);
+#endif
         Permit();
     }
     return res;
@@ -211,7 +217,13 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
          * while the alert is displayed.
          */
         Forbid();
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->AllocMemListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         Remove((struct Node *)header);
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->AllocMemListSpinLock);
+#endif
         Permit();
 
         /* Reset fault state in order to see who is freeing the bad entry */
@@ -260,6 +272,9 @@ void MungWall_Scan(APTR pool, struct TraceLocation *loc, struct ExecBase *SysBas
         DSCAN(bug("[Mungwall] Scan(), caller %s, SysBase 0x%p\n", function, SysBase);)
 
         Forbid();
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&sysBase->AllocMemListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
         ForeachNodeSafe(&sysBase->AllocMemList, allocnode, tmp)
         {
@@ -281,6 +296,9 @@ void MungWall_Scan(APTR pool, struct TraceLocation *loc, struct ExecBase *SysBas
             CheckHeader(allocnode, 0, loc, SysBase);
         }
 
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&sysBase->AllocMemListSpinLock);
+#endif
         Permit();
     }
 }

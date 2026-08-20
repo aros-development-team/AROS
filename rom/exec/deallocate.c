@@ -43,6 +43,12 @@
         The start and end borders of the block are aligned to
         a multiple of sizeof(struct MemChunk) and to include the block.
 
+        On SMP builds this function serialises through the header's
+        embedded spinlock (mh_SpinLock) - see the corresponding note in
+        Allocate(): a hand-built MemHeader must be zeroed before its
+        fields are filled in, or the lock word contains garbage and
+        this call spins forever.
+
     EXAMPLE
 
     BUGS

@@ -47,11 +47,20 @@
         The memory is aligned to sizeof(struct MemChunk). All requests
         are rounded up to a multiple of that size.
 
+        On SMP builds this function serialises through the header's
+        embedded spinlock (mh_SpinLock), so a hand-built MemHeader MUST
+        be fully zeroed before the fields are filled in (allocate it
+        with MEMF_CLEAR, as the example does) - a zeroed lock word is an
+        unlocked lock. Passing a header with garbage in mh_SpinLock
+        makes Allocate()/Deallocate() spin forever; this cannot be
+        detected defensively, since garbage is indistinguishable from
+        "currently locked by another CPU".
+
     EXAMPLE
         #define POOLSIZE 4096
         \* Get a MemHeader structure and some private memory *\
         mh=(struct MemHeader *)
-            AllocMem(sizeof(struct MemHeader)+POOLSIZE,MEMF_ANY);
+            AllocMem(sizeof(struct MemHeader)+POOLSIZE,MEMF_ANY|MEMF_CLEAR);
         if(mh!=NULL)
         {
             \* Build a private pool *\
