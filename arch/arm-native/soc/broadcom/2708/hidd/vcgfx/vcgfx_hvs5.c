@@ -35,7 +35,7 @@
  * node "disabled" either way. So this is a deliberate one-line opt-in for
  * a real Pi 4 bring-up session, exactly like VC4_HVS_PROBE next door.
  */
-#define VC4_HVS5_DUMP       0
+#define VC4_HVS5_DUMP       1
 
 /* Words printed either side of a framebuffer address hit. A VideoCore IV
  * plane entry was 7 words unity / 14 scaled; allow for HVS5 being wider. */
