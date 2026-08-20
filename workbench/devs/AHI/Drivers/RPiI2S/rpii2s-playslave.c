@@ -32,8 +32,10 @@ void dma_irq_handler(struct RPiI2SData *data, void *data2) {
 AROS_UFH3(void, SlaveEntry, AROS_UFHA(STRPTR, argPtr, A0), AROS_UFHA(ULONG, argSize, D0), AROS_UFHA(struct ExecBase *, SysBase, A6)) {
     AROS_USERFUNC_INIT
     struct AHIAudioCtrlDrv *AudioCtrl;
+    struct DriverBase *AHIsubBase;
     BOOL running; ULONG signals;
     while (!(AudioCtrl = (struct AHIAudioCtrlDrv *)FindTask(NULL)->tc_UserData)) __sync_synchronize();
+    AHIsubBase = (struct DriverBase *)dd->ahisubbase;
     dd->slavesignal = AllocSignal(-1);
     if (dd->slavesignal != -1) {
         /* Pre-fill with silence */
