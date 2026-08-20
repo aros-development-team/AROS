@@ -111,20 +111,28 @@ static int PCIBcm2712_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[PCIBcm2712] Initializing BCM2712 PCIe host bridge (RPi5 NVMe M.2)\n"));
 
-    psd->kernelBase = (struct Library *)OpenResource("kernel.resource");
-    if (!psd->kernelBase)
+    APTR KernelBase = OpenResource("kernel.resource");
+    psd->kernelBase = (struct Library *)KernelBase;
+    if (!KernelBase)
         return FALSE;
 
-    /* Map DBI/Registers */
-    psd->regs = (volatile uint8_t *)KrnMapGlobal(BCM2712_PCIE0_REG_BASE, BCM2712_PCIE0_REG_SIZE, KMAP_IO);
-    if (!psd->regs)
+    /* Map DBI/Registers (identity map, Device memory) */
+    if (!KrnMapGlobal((void *)(IPTR)BCM2712_PCIE0_REG_BASE,
+                      (void *)(IPTR)BCM2712_PCIE0_REG_BASE, BCM2712_PCIE0_REG_SIZE,
+                      MAP_Readable | MAP_Writable | MAP_CacheInhibit | MAP_Guarded))
     {
         D(bug("[PCIBcm2712] Failed to map PCIe registers\n"));
         return FALSE;
     }
+    psd->regs = (volatile uint8_t *)(IPTR)BCM2712_PCIE0_REG_BASE;
 
     /* Map ECAM Window (Bus 0 & 1) */
-    psd->ecam = (volatile uint8_t *)KrnMapGlobal(BCM2712_PCIE0_ECAM_BASE, BCM2712_PCIE0_ECAM_SIZE, KMAP_IO);
+    if (KrnMapGlobal((void *)(IPTR)BCM2712_PCIE0_ECAM_BASE,
+                     (void *)(IPTR)BCM2712_PCIE0_ECAM_BASE, BCM2712_PCIE0_ECAM_SIZE,
+                     MAP_Readable | MAP_Writable | MAP_CacheInhibit | MAP_Guarded))
+        psd->ecam = (volatile uint8_t *)(IPTR)BCM2712_PCIE0_ECAM_BASE;
+    else
+        psd->ecam = NULL;
 
     /* Inbound DMA offset */
     psd->dma_offset = 0;
@@ -137,13 +145,14 @@ static int PCIBcm2712_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[PCIBcm2712] Status=0x%08x link_up=%ld\n", (unsigned)status, (long)psd->link_up));
 
     /* Obtain OOP Attribute Bases */
-    struct TagItem attrTags[] = {
-        { aHidd_PCIDriver_DeviceClass, (IPTR)&psd->hiddPCIDriverAB },
-        { aHidd_PCIDevice_isBridge,    (IPTR)&psd->hiddPCIDeviceAB },
-        { aHidd_Name,                  (IPTR)&psd->hiddAB },
-        { TAG_DONE, 0 }
-    };
-    OOP_ObtainAttrBases(attrTags);
+    psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
+    psd->hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+    psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
+    if (psd->hiddPCIDriverAB == 0 || psd->hiddPCIDeviceAB == 0 || psd->hiddAB == 0)
+    {
+        D(bug("[PCIBcm2712] ObtainAttrBases failed\n"));
+        return FALSE;
+    }
 
     /* Instantiate Driver Object */
     psd->driverObject = OOP_NewObject(psd->driverClass, NULL, TAG_DONE);
@@ -153,19 +162,20 @@ static int PCIBcm2712_Init(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    /* Register with PCIBus Class */
-    psd->busClass = OOP_FindClass(CLID_Hidd_PCIBus);
-    if (psd->busClass)
+    /* Register the driver with pci.hidd */
     {
-        struct TagItem busTags[] = {
-            { aHidd_PCI_Driver, (IPTR)psd->driverObject },
-            { TAG_DONE, 0 }
-        };
+        struct pHidd_PCI_AddHardwareDriver msg;
+        OOP_Object *pci;
 
-        psd->busObject = OOP_NewObject(psd->busClass, NULL, (struct TagItem *)&busTags);
-        if (psd->busObject)
+        msg.driverClass = psd->driverClass;
+        msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
+
+        pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+        if (pci)
         {
-            D(bug("[PCIBcm2712] Registered PCIe host bridge with pci.hidd bus\n"));
+            OOP_DoMethod(pci, (OOP_Msg)&msg);
+            OOP_DisposeObject(pci);
+            D(bug("[PCIBcm2712] driver registered\n"));
         }
     }
 

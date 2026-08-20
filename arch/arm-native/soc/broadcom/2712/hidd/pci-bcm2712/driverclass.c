@@ -181,7 +181,7 @@ VOID PCIBcm2712__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o, s
  */
 APTR PCIBcm2712__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDriver_MapPCI *msg)
 {
-    IPTR pci_addr = (IPTR)msg->address;
+    IPTR pci_addr = (IPTR)msg->PCIAddress;
     IPTR cpu_addr;
 
     /* Outbound memory window translation */
@@ -195,7 +195,12 @@ APTR PCIBcm2712__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o, struct pHi
         cpu_addr = pci_addr;
     }
 
-    return (APTR)KrnMapGlobal(cpu_addr, msg->length, KMAP_IO);
+    /* Identity map as Device memory; the pointer is the CPU address. */
+    if (!KrnMapGlobal((void *)cpu_addr, (void *)cpu_addr, msg->Length,
+                      MAP_Readable | MAP_Writable | MAP_CacheInhibit | MAP_Guarded))
+        return NULL;
+
+    return (APTR)cpu_addr;
 }
 
 IPTR PCIBcm2712__Hidd_PCIDriver__CPUtoPCI(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDriver_CPUtoPCI *msg)
