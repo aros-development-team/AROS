@@ -62,7 +62,7 @@ static BOOL OpenClasses(void)
 int main(int argc, char **argv)
 {
     Object *app, *win, *actionobj;
-    Object *mi_about, *mi_quit, *mi_iconify, *mi_save, *mi_use, *mi_flush;
+    Object *mi_about, *mi_quit, *mi_iconify, *mi_save, *mi_use, *mi_flush, *mi_savelog;
 
     (void)argc; (void)argv;
 
@@ -104,6 +104,7 @@ int main(int argc, char **argv)
                 Child, mi_quit = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Quit", MUIA_Menuitem_Shortcut, (IPTR)"Q", End,
                 End,
             Child, MenuObjectT((IPTR)"Log"),
+                Child, mi_savelog = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Save log...", End,
                 Child, mi_flush = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Flush all", End,
                 End,
             Child, MenuObjectT((IPTR)"Settings"),
@@ -135,6 +136,8 @@ int main(int argc, char **argv)
              app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
     DoMethod(mi_quit, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
              app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(mi_savelog, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+             actionobj, 1, MUIM_BtA_SaveLog);
     DoMethod(mi_flush, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
              actionobj, 1, MUIM_BtA_FlushLog);
     DoMethod(mi_save, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,

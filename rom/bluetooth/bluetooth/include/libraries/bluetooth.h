@@ -579,4 +579,53 @@ struct BtRegDevCfg
 # pragma pack()
 #endif
 
+/* *** pluggable controller-firmware loaders ***
+ *
+ * Some radios (e.g. Realtek RTL8761/8852) answer HCI from a ROM bootloader but
+ * cannot transmit/receive until the host downloads a firmware patch. Support for
+ * a given family lives in a separate loadable module in DEVS:Bluetooth/FWLoaders/,
+ * NOT in bluetooth.library. BTStackLoader opens each module; the module registers
+ * a "struct BtFirmwareLoader" with btAddFirmwareLoader(). During a controller's
+ * bring-up the stack offers the controller to every registered loader (fwl_Match)
+ * and lets the best match run (fwl_Load), giving it a synchronous HCI channel and
+ * a log callback via "struct BtFirmwareContext". Firmware BLOBS are read from disk
+ * only (never the network).
+ *
+ * These are in-memory runtime structures (they hold function pointers), so they
+ * live OUTSIDE the on-disk pack(2) region above - their pointers must keep the
+ * platform's natural alignment. */
+
+struct BtFirmwareContext
+{
+    /* controller identity (filled in by the library) */
+    UWORD   fwc_Manufacturer;             /* Bluetooth SIG company id */
+    UWORD   fwc_HCIVersion;
+    UWORD   fwc_HCIRevision;
+    UWORD   fwc_LMPVersion;
+    UWORD   fwc_LMPSubversion;
+    /* send one HCI command and block until it completes. opcode is OGF<<10|OCF.
+     * status gets the HCI status byte; up to respmax bytes of return parameters
+     * (status byte first) are copied to resp with the count in *resplen.
+     * returns 0 on a completed, successful command, non-zero otherwise. Any of
+     * status/resp/resplen may be NULL. Provided by the library. */
+    LONG  (*fwc_HciCommand)(struct BtFirmwareContext *ctx, UWORD opcode,
+                            CONST_APTR params, UWORD plen,
+                            UBYTE *status, UBYTE *resp, UWORD *resplen, UWORD respmax);
+    /* append a line to the bluetooth message log (RETURN_OK/WARN/ERROR/FAIL) */
+    void  (*fwc_Log)(struct BtFirmwareContext *ctx, LONG level, CONST_STRPTR fmt, ...);
+    APTR    fwc_Private;                  /* library use only */
+};
+
+struct BtFirmwareLoader
+{
+    struct MinNode fwl_Node;              /* linked into the stack's loader list */
+    CONST_STRPTR   fwl_Name;              /* human-readable loader name */
+    /* return a non-zero priority if this loader handles the controller in ctx,
+     * else 0 (identity-only; must not issue HCI). Highest priority wins. */
+    ULONG        (*fwl_Match)(struct BtFirmwareLoader *self, struct BtFirmwareContext *ctx);
+    /* download/apply firmware; return 0 on success (or if nothing was needed). */
+    LONG         (*fwl_Load)(struct BtFirmwareLoader *self, struct BtFirmwareContext *ctx);
+    APTR           fwl_UserData;          /* loader's own use */
+};
+
 #endif /* LIBRARIES_BLUETOOTH_H */

@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+# Pluggable controller-firmware loaders (DEVS:Bluetooth/FWLoaders)
+#MM- kernel-bluetooth-firmware : \
+#MM      kernel-bluetooth-firmware-rtlv1 \
+#MM      kernel-bluetooth-firmware-rtlv2
+
+#MM- kernel-bluetooth-firmware-clean : \
+#MM      kernel-bluetooth-firmware-rtlv1-clean \
+#MM      kernel-bluetooth-firmware-rtlv2-clean
+
+.PHONY: kernel-bluetooth-firmware
+.PHONY: kernel-bluetooth-firmware-clean
+
+%common

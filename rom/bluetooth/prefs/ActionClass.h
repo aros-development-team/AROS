@@ -46,7 +46,7 @@ struct BtActionData
 
     /* message log + bottom bar */
     Object *errlist, *errlvl;
-    Object *bt_flush, *bt_save;
+    Object *bt_flush, *bt_save, *bt_savelog;
     Object *bt_allon, *bt_alloff, *bt_restart, *bt_use;
     Object *statustxt;
 
@@ -93,6 +93,7 @@ struct BtActionData
 #define MUIM_BtA_HandleEvents (TAGBASE_BtA | 0x15)
 #define MUIM_BtA_AddDevice    (TAGBASE_BtA | 0x17)
 #define MUIM_BtA_DevInfo      (TAGBASE_BtA | 0x18)
+#define MUIM_BtA_SaveLog      (TAGBASE_BtA | 0x19)
 
 struct MUIP_BtA_Reply { STACKED ULONG MethodID; STACKED IPTR yes; };
 #define MUIM_BtA_PairReply    (TAGBASE_BtA | 0x16)

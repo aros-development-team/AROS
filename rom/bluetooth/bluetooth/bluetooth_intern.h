@@ -162,6 +162,8 @@ struct BtBase
     struct timerequest  bt_TimerIOReq;    /* Standard timer request */
     struct List         bt_Hardware;      /* List of Hardware Interfaces in use */
     struct List         bt_Classes;       /* List of Classes loaded */
+    struct List         bt_FirmwareLoaders; /* List of struct BtFirmwareLoader (plugins) */
+    struct SignalSemaphore bt_FirmwareLock; /* Guards bt_FirmwareLoaders */
     struct List         bt_ErrorMsgs;     /* List of Error Msgs */
     struct List         bt_EventHooks;    /* List of EventHandlers */
     struct MsgPort      bt_EventReplyPort; /* Replyport for Events */
@@ -255,6 +257,8 @@ struct BtAppBinding
 #define BTHF_DISCOVERABLE   0x0008        /* inquiry scan on */
 #define BTHF_CONNECTABLE    0x0010        /* page scan on */
 #define BTHF_REMOVEME       0x0100        /* scheduled for removal */
+#define BTHF_FWLOADED       0x0200        /* firmware download done (or not needed) */
+#define BTHF_FWPENDING      0x0400        /* firmware load requested, awaiting a loader */
 
 #define BT_ADDRSTR_LEN      18            /* "xx:xx:xx:xx:xx:xx" + NUL */
 #define BT_NAME_MAX         248           /* HCI local/remote name */

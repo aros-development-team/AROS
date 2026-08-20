@@ -71,6 +71,8 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR BluetoothBase)
 
         NewList(&BluetoothBase->bt_Hardware);
         NewList(&BluetoothBase->bt_Classes);
+        NewList(&BluetoothBase->bt_FirmwareLoaders);
+        InitSemaphore(&BluetoothBase->bt_FirmwareLock);
         NewList(&BluetoothBase->bt_ErrorMsgs);
         NewList(&BluetoothBase->bt_EventHooks);
         memset(&BluetoothBase->bt_EventReplyPort, 0, sizeof(BluetoothBase->bt_EventReplyPort));

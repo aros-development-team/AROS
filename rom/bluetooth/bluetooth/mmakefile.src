@@ -4,6 +4,7 @@ FILES :=    \
     bluetooth.library \
     objects \
     classes \
+    firmware \
     hwtask \
     hwconn \
     config \

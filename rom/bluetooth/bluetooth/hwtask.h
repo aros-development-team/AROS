@@ -75,6 +75,7 @@
 #define HC_OP_LE_READ_LOCAL_FEATURES  HC_OP(0x08, 0x0003)
 #define HC_OP_LE_SET_SCAN_PARAMETERS  HC_OP(0x08, 0x000b)
 #define HC_OP_LE_SET_SCAN_ENABLE      HC_OP(0x08, 0x000c)
+
 #define HC_OP_LE_CREATE_CONNECTION    HC_OP(0x08, 0x000d)
 #define HC_OP_LE_CREATE_CONN_CANCEL   HC_OP(0x08, 0x000e)
 #define HC_OP_LE_START_ENCRYPTION     HC_OP(0x08, 0x0019)
@@ -115,6 +116,7 @@
 enum {
     HCB_RESET = 0,
     HCB_READ_VERSION,
+    HCB_FIRMWARE,           /* offer the controller to the pluggable firmware loaders */
     HCB_READ_FEATURES,
     HCB_READ_BUFFER_SIZE,
     HCB_READ_BD_ADDR,
@@ -249,12 +251,30 @@ struct BtHWCore
     BOOL                hc_BringupFailed;
     BOOL                hc_Shutdown;
 
+    /* firmware-loader hook: HCB_FIRMWARE sets hc_FirmwarePending so the hwtask
+       main loop runs the (synchronous) loader outside event processing. */
+    BOOL                hc_FirmwarePending;
+    /* one in-flight synchronous HCI command (bHciDoSync / firmware loaders) */
+    BOOL                hc_SyncDone;
+    BOOL                hc_SyncOK;        /* command completed (vs timeout/send error) */
+    UBYTE               hc_SyncStatus;    /* HCI status byte */
+    UBYTE              *hc_SyncResp;      /* caller's return-param buffer, or NULL */
+    UWORD               hc_SyncRespMax;
+    UWORD               hc_SyncRespLen;
+
     /* discovery */
     BOOL                hc_InqActive;
     BOOL                hc_LEScanActive;
     BOOL                hc_ResolveNames;
     BOOL                hc_DiscoveryPending; /* discovery requested, commands in flight */
     struct bt_timer     hc_DiscoveryTimer;
+
+    /* scan diagnostics (conclusive "why is nothing found" instrumentation) */
+    ULONG               hc_DiagAdvLegacy;    /* LE advertising reports parsed (subevent 0x02) */
+    ULONG               hc_DiagAdvExt;       /* LE extended advertising reports parsed (0x0D) */
+    ULONG               hc_DiagAdvOther;     /* LE Meta events of some other subevent */
+    ULONG               hc_DiagInqResults;   /* classic inquiry results seen */
+    ULONG               hc_DiagLESubeventMask; /* bitmask of LE Meta subevent codes seen this run */
 
     /* remote name requests */
     struct MinList      hc_NameChannels;   /* BtChannel queue (bch_QueueNode) */
@@ -281,6 +301,11 @@ uint64_t bNowUS(struct BtHWCore *hc);
 BOOL bSubmitCmd(struct BtHWCore *hc, UWORD opcode, const UBYTE *params, UBYTE len,
                 bt_cmdq_complete_fn cb, void *user);
 void bIgnoreCompletion(struct bt_cmdq_completion *completion, void *user_data);
+/* synchronous HCI command used by firmware loaders (hwtask.c) */
+LONG bHciDoSync(struct BtHWCore *hc, UWORD opcode, CONST_APTR params, UWORD plen,
+                UBYTE *status, UBYTE *resp, UWORD *resplen, UWORD respmax);
+/* firmware.c: offer the controller to the registered firmware loaders */
+void bDoFirmware(struct BtHWCore *hc);
 struct BtDevice * bFindDeviceByAddr(struct BtHWCore *hc, const UBYTE *addr);
 LONG bStopDiscovery(struct BtHWCore *hc);
 void bReplyChannel(struct BtBase *BluetoothBase, struct BtChannel *bch, LONG error, ULONG actual);

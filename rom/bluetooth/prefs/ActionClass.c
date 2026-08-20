@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <intuition/classusr.h>
 #include <libraries/mui.h>
+#include <libraries/asl.h>
 #include <libraries/bluetooth.h>
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -322,6 +323,53 @@ static void DoFlush(struct BtActionData *data)
     btUnlockBase();
     RefreshErrors(data);
 }
+/* Save the whole message log to a file the user picks (default the boot volume,
+   so it lands on the USB key). Mirrors Trident's "Save Log". */
+static void DoSaveLog(struct BtActionData *data)
+{
+    struct FileRequester *aslreq;
+    struct TagItem asltags[] = {
+        { ASLFR_InitialDrawer, (IPTR) "SYS:" },
+        { ASLFR_InitialFile,   (IPTR) "BluetoothLog.txt" },
+        { ASLFR_DoSaveMode,    (IPTR) TRUE },
+        { ASLFR_TitleText,     (IPTR) "Save Bluetooth message log" },
+        { TAG_END,             (IPTR) NULL }
+    };
+    char path[256];
+    BPTR fh;
+
+    if((aslreq = (struct FileRequester *) MUI_AllocAslRequest(ASL_FileRequest, asltags)))
+    {
+        if(MUI_AslRequest(aslreq, TAG_END))
+        {
+            strncpy(path, aslreq->fr_Drawer, sizeof(path) - 1);
+            path[sizeof(path) - 1] = '\0';
+            AddPart((STRPTR) path, aslreq->fr_File, sizeof(path));
+            if((fh = Open((STRPTR) path, MODE_NEWFILE)))
+            {
+                struct List *el;
+                struct Node *bem;
+                char line[400];
+                btLockReadBase();
+                btGetAttrs(BGA_STACK, NULL, BSA_ErrorMsgList, &el, TAG_END);
+                for(bem = el->lh_Head; bem->ln_Succ; bem = bem->ln_Succ)
+                {
+                    IPTR level = 0;
+                    STRPTR origin = NULL, msg = NULL;
+                    btGetAttrs(BGA_ERRORMSG, bem, BEMA_Level, &level, BEMA_Origin, &origin, BEMA_Msg, &msg, TAG_END);
+                    snprintf(line, sizeof(line), "%ld %s: %s\n", (long) level, origin ? origin : "?", msg ? msg : "");
+                    FPuts(fh, (STRPTR) line);
+                }
+                btUnlockBase();
+                Close(fh);
+                SetStatus(data, "Message log saved.");
+            } else {
+                SetStatus(data, "Could not open the log file for writing.");
+            }
+        }
+        MUI_FreeAslRequest(aslreq);
+    }
+}
 static void DoPairReply(struct BtActionData *data, BOOL yes)
 {
     if(data->pairdev) {
@@ -560,6 +608,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                     MUIA_Cycle_Active, 3,
                     End,
                 Child, HSpace(0),
+                Child, data->bt_savelog = SimpleButton("Save log..."),
                 Child, data->bt_flush = SimpleButton("Flush all"),
                 End,
             Child, data->errlist = ListviewObject,
@@ -619,6 +668,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(data->bt_forget,     MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Forget);
     DoMethod(data->bt_clsscan,    MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_ClsScan);
 
+    DoMethod(data->bt_savelog,    MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_SaveLog);
     DoMethod(data->bt_flush,      MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_FlushLog);
     DoMethod(data->bt_allon,      MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_AllOnline);
     DoMethod(data->bt_alloff,     MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_AllOffline);
@@ -660,6 +710,7 @@ AROS_UFH3(IPTR, ActionDispatcher,
             { APTR b = SelectedDevice(data); if(b && data->devwin) DoMethod(data->devwin, MUIM_DevWin_Show, b); }
             return 0;
         case MUIM_BtA_FlushLog:    DoFlush(data); return 0;
+        case MUIM_BtA_SaveLog:     DoSaveLog(data); return 0;
         case MUIM_BtA_Save:
         case MUIM_BtA_Use:         if(btSaveCfgToDisk(NULL, FALSE)) SetStatus(data,"Configuration saved."); else SetStatus(data,"Saving failed."); return 0;
         case MUIM_BtA_AllOnline:   RefreshHardware(data); return 0;

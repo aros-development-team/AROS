@@ -6,6 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-bluetooth : \
 #MM      kernel-bluetooth-library \
 #MM      kernel-bluetooth-classes \
+#MM      kernel-bluetooth-firmware \
 #MM      bluetooth-shellcommands \
 #MM      kernel-bluetooth-hardware \
 #MM      kernel-bluetooth-prefs
@@ -13,6 +14,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-bluetooth-clean : \
 #MM      kernel-bluetooth-library-clean \
 #MM      kernel-bluetooth-classes-clean \
+#MM      kernel-bluetooth-firmware-clean \
 #MM      bluetooth-shellcommands-clean \
 #MM      kernel-bluetooth-hardware-clean \
 #MM      kernel-bluetooth-prefs-clean
