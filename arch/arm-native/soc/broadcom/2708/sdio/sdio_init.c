@@ -65,13 +65,19 @@ APTR MBoxBase __attribute__((used)) = NULL;
  * 3/3B+ the SoC supplies it on GPCLK2 (GPIO43), but the firmware does not
  * start it for us: GPIO43 comes up as a plain input. Without the LPO the
  * chip stays asleep and never answers CMD5.
- * Derive ~32.768 kHz from the 19.2 MHz crystal with the MASH-1 fractional
- * divider: 19.2e6 / 585.9375 = 32768 Hz (DIVI 585, DIVF 0.9375*4096=3840).
+ * Derive ~32.768 kHz from the crystal with the MASH-1 fractional divider.
+ * The oscillator feeding CM_SRC_OSC is 19.2 MHz on BCM2835/6/7 but 54 MHz on
+ * BCM2711, so the divider is per-SoC - one divider for both would clock the
+ * chip's PMU ~2.8x too fast on a Pi 4:
+ *   19.2e6 / 585.9375  = 32768 Hz (DIVI 585,  DIVF 0.9375*4096   = 3840)
+ *   54.0e6 / 1647.9492 = 32768 Hz (DIVI 1647, DIVF 0.94921875*4096 = 3888)
  */
 #define CM_GP2CTL               (CLOCK_BASE + 0x80)
 #define CM_GP2DIV               (CLOCK_BASE + 0x84)
 #define SDIO_LPO_DIVI           585
 #define SDIO_LPO_DIVF           3840
+#define SDIO_LPO_DIVI_2711      1647
+#define SDIO_LPO_DIVF_2711      3888
 
 /* MMC command opcodes reused from the memory-card set */
 #define SDIO_CMD_SEND_RELATIVE_ADDR     MMC_CMD_SET_RELATIVE_ADDR       /* CMD3, R6 */
@@ -254,13 +260,48 @@ static void sdio_gpio_mux(struct SDIOBase *SDIOBase)
 
 /*
  * Pull configuration for the SDIO bus, matching the Pi device tree:
- * CLK (GPIO34) no pull, CMD/DAT (GPIO35-39) pull-up. Uses the legacy
- * BCM2835 GPPUD/GPPUDCLK clocked sequence (bank 1 = GPIO32-53).
+ * CLK (GPIO34) no pull, CMD/DAT (GPIO35-39) pull-up.
+ *
+ * Two incompatible register sets: BCM2835/6/7 use the clocked GPPUD/GPPUDCLK
+ * sequence (bank 1 = GPIO32-53), while on BCM2711 those registers read back
+ * as reserved and writes are ignored - the pulls moved to the directly
+ * writable GPIO_PUP_PDN_CNTRL_REG0..3 (GPIO+0xE4), 16 pins per register,
+ * 2 bits each (00 none, 01 up, 10 down). Using the legacy path on a Pi 4
+ * leaves CMD/DAT floating, and the card never answers CMD5.
  */
+#define GPPUPPDN(pin)           (GPIO_BASE + 0xE4 + (((pin) >> 4) << 2))
+#define GPPUPPDN_NONE           0
+#define GPPUPPDN_UP             1
+
+static void sdio_gpio_pulls_2711(struct SDIOBase *SDIOBase)
+{
+    int pin;
+
+    for (pin = 34; pin <= 39; pin++)
+    {
+        volatile ULONG *reg = (volatile ULONG *)GPPUPPDN(pin);
+        int shift = (pin & 0x0f) << 1;
+        ULONG val = AROS_LE2LONG(*reg);
+
+        val &= ~(0x3 << shift);
+        val |= ((pin == 34) ? GPPUPPDN_NONE : GPPUPPDN_UP) << shift;
+        *reg = AROS_LONG2LE(val);
+    }
+
+    D(bug("[SDIO] GPIO34-39 pulls (2711): PUPPDN2=0x%08x\n",
+          AROS_LE2LONG(*(volatile ULONG *)GPPUPPDN(34))));
+}
+
 static void sdio_gpio_pulls(struct SDIOBase *SDIOBase)
 {
     volatile ULONG *gppud = (volatile ULONG *)GPPUD;
     volatile ULONG *clk1 = (volatile ULONG *)GPPUDCLK1;
+
+    if (SDIOBase->sdio_periiobase == BCM2711_PERIIOBASE)
+    {
+        sdio_gpio_pulls_2711(SDIOBase);
+        return;
+    }
 
     /* GPIO35-39: pull-up (GPPUD = 2) */
     *gppud = AROS_LONG2LE(2);
@@ -289,6 +330,9 @@ static void sdio_wifi_clock(struct SDIOBase *SDIOBase)
     volatile ULONG *divr = (volatile ULONG *)CM_GP2DIV;
     volatile ULONG *fsel4 = (volatile ULONG *)GPFSEL4;
     int shift = (43 % 10) * 3;          /* GPIO43 = field 3 of GPFSEL4 */
+    int is2711 = (SDIOBase->sdio_periiobase == BCM2711_PERIIOBASE);
+    ULONG divi = is2711 ? SDIO_LPO_DIVI_2711 : SDIO_LPO_DIVI;
+    ULONG divf = is2711 ? SDIO_LPO_DIVF_2711 : SDIO_LPO_DIVF;
     ULONG val, timeout;
 
     D(bug("[SDIO] GPCLK2 before: CTL=0x%08x DIV=0x%08x GPFSEL4=0x%08x\n",
@@ -300,8 +344,8 @@ static void sdio_wifi_clock(struct SDIOBase *SDIOBase)
     while ((AROS_LE2LONG(*ctl) & CM_BUSY) && timeout--)
         sdio_udelay(SDIOBase, 10);
 
-    /* Fractional (MASH-1) divider from the 19.2 MHz crystal */
-    *divr = AROS_LONG2LE(CM_PASSWORD | (SDIO_LPO_DIVI << 12) | SDIO_LPO_DIVF);
+    /* Fractional (MASH-1) divider, sized for this SoC's crystal */
+    *divr = AROS_LONG2LE(CM_PASSWORD | (divi << 12) | divf);
 
     /* Select source + MASH, then enable in a second write (per datasheet) */
     *ctl = AROS_LONG2LE(CM_PASSWORD | CM_MASH(1) | CM_SRC_OSC);
