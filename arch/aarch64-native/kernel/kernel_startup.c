@@ -42,6 +42,21 @@
 extern struct TagItem *BootMsg;
 
 void __attribute__((used)) kernel_cstart(struct TagItem *msg);
+/*
+ * .aros.init is declared twice: "ax" by the asm below that carries
+ * start:, and again by the section attribute on the stack pointers. The
+ * second declaration must not bring attributes of its own, which is what
+ * the section comment ends the directive for.
+ *
+ * AROS_SECTION_COMMENT arrives empty because config/features only probes
+ * for it when AROS_TARGET_CPU is arm, so the compiler's flags come
+ * through and the assembler rejects the second declaration.
+ * riscv-native works around it the same way; the fix belongs in that
+ * probe.
+ */
+#undef TARGET_SECTION_COMMENT
+#define TARGET_SECTION_COMMENT "\n#"
+
 static void __attribute__((used, noreturn, noinline)) kernel_cstart_user(void);
 
 uint64_t stack[AROS_STACKSIZE] __attribute__((used,aligned(16)));
