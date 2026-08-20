@@ -35,7 +35,7 @@
  * node "disabled" either way. So this is a deliberate one-line opt-in for
  * a real Pi 4 bring-up session, exactly like VC4_HVS_PROBE next door.
  */
-#define VC4_HVS5_DUMP       1
+#define VC4_HVS5_DUMP       0
 
 /* Words printed either side of a framebuffer address hit. A VideoCore IV
  * plane entry was 7 words unity / 14 scaled; allow for HVS5 being wider. */
@@ -55,9 +55,35 @@ static const struct hvs5_pv hvs5_pvs[HVS5_PV_COUNT] =
     { "PV4", 0x216000, 32 + 110 },
 };
 
+/*
+ * Phase 2 rides on the same opt-in as the dump. It writes to the HVS, so
+ * on top of the QEMU abort it can disturb a working display - though only
+ * transiently: any anomaly hands straight back to the firmware, and a
+ * firmware list rebuild heals whatever we left behind.
+ */
+#define VC4_HVS5_TAKEOVER   0
+
+/* A 50 Hz frame is ~20ms, roughly 150k uncached register reads. */
+#define HVS5_SPIN_LATCH     5000000
+
 static inline ULONG hvs5_rd(ULONG offset)
 {
     return *(volatile ULONG *)(HVS5_BASE + offset);
+}
+
+static inline void hvs5_wr(ULONG offset, ULONG value)
+{
+    *(volatile ULONG *)(HVS5_BASE + offset) = value;
+}
+
+static inline ULONG hvs5_dl_rd(ULONG word)
+{
+    return hvs5_rd(HVS5_DLIST_START + 4 * word);
+}
+
+static inline void hvs5_dl_wr(ULONG word, ULONG value)
+{
+    hvs5_wr(HVS5_DLIST_START + 4 * word, value);
 }
 
 static inline ULONG pv_rd(ULONG base_off, ULONG offset)
@@ -169,4 +195,220 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
         "(set VC4_HVS5_DUMP for the bring-up dump, real Pi 4 only)\n",
         fb_phys);
 #endif
+}
+
+/* ------------------------------------------------------------------ */
+/* Phase 2: display list ownership                                     */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Locate the plane carrying a known buffer, without assuming where an
+ * entry keeps its pointer: walk the entries and compare every word in
+ * each against the address, bus alias masked off. That is how the dump
+ * found the framebuffer, and unlike a fixed offset it survives scaled
+ * entries, whose pointer sits elsewhere.
+ */
+static BOOL hvs5_find_plane(ULONG head, ULONG phys, ULONG *entry_off,
+                            ULONG *ptr_off, ULONG *entry_words)
+{
+    ULONG want = phys & 0x3fffffff;
+    ULONG idx = head;
+
+    if (!want)
+        return FALSE;
+
+    while (idx < HVS5_DLIST_WORDS)
+    {
+        ULONG ctl0 = hvs5_dl_rd(idx), size, w;
+
+        if (ctl0 & HVS5_CTL0_END)
+            return FALSE;
+
+        size = (ctl0 >> HVS5_CTL0_SIZE_SHIFT) & HVS5_CTL0_SIZE_MASK;
+        if (size == 0 || idx + size >= HVS5_DLIST_WORDS)
+            return FALSE;
+
+        for (w = 1; w < size; w++)
+        {
+            if ((hvs5_dl_rd(idx + w) & 0x3fffffff) == want)
+            {
+                *entry_off = idx - head;
+                *ptr_off = w;
+                *entry_words = size;
+                return TRUE;
+            }
+        }
+        idx += size;
+    }
+    return FALSE;
+}
+
+/* Total length of a list, END word included. 0 = malformed. */
+static ULONG hvs5_list_length(ULONG head)
+{
+    ULONG idx = head;
+
+    while (idx < HVS5_DLIST_WORDS)
+    {
+        ULONG ctl0 = hvs5_dl_rd(idx), size;
+
+        if (ctl0 & HVS5_CTL0_END)
+            return idx - head + 1;
+
+        size = (ctl0 >> HVS5_CTL0_SIZE_SHIFT) & HVS5_CTL0_SIZE_MASK;
+        if (size == 0 || idx + size >= HVS5_DLIST_WORDS)
+            return 0;
+        idx += size;
+    }
+    return 0;
+}
+
+BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
+                       ULONG fb_phys, ULONG fb_pitch)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    st->hvs_Active = FALSE;
+    (void)fb_pitch;
+
+#if VC4_HVS5_TAKEOVER
+    {
+        ULONG ctrl, head, len, base, i;
+        ULONG fb_entry, fb_ptr, fb_words;
+
+        if (hvs5_rd(HVS5_ID) != HVS5_ID_MAGIC)
+            return FALSE;
+
+        ctrl = hvs5_rd(HVS5_DISPCTRLX(HVS5_CHANNEL_HDMI));
+        head = hvs5_rd(HVS5_DISPLACT(HVS5_CHANNEL_HDMI));
+        if (!(ctrl & (1UL << 31)) || head == 0 || head >= HVS5_DLIST_WORDS)
+        {
+            bug("[VC4HVS5] takeover: channel %u unusable (CTRL=%08x head=%u)\n",
+                (unsigned)HVS5_CHANNEL_HDMI, ctrl, (unsigned)head);
+            return FALSE;
+        }
+
+        len = hvs5_list_length(head);
+        if (len == 0 || len > HVS5_OWN_SLOT_STRIDE)
+        {
+            bug("[VC4HVS5] takeover: list at %u is %u words, refusing\n",
+                (unsigned)head, (unsigned)len);
+            return FALSE;
+        }
+
+        if (!hvs5_find_plane(head, fb_phys, &fb_entry, &fb_ptr, &fb_words))
+        {
+            bug("[VC4HVS5] takeover: no plane points at fb 0x%08x\n", fb_phys);
+            return FALSE;
+        }
+
+        /* Copy the firmware's list wholesale, then retarget just the
+         * framebuffer. Every other plane it built - the cursor above all -
+         * comes along untouched. */
+        base = HVS5_OWN_SLOT_BASE + HVS5_OWN_SLOT_STRIDE * st->hvs_Slot;
+        st->hvs_Slot = (st->hvs_Slot + 1) % HVS5_OWN_SLOTS;
+
+        for (i = 0; i < len; i++)
+            hvs5_dl_wr(base + i, hvs5_dl_rd(head + i));
+
+        st->hvs_FBPtr    = fb_phys & ~HVS5_PTR_BUS_ALIAS;
+        st->hvs_FBPtrOff = fb_entry + fb_ptr;
+        st->hvs_FBWords  = fb_words;
+        st->hvs_ListBase = base;
+        hvs5_dl_wr(base + st->hvs_FBPtrOff,
+                   HVS5_PTR_BUS_ALIAS | st->hvs_FBPtr);
+
+        /* The cursor plane, if the firmware had one up. Found the same
+         * way, by its buffer address. */
+        st->hvs_CurOff = 0;
+        if (hvs5_find_plane(head, xsd->vcsd_CurBufBus, &st->hvs_CurOff,
+                            &st->hvs_CurPtrOff, &st->hvs_CurWords))
+        {
+            /* POS0 is the one field the bring-up dump could not decode:
+             * both planes sat at the origin, so its layout is still the
+             * VideoCore IV one by assumption. Print what the firmware
+             * built against where the driver believes the pointer is, and
+             * a single run settles it. */
+            ULONG pos0 = hvs5_dl_rd(head + st->hvs_CurOff + 1);
+
+            bug("[VC4HVS5] cursor plane at +%u (%u words, ptr +%u), "
+                "POS0=%08x while the driver has it at %d,%d\n",
+                (unsigned)st->hvs_CurOff, (unsigned)st->hvs_CurWords,
+                (unsigned)st->hvs_CurPtrOff, pos0,
+                (int)xsd->vcsd_CurX, (int)xsd->vcsd_CurY);
+        }
+        else
+            bug("[VC4HVS5] no cursor plane in the firmware list - the "
+                "pointer will not move while we own the display\n");
+
+        VC4_MBOX_LOCK(xsd);
+        hvs5_wr(HVS5_DISPLIST(HVS5_CHANNEL_HDMI), base);
+        for (i = 0; i < HVS5_SPIN_LATCH; i++)
+        {
+            if (hvs5_rd(HVS5_DISPLACT(HVS5_CHANNEL_HDMI)) == base)
+                break;
+        }
+        if (hvs5_rd(HVS5_DISPLACT(HVS5_CHANNEL_HDMI)) == base)
+            st->hvs_Active = TRUE;
+        else
+            hvs5_wr(HVS5_DISPLIST(HVS5_CHANNEL_HDMI), head);
+        VC4_MBOX_UNLOCK(xsd);
+
+        if (st->hvs_Active)
+            bug("[VC4HVS5] takeover: ACTIVE - %u words copied %u -> %u, "
+                "fb plane +%u ptr +%u\n", (unsigned)len, (unsigned)head,
+                (unsigned)base, (unsigned)fb_entry, (unsigned)fb_ptr);
+        else
+            bug("[VC4HVS5] takeover: never latched, firmware restored\n");
+    }
+#else
+    (void)fb_phys;
+#endif
+
+    return st->hvs_Active;
+}
+
+BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    if (!st->hvs_Active)
+        return FALSE;
+
+    /* One word, reloaded by the HVS at frame start, so the flip is
+     * vblank-latched without a repoint. Unpaced until the PixelValve
+     * interrupt is wired up. */
+    st->hvs_FBPtr = page_phys & ~HVS5_PTR_BUS_ALIAS;
+    hvs5_dl_wr(st->hvs_ListBase + st->hvs_FBPtrOff,
+               HVS5_PTR_BUS_ALIAS | st->hvs_FBPtr);
+    return TRUE;
+}
+
+void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    ULONG base;
+
+    if (!st->hvs_Active || !st->hvs_CurOff)
+        return;
+
+    base = st->hvs_ListBase + st->hvs_CurOff;
+
+    /* Position and shape, patched into the inherited entry: POS0 at [1]
+     * and POS2 at [3] follow VideoCore IV, the pointer offset was
+     * measured at takeover, and the pitch closes the entry. Hiding the
+     * pointer clears VALID rather than restructuring the list. */
+    if (!xsd->vcsd_CurVisible || !xsd->vcsd_CurBuf)
+    {
+        hvs5_dl_wr(base, hvs5_dl_rd(base) & ~HVS5_CTL0_VALID);
+        return;
+    }
+
+    hvs5_dl_wr(base, hvs5_dl_rd(base) | HVS5_CTL0_VALID);
+    hvs5_dl_wr(base + 1, ((ULONG)xsd->vcsd_CurY << 12)
+                       | ((ULONG)xsd->vcsd_CurX & 0xfff));
+    hvs5_dl_wr(base + 3, (xsd->vcsd_CurHeight << 16) | xsd->vcsd_CurWidth);
+    hvs5_dl_wr(base + st->hvs_CurPtrOff,
+               HVS5_PTR_BUS_ALIAS | (xsd->vcsd_CurBufBus & ~HVS5_PTR_BUS_ALIAS));
+    hvs5_dl_wr(base + st->hvs_CurWords - 1, xsd->vcsd_CurWidth * 4);
 }

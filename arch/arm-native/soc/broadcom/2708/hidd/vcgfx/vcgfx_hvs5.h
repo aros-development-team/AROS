@@ -110,4 +110,27 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
                    ULONG fb_phys, ULONG fb_pitch,
                    ULONG fb_width, ULONG fb_height);
 
+/* Our own lists live high in list RAM, clear of the firmware's (which
+ * ran from word 4 to about word 840) and of the filter kernel at 0xff4.
+ * Two slots so a mode switch never rewrites the list being scanned. */
+#define HVS5_OWN_SLOTS      2
+#define HVS5_OWN_SLOT_BASE  3584
+#define HVS5_OWN_SLOT_STRIDE 128
+
+/* Take the HDMI channel: copy the firmware's live list into a slot of
+ * our own, retarget the framebuffer plane and repoint the channel. The
+ * whole list is inherited verbatim - the cursor plane included - so
+ * nothing depends on knowing how to author an HVS5 entry. Returns FALSE
+ * and leaves the firmware in charge on any anomaly. */
+BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
+                       ULONG fb_phys, ULONG fb_pitch);
+
+/* Retarget the framebuffer plane at another page. One word, latched by
+ * the HVS at frame start. */
+BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
+
+/* Patch the inherited cursor plane in place. No-op when the firmware had
+ * no cursor plane at takeover. */
+void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd);
+
 #endif /* _VIDEOCOREGFX_HVS5_H */
