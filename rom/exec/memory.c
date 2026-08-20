@@ -985,6 +985,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
              * allocator ctx size in any case.
              */
             IPTR puddleSize = pool->pool.PuddleSize;
+            struct Node *head = (struct Node *)pool->pool.PuddleList.mlh_Head;
 
             if (memSize > puddleSize - (MEMHEADER_TOTAL + mhac_GetCtxSize()))
             {
@@ -993,6 +994,20 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
                 puddleSize = memSize + MEMHEADER_TOTAL + mhac_GetCtxSize();
                 /* Align the size up to page boundary */
                 puddleSize = (puddleSize + align) & ~align;
+            }
+            else if (head->ln_Succ && head->ln_Succ->ln_Succ == NULL)
+            {
+                /*
+                 * Slow start: the only list entry is the pool's header
+                 * block, so this is the pool's first data puddle. Many
+                 * pools only ever hold a handful of small allocations;
+                 * size the first puddle for the request instead of
+                 * committing a full puddleSize up front. Pools that
+                 * keep allocating get full-size puddles from the
+                 * second one on.
+                 */
+                puddleSize = memSize + MEMHEADER_TOTAL + mhac_GetCtxSize();
+                puddleSize = (puddleSize + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL - 1);
             }
 
             mh = AllocMemHeader(puddleSize, flags, loc, SysBase);
