@@ -246,7 +246,7 @@ static void bcmgenet_free_ring(struct bcmgenet_ring *ring)
 }
 
 /* == unit lifecycle ======================================================= */
-static AROS_INTH1(BCMGENET_TXIntHandler, struct BCMGENETUnit *, unit)
+static AROS_INTH1(BCMGENET_IntHandler, struct BCMGENETUnit *, unit)
 {
     struct bcmgenet_hw *hw = unit->bgu_HW;
     ULONG status;
@@ -266,27 +266,19 @@ static AROS_INTH1(BCMGENET_TXIntHandler, struct BCMGENETUnit *, unit)
         Signal(unit->bgu_Task, unit->bgu_IRQSignal);
     }
 
+    if ((status & GENET_IRQ_RXDMA_DONE) != 0)
+    {
+        BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR,
+                       GENET_IRQ_RXDMA_DONE);
+
+        unit->bgu_IRQPending |= GENET_IRQ_RXDMA_DONE;
+        Signal(unit->bgu_Task, unit->bgu_IRQSignal);
+    }
+
     return FALSE;
     AROS_INTFUNC_EXIT
 }
-/*
- * TODO: this is the shape of the thing, not a working driver yet.
- * BCMGENET_BeginIO() refuses every request until bgu_InputPort is set
- * (checked there on purpose, so a half-finished unit fails closed
- * instead of PutMsg()-ing onto a NULL port) - still missing:
- *  - bgu_InputPort and bgu_RequestPorts[] (see REQUEST_QUEUE_COUNT):
- *    real AROS ports need a live task or software interrupt behind
- *    mp_SigTask to be woken by PutMsg(), which does not exist yet
- *  - allocate bgu_TX/bgu_RX ring buffers (GENET_TXDESC/RXDESC *
- *    GENET_BUFSIZE each) and hand them to BCMGENET_HWInit()
- *  - register the two IRQ handlers (unit->bgu_HW->irq[0]/[1]) with
- *    KrnAddIRQHandler() into bgu_IRQHandler[0]/[1]
- *  - decide how received frames and completed sends get from IRQ
- *    context to the openers: a bare exec worker task like dwmac's
- *    DWMAC_UnitTask, or an interrupt-driven bottom half like
- *    RPiHDMI's slave process. Left open on purpose - whichever is
- *    chosen is what ends up behind bgu_InputPort/bgu_RequestPorts.
- */
+
 struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
 {
     struct BCMGENETUnit *unit;
@@ -374,7 +366,7 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
      */
     unit->bgu_IRQHandler[0].is_Node.ln_Type = NT_INTERRUPT;
     unit->bgu_IRQHandler[0].is_Node.ln_Name = "bcmgenet";
-    unit->bgu_IRQHandler[0].is_Code = (VOID_FUNC)BCMGENET_TXIntHandler;
+    unit->bgu_IRQHandler[0].is_Code = (VOID_FUNC)BCMGENET_IntHandler;
     unit->bgu_IRQHandler[0].is_Data = unit;
     AddIntServer(INTB_KERNEL + unit->bgu_HW->irq[0],
         &unit->bgu_IRQHandler[0]);
@@ -516,7 +508,7 @@ void BCMGENET_GoOnline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
     ULONG cmd;
 
     /* Fjern eventuelle gamle, latchede TX-avbrudd før unmaskering. */
-    BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR, GENET_IRQ_TXDMA_DONE);
+    BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR, GENET_IRQ_TXDMA_DONE | GENET_IRQ_RXDMA_DONE);
 
     /* Aktiver bare TX-completion-avbrudd. */
     BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR_MASK,
@@ -705,6 +697,104 @@ static void bcmgenet_tx_complete(struct BCMGENETBase *base,
     BCMGENET_ReportEvents(base, unit, S2EVENT_TX);
 }
 
+/*
+ * TODO (step 3): the dwmac-style opener dispatch - packet-type match
+ * against each opener's read queue, rx_function copy, SANA2IOF_RAW,
+ * orphans to ADOPT_QUEUE, type trackers. See DWMAC_RXPacket()
+ * (dwmac_unit.c:228). Until then received frames are only logged and
+ * counted, which is enough to see an OFFER arrive in the capture.
+ */
+static void bcmgenet_rx_packet(struct BCMGENETBase *base,
+                               struct BCMGENETUnit *unit,
+                               struct eth_frame *frame, ULONG length)
+{
+    D(bug("[bcmgenet] RX %02x:%02x:%02x:%02x:%02x:%02x -> "
+          "%02x:%02x:%02x:%02x:%02x:%02x type %04x len %lu\n",
+          frame->eth_packet_source[0], frame->eth_packet_source[1],
+          frame->eth_packet_source[2], frame->eth_packet_source[3],
+          frame->eth_packet_source[4], frame->eth_packet_source[5],
+          frame->eth_packet_dest[0], frame->eth_packet_dest[1],
+          frame->eth_packet_dest[2], frame->eth_packet_dest[3],
+          frame->eth_packet_dest[4], frame->eth_packet_dest[5],
+          AROS_BE2WORD(frame->eth_packet_type), length);)
+}
+
+/*
+ * Port of genet_rxintr() (bcmgenet.c:682). The engine bumped its
+ * producer index past our shadow; every slot in between holds a frame.
+ * Advancing the consumer index at the end is what re-arms the slots -
+ * the address registers still hold the same buffers, so unlike the
+ * OpenBSD original there is no per-slot refill to do.
+ */
+static void bcmgenet_rx_process(struct BCMGENETBase *base,
+                                struct BCMGENETUnit *unit, ULONG qid)
+{
+    struct bcmgenet_ring *rx = &unit->bgu_RX;
+    struct bcmgenet_hw *hw = unit->bgu_HW;
+    ULONG pidx, total, index, n;
+
+    pidx = BCMGENET_Read(hw, GENET_RX_DMA_PROD_INDEX(qid)) & 0xffff;
+    total = (pidx - rx->pidx) & 0xffff;
+
+    D(bug("[bcmgenet] RX pidx=%04lx total=%lu\n", pidx, total);)
+
+    index = rx->next;
+    for (n = 0; n < total; n++)
+    {
+        ULONG status = BCMGENET_Read(hw, GENET_RX_DESC_STATUS(index));
+        ULONG len = (status & GENET_RX_DESC_STATUS_BUFLEN_MASK) >>
+                    GENET_RX_DESC_STATUS_BUFLEN_SHIFT;
+        UBYTE *buf = rx->buf[index];
+        ULONG postlen = GENET_BUFSIZE;
+
+        /* Drop the cached lines so the engine's frame is what gets read */
+        CachePostDMA(buf, &postlen, 0);
+
+        /*
+         * A frame that does not fit one buffer arrives split across
+         * slots with SOP/EOP marking the pieces; at 1536 bytes per
+         * buffer and CRC included that cannot happen at our MTU, so
+         * anything partial is treated as an error rather than glued.
+         * OpenBSD leaves this unchecked ("XXX check for errors").
+         */
+        if ((status & (GENET_RX_DESC_STATUS_SOP | GENET_RX_DESC_STATUS_EOP))
+                != (GENET_RX_DESC_STATUS_SOP | GENET_RX_DESC_STATUS_EOP) ||
+            (status & GENET_RX_DESC_STATUS_RX_ERROR) != 0)
+        {
+            D(bug("[bcmgenet] RX slot %lu bad status %08lx\n", index, status);)
+            unit->bgu_Stats.BadData++;
+        }
+        else if (len > 2 + ETH_HEADERSIZE)
+        {
+            /*
+             * RBUF_ALIGN_2B put two pad bytes ahead of the frame and
+             * counted them in BUFLEN; step past them. The tail still
+             * carries the 4-byte CRC - the openers do not mind, and
+             * OpenBSD keeps it too (it trims only the two pad bytes).
+             */
+            bcmgenet_rx_packet(base, unit,
+                               (struct eth_frame *)(buf + 2), len - 2);
+            unit->bgu_Stats.PacketsReceived++;
+        }
+        else
+            unit->bgu_Stats.BadData++;
+
+        index = (index + 1) & (GENET_DMA_DESC_COUNT - 1);
+    }
+
+    if (total != 0)
+    {
+        rx->next = index;
+        rx->pidx = pidx;
+
+        /* Handing the consumed slots back is what keeps the ring fed */
+        rx->cidx = (rx->cidx + total) & 0xffff;
+        BCMGENET_Write(hw, GENET_RX_DMA_CONS_INDEX(qid), rx->cidx);
+
+        BCMGENET_ReportEvents(base, unit, S2EVENT_RX);
+    }
+}
+
 static void BCMGENET_UnitTask(void)
 {
 
@@ -817,6 +907,9 @@ static void BCMGENET_UnitTask(void)
                 /* Freed slots may unblock requests parked on a full ring */
                 bcmgenet_tx_drain(base, unit);
             }
+
+            if (pending & GENET_IRQ_RXDMA_DONE)
+                bcmgenet_rx_process(base, unit, GENET_DMA_DEFAULT_QUEUE);
         }
     }
 
