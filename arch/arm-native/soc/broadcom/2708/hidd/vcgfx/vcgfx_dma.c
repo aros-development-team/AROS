@@ -22,9 +22,9 @@
 
 #include <exec/memory.h>
 
-#include "vc4gfx_hidd.h"
-#include "vc4gfx_hardware.h"
-#include "vc4gfx_neon.h"
+#include "vcgfx_hidd.h"
+#include "vcgfx_hardware.h"
+#include "vcgfx_neon.h"
 
 extern APTR KernelBase;
 APTR DMABase = NULL;

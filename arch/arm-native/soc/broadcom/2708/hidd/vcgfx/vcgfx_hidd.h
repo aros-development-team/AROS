@@ -14,8 +14,8 @@
 
 #include <hardware/bcm2708_dma.h>
 
-#include "vc4gfx_hardware.h"
-#include "vc4gfx_hvs.h"
+#include "vcgfx_hardware.h"
+#include "vcgfx_hvs.h"
 
 /* vcsd_MBoxMessage is one shared buffer for every mailbox round-trip;
  * take vcsd_GPUMemLock around each pack-write-read sequence. */
@@ -111,7 +111,7 @@ struct VideoCoreGfx_staticdata {
         UBYTE                   vcsd_FBPages;       /* 1 or 2 */
         UBYTE                   vcsd_FBFront;       /* Currently scanned-out page */
 
-        /* HVS display-list ownership (vc4gfx_hvs.c). While hvs_Active,
+        /* HVS display-list ownership (vcgfx_hvs.c). While hvs_Active,
          * flips and cursor updates go through our own display list and
          * the firmware display mailbox tags must not be used. */
         struct vc4_hvs_state    vcsd_HVS;
@@ -175,7 +175,7 @@ struct DisplayMode
 #undef HiddDMEnumAttrBase
 #undef HiddAttrBase
 
-/* These must stay in the same order as interfaces[] array in vc4gfx_init.c */
+/* These must stay in the same order as interfaces[] array in vcgfx_init.c */
 #define HiddVideoCoreGfxAttrBase         XSD(cl)->vcsd_attrBases[0]
 #define HiddVideoCoreGfxBitMapAttrBase   XSD(cl)->vcsd_attrBases[1]
 #define HiddChunkyBMAttrBase             XSD(cl)->vcsd_attrBases[2]

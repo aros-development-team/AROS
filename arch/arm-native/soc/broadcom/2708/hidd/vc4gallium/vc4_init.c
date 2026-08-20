@@ -36,7 +36,7 @@ APTR DMABase = NULL;
 #include "vc4_drm_aros.h"
 #include "vc4_v3d.h"
 
-/* IID for vc4gfx bitmap — matches vc4gfx_bitmap.h */
+/* IID for vcgfx bitmap — matches vcgfx_bitmap.h */
 #define IID_Hidd_BitMap_VideoCore4  "hidd.bitmap.bcmvc4"
 
 /*
@@ -288,11 +288,11 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
     LIBBASE->sd.dmaCBRaw = NULL;
     LIBBASE->sd.dmaCBRawSize = 0;
 
-    /* vc4gfx bitmap attr base is optional — without it we fall back to
+    /* vcgfx bitmap attr base is optional — without it we fall back to
      * WritePixelArray for display. Not fatal. */
     LIBBASE->sd.hiddVC4GfxBMAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_BitMap_VideoCore4);
     if (!LIBBASE->sd.hiddVC4GfxBMAB)
-        D(bug("[VC4Gallium] vc4gfx bitmap attr base not available — will use CPU blit\n"));
+        D(bug("[VC4Gallium] vcgfx bitmap attr base not available — will use CPU blit\n"));
 
     /* Standard BitMap attribute base for BytesPerRow etc. */
     LIBBASE->sd.hiddBitMapAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_BitMap);

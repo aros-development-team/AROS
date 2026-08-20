@@ -31,7 +31,7 @@
 #define AROS_GALLIUM_DRIVER_VC4   0
 //#define AROS_GALLIUM_DRIVER_V3D   1
 
-/* Scanout page description for zero-copy fullscreen GL (v2). The vc4gfx
+/* Scanout page description for zero-copy fullscreen GL (v2). The vcgfx
  * framebuffer has two flip pages; Mesa renders into the back page and
  * presents via flip_scanout instead of copying. name[] are GEM_OPEN names
  * (page physical addresses), stable across flips; `back` indexes the page
@@ -94,7 +94,7 @@ struct vc4_aros_bridge
     void   (*release_all_bos)(void *ctx);
 
     /* v2: query the framebuffer's flip pages (publishing them as GEM_OPEN
-     * names). Returns 0 for a flippable vc4gfx framebuffer, -1 otherwise. */
+     * names). Returns 0 for a flippable vcgfx framebuffer, -1 otherwise. */
     int    (*get_scanout)(void *ctx, OOP_Object *dest_bitmap,
                           struct vc4_aros_scanout *out);
 

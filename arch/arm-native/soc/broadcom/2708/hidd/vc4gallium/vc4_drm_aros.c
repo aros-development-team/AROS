@@ -359,7 +359,7 @@ static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG ali
 
     /* MBoxCall (not MBoxWrite + MBoxRead) so the request/response pair is
      * atomic under the resource's own mbox_Sem. A separate write+read drops
-     * that lock between the two, letting another mailbox user (e.g. vc4gfx's
+     * that lock between the two, letting another mailbox user (e.g. vcgfx's
      * cursor/mode MBoxCall) inject a request and consume our reply. */
     if (MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, (APTR)sd->mbox_msg)
         == (volatile unsigned int *)-1)

@@ -17,7 +17,7 @@ BCM2708_SP := aros-$(AROS_TARGET_CPU)-bcm2708.rom
 #MM kernel-bwfm-bcm2708 \
 #MM kernel-sdcard \
 #MM hidd-i2c-bcm2708 \
-#MM hidd-vc4gfx \
+#MM hidd-vcgfx \
 #MM kernel-usb-usb2otg
 
 #MM kernel-package-arm-bcm2708-missing: \
@@ -30,7 +30,7 @@ PKG_RSRC_ARCH :=
 PKG_DEVS      := sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  :=
-PKG_HIDDS     := i2c-bcm2708 vc4gfx
+PKG_HIDDS     := i2c-bcm2708 vcgfx
 PKG_CLASSES   :=
  
 %make_package mmake=kernel-package-arm-bcm2708 file=$(AROSDIR)/$(BCM2708_SP) \

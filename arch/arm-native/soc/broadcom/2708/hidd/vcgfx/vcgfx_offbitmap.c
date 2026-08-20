@@ -26,8 +26,8 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "vc4gfx_bitmap.h"
-#include "vc4gfx_hidd.h"
+#include "vcgfx_bitmap.h"
+#include "vcgfx_hidd.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -40,13 +40,13 @@
 #define MNAME_ROOT(x) VideoCoreGfxOffBM__Root__ ## x
 #define MNAME_BM(x) VideoCoreGfxOffBM__Hidd_BitMap__ ## x
 
-#include "vc4gfx_bitmapclass.c"
+#include "vcgfx_bitmapclass.c"
 
 /* Included bitmapclass.c sets its own DEBUG; reset to this file's value. */
 #undef DEBUG
 #define DEBUG 0
 
-/* Helpers below carry 'xsd'; switch MBoxBase to it (as in vc4gfx_onbitmap.c). */
+/* Helpers below carry 'xsd'; switch MBoxBase to it (as in vcgfx_onbitmap.c). */
 #undef MBoxBase
 #define MBoxBase      xsd->vcsd_MBoxBase
 
