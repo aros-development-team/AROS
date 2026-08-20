@@ -351,7 +351,15 @@ BOOL bcmgenet_setup_rxbuf(struct bcmgenet_hw *hw, ULONG index)
 
 BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit)
 {
+    struct bcmgenet_hw *hw = unit->bgu_HW;
     ULONG qid = GENET_DMA_DEFAULT_QUEUE;
+
+    /*
+     * Point the MAC at the external gigabit PHY. genet_init()
+     * (bcmgenet.c:594) does this for every RGMII flavour, and the
+     * Pi 4B is always RGMII_RXID.
+     */
+    BCMGENET_Write(hw, GENET_SYS_PORT_CTRL, GENET_SYS_PORT_MODE_EXT_GPHY);
 
     if (!bcmgenet_init_rings(unit, qid))
         return FALSE;

@@ -500,23 +500,20 @@ void BCMGENET_DeleteUnit(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
     FreeMem(unit, sizeof(struct BCMGENETUnit));
 }
 
-/* TODO: port the RXEN/TXEN half of genet_init()/genet_stop()
- * (bcmgenet.c:583, 632). */
+/* The RXEN/TXEN halves of genet_init()/genet_stop() (bcmgenet.c:583, 632) */
 void BCMGENET_GoOnline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
 {
     struct bcmgenet_hw *hw = unit->bgu_HW;
     ULONG cmd;
 
-    /* Fjern eventuelle gamle, latchede TX-avbrudd før unmaskering. */
-    BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR, GENET_IRQ_TXDMA_DONE | GENET_IRQ_RXDMA_DONE);
-
-    /* Aktiver bare TX-completion-avbrudd. */
+    /* Drop any interrupts latched while offline before unmasking */
+    BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR,
+                   GENET_IRQ_TXDMA_DONE | GENET_IRQ_RXDMA_DONE);
     BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR_MASK,
-                   GENET_IRQ_TXDMA_DONE);
+                   GENET_IRQ_TXDMA_DONE | GENET_IRQ_RXDMA_DONE);
 
-    /* TX-MAC må være på for at GENET faktisk skal sende. */
     cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
-    cmd |= GENET_UMAC_CMD_TXEN;
+    cmd |= GENET_UMAC_CMD_TXEN | GENET_UMAC_CMD_RXEN;
     BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
 
     unit->bgu_Flags |= IFF_UP;
@@ -524,6 +521,24 @@ void BCMGENET_GoOnline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
 
 void BCMGENET_GoOffline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
 {
+    struct bcmgenet_hw *hw = unit->bgu_HW;
+    ULONG cmd;
+
+    /*
+     * Stop the flow, then silence the block: no new frames in or out,
+     * and no interrupts once the unit claims to be offline. Frames the
+     * engine already owns just stop moving; the rings and their
+     * indices stay valid, so GoOnline() can restart without a reinit.
+     */
+    cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
+    cmd &= ~(GENET_UMAC_CMD_TXEN | GENET_UMAC_CMD_RXEN);
+    BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
+
+    BCMGENET_Write(hw, GENET_INTRL2_CPU_SET_MASK,
+                   GENET_IRQ_TXDMA_DONE | GENET_IRQ_RXDMA_DONE);
+    BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR,
+                   GENET_IRQ_TXDMA_DONE | GENET_IRQ_RXDMA_DONE);
+
     unit->bgu_Flags &= ~IFF_UP;
 }
 
@@ -698,25 +713,137 @@ static void bcmgenet_tx_complete(struct BCMGENETBase *base,
 }
 
 /*
- * TODO (step 3): the dwmac-style opener dispatch - packet-type match
- * against each opener's read queue, rx_function copy, SANA2IOF_RAW,
- * orphans to ADOPT_QUEUE, type trackers. See DWMAC_RXPacket()
- * (dwmac_unit.c:228). Until then received frames are only logged and
- * counted, which is enough to see an OFFER arrive in the capture.
+ * Ports of DWMAC_CopyPacket()/DWMAC_RXPacket() (dwmac_unit.c:228, 283) -
+ * the SANA-II delivery ceremony is identical, only the names differ.
  */
+static void bcmgenet_copy_packet(struct BCMGENETBase *base,
+                                 struct BCMGENETUnit *unit,
+                                 struct IOSana2Req *request,
+                                 ULONG packet_size, UWORD packet_type,
+                                 struct eth_frame *frame)
+{
+    struct Library *UtilityBase = base->bgm_UtilityBase;
+    struct Opener *opener;
+    UBYTE *ptr;
+    BOOL filtered = FALSE;
+
+    request->ios2_Req.io_Flags &= ~(SANA2IOF_BCAST | SANA2IOF_MCAST);
+    if (bcmgenet_sameaddr(frame->eth_packet_dest, bcmgenet_broadcast))
+        request->ios2_Req.io_Flags |= SANA2IOF_BCAST;
+    else if ((frame->eth_packet_dest[0] & 0x1) != 0)
+        request->ios2_Req.io_Flags |= SANA2IOF_MCAST;
+
+    CopyMem(frame->eth_packet_source, request->ios2_SrcAddr, ETH_ADDRESSSIZE);
+    CopyMem(frame->eth_packet_dest, request->ios2_DstAddr, ETH_ADDRESSSIZE);
+    request->ios2_PacketType = packet_type;
+
+    if ((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
+    {
+        packet_size -= ETH_HEADERSIZE;
+        ptr = frame->eth_packet_data;
+    }
+    else
+        ptr = (UBYTE *)frame;
+
+    request->ios2_DataLength = packet_size;
+
+    opener = request->ios2_BufferManagement;
+    if (request->ios2_Req.io_Command == CMD_READ &&
+        opener->filter_hook != NULL)
+    {
+        if (!CallHookPkt(opener->filter_hook, request, ptr))
+            filtered = TRUE;
+    }
+
+    /* A rejected packet leaves the request queued for the next one */
+    if (filtered)
+        return;
+
+    if (!opener->rx_function(request->ios2_Data, ptr, packet_size))
+    {
+        request->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+        request->ios2_WireError = S2WERR_BUFF_ERROR;
+        BCMGENET_ReportEvents(base, unit, S2EVENT_ERROR | S2EVENT_SOFTWARE |
+                              S2EVENT_BUFF | S2EVENT_RX);
+    }
+
+    Disable();
+    Remove((APTR)request);
+    Enable();
+    ReplyMsg((APTR)request);
+}
+
 static void bcmgenet_rx_packet(struct BCMGENETBase *base,
                                struct BCMGENETUnit *unit,
                                struct eth_frame *frame, ULONG length)
 {
-    D(bug("[bcmgenet] RX %02x:%02x:%02x:%02x:%02x:%02x -> "
-          "%02x:%02x:%02x:%02x:%02x:%02x type %04x len %lu\n",
-          frame->eth_packet_source[0], frame->eth_packet_source[1],
-          frame->eth_packet_source[2], frame->eth_packet_source[3],
-          frame->eth_packet_source[4], frame->eth_packet_source[5],
-          frame->eth_packet_dest[0], frame->eth_packet_dest[1],
-          frame->eth_packet_dest[2], frame->eth_packet_dest[3],
-          frame->eth_packet_dest[4], frame->eth_packet_dest[5],
-          AROS_BE2WORD(frame->eth_packet_type), length);)
+    struct Opener *opener, *opener_tail;
+    struct IOSana2Req *request, *request_tail;
+    struct TypeStats *tracker;
+    BOOL accepted, is_orphan = TRUE;
+    UWORD packet_type;
+
+    if (!BCMGENET_AddressFilter(base, unit, frame->eth_packet_dest))
+        return;
+
+    /*
+     * Kept unsigned: an ethertype with the high bit set would otherwise
+     * sign-extend and never match an opener's ULONG packet type.
+     */
+    packet_type = (UWORD)AROS_BE2WORD(frame->eth_packet_type);
+
+    unit->bgu_Stats.PacketsReceived++;
+
+    tracker = BCMGENET_FindTypeStats(&unit->bgu_TypeTrackers, packet_type);
+    if (tracker)
+    {
+        tracker->stats.PacketsReceived++;
+        tracker->stats.BytesReceived += length;
+    }
+
+    opener = (APTR)unit->bgu_Openers.mlh_Head;
+    opener_tail = (APTR)&unit->bgu_Openers.mlh_Tail;
+
+    while (opener != opener_tail)
+    {
+        request = (APTR)opener->read_port.mp_MsgList.lh_Head;
+        request_tail = (APTR)&opener->read_port.mp_MsgList.lh_Tail;
+        accepted = FALSE;
+
+        while (request != request_tail && !accepted)
+        {
+            struct IOSana2Req *next =
+                (APTR)request->ios2_Req.io_Message.mn_Node.ln_Succ;
+
+            /* An 802.3 length field matches any small-type request */
+            if (request->ios2_PacketType == packet_type ||
+                (request->ios2_PacketType <= ETH_MTU &&
+                 packet_type <= ETH_MTU))
+            {
+                bcmgenet_copy_packet(base, unit, request, length,
+                                     packet_type, frame);
+                accepted = TRUE;
+            }
+            request = next;
+        }
+
+        if (accepted)
+            is_orphan = FALSE;
+
+        opener = (APTR)opener->node.mln_Succ;
+    }
+
+    if (is_orphan)
+    {
+        unit->bgu_Stats.UnknownTypesReceived++;
+
+        if (!IsListEmpty(&unit->bgu_RequestPorts[ADOPT_QUEUE]->mp_MsgList))
+        {
+            bcmgenet_copy_packet(base, unit,
+                (APTR)unit->bgu_RequestPorts[ADOPT_QUEUE]->mp_MsgList.lh_Head,
+                length, packet_type, frame);
+        }
+    }
 }
 
 /*
