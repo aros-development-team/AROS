@@ -837,7 +837,7 @@ void e1000func_unmap_and_free_tx_resource(struct net_device *unit,
         buffer_info->dma = NULL;
     }
     if (buffer_info->buffer) {
-        FreeMem(buffer_info->buffer, ETH_MAXPACKETSIZE);
+        FreeMem(buffer_info->buffer, unit->e1ku_frame_max);
         buffer_info->buffer = NULL;
     }
     /* buffer_info must be completely set up in the transmit path */
