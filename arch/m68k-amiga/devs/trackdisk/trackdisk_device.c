@@ -470,6 +470,12 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
         TASKTAG_PC, TD_DevTask,
         TASKTAG_NAME, "trackdisk.device",
         TASKTAG_PRI, 5,
+        /*
+         * The device task runs a flat IO loop over disk.resource;
+         * measured peak stack use is around half a KB, and its stack
+         * is chip RAM on an unexpanded machine.
+         */
+        TASKTAG_STACKSIZE, 4096,
         TASKTAG_ARG1, FindTask(0),
         TASKTAG_ARG2, tdb,
         TAG_DONE);

@@ -312,6 +312,17 @@ int Exec_InitServices(struct ExecBase *SysBase)
 #if defined(__AROSEXEC_SMP__)
                         TASKTAG_AFFINITY, TASKAFFINITY_ANY,
 #endif
+#ifdef __mc68000
+                        /*
+                         * The service loop only disposes tasks and answers
+                         * ServicePort messages; measured peak stack use is
+                         * a few hundred bytes, and resident-task stacks
+                         * come out of chip RAM on an unexpanded Amiga.
+                         * The guru task below keeps the default: it runs
+                         * the alert display path.
+                         */
+                        TASKTAG_STACKSIZE  , 4096,
+#endif
                         TASKTAG_PC         , ServiceTask,
                         TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->ServicePort,
                         TASKTAG_ARG1       , SysBase,
@@ -326,6 +337,14 @@ int Exec_InitServices(struct ExecBase *SysBase)
     /* Create task for handling supervisor level errors */
     NewCreateTask(TASKTAG_NAME       , "Exec Guru Task",
                   TASKTAG_PRI        , 126,
+#ifdef __mc68000
+                  /*
+                   * Idle until an alert fires; the alert display path
+                   * runs well within 8 KB and the stack is chip RAM on
+                   * an unexpanded machine.
+                   */
+                  TASKTAG_STACKSIZE  , 8192,
+#endif
                   TASKTAG_PC         , SupervisorAlertTask,
                   TASKTAG_ARG1       , SysBase,
                   TAG_DONE);

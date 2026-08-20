@@ -89,6 +89,13 @@ OOP_Object *METHOD(AmigaVideoCompositor, Root, New)
             /* Our housekeeper must have the largest possible priority */
             compdata->housekeeper = NewCreateTask(TASKTAG_NAME       , "AmigaVideo display housekeeper",
                                 TASKTAG_PRI        , 127,
+                                /*
+                                 * A short message loop; measured peak
+                                 * stack use is under 1 KB, and the
+                                 * stack is chip RAM on an unexpanded
+                                 * machine.
+                                 */
+                                TASKTAG_STACKSIZE  , 4096,
                                 TASKTAG_PC         , DisplayServiceTask,
                                 TASKTAG_ARG1       , o,
                                 TAG_DONE);

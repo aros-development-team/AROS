@@ -30,8 +30,16 @@
 #   include <devices/timer.h>
 #endif
 
-/* Size of the input device's stack */
+/* Size of the input device's stack. Input handlers run on it, so it
+ * keeps generous headroom over the measured peak (under 1 KB on m68k);
+ * Kickstart gives its input.device task 4 KB and handlers are expected
+ * to be frugal, so 8 KB is still double the classic budget without
+ * pinning 26 KB of chip RAM. */
+#ifdef __mc68000
+#define IDTASK_STACKSIZE    	    8192
+#else
 #define IDTASK_STACKSIZE    	    (AROS_STACKSIZE + 10240)
+#endif
 
 /* Priority of the input.device task */
 #define IDTASK_PRIORITY     	    20

@@ -279,8 +279,19 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
            NP_StackSize tag */
         cli->cli_DefaultStack = (me->pr_StackSize + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
 
+#ifdef __mc68000
+        /*
+         * The command stack is chip RAM on an unexpanded Amiga and is
+         * held for as long as a launched program runs. AmigaOS shells
+         * default to 4000 bytes here; 8 KB is double that for AROS's
+         * heavier C commands without pinning a full 16 KB.
+         */
+        if (cli->cli_DefaultStack < (LONG)(8192 / CLI_DEFAULTSTACK_UNIT))
+            cli->cli_DefaultStack = (LONG)(8192 / CLI_DEFAULTSTACK_UNIT);
+#else
         if (cli->cli_DefaultStack < (LONG)(AROS_STACKSIZE / CLI_DEFAULTSTACK_UNIT))
             cli->cli_DefaultStack = (LONG)(AROS_STACKSIZE / CLI_DEFAULTSTACK_UNIT);
+#endif
     }
 
     AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);

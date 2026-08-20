@@ -80,6 +80,8 @@
     struct TraceLocation tp = CURRENT_LOCATION("CreatePool");
     struct MemHeader *firstPuddle = NULL;
     IPTR align = PrivExecBase(SysBase)->PageSize - 1;
+    ULONG poolstruct_size;
+    IPTR headerSize;
 
     if (align < 4095)
         align = 4095;
@@ -105,14 +107,59 @@
     puddleSize = (puddleSize + align) & ~align;
     D(bug("[CreatePool] Aligned puddle size: %u (0x%08X)\n", puddleSize, puddleSize);)
 
-    /* Allocate the first puddle. It will contain pool header. */
-    firstPuddle = AllocMemHeader(puddleSize, requirements & ~MEMF_SEM_PROTECTED, &tp, SysBase);
-    D(bug("[CreatePool] Initial puddle 0x%p\n", firstPuddle);)
+    poolstruct_size = (requirements & MEMF_SEM_PROTECTED) ? sizeof(struct ProtectedPool) :
+                                      sizeof(struct Pool);
+
+    /*
+     * The pool handle is the address of a MemHeader whose first allocation
+     * is the pool structure (see AllocPooled()). Historically that
+     * MemHeader was a full puddle, which made every pool cost puddleSize
+     * bytes up front even when nothing was ever allocated from it - and
+     * pools are created eagerly all over the system. Instead, size the
+     * handle's block for the pool structure (plus its allocator context)
+     * alone and leave the rest of the puddle list empty: the first
+     * AllocPooled() brings in the first real puddle. The block is laid
+     * out exactly like a puddle and sits on the puddle list as before,
+     * so nothing downstream changes; with zero free bytes it can never
+     * satisfy an allocation nor be reclaimed as an empty puddle.
+     */
+    headerSize = MEMHEADER_TOTAL + mhac_GetCtxSize()
+        + ((poolstruct_size + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL - 1));
+
+    firstPuddle = nommu_AllocMem(headerSize, requirements & ~MEMF_SEM_PROTECTED, &tp, SysBase);
+    if (firstPuddle)
+    {
+        struct MemHeader *orig = FindMem(firstPuddle, SysBase);
+
+        if (IsManagedMem(orig))
+        {
+            /*
+             * In managed memory the block itself becomes the managed pool
+             * and needs real capacity behind the header, so managed pools
+             * keep the historical eager full-size block.
+             */
+            nommu_FreeMem(firstPuddle, headerSize, &tp, SysBase);
+            firstPuddle = AllocMemHeader(puddleSize, requirements & ~MEMF_SEM_PROTECTED, &tp, SysBase);
+        }
+        else
+        {
+            /* Initialize the handle's MemHeader like AllocMemHeader() would */
+            firstPuddle->mh_Node.ln_Type = NT_MEMORY;
+            firstPuddle->mh_Node.ln_Pri  = orig->mh_Node.ln_Pri;
+            firstPuddle->mh_Attributes   = orig->mh_Attributes;
+            firstPuddle->mh_Lower        = (APTR)firstPuddle + MEMHEADER_TOTAL;
+            firstPuddle->mh_Upper        = (APTR)firstPuddle + headerSize;
+            firstPuddle->mh_First        = firstPuddle->mh_Lower;
+            firstPuddle->mh_Free         = headerSize - MEMHEADER_TOTAL;
+
+            firstPuddle->mh_First->mc_Next  = NULL;
+            firstPuddle->mh_First->mc_Bytes = firstPuddle->mh_Free;
+        }
+    }
+    D(bug("[CreatePool] Pool header block 0x%p\n", firstPuddle);)
 
     if (firstPuddle)
     {
-        ULONG poolstruct_size = (requirements & MEMF_SEM_PROTECTED) ? sizeof(struct ProtectedPool) :
-                                          sizeof(struct Pool);
         struct ProtectedPool *pool;
 
         /*

@@ -183,7 +183,18 @@ static void internalSetTimeFromBootVolume(BPTR lock, struct DosLibrary *DOSBase)
         return ERROR_NO_FREE_STORE;
     }
 
+#ifdef __mc68000
+    /*
+     * This process mounts the boot volume and then becomes the initial
+     * shell; commands it launches run on their own cli_DefaultStack
+     * stacks, so its own stack only carries mount packets and script
+     * parsing. 8 KB is double the classic shell budget, and the block
+     * is chip RAM on an unexpanded machine.
+     */
+    mp = CreateProc("Boot Mount", 0, seg, 8192);
+#else
     mp = CreateProc("Boot Mount", 0, seg, AROS_STACKSIZE);
+#endif
     if (mp == NULL) {
         DeleteMsgPort(reply_mp);
         if (my_dp)
