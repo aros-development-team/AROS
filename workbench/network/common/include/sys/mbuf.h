@@ -415,6 +415,8 @@ int mb_check_conf(void *dp, IPTR newvalue);
 
 BOOL mbinit(void);
 void mbdeinit(void);
+void mb_autosize(ULONG mtu);
+BOOL m_valid(struct mbuf *m);
 BOOL m_alloc(int howmany, int canwait);
 BOOL m_clalloc(int ncl, int canwait);
 struct mbuf * m_retry(int canwait, int type);
