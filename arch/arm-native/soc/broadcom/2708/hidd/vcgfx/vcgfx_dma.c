@@ -43,6 +43,16 @@ static inline ULONG vc4_now_us(void)
 #define VC4_DMA_MAX_YLEN    0x3FFF
 #define VC4_DMA_MAX_STRIDE  0x7FFF
 
+/* Above the first gigabyte BCM2708_DMA_BUS_ADDR() drops the high bits and
+ * the transfer lands elsewhere - reachable on a Pi 4, never on a 1GB
+ * board. IPTR, not ULONG: that cast would itself hide a >4GB overflow.
+ * Out of range is never fatal, callers fall back to NEON. */
+static inline BOOL vc4_dma_addressable(IPTR phys, ULONG bytes)
+{
+    return BCM2708_DMA_ADDRESSABLE(phys)
+        && BCM2708_DMA_ADDRESSABLE(phys + bytes);
+}
+
 int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
 {
     APTR raw;
@@ -63,6 +73,18 @@ int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
     xsd->vcsd_DMACB = (struct BCM2708DMACB *)(((IPTR)raw + 31) & ~31);
     xsd->vcsd_DMAFillPx = (ULONG *)(xsd->vcsd_DMACB + 1);
 
+    /* The engine fetches the CB through the alias too, so an unreachable
+     * one costs the whole channel. Covers the fill pixel behind it. */
+    if (!vc4_dma_addressable((IPTR)KrnVirtualToPhysical(xsd->vcsd_DMACB),
+                             sizeof(struct BCM2708DMACB) + sizeof(ULONG)))
+    {
+        D(bug("[VideoCoreGfx] %s: DMA CB above the 1GB alias, no DMA\n",
+            __PRETTY_FUNCTION__));
+        FreeVec(raw);
+        xsd->vcsd_DMACBRaw = NULL;
+        return FALSE;
+    }
+
     if ((xsd->vcsd_DMAChannel = DMAAllocChannel(DMACHF_TDMODE | DMACHF_IRQ)) < 0)
     {
         FreeVec(raw);
@@ -78,10 +100,22 @@ int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
     if ((xsd->vcsd_DMABounceRaw = AllocVec(VC4_DMA_BOUNCE_SIZE + 31,
                                            MEMF_PUBLIC)) != NULL)
     {
-        xsd->vcsd_DMABounce =
-            (UBYTE *)(((IPTR)xsd->vcsd_DMABounceRaw + 31) & ~31);
-        xsd->vcsd_DMABouncePhys =
-            (ULONG)(IPTR)KrnVirtualToPhysical(xsd->vcsd_DMABounce);
+        UBYTE *bounce = (UBYTE *)(((IPTR)xsd->vcsd_DMABounceRaw + 31) & ~31);
+        IPTR phys = (IPTR)KrnVirtualToPhysical(bounce);
+
+        if (vc4_dma_addressable(phys, VC4_DMA_BOUNCE_SIZE))
+        {
+            xsd->vcsd_DMABounce = bounce;
+            xsd->vcsd_DMABouncePhys = (ULONG)phys;
+        }
+        else
+        {
+            /* Reads keep working, just on the NEON path. */
+            D(bug("[VideoCoreGfx] %s: bounce buffer above the 1GB alias\n",
+                __PRETTY_FUNCTION__));
+            FreeVec(xsd->vcsd_DMABounceRaw);
+            xsd->vcsd_DMABounceRaw = NULL;
+        }
     }
 
     D(bug("[VideoCoreGfx] %s: DMA channel %d\n", __PRETTY_FUNCTION__,
@@ -174,6 +208,11 @@ BOOL vc4_dma_copy(struct VideoCoreGfx_staticdata *xsd,
     if (width_bytes > VC4_DMA_MAX_XLEN || (height - 1) > VC4_DMA_MAX_YLEN)
         return FALSE;
 
+    /* Check before bottom_up moves the bases to the last row. */
+    if (!vc4_dma_addressable(src_phys, (height - 1) * src_pitch + width_bytes)
+        || !vc4_dma_addressable(dst_phys, (height - 1) * dst_pitch + width_bytes))
+        return FALSE;
+
     if (bottom_up)
     {
         src_phys += (height - 1) * src_pitch;
@@ -224,7 +263,7 @@ BOOL vc4_dma_put(struct VideoCoreGfx_staticdata *xsd,
     struct BCM2708DMACB *cb;
     LONG s_stride = (LONG)(src_modulo - width_bytes);
     LONG d_stride = (LONG)(dst_pitch - width_bytes);
-    ULONG src_phys;
+    IPTR src_phys;
     BOOL ok;
 
     if (xsd->vcsd_DMAChannel < 0 || width_bytes == 0 || height == 0)
@@ -234,7 +273,11 @@ BOOL vc4_dma_put(struct VideoCoreGfx_staticdata *xsd,
         d_stride < 0 || d_stride > VC4_DMA_MAX_STRIDE)
         return FALSE;
 
-    src_phys = (ULONG)(IPTR)KrnVirtualToPhysical((APTR)src);
+    /* An ordinary bitmap - the one source that can sit anywhere in RAM. */
+    src_phys = (IPTR)KrnVirtualToPhysical((APTR)src);
+    if (!vc4_dma_addressable(src_phys, (height - 1) * src_modulo + width_bytes)
+        || !vc4_dma_addressable(dst_phys, (height - 1) * dst_pitch + width_bytes))
+        return FALSE;
 
     if (src_modulo == width_bytes)
         CacheClearE((APTR)src, height * width_bytes, CACRF_ClearD);
@@ -284,6 +327,9 @@ BOOL vc4_dma_get(struct VideoCoreGfx_staticdata *xsd,
         return FALSE;
     if (width_bytes > VC4_DMA_BOUNCE_SIZE ||
         s_stride < 0 || s_stride > VC4_DMA_MAX_STRIDE)
+        return FALSE;
+    /* The bounce buffer was checked once at init. */
+    if (!vc4_dma_addressable(src_phys, (height - 1) * src_pitch + width_bytes))
         return FALSE;
 
     rows_per_chunk = VC4_DMA_BOUNCE_SIZE / width_bytes;
@@ -360,6 +406,9 @@ BOOL vc4_dma_fill(struct VideoCoreGfx_staticdata *xsd,
         return FALSE;
     if (width_bytes > VC4_DMA_MAX_XLEN || (height - 1) > VC4_DMA_MAX_YLEN ||
         d_stride > VC4_DMA_MAX_STRIDE)
+        return FALSE;
+    /* The fill pixel lives behind the CB, checked once at init. */
+    if (!vc4_dma_addressable(dst_phys, (height - 1) * dst_pitch + width_bytes))
         return FALSE;
 
     ObtainSemaphore(&xsd->vcsd_DMALock);

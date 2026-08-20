@@ -53,6 +53,14 @@
 #define HVS_SPIN_PROBEBIT 100000    /* ~2-4 frames per probed INTEN bit */
 #define HVS_SPIN_FLIP   500000      /* flip-latch wait bound, ~3 frames */
 
+/* Every register below is VideoCore IV's; BCM2711 carries HVS5 instead.
+ * Gates the entry points that reach hardware before an hvs_Active check -
+ * the rest already no-ops while hvs_Active is FALSE. */
+static inline BOOL hvs_hw_known(struct VideoCoreGfx_staticdata *xsd)
+{
+    return !xsd->vcsd_IsBCM2711;
+}
+
 static inline ULONG hvs_rd(ULONG offset)
 {
     return *(volatile ULONG *)(VC4_HVS_BASE + offset);
@@ -529,6 +537,12 @@ void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
 
+    if (!hvs_hw_known(xsd))
+    {
+        st->hvs_VSyncIrq = NULL;
+        return;
+    }
+
     st->hvs_VSyncIrq = KrnAddIRQHandler(IRQ_PIXELVALVE1, hvs_vsync_irq,
                                         st, SysBase);
     if (!st->hvs_VSyncIrq)
@@ -655,6 +669,9 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
 
     st->hvs_Active = FALSE;
+
+    if (!hvs_hw_known(xsd))
+        return FALSE;
 
 #if VC4_HVS_TAKEOVER
     {
@@ -1053,6 +1070,13 @@ void vc4_hvs_dump(struct VideoCoreGfx_staticdata *xsd,
 #if VC4_HVS_DUMP
     ULONG id;
     int ch;
+
+    if (!hvs_hw_known(xsd))
+    {
+        bug("[VC4HVS] BCM2711 - HVS5 not supported yet, staying on the "
+            "firmware display\n");
+        return;
+    }
 
     id = hvs_rd(HVS_ID);
     if (id == 0 || id == 0xffffffff)
