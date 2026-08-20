@@ -190,5 +190,9 @@ boot_sync_handler:
 
     .section .text
     .byte 0
-    .string "$VER: arosraspi-aarch64.img v40.46 (" __DATE__ ")"
+    /* Assemblers do not concatenate adjacent string literals (C does);
+     * emit the pieces with .ascii and terminate with .asciz. */
+    .ascii "$VER: arosraspi-aarch64.img v40.46 ("
+    .ascii __DATE__
+    .asciz ")"
     .byte 0
