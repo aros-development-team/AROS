@@ -26,8 +26,8 @@
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
 
-#include "vc4gfx_hidd.h"
-#include "vc4gfx_hardware.h"
+#include "vcgfx_hidd.h"
+#include "vcgfx_hardware.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -107,7 +107,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     }
 
     /* PV2 vsync IRQ handler; the source stays masked until the HVS
-     * takeover arms it (vc4gfx_hvs.c). */
+     * takeover arms it (vcgfx_hvs.c). */
     vc4_hvs_init(xsd);
 
     if (!FNAME_SUPPORT(GetAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM))

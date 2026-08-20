@@ -172,7 +172,7 @@ struct vc4galliumstaticdata
     BOOL                    vblank_added;
     struct SignalSemaphore  wait_gate;
 
-    /* vc4gfx bitmap detection */
+    /* vcgfx bitmap detection */
     OOP_AttrBase            hiddVC4GfxBMAB;     /* VideoCoreGfxBitMap attr base */
     OOP_AttrBase            hiddBitMapAB;       /* standard BitMap attr base */
 

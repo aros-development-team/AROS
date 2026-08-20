@@ -26,9 +26,9 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-#include "vc4gfx_hidd.h"
-#include "vc4gfx_hardware.h"
-#include "vc4gfx_hvs.h"
+#include "vcgfx_hidd.h"
+#include "vcgfx_hardware.h"
+#include "vcgfx_hvs.h"
 
 /* Set to 0 to silence the dump / skip the probe / leave the firmware
  * in control of the display list (kill switch) / leave the PV2 vsync

@@ -13,10 +13,10 @@
 #include <aros/macros.h>
 #include <string.h>
 
-#include "vc4gfx_hardware.h"
-#include "vc4gfx_hidd.h"
+#include "vcgfx_hardware.h"
+#include "vcgfx_hidd.h"
 
-#include "vc4gfx_neon.h"
+#include "vcgfx_neon.h"
 
 /* Shared by the onscreen (FB) and offscreen (GPU) bitmap classes: both have
  * uncached physical pixels in data->VideoData. RAM-backed offscreen bitmaps

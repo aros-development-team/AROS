@@ -29,9 +29,9 @@
 
 #include <proto/mbox.h>
 
-#include "vc4gfx_hidd.h"
-#include "vc4gfx_hardware.h"
-#include "vc4gfx_neon.h"
+#include "vcgfx_hidd.h"
+#include "vcgfx_hardware.h"
+#include "vcgfx_neon.h"
 
 #ifdef MBoxBase
 #undef MBoxBase
@@ -145,7 +145,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     struct TagItem gfxmsg_tags[] =
     {
-        { aHidd_Name            , (IPTR)"vc4gfx.hidd"     },
+        { aHidd_Name            , (IPTR)"vcgfx.hidd"     },
         { aHidd_HardwareName    , (IPTR)"VideoCore4 Display Adaptor"   },
         { aHidd_ProducerName    , (IPTR)"Broadcom Corporation"  },
         { TAG_MORE              , (IPTR)msg->attrList       }

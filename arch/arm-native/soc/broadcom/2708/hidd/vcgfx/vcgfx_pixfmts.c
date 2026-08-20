@@ -14,7 +14,7 @@
 #include <hidd/gfx.h>
 #include <oop/oop.h>
 
-#include "vc4gfx_hidd.h"
+#include "vcgfx_hidd.h"
 
 #define ARRAYSIZE_TRUECOLOR     13
 #define ARRAYSIZE_LUT           15

@@ -9,8 +9,8 @@
 
 #include <asm/io.h>
 
-#include "vc4gfx_hidd.h"
-#include "vc4gfx_hardware.h"
+#include "vcgfx_hidd.h"
+#include "vcgfx_hardware.h"
 
 BOOL FNAME_HW(InitGfxHW)(APTR param0)
 {

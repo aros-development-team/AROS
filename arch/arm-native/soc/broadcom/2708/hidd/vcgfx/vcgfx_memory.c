@@ -22,8 +22,8 @@
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
 
-#include "vc4gfx_hidd.h"
-#include "vc4gfx_hardware.h"
+#include "vcgfx_hidd.h"
+#include "vcgfx_hardware.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -217,7 +217,7 @@ int FNAME_SUPPORT(InitMem)(void *memstart, int memlength, struct VideoCoreGfxBas
 //    struct MemChunk *mc = memstart;
 
     /* vcsd_GPUMemLock is initialised earlier in FNAME_SUPPORT(Init)
-     * (vc4gfx_init.c) so that the very first MBoxWrite/Read can take
+     * (vcgfx_init.c) so that the very first MBoxWrite/Read can take
      * it. */
 
     D(bug("[VideoCoreGfx] VideoCore GPU Memory @ 0x%p [%dKB]\n", memstart, memlength >> 10));

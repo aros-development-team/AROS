@@ -71,7 +71,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-bus-quick \
 #MM hidd-i2c-quick \
 #MM kernel-hidd-gfx-quick \
-#MM hidd-vc4gfx-quick \
+#MM hidd-vcgfx-quick \
 #MM hidd-fbgfx-quick \
 #MM kernel-sdcard-quick \
 #MM kernel-hidd-input-quick \
@@ -134,7 +134,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-bus \
 #MM hidd-i2c \
 #MM hidd-i2c-bcm2708 \
-#MM hidd-vc4gfx \
+#MM hidd-vcgfx \
 #MM kernel-hidd-gfx \
 #MM hidd-fbgfx \
 #MM kernel-hidd-input \
@@ -182,11 +182,11 @@ PKG_RSRC_ARCH := processor
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg USBHardware/pcixhci
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
-# vc4gfx drives the BCM283x VideoCore directly and bows out on BCM2711;
+# vcgfx drives the BCM283x VideoCore directly and bows out on BCM2711;
 # fbgfx takes over there, painting into the framebuffer the bootstrap set up.
 # The PCIe bridge and its xHCI controller only exist on BCM2711; both drivers
 # find nothing on a Pi 2/3 and stay out of the way.
-PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus i2c i2c-bcm2708 vc4gfx fbgfx pci pcibcm2711
+PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus i2c i2c-bcm2708 vcgfx fbgfx pci pcibcm2711
 PKG_CLASSES   := USB/hub USB/hubss USB/massstorage
 
 %make_package mmake=kernel-package-raspi-aarch64 file=$(AROSDIR)/$(ARM_BSP) \
@@ -231,7 +231,9 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 #MM
 distfiles-raspi-aarch64le : $(AROSDIR)/aros-aarch64-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
 	@$(ECHO) Copying RasPi AArch64 distfiles...
-	@$(CP) -R $(AROSDIR) $(DISTDIR)/
+# Contents, not the directory: once $(DISTDIR) exists, naming the directory
+# nests a fresh tree in $(DISTDIR)/AROS and the flashed one goes stale.
+	@$(CP) -R $(AROSDIR)/. $(DISTDIR)/
 
 #MM
 clean ::
