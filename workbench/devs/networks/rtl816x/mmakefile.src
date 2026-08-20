@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-networks-rtl816x-i386 : workbench-devs-networks-rtl816x
+#MM- workbench-devs-networks-rtl816x-x86_64 : workbench-devs-networks-rtl816x
+
+FILES := handler unit rtl816x rtl816x_hw8169 rtl816x_hw8168 rtl816x_hw8101 rtl816x_ids
+
+CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
+CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
+USER_LDFLAGS := -static
+
+#MM- workbench-devs-networks-rtl816x : workbench-devs-networks-rtl816x-normal
+#MM- workbench-devs-networks-rtl816x : workbench-devs-networks-rtl816x-debug
+
+%build_module mmake=workbench-devs-networks-rtl816x-normal \
+    modname=rtl816x modtype=device \
+    files="rtl816x_init $(FILES)" cflags=$(CFLAGSNORMAL) \
+    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="hiddstubs"
+
+%build_module mmake=workbench-devs-networks-rtl816x-debug \
+    modname=rtl816x_debug modtype=device \
+    files="rtl816x_init $(FILES)" conffile=rtl816x.conf cflags=$(CFLAGSDEBUG) \
+    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="hiddstubs"

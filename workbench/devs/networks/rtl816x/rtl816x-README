@@ -1,0 +1,11 @@
+rtl816x.device - SANA-II driver for the Realtek RTL8169/8168/8101 family
+
+This driver merges and replaces the earlier rtl8169.device and
+rtl8168.device drivers. It handles the PCI RTL8169/8110 gigabit parts,
+the PCIe RTL8168/8111 series (B through H generations - E and later use
+a generic initialisation path), and the RTL8100/8101/8136 fast-ethernet
+parts.
+
+The MAC version is detected from the chip and reported in the debug log.
+Unrecognised revisions fall back to a generic setup for their family
+rather than being rejected.
