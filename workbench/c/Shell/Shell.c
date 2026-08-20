@@ -77,6 +77,12 @@ LONG interact(ShellState *ss)
     BOOL moreLeft = FALSE;
     LONG error = 0;
 
+    /* Executing a script marks the shell as background, so remember how the
+     * shell itself was created - that is what decides whether it goes back to
+     * being interactive once the script is done.
+     */
+    ss->background = cli->cli_Background ? TRUE : FALSE;
+
     setInteractive(cli, ss);
 
     /* pre-allocate input buffer */
@@ -164,8 +170,8 @@ LONG interact(ShellState *ss)
             }
 
             cli->cli_CurrentInput = cli->cli_StandardInput;
-            if (!cli->cli_Background)
-                cli->cli_Background = IsInteractive(cli->cli_CurrentInput) ? DOSFALSE : DOSTRUE;
+            cli->cli_Background = (ss->background ||
+                    !IsInteractive(cli->cli_CurrentInput)) ? DOSTRUE : DOSFALSE;
 
             setInteractive(cli, ss);
         }
