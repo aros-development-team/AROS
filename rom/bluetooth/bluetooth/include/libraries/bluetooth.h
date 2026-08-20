@@ -211,6 +211,8 @@
 #define BSVA_EndpointList    (BSVA_Dummy + 0x20) /* struct List * of BtEndpoint */
 #define BSVA_NumEndpoints    (BSVA_Dummy + 0x21) /* ULONG */
 #define BSVA_ServiceClassIDs (BSVA_Dummy + 0x22) /* UWORD * array of 16 bit service class ids, 0 terminated */
+#define BSVA_HIDDescriptor   (BSVA_Dummy + 0x23) /* UBYTE * HID report descriptor from SDP (classic HID), or NULL */
+#define BSVA_HIDDescriptorLen (BSVA_Dummy + 0x24) /* ULONG length of BSVA_HIDDescriptor */
 
 /* BSVA_Protocol */
 #define BSVP_UNKNOWN 0

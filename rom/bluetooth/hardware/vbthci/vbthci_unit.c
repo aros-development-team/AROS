@@ -18,11 +18,13 @@
 
 /* the simulated neighbourhood */
 static const struct VBTFakeDevice fakedevs[] = {
-    { { 0x01, 0x00, 0x0f, 0xdc, 0x1b, 0x00 }, 0, FALSE, 0x002540, 0,      0x1124, "Virtual Keyboard", -48 },
-    { { 0x02, 0x00, 0x0f, 0xdc, 0x1b, 0x00 }, 0, FALSE, 0x002580, 0,      0x1124, "Virtual Mouse", -55 },
-    { { 0x03, 0x00, 0x0f, 0xdc, 0x1b, 0x00 }, 0, FALSE, 0x5a020c, 0,      0x1101, "Virtual Phone", -70 },
-    { { 0x01, 0x01, 0x0f, 0xdc, 0x1b, 0x00 }, 0, TRUE,  0,        0x03c2, 0x1812, "VirtLE Mouse", -60 },
-    { { 0x02, 0x01, 0x0f, 0xdc, 0x1b, 0x00 }, 0, TRUE,  0,        0x0341, 0x180d, "VirtLE Heart Rate", -66 },
+    /* addr,                                 atype, IsLE, Dual, CoD,      Appear, UUID,   name,                RSSI */
+    /* the keyboard is one dual-mode device: reachable over BR/EDR (HIDP) and LE (HOGP) */
+    { { 0x01, 0x00, 0x0f, 0xdc, 0x1b, 0x00 }, 0, FALSE, TRUE,  0x002540, 0x03c1, 0x1124, "Virtual Keyboard", -48 },
+    { { 0x02, 0x00, 0x0f, 0xdc, 0x1b, 0x00 }, 0, FALSE, FALSE, 0x002580, 0,      0x1124, "Virtual Mouse", -55 },
+    { { 0x03, 0x00, 0x0f, 0xdc, 0x1b, 0x00 }, 0, FALSE, FALSE, 0x5a020c, 0,      0x1101, "Virtual Phone", -70 },
+    { { 0x01, 0x01, 0x0f, 0xdc, 0x1b, 0x00 }, 0, TRUE,  FALSE, 0,        0x03c2, 0x1812, "VirtLE Mouse", -60 },
+    { { 0x02, 0x01, 0x0f, 0xdc, 0x1b, 0x00 }, 0, TRUE,  FALSE, 0,        0x0341, 0x180d, "VirtLE Heart Rate", -66 },
 };
 #define NUMFAKEDEVS (sizeof(fakedevs)/sizeof(fakedevs[0]))
 
@@ -337,7 +339,7 @@ static void vbt_HandleCommand(struct VBTHCIUnit *unit, const UBYTE *data, ULONG 
         vbt_CommandStatus(unit, opcode, 0);
         unit->vu_Inquiring = TRUE;
         for(i = 0; i < NUMFAKEDEVS; i++) {
-            if(!fakedevs[i].fd_IsLE) {
+            if(VBT_HASCLASSIC(&fakedevs[i])) {
                 vbt_Schedule(unit, VBTE_INQUIRY_RESULT, i, 0, 400 + cnt * 350);
                 cnt++;
             }
@@ -369,7 +371,7 @@ static void vbt_HandleCommand(struct VBTHCIUnit *unit, const UBYTE *data, ULONG 
             break;
         }
         for(i = 0; i < NUMFAKEDEVS; i++) {
-            if(!fakedevs[i].fd_IsLE && !memcmp(fakedevs[i].fd_Addr, p, 6)) {
+            if(VBT_HASCLASSIC(&fakedevs[i]) && !memcmp(fakedevs[i].fd_Addr, p, 6)) {
                 idx = i;
             }
         }
@@ -397,7 +399,7 @@ static void vbt_HandleCommand(struct VBTHCIUnit *unit, const UBYTE *data, ULONG 
             ULONG i, cnt = 0;
             unit->vu_LEScanning = TRUE;
             for(i = 0; i < NUMFAKEDEVS; i++) {
-                if(fakedevs[i].fd_IsLE) {
+                if(VBT_HASLE(&fakedevs[i])) {
                     vbt_Schedule(unit, VBTE_LE_ADV_REPORT, i, 0, 300 + cnt * 400);
                     cnt++;
                 }
@@ -503,6 +505,20 @@ static void vbt_HandleRequest(struct VBTHCIUnit *unit, struct IOBTHCIReq *ioreq)
     case BTCMD_WRITEACL:
         vbtp_HandleACL(unit, ioreq->iobt_Data, ioreq->iobt_Length);
         ioreq->iobt_Actual = ioreq->iobt_Length;
+        /* Credit the packet back with a Number Of Completed Packets event.
+         * Without it the host's ACL flow-control credits deplete and never
+         * recover, stalling further ACL traffic once the initial buffer count
+         * is used up (e.g. midway through GATT service enumeration). */
+        if(ioreq->iobt_Length >= 2) {
+            const UBYTE *ad = (const UBYTE *) ioreq->iobt_Data;
+            UBYTE ncp[5];
+            UWORD h = (ad[0] | (ad[1] << 8)) & 0x0fff;
+            ncp[0] = 1;                 /* number of handles */
+            ncp[1] = h & 0xff;
+            ncp[2] = (h >> 8) & 0x0f;
+            ncp[3] = 1; ncp[4] = 0;     /* one completed packet on this handle */
+            vbt_SendEvent(unit, 0x13, ncp, 5);
+        }
         break;
     case CMD_RESET:
     case CMD_FLUSH:

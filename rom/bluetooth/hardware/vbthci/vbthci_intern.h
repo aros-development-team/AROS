@@ -35,13 +35,18 @@ struct VBTFakeDevice
 {
     UBYTE  fd_Addr[6];        /* wire order (LSB first) */
     UBYTE  fd_AddrType;       /* 0 public, 1 random */
-    UBYTE  fd_IsLE;
-    ULONG  fd_CoD;
-    UWORD  fd_Appearance;
+    UBYTE  fd_IsLE;           /* primary bearer is LE */
+    UBYTE  fd_DualMode;       /* dual-mode: reachable on BOTH BR/EDR and LE (same address) */
+    ULONG  fd_CoD;            /* classic Class-of-Device (inquiry) */
+    UWORD  fd_Appearance;     /* LE appearance (advertising) */
     UWORD  fd_ServiceUUID;    /* 16 bit UUID advertised */
     CONST_STRPTR fd_Name;
     BYTE   fd_RSSI;
 };
+
+/* which bearers a fake device is reachable on */
+#define VBT_HASCLASSIC(fd)  (!(fd)->fd_IsLE || (fd)->fd_DualMode)
+#define VBT_HASLE(fd)       ((fd)->fd_IsLE || (fd)->fd_DualMode)
 
 /* a scheduled event */
 struct VBTTimedEvent

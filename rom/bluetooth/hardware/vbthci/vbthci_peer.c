@@ -16,19 +16,9 @@
 #include <string.h>
 
 #include "vbthci_intern.h"
+#include "vbthci_devclass.h"
 
 #define NewList(list) NEWLIST(list)
-
-/* HID report descriptor of a boot mouse (also used for the LE mouse) */
-static const UBYTE mouse_reportdesc[] = {
-    0x05, 0x01, 0x09, 0x02, 0xa1, 0x01, 0x09, 0x01,
-    0xa1, 0x00, 0x05, 0x09, 0x19, 0x01, 0x29, 0x03,
-    0x15, 0x00, 0x25, 0x01, 0x95, 0x03, 0x75, 0x01,
-    0x81, 0x02, 0x95, 0x01, 0x75, 0x05, 0x81, 0x03,
-    0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x15, 0x81,
-    0x25, 0x7f, 0x75, 0x08, 0x95, 0x02, 0x81, 0x06,
-    0xc0, 0xc0
-};
 
 /* *** ACL to host *** */
 
@@ -137,11 +127,15 @@ void vbtp_Reset(struct VBTHCIUnit *unit)
 /* /// "vbtp_BuildHIDRecord()" */
 /* One HID service record: attributes 0x0000 (handle), 0x0001 (HID class),
    0x0004 (L2CAP PSM 0x11 + HIDP), 0x0009 (HID profile), 0x000d (PSM 0x13),
-   0x0100 (name). Encoded by hand -- values are static. */
-static ULONG vbtp_BuildHIDRecord(UBYTE *buf, ULONG handle, CONST_STRPTR name)
+   0x0100 (name), 0x0206 (HIDDescriptorList - the report descriptor). Encoded
+   by hand; the report descriptor is the device's own (mouse/keyboard). */
+static ULONG vbtp_BuildHIDRecord(UBYTE *buf, ULONG handle, const struct VBTFakeDevice *fd)
 {
     UBYTE *p = buf;
+    CONST_STRPTR name = fd ? fd->fd_Name : (CONST_STRPTR) "HID device";
     ULONG namelen = strlen(name);
+    ULONG desclen;
+    const UBYTE *desc = vbtp_HidReportDesc(fd, &desclen);
     UBYTE *seqlen;
 
     /* attribute 0x0000: record handle */
@@ -170,6 +164,14 @@ static ULONG vbtp_BuildHIDRecord(UBYTE *buf, ULONG handle, CONST_STRPTR name)
     *p++ = 0x25; *p++ = namelen;
     CopyMem((APTR) name, p, namelen);
     p += namelen;
+    /* attribute 0x0206: HIDDescriptorList = { { UINT8 0x22 (Report), <descriptor> } } */
+    *p++ = 0x09; *p++ = 0x02; *p++ = 0x06;
+    *p++ = 0x35; *p++ = (UBYTE)(6 + desclen);   /* list sequence: one record */
+    *p++ = 0x35; *p++ = (UBYTE)(4 + desclen);   /* record sequence */
+    *p++ = 0x08; *p++ = 0x22;                   /* UINT8 descriptor type = Report */
+    *p++ = 0x25; *p++ = (UBYTE) desclen;        /* text string (descriptor bytes) */
+    CopyMem((APTR) desc, p, desclen);
+    p += desclen;
     (void) seqlen;
     return(p - buf);
 }
@@ -204,7 +206,7 @@ static void vbtp_SDPRequest(struct VBTHCIUnit *unit, struct VBTLink *ln, struct 
     case 0x04: { /* service attribute request */
         const struct VBTFakeDevice *fd = vbt_FakeDevice(ln->ln_DevIdx);
         ULONG plen;
-        attrlen = vbtp_BuildHIDRecord(attrs, 0x00010000, fd ? fd->fd_Name : (CONST_STRPTR) "HID device");
+        attrlen = vbtp_BuildHIDRecord(attrs, 0x00010000, fd);
         rsp[0] = 0x05;
         rsp[1] = tid >> 8;
         rsp[2] = tid & 0xff;
@@ -401,21 +403,24 @@ static void vbtp_ATTRequest(struct VBTHCIUnit *unit, struct VBTLink *ln, const U
             break;
         }
         case 0x0012: { /* report map */
-            ULONG n = sizeof(mouse_reportdesc);
+            ULONG total;
+            const UBYTE *map = vbtp_HidReportDesc(fd, &total);
+            ULONG n = total;
             ULONG mtu = ln->ln_MTU ? ln->ln_MTU : 23;
             if(n > mtu - 1) {
                 n = mtu - 1;
             }
             rsp[0] = 0x0b;
-            CopyMem((APTR) mouse_reportdesc, &rsp[1], n);
+            CopyMem((APTR) map, &rsp[1], n);
             vbtp_SendPDU(unit, ln, 0x0004, rsp, 1 + n);
             break;
         }
-        case 0x0014: /* report value */
+        case 0x0014: { /* report value: return an empty report of the right size */
+            ULONG rlen = vbtp_HidInputReport(fd, 1, &rsp[1]); /* odd step == idle/release */
             rsp[0] = 0x0b;
-            rsp[1] = 0; rsp[2] = 0; rsp[3] = 0;
-            vbtp_SendPDU(unit, ln, 0x0004, rsp, 4);
+            vbtp_SendPDU(unit, ln, 0x0004, rsp, 1 + rlen);
             break;
+        }
         case 0x0015: /* CCCD */
             rsp[0] = 0x0b;
             rsp[1] = ln->ln_Notify ? 1 : 0;
@@ -442,7 +447,8 @@ static void vbtp_ATTRequest(struct VBTHCIUnit *unit, struct VBTLink *ln, const U
         handle = req[1] | (req[2] << 8);
         offset = req[3] | (req[4] << 8);
         if(handle == 0x0012) {
-            ULONG total = sizeof(mouse_reportdesc);
+            ULONG total;
+            const UBYTE *map = vbtp_HidReportDesc(fd, &total);
             ULONG mtu = ln->ln_MTU ? ln->ln_MTU : 23;
             if(offset > total) {
                 vbtp_ATTError(unit, ln, 0x0c, handle, 0x07); /* invalid offset */
@@ -452,7 +458,7 @@ static void vbtp_ATTRequest(struct VBTHCIUnit *unit, struct VBTLink *ln, const U
                     n = mtu - 1;
                 }
                 rsp[0] = 0x0d;
-                CopyMem((APTR) &mouse_reportdesc[offset], &rsp[1], n);
+                CopyMem((APTR) &map[offset], &rsp[1], n);
                 vbtp_SendPDU(unit, ln, 0x0004, rsp, 1 + n);
             }
         } else {
@@ -505,6 +511,17 @@ static struct VBTChan * vbtp_FindChanByLocal(struct VBTLink *ln, UWORD cid)
         }
     }
     return(NULL);
+}
+/* \\\ */
+
+/* /// "vbtp_ChannelOpened()" */
+/* An L2CAP channel just reached the open state. If it is the HIDP interrupt
+   channel (PSM 0x13), start streaming HID input reports on it. */
+static void vbtp_ChannelOpened(struct VBTHCIUnit *unit, struct VBTLink *ln, struct VBTChan *ch)
+{
+    if(ch->lc_PSM == 0x0013) {
+        vbt_Schedule(unit, VBTE_HID_REPORT, vbtp_LinkIndex(unit, ln), 0, 500);
+    }
 }
 /* \\\ */
 
@@ -578,6 +595,7 @@ static void vbtp_Signaling(struct VBTHCIUnit *unit, struct VBTLink *ln, const UB
                 ch->lc_ConfIn = TRUE;
                 if(ch->lc_ConfOut) {
                     ch->lc_State = 2;
+                    vbtp_ChannelOpened(unit, ln, ch);
                 }
             }
             break;
@@ -605,6 +623,7 @@ static void vbtp_Signaling(struct VBTHCIUnit *unit, struct VBTLink *ln, const UB
                 ch->lc_ConfOut = TRUE;
                 if(ch->lc_ConfIn) {
                     ch->lc_State = 2;
+                    vbtp_ChannelOpened(unit, ln, ch);
                 }
             }
             break;
@@ -655,8 +674,14 @@ static void vbtp_ProcessPDU(struct VBTHCIUnit *unit, struct VBTLink *ln, const U
         struct VBTChan *ch = vbtp_FindChanByLocal(ln, cid);
         if(ch && (ch->lc_PSM == 0x0001)) {
             vbtp_SDPRequest(unit, ln, ch, &pdu[4], plen);
+        } else if(ch && (ch->lc_PSM == 0x0011) && (plen >= 1)) {
+            /* HIDP control channel: acknowledge each transaction (SET_PROTOCOL,
+               SET_REPORT, ...) with HANDSHAKE(successful). GET_* is not used by
+               our host, which reads input reports on the interrupt channel. */
+            UBYTE hs = 0x00; /* transaction type HANDSHAKE (0x0), result successful (0x0) */
+            vbtp_SendPDU(unit, ln, ch->lc_RemoteCID, &hs, 1);
         }
-        /* HIDP channels: input only, output data is accepted silently */
+        /* HIDP interrupt channel: input only, host output accepted silently */
     }
 }
 /* \\\ */
@@ -721,7 +746,7 @@ BOOL vbtp_HandleCommand(struct VBTHCIUnit *unit, UWORD opcode, const UBYTE *p, U
         }
         for(i = 0; i < vbt_NumFakeDevices(); i++) {
             const struct VBTFakeDevice *fd = vbt_FakeDevice(i);
-            if(!fd->fd_IsLE && !memcmp(fd->fd_Addr, p, 6)) {
+            if(VBT_HASCLASSIC(fd) && !memcmp(fd->fd_Addr, p, 6)) {
                 idx = i;
             }
         }
@@ -761,7 +786,7 @@ BOOL vbtp_HandleCommand(struct VBTHCIUnit *unit, UWORD opcode, const UBYTE *p, U
         }
         for(i = 0; i < vbt_NumFakeDevices(); i++) {
             const struct VBTFakeDevice *fd = vbt_FakeDevice(i);
-            if(fd->fd_IsLE && !memcmp(fd->fd_Addr, &p[6], 6)) {
+            if(VBT_HASLE(fd) && !memcmp(fd->fd_Addr, &p[6], 6)) {
                 idx = i;
             }
         }
@@ -1125,18 +1150,45 @@ void vbtp_Timed(struct VBTHCIUnit *unit, struct VBTTimedEvent *te)
     case VBTE_LE_NOTIFY: {
         struct VBTLink *ln = &unit->vu_Links[te->te_Index];
         if(ln->ln_Used && ln->ln_Notify) {
-            /* handle value notification: mouse wiggle */
-            UBYTE pdu[6];
-            static const BYTE dx[4] = { 4, 0, -4, 0 };
-            static const BYTE dy[4] = { 0, 4, 0, -4 };
+            /* handle value notification: one HID input report (mouse motion or
+             * keystroke, per the device class) prefixed with the ATT notify
+             * header for the report value handle (0x0014). */
+            const struct VBTFakeDevice *fd = vbt_FakeDevice(ln->ln_DevIdx);
+            UBYTE pdu[3 + 8];
+            ULONG rlen;
             pdu[0] = 0x1b;
             pdu[1] = 0x14; pdu[2] = 0x00;
-            pdu[3] = 0;
-            pdu[4] = (UBYTE) dx[ln->ln_MouseStep & 3];
-            pdu[5] = (UBYTE) dy[ln->ln_MouseStep & 3];
+            rlen = vbtp_HidInputReport(fd, ln->ln_MouseStep, &pdu[3]);
             ln->ln_MouseStep++;
-            vbtp_SendPDU(unit, ln, 0x0004, pdu, 6);
+            vbtp_SendPDU(unit, ln, 0x0004, pdu, 3 + rlen);
             vbt_Schedule(unit, VBTE_LE_NOTIFY, te->te_Index, 0, 1000);
+        }
+        break;
+    }
+
+    case VBTE_HID_REPORT: {
+        /* classic HIDP: one input report on the interrupt channel (PSM 0x13),
+         * as an HIDP DATA message (0xa1 = DATA transaction, Input report). */
+        struct VBTLink *ln = &unit->vu_Links[te->te_Index];
+        struct VBTChan *ch = NULL;
+        UWORD n;
+        if(ln->ln_Used) {
+            for(n = 0; n < VBT_MAXCHANS; n++) {
+                if((ln->ln_Chans[n].lc_State == 2) && (ln->ln_Chans[n].lc_PSM == 0x0013)) {
+                    ch = &ln->ln_Chans[n];
+                    break;
+                }
+            }
+        }
+        if(ch) {
+            const struct VBTFakeDevice *fd = vbt_FakeDevice(ln->ln_DevIdx);
+            UBYTE pdu[1 + 8];
+            ULONG rlen;
+            pdu[0] = 0xa1;
+            rlen = vbtp_HidInputReport(fd, ln->ln_MouseStep, &pdu[1]);
+            ln->ln_MouseStep++;
+            vbtp_SendPDU(unit, ln, ch->lc_RemoteCID, pdu, 1 + rlen);
+            vbt_Schedule(unit, VBTE_HID_REPORT, te->te_Index, 0, 1000);
         }
         break;
     }

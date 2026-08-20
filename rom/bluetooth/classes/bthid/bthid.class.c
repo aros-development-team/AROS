@@ -82,14 +82,33 @@ static struct BTHidBinding * btcAttemptServiceBinding(struct BTHidBase *nh, stru
                BSVA_Device, &bd,
                TAG_END);
     if((uuid16 == 0x1812) && (proto == BSVP_ATT)) {
-        classic = FALSE;
+        classic = FALSE;         /* HID over GATT (HOGP) */
     } else if((uuid16 == 0x1124) && (proto == BSVP_L2CAP)) {
-        /* classic HIDP: not implemented yet */
-        CloseLibrary(BluetoothBase);
-        return NULL;
+        classic = TRUE;          /* HID over L2CAP (HIDP) */
     } else {
         CloseLibrary(BluetoothBase);
         return NULL;
+    }
+
+    /* One HID binding per physical device. A dual-mode device offers an HID
+       service on BOTH bearers (HIDP and HOGP) but it is one keyboard/mouse -
+       binding both would double every keystroke, so refuse a second. */
+    {
+        struct BTHidBinding *ex;
+        BOOL have = FALSE;
+        Forbid();
+        for(ex = (struct BTHidBinding *) nh->nh_Bindings.lh_Head;
+            ex->nhb_Node.ln_Succ; ex = (struct BTHidBinding *) ex->nhb_Node.ln_Succ) {
+            if(ex->nhb_Device == bd) {
+                have = TRUE;
+                break;
+            }
+        }
+        Permit();
+        if(have) {
+            CloseLibrary(BluetoothBase);
+            return NULL;
+        }
     }
 
     if((nhb = btAllocVec(sizeof(struct BTHidBinding)))) {
@@ -319,28 +338,45 @@ static BOOL bthidReadReportMap(struct BTHidBinding *nhb, struct Library *Bluetoo
 {
     APTR ch;
     UBYTE mapbuf[512];
+    const UBYTE *map = mapbuf;
     LONG err = -1;
     ULONG actual = 0;
     struct BtEndpoint *bep = NULL;
+    IPTR handle = 0;
 
-    /* find the Report Map characteristic (0x2a4b) */
-    bep = btFindEndpoint(nhb->nhb_Service, NULL, BEA_UUID16, 0x2a4b, TAG_END);
-    if(!bep) {
-        return FALSE;
-    }
-    if((ch = btAllocChannel(nhb->nhb_Device, nhb->nhb_ChannelPort, NULL))) {
-        IPTR handle = 0;
-        btGetAttrs(BGA_ENDPOINT, bep, BEA_Handle, &handle, TAG_END);
-        btSetAttrs(BGA_CHANNEL, ch, BCHA_AutoConnect, TRUE, TAG_END);
-        btChannelSetup(ch, BTPR_GATTREAD, handle, 0);
-        err = btDoChannel(ch, mapbuf, sizeof(mapbuf));
-        actual = btGetChannelActual(ch);
-        btFreeChannel(ch);
+    if(nhb->nhb_Classic) {
+        /* classic HIDP: the report descriptor came from SDP (HIDDescriptorList),
+           stored on the service - no channel read needed. */
+        IPTR desc = 0, desclen = 0;
+        btGetAttrs(BGA_SERVICE, nhb->nhb_Service,
+                   BSVA_HIDDescriptor, &desc,
+                   BSVA_HIDDescriptorLen, &desclen,
+                   TAG_END);
+        if(!desc || !desclen) {
+            return FALSE;
+        }
+        map = (const UBYTE *) desc;
+        actual = (ULONG) desclen;
+        err = 0;
+    } else {
+        /* HID over GATT: read the Report Map characteristic (0x2a4b). */
+        bep = btFindEndpoint(nhb->nhb_Service, NULL, BEA_UUID16, 0x2a4b, TAG_END);
+        if(!bep) {
+            return FALSE;
+        }
+        if((ch = btAllocChannel(nhb->nhb_Device, nhb->nhb_ChannelPort, NULL))) {
+            btGetAttrs(BGA_ENDPOINT, bep, BEA_Handle, &handle, TAG_END);
+            btSetAttrs(BGA_CHANNEL, ch, BCHA_AutoConnect, TRUE, TAG_END);
+            btChannelSetup(ch, BTPR_GATTREAD, handle, 0);
+            err = btDoChannel(ch, mapbuf, sizeof(mapbuf));
+            actual = btGetChannelActual(ch);
+            btFreeChannel(ch);
+        }
     }
     if(err) {
         return FALSE;
     }
-    if(bt_hid_report_parse(mapbuf, actual, &nhb->nhb_Descriptor) != BT_OK) {
+    if(bt_hid_report_parse(map, actual, &nhb->nhb_Descriptor) != BT_OK) {
         return FALSE;
     }
     bt_hid_input_init(&nhb->nhb_Input, &nhb->nhb_Descriptor);
@@ -396,20 +432,35 @@ AROS_UFH0(void, bthidTask)
             break;
         }
 
-        /* subscribe to every readable Report characteristic (0x2a4d) */
-        while((reportep = btFindEndpoint(nhb->nhb_Service, reportep, BEA_UUID16, 0x2a4d, BEA_CanRead, TRUE, TAG_END))) {
-            if(numch >= 2) {
-                break;
+        if(nhb->nhb_Classic) {
+            /* HIDP: read input reports from the interrupt channel (PSM 0x13).
+               Each SDU is prefixed with the HIDP header byte (0xa1 = DATA,
+               Input report), stripped before parsing. Opening the channel
+               (BCHA_AutoConnect) brings the L2CAP link up and makes the peer
+               start streaming. */
+            reportep = btFindEndpoint(nhb->nhb_Service, NULL, BEA_PSM, 0x0013, TAG_END);
+            if(reportep && (readch[0] = btAllocChannel(nhb->nhb_Device, nhb->nhb_ChannelPort, reportep))) {
+                btSetAttrs(BGA_CHANNEL, readch[0], BCHA_AutoConnect, TRUE, TAG_END);
+                btChannelSetup(readch[0], BTPR_READ, 0, 0);
+                btSendChannel(readch[0], readbuf[0], sizeof(readbuf[0]));
+                numch = 1;
             }
-            if((readch[numch] = btAllocChannel(nhb->nhb_Device, nhb->nhb_ChannelPort, reportep))) {
-                btSetAttrs(BGA_CHANNEL, readch[numch], BCHA_AutoConnect, TRUE, TAG_END);
-                btChannelSetup(readch[numch], BTPR_READ, 0, 0);
-                btSendChannel(readch[numch], readbuf[numch], sizeof(readbuf[numch]));
-                numch++;
+        } else {
+            /* HOGP: subscribe to every readable Report characteristic (0x2a4d) */
+            while((reportep = btFindEndpoint(nhb->nhb_Service, reportep, BEA_UUID16, 0x2a4d, BEA_CanRead, TRUE, TAG_END))) {
+                if(numch >= 2) {
+                    break;
+                }
+                if((readch[numch] = btAllocChannel(nhb->nhb_Device, nhb->nhb_ChannelPort, reportep))) {
+                    btSetAttrs(BGA_CHANNEL, readch[numch], BCHA_AutoConnect, TRUE, TAG_END);
+                    btChannelSetup(readch[numch], BTPR_READ, 0, 0);
+                    btSendChannel(readch[numch], readbuf[numch], sizeof(readbuf[numch]));
+                    numch++;
+                }
             }
         }
         if(!numch) {
-            btAddErrorMsg(RETURN_WARN, (STRPTR) libname, "No input report characteristic found.");
+            btAddErrorMsg(RETURN_WARN, (STRPTR) libname, "No input report endpoint found.");
             break;
         }
 
@@ -433,7 +484,13 @@ AROS_UFH0(void, bthidTask)
                         LONG err = btGetChannelError(ch);
                         if(!err) {
                             ULONG actual = btGetChannelActual(ch);
-                            bt_hid_input_process(&nhb->nhb_Input, readbuf[n], actual,
+                            const UBYTE *rep = readbuf[n];
+                            if(nhb->nhb_Classic && (actual >= 1)) {
+                                /* drop the HIDP header byte (0xa1 = DATA/Input) */
+                                rep++;
+                                actual--;
+                            }
+                            bt_hid_input_process(&nhb->nhb_Input, rep, actual,
                                                  bt_aros_input_bridge_handle, &nhb->nhb_Bridge);
                         } else if((err == IOERR_ABORTED) || (err == BTIOERR_NOTCONNECTED)) {
                             /* device gone: wait for reconnect via auto connect */

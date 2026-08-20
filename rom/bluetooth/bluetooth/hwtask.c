@@ -516,7 +516,7 @@ static LONG bStartDiscovery(struct BtHWCore *hc, struct BtDiscoveryParams *bdp)
 /* \\\ */
 
 /* /// "bStopDiscovery()" */
-static LONG bStopDiscovery(struct BtHWCore *hc)
+LONG bStopDiscovery(struct BtHWCore *hc)
 {
     struct BtBase *BluetoothBase = hc->hc_Base;
     struct BtHardware *bth = hc->hc_Hardware;
@@ -708,10 +708,10 @@ static void bHandleInquiryResult(struct BtHWCore *hc, UBYTE code, const UBYTE *p
             return;
         }
         addr = &params[1];
-        codv = params[10] | (params[11] << 8) | (params[12] << 16);
-        rssi = (BYTE) params[15];
-        bt_le_adv_parse(&params[16], len - 16, &info);
-        bNoteDevice(hc, addr, BDAT_PUBLIC, FALSE, codv, rssi, info.name, info.name_len, &params[16], len - 16, 0);
+        codv = params[9] | (params[10] << 8) | (params[11] << 16);
+        rssi = (BYTE) params[14];
+        bt_le_adv_parse(&params[15], len - 15, &info);
+        bNoteDevice(hc, addr, BDAT_PUBLIC, FALSE, codv, rssi, info.name, info.name_len, &params[15], len - 15, 0);
         break;
     }
     }

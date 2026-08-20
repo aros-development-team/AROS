@@ -8,6 +8,8 @@ FILES :=    \
     hwconn \
     config \
     numtostr \
+    popupicon \
+    popup \
     debug
 
 #MM kernel-bluetooth-library-includes :                         \

@@ -22,6 +22,8 @@
 
 #include "bluetoothprefs.h"
 #include "ActionClass.h"     /* struct DevEntry */
+#include "IconListClass.h"   /* ICONLIST_IMAGES */
+#include "icons.h"
 #include "ScanWinClass.h"
 #include "debug.h"
 
@@ -29,16 +31,19 @@
 #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 
 #define FREELIST(l) { struct MinNode *n; while((n = (struct MinNode *)RemHead((struct List *)&(l)))) FreeVec(n); }
+#define ICONCOL(buf,imgs,idx,text) (snprintf((buf),sizeof(buf),"\33O[%08lx] %s",(unsigned long)(IPTR)(imgs)[idx],(text)),(buf))
 
-/* display hook for the discovery list */
+/* display hook for the discovery list; h_Data is the inner IconList object */
 AROS_UFH3(LONG, ScanDisplay, AROS_UFHA(struct Hook *, h, A0), AROS_UFHA(char **, a, A2), AROS_UFHA(struct DevEntry *, e, A1))
 {
     AROS_USERFUNC_INIT
     static char rssibuf[12];
+    static char addrbuf[64];
     if(e) {
         if(e->rssi != 127) snprintf(rssibuf, sizeof(rssibuf), "%ld", (long)e->rssi); else strcpy(rssibuf, "-");
-        *a++ = e->addr; *a++ = e->name; *a++ = e->type; *a = rssibuf;
-    } else { *a++ = "Address"; *a++ = "Name"; *a++ = "Type"; *a = "RSSI"; }
+        *a++ = h->h_Data ? ICONCOL(addrbuf, ICONLIST_IMAGES(h->h_Data), e->icon, e->addr) : e->addr;
+        *a++ = e->name; *a = rssibuf;
+    } else { *a++ = "Address"; *a++ = "Name"; *a = "RSSI"; }
     return 0;
     AROS_USERFUNC_EXIT
 }
@@ -69,15 +74,17 @@ static void Populate(struct ScanWinData *data)
         for(bd = devl->lh_Head; bd->ln_Succ; bd = bd->ln_Succ) {
             struct DevEntry *e;
             STRPTR name = NULL, addr = NULL;
-            IPTR isc = 0, isl = 0, isreg = 0, isb = 0, isconn = 0;
+            IPTR isc = 0, isl = 0, isreg = 0, isb = 0, isconn = 0, cod = 0, appear = 0;
             LONG rssi = 127;
             btGetAttrs(BGA_DEVICE, bd, BDA_Name, &name, BDA_AddressString, &addr, BDA_RSSI, &rssi,
                        BDA_IsClassic, &isc, BDA_IsLE, &isl, BDA_IsRegistered, &isreg,
-                       BDA_IsBonded, &isb, BDA_IsConnected, &isconn, TAG_END);
+                       BDA_IsBonded, &isb, BDA_IsConnected, &isconn,
+                       BDA_ClassOfDevice, &cod, BDA_Appearance, &appear, TAG_END);
             /* only devices that are not yet known/connected */
             if(isreg || isb || isconn) continue;
             if(!(e = AllocVec(sizeof(struct DevEntry), MEMF_CLEAR))) break;
             e->bd = bd;
+            e->icon = DeviceIconFor(cod, appear, isc);
             e->rssi = rssi;
             strncpy(e->addr, addr ? addr : "?", sizeof(e->addr)-1);
             strncpy(e->name, name ? name : "?", sizeof(e->name)-1);
@@ -95,16 +102,18 @@ static void Populate(struct ScanWinData *data)
 static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct ScanWinData *data;
-    Object *list, *refreshbtn, *connectbtn, *contents;
+    Object *list, *innerlist, *refreshbtn, *connectbtn, *contents;
 
     list = ListviewObject,
-        MUIA_Listview_List, ListObject,
+        MUIA_Listview_List, innerlist = NewObject(IconListClass->mcc_Class, NULL,
             InputListFrame,
-            MUIA_List_Format, "BAR,BAR,BAR,",
+            MUIA_List_MinLineHeight, 18,
+            MUIA_List_Format, (IPTR)"BAR,BAR,",
             MUIA_List_Title, TRUE,
-            MUIA_List_DisplayHook, &scanhook,
-            End,
+            MUIA_List_DisplayHook, (IPTR)&scanhook,
+            TAG_END),
         End;
+    scanhook.h_Data = innerlist;
 
     contents = VGroup,
         Child, Label("Discovered devices:"),
@@ -133,7 +142,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     memset(data, 0, sizeof(*data));
-    data->list = list;
+    data->list = innerlist;
     data->refreshbtn = refreshbtn;
     data->connectbtn = connectbtn;
     NewList((struct List *)&data->entries);
@@ -179,7 +188,15 @@ AROS_UFH3(IPTR, ScanWinDispatcher,
             {
                 struct DevEntry *e = NULL;
                 DoMethod(data->list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &e);
-                if(e && e->bd) btConnectDevice(e->bd);
+                if(e && e->bd) {
+                    /* register (persist), connect and pair - the device then
+                     * moves to the main Devices page and drops off this list.
+                     * Pairing drives the library's own confirmation popup (a
+                     * no-op for LE, which has no SMP bonding yet). */
+                    btRegisterDevice(e->bd);
+                    btConnectDevice(e->bd);
+                    btPairDevice(e->bd, TAG_END);
+                }
                 Populate(data);
             }
             return 0;

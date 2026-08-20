@@ -18,8 +18,8 @@
 
 /* one line in each of the panels' lists */
 struct HWEntry  { struct MinNode node; APTR bth; ULONG icon; char name[64]; char addr[24]; char state[16]; char prod[64]; char info[64]; };
-struct DevEntry { struct MinNode node; APTR bd;  ULONG icon; char addr[24]; char name[48]; char type[10]; char flags[48]; LONG rssi; };
-struct SvcEntry { struct MinNode node; APTR bsv; char name[48]; char uuid[12]; char proto[40]; };
+struct DevEntry { struct MinNode node; APTR bd;  ULONG icon; ULONG statusicon; char addr[24]; char name[48]; char type[10]; char flags[48]; LONG rssi; };
+struct SvcEntry { struct MinNode node; APTR bsv; char name[48]; char type[8]; char uuid[12]; char proto[40]; char binding[40]; };
 struct ClsEntry { struct MinNode node; APTR bc;  ULONG icon; char name[48]; char use[8];   char path[80]; };
 struct ErrEntry { struct MinNode node; char level[8]; char origin[24]; char msg[160]; };
 

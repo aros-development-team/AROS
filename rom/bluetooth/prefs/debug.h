@@ -12,6 +12,7 @@
 
 #if DEBUG
 #include <proto/exec.h>
+#include <proto/debug.h>
 #define D(x)    x
 #define bug     KPrintF
 #else

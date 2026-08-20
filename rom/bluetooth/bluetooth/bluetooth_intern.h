@@ -107,6 +107,26 @@ struct BtHandlerTask
     struct timerequest *bh_TimerIOReq;    /* Standard timer request */
 };
 
+/* PoPo-style popup GUI task, spawned on demand to show pairing requests
+   from inside the library, the way poseidon.library's PoPo does for USB. */
+struct BtPopupTask
+{
+    struct Task        *bp_Task;          /* the popup GUI task */
+    struct MsgPort     *bp_Port;          /* port for pairing popup requests */
+    LONG                bp_ReadySignal;
+    struct Task        *bp_ReadySigTask;
+    struct Library     *bp_MUIMasterBase; /* muimaster, opened by the task */
+};
+
+/* A pairing request handed to the popup task. */
+struct BtPopupMsg
+{
+    struct Message      bpm_Msg;
+    struct BtDevice    *bpm_Device;
+    ULONG               bpm_Type;         /* BPRT_xxx */
+    ULONG               bpm_Passkey;
+};
+
 struct BtWStringMap
 {
     WORD   bsm_ID;
@@ -159,6 +179,7 @@ struct BtBase
     ULONG               bt_OSVersion;     /* Internal OS Version descriptor */
     BOOL                bt_StartedAsTask; /* Did we start in Task Mode before DOS was available? */
     struct BtHandlerTask bt_EventHandler; /* Event handler */
+    struct BtPopupTask   bt_Popup;        /* PoPo-style pairing popup task */
 };
 
 /* bt_Flags */
@@ -370,7 +391,7 @@ struct BtDevice
     struct BtPoPoCfg    bd_PoPoCfg;       /* Inhibit PopUp and Class scan Config */
     UBYTE               bd_AdvData[BT_ADVDATA_MAX];
     struct BtKeyCfg     bd_Keys;          /* bond keys */
-    struct BtHWConn    *bd_Conn;          /* link state (hwconn.c private) */
+    struct BtHWConn    *bd_Conns[2];      /* per-bearer link state: [0]=BR/EDR, [1]=LE (hwconn.c private) */
 };
 
 struct BtService
@@ -379,6 +400,7 @@ struct BtService
     struct BtDevice    *bsv_Device;       /* Up linkage */
     APTR                bsv_SvcBinding;   /* Service Binding */
     struct BtClass     *bsv_ClsBinding;   /* Which class has the bond? */
+    BOOL                bsv_BindingInProgress; /* a class scan is binding this service; do not free it */
     UBYTE               bsv_UUID[16];     /* 128 bit UUID, big endian */
     UWORD               bsv_UUID16;       /* 16 bit UUID or 0 */
     UWORD               bsv_Protocol;     /* BSVP_xxx */
@@ -393,6 +415,8 @@ struct BtService
     STRPTR              bsv_Name;         /* Service name */
     STRPTR              bsv_IDString;     /* Service ID string */
     UWORD              *bsv_ServiceClassIDs; /* 0 terminated array of 16 bit ids */
+    UBYTE              *bsv_HidDescriptor; /* SDP HIDDescriptorList report descriptor (classic HID), or NULL */
+    UWORD               bsv_HidDescriptorLen;
     struct List         bsv_Endpoints;    /* List of endpoints */
 };
 

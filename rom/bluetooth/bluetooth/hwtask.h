@@ -192,6 +192,7 @@ struct BtHWConn
     struct MinList      cn_WaitReqs;   /* BtChannel requests waiting for the link */
     /* service enumeration */
     UWORD               cn_EnumState;
+    BOOL                cn_Enumerated;  /* this bearer's services have been enumerated once */
     UWORD               cn_EnumIndex;
     UWORD               cn_EnumCount;
     ULONG               cn_EnumHandles[32];
@@ -281,6 +282,7 @@ BOOL bSubmitCmd(struct BtHWCore *hc, UWORD opcode, const UBYTE *params, UBYTE le
                 bt_cmdq_complete_fn cb, void *user);
 void bIgnoreCompletion(struct bt_cmdq_completion *completion, void *user_data);
 struct BtDevice * bFindDeviceByAddr(struct BtHWCore *hc, const UBYTE *addr);
+LONG bStopDiscovery(struct BtHWCore *hc);
 void bReplyChannel(struct BtBase *BluetoothBase, struct BtChannel *bch, LONG error, ULONG actual);
 void bStartACLWrite(struct BtHWCore *hc);
 

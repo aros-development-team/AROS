@@ -207,6 +207,7 @@ int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR BluetoothBase)
         pic = (struct BtIFFContext *) BluetoothBase->bt_ConfigRoot.lh_Head;
     }
 
+    bStopPopup(BluetoothBase);
     if(BluetoothBase->bt_EventHandler.bh_Task) {
         BluetoothBase->bt_EventHandler.bh_ReadySignal = SIGB_SINGLE;
         BluetoothBase->bt_EventHandler.bh_ReadySigTask = FindTask(NULL);
@@ -1338,6 +1339,8 @@ static const ULONG BtServicePT[] = {
     PACK_ENTRY(BSVA_Dummy, BSVA_IDString, BtService, bsv_IDString, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSVA_Dummy, BSVA_NumEndpoints, BtService, bsv_NumEPs, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSVA_Dummy, BSVA_ServiceClassIDs, BtService, bsv_ServiceClassIDs, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSVA_Dummy, BSVA_HIDDescriptor, BtService, bsv_HidDescriptor, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSVA_Dummy, BSVA_HIDDescriptorLen, BtService, bsv_HidDescriptorLen, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
 

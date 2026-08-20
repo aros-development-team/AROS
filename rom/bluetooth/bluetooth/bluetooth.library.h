@@ -68,6 +68,10 @@ BOOL bHaveDOS(struct BtBase *BluetoothBase);
 void bGarbageCollectEvents(struct BtBase *BluetoothBase);
 BOOL bStartEventHandler(struct BtBase *BluetoothBase);
 
+/* PoPo-style pairing popup handled inside the library */
+void bShowPairingPopup(struct BtBase *BluetoothBase, struct BtDevice *bd, ULONG type, ULONG passkey);
+void bStopPopup(struct BtBase *BluetoothBase);
+
 void bStripString(struct BtBase *BluetoothBase, STRPTR str);
 struct Node * bFindName(struct BtBase *BluetoothBase, struct List *list, STRPTR name);
 struct BtHardware * bFindHardware(struct BtBase *BluetoothBase, STRPTR name, ULONG unit);

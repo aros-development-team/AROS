@@ -23,6 +23,9 @@ extern struct Library      *MUIMasterBase;
 extern struct Library      *BluetoothBase;
 extern struct Library      *IconBase;
 
+/* pick a device-class icon (ICON_DEV_*) from Class-of-Device / LE Appearance */
+ULONG DeviceIconFor(IPTR cod, IPTR appearance, IPTR isclassic);
+
 /* Custom MUI classes, created by main() */
 extern struct MUI_CustomClass *IconListClass;
 extern struct MUI_CustomClass *ActionClass;

@@ -354,6 +354,7 @@ void bFreeService(LIBBASETYPEPTR BluetoothBase, struct BtService *bsv)
     btFreeVec(bsv->bsv_Name);
     btFreeVec(bsv->bsv_IDString);
     btFreeVec(bsv->bsv_ServiceClassIDs);
+    btFreeVec(bsv->bsv_HidDescriptor);
     btFreeVec(bsv);
 }
 /* \\\ */

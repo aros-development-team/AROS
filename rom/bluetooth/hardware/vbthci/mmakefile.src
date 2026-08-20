@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-FILES := vbthci_device vbthci_unit vbthci_peer
+FILES := vbthci_device vbthci_unit vbthci_peer vbthci_hid
 
 USER_INCLUDES := -I$(SRCDIR)/rom/bluetooth/stack/include
 

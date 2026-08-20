@@ -15,7 +15,7 @@
 
 struct DevWinData
 {
-    Object        *nametxt, *addrtxt, *typetxt, *statetxt;
+    Object        *nametxt, *addrtxt, *typetxt, *statetxt, *bindtxt;
     Object        *svclist;
     Object        *rescanbtn;
     struct MinList svcentries;   /* struct SvcEntry backing store */

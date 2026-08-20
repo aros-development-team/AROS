@@ -23,6 +23,8 @@
 #include "bluetoothprefs.h"
 #include "ActionClass.h"     /* struct SvcEntry */
 #include "DevWinClass.h"
+#include "IconListClass.h"   /* ICONLIST_IMAGES */
+#include "icons.h"
 #include "debug.h"
 
 #pragma GCC diagnostic ignored "-Wint-conversion"
@@ -33,8 +35,20 @@
 AROS_UFH3(LONG, SvcDisplay, AROS_UFHA(struct Hook *, h, A0), AROS_UFHA(char **, a, A2), AROS_UFHA(struct SvcEntry *, e, A1))
 {
     AROS_USERFUNC_INIT
-    if(e) { *a++ = e->name; *a++ = e->uuid; *a = e->proto; }
-    else  { *a++ = "Service"; *a++ = "UUID"; *a = "Protocol"; }
+    static char bindbuf[64];
+    if(e) {
+        *a++ = e->name; *a++ = e->type; *a++ = e->uuid; *a++ = e->proto;
+        if(e->binding[0] && strcmp(e->binding, "-") && h->h_Data) {
+            /* show the bound class with its icon, like Trident's bindings */
+            snprintf(bindbuf, sizeof(bindbuf), "\33O[%08lx] %s",
+                     (unsigned long)(IPTR)ICONLIST_IMAGES((Object *)h->h_Data)[ICON_CLASSES], e->binding);
+            *a = bindbuf;
+        } else {
+            *a = e->binding[0] ? e->binding : "-";
+        }
+    } else {
+        *a++ = "Service"; *a++ = "Type"; *a++ = "UUID"; *a++ = "Protocol"; *a = "Binding";
+    }
     return 0;
     AROS_USERFUNC_EXIT
 }
@@ -47,6 +61,8 @@ static void Populate(struct DevWinData *data)
     struct Node *bsv;
     STRPTR name = NULL, addr = NULL;
     IPTR isc = 0, isl = 0, isreg = 0, isb = 0, isconn = 0, isdead = 0;
+    APTR devbindcls = NULL;
+    STRPTR devbindname = NULL;
     char buf[96];
 
     if(!data->device) return;
@@ -54,7 +70,9 @@ static void Populate(struct DevWinData *data)
     btLockReadBase();
     btGetAttrs(BGA_DEVICE, data->device, BDA_Name, &name, BDA_AddressString, &addr,
                BDA_IsClassic, &isc, BDA_IsLE, &isl, BDA_IsRegistered, &isreg, BDA_IsBonded, &isb,
-               BDA_IsConnected, &isconn, BDA_IsDead, &isdead, TAG_END);
+               BDA_IsConnected, &isconn, BDA_IsDead, &isdead, BDA_BindingClass, &devbindcls, TAG_END);
+    if(devbindcls) btGetAttrs(BGA_BTCLASS, devbindcls, BCA_ClassName, &devbindname, TAG_END);
+    set(data->bindtxt, MUIA_Text_Contents, (IPTR)(devbindname ? devbindname : "-"));
 
     set(data->nametxt, MUIA_Text_Contents, (IPTR)(name ? name : "?"));
     set(data->addrtxt, MUIA_Text_Contents, (IPTR)(addr ? addr : "?"));
@@ -70,11 +88,15 @@ static void Populate(struct DevWinData *data)
     btGetAttrs(BGA_DEVICE, data->device, BDA_ServiceList, &svcl, TAG_END);
     for(bsv = svcl->lh_Head; bsv->ln_Succ; bsv = bsv->ln_Succ) {
         struct SvcEntry *e;
-        STRPTR sname = NULL;
+        STRPTR sname = NULL, bindname = NULL;
+        APTR bindcls = NULL;
         IPTR uuid16 = 0, proto = 0, psm = 0, chan = 0, sh = 0, eh = 0;
         if(!(e = AllocVec(sizeof(struct SvcEntry), MEMF_CLEAR))) break;
         btGetAttrs(BGA_SERVICE, bsv, BSVA_Name, &sname, BSVA_UUID16, &uuid16, BSVA_Protocol, &proto,
-                   BSVA_PSM, &psm, BSVA_RFCOMMChannel, &chan, BSVA_StartHandle, &sh, BSVA_EndHandle, &eh, TAG_END);
+                   BSVA_PSM, &psm, BSVA_RFCOMMChannel, &chan, BSVA_StartHandle, &sh, BSVA_EndHandle, &eh,
+                   BSVA_BindingClass, &bindcls, TAG_END);
+        if(bindcls) btGetAttrs(BGA_BTCLASS, bindcls, BCA_ClassName, &bindname, TAG_END);
+        strncpy(e->binding, bindname ? bindname : "-", sizeof(e->binding)-1);
         e->bsv = bsv;
         strncpy(e->name, sname ? sname : "?", sizeof(e->name)-1);
         snprintf(e->uuid, sizeof(e->uuid), "0x%04lx", (unsigned long)uuid16);
@@ -84,6 +106,8 @@ static void Populate(struct DevWinData *data)
             case BSVP_ATT: snprintf(e->proto, sizeof(e->proto), "GATT 0x%04lx-0x%04lx", (unsigned long)sh, (unsigned long)eh); break;
             default: strcpy(e->proto, "-"); break;
         }
+        /* the bearer the service lives on: GATT/ATT is LE, everything else BR/EDR */
+        strcpy(e->type, (proto == BSVP_ATT) ? "LE" : "BR/EDR");
         AddTail((struct List *)&data->svcentries, (struct Node *)e);
         DoMethod(data->svclist, MUIM_List_InsertSingle, e, MUIV_List_Insert_Bottom);
     }
@@ -96,23 +120,25 @@ static void Populate(struct DevWinData *data)
 static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct DevWinData *data;
-    Object *nametxt, *addrtxt, *typetxt, *statetxt, *svclist, *rescanbtn, *contents;
+    Object *nametxt, *addrtxt, *typetxt, *statetxt, *bindtxt, *svclist, *rescanbtn, *contents;
 
     contents = VGroup,
         Child, ColGroup(2), GroupFrameT("Device"),
-            Child, Label("Name:"),    Child, nametxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
-            Child, Label("Address:"), Child, addrtxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
-            Child, Label("Type:"),    Child, typetxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
-            Child, Label("Status:"),  Child, statetxt = TextObject, MUIA_Text_Contents, (IPTR)"", End,
+            Child, Label("Name:"),        Child, nametxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
+            Child, Label("Address:"),     Child, addrtxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
+            Child, Label("Type:"),        Child, typetxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
+            Child, Label("Status:"),      Child, statetxt = TextObject, MUIA_Text_Contents, (IPTR)"", End,
+            Child, Label("Bound class:"), Child, bindtxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
             End,
-        Child, VGroup, GroupFrameT("Services"),
-            Child, svclist = ListviewObject,
-                MUIA_Listview_List, ListObject,
+        Child, VGroup, GroupFrameT("Services and their bindings"),
+            Child, ListviewObject,
+                MUIA_Listview_List, (svclist = NewObject(IconListClass->mcc_Class, NULL,
                     InputListFrame,
-                    MUIA_List_Format, "BAR,BAR,",
+                    MUIA_List_MinLineHeight, 18,
+                    MUIA_List_Format, "BAR,BAR,BAR,BAR,",
                     MUIA_List_Title, TRUE,
                     MUIA_List_DisplayHook, &svchook,
-                    End,
+                    TAG_END)),
                 End,
             End,
         Child, HGroup,
@@ -141,9 +167,13 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     data->addrtxt = addrtxt;
     data->typetxt = typetxt;
     data->statetxt = statetxt;
+    data->bindtxt = bindtxt;
     data->svclist = svclist;
     data->rescanbtn = rescanbtn;
     NewList((struct List *)&data->svcentries);
+
+    /* let the services display hook reach this list's icon images */
+    svchook.h_Data = svclist;
 
     DoMethod(obj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
              obj, 3, MUIM_Set, MUIA_Window_Open, FALSE);

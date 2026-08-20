@@ -88,11 +88,17 @@ AROS_UFH3(LONG, DevDisplay, AROS_UFHA(struct Hook *, h, A0), AROS_UFHA(char **, 
 {
     AROS_USERFUNC_INIT
     struct BtActionData *ad = (struct BtActionData *)h->h_Data;
-    static char b0[64], rssibuf[12];
+    static char b0[64], b1[80], rssibuf[12];
     if(e) {
         if(e->rssi != 127) snprintf(rssibuf, sizeof(rssibuf), "%ld", (long)e->rssi); else strcpy(rssibuf, "-");
-        *a++ = ICONCOL(b0, ICONLIST_IMAGES(ad->devlist), e->icon, e->addr); *a++ = e->name; *a++ = e->type; *a++ = rssibuf; *a = e->flags;
-    } else { *a++ = "Address"; *a++ = "Name"; *a++ = "Type"; *a++ = "RSSI"; *a = "Status"; }
+        /* Address column shows the online/offline LED; Name column shows the
+         * device-class icon before the name. The bearer type is a per-service
+         * property (a device may support several), shown in the Information
+         * window's service list, not on the device row. */
+        *a++ = ICONCOL(b0, ICONLIST_IMAGES(ad->devlist), e->statusicon, e->addr);
+        *a++ = ICONCOL(b1, ICONLIST_IMAGES(ad->devlist), e->icon, e->name);
+        *a++ = rssibuf; *a = e->flags;
+    } else { *a++ = "Address"; *a++ = "Name"; *a++ = "RSSI"; *a = "Status"; }
     return 0;
     AROS_USERFUNC_EXIT
 }
@@ -133,6 +139,38 @@ static void SetStatus(struct BtActionData *data, CONST_STRPTR s)
 
 /* *** refresh *** */
 
+/* pick a device-class icon from the classic Class-of-Device or the LE Appearance */
+ULONG DeviceIconFor(IPTR cod, IPTR appearance, IPTR isclassic)
+{
+    if(isclassic && cod) {
+        ULONG major = (cod >> 8) & 0x1f;
+        ULONG minor = (cod >> 2) & 0x3f;
+        switch(major) {
+            case 0x01: return ICON_DEV_COMPUTER;
+            case 0x02: return ICON_DEV_PHONE;
+            case 0x04: return ICON_DEV_HEADSET;          /* audio / video */
+            case 0x05:                                    /* peripheral */
+                switch((minor >> 4) & 0x03) {
+                    case 1: return ICON_DEV_KEYBOARD;
+                    case 2: return ICON_DEV_MOUSE;
+                    case 3: return ICON_DEV_KEYBOARD;     /* keyboard+pointing combo */
+                }
+                return ICON_DEV_GENERIC;
+        }
+    }
+    if(appearance) {
+        switch((appearance >> 6) & 0x3ff) {              /* GAP appearance category */
+            case 1:  return ICON_DEV_PHONE;              /* Phone */
+            case 2:  return ICON_DEV_COMPUTER;           /* Computer */
+            case 15:                                      /* HID */
+                if(appearance == 961) return ICON_DEV_KEYBOARD;
+                if(appearance == 962) return ICON_DEV_MOUSE;
+                return ICON_DEV_GENERIC;
+        }
+    }
+    return ICON_DEV_GENERIC;
+}
+
 static void RefreshDevices(struct BtActionData *data)
 {
     struct List *hwl, *devl;
@@ -148,18 +186,20 @@ static void RefreshDevices(struct BtActionData *data)
         for(bd = devl->lh_Head; bd->ln_Succ; bd = bd->ln_Succ) {
             struct DevEntry *e = AllocVec(sizeof(struct DevEntry), MEMF_CLEAR);
             STRPTR name = NULL, addr = NULL;
-            IPTR isc = 0, isl = 0, isreg = 0, isb = 0, isconn = 0, isdead = 0;
+            IPTR isc = 0, isl = 0, isreg = 0, isb = 0, isconn = 0, isdead = 0, cod = 0, appear = 0;
             LONG rssi = 127;
             if(!e) break;
             btGetAttrs(BGA_DEVICE, bd, BDA_Name, &name, BDA_AddressString, &addr, BDA_RSSI, &rssi,
                        BDA_IsClassic, &isc, BDA_IsLE, &isl, BDA_IsRegistered, &isreg, BDA_IsBonded, &isb,
-                       BDA_IsConnected, &isconn, BDA_IsDead, &isdead, TAG_END);
+                       BDA_IsConnected, &isconn, BDA_IsDead, &isdead,
+                       BDA_ClassOfDevice, &cod, BDA_Appearance, &appear, TAG_END);
             /* the Devices page lists only devices we actually use (connected,
              * registered or bonded); freshly discovered ones live in the
              * "Add Device" window instead. */
             if(!(isreg || isb || isconn)) { FreeVec(e); continue; }
             e->bd = bd;
-            e->icon = isconn ? ICON_LED_GREEN : ICON_LED_ORANGE;
+            e->icon = DeviceIconFor(cod, appear, isc);
+            e->statusicon = isdead ? ICON_LED_RED : (isconn ? ICON_LED_GREEN : ICON_LED_GRAY);
             e->rssi = rssi;
             strncpy(e->addr, addr ? addr : "?", sizeof(e->addr)-1);
             strncpy(e->name, name ? name : "?", sizeof(e->name)-1);
@@ -321,6 +361,7 @@ static void HandleEvents(struct BtActionData *data)
                 STRPTR name = NULL;
                 IPTR passkey = 0;
                 char buf[160];
+                if(!data->pairwin) break;   /* pairing popup not built yet */
                 btLockReadBase();
                 btGetAttrs(BGA_DEVICE, p1, BDA_Name, &name, BDA_PairingPasskey, &passkey, TAG_END);
                 data->pairdev = p1;
@@ -343,9 +384,16 @@ static void HandleEvents(struct BtActionData *data)
                 break;
             }
             case BEHMB_PAIRINGDONE:
-                set(data->pairwin, MUIA_Window_Open, FALSE);
+                if(data->pairwin) set(data->pairwin, MUIA_Window_Open, FALSE);
                 data->pairdev = NULL;
-                SetStatus(data, (IPTR)p2 ? "Pairing failed." : "Pairing complete.");
+                if((IPTR)p2) {
+                    SetStatus(data, "Pairing failed.");
+                } else {
+                    /* a device paired successfully: it now belongs on the
+                     * Devices page, so dismiss the Add Device window. */
+                    if(data->scanwin) set(data->scanwin, MUIA_Window_Open, FALSE);
+                    SetStatus(data, "Pairing complete.");
+                }
                 RefreshDevices(data);
                 break;
         }
@@ -416,6 +464,8 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                     MUIA_Listview_List, navlst,
                     End,
                 End,
+            /* draggable divider between the navigation column and the pages */
+            Child, BalanceObject, End,
             /* right: one page per navigation entry */
             Child, data->pagegrp = VGroup,
                 MUIA_HorizWeight, 72,
@@ -457,15 +507,10 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                     End,
                 /* --- Devices --- */
                 Child, VGroup,
-                    Child, Label("Registered and discovered devices:"),
-                    Child, LISTVIEW(data->devlist, &data->devhook, "BAR,BAR,BAR,BAR,"),
+                    Child, Label("Your Bluetooth devices:"),
+                    Child, LISTVIEW(data->devlist, &data->devhook, "BAR,BAR,BAR,"),
                     Child, HGroup, MUIA_Group_SameWidth, TRUE,
                         Child, data->bt_adddev = SimpleButton("Add Device"),
-                        Child, data->bt_register = SimpleButton("Register"),
-                        Child, data->bt_unregister = SimpleButton("Unregister"),
-                        Child, data->bt_pair = SimpleButton("Pair"),
-                        End,
-                    Child, HGroup, MUIA_Group_SameWidth, TRUE,
                         Child, data->bt_connect = SimpleButton("Connect"),
                         Child, data->bt_disconnect = SimpleButton("Disconnect"),
                         Child, data->bt_info = SimpleButton("Information"),
@@ -568,9 +613,6 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* action buttons */
     DoMethod(data->bt_adddev,     MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_AddDevice);
-    DoMethod(data->bt_register,   MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Register);
-    DoMethod(data->bt_unregister, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Unregister);
-    DoMethod(data->bt_pair,       MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Pair);
     DoMethod(data->bt_connect,    MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Connect);
     DoMethod(data->bt_disconnect, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Disconnect);
     DoMethod(data->bt_info,       MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_DevInfo);

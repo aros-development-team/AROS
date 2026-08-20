@@ -251,26 +251,55 @@ void bDeviceClassScan(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
     if(!(bd->bd_Flags & BDFF_REGISTERED)) {
         return;
     }
+    /* Only offer a device to the classes once its services are known. A
+     * DEVICECONNECTED scan can otherwise run while the hardware task is still
+     * enumerating services (GATT/SDP); the binding attempt takes device locks
+     * and spawns binding subtasks, stalling that enumeration until it times
+     * out. Services becoming known raises BEHMB_SERVICESCHG, which drives a
+     * second scan that does the real binding. */
+    if(!(bd->bd_Flags & BDFF_SERVICESKNOWN)) {
+        return;
+    }
+    if(bd->bd_PoPoCfg.bpc_NoClassBind || bd->bd_DevBinding || (bd->bd_Flags & BDFF_APPBINDING)) {
+        return;
+    }
     KPRINTF(5, ("Doing ClassScan on Device: %s\n", bd->bd_Name));
-    btLockWriteDevice(bd);
-    while(!(bd->bd_PoPoCfg.bpc_NoClassBind || bd->bd_DevBinding || (bd->bd_Flags & BDFF_APPBINDING))) {
-        hassvcbinding = FALSE;
-        bsv = (struct BtService *) bd->bd_Services.lh_Head;
-        while(bsv->bsv_Node.ln_Succ) {
+
+    /* A class's service binding (btcDoMethod(BCM_*ServiceBinding)) can spawn a
+     * subtask that does blocking GATT/SDP I/O, which the hardware task must
+     * service - and the hardware task also needs the device lock (pairing,
+     * disconnect, ...). So we must NOT hold the device lock across a binding
+     * attempt. Instead: snapshot the unbound services under the lock and mark
+     * them "binding in progress" (bClearServices/bFreeService keep those), drop
+     * the lock for the attempts, then reacquire it briefly to record results. */
+    {
+        struct BtService *svcs[16];
+        UWORD nsvc = 0, i;
+
+        btLockWriteDevice(bd);
+        for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ;
+            bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
             if(bsv->bsv_SvcBinding) {
                 hassvcbinding = TRUE;
-                break;
+            } else if(!bsv->bsv_BindingInProgress && (nsvc < 16)) {
+                bsv->bsv_BindingInProgress = TRUE;
+                svcs[nsvc++] = bsv;
             }
-            bsv = (struct BtService *) bsv->bsv_Node.ln_Succ;
         }
+        btUnlockDevice(bd);
 
+        /* forced device binding wins over service bindings, as before */
         owner = btGetForcedBinding(bd->bd_IDString, NULL);
         if((!hassvcbinding) && owner) {
             bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head;
             while(bc->bc_Node.ln_Succ) {
                 if(!strcmp(owner, bc->bc_ClassName)) {
-                    if((bd->bd_DevBinding = (APTR) btcDoMethod(BCM_ForceDeviceBinding, bd))) {
+                    binding = (APTR) btcDoMethod(BCM_ForceDeviceBinding, bd);
+                    if(binding) {
+                        btLockWriteDevice(bd);
+                        bd->bd_DevBinding = binding;
                         bd->bd_ClsBinding = bc;
+                        btUnlockDevice(bd);
                         bc->bc_UseCnt++;
                         btSendEvent(BEHMB_ADDBINDING, bd, NULL);
                     } else {
@@ -281,62 +310,27 @@ void bDeviceClassScan(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
                 }
                 bc = (struct BtClass *) bc->bc_Node.ln_Succ;
             }
-            /* no more scanning required, abort here */
-            break;
-        }
-
-        /* Service bindings */
-        bsv = (struct BtService *) bd->bd_Services.lh_Head;
-        while(bsv->bsv_Node.ln_Succ) {
-            if(!bsv->bsv_SvcBinding) {
-                binding = NULL;
-                owner = btGetForcedBinding(bd->bd_IDString, bsv->bsv_IDString);
-                bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head;
-                while(bc->bc_Node.ln_Succ) {
-                    if(owner) {
-                        if(!strcmp(owner, bc->bc_ClassName)) {
-                            binding = (APTR) btcDoMethod(BCM_ForceServiceBinding, bsv);
-                            if(!binding) {
-                                btAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                                               "Forced service binding of %s to %s failed.", bd->bd_Name, owner);
-                            }
-                        }
-                        if(!binding) {
-                            bc = (struct BtClass *) bc->bc_Node.ln_Succ;
-                            continue;
-                        }
-                    } else {
-                        binding = (APTR) btcDoMethod(BCM_AttemptServiceBinding, bsv);
-                    }
-                    if(binding) {
-                        Forbid();
-                        bsv->bsv_SvcBinding = binding;
-                        bsv->bsv_ClsBinding = bc;
-                        hassvcbinding = TRUE;
-                        bc->bc_UseCnt++;
-                        Permit();
-                        btSendEvent(BEHMB_ADDBINDING, bd, NULL);
-                        break;
-                    }
-                    bc = (struct BtClass *) bc->bc_Node.ln_Succ;
-                }
+            btLockWriteDevice(bd);
+            for(i = 0; i < nsvc; i++) {
+                svcs[i]->bsv_BindingInProgress = FALSE;
             }
-            bsv = (struct BtService *) bsv->bsv_Node.ln_Succ;
+            btUnlockDevice(bd);
+            return;
         }
 
-        /* Could not establish service binding, try device binding then */
-        if(!hassvcbinding) {
+        /* Service bindings, one snapshot service at a time, WITHOUT the lock. */
+        for(i = 0; i < nsvc; i++) {
+            bsv = svcs[i];
             binding = NULL;
-            owner = btGetForcedBinding(bd->bd_IDString, NULL);
+            owner = btGetForcedBinding(bd->bd_IDString, bsv->bsv_IDString);
             bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head;
             while(bc->bc_Node.ln_Succ) {
-                binding = NULL;
                 if(owner) {
                     if(!strcmp(owner, bc->bc_ClassName)) {
-                        binding = (APTR) btcDoMethod(BCM_ForceDeviceBinding, bd);
+                        binding = (APTR) btcDoMethod(BCM_ForceServiceBinding, bsv);
                         if(!binding) {
                             btAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                                           "Forced device binding of %s to %s failed.", bd->bd_Name, owner);
+                                           "Forced service binding of %s to %s failed.", bd->bd_Name, owner);
                         }
                     }
                     if(!binding) {
@@ -344,11 +338,14 @@ void bDeviceClassScan(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
                         continue;
                     }
                 } else {
-                    binding = (APTR) btcDoMethod(BCM_AttemptDeviceBinding, bd);
+                    binding = (APTR) btcDoMethod(BCM_AttemptServiceBinding, bsv);
                 }
                 if(binding) {
-                    bd->bd_DevBinding = binding;
-                    bd->bd_ClsBinding = bc;
+                    btLockWriteDevice(bd);
+                    bsv->bsv_SvcBinding = binding;
+                    bsv->bsv_ClsBinding = bc;
+                    btUnlockDevice(bd);
+                    hassvcbinding = TRUE;
                     bc->bc_UseCnt++;
                     btSendEvent(BEHMB_ADDBINDING, bd, NULL);
                     break;
@@ -356,9 +353,49 @@ void bDeviceClassScan(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
                 bc = (struct BtClass *) bc->bc_Node.ln_Succ;
             }
         }
-        break;
+
+        /* done with the snapshot: clear the in-progress markers */
+        btLockWriteDevice(bd);
+        for(i = 0; i < nsvc; i++) {
+            svcs[i]->bsv_BindingInProgress = FALSE;
+        }
+        btUnlockDevice(bd);
     }
-    btUnlockDevice(bd);
+
+    /* Could not establish a service binding: try a device binding then. Device
+     * bindings do not do blocking I/O for our classes, so the lock is fine. */
+    if(!hassvcbinding && !bd->bd_DevBinding) {
+        btLockWriteDevice(bd);
+        owner = btGetForcedBinding(bd->bd_IDString, NULL);
+        bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head;
+        while(bc->bc_Node.ln_Succ) {
+            binding = NULL;
+            if(owner) {
+                if(!strcmp(owner, bc->bc_ClassName)) {
+                    binding = (APTR) btcDoMethod(BCM_ForceDeviceBinding, bd);
+                    if(!binding) {
+                        btAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Forced device binding of %s to %s failed.", bd->bd_Name, owner);
+                    }
+                }
+                if(!binding) {
+                    bc = (struct BtClass *) bc->bc_Node.ln_Succ;
+                    continue;
+                }
+            } else {
+                binding = (APTR) btcDoMethod(BCM_AttemptDeviceBinding, bd);
+            }
+            if(binding) {
+                bd->bd_DevBinding = binding;
+                bd->bd_ClsBinding = bc;
+                bc->bc_UseCnt++;
+                btSendEvent(BEHMB_ADDBINDING, bd, NULL);
+                break;
+            }
+            bc = (struct BtClass *) bc->bc_Node.ln_Succ;
+        }
+        btUnlockDevice(bd);
+    }
 }
 /* \\\ */
 
