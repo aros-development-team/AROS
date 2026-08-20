@@ -52,10 +52,39 @@ LONG __CloseSocket(LONG fd, struct SocketBase *libPtr);
  * another library's context can recover everything it needs from the socket.
  */
 
+/*
+ * Return the SocketBase to use as the sleep/lock context for a blocking
+ * operation on behalf of the calling task.
+ *
+ * A blocking socket operation sleeps (tsleep) on the base passed as its
+ * process context, and the matching wakeup() signals that base's owner task.
+ * Each base carries a single sleeper's worth of state (p_wchan, p_sleep_link,
+ * timer), so two tasks must never sleep on one base at the same time.
+ *
+ * The task issuing the operation may have no base of its own - a posixc
+ * worker thread reading an inherited socket descriptor reaches us through
+ * fd.library without ever opening bsdsocket.library.  Sleeping such a task on
+ * the socket owner's base (so->so_pgid) would let two tasks share one base's
+ * sleep state and corrupt the sleep queue.  Give the task its own base
+ * instead; a plain OpenLibrary() creates and registers a per-task base, and
+ * FindSocketBase() returns it on every later call.
+ */
+static struct SocketBase *fdh_task_base(struct socket *so)
+{
+    struct SocketBase *p = FindSocketBase(FindTask(NULL));
+
+    if (p == NULL)
+        p = (struct SocketBase *)OpenLibrary("bsdsocket.library", 0);
+    if (p == NULL)
+        p = (struct SocketBase *)so->so_pgid; /* last resort */
+
+    return p;
+}
+
 static SIPTR fdh_sock_read(APTR data, APTR buf, IPTR nbytes, LONG *perror)
 {
     struct socket *so = (struct socket *)data;
-    struct SocketBase *p = (struct SocketBase *)so->so_pgid;
+    struct SocketBase *p = fdh_task_base(so);
     struct uio auio;
     struct iovec aiov;
     struct mbuf *from = NULL, *control = NULL;
@@ -90,7 +119,7 @@ static SIPTR fdh_sock_read(APTR data, APTR buf, IPTR nbytes, LONG *perror)
 static SIPTR fdh_sock_write(APTR data, CONST_APTR buf, IPTR nbytes, LONG *perror)
 {
     struct socket *so = (struct socket *)data;
-    struct SocketBase *p = (struct SocketBase *)so->so_pgid;
+    struct SocketBase *p = fdh_task_base(so);
     struct uio auio;
     struct iovec aiov;
     LONG error, len;

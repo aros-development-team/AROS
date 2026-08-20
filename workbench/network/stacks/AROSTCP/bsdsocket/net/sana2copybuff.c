@@ -243,6 +243,11 @@ AROS_UFH3(BOOL, m_copy_to_mbuf,
 #endif
 
     while(n > 0) {
+        /* Never walk past the end of the reserved chain if the driver reports
+         * more data than it can hold; fail the copy instead of dereferencing
+         * NULL (runs in interrupt context, so no logging here). */
+        if(m == NULL)
+            return FALSE;
 #if DIAGNOSTIC
         if(m == 0) {
             log(LOG_ERR, "m_copy_to_buff: mbuf chain short, "
