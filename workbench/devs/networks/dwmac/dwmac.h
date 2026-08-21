@@ -54,6 +54,9 @@
 #define DWMAC_CONFIG_DM                 (1 << 13)   /* full duplex      */
 #define DWMAC_CONFIG_FES                (1 << 14)   /* 100Mbit          */
 #define DWMAC_CONFIG_PS                 (1 << 15)   /* port select: MII */
+#define DWMAC_CONFIG_JE                 (1 << 16)   /* jumbo enable     */
+#define DWMAC_CONFIG_JD                 (1 << 17)   /* jabber disable   */
+#define DWMAC_CONFIG_WD                 (1 << 19)   /* watchdog disable */
 #define DWMAC_CONFIG_ACS                (1 << 20)   /* strip pad/fcs    */
 #define DWMAC_CONFIG_CST                (1 << 21)   /* strip fcs (type) */
 
@@ -223,6 +226,16 @@ struct dwmac_desc
 #define ETH_MTU                         1500
 #define ETH_MAXPACKETSIZE               (ETH_HEADERSIZE + ETH_MTU)
 #define ETH_ZLEN                        60
+#define ETH_CRCSIZE                     4
+
+/*
+ * Jumbo ceiling.  The MAC's Jumbo-Enable extends the giant-packet limit to
+ * 9018 bytes on the wire, so 9000 is the largest MTU we advertise.  The
+ * effective maximum on a given SoC is also bounded by the MTL FIFO depth in
+ * store-and-forward mode; that is not probed here.
+ */
+#define DWMAC_MAX_MTU                   9000
+#define DWMAC_ENV_MTU_PATH              "SYS/Net/dwmac/unit0/MTU"
 
 struct eth_frame
 {
@@ -334,6 +347,11 @@ struct DWMACUnit
     struct Sana2DeviceQuery dwu_Sana2Info;
     struct Sana2DeviceStats dwu_Stats;
     ULONG               dwu_SpecialStats[STAT_COUNT];
+
+    /* Frame geometry, from ENV:SYS/Net/dwmac/unit0/MTU at unit creation */
+    ULONG               dwu_MTU;        /* configured MTU              */
+    ULONG               dwu_FrameMax;   /* MTU + Ethernet header + FCS */
+    ULONG               dwu_BufSize;    /* per-slot ring buffer size   */
 
     /* Rings and their buffers, one contiguous allocation each */
     APTR                dwu_DescMem;

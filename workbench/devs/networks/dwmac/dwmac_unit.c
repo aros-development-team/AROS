@@ -20,6 +20,7 @@
 
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/dos.h>
 
 #include "dwmac.h"
 
@@ -364,22 +365,22 @@ static void DWMAC_RXProcess(struct DWMACUnit *unit)
         ULONG slot = unit->dwu_RXCurrent;
         volatile struct dwmac_desc *desc =
             (volatile struct dwmac_desc *)&unit->dwu_RXDesc[slot];
-        UBYTE *buf = unit->dwu_RXBuf + slot * DWMAC_BUFSIZE;
+        UBYTE *buf = unit->dwu_RXBuf + slot * unit->dwu_BufSize;
         ULONG des3 = desc->des3;
 
         if (des3 & DWMAC_RDES3_OWN)
             break;
 
         /* The ownership read must land before the frame is looked at */
-        DWMAC_SYNC(buf, DWMAC_BUFSIZE);
+        DWMAC_SYNC(buf, unit->dwu_BufSize);
 
         if ((des3 & (DWMAC_RDES3_FD | DWMAC_RDES3_LD)) ==
             (DWMAC_RDES3_FD | DWMAC_RDES3_LD) && !(des3 & DWMAC_RDES3_ES))
         {
             ULONG length = des3 & DWMAC_RDES3_LEN_MASK;
 
-            if (length > DWMAC_BUFSIZE)
-                length = DWMAC_BUFSIZE;
+            if (length > unit->dwu_BufSize)
+                length = unit->dwu_BufSize;
 
             if (length >= ETH_HEADERSIZE)
                 DWMAC_RXPacket(base, unit, (struct eth_frame *)buf, length);
@@ -421,7 +422,7 @@ static AROS_INTH1(DWMAC_TXIntF, struct DWMACUnit *, unit)
         ULONG next = (slot + 1) % DWMAC_TXDESC;
         volatile struct dwmac_desc *desc =
             (volatile struct dwmac_desc *)&unit->dwu_TXDesc[slot];
-        UBYTE *buffer = unit->dwu_TXBuf + slot * DWMAC_BUFSIZE;
+        UBYTE *buffer = unit->dwu_TXBuf + slot * unit->dwu_BufSize;
         struct IOSana2Req *request;
         struct Opener *opener;
         ULONG data_size, packet_size, wire_error = 0;
@@ -615,9 +616,20 @@ void DWMAC_GoOnline(struct DWMACBase *base, struct DWMACUnit *unit)
     DWMAC_Write(hw, DWMAC_MAC_PKT_FILTER, filter);
 
     dwmac_setspeed(hw, unit->dwu_SpeedMbps, unit->dwu_FullDuplex);
-    DWMAC_Write(hw, DWMAC_MAC_CONFIG,
-                DWMAC_Read(hw, DWMAC_MAC_CONFIG) | DWMAC_CONFIG_ACS |
-                DWMAC_CONFIG_CST | DWMAC_CONFIG_TE | DWMAC_CONFIG_RE);
+    {
+        ULONG cfg = DWMAC_Read(hw, DWMAC_MAC_CONFIG) | DWMAC_CONFIG_ACS |
+                    DWMAC_CONFIG_CST | DWMAC_CONFIG_TE | DWMAC_CONFIG_RE;
+        /*
+         * For a jumbo MTU, JE lifts the giant-packet limit to 9018 bytes and
+         * JD/WD stop the transmit-jabber and receive-watchdog timers from
+         * cutting an oversized frame short.  Cleared for a standard MTU.
+         */
+        if (unit->dwu_MTU > ETH_MTU)
+            cfg |= DWMAC_CONFIG_JE | DWMAC_CONFIG_JD | DWMAC_CONFIG_WD;
+        else
+            cfg &= ~(DWMAC_CONFIG_JE | DWMAC_CONFIG_JD | DWMAC_CONFIG_WD);
+        DWMAC_Write(hw, DWMAC_MAC_CONFIG, cfg);
+    }
 
     DWMAC_Write(hw, DWMAC_DMA_CH0_INT_ENABLE,
                 DWMAC_DMA_INT_NIE | DWMAC_DMA_INT_AIE | DWMAC_DMA_INT_RIE |
@@ -713,7 +725,7 @@ static void DWMAC_InitRings(struct DWMACUnit *unit)
 
     for (i = 0; i < DWMAC_RXDESC; i++)
     {
-        IPTR buf = (IPTR)(unit->dwu_RXBuf + i * DWMAC_BUFSIZE);
+        IPTR buf = (IPTR)(unit->dwu_RXBuf + i * unit->dwu_BufSize);
 
         unit->dwu_RXDesc[i].des0 = (ULONG)buf;
         unit->dwu_RXDesc[i].des1 = (ULONG)((UQUAD)buf >> 32);
@@ -734,7 +746,7 @@ static void DWMAC_InitRings(struct DWMACUnit *unit)
                 (8 << DWMAC_DMA_TX_PBL_SHIFT) | DWMAC_DMA_TX_OSF);
     DWMAC_Write(hw, DWMAC_DMA_CH0_RX_CONTROL,
                 (8 << DWMAC_DMA_RX_PBL_SHIFT) |
-                (DWMAC_BUFSIZE << DWMAC_DMA_RX_RBSZ_SHIFT));
+                (unit->dwu_BufSize << DWMAC_DMA_RX_RBSZ_SHIFT));
 
     DWMAC_Write(hw, DWMAC_DMA_CH0_TXDESC_HI,
                 (ULONG)((UQUAD)(IPTR)unit->dwu_TXDesc >> 32));
@@ -902,6 +914,83 @@ static BOOL dwmac_validmac(const UBYTE *addr)
     return (bits != 0) && ((addr[0] & 0x1) == 0);
 }
 
+/*
+ * Read the interface MTU once, at unit creation, from
+ * ENV:SYS/Net/dwmac/unit0/MTU (there is only ever unit 0 per controller).
+ * Absent or out-of-range values leave the standard 1500-byte MTU in place.
+ * The value drives the advertised MTU, the transmit size limit, and the
+ * ring buffer size, so it must be settled before the buffers are allocated.
+ */
+static void DWMAC_ConfigMTU(struct DWMACUnit *unit)
+{
+    ULONG mtu = ETH_MTU;
+    struct Library *DOSBase;
+
+    if ((DOSBase = OpenLibrary((CONST_STRPTR)"dos.library", 36)) != NULL)
+    {
+        char value[16];
+
+        if (GetVar((CONST_STRPTR)DWMAC_ENV_MTU_PATH, value, sizeof(value),
+                   LV_VAR) > 0)
+        {
+            LONG v = 0;
+            if (StrToLong(value, &v) > 0 && v >= 576)
+                mtu = (ULONG)v;
+            else
+            {
+                D(bug("[dwmac] ignoring out-of-range %s='%s'\n",
+                      DWMAC_ENV_MTU_PATH, value);)
+            }
+        }
+        CloseLibrary(DOSBase);
+    }
+
+    if (mtu > DWMAC_MAX_MTU)
+    {
+        D(bug("[dwmac] MTU %lu exceeds maximum %lu - clamping\n",
+              (unsigned long)mtu, (unsigned long)DWMAC_MAX_MTU);)
+        mtu = DWMAC_MAX_MTU;
+    }
+
+    /*
+     * Store-and-forward (§DWMAC_HWInit) needs the whole frame to fit the MTL
+     * FIFO, so a jumbo MTU is only honoured up to what the smaller of the
+     * TX/RX FIFOs (from HW_FEATURE1) can buffer.  The standard MTU always
+     * fits and is never clamped below.
+     */
+    {
+        ULONG feat1 = DWMAC_Read(unit->dwu_HW, DWMAC_MAC_HW_FEATURE1);
+        ULONG txf   = 128UL << DWMAC_HWFEAT1_TXFIFO(feat1);
+        ULONG rxf   = 128UL << DWMAC_HWFEAT1_RXFIFO(feat1);
+        ULONG fifo  = (txf < rxf) ? txf : rxf;
+
+        if (mtu + ETH_HEADERSIZE + ETH_CRCSIZE > fifo)
+        {
+            ULONG cap = (fifo > ETH_HEADERSIZE + ETH_CRCSIZE)
+                        ? fifo - ETH_HEADERSIZE - ETH_CRCSIZE : ETH_MTU;
+            if (cap < ETH_MTU)
+                cap = ETH_MTU;
+            if (mtu > cap)
+            {
+                D(bug("[dwmac] MTU %lu exceeds FIFO capacity %lu - "
+                      "clamping to %lu\n", (unsigned long)mtu,
+                      (unsigned long)fifo, (unsigned long)cap);)
+                mtu = cap;
+            }
+        }
+    }
+
+    unit->dwu_MTU      = mtu;
+    unit->dwu_FrameMax = mtu + ETH_HEADERSIZE + ETH_CRCSIZE;
+    /* One whole frame per buffer, rounded up to a 64-byte cache line (also
+     * satisfies the RX DMA buffer-size alignment). */
+    unit->dwu_BufSize  = (unit->dwu_FrameMax + 63) & ~63UL;
+
+    D(bug("[dwmac] MTU %lu, frame_max %lu, buffer %lu\n",
+          (unsigned long)unit->dwu_MTU, (unsigned long)unit->dwu_FrameMax,
+          (unsigned long)unit->dwu_BufSize);)
+}
+
 struct DWMACUnit *DWMAC_CreateUnit(struct DWMACBase *base)
 {
     struct DWMACUnit *unit;
@@ -948,11 +1037,14 @@ struct DWMACUnit *DWMAC_CreateUnit(struct DWMACBase *base)
         port->mp_SigTask = &unit->dwu_TXInt;
     }
 
+    DWMAC_ConfigMTU(unit);
+
     unit->dwu_DescMemSize =
         (DWMAC_TXDESC + DWMAC_RXDESC) * sizeof(struct dwmac_desc) + 63;
     unit->dwu_DescMem = AllocMem(unit->dwu_DescMemSize,
                                  MEMF_PUBLIC | MEMF_CLEAR);
-    unit->dwu_BufMemSize = (DWMAC_TXDESC + DWMAC_RXDESC) * DWMAC_BUFSIZE + 63;
+    unit->dwu_BufMemSize =
+        (DWMAC_TXDESC + DWMAC_RXDESC) * unit->dwu_BufSize + 63;
     unit->dwu_BufMem = AllocMem(unit->dwu_BufMemSize,
                                 MEMF_PUBLIC | MEMF_CLEAR);
     if (!unit->dwu_DescMem || !unit->dwu_BufMem)
@@ -965,7 +1057,7 @@ struct DWMACUnit *DWMAC_CreateUnit(struct DWMACBase *base)
         (((IPTR)unit->dwu_DescMem + 63) & ~63);
     unit->dwu_RXDesc = unit->dwu_TXDesc + DWMAC_TXDESC;
     unit->dwu_TXBuf = (UBYTE *)(((IPTR)unit->dwu_BufMem + 63) & ~63);
-    unit->dwu_RXBuf = unit->dwu_TXBuf + DWMAC_TXDESC * DWMAC_BUFSIZE;
+    unit->dwu_RXBuf = unit->dwu_TXBuf + DWMAC_TXDESC * unit->dwu_BufSize;
 
     /*
      * The tree's word beats the filter registers, which beat nothing -
@@ -1006,7 +1098,7 @@ struct DWMACUnit *DWMAC_CreateUnit(struct DWMACBase *base)
     unit->dwu_Sana2Info.DevQueryFormat = 0;
     unit->dwu_Sana2Info.DeviceLevel = 0;
     unit->dwu_Sana2Info.AddrFieldSize = 8 * ETH_ADDRESSSIZE;
-    unit->dwu_Sana2Info.MTU = ETH_MTU;
+    unit->dwu_Sana2Info.MTU = unit->dwu_MTU;
     unit->dwu_Sana2Info.BPS = unit->dwu_SpeedMbps * 1000000UL;
     unit->dwu_Sana2Info.HardwareType = S2WireType_Ethernet;
 
