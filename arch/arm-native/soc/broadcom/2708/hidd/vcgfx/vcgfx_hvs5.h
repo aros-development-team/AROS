@@ -114,12 +114,11 @@
 #define HVS5_PV_HDMI_IRQ    (32 + 110)
 #define HVS5_PV_H_PIXELS_PER_CLK 2
 
-/* Timing registers confirmed by the dump - eight in a row matching the
- * VideoCore IV map, which is why the interrupt pair is assumed to sit
- * where it did there as well. Unconfirmed: the dump only reached +0x1c.
- * A wrong guess costs nothing, because the probe in vcgfx_hvs5.c arms one
- * bit at a time and counts deliveries, so silence just leaves flips
- * unpaced. */
+/* Confirmed against the live PV4: the timing registers match the
+ * VideoCore IV map, and so does the interrupt pair - +0x24 and +0x28 both
+ * read zero on an unused, masked source while +0x2c carries status
+ * (0x00000c44). The probe in vcgfx_hvs5.c still measures which bit runs
+ * at frame rate, because the documented numbering was wrong there. */
 #define HVS5_PV_CONTROL     0x00
 #define HVS5_PV_VERTA       0x14
 #define HVS5_PV_VERTB       0x18

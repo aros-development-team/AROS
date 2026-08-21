@@ -432,9 +432,12 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
         }
 
         if (st->hvs_Active)
-            bug("[VC4HVS5] takeover: ACTIVE - %u words copied %u -> %u, "
-                "fb plane +%u ptr +%u\n", (unsigned)len, (unsigned)head,
-                (unsigned)base, (unsigned)fb_entry, (unsigned)fb_ptr);
+            bug("[VC4HVS5] takeover: ACTIVE - %u words at %u (from %u), "
+                "fb plane ptr +%u, cursor +%u\n",
+                (unsigned)(fb_words + (st->hvs_CurOff ? HVS5_CURSOR_WORDS : 0)
+                           + 1),
+                (unsigned)base, (unsigned)head, (unsigned)fb_ptr,
+                (unsigned)st->hvs_CurOff);
         else
             bug("[VC4HVS5] takeover: never latched, firmware restored\n");
     }
@@ -522,7 +525,7 @@ void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd)
  * PixelValve that is driving a live display, and a wrong offset there
  * could land in a timing register.
  */
-#define VC4_HVS5_VSYNC_IRQ  0
+#define VC4_HVS5_VSYNC_IRQ  1
 
 /* ~3 frames: enough for a flip to latch, bounded so a dead counter
  * degrades to unpaced instead of stalling the presenter. */
