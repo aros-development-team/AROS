@@ -10,6 +10,19 @@
 #include <aros/types/spinlock_s.h>
 #endif
 
+/*
+ * Every path that touches ss_QueueCount, ss_NestCount, ss_Owner or
+ * ss_WaitQueue takes this lock, so they exclude each other across cores.
+ */
+#if defined(__AROSEXEC_SMP__)
+#define SEM_LOCK(ss)    EXEC_SPINLOCK_LOCK(&(ss)->ss_MultipleLink.sr_SpinLock, \
+                                           NULL, SPINLOCK_MODE_WRITE)
+#define SEM_UNLOCK(ss)  EXEC_SPINLOCK_UNLOCK(&(ss)->ss_MultipleLink.sr_SpinLock)
+#else
+#define SEM_LOCK(ss)    do { } while (0)
+#define SEM_UNLOCK(ss)  do { } while (0)
+#endif
+
 struct TraceLocation;
 
 BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller, struct ExecBase *SysBase);

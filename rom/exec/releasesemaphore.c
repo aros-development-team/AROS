@@ -71,8 +71,14 @@
     if (!CheckSemaphore(sigSem, &tp, SysBase))
         return;
 
-    /* Protect the semaphore structure from multiple access. */
+    /*
+     * Forbid() only holds off this core, so the lock is what keeps the
+     * wait-queue walk and the grant atomic against other cores.
+     */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&sigSem->ss_MultipleLink.sr_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
     /* Release one on the nest count */
     sigSem->ss_NestCount--;
@@ -198,6 +204,9 @@
         Alert( AN_SemCorrupt );
     }
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&sigSem->ss_MultipleLink.sr_SpinLock);
+#endif
     /* All done. */
     Permit();
 

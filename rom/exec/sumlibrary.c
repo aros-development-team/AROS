@@ -8,6 +8,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -50,6 +52,9 @@
 
     /* Arbitrate for library base */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&library->lib_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
     /*
         If the library checksumming is already in progress or if the
@@ -57,37 +62,24 @@
     */
     if(library->lib_Flags&LIBF_SUMUSED&&!(library->lib_Flags&LIBF_SUMMING))
     {
-        /* As long as the library is marked as changed */
-        do
-        {
-            ULONG *lp;
+        ULONG *lp;
 
-            /* Memorize library flags */
-            oldflags=library->lib_Flags;
+        /* Memorize library flags */
+        oldflags=library->lib_Flags;
+        library->lib_Flags&=~LIBF_CHANGED;
 
-            /* Tell other tasks: Summing in progress */
-            library->lib_Flags|=LIBF_SUMMING;
-            library->lib_Flags&=~LIBF_CHANGED;
+        /*
+         * Keep the lock across the sum: releasing it would let another
+         * core expunge the library while we read its jumptable.
+         */
 
-            /* As long as the summing goes multitasking may be permitted. */
-            Permit();
-
-            /* Build checksum. Note: library bases are LONG aligned */
-            sum=0;
-            /* Get start of jumptable */
-            lp=(ULONG *)((UBYTE *)library+library->lib_NegSize);
-            /* And sum it up */
-            while(lp<(ULONG *)library)
-                sum+=*lp++;
-
-            /* Summing complete. Arbitrate again. */
-            Forbid();
-
-            /* Remove summing flag */
-            library->lib_Flags&=~LIBF_SUMMING;
-
-            /* Do it again if the library changed while summing. */
-        }while(library->lib_Flags&LIBF_CHANGED);
+        /* Build checksum. Note: library bases are LONG aligned */
+        sum=0;
+        /* Get start of jumptable */
+        lp=(ULONG *)((UBYTE *)library+library->lib_NegSize);
+        /* And sum it up */
+        while(lp<(ULONG *)library)
+            sum+=*lp++;
 
         /*
             Alert() if the library wasn't marked as changed and if the
@@ -100,6 +92,9 @@
         library->lib_Sum=sum;
     }
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&library->lib_SpinLock);
+#endif
     /* All done. */
     Permit();
     AROS_LIBFUNC_EXIT

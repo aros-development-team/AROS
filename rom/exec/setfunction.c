@@ -10,6 +10,7 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
 #include "exec_debug.h"
 
 /*****************************************************************************
@@ -76,6 +77,9 @@
         functions - but it need not be.
     */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&library->lib_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
     /* Mark the library as changed. */
     library->lib_Flags|=LIBF_CHANGED;
@@ -104,6 +108,9 @@
 #endif
 #endif
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&library->lib_SpinLock);
+#endif
     /* Arbitration is no longer needed */
     Permit();
 
