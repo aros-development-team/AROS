@@ -104,7 +104,11 @@ void ServiceTask(struct ExecBase *SysBase)
                     task->tc_State = TS_READY;
                     Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #else
+                    /* Disable() masks the FIQ that would re-enter the
+                     * scheduler locks taken below. */
+                    Disable();
                     krnSysCallReschedTask(task, TS_READY);
+                    Enable();
 #endif
                 }
                 else

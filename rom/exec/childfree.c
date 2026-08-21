@@ -49,16 +49,50 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ETask *et;
+    struct Task *ThisTask = GET_THIS_TASK;
+    struct ETask *parent, *et = NULL, *child;
 
     Forbid();
-    et = FindChild(tid);
-    if(et != NULL)
+    parent = ThisTask ? GetETask(ThisTask) : NULL;
+    if (parent)
     {
-        Remove((struct Node *)et);
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&IntETask(parent)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+        ForeachNode(&parent->et_Children, child)
+        {
+            if (child->et_UniqueID == tid)
+            {
+                et = child;
+                Remove((struct Node *)et);
+                break;
+            }
+        }
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&IntETask(parent)->iet_TaskLock);
+#endif
 
-        ExpungeETask(et);
+        if (et == NULL)
+        {
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_LOCK(&parent->et_TaskMsgPort.mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            ForeachNode(&parent->et_TaskMsgPort.mp_MsgList, child)
+            {
+                if (child->et_UniqueID == tid)
+                {
+                    et = child;
+                    Remove((struct Node *)et);
+                    break;
+                }
+            }
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(&parent->et_TaskMsgPort.mp_SpinLock);
+#endif
+        }
     }
+    if(et != NULL)
+        ExpungeETask(et);
     Permit();
     
     AROS_LIBFUNC_EXIT

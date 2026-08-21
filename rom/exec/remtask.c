@@ -55,7 +55,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct MemList *mb;
+    struct MemList *mb, *mbnext;
     struct ETask *et;
     struct Task *suicide = GET_THIS_TASK;
 
@@ -98,9 +98,19 @@
             task->tc_State = TS_REMOVED;
             Remove(&task->tc_Node);
 #else
+            /* Disable(), not Forbid(): only it masks the FIQ whose
+             * signal_hook would re-enter these same locks. */
+            Disable();
             krnSysCallReschedTask(task, TS_REMOVED);
+            Enable();
 #endif
         }
+
+#if defined(__AROSEXEC_SMP__)
+        /* Terminal now, so no new IPIs can be queued - flush the ones
+         * already in flight before any memory is freed. */
+        CancelSignalIPIs(task);
+#endif
 
         /* Delete context */
         et = GetETask(task);
@@ -159,9 +169,16 @@
              * We do this here because it's unsafe to send it to the service task:
              * by the time the service task processes it, the task structure may
              * have been freed following the return of this function.
+             *
+             * The list header may itself live in one of these MemLists, so
+             * detach the chain first rather than walking with RemHead.
              */
-            while((mb = (struct MemList *) RemHead(&task->tc_MemEntry)) != NULL)
+            task->tc_MemEntry.lh_TailPred->ln_Succ = NULL;
+            for (mb = (struct MemList *)task->tc_MemEntry.lh_Head; mb; mb = mbnext)
+            {
+                mbnext = (struct MemList *)mb->ml_Node.ln_Succ;
                 FreeEntry(mb);
+            }
         }
     }
 
