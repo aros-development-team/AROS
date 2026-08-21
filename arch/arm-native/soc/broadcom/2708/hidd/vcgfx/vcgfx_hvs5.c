@@ -320,14 +320,23 @@ static ULONG hvs5_list_length(ULONG head)
     return 0;
 }
 
-/* Prime the constant words of an authored plane. [4] and [6] are context
- * the HVS fills in during scanout, so they start clear. */
+/*
+ * Lay down a whole plane entry, invalid but well formed. Every word
+ * matters, not just the constant ones: a plane that is not currently
+ * shown never gets its position or pointer written, and list RAM is full
+ * of stale entries, so anything left unwritten hands the HVS a garbage
+ * address and size behind a clear VALID bit. [4] and [6] are context the
+ * HVS fills in during scanout.
+ */
 static void hvs5_init_plane(ULONG base, ULONG alpha_mode)
 {
+    ULONG i;
+
+    for (i = 0; i < HVS5_PLANE_WORDS; i++)
+        hvs5_dl_wr(base + i, 0);
+
     hvs5_dl_wr(base + 0, HVS5_CTL0_CURSOR & ~HVS5_CTL0_VALID);
     hvs5_dl_wr(base + 2, alpha_mode);
-    hvs5_dl_wr(base + 4, 0);
-    hvs5_dl_wr(base + 6, 0);
 }
 
 /*
