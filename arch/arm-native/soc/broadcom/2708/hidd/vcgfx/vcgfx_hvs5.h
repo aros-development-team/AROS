@@ -56,7 +56,7 @@
  * entry kept in POS2). The observed framebuffer entry:
  *
  *   [0] CTL0   0x4800d807  VALID | size 8 | RGBA8888
- *   [1] POS0   0x00000000  dest x/y
+ *   [1] POS0   0x00000000  dest y 31:16 | x 15:0
  *   [2]        0x4000fff0  alpha mode 31:30
  *   [3] POS2   0x04000500  height 31:16 | width 11:0  (1280x1024)
  *   [4]        0x014f0000  context, HVS-written
@@ -67,7 +67,27 @@
  * The tail is anchored to the end of the entry exactly as on VideoCore
  * IV, so one rule covers both: PTR0 at [size-3], PTRCTX at [size-2],
  * PITCH at [size-1]. That is what a takeover needs - inherit the entry
- * verbatim and rewrite PTR0 alone. */
+ * verbatim and rewrite PTR0 alone.
+ *
+ * POS0 packs into 16-bit halves like POS2, NOT into VideoCore IV's
+ * 12-bit fields: a cursor plane read back as 0x02000283 with the pointer
+ * near the middle of a 1280x1024 screen decodes to x 643, y 512, where
+ * the VC4 packing would have claimed y 0. Widening these fields is
+ * presumably why the entry grew a word. */
+#define HVS5_POS0(x, y)     ((((ULONG)(y) & 0xffff) << 16) \
+                             | ((ULONG)(x) & 0xffff))
+#define HVS5_POS2(w, h)     ((((ULONG)(h) & 0xffff) << 16) \
+                             | ((ULONG)(w) & 0xffff))
+
+/* Template for a cursor plane of our own, taken field for field from the
+ * firmware's. Word [2] selects how the plane blends: the framebuffer used
+ * 0x4000fff0 and the cursor 0x0000fff0, so bit 30 is fixed alpha against
+ * per-pixel. [4] and [6] are context the HVS writes itself and start at
+ * zero, as they do on VideoCore IV. */
+#define HVS5_CURSOR_WORDS   8
+#define HVS5_CTL0_CURSOR    0x4800d807
+#define HVS5_ALPHA_PERPIXEL 0x0000fff0
+#define HVS5_ALPHA_FIXED    0x4000fff0
 #define HVS5_CTL0_END           (1UL << 31)
 #define HVS5_CTL0_VALID         (1UL << 30)
 #define HVS5_CTL0_SIZE_SHIFT    24
