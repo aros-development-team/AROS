@@ -2,8 +2,8 @@
 #MM- test : test-smp
 #MM- test-quick : test-smp-quick
 #
-#MM- test-smp : test-smp-stress test-smp-trace test-smp-smp test-smp-smp-smallpt test-smp-preempt test-smp-sigrace
-#MM- test-smp-quick : test-smp-stress-quick test-smp-trace-quick test-smp-smp-quick test-smp-smp-smallpt-quick test-smp-preempt-quick test-smp-sigrace-quick
+#MM- test-smp : test-smp-stress test-smp-trace test-smp-smp test-smp-smp-smallpt test-smp-preempt test-smp-sigrace test-smp-sem test-smp-sched test-smp-doio
+#MM- test-smp-quick : test-smp-stress-quick test-smp-trace-quick test-smp-smp-quick test-smp-smp-smallpt-quick test-smp-preempt-quick test-smp-sigrace-quick test-smp-sem-quick test-smp-sched-quick test-smp-doio-quick
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -26,5 +26,17 @@ USER_CFLAGS := $(PARANOIA_CFLAGS)
 %build_prog mmake=test-smp-sigrace \
     files=smpsigrace targetdir=$(EXEDIR) \
     progname=SMP-SigRace
+
+%build_prog mmake=test-smp-sem \
+    files=smpsem targetdir=$(EXEDIR) \
+    progname=SMP-Sem
+
+%build_prog mmake=test-smp-sched \
+    files=smpsched targetdir=$(EXEDIR) \
+    progname=SMP-Sched
+
+%build_prog mmake=test-smp-doio \
+    files=smpdoio targetdir=$(EXEDIR) \
+    progname=SMP-DoIO
 
 %common
