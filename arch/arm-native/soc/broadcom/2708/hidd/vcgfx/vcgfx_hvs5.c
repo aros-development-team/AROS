@@ -359,7 +359,7 @@ static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
 
     if (ow <= 0 || oh <= 0)
     {
-        hvs5_dl_wr(base, hvs5_dl_rd(base) & ~HVS5_CTL0_VALID);
+        hvs5_dl_wr(base, HVS5_CTL0_CURSOR & ~HVS5_CTL0_VALID);
         return;
     }
 
@@ -369,7 +369,7 @@ static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
                HVS5_PTR_BUS_ALIAS | ptr);
     hvs5_dl_wr(base + HVS5_PLANE_WORDS - 1, st->hvs_OvlPitch);
 
-    hvs5_dl_wr(base, hvs5_dl_rd(base) | HVS5_CTL0_VALID);
+    hvs5_dl_wr(base, HVS5_CTL0_CURSOR);
 }
 
 /*
@@ -575,7 +575,16 @@ static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base)
 
     if (!xsd->vcsd_CurVisible || cw <= 0 || ch <= 0)
     {
-        hvs5_dl_wr(base, hvs5_dl_rd(base) & ~HVS5_CTL0_VALID);
+        /* Report the transition only: whichever of these two reasons hides
+         * the pointer, it is worth knowing which, and neither should happen
+         * while it is sitting in the middle of the screen. */
+        if (st->hvs_CurShown)
+            bug("[VC4HVS5] cursor hidden: %s, at %d,%d size %dx%d in %ux%u\n",
+                xsd->vcsd_CurVisible ? "clipped away" : "not visible",
+                (int)xsd->vcsd_CurX, (int)xsd->vcsd_CurY, (int)cw, (int)ch,
+                (unsigned)st->hvs_SrcW, (unsigned)st->hvs_SrcH);
+        st->hvs_CurShown = FALSE;
+        hvs5_dl_wr(base, HVS5_CTL0_CURSOR & ~HVS5_CTL0_VALID);
         return;
     }
 
@@ -584,8 +593,11 @@ static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base)
     hvs5_dl_wr(base + st->hvs_CurPtrOff, HVS5_PTR_BUS_ALIAS | ptr);
     hvs5_dl_wr(base + st->hvs_CurWords - 1, pitch);
 
-    /* VALID last: the HVS must never see a half-written entry. */
-    hvs5_dl_wr(base, hvs5_dl_rd(base) | HVS5_CTL0_VALID);
+    /* VALID last: the HVS must never see a half-written entry. Written
+     * whole rather than OR-ed in - CTL0 is a word the HVS itself touches
+     * during scanout, so a read-modify-write races with it. */
+    hvs5_dl_wr(base, HVS5_CTL0_CURSOR);
+    st->hvs_CurShown = TRUE;
 }
 
 BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,

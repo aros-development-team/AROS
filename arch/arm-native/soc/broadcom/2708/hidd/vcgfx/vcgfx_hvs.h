@@ -253,6 +253,7 @@ struct vc4_hvs_state
     ULONG       hvs_CurPtrOff;          /* pointer word within that entry */
     ULONG       hvs_CurWords;           /* its length */
     BOOL        hvs_OvlUsable;          /* fb plane is plain enough to compose over */
+    BOOL        hvs_CurShown;           /* last validity written to the cursor plane */
 
     /* Zero-copy overlay plane (windowed GL): composited above the fb
      * plane, below the cursor. hvs_OvlOff = entry offset in the current
