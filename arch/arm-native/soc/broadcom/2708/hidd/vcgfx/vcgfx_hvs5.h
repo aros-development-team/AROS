@@ -84,7 +84,7 @@
  * 0x4000fff0 and the cursor 0x0000fff0, so bit 30 is fixed alpha against
  * per-pixel. [4] and [6] are context the HVS writes itself and start at
  * zero, as they do on VideoCore IV. */
-#define HVS5_CURSOR_WORDS   8
+#define HVS5_PLANE_WORDS    8
 #define HVS5_CTL0_CURSOR    0x4800d807
 #define HVS5_ALPHA_PERPIXEL 0x0000fff0
 #define HVS5_ALPHA_FIXED    0x4000fff0
@@ -168,8 +168,16 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
  * the HVS at frame start. */
 BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
 
-/* Patch the inherited cursor plane in place. No-op when the firmware had
- * no cursor plane at takeover. */
+/* Patch the cursor plane in place. No-op when there is no cursor buffer. */
 void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd);
+
+/* Show (ovl != NULL) or drop (ovl == NULL) a plane composited over the
+ * framebuffer, below the cursor - what lets the GL stack present without
+ * a blit. Returns FALSE when unavailable, and the caller blits: scaling
+ * would need the filter kernel and the wider entry that goes with it,
+ * neither of which is decoded on HVS5 yet. */
+struct vc4gfx_overlay;
+BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
+                      const struct vc4gfx_overlay *ovl);
 
 #endif /* _VIDEOCOREGFX_HVS5_H */

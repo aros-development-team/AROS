@@ -921,10 +921,8 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
     ULONG dw, dh;
     BOOL structural;
 
-    /* HVS5 inherits the firmware's list rather than authoring one, so
-     * there is nowhere to splice an overlay plane in yet. */
     if (!hvs_hw_known(xsd))
-        return FALSE;
+        return vc4_hvs5_overlay(xsd, ovl);
 
     VC4_MBOX_LOCK(xsd);
 

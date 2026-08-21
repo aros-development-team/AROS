@@ -249,10 +249,10 @@ struct vc4_hvs_state
     ULONG       hvs_ListBase;           /* head of the current authored list */
     ULONG       hvs_CurOff;             /* cursor entry offset in it, 0 = none */
 
-    /* HVS5 keeps the cursor plane the firmware built rather than
-     * authoring one, so its shape is discovered, not known. */
+    /* HVS5 authors its own planes, so their shape is recorded here. */
     ULONG       hvs_CurPtrOff;          /* pointer word within that entry */
     ULONG       hvs_CurWords;           /* its length */
+    BOOL        hvs_OvlUsable;          /* fb plane is plain enough to compose over */
 
     /* Zero-copy overlay plane (windowed GL): composited above the fb
      * plane, below the cursor. hvs_OvlOff = entry offset in the current

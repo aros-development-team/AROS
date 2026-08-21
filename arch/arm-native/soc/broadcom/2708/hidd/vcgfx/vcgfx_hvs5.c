@@ -36,7 +36,7 @@
  * node "disabled" either way. So this is a deliberate one-line opt-in for
  * a real Pi 4 bring-up session, exactly like VC4_HVS_PROBE next door.
  */
-#define VC4_HVS5_DUMP       0
+#define VC4_HVS5_DUMP       1
 
 /* Words printed either side of a framebuffer address hit. A VideoCore IV
  * plane entry was 7 words unity / 14 scaled; allow for HVS5 being wider. */
@@ -57,12 +57,13 @@ static const struct hvs5_pv hvs5_pvs[HVS5_PV_COUNT] =
 };
 
 /*
- * Phase 2 rides on the same opt-in as the dump. It writes to the HVS, so
- * on top of the QEMU abort it can disturb a working display - though only
- * transiently: any anomaly hands straight back to the firmware, and a
- * firmware list rebuild heals whatever we left behind.
+ * Owning the display list is how flips become atomic, so this is on. The
+ * cost is that QEMU's raspi4b cannot boot the result at all - it models no
+ * HVS and aborts on the first register read - but that machine is too
+ * incomplete to test against anyway. Clear this to get back to the
+ * firmware paths.
  */
-#define VC4_HVS5_TAKEOVER   0
+#define VC4_HVS5_TAKEOVER   1
 
 /*
  * Vblank pacing. Installing the handler touches no registers and the
@@ -319,6 +320,99 @@ static ULONG hvs5_list_length(ULONG head)
     return 0;
 }
 
+/* Prime the constant words of an authored plane. [4] and [6] are context
+ * the HVS fills in during scanout, so they start clear. */
+static void hvs5_init_plane(ULONG base, ULONG alpha_mode)
+{
+    hvs5_dl_wr(base + 0, HVS5_CTL0_CURSOR & ~HVS5_CTL0_VALID);
+    hvs5_dl_wr(base + 2, alpha_mode);
+    hvs5_dl_wr(base + 4, 0);
+    hvs5_dl_wr(base + 6, 0);
+}
+
+/*
+ * The overlay plane: a buffer some other producer - the GL stack - renders
+ * into, composited straight over the framebuffer instead of being blitted
+ * into it. Fixed alpha rather than per-pixel, because what GL leaves in
+ * the alpha channel is undefined.
+ */
+static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    LONG ox = st->hvs_OvlX, oy = st->hvs_OvlY;
+    LONG ow = st->hvs_OvlW, oh = st->hvs_OvlH;
+    ULONG ptr = st->hvs_OvlPhys & ~HVS5_PTR_BUS_ALIAS;
+
+    if (ox < 0) { ptr += (ULONG)(-ox) * 4;               ow += ox; ox = 0; }
+    if (oy < 0) { ptr += (ULONG)(-oy) * st->hvs_OvlPitch; oh += oy; oy = 0; }
+    if (ox + ow > (LONG)st->hvs_SrcW) ow = (LONG)st->hvs_SrcW - ox;
+    if (oy + oh > (LONG)st->hvs_SrcH) oh = (LONG)st->hvs_SrcH - oy;
+
+    if (ow <= 0 || oh <= 0)
+    {
+        hvs5_dl_wr(base, hvs5_dl_rd(base) & ~HVS5_CTL0_VALID);
+        return;
+    }
+
+    hvs5_dl_wr(base + 1, HVS5_POS0(ox, oy));
+    hvs5_dl_wr(base + 3, HVS5_POS2(ow, oh));
+    hvs5_dl_wr(base + HVS5_PLANE_WORDS - HVS5_PTROFF_FROM_END,
+               HVS5_PTR_BUS_ALIAS | ptr);
+    hvs5_dl_wr(base + HVS5_PLANE_WORDS - 1, st->hvs_OvlPitch);
+
+    hvs5_dl_wr(base, hvs5_dl_rd(base) | HVS5_CTL0_VALID);
+}
+
+/*
+ * Compose a list into the next slot: the framebuffer plane, then the
+ * overlay if one is up, then the cursor, then END. Round-robin so the
+ * slot being written is never the one the HVS is scanning.
+ *
+ * The caller must write the returned head to DISPLIST. Do that only for
+ * structural changes: the HVS applies a repoint mid-scanout, which shows
+ * as a torn frame, so steady-state updates patch the live list instead.
+ */
+static ULONG hvs5_build_list(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    ULONG base = HVS5_OWN_SLOT_BASE + HVS5_OWN_SLOT_STRIDE * st->hvs_Slot;
+    ULONG n = 0, i;
+
+    st->hvs_Slot = (st->hvs_Slot + 1) % HVS5_OWN_SLOTS;
+
+    for (i = 0; i < st->hvs_FBWords; i++)
+        hvs5_dl_wr(base + n++, st->hvs_FBEntry[i]);
+    hvs5_dl_wr(base + st->hvs_FBPtrOff, HVS5_PTR_BUS_ALIAS | st->hvs_FBPtr);
+
+    st->hvs_OvlOff = 0;
+    st->hvs_OvlWords = 0;
+    if (st->hvs_OvlActive)
+    {
+        st->hvs_OvlOff = n;
+        st->hvs_OvlWords = HVS5_PLANE_WORDS;
+        hvs5_init_plane(base + n, HVS5_ALPHA_FIXED);
+        hvs5_write_overlay(xsd, base + n);
+        n += HVS5_PLANE_WORDS;
+    }
+
+    /* Authored whenever a buffer exists, visible or not, so VALID alone
+     * carries visibility and showing the pointer never reshapes the list. */
+    st->hvs_CurOff = 0;
+    if (xsd->vcsd_CurBuf)
+    {
+        st->hvs_CurOff    = n;
+        st->hvs_CurWords  = HVS5_PLANE_WORDS;
+        st->hvs_CurPtrOff = HVS5_PLANE_WORDS - HVS5_PTROFF_FROM_END;
+        hvs5_init_plane(base + n, HVS5_ALPHA_PERPIXEL);
+        hvs5_write_cursor(xsd, base + n);
+        n += HVS5_PLANE_WORDS;
+    }
+
+    hvs5_dl_wr(base + n++, HVS5_CTL0_END);
+    st->hvs_ListBase = base;
+    return base;
+}
+
 BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
                        ULONG fb_phys, ULONG fb_pitch)
 {
@@ -358,67 +452,36 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
             return FALSE;
         }
 
-        /* Author our own list: the framebuffer plane inherited verbatim,
-         * then a cursor plane of our own, then END. The firmware's list
-         * cannot supply the cursor - whether it has such a plane at all
-         * depends on how far Intuition got before the mode was set, and
-         * both a 9-word and a 17-word list have been seen on the same
-         * board across boots. */
-        base = HVS5_OWN_SLOT_BASE + HVS5_OWN_SLOT_STRIDE * st->hvs_Slot;
-        st->hvs_Slot = (st->hvs_Slot + 1) % HVS5_OWN_SLOTS;
-
+        /* Keep the framebuffer entry, so the list can be rebuilt later
+         * without the firmware's copy still being there to read. */
+        if (fb_words > HVS_FB_ENTRY_MAX)
+        {
+            bug("[VC4HVS5] takeover: fb entry is %u words, too long\n",
+                (unsigned)fb_words);
+            return FALSE;
+        }
         for (i = 0; i < fb_words; i++)
-            hvs5_dl_wr(base + i, hvs5_dl_rd(head + fb_entry + i));
+            st->hvs_FBEntry[i] = hvs5_dl_rd(head + fb_entry + i);
 
         st->hvs_FBPtr    = fb_phys & ~HVS5_PTR_BUS_ALIAS;
         st->hvs_FBPtrOff = fb_ptr;
         st->hvs_FBWords  = fb_words;
-        st->hvs_ListBase = base;
 
-        /* The framebuffer plane covers the screen, so its POS2 is what a
-         * cursor has to be clipped against. */
+        /* The framebuffer plane covers the screen, so its POS2 is what the
+         * other planes get clipped against. */
         {
-            ULONG pos2 = hvs5_dl_rd(base + 3);
+            ULONG pos2 = st->hvs_FBEntry[3];
 
             st->hvs_SrcW = pos2 & 0xffff;
             st->hvs_SrcH = (pos2 >> 16) & 0xffff;
         }
-        hvs5_dl_wr(base + st->hvs_FBPtrOff,
-                   HVS5_PTR_BUS_ALIAS | st->hvs_FBPtr);
 
-        /* The cursor plane is always authored when there is a buffer for
-         * it, visible or not: VALID then carries visibility and the list
-         * never has to change shape again. */
-        st->hvs_CurOff = 0;
-        if (xsd->vcsd_CurBuf)
-        {
-            const ULONG *px = (const ULONG *)xsd->vcsd_CurBuf;
+        /* A framebuffer the firmware scales carries extra words we have
+         * not decoded, so refuse to compose over one. */
+        st->hvs_OvlActive = FALSE;
+        st->hvs_OvlUsable = (fb_words == HVS5_PLANE_WORDS);
 
-            st->hvs_CurOff    = fb_words;
-            st->hvs_CurWords  = HVS5_CURSOR_WORDS;
-            st->hvs_CurPtrOff = HVS5_CURSOR_WORDS - HVS5_PTROFF_FROM_END;
-
-            hvs5_dl_wr(base + st->hvs_CurOff + 0, HVS5_CTL0_CURSOR
-                                                & ~HVS5_CTL0_VALID);
-            hvs5_dl_wr(base + st->hvs_CurOff + 2, HVS5_ALPHA_PERPIXEL);
-            hvs5_dl_wr(base + st->hvs_CurOff + 4, 0);
-            hvs5_dl_wr(base + st->hvs_CurOff + 6, 0);
-
-            /* Per-pixel blending means a clear alpha byte is the whole
-             * difference between a pointer and nothing at all. */
-            bug("[VC4HVS5] cursor plane authored at +%u, visible %d, "
-                "%ux%u at %d,%d, first pixels %08x %08x %08x %08x\n",
-                (unsigned)st->hvs_CurOff, (int)xsd->vcsd_CurVisible,
-                (unsigned)xsd->vcsd_CurWidth, (unsigned)xsd->vcsd_CurHeight,
-                (int)xsd->vcsd_CurX, (int)xsd->vcsd_CurY,
-                px[0], px[1], px[2], px[3]);
-
-            hvs5_dl_wr(base + st->hvs_CurOff + HVS5_CURSOR_WORDS,
-                       HVS5_CTL0_END);
-            hvs5_write_cursor(xsd, base + st->hvs_CurOff);
-        }
-        else
-            hvs5_dl_wr(base + fb_words, HVS5_CTL0_END);
+        base = hvs5_build_list(xsd);
 
         hvs5_log_list(base);
 
@@ -446,7 +509,7 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
         if (st->hvs_Active)
             bug("[VC4HVS5] takeover: ACTIVE - %u words at %u (from %u), "
                 "fb plane ptr +%u, cursor +%u\n",
-                (unsigned)(fb_words + (st->hvs_CurOff ? HVS5_CURSOR_WORDS : 0)
+                (unsigned)(fb_words + (st->hvs_CurOff ? HVS5_PLANE_WORDS : 0)
                            + 1),
                 (unsigned)base, (unsigned)head, (unsigned)fb_ptr,
                 (unsigned)st->hvs_CurOff);
@@ -514,6 +577,66 @@ static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base)
 
     /* VALID last: the HVS must never see a half-written entry. */
     hvs5_dl_wr(base, hvs5_dl_rd(base) | HVS5_CTL0_VALID);
+}
+
+BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
+                      const struct vc4gfx_overlay *ovl)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    BOOL structural;
+
+    if (!st->hvs_Active || !st->hvs_OvlUsable)
+        return FALSE;
+
+    VC4_MBOX_LOCK(xsd);
+
+    if (!ovl)
+    {
+        if (st->hvs_OvlActive)
+        {
+            st->hvs_OvlActive = FALSE;
+            hvs5_wr(HVS5_DISPLIST(HVS5_CHANNEL_HDMI), hvs5_build_list(xsd));
+        }
+        VC4_MBOX_UNLOCK(xsd);
+        return TRUE;
+    }
+
+    /* Scaling needs the filter kernel and the extra entry words that go
+     * with it, neither of which has been decoded on HVS5 - refused, and
+     * the caller blits instead. */
+    if ((ovl->ovl_DestW && ovl->ovl_DestW != ovl->ovl_Width)
+        || (ovl->ovl_DestH && ovl->ovl_DestH != ovl->ovl_Height))
+    {
+        VC4_MBOX_UNLOCK(xsd);
+        return FALSE;
+    }
+
+    structural = !st->hvs_OvlActive || !st->hvs_OvlOff
+              || st->hvs_OvlW != ovl->ovl_Width
+              || st->hvs_OvlH != ovl->ovl_Height;
+
+    st->hvs_OvlActive = TRUE;
+    st->hvs_OvlPhys  = ovl->ovl_Phys & ~HVS5_PTR_BUS_ALIAS;
+    st->hvs_OvlPitch = ovl->ovl_Pitch;
+    st->hvs_OvlW     = ovl->ovl_Width;
+    st->hvs_OvlH     = ovl->ovl_Height;
+    st->hvs_OvlDestW = ovl->ovl_Width;
+    st->hvs_OvlDestH = ovl->ovl_Height;
+    st->hvs_OvlX     = ovl->ovl_X;
+    st->hvs_OvlY     = ovl->ovl_Y;
+
+    if (structural)
+        hvs5_wr(HVS5_DISPLIST(HVS5_CHANNEL_HDMI), hvs5_build_list(xsd));
+    else
+        hvs5_write_overlay(xsd, st->hvs_ListBase + st->hvs_OvlOff);
+
+    /* The buffer just replaced stays on screen until this latches, so
+     * pace the producer exactly like a page flip. */
+    st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+    hvs5_latch_wait(st);
+
+    VC4_MBOX_UNLOCK(xsd);
+    return TRUE;
 }
 
 void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd)
