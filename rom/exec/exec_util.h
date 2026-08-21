@@ -54,7 +54,7 @@
 
 #ifdef __riscv
 #define PC pc
-#define FP x[4]
+#define FP fp
 #define CALLER_FRAME NULL
 #endif
 
