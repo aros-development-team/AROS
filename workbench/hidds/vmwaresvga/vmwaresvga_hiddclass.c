@@ -814,6 +814,10 @@ BOOL VMWareSVGADisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *
 
     D(bug("[VMWareSVGA] %s()\n", __func__);)
 
+    /* Without a usable hardware cursor the base class renders one for us */
+    if (!data->hwCursor)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     if (msg->shape == NULL)
     {
         D(bug("[VMWareSVGA] %s: blanking cursor\n", __func__);)
@@ -875,6 +879,9 @@ BOOL VMWareSVGADisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o,
 {
     D(bug("[VMWareSVGA] %s()\n", __func__);)
 
+    if (!XSD(cl)->hwCursor)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     XSD(cl)->mouse.x = msg->x;
     XSD(cl)->mouse.y = msg->y;
 
@@ -893,6 +900,12 @@ BOOL VMWareSVGADisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o,
 VOID VMWareSVGADisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorVisible *msg)
 {
     D(bug("[VMWareSVGA] %s()\n", __func__);)
+
+    if (!XSD(cl)->hwCursor)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
 
     XSD(cl)->mouse.visible = msg->visible;
     if ((XSD(cl)->visible))
