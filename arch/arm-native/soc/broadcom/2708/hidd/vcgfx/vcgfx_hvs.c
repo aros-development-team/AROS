@@ -29,6 +29,7 @@
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
 #include "vcgfx_hvs.h"
+#include "vcgfx_hvs5.h"
 
 /* Set to 0 to silence the dump / skip the probe / leave the firmware
  * in control of the display list (kill switch) / leave the PV2 vsync
@@ -539,7 +540,7 @@ void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd)
 
     if (!hvs_hw_known(xsd))
     {
-        st->hvs_VSyncIrq = NULL;
+        vc4_hvs5_irq_init(xsd);
         return;
     }
 
@@ -659,6 +660,11 @@ static void hvs_vsync_start(struct vc4_hvs_state *st)
 #else
 void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd)
 {
+    if (!hvs_hw_known(xsd))
+    {
+        vc4_hvs5_irq_init(xsd);
+        return;
+    }
     xsd->vcsd_HVS.hvs_VSyncIrq = NULL;
 }
 #endif
@@ -671,7 +677,7 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
     st->hvs_Active = FALSE;
 
     if (!hvs_hw_known(xsd))
-        return FALSE;
+        return vc4_hvs5_takeover(xsd, fb_phys, fb_pitch);
 
 #if VC4_HVS_TAKEOVER
     {
@@ -890,6 +896,9 @@ BOOL vc4_hvs_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
 
+    if (!hvs_hw_known(xsd))
+        return vc4_hvs5_flip_page(xsd, page_phys);
+
     if (!st->hvs_Active)
         return FALSE;
 
@@ -911,6 +920,9 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
     ULONG dw, dh;
     BOOL structural;
+
+    if (!hvs_hw_known(xsd))
+        return vc4_hvs5_overlay(xsd, ovl);
 
     VC4_MBOX_LOCK(xsd);
 
@@ -1033,6 +1045,12 @@ void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd)
     BOOL present;
 
     VC4_MBOX_LOCK(xsd);
+    if (!hvs_hw_known(xsd))
+    {
+        vc4_hvs5_update_cursor(xsd);
+        VC4_MBOX_UNLOCK(xsd);
+        return;
+    }
     if (!st->hvs_Active)
     {
         VC4_MBOX_UNLOCK(xsd);
@@ -1073,8 +1091,7 @@ void vc4_hvs_dump(struct VideoCoreGfx_staticdata *xsd,
 
     if (!hvs_hw_known(xsd))
     {
-        bug("[VC4HVS] BCM2711 - HVS5 not supported yet, staying on the "
-            "firmware display\n");
+        vc4_hvs5_dump(xsd, fb_phys, fb_pitch, fb_width, fb_height);
         return;
     }
 
