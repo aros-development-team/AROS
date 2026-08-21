@@ -64,6 +64,15 @@ static const struct hvs5_pv hvs5_pvs[HVS5_PV_COUNT] =
  */
 #define VC4_HVS5_TAKEOVER   0
 
+/*
+ * Vblank pacing. Installing the handler touches no registers and the
+ * frame-rate-bit probe only runs after a takeover has succeeded, so this
+ * does not need the caution the two flags above do. Must be defined up
+ * here: the takeover below is guarded by it, and a definition further
+ * down would preprocess to 0 there and silently drop the call.
+ */
+#define VC4_HVS5_VSYNC_IRQ  1
+
 /* A 50 Hz frame is ~20ms, roughly 150k uncached register reads. */
 #define HVS5_SPIN_LATCH     5000000
 
@@ -214,6 +223,9 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
 
 static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base);
 static void hvs5_latch_wait(struct vc4_hvs_state *st);
+#if VC4_HVS5_VSYNC_IRQ
+static void hvs5_vsync_start(struct vc4_hvs_state *st);
+#endif
 
 /*
  * Locate the plane carrying a known buffer, without assuming where an
@@ -517,15 +529,6 @@ void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd)
 /* ------------------------------------------------------------------ */
 /* Phase 3: vblank pacing                                              */
 /* ------------------------------------------------------------------ */
-
-/*
- * Off until the register dump confirms where PV5 keeps INTEN and INTSTAT.
- * The timing registers matched VideoCore IV's map exactly, so the pair is
- * very likely at +0x24/+0x28, but arming an interrupt means writing to a
- * PixelValve that is driving a live display, and a wrong offset there
- * could land in a timing register.
- */
-#define VC4_HVS5_VSYNC_IRQ  1
 
 /* ~3 frames: enough for a flip to latch, bounded so a dead counter
  * degrades to unpaced instead of stalling the presenter. */
