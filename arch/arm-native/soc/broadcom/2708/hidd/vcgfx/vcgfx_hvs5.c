@@ -664,7 +664,8 @@ static void hvs5_vsync_start(struct vc4_hvs_state *st)
         bug("[VC4HVS5] vsync: nothing delivered, re-masked\n");
     }
     else
-        bug("[VC4HVS5] vsync: alive, %u ticks\n",
+        bug("[VC4HVS5] vsync: alive on INTEN=0x%03x, %u ticks\n",
+            (unsigned)st->hvs_VSyncMask,
             (unsigned)(st->hvs_VSyncCount - c0));
 }
 #else
