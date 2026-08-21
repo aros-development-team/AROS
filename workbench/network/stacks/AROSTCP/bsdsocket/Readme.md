@@ -370,7 +370,9 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   (`OpenDevice`, `S2_DEVICEQUERY`/`S2_GETSTATIONADDRESS`, buffer-management callbacks), maps
   SANA-II wire types to RFC 1573 interface types, and drives TX/RX. The interface MTU is taken from
   the device's `S2_DEVICEQUERY` rather than assumed to be 1500, so a jumbo-capable driver (tested to
-  9000) is used at its advertised size; oversize sends are rejected with `S2ERR_MTU_EXCEEDED`, and
+  9000) is used at its advertised size. It can be changed at runtime with `SIOCSIFMTU`
+  (`sana_ioctl`, bounded below by 1280 and above by that device maximum, since the driver's frame
+  buffers were sized at init). Oversize sends are rejected with `S2ERR_MTU_EXCEEDED`, and
   the mbuf cap is grown for the MTU (§3.3). Transmit is **decoupled** from the caller: instead of
   issuing a SANA-II write inline, `sana_output` enqueues the packet on `if_snd` and `sana_start`
   feeds queued packets into the pool of write requests as earlier ones complete, so a burst of sends

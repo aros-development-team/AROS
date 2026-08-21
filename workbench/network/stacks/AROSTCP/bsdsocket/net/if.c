@@ -617,6 +617,15 @@ caddr_t data;
         ifr->ifr_mtu = ifp->if_mtu;
         break;
 
+    case SIOCSIFMTU:
+        /*
+         * Only the driver knows the frame size its buffers were sized
+         * for, so it validates and applies the new MTU (see sana_ioctl).
+         */
+        if(ifp->if_ioctl == 0)
+            return (EOPNOTSUPP);
+        return ((*ifp->if_ioctl)(ifp, cmd, data));
+
     case SIOCGIFHWADDR: {
         struct ifaddr *ifa_link;
         struct sockaddr_dl *sdl = NULL;

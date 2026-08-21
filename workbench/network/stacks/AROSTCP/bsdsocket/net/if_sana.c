@@ -619,6 +619,25 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
         }
         break;
 
+    case SIOCSIFMTU:		/* Set Interface MTU */
+        /*
+         * The frame buffers were sized for ss_maxmtu (the MTU the device
+         * was configured with at init, from S2_DEVICEQUERY), so the MTU
+         * may be lowered freely but never raised above that ceiling.  The
+         * floor is 1280, the IPv6 minimum, so both address families keep
+         * working at any accepted value.  mb_autosize (grow-only) keeps
+         * the cluster pool adequate.
+         */
+        D(bug("[AROSTCP:SANA] %s: SIOCSIFMTU %ld (max %ld)\n", __func__,
+              (long)ifr->ifr_mtu, (long)ssc->ss_maxmtu));
+        if(ifr->ifr_mtu < 1280 || ifr->ifr_mtu > ssc->ss_maxmtu)
+            error = EINVAL;
+        else {
+            ssc->ss_if.if_mtu = ifr->ifr_mtu;
+            mb_autosize(ifr->ifr_mtu);
+        }
+        break;
+
     /*
      * Set interface address (and mark interface up).
      */
