@@ -530,10 +530,22 @@ void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd)
 /* Phase 3: vblank pacing                                              */
 /* ------------------------------------------------------------------ */
 
-/* ~3 frames: enough for a flip to latch, bounded so a dead counter
- * degrades to unpaced instead of stalling the presenter. */
-#define HVS5_SPIN_FLIP      500000
-#define HVS5_SPIN_PROBEBIT  100000
+/*
+ * Timings are wall clock, read off the 1 MHz system timer, not spin
+ * counts. The VideoCore IV probe counted uncached register reads, and a
+ * Pi 4 gets through 100000 of them in about a millisecond - enough to see
+ * the line-rate sources but not one whole frame, so the ratio test gave
+ * up. The same mistake would have left the flip wait timing out well
+ * inside a single 60 Hz frame.
+ */
+#define HVS5_PROBE_US       100000  /* per bit: ~6 frames, ~6400 lines */
+#define HVS5_VERIFY_US      200000  /* long enough for the 5 ticks below */
+#define HVS5_FLIP_US        50000   /* ~3 frames, then give up on pacing */
+
+static inline ULONG hvs5_now_us(void)
+{
+    return AROS_LE2LONG(*(volatile ULONG *)SYSTIMER_CLO);
+}
 
 static inline void pv_wr(ULONG base_off, ULONG offset, ULONG value)
 {
@@ -578,7 +590,7 @@ static void hvs5_vsync_start(struct vc4_hvs_state *st)
     ULONG vertb = pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_VERTB);
     ULONG vtot = (verta & 0xffff) + (verta >> 16)
                + (vertb & 0xffff) + (vertb >> 16);
-    ULONG rate[10], line_max = 0, expect, c0, i, b;
+    ULONG rate[10], line_max = 0, expect, c0, b, start;
 
     if (!st->hvs_VSyncIrq)
         return;
@@ -593,8 +605,9 @@ static void hvs5_vsync_start(struct vc4_hvs_state *st)
             st->hvs_VSyncMask = 1UL << b;       /* handler counts this bit */
             pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
             pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, 1UL << b);
-            for (i = 0; i < HVS5_SPIN_PROBEBIT; i++)
-                (void)pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_STAT);  /* pace */
+            start = hvs5_now_us();
+            while ((hvs5_now_us() - start) < HVS5_PROBE_US)
+                ;
             pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, 0);
             pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
             rate[b] = st->hvs_VSyncCount - c0;
@@ -639,9 +652,9 @@ static void hvs5_vsync_start(struct vc4_hvs_state *st)
     pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, st->hvs_VSyncMask);
 
     c0 = st->hvs_VSyncCount;
-    for (i = 0; i < HVS5_SPIN_LATCH; i++)
+    start = hvs5_now_us();
+    while ((hvs5_now_us() - start) < HVS5_VERIFY_US)
     {
-        (void)pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_STAT);
         if (st->hvs_VSyncCount >= c0 + 5)
             break;
     }
@@ -674,13 +687,12 @@ static void hvs5_latch_wait(struct vc4_hvs_state *st)
     if (st->hvs_VSyncIrq && st->hvs_VSyncMask
         && (pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN) & st->hvs_VSyncMask))
     {
-        ULONG i;
+        ULONG start = hvs5_now_us();
 
-        for (i = 0; i < HVS5_SPIN_FLIP; i++)
+        while ((LONG)(st->hvs_VSyncCount - st->hvs_FlipArmed) < 0)
         {
-            if ((LONG)(st->hvs_VSyncCount - st->hvs_FlipArmed) >= 0)
+            if ((hvs5_now_us() - start) >= HVS5_FLIP_US)
                 break;
-            (void)pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_STAT);
         }
     }
 #else
