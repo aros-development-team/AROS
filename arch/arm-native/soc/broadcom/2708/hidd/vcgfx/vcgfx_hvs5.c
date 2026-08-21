@@ -1,20 +1,25 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: BCM2711 HVS5 read-only bring-up dump.
+    Desc: BCM2711 display: HVS5 display lists and PixelValve vblank.
 
-    Phase 1 of VideoCore VI display support. Nothing here writes to the
-    hardware: the firmware keeps driving the display throughout, and the
-    point is only to learn the HVS5 display list layout the way the
-    VideoCore IV one was learned - by decoding a live firmware-built list
-    rather than assuming a format.
+    HVS5, not HVS6: the compositor block carries its own revision number,
+    which is not the VideoCore generation. A Pi 4 is VideoCore VI with an
+    HVS5 and a V3D 4.2, where a Pi 3 is VideoCore IV with an HVS4 and a
+    V3D 2.1 - the numbers lining up there is a coincidence. The identity
+    register reads the same 0x64647276 on both, so it does not tell them
+    apart; HVS5 is simply the established name for this block.
 
-    The trick that makes that possible without knowing the layout: the
-    framebuffer address is already known from FBALLOC, so scanning the
-    register window for it finds both where the display list RAM lives and
-    where the plane entry keeps its pointer. Everything phase 2 needs
-    (entry length, the pointer's offset within it, which channel is live)
-    falls out of the words printed around each hit.
+    The layout it drives was measured, not assumed. vc4_hvs5_dump() finds
+    the display list by searching the register window for the framebuffer
+    address FBALLOC already reported, and everything else - entry length,
+    where the pointer sits inside an entry, which channel is live, how
+    POS0 packs - was read out of a live firmware-built list on real
+    hardware. See vcgfx_hvs5.h for what came out of it.
+
+    From there the driver owns the list: it inherits the framebuffer plane
+    verbatim, authors its own cursor and overlay planes, and paces flips
+    off the PixelValve interrupt.
 */
 
 #define DEBUG 0

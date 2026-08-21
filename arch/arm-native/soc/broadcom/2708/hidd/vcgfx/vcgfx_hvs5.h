@@ -3,13 +3,15 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: BCM2711 (VideoCore VI) HVS5 and PixelValve addresses.
+    Desc: BCM2711 HVS5 and PixelValve addresses and display list layout.
 
-    Every address and interrupt below is read straight out of the Pi 4
+    HVS5 on a VideoCore VI: the compositor's revision number is its own,
+    not the VideoCore generation - see vcgfx_hvs5.c.
+
+    Every address and interrupt here is read straight out of the Pi 4
     firmware device tree (bcm2711-rpi-4-b.dtb), so they are plain ABI
-    facts. The register layout inside the block is NOT assumed anywhere -
-    vc4_hvs5_dump() finds the display list by searching for the known
-    framebuffer address, which is what phase 2 will be built on.
+    facts. Everything about the layout inside the block was measured on a
+    real Pi 4 rather than assumed, and says so where it matters.
 */
 
 #include <exec/types.h>
