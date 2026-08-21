@@ -7,6 +7,9 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
+#include "exec_locks.h"
+
 /*****************************************************************************
 
     NAME */
@@ -43,12 +46,11 @@
     AROS_LIBFUNC_INIT
 
     /* Arbitrate for the resource list */
-    Forbid();
+    EXEC_LOCK_LIST_WRITE_AND_FORBID(&SysBase->ResourceList);
 
     Remove((struct Node *)resource);
 
     /* All done. */
-    Permit();
+    EXEC_UNLOCK_LIST_AND_PERMIT(&SysBase->ResourceList);
     AROS_LIBFUNC_EXIT
 } /* RemResource */
-

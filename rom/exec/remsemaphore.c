@@ -46,10 +46,14 @@
 
     /* Arbitrate for the semaphore list */
     Forbid();
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->SemListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
     /* Remove the semaphore */
     Remove(&sigSem->ss_Link);
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->SemListSpinLock);
+#endif
     /* All done. */
     Permit();
     AROS_LIBFUNC_EXIT
