@@ -30,6 +30,8 @@ struct BtActionData
 
     Object *hwlist;
     Object *hwinfoobj;
+    Object *hwdevobj, *hwunitobj;   /* manual "add radio": HCI device name + unit */
+    Object *bt_hwadd, *bt_hwremove;
 
     Object *devlist;
     Object *bt_adddev, *bt_register, *bt_unregister, *bt_pair;
@@ -94,6 +96,8 @@ struct BtActionData
 #define MUIM_BtA_AddDevice    (TAGBASE_BtA | 0x17)
 #define MUIM_BtA_DevInfo      (TAGBASE_BtA | 0x18)
 #define MUIM_BtA_SaveLog      (TAGBASE_BtA | 0x19)
+#define MUIM_BtA_HwAdd        (TAGBASE_BtA | 0x1a)
+#define MUIM_BtA_HwRemove     (TAGBASE_BtA | 0x1b)
 
 struct MUIP_BtA_Reply { STACKED ULONG MethodID; STACKED IPTR yes; };
 #define MUIM_BtA_PairReply    (TAGBASE_BtA | 0x16)

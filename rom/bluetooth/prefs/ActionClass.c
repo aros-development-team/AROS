@@ -138,6 +138,52 @@ static void SetStatus(struct BtActionData *data, CONST_STRPTR s)
     set(data->statustxt, MUIA_Text_Contents, (IPTR)s);
 }
 
+static void RefreshHardware(struct BtActionData *data);   /* defined below */
+
+static APTR SelectedHardware(struct BtActionData *data)
+{
+    struct HWEntry *e = NULL;
+    DoMethod(data->hwlist, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &e);
+    return e ? e->bth : NULL;
+}
+
+/* Manually bring up an HCI transport at runtime - the GUI equivalent of the
+   AddBTHardware shell command (mirrors Trident's hardware panel). */
+static void DoHwAdd(struct BtActionData *data)
+{
+    STRPTR name = NULL;
+    IPTR unit = 0;
+    APTR bth;
+
+    get(data->hwdevobj, MUIA_String_Contents, &name);
+    get(data->hwunitobj, MUIA_String_Integer, &unit);
+    if(!name || !name[0]) {
+        SetStatus(data, "Enter a device driver name first.");
+        return;
+    }
+    SetStatus(data, "Adding radio...");
+    if((bth = btAddHardware(name, (ULONG)unit))) {
+        btEnumerateHardware(bth);
+        btClassScan();
+        RefreshHardware(data);
+        SetStatus(data, "Radio added.");
+    } else {
+        SetStatus(data, "Could not add that radio.");
+    }
+}
+
+static void DoHwRemove(struct BtActionData *data)
+{
+    APTR bth = SelectedHardware(data);
+    if(bth) {
+        btRemHardware(bth);
+        RefreshHardware(data);
+        SetStatus(data, "Radio removed.");
+    } else {
+        SetStatus(data, "Select a radio to remove.");
+    }
+}
+
 /* *** refresh *** */
 
 /* pick a device-class icon from the classic Class-of-Device or the LE Appearance */
@@ -549,8 +595,29 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                     Child, Label("Bluetooth radios in the system:"),
                     Child, LISTVIEW(data->hwlist, &data->hwhook, "BAR,BAR,BAR,BAR,"),
                     Child, HGroup,
+                        Child, Label("Driver:"),
+                        Child, PopaslObject,
+                            MUIA_Popstring_String, data->hwdevobj = StringObject,
+                                StringFrame,
+                                MUIA_String_AdvanceOnCR, TRUE,
+                                End,
+                            MUIA_Popstring_Button, PopButton(MUII_PopFile),
+                            ASLFR_TitleText, (IPTR)"Select a Bluetooth HCI device driver",
+                            ASLFR_InitialDrawer, (IPTR)"DEVS:",
+                            End,
+                        Child, Label("Unit:"),
+                        Child, data->hwunitobj = StringObject,
+                            StringFrame,
+                            MUIA_HorizWeight, 8,
+                            MUIA_String_AdvanceOnCR, TRUE,
+                            MUIA_String_Integer, 0,
+                            MUIA_String_Accept, (IPTR)"0123456789",
+                            End,
+                        End,
+                    Child, HGroup, MUIA_Group_SameWidth, TRUE,
+                        Child, data->bt_hwadd = SimpleButton("Add"),
+                        Child, data->bt_hwremove = SimpleButton("Remove"),
                         Child, data->hwinfoobj = SimpleButton("Information"),
-                        Child, HSpace(0),
                         End,
                     End,
                 /* --- Devices --- */
@@ -668,6 +735,11 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(data->bt_forget,     MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Forget);
     DoMethod(data->bt_clsscan,    MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_ClsScan);
 
+    DoMethod(data->bt_hwadd,      MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_HwAdd);
+    DoMethod(data->bt_hwremove,   MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_HwRemove);
+    /* pressing Return in the unit field adds the radio too */
+    DoMethod(data->hwunitobj,     MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, obj, 1, MUIM_BtA_HwAdd);
+
     DoMethod(data->bt_savelog,    MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_SaveLog);
     DoMethod(data->bt_flush,      MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_FlushLog);
     DoMethod(data->bt_allon,      MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_AllOnline);
@@ -703,6 +775,8 @@ AROS_UFH3(IPTR, ActionDispatcher,
         case MUIM_BtA_Disconnect:  { APTR b = SelectedDevice(data); if(b) btDisconnectDevice(b); SetStatus(data,"Disconnected."); } return 0;
         case MUIM_BtA_Forget:      DoForget(data); return 0;
         case MUIM_BtA_ClsScan:     btClassScan(); SetStatus(data,"Class scan requested."); return 0;
+        case MUIM_BtA_HwAdd:       DoHwAdd(data); return 0;
+        case MUIM_BtA_HwRemove:    DoHwRemove(data); return 0;
         case MUIM_BtA_AddDevice:
             if(data->scanwin) { DoMethod(data->scanwin, MUIM_ScanWin_Refresh); set(data->scanwin, MUIA_Window_Open, TRUE); SetStatus(data,"Scanning for devices..."); }
             return 0;
