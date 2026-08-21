@@ -540,7 +540,7 @@ void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd)
 
     if (!hvs_hw_known(xsd))
     {
-        st->hvs_VSyncIrq = NULL;
+        vc4_hvs5_irq_init(xsd);
         return;
     }
 
@@ -660,6 +660,11 @@ static void hvs_vsync_start(struct vc4_hvs_state *st)
 #else
 void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd)
 {
+    if (!hvs_hw_known(xsd))
+    {
+        vc4_hvs5_irq_init(xsd);
+        return;
+    }
     xsd->vcsd_HVS.hvs_VSyncIrq = NULL;
 }
 #endif

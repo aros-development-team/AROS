@@ -21,6 +21,7 @@
 #include <aros/debug.h>
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
@@ -188,6 +189,15 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
             pv_rd(pv->pv_Offset, 0x0c), pv_rd(pv->pv_Offset, 0x10),
             pv_rd(pv->pv_Offset, 0x14), pv_rd(pv->pv_Offset, 0x18),
             pv_rd(pv->pv_Offset, 0x1c), (ctrl & 1) ? " ENABLED" : "");
+
+        /* +0x20 onwards, where VideoCore IV kept INTEN and INTSTAT. Read
+         * only, and the values identify them: an unused INTEN reads 0. */
+        if (ctrl & 1)
+            bug("[VC4HVS5]   +0x20..: %08x %08x %08x %08x %08x %08x %08x %08x\n",
+                pv_rd(pv->pv_Offset, 0x20), pv_rd(pv->pv_Offset, 0x24),
+                pv_rd(pv->pv_Offset, 0x28), pv_rd(pv->pv_Offset, 0x2c),
+                pv_rd(pv->pv_Offset, 0x30), pv_rd(pv->pv_Offset, 0x34),
+                pv_rd(pv->pv_Offset, 0x38), pv_rd(pv->pv_Offset, 0x3c));
     }
 #else
     (void)xsd; (void)fb_pitch; (void)fb_width; (void)fb_height;
@@ -203,6 +213,7 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
 /* ------------------------------------------------------------------ */
 
 static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base);
+static void hvs5_latch_wait(struct vc4_hvs_state *st);
 
 /*
  * Locate the plane carrying a known buffer, without assuming where an
@@ -413,6 +424,14 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
         VC4_MBOX_UNLOCK(xsd);
 
         if (st->hvs_Active)
+        {
+            st->hvs_FlipArmed = st->hvs_VSyncCount;     /* nothing pending */
+#if VC4_HVS5_VSYNC_IRQ
+            hvs5_vsync_start(st);
+#endif
+        }
+
+        if (st->hvs_Active)
             bug("[VC4HVS5] takeover: ACTIVE - %u words copied %u -> %u, "
                 "fb plane +%u ptr +%u\n", (unsigned)len, (unsigned)head,
                 (unsigned)base, (unsigned)fb_entry, (unsigned)fb_ptr);
@@ -439,6 +458,9 @@ BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
     st->hvs_FBPtr = page_phys & ~HVS5_PTR_BUS_ALIAS;
     hvs5_dl_wr(st->hvs_ListBase + st->hvs_FBPtrOff,
                HVS5_PTR_BUS_ALIAS | st->hvs_FBPtr);
+    st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+
+    hvs5_latch_wait(st);
     return TRUE;
 }
 
@@ -487,4 +509,175 @@ void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd)
         return;
 
     hvs5_write_cursor(xsd, st->hvs_ListBase + st->hvs_CurOff);
+}
+
+/* ------------------------------------------------------------------ */
+/* Phase 3: vblank pacing                                              */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Off until the register dump confirms where PV5 keeps INTEN and INTSTAT.
+ * The timing registers matched VideoCore IV's map exactly, so the pair is
+ * very likely at +0x24/+0x28, but arming an interrupt means writing to a
+ * PixelValve that is driving a live display, and a wrong offset there
+ * could land in a timing register.
+ */
+#define VC4_HVS5_VSYNC_IRQ  0
+
+/* ~3 frames: enough for a flip to latch, bounded so a dead counter
+ * degrades to unpaced instead of stalling the presenter. */
+#define HVS5_SPIN_FLIP      500000
+#define HVS5_SPIN_PROBEBIT  100000
+
+static inline void pv_wr(ULONG base_off, ULONG offset, ULONG value)
+{
+    *(volatile ULONG *)(ARM_PERIIOBASE + base_off + offset) = value;
+}
+
+#if VC4_HVS5_VSYNC_IRQ
+/* IRQ context: count only, no printing. The line is shared with PV1,
+ * which is disabled and masked, so a status of zero is not ours. */
+static void hvs5_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
+{
+    ULONG stat = pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT);
+
+    if (stat)
+    {
+        pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, stat);   /* W1C */
+        if (stat & st->hvs_VSyncMask)
+            st->hvs_VSyncCount++;
+    }
+}
+
+void vc4_hvs5_irq_init(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    st->hvs_VSyncIrq = KrnAddIRQHandler(HVS5_PV_HDMI_IRQ, hvs5_vsync_irq,
+                                        st, SysBase);
+    if (!st->hvs_VSyncIrq)
+        bug("[VC4HVS5] vsync: KrnAddIRQHandler failed\n");
+}
+
+/*
+ * Find the per-frame interrupt bit by measurement rather than by
+ * documentation, which was wrong on VideoCore IV: arm one bit alone for a
+ * short window and count what arrives. Line-rate sources fire about a
+ * vertical total more often than frame-rate ones, and PV_VERTA/B give
+ * that ratio, so no timer is needed.
+ */
+static void hvs5_vsync_start(struct vc4_hvs_state *st)
+{
+    ULONG verta = pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_VERTA);
+    ULONG vertb = pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_VERTB);
+    ULONG vtot = (verta & 0xffff) + (verta >> 16)
+               + (vertb & 0xffff) + (vertb >> 16);
+    ULONG rate[10], line_max = 0, expect, c0, i, b;
+
+    if (!st->hvs_VSyncIrq)
+        return;
+
+    if (!st->hvs_VSyncMask)
+    {
+        bug("[VC4HVS5] vsync: per-bit probe, vtot=%u\n", (unsigned)vtot);
+
+        for (b = 0; b < 10; b++)
+        {
+            c0 = st->hvs_VSyncCount;
+            st->hvs_VSyncMask = 1UL << b;       /* handler counts this bit */
+            pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
+            pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, 1UL << b);
+            for (i = 0; i < HVS5_SPIN_PROBEBIT; i++)
+                (void)pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_STAT);  /* pace */
+            pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, 0);
+            pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
+            rate[b] = st->hvs_VSyncCount - c0;
+            bug("[VC4HVS5] vsync: bit %u -> %u ticks\n",
+                (unsigned)b, (unsigned)rate[b]);
+        }
+        st->hvs_VSyncMask = 0;
+
+        for (b = 0; b < 10; b++)
+        {
+            if (rate[b] > line_max)
+                line_max = rate[b];
+        }
+        if (vtot == 0 || line_max < vtot / 4)
+        {
+            bug("[VC4HVS5] vsync: inconclusive (max %u) - flips stay "
+                "unpaced\n", (unsigned)line_max);
+            return;
+        }
+        expect = line_max / vtot;
+        if (expect == 0)
+            expect = 1;
+
+        for (b = 0; b < 10; b++)
+        {
+            if (rate[b] >= (expect + 1) / 2 && rate[b] <= 2 * expect + 2)
+            {
+                st->hvs_VSyncMask = 1UL << b;
+                bug("[VC4HVS5] vsync: bit %u runs at frame rate\n",
+                    (unsigned)b);
+                break;
+            }
+        }
+        if (!st->hvs_VSyncMask)
+        {
+            bug("[VC4HVS5] vsync: no frame-rate bit found\n");
+            return;
+        }
+    }
+
+    pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
+    pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, st->hvs_VSyncMask);
+
+    c0 = st->hvs_VSyncCount;
+    for (i = 0; i < HVS5_SPIN_LATCH; i++)
+    {
+        (void)pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_STAT);
+        if (st->hvs_VSyncCount >= c0 + 5)
+            break;
+    }
+    if (st->hvs_VSyncCount == c0)
+    {
+        pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, 0);
+        bug("[VC4HVS5] vsync: nothing delivered, re-masked\n");
+    }
+    else
+        bug("[VC4HVS5] vsync: alive, %u ticks\n",
+            (unsigned)(st->hvs_VSyncCount - c0));
+}
+#else
+void vc4_hvs5_irq_init(struct VideoCoreGfx_staticdata *xsd)
+{
+    xsd->vcsd_HVS.hvs_VSyncIrq = NULL;
+}
+#endif
+
+/*
+ * A page retargeted away from stays on screen until the write latches at
+ * the next frame start, and the caller starts drawing into it the moment
+ * this returns - so wait for our own latch, not the previous one. Only
+ * when the interrupt is genuinely armed, and bounded, so a dead counter
+ * degrades to unpaced rather than stalling.
+ */
+static void hvs5_latch_wait(struct vc4_hvs_state *st)
+{
+#if VC4_HVS5_VSYNC_IRQ
+    if (st->hvs_VSyncIrq && st->hvs_VSyncMask
+        && (pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN) & st->hvs_VSyncMask))
+    {
+        ULONG i;
+
+        for (i = 0; i < HVS5_SPIN_FLIP; i++)
+        {
+            if ((LONG)(st->hvs_VSyncCount - st->hvs_FlipArmed) >= 0)
+                break;
+            (void)pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_STAT);
+        }
+    }
+#else
+    (void)st;
+#endif
 }

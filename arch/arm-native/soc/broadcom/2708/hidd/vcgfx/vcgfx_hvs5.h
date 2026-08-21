@@ -110,8 +110,28 @@
  * timing exactly (hsync 112, hbp 248, hfp 48, htotal 1688). Vertical
  * fields are not scaled. Note PV1 and PV4 share GIC SPI 110. */
 #define HVS5_PV_HDMI        4
+#define HVS5_PV_HDMI_OFFSET 0x216000
 #define HVS5_PV_HDMI_IRQ    (32 + 110)
 #define HVS5_PV_H_PIXELS_PER_CLK 2
+
+/* Timing registers confirmed by the dump - eight in a row matching the
+ * VideoCore IV map, which is why the interrupt pair is assumed to sit
+ * where it did there as well. Unconfirmed: the dump only reached +0x1c.
+ * A wrong guess costs nothing, because the probe in vcgfx_hvs5.c arms one
+ * bit at a time and counts deliveries, so silence just leaves flips
+ * unpaced. */
+#define HVS5_PV_CONTROL     0x00
+#define HVS5_PV_VERTA       0x14
+#define HVS5_PV_VERTB       0x18
+#define HVS5_PV_INTEN       0x24
+#define HVS5_PV_INTSTAT     0x28
+#define HVS5_PV_STAT        0x2c
+#define HVS5_PV_INT_ALL     0x3ff
+
+/* Install the PixelValve interrupt handler, source left masked. Must run
+ * at driver init: KrnAddIRQHandler allocates in supervisor mode, and
+ * calling it mid mode-set can catch the memory lock held. */
+void vc4_hvs5_irq_init(struct VideoCoreGfx_staticdata *xsd);
 struct hvs5_pv
 {
     const char *pv_Name;
