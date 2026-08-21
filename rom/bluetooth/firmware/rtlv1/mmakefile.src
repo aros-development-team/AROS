@@ -10,7 +10,7 @@ FILES := rtlbtv1
 
 %build_module_library mmake=kernel-bluetooth-firmware-rtlv1 \
     modname=rtlbtv1 modtype=library modsuffix="fwl" \
-    moduledir=$(AROS_DEVS)/Bluetooth/FWLoaders \
+    moduledir=Devs/Bluetooth/FWLoaders \
     files="$(FILES)"
 
 %common
