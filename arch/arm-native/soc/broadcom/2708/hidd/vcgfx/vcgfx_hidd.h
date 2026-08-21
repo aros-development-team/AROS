@@ -53,7 +53,7 @@ struct VideoCoreGfx_staticdata {
 
         OOP_Class 	    	*vcsd_basebm;            /* baseclass for CreateObject */
         OOP_Class               *vcsd_basegallium;       /* baseclass for CreateObject */
-        struct Library          *vcsd_VC4GalliumLib;     /* keeps vc4gallium.hidd loaded */
+        struct Library          *vcsd_GalliumLib;        /* keeps the SoC's gallium hidd loaded */
 
         OOP_Class               *vcsd_VideoCoreGfxClass;
 	OOP_Object              *vcsd_VideoCoreGfxInstance;

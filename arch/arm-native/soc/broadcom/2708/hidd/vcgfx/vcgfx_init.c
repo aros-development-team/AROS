@@ -154,9 +154,10 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
             {
                 LIBBASE->vsd.vcsd_basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
-                /* vc4gallium.hidd lives on the FS, so it can't be opened from
-                 * InitLib (no disk yet); it loads lazily from
-                 * HIDD_Gfx_CreateObject, falling back to softpipe. */
+                /* The gallium hidd (vc4gallium or v3d, by SoC) lives on
+                 * the FS, so it can't be opened from InitLib (no disk
+                 * yet); it loads lazily from HIDD_Gfx_CreateObject,
+                 * falling back to softpipe. */
 
                 if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, TAG_DONE) == DD_OK)
                 {

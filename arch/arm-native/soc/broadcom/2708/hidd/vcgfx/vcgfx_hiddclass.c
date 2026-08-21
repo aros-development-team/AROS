@@ -718,16 +718,20 @@ OOP_Object *MNAME_DISPLAY(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHi
 
         if (XSD(cl)->vcsd_basegallium && msg->cl == XSD(cl)->vcsd_basegallium)
         {
-            /* hidd.gallium.vc4 lives on the FS; load it on first request
-             * so its OOP class registers before OOP_NewObject. */
-            if (!XSD(cl)->vcsd_VC4GalliumLib)
-                XSD(cl)->vcsd_VC4GalliumLib = OpenLibrary("vc4gallium.hidd", 0);
+            /* The display driver knows which GPU sits next to it: V3D 4.2
+             * (hidds/v3d) on the BCM2711, VideoCore IV (vc4gallium)
+             * before that. Both live on the FS, so load on first request
+             * so the OOP class registers before OOP_NewObject. */
+            CONST_STRPTR gallium_lib = XSD(cl)->vcsd_IsBCM2711
+                                     ? "v3d.hidd" : "vc4gallium.hidd";
+            CONST_STRPTR gallium_cl  = XSD(cl)->vcsd_IsBCM2711
+                                     ? "hidd.gallium.v3d" : "hidd.gallium.vc4";
 
-            if (XSD(cl)->vcsd_VC4GalliumLib)
-            {
-                /* Must match CLID_Hidd_Gallium_VC4 in vc4gallium_intern.h */
-                object = OOP_NewObject(NULL, (STRPTR)"hidd.gallium.vc4", msg->attrList);
-            }
+            if (!XSD(cl)->vcsd_GalliumLib)
+                XSD(cl)->vcsd_GalliumLib = OpenLibrary(gallium_lib, 0);
+
+            if (XSD(cl)->vcsd_GalliumLib)
+                object = OOP_NewObject(NULL, (STRPTR)gallium_cl, msg->attrList);
             /* else: object stays NULL; CreatePipe will use its softpipe fallback. */
         }
         else
