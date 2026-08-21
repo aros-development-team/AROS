@@ -61,7 +61,10 @@ int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
     InitSemaphore(&xsd->vcsd_DMALock);
 
     if ((DMABase = OpenResource("dma.resource")) == NULL)
+    {
+        bug("[VideoCoreGfx] no DMA: dma.resource missing\n");
         return FALSE;
+    }
 
     /* CB (32 bytes, 32-byte aligned) + the fill source pixel directly
      * behind it, so one cache flush covers both. */
@@ -78,8 +81,8 @@ int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
     if (!vc4_dma_addressable((IPTR)KrnVirtualToPhysical(xsd->vcsd_DMACB),
                              sizeof(struct BCM2708DMACB) + sizeof(ULONG)))
     {
-        D(bug("[VideoCoreGfx] %s: DMA CB above the 1GB alias, no DMA\n",
-            __PRETTY_FUNCTION__));
+        bug("[VideoCoreGfx] no DMA: control block at phys 0x%p is above the "
+            "1GB bus alias\n", KrnVirtualToPhysical(xsd->vcsd_DMACB));
         FreeVec(raw);
         xsd->vcsd_DMACBRaw = NULL;
         return FALSE;
@@ -87,6 +90,7 @@ int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
 
     if ((xsd->vcsd_DMAChannel = DMAAllocChannel(DMACHF_TDMODE | DMACHF_IRQ)) < 0)
     {
+        bug("[VideoCoreGfx] no DMA: no 2D-capable channel free\n");
         FreeVec(raw);
         xsd->vcsd_DMACBRaw = NULL;
         return FALSE;
@@ -118,8 +122,9 @@ int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
         }
     }
 
-    D(bug("[VideoCoreGfx] %s: DMA channel %d\n", __PRETTY_FUNCTION__,
-        (int)xsd->vcsd_DMAChannel));
+    bug("[VideoCoreGfx] DMA channel %d, CB at phys 0x%p, bounce %s\n",
+        (int)xsd->vcsd_DMAChannel, KrnVirtualToPhysical(xsd->vcsd_DMACB),
+        xsd->vcsd_DMABounce ? "ready" : "unavailable");
     return TRUE;
 }
 
@@ -128,9 +133,9 @@ int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
  * which takes on the order of 100 ms once the HVS competes for the SDRAM.
  * Budget a pessimistic 25 MB/s, capped so a wedged channel is noticed.
  *
- * 128-bit SRC_WIDTH/DEST_WIDTH would be several times faster but needs the
- * row length a multiple of 16; what the engine does with the trailing
- * partial write otherwise is unverified.
+ * A contiguous copy goes out 128 bits at a time (see vc4_dma_copy) and
+ * beats that comfortably, but the budget stays pessimistic: it only has to
+ * be generous enough that a genuinely wedged channel is still noticed.
  */
 static ULONG vc4_dma_timeout_us(ULONG bytes)
 {
@@ -189,15 +194,14 @@ static BOOL vc4_dma_run(struct VideoCoreGfx_staticdata *xsd, const char *op,
     return FALSE;
 }
 
-/*
- * 2D rectangle copy between two uncached physical buffers (FB regions).
- * bottom_up walks rows last-to-first via negative strides — required when
- * src/dest overlap with the destination below the source.
- */
-BOOL vc4_dma_copy(struct VideoCoreGfx_staticdata *xsd,
-                  ULONG src_phys, ULONG src_pitch,
-                  ULONG dst_phys, ULONG dst_pitch,
-                  ULONG width_bytes, ULONG height, BOOL bottom_up)
+/* One column band of a rectangle copy. bottom_up walks rows last-to-first
+ * via negative strides - required when src/dest overlap with the
+ * destination below the source. */
+static BOOL vc4_dma_copy_band(struct VideoCoreGfx_staticdata *xsd,
+                              ULONG src_phys, ULONG src_pitch,
+                              ULONG dst_phys, ULONG dst_pitch,
+                              ULONG width_bytes, ULONG height,
+                              BOOL bottom_up)
 {
     struct BCM2708DMACB *cb;
     LONG s_stride, d_stride;
@@ -247,6 +251,94 @@ BOOL vc4_dma_copy(struct VideoCoreGfx_staticdata *xsd,
 
     ReleaseSemaphore(&xsd->vcsd_DMALock);
     return ok;
+}
+
+/* A contiguous run: one linear transfer, so there is no per-row address
+ * arithmetic for a wide transfer to get wrong. */
+static BOOL vc4_dma_copy_linear(struct VideoCoreGfx_staticdata *xsd,
+                                ULONG src_phys, ULONG dst_phys,
+                                ULONG bytes, ULONG wide)
+{
+    struct BCM2708DMACB *cb;
+    BOOL ok;
+
+    if (bytes == 0)
+        return TRUE;
+
+    ObtainSemaphore(&xsd->vcsd_DMALock);
+
+    cb = xsd->vcsd_DMACB;
+    cb->ti = AROS_LONG2LE(DMA_TI_INTEN | DMA_TI_SRC_INC | DMA_TI_DEST_INC |
+                          DMA_TI_BURST_LENGTH(8) | wide);
+    cb->source_ad = AROS_LONG2LE(BCM2708_DMA_BUS_ADDR(src_phys));
+    cb->dest_ad   = AROS_LONG2LE(BCM2708_DMA_BUS_ADDR(dst_phys));
+    cb->txfr_len  = AROS_LONG2LE(bytes);    /* 1D: 30-bit byte count */
+    cb->stride    = 0;
+    cb->nextconbk = 0;
+    cb->reserved[0] = 0;
+    cb->reserved[1] = 0;
+
+    ok = vc4_dma_run(xsd, wide ? "copy16" : "copy4", bytes);
+
+    ReleaseSemaphore(&xsd->vcsd_DMALock);
+    return ok;
+}
+
+/*
+ * 2D rectangle copy between two uncached physical buffers (FB regions).
+ *
+ * 128-bit transfers move several times the bytes per cycle that the
+ * default 32-bit ones do, which is most of the cost of scrolling a window.
+ * They are only taken where the whole rectangle spans full rows of both
+ * buffers, though: that is one contiguous run, so it goes out as a single
+ * linear transfer with no stride at all, and the only unaligned remainders
+ * are a few bytes at each end of the run rather than of every row.
+ *
+ * Splitting a strided rectangle into columns and widening the middle was
+ * tried and is measurably faster, but it crashed the machine - a wide
+ * transfer with a non-zero stride is a combination this engine had never
+ * been asked for here. Until that is understood, anything strided stays
+ * 32-bit, which is exactly what it was before.
+ */
+BOOL vc4_dma_copy(struct VideoCoreGfx_staticdata *xsd,
+                  ULONG src_phys, ULONG src_pitch,
+                  ULONG dst_phys, ULONG dst_pitch,
+                  ULONG width_bytes, ULONG height, BOOL bottom_up)
+{
+    /* bottom_up exists to walk rows backwards over an overlap, which a
+     * linear run cannot do - but it only arises when the destination is
+     * below the source, and a terminal scrolls the other way. */
+    if (!bottom_up && width_bytes && height
+        && src_pitch == width_bytes && dst_pitch == width_bytes
+        && ((src_phys ^ dst_phys) & 15) == 0)
+    {
+        ULONG total = width_bytes * height;
+
+        if (vc4_dma_addressable(src_phys, total)
+            && vc4_dma_addressable(dst_phys, total))
+        {
+            ULONG lead = (16 - (src_phys & 15)) & 15;
+            ULONG mid;
+
+            if (lead > total)
+                lead = total;
+            mid = (total - lead) & ~15u;
+
+            if (mid)
+            {
+                return vc4_dma_copy_linear(xsd, src_phys, dst_phys, lead, 0)
+                    && vc4_dma_copy_linear(xsd, src_phys + lead,
+                                           dst_phys + lead, mid,
+                                           DMA_TI_SRC_WIDTH | DMA_TI_DEST_WIDTH)
+                    && vc4_dma_copy_linear(xsd, src_phys + lead + mid,
+                                           dst_phys + lead + mid,
+                                           total - lead - mid, 0);
+            }
+        }
+    }
+
+    return vc4_dma_copy_band(xsd, src_phys, src_pitch, dst_phys, dst_pitch,
+                             width_bytes, height, bottom_up);
 }
 
 /*
@@ -432,3 +524,4 @@ BOOL vc4_dma_fill(struct VideoCoreGfx_staticdata *xsd,
     ReleaseSemaphore(&xsd->vcsd_DMALock);
     return ok;
 }
+
