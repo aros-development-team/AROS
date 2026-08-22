@@ -224,8 +224,8 @@ static int TestSemList(void)
         ObtainSemaphoreList(&ctx.lc_List);
         ReleaseSemaphoreList(&ctx.lc_List);
     }
-    bug("[smpsem] phase 1: uncontended OK (nest=%ld queue=%ld owner=%p)\n",
-        (LONG)ctx.lc_Sem[0].ss_NestCount, (LONG)ctx.lc_Sem[0].ss_QueueCount,
+    bug("[smpsem] phase 1: uncontended OK (nest=%d queue=%d owner=%p)\n",
+        (int)ctx.lc_Sem[0].ss_NestCount, (int)ctx.lc_Sem[0].ss_QueueCount,
         ctx.lc_Sem[0].ss_Owner);
 
     w[0].w_Arg = &ctx;
@@ -258,9 +258,9 @@ static int TestSemList(void)
             ULONG *rf = (ULONG *)t[k]->tc_UnionETask.tc_ETask->et_RegFrame;
             int j;
 
-            bug("[smpsem]   task %d '%s' @%p state=%ld sigwait=%08lx sigrecvd=%08lx sigalloc=%08lx\n", k,
+            bug("[smpsem]   task %d '%s' @%p state=%d sigwait=%08lx sigrecvd=%08lx sigalloc=%08lx\n", k,
                 t[k]->tc_Node.ln_Name, t[k],
-                (LONG)t[k]->tc_State,
+                (int)t[k]->tc_State,
                 (unsigned long)t[k]->tc_SigWait,
                 (unsigned long)t[k]->tc_SigRecvd,
                 (unsigned long)t[k]->tc_SigAlloc);
@@ -282,11 +282,10 @@ static int TestSemList(void)
         {
             struct SignalSemaphore *ss = &ctx.lc_Sem[k];
 
-            bug("[smpsem]   sem %d: owner=%p queue=%ld nest=%ld waiters=%s mlink-queued=%s lockword=%08lx\n",
-                k, ss->ss_Owner, (LONG)ss->ss_QueueCount, (LONG)ss->ss_NestCount,
+            bug("[smpsem]   sem %d: owner=%p queue=%d nest=%d waiters=%s mlink-queued=%s\n",
+                k, ss->ss_Owner, (int)ss->ss_QueueCount, (int)ss->ss_NestCount,
                 (ss->ss_WaitQueue.mlh_Head->mln_Succ != NULL) ? "yes" : "no",
-                (ss->ss_MultipleLink.sr_Link.mln_Succ != NULL) ? "yes" : "no",
-                (unsigned long)*(volatile ULONG *)&ss->ss_MultipleLink.sr_SpinLock);
+                (ss->ss_MultipleLink.sr_Link.mln_Succ != NULL) ? "yes" : "no");
         }
         ok = 0;
     }
@@ -573,7 +572,7 @@ int main(void)
     if (KernelBase)
         g_NumCPUs = KrnGetCPUCount();
 
-    bug("[smpsem] start: cpus=%ld\n", (LONG)g_NumCPUs);
+    bug("[smpsem] start: cpus=%d\n", g_NumCPUs);
 
     r = TestSemList();          if (r > 0) pass++; else if (!r) fail++; else inval++;
     r = TestProcure();          if (r > 0) pass++; else if (!r) fail++; else inval++;
