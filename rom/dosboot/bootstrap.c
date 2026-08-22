@@ -181,9 +181,14 @@ BOOL dosboot_DevicePresent(struct IORequest*bootDevIO, BPTR bootDevName, ULONG b
 /* Returns TRUE if it was a BootBlock style, but couldn't
  * be booted, FALSE if not a BootBlock style, and doesn't
  * return at all on a successful boot.
+ *
+ * The boot block's init code is called after *iop and its reply
+ * port have been closed and freed. Should that code come back,
+ * both pointers are cleared so the caller does not touch them.
  */
-static BOOL dosboot_BootBlock(struct IOStdReq *io, struct BootNode *bn, struct ExpansionBase *ExpansionBase, ULONG bootblock_size)
+static BOOL dosboot_BootBlock(struct IOStdReq **iop, struct MsgPort **portp, struct BootNode *bn, struct ExpansionBase *ExpansionBase, ULONG bootblock_size)
 {
+    struct IOStdReq *io = *iop;
     VOID_FUNC init = NULL;
     UBYTE *buffer;
 
@@ -232,7 +237,9 @@ static BOOL dosboot_BootBlock(struct IOStdReq *io, struct BootNode *bn, struct E
 
        CloseDevice((struct IORequest *)io);
        DeleteIORequest((struct IORequest*)io);
-       DeleteMsgPort(((struct IORequest*)io)->io_Message.mn_ReplyPort);
+       DeleteMsgPort(*portp);
+       *iop = NULL;
+       *portp = NULL;
 
        /*
         * This is actually rt_Init calling convention for non-autoinit residents.
@@ -243,6 +250,10 @@ static BOOL dosboot_BootBlock(struct IOStdReq *io, struct BootNode *bn, struct E
         * This is needed because dos.library contains the second part of "bootable"
         * test, trying to mount a filesystem and read the volume.
         * We hope it won't do any harm for NDOS game disks.
+        *
+        * dos.library's init only returns if that second part failed (it
+        * RemTask()s itself otherwise), so landing here means the volume
+        * could not be mounted. The IORequest is already gone by now.
        */
        AROS_UFC3NR(void, init,
                  AROS_UFCA(APTR, NULL, D0),
@@ -341,7 +352,7 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                      */
                     
                     D(bug("[DOSBoot:bootstrap] %s: Attempting %b\n",__func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
-                    if (!BootNodeDeviceUnit || !dosboot_BootBlock(io, bn, ExpansionBase, bootblock_size)) {
+                    if (!BootNodeDeviceUnit || !dosboot_BootBlock(&io, &msgport, bn, ExpansionBase, bootblock_size)) {
                         if (BootNodeDeviceUnit)
                         {
                             CloseDevice((struct IORequest *)io);
@@ -361,7 +372,7 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                     }
                     else
                     {
-                        if (BootNodeDeviceUnit)
+                        if (BootNodeDeviceUnit && io)
                             CloseDevice((struct IORequest *)io);
                     }
                 }
