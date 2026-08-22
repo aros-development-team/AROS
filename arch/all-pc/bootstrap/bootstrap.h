@@ -7,6 +7,7 @@
 */
 
 #include <aros/multiboot.h>
+#include <exec/types.h>
 
 #include "support.h"
 
@@ -82,6 +83,7 @@ void bootstrap_halt(void) __attribute__((noreturn));
 unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsigned long *mmap_len);
 unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mmap_len);
 void setupVESA(char *str);
+BOOL setupVESAMode(long x, long y, long d, long vfreq, BOOL prioritise_depth, BOOL set_refresh);
 
 #if defined(__i386__) || defined(__x86_64__)
     #define LONG2BE(v)  ({ unsigned int __v32; asm volatile("bswap %0":"=a"(__v32):"0"((v))); __v32; })
