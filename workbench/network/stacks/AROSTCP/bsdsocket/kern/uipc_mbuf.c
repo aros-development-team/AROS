@@ -294,6 +294,14 @@ mb_autosize(ULONG mtu)
 }
 
 /*
+ * Smallest initial pool worth starting with on a memory-tight machine.  The
+ * pool still grows on demand once running, so these only need to be enough to
+ * get the stack going.
+ */
+#define MB_INIT_MIN_MBUFS       64
+#define MB_INIT_MIN_CLUSTERS    4
+
+/*
  * mbinit() must be called before any other mbuf related function (exept the
  * mb_check_conf() which is called at configuration time). This
  * allocates memory from the system in one big chunk. This memory will not be
@@ -322,11 +330,30 @@ mbinit(void)
     mclfree = NULL;
 
     /*
-     * Preallocate some mbufs and mbuf clusters.
+     * Preallocate some mbufs and mbuf clusters.  The full initial pool is one
+     * large contiguous block, which may not fit on a memory-tight or
+     * fragmented machine; rather than refuse to start the stack, halve the
+     * request until it succeeds (down to a small floor).  The pool still grows
+     * on demand afterwards.
      */
-    initialized =
-        (m_alloc(mbconf.initial_mbuf_chunks * mbconf.mbufchunk, M_WAIT)
-         && m_clalloc(mbconf.clusterchunk, M_WAIT));
+    {
+        int mbufs = mbconf.initial_mbuf_chunks * mbconf.mbufchunk;
+        int cls   = mbconf.clusterchunk;
+        BOOL got_m = FALSE, got_c = FALSE;
+
+        while(mbufs >= MB_INIT_MIN_MBUFS && !(got_m = m_alloc(mbufs, M_WAIT)))
+            mbufs >>= 1;
+        while(cls >= MB_INIT_MIN_CLUSTERS && !(got_c = m_clalloc(cls, M_WAIT)))
+            cls >>= 1;
+
+        initialized = got_m && got_c;
+
+        if(initialized &&
+           (mbufs < mbconf.initial_mbuf_chunks * mbconf.mbufchunk ||
+            cls < mbconf.clusterchunk))
+            __log(LOG_WARNING, "mbinit: low memory - started with %d mbufs,"
+                  " %d clusters", mbufs, cls);
+    }
 
     splx(s);
 
