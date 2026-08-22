@@ -196,12 +196,15 @@
 
             arg &= (O_NONBLOCK|O_APPEND|O_ASYNC);
 
+            __fcb_lock(desc->fcb);
             if (ChangeMode(CHANGE_FH, desc->fcb->handle, oldmode | __oflags2amode(arg)) == DOSTRUE)
             {
                 desc->fcb->flags &= ~(O_NONBLOCK|O_APPEND|O_ASYNC);
                 desc->fcb->flags |= arg;
+                __fcb_unlock(desc->fcb);
                 return 0;
             }
+            __fcb_unlock(desc->fcb);
 
             errno = __stdc_ioerr2errno(IoErr());
             return -1;

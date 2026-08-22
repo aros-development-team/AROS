@@ -10,16 +10,32 @@
 */
 
 #include <dos/dos.h>
+#include <exec/semaphores.h>
 
 /* file control block - one per file handle */
 typedef struct _fcb
 {
-    BPTR handle;// if privflags has flag _FCB_ISDIR: BCPL pointer to struct FileLock  
+    BPTR handle;// if privflags has flag _FCB_ISDIR: BCPL pointer to struct FileLock
                 // otherwise: BCPL pointer to struct FileHandle
     int  flags;
     unsigned int opencount;
     unsigned int privflags;
+    /* Serialises DOS operations on the shared handle. A single fcb (one DOS
+       FileHandle) is shared between descriptors that are dup'd, inherited
+       across vfork()/exec*(), or reached from pthread workers through the
+       creator's descriptor table. DOS FileHandles carry buffer/position
+       state and are not safe for concurrent use, so read/write serialise
+       on this. Initialised at fcb creation. */
+    struct SignalSemaphore io_lock;
 } fcb;
+
+#include <proto/exec.h>
+/* Serialise a whole POSIX/stdio operation against concurrent use of the
+   same shared DOS handle. Recursive (SignalSemaphore), so a syscall may
+   hold it across a sequence that itself calls the __dos64_* primitives
+   (which also lock). A NULL/absent handle needs no serialisation. */
+static inline void __fcb_lock(fcb *f)   { if (f) ObtainSemaphore(&f->io_lock); }
+static inline void __fcb_unlock(fcb *f) { if (f) ReleaseSemaphore(&f->io_lock); }
 
 /* privflags */
 #define _FCB_ISDIR        ((unsigned int)1<<0)
@@ -33,7 +49,9 @@ typedef struct _fcb
     if (__builtin_expect(fdesc->fcb->privflags & _FCB_FLUSHONREAD, 0))  \
     {                                                                   \
         fdesc->fcb->privflags &= ~_FCB_FLUSHONREAD;                     \
+        __fcb_lock(fdesc->fcb);                                         \
         Flush(fdesc->fcb->handle);                                      \
+        __fcb_unlock(fdesc->fcb);                                       \
     }
 
 /* file descriptor structure - one per descriptor */

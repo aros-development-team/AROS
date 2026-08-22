@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function fchmod().
 */
@@ -75,7 +75,10 @@ ULONG prot_u2a(mode_t protect);
             return -1;
         }
             
-        if(NameFromFH(fdesc->fcb->handle, buffer, buffersize))
+        __fcb_lock(fdesc->fcb);
+        BOOL __nameok = NameFromFH(fdesc->fcb->handle, buffer, buffersize);
+        __fcb_unlock(fdesc->fcb);
+        if(__nameok)
             break;
         else if(IoErr() != ERROR_LINE_TOO_LONG)
         {

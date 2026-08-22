@@ -93,6 +93,8 @@
 
         __dos64_seek(fdesc->fcb, size, OFFSET_BEGINNING);
 
+        /* Serialise the raw FWrite/Flush burst on the shared handle. */
+        __fcb_lock(fdesc->fcb);
         while (left >= 16)
         {
             FWrite(fdesc->fcb->handle, buf, 16, 1);
@@ -102,6 +104,7 @@
             FWrite(fdesc->fcb->handle, buf, left, 1);
 
         Flush(fdesc->fcb->handle);
+        __fcb_unlock(fdesc->fcb);
     }
 
     /* Restore the original position */

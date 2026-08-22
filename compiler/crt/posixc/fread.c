@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function fread().
 */
@@ -69,7 +69,9 @@
 
     FLUSHONREADCHECK
 
+    __fcb_lock(fdesc->fcb);
     cnt = FRead (fdesc->fcb->handle, buf, size, nblocks);
+    __fcb_unlock(fdesc->fcb);
 
     if (cnt == -1)
     {

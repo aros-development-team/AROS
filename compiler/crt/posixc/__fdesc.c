@@ -48,6 +48,28 @@ static void __set_errno(struct PosixCIntBase *PosixCBase, int enval)
     }
 }
 
+/* A pthread worker Task receives its own posixc.library base but the POSIX
+   descriptor table belongs to the Process that created it.  __fd_owner()
+   resolves the base that actually holds the descriptor array/slots/pool;
+   it is the base itself for an ordinary Process or CLI child.  All descriptor
+   table accesses go through FD_ARRAY()/FD_SLOTS()/FD_POOL() so a worker sees
+   its creator's table. */
+static struct PosixCIntBase *__fd_owner(struct PosixCIntBase *PosixCBase)
+{
+    return PosixCBase->fd_owner ? PosixCBase->fd_owner : PosixCBase;
+}
+
+#define FD_SLOTS(base) (__fd_owner(base)->fd_slots)
+#define FD_ARRAY(base) (__fd_owner(base)->fd_array)
+#define FD_POOL(base)  (__fd_owner(base)->internalpool)
+
+/* Serialise access to the shared descriptor table against a concurrent
+   grow (see __getfdslot). The lock lives in the owning base and is a
+   SignalSemaphore, so nested locking within one Task (e.g. __open ->
+   __getfdslot -> close -> __setfdesc) is safe. */
+#define FD_LOCK(base)   ObtainSemaphore(&__fd_owner(base)->fd_sem)
+#define FD_UNLOCK(base) ReleaseSemaphore(&__fd_owner(base)->fd_sem)
+
 /* TODO: Add locking to make filedesc usage thread safe
    Using vfork()+exec*() filedescriptors may be shared between different
    tasks. Only one DOS file handle is used between shared file descriptors.
@@ -61,8 +83,8 @@ void __getfdarray(APTR *arrayptr, int *slotsptr)
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
-    *arrayptr = PosixCBase->fd_array;
-    *slotsptr = PosixCBase->fd_slots;
+    *arrayptr = FD_ARRAY(PosixCBase);
+    *slotsptr = FD_SLOTS(PosixCBase);
 }
 
 void __setfdarray(APTR array, int slots)
@@ -70,8 +92,8 @@ void __setfdarray(APTR array, int slots)
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
-    PosixCBase->fd_array = array;
-    PosixCBase->fd_slots = slots;
+    FD_ARRAY(PosixCBase) = array;
+    FD_SLOTS(PosixCBase) = slots;
 }
 
 void __setfdarraybase(struct PosixCIntBase *PosixCBase2)
@@ -79,8 +101,8 @@ void __setfdarraybase(struct PosixCIntBase *PosixCBase2)
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
-    PosixCBase->fd_array = PosixCBase2->fd_array;
-    PosixCBase->fd_slots = PosixCBase2->fd_slots;
+    FD_ARRAY(PosixCBase) = FD_ARRAY(PosixCBase2);
+    FD_SLOTS(PosixCBase) = FD_SLOTS(PosixCBase2);
 }
 
 int __getfdslots(void)
@@ -88,15 +110,20 @@ int __getfdslots(void)
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
-    return PosixCBase->fd_slots;
+    return FD_SLOTS(PosixCBase);
 }
 
 fdesc *__getfdesc(register int fd)
 {
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
-    fdesc *local = ((PosixCBase->fd_slots>fd) && (fd>=0)) ?
-                       PosixCBase->fd_array[fd] : NULL;
+    fdesc *local;
+
+    /* Read the slot count and array entry atomically w.r.t. a grow. */
+    FD_LOCK(PosixCBase);
+    local = ((FD_SLOTS(PosixCBase)>fd) && (fd>=0)) ?
+                FD_ARRAY(PosixCBase)[fd] : NULL;
+    FD_UNLOCK(PosixCBase);
 
     /* Standard streams (0..2) are always process-local. */
     if (fd >= 0 && fd <= STDERR_FILENO)
@@ -150,7 +177,11 @@ void __setfdesc(register int fd, fdesc *desc)
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
     /* FIXME: Check if fd is in valid range... */
-    PosixCBase->fd_array[fd] = desc;
+    /* Publish the slot pointer under the table guard so a concurrent grow
+       (which reallocates the array) cannot write into a stale array. */
+    FD_LOCK(PosixCBase);
+    FD_ARRAY(PosixCBase)[fd] = desc;
+    FD_UNLOCK(PosixCBase);
 
     /* Standard streams (0..2) are inherited DOS handles kept process-local;
        they are never published in fd.library, whose descriptor numbers are
@@ -174,7 +205,7 @@ int __getfirstfd(register int startfd)
     if (!__fdlib_available(PosixCBase)) {
         for (
             ;
-            startfd < PosixCBase->fd_slots && PosixCBase->fd_array[startfd];
+            startfd < FD_SLOTS(PosixCBase) && FD_ARRAY(PosixCBase)[startfd];
             startfd++
         );
 
@@ -183,7 +214,7 @@ int __getfirstfd(register int startfd)
 
     struct Library *FDBase = PosixCBase->PosixCFDBase;
     for (;;) {
-        if (startfd < PosixCBase->fd_slots && PosixCBase->fd_array[startfd]) {
+        if (startfd < FD_SLOTS(PosixCBase) && FD_ARRAY(PosixCBase)[startfd]) {
             startfd++;
             continue;
         }
@@ -199,7 +230,13 @@ int __getfdslot(int wanted_fd)
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     LONG error;
 
-    if (wanted_fd>=PosixCBase->fd_slots)
+    /* Hold the table guard across the grow/close below: the realloc+free
+       must not run while another Task is indexing the array. close() and
+       the FreePooled path re-enter under the same Task, which the
+       recursive SignalSemaphore permits. */
+    FD_LOCK(PosixCBase);
+
+    if (wanted_fd>=FD_SLOTS(PosixCBase))
     {
         void *tmp;
 
@@ -208,26 +245,27 @@ int __getfdslot(int wanted_fd)
            range are already NULL. Do not call memset()/other stdc helpers
            here: __getfdslot() runs during posixc OpenLib (via __init_stdfiles)
            before stdc.library's relbase is available. */
-        tmp = AllocPooled(PosixCBase->internalpool, (wanted_fd+1)*sizeof(fdesc *));
+        tmp = AllocPooled(FD_POOL(PosixCBase), (wanted_fd+1)*sizeof(fdesc *));
 
-        if (!tmp) return -1;
+        if (!tmp) { FD_UNLOCK(PosixCBase); return -1; }
 
-        if (PosixCBase->fd_array)
+        if (FD_ARRAY(PosixCBase))
         {
-            size_t size = PosixCBase->fd_slots*sizeof(fdesc *);
-            CopyMem(PosixCBase->fd_array, tmp, size);
-            FreePooled(PosixCBase->internalpool, PosixCBase->fd_array, size);
+            size_t size = FD_SLOTS(PosixCBase)*sizeof(fdesc *);
+            CopyMem(FD_ARRAY(PosixCBase), tmp, size);
+            FreePooled(FD_POOL(PosixCBase), FD_ARRAY(PosixCBase), size);
         }
 
-        PosixCBase->fd_array = tmp;
-        PosixCBase->fd_slots = wanted_fd+1;
+        FD_ARRAY(PosixCBase) = tmp;
+        FD_SLOTS(PosixCBase) = wanted_fd+1;
     }
     else if (wanted_fd < 0)
     {
+        FD_UNLOCK(PosixCBase);
         __set_errno(PosixCBase, EINVAL);
         return -1;
     }
-    else if (PosixCBase->fd_array[wanted_fd])
+    else if (FD_ARRAY(PosixCBase)[wanted_fd])
     {
         /* The slot is grown above for an out-of-range wanted_fd (which is
            empty, so nothing is closed if that allocation fails); only an
@@ -239,6 +277,8 @@ int __getfdslot(int wanted_fd)
            swap; see CRT_REVIEW.md (dup2 ENOMEM edge). */
         close(wanted_fd);
     }
+
+    FD_UNLOCK(PosixCBase);
 
     /* Standard streams (0..2) stay process-local; do not reserve their
        numbers in the system-wide fd.library table (see __setfdesc()). */
@@ -334,6 +374,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
     cblock = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR);
     if (!cblock) { D(bug("__open: no memory [1]\n")); goto err; }
+    InitSemaphore(&cblock->io_lock);
     currdesc = __alloc_fdesc();
     if (!currdesc) { D(bug("__open: no memory [2]\n")); goto err; }
     currdesc->fdflags = 0;
@@ -518,11 +559,11 @@ fdesc *__alloc_fdesc(void)
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     fdesc * desc;
 
-    desc = AllocPooled(PosixCBase->internalpool, sizeof(fdesc));
+    desc = AllocPooled(FD_POOL(PosixCBase), sizeof(fdesc));
     if (desc)
-        desc->allocpool = PosixCBase->internalpool;
+        desc->allocpool = FD_POOL(PosixCBase);
 
-    D(bug("Allocated fdesc %x from %x pool\n", desc, PosixCBase->internalpool));
+    D(bug("Allocated fdesc %x from %x pool\n", desc, FD_POOL(PosixCBase)));
 
     return desc;
 }
@@ -533,7 +574,7 @@ void __free_fdesc(fdesc *desc)
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     /* A descriptor table can cross posixc instances during vfork/launcher
        handoff; free each fdesc to the pool that actually allocated it. */
-    APTR pool = desc->allocpool ? desc->allocpool : PosixCBase->internalpool;
+    APTR pool = desc->allocpool ? desc->allocpool : FD_POOL(PosixCBase);
 
     D(bug("Freeing fdesc %x from %x pool\n", desc, pool));
     FreePooled(pool, desc, sizeof(fdesc));
@@ -592,6 +633,10 @@ int __init_stdfiles(struct PosixCIntBase *PosixCBase)
     me = (struct Process *)FindTask (NULL);
 
     infcb->handle = Input();
+    InitSemaphore(&infcb->io_lock);
+    InitSemaphore(&outfcb->io_lock);
+    InitSemaphore(&errfcb->io_lock);
+
     infcb->flags  = O_RDONLY;
     infcb->opencount = 1;
     /* Remove (remaining) command line args on first read */
@@ -628,9 +673,9 @@ int __init_stdfiles(struct PosixCIntBase *PosixCBase)
     __dos64_probe(outfcb);
     __dos64_probe(errfcb);
 
-    PosixCBase->fd_array[STDIN_FILENO]  = indesc;
-    PosixCBase->fd_array[STDOUT_FILENO] = outdesc;
-    PosixCBase->fd_array[STDERR_FILENO] = errdesc;
+    FD_ARRAY(PosixCBase)[STDIN_FILENO]  = indesc;
+    FD_ARRAY(PosixCBase)[STDOUT_FILENO] = outdesc;
+    FD_ARRAY(PosixCBase)[STDERR_FILENO] = errdesc;
 
     return 1;
 }
@@ -647,16 +692,20 @@ static int __copy_fdarray(fdesc **__src_fd_array, int fd_slots)
         {
             if(__getfdslot(i) != i)
                 return 0;
-            
-            if((PosixCBase->fd_array[i] = __alloc_fdesc()) == NULL)
+
+            if((FD_ARRAY(PosixCBase)[i] = __alloc_fdesc()) == NULL)
                 return 0;
 
-            PosixCBase->fd_array[i]->fdflags = __src_fd_array[i]->fdflags;
-            PosixCBase->fd_array[i]->fcb = __src_fd_array[i]->fcb;
-            PosixCBase->fd_array[i]->fcb->opencount++;
+            FD_ARRAY(PosixCBase)[i]->fdflags = __src_fd_array[i]->fdflags;
+            FD_ARRAY(PosixCBase)[i]->fcb = __src_fd_array[i]->fcb;
+            /* The source (parent) may still be using this fcb - bump its
+               shared reference count atomically. */
+            __fcb_lock(FD_ARRAY(PosixCBase)[i]->fcb);
+            FD_ARRAY(PosixCBase)[i]->fcb->opencount++;
+            __fcb_unlock(FD_ARRAY(PosixCBase)[i]->fcb);
         }
     }
-    
+
     return 1;
 }
 
@@ -664,10 +713,39 @@ int __init_fd(struct PosixCIntBase *PosixCBase)
 {
     struct PosixCIntBase *pPosixCBase =
         (struct PosixCIntBase *)__GM_GetBaseParent(PosixCBase);
+    struct Task *task = FindTask(NULL);
 
     D(bug("Found parent PosixCBase %p with flags 0x%x\n",
           pPosixCBase, pPosixCBase ? pPosixCBase->flags : 0
     ));
+
+    if (pPosixCBase &&
+        !(pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)) &&
+        (task->tc_Node.ln_Type == NT_TASK ||
+         (task->tc_Node.ln_Type == NT_PROCESS &&
+          ((struct Process *)task)->pr_CLI == BNULL)))
+    {
+        /*
+         * pthread workers are implemented by CreateNewProcTags(NP_Entry) and
+         * therefore appear as CLI-less Exec Processes (some alternate thread
+         * implementations use plain Tasks).  They receive a distinct per-task
+         * posixc.library base, but the POSIX file descriptors belong to the
+         * creator Process.  Route descriptor lookups and allocation through
+         * the creator's owning base while retaining this task's own errno,
+         * stdio, signal mask and other per-base state.
+         *
+         * A CLI child (a vfork launcher runs with NP_Cli=TRUE) takes the
+         * independent table path below.
+         */
+        PosixCBase->fd_owner = __fd_owner(pPosixCBase);
+        return TRUE;
+    }
+
+    PosixCBase->fd_owner = PosixCBase;
+    /* This base owns its table - initialise the guard before any slot is
+       allocated below (a borrower never reaches here; it locks the owner's
+       already-initialised semaphore). */
+    InitSemaphore(&PosixCBase->fd_sem);
 
     if (pPosixCBase && (pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)))
     {
@@ -676,7 +754,7 @@ int __init_fd(struct PosixCIntBase *PosixCBase)
 
         if (pPosixCBase->flags & EXEC_PARENT)
             /* EXEC_PARENT called through RunCommand which injected parameters to Input() */
-            PosixCBase->fd_array[STDIN_FILENO]->fcb->privflags |= _FCB_FLUSHONREAD;
+            FD_ARRAY(PosixCBase)[STDIN_FILENO]->fcb->privflags |= _FCB_FLUSHONREAD;
 
         return res;
     }
@@ -686,10 +764,17 @@ int __init_fd(struct PosixCIntBase *PosixCBase)
 
 void __exit_fd(struct PosixCIntBase *PosixCBase)
 {
-    int i = PosixCBase->fd_slots;
+    int i;
+
+    /* A pthread worker shares its creator Process' descriptor table; the
+       creator owns and closes it, so a worker must not tear it down. */
+    if (__fd_owner(PosixCBase) != PosixCBase)
+        return;
+
+    i = FD_SLOTS(PosixCBase);
     while (i)
     {
-        if (PosixCBase->fd_array[--i])
+        if (FD_ARRAY(PosixCBase)[--i])
             close(i);
     }
 }
@@ -701,7 +786,7 @@ void __close_on_exec_fdescs(void)
     int i;
     fdesc *fd;
 
-    for (i = PosixCBase->fd_slots - 1; i >= 0; i--)
+    for (i = FD_SLOTS(PosixCBase) - 1; i >= 0; i--)
     {
         if ((fd = __getfdesc(i)) != NULL)
         {
@@ -730,13 +815,13 @@ void __updatestdio(void)
     fflush(((struct PosixCBase *)PosixCBase)->_stdout);
     fflush(((struct PosixCBase *)PosixCBase)->_stderr);
 
-    fcb = PosixCBase->fd_array[STDIN_FILENO]->fcb;
+    fcb = FD_ARRAY(PosixCBase)[STDIN_FILENO]->fcb;
     fcb->handle = Input();
 
-    fcb = PosixCBase->fd_array[STDOUT_FILENO]->fcb;
+    fcb = FD_ARRAY(PosixCBase)[STDOUT_FILENO]->fcb;
     fcb->handle = Output();
 
-    fcb = PosixCBase->fd_array[STDERR_FILENO]->fcb;
+    fcb = FD_ARRAY(PosixCBase)[STDERR_FILENO]->fcb;
     stderrlogic(me, fcb);
 }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/dos.h>
@@ -99,6 +99,9 @@
         __free_fdesc(wdesc);
         return -1;
     }
+
+    InitSemaphore(&rfcb->io_lock);
+    InitSemaphore(&wfcb->io_lock);
 
     pipedes[0] = __getfdslot(__getfirstfd(0));
     rdesc->fdflags = 0;

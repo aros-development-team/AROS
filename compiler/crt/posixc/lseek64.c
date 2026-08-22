@@ -136,7 +136,7 @@
                 QUAD towrite = abs_new_pos - file_size;
                 do
                 {
-                    Write(fdesc->fcb->handle, zeros, MIN(towrite, bufsize));
+                    __dos64_write(fdesc->fcb, zeros, MIN(towrite, bufsize));
                     towrite -= bufsize;
                 }
                 while(towrite > 0);

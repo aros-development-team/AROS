@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function fflush().
 */
@@ -69,11 +69,14 @@
                     return EOF;
                 }
 
+                __fcb_lock(fdesc->fcb);
                 if (!Flush(fdesc->fcb->handle))
                 {
+                    __fcb_unlock(fdesc->fcb);
                     errno = __stdc_ioerr2errno(IoErr());
                     return EOF;
                 }
+                __fcb_unlock(fdesc->fcb);
             }
         }
     }
@@ -87,8 +90,13 @@
             return EOF;
         }
 
+        __fcb_lock(fdesc->fcb);
         if (Flush(fdesc->fcb->handle))
+        {
+            __fcb_unlock(fdesc->fcb);
             return 0;
+        }
+        __fcb_unlock(fdesc->fcb);
     }
 
     errno = __stdc_ioerr2errno(IoErr());
