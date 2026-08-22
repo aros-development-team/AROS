@@ -2,5 +2,5 @@
 Format.c
  */
 
-BOOL FDSFormat (DSTR , LONG , SIPTR * , globaldata * );
+BOOL FDSFormat (DSTR , LONG , SIPTR * , BOOL , globaldata * );
 BOOL MakeRBlkExtension (globaldata *g);
