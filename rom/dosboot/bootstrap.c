@@ -178,9 +178,12 @@ BOOL dosboot_DevicePresent(struct IORequest*bootDevIO, BPTR bootDevName, ULONG b
     return FALSE;
 }
 
-/* Returns TRUE if it was a BootBlock style, but couldn't
- * be booted, FALSE if not a BootBlock style, and doesn't
- * return at all on a successful boot.
+/* Does not return at all on a successful boot. Otherwise the
+ * return value tells the caller whether it is done with the node:
+ * on m68k it is always TRUE, so a node whose boot block did not
+ * boot (or that had none) is not tried any other way, as on
+ * AmigaOS; elsewhere it is always FALSE and the caller goes on to
+ * try the BootPoint and DOS methods.
  *
  * The boot block's init code is called after *iop and its reply
  * port have been closed and freed. Should that code come back,
@@ -344,23 +347,28 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                 if (!BootNodeDeviceUnit || (dosboot_DevicePresent((struct IORequest*)io, device, unit)))
                 {
                     /* First try as a BootBlock.
-                     * dosboot_BootBlock returns TRUE if it *was*
-                     * a BootBlock device, but couldn't be booted.
-                     * Returns FALSE if not a bootblock device,
-                     * and doesn't return at all if the bootblock
-                     * was successful.
+                     * dosboot_BootBlock does not return at all if
+                     * the boot block booted. TRUE (always, on m68k)
+                     * means the node is done with; FALSE (always,
+                     * elsewhere) means try BootPoint and DOS next.
+                     * Either way io and msgport may have been freed
+                     * and cleared along the way.
                      */
                     
                     D(bug("[DOSBoot:bootstrap] %s: Attempting %b\n",__func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
                     if (!BootNodeDeviceUnit || !dosboot_BootBlock(&io, &msgport, bn, ExpansionBase, bootblock_size)) {
-                        if (BootNodeDeviceUnit)
+                        if (io)
                         {
-                            CloseDevice((struct IORequest *)io);
+                            if (BootNodeDeviceUnit)
+                                CloseDevice((struct IORequest *)io);
+                            DeleteIORequest((struct IORequest*)io);
+                            io = NULL;
                         }
-                        DeleteIORequest((struct IORequest*)io);
-                        io = NULL;
-                        DeleteMsgPort(msgport);
-                        msgport = NULL;
+                        if (msgport)
+                        {
+                            DeleteMsgPort(msgport);
+                            msgport = NULL;
+                        }
 
                         /* Then as a BootPoint node */
                         D(bug("[DOSBoot:bootstrap] %s: Attempting %b as BootPoint\n", __func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
