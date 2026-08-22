@@ -20,6 +20,8 @@ extern BOOL Net4Win_InitClass(struct MUI_CustomClass *PAWinCl);
 extern void Net4Win_FreeClass(void);
 extern struct MUI_CustomClass *Net4WinClass;
 extern void Net4_WriteTokens(FILE *f, struct ProtocolAddress *pa);
+extern struct Node *Net4_ReadTokens(struct List *protoList, CONST_STRPTR token, UBYTE id);
+extern void Net4_Display(struct ProtocolAddress *pa, STRPTR buf, ULONG buflen);
 
 /* -----------------------------------------------------------------------
  * IPv4Startup — called after all modules are loaded.
@@ -39,7 +41,8 @@ static void IPv4Startup(struct NetPrefsBase *NetPrefsBase)
     {
         IPv4Base->npv4_WinClass = Net4WinClass;
         RegisterProtoHandler("IPv4", PROTO_FAMILY_IPV4,
-                             Net4WinClass, Net4_WriteTokens);
+                             Net4WinClass, Net4_WriteTokens,
+                             Net4_ReadTokens, Net4_Display);
     }
 }
 

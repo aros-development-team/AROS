@@ -12,6 +12,8 @@
 #define _PROTOCOLS_H_
 
 #include <exec/types.h>
+#include <exec/nodes.h>
+#include <exec/lists.h>
 #include <libraries/mui.h>
 #include <utility/hooks.h>
 #include <stdio.h>
@@ -28,12 +30,17 @@ enum ProtocolFamily
 };
 
 /*
- * ProtocolAddress - holds the complete address configuration for one protocol
- * (IPv4 or IPv6) on an interface.
+ * ProtocolAddress - one protocol object attached to an interface.  It is a
+ * List node so an interface can carry any set of protocol objects (IPv4 only,
+ * IPv6 only, both, or others); pa_node.ln_Type is the ID the owning plugin was
+ * assigned at registration, which is how the core routes a node back to its
+ * handler without interpreting the address itself.  The core treats everything
+ * below ln_Type as opaque plugin data.
  */
 struct ProtocolAddress
 {
-    enum ProtocolFamily  pa_family;            /* PROTO_FAMILY_IPV4 or PROTO_FAMILY_IPV6 */
+    struct Node          pa_node;              /* ln_Type = owning plugin's ID           */
+    enum ProtocolFamily  pa_family;            /* plugin-internal family tag             */
     enum IPMode          pa_mode;              /* DHCP, Auto, or Manual                  */
     TEXT                 pa_addr[IP6BUFLEN];   /* IP or IPv6 address (Manual mode)       */
     TEXT                 pa_mask[IPBUFLEN];    /* netmask (IPv4 only)                    */
@@ -46,15 +53,15 @@ extern struct Hook proto_constructHook;
 extern struct Hook proto_destructHook;
 extern struct Hook proto_displayHook;
 
-/*--- Shared init / conversion (protocols.c) --------------------------------*/
+/*--- Protocol-object list helpers (protocols.c) ----------------------------*/
 
-void ProtoAddr_FromInterface(struct ProtocolAddress *pa,
-                             struct Interface *iface,
-                             enum ProtocolFamily fam);
+struct ProtoHandlerNode;
 
-void ProtoAddr_ToInterface(struct Interface *iface,
-                           struct ProtocolAddress *ipv4,
-                           struct ProtocolAddress *ipv6);
+struct ProtoHandlerNode *ProtoHandler_ByID(UBYTE id);
+struct ProtocolAddress  *ProtoAddr_Find(struct List *list, UBYTE id);
+struct ProtocolAddress  *ProtoAddr_FindOrAdd(struct List *list, UBYTE id);
+void                     ProtoAddr_FreeList(struct List *list);
+void                     ProtoAddr_CopyList(struct List *dst, struct List *src);
 
 /*--- PAWinClass: common protocol-address configuration window --------------*/
 /*    Defined in protocols.c; subclassed by plugin modules (.netprefs).      */

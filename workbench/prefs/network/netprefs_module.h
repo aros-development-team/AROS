@@ -13,6 +13,8 @@
 #define _NETPREFS_MODULE_H_
 
 #include <exec/nodes.h>
+#include <exec/lists.h>
+#include <exec/types.h>
 #include <stdio.h>
 
 struct NetPrefsBase;
@@ -23,6 +25,20 @@ typedef void (*NETPREFS_STARTUP)(struct NetPrefsBase *);
 
 /* Callback: write protocol config tokens to an interfaces file */
 typedef void (*NETPREFS_WRITETOKENS)(FILE *f, struct ProtocolAddress *pa);
+
+/*
+ * Callback: claim and parse one token off an interface line.  If the token
+ * belongs to this protocol, find (or, on its first token, allocate and AddTail)
+ * this protocol's node on protoList - tagged with the plugin's assigned id in
+ * ln_Type - parse the token's value into it, and return the node.  Return NULL
+ * if the token is not one of this protocol's.
+ */
+typedef struct Node *(*NETPREFS_READTOKENS)(struct List *protoList,
+                                            CONST_STRPTR token, UBYTE id);
+
+/* Callback: format a short list-column string for one protocol object */
+typedef void (*NETPREFS_DISPLAY)(struct ProtocolAddress *pa,
+                                 STRPTR buf, ULONG buflen);
 
 /*
  * NetPrefsModule - registered by each plugin during ModuleInit().

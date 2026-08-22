@@ -261,3 +261,82 @@ void Net4_WriteTokens(FILE *f, struct ProtocolAddress *pa)
     if (pa->pa_gate[0])
         fprintf(f, "GW=%s ", pa->pa_gate);
 }
+
+/* Find (or create and append) this plugin's address node on an interface's
+ * protocol list, tagged with our id in ln_Type. */
+static struct ProtocolAddress *net4_node(struct List *list, UBYTE id)
+{
+    struct Node *n;
+
+    for (n = list->lh_Head; n->ln_Succ; n = n->ln_Succ)
+        if (n->ln_Type == id)
+            return (struct ProtocolAddress *)n;
+
+    struct ProtocolAddress *pa = AllocVec(sizeof(*pa), MEMF_CLEAR);
+    if (pa)
+    {
+        pa->pa_node.ln_Type = id;
+        pa->pa_family       = PROTO_FAMILY_IPV4;
+        AddTail(list, &pa->pa_node);
+    }
+    return pa;
+}
+
+/* Claim and parse one IPv4 token (IP= / NETMASK= / GW=).  IP= must not swallow
+ * IP6= and GW= must not swallow GW6= - the '6' breaks the 3-char prefix. */
+struct Node *Net4_ReadTokens(struct List *protoList, CONST_STRPTR token, UBYTE id)
+{
+    struct ProtocolAddress *pa;
+    CONST_STRPTR val;
+
+    if (strncmp(token, "IP=", 3) == 0)
+    {
+        if (!(pa = net4_node(protoList, id))) return NULL;
+        val = token + 3;
+        if (strncmp(val, "DHCP", 4) == 0)
+        {
+            pa->pa_mode = IP_MODE_DHCP; pa->pa_addr[0] = '\0';
+        }
+        else if (strncmp(val, "AUTO", 4) == 0)
+        {
+            pa->pa_mode = IP_MODE_AUTO; pa->pa_addr[0] = '\0';
+        }
+        else
+        {
+            pa->pa_mode = IP_MODE_MANUAL;
+            strlcpy(pa->pa_addr, val, sizeof(pa->pa_addr));
+        }
+        return &pa->pa_node;
+    }
+    if (strncmp(token, "NETMASK=", 8) == 0)
+    {
+        if (!(pa = net4_node(protoList, id))) return NULL;
+        strlcpy(pa->pa_mask, token + 8, sizeof(pa->pa_mask));
+        return &pa->pa_node;
+    }
+    if (strncmp(token, "GW=", 3) == 0)
+    {
+        if (!(pa = net4_node(protoList, id))) return NULL;
+        strlcpy(pa->pa_gate, token + 3, sizeof(pa->pa_gate));
+        return &pa->pa_node;
+    }
+    return NULL;
+}
+
+/* Format the address column for the interface list. */
+void Net4_Display(struct ProtocolAddress *pa, STRPTR buf, ULONG buflen)
+{
+    switch (pa->pa_mode)
+    {
+        case IP_MODE_DHCP:
+            strlcpy(buf, _(MSG_IP_MODE_DHCP), buflen);
+            break;
+        case IP_MODE_AUTO:
+            strlcpy(buf, _(MSG_IP_MODE_AUTO), buflen);
+            break;
+        default:
+            strlcpy(buf, pa->pa_addr[0] ? pa->pa_addr : _(MSG_IP_MODE_MANUAL),
+                    buflen);
+            break;
+    }
+}
