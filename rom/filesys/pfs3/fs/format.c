@@ -143,7 +143,7 @@
  */
 static void ShowVersion (globaldata *g);
 static ULONG MakeBootBlock(globaldata *g);
-static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g);
+static rootblock_t *MakeRootBlock (DSTR diskname, BOOL showrequesters, globaldata *g);
 static void MakeBitmap (globaldata *g);
 static void MakeRootDir (globaldata *g);
 static ULONG CalcNumReserved (globaldata *g, ULONG resblocksize);
@@ -156,7 +156,8 @@ static crootblockextension_t *MakeFormatRBlkExtension (struct rootblock *rbl, gl
 /*                               FORMAT                               */
 /**********************************************************************/
 
-BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, globaldata *g)
+BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
+	globaldata *g)
 {
   struct rootblock *rootblock;
   struct volumedata *volume;
@@ -181,7 +182,8 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, globaldata *g)
 
 	/* update dos envec and geom */
 	GetDriveGeometry (g);
-	ShowVersion (g);
+	if (showrequesters)
+		ShowVersion (g);
 
 	/* issue 00118: disk cannot exceed MAX_DISK_SIZE */
 	if (g->geom->dg_TotalSectors > MAXDISKSIZE) {
@@ -195,7 +197,7 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, globaldata *g)
  		return DOSFALSE;
 	}
 
-	if (!(rootblock = MakeRootBlock (diskname, g))) {
+	if (!(rootblock = MakeRootBlock (diskname, showrequesters, g))) {
 		*error = ERROR_NO_FREE_STORE;
 		return DOSFALSE;
 	}
@@ -316,7 +318,7 @@ static ULONG MakeBootBlock (globaldata *g)
  * including reserved bitmap
  * (will be written by Update and freed by FreeVolumeRes.)
  */
-static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
+static rootblock_t *MakeRootBlock (DSTR diskname, BOOL showrequesters, globaldata *g)
 {
   struct rootblock *rbl;
   struct DateStamp time;
@@ -356,7 +358,8 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 				resblocksize = 4096;
 			}
 			rbl->disktype = ID_PFS2_DISK;
-			NormalErrorMsg(AFS_WARNING_EXPERIMENTAL_DISK, NULL, 1);
+			if (showrequesters)
+				NormalErrorMsg(AFS_WARNING_EXPERIMENTAL_DISK, NULL, 1);
 		}
 	}
 
@@ -371,7 +374,8 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 #if LARGE_FILE_SIZE
 	rbl->options |= MODE_LARGEFILE;
 	rbl->disktype = ID_PFS2_DISK;
-	NormalErrorMsg(AFS_WARNING_EXPERIMENTAL_FILE, NULL, 1);
+	if (showrequesters)
+		NormalErrorMsg(AFS_WARNING_EXPERIMENTAL_FILE, NULL, 1);
 #endif
 
 	rbl->datestamp = 1;
