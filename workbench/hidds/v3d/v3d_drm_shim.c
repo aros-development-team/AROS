@@ -163,9 +163,41 @@ static void bo_unref(struct V3DData *sd, ULONG handle)
         return;
     if (--bo->refcount == 0)
     {
+        v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
         v3d_gpu_mem_free(sd, bo->gpu_handle);
         bo->gpu_handle = 0;
     }
+}
+
+/*
+ * Session sweep, called when the last pipe screen goes: whatever Mesa
+ * leaked stays firmware-LOCKED forever otherwise, and the GPU heap
+ * shrinks with every GL session until allocations start failing. The
+ * driver's own allocations (page table, scratch, overflow, landing
+ * zone) never sit in this table, so everything here belongs to Mesa.
+ */
+void v3d_release_all_bos(struct V3DData *sd)
+{
+    ULONG h, leaked = 0;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (h = 1; h < V3D_MAX_BOS; h++)
+    {
+        struct V3DBO *bo = &sd->bo_table[h];
+
+        if (bo->refcount == 0)
+            continue;
+        v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
+        v3d_gpu_mem_free(sd, bo->gpu_handle);
+        bo->gpu_handle = 0;
+        bo->refcount = 0;
+        leaked++;
+    }
+    sd->bo_next_handle = 0;
+    ReleaseSemaphore(&sd->bo_lock);
+
+    if (leaked)
+        bug("[V3D] session sweep: released %u leaked BOs\n", (unsigned)leaked);
 }
 
 /* ---- the dispatch ---- */
@@ -202,18 +234,25 @@ int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
 
         sd->bo_table[h].gpu_handle = gpu_handle;
         sd->bo_table[h].paddr      = paddr;
+        sd->bo_table[h].gpu_va     = v3d_mmu_map(sd, paddr, create->size);
         sd->bo_table[h].size       = create->size;
         sd->bo_table[h].refcount   = 1;
         ReleaseSemaphore(&sd->bo_lock);
 
         create->handle = h;
-        create->offset = V3D_GPU_ADDR(paddr);
+        create->offset = sd->bo_table[h].gpu_va;
         return 0;
     }
 
     case DRM_IOCTL_GEM_CLOSE:
     {
         struct drm_gem_close *close = arg;
+
+        /* With jobs in flight the GPU may still read this BO - no
+         * per-job references exist, so drain first. Rare: Mesa's BO
+         * cache absorbs the per-frame churn, real closes are eviction. */
+        if (sd->finished_seqno != sd->seqno)
+            v3d_wait_idle(sd);
 
         ObtainSemaphore(&sd->bo_lock);
         bo_unref(sd, close->handle);
@@ -242,31 +281,27 @@ int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
         ObtainSemaphore(&sd->bo_lock);
         bo = bo_lookup(sd, get->handle);
         if (bo)
-            get->offset = V3D_GPU_ADDR(bo->paddr);
+            get->offset = bo->gpu_va;
         ReleaseSemaphore(&sd->bo_lock);
         return bo ? 0 : -1;
     }
 
     case DRM_IOCTL_V3D_WAIT_BO:
-        /* Submission below is synchronous, so completion already
-         * happened by the time anyone asks. */
+        /* No per-BO tracking: any BO may belong to the jobs in flight,
+         * so waiting on one means draining the pipeline. Mesa only asks
+         * before CPU access, which is rare on the hot path. */
+        v3d_wait_idle(sd);
         return 0;
 
     case DRM_IOCTL_V3D_SUBMIT_CL:
     {
         struct drm_v3d_submit_cl *submit = arg;
 
-        if (submit->bcl_start != submit->bcl_end)
-        {
-            v3d_submit_bin(sd, submit->bcl_start, submit->bcl_end,
-                           submit->qma, submit->qms, submit->qts);
-            v3d_wait_idle(sd);
-        }
-        if (submit->rcl_start != submit->rcl_end)
-        {
-            v3d_submit_render(sd, submit->rcl_start, submit->rcl_end);
-            v3d_wait_idle(sd);
-        }
+        /* Asynchronous: returns once the bin job is kicked; the render
+         * is stashed and handed over on the binner's flush. */
+        v3d_submit_cl(sd, submit->bcl_start, submit->bcl_end,
+                      submit->qma, submit->qms, submit->qts,
+                      submit->rcl_start, submit->rcl_end);
         return 0;
     }
 

@@ -21,6 +21,7 @@
 #include <proto/mbox.h>
 
 #include <hidd/gallium.h>
+#include <hidd/gfx.h>
 
 #include "v3d_intern.h"
 
@@ -149,6 +150,49 @@ static BOOL v3d_asb_enable(ULONG reg, const char *name)
     return !(v & V3D_ASB_ACK);
 }
 
+/*
+ * Full block reset, for hang recovery: pull V3DRSTN, release it, and
+ * unstall the ASB bridges again - the same authorities the power-up
+ * sequence uses, so every step here is hardware-verified. The firmware
+ * clock is left alone (a reset does not touch it), and BOs are firmware
+ * allocations, so only the job in flight is lost.
+ */
+/* Stall one ASB bridge before a reset: request stop, wait for the ack.
+ * Resetting with live bus traffic is what left the hub registers
+ * reading garbage after repeated recoveries. */
+static void v3d_asb_stall(ULONG reg)
+{
+    ULONG v = asb_rd(reg), i;
+
+    asb_wr(reg, (v & 0xffffff) | V3D_ASB_REQ_STOP);
+    for (i = 0; i < PM_SPIN; i++)
+        if (asb_rd(reg) & V3D_ASB_ACK)
+            break;
+}
+
+BOOL v3d_block_reset(void)
+{
+    ULONG i;
+
+    v3d_asb_stall(V3D_ASB_V3D_S_CTRL);
+    v3d_asb_stall(V3D_ASB_V3D_M_CTRL);
+
+    pm_wr(V3D_PM_GRAFX, (pm_rd(V3D_PM_GRAFX) & 0xffffff) & ~V3D_PM_V3DRSTN);
+    for (i = 0; i < PM_SPIN; i++)
+        if (!(pm_rd(V3D_PM_GRAFX) & V3D_PM_V3DRSTN))
+            break;
+
+    pm_wr(V3D_PM_GRAFX, (pm_rd(V3D_PM_GRAFX) & 0xffffff) | V3D_PM_V3DRSTN);
+    for (i = 0; i < PM_SPIN; i++)
+        if (pm_rd(V3D_PM_GRAFX) & V3D_PM_V3DRSTN)
+            break;
+
+    bug("[V3D] block reset: PM_GRAFX=0x%08x\n", pm_rd(V3D_PM_GRAFX));
+
+    return v3d_asb_enable(V3D_ASB_V3D_M_CTRL, "V3D_M")
+        && v3d_asb_enable(V3D_ASB_V3D_S_CTRL, "V3D_S");
+}
+
 static int V3D_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct V3DData *sd = &LIBBASE->sd;
@@ -178,6 +222,7 @@ static int V3D_Init(LIBBASETYPEPTR LIBBASE)
 
     InitSemaphore(&sd->mbox_lock);
     InitSemaphore(&sd->bo_lock);
+    InitSemaphore(&sd->job_lock);
 
     /* The CoreAPI table rides in on the attribute list at object
      * creation; without the base the tag id cannot even be computed. */
@@ -188,6 +233,25 @@ static int V3D_Init(LIBBASETYPEPTR LIBBASE)
         sd->mbox_msg_raw = NULL;
         return FALSE;
     }
+
+    /* timer.device (UNIT_MICROHZ) for the GPU wait loop's microsleeps.
+     * Non-fatal: without it the waits degrade to bounded spinning. */
+    sd->gpu_timer_ok = FALSE;
+    sd->gpu_timer_template.tr_node.io_Message.mn_Node.ln_Type = NT_MESSAGE;
+    sd->gpu_timer_template.tr_node.io_Message.mn_ReplyPort = NULL;
+    sd->gpu_timer_template.tr_node.io_Message.mn_Length =
+        sizeof(sd->gpu_timer_template);
+    if (OpenDevice("timer.device", UNIT_MICROHZ,
+                   (struct IORequest *)&sd->gpu_timer_template, 0) == 0)
+        sd->gpu_timer_ok = TRUE;
+    else
+        bug("[V3D] timer.device unavailable - GPU waits will spin\n");
+
+    /* Standard and vcgfx bitmap attributes, for the present fast paths
+     * (DMA blit, flip, overlay). Non-fatal: without them presents fall
+     * back to WritePixelArray. */
+    sd->hiddBitMapAB = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+    sd->hiddVCGfxBMAB = OOP_ObtainAttrBase(IID_Hidd_BitMap_VideoCore4);
 
     v3d_clock_on(sd);
     if (v3d_reset_deassert()
@@ -209,6 +273,15 @@ static int V3D_Expunge(LIBBASETYPEPTR LIBBASE)
 
     if (sd->powered)
         v3d_hw_shutdown(sd);
+    if (sd->hiddBitMapAB)
+        OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+    if (sd->hiddVCGfxBMAB)
+        OOP_ReleaseAttrBase(IID_Hidd_BitMap_VideoCore4);
+    if (sd->gpu_timer_ok)
+    {
+        CloseDevice((struct IORequest *)&sd->gpu_timer_template);
+        sd->gpu_timer_ok = FALSE;
+    }
     if (sd->hiddGalliumAB)
         OOP_ReleaseAttrBase(IID_Hidd_Gallium);
     if (sd->mbox_msg_raw)
