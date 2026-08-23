@@ -23,7 +23,8 @@
  * Full engines (2, 4, 5) support 2D/TDMODE and wide bursts, lite engines
  * do 32-bit transfers only. Lite channels 13-14 have no dedicated ARM
  * IRQ line (only DMA0-12 map to GPU IRQ 16+N), so they are excluded —
- * users may rely on per-channel completion interrupts.
+ * users may rely on per-channel completion interrupts. (On the BCM2711
+ * 13-14 are DMA4 engines with a line each, see below.)
  */
 #define DMA_POOL_FULL   ((1 << 2) | (1 << 4) | (1 << 5))
 #define DMA_POOL_LITE   ((1 << 8) | (1 << 9) | (1 << 10) | (1 << 11) | \
@@ -35,6 +36,16 @@
  */
 #define DMA_POOL_FULL_BCM2711  ((1 << 2) | (1 << 4))
 #define DMA_POOL_LITE_BCM2711  ((1 << 8) | (1 << 9) | (1 << 10))
+
+/*
+ * The BCM2711 DMA4 engines: 40-bit addressing and a 128-bit AXI path, so no
+ * bus alias and no 1GB ceiling on either end of a transfer. All four are the
+ * OS's - the firmware keeps channel 15, which is not ours to hand out anyway.
+ *
+ * Handed out only on request (DMACHF_DMA4): the control block layout differs,
+ * so a caller that got one unasked would program it as garbage.
+ */
+#define DMA_POOL_DMA4_BCM2711  ((1 << 11) | (1 << 12) | (1 << 13) | (1 << 14))
 
 /*
  * BCM2712 DMA channel allocation.
@@ -102,14 +113,51 @@ static void dma_irq_handler(void *data1, void *data2)
     }
 }
 
-/* Enable the channel and bring the engine to a clean, idle state. */
-static void dma_channel_reset(struct DMABase *DMABase, int channel)
+/* Where a channel reports its errors - DMA4 moved the register. */
+static inline IPTR dma_debug_reg(struct DMABase *DMABase, int channel)
 {
-    volatile ULONG *enable = (volatile ULONG *)DMA_ENABLE_REG;
+    if (BCM2708_DMA_IS_DMA4(DMABase->dma_periiobase, channel))
+        return DMA4_DEBUG(channel);
+
+    return DMA_DEBUG(channel);
+}
+
+/* Stop the channel and leave the engine idle with its flags clear. */
+static void dma_channel_quiesce(struct DMABase *DMABase, int channel)
+{
     volatile ULONG *cs = (volatile ULONG *)DMA_CS(channel);
     int try = 10000;
 
-    *enable = AROS_LONG2LE(AROS_LE2LONG(*enable) | (1 << channel));
+    if (BCM2708_DMA_IS_DMA4(DMABase->dma_periiobase, channel))
+    {
+        /*
+         * DMA4 has no reset bit in CS - bit 31 is HALT there - and resetting
+         * while the AXI bus still has transactions in flight is documented as
+         * probably fatal. So halt, let the engine drain, then reset via DEBUG.
+         */
+        *cs = AROS_LONG2LE(DMA4_CS_HALT);
+        while (try-- > 0)
+        {
+            if (!(AROS_LE2LONG(*cs) & (DMA4_CS_HALT | DMA4_CS_DMA_BUSY)))
+                break;
+        }
+
+        /* The DMA4 error latches are read-to-clear, not W1C - and they
+         * must be cleared, or CS.ERROR stays up and the engine
+         * misbehaves on later transfers. */
+        (void)*(volatile ULONG *)DMA4_DEBUG(channel);
+
+        if (AROS_LE2LONG(*cs) & (DMA4_CS_HALT | DMA4_CS_DMA_BUSY))
+            /* Still draining: a DEBUG reset now is documented as
+             * "probably fatal", so leave the engine as it stands. */
+            bug("[DMA] channel %d would not halt (cs=0x%08x) - "
+                "reset skipped\n", channel, AROS_LE2LONG(*cs));
+        else
+            *(volatile ULONG *)DMA4_DEBUG(channel) =
+                AROS_LONG2LE(DMA4_DEBUG_RESET);
+        *cs = AROS_LONG2LE(DMA4_CS_INT | DMA4_CS_END);
+        return;
+    }
 
     *cs = AROS_LONG2LE(DMA_CS_RESET);
     while (try-- > 0)
@@ -118,6 +166,16 @@ static void dma_channel_reset(struct DMABase *DMABase, int channel)
             break;
     }
     *cs = AROS_LONG2LE(DMA_CS_INT | DMA_CS_END);
+}
+
+/* Enable the channel and bring the engine to a clean, idle state. */
+static void dma_channel_reset(struct DMABase *DMABase, int channel)
+{
+    volatile ULONG *enable = (volatile ULONG *)DMA_ENABLE_REG;
+
+    *enable = AROS_LONG2LE(AROS_LE2LONG(*enable) | (1 << channel));
+
+    dma_channel_quiesce(DMABase, channel);
 }
 
 AROS_LH1(int, DMAAllocChannel,
@@ -140,9 +198,13 @@ AROS_LH1(int, DMAAllocChannel,
         ULONG full = is2712 ? DMA_POOL_FULL_BCM2712 : (is2711 ? DMA_POOL_FULL_BCM2711 : DMA_POOL_FULL);
         ULONG lite = is2712 ? DMA_POOL_LITE_BCM2712 : (is2711 ? DMA_POOL_LITE_BCM2711 : DMA_POOL_LITE);
 
+        /* DMA4 is a distinct programming model, so it is exactly what was
+         * asked for or nothing - never a substitute from another pool. */
+        if (flags & DMACHF_DMA4)
+            avail = is2711 ? (DMA_POOL_DMA4_BCM2711 & ~DMABase->dma_InUse) : 0;
         /* Prefer lite channels so the scarce full engines stay available
          * for users that need TDMODE. */
-        if (flags & DMACHF_TDMODE)
+        else if (flags & DMACHF_TDMODE)
             avail = full & ~DMABase->dma_InUse;
         else
         {
@@ -204,15 +266,8 @@ AROS_LH1(void, DMAFreeChannel,
     if (DMABase->dma_InUse & (1 << channel))
     {
         volatile ULONG *enable = (volatile ULONG *)DMA_ENABLE_REG;
-        volatile ULONG *cs = (volatile ULONG *)DMA_CS(channel);
-        int try = 10000;
 
-        *cs = AROS_LONG2LE(DMA_CS_RESET);
-        while (try-- > 0)
-        {
-            if (!(AROS_LE2LONG(*cs) & DMA_CS_RESET))
-                break;
-        }
+        dma_channel_quiesce(DMABase, channel);
 
         *enable = AROS_LONG2LE(AROS_LE2LONG(*enable) & ~(1 << channel));
         DMABase->dma_InUse &= ~(1 << channel);
@@ -301,6 +356,23 @@ AROS_LH2(int, DMAWaitChannel,
         if (v & DMA_CS_END)
         {
             *cs = AROS_LONG2LE(DMA_CS_INT | DMA_CS_END);
+            /* DMA4: the error latches are read-to-clear and CS.ERROR
+             * mirrors them; clear on every completion so latched state
+             * cannot poison the channel's next transfer. Report the
+             * transfer as failed if any were set. */
+            if (BCM2708_DMA_IS_DMA4(DMABase->dma_periiobase, channel))
+            {
+                ULONG dbg = AROS_LE2LONG(
+                    *(volatile ULONG *)DMA4_DEBUG(channel));
+
+                if (dbg & DMA4_DEBUG_ERRORS)
+                {
+                    bug("[DMA] channel %d completed with errors: "
+                        "debug=0x%08x\n", channel, dbg);
+                    ret = -1;
+                    break;
+                }
+            }
             ret = 0;
             break;
         }
@@ -352,21 +424,19 @@ AROS_LH2(int, DMAWaitChannel,
      * writes, so the next transfer would silently run the old control block. */
     if (do_reset)
     {
-        int try = 10000;
+        /* Before the reset wipes them. Legacy DEBUG bit 0 is
+         * READ_LAST_NOT_SET, 1 FIFO_ERROR, 2 READ_ERROR; CS bit 0
+         * ACTIVE, 1 END, 8 ERROR. DMA4: bit 0 is WRITE_ERROR, bit 3
+         * READ_CB_ERROR, CS.ERROR at bit 10, and this DEBUG read
+         * CLEARS the DMA4 latches (they are RC). Note the time printed
+         * is the actual elapsed time, not the caller's budget. */
+        bug("[DMA] channel %d %s after %uus (budget %uus): "
+            "cs=0x%08x debug=0x%08x\n",
+            channel, reason, (unsigned)(dma_now_us(DMABase) - start),
+            timeout_us, AROS_LE2LONG(*cs),
+            AROS_LE2LONG(*(volatile ULONG *)dma_debug_reg(DMABase, channel)));
 
-        /* Before the reset wipes them. DEBUG bit 0 READ_LAST_NOT_SET, 1
-         * FIFO_ERROR, 2 READ_ERROR; CS bit 0 ACTIVE, 1 END, 8 ERROR. */
-        bug("[DMA] channel %d %s after %uus: cs=0x%08x debug=0x%08x\n",
-            channel, reason, timeout_us, AROS_LE2LONG(*cs),
-            AROS_LE2LONG(*(volatile ULONG *)DMA_DEBUG(channel)));
-
-        *cs = AROS_LONG2LE(DMA_CS_RESET);
-        while (try-- > 0)
-        {
-            if (!(AROS_LE2LONG(*cs) & DMA_CS_RESET))
-                break;
-        }
-        *cs = AROS_LONG2LE(DMA_CS_INT | DMA_CS_END);
+        dma_channel_quiesce(DMABase, channel);
     }
 
     if (dsig >= 0)
