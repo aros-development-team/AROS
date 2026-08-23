@@ -51,25 +51,26 @@ BOOL v3d_hw_init(struct V3DData *sd)
     for (i = 0; i < 3; i++)
         sd->core_ident[i] = v3d_core_rd(sd, V3D_CTL_IDENT0 + 4 * i);
 
-    /* Provisional decode for the log; Mesa parses the raw idents itself
-     * through GET_PARAM, so nothing downstream depends on this. */
-    sd->ver = ((sd->hub_ident[1] >> 4) & 0xf) * 10 + (sd->hub_ident[1] & 0xf);
+    /* For the log only - Mesa parses the raw idents itself through
+     * GET_PARAM. Low nibble is the major: 0x24 on hardware = V3D 4.2. */
+    sd->ver = (sd->hub_ident[1] & 0xf) * 10 + ((sd->hub_ident[1] >> 4) & 0xf);
 
     bug("[V3D] hub ident %08x %08x %08x %08x core %08x %08x %08x -> V3D %u.%u\n",
         sd->hub_ident[0], sd->hub_ident[1], sd->hub_ident[2],
         sd->hub_ident[3], sd->core_ident[0], sd->core_ident[1],
         sd->core_ident[2], (unsigned)(sd->ver / 10), (unsigned)(sd->ver % 10));
 
-    /* All-zeroes/all-ones is a dead bus; a live hub answers with "V3D"
-     * in the identity's low bytes, as the VideoCore IV one did. Anything
-     * in between is left for the dump reader to judge. */
-    if (sd->hub_ident[0] == 0 || sd->hub_ident[0] == 0xffffffff)
+    /* Measured on hardware: the hub signs itself "VHUB" and the core
+     * "V3D"+4. 0xdeadbeef everywhere means the wake-up sequence missed a
+     * step; all-zeroes/all-ones is a dead bus. */
+    if (sd->hub_ident[0] == 0 || sd->hub_ident[0] == 0xffffffff
+        || sd->hub_ident[0] == 0xdeadbeef)
     {
         bug("[V3D] hub not responding - unpowered?\n");
         return FALSE;
     }
-    if ((sd->hub_ident[0] & 0xffffff) != 0x443356)
-        bug("[V3D] no V3D signature in IDENT0 - read the dump carefully\n");
+    if (sd->hub_ident[0] != 0x42554856)
+        bug("[V3D] no VHUB signature in IDENT0 - read the dump carefully\n");
 
     /* The address-path question phase B hangs on: an enabled MMU means
      * BO addresses are GPU-virtual through a firmware page table, a
