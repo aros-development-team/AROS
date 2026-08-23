@@ -81,6 +81,34 @@ extern IPTR __arm_periiobase;
 #define V3D_IRQ             (32 + 74)   /* GIC SPI 74, from the device tree */
 
 /*
+ * Power and reset. The device tree hangs the BCM2711's V3D off the
+ * classic PM block (power-domains = <&pm 1>, resets = <&pm 0>), not the
+ * firmware: the mailbox power tags answer "on" without the block ever
+ * waking, and every register then reads the bus poison 0xdeadbeef. The
+ * PM block's third register window on the 2711 is a new ASB instance
+ * next to V3D itself, whose bridges have to be unstalled after power-up.
+ * Register and bit meanings are the BCM2835 PM block's, unchanged.
+ */
+#define V3D_PM_OFFSET       0x100000    /* /soc, so periiobase-relative */
+#define V3D_PM_GRAFX        0x10c
+#define V3D_PM_PASSWORD     0x5a000000
+#define V3D_PM_POWUP        (1 << 0)
+#define V3D_PM_POWOK        (1 << 1)
+#define V3D_PM_ISPOW        (1 << 2)
+#define V3D_PM_MEMREP       (1 << 3)
+#define V3D_PM_MRDONE       (1 << 4)
+#define V3D_PM_ISFUNC       (1 << 5)
+#define V3D_PM_V3DRSTN      (1 << 6)
+
+#define V3D_ASB_OFFSET      0xc11000    /* the 2711-only instance */
+#define V3D_ASB_V3D_S_CTRL  0x08
+#define V3D_ASB_V3D_M_CTRL  0x0c
+#define V3D_ASB_REQ_STOP    (1 << 0)
+#define V3D_ASB_ACK         (1 << 1)
+
+#define V3D_CLK_ID          5           /* firmware clock, as on the Pi 3 */
+
+/*
  * How a BO's locked bus address is presented to the GPU. Phase B decides
  * this from the MMU dump: with the MMU off the masked physical address is
  * what the units consume, exactly as on the VideoCore IV.
