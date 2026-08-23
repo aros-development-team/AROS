@@ -24,15 +24,8 @@
 #ifndef _V3D_DRM_H_
 #define _V3D_DRM_H_
 
-/* drm.h stub */
 #include <stdint.h>
-typedef unsigned int __u32;
-typedef unsigned long long __u64;
-typedef int __s32;
-typedef long long __s64;
-#define DRM_COMMAND_BASE 0x40
-#define DRM_IOWR(nr, type) (DRM_COMMAND_BASE + (nr))
-#define DRM_IOW(nr, type) (DRM_COMMAND_BASE + (nr))
+#include "drm.h"
 
 #if defined(__cplusplus)
 extern "C" {

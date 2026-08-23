@@ -168,11 +168,20 @@ GCA_GENFILES := gallium_core_api.h gca_table.c gca_bind.c gca_glue.S \
 # hidd-vc4gallium.
 GCA_ABI_FLAGS := $(TARGET_ISA_CFLAGS) $(USER_CPPFLAGS)
 
-$(GCA_GENDIR)/.gca.stamp : $(top_libdir)/libgallium_vc4.a $(GCA_CORELIBS) $(GCA_TOOL)
+# Both pipe drivers bind against the ONE table mesa3dgl carries, and
+# gca_bind matches slots positionally, so the slot list is generated from
+# the union of their import sets. A driver added here must also appear in
+# the v3d-side consumption (workbench/hidds/v3d) and vice versa.
+GCA_CONSUMERS := $(top_libdir)/libgallium_vc4.a $(top_libdir)/libgallium_v3d.a
+
+#MM linklibs-gallium_vc4-gca : linklibs-gallium_v3d
+#MM linklibs-galliumcoreapi : linklibs-gallium_vc4 linklibs-gallium_v3d
+
+$(GCA_GENDIR)/.gca.stamp : $(GCA_CONSUMERS) $(GCA_CORELIBS) $(GCA_TOOL)
 	%mkdir_q dir="$(GCA_GENDIR)"
 	$(Q)$(ECHO) "Generating GalliumCoreAPI glue"
 	$(Q)$(PYTHON) $(GCA_TOOL) --nm $(GCA_NM) --ar $(GCA_AR) \
-		--consumer $(top_libdir)/libgallium_vc4.a \
+		--consumer $(GCA_CONSUMERS) \
 		--providers $(GCA_CORELIBS) \
 		--private-data nir_intrinsic_infos nir_op_infos util_cpu_caps \
 		--mesa-version $(MESAGLVERSION) --arch $(AROS_TARGET_CPU) \
