@@ -928,6 +928,7 @@ static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
                                 Icons[x].Icon_PositionY,
                                 IDS_NORMAL,
                                 ICONDRAWA_Frameless, TRUE,
+                                ICONDRAWA_Borderless, TRUE,
                                 ICONDRAWA_EraseBackground, FALSE,
                                 TAG_DONE);
                         }
@@ -1033,6 +1034,7 @@ static void Insert_Icon(LONG Mode, LONG NrIcon)
         Icons[NrIcon].Icon_PositionY - MovingTable[(Icons[NrIcon].Icon_Status & 0x07)],
         Mode,
         ICONDRAWA_Frameless, TRUE,
+        ICONDRAWA_Borderless, TRUE,
         ICONDRAWA_EraseBackground, FALSE,
         TAG_DONE);
 
@@ -1206,6 +1208,7 @@ static BOOL OpenMainWindow(void)
                     Icons[x].Icon_PositionY,
                     IDS_NORMAL,
                     ICONDRAWA_Frameless, TRUE,
+                    ICONDRAWA_Borderless, TRUE,
                     ICONDRAWA_EraseBackground, FALSE,
                     TAG_DONE);
             }
