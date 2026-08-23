@@ -4,7 +4,6 @@
     Desc: dos64.library packet transport helpers.
 */
 
-#include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -77,8 +76,10 @@ QUAD dos64_SendPkt64OS4(struct Dos64Base *DOS64Base, struct MsgPort *port, LONG 
     dp->dp_Type = action;
     dp->dp_Arg1 = object;               /* standard slot, as handlers expect  */
     sp->pkt64.dp_Res0 = DP64_INIT;      /* marks the packet as 64-bit capable */
+    sp->pkt64.dp_Arg1 = object;         /* the object, where a 64-bit handler looks */
     sp->pkt64.dp_Arg2 = arg64;
     sp->pkt64.dp_Arg3 = arg32;
+    sp->pkt64.dp_Arg5 = 0;              /* zero validates dp_Arg4 */
 
     SendPkt(dp, port, &me->pr_MsgPort);
     if (WaitPkt() != dp)
