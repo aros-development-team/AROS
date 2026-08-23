@@ -349,18 +349,24 @@ static void hvs5_init_plane(ULONG base, ULONG alpha_mode)
  * into, composited straight over the framebuffer instead of being blitted
  * into it. Fixed alpha rather than per-pixel, because what GL leaves in
  * the alpha channel is undefined.
+ *
+ * hvs_OvlX/Y are fb coords, so they are shifted by the fb plane origin
+ * and clipped against its destination rectangle, like the cursor. No
+ * scaling term: the overlay is only offered on a unity framebuffer
+ * (hvs_OvlUsable), where destination and source are the same size.
  */
 static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-    LONG ox = st->hvs_OvlX, oy = st->hvs_OvlY;
+    LONG left = (LONG)st->hvs_FBX, top = (LONG)st->hvs_FBY;
+    LONG ox = left + st->hvs_OvlX, oy = top + st->hvs_OvlY;
     LONG ow = st->hvs_OvlW, oh = st->hvs_OvlH;
     ULONG ptr = st->hvs_OvlPhys & ~HVS5_PTR_BUS_ALIAS;
 
-    if (ox < 0) { ptr += (ULONG)(-ox) * 4;               ow += ox; ox = 0; }
-    if (oy < 0) { ptr += (ULONG)(-oy) * st->hvs_OvlPitch; oh += oy; oy = 0; }
-    if (ox + ow > (LONG)st->hvs_SrcW) ow = (LONG)st->hvs_SrcW - ox;
-    if (oy + oh > (LONG)st->hvs_SrcH) oh = (LONG)st->hvs_SrcH - oy;
+    if (ox < left) { ptr += (ULONG)(left - ox) * 4;                ow -= left - ox; ox = left; }
+    if (oy < top)  { ptr += (ULONG)(top - oy) * st->hvs_OvlPitch;  oh -= top - oy;  oy = top; }
+    if (ox + ow > left + (LONG)st->hvs_DestW) ow = left + (LONG)st->hvs_DestW - ox;
+    if (oy + oh > top + (LONG)st->hvs_DestH)  oh = top + (LONG)st->hvs_DestH - oy;
 
     if (ow <= 0 || oh <= 0)
     {
@@ -481,13 +487,48 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
         st->hvs_FBPtrOff = fb_ptr;
         st->hvs_FBWords  = fb_words;
 
-        /* The framebuffer plane covers the screen, so its POS2 is what the
-         * other planes get clipped against. */
+        /* The framebuffer plane is what the other planes sit on: its
+         * destination rectangle is their clip region and their origin. A
+         * mode below the panel's own gets centred and scaled by the
+         * firmware, so anything positioned in fb coords has to be mapped
+         * through that rectangle. */
         {
-            ULONG pos2 = st->hvs_FBEntry[3];
+            ULONG ctl0 = st->hvs_FBEntry[0];
+            ULONG pos0 = st->hvs_FBEntry[1];
 
-            st->hvs_SrcW = pos2 & 0xffff;
-            st->hvs_SrcH = (pos2 >> 16) & 0xffff;
+            st->hvs_FBX = pos0 & 0xffff;
+            st->hvs_FBY = (pos0 >> 16) & 0xffff;
+
+            if (ctl0 & HVS5_CTL0_UNITY)
+            {
+                ULONG pos2 = st->hvs_FBEntry[3];
+
+                st->hvs_SrcW  = pos2 & 0xffff;
+                st->hvs_SrcH  = (pos2 >> 16) & 0xffff;
+                st->hvs_DestW = st->hvs_SrcW;
+                st->hvs_DestH = st->hvs_SrcH;
+            }
+            else
+            {
+                ULONG pos1 = st->hvs_FBEntry[3];
+                ULONG pos2 = st->hvs_FBEntry[4];
+
+                st->hvs_DestW = pos1 & 0xffff;
+                st->hvs_DestH = (pos1 >> 16) & 0xffff;
+                st->hvs_SrcW  = pos2 & 0xffff;
+                st->hvs_SrcH  = (pos2 >> 16) & 0xffff;
+            }
+
+            if (!st->hvs_SrcW || !st->hvs_SrcH
+                || !st->hvs_DestW || !st->hvs_DestH)
+            {
+                bug("[VC4HVS5] takeover: fb plane geometry %ux%u -> %ux%u"
+                    " at %u,%u makes no sense, refusing\n",
+                    (unsigned)st->hvs_SrcW, (unsigned)st->hvs_SrcH,
+                    (unsigned)st->hvs_DestW, (unsigned)st->hvs_DestH,
+                    (unsigned)st->hvs_FBX, (unsigned)st->hvs_FBY);
+                return FALSE;
+            }
         }
 
         /* A framebuffer the firmware scales carries extra words we have
@@ -522,11 +563,14 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
 
         if (st->hvs_Active)
             bug("[VC4HVS5] takeover: ACTIVE - %u words at %u (from %u), "
-                "fb plane ptr +%u, cursor +%u\n",
+                "fb plane ptr +%u, cursor +%u, fb %ux%u -> %ux%u at %u,%u\n",
                 (unsigned)(fb_words + (st->hvs_CurOff ? HVS5_PLANE_WORDS : 0)
                            + 1),
                 (unsigned)base, (unsigned)head, (unsigned)fb_ptr,
-                (unsigned)st->hvs_CurOff);
+                (unsigned)st->hvs_CurOff,
+                (unsigned)st->hvs_SrcW, (unsigned)st->hvs_SrcH,
+                (unsigned)st->hvs_DestW, (unsigned)st->hvs_DestH,
+                (unsigned)st->hvs_FBX, (unsigned)st->hvs_FBY);
         else
             bug("[VC4HVS5] takeover: never latched, firmware restored\n");
     }
@@ -561,22 +605,30 @@ BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
  * public entry point so the takeover can prime the entry before the
  * channel is ours and hvs_Active is still FALSE.
  *
- * vcsd_CurX/Y already have the hotspot applied and go negative past the
- * top and left edges, so clip by walking into the image and shrinking the
- * plane - a 16-bit position field would read a negative value as 65535.
+ * vcsd_CurX/Y are fb coords with the hotspot applied, while POS0 is in
+ * output coords, so the position is mapped through the fb plane's
+ * destination rectangle - origin plus scale. The plane itself stays
+ * unity-sized, like the firmware cursor, so only the position scales.
+ * The coords go negative past the top and left edges, so clip by walking
+ * into the image and shrinking the plane - a 16-bit position field would
+ * read a negative value as 65535.
  */
 static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-    LONG cx = xsd->vcsd_CurX, cy = xsd->vcsd_CurY;
+    LONG left = (LONG)st->hvs_FBX, top = (LONG)st->hvs_FBY;
+    LONG right = left + (LONG)st->hvs_DestW;
+    LONG bottom = top + (LONG)st->hvs_DestH;
+    LONG cx = left + xsd->vcsd_CurX * (LONG)st->hvs_DestW / (LONG)st->hvs_SrcW;
+    LONG cy = top + xsd->vcsd_CurY * (LONG)st->hvs_DestH / (LONG)st->hvs_SrcH;
     LONG cw = xsd->vcsd_CurWidth, ch = xsd->vcsd_CurHeight;
     ULONG pitch = xsd->vcsd_CurWidth * 4;
     ULONG ptr = xsd->vcsd_CurBufBus & ~HVS5_PTR_BUS_ALIAS;
 
-    if (cx < 0) { ptr += (ULONG)(-cx) * 4;     cw += cx; cx = 0; }
-    if (cy < 0) { ptr += (ULONG)(-cy) * pitch; ch += cy; cy = 0; }
-    if (cx + cw > (LONG)st->hvs_SrcW) cw = (LONG)st->hvs_SrcW - cx;
-    if (cy + ch > (LONG)st->hvs_SrcH) ch = (LONG)st->hvs_SrcH - cy;
+    if (cx < left) { ptr += (ULONG)(left - cx) * 4;     cw -= left - cx; cx = left; }
+    if (cy < top)  { ptr += (ULONG)(top - cy) * pitch;  ch -= top - cy;  cy = top; }
+    if (cx + cw > right)  cw = right - cx;
+    if (cy + ch > bottom) ch = bottom - cy;
 
     if (!xsd->vcsd_CurVisible || cw <= 0 || ch <= 0)
     {
@@ -584,10 +636,13 @@ static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base)
          * the pointer, it is worth knowing which, and neither should happen
          * while it is sitting in the middle of the screen. */
         if (st->hvs_CurShown)
-            bug("[VC4HVS5] cursor hidden: %s, at %d,%d size %dx%d in %ux%u\n",
+            bug("[VC4HVS5] cursor hidden: %s, fb %d,%d -> %d,%d size %dx%d"
+                " in %ux%u at %u,%u\n",
                 xsd->vcsd_CurVisible ? "clipped away" : "not visible",
-                (int)xsd->vcsd_CurX, (int)xsd->vcsd_CurY, (int)cw, (int)ch,
-                (unsigned)st->hvs_SrcW, (unsigned)st->hvs_SrcH);
+                (int)xsd->vcsd_CurX, (int)xsd->vcsd_CurY, (int)cx, (int)cy,
+                (int)cw, (int)ch,
+                (unsigned)st->hvs_DestW, (unsigned)st->hvs_DestH,
+                (unsigned)st->hvs_FBX, (unsigned)st->hvs_FBY);
         st->hvs_CurShown = FALSE;
         hvs5_dl_wr(base, HVS5_CTL0_CURSOR & ~HVS5_CTL0_VALID);
         return;
