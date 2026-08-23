@@ -218,6 +218,18 @@ if test "x-$aros_tree_vectorize" = "x-yes" ; then
     aros_cflags_tree_vectorize=-ftree-vectorize
 fi
 
+AC_MSG_CHECKING([for an option to disable vectorization])
+aros_cflags_no_vectorize=
+for flag in -fno-vectorize -fno-tree-vectorize; do
+    CFLAGS="$flag -Werror"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cflags_no_vectorize=$flag; break],[])
+done
+if test -n "$aros_cflags_no_vectorize" ; then
+    AC_MSG_RESULT([$aros_cflags_no_vectorize])
+else
+    AC_MSG_RESULT([no])
+fi
+
 AC_MSG_CHECKING([whether ${CC} accepts -flto])
 CFLAGS=-flto
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_lto="yes"],[aros_lto="no"])
@@ -1731,6 +1743,7 @@ AC_SUBST(aros_cflags_no_trapping_math)
 AC_SUBST(aros_cflags_float_store)
 AC_SUBST(aros_cflags_no_float_store)
 AC_SUBST(aros_cflags_tree_vectorize)
+AC_SUBST(aros_cflags_no_vectorize)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)
 AC_SUBST(aros_cflags_whole_program)

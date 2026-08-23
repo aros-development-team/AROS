@@ -57,6 +57,7 @@ CFLAGS_NO_FLOAT_STORE                   := @aros_cflags_no_float_store@
 
 # Auto vectorize
 CFLAGS_TREE_VECTORIZE                   := @aros_cflags_tree_vectorize@
+CFLAGS_NO_VECTORIZE                     := @aros_cflags_no_vectorize@
 
 #
 # LTO/Graphite optimization flags
