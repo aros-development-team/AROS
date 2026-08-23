@@ -77,13 +77,8 @@ asm (
     ".string \"Native/CORE AArch64 v1 (" __DATE__ ")\"" "\n\t\n\t"
 );
 
-#if defined(__clang__)
-static uint64_t * const stack_end __attribute__((used, section(".aros.init"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
-static uint64_t * const stack_super_end __attribute__((used, section(".aros.init"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
-#else
-static uint64_t * const stack_end __attribute__((used, section(".aros.init " TARGET_SECTION_COMMENT))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
-static uint64_t * const stack_super_end __attribute__((used, section(".aros.init " TARGET_SECTION_COMMENT))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
-#endif
+static uint64_t * const stack_end __attribute__((used, section(".aros.init.data"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
+static uint64_t * const stack_super_end __attribute__((used, section(".aros.init.data"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
 
 struct ARM_Implementation __arm_arosintern  __attribute__((aligned(8), section(".data"))) = {0,0,NULL,0};
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
