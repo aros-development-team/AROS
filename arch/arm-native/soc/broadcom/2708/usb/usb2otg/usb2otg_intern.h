@@ -28,6 +28,8 @@
 #include <exec/initializers.h>
 #include <dos/dos.h>
 
+#include <string.h>
+
 #include <devices/timer.h>
 #include <utility/utility.h>
 
