@@ -45,12 +45,26 @@ struct Dos64Base
      (err) == ERROR_BAD_NUMBER)
 
 /*
- * A value-returning packet failed because the filesystem does not
- * understand the action. Handlers reply to unknown packets with
- * either -1 or the canonical DOSFALSE, so accept both res1 values.
+ * A value-returning packet did not give us an answer, so the caller
+ * should ask again over the 32-bit path.
+ *
+ * Handlers reply to a packet they will not service with either -1 or
+ * the canonical DOSFALSE, so accept both res1 values - but do not go
+ * on to insist on a particular error code. Filesystems report refusing
+ * these packets in whatever terms suit them (pfs3 answers them with
+ * ERROR_NOT_A_DOS_DISK when it has no valid disk, for instance), and a
+ * code we failed to anticipate must not be mistaken for a result.
+ *
+ * Testing the error rather than the result also keeps the genuine
+ * answer zero - an empty file, or position zero - distinguishable from
+ * DOSFALSE: those come back with no error and are returned as-is.
+ *
+ * Falling back is always safe here. These packets only ever ask a
+ * question or reposition a file; reads and writes never travel this
+ * way, so nothing can be done twice by asking again.
  */
 #define dos64_UnsupportedPkt(ret, err) \
-    (((ret) == -1 || (ret) == DOSFALSE) && dos64_UnsupportedAction(err))
+    (((ret) == -1 || (ret) == DOSFALSE) && ((err) != 0))
 
 /* Largest chunk handed to the 32-bit ACTION_READ/ACTION_WRITE packets */
 #define DOS64_IOCHUNK 0x40000000
