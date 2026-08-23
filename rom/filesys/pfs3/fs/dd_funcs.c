@@ -1631,6 +1631,9 @@ static SIPTR dd_InhibitOff(struct DosPacket *pkt, globaldata * g)
 
 static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 {
+	struct Task *caller;
+	BOOL showrequesters = TRUE;
+
 	/* argumenten stemmen NIET met de dosmanual overeen */
 	// ARG1 = BSTR Name of device (with trailing ':')
 	// ARG2 = LONG Type of format (file system specific ==> ID_FDOS_DISK of 0)
@@ -1645,6 +1648,14 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	}
 #endif
 
+	caller = NULL;
+	if (pkt->dp_Port &&
+		(pkt->dp_Port->mp_Flags & PF_ACTION) == PA_SIGNAL)
+		caller = pkt->dp_Port->mp_SigTask;
+	if (caller && caller->tc_Node.ln_Type == NT_PROCESS)
+		showrequesters = ((struct Process *)caller)->pr_WindowPtr !=
+			(APTR)(SIPTR)-1;
+
 	/* Ik neem aan dat er geen Lock check nodig is ... */
 	/* if not inhibited then 'remove disk' */
 	if (g->inhibitcount == 0)
@@ -1657,7 +1668,8 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	}
 
 	/* format disk */
-	return FDSFormat((DSTR)BADDR(pkt->dp_Arg1), pkt->dp_Arg2, &pkt->dp_Res2, g);
+	return FDSFormat((DSTR)BADDR(pkt->dp_Arg1), pkt->dp_Arg2,
+		&pkt->dp_Res2, showrequesters, g);
 }
 
 
@@ -2316,4 +2328,3 @@ static void dd_ChangeFilePosition64(struct DosPacket *pkt, globaldata *g)
 
 
 #endif
-

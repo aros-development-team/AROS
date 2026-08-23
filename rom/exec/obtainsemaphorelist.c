@@ -128,16 +128,18 @@
             {
                 /* We got it, go on to the next one */
                 ss = (struct SignalSemaphore *)ss->ss_Link.ln_Succ;
-                failedObtain--;
             }
         }
     }
 
 #ifndef NO_CONSISTENCY_CHECKS
-    if(failedObtain != 0)
+    ForeachNode(sigSem, ss)
     {
-        kprintf("\n\nObtainSemaList: Obtained count mismatch %d\n", failedObtain);
-        Alert(AN_BadSemaphore);
+        if(ss->ss_Owner != ThisTask)
+        {
+            kprintf("\n\nObtainSemaList: sem 0x%p not owned after obtain\n", ss);
+            Alert(AN_BadSemaphore);
+        }
     }
 #endif
 

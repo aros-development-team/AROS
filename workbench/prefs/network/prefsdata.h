@@ -6,6 +6,7 @@
 #define _PREFSDATA_H_
 
 #include <exec/types.h>
+#include <exec/lists.h>
 
 #define PREFS_PATH_ENV              "ENV:AROSTCP"
 #define PREFS_PATH_ENVARC           "ENVARC:AROSTCP"
@@ -77,21 +78,18 @@ enum IPMode
 struct Interface
 {
     TEXT name[NAMEBUFLEN];
-    enum IPMode ipMode;
-    TEXT IP[IPBUFLEN];
-    TEXT mask[IPBUFLEN];
-    TEXT gate[IPBUFLEN];
-    enum IPMode ip6Mode;
-    TEXT ip6[IP6BUFLEN];
-    LONG ip6prefix;
-    TEXT gate6[IP6BUFLEN];
+    /* Protocol objects the interface carries: ProtocolAddress nodes, each
+     * tagged in ln_Type with the owning plugin's id.  An interface may hold
+     * any set of these - IPv4 only, IPv6 only, both, or none.  The core never
+     * looks inside a node; it only routes each back to its plugin. */
+    struct List protoAddrs;
     TEXT device[NAMEBUFLEN];
     LONG unit;
     BOOL up;
     /* 6in4 (SIT) tunnel pseudo-interface.  When isTunnel is TRUE the interface
      * has no SANA-II device; the outer IPv4 endpoints below carry the tunnel,
-     * while ip6/ip6prefix (IP6/PREFIXLEN) and gate6 (GW6) describe the inner
-     * IPv6 address and peer.  See AROSTCP SSC_TEMPLATE (TUNNEL/TSRC/TDST/TTL). */
+     * and the inner IPv6 is just another protocol object on protoAddrs.
+     * See AROSTCP SSC_TEMPLATE (TUNNEL/TSRC/TDST/TTL). */
     BOOL isTunnel;
     TEXT tunnelRemote[IPBUFLEN]; /* TDST - outer IPv4 remote endpoint (required) */
     TEXT tunnelLocal[IPBUFLEN];  /* TSRC - outer IPv4 local endpoint (optional)  */
@@ -164,16 +162,7 @@ enum ErrorCode UseNetworkPrefs();
 
 struct Interface * GetInterface(LONG index);
 STRPTR GetName(struct Interface *iface);
-enum IPMode GetIPMode(struct Interface *iface);
-BOOL   GetIfDHCP(struct Interface *iface);   /* TRUE if IP_MODE_DHCP */
-STRPTR GetIP(struct Interface *iface);
-STRPTR GetMask(struct Interface *iface);
-STRPTR GetGate(struct Interface *iface);
-enum IPMode GetIP6Mode(struct Interface *iface);
-BOOL   GetIfDHCP6(struct Interface *iface);  /* TRUE if IP_MODE_DHCP */
-STRPTR GetIP6(struct Interface *iface);
-LONG   GetIP6Prefix(struct Interface *iface);
-STRPTR GetGate6(struct Interface *iface);
+struct List *GetProtoAddrs(struct Interface *iface); /* interface's protocol objects */
 STRPTR GetDevice(struct Interface *iface);
 LONG   GetUnit(struct Interface *iface);
 BOOL   GetUp(struct Interface *iface);
@@ -189,23 +178,7 @@ STRPTR GetDomain(void);
 LONG   GetInterfaceCount(void);
 BOOL   GetAutostart(void);
 
-void SetInterface
-(
-    struct Interface *iface, STRPTR name, enum IPMode ipMode, STRPTR IP,
-    STRPTR mask, STRPTR gate, enum IPMode ip6Mode, STRPTR ip6, LONG ip6prefix,
-    STRPTR gate6, STRPTR device, LONG unit, BOOL up
-);
 void SetName(struct Interface *iface, STRPTR w);
-void SetIPMode(struct Interface *iface, enum IPMode w);
-void SetIfDHCP(struct Interface *iface, BOOL w);  /* sets IP_MODE_DHCP or IP_MODE_MANUAL */
-void SetIP(struct Interface *iface, STRPTR w);
-void SetMask(struct Interface *iface, STRPTR w);
-void SetGate(struct Interface *iface, STRPTR w);
-void SetIP6Mode(struct Interface *iface, enum IPMode w);
-void SetIfDHCP6(struct Interface *iface, BOOL w); /* sets IP_MODE_DHCP or IP_MODE_MANUAL */
-void SetIP6(struct Interface *iface, STRPTR w);
-void SetIP6Prefix(struct Interface *iface, LONG w);
-void SetGate6(struct Interface *iface, STRPTR w);
 void SetDevice(struct Interface *iface, STRPTR w);
 void SetUnit(struct Interface *iface, LONG w);
 void SetUp(struct Interface *iface, BOOL w);

@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "protocols.h"
+#include "netprefs_intern.h"
 #include "locale.h"
 
 #define USE_NET_PROTOICON_COLORS
@@ -68,32 +69,20 @@ AROS_UFH3S(LONG, protoDisplayFunc,
         /*
          * Two static buffers are safe here because the display hook is called
          * once per entry before MUI renders the row; no re-entrancy concern.
+         * The protocol name and the address text both come from the owning
+         * plugin - this hook knows nothing about IPv4/IPv6.
          */
-        static char famBuf[8];
-        static char addrBuf[IP6BUFLEN + 4];
+        static char famBuf[16];
+        static char addrBuf[IP6BUFLEN + 8];
+        struct ProtoHandlerNode *ph = ProtoHandler_ByID(entry->pa_node.ln_Type);
 
-        if (entry->pa_family == PROTO_FAMILY_IPV4)
-            strcpy(famBuf, "IPv4");
-        else
-            strcpy(famBuf, "IPv6");
-
-        switch (entry->pa_mode)
+        famBuf[0] = addrBuf[0] = '\0';
+        if (ph)
         {
-            case IP_MODE_DHCP:
-                strcpy(addrBuf, _(MSG_IP_MODE_DHCP));
-                break;
-            case IP_MODE_AUTO:
-                strcpy(addrBuf,
-                    (entry->pa_family == PROTO_FAMILY_IPV6)
-                        ? _(MSG_IP6_MODE_AUTO)
-                        : _(MSG_IP_MODE_AUTO));
-                break;
-            default:
-                if (entry->pa_addr[0])
-                    strcpy(addrBuf, entry->pa_addr);
-                else
-                    strcpy(addrBuf, _(MSG_IP_MODE_MANUAL));
-                break;
+            if (ph->ph_Node.ln_Name)
+                strlcpy(famBuf, ph->ph_Node.ln_Name, sizeof(famBuf));
+            if (ph->ph_Display)
+                ph->ph_Display(entry, addrBuf, sizeof(addrBuf));
         }
 
         *array++ = famBuf;
@@ -115,52 +104,77 @@ struct Hook proto_constructHook = { {0}, (HOOKFUNC)protoConstructFunc, NULL, NUL
 struct Hook proto_destructHook  = { {0}, (HOOKFUNC)protoDestructFunc,  NULL, NULL };
 struct Hook proto_displayHook   = { {0}, (HOOKFUNC)protoDisplayFunc,   NULL, NULL };
 
-/*--- Conversion functions --------------------------------------------------*/
+/*--- Protocol-object list helpers ------------------------------------------*
+ * The core keeps each interface's protocol objects on a List of
+ * ProtocolAddress nodes, tagged in ln_Type with the owning plugin's id.  These
+ * helpers let both the core and the plugins find/create/copy/free them without
+ * anyone interpreting the address itself.
+ */
 
-void ProtoAddr_FromInterface(struct ProtocolAddress *pa,
-                             struct Interface *iface,
-                             enum ProtocolFamily fam)
+extern struct NetPrefsBase *NetPrefs_GetBase(void);
+
+/* Find the registered handler for a plugin id (ln_Type), or NULL. */
+struct ProtoHandlerNode *ProtoHandler_ByID(UBYTE id)
 {
-    pa->pa_family = fam;
+    struct NetPrefsBase *npb = NetPrefs_GetBase();
+    struct ProtoHandlerNode *ph;
 
-    if (fam == PROTO_FAMILY_IPV4)
-    {
-        pa->pa_mode = GetIPMode(iface);
-        strncpy(pa->pa_addr, GetIP(iface),   sizeof(pa->pa_addr) - 1);
-        strncpy(pa->pa_mask, GetMask(iface), sizeof(pa->pa_mask) - 1);
-        pa->pa_prefix    = 0;
-        strncpy(pa->pa_gate, GetGate(iface), sizeof(pa->pa_gate) - 1);
-    }
-    else
-    {
-        pa->pa_mode = GetIP6Mode(iface);
-        strncpy(pa->pa_addr, GetIP6(iface),   sizeof(pa->pa_addr) - 1);
-        pa->pa_mask[0] = '\0';
-        pa->pa_prefix  = GetIP6Prefix(iface);
-        strncpy(pa->pa_gate, GetGate6(iface), sizeof(pa->pa_gate) - 1);
-    }
-
-    /* Guarantee NUL termination regardless of source length */
-    pa->pa_addr[sizeof(pa->pa_addr) - 1] = '\0';
-    pa->pa_mask[sizeof(pa->pa_mask) - 1] = '\0';
-    pa->pa_gate[sizeof(pa->pa_gate) - 1] = '\0';
+    if (!npb)
+        return NULL;
+    ForeachNode(&npb->npb_ProtoHandlers, ph)
+        if (ph->ph_ID == id)
+            return ph;
+    return NULL;
 }
 
-void ProtoAddr_ToInterface(struct Interface *iface,
-                           struct ProtocolAddress *ipv4,
-                           struct ProtocolAddress *ipv6)
+/* Find an interface's protocol object of the given id, or NULL. */
+struct ProtocolAddress *ProtoAddr_Find(struct List *list, UBYTE id)
 {
-    /* IPv4 */
-    SetIPMode(iface, ipv4->pa_mode);
-    SetIP(iface,     ipv4->pa_addr);
-    SetMask(iface,   ipv4->pa_mask);
-    SetGate(iface,   ipv4->pa_gate);
+    struct ProtocolAddress *pa;
 
-    /* IPv6 */
-    SetIP6Mode(iface,   ipv6->pa_mode);
-    SetIP6(iface,       ipv6->pa_addr);
-    SetIP6Prefix(iface, ipv6->pa_prefix);
-    SetGate6(iface,     ipv6->pa_gate);
+    ForeachNode(list, pa)
+        if (pa->pa_node.ln_Type == id)
+            return pa;
+    return NULL;
+}
+
+/* Find, or allocate and append, an interface's protocol object of an id. */
+struct ProtocolAddress *ProtoAddr_FindOrAdd(struct List *list, UBYTE id)
+{
+    struct ProtocolAddress *pa = ProtoAddr_Find(list, id);
+
+    if (!pa && (pa = AllocVec(sizeof(*pa), MEMF_CLEAR)) != NULL)
+    {
+        pa->pa_node.ln_Type = id;
+        AddTail(list, &pa->pa_node);
+    }
+    return pa;
+}
+
+/* Free every protocol object on a list, leaving it empty. */
+void ProtoAddr_FreeList(struct List *list)
+{
+    struct Node *n;
+
+    while ((n = RemHead(list)) != NULL)
+        FreeVec(n);
+}
+
+/* Replace dst's protocol objects with deep copies of src's. */
+void ProtoAddr_CopyList(struct List *dst, struct List *src)
+{
+    struct ProtocolAddress *pa;
+
+    ProtoAddr_FreeList(dst);
+    ForeachNode(src, pa)
+    {
+        struct ProtocolAddress *copy = AllocVec(sizeof(*copy), MEMF_ANY);
+        if (copy)
+        {
+            *copy = *pa;                 /* copies ln_Type + all fields */
+            AddTail(dst, &copy->pa_node);
+        }
+    }
 }
 
 /*===========================================================================

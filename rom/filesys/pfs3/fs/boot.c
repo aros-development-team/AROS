@@ -159,7 +159,7 @@ BOOL debug=FALSE;
 
 /* protos */
 // extern void __saveds EntryWithNewStack(void);
-void __saveds EntryPoint(void);
+void __saveds EntryPoint(struct ExecBase *);
 void NormalCommands(struct DosPacket *, globaldata *);
 void HandleSleepMsg (globaldata *g);
 void ReturnPacket(struct DosPacket *, struct MsgPort *, globaldata *);
@@ -219,7 +219,8 @@ static UBYTE debugbuf[120];
 /*                                MAIN                                */
 /**********************************************************************/
 
-void __saveds EntryPoint (void)
+#undef SysBase
+void __saveds EntryPoint (struct ExecBase *SysBase)
 {
 	/* globals */
 	struct globaldata *g;
@@ -231,11 +232,6 @@ void __saveds EntryPoint (void)
 	struct Message *msg;
 	UBYTE *mountname;
 	ULONG signal, dossig, timesig, notifysig, sleepsig, waitmask;
-#undef SysBase
-	struct ExecBase *SysBase;
-
-	SysBase =  *((struct ExecBase **)4);
-
 	/* init globaldata */
 	g = AllocMem(sizeof(struct globaldata), MEMF_CLEAR);
 	if (!g)
@@ -706,12 +702,13 @@ static void Quit (globaldata *g)
 #ifdef __AROS__
 LONG AROSEntryPoint(struct ExecBase *SysBase)
 {
-    return (LONG)EntryPoint;
+    EntryPoint(SysBase);
+    return RETURN_OK;
 }
 #else
 LONG __saveds __startup Main(void)
 {
-    return EntryPoint(*(struct ExecBase **)4L);
+    EntryPoint(*(struct ExecBase **)4L);
+    return RETURN_OK;
 }
 #endif
-

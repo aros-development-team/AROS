@@ -124,11 +124,13 @@ AROS_LH1(APTR, GetBase,
  * Register a protocol-address handler.  Called by modules during their
  * Startup callback.
  * ----------------------------------------------------------------------- */
-AROS_LH4(void, RegisterProtoHandler,
+AROS_LH6(void, RegisterProtoHandler,
          AROS_LHA(CONST_STRPTR, name, A0),
          AROS_LHA(ULONG, family, D0),
          AROS_LHA(struct MUI_CustomClass *, winclass, A1),
          AROS_LHA(NETPREFS_WRITETOKENS, writetokens, A2),
+         AROS_LHA(NETPREFS_READTOKENS, readtokens, A3),
+         AROS_LHA(NETPREFS_DISPLAY, display, D1),
          struct NetPrefsBase *, NetPrefsBase, 8, NetPrefs)
 {
     AROS_LIBFUNC_INIT
@@ -140,11 +142,17 @@ AROS_LH4(void, RegisterProtoHandler,
         AllocMem(sizeof(struct ProtoHandlerNode), MEMF_CLEAR);
     if (ph)
     {
-        ph->ph_Node.ln_Name = (char *)name;
-        ph->ph_Node.ln_Pri  = (BYTE)family;
+        /* Assign a non-zero ID (fits ln_Type) used to tag this plugin's
+         * address nodes on an interface's protocol list. */
+        ph->ph_ID            = (UBYTE)(family + 1);
+        ph->ph_Node.ln_Name  = (char *)name;
+        ph->ph_Node.ln_Pri   = (BYTE)family;
+        ph->ph_Node.ln_Type  = ph->ph_ID;
         ph->ph_Family        = family;
         ph->ph_WinClass      = winclass;
         ph->ph_WriteTokens   = writetokens;
+        ph->ph_ReadTokens    = readtokens;
+        ph->ph_Display       = display;
         Enqueue(&NetPrefsBase->npb_ProtoHandlers, &ph->ph_Node);
     }
 

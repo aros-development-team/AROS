@@ -17,6 +17,9 @@
 
 #define VERSION "$VER: Network 1.25 (21.02.2026) AROS Dev Team"
 
+struct NetPrefsBase;
+extern struct NetPrefsBase *NetPrefs_Bootstrap(void);
+
 int main(int argc, char **argv)
 {
     Object *application,  *window;
@@ -24,6 +27,11 @@ int main(int argc, char **argv)
     Locale_Initialize();
 
     ReadArguments(argc, argv);
+
+    /* Load the protocol plugins before parsing: they are what claim/parse the
+     * per-protocol address tokens at load time and write them at save time.
+     * Needed even in headless SAVE/USE mode, where no editor window is made. */
+    NetPrefs_Bootstrap();
 
     InitNetworkPrefs(
         (ARG(FROM) != (IPTR)NULL ? (STRPTR)ARG(FROM) : (STRPTR)PREFS_PATH_ENV),
