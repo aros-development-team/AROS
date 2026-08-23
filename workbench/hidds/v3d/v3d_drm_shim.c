@@ -164,8 +164,10 @@ static void bo_unref(struct V3DData *sd, ULONG handle)
     if (--bo->refcount == 0)
     {
         v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
-        v3d_gpu_mem_free(sd, bo->gpu_handle);
+        if (!bo->external)
+            v3d_gpu_mem_free(sd, bo->gpu_handle);
         bo->gpu_handle = 0;
+        bo->external = FALSE;
     }
 }
 
@@ -188,9 +190,11 @@ void v3d_release_all_bos(struct V3DData *sd)
         if (bo->refcount == 0)
             continue;
         v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
-        v3d_gpu_mem_free(sd, bo->gpu_handle);
+        if (!bo->external)
+            v3d_gpu_mem_free(sd, bo->gpu_handle);
         bo->gpu_handle = 0;
         bo->refcount = 0;
+        bo->external = FALSE;
         leaked++;
     }
     sd->bo_next_handle = 0;
@@ -237,10 +241,61 @@ int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
         sd->bo_table[h].gpu_va     = v3d_mmu_map(sd, paddr, create->size);
         sd->bo_table[h].size       = create->size;
         sd->bo_table[h].refcount   = 1;
+        sd->bo_table[h].external   = FALSE;
         ReleaseSemaphore(&sd->bo_lock);
 
         create->handle = h;
         create->offset = sd->bo_table[h].gpu_va;
+        return 0;
+    }
+
+    case DRM_IOCTL_GEM_OPEN:
+    {
+        /* Wrap a framebuffer flip page as a BO, so Mesa renders straight
+         * into scanout and presenting becomes a page flip. The only
+         * names accepted are the pages the gallium class published; the
+         * memory is not ours, so the entry is marked external and only
+         * ever unmapped, never FREEMEMed. */
+        struct drm_gem_open *open = arg;
+        ULONG name = (ULONG)open->name, h;
+
+        ObtainSemaphore(&sd->bo_lock);
+        if (!sd->scanout_size
+            || (name != sd->scanout_phys[0] && name != sd->scanout_phys[1]))
+        {
+            ReleaseSemaphore(&sd->bo_lock);
+            return -1;
+        }
+
+        /* The same page opened again keeps its handle - Mesa's handle
+         * hash relies on that identity. */
+        for (h = 1; h < V3D_MAX_BOS; h++)
+            if (sd->bo_table[h].refcount && sd->bo_table[h].external
+                && sd->bo_table[h].paddr == name)
+                break;
+
+        if (h < V3D_MAX_BOS)
+            sd->bo_table[h].refcount++;
+        else
+        {
+            h = bo_alloc_handle(sd);
+            if (!h)
+            {
+                ReleaseSemaphore(&sd->bo_lock);
+                bug("[V3D] out of BO handles\n");
+                return -1;
+            }
+            sd->bo_table[h].gpu_handle = 0;
+            sd->bo_table[h].external   = TRUE;
+            sd->bo_table[h].paddr      = name;
+            sd->bo_table[h].gpu_va     = v3d_mmu_map(sd, name,
+                                                     sd->scanout_size);
+            sd->bo_table[h].size       = sd->scanout_size;
+            sd->bo_table[h].refcount   = 1;
+        }
+        open->handle = h;
+        open->size = sd->bo_table[h].size;
+        ReleaseSemaphore(&sd->bo_lock);
         return 0;
     }
 

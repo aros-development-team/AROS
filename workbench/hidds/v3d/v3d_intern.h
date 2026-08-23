@@ -226,6 +226,19 @@ extern IPTR __arm_periiobase;
 #define aoVCGfxBM_Flip          2   /* [S] TRUE = flip front/back */
 #define aoVCGfxBM_Overlay       3   /* [GS] overlay descriptor */
 
+/* Overlay descriptor (mirrored from vcgfx_bitmap.h, like the ids above):
+ * a 32bpp plane the HVS scans straight from GPU memory, composited over
+ * the framebuffer. x/y are fb coordinates. */
+struct vc4gfx_overlay
+{
+    ULONG ovl_Phys;                 /* ARM phys of the pixel data */
+    ULONG ovl_Pitch;                /* bytes per row */
+    ULONG ovl_Width, ovl_Height;    /* source pixels */
+    LONG  ovl_X, ovl_Y;             /* position in fb coordinates */
+    ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
+                                     * = unscaled, larger = HVS upscale */
+};
+
 /*
  * GPU wait tiers (vc4gallium's proven values): tight spin for µs-precise
  * completion of short jobs, then ~1 ms timer naps so input and other
@@ -256,11 +269,13 @@ extern IPTR __arm_periiobase;
  */
 struct V3DBO
 {
-    ULONG   gpu_handle;     /* firmware handle, 0 = slot free */
+    ULONG   gpu_handle;     /* firmware handle, 0 = slot free/external */
     ULONG   paddr;          /* locked address, alias bits masked (CPU) */
     ULONG   gpu_va;         /* what the GPU sees, via the V3D MMU */
     ULONG   size;
     ULONG   refcount;
+    ULONG   external;       /* wraps memory we do not own (a scanout
+                             * page): unmap on close, never FREEMEM */
 };
 
 #define V3D_MAX_BOS     1024
@@ -327,6 +342,12 @@ struct V3DData
     struct V3DBO    bo_table[V3D_MAX_BOS];
     ULONG           bo_next_handle;
     struct SignalSemaphore bo_lock;
+
+    /* The framebuffer flip pages, published (under bo_lock) as the only
+     * names DRM_IOCTL_GEM_OPEN accepts - the zero-copy fullscreen path
+     * wraps them as BOs and renders straight into the back page. */
+    ULONG           scanout_phys[2];
+    ULONG           scanout_size;
 
     /* timer.device (UNIT_MICROHZ) for the wait loops' microsleeps. Only
      * io_Device/io_Unit are kept - each nap clones them into a stack
