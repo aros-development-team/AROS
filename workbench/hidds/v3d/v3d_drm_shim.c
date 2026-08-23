@@ -11,6 +11,8 @@
 
 #include "v3d_intern.h"
 
+#include <stdint.h>
+
 /* DRM ioctl numbers used by Mesa V3D driver */
 #define DRM_IOCTL_V3D_SUBMIT_CL    0x00
 #define DRM_IOCTL_V3D_WAIT_BO      0x01
@@ -23,7 +25,7 @@
 #define DRM_IOCTL_GEM_OPEN         0x0A
 #define DRM_IOCTL_GEM_FLINK        0x0B
 
-/* Structures matching Linux DRM V3D ioctls */
+/* The DRM V3D ioctl structures, mirrored here for now */
 struct drm_v3d_submit_cl {
     ULONG bcl_start;
     ULONG bcl_end;
@@ -113,10 +115,104 @@ static void free_handle(ULONG handle)
 }
 
 /*
+ * mmap/munmap, as Mesa's bufmgr calls them: DRM_IOCTL_V3D_MMAP_BO already
+ * answered with the buffer's own address in the offset field, so mapping
+ * is handing that address back and unmapping is nothing at all.
+ */
+void *mmap(void *addr, unsigned long length, int prot, int flags, int fd,
+           long offset)
+{
+    (void)addr; (void)length; (void)prot; (void)flags; (void)fd;
+    return (void *)(IPTR)offset;
+}
+
+int munmap(void *addr, unsigned long length)
+{
+    (void)addr; (void)length;
+    return 0;
+}
+
+/*
+ * Stubs for paths the screen configuration keeps closed: renderonly is
+ * only reached when v3d_screen_create() is given a renderonly context
+ * (ours passes NULL), and the driconf queries only when it is given an
+ * option cache (also NULL). They exist to satisfy the linker, not to run.
+ */
+struct renderonly *renderonly_dup(const struct renderonly *ro)
+{
+    (void)ro;
+    return NULL;
+}
+
+struct renderonly_scanout *
+renderonly_create_gpu_import_for_resource(struct pipe_resource *rsc,
+                                          struct renderonly *ro,
+                                          struct winsys_handle *out_handle)
+{
+    (void)rsc; (void)ro; (void)out_handle;
+    return NULL;
+}
+
+void renderonly_scanout_destroy(struct renderonly_scanout *scanout,
+                                struct renderonly *ro)
+{
+    (void)scanout; (void)ro;
+}
+
+unsigned char driCheckOption(const void *cache, const char *name, int type)
+{
+    (void)cache; (void)name; (void)type;
+    return 0;
+}
+
+unsigned char driQueryOptionb(const void *cache, const char *name)
+{
+    (void)cache; (void)name;
+    return 0;
+}
+
+/*
+ * The CLIF dumper prints control lists for V3D_DEBUG=cl sessions, through
+ * a decoder that wants the packet XML embedded in a generated header.
+ * Not worth carrying for a debug aid: a NULL from init makes every caller
+ * skip its dump, since they all test the flag first and pass the handle
+ * straight back in.
+ */
+struct clif_dump *clif_dump_init(const void *devinfo, void *output,
+                                 int pretty)
+{
+    (void)devinfo; (void)output; (void)pretty;
+    return NULL;
+}
+
+void clif_dump(struct clif_dump *clif, const void *submit)
+{
+    (void)clif; (void)submit;
+}
+
+void clif_dump_add_bo(struct clif_dump *clif, const char *name,
+                      uint32_t offset, uint32_t size, void *vaddr)
+{
+    (void)clif; (void)name; (void)offset; (void)size; (void)vaddr;
+}
+
+void clif_dump_destroy(struct clif_dump *clif)
+{
+    (void)clif;
+}
+
+/* Not in AROS's stdc. The builtin compiles to rbit+clz on clang; gcc may
+ * lower it to a call to ffs itself, which this would then be. */
+int ffs(int i)
+{
+    return __builtin_ffs(i);
+}
+
+/*
  * v3d_ioctl_aros — replacement for drmIoctl/v3d_ioctl.
  *
- * This function is called by the Mesa V3D driver instead of the
- * Linux DRM ioctl interface.
+ * This is what the Mesa V3D driver calls instead of reaching a DRM
+ * device.
  */
 int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
 {

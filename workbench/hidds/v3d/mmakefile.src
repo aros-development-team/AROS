@@ -22,14 +22,35 @@ V3D_SOURCES := \
     $(MESA_V3D_DIR)/v3d_tiling \
     $(MESA_V3D_DIR)/v3d_uniforms
 
-# V3D per-version sources (v42 for BCM2711)
+#
+# The v3dx_ sources are compiled once per hardware generation, exactly as
+# Mesa's own build does: v3d_context.c dispatches on devinfo.ver and calls
+# both the v3d33_ and the v3d41_ entry points by name, so both sets have to
+# exist or the link fails. Mesa 20.0.8 builds 33 and 41 only - a V3D 4.2
+# part like the BCM2711 runs the 41 path - so there is no 42 here.
+#
+# Generated wrappers rather than two linklibs, because the version has to
+# reach the compiler as a macro and %build_linklib takes one set of flags.
+#
+V3DX_BASE   := draw emit format_table job rcl state
+V3DX_GENDIR := $(OBJDIR)/v3dx-gen
+
 V3DX_SOURCES := \
-    $(MESA_V3D_DIR)/v3dx_draw \
-    $(MESA_V3D_DIR)/v3dx_emit \
-    $(MESA_V3D_DIR)/v3dx_format_table \
-    $(MESA_V3D_DIR)/v3dx_job \
-    $(MESA_V3D_DIR)/v3dx_rcl \
-    $(MESA_V3D_DIR)/v3dx_state
+    $(patsubst %,$(V3DX_GENDIR)/v3d33_%,$(V3DX_BASE)) \
+    $(patsubst %,$(V3DX_GENDIR)/v3d41_%,$(V3DX_BASE))
+
+$(V3DX_GENDIR)/v3d33_%.c : $(MESA_V3D_DIR)/v3dx_%.c
+	%mkdir_q dir="$(V3DX_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)printf '#define V3D_VERSION 33\n#include "%s"\n' $< > $@
+
+$(V3DX_GENDIR)/v3d41_%.c : $(MESA_V3D_DIR)/v3dx_%.c
+	%mkdir_q dir="$(V3DX_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)printf '#define V3D_VERSION 41\n#include "%s"\n' $< > $@
+
+#MM
+linklibs-gallium_v3d-gen-v3dx : $(addsuffix .c,$(V3DX_SOURCES))
 
 # Broadcom compiler sources
 BROADCOM_COMPILER_SOURCES := \
@@ -57,7 +78,10 @@ BROADCOM_COMPILER_SOURCES := \
 # Broadcom common sources
 BROADCOM_COMMON_SOURCES := \
     $(MESA_BROADCOM_DIR)/common/v3d_debug \
-    $(MESA_BROADCOM_DIR)/common/v3d_device_info
+    $(MESA_BROADCOM_DIR)/common/v3d_device_info \
+    $(MESA_BROADCOM_DIR)/qpu/qpu_instr \
+    $(MESA_BROADCOM_DIR)/qpu/qpu_pack \
+    $(MESA_BROADCOM_DIR)/qpu/qpu_disasm
 
 # V3D HIDD sources
 V3D_HIDD_SOURCES := \
@@ -67,11 +91,53 @@ V3D_HIDD_SOURCES := \
     v3d_drm_shim \
     $(SRCDIR)/workbench/libs/mesa/emul_arosc
 
+#
+# Mesa's meson build generates the CLE packet headers from XML; do the same
+# here. Written to a directory of our own rather than into the port, so
+# these never race with vc4gallium's identical rules. Two include roots
+# because the sources reach them both ways: "cle/x.h" and "broadcom/cle/x.h".
+#
+CLE_SRCDIR  := $(MESA_BROADCOM_DIR)/cle
+CLE_GENROOT := $(OBJDIR)/cle-gen
+CLE_GENDIR  := $(CLE_GENROOT)/broadcom/cle
+
+$(CLE_GENDIR)/v3d_packet_v33_pack.h: $(CLE_SRCDIR)/gen_pack_header.py $(CLE_SRCDIR)/v3d_packet_v33.xml
+	%mkdir_q dir="$(CLE_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 33 > $@
+
+$(CLE_GENDIR)/v3d_packet_v41_pack.h: $(CLE_SRCDIR)/gen_pack_header.py $(CLE_SRCDIR)/v3d_packet_v33.xml
+	%mkdir_q dir="$(CLE_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 41 > $@
+
+$(CLE_GENDIR)/v3d_packet_v42_pack.h: $(CLE_SRCDIR)/gen_pack_header.py $(CLE_SRCDIR)/v3d_packet_v33.xml
+	%mkdir_q dir="$(CLE_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 42 > $@
+
+CLE_GEN_HEADERS := \
+    $(CLE_GENDIR)/v3d_packet_v33_pack.h \
+    $(CLE_GENDIR)/v3d_packet_v41_pack.h \
+    $(CLE_GENDIR)/v3d_packet_v42_pack.h
+
+#MM
+linklibs-gallium_v3d-gen-cle : $(CLE_GEN_HEADERS)
+
+#
+# The DRM stubs have to be found before Mesa's own include/, which carries
+# a drm-uapi/ of its own that pulls in host ioctl headers. mesa.cfg puts
+# that directory on the line as -iquote, so ours has to come ahead of
+# $(USER_INCLUDES) rather than after it.
+#
 USER_INCLUDES := \
+    -iquote $(SRCDIR)/$(CURDIR)/drm-stubs \
+    -I$(SRCDIR)/$(CURDIR)/drm-stubs \
     $(USER_INCLUDES) \
     -I$(top_builddir)/galliumglue \
     -iquote $(SRCDIR)/$(CURDIR) \
-    -iquote $(SRCDIR)/$(CURDIR)/drm-stubs \
+    -iquote $(CLE_GENROOT) \
+    -iquote $(CLE_GENROOT)/broadcom \
     -isystem $(top_srcdir)/include \
     -isystem $(MESA_BROADCOM_DIR)/cle \
     -isystem $(MESA_BROADCOM_DIR) \
@@ -84,7 +150,6 @@ USER_INCLUDES := \
     -I $(top_builddir)/src/compiler/nir
 
 USER_CPPFLAGS += \
-    -DV3D_VERSION=42 \
     -DUSING_V3D_SIMULATOR=0 \
     -Dusing_v3d_simulator=0 \
     -UHAVE_VALGRIND \
@@ -97,34 +162,29 @@ USER_CFLAGS += $(NOWARN_CFLAGS)
 # Build combined Mesa V3D driver archive
 COMBINED_V3D_SOURCES := $(V3D_SOURCES) $(V3DX_SOURCES) $(BROADCOM_COMPILER_SOURCES) $(BROADCOM_COMMON_SOURCES)
 
+#MM linklibs-gallium_v3d : linklibs-gallium_v3d-gen-cle linklibs-gallium_v3d-gen-v3dx
+
 %build_linklib mmake=linklibs-gallium_v3d libname=gallium_v3d libdir=$(top_libdir) \
     objdir=$(top_builddir)/gallium_v3d files="$(COMBINED_V3D_SOURCES)"
 
-# GalliumCoreAPI runtime binding
+#
+# GalliumCoreAPI runtime binding. The generation lives with vc4gallium,
+# which runs galliumglue.py over BOTH pipe drivers: mesa3dgl carries one
+# table and gca_bind matches slots positionally, so every consumer must be
+# rewritten against the same union-generated artefacts. Generating a
+# second set here is what the first version of this file did, and the two
+# runs silently overwrote each other's glue.
+#
 GCA_GENDIR   := $(top_builddir)/galliumglue
-GCA_TOOL     := $(SRCDIR)/workbench/libs/mesa/galliumglue.py
-GCA_NM       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-nm
 GCA_OBJCOPY  := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-objcopy
 GCA_AR       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-ar
-GCA_CORELIBS := $(addprefix $(top_libdir)/lib, \
-    compiler.a galliumauxiliary.a mesautil.a mesa.a glapi.a mesadevutil.a)
-GCA_ABI_FLAGS := $(TARGET_ISA_CFLAGS) $(USER_CPPFLAGS)
 
-$(GCA_GENDIR)/.gca_v3d.stamp : $(top_libdir)/libgallium_v3d.a $(GCA_CORELIBS) $(GCA_TOOL)
-	%mkdir_q dir="$(GCA_GENDIR)"
-	$(Q)$(ECHO) "Generating GalliumCoreAPI glue for V3D"
-	$(Q)$(PYTHON) $(GCA_TOOL) --nm $(GCA_NM) --ar $(GCA_AR) \
-		--consumer $(top_libdir)/libgallium_v3d.a \
-		--providers $(GCA_CORELIBS) \
-		--private-data nir_intrinsic_infos nir_op_infos util_cpu_caps \
-		--mesa-version $(MESAGLVERSION) --arch $(AROS_TARGET_CPU) \
-		--abi-flags "$(strip $(GCA_ABI_FLAGS))" \
-		--abi-files $(SRCDIR)/workbench/libs/mesa/mesa-$(MESAGLVERSION)-aros.diff \
-		--outdir $(GCA_GENDIR)
-	$(Q)touch $@
+#MM linklibs-gallium_v3d-gca : linklibs-gallium_vc4-gca
 
-$(top_libdir)/libgallium_v3d_gca.a : $(top_libdir)/libgallium_v3d.a $(GCA_GENDIR)/.gca_v3d.stamp
-	$(Q)$(ECHO) "Rewriting gallium_v3d through GalliumCoreAPI table"
+$(top_libdir)/libgallium_v3d_gca.a : $(top_libdir)/libgallium_v3d.a \
+        $(GCA_GENDIR)/gca_redefs.txt $(GCA_GENDIR)/gca_bind.o \
+        $(GCA_GENDIR)/gca_glue.o
+	$(Q)$(ECHO) "Rewriting gallium_v3d through the GalliumCoreAPI table"
 	$(Q)$(GCA_OBJCOPY) --redefine-syms=$(GCA_GENDIR)/gca_redefs.txt \
 		$(top_libdir)/libgallium_v3d.a $@
 	$(Q)$(GCA_AR) rs $@ $(GCA_GENDIR)/gca_bind.o $(GCA_GENDIR)/gca_glue.o
