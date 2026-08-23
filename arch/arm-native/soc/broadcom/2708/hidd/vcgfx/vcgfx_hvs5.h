@@ -92,6 +92,24 @@
 #define HVS5_ALPHA_FIXED    0x4000fff0
 #define HVS5_CTL0_END           (1UL << 31)
 #define HVS5_CTL0_VALID         (1UL << 30)
+
+/* Bit 15 = unity, i.e. the plane is not scaled. Measured on a Pi 4 at
+ * 3840x2160: a 1280x768 mode leaves the firmware scaling the framebuffer
+ * plane, whose CTL0 read 0x4f005807 against 0x4800d807 for the unity
+ * cursor beside it, and against 0x4800d807 for the framebuffer itself
+ * when the mode is the panel's own. A scaled entry inserts POS1 (the
+ * destination size) at [3] and pushes POS2 (the source size) to [4]:
+ *
+ *   [1] POS0 0x003000c8  dest origin 200,48
+ *   [3] POS1 0x08100d70  dest 3440x2064   <- absent when unity
+ *   [4] POS2 0x03000500  src  1280x768
+ *
+ * 3840-3440 = 2*200 and 2160-2064 = 2*48, so that is the overscanned
+ * rectangle the framebuffer is centred and scaled into. Note the tail
+ * rule does not hold here - PTR0 sat at [6] of 15 words, with the
+ * scaling factors and two kernel pointers behind it - which is why the
+ * pointer word is located by search rather than by offset. */
+#define HVS5_CTL0_UNITY         (1UL << 15)
 #define HVS5_CTL0_SIZE_SHIFT    24
 #define HVS5_CTL0_SIZE_MASK     0x3f
 #define HVS5_CTL0_FORMAT_MASK   0xf
