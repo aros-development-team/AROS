@@ -50,6 +50,23 @@ extern IPTR __arm_periiobase;
 #define V3D_CTL_IDENT1      0x0004
 #define V3D_CTL_IDENT2      0x0008
 #define V3D_CTL_MISCCFG     0x0018
+
+/*
+ * Cache control. The probe corroborates the layout: +020 read 1 with the
+ * L2 enabled, and +034/+038 are the only fully writable neighbours here,
+ * +038 resetting to all-ones - a flush range's start and end. The GPU's
+ * read caches have to be invalidated around a job or it works from stale
+ * memory, and the parts of a frame that survive are then whichever tiles
+ * happened to miss.
+ */
+#define V3D_CTL_L2CACTL     0x0020
+#define V3D_CTL_SLCACTL     0x0024
+#define V3D_CTL_L2TCACTL    0x0030
+#define V3D_CTL_L2TFLSTA    0x0034
+#define V3D_CTL_L2TFLEND    0x0038
+#define V3D_L2CACTL_ENABLE  (1 << 0)
+#define V3D_L2CACTL_CLEAR   (1 << 2)
+#define V3D_L2TCACTL_FLUSH  (1 << 0)
 #define V3D_CTL_INT_STS     0x0050
 #define V3D_CTL_INT_SET     0x0054
 #define V3D_CTL_INT_CLR     0x0058
@@ -79,6 +96,20 @@ extern IPTR __arm_periiobase;
 #define V3D_CLE_CT0QMA      0x0170  /* binner tile alloc: address, then */
 #define V3D_CLE_CT0QMS      0x0174  /* size - required from 4.1 on */
 #define V3D_CLE_CTCS_RUN    (1 << 5)
+
+/*
+ * Core interrupt bits, both measured rather than assumed: bit 1 comes up
+ * when a binner job completes and bit 0 when a render does - a bin-only
+ * wait sees 0x2, and 0x3 once the render has run too. Guessing them in
+ * the obvious order put render completion at bit 2, where nothing ever
+ * arrived, and every frame waited out its timeout with both threads
+ * sitting idle at their end addresses.
+ *
+ * Which bit carries the binner's request for more tile memory is NOT
+ * known - nothing here has been seen to ask for it yet.
+ */
+#define V3D_INT_FRDONE      (1 << 0)
+#define V3D_INT_FLDONE      (1 << 1)
 
 /* MMU (hub side). Whether the firmware leaves it enabled decides how BO
  * addresses reach the GPU; the init dump answers that on real hardware. */
@@ -162,6 +193,12 @@ struct V3DData
     ULONG           core_ident[3];
     ULONG           ver;            /* 42 on a BCM2711 */
 
+    /* End addresses of the jobs in flight, so a wait can be tied to the
+     * work that was actually submitted rather than to whatever the
+     * executor's active registers happen to hold. */
+    ULONG           bin_end;
+    ULONG           render_end;
+
     struct V3DBO    bo_table[V3D_MAX_BOS];
     ULONG           bo_next_handle;
     struct SignalSemaphore bo_lock;
@@ -186,6 +223,7 @@ BOOL v3d_submit_bin(struct V3DData *sd, ULONG start, ULONG end,
                     ULONG qma, ULONG qms, ULONG qts);
 BOOL v3d_submit_render(struct V3DData *sd, ULONG start, ULONG end);
 void v3d_wait_idle(struct V3DData *sd);
+void v3d_flush_caches(struct V3DData *sd);
 
 /* v3d_drm_shim.c */
 ULONG v3d_gpu_mem_alloc(struct V3DData *sd, ULONG size, ULONG align,

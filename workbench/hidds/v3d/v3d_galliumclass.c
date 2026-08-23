@@ -34,6 +34,16 @@
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase (SD(cl)->hiddGalliumAB)
 
+/* What the driver actually renders, in WritePixelArray's terms. The pipe
+ * format is a little-endian RGBA word, which reaches memory as B,G,R,A -
+ * naming it ARGB instead swaps the channels, which is what turned the
+ * triangle's colours inside out. */
+#if (AROS_BIG_ENDIAN == 1)
+#define V3D_PIXFMT  RECTFMT_RAW
+#else
+#define V3D_PIXFMT  RECTFMT_BGRA32
+#endif
+
 struct pipe_screen;
 struct pipe_screen_config;
 struct renderonly;
@@ -154,6 +164,7 @@ VOID HiddV3D__Hidd_Gallium__DisplayResource(OOP_Class *cl, OOP_Object *o,
 
     slice = &rsc->slices[0];
     v3d_wait_idle(sd);
+    v3d_flush_caches(sd);
 
     /* bo->map is populated lazily - a target the GPU rendered into has
      * never been mapped, so reading the field directly finds NULL and
@@ -216,7 +227,7 @@ VOID HiddV3D__Hidd_Gallium__DisplayResource(OOP_Class *cl, OOP_Object *o,
     {
         rp->BitMap = msg->bitmap;
         WritePixelArray(src, 0, 0, stride, rp, msg->dstx, msg->dsty,
-                        msg->width, msg->height, RECTFMT_ARGB);
+                        msg->width, msg->height, V3D_PIXFMT);
         FreeRastPort(rp);
     }
 

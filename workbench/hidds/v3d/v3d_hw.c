@@ -102,6 +102,27 @@ void v3d_hw_shutdown(struct V3DData *sd)
  * three values with the submit. No cache work anywhere: every BO lives in
  * the uncached GPU region.
  */
+/*
+ * Invalidate the GPU's read caches, in the order Mesa's own shim uses:
+ * the L2, the texture L2 over its whole range, then the slice caches.
+ * Without this a job runs against whatever those caches still hold, and
+ * a frame comes out with only the parts that happened to miss.
+ */
+void v3d_flush_caches(struct V3DData *sd)
+{
+    if (!sd->powered)
+        return;
+
+    v3d_core_wr(sd, V3D_CTL_L2CACTL,
+                V3D_L2CACTL_CLEAR | V3D_L2CACTL_ENABLE);
+
+    v3d_core_wr(sd, V3D_CTL_L2TFLSTA, 0);
+    v3d_core_wr(sd, V3D_CTL_L2TFLEND, ~0UL);
+    v3d_core_wr(sd, V3D_CTL_L2TCACTL, V3D_L2TCACTL_FLUSH);
+
+    v3d_core_wr(sd, V3D_CTL_SLCACTL, ~0UL);
+}
+
 BOOL v3d_submit_bin(struct V3DData *sd, ULONG start, ULONG end,
                     ULONG qma, ULONG qms, ULONG qts)
 {
@@ -116,6 +137,12 @@ BOOL v3d_submit_bin(struct V3DData *sd, ULONG start, ULONG end,
         v3d_core_wr(sd, V3D_CLE_CT0QMS, qms);
         v3d_core_wr(sd, V3D_CLE_CT0QTS, qts);
     }
+    /* W1C the completion latch before starting, or the wait below sees
+     * the previous frame's flush and hands the renderer an unflushed
+     * binner. */
+    v3d_core_wr(sd, V3D_CTL_INT_CLR, V3D_INT_FLDONE);
+    v3d_flush_caches(sd);
+    sd->bin_end = end;
     v3d_core_wr(sd, V3D_CLE_CT0QBA, start);
     v3d_core_wr(sd, V3D_CLE_CT0QEA, end);
 
@@ -148,6 +175,9 @@ BOOL v3d_submit_render(struct V3DData *sd, ULONG start, ULONG end)
     if (!sd->powered)
         return FALSE;
 
+    v3d_core_wr(sd, V3D_CTL_INT_CLR, V3D_INT_FRDONE);
+    v3d_flush_caches(sd);
+    sd->render_end = end;
     v3d_core_wr(sd, V3D_CLE_CT1QBA, start);
     v3d_core_wr(sd, V3D_CLE_CT1QEA, end);
     return TRUE;
@@ -177,7 +207,32 @@ static void v3d_report_once(struct V3DData *sd)
         v3d_core_rd(sd, V3D_CLE_CT0CS), v3d_core_rd(sd, V3D_CLE_CT1CS));
 }
 
-/* Bounded: a wedged CLE degrades to a logged failure, not a hang. */
+/*
+ * Wait for the jobs that were actually submitted.
+ *
+ * Neither the RUN bit nor the active end address can carry this on its
+ * own. A queue write starts the thread asynchronously, so RUN may not be
+ * up at the first poll; and the active registers lag the queue, so
+ * straight after a submit they still describe the PREVIOUS job - where
+ * the current address has of course already reached the end. Either test
+ * therefore reports "idle" for a job that has not begun, and the frame
+ * gets presented out from under it. Only the first frame escapes, having
+ * no predecessor, which is exactly how the flicker looked.
+ *
+ * Comparing against the end address this driver itself submitted has no
+ * such ambiguity: it is reached when that specific job is done and at no
+ * other time.
+ *
+ * Bounded: a wedged CLE degrades to a logged failure, not a hang.
+ */
+/*
+ * The binner asks for more tile memory by raising OUTOMEM and stopping.
+ * Nothing answers yet, so say so once rather than spinning silently to
+ * the timeout - and say it from the polling path, because the interrupt
+ * is not needed for this: vc4gallium services the same condition by
+ * polling, its live IRQ path having made rendering worse rather than
+ * better.
+ */
 void v3d_wait_idle(struct V3DData *sd)
 {
     ULONG tries = 5000000;
@@ -187,21 +242,44 @@ void v3d_wait_idle(struct V3DData *sd)
 
     while (--tries)
     {
-        if (!(v3d_core_rd(sd, V3D_CLE_CT0CS) & V3D_CLE_CTCS_RUN)
-            && !(v3d_core_rd(sd, V3D_CLE_CT1CS) & V3D_CLE_CTCS_RUN))
+        ULONG ints = v3d_core_rd(sd, V3D_CTL_INT_STS);
+        BOOL busy = FALSE;
+
+
+        /* The binner is done when it has flushed, which the completion
+         * latch reports - reaching the end of the control list only means
+         * the executor read it. */
+        if (sd->bin_end && !(ints & V3D_INT_FLDONE))
+            busy = TRUE;
+        /* Same reasoning as the binner, and the reason its current
+         * address is no guide: a render thread runs the per-tile lists,
+         * so it spends the job inside the tile allocation and only the
+         * completion latch says it is finished. */
+        if (sd->render_end && !(ints & V3D_INT_FRDONE))
+            busy = TRUE;
+
+        if (!busy)
         {
+            sd->bin_end = 0;
+            sd->render_end = 0;
             v3d_report_once(sd);
             return;
         }
     }
 
+    /* Say which thread is short of what: the end address each is waiting
+     * for against where it actually is, and the raw latches. */
     {
         static ULONG n = 0;
 
         if (n++ < 4)
-            bug("[V3D] CLE stuck: CT0CS=%08x CT0CA=%08x CT1CS=%08x "
-                "CT1CA=%08x\n",
-                v3d_core_rd(sd, V3D_CLE_CT0CS), v3d_core_rd(sd, V3D_CLE_CT0CA),
-                v3d_core_rd(sd, V3D_CLE_CT1CS), v3d_core_rd(sd, V3D_CLE_CT1CA));
+            bug("[V3D] stalled: bin CA=%08x want=%08x CS=%08x | "
+                "render CA=%08x want=%08x CS=%08x | INT core=%08x hub=%08x\n",
+                v3d_core_rd(sd, V3D_CLE_CT0CA), sd->bin_end,
+                v3d_core_rd(sd, V3D_CLE_CT0CS),
+                v3d_core_rd(sd, V3D_CLE_CT1CA), sd->render_end,
+                v3d_core_rd(sd, V3D_CLE_CT1CS),
+                v3d_core_rd(sd, V3D_CTL_INT_STS),
+                v3d_hub_rd(sd, V3D_HUB_INT_STS));
     }
 }
