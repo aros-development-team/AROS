@@ -17,6 +17,8 @@
 #include <aros/types/sigset_t.h>
 #include <aros/types/timespec_s.h>
 
+#include <string.h>
+
 #define NBBY            8
 
 #ifndef FD_SETSIZE
