@@ -1,197 +1,149 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    VideoCore VI (V3D 4.2) GPU — Hardware initialization and job submission
+    VideoCore VI (V3D 4.2) - hardware probe and job submission.
+
+    Phase A is the probe: identify the block and record what state the
+    firmware left it in - above all whether the MMU is live, which decides
+    how buffer addresses reach the GPU. Submission stays a synchronous
+    CLE kick with a bounded poll, the same baseline vc4gallium started
+    from, until the probe output from real hardware settles the open
+    questions.
 */
 
-#include <exec/types.h>
-#include <exec/memory.h>
+#define DEBUG 0
 #include <aros/debug.h>
-#include <aros/macros.h>
+
+#include <exec/types.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include "v3d_intern.h"
 
-/* Register access */
 static inline ULONG v3d_hub_rd(struct V3DData *sd, ULONG off)
 {
-    return AROS_LE2LONG(*(volatile ULONG *)(sd->hub_base + off));
+    return *(volatile ULONG *)(sd->hub_base + off);
 }
 
 static inline void v3d_hub_wr(struct V3DData *sd, ULONG off, ULONG val)
 {
-    *(volatile ULONG *)(sd->hub_base + off) = AROS_LONG2LE(val);
+    *(volatile ULONG *)(sd->hub_base + off) = val;
 }
 
 static inline ULONG v3d_core_rd(struct V3DData *sd, ULONG off)
 {
-    return AROS_LE2LONG(*(volatile ULONG *)(sd->core0_base + off));
+    return *(volatile ULONG *)(sd->core0_base + off);
 }
 
 static inline void v3d_core_wr(struct V3DData *sd, ULONG off, ULONG val)
 {
-    *(volatile ULONG *)(sd->core0_base + off) = AROS_LONG2LE(val);
+    *(volatile ULONG *)(sd->core0_base + off) = val;
 }
 
-/*
- * Power on the V3D block via VideoCore mailbox.
- */
-static BOOL v3d_power_on(struct V3DData *sd)
-{
-    /* The V3D power domain should already be enabled by the firmware
-     * if the GPU is in use for the framebuffer. If not, we'd need
-     * to send a mailbox message to power it on.
-     * For now, assume it's powered (firmware enables it at boot). */
-    D(bug("[V3D] Assuming V3D is powered on by firmware\n"));
-    return TRUE;
-}
-
-/*
- * Initialize V3D hardware — identify the GPU and verify it's alive.
- */
 BOOL v3d_hw_init(struct V3DData *sd)
 {
-    ULONG ident0, ident1, ident2;
+    ULONG i;
 
-    sd->hub_base = V3D_HUB_BASE;
-    sd->core0_base = V3D_CORE0_BASE;
+    sd->hub_base   = ARM_PERIIOBASE + V3D_HUB_OFFSET;
+    sd->core0_base = ARM_PERIIOBASE + V3D_CORE0_OFFSET;
 
-    /* Power on */
-    if (!v3d_power_on(sd))
-        return FALSE;
+    for (i = 0; i < 4; i++)
+        sd->hub_ident[i] = v3d_hub_rd(sd, V3D_HUB_IDENT0 + 4 * i);
+    for (i = 0; i < 3; i++)
+        sd->core_ident[i] = v3d_core_rd(sd, V3D_CTL_IDENT0 + 4 * i);
 
-    /* Read identification registers */
-    ident0 = v3d_hub_rd(sd, V3D_HUB_IDENT0);
-    ident1 = v3d_hub_rd(sd, V3D_HUB_IDENT1);
-    ident2 = v3d_hub_rd(sd, V3D_HUB_IDENT2);
+    /* Provisional decode for the log; Mesa parses the raw idents itself
+     * through GET_PARAM, so nothing downstream depends on this. */
+    sd->ver = ((sd->hub_ident[1] >> 4) & 0xf) * 10 + (sd->hub_ident[1] & 0xf);
 
-    sd->ver = (ident0 >> V3D_IDENT0_VER_SHIFT) & 0xFF;
+    bug("[V3D] hub ident %08x %08x %08x %08x core %08x %08x %08x -> V3D %u.%u\n",
+        sd->hub_ident[0], sd->hub_ident[1], sd->hub_ident[2],
+        sd->hub_ident[3], sd->core_ident[0], sd->core_ident[1],
+        sd->core_ident[2], (unsigned)(sd->ver / 10), (unsigned)(sd->ver % 10));
 
-    if (sd->ver == 0 || sd->ver == 0xFF) {
-        D(bug("[V3D] V3D not responding (ident0=0x%08lx) — not powered?\n", ident0));
+    /* All-zeroes/all-ones is a dead bus; a live hub answers with "V3D"
+     * in the identity's low bytes, as the VideoCore IV one did. Anything
+     * in between is left for the dump reader to judge. */
+    if (sd->hub_ident[0] == 0 || sd->hub_ident[0] == 0xffffffff)
+    {
+        bug("[V3D] hub not responding - unpowered?\n");
         return FALSE;
     }
+    if ((sd->hub_ident[0] & 0xffffff) != 0x443356)
+        bug("[V3D] no V3D signature in IDENT0 - read the dump carefully\n");
 
-    /* Extract core info from ident1 */
-    sd->nslc = (ident1 >> 4) & 0xF;
-    sd->qpus_per_slice = (ident1 >> 8) & 0xF;
+    /* The address-path question phase B hangs on: an enabled MMU means
+     * BO addresses are GPU-virtual through a firmware page table, a
+     * disabled one means the masked bus address works as on VideoCore IV. */
+    bug("[V3D] MMU_CTL=%08x PT_PA_BASE=%08x AXICFG=%08x UIFCFG=%08x\n",
+        v3d_hub_rd(sd, V3D_MMU_CTL), v3d_hub_rd(sd, V3D_MMU_PT_PA_BASE),
+        v3d_hub_rd(sd, V3D_HUB_AXICFG), v3d_hub_rd(sd, V3D_HUB_UIFCFG));
 
-    D(bug("[V3D] V3D %ld.%ld identified: %ld slices, %ld QPUs/slice\n",
-          sd->ver / 10, sd->ver % 10, sd->nslc, sd->qpus_per_slice));
-    D(bug("[V3D] IDENT0=0x%08lx IDENT1=0x%08lx IDENT2=0x%08lx\n",
-          ident0, ident1, ident2));
-
-    /* Mask all interrupts initially */
-    v3d_hub_wr(sd, V3D_HUB_INT_MSK_SET, 0xFFFFFFFF);
-    v3d_hub_wr(sd, V3D_HUB_INT_CLR, 0xFFFFFFFF);
-
-    /* Initialize buffer and job lists */
-    NEWLIST(&sd->bo_list);
-    NEWLIST(&sd->job_list);
-    InitSemaphore(&sd->bo_lock);
-    InitSemaphore(&sd->job_lock);
+    /* Everything masked until an interrupt path exists. */
+    v3d_hub_wr(sd, V3D_HUB_INT_MSK_SET, 0xffffffff);
+    v3d_hub_wr(sd, V3D_HUB_INT_CLR, 0xffffffff);
+    v3d_core_wr(sd, V3D_CTL_INT_MSK_SET, 0xffffffff);
+    v3d_core_wr(sd, V3D_CTL_INT_CLR, 0xffffffff);
 
     sd->powered = TRUE;
-
     return TRUE;
 }
 
 void v3d_hw_shutdown(struct V3DData *sd)
 {
-    /* Mask all interrupts */
-    v3d_hub_wr(sd, V3D_HUB_INT_MSK_SET, 0xFFFFFFFF);
+    v3d_hub_wr(sd, V3D_HUB_INT_MSK_SET, 0xffffffff);
     sd->powered = FALSE;
 }
 
 /*
- * Allocate a GPU buffer object (physically contiguous).
- * The V3D GPU on BCM2711 without IOMMU sees physical addresses directly.
+ * Kick the control lists and let the CLE run: thread 0 bins, thread 1
+ * renders, and each starts when its end address lands. The binner's tile
+ * alloc memory is not optional on 4.1+ - Mesa allocates it and passes the
+ * three values with the submit. No cache work anywhere: every BO lives in
+ * the uncached GPU region.
  */
-struct V3DBO *v3d_aros_bo_alloc(struct V3DData *sd, ULONG size)
-{
-    struct V3DBO *bo;
-
-    bo = AllocVec(sizeof(struct V3DBO), MEMF_CLEAR | MEMF_PUBLIC);
-    if (!bo)
-        return NULL;
-
-    /* Allocate physically contiguous memory in the low 1GB
-     * (V3D can address full 4GB but we keep it simple) */
-    bo->vaddr = AllocVec(size, MEMF_CLEAR | MEMF_PUBLIC | MEMF_31BIT);
-    if (!bo->vaddr) {
-        FreeVec(bo);
-        return NULL;
-    }
-
-    /* On AROS without MMU for userspace, virtual = physical */
-    bo->paddr = (ULONG)(IPTR)bo->vaddr;
-    bo->size = size;
-    bo->refcount = 1;
-
-    ObtainSemaphore(&sd->bo_lock);
-    AddTail((struct List *)&sd->bo_list, (struct Node *)bo);
-    ReleaseSemaphore(&sd->bo_lock);
-
-    return bo;
-}
-
-void v3d_aros_bo_free(struct V3DData *sd, struct V3DBO *bo)
-{
-    if (--bo->refcount > 0)
-        return;
-
-    ObtainSemaphore(&sd->bo_lock);
-    Remove((struct Node *)bo);
-    ReleaseSemaphore(&sd->bo_lock);
-
-    FreeVec(bo->vaddr);
-    FreeVec(bo);
-}
-
-/*
- * Submit a control list to the V3D CLE (Control List Executor).
- *
- * Thread 0 = Binning (geometry processing)
- * Thread 1 = Rendering (fragment processing)
- *
- * The CLE starts executing when we write the end address.
- */
-BOOL v3d_submit_cl(struct V3DData *sd, ULONG start, ULONG end, BOOL is_render)
+BOOL v3d_submit_bin(struct V3DData *sd, ULONG start, ULONG end,
+                    ULONG qma, ULONG qms, ULONG qts)
 {
     if (!sd->powered)
         return FALSE;
 
-    /* Flush data cache so GPU sees the control list */
-    CacheClearE((APTR)(IPTR)start, end - start, CACRF_ClearD);
-
-    if (is_render) {
-        /* Thread 1: Rendering */
-        v3d_core_wr(sd, V3D_CLE_CT1CA, start);
-        v3d_core_wr(sd, V3D_CLE_CT1EA, end);
-    } else {
-        /* Thread 0: Binning */
-        v3d_core_wr(sd, V3D_CLE_CT0CA, start);
-        v3d_core_wr(sd, V3D_CLE_CT0EA, end);
+    if (qma)
+    {
+        v3d_core_wr(sd, V3D_CLE_CT0QMA, qma);
+        v3d_core_wr(sd, V3D_CLE_CT0QMS, qms);
+        v3d_core_wr(sd, V3D_CLE_CT0QTS, qts);
     }
-
+    v3d_core_wr(sd, V3D_CLE_CT0QBA, start);
+    v3d_core_wr(sd, V3D_CLE_CT0QEA, end);
     return TRUE;
 }
 
-/*
- * Wait for both CLE threads to become idle.
- */
+BOOL v3d_submit_render(struct V3DData *sd, ULONG start, ULONG end)
+{
+    if (!sd->powered)
+        return FALSE;
+
+    v3d_core_wr(sd, V3D_CLE_CT1QBA, start);
+    v3d_core_wr(sd, V3D_CLE_CT1QEA, end);
+    return TRUE;
+}
+
+/* Bounded: a wedged CLE degrades to a logged failure, not a hang. */
 void v3d_wait_idle(struct V3DData *sd)
 {
-    int tries = 1000000;
+    ULONG tries = 5000000;
 
-    while (--tries) {
-        ULONG ct0cs = v3d_core_rd(sd, V3D_CLE_CT0CS);
-        ULONG ct1cs = v3d_core_rd(sd, V3D_CLE_CT1CS);
+    if (!sd->powered)
+        return;
 
-        if (!(ct0cs & V3D_CLE_CTCS_RUN) && !(ct1cs & V3D_CLE_CTCS_RUN))
+    while (--tries)
+    {
+        if (!(v3d_core_rd(sd, V3D_CLE_CT0CS) & V3D_CLE_CTCS_RUN)
+            && !(v3d_core_rd(sd, V3D_CLE_CT1CS) & V3D_CLE_CTCS_RUN))
             return;
     }
 
-    D(bug("[V3D] WARNING: Timeout waiting for CLE idle\n"));
+    bug("[V3D] CLE stuck: CT0CS=%08x CT0CA=%08x CT1CS=%08x CT1CA=%08x\n",
+        v3d_core_rd(sd, V3D_CLE_CT0CS), v3d_core_rd(sd, V3D_CLE_CT0CA),
+        v3d_core_rd(sd, V3D_CLE_CT1CS), v3d_core_rd(sd, V3D_CLE_CT1CA));
 }
