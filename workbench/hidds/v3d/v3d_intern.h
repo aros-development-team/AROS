@@ -63,18 +63,27 @@ extern IPTR __arm_periiobase;
 #define V3D_CLE_CT1EA       0x010c
 #define V3D_CLE_CT0CA       0x0110
 #define V3D_CLE_CT1CA       0x0114
-#define V3D_CLE_CT0QBA      0x0130
-#define V3D_CLE_CT0QEA      0x0134
-#define V3D_CLE_CT1QBA      0x0138
-#define V3D_CLE_CT1QEA      0x013c
-#define V3D_CLE_CT0QMA      0x0140  /* binner tile alloc: addr, size, */
-#define V3D_CLE_CT0QMS      0x0144  /* tile state - required on 4.1+, */
-#define V3D_CLE_CT0QTS      0x0148  /* Mesa passes them with the submit */
+/*
+ * Queue registers, located by probing the live core rather than guessed:
+ * writing to the VideoCore IV offsets read back as zero while IDENT0 read
+ * correctly from the same base. Four consecutive writable words at +160
+ * with the masked tile-alloc pair right behind them, and the read-only
+ * current-address registers at +110, identify them unambiguously - and
+ * note they interleave by thread rather than pairing per queue.
+ */
+#define V3D_CLE_CT0QTS      0x015c
+#define V3D_CLE_CT0QBA      0x0160
+#define V3D_CLE_CT1QBA      0x0164
+#define V3D_CLE_CT0QEA      0x0168
+#define V3D_CLE_CT1QEA      0x016c
+#define V3D_CLE_CT0QMA      0x0170  /* binner tile alloc: address, then */
+#define V3D_CLE_CT0QMS      0x0174  /* size - required from 4.1 on */
 #define V3D_CLE_CTCS_RUN    (1 << 5)
 
 /* MMU (hub side). Whether the firmware leaves it enabled decides how BO
  * addresses reach the GPU; the init dump answers that on real hardware. */
 #define V3D_MMU_CTL         0x1200
+#define V3D_MMU_CTL_ENABLE  (1 << 31)
 #define V3D_MMU_PT_PA_BASE  0x1204
 #define V3D_MMU_ILLEGAL_ADDR 0x1230
 

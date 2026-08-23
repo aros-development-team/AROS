@@ -105,6 +105,8 @@ void v3d_hw_shutdown(struct V3DData *sd)
 BOOL v3d_submit_bin(struct V3DData *sd, ULONG start, ULONG end,
                     ULONG qma, ULONG qms, ULONG qts)
 {
+    static BOOL reported = FALSE;
+
     if (!sd->powered)
         return FALSE;
 
@@ -116,6 +118,28 @@ BOOL v3d_submit_bin(struct V3DData *sd, ULONG start, ULONG end,
     }
     v3d_core_wr(sd, V3D_CLE_CT0QBA, start);
     v3d_core_wr(sd, V3D_CLE_CT0QEA, end);
+
+    /*
+     * Read the queue back once. Whether the CLE ever saw a job is the
+     * question under everything rendering black, and it splits three ways:
+     * values that read back mean the registers are right and the executor
+     * took the work; zeroes mean the writes are landing somewhere else -
+     * these offsets came from the VideoCore IV and were never checked
+     * against 4.x; and CT0CA moving means it ran.
+     */
+    if (!reported)
+    {
+        reported = TRUE;
+        bug("[V3D] bin submit: wrote QBA=%08x QEA=%08x QMA=%08x QMS=%08x\n",
+            start, end, qma, qms);
+        bug("[V3D] bin readback: QBA=%08x QEA=%08x CT0CS=%08x CT0CA=%08x "
+            "CT0EA=%08x\n",
+            v3d_core_rd(sd, V3D_CLE_CT0QBA), v3d_core_rd(sd, V3D_CLE_CT0QEA),
+            v3d_core_rd(sd, V3D_CLE_CT0CS), v3d_core_rd(sd, V3D_CLE_CT0CA),
+            v3d_core_rd(sd, V3D_CLE_CT0EA));
+        bug("[V3D] ident sanity: core IDENT0=%08x (V3D+4 = live core)\n",
+            v3d_core_rd(sd, V3D_CTL_IDENT0));
+    }
     return TRUE;
 }
 
@@ -127,6 +151,30 @@ BOOL v3d_submit_render(struct V3DData *sd, ULONG start, ULONG end)
     v3d_core_wr(sd, V3D_CLE_CT1QBA, start);
     v3d_core_wr(sd, V3D_CLE_CT1QEA, end);
     return TRUE;
+}
+
+/*
+ * Everything the GPU renders comes back as zeroes while CPU round-trips
+ * through the same memory are perfect, which points at the GPU not
+ * reaching that memory at all rather than at the drawing. On V3D 4.x
+ * every access goes through the MMU - there is no bypass - so a disabled,
+ * unconfigured one (MMU_CTL reading 0, as it does here) would produce
+ * exactly this. Report the fault state once after the first job so the
+ * question is settled by the hardware rather than by argument.
+ */
+static void v3d_report_once(struct V3DData *sd)
+{
+    static BOOL done = FALSE;
+
+    if (done)
+        return;
+    done = TRUE;
+
+    bug("[V3D] after first job: MMU_CTL=%08x ILLEGAL_ADDR=%08x "
+        "hub INT_STS=%08x core INT_STS=%08x CT0CS=%08x CT1CS=%08x\n",
+        v3d_hub_rd(sd, V3D_MMU_CTL), v3d_hub_rd(sd, V3D_MMU_ILLEGAL_ADDR),
+        v3d_hub_rd(sd, V3D_HUB_INT_STS), v3d_core_rd(sd, V3D_CTL_INT_STS),
+        v3d_core_rd(sd, V3D_CLE_CT0CS), v3d_core_rd(sd, V3D_CLE_CT1CS));
 }
 
 /* Bounded: a wedged CLE degrades to a logged failure, not a hang. */
@@ -141,10 +189,19 @@ void v3d_wait_idle(struct V3DData *sd)
     {
         if (!(v3d_core_rd(sd, V3D_CLE_CT0CS) & V3D_CLE_CTCS_RUN)
             && !(v3d_core_rd(sd, V3D_CLE_CT1CS) & V3D_CLE_CTCS_RUN))
+        {
+            v3d_report_once(sd);
             return;
+        }
     }
 
-    bug("[V3D] CLE stuck: CT0CS=%08x CT0CA=%08x CT1CS=%08x CT1CA=%08x\n",
-        v3d_core_rd(sd, V3D_CLE_CT0CS), v3d_core_rd(sd, V3D_CLE_CT0CA),
-        v3d_core_rd(sd, V3D_CLE_CT1CS), v3d_core_rd(sd, V3D_CLE_CT1CA));
+    {
+        static ULONG n = 0;
+
+        if (n++ < 4)
+            bug("[V3D] CLE stuck: CT0CS=%08x CT0CA=%08x CT1CS=%08x "
+                "CT1CA=%08x\n",
+                v3d_core_rd(sd, V3D_CLE_CT0CS), v3d_core_rd(sd, V3D_CLE_CT0CA),
+                v3d_core_rd(sd, V3D_CLE_CT1CS), v3d_core_rd(sd, V3D_CLE_CT1CA));
+    }
 }
