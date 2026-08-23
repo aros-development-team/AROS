@@ -719,6 +719,18 @@ int __init_fd(struct PosixCIntBase *PosixCBase)
           pPosixCBase, pPosixCBase ? pPosixCBase->flags : 0
     ));
 
+    /* Initialise this base's own table lock up front, before any descriptor
+       call can reach FD_LOCK: the owner path's __init_stdfiles() below takes
+       it via __getfdslot(), and a borrower's later fdopen() (from
+       __init_stdio, a lower OpenLib priority that runs afterwards) takes it
+       via __getfdesc().  A borrower normally locks the owner's lock through
+       __fd_owner(), leaving its own unused - but every base keeping its own
+       initialised means a lookup that resolves to self (a borrower whose
+       owner is not yet resolved) never obtains an uninitialised semaphore.
+       This was the "ObtainSemaphore called on a not initialized semaphore"
+       seen for pthread workers under load. */
+    InitSemaphore(&PosixCBase->fd_sem);
+
     if (pPosixCBase &&
         !(pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)) &&
         (task->tc_Node.ln_Type == NT_TASK ||
@@ -742,10 +754,6 @@ int __init_fd(struct PosixCIntBase *PosixCBase)
     }
 
     PosixCBase->fd_owner = PosixCBase;
-    /* This base owns its table - initialise the guard before any slot is
-       allocated below (a borrower never reaches here; it locks the owner's
-       already-initialised semaphore). */
-    InitSemaphore(&PosixCBase->fd_sem);
 
     if (pPosixCBase && (pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)))
     {
