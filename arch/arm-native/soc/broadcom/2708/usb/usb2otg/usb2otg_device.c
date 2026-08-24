@@ -21,7 +21,8 @@
 
 #define DEVNAME         "usb2otg.device"
 
-#define USB2OTG_DT_COMPATIBLE "brcm,bcm2708-usb"
+#define USB2OTG_DT_COMPATIBLE "brcm,bcm2835-usb"
+#define USB2OTG_DT_COMPATIBLE_LEGACY "brcm,bcm2708-usb"
 
 const char devname[]    = MOD_NAME_STRING;
 
@@ -61,6 +62,8 @@ static BOOL FNAME_DEV(DTEnabled)(void)
        such node means this machine has no OTG core of ours - BCM2712 puts a
        different controller somewhere else entirely. */
     key = OF_FindNodeByCompatible(NULL, USB2OTG_DT_COMPATIBLE);
+    if (key == NULL)
+        key = OF_FindNodeByCompatible(NULL, USB2OTG_DT_COMPATIBLE_LEGACY);
     if (key == NULL)
         return FALSE;
 
