@@ -178,7 +178,11 @@ static AROS_UFH3 (APTR, Cia_Init,
     base->hw->ciacrb = 0x00;
     base->hw->ciapra = 0xff;
     base->hw->ciaprb = 0xff;
-    base->hw->ciaddra = 0xff;
+    /* Only /DTR and /RTS are outputs on CIA-B port A; PA0-2 are the
+     * parallel port's Centronics status inputs and PA3-5 the serial
+     * port's /DSR, /CTS and /CD, all driven by the peripheral through
+     * the 1489 receivers. Same value the boot debug code uses. */
+    base->hw->ciaddra = 0xc0;
     base->hw->ciaddrb = 0xff;
     base->inten_mask = INTF_EXTER;
 
