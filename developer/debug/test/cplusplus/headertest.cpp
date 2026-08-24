@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 // purpose of this test is to find out if our headers are C++ compatible
@@ -599,7 +599,7 @@
 // #include <c_iff.h>
 
 // #include <clib/Aboutbox_protos.h>
-#include <clib/Aboutmui_protos.h>
+// #include <clib/Aboutmui_protos.h>
 #include <clib/AboutWindow_protos.h>
 #include <clib/ahi_protos.h>
 #include <clib/ahi_sub_protos.h>
@@ -609,10 +609,10 @@
 #include <clib/arossupport_protos.h>
 #include <clib/asl_protos.h>
 #include <clib/ata_protos.h>
-#include <clib/Balance_protos.h>
+// #include <clib/Balance_protos.h>
 #include <clib/battclock_protos.h>
 #include <clib/bestcomm_protos.h>
-#include <clib/Boopsi_protos.h>
+// #include <clib/Boopsi_protos.h>
 #include <clib/boopsistubs.h>
 #include <clib/bootloader_protos.h>
 #include <clib/bsdsocket_protos.h>
@@ -1080,7 +1080,7 @@
 #include <interface/Hidd_GC.h>
 #include <interface/Hidd_Gfx.h>
 #include <interface/Hidd.h>
-#include <interface/Hidd_Overlay.h>
+// #include <interface/Hidd_Overlay.h>
 #include <interface/Hidd_PCIDevice.h>
 #include <interface/Hidd_PCIDriver.h>
 #include <interface/Hidd_PCI.h>
@@ -1262,7 +1262,7 @@
 #include <prefs/workbench.h>
 
 // #include <proto/Aboutbox.h>
-#include <proto/Aboutmui.h>
+// #include <proto/Aboutmui.h>
 #include <proto/AboutWindow.h>
 #include <proto/ahi.h>
 #include <proto/ahi_sub.h>
@@ -1272,11 +1272,11 @@
 #include <proto/arossupport.h>
 #include <proto/asl.h>
 #include <proto/ata.h>
-#include <proto/Balance.h>
+// #include <proto/Balance.h>
 #include <proto/battclock.h>
 // #include <proto/battmem.h>
 #include <proto/bestcomm.h>
-#include <proto/Boopsi.h>
+// #include <proto/Boopsi.h>
 #include <proto/bootloader.h>
 #include <proto/bsdsocket.h>
 #include <proto/bullet.h>
