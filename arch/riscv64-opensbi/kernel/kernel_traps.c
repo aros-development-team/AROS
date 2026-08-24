@@ -177,7 +177,14 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
             core_SysCall((int)ctx->x[CTX_REG_A7], ctx);
     }
 
-    __riscv64_trap_depth--;
+    /*
+     * __riscv64_trap_depth is released at the very end of the assembly exit
+     * in traps.S (after the register restore, immediately before sret), NOT
+     * here: decrementing it now would leave the whole exit sequence running
+     * at depth 0, so a trap taken mid-exit would be treated as the outermost
+     * one, reschedule, and snapshot this half-restored exit state as a task
+     * context - which later resumes with a wild sp and faults.
+     */
 }
 
 static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,

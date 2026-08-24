@@ -80,7 +80,6 @@ __trap_entry:
 	ld	t0, 240(sp)
 	csrw	sstatus, t0
 	ld	ra, 0(sp)
-	ld	t1, 24(sp)
 	ld	t2, 32(sp)
 	ld	s0, 40(sp)
 	ld	s1, 48(sp)
@@ -106,6 +105,17 @@ __trap_entry:
 	ld	t4, 208(sp)
 	ld	t5, 216(sp)
 	ld	t6, 224(sp)
+	/* Release the in-trap nesting depth here, at the very end of the exit,
+	   rather than in krnTrapHandler(): the depth must stay elevated across
+	   this whole restore so that a trap taken mid-exit still counts as
+	   nested and cannot enter the scheduler and snapshot this half-restored
+	   exit state as a task context. t0/t1 are still scratch (restored just
+	   below, before sp). */
+	la	t0, __riscv64_trap_depth
+	lw	t1, 0(t0)
+	addiw	t1, t1, -1
+	sw	t1, 0(t0)
+	ld	t1, 24(sp)
 	ld	t0, 16(sp)
 	/* Load sp last, directly from the context - the dispatcher may
 	   have switched the frame to a different task */
