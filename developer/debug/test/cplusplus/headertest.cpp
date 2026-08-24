@@ -652,7 +652,7 @@
 #include <clib/freetype2_protos.h>
 #include <clib/gadtools_protos.h>
 #include <clib/gallium_protos.h>
-#include <clib/gameport_protos.h>
+// #include <clib/gameport_protos.h>
 #include <clib/gl_protos.h>
 #include <clib/glu_protos.h>
 #include <clib/graphics_protos.h>
@@ -1318,7 +1318,7 @@
 #include <proto/freetype2.h>
 #include <proto/gadtools.h>
 #include <proto/gallium.h>
-#include <proto/gameport.h>
+// #include <proto/gameport.h>
 #include <proto/gl.h>
 #include <proto/glu.h>
 // #include <proto/Graph.h>
