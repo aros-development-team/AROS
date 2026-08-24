@@ -154,9 +154,9 @@ AROS_LH1(unsigned int, GPIOGet,
         val = (reg_val >> (pin & 0x1F)) & 1;
     }
 
-    AROS_LIBFUNC_EXIT
-
     return val;
+
+    AROS_LIBFUNC_EXIT
 }
 
 AROS_LH2(void, GPIOSetPull,
