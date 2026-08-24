@@ -600,7 +600,7 @@
 
 // #include <clib/Aboutbox_protos.h>
 // #include <clib/Aboutmui_protos.h>
-#include <clib/AboutWindow_protos.h>
+// #include <clib/AboutWindow_protos.h>
 #include <clib/ahi_protos.h>
 #include <clib/ahi_sub_protos.h>
 #include <clib/alib_protos.h>
@@ -617,14 +617,14 @@
 #include <clib/bootloader_protos.h>
 #include <clib/bsdsocket_protos.h>
 #include <clib/bullet_protos.h>
-#include <clib/Busy_protos.h>
+// #include <clib/Busy_protos.h>
 #include <clib/bz2_protos.h>
-#include <clib/Calendar_protos.h>
+// #include <clib/Calendar_protos.h>
 // #include <clib/Calltips_protos.h>
 #include <clib/camd_protos.h>
 #include <clib/cardres_protos.h>
 #include <clib/cia_protos.h>
-#include <clib/Clock_protos.h>
+// #include <clib/Clock_protos.h>
 #include <clib/clocksource_protos.h>
 #include <clib/codesets_protos.h>
 // #include <clib/Coloradjust_protos.h>
@@ -656,15 +656,15 @@
 #include <clib/gl_protos.h>
 #include <clib/glu_protos.h>
 #include <clib/graphics_protos.h>
-#include <clib/Graph_protos.h>
+// #include <clib/Graph_protos.h>
 #include <clib/hostlib_protos.h>
 #include <clib/hpet_protos.h>
-#include <clib/IconDrawerList_protos.h>
-#include <clib/IconImage_protos.h>
-#include <clib/IconList_protos.h>
-#include <clib/IconListview_protos.h>
+// #include <clib/IconDrawerList_protos.h>
+// #include <clib/IconImage_protos.h>
+// #include <clib/IconList_protos.h>
+// #include <clib/IconListview_protos.h>
 #include <clib/icon_protos.h>
-#include <clib/IconVolumeList_protos.h>
+// #include <clib/IconVolumeList_protos.h>
 #include <clib/identify_protos.h>
 #include <clib/iffparse_protos.h>
 #include <clib/input_protos.h>
@@ -714,8 +714,8 @@
 #include <clib/popupmenu_protos.h>
 #include <clib/poseidon_protos.h>
 // #include <clib/posixc_protos.h>
-#include <clib/PrefsEditor_protos.h>
-#include <clib/PrefsWindow_protos.h>
+// #include <clib/PrefsEditor_protos.h>
+// #include <clib/PrefsWindow_protos.h>
 #include <clib/processor_protos.h>
 // #include <clib/Process_protos.h>
 #include <clib/prometheus_protos.h>
@@ -733,7 +733,7 @@
 #include <clib/socket_protos.h>
 // #include <clib/stdcio_protos.h>
 // #include <clib/stdc_protos.h>
-#include <clib/SystemPrefsWindow_protos.h>
+// #include <clib/SystemPrefsWindow_protos.h>
 #include <clib/task_protos.h>
 #include <clib/timer_protos.h>
 // #include <clib/Title_protos.h>
@@ -1263,7 +1263,7 @@
 
 // #include <proto/Aboutbox.h>
 // #include <proto/Aboutmui.h>
-#include <proto/AboutWindow.h>
+// #include <proto/AboutWindow.h>
 #include <proto/ahi.h>
 #include <proto/ahi_sub.h>
 #include <proto/alib.h>
@@ -1280,14 +1280,14 @@
 #include <proto/bootloader.h>
 #include <proto/bsdsocket.h>
 #include <proto/bullet.h>
-#include <proto/Busy.h>
+// #include <proto/Busy.h>
 #include <proto/bz2.h>
-#include <proto/Calendar.h>
+// #include <proto/Calendar.h>
 // #include <proto/Calltips.h>
 #include <proto/camd.h>
 #include <proto/cardres.h>
 #include <proto/cia.h>
-#include <proto/Clock.h>
+// #include <proto/Clock.h>
 #include <proto/clocksource.h>
 #include <proto/codesets.h>
 // #include <proto/Coloradjust.h>
@@ -1321,16 +1321,16 @@
 #include <proto/gameport.h>
 #include <proto/gl.h>
 #include <proto/glu.h>
-#include <proto/Graph.h>
+// #include <proto/Graph.h>
 #include <proto/graphics.h>
 #include <proto/hostlib.h>
 #include <proto/hpet.h>
-#include <proto/IconDrawerList.h>
+// #include <proto/IconDrawerList.h>
 #include <proto/icon.h>
-#include <proto/IconImage.h>
-#include <proto/IconList.h>
-#include <proto/IconListview.h>
-#include <proto/IconVolumeList.h>
+// #include <proto/IconImage.h>
+// #include <proto/IconList.h>
+// #include <proto/IconListview.h>
+// #include <proto/IconVolumeList.h>
 #include <proto/identify.h>
 #include <proto/iffparse.h>
 #include <proto/input.h>
@@ -1378,8 +1378,8 @@
 #include <proto/poseidon.h>
 // #include <proto/posixc.h>
 // #include <proto/potgo.h>
-#include <proto/PrefsEditor.h>
-#include <proto/PrefsWindow.h>
+// #include <proto/PrefsEditor.h>
+// #include <proto/PrefsWindow.h>
 // #include <proto/Process.h>
 #include <proto/processor.h>
 #include <proto/prometheus.h>
@@ -1397,7 +1397,7 @@
 #include <proto/socket.h>
 // #include <proto/stdc.h>
 // #include <proto/stdcio.h>
-#include <proto/SystemPrefsWindow.h>
+// #include <proto/SystemPrefsWindow.h>
 #include <proto/task.h>
 #include <proto/timer.h>
 // #include <proto/Title.h>
