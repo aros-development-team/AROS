@@ -203,6 +203,18 @@ AROS_LH4(struct BtErrorMsg *, btAddErrorMsgA,
                 AddTail(&BluetoothBase->bt_ErrorMsgs, &bem->bem_Node);
                 Permit();
                 btSendEvent(BEHMB_ADDERRORMSG, bem, NULL);
+                /* with the "btdebug" boot argument also mirror the line to the
+                   boot volume, so a board without keyboard/shell still leaves a
+                   readable log. Only from a Process (DOS I/O needs one). */
+                if((BluetoothBase->bt_Flags & BTF_KLOG) && bHaveDOS(BluetoothBase) &&
+                   (FindTask(NULL)->tc_Node.ln_Type == NT_PROCESS)) {
+                    BPTR fh = Open("SYS:BluetoothLog.txt", MODE_READWRITE);
+                    if(fh) {
+                        Seek(fh, 0, OFFSET_END);
+                        FPrintf(fh, "%ld %s: %s\n", (LONG) level, origin, bem->bem_Msg);
+                        Close(fh);
+                    }
+                }
                 return(bem);
             }
             btFreeVec(bem->bem_Origin);

@@ -23,6 +23,7 @@
 #include <clib/alib_protos.h>
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "bluetoothprefs.h"
 #include "ActionClass.h"
@@ -218,14 +219,73 @@ ULONG DeviceIconFor(IPTR cod, IPTR appearance, IPTR isclassic)
     return ICON_DEV_GENERIC;
 }
 
+
+/* *** incremental list update ***
+ * The stack raises a device event for every advertising report during a scan,
+ * so rebuilding a list on each event tears it down many times a second - the
+ * list flickers and the selection is lost. Instead merge a freshly built set
+ * of entries into the live list: update rows in place (redrawing only those),
+ * insert new ones, remove vanished ones. */
+
+static LONG ListIndexOf(Object *list, APTR entry)
+{
+    LONG i = 0;
+    APTR p;
+    for(;;) {
+        DoMethod(list, MUIM_List_GetEntry, i, &p);
+        if(!p) return -1;
+        if(p == entry) return i;
+        i++;
+    }
+}
+
+#define DEVENTRY_DATA(e) (((UBYTE *)(e)) + offsetof(struct DevEntry, icon))
+#define DEVENTRY_DATALEN (sizeof(struct DevEntry) - offsetof(struct DevEntry, icon))
+
+void MergeDevList(Object *list, struct MinList *entries, struct MinList *fresh)
+{
+    struct DevEntry *e, *next, *f;
+    BOOL structural = FALSE;
+
+    for(e = (struct DevEntry *)entries->mlh_Head; (next = (struct DevEntry *)e->node.mln_Succ); e = next) {
+        for(f = (struct DevEntry *)fresh->mlh_Head; f->node.mln_Succ; f = (struct DevEntry *)f->node.mln_Succ) {
+            if(f->bd == e->bd) break;
+        }
+        if(!f->node.mln_Succ) {
+            /* gone */
+            LONG pos = ListIndexOf(list, e);
+            if(!structural) { set(list, MUIA_List_Quiet, TRUE); structural = TRUE; }
+            if(pos >= 0) DoMethod(list, MUIM_List_Remove, pos);
+            Remove((struct Node *)e);
+            FreeVec(e);
+            continue;
+        }
+        if(memcmp(DEVENTRY_DATA(e), DEVENTRY_DATA(f), DEVENTRY_DATALEN)) {
+            LONG pos;
+            memcpy(DEVENTRY_DATA(e), DEVENTRY_DATA(f), DEVENTRY_DATALEN);
+            if(!structural && ((pos = ListIndexOf(list, e)) >= 0)) {
+                DoMethod(list, MUIM_List_Redraw, pos);
+            }
+        }
+        Remove((struct Node *)f);
+        FreeVec(f);
+    }
+    /* whatever is left in fresh is new */
+    while((f = (struct DevEntry *)RemHead((struct List *)fresh))) {
+        if(!structural) { set(list, MUIA_List_Quiet, TRUE); structural = TRUE; }
+        AddTail((struct List *)entries, (struct Node *)f);
+        DoMethod(list, MUIM_List_InsertSingle, f, MUIV_List_Insert_Bottom);
+    }
+    if(structural) set(list, MUIA_List_Quiet, FALSE);
+}
+
 static void RefreshDevices(struct BtActionData *data)
 {
     struct List *hwl, *devl;
     struct Node *bth, *bd;
+    struct MinList fresh;
 
-    set(data->devlist, MUIA_List_Quiet, TRUE);
-    DoMethod(data->devlist, MUIM_List_Clear);
-    FREELIST(data->deventries);
+    NewList((struct List *)&fresh);
     btLockReadBase();
     btGetAttrs(BGA_STACK, NULL, BSA_HardwareList, &hwl, TAG_END);
     for(bth = hwl->lh_Head; bth->ln_Succ; bth = bth->ln_Succ) {
@@ -255,12 +315,11 @@ static void RefreshDevices(struct BtActionData *data)
                      isreg ? "registered " : "", isb ? "bonded " : "",
                      isconn ? "connected " : "", isdead ? "unreachable " : "");
             if(!e->flags[0]) strcpy(e->flags, "discovered");
-            AddTail((struct List *)&data->deventries, (struct Node *)e);
-            DoMethod(data->devlist, MUIM_List_InsertSingle, e, MUIV_List_Insert_Bottom);
+            AddTail((struct List *)&fresh, (struct Node *)e);
         }
     }
     btUnlockBase();
-    set(data->devlist, MUIA_List_Quiet, FALSE);
+    MergeDevList(data->devlist, &data->deventries, &fresh);
     if(data->devwin) DoMethod(data->devwin, MUIM_DevWin_Populate);
     if(data->scanwin) DoMethod(data->scanwin, MUIM_ScanWin_Populate);
 }

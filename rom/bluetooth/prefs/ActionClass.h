@@ -70,6 +70,9 @@ struct BtActionData
     struct Hook navhook, hwhook, devhook, clshook, errhook;
 };
 
+/* incremental list update shared by the Devices page and the Add Device window (ActionClass.c) */
+void MergeDevList(Object *list, struct MinList *entries, struct MinList *fresh);
+
 #define TAGBASE_BtA (TAG_USER | 0x1a00)
 
 #define MUIM_BtA_Scan         (TAGBASE_BtA | 0x01)

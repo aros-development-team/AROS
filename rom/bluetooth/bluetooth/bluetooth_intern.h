@@ -293,6 +293,7 @@ struct BtHardware
     UWORD               bth_LMPSubversion;
     UWORD               bth_ManufacturerID;
     UBYTE               bth_Features[8];        /* LMP features page 0 */
+    UBYTE               bth_LEFeatures[8];      /* LE controller features (bit 6 of byte 0 = LE Secure Connections) */
     UWORD               bth_ACLMaxPktSize;
     UWORD               bth_ACLNumPkts;
     UWORD               bth_SCOMaxPktSize;
@@ -441,6 +442,12 @@ struct BtEndpoint
     UWORD               bep_UUID16;
     UWORD               bep_Properties;
     UWORD               bep_MaxPktSize;   /* MTU */
+    UWORD               bep_EndHandle;    /* GATT: last handle belonging to this characteristic */
+    UWORD               bep_CCCDHandle;   /* GATT: Client Characteristic Configuration descriptor (0 = unknown) */
+    UWORD               bep_RefHandle;    /* GATT: HID Report Reference descriptor (0 = none) */
+    UWORD               bep_ReportID;     /* HID report id from the Report Reference */
+    UWORD               bep_ReportType;   /* 1 input, 2 output, 3 feature */
+    UWORD               bep_DescDone;     /* descriptors have been looked at */
     UBYTE               bep_UUID[16];
     STRPTR              bep_Name;
     struct BtHWEndpoint *bep_Chan;        /* open channel state (hwconn.c private) */

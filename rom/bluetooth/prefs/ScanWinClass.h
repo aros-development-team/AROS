@@ -21,6 +21,7 @@ struct ScanWinData
     struct Hook    dischook;
     struct MinList entries;      /* struct DevEntry backing store */
     APTR           radio;        /* radio used for discovery */
+    BOOL           busy;         /* connect/pair in progress (they block) */
 };
 
 #define TAGBASE_ScanWin (TAG_USER | 0x1b00)

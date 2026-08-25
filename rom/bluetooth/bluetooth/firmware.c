@@ -108,15 +108,16 @@ static struct BtFirmwareLoader * bFindLoader(struct BtBase *BluetoothBase, struc
 /* Offer the controller behind hc to the registered firmware loaders and let the
    best match download its firmware. Runs in the hwtask (so fwc_HciCommand can
    pump events). Idempotent: a controller flagged BTHF_FWLOADED is left alone. */
-void bDoFirmware(struct BtHWCore *hc)
+BOOL bDoFirmware(struct BtHWCore *hc)
 {
+    BOOL loaded = FALSE;
     struct BtBase *BluetoothBase = hc->hc_Base;
     struct BtHardware *bth = hc->hc_Hardware;
     struct BtFirmwareContext ctx;
     struct BtFirmwareLoader *best;
 
     if(bth->bth_Flags & BTHF_FWLOADED) {
-        return;
+        return(FALSE);
     }
 
     bFillCtxIdentity(&ctx, bth);
@@ -133,7 +134,7 @@ void bDoFirmware(struct BtHWCore *hc)
         /* No loader handles this controller yet. Most controllers need no
            firmware; leave it eligible so a loader binding later can retry. */
         bth->bth_Flags |= BTHF_FWPENDING;
-        return;
+        return(FALSE);
     }
 
     btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
@@ -147,6 +148,8 @@ void bDoFirmware(struct BtHWCore *hc)
             btAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
                            "%s/%ld: firmware load failed (error %ld).",
                            bth->bth_DevName, bth->bth_Unit, err);
+        } else {
+            loaded = TRUE;
         }
     }
     ReleaseSemaphore(&BluetoothBase->bt_FirmwareLock);
@@ -155,6 +158,7 @@ void bDoFirmware(struct BtHWCore *hc)
        just loop on every future bind. A re-plug makes a fresh controller. */
     bth->bth_Flags &= ~BTHF_FWPENDING;
     bth->bth_Flags |= BTHF_FWLOADED;
+    return(loaded);
 }
 /* \\\ */
 

@@ -101,10 +101,17 @@ static bt_status_t add_input(struct bt_hid_report_descriptor *out,
                            : (uint16_t)1;
     uint32_t added_bits = (uint32_t)globals->report_size * globals->report_count;
 
-    if (report == NULL || globals->report_size > 32 || globals->report_count == 0 ||
-        added_bits > UINT16_MAX || report->input_bits > UINT16_MAX - added_bits ||
+    if (globals->report_size > 32 || globals->report_count == 0 || added_bits > UINT16_MAX)
+        return BT_ERR_INVALID_ARGUMENT;          /* malformed item */
+    if (report == NULL || report->input_bits > UINT16_MAX - added_bits ||
         out->field_count + emitted > BT_HID_MAX_FIELDS)
-        return BT_ERR_NO_RESOURCES;
+    {
+        /* beyond our tables (too many reports/fields): drop this input item but
+         * keep the report's bit accounting right so later items stay aligned */
+        if (report != NULL && report->input_bits <= UINT16_MAX - added_bits)
+            report->input_bits = (uint16_t)(report->input_bits + added_bits);
+        return BT_OK;
+    }
     for (i = 0; i < emitted; ++i)
     {
         struct bt_hid_field *field = &out->fields[out->field_count++];
@@ -221,9 +228,10 @@ bt_status_t bt_hid_report_parse(const uint8_t *data, size_t data_len,
             switch (tag)
             {
             case HID_LOCAL_USAGE:
-                if (locals.usage_count == BT_HID_MAX_LOCAL_USAGES)
-                    return BT_ERR_NO_RESOURCES;
-                locals.usages[locals.usage_count++] = (uint16_t)value;
+                /* more usages than we can list: keep what we have (the last one
+                 * is reused for the rest) rather than rejecting the whole map */
+                if (locals.usage_count < BT_HID_MAX_LOCAL_USAGES)
+                    locals.usages[locals.usage_count++] = (uint16_t)value;
                 break;
             case HID_LOCAL_USAGE_MIN:
                 locals.usage_min = (uint16_t)value;

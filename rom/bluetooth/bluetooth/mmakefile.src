@@ -5,6 +5,7 @@ FILES :=    \
     objects \
     classes \
     firmware \
+    aes128 \
     hwtask \
     hwconn \
     config \

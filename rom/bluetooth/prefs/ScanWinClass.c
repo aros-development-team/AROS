@@ -62,11 +62,9 @@ static void Populate(struct ScanWinData *data)
 {
     struct List *hwl, *devl;
     struct Node *bth, *bd;
+    struct MinList fresh;
 
-    set(data->list, MUIA_List_Quiet, TRUE);
-    DoMethod(data->list, MUIM_List_Clear);
-    FREELIST(data->entries);
-
+    NewList((struct List *)&fresh);
     btLockReadBase();
     btGetAttrs(BGA_STACK, NULL, BSA_HardwareList, &hwl, TAG_END);
     for(bth = hwl->lh_Head; bth->ln_Succ; bth = bth->ln_Succ) {
@@ -89,12 +87,11 @@ static void Populate(struct ScanWinData *data)
             strncpy(e->addr, addr ? addr : "?", sizeof(e->addr)-1);
             strncpy(e->name, name ? name : "?", sizeof(e->name)-1);
             strcpy(e->type, (isc && isl) ? "dual" : (isl ? "LE" : "BR/EDR"));
-            AddTail((struct List *)&data->entries, (struct Node *)e);
-            DoMethod(data->list, MUIM_List_InsertSingle, e, MUIV_List_Insert_Bottom);
+            AddTail((struct List *)&fresh, (struct Node *)e);
         }
     }
     btUnlockBase();
-    set(data->list, MUIA_List_Quiet, FALSE);
+    MergeDevList(data->list, &data->entries, &fresh);
 }
 /* \\\ */
 
@@ -187,15 +184,26 @@ AROS_UFH3(IPTR, ScanWinDispatcher,
         case MUIM_ScanWin_Connect:
             {
                 struct DevEntry *e = NULL;
+                if(data->busy) {
+                    return 0;           /* a connect/pair is already running (these calls block) */
+                }
                 DoMethod(data->list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &e);
                 if(e && e->bd) {
                     /* register (persist), connect and pair - the device then
                      * moves to the main Devices page and drops off this list.
-                     * Pairing drives the library's own confirmation popup (a
-                     * no-op for LE, which has no SMP bonding yet). */
+                     * Pairing drives the library's own confirmation popup. */
+                    BOOL paired;
+                    data->busy = TRUE;
                     btRegisterDevice(e->bd);
                     btConnectDevice(e->bd);
-                    btPairDevice(e->bd, TAG_END);
+                    paired = btPairDevice(e->bd, TAG_END);
+                    data->busy = FALSE;
+                    if(paired) {
+                        /* done: close, so a stray key from the freshly bound
+                         * device cannot trigger another connect from here */
+                        set(obj, MUIA_Window_Open, FALSE);
+                        return 0;
+                    }
                 }
                 Populate(data);
             }

@@ -40,7 +40,7 @@ struct MUI_CustomClass *ActionClass   = NULL;
 struct MUI_CustomClass *ScanWinClass  = NULL;
 struct MUI_CustomClass *DevWinClass   = NULL;
 
-const char *version = "$VER: Bluetooth 1.0 (18.08.2026) The AROS Development Team";
+const char *version = "$VER: Bluetooth 1.1 (25.08.2026) The AROS Development Team";
 
 static void CloseClasses(void)
 {

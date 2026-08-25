@@ -5,7 +5,7 @@
 #include <btcore/types.h>
 
 #ifndef BT_HID_MAX_FIELDS
-#define BT_HID_MAX_FIELDS 128
+#define BT_HID_MAX_FIELDS 256
 #endif
 
 #ifndef BT_HID_MAX_REPORTS
@@ -13,7 +13,7 @@
 #endif
 
 #ifndef BT_HID_MAX_LOCAL_USAGES
-#define BT_HID_MAX_LOCAL_USAGES 32
+#define BT_HID_MAX_LOCAL_USAGES 64
 #endif
 
 #define BT_HID_INPUT_CONSTANT 0x0001u

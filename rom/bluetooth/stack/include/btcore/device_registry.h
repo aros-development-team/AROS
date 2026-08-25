@@ -115,6 +115,8 @@ struct bt_le_adv_info
     const uint8_t *name;
     size_t name_len;
     bool name_complete;   /* EIR 0x09 rather than the shortened 0x08 */
+    bool has_flags;       /* AD type 0x01 (Flags) was present */
+    uint8_t flags;        /* bit0 LE limited discoverable, bit1 LE general discoverable */
 };
 
 void bt_le_adv_parse(const uint8_t *data, size_t length, struct bt_le_adv_info *out);

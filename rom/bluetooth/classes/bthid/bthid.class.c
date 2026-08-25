@@ -26,6 +26,7 @@
 #include <proto/input.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "bthid.h"
 
@@ -374,9 +375,34 @@ static BOOL bthidReadReportMap(struct BTHidBinding *nhb, struct Library *Bluetoo
         }
     }
     if(err) {
+        STRPTR devname = NULL;
+        btGetAttrs(BGA_DEVICE, nhb->nhb_Device, BDA_Name, &devname, TAG_END);
+        /* ATT 0x05 insufficient authentication, 0x08 insufficient authorization,
+           0x0f insufficient encryption: HID report maps are only readable on an
+           encrypted link, i.e. the device has to be paired first. */
+        btAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                       "Cannot read the HID report map of '%s' (error %ld, ATT 0x%02lx)%s.",
+                       devname ? devname : (STRPTR) "device", (LONG) err, (ULONG) actual,
+                       ((actual == 0x05) || (actual == 0x08) || (actual == 0x0f)) ? (STRPTR) " - the link is not encrypted, pair the device first" : (STRPTR) "");
         return FALSE;
     }
     if(bt_hid_report_parse(map, actual, &nhb->nhb_Descriptor) != BT_OK) {
+        STRPTR devname = NULL;
+        btGetAttrs(BGA_DEVICE, nhb->nhb_Device, BDA_Name, &devname, TAG_END);
+        btAddErrorMsg(RETURN_WARN, (STRPTR) libname, "The HID report map of '%s' (%ld bytes) could not be parsed.",
+                       devname ? devname : (STRPTR) "device", actual);
+        {
+            /* hex dump so the map can be examined offline */
+            ULONG o;
+            for(o = 0; o < actual; o += 24) {
+                char hex[3 * 24 + 1];
+                ULONG n, p = 0;
+                for(n = 0; (n < 24) && (o + n < actual); n++) {
+                    p += snprintf(hex + p, sizeof(hex) - p, "%02lx ", (ULONG) map[o + n]);
+                }
+                btAddErrorMsg(RETURN_OK, (STRPTR) libname, "map[%03ld]: %s", o, hex);
+            }
+        }
         return FALSE;
     }
     bt_hid_input_init(&nhb->nhb_Input, &nhb->nhb_Descriptor);
@@ -394,8 +420,9 @@ AROS_UFH0(void, bthidTask)
     struct BTHidBinding *nhb = thistask->tc_UserData;
     struct Library *BluetoothBase;
     struct BtEndpoint *reportep = NULL;
-    APTR readch[2] = { NULL, NULL };
-    UBYTE readbuf[2][64];
+    APTR readch[8];
+    UBYTE readbuf[8][64];
+    UBYTE readid[8];       /* HOGP report id of each channel (0 = none) */
     UWORD numch = 0;
     UWORD n;
     ULONG sigmask;
@@ -446,12 +473,36 @@ AROS_UFH0(void, bthidTask)
                 numch = 1;
             }
         } else {
-            /* HOGP: subscribe to every readable Report characteristic (0x2a4d) */
+            /* HOGP: subscribe to every notifying Report characteristic (0x2a4d) that
+               is an Input report (Report Reference type 1) or of unknown type */
             while((reportep = btFindEndpoint(nhb->nhb_Service, reportep, BEA_UUID16, 0x2a4d, BEA_CanRead, TRUE, TAG_END))) {
-                if(numch >= 2) {
+                IPTR rtype = 0, rid = 0, ref = 0;
+                if(numch >= 8) {
                     break;
                 }
+                btGetAttrs(BGA_ENDPOINT, reportep, BEA_ReportType, &rtype, BEA_ReportID, &rid,
+                           BEA_ReportRefHandle, &ref, TAG_END);
+                if(!rtype && ref) {
+                    /* the Report Reference is readable only on an encrypted link, so
+                       the stack's enumeration (before pairing) could not fetch it -
+                       we can now: [report id][type 1 input / 2 output / 3 feature] */
+                    APTR rch;
+                    if((rch = btAllocChannel(nhb->nhb_Device, nhb->nhb_ChannelPort, NULL))) {
+                        UBYTE rr[4];
+                        btSetAttrs(BGA_CHANNEL, rch, BCHA_AutoConnect, TRUE, TAG_END);
+                        btChannelSetup(rch, BTPR_GATTREAD, ref, 0);
+                        if(!btDoChannel(rch, rr, sizeof(rr)) && (btGetChannelActual(rch) >= 2)) {
+                            rid = rr[0];
+                            rtype = rr[1];
+                        }
+                        btFreeChannel(rch);
+                    }
+                }
+                if(rtype && (rtype != 1)) {
+                    continue;              /* output / feature report */
+                }
                 if((readch[numch] = btAllocChannel(nhb->nhb_Device, nhb->nhb_ChannelPort, reportep))) {
+                    readid[numch] = (UBYTE) rid;
                     btSetAttrs(BGA_CHANNEL, readch[numch], BCHA_AutoConnect, TRUE, TAG_END);
                     btChannelSetup(readch[numch], BTPR_READ, 0, 0);
                     btSendChannel(readch[numch], readbuf[numch], sizeof(readbuf[numch]));
@@ -485,10 +536,19 @@ AROS_UFH0(void, bthidTask)
                         if(!err) {
                             ULONG actual = btGetChannelActual(ch);
                             const UBYTE *rep = readbuf[n];
+                            UBYTE idbuf[65];
                             if(nhb->nhb_Classic && (actual >= 1)) {
                                 /* drop the HIDP header byte (0xa1 = DATA/Input) */
                                 rep++;
                                 actual--;
+                            } else if(!nhb->nhb_Classic && nhb->nhb_Descriptor.uses_report_ids && readid[n]) {
+                                /* HOGP notifications carry no report id: it is the
+                                   characteristic's Report Reference - put it back */
+                                idbuf[0] = readid[n];
+                                if(actual > sizeof(idbuf) - 1) actual = sizeof(idbuf) - 1;
+                                CopyMem((APTR) rep, &idbuf[1], actual);
+                                rep = idbuf;
+                                actual++;
                             }
                             bt_hid_input_process(&nhb->nhb_Input, rep, actual,
                                                  bt_aros_input_bridge_handle, &nhb->nhb_Bridge);

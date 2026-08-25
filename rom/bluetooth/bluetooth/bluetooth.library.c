@@ -1361,6 +1361,10 @@ static const ULONG BtEndpointPT[] = {
     PACK_ENTRY(BEA_Dummy, BEA_Properties, BtEndpoint, bep_Properties, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BEA_Dummy, BEA_MaxPktSize, BtEndpoint, bep_MaxPktSize, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BEA_Dummy, BEA_Name, BtEndpoint, bep_Name, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BEA_Dummy, BEA_ReportID, BtEndpoint, bep_ReportID, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BEA_Dummy, BEA_ReportType, BtEndpoint, bep_ReportType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BEA_Dummy, BEA_CCCDHandle, BtEndpoint, bep_CCCDHandle, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BEA_Dummy, BEA_ReportRefHandle, BtEndpoint, bep_RefHandle, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
 

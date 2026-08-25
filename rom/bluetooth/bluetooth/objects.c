@@ -775,6 +775,16 @@ AROS_LH3(struct BtEndpoint *, btFindEndpointA,
                 takeit = FALSE;
             }
         }
+        if((ti = FindTagItem(BEA_ReportType, tags))) {
+            if(ti->ti_Data != bep->bep_ReportType) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(BEA_ReportID, tags))) {
+            if(ti->ti_Data != bep->bep_ReportID) {
+                takeit = FALSE;
+            }
+        }
         if((ti = FindTagItem(BEA_Properties, tags))) {
             if((ti->ti_Data & bep->bep_Properties) != ti->ti_Data) {
                 takeit = FALSE;

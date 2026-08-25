@@ -240,6 +240,10 @@
 #define BEA_MaxPktSize       (BEA_Dummy + 0x19) /* ULONG MTU */
 #define BEA_IsOpen           (BEA_Dummy + 0x1a) /* BOOL channel currently open */
 #define BEA_Name             (BEA_Dummy + 0x1b) /* STRPTR */
+#define BEA_ReportID         (BEA_Dummy + 0x1c) /* ULONG HID Report Reference: report id (0 = none) */
+#define BEA_ReportType       (BEA_Dummy + 0x1d) /* ULONG HID Report Reference: 1 input, 2 output, 3 feature (0 = unknown) */
+#define BEA_CCCDHandle       (BEA_Dummy + 0x1e) /* ULONG GATT handle of the characteristic's CCCD (0 = unknown) */
+#define BEA_ReportRefHandle  (BEA_Dummy + 0x1f) /* ULONG GATT handle of the HID Report Reference descriptor (0 = none) */
 
 /* BEA_Type */
 #define BEPT_L2CAP        1 /* connection oriented L2CAP channel (PSM) */

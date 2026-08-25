@@ -180,6 +180,17 @@ AROS_UFH0(void, bPopupTask)
 
             while((pm = (struct BtPopupMsg *) GetMsg(port)))
             {
+                if(pm->bpm_Type == BPRT_NONE)
+                {
+                    /* the pairing this popup belongs to has finished (or failed) */
+                    if(!curdev || (curdev == pm->bpm_Device))
+                    {
+                        set(win, MUIA_Window_Open, FALSE);
+                        curdev = NULL;
+                    }
+                    btFreeVec(pm);
+                    continue;
+                }
                 STRPTR name = NULL;
                 char buf[200];
                 BOOL needinput = FALSE;
@@ -215,6 +226,8 @@ AROS_UFH0(void, bPopupTask)
                 btUnlockBase();
 
                 set(bodytxt, MUIA_Text_Contents, (IPTR)buf);
+                /* a displayed passkey is confirmed on the device (Enter), not here */
+                set(acceptbtn, MUIA_ShowMe, (curtype != BPRT_PASSKEYDISPLAY));
                 set(inputstr, MUIA_ShowMe, needinput);
                 set(inputstr, MUIA_String_Contents, (IPTR)"");
                 set(win, MUIA_Window_Open, TRUE);
@@ -288,6 +301,8 @@ void bShowPairingPopup(struct BtBase *BluetoothBase, struct BtDevice *bd, ULONG 
 
     if(!bd || !BluetoothBase->bt_GlobalCfg->bgc_PopupPairing)
         return;
+    if((type == BPRT_NONE) && !BluetoothBase->bt_Popup.bp_Port)
+        return;                          /* nothing open to close */
     if(!bStartPopup(BluetoothBase))
         return;
 
