@@ -154,6 +154,7 @@
 #define BDA_PairingRequest   (BDA_Dummy + 0x2b) /* ULONG BPRT_xxx pending request */
 #define BDA_PairingPasskey   (BDA_Dummy + 0x2c) /* ULONG passkey to display/compare */
 #define BDA_LinkType         (BDA_Dummy + 0x2d) /* ULONG BDLT_xxx of the current link */
+#define BDA_BondFlags        (BDA_Dummy + 0x2e) /* ULONG BDKF_xxx: which keys are stored (never the keys themselves) */
 #define BDA_InhibitPopup     (BDA_Dummy + 0x40) /* BOOL (settable) */
 #define BDA_InhibitClassBind (BDA_Dummy + 0x41) /* BOOL (settable) */
 #define BDA_AutoConnect      (BDA_Dummy + 0x42) /* BOOL (settable): connect on I/O and reconnect */
@@ -164,6 +165,13 @@
 #define BDAT_RANDOM          1
 #define BDAT_PUBLIC_IDENTITY 2
 #define BDAT_RANDOM_IDENTITY 3
+
+/* BDA_BondFlags */
+#define BDKF_LINKKEY 0x01 /* BR/EDR link key */
+#define BDKF_LTK     0x02 /* LE long term key */
+#define BDKF_IRK     0x04 /* LE identity resolving key (peer uses private addresses) */
+#define BDKF_CSRK    0x08 /* LE signing key */
+#define BDKF_SC      0x10 /* LE Secure Connections key */
 
 /* BDA_Role */
 #define BDR_NONE             0
@@ -449,6 +457,7 @@
 #define IFFCHNK_FORCEDBIND MAKE_ID('F','B','N','D')
 #define IFFCHNK_POPUP      MAKE_ID('P','O','P','O')
 #define IFFCHNK_REGDEVICE  MAKE_ID('D','R','E','G') /* struct BtRegDevCfg */
+#define IFFCHNK_DEVNAME    MAKE_ID('D','N','A','M') /* name the device reported (NAME = custom name) */
 #define IFFCHNK_KEYS       MAKE_ID('K','E','Y','S') /* bond keys (opaque, versioned) */
 
 /* Public definitions to Private interfaces */

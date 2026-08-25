@@ -21,6 +21,7 @@
 #include "debug.h"
 
 #include "hwtask.h"
+#include "aes128.h"
 
 #include <dos/dos.h>
 #include <proto/exec.h>
@@ -156,7 +157,56 @@ struct BtDevice * bFindDeviceByAddr(struct BtHWCore *hc, const UBYTE *addr)
         if(!memcmp(bd->bd_Address.bd_Addr, addr, 6)) {
             return(bd);
         }
+        /* a bonded peer currently using a resolvable private address */
+        if(bd->bd_CurAddrValid && !memcmp(bd->bd_CurAddr, addr, 6)) {
+            return(bd);
+        }
         bd = (struct BtDevice *) bd->bd_Node.ln_Succ;
+    }
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "bResolvePrivateAddr()" */
+/* LE privacy: a bonded peer that gave us its IRK advertises from a random
+   resolvable private address (top bits 01) that changes every few minutes.
+   hash = ah(IRK, prand) - check the 24 bit hash against every stored IRK.
+   On a match the device is returned and remembers this address as the one
+   the peer answers to right now (bd_CurAddr). Base must be locked. */
+static struct BtDevice * bResolvePrivateAddr(struct BtHWCore *hc, const UBYTE *addr)
+{
+    struct BtHardware *bth = hc->hc_Hardware;
+    struct BtDevice *bd;
+    UBYTE rp[16];
+    UBYTE key[16];
+    UBYTE out[16];
+    ULONG i;
+
+    if((addr[5] & 0xc0) != 0x40) {
+        return(NULL);
+    }
+    /* r' = padding || prand; prand most significant octet first */
+    memset(rp, 0, sizeof(rp));
+    rp[13] = addr[5];
+    rp[14] = addr[4];
+    rp[15] = addr[3];
+    for(bd = (struct BtDevice *) bth->bth_Devices.lh_Head; bd->bd_Node.ln_Succ; bd = (struct BtDevice *) bd->bd_Node.ln_Succ) {
+        if(!(bd->bd_Keys.bkc_Flags & BKCF_IRK)) {
+            continue;
+        }
+        /* the IRK is stored as distributed (LSB first); AES wants MSB first */
+        for(i = 0; i < 16; i++) {
+            key[i] = bd->bd_Keys.bkc_IRK[15 - i];
+        }
+        bAES128Encrypt(key, rp, out);
+        if((out[15] == addr[0]) && (out[14] == addr[1]) && (out[13] == addr[2])) {
+            if(!bd->bd_CurAddrValid || memcmp(bd->bd_CurAddr, addr, 6)) {
+                CopyMem((APTR) addr, bd->bd_CurAddr, 6);
+                bd->bd_CurAddrType = BDAT_RANDOM;
+                bd->bd_CurAddrValid = TRUE;
+            }
+            return(bd);
+        }
     }
     return(NULL);
 }
@@ -229,6 +279,15 @@ static BOOL bNoteDevice(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype, 
 
     btLockWriteBase();
     bd = bFindDeviceByAddr(hc, addr);
+    if(!bd && isle && (addrtype == BDAT_RANDOM)) {
+        bd = bResolvePrivateAddr(hc, addr);
+    }
+    if(!bd && hc->hc_BgScanActive && !(bth->bth_Flags & BTHF_DISCOVERING)) {
+        /* the background scan only exists to catch our own bonded devices
+           waking up; strangers are not listed outside a discovery */
+        btUnlockBase();
+        return(FALSE);
+    }
     if(!bd) {
         if(isle && (addrtype == BDAT_RANDOM)) {
             /* Private (rotating) random addresses would only clutter the list -
@@ -318,6 +377,10 @@ static BOOL bNoteDevice(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype, 
         btSendEvent(BEHMB_ADDDEVICE, bd, NULL);
     } else if(changed) {
         btSendEvent(BEHMB_DEVICEUPDATE, bd, NULL);
+    }
+    if(isle && (bd->bd_Flags & BDFF_REGISTERED)) {
+        /* one of ours is awake and advertising: reconnect it if wanted */
+        bConnAdvertising(hc, bd);
     }
     return(TRUE);
 }
@@ -589,6 +652,7 @@ static void bFinishDiscovery(struct BtHWCore *hc)
             bScanDiagDump(hc);          /* SYS:BluetoothScan.log, "btdebug" only */
         }
         btSendEvent(BEHMB_DISCOVERYSTOP, bth, NULL);
+        bBgScanSchedule(hc);
     }
 }
 /* \\\ */
@@ -619,6 +683,126 @@ static void bScanParamCB(struct bt_cmdq_completion *completion, void *user_data)
 { bScanCmdLog((struct BtHWCore *) user_data, completion, "LE Set Scan Parameters"); }
 static void bScanEnableCB(struct bt_cmdq_completion *completion, void *user_data)
 { bScanCmdLog((struct BtHWCore *) user_data, completion, "LE Set Scan Enable"); }
+/* \\\ */
+
+/* *** background LE scan *** */
+
+/* /// "bBgScanCmdCB()" */
+static void bBgScanCmdCB(struct bt_cmdq_completion *completion, void *user_data)
+{
+    struct BtHWCore *hc = user_data;
+    if((completion->result != BT_CMDQ_RESULT_COMPLETE) || completion->status) {
+        struct BtBase *BluetoothBase = hc->hc_Base;
+        hc->hc_BgScanActive = FALSE;
+        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "Background LE scan refused by the controller: %s (%ld).",
+                       btNumToStr(BNTS_HCISTATUS, completion->status, "unknown"), completion->status);
+    }
+}
+/* \\\ */
+
+/* /// "bBgScanStop()" */
+/* Called before any LE scan or connect command: they are refused (Command
+   Disallowed) while a scan is enabled on most controllers. */
+void bBgScanStop(struct BtHWCore *hc)
+{
+    bt_timer_list_cancel(&hc->hc_Timers, &hc->hc_BgScanTimer);
+    if(hc->hc_BgScanActive) {
+        UBYTE params[2] = { 0, 0 };
+        hc->hc_BgScanActive = FALSE;
+        bSubmitCmd(hc, HC_OP_LE_SET_SCAN_ENABLE, params, 2, bIgnoreCompletion, hc);
+    }
+}
+/* \\\ */
+
+/* /// "bBgScanNeeded()" */
+/* Is there a bonded LE device that should be reconnected when it shows up?
+   Either a class is already waiting for it (cn_WaitAdv) or its auto-connect
+   policy says so. */
+static BOOL bBgScanNeeded(struct BtHWCore *hc)
+{
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtHardware *bth = hc->hc_Hardware;
+    struct BtDevice *bd;
+    BOOL needed = FALSE;
+
+    if((bth->bth_State != BHS_READY) || !(bth->bth_Flags & BTHF_LE)) {
+        return(FALSE);
+    }
+    if(!BluetoothBase->bt_GlobalCfg->bgc_AutoConnect) {
+        return(FALSE);
+    }
+    btLockReadBase();
+    for(bd = (struct BtDevice *) bth->bth_Devices.lh_Head; bd->bd_Node.ln_Succ; bd = (struct BtDevice *) bd->bd_Node.ln_Succ) {
+        if((bd->bd_Flags & (BDFF_LE|BDFF_REGISTERED|BDFF_BONDED)) != (BDFF_LE|BDFF_REGISTERED|BDFF_BONDED)) {
+            continue;
+        }
+        if(bd->bd_Conns[1] && (bd->bd_Conns[1]->cn_State == HCNS_CONNECTED)) {
+            continue;
+        }
+        if(bd->bd_PoPoCfg.bpc_AutoConnect || (bd->bd_Conns[1] && bd->bd_Conns[1]->cn_WaitAdv)) {
+            needed = TRUE;
+            break;
+        }
+    }
+    btUnlockBase();
+    return(needed);
+}
+/* \\\ */
+
+/* /// "bBgScanUpdate()" */
+/* Start or stop the background scan according to the current state. */
+void bBgScanUpdate(struct BtHWCore *hc)
+{
+    struct BtHardware *bth = hc->hc_Hardware;
+    BOOL want;
+
+    bt_timer_list_cancel(&hc->hc_Timers, &hc->hc_BgScanTimer);
+    if((bth->bth_Flags & BTHF_DISCOVERING) || hc->hc_DiscoveryPending || hc->hc_LEScanActive ||
+       hc->hc_Connecting || !hc->hc_BringupDone || hc->hc_BringupFailed) {
+        want = FALSE;
+    } else {
+        want = bBgScanNeeded(hc);
+    }
+    if(want && !hc->hc_BgScanActive) {
+        UBYTE params[7];
+        struct bt_buf_writer w;
+        bt_buf_writer_init(&w, params, sizeof(params));
+        bt_buf_writer_write_u8(&w, 0x00);     /* passive: we only want to see who is there */
+        bt_buf_writer_write_le16(&w, 0x0800); /* interval 1.28 s */
+        bt_buf_writer_write_le16(&w, 0x0030); /* window 30 ms (~2% duty) */
+        bt_buf_writer_write_u8(&w, 0x00);     /* public own address */
+        bt_buf_writer_write_u8(&w, 0x00);     /* no filter policy (private addresses are resolved here) */
+        bSubmitCmd(hc, HC_OP_LE_SET_SCAN_PARAMETERS, params, 7, bBgScanCmdCB, hc);
+        params[0] = 0x01; /* enable */
+        params[1] = 0x00; /* every report: a device may need a second look */
+        bSubmitCmd(hc, HC_OP_LE_SET_SCAN_ENABLE, params, 2, bBgScanCmdCB, hc);
+        hc->hc_BgScanActive = TRUE;
+        KPRINTF(5, ("background LE scan on\n"));
+    } else if(!want && hc->hc_BgScanActive) {
+        bBgScanStop(hc);
+        KPRINTF(5, ("background LE scan off\n"));
+    }
+}
+/* \\\ */
+
+/* /// "bBgScanTimerCB()" */
+static void bBgScanTimerCB(struct bt_timer *timer, void *user_data)
+{
+    (void) timer;
+    bBgScanUpdate((struct BtHWCore *) user_data);
+}
+/* \\\ */
+
+/* /// "bBgScanSchedule()" */
+/* Re-evaluate in a couple of seconds: links come and go in bursts (a class
+   retrying a connect, a dual-mode device bringing up both bearers) and the
+   scan should not flap on and off in between. */
+void bBgScanSchedule(struct BtHWCore *hc)
+{
+    bt_timer_list_cancel(&hc->hc_Timers, &hc->hc_BgScanTimer);
+    bt_timer_list_add(&hc->hc_Timers, &hc->hc_BgScanTimer, bNowUS(hc) + 2000000ULL);
+}
 /* \\\ */
 
 /* /// "bStartDiscovery()" */
@@ -689,6 +873,7 @@ static LONG bStartDiscovery(struct BtHWCore *hc, struct BtDiscoveryParams *bdp)
                    le ? (STRPTR) "yes" : (STRPTR) "no", dur);
     btSendEvent(BEHMB_DISCOVERYSTART, bth, NULL);
 
+    bBgScanStop(hc);   /* scan parameters cannot be changed while scanning */
     if(le) {
         UBYTE params[7];
         struct bt_buf_writer w;
@@ -1450,6 +1635,8 @@ static void bBringupStep(struct BtHWCore *hc)
             hc->hc_BringupDone = TRUE;
             /* stock up on controller entropy for LE pairing */
             bConnRequestEntropy(hc, 4);
+            /* and start listening for our bonded LE devices */
+            bBgScanSchedule(hc);
             return;
         }
     }
@@ -1576,7 +1763,7 @@ void bHandleChannel(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth, struct
             if(!(bd->bd_Flags & BDFF_REGISTERED)) {
                 bd->bd_Flags |= BDFF_REGISTERED;
                 btUnlockDevice(bd);
-                bStoreDevConfig(BluetoothBase, bd);
+                bStoreDevConfig(BluetoothBase, bd, TRUE);
                 btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "Device %s registered.", bd->bd_Name);
                 btSendEvent(BEHMB_DEVICEREGISTERED, bd, NULL);
@@ -1594,8 +1781,10 @@ void bHandleChannel(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth, struct
             btLockWriteDevice(bd);
             if(bd->bd_Flags & BDFF_REGISTERED) {
                 bd->bd_Flags &= ~(BDFF_REGISTERED|BDFF_BONDED);
+                memset(&bd->bd_Keys, 0, sizeof(bd->bd_Keys));
+                bd->bd_CurAddrValid = FALSE;
                 btUnlockDevice(bd);
-                bStoreDevConfig(BluetoothBase, bd);
+                bStoreDevConfig(BluetoothBase, bd, TRUE);
                 btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "Device %s unregistered.", bd->bd_Name);
                 /* bindings are released by the event handler task */
@@ -1718,6 +1907,7 @@ static struct BtHWCore * bAllocCore(struct BtBase *BluetoothBase, struct BtHardw
     bt_timer_list_init(&hc->hc_Timers);
     bt_cmdq_init(&hc->hc_CmdQ, &hc->hc_Transport, &hc->hc_Timers);
     bt_timer_init(&hc->hc_DiscoveryTimer, bDiscoveryTimerCB, hc);
+    bt_timer_init(&hc->hc_BgScanTimer, bBgScanTimerCB, hc);
 
     for(n = 0; n < HC_NUMCMDREQS; n++) {
         hc->hc_CmdReq[n] = (struct IOBTHCIReq *) CreateIORequest(&bth->bth_DevMsgPort, sizeof(struct IOBTHCIReq));
@@ -1921,6 +2111,14 @@ static void bTick(struct BtHWCore *hc)
         }
     }
     bConnTick(hc);
+    /* registrations and policies change from other tasks: re-check the
+       background scan every few seconds as a catch-all */
+    if((LONG) (hc->hc_Tick - hc->hc_BgScanCheckTick) >= 5000) {
+        hc->hc_BgScanCheckTick = hc->hc_Tick;
+        if(!hc->hc_BgScanTimer.pending) {
+            bBgScanUpdate(hc);
+        }
+    }
 }
 /* \\\ */
 

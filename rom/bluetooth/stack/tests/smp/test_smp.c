@@ -96,7 +96,7 @@ static void test_key_distribution_payloads(void)
 
     bt_buf_writer_init(&w, buf, sizeof(buf));
     BT_CHECK(bt_smp_encode_central_identification(&w, rand, 0x1234) == BT_OK);
-    BT_CHECK(buf[9] == 0x34 && buf[10] == 0x12);
+    BT_CHECK(buf[1] == 0x34 && buf[2] == 0x12 && memcmp(&buf[3], rand, 8) == 0);   /* EDIV before Rand */
     BT_CHECK(bt_smp_parse_command(buf, 11, &command) == BT_OK);
     BT_CHECK(bt_smp_parse_central_identification(&command, &central) == BT_OK);
     BT_CHECK(central.ediv == 0x1234 && memcmp(central.rand, rand, 8) == 0);

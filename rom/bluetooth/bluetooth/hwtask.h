@@ -226,6 +226,10 @@ struct BtHWConn
     UBYTE               cn_SMPKeySize;
     UBYTE               cn_SMPLTK[16];    /* key handed to LE Start Encryption (HCI byte order) */
     ULONG               cn_LastActivity;
+    /* HCNS_CONNECTING without an HCI connect in flight: a class wants the
+       (bonded, sleeping) LE peer and the background scan connects as soon as
+       it advertises - no 10 s timeout, no controller time wasted paging. */
+    BOOL                cn_WaitAdv;
 };
 
 #define HCNS_FREE       0
@@ -317,6 +321,14 @@ struct BtHWCore
     BOOL                hc_DiscoveryPending; /* discovery requested, commands in flight */
     struct bt_timer     hc_DiscoveryTimer;
 
+    /* background LE scan: a low duty passive scan that runs whenever a
+       bonded LE device with auto-connect is not connected, so a keyboard
+       waking up (advertising) is reconnected without anyone asking. Off
+       during discovery and while an outgoing connect is in flight. */
+    BOOL                hc_BgScanActive;
+    struct bt_timer     hc_BgScanTimer;      /* re-arm hysteresis after link changes */
+    ULONG               hc_BgScanCheckTick;  /* periodic re-evaluation (hc_Tick based) */
+
     /* scan diagnostics (conclusive "why is nothing found" instrumentation) */
     ULONG               hc_DiagAdvLegacy;    /* LE advertising reports parsed (subevent 0x02) */
     ULONG               hc_DiagAdvExt;       /* LE extended advertising reports parsed (0x0D) */
@@ -368,8 +380,16 @@ struct BtDevice * bFindDeviceByAddr(struct BtHWCore *hc, const UBYTE *addr);
 LONG bStopDiscovery(struct BtHWCore *hc);
 void bReplyChannel(struct BtBase *BluetoothBase, struct BtChannel *bch, LONG error, ULONG actual);
 void bStartACLWrite(struct BtHWCore *hc);
+/* background LE scan (hwtask.c): stop it before an LE connect/scan command,
+   re-evaluate (now / after a short delay) when links or registrations change */
+void bBgScanStop(struct BtHWCore *hc);
+void bBgScanUpdate(struct BtHWCore *hc);
+void bBgScanSchedule(struct BtHWCore *hc);
 
 /* hwconn.c */
+/* a bonded/registered LE device is advertising: connect to it when a class
+   is waiting for it or its auto-connect policy says so */
+void bConnAdvertising(struct BtHWCore *hc, struct BtDevice *bd);
 void bConnInit(struct BtHWCore *hc);
 void bConnShutdown(struct BtHWCore *hc);
 BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULONG len);

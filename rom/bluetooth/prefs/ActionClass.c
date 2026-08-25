@@ -51,9 +51,12 @@ static struct BtNavEntry naventries[] =
     { "Devices",  BTPAGE_DEVICES,  2 },
     { "Classes",  BTPAGE_CLASSES,  3 },
     { "Options",  BTPAGE_OPTIONS,  4 },
+    { "Config",   BTPAGE_CONFIG,   4 },
 };
 
 static const char *errlvlstrings[] = { "Failures", "Errors", "Warnings", "All messages", NULL };
+/* BGCA_PopupDeviceNew: BGCP_NEVER .. BGCP_ALWAYS */
+static const char *popupnewstrings[] = { "Never", "When seen for the first time", "When registered without a binding", "Always", NULL };
 
 /* *** display hooks ***
  * The first column of each list is rendered with a leading icon using the
@@ -121,6 +124,16 @@ AROS_UFH3(LONG, ErrDisplay, AROS_UFHA(struct Hook *, h, A0), AROS_UFHA(char **, 
     AROS_USERFUNC_INIT
     if(e) { *a++ = e->level; *a++ = e->origin; *a = e->msg; }
     else  { *a++ = "Lvl"; *a++ = "Origin"; *a = "Message"; }
+    return 0;
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(LONG, CfgDisplay, AROS_UFHA(struct Hook *, h, A0), AROS_UFHA(char **, a, A2), AROS_UFHA(struct CfgEntry *, e, A1))
+{
+    AROS_USERFUNC_INIT
+    static char sizebuf[16];
+    if(e) { snprintf(sizebuf, sizeof(sizebuf), "%lu", (unsigned long)e->size); *a++ = e->type; *a++ = e->desc; *a++ = e->owner; *a = sizebuf; }
+    else  { *a++ = "Type"; *a++ = "Description"; *a++ = "Owner"; *a = "Size"; }
     return 0;
     AROS_USERFUNC_EXIT
 }
@@ -418,6 +431,381 @@ static void RefreshErrors(struct BtActionData *data)
     set(data->errlist, MUIA_List_Active, MUIV_List_Active_Bottom);
 }
 
+/* *** config page ***
+ * Lists every form of the stack's configuration the way Trident's Config
+ * panel does: the global stack config, one entry per known device (with its
+ * registration/bond state), per-device and per-class private prefs, forced
+ * bindings. Built from the IFF image btWriteCfg() produces. */
+
+static ULONG RdBE(const UBYTE *p)
+{
+    return ((ULONG)p[0] << 24) | ((ULONG)p[1] << 16) | ((ULONG)p[2] << 8) | p[3];
+}
+
+/* direct child chunk of an IFF FORM: pointer to its data (after the 8 byte header) */
+static const UBYTE *FindChunkData(const UBYTE *form, ULONG id)
+{
+    const UBYTE *p = form + 12;
+    const UBYTE *end = form + 8 + RdBE(form + 4);
+    while(p + 8 <= end) {
+        ULONG clen = RdBE(p + 4);
+        if(RdBE(p) == id) return p + 8;
+        p += 8 + ((clen + 1) & ~1UL);
+    }
+    return NULL;
+}
+
+static void AddCfgEntry(struct BtActionData *data, ULONG formid, ULONG parentid, ULONG size,
+                        CONST_STRPTR type, CONST_STRPTR desc, CONST_STRPTR owner, CONST_STRPTR devid)
+{
+    struct CfgEntry *e = AllocVec(sizeof(struct CfgEntry), MEMF_CLEAR);
+    if(!e) return;
+    e->formid = formid;
+    e->parentid = parentid;
+    e->size = size;
+    strncpy(e->type, type, sizeof(e->type)-1);
+    strncpy(e->desc, desc, sizeof(e->desc)-1);
+    strncpy(e->owner, owner ? owner : "Bluetooth", sizeof(e->owner)-1);
+    strncpy(e->devid, devid ? devid : "", sizeof(e->devid)-1);
+    AddTail((struct List *)&data->cfgentries, (struct Node *)e);
+    DoMethod(data->cfglist, MUIM_List_InsertSingle, e, MUIV_List_Insert_Bottom);
+}
+
+static void WalkCfgForm(struct BtActionData *data, const UBYTE *form, ULONG parentid, ULONG depth, CONST_STRPTR devid)
+{
+    ULONG formid = RdBE(form + 8);
+    ULONG size = RdBE(form + 4) + 8;
+    const UBYTE *p, *end, *s;
+    char desc[96];
+    char mydevid[32];
+    CONST_STRPTR owner = (CONST_STRPTR)FindChunkData(form, IFFCHNK_OWNER);
+
+    switch(formid) {
+        case IFFFORM_BTCFG:
+            break;   /* the root itself is not listed, its children are */
+        case IFFFORM_BTSTACKCFG:
+            AddCfgEntry(data, formid, parentid, size, "Stack", "Global stack configuration (radios, classes, options)", "Bluetooth", NULL);
+            break;
+        case IFFFORM_BTDEVICECFG: {
+            const UBYTE *dreg = FindChunkData(form, IFFCHNK_REGDEVICE);
+            const UBYTE *keys = FindChunkData(form, IFFCHNK_KEYS);
+            CONST_STRPTR name = (CONST_STRPTR)FindChunkData(form, IFFCHNK_NAME);
+            s = FindChunkData(form, IFFCHNK_DEVID);
+            strncpy(mydevid, s ? (const char *)s : "?", sizeof(mydevid)-1);
+            mydevid[sizeof(mydevid)-1] = 0;
+            devid = mydevid;
+            snprintf(desc, sizeof(desc), "%s (%s)%s%s%s%s%s", name ? name : mydevid, mydevid,
+                     dreg ? " - registered" : "",
+                     keys ? ", bonded:" : "",
+                     (keys && (keys[0] & BDKF_LINKKEY)) ? " link key" : "",
+                     (keys && (keys[0] & BDKF_LTK)) ? ((keys[0] & BDKF_SC) ? " LE key (SC)" : " LE key") : "",
+                     (keys && (keys[0] & BDKF_IRK)) ? " IRK" : "");
+            AddCfgEntry(data, formid, parentid, size, "Device", desc, "Bluetooth", mydevid);
+            break;
+        }
+        case IFFFORM_BTCLASSCFG:
+            snprintf(desc, sizeof(desc), "Default prefs for %s", owner ? owner : "?");
+            AddCfgEntry(data, formid, parentid, size, "Class", desc, owner, NULL);
+            break;
+        case IFFFORM_BTDEVCFGDATA:
+            snprintf(desc, sizeof(desc), "%s prefs for this device", owner ? owner : "?");
+            AddCfgEntry(data, formid, parentid, size, "  Device prefs", desc, owner, devid);
+            break;
+        case IFFFORM_BTSVCCFGDATA:
+            s = FindChunkData(form, IFFCHNK_SVCID);
+            snprintf(desc, sizeof(desc), "%s prefs for service %s", owner ? owner : "?", s ? (const char *)s : "?");
+            AddCfgEntry(data, formid, parentid, size, "  Service prefs", desc, owner, devid);
+            break;
+        case IFFFORM_BTCLASSDATA:
+        case IFFFORM_BTDEVCLSDATA:
+        case IFFFORM_BTSVCCLSDATA:
+            snprintf(desc, sizeof(desc), "%s private data", owner ? owner : "?");
+            AddCfgEntry(data, formid, parentid, size, "  Private data", desc, owner, devid);
+            break;
+        default:
+            snprintf(desc, sizeof(desc), "Unknown form %c%c%c%c", (int)form[8], (int)form[9], (int)form[10], (int)form[11]);
+            AddCfgEntry(data, formid, parentid, size, "Unknown", desc, owner, devid);
+            break;
+    }
+
+    if(depth >= 3) return;
+    p = form + 12;
+    end = form + 8 + RdBE(form + 4);
+    while(p + 8 <= end) {
+        ULONG cid = RdBE(p), clen = RdBE(p + 4);
+        if(cid == ID_FORM) {
+            WalkCfgForm(data, p, formid, depth + 1, devid);
+        } else if((cid == IFFCHNK_FORCEDBIND) && (formid == IFFFORM_BTDEVICECFG)) {
+            snprintf(desc, sizeof(desc), "Forced binding to %s", (const char *)(p + 8));
+            AddCfgEntry(data, cid, formid, clen + 8, "  Binding", desc, (CONST_STRPTR)(p + 8), devid);
+        }
+        p += 8 + ((clen + 1) & ~1UL);
+    }
+}
+
+static void RefreshConfig(struct BtActionData *data)
+{
+    IPTR oldpos = 0, saved = 0, curr = 0;
+    UBYTE *buf;
+
+    set(data->cfglist, MUIA_List_Quiet, TRUE);
+    get(data->cfglist, MUIA_List_Active, &oldpos);
+    DoMethod(data->cfglist, MUIM_List_Clear);
+    FREELIST(data->cfgentries);
+    if((buf = btWriteCfg(NULL))) {
+        if(RdBE(buf) == ID_FORM) WalkCfgForm(data, buf, 0, 0, NULL);
+        btFreeVec(buf);
+    }
+    set(data->cfglist, MUIA_List_Active, oldpos);
+    set(data->cfglist, MUIA_List_Quiet, FALSE);
+    btGetAttrs(BGA_STACK, NULL, BSA_CurrConfigHash, &curr, BSA_SavedConfigHash, &saved, TAG_END);
+    set(data->bt_save, MUIA_Disabled, (curr == saved));
+}
+
+static struct CfgEntry *SelectedCfg(struct BtActionData *data)
+{
+    struct CfgEntry *e = NULL;
+    DoMethod(data->cfglist, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &e);
+    return e;
+}
+
+/* the library's form for a list entry, or NULL */
+static APTR CfgFormFor(struct CfgEntry *e)
+{
+    APTR pic;
+    switch(e->formid) {
+        case IFFFORM_BTSTACKCFG:
+            return btFindCfgForm(NULL, IFFFORM_BTSTACKCFG);
+        case IFFFORM_BTDEVICECFG:
+            for(pic = btFindCfgForm(NULL, IFFFORM_BTDEVICECFG); pic; pic = btNextCfgForm(pic))
+                if(btMatchStringChunk(pic, IFFCHNK_DEVID, e->devid)) return pic;
+            return NULL;
+        case IFFFORM_BTCLASSCFG:
+            return btGetClsCfg(e->owner);
+        case IFFFORM_BTDEVCFGDATA:
+            return btGetDevCfg(e->owner, e->devid, NULL);
+    }
+    return NULL;
+}
+
+static void DoCfgActive(struct BtActionData *data)
+{
+    struct CfgEntry *e = SelectedCfg(data);
+    BOOL canremove = FALSE, canexport = FALSE;
+    if(e) {
+        switch(e->formid) {
+            case IFFFORM_BTSTACKCFG:  canexport = TRUE; break;
+            case IFFFORM_BTDEVICECFG:
+            case IFFFORM_BTCLASSCFG:
+            case IFFFORM_BTDEVCFGDATA: canexport = canremove = TRUE; break;
+        }
+    }
+    set(data->bt_cfgremove, MUIA_Disabled, !canremove);
+    set(data->bt_cfgexport, MUIA_Disabled, !canexport);
+}
+
+static void DoCfgRemove(struct BtActionData *data)
+{
+    struct CfgEntry *e = SelectedCfg(data);
+    APTR pic;
+    if(!e) return;
+    if(e->formid == IFFFORM_BTDEVICECFG) {
+        APTR bd;
+        if(!MUI_Request(_app(data->cfglist), _win(data->cfglist), 0, NULL, "Remove|Cancel",
+                        "Remove the stored configuration of device\n%s?\n\nIts registration and pairing keys are dropped;\nit has to be paired again to be used.", e->desc))
+            return;
+        /* a live device object must let go of the registration too, or the
+           stack writes the record straight back */
+        btLockReadBase();
+        bd = btFindDevice(NULL, BDA_IDString, (IPTR)e->devid, TAG_END);
+        btUnlockBase();
+        if(bd) { btUnregisterDevice(bd); btUnpairDevice(bd); }
+    } else if(!MUI_Request(_app(data->cfglist), _win(data->cfglist), 0, NULL, "Remove|Cancel",
+                           "Remove the configuration entry\n%s?", e->desc)) {
+        return;
+    }
+    if((pic = CfgFormFor(e))) {
+        btRemCfgForm(pic);
+        SetStatus(data, "Configuration entry removed.");
+    } else {
+        SetStatus(data, "Could not find that configuration entry.");
+    }
+    RefreshConfig(data);
+    RefreshDevices(data);
+}
+
+static void DoCfgExport(struct BtActionData *data)
+{
+    struct CfgEntry *e = SelectedCfg(data);
+    struct FileRequester *aslreq;
+    struct TagItem asltags[] = {
+        { ASLFR_InitialDrawer, (IPTR) "SYS:" },
+        { ASLFR_InitialFile,   (IPTR) "bluetooth-export.prefs" },
+        { ASLFR_DoSaveMode,    (IPTR) TRUE },
+        { ASLFR_TitleText,     (IPTR) "Export configuration entry" },
+        { TAG_END,             (IPTR) NULL }
+    };
+    APTR pic;
+    UBYTE *buf;
+    char path[256];
+    BPTR fh;
+
+    if(!e || !(pic = CfgFormFor(e))) { SetStatus(data, "Select an entry to export."); return; }
+    if(!(aslreq = (struct FileRequester *) MUI_AllocAslRequest(ASL_FileRequest, asltags))) return;
+    if(MUI_AslRequest(aslreq, TAG_END)) {
+        strncpy(path, aslreq->fr_Drawer, sizeof(path) - 1);
+        path[sizeof(path) - 1] = '\0';
+        AddPart((STRPTR) path, aslreq->fr_File, sizeof(path));
+        if((buf = btWriteCfg(pic))) {
+            if((fh = Open((STRPTR) path, MODE_NEWFILE))) {
+                Write(fh, buf, (RdBE(buf + 4) + 9) & ~1UL);
+                Close(fh);
+                SetStatus(data, "Configuration entry exported.");
+            } else {
+                SetStatus(data, "Could not open the file for writing.");
+            }
+            btFreeVec(buf);
+        }
+    }
+    MUI_FreeAslRequest(aslreq);
+}
+
+static void DoCfgImport(struct BtActionData *data)
+{
+    struct FileRequester *aslreq;
+    struct TagItem asltags[] = {
+        { ASLFR_InitialDrawer, (IPTR) "SYS:" },
+        { ASLFR_TitleText,     (IPTR) "Import configuration" },
+        { TAG_END,             (IPTR) NULL }
+    };
+    char path[256];
+    BPTR fh;
+
+    if(!(aslreq = (struct FileRequester *) MUI_AllocAslRequest(ASL_FileRequest, asltags))) return;
+    if(MUI_AslRequest(aslreq, TAG_END)) {
+        strncpy(path, aslreq->fr_Drawer, sizeof(path) - 1);
+        path[sizeof(path) - 1] = '\0';
+        AddPart((STRPTR) path, aslreq->fr_File, sizeof(path));
+        if((fh = Open((STRPTR) path, MODE_OLDFILE))) {
+            UBYTE head[12];
+            if((Read(fh, head, 12) == 12) && (RdBE(head) == ID_FORM)) {
+                ULONG len = RdBE(head + 4);
+                UBYTE *buf = AllocVec(len + 8, MEMF_ANY);
+                if(buf) {
+                    memcpy(buf, head, 12);
+                    if(Read(fh, buf + 12, len - 4) == (LONG)(len - 4)) {
+                        switch(RdBE(head + 8)) {
+                            case IFFFORM_BTCFG:
+                                /* a whole prefs file: replaces the running config */
+                                if(btReadCfg(NULL, buf)) { btParseCfg(); SetStatus(data, "Configuration imported."); }
+                                else SetStatus(data, "The file could not be read as a Bluetooth configuration.");
+                                break;
+                            case IFFFORM_BTDEVICECFG:
+                            case IFFFORM_BTCLASSCFG:
+                                if(btAddCfgEntry(NULL, buf)) SetStatus(data, "Configuration entry imported.");
+                                else SetStatus(data, "The entry could not be added.");
+                                break;
+                            default:
+                                SetStatus(data, "Not a Bluetooth configuration, device or class entry.");
+                                break;
+                        }
+                    } else {
+                        SetStatus(data, "The file is truncated.");
+                    }
+                    FreeVec(buf);
+                }
+            } else {
+                SetStatus(data, "Not an IFF configuration file.");
+            }
+            Close(fh);
+        } else {
+            SetStatus(data, "Could not open that file.");
+        }
+    }
+    MUI_FreeAslRequest(aslreq);
+    RefreshConfig(data);
+    RefreshDevices(data);
+}
+
+/* *** options page ***
+ * The gadgets mirror the stack's global config (BGA_STACKCFG); every change
+ * is pushed straight into the library (in memory), Save/Use write it out,
+ * as in Trident. */
+
+static void LoadOptions(struct BtActionData *data)
+{
+    IPTR disc = 0, conn = 0, autoc = 0, popp = 0, li = 0, lw = 0, le = 0, lf = 0;
+    IPTR dtime = 12, pnew = 0, pgone = 0, pdelay = 5, pact = 0, pfront = 0;
+    STRPTR lname = NULL;
+
+    btGetAttrs(BGA_STACKCFG, NULL,
+               BGCA_Discoverable, &disc, BGCA_Connectable, &conn, BGCA_AutoConnect, &autoc,
+               BGCA_PopupPairing, &popp, BGCA_LogInfo, &li, BGCA_LogWarning, &lw,
+               BGCA_LogError, &le, BGCA_LogFailure, &lf, BGCA_DiscoveryTime, &dtime,
+               BGCA_PopupDeviceNew, &pnew, BGCA_PopupDeviceGone, &pgone, BGCA_PopupCloseDelay, &pdelay,
+               BGCA_PopupActivateWin, &pact, BGCA_PopupWinToFront, &pfront, BGCA_LocalName, &lname,
+               TAG_END);
+    data->optloading = TRUE;
+    nnset(data->opt_discoverable, MUIA_Selected, disc ? TRUE : FALSE);
+    nnset(data->opt_connectable,  MUIA_Selected, conn ? TRUE : FALSE);
+    nnset(data->opt_autoconnect,  MUIA_Selected, autoc ? TRUE : FALSE);
+    nnset(data->opt_popuppairing, MUIA_Selected, popp ? TRUE : FALSE);
+    nnset(data->opt_loginfo, MUIA_Selected, li ? TRUE : FALSE);
+    nnset(data->opt_logwarn, MUIA_Selected, lw ? TRUE : FALSE);
+    nnset(data->opt_logerr,  MUIA_Selected, le ? TRUE : FALSE);
+    nnset(data->opt_logfail, MUIA_Selected, lf ? TRUE : FALSE);
+    nnset(data->opt_disctime, MUIA_Numeric_Value, dtime);
+    nnset(data->opt_popupnew, MUIA_Cycle_Active, (pnew <= BGCP_ALWAYS) ? pnew : 0);
+    nnset(data->opt_popupgone, MUIA_Selected, pgone ? TRUE : FALSE);
+    nnset(data->opt_popupdelay, MUIA_Numeric_Value, pdelay);
+    nnset(data->opt_popupactivate, MUIA_Selected, pact ? TRUE : FALSE);
+    nnset(data->opt_popuptofront, MUIA_Selected, pfront ? TRUE : FALSE);
+    nnset(data->opt_localname, MUIA_String_Contents, (IPTR)(lname ? lname : (STRPTR)""));
+    data->optloading = FALSE;
+}
+
+static void ApplyOptions(struct BtActionData *data)
+{
+    IPTR disc = 0, conn = 0, autoc = 0, popp = 0, li = 0, lw = 0, le = 0, lf = 0;
+    IPTR dtime = 12, pnew = 0, pgone = 0, pdelay = 5, pact = 0, pfront = 0;
+    STRPTR lname = NULL;
+    struct List *hwl;
+    struct Node *bth;
+
+    if(data->optloading) return;
+    get(data->opt_discoverable, MUIA_Selected, &disc);
+    get(data->opt_connectable,  MUIA_Selected, &conn);
+    get(data->opt_autoconnect,  MUIA_Selected, &autoc);
+    get(data->opt_popuppairing, MUIA_Selected, &popp);
+    get(data->opt_loginfo, MUIA_Selected, &li);
+    get(data->opt_logwarn, MUIA_Selected, &lw);
+    get(data->opt_logerr,  MUIA_Selected, &le);
+    get(data->opt_logfail, MUIA_Selected, &lf);
+    get(data->opt_disctime, MUIA_Numeric_Value, &dtime);
+    get(data->opt_popupnew, MUIA_Cycle_Active, &pnew);
+    get(data->opt_popupgone, MUIA_Selected, &pgone);
+    get(data->opt_popupdelay, MUIA_Numeric_Value, &pdelay);
+    get(data->opt_popupactivate, MUIA_Selected, &pact);
+    get(data->opt_popuptofront, MUIA_Selected, &pfront);
+    get(data->opt_localname, MUIA_String_Contents, &lname);
+    btSetAttrs(BGA_STACKCFG, NULL,
+               BGCA_Discoverable, disc, BGCA_Connectable, conn, BGCA_AutoConnect, autoc,
+               BGCA_PopupPairing, popp, BGCA_LogInfo, li, BGCA_LogWarning, lw,
+               BGCA_LogError, le, BGCA_LogFailure, lf, BGCA_DiscoveryTime, dtime,
+               BGCA_PopupDeviceNew, pnew, BGCA_PopupDeviceGone, pgone, BGCA_PopupCloseDelay, pdelay,
+               BGCA_PopupActivateWin, pact, BGCA_PopupWinToFront, pfront,
+               BGCA_LocalName, (IPTR)((lname && lname[0]) ? lname : NULL),
+               TAG_END);
+    /* the scan modes take effect on the radios right away */
+    btLockReadBase();
+    btGetAttrs(BGA_STACK, NULL, BSA_HardwareList, &hwl, TAG_END);
+    for(bth = hwl->lh_Head; bth->ln_Succ; bth = bth->ln_Succ) {
+        btSetAttrs(BGA_HARDWARE, bth, BHA_Discoverable, disc, BHA_Connectable, conn, TAG_END);
+    }
+    btUnlockBase();
+    RefreshConfig(data);
+}
+
 /* *** actions *** */
 
 static void DoForget(struct BtActionData *data)
@@ -514,6 +902,10 @@ static void HandleEvents(struct BtActionData *data)
                 RefreshClasses(data); RefreshDevices(data); break;
             case BEHMB_ADDERRORMSG:
                 RefreshErrors(data); break;
+            case BEHMB_CONFIGCHG:
+                /* the stack's config changed (a pairing was stored, options
+                 * set elsewhere, a save): mirror it */
+                LoadOptions(data); RefreshConfig(data); break;
             case BEHMB_DISCOVERYSTART: SetStatus(data, "Discovering..."); RefreshHardware(data); break;
             case BEHMB_DISCOVERYSTOP: SetStatus(data, "Discovery finished."); RefreshHardware(data); break;
             case BEHMB_PAIRINGREQUEST: {
@@ -598,12 +990,14 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     NewList((struct List *)&data->deventries);
     NewList((struct List *)&data->clsentries);
     NewList((struct List *)&data->errentries);
+    NewList((struct List *)&data->cfgentries);
 
     InitHook(&data->navhook, (APTR)NavDisplay, data);
     InitHook(&data->hwhook,  (APTR)HWDisplay,  data);
     InitHook(&data->devhook, (APTR)DevDisplay, data);
     InitHook(&data->clshook, (APTR)ClsDisplay, data);
     InitHook(&data->errhook, (APTR)ErrDisplay, data);
+    InitHook(&data->cfghook, (APTR)CfgDisplay, data);
 
     data->scanwin = NewObject(ScanWinClass->mcc_Class, NULL, TAG_END);
     data->devwin  = NewObject(DevWinClass->mcc_Class, NULL, TAG_END);
@@ -710,23 +1104,62 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                     End,
                 /* --- Options --- */
                 Child, VGroup,
-                    Child, VGroup, GroupFrameT("Radio"),
-                        Child, ColGroup(2),
-                            Child, data->opt_discoverable = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Discoverable"),
-                            Child, data->opt_connectable  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Connectable"),
-                            Child, data->opt_autoconnect  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Auto-connect known devices"),
-                            Child, data->opt_popuppairing = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Show pairing pop-ups"),
+                    Child, HGroup,
+                        Child, VGroup, GroupFrameT("Radio"),
+                            Child, ColGroup(2),
+                                Child, data->opt_discoverable = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Discoverable"),
+                                Child, data->opt_connectable  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Connectable"),
+                                Child, data->opt_autoconnect  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Reconnect bonded devices automatically"),
+                                End,
+                            Child, ColGroup(2),
+                                Child, Label("Local name:"),
+                                Child, data->opt_localname = StringObject, StringFrame, MUIA_String_MaxLen, 63, MUIA_String_AdvanceOnCR, TRUE, End,
+                                Child, Label("Discovery time:"),
+                                Child, data->opt_disctime = SliderObject, MUIA_Numeric_Min, 5, MUIA_Numeric_Max, 60, MUIA_Numeric_Format, "%ld s", End,
+                                End,
+                            End,
+                        Child, VGroup, GroupFrameT("Logging"),
+                            Child, ColGroup(2),
+                                Child, data->opt_loginfo = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Information"),
+                                Child, data->opt_logwarn = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Warnings"),
+                                Child, data->opt_logerr  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Errors"),
+                                Child, data->opt_logfail = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Failures"),
+                                End,
+                            Child, VSpace(0),
                             End,
                         End,
-                    Child, VGroup, GroupFrameT("Logging"),
+                    Child, VGroup, GroupFrameT("Pop-ups"),
                         Child, ColGroup(2),
-                            Child, data->opt_loginfo = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Information"),
-                            Child, data->opt_logwarn = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Warnings"),
-                            Child, data->opt_logerr  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Errors"),
-                            Child, data->opt_logfail = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Failures"),
+                            Child, data->opt_popuppairing  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Ask on pairing requests"),
+                            Child, data->opt_popupgone     = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Announce devices going away"),
+                            Child, data->opt_popupactivate = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Activate the pop-up window"),
+                            Child, data->opt_popuptofront  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Bring the pop-up to the front on changes"),
+                            End,
+                        Child, ColGroup(2),
+                            Child, Label("New device:"),
+                            Child, data->opt_popupnew = CycleObject, MUIA_Cycle_Entries, popupnewstrings, End,
+                            Child, Label("Close after:"),
+                            Child, data->opt_popupdelay = SliderObject, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 30, MUIA_Numeric_Format, "%ld s", End,
                             End,
                         End,
                     Child, VSpace(0),
+                    End,
+                /* --- Config --- */
+                Child, VGroup,
+                    Child, Label("Configuration held by the stack (Save writes it to ENVARC:Sys/bluetooth.prefs):"),
+                    Child, ListviewObject,
+                        MUIA_Listview_List, (data->cfglist = ListObject,
+                            InputListFrame,
+                            MUIA_List_Format, "BAR,BAR,BAR,",
+                            MUIA_List_Title, TRUE,
+                            MUIA_List_DisplayHook, &data->cfghook,
+                            End),
+                        End,
+                    Child, HGroup, MUIA_Group_SameWidth, TRUE,
+                        Child, data->bt_cfgexport = SimpleButton("Export..."),
+                        Child, data->bt_cfgimport = SimpleButton("Import..."),
+                        Child, data->bt_cfgremove = SimpleButton("Remove"),
+                        End,
                     End,
                 End,
             End,
@@ -815,6 +1248,28 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(data->bt_save,       MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Save);
     DoMethod(data->bt_use,        MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Use);
 
+    /* options: any change goes straight into the stack's global config */
+    {
+        Object *checks[] = { data->opt_discoverable, data->opt_connectable, data->opt_autoconnect,
+                             data->opt_popuppairing, data->opt_popupgone, data->opt_popupactivate,
+                             data->opt_popuptofront, data->opt_loginfo, data->opt_logwarn,
+                             data->opt_logerr, data->opt_logfail, NULL };
+        for(i = 0; checks[i]; i++)
+            DoMethod(checks[i], MUIM_Notify, MUIA_Selected, MUIV_EveryTime, obj, 1, MUIM_BtA_OptChanged);
+    }
+    DoMethod(data->opt_localname,  MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, obj, 1, MUIM_BtA_OptChanged);
+    DoMethod(data->opt_disctime,   MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, obj, 1, MUIM_BtA_OptChanged);
+    DoMethod(data->opt_popupdelay, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, obj, 1, MUIM_BtA_OptChanged);
+    DoMethod(data->opt_popupnew,   MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, obj, 1, MUIM_BtA_OptChanged);
+
+    /* config page */
+    DoMethod(data->cfglist,       MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, obj, 1, MUIM_BtA_CfgActive);
+    DoMethod(data->bt_cfgexport,  MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_CfgExport);
+    DoMethod(data->bt_cfgimport,  MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_CfgImport);
+    DoMethod(data->bt_cfgremove,  MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_CfgRemove);
+    set(data->bt_cfgexport, MUIA_Disabled, TRUE);
+    set(data->bt_cfgremove, MUIA_Disabled, TRUE);
+
     return (IPTR)obj;
 }
 /* \\\ */
@@ -853,7 +1308,20 @@ AROS_UFH3(IPTR, ActionDispatcher,
         case MUIM_BtA_FlushLog:    DoFlush(data); return 0;
         case MUIM_BtA_SaveLog:     DoSaveLog(data); return 0;
         case MUIM_BtA_Save:
-        case MUIM_BtA_Use:         if(btSaveCfgToDisk(NULL, FALSE)) SetStatus(data,"Configuration saved."); else SetStatus(data,"Saving failed."); return 0;
+            /* ENVARC: and ENV:, like Trident's Save */
+            if(btSaveCfgToDisk(NULL, FALSE)) SetStatus(data,"Configuration saved to ENVARC:Sys/bluetooth.prefs."); else SetStatus(data,"Saving failed.");
+            RefreshConfig(data);
+            return 0;
+        case MUIM_BtA_Use:
+            /* ENV: only: in use until the next reboot */
+            if(btSaveCfgToDisk("ENV:Sys/bluetooth.prefs", FALSE)) SetStatus(data,"Configuration in use (ENV: only, not saved permanently)."); else SetStatus(data,"Writing ENV:Sys/bluetooth.prefs failed.");
+            RefreshConfig(data);
+            return 0;
+        case MUIM_BtA_OptChanged:  ApplyOptions(data); return 0;
+        case MUIM_BtA_CfgActive:   DoCfgActive(data); return 0;
+        case MUIM_BtA_CfgExport:   DoCfgExport(data); return 0;
+        case MUIM_BtA_CfgImport:   DoCfgImport(data); return 0;
+        case MUIM_BtA_CfgRemove:   DoCfgRemove(data); return 0;
         case MUIM_BtA_AllOnline:   RefreshHardware(data); return 0;
         case MUIM_BtA_AllOffline:  RefreshHardware(data); return 0;
         case MUIM_BtA_Restart:     RefreshHardware(data); RefreshDevices(data); RefreshClasses(data); RefreshErrors(data); SetStatus(data,"Refreshed."); return 0;
@@ -877,6 +1345,8 @@ AROS_UFH3(IPTR, ActionDispatcher,
             RefreshDevices(data);
             RefreshClasses(data);
             RefreshErrors(data);
+            LoadOptions(data);
+            RefreshConfig(data);
             return TRUE;
 
         case MUIM_Cleanup:
@@ -897,6 +1367,7 @@ AROS_UFH3(IPTR, ActionDispatcher,
             FREELIST(data->deventries);
             FREELIST(data->clsentries);
             FREELIST(data->errentries);
+            FREELIST(data->cfgentries);
             break;
     }
     return DoSuperMethodA(cl, obj, msg);

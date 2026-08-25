@@ -157,6 +157,8 @@ AROS_LH1(BOOL, btLoadCfgFromDisk,
                     if(Read(filehandle, &buf[3], formlen - 4) == formlen - 4) {
                         KPRINTF(1, ("Data read OK\n"));
 
+                        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Loaded config from '%s' (%ld bytes).", filename, formlen + 8);
                         btReadCfg(NULL, buf);
                         btParseCfg();
 
@@ -185,6 +187,60 @@ AROS_LH1(BOOL, btLoadCfgFromDisk,
 }
 /* \\\ */
 
+/* /// "bSyncStackCfg()" */
+/* Rewrites the radio (BHWD) and class (BCLS) entries of the stack config
+   from what is running right now, so that a saved prefs file brings the same
+   radios and classes back at the next boot. Trident does this in the prefs
+   before saving; here it is part of every save so the automatic saves of
+   pairings never produce a file that btParseCfg() would read as "no classes
+   wanted". */
+void bSyncStackCfg(LIBBASETYPEPTR BluetoothBase)
+{
+    struct BtIFFContext *pic;
+    struct BtIFFContext *subpic;
+    struct BtIFFContext *root;
+    struct BtHardware *bth;
+    struct BtClass *bc;
+    ULONG unitchunk[3];
+
+    bLockSemExcl(BluetoothBase, &BluetoothBase->bt_ConfigLock);
+    pic = btFindCfgForm(NULL, IFFFORM_BTSTACKCFG);
+    if(!pic) {
+        root = (struct BtIFFContext *) BluetoothBase->bt_ConfigRoot.lh_Head;
+        if(root->bic_Node.ln_Succ) {
+            pic = bAllocForm(BluetoothBase, root, IFFFORM_BTSTACKCFG);
+        }
+    }
+    if(pic) {
+        while((subpic = btFindCfgForm(pic, IFFFORM_BTHWDEVICE))) {
+            bFreeForm(BluetoothBase, subpic);
+        }
+        while((subpic = btFindCfgForm(pic, IFFFORM_BTCLASS))) {
+            bFreeForm(BluetoothBase, subpic);
+        }
+        btLockReadBase();
+        ForeachNode(&BluetoothBase->bt_Hardware, bth) {
+            if((subpic = bAllocForm(BluetoothBase, pic, IFFFORM_BTHWDEVICE))) {
+                bAddStringChunk(BluetoothBase, subpic, IFFCHNK_NAME, bth->bth_DevName);
+                unitchunk[0] = AROS_LONG2BE(IFFCHNK_UNIT);
+                unitchunk[1] = AROS_LONG2BE(4);
+                unitchunk[2] = bth->bth_Unit;
+                bAddCfgChunk(BluetoothBase, subpic, unitchunk);
+            }
+        }
+        ForeachNode(&BluetoothBase->bt_Classes, bc) {
+            if((subpic = bAllocForm(BluetoothBase, pic, IFFFORM_BTCLASS))) {
+                bAddStringChunk(BluetoothBase, subpic, IFFCHNK_NAME,
+                                bc->bc_FullPath ? bc->bc_FullPath : bc->bc_ClassName);
+            }
+        }
+        btUnlockBase();
+    }
+    bUnlockSem(BluetoothBase, &BluetoothBase->bt_ConfigLock);
+    bCheckCfgChanged(BluetoothBase);
+}
+/* \\\ */
+
 /* /// "btSaveCfgToDisk()" */
 AROS_LH2(BOOL, btSaveCfgToDisk,
          AROS_LHA(STRPTR, filename, A1),
@@ -199,12 +255,19 @@ AROS_LH2(BOOL, btSaveCfgToDisk,
     if(!filename) {
         saved = btSaveCfgToDisk("ENVARC:Sys/bluetooth.prefs", FALSE);
         saved &= btSaveCfgToDisk("ENV:Sys/bluetooth.prefs", FALSE);
+        if(saved) {
+            /* the prefs file now mirrors memory: automatic saves of
+               registrations/bonds (bStoreDevConfig) may go ahead */
+            BluetoothBase->bt_ConfigRead = TRUE;
+        }
         return(saved);
     }
 
     if(!bOpenDOS(BluetoothBase)) {
         return(FALSE);
     }
+    /* the file describes the running stack: radios and classes included */
+    bSyncStackCfg(BluetoothBase);
     bLockSemShared(BluetoothBase, &BluetoothBase->bt_ConfigLock);
 
     buf = (ULONG *) btWriteCfg(NULL);
@@ -516,7 +579,9 @@ AROS_LH0(void, btParseCfg,
         bth->bth_RemoveMe = removeall;
     }
 
-    /* select all classes for removal */
+    /* select all classes for removal - unless the config lists no classes
+       at all (a prefs file from before the class list was saved with it):
+       then, as with the hardware, keep what is loaded */
     ForeachNode(&BluetoothBase->bt_Classes, bc) {
         /*
          * For kickstart-resident classes we check usage count, and
@@ -525,7 +590,9 @@ AROS_LH0(void, btParseCfg,
          * at boot time. If we happen to remove them, we can end up with
          * no input or storage devices at all.
          */
-        if (FindResident(bc->bc_ClassName))
+        if(!btFindCfgForm(pic, IFFFORM_BTCLASS))
+            bc->bc_RemoveMe = FALSE;
+        else if (FindResident(bc->bc_ClassName))
             bc->bc_RemoveMe = (bc->bc_UseCnt == 0);
         else
             bc->bc_RemoveMe = TRUE;
@@ -638,6 +705,19 @@ AROS_LH0(void, btParseCfg,
         subpic = btNextCfgForm(subpic);
     }
     bUnlockSem(BluetoothBase, &BluetoothBase->bt_ConfigLock);
+
+    /* Radios that were already up before this config arrived (the USB class
+       adds them early in the boot, BTStackLoader loads the config later)
+       enumerated with an empty device list: restore their registered devices
+       now. */
+    /* Whatever state the radio is in (it may well be re-initialising on a
+       late firmware load right now): the device objects do not need it. */
+    ForeachNode(&BluetoothBase->bt_Hardware, bth) {
+        ULONG count = bRestoreDevices(BluetoothBase, bth);
+        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld: %ld registered device(s) restored from the config.",
+                       bth->bth_DevName, bth->bth_Unit, count);
+    }
 
     if(!nodos && BluetoothBase->bt_StartedAsTask) {
         // last time we were reading the config before DOS, so maybe we need to

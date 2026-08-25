@@ -193,9 +193,7 @@ AROS_LH1(APTR, btEnumerateHardware,
          LIBBASETYPEPTR, BluetoothBase, 14, bt)
 {
     AROS_LIBFUNC_INIT
-    struct BtIFFContext *pic;
-    struct BtDevice *bd;
-    ULONG count = 0;
+    ULONG count;
     LONG err;
 
     KPRINTF(5, ("btEnumerateHardware(%p)\n", bth));
@@ -203,57 +201,7 @@ AROS_LH1(APTR, btEnumerateHardware,
         return(NULL);
     }
 
-    /* exclusive: bApplyDevConfig() below needs the write lock and a shared
-       lock cannot always be promoted */
-    bLockSemExcl(BluetoothBase, &BluetoothBase->bt_ConfigLock);
-    pic = btFindCfgForm(NULL, IFFFORM_BTDEVICECFG);
-    while(pic) {
-        struct BtRegDevCfg *brd = bFindCfgChunk(BluetoothBase, pic, IFFCHNK_REGDEVICE);
-        if(brd) {
-            BD_ADDR addr;
-            CopyMem(brd->brd_Address, addr.bd_Addr, 6);
-            btLockReadBase();
-            bd = btFindDevice(NULL, BDA_Address, (IPTR) &addr, BDA_Hardware, (IPTR) bth, TAG_END);
-            btUnlockBase();
-            if(!bd) {
-                bd = btAllocDevice(bth);
-                if(bd) {
-                    btLockWriteDevice(bd);
-                    CopyMem(brd->brd_Address, bd->bd_Address.bd_Addr, 6);
-                    bd->bd_AddrType = brd->brd_AddressType;
-                    bAddrToStr(bd->bd_Address.bd_Addr, (STRPTR) bd->bd_AddrString);
-                    bd->bd_IDString = btCopyStrFmt("BT:%s", bd->bd_AddrString);
-                    bd->bd_ClassOfDevice = brd->brd_ClassOfDevice;
-                    bd->bd_Appearance = brd->brd_Appearance;
-                    bd->bd_VendorIDSource = brd->brd_VendorIDSource;
-                    bd->bd_VendorID = brd->brd_VendorID;
-                    bd->bd_ProductID = brd->brd_ProductID;
-                    bd->bd_ProductVersion = brd->brd_ProductVersion;
-                    bd->bd_Flags |= BDFF_REGISTERED;
-                    if(brd->brd_Flags & BRDF_CLASSIC) {
-                        bd->bd_Flags |= BDFF_CLASSIC;
-                    }
-                    if(brd->brd_Flags & BRDF_LE) {
-                        bd->bd_Flags |= BDFF_LE;
-                    }
-                    if(brd->brd_Flags & BRDF_BONDED) {
-                        bd->bd_Flags |= BDFF_BONDED;
-                    }
-                    bApplyDevConfig(BluetoothBase, bd);
-                    if(!bd->bd_Name) {
-                        bd->bd_Name = btCopyStr(bd->bd_AddrString);
-                    }
-                    bd->bd_Node.ln_Name = bd->bd_Name;
-                    btUnlockDevice(bd);
-                    count++;
-                    btSendEvent(BEHMB_ADDDEVICE, bd, NULL);
-                    btSendEvent(BEHMB_DEVICEREGISTERED, bd, NULL);
-                }
-            }
-        }
-        pic = btNextCfgForm(pic);
-    }
-    bUnlockSem(BluetoothBase, &BluetoothBase->bt_ConfigLock);
+    count = bRestoreDevices(BluetoothBase, bth);
 
     /* apply default scan modes */
     bSubmitCtrl(BluetoothBase, bth, NULL, BTPRI_SETSCANMODE,
@@ -817,6 +765,16 @@ void bApplyDevConfig(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
         if(bMatchStringChunk(BluetoothBase, pic, IFFCHNK_DEVID, bd->bd_IDString)) {
             STRPTR name;
             bd->bd_IsNewToMe = FALSE;
+            if((name = bGetStringChunk(BluetoothBase, pic, IFFCHNK_DEVNAME))) {
+                /* the name the device reported last time */
+                btFreeVec(bd->bd_OrigName);
+                bd->bd_OrigName = name;
+                if(!bd->bd_Name || !strcmp(bd->bd_Name, (char *) bd->bd_AddrString)) {
+                    btFreeVec(bd->bd_Name);
+                    bd->bd_Name = btCopyStr(name);
+                    bd->bd_Node.ln_Name = bd->bd_Name;
+                }
+            }
             if((name = bGetStringChunk(BluetoothBase, pic, IFFCHNK_NAME))) {
                 btFreeVec(bd->bd_Name);
                 bd->bd_Name = name;
@@ -845,10 +803,142 @@ void bApplyDevConfig(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
 }
 /* \\\ */
 
+/* /// "bRestoreDevices()" */
+/* Instantiates the registered (paired) devices recorded in the config for a
+   radio - the persistent part of the device list. Runs from
+   btEnumerateHardware() and again from btParseCfg(): at boot the radio is
+   usually brought up (by the USB class) before BTStackLoader has loaded the
+   config, so the first pass finds nothing. Returns the number created. */
+ULONG bRestoreDevices(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth)
+{
+    struct BtIFFContext *pic;
+    struct BtDevice *bd;
+    ULONG count = 0;
+
+    /* exclusive: bApplyDevConfig() below needs the write lock and a shared
+       lock cannot always be promoted */
+    bLockSemExcl(BluetoothBase, &BluetoothBase->bt_ConfigLock);
+    pic = btFindCfgForm(NULL, IFFFORM_BTDEVICECFG);
+    while(pic) {
+        struct BtRegDevCfg *brd = bFindCfgChunk(BluetoothBase, pic, IFFCHNK_REGDEVICE);
+        if(brd) {
+            BD_ADDR addr;
+            CopyMem(brd->brd_Address, addr.bd_Addr, 6);
+            btLockReadBase();
+            bd = btFindDevice(NULL, BDA_Address, (IPTR) &addr, BDA_Hardware, (IPTR) bth, TAG_END);
+            btUnlockBase();
+            if(!bd) {
+                bd = btAllocDevice(bth);
+                if(bd) {
+                    btLockWriteDevice(bd);
+                    CopyMem(brd->brd_Address, bd->bd_Address.bd_Addr, 6);
+                    bd->bd_AddrType = brd->brd_AddressType;
+                    bAddrToStr(bd->bd_Address.bd_Addr, (STRPTR) bd->bd_AddrString);
+                    bd->bd_IDString = btCopyStrFmt("BT:%s", bd->bd_AddrString);
+                    bd->bd_ClassOfDevice = brd->brd_ClassOfDevice;
+                    bd->bd_Appearance = brd->brd_Appearance;
+                    bd->bd_VendorIDSource = brd->brd_VendorIDSource;
+                    bd->bd_VendorID = brd->brd_VendorID;
+                    bd->bd_ProductID = brd->brd_ProductID;
+                    bd->bd_ProductVersion = brd->brd_ProductVersion;
+                    bd->bd_Flags |= BDFF_REGISTERED;
+                    if(brd->brd_Flags & BRDF_CLASSIC) {
+                        bd->bd_Flags |= BDFF_CLASSIC;
+                    }
+                    if(brd->brd_Flags & BRDF_LE) {
+                        bd->bd_Flags |= BDFF_LE;
+                    }
+                    if(brd->brd_Flags & BRDF_BONDED) {
+                        bd->bd_Flags |= BDFF_BONDED;
+                    }
+                    bApplyDevConfig(BluetoothBase, bd);
+                    if(!bd->bd_Name) {
+                        bd->bd_Name = btCopyStr(bd->bd_AddrString);
+                    }
+                    bd->bd_Node.ln_Name = bd->bd_Name;
+                    btUnlockDevice(bd);
+                    count++;
+                    btSendEvent(BEHMB_ADDDEVICE, bd, NULL);
+                    btSendEvent(BEHMB_DEVICEREGISTERED, bd, NULL);
+                }
+            } else {
+                /* already known (discovered or paired before the config was
+                   loaded): pick up the stored name/policy/keys */
+                btLockWriteDevice(bd);
+                if(!(bd->bd_Flags & BDFF_REGISTERED)) {
+                    bd->bd_Flags |= BDFF_REGISTERED;
+                    bApplyDevConfig(BluetoothBase, bd);
+                    btUnlockDevice(bd);
+                    count++;
+                    btSendEvent(BEHMB_DEVICEREGISTERED, bd, NULL);
+                } else {
+                    btUnlockDevice(bd);
+                }
+            }
+        }
+        pic = btNextCfgForm(pic);
+    }
+    bUnlockSem(BluetoothBase, &BluetoothBase->bt_ConfigLock);
+    return(count);
+}
+/* \\\ */
+
+/* /// "bRekeyDevice()" */
+/* A bonded LE peer told us its identity address (it had been talking to us
+   from a resolvable private address): from now on the device is identified
+   and stored under the identity, while the link that is up keeps using the
+   private address (bd_CurAddr). Called with the device write locked. */
+void bRekeyDevice(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd, const UBYTE *addr, UBYTE addrtype)
+{
+    struct BtIFFContext *pic;
+    STRPTR oldid = bd->bd_IDString;
+    STRPTR newid;
+    BOOL addrname;
+
+    if(!memcmp(bd->bd_Address.bd_Addr, addr, 6)) {
+        return;
+    }
+    CopyMem(bd->bd_Address.bd_Addr, bd->bd_CurAddr, 6);
+    bd->bd_CurAddrType = bd->bd_AddrType;
+    bd->bd_CurAddrValid = TRUE;
+    addrname = bd->bd_Name && !strcmp(bd->bd_Name, (char *) bd->bd_AddrString);
+    CopyMem((APTR) addr, bd->bd_Address.bd_Addr, 6);
+    bd->bd_AddrType = addrtype;
+    bAddrToStr(bd->bd_Address.bd_Addr, (STRPTR) bd->bd_AddrString);
+    newid = btCopyStrFmt("BT:%s", bd->bd_AddrString);
+    if(!newid) {
+        return;
+    }
+    bd->bd_IDString = newid;
+    if(addrname) {
+        btFreeVec(bd->bd_Name);
+        bd->bd_Name = btCopyStr(bd->bd_AddrString);
+        bd->bd_Node.ln_Name = bd->bd_Name;
+    }
+    /* move the config form (custom name, popup settings) to the new id */
+    if(oldid) {
+        bLockSemExcl(BluetoothBase, &BluetoothBase->bt_ConfigLock);
+        pic = btFindCfgForm(NULL, IFFFORM_BTDEVICECFG);
+        while(pic) {
+            if(bMatchStringChunk(BluetoothBase, pic, IFFCHNK_DEVID, oldid)) {
+                bAddStringChunk(BluetoothBase, pic, IFFCHNK_DEVID, newid);
+                break;
+            }
+            pic = btNextCfgForm(pic);
+        }
+        bUnlockSem(BluetoothBase, &BluetoothBase->bt_ConfigLock);
+        btFreeVec(oldid);
+    }
+}
+/* \\\ */
+
 /* /// "bStoreDevConfig()" */
 /* Writes custom name, popup config and (if registered) the registration
-   record of a device into its DEVC form. */
-void bStoreDevConfig(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
+   record of a device into its DEVC form. With persist set the config is also
+   written to disk (ENVARC:/ENV:Sys/bluetooth.prefs) by the event handler
+   process - that is how registrations and bond keys survive a reboot without
+   the user having to press Save in the prefs. */
+void bStoreDevConfig(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd, BOOL persist)
 {
     struct BtIFFContext *pic;
     struct BtIFFContext *root;
@@ -874,10 +964,16 @@ void bStoreDevConfig(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
         }
     }
     if(pic) {
+        /* NAME: a custom name given by the user; DNAM: the name the device
+           reported, so a device restored at boot is listed by name until it
+           is heard from again */
         if(bd->bd_Name && (!bd->bd_OrigName || strcmp(bd->bd_Name, bd->bd_OrigName))) {
             bAddStringChunk(BluetoothBase, pic, IFFCHNK_NAME, bd->bd_Name);
         } else {
             bRemCfgChunk(BluetoothBase, pic, IFFCHNK_NAME);
+        }
+        if(bd->bd_OrigName) {
+            bAddStringChunk(BluetoothBase, pic, IFFCHNK_DEVNAME, bd->bd_OrigName);
         }
         bAddCfgChunk(BluetoothBase, pic, &bd->bd_PoPoCfg);
         if(bd->bd_Flags & BDFF_REGISTERED) {
@@ -911,6 +1007,15 @@ void bStoreDevConfig(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
     }
     bUnlockSem(BluetoothBase, &BluetoothBase->bt_ConfigLock);
     bCheckCfgChanged(BluetoothBase);
+    if(persist) {
+        BluetoothBase->bt_SaveConfigReq = TRUE;
+        Forbid();
+        if(BluetoothBase->bt_EventHandler.bh_Task && BluetoothBase->bt_EventHandler.bh_TimerMsgPort) {
+            Signal(BluetoothBase->bt_EventHandler.bh_Task,
+                   1UL << BluetoothBase->bt_EventHandler.bh_TimerMsgPort->mp_SigBit);
+        }
+        Permit();
+    }
 }
 /* \\\ */
 

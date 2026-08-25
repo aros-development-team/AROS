@@ -174,6 +174,7 @@ struct BtBase
     ULONG               bt_MemAllocated;  /* Bytes of memory allocated by stack */
     BOOL                bt_ConfigRead;    /* Has a config been loaded? */
     BOOL                bt_CheckConfigReq; /* Set to true, to check if config changed */
+    BOOL                bt_SaveConfigReq; /* device registration/bond changed: write the config to disk */
     ULONG               bt_ConfigHash;    /* Last config hash value */
     ULONG               bt_SavedConfigHash; /* Hash sum of last saved config */
     struct BtGlobalCfg *bt_GlobalCfg;     /* Global Config structure */
@@ -397,6 +398,13 @@ struct BtDevice
     UBYTE               bd_AdvData[BT_ADVDATA_MAX];
     struct BtKeyCfg     bd_Keys;          /* bond keys */
     struct BtHWConn    *bd_Conns[2];      /* per-bearer link state: [0]=BR/EDR, [1]=LE (hwconn.c private) */
+    /* The address the peer is using right now when it differs from
+       bd_Address: a bonded LE peer advertising from a resolvable private
+       address that its IRK resolved to this device. Links are created to
+       and matched against this address while bd_CurAddrValid. */
+    UBYTE               bd_CurAddr[6];
+    UBYTE               bd_CurAddrType;
+    BOOL                bd_CurAddrValid;
 };
 
 struct BtService

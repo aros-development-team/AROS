@@ -59,8 +59,9 @@ static void Populate(struct DevWinData *data)
 {
     struct List *svcl;
     struct Node *bsv;
-    STRPTR name = NULL, addr = NULL;
-    IPTR isc = 0, isl = 0, isreg = 0, isb = 0, isconn = 0, isdead = 0;
+    STRPTR name = NULL, addr = NULL, origname = NULL;
+    IPTR isc = 0, isl = 0, isreg = 0, isb = 0, isconn = 0, isdead = 0, keys = 0;
+    IPTR inhibitpopup = 0, noclassbind = 0, autoconnect = 0, trusted = 0;
     APTR devbindcls = NULL;
     STRPTR devbindname = NULL;
     char buf[96];
@@ -68,9 +69,11 @@ static void Populate(struct DevWinData *data)
     if(!data->device) return;
 
     btLockReadBase();
-    btGetAttrs(BGA_DEVICE, data->device, BDA_Name, &name, BDA_AddressString, &addr,
+    btGetAttrs(BGA_DEVICE, data->device, BDA_Name, &name, BDA_OrigName, &origname, BDA_AddressString, &addr,
                BDA_IsClassic, &isc, BDA_IsLE, &isl, BDA_IsRegistered, &isreg, BDA_IsBonded, &isb,
-               BDA_IsConnected, &isconn, BDA_IsDead, &isdead, BDA_BindingClass, &devbindcls, TAG_END);
+               BDA_IsConnected, &isconn, BDA_IsDead, &isdead, BDA_BindingClass, &devbindcls,
+               BDA_BondFlags, &keys, BDA_InhibitPopup, &inhibitpopup, BDA_InhibitClassBind, &noclassbind,
+               BDA_AutoConnect, &autoconnect, BDA_Trusted, &trusted, TAG_END);
     if(devbindcls) btGetAttrs(BGA_BTCLASS, devbindcls, BCA_ClassName, &devbindname, TAG_END);
     set(data->bindtxt, MUIA_Text_Contents, (IPTR)(devbindname ? devbindname : "-"));
 
@@ -81,6 +84,22 @@ static void Populate(struct DevWinData *data)
              isb ? "bonded " : "", isdead ? "unreachable " : "");
     if(!buf[0]) strcpy(buf, "-");
     set(data->statetxt, MUIA_Text_Contents, (IPTR)buf);
+    /* which keys the bond holds (never the keys themselves) */
+    snprintf(buf, sizeof(buf), "%s%s%s%s%s", (keys & BDKF_LINKKEY) ? "BR/EDR link key " : "",
+             (keys & BDKF_LTK) ? ((keys & BDKF_SC) ? "LE key (Secure Connections) " : "LE key (legacy) ") : "",
+             (keys & BDKF_IRK) ? "IRK " : "", (keys & BDKF_CSRK) ? "CSRK " : "",
+             keys ? "" : "none");
+    set(data->keystxt, MUIA_Text_Contents, (IPTR)buf);
+
+    /* settings: only the gadgets, not the stack (see MUIM_DevWin_SettingChg) */
+    data->loading = TRUE;
+    nnset(data->cwname, MUIA_String_Contents, (IPTR)(name ? name : (STRPTR)""));
+    nnset(data->chk_inhibitpopup, MUIA_Selected, inhibitpopup ? TRUE : FALSE);
+    nnset(data->chk_noclassbind,  MUIA_Selected, noclassbind ? TRUE : FALSE);
+    nnset(data->chk_autoconnect,  MUIA_Selected, autoconnect ? TRUE : FALSE);
+    nnset(data->chk_trusted,      MUIA_Selected, trusted ? TRUE : FALSE);
+    set(data->resetnamebtn, MUIA_Disabled, !(origname && name && strcmp(origname, name)));
+    data->loading = FALSE;
 
     set(data->svclist, MUIA_List_Quiet, TRUE);
     DoMethod(data->svclist, MUIM_List_Clear);
@@ -120,7 +139,8 @@ static void Populate(struct DevWinData *data)
 static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct DevWinData *data;
-    Object *nametxt, *addrtxt, *typetxt, *statetxt, *bindtxt, *svclist, *rescanbtn, *contents;
+    Object *nametxt, *addrtxt, *typetxt, *statetxt, *bindtxt, *keystxt, *svclist, *rescanbtn, *contents;
+    Object *cwname, *setnamebtn, *resetnamebtn, *chk_inhibitpopup, *chk_noclassbind, *chk_autoconnect, *chk_trusted;
 
     contents = VGroup,
         Child, ColGroup(2), GroupFrameT("Device"),
@@ -129,6 +149,28 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
             Child, Label("Type:"),        Child, typetxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
             Child, Label("Status:"),      Child, statetxt = TextObject, MUIA_Text_Contents, (IPTR)"", End,
             Child, Label("Bound class:"), Child, bindtxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
+            Child, Label("Stored keys:"), Child, keystxt  = TextObject, MUIA_Text_Contents, (IPTR)"", End,
+            End,
+        /* the persistent per-device settings, kept in the device's config
+           form (Save/Use in the main window writes them to disk) */
+        Child, VGroup, GroupFrameT("Settings"),
+            Child, HGroup,
+                Child, Label("Custom name:"),
+                Child, cwname = StringObject, StringFrame, MUIA_String_MaxLen, 63, MUIA_String_AdvanceOnCR, TRUE, End,
+                Child, setnamebtn = SimpleButton("Set"),
+                Child, resetnamebtn = SimpleButton("Reset"),
+                End,
+            /* checkmarks and labels are fixed size: the spacer lets the group
+               (and so the window) be resized wider than its contents */
+            Child, HGroup,
+                Child, ColGroup(4),
+                    Child, chk_autoconnect  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Auto-reconnect"),
+                    Child, chk_trusted      = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("Trusted (may connect to us)"),
+                    Child, chk_noclassbind  = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("No class binding"),
+                    Child, chk_inhibitpopup = MUI_MakeObject(MUIO_Checkmark, NULL), Child, LLabel("No pop-ups"),
+                    End,
+                Child, HSpace(0),
+                End,
             End,
         Child, VGroup, GroupFrameT("Services and their bindings"),
             Child, ListviewObject,
@@ -168,8 +210,16 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     data->typetxt = typetxt;
     data->statetxt = statetxt;
     data->bindtxt = bindtxt;
+    data->keystxt = keystxt;
     data->svclist = svclist;
     data->rescanbtn = rescanbtn;
+    data->cwname = cwname;
+    data->setnamebtn = setnamebtn;
+    data->resetnamebtn = resetnamebtn;
+    data->chk_inhibitpopup = chk_inhibitpopup;
+    data->chk_noclassbind = chk_noclassbind;
+    data->chk_autoconnect = chk_autoconnect;
+    data->chk_trusted = chk_trusted;
     NewList((struct List *)&data->svcentries);
 
     /* let the services display hook reach this list's icon images */
@@ -178,6 +228,13 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(obj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
              obj, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     DoMethod(rescanbtn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_DevWin_Rescan);
+    DoMethod(setnamebtn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_DevWin_SetName);
+    DoMethod(cwname, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, obj, 1, MUIM_DevWin_SetName);
+    DoMethod(resetnamebtn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_DevWin_ResetName);
+    DoMethod(chk_inhibitpopup, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, obj, 1, MUIM_DevWin_SettingChg);
+    DoMethod(chk_noclassbind,  MUIM_Notify, MUIA_Selected, MUIV_EveryTime, obj, 1, MUIM_DevWin_SettingChg);
+    DoMethod(chk_autoconnect,  MUIM_Notify, MUIA_Selected, MUIV_EveryTime, obj, 1, MUIM_DevWin_SettingChg);
+    DoMethod(chk_trusted,      MUIM_Notify, MUIA_Selected, MUIV_EveryTime, obj, 1, MUIM_DevWin_SettingChg);
 
     return (IPTR)obj;
 }
@@ -213,6 +270,42 @@ AROS_UFH3(IPTR, DevWinDispatcher,
             if(data->device) btEnumerateServices(data->device);
             Populate(data);
             return 0;
+
+        case MUIM_DevWin_SettingChg: {
+            IPTR inhibitpopup = 0, noclassbind = 0, autoconnect = 0, trusted = 0;
+            if(data->loading || !data->device) return 0;
+            get(data->chk_inhibitpopup, MUIA_Selected, &inhibitpopup);
+            get(data->chk_noclassbind,  MUIA_Selected, &noclassbind);
+            get(data->chk_autoconnect,  MUIA_Selected, &autoconnect);
+            get(data->chk_trusted,      MUIA_Selected, &trusted);
+            /* into the device's config form (in memory); Save/Use persists it */
+            btSetAttrs(BGA_DEVICE, data->device,
+                       BDA_InhibitPopup, inhibitpopup, BDA_InhibitClassBind, noclassbind,
+                       BDA_AutoConnect, autoconnect, BDA_Trusted, trusted, TAG_END);
+            return 0;
+        }
+
+        case MUIM_DevWin_SetName: {
+            STRPTR newname = NULL;
+            if(data->loading || !data->device) return 0;
+            get(data->cwname, MUIA_String_Contents, &newname);
+            if(newname && newname[0]) {
+                btSetAttrs(BGA_DEVICE, data->device, BDA_Name, (IPTR)newname, TAG_END);
+                Populate(data);
+            }
+            return 0;
+        }
+
+        case MUIM_DevWin_ResetName: {
+            STRPTR origname = NULL;
+            if(!data->device) return 0;
+            btGetAttrs(BGA_DEVICE, data->device, BDA_OrigName, &origname, TAG_END);
+            if(origname && origname[0]) {
+                btSetAttrs(BGA_DEVICE, data->device, BDA_Name, (IPTR)origname, TAG_END);
+                Populate(data);
+            }
+            return 0;
+        }
 
         case OM_DISPOSE:
             FREELIST(data->svcentries);

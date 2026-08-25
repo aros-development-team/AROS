@@ -158,10 +158,11 @@ bt_status_t bt_smp_encode_central_identification(struct bt_buf_writer *w,
 
     if (w == NULL || rand == NULL)
         return BT_ERR_INVALID_ARGUMENT;
+    /* Core Vol 3 Part H 3.6.3: Code, EDIV (2 octets), Rand (8 octets) */
     st = bt_buf_writer_write_u8(w, BT_SMP_CENTRAL_IDENTIFICATION);
     if (st == BT_OK)
-        st = bt_buf_writer_write_bytes(w, rand, 8);
-    return st == BT_OK ? bt_buf_writer_write_le16(w, ediv) : st;
+        st = bt_buf_writer_write_le16(w, ediv);
+    return st == BT_OK ? bt_buf_writer_write_bytes(w, rand, 8) : st;
 }
 
 bt_status_t bt_smp_parse_central_identification(const struct bt_smp_command *command,
@@ -170,8 +171,8 @@ bt_status_t bt_smp_parse_central_identification(const struct bt_smp_command *com
     if (command == NULL || out == NULL || command->code != BT_SMP_CENTRAL_IDENTIFICATION ||
         command->data_len != 10)
         return BT_ERR_INVALID_ARGUMENT;
-    out->rand = command->data;
-    out->ediv = (uint16_t)command->data[8] | ((uint16_t)command->data[9] << 8);
+    out->ediv = (uint16_t)command->data[0] | ((uint16_t)command->data[1] << 8);
+    out->rand = command->data + 2;
     return BT_OK;
 }
 

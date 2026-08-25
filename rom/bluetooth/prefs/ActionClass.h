@@ -22,6 +22,8 @@ struct DevEntry { struct MinNode node; APTR bd;  ULONG icon; ULONG statusicon; c
 struct SvcEntry { struct MinNode node; APTR bsv; char name[48]; char type[8]; char uuid[12]; char proto[40]; char binding[40]; };
 struct ClsEntry { struct MinNode node; APTR bc;  ULONG icon; char name[48]; char use[8];   char path[80]; };
 struct ErrEntry { struct MinNode node; char level[8]; char origin[24]; char msg[160]; };
+/* one config form (or forced binding chunk) on the Config page, Trident style */
+struct CfgEntry { struct MinNode node; ULONG formid; ULONG parentid; ULONG size; char type[20]; char desc[96]; char owner[40]; char devid[32]; };
 
 struct BtActionData
 {
@@ -42,9 +44,16 @@ struct BtActionData
     Object *clslist;
     Object *bt_clsscan;
 
-    /* options page */
+    /* options page (the stack's global config, BGA_STACKCFG) */
     Object *opt_discoverable, *opt_connectable, *opt_autoconnect;
     Object *opt_popuppairing, *opt_loginfo, *opt_logwarn, *opt_logerr, *opt_logfail;
+    Object *opt_localname, *opt_disctime, *opt_popupnew, *opt_popupgone;
+    Object *opt_popupdelay, *opt_popupactivate, *opt_popuptofront, *opt_taskpri;
+    BOOL    optloading;     /* filling the gadgets: ignore their notifications */
+
+    /* config page: every form in the stack's config, Trident's "Config" panel */
+    Object *cfglist;
+    Object *bt_cfgexport, *bt_cfgimport, *bt_cfgremove;
 
     /* message log + bottom bar */
     Object *errlist, *errlvl;
@@ -58,7 +67,7 @@ struct BtActionData
     ULONG   pairtype;
 
     /* list backing stores */
-    struct MinList hwentries, deventries, clsentries, errentries;
+    struct MinList hwentries, deventries, clsentries, errentries, cfgentries;
 
     /* live events */
     struct MsgPort         *eventport;
@@ -67,7 +76,7 @@ struct BtActionData
     BOOL                    ihadded;
 
     /* display hooks */
-    struct Hook navhook, hwhook, devhook, clshook, errhook;
+    struct Hook navhook, hwhook, devhook, clshook, errhook, cfghook;
 };
 
 /* incremental list update shared by the Devices page and the Add Device window (ActionClass.c) */
@@ -101,6 +110,11 @@ void MergeDevList(Object *list, struct MinList *entries, struct MinList *fresh);
 #define MUIM_BtA_SaveLog      (TAGBASE_BtA | 0x19)
 #define MUIM_BtA_HwAdd        (TAGBASE_BtA | 0x1a)
 #define MUIM_BtA_HwRemove     (TAGBASE_BtA | 0x1b)
+#define MUIM_BtA_OptChanged   (TAGBASE_BtA | 0x1c)   /* an Options page gadget changed */
+#define MUIM_BtA_CfgActive    (TAGBASE_BtA | 0x1d)   /* Config page selection changed */
+#define MUIM_BtA_CfgExport    (TAGBASE_BtA | 0x1e)
+#define MUIM_BtA_CfgImport    (TAGBASE_BtA | 0x1f)
+#define MUIM_BtA_CfgRemove    (TAGBASE_BtA | 0x20)
 
 struct MUIP_BtA_Reply { STACKED ULONG MethodID; STACKED IPTR yes; };
 #define MUIM_BtA_PairReply    (TAGBASE_BtA | 0x16)

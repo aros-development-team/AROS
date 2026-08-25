@@ -848,6 +848,20 @@ AROS_UFH0(void, bEventHandlerTask)
                             if(BluetoothBase->bt_CheckConfigReq) {
                                 bCheckCfgChanged(BluetoothBase);
                             }
+                            if(BluetoothBase->bt_SaveConfigReq) {
+                                /* a registration or bond changed: persist it. Only
+                                   once a config has been loaded from (or written to)
+                                   disk - before BTStackLoader ran, the in-memory
+                                   config is just the defaults and must not clobber
+                                   the user's prefs file. */
+                                BluetoothBase->bt_SaveConfigReq = FALSE;
+                                if(BluetoothBase->bt_ConfigRead && bOpenDOS(BluetoothBase)) {
+                                    if(btSaveCfgToDisk(NULL, FALSE)) {
+                                        btAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                                       "Device registrations saved to Sys/bluetooth.prefs.");
+                                    }
+                                }
+                            }
                             while((ben = (struct BtEventNote *) GetMsg(bh->bh_MsgPort))) {
                                 switch(ben->ben_Event) {
                                 case BEHMB_CONFIGCHG:

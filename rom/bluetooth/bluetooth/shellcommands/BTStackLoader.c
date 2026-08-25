@@ -20,7 +20,7 @@
 
 #include <string.h>
 
-const char *psd_version = "$VER: BTStackLoader 1.0 (18.08.2026) (ported from the Poseidon shell commands by Chris Hodges)";
+const char *psd_version = "$VER: BTStackLoader 1.1 (25.08.2026) (ported from the Poseidon shell commands by Chris Hodges)";
 
 #define FWLOADERPATH    "DEVS:Bluetooth/FWLoaders"
 #define FWPATHMAX       256
@@ -81,8 +81,19 @@ int main(void)
             ret = RETURN_OK;
             btParseCfg();
         } else {
-            ret = RETURN_ERROR;
-            PutStr("Error loading bluetooth.prefs!\n");
+            /* First boot with the stack: no prefs yet. Write the defaults
+               so that pairings made from now on can be saved into the
+               file automatically (the library only auto-saves once a prefs
+               file exists, to avoid clobbering one it has not read). */
+            if(btSaveCfgToDisk(NULL, FALSE))
+            {
+                ret = RETURN_WARN;
+                PutStr("No bluetooth.prefs found - created one with the defaults.\n");
+                btParseCfg();
+            } else {
+                ret = RETURN_ERROR;
+                PutStr("Error loading bluetooth.prefs!\n");
+            }
         }
         CloseLibrary(BluetoothBase);
     } else {

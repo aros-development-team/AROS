@@ -1289,6 +1289,7 @@ static const ULONG BtDevicePT[] = {
     PACK_ENTRY(BDA_Dummy, BDA_ConnHandle, BtDevice, bd_ConnHandle, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BDA_Dummy, BDA_Role, BtDevice, bd_Role, PKCTRL_UBYTE|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BDA_Dummy, BDA_LinkType, BtDevice, bd_LinkType, PKCTRL_UBYTE|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BDA_Dummy, BDA_BondFlags, BtDevice, bd_Keys.bkc_Flags, PKCTRL_UBYTE|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BDA_Dummy, BDA_Hardware, BtDevice, bd_Hardware, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BDA_Dummy, BDA_Binding, BtDevice, bd_DevBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
     PACK_ENTRY(BDA_Dummy, BDA_BindingClass, BtDevice, bd_ClsBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
@@ -1691,7 +1692,9 @@ AROS_LH3(LONG, btSetAttrsA,
         res = -1;
     }
     if(savepopocfg) {
-        bStoreDevConfig(BluetoothBase, (struct BtDevice *) btstruct);
+        /* per-device settings (name, popup/bind/connect policy): in memory
+           only, the prefs' Save/Use writes them - as Poseidon does */
+        bStoreDevConfig(BluetoothBase, (struct BtDevice *) btstruct, FALSE);
     }
     if(checkcfgupdate) {
         struct BtIFFContext *pic;
