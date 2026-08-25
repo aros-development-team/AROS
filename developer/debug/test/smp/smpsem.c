@@ -59,6 +59,7 @@ static struct SemWorker *myworker(void)
 
 static struct Task *spawn(const char *name, APTR pc, int cpu, struct SemWorker *w)
 {
+#if defined(__AROSEXEC_SMP__)
     if (KernelBase && g_NumCPUs > 1)
     {
         cpumask_t *mask = KrnAllocCPUMask();
@@ -77,7 +78,7 @@ static struct Task *spawn(const char *name, APTR pc, int cpu, struct SemWorker *
                                  TAG_DONE);
         }
     }
-
+#endif
     return NewCreateTask(TASKTAG_NAME,      (IPTR)name,
                          TASKTAG_PRI,       0,
                          TASKTAG_PC,        (IPTR)pc,
@@ -569,8 +570,10 @@ int main(void)
     int r;
 
     KernelBase = OpenResource("kernel.resource");
+#if defined(__AROSEXEC_SMP__)
     if (KernelBase)
         g_NumCPUs = KrnGetCPUCount();
+#endif
 
     bug("[smpsem] start: cpus=%d\n", g_NumCPUs);
 
