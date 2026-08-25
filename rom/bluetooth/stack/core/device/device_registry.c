@@ -100,9 +100,9 @@ struct bt_discovered_device *bt_device_registry_note_classic(struct bt_device_re
  */
 bool bt_le_addr_is_stable(const struct bt_addr *addr, uint8_t address_type)
 {
-    if (address_type == 0)
-        return true;                    /* public */
-    return (addr->b[BT_ADDR_LEN - 1u] & 0xc0u) == 0xc0u;
+    if (address_type == 0 || address_type >= 2)
+        return true;                    /* public, or an identity address resolved by the controller */
+    return (addr->b[BT_ADDR_LEN - 1u] & 0xc0u) == 0xc0u;   /* static random */
 }
 
 bool bt_cod_is_hid(uint32_t class_of_device)

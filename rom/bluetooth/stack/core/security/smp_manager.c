@@ -664,6 +664,11 @@ void bt_smp_manager_on_pdu(struct bt_smp_manager *m, const uint8_t *pdu,
     case BT_SMP_PAIRING_FAILED:
         finish(m, BT_SMP_MANAGER_ERROR_PROTOCOL);
         break;
+    case BT_SMP_PAIRING_KEYPRESS_NOTIFICATION:
+    case BT_SMP_SECURITY_REQUEST:
+        /* progress hints from a peer typing a passkey, or a Security Request
+         * arriving while we already pair: informational, not a violation */
+        break;
     default:
         send_failed(m, 0x07, now_us, BT_SMP_MANAGER_ERROR_PROTOCOL);
         break;

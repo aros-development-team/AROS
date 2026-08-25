@@ -12,6 +12,8 @@
 #define MUIMASTER_YES_INLINE_STDARG
 #include <proto/muimaster.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
+#include <dos/dostags.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/bluetooth.h>
@@ -48,6 +50,26 @@ AROS_UFH3(LONG, ScanDisplay, AROS_UFHA(struct Hook *, h, A0), AROS_UFHA(char **,
     AROS_USERFUNC_EXIT
 }
 static struct Hook scanhook = { { NULL, NULL }, (APTR)ScanDisplay };
+
+/* The connect/pair calls block until the device answers (or times out) and
+ * pairing waits on the user, so they must not run on the GUI task. A small
+ * helper process does the sequence; success registers the device (the
+ * library does that on pairing completion), failure leaves it alone. */
+AROS_UFH0(void, ScanConnectProc)
+{
+    AROS_USERFUNC_INIT
+    APTR bd = FindTask(NULL)->tc_UserData;
+    struct Library *BluetoothBase = OpenLibrary("bluetooth.library", 1);
+    if(BluetoothBase) {
+        if(btConnectDevice(bd)) {
+            if(!btPairDevice(bd, TAG_END)) {
+                btDisconnectDevice(bd);
+            }
+        }
+        CloseLibrary(BluetoothBase);
+    }
+    AROS_USERFUNC_EXIT
+}
 
 static APTR DefaultRadio(void)
 {
@@ -189,18 +211,12 @@ AROS_UFH3(IPTR, ScanWinDispatcher,
                 }
                 DoMethod(data->list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &e);
                 if(e && e->bd) {
-                    /* register (persist), connect and pair - the device then
-                     * moves to the main Devices page and drops off this list.
-                     * Pairing drives the library's own confirmation popup. */
-                    BOOL paired;
-                    data->busy = TRUE;
-                    btRegisterDevice(e->bd);
-                    btConnectDevice(e->bd);
-                    paired = btPairDevice(e->bd, TAG_END);
-                    data->busy = FALSE;
-                    if(paired) {
-                        /* done: close, so a stray key from the freshly bound
-                         * device cannot trigger another connect from here */
+                    /* connect and pair in the background; the device shows up on
+                     * the Devices page as it connects, and gets registered by the
+                     * library once pairing succeeds. Close now so a key from a
+                     * freshly bound device cannot trigger another connect here. */
+                    if(CreateNewProcTags(NP_Entry, (IPTR)ScanConnectProc, NP_Name, (IPTR)"Bluetooth pairing",
+                                         NP_UserData, (IPTR)e->bd, NP_Priority, 0, TAG_DONE)) {
                         set(obj, MUIA_Window_Open, FALSE);
                         return 0;
                     }

@@ -218,7 +218,8 @@ static BOOL bSetDeviceName(struct BtHWCore *hc, struct BtDevice *bd, const UBYTE
  */
 static BOOL bNoteDevice(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype, BOOL isle,
                         ULONG cod, LONG rssi, const UBYTE *name, ULONG namelen,
-                        const UBYTE *advdata, ULONG advlen, UWORD appearance)
+                        const UBYTE *advdata, ULONG advlen, UWORD appearance,
+                        const struct bt_le_adv_info *info)
 {
     struct BtBase *BluetoothBase = hc->hc_Base;
     struct BtHardware *bth = hc->hc_Hardware;
@@ -230,11 +231,16 @@ static BOOL bNoteDevice(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype, 
     bd = bFindDeviceByAddr(hc, addr);
     if(!bd) {
         if(isle && (addrtype == BDAT_RANDOM)) {
-            /* private (rotating) random addresses without a name would only
-               clutter the list */
+            /* Private (rotating) random addresses would only clutter the list -
+               unless the device tells us it wants to be found: a name, an
+               appearance, the HID service, or the LE General/Limited Discoverable
+               flag (a PC or phone in its "discoverable" mode advertises exactly
+               that from a resolvable private address). */
             struct bt_addr ba;
+            BOOL discoverable = info && info->has_flags && (info->flags & 0x03);
+            BOOL hid = info && info->hid;
             CopyMem((APTR) addr, ba.b, 6);
-            if(!bt_le_addr_is_stable(&ba, addrtype) && !namelen && !appearance) {
+            if(!bt_le_addr_is_stable(&ba, addrtype) && !namelen && !appearance && !discoverable && !hid) {
                 btUnlockBase();
                 hc->hc_DiagDropped++;
                 return(FALSE);
@@ -446,7 +452,7 @@ static void bScanDiagDump(struct BtHWCore *hc)
                      addr, kind, ev, ad, sd->sd_HasFlags ? "" : "(none)", sd->sd_Flags,
                      disc ? "(discoverable)" : "", sd->sd_Name, sd->sd_Appearance, sd->sd_HID ? 'y' : 'n',
                      (long) sd->sd_RSSI, sd->sd_Count, sd->sd_Noted, sd->sd_Dropped,
-                     sd->sd_Noted ? "LISTED" : "NOT LISTED (private address, no name/appearance in any report)");
+                     sd->sd_Noted ? "LISTED" : "NOT LISTED (private address, not discoverable, no name/appearance/HID)");
         } else {
             snprintf(line, sizeof(line),
                      "BR  %s %-13s ev=%-28s cod=0x%06lx name=\"%s\" rssi=%ld reports=%u -> %s\n",
@@ -456,7 +462,7 @@ static void bScanDiagDump(struct BtHWCore *hc)
         FPuts(fh, line);
     }
     snprintf(line, sizeof(line),
-             "---- %lu private-address devices never listed; %lu of those advertised discoverable/HID (would appear with a discoverable exemption)\n\n",
+             "---- %lu private-address devices never listed (%lu discoverable/HID - should be 0)\n\n",
              (unsigned long) rpa_droppedonly, (unsigned long) rpa_discoverable);
     FPuts(fh, line);
     Close(fh);
@@ -883,7 +889,7 @@ static void bHandleInquiryResult(struct BtHWCore *hc, UBYTE code, const UBYTE *p
         while(bt_hci_inquiry_result_iter_next(&it, &entry) == BT_OK) {
             hc->hc_DiagInqResults++;
             bScanDiagNote(hc, entry.bd_addr.b, 0xfe, FALSE, 0x01, 0, NULL, 0, NULL, 127, entry.class_of_device,
-                          bNoteDevice(hc, entry.bd_addr.b, BDAT_PUBLIC, FALSE, entry.class_of_device, 127, NULL, 0, NULL, 0, 0));
+                          bNoteDevice(hc, entry.bd_addr.b, BDAT_PUBLIC, FALSE, entry.class_of_device, 127, NULL, 0, NULL, 0, 0, NULL));
         }
         break;
     }
@@ -903,7 +909,7 @@ static void bHandleInquiryResult(struct BtHWCore *hc, UBYTE code, const UBYTE *p
             ULONG codv = cod[0] | (cod[1] << 8) | (cod[2] << 16);
             hc->hc_DiagInqResults++;
             bScanDiagNote(hc, addr, 0xfe, FALSE, 0x02, 0, NULL, 0, NULL, rssi, codv,
-                          bNoteDevice(hc, addr, BDAT_PUBLIC, FALSE, codv, rssi, NULL, 0, NULL, 0, 0));
+                          bNoteDevice(hc, addr, BDAT_PUBLIC, FALSE, codv, rssi, NULL, 0, NULL, 0, 0, NULL));
         }
         break;
     case HC_EVT_EXTENDED_INQUIRY_RESULT: {
@@ -921,7 +927,7 @@ static void bHandleInquiryResult(struct BtHWCore *hc, UBYTE code, const UBYTE *p
         bt_le_adv_parse(&params[15], len - 15, &info);
         hc->hc_DiagInqResults++;
         bScanDiagNote(hc, addr, 0xfe, FALSE, 0x04, 0, &params[15], len - 15, &info, rssi, codv,
-                      bNoteDevice(hc, addr, BDAT_PUBLIC, FALSE, codv, rssi, info.name, info.name_len, &params[15], len - 15, 0));
+                      bNoteDevice(hc, addr, BDAT_PUBLIC, FALSE, codv, rssi, info.name, info.name_len, &params[15], len - 15, 0, &info));
         break;
     }
     }
@@ -969,7 +975,7 @@ static void bHandleLEMeta(struct BtHWCore *hc, const UBYTE *params, ULONG len)
             if(report.event_type == 0x04) hc->hc_DiagScanRsp++;
             {
                 BOOL noted = bNoteDevice(hc, report.address.b, report.address_type & 3, TRUE, 0, report.rssi,
-                                         info.name, info.name_len, report.data, report.data_len, info.appearance);
+                                         info.name, info.name_len, report.data, report.data_len, info.appearance, &info);
                 bScanDiagNote(hc, report.address.b, report.address_type & 3, TRUE, (UBYTE)(1u << (report.event_type & 7)), 0,
                               report.data, report.data_len, &info, report.rssi, 0, noted);
             }
@@ -1001,7 +1007,7 @@ static void bHandleLEMeta(struct BtHWCore *hc, const UBYTE *params, ULONG len)
                 if(rep[0] & 0x08) hc->hc_DiagScanRsp++;
                 {
                     BOOL noted = bNoteDevice(hc, &rep[3], addrtype & 3, TRUE, 0, rssi,
-                                             info.name, info.name_len, &rep[24], dlen, info.appearance);
+                                             info.name, info.name_len, &rep[24], dlen, info.appearance, &info);
                     bScanDiagNote(hc, &rep[3], addrtype & 3, TRUE, 0, rep[0], &rep[24], dlen, &info, rssi, 0, noted);
                 }
             }

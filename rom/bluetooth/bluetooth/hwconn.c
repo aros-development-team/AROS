@@ -1221,6 +1221,18 @@ static void bGATTEnumCB(struct bt_gatt_client_completion *completion, void *user
             bConnRunEnum(cn);
             return;
         }
+        if(cn->cn_EnumState == ENUM_GATT_CHARS) {
+            /* a service whose characteristics need authentication (phones do
+               this for some) is skipped, the rest of the device still enumerates */
+            btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s: characteristics of service %ld are not readable (ATT 0x%02lx) - skipped.",
+                           bd->bd_Name, (ULONG) cn->cn_EnumIndex, (ULONG) completion->att_error_code);
+            cn->cn_EnumIndex++;
+            bConnRunEnum(cn);
+            return;
+        }
+        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%s: GATT discovery failed (ATT 0x%02lx).",
+                       bd->bd_Name, (ULONG) completion->att_error_code);
         bConnFinishEnum(cn, BTIOERR_REMOTEERROR);
         return;
     }
@@ -2010,6 +2022,16 @@ static void bSMPChannelEvent(struct bt_l2cap_channel_event_info *info, void *use
             break;
         }
         if(cn->cn_SMPActive) {
+            if((info->data[0] == BT_SMP_PAIRING_FAILED) && (info->data_len >= 2)) {
+                static const char *why[] = { "?", "passkey entry failed", "OOB data not available",
+                    "authentication requirements not met", "confirm value failed", "pairing not supported",
+                    "encryption key size", "command not supported", "unspecified reason", "repeated attempts",
+                    "invalid parameters", "DHKey check failed", "numeric comparison failed",
+                    "BR/EDR pairing in progress", "cross-transport key not allowed" };
+                UBYTE r = info->data[1];
+                btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%s refused the pairing: %s (0x%02lx).",
+                               bd->bd_Name, (r < 15) ? why[r] : "unknown", (ULONG) r);
+            }
             bt_smp_manager_on_pdu(&cn->cn_SMP, info->data, info->data_len, info->now_us);
         } else if(info->data[0] == BT_SMP_SECURITY_REQUEST) {
             /* the peripheral wants a secure link */

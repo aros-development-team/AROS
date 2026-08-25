@@ -293,12 +293,12 @@ static void RefreshDevices(struct BtActionData *data)
         for(bd = devl->lh_Head; bd->ln_Succ; bd = bd->ln_Succ) {
             struct DevEntry *e = AllocVec(sizeof(struct DevEntry), MEMF_CLEAR);
             STRPTR name = NULL, addr = NULL;
-            IPTR isc = 0, isl = 0, isreg = 0, isb = 0, isconn = 0, isdead = 0, cod = 0, appear = 0;
+            IPTR isc = 0, isl = 0, isreg = 0, isb = 0, isconn = 0, isdead = 0, cod = 0, appear = 0, pstate = 0;
             LONG rssi = 127;
             if(!e) break;
             btGetAttrs(BGA_DEVICE, bd, BDA_Name, &name, BDA_AddressString, &addr, BDA_RSSI, &rssi,
                        BDA_IsClassic, &isc, BDA_IsLE, &isl, BDA_IsRegistered, &isreg, BDA_IsBonded, &isb,
-                       BDA_IsConnected, &isconn, BDA_IsDead, &isdead,
+                       BDA_IsConnected, &isconn, BDA_IsDead, &isdead, BDA_PairingState, &pstate,
                        BDA_ClassOfDevice, &cod, BDA_Appearance, &appear, TAG_END);
             /* the Devices page lists only devices we actually use (connected,
              * registered or bonded); freshly discovered ones live in the
@@ -311,9 +311,15 @@ static void RefreshDevices(struct BtActionData *data)
             strncpy(e->addr, addr ? addr : "?", sizeof(e->addr)-1);
             strncpy(e->name, name ? name : "?", sizeof(e->name)-1);
             strcpy(e->type, (isc && isl) ? "dual" : (isl ? "LE" : "BR/EDR"));
-            snprintf(e->flags, sizeof(e->flags), "%s%s%s%s",
-                     isreg ? "registered " : "", isb ? "bonded " : "",
-                     isconn ? "connected " : "", isdead ? "unreachable " : "");
+            /* a device that is connected only because it is being paired says so */
+            if(pstate == BDPS_WAITUSER)
+                snprintf(e->flags, sizeof(e->flags), "pairing - enter the passkey");
+            else if(pstate == BDPS_INPROGRESS)
+                snprintf(e->flags, sizeof(e->flags), "pairing...");
+            else
+                snprintf(e->flags, sizeof(e->flags), "%s%s%s%s",
+                         isreg ? "registered " : "", isb ? "bonded " : "",
+                         isconn ? "connected " : "", isdead ? "unreachable " : "");
             if(!e->flags[0]) strcpy(e->flags, "discovered");
             AddTail((struct List *)&fresh, (struct Node *)e);
         }
@@ -511,6 +517,7 @@ static void HandleEvents(struct BtActionData *data)
             case BEHMB_DISCOVERYSTART: SetStatus(data, "Discovering..."); RefreshHardware(data); break;
             case BEHMB_DISCOVERYSTOP: SetStatus(data, "Discovery finished."); RefreshHardware(data); break;
             case BEHMB_PAIRINGREQUEST: {
+                RefreshDevices(data);
                 STRPTR name = NULL;
                 IPTR passkey = 0;
                 char buf[160];
@@ -539,6 +546,7 @@ static void HandleEvents(struct BtActionData *data)
             case BEHMB_PAIRINGDONE:
                 if(data->pairwin) set(data->pairwin, MUIA_Window_Open, FALSE);
                 data->pairdev = NULL;
+                RefreshDevices(data);
                 if((IPTR)p2) {
                     SetStatus(data, "Pairing failed.");
                 } else {
