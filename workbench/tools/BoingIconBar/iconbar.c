@@ -114,6 +114,8 @@ static BOOL DrainAndReplyPort(struct MsgPort *port);                    // drain
 static BOOL NoIconBouncing(void);                                       // check if no icon is bouncing
 static BOOL MouseOverToolbar(void);                                     // check if mouse is over the toolbar
 static void HandleFocus(void);                                          // focus follows the mouse
+static void ParseAlign(STRPTR str);                                     // parse ALIGN parameter
+static void ComputeWindowPosition(void);                                // set toolbar position from Align
 static void RefreshBackground(void);                                    // refresh toolbar background
 static void IconLabel(void);                                            // add label to icon
 
@@ -124,13 +126,14 @@ static void IconLabel(void);                                            // add l
 #define ICON_ACTIVE (1<<7)
 #define SELECTED_ICON (1<<6)
 
-#define TEMPLATE        "SPACE/N/K,STATIC/N/K,AUTOREMAP/S/K,NAMES/S/K,SYSFONT/K,LABELFONT/K,FONTSIZE/N/K"
+#define TEMPLATE        "SPACE/N/K,STATIC/N/K,ALIGN/K,AUTOREMAP/S/K,NAMES/S/K,SYSFONT/K,LABELFONT/K,FONTSIZE/N/K"
 
 // ------------------------------
 
 enum {
     ARG_SPACE = 0,
     ARG_STATIC,
+    ARG_ALIGN,
     ARG_AUTOREMAP,
     ARG_NAMES,
     ARG_SYSFONT,
@@ -141,7 +144,7 @@ enum {
 
 #define BIB_PREFS "ENV:Iconbar.prefs"
 
-const TEXT version[]="$VER: BoingIconBar 1.12 (01.05.2023) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
+const TEXT version[]="$VER: BoingIconBar 1.13 (23.08.2026) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
 
 static BOOL                                     BiB_Exit=FALSE, Icon_Remap=FALSE, PositionMenuOK=FALSE; 
 static BOOL                                     Window_Active=FALSE, Window_Open=FALSE, MenuWindow_Open=FALSE, FirstOpening=TRUE;
@@ -150,9 +153,10 @@ static BOOL                                     B_Labels=FALSE;
 static TEXT                                     IT_Labels[100];  // buffer for label
 
 // -----------
-static char                                     *argSysFont = NULL, *argLabelFont = NULL;
+static char                                     *argSysFont = NULL, *argLabelFont = NULL, *argAlign = NULL;
 
 static IPTR                                     Spacing=5, Static=0, FontSize = 0;
+static LONG                                     Align = 0;             // 0=center, 1=left, 2=right
 static LONG                                     Position, OldPosition; 
 static LONG                                     WindowHeight, WindowWidth, ScreenHeight, ScreenWidth, IconWidth;
 static LONG                                     IconCounter, LevelCounter, CurrentLevel=0, lbm=0, rbm=0, MouseIcon;
@@ -182,6 +186,7 @@ static BOOL                                     WallpaperPending = FALSE;
 static IPTR                                     args[ARG_TOTAL] = {
                         (IPTR)&Spacing,
                         (IPTR)&Static,
+                        (IPTR)&argAlign,
                         0,
                         0,
                         0,
@@ -262,6 +267,11 @@ int main(int argc, char *argv[])
             Static = *(LONG*)args[ARG_STATIC];
         }
 
+        if (args[ARG_ALIGN])
+        {
+            ParseAlign((STRPTR)args[ARG_ALIGN]);
+        }
+
         if (args[ARG_SYSFONT])
         {
             argSysFont = AllocVec(strlen((char *)args[ARG_SYSFONT]) + 1, MEMF_CLEAR);
@@ -300,6 +310,9 @@ int main(int argc, char *argv[])
 
                     if ((str = FindToolType(dob->do_ToolTypes, "STATIC")))
                         Static = atoi(str);
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "ALIGN")))
+                        ParseAlign(str);
 
                     if ((str = FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
                         Icon_Remap = TRUE;
@@ -791,8 +804,7 @@ static BOOL ReadPrefs(void)
             IconCounter = Levels[1].Beginning;
             WindowWidth = Levels[0].WindowPos_X;
             WindowHeight = Levels[0].WindowPos_Y;
-            BeginningWindow = ScreenWidth / 2 - WindowWidth / 2;
-            EndingWindow = ScreenWidth / 2 + WindowWidth / 2;
+            ComputeWindowPosition();
             CurrentLevel= 0;
 
             // add Settings menu entry
@@ -1243,7 +1255,7 @@ static BOOL OpenMainWindow(void)
     if((MyScreen=LockPubScreen(NULL)))
     {
         BltBitMapRastPort(MyScreen->RastPort.BitMap,
-            ScreenWidth / 2 - WindowWidth / 2,
+            BeginningWindow,
             ScreenHeight - WindowHeight,
             &RP_Buffer,
             0, 0,
@@ -1451,8 +1463,7 @@ static void Show_Selected_Level(void)
     IconCounter   = Levels[CurrentLevel+1].Beginning;
     WindowWidth = Levels[CurrentLevel].WindowPos_X;
     WindowHeight  = Levels[CurrentLevel].WindowPos_Y;
-    BeginningWindow = ScreenWidth / 2 - WindowWidth / 2;
-    EndingWindow   = ScreenWidth / 2 + WindowWidth / 2;
+    ComputeWindowPosition();
 
     //LJ: delay needed for AROS, otherwise garbage from old icons remains
     Delay(10); // 200 ms seems to be enough
@@ -1812,6 +1823,40 @@ static void HandleFocus(void)
     {
         ActivateWindow(PrevActiveWindow);
         PrevActiveWindow = NULL;
+    }
+}
+
+
+static void ParseAlign(STRPTR str)
+{
+    if (str)
+    {
+        if (stricmp(str, "LEFT") == 0)
+            Align = 1;
+        else if (stricmp(str, "RIGHT") == 0)
+            Align = 2;
+        else
+            Align = 0;
+    }
+}
+
+
+static void ComputeWindowPosition(void)
+{
+    if (Align == 1)                      /* LEFT */
+    {
+        BeginningWindow = 0;
+        EndingWindow = WindowWidth;
+    }
+    else if (Align == 2)                 /* RIGHT */
+    {
+        BeginningWindow = ScreenWidth - WindowWidth;
+        EndingWindow = ScreenWidth;
+    }
+    else                                 /* CENTER (default) */
+    {
+        BeginningWindow = ScreenWidth / 2 - WindowWidth / 2;
+        EndingWindow = ScreenWidth / 2 + WindowWidth / 2;
     }
 }
 

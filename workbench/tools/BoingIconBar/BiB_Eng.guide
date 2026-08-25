@@ -108,6 +108,8 @@ Version 1.02
 
     @{FG HighLight}STATIC/N/K@{FG Text} - if we want our toolbar to be visible after having been run, you have to specify this parameter with a number bigger than 0. This number informs us about the time in seconds after which the window will be displayed on the screen e.g. during the start up of the operating system.
 
+    @{FG HighLight}ALIGN/K@{FG Text} - alignment of the toolbar on the screen: LEFT, RIGHT or CENTER (default). LEFT aligns the toolbar to the left edge of the screen, RIGHT to the right edge.
+
     @{FG HighLight}AUTOREMAP/S@{FG Text} - this parameter is unavailable for MorphOS users. It can happen that the icons might be displayed inappropriately, e.g. after choosing an option from the menu of Workbench "Tools -> ResetWB". Using this parameter causes automatic remapping of icons to the actual colour palette, before displaying the toolbar.
    
     @{FG HighLight}BACKGROUND/S@{FG Text} - (AROS only) Displays the toolbar background images.
