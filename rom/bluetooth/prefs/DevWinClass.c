@@ -15,6 +15,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/bluetooth.h>
+#include <proto/btclass.h>
 
 #include <clib/alib_protos.h>
 #include <stdio.h>
@@ -139,7 +140,7 @@ static void Populate(struct DevWinData *data)
 static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct DevWinData *data;
-    Object *nametxt, *addrtxt, *typetxt, *statetxt, *bindtxt, *keystxt, *svclist, *rescanbtn, *contents;
+    Object *nametxt, *addrtxt, *typetxt, *statetxt, *bindtxt, *keystxt, *svclist, *rescanbtn, *cfgbtn, *contents;
     Object *cwname, *setnamebtn, *resetnamebtn, *chk_inhibitpopup, *chk_noclassbind, *chk_autoconnect, *chk_trusted;
 
     contents = VGroup,
@@ -185,6 +186,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
             End,
         Child, HGroup,
             Child, rescanbtn = SimpleButton("Rescan services"),
+            Child, cfgbtn = SimpleButton("Configure"),
             Child, HSpace(0),
             End,
         End;
@@ -213,6 +215,8 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     data->keystxt = keystxt;
     data->svclist = svclist;
     data->rescanbtn = rescanbtn;
+    data->cfgbtn = cfgbtn;
+    set(cfgbtn, MUIA_Disabled, TRUE);
     data->cwname = cwname;
     data->setnamebtn = setnamebtn;
     data->resetnamebtn = resetnamebtn;
@@ -228,6 +232,8 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(obj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
              obj, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     DoMethod(rescanbtn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_DevWin_Rescan);
+    DoMethod(cfgbtn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_DevWin_Configure);
+    DoMethod(svclist, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, obj, 1, MUIM_DevWin_SvcActive);
     DoMethod(setnamebtn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_DevWin_SetName);
     DoMethod(cwname, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, obj, 1, MUIM_DevWin_SetName);
     DoMethod(resetnamebtn, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_DevWin_ResetName);
@@ -259,17 +265,43 @@ AROS_UFH3(IPTR, DevWinDispatcher,
         case MUIM_DevWin_Show:
             data->device = ((struct MUIP_DevWin_Show *)msg)->device;
             Populate(data);
+            DoMethod(obj, MUIM_DevWin_SvcActive);
             set(obj, MUIA_Window_Open, TRUE);
             return 0;
 
         case MUIM_DevWin_Populate:
             Populate(data);
+            DoMethod(obj, MUIM_DevWin_SvcActive);
             return 0;
 
         case MUIM_DevWin_Rescan:
             if(data->device) btEnumerateServices(data->device);
             Populate(data);
             return 0;
+
+        case MUIM_DevWin_SvcActive:
+        case MUIM_DevWin_Configure: {
+            /* the selected service's binding (or, if none is selected, the
+               device binding): does its class offer a settings window, open it */
+            struct SvcEntry *e = NULL;
+            APTR binding = NULL, bc = NULL;
+            struct Library *BtClsBase = NULL;
+            IPTR has = FALSE;
+            if(!data->device) return 0;
+            DoMethod(data->svclist, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &e);
+            btLockReadBase();
+            if(e) btGetAttrs(BGA_SERVICE, e->bsv, BSVA_Binding, &binding, BSVA_BindingClass, &bc, TAG_END);
+            if(!binding) btGetAttrs(BGA_DEVICE, data->device, BDA_Binding, &binding, BDA_BindingClass, &bc, TAG_END);
+            if(binding && bc) btGetAttrs(BGA_BTCLASS, bc, BCA_ClassBase, &BtClsBase, TAG_END);
+            btUnlockBase();
+            if(BtClsBase) btcGetAttrs(BCGA_CLASS, NULL, BCCA_HasBindingCfgGUI, &has, TAG_END);
+            if(msg->MethodID == MUIM_DevWin_SvcActive) {
+                set(data->cfgbtn, MUIA_Disabled, !has);
+            } else if(has) {
+                btcDoMethod(BCM_OpenBindingCfgWindow, binding);
+            }
+            return 0;
+        }
 
         case MUIM_DevWin_SettingChg: {
             IPTR inhibitpopup = 0, noclassbind = 0, autoconnect = 0, trusted = 0;

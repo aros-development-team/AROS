@@ -19,6 +19,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/bluetooth.h>
+#include <proto/btclass.h>       /* btcGetAttrs/btcDoMethod on a class base (BtClsBase) */
 
 #include <clib/alib_protos.h>
 #include <stdio.h>
@@ -198,6 +199,121 @@ static void DoHwRemove(struct BtActionData *data)
     }
 }
 
+/* *** class settings windows ***
+ * A class may offer a settings GUI for its defaults (BCCA_HasClassCfgGUI) and
+ * one per binding (BCCA_HasBindingCfgGUI) - bthid.class does, for key
+ * mappings and actions. Trident opens them with the class methods
+ * UCM_OpenCfgWindow/UCM_OpenBindingCfgWindow; the BCM_ ones are the same. */
+
+static APTR SelectedClass(struct BtActionData *data)
+{
+    struct ClsEntry *e = NULL;
+    DoMethod(data->clslist, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &e);
+    return e ? e->bc : NULL;
+}
+
+/* does the class offer that settings window? (attr = BCCA_HasClassCfgGUI / BCCA_HasBindingCfgGUI) */
+static BOOL ClassHasGUI(APTR bc, ULONG attr)
+{
+    struct Library *BtClsBase = NULL;
+    IPTR has = FALSE;
+    if(!bc) return FALSE;
+    btGetAttrs(BGA_BTCLASS, bc, BCA_ClassBase, &BtClsBase, TAG_END);
+    if(!BtClsBase) return FALSE;
+    btcGetAttrs(BCGA_CLASS, NULL, attr, &has, TAG_END);
+    return has ? TRUE : FALSE;
+}
+
+static BOOL OpenBindingWindow(APTR bc, APTR binding)
+{
+    struct Library *BtClsBase = NULL;
+    if(!bc || !binding) return FALSE;
+    btGetAttrs(BGA_BTCLASS, bc, BCA_ClassBase, &BtClsBase, TAG_END);
+    if(!BtClsBase) return FALSE;
+    return btcDoMethod(BCM_OpenBindingCfgWindow, binding) ? TRUE : FALSE;
+}
+
+/* the device's own binding, or any of its services' bindings, whose class
+ * has a binding settings window */
+static BOOL DeviceHasSettings(APTR bd)
+{
+    APTR binding = NULL, bc = NULL;
+    struct List *svcl;
+    struct Node *bsv;
+    BOOL has = FALSE;
+    if(!bd) return FALSE;
+    btLockReadBase();
+    btGetAttrs(BGA_DEVICE, bd, BDA_Binding, &binding, BDA_BindingClass, &bc, BDA_ServiceList, &svcl, TAG_END);
+    if(binding && ClassHasGUI(bc, BCCA_HasBindingCfgGUI)) {
+        has = TRUE;
+    } else {
+        for(bsv = svcl->lh_Head; bsv->ln_Succ && !has; bsv = bsv->ln_Succ) {
+            binding = NULL; bc = NULL;
+            btGetAttrs(BGA_SERVICE, bsv, BSVA_Binding, &binding, BSVA_BindingClass, &bc, TAG_END);
+            if(binding && ClassHasGUI(bc, BCCA_HasBindingCfgGUI)) has = TRUE;
+        }
+    }
+    btUnlockBase();
+    return has;
+}
+
+/* open the settings window(s) of every binding on the device (Trident's Action_Dev_Configure) */
+static ULONG OpenDeviceSettings(APTR bd)
+{
+    APTR binding = NULL, bc = NULL;
+    struct List *svcl;
+    struct Node *bsv;
+    ULONG opened = 0;
+    if(!bd) return 0;
+    btLockReadBase();
+    btGetAttrs(BGA_DEVICE, bd, BDA_Binding, &binding, BDA_BindingClass, &bc, BDA_ServiceList, &svcl, TAG_END);
+    if(binding && bc) {
+        if(OpenBindingWindow(bc, binding)) opened++;
+    } else {
+        for(bsv = svcl->lh_Head; bsv->ln_Succ; bsv = bsv->ln_Succ) {
+            binding = NULL; bc = NULL;
+            btGetAttrs(BGA_SERVICE, bsv, BSVA_Binding, &binding, BSVA_BindingClass, &bc, TAG_END);
+            if(binding && bc && OpenBindingWindow(bc, binding)) opened++;
+        }
+    }
+    btUnlockBase();
+    return opened;
+}
+
+static void UpdateDevButtons(struct BtActionData *data)
+{
+    set(data->bt_devsettings, MUIA_Disabled, !DeviceHasSettings(SelectedDevice(data)));
+}
+
+static void UpdateClsButtons(struct BtActionData *data)
+{
+    set(data->bt_clscfg, MUIA_Disabled, !ClassHasGUI(SelectedClass(data), BCCA_HasClassCfgGUI));
+}
+
+static void DoClsConfigure(struct BtActionData *data)
+{
+    APTR bc = SelectedClass(data);
+    struct Library *BtClsBase = NULL;
+    if(!bc) { SetStatus(data, "Select a class first."); return; }
+    btGetAttrs(BGA_BTCLASS, bc, BCA_ClassBase, &BtClsBase, TAG_END);
+    if(BtClsBase && btcDoMethod(BCM_OpenCfgWindow)) {
+        SetStatus(data, "Class settings window opened.");
+    } else {
+        SetStatus(data, "This class has no settings window.");
+    }
+}
+
+static void DoDevSettings(struct BtActionData *data)
+{
+    APTR bd = SelectedDevice(data);
+    if(!bd) { SetStatus(data, "Select a device first."); return; }
+    if(OpenDeviceSettings(bd)) {
+        SetStatus(data, "Device settings window opened.");
+    } else {
+        SetStatus(data, "No class with a settings window is bound to this device.");
+    }
+}
+
 /* *** refresh *** */
 
 /* pick a device-class icon from the classic Class-of-Device or the LE Appearance */
@@ -341,6 +457,7 @@ static void RefreshDevices(struct BtActionData *data)
     MergeDevList(data->devlist, &data->deventries, &fresh);
     if(data->devwin) DoMethod(data->devwin, MUIM_DevWin_Populate);
     if(data->scanwin) DoMethod(data->scanwin, MUIM_ScanWin_Populate);
+    if(data->bt_devsettings) UpdateDevButtons(data);
 }
 
 static void RefreshHardware(struct BtActionData *data)
@@ -402,6 +519,7 @@ static void RefreshClasses(struct BtActionData *data)
     }
     btUnlockBase();
     set(data->clslist, MUIA_List_Quiet, FALSE);
+    if(data->bt_clscfg) UpdateClsButtons(data);
 }
 
 static void RefreshErrors(struct BtActionData *data)
@@ -1090,6 +1208,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                         Child, data->bt_connect = SimpleButton("Connect"),
                         Child, data->bt_disconnect = SimpleButton("Disconnect"),
                         Child, data->bt_info = SimpleButton("Information"),
+                        Child, data->bt_devsettings = SimpleButton("Settings"),
                         Child, data->bt_forget = SimpleButton("Forget"),
                         End,
                     End,
@@ -1099,6 +1218,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                     Child, LISTVIEW(data->clslist, &data->clshook, "BAR,BAR,"),
                     Child, HGroup,
                         Child, data->bt_clsscan = SimpleButton("Class Scan"),
+                        Child, data->bt_clscfg = SimpleButton("Configure"),
                         Child, HSpace(0),
                         End,
                     End,
@@ -1234,6 +1354,13 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(data->bt_info,       MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_DevInfo);
     DoMethod(data->bt_forget,     MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_Forget);
     DoMethod(data->bt_clsscan,    MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_ClsScan);
+    /* class/binding settings windows (enabled per selection) */
+    DoMethod(data->bt_devsettings, MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_DevSettings);
+    DoMethod(data->bt_clscfg,     MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_ClsConfigure);
+    DoMethod(data->devlist,       MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, obj, 1, MUIM_BtA_DevActive);
+    DoMethod(data->clslist,       MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, obj, 1, MUIM_BtA_ClsActive);
+    set(data->bt_devsettings, MUIA_Disabled, TRUE);
+    set(data->bt_clscfg, MUIA_Disabled, TRUE);
 
     DoMethod(data->bt_hwadd,      MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_HwAdd);
     DoMethod(data->bt_hwremove,   MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_HwRemove);
@@ -1318,6 +1445,10 @@ AROS_UFH3(IPTR, ActionDispatcher,
             RefreshConfig(data);
             return 0;
         case MUIM_BtA_OptChanged:  ApplyOptions(data); return 0;
+        case MUIM_BtA_DevActive:   UpdateDevButtons(data); return 0;
+        case MUIM_BtA_ClsActive:   UpdateClsButtons(data); return 0;
+        case MUIM_BtA_DevSettings: DoDevSettings(data); return 0;
+        case MUIM_BtA_ClsConfigure: DoClsConfigure(data); return 0;
         case MUIM_BtA_CfgActive:   DoCfgActive(data); return 0;
         case MUIM_BtA_CfgExport:   DoCfgExport(data); return 0;
         case MUIM_BtA_CfgImport:   DoCfgImport(data); return 0;

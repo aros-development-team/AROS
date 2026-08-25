@@ -38,11 +38,12 @@ struct BtActionData
     Object *devlist;
     Object *bt_adddev, *bt_register, *bt_unregister, *bt_pair;
     Object *bt_connect, *bt_disconnect, *bt_info, *bt_forget;
+    Object *bt_devsettings;  /* the bound class's per-device settings window (Trident "Settings") */
     Object *scanwin;        /* the "Add Device" discovery window */
     Object *devwin;         /* per-device information/services window */
 
     Object *clslist;
-    Object *bt_clsscan;
+    Object *bt_clsscan, *bt_clscfg;   /* class defaults settings window (Trident "Configure") */
 
     /* options page (the stack's global config, BGA_STACKCFG) */
     Object *opt_discoverable, *opt_connectable, *opt_autoconnect;
@@ -115,6 +116,9 @@ void MergeDevList(Object *list, struct MinList *entries, struct MinList *fresh);
 #define MUIM_BtA_CfgExport    (TAGBASE_BtA | 0x1e)
 #define MUIM_BtA_CfgImport    (TAGBASE_BtA | 0x1f)
 #define MUIM_BtA_CfgRemove    (TAGBASE_BtA | 0x20)
+#define MUIM_BtA_ClsConfigure (TAGBASE_BtA | 0x21)   /* open the class's default settings window */
+#define MUIM_BtA_DevSettings  (TAGBASE_BtA | 0x22)   /* open the binding settings window(s) of a device */
+#define MUIM_BtA_ClsActive    (TAGBASE_BtA | 0x23)
 
 struct MUIP_BtA_Reply { STACKED ULONG MethodID; STACKED IPTR yes; };
 #define MUIM_BtA_PairReply    (TAGBASE_BtA | 0x16)
