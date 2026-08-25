@@ -80,6 +80,7 @@
 #include <datatypes/pictureclass.h>
 #include <dos/dos.h>
 #include <devices/rawkeycodes.h>
+#include <devices/timer.h>
 #include <aros/detach.h>
 
 #include <stdio.h>
@@ -111,6 +112,8 @@ static void Reload(void);                                               // reloa
 static void HandleScreenNotify(void);                                   // handle Workbench screen reset
 static BOOL DrainAndReplyPort(struct MsgPort *port);                    // drain port, replying every message
 static BOOL NoIconBouncing(void);                                       // check if no icon is bouncing
+static BOOL MouseOverToolbar(void);                                     // check if mouse is over the toolbar
+static void HandleFocus(void);                                          // focus follows the mouse
 static void RefreshBackground(void);                                    // refresh toolbar background
 static void IconLabel(void);                                            // add label to icon
 
@@ -163,7 +166,13 @@ static ULONG                                    ScreenNotifyMask = 0;
 static APTR                                     ScreenNotifyHandle = NULL;
 static BOOL                                     ScreenResetInProgress = FALSE;
 
-static BOOL                                     NoActivate = FALSE;
+static struct Window                            *PrevActiveWindow = NULL;
+static BOOL                                     FocusOver = FALSE;
+static LONG                                     FocusStableTicks = 0;
+
+static struct MsgPort                           *FocusPort = NULL;
+static struct timerequest                       *FocusTimer = NULL;
+static ULONG                                    FocusMask = 0;
 
 static struct MsgPort                           *WallpaperPort = NULL;
 static ULONG                                    WallpaperMask = 0;
@@ -412,6 +421,29 @@ int main(int argc, char *argv[])
         }
     }
 
+    // periodic timer for focus-follows-mouse (works even when the window is inactive)
+    FocusPort = CreateMsgPort();
+    if (FocusPort)
+    {
+        FocusTimer = (struct timerequest *)CreateIORequest(FocusPort, sizeof(struct timerequest));
+        if (FocusTimer)
+        {
+            if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)FocusTimer, 0) == 0)
+            {
+                FocusTimer->tr_node.io_Command = TR_ADDREQUEST;
+                FocusTimer->tr_time.tv_secs = 0;
+                FocusTimer->tr_time.tv_micro = 100000;   /* 100 ms */
+                SendIO((struct IORequest *)FocusTimer);
+                FocusMask = 1 << FocusPort->mp_SigBit;
+            }
+            else
+            {
+                DeleteIORequest((struct IORequest *)FocusTimer);
+                FocusTimer = NULL;
+            }
+        }
+    }
+
     // ------ Opening font if parameter NAMES is active
 
     if (FontSize)
@@ -473,7 +505,7 @@ int main(int argc, char *argv[])
 
             if(Window_Open || MenuWindow_Open)
             {
-                WindowSignal = Wait(WindowMask | MenuMask | ScreenNotifyMask | WallpaperMask | SIGBREAKF_CTRL_C);
+                WindowSignal = Wait(WindowMask | MenuMask | ScreenNotifyMask | WallpaperMask | FocusMask | SIGBREAKF_CTRL_C);
 
                 if(WindowSignal & WindowMask)
                 {
@@ -512,6 +544,16 @@ int main(int argc, char *argv[])
                     WallpaperPending = TRUE;
                 }
 
+                if(WindowSignal & FocusMask)
+                {
+                    BOOL fired = FALSE;
+                    while(GetMsg(FocusPort) != NULL)
+                        fired = TRUE;
+                    if (fired)
+                        SendIO((struct IORequest *)FocusTimer);
+                    HandleFocus();
+                }
+
                 if(WindowSignal & SIGBREAKF_CTRL_C)
                 {
                     D(bug("CTRL-C reveived\n"));
@@ -547,6 +589,15 @@ int main(int argc, char *argv[])
                 {
                     if (DrainAndReplyPort(WallpaperPort))
                         WallpaperPending = FALSE;
+                }
+
+                if (FocusMask)
+                {
+                    BOOL fired = FALSE;
+                    while(GetMsg(FocusPort) != NULL)
+                        fired = TRUE;
+                    if (fired)
+                        SendIO((struct IORequest *)FocusTimer);
                 }
 
                 CheckMousePosition();
@@ -588,6 +639,19 @@ EndNotify(WallpaperNotRequest);
 
     if (WallpaperPort)
         DeleteMsgPort(WallpaperPort);
+
+    if (FocusTimer)
+    {
+        if (FocusTimer->tr_node.io_Device)
+        {
+            AbortIO((struct IORequest *)FocusTimer);
+            WaitIO((struct IORequest *)FocusTimer);
+        }
+        DeleteIORequest((struct IORequest *)FocusTimer);
+    }
+
+    if (FocusPort)
+        DeleteMsgPort(FocusPort);
     
     for(x=0; x<SUM_ICON; x++)
     {
@@ -1172,6 +1236,10 @@ static BOOL OpenMainWindow(void)
 {
     LONG x, y, a;
 
+    PrevActiveWindow = NULL;
+    FocusOver = FALSE;
+    FocusStableTicks = 0;
+
     if((MyScreen=LockPubScreen(NULL)))
     {
         BltBitMapRastPort(MyScreen->RastPort.BitMap,
@@ -1274,7 +1342,7 @@ static BOOL OpenMainWindow(void)
             WA_MouseQueue, 3,
             WA_Borderless, TRUE,
             WA_SizeGadget, FALSE,
-            WA_Activate, ((NoActivate || (FirstOpening && Static)) ? FALSE : TRUE),
+            WA_Activate, FALSE,
             WA_PubScreenName, NULL,
             WA_BackFill, LAYERS_NOBACKFILL,
             WA_Flags, WFLG_NOCAREREFRESH|
@@ -1696,12 +1764,63 @@ static BOOL NoIconBouncing(void)
 }
 
 
+static BOOL MouseOverToolbar(void)
+{
+    LONG mx = MyScreen->MouseX;
+    LONG my = MyScreen->MouseY;
+
+    return (mx >= BeginningWindow &&
+            mx < BeginningWindow + WindowWidth &&
+            my >= ScreenHeight - WindowHeight &&
+            my < ScreenHeight);
+}
+
+
+static void HandleFocus(void)
+{
+    BOOL over;
+
+    if (ScreenResetInProgress || !Window_Open || MenuWindow_Open)
+        return;
+
+    over = MouseOverToolbar();
+
+    /* Debounce: only act when the mouse-over state is stable for two
+       consecutive timer ticks, to avoid flapping activation when the
+       pointer crosses the toolbar border. */
+    if (over == FocusOver)
+        FocusStableTicks++;
+    else
+    {
+        FocusOver = over;
+        FocusStableTicks = 0;
+    }
+
+    if (FocusStableTicks < 2)
+        return;
+
+    if (over)
+    {
+        if (IntuitionBase->ActiveWindow != MainWindow)
+        {
+            if (PrevActiveWindow == NULL)
+                PrevActiveWindow = IntuitionBase->ActiveWindow;
+            ActivateWindow(MainWindow);
+        }
+    }
+    else if (PrevActiveWindow != NULL)
+    {
+        ActivateWindow(PrevActiveWindow);
+        PrevActiveWindow = NULL;
+    }
+}
+
+
 static void RefreshBackground(void)
 {
     if(ScreenResetInProgress)
         return;
 
-    NoActivate = TRUE;
     CloseMainWindow();
 
     /* Let the layers/Wanderer repaint the revealed wallpaper before we
@@ -1712,7 +1831,6 @@ static void RefreshBackground(void)
     {
         BiB_Exit = TRUE;
     }
-    NoActivate = FALSE;
 }
 
 
