@@ -72,12 +72,26 @@ __trap_entry:
 	csrr	a2, stval
 	call	krnTrapHandler
 
-	/* restore (the handler may have modified the context) */
+	/* restore (the handler may have modified the context).
+
+	   Force SIE off for the whole restore first. This sequence is not
+	   re-entrant: an interrupt taken part-way through it (once sstatus, and
+	   with it SIE, has been reloaded from the frame) is saved with an sepc
+	   pointing inside this code. Resuming that half-restored context re-runs
+	   the "ld sp, 8(sp)" below with a stale sp, walking sp up off the top of
+	   the task's stack a frame at a time until a load reads adjacent memory
+	   as the context. It could also reschedule (the nesting depth is briefly
+	   1 again), propagating the bad context into a task's saved frame. Hold
+	   SIE clear until the closing sret, which restores the task's real
+	   interrupt-enable from the frame's SPIE. */
+	csrci	sstatus, 2
 	ld	t0, 232(sp)
 	csrw	sepc, t0
 	/* restore sstatus from the context: carries the task's FS state
-	   and its SPIE (pre-trap interrupt-enable) for sret */
+	   and its SPIE (pre-trap interrupt-enable) for sret. Mask SIE out of the
+	   reloaded value so it stays clear across the register restore below. */
 	ld	t0, 240(sp)
+	andi	t0, t0, -3
 	csrw	sstatus, t0
 	ld	ra, 0(sp)
 	ld	t2, 32(sp)
