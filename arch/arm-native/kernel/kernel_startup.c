@@ -58,16 +58,29 @@ asm (
     "           bl      __clear_bss          \n"
     "           pop {r0}                     \n"
     "           cps     #0x1f                \n" /* system mode */
-    "           ldr     sp, stack_end        \n"
+    "           ldr     r1, =stack_end       \n"
+    "           ldr     sp, [r1]             \n"
     "           cps     #0x11                \n" /* fiq mode */
-    "           ldr     sp, stack_fiq_end    \n"
+    "           ldr     r1, =stack_fiq_end   \n"
+    "           ldr     sp, [r1]             \n"
     "           cps     #0x13                \n" /* SVC (supervisor) mode */
-    "           ldr     sp, stack_super_end  \n"
+    "           ldr     r1, =stack_super_end \n"
+    "           ldr     sp, [r1]             \n"
     "           b       kernel_cstart        \n"
+    "           .ltorg                       \n"
 
     ".string \"Native/CORE v3 (" __DATE__ ")\"" "\n\t\n\t"
 );
 
+/*
+ * The entry code above takes the address of each of these through a literal
+ * pool ("ldr r1, =stack_end") and then dereferences it, so the reference is
+ * resolved by a relocation rather than by a PC-relative offset the assembler
+ * has to compute. That leaves these free to sit in their own section: putting
+ * data in .aros.init, which the entry code declares as "ax", would otherwise
+ * make the assembler warn about changed section attributes. The linker script
+ * globs .aros.init*, so they are still placed with the init code.
+ */
 static uint32_t * const stack_end __attribute__((used, section(".aros.init.data"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
 static uint32_t * const stack_super_end __attribute__((used, section(".aros.init.data"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
 static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init.data"))) = &stack_fiq[1024 - sizeof(IPTR)];
