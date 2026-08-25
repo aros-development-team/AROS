@@ -27,7 +27,7 @@
 */
 
 #include "exec/memory.h"
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <memory.h>
 #include <aros/macros.h>
@@ -120,37 +120,23 @@ static void bcmgenet_disable_dma(struct BCMGENETUnit *unit)
     ULONG cmd;
     struct bcmgenet_hw *hw = unit->bgu_HW;
 
-    D(bug("[bcmgenet] Turn off UniMAC RX\n");)
     /* Turn off UniMAC RX */
-    D(bug("[bcmgenet] read UMAC_CMD\n");)
     cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
-    D(bug("[bcmgenet] UMAC_CMD = %08lx\n", cmd);)
-
     cmd &= ~GENET_UMAC_CMD_RXEN;
-
-    D(bug("[bcmgenet] write UMAC_CMD = %08lx\n", cmd);)
     BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
 
-    /* Diagnostic only: make a deferred MMIO write fault appear here. */
-    asm volatile("dsb sy" ::: "memory");
-
-    D(bug("[bcmgenet] UMAC_CMD write completed\n");)
-
-    D(bug("[bcmgenet] Turn off RX DMA and queue 16\n");)
     /* Turn off RX DMA and queue 16 */
     cmd = BCMGENET_Read(hw, GENET_RX_DMA_CTRL);
     cmd &= ~GENET_RX_DMA_CTRL_EN;
     cmd &= ~GENET_RX_DMA_CTRL_RBUF_EN(GENET_DMA_DEFAULT_QUEUE);
     BCMGENET_Write(hw, GENET_RX_DMA_CTRL, cmd);
 
-    D(bug("[bcmgenet] Turn off TX DMA and queue 16\n");)
     /* Turn off TX DMA and queue 16 */
     cmd = BCMGENET_Read(hw, GENET_TX_DMA_CTRL);
     cmd &= ~GENET_TX_DMA_CTRL_EN;
     cmd &= ~GENET_TX_DMA_CTRL_RBUF_EN(GENET_DMA_DEFAULT_QUEUE);
     BCMGENET_Write(hw, GENET_TX_DMA_CTRL, cmd);
 
-    D(bug("[bcmgenet] Flush TX FIFO\n");)
     /* Flush TX FIFO */
     BCMGENET_Write(hw, GENET_UMAC_TX_FLUSH, 1);
     bcmgenet_wait(unit, 10);
@@ -188,6 +174,16 @@ BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit)
     BCMGENET_Write(hw, GENET_SYS_RBUF_FLUSH_CTRL, 0);
     bcmgenet_wait(unit, 10);
 
+    /*
+     * Now that the flush pulse has been through, UniMAC answers reads and
+     * the engine can be stopped the way genet_reset() does it first thing.
+     * The firmware may well have left GENET running - start4.elf uses it
+     * when BOOT_ORDER includes network boot - and bcmgenet_init_rings()
+     * only ORs bits into TX_DMA_CTRL/RX_DMA_CTRL, so whatever is running
+     * has to be turned off here rather than overwritten later.
+     */
+    bcmgenet_disable_dma(unit);
+
     /* Disable UniMAC completely before its software reset. This clears
         * any previous RX, TX, or link configuration */
     BCMGENET_Write(hw, GENET_UMAC_CMD, 0);
@@ -222,8 +218,6 @@ BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit)
     /* Select GENET's expected transmit-buffer size mode */
     BCMGENET_Write(hw, GENET_RBUF_TBUF_SIZE_CTRL, 1);
 
-    /* just for diag */
-    BCMGENET_Read(hw, GENET_UMAC_CMD);
     return TRUE;
 }
 
@@ -327,27 +321,100 @@ static BOOL bcmgenet_init_rings(struct BCMGENETUnit *unit, ULONG qid) {
 	return TRUE;
 }
 
-BOOL bcmgenet_setup_rxbuf(struct bcmgenet_hw *hw, ULONG index)
+/*
+ * Bring-up diagnostic. Set to 0 once the wire works.
+ *
+ * Sends one frame through UniMAC's internal loopback and looks for it in
+ * the RX ring. Everything between the TX descriptor and the RX descriptor
+ * is exercised - buffer contents, cache maintenance, DMA addresses, both
+ * engines, the MAC itself - while the RGMII pins, the PHY, the cable and
+ * whatever the cable is plugged into are bypassed. A frame that comes back
+ * clears this driver of the "nothing reaches the wire" charge; one that
+ * does not puts the fault on this side of the PHY.
+ */
+#define BCMGENET_LOOPBACK_SELFTEST 0
+
+#if BCMGENET_LOOPBACK_SELFTEST
+static void bcmgenet_loopback_selftest(struct BCMGENETUnit *unit, ULONG qid)
 {
+    struct bcmgenet_hw *hw = unit->bgu_HW;
+    UBYTE *txbuf = unit->bgu_TX.buf[0];
+    ULONG cmd, len, spins, pidx, i;
+    UQUAD dma;
+
+    /* Minimum-length frame from us to us, payload a recognisable fill */
+    for (i = 0; i < ETH_ZLEN; i++)
+        txbuf[i] = 0xa5;
+    CopyMem(unit->bgu_DevAddr, txbuf, ETH_ADDRESSSIZE);
+    CopyMem(unit->bgu_DevAddr, txbuf + ETH_ADDRESSSIZE, ETH_ADDRESSSIZE);
+
+    cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
+    BCMGENET_Write(hw, GENET_UMAC_CMD, cmd |
+                   GENET_UMAC_CMD_LCL_LOOP_EN | GENET_UMAC_CMD_PROMISC |
+                   GENET_UMAC_CMD_TXEN | GENET_UMAC_CMD_RXEN);
+
+    len = ETH_ZLEN;
+    dma = (UQUAD)(IPTR)CachePreDMA(txbuf, &len, DMA_ReadFromRAM);
+
+    BCMGENET_Write(hw, GENET_TX_DESC_ADDRESS_LO(0), (ULONG)dma);
+    BCMGENET_Write(hw, GENET_TX_DESC_ADDRESS_HI(0), (ULONG)(dma >> 32));
+    BCMGENET_Write(hw, GENET_TX_DESC_STATUS(0),
+                   GENET_TX_DESC_STATUS_SOP | GENET_TX_DESC_STATUS_EOP |
+                   GENET_TX_DESC_STATUS_CRC |
+                   GENET_TX_DESC_STATUS_QTAG_MASK |
+                   ((ETH_ZLEN << GENET_TX_DESC_STATUS_BUFLEN_SHIFT) &
+                    GENET_TX_DESC_STATUS_BUFLEN_MASK));
+    BCMGENET_Write(hw, GENET_TX_DMA_PROD_INDEX(qid), 1);
+
+    /* Up to 100ms; the engine turns a runt around in microseconds */
+    pidx = GENET_DMA_DESC_COUNT;
+    for (spins = 100; spins > 0; spins--)
+    {
+        pidx = BCMGENET_Read(hw, GENET_RX_DMA_PROD_INDEX(qid)) & 0xffff;
+        if (pidx != GENET_DMA_DESC_COUNT)
+            break;
+        bcmgenet_wait(unit, 1000);
+    }
+
+    bug("[bcmgenet] loopback: TX cons=%04x RX prod=%04x\n",
+        (unsigned)(BCMGENET_Read(hw, GENET_TX_DMA_CONS_INDEX(qid)) & 0xffff),
+        (unsigned)pidx);
+
+    if (pidx != GENET_DMA_DESC_COUNT)
+    {
+        ULONG status = BCMGENET_Read(hw, GENET_RX_DESC_STATUS(0));
+        UBYTE *rxbuf = unit->bgu_RX.buf[0];
+        ULONG postlen = GENET_BUFSIZE;
+
+        CachePostDMA(rxbuf, &postlen, 0);
+
+        /* RBUF_ALIGN_2B means the frame starts two bytes in */
+        bug("[bcmgenet] loopback: status %08x len %u dst "
+            "%02x:%02x:%02x:%02x:%02x:%02x payload %02x %02x\n",
+            (unsigned)status,
+            (unsigned)((status & GENET_RX_DESC_STATUS_BUFLEN_MASK) >>
+                       GENET_RX_DESC_STATUS_BUFLEN_SHIFT),
+            rxbuf[2], rxbuf[3], rxbuf[4], rxbuf[5], rxbuf[6], rxbuf[7],
+            rxbuf[16], rxbuf[17]);
+    }
+    else
+        bug("[bcmgenet] loopback: nothing came back\n");
+
+    /* Put the rings and UMAC_CMD back where init_rings left them */
+    BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
+    bcmgenet_init_rings(unit, qid);
+
     /*
-	int error;
-
-	error = bus_dmamap_load_mbuf(sc->sc_rx.buf_tag,
-	    sc->sc_rx.buf_map[index].map, m, BUS_DMA_READ | BUS_DMA_NOWAIT);
-	if (error != 0)
-		return error;
-
-	bus_dmamap_sync(sc->sc_rx.buf_tag, sc->sc_rx.buf_map[index].map,
-	    0, sc->sc_rx.buf_map[index].map->dm_mapsize,
-	    BUS_DMASYNC_PREREAD);
-
-	sc->sc_rx.buf_map[index].mbuf = m;
-	genet_setup_rxdesc(sc, index,
-	    sc->sc_rx.buf_map[index].map->dm_segs[0].ds_addr,
-	    sc->sc_rx.buf_map[index].map->dm_segs[0].ds_len);
-*/
-	return 0;
+     * RX_DMA_PROD_INDEX belongs to the engine: init_rings writes the reset
+     * value into it but the hardware keeps counting from where the test
+     * frame left it. Believing the written value costs one bogus receive -
+     * the test frame, re-read out of slot 0 - so take the engine's word
+     * for where the ring stands instead.
+     */
+    unit->bgu_RX.pidx = BCMGENET_Read(hw, GENET_RX_DMA_PROD_INDEX(qid)) & 0xffff;
+    unit->bgu_RX.next = unit->bgu_RX.pidx & (GENET_DMA_DESC_COUNT - 1);
 }
+#endif
 
 BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit)
 {
@@ -364,11 +431,16 @@ BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit)
     if (!bcmgenet_init_rings(unit, qid))
         return FALSE;
 
+#if BCMGENET_LOOPBACK_SELFTEST
+    bcmgenet_loopback_selftest(unit, qid);
+#endif
+
     return TRUE;
 }
 
-static void bcmgenet_setup_rxfilter_mdf(struct bcmgenet_hw *hw, ULONG n,
-                                        const UBYTE *addr)
+/* One exact-match slot of the UniMAC filter. Which slots are live is decided
+ * by GENET_UMAC_MDF_CTRL, which BCMGENET_SetRXFilter() owns. */
+void BCMGENET_SetMDFEntry(struct bcmgenet_hw *hw, ULONG n, const UBYTE *addr)
 {
     BCMGENET_Write(hw, GENET_UMAC_MDF_ADDR0(n),
                    ((ULONG)addr[0] << 8) | addr[1]);
@@ -379,18 +451,11 @@ static void bcmgenet_setup_rxfilter_mdf(struct bcmgenet_hw *hw, ULONG n,
 
 void BCMGENET_SetMACAddress(struct bcmgenet_hw *hw, const UBYTE *addr)
 {
-    static const UBYTE broadcast[ETH_ADDRESSSIZE] =
-        { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-
     BCMGENET_Write(hw, GENET_UMAC_MAC0,
                    ((ULONG)addr[0] << 24) | ((ULONG)addr[1] << 16) |
                    ((ULONG)addr[2] << 8) | addr[3]);
     BCMGENET_Write(hw, GENET_UMAC_MAC1,
                    ((ULONG)addr[4] << 8) | addr[5]);
-
-    bcmgenet_setup_rxfilter_mdf(hw, 0, broadcast);
-    bcmgenet_setup_rxfilter_mdf(hw, 1, addr);
-    BCMGENET_Write(hw, GENET_UMAC_MDF_CTRL, GENET_MDF_CTRL_ENABLE(2));
 }
 
 BOOL BCMGENET_GetMACAddress(struct bcmgenet_hw *hw, UBYTE *addr)
@@ -408,6 +473,89 @@ BOOL BCMGENET_GetMACAddress(struct bcmgenet_hw *hw, UBYTE *addr)
     addr[5] = (machi >> 0) & 0xff;
 
     return TRUE;
+}
+
+static LONG bcmgenet_auxctl_read(struct bcmgenet_hw *hw, UWORD sel)
+{
+    if (!BCMGENET_MDIOWrite(hw, hw->phyAddr, MII_BCM54XX_AUX_CTL,
+            BCM54XX_AUXCTL_SHDWSEL_MASK |
+            (sel << BCM54XX_AUXCTL_SHDWSEL_READ_SHIFT)))
+        return -1;
+
+    return BCMGENET_MDIORead(hw, hw->phyAddr, MII_BCM54XX_AUX_CTL);
+}
+
+static LONG bcmgenet_shadow_read(struct bcmgenet_hw *hw, UWORD sel)
+{
+    LONG val;
+
+    if (!BCMGENET_MDIOWrite(hw, hw->phyAddr, MII_BCM54XX_SHD,
+            (UWORD)(sel << BCM54XX_SHD_SEL_SHIFT)))
+        return -1;
+
+    val = BCMGENET_MDIORead(hw, hw->phyAddr, MII_BCM54XX_SHD);
+
+    return (val < 0) ? val : (val & BCM54XX_SHD_DATA_MASK);
+}
+
+/*
+ * Hand the PHY the clock delays the board's phy-mode calls for. Which delay
+ * ends up on TXC decides whether the link partner sees valid frames or FCS
+ * errors, and RX has its own delay - so getting TX wrong gives a link that
+ * receives perfectly and transmits nothing the switch will keep. "rxid"
+ * means the PHY supplies the RX delay and none on TX.
+ */
+static void bcmgenet_phy_config_delays(struct bcmgenet_hw *hw)
+{
+    BOOL rxdelay = (hw->phyMode == GENET_PHY_MODE_RGMII_ID ||
+                    hw->phyMode == GENET_PHY_MODE_RGMII_RXID);
+    BOOL txdelay = (hw->phyMode == GENET_PHY_MODE_RGMII_ID ||
+                    hw->phyMode == GENET_PHY_MODE_RGMII_TXID);
+    LONG val;
+
+    val = bcmgenet_auxctl_read(hw, BCM54XX_AUXCTL_SHDWSEL_MISC);
+    if (val >= 0)
+    {
+        UWORD misc = (UWORD)val | BCM54XX_AUXCTL_MISC_WREN;
+
+        if (rxdelay)
+            misc |= BCM54XX_AUXCTL_MISC_RGMII_SKEW_EN;
+        else
+            misc &= ~BCM54XX_AUXCTL_MISC_RGMII_SKEW_EN;
+
+        BCMGENET_MDIOWrite(hw, hw->phyAddr, MII_BCM54XX_AUX_CTL,
+                           BCM54XX_AUXCTL_SHDWSEL_MISC | misc);
+
+        D(bug("[bcmgenet] PHY RX skew %s, auxctl misc %04x -> %04x\n",
+              rxdelay ? "on" : "off", (unsigned)val, (unsigned)misc);)
+    }
+    else
+    {
+        D(bug("[bcmgenet] PHY auxctl misc read failed\n");)
+    }
+
+    val = bcmgenet_shadow_read(hw, BCM54XX_SHD_CLK_CTL);
+    if (val >= 0)
+    {
+        UWORD clk = (UWORD)val;
+
+        if (txdelay)
+            clk |= BCM54XX_SHD_CLK_CTL_GTXCLK_EN;
+        else
+            clk &= ~BCM54XX_SHD_CLK_CTL_GTXCLK_EN;
+
+        BCMGENET_MDIOWrite(hw, hw->phyAddr, MII_BCM54XX_SHD,
+            BCM54XX_SHD_WRITE |
+            (BCM54XX_SHD_CLK_CTL << BCM54XX_SHD_SEL_SHIFT) |
+            (clk & BCM54XX_SHD_DATA_MASK));
+
+        D(bug("[bcmgenet] PHY TX delay %s, clk ctl %04x -> %04x\n",
+              txdelay ? "on" : "off", (unsigned)val, (unsigned)clk);)
+    }
+    else
+    {
+        D(bug("[bcmgenet] PHY clk ctl read failed\n");)
+    }
 }
 
 BOOL BCMGENET_PHYInit(struct BCMGENETUnit *unit)
@@ -444,6 +592,9 @@ BOOL BCMGENET_PHYInit(struct BCMGENETUnit *unit)
         D(bug("[bcmgenet] PHY reset timeout\n");)
         return FALSE;
     }
+
+    /* The reset above returned the clock delays to their strap defaults */
+    bcmgenet_phy_config_delays(hw);
 
     /* Announce support for 10, 100 Mbit, half and full duplex */
     if (!BCMGENET_MDIOWrite(hw, hw->phyAddr, MII_ANAR,

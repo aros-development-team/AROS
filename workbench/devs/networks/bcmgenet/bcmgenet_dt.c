@@ -12,7 +12,7 @@
     below as a fallback if that translation cannot be read for some
     reason.
 */
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -32,24 +32,80 @@
 #define GIC_SPI_BASE            32
 
 /*
- * TODO: the mdio child node's own child (the actual PHY, e.g.
- * "ethernet-phy@1") carries the mdio address in its "reg" property.
- * Walk it with OF_GetChild() the way the caller already has the mdio
- * node in hand. Falls back to address 1, which is where the Pi 4B's
- * BCM54213PE sits (see &genet_mdio in bcm2711-rpi-4-b.dts).
+ * The mdio node's own child (e.g. "ethernet-phy@1") carries the address on
+ * the mdio bus in its "reg" property. Falls back to 1, which is where the
+ * Pi 4B's BCM54213PE sits (see &genet_mdio in bcm2711-rpi-4-b.dts).
  */
-static ULONG bcmgenet_phyaddress(APTR mdio_node)
+static ULONG bcmgenet_phyaddress(APTR OpenFirmwareBase, APTR mdio_node)
 {
+    APTR phy_node, prop;
+
+    phy_node = OF_GetChild(mdio_node, NULL);
+    if (phy_node)
+    {
+        prop = OF_FindProperty(phy_node, "reg");
+        if (prop && OF_GetPropLen(prop) >= sizeof(ULONG))
+            return AROS_BE2LONG(*(const ULONG *)OF_GetPropValue(prop)) & 0x1f;
+    }
+
+    D(bug("[bcmgenet] no phy address in the tree, assuming 1\n");)
     return 1;
 }
 
-/*
- * TODO: read the "phy-mode" string property (e.g. "rgmii-rxid") and
- * map it to enum genet_phy_mode. Falls back to the mode wired on every
- * shipping Pi 4B.
- */
-static enum genet_phy_mode bcmgenet_phymode(APTR node)
+/* Both sides NUL-terminated. Local rather than strcmp(): a driver reached
+ * through a NULL StdCBase would fault on the libc one. */
+static BOOL genet_streq(const char *a, const char *b)
 {
+    while (*a != '\0' && *a == *b)
+    {
+        a++;
+        b++;
+    }
+
+    return (*a == '\0' && *b == '\0');
+}
+
+/*
+ * "phy-mode" decides which end of the link supplies the RGMII clock delays,
+ * and getting it wrong costs one direction of traffic - so it is read rather
+ * than assumed, even though every shipping Pi 4B says "rgmii-rxid".
+ */
+static enum genet_phy_mode bcmgenet_phymode(APTR OpenFirmwareBase, APTR node)
+{
+    static const struct
+    {
+        const char         *name;
+        enum genet_phy_mode mode;
+    } modes[] =
+    {
+        { "rgmii-rxid", GENET_PHY_MODE_RGMII_RXID },
+        { "rgmii-txid", GENET_PHY_MODE_RGMII_TXID },
+        { "rgmii-id",   GENET_PHY_MODE_RGMII_ID   },
+        { "rgmii",      GENET_PHY_MODE_RGMII      },
+    };
+    APTR prop;
+    const char *value;
+    ULONG len, i;
+
+    prop = OF_FindProperty(node, "phy-mode");
+    if (prop && (len = OF_GetPropLen(prop)) > 0)
+    {
+        value = OF_GetPropValue(prop);
+
+        /* A string property carries its terminator; without one it is not
+         * one, and walking it would run off the end of the property. */
+        if (value[len - 1] == '\0')
+        {
+            for (i = 0; i < sizeof(modes) / sizeof(modes[0]); i++)
+            {
+                if (genet_streq(value, modes[i].name))
+                    return modes[i].mode;
+            }
+
+            D(bug("[bcmgenet] unknown phy-mode \"%s\"\n", value);)
+        }
+    }
+
     return GENET_PHY_MODE_RGMII_RXID;
 }
 
@@ -229,16 +285,31 @@ BOOL BCMGENET_Discover(struct BCMGENETBase *base, struct bcmgenet_hw *hw)
     }
 
     /*
-     * TODO: read both cells of "interrupts" (RXDMA and TXDMA are
-     * separate GIC SPIs on the BCM2711 - 157 and 158). Mirror
-     * pcie_init.c's raw cell parsing with AROS_BE2LONG().
+     * "interrupts" is a list of <type, number, flags> triplets; cell 1 of
+     * each is the SPI number. GENET raises two, INTRL2_0 and INTRL2_1 (157
+     * and 158 on the BCM2711), and only the first carries the default
+     * queue's TX/RX completions this driver waits on.
      */
     hw->irq[0] = GIC_SPI_BASE + 157;
     hw->irq[1] = GIC_SPI_BASE + 158;
 
+    prop = OF_FindProperty(node, "interrupts");
+    if (prop && OF_GetPropLen(prop) >= 6 * sizeof(ULONG))
+    {
+        const ULONG *cells = OF_GetPropValue(prop);
+
+        hw->irq[0] = GIC_SPI_BASE + AROS_BE2LONG(cells[1]);
+        hw->irq[1] = GIC_SPI_BASE + AROS_BE2LONG(cells[4]);
+    }
+    else
+    {
+        D(bug("[bcmgenet] no usable interrupts property, assuming 157/158\n");)
+    }
+
     mdio_node = OF_FindNodeByCompatible(NULL, GENET_MDIO_COMPATIBLE);
-    hw->phyAddr = mdio_node ? bcmgenet_phyaddress(mdio_node) : 1;
-    hw->phyMode = bcmgenet_phymode(node);
+    hw->phyAddr = mdio_node ?
+        bcmgenet_phyaddress(OpenFirmwareBase, mdio_node) : 1;
+    hw->phyMode = bcmgenet_phymode(OpenFirmwareBase, node);
 
     /* Firmware sometimes leaves the address it used in the tree */
     hw->haveMacAddr = FALSE;

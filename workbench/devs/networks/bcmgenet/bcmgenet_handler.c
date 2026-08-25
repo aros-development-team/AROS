@@ -1,14 +1,12 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Broadcom GENETv5 SANA-II driver, the command set. This part is
-          generic SANA-II ceremony, not GENET-specific, and needs no
-          porting from OpenBSD - CmdWrite/CmdRead just queue the request
-          for whichever bottom half BCMGENET_CreateUnit() ends up using
-          (see the TODO there) to drain into BCMGENET_SendPacket() /
-          deliver received frames.
+    Desc: Broadcom GENETv5 SANA-II driver, the command set. Generic
+          SANA-II ceremony, not GENET-specific: CmdWrite/CmdRead queue the
+          request for the unit task to drain into BCMGENET_SendPacket() or
+          to satisfy from a received frame.
 */
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -53,9 +51,17 @@ static const char * const bcmgenet_special_stat_names[STAT_COUNT] =
     "Underruns"
 };
 
+/*
+ * CONNECT and DISCONNECT are in here even though a wired unit never raises
+ * them: sana_run() asks for OFFLINE|CONNECT|DISCONNECT in one S2_ONEVENT for
+ * every interface, and rejecting the whole request as S2ERR_NOT_SUPPORTED
+ * makes sana_connect() drop it without reissuing, which loses the reconnect
+ * notification for good.
+ */
 #define KNOWN_EVENTS \
     (S2EVENT_ERROR | S2EVENT_TX | S2EVENT_RX | S2EVENT_ONLINE | \
-     S2EVENT_OFFLINE | S2EVENT_BUFF | S2EVENT_HARDWARE | S2EVENT_SOFTWARE)
+     S2EVENT_OFFLINE | S2EVENT_BUFF | S2EVENT_HARDWARE | S2EVENT_SOFTWARE | \
+     S2EVENT_CONNECT | S2EVENT_DISCONNECT)
 
 static BOOL CmdInvalid(struct BCMGENETBase *base, struct IOSana2Req *request)
 {
@@ -227,6 +233,14 @@ static BOOL CmdConfigInterface(struct BCMGENETBase *base,
     CopyMem(request->ios2_SrcAddr, unit->bgu_DevAddr, ETH_ADDRESSSIZE);
     BCMGENET_SetMACAddress(unit->bgu_HW, unit->bgu_DevAddr);
     unit->bgu_Flags |= IFF_CONFIGURED;
+
+    /* The filter carries our own address in a slot of its own */
+    if (unit->bgu_Flags & IFF_UP)
+        BCMGENET_SetRXFilter(base, unit);
+
+    D(bug("[bcmgenet] configured with %02x:%02x:%02x:%02x:%02x:%02x\n",
+          unit->bgu_DevAddr[0], unit->bgu_DevAddr[1], unit->bgu_DevAddr[2],
+          unit->bgu_DevAddr[3], unit->bgu_DevAddr[4], unit->bgu_DevAddr[5]);)
 
     /* Going online is S2_ONLINE's job; the stack sends it right after */
 
@@ -592,6 +606,11 @@ void BCMGENET_HandleRequest(struct BCMGENETBase *base, struct IOSana2Req *reques
         complete = CmdInvalid(base, request);
         break;
     }
+
+    D(bug("[bcmgenet] cmd %04lx: error %ld/%08lx, unit flags %04lx\n",
+          (ULONG)request->ios2_Req.io_Command,
+          (LONG)request->ios2_Req.io_Error,
+          (ULONG)request->ios2_WireError, (ULONG)unit->bgu_Flags);)
 
     if (complete && (request->ios2_Req.io_Flags & IOF_QUICK) == 0)
         ReplyMsg((struct Message *)request);

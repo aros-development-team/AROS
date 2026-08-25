@@ -238,6 +238,31 @@
 #define GBSR_LP1000HD                   0x0400
 #define GBSR_LP1000FD                   0x0800
 
+/*
+ * Broadcom BCM54xx vendor registers, for the BCM54213PE on the Pi 4B. Both
+ * the RX skew and the TX clock delay come back as strap defaults out of a
+ * BMCR_RESET, so they have to be programmed for the board's phy-mode every
+ * time the PHY is reset - see bcm54xx_config_clock_delay() in Linux's
+ * drivers/net/phy/broadcom.c, which this follows.
+ *
+ * The auxiliary control register at 0x18 selects a shadow in its low three
+ * bits on a write, and in bits 14:12 on a read. Register 0x1c is a second,
+ * differently encoded shadow window: select in bits 14:10, data in 9:0.
+ */
+#define MII_BCM54XX_AUX_CTL                 0x18
+#define BCM54XX_AUXCTL_SHDWSEL_MASK         0x0007
+#define BCM54XX_AUXCTL_SHDWSEL_MISC         0x0007
+#define BCM54XX_AUXCTL_SHDWSEL_READ_SHIFT   12
+#define BCM54XX_AUXCTL_MISC_WREN            0x8000
+#define BCM54XX_AUXCTL_MISC_RGMII_SKEW_EN   0x0100
+
+#define MII_BCM54XX_SHD                     0x1c
+#define BCM54XX_SHD_WRITE                   0x8000
+#define BCM54XX_SHD_SEL_SHIFT               10
+#define BCM54XX_SHD_DATA_MASK               0x03ff
+#define BCM54XX_SHD_CLK_CTL                 0x03
+#define BCM54XX_SHD_CLK_CTL_GTXCLK_EN       0x0200
+
 /* Ethernet on the wire */
 #define ETH_ADDRESSSIZE                 6
 #define ETH_HEADERSIZE                  14
@@ -448,6 +473,7 @@ BOOL BCMGENET_HWReset(struct BCMGENETUnit *unit);
 BOOL BCMGENET_HWInit(struct BCMGENETUnit *unit);
 void BCMGENET_SetMACAddress(struct bcmgenet_hw *hw, const UBYTE *addr);
 BOOL BCMGENET_GetMACAddress(struct bcmgenet_hw *hw, UBYTE *addr);
+void BCMGENET_SetMDFEntry(struct bcmgenet_hw *hw, ULONG n, const UBYTE *addr);
 BOOL BCMGENET_PHYInit(struct BCMGENETUnit *unit);
 BOOL BCMGENET_PHYGetLink(struct bcmgenet_hw *hw, ULONG *mbps, BOOL *fullduplex);
 
@@ -457,6 +483,7 @@ BOOL BCMGENET_CheckLink(struct BCMGENETBase *base, struct BCMGENETUnit *unit);
 void BCMGENET_DeleteUnit(struct BCMGENETBase *base, struct BCMGENETUnit *unit);
 void BCMGENET_GoOnline(struct BCMGENETBase *base, struct BCMGENETUnit *unit);
 void BCMGENET_GoOffline(struct BCMGENETBase *base, struct BCMGENETUnit *unit);
+void BCMGENET_SetRXFilter(struct BCMGENETBase *base, struct BCMGENETUnit *unit);
 BOOL BCMGENET_AddressFilter(struct BCMGENETBase *base, struct BCMGENETUnit *unit,
                             UBYTE *address);
 BOOL BCMGENET_SendPacket(struct BCMGENETBase *base, struct BCMGENETUnit *unit,

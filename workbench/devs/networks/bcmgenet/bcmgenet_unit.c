@@ -1,13 +1,12 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Broadcom GENETv5 SANAII driver, the unit: address bookkeeping
-          is generic SANA-II ceremony and fully implemented below; the
-          ring/interrupt/hardware pieces are left as TODOs for the port
-          from OpenBSD's bcmgenet.c.
+    Desc: Broadcom GENETv5 SANA-II driver, the unit: address bookkeeping,
+          the receive filter, the DMA rings and the service task that
+          drives them.
 */
 #include "exec/tasks.h"
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -149,9 +148,8 @@ BOOL BCMGENET_AddMulticastRange(struct BCMGENETBase *base, struct BCMGENETUnit *
     Enable();
     unit->bgu_RangeCount++;
 
-    /* TODO: also program a GENET_UMAC_MDF_ADDR0/1(n) hardware filter
-     * entry so multicast frames outside promiscuous mode actually
-     * reach the ring - see genet_setup_rxfilter_mdf() (bcmgenet.c:380). */
+    if (unit->bgu_Flags & IFF_UP)
+        BCMGENET_SetRXFilter(base, unit);
 
     return TRUE;
 }
@@ -178,6 +176,9 @@ BOOL BCMGENET_RemMulticastRange(struct BCMGENETBase *base, struct BCMGENETUnit *
         Enable();
         FreeMem(range, sizeof(struct AddressRange));
         unit->bgu_RangeCount--;
+
+        if (unit->bgu_Flags & IFF_UP)
+            BCMGENET_SetRXFilter(base, unit);
     }
 
     return TRUE;
@@ -312,6 +313,11 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
 
     CopyMem(unit->bgu_DevAddr, unit->bgu_OrgAddr, ETH_ADDRESSSIZE);
 
+    D(bug("[bcmgenet] station address %02x:%02x:%02x:%02x:%02x:%02x from %s\n",
+          unit->bgu_DevAddr[0], unit->bgu_DevAddr[1], unit->bgu_DevAddr[2],
+          unit->bgu_DevAddr[3], unit->bgu_DevAddr[4], unit->bgu_DevAddr[5],
+          unit->bgu_HW->haveMacAddr ? "device tree" : "UMAC_MAC0/1");)
+
     unit->bgu_TimerPort = CreateMsgPort();
     if (!unit->bgu_TimerPort)
         goto fail;
@@ -325,22 +331,15 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
                    (struct IORequest *)unit->bgu_TimerReq, 0) != 0)
         goto fail;
 
-    bug("[bcmgenet] before hardware reset\n");
+    D(bug("[bcmgenet] SYS_REV_CTRL = %08lx\n",
+          BCMGENET_Read(unit->bgu_HW, GENET_SYS_REV_CTRL));)
 
-    ULONG rev = BCMGENET_Read(unit->bgu_HW, GENET_SYS_REV_CTRL);
-    D(bug("[bcmgenet] SYS_REV_CTRL = %08lx\n", rev);)
-    /*
-     * Read the firmware-programmed station address before reset: UniMAC
-     * reset may clear the MAC address registers.
-     */
     if (!BCMGENET_HWReset(unit))
     {
         D(bug("[bcmgenet] hardware reset failed\n");)
         FreeMem(unit, sizeof(*unit));
         return NULL;
     }
-
-    bug("[bcmgenet] hardware reset succeeded\n");
 
     /* Initialise ring buffer elements */
     if (!bcmgenet_alloc_ring(&unit->bgu_RX) ||
@@ -355,9 +354,6 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
     if (!BCMGENET_PHYInit(unit))
         goto fail;
 
-    /* TODO:
-     * IRQ handler registration. Free 'unit' and
-     * return NULL on any failure past this point. */
     /*
      * irq[0] (INTRL2_0) carries the default queue's TXDMA/RXDMA_DONE -
      * the bits the 0x200 register block exposes. irq[1] (INTRL2_1) is
@@ -447,7 +443,7 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
     return unit;
 
 fail:
-    bug("[bcmgenet] unit failed");
+    D(bug("[bcmgenet] unit creation failed\n");)
     BCMGENET_DeleteUnit(base, unit);
     return 0;
 }
@@ -500,6 +496,65 @@ void BCMGENET_DeleteUnit(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
     FreeMem(unit, sizeof(struct BCMGENETUnit));
 }
 
+/*
+ * Rebuild the UniMAC exact-match filter from the unit's current address
+ * state: broadcast, our own address, then one slot per multicast address
+ * being listened for. There are only GENET_MAX_MDF_FILTER slots and no hash
+ * fallback, so a range covering more than a single address, or more
+ * addresses than fit, leaves promiscuous mode as the only way to honour the
+ * request - the same fallback genet_setup_rxfilter() (bcmgenet.c:394) makes.
+ * The software filter in BCMGENET_AddressFilter() enforces the exact ranges
+ * afterwards either way.
+ */
+void BCMGENET_SetRXFilter(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
+{
+    struct bcmgenet_hw *hw = unit->bgu_HW;
+    struct AddressRange *range;
+    BOOL promisc = (unit->bgu_Flags & IFF_PROMISC) != 0;
+    ULONG cmd, n = 0;
+
+    if (!promisc)
+    {
+        BCMGENET_SetMDFEntry(hw, n++, bcmgenet_broadcast);
+        BCMGENET_SetMDFEntry(hw, n++, unit->bgu_DevAddr);
+
+        ForeachNode(&unit->bgu_MulticastRanges, range)
+        {
+            UBYTE addr[ETH_ADDRESSSIZE];
+
+            if (range->lower_bound_left != range->upper_bound_left ||
+                range->lower_bound_right != range->upper_bound_right ||
+                n >= GENET_MAX_MDF_FILTER)
+            {
+                promisc = TRUE;
+                break;
+            }
+
+            addr[0] = (range->lower_bound_left >> 24) & 0xff;
+            addr[1] = (range->lower_bound_left >> 16) & 0xff;
+            addr[2] = (range->lower_bound_left >> 8) & 0xff;
+            addr[3] = range->lower_bound_left & 0xff;
+            addr[4] = (range->lower_bound_right >> 8) & 0xff;
+            addr[5] = range->lower_bound_right & 0xff;
+
+            BCMGENET_SetMDFEntry(hw, n++, addr);
+        }
+    }
+
+    cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
+    if (promisc)
+        cmd |= GENET_UMAC_CMD_PROMISC;
+    else
+        cmd &= ~GENET_UMAC_CMD_PROMISC;
+    BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
+
+    BCMGENET_Write(hw, GENET_UMAC_MDF_CTRL,
+                   promisc ? 0 : GENET_MDF_CTRL_ENABLE(n));
+
+    D(bug("[bcmgenet] rx filter: %lu entries%s\n", (unsigned long)n,
+          promisc ? ", promiscuous" : "");)
+}
+
 /* The RXEN/TXEN halves of genet_init()/genet_stop() (bcmgenet.c:583, 632) */
 void BCMGENET_GoOnline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
 {
@@ -512,23 +567,21 @@ void BCMGENET_GoOnline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
     BCMGENET_Write(hw, GENET_INTRL2_CPU_CLEAR_MASK,
                    GENET_IRQ_TXDMA_DONE | GENET_IRQ_RXDMA_DONE);
 
+    BCMGENET_SetRXFilter(base, unit);
+
     /*
-     * DIAGNOSTIC: promiscuous mode bypasses the MDF filter entirely
-     * (the OpenBSD promisc arm, bcmgenet.c:415: PROMISC + MDF_CTRL=0).
-     * RX prod moving with this in = the MDF entries are wrong; still
-     * stuck = the frames die before UniMAC (RGMII input path).
-     * Remove once RX works.
+     * UMAC_CMD comes out of reset with the speed field at SPEED_10, and
+     * nothing but the one-second poll ever writes it. Enabling TX against
+     * a gigabit PHY at that setting puts mangled frames on the wire until
+     * the next tick, so settle the speed here before the MAC is let go.
      */
-    BCMGENET_Write(hw, GENET_UMAC_MDF_CTRL, 0);
+    BCMGENET_CheckLink(base, unit);
 
     cmd = BCMGENET_Read(hw, GENET_UMAC_CMD);
-    cmd |= GENET_UMAC_CMD_TXEN | GENET_UMAC_CMD_RXEN |
-           GENET_UMAC_CMD_PROMISC;
+    cmd |= GENET_UMAC_CMD_TXEN | GENET_UMAC_CMD_RXEN;
     BCMGENET_Write(hw, GENET_UMAC_CMD, cmd);
 
-    /* DIAGNOSTIC: let the software filter pass everything too, so the
-     * dispatch log shows every frame that reaches the ring. */
-    unit->bgu_Flags |= IFF_UP | IFF_PROMISC;
+    unit->bgu_Flags |= IFF_UP;
 }
 
 void BCMGENET_GoOffline(struct BCMGENETBase *base, struct BCMGENETUnit *unit)
@@ -717,7 +770,8 @@ static void bcmgenet_tx_complete(struct BCMGENETBase *base,
             ReplyMsg(&request->ios2_Req.io_Message);
         }
 
-        tx->cidx++;
+        /* Kept in the engine's 16-bit index space, as pidx is */
+        tx->cidx = (tx->cidx + 1) & 0xffff;
         tx->next = (tx->next + 1) & (GENET_DMA_DESC_COUNT - 1);
     }
 
@@ -846,8 +900,13 @@ static void bcmgenet_rx_packet(struct BCMGENETBase *base,
     }
 
     /* Diagnostic while bringing RX up; remove with the PROMISC diag */
-    D(bug("[bcmgenet] RX type %04x len %lu dst %02x:%02x:%02x:%02x:%02x:%02x %s\n",
+    D(bug("[bcmgenet] RX type %04x len %lu "
+          "src %02x:%02x:%02x:%02x:%02x:%02x "
+          "dst %02x:%02x:%02x:%02x:%02x:%02x %s\n",
           packet_type, length,
+          frame->eth_packet_source[0], frame->eth_packet_source[1],
+          frame->eth_packet_source[2], frame->eth_packet_source[3],
+          frame->eth_packet_source[4], frame->eth_packet_source[5],
           frame->eth_packet_dest[0], frame->eth_packet_dest[1],
           frame->eth_packet_dest[2], frame->eth_packet_dest[3],
           frame->eth_packet_dest[4], frame->eth_packet_dest[5],

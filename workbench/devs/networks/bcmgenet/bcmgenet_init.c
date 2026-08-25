@@ -6,7 +6,7 @@
           Expunge), not GENET-specific.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -57,7 +57,19 @@ static int BCMGENET_Init(LIBBASETYPEPTR LIBBASE)
     if (!BCMGENET_Discover(LIBBASE, hw))
         return FALSE;
 
-    /* Smoketest */
+    /*
+     * A register block reading all-ones or all-zeros means the mapping
+     * never reached the hardware, whatever the device tree claimed.
+     */
+    ULONG rev = BCMGENET_Read(hw, GENET_SYS_REV_CTRL);
+
+    if (rev == 0 || rev == 0xffffffff)
+    {
+        D(bug("[bcmgenet] SYS_REV_CTRL reads %08lx, no hardware there\n", rev);)
+        return FALSE;
+    }
+
+    /* The PHY has to answer before there is any point going further */
     LONG id1, id2;
 
     id1 = BCMGENET_MDIORead(hw, hw->phyAddr, MII_PHYSID1);
@@ -71,15 +83,8 @@ static int BCMGENET_Init(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    D(bug("[bcmgenet] PHY %lu: id %04lx:%04lx\n",
-          hw->phyAddr, id1, id2);)
-
-    /*
-     * TODO: once BCMGENET_Read()/BCMGENET_HWReset() are written, sanity
-     * check GENET_SYS_REV_CTRL here the way DWMAC_Init() checks
-     * DWMAC_MAC_VERSION - a register block that reads all-ones or
-     * all-zeros means the mapping did not really reach the hardware.
-     */
+    D(bug("[bcmgenet] rev %08lx, PHY %lu: id %04lx:%04lx\n",
+          rev, hw->phyAddr, id1, id2);)
 
     LIBBASE->bgm_Found = TRUE;
 
@@ -240,6 +245,9 @@ static int BCMGENET_Open(LIBBASETYPEPTR LIBBASE, struct IORequest *io,
     AddTail((struct List *)&unit->bgu_Openers, (struct Node *)opener);
     Enable();
     unit->bgu_OpenCount++;
+
+    D(bug("[bcmgenet] opened by \"%s\", open count %lu\n",
+          FindTask(NULL)->tc_Node.ln_Name, (ULONG)unit->bgu_OpenCount);)
 
     return TRUE;
 }
