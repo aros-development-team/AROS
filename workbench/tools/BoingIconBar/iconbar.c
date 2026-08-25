@@ -110,6 +110,8 @@ static void Settings(void);                                             // open 
 static void Reload(void);                                               // reload the BiB
 static void HandleScreenNotify(void);                                   // handle Workbench screen reset
 static BOOL DrainAndReplyPort(struct MsgPort *port);                    // drain port, replying every message
+static BOOL NoIconBouncing(void);                                       // check if no icon is bouncing
+static void RefreshBackground(void);                                    // refresh toolbar background
 static void IconLabel(void);                                            // add label to icon
 
 // ------------------------------
@@ -160,6 +162,13 @@ static struct MsgPort                           *ScreenNotifyPort = NULL;
 static ULONG                                    ScreenNotifyMask = 0;
 static APTR                                     ScreenNotifyHandle = NULL;
 static BOOL                                     ScreenResetInProgress = FALSE;
+
+static BOOL                                     NoActivate = FALSE;
+
+static struct MsgPort                           *WallpaperPort = NULL;
+static ULONG                                    WallpaperMask = 0;
+static struct NotifyRequest                     *WallpaperNotRequest = NULL;
+static BOOL                                     WallpaperPending = FALSE;
 
 static IPTR                                     args[ARG_TOTAL] = {
                         (IPTR)&Spacing,
@@ -381,6 +390,28 @@ int main(int argc, char *argv[])
         }
     }
 
+    // start notification on the wallpaper prefs file
+    WallpaperPort = CreateMsgPort();
+    if (WallpaperPort)
+    {
+        WallpaperNotRequest = AllocVec(sizeof(struct NotifyRequest), MEMF_CLEAR);
+        if (WallpaperNotRequest)
+        {
+            WallpaperNotRequest->nr_Name = "ENV:SYS/Wanderer/global.prefs";
+            WallpaperNotRequest->nr_Flags = NRF_SEND_MESSAGE;
+            WallpaperNotRequest->nr_stuff.nr_Msg.nr_Port = WallpaperPort;
+
+            if (StartNotify(WallpaperNotRequest) != DOSFALSE)
+            {
+                WallpaperMask = 1 << WallpaperPort->mp_SigBit;
+            }
+            else
+            {
+                WallpaperNotRequest->nr_Name = NULL;
+            }
+        }
+    }
+
     // ------ Opening font if parameter NAMES is active
 
     if (FontSize)
@@ -442,7 +473,7 @@ int main(int argc, char *argv[])
 
             if(Window_Open || MenuWindow_Open)
             {
-                WindowSignal = Wait(WindowMask | MenuMask | ScreenNotifyMask | SIGBREAKF_CTRL_C);
+                WindowSignal = Wait(WindowMask | MenuMask | ScreenNotifyMask | WallpaperMask | SIGBREAKF_CTRL_C);
 
                 if(WindowSignal & WindowMask)
                 {
@@ -475,10 +506,24 @@ int main(int argc, char *argv[])
                     HandleScreenNotify();
                 }
 
+                if(WindowSignal & WallpaperMask)
+                {
+                    DrainAndReplyPort(WallpaperPort);
+                    WallpaperPending = TRUE;
+                }
+
                 if(WindowSignal & SIGBREAKF_CTRL_C)
                 {
                     D(bug("CTRL-C reveived\n"));
                     BiB_Exit=TRUE;
+                }
+
+                if(WallpaperPending && Window_Open && NoIconBouncing())
+                {
+                    /* Let Wanderer repaint the new wallpaper before recapturing */
+                    Delay(20);
+                    RefreshBackground();
+                    WallpaperPending = FALSE;
                 }
 
             }
@@ -496,6 +541,12 @@ int main(int argc, char *argv[])
                 if (ScreenNotifyMask)
                 {
                     HandleScreenNotify();
+                }
+
+                if (WallpaperMask)
+                {
+                    if (DrainAndReplyPort(WallpaperPort))
+                        WallpaperPending = FALSE;
                 }
 
                 CheckMousePosition();
@@ -527,6 +578,16 @@ bailout:
 
     if (ScreenNotifyPort)
         DeleteMsgPort(ScreenNotifyPort);
+
+    if (WallpaperNotRequest)
+    {
+        if (WallpaperNotRequest->nr_Name)
+EndNotify(WallpaperNotRequest);
+        FreeVec(WallpaperNotRequest);
+    }
+
+    if (WallpaperPort)
+        DeleteMsgPort(WallpaperPort);
     
     for(x=0; x<SUM_ICON; x++)
     {
@@ -1213,7 +1274,7 @@ static BOOL OpenMainWindow(void)
             WA_MouseQueue, 3,
             WA_Borderless, TRUE,
             WA_SizeGadget, FALSE,
-            WA_Activate, ((FirstOpening && Static) ? FALSE : TRUE),
+            WA_Activate, ((NoActivate || (FirstOpening && Static)) ? FALSE : TRUE),
             WA_PubScreenName, NULL,
             WA_BackFill, LAYERS_NOBACKFILL,
             WA_Flags, WFLG_NOCAREREFRESH|
@@ -1619,6 +1680,39 @@ static BOOL DrainAndReplyPort(struct MsgPort *port)
         ReplyMsg(msg);
     }
     return got;
+}
+
+
+static BOOL NoIconBouncing(void)
+{
+    LONG x;
+
+    for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+    {
+        if(Icons[x].Icon_OK && Icons[x].Icon_Status != 0)
+            return FALSE;
+    }
+    return TRUE;
+}
+
+
+static void RefreshBackground(void)
+{
+    if(ScreenResetInProgress)
+        return;
+
+    NoActivate = TRUE;
+    CloseMainWindow();
+
+    /* Let the layers/Wanderer repaint the revealed wallpaper before we
+       recapture it, otherwise we would just grab the old cached pixels. */
+    Delay(2);
+
+    if(OpenMainWindow() == FALSE)
+    {
+        BiB_Exit = TRUE;
+    }
+    NoActivate = FALSE;
 }
 
 
