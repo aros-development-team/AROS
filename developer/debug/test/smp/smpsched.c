@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__AROSEXEC_SMP__)
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -331,3 +332,9 @@ int main(void)
     bug("[smpsched] DONE: %d PASS, %d FAIL, %d INVALID\n", pass, fail, inval);
     return fail ? RETURN_FAIL : RETURN_OK;
 }
+#else
+int main(void)
+{
+    return RETURN_FAIL;
+}
+#endif
