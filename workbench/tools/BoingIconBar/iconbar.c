@@ -108,6 +108,8 @@ static void Decode_Menu_IDCMP(struct IntuiMessage *KomIDCMP);           // decod
 static void Launch_Program(STRPTR Program);                             // start the chosed program
 static void Settings(void);                                             // open the prefs program
 static void Reload(void);                                               // reload the BiB
+static void HandleScreenNotify(void);                                   // handle Workbench screen reset
+static BOOL DrainAndReplyPort(struct MsgPort *port);                    // drain port, replying every message
 static void IconLabel(void);                                            // add label to icon
 
 // ------------------------------
@@ -153,6 +155,11 @@ static LONG                                     Length, BeginningWindow, EndingW
 static BYTE                                     MovingTable[8]={0, 4, 7, 9, 10, 9, 7, 4};
 static TEXT                                     BufferList[20]; 
 static ULONG                                    WindowMask=0, MenuMask=0, WindowSignal;
+
+static struct MsgPort                           *ScreenNotifyPort = NULL;
+static ULONG                                    ScreenNotifyMask = 0;
+static APTR                                     ScreenNotifyHandle = NULL;
+static BOOL                                     ScreenResetInProgress = FALSE;
 
 static IPTR                                     args[ARG_TOTAL] = {
                         (IPTR)&Spacing,
@@ -358,6 +365,22 @@ int main(int argc, char *argv[])
         goto bailout;
     }
 
+    // start notification on Workbench screen reset (e.g. resolution change)
+    ScreenNotifyPort = CreateMsgPort();
+    if (ScreenNotifyPort)
+    {
+        ScreenNotifyHandle = StartScreenNotifyTags(
+            SNA_Notify,   SNOTIFY_WAIT_REPLY | SNOTIFY_BEFORE_CLOSEWB | SNOTIFY_AFTER_OPENWB,
+            SNA_MsgPort,  ScreenNotifyPort,
+            SNA_Priority, 0,
+            TAG_END);
+
+        if (ScreenNotifyHandle)
+        {
+            ScreenNotifyMask = 1 << ScreenNotifyPort->mp_SigBit;
+        }
+    }
+
     // ------ Opening font if parameter NAMES is active
 
     if (FontSize)
@@ -411,14 +434,15 @@ int main(int argc, char *argv[])
         while (BiB_Exit==FALSE)
         {
 
-            if (GetMsg(BIBport) != NULL)
+            if (DrainAndReplyPort(BIBport))
             {
-                Reload();
+                if (!ScreenResetInProgress)
+                    Reload();
             }
 
             if(Window_Open || MenuWindow_Open)
             {
-                WindowSignal = Wait(WindowMask | MenuMask | SIGBREAKF_CTRL_C);
+                WindowSignal = Wait(WindowMask | MenuMask | ScreenNotifyMask | SIGBREAKF_CTRL_C);
 
                 if(WindowSignal & WindowMask)
                 {
@@ -446,6 +470,11 @@ int main(int argc, char *argv[])
                         CloseMenuWindow();
                 }
 
+                if(WindowSignal & ScreenNotifyMask)
+                {
+                    HandleScreenNotify();
+                }
+
                 if(WindowSignal & SIGBREAKF_CTRL_C)
                 {
                     D(bug("CTRL-C reveived\n"));
@@ -462,6 +491,11 @@ int main(int argc, char *argv[])
                     D(bug("CTRL-C reveived\n"));
                     SetSignal(0, SIGBREAKF_CTRL_C);
                     BiB_Exit=TRUE;
+                }
+
+                if (ScreenNotifyMask)
+                {
+                    HandleScreenNotify();
                 }
 
                 CheckMousePosition();
@@ -487,6 +521,12 @@ bailout:
 
     if (BIBport)
         DeleteMsgPort(BIBport);
+
+    if (ScreenNotifyHandle)
+        EndScreenNotify(ScreenNotifyHandle);
+
+    if (ScreenNotifyPort)
+        DeleteMsgPort(ScreenNotifyPort);
     
     for(x=0; x<SUM_ICON; x++)
     {
@@ -1245,6 +1285,9 @@ static void CloseMainWindow(void)
 
 static void CheckMousePosition(void)
 {
+    if (ScreenResetInProgress)
+        return;
+
     if((MyScreen->MouseY > ScreenHeight - 8) &&
         Window_Open == FALSE &&
         MyScreen->MouseX > BeginningWindow &&
@@ -1468,6 +1511,114 @@ static void Launch_Program(STRPTR Program)
 static void Settings(void)
 {
     OpenWorkbenchObject("SYS:Prefs/BoingIconBar", TAG_DONE);
+}
+
+
+static void ScreenResetCleanup(void)
+{
+    LONG x;
+
+    if (MenuWindow_Open)
+    {
+        MenuWindow_Open = FALSE;
+        if (MenuWindow)
+            CloseWindow(MenuWindow);
+        MenuWindow = NULL;
+        MenuMask = 0;
+    }
+
+    if (Window_Open == TRUE)
+    {
+        CloseMainWindow();
+    }
+
+    for(x=0; x<SUM_ICON; x++)
+    {
+        if(Icon[x] != NULL)
+        {
+            FreeDiskObject(Icon[x]);
+            Icon[x]=NULL;
+        }
+        Icons[x].Icon_Height  = 0;
+        Icons[x].Icon_Width = 0;
+        Icons[x].Icon_PositionX  = 0;
+        Icons[x].Icon_PositionY  = 0;
+    }
+
+    if(BMP_Buffer)
+        FreeBitMap(BMP_Buffer);
+    if(BMP_DoubleBuffer)
+        FreeBitMap(BMP_DoubleBuffer);
+
+    for(x=0; x<3; x++)
+    {
+        if(picture[x])
+            DisposeDTObject(picture[x]);
+        picture[x] = NULL;
+        bm[x] = NULL;
+    }
+}
+
+
+static void ScreenResetRestore(void)
+{
+    if(ReadPrefs() == FALSE)
+    {
+        puts("Prefs error\n");
+        return;
+    }
+
+    LoadBackground();
+
+    if(Static)
+    {
+        Delay(Static * 50);
+        OpenMainWindow();
+        FirstOpening = FALSE;
+    }
+}
+
+
+static void HandleScreenNotify(void)
+{
+    struct ScreenNotifyMessage *msg;
+
+    while((msg = (struct ScreenNotifyMessage *)GetMsg(ScreenNotifyPort)))
+    {
+        switch(msg->snm_Class)
+        {
+            case SNOTIFY_BEFORE_CLOSEWB:
+                D(bug("[IconBar] screen reset: closing toolbar\n"));
+                ScreenResetInProgress = TRUE;
+                ScreenResetCleanup();
+                break;
+
+            case SNOTIFY_AFTER_OPENWB:
+                D(bug("[IconBar] screen reset: reopening toolbar\n"));
+                ScreenResetInProgress = FALSE;
+                ScreenResetRestore();
+                break;
+
+            default:
+                break;
+        }
+
+        ReplyMsg((struct Message *)msg);
+    }
+}
+
+
+static BOOL DrainAndReplyPort(struct MsgPort *port)
+{
+    struct Message *msg;
+    BOOL got = FALSE;
+
+    while ((msg = GetMsg(port)))
+    {
+        got = TRUE;
+        ReplyMsg(msg);
+    }
+    return got;
 }
 
 
