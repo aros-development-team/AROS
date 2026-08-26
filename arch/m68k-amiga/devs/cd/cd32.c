@@ -151,7 +151,16 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
 
     AROS_INTFUNC_INIT
 
-    status = readl(AKIKO_CDINTREQ);
+    /* CDINTREQ returns the raw request latches; CDINTENA only gates the
+     * INT2 line. Completion bits stay latched until the matching index
+     * comparator is rewritten, so between exchanges the previous
+     * command's TXDMA/RXDMA bits are still visible. This server runs on
+     * every PORTS interrupt (CIA-A events included) and must only act
+     * on the sources it has armed: reacting to a stale latch signals
+     * the unit task at a moment it never asked about, desynchronising
+     * the command exchange.
+     */
+    status = readl(AKIKO_CDINTREQ) & cu->cu_IntEnable;
     if (!status)
         return FALSE;
 
