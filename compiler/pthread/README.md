@@ -8,7 +8,7 @@ Due to underlying API limitations detached threads are not supported.
 
 ## License
 
-The library is availabe under the zlib license.
+The library is available under the zlib license.
 
 ## Website
 [http://bszili.morphos.me](http://bszili.morphos.me)
