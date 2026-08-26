@@ -21,7 +21,8 @@
  */
 
 #ifndef BT_CMDQ_MAX_PENDING
-#define BT_CMDQ_MAX_PENDING 4
+#define BT_CMDQ_MAX_PENDING 16   /* a host queue, not the controller's window: bursts (list
+                                    programming, bring-up) must not drop commands */
 #endif
 
 #ifndef BT_CMDQ_DEFAULT_TIMEOUT_US

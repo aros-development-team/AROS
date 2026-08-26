@@ -2438,6 +2438,18 @@ static void bSMPComplete(void *context, enum bt_smp_manager_result result,
                        (neg && neg->mitm_requested) ? (STRPTR) ", authenticated" : (STRPTR) "",
                        (bd->bd_Keys.bkc_Flags & BKCF_LTK) ? (STRPTR) ", key stored" : (STRPTR) "");
         bPairingDone(cn, 0, 0);
+    } else if((result == BT_SMP_MANAGER_ERROR_UNSUPPORTED) && neg && neg->secure_connections &&
+              !cn->cn_SMPLegacy && (cn->cn_State == HCNS_CONNECTED)) {
+        /* the SMP manager's LE Secure Connections covers Just Works and
+           Numeric Comparison only; a keyboard peer negotiates Passkey Entry.
+           Legacy pairing has it: run the pairing again without offering SC
+           (from bConnTick(), not from inside the manager's own callback). */
+        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s: %s is not available with LE Secure Connections - pairing the legacy way.",
+                       bd->bd_Name, assocname[neg->association]);
+        cn->cn_SMPLegacy = TRUE;
+        cn->cn_PairRetry = TRUE;
+        cn->cn_PairState = PAIR_IDLE;
     } else {
         btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%s: LE pairing failed - %s.",
                        bd->bd_Name, (result < 7) ? resname[result] : "unknown");
@@ -2519,6 +2531,7 @@ static void bSMPChannelEvent(struct bt_l2cap_channel_event_info *info, void *use
 static BOOL bSMPSetup(struct BtHWConn *cn)
 {
     struct BtHWCore *hc = cn->cn_Core;
+    struct BtBase *BluetoothBase = hc->hc_Base;
     struct BtHardware *bth = hc->hc_Hardware;
     struct BtDevice *bd = cn->cn_Device;
     struct bt_smp_manager_config cfg;
@@ -2528,8 +2541,14 @@ static BOOL bSMPSetup(struct BtHWConn *cn)
     memset(&cfg, 0, sizeof(cfg));
     cfg.features.io_capability = SMP_IO_DISPLAYYESNO;  /* a keyboard peer -> we display the passkey */
     cfg.features.oob_data_flag = 0;
+    /* LE Secure Connections is offered only with the "btlesc" boot argument:
+       legacy pairing is what every device so far has been bonded with, and
+       the SC Passkey Entry exchange stalls against the G915 keyboard on the
+       rtl8761bu (whose LE Read Local P-256 Public Key also returns the same
+       key on every boot) - see the SMP trace in the log with btdebug. */
     cfg.features.auth_req = BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM |
-                            ((bth->bth_LECaps & BTLC_SECURECONN) ? BT_SMP_AUTHREQ_SC : 0);
+                            (((bth->bth_LECaps & BTLC_SECURECONN) && (BluetoothBase->bt_Flags & BTF_LESC) &&
+                              !cn->cn_SMPLegacy) ? BT_SMP_AUTHREQ_SC : 0);
     cfg.features.max_encryption_key_size = 16;
     cfg.features.initiator_key_distribution = 0;
     cfg.features.responder_key_distribution = BT_SMP_KEYDIST_ENC_KEY | BT_SMP_KEYDIST_ID_KEY;
@@ -2954,15 +2973,9 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
         bd = bFindDeviceByAddr(hc, params);
         btUnlockBase();
         if(bd && bd->bd_Conns[0]) {
-            struct BtHWConn *pcn = bd->bd_Conns[0];
-            btLockWriteDevice(bd);
-            bd->bd_PairingRequest = BPRT_PASSKEYDISPLAY;
-            bd->bd_PairingPasskey = passkey;
-            btUnlockDevice(bd);
-            if(pcn->cn_PairState == PAIR_IDLE) {
-                pcn->cn_PairState = PAIR_AUTH;
-            }
-            btSendEvent(BEHMB_PAIRINGREQUEST, bd, (APTR) (IPTR) BPRT_PASSKEYDISPLAY);
+            /* the peer types this passkey on its side: show it the same way
+               the LE path does - log line, event AND the pairing popup */
+            bAskUser(bd->bd_Conns[0], BPRT_PASSKEYDISPLAY, passkey);
         }
         return(TRUE);
     }
@@ -2994,10 +3007,11 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
             BOOL autoconn = FALSE;
             status = params[1];
             handle = (params[2] | (params[3] << 8)) & 0x0fff;
-            if(hc->hc_AutoConnArmed && !hc->hc_Connecting) {
+            if(hc->hc_AutoConnArmed && !(hc->hc_Connecting && (hc->hc_Connecting->cn_LinkType == BDLT_LE))) {
                 /* the controller's own initiator (accept list) answered: a
                    link to one of ours, or the cancel bAutoConnDisarm() asked
-                   for (status 0x02, no address) */
+                   for (status 0x02, no address). A BR/EDR page in flight is
+                   unrelated - LE events cannot belong to it. */
                 autoconn = TRUE;
                 if(status) {
                     KPRINTF(10, ("auto-connect ended (0x%02lx)\n", (ULONG) status));
@@ -3702,6 +3716,10 @@ void bConnTick(struct BtHWCore *hc)
         }
         if(cn->cn_State != HCNS_CONNECTED) {
             continue;
+        }
+        if(cn->cn_PairRetry) {
+            cn->cn_PairRetry = FALSE;
+            bStartPairing(cn);
         }
         if(cn->cn_AuthRetries && cn->cn_NextAttempt &&
            ((cn->cn_PairState == PAIR_AUTH) || cn->cn_EncryptPending) &&

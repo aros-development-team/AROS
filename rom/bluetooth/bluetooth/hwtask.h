@@ -129,6 +129,18 @@
 #define HC_LE_SUB_DHKEY_COMPLETE      0x09
 #define HC_LE_SUB_ENH_CONN_COMPLETE   0x0a
 
+/* controller list programming steps (bLEListsStep) */
+enum {
+    HCLS_IDLE = 0,
+    HCLS_RES_OFF,       /* LE Set Address Resolution Enable 0 */
+    HCLS_CLEAR_RL,
+    HCLS_ADD_RL,        /* one bonded peer with an IRK per command */
+    HCLS_RES_ON,
+    HCLS_CLEAR_WL,
+    HCLS_ADD_WL,        /* one reconnect candidate per command */
+    HCLS_DONE
+};
+
 /* bring-up steps */
 enum {
     HCB_RESET = 0,
@@ -240,6 +252,11 @@ struct BtHWConn
     BOOL                cn_SMPChanOpen;   /* fixed SMP channel registered on this link */
     BOOL                cn_EncryptPending;/* LE Start Encryption with the stored key in flight */
     UBYTE               cn_SMPRandWait;   /* LE Rand completions to collect before starting */
+    /* LE Secure Connections is only implemented for Just Works / Numeric
+       Comparison: when the peer's IO capability makes it Passkey Entry
+       (a keyboard), the pairing is run again without offering SC */
+    BOOL                cn_SMPLegacy;     /* do not offer SC this time */
+    BOOL                cn_PairRetry;     /* restart the pairing from bConnTick() (outside the SMP callback) */
     UBYTE               cn_SMPKeySize;
     UBYTE               cn_SMPLTK[16];    /* key handed to LE Start Encryption (HCI byte order) */
     ULONG               cn_LastActivity;
@@ -365,7 +382,10 @@ struct BtHWCore
     BOOL                hc_AutoConnArmed;    /* the accept-list initiator is pending */
     BOOL                hc_AutoConnCancel;   /* LE Create Connection Cancel sent, waiting for its completion */
     BOOL                hc_AutoConnFast;     /* armed with the fast (reconnect) scan parameters */
-    BOOL                hc_ListsSyncing;     /* list reprogramming commands in flight */
+    BOOL                hc_ListsSyncing;     /* list reprogramming in progress (one command at a time) */
+    UBYTE               hc_ListsStep;        /* HCLS_xxx */
+    UWORD               hc_ListsIndex;       /* next device to add in the current step */
+    UWORD               hc_ListsSkipped;     /* candidates the accept list had no slot for */
     BOOL                hc_ResolvingOn;      /* LE address resolution enabled in the controller */
     UBYTE               hc_AcceptListCount;  /* entries programmed */
     BOOL                hc_DiscDeferred;     /* a discovery waits for the initiator to cancel */

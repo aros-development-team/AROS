@@ -120,6 +120,7 @@ struct bt_smp_manager
     uint8_t mac_key[16];
     uint8_t peer_dhkey_check[16];
     uint32_t numeric_value;
+    uint8_t sc_round;              /* Passkey Entry: commitment round 0..19 */
 };
 
 void bt_smp_manager_init(struct bt_smp_manager *manager,

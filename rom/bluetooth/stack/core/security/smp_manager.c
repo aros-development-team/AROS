@@ -57,6 +57,28 @@ static void set_passkey_tk(struct bt_smp_manager *m, uint32_t passkey)
     m->tk[15] = (uint8_t)passkey;
 }
 
+static bool sc_passkey_entry(const struct bt_smp_manager *m)
+{
+    return m->negotiation.association == BT_SMP_ASSOC_PASSKEY_INITIATOR_DISPLAYS ||
+           m->negotiation.association == BT_SMP_ASSOC_PASSKEY_RESPONDER_DISPLAYS ||
+           m->negotiation.association == BT_SMP_ASSOC_PASSKEY_BOTH_INPUT;
+}
+
+/* the 128-bit r for f6: the passkey for Passkey Entry, zero otherwise */
+static const uint8_t *sc_f6_r(const struct bt_smp_manager *m, const uint8_t zero[16])
+{
+    return sc_passkey_entry(m) ? m->tk : zero;
+}
+
+/* z for round i of Passkey Entry: 0x80 | bit i of the passkey (both sides
+ * commit to the same passkey, bit by bit, over 20 rounds) */
+static uint8_t sc_passkey_z(const struct bt_smp_manager *m)
+{
+    uint32_t passkey = ((uint32_t)m->tk[12] << 24) | ((uint32_t)m->tk[13] << 16) |
+                       ((uint32_t)m->tk[14] << 8) | m->tk[15];
+    return (uint8_t)(0x80u | ((passkey >> m->sc_round) & 1u));
+}
+
 static void start_confirm_exchange(struct bt_smp_manager *m, uint64_t now_us)
 {
     uint8_t confirm[16];
@@ -84,6 +106,33 @@ static void start_confirm_exchange(struct bt_smp_manager *m, uint64_t now_us)
     }
 }
 
+/* LE Secure Connections Passkey Entry, one of the 20 rounds: fresh Nai,
+ * Cai = f4(PKa, PKb, Nai, rai) sent as Pairing Confirm; the responder answers
+ * with its own commitment, then the randoms are exchanged (handle_sc_confirm
+ * / handle_sc_random) and the responder's commitment is verified. */
+static void start_sc_passkey_round(struct bt_smp_manager *m, uint64_t now_us)
+{
+    uint8_t confirm[16];
+    uint8_t wire[16];
+    uint8_t pdu[17];
+    struct bt_buf_writer w;
+
+    if (m->ops->random(m->context, m->local_random, sizeof(m->local_random)) != BT_OK ||
+        bt_smp_crypto_f4(&m->cmac, m->local_public_x, m->peer_public_x, m->local_random,
+                         sc_passkey_z(m), confirm) != BT_OK)
+    {
+        send_failed(m, 0x08, now_us, BT_SMP_MANAGER_ERROR_CRYPTO);
+        return;
+    }
+    reverse_copy(wire, confirm, 16);
+    bt_buf_writer_init(&w, pdu, sizeof(pdu));
+    m->state = BT_SMP_STATE_WAIT_SC_CONFIRM;
+    m->deadline_us = timeout_deadline(now_us);
+    if (bt_smp_encode_value128(&w, BT_SMP_PAIRING_CONFIRM, wire) != BT_OK ||
+        send_pdu(m, pdu, bt_buf_writer_len(&w), now_us) != BT_OK)
+        finish(m, BT_SMP_MANAGER_ERROR_PROTOCOL);
+}
+
 static void start_sc_stage2(struct bt_smp_manager *m, uint64_t now_us)
 {
     uint8_t a1[7];
@@ -107,7 +156,7 @@ static void start_sc_stage2(struct bt_smp_manager *m, uint64_t now_us)
     io_cap[1] = m->config.features.oob_data_flag;
     io_cap[2] = m->config.features.io_capability;
     if (bt_smp_crypto_f6(&m->cmac, m->mac_key, m->local_random, m->peer_random,
-                         zero, io_cap, a1, a2, check) != BT_OK)
+                         sc_f6_r(m, zero), io_cap, a1, a2, check) != BT_OK)
         goto crypto_error;
     clear = 16u - m->negotiation.encryption_key_size;
     memset(m->stk, 0, clear);
@@ -126,11 +175,13 @@ crypto_error:
 static void start_secure_connections(struct bt_smp_manager *m, uint64_t now_us)
 {
     if (m->negotiation.association != BT_SMP_ASSOC_JUST_WORKS &&
-        m->negotiation.association != BT_SMP_ASSOC_NUMERIC_COMPARISON)
+        m->negotiation.association != BT_SMP_ASSOC_NUMERIC_COMPARISON &&
+        !sc_passkey_entry(m))
     {
-        send_failed(m, 0x07, now_us, BT_SMP_MANAGER_ERROR_UNSUPPORTED);
+        send_failed(m, 0x07, now_us, BT_SMP_MANAGER_ERROR_UNSUPPORTED); /* OOB */
         return;
     }
+    m->sc_round = 0;
     if (m->cmac.calculate == NULL || m->ops->generate_public_key == NULL ||
         m->ops->generate_dhkey == NULL)
     {
@@ -347,7 +398,8 @@ static void handle_sc_random(struct bt_smp_manager *m,
         goto invalid;
     reverse_copy(m->peer_random, wire, 16);
     if (bt_smp_crypto_f4(&m->cmac, m->peer_public_x, m->local_public_x,
-                         m->peer_random, 0, expected) != BT_OK)
+                         m->peer_random, sc_passkey_entry(m) ? sc_passkey_z(m) : 0,
+                         expected) != BT_OK)
     {
         send_failed(m, 0x08, now_us, BT_SMP_MANAGER_ERROR_CRYPTO);
         return;
@@ -355,6 +407,11 @@ static void handle_sc_random(struct bt_smp_manager *m,
     if (memcmp(expected, m->peer_confirm, 16) != 0)
     {
         send_failed(m, 0x04, now_us, BT_SMP_MANAGER_ERROR_CONFIRM);
+        return;
+    }
+    if (sc_passkey_entry(m) && ++m->sc_round < 20)
+    {
+        start_sc_passkey_round(m, now_us);   /* next bit; the 20th random pair feeds f5/f6 */
         return;
     }
     if (m->negotiation.association == BT_SMP_ASSOC_NUMERIC_COMPARISON)
@@ -402,7 +459,7 @@ static void handle_sc_dhkey_check(struct bt_smp_manager *m,
     io_cap[1] = m->pres[4];
     io_cap[2] = m->pres[5];
     if (bt_smp_crypto_f6(&m->cmac, m->mac_key, m->peer_random, m->local_random,
-                         zero, io_cap, a2, a1, expected) != BT_OK)
+                         sc_f6_r(m, zero), io_cap, a2, a1, expected) != BT_OK)
     {
         send_failed(m, 0x08, now_us, BT_SMP_MANAGER_ERROR_CRYPTO);
         return;
@@ -682,7 +739,10 @@ bt_status_t bt_smp_manager_provide_passkey(struct bt_smp_manager *m,
         m->negotiation.association == BT_SMP_ASSOC_OOB)
         return BT_ERR_INVALID_ARGUMENT;
     set_passkey_tk(m, passkey);
-    start_confirm_exchange(m, now_us);
+    if (m->negotiation.secure_connections)
+        start_sc_passkey_round(m, now_us);
+    else
+        start_confirm_exchange(m, now_us);
     return m->state == BT_SMP_STATE_FAILED ? BT_ERR_INVALID_ARGUMENT : BT_OK;
 }
 
@@ -750,6 +810,35 @@ void bt_smp_manager_on_dhkey(struct bt_smp_manager *m, bool success,
         return;
     }
     memcpy(m->dhkey, dhkey, 32);
+    if (sc_passkey_entry(m))
+    {
+        m->sc_round = 0;
+        if (m->negotiation.association == BT_SMP_ASSOC_PASSKEY_INITIATOR_DISPLAYS)
+        {
+            uint8_t random_bytes[4];
+            uint32_t passkey;
+
+            if (m->ops->random(m->context, random_bytes, sizeof(random_bytes)) != BT_OK)
+            {
+                send_failed(m, 0x08, now_us, BT_SMP_MANAGER_ERROR_CRYPTO);
+                return;
+            }
+            passkey = (((uint32_t)random_bytes[0] << 24) | ((uint32_t)random_bytes[1] << 16) |
+                       ((uint32_t)random_bytes[2] << 8) | random_bytes[3]) % 1000000u;
+            set_passkey_tk(m, passkey);
+            if (m->ops->user_action != NULL)
+                m->ops->user_action(m->context, BT_SMP_USER_DISPLAY_PASSKEY, passkey);
+            start_sc_passkey_round(m, now_us);
+            return;
+        }
+        /* the responder displays (or both type): the rounds start once the
+         * passkey is provided */
+        m->state = BT_SMP_STATE_WAIT_TK;
+        m->deadline_us = timeout_deadline(now_us);
+        if (m->ops->user_action != NULL)
+            m->ops->user_action(m->context, BT_SMP_USER_REQUEST_PASSKEY, 0);
+        return;
+    }
     m->state = BT_SMP_STATE_WAIT_SC_CONFIRM;
     m->deadline_us = timeout_deadline(now_us);
 }

@@ -188,6 +188,7 @@ struct BtBase
 /* bt_Flags */
 #define BTF_KLOG       0x0001
 #define BTF_LEHOSTSCAN 0x0002   /* "btlehost" boot argument: never use the controller's lists */
+#define BTF_LESC       0x0004   /* "btlesc" boot argument: offer LE Secure Connections when pairing */
 
 struct BtEventHook
 {

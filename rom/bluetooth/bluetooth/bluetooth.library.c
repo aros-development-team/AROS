@@ -65,6 +65,9 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR BluetoothBase)
                     } else if (stricmp(node->ln_Name, "btlehost") == 0) {
                         /* never hand LE reconnects to the controller's lists */
                         BluetoothBase->bt_Flags |= BTF_LEHOSTSCAN;
+                    } else if (stricmp(node->ln_Name, "btlesc") == 0) {
+                        /* offer LE Secure Connections (opt-in until proven) */
+                        BluetoothBase->bt_Flags |= BTF_LESC;
                     }
                 }
             }

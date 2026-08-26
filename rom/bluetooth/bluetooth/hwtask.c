@@ -827,7 +827,8 @@ static void bLECapsEvaluate(struct BtHWCore *hc)
                        (bth->bth_LEReconnect == BTLR_ACCEPTLIST) ? (STRPTR) "the controller's accept list" :
                        (BluetoothBase->bt_Flags & BTF_LEHOSTSCAN) ? (STRPTR) "host scanning (btlehost)" : (STRPTR) "host scanning",
                        (ULONG) bth->bth_AcceptListSize, (ULONG) bth->bth_ResolvingListSize,
-                       (caps & BTLC_SECURECONN) ? (STRPTR) "yes" : (STRPTR) "no");
+                       !(caps & BTLC_SECURECONN) ? (STRPTR) "no" :
+                       (BluetoothBase->bt_Flags & BTF_LESC) ? (STRPTR) "yes (btlesc)" : (STRPTR) "available, legacy pairing used");
     }
 }
 /* \\\ */
@@ -848,99 +849,203 @@ static BOOL bAutoConnCandidate(struct BtDevice *bd)
 }
 /* \\\ */
 
-/* /// "bResolvingCmdCB()" */
-static void bResolvingCmdCB(struct bt_cmdq_completion *completion, void *user_data)
+/* /// "bListsNthDevice()" */
+/* The n-th device for a list step: the resolving list takes every bonded
+   LE peer with an IRK, the accept list the reconnect candidates. *rest is
+   how many more would follow. */
+static struct BtDevice * bListsNthDevice(struct BtHardware *bth, BOOL resolving, UWORD n, UWORD *rest)
+{
+    struct BtDevice *bd;
+    struct BtDevice *found = NULL;
+    UWORD seen = 0;
+    *rest = 0;
+    for(bd = (struct BtDevice *) bth->bth_Devices.lh_Head; bd->bd_Node.ln_Succ; bd = (struct BtDevice *) bd->bd_Node.ln_Succ) {
+        BOOL match;
+        if(resolving) {
+            match = ((bd->bd_Flags & (BDFF_LE|BDFF_BONDED)) == (BDFF_LE|BDFF_BONDED)) &&
+                    (bd->bd_Keys.bkc_Flags & BKCF_IRK);
+        } else {
+            match = bAutoConnCandidate(bd);
+        }
+        if(!match) {
+            continue;
+        }
+        if(seen == n) {
+            found = bd;
+        } else if(seen > n) {
+            (*rest)++;
+        }
+        seen++;
+    }
+    return(found);
+}
+/* \\\ */
+
+/* /// "bListsAbort()" */
+static void bListsAbort(struct BtHWCore *hc)
+{
+    hc->hc_ListsSyncing = FALSE;
+    hc->hc_ListsStep = HCLS_IDLE;
+    hc->hc_Hardware->bth_LEListsDirty = TRUE;   /* try again later */
+    bBgScanSchedule(hc);
+}
+/* \\\ */
+
+static void bListsStepCB(struct bt_cmdq_completion *completion, void *user_data);
+
+/* /// "bLEListsStep()" */
+/* Reprogram the controller's resolving list (bonded peers with an IRK) and
+   accept list (the reconnect candidates), ONE command at a time - the
+   command queue holds BT_CMDQ_MAX_PENDING (4) entries and anything beyond
+   that would be dropped on the floor. Only run with the LE radio idle:
+   neither list may change while scanning or initiating. */
+static void bLEListsStep(struct BtHWCore *hc)
+{
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtHardware *bth = hc->hc_Hardware;
+    BOOL privacy = (bth->bth_LEReconnect == BTLR_RESOLVING);
+    UBYTE p[39];
+
+    for(;;) {
+        struct BtDevice *bd;
+        UWORD rest;
+        switch(hc->hc_ListsStep) {
+        case HCLS_RES_OFF:
+            if(!privacy) {
+                hc->hc_ListsStep = HCLS_CLEAR_WL;
+                continue;
+            }
+            p[0] = 0;
+            hc->hc_ResolvingOn = FALSE;
+            if(!bSubmitCmd(hc, HC_OP_LE_SET_ADDR_RESOLUTION, p, 1, bListsStepCB, hc)) {
+                bListsAbort(hc);
+            }
+            return;
+        case HCLS_CLEAR_RL:
+            hc->hc_ListsIndex = 0;
+            if(!bSubmitCmd(hc, HC_OP_LE_CLEAR_RESOLVING_LIST, NULL, 0, bListsStepCB, hc)) {
+                bListsAbort(hc);
+            }
+            return;
+        case HCLS_ADD_RL:
+            btLockReadBase();
+            bd = bListsNthDevice(bth, TRUE, hc->hc_ListsIndex, &rest);
+            if(!bd || (hc->hc_ListsIndex >= bth->bth_ResolvingListSize)) {
+                btUnlockBase();
+                hc->hc_ListsStep = HCLS_RES_ON;
+                continue;
+            }
+            p[0] = bd->bd_AddrType & 1;                 /* peer identity address type */
+            CopyMem(bd->bd_Address.bd_Addr, &p[1], 6);
+            CopyMem(bd->bd_Keys.bkc_IRK, &p[7], 16);    /* peer IRK as distributed (LSB first) */
+            memset(&p[23], 0, 16);                      /* local IRK: we use our identity address */
+            btUnlockBase();
+            hc->hc_ListsIndex++;
+            if(!bSubmitCmd(hc, HC_OP_LE_ADD_RESOLVING_LIST, p, 39, bListsStepCB, hc)) {
+                bListsAbort(hc);
+            }
+            return;
+        case HCLS_RES_ON:
+            p[0] = 1;
+            if(!bSubmitCmd(hc, HC_OP_LE_SET_ADDR_RESOLUTION, p, 1, bListsStepCB, hc)) {
+                bListsAbort(hc);
+            }
+            return;
+        case HCLS_CLEAR_WL:
+            hc->hc_ListsIndex = 0;
+            hc->hc_ListsSkipped = 0;
+            if(!bSubmitCmd(hc, HC_OP_LE_CLEAR_WHITE_LIST, NULL, 0, bListsStepCB, hc)) {
+                bListsAbort(hc);
+            }
+            return;
+        case HCLS_ADD_WL:
+            btLockReadBase();
+            bd = bListsNthDevice(bth, FALSE, hc->hc_ListsIndex, &rest);
+            if(!bd) {
+                btUnlockBase();
+                hc->hc_ListsStep = HCLS_DONE;
+                continue;
+            }
+            if(hc->hc_ListsIndex >= bth->bth_AcceptListSize) {
+                btUnlockBase();
+                hc->hc_ListsSkipped = rest + 1;
+                hc->hc_ListsStep = HCLS_DONE;
+                continue;
+            }
+            p[0] = bd->bd_AddrType & 1;
+            CopyMem(bd->bd_Address.bd_Addr, &p[1], 6);
+            btUnlockBase();
+            hc->hc_ListsIndex++;
+            if(!bSubmitCmd(hc, HC_OP_LE_ADD_WHITE_LIST, p, 7, bListsStepCB, hc)) {
+                bListsAbort(hc);
+            }
+            return;
+        case HCLS_DONE:
+        default:
+            hc->hc_AcceptListCount = hc->hc_ListsIndex;
+            hc->hc_ListsSyncing = FALSE;
+            hc->hc_ListsStep = HCLS_IDLE;
+            KPRINTF(10, ("LE lists programmed: %ld accept-listed, %ld skipped, resolution %s\n",
+                         (LONG) hc->hc_AcceptListCount, (LONG) hc->hc_ListsSkipped,
+                         hc->hc_ResolvingOn ? "on" : "off"));
+            if(hc->hc_ListsSkipped) {
+                btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "%s/%ld: accept list full (%ld slots) - %ld bonded device(s) will not reconnect by themselves.",
+                               bth->bth_DevName, bth->bth_Unit, (ULONG) bth->bth_AcceptListSize,
+                               (ULONG) hc->hc_ListsSkipped);
+            }
+            bAutoConnUpdate(hc);
+            return;
+        }
+    }
+}
+/* \\\ */
+
+/* /// "bListsStepCB()" */
+static void bListsStepCB(struct bt_cmdq_completion *completion, void *user_data)
 {
     struct BtHWCore *hc = user_data;
     struct BtBase *BluetoothBase = hc->hc_Base;
     struct BtHardware *bth = hc->hc_Hardware;
     BOOL ok = (completion->result == BT_CMDQ_RESULT_COMPLETE) && !completion->status;
-    hc->hc_ResolvingOn = ok;
-    if(!ok) {
-        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                       "%s/%ld: LE address resolution could not be enabled (%s) - private addresses are resolved by the host.",
-                       bth->bth_DevName, bth->bth_Unit,
-                       btNumToStr(BNTS_HCISTATUS, completion->status, "unknown"));
-    }
-}
-/* \\\ */
 
-/* /// "bListsCmdCB()" */
-/* the command closing a list reprogramming completed: the lists are in place */
-static void bListsCmdCB(struct bt_cmdq_completion *completion, void *user_data)
-{
-    struct BtHWCore *hc = user_data;
-    (void) completion;
-    hc->hc_ListsSyncing = FALSE;
-    bAutoConnUpdate(hc);
+    if(!ok) {
+        bth->bth_LastHCIError = completion->status;
+        KPRINTF(10, ("list step %ld: cmd %04lx failed (result %ld status %02lx)\n",
+                     (LONG) hc->hc_ListsStep, (ULONG) completion->opcode,
+                     (LONG) completion->result, (ULONG) completion->status));
+    }
+    switch(hc->hc_ListsStep) {
+    case HCLS_RES_ON:
+        hc->hc_ResolvingOn = ok;
+        if(!ok) {
+            btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s/%ld: LE address resolution could not be enabled (%s) - private addresses are resolved by the host.",
+                           bth->bth_DevName, bth->bth_Unit,
+                           btNumToStr(BNTS_HCISTATUS, completion->status, "unknown"));
+        }
+        hc->hc_ListsStep = HCLS_CLEAR_WL;
+        break;
+    case HCLS_ADD_RL:
+    case HCLS_ADD_WL:
+        break;   /* same step, next device (hc_ListsIndex already advanced) */
+    default:
+        hc->hc_ListsStep++;
+        break;
+    }
+    bLEListsStep(hc);
 }
 /* \\\ */
 
 /* /// "bLEListsSync()" */
-/* Reprogram the controller's resolving list (bonded peers with an IRK) and
-   accept list (the reconnect candidates). Only called with the LE radio
-   idle: neither may change while scanning or initiating. The commands are
-   queued in order; bListsCmdCB() fires after the last one. */
 static void bLEListsSync(struct BtHWCore *hc)
 {
-    struct BtBase *BluetoothBase = hc->hc_Base;
-    struct BtHardware *bth = hc->hc_Hardware;
-    struct BtDevice *bd;
-    BOOL privacy = (bth->bth_LEReconnect == BTLR_RESOLVING);
-    UBYTE p[39];
-    UWORD wl = 0, rl = 0, skipped = 0;
-
-    bth->bth_LEListsDirty = FALSE;
+    hc->hc_Hardware->bth_LEListsDirty = FALSE;
     hc->hc_ListsSyncing = TRUE;
-    if(privacy) {
-        p[0] = 0;
-        bSubmitCmd(hc, HC_OP_LE_SET_ADDR_RESOLUTION, p, 1, bIgnoreCompletion, hc);
-        hc->hc_ResolvingOn = FALSE;
-        bSubmitCmd(hc, HC_OP_LE_CLEAR_RESOLVING_LIST, NULL, 0, bIgnoreCompletion, hc);
-    }
-    btLockReadBase();
-    if(privacy) {
-        for(bd = (struct BtDevice *) bth->bth_Devices.lh_Head; bd->bd_Node.ln_Succ; bd = (struct BtDevice *) bd->bd_Node.ln_Succ) {
-            if(((bd->bd_Flags & (BDFF_LE|BDFF_BONDED)) != (BDFF_LE|BDFF_BONDED)) || !(bd->bd_Keys.bkc_Flags & BKCF_IRK)) {
-                continue;
-            }
-            if(rl >= bth->bth_ResolvingListSize) {
-                break;
-            }
-            p[0] = bd->bd_AddrType & 1;                 /* peer identity address type */
-            CopyMem(bd->bd_Address.bd_Addr, &p[1], 6);
-            CopyMem(bd->bd_Keys.bkc_IRK, &p[7], 16);    /* peer IRK, as distributed (LSB first) */
-            memset(&p[23], 0, 16);                      /* local IRK: we use our identity address */
-            bSubmitCmd(hc, HC_OP_LE_ADD_RESOLVING_LIST, p, 39, bIgnoreCompletion, hc);
-            rl++;
-        }
-        p[0] = 1;
-        bSubmitCmd(hc, HC_OP_LE_SET_ADDR_RESOLUTION, p, 1, bResolvingCmdCB, hc);
-    }
-    bSubmitCmd(hc, HC_OP_LE_CLEAR_WHITE_LIST, NULL, 0, bIgnoreCompletion, hc);
-    for(bd = (struct BtDevice *) bth->bth_Devices.lh_Head; bd->bd_Node.ln_Succ; bd = (struct BtDevice *) bd->bd_Node.ln_Succ) {
-        if(!bAutoConnCandidate(bd)) {
-            continue;
-        }
-        if(wl >= bth->bth_AcceptListSize) {
-            skipped++;
-            continue;
-        }
-        p[0] = bd->bd_AddrType & 1;
-        CopyMem(bd->bd_Address.bd_Addr, &p[1], 6);
-        bSubmitCmd(hc, HC_OP_LE_ADD_WHITE_LIST, p, 7, bIgnoreCompletion, hc);
-        wl++;
-    }
-    btUnlockBase();
-    hc->hc_AcceptListCount = wl;
-    /* a harmless query closes the sequence so the callback runs after the last add */
-    bSubmitCmd(hc, HC_OP_LE_READ_WHITE_LIST_SIZE, NULL, 0, bListsCmdCB, hc);
-    KPRINTF(10, ("LE lists: %ld resolving, %ld accept-listed, %ld skipped\n", (LONG) rl, (LONG) wl, (LONG) skipped));
-    if(skipped) {
-        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                       "%s/%ld: accept list full (%ld slots) - %ld bonded device(s) will not reconnect by themselves.",
-                       bth->bth_DevName, bth->bth_Unit, (ULONG) bth->bth_AcceptListSize, (ULONG) skipped);
-    }
+    hc->hc_ListsStep = HCLS_RES_OFF;
+    hc->hc_ListsIndex = 0;
+    hc->hc_ListsSkipped = 0;
+    bLEListsStep(hc);
 }
 /* \\\ */
 
@@ -964,6 +1069,21 @@ static void bAutoConnCmdCB(struct bt_cmdq_completion *completion, void *user_dat
 }
 /* \\\ */
 
+/* /// "bAutoConnCancelCB()" */
+/* a refused cancel (nothing was pending after all, e.g. the link just came
+   up) gets no LE Connection Complete event: resume right away */
+static void bAutoConnCancelCB(struct bt_cmdq_completion *completion, void *user_data)
+{
+    struct BtHWCore *hc = user_data;
+    if((completion->result != BT_CMDQ_RESULT_COMPLETE) || completion->status) {
+        KPRINTF(10, ("auto-connect cancel refused (%02lx)\n", (ULONG) completion->status));
+        if(hc->hc_AutoConnCancel) {
+            bAutoConnDone(hc);
+        }
+    }
+}
+/* \\\ */
+
 /* /// "bAutoConnDisarm()" */
 /* Take the accept-list initiator back: LE Create Connection Cancel. The
    controller answers with an LE Connection Complete (status 0x02), which
@@ -975,7 +1095,9 @@ void bAutoConnDisarm(struct BtHWCore *hc)
     }
     hc->hc_AutoConnCancel = TRUE;
     KPRINTF(10, ("auto-connect: cancelling\n"));
-    bSubmitCmd(hc, HC_OP_LE_CREATE_CONN_CANCEL, NULL, 0, bIgnoreCompletion, hc);
+    if(!bSubmitCmd(hc, HC_OP_LE_CREATE_CONN_CANCEL, NULL, 0, bAutoConnCancelCB, hc)) {
+        bAutoConnDone(hc);
+    }
 }
 /* \\\ */
 
@@ -1011,7 +1133,8 @@ static void bAutoConnUpdate(struct BtHWCore *hc)
         return;   /* a transition is in flight; its completion re-enters */
     }
     quiet = !(bth->bth_Flags & BTHF_DISCOVERING) && !hc->hc_DiscoveryPending && !hc->hc_LEScanActive &&
-            !hc->hc_BgScanActive && !hc->hc_Connecting && hc->hc_BringupDone && !hc->hc_BringupFailed;
+            !hc->hc_BgScanActive && hc->hc_BringupDone && !hc->hc_BringupFailed &&
+            !(hc->hc_Connecting && (hc->hc_Connecting->cn_LinkType == BDLT_LE));
     want = quiet && bBgScanNeeded(hc);
     if(!want) {
         if(hc->hc_AutoConnArmed && !quiet) {
@@ -2480,7 +2603,15 @@ void bStartACLWrite(struct BtHWCore *hc)
     struct HCACLTx *tx;
     UWORD n;
 
-    while((tx = (struct HCACLTx *) hc->hc_ACLTxQueue.mlh_Head)->tx_Node.mln_Succ) {
+    struct HCACLTx *next;
+
+    /* One queue, two credit pools: a packet whose bearer is out of credits
+       must not hold up the other bearer's traffic behind it (a BR/EDR link
+       saturated by BNEP data used to stall every LE packet - SMP, ATT -
+       queued after it: pairing timed out, HID notifications stopped). Walk
+       the queue and send whatever has credits, in order per bearer. */
+    for(tx = (struct HCACLTx *) hc->hc_ACLTxQueue.mlh_Head;
+        (next = (struct HCACLTx *) tx->tx_Node.mln_Succ); tx = next) {
         struct BtHWConn *cn = NULL;
         struct MinNode *mn;
         ULONG *credits = &hc->hc_ACLCredits;
@@ -2496,7 +2627,7 @@ void bStartACLWrite(struct BtHWCore *hc)
             credits = &hc->hc_LEACLCredits;
         }
         if(!*credits) {
-            return;
+            continue;   /* this bearer waits; the other may still go */
         }
         for(n = 0; n < HC_NUMACLWRITES; n++) {
             if(!hc->hc_ACLWritePending[n]) {

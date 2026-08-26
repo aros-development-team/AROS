@@ -463,6 +463,137 @@ static void test_secure_connections_numeric_confirmation(void)
     BT_CHECK(port.sent[0] == BT_SMP_PAIRING_FAILED && port.sent[1] == 0x0C);
 }
 
+/* LE Secure Connections Passkey Entry, initiator displays (a keyboard peer):
+ * 20 commitment rounds, each committing to one passkey bit, then f5/f6 with
+ * r = passkey. The responder is emulated here round by round. */
+static void test_secure_connections_passkey_entry(void)
+{
+    struct bt_smp_manager manager;
+    struct fake_manager_port port;
+    struct bt_smp_aes_cmac cmac = {fake_cmac, NULL};
+    uint8_t local_x[32], local_y[32], peer_x[32], peer_y[32], dhkey[32];
+    uint8_t peer_random[16];
+    uint8_t peer_confirm[16];
+    uint8_t our_confirm[16];
+    uint8_t expected[16];
+    uint8_t responder_check[16];
+    uint8_t a1[7], a2[7];
+    uint8_t io_cap[3] = {BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_MITM, 0, 0x02};
+    uint32_t passkey;
+    size_t i;
+    int round;
+
+    init_manager(&manager, &port, BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_MITM);
+    manager.config.features.io_capability = 0x01; /* DisplayYesNo */
+    bt_smp_manager_set_cmac(&manager, &cmac);
+    BT_CHECK(bt_smp_manager_start(&manager, 0) == BT_OK);
+    feed_pairing_response_with_keys(&manager, 0x02 /* KeyboardOnly */,
+                                    BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_MITM, 0, 0, 1);
+    BT_CHECK(manager.negotiation.secure_connections);
+    BT_CHECK(manager.negotiation.association == BT_SMP_ASSOC_PASSKEY_INITIATOR_DISPLAYS);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_LOCAL_PUBLIC_KEY);
+    for (i = 0; i < 32; ++i)
+    {
+        local_x[i] = (uint8_t)(0x10u + i);
+        local_y[i] = (uint8_t)(0x40u + i);
+        peer_x[i] = (uint8_t)(0x80u + i);
+        peer_y[i] = (uint8_t)(0xC0u + i);
+        dhkey[i] = (uint8_t)(0x55u ^ i);
+    }
+    bt_smp_manager_on_local_public_key(&manager, true, local_x, local_y, 2);
+    feed_public_key(&manager, peer_x, peer_y, 3);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_DHKEY);
+    bt_smp_manager_on_dhkey(&manager, true, dhkey, 4);
+
+    /* the passkey was generated and shown, and round 0's commitment went out */
+    BT_CHECK(port.user_calls == 1 && port.user_action == BT_SMP_USER_DISPLAY_PASSKEY);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_SC_CONFIRM);
+    BT_CHECK(port.sent[0] == BT_SMP_PAIRING_CONFIRM);
+    passkey = ((uint32_t)manager.tk[12] << 24) | ((uint32_t)manager.tk[13] << 16) |
+              ((uint32_t)manager.tk[14] << 8) | manager.tk[15];
+    BT_CHECK(passkey <= 999999u);
+
+    for (round = 0; round < 20; ++round)
+    {
+        uint8_t z = (uint8_t)(0x80u | ((passkey >> round) & 1u));
+
+        BT_CHECK(manager.sc_round == round);
+        BT_CHECK(manager.state == BT_SMP_STATE_WAIT_SC_CONFIRM);
+        /* our commitment must be f4(PKa, PKb, Nai, rai) */
+        for (i = 0; i < 16; ++i)
+            our_confirm[i] = port.sent[16 - i];
+        BT_CHECK(bt_smp_crypto_f4(&manager.cmac, local_x, peer_x, manager.local_random, z,
+                                  expected) == BT_OK);
+        BT_CHECK(memcmp(our_confirm, expected, 16) == 0);
+        /* responder's commitment to the same bit, then the randoms */
+        for (i = 0; i < 16; ++i)
+            peer_random[i] = (uint8_t)(0xE0u + i + round);
+        BT_CHECK(bt_smp_crypto_f4(&manager.cmac, peer_x, local_x, peer_random, z,
+                                  peer_confirm) == BT_OK);
+        feed_value(&manager, BT_SMP_PAIRING_CONFIRM, peer_confirm, 5 + round);
+        BT_CHECK(manager.state == BT_SMP_STATE_WAIT_SC_RANDOM);
+        BT_CHECK(port.sent[0] == BT_SMP_PAIRING_RANDOM);
+        feed_value(&manager, BT_SMP_PAIRING_RANDOM, peer_random, 6 + round);
+    }
+    /* after the 20th round: DHKey check with r = passkey */
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_DHKEY_CHECK);
+    BT_CHECK(port.sent[0] == BT_SMP_PAIRING_DHKEY_CHECK);
+    a1[0] = manager.config.initiator_address_type;
+    memcpy(a1 + 1, manager.config.initiator_address, 6);
+    a2[0] = manager.config.responder_address_type;
+    memcpy(a2 + 1, manager.config.responder_address, 6);
+    BT_CHECK(bt_smp_crypto_f6(&manager.cmac, manager.mac_key, peer_random,
+                              manager.local_random, manager.tk, io_cap, a2, a1,
+                              responder_check) == BT_OK);
+    feed_value(&manager, BT_SMP_PAIRING_DHKEY_CHECK, responder_check, 40);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_ENCRYPTION);
+    BT_CHECK(port.encryption_calls == 1);
+    bt_smp_manager_on_encryption_changed(&manager, true, 41);
+    BT_CHECK(manager.state == BT_SMP_STATE_COMPLETE);
+    BT_CHECK(port.complete_calls == 1 && port.result == BT_SMP_MANAGER_OK);
+
+    /* a responder committing to the wrong bit is caught in that round */
+    init_manager(&manager, &port, BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_MITM);
+    manager.config.features.io_capability = 0x01;
+    bt_smp_manager_set_cmac(&manager, &cmac);
+    BT_CHECK(bt_smp_manager_start(&manager, 0) == BT_OK);
+    feed_pairing_response_with_keys(&manager, 0x02, BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_MITM, 0, 0, 1);
+    bt_smp_manager_on_local_public_key(&manager, true, local_x, local_y, 2);
+    feed_public_key(&manager, peer_x, peer_y, 3);
+    bt_smp_manager_on_dhkey(&manager, true, dhkey, 4);
+    passkey = ((uint32_t)manager.tk[12] << 24) | ((uint32_t)manager.tk[13] << 16) |
+              ((uint32_t)manager.tk[14] << 8) | manager.tk[15];
+    {
+        uint8_t wrong = (uint8_t)(0x80u | (((passkey >> 0) & 1u) ^ 1u));
+        for (i = 0; i < 16; ++i)
+            peer_random[i] = (uint8_t)(0x70u + i);
+        BT_CHECK(bt_smp_crypto_f4(&manager.cmac, peer_x, local_x, peer_random, wrong,
+                                  peer_confirm) == BT_OK);
+        feed_value(&manager, BT_SMP_PAIRING_CONFIRM, peer_confirm, 5);
+        feed_value(&manager, BT_SMP_PAIRING_RANDOM, peer_random, 6);
+        BT_CHECK(manager.state == BT_SMP_STATE_FAILED);
+        BT_CHECK(port.result == BT_SMP_MANAGER_ERROR_CONFIRM);
+        BT_CHECK(port.sent[0] == BT_SMP_PAIRING_FAILED && port.sent[1] == 0x04);
+    }
+
+    /* the responder-displays variant waits for the passkey first */
+    init_manager(&manager, &port, BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_MITM);
+    manager.config.features.io_capability = 0x02; /* KeyboardOnly */
+    bt_smp_manager_set_cmac(&manager, &cmac);
+    BT_CHECK(bt_smp_manager_start(&manager, 0) == BT_OK);
+    feed_pairing_response_with_keys(&manager, 0x00 /* DisplayOnly */,
+                                    BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_MITM, 0, 0, 1);
+    BT_CHECK(manager.negotiation.association == BT_SMP_ASSOC_PASSKEY_RESPONDER_DISPLAYS);
+    bt_smp_manager_on_local_public_key(&manager, true, local_x, local_y, 2);
+    feed_public_key(&manager, peer_x, peer_y, 3);
+    bt_smp_manager_on_dhkey(&manager, true, dhkey, 4);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_TK);
+    BT_CHECK(port.user_action == BT_SMP_USER_REQUEST_PASSKEY);
+    BT_CHECK(bt_smp_manager_provide_passkey(&manager, 123456, 5) == BT_OK);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_SC_CONFIRM);
+    BT_CHECK(port.sent[0] == BT_SMP_PAIRING_CONFIRM);
+}
+
 static void test_full_key_distribution_and_order_validation(void)
 {
     struct bt_smp_manager manager;
@@ -515,5 +646,6 @@ void run_smp_manager_tests(void)
     test_passkey_input();
     test_secure_connections_just_works();
     test_secure_connections_numeric_confirmation();
+    test_secure_connections_passkey_entry();
     test_full_key_distribution_and_order_validation();
 }
