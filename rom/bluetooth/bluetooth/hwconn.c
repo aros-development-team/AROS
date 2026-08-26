@@ -759,17 +759,6 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
                    (role == BDR_CENTRAL) ? "central" : "peripheral");
     btSendEvent(BEHMB_DEVICECONNECTED, bd, NULL);
 
-    /* re-dispatch requests that waited for the link */
-    {
-        struct MinNode *mn;
-        while((mn = (struct MinNode *) RemHead((struct List *) &cn->cn_WaitReqs))) {
-            struct BtChannel *bch = BCH_FROM_QNODE(mn);
-            bch->bch_Flags &= ~BCHF_QUEUED;
-            if(!bConnHandleRequest(hc, bch)) {
-                bReplyChannel(BluetoothBase, bch, BTIOERR_NOTSUPPORTED, 0);
-            }
-        }
-    }
     if(cn->cn_LinkType == BDLT_LE) {
         /* always listen on the SMP channel (Security Requests) and re-encrypt a
            bonded peer BEFORE talking GATT to it: ATT traffic racing the LL
@@ -800,6 +789,19 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
     }
     if(cn->cn_PairState == PAIR_CONNECTING) {
         bStartPairing(cn);
+    }
+    /* Re-dispatch the requests a class queued while the link was down (a
+     * connection kept alive by cn_WaitAdv arrives with every read the class
+     * re-issued meanwhile). NEVER drain cn_WaitReqs in place here:
+     * bConnHandleRequest() parks a request straight back on it whenever the
+     * GATT client is busy, so a RemHead() loop takes it off, the body puts it
+     * back, and the machine hangs (bellatrix ISSUE-0062). bDispatchWaiting()
+     * detaches the queue first. And only now, after enumeration/re-encryption
+     * have been kicked off: with either pending the requests park again and
+     * bConnFinishEnum() releases them, instead of ATT traffic racing the LL
+     * encryption. */
+    if((cn->cn_EnumState == ENUM_IDLE) && !cn->cn_EncryptPending) {
+        bDispatchWaiting(cn);
     }
 }
 /* \\\ */
@@ -1854,6 +1856,12 @@ static void bConnFinishEnum(struct BtHWConn *cn, LONG error)
     if((cn->cn_PairState == PAIR_WAITENUM) && (cn->cn_State == HCNS_CONNECTED)) {
         cn->cn_PairState = PAIR_IDLE;
         bStartPairing(cn);
+    }
+    if(cn->cn_State == HCNS_CONNECTED) {
+        /* requests parked behind the enumeration (or the re-encryption that
+           preceded it) can go now; bConnDown() has already flushed them when
+           the link is gone */
+        bDispatchWaiting(cn);
     }
 }
 /* \\\ */
