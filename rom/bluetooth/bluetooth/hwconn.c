@@ -60,6 +60,9 @@ static void bConnRunEnum(struct BtHWConn *cn);
 static void bConnFinishEnum(struct BtHWConn *cn, LONG error);
 static struct BtEndpoint * bNextDescEndpoint(struct BtHWConn *cn);
 static void bEndpointEvent(struct bt_l2cap_channel_event_info *info, void *user_data);
+static void bRFCOMMWrite(struct BtHWEndpoint *hep, struct BtChannel *bch);
+static BOOL bRFCOMMEndpointOpen(struct BtHWEndpoint *hep);
+static void bRFCOMMDlcEvent(void *user_data, const struct bt_rfcomm_dlc_event *event);
 static void bFlushWaitingRequests(struct BtHWConn *cn, LONG error);
 static void bDispatchWaiting(struct BtHWConn *cn);
 static void bStartPairing(struct BtHWConn *cn);
@@ -256,6 +259,10 @@ static void bEndpointWrite(struct BtHWEndpoint *hep, struct BtChannel *bch)
     struct BtBase *BluetoothBase = hc->hc_Base;
     bt_status_t st;
 
+    if(hep->hep_Endpoint && (hep->hep_Endpoint->bep_Type == BEPT_RFCOMM)) {
+        bRFCOMMWrite(hep, bch);
+        return;
+    }
     if(bch->bch_Length > BT_L2CAP_MAX_SEND_LEN) {
         bReplyChannel(BluetoothBase, bch, BTIOERR_BADPARAMS, 0);
         return;
@@ -322,6 +329,179 @@ static void bEndpointEvent(struct bt_l2cap_channel_event_info *info, void *user_
 }
 /* \\\ */
 
+/* *** RFCOMM endpoints ***
+ * One TS 07.10 multiplexer per BR/EDR link (btcore bt_rfcomm), riding a
+ * single L2CAP channel to PSM 0x0003. Every BEPT_RFCOMM endpoint of every
+ * service on the device is a DLC on that session; the DLCI lives in
+ * hep_LocalCID. */
+
+/* /// "bRFCOMMSend()" */
+static bt_status_t bRFCOMMSend(void *context, const uint8_t *frame, size_t len)
+{
+    struct BtHWConn *cn = context;
+    return(bt_l2cap_channel_manager_send(&cn->cn_L2CAP, cn->cn_RFCOMMCid, frame, len, bNowUS(cn->cn_Core)));
+}
+/* \\\ */
+
+/* /// "bRFCOMMSessionEvent()" */
+static void bRFCOMMSessionEvent(void *context, uint8_t event)
+{
+    struct BtHWConn *cn = context;
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    struct MinNode *mn, *next;
+
+    for(mn = cn->cn_Endpoints.mlh_Head; (next = mn->mln_Succ); mn = next) {
+        struct BtHWEndpoint *hep = (struct BtHWEndpoint *) mn;
+        if(!hep->hep_Endpoint || (hep->hep_Endpoint->bep_Type != BEPT_RFCOMM)) {
+            continue;
+        }
+        if(event == BT_RFCOMM_SESSION_UP) {
+            if((hep->hep_State == HEPS_OPENING) && !hep->hep_LocalCID) {
+                uint8_t dlci = 0;
+                if(bt_rfcomm_open(&cn->cn_RFCOMM, hep->hep_Endpoint->bep_RFCOMMChannel,
+                                  bRFCOMMDlcEvent, hep, &dlci) == BT_OK) {
+                    hep->hep_LocalCID = dlci;
+                } else {
+                    hep->hep_State = HEPS_CLOSED;
+                    bReqQueueFlush(BluetoothBase, &hep->hep_ReadReqs, BTIOERR_CHANNELFAILED);
+                    bReqQueueFlush(BluetoothBase, &hep->hep_WriteReqs, BTIOERR_CHANNELFAILED);
+                }
+            }
+        } else {
+            /* session gone: the DLC events already flushed open DLCs, this
+               catches endpoints still waiting for the session */
+            if(hep->hep_State != HEPS_CLOSED) {
+                hep->hep_State = HEPS_CLOSED;
+                hep->hep_LocalCID = 0;
+                bReqQueueFlush(BluetoothBase, &hep->hep_ReadReqs, BTIOERR_DISCONNECTED);
+                bReqQueueFlush(BluetoothBase, &hep->hep_WriteReqs, BTIOERR_DISCONNECTED);
+            }
+        }
+    }
+}
+/* \\\ */
+
+/* /// "bRFCOMMDlcEvent()" */
+static void bRFCOMMDlcEvent(void *user_data, const struct bt_rfcomm_dlc_event *event)
+{
+    struct BtHWEndpoint *hep = user_data;
+    struct BtHWConn *cn = hep->hep_Conn;
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    struct MinNode *mn;
+
+    switch(event->event) {
+    case BT_RFCOMM_DLC_OPEN:
+        hep->hep_State = HEPS_OPEN;
+        /* flush queued writes as long as there are credits */
+        while(bt_rfcomm_can_send(&cn->cn_RFCOMM, hep->hep_LocalCID) &&
+              (mn = (struct MinNode *) RemHead((struct List *) &hep->hep_WriteReqs))) {
+            struct BtChannel *bch = BCH_FROM_QNODE(mn);
+            bch->bch_Flags &= ~BCHF_QUEUED;
+            bRFCOMMWrite(hep, bch);
+        }
+        break;
+    case BT_RFCOMM_DLC_DATA:
+        bDeliverSDU(hep, event->data, event->data_len);
+        break;
+    case BT_RFCOMM_DLC_CREDITS:
+        while(bt_rfcomm_can_send(&cn->cn_RFCOMM, hep->hep_LocalCID) &&
+              (mn = (struct MinNode *) RemHead((struct List *) &hep->hep_WriteReqs))) {
+            struct BtChannel *bch = BCH_FROM_QNODE(mn);
+            bch->bch_Flags &= ~BCHF_QUEUED;
+            bRFCOMMWrite(hep, bch);
+        }
+        break;
+    case BT_RFCOMM_DLC_CLOSED: {
+        LONG err = event->refused ? BTIOERR_REFUSED : BTIOERR_DISCONNECTED;
+        if(hep->hep_State == HEPS_CLOSING) {
+            err = IOERR_ABORTED;
+        }
+        hep->hep_State = HEPS_CLOSED;
+        hep->hep_LocalCID = 0;
+        bReqQueueFlush(BluetoothBase, &hep->hep_ReadReqs, err);
+        bReqQueueFlush(BluetoothBase, &hep->hep_WriteReqs, err);
+        break;
+    }
+    }
+}
+/* \\\ */
+
+/* /// "bRFCOMMChanEvent()" */
+/* the underlying L2CAP channel (PSM 0x0003) of the multiplexer */
+static void bRFCOMMChanEvent(struct bt_l2cap_channel_event_info *info, void *user_data)
+{
+    struct BtHWConn *cn = user_data;
+
+    switch(info->event) {
+    case BT_L2CAP_CHANNEL_EVENT_OPENED:
+        cn->cn_RFCOMMCid = info->local_cid;
+        bt_rfcomm_start(&cn->cn_RFCOMM);
+        break;
+    case BT_L2CAP_CHANNEL_EVENT_DATA:
+        bt_rfcomm_on_data(&cn->cn_RFCOMM, info->data, info->data_len);
+        break;
+    case BT_L2CAP_CHANNEL_EVENT_CLOSED:
+        cn->cn_RFCOMMOpen = FALSE;
+        cn->cn_RFCOMMCid = 0;
+        bt_rfcomm_stop(&cn->cn_RFCOMM);   /* emits DOWN -> endpoints flushed */
+        break;
+    }
+}
+/* \\\ */
+
+/* /// "bRFCOMMEndpointOpen()" */
+static BOOL bRFCOMMEndpointOpen(struct BtHWEndpoint *hep)
+{
+    struct BtHWConn *cn = hep->hep_Conn;
+    struct BtHWCore *hc = cn->cn_Core;
+
+    if(!cn->cn_RFCOMMOpen) {
+        uint16_t cid;
+        bt_rfcomm_init(&cn->cn_RFCOMM, BT_L2CAP_DEFAULT_MTU - 6, bRFCOMMSend, bRFCOMMSessionEvent, cn);
+        if(bt_l2cap_channel_manager_open(&cn->cn_L2CAP, 0x0003, BT_L2CAP_DEFAULT_MTU,
+                                         bRFCOMMChanEvent, cn, &cid, bNowUS(hc)) != BT_OK) {
+            return(FALSE);
+        }
+        cn->cn_RFCOMMCid = cid;
+        cn->cn_RFCOMMOpen = TRUE;
+    }
+    hep->hep_State = HEPS_OPENING;
+    hep->hep_LocalCID = 0;
+    if(bt_rfcomm_session_up(&cn->cn_RFCOMM)) {
+        uint8_t dlci = 0;
+        if(bt_rfcomm_open(&cn->cn_RFCOMM, hep->hep_Endpoint->bep_RFCOMMChannel,
+                          bRFCOMMDlcEvent, hep, &dlci) != BT_OK) {
+            hep->hep_State = HEPS_CLOSED;
+            return(FALSE);
+        }
+        hep->hep_LocalCID = dlci;
+    }
+    return(TRUE);
+}
+/* \\\ */
+
+/* /// "bRFCOMMWrite()" */
+static void bRFCOMMWrite(struct BtHWEndpoint *hep, struct BtChannel *bch)
+{
+    struct BtHWConn *cn = hep->hep_Conn;
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    bt_status_t st;
+
+    if(bch->bch_Length > bt_rfcomm_mtu(&cn->cn_RFCOMM, hep->hep_LocalCID)) {
+        bReplyChannel(BluetoothBase, bch, BTIOERR_BADPARAMS, 0);
+        return;
+    }
+    st = bt_rfcomm_send(&cn->cn_RFCOMM, hep->hep_LocalCID, bch->bch_Data, bch->bch_Length);
+    if(st == BT_ERR_BUSY) {
+        bReqQueueAdd(&hep->hep_WriteReqs, bch);   /* out of credits: resumes on BT_RFCOMM_DLC_CREDITS */
+    } else if(st != BT_OK) {
+        bReplyChannel(BluetoothBase, bch, BTIOERR_HOSTERROR, 0);
+    } else {
+        bReplyChannel(BluetoothBase, bch, 0, bch->bch_Length);
+    }
+}
+/* \\\ */
+
 /* /// "bEndpointOpen()" */
 static BOOL bEndpointOpen(struct BtHWEndpoint *hep)
 {
@@ -347,6 +527,8 @@ static BOOL bEndpointOpen(struct BtHWEndpoint *hep)
             return(FALSE);
         }
         return(TRUE);
+    case BEPT_RFCOMM:
+        return(bRFCOMMEndpointOpen(hep));
     default:
         return(FALSE);
     }
@@ -361,6 +543,14 @@ static void bEndpointClose(struct BtHWEndpoint *hep)
         return;
     }
     hep->hep_State = HEPS_CLOSING;
+    if(hep->hep_Endpoint && (hep->hep_Endpoint->bep_Type == BEPT_RFCOMM)) {
+        if(hep->hep_LocalCID) {
+            bt_rfcomm_close(&cn->cn_RFCOMM, (uint8_t) hep->hep_LocalCID);
+        }
+        hep->hep_LocalCID = 0;
+        hep->hep_State = HEPS_CLOSED;
+        return;
+    }
     bt_l2cap_channel_manager_close(&cn->cn_L2CAP, hep->hep_LocalCID, bNowUS(cn->cn_Core));
     hep->hep_State = HEPS_CLOSED;
 }
@@ -1188,7 +1378,8 @@ static void bParseSDPRecord(struct BtHWConn *cn, ULONG handle, const UBYTE *attr
                 bep->bep_CanRead = TRUE;
                 bep->bep_CanWrite = TRUE;
                 bep->bep_PSM = psms[n];
-                bep->bep_MaxPktSize = BT_L2CAP_DEFAULT_MTU;
+                /* BNEP (PAN) needs room for a whole ethernet frame */
+                bep->bep_MaxPktSize = (psms[n] == 0x000f) ? 1691 : BT_L2CAP_DEFAULT_MTU;
                 bep->bep_Name = btCopyStrFmt("L2CAP PSM 0x%04lx", psms[n]);
                 bep->bep_Node.ln_Name = bep->bep_Name;
             }
@@ -3059,7 +3250,8 @@ BOOL bConnHandleRequest(struct BtHWCore *hc, struct BtChannel *bch)
         switch(bep->bep_Type) {
         case BEPT_L2CAP:
         case BEPT_L2CAP_FIXED:
-            if(cn->cn_LinkType == BDLT_LE && bep->bep_Type == BEPT_L2CAP) {
+        case BEPT_RFCOMM:
+            if((cn->cn_LinkType == BDLT_LE) && (bep->bep_Type != BEPT_L2CAP_FIXED)) {
                 bReplyChannel(BluetoothBase, bch, BTIOERR_NOTSUPPORTED, 0);
                 return(TRUE);
             }
@@ -3275,7 +3467,8 @@ void bConnTick(struct BtHWCore *hc)
             struct BtHWEndpoint *hep = (struct BtHWEndpoint *) en;
             if(hep->hep_CloseTick && !hep->hep_UseCnt && ((LONG) (hc->hc_Tick - hep->hep_CloseTick) >= 0)) {
                 hep->hep_CloseTick = 0;
-                if(hep->hep_Endpoint->bep_Type == BEPT_L2CAP) {
+                if((hep->hep_Endpoint->bep_Type == BEPT_L2CAP) ||
+                   (hep->hep_Endpoint->bep_Type == BEPT_RFCOMM)) {
                     bEndpointClose(hep);
                 }
             }

@@ -23,6 +23,7 @@
 #include <btcore/sdp_client.h>
 #include <btcore/att.h>
 #include <btcore/gatt_client.h>
+#include <btcore/rfcomm.h>
 #include <btcore/smp.h>
 #include <btcore/smp_manager.h>
 
@@ -217,6 +218,10 @@ struct BtHWConn
     UWORD               cn_PairState;
     struct BtChannel   *cn_PairReq;
     /* LE pairing: btcore Security Manager, driven over fixed CID 6 */
+    /* RFCOMM multiplexer (one per BR/EDR link, all DLCs of all services) */
+    struct bt_rfcomm_session cn_RFCOMM;
+    BOOL                cn_RFCOMMOpen;    /* L2CAP channel to PSM 0x0003 exists */
+    UWORD               cn_RFCOMMCid;
     struct bt_smp_manager     cn_SMP;
     struct bt_smp_cmac_aes128 cn_SMPCmac;
     BOOL                cn_SMPActive;     /* manager initialised for a pairing in progress */

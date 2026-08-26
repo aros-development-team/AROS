@@ -20,6 +20,7 @@ BTCORE_FILES := \
     protocols/l2cap/l2cap \
     protocols/l2cap/signaling \
     protocols/l2cap/channel_manager \
+    protocols/rfcomm/rfcomm \
     protocols/sdp/sdp \
     protocols/sdp/sdp_client \
     protocols/att/att \

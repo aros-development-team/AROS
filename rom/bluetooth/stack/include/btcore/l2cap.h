@@ -36,7 +36,7 @@ bt_status_t bt_l2cap_parse_header(struct bt_buf_reader *r, struct bt_l2cap_heade
  * L2CAP PDU (header included) this reassembler can hold.
  */
 #ifndef BT_L2CAP_REASSEMBLY_MAX
-#define BT_L2CAP_REASSEMBLY_MAX 1024
+#define BT_L2CAP_REASSEMBLY_MAX 1708 /* header + BNEP-wrapped ethernet frame */
 #endif
 
 struct bt_l2cap_reassembler

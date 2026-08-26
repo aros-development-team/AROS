@@ -1,0 +1,13 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := btserial.class dev debug
+
+#MM- kernel-bluetooth-classes-btserial : kernel-bluetooth-btclass kernel-bluetooth-library-includes
+
+%build_module_library mmake=kernel-bluetooth-classes-btserial \
+    modname=btserial modtype=btclass modsuffix="class" \
+    files="$(FILES)"
+
+%common

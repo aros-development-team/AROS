@@ -44,7 +44,7 @@
 #endif
 
 #ifndef BT_L2CAP_MAX_SEND_LEN
-#define BT_L2CAP_MAX_SEND_LEN 512
+#define BT_L2CAP_MAX_SEND_LEN 1700 /* big enough for a BNEP-wrapped ethernet frame */
 #endif
 
 enum bt_l2cap_channel_state
