@@ -240,6 +240,9 @@ struct BtHWConn
        (the peer may simply be away) - keep them out of the log and off the
        device's dead-count */
     BOOL                cn_AutoRetry;
+    /* authentication attempts re-issued after an LMP transaction collision
+       (0x23: both sides started a security procedure at once) */
+    UBYTE               cn_AuthRetries;
 };
 
 #define HCNS_FREE       0

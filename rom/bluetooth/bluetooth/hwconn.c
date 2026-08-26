@@ -2689,6 +2689,17 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
         }
         handle = (params[1] | (params[2] << 8)) & 0x0fff;
         cn = bFindConnByHandle(hc, handle);
+        if(cn && (params[0] == 0x23) && (cn->cn_AuthRetries < 2) &&
+           ((cn->cn_PairState == PAIR_AUTH) || cn->cn_EncryptPending)) {
+            /* LMP transaction collision: both sides started a security
+               procedure at the same moment - the loser simply retries
+               once the peer's round has finished (bConnTick()) */
+            cn->cn_AuthRetries++;
+            cn->cn_NextAttempt = hc->hc_Tick + 1200;
+            KPRINTF(10, ("auth collision on '%s' - retry %ld scheduled\n",
+                         cn->cn_Device->bd_Name, (LONG) cn->cn_AuthRetries));
+            return(TRUE);
+        }
         if(cn && (cn->cn_PairState != PAIR_IDLE)) {
             if(params[0]) {
                 bPairingDone(cn, BTIOERR_SECURITY, params[0]);
@@ -3577,6 +3588,16 @@ void bConnTick(struct BtHWCore *hc)
         }
         if(cn->cn_State != HCNS_CONNECTED) {
             continue;
+        }
+        if(cn->cn_AuthRetries && cn->cn_NextAttempt &&
+           ((cn->cn_PairState == PAIR_AUTH) || cn->cn_EncryptPending) &&
+           ((LONG) (hc->hc_Tick - cn->cn_NextAttempt) >= 0)) {
+            /* re-issue the authentication that lost an LMP collision */
+            UBYTE p[2];
+            cn->cn_NextAttempt = 0;
+            p[0] = cn->cn_Handle & 0xff;
+            p[1] = cn->cn_Handle >> 8;
+            bSubmitCmd(hc, HC_OP_AUTH_REQUESTED, p, 2, bIgnoreCompletion, hc);
         }
         bt_l2cap_channel_manager_tick(&cn->cn_L2CAP, now);
         bt_gatt_client_tick(&cn->cn_GATT, now);
