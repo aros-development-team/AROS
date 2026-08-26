@@ -680,9 +680,16 @@ static void bBNEPControl(struct BTPanUnit *ncp, const UBYTE *p, ULONG len)
                     if(code == 0)
                     {
                         ncp->ncp_BNEPState = BPS_UP;
-                        btAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                                       "btpan.device unit %ld: BNEP connection established.",
-                                       ncp->ncp_UnitNo);
+                        /* a peer with tethering disabled accepts the setup and
+                           then drops the channel over and over: say it once,
+                           and report loss/recovery instead of every cycle */
+                        if(!ncp->ncp_EstLogged)
+                        {
+                            btAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                                           "btpan.device unit %ld: BNEP connection established.",
+                                           ncp->ncp_UnitNo);
+                            ncp->ncp_EstLogged = TRUE;
+                        }
                     } else {
                         ncp->ncp_BNEPState = BPS_DOWN;
                         btAddErrorMsg(RETURN_WARN, (STRPTR) libname,
@@ -795,6 +802,14 @@ static void bBNEPInput(struct BTPanUnit *ncp, const UBYTE *p, ULONG len)
         return;
     }
     CopyMem((APTR) &p[pos], eth + 14, plen);
+    if(ncp->ncp_LossLogged)
+    {
+        btAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                       "btpan.device unit %ld: BNEP connection recovered.",
+                       ncp->ncp_UnitNo);
+        ncp->ncp_LossLogged = FALSE;
+    }
+    ncp->ncp_RetryMS = 0;
     bReadPacket(ncp, eth, 14 + plen);
 }
 /* \\\ */
@@ -852,8 +867,17 @@ AROS_UFH0(void, bEthTask)
                     {
                         /* link down: a fresh L2CAP channel needs a fresh
                            BNEP setup once the device is back */
+                        if((ncp->ncp_BNEPState == BPS_UP) && !ncp->ncp_LossLogged)
+                        {
+                            btAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                           "btpan.device unit %ld: BNEP connection lost - retrying.",
+                                           ncp->ncp_UnitNo);
+                            ncp->ncp_LossLogged = TRUE;
+                        }
                         ncp->ncp_BNEPState = BPS_DOWN;
-                        btDelayMS(1000);
+                        ncp->ncp_RetryMS = ncp->ncp_RetryMS ?
+                            ((ncp->ncp_RetryMS >= 30000) ? 60000 : ncp->ncp_RetryMS * 2) : 2000;
+                        btDelayMS(ncp->ncp_RetryMS);
                     } else {
                         bDoEvent(ncp, S2EVENT_ERROR|S2EVENT_RX);
                         btDelayMS(250);
@@ -884,7 +908,17 @@ AROS_UFH0(void, bEthTask)
                     ncp->ncp_WriteKind = BPWK_NONE;
                     if(ioerr && ((ioerr == BTIOERR_NOTCONNECTED) || (ioerr == BTIOERR_DISCONNECTED)))
                     {
+                        if((ncp->ncp_BNEPState == BPS_UP) && !ncp->ncp_LossLogged)
+                        {
+                            btAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                           "btpan.device unit %ld: BNEP connection lost - retrying.",
+                                           ncp->ncp_UnitNo);
+                            ncp->ncp_LossLogged = TRUE;
+                        }
                         ncp->ncp_BNEPState = BPS_DOWN;
+                        ncp->ncp_RetryMS = ncp->ncp_RetryMS ?
+                            ((ncp->ncp_RetryMS >= 30000) ? 60000 : ncp->ncp_RetryMS * 2) : 2000;
+                        btDelayMS(ncp->ncp_RetryMS);
                     }
                 }
             }

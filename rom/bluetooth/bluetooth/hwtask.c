@@ -381,6 +381,13 @@ static BOOL bNoteDevice(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype, 
     if(isle && (bd->bd_Flags & BDFF_REGISTERED)) {
         /* one of ours is awake and advertising: reconnect it if wanted */
         bConnAdvertising(hc, bd);
+    } else if(!isle &&
+              ((bd->bd_Flags & (BDFF_REGISTERED|BDFF_BONDED)) == (BDFF_REGISTERED|BDFF_BONDED)) &&
+              !bd->bd_Conns[0]) {
+        /* a bonded classic peer answered an inquiry: page it as soon as the
+           discovery is over and the radio is free (bConnClassicTick()) */
+        bd->bd_RetryShift = 0;
+        bd->bd_NextAttempt = hc->hc_Tick;
     }
     return(TRUE);
 }

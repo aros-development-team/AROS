@@ -693,9 +693,11 @@ AROS_LH0(void, btParseCfg,
        late firmware load right now): the device objects do not need it. */
     ForeachNode(&BluetoothBase->bt_Hardware, bth) {
         ULONG count = bRestoreDevices(BluetoothBase, bth);
-        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                       "%s/%ld: %ld registered device(s) restored from the config.",
-                       bth->bth_DevName, bth->bth_Unit, count);
+        if(count) {
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s/%ld: %ld registered device(s) restored from the config.",
+                           bth->bth_DevName, bth->bth_Unit, count);
+        }
     }
 
     if(!nodos && BluetoothBase->bt_StartedAsTask) {

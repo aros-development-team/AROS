@@ -236,6 +236,10 @@ struct BtHWConn
        it advertises - no 10 s timeout, no controller time wasted paging. */
     BOOL                cn_WaitAdv;
     ULONG               cn_NextAttempt;   /* hc_Tick: while waiting, when to try a direct connect */
+    /* an unattended page from bConnClassicTick(): failures are expected
+       (the peer may simply be away) - keep them out of the log and off the
+       device's dead-count */
+    BOOL                cn_AutoRetry;
 };
 
 #define HCNS_FREE       0

@@ -408,6 +408,9 @@ struct BtDevice
     /* reconnect backoff: how long a class waits for an advert before the next
        direct connect attempt doubles (reset on link-up or a heard advert) */
     UWORD               bd_RetryShift;
+    /* BR/EDR reconnect: hc_Tick deadline for the next page attempt
+       (bConnClassicTick(); classic peers never advertise, we must page) */
+    ULONG               bd_NextAttempt;
 };
 
 struct BtService

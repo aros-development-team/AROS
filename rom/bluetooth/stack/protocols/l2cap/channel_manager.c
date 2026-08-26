@@ -303,10 +303,12 @@ static void handle_configure_request(struct bt_l2cap_channel_manager *mgr, uint8
         chan->remote_mtu = req.mtu;
 
     /* Accept whatever was proposed -- see header's documented scope
-     * reduction (no negotiation loop). Source CID here is *our* CID for
-     * this channel (echoing the request's Destination CID), per spec. */
+     * reduction (no negotiation loop). Source CID in a Configure Response
+     * names the channel endpoint of the device RECEIVING the response
+     * (spec Vol 3 Part A 4.5), i.e. the requester's CID: real stacks
+     * (Android) validate it and abandon the channel on a mismatch. */
     bt_buf_writer_init(&w, buf, sizeof(buf));
-    bt_l2cap_sig_encode_configure_response(&w, identifier, chan->local_cid, 0,
+    bt_l2cap_sig_encode_configure_response(&w, identifier, chan->remote_cid, 0,
                                             BT_L2CAP_CONFIG_RESULT_SUCCESS, 0);
     send_l2cap_pdu(mgr, mgr->signaling_cid, buf, bt_buf_writer_len(&w));
 
@@ -415,6 +417,75 @@ static void handle_command_reject(struct bt_l2cap_channel_manager *mgr, uint8_t 
         finish_close(chan, BT_L2CAP_CLOSE_CONFIG_FAILED);
 }
 
+static void handle_echo_request(struct bt_l2cap_channel_manager *mgr, uint8_t identifier,
+                                 const uint8_t *cmd_data, size_t cmd_data_len)
+{
+    uint8_t buf[BT_L2CAP_SIG_HEADER_LEN + 44];
+    struct bt_buf_writer w;
+    size_t n = (cmd_data_len > 44) ? 44 : cmd_data_len;
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_ECHO_RESPONSE, identifier, (uint16_t)n);
+    if (n > 0)
+        bt_buf_writer_write_bytes(&w, cmd_data, n);
+    send_l2cap_pdu(mgr, mgr->signaling_cid, buf, bt_buf_writer_len(&w));
+}
+
+static void handle_information_request(struct bt_l2cap_channel_manager *mgr, uint8_t identifier,
+                                        const uint8_t *cmd_data, size_t cmd_data_len)
+{
+    /* Android sends these on every new BR/EDR link and waits for the answer
+     * before it completes channel setup: leaving them unanswered stalls (and
+     * eventually aborts) every outgoing connection to such a peer. */
+    uint8_t buf[BT_L2CAP_SIG_HEADER_LEN + 4 + 8];
+    struct bt_buf_writer w;
+    struct bt_buf_reader r;
+    uint16_t info_type;
+
+    bt_buf_reader_init(&r, cmd_data, cmd_data_len);
+    if (bt_buf_reader_read_le16(&r, &info_type) != BT_OK)
+        return;
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    if (info_type == 0x0002u)
+    {
+        /* extended features supported: fixed channels only (no ERTM,
+         * streaming, FCS options or connectionless traffic) */
+        bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_INFORMATION_RESPONSE, identifier, 8);
+        bt_buf_writer_write_le16(&w, info_type);
+        bt_buf_writer_write_le16(&w, 0x0000u); /* success */
+        bt_buf_writer_write_le32(&w, 0x00000080u); /* bit 7: fixed channels */
+    }
+    else if (info_type == 0x0003u)
+    {
+        /* fixed channels supported: only the signaling channel (CID 1) */
+        bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_INFORMATION_RESPONSE, identifier, 12);
+        bt_buf_writer_write_le16(&w, info_type);
+        bt_buf_writer_write_le16(&w, 0x0000u); /* success */
+        bt_buf_writer_write_le32(&w, 0x00000002u); /* bit 1: CID 0x0001 */
+        bt_buf_writer_write_le32(&w, 0x00000000u);
+    }
+    else
+    {
+        /* connectionless MTU and anything newer: not supported */
+        bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_INFORMATION_RESPONSE, identifier, 4);
+        bt_buf_writer_write_le16(&w, info_type);
+        bt_buf_writer_write_le16(&w, 0x0001u); /* not supported */
+    }
+    send_l2cap_pdu(mgr, mgr->signaling_cid, buf, bt_buf_writer_len(&w));
+}
+
+static void send_command_reject(struct bt_l2cap_channel_manager *mgr, uint8_t identifier)
+{
+    uint8_t buf[BT_L2CAP_SIG_HEADER_LEN + 2];
+    struct bt_buf_writer w;
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_COMMAND_REJECT, identifier, 2);
+    bt_buf_writer_write_le16(&w, 0x0000u); /* command not understood */
+    send_l2cap_pdu(mgr, mgr->signaling_cid, buf, bt_buf_writer_len(&w));
+}
+
 static void process_signaling_pdu(struct bt_l2cap_channel_manager *mgr, const uint8_t *payload,
                                    size_t payload_len, uint64_t now_us)
 {
@@ -453,11 +524,17 @@ static void process_signaling_pdu(struct bt_l2cap_channel_manager *mgr, const ui
     case BT_L2CAP_SIG_COMMAND_REJECT:
         handle_command_reject(mgr, hdr.identifier, cmd_data, hdr.length, now_us);
         break;
+    case BT_L2CAP_SIG_ECHO_REQUEST:
+        handle_echo_request(mgr, hdr.identifier, cmd_data, hdr.length);
+        break;
+    case BT_L2CAP_SIG_INFORMATION_REQUEST:
+        handle_information_request(mgr, hdr.identifier, cmd_data, hdr.length);
+        break;
+    case BT_L2CAP_SIG_ECHO_RESPONSE:
+    case BT_L2CAP_SIG_INFORMATION_RESPONSE:
+        break; /* we never ask, but do not Command Reject a response */
     default:
-        /* Unrecognized command. A fully compliant peer-facing
-         * implementation would send Command Reject (reason 0x0000); not
-         * done here since this manager never sends anything a compliant
-         * peer wouldn't recognize. */
+        send_command_reject(mgr, hdr.identifier);
         break;
     }
 }

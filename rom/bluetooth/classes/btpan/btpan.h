@@ -163,6 +163,9 @@ struct BTPanUnit
     UBYTE               ncp_PeerAddr[6];  /* the peer's BD address */
     UBYTE               ncp_CtlBuf[32];   /* control message being sent / queued */
     UWORD               ncp_CtlLen;       /* pending control reply (0 = none) */
+    UWORD               ncp_RetryMS;      /* re-setup backoff, doubles to 60 s (0 = healthy) */
+    BOOL                ncp_EstLogged;    /* "connection established" said once already */
+    BOOL                ncp_LossLogged;   /* outage reported - say so when it recovers */
     UBYTE              *ncp_AsmBuf;       /* reassembled ethernet frame */
 
     /* the persistent identity of the unit (units survive rebinds) */

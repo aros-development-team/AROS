@@ -214,11 +214,31 @@ AROS_LH1(APTR, btEnumerateHardware,
         bSubmitCtrl(BluetoothBase, bth, NULL, BTPRI_SETLOCALNAME, 0, 0,
                     BluetoothBase->bt_GlobalCfg->bgc_LocalName,
                     strlen((char *) BluetoothBase->bt_GlobalCfg->bgc_LocalName), &err);
+    } else {
+        /* No name configured: never leave the controller's firmware default
+           ("RTK_BT_5.0" and the like) on the air - present the machine.
+           The prefs' Options page overrides this (bgc_LocalName above). */
+        char defname[64];
+        defname[0] = 0;
+        if(bHaveDOS(BluetoothBase) &&
+           (FindTask(NULL)->tc_Node.ln_Type == NT_PROCESS)) {
+            if(GetVar((CONST_STRPTR) "HOSTNAME", (STRPTR) defname,
+                      sizeof(defname), 0) <= 0) {
+                defname[0] = 0;
+            }
+        }
+        if(!defname[0]) {
+            strcpy(defname, "AROS");
+        }
+        bSubmitCtrl(BluetoothBase, bth, NULL, BTPRI_SETLOCALNAME, 0, 0,
+                    (UBYTE *) defname, strlen(defname), &err);
     }
 
-    btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                   "%s/%ld: %ld registered device(s) restored.",
-                   bth->bth_DevName, bth->bth_Unit, count);
+    if(count) {
+        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld: %ld registered device(s) restored.",
+                       bth->bth_DevName, bth->bth_Unit, count);
+    }
     return(bth);
     AROS_LIBFUNC_EXIT
 }

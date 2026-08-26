@@ -778,6 +778,18 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
         if((role == BDR_CENTRAL) && (bd->bd_Keys.bkc_Flags & BKCF_LTK) && (cn->cn_PairState != PAIR_CONNECTING)) {
             bLEReencrypt(cn);
         }
+    } else if((role == BDR_CENTRAL) && (bd->bd_Keys.bkc_Flags & BKCF_LINKKEY) &&
+              (cn->cn_PairState == PAIR_IDLE)) {
+        /* the BR/EDR twin of the above: a bonded phone/PC expects the
+           reconnected link authenticated and encrypted before it serves
+           anything (Android closes the SDP channel and then the link).
+           Authenticate with the stored link key; the held-back enumeration
+           runs from the Encryption Change event. */
+        UBYTE p[2];
+        cn->cn_EncryptPending = TRUE;
+        p[0] = handle & 0xff;
+        p[1] = handle >> 8;
+        bSubmitCmd(hc, HC_OP_AUTH_REQUESTED, p, 2, bIgnoreCompletion, hc);
     }
     /* enumerate this bearer's services once (each bearer of a dual-mode device
        enumerates independently, accumulating onto the one device). A pending
@@ -841,7 +853,7 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
             bd->bd_LinkType = BDLT_NONE;
         }
     }
-    if(!wasup) {
+    if(!wasup && !cn->cn_AutoRetry) {
         bd->bd_DeadCount += 4;
         if((bd->bd_DeadCount > 14) && !(bd->bd_Flags & BDFF_DEAD)) {
             bd->bd_Flags |= BDFF_DEAD;
@@ -857,16 +869,28 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
                        "Disconnected from %s (%s).", bd->bd_Name,
                        btNumToStr(BNTS_HCISTATUS, reason, "unknown reason"));
         btSendEvent(BEHMB_DEVICEDISCONNECTED, bd, (APTR) (IPTR) reason);
-    } else {
+    } else if(!cn->cn_AutoRetry) {
         btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                        "Connection to %s failed (%s).", bd->bd_Name,
                        btNumToStr(BNTS_HCISTATUS, reason, "unknown reason"));
+    } else {
+        KPRINTF(10, ("auto page of '%s' failed (0x%02x)\n", bd->bd_Name, reason));
     }
     /* a bonded device whose live link just dropped is the classic
        reconnect-soon case: listen hard for it for a while */
     if(wasup && (cn->cn_LinkType == BDLT_LE) &&
        ((bd->bd_Flags & (BDFF_REGISTERED|BDFF_BONDED)) == (BDFF_REGISTERED|BDFF_BONDED))) {
         bBgScanBoost(hc);
+    }
+    if((cn->cn_LinkType == BDLT_ACL) && (reason != 0x16) &&
+       ((bd->bd_Flags & (BDFF_REGISTERED|BDFF_BONDED)) == (BDFF_REGISTERED|BDFF_BONDED))) {
+        if(wasup) {
+            /* it was here a moment ago (and 0x16 - terminated by us - means
+               the user asked for the disconnect): retry soon, then back off */
+            bd->bd_RetryShift = 0;
+            bd->bd_NextAttempt = hc->hc_Tick + 10000;
+        }
+        /* a failed page keeps whatever bConnClassicTick() scheduled */
     }
     Remove((struct Node *) cn);
     btFreeVec(cn);
@@ -1468,9 +1492,27 @@ static void bSDPConnectCB(bool success, void *user_data)
 static void bSDPEnumCB(struct bt_sdp_client_completion *completion, void *user_data)
 {
     struct BtHWConn *cn = user_data;
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
     UWORD n;
 
     if(completion->result != BT_SDP_CLIENT_OK) {
+        static const char *why[] = { "ok", "connect failed", "channel closed",
+                                     "remote protocol error", "record too large" };
+        CONST_STRPTR reason = (completion->result <= BT_SDP_CLIENT_ERROR_TOO_LARGE) ?
+                              (CONST_STRPTR) why[completion->result] : (CONST_STRPTR) "unknown";
+        if(cn->cn_EnumState == ENUM_SDP_ATTRS) {
+            /* one unreadable record must not cost the rest of the device */
+            btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s: SDP record 0x%08lx skipped (%s).",
+                           cn->cn_Device->bd_Name,
+                           (ULONG) cn->cn_EnumHandles[cn->cn_EnumIndex], reason);
+            cn->cn_EnumIndex++;
+            bConnRunEnum(cn);
+            return;
+        }
+        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s: SDP service search failed (%s).",
+                       cn->cn_Device->bd_Name, reason);
         bConnFinishEnum(cn, BTIOERR_REMOTEERROR);
         return;
     }
@@ -1690,9 +1732,14 @@ static void bConnRunEnum(struct BtHWConn *cn)
         if(cn->cn_EnumIndex >= cn->cn_EnumCount) {
             bConnFinishEnum(cn, 0);
         } else {
-            /* all attributes: sequence { UINT32 0x0000FFFF } */
-            static const uint8_t attrids[] = { 0x35, 0x05, 0x0a, 0x00, 0x00, 0xff, 0xff };
-            if(bt_sdp_client_get_attributes(&cn->cn_SDP, cn->cn_EnumHandles[cn->cn_EnumIndex], 1000,
+            /* only the attributes the parser uses - a phone's full records
+               (icons, OBEX details, long strings) run to kilobytes:
+               ServiceClassIDList, ProtocolDescriptorList,
+               BluetoothProfileDescriptorList, ServiceName, HIDDescriptorList */
+            static const uint8_t attrids[] = { 0x35, 0x0f,
+                0x09, 0x00, 0x01, 0x09, 0x00, 0x04, 0x09, 0x00, 0x09,
+                0x09, 0x01, 0x00, 0x09, 0x02, 0x06 };
+            if(bt_sdp_client_get_attributes(&cn->cn_SDP, cn->cn_EnumHandles[cn->cn_EnumIndex], 2048,
                                             attrids, sizeof(attrids), bSDPEnumCB, cn, now) != BT_OK) {
                 bConnFinishEnum(cn, BTIOERR_HOSTERROR);
             }
@@ -2616,12 +2663,14 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                     btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "%s: link encrypted with the stored key.", cn->cn_Device->bd_Name);
                 } else {
                     btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                                   "%s: the stored LE key was rejected (%s) - remove the device and pair it again.",
-                                   cn->cn_Device->bd_Name, btNumToStr(BNTS_HCISTATUS, params[0], "unknown"));
+                                   "%s: the stored %s key was rejected (%s) - remove the device and pair it again.",
+                                   cn->cn_Device->bd_Name,
+                                   (cn->cn_LinkType == BDLT_LE) ? "LE" : "link",
+                                   btNumToStr(BNTS_HCISTATUS, params[0], "unknown"));
                 }
                 /* the enumeration bConnUp() held back can run now */
                 if(!cn->cn_Enumerated && (cn->cn_EnumState == ENUM_IDLE) && (cn->cn_State == HCNS_CONNECTED)) {
-                    cn->cn_EnumState = ENUM_GATT_CONNECT;
+                    cn->cn_EnumState = (cn->cn_LinkType == BDLT_LE) ? ENUM_GATT_CONNECT : ENUM_SDP_CONNECT;
                     bConnRunEnum(cn);
                 }
             }
@@ -2647,6 +2696,24 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                 /* authenticated: switch on encryption */
                 UBYTE p[3];
                 cn->cn_PairState = PAIR_ENCRYPT;
+                p[0] = handle & 0xff;
+                p[1] = handle >> 8;
+                p[2] = 0x01;
+                bSubmitCmd(hc, HC_OP_SET_CONN_ENCRYPTION, p, 3, bIgnoreCompletion, hc);
+            }
+        } else if(cn && cn->cn_EncryptPending) {
+            /* reconnect authentication with the stored link key (bConnUp()) */
+            if(params[0]) {
+                cn->cn_EncryptPending = FALSE;
+                btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "%s: the stored link key was rejected (%s) - remove the device and pair it again.",
+                               cn->cn_Device->bd_Name, btNumToStr(BNTS_HCISTATUS, params[0], "unknown"));
+                if(!cn->cn_Enumerated && (cn->cn_EnumState == ENUM_IDLE) && (cn->cn_State == HCNS_CONNECTED)) {
+                    cn->cn_EnumState = ENUM_SDP_CONNECT;
+                    bConnRunEnum(cn);
+                }
+            } else {
+                UBYTE p[3];
                 p[0] = handle & 0xff;
                 p[1] = handle >> 8;
                 p[2] = 0x01;
@@ -3409,6 +3476,57 @@ BOOL bConnAbortRequest(struct BtHWCore *hc, struct BtChannel *victim)
 }
 /* \\\ */
 
+/* /// "bConnClassicTick()" */
+/* BR/EDR peers never advertise, so the advert-driven LE reconnect can never
+   see them: instead page each registered+bonded classic device that wants
+   auto-connect on a doubling backoff whenever the radio is free. This is
+   what brings a phone back after a reboot (and re-enumerates its services,
+   without which no class can bind it). */
+static void bConnClassicTick(struct BtHWCore *hc)
+{
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtHardware *bth = hc->hc_Hardware;
+    struct Node *node;
+
+    if(!(bth->bth_Flags & BTHF_CLASSIC) || (bth->bth_State != BHS_READY) ||
+       hc->hc_Connecting || (bth->bth_Flags & BTHF_DISCOVERING) ||
+       !BluetoothBase->bt_GlobalCfg->bgc_AutoConnect ||
+       (hc->hc_Tick < 5000)) {   /* let bring-up/restore settle first */
+        return;
+    }
+    ForeachNode(&bth->bth_Devices, node) {
+        struct BtDevice *bd = (struct BtDevice *) node;
+        struct BtHWConn *cn;
+        BOOL pending;
+        LONG err;
+        if(((bd->bd_Flags & (BDFF_CLASSIC|BDFF_REGISTERED|BDFF_BONDED)) !=
+            (BDFF_CLASSIC|BDFF_REGISTERED|BDFF_BONDED)) ||
+           !bd->bd_PoPoCfg.bpc_AutoConnect || bd->bd_Conns[0]) {
+            continue;
+        }
+        if((LONG) (hc->hc_Tick - bd->bd_NextAttempt) < 0) {
+            continue;
+        }
+        bd->bd_NextAttempt = hc->hc_Tick +
+            (30000UL << ((bd->bd_RetryShift > 4) ? 4 : bd->bd_RetryShift));
+        if(bd->bd_RetryShift < 15) {
+            bd->bd_RetryShift++;
+        }
+        if(bd->bd_RetryShift == 1) {
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "Looking for %s.", bd->bd_Name);
+        }
+        KPRINTF(10, ("classic reconnect: paging '%s' (shift %ld)\n",
+                     bd->bd_Name, (LONG) bd->bd_RetryShift));
+        cn = bEnsureConnection(hc, bd, BDLT_ACL, CONN_NOW, &pending, &err);
+        if(cn) {
+            cn->cn_AutoRetry = TRUE;
+        }
+        break;   /* one page at a time; the next tick serves the others */
+    }
+}
+/* \\\ */
+
 /* /// "bConnTick()" */
 void bConnTick(struct BtHWCore *hc)
 {
@@ -3449,8 +3567,10 @@ void bConnTick(struct BtHWCore *hc)
             } else if((waited > 10000) && !cn->cn_Reason) {
                 struct BtBase *BluetoothBase = hc->hc_Base;
                 cn->cn_Reason = 0x08;   /* marks the cancel as sent */
-                btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                               "%s does not answer - cancelling the connection attempt.", cn->cn_Device->bd_Name);
+                if(!cn->cn_AutoRetry) {
+                    btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "%s does not answer - cancelling the connection attempt.", cn->cn_Device->bd_Name);
+                }
                 bDisconnect(cn, 0x13);
             }
             continue;
@@ -3474,6 +3594,7 @@ void bConnTick(struct BtHWCore *hc)
             }
         }
     }
+    bConnClassicTick(hc);
 }
 /* \\\ */
 
