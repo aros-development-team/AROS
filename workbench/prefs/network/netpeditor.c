@@ -2352,10 +2352,6 @@ static void NetPEditor_AddEntry(Class *CLASS, Object *self, STRPTR devicename)
         );
     }
 
-    /* Warn about DHCP limitations with more than one interface */
-    if (entries == 1)
-        DisplayErrorMessage(self, MULTIPLE_IFACES);
-
     SET(data->netped_interfaceList, MUIA_List_Active, entries + 1);
 }
 /* Create a new 6in4 tunnel entry and make it current. */

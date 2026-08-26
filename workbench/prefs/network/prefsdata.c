@@ -250,13 +250,17 @@ void SetDefaultMobilePrefsValues()
 
 void InitInterface(struct Interface *iface)
 {
-    /* Drop any protocol objects from a previous use, then start empty.  The
-     * core never adds protocol objects itself - the loader (via the plugins'
-     * ReadTokens) and the editor do.  A non-NULL lh_Head means the list was
-     * already initialised and may hold nodes to free; a zeroed struct (first
-     * use) must not be walked. */
-    if (iface->protoAddrs.lh_Head != NULL)
-        ProtoAddr_FreeList(&iface->protoAddrs);
+    /* Start the interface with an empty protocol-object list.  The core never
+     * adds protocol objects itself - the loader (via the plugins' ReadTokens)
+     * and the editor do.
+     *
+     * Treat the struct as raw, uninitialised storage: NEWLIST unconditionally
+     * and never inspect the incoming header.  The editor passes fresh stack
+     * locals (Add Interface / Add Tunnel) whose list header is stack garbage -
+     * testing lh_Head there and freeing would walk wild pointers and crash.  A
+     * list an interface already owned must be released by its owner (the MUI
+     * destruct hook / Gadgets2NetworkPrefs), not here where validity is
+     * unknowable. */
     NEWLIST(&iface->protoAddrs);
 
     SetName(iface, DEFAULTNAME);
