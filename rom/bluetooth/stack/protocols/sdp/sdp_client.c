@@ -13,6 +13,7 @@ static void fail(struct bt_sdp_client *client, enum bt_sdp_client_result result)
     void *ud = client->complete_user_data;
 
     client->busy = false;
+    client->deadline_us = 0;
 
     completion.result = result;
     completion.op = client->op;
@@ -31,6 +32,7 @@ static void succeed(struct bt_sdp_client *client)
     void *ud = client->complete_user_data;
 
     client->busy = false;
+    client->deadline_us = 0;
 
     completion.result = BT_SDP_CLIENT_OK;
     completion.op = client->op;
@@ -323,6 +325,7 @@ bt_status_t bt_sdp_client_search(struct bt_sdp_client *client, const uint8_t *se
     client->last_total_count = 0;
     client->on_complete = on_complete;
     client->complete_user_data = user_data;
+    client->deadline_us = now_us + BT_SDP_CLIENT_REQUEST_TIMEOUT_US;
 
     issue_request(client, now_us);
     return BT_OK;
@@ -350,7 +353,15 @@ bt_status_t bt_sdp_client_get_attributes(struct bt_sdp_client *client, uint32_t 
     client->result_len = 0;
     client->on_complete = on_complete;
     client->complete_user_data = user_data;
+    client->deadline_us = now_us + BT_SDP_CLIENT_REQUEST_TIMEOUT_US;
 
     issue_request(client, now_us);
     return BT_OK;
+}
+
+void bt_sdp_client_tick(struct bt_sdp_client *client, uint64_t now_us)
+{
+    if (!client->busy || client->deadline_us == 0 || now_us < client->deadline_us)
+        return;
+    fail(client, BT_SDP_CLIENT_ERROR_TIMEOUT);
 }

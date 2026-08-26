@@ -595,9 +595,59 @@ static void test_disconnect_while_busy(void)
     BT_CHECK(!client.channel_ready);
 }
 
+/* An SDP server that never answers must not leave the caller hanging: the
+ * tick fails the operation once its deadline passes, and the client is
+ * usable again afterwards. */
+static void test_search_times_out(void)
+{
+    struct fake_transport ft;
+    struct bt_l2cap_channel_manager mgr;
+    struct bt_sdp_client client;
+    struct connect_log clog = {0, false};
+    struct complete_log slog = {0, BT_SDP_CLIENT_OK, {0}, 0, 0};
+    uint8_t pattern[8];
+    struct bt_buf_writer pw;
+    uint64_t t0 = 1000000ULL;
+
+    fake_transport_init(&ft);
+    bt_l2cap_channel_manager_init(&mgr, &ft.base, 0x0041, BT_L2CAP_CID_SIGNALING_CLASSIC, 200);
+    bt_sdp_client_init(&client, &mgr);
+    BT_CHECK(bt_sdp_client_connect(&client, on_connect, &clog, 0) == BT_OK);
+    drive_l2cap_open(&mgr, &ft, client.local_cid, 0x0060);
+    BT_CHECK(clog.success);
+
+    bt_buf_writer_init(&pw, pattern, sizeof(pattern));
+    bt_sdp_encode_sequence_header(&pw, 3);
+    bt_sdp_encode_uuid16(&pw, 0x0100);
+    BT_CHECK(bt_sdp_client_search(&client, pattern, bt_buf_writer_len(&pw), 10, on_complete, &slog,
+                                    t0) == BT_OK);
+    ft.captured_complete = false;
+    BT_CHECK(client.busy);
+
+    /* well within the deadline: nothing happens */
+    bt_sdp_client_tick(&client, t0 + BT_SDP_CLIENT_REQUEST_TIMEOUT_US / 2);
+    BT_CHECK(client.busy);
+    BT_CHECK(slog.count == 0);
+
+    /* past it: the operation fails with TIMEOUT and the client is idle */
+    bt_sdp_client_tick(&client, t0 + BT_SDP_CLIENT_REQUEST_TIMEOUT_US);
+    BT_CHECK(slog.count == 1);
+    BT_CHECK(slog.result == BT_SDP_CLIENT_ERROR_TIMEOUT);
+    BT_CHECK(!client.busy);
+    BT_CHECK(client.channel_ready);
+
+    /* idle: ticking again is a no-op, and a new search is accepted */
+    bt_sdp_client_tick(&client, t0 + 2 * BT_SDP_CLIENT_REQUEST_TIMEOUT_US);
+    BT_CHECK(slog.count == 1);
+    BT_CHECK(bt_sdp_client_search(&client, pattern, bt_buf_writer_len(&pw), 10, on_complete, &slog,
+                                    t0 + 3 * BT_SDP_CLIENT_REQUEST_TIMEOUT_US) == BT_OK);
+    BT_CHECK(client.busy);
+}
+
 void run_sdp_client_tests(void)
 {
     test_connect_and_search_single_round();
+    test_search_times_out();
     test_search_with_continuation();
     test_get_attributes_split_across_continuation();
     test_connect_refused();

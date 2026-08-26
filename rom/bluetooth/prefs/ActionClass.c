@@ -280,6 +280,7 @@ static void PopulateHwWin(struct BtActionData *data, APTR bth)
     IPTR unit = 0, state = 0, isc = 0, isl = 0, num = 0, cod = 0;
     IPTR ver = 0, rev = 0, drv = 0, hciv = 0, hcir = 0, lmpv = 0, lmps = 0, manid = 0;
     IPTR aclsz = 0, aclnum = 0, scosz = 0, sconum = 0, lesz = 0, lenum = 0, errs = 0, lasterr = 0;
+    IPTR lecaps = 0, wlsz = 0, rlsz = 0, lerc = 0;
     UBYTE *feat = NULL, *lefeat = NULL;
     char buf[104];
 
@@ -296,6 +297,8 @@ static void PopulateHwWin(struct BtActionData *data, APTR bth)
                BHA_HCIVersion, &hciv, BHA_HCIRevision, &hcir, BHA_LMPVersion, &lmpv,
                BHA_LMPSubversion, &lmps, BHA_ManufacturerID, &manid, BHA_ManufacturerName, &chip,
                BHA_Features, &feat, BHA_LEFeatures, &lefeat,
+               BHA_LECaps, &lecaps, BHA_AcceptListSize, &wlsz,
+               BHA_ResolvingListSize, &rlsz, BHA_LEReconnect, &lerc,
                BHA_ACLMaxPktSize, &aclsz, BHA_ACLNumPkts, &aclnum,
                BHA_SCOMaxPktSize, &scosz, BHA_SCONumPkts, &sconum,
                BHA_LEACLMaxPktSize, &lesz, BHA_LEACLNumPkts, &lenum,
@@ -335,6 +338,18 @@ static void PopulateHwWin(struct BtActionData *data, APTR bth)
         if(lesz) snprintf(buf, sizeof(buf), "LE ACL %ld bytes x %ld", (long)lesz, (long)lenum);
         else     snprintf(buf, sizeof(buf), "shared with BR/EDR");
         AddHwProp(data, "LE buffers", buf);
+    }
+    if(isl) {
+        /* what the stack made of the capabilities: the reconnect "rung" */
+        snprintf(buf, sizeof(buf), "%s",
+                 (lerc == BHLR_RESOLVING) ? "controller (accept list + resolving list)" :
+                 (lerc == BHLR_ACCEPTLIST) ? "controller (accept list)" : "host scanning");
+        AddHwProp(data, "LE reconnect", buf);
+        snprintf(buf, sizeof(buf), "accept list %ld, resolving list %ld, secure connections %s, extended advertising %s",
+                 (long)wlsz, (long)rlsz,
+                 (lecaps & BHLC_SECURECONN) ? "yes" : "no",
+                 (lecaps & BHLC_EXTADV) ? "yes" : "no");
+        AddHwProp(data, "LE capabilities", buf);
     }
     if(isc) AddHwFeatures(data, "BR/EDR features", feat, lmpfeatbits);
     if(isl) AddHwFeatures(data, "LE features", lefeat, lefeatbits);

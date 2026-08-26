@@ -721,6 +721,14 @@ static void test_incoming_connection_accepted(void)
     feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 30);
     BT_CHECK(log.open_count == 1);
     BT_CHECK(find_chan(&mgr, local_cid)->state == BT_L2CAP_CHAN_OPEN);
+    /* our Configure Response names the channel endpoint of the device that
+     * receives it - the peer's CID, not ours (Android checks this and
+     * abandons the channel on a mismatch) */
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_CONFIGURE_RESPONSE);
+    BT_CHECK(hdr.identifier == 0x12);
+    BT_CHECK(hdr.length >= 6);
+    BT_CHECK((cmd_data[0] | (cmd_data[1] << 8)) == 0x0061);
 
     /* data flows to the listener's callback */
     feed_data(&mgr, local_cid, payload, sizeof(payload), 40);
@@ -737,9 +745,89 @@ static void test_incoming_connection_accepted(void)
     BT_CHECK(crsp.result == BT_L2CAP_CONN_RESULT_REFUSED_PSM);
 }
 
+/* Android sends Information Requests on every new BR/EDR link and stalls
+ * channel setup until they are answered; Echo Requests must be echoed and
+ * anything unknown gets a Command Reject. */
+static void test_information_echo_and_reject(void)
+{
+    struct fake_transport ft;
+    struct bt_l2cap_channel_manager mgr;
+    struct bt_l2cap_sig_header hdr;
+    const uint8_t *cmd_data;
+    uint8_t buf[32];
+    struct bt_buf_writer w;
+
+    fake_transport_init(&ft);
+    bt_l2cap_channel_manager_init(&mgr, &ft.base, 0x0042, BT_L2CAP_CID_SIGNALING_CLASSIC, 200);
+
+    /* extended features supported: success, fixed channels only */
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_INFORMATION_REQUEST, 0x21, 2);
+    bt_buf_writer_write_le16(&w, 0x0002);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 5);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_INFORMATION_RESPONSE);
+    BT_CHECK(hdr.identifier == 0x21);
+    BT_CHECK(hdr.length == 8);
+    BT_CHECK((cmd_data[0] | (cmd_data[1] << 8)) == 0x0002);
+    BT_CHECK((cmd_data[2] | (cmd_data[3] << 8)) == 0x0000);
+    BT_CHECK(cmd_data[4] == 0x80 && cmd_data[5] == 0 && cmd_data[6] == 0 && cmd_data[7] == 0);
+
+    /* fixed channels supported: the signaling channel */
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_INFORMATION_REQUEST, 0x22, 2);
+    bt_buf_writer_write_le16(&w, 0x0003);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 6);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_INFORMATION_RESPONSE);
+    BT_CHECK(hdr.length == 12);
+    BT_CHECK((cmd_data[2] | (cmd_data[3] << 8)) == 0x0000);
+    BT_CHECK(cmd_data[4] == 0x02);
+
+    /* connectionless MTU: not supported */
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_INFORMATION_REQUEST, 0x23, 2);
+    bt_buf_writer_write_le16(&w, 0x0001);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 7);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_INFORMATION_RESPONSE);
+    BT_CHECK(hdr.length == 4);
+    BT_CHECK((cmd_data[2] | (cmd_data[3] << 8)) == 0x0001);
+
+    /* echo: the data comes back under the same identifier */
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_ECHO_REQUEST, 0x24, 3);
+    bt_buf_writer_write_u8(&w, 0xAA);
+    bt_buf_writer_write_u8(&w, 0xBB);
+    bt_buf_writer_write_u8(&w, 0xCC);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 8);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_ECHO_RESPONSE);
+    BT_CHECK(hdr.identifier == 0x24);
+    BT_CHECK(hdr.length == 3 && cmd_data[0] == 0xAA && cmd_data[2] == 0xCC);
+
+    /* something we do not know: Command Reject, reason "not understood" */
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, 0x7f, 0x25, 0);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 9);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_COMMAND_REJECT);
+    BT_CHECK(hdr.identifier == 0x25);
+    BT_CHECK(hdr.length == 2 && cmd_data[0] == 0 && cmd_data[1] == 0);
+
+    /* a stray response never provokes a reject (no ping-pong) */
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_INFORMATION_RESPONSE, 0x26, 4);
+    bt_buf_writer_write_le16(&w, 0x0002);
+    bt_buf_writer_write_le16(&w, 0x0000);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 10);
+    BT_CHECK(!take_last_sig_command(&ft, &hdr, &cmd_data));
+}
+
 void run_l2cap_channel_tests(void)
 {
     test_incoming_connection_accepted();
+    test_information_echo_and_reject();
     test_open_full_handshake();
     test_connection_refused();
     test_data_round_trip();

@@ -40,7 +40,8 @@ enum bt_sdp_client_result
     BT_SDP_CLIENT_ERROR_CONNECT,  /* the L2CAP channel to the SDP server failed to open */
     BT_SDP_CLIENT_ERROR_CLOSED,   /* the channel closed while a request was in flight */
     BT_SDP_CLIENT_ERROR_PROTOCOL, /* malformed or mismatched response */
-    BT_SDP_CLIENT_ERROR_TOO_LARGE /* accumulated result exceeds BT_SDP_CLIENT_MAX_RESULT */
+    BT_SDP_CLIENT_ERROR_TOO_LARGE /* accumulated result exceeds BT_SDP_CLIENT_MAX_RESULT */,
+    BT_SDP_CLIENT_ERROR_TIMEOUT   /* the server never answered (bt_sdp_client_tick()) */
 };
 
 struct bt_sdp_client_completion
@@ -89,7 +90,19 @@ struct bt_sdp_client
 
     bt_sdp_client_complete_fn on_complete;
     void *complete_user_data;
+    uint64_t deadline_us;  /* whole-operation deadline, 0 = none */
 };
+
+/* An SDP server that never answers (or answers a transaction id we are not
+ * waiting for) must not leave the caller hanging: the whole operation,
+ * continuation rounds included, has this long. */
+#ifndef BT_SDP_CLIENT_REQUEST_TIMEOUT_US
+#define BT_SDP_CLIENT_REQUEST_TIMEOUT_US (10u * 1000000u)
+#endif
+
+/* Call periodically; fails the in-flight operation with
+ * BT_SDP_CLIENT_ERROR_TIMEOUT once its deadline passes. */
+void bt_sdp_client_tick(struct bt_sdp_client *client, uint64_t now_us);
 
 void bt_sdp_client_init(struct bt_sdp_client *client, struct bt_l2cap_channel_manager *l2cap);
 

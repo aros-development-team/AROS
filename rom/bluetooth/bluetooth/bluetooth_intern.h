@@ -186,7 +186,8 @@ struct BtBase
 };
 
 /* bt_Flags */
-#define BTF_KLOG 0x0001
+#define BTF_KLOG       0x0001
+#define BTF_LEHOSTSCAN 0x0002   /* "btlehost" boot argument: never use the controller's lists */
 
 struct BtEventHook
 {
@@ -261,6 +262,16 @@ struct BtAppBinding
 #define BTHF_FWLOADED       0x0200        /* firmware download done (or not needed) */
 #define BTHF_FWPENDING      0x0400        /* firmware load requested, awaiting a loader */
 
+/* bth_LECaps (same values as the public BHLC_xxx) */
+#define BTLC_ACCEPTLIST     0x01          /* filter accept list (4.0) */
+#define BTLC_LLPRIVACY      0x02          /* resolving list + address resolution (4.2) */
+#define BTLC_SECURECONN     0x04          /* LE Secure Connections: P-256 + DHKey commands */
+#define BTLC_EXTADV         0x08          /* LE extended advertising (5.0) */
+/* bth_LEReconnect (same values as the public BHLR_xxx) */
+#define BTLR_HOST           0             /* host scans for adverts and initiates */
+#define BTLR_ACCEPTLIST     1             /* the controller connects to accept-listed identities */
+#define BTLR_RESOLVING      2             /* as above, resolving private addresses itself */
+
 #define BT_ADDRSTR_LEN      18            /* "xx:xx:xx:xx:xx:xx" + NUL */
 #define BT_NAME_MAX         248           /* HCI local/remote name */
 
@@ -294,7 +305,13 @@ struct BtHardware
     UWORD               bth_LMPSubversion;
     UWORD               bth_ManufacturerID;
     UBYTE               bth_Features[8];        /* LMP features page 0 */
-    UBYTE               bth_LEFeatures[8];      /* LE controller features (bit 6 of byte 0 = LE Secure Connections) */
+    UBYTE               bth_LEFeatures[8];      /* LE controller features (Vol 6 Part B 4.6; byte 0 bit 6 = LL privacy) */
+    UBYTE               bth_SupportedCmds[64];  /* HCI Read Local Supported Commands bitmap */
+    UBYTE               bth_LECaps;             /* BTLC_xxx: what the controller can do for us */
+    UBYTE               bth_AcceptListSize;     /* filter accept list slots (0 = none) */
+    UBYTE               bth_ResolvingListSize;  /* resolving list slots (0 = none) */
+    UBYTE               bth_LEReconnect;        /* BTLR_xxx: how bonded LE peers get reconnected */
+    BOOL                bth_LEListsDirty;       /* the bonded set changed: reprogram the controller's lists */
     UWORD               bth_ACLMaxPktSize;
     UWORD               bth_ACLNumPkts;
     UWORD               bth_SCOMaxPktSize;
@@ -462,6 +479,7 @@ struct BtEndpoint
     UWORD               bep_ReportID;     /* HID report id from the Report Reference */
     UWORD               bep_ReportType;   /* 1 input, 2 output, 3 feature */
     UWORD               bep_DescDone;     /* descriptors have been looked at */
+    UWORD               bep_EnumMark;     /* matched by the current re-enumeration (hwconn.c) */
     UBYTE               bep_UUID[16];
     STRPTR              bep_Name;
     struct BtHWEndpoint *bep_Chan;        /* open channel state (hwconn.c private) */

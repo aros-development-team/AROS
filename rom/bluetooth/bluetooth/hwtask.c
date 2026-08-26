@@ -39,6 +39,8 @@
 #define TimerBase BluetoothBase->bt_TimerIOReq.tr_node.io_Device
 
 static void bStartDiscoveryPhase(struct BtHWCore *hc);
+static void bStartDiscoveryRadio(struct BtHWCore *hc);
+static void bAutoConnUpdate(struct BtHWCore *hc);
 static void bFinishDiscovery(struct BtHWCore *hc);
 static void bNextNameRequest(struct BtHWCore *hc);
 static void bBringupStep(struct BtHWCore *hc);
@@ -768,6 +770,331 @@ static BOOL bBgScanNeeded(struct BtHWCore *hc)
 #define BGSCAN_SLOW_WINDOW   0x0030 /* 30 ms: ~2% duty */
 #define BGSCAN_BOOST_MS      60000
 
+/* *** controller-side reconnect: accept list + resolving list *** */
+
+/* /// "bLECapsEvaluate()" */
+/* Named capabilities from what the controller reported at bring-up, and the
+   reconnect "rung" they buy us (bellatrix ISSUE-0061 section 3):
+     0 - the host scans for adverts and initiates (any controller)
+     1 - accept list: the controller connects to listed identities (4.0)
+     2 - plus resolving list: peers may use private addresses (4.2)
+   "btlehost" on the boot line pins rung 0 for controllers that claim a
+   feature and get it wrong (Linux had to do the same for LL privacy). */
+static void bLECapsEvaluate(struct BtHWCore *hc)
+{
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtHardware *bth = hc->hc_Hardware;
+    UBYTE caps = 0;
+
+    if(bth->bth_Flags & BTHF_LE) {
+        if(bth->bth_AcceptListSize) {
+            caps |= BTLC_ACCEPTLIST;
+        }
+        if((bth->bth_LEFeatures[0] & 0x40) && bth->bth_ResolvingListSize) {
+            caps |= BTLC_LLPRIVACY;
+        }
+        /* LE Secure Connections is not in the LE feature set: the controller
+           half of it is the P-256 / DHKey commands (supported commands octet
+           34, bits 1 and 2) */
+        if((bth->bth_SupportedCmds[34] & 0x06) == 0x06) {
+            caps |= BTLC_SECURECONN;
+        }
+        if(bth->bth_LEFeatures[1] & 0x10) {           /* bit 12: LE extended advertising */
+            caps |= BTLC_EXTADV;
+        }
+    }
+    bth->bth_LECaps = caps;
+    if(BluetoothBase->bt_Flags & BTF_LEHOSTSCAN) {
+        bth->bth_LEReconnect = BTLR_HOST;
+    } else if(caps & BTLC_LLPRIVACY) {
+        bth->bth_LEReconnect = BTLR_RESOLVING;
+    } else if(caps & BTLC_ACCEPTLIST) {
+        bth->bth_LEReconnect = BTLR_ACCEPTLIST;
+    } else {
+        bth->bth_LEReconnect = BTLR_HOST;
+    }
+    hc->hc_AutoConnArmed = FALSE;
+    hc->hc_AutoConnCancel = FALSE;
+    hc->hc_ListsSyncing = FALSE;
+    hc->hc_ResolvingOn = FALSE;
+    hc->hc_AcceptListCount = 0;
+    bth->bth_LEListsDirty = TRUE;
+    if(bth->bth_Flags & BTHF_LE) {
+        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld: LE reconnect by %s (accept list %ld, resolving list %ld, secure connections %s).",
+                       bth->bth_DevName, bth->bth_Unit,
+                       (bth->bth_LEReconnect == BTLR_RESOLVING) ? (STRPTR) "the controller, resolving private addresses" :
+                       (bth->bth_LEReconnect == BTLR_ACCEPTLIST) ? (STRPTR) "the controller's accept list" :
+                       (BluetoothBase->bt_Flags & BTF_LEHOSTSCAN) ? (STRPTR) "host scanning (btlehost)" : (STRPTR) "host scanning",
+                       (ULONG) bth->bth_AcceptListSize, (ULONG) bth->bth_ResolvingListSize,
+                       (caps & BTLC_SECURECONN) ? (STRPTR) "yes" : (STRPTR) "no");
+    }
+}
+/* \\\ */
+
+/* /// "bAutoConnCandidate()" */
+/* Does this device get a slot in the controller's accept list? Same rule as
+   the host-side background scan: bonded, registered, not connected, and
+   either its policy says auto-connect or a class is already waiting. */
+static BOOL bAutoConnCandidate(struct BtDevice *bd)
+{
+    if((bd->bd_Flags & (BDFF_LE|BDFF_REGISTERED|BDFF_BONDED)) != (BDFF_LE|BDFF_REGISTERED|BDFF_BONDED)) {
+        return(FALSE);
+    }
+    if(bd->bd_Conns[1] && (bd->bd_Conns[1]->cn_State == HCNS_CONNECTED)) {
+        return(FALSE);
+    }
+    return((bd->bd_PoPoCfg.bpc_AutoConnect || (bd->bd_Conns[1] && bd->bd_Conns[1]->cn_WaitAdv)) ? TRUE : FALSE);
+}
+/* \\\ */
+
+/* /// "bResolvingCmdCB()" */
+static void bResolvingCmdCB(struct bt_cmdq_completion *completion, void *user_data)
+{
+    struct BtHWCore *hc = user_data;
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtHardware *bth = hc->hc_Hardware;
+    BOOL ok = (completion->result == BT_CMDQ_RESULT_COMPLETE) && !completion->status;
+    hc->hc_ResolvingOn = ok;
+    if(!ok) {
+        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld: LE address resolution could not be enabled (%s) - private addresses are resolved by the host.",
+                       bth->bth_DevName, bth->bth_Unit,
+                       btNumToStr(BNTS_HCISTATUS, completion->status, "unknown"));
+    }
+}
+/* \\\ */
+
+/* /// "bListsCmdCB()" */
+/* the command closing a list reprogramming completed: the lists are in place */
+static void bListsCmdCB(struct bt_cmdq_completion *completion, void *user_data)
+{
+    struct BtHWCore *hc = user_data;
+    (void) completion;
+    hc->hc_ListsSyncing = FALSE;
+    bAutoConnUpdate(hc);
+}
+/* \\\ */
+
+/* /// "bLEListsSync()" */
+/* Reprogram the controller's resolving list (bonded peers with an IRK) and
+   accept list (the reconnect candidates). Only called with the LE radio
+   idle: neither may change while scanning or initiating. The commands are
+   queued in order; bListsCmdCB() fires after the last one. */
+static void bLEListsSync(struct BtHWCore *hc)
+{
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtHardware *bth = hc->hc_Hardware;
+    struct BtDevice *bd;
+    BOOL privacy = (bth->bth_LEReconnect == BTLR_RESOLVING);
+    UBYTE p[39];
+    UWORD wl = 0, rl = 0, skipped = 0;
+
+    bth->bth_LEListsDirty = FALSE;
+    hc->hc_ListsSyncing = TRUE;
+    if(privacy) {
+        p[0] = 0;
+        bSubmitCmd(hc, HC_OP_LE_SET_ADDR_RESOLUTION, p, 1, bIgnoreCompletion, hc);
+        hc->hc_ResolvingOn = FALSE;
+        bSubmitCmd(hc, HC_OP_LE_CLEAR_RESOLVING_LIST, NULL, 0, bIgnoreCompletion, hc);
+    }
+    btLockReadBase();
+    if(privacy) {
+        for(bd = (struct BtDevice *) bth->bth_Devices.lh_Head; bd->bd_Node.ln_Succ; bd = (struct BtDevice *) bd->bd_Node.ln_Succ) {
+            if(((bd->bd_Flags & (BDFF_LE|BDFF_BONDED)) != (BDFF_LE|BDFF_BONDED)) || !(bd->bd_Keys.bkc_Flags & BKCF_IRK)) {
+                continue;
+            }
+            if(rl >= bth->bth_ResolvingListSize) {
+                break;
+            }
+            p[0] = bd->bd_AddrType & 1;                 /* peer identity address type */
+            CopyMem(bd->bd_Address.bd_Addr, &p[1], 6);
+            CopyMem(bd->bd_Keys.bkc_IRK, &p[7], 16);    /* peer IRK, as distributed (LSB first) */
+            memset(&p[23], 0, 16);                      /* local IRK: we use our identity address */
+            bSubmitCmd(hc, HC_OP_LE_ADD_RESOLVING_LIST, p, 39, bIgnoreCompletion, hc);
+            rl++;
+        }
+        p[0] = 1;
+        bSubmitCmd(hc, HC_OP_LE_SET_ADDR_RESOLUTION, p, 1, bResolvingCmdCB, hc);
+    }
+    bSubmitCmd(hc, HC_OP_LE_CLEAR_WHITE_LIST, NULL, 0, bIgnoreCompletion, hc);
+    for(bd = (struct BtDevice *) bth->bth_Devices.lh_Head; bd->bd_Node.ln_Succ; bd = (struct BtDevice *) bd->bd_Node.ln_Succ) {
+        if(!bAutoConnCandidate(bd)) {
+            continue;
+        }
+        if(wl >= bth->bth_AcceptListSize) {
+            skipped++;
+            continue;
+        }
+        p[0] = bd->bd_AddrType & 1;
+        CopyMem(bd->bd_Address.bd_Addr, &p[1], 6);
+        bSubmitCmd(hc, HC_OP_LE_ADD_WHITE_LIST, p, 7, bIgnoreCompletion, hc);
+        wl++;
+    }
+    btUnlockBase();
+    hc->hc_AcceptListCount = wl;
+    /* a harmless query closes the sequence so the callback runs after the last add */
+    bSubmitCmd(hc, HC_OP_LE_READ_WHITE_LIST_SIZE, NULL, 0, bListsCmdCB, hc);
+    KPRINTF(10, ("LE lists: %ld resolving, %ld accept-listed, %ld skipped\n", (LONG) rl, (LONG) wl, (LONG) skipped));
+    if(skipped) {
+        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld: accept list full (%ld slots) - %ld bonded device(s) will not reconnect by themselves.",
+                       bth->bth_DevName, bth->bth_Unit, (ULONG) bth->bth_AcceptListSize, (ULONG) skipped);
+    }
+}
+/* \\\ */
+
+/* /// "bAutoConnCmdCB()" */
+static void bAutoConnCmdCB(struct bt_cmdq_completion *completion, void *user_data)
+{
+    struct BtHWCore *hc = user_data;
+    if((completion->result != BT_CMDQ_RESULT_COMPLETE) || completion->status) {
+        struct BtBase *BluetoothBase = hc->hc_Base;
+        struct BtHardware *bth = hc->hc_Hardware;
+        hc->hc_AutoConnArmed = FALSE;
+        hc->hc_AutoConnCancel = FALSE;
+        bth->bth_LastHCIError = completion->status;
+        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld: the controller refused the accept-list auto-connect (%s) - falling back to host scanning.",
+                       bth->bth_DevName, bth->bth_Unit,
+                       btNumToStr(BNTS_HCISTATUS, completion->status, "unknown"));
+        bth->bth_LEReconnect = BTLR_HOST;
+        bBgScanSchedule(hc);
+    }
+}
+/* \\\ */
+
+/* /// "bAutoConnDisarm()" */
+/* Take the accept-list initiator back: LE Create Connection Cancel. The
+   controller answers with an LE Connection Complete (status 0x02), which
+   bAutoConnDone() handles - nothing else may use the LE radio until then. */
+void bAutoConnDisarm(struct BtHWCore *hc)
+{
+    if(!hc->hc_AutoConnArmed || hc->hc_AutoConnCancel) {
+        return;
+    }
+    hc->hc_AutoConnCancel = TRUE;
+    KPRINTF(10, ("auto-connect: cancelling\n"));
+    bSubmitCmd(hc, HC_OP_LE_CREATE_CONN_CANCEL, NULL, 0, bIgnoreCompletion, hc);
+}
+/* \\\ */
+
+/* /// "bAutoConnDone()" */
+/* The pending auto-connect ended - a link came up (already handled by the
+   caller) or the cancel completed: resume whatever waited for the radio and
+   re-arm later. */
+void bAutoConnDone(struct BtHWCore *hc)
+{
+    hc->hc_AutoConnArmed = FALSE;
+    hc->hc_AutoConnCancel = FALSE;
+    if(hc->hc_DiscDeferred) {
+        hc->hc_DiscDeferred = FALSE;
+        bStartDiscoveryRadio(hc);
+    }
+    bConnStartPending(hc);
+    bBgScanSchedule(hc);
+}
+/* \\\ */
+
+/* /// "bAutoConnUpdate()" */
+/* The rung 1/2 counterpart of bBgScanUpdate(): keep one LE Create Connection
+   (filter policy: accept list) pending whenever a bonded device should be
+   reconnected and the LE radio is otherwise idle. */
+static void bAutoConnUpdate(struct BtHWCore *hc)
+{
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtHardware *bth = hc->hc_Hardware;
+    BOOL fast = ((LONG) (hc->hc_BgScanFastUntil - hc->hc_Tick) > 0);
+    BOOL quiet, want;
+
+    if(hc->hc_AutoConnCancel || hc->hc_ListsSyncing) {
+        return;   /* a transition is in flight; its completion re-enters */
+    }
+    quiet = !(bth->bth_Flags & BTHF_DISCOVERING) && !hc->hc_DiscoveryPending && !hc->hc_LEScanActive &&
+            !hc->hc_BgScanActive && !hc->hc_Connecting && hc->hc_BringupDone && !hc->hc_BringupFailed;
+    want = quiet && bBgScanNeeded(hc);
+    if(!want) {
+        if(hc->hc_AutoConnArmed && !quiet) {
+            bAutoConnDisarm(hc);
+        } else if(hc->hc_AutoConnArmed) {
+            bAutoConnDisarm(hc);
+            KPRINTF(10, ("auto-connect: nothing to wait for\n"));
+        }
+        return;
+    }
+    if(bth->bth_LEReconnect == BTLR_ACCEPTLIST) {
+        /* rung 1 matches identities only: a peer we have heard from a
+           private address would never be caught - the whole radio then
+           falls back to host scanning, where the IRK is put to use */
+        struct BtDevice *bd;
+        BOOL rpa = FALSE;
+        btLockReadBase();
+        for(bd = (struct BtDevice *) bth->bth_Devices.lh_Head; bd->bd_Node.ln_Succ; bd = (struct BtDevice *) bd->bd_Node.ln_Succ) {
+            if(bAutoConnCandidate(bd) && bd->bd_CurAddrValid) {
+                rpa = TRUE;
+                btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "%s uses private addresses this controller cannot resolve - reconnecting by host scanning.",
+                               bd->bd_Name);
+                break;
+            }
+        }
+        btUnlockBase();
+        if(rpa) {
+            bth->bth_LEReconnect = BTLR_HOST;
+            if(hc->hc_AutoConnArmed) {
+                bAutoConnDisarm(hc);
+            } else {
+                bBgScanUpdate(hc);
+            }
+            return;
+        }
+    }
+    if(bth->bth_LEListsDirty) {
+        if(hc->hc_AutoConnArmed) {
+            bAutoConnDisarm(hc);   /* lists only change with the initiator idle */
+        } else {
+            bLEListsSync(hc);
+        }
+        return;
+    }
+    if(!hc->hc_AcceptListCount) {
+        return;
+    }
+    if(hc->hc_AutoConnArmed) {
+        if(fast != hc->hc_AutoConnFast) {
+            bAutoConnDisarm(hc);   /* re-armed at the other rate from bAutoConnDone() */
+        }
+        return;
+    }
+    {
+        UBYTE params[25];
+        struct bt_buf_writer w;
+        static const UBYTE noaddr[6] = { 0, 0, 0, 0, 0, 0 };
+        bt_buf_writer_init(&w, params, sizeof(params));
+        bt_buf_writer_write_le16(&w, fast ? BGSCAN_FAST_INTERVAL : BGSCAN_SLOW_INTERVAL);
+        bt_buf_writer_write_le16(&w, fast ? BGSCAN_FAST_WINDOW : BGSCAN_SLOW_WINDOW);
+        bt_buf_writer_write_u8(&w, 0x01);               /* filter policy: accept list */
+        bt_buf_writer_write_u8(&w, 0x00);               /* peer address: ignored */
+        bt_buf_writer_write_bytes(&w, noaddr, 6);
+        bt_buf_writer_write_u8(&w, 0x00);               /* own address type public */
+        bt_buf_writer_write_le16(&w, 0x0018);           /* conn interval min 30ms */
+        bt_buf_writer_write_le16(&w, 0x0028);           /* conn interval max 50ms */
+        bt_buf_writer_write_le16(&w, 0x0000);           /* latency */
+        bt_buf_writer_write_le16(&w, 0x02a0);           /* supervision timeout 6.72s */
+        bt_buf_writer_write_le16(&w, 0x0000);           /* min CE */
+        bt_buf_writer_write_le16(&w, 0x0000);           /* max CE */
+        if(bSubmitCmd(hc, HC_OP_LE_CREATE_CONNECTION, params, 25, bAutoConnCmdCB, hc)) {
+            hc->hc_AutoConnArmed = TRUE;
+            hc->hc_AutoConnFast = fast;
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s/%ld: controller auto-connect armed for %ld device(s) (%s duty).",
+                           bth->bth_DevName, bth->bth_Unit, (ULONG) hc->hc_AcceptListCount,
+                           fast ? (STRPTR) "reconnect" : (STRPTR) "watch");
+        }
+    }
+}
+/* \\\ */
+
 /* /// "bBgScanUpdate()" */
 /* Start or stop the background scan according to the current state, at the
    duty cycle the situation calls for. */
@@ -779,6 +1106,11 @@ void bBgScanUpdate(struct BtHWCore *hc)
     BOOL fast = ((LONG) (hc->hc_BgScanFastUntil - hc->hc_Tick) > 0);
 
     bt_timer_list_cancel(&hc->hc_Timers, &hc->hc_BgScanTimer);
+    if(bth->bth_LEReconnect != BTLR_HOST) {
+        /* the controller listens for us (accept list): no host scan */
+        bAutoConnUpdate(hc);
+        return;
+    }
     if((bth->bth_Flags & BTHF_DISCOVERING) || hc->hc_DiscoveryPending || hc->hc_LEScanActive ||
        hc->hc_Connecting || !hc->hc_BringupDone || hc->hc_BringupFailed) {
         want = FALSE;
@@ -922,6 +1254,29 @@ static LONG bStartDiscovery(struct BtHWCore *hc, struct BtDiscoveryParams *bdp)
                    le ? (STRPTR) "yes" : (STRPTR) "no", dur);
     btSendEvent(BEHMB_DISCOVERYSTART, bth, NULL);
 
+    hc->hc_DiscClassic = classic;
+    hc->hc_DiscLE = le;
+    hc->hc_DiscDur = dur;
+    if(hc->hc_AutoConnArmed) {
+        /* the controller's accept-list initiator owns the LE radio: cancel
+           it first, bAutoConnDone() starts the radio side of the discovery */
+        hc->hc_DiscDeferred = TRUE;
+        bAutoConnDisarm(hc);
+        return(0);
+    }
+    bStartDiscoveryRadio(hc);
+    return(0);
+}
+/* \\\ */
+
+/* /// "bStartDiscoveryRadio()" */
+/* the radio half of bStartDiscovery(): scan / inquiry commands and the timer */
+static void bStartDiscoveryRadio(struct BtHWCore *hc)
+{
+    BOOL classic = hc->hc_DiscClassic;
+    BOOL le = hc->hc_DiscLE;
+    ULONG dur = hc->hc_DiscDur;
+
     bBgScanStop(hc);   /* scan parameters cannot be changed while scanning */
     if(le) {
         UBYTE params[7];
@@ -955,7 +1310,6 @@ static LONG bStartDiscovery(struct BtHWCore *hc, struct BtDiscoveryParams *bdp)
     /* the LE scan needs a timer; the inquiry stops by itself but the timer
        also acts as a safety net */
     bt_timer_list_add(&hc->hc_Timers, &hc->hc_DiscoveryTimer, bNowUS(hc) + (uint64_t) dur * 1000000ULL);
-    return(0);
 }
 /* \\\ */
 
@@ -970,6 +1324,7 @@ LONG bStopDiscovery(struct BtHWCore *hc)
         return(0);
     }
     bt_timer_list_cancel(&hc->hc_Timers, &hc->hc_DiscoveryTimer);
+    hc->hc_DiscDeferred = FALSE;
     if(hc->hc_LEScanActive) {
         UBYTE params[2] = { 0, 0 };
         hc->hc_LEScanActive = FALSE;
@@ -1208,9 +1563,10 @@ static void bHandleLEMeta(struct BtHWCore *hc, const UBYTE *params, ULONG len)
             hc->hc_DiagAdvLegacy++;
             if(report.event_type == 0x04) hc->hc_DiagScanRsp++;
             {
-                BOOL noted = bNoteDevice(hc, report.address.b, report.address_type & 3, TRUE, 0, report.rssi,
+                UBYTE at = HC_LE_ADDRTYPE_IDENT(report.address_type);
+                BOOL noted = bNoteDevice(hc, report.address.b, at, TRUE, 0, report.rssi,
                                          info.name, info.name_len, report.data, report.data_len, info.appearance, &info);
-                bScanDiagNote(hc, report.address.b, report.address_type & 3, TRUE, (UBYTE)(1u << (report.event_type & 7)), 0,
+                bScanDiagNote(hc, report.address.b, at, TRUE, (UBYTE)(1u << (report.event_type & 7)), 0,
                               report.data, report.data_len, &info, report.rssi, 0, noted);
             }
         }
@@ -1240,9 +1596,10 @@ static void bHandleLEMeta(struct BtHWCore *hc, const UBYTE *params, ULONG len)
                 bt_le_adv_parse(&rep[24], dlen, &info);
                 if(rep[0] & 0x08) hc->hc_DiagScanRsp++;
                 {
-                    BOOL noted = bNoteDevice(hc, &rep[3], addrtype & 3, TRUE, 0, rssi,
+                    UBYTE at = HC_LE_ADDRTYPE_IDENT(addrtype);
+                    BOOL noted = bNoteDevice(hc, &rep[3], at, TRUE, 0, rssi,
                                              info.name, info.name_len, &rep[24], dlen, info.appearance, &info);
-                    bScanDiagNote(hc, &rep[3], addrtype & 3, TRUE, 0, rep[0], &rep[24], dlen, &info, rssi, 0, noted);
+                    bScanDiagNote(hc, &rep[3], at, TRUE, 0, rep[0], &rep[24], dlen, &info, rssi, 0, noted);
                 }
             }
             o += 24 + rep[23];
@@ -1467,6 +1824,17 @@ static void bBringupCB(struct bt_cmdq_completion *completion, void *user_data)
             }
             break;
         }
+        case HCB_READ_LOCAL_COMMANDS:
+            if(rplen >= 65) {
+                CopyMem((APTR) &rp[1], bth->bth_SupportedCmds, 64);
+            }
+            break;
+        case HCB_LE_READ_WHITE_LIST_SIZE:
+            bth->bth_AcceptListSize = (rplen >= 2) ? rp[1] : 0;
+            break;
+        case HCB_LE_READ_RESOLVING_SIZE:
+            bth->bth_ResolvingListSize = (rplen >= 2) ? rp[1] : 0;
+            break;
         case HCB_READ_BUFFER_SIZE: {
             struct bt_hci_buffer_size bs;
             if(bt_hci_parse_buffer_size(rp, rplen, &bs) == BT_OK) {
@@ -1552,6 +1920,9 @@ static void bBringupStep(struct BtHWCore *hc)
         case HCB_READ_FEATURES:
             opcode = HC_OP_READ_LOCAL_FEATURES;
             break;
+        case HCB_READ_LOCAL_COMMANDS:
+            opcode = HC_OP_READ_LOCAL_COMMANDS;
+            break;
         case HCB_READ_BUFFER_SIZE:
             opcode = HC_OP_READ_BUFFER_SIZE;
             break;
@@ -1588,6 +1959,21 @@ static void bBringupStep(struct BtHWCore *hc)
                 continue;
             }
             opcode = HC_OP_LE_READ_LOCAL_FEATURES;
+            break;
+        case HCB_LE_READ_WHITE_LIST_SIZE:
+            if(!(bth->bth_Flags & BTHF_LE)) {
+                hc->hc_BringupStep++;
+                continue;
+            }
+            opcode = HC_OP_LE_READ_WHITE_LIST_SIZE;
+            break;
+        case HCB_LE_READ_RESOLVING_SIZE:
+            /* only where the LE feature set claims LL privacy (byte 0 bit 6) */
+            if(!(bth->bth_Flags & BTHF_LE) || !(bth->bth_LEFeatures[0] & 0x40)) {
+                hc->hc_BringupStep++;
+                continue;
+            }
+            opcode = HC_OP_LE_READ_RESOLVING_SIZE;
             break;
         case HCB_WRITE_LE_HOST_SUPPORT:
             if(!(bth->bth_Flags & BTHF_LE) || !(bth->bth_Flags & BTHF_CLASSIC)) {
@@ -1677,6 +2063,7 @@ static void bBringupStep(struct BtHWCore *hc)
                                "%s/%ld: controller re-initialised on the new firmware.",
                                bth->bth_DevName, bth->bth_Unit);
             }
+            bLECapsEvaluate(hc);
             btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                            "%s/%ld: bring-up complete - HCI %ld.%ld LMP %ld.%ld, %s%s%s, addr %s.",
                            bth->bth_DevName, bth->bth_Unit,
@@ -1817,6 +2204,7 @@ void bHandleChannel(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth, struct
             if(!(bd->bd_Flags & BDFF_REGISTERED)) {
                 bd->bd_Flags |= BDFF_REGISTERED;
                 btUnlockDevice(bd);
+                bth->bth_LEListsDirty = TRUE;
                 bStoreDevConfig(BluetoothBase, bd, TRUE);
                 btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "Device %s registered.", bd->bd_Name);
@@ -1838,6 +2226,7 @@ void bHandleChannel(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth, struct
                 memset(&bd->bd_Keys, 0, sizeof(bd->bd_Keys));
                 bd->bd_CurAddrValid = FALSE;
                 btUnlockDevice(bd);
+                bth->bth_LEListsDirty = TRUE;
                 bStoreDevConfig(BluetoothBase, bd, TRUE);
                 btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "Device %s unregistered.", bd->bd_Name);

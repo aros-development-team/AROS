@@ -69,6 +69,7 @@
 #define HC_OP_WRITE_SIMPLE_PAIRING    HC_OP(0x03, 0x0056)
 #define HC_OP_WRITE_LE_HOST_SUPPORT   HC_OP(0x03, 0x006d)
 #define HC_OP_READ_LOCAL_VERSION      HC_OP(0x04, 0x0001)
+#define HC_OP_READ_LOCAL_COMMANDS     HC_OP(0x04, 0x0002)
 #define HC_OP_READ_LOCAL_FEATURES     HC_OP(0x04, 0x0003)
 #define HC_OP_READ_BUFFER_SIZE        HC_OP(0x04, 0x0005)
 #define HC_OP_READ_BD_ADDR            HC_OP(0x04, 0x0009)
@@ -78,6 +79,13 @@
 #define HC_OP_LE_READ_LOCAL_FEATURES  HC_OP(0x08, 0x0003)
 #define HC_OP_LE_SET_SCAN_PARAMETERS  HC_OP(0x08, 0x000b)
 #define HC_OP_LE_SET_SCAN_ENABLE      HC_OP(0x08, 0x000c)
+#define HC_OP_LE_READ_WHITE_LIST_SIZE HC_OP(0x08, 0x000f)
+#define HC_OP_LE_CLEAR_WHITE_LIST     HC_OP(0x08, 0x0010)
+#define HC_OP_LE_ADD_WHITE_LIST       HC_OP(0x08, 0x0011)
+#define HC_OP_LE_ADD_RESOLVING_LIST   HC_OP(0x08, 0x0027)
+#define HC_OP_LE_CLEAR_RESOLVING_LIST HC_OP(0x08, 0x0029)
+#define HC_OP_LE_READ_RESOLVING_SIZE  HC_OP(0x08, 0x002a)
+#define HC_OP_LE_SET_ADDR_RESOLUTION  HC_OP(0x08, 0x002d)
 #define HC_OP_LE_RAND                 HC_OP(0x08, 0x0018)
 #define HC_OP_LE_READ_LOCAL_P256      HC_OP(0x08, 0x0025)
 #define HC_OP_LE_GENERATE_DHKEY       HC_OP(0x08, 0x0026)
@@ -127,12 +135,15 @@ enum {
     HCB_READ_VERSION,
     HCB_FIRMWARE,           /* offer the controller to the pluggable firmware loaders */
     HCB_READ_FEATURES,
+    HCB_READ_LOCAL_COMMANDS,
     HCB_READ_BUFFER_SIZE,
     HCB_READ_BD_ADDR,
     HCB_SET_EVENT_MASK,
     HCB_LE_SET_EVENT_MASK,
     HCB_LE_READ_BUFFER_SIZE,
     HCB_LE_READ_LOCAL_FEATURES,
+    HCB_LE_READ_WHITE_LIST_SIZE,
+    HCB_LE_READ_RESOLVING_SIZE,
     HCB_WRITE_LE_HOST_SUPPORT,
     HCB_WRITE_INQUIRY_MODE,
     HCB_WRITE_SIMPLE_PAIRING,
@@ -209,6 +220,7 @@ struct BtHWConn
     UWORD               cn_EnumCount;
     ULONG               cn_EnumHandles[32];
     struct bt_gatt_service cn_Services[BT_GATT_CLIENT_MAX_SERVICES];
+    struct BtService   *cn_EnumSvc[BT_GATT_CLIENT_MAX_SERVICES]; /* the BtService each discovered service maps to */
     struct BtChannel   *cn_EnumReq;    /* control request waiting for enumeration */
     struct BtEndpoint  *cn_EnumEP;     /* GATT endpoint whose descriptors are being looked at */
     BOOL                cn_CCCDBusy;     /* a CCCD write is in flight on the GATT client */
@@ -345,6 +357,21 @@ struct BtHWCore
     ULONG               hc_BgScanCheckTick;  /* periodic re-evaluation (hc_Tick based) */
     struct BtDevice    *hc_AdvPending;       /* advert heard while the radio was busy: connect when free */
 
+    /* controller-side reconnect (bth_LEReconnect != BTLR_HOST): one LE Create
+       Connection with the accept-list filter policy stays pending and the
+       controller connects whenever a listed device advertises. It is the
+       one LE initiator, so a directed connect or an LE discovery first
+       cancels it (bAutoConnDisarm) and resumes from its completion. */
+    BOOL                hc_AutoConnArmed;    /* the accept-list initiator is pending */
+    BOOL                hc_AutoConnCancel;   /* LE Create Connection Cancel sent, waiting for its completion */
+    BOOL                hc_AutoConnFast;     /* armed with the fast (reconnect) scan parameters */
+    BOOL                hc_ListsSyncing;     /* list reprogramming commands in flight */
+    BOOL                hc_ResolvingOn;      /* LE address resolution enabled in the controller */
+    UBYTE               hc_AcceptListCount;  /* entries programmed */
+    BOOL                hc_DiscDeferred;     /* a discovery waits for the initiator to cancel */
+    BOOL                hc_DiscClassic, hc_DiscLE;
+    ULONG               hc_DiscDur;
+
     /* scan diagnostics (conclusive "why is nothing found" instrumentation) */
     ULONG               hc_DiagAdvLegacy;    /* LE advertising reports parsed (subevent 0x02) */
     ULONG               hc_DiagAdvExt;       /* LE extended advertising reports parsed (0x0D) */
@@ -403,6 +430,12 @@ void bBgScanUpdate(struct BtHWCore *hc);
 void bBgScanSchedule(struct BtHWCore *hc);
 /* run the scan at the fast (reconnect) duty cycle for the next minute */
 void bBgScanBoost(struct BtHWCore *hc);
+void bAutoConnDisarm(struct BtHWCore *hc);
+void bAutoConnDone(struct BtHWCore *hc);
+void bConnStartPending(struct BtHWCore *hc);
+/* advertising report / connection address types with address resolution on:
+   0x02/0x03 are resolved identities (public / random) */
+#define HC_LE_ADDRTYPE_IDENT(t) (((t) == 0x02) ? BDAT_PUBLIC : ((t) == 0x03) ? BDAT_RANDOM : ((t) & 1))
 
 /* hwconn.c */
 /* a bonded/registered LE device is advertising: connect to it when a class

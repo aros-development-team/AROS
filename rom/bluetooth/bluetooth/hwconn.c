@@ -937,12 +937,29 @@ static BOOL bStartConnect(struct BtHWConn *cn)
            private address) rather than its identity */
         const UBYTE *peer = bd->bd_CurAddrValid ? bd->bd_CurAddr : bd->bd_Address.bd_Addr;
         UBYTE peertype = bd->bd_CurAddrValid ? bd->bd_CurAddrType : bd->bd_AddrType;
+        if(hc->hc_AutoConnArmed) {
+            /* one LE initiator: the controller's accept-list auto-connect
+               must be cancelled first; bAutoConnDone() comes back through
+               bStartNextConnect() once it is */
+            hc->hc_Connecting = NULL;
+            cn->cn_Role = BDR_NONE;
+            bAutoConnDisarm(hc);
+            return(TRUE);
+        }
+        if(hc->hc_ResolvingOn && (bd->bd_Keys.bkc_Flags & BKCF_IRK)) {
+            /* the controller resolves the peer's private addresses itself:
+               initiate to the identity, typed as one (0x02/0x03) */
+            peer = bd->bd_Address.bd_Addr;
+            peertype = (bd->bd_AddrType & 1) | 0x02;
+        } else {
+            peertype &= 1;
+        }
         bBgScanStop(hc);   /* initiating is refused while a scan runs */
         bt_buf_writer_init(&w, params, sizeof(params));
         bt_buf_writer_write_le16(&w, 0x0060);           /* scan interval */
         bt_buf_writer_write_le16(&w, 0x0030);           /* scan window */
         bt_buf_writer_write_u8(&w, 0x00);               /* filter policy: peer address */
-        bt_buf_writer_write_u8(&w, peertype & 1);       /* peer address type */
+        bt_buf_writer_write_u8(&w, peertype);           /* peer address type */
         bt_buf_writer_write_bytes(&w, peer, 6);
         bt_buf_writer_write_u8(&w, 0x00);               /* own address type public */
         bt_buf_writer_write_le16(&w, 0x0018);           /* conn interval min 30ms */
@@ -983,6 +1000,14 @@ static void bStartNextConnect(struct BtHWCore *hc)
             return;
         }
     }
+}
+/* \\\ */
+
+/* /// "bConnStartPending()" */
+/* hwtask.c: the LE radio became free again (bAutoConnDone) */
+void bConnStartPending(struct BtHWCore *hc)
+{
+    bStartNextConnect(hc);
 }
 /* \\\ */
 
@@ -1499,8 +1524,8 @@ static void bSDPEnumCB(struct bt_sdp_client_completion *completion, void *user_d
 
     if(completion->result != BT_SDP_CLIENT_OK) {
         static const char *why[] = { "ok", "connect failed", "channel closed",
-                                     "remote protocol error", "record too large" };
-        CONST_STRPTR reason = (completion->result <= BT_SDP_CLIENT_ERROR_TOO_LARGE) ?
+                                     "remote protocol error", "record too large", "no answer" };
+        CONST_STRPTR reason = (completion->result <= BT_SDP_CLIENT_ERROR_TIMEOUT) ?
                               (CONST_STRPTR) why[completion->result] : (CONST_STRPTR) "unknown";
         if(cn->cn_EnumState == ENUM_SDP_ATTRS) {
             /* one unreadable record must not cost the rest of the device */
@@ -1636,7 +1661,32 @@ static void bGATTEnumCB(struct bt_gatt_client_completion *completion, void *user
         }
         btLockWriteDevice(bd);
         for(n = 0; n < cn->cn_EnumCount; n++) {
-            struct BtService *bsv = bAllocService(BluetoothBase, bd);
+            struct BtService *bsv;
+            UWORD k;
+            /* a bound service survived bClearServices() (its binding owns
+               channels and holds the pointer): refresh it in place instead
+               of listing it a second time */
+            for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
+                if((bsv->bsv_Protocol != BSVP_ATT) || (bsv->bsv_UUID16 != cn->cn_Services[n].uuid16)) {
+                    continue;
+                }
+                for(k = 0; k < n; k++) {
+                    if(cn->cn_EnumSvc[k] == bsv) {
+                        break;
+                    }
+                }
+                if(k == n) {
+                    break;   /* not claimed by an earlier discovered service */
+                }
+            }
+            if(bsv->bsv_Node.ln_Succ) {
+                bsv->bsv_StartHandle = cn->cn_Services[n].start_handle;
+                bsv->bsv_EndHandle = cn->cn_Services[n].end_handle;
+                cn->cn_EnumSvc[n] = bsv;
+                continue;
+            }
+            bsv = bAllocService(BluetoothBase, bd);
+            cn->cn_EnumSvc[n] = bsv;
             if(bsv) {
                 UBYTE ustr[40];
                 STRPTR nm;
@@ -1661,39 +1711,72 @@ static void bGATTEnumCB(struct bt_gatt_client_completion *completion, void *user
 
     case ENUM_GATT_CHARS: {
         /* characteristics of service cn_EnumIndex */
-        struct BtService *bsv;
-        UWORD idx = 0;
+        struct BtService *bsv = (cn->cn_EnumIndex < cn->cn_EnumCount) ? cn->cn_EnumSvc[cn->cn_EnumIndex] : NULL;
         btLockWriteDevice(bd);
-        for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
-            if(bsv->bsv_Protocol != BSVP_ATT) {
-                continue;
+        if(bsv) {
+            struct BtEndpoint *bep;
+            for(bep = (struct BtEndpoint *) bsv->bsv_Endpoints.lh_Head; bep->bep_Node.ln_Succ; bep = (struct BtEndpoint *) bep->bep_Node.ln_Succ) {
+                bep->bep_EnumMark = 0;
             }
-            if(idx == cn->cn_EnumIndex) {
-                for(n = 0; n < completion->count; n++) {
-                    struct BtEndpoint *bep = bAllocEndpoint(BluetoothBase, bsv);
-                    if(bep) {
-                        UBYTE props = completion->characteristics[n].properties;
-                        STRPTR nm;
-                        bep->bep_Type = BEPT_GATT_CHAR;
-                        bep->bep_Handle = completion->characteristics[n].value_handle;
-                        bep->bep_UUID16 = completion->characteristics[n].uuid16;
-                        bUUID16To128(bep->bep_UUID16, bep->bep_UUID);
-                        bep->bep_Properties = props;
-                        bep->bep_CanRead = (props & 0x30) ? TRUE : FALSE;  /* notify | indicate */
-                        bep->bep_CanWrite = (props & 0x0c) ? TRUE : FALSE; /* write | write without response */
-                        bep->bep_MaxPktSize = 20;
-                        /* the characteristic's descriptors live between its value
-                           handle and the next declaration (or the service end) */
-                        bep->bep_EndHandle = (n + 1 < completion->count) ?
-                                             (completion->characteristics[n + 1].declaration_handle - 1) : bsv->bsv_EndHandle;
-                        nm = btNumToStr(BNTS_UUID16, bep->bep_UUID16, NULL);
-                        bep->bep_Name = nm ? btCopyStr(nm) : btCopyStrFmt("Characteristic 0x%04lx", bep->bep_UUID16);
-                        bep->bep_Node.ln_Name = bep->bep_Name;
+            for(n = 0; n < completion->count; n++) {
+                UWORD vh = completion->characteristics[n].value_handle;
+                UWORD uuid = completion->characteristics[n].uuid16;
+                UBYTE props = completion->characteristics[n].properties;
+                UWORD endh = (n + 1 < completion->count) ?
+                             (completion->characteristics[n + 1].declaration_handle - 1) : bsv->bsv_EndHandle;
+                struct BtEndpoint *byuuid = NULL;
+                /* a kept service already has endpoints and classes hold
+                   pointers to them: update the matching one in place - by
+                   value handle, else the next unclaimed one of that UUID
+                   (a HID service has several Report characteristics) */
+                for(bep = (struct BtEndpoint *) bsv->bsv_Endpoints.lh_Head; bep->bep_Node.ln_Succ; bep = (struct BtEndpoint *) bep->bep_Node.ln_Succ) {
+                    if((bep->bep_Type != BEPT_GATT_CHAR) || bep->bep_EnumMark || (bep->bep_UUID16 != uuid)) {
+                        continue;
+                    }
+                    if(bep->bep_Handle == vh) {
+                        break;
+                    }
+                    if(!byuuid) {
+                        byuuid = bep;
                     }
                 }
-                break;
+                if(!bep->bep_Node.ln_Succ) {
+                    bep = byuuid;
+                }
+                if(bep) {
+                    if(bep->bep_Handle != vh) {
+                        /* moved: its descriptors must be looked up again */
+                        bep->bep_Handle = vh;
+                        bep->bep_CCCDHandle = 0;
+                        bep->bep_DescDone = FALSE;
+                    }
+                    bep->bep_Properties = props;
+                    bep->bep_CanRead = (props & 0x30) ? TRUE : FALSE;
+                    bep->bep_CanWrite = (props & 0x0c) ? TRUE : FALSE;
+                    bep->bep_EndHandle = endh;
+                    bep->bep_EnumMark = 1;
+                    continue;
+                }
+                bep = bAllocEndpoint(BluetoothBase, bsv);
+                if(bep) {
+                    STRPTR nm;
+                    bep->bep_Type = BEPT_GATT_CHAR;
+                    bep->bep_Handle = vh;
+                    bep->bep_UUID16 = uuid;
+                    bUUID16To128(bep->bep_UUID16, bep->bep_UUID);
+                    bep->bep_Properties = props;
+                    bep->bep_CanRead = (props & 0x30) ? TRUE : FALSE;  /* notify | indicate */
+                    bep->bep_CanWrite = (props & 0x0c) ? TRUE : FALSE; /* write | write without response */
+                    bep->bep_MaxPktSize = 20;
+                    /* the characteristic's descriptors live between its value
+                       handle and the next declaration (or the service end) */
+                    bep->bep_EndHandle = endh;
+                    bep->bep_EnumMark = 1;
+                    nm = btNumToStr(BNTS_UUID16, bep->bep_UUID16, NULL);
+                    bep->bep_Name = nm ? btCopyStr(nm) : btCopyStrFmt("Characteristic 0x%04lx", bep->bep_UUID16);
+                    bep->bep_Node.ln_Name = bep->bep_Name;
+                }
             }
-            idx++;
         }
         btUnlockDevice(bd);
         cn->cn_EnumIndex++;
@@ -2263,6 +2346,7 @@ static void bSMPKeysComplete(void *context, const struct bt_smp_distributed_keys
     struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
     struct BtDevice *bd = cn->cn_Device;
     (void) local;
+    cn->cn_Core->hc_Hardware->bth_LEListsDirty = TRUE;   /* a new bond for the controller's lists */
     btLockWriteDevice(bd);
     if(peer->key_mask & BT_SMP_KEYDIST_ENC_KEY) {
         /* distributed as on the wire = HCI byte order */
@@ -2445,7 +2529,7 @@ static BOOL bSMPSetup(struct BtHWConn *cn)
     cfg.features.io_capability = SMP_IO_DISPLAYYESNO;  /* a keyboard peer -> we display the passkey */
     cfg.features.oob_data_flag = 0;
     cfg.features.auth_req = BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM |
-                            ((bth->bth_LEFeatures[0] & 0x40) ? BT_SMP_AUTHREQ_SC : 0);
+                            ((bth->bth_LECaps & BTLC_SECURECONN) ? BT_SMP_AUTHREQ_SC : 0);
     cfg.features.max_encryption_key_size = 16;
     cfg.features.initiator_key_distribution = 0;
     cfg.features.responder_key_distribution = BT_SMP_KEYDIST_ENC_KEY | BT_SMP_KEYDIST_ID_KEY;
@@ -2907,8 +2991,20 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
             if(len < 12) {
                 return(TRUE);
             }
+            BOOL autoconn = FALSE;
             status = params[1];
             handle = (params[2] | (params[3] << 8)) & 0x0fff;
+            if(hc->hc_AutoConnArmed && !hc->hc_Connecting) {
+                /* the controller's own initiator (accept list) answered: a
+                   link to one of ours, or the cancel bAutoConnDisarm() asked
+                   for (status 0x02, no address) */
+                autoconn = TRUE;
+                if(status) {
+                    KPRINTF(10, ("auto-connect ended (0x%02lx)\n", (ULONG) status));
+                    bAutoConnDone(hc);
+                    return(TRUE);
+                }
+            }
             btLockReadBase();
             bd = bFindDeviceByAddr(hc, &params[6]);
             btUnlockBase();
@@ -2933,6 +3029,9 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                     p[2] = 0x13;
                     bSubmitCmd(hc, HC_OP_DISCONNECT, p, 3, bIgnoreCompletion, hc);
                 }
+                if(autoconn) {
+                    bAutoConnDone(hc);
+                }
                 return(TRUE);
             }
             cn = bd->bd_Conns[1];
@@ -2950,6 +3049,9 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                 bConnDown(cn, BTIOERR_CONNFAILED, status);
             } else {
                 bConnUp(cn, handle, params[4] ? BDR_PERIPHERAL : BDR_CENTRAL);
+            }
+            if(autoconn) {
+                bAutoConnDone(hc);   /* re-arms for the others, resumes a deferred discovery */
             }
             bStartNextConnect(hc);
             return(TRUE);
@@ -3160,6 +3262,7 @@ BOOL bConnHandleRequest(struct BtHWCore *hc, struct BtChannel *bch)
             bd->bd_Flags &= ~BDFF_BONDED;
             bd->bd_CurAddrValid = FALSE;
             btUnlockDevice(bd);
+            hc->hc_Hardware->bth_LEListsDirty = TRUE;
             bStoreDevConfig(BluetoothBase, bd, TRUE);
             if(bd->bd_Conns[0]) {
                 bDisconnect(bd->bd_Conns[0], 0x13);
@@ -3565,7 +3668,10 @@ void bConnTick(struct BtHWCore *hc)
                    direct connect (the controller then listens for that peer
                    at 100% for 10 s) - the peer may advertise undetectably
                    seldom, or its private address may have rotated */
-                if((LONG) (hc->hc_Tick - cn->cn_NextAttempt) >= 0) {
+                if((hc->hc_Hardware->bth_LEReconnect == BTLR_HOST) &&
+                   ((LONG) (hc->hc_Tick - cn->cn_NextAttempt) >= 0)) {
+                    /* (with the controller listening on its accept list a
+                       direct connect adds nothing: it sees every advert) */
                     if(!hc->hc_Connecting && !(hc->hc_Hardware->bth_Flags & BTHF_DISCOVERING)) {
                         struct BtBase *BluetoothBase = hc->hc_Base;
                         btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
@@ -3609,6 +3715,7 @@ void bConnTick(struct BtHWCore *hc)
         }
         bt_l2cap_channel_manager_tick(&cn->cn_L2CAP, now);
         bt_gatt_client_tick(&cn->cn_GATT, now);
+        bt_sdp_client_tick(&cn->cn_SDP, now);
         if(cn->cn_SMPActive) {
             bt_smp_manager_tick(&cn->cn_SMP, now);
         }

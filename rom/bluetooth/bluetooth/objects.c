@@ -901,6 +901,9 @@ ULONG bRestoreDevices(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth)
         pic = btNextCfgForm(pic);
     }
     bUnlockSem(BluetoothBase, &BluetoothBase->bt_ConfigLock);
+    if(count) {
+        bth->bth_LEListsDirty = TRUE;   /* the controller's accept/resolving lists follow the bonds */
+    }
     return(count);
 }
 /* \\\ */

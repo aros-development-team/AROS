@@ -61,8 +61,10 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR BluetoothBase)
 
                 for (node = args->lh_Head; node->ln_Succ; node = node->ln_Succ) {
                     if (stricmp(node->ln_Name, "btdebug") == 0) {
-                        BluetoothBase->bt_Flags = BTF_KLOG;
-                        break;
+                        BluetoothBase->bt_Flags |= BTF_KLOG;
+                    } else if (stricmp(node->ln_Name, "btlehost") == 0) {
+                        /* never hand LE reconnects to the controller's lists */
+                        BluetoothBase->bt_Flags |= BTF_LEHOSTSCAN;
                     }
                 }
             }
@@ -1504,6 +1506,22 @@ AROS_LH3(LONG, btGetAttrsA,
         }
         if((ti = FindTagItem(BHA_LEFeatures, tags))) {
             *((UBYTE **) ti->ti_Data) = bth->bth_LEFeatures;
+            count++;
+        }
+        if((ti = FindTagItem(BHA_LECaps, tags))) {
+            *((IPTR *) ti->ti_Data) = bth->bth_LECaps;
+            count++;
+        }
+        if((ti = FindTagItem(BHA_AcceptListSize, tags))) {
+            *((IPTR *) ti->ti_Data) = bth->bth_AcceptListSize;
+            count++;
+        }
+        if((ti = FindTagItem(BHA_ResolvingListSize, tags))) {
+            *((IPTR *) ti->ti_Data) = bth->bth_ResolvingListSize;
+            count++;
+        }
+        if((ti = FindTagItem(BHA_LEReconnect, tags))) {
+            *((IPTR *) ti->ti_Data) = bth->bth_LEReconnect;
             count++;
         }
         if((ti = FindTagItem(BHA_ManufacturerName, tags))) {

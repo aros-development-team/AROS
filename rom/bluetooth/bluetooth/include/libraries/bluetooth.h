@@ -97,6 +97,20 @@
 #define BHA_ManufacturerName (BHA_Dummy + 0x49) /* STRPTR */
 #define BHA_Features         (BHA_Dummy + 0x4a) /* UBYTE * (8 bytes LMP features) */
 #define BHA_LEFeatures       (BHA_Dummy + 0x4b) /* UBYTE * (8 bytes LE controller features) */
+#define BHA_LECaps           (BHA_Dummy + 0x4c) /* ULONG (BHLC_xxx: controller capabilities the stack uses) */
+#define BHA_AcceptListSize   (BHA_Dummy + 0x4d) /* ULONG (filter accept list slots, 0 = none) */
+#define BHA_ResolvingListSize (BHA_Dummy + 0x4e) /* ULONG (resolving list slots, 0 = none) */
+#define BHA_LEReconnect      (BHA_Dummy + 0x4f) /* ULONG (BHLR_xxx: how bonded LE devices are reconnected) */
+
+/* BHA_LECaps */
+#define BHLC_ACCEPTLIST      0x01 /* filter accept list (Bluetooth 4.0) */
+#define BHLC_LLPRIVACY       0x02 /* resolving list / address resolution (4.2) */
+#define BHLC_SECURECONN      0x04 /* LE Secure Connections (P-256 + DHKey commands) */
+#define BHLC_EXTADV          0x08 /* LE extended advertising (5.0) */
+/* BHA_LEReconnect */
+#define BHLR_HOST            0    /* the host scans and initiates (rung 0) */
+#define BHLR_ACCEPTLIST      1    /* the controller connects to accept-listed identities (rung 1) */
+#define BHLR_RESOLVING       2    /* as above, resolving private addresses itself (rung 2) */
 #define BHA_ACLMaxPktSize    (BHA_Dummy + 0x50) /* ULONG */
 #define BHA_ACLNumPkts       (BHA_Dummy + 0x51) /* ULONG */
 #define BHA_SCOMaxPktSize    (BHA_Dummy + 0x52) /* ULONG */
