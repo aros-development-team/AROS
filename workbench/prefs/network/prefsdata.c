@@ -1570,11 +1570,89 @@ static BOOL ReadServer(struct Server *server, BPTR file, LONG size)
 }
 
 
+/* TRUE if <root>/db/interfaces exists. */
+static BOOL InterfacesExistUnder(CONST_STRPTR root)
+{
+    ULONG len = strlen(root) + 4 + 20;
+    TEXT filename[len];
+    BPTR lock;
+
+    CombinePath3P(filename, len, root, "db", "interfaces");
+    if ((lock = Lock(filename, SHARED_LOCK)))
+    {
+        UnLock(lock);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* Resolve which directory to read the configuration from, mirroring how the
+ * AROSTCP stack itself locates its prefs (see bsdsocket/kern/amiga_main.c):
+ *
+ *   1. ENV:AROSTCP - the live/edited config, once it has been populated (by a
+ *      previous Save, or by the boot copy of ENVARC:->ENV:).
+ *   2. ENV:AROSTCP/Config - an explicit db-directory override, the same env var
+ *      the stack honours.  Its contents name the db dir, so the reader (which
+ *      appends "/db") is given the parent.
+ *   3. The install location named by SYS/Packages/AROSTCP (e.g.
+ *      SYS:System/Network/AROSTCP), whose db/ holds the shipped config - this
+ *      is the stack's default when no override is set, and the case that was
+ *      leaving the editor's interface list empty (nothing populates ENV:AROSTCP
+ *      on a freshly installed system).
+ *   4. ENV:AROSTCP as a last resort.
+ *
+ * The returned string is valid for the life of the program. */
+static CONST_STRPTR ResolveReadRoot(void)
+{
+    static TEXT root[1024];
+    TEXT cfg[1024];
+
+    /* 1. Live config already present in ENV: */
+    if (InterfacesExistUnder(PREFS_PATH_ENV))
+        return PREFS_PATH_ENV;
+
+    /* 2. Stack's AROSTCP/Config override (names the db dir directly). */
+    if (GetVar("AROSTCP/Config", cfg, sizeof(cfg), GVF_GLOBAL_ONLY) > 0 && cfg[0])
+    {
+        BPTR lock = Lock(cfg, SHARED_LOCK);
+        if (lock)
+        {
+            STRPTR pp;
+            UnLock(lock);
+            /* cfg is "<root>/db"; hand back <root> so the reader's "/db" append
+             * reconstructs it. */
+            strlcpy(root, cfg, sizeof(root));
+            pp = PathPart(root);
+            pp[0] = '\0';
+            if (root[0])
+                return root;
+        }
+    }
+
+    /* 3. Stack default: the package install location; its db/ holds the config. */
+    {
+        CONST_STRPTR loc = GetDefaultStackLocation();
+        if (loc && loc[0] && InterfacesExistUnder(loc))
+        {
+            strlcpy(root, loc, sizeof(root));
+            return root;
+        }
+    }
+
+    /* 4. Nothing found - fall back to ENV:AROSTCP (list may be empty). */
+    return PREFS_PATH_ENV;
+}
+
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save)
 {
     SetDefaultNetworkPrefsValues();
     SetDefaultWirelessPrefsValues();
     SetDefaultMobilePrefsValues();
+
+    /* When no explicit source was requested, locate the config the same way the
+     * stack does, so the editor shows the configuration actually in use. */
+    if (directory == NULL)
+        directory = ResolveReadRoot();
 
     ReadNetworkPrefs(directory);
     ReadWirelessPrefs(WIRELESS_PATH_ENV);

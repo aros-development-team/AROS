@@ -33,8 +33,11 @@ int main(int argc, char **argv)
      * Needed even in headless SAVE/USE mode, where no editor window is made. */
     NetPrefs_Bootstrap();
 
+    /* Pass NULL when no explicit FROM was given so InitNetworkPrefs resolves
+     * the config location the same way the stack does (ENV:AROSTCP, an
+     * AROSTCP/Config override, or the SYS/Packages/AROSTCP install dir). */
     InitNetworkPrefs(
-        (ARG(FROM) != (IPTR)NULL ? (STRPTR)ARG(FROM) : (STRPTR)PREFS_PATH_ENV),
+        (ARG(FROM) != (IPTR)NULL ? (STRPTR)ARG(FROM) : NULL),
         (ARG(USE) ? TRUE : FALSE),
         (ARG(SAVE) ? TRUE : FALSE));
 
