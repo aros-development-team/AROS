@@ -188,19 +188,17 @@ AROS_LH1(BOOL, btLoadCfgFromDisk,
 /* \\\ */
 
 /* /// "bSyncStackCfg()" */
-/* Rewrites the radio (BHWD) and class (BCLS) entries of the stack config
-   from what is running right now, so that a saved prefs file brings the same
-   radios and classes back at the next boot. Trident does this in the prefs
-   before saving; here it is part of every save so the automatic saves of
-   pairings never produce a file that btParseCfg() would read as "no classes
-   wanted". */
+/* Rewrites the radio (BHWD) entries of the stack config from what is
+   running right now, so a saved prefs file mounts the same radios at the
+   next boot (BTStackLoader runs before AddBTHardware on serial-attached
+   radios). Classes are NOT recorded: they are installed by AddBTClasses,
+   and the config only stores their configurations. */
 void bSyncStackCfg(LIBBASETYPEPTR BluetoothBase)
 {
     struct BtIFFContext *pic;
     struct BtIFFContext *subpic;
     struct BtIFFContext *root;
     struct BtHardware *bth;
-    struct BtClass *bc;
     ULONG unitchunk[3];
 
     bLockSemExcl(BluetoothBase, &BluetoothBase->bt_ConfigLock);
@@ -215,9 +213,6 @@ void bSyncStackCfg(LIBBASETYPEPTR BluetoothBase)
         while((subpic = btFindCfgForm(pic, IFFFORM_BTHWDEVICE))) {
             bFreeForm(BluetoothBase, subpic);
         }
-        while((subpic = btFindCfgForm(pic, IFFFORM_BTCLASS))) {
-            bFreeForm(BluetoothBase, subpic);
-        }
         btLockReadBase();
         ForeachNode(&BluetoothBase->bt_Hardware, bth) {
             if((subpic = bAllocForm(BluetoothBase, pic, IFFFORM_BTHWDEVICE))) {
@@ -226,12 +221,6 @@ void bSyncStackCfg(LIBBASETYPEPTR BluetoothBase)
                 unitchunk[1] = AROS_LONG2BE(4);
                 unitchunk[2] = bth->bth_Unit;
                 bAddCfgChunk(BluetoothBase, subpic, unitchunk);
-            }
-        }
-        ForeachNode(&BluetoothBase->bt_Classes, bc) {
-            if((subpic = bAllocForm(BluetoothBase, pic, IFFFORM_BTCLASS))) {
-                bAddStringChunk(BluetoothBase, subpic, IFFCHNK_NAME,
-                                bc->bc_FullPath ? bc->bc_FullPath : bc->bc_ClassName);
             }
         }
         btUnlockBase();
@@ -579,23 +568,13 @@ AROS_LH0(void, btParseCfg,
         bth->bth_RemoveMe = removeall;
     }
 
-    /* select all classes for removal - unless the config lists no classes
-       at all (a prefs file from before the class list was saved with it):
-       then, as with the hardware, keep what is loaded */
+    /* Unlike Poseidon (where Trident is the class registry and the saved
+       list decides what exists), classes here are installed by AddBTClasses
+       from SYS:Classes/Bluetooth. The config only carries per-class
+       CONFIGURATIONS (CLSC forms); a class list in an old prefs file is
+       honoured additively below but never removes a loaded class. */
     ForeachNode(&BluetoothBase->bt_Classes, bc) {
-        /*
-         * For kickstart-resident classes we check usage count, and
-         * remove them only if it's zero.
-         * These classes can be responsible for devices which we can use
-         * at boot time. If we happen to remove them, we can end up with
-         * no input or storage devices at all.
-         */
-        if(!btFindCfgForm(pic, IFFFORM_BTCLASS))
-            bc->bc_RemoveMe = FALSE;
-        else if (FindResident(bc->bc_ClassName))
-            bc->bc_RemoveMe = (bc->bc_UseCnt == 0);
-        else
-            bc->bc_RemoveMe = TRUE;
+        bc->bc_RemoveMe = FALSE;
     }
 
     btUnlockBase();
