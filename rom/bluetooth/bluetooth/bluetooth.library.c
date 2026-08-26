@@ -1502,6 +1502,10 @@ AROS_LH3(LONG, btGetAttrsA,
             *((UBYTE **) ti->ti_Data) = bth->bth_Features;
             count++;
         }
+        if((ti = FindTagItem(BHA_LEFeatures, tags))) {
+            *((UBYTE **) ti->ti_Data) = bth->bth_LEFeatures;
+            count++;
+        }
         if((ti = FindTagItem(BHA_ManufacturerName, tags))) {
             *((STRPTR *) ti->ti_Data) = btNumToStr(BNTS_MANUFACTURER, bth->bth_ManufacturerID, "unknown");
             count++;

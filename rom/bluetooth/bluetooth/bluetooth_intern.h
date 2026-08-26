@@ -405,6 +405,9 @@ struct BtDevice
     UBYTE               bd_CurAddr[6];
     UBYTE               bd_CurAddrType;
     BOOL                bd_CurAddrValid;
+    /* reconnect backoff: how long a class waits for an advert before the next
+       direct connect attempt doubles (reset on link-up or a heard advert) */
+    UWORD               bd_RetryShift;
 };
 
 struct BtService

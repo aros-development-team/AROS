@@ -879,10 +879,10 @@ static void bHandleReport(struct BTHidBinding *nhb, UWORD n)
         }
         nhb->nhb_LastErr = 0;
     }
-    else if((ioerr == IOERR_ABORTED) || (ioerr == BTIOERR_NOTCONNECTED))
+    else if((ioerr == IOERR_ABORTED) || (ioerr == BTIOERR_NOTCONNECTED) || (ioerr == BTIOERR_DISCONNECTED))
     {
-        /* link down: the next read waits for the device to come back
-           (BCHA_AutoConnect), do not spin meanwhile */
+        /* link down (or dropped mid-read): the next read waits for the
+           device to come back (BCHA_AutoConnect), do not spin meanwhile */
         btDelayMS(1000);
     } else {
         if(ioerr != nhb->nhb_LastErr)

@@ -139,6 +139,15 @@ AROS_UFH3(LONG, CfgDisplay, AROS_UFHA(struct Hook *, h, A0), AROS_UFHA(char **, 
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3(LONG, HwPropDisplay, AROS_UFHA(struct Hook *, h, A0), AROS_UFHA(char **, a, A2), AROS_UFHA(struct HwPropEntry *, e, A1))
+{
+    AROS_USERFUNC_INIT
+    if(e) { *a++ = e->name; *a = e->val; }
+    else  { *a++ = ""; *a = ""; }
+    return 0;
+    AROS_USERFUNC_EXIT
+}
+
 /* *** selection helpers *** */
 
 static APTR SelectedDevice(struct BtActionData *data)
@@ -197,6 +206,156 @@ static void DoHwRemove(struct BtActionData *data)
     } else {
         SetStatus(data, "Select a radio to remove.");
     }
+}
+
+/* *** radio information window ***
+ * Everything the bring-up learned about the controller, the way Trident's
+ * hardware information shows a USB stick: identity, versions, buffer sizes,
+ * and the BR/EDR and LE feature bits decoded by name. */
+
+static void AddHwProp(struct BtActionData *data, CONST_STRPTR name, CONST_STRPTR val)
+{
+    struct HwPropEntry *e = AllocVec(sizeof(struct HwPropEntry), MEMF_CLEAR);
+    if(!e) return;
+    strncpy(e->name, name, sizeof(e->name)-1);
+    strncpy(e->val, val, sizeof(e->val)-1);
+    AddTail((struct List *)&data->hwpropentries, (struct Node *)e);
+    DoMethod(data->hwproplist, MUIM_List_InsertSingle, e, MUIV_List_Insert_Bottom);
+}
+
+struct HwFeatBit { UBYTE byte; UBYTE bit; CONST_STRPTR name; };
+
+/* LMP features page 0 (curated) and the LE controller feature bits */
+static const struct HwFeatBit lmpfeatbits[] = {
+    { 0, 0, "3-slot packets" }, { 0, 1, "5-slot packets" }, { 0, 2, "encryption" },
+    { 0, 5, "role switch" }, { 0, 7, "sniff mode" },
+    { 1, 1, "RSSI" }, { 1, 3, "SCO" },
+    { 3, 1, "EDR 2 Mb/s" }, { 3, 2, "EDR 3 Mb/s" }, { 3, 7, "eSCO" },
+    { 4, 5, "BR/EDR not supported" }, { 4, 6, "LE (controller)" },
+    { 6, 3, "Secure Simple Pairing" },
+    { 0, 0, NULL }
+};
+static const struct HwFeatBit lefeatbits[] = {
+    { 0, 0, "encryption" }, { 0, 1, "connection parameters request" },
+    { 0, 2, "extended reject" }, { 0, 3, "peripheral feature exchange" },
+    { 0, 4, "ping" }, { 0, 5, "data length extension" },
+    { 0, 6, "LL privacy (resolving list)" }, { 0, 7, "ext. scanner filter policies" },
+    { 1, 0, "2M PHY" }, { 1, 3, "coded PHY (long range)" },
+    { 1, 4, "extended advertising" }, { 1, 5, "periodic advertising" },
+    { 1, 6, "channel selection #2" }, { 1, 7, "power class 1" },
+    { 0, 0, NULL }
+};
+
+/* the set bits as "name, name, ..." rows (wrapped over several list lines) */
+static void AddHwFeatures(struct BtActionData *data, CONST_STRPTR name, const UBYTE *feat, const struct HwFeatBit *tab)
+{
+    char buf[100];
+    ULONG pos = 0;
+    BOOL first = TRUE;
+    BOOL any = FALSE;
+
+    if(!feat) return;
+    buf[0] = 0;
+    for(; tab->name; tab++) {
+        ULONG len;
+        if(!(feat[tab->byte] & (1 << tab->bit))) continue;
+        len = strlen(tab->name);
+        if(pos && (pos + len + 2 >= sizeof(buf) - 1)) {
+            AddHwProp(data, first ? name : "", buf);
+            first = FALSE;
+            pos = 0;
+            buf[0] = 0;
+        }
+        pos += snprintf(buf + pos, sizeof(buf) - pos, "%s%s", pos ? ", " : "", tab->name);
+        any = TRUE;
+    }
+    if(pos || !any) {
+        AddHwProp(data, first ? name : "", any ? buf : (char *)"none");
+    }
+}
+
+static void PopulateHwWin(struct BtActionData *data, APTR bth)
+{
+    STRPTR name = NULL, prod = NULL, manu = NULL, desc = NULL, addr = NULL, lname = NULL, chip = NULL;
+    IPTR unit = 0, state = 0, isc = 0, isl = 0, num = 0, cod = 0;
+    IPTR ver = 0, rev = 0, drv = 0, hciv = 0, hcir = 0, lmpv = 0, lmps = 0, manid = 0;
+    IPTR aclsz = 0, aclnum = 0, scosz = 0, sconum = 0, lesz = 0, lenum = 0, errs = 0, lasterr = 0;
+    UBYTE *feat = NULL, *lefeat = NULL;
+    char buf[104];
+
+    set(data->hwproplist, MUIA_List_Quiet, TRUE);
+    DoMethod(data->hwproplist, MUIM_List_Clear);
+    FREELIST(data->hwpropentries);
+    btLockReadBase();
+    btGetAttrs(BGA_HARDWARE, bth,
+               BHA_DeviceName, &name, BHA_DeviceUnit, &unit, BHA_ProductName, &prod,
+               BHA_Manufacturer, &manu, BHA_Description, &desc, BHA_Version, &ver,
+               BHA_Revision, &rev, BHA_DriverVersion, &drv, BHA_State, &state,
+               BHA_IsClassic, &isc, BHA_IsLE, &isl, BHA_AddressString, &addr,
+               BHA_LocalName, &lname, BHA_ClassOfDevice, &cod, BHA_NumDevices, &num,
+               BHA_HCIVersion, &hciv, BHA_HCIRevision, &hcir, BHA_LMPVersion, &lmpv,
+               BHA_LMPSubversion, &lmps, BHA_ManufacturerID, &manid, BHA_ManufacturerName, &chip,
+               BHA_Features, &feat, BHA_LEFeatures, &lefeat,
+               BHA_ACLMaxPktSize, &aclsz, BHA_ACLNumPkts, &aclnum,
+               BHA_SCOMaxPktSize, &scosz, BHA_SCONumPkts, &sconum,
+               BHA_LEACLMaxPktSize, &lesz, BHA_LEACLNumPkts, &lenum,
+               BHA_ErrorCount, &errs, BHA_LastHCIError, &lasterr,
+               TAG_END);
+
+    snprintf(buf, sizeof(buf), "%s unit %ld", name ? name : (STRPTR)"?", (long)unit);
+    AddHwProp(data, "Driver", buf);
+    AddHwProp(data, "Product", prod ? prod : (STRPTR)"?");
+    if(manu && manu[0]) AddHwProp(data, "Manufacturer", manu);
+    if(desc && desc[0]) AddHwProp(data, "Description", desc);
+    snprintf(buf, sizeof(buf), "%ld.%ld (driver API %ld)", (long)ver, (long)rev, (long)drv);
+    AddHwProp(data, "Version", buf);
+    AddHwProp(data, "State", btNumToStr(BNTS_HWSTATE, state, "?"));
+    AddHwProp(data, "Address", addr ? addr : (STRPTR)"?");
+    if(lname && lname[0]) AddHwProp(data, "Local name", lname);
+    snprintf(buf, sizeof(buf), "0x%06lx", (unsigned long)cod);
+    AddHwProp(data, "Class of device", buf);
+    snprintf(buf, sizeof(buf), "%s%s%s", isc ? "BR/EDR" : "", (isc && isl) ? " + " : "", isl ? "Low Energy" : "");
+    AddHwProp(data, "Transports", buf[0] ? buf : (char *)"none");
+    snprintf(buf, sizeof(buf), "HCI %s (revision %ld), LMP %s (subversion %ld)",
+             btNumToStr(BNTS_LMPVERSION, hciv, "?"), (long)hcir,
+             btNumToStr(BNTS_LMPVERSION, lmpv, "?"), (long)lmps);
+    AddHwProp(data, "Bluetooth version", buf);
+    snprintf(buf, sizeof(buf), "%s (0x%04lx)", chip ? chip : (STRPTR)"unknown", (unsigned long)manid);
+    AddHwProp(data, "Chip vendor", buf);
+    if(isc) {
+        snprintf(buf, sizeof(buf), "ACL %ld bytes x %ld%s", (long)aclsz, (long)aclnum,
+                 sconum ? "" : ", no SCO buffers");
+        if(sconum) {
+            ULONG p = strlen(buf);
+            snprintf(buf + p, sizeof(buf) - p, ", SCO %ld bytes x %ld", (long)scosz, (long)sconum);
+        }
+        AddHwProp(data, "Buffers", buf);
+    }
+    if(isl) {
+        if(lesz) snprintf(buf, sizeof(buf), "LE ACL %ld bytes x %ld", (long)lesz, (long)lenum);
+        else     snprintf(buf, sizeof(buf), "shared with BR/EDR");
+        AddHwProp(data, "LE buffers", buf);
+    }
+    if(isc) AddHwFeatures(data, "BR/EDR features", feat, lmpfeatbits);
+    if(isl) AddHwFeatures(data, "LE features", lefeat, lefeatbits);
+    snprintf(buf, sizeof(buf), "%ld known", (long)num);
+    AddHwProp(data, "Devices", buf);
+    if(errs || lasterr) {
+        snprintf(buf, sizeof(buf), "%ld transport error(s), last HCI status %s (0x%02lx)",
+                 (long)errs, btNumToStr(BNTS_HCISTATUS, lasterr, "none"), (unsigned long)lasterr);
+        AddHwProp(data, "Errors", buf);
+    }
+    btUnlockBase();
+    set(data->hwproplist, MUIA_List_Quiet, FALSE);
+}
+
+static void DoHwInfo(struct BtActionData *data)
+{
+    APTR bth = SelectedHardware(data);
+    if(!bth) { SetStatus(data, "Select a radio first."); return; }
+    if(!data->hwwin) return;
+    PopulateHwWin(data, bth);
+    set(data->hwwin, MUIA_Window_Open, TRUE);
 }
 
 /* *** class settings windows ***
@@ -1008,6 +1167,7 @@ static void HandleEvents(struct BtActionData *data)
         btGetAttrs(BGA_EVENTNOTE, m, BENA_EventID, &ev, BENA_Param1, &p1, BENA_Param2, &p2, TAG_END);
         switch(ev) {
             case BEHMB_ADDHARDWARE: case BEHMB_REMHARDWARE:
+                if((ev == BEHMB_REMHARDWARE) && data->hwwin) set(data->hwwin, MUIA_Window_Open, FALSE);
                 RefreshHardware(data); RefreshDevices(data); break;
             case BEHMB_ADDDEVICE: case BEHMB_REMDEVICE: case BEHMB_DEVICEUPDATE:
             case BEHMB_DEVICEREGISTERED: case BEHMB_DEVICEUNREGISTERED:
@@ -1109,6 +1269,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     NewList((struct List *)&data->clsentries);
     NewList((struct List *)&data->errentries);
     NewList((struct List *)&data->cfgentries);
+    NewList((struct List *)&data->hwpropentries);
 
     InitHook(&data->navhook, (APTR)NavDisplay, data);
     InitHook(&data->hwhook,  (APTR)HWDisplay,  data);
@@ -1116,9 +1277,30 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     InitHook(&data->clshook, (APTR)ClsDisplay, data);
     InitHook(&data->errhook, (APTR)ErrDisplay, data);
     InitHook(&data->cfghook, (APTR)CfgDisplay, data);
+    InitHook(&data->hwprophook, (APTR)HwPropDisplay, data);
 
     data->scanwin = NewObject(ScanWinClass->mcc_Class, NULL, TAG_END);
     data->devwin  = NewObject(DevWinClass->mcc_Class, NULL, TAG_END);
+
+    /* radio information window (opened from the Hardware page) */
+    data->hwwin = WindowObject,
+        MUIA_Window_Title, "Radio Information",
+        MUIA_Window_ID,    MAKE_ID('B','T','H','W'),
+        WindowContents, VGroup,
+            Child, ListviewObject,
+                MUIA_Listview_Input, FALSE,
+                MUIA_Listview_List, (data->hwproplist = ListObject,
+                    ReadListFrame,
+                    MUIA_List_Format, "BAR,",
+                    MUIA_List_DisplayHook, &data->hwprophook,
+                    End),
+                End,
+            End,
+        End;
+    if(data->hwwin) {
+        DoMethod(data->hwwin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+                 data->hwwin, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+    }
 
     /* the left navigation list (drives the page group below) */
     navlst = NewObject(IconListClass->mcc_Class, NULL,
@@ -1366,6 +1548,8 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(data->bt_hwremove,   MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_HwRemove);
     /* pressing Return in the unit field adds the radio too */
     DoMethod(data->hwunitobj,     MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, obj, 1, MUIM_BtA_HwAdd);
+    DoMethod(data->hwinfoobj,     MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_HwInfo);
+    DoMethod(data->hwlist,        MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, obj, 1, MUIM_BtA_HwInfo);
 
     DoMethod(data->bt_savelog,    MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_SaveLog);
     DoMethod(data->bt_flush,      MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_FlushLog);
@@ -1425,6 +1609,7 @@ AROS_UFH3(IPTR, ActionDispatcher,
         case MUIM_BtA_Forget:      DoForget(data); return 0;
         case MUIM_BtA_ClsScan:     btClassScan(); SetStatus(data,"Class scan requested."); return 0;
         case MUIM_BtA_HwAdd:       DoHwAdd(data); return 0;
+        case MUIM_BtA_HwInfo:      DoHwInfo(data); return 0;
         case MUIM_BtA_HwRemove:    DoHwRemove(data); return 0;
         case MUIM_BtA_AddDevice:
             if(data->scanwin) { DoMethod(data->scanwin, MUIM_ScanWin_Refresh); set(data->scanwin, MUIA_Window_Open, TRUE); SetStatus(data,"Scanning for devices..."); }
@@ -1463,6 +1648,7 @@ AROS_UFH3(IPTR, ActionDispatcher,
             if(!DoSuperMethodA(cl, obj, msg)) return FALSE;
             if(data->scanwin) DoMethod(_app(obj), OM_ADDMEMBER, data->scanwin);
             if(data->devwin)  DoMethod(_app(obj), OM_ADDMEMBER, data->devwin);
+            if(data->hwwin)   DoMethod(_app(obj), OM_ADDMEMBER, data->hwwin);
             if((data->eventport = CreateMsgPort())) {
                 data->eventhandler = btAddEventHandler(data->eventport, ~0);
                 data->ihnode.ihn_Object = obj;
@@ -1489,16 +1675,19 @@ AROS_UFH3(IPTR, ActionDispatcher,
             if(data->eventport) { DeleteMsgPort(data->eventport); data->eventport = NULL; }
             if(data->scanwin) DoMethod(_app(obj), OM_REMMEMBER, data->scanwin);
             if(data->devwin)  DoMethod(_app(obj), OM_REMMEMBER, data->devwin);
+            if(data->hwwin)   { set(data->hwwin, MUIA_Window_Open, FALSE); DoMethod(_app(obj), OM_REMMEMBER, data->hwwin); }
             break;
 
         case OM_DISPOSE:
             if(data->scanwin) { MUI_DisposeObject(data->scanwin); data->scanwin = NULL; }
             if(data->devwin)  { MUI_DisposeObject(data->devwin);  data->devwin = NULL; }
+            if(data->hwwin)   { MUI_DisposeObject(data->hwwin);   data->hwwin = NULL; }
             FREELIST(data->hwentries);
             FREELIST(data->deventries);
             FREELIST(data->clsentries);
             FREELIST(data->errentries);
             FREELIST(data->cfgentries);
+            FREELIST(data->hwpropentries);
             break;
     }
     return DoSuperMethodA(cl, obj, msg);

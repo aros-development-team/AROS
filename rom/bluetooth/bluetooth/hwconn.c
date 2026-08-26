@@ -554,6 +554,7 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
     bd->bd_Role = role;
     bd->bd_LinkType = cn->cn_LinkType;
     bd->bd_DeadCount = 0;
+    bd->bd_RetryShift = 0;
     if(bd->bd_Flags & BDFF_DEAD) {
         bd->bd_Flags &= ~BDFF_DEAD;
     }
@@ -670,6 +671,12 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
         btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                        "Connection to %s failed (%s).", bd->bd_Name,
                        btNumToStr(BNTS_HCISTATUS, reason, "unknown reason"));
+    }
+    /* a bonded device whose live link just dropped is the classic
+       reconnect-soon case: listen hard for it for a while */
+    if(wasup && (cn->cn_LinkType == BDLT_LE) &&
+       ((bd->bd_Flags & (BDFF_REGISTERED|BDFF_BONDED)) == (BDFF_REGISTERED|BDFF_BONDED))) {
+        bBgScanBoost(hc);
     }
     Remove((struct Node *) cn);
     btFreeVec(cn);
@@ -834,7 +841,19 @@ static struct BtHWConn * bEnsureConnection(struct BtHWCore *hc, struct BtDevice 
          * the background scan sees it and bConnAdvertising() connects. */
         cn->cn_WaitAdv = TRUE;
         *pending = TRUE;
-        bBgScanUpdate(hc);
+        /* No advert forever is also possible (the peer's private address
+         * rotated, or it only advertises briefly): fall back to a direct
+         * connect attempt on a doubling backoff. */
+        cn->cn_NextAttempt = hc->hc_Tick +
+            (15000UL << ((bd->bd_RetryShift > 5) ? 5 : bd->bd_RetryShift));
+        if(bd->bd_RetryShift < 15) {
+            bd->bd_RetryShift++;
+        }
+        if(bd->bd_RetryShift == 1) {
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "Waiting for %s to advertise.", bd->bd_Name);
+        }
+        bBgScanBoost(hc);
         return(cn);
     }
     /* The radio cannot reliably run an inquiry / LE scan and service a
@@ -863,13 +882,22 @@ void bConnAdvertising(struct BtHWCore *hc, struct BtDevice *bd)
         return;
     }
     if(hc->hc_Connecting || (bth->bth_Flags & BTHF_DISCOVERING)) {
-        /* one connect at a time, and never hijack a discovery the user
-           started - the device will advertise again */
+        /* One connect at a time, and never hijack a discovery the user
+         * started. The advert is not discarded: remember the device and
+         * bConnRetryPending() acts on it when the radio is free. */
+        if((cn || ((bd->bd_Flags & BDFF_BONDED) && bd->bd_PoPoCfg.bpc_AutoConnect &&
+                   BluetoothBase->bt_GlobalCfg->bgc_AutoConnect)) &&
+           (hc->hc_AdvPending != bd)) {
+            hc->hc_AdvPending = bd;
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s is awake - connecting when the radio is free.", bd->bd_Name);
+        }
         return;
     }
     if(cn) {
         if((cn->cn_State == HCNS_CONNECTING) && cn->cn_WaitAdv) {
             cn->cn_WaitAdv = FALSE;
+            bd->bd_RetryShift = 0;
             btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                            "%s is awake - connecting.", bd->bd_Name);
             bStartNextConnect(hc);
@@ -880,9 +908,29 @@ void bConnAdvertising(struct BtHWCore *hc, struct BtDevice *bd)
        !BluetoothBase->bt_GlobalCfg->bgc_AutoConnect) {
         return;
     }
+    bd->bd_RetryShift = 0;
     btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                    "%s is awake - reconnecting.", bd->bd_Name);
     bEnsureConnection(hc, bd, BDLT_LE, CONN_NOW, &pending, &err);
+}
+/* \\\ */
+
+/* /// "bConnRetryPending()" */
+/* Called (from the background scan's re-arm timer) once the radio may be
+   free again: retry the advert that could not be acted on at the time. */
+void bConnRetryPending(struct BtHWCore *hc)
+{
+    struct BtDevice *bd = hc->hc_AdvPending;
+    struct BtHardware *bth = hc->hc_Hardware;
+
+    if(!bd) {
+        return;
+    }
+    if(hc->hc_Connecting || (bth->bth_Flags & BTHF_DISCOVERING)) {
+        return;   /* still busy; the timer fires again */
+    }
+    hc->hc_AdvPending = NULL;
+    bConnAdvertising(hc, bd);
 }
 /* \\\ */
 
@@ -3184,7 +3232,24 @@ void bConnTick(struct BtHWCore *hc)
                10 s, and give up outright if even the cancel gets no answer */
             LONG waited = (LONG) (hc->hc_Tick - cn->cn_LastActivity);
             if(cn->cn_WaitAdv) {
-                continue;   /* not paging: waits for the peer to advertise */
+                /* waiting for an advert; on the backoff deadline try one
+                   direct connect (the controller then listens for that peer
+                   at 100% for 10 s) - the peer may advertise undetectably
+                   seldom, or its private address may have rotated */
+                if((LONG) (hc->hc_Tick - cn->cn_NextAttempt) >= 0) {
+                    if(!hc->hc_Connecting && !(hc->hc_Hardware->bth_Flags & BTHF_DISCOVERING)) {
+                        struct BtBase *BluetoothBase = hc->hc_Base;
+                        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                       "No advert from %s - trying a direct connection.",
+                                       cn->cn_Device->bd_Name);
+                        cn->cn_WaitAdv = FALSE;
+                        cn->cn_LastActivity = hc->hc_Tick;
+                        bStartNextConnect(hc);
+                    } else {
+                        cn->cn_NextAttempt = hc->hc_Tick + 5000; /* radio busy: look again soon */
+                    }
+                }
+                continue;
             }
             if(waited > 20000) {
                 bConnDown(cn, BTIOERR_TIMEOUT, 0x08);
@@ -3222,7 +3287,9 @@ void bConnTick(struct BtHWCore *hc)
 /* /// "bConnDeviceGone()" */
 void bConnDeviceGone(struct BtHWCore *hc, struct BtDevice *bd)
 {
-    (void) hc;
+    if(hc->hc_AdvPending == bd) {
+        hc->hc_AdvPending = NULL;
+    }
     if(bd->bd_Conns[0]) {
         bDisconnect(bd->bd_Conns[0], 0x13);
     }

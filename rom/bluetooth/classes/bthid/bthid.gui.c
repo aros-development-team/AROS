@@ -23,7 +23,7 @@ extern const STRPTR GM_UNIQUENAME(libname);
 static char *MainGUIPages[] = { "General", "Keyboard", "Action", NULL };
 static char *MainGUIPagesDefault[] = { "General", "Keyboard", NULL };
 
-static char *LLPortStrings[] = { "Don't touch", "Overwrite with USB", "Merge with USB", "Disable", "Analogue Hack", NULL };
+static char *LLPortStrings[] = { "Don't touch", "Overwrite with Bluetooth", "Merge with Bluetooth", "Disable", "Analogue Hack", NULL };
 static char *LLRumbleStrings[] = { "Off", "Port 0", "Port 1", "Port 2", "Port 3", NULL };
 
 static char *TurboMouseStrings[] = { "Off", "1000 Hz", "500 Hz", "250 Hz", "125 Hz", NULL };
@@ -38,7 +38,7 @@ static char *ActionTriggerStrings[] = { "Down", "Up", "Any", "Always", "NaN", NU
 static UWORD ActionTriggerVals[] = { HUA_DOWNEVENT, HUA_UPEVENT, HUA_ANY, HUA_ALWAYS, HUA_NAN, 0 };
 
 static char *A_CCVariableStrings[] = { "Eval. item val", "Orig. item value", "Constant", "Click count", "Click time",
-                                       "USB qualifiers", "All qualifiers", "Random bit", "Random value", "Timer",
+                                       "HID qualifiers", "All qualifiers", "Random bit", "Random value", "Timer",
                                        "Local var 1", "Local var 2", "Local var 3", "Local var 4",
                                        "Local var 5", "Local var 6", "Local var 7", "Local var 8",
                                        "Global var A", "Global var B", "Global var C", "Global var D",
@@ -887,11 +887,11 @@ AROS_UFH0(void, GM_UNIQUENAME(bGUITask))
                                                 End,
                                             Child, (IPTR)VSpace(0),
                                             End,
-                                        Child, (IPTR)VGroup, GroupFrameT("USB Keyboard mapping"), /* HUA_KEYMAP */
+                                        Child, (IPTR)VGroup, GroupFrameT("HID keyboard mapping"), /* HUA_KEYMAP */
                                             Child, (IPTR)VSpace(0),
                                             Child, (IPTR)HGroup,
                                                 Child, (IPTR)HSpace(0),
-                                                Child, (IPTR)Label((IPTR) "\33cMapping of USB keycodes\nto Amiga rawcodes"),
+                                                Child, (IPTR)Label((IPTR) "\33cMapping of HID keycodes\nto Amiga rawcodes"),
                                                 Child, (IPTR)HSpace(0),
                                                 End,
                                             Child, (IPTR)VSpace(0),

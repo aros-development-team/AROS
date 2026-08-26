@@ -230,6 +230,7 @@ struct BtHWConn
        (bonded, sleeping) LE peer and the background scan connects as soon as
        it advertises - no 10 s timeout, no controller time wasted paging. */
     BOOL                cn_WaitAdv;
+    ULONG               cn_NextAttempt;   /* hc_Tick: while waiting, when to try a direct connect */
 };
 
 #define HCNS_FREE       0
@@ -326,8 +327,11 @@ struct BtHWCore
        waking up (advertising) is reconnected without anyone asking. Off
        during discovery and while an outgoing connect is in flight. */
     BOOL                hc_BgScanActive;
+    BOOL                hc_BgScanFast;       /* scanning with the fast (reconnect) parameters */
+    ULONG               hc_BgScanFastUntil;  /* hc_Tick until which the fast set is used */
     struct bt_timer     hc_BgScanTimer;      /* re-arm hysteresis after link changes */
     ULONG               hc_BgScanCheckTick;  /* periodic re-evaluation (hc_Tick based) */
+    struct BtDevice    *hc_AdvPending;       /* advert heard while the radio was busy: connect when free */
 
     /* scan diagnostics (conclusive "why is nothing found" instrumentation) */
     ULONG               hc_DiagAdvLegacy;    /* LE advertising reports parsed (subevent 0x02) */
@@ -385,11 +389,15 @@ void bStartACLWrite(struct BtHWCore *hc);
 void bBgScanStop(struct BtHWCore *hc);
 void bBgScanUpdate(struct BtHWCore *hc);
 void bBgScanSchedule(struct BtHWCore *hc);
+/* run the scan at the fast (reconnect) duty cycle for the next minute */
+void bBgScanBoost(struct BtHWCore *hc);
 
 /* hwconn.c */
 /* a bonded/registered LE device is advertising: connect to it when a class
    is waiting for it or its auto-connect policy says so */
 void bConnAdvertising(struct BtHWCore *hc, struct BtDevice *bd);
+/* act on an advert that had to be parked because the radio was busy */
+void bConnRetryPending(struct BtHWCore *hc);
 void bConnInit(struct BtHWCore *hc);
 void bConnShutdown(struct BtHWCore *hc);
 BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULONG len);

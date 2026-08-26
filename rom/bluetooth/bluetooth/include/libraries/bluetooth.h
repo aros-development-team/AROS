@@ -96,6 +96,7 @@
 #define BHA_ManufacturerID   (BHA_Dummy + 0x48) /* ULONG Bluetooth SIG company identifier */
 #define BHA_ManufacturerName (BHA_Dummy + 0x49) /* STRPTR */
 #define BHA_Features         (BHA_Dummy + 0x4a) /* UBYTE * (8 bytes LMP features) */
+#define BHA_LEFeatures       (BHA_Dummy + 0x4b) /* UBYTE * (8 bytes LE controller features) */
 #define BHA_ACLMaxPktSize    (BHA_Dummy + 0x50) /* ULONG */
 #define BHA_ACLNumPkts       (BHA_Dummy + 0x51) /* ULONG */
 #define BHA_SCOMaxPktSize    (BHA_Dummy + 0x52) /* ULONG */

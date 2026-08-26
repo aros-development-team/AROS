@@ -69,10 +69,12 @@ AROS_LH2(struct BtHardware *, btAddHardware,
     struct Task *tmptask;
     KPRINTF(5, ("btAddHardware(%s, %ld)\n", name, unit));
 
-    if(bFindHardware(BluetoothBase, name, unit)) {
-        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                       "Hardware %s/%ld is already in use.", name, unit);
-        return(NULL);
+    if((bth = bFindHardware(BluetoothBase, name, unit))) {
+        /* normal since a saved config mounts its radios at BTStackLoader
+           time: an AddBTHardware that follows finds its work done */
+        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                       "Hardware %s/%ld is already online.", name, unit);
+        return(bth);
     }
 
     if((bth = btAllocVec(sizeof(struct BtHardware)))) {

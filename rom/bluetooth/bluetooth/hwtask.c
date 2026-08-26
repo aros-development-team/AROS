@@ -750,12 +750,26 @@ static BOOL bBgScanNeeded(struct BtHWCore *hc)
 }
 /* \\\ */
 
+/* The two scan scenarios (units of 0.625 ms). FAST is Linux's awake-machine
+   background pair, run for a minute after a bonded link drops or a class
+   starts waiting for a peer - the window in which a returning device
+   advertises. SLOW is the long-term watch; missing an advert there only
+   delays the reconnect until the next one. */
+#define BGSCAN_FAST_INTERVAL 0x0060 /* 60 ms */
+#define BGSCAN_FAST_WINDOW   0x0030 /* 30 ms: 50% duty */
+#define BGSCAN_SLOW_INTERVAL 0x0800 /* 1.28 s */
+#define BGSCAN_SLOW_WINDOW   0x0030 /* 30 ms: ~2% duty */
+#define BGSCAN_BOOST_MS      60000
+
 /* /// "bBgScanUpdate()" */
-/* Start or stop the background scan according to the current state. */
+/* Start or stop the background scan according to the current state, at the
+   duty cycle the situation calls for. */
 void bBgScanUpdate(struct BtHWCore *hc)
 {
+    struct BtBase *BluetoothBase = hc->hc_Base;
     struct BtHardware *bth = hc->hc_Hardware;
     BOOL want;
+    BOOL fast = ((LONG) (hc->hc_BgScanFastUntil - hc->hc_Tick) > 0);
 
     bt_timer_list_cancel(&hc->hc_Timers, &hc->hc_BgScanTimer);
     if((bth->bth_Flags & BTHF_DISCOVERING) || hc->hc_DiscoveryPending || hc->hc_LEScanActive ||
@@ -764,13 +778,19 @@ void bBgScanUpdate(struct BtHWCore *hc)
     } else {
         want = bBgScanNeeded(hc);
     }
+    if(hc->hc_BgScanActive && want && (fast != hc->hc_BgScanFast)) {
+        /* rate change: parameters cannot be set while scanning */
+        UBYTE params[2] = { 0, 0 };
+        hc->hc_BgScanActive = FALSE;
+        bSubmitCmd(hc, HC_OP_LE_SET_SCAN_ENABLE, params, 2, bIgnoreCompletion, hc);
+    }
     if(want && !hc->hc_BgScanActive) {
         UBYTE params[7];
         struct bt_buf_writer w;
         bt_buf_writer_init(&w, params, sizeof(params));
         bt_buf_writer_write_u8(&w, 0x00);     /* passive: we only want to see who is there */
-        bt_buf_writer_write_le16(&w, 0x0800); /* interval 1.28 s */
-        bt_buf_writer_write_le16(&w, 0x0030); /* window 30 ms (~2% duty) */
+        bt_buf_writer_write_le16(&w, fast ? BGSCAN_FAST_INTERVAL : BGSCAN_SLOW_INTERVAL);
+        bt_buf_writer_write_le16(&w, fast ? BGSCAN_FAST_WINDOW : BGSCAN_SLOW_WINDOW);
         bt_buf_writer_write_u8(&w, 0x00);     /* public own address */
         bt_buf_writer_write_u8(&w, 0x00);     /* no filter policy (private addresses are resolved here) */
         bSubmitCmd(hc, HC_OP_LE_SET_SCAN_PARAMETERS, params, 7, bBgScanCmdCB, hc);
@@ -778,10 +798,29 @@ void bBgScanUpdate(struct BtHWCore *hc)
         params[1] = 0x00; /* every report: a device may need a second look */
         bSubmitCmd(hc, HC_OP_LE_SET_SCAN_ENABLE, params, 2, bBgScanCmdCB, hc);
         hc->hc_BgScanActive = TRUE;
-        KPRINTF(5, ("background LE scan on\n"));
+        hc->hc_BgScanFast = fast;
+        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld: background LE scan on (%s duty).",
+                       bth->bth_DevName, bth->bth_Unit, fast ? (STRPTR) "reconnect" : (STRPTR) "watch");
     } else if(!want && hc->hc_BgScanActive) {
         bBgScanStop(hc);
-        KPRINTF(5, ("background LE scan off\n"));
+        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld: background LE scan off.", bth->bth_DevName, bth->bth_Unit);
+    }
+}
+/* \\\ */
+
+/* /// "bBgScanBoost()" */
+/* A reconnect became likely (a bonded link just dropped, or a class started
+   waiting for its device): listen at the fast duty cycle for the next
+   minute, then fall back to the long-term watch. */
+void bBgScanBoost(struct BtHWCore *hc)
+{
+    hc->hc_BgScanFastUntil = hc->hc_Tick + BGSCAN_BOOST_MS;
+    if(hc->hc_BgScanActive && !hc->hc_BgScanFast) {
+        bBgScanUpdate(hc);
+    } else {
+        bBgScanSchedule(hc);
     }
 }
 /* \\\ */
@@ -789,8 +828,11 @@ void bBgScanUpdate(struct BtHWCore *hc)
 /* /// "bBgScanTimerCB()" */
 static void bBgScanTimerCB(struct bt_timer *timer, void *user_data)
 {
+    struct BtHWCore *hc = user_data;
     (void) timer;
-    bBgScanUpdate((struct BtHWCore *) user_data);
+    bBgScanUpdate(hc);
+    /* an advert parked while the radio was busy can be acted on now */
+    bConnRetryPending(hc);
 }
 /* \\\ */
 
@@ -1367,12 +1409,17 @@ static void bBringupCB(struct bt_cmdq_completion *completion, void *user_data)
         optional = TRUE;
         break;
     }
-    /* trace every init step so a real adapter's bring-up is visible end to end */
-    btAddErrorMsg(ok ? RETURN_OK : (optional ? RETURN_WARN : RETURN_FAIL), (STRPTR) GM_UNIQUENAME(libname),
-                   "%s/%ld: init step %ld -> %s (0x%02lx).",
-                   bth->bth_DevName, bth->bth_Unit, (ULONG) hc->hc_BringupStep,
-                   ok ? (STRPTR) "ok" : (completion->result == BT_CMDQ_RESULT_TIMEOUT) ? (STRPTR) "timeout" : (STRPTR) "error",
-                   (ULONG) completion->status);
+    /* only a step that went wrong is worth a log line; the "bring-up
+       complete" summary covers the good case */
+    KPRINTF(5, ("init step %ld -> %s (0x%02lx)\n", (ULONG) hc->hc_BringupStep,
+                ok ? "ok" : "failed", (ULONG) completion->status));
+    if(!ok) {
+        btAddErrorMsg(optional ? RETURN_WARN : RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld: init step %ld -> %s (0x%02lx).",
+                       bth->bth_DevName, bth->bth_Unit, (ULONG) hc->hc_BringupStep,
+                       (completion->result == BT_CMDQ_RESULT_TIMEOUT) ? (STRPTR) "timeout" : (STRPTR) "error",
+                       (ULONG) completion->status);
+    }
     if(!ok) {
         bth->bth_LastHCIError = completion->status;
         if(!optional) {

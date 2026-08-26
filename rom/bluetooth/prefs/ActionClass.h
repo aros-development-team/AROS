@@ -24,6 +24,8 @@ struct ClsEntry { struct MinNode node; APTR bc;  ULONG icon; char name[48]; char
 struct ErrEntry { struct MinNode node; char level[8]; char origin[24]; char msg[160]; };
 /* one config form (or forced binding chunk) on the Config page, Trident style */
 struct CfgEntry { struct MinNode node; ULONG formid; ULONG parentid; ULONG size; char type[20]; char desc[96]; char owner[40]; char devid[32]; };
+/* one property row in the radio information window */
+struct HwPropEntry { struct MinNode node; char name[28]; char val[104]; };
 
 struct BtActionData
 {
@@ -34,6 +36,7 @@ struct BtActionData
     Object *hwinfoobj;
     Object *hwdevobj, *hwunitobj;   /* manual "add radio": HCI device name + unit */
     Object *bt_hwadd, *bt_hwremove;
+    Object *hwwin, *hwproplist;     /* radio information window: detected capabilities */
 
     Object *devlist;
     Object *bt_adddev, *bt_register, *bt_unregister, *bt_pair;
@@ -68,7 +71,7 @@ struct BtActionData
     ULONG   pairtype;
 
     /* list backing stores */
-    struct MinList hwentries, deventries, clsentries, errentries, cfgentries;
+    struct MinList hwentries, deventries, clsentries, errentries, cfgentries, hwpropentries;
 
     /* live events */
     struct MsgPort         *eventport;
@@ -77,7 +80,7 @@ struct BtActionData
     BOOL                    ihadded;
 
     /* display hooks */
-    struct Hook navhook, hwhook, devhook, clshook, errhook, cfghook;
+    struct Hook navhook, hwhook, devhook, clshook, errhook, cfghook, hwprophook;
 };
 
 /* incremental list update shared by the Devices page and the Add Device window (ActionClass.c) */
