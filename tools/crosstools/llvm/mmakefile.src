@@ -601,6 +601,8 @@ else
     destination=$(HOSTDIR)/Ports/host/libunwind
 
 # The AROS lld patch only exists for the v11 toolchain; v20+ builds stock lld.
+# Only armeb still needs it - collect-aros asks for the upstream emulation
+# names on every other CPU when the toolchain is llvm.
 ifeq ($(shell test $(LLVM_VERSION_MAJOR) -lt 20; echo $$?),0)
 LLVMLLD_PATCHES_SPECS   := $(LLVMLLD_ARCHBASE)-aros.diff:$(LLVMLLD_ARCHBASE):-p1
 else
