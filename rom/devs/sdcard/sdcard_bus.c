@@ -530,6 +530,13 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 
     sdcClkDiv = FNAME_SDCBUS(GetClockDiv)(speed, bus);
 
+    /* What the card is really clocked at, which is the base rate divided down
+       and only as trustworthy as the base rate the controller reported. */
+    DINIT(bug("[SDBus%02u] clock: asked %u Hz, base %u Hz, div %u -> %u Hz [HCTRL 0x%02x]\n",
+        bus->sdcb_BusNum, speed, bus->sdcb_ClockMax, sdcClkDiv,
+        sdcClkDiv ? (bus->sdcb_ClockMax / (sdcClkDiv * 2)) : bus->sdcb_ClockMax,
+        bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, bus)));
+
     sdcClkCtrl = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
     sdcClkCtrl |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
 
