@@ -1167,29 +1167,21 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
                 if (sdDataMode == MMC_DATA_READ)
                 {
                     /*
-                     * The data port is one 32bit register, so this is a bus
-                     * round trip per word whatever we do - but the indirect
-                     * accessor call costs about as much as the access itself,
-                     * so read through a local pointer, several at a time.
-                     * Writes keep the accessor: the earlier controller needs
-                     * its inter-write delay, and that lives in there.
+                     * A bus that can read its data port in bulk does so: the
+                     * indirect call costs about as much as the register access
+                     * itself, and this is one call per word otherwise.
                      */
-                    volatile ULONG *port = (volatile ULONG *)((IPTR)bus->sdcb_IOBase + SDHCI_BUFFER);
-
-                    for (currword = 0; (currword + 8) <= tranwords; currword += 8)
+                    if (bus->sdcb_IOReadLongs)
                     {
-                        dataPtr[currword    ] = AROS_LE2LONG(*port);
-                        dataPtr[currword + 1] = AROS_LE2LONG(*port);
-                        dataPtr[currword + 2] = AROS_LE2LONG(*port);
-                        dataPtr[currword + 3] = AROS_LE2LONG(*port);
-                        dataPtr[currword + 4] = AROS_LE2LONG(*port);
-                        dataPtr[currword + 5] = AROS_LE2LONG(*port);
-                        dataPtr[currword + 6] = AROS_LE2LONG(*port);
-                        dataPtr[currword + 7] = AROS_LE2LONG(*port);
+                        bus->sdcb_IOReadLongs(SDHCI_BUFFER, (ULONG *)dataPtr,
+                                              tranwords, bus);
                     }
-                    for (; currword < tranwords; currword++)
+                    else
                     {
-                        dataPtr[currword] = AROS_LE2LONG(*port);
+                        for (currword = 0; currword < tranwords; currword++)
+                        {
+                            dataPtr[currword] = bus->sdcb_IOReadLong(SDHCI_BUFFER, bus);
+                        }
                     }
                 }
                 else

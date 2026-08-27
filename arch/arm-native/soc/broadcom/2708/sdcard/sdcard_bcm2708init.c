@@ -249,6 +249,7 @@ bcminit_clock:
         __BCM2708Bus->sdcb_IOReadByte = FNAME_BCMSDCBUS(BCMMMIOReadByte);
         __BCM2708Bus->sdcb_IOReadWord = FNAME_BCMSDCBUS(BCMMMIOReadWord);
         __BCM2708Bus->sdcb_IOReadLong = FNAME_BCMSDCBUS(BCMMMIOReadLong);
+        __BCM2708Bus->sdcb_IOReadLongs = FNAME_BCMSDCBUS(BCMMMIOReadLongs);
 
         if (isEMMC2)
         {

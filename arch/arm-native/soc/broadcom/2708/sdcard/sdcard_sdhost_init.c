@@ -271,6 +271,7 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
         bus->sdcb_IOReadByte = NULL;
         bus->sdcb_IOReadWord = NULL;
         bus->sdcb_IOReadLong = NULL;
+        bus->sdcb_IOReadLongs = NULL;
         bus->sdcb_IOWriteByte = NULL;
         bus->sdcb_IOWriteWord = NULL;
         bus->sdcb_IOWriteLong = NULL;

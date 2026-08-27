@@ -65,6 +65,29 @@ ULONG FNAME_BCMSDCBUS(BCMMMIOReadLong)(ULONG reg, struct sdcard_Bus *bus)
     return AROS_LE2LONG(*(volatile ULONG *)(bus->sdcb_IOBase + reg));
 }
 
+/* Bulk read from one register, for the PIO data port. Unrolled because the
+ * per-word call overhead is comparable to the MMIO access itself. */
+void FNAME_BCMSDCBUS(BCMMMIOReadLongs)(ULONG reg, ULONG *dest, ULONG count,
+                                       struct sdcard_Bus *bus)
+{
+    volatile ULONG *port = (volatile ULONG *)((IPTR)bus->sdcb_IOBase + reg);
+    ULONG i;
+
+    for (i = 0; (i + 8) <= count; i += 8)
+    {
+        dest[i    ] = AROS_LE2LONG(*port);
+        dest[i + 1] = AROS_LE2LONG(*port);
+        dest[i + 2] = AROS_LE2LONG(*port);
+        dest[i + 3] = AROS_LE2LONG(*port);
+        dest[i + 4] = AROS_LE2LONG(*port);
+        dest[i + 5] = AROS_LE2LONG(*port);
+        dest[i + 6] = AROS_LE2LONG(*port);
+        dest[i + 7] = AROS_LE2LONG(*port);
+    }
+    for (; i < count; i++)
+        dest[i] = AROS_LE2LONG(*port);
+}
+
 static void FNAME_BCMSDCBUS(BCM283xWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
 {
     /* Bug: two SDC clock cycle delay required between successive chipset writes */

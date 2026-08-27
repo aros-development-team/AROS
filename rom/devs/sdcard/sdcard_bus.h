@@ -72,6 +72,9 @@ struct sdcard_Bus
     UBYTE                               (*sdcb_IOReadByte)(ULONG, struct sdcard_Bus *);
     UWORD                               (*sdcb_IOReadWord)(ULONG, struct sdcard_Bus *);
     ULONG                               (*sdcb_IOReadLong)(ULONG, struct sdcard_Bus *);
+    /* Optional: read count longs from one register. NULL = loop on
+     * sdcb_IOReadLong. */
+    void                                (*sdcb_IOReadLongs)(ULONG, ULONG *, ULONG, struct sdcard_Bus *);
 
     void                                (*sdcb_IOWriteByte)(ULONG, UBYTE, struct sdcard_Bus *);
     void                                (*sdcb_IOWriteWord)(ULONG, UWORD, struct sdcard_Bus *);
