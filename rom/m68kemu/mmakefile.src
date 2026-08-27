@@ -1,5 +1,4 @@
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
-# Author: Fabian Schmieder (@metaneutrons)
 #
 # m68kemu.library — Transparent M68K emulation for AmigaOS hunk binaries
 # Uses Moira (MIT license) as the CPU core
@@ -18,7 +17,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-m68kemu-riscv64 : kernel-m68kemu-library
 
 USER_CPPFLAGS := -DNO_INLINE_STDARG -I$(SRCDIR)/$(CURDIR)/Moira
-USER_CXXFLAGS := -std=c++20
+# Moira uses if constexpr (<integer>) - narrowing the condition to bool is only
+# well formed since P1401R5, which clang implements from 12 on (clang 11 errors).
+USER_CXXFLAGS := $(CXXFLAGS_CXX20) $(NOWARN_NARROWING)
 USER_LDFLAGS := -static
 
 M68KEMU_FILES := \
