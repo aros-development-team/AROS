@@ -245,6 +245,9 @@ struct vc4_hvs_state
     ULONG       hvs_FBWords;            /* its length in words */
     ULONG       hvs_FBPtrOff;           /* PTR0 word offset within it */
     ULONG       hvs_FBPtr;              /* ARM phys of current scanout page */
+    ULONG       hvs_Channel;            /* HVS channel driving the display */
+    ULONG       hvs_PVOffset;           /* the enabled pixelvalve, 0 = none */
+    ULONG       hvs_PVIrq;              /* and its GIC line */
     ULONG       hvs_Slot;               /* next round-robin slot */
     ULONG       hvs_ListBase;           /* head of the current authored list */
     ULONG       hvs_CurOff;             /* cursor entry offset in it, 0 = none */

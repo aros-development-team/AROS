@@ -17,10 +17,13 @@
 #include <exec/types.h>
 #include <exec/ports.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <string.h>
 
 #include "v3d_intern.h"
+
+extern APTR KernelBase;
 
 static inline ULONG v3d_hub_rd(struct V3DData *sd, ULONG off)
 {
@@ -53,7 +56,7 @@ static inline ULONG v3d_now_us(void)
  * renders. Falls back to a wall-clock spin if the timer was unavailable
  * at init or the task has no free signal.
  */
-static void v3d_gpu_nap(struct V3DData *sd, ULONG us)
+static void v3d_gpu_nap(struct V3DData *sd, ULONG us, ULONG wakesigs)
 {
     struct MsgPort port;
     struct timerequest tr;
@@ -86,13 +89,19 @@ static void v3d_gpu_nap(struct V3DData *sd, ULONG us)
     tr.tr_time.tv_secs  = 0;
     tr.tr_time.tv_micro = us;
 
-    DoIO((struct IORequest *)&tr);
+    /* The completion interrupt gets to cut the nap short; the timer is
+     * then only the safety net for an interrupt that never arrives. */
+    SendIO((struct IORequest *)&tr);
+    Wait((1UL << sig) | wakesigs);
+    AbortIO((struct IORequest *)&tr);
+    WaitIO((struct IORequest *)&tr);
 
     FreeSignal(sig);
 }
 
 static void v3d_mmu_map_at(struct V3DData *sd, ULONG va, ULONG paddr,
                            ULONG size);
+static void v3d_irq_handler(struct V3DData *sd, struct ExecBase *sysBase);
 
 BOOL v3d_hw_init(struct V3DData *sd)
 {
@@ -134,11 +143,34 @@ BOOL v3d_hw_init(struct V3DData *sd)
         v3d_hub_rd(sd, V3D_MMU_CTL), v3d_hub_rd(sd, V3D_MMU_PT_PA_BASE),
         v3d_hub_rd(sd, V3D_HUB_AXICFG), v3d_hub_rd(sd, V3D_HUB_UIFCFG));
 
-    /* Everything masked until an interrupt path exists. */
+    
+    /* Mask and clear everything, then arm just the sources the service
+     * machine acts on. The hub's stay masked - nothing there is wanted,
+     * and its MMU violation latches are read from the logs instead. */
     v3d_hub_wr(sd, V3D_HUB_INT_MSK_SET, 0xffffffff);
     v3d_hub_wr(sd, V3D_HUB_INT_CLR, 0xffffffff);
     v3d_core_wr(sd, V3D_CTL_INT_MSK_SET, 0xffffffff);
     v3d_core_wr(sd, V3D_CTL_INT_CLR, 0xffffffff);
+
+#if V3D_IRQ_ENABLE
+    if (!sd->irq_handle)
+    {
+        sd->waiter = NULL;
+        sd->waiter_sig = -1;
+        sd->irq_handle = KrnAddIRQHandler(V3D_IRQ, v3d_irq_handler,
+                                          sd, SysBase);
+    }
+    if (sd->irq_handle)
+    {
+        /* Clearing a mask bit enables that source. */
+        v3d_core_wr(sd, V3D_CTL_INT_MSK_CLR,
+                    V3D_INT_FLDONE | V3D_INT_FRDONE | V3D_INT_OUTOMEM);
+        bug("[V3D] completion IRQ armed on INTID %u (MSK_STS=%08x)\n",
+            (unsigned)V3D_IRQ, v3d_core_rd(sd, V3D_CTL_INT_MSK_STS));
+    }
+    else
+        bug("[V3D] no IRQ handler - polling only\n");
+#endif
 
     /* What the firmware left in the overflow registers - the stale BPOA
      * is where an unsupplied overflow would spill. */
@@ -164,12 +196,8 @@ BOOL v3d_hw_init(struct V3DData *sd)
     }
 
     /*
-     * Enable the MMU and run every BO at a LOW GPU virtual address:
-     * feeding the hardware identity-mapped ~1GB physicals made the PTB
-     * emit a load-bearing stream at a low stray address (an internal
-     * truncation/banking path nothing else exercises), which ate exec's
-     * LVO tables, the boot page tables and the IRQ lists at fullscreen
-     * tile counts. Everything unmapped faults into the scratch page and
+     * Enable the MMU and map every BO at its physical address (see
+     * V3D_GPU_VA). Everything unmapped faults into the scratch page and
      * latches VIO_ADDR. PT entries: 32-bit, pfn low, VALID|WRITEABLE;
      * zeroed = invalid, which VCMEM_ZERO gives for free. Mappings are
      * made per-BO at CREATE and survive a recovery reset (the PT lives
@@ -237,9 +265,8 @@ BOOL v3d_hw_init(struct V3DData *sd)
 }
 
 /*
- * Map a BO for the GPU at its low virtual address (V3D_GPU_VA: a
- * stateless, collision-free fold of the physical address into the
- * bottom 512MB) and return that VA. The PT lives in uncached firmware
+ * Map a BO for the GPU at its physical address (V3D_GPU_VA: a stateless
+ * identity map) and return that VA. The PT lives in uncached firmware
  * memory, so the walker sees the entries as soon as the TLB is cleared;
  * creates and frees only happen with the GPU idle (synchronous submit),
  * so a full clear is safe and simple.
@@ -290,7 +317,16 @@ void v3d_mmu_unmap(struct V3DData *sd, ULONG gpu_va, ULONG size)
 
 void v3d_hw_shutdown(struct V3DData *sd)
 {
+    /* Mask before the handler goes: an interrupt arriving after it has
+     * been removed would be nobody's. */
+    v3d_core_wr(sd, V3D_CTL_INT_MSK_SET, 0xffffffff);
     v3d_hub_wr(sd, V3D_HUB_INT_MSK_SET, 0xffffffff);
+    if (sd->irq_handle)
+    {
+        KrnRemIRQHandler(sd->irq_handle);
+        sd->irq_handle = NULL;
+    }
+    sd->waiter = NULL;
     sd->powered = FALSE;
 }
 
@@ -333,14 +369,68 @@ void v3d_flush_caches(struct V3DData *sd)
  */
 static void v3d_service(struct V3DData *sd)
 {
-    ULONG ints = v3d_core_rd(sd, V3D_CTL_INT_STS);
+    ULONG ints;
+
+    /* Runs from the interrupt as well as the wait paths, so the state
+     * machine below is a critical section. Disable() suffices on UP; SMP
+     * would need job_lock to become a spinlock the handler can take. */
+    Disable();
+    ints = v3d_core_rd(sd, V3D_CTL_INT_STS);
+
+    /*
+     * OUTOMEM: the binner outran the supply armed at submit and has
+     * stopped. Only record the latch here - the one buffer left to hand
+     * over may still be feeding the previous render, so the refill waits
+     * for that render to retire.
+     */
+    if (ints & V3D_INT_OUTOMEM)
+    {
+        v3d_core_wr(sd, V3D_CTL_INT_CLR, V3D_INT_OUTOMEM);
+        sd->oom_pending = TRUE;
+        sd->oom_events++;
+    }
+    if (ints & V3D_INT_SPILLUSE)
+    {
+        v3d_core_wr(sd, V3D_CTL_INT_CLR, V3D_INT_SPILLUSE);
+        sd->spill_events++;
+    }
+
+    if (sd->oom_pending && !sd->render_running)
+    {
+        ULONG idx = (sd->bin_seqno + 1) & 1;
+
+        if (sd->oom_handed || !sd->overflow_va[idx])
+        {
+            /* Second exhaustion in one job (or no supply at all): let it
+             * stall. The wait times out, dumps the state and recovers -
+             * better than feeding memory a live render still reads. */
+            if (sd->oom_events <= 4)
+                bug("[V3D] binner out of tile memory twice in one job - "
+                    "stalling (events=%u)\n", (unsigned)sd->oom_events);
+            sd->oom_pending = FALSE;
+        }
+        else
+        {
+            v3d_core_wr(sd, V3D_PTB_BPOA, sd->overflow_va[idx]);
+            v3d_core_wr(sd, V3D_PTB_BPOS, V3D_OVERFLOW_SIZE);
+            sd->oom_handed = TRUE;
+            sd->oom_pending = FALSE;
+            if (sd->oom_events <= 8)
+                bug("[V3D] binner out of tile memory: fed supply %u "
+                    "(event %u)\n", (unsigned)idx, (unsigned)sd->oom_events);
+        }
+    }
 
     if (sd->bin_running && (ints & V3D_INT_FLDONE))
     {
         v3d_core_wr(sd, V3D_CTL_INT_CLR, V3D_INT_FLDONE);
         sd->bin_running = FALSE;
+        sd->bin_flushed_seqno = sd->bin_seqno;
+#if V3D_PROFILE
+        sd->prof_bin_acc += v3d_now_us() - sd->prof_bin_kick;
+#endif
         /* A bin-only submission is finished at the flush */
-        if (!sd->pending_rcl_end && sd->finished_seqno < sd->bin_seqno)
+        if (sd->bin_only && sd->finished_seqno < sd->bin_seqno)
             sd->finished_seqno = sd->bin_seqno;
     }
 
@@ -349,26 +439,66 @@ static void v3d_service(struct V3DData *sd)
         v3d_core_wr(sd, V3D_CTL_INT_CLR, V3D_INT_FRDONE);
         sd->render_running = FALSE;
         sd->finished_seqno = sd->render_seqno;
+#if V3D_PROFILE
+        sd->prof_render_acc += v3d_now_us() - sd->prof_render_kick;
+        /* Only snapshot here: this runs in interrupt context, and a
+         * serial line would hold interrupts off for milliseconds. The
+         * next submit prints it. */
+        if (++sd->prof_jobs >= V3D_PROF_PERIOD)
+        {
+            sd->prof_rep_bin = sd->prof_bin_acc / sd->prof_jobs;
+            sd->prof_rep_render = sd->prof_render_acc / sd->prof_jobs;
+            sd->prof_rep_jobs = sd->prof_jobs;
+            sd->prof_bin_acc = sd->prof_render_acc = sd->prof_jobs = 0;
+        }
+#endif
     }
 
-    if (sd->pending_rcl_end && !sd->bin_running && !sd->render_running)
+    /* The oldest stashed job whose own bin has flushed. Deliberately not
+     * waiting for the binner to be idle: bin N+1 running while render N
+     * starts is the point of the queue. */
+    if (sd->rcl_count && !sd->render_running
+        && sd->rcl_q[sd->rcl_head].seqno <= sd->bin_flushed_seqno)
     {
+        ULONG start = sd->rcl_q[sd->rcl_head].start;
+        ULONG end = sd->rcl_q[sd->rcl_head].end;
+
+        sd->render_seqno = sd->rcl_q[sd->rcl_head].seqno;
+        sd->rcl_head = (sd->rcl_head + 1) % V3D_RCL_QUEUE;
+        sd->rcl_count--;
+
         v3d_core_wr(sd, V3D_CTL_INT_CLR, V3D_INT_FRDONE);
         v3d_flush_caches(sd);
-        sd->render_end = sd->pending_rcl_end;
-        sd->render_seqno = sd->pending_seqno;
+        sd->render_end = end;
         sd->render_running = TRUE;
-        v3d_core_wr(sd, V3D_CLE_CT1QBA, sd->pending_rcl_start);
-        v3d_core_wr(sd, V3D_CLE_CT1QEA, sd->pending_rcl_end);
-        sd->pending_rcl_start = 0;
-        sd->pending_rcl_end = 0;
+#if V3D_PROFILE
+        sd->prof_render_kick = v3d_now_us();
+#endif
+        v3d_core_wr(sd, V3D_CLE_CT1QBA, start);
+        v3d_core_wr(sd, V3D_CLE_CT1QEA, end);
     }
+
+    Enable();
+}
+
+/* The completion interrupt. Servicing from here is what keeps the
+ * renderer fed - with the present ring no longer waiting, nothing else
+ * would look until the next submit. */
+static void v3d_irq_handler(struct V3DData *sd, struct ExecBase *sysBase)
+{
+    struct Task *t;
+
+    v3d_service(sd);
+
+    t = sd->waiter;
+    if (t && sd->waiter_sig >= 0)
+        Signal(t, 1UL << sd->waiter_sig);
 }
 
 static BOOL v3d_pipeline_idle(struct V3DData *sd)
 {
     return !sd->bin_running && !sd->render_running
-        && !sd->pending_rcl_end && sd->finished_seqno == sd->seqno;
+        && !sd->rcl_count && sd->finished_seqno == sd->seqno;
 }
 
 /*
@@ -391,9 +521,11 @@ static void v3d_report_once(struct V3DData *sd)
         v3d_hub_rd(sd, V3D_HUB_INT_STS), v3d_core_rd(sd, V3D_CTL_INT_STS),
         v3d_core_rd(sd, V3D_CLE_CT0CS), v3d_core_rd(sd, V3D_CLE_CT1CS));
     /* BPCA moving away from BPOA means the overflow was consumed. */
-    bug("[V3D] after first job: BPCA=%08x BPCS=%08x BPOA=%08x BPOS=%08x\n",
+    bug("[V3D] after first job: BPCA=%08x BPCS=%08x BPOA=%08x BPOS=%08x "
+        "oom=%u spill=%u\n",
         v3d_core_rd(sd, V3D_PTB_BPCA), v3d_core_rd(sd, V3D_PTB_BPCS),
-        v3d_core_rd(sd, V3D_PTB_BPOA), v3d_core_rd(sd, V3D_PTB_BPOS));
+        v3d_core_rd(sd, V3D_PTB_BPOA), v3d_core_rd(sd, V3D_PTB_BPOS),
+        (unsigned)sd->oom_events, (unsigned)sd->spill_events);
 }
 
 /*
@@ -409,24 +541,28 @@ static void v3d_recover(struct V3DData *sd)
 
     if (n++ < 4)
         bug("[V3D] stalled: bin CA=%08x want=%08x CS=%08x run=%d | "
-            "render CA=%08x want=%08x CS=%08x run=%d pend=%d | "
+            "render CA=%08x want=%08x CS=%08x run=%d rclq=%d | "
             "INT core=%08x hub=%08x MMU_CTL=%08x VIO_ADDR=%08x "
-            "seq=%u fin=%u\n",
+            "seq=%u fin=%u oom=%u/%u spill=%u BPCS=%08x\n",
             v3d_core_rd(sd, V3D_CLE_CT0CA), sd->bin_end,
             v3d_core_rd(sd, V3D_CLE_CT0CS), (int)sd->bin_running,
             v3d_core_rd(sd, V3D_CLE_CT1CA), sd->render_end,
             v3d_core_rd(sd, V3D_CLE_CT1CS), (int)sd->render_running,
-            (int)(sd->pending_rcl_end != 0),
+            (int)sd->rcl_count,
             v3d_core_rd(sd, V3D_CTL_INT_STS),
             v3d_hub_rd(sd, V3D_HUB_INT_STS),
             v3d_hub_rd(sd, V3D_MMU_CTL),
             v3d_hub_rd(sd, V3D_MMU_VIO_ADDR),
-            (unsigned)sd->seqno, (unsigned)sd->finished_seqno);
+            (unsigned)sd->seqno, (unsigned)sd->finished_seqno,
+            (unsigned)sd->oom_events, (unsigned)sd->oom_handed,
+            (unsigned)sd->spill_events,
+            v3d_core_rd(sd, V3D_PTB_BPCS));
 
     sd->bin_running = FALSE;
     sd->render_running = FALSE;
-    sd->pending_rcl_start = 0;
-    sd->pending_rcl_end = 0;
+    sd->rcl_head = 0;
+    sd->rcl_count = 0;
+    sd->bin_flushed_seqno = sd->seqno;
     sd->finished_seqno = sd->seqno;
     sd->bin_end = 0;
     sd->render_end = 0;
@@ -457,29 +593,63 @@ static void v3d_recover(struct V3DData *sd)
 static BOOL v3d_wait_for(struct V3DData *sd, BOOL (*until)(struct V3DData *))
 {
     ULONG start = v3d_now_us();
+    BOOL ret = TRUE;
+    BYTE sig = -1;
 
     for (;;)
     {
         ULONG waited;
 
+        /* Still serviced here as well as from the handler: harmless
+         * (one register read), and it is the whole mechanism when the
+         * interrupt is disabled or never arrives. */
         v3d_service(sd);
         if (until(sd))
-            return TRUE;
+            break;
 
         waited = v3d_now_us() - start;
         if (waited >= V3D_GPUWAIT_TIMEOUT_US)
         {
             v3d_recover(sd);
-            return FALSE;
+            ret = FALSE;
+            break;
         }
-        if (waited >= V3D_GPUWAIT_SPIN_US)
-            v3d_gpu_nap(sd, V3D_GPUWAIT_NAP_US);
+        if (waited < V3D_GPUWAIT_SPIN_US)
+            continue;       /* short jobs never leave the spin window */
+
+        /* Past the spin window: register for the completion interrupt
+         * and sleep on it, with the timer nap as the safety net. Only
+         * one waiter exists at a time - every caller holds job_lock. */
+        if (sig < 0 && sd->irq_handle && (sig = AllocSignal(-1)) >= 0)
+        {
+            Disable();
+            sd->waiter_sig = sig;
+            sd->waiter = FindTask(NULL);
+            Enable();
+            continue;       /* recheck: it may have finished meanwhile */
+        }
+
+        v3d_gpu_nap(sd, V3D_GPUWAIT_NAP_US,
+                    (sig >= 0) ? (1UL << sig) : 0);
     }
+
+    if (sig >= 0)
+    {
+        /* Stop the handler signalling a bit that is about to be freed */
+        Disable();
+        sd->waiter = NULL;
+        Enable();
+        FreeSignal(sig);
+    }
+    return ret;
 }
 
+/* Room for another job: the one binner is free and the render queue has
+ * a slot. It no longer depends on any render having finished, which is
+ * what used to make a submit block for a whole render. */
 static BOOL v3d_slot_free(struct V3DData *sd)
 {
-    return !sd->bin_running && !sd->pending_rcl_end;
+    return !sd->bin_running && sd->rcl_count < V3D_RCL_QUEUE;
 }
 
 /*
@@ -505,6 +675,32 @@ BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
 
     seqno = ++sd->seqno;
 
+    /* Queue the render before starting the bin: the flush can land in
+     * the handler the instant the bin is kicked, and the entry has to be
+     * there for it to be picked up. */
+    Disable();
+    if (rcl_start != rcl_end)
+    {
+        UBYTE tail = (sd->rcl_head + sd->rcl_count) % V3D_RCL_QUEUE;
+
+        sd->rcl_q[tail].start = rcl_start;
+        sd->rcl_q[tail].end   = rcl_end;
+        sd->rcl_q[tail].seqno = seqno;
+        sd->rcl_count++;
+        sd->bin_only = FALSE;
+        /* No bin of its own: nothing will ever flush for it, so date it
+         * as already binned or the queue would stall on it. */
+        if (bcl_start == bcl_end)
+            sd->bin_flushed_seqno = seqno;
+    }
+    else
+    {
+        sd->bin_only = TRUE;
+        if (bcl_start == bcl_end)
+            sd->finished_seqno = seqno;      /* empty submission */
+    }
+    Enable();
+
     if (bcl_start != bcl_end)
     {
         if (qma)
@@ -528,30 +724,66 @@ BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
         sd->bin_end = bcl_end;
         sd->bin_seqno = seqno;
         sd->bin_running = TRUE;
+        sd->oom_pending = FALSE;
+        sd->oom_handed = FALSE;
+#if V3D_PROFILE
+        sd->prof_bin_kick = v3d_now_us();
+#endif
         v3d_core_wr(sd, V3D_CLE_CT0QBA, bcl_start);
         v3d_core_wr(sd, V3D_CLE_CT0QEA, bcl_end);
         D(bug("[V3D] bin submit %u: QBA=%08x QEA=%08x\n", (unsigned)seqno,
               bcl_start, bcl_end));
     }
 
-    if (rcl_start != rcl_end)
-    {
-        sd->pending_rcl_start = rcl_start;
-        sd->pending_rcl_end = rcl_end;
-        sd->pending_seqno = seqno;
-    }
-    else if (bcl_start == bcl_end)
-        sd->finished_seqno = seqno;     /* empty submission */
-
     /* An RCL with no BCL (or a bin that flushed instantly) can go now */
     v3d_service(sd);
+
+#if V3D_PROFILE
+    if (sd->prof_rep_jobs)
+    {
+        V3D_PROF("[V3DProf] gpu: %lu jobs bin=%luus render=%luus "
+                 "oom=%lu spill=%lu\n",
+                 (unsigned long)sd->prof_rep_jobs,
+                 (unsigned long)sd->prof_rep_bin,
+                 (unsigned long)sd->prof_rep_render,
+                 (unsigned long)sd->oom_events,
+                 (unsigned long)sd->spill_events);
+        sd->prof_rep_jobs = 0;
+    }
+#endif
 
     ReleaseSemaphore(&sd->job_lock);
     return TRUE;
 }
 
+static BOOL v3d_seqno_reached(struct V3DData *sd)
+{
+    return sd->finished_seqno >= sd->wait_seqno;
+}
+
+/* Wait for ONE submission, not for the pipeline: the frame being
+ * presented retired long ago, while the one just submitted keeps
+ * rendering behind it. Waiting for the pipeline serialises CPU and GPU. */
+void v3d_hw_wait_seqno(struct V3DData *sd, ULONG seqno)
+{
+    ObtainSemaphore(&sd->job_lock);
+    if (sd->powered && seqno && sd->finished_seqno < seqno)
+    {
+        sd->wait_seqno = seqno;
+        v3d_wait_for(sd, v3d_seqno_reached);
+    }
+    ReleaseSemaphore(&sd->job_lock);
+}
+
 void v3d_wait_idle(struct V3DData *sd)
 {
+#if V3D_PROFILE
+    /* How long the CPU actually spends blocked on the GPU, and the worst
+     * single case - an average alone hides one pathological frame. */
+    static ULONG n, acc, worst;
+    ULONG t0 = V3D_NOW_US();
+#endif
+
     ObtainSemaphore(&sd->job_lock);
     if (sd->powered)
     {
@@ -559,4 +791,21 @@ void v3d_wait_idle(struct V3DData *sd)
             v3d_report_once(sd);
     }
     ReleaseSemaphore(&sd->job_lock);
+
+#if V3D_PROFILE
+    {
+        ULONG d = V3D_NOW_US() - t0;
+
+        acc += d;
+        if (d > worst)
+            worst = d;
+        if (++n >= V3D_PROF_PERIOD)
+        {
+            V3D_PROF("[V3DProf] wait_idle: %lu calls avg=%luus max=%luus\n",
+                     (unsigned long)n, (unsigned long)(acc / n),
+                     (unsigned long)worst);
+            n = acc = worst = 0;
+        }
+    }
+#endif
 }

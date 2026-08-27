@@ -44,8 +44,9 @@
 #define HVS5_DISPCTRLX(ch)  (0x0040 + 0x10 * (ch))
 #define HVS5_CHANNELS       3
 
-/* Firmware drove HDMI on channel 0, with both LIST and LACT reading 4. */
-#define HVS5_CHANNEL_HDMI   0
+/* The live channel varies with the mode the firmware set (channel 1 on a
+ * 1280x1024 boot, 0 on a 1920x1080 one), so vc4_hvs5_takeover() probes
+ * for it and records it in hvs_Channel. */
 
 /* The one structural move: list RAM is at +0x4000, not +0x2000, and
  * heads are word indices into it (head 4 -> +0x4010). */
@@ -124,14 +125,12 @@
 /* pixelvalve@..., "brcm,bcm2711-pixelvalveN". PV2 has moved (0x7e807000
  * on BCM283x) and PV3/PV4 are new.
  *
- * Measured on hardware: PV4 (0x7e216000) is the enabled one, and it
- * counts two pixels per clock horizontally - a 1280x1024 screen reports
+ * Which one drives HDMI also varies with the mode (PV4, PV2), so it is
+ * found by scanning for CONTROL bit 0 and kept in hvs_PVOffset/PVIrq.
+ * Both count two pixels per clock horizontally: a 1280x1024 screen reports
  * hactive 640, and doubling every horizontal field reproduces the VESA
  * timing exactly (hsync 112, hbp 248, hfp 48, htotal 1688). Vertical
  * fields are not scaled. Note PV1 and PV4 share GIC SPI 110. */
-#define HVS5_PV_HDMI        4
-#define HVS5_PV_HDMI_OFFSET 0x216000
-#define HVS5_PV_HDMI_IRQ    (32 + 110)
 #define HVS5_PV_H_PIXELS_PER_CLK 2
 
 /* Confirmed against the live PV4: the timing registers match the

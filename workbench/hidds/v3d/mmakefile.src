@@ -87,6 +87,7 @@ BROADCOM_COMMON_SOURCES := \
 V3D_HIDD_SOURCES := \
     v3d_init \
     v3d_hw \
+    v3d_mem \
     v3d_galliumclass \
     v3d_drm_shim \
     $(SRCDIR)/workbench/libs/mesa/emul_arosc

@@ -128,10 +128,16 @@ static struct
                                      * unmap/map and TLB flushes) per frame */
 } v3d_scan;
 
+/* Three pages, not two: the present shows the PREVIOUS frame, whose jobs
+ * retired while this one was built, so it never waits on the frame just
+ * submitted. Costs one frame of latency. */
 static struct
 {
     struct pipe_resource *rsc;
     struct v3d_bo  *onplane;        /* page the overlay currently scans */
+    struct v3d_bo  *queued;         /* rendered; goes on the plane next */
+    ULONG           queued_seqno;   /* the jobs that filled `queued` */
+    struct v3d_bo  *freep;          /* parked spare, ring not yet full */
     ULONG           page_handle;    /* BO bound in rsc (render target) */
     BOOL            shown;
     struct pipe_resource *refused;  /* overlay said no (scaled desktop /
@@ -308,8 +314,11 @@ static BOOL v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
     desc.ovl_Height = h;
     desc.ovl_X      = x;
     desc.ovl_Y      = y;
-    desc.ovl_DestW  = w;
-    desc.ovl_DestH  = h;
+    /* Always 1:1. The field is the Pi 3 scaled-plane request (HVS4
+     * implements it, HVS5 does not), and desc is not zeroed, so leaving
+     * it out would hand the hidd stack garbage. */
+    desc.ovl_DestW  = 0;
+    desc.ovl_DestH  = 0;
 
     OOP_SetAttrs(bmobj, ovltags);
     OOP_GetAttr(bmobj, sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, &active);
@@ -329,6 +338,20 @@ static void v3d_ovl_suspend(struct V3DData *sd)
     if (v3d_ovl.shown && v3d_ovl.bm)
         OOP_SetAttrs(v3d_ovl.bm, ovltags);
     v3d_ovl.shown = FALSE;
+
+    /* Retire the queued frame: it goes stale while the plane is hidden
+     * (the blit path is drawing meanwhile), and showing it on reveal
+     * would put one old image on screen. Park it as the spare instead,
+     * so the ring refills exactly as it does at entry. */
+    if (v3d_ovl.queued)
+    {
+        if (v3d_ovl.freep)
+            v3d_bo_unreference(&v3d_ovl.queued);
+        else
+            v3d_ovl.freep = v3d_ovl.queued;
+        v3d_ovl.queued = NULL;
+        v3d_ovl.queued_seqno = 0;
+    }
 }
 
 /* Full teardown: resource changed or the session is going away. */
@@ -337,6 +360,11 @@ static void v3d_ovl_exit(struct V3DData *sd)
     v3d_ovl_suspend(sd);
     if (v3d_ovl.onplane)
         v3d_bo_unreference(&v3d_ovl.onplane);
+    if (v3d_ovl.queued)
+        v3d_bo_unreference(&v3d_ovl.queued);
+    if (v3d_ovl.freep)
+        v3d_bo_unreference(&v3d_ovl.freep);
+    v3d_ovl.queued_seqno = 0;
     v3d_ovl.rsc = NULL;
     v3d_ovl.page_handle = 0;
     v3d_ovl.bm = NULL;
@@ -462,8 +490,9 @@ VOID HiddV3D__Hidd_Gallium__DestroyPipeScreen(OOP_Class *cl, OOP_Object *o,
     v3d_release_all_bos(sd);
     sd->bin_running = FALSE;
     sd->render_running = FALSE;
-    sd->pending_rcl_start = 0;
-    sd->pending_rcl_end = 0;
+    sd->rcl_head = 0;
+    sd->rcl_count = 0;
+    sd->bin_flushed_seqno = sd->seqno;
     sd->finished_seqno = sd->seqno;
     sd->bin_end = 0;
     sd->render_end = 0;
@@ -665,19 +694,29 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     bound = (v3d_scan.rsc == &rsc->base &&
              rsc->bo->handle == v3d_scan.page_handle);
 
-    if (fullscreen)
+    /* Flip is tried first only when the overlay is not preferred, or
+     * when the overlay has already refused this resource - so a display
+     * the HVS plane cannot serve still gets a zero-copy path. */
+    if (fullscreen
+        && (!V3D_PREFER_OVERLAY || v3d_ovl.refused == &rsc->base))
     {
         struct v3d_scanout_info so;
+#if V3D_PROFILE
         ULONG t0, t1;
+#endif
 
         if (v3d_get_scanout(sd, scr_bm_obj, &so)
             && (ULONG)xSize == so.width && (ULONG)ySize == so.height
             && stride == so.pitch)
         {
             /* The frame must be complete before it goes on scanout. */
-            t0 = *(volatile ULONG *)V3D_SYSTIMER_CLO;
+#if V3D_PROFILE
+            t0 = V3D_NOW_US();
+#endif
             v3d_wait_idle(sd);
-            t1 = *(volatile ULONG *)V3D_SYSTIMER_CLO;
+#if V3D_PROFILE
+            t1 = V3D_NOW_US();
+#endif
 
             if (bound && so.name[0] == v3d_scan.name[0]
                 && so.name[1] == v3d_scan.name[1])
@@ -687,33 +726,44 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                 if (v3d_flip_fb(sd, scr_bm_obj)
                     && v3d_scan_bind_back(sd, rsc, scr_bm_obj))
                 {
-                    /* Heartbeat with the frame-phase breakdown that
-                     * decides what to optimise: emit = app+Mesa CPU time
-                     * since the last present returned, render = the
-                     * wait_idle for this frame's jobs, vsync = flip's
-                     * latch wait. emit+render > one vblank period is
-                     * what locks a 60 Hz panel to 30 FPS. */
-                    static ULONG n = 0, emit_acc, rend_acc, vs_acc, prev;
-                    ULONG t2 = *(volatile ULONG *)V3D_SYSTIMER_CLO;
+                    static ULONG n;
+#if V3D_PROFILE
+                    /* emit = app plus Mesa on the CPU since the last
+                     * present, render = the wait for this frame's jobs,
+                     * vsync = the latch wait. */
+                    static ULONG emit_acc, rend_acc, vs_acc, prev, job_acc;
+                    ULONG t2 = V3D_NOW_US();
 
                     if (prev)
                         emit_acc += t0 - prev;
                     rend_acc += t1 - t0;
                     vs_acc   += t2 - t1;
                     prev = t2;
-                    n++;
-                    if (n <= 2 || (n & 255) == 0)
+                    job_acc += sd->prof_submits;
+                    sd->prof_submits = 0;
+#endif
+                    /* Twice only, and unconditional: enough to tell from
+                     * a serial log that the zero-copy path engaged. */
+                    if (++n <= 2)
+                        bug("[V3D] present flip #%u: %ldx%ld\n",
+                            (unsigned)n, (long)xSize, (long)ySize);
+#if V3D_PROFILE
+                    if (n % V3D_PROF_PERIOD == 0)
                     {
-                        ULONG f = (n <= 2) ? 1 : 256;
+                        ULONG f = V3D_PROF_PERIOD;
 
-                        bug("[V3D] present flip #%u: %ldx%ld emit=%luus "
-                            "render-wait=%luus vsync-wait=%luus\n",
-                            (unsigned)n, (long)xSize, (long)ySize,
-                            (unsigned long)(emit_acc / f),
-                            (unsigned long)(rend_acc / f),
-                            (unsigned long)(vs_acc / f));
-                        emit_acc = rend_acc = vs_acc = 0;
+                        V3D_PROF("[V3DProf] flip: %lu frames emit=%luus "
+                                 "render-wait=%luus vsync-wait=%luus "
+                                 "jobs=%lu.%02lu/f\n",
+                                 (unsigned long)f,
+                                 (unsigned long)(emit_acc / f),
+                                 (unsigned long)(rend_acc / f),
+                                 (unsigned long)(vs_acc / f),
+                                 (unsigned long)(job_acc / f),
+                                 (unsigned long)(job_acc * 100 / f % 100));
+                        emit_acc = rend_acc = vs_acc = job_acc = 0;
                     }
+#endif
                     UnlockLayerRom(L);
                     return TRUE;
                 }
@@ -742,6 +792,28 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
             bug("[V3D] present: leaving scanout mode (geometry changed)\n");
             detach_after_blit = TRUE;
         }
+        else
+        {
+            /* Once: missing flip pages are a vcgfx question, a geometry
+             * mismatch a mode/drawable one. */
+            static BOOL said = FALSE;
+
+            if (!said)
+            {
+                said = TRUE;
+                if (!v3d_get_scanout(sd, scr_bm_obj, &so))
+                    bug("[V3D] present: no flip pages on this bitmap "
+                        "(scaled or single-buffered mode) - trying the "
+                        "overlay\n");
+                else
+                    bug("[V3D] present: drawable %ldx%ld stride=%u does not "
+                        "match framebuffer %ux%u pitch=%u - trying the "
+                        "overlay\n",
+                        (long)xSize, (long)ySize, (unsigned)stride,
+                        (unsigned)so.width, (unsigned)so.height,
+                        (unsigned)so.pitch);
+            }
+        }
     }
     else if (bound)
     {
@@ -749,9 +821,13 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
         detach_after_blit = TRUE;
     }
 
-    /* Zero-copy windowed present: a fully visible window shows the
-     * rendered BO as an HVS overlay plane. */
-    if (!fullscreen && !bound && !detach_after_blit)
+    /*
+     * Zero-copy overlay present. Serves a fully visible window, and
+     * equally a fullscreen surface the flip path declined - the common
+     * case on a non-native mode. Gating it on !fullscreen sent exactly
+     * that case to the CPU blit instead.
+     */
+    if (!bound && !detach_after_blit && !enter_scanout)
     {
         LONG absX = L->bounds.MinX + xDest;
         LONG absY = L->bounds.MinY + yDest;
@@ -767,22 +843,99 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
         {
             if (windowed && rsc->bo->handle == v3d_ovl.page_handle)
             {
-                v3d_wait_idle(sd);
-                if (v3d_show_overlay(sd, scr_bm_obj, rsc->bo, stride,
+#if V3D_PROFILE
+                ULONG t0 = V3D_NOW_US(), t1;
+#endif
+                if (!v3d_ovl.queued)
+                {
+                    /* The ring only empties at entry or after a
+                     * suspend. Counting up during a running app means
+                     * presents are being dropped. */
+                    static ULONG refills = 0;
+
+                    if (++refills <= 8 || (refills & 63) == 0)
+                        bug("[V3D] present: overlay ring refill #%u "
+                            "(a present showed nothing new)\n",
+                            (unsigned)refills);
+
+                    /* Ring not full yet (the present right after entry,
+                     * or after a reveal): queue the frame just rendered,
+                     * take the parked page as the next target, and leave
+                     * the plane showing what it already has. */
+                    v3d_ovl.queued = rsc->bo;
+                    v3d_ovl.queued_seqno = sd->seqno;
+                    rsc->bo = v3d_ovl.freep;
+                    v3d_ovl.freep = NULL;
+                    rsc->slices[0].offset = 0;
+                    v3d_ovl.page_handle = rsc->bo->handle;
+                    UnlockLayerRom(L);
+                    return TRUE;
+                }
+
+                /* Show the PREVIOUS frame. Its jobs ran while this one
+                 * was being built, so this wait is normally a no-op -
+                 * that is the whole point of the third page. */
+                v3d_hw_wait_seqno(sd, v3d_ovl.queued_seqno);
+#if V3D_PROFILE
+                t1 = V3D_NOW_US();
+#endif
+                if (v3d_show_overlay(sd, scr_bm_obj, v3d_ovl.queued, stride,
                                      absX, absY, xSize, ySize))
                 {
-                    /* Ping-pong: shown page goes on the plane, the page
-                     * leaving it (off-screen since the Set latched)
-                     * becomes the next render target. */
+                    /* Rotate: the page leaving the plane is off-screen
+                     * once the Set latched, so it becomes the next
+                     * render target; the frame just submitted waits its
+                     * turn in `queued`. */
                     struct v3d_bo *off = v3d_ovl.onplane;
                     static ULONG n = 0;
 
-                    if (++n <= 2 || (n & 511) == 0)
+                    /* Twice, at startup, and never again: one serial
+                     * line is ~8ms at 115200 - two frames' worth - and
+                     * a periodic log turns into a periodic stutter in
+                     * anything with time-based animation. */
+                    if (++n <= 2)
                         bug("[V3D] present overlay #%u: %ldx%ld at %ld,%ld\n",
                             (unsigned)n, (long)xSize, (long)ySize,
                             (long)absX, (long)absY);
+#if V3D_PROFILE
+                    /* Same phases as the flip path - the overlay's Set
+                     * waits for the latch too, so the numbers compare. */
+                    {
+                        static ULONG emit_acc, rend_acc, lat_acc, prev,
+                                     job_acc;
+                        ULONG t2 = V3D_NOW_US();
 
-                    v3d_ovl.onplane = rsc->bo;
+                        if (prev)
+                            emit_acc += t0 - prev;
+                        rend_acc += t1 - t0;
+                        lat_acc  += t2 - t1;
+                        prev = t2;
+                        job_acc += sd->prof_submits;
+                        sd->prof_submits = 0;
+
+                        if (n % V3D_PROF_PERIOD == 0)
+                        {
+                            ULONG f = V3D_PROF_PERIOD;
+
+                            V3D_PROF("[V3DProf] overlay: %lu frames "
+                                     "emit=%luus render-wait=%luus "
+                                     "latch-wait=%luus jobs=%lu.%02lu/f "
+                                     "%ldx%ld\n",
+                                     (unsigned long)f,
+                                     (unsigned long)(emit_acc / f),
+                                     (unsigned long)(rend_acc / f),
+                                     (unsigned long)(lat_acc / f),
+                                     (unsigned long)(job_acc / f),
+                                     (unsigned long)(job_acc * 100 / f % 100),
+                                     (long)xSize, (long)ySize);
+                            emit_acc = rend_acc = lat_acc = job_acc = 0;
+                        }
+                    }
+#endif
+
+                    v3d_ovl.onplane = v3d_ovl.queued;
+                    v3d_ovl.queued = rsc->bo;
+                    v3d_ovl.queued_seqno = sd->seqno;
                     v3d_ovl.shown = TRUE;
                     v3d_ovl.bm = scr_bm_obj;
                     rsc->bo = off;
@@ -812,12 +965,21 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
         else if (windowed && !v3d_ovl.rsc && rsc->slices[0].size
                  && v3d_ovl.refused != &rsc->base)
         {
+            /* Two more pages: one to render the next frame into, one
+             * parked so the ring can fill without another allocation on
+             * the following present. */
             struct v3d_bo *nb = v3d_bo_alloc(v3d_screen(rsc->base.screen),
                                              rsc->slices[0].size,
                                              "overlay-page");
+            struct v3d_bo *nb2 = nb
+                ? v3d_bo_alloc(v3d_screen(rsc->base.screen),
+                               rsc->slices[0].size, "overlay-page")
+                : NULL;
 
-            if (nb)
+            if (nb && nb2)
             {
+                /* Entry frame only: nothing is queued yet, so this one
+                 * has to be waited for before it goes on the plane. */
                 v3d_wait_idle(sd);
                 if (v3d_show_overlay(sd, scr_bm_obj, rsc->bo, stride,
                                      absX, absY, xSize, ySize))
@@ -826,6 +988,9 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                         (long)xSize, (long)ySize, (long)absX, (long)absY);
                     v3d_ovl.rsc = &rsc->base;
                     v3d_ovl.onplane = rsc->bo;
+                    v3d_ovl.queued = NULL;
+                    v3d_ovl.queued_seqno = 0;
+                    v3d_ovl.freep = nb2;
                     v3d_ovl.shown = TRUE;
                     v3d_ovl.bm = scr_bm_obj;
                     rsc->bo = nb;
@@ -835,9 +1000,19 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                     return TRUE;
                 }
                 v3d_bo_unreference(&nb);
+                v3d_bo_unreference(&nb2);
                 /* Scaled desktop or no takeover: remember and stop
                  * paying an alloc+refusal every present. */
                 bug("[V3D] present: overlay unavailable, blitting\n");
+                v3d_ovl.refused = &rsc->base;
+            }
+            else if (nb)
+            {
+                /* Only one of the two pages came back: no ring, and the
+                 * one page would leak. Blit this session. */
+                v3d_bo_unreference(&nb);
+                bug("[V3D] present: no memory for the overlay ring, "
+                    "blitting\n");
                 v3d_ovl.refused = &rsc->base;
             }
         }

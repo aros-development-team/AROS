@@ -16,6 +16,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <devices/timer.h>
 #include <oop/oop.h>
@@ -144,6 +145,12 @@ extern IPTR __arm_periiobase;
  */
 #define V3D_INT_FRDONE      (1 << 0)
 #define V3D_INT_FLDONE      (1 << 1)
+/* Bits 2 and 3 from Linux's v3d_regs.h. OUTOMEM is the binner asking for
+ * more tile memory and stopping until BPOA/BPOS are refilled; SPILLUSE
+ * (meaning not verified on hardware) has been seen latched alongside
+ * FLDONE on jobs that consumed the pre-armed supply. */
+#define V3D_INT_OUTOMEM     (1 << 2)
+#define V3D_INT_SPILLUSE    (1 << 3)
 
 /*
  * MMU (hub side; bare register ABI, every offset and bit below confirmed
@@ -248,28 +255,56 @@ struct vc4gfx_overlay
 #define V3D_GPUWAIT_NAP_US      1000
 #define V3D_GPUWAIT_TIMEOUT_US  1000000
 
-/*
- * The CPU reaches a BO at its locked physical address (identity through
- * the uncached VideoCore window). The GPU gets a LOW VIRTUAL address
- * through the V3D MMU instead: the hardware is only ever exercised with
- * small VAs in practice, and feeding it identity-mapped ~1GB physicals
- * made the PTB compute stray writes into low RAM (an internal
- * truncation/banking path nothing else exercises). paddr & 0x1FFFFFFF is
- * collision-free for a <=512MB firmware heap and needs no allocator
- * state.
- */
-#define V3D_GPU_ADDR(phys)  ((ULONG)(phys) & 0x3fffffff)
-#define V3D_GPU_VA(paddr)   ((ULONG)(paddr) & 0x1fffffff)
+/* 0 = page flip first. The flip makes the render target an IMPORTED BO,
+ * which Mesa cannot assume it owns, so it loads tiles and flushes more:
+ * 2.5-3.4 jobs/frame against the overlay's 1.0. */
+#define V3D_PREFER_OVERLAY  1
 
-/*
- * A buffer object. gpu_handle is the firmware allocation (ALLOCMEM), and
- * the memory stays locked for the BO's whole life: paddr doubles as the
- * CPU mapping through the identity-mapped uncached VideoCore region, so
- * nothing is ever flushed or invalidated for the GPU's benefit.
- */
+/* Service from the completion interrupt (GIC SPI 74). 0 = poll only,
+ * which leaves a stashed render idle until the next submit. If the Pi 3
+ * hazard vc4gallium documents turns out to apply here too, the symptom
+ * is mailbox timeouts after the first frames. */
+#define V3D_IRQ_ENABLE      1
+
+/* Stashed renders in flight; eduke32 peaks at four jobs per frame. */
+#define V3D_RCL_QUEUE       4
+
+/* Opt-in, and must stay that way: one serial line is ~8ms, so a period
+ * blocks the rendering task for ~30ms and time-based animation jumps. */
+#define V3D_PROFILE         0   /* summary lines, one per period */
+#define V3D_PROFILE_FRAME   0   /* per-frame dumps, serial-heavy */
+#define V3D_PROF_PERIOD     120 /* frames (or calls) between summaries */
+
+#if V3D_PROFILE || V3D_PROFILE_FRAME
+#define V3D_NOW_US()    ((ULONG)AROS_LE2LONG(*(volatile ULONG *)V3D_SYSTIMER_CLO))
+#else
+#define V3D_NOW_US()    0
+#endif
+
+#if V3D_PROFILE
+#define V3D_PROF(...)   bug(__VA_ARGS__)
+#else
+#define V3D_PROF(...)   do { } while (0)
+#endif
+
+#if V3D_PROFILE_FRAME
+#define V3D_PROFF(...)  bug(__VA_ARGS__)
+#else
+#define V3D_PROFF(...)  do { } while (0)
+#endif
+
+/* The GPU sees a BO at its physical address through the V3D MMU. The
+ * page table is 4MB, so it spans the whole 32-bit VA space and the
+ * identity map needs no allocator state. */
+#define V3D_GPU_ADDR(phys)  ((ULONG)(phys) & 0x3fffffff)
+#define V3D_GPU_VA(paddr)   ((ULONG)(paddr))
+
+/* A buffer object. gpu_handle is the arena allocation and equals paddr:
+ * the arena is identity-mapped and Normal Non-Cacheable, so one value is
+ * allocator cookie, CPU pointer and GPU page at once. */
 struct V3DBO
 {
-    ULONG   gpu_handle;     /* firmware handle, 0 = slot free/external */
+    ULONG   gpu_handle;     /* arena address, 0 = slot free/external */
     ULONG   paddr;          /* locked address, alias bits masked (CPU) */
     ULONG   gpu_va;         /* what the GPU sees, via the V3D MMU */
     ULONG   size;
@@ -278,7 +313,23 @@ struct V3DBO
                              * page): unmap on close, never FREEMEM */
 };
 
-#define V3D_MAX_BOS     1024
+/* One BO per texture and per vertex buffer; Doom 3 keeps a few thousand
+ * live, and Mesa answers a refused CREATE_BO by dropping its whole BO
+ * cache and retrying. */
+#define V3D_MAX_BOS     8192
+
+/* A slab of system RAM, remapped Normal Non-Cacheable and suballocated as
+ * GPU memory (v3d_mem.c). raw is what AllocMem returned, before the 4K
+ * alignment the suballocation needs. */
+struct V3DArena
+{
+    struct MinNode      node;
+    APTR                raw;
+    ULONG               raw_size;
+    APTR                base;
+    ULONG               size;
+    struct MemHeader    mh;
+};
 
 struct V3DData
 {
@@ -316,9 +367,24 @@ struct V3DData
     BOOL            render_running;
     ULONG           bin_seqno;
     ULONG           render_seqno;
-    ULONG           pending_seqno;
-    ULONG           pending_rcl_start;
-    ULONG           pending_rcl_end;    /* 0 = no render stashed */
+    /* Stashed renders. A queue, not one slot: with one, a submit could
+     * not return until the previous render retired. An entry may only be
+     * kicked once ITS OWN bin has flushed, hence bin_flushed_seqno (bins
+     * run in order on the single CT0 thread). */
+    struct
+    {
+        ULONG start, end, seqno;
+    }               rcl_q[V3D_RCL_QUEUE];
+    UBYTE           rcl_head, rcl_count;
+    ULONG           bin_flushed_seqno;
+    BOOL            bin_only;           /* the bin in flight has no RCL */
+    ULONG           wait_seqno;         /* target for v3d_hw_wait_seqno */
+
+    /* Completion interrupt. `waiter` is whoever is inside v3d_wait_for -
+     * one at a time, every caller holds job_lock. */
+    APTR            irq_handle;
+    struct Task     *waiter;
+    BYTE            waiter_sig;
 
     /* End addresses of the last kicked jobs, for the stall dump */
     ULONG           bin_end;
@@ -341,6 +407,14 @@ struct V3DData
 
     struct V3DBO    bo_table[V3D_MAX_BOS];
     ULONG           bo_next_handle;
+    BOOL            bo_full_reported;
+
+    /* GPU memory arenas (see v3d_mem.c), all under bo_lock */
+    struct MinList  arenas;
+    ULONG           arena_bytes;
+    ULONG           gpu_mem_bytes;
+    ULONG           gpu_mem_allocs;
+    ULONG           oom_reports;
     struct SignalSemaphore bo_lock;
 
     /* The framebuffer flip pages, published (under bo_lock) as the only
@@ -358,11 +432,27 @@ struct V3DData
     APTR            coreapi;        /* GalliumCoreAPI table from mesa3dgl */
     BOOL            powered;
 
-    /* Live pipe screens (a GL app makes more than one: the capability
-     * probe's, then the real one) - the BO sweep and state reset only
-     * run when the LAST one goes. */
+    /* A GL app makes more than one, so the BO sweep and state reset only
+     * run when the last goes. */
     LONG            screen_count;
     ULONG           recoveries;     /* hang-recovery fuse, per session */
+
+    /* The supply is pre-armed per bin job, so OUTOMEM means even that
+     * ran out and the binner has stopped until BPOA/BPOS are refilled. */
+    BOOL            oom_pending;    /* latch seen, refill not yet handed */
+    BOOL            oom_handed;     /* refill given for the current job */
+    ULONG           oom_events;
+    ULONG           spill_events;
+
+#if V3D_PROFILE
+    ULONG           prof_submits;   /* jobs since the last present */
+    /* Bin against render, kick to latch. Sub-millisecond values are
+     * noise: latch detection is delayed by up to one nap. */
+    ULONG           prof_bin_kick, prof_render_kick;
+    ULONG           prof_bin_acc, prof_render_acc, prof_jobs;
+    /* Snapshotted in interrupt context, printed by the next submit. */
+    ULONG           prof_rep_bin, prof_rep_render, prof_rep_jobs;
+#endif
 };
 
 struct IntHiddV3DBase
@@ -386,12 +476,16 @@ BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
                    ULONG qma, ULONG qms, ULONG qts,
                    ULONG rcl_start, ULONG rcl_end);
 void v3d_wait_idle(struct V3DData *sd);
+void v3d_hw_wait_seqno(struct V3DData *sd, ULONG seqno);
 void v3d_flush_caches(struct V3DData *sd);
 
-/* v3d_drm_shim.c */
+/* v3d_mem.c */
 ULONG v3d_gpu_mem_alloc(struct V3DData *sd, ULONG size, ULONG align,
                         ULONG *out_paddr);
-void v3d_gpu_mem_free(struct V3DData *sd, ULONG gpu_handle);
+void v3d_gpu_mem_free(struct V3DData *sd, ULONG gpu_handle, ULONG size);
+void v3d_mem_release(struct V3DData *sd);
+
+/* v3d_drm_shim.c */
 int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg);
 void v3d_release_all_bos(struct V3DData *sd);
 
