@@ -170,6 +170,21 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
         /* Prove the controller's own transfers land where we think they do. */
         FNAME_SDCBUS(ADMAVerify)(sdcUnit);
     }
+    else
+    {
+        /*
+         * A card left in stand-by answers CMD9 but ignores CMD17/CMD18
+         * outright, so the only sign of this is a bare command timeout much
+         * later, once the transfer clock and bus width have quietly been
+         * skipped along with everything else in here.
+         */
+        bug("[SDCard%02ld] %s: CMD7 (RCA %d) not acknowledged, card stays in stand-by [PS %08x BS %08x]\n",
+            sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcUnit->sdcu_CardRCA,
+            sdcUnit->sdcu_Bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, sdcUnit->sdcu_Bus),
+            sdcUnit->sdcu_Bus->sdcb_BusStatus);
+
+        return FALSE;
+    }
 
     D(bug("[SDCard%02ld] %s: Done.\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
@@ -385,7 +400,9 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
 
                             sdcUnit->sdcu_Read32                = FNAME_SDCIO(ReadSector32);
                             sdcUnit->sdcu_Write32               = FNAME_SDCIO(WriteSector32);
-                            sdcUnit->sdcu_Bus->sdcb_BusFlags    = AF_Bus_MediaPresent;
+                            /* Add to what the bus has already established about
+                               itself - DMA and interrupt delivery live here too. */
+                            sdcUnit->sdcu_Bus->sdcb_BusFlags    |= AF_Bus_MediaPresent;
 #if defined(SDHCI_READONLY)
                             sdcUnit->sdcu_Flags                 = AF_Card_WriteProtect;
 #endif
@@ -529,6 +546,13 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
     sdcClkCtrlCur = bus->sdcb_IOReadWord(SDHCI_CLOCK_CONTROL, bus);
 
     sdcClkDiv = FNAME_SDCBUS(GetClockDiv)(speed, bus);
+
+    /* What the card is really clocked at, which is the base rate divided down
+       and only as trustworthy as the base rate the controller reported. */
+    DINIT(bug("[SDBus%02u] clock: asked %u Hz, base %u Hz, div %u -> %u Hz [HCTRL 0x%02x]\n",
+        bus->sdcb_BusNum, speed, bus->sdcb_ClockMax, sdcClkDiv,
+        sdcClkDiv ? (bus->sdcb_ClockMax / (sdcClkDiv * 2)) : bus->sdcb_ClockMax,
+        bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, bus)));
 
     sdcClkCtrl = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
     sdcClkCtrl |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
@@ -698,7 +722,8 @@ static BOOL FNAME_SDCBUS(ADMASetup)(struct sdcard_Bus *bus, APTR data, ULONG len
     UBYTE                       *pos;
     ULONG                       remaining;
     UBYTE                       sdcHostCtrl;
-    UWORD                       n = 0;
+    UWORD                       n;
+    BOOL                        bounced;
 
     if (!(bus->sdcb_BusFlags & AF_Bus_DMA) || (data == NULL) || (len == 0))
         return FALSE;
@@ -710,20 +735,23 @@ static BOOL FNAME_SDCBUS(ADMASetup)(struct sdcard_Bus *bus, APTR data, ULONG len
      * ends mid line would drag its neighbours along. Anything unaligned goes
      * through the bounce buffer instead.
      */
-    if (((IPTR)data | (IPTR)len) & 63)
-    {
-        if (len > bus->sdcb_ADMABounceSize)
-            return FALSE;
-
-        bus->sdcb_BusFlags |= AF_Bus_DMABounced;
-    }
+    bounced = (((IPTR)data | (IPTR)len) & 63) ? TRUE : FALSE;
 
     bus->sdcb_ADMAData = data;
     bus->sdcb_ADMALen = len;
 
-    pos = (bus->sdcb_BusFlags & AF_Bus_DMABounced) ? bus->sdcb_ADMABounce : data;
+retry:
+    if (bounced && (len > bus->sdcb_ADMABounceSize))
+    {
+        DTRANS(bug("[SDBus%02u] %s: transfer larger than the bounce buffer (%u)\n",
+                   bus->sdcb_BusNum, __PRETTY_FUNCTION__, len));
+        return FALSE;
+    }
 
-    if ((bus->sdcb_BusFlags & AF_Bus_DMABounced) && isWrite)
+    n = 0;
+    pos = bounced ? bus->sdcb_ADMABounce : data;
+
+    if (bounced && isWrite)
         CopyMem(data, pos, len);
 
     /*
@@ -756,6 +784,18 @@ static BOOL FNAME_SDCBUS(ADMASetup)(struct sdcard_Bus *bus, APTR data, ULONG len
         {
             DTRANS(bug("[SDBus%02u] %s: buffer needs PIO (desc %d, phys 0x%p)\n",
                        bus->sdcb_BusNum, __PRETTY_FUNCTION__, n, (APTR)phys));
+
+            /*
+             * The bounce buffer is contiguous and within reach, so describing
+             * it can only fail on size. Start over through it rather than
+             * hand a whole chunk to PIO.
+             */
+            if (!bounced)
+            {
+                bounced = TRUE;
+                goto retry;
+            }
+
             return FALSE;
         }
 
@@ -777,9 +817,11 @@ static BOOL FNAME_SDCBUS(ADMASetup)(struct sdcard_Bus *bus, APTR data, ULONG len
      * controller reads what we just wrote. For a read this also drops any
      * dirty lines that would otherwise be written back over the result.
      */
+    if (bounced)
+        bus->sdcb_BusFlags |= AF_Bus_DMABounced;
+
     CacheClearE(bus->sdcb_ADMADesc, n * sizeof(struct sdcard_ADMADesc), CACRF_ClearD);
-    CacheClearE((bus->sdcb_BusFlags & AF_Bus_DMABounced) ? bus->sdcb_ADMABounce : data,
-                len, CACRF_ClearD);
+    CacheClearE(bounced ? bus->sdcb_ADMABounce : data, len, CACRF_ClearD);
 
     bus->sdcb_IOWriteLong(SDHCI_ADMA_ADDRESS,
         (ULONG)FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMADesc), bus);
@@ -965,6 +1007,15 @@ D(bug("SendCmd(%d,%d)\n", sdCommand, sdDataLen));
     KrnSpinUnLock(&bus->sdcb_Lock);
 #endif
 
+    /*
+     * From here until the command completes, any error the controller reports
+     * belongs to it. sdcb_BusStatus cannot carry that: it is overwritten by
+     * whichever interrupt happens to arrive next, so an error can be erased
+     * before the waiting task ever looks at it, or a stale one inherited by a
+     * command that never failed.
+     */
+    bus->sdcb_CmdError = 0;
+
     SetSignal(0, 1L << bus->sdcb_CommandSig);
 
     bus->sdcb_IOWriteLong(SDHCI_ARGUMENT, sdArg, bus);
@@ -1037,7 +1088,8 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
 {
     DTRANS(UWORD        sdCommand = (UWORD)GetTagData(SDCARD_TAG_CMD, 0, DataTags));
     ULONG               sdcStateMask, sdCommandMask,
-                        sdData, sdDataMode = MMC_DATA_READ, sdDataLen, sdcReg = 0;
+                        sdDataMode = MMC_DATA_READ, sdDataLen, sdcReg = 0;
+    IPTR                sdData;
     struct TagItem      *sdDataLenTag = NULL;
     ULONG               waitStart = 0;
     BOOL                waiting = FALSE;
@@ -1114,9 +1166,22 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
                 DTRANS(bug("[SDBus%02u] %s: Attempting to %s %dbytes\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, ((sdDataMode == MMC_DATA_READ) ? "read" : "write"), tranlen));
                 if (sdDataMode == MMC_DATA_READ)
                 {
-                    for (currword = 0; currword < tranwords; currword++)
+                    /*
+                     * A bus that can read its data port in bulk does so: the
+                     * indirect call costs about as much as the register access
+                     * itself, and this is one call per word otherwise.
+                     */
+                    if (bus->sdcb_IOReadLongs)
                     {
-                        dataPtr[currword] = bus->sdcb_IOReadLong(SDHCI_BUFFER, bus);
+                        bus->sdcb_IOReadLongs(SDHCI_BUFFER, (ULONG *)dataPtr,
+                                              tranwords, bus);
+                    }
+                    else
+                    {
+                        for (currword = 0; currword < tranwords; currword++)
+                        {
+                            dataPtr[currword] = bus->sdcb_IOReadLong(SDHCI_BUFFER, bus);
+                        }
                     }
                 }
                 else
@@ -1301,7 +1366,7 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
             }
         }
 
-        if ((bus->sdcb_BusStatus & SDHCI_INT_ERROR) == SDHCI_INT_ERROR)
+        if (bus->sdcb_CmdError)
             break;
 
         if ((sdcard_CurrentTime() - waitStart) > waitLimit)
@@ -1380,7 +1445,7 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
         }
     }
 
-    if (timedOut || (bus->sdcb_BusStatus & SDHCI_INT_ERROR))
+    if (timedOut || bus->sdcb_CmdError)
     {
         return -1;
     }
@@ -1552,6 +1617,10 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 
     if (error)
     {
+        /* Hand the failure to whoever is waiting on this command, before the
+           bits are cleared out of the shared status copy below. */
+        bus->sdcb_CmdError |= (bus->sdcb_BusStatus & SDHCI_INT_ERROR_MASK) | SDHCI_INT_ERROR;
+
         if (bus->sdcb_BusStatus & bus->sdcb_IntrMask)
         {
             bug("[SDBus%02u] %s: Clearing Unhandled Interrupts [%08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus & bus->sdcb_IntrMask);
@@ -1562,6 +1631,26 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 
         FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
         FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
+
+        /*
+         * The reset took the command with it, so there is no response left to
+         * read and no data left to move. Drop the listeners rather than let
+         * WaitCmd's recovery run FinishCmd()/FinishData() over a controller
+         * that has been wiped, and put back the transfer state FinishData()
+         * would have cleaned up had it run.
+         */
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+        bus->sdcb_RespListener = NULL;
+        bus->sdcb_DataListener = NULL;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
+        bus->sdcb_BusFlags &= ~(AF_Bus_DMAActive | AF_Bus_DMABounced);
+
+        if (bus->sdcb_LEDCtrl)
+            bus->sdcb_LEDCtrl(LED_OFF);
 
         /*
          * Signal the bus task so it wakes up from WaitCmd().

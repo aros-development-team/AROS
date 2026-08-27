@@ -40,9 +40,10 @@ struct sdcard_Bus
 
     ULONG                               sdcb_BusFlags;       /* Bus flags similar to unit flags */
     volatile ULONG                      sdcb_BusStatus;      /* copy of the status register */
-    UBYTE                               sdcb_TaskSig;        /* Signal used to wake task */
-    UBYTE                               sdcb_MediaSig;       /* Insert/Eject notification */
-    UBYTE                               sdcb_CommandSig;     /* Command completed signal */
+    volatile ULONG                      sdcb_CmdError;       /* error bits latched for the command in flight */
+    BYTE                                sdcb_TaskSig;        /* Signal used to wake task, -1 if none */
+    BYTE                                sdcb_MediaSig;       /* Insert/Eject notification, -1 if none */
+    BYTE                                sdcb_CommandSig;     /* Command completed signal, -1 if none */
     UBYTE                               sdcb_SectorShift;    /* (1 << sdcb_SectorShift) == sector size in bytes */
 
     struct TagItem                      *sdcb_RespListener;  /* Current TagList waiting for Response */
@@ -71,6 +72,9 @@ struct sdcard_Bus
     UBYTE                               (*sdcb_IOReadByte)(ULONG, struct sdcard_Bus *);
     UWORD                               (*sdcb_IOReadWord)(ULONG, struct sdcard_Bus *);
     ULONG                               (*sdcb_IOReadLong)(ULONG, struct sdcard_Bus *);
+    /* Optional: read count longs from one register. NULL = loop on
+     * sdcb_IOReadLong. */
+    void                                (*sdcb_IOReadLongs)(ULONG, ULONG *, ULONG, struct sdcard_Bus *);
 
     void                                (*sdcb_IOWriteByte)(ULONG, UBYTE, struct sdcard_Bus *);
     void                                (*sdcb_IOWriteWord)(ULONG, UWORD, struct sdcard_Bus *);

@@ -69,6 +69,9 @@ static void FNAME_BCMSDC(SDBusPostIRQInit)(struct sdcard_Bus *bus)
 static void FNAME_BCMSDC(SDSetBusWidth)(UBYTE width, struct sdcard_Bus *bus)
 {
     UBYTE sdcHostCtrl = bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, bus);
+
+    DINIT(bug("[SDCard--] %s: %u-bit bus width\n", __PRETTY_FUNCTION__, width));
+
     if (width == 4)
         sdcHostCtrl |= SDHCI_HCTRL_4BITBUS;
     else
@@ -246,6 +249,7 @@ bcminit_clock:
         __BCM2708Bus->sdcb_IOReadByte = FNAME_BCMSDCBUS(BCMMMIOReadByte);
         __BCM2708Bus->sdcb_IOReadWord = FNAME_BCMSDCBUS(BCMMMIOReadWord);
         __BCM2708Bus->sdcb_IOReadLong = FNAME_BCMSDCBUS(BCMMMIOReadLong);
+        __BCM2708Bus->sdcb_IOReadLongs = FNAME_BCMSDCBUS(BCMMMIOReadLongs);
 
         if (isEMMC2)
         {
@@ -326,6 +330,13 @@ bcminit_clock:
                 else
                     DINIT(bug("[SDCard--] %s: controller reports no base clock, keeping the mailbox rate\n", __PRETTY_FUNCTION__));
             }
+
+            DINIT(bug("[SDCard--] %s: %s @ 0x%p: base clock %uMHz, caps 0x%08x, host spec %u%s%s\n",
+                        __PRETTY_FUNCTION__, isEMMC2 ? "EMMC2" : "Arasan", (APTR)ctrlBase,
+                        __BCM2708Bus->sdcb_ClockMax / 1000000, __BCM2708Bus->sdcb_Capabilities,
+                        (__BCM2708Bus->sdcb_Version & 0xFF) + 1,
+                        (__BCM2708Bus->sdcb_Capabilities & SDHCI_CAN_DO_ADMA2) ? ", ADMA2" : "",
+                        (__BCM2708Bus->sdcb_Capabilities & SDHCI_CAN_DO_HISPD) ? ", HISPD" : ""));
 
             DINIT(bug("[SDCard--] %s: SDHC Base Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax / 1000000));
             DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMin));

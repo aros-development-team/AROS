@@ -48,14 +48,14 @@ ULONG FNAME_SDCBUS(GetClockDiv)(ULONG speed, struct sdcard_Bus *bus)
 
 UBYTE FNAME_BCMSDCBUS(BCMMMIOReadByte)(ULONG reg, struct sdcard_Bus *bus)
 {
-    ULONG val = AROS_LE2LONG(*(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3));
+    ULONG val = AROS_LE2LONG(*(volatile ULONG *)(((IPTR)bus->sdcb_IOBase + reg) & ~3));
 
     return (val >> ((reg & 3) << 3)) & 0xFF;
 }
 
 UWORD FNAME_BCMSDCBUS(BCMMMIOReadWord)(ULONG reg, struct sdcard_Bus *bus)
 {
-    ULONG val = AROS_LE2LONG(*(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3));
+    ULONG val = AROS_LE2LONG(*(volatile ULONG *)(((IPTR)bus->sdcb_IOBase + reg) & ~3));
 
     return (val >> (((reg >> 1) & 1) << 4)) & 0xFFFF;
 }
@@ -63,6 +63,29 @@ UWORD FNAME_BCMSDCBUS(BCMMMIOReadWord)(ULONG reg, struct sdcard_Bus *bus)
 ULONG FNAME_BCMSDCBUS(BCMMMIOReadLong)(ULONG reg, struct sdcard_Bus *bus)
 {
     return AROS_LE2LONG(*(volatile ULONG *)(bus->sdcb_IOBase + reg));
+}
+
+/* Bulk read from one register, for the PIO data port. Unrolled because the
+ * per-word call overhead is comparable to the MMIO access itself. */
+void FNAME_BCMSDCBUS(BCMMMIOReadLongs)(ULONG reg, ULONG *dest, ULONG count,
+                                       struct sdcard_Bus *bus)
+{
+    volatile ULONG *port = (volatile ULONG *)((IPTR)bus->sdcb_IOBase + reg);
+    ULONG i;
+
+    for (i = 0; (i + 8) <= count; i += 8)
+    {
+        dest[i    ] = AROS_LE2LONG(*port);
+        dest[i + 1] = AROS_LE2LONG(*port);
+        dest[i + 2] = AROS_LE2LONG(*port);
+        dest[i + 3] = AROS_LE2LONG(*port);
+        dest[i + 4] = AROS_LE2LONG(*port);
+        dest[i + 5] = AROS_LE2LONG(*port);
+        dest[i + 6] = AROS_LE2LONG(*port);
+        dest[i + 7] = AROS_LE2LONG(*port);
+    }
+    for (; i < count; i++)
+        dest[i] = AROS_LE2LONG(*port);
 }
 
 static void FNAME_BCMSDCBUS(BCM283xWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
@@ -77,7 +100,7 @@ static void FNAME_BCMSDCBUS(BCM283xWriteLong)(ULONG reg, ULONG val, struct sdcar
 
 void FNAME_BCMSDCBUS(BCMMMIOWriteByte)(ULONG reg, UBYTE val, struct sdcard_Bus *bus)
 {
-    ULONG currval = AROS_LE2LONG(*(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3));
+    ULONG currval = AROS_LE2LONG(*(volatile ULONG *)(((IPTR)bus->sdcb_IOBase + reg) & ~3));
     ULONG shift = (reg & 3) << 3;
     ULONG mask = 0xFF << shift;
     ULONG newval = (currval & ~mask) | (val << shift);
@@ -87,7 +110,7 @@ void FNAME_BCMSDCBUS(BCMMMIOWriteByte)(ULONG reg, UBYTE val, struct sdcard_Bus *
 
 void FNAME_BCMSDCBUS(BCMMMIOWriteWord)(ULONG reg, UWORD val, struct sdcard_Bus *bus)
 {
-    ULONG currval = AROS_LE2LONG(*(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3));
+    ULONG currval = AROS_LE2LONG(*(volatile ULONG *)(((IPTR)bus->sdcb_IOBase + reg) & ~3));
     ULONG shift = ((reg >> 1) & 1) << 4;
     ULONG mask = 0xFFFF << shift;
     ULONG newval = (currval & ~mask) | (val << shift);

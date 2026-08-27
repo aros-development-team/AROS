@@ -40,6 +40,7 @@ void FNAME_BCMSDCBUS(BCMLEDCtrl)(int lvl);
 UBYTE FNAME_BCMSDCBUS(BCMMMIOReadByte)(ULONG, struct sdcard_Bus *);
 UWORD FNAME_BCMSDCBUS(BCMMMIOReadWord)(ULONG, struct sdcard_Bus *);
 ULONG FNAME_BCMSDCBUS(BCMMMIOReadLong)(ULONG, struct sdcard_Bus *);
+void FNAME_BCMSDCBUS(BCMMMIOReadLongs)(ULONG, ULONG *, ULONG, struct sdcard_Bus *);
 
 void FNAME_BCMSDCBUS(BCMMMIOWriteByte)(ULONG, UBYTE, struct sdcard_Bus *);
 void FNAME_BCMSDCBUS(BCMMMIOWriteWord)(ULONG, UWORD, struct sdcard_Bus *);
