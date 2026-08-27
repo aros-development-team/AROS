@@ -23,6 +23,7 @@ BTCORE_FILES := \
     protocols/rfcomm/rfcomm \
     protocols/sdp/sdp \
     protocols/sdp/sdp_client \
+    protocols/sdp/sdp_server \
     protocols/att/att \
     protocols/gatt/gatt_client \
     protocols/smp/smp \

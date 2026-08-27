@@ -21,6 +21,8 @@
 #include <proto/timer.h>
 
 #include <string.h>
+#include <btcore/buffer.h>
+#include <btcore/sdp.h>
 
 #define NewList(list) NEWLIST(list)
 #define min(x,y) (((x) < (y)) ? (x) : (y))
@@ -1557,6 +1559,128 @@ AROS_LH1(BOOL, btEnumerateServices,
         return(FALSE);
     }
     return(bSubmitCtrl(BluetoothBase, bd->bd_Hardware, bd, BTPRI_ENUMSERVICES, 0, 0, NULL, 0, &err));
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Service records (our SDP server) *** */
+
+/* /// "btAddServiceRecordA()" */
+/*
+ * A record the SDP server advertises: ServiceRecordHandle, ServiceClassIDList,
+ * ProtocolDescriptorList (L2CAP [+PSM] [, RFCOMM channel]), BrowseGroupList
+ * (public browse root), BluetoothProfileDescriptorList and ServiceName. The
+ * attribute list content is encoded once; the record handle is unique per
+ * stack lifetime.
+ */
+AROS_LH1(APTR, btAddServiceRecordA,
+         AROS_LHA(struct TagItem *, tags, A0),
+         LIBBASETYPEPTR, BluetoothBase, 88, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtServiceRecord *bsr;
+    ULONG uuid16 = GetTagData(BSRA_UUID16, 0, tags);
+    ULONG proto = GetTagData(BSRA_Protocol, BSVP_RFCOMM, tags);
+    ULONG channel = GetTagData(BSRA_RFCOMMChannel, 0, tags);
+    ULONG psm = GetTagData(BSRA_PSM, 0, tags);
+    ULONG profile = GetTagData(BSRA_ProfileUUID16, uuid16, tags);
+    ULONG version = GetTagData(BSRA_ProfileVersion, 0x0102, tags);
+    STRPTR name = (STRPTR) GetTagData(BSRA_Name, 0, tags);
+    UBYTE buf[256];
+    struct bt_buf_writer w;
+    ULONG nlen = name ? strlen((char *) name) : 0;
+    ULONG protolen;
+
+    KPRINTF(5, ("btAddServiceRecordA(%04lx, %ld)\n", uuid16, proto));
+    if(!uuid16 || ((proto == BSVP_RFCOMM) && ((channel < 1) || (channel > 30))) ||
+       ((proto == BSVP_L2CAP) && !psm) || ((proto != BSVP_RFCOMM) && (proto != BSVP_L2CAP))) {
+        return(NULL);
+    }
+    if(nlen > 64) {
+        nlen = 64;
+    }
+    if(!(bsr = btAllocVec(sizeof(struct BtServiceRecord)))) {
+        return(NULL);
+    }
+    bsr->bsr_UUID16 = uuid16;
+    bsr->bsr_Protocol = proto;
+    bsr->bsr_Channel = channel;
+    bsr->bsr_PSM = psm;
+    bsr->bsr_Name = name ? btCopyStr(name) : NULL;
+
+    btLockWriteBase();
+    bsr->bsr_Handle = BluetoothBase->bt_NextRecordHandle++;
+    btUnlockBase();
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_sdp_encode_uint(&w, 0x0000, 2);
+    bt_sdp_encode_uint(&w, bsr->bsr_Handle, 4);
+    bt_sdp_encode_uint(&w, 0x0001, 2);
+    bt_sdp_encode_sequence_header(&w, 3);
+    bt_sdp_encode_uuid16(&w, uuid16);
+    bt_sdp_encode_uint(&w, 0x0004, 2);
+    /* L2CAP descriptor: 5 bytes with a PSM, 3 without; RFCOMM descriptor: 5 */
+    protolen = ((proto == BSVP_L2CAP) ? 7 : 5) + ((proto == BSVP_RFCOMM) ? 7 : 0);
+    bt_sdp_encode_sequence_header(&w, protolen);
+    if(proto == BSVP_L2CAP) {
+        bt_sdp_encode_sequence_header(&w, 5);
+        bt_sdp_encode_uuid16(&w, 0x0100);
+        bt_sdp_encode_uint(&w, psm, 2);
+    } else {
+        bt_sdp_encode_sequence_header(&w, 3);
+        bt_sdp_encode_uuid16(&w, 0x0100);
+        bt_sdp_encode_sequence_header(&w, 5);
+        bt_sdp_encode_uuid16(&w, 0x0003);
+        bt_sdp_encode_uint(&w, channel, 1);
+    }
+    bt_sdp_encode_uint(&w, 0x0005, 2);
+    bt_sdp_encode_sequence_header(&w, 3);
+    bt_sdp_encode_uuid16(&w, 0x1002);           /* PublicBrowseRoot */
+    bt_sdp_encode_uint(&w, 0x0009, 2);
+    bt_sdp_encode_sequence_header(&w, 8);
+    bt_sdp_encode_sequence_header(&w, 6);
+    bt_sdp_encode_uuid16(&w, profile);
+    bt_sdp_encode_uint(&w, version, 2);
+    if(nlen) {
+        bt_sdp_encode_uint(&w, 0x0100, 2);
+        bt_buf_writer_write_u8(&w, 0x25);        /* text, 8 bit length */
+        bt_buf_writer_write_u8(&w, nlen);
+        bt_buf_writer_write_bytes(&w, (const uint8_t *) name, nlen);
+    }
+    bsr->bsr_AttrsLen = bt_buf_writer_len(&w);
+    if(!(bsr->bsr_Attrs = btAllocVec(bsr->bsr_AttrsLen))) {
+        btFreeVec(bsr->bsr_Name);
+        btFreeVec(bsr);
+        return(NULL);
+    }
+    CopyMem(buf, bsr->bsr_Attrs, bsr->bsr_AttrsLen);
+    bsr->bsr_Node.ln_Name = bsr->bsr_Name;
+
+    btLockWriteBase();
+    AddTail(&BluetoothBase->bt_ServiceRecords, &bsr->bsr_Node);
+    btUnlockBase();
+    KPRINTF(5, ("service record %08lx: class %04lx, %ld bytes\n", bsr->bsr_Handle, uuid16, bsr->bsr_AttrsLen));
+    return(bsr);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btRemServiceRecord()" */
+AROS_LH1(void, btRemServiceRecord,
+         AROS_LHA(APTR, record, A0),
+         LIBBASETYPEPTR, BluetoothBase, 89, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtServiceRecord *bsr = record;
+    if(!bsr) {
+        return;
+    }
+    btLockWriteBase();
+    Remove(&bsr->bsr_Node);
+    btUnlockBase();
+    btFreeVec(bsr->bsr_Attrs);
+    btFreeVec(bsr->bsr_Name);
+    btFreeVec(bsr);
     AROS_LIBFUNC_EXIT
 }
 /* \\\ */

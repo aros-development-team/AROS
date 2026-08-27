@@ -48,11 +48,21 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
         if((nh->nh_DevBase = (struct BTSerDevBase *) MakeLibrary((APTR) DevFuncTable, NULL, (APTR) devInit,
            sizeof(struct BTSerDevBase), NULL)))
         {
+            struct Library *BluetoothBase;
             nh->nh_DevBase->nsd_ClsBase = nh;
             Forbid();
             AddDevice((struct Device *) nh->nh_DevBase);
             nh->nh_DevBase->nsd_Library.lib_OpenCnt++;
             Permit();
+            /* be a serial port for peers too: they connect to channel 1 and
+               show up as incoming SPP services, bound like the outgoing ones */
+            if((BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+            {
+                nh->nh_Record = btAddServiceRecord(BSRA_UUID16, 0x1101, BSRA_Protocol, BSVP_RFCOMM,
+                                                   BSRA_RFCOMMChannel, 1, BSRA_Name, (IPTR) "Serial Port",
+                                                   TAG_END);
+                CloseLibrary(BluetoothBase);
+            }
             ret = nh;
         } else {
             KPRINTF(20, ("failed to create btserial.device\n"));
@@ -75,6 +85,13 @@ static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh)
 
     if(nh->nh_DevBase->nsd_Library.lib_OpenCnt == 1)
     {
+        struct Library *BluetoothBase;
+        if(nh->nh_Record && (BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+        {
+            btRemServiceRecord(nh->nh_Record);
+            nh->nh_Record = NULL;
+            CloseLibrary(BluetoothBase);
+        }
         CloseLibrary((struct Library *) UtilityBase);
 
         nsu = (struct BTSerialUnit *) nh->nh_Units.lh_Head;
@@ -175,6 +192,15 @@ struct BTSerialUnit * GM_UNIQUENAME(bForceServiceBinding)(struct BTSerialBase *n
     {
         if(addr && !memcmp(nsu->nsu_UnitAddr, addr, 6) && (nsu->nsu_UnitChannel == channel))
         {
+            if(nsu->nsu_Task)
+            {
+                /* already bound (a second record for the same port):
+                   one unit, one task */
+                Permit();
+                KPRINTF(10, ("unit %ld already bound\n", nsu->nsu_UnitNo));
+                CloseLibrary(BluetoothBase);
+                return(NULL);
+            }
             unitno = nsu->nsu_UnitNo;
             unitfound = TRUE;
             break;

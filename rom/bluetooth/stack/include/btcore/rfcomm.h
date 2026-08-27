@@ -46,6 +46,10 @@ struct bt_rfcomm_dlc_event
 typedef bt_status_t (*bt_rfcomm_send_fn)(void *context, const uint8_t *frame, size_t len);
 typedef void (*bt_rfcomm_session_fn)(void *context, uint8_t event);
 typedef void (*bt_rfcomm_dlc_fn)(void *context, const struct bt_rfcomm_dlc_event *event);
+/* responder role: the peer wants a DLC to our server channel; return true
+ * (filling in the DLC callback) to accept it, false to answer DM */
+typedef bool (*bt_rfcomm_accept_fn)(void *context, uint8_t server_channel,
+                                    bt_rfcomm_dlc_fn *callback, void **user_data);
 
 struct bt_rfcomm_dlc
 {
@@ -65,9 +69,11 @@ struct bt_rfcomm_dlc
 struct bt_rfcomm_session
 {
     uint8_t state;                /* internal */
+    bool responder;               /* the peer started the multiplexer */
     uint16_t max_frame;           /* largest frame the transport can carry */
     bt_rfcomm_send_fn send;
     bt_rfcomm_session_fn event;
+    bt_rfcomm_accept_fn accept;   /* responder only */
     void *context;
     struct bt_rfcomm_dlc dlcs[BT_RFCOMM_MAX_DLCS];
 };
@@ -77,6 +83,12 @@ struct bt_rfcomm_session
 void bt_rfcomm_init(struct bt_rfcomm_session *s, uint16_t max_frame,
                     bt_rfcomm_send_fn send, bt_rfcomm_session_fn event, void *context);
 
+/* responder role (the peer opened the L2CAP channel): the session comes up
+ * on the peer's SABM, DLCs it opens to our server channels are offered to
+ * accept(); bt_rfcomm_start() is not used */
+void bt_rfcomm_init_responder(struct bt_rfcomm_session *s, uint16_t max_frame,
+                              bt_rfcomm_send_fn send, bt_rfcomm_session_fn event,
+                              bt_rfcomm_accept_fn accept, void *context);
 /* start the multiplexer (SABM on DLCI 0); BT_RFCOMM_SESSION_UP follows */
 bt_status_t bt_rfcomm_start(struct bt_rfcomm_session *s);
 

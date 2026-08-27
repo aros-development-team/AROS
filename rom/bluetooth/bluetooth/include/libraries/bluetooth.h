@@ -236,6 +236,9 @@
 #define BSVA_ServiceClassIDs (BSVA_Dummy + 0x22) /* UWORD * array of 16 bit service class ids, 0 terminated */
 #define BSVA_HIDDescriptor   (BSVA_Dummy + 0x23) /* UBYTE * HID report descriptor from SDP (classic HID), or NULL */
 #define BSVA_HIDDescriptorLen (BSVA_Dummy + 0x24) /* ULONG length of BSVA_HIDDescriptor */
+#define BSVA_Incoming        (BSVA_Dummy + 0x25) /* BOOL: the remote device connected to one of OUR service
+                                                    records (btAddServiceRecord); the service lives as long as
+                                                    that connection and is never (re)connected by the stack */
 
 /* BSVA_Protocol */
 #define BSVP_UNKNOWN 0
@@ -332,6 +335,19 @@
 #define BGCA_PrefsVersion    (BGCA_Dummy + 0x70)
 
 /* Tags for btStartDiscoveryA() */
+/* Tags for btAddServiceRecord(): a service record the stack advertises in
+   its SDP server, the transport a class serves it on. Peers connecting to
+   it show up as BSVA_Incoming services of their device, bound like any
+   other service. */
+#define BSRA_Dummy           (BT_TAGBASE + 0xd00)
+#define BSRA_UUID16          (BSRA_Dummy + 0x01) /* ULONG service class (e.g. 0x1101 Serial Port) - required */
+#define BSRA_Protocol        (BSRA_Dummy + 0x02) /* ULONG BSVP_RFCOMM or BSVP_L2CAP - required */
+#define BSRA_RFCOMMChannel   (BSRA_Dummy + 0x03) /* ULONG server channel 1-30 (BSVP_RFCOMM) */
+#define BSRA_PSM             (BSRA_Dummy + 0x04) /* ULONG (BSVP_L2CAP) */
+#define BSRA_Name            (BSRA_Dummy + 0x05) /* STRPTR ServiceName */
+#define BSRA_ProfileUUID16   (BSRA_Dummy + 0x06) /* ULONG profile in the ProfileDescriptorList (default: BSRA_UUID16) */
+#define BSRA_ProfileVersion  (BSRA_Dummy + 0x07) /* ULONG (default 0x0102) */
+
 #define BDSA_Dummy           (BT_TAGBASE + 0xb00)
 #define BDSA_Duration        (BDSA_Dummy + 0x01) /* ULONG seconds (default BGCA_DiscoveryTime) */
 #define BDSA_Classic         (BDSA_Dummy + 0x02) /* BOOL inquiry (default TRUE if supported) */
@@ -417,6 +433,7 @@
 #define BEHMB_PAIRINGREQUEST  0x15 /* Param1 = bd, Param2 = (IPTR) BPRT_xxx */
 #define BEHMB_PAIRINGDONE     0x16 /* Param1 = bd, Param2 = (IPTR) 0 = ok, else HCI/SMP status */
 #define BEHMB_SERVICESCHG     0x17 /* Param1 = bd */
+#define BEHMB_SERVICEGONE     0x18 /* Param1 = bsv (an incoming service whose connection closed; released and freed by the stack) */
 
 #define BEHMF_ADDHARDWARE     (1L<<BEHMB_ADDHARDWARE)
 #define BEHMF_REMHARDWARE     (1L<<BEHMB_REMHARDWARE)

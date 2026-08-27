@@ -385,7 +385,7 @@ static BOOL bNoteDevice(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype, 
         bConnAdvertising(hc, bd);
     } else if(!isle &&
               ((bd->bd_Flags & (BDFF_REGISTERED|BDFF_BONDED)) == (BDFF_REGISTERED|BDFF_BONDED)) &&
-              !bd->bd_Conns[0]) {
+              !bd->bd_AutoHold && !bd->bd_Conns[0]) {
         /* a bonded classic peer answered an inquiry: page it as soon as the
            discovery is over and the radio is free (bConnClassicTick()) */
         bd->bd_RetryShift = 0;
@@ -746,7 +746,7 @@ static BOOL bBgScanNeeded(struct BtHWCore *hc)
         if((bd->bd_Flags & (BDFF_LE|BDFF_REGISTERED|BDFF_BONDED)) != (BDFF_LE|BDFF_REGISTERED|BDFF_BONDED)) {
             continue;
         }
-        if(bd->bd_Conns[1] && (bd->bd_Conns[1]->cn_State == HCNS_CONNECTED)) {
+        if(bd->bd_AutoHold || (bd->bd_Conns[1] && (bd->bd_Conns[1]->cn_State == HCNS_CONNECTED))) {
             continue;
         }
         if(bd->bd_PoPoCfg.bpc_AutoConnect || (bd->bd_Conns[1] && bd->bd_Conns[1]->cn_WaitAdv)) {
@@ -842,7 +842,7 @@ static BOOL bAutoConnCandidate(struct BtDevice *bd)
     if((bd->bd_Flags & (BDFF_LE|BDFF_REGISTERED|BDFF_BONDED)) != (BDFF_LE|BDFF_REGISTERED|BDFF_BONDED)) {
         return(FALSE);
     }
-    if(bd->bd_Conns[1] && (bd->bd_Conns[1]->cn_State == HCNS_CONNECTED)) {
+    if(bd->bd_AutoHold || (bd->bd_Conns[1] && (bd->bd_Conns[1]->cn_State == HCNS_CONNECTED))) {
         return(FALSE);
     }
     return((bd->bd_PoPoCfg.bpc_AutoConnect || (bd->bd_Conns[1] && bd->bd_Conns[1]->cn_WaitAdv)) ? TRUE : FALSE);
@@ -2180,6 +2180,10 @@ static void bBringupStep(struct BtHWCore *hc)
             opcode = HC_OP_WRITE_SCAN_ENABLE;
             params[0] = ((bth->bth_Flags & BTHF_DISCOVERABLE) ? 1 : 0) | ((bth->bth_Flags & BTHF_CONNECTABLE) ? 2 : 0);
             len = 1;
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s/%ld: %sdiscoverable, %sconnectable.", bth->bth_DevName, bth->bth_Unit,
+                           (params[0] & 1) ? (STRPTR) "" : (STRPTR) "not ",
+                           (params[0] & 2) ? (STRPTR) "" : (STRPTR) "not ");
             break;
         default:
             if(hc->hc_Reinit) {
@@ -2304,6 +2308,10 @@ void bHandleChannel(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth, struct
                 bth->bth_Flags |= BTHF_CONNECTABLE;
             }
             params[0] = (bch->bch_Value ? 1 : 0) | (bch->bch_Index ? 2 : 0);
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s/%ld: %sdiscoverable, %sconnectable.", bth->bth_DevName, bth->bth_Unit,
+                           (params[0] & 1) ? (STRPTR) "" : (STRPTR) "not ",
+                           (params[0] & 2) ? (STRPTR) "" : (STRPTR) "not ");
             bSubmitCmd(hc, HC_OP_WRITE_SCAN_ENABLE, params, 1, bIgnoreCompletion, hc);
             bReplyChannel(BluetoothBase, bch, 0, 0);
             return;
@@ -2334,6 +2342,7 @@ void bHandleChannel(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth, struct
             btLockWriteDevice(bd);
             if(!(bd->bd_Flags & BDFF_REGISTERED)) {
                 bd->bd_Flags |= BDFF_REGISTERED;
+                bd->bd_AutoHold = FALSE;
                 btUnlockDevice(bd);
                 bth->bth_LEListsDirty = TRUE;
                 bStoreDevConfig(BluetoothBase, bd, TRUE);

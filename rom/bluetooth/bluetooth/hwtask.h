@@ -21,6 +21,7 @@
 #include <btcore/l2cap_channel.h>
 #include <btcore/sdp.h>
 #include <btcore/sdp_client.h>
+#include <btcore/sdp_server.h>
 #include <btcore/att.h>
 #include <btcore/gatt_client.h>
 #include <btcore/rfcomm.h>
@@ -246,11 +247,16 @@ struct BtHWConn
     struct bt_rfcomm_session cn_RFCOMM;
     BOOL                cn_RFCOMMOpen;    /* L2CAP channel to PSM 0x0003 exists */
     UWORD               cn_RFCOMMCid;
+    /* our SDP server on this link (the peer browsing us), and the record
+       handed to it by bSDPRecordAt() */
+    struct bt_sdp_server cn_SDPServer;
+    struct bt_sdp_record cn_SDPRecTmp;
     struct bt_smp_manager     cn_SMP;
     struct bt_smp_cmac_aes128 cn_SMPCmac;
     BOOL                cn_SMPActive;     /* manager initialised for a pairing in progress */
     BOOL                cn_SMPChanOpen;   /* fixed SMP channel registered on this link */
-    BOOL                cn_EncryptPending;/* LE Start Encryption with the stored key in flight */
+    BOOL                cn_EncryptPending;/* encryption with the stored key in flight (enumeration held back) */
+    ULONG               cn_EncryptSince;  /* hc_Tick when it was requested (bConnTick() gives up on silence) */
     UBYTE               cn_SMPRandWait;   /* LE Rand completions to collect before starting */
     /* LE Secure Connections is only implemented for Just Works / Numeric
        Comparison: when the peer's IO capability makes it Passkey Entry

@@ -293,7 +293,7 @@ void bDeviceClassScan(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
             bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
             if(bsv->bsv_SvcBinding) {
                 hassvcbinding = TRUE;
-            } else if(!bsv->bsv_BindingInProgress && (nsvc < 16)) {
+            } else if(!bsv->bsv_BindingInProgress && !bsv->bsv_Gone && (nsvc < 16)) {
                 bsv->bsv_BindingInProgress = TRUE;
                 svcs[nsvc++] = bsv;
             }
@@ -877,6 +877,23 @@ AROS_UFH0(void, bEventHandlerTask)
                                 case BEHMB_ADDHARDWARE:
                                     classscan = TRUE;
                                     break;
+
+                                case BEHMB_SERVICEGONE: {
+                                    /* the peer closed its connection to one of our
+                                       service records: release the class binding
+                                       (the hardware task cannot) and drop the service */
+                                    struct BtService *bsv = (struct BtService *) ben->ben_Param1;
+                                    struct BtDevice *bd = bsv ? bsv->bsv_Device : NULL;
+                                    if(bd) {
+                                        btReleaseSvcBinding(bsv);
+                                        btLockWriteDevice(bd);
+                                        bFreeService(BluetoothBase, bsv);
+                                        bd->bd_NumServices--;
+                                        btUnlockDevice(bd);
+                                        btSendEvent(BEHMB_SERVICESCHG, bd, NULL);
+                                    }
+                                    break;
+                                }
 
                                 case BEHMB_DEVICEUNREGISTERED: {
                                     /* the hardware task cannot release bindings itself */

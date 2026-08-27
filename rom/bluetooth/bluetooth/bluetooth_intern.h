@@ -163,6 +163,8 @@ struct BtBase
     struct List         bt_Hardware;      /* List of Hardware Interfaces in use */
     struct List         bt_Classes;       /* List of Classes loaded */
     struct List         bt_FirmwareLoaders; /* List of struct BtFirmwareLoader (plugins) */
+    struct List         bt_ServiceRecords; /* List of struct BtServiceRecord (our SDP records) */
+    ULONG               bt_NextRecordHandle; /* next SDP record handle to hand out */
     struct SignalSemaphore bt_FirmwareLock; /* Guards bt_FirmwareLoaders */
     struct List         bt_ErrorMsgs;     /* List of Error Msgs */
     struct List         bt_EventHooks;    /* List of EventHandlers */
@@ -189,6 +191,21 @@ struct BtBase
 #define BTF_KLOG       0x0001
 #define BTF_LEHOSTSCAN 0x0002   /* "btlehost" boot argument: never use the controller's lists */
 #define BTF_LESC       0x0004   /* "btlesc" boot argument: offer LE Secure Connections when pairing */
+
+/* one of our SDP records (btAddServiceRecord): what the SDP server hands
+   out, and the transport endpoint a class serves behind it */
+struct BtServiceRecord
+{
+    struct Node         bsr_Node;
+    ULONG               bsr_Handle;       /* SDP record handle */
+    UWORD               bsr_UUID16;       /* service class */
+    UWORD               bsr_Protocol;     /* BSVP_RFCOMM / BSVP_L2CAP */
+    UWORD               bsr_Channel;      /* RFCOMM server channel */
+    UWORD               bsr_PSM;
+    STRPTR              bsr_Name;
+    UBYTE              *bsr_Attrs;        /* encoded attribute list content */
+    ULONG               bsr_AttrsLen;
+};
 
 struct BtEventHook
 {
@@ -430,6 +447,7 @@ struct BtDevice
     /* BR/EDR reconnect: hc_Tick deadline for the next page attempt
        (bConnClassicTick(); classic peers never advertise, we must page) */
     ULONG               bd_NextAttempt;
+    BOOL                bd_AutoHold;      /* user disconnected it: no automatic reconnect until asked */
 };
 
 struct BtService
@@ -449,6 +467,9 @@ struct BtService
     UWORD               bsv_EndHandle;    /* GATT */
     UWORD               bsv_NumEPs;
     BOOL                bsv_IsPrimary;
+    BOOL                bsv_Stale;        /* kept across a re-enumeration, not yet seen again */
+    BOOL                bsv_Incoming;     /* a peer connected to one of our service records */
+    BOOL                bsv_Gone;         /* incoming connection closed: being released and freed */
     ULONG               bsv_RecordHandle; /* SDP record handle */
     STRPTR              bsv_Name;         /* Service name */
     STRPTR              bsv_IDString;     /* Service ID string */
@@ -482,6 +503,7 @@ struct BtEndpoint
     UWORD               bep_ReportType;   /* 1 input, 2 output, 3 feature */
     UWORD               bep_DescDone;     /* descriptors have been looked at */
     UWORD               bep_EnumMark;     /* matched by the current re-enumeration (hwconn.c) */
+    UWORD               bep_Incoming;     /* opened by the peer to our server channel: never initiated by us */
     UBYTE               bep_UUID[16];
     STRPTR              bep_Name;
     struct BtHWEndpoint *bep_Chan;        /* open channel state (hwconn.c private) */

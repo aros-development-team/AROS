@@ -17,7 +17,7 @@ TEST_SRC := tests/main.c tests/support/test.c tests/endian/test_endian.c \
             tests/addr/test_addr.c tests/device/test_device_registry.c \
             tests/discovery/test_discovery.c tests/l2cap/test_l2cap.c \
             tests/l2cap/test_signaling.c tests/l2cap/test_channel.c \
-            tests/sdp/test_sdp.c tests/sdp/test_sdp_client.c tests/att/test_att.c \
+            tests/sdp/test_sdp.c tests/sdp/test_sdp_client.c tests/sdp/test_sdp_server.c tests/att/test_att.c \
             tests/gatt/test_gatt_client.c tests/smp/test_smp.c \
             tests/security/test_bond_store.c tests/security/test_smp_crypto.c \
             tests/security/test_smp_pairing.c tests/security/test_smp_manager.c \

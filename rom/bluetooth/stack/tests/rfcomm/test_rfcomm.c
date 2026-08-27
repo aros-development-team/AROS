@@ -47,6 +47,20 @@ static void t_dlc(void *ctx, const struct bt_rfcomm_dlc_event *ev)
     }
 }
 
+/* responder role: serve channel 1 only */
+static int accepts;
+static uint8_t accept_channel;
+static bool t_accept(void *ctx, uint8_t channel, bt_rfcomm_dlc_fn *cb, void **ud)
+{
+    (void) ctx;
+    accepts++;
+    accept_channel = channel;
+    if(channel != 1) return false;
+    *cb = t_dlc;
+    *ud = NULL;
+    return true;
+}
+
 /* peer helpers: frames as the responder would send them */
 static uint8_t fcs_calc(const uint8_t *d, size_t n)
 {
@@ -80,7 +94,7 @@ static void peer_uih(struct bt_rfcomm_session *s, uint8_t dlci, int credits, con
     f[pos++] = (credits >= 0) ? 0xff : 0xef;
     f[pos++] = (uint8_t)((len << 1) | 1);
     if(credits >= 0) f[pos++] = (uint8_t)credits;
-    memcpy(&f[pos], data, len); pos += len;
+    if(len) { memcpy(&f[pos], data, len); pos += len; }
     f[pos] = fcs_calc(f, 2); pos++;
     bt_rfcomm_on_data(s, f, pos);
 }
@@ -169,6 +183,68 @@ int main(void)
 
     bt_rfcomm_stop(&ses);
     assert(ses_down == 1);
+
+    /* ---- responder role: the peer starts the multiplexer and opens our channel 1 */
+    {
+        struct bt_rfcomm_session rs;
+        uint8_t f[4];
+        int opened_before = dlc_open;
+        int closed_before = dlc_closed;
+        rxlen = 0;
+        bt_rfcomm_init_responder(&rs, 666, t_send, t_session, t_accept, NULL);
+        /* initiator's SABM on DLCI 0 (command: C/R 1) */
+        f[0] = 0x03; f[1] = 0x3f; f[2] = 0x01; f[3] = fcs_calc(f, 3);
+        bt_rfcomm_on_data(&rs, f, 4);
+        assert(ses_up == 2 && bt_rfcomm_session_up(&rs));
+        assert(lastlen == 4 && lastframe[0] == 0x03 && lastframe[1] == 0x73);   /* our UA: responder response C/R 1 */
+        /* PN command for DLCI 2 (channel 1), credit flow requested, mtu 100, 4 credits */
+        {
+            uint8_t pn[10] = { 0x83, (8 << 1) | 1, 2, 0xf0, 0, 0, 100, 0, 0, 4 };
+            uint8_t u[16];
+            size_t pos = 0;
+            u[pos++] = 0x03; u[pos++] = 0xef; u[pos++] = (uint8_t)((10 << 1) | 1);
+            memcpy(&u[pos], pn, 10); pos += 10;
+            u[pos] = fcs_calc(u, 2); pos++;
+            bt_rfcomm_on_data(&rs, u, pos);
+        }
+        assert(accepts == 1 && accept_channel == 1);
+        assert(lastframe[0] == 0x01 && lastframe[3] == 0x81);      /* PN response on DLCI 0, our UIH C/R 0 */
+        assert(lastframe[6] == 0xe0 && lastframe[9] == 100);        /* credits accepted, mtu 100 */
+        /* SABM on DLCI 2 */
+        f[0] = (2 << 2) | 0x03; f[1] = 0x3f; f[2] = 0x01; f[3] = fcs_calc(f, 3);
+        bt_rfcomm_on_data(&rs, f, 4);
+        assert(dlc_open == opened_before + 1);
+        assert(bt_rfcomm_mtu(&rs, 2) == 100);
+        assert(bt_rfcomm_can_send(&rs, 2));
+        /* our data frame carries the responder's C/R (address 0x09) */
+        {
+            uint8_t msg[3] = { 'x', 'y', 'z' };
+            assert(bt_rfcomm_send(&rs, 2, msg, 3) == BT_OK);
+            assert(lastframe[0] == ((2 << 2) | 0x01));
+        }
+        /* the initiator's data (its UIH: C/R 1) */
+        {
+            uint8_t u[8]; size_t pos = 0;
+            u[pos++] = (2 << 2) | 0x03; u[pos++] = 0xef; u[pos++] = (uint8_t)((3 << 1) | 1);
+            u[pos++] = 'a'; u[pos++] = 'b'; u[pos++] = 'c';
+            u[pos] = fcs_calc(u, 2); pos++;
+            bt_rfcomm_on_data(&rs, u, pos);
+            assert(rxlen == 3 && !memcmp(rxbuf, "abc", 3));
+        }
+        /* initiator disconnects the DLC, then the session */
+        f[0] = (2 << 2) | 0x03; f[1] = 0x53; f[2] = 0x01; f[3] = fcs_calc(f, 3);
+        bt_rfcomm_on_data(&rs, f, 4);
+        assert(dlc_closed == closed_before + 1);
+        assert(lastframe[0] == ((2 << 2) | 0x03) && lastframe[1] == 0x73);
+        /* a channel nobody serves: DM */
+        f[0] = (4 << 2) | 0x03; f[1] = 0x3f; f[2] = 0x01; f[3] = fcs_calc(f, 3);
+        bt_rfcomm_on_data(&rs, f, 4);
+        assert(accepts == 2 && accept_channel == 2);
+        assert(lastframe[0] == ((4 << 2) | 0x03) && lastframe[1] == 0x1f);
+        f[0] = 0x03; f[1] = 0x53; f[2] = 0x01; f[3] = fcs_calc(f, 3);
+        bt_rfcomm_on_data(&rs, f, 4);
+        assert(ses_down == 2);
+    }
 
     puts("rfcomm tests passed");
     return 0;

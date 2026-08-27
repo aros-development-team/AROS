@@ -87,6 +87,8 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR BluetoothBase)
         NewList(&BluetoothBase->bt_AlienConfigs);
 
         NewList(&BluetoothBase->bt_DeadlockDebug);
+        NewList(&BluetoothBase->bt_ServiceRecords);
+        BluetoothBase->bt_NextRecordHandle = 0x00010000;
 
         InitSemaphore(&BluetoothBase->bt_ReentrantLock);
 
@@ -1349,6 +1351,7 @@ static const ULONG BtServicePT[] = {
     PACK_ENTRY(BSVA_Dummy, BSVA_ServiceClassIDs, BtService, bsv_ServiceClassIDs, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSVA_Dummy, BSVA_HIDDescriptor, BtService, bsv_HidDescriptor, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSVA_Dummy, BSVA_HIDDescriptorLen, BtService, bsv_HidDescriptorLen, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSVA_Dummy, BSVA_Incoming, BtService, bsv_Incoming, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
 

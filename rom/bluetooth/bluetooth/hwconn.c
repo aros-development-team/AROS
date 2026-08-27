@@ -63,6 +63,10 @@ static void bEndpointEvent(struct bt_l2cap_channel_event_info *info, void *user_
 static void bRFCOMMWrite(struct BtHWEndpoint *hep, struct BtChannel *bch);
 static BOOL bRFCOMMEndpointOpen(struct BtHWEndpoint *hep);
 static void bRFCOMMDlcEvent(void *user_data, const struct bt_rfcomm_dlc_event *event);
+static void bSDPServerEvent(struct bt_l2cap_channel_event_info *info, void *user_data);
+static void bRFCOMMListenEvent(struct bt_l2cap_channel_event_info *info, void *user_data);
+static bool bRFCOMMAccept(void *context, uint8_t channel, bt_rfcomm_dlc_fn *cb, void **ud);
+static const struct bt_sdp_record *bSDPRecordAt(void *context, size_t index);
 static void bFlushWaitingRequests(struct BtHWConn *cn, LONG error);
 static void bDispatchWaiting(struct BtHWConn *cn);
 static void bStartPairing(struct BtHWConn *cn);
@@ -399,6 +403,16 @@ static void bRFCOMMDlcEvent(void *user_data, const struct bt_rfcomm_dlc_event *e
             bch->bch_Flags &= ~BCHF_QUEUED;
             bRFCOMMWrite(hep, bch);
         }
+        if(hep->hep_Endpoint->bep_Incoming) {
+            /* the peer opened one of our server channels: the service it
+               is now behind exists, let the classes bind it */
+            struct BtEndpoint *bep = hep->hep_Endpoint;
+            bep->bep_MaxPktSize = bt_rfcomm_mtu(&cn->cn_RFCOMM, hep->hep_LocalCID);
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s connected to %s (channel %ld).", cn->cn_Device->bd_Name,
+                           bep->bep_Service->bsv_Name, (ULONG) bep->bep_RFCOMMChannel);
+            btSendEvent(BEHMB_SERVICESCHG, cn->cn_Device, NULL);
+        }
         break;
     case BT_RFCOMM_DLC_DATA:
         bDeliverSDU(hep, event->data, event->data_len);
@@ -420,6 +434,19 @@ static void bRFCOMMDlcEvent(void *user_data, const struct bt_rfcomm_dlc_event *e
         hep->hep_LocalCID = 0;
         bReqQueueFlush(BluetoothBase, &hep->hep_ReadReqs, err);
         bReqQueueFlush(BluetoothBase, &hep->hep_WriteReqs, err);
+        if(hep->hep_Endpoint->bep_Incoming) {
+            /* the peer hung up: the service goes with the connection (the
+               event task releases the binding and frees it) */
+            struct BtService *bsv = hep->hep_Endpoint->bep_Service;
+            struct BtDevice *bd = cn->cn_Device;
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s disconnected from %s.", bd->bd_Name, bsv->bsv_Name);
+            btLockWriteDevice(bd);
+            bsv->bsv_Gone = TRUE;
+            btUnlockDevice(bd);
+            bFreeHWEndpoint(hep, err);
+            btSendEvent(BEHMB_SERVICEGONE, bsv, NULL);
+        }
         break;
     }
     }
@@ -502,6 +529,174 @@ static void bRFCOMMWrite(struct BtHWEndpoint *hep, struct BtChannel *bch)
 }
 /* \\\ */
 
+/* *** our services: SDP server + RFCOMM acceptor ***
+ * Every BR/EDR link listens on PSM 0x0001 (the peer browsing the records
+ * registered with btAddServiceRecord) and PSM 0x0003 (the peer opening a
+ * DLC to a channel one of those records names). A DLC that is accepted
+ * becomes an "incoming" service of the peer's device with one open RFCOMM
+ * endpoint, for the classes to bind like any other service. */
+
+/* /// "bSDPRecordAt()" */
+static const struct bt_sdp_record *bSDPRecordAt(void *context, size_t index)
+{
+    struct BtHWConn *cn = context;
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    struct BtServiceRecord *bsr;
+    const struct bt_sdp_record *rec = NULL;
+    size_t n = 0;
+
+    btLockReadBase();
+    for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head; bsr->bsr_Node.ln_Succ;
+        bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
+        if(n++ == index) {
+            cn->cn_SDPRecTmp.handle = bsr->bsr_Handle;
+            cn->cn_SDPRecTmp.attrs = bsr->bsr_Attrs;
+            cn->cn_SDPRecTmp.attrs_len = bsr->bsr_AttrsLen;
+            rec = &cn->cn_SDPRecTmp;
+            break;
+        }
+    }
+    btUnlockBase();
+    return(rec);
+}
+/* \\\ */
+
+/* /// "bSDPServerEvent()" */
+static void bSDPServerEvent(struct bt_l2cap_channel_event_info *info, void *user_data)
+{
+    struct BtHWConn *cn = user_data;
+
+    switch(info->event) {
+    case BT_L2CAP_CHANNEL_EVENT_OPENED:
+        bt_sdp_server_init(&cn->cn_SDPServer, bSDPRecordAt, cn);
+        KPRINTF(10, ("SDP server channel open (cid %04lx)\n", (ULONG) info->local_cid));
+        break;
+    case BT_L2CAP_CHANNEL_EVENT_DATA: {
+        UBYTE rsp[BT_L2CAP_DEFAULT_MTU];
+        size_t n = bt_sdp_server_handle(&cn->cn_SDPServer, info->data, info->data_len, rsp, sizeof(rsp));
+        if(n) {
+            bt_l2cap_channel_manager_send(&cn->cn_L2CAP, info->local_cid, rsp, n, bNowUS(cn->cn_Core));
+        }
+        break;
+    }
+    case BT_L2CAP_CHANNEL_EVENT_CLOSED:
+        break;
+    }
+}
+/* \\\ */
+
+/* /// "bRFCOMMAccept()" */
+/* the peer wants a DLC to one of our server channels */
+static bool bRFCOMMAccept(void *context, uint8_t channel, bt_rfcomm_dlc_fn *cb, void **ud)
+{
+    struct BtHWConn *cn = context;
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    struct BtDevice *bd = cn->cn_Device;
+    struct BtServiceRecord *bsr, *found = NULL;
+    struct BtService *bsv;
+    struct BtEndpoint *bep = NULL;
+    struct BtHWEndpoint *hep;
+
+    btLockReadBase();
+    for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head; bsr->bsr_Node.ln_Succ;
+        bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
+        if((bsr->bsr_Protocol == BSVP_RFCOMM) && (bsr->bsr_Channel == channel)) {
+            found = bsr;
+            break;
+        }
+    }
+    btUnlockBase();
+    if(!found) {
+        KPRINTF(10, ("RFCOMM channel %ld requested by '%s': nothing registered\n", (LONG) channel, bd->bd_Name));
+        return(false);
+    }
+    btLockWriteDevice(bd);
+    for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
+        if(bsv->bsv_Incoming && !bsv->bsv_Gone && (bsv->bsv_Protocol == BSVP_RFCOMM) &&
+           (bsv->bsv_RFCOMMChannel == channel)) {
+            bep = (struct BtEndpoint *) bsv->bsv_Endpoints.lh_Head;
+            break;
+        }
+    }
+    if(!bsv->bsv_Node.ln_Succ) {
+        UBYTE ustr[40];
+        if(!(bsv = bAllocService(BluetoothBase, bd))) {
+            btUnlockDevice(bd);
+            return(false);
+        }
+        bsv->bsv_Protocol = BSVP_RFCOMM;
+        bsv->bsv_RFCOMMChannel = channel;
+        bsv->bsv_UUID16 = found->bsr_UUID16;
+        bUUID16To128(bsv->bsv_UUID16, bsv->bsv_UUID);
+        bsv->bsv_Incoming = TRUE;
+        bsv->bsv_Name = btCopyStrFmt("%s (incoming)", found->bsr_Name ? found->bsr_Name : (STRPTR) "Service");
+        bsv->bsv_Node.ln_Name = bsv->bsv_Name;
+        bUUIDToStr(bsv->bsv_UUID, (STRPTR) ustr);
+        bsv->bsv_IDString = btCopyStrFmt("%s-in%02lx", ustr, (ULONG) channel);
+        if((bep = bAllocEndpoint(BluetoothBase, bsv))) {
+            bep->bep_Type = BEPT_RFCOMM;
+            bep->bep_CanRead = TRUE;
+            bep->bep_CanWrite = TRUE;
+            bep->bep_RFCOMMChannel = channel;
+            bep->bep_MaxPktSize = BT_RFCOMM_DEFAULT_MTU;
+            bep->bep_Incoming = TRUE;
+            bep->bep_Name = btCopyStrFmt("RFCOMM channel %ld (incoming)", (ULONG) channel);
+            bep->bep_Node.ln_Name = bep->bep_Name;
+        }
+    }
+    btUnlockDevice(bd);
+    if(!bep) {
+        return(false);
+    }
+    hep = bFindHWEndpoint(cn, bep);
+    if(!hep) {
+        hep = bAllocHWEndpoint(cn, bep);
+    }
+    if(!hep || (hep->hep_State != HEPS_CLOSED)) {
+        return(false);   /* one DLC per channel */
+    }
+    hep->hep_State = HEPS_OPENING;
+    hep->hep_LocalCID = channel << 1;
+    *cb = bRFCOMMDlcEvent;
+    *ud = hep;
+    return(true);
+}
+/* \\\ */
+
+/* /// "bRFCOMMListenEvent()" */
+/* the peer opened the RFCOMM L2CAP channel (PSM 0x0003) to us */
+static void bRFCOMMListenEvent(struct bt_l2cap_channel_event_info *info, void *user_data)
+{
+    struct BtHWConn *cn = user_data;
+
+    switch(info->event) {
+    case BT_L2CAP_CHANNEL_EVENT_OPENED:
+        if(cn->cn_RFCOMMOpen) {
+            /* one multiplexer per link; ours is already up */
+            bt_l2cap_channel_manager_close(&cn->cn_L2CAP, info->local_cid, bNowUS(cn->cn_Core));
+            break;
+        }
+        cn->cn_RFCOMMCid = info->local_cid;
+        cn->cn_RFCOMMOpen = TRUE;
+        bt_rfcomm_init_responder(&cn->cn_RFCOMM, BT_L2CAP_DEFAULT_MTU - 6, bRFCOMMSend, bRFCOMMSessionEvent,
+                                 bRFCOMMAccept, cn);
+        break;
+    case BT_L2CAP_CHANNEL_EVENT_DATA:
+        if(info->local_cid == cn->cn_RFCOMMCid) {
+            bt_rfcomm_on_data(&cn->cn_RFCOMM, info->data, info->data_len);
+        }
+        break;
+    case BT_L2CAP_CHANNEL_EVENT_CLOSED:
+        if(info->local_cid == cn->cn_RFCOMMCid) {
+            cn->cn_RFCOMMOpen = FALSE;
+            cn->cn_RFCOMMCid = 0;
+            bt_rfcomm_stop(&cn->cn_RFCOMM);   /* emits DOWN -> endpoints flushed */
+        }
+        break;
+    }
+}
+/* \\\ */
+
 /* /// "bEndpointOpen()" */
 static BOOL bEndpointOpen(struct BtHWEndpoint *hep)
 {
@@ -528,6 +723,9 @@ static BOOL bEndpointOpen(struct BtHWEndpoint *hep)
         }
         return(TRUE);
     case BEPT_RFCOMM:
+        if(bep->bep_Incoming) {
+            return(FALSE);   /* the peer opens these, never us */
+        }
         return(bRFCOMMEndpointOpen(hep));
     default:
         return(FALSE);
@@ -720,6 +918,14 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
     bt_gatt_client_init(&cn->cn_GATT, &cn->cn_L2CAP);
     bt_gatt_client_set_notify_handler(&cn->cn_GATT, bGATTNotify, cn);
 
+    if(cn->cn_LinkType == BDLT_ACL) {
+        /* the peer may browse our SDP records and connect to the RFCOMM
+           channels behind them (registered first: the listener table is
+           small and the peer's own PSMs below can fill it) */
+        bt_sdp_server_init(&cn->cn_SDPServer, bSDPRecordAt, cn);
+        bt_l2cap_channel_manager_listen(&cn->cn_L2CAP, BT_SDP_PSM, BT_L2CAP_DEFAULT_MTU, bSDPServerEvent, cn);
+        bt_l2cap_channel_manager_listen(&cn->cn_L2CAP, 0x0003, BT_L2CAP_DEFAULT_MTU, bRFCOMMListenEvent, cn);
+    }
     /* listen on the known L2CAP PSMs so the device can open channels to us */
     btLockReadDevice(bd);
     for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
@@ -745,6 +951,8 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
     bd->bd_LinkType = cn->cn_LinkType;
     bd->bd_DeadCount = 0;
     bd->bd_RetryShift = 0;
+    bd->bd_AutoHold = FALSE;
+    cn->cn_AutoRetry = FALSE;
     if(bd->bd_Flags & BDFF_DEAD) {
         bd->bd_Flags &= ~BDFF_DEAD;
     }
@@ -767,15 +975,16 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
         if((role == BDR_CENTRAL) && (bd->bd_Keys.bkc_Flags & BKCF_LTK) && (cn->cn_PairState != PAIR_CONNECTING)) {
             bLEReencrypt(cn);
         }
-    } else if((role == BDR_CENTRAL) && (bd->bd_Keys.bkc_Flags & BKCF_LINKKEY) &&
-              (cn->cn_PairState == PAIR_IDLE)) {
-        /* the BR/EDR twin of the above: a bonded phone/PC expects the
-           reconnected link authenticated and encrypted before it serves
-           anything (Android closes the SDP channel and then the link).
-           Authenticate with the stored link key; the held-back enumeration
-           runs from the Encryption Change event. */
+    } else if((bd->bd_Keys.bkc_Flags & BKCF_LINKKEY) && (cn->cn_PairState == PAIR_IDLE)) {
+        /* the BR/EDR twin of the above, whichever side paged: a bonded link
+           is authenticated with the stored key and encrypted before anything
+           is served on it. The peer may be doing the same at this moment -
+           an LMP collision is retried (bConnTick()), and if it simply gets
+           there first the Encryption Change event releases the held-back
+           enumeration all the same. */
         UBYTE p[2];
         cn->cn_EncryptPending = TRUE;
+        cn->cn_EncryptSince = hc->hc_Tick;
         p[0] = handle & 0xff;
         p[1] = handle >> 8;
         bSubmitCmd(hc, HC_OP_AUTH_REQUESTED, p, 2, bIgnoreCompletion, hc);
@@ -813,7 +1022,7 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
     struct BtBase *BluetoothBase = hc->hc_Base;
     struct BtDevice *bd = cn->cn_Device;
     struct MinNode *mn;
-    BOOL wasup = (cn->cn_State == HCNS_CONNECTED);
+    BOOL wasup = (cn->cn_State == HCNS_CONNECTED) || (cn->cn_State == HCNS_DISCONNECTING);
 
     if(hc->hc_Connecting == cn) {
         hc->hc_Connecting = NULL;
@@ -823,6 +1032,18 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
 
     while((mn = cn->cn_Endpoints.mlh_Head)->mln_Succ) {
         bFreeHWEndpoint((struct BtHWEndpoint *) mn, error); /* removes the node */
+    }
+    if(cn->cn_LinkType == BDLT_ACL) {
+        /* services the peer had opened to our records go with the link */
+        struct BtService *bsv;
+        btLockWriteDevice(bd);
+        for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
+            if(bsv->bsv_Incoming && !bsv->bsv_Gone) {
+                bsv->bsv_Gone = TRUE;
+                btSendEvent(BEHMB_SERVICEGONE, bsv, NULL);
+            }
+        }
+        btUnlockDevice(bd);
     }
     bFlushWaitingRequests(cn, error);
     if(cn->cn_CtrlReq) {
@@ -884,15 +1105,16 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
        ((bd->bd_Flags & (BDFF_REGISTERED|BDFF_BONDED)) == (BDFF_REGISTERED|BDFF_BONDED))) {
         bBgScanBoost(hc);
     }
-    if((cn->cn_LinkType == BDLT_ACL) && (reason != 0x16) &&
-       ((bd->bd_Flags & (BDFF_REGISTERED|BDFF_BONDED)) == (BDFF_REGISTERED|BDFF_BONDED))) {
-        if(wasup) {
-            /* it was here a moment ago (and 0x16 - terminated by us - means
-               the user asked for the disconnect): retry soon, then back off */
-            bd->bd_RetryShift = 0;
-            bd->bd_NextAttempt = hc->hc_Tick + 10000;
-        }
-        /* a failed page keeps whatever bConnClassicTick() scheduled */
+    if(wasup && (reason == 0x16)) {
+        /* terminated by the local host = the user asked for it: neither
+           the classic page loop nor the LE accept list brings it back
+           until the user connects it again (or registers/reboots) */
+        bd->bd_AutoHold = TRUE;
+    } else if((cn->cn_LinkType == BDLT_ACL) && wasup &&
+              ((bd->bd_Flags & (BDFF_REGISTERED|BDFF_BONDED)) == (BDFF_REGISTERED|BDFF_BONDED))) {
+        /* it was here a moment ago: retry soon, then back off */
+        bd->bd_RetryShift = 0;
+        bd->bd_NextAttempt = hc->hc_Tick + 10000;
     }
     Remove((struct Node *) cn);
     btFreeVec(cn);
@@ -1024,6 +1246,9 @@ static struct BtHWConn * bEnsureConnection(struct BtHWCore *hc, struct BtDevice 
     UBYTE linktype;
 
     *pending = FALSE;
+    if(mode == CONN_NOW) {
+        bd->bd_AutoHold = FALSE;   /* asked for explicitly: automatic reconnects resume */
+    }
 
     /* choose the bearer: an explicit request wins, otherwise prefer BR/EDR */
     if((wantlink == BDLT_ACL) && (bd->bd_Flags & BDFF_CLASSIC) && (bth->bth_Flags & BTHF_CLASSIC)) {
@@ -1060,7 +1285,9 @@ static struct BtHWConn * bEnsureConnection(struct BtHWCore *hc, struct BtDevice 
         *error = BTIOERR_NOTCONNECTED;
         return(NULL);
     }
-    if(mode == CONN_NONE) {
+    if((mode == CONN_NONE) || ((mode == CONN_AUTO) && bd->bd_AutoHold)) {
+        /* (a class re-opening its channels does not override a disconnect
+           the user asked for; it retries with its own backoff) */
         *error = BTIOERR_NOTCONNECTED;
         return(NULL);
     }
@@ -1377,6 +1604,28 @@ static void bParseSDPRecord(struct BtHWConn *cn, ULONG handle, const UBYTE *attr
     }
 
     btLockWriteDevice(bd);
+    /* a bound service survived bClearServices(): same class and transport
+       endpoint means the same record - refresh it rather than add a twin
+       (a twin got btpan bound twice to one unit) */
+    for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
+        if(!bsv->bsv_Stale || (bsv->bsv_Protocol == BSVP_ATT)) {
+            continue;
+        }
+        if(numclassids ? (bsv->bsv_UUID16 != classids[0]) : memcmp(bsv->bsv_UUID, uuid128, 16)) {
+            continue;
+        }
+        if(numpsms ? ((bsv->bsv_Protocol != BSVP_L2CAP) || (bsv->bsv_PSM != psms[0])) :
+           rfcomm ? ((bsv->bsv_Protocol != BSVP_RFCOMM) || (bsv->bsv_RFCOMMChannel != rfcomm)) :
+                    (bsv->bsv_Protocol == BSVP_L2CAP) || (bsv->bsv_Protocol == BSVP_RFCOMM)) {
+            continue;
+        }
+        bsv->bsv_Stale = FALSE;
+        bsv->bsv_RecordHandle = handle;
+        bsv->bsv_Version = version;
+        btUnlockDevice(bd);
+        btFreeVec(name);
+        return;
+    }
     bsv = bAllocService(BluetoothBase, bd);
     if(bsv) {
         bsv->bsv_RecordHandle = handle;
@@ -1501,6 +1750,8 @@ static void bClearServices(struct BtHWConn *cn)
             }
             bFreeService(BluetoothBase, bsv);
             bd->bd_NumServices--;
+        } else if(svatt == isle) {
+            bsv->bsv_Stale = TRUE;   /* refreshed in place when the record shows up again */
         }
         bsv = nsv;
     }
@@ -2490,6 +2741,7 @@ static void bLEReencrypt(struct BtHWConn *cn)
     UWORD ediv = bd->bd_Keys.bkc_EDIV[0] | (bd->bd_Keys.bkc_EDIV[1] << 8);
     if(bLEStartEncryption(cn, bd->bd_Keys.bkc_LTK, bd->bd_Keys.bkc_Rand, ediv)) {
         cn->cn_EncryptPending = TRUE;
+        cn->cn_EncryptSince = cn->cn_Core->hc_Tick;
         btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "%s: encrypting the link with the stored LE key.", bd->bd_Name);
     }
 }
@@ -2704,9 +2956,19 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
             if(cn) {
                 cn->cn_Role = BDR_PERIPHERAL;
                 reply[6] = 0x01; /* remain peripheral */
+                btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "%s is connecting to us.", bd->bd_Name);
                 bSubmitCmd(hc, HC_OP_ACCEPT_CONN_REQ, reply, 7, bIgnoreCompletion, hc);
                 return(TRUE);
             }
+        }
+        {
+            UBYTE astr[24];
+            bAddrToStr(params, (STRPTR) astr);
+            btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Connection from %s rejected (%s).", bd ? bd->bd_Name : (STRPTR) astr,
+                           (bd && bd->bd_Conns[0]) ? (STRPTR) "already connected" :
+                           bd ? (STRPTR) "not registered and not discoverable" : (STRPTR) "unknown device, not discoverable");
         }
         reply[6] = 0x0f; /* unacceptable BD_ADDR */
         bSubmitCmd(hc, HC_OP_REJECT_CONN_REQ, reply, 7, bIgnoreCompletion, hc);
@@ -2848,6 +3110,14 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                 btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "%s: the stored link key was rejected (%s) - remove the device and pair it again.",
                                cn->cn_Device->bd_Name, btNumToStr(BNTS_HCISTATUS, params[0], "unknown"));
+                if(!cn->cn_Enumerated && (cn->cn_EnumState == ENUM_IDLE) && (cn->cn_State == HCNS_CONNECTED)) {
+                    cn->cn_EnumState = ENUM_SDP_CONNECT;
+                    bConnRunEnum(cn);
+                }
+            } else if(cn->cn_Encrypted) {
+                /* the peer authenticated and encrypted the link before our
+                   own request went through: nothing left to switch on */
+                cn->cn_EncryptPending = FALSE;
                 if(!cn->cn_Enumerated && (cn->cn_EnumState == ENUM_IDLE) && (cn->cn_State == HCNS_CONNECTED)) {
                     cn->cn_EnumState = ENUM_SDP_CONNECT;
                     bConnRunEnum(cn);
@@ -3449,7 +3719,8 @@ BOOL bConnHandleRequest(struct BtHWCore *hc, struct BtChannel *bch)
             return(TRUE);
         }
         cn = bEnsureConnection(hc, bd, (bep->bep_Type == BEPT_GATT_CHAR) ? BDLT_LE : BDLT_ACL,
-                               (bch->bch_Flags & BCHF_AUTOCONNECT) ? CONN_AUTO : CONN_NONE, &pending, &err);
+                               ((bch->bch_Flags & BCHF_AUTOCONNECT) && !bep->bep_Incoming) ? CONN_AUTO : CONN_NONE,
+                               &pending, &err);
         if(!cn) {
             bReplyChannel(BluetoothBase, bch, err, 0);
             return(TRUE);
@@ -3655,7 +3926,7 @@ static void bConnClassicTick(struct BtHWCore *hc)
         LONG err;
         if(((bd->bd_Flags & (BDFF_CLASSIC|BDFF_REGISTERED|BDFF_BONDED)) !=
             (BDFF_CLASSIC|BDFF_REGISTERED|BDFF_BONDED)) ||
-           !bd->bd_PoPoCfg.bpc_AutoConnect || bd->bd_Conns[0]) {
+           !bd->bd_PoPoCfg.bpc_AutoConnect || bd->bd_AutoHold || bd->bd_Conns[0]) {
             continue;
         }
         if((LONG) (hc->hc_Tick - bd->bd_NextAttempt) < 0) {
@@ -3738,6 +4009,19 @@ void bConnTick(struct BtHWCore *hc)
         if(cn->cn_PairRetry) {
             cn->cn_PairRetry = FALSE;
             bStartPairing(cn);
+        }
+        if(cn->cn_EncryptPending && ((LONG) (hc->hc_Tick - cn->cn_EncryptSince) > 10000)) {
+            /* no Authentication Complete / Encryption Change came back:
+               do not hold the enumeration hostage to it */
+            struct BtBase *BluetoothBase = hc->hc_Base;
+            cn->cn_EncryptPending = FALSE;
+            btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s: no answer to the encryption request - continuing %s.",
+                           cn->cn_Device->bd_Name, cn->cn_Encrypted ? (STRPTR) "encrypted" : (STRPTR) "unencrypted");
+            if(!cn->cn_Enumerated && (cn->cn_EnumState == ENUM_IDLE)) {
+                cn->cn_EnumState = (cn->cn_LinkType == BDLT_LE) ? ENUM_GATT_CONNECT : ENUM_SDP_CONNECT;
+                bConnRunEnum(cn);
+            }
         }
         if(cn->cn_AuthRetries && cn->cn_NextAttempt &&
            ((cn->cn_PairState == PAIR_AUTH) || cn->cn_EncryptPending) &&

@@ -17,6 +17,7 @@
 #include "l2cap/test_channel.h"
 #include "sdp/test_sdp.h"
 #include "sdp/test_sdp_client.h"
+#include "sdp/test_sdp_server.h"
 #include "att/test_att.h"
 #include "gatt/test_gatt_client.h"
 #include "smp/test_smp.h"
@@ -51,6 +52,7 @@ int main(void)
     run_l2cap_signaling_tests();
     run_l2cap_channel_tests();
     run_sdp_tests();
+    run_sdp_server_tests();
     run_sdp_client_tests();
     run_att_tests();
     run_gatt_client_tests();

@@ -52,6 +52,7 @@ struct BTSerialBase
 
     struct BTSerDevBase *nh_DevBase;      /* base of device created */
     struct List         nh_Units;         /* List of units available */
+    APTR                nh_Record;        /* our Serial Port SDP record (peers connect to it) */
 };
 
 struct BTSerDevBase

@@ -1,10 +1,13 @@
 /*
- * RFCOMM multiplexer, client (initiator) role. See btcore/rfcomm.h.
+ * RFCOMM multiplexer, initiator and responder roles. See btcore/rfcomm.h.
  *
  * Frames are TS 07.10 basic option without the flag octets (L2CAP keeps the
  * frame boundaries): address, control, length (EA coded), information, FCS.
- * As the initiator every command we send carries C/R = 1 and every DLC we
- * open has direction bit 0 (DLCI = server channel << 1).
+ * The initiator's commands carry C/R = 1 and its responses C/R = 0; the
+ * responder's the other way round. A DLC to a server channel on the
+ * responder has direction bit 0 (DLCI = server channel << 1) whoever looks
+ * at it, so the initiator opening our channel and us opening the peer's
+ * use the same DLCI formula.
  */
 
 #include <btcore/rfcomm.h>
@@ -33,7 +36,7 @@
 /* session states */
 enum { SES_CLOSED, SES_WAIT_UA, SES_UP, SES_CLOSING };
 /* DLC states */
-enum { DLC_CLOSED, DLC_WAIT_PN, DLC_WAIT_UA, DLC_OPEN, DLC_CLOSING };
+enum { DLC_CLOSED, DLC_WAIT_PN, DLC_WAIT_UA, DLC_OPEN, DLC_CLOSING, DLC_WAIT_SABM };
 
 #define MSC_SIGNALS 0x8d   /* EA | RTC | RTR | DV */
 
@@ -77,7 +80,8 @@ static struct bt_rfcomm_dlc *dlc_by_dlci(struct bt_rfcomm_session *s, uint8_t dl
 static bt_status_t send_ctrl(struct bt_rfcomm_session *s, uint8_t dlci, uint8_t control, bool cmd)
 {
     uint8_t f[4];
-    f[0] = (uint8_t) ((dlci << 2) | (cmd ? 0x03 : 0x01));
+    bool cr = s->responder ? !cmd : cmd;
+    f[0] = (uint8_t) ((dlci << 2) | (cr ? 0x03 : 0x01));
     f[1] = control;
     f[2] = 0x01;
     f[3] = rf_fcs(f, 3);
@@ -93,7 +97,7 @@ static bt_status_t send_uih(struct bt_rfcomm_session *s, uint8_t dlci,
 
     if(len > BT_RFCOMM_MAX_MTU)
         return BT_ERR_INVALID_ARGUMENT;
-    f[pos++] = (uint8_t) ((dlci << 2) | 0x03);
+    f[pos++] = (uint8_t) ((dlci << 2) | (s->responder ? 0x01 : 0x03));   /* UIH is a command */
     f[pos++] = (credits >= 0) ? RF_UIH_PF : RF_UIH;
     if(len > 127)
     {
@@ -201,6 +205,44 @@ void bt_rfcomm_init(struct bt_rfcomm_session *s, uint16_t max_frame,
     s->context = context;
 }
 
+void bt_rfcomm_init_responder(struct bt_rfcomm_session *s, uint16_t max_frame,
+                              bt_rfcomm_send_fn send, bt_rfcomm_session_fn event,
+                              bt_rfcomm_accept_fn accept, void *context)
+{
+    bt_rfcomm_init(s, max_frame, send, event, context);
+    s->responder = true;
+    s->accept = accept;
+}
+
+/* responder: the peer asks for a DLC to one of our server channels */
+static struct bt_rfcomm_dlc *accept_dlc(struct bt_rfcomm_session *s, uint8_t dlci)
+{
+    struct bt_rfcomm_dlc *d = NULL;
+    bt_rfcomm_dlc_fn cb = NULL;
+    void *ud = NULL;
+    unsigned i;
+
+    if(!s->accept || !s->accept(s->context, (uint8_t) (dlci >> 1), &cb, &ud))
+        return NULL;
+    for(i = 0; i < BT_RFCOMM_MAX_DLCS; i++)
+    {
+        if(s->dlcs[i].state == DLC_CLOSED)
+        {
+            d = &s->dlcs[i];
+            break;
+        }
+    }
+    if(!d)
+        return NULL;
+    memset(d, 0, sizeof(*d));
+    d->dlci = dlci;
+    d->mtu = s->max_frame;
+    d->callback = cb;
+    d->user_data = ud;
+    d->state = DLC_WAIT_SABM;
+    return d;
+}
+
 bt_status_t bt_rfcomm_start(struct bt_rfcomm_session *s)
 {
     bt_status_t st;
@@ -235,7 +277,7 @@ bt_status_t bt_rfcomm_open(struct bt_rfcomm_session *s, uint8_t server_channel,
         return BT_ERR_INVALID_ARGUMENT;
     if(s->state != SES_UP)
         return BT_ERR_INVALID_STATE;
-    if(dlc_by_dlci(s, (uint8_t) (server_channel << 1)))
+    if(dlc_by_dlci(s, (uint8_t) ((server_channel << 1) | (s->responder ? 1 : 0))))
         return BT_ERR_ALREADY;
     for(i = 0; i < BT_RFCOMM_MAX_DLCS; i++)
     {
@@ -248,7 +290,7 @@ bt_status_t bt_rfcomm_open(struct bt_rfcomm_session *s, uint8_t server_channel,
     if(!d)
         return BT_ERR_NO_RESOURCES;
     memset(d, 0, sizeof(*d));
-    d->dlci = (uint8_t) (server_channel << 1);
+    d->dlci = (uint8_t) ((server_channel << 1) | (s->responder ? 1 : 0));   /* channels on the initiator: D = 1 */
     d->mtu = s->max_frame;
     d->callback = callback;
     d->user_data = user_data;
@@ -369,8 +411,32 @@ static void handle_mcc(struct bt_rfcomm_session *s, const uint8_t *p, size_t len
                     else
                         dlc_down(s, d, false);
                 }
+            } else if(s->responder && (s->state == SES_UP)) {
+                /* the peer negotiating a DLC to one of our channels: answer
+                   with what we can do, then wait for its SABM */
+                struct bt_rfcomm_dlc *d = dlc_by_dlci(s, value[0]);
+                uint16_t mtu = (uint16_t) (value[4] | (value[5] << 8));
+                uint8_t pn[8];
+                if(!d)
+                    d = accept_dlc(s, value[0]);
+                if(!d)
+                    break;                     /* DM follows its SABM */
+                if(mtu && (mtu < d->mtu))
+                    d->mtu = mtu;
+                d->cfc = ((value[1] & 0xf0) == 0xf0);
+                if(d->cfc)
+                {
+                    d->tx_credits = value[7];
+                    d->rx_credits = 7;
+                }
+                memcpy(pn, value, 8);
+                pn[1] = d->cfc ? 0xe0 : 0x00;
+                pn[4] = (uint8_t) (d->mtu & 0xff);
+                pn[5] = (uint8_t) (d->mtu >> 8);
+                pn[7] = d->cfc ? 7 : 0;
+                send_mcc(s, RF_MCC_PN, false, pn, 8);
             } else {
-                /* peer negotiating (unusual as responder): accept its terms */
+                /* an initiator being negotiated at: accept the peer's terms */
                 uint8_t pn[8];
                 memcpy(pn, value, 8);
                 pn[1] = ((value[1] & 0xf0) == 0xf0) ? 0xe0 : 0x00;
@@ -471,8 +537,41 @@ void bt_rfcomm_on_data(struct bt_rfcomm_session *s, const uint8_t *data, size_t 
         switch(control & 0xef)
         {
             case RF_SABM & 0xef:
-                /* the peer opening channels to us is not supported */
-                send_ctrl(s, dlci, RF_DM_F, false);
+                if(s->responder && (dlci == 0) && (s->state == SES_CLOSED))
+                {
+                    /* the peer starts the multiplexer */
+                    if(send_ctrl(s, 0, RF_UA, false) == BT_OK)
+                    {
+                        s->state = SES_UP;
+                        if(s->event)
+                            s->event(s->context, BT_RFCOMM_SESSION_UP);
+                    }
+                }
+                else if(s->responder && dlci && (s->state == SES_UP))
+                {
+                    /* a DLC to one of our server channels (PN may have
+                       come first, or not at all) */
+                    d = dlc_by_dlci(s, dlci);
+                    if(!d)
+                        d = accept_dlc(s, dlci);
+                    if(d && (d->state == DLC_WAIT_SABM))
+                    {
+                        if(send_ctrl(s, dlci, RF_UA, false) == BT_OK)
+                        {
+                            d->state = DLC_OPEN;
+                            d->msc_sent = true;
+                            send_msc(s, d, true, MSC_SIGNALS);
+                            replenish(s, d);
+                            dlc_event(s, d, BT_RFCOMM_DLC_OPEN, false, NULL, 0);
+                        }
+                        else
+                            dlc_down(s, d, false);
+                    }
+                    else
+                        send_ctrl(s, dlci, RF_DM_F, false);
+                }
+                else
+                    send_ctrl(s, dlci, RF_DM_F, false);
                 break;
 
             case RF_UA & 0xef:

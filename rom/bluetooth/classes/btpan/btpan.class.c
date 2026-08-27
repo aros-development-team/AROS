@@ -220,6 +220,15 @@ struct BTPanUnit * GM_UNIQUENAME(bForceServiceBinding)(struct BTPanBase *nh, str
     {
         if(addr && !memcmp(ncp->ncp_UnitAddr, addr, 6) && (ncp->ncp_UnitUUID == uuid16))
         {
+            if(ncp->ncp_Task)
+            {
+                /* already bound (a second record for the same network):
+                   one unit, one task */
+                Permit();
+                KPRINTF(10, ("unit %ld already bound\n", ncp->ncp_UnitNo));
+                CloseLibrary(BluetoothBase);
+                return(NULL);
+            }
             unitno = ncp->ncp_UnitNo;
             unitfound = TRUE;
             break;
