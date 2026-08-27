@@ -972,6 +972,15 @@ D(bug("SendCmd(%d,%d)\n", sdCommand, sdDataLen));
     KrnSpinUnLock(&bus->sdcb_Lock);
 #endif
 
+    /*
+     * From here until the command completes, any error the controller reports
+     * belongs to it. sdcb_BusStatus cannot carry that: it is overwritten by
+     * whichever interrupt happens to arrive next, so an error can be erased
+     * before the waiting task ever looks at it, or a stale one inherited by a
+     * command that never failed.
+     */
+    bus->sdcb_CmdError = 0;
+
     SetSignal(0, 1L << bus->sdcb_CommandSig);
 
     bus->sdcb_IOWriteLong(SDHCI_ARGUMENT, sdArg, bus);
@@ -1309,7 +1318,7 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
             }
         }
 
-        if ((bus->sdcb_BusStatus & SDHCI_INT_ERROR) == SDHCI_INT_ERROR)
+        if (bus->sdcb_CmdError)
             break;
 
         if ((sdcard_CurrentTime() - waitStart) > waitLimit)
@@ -1388,7 +1397,7 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
         }
     }
 
-    if (timedOut || (bus->sdcb_BusStatus & SDHCI_INT_ERROR))
+    if (timedOut || bus->sdcb_CmdError)
     {
         return -1;
     }
@@ -1560,6 +1569,10 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 
     if (error)
     {
+        /* Hand the failure to whoever is waiting on this command, before the
+           bits are cleared out of the shared status copy below. */
+        bus->sdcb_CmdError |= (bus->sdcb_BusStatus & SDHCI_INT_ERROR_MASK) | SDHCI_INT_ERROR;
+
         if (bus->sdcb_BusStatus & bus->sdcb_IntrMask)
         {
             bug("[SDBus%02u] %s: Clearing Unhandled Interrupts [%08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus & bus->sdcb_IntrMask);
@@ -1570,6 +1583,26 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 
         FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
         FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
+
+        /*
+         * The reset took the command with it, so there is no response left to
+         * read and no data left to move. Drop the listeners rather than let
+         * WaitCmd's recovery run FinishCmd()/FinishData() over a controller
+         * that has been wiped, and put back the transfer state FinishData()
+         * would have cleaned up had it run.
+         */
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+        bus->sdcb_RespListener = NULL;
+        bus->sdcb_DataListener = NULL;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
+        bus->sdcb_BusFlags &= ~(AF_Bus_DMAActive | AF_Bus_DMABounced);
+
+        if (bus->sdcb_LEDCtrl)
+            bus->sdcb_LEDCtrl(LED_OFF);
 
         /*
          * Signal the bus task so it wakes up from WaitCmd().
