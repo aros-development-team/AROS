@@ -400,7 +400,9 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
 
                             sdcUnit->sdcu_Read32                = FNAME_SDCIO(ReadSector32);
                             sdcUnit->sdcu_Write32               = FNAME_SDCIO(WriteSector32);
-                            sdcUnit->sdcu_Bus->sdcb_BusFlags    = AF_Bus_MediaPresent;
+                            /* Add to what the bus has already established about
+                               itself - DMA and interrupt delivery live here too. */
+                            sdcUnit->sdcu_Bus->sdcb_BusFlags    |= AF_Bus_MediaPresent;
 #if defined(SDHCI_READONLY)
                             sdcUnit->sdcu_Flags                 = AF_Card_WriteProtect;
 #endif
