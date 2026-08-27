@@ -1166,9 +1166,30 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
                 DTRANS(bug("[SDBus%02u] %s: Attempting to %s %dbytes\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, ((sdDataMode == MMC_DATA_READ) ? "read" : "write"), tranlen));
                 if (sdDataMode == MMC_DATA_READ)
                 {
-                    for (currword = 0; currword < tranwords; currword++)
+                    /*
+                     * The data port is one 32bit register, so this is a bus
+                     * round trip per word whatever we do - but the indirect
+                     * accessor call costs about as much as the access itself,
+                     * so read through a local pointer, several at a time.
+                     * Writes keep the accessor: the earlier controller needs
+                     * its inter-write delay, and that lives in there.
+                     */
+                    volatile ULONG *port = (volatile ULONG *)((IPTR)bus->sdcb_IOBase + SDHCI_BUFFER);
+
+                    for (currword = 0; (currword + 8) <= tranwords; currword += 8)
                     {
-                        dataPtr[currword] = bus->sdcb_IOReadLong(SDHCI_BUFFER, bus);
+                        dataPtr[currword    ] = AROS_LE2LONG(*port);
+                        dataPtr[currword + 1] = AROS_LE2LONG(*port);
+                        dataPtr[currword + 2] = AROS_LE2LONG(*port);
+                        dataPtr[currword + 3] = AROS_LE2LONG(*port);
+                        dataPtr[currword + 4] = AROS_LE2LONG(*port);
+                        dataPtr[currword + 5] = AROS_LE2LONG(*port);
+                        dataPtr[currword + 6] = AROS_LE2LONG(*port);
+                        dataPtr[currword + 7] = AROS_LE2LONG(*port);
+                    }
+                    for (; currword < tranwords; currword++)
+                    {
+                        dataPtr[currword] = AROS_LE2LONG(*port);
                     }
                 }
                 else
