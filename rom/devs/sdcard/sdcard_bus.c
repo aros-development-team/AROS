@@ -722,7 +722,8 @@ static BOOL FNAME_SDCBUS(ADMASetup)(struct sdcard_Bus *bus, APTR data, ULONG len
     UBYTE                       *pos;
     ULONG                       remaining;
     UBYTE                       sdcHostCtrl;
-    UWORD                       n = 0;
+    UWORD                       n;
+    BOOL                        bounced;
 
     if (!(bus->sdcb_BusFlags & AF_Bus_DMA) || (data == NULL) || (len == 0))
         return FALSE;
@@ -734,20 +735,23 @@ static BOOL FNAME_SDCBUS(ADMASetup)(struct sdcard_Bus *bus, APTR data, ULONG len
      * ends mid line would drag its neighbours along. Anything unaligned goes
      * through the bounce buffer instead.
      */
-    if (((IPTR)data | (IPTR)len) & 63)
-    {
-        if (len > bus->sdcb_ADMABounceSize)
-            return FALSE;
-
-        bus->sdcb_BusFlags |= AF_Bus_DMABounced;
-    }
+    bounced = (((IPTR)data | (IPTR)len) & 63) ? TRUE : FALSE;
 
     bus->sdcb_ADMAData = data;
     bus->sdcb_ADMALen = len;
 
-    pos = (bus->sdcb_BusFlags & AF_Bus_DMABounced) ? bus->sdcb_ADMABounce : data;
+retry:
+    if (bounced && (len > bus->sdcb_ADMABounceSize))
+    {
+        DTRANS(bug("[SDBus%02u] %s: transfer larger than the bounce buffer (%u)\n",
+                   bus->sdcb_BusNum, __PRETTY_FUNCTION__, len));
+        return FALSE;
+    }
 
-    if ((bus->sdcb_BusFlags & AF_Bus_DMABounced) && isWrite)
+    n = 0;
+    pos = bounced ? bus->sdcb_ADMABounce : data;
+
+    if (bounced && isWrite)
         CopyMem(data, pos, len);
 
     /*
@@ -780,6 +784,18 @@ static BOOL FNAME_SDCBUS(ADMASetup)(struct sdcard_Bus *bus, APTR data, ULONG len
         {
             DTRANS(bug("[SDBus%02u] %s: buffer needs PIO (desc %d, phys 0x%p)\n",
                        bus->sdcb_BusNum, __PRETTY_FUNCTION__, n, (APTR)phys));
+
+            /*
+             * The bounce buffer is contiguous and within reach, so describing
+             * it can only fail on size. Start over through it rather than
+             * hand a whole chunk to PIO.
+             */
+            if (!bounced)
+            {
+                bounced = TRUE;
+                goto retry;
+            }
+
             return FALSE;
         }
 
@@ -801,9 +817,11 @@ static BOOL FNAME_SDCBUS(ADMASetup)(struct sdcard_Bus *bus, APTR data, ULONG len
      * controller reads what we just wrote. For a read this also drops any
      * dirty lines that would otherwise be written back over the result.
      */
+    if (bounced)
+        bus->sdcb_BusFlags |= AF_Bus_DMABounced;
+
     CacheClearE(bus->sdcb_ADMADesc, n * sizeof(struct sdcard_ADMADesc), CACRF_ClearD);
-    CacheClearE((bus->sdcb_BusFlags & AF_Bus_DMABounced) ? bus->sdcb_ADMABounce : data,
-                len, CACRF_ClearD);
+    CacheClearE(bounced ? bus->sdcb_ADMABounce : data, len, CACRF_ClearD);
 
     bus->sdcb_IOWriteLong(SDHCI_ADMA_ADDRESS,
         (ULONG)FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMADesc), bus);
