@@ -150,11 +150,9 @@ void v3d_release_all_bos(struct V3DData *sd)
 
 /* ---- the dispatch ---- */
 
-int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
+static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
+                              void *arg)
 {
-    if (!sd)
-        return -1;
-
     switch (request)
     {
     case DRM_IOCTL_V3D_CREATE_BO:
@@ -334,6 +332,167 @@ int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
         D(bug("[V3D] unhandled ioctl 0x%lx\n", request));
         return -1;
     }
+}
+
+#if V3D_PROFILE
+/* Both take mbox_lock from the caller. */
+static void msg_clkrate(struct V3DData *sd, ULONG clkid, ULONG tag,
+                        ULONG *out)
+{
+    volatile ULONG *msg = sd->mbox_msg;
+
+    msg[0] = AROS_LE2LONG(8 * 4);
+    msg[1] = AROS_LE2LONG(VCTAG_REQ);
+    msg[2] = AROS_LE2LONG(tag);
+    msg[3] = AROS_LE2LONG(8);
+    msg[4] = AROS_LE2LONG(4);
+    msg[5] = AROS_LE2LONG(clkid);
+    msg[6] = 0;
+    msg[7] = 0;
+    if (MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, (APTR)msg)
+        != (volatile unsigned int *)-1)
+        *out = AROS_LE2LONG(msg[6]);
+}
+
+static void msg_throttled(struct V3DData *sd, ULONG *out)
+{
+    volatile ULONG *msg = sd->mbox_msg;
+
+    msg[0] = AROS_LE2LONG(8 * 4);
+    msg[1] = AROS_LE2LONG(VCTAG_REQ);
+    msg[2] = AROS_LE2LONG(VCTAG_GETTHROTTLED);
+    msg[3] = AROS_LE2LONG(4);
+    msg[4] = AROS_LE2LONG(4);
+    msg[5] = 0;
+    msg[6] = 0;
+    msg[7] = 0;
+    if (MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, (APTR)msg)
+        != (volatile unsigned int *)-1)
+        *out = AROS_LE2LONG(msg[5]);
+}
+
+/*
+ * What the CPU managed while those frames ran: ALU loop (core clock),
+ * cached writes (cache/TLB health), uncached writes (the VideoCore window
+ * every control list goes through). Firmware clock and throttle flags too,
+ * since thermal capping looks just like a driver regression from here.
+ */
+static void v3d_prof_bench(struct V3DData *sd)
+{
+    static UBYTE cached_buf[65536];
+    static ULONG nc_paddr, nc_handle;
+    volatile ULONG acc = 0;
+    ULONG t0, t1, us_alu, us_cached, us_nc = 0;
+    ULONG arm_hz = 0, arm_meas_hz = 0, throttled = 0;
+    ULONG v3d_hz = 0, v3d_meas_hz = 0;
+    uint64_t sctlr = 0;
+    ULONG i;
+
+    t0 = V3D_NOW_US();
+    for (i = 0; i < 100000; i++)
+        acc += i ^ (acc << 1);
+    t1 = V3D_NOW_US();
+    us_alu = t1 - t0;
+
+    t0 = t1;
+    for (i = 0; i < sizeof(cached_buf); i += 4)
+        *(volatile ULONG *)&cached_buf[i] = i;
+    t1 = V3D_NOW_US();
+    us_cached = t1 - t0;
+
+    if (!nc_handle)
+        nc_handle = v3d_gpu_mem_alloc(sd, 65536, 4096, &nc_paddr);
+    if (nc_handle)
+    {
+        t0 = V3D_NOW_US();
+        for (i = 0; i < 65536; i += 4)
+            *(volatile ULONG *)(IPTR)(nc_paddr + i) = i;
+        asm volatile("dsb sy" ::: "memory");
+        t1 = V3D_NOW_US();
+        us_nc = t1 - t0;
+    }
+
+    /* Cache and MMU enables: the C bit going down mid-run would explain
+     * a whole-machine slowdown that no driver change accounts for. */
+    asm volatile("mrs %0, sctlr_el1" : "=r"(sctlr));
+
+    ObtainSemaphore(&sd->mbox_lock);
+    msg_clkrate(sd, 3, VCTAG_GETCLKRATE, &arm_hz);
+    msg_clkrate(sd, 3, VCTAG_GETCLKMEAS, &arm_meas_hz);
+    /* Clock 5 is V3D. The setpoint is what we asked for at init; only the
+     * MEASURED rate catches the firmware governor parking the GPU at a
+     * fraction of it - the same trap the Pi 3 sprang on vc4gallium, and
+     * a 2x here would account for half the frame time on its own. */
+    msg_clkrate(sd, V3D_CLK_ID, VCTAG_GETCLKRATE, &v3d_hz);
+    msg_clkrate(sd, V3D_CLK_ID, VCTAG_GETCLKMEAS, &v3d_meas_hz);
+    msg_throttled(sd, &throttled);
+    ReleaseSemaphore(&sd->mbox_lock);
+
+    bug("[V3DProf] bench: alu=%luus cached=%luus nc=%luus "
+        "arm=%lu/%lu Hz v3d=%lu/%lu Hz throttled=0x%lx sctlr=0x%08lx\n",
+        (unsigned long)us_alu, (unsigned long)us_cached, (unsigned long)us_nc,
+        (unsigned long)arm_hz, (unsigned long)arm_meas_hz,
+        (unsigned long)v3d_hz, (unsigned long)v3d_meas_hz,
+        (unsigned long)throttled, (unsigned long)sctlr);
+}
+
+/* Frame budget: mesa_gap is the time between ioctls (the app plus Mesa on
+ * the CPU), ioctl is the time spent inside this driver. */
+static struct
+{
+    ULONG mesa, inside, period, frames, prev_submit, last_exit;
+} v3d_prof;
+#endif
+
+int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
+{
+    int ret;
+#if V3D_PROFILE
+    ULONG t0, t1;
+#endif
+
+    if (!sd)
+        return -1;
+
+#if V3D_PROFILE
+    t0 = V3D_NOW_US();
+    if (v3d_prof.last_exit)
+        v3d_prof.mesa += t0 - v3d_prof.last_exit;
+#endif
+
+    ret = v3d_ioctl_dispatch(sd, request, arg);
+
+#if V3D_PROFILE
+    t1 = V3D_NOW_US();
+    v3d_prof.inside += t1 - t0;
+    v3d_prof.last_exit = t1;
+
+    if (request == DRM_IOCTL_V3D_SUBMIT_CL)
+    {
+        sd->prof_submits++;
+        if (v3d_prof.prev_submit)
+            v3d_prof.period += t1 - v3d_prof.prev_submit;
+        v3d_prof.prev_submit = t1;
+
+        if (++v3d_prof.frames >= V3D_PROF_PERIOD)
+        {
+            ULONG f = v3d_prof.frames;
+            ULONG per = v3d_prof.period / f;
+
+            bug("[V3DProf] %lu frames: frame=%luus (%lu fps) "
+                "mesa_gap=%luus/f driver=%luus/f\n",
+                (unsigned long)f, (unsigned long)per,
+                (unsigned long)(per ? 1000000 / per : 0),
+                (unsigned long)(v3d_prof.mesa / f),
+                (unsigned long)(v3d_prof.inside / f));
+            v3d_prof_bench(sd);
+            v3d_prof.mesa = v3d_prof.inside = v3d_prof.period = 0;
+            v3d_prof.frames = 0;
+        }
+    }
+#endif
+
+    return ret;
 }
 
 /*

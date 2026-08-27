@@ -251,53 +251,26 @@ struct vc4gfx_overlay
  * completion of short jobs, then ~1 ms timer naps so input and other
  * tasks keep running while the GPU renders, up to the hang timeout.
  */
-/* Measured 2026-08-26 (eduke32 1080p): spinning the whole wait instead
- * of napping gave render-wait=32.5ms against 34-48ms with naps, so the
- * nap tier costs about one nap and the GPU is genuinely busy that long.
- * Keep napping - it hands ~30ms/frame back to the rest of the system.
- * An IRQ-driven completion (V3D_IRQ, GIC SPI 74) is worth the remainder
- * once the render cost itself is down. */
 #define V3D_GPUWAIT_SPIN_US     2000
 #define V3D_GPUWAIT_NAP_US      1000
 #define V3D_GPUWAIT_TIMEOUT_US  1000000
 
-/*
- * Profiling, off by default. Each measured stage prints one bug() line
- * tagged [V3DProf], so grepping a serial log gives a CSV of where the
- * frame went. Periodic on purpose: a per-frame line costs roughly 87us
- * per character at 115200 baud, which is enough to overlap the GPU and
- * change the very number being measured.
- */
-/*
- * Service the GPU from its completion interrupt (GIC SPI 74).
- *
- * Not a latency refinement: the stashed render is kicked by
- * v3d_service, and with the three-page present ring nothing polls
- * between frames, so a poll-only driver leaves the renderer idle from
- * the binner's flush until the next submit - a whole frame of CPU work
- * later.
- *
- * V3D owns SPI 74 alone on the BCM2711 (the Pi 4 firmware has no 3D
- * driver), so the Pi 3 hazard vc4gallium documents at length - the
- * firmware co-listening on the V3D line and losing its property mailbox
- * the moment any V3D interrupt is armed - should not apply. If it turns
- * out to, the symptom is ALLOCMEM/mailbox timeouts after the first
- * frames; set this to 0 and the driver is poll-only again.
- */
+/* 0 = page flip first. The flip makes the render target an IMPORTED BO,
+ * which Mesa cannot assume it owns, so it loads tiles and flushes more:
+ * 2.5-3.4 jobs/frame against the overlay's 1.0. */
+#define V3D_PREFER_OVERLAY  1
+
+/* Service from the completion interrupt (GIC SPI 74). 0 = poll only,
+ * which leaves a stashed render idle until the next submit. If the Pi 3
+ * hazard vc4gallium documents turns out to apply here too, the symptom
+ * is mailbox timeouts after the first frames. */
 #define V3D_IRQ_ENABLE      1
 
-/* Depth of the stashed-render queue: eduke32 peaks around four jobs per
- * frame, and one entry per job is what lets the CPU stay ahead. */
+/* Stashed renders in flight; eduke32 peaks at four jobs per frame. */
 #define V3D_RCL_QUEUE       4
 
-/*
- * Profiling is OPT-IN, and must stay that way: a serial line is ~8ms at
- * 115200 - two frames at 60Hz - and a period prints four of them, so the
- * measurement blocks the rendering task for ~30ms every time. With
- * time-based animation that lands as a visible jump (a 24-line trace
- * once measured 208ms for a "frame" that otherwise takes 16.66ms). Turn
- * it on for a measurement run, read the numbers, turn it off again.
- */
+/* Opt-in, and must stay that way: one serial line is ~8ms, so a period
+ * blocks the rendering task for ~30ms and time-based animation jumps. */
 #define V3D_PROFILE         0   /* summary lines, one per period */
 #define V3D_PROFILE_FRAME   0   /* per-frame dumps, serial-heavy */
 #define V3D_PROF_PERIOD     120 /* frames (or calls) between summaries */
