@@ -462,8 +462,9 @@ VOID HiddV3D__Hidd_Gallium__DestroyPipeScreen(OOP_Class *cl, OOP_Object *o,
     v3d_release_all_bos(sd);
     sd->bin_running = FALSE;
     sd->render_running = FALSE;
-    sd->pending_rcl_start = 0;
-    sd->pending_rcl_end = 0;
+    sd->rcl_head = 0;
+    sd->rcl_count = 0;
+    sd->bin_flushed_seqno = sd->seqno;
     sd->finished_seqno = sd->seqno;
     sd->bin_end = 0;
     sd->render_end = 0;

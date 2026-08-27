@@ -145,6 +145,12 @@ extern IPTR __arm_periiobase;
  */
 #define V3D_INT_FRDONE      (1 << 0)
 #define V3D_INT_FLDONE      (1 << 1)
+/* Bits 2 and 3 from Linux's v3d_regs.h. OUTOMEM is the binner asking for
+ * more tile memory and stopping until BPOA/BPOS are refilled; SPILLUSE
+ * (meaning not verified on hardware) has been seen latched alongside
+ * FLDONE on jobs that consumed the pre-armed supply. */
+#define V3D_INT_OUTOMEM     (1 << 2)
+#define V3D_INT_SPILLUSE    (1 << 3)
 
 /*
  * MMU (hub side; bare register ABI, every offset and bit below confirmed
@@ -245,36 +251,84 @@ struct vc4gfx_overlay
  * completion of short jobs, then ~1 ms timer naps so input and other
  * tasks keep running while the GPU renders, up to the hang timeout.
  */
+/* Measured 2026-08-26 (eduke32 1080p): spinning the whole wait instead
+ * of napping gave render-wait=32.5ms against 34-48ms with naps, so the
+ * nap tier costs about one nap and the GPU is genuinely busy that long.
+ * Keep napping - it hands ~30ms/frame back to the rest of the system.
+ * An IRQ-driven completion (V3D_IRQ, GIC SPI 74) is worth the remainder
+ * once the render cost itself is down. */
 #define V3D_GPUWAIT_SPIN_US     2000
 #define V3D_GPUWAIT_NAP_US      1000
 #define V3D_GPUWAIT_TIMEOUT_US  1000000
 
 /*
- * The CPU reaches a BO at its locked physical address (identity through
- * the uncached VideoCore window). The GPU gets that same address as a
- * virtual one through the V3D MMU: the page table is 4MB, so it spans
- * the whole 32-bit VA space, and an identity map needs no allocator
- * state and cannot collide.
- *
- * This used to fold into the bottom 512MB (paddr & 0x1FFFFFFF), because
- * identity-mapped ~1GB physicals had been seen to make the PTB compute
- * stray writes into low RAM. That observation predates nothing: the
- * CT0QTS enable, the BPOA/BPOS programming and the quirk landing zone
- * all landed in the same commit as the fold, and every one of them
- * independently caused low-RAM sprays of its own, so the fold was never
- * shown to be doing any work. Linux's v3d runs its VA allocator over the
- * full page table. The fold is not free: it caps addressable BO memory
- * at 512MB, which is the ceiling Doom 3 hits.
+ * Profiling, off by default. Each measured stage prints one bug() line
+ * tagged [V3DProf], so grepping a serial log gives a CSV of where the
+ * frame went. Periodic on purpose: a per-frame line costs roughly 87us
+ * per character at 115200 baud, which is enough to overlap the GPU and
+ * change the very number being measured.
  */
+/*
+ * Service the GPU from its completion interrupt (GIC SPI 74).
+ *
+ * Not a latency refinement: the stashed render is kicked by
+ * v3d_service, and with the three-page present ring nothing polls
+ * between frames, so a poll-only driver leaves the renderer idle from
+ * the binner's flush until the next submit - a whole frame of CPU work
+ * later.
+ *
+ * V3D owns SPI 74 alone on the BCM2711 (the Pi 4 firmware has no 3D
+ * driver), so the Pi 3 hazard vc4gallium documents at length - the
+ * firmware co-listening on the V3D line and losing its property mailbox
+ * the moment any V3D interrupt is armed - should not apply. If it turns
+ * out to, the symptom is ALLOCMEM/mailbox timeouts after the first
+ * frames; set this to 0 and the driver is poll-only again.
+ */
+#define V3D_IRQ_ENABLE      1
+
+/* Depth of the stashed-render queue: eduke32 peaks around four jobs per
+ * frame, and one entry per job is what lets the CPU stay ahead. */
+#define V3D_RCL_QUEUE       4
+
+/*
+ * Profiling is OPT-IN, and must stay that way: a serial line is ~8ms at
+ * 115200 - two frames at 60Hz - and a period prints four of them, so the
+ * measurement blocks the rendering task for ~30ms every time. With
+ * time-based animation that lands as a visible jump (a 24-line trace
+ * once measured 208ms for a "frame" that otherwise takes 16.66ms). Turn
+ * it on for a measurement run, read the numbers, turn it off again.
+ */
+#define V3D_PROFILE         0   /* summary lines, one per period */
+#define V3D_PROFILE_FRAME   0   /* per-frame dumps, serial-heavy */
+#define V3D_PROF_PERIOD     120 /* frames (or calls) between summaries */
+
+#if V3D_PROFILE || V3D_PROFILE_FRAME
+#define V3D_NOW_US()    ((ULONG)AROS_LE2LONG(*(volatile ULONG *)V3D_SYSTIMER_CLO))
+#else
+#define V3D_NOW_US()    0
+#endif
+
+#if V3D_PROFILE
+#define V3D_PROF(...)   bug(__VA_ARGS__)
+#else
+#define V3D_PROF(...)   do { } while (0)
+#endif
+
+#if V3D_PROFILE_FRAME
+#define V3D_PROFF(...)  bug(__VA_ARGS__)
+#else
+#define V3D_PROFF(...)  do { } while (0)
+#endif
+
+/* The GPU sees a BO at its physical address through the V3D MMU. The
+ * page table is 4MB, so it spans the whole 32-bit VA space and the
+ * identity map needs no allocator state. */
 #define V3D_GPU_ADDR(phys)  ((ULONG)(phys) & 0x3fffffff)
 #define V3D_GPU_VA(paddr)   ((ULONG)(paddr))
 
-/*
- * A buffer object. gpu_handle is the arena allocation and equals paddr:
+/* A buffer object. gpu_handle is the arena allocation and equals paddr:
  * the arena is identity-mapped and Normal Non-Cacheable, so one value is
- * at once the allocator's cookie, the CPU pointer and the GPU's physical
- * page, and nothing is ever flushed or invalidated for the GPU's benefit.
- */
+ * allocator cookie, CPU pointer and GPU page at once. */
 struct V3DBO
 {
     ULONG   gpu_handle;     /* arena address, 0 = slot free/external */
@@ -340,9 +394,24 @@ struct V3DData
     BOOL            render_running;
     ULONG           bin_seqno;
     ULONG           render_seqno;
-    ULONG           pending_seqno;
-    ULONG           pending_rcl_start;
-    ULONG           pending_rcl_end;    /* 0 = no render stashed */
+    /* Stashed renders. A queue, not one slot: with one, a submit could
+     * not return until the previous render retired. An entry may only be
+     * kicked once ITS OWN bin has flushed, hence bin_flushed_seqno (bins
+     * run in order on the single CT0 thread). */
+    struct
+    {
+        ULONG start, end, seqno;
+    }               rcl_q[V3D_RCL_QUEUE];
+    UBYTE           rcl_head, rcl_count;
+    ULONG           bin_flushed_seqno;
+    BOOL            bin_only;           /* the bin in flight has no RCL */
+    ULONG           wait_seqno;         /* target for v3d_hw_wait_seqno */
+
+    /* Completion interrupt. `waiter` is whoever is inside v3d_wait_for -
+     * one at a time, every caller holds job_lock. */
+    APTR            irq_handle;
+    struct Task     *waiter;
+    BYTE            waiter_sig;
 
     /* End addresses of the last kicked jobs, for the stall dump */
     ULONG           bin_end;
@@ -390,11 +459,27 @@ struct V3DData
     APTR            coreapi;        /* GalliumCoreAPI table from mesa3dgl */
     BOOL            powered;
 
-    /* Live pipe screens (a GL app makes more than one: the capability
-     * probe's, then the real one) - the BO sweep and state reset only
-     * run when the LAST one goes. */
+    /* A GL app makes more than one, so the BO sweep and state reset only
+     * run when the last goes. */
     LONG            screen_count;
     ULONG           recoveries;     /* hang-recovery fuse, per session */
+
+    /* The supply is pre-armed per bin job, so OUTOMEM means even that
+     * ran out and the binner has stopped until BPOA/BPOS are refilled. */
+    BOOL            oom_pending;    /* latch seen, refill not yet handed */
+    BOOL            oom_handed;     /* refill given for the current job */
+    ULONG           oom_events;
+    ULONG           spill_events;
+
+#if V3D_PROFILE
+    ULONG           prof_submits;   /* jobs since the last present */
+    /* Bin against render, kick to latch. Sub-millisecond values are
+     * noise: latch detection is delayed by up to one nap. */
+    ULONG           prof_bin_kick, prof_render_kick;
+    ULONG           prof_bin_acc, prof_render_acc, prof_jobs;
+    /* Snapshotted in interrupt context, printed by the next submit. */
+    ULONG           prof_rep_bin, prof_rep_render, prof_rep_jobs;
+#endif
 };
 
 struct IntHiddV3DBase
@@ -418,6 +503,7 @@ BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
                    ULONG qma, ULONG qms, ULONG qts,
                    ULONG rcl_start, ULONG rcl_end);
 void v3d_wait_idle(struct V3DData *sd);
+void v3d_hw_wait_seqno(struct V3DData *sd, ULONG seqno);
 void v3d_flush_caches(struct V3DData *sd);
 
 /* v3d_mem.c */
