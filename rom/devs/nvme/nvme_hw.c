@@ -174,7 +174,15 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
         processed++;
     }
 
-    if ((head != nvmeq->cq_head) || (phase == nvmeq->cq_phase)) {
+    /*
+     * Only ring the doorbell when we actually consumed something. Telling
+     * the controller a head it already has is not just wasted MMIO: it makes
+     * a controller that tracks outstanding completions decide the interrupt
+     * is still owed, re-assert its (level) INTx, and so drive an interrupt
+     * storm that starves the machine - this is what QEMU's controller does,
+     * and it wedges the boot as soon as the first admin command completes.
+     */
+    if ((head != nvmeq->cq_head) || (phase != nvmeq->cq_phase)) {
         D(bug ("[NVME:HW] %s: updating head=%u, phase=%u\n", __func__, head, phase);)
         nvmeq->q_db[1 << nvmeq->dev->db_stride] = head;
         nvmeq->cq_head = head;

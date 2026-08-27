@@ -369,19 +369,19 @@ resetfailed:
                 dev->dev_nvmeregbase->intmc = ~0;
 
                 /*
-                 * Retire anything the previous owner left asserted.
+                 * Nothing to retire here: the controller was taken down
+                 * and brought back up above, which drops any assertion a
+                 * previous owner left behind.
                  *
-                 * Taking the controller down discards the completions
-                 * themselves, but not necessarily its assertion of the
-                 * line - firmware that used the controller to boot can
-                 * leave it held, and a pin already held reports nothing
-                 * when it is asserted again. Acknowledging the empty
-                 * admin queue drops it, so the first real completion is
-                 * seen as the change it needs to be. Writing the head
-                 * it already has is a no-op to the controller itself.
+                 * Do not ring the head doorbell "just in case" either. It
+                 * is not the no-op it looks like: a controller that counts
+                 * outstanding completions treats a head write that equals
+                 * the tail as one completion acknowledged, so an unmatched
+                 * one drives that count below zero and it then never
+                 * deasserts its (level) INTx again. The result is an
+                 * interrupt storm that starves the machine from the first
+                 * admin command onwards.
                  */
-                dev->dev_Queues[0]->q_db[1 << dev->db_stride] =
-                    dev->dev_Queues[0]->cq_head;
 
                 buffer = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, 8192);
                 if (buffer) {
