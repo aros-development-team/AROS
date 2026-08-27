@@ -140,8 +140,8 @@ BOOL bSubmitCmd(struct BtHWCore *hc, UWORD opcode, const UBYTE *params, UBYTE le
 /* /// "bIgnoreCompletion()" */
 void bIgnoreCompletion(struct bt_cmdq_completion *completion, void *user_data)
 {
-    struct BtHWCore *hc = user_data;
     if((completion->result != BT_CMDQ_RESULT_COMPLETE) || completion->status) {
+        struct BtHWCore *hc = user_data;
         hc->hc_Hardware->bth_LastHCIError = completion->status;
         KPRINTF(10, ("cmd %04lx failed: result %ld status %02lx\n", completion->opcode, completion->result, completion->status));
     }
@@ -2154,7 +2154,10 @@ static void bBringupStep(struct BtHWCore *hc)
             }
             opcode = HC_OP_WRITE_LOCAL_NAME;
             memset(params, 0, 248);
-            strncpy((char *) params, name, 247);
+            {
+                ULONG nlen = strlen((char *) name);
+                CopyMem(name, params, (nlen > 247) ? 247 : nlen);
+            }
             len = 248;
             break;
         }
@@ -2632,7 +2635,8 @@ void bStartACLWrite(struct BtHWCore *hc)
         struct BtHWConn *cn = NULL;
         struct MinNode *mn;
         ULONG *credits = &hc->hc_ACLCredits;
-        struct IOBTHCIReq *req = NULL;
+        struct IOBTHCIReq *req;
+        LONG slot = -1;
 
         for(mn = hc->hc_Conns.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ) {
             if(((struct BtHWConn *) mn)->cn_Handle == tx->tx_Handle) {
@@ -2648,21 +2652,22 @@ void bStartACLWrite(struct BtHWCore *hc)
         }
         for(n = 0; n < HC_NUMACLWRITES; n++) {
             if(!hc->hc_ACLWritePending[n]) {
-                req = hc->hc_ACLWriteReq[n];
+                slot = n;
                 break;
             }
         }
-        if(!req) {
+        if(slot < 0) {
             return;
         }
+        req = hc->hc_ACLWriteReq[slot];
         Remove((struct Node *) tx);
-        CopyMem(tx->tx_Data, hc->hc_ACLWriteBuf[n], tx->tx_Length);
+        CopyMem(tx->tx_Data, hc->hc_ACLWriteBuf[slot], tx->tx_Length);
         req->iobt_Req.io_Command = BTCMD_WRITEACL;
-        req->iobt_Data = hc->hc_ACLWriteBuf[n];
+        req->iobt_Data = hc->hc_ACLWriteBuf[slot];
         req->iobt_Length = tx->tx_Length;
         req->iobt_Actual = 0;
         req->iobt_Req.io_Error = 0;
-        hc->hc_ACLWritePending[n] = TRUE;
+        hc->hc_ACLWritePending[slot] = TRUE;
         (*credits)--;
         if(cn) {
             cn->cn_Credits++;
