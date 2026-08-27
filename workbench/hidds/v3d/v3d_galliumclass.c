@@ -314,8 +314,11 @@ static BOOL v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
     desc.ovl_Height = h;
     desc.ovl_X      = x;
     desc.ovl_Y      = y;
-    desc.ovl_DestW  = w;
-    desc.ovl_DestH  = h;
+    /* Always 1:1. The field is the Pi 3 scaled-plane request (HVS4
+     * implements it, HVS5 does not), and desc is not zeroed, so leaving
+     * it out would hand the hidd stack garbage. */
+    desc.ovl_DestW  = 0;
+    desc.ovl_DestH  = 0;
 
     OOP_SetAttrs(bmobj, ovltags);
     OOP_GetAttr(bmobj, sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, &active);

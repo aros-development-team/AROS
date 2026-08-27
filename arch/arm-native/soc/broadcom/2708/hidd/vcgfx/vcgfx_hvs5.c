@@ -719,16 +719,6 @@ BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
         return TRUE;
     }
 
-    /* Scaling needs the filter kernel and the extra entry words that go
-     * with it, neither of which has been decoded on HVS5 - refused, and
-     * the caller blits instead. */
-    if ((ovl->ovl_DestW && ovl->ovl_DestW != ovl->ovl_Width)
-        || (ovl->ovl_DestH && ovl->ovl_DestH != ovl->ovl_Height))
-    {
-        VC4_MBOX_UNLOCK(xsd);
-        return FALSE;
-    }
-
     structural = !st->hvs_OvlActive || !st->hvs_OvlOff
               || st->hvs_OvlW != ovl->ovl_Width
               || st->hvs_OvlH != ovl->ovl_Height;
