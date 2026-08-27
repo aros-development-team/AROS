@@ -39,28 +39,9 @@
  */
 static void timer_ProcessTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
-    unsigned int last_CLO;
-    D(unsigned int last_CHI);
+    /* EClockUpdate() (ticks.c) owns the counter arithmetic. */
+    EClockUpdate(TimerBase);
 
-    D(last_CHI = TimerBase->tb_Platform.tbp_CHI);
-    last_CLO = TimerBase->tb_Platform.tbp_CLO;
-
-    TimerBase->tb_Platform.tbp_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
-    TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
-
-    D(bug("[Timer] %s: Updating EClock..\n", __func__));
-    D(bug("[Timer] %s:   diff_CHI = %d\n", __func__, (TimerBase->tb_Platform.tbp_CHI - last_CHI)));
-    D(bug("[Timer] %s:   diff_CLO = %d\n", __func__, (TimerBase->tb_Platform.tbp_CLO - last_CLO)));
-
-    TimerBase->tb_Platform.tbp_TickRate.tv_secs  = 0;
-    if ((TimerBase->tb_Platform.tbp_CLO - last_CLO) > 0)
-        TimerBase->tb_Platform.tbp_TickRate.tv_micro = TimerBase->tb_Platform.tbp_CLO - last_CLO;
-    else
-        TimerBase->tb_Platform.tbp_TickRate.tv_micro = ((1000000 - last_CLO) + TimerBase->tb_Platform.tbp_CLO);
-
-    /* Increment EClock value and process microhz requests */
-    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_Platform.tbp_TickRate);
-    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_Platform.tbp_TickRate);
     TimerBase->tb_ticks_total++;
 
     D(bug("[Timer] %s: Processing events.. \n", __func__));

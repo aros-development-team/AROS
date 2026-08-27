@@ -6,6 +6,6 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/timer
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
   arch=raspi-aarch64 modname=timer \
-  files="timer_init"
+  files="timer_init ticks"
 
 %common
