@@ -1481,6 +1481,24 @@ static void bClearServices(struct BtHWConn *cn)
             /* keep bound services (their binding owns channels) and services a
                class scan is currently binding (its subtask still holds the
                pointer); everything else on this bearer is refreshed */
+            struct MinNode *qn, *qnext;
+            /* requests parked on this link for endpoints of the service
+               would be dispatched after the enumeration - into freed
+               memory. Fail them now; the class retries on SERVICESCHG. */
+            for(qn = cn->cn_WaitReqs.mlh_Head; (qnext = qn->mln_Succ); qn = qnext) {
+                struct BtChannel *bch = BCH_FROM_QNODE(qn);
+                struct BtEndpoint *bep;
+                if(!bch->bch_Endpoint) {
+                    continue;
+                }
+                for(bep = (struct BtEndpoint *) bsv->bsv_Endpoints.lh_Head; bep->bep_Node.ln_Succ; bep = (struct BtEndpoint *) bep->bep_Node.ln_Succ) {
+                    if(bep == bch->bch_Endpoint) {
+                        Remove((struct Node *) qn);
+                        bReplyChannel(BluetoothBase, bch, BTIOERR_CHANNELFAILED, 0);
+                        break;
+                    }
+                }
+            }
             bFreeService(BluetoothBase, bsv);
             bd->bd_NumServices--;
         }

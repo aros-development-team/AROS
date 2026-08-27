@@ -313,6 +313,7 @@ struct BtHardware
     UBYTE               bth_ResolvingListSize;  /* resolving list slots (0 = none) */
     UBYTE               bth_LEReconnect;        /* BTLR_xxx: how bonded LE peers get reconnected */
     BOOL                bth_LEListsDirty;       /* the bonded set changed: reprogram the controller's lists */
+    STRPTR              bth_WantedName;         /* local name the stack programmed (re-applied on a re-init) */
     UWORD               bth_ACLMaxPktSize;
     UWORD               bth_ACLNumPkts;
     UWORD               bth_SCOMaxPktSize;

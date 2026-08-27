@@ -2141,7 +2141,13 @@ static void bBringupStep(struct BtHWCore *hc)
             len = 3;
             break;
         case HCB_WRITE_LOCAL_NAME: {
+            /* the configured name, else whatever the stack last programmed
+               (the HOSTNAME/"AROS" default): a controller restarted on new
+               firmware would otherwise come back as "RTK_BT_5.0" */
             STRPTR name = (STRPTR) BluetoothBase->bt_GlobalCfg->bgc_LocalName;
+            if(!name[0] && bth->bth_WantedName && bth->bth_WantedName[0]) {
+                name = bth->bth_WantedName;
+            }
             if(!(bth->bth_Flags & BTHF_CLASSIC) || !name[0]) {
                 hc->hc_BringupStep++;
                 continue;
@@ -2277,6 +2283,8 @@ void bHandleChannel(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth, struct
             }
             btFreeVec(bth->bth_LocalName);
             bth->bth_LocalName = btCopyStr((STRPTR) params);
+            btFreeVec(bth->bth_WantedName);
+            bth->bth_WantedName = btCopyStr((STRPTR) params);
             bSubmitCmd(hc, HC_OP_WRITE_LOCAL_NAME, params, 248, bIgnoreCompletion, hc);
             bReplyChannel(BluetoothBase, bch, 0, 0);
             return;
