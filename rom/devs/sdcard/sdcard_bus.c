@@ -1037,7 +1037,8 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
 {
     DTRANS(UWORD        sdCommand = (UWORD)GetTagData(SDCARD_TAG_CMD, 0, DataTags));
     ULONG               sdcStateMask, sdCommandMask,
-                        sdData, sdDataMode = MMC_DATA_READ, sdDataLen, sdcReg = 0;
+                        sdDataMode = MMC_DATA_READ, sdDataLen, sdcReg = 0;
+    IPTR                sdData;
     struct TagItem      *sdDataLenTag = NULL;
     ULONG               waitStart = 0;
     BOOL                waiting = FALSE;
