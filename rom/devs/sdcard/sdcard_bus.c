@@ -170,6 +170,21 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
         /* Prove the controller's own transfers land where we think they do. */
         FNAME_SDCBUS(ADMAVerify)(sdcUnit);
     }
+    else
+    {
+        /*
+         * A card left in stand-by answers CMD9 but ignores CMD17/CMD18
+         * outright, so the only sign of this is a bare command timeout much
+         * later, once the transfer clock and bus width have quietly been
+         * skipped along with everything else in here.
+         */
+        bug("[SDCard%02ld] %s: CMD7 (RCA %d) not acknowledged, card stays in stand-by [PS %08x BS %08x]\n",
+            sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcUnit->sdcu_CardRCA,
+            sdcUnit->sdcu_Bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, sdcUnit->sdcu_Bus),
+            sdcUnit->sdcu_Bus->sdcb_BusStatus);
+
+        return FALSE;
+    }
 
     D(bug("[SDCard%02ld] %s: Done.\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
