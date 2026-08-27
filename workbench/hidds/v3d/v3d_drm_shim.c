@@ -4,11 +4,10 @@
     V3D DRM ioctl shim: what Mesa's v3d driver reaches on AROS in place of
     a host kernel's DRM device.
 
-    Follows vc4gallium's hardware-proven model. Buffer objects are
-    firmware allocations (ALLOCMEM/LOCKMEM) reached through the uncached
-    bus alias, so the CPU and the GPU agree on memory contents without a
-    single cache operation; handles come from a rotating table that reuses
-    freed slots. The dispatch switches on the DRM_IOCTL_* constants from
+    Buffer objects come from uncached system RAM (see v3d_mem.c), so the
+    CPU and the GPU agree on memory contents without a single cache
+    operation; handles come from a rotating table that reuses freed
+    slots. The dispatch switches on the DRM_IOCTL_* constants from
     the same drm-uapi header Mesa compiles against - the first version of
     this file kept a private copy of both the numbers and the structs, and
     the numbers had drifted a COMMAND_BASE apart from what Mesa sent.
@@ -32,99 +31,16 @@
 #define VCMB_BASE       (ARM_PERIIOBASE + 0xB880)
 #define VCMB_PROPCHAN   8
 #define VCTAG_REQ       0
-#define VCTAG_ALLOCMEM  0x0003000c
-#define VCTAG_LOCKMEM   0x0003000d
-#define VCTAG_UNLOCKMEM 0x0003000e
-#define VCTAG_FREEMEM   0x0003000f
 
-#define VCMEM_DIRECT    (1 << 2)
-#define VCMEM_ZERO      (1 << 4)
+/* Profiling only: the configured clock rate, the measured one (which is
+ * what catches a divider change the configured rate hides) and the
+ * firmware's undervoltage/throttle flags. */
+#define VCTAG_GETCLKRATE    0x00030002
+#define VCTAG_GETCLKMEAS    0x00030047
+#define VCTAG_GETTHROTTLED  0x00030046
 
 /* Global for the drmIoctl override macro; set at CreatePipeScreen. */
 struct V3DData *g_v3d_data = NULL;
-
-/* ---- GPU memory, through the firmware allocator ---- */
-
-ULONG v3d_gpu_mem_alloc(struct V3DData *sd, ULONG size, ULONG align,
-                        ULONG *out_paddr)
-{
-    volatile ULONG *msg = sd->mbox_msg;
-    ULONG gpu_handle, paddr;
-
-    ObtainSemaphore(&sd->mbox_lock);
-
-    msg[0] = AROS_LE2LONG(9 * 4);
-    msg[1] = AROS_LE2LONG(VCTAG_REQ);
-    msg[2] = AROS_LE2LONG(VCTAG_ALLOCMEM);
-    msg[3] = AROS_LE2LONG(12);
-    msg[4] = AROS_LE2LONG(12);
-    msg[5] = AROS_LE2LONG(size);
-    msg[6] = AROS_LE2LONG(align);
-    msg[7] = AROS_LE2LONG(VCMEM_DIRECT | VCMEM_ZERO);
-    msg[8] = 0;
-
-    if (MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, (APTR)msg)
-        == (volatile unsigned int *)-1
-        || (gpu_handle = AROS_LE2LONG(msg[5])) == 0)
-    {
-        ReleaseSemaphore(&sd->mbox_lock);
-        bug("[V3D] ALLOCMEM failed for %u bytes (gpu_mem= too small?)\n",
-            (unsigned)size);
-        return 0;
-    }
-
-    msg[0] = AROS_LE2LONG(8 * 4);
-    msg[1] = AROS_LE2LONG(VCTAG_REQ);
-    msg[2] = AROS_LE2LONG(VCTAG_LOCKMEM);
-    msg[3] = AROS_LE2LONG(4);
-    msg[4] = AROS_LE2LONG(4);
-    msg[5] = AROS_LE2LONG(gpu_handle);
-    msg[6] = 0;
-    msg[7] = 0;
-
-    if (MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, (APTR)msg)
-        == (volatile unsigned int *)-1
-        || (paddr = AROS_LE2LONG(msg[5]) & 0x3fffffff) == 0)
-    {
-        ReleaseSemaphore(&sd->mbox_lock);
-        v3d_gpu_mem_free(sd, gpu_handle);
-        bug("[V3D] LOCKMEM failed for handle %u\n", (unsigned)gpu_handle);
-        return 0;
-    }
-
-    ReleaseSemaphore(&sd->mbox_lock);
-    *out_paddr = paddr;
-    return gpu_handle;
-}
-
-void v3d_gpu_mem_free(struct V3DData *sd, ULONG gpu_handle)
-{
-    volatile ULONG *msg = sd->mbox_msg;
-
-    ObtainSemaphore(&sd->mbox_lock);
-
-    msg[0] = AROS_LE2LONG(8 * 4);
-    msg[1] = AROS_LE2LONG(VCTAG_REQ);
-    msg[2] = AROS_LE2LONG(VCTAG_UNLOCKMEM);
-    msg[3] = AROS_LE2LONG(4);
-    msg[4] = AROS_LE2LONG(4);
-    msg[5] = AROS_LE2LONG(gpu_handle);
-    msg[6] = 0;
-    msg[7] = 0;
-    MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, (APTR)msg);
-
-    msg[0] = AROS_LE2LONG(8 * 4);
-    msg[1] = AROS_LE2LONG(VCTAG_REQ);
-    msg[2] = AROS_LE2LONG(VCTAG_FREEMEM);
-    msg[3] = AROS_LE2LONG(4);
-    msg[4] = AROS_LE2LONG(4);
-    msg[5] = AROS_LE2LONG(gpu_handle);
-    msg[6] = 0;
-    msg[7] = 0;
-    MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, (APTR)msg);
-
-    ReleaseSemaphore(&sd->mbox_lock);
-}
 
 /* ---- BO handle table (rotating, slots reused on free) ---- */
 
@@ -147,6 +63,29 @@ static ULONG bo_alloc_handle(struct V3DData *sd)
     return 0;
 }
 
+/* Exhaustion is either a real working set or a leak, and the two look the
+ * same from the failing allocation - so say how much the live entries hold.
+ * Once per session: Mesa retries every refused allocation, and an app that
+ * keeps asking would otherwise bury the rest of the log. */
+static void bo_report_full(struct V3DData *sd)
+{
+    ULONG h, live = 0, bytes = 0;
+
+    if (sd->bo_full_reported)
+        return;
+    sd->bo_full_reported = TRUE;
+
+    for (h = 1; h < V3D_MAX_BOS; h++)
+        if (sd->bo_table[h].refcount)
+        {
+            live++;
+            bytes += sd->bo_table[h].size;
+        }
+
+    bug("[V3D] out of BO handles: %u live holding %u KB\n",
+        (unsigned)live, (unsigned)(bytes >> 10));
+}
+
 static struct V3DBO *bo_lookup(struct V3DData *sd, ULONG handle)
 {
     if (handle == 0 || handle >= V3D_MAX_BOS
@@ -165,7 +104,7 @@ static void bo_unref(struct V3DData *sd, ULONG handle)
     {
         v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
         if (!bo->external)
-            v3d_gpu_mem_free(sd, bo->gpu_handle);
+            v3d_gpu_mem_free(sd, bo->gpu_handle, bo->size);
         bo->gpu_handle = 0;
         bo->external = FALSE;
     }
@@ -173,10 +112,10 @@ static void bo_unref(struct V3DData *sd, ULONG handle)
 
 /*
  * Session sweep, called when the last pipe screen goes: whatever Mesa
- * leaked stays firmware-LOCKED forever otherwise, and the GPU heap
- * shrinks with every GL session until allocations start failing. The
- * driver's own allocations (page table, scratch, overflow, landing
- * zone) never sit in this table, so everything here belongs to Mesa.
+ * leaked would otherwise keep its arena pinned, and the driver's share of
+ * system RAM would grow with every GL session. The driver's own
+ * allocations (page table, scratch, overflow, landing zone) never sit in
+ * this table, so everything here belongs to Mesa.
  */
 void v3d_release_all_bos(struct V3DData *sd)
 {
@@ -191,17 +130,22 @@ void v3d_release_all_bos(struct V3DData *sd)
             continue;
         v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
         if (!bo->external)
-            v3d_gpu_mem_free(sd, bo->gpu_handle);
+            v3d_gpu_mem_free(sd, bo->gpu_handle, bo->size);
         bo->gpu_handle = 0;
         bo->refcount = 0;
         bo->external = FALSE;
         leaked++;
     }
     sd->bo_next_handle = 0;
+    sd->bo_full_reported = FALSE;
+    sd->oom_reports = 0;
     ReleaseSemaphore(&sd->bo_lock);
 
     if (leaked)
         bug("[V3D] session sweep: released %u leaked BOs\n", (unsigned)leaked);
+
+    /* Now that nothing is allocated from them, hand the arenas back. */
+    v3d_mem_release(sd);
 }
 
 /* ---- the dispatch ---- */
@@ -222,8 +166,8 @@ int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
         h = bo_alloc_handle(sd);
         if (!h)
         {
+            bo_report_full(sd);
             ReleaseSemaphore(&sd->bo_lock);
-            bug("[V3D] out of BO handles\n");
             return -1;
         }
 
@@ -281,8 +225,8 @@ int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
             h = bo_alloc_handle(sd);
             if (!h)
             {
+                bo_report_full(sd);
                 ReleaseSemaphore(&sd->bo_lock);
-                bug("[V3D] out of BO handles\n");
                 return -1;
             }
             sd->bo_table[h].gpu_handle = 0;

@@ -164,12 +164,8 @@ BOOL v3d_hw_init(struct V3DData *sd)
     }
 
     /*
-     * Enable the MMU and run every BO at a LOW GPU virtual address:
-     * feeding the hardware identity-mapped ~1GB physicals made the PTB
-     * emit a load-bearing stream at a low stray address (an internal
-     * truncation/banking path nothing else exercises), which ate exec's
-     * LVO tables, the boot page tables and the IRQ lists at fullscreen
-     * tile counts. Everything unmapped faults into the scratch page and
+     * Enable the MMU and map every BO at its physical address (see
+     * V3D_GPU_VA). Everything unmapped faults into the scratch page and
      * latches VIO_ADDR. PT entries: 32-bit, pfn low, VALID|WRITEABLE;
      * zeroed = invalid, which VCMEM_ZERO gives for free. Mappings are
      * made per-BO at CREATE and survive a recovery reset (the PT lives
@@ -237,9 +233,8 @@ BOOL v3d_hw_init(struct V3DData *sd)
 }
 
 /*
- * Map a BO for the GPU at its low virtual address (V3D_GPU_VA: a
- * stateless, collision-free fold of the physical address into the
- * bottom 512MB) and return that VA. The PT lives in uncached firmware
+ * Map a BO for the GPU at its physical address (V3D_GPU_VA: a stateless
+ * identity map) and return that VA. The PT lives in uncached firmware
  * memory, so the walker sees the entries as soon as the TLB is cleared;
  * creates and frees only happen with the GPU idle (synchronous submit),
  * so a full clear is safe and simple.

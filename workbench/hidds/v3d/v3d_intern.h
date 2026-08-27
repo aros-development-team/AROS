@@ -16,6 +16,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <devices/timer.h>
 #include <oop/oop.h>
@@ -250,26 +251,33 @@ struct vc4gfx_overlay
 
 /*
  * The CPU reaches a BO at its locked physical address (identity through
- * the uncached VideoCore window). The GPU gets a LOW VIRTUAL address
- * through the V3D MMU instead: the hardware is only ever exercised with
- * small VAs in practice, and feeding it identity-mapped ~1GB physicals
- * made the PTB compute stray writes into low RAM (an internal
- * truncation/banking path nothing else exercises). paddr & 0x1FFFFFFF is
- * collision-free for a <=512MB firmware heap and needs no allocator
- * state.
+ * the uncached VideoCore window). The GPU gets that same address as a
+ * virtual one through the V3D MMU: the page table is 4MB, so it spans
+ * the whole 32-bit VA space, and an identity map needs no allocator
+ * state and cannot collide.
+ *
+ * This used to fold into the bottom 512MB (paddr & 0x1FFFFFFF), because
+ * identity-mapped ~1GB physicals had been seen to make the PTB compute
+ * stray writes into low RAM. That observation predates nothing: the
+ * CT0QTS enable, the BPOA/BPOS programming and the quirk landing zone
+ * all landed in the same commit as the fold, and every one of them
+ * independently caused low-RAM sprays of its own, so the fold was never
+ * shown to be doing any work. Linux's v3d runs its VA allocator over the
+ * full page table. The fold is not free: it caps addressable BO memory
+ * at 512MB, which is the ceiling Doom 3 hits.
  */
 #define V3D_GPU_ADDR(phys)  ((ULONG)(phys) & 0x3fffffff)
-#define V3D_GPU_VA(paddr)   ((ULONG)(paddr) & 0x1fffffff)
+#define V3D_GPU_VA(paddr)   ((ULONG)(paddr))
 
 /*
- * A buffer object. gpu_handle is the firmware allocation (ALLOCMEM), and
- * the memory stays locked for the BO's whole life: paddr doubles as the
- * CPU mapping through the identity-mapped uncached VideoCore region, so
- * nothing is ever flushed or invalidated for the GPU's benefit.
+ * A buffer object. gpu_handle is the arena allocation and equals paddr:
+ * the arena is identity-mapped and Normal Non-Cacheable, so one value is
+ * at once the allocator's cookie, the CPU pointer and the GPU's physical
+ * page, and nothing is ever flushed or invalidated for the GPU's benefit.
  */
 struct V3DBO
 {
-    ULONG   gpu_handle;     /* firmware handle, 0 = slot free/external */
+    ULONG   gpu_handle;     /* arena address, 0 = slot free/external */
     ULONG   paddr;          /* locked address, alias bits masked (CPU) */
     ULONG   gpu_va;         /* what the GPU sees, via the V3D MMU */
     ULONG   size;
@@ -278,7 +286,23 @@ struct V3DBO
                              * page): unmap on close, never FREEMEM */
 };
 
-#define V3D_MAX_BOS     1024
+/* One BO per texture and per vertex buffer; Doom 3 keeps a few thousand
+ * live, and Mesa answers a refused CREATE_BO by dropping its whole BO
+ * cache and retrying. */
+#define V3D_MAX_BOS     8192
+
+/* A slab of system RAM, remapped Normal Non-Cacheable and suballocated as
+ * GPU memory (v3d_mem.c). raw is what AllocMem returned, before the 4K
+ * alignment the suballocation needs. */
+struct V3DArena
+{
+    struct MinNode      node;
+    APTR                raw;
+    ULONG               raw_size;
+    APTR                base;
+    ULONG               size;
+    struct MemHeader    mh;
+};
 
 struct V3DData
 {
@@ -341,6 +365,14 @@ struct V3DData
 
     struct V3DBO    bo_table[V3D_MAX_BOS];
     ULONG           bo_next_handle;
+    BOOL            bo_full_reported;
+
+    /* GPU memory arenas (see v3d_mem.c), all under bo_lock */
+    struct MinList  arenas;
+    ULONG           arena_bytes;
+    ULONG           gpu_mem_bytes;
+    ULONG           gpu_mem_allocs;
+    ULONG           oom_reports;
     struct SignalSemaphore bo_lock;
 
     /* The framebuffer flip pages, published (under bo_lock) as the only
@@ -388,10 +420,13 @@ BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
 void v3d_wait_idle(struct V3DData *sd);
 void v3d_flush_caches(struct V3DData *sd);
 
-/* v3d_drm_shim.c */
+/* v3d_mem.c */
 ULONG v3d_gpu_mem_alloc(struct V3DData *sd, ULONG size, ULONG align,
                         ULONG *out_paddr);
-void v3d_gpu_mem_free(struct V3DData *sd, ULONG gpu_handle);
+void v3d_gpu_mem_free(struct V3DData *sd, ULONG gpu_handle, ULONG size);
+void v3d_mem_release(struct V3DData *sd);
+
+/* v3d_drm_shim.c */
 int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg);
 void v3d_release_all_bos(struct V3DData *sd);
 
