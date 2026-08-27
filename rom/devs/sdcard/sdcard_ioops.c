@@ -171,13 +171,19 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
                     if (SDCBUS_SendCmd(sdcReadTags, bus) == -1)
                     {
                         bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                        retVal = IOERR_ABORTED;
                     }
-                    if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
+                    else if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
                     {
                         bug("[SDCard%02ld] %s: Failed to ACK termination of Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                        retVal = IOERR_ABORTED;
                     }
                 }
-                *act += chunk << sectorShift;
+
+                /* A card that never acknowledged the stop is still streaming
+                   as far as it knows, so this chunk did not arrive intact. */
+                if (retVal == 0)
+                    *act += chunk << sectorShift;
             }
             else
             {
@@ -274,13 +280,19 @@ BYTE FNAME_SDCIO(ReadSector64)(struct sdcard_Unit *unit, UQUAD block,
                     if (SDCBUS_SendCmd(sdcReadTags, bus) == -1)
                     {
                         bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                        retVal = IOERR_ABORTED;
                     }
-                    if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
+                    else if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
                     {
                         bug("[SDCard%02ld] %s: Failed to ACK termination of Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                        retVal = IOERR_ABORTED;
                     }
                 }
-                *act += chunk << sectorShift;
+
+                /* A card that never acknowledged the stop is still streaming
+                   as far as it knows, so this chunk did not arrive intact. */
+                if (retVal == 0)
+                    *act += chunk << sectorShift;
             }
             else
             {
@@ -376,13 +388,19 @@ BYTE FNAME_SDCIO(WriteSector32)(struct sdcard_Unit *unit, ULONG block,
                     if (SDCBUS_SendCmd(sdcWriteTags, bus) == -1)
                     {
                         bug("[SDCard%02ld] %s: Failed to terminate Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                        retVal = IOERR_ABORTED;
                     }
-                    if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
+                    else if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
                     {
                         bug("[SDCard%02ld] %s: Failed to ACK termination of Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                        retVal = IOERR_ABORTED;
                     }
                 }
-                *act += chunk << sectorShift;
+
+                /* An unacknowledged stop leaves the card mid-write, so these
+                   blocks cannot be reported as safely on the card. */
+                if (retVal == 0)
+                    *act += chunk << sectorShift;
             }
             else
             {
@@ -477,13 +495,19 @@ BYTE FNAME_SDCIO(WriteSector64)(struct sdcard_Unit *unit, UQUAD block,
                     if (SDCBUS_SendCmd(sdcWriteTags, bus) == -1)
                     {
                         bug("[SDCard%02ld] %s: Failed to terminate Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                        retVal = IOERR_ABORTED;
                     }
-                    if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
+                    else if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
                     {
                         bug("[SDCard%02ld] %s: Failed to ACK termination of Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                        retVal = IOERR_ABORTED;
                     }
                 }
-                *act += chunk << sectorShift;
+
+                /* An unacknowledged stop leaves the card mid-write, so these
+                   blocks cannot be reported as safely on the card. */
+                if (retVal == 0)
+                    *act += chunk << sectorShift;
             }
             else
             {
