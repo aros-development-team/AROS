@@ -170,7 +170,25 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
             head = 0;
             phase = !phase;
         }
+
+        /*
+         * The completion hook takes the queue lock itself - it frees the
+         * command id - so it must not be called with the lock held, or the
+         * first completion deadlocks the CPU against itself. Publish what
+         * we have consumed first, so another core walking the queue cannot
+         * hand the same entry out twice while the hook runs, then drop the
+         * lock across the call. The controller cannot reuse the entry yet:
+         * that needs the head doorbell, which is only rung below.
+         */
+        nvmeq->cq_head = head;
+        nvmeq->cq_phase = phase;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&nvmeq->q_lock);
+#endif
         nvme_complete_event(nvmeq, cqe);
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         processed++;
     }
 
@@ -182,7 +200,7 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
      * storm that starves the machine - this is what QEMU's controller does,
      * and it wedges the boot as soon as the first admin command completes.
      */
-    if ((head != nvmeq->cq_head) || (phase != nvmeq->cq_phase)) {
+    if (processed) {
         D(bug ("[NVME:HW] %s: updating head=%u, phase=%u\n", __func__, head, phase);)
         nvmeq->q_db[1 << nvmeq->dev->db_stride] = head;
         nvmeq->cq_head = head;
