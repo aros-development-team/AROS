@@ -16,18 +16,18 @@ usage() {
     exit 0
 }
 
-[ $# -eq 0 ] &&  echo -n "AROS"
+[ $# -eq 0 ] &&  printf %s "AROS"
 
 for arg in "$@"; do
     case "$arg" in
-        -s|--kernel-name) echo -n "AROS";;
-        -n|--nodename) echo -n "localhost";;
-        -r|--kernel-release) echo -n "1";;
-        -v|--kernel-version) echo -n "0";;
-        -m|--machine) echo -n "@aros_target_cpu@";;
-        -p|--processor) echo -n "@aros_target_cpu@";;
-        -i|--hardware-platform) echo -n "@aros_target_cpu@";;
-        -o|--operating-system) echo -n "AmigaOS/AROS";;
+        -s|--kernel-name) printf %s "AROS";;
+        -n|--nodename) printf %s "localhost";;
+        -r|--kernel-release) printf %s "1";;
+        -v|--kernel-version) printf %s "0";;
+        -m|--machine) printf %s "@aros_target_cpu@";;
+        -p|--processor) printf %s "@aros_target_cpu@";;
+        -i|--hardware-platform) printf %s "@aros_target_cpu@";;
+        -o|--operating-system) printf %s "AmigaOS/AROS";;
         --help) usage;;
     esac
 done
