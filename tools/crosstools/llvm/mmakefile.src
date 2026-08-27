@@ -506,11 +506,22 @@ LLVM_COMPILER_RT_CMAKEOPTIONS :=                                                
 # (copied, not symlinked, as AROS' build tools define no $(LN)).
 COMPILER_RT_CLANG_LIBDIR := $(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)/lib/aros
 
+# compiler-rt installs under the full LLVM version, but from clang 16 the
+# driver's resource directory is the major version only, so AddRunTimeLibs()
+# never finds the builtins there. Mirror them into the directory clang
+# actually searches.
+COMPILER_RT_RESOURCE_LIBDIR := $(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION_MAJOR)/lib/aros
+
 #MM crosstools-compiler-rt-fixup : crosstools-compiler-rt
 crosstools-compiler-rt-fixup :
 	$(Q)$(IF) $(TEST) -f $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-arm.a -a \
 	    ! -e $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-armhf.a ; then \
 	    $(CP) $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-arm.a $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-armhf.a ; \
+	fi
+	$(Q)$(IF) $(TEST) -d $(COMPILER_RT_CLANG_LIBDIR) -a \
+	    "$(COMPILER_RT_CLANG_LIBDIR)" != "$(COMPILER_RT_RESOURCE_LIBDIR)" ; then \
+	    $(MKDIR) $(COMPILER_RT_RESOURCE_LIBDIR) ; \
+	    $(CP) $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.*.a $(COMPILER_RT_RESOURCE_LIBDIR)/ ; \
 	fi
 
 ifneq ($(AROS_TARGET_CPU32),)
