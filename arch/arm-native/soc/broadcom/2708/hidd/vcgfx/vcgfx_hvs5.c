@@ -301,6 +301,16 @@ static void hvs5_log_list(ULONG head)
             hvs5_dl_rd(idx + 1), hvs5_dl_rd(idx + 2),
             hvs5_dl_rd(idx + size - HVS5_PTROFF_FROM_END));
 
+        /* Raw words too: a firmware-scaled plane is longer than the
+         * 8-word entry decoded so far. */
+        {
+            ULONG i;
+
+            for (i = 0; i < size; i++)
+                bug("[VC4HVS5]     [%u] %08x\n",
+                    (unsigned)i, hvs5_dl_rd(idx + i));
+        }
+
         idx += size;
     }
 }
@@ -443,32 +453,46 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
 
 #if VC4_HVS5_TAKEOVER
     {
-        ULONG ctrl, head, len, base, i;
+        ULONG ctrl, head, len, base, i, ch;
         ULONG fb_entry, fb_ptr, fb_words;
 
         if (hvs5_rd(HVS5_ID) != HVS5_ID_MAGIC)
             return FALSE;
 
-        ctrl = hvs5_rd(HVS5_DISPCTRLX(HVS5_CHANNEL_HDMI));
-        head = hvs5_rd(HVS5_DISPLACT(HVS5_CHANNEL_HDMI));
-        if (!(ctrl & (1UL << 31)) || head == 0 || head >= HVS5_DLIST_WORDS)
+        /* Enabled with a plausible head is not enough: the test is that
+         * the list points at our framebuffer, which also hands us the
+         * plane to inherit. */
+        for (ch = 0; ch < HVS5_CHANNELS; ch++)
         {
-            bug("[VC4HVS5] takeover: channel %u unusable (CTRL=%08x head=%u)\n",
-                (unsigned)HVS5_CHANNEL_HDMI, ctrl, (unsigned)head);
+            ctrl = hvs5_rd(HVS5_DISPCTRLX(ch));
+            head = hvs5_rd(HVS5_DISPLACT(ch));
+
+            if (!(ctrl & (1UL << 31)) || head == 0
+                || head >= HVS5_DLIST_WORDS)
+                continue;
+            if (hvs5_find_plane(head, fb_phys, &fb_entry, &fb_ptr, &fb_words))
+                break;
+        }
+
+        if (ch == HVS5_CHANNELS)
+        {
+            for (i = 0; i < HVS5_CHANNELS; i++)
+                bug("[VC4HVS5] takeover: channel %u CTRL=%08x head=%u\n",
+                    (unsigned)i, hvs5_rd(HVS5_DISPCTRLX(i)),
+                    (unsigned)hvs5_rd(HVS5_DISPLACT(i)));
+            bug("[VC4HVS5] takeover: no channel scans out fb 0x%08x\n",
+                fb_phys);
             return FALSE;
         }
+
+        st->hvs_Channel = ch;
+        head = hvs5_rd(HVS5_DISPLACT(ch));
 
         len = hvs5_list_length(head);
         if (len == 0 || len > HVS5_OWN_SLOT_STRIDE)
         {
             bug("[VC4HVS5] takeover: list at %u is %u words, refusing\n",
                 (unsigned)head, (unsigned)len);
-            return FALSE;
-        }
-
-        if (!hvs5_find_plane(head, fb_phys, &fb_entry, &fb_ptr, &fb_words))
-        {
-            bug("[VC4HVS5] takeover: no plane points at fb 0x%08x\n", fb_phys);
             return FALSE;
         }
 
@@ -541,16 +565,16 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
         hvs5_log_list(base);
 
         VC4_MBOX_LOCK(xsd);
-        hvs5_wr(HVS5_DISPLIST(HVS5_CHANNEL_HDMI), base);
+        hvs5_wr(HVS5_DISPLIST(st->hvs_Channel), base);
         for (i = 0; i < HVS5_SPIN_LATCH; i++)
         {
-            if (hvs5_rd(HVS5_DISPLACT(HVS5_CHANNEL_HDMI)) == base)
+            if (hvs5_rd(HVS5_DISPLACT(st->hvs_Channel)) == base)
                 break;
         }
-        if (hvs5_rd(HVS5_DISPLACT(HVS5_CHANNEL_HDMI)) == base)
+        if (hvs5_rd(HVS5_DISPLACT(st->hvs_Channel)) == base)
             st->hvs_Active = TRUE;
         else
-            hvs5_wr(HVS5_DISPLIST(HVS5_CHANNEL_HDMI), head);
+            hvs5_wr(HVS5_DISPLIST(st->hvs_Channel), head);
         VC4_MBOX_UNLOCK(xsd);
 
         if (st->hvs_Active)
@@ -667,7 +691,20 @@ BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
     BOOL structural;
 
     if (!st->hvs_Active || !st->hvs_OvlUsable)
+    {
+        /* Once: which precondition failed decides the fix (takeover
+         * failure vs a firmware-scaled fb plane). */
+        static BOOL said = FALSE;
+
+        if (!said && ovl)
+        {
+            said = TRUE;
+            bug("[VC4HVS5] overlay refused: %s\n",
+                !st->hvs_Active ? "no display list takeover"
+                                : "fb plane is scaled (non-native mode)");
+        }
         return FALSE;
+    }
 
     VC4_MBOX_LOCK(xsd);
 
@@ -676,7 +713,7 @@ BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
         if (st->hvs_OvlActive)
         {
             st->hvs_OvlActive = FALSE;
-            hvs5_wr(HVS5_DISPLIST(HVS5_CHANNEL_HDMI), hvs5_build_list(xsd));
+            hvs5_wr(HVS5_DISPLIST(st->hvs_Channel), hvs5_build_list(xsd));
         }
         VC4_MBOX_UNLOCK(xsd);
         return TRUE;
@@ -707,7 +744,7 @@ BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
     st->hvs_OvlY     = ovl->ovl_Y;
 
     if (structural)
-        hvs5_wr(HVS5_DISPLIST(HVS5_CHANNEL_HDMI), hvs5_build_list(xsd));
+        hvs5_wr(HVS5_DISPLIST(st->hvs_Channel), hvs5_build_list(xsd));
     else
         hvs5_write_overlay(xsd, st->hvs_ListBase + st->hvs_OvlOff);
 
@@ -757,15 +794,16 @@ static inline void pv_wr(ULONG base_off, ULONG offset, ULONG value)
 }
 
 #if VC4_HVS5_VSYNC_IRQ
-/* IRQ context: count only, no printing. The line is shared with PV1,
- * which is disabled and masked, so a status of zero is not ours. */
+/* IRQ context: count only, no printing. Some pixelvalves share a GIC line
+ * (PV1 and PV4 both sit on SPI 110), and the other one is disabled and
+ * masked, so a status of zero is not ours. */
 static void hvs5_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
 {
-    ULONG stat = pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT);
+    ULONG stat = pv_rd(st->hvs_PVOffset, HVS5_PV_INTSTAT);
 
     if (stat)
     {
-        pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, stat);   /* W1C */
+        pv_wr(st->hvs_PVOffset, HVS5_PV_INTSTAT, stat);   /* W1C */
         if (stat & st->hvs_VSyncMask)
             st->hvs_VSyncCount++;
     }
@@ -774,8 +812,28 @@ static void hvs5_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
 void vc4_hvs5_irq_init(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    ULONG i;
 
-    st->hvs_VSyncIrq = KrnAddIRQHandler(HVS5_PV_HDMI_IRQ, hvs5_vsync_irq,
+    /* Only an enabled pixelvalve carries timing, and which one that is
+     * follows the mode the firmware set - so ask, rather than assume. */
+    for (i = 0; i < HVS5_PV_COUNT; i++)
+    {
+        if (!(pv_rd(hvs5_pvs[i].pv_Offset, HVS5_PV_CONTROL) & 1))
+            continue;
+        st->hvs_PVOffset = hvs5_pvs[i].pv_Offset;
+        st->hvs_PVIrq    = hvs5_pvs[i].pv_Irq;
+        bug("[VC4HVS5] vsync: %s drives the display (irq %u)\n",
+            hvs5_pvs[i].pv_Name, (unsigned)st->hvs_PVIrq);
+        break;
+    }
+
+    if (!st->hvs_PVOffset)
+    {
+        bug("[VC4HVS5] vsync: no enabled pixelvalve, flips will not pace\n");
+        return;
+    }
+
+    st->hvs_VSyncIrq = KrnAddIRQHandler(st->hvs_PVIrq, hvs5_vsync_irq,
                                         st, SysBase);
     if (!st->hvs_VSyncIrq)
         bug("[VC4HVS5] vsync: KrnAddIRQHandler failed\n");
@@ -790,8 +848,8 @@ void vc4_hvs5_irq_init(struct VideoCoreGfx_staticdata *xsd)
  */
 static void hvs5_vsync_start(struct vc4_hvs_state *st)
 {
-    ULONG verta = pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_VERTA);
-    ULONG vertb = pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_VERTB);
+    ULONG verta = pv_rd(st->hvs_PVOffset, HVS5_PV_VERTA);
+    ULONG vertb = pv_rd(st->hvs_PVOffset, HVS5_PV_VERTB);
     ULONG vtot = (verta & 0xffff) + (verta >> 16)
                + (vertb & 0xffff) + (vertb >> 16);
     ULONG rate[10], line_max = 0, expect, c0, b, start;
@@ -807,13 +865,13 @@ static void hvs5_vsync_start(struct vc4_hvs_state *st)
         {
             c0 = st->hvs_VSyncCount;
             st->hvs_VSyncMask = 1UL << b;       /* handler counts this bit */
-            pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
-            pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, 1UL << b);
+            pv_wr(st->hvs_PVOffset, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
+            pv_wr(st->hvs_PVOffset, HVS5_PV_INTEN, 1UL << b);
             start = hvs5_now_us();
             while ((hvs5_now_us() - start) < HVS5_PROBE_US)
                 ;
-            pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, 0);
-            pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
+            pv_wr(st->hvs_PVOffset, HVS5_PV_INTEN, 0);
+            pv_wr(st->hvs_PVOffset, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
             rate[b] = st->hvs_VSyncCount - c0;
             bug("[VC4HVS5] vsync: bit %u -> %u ticks\n",
                 (unsigned)b, (unsigned)rate[b]);
@@ -852,8 +910,8 @@ static void hvs5_vsync_start(struct vc4_hvs_state *st)
         }
     }
 
-    pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
-    pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, st->hvs_VSyncMask);
+    pv_wr(st->hvs_PVOffset, HVS5_PV_INTSTAT, HVS5_PV_INT_ALL);
+    pv_wr(st->hvs_PVOffset, HVS5_PV_INTEN, st->hvs_VSyncMask);
 
     c0 = st->hvs_VSyncCount;
     start = hvs5_now_us();
@@ -864,7 +922,7 @@ static void hvs5_vsync_start(struct vc4_hvs_state *st)
     }
     if (st->hvs_VSyncCount == c0)
     {
-        pv_wr(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN, 0);
+        pv_wr(st->hvs_PVOffset, HVS5_PV_INTEN, 0);
         bug("[VC4HVS5] vsync: nothing delivered, re-masked\n");
     }
     else
@@ -890,7 +948,7 @@ static void hvs5_latch_wait(struct vc4_hvs_state *st)
 {
 #if VC4_HVS5_VSYNC_IRQ
     if (st->hvs_VSyncIrq && st->hvs_VSyncMask
-        && (pv_rd(HVS5_PV_HDMI_OFFSET, HVS5_PV_INTEN) & st->hvs_VSyncMask))
+        && (pv_rd(st->hvs_PVOffset, HVS5_PV_INTEN) & st->hvs_VSyncMask))
     {
         ULONG start = hvs5_now_us();
 
