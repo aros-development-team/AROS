@@ -1,35 +1,20 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+
+    Desc: security.library private memory management
+*/
 #ifndef _SECURITY_MEMORY_H
 #define _SECURITY_MEMORY_H
-/************************************************************
-* MultiUser - MultiUser Task/File Support System				*
-* ---------------------------------------------------------	*
-* Memory management														*
-* ---------------------------------------------------------	*
-* © Copyright 1993-1994 Geert Uytterhoeven						*
-* All Rights Reserved.													*
-************************************************************/
 
-/* This structure might change/melt/whatever whenever */
+#include <exec/types.h>
 
-struct MemNode {
-	struct MinNode TaskMemNode;
-	struct MinNode Node;
-	APTR Address;
-	ULONG Size;
-	struct secOldTaskNode *Owner;
-};
+struct SecurityBase;
 
-/*
- *      Private Function Prototypes
- */
-
-extern BOOL InitMemory(void);
-extern void CleanUpMemory(void);
+extern BOOL InitMemory(struct SecurityBase *secBase);
+extern void CleanUpMemory(struct SecurityBase *secBase);
 extern APTR MAlloc(ULONG size);
 extern void Free(APTR block, ULONG size);
 extern APTR MAllocV(ULONG size);
 extern void FreeV(APTR block);
-
-extern void InitMemList(void);
 
 #endif /* _SECURITY_MEMORY_H */

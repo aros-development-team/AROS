@@ -1,12 +1,28 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/debug.h>
-#include <stdio.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <proto/security.h>
 
 #include "security_intern.h"
+#include "security_task.h"
+#include "security_server.h"
+#include "security_segment.h"
+#include "security_monitor.h"
+#include "security_memory.h"
 #include "security_plugins.h"
+#include "security_crypto.h"
+#include "security_enforce.h"
+#include "security_packetio.h"
+#include "security_userinfo.h"
+#include "security_groupinfo.h"
+#include "security_login.h"
+#include "security_support.h"
 
 /*****************************************************************************
 
@@ -14,7 +30,6 @@
         AROS_LH4(APTR, secContextLocate,
 
 /*  SYNOPSIS */
-        /* (module, id, caller, size) */
         AROS_LHA(secPluginModule *, module, A0),
         AROS_LHA(ULONG, id, D0),
         AROS_LHA(struct Task *, caller, A1),
@@ -23,46 +38,33 @@
 /*  LOCATION */
         struct SecurityBase *, secBase, 52, Security)
 
-/*  FUNCTION
-
-    INPUTS
-
+/*
+    FUNCTION
+        Plugin API: locate (or allocate) the context memory of size 'size'
+        that a module keeps for a caller under the given id. The memory is
+        freed automatically when the caller closes the library or exits.
 
     RESULT
+        The context memory, or NULL.
 
-
-    NOTES
-
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
     APTR res = NULL;
-    struct secTaskNode * node;
+    struct secTaskNode *node;
+
+    if (!caller)
+        caller = FindTask(NULL);
 
     ObtainSemaphore(&secBase->TaskOwnerSem);
-    node = FindContextOwner(secBase, caller);
-    res = FindContext(node, module, id);
-    if (res == NULL)
+    if ((node = FindContextOwner(secBase, caller)))
+    {
+        if (!(res = FindContext(node, module, id)))
             res = AllocateContext(node, module, id, size);
+    }
     ReleaseSemaphore(&secBase->TaskOwnerSem);
-
     return res;
 
     AROS_LIBFUNC_EXIT
-
 } /* secContextLocate */

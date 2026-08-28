@@ -1,153 +1,51 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-    Desc: Security library initialization code.
+    Desc: security.library initialization.
+
+          The library is a ROM resident with residentpri -121, which
+          genmodule turns into an RTF_AFTERDOS resident: it is initialised by
+          dos.library's CliInit() once SYS: and the boot assigns exist, in
+          the context of the boot process. So dos.library is available here
+          and the server can be started right away (security_afterdos.c).
 */
-
-#include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/utility.h>
-#include <proto/dos.h>
-#include <proto/intuition.h>
-#include <proto/reqtools.h>
+#include <proto/task.h>
 
 #include <proto/security.h>
 
 #include <exec/types.h>
 #include <exec/libraries.h>
-
 #include <aros/symbolsets.h>
 
 #include "security_intern.h"
 #include "security_task.h"
-#include "security_server.h"
 #include "security_segment.h"
 #include "security_monitor.h"
 #include "security_memory.h"
+#include "security_plugins.h"
 
 #include LC_LIBDEFS_FILE
 
-struct ReqToolsBase *ReqToolsBase;
-
-extern void AROS_SLIB_ENTRY(SecurityAddTask,Exec,47)(void);
-extern void AROS_SLIB_ENTRY(SecurityRemTask,Exec,48)(void);
-
-/****************************************************************************************/
-static int Security_AfterDOS(LIBBASETYPEPTR secBase)
-{
-     D(bug( DEBUG_NAME_STR " %s(%p)\n", __func__, secBase);)
-
-     /*
-     *  Open dos.library, intuition.library and utility.library V37+,
-     *  reqtools.library V38+ and create the Server
-     */
-
-    if (!(DOSBase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS)) ||
-             !(IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION)) ||
-             !(UtilityBase = (struct UtilityBase *)TaggedOpenLibrary(TAGGEDOPEN_UTILITY)) ||
-             !(ReqToolsBase = (struct ReqToolsBase *)OpenLibrary("reqtools.library", 38)) ||
-             !CreateServer(secBase))
-    {
-        D(bug( DEBUG_NAME_STR " %s: failed to open libraries\n", __func__));
-        return(FALSE);
-    }
-
-    /*
-     *  Open locale.library, and the default catalog for logfile output if possible
-    */
-
-    secBase->LogInfo.li_LocaleBase = OpenLibrary("locale.library",37);
-    if  (secBase->LogInfo.li_LocaleBase) {
-            secBase->LogInfo.li_Catalog = OpenCatalog(0,SECURITYCATALOGNAME,
-                                                     OC_BuiltInLanguage,"english",
-                                                     OC_Version,SECURITYCATALOGVERSION,
-                                                     TAG_DONE);
-    }
-
-    Forbid();
-    /*
-     *  Make sure the Server is owned by the system
-     */
-
-    SetTaskExtOwner(secBase, (struct Task *)secBase->Server, (struct secExtOwner *)&RootExtOwner);
-
-    /*
-     *  Patch dos.library functions:
-     *
-     *                  LoadSeg()
-     *                  NewLoadSeg()
-     *                  UnLoadSeg()
-     *                  InternalLoadSeg()
-     *                  InternalUnLoadSeg()
-     *                  CreateProc()
-     *                  CreateNewProc()
-     *                  RunCommand()
-     *                  SetProtection()
-     *
-     */
-#if (0)
-    secBase->OLDLoadSeg = SetFunction((struct Library *)DOSBase,
-                                                                                                              (LONG)&LVOLoadSeg,
-                                                                                                              (APTR)NEWLoadSeg);
-    secBase->OLDNewLoadSeg = SetFunction((struct Library *)DOSBase,
-                                                                                                              (LONG)&LVONewLoadSeg,
-                                                                                                              (APTR)NEWNewLoadSeg);
-    secBase->OLDUnLoadSeg = SetFunction((struct Library *)DOSBase,
-                                                                                                              (LONG)&LVOUnLoadSeg,
-                                                                                                              (APTR)NEWUnLoadSeg);
-    secBase->OLDInternalLoadSeg = SetFunction((struct Library *)DOSBase,
-                                                                                                              (LONG)&LVOInternalLoadSeg,
-                                                                                                              (APTR)NEWInternalLoadSeg);
-    secBase->OLDInternalUnLoadSeg = SetFunction((struct Library *)DOSBase,
-                                                                                                                     (LONG)&LVOInternalUnLoadSeg,
-                                                                                                                     (APTR)NEWInternalUnLoadSeg);
-    secBase->OLDCreateProc = SetFunction((struct Library *)DOSBase,
-                                                                                                    (LONG)&LVOCreateProc,
-                                                                                                    (APTR)NEWCreateProc);
-    secBase->OLDCreateNewProc = SetFunction((struct Library *)DOSBase,
-                                                                                                            (LONG)&LVOCreateNewProc,
-                                                                                                            (APTR)NEWCreateNewProc);
-    secBase->OLDRunCommand = SetFunction((struct Library *)DOSBase,
-                                                                                                    (LONG)&LVORunCommand,
-                                                                                                    (APTR)NEWRunCommand);
-    secBase->OLDSetProtection = SetFunction((struct Library *)DOSBase,
-                                                                                                            (LONG)&LVOSetProtection,
-                                                                                                            (APTR)NEWSetProtection);
-#endif
-    Permit();
-
-    /*
-     *  Activate the Server
-     */
-
-    if (!StartServer(secBase))
-                return(FALSE);
-
-        return(TRUE);
-}
+struct SecurityBase *SecurityBaseGlobal = NULL;
 
 static int Security_Init(LIBBASETYPEPTR secBase)
 {
-    struct Task *task;
+    D(bug(DEBUG_NAME_STR " %s(%p)\n", __func__, secBase);)
 
-    D(
-        bug( DEBUG_NAME_STR " %s(%p)\n", __func__, secBase);
-#ifdef WANT_COMPILER_INFO
-        bug( DEBUG_NAME_STR " %s starting up\n\n", __COMPILER_NAME__ " built " __DATE__ " " __TIME__);
-#endif
-    )
+    SecurityBaseGlobal = secBase;
 
-    /*
-     *  Initialise Memory Management
-     */
+    secBase->sec_TaskResBase = OpenResource("task.resource");
+    if (!secBase->sec_TaskResBase)
+    {
+        D(bug(DEBUG_NAME_STR " %s: task.resource not available\n", __func__);)
+        return FALSE;
+    }
 
-    if (!InitMemory())
-        return(FALSE);
-
-    /*
-     *  Initialise the Semaphores
-     */
+    if (!InitMemory(secBase))
+        return FALSE;
 
     InitSemaphore(&secBase->SuperSem);
     InitSemaphore(&secBase->TaskOwnerSem);
@@ -156,66 +54,61 @@ static int Security_Init(LIBBASETYPEPTR secBase)
     InitSemaphore(&secBase->MonitorSem);
     InitSemaphore(&secBase->PluginModuleSem);
 
-    /*
-     *  Initialise Task Owner, Segment Owner and Monitor Lists.
-     *  Also initialise Mem Owner and Session lists.
-     */
-
-    NEWLIST((struct List *)&secBase->SessionsList);
     NEWLIST((struct List *)&secBase->PluginModuleList);
+    NEWLIST((struct List *)&secBase->NativeVolumes);
+    secBase->FirstStartup = TRUE;
+    secBase->LimitDOSSetProtection = TRUE;
 
-    /*
-     *  Initialise Task Control
-     */
-
-    NEWLIST((struct List *)&secBase->Frozen);
-    NEWLIST((struct List *)&secBase->Zombies);
-
-    InitTaskList(secBase);
-#if (0)
-    InitMemList();
-#endif
     InitSegList(secBase);
     InitMonList(secBase);
 
-    /*
-     *  Create Task/User list
-     *
-     *  All tasks have no owner.
-     */
-    D(bug( DEBUG_NAME_STR " %s: Initialising task/user list(s)\n", __func__);)
-
-    Forbid();
-    CreateOrphanTask(secBase, FindTask(NULL), DEFPROTECTION);
-    for (task = (struct Task *)SysBase->TaskReady.lh_Head;
-              task->tc_Node.ln_Succ; task = (struct Task *)task->tc_Node.ln_Succ)
-              CreateOrphanTask(secBase, task, DEFPROTECTION);
-    for (task = (struct Task *)SysBase->TaskWait.lh_Head;
-              task->tc_Node.ln_Succ; task = (struct Task *)task->tc_Node.ln_Succ)
-              CreateOrphanTask(secBase, task, DEFPROTECTION);
-
-    /*
-     *  Patch exec.library functions:
-     *
-     *                  AddTask()
-     *                  RemTask()
-     *
-     *  This must be done inside this Forbid()/Permit() pair
-     *  to prevent the birth of orphan-tasks
-     */
-    secBase->OLDAddTask = SetFunction((struct Library *)SysBase, -LIB_VECTSIZE * 47, (APTR) AROS_SLIB_ENTRY(SecurityAddTask, Exec, 47));
-    secBase->OLDRemTask = SetFunction((struct Library *)SysBase, -LIB_VECTSIZE * 48, (APTR) AROS_SLIB_ENTRY(SecurityRemTask, Exec, 48));
-    Permit();
-
-        // TODO: only call the following if we can FindName dos.library in the library list.
-        // If not we are called during rom startup - and it will be handled by the resident.
+    if (!InitTaskList(secBase))
+    {
+        CleanUpMemory(secBase);
+        return FALSE;
+    }
 
     if (!Security_AfterDOS(secBase))
-                return(FALSE);
+    {
+        D(bug(DEBUG_NAME_STR " %s: DOS side initialisation failed\n", __func__);)
+        CleanUpTaskList(secBase);
+        CleanUpMemory(secBase);
+        return FALSE;
+    }
 
-    return(TRUE);
+    D(bug(DEBUG_NAME_STR " %s: initialised\n", __func__);)
+
+    return TRUE;
 }
 
-/****************************************************************************************/
+static int Security_Expunge(LIBBASETYPEPTR secBase)
+{
+    D(bug(DEBUG_NAME_STR " %s(%p)\n", __func__, secBase);)
+
+    CleanUpTaskList(secBase);
+    CleanUpMemory(secBase);
+    SecurityBaseGlobal = NULL;
+
+    return TRUE;
+}
+
+/*
+ * Every task that opens the library gets a fresh plugin context level,
+ * see security_plugins.c.
+ */
+static int Security_Open(LIBBASETYPEPTR secBase)
+{
+    PushContext(secBase, FindTask(NULL));
+    return TRUE;
+}
+
+static int Security_Close(LIBBASETYPEPTR secBase)
+{
+    PopContext(secBase, FindTask(NULL));
+    return TRUE;
+}
 
 ADD2INITLIB(Security_Init, 0);
+ADD2EXPUNGELIB(Security_Expunge, 0);
+ADD2OPENLIB(Security_Open, 0);
+ADD2CLOSELIB(Security_Close, 0);

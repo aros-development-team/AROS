@@ -1,38 +1,46 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+
+    Desc: security.library server process
+*/
 #ifndef _SECURITY_SERVER_H
 #define _SECURITY_SERVER_H
 
-#define SERVERNAME		"Heimdall.server"
+#include <exec/ports.h>
+
+#define SERVERNAME              "Security.server"
+
+struct SecurityBase;
 
 /*
- *      Private Server Packet
+ * Private Server Packet
  */
-
-struct secSPacket {
+struct secSPacket
+{
     struct Message      Msg;
     LONG                Type;                   /* See definitions below */
-    SIPTR                Arg1;
-    SIPTR                Arg2;
-    SIPTR                Arg3;
-    SIPTR                Arg4;
-    SIPTR                Res1;
-    ULONG               Stage;                  /* How far the request has gone: index into plugin stack for this operation */
-    ULONG               AsyncResult;            /* Result of an asynchronous operation : Plugins */
+    SIPTR               Arg1;
+    SIPTR               Arg2;
+    SIPTR               Arg3;
+    SIPTR               Arg4;
+    SIPTR               Res1;
+    ULONG               Stage;                  /* index into the plugin stack for this operation */
+    ULONG               AsyncResult;            /* Result of an asynchronous plugin operation     */
 };
 
-#define secSAction_Quit                 0       /* Server Quit */
-#define secSAction_CheckUser            1       /* Login User */
-#define secSAction_Passwd               2       /* Change User Password */
-#define secSAction_GetUserInfo          3       /* Get User Information */
-#define secSAction_CheckPasswd          4       /* Check Password */
-#define secSAction_PasswdDirLock        5       /* Get PasswdDirLock */
-#define secSAction_ConfigDirLock        6       /* Get ConfigDirLock */
-#define secSAction_GetGroupInfo         7       /* Get Group Information */
-#define secSAction_InitModule		8       /* Call the init function for a module */
-#define secSAction_FiniModule		9       /* Call the fini function for a module */
-
-/*
- *		Private Function Prototypes
- */
+#define secSAction_Quit                 0       /* Server Quit                                  */
+#define secSAction_CheckUser            1       /* Login User                                   */
+#define secSAction_Passwd               2       /* Change User Password                         */
+#define secSAction_GetUserInfo          3       /* Get User Information                         */
+#define secSAction_CheckPasswd          4       /* Check Password                               */
+#define secSAction_PasswdDirLock        5       /* Get PasswdDirLock                            */
+#define secSAction_ConfigDirLock        6       /* Get ConfigDirLock                            */
+#define secSAction_GetGroupInfo         7       /* Get Group Information                        */
+#define secSAction_InitModule           8       /* Call the init function for a module          */
+#define secSAction_FiniModule           9       /* Call the fini function for a module          */
+#define secSAction_LoadPlugin           10      /* Load a plugin by name                        */
+#define secSAction_UnloadPlugin         11      /* Unload a plugin by name                      */
+#define secSAction_Log                  12      /* Append a line to the log file                */
 
 extern struct Process *CreateServer(struct SecurityBase *secBase);
 extern BOOL StartServer(struct SecurityBase *secBase);

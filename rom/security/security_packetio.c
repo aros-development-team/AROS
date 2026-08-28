@@ -1,84 +1,54 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-#include <aros/debug.h>
+    Desc: security.library packet helpers. Original code (c) 1998 Wez Furlong.
+*/
 
 #include <proto/exec.h>
-#include <proto/utility.h>
 #include <proto/dos.h>
-#include <proto/intuition.h>
 
 #include <proto/security.h>
-
-#include <dos/dos.h>
 
 #include "security_intern.h"
 #include "security_task.h"
 #include "security_packetio.h"
 
-/*	Return the Owner of a DosPacket */
-
-struct secExtOwner* GetPktOwner(struct SecurityBase *secBase, struct DosPacket* pkt)
+/* The task that sent a packet, or NULL if it cannot be determined */
+struct Task *GetPktTask(struct DosPacket *pkt)
 {
-    struct MsgPort* port;
-    struct Task *task;
-    struct secExtOwner *owner = NULL;
+    struct MsgPort *port;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    if ((port= pkt->dp_Port) && (port->mp_Flags == PA_SIGNAL) &&
-                    (task = port->mp_SigTask))
-        owner = secGetTaskExtOwner(task);
-    return owner;
+    if (pkt && (port = pkt->dp_Port) && ((port->mp_Flags & PF_ACTION) == PA_SIGNAL))
+        return port->mp_SigTask;
+    return NULL;
 }
 
-/* Return the owning task of a packet */
-
-struct Task * GetPktTask(struct DosPacket *pkt)
+/* Return the Owner of a DosPacket (allocated; free with secFreeExtOwner()) */
+struct secExtOwner *GetPktOwner(struct SecurityBase *secBase, struct DosPacket *pkt)
 {
-    struct MsgPort* port;
-    struct Task *task=NULL;
-#if (0)
-    struct secExtOwner *owner = NULL;
-#endif
+    struct Task *task = GetPktTask(pkt);
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    if ((port= pkt->dp_Port) && (port->mp_Flags == PA_SIGNAL))
-        task = port->mp_SigTask;
-    return task;	
+    return task ? GetTaskExtOwner(secBase, task) : NULL;
 }
 
-/*	Return the 'umask' of the task that sent a packet */
-
+/* Return the 'umask' of the task that sent a packet */
 LONG GetPktDefProtection(struct SecurityBase *secBase, struct DosPacket *pkt)
 {
-    struct MsgPort* port;
-    struct Task *task;
+    struct Task *task = GetPktTask(pkt);
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    LONG prot = DEFPROTECTION;
-    if ((port= pkt->dp_Port) && (port->mp_Flags == PA_SIGNAL) &&
-                    (task = port->mp_SigTask))
-        prot = secGetDefProtection(task);
-    return prot;
+    return task ? (LONG)GetTaskDefProtection(secBase, task) : secDEFPROTECTION;
 }
 
-/* DoPkt */
-
-SIPTR secFSDoPkt(struct secVolume *Vol, LONG act, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5)
+/*
+ * Send a packet to the real filesystem behind an enforced volume and wait
+ * for the reply on the volume's private port.
+ */
+SIPTR secFSDoPkt(struct SecurityBase *secBase, struct secVolume *Vol, LONG act, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5, SIPTR *res2)
 {
-    /* Send and Wait for a packet, using repport instead of pr_MsgPort for the
-     * reply */
-
     struct StandardPacket StdPkt;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
+    memset(&StdPkt, 0, sizeof(StdPkt));
     StdPkt.sp_Msg.mn_ReplyPort = Vol->RepPort;
-    StdPkt.sp_Msg.mn_Node.ln_Succ = NULL;
-    StdPkt.sp_Msg.mn_Node.ln_Pred = NULL;
-    StdPkt.sp_Msg.mn_Node.ln_Type = 0;
-    StdPkt.sp_Msg.mn_Node.ln_Pri = 0;
     StdPkt.sp_Msg.mn_Node.ln_Name = (STRPTR)&StdPkt.sp_Pkt;
     StdPkt.sp_Msg.mn_Length = sizeof(struct StandardPacket);
     StdPkt.sp_Pkt.dp_Link = &StdPkt.sp_Msg;
@@ -91,24 +61,22 @@ SIPTR secFSDoPkt(struct secVolume *Vol, LONG act, SIPTR arg1, SIPTR arg2, SIPTR 
     StdPkt.sp_Pkt.dp_Arg5 = arg5;
 
     SendPkt(&StdPkt.sp_Pkt, Vol->OrigProc, Vol->RepPort);
-    do {
-            WaitPort(Vol->RepPort);
-    } while(GetMsg(Vol->RepPort) == NULL);
+    do
+    {
+        WaitPort(Vol->RepPort);
+    } while (GetMsg(Vol->RepPort) == NULL);
 
+    if (res2)
+        *res2 = StdPkt.sp_Pkt.dp_Res2;
     return StdPkt.sp_Pkt.dp_Res1;
 }
 
-/* DoPkt, based on the content of the packet; used to pass a packet straight
- * through to the underlying FileSystem */
-
-SIPTR DoPacket(struct secVolume *Vol, struct DosPacket* pkt)
+/* Pass a packet straight through to the underlying FileSystem */
+SIPTR DoPacket(struct SecurityBase *secBase, struct secVolume *Vol, struct DosPacket *pkt)
 {
-    SIPTR res1;
+    SIPTR res2 = 0;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    res1 = secFSDoPkt(Vol, pkt->dp_Type, pkt->dp_Arg1, pkt->dp_Arg2, pkt->dp_Arg3, pkt->dp_Arg4, pkt->dp_Arg5);
-    pkt->dp_Res1 = res1;
-    pkt->dp_Res2 = IoErr();
-    return res1;
+    pkt->dp_Res1 = secFSDoPkt(secBase, Vol, pkt->dp_Type, pkt->dp_Arg1, pkt->dp_Arg2, pkt->dp_Arg3, pkt->dp_Arg4, pkt->dp_Arg5, &res2);
+    pkt->dp_Res2 = res2;
+    return pkt->dp_Res1;
 }

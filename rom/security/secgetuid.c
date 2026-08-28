@@ -1,14 +1,28 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/debug.h>
-#include <stdio.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <proto/security.h>
 
 #include "security_intern.h"
 #include "security_task.h"
-
-#include <libraries/mufs.h>
+#include "security_server.h"
+#include "security_segment.h"
+#include "security_monitor.h"
+#include "security_memory.h"
+#include "security_plugins.h"
+#include "security_crypto.h"
+#include "security_enforce.h"
+#include "security_packetio.h"
+#include "security_userinfo.h"
+#include "security_groupinfo.h"
+#include "security_login.h"
+#include "security_support.h"
 
 /*****************************************************************************
 
@@ -16,49 +30,26 @@
         AROS_LH0(UWORD, secgetuid,
 
 /*  SYNOPSIS */
-        /* void */
 
 /*  LOCATION */
         struct SecurityBase *, secBase, 39, Security)
 
-/*  FUNCTION
+/*
+    FUNCTION
+        POSIX: the real user id of the calling task.
 
-    INPUTS
-
-
-    RESULT
-
-
-    NOTES
-
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    struct secTaskNode *tasknode;
-    UWORD rc = secNOBODY_UID;
+    struct secTaskNode *node;
+    UWORD uid = secNOBODY_UID;
 
     ObtainSemaphore(&secBase->TaskOwnerSem);
-    if ((tasknode = FindTaskNode(secBase, FindTask(NULL))) || (tasknode = CreateOrphanTask(secBase, FindTask(NULL), DEFPROTECTION)))
-            rc = tasknode->RealUID;
+    if ((node = FindOrCreateTaskNode(secBase, FindTask(NULL))))
+        uid = node->RealUID;
     ReleaseSemaphore(&secBase->TaskOwnerSem);
-    return rc;
+    return uid;
 
     AROS_LIBFUNC_EXIT
-
 } /* secgetuid */
-

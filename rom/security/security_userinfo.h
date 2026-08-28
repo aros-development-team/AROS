@@ -1,24 +1,21 @@
-/************************************************************
-* MultiUser - MultiUser Task/File Support System				*
-* ---------------------------------------------------------	*
-* User Information Management											*
-* ---------------------------------------------------------	*
-* © Copyright 1993-1994 Geert Uytterhoeven						*
-* All Rights Reserved.													*
-************************************************************/
-
-#include <libraries/mufs.h>
-
 /*
- *		Private User Information Structure
- *
- *		This is a sub class of the Public User Information Structure
- */
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-struct secPrivUserInfo {
+    Desc: security.library private user information
+*/
+#ifndef _SECURITY_USERINFO_H
+#define _SECURITY_USERINFO_H
+
+#include <libraries/security.h>
+
+/* Private User Information: a sub class of the public structure */
+struct secPrivUserInfo
+{
     struct secUserInfo  Pub;            /* The public part                      */
     BOOL                Password;       /* TRUE if the User has a password      */
     STRPTR              Pattern;        /* Pattern matching temp                */
     ULONG               Count;          /* last info                            */
-    UWORD               Tgid;           /* gid for muKeyType_gidNext            */
+    UWORD               Tgid;           /* gid for secKeyType_gidNext           */
 };
+
+#endif /* _SECURITY_USERINFO_H */

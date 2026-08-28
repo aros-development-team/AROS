@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -27,31 +27,27 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH1(BOOL, secLoadPlugin,
+        AROS_LH0(BOOL, secIsConfigured,
 
 /*  SYNOPSIS */
-        AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
-        struct SecurityBase *, secBase, 50, Security)
+        struct SecurityBase *, secBase, 58, Security)
 
 /*
     FUNCTION
-        Load and initialise a plugin from the configuration directory.
-        Root only.
+        Is the system configured for multi-user operation, i.e. has a
+        password file been found and parsed? On an unconfigured system
+        every task is treated as privileged and no access checks are made.
 
-    INPUTS
-        name - the plugin name without the .secplugin suffix.
+    RESULT
+        TRUE if configured and no security violation was detected.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    if (!name || !CallerIsRoot(secBase))
-        return FALSE;
-    if (FindTask(NULL) == (struct Task *)secBase->Server)
-        return loadPlugin(secBase, name);
-    return (BOOL)SendServerPacket(secBase, secSAction_LoadPlugin, (SIPTR)name, 0, 0, 0);
+    return secBase->Configured && !secBase->SecurityViolation;
 
     AROS_LIBFUNC_EXIT
-} /* secLoadPlugin */
+} /* secIsConfigured */

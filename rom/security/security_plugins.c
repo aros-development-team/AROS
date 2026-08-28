@@ -1,10 +1,13 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-#include <aros/debug.h>
+    Desc: security.library plugin loading and per-task plugin contexts.
+          Original code (c) 2000 Wez Furlong.
+*/
 
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
-#include <proto/intuition.h>
 
 #include <proto/security.h>
 
@@ -13,205 +16,214 @@
 #include "security_plugins.h"
 #include "security_server.h"
 #include "security_memory.h"
+#include "security_crypto.h"
 
-
-void UseModule(struct SecurityBase *secBase, secPluginModule * mod)
+void UseModule(struct SecurityBase *secBase, secPluginModule *mod)
 {
-    D(bug( DEBUG_NAME_STR " %s: using module %p\n", __func__, mod));
     ObtainSemaphore(&secBase->PluginModuleSem);
     mod->reference_count++;
     ReleaseSemaphore(&secBase->PluginModuleSem);
 }
 
-void ReleaseModule(struct SecurityBase *secBase, secPluginModule * mod)
+void ReleaseModule(struct SecurityBase *secBase, secPluginModule *mod)
 {
-    D(bug( DEBUG_NAME_STR " %s: releasing module %p\n", __func__, mod));
     ObtainSemaphore(&secBase->PluginModuleSem);
     mod->reference_count--;
     ReleaseSemaphore(&secBase->PluginModuleSem);
 }
 
-BOOL loadPlugin(struct SecurityBase *secBase, STRPTR name)
+/*
+ * Locate the plugin header in a loaded seglist: scan the first 4KB of
+ * every segment for the magic, IPTR aligned. On 64-bit hosts the magic and
+ * the version share one IPTR sized slot, so only the first ULONG is compared.
+ */
+static struct secPluginHeader *FindPluginHeader(BPTR seglist)
+{
+    BPTR thisseg;
+
+    for (thisseg = seglist; thisseg != BNULL; thisseg = *(BPTR *)BADDR(thisseg))
+    {
+        IPTR *addr = (IPTR *)BADDR(thisseg);
+        IPTR *end = (IPTR *)((UBYTE *)addr + 4096);
+        IPTR *pos;
+
+        for (pos = addr + 1; pos < end; pos++)
+        {
+            struct secPluginHeader *hdr = (struct secPluginHeader *)pos;
+
+            if (hdr->plugin_magic == secPLUGIN_RECOGNITION && hdr->Version == secPLUGIN_INTERFACE &&
+                hdr->Initialize && hdr->Terminate)
+                return hdr;
+        }
+    }
+    return NULL;
+}
+
+/* Build the plugin path: SECURITY:<name>.secplugin (fall back to <name>) */
+static BOOL BuildPluginName(struct SecurityBase *secBase, CONST_STRPTR name, STRPTR fullname, ULONG size)
+{
+    fullname[0] = '\0';
+    if (strchr(name, ':') == NULL && strchr(name, '/') == NULL)
+    {
+        strncpy(fullname, secConfig_AssignName ":", size - 1);
+        fullname[size - 1] = '\0';
+    }
+    strncat(fullname, name, size - strlen(fullname) - 1);
+    strncat(fullname, secPLUGIN_SUFFIX, size - strlen(fullname) - 1);
+    return TRUE;
+}
+
+BOOL loadPlugin(struct SecurityBase *secBase, CONST_STRPTR name)
 {
     char fullname[256];
     BPTR seglist;
+    struct secPluginHeader *hdr;
+    secPluginModule *mod;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+    BuildPluginName(secBase, name, fullname, sizeof(fullname));
+    D(bug(DEBUG_NAME_STR " %s(%s)\n", __func__, fullname);)
 
-    strncpy(fullname, name, sizeof(fullname));
-    strncat(fullname, secPLUGIN_SUFFIX, sizeof(fullname));
-    D(bug( DEBUG_NAME_STR " %s(%s)\n", __func__, fullname));
-    seglist = LoadSeg(fullname);
-    if (seglist)	{
-        BPTR thisseg = seglist;
-        struct secPluginHeader * hdr = NULL;
-        D(bug( DEBUG_NAME_STR " %s: seglist loaded\n", __func__));	
-        /* Scan the seglist for magic identifier */
-        while((hdr == NULL) && (thisseg != BNULL))	{
-            IPTR size, pos, *addr;
-            addr = BADDR(thisseg);
-            size = addr[-1];
-            D(bug( DEBUG_NAME_STR " %s: scanning hunk of size %ld for plugin header\n", __func__, size));
-            /* start at 1 to skip pointer to next segment */
-            for (pos = 1; pos < size; pos++)	{
-                if (addr[pos] == secPLUGIN_RECOGNITION)	{
-                    /* Found the plugin */
-                    hdr = (struct secPluginHeader*)&addr[pos];
-                    break;
-                }
-            }
-            thisseg = (BPTR)addr[0];	/* get next segment in the list */
-        }
-        if (hdr != NULL)	{
-            D(bug( DEBUG_NAME_STR " %s: plugin header found at %lx\n", __func__, hdr));
-            if (hdr->Version == MUFS_PLUGIN_INTERFACE)	{
-                secPluginModule * mod = (secPluginModule *)MAlloc(sizeof(secPluginModule));
-                D(bug( DEBUG_NAME_STR " %s: Version matches\n", __func__));
-                if (mod)	{
-                    D(bug( DEBUG_NAME_STR " %s: Allocated module\n", __func__));
-                    mod->SegList = seglist;
-                    mod->header = hdr;
-                    mod->reference_count = 0;
-                    strncpy(mod->modulename, name, sizeof(mod->modulename));
-                    ObtainSemaphore(&secBase->PluginModuleSem);
-                    AddTail((struct List*)&secBase->PluginModuleList, (struct Node*)mod);
-                    ReleaseSemaphore(&secBase->PluginModuleSem);
-                    
-                    /* Loaded and added to the list - get the server to call the
-                     * init function (unless we are the server: do it now) */
+    if (!(seglist = LoadSeg(fullname)))
+        return FALSE;
 
-                    if ((struct Process*)FindTask(NULL) == secBase->Server)	{
-                        if (mod->header->Initialize((struct Library *)secBase, mod))
-                            return TRUE;
-                    }
-                    else	{
-                        D(bug( DEBUG_NAME_STR " %s: Asking server to init module\n", __func__));
-                        if ((BOOL)SendServerPacket(secBase, secSAction_InitModule, (SIPTR)mod, (SIPTR)NULL, (SIPTR)NULL, (SIPTR)NULL))
-                            return TRUE;
-                    }
-                    D(bug( DEBUG_NAME_STR " %s: Failed :-(\n", __func__));
-                    
-                    /* Failed to init for some reason - get the server to call the
-                     * fini function.  unloadPlugin also frees the memory for mod
-                     * and unloadsegs the seglist.
-                     * */
-                    unloadPlugin(secBase, mod);
-                    return FALSE;
-                }
-            }
-        }
+    if (!(hdr = FindPluginHeader(seglist)))
+    {
+        D(bug(DEBUG_NAME_STR " %s: no plugin header found\n", __func__);)
         UnLoadSeg(seglist);
+        return FALSE;
+    }
+
+    if (!(mod = (secPluginModule *)MAlloc(sizeof(secPluginModule))))
+    {
+        UnLoadSeg(seglist);
+        return FALSE;
+    }
+    mod->SegList = seglist;
+    mod->header = hdr;
+    mod->reference_count = 0;
+    strncpy((char *)mod->modulename, name, sizeof(mod->modulename) - 1);
+
+    ObtainSemaphore(&secBase->PluginModuleSem);
+    AddTail((struct List *)&secBase->PluginModuleList, (struct Node *)mod);
+    ReleaseSemaphore(&secBase->PluginModuleSem);
+
+    /* The init function runs in the server's context */
+    if (FindTask(NULL) == (struct Task *)secBase->Server)
+    {
+        if (mod->header->Initialize((struct Library *)secBase, mod))
+            return TRUE;
+    }
+    else if (SendServerPacket(secBase, secSAction_InitModule, (SIPTR)mod, 0, 0, 0))
+        return TRUE;
+
+    D(bug(DEBUG_NAME_STR " %s: plugin initialisation failed\n", __func__);)
+    unloadPlugin(secBase, mod);
+    return FALSE;
+}
+
+void unloadPlugin(struct SecurityBase *secBase, secPluginModule *mod)
+{
+    BPTR seglist = mod->SegList;
+
+    if (FindTask(NULL) == (struct Task *)secBase->Server)
+        mod->header->Terminate();
+    else
+        SendServerPacket(secBase, secSAction_FiniModule, (SIPTR)mod, 0, 0, 0);
+
+    ObtainSemaphore(&secBase->PluginModuleSem);
+    Remove((struct Node *)mod);
+    ReleaseSemaphore(&secBase->PluginModuleSem);
+
+    ObtainSemaphore(&secBase->TaskOwnerSem);
+    FreeModuleContext(secBase, mod);
+    ReleaseSemaphore(&secBase->TaskOwnerSem);
+
+    Free(mod, sizeof(secPluginModule));
+    if (seglist)
+        UnLoadSeg(seglist);
+}
+
+BOOL unloadPluginName(struct SecurityBase *secBase, CONST_STRPTR name)
+{
+    secPluginModule *mod, *found = NULL;
+
+    ObtainSemaphore(&secBase->PluginModuleSem);
+    ForeachNode(&secBase->PluginModuleList, mod)
+    {
+        if (!Stricmp((CONST_STRPTR)mod->modulename, name))
+        {
+            found = mod;
+            break;
+        }
+    }
+    ReleaseSemaphore(&secBase->PluginModuleSem);
+
+    if (found && found->reference_count == 0)
+    {
+        unloadPlugin(secBase, found);
+        return TRUE;
     }
     return FALSE;
 }
 
-
-void unloadPlugin(struct SecurityBase *secBase, secPluginModule * mod)
+/* (Un)register a handler op-table with the subsystem it belongs to */
+ULONG regHandler(struct SecurityBase *secBase, BOOL reg, struct plugin_ops *ops)
 {
-    BPTR seglist = mod->SegList;
+    if (!ops || !ops->module)
+        return secpiFALSE;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    if ((struct Process*)FindTask(NULL) == secBase->Server)
-        mod->header->Terminate();
-    else
-        SendServerPacket(secBase, secSAction_FiniModule, (SIPTR)mod, (SIPTR)NULL, (SIPTR)NULL, (SIPTR)NULL);
-
-    /* Remove the module from the list */
-    ObtainSemaphore(&secBase->PluginModuleSem);
-    Remove((struct Node*)mod);
-    ReleaseSemaphore(&secBase->PluginModuleSem);
-    Free(mod, sizeof(secPluginModule));
-    if (seglist)
-        UnLoadSeg(seglist);
-    /* We can do this even if mod no longer exists in memory: the reference is
-     * good enough for us */
-    ObtainSemaphore(&secBase->TaskOwnerSem);
-    FreeModuleContext(secBase, mod);
-    ReleaseSemaphore(&secBase->TaskOwnerSem);
+    switch (ops->HandlerType)
+    {
+    case ID_PLUGIN_ENCRYPTION:
+        return reg ? RegisterEncryptionHandler(secBase, ops) : UnRegisterEncryptionHandler(secBase, ops);
+    default:
+        return secpiNOTSUPP;
+    }
 }
 
-/* Explanation of Contexts
+/*
+ * Contexts
  *
- * `Context' is some block of memory that some part of the multiuser system
- * needs to associate with a particular caller.  For example: getpwent needs
- * to remember the position in the password file between calls - this
- * information belongs in the context of the caller.
- *
- * Simple context management can be acheived by associating the context with
- * the task that makes the call into the security library - however, the
- * AmigaOS architecture is such that this will break if one task opens the
- * library and CreateNewProcs a child process that shares the library base.
- *
- * So, the amazing security.library handles this case too: context is
- * associated with a task that explicitly opens the security.library.
- * It's child tasks inherit context.
- *
- * OK, so what if a child task LoadSegs some code and then does a RunCommand
- * on that seglist?  No problem.  OK, but what if the loaded code opens the
- * security.library itself - it will run fine (and get it's own context), but
- * when it closes the library, won't it's context dissapear too?
- *
- * Ahh, we can handle this case. Because we keep context in a stack; each time
- * the library is opened, we push a new context list onto this stack.  Each
- * time the library is closed, the context stack is popped back.
- * This means that even if the LoadSeg/RunCommand-ed child also LoadSegs and
- * RunCommands, things will still work as expected.
- *
- * What a really cool thing this is.
- *
- * OK, so how is it used?
- *
- * Modules within the system can request a certain amount of context space to
- * be allocated by using the secContextLocate API.  The returned memory can be
- * used for anything that the module desires; the only restriction is that the
- * size the module requests should be consistent between calls - the first
- * call allocates the memory - subsequent calls return the memory that was
- * allocated before-hand.
- *
- * There is no need to explicitly free the context - the library handles this:
- * context is freed when the current context is popped, or when the task node
- * is freed.  Additionally, context allocated under a certain module is freed
- * when that module is unloaded.
- * */
-
-/* Free all context associated with the tasknode */
-void FreeAllContext(struct secTaskNode * node)
+ * A context is a block of memory a plugin associates with a caller (e.g.
+ * getpwent's position). Contexts are attached to the task that opened the
+ * library, child tasks inherit them, and every OpenLibrary()/CloseLibrary()
+ * pushes/pops a level so nested LoadSeg/RunCommand combinations work.
+ */
+void FreeAllContext(struct secTaskNode *node)
 {
-    struct secContextNode * con;
-    struct secContextList * clist;
-    while ( (clist = (struct secContextList*)RemHead((struct List*)&node->Context)) != NULL)	{
-        while( (con = (struct secContextNode*)RemHead((struct List*)&clist->Context)) != NULL)
-                FreeV(con);
+    struct secContextNode *con;
+    struct secContextList *clist;
+
+    while ((clist = (struct secContextList *)RemHead((struct List *)&node->Context)) != NULL)
+    {
+        while ((con = (struct secContextNode *)RemHead((struct List *)&clist->Context)) != NULL)
+            FreeV(con);
         Free(clist, sizeof(struct secContextList));
     }
 }
 
-/* Free all context allocated by the (module).
- * This is expensive. */
-void FreeModuleContext(struct SecurityBase *secBase, secPluginModule * module)
+/* Free all context allocated by (module). Expensive. */
+void FreeModuleContext(struct SecurityBase *secBase, secPluginModule *module)
 {
-    struct secContextNode * con;
-    struct MinNode * tnode, * cnode, *clnode;
-    struct secTaskNode * tasknode;
-    struct secContextList * clist;
+    struct MinNode *tnode, *cnode, *cnext, *clnode;
     int i;
 
-    /* For each task,
-     * 	For each context list
-     * 		For each context node
-     * 			if the module matches, remove and free the node
-     * */
-    
-    for (i=0; i<TASKHASHVALUE; i++)	{
-        for (tnode = secBase->TaskOwnerList[i].mlh_Head; tnode->mln_Succ; tnode = tnode->mln_Succ)	{
-            tasknode = (struct secTaskNode*)tnode;
-            for (clnode = tasknode->Context.mlh_Head; clnode->mln_Succ; clnode = clnode->mln_Succ)	{
-                clist = (struct secContextList*)clnode;
-                for (cnode = clist->Context.mlh_Head; cnode->mln_Succ; cnode = cnode->mln_Succ)	{
-                    con = (struct secContextNode*)cnode;
-                    if (con->mod == module)	{
-                        Remove((struct Node*)con);
+    for (i = 0; i < TASKHASHVALUE; i++)
+    {
+        ForeachNode(&secBase->TaskOwnerList[i], tnode)
+        {
+            struct secTaskNode *tasknode = TASKNODE_FROM_LISTNODE(tnode);
+
+            ForeachNode(&tasknode->Context, clnode)
+            {
+                struct secContextList *clist = (struct secContextList *)clnode;
+
+                for (cnode = clist->Context.mlh_Head; (cnext = cnode->mln_Succ); cnode = cnext)
+                {
+                    struct secContextNode *con = (struct secContextNode *)cnode;
+                    if (con->mod == module)
+                    {
+                        Remove((struct Node *)con);
                         FreeV(con);
                     }
                 }
@@ -220,84 +232,84 @@ void FreeModuleContext(struct SecurityBase *secBase, secPluginModule * module)
     }
 }
 
-/* Allocate memory for the context of a module/id of a given size.
- * memory is attached to the context list of the supplied tasknode */
-APTR AllocateContext(struct secTaskNode * node, secPluginModule * module, ULONG id, ULONG size)
+APTR AllocateContext(struct secTaskNode *node, secPluginModule *module, ULONG id, ULONG size)
 {
-    struct secContextNode * con;
-    struct secContextList * clist;
+    struct secContextNode *con;
+    struct secContextList *clist;
 
-    con = (struct secContextNode*)MAllocV(sizeof(struct secContextNode) + size);
-    if (con)	{
+    if (IsMinListEmpty(&node->Context))
+        return NULL;
+    if ((con = (struct secContextNode *)MAllocV(sizeof(struct secContextNode) + size)))
+    {
         con->mod = module;
         con->id = id;
-        clist = (struct secContextList*)node->Context.mlh_Head;
-        AddHead((struct List*)&clist->Context, (struct Node*)con);
-        return (APTR)((IPTR)con+sizeof(struct secContextNode));
+        clist = (struct secContextList *)node->Context.mlh_Head;
+        AddHead((struct List *)&clist->Context, (struct Node *)con);
+        return (APTR)(con + 1);
     }
     return NULL;
 }
 
-struct secTaskNode * FindContextOwner(struct SecurityBase*secBase, struct Task * caller)
+struct secTaskNode *FindContextOwner(struct SecurityBase *secBase, struct Task *caller)
 {
-    struct secTaskNode * ret = FindTaskNode(secBase, caller);
-    while (ret)	{
-        if (!IsListEmpty((struct List*)&(ret->Context)))
+    struct secTaskNode *ret = FindTaskNode(secBase, caller);
+
+    while (ret)
+    {
+        if (!IsMinListEmpty(&ret->Context))
             return ret;
         ret = ret->Parent;
     }
     return NULL;
 }
 
-APTR FindContext(struct secTaskNode * node, secPluginModule * module, ULONG id)
+APTR FindContext(struct secTaskNode *node, secPluginModule *module, ULONG id)
 {
-    struct secContextNode * con;
-    struct secContextList * clist;
-    struct MinNode * n;
-    clist = (struct secContextList*)node->Context.mlh_Head;
-    if (clist)	{
-        for (n = clist->Context.mlh_Head; n->mln_Succ; n = n->mln_Succ)	{
-            con = (struct secContextNode*)n;
-            if ((con->mod == module) && (con->id == id))
-                return (APTR)((IPTR)con+sizeof(struct secContextNode));
-        }
+    struct secContextList *clist;
+    struct MinNode *n;
+
+    if (!node || IsMinListEmpty(&node->Context))
+        return NULL;
+    clist = (struct secContextList *)node->Context.mlh_Head;
+    ForeachNode(&clist->Context, n)
+    {
+        struct secContextNode *con = (struct secContextNode *)n;
+        if ((con->mod == module) && (con->id == id))
+            return (APTR)(con + 1);
     }
     return NULL;
 }
 
-/* Push a new level of context onto (caller).
- * Call this when (caller) opens the security.library
- * */
-void PushContext(struct SecurityBase*secBase, struct Task * caller)
+/* Push a new level of context onto (caller): called when it opens the library */
+void PushContext(struct SecurityBase *secBase, struct Task *caller)
 {
-    struct secContextList * clist;
-    struct secTaskNode * tnode;
-    tnode = FindTaskNode(secBase, caller);
-    if (tnode == NULL)
-        return;	/* TODO: Create an orphan task here? This should never happen */
-    clist = (struct secContextList*)MAlloc(sizeof(struct secContextList));
-    if (clist == NULL)
-        return;
-    NEWLIST((struct List*)&clist->Context);
-    AddHead((struct List*)&tnode->Context, (struct Node*)clist);
+    struct secContextList *clist;
+    struct secTaskNode *tnode;
+
+    ObtainSemaphore(&secBase->TaskOwnerSem);
+    if ((tnode = FindOrCreateTaskNode(secBase, caller)) &&
+        (clist = (struct secContextList *)MAlloc(sizeof(struct secContextList))))
+    {
+        NEWLIST((struct List *)&clist->Context);
+        AddHead((struct List *)&tnode->Context, (struct Node *)clist);
+    }
+    ReleaseSemaphore(&secBase->TaskOwnerSem);
 }
 
-/* Remove the head from the (caller) context list.
- * Call this when (caller) closes the security.library */
-void PopContext(struct SecurityBase*secBase, struct Task * caller)
+/* Pop the head context level of (caller): called when it closes the library */
+void PopContext(struct SecurityBase *secBase, struct Task *caller)
 {
-    struct secContextList * clist;
-    struct secTaskNode * tnode;
-    struct secContextNode * con;
-    
-    tnode = FindTaskNode(secBase, caller);
-    if (tnode == NULL)
-        return;	/* TODO: Create an orphan task here? This should never happen */
-    clist = (struct secContextList*)RemHead((struct List*)&tnode->Context);
-    if (clist == NULL)
-        return;
-    /* Now free the context memory */
-    while( (con = (struct secContextNode*)RemHead((struct List*)&clist->Context)) != NULL)
+    struct secContextList *clist;
+    struct secTaskNode *tnode;
+    struct secContextNode *con;
+
+    ObtainSemaphore(&secBase->TaskOwnerSem);
+    if ((tnode = FindTaskNode(secBase, caller)) &&
+        (clist = (struct secContextList *)RemHead((struct List *)&tnode->Context)))
+    {
+        while ((con = (struct secContextNode *)RemHead((struct List *)&clist->Context)) != NULL)
             FreeV(con);
-    Free(clist, sizeof(struct secContextList));
+        Free(clist, sizeof(struct secContextList));
+    }
+    ReleaseSemaphore(&secBase->TaskOwnerSem);
 }

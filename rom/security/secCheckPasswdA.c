@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -27,52 +27,56 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH1(BOOL, secSetDefProtectionA,
+        AROS_LH1(BOOL, secCheckPasswdA,
 
 /*  SYNOPSIS */
         AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
-        struct SecurityBase *, secBase, 13, Security)
+        struct SecurityBase *, secBase, 17, Security)
 
 /*
     FUNCTION
-        Set the default protection bits ('umask') used for new files.
+        Check the password of the owner of the calling task; asks for it
+        unless secT_Password is given.
 
     TAGS
-        secT_Task          - (struct Task *) the task, default the current one.
-        secT_DefProtection - (ULONG) the protection bits, default
-                             FIBF_OTR_READ|FIBF_GRP_READ.
-        secT_Global        - (BOOL) also change all descendants of the task.
+        secT_Input, secT_Output, secT_Graphical, secT_PubScrName - as for
+        secLoginA(). secT_Password - (STRPTR) the password to check.
 
     RESULT
-        success
+        valid - TRUE if the password is correct.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     struct secTags tags;
-    struct secTaskNode *node;
+    struct LocaleInfo li;
+    char pwdbuf[secPASSWORDSIZE];
+    STRPTR password;
     BOOL res = FALSE;
 
     if (!InterpretTagList(secBase, taglist, &tags))
         return FALSE;
 
-    ObtainSemaphore(&secBase->TaskOwnerSem);
-    if ((node = FindOrCreateTaskNode(secBase, tags.Task)))
+    if (tags.Password)
+        password = tags.Password;
+    else
     {
-        node->DefProtection = tags.DefProtection;
-        if (tags.Global)
+        memset(pwdbuf, 0, sizeof(pwdbuf));
+        OpenLoc(secBase, &li);
+        if (!ReadPasswordCon(secBase, tags.Input, tags.Output, pwdbuf, sizeof(pwdbuf), &li))
         {
-            struct MinNode *n;
-            ForeachNode(&node->Children, n)
-                TASKNODE_FROM_SIBLINGS(n)->DefProtection = tags.DefProtection;
+            CloseLoc(secBase, &li);
+            return FALSE;
         }
-        res = TRUE;
+        CloseLoc(secBase, &li);
+        password = pwdbuf;
     }
-    ReleaseSemaphore(&secBase->TaskOwnerSem);
+    res = (BOOL)SendServerPacket(secBase, secSAction_CheckPasswd, (SIPTR)password, 0, 0, 0);
+    memset(pwdbuf, 0, sizeof(pwdbuf));
     return res;
 
     AROS_LIBFUNC_EXIT
-} /* secSetDefProtectionA */
+} /* secCheckPasswdA */

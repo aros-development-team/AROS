@@ -1,41 +1,38 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+
+    Desc: security.library filesystem enforcer
+*/
 #ifndef _SECURITY_ENFORCE_H
 #define _SECURITY_ENFORCE_H
 
 #include <dos/dosextens.h>
+#include <libraries/security.h>
 
-/* Flags for muVolume */
+struct SecurityBase;
+struct secVolume;
 
-#define secFSE_TRUE_MUFS                (0)	/* A true MUFS volume */
-#define secFSE_ENFORCED                 (1)	/* Enforced by the packet interceptor */
-#define secFSE_READONLY                 (2)	/* This FS is read only */
-#define secFSE_NOSUID                   (4)	/* Do not allow setuid from this volume */
+/* Flags for secVolume.FS_Flags */
+#define secFSE_TRUE_MUFS                (0)     /* A true multi-user aware volume       */
+#define secFSE_ENFORCED                 (1)     /* Enforced by the packet interceptor   */
+#define secFSE_READONLY                 (2)     /* This FS is read only                 */
+#define secFSE_NOSUID                   (4)     /* Do not allow setuid from this volume */
 
-/* Default Protections for the root directory */
-
-#define secFSE_DEF_ROOTPROTECTION       (FIBF_OTR_READ|FIBF_GRP_READ|FIBF_DELETE|FIBF_EXECUTE)
-
+/* Default Protections/owner for the root directory of an enforced volume */
+#define secFSE_DEF_ROOTPROTECTION       (FIBF_OTR_READ | FIBF_GRP_READ | FIBF_DELETE | FIBF_EXECUTE)
 #define secFSE_DEF_ROOTOWNER            secOWNER_SYSTEM
 
-/* The name of the FSTAB file */
+typedef BOOL (*PKTFUNC)(struct SecurityBase *, struct secVolume *, struct DosPacket *, struct secExtOwner *);
 
-#define secFSE_FSTAB_FILENAME           "fstab"
-
-/* Handle Despatch */
-
-typedef BOOL (*PKTFUNC)(struct secVolume *,struct DosPacket*, struct secExtOwner*);
-
-struct secFSE_PktHandler {
+struct secFSE_PktHandler
+{
     LONG        action;
     PKTFUNC     func;
 };
 
-/*
- *      Private Function Prototypes
- */
-
 extern void ReadFSTab(struct SecurityBase *secBase);
-extern BOOL BootStrapRendevous(struct SecurityBase *secBase);
-extern LONG IsAllowed(struct SecurityBase *secBase, struct secVolume *Vol,struct secExtOwner *task, 
-		ULONG object, LONG prot, LONG access);
+extern BOOL BootStrapRendezvous(struct SecurityBase *secBase);
+extern LONG IsAllowed(struct SecurityBase *secBase, struct secVolume *Vol, struct secExtOwner *task,
+                      ULONG object, LONG prot, LONG access);
 
 #endif /* _SECURITY_ENFORCE_H */

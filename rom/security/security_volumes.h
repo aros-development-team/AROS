@@ -1,60 +1,58 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+
+    Desc: security.library volume tracking
+*/
 #ifndef _SECURITY_VOLUMES_H
 #define _SECURITY_VOLUMES_H
 
-/************************************************************
-* MultiUser - MultiUser Task/File Support System				*
-* ---------------------------------------------------------	*
-* Configuration															*
-* ---------------------------------------------------------	*
-* © Copyright 1993-1994 Geert Uytterhoeven						*
-* All Rights Reserved.													*
-************************************************************/
-
-
+#include <exec/lists.h>
+#include <dos/dosextens.h>
 #include <libraries/security.h>
 
+#ifndef TASKHASHVALUE
+#define TASKHASHVALUE 23
+#endif
+
+struct SecurityBase;
+
 /*
- *		MultiUserFileSystem Volumes
+ * A volume known to the library: either a native muFS volume (FS_Flags == 0)
+ * or one enforced by the packet interceptor.
  */
+struct secVolume
+{
+    struct secVolume    *Next;
+    struct DosList      *DosList;               /* DosList for this Volume                          */
+    struct MsgPort      *Process;               /* Handler port for this Volume                     */
 
-struct secVolume {
-    struct secVolume                    *Next;
-    struct DosList                      *DosList;			/* DosList for this muFS Volume */
-    struct MsgPort                      *Process;			/* Process for this muFS Volume */
-    
-    /* Extensions for MUFS2 */
-    
-    LONG	                        FS_Flags;						/* Allow set{g,u}id, read-only etc. */
-    
-    /* If FS_Flags == 0, the rest of this structure is ignored; this indicates
-     * that the volume is a true MUFS volume */
-    
-    LONG	                        RootProtection;				/* Permissions for the root dir */
-    ULONG	                        RootOwner;						/* UID:GID of owner of root dir */
+    LONG                FS_Flags;               /* secFSE_#?; 0 = true muFS volume                  */
+    LONG                RootProtection;         /* Permissions for the root dir                     */
+    ULONG               RootOwner;              /* UID:GID of owner of root dir                     */
 
-    STRPTR                              FS_Name;						/* So we dont re-run on the same volume */
-    struct MsgPort*	                OrigProc;		/* The real FS */
-    struct MsgPort*	                RepPort;			/* For talking with the real FS */	
-    struct MinList	                FHCache[TASKHASHVALUE];	/* HashList of cached FileHandles */
-    struct FileInfoBlock                *fib;
-    LONG	                        PassKey;							/* If non-zero, contains the 32 bit passkey
-                                                                                             * needed to write enable the filesystem 
-                                                                                             * with ACTION_WRITE_PROTECT */
-    /* NEW proxy enforcer */
-    struct MinList                      ProxyLocks;	/* List of locks */
-    struct MinList                      ProxyHandles[TASKHASHVALUE];	/* HashList of proxy filehandles */
-    struct DeviceNode                   *ProxyDosList;	/* Dos entry created by the proxy filesystem */
-    struct DeviceList                   *ProxyDosListVolume;	/* Dos entry created by the proxy filesystem */
-    ULONG                               LockCount;			/* Number of proxy locks in existence */
+    STRPTR              FS_Name;                /* Volume name (owned copy)                         */
+    struct MsgPort      *OrigProc;              /* The real FS                                      */
+    struct MsgPort      *RepPort;               /* For talking with the real FS                     */
+    struct FileInfoBlock *fib;
+    LONG                PassKey;                /* passkey for ACTION_WRITE_PROTECT, if any         */
+
+    struct MinList      ProxyLocks;             /* proxy enforcer state                             */
+    struct MinList      ProxyHandles[TASKHASHVALUE];
+    struct DeviceNode   *ProxyDosList;
+    struct DeviceList   *ProxyDosListVolume;
+    ULONG               LockCount;
 };
 
+/* A volume whose handler enforces ownership itself (fstab NATIVE) */
+struct secNativeVolume
+{
+    struct MinNode      Node;
+    char                Name[1];                /* variable length */
+};
 
-/*
- *		Function Prototypes
- */
-
-extern BOOL InitVolumes(struct Library *secBase);
-extern void FreeVolumes(struct Library *secBase);
-extern BOOL CheckmuFSVolume(struct MsgPort *port);
+extern BOOL IsSecFSDosType(ULONG dostype);
+extern BOOL InitVolumes(struct SecurityBase *secBase);
+extern void FreeVolumes(struct SecurityBase *secBase);
+extern BOOL IsSecFSVolume(struct SecurityBase *secBase, struct MsgPort *port);
 
 #endif /* _SECURITY_VOLUMES_H */
