@@ -244,8 +244,9 @@ struct pciusbXHCIDevice {
 };
 
 struct pciusbXHCIEndpointCtx {
-    struct pciusbXHCIDevice            *ectx_Device;
+    struct pciusbXHCIDevice            *ectx_Device;                                // NULL once the device is gone
     ULONG                               ectx_EPID;
+    ULONG                               ectx_RefCount;                              // prepared endpoints holding this
     struct MsgPort                     *ectx_TimerPort;
     struct timerequest                 *ectx_TimerReq;
 };

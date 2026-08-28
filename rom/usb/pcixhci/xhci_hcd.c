@@ -2108,6 +2108,20 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
         return 0;
     }
 
+    if(epctx && !epctx->ectx_Device) {
+        /* Left over from a device torn down under it: drop our reference. */
+        ioreq->iouh_DriverPrivate2 = NULL;
+        Disable();
+        if(epctx->ectx_RefCount)
+            epctx->ectx_RefCount--;
+        Enable();
+        if(!epctx->ectx_RefCount) {
+            xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+            FreeMem(epctx, sizeof(*epctx));
+        }
+        epctx = NULL;
+    }
+
     if(!epctx) {
         epctx = AllocMem(sizeof(*epctx), MEMF_ANY | MEMF_CLEAR);
         if(!epctx)
@@ -2231,6 +2245,11 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
         epctx->ectx_EPID = epid;
         if(!dev_epctx)
             devCtx->dc_EPContexts[epid] = epctx;
+        if(ioreq->iouh_DriverPrivate2 != epctx) {
+            Disable();
+            epctx->ectx_RefCount++;
+            Enable();
+        }
     }
 
     ioreq->iouh_DriverPrivate2 = epctx;
@@ -2263,7 +2282,31 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     epid = xhciEndpointID(ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
 
     if(epctx) {
+        BOOL lastref;
+
+        ioreq->iouh_DriverPrivate2 = NULL;
+
+        Disable();
+        if(epctx->ectx_RefCount)
+            epctx->ectx_RefCount--;
+        lastref = (epctx->ectx_RefCount == 0);
         devCtx = epctx->ectx_Device;
+        Enable();
+
+        if(!lastref)
+            return;                     /* still held by another prepared endpoint */
+
+        if(!devCtx) {
+            /*
+             * The device was torn down (xhciFreeDeviceCtx) while this
+             * context was still held; nothing is left to release on the
+             * controller, only the context itself.
+             */
+            xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+            FreeMem(epctx, sizeof(*epctx));
+            return;
+        }
+
         epid = epctx->ectx_EPID;
         timerreq = epctx->ectx_TimerReq;
     } else {
@@ -2278,6 +2321,11 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     epctx_free = devCtx->dc_EPContexts[epid];
     if(!epctx_free)
         epctx_free = epctx;
+    else if((epctx_free != epctx) && epctx_free->ectx_RefCount) {
+        /* Held by someone else: detach it, its last holder frees it. */
+        epctx_free->ectx_Device = NULL;
+        epctx_free = NULL;
+    }
     devCtx->dc_EPContexts[epid] = NULL;
 
     ioreq->iouh_DriverPrivate2 = NULL;
@@ -2325,6 +2373,25 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
     if((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
         ioreq->iouh_DriverPrivate1 = NULL;
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+
+        /*
+         * Drop the ring's back-pointers to this request. Its TRBs may still
+         * be on the ring when the endpoint is stopped later (an RT iso
+         * client tears its handler down and then switches alternate
+         * setting), and the Stopped events for them must not resolve to a
+         * request that has been reaped - or freed - by then.
+         */
+        if(driprivate->dpDevice) {
+            volatile struct pcisusbXHCIRing *epRing =
+                (volatile struct pcisusbXHCIRing *)driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr;
+            if(epRing && epRing->ringio) {
+                ULONG cnt;
+                for(cnt = 0; cnt < XHCI_EVENT_RING_TRBS; cnt++) {
+                    if(epRing->ringio[cnt] == (struct IORequest *)ioreq)
+                        epRing->ringio[cnt] = NULL;
+                }
+            }
+        }
 
         if(driprivate->dpBounceBuf) {
             xhciReleaseDMABuffer(hc, ioreq, 0, driprivate->dpBounceDir,
@@ -3313,7 +3380,16 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     }
                 }
 
-                if(!req && devCtx && (trbe_epid < MAX_DEVENDPOINTS)) {
+                /*
+                 * Stopped completions describe TRBs left on the ring when
+                 * the endpoint was halted; the request they belonged to has
+                 * already been finished, so never pin them on whatever is
+                 * busy on the endpoint now.
+                 */
+                if(!req && devCtx && (trbe_epid < MAX_DEVENDPOINTS) &&
+                   (trbe_ccode != TRB_CC_STOPPED) &&
+                   (trbe_ccode != TRB_CC_STOPPED_LENGTH_INVALID) &&
+                   (trbe_ccode != TRB_CC_STOPPED_SHORT_PACKET)) {
                     req = xhciBusyReqFromSlotEpid(hc, devCtx, trbe_epid);
                     if(req) {
                         pciusbXHCIDebugTRBV("xHCI",
@@ -4243,15 +4319,29 @@ void xhciFreeDeviceCtx(struct PCIController *hc,
         xhciSetPointer(hc, ((volatile struct xhci_address *)xhcic->xhc_DCBAAp)[devCtx->dc_SlotID], 0);
 
     for(ULONG epid = 0; epid < MAX_DEVENDPOINTS; epid++) {
+        struct pciusbXHCIEndpointCtx *epctx;
+
         xhciFreeEndpointContext(hc, devCtx, epid, FALSE, timerreq);
-        if(devCtx->dc_EPContexts[epid]) {
-            if(devCtx->dc_EPContexts[epid]->ectx_TimerReq ||
-                    devCtx->dc_EPContexts[epid]->ectx_TimerPort) {
-                xhciCloseTaskTimer(&devCtx->dc_EPContexts[epid]->ectx_TimerPort,
-                                   &devCtx->dc_EPContexts[epid]->ectx_TimerReq);
+
+        Disable();
+        epctx = devCtx->dc_EPContexts[epid];
+        devCtx->dc_EPContexts[epid] = NULL;
+        if(epctx)
+            epctx->ectx_Device = NULL;
+        Enable();
+
+        if(epctx) {
+            if(epctx->ectx_TimerReq || epctx->ectx_TimerPort) {
+                xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
             }
-            FreeMem(devCtx->dc_EPContexts[epid], sizeof(*devCtx->dc_EPContexts[epid]));
-            devCtx->dc_EPContexts[epid] = NULL;
+            /*
+             * A prepared endpoint (its ioreq's iouh_DriverPrivate2) may still
+             * point at this context - a class freeing its pipes after the
+             * device has gone. Leave it to xhciDestroyEndpoint, which frees
+             * it with the last reference; it never touches the device again.
+             */
+            if(!epctx->ectx_RefCount)
+                FreeMem(epctx, sizeof(*epctx));
         }
     }
 
