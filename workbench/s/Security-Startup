@@ -1,0 +1,22 @@
+; $VER: Security-Startup 45.1 (28.08.2026)
+;
+; Run by dos.library before S:Startup-Sequence when security.library is
+; part of the ROM. Remove this file to boot as a single-user system.
+;
+; NOTE: like the Startup-Sequence this script runs in a shell on the boot
+; console; it MUST end with EndCLI, otherwise the shell stays interactive
+; and the Startup-Sequence does not run until EndCLI is typed.
+;
+; Log in. PARENT makes the boot process inherit the login, so that the
+; Startup-Sequence (and everything it starts) runs as the logged-in user.
+; On an unconfigured system (no SYS:Security/passwd) this logs in as root
+; without asking.
+Login PARENT QUIET
+;
+; Per-user settings: point HOME: at the user's home directory when known.
+If EXISTS SECURITY:
+    If "$Home" NOT EQ ""
+        Assign HOME: "$Home"
+    EndIf
+EndIf
+EndCLI >NIL:

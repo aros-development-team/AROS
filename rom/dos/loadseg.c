@@ -165,6 +165,10 @@ static AROS_UFH3(void, FreeFunc,
         /* We cache the IoErr(), since Close() will alter it */
         err = IoErr();
 
+        /* Multi-user: remember the owner of setuid executables */
+        if (segs && SECURITY_ACTIVE)
+            secRegisterSegment(segs, file);
+
         D(if (segs == BNULL)
             bug("[LoadSeg] Failed to load '%s'\n", name));
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)

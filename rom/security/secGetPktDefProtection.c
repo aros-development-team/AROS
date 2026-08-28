@@ -1,15 +1,28 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
 
-#include <stdio.h>
+#include <proto/security.h>
 
 #include "security_intern.h"
+#include "security_task.h"
+#include "security_server.h"
+#include "security_segment.h"
+#include "security_monitor.h"
+#include "security_memory.h"
+#include "security_plugins.h"
+#include "security_crypto.h"
+#include "security_enforce.h"
 #include "security_packetio.h"
-
-#include <libraries/mufs.h>
+#include "security_userinfo.h"
+#include "security_groupinfo.h"
+#include "security_login.h"
+#include "security_support.h"
 
 /*****************************************************************************
 
@@ -17,43 +30,21 @@
         AROS_LH1(LONG, secGetPktDefProtection,
 
 /*  SYNOPSIS */
-        /* (pkt) */
         AROS_LHA(struct DosPacket *, pkt, A1),
 
 /*  LOCATION */
         struct SecurityBase *, secBase, 35, Security)
 
-/*  FUNCTION
+/*
+    FUNCTION
+        Filesystem API: get the default protection bits of the task that
+        sent a packet, to be used for newly created objects.
 
-    INPUTS
-
-
-    RESULT
-
-
-    NOTES
-
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    return pkt == NULL ? DEFPROTECTION : GetPktDefProtection(secBase, pkt);
+    return pkt ? GetPktDefProtection(secBase, pkt) : secDEFPROTECTION;
 
     AROS_LIBFUNC_EXIT
-
 } /* secGetPktDefProtection */
-

@@ -499,8 +499,16 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
      * Blizzard SCSI Kit boot ROM plays SetFunction() tricks with
      * AddTask() and assumes it is called by a process early enough!
      */
+    /*
+     * Multi-user: the owner of a setuid executable must be applied before
+     * the new process gets to run, so hold Forbid() across AddTask().
+     */
+    Forbid();
     if (AddTask(&process->pr_Task, DosEntry, NULL))
     {
+        if (SECURITY_ACTIVE && segList)
+            secSetTaskOwnerFromSegment(&process->pr_Task, segList);
+        Permit();
         /* Use defaults[19].ti_Data instead of testing against
          * (process->pr_Flags & PRF_SYNCHRONOUS).
          *
@@ -535,6 +543,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
         goto end;
     }
+    Permit();
 
     /* Fall through */
 enomem:

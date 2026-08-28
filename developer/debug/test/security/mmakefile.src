@@ -1,0 +1,15 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/security
+
+FILES := sectest
+
+#MM- test : test-security
+#MM test-security : includes linklibs kernel-security-includes
+
+%build_progs mmake=test-security \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

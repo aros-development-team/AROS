@@ -1,53 +1,42 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-    Desc: private definitions for the security.library
+    Desc: private definitions for security.library
 */
 #ifndef _SECURITY_INTERN_H
 #define _SECURITY_INTERN_H
 
-#ifndef EXEC_TYPES_H
+#include <aros/debug.h>
+
 #include <exec/types.h>
-#endif
-#ifndef EXEC_NODES_H
 #include <exec/nodes.h>
-#endif
-#ifndef UTILITY_UTILITY_H
-#include <utility/utility.h>
-#endif
-#ifndef HIDD_HIDD_H
-#include <hidd/hidd.h>
-#endif
-#ifndef EXEC_LISTS_H
-#   include <exec/lists.h>
-#endif
-
-#define DEBUG   1
-
+#include <exec/lists.h>
 #include <exec/io.h>
 #include <exec/semaphores.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
-
-#include <hardware/intbits.h>
-#include <asm/io.h>
-
+#include <exec/tasks.h>
+#include <utility/utility.h>
+#include <utility/hooks.h>
 #include <dos/dos.h>
 #include <dos/exall.h>
 #include <dos/dostags.h>
 #include <dos/filehandler.h>
+#include <dos/filesystemids.h>
 #include <dos/notify.h>
+#include <intuition/intuition.h>
+#include <libraries/locale.h>
+#include <resources/task.h>
 
-#include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
 #include <aros/config.h>
-#include <aros/debug.h>
-#include <aros/multiboot.h>
+#include <aros/symbolsets.h>
 
-#include <hardware/custom.h>
 #include <libraries/security.h>
+
+#include <string.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -56,177 +45,110 @@
 #include "security_volumes.h"
 #include "security_locale.h"
 
-#define  DEBUG_NAME_STR                     "[security.library]"
+#define DEBUG_NAME_STR                  "[security.library]"
 
-struct ExecBase;
-struct DosLibrary;
-
-typedef void (*FreeFunction)(void*);
-
-typedef APTR (*AddTaskFunc)(struct Task*, APTR,APTR,struct ExecBase*);
-typedef VOID (*RemTaskFunc)(struct Task*, struct ExecBase*);
-typedef APTR (*AllocMemFunc)(ULONG, ULONG, struct ExecBase *);
-typedef VOID (*FreeMemFunc)(void *, ULONG, struct ExecBase *);
-
-typedef BPTR (*LoadSegFunc)(STRPTR, struct DosLibrary *);
-typedef BPTR (*NewLoadSegFunc)(STRPTR, struct TagItem *, struct DosLibrary *);
-typedef BOOL (*UnLoadSegFunc)(BPTR, struct DosLibrary *);
-typedef BPTR (*InternalLoadSegFunc)(BPTR, BPTR, LONG*, LONG*, struct DosLibrary *);
-typedef BOOL (*InternalUnLoadSegFunc)(BPTR, FreeFunction, struct DosLibrary *);
-typedef struct Process *(*CreateProcFunc)(STRPTR, LONG, BPTR, LONG, struct DosLibrary *);
-typedef struct Process *(*CreateNewProcFunc)(struct TagItem *, struct DosLibrary *);
-typedef LONG (*RunCommandFunc)(BPTR, ULONG, STRPTR, ULONG, struct DosLibrary *);
-typedef BOOL (*SetProtectionFunc)(STRPTR, LONG, struct DosLibrary *);
-
-/****************************************************************************
-
-                -------------- Library Base  ------------------
-
- ****************************************************************************/
-
-
-struct SecurityBase 
+/*
+ * The library base
+ */
+struct SecurityBase
 {
     struct Library              LibNode;
     UBYTE                       Flags;
     UBYTE                       Pad;
     BPTR                        SegList;
 
-    /*
-     *		The Server's Process
-     */
+    /* Libraries/resources we use. dos & co are only valid once
+     * sec_AfterDOSDone is TRUE. */
+    struct Library              *sec_TaskResBase;
+    struct Library              *sec_DOSBase;
+    struct Library              *sec_UtilityBase;
+    struct Library              *sec_IntuitionBase;
+    struct Library              *sec_LocaleBase;
+    BOOL                        sec_AfterDOSDone;
 
+    /* task.resource notification hook */
+    struct Hook                 TaskNotifyHook;
+
+    /* The Server's Process and Packet MsgPort */
     struct Process              *Server;
-
-    /*
-     *		The Server's Packet MsgPort
-     */
-
     struct MsgPort              *ServerPort;
 
-    /*
-     *		List of sessions
-     */
-
+    /* List of sessions */
     struct MinList              SessionsList;
 
-    /*
-     *		List of Tasks and their Owner(s)
-     */
-
+    /* Tasks and their Owner(s) */
     struct SignalSemaphore      TaskOwnerSem;
     struct MinList              TaskOwnerList[TASKHASHVALUE];
 
-    /*
-     *		List of memory chunks and address, size, owner.
-     *		It's using the tasksemaphore since one usually wants that one
-     *		too when dealing with this list.
-     */
-
-/*	struct MinList MemOwnerList[MEMHASHVALUE];*/
-
-    /*
-     *		List of Segments and their Owner
-     */
-
+    /* Segments and their Owner (setuid executables) */
     struct SignalSemaphore      SegOwnerSem;
     struct MinList              SegOwnerList;
 
-    /*
-     *		Old AddTask()/RemTask()
-     */
-
-    AddTaskFunc		        OLDAddTask;
-    RemTaskFunc		        OLDRemTask;
-
-    /*
-     * 	Old AllocMem()/FreeMem()
-     */
-/*	
-    AllocMemFunc	OLDAllocMem;
-    FreeMemFunc		OLDFreeMem;
-*/
-    /*
-     *		Old LoadSeg()/NewLoadSeg()/UnLoadSeg()/InternalLoadSeg()/
-     *		InternalUnLoadSeg()/CreateProc()/CreateNewProc()/RunCommand()/
-     *		SetProtection()
-     */
-
-    LoadSegFunc                 OLDLoadSeg;
-    NewLoadSegFunc              OLDNewLoadSeg;
-    UnLoadSegFunc               OLDUnLoadSeg;
-    InternalLoadSegFunc		OLDInternalLoadSeg;
-    InternalUnLoadSegFunc	OLDInternalUnLoadSeg;
-    CreateProcFunc              OLDCreateProc;
-    CreateNewProcFunc           OLDCreateNewProc;
-    RunCommandFunc              OLDRunCommand;
-    SetProtectionFunc           OLDSetProtection;
-
-    /*
-     *		Configuration
-     */
-
+    /* Configuration */
     struct secConfig            Config;
+    BOOL                        Configured;             /* passwd file found and parsed     */
+    BOOL                        LimitDOSSetProtection;  /* runtime state of the option      */
 
-    /*
-     *		Signals for Passwd File Notification and Consistency Check
-     */
-
+    /* Signals for Passwd File Notification and Consistency Check */
     ULONG                       NotifySig;
     ULONG                       ConsistencySig;
 
-    /*
-     *		Security violation flag
-     */
-
+    /* Security violation flag */
     BOOL                        SecurityViolation;
 
-    /*
-     *		MultiUser Volumes
-     */
-
+    /* Volumes */
     struct SignalSemaphore      VolumesSem;
     struct secVolume            *Volumes;
+    struct MinList              NativeVolumes;          /* fstab NATIVE entries (secNativeVolume)   */
 
-    /*
-     *		Monitoring
-     */
-
+    /* Monitoring */
     struct SignalSemaphore      MonitorSem;
     struct MinList              MonitorList;
     struct MsgPort              *MonitorPort;
 
-    /*
-     *		Task Control
-     */
-
+    /* Task Control */
     struct MinList              Frozen;
     struct MinList              Zombies;
 
-    /*
-     *		LocaleInfo for logfile
-     */
-
+    /* LocaleInfo for logfile */
     struct LocaleInfo           LogInfo;
 
-    /*
-     *		You must get this one if you intend to get more than one sem.
-     */
-
+    /* You must get this one if you intend to get more than one sem. */
     struct SignalSemaphore      SuperSem;
 
-    /*
-     * 	Plugins
-     */
-
+    /* Plugins */
     struct SignalSemaphore      PluginModuleSem;
-    struct MinList              PluginModuleList;	/* List of loaded plugin modules */
+    struct MinList              PluginModuleList;
 
-    /* moved (NicJA) from globals */
+    /* Memory pool */
+    struct SignalSemaphore      MemSem;
+    APTR                        MemPool;
+
+    /* Configuration directories */
     BPTR                        _pwdLock;
     BPTR                        _cfgLock;
     struct NotifyRequest        PasswdNotifyReq;
     struct NotifyRequest        GroupNotifyReq;
+
+    /* Parsed user/group database (owned by the server) */
+    struct secUserDef           *UserDefs;
+    struct secGroupDef          *GroupDefs;
+    char                        *Buffer;                /* general purpose line buffer      */
+    char                        Key[64];
+    BOOL                        FirstStartup;
 };
+
+/* Library bases are all reachable through secBase */
+#define DOSBase                 ((struct DosLibrary *)secBase->sec_DOSBase)
+#define UtilityBase             ((struct UtilityBase *)secBase->sec_UtilityBase)
+#define IntuitionBase           ((struct IntuitionBase *)secBase->sec_IntuitionBase)
+#define LocaleBase              (secBase->sec_LocaleBase)
+#define TaskResBase             (secBase->sec_TaskResBase)
+
+/* Helper to reach the library base from callbacks that only have a task */
+extern struct SecurityBase *SecurityBaseGlobal;
+
+/* Server-side entry points (security_afterdos.c) */
+BOOL Security_AfterDOS(struct SecurityBase *secBase);
 
 #endif /* _SECURITY_INTERN_H */

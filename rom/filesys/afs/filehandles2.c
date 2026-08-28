@@ -22,6 +22,7 @@
 #include "filehandles1.h"
 #include "hashing.h"
 #include "misc.h"
+#include "afs_security.h"
 #include "baseredef.h"
 #include "validator.h"
 
@@ -684,6 +685,8 @@ ULONG i;
         for (i=BLK_BLOCK_COUNT; i<=BLK_COMMENT_END(volume); i++)
                 newblock->buffer[i] = 0;
         newblock->buffer[BLK_PROTECT(volume)] = OS_LONG2BE(protection);
+        /* multi-user: new objects belong to the creator */
+        newblock->buffer[BLK_OWNER(volume)] = OS_LONG2BE(afsSecNewOwner(afsbase));
         DateStamp(&ds);
         newblock->buffer[BLK_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
         newblock->buffer[BLK_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);

@@ -737,6 +737,17 @@ static LONG internalBootCliHandler(void)
     D(bug("Dos/CliInit: Calling InitCode(RTF_AFTERDOS, 0)\n"));
     InitCode(RTF_AFTERDOS, 0);
 
+    /*
+     * Multi-user support: if security.library is part of the ROM it is
+     * up by now (its RTF_AFTERDOS part started the server). Open it once
+     * and keep it; without it dos behaves as a single-user system.
+     */
+    if (FindResident(SECURITYNAME))
+    {
+        IDosBase(DOSBase)->securityBase = OpenLibrary(SECURITYNAME, 0);
+        D(bug("Dos/CliInit: security.library @ 0x%p\n", IDosBase(DOSBase)->securityBase));
+    }
+
     /* Call the platform-overridable portions */
     D(bug("Dos/CliInit: Calling __dos_Boot(%p, 0x%lx, 0x%x)\n", DOSBase, BootFlags, Flags));
     __dos_Boot(DOSBase, BootFlags, Flags);

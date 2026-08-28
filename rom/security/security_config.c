@@ -1,14 +1,17 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-#include <aros/debug.h>
+    Desc: security.library configuration, key files and the user/group
+          database. Derived from MultiUser Config.c (c) Geert Uytterhoeven.
+
+          All functions here run in the context of the server process.
+*/
 
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
-#include <proto/intuition.h>
 
 #include <proto/security.h>
-
-#include <dos/dos.h>
 
 #include "security_intern.h"
 #include "security_plugins.h"
@@ -17,74 +20,85 @@
 #include "security_memory.h"
 #include "security_support.h"
 
-/*
- *      Configuration Stuff
- */
-
-const char KeyFileName[] = secKey_FileName;
+const char KeyFileName[]    = secKey_FileName;
 const char PasswdFileName[] = secPasswd_FileName;
 const char ConfigFileName[] = secConfig_FileName;
-const char GroupFileName[] = secGroup_FileName;
-const char LogFileName[] = secLog_FileName;
-
-struct secUserDef *UserDef = NULL;
-struct secGroupDef *GroupDef = NULL;
+const char GroupFileName[]  = secGroup_FileName;
+const char LogFileName[]    = secLog_FileName;
 
 /*
- *      General Purpose Buffer
+ * Convert a MuFS era format string ("%ld" with 32-bit longs) into one that
+ * fetches IPTR sized values ("%id"), so that SIPTR argument arrays work on
+ * 64-bit systems.
  */
-
-#define GENBUFSIZE 1024
-
-char *Buffer = NULL;
-
-char Key[64];
-
-/*
- *      First run indicator
- */
-BOOL FirstStartup = TRUE;
-
-/*
- *      Clear the General Purpose Buffer
- */
-
-void ClearBuffer(void)
+void FixFormat(CONST_STRPTR src, STRPTR dst, ULONG dstsize)
 {
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+    ULONG o = 0;
 
-    if (!Buffer && !(Buffer = MAlloc(GENBUFSIZE)))
-        Die(NULL, AN_Unknown | AG_NoMemory);
-    SetMem(Buffer, 0, GENBUFSIZE);
+    while (*src && o < dstsize - 1)
+    {
+        if (src[0] == '%' && src[1] == 'l' && (src[2] == 'd' || src[2] == 'u' || src[2] == 'x' || src[2] == 'X' || src[2] == 'c'))
+        {
+            if (o + 3 >= dstsize - 1)
+                break;
+            dst[o++] = '%';
+            dst[o++] = 'i';
+            dst[o++] = src[2];
+            src += 3;
+        }
+        else if (src[0] == '%' && src[1] == '%')
+        {
+            if (o + 2 >= dstsize - 1)
+                break;
+            dst[o++] = '%';
+            dst[o++] = '%';
+            src += 2;
+        }
+        else
+            dst[o++] = *src++;
+    }
+    dst[o] = '\0';
 }
 
-void FreeBuffer(void)
+/*
+ * General purpose line buffer
+ */
+BOOL ClearBuffer(struct SecurityBase *secBase)
 {
-    if (Buffer) {
-        Free(Buffer, GENBUFSIZE);
-        Buffer = NULL;
+    if (!secBase->Buffer && !(secBase->Buffer = MAlloc(secGENBUFSIZE)))
+    {
+        Die(secBase, NULL, AN_Unknown | AG_NoMemory);
+        return FALSE;
+    }
+    memset(secBase->Buffer, 0, secGENBUFSIZE);
+    return TRUE;
+}
+
+void FreeBuffer(struct SecurityBase *secBase)
+{
+    if (secBase->Buffer)
+    {
+        Free(secBase->Buffer, secGENBUFSIZE);
+        secBase->Buffer = NULL;
     }
 }
 
-void PurgeKeyBuffer(void)
+void PurgeKeyBuffer(struct SecurityBase *secBase)
 {
-    SetMem(Key, 0, sizeof(Key));
+    memset(secBase->Key, 0, sizeof(secBase->Key));
 }
 
 /*
- *      Parse a User Entry.
- *      Note: Is is traditional to be able to specify the name of the nobody user,
- *      so allow for this.
- *      The Who support program will probably need tweaking to match.
+ * Parse a User Entry:  UserID|Password|uid|gid|UserName|HomeDir|Shell
  */
-
 static struct secUserDef *ParseUserLine(struct SecurityBase *secBase, STRPTR line, ULONG linenum)
 {
     int i, j, len;
-    LONG uid, gid;
+    LONG uid = 0, gid = 0;
     struct secUserDef *def;
     STRPTR part[7];
     STRPTR ptr;
+    ULONG pwdlen;
 
 #define UPART_USERID            0
 #define UPART_PASSWORD          1
@@ -94,155 +108,170 @@ static struct secUserDef *ParseUserLine(struct SecurityBase *secBase, STRPTR lin
 #define UPART_HOMEDIR           5
 #define UPART_SHELL             6
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
     i = 0;
-    for (j = 0; j < 7; j++) {
+    for (j = 0; j < 7; j++)
+    {
         part[j] = &line[i];
         while ((line[i]) && (line[i] != '\n') && (line[i] != '|'))
             i++;
         if (j == 6)
+        {
             if (line[i] && (line[i] != '\n'))
                 goto Fail;
-            else {}
+        }
         else if (line[i] != '|')
             goto Fail;
         line[i++] = '\0';
         len = strlen(part[j]);
-        switch(j) {
-            case UPART_USERID:
-                if (!len)
-                    goto Fail;
-                break;
+        switch (j)
+        {
+        case UPART_USERID:
+            if (!len || len >= secUSERIDSIZE)
+                goto Fail;
+            break;
 
-            case UPART_PASSWORD:
-                if (len && (len != (MaxPwdLen(secBase))))
-                    goto Fail;
-                break;
+        case UPART_PASSWORD:
+            /* Any hash the crypto layer understands; empty = no password */
+            if (len && !IsValidPasswordHash(secBase, part[j]))
+                goto Fail;
+            break;
 
-            case UPART_UID:
-                if (!len || (StrToLong(part[j], &uid) == -1) || (uid < 0) || (uid > 65535))
-                    goto Fail;
-                break;
+        case UPART_UID:
+            if (!len || (StrToLong(part[j], &uid) == -1) || (uid < 0) || (uid > 65535))
+                goto Fail;
+            break;
 
-            case UPART_GID:
-                if (!len || (StrToLong(part[j], &gid) == -1) || (gid < 0) || (gid > 65535))
-                    goto Fail;
-                break;
+        case UPART_GID:
+            if (!len || (StrToLong(part[j], &gid) == -1) || (gid < 0) || (gid > 65535))
+                goto Fail;
+            break;
 
-            case UPART_USERNAME:
-            case UPART_HOMEDIR:
-            case UPART_SHELL:
-                break;
+        case UPART_USERNAME:
+            if (len >= secUSERNAMESIZE)
+                goto Fail;
+            break;
+        case UPART_HOMEDIR:
+            if (len >= secHOMEDIRSIZE)
+                goto Fail;
+            break;
+        case UPART_SHELL:
+            if (len >= secSHELLSIZE)
+                goto Fail;
+            break;
         }
     }
 
-    if ((def = (struct secUserDef *)MAllocV(sizeof(struct secUserDef)+strlen(part[UPART_USERID])+
-                    strlen(part[UPART_USERNAME])+strlen(part[UPART_HOMEDIR])+
-                    strlen(part[UPART_SHELL])+(MaxPwdLen(secBase)+1) +4))) {
+    pwdlen = MaxPwdLen(secBase);
+    if (strlen(part[UPART_PASSWORD]) > pwdlen)
+        pwdlen = strlen(part[UPART_PASSWORD]);
+
+    if ((def = (struct secUserDef *)MAllocV(sizeof(struct secUserDef) + strlen(part[UPART_USERID]) +
+                    strlen(part[UPART_USERNAME]) + strlen(part[UPART_HOMEDIR]) +
+                    strlen(part[UPART_SHELL]) + (pwdlen + 1) + 4)))
+    {
         ptr = &((STRPTR)def)[sizeof(struct secUserDef)];
         def->UserID = ptr;
         strcpy(ptr, part[UPART_USERID]);
-        ptr = &ptr[strlen(part[UPART_USERID])+1];
+        ptr = &ptr[strlen(part[UPART_USERID]) + 1];
         def->Password = ptr;
         strcpy(ptr, part[UPART_PASSWORD]);
-        ptr = &ptr[MaxPwdLen(secBase)+1];
+        ptr = &ptr[pwdlen + 1];
         def->uid = (UWORD)uid;
         def->gid = (UWORD)gid;
         def->UserName = ptr;
         strcpy(ptr, part[UPART_USERNAME]);
-        ptr = &ptr[strlen(part[UPART_USERNAME])+1];
+        ptr = &ptr[strlen(part[UPART_USERNAME]) + 1];
         def->HomeDir = ptr;
         strcpy(ptr, part[UPART_HOMEDIR]);
-        ptr = &ptr[strlen(part[UPART_HOMEDIR])+1];
+        ptr = &ptr[strlen(part[UPART_HOMEDIR]) + 1];
         def->Shell = ptr;
         strcpy(ptr, part[UPART_SHELL]);
-    } else
-        Die(NULL, AN_Unknown | AG_NoMemory);
-    return(def);
+    }
+    else
+        Die(secBase, NULL, AN_Unknown | AG_NoMemory);
+    return def;
 
 Fail:
-    Warn(secBase, GetLocStr(secBase, MSG_BADENTRY_PASSWD), linenum);
-    return(NULL);
+    Warn1(secBase, GetLocStr(secBase, MSG_BADENTRY_PASSWD), linenum);
+    return NULL;
 }
 
-
 /*
- *      Parse a Group Entry
+ * Parse a Group Entry:  GroupID|gid|MgrUid|GroupName
  */
-
 static struct secGroupDef *ParseGroupLine(struct SecurityBase *secBase, STRPTR line, ULONG linenum)
 {
     int i, j, len;
-    LONG gid, mgruid;
+    LONG gid = 0, mgruid = 0;
     struct secGroupDef *def;
     STRPTR part[4];
     STRPTR ptr;
 
-#define GPART_GROUPID	0
-#define GPART_GID			1
-#define GPART_MGRUID		2
-#define GPART_GROUPNAME	3
-
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+#define GPART_GROUPID   0
+#define GPART_GID       1
+#define GPART_MGRUID    2
+#define GPART_GROUPNAME 3
 
     i = 0;
-    for (j = 0; j < 4; j++) {
+    for (j = 0; j < 4; j++)
+    {
         part[j] = &line[i];
         while ((line[i]) && (line[i] != '\n') && (line[i] != '|'))
-                i++;
+            i++;
         if (j == 3)
+        {
             if (line[i] && (line[i] != '\n'))
                 goto Fail;
-            else {}
+        }
         else if (line[i] != '|')
             goto Fail;
         line[i++] = '\0';
         len = strlen(part[j]);
-        switch(j) {
-            case GPART_GROUPID:
-                if (!len)
-                    goto Fail;
-                break;
-
-            case GPART_GID:
-                if (!len || (StrToLong(part[j], &gid) == -1) || (gid < 0) || (gid > 65535))
-                    goto Fail;
-                break;
-
-            case GPART_MGRUID:
-                if (!len || (StrToLong(part[j], &mgruid) == -1) || (mgruid < 0) || (mgruid > 65535))
-                    goto Fail;
-                break;
-
-            case GPART_GROUPNAME:
-                break;
+        switch (j)
+        {
+        case GPART_GROUPID:
+            if (!len || len >= secGROUPIDSIZE)
+                goto Fail;
+            break;
+        case GPART_GID:
+            if (!len || (StrToLong(part[j], &gid) == -1) || (gid < 0) || (gid > 65535))
+                goto Fail;
+            break;
+        case GPART_MGRUID:
+            if (!len || (StrToLong(part[j], &mgruid) == -1) || (mgruid < 0) || (mgruid > 65535))
+                goto Fail;
+            break;
+        case GPART_GROUPNAME:
+            if (len >= secGROUPNAMESIZE)
+                goto Fail;
+            break;
         }
     }
 
-    if ((def = (struct secGroupDef *)MAllocV(sizeof(struct secGroupDef)+strlen(part[GPART_GROUPID])+
-                    strlen(part[GPART_GROUPNAME])+2))) {
+    if ((def = (struct secGroupDef *)MAllocV(sizeof(struct secGroupDef) + strlen(part[GPART_GROUPID]) +
+                    strlen(part[GPART_GROUPNAME]) + 2)))
+    {
         ptr = &((STRPTR)def)[sizeof(struct secGroupDef)];
         def->GroupID = ptr;
         strcpy(ptr, part[GPART_GROUPID]);
-        ptr = &ptr[strlen(part[GPART_GROUPID])+1];
+        ptr = &ptr[strlen(part[GPART_GROUPID]) + 1];
         def->gid = (UWORD)gid;
         def->MgrUid = (UWORD)mgruid;
         def->GroupName = ptr;
         strcpy(ptr, part[GPART_GROUPNAME]);
-    } else
-        Die(NULL, AN_Unknown | AG_NoMemory);
-    return(def);
+    }
+    else
+        Die(secBase, NULL, AN_Unknown | AG_NoMemory);
+    return def;
 
 Fail:
-    Warn(secBase, GetLocStr(secBase, MSG_BADENTRY_GROUP), linenum);
-    return(NULL);
+    Warn1(secBase, GetLocStr(secBase, MSG_BADENTRY_GROUP), linenum);
+    return NULL;
 }
 
 /*
- *      Parse a Relation Entry
+ * Parse a Relation Entry:  uid:gid[,gid...]
  */
-
 static void ParseRelationLine(struct SecurityBase *secBase, STRPTR line, ULONG linenum)
 {
     struct secUserDef *def;
@@ -251,330 +280,321 @@ static void ParseRelationLine(struct SecurityBase *secBase, STRPTR line, ULONG l
     LONG uid, gid, len;
     ULONG i, j;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    if (((len = StrToLong(line, &uid)) == -1) || (uid < -2) || (uid > 65535))
-            goto Fail;
+    if (((len = StrToLong(line, &uid)) == -1) || (uid < 0) || (uid > 65535))
+        goto Fail;
     i = len;
-    j = i+1;
+    j = i + 1;
     if (line[i] != ':')
+        goto Fail;
+    for (def = secBase->UserDefs; def && (def->uid != uid); def = def->Next);
+    if (!def)
+        goto Fail;
+
+    do
+    {
+        if (((len = StrToLong(&line[++i], &gid)) == -1) || (gid < 0) || (gid > 65535))
             goto Fail;
-    for (def = UserDef; def && (def->uid != uid); def = def->Next);
-    if (def) {
-            do {
-                    if (((len = StrToLong(&line[++i], &gid)) == -1) || (gid < 0) || (gid > 65535))
-                            goto Fail;
-                    i += len;
-                    numgroups++;
-                    if (line[i] && (line[i] != ',') && (line[i] != '\n'))
-                            goto Fail;
-            } while (line[i] && (line[i] != '\n'));
-            if (def->NumSecGroups+numgroups <= 65535) {
-                if (def->NumSecGroups)
-                    if ((groups = MAlloc((numgroups+def->NumSecGroups)*sizeof(UWORD)))) {
-                        CopyMem(def->SecGroups, groups, def->NumSecGroups*sizeof(UWORD));
-                        Free(def->SecGroups, def->NumSecGroups*sizeof(UWORD));
-                        def->SecGroups = groups;
-                        groups += def->NumSecGroups;
-                        def->NumSecGroups += numgroups;
-                    } else
-                        Die(NULL, AN_Unknown | AG_NoMemory);
-                    else if ((groups = MAlloc(numgroups*sizeof(UWORD)))) {
-                        def->SecGroups = groups;
-                        def->NumSecGroups = numgroups;
-                    } else
-                        Die(NULL, AN_Unknown | AG_NoMemory);
-                    if (groups)
-                        for (i = 0; i < numgroups; i++) {
-                            j += StrToLong(&line[j], &gid) + 1;
-                            groups[i] = gid;
-                        }
-            } else {
-                Warn(secBase, GetLocStr(secBase, MSG_TOOMANYSECGROUPS), uid, linenum);
-            }
-    } else {
-Fail:
-        Warn(secBase, GetLocStr(secBase, MSG_BADENTRY_GROUP), linenum);
+        i += len;
+        numgroups++;
+        if (line[i] && (line[i] != ',') && (line[i] != '\n'))
+            goto Fail;
+    } while (line[i] && (line[i] != '\n'));
+
+    if (def->NumSecGroups + numgroups > 65535)
+    {
+        Warn2(secBase, GetLocStr(secBase, MSG_TOOMANYSECGROUPS), uid, linenum);
+        return;
     }
+
+    if (!(groups = MAlloc((numgroups + def->NumSecGroups) * sizeof(UWORD))))
+    {
+        Die(secBase, NULL, AN_Unknown | AG_NoMemory);
+        return;
+    }
+    if (def->NumSecGroups)
+    {
+        CopyMem(def->SecGroups, groups, def->NumSecGroups * sizeof(UWORD));
+        Free(def->SecGroups, def->NumSecGroups * sizeof(UWORD));
+    }
+    def->SecGroups = groups;
+    groups += def->NumSecGroups;
+    def->NumSecGroups += numgroups;
+    for (i = 0; i < numgroups; i++)
+    {
+        j += StrToLong(&line[j], &gid) + 1;
+        groups[i] = gid;
+    }
+    return;
+
+Fail:
+    Warn1(secBase, GetLocStr(secBase, MSG_BADENTRY_GROUP), linenum);
 }
 
 /*
- *      Initialise the User and Group Definitions
+ * Initialise the User and Group Definitions
  */
-
 static void InitDefs(struct SecurityBase *secBase)
 {
-    BPTR file;
+    BPTR file, olddir;
     ULONG linenum;
+    char *Buffer;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+    D(bug(DEBUG_NAME_STR " %s()\n", __func__);)
 
-    CurrentDir(secBase->_pwdLock);
-    if ((file = Open(PasswdFileName, MODE_OLDFILE))) {
+    if (!secBase->_pwdLock || !ClearBuffer(secBase))
+        return;
+    Buffer = secBase->Buffer;
+
+    olddir = CurrentDir(secBase->_pwdLock);
+    if ((file = Open(PasswdFileName, MODE_OLDFILE)))
+    {
         struct secUserDef *def1, *def2 = NULL;
 
-        for (linenum = 1; FGets(file, Buffer, GENBUFSIZE-1); linenum++)
-            /* V36/37: use GENBUFSIZE-1 */
-            /* V39: use GENBUFSIZE */
+        for (linenum = 1; FGets(file, Buffer, secGENBUFSIZE - 1); linenum++)
             if (Buffer[0] && (Buffer[0] != '\n'))
-                    if ((def1 = ParseUserLine(secBase, Buffer, linenum))) {
-                        if (def2)
-                            def2->Next = def1;
-                        else
-                            UserDef = def1;
-                        def2 = def1;
-                    }
-        Close(file);
-    }
-    CurrentDir(secBase->_cfgLock);
-
-    if (UserDef && (file = Open(GroupFileName, MODE_OLDFILE))) {
-        struct secGroupDef *def1, *def2 = NULL;
-
-        for (linenum = 1; FGets(file, Buffer, GENBUFSIZE-1) && (Buffer[0] != '\n'); linenum++)
-            /* V36/37: use GENBUFSIZE-1 */
-            /* V39: use GENBUFSIZE */
-            if (Buffer[0])
-                if ((def1 = ParseGroupLine(secBase, Buffer, linenum))) {
+                if ((def1 = ParseUserLine(secBase, Buffer, linenum)))
+                {
                     if (def2)
                         def2->Next = def1;
                     else
-                        GroupDef = def1;
+                        secBase->UserDefs = def1;
+                    def2 = def1;
+                }
+        Close(file);
+    }
+
+    if (secBase->_cfgLock)
+        CurrentDir(secBase->_cfgLock);
+
+    if (secBase->UserDefs && (file = Open(GroupFileName, MODE_OLDFILE)))
+    {
+        struct secGroupDef *def1, *def2 = NULL;
+
+        for (linenum = 1; FGets(file, Buffer, secGENBUFSIZE - 1) && (Buffer[0] != '\n'); linenum++)
+            if (Buffer[0])
+                if ((def1 = ParseGroupLine(secBase, Buffer, linenum)))
+                {
+                    if (def2)
+                        def2->Next = def1;
+                    else
+                        secBase->GroupDefs = def1;
                     def2 = def1;
                 }
         if (Buffer[0] == '\n')
-            for (linenum++; FGets(file, Buffer, GENBUFSIZE-1); linenum++)
-                /* V36/37: use GENBUFSIZE-1 */
-                /* V39: use GENBUFSIZE */
+            for (linenum++; FGets(file, Buffer, secGENBUFSIZE - 1); linenum++)
                 if (Buffer[0] && (Buffer[0] != '\n'))
                     ParseRelationLine(secBase, Buffer, linenum);
         Close(file);
     }
+    CurrentDir(olddir);
 
-    ClearBuffer();
+    ClearBuffer(secBase);
 
-    if (!UserDef || !GroupDef)
-        FreeDefs();
+    if (!secBase->UserDefs || !secBase->GroupDefs)
+        FreeDefs(secBase);
+
+    secBase->Configured = (secBase->UserDefs != NULL);
+    D(bug(DEBUG_NAME_STR " %s: system is %sconfigured\n", __func__, secBase->Configured ? "" : "NOT ");)
 }
 
-/*
- *      Free the User and Group Definitions
- */
-
-void FreeDefs(void)
+void FreeDefs(struct SecurityBase *secBase)
 {
-    struct secUserDef *udef = UserDef;
-    struct secGroupDef *gdef = GroupDef;
+    struct secUserDef *udef = secBase->UserDefs;
+    struct secGroupDef *gdef = secBase->GroupDefs;
     APTR p;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    while(udef) {
+    while (udef)
+    {
         p = udef->Next;
         if (udef->NumSecGroups)
-            Free(udef->SecGroups, udef->NumSecGroups*sizeof(UWORD));
-        
+            Free(udef->SecGroups, udef->NumSecGroups * sizeof(UWORD));
         FreeV(udef);
         udef = p;
     }
-    UserDef = NULL;
-    while(gdef) {
+    secBase->UserDefs = NULL;
+    while (gdef)
+    {
         p = gdef->Next;
         FreeV(gdef);
         gdef = p;
     }
-    GroupDef = NULL;
+    secBase->GroupDefs = NULL;
 }
 
-/*
- *      Get a pointer to the User Definitions
- */
-
-struct secUserDef *GetUserDefs(struct Library *_Base)
+struct secUserDef *GetUserDefs(struct SecurityBase *secBase)
 {
-    struct SecurityBase *secBase = (struct SecurityBase *)_Base;
-
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    if (!UserDef)
+    if (!secBase->UserDefs)
         InitDefs(secBase);
-    return(UserDef);
+    return secBase->UserDefs;
 }
 
-/*
- *      Get a pointer to the Group Definitions
- */
-
-struct secGroupDef *GetGroupDefs(struct Library *_Base)
+struct secGroupDef *GetGroupDefs(struct SecurityBase *secBase)
 {
-    struct SecurityBase *secBase = (struct SecurityBase *)_Base;
-
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    if (!GroupDef)
+    if (!secBase->GroupDefs)
         InitDefs(secBase);
-    return(GroupDef);
+    return secBase->GroupDefs;
 }
 
 /*
- *      Parse a Key File Line and Lock the appropriate Directory
+ * Key files
  */
 static void RemTerminatingLF(char *buffer)
 {
-    int i;
-
-    for (i = 0; buffer[i]; i++);
-    if (i && (buffer[i-1] == '\n'))
-        buffer[i-1] = '\0';
+    int i = strlen(buffer);
+    if (i && (buffer[i - 1] == '\n'))
+        buffer[i - 1] = '\0';
 }
 
-static BOOL ParseDirLockLine(struct MsgPort *fs, BPTR file, BPTR *dir)
+/* Read a directory name from the key file and lock it on the given handler */
+static BOOL ParseDirLockLine(struct SecurityBase *secBase, struct MsgPort *fs, BPTR file, BPTR *dir)
 {
+    char *Buffer = secBase->Buffer;
     BOOL res = FALSE;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    if ((res = (FGets(file, Buffer+1, GENBUFSIZE-2)==NULL?FALSE:TRUE)  )) {
-        /* V36/37: use GENBUFSIZE-2 */
-        /* V39: use GENBUFSIZE-1 */
-        RemTerminatingLF(Buffer);
-        if (Buffer[1]) {
-            if (*dir)	{
-                res = FALSE;
-            } else {
-                Buffer[0] = strlen(Buffer+1);
-                if ((*dir = (BPTR)DoPkt(fs, ACTION_LOCATE_OBJECT, 0, (SIPTR)MKBADDR(Buffer), ACCESS_READ, 0, 0)) != BNULL)
-                    res = TRUE;
+    if (FGets(file, Buffer + 1, secGENBUFSIZE - 2))
+    {
+        res = TRUE;
+        RemTerminatingLF(Buffer + 1);
+        if (Buffer[1])
+        {
+            if (*dir)
+                res = FALSE;    /* two volumes claim the directory */
+            else
+            {
+                Buffer[0] = strlen(Buffer + 1);
+                *dir = (BPTR)DoPkt(fs, ACTION_LOCATE_OBJECT, 0, (SIPTR)MKBADDR(Buffer), ACCESS_READ, 0, 0);
+                res = (*dir != BNULL);
             }
         }
     }
-    return(res);
+    return res;
 }
 
-/*
- *      'Safe' FGets
- *
- *      Prevents synchronization problems on startup
- */
-
-static STRPTR SafeFGets(BPTR fh, STRPTR buf, ULONG len)
+/* 'Safe' FGets: prevents synchronisation problems on startup */
+static STRPTR SafeFGets(struct SecurityBase *secBase, BPTR fh, STRPTR buf, ULONG len)
 {
     STRPTR res;
     int i;
 
     if (!(res = FGets(fh, buf, len)))
-        for (i = 1; !res && (i < 10); i++) {
+        for (i = 1; !res && (i < 10); i++)
+        {
             Delay(25);
             res = FGets(fh, buf, len);
         }
-    return(res);
+    return res;
 }
 
-/*
- *      Read and parse the Key Files
- */
-
-static BOOL ReadKeyFile(struct Library *_Base, struct MsgPort *fs)
+static BOOL ReadKeyFile(struct SecurityBase *secBase, struct MsgPort *fs)
 {
-    struct SecurityBase *secBase = (struct SecurityBase *)_Base;
-    BPTR dir, file;
-    char buffer[12];
+    BPTR dir, file, olddir;
+    char buffer[secPASSWORDSIZE];
     BOOL res = FALSE;
-    static char name[] = "\1:";
+    char *Buffer = secBase->Buffer;
+    /* BSTR ":" */
+    UBYTE rootname[4] = { 1, ':', 0, 0 };
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    dir = (BPTR)DoPkt(fs, ACTION_LOCATE_OBJECT, 0, (SIPTR)MKBADDR(name), ACCESS_READ, 0, 0);
-    if (dir) {
-        CurrentDir(dir);
-        file = Open(KeyFileName, MODE_OLDFILE);
-        if (file) {
-            if (SafeFGets(file, Buffer, GENBUFSIZE-1)) {
+    dir = (BPTR)DoPkt(fs, ACTION_LOCATE_OBJECT, 0, (SIPTR)MKBADDR(rootname), ACCESS_READ, 0, 0);
+    if (dir)
+    {
+        olddir = CurrentDir(dir);
+        if ((file = Open(KeyFileName, MODE_OLDFILE)))
+        {
+            if (SafeFGets(secBase, file, Buffer, secGENBUFSIZE - 1))
+            {
                 res = TRUE;
-                /* V36/37: use GENBUFSIZE-1 */
-                /* V39: use GENBUFSIZE */
                 RemTerminatingLF(Buffer);
-                if (Encrypt(buffer, Buffer, "Alpha, PowerPC or R4400?")) {
-                    if (Key[0])	{
-                        res = !strcmp(Key, buffer);
-                    } else {
-                        strcpy(Key, buffer);
-                    }
-                    if (res)	{
-                        res = (ParseDirLockLine(fs, file, &secBase->_pwdLock) &&
-                                ParseDirLockLine(fs, file, &secBase->_cfgLock));
-                    }
+                if (Encrypt(buffer, Buffer, "Alpha, PowerPC or R4400?"))
+                {
+                    if (secBase->Key[0])
+                        res = !strcmp(secBase->Key, buffer);
+                    else
+                        strncpy(secBase->Key, buffer, sizeof(secBase->Key) - 1);
+                    if (res)
+                        res = (ParseDirLockLine(secBase, fs, file, &secBase->_pwdLock) &&
+                               ParseDirLockLine(secBase, fs, file, &secBase->_cfgLock));
                 }
             }
             Close(file);
-            ClearBuffer();
+            ClearBuffer(secBase);
         }
+        CurrentDir(olddir);
         UnLock(dir);
     }
-    return(res);
-}
-
-BOOL ReadKeyFiles(struct Library *_Base)
-{
-    struct SecurityBase *secBase = (struct SecurityBase *)_Base;
-    struct secVolume *vol;
-    BOOL res = FALSE;
-
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    if (secBase->Volumes)
-    {
-        for (vol = secBase->Volumes; vol && (res = (vol->FS_Flags?TRUE:ReadKeyFile(_Base, vol->Process))); vol = vol->Next);
-        return((BOOL)(res && secBase->_pwdLock && secBase->_cfgLock));
-    }
-    return FALSE;
+    return res;
 }
 
 /*
- *      Attempt to load the Configuration file
+ * Probe a volume for a key file: used to find filesystems that enforce
+ * ownership natively (SFS, ...) but have no multi-user dostype. The key
+ * must match the one of the other multi-user volumes.
  */
-void LoadConfig(struct Library *_Base)
+BOOL ProbeKeyFile(struct SecurityBase *secBase, struct MsgPort *fs)
 {
-    struct SecurityBase *secBase = (struct SecurityBase *)_Base;
-    BPTR file;
-    SIPTR *argarray[15] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+    if (!ClearBuffer(secBase))
+        return FALSE;
+    return ReadKeyFile(secBase, fs);
+}
 
-#define argLIMITDOSSETPROTECTION	0
-#define argPROFILE					1
-#define argLASTLOGINREQ				2
-#define argLOGSTARTUP				3
-#define argLOGLOGIN					4
-#define argLOGLOGINFAIL				5
-#define argLOGPASSWD					6
-#define argLOGPASSWDFAIL			7
-#define argLOGCHECKPASSWD			8
-#define argLOGCHECKPASSWDFAIL		9
-#define argPASSWDUIDLEVEL			10
-#define argPASSWDGIDLEVEL			11
-#define argFSTAB						12
-/*#define argRESOURCETRACKING		13*/
-#define argLOADPLUGIN				14
+BOOL ReadKeyFiles(struct SecurityBase *secBase)
+{
+    struct secVolume *vol;
+    BOOL res = FALSE;
+
+    if (!secBase->Volumes || !ClearBuffer(secBase))
+        return FALSE;
+
+    for (vol = secBase->Volumes; vol && (res = (vol->FS_Flags ? TRUE : ReadKeyFile(secBase, vol->Process))); vol = vol->Next);
+    return (res && secBase->_pwdLock && secBase->_cfgLock);
+}
+
+/*
+ * Load the configuration file
+ */
+void LoadConfig(struct SecurityBase *secBase)
+{
+    BPTR file, olddir;
+    SIPTR *argarray[15];
+
+#define argLIMITDOSSETPROTECTION    0
+#define argPROFILE                  1
+#define argLASTLOGINREQ             2
+#define argLOGSTARTUP               3
+#define argLOGLOGIN                 4
+#define argLOGLOGINFAIL             5
+#define argLOGPASSWD                6
+#define argLOGPASSWDFAIL            7
+#define argLOGCHECKPASSWD           8
+#define argLOGCHECKPASSWDFAIL       9
+#define argPASSWDUIDLEVEL           10
+#define argPASSWDGIDLEVEL           11
+#define argFSTAB                    12
+#define argRESOURCETRACKING         13
+#define argLOADPLUGIN               14
 
     struct RDArgs *rdargs;
     ULONG line;
     struct secConfig config;
+    char *Buffer;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+    D(bug(DEBUG_NAME_STR " %s()\n", __func__);)
 
-    config.Flags = muCFGF_LimitDOSSetProtection | muCFGF_Profile | muCFGF_LastLoginReq;
+    config.Flags = secCFGF_LimitDOSSetProtection | secCFGF_Profile | secCFGF_LastLoginReq;
     config.LogFlags = 0;
     config.PasswduidLevel = secNOBODY_UID;
     config.PasswdgidLevel = secNOBODY_UID;
 
-    if ((rdargs = AllocDosObject(DOS_RDARGS, NULL))) {
-        CurrentDir(secBase->_cfgLock);
-        if ((file = Open(ConfigFileName, MODE_OLDFILE))) {
-            D(bug( DEBUG_NAME_STR " %s: '%s' opened @ %p\n", __func__, ConfigFileName, file);)
-            for (line = 1; FGets(file, Buffer, GENBUFSIZE-1); line++) {
-                D(bug( DEBUG_NAME_STR " %s:        Config Line '%s'\n", __func__, Buffer);)
-                /* V36/37: use GENBUFSIZE-1 */
-                /* V39: use GENBUFSIZE */
+    if (secBase->_cfgLock && ClearBuffer(secBase) && (rdargs = AllocDosObject(DOS_RDARGS, NULL)))
+    {
+        Buffer = secBase->Buffer;
+        olddir = CurrentDir(secBase->_cfgLock);
+        if ((file = Open(ConfigFileName, MODE_OLDFILE)))
+        {
+            D(bug(DEBUG_NAME_STR " %s: '%s' opened\n", __func__, ConfigFileName);)
+            for (line = 1; FGets(file, Buffer, secGENBUFSIZE - 1); line++)
+            {
+                if (!Buffer[0] || Buffer[0] == '\n' || Buffer[0] == ';' || Buffer[0] == '#')
+                    continue;
                 rdargs->RDA_Source.CS_Buffer = Buffer;
                 rdargs->RDA_Source.CS_Length = strlen(Buffer);
                 rdargs->RDA_Source.CS_CurChr = 0;
@@ -583,142 +603,95 @@ void LoadConfig(struct Library *_Base)
                 rdargs->RDA_BufSiz = 0;
                 rdargs->RDA_ExtHelp = NULL;
                 rdargs->RDA_Flags = RDAF_NOPROMPT;
-                SetMem(argarray, 0, sizeof(argarray));
+                memset(argarray, 0, sizeof(argarray));
                 if (ReadArgs("LIMITDOSSETPROTECTION/K/N,PROFILE/K/N,LASTLOGINREQ/K/N,LOGSTARTUP/K/N,"
-                                "LOGLOGIN/K/N,LOGLOGINFAIL/K/N,LOGPASSWD/K/N,LOGPASSWDFAIL/K/N,"
-                                "LOGCHECKPASSWD/K/N,LOGCHECKPASSWDFAIL/K/N,PASSWDUIDLEVEL/K/N,"
-                                "PASSWDGIDLEVEL/K/N,FSTAB/K/N,RESOURCETRACKING/K/N,LOADPLUGIN/K"
-                                , (SIPTR *)argarray, rdargs)) {
-                    if (argarray[argLIMITDOSSETPROTECTION])
-                        if (*argarray[argLIMITDOSSETPROTECTION])
-                            config.Flags |= muCFGF_LimitDOSSetProtection;
-                        else
-                            config.Flags &= ~muCFGF_LimitDOSSetProtection;
-                    if (argarray[argPROFILE])
-                        if (*argarray[argPROFILE])
-                            config.Flags |= muCFGF_Profile;
-                        else
-                            config.Flags &= ~muCFGF_Profile;
-                    if (argarray[argLASTLOGINREQ])
-                        if (*argarray[argLASTLOGINREQ])
-                            config.Flags |= muCFGF_LastLoginReq;
-                        else
-                            config.Flags &= ~muCFGF_LastLoginReq;
-                    if (argarray[argLOGSTARTUP])
-                        if (*argarray[argLOGSTARTUP])
-                            config.LogFlags |= muLogF_Startup;
-                        else
-                            config.LogFlags &= ~muLogF_Startup;
-                    if (argarray[argLOGLOGIN])
-                        if (*argarray[argLOGLOGIN])
-                            config.LogFlags |= muLogF_Login;
-                        else
-                            config.LogFlags &= ~muLogF_Login;
-                    if (argarray[argLOGLOGINFAIL])
-                        if (*argarray[argLOGLOGINFAIL])
-                            config.LogFlags |= muLogF_LoginFail;
-                        else
-                            config.LogFlags &= ~muLogF_LoginFail;
-                    if (argarray[argLOGPASSWD])
-                        if (*argarray[argLOGPASSWD])
-                            config.LogFlags |= muLogF_Passwd;
-                        else
-                            config.LogFlags &= ~muLogF_Passwd;
-                    if (argarray[argLOGPASSWDFAIL])
-                        if (*argarray[argLOGPASSWDFAIL])
-                            config.LogFlags |= muLogF_PasswdFail;
-                        else
-                            config.LogFlags &= ~muLogF_PasswdFail;
-                    if (argarray[argLOGCHECKPASSWD])
-                        if (*argarray[argLOGCHECKPASSWD])
-                            config.LogFlags |= muLogF_CheckPasswd;
-                        else
-                            config.LogFlags &= ~muLogF_CheckPasswd;
-                    if (argarray[argLOGCHECKPASSWDFAIL])
-                        if (*argarray[argLOGCHECKPASSWDFAIL])
-                            config.LogFlags |= muLogF_CheckPasswdFail;
-                        else
-                            config.LogFlags &= ~muLogF_CheckPasswdFail;
+                             "LOGLOGIN/K/N,LOGLOGINFAIL/K/N,LOGPASSWD/K/N,LOGPASSWDFAIL/K/N,"
+                             "LOGCHECKPASSWD/K/N,LOGCHECKPASSWDFAIL/K/N,PASSWDUIDLEVEL/K/N,"
+                             "PASSWDGIDLEVEL/K/N,FSTAB/K/N,RESOURCETRACKING/K/N,LOADPLUGIN/K",
+                             (SIPTR *)argarray, rdargs))
+                {
+#define BOOLOPT(idx, var, flag) \
+                    if (argarray[idx]) { if (*argarray[idx]) var |= (flag); else var &= ~(flag); }
+
+                    BOOLOPT(argLIMITDOSSETPROTECTION, config.Flags, secCFGF_LimitDOSSetProtection);
+                    BOOLOPT(argPROFILE, config.Flags, secCFGF_Profile);
+                    BOOLOPT(argLASTLOGINREQ, config.Flags, secCFGF_LastLoginReq);
+                    BOOLOPT(argFSTAB, config.Flags, secCFGF_UseFSTab);
+                    BOOLOPT(argRESOURCETRACKING, config.Flags, secCFGF_RT);
+                    BOOLOPT(argLOGSTARTUP, config.LogFlags, secLogF_Startup);
+                    BOOLOPT(argLOGLOGIN, config.LogFlags, secLogF_Login);
+                    BOOLOPT(argLOGLOGINFAIL, config.LogFlags, secLogF_LoginFail);
+                    BOOLOPT(argLOGPASSWD, config.LogFlags, secLogF_Passwd);
+                    BOOLOPT(argLOGPASSWDFAIL, config.LogFlags, secLogF_PasswdFail);
+                    BOOLOPT(argLOGCHECKPASSWD, config.LogFlags, secLogF_CheckPasswd);
+                    BOOLOPT(argLOGCHECKPASSWDFAIL, config.LogFlags, secLogF_CheckPasswdFail);
+#undef BOOLOPT
                     if (argarray[argPASSWDUIDLEVEL])
-                        if (*argarray[argPASSWDUIDLEVEL] > 65535)
-                            Warn(secBase, GetLocStr(secBase, MSG_BADVALUE_CONFIG), line);
+                    {
+                        if (*argarray[argPASSWDUIDLEVEL] > 65535 || *argarray[argPASSWDUIDLEVEL] < 0)
+                            Warn1(secBase, GetLocStr(secBase, MSG_BADVALUE_CONFIG), line);
                         else
                             config.PasswduidLevel = *argarray[argPASSWDUIDLEVEL];
+                    }
                     if (argarray[argPASSWDGIDLEVEL])
-                        if (*argarray[argPASSWDGIDLEVEL] > 65535)
-                            Warn(secBase, GetLocStr(secBase, MSG_BADVALUE_CONFIG), line);
+                    {
+                        if (*argarray[argPASSWDGIDLEVEL] > 65535 || *argarray[argPASSWDGIDLEVEL] < 0)
+                            Warn1(secBase, GetLocStr(secBase, MSG_BADVALUE_CONFIG), line);
                         else
                             config.PasswdgidLevel = *argarray[argPASSWDGIDLEVEL];
-                    
-                    if (argarray[argFSTAB])
-                        if (*argarray[argFSTAB])	{
-                            config.Flags |= muCFGF_UseFSTab;
-                        } else	{
-                            config.Flags &= ~muCFGF_UseFSTab;
-                        }
-#if 0 /* Resource Tracking */
-                    if (argarray[argRESOURCETRACKING])
-                        if (*argarray[argRESOURCETRACKING])
-                            config.Flags |= muCFGF_RT;
-                        else
-                            config.Flags &= ~muCFGF_RT;
-#endif 
-                    if (argarray[argLOADPLUGIN])	{
-                        /* LOADPLUGIN/K where the keyword is the name of the plugin
-                         * file, WITHOUT the .secfsplugin extension */
-                        /* FIXME: What should we do if a plugin fails to load? */
-                        if (!loadPlugin(secBase, (STRPTR)argarray[argLOADPLUGIN]))
-                            Warn(secBase, "Failed to load plugin \"%s\"", argarray[argLOADPLUGIN]);
                     }
-                } else
-                    Warn(secBase, GetLocStr(secBase, MSG_BADOPTION_CONFIG), line);
+                    if (argarray[argLOADPLUGIN])
+                    {
+                        /* LOADPLUGIN name: the plugin file, WITHOUT the suffix */
+                        if (!loadPlugin(secBase, (STRPTR)argarray[argLOADPLUGIN]))
+                            Warn1(secBase, "Failed to load plugin \"%s\"", argarray[argLOADPLUGIN]);
+                    }
+                }
+                else
+                    Warn1(secBase, GetLocStr(secBase, MSG_BADOPTION_CONFIG), line);
                 FreeArgs(rdargs);
             }
             Close(file);
-            ClearBuffer();
-        } else
-            Warn(secBase, GetLocStr(secBase, MSG_NOCONFIGFILE));
-        D(bug( DEBUG_NAME_STR " %s: Freeing Args...\n", __func__);)
+            ClearBuffer(secBase);
+        }
+        else
+        {
+            D(bug(DEBUG_NAME_STR " %s: no configuration file, using defaults\n", __func__);)
+        }
+        CurrentDir(olddir);
         FreeDosObject(DOS_RDARGS, rdargs);
-    } else
-        Die(NULL, AN_Unknown | AG_NoMemory);
+    }
 
-    D(bug( DEBUG_NAME_STR " %s: Done\n", __func__);)
+    secBase->Config = config;
+    secBase->LimitDOSSetProtection = (config.Flags & secCFGF_LimitDOSSetProtection) ? TRUE : FALSE;
 
-    secBase->Config.Flags = config.Flags;
-    secBase->Config.LogFlags = config.LogFlags;
-    secBase->Config.PasswduidLevel = config.PasswduidLevel;
-    secBase->Config.PasswdgidLevel = config.PasswdgidLevel;
-
-    if (FirstStartup) {
-        FirstStartup = FALSE;
-        if (secBase->Config.LogFlags & muLogF_Startup)
-            VLogF(_Base, "Startup", NULL);
+    if (secBase->FirstStartup)
+    {
+        secBase->FirstStartup = FALSE;
+        if (secBase->Config.LogFlags & secLogF_Startup)
+            VLogF(secBase, GetLogStr(secBase, MSG_LOG_STARTUP), NULL);
     }
 }
 
-
 /*
- *      Update the User Definitions
- *
- *
- *      OUT:	BOOL	Success
+ * Write the user definitions back to the password file
  */
-
-BOOL UpdateUserDefs(struct Library *_Base)
+BOOL UpdateUserDefs(struct SecurityBase *secBase)
 {
-    struct SecurityBase *secBase = (struct SecurityBase *)_Base;
-    BPTR file;
+    BPTR file, olddir;
     BOOL res = FALSE;
-    struct secUserDef *def = UserDef;
+    struct secUserDef *def = secBase->UserDefs;
     SIPTR args[7];
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+    if (!secBase->_pwdLock)
+        return FALSE;
 
-    CurrentDir(secBase->_pwdLock);
-    if ((file = Open(PasswdFileName, MODE_NEWFILE))) {
+    olddir = CurrentDir(secBase->_pwdLock);
+    if ((file = Open(PasswdFileName, MODE_NEWFILE)))
+    {
         res = TRUE;
-        while(def && res) {
+        while (def && res)
+        {
             args[0] = (SIPTR)def->UserID;
             args[1] = (SIPTR)def->Password;
             args[2] = (SIPTR)def->uid;
@@ -726,31 +699,36 @@ BOOL UpdateUserDefs(struct Library *_Base)
             args[4] = (SIPTR)def->UserName;
             args[5] = (SIPTR)def->HomeDir;
             args[6] = (SIPTR)def->Shell;
-            res = (VFPrintf(file, "%s|%s|%ld|%ld|%s|%s|%s\n", (RAWARG)args) != -1);
+            res = (VFPrintf(file, "%s|%s|%iu|%iu|%s|%s|%s\n", (RAWARG)args) != -1);
             def = def->Next;
         }
         res = Close(file) && res;
     }
+    CurrentDir(olddir);
 
-    return(res);
+    return res;
 }
 
 /*
- *      Format and dump a string to the Log File
+ * Format and append a line to the log file
  */
-
-void VLogF(struct Library *_Base, STRPTR fmt, SIPTR *argv)
+void VLogF(struct SecurityBase *secBase, CONST_STRPTR fmt, SIPTR *argv)
 {
-    struct SecurityBase *secBase = (struct SecurityBase *)_Base;
-    BPTR file;
+    BPTR file, olddir;
     char date[LEN_DATSTRING];
     char time[LEN_DATSTRING];
+    char fixed[256];
     struct DateTime dt;
     SIPTR args[2];
 
-    CurrentDir(secBase->_cfgLock);
-    if ((file = Open(LogFileName, MODE_READWRITE))) {
-        if (Seek(file, 0, OFFSET_END) != -1) {
+    if (!secBase->_cfgLock)
+        return;
+
+    olddir = CurrentDir(secBase->_cfgLock);
+    if ((file = Open(LogFileName, MODE_READWRITE)))
+    {
+        if (Seek(file, 0, OFFSET_END) != -1)
+        {
             DateStamp(&dt.dat_Stamp);
             dt.dat_Format = FORMAT_DOS;
             dt.dat_Flags = 0;
@@ -761,9 +739,11 @@ void VLogF(struct Library *_Base, STRPTR fmt, SIPTR *argv)
             args[0] = (SIPTR)date;
             args[1] = (SIPTR)time;
             VFPrintf(file, "%s, %s: ", (RAWARG)args);
-            VFPrintf(file, fmt, (RAWARG)argv);
+            FixFormat(fmt, fixed, sizeof(fixed));
+            VFPrintf(file, fixed, (RAWARG)argv);
             FPutC(file, '\n');
         }
         Close(file);
     }
+    CurrentDir(olddir);
 }

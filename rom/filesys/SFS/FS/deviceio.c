@@ -386,6 +386,11 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
 
                                 if(de->de_TableSize>=14) {
                                     globals->mask_mask=de->de_Mask;
+                                    /* de_Mask is a 32-bit value; on 64-bit systems memory above
+                                       4 GB must not be treated as non-DMAable because of it */
+                                    if(sizeof(IPTR) > sizeof(ULONG)) {
+                                        globals->mask_mask|=~(IPTR)0xFFFFFFFFUL;
+                                    }
                                 }
                             }
                         }

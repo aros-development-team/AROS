@@ -1,14 +1,28 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/debug.h>
-#include <stdio.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <proto/security.h>
 
 #include "security_intern.h"
 #include "security_task.h"
-
-#include <libraries/mufs.h>
+#include "security_server.h"
+#include "security_segment.h"
+#include "security_monitor.h"
+#include "security_memory.h"
+#include "security_plugins.h"
+#include "security_crypto.h"
+#include "security_enforce.h"
+#include "security_packetio.h"
+#include "security_userinfo.h"
+#include "security_groupinfo.h"
+#include "security_login.h"
+#include "security_support.h"
 
 /*****************************************************************************
 
@@ -16,62 +30,33 @@
         AROS_LH1(int, secseteuid,
 
 /*  SYNOPSIS */
-        /* (uid) */
         AROS_LHA(UWORD, uid, D0),
 
 /*  LOCATION */
         struct SecurityBase *, secBase, 43, Security)
 
-/*  FUNCTION
+/*
+    FUNCTION
+        POSIX: set the effective user id.
 
-    INPUTS
-
-
-    RESULT
-
-
-    NOTES
-
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    struct secTaskNode *tasknode;
+    struct secTaskNode *node;
     int rc = -1;
 
     ObtainSemaphore(&secBase->TaskOwnerSem);
-    if ((tasknode = FindTaskNode(secBase, FindTask(NULL))) || (tasknode = CreateOrphanTask(secBase, FindTask(NULL), DEFPROTECTION)))
+    if ((node = FindOrCreateTaskNode(secBase, FindTask(NULL))) && node->Owner)
     {
-            if (tasknode->Owner){
-                    if (tasknode->Owner->uid == secROOT_UID ||
-                        tasknode->RealUID == uid ||
-                        tasknode->SavedUID == uid)
-                    {
-                            tasknode->Owner->uid = uid;
-                            rc = 0;
-                    }
-                    else if (tasknode->Owner->uid == uid)
-                            rc = 0;
-            }
+        if (node->Owner->uid == secROOT_UID || uid == node->RealUID || uid == node->SavedUID)
+        {
+            node->Owner->uid = uid;
+            rc = 0;
+        }
     }
     ReleaseSemaphore(&secBase->TaskOwnerSem);
     return rc;
 
     AROS_LIBFUNC_EXIT
-
 } /* secseteuid */
-

@@ -1,5 +1,6 @@
 #
-#   Makefile to make MultiUserFS compatible security.library.
+#   Makefile for security.library (AROS multi-user support, MuFS derived)
+#
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -8,7 +9,7 @@ PUBLICFUNCS := \
 	secAddMonitor \
 	secAllocGroupInfo \
 	secAllocUserInfo \
-	secCheckPasswd \
+	secCheckPasswdA \
 	secContextLocate \
 	secEnumChildren \
 	secFreeExtOwner \
@@ -28,15 +29,16 @@ PUBLICFUNCS := \
 	secKill \
 	secLimitDOSSetProtection \
 	secLocksecBase \
-	secLoginA \
-	secLogout \
 	secPasswd \
 	secRemMonitor \
 	secSetDefProtectionA \
 	secSetProtection \
 	secUnfreeze \
 	secUnlocksecBase \
-	secUserInfo2ExtOwner
+	secUserInfo2ExtOwner \
+	secIsConfigured \
+	secLimitProtection \
+	secIsVolumeSecured
 
 CRTPUBLICFUNCS := \
 	secgetgid \
@@ -48,18 +50,22 @@ CRTPUBLICFUNCS := \
 	secsetreuid \
 	secsetuid
 
-PRIVATEFUNCS := \
-	secFSRendezVous \
+FSFUNCS := \
+	secFSRendezVous
+
+PLUGINFUNCS := \
 	secLoadPlugin \
 	secUnloadPlugin \
 	secRegisterHandler \
 	secUnRegisterHandler \
 	secPluginOperationComplete
 
+DOSFUNCS := \
+	security_dosfuncs
+
 SECURITYFILES := \
+	security_afterdos \
 	security_config \
-	security_execfuncs \
-	security_dosfuncs \
 	security_locale \
 	security_volumes \
 	security_memory \
@@ -71,19 +77,22 @@ SECURITYFILES := \
 	security_task \
 	security_server \
 	security_segment \
-	security_support
+	security_support \
+	security_login
 
-EXEDIR := $(AROSDIR)/MuFS
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
 
-#USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../Include
-USER_CPPFLAGS := -DDEBUG
+USER_INCLUDES := $(TARGET_EXEC_INCLUDES) -I$(SRCDIR)/rom/exec
+USER_CPPFLAGS := -DUSE_EXEC_DEBUG
+USER_CPPFLAGS += -DDEBUG=1
 USER_LDFLAGS := -static
 
-#MM kernel-security : includes linklibs kernel-security-catalogs
-%subtarget parentmmake=workbench-libs mmake=kernel-security
+#MM kernel-security : includes linklibs kernel-security-catalogs kernel-task-includes
+#MM kernel-security-includes : includes kernel-security-catalogs
 
 %build_module mmake=kernel-security modname=security \
-  modtype=library files="security_init $(PUBLICFUNCS) $(CRTPUBLICFUNCS) $(PRIVATEFUNCS) $(SECURITYFILES)" \
-  uselibs=""
+  modtype=library files="security_init $(PUBLICFUNCS) $(CRTPUBLICFUNCS) $(FSFUNCS) $(PLUGINFUNCS) $(DOSFUNCS) $(SECURITYFILES)" \
+  uselibs="amiga"
 
 %common

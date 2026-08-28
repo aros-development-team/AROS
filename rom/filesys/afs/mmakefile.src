@@ -10,13 +10,14 @@ FILES := main \
 	filehandles1 \
 	filehandles2 \
 	filehandles3 \
+	afs_security \
 	hashing \
 	misc \
 	os_aros_support \
 	volumes \
    	validator
 
-#MM- kernel-fs-afs : includes linklibs
+#MM- kernel-fs-afs : includes linklibs kernel-security-includes kernel-task-includes
 
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \

@@ -1,15 +1,28 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
 
 #include <proto/security.h>
 
-#include <stdio.h>
-
 #include "security_intern.h"
 #include "security_task.h"
+#include "security_server.h"
+#include "security_segment.h"
+#include "security_monitor.h"
+#include "security_memory.h"
+#include "security_plugins.h"
+#include "security_crypto.h"
+#include "security_enforce.h"
+#include "security_packetio.h"
+#include "security_userinfo.h"
+#include "security_groupinfo.h"
+#include "security_login.h"
+#include "security_support.h"
 
 /*****************************************************************************
 
@@ -17,90 +30,33 @@
         AROS_LH1(BOOL, secKill,
 
 /*  SYNOPSIS */
-        /* (task) */
         AROS_LHA(struct Task *, task, D0),
 
 /*  LOCATION */
         struct SecurityBase *, secBase, 30, Security)
 
-/*  FUNCTION
-
-    INPUTS
-
+/*
+    FUNCTION
+        Kill a task. Root only. Processes are asked to quit with
+        SIGBREAKF_CTRL_C; plain tasks are removed with RemTask().
 
     RESULT
+        success
 
-
-    NOTES
-
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    BOOL res = FALSE;
-    UBYTE *sp;
-    struct secExtOwner *xowner;
-    
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+    if (!task || task == FindTask(NULL) || task == (struct Task *)secBase->Server || !CallerIsRoot(secBase))
+        return FALSE;
 
-    xowner = GetTaskExtOwner(secBase, FindTask(NULL));
-    if (task && (task != FindTask(NULL)) &&
-                    (task != (struct Task*)secBase->Server) &&
-             (secGetRelationshipA(xowner, 0, NULL) & secRelF_ROOT_UID)) {
-        Disable();
-        switch (task->tc_Node.ln_Type) {
-            case NT_TASK:
-                    RemTask(task);
-                    res = TRUE;
-                    break;
-
-            case NT_PROCESS:
-                    Remove((struct Node*)task);
-                    task->tc_State = TS_READY;
-                    sp = task->tc_SPReg;
-#if (0)
-                    if (SysBase->AttnFlags & AFF_68881) {
-                        ULONG size;
-                        if ((size = *(ULONG *)sp)!=NULL) {
-                            sp += 110;
-
-                            if (size == 0x90)
-                                sp += 12;
-
-                            if ((SysBase->LibNode.lib_Version > 37) ||
-                                 ((SysBase->LibNode.lib_Version == 37) &&
-                                 (SysBase->LibNode.lib_Revision >= 132)))
-                                sp += 2;
-
-                            size = sp[1];
-                            sp += size;
-                        }
-                        sp += 4;
-                    }
-#endif
-                    *(IPTR *)sp = (IPTR)CleanUpBody;
-                    AddHead((struct List*)&SysBase->TaskReady, (struct Node*)task);
-                    res = TRUE;
-                    break;
-        }
-        Enable();
-    }
-    secFreeExtOwner(xowner);
-    return(res);
+    Forbid();
+    if (task->tc_Node.ln_Type == NT_PROCESS)
+        Signal(task, SIGBREAKF_CTRL_C);
+    else
+        RemTask(task);
+    Permit();
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
-
 } /* secKill */
-

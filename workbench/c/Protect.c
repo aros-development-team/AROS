@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Protect CLI command
 */
@@ -12,7 +12,7 @@
 
     SYNOPSIS
 
-        FILE/A,FLAGS,ADD/S,SUB/S,ALL/S,QUIET/S
+        FILE/A,FLAGS,ADD/S,SUB/S,ALL/S,QUIET/S,GROUP/K,OTHER/K
 
     LOCATION
 
@@ -81,6 +81,36 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/security.h>
+#include <libraries/security.h>
+
+/* Multi-user support: GROUP/OTHER bits, security.library when resident */
+struct Library *secBase = NULL;
+static LONG grpMask = 0, otrMask = 0;       /* FIBF_GRP_#? / FIBF_OTR_#? bits to set */
+static BOOL grpSet = FALSE, otrSet = FALSE;
+static BOOL grpAdd = FALSE, grpSub = FALSE, otrAdd = FALSE, otrSub = FALSE;
+
+/* Parse "[+|-]rwed" into active-high bits shifted to 'shift' */
+static BOOL parseRWED(STRPTR s, LONG shift, LONG *mask, BOOL *add, BOOL *sub)
+{
+    *mask = 0;
+    if (*s == '+') { *add = TRUE; s++; }
+    else if (*s == '-') { *sub = TRUE; s++; }
+    for (; *s; s++)
+    {
+        switch (ToUpper(*s))
+        {
+        case 'R': *mask |= FIBF_READ << shift; break;
+        case 'W': *mask |= FIBF_WRITE << shift; break;
+        case 'E': *mask |= FIBF_EXECUTE << shift; break;
+        case 'D': *mask |= FIBF_DELETE << shift; break;
+        default:
+            Printf("Invalid GROUP/OTHER flags - must be one of RWED\n");
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
 
 #define CTRL_C         (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
 
@@ -88,7 +118,7 @@
 #define Bit_Clear(name, bit)    name &= ~Bit_Mask(bit)
 #define Bit_Set(name, bit)      name |= Bit_Mask(bit)
 
-#define ARG_TEMPLATE    "FILE/A,FLAGS,ADD/S,SUB/S,ALL/S,QUIET/S"
+#define ARG_TEMPLATE    "FILE/A,FLAGS,ADD/S,SUB/S,ALL/S,QUIET/S,GROUP/K,OTHER/K"
 
 #ifndef FIBB_HOLD
 #define FIBB_HOLD 7
@@ -105,6 +135,8 @@ enum
     ARG_SUB,
     ARG_ALL,
     ARG_QUIET,
+    ARG_GROUP,
+    ARG_OTHER,
     NOOFARGS
 };
 
@@ -159,6 +191,25 @@ int main(void)
             BOOL    sub = (BOOL)args[ARG_SUB];
             BOOL    all = (BOOL)args[ARG_ALL];
             BOOL    quiet = (BOOL)args[ARG_QUIET];
+
+            /* GROUP/OTHER only exist on multi-user systems (security.library resident) */
+            if (FindResident(SECURITYNAME))
+                secBase = OpenLibrary(SECURITYNAME, 0);
+            if ((args[ARG_GROUP] || args[ARG_OTHER]) && !secBase)
+            {
+                Printf("GROUP and OTHER require security.library (multi-user system)\n");
+                retval = RETURN_FAIL;
+            }
+            else if (args[ARG_GROUP])
+            {
+                grpSet = parseRWED((STRPTR)args[ARG_GROUP], FIBB_GRP_DELETE, &grpMask, &grpAdd, &grpSub);
+                if (!grpSet) retval = RETURN_FAIL;
+            }
+            if (args[ARG_OTHER] && secBase)
+            {
+                otrSet = parseRWED((STRPTR)args[ARG_OTHER], FIBB_OTR_DELETE, &otrMask, &otrAdd, &otrSub);
+                if (!otrSet) retval = RETURN_FAIL;
+            }
 
             LONG    flagValues = FIBF_READ | FIBF_WRITE | FIBF_DELETE |
                                  FIBF_EXECUTE;
@@ -364,7 +415,7 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
 {
     LONG  newFlags;
     
-    if (flags != ALL_OFF)
+    if (flags != ALL_OFF || grpSet || otrSet)
     {
         if (add)
         {
@@ -376,6 +427,11 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
             /* Disable permissions */
             newFlags = subFlags(flags, oldFlags);
         }
+        else if (flags == ALL_OFF && !flagsSet)
+        {
+            /* Only GROUP/OTHER given: leave the owner bits alone */
+            newFlags = oldFlags;
+        }
         else
         {
             /* Clear all permissions then set the ones given. */
@@ -385,6 +441,7 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
     else
     {
         /* No flags were given */
+        newFlags = oldFlags;
         if (!add && !sub)
         {
             /* Disable all permissions */
@@ -397,10 +454,36 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
         }
     }
 
+    /* GROUP and OTHER bits are active high; ADD/SUB from the switches or the
+       +/- prefix of the GROUP/OTHER argument */
+    if (grpSet)
+    {
+        LONG grpBits = FIBF_GRP_READ | FIBF_GRP_WRITE | FIBF_GRP_EXECUTE | FIBF_GRP_DELETE;
+        if (grpAdd || (add && !grpSub))
+            newFlags |= grpMask;
+        else if (grpSub || sub)
+            newFlags &= ~grpMask;
+        else
+            newFlags = (newFlags & ~grpBits) | grpMask;
+    }
+    if (otrSet)
+    {
+        LONG otrBits = FIBF_OTR_READ | FIBF_OTR_WRITE | FIBF_OTR_EXECUTE | FIBF_OTR_DELETE;
+        if (otrAdd || (add && !otrSub))
+            newFlags |= otrMask;
+        else if (otrSub || sub)
+            newFlags &= ~otrMask;
+        else
+            newFlags = (newFlags & ~otrBits) | otrMask;
+    }
+
+    /* On a multi-user system use the unrestricted call, so that the GROUP/OTHER
+       bits are not filtered by LIMITDOSSETPROTECTION */
+    if (secBase)
+        return secSetProtection(file, newFlags) ? TRUE : FALSE;
     if (!SetProtection(file, newFlags))
     {
         return FALSE;
     }
-    
     return TRUE;
 }

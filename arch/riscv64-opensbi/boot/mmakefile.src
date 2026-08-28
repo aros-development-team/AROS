@@ -29,6 +29,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-processor \
 #MM     kernel-dos \
 #MM     kernel-dos64 \
+#MM     kernel-security \
 #MM     kernel-dosboot \
 #MM     kernel-bootloader \
 #MM     kernel-filesystem \
@@ -92,7 +93,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-classes-bootkeyboard \
 #MM     kernel-usb-classes-bootmouse
 
-BSP_LIBS      := aros oop utility dos dos64 graphics layers intuition keymap \
+BSP_LIBS      := aros oop utility dos dos64 security graphics layers intuition keymap \
                  partition cgxbootpic gadtools acpica poseidon
 BSP_LIBS_ARCH := expansion debug
 BSP_RSRC      := bootloader dosboot FileSystem lddemon misc shell \

@@ -171,6 +171,34 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                 FPuts(cos, C);
             }
 
+            /*
+             * Multi-user: with security.library in the ROM, S:Security-Startup
+             * runs before the Startup-Sequence. It performs the login and
+             * prepares the assigns for the per-user settings. Without the
+             * script (or the library) this is an ordinary single-user boot.
+             */
+            if (SECURITY_ACTIVE && !(BootFlags & BF_NO_STARTUP_SEQUENCE))
+            {
+                BPTR sas = Open("S:Security-Startup", MODE_OLDFILE);
+
+                if (sas)
+                {
+                    D(bug("[DOS] %s: running Security-Startup\n", __func__);)
+                    if (SystemTags(NULL,
+                                   NP_Name, "Security Startup",
+                                   SYS_Background, FALSE,
+                                   SYS_Asynch, FALSE,
+                                   SYS_Input, cis,
+                                   SYS_Output, cos,
+                                   SYS_ScriptInput, sas,
+                                   TAG_END) == -1)
+                    {
+                        D(bug("[DOS] %s:  .. Security-Startup failed!\n", __func__);)
+                        Close(sas);
+                    }
+                }
+            }
+
             D(bug("[DOS] %s: initialising CLI\n", __func__);)
 
             if (SystemTags(NULL,

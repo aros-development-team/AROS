@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     List the contents of a directory.
 */
@@ -55,6 +55,8 @@
         NOHEAD        --  Don't print any header information
         FILES         --  Display files only
         DIRS          --  Display directories only
+        OWNER         --  Show the owner and the group/other protection bits
+                          (multi-user systems only, i.e. with security.library)
         LFORMAT       --  Specify the list output in printf-style
         ALL           --  List the contents of directories recursively
 
@@ -62,6 +64,8 @@
         The following attributes of the LFORMAT strings are available
 
         %A  --  file attributes
+        %X  --  file attributes for owner, group and other (multi-user systems)
+        %U  --  file owner user:group (multi-user systems)
         %B  --  size of file in blocks rather than bytes
         %C  --  file comment
         %D  --  modification date
@@ -141,13 +145,73 @@
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
+#include <proto/security.h>
+#include <libraries/security.h>
+#include <string.h>
+
+/* Multi-user support: security.library (only when resident in ROM) */
+struct Library *secBase = NULL;
+static BOOL listOwner = FALSE;
+
+/* Format "user:group" for an owner, resolving names when possible */
+static void formatOwner(UWORD uid, UWORD gid, STRPTR buf, ULONG size)
+{
+    static UWORD lastuid = 0xffff, lastgid = 0xffff;
+    static char lastuser[secUSERIDSIZE], lastgroup[secGROUPIDSIZE];
+    ULONG l;
+
+    if (uid == secNOBODY_UID && gid == secNOBODY_GID)
+    {
+        strncpy(buf, "nobody", size - 1);
+        buf[size - 1] = '\0';
+        return;
+    }
+    if (secBase)
+    {
+        if (uid != lastuid)
+        {
+            struct secUserInfo *ui = secAllocUserInfo();
+            lastuser[0] = '\0';
+            if (ui)
+            {
+                ui->uid = uid;
+                if (secGetUserInfo(ui, secKeyType_uid))
+                    strncpy(lastuser, ui->UserID, sizeof(lastuser) - 1);
+                secFreeUserInfo(ui);
+            }
+            lastuid = uid;
+        }
+        if (gid != lastgid)
+        {
+            struct secGroupInfo *gi = secAllocGroupInfo();
+            lastgroup[0] = '\0';
+            if (gi)
+            {
+                gi->gid = gid;
+                if (secGetGroupInfo(gi, secKeyType_gid))
+                    strncpy(lastgroup, gi->GroupID, sizeof(lastgroup) - 1);
+                secFreeGroupInfo(gi);
+            }
+            lastgid = gid;
+        }
+    }
+    if (lastuser[0] && uid == lastuid)
+        __sprintf(buf, "%s", lastuser);
+    else
+        __sprintf(buf, "%lu", (unsigned long)uid);
+    l = strlen(buf);
+    if (lastgroup[0] && gid == lastgid)
+        __sprintf(buf + l, ":%s", lastgroup);
+    else
+        __sprintf(buf + l, ":%lu", (unsigned long)gid);
+}
 #include <utility/tagitem.h>
 
 #include <string.h>
 
 const TEXT version[] = "$VER: List 41.14 (26.01.2018)";
 
-#define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
+#define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S,OWNER/S"
 
 struct DirNode
 {
@@ -182,6 +246,7 @@ enum
     ARG_DIRS,
     ARG_LFORMAT,
     ARG_ALL,
+    ARG_OWNER,
     NOOFARGS
 };
 
@@ -268,6 +333,8 @@ struct lfstruct
     STRPTR             comment;
     UQUAD              size;
     ULONG              key;
+    STRPTR             xflags;    /* owner/group/other protection: rwedrwedrwed */
+    STRPTR             owner;     /* user:group */
 };
 
 
@@ -432,6 +499,16 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                 D(bug("[List] rawFormat = [%s]", fbuf));
                 Printf( fbuf, lf->flags);
                 break;
+                /* Extended attributes: owner, group and other rwed bits */
+            case 'X':
+                strcpy( fbuf +fbufindex, "s");
+                Printf( fbuf, secBase ? lf->xflags : lf->flags);
+                break;
+                /* Owner (user:group) */
+            case 'U':
+                strcpy( fbuf +fbufindex, "s");
+                Printf( fbuf, secBase ? lf->owner : (STRPTR)"");
+                break;
 
                 /* Disk block key */
             case 'K':
@@ -567,6 +644,8 @@ int printFileData(struct AnchorPath *ap,
     UBYTE date[LEN_DATSTRING];
     UBYTE time[LEN_DATSTRING];
     UBYTE flags[8];
+    UBYTE xflags[13];
+    UBYTE owner[secUSERIDSIZE + secGROUPIDSIZE + 2];
 
     struct DateTime dt;
 
@@ -634,6 +713,24 @@ int printFileData(struct AnchorPath *ap,
     flags[6] = protection & FIBF_DELETE  ? '-' : 'd';
     flags[7] = 0x00;
 
+    /* Multi-user protection string: owner, group, other */
+    xflags[0] = protection & FIBF_READ    ? '-' : 'r';
+    xflags[1] = protection & FIBF_WRITE   ? '-' : 'w';
+    xflags[2] = protection & FIBF_EXECUTE ? '-' : 'e';
+    xflags[3] = protection & FIBF_DELETE  ? '-' : 'd';
+    xflags[4] = protection & FIBF_GRP_READ    ? 'r' : '-';
+    xflags[5] = protection & FIBF_GRP_WRITE   ? 'w' : '-';
+    xflags[6] = protection & FIBF_GRP_EXECUTE ? 'e' : '-';
+    xflags[7] = protection & FIBF_GRP_DELETE  ? 'd' : '-';
+    xflags[8] = protection & FIBF_OTR_READ    ? 'r' : '-';
+    xflags[9] = protection & FIBF_OTR_WRITE   ? 'w' : '-';
+    xflags[10] = protection & FIBF_OTR_EXECUTE ? 'e' : '-';
+    xflags[11] = protection & FIBF_OTR_DELETE  ? 'd' : '-';
+    xflags[12] = 0x00;
+    owner[0] = '\0';
+    if (secBase)
+        formatOwner(ap->ap_Info.fib_OwnerUID, ap->ap_Info.fib_OwnerGID, owner, sizeof(owner));
+
     if (isDir)
     {
         if (showDirs)
@@ -644,7 +741,7 @@ int printFileData(struct AnchorPath *ap,
             if (lFormat != NULL)
             {
                 struct lfstruct lf = { ap, isDir, date, time, flags, filename,
-                                       filenote, size, diskKey};
+                                       filenote, size, diskKey, xflags, owner };
 
                 printLformat(lFormat, &lf);
                 Printf("\n");
@@ -657,7 +754,10 @@ int printFileData(struct AnchorPath *ap,
 
                 if (!quick)
                 {
-                    Printf("%7s %7s ", DIRTEXT, flags); // Size field width, flags field width
+                    if (listOwner)
+                        Printf("%7s %12s %-16s ", DIRTEXT, xflags, owner);
+                    else
+                        Printf("%7s %7s ", DIRTEXT, flags); // Size field width, flags field width
                 }
                 
                 if (!noDates && (!quick || dates))
@@ -677,7 +777,7 @@ int printFileData(struct AnchorPath *ap,
         if (lFormat != NULL)
         {
             struct lfstruct lf = { ap, isDir, date, time, flags, filename,
-                                   filenote, size, diskKey };
+                                   filenote, size, diskKey, xflags, owner };
 
             printLformat(lFormat, &lf);
             Printf("\n");
@@ -713,7 +813,10 @@ int printFileData(struct AnchorPath *ap,
                     }
                 }
                 
-                Printf("%7s ", flags); // Flags field width
+                if (listOwner)
+                    Printf("%12s %-16s ", xflags, owner);
+                else
+                    Printf("%7s ", flags); // Flags field width
             }
             
             if (!noDates && (!quick || dates))
@@ -1017,6 +1120,11 @@ int main(void)
         BOOL    noHead = (BOOL)args[ARG_NOHEAD];
         BOOL    block = (BOOL)args[ARG_BLOCK];
         BOOL    all = (BOOL)args[ARG_ALL];
+
+        /* Multi-user extensions (OWNER, %U, %X) only when security.library is resident */
+        if (FindResident(SECURITYNAME))
+            secBase = OpenLibrary(SECURITYNAME, 0);
+        listOwner = secBase ? (BOOL)args[ARG_OWNER] : FALSE;
         BOOL    keys = (BOOL)args[ARG_KEYS];
 
         struct DateTime  sinceDatetime;

@@ -1,98 +1,107 @@
-/************************************************************
-* MultiUser - MultiUser Task/File Support System				*
-* ---------------------------------------------------------	*
-* Configuration															*
-* ---------------------------------------------------------	*
-* © Copyright 1993-1994 Geert Uytterhoeven						*
-* All Rights Reserved.													*
-************************************************************/
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
+    Desc: security.library configuration and user/group database
+*/
+#ifndef _SECURITY_CONFIG_H
+#define _SECURITY_CONFIG_H
 
+#include <exec/types.h>
 #include <libraries/security.h>
 
-/*
- *		MultiUser Configuration
- */
+struct SecurityBase;
 
-struct secConfig {
-    ULONG                               Flags;								/* See definitions below */
-    ULONG                               LogFlags;							/* See definitions below */
-    UWORD                               PasswduidLevel;					/* Lowest uid for users who can */
-                                                                                                    /* change their passwords */
-    UWORD                               PasswdgidLevel;					/* Lowest gid for users who can */
-													/* change their passwords */
+/* Size of the general purpose line buffer */
+#define secGENBUFSIZE                   1024
+
+/*
+ * Configuration
+ */
+struct secConfig
+{
+    ULONG               Flags;                  /* See definitions below                        */
+    ULONG               LogFlags;               /* See definitions below                        */
+    UWORD               PasswduidLevel;         /* Highest uid for users who can change passwd  */
+    UWORD               PasswdgidLevel;         /* Highest gid for users who can change passwd  */
 };
 
-#define muCFGB_LimitDOSSetProtection	(0)	/* LimitDOSSetProtection */
-#define muCFGB_Profile						(1)	/* Execute the .profile */
-#define muCFGB_LastLoginReq				(2)	/* Display the lastlogin date */
-#define muCFGB_UseFSTab						(3)	/* Use the fstab file for extra FS */
-#define muCFGB_RT								(4)	/* Enable resourcetracking */
+#define secCFGB_LimitDOSSetProtection   (0)     /* LimitDOSSetProtection                */
+#define secCFGB_Profile                 (1)     /* Execute the .profile                 */
+#define secCFGB_LastLoginReq            (2)     /* Display the lastlogin date           */
+#define secCFGB_UseFSTab                (3)     /* Use the fstab file for extra FS      */
+#define secCFGB_RT                      (4)     /* Enable resourcetracking (unused)     */
 
-#define muLogB_Startup						(0)	/* Startup Information */
-#define muLogB_Login							(1)	/* Log successful Login/Logout */
-#define muLogB_LoginFail					(2)	/* Log unsuccessful Login/Logout */
-#define muLogB_Passwd						(3)	/* Log successful Passwd */
-#define muLogB_PasswdFail					(4)	/* Log unsuccessful Passwd */
-#define muLogB_CheckPasswd					(5)	/* Log successful CheckPasswd */
-#define muLogB_CheckPasswdFail			(6)	/* Log unsuccessful CheckPasswd */
+#define secCFGF_LimitDOSSetProtection   (1 << secCFGB_LimitDOSSetProtection)
+#define secCFGF_Profile                 (1 << secCFGB_Profile)
+#define secCFGF_LastLoginReq            (1 << secCFGB_LastLoginReq)
+#define secCFGF_UseFSTab                (1 << secCFGB_UseFSTab)
+#define secCFGF_RT                      (1 << secCFGB_RT)
 
-#define muCFGF_LimitDOSSetProtection	(1<<muCFGB_LimitDOSSetProtection)
-#define muCFGF_Profile						(1<<muCFGB_Profile)
-#define muCFGF_LastLoginReq				(1<<muCFGB_LastLoginReq)
-#define muCFGF_UseFSTab						(1<<muCFGB_UseFSTab)
-#define muCFGF_RT								(1<<muCFGB_RT)
+#define secLogB_Startup                 (0)     /* Startup Information                  */
+#define secLogB_Login                   (1)     /* Log successful Login/Logout          */
+#define secLogB_LoginFail               (2)     /* Log unsuccessful Login/Logout        */
+#define secLogB_Passwd                  (3)     /* Log successful Passwd                */
+#define secLogB_PasswdFail              (4)     /* Log unsuccessful Passwd              */
+#define secLogB_CheckPasswd             (5)     /* Log successful CheckPasswd           */
+#define secLogB_CheckPasswdFail         (6)     /* Log unsuccessful CheckPasswd         */
 
-#define muLogF_Startup						(1<<muLogB_Startup)
-#define muLogF_Login							(1<<muLogB_Login)
-#define muLogF_LoginFail					(1<<muLogB_LoginFail)
-#define muLogF_Passwd						(1<<muLogB_Passwd)
-#define muLogF_PasswdFail					(1<<muLogB_PasswdFail)
-#define muLogF_CheckPasswd					(1<<muLogB_CheckPasswd)
-#define muLogF_CheckPasswdFail			(1<<muLogB_CheckPasswdFail)
-
-/*
- *		Private User Definition Entry
- */
-
-struct secUserDef {
-    struct secUserDef                   *Next;
-    STRPTR                              UserID;
-    STRPTR                              Password;
-    UWORD                               uid;
-    UWORD                               gid;
-    STRPTR                              UserName;
-    STRPTR                              HomeDir;
-    STRPTR                              Shell;
-    UWORD                               NumSecGroups;
-    UWORD                               *SecGroups;
-};
+#define secLogF_Startup                 (1 << secLogB_Startup)
+#define secLogF_Login                   (1 << secLogB_Login)
+#define secLogF_LoginFail               (1 << secLogB_LoginFail)
+#define secLogF_Passwd                  (1 << secLogB_Passwd)
+#define secLogF_PasswdFail              (1 << secLogB_PasswdFail)
+#define secLogF_CheckPasswd             (1 << secLogB_CheckPasswd)
+#define secLogF_CheckPasswdFail         (1 << secLogB_CheckPasswdFail)
 
 /*
- *		Private Group Definition Entry
+ * Private User Definition Entry
  */
-
-struct secGroupDef {
-    struct secGroupDef                  *Next;
-    STRPTR                              GroupID;
-    UWORD                               gid;
-    UWORD                               MgrUid;
-    STRPTR                              GroupName;
+struct secUserDef
+{
+    struct secUserDef   *Next;
+    STRPTR              UserID;
+    STRPTR              Password;
+    UWORD               uid;
+    UWORD               gid;
+    STRPTR              UserName;
+    STRPTR              HomeDir;
+    STRPTR              Shell;
+    UWORD               NumSecGroups;
+    UWORD               *SecGroups;
 };
 
 /*
- *		Function Prototypes
+ * Private Group Definition Entry
  */
+struct secGroupDef
+{
+    struct secGroupDef  *Next;
+    STRPTR              GroupID;
+    UWORD               gid;
+    UWORD               MgrUid;
+    STRPTR              GroupName;
+};
 
-extern void LoadConfig(struct Library *_Base);
-extern BOOL ReadKeyFiles(struct Library *_Base);
+/*
+ * Function Prototypes (all run in the server's context unless noted)
+ */
+extern void LoadConfig(struct SecurityBase *secBase);
+extern BOOL ReadKeyFiles(struct SecurityBase *secBase);
+/* Does the volume behind 'fs' carry a valid key file? (server context) */
+extern BOOL ProbeKeyFile(struct SecurityBase *secBase, struct MsgPort *fs);
 
-extern struct secUserDef *GetUserDefs(struct Library *secBase);
-extern struct secGroupDef *GetGroupDefs(struct Library *secBase);
-extern void FreeDefs(void);
-extern BOOL UpdateUserDefs(struct Library *secBase);
+extern struct secUserDef *GetUserDefs(struct SecurityBase *secBase);
+extern struct secGroupDef *GetGroupDefs(struct SecurityBase *secBase);
+extern void FreeDefs(struct SecurityBase *secBase);
+extern BOOL UpdateUserDefs(struct SecurityBase *secBase);
 
-void ClearBuffer(void);
-void FreeBuffer(void);
-void PurgeKeyBuffer(void);
-extern void VLogF(struct Library *secBase, STRPTR fmt, SIPTR *argv);
+extern BOOL ClearBuffer(struct SecurityBase *secBase);
+extern void FreeBuffer(struct SecurityBase *secBase);
+extern void PurgeKeyBuffer(struct SecurityBase *secBase);
+
+/* Logging: VLogF takes a RawDoFmt style mem stream of SIPTRs, formats
+ * written for 32-bit MuFS ("%ld") are converted on the fly */
+extern void VLogF(struct SecurityBase *secBase, CONST_STRPTR fmt, SIPTR *argv);
+extern void FixFormat(CONST_STRPTR src, STRPTR dst, ULONG dstsize);
+
+#endif /* _SECURITY_CONFIG_H */

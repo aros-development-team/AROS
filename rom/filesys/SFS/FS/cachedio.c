@@ -325,7 +325,9 @@ void cleanupcachedio(void) {
   /* Only call this if initcachedio() was succesful. */
 
   flushiocache();    /*** returns an errorcode... */
-  freeIOCache(globals->iocache_lruhead);
+  if(globals->iocache_lruhead!=0) {
+    freeIOCache(globals->iocache_lruhead);
+  }
   globals->iocache_lruhead=0;
 
   globals->iocache_lines=0;
@@ -537,6 +539,11 @@ LONG flushiocache(void) {
   /* Writes all dirty data to disk, but keeps the cached data for
      later reads.  Use this to ensure data is comitted to disk
      when doing critical operations. */
+
+  /* Nothing to flush if the cache was never (fully) set up */
+  if(globals->iocache_lruhead==0) {
+    return(0);
+  }
 
   ioc=(struct IOCache *)globals->iocache_lruhead->mlh_Head;
 

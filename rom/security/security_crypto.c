@@ -1,103 +1,119 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-#include <aros/debug.h>
+    Desc: security.library password hashing. The built-in scheme is the
+          classic 11 character ACrypt() hash (compatible with MuFS and
+          AS225 password files); an encryption plugin may replace it.
+*/
 
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
-#include <proto/intuition.h>
+#include <clib/alib_protos.h>
 
 #include <proto/security.h>
-
-#include <clib/alib_protos.h>
 
 #include "security_intern.h"
 #include "security_crypto.h"
 #include "security_plugins.h"
 #include "security_memory.h"
-#include "security_support.h"
 
-/* Handle Encryption using plugins.
- * 
- * This particular plugin is different from most,
- * since encryption plugins do not stack, and the operation
- * may not occur asynchronously.
- * */
+/* The current encryption handler (plugins do not stack) */
+static struct plugin_crypt_ops *eops = NULL;
 
-/* The current encryption handler */
-static struct plugin_crypt_ops * eops = NULL;
-
-ULONG UnRegisterEncryptionHandler(struct plugin_ops * ops)
+ULONG UnRegisterEncryptionHandler(struct SecurityBase *secBase, struct plugin_ops *ops)
 {
-    D(bug( DEBUG_NAME_STR " %s(%p)\n", __func__, ops);)
-    if (eops != (struct plugin_crypt_ops*)ops)
-        return TRUE;
+    if (eops != (struct plugin_crypt_ops *)ops)
+        return secpiFALSE;
     eops = NULL;
-    return FALSE;
+    return secpiTRUE;
 }
 
-ULONG RegisterEncryptionHandler(struct plugin_ops * ops)
+ULONG RegisterEncryptionHandler(struct SecurityBase *secBase, struct plugin_ops *ops)
 {
-    D(bug( DEBUG_NAME_STR " %s(%p)\n", __func__, ops);)
     if (eops)
-        UnRegisterEncryptionHandler((struct plugin_ops*)eops);
-    eops = (struct plugin_crypt_ops*)ops;
-    return TRUE;
+        UnRegisterEncryptionHandler(secBase, (struct plugin_ops *)eops);
+    eops = (struct plugin_crypt_ops *)ops;
+    return secpiTRUE;
 }
 
-STRPTR Crypt(struct SecurityBase *secBase, STRPTR buffer, STRPTR key, STRPTR setting)
+STRPTR Encrypt(STRPTR buffer, CONST_STRPTR pwd, CONST_STRPTR setting)
 {
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-    if (strlen(key))	{
-        if (eops)	{
-            ULONG ret;
-            UseModule(secBase, eops->ops.module);
-            D(bug( DEBUG_NAME_STR " %s: Calling encryption from module: buffer='%s' key='%s' setting='%s'\n", __func__, buffer, key, setting));
-            ret = eops->Crypt(buffer, key, setting);
-            ReleaseModule(secBase, eops->ops.module);
-            D(bug( DEBUG_NAME_STR " %s: buffer = '%s'\n", __func__, buffer));
-            if ( ret == secpiTRUE)
-                return buffer;
-        }
-        /* Fall back to default implementation (using ACrypt) */
-        return(ACrypt(buffer, key, setting));
-    }
-    /* If the pwd is zero length, zero out the buffer */
-    return(SetMem(buffer, '\0', MaxPwdLen(secBase)));
-}
-
-STRPTR Encrypt(STRPTR buffer, STRPTR pwd, STRPTR userid)
-{
-    if (strlen(pwd))
-        return ACrypt(buffer, pwd, userid);
-    return SetMem(buffer, 0, 12);
+    if (pwd && pwd[0])
+        return ACrypt(buffer, (STRPTR)pwd, (STRPTR)setting);
+    memset(buffer, 0, secACRYPT_LEN + 1);
+    return buffer;
 }
 
 ULONG MaxPwdLen(struct SecurityBase *secBase)
 {
-    ULONG ret = 11; 	/* ACrypt -> 11 plus '\0' (experimental) */
-    if (eops)	{
+    ULONG ret = secACRYPT_LEN;
+
+    if (eops)
+    {
         UseModule(secBase, eops->ops.module);
         ret = eops->MaxPwdLen();
         ReleaseModule(secBase, eops->ops.module);
     }
-    D(bug( DEBUG_NAME_STR " %s: max password length is 0x%lx\n", __func__, ret));
     return ret;
 }
 
-BOOL verifypass(struct SecurityBase *secBase, STRPTR userid, STRPTR thepass, STRPTR suppliedpass)
+BOOL IsValidPasswordHash(struct SecurityBase *secBase, CONST_STRPTR hash)
 {
-    char buffer[32];
-    if (eops)	{
-        ULONG ret;
-        UseModule(secBase, eops->ops.module);
-        ret = eops->CheckPassword(userid, thepass, suppliedpass);
-        ReleaseModule(secBase, eops->ops.module);
-        if ( ret == secpiTRUE)
-                return TRUE;
-        D(bug( DEBUG_NAME_STR " %s: password '%s' != '%s'\n", __func__, suppliedpass, thepass));
-        return FALSE;
+    ULONG len = strlen(hash);
+
+    if (len == 0)
+        return TRUE;
+    if (eops)
+        return len <= MaxPwdLen(secBase);
+    return len == secACRYPT_LEN;
+}
+
+BOOL EncryptPassword(struct SecurityBase *secBase, STRPTR buffer, CONST_STRPTR userid, CONST_STRPTR pwd)
+{
+    if (!pwd || !pwd[0])
+    {
+        buffer[0] = '\0';
+        return TRUE;
     }
-    /* Fall back to default implementation (using ACrypt) */
+    if (eops)
+    {
+        ULONG ret;
+
+        UseModule(secBase, eops->ops.module);
+        ret = eops->EncryptPassword(buffer, (STRPTR)userid, (STRPTR)pwd);
+        ReleaseModule(secBase, eops->ops.module);
+        if (ret == secpiTRUE)
+            return TRUE;
+        if (ret != secpiNOTSUPP && ret != secpiFALSECONT)
+            return FALSE;
+    }
+    return Encrypt(buffer, pwd, userid) != NULL;
+}
+
+BOOL verifypass(struct SecurityBase *secBase, CONST_STRPTR userid, CONST_STRPTR thepass, CONST_STRPTR suppliedpass)
+{
+    char buffer[secACRYPT_LEN + 1];
+
+    /* No password set: only an empty password matches */
+    if (!thepass || !thepass[0])
+        return (!suppliedpass || !suppliedpass[0]);
+
+    if (eops)
+    {
+        ULONG ret;
+
+        UseModule(secBase, eops->ops.module);
+        ret = eops->CheckPassword((STRPTR)userid, (STRPTR)thepass, (STRPTR)suppliedpass);
+        ReleaseModule(secBase, eops->ops.module);
+        if (ret == secpiTRUE)
+            return TRUE;
+        if (ret != secpiNOTSUPP && ret != secpiFALSECONT)
+            return FALSE;
+    }
+
+    if (strlen(thepass) != secACRYPT_LEN)
+        return FALSE;
     Encrypt(buffer, suppliedpass, userid);
     return !strcmp(buffer, thepass);
 }

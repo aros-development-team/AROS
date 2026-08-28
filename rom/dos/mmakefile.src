@@ -71,6 +71,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 
 #MM kernel-dos-includes : \
 #MM     kernel-utility-includes \
+#MM     kernel-security-includes \
 #MM     kernel-exec-includes \
 #MM     kernel-timer-includes \
 #MM     kernel-intuition-includes \
@@ -80,6 +81,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 
 DOS_CPPFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 USER_CPPFLAGS := $(DOS_CPPFLAGS)
+# TEMPORARY (security wip): boot tracing
+USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \

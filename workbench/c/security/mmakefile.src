@@ -1,0 +1,18 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# Multi-user support commands (security.library)
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := Login Logout Passwd Who SetOwner
+
+USER_CFLAGS  := -noposixc
+USER_LDFLAGS := -static
+
+#MM- workbench-c : workbench-c-security
+#MM workbench-c-security : includes kernel-security-includes kernel-task-includes linklibs
+
+%build_progs mmake=workbench-c-security \
+    files="$(FILES)" targetdir=$(AROS_C) coverageinstr=no
+
+%common
