@@ -695,6 +695,29 @@ static UBYTE xhciEndpointStateOf(struct PCIController *hc,
     return xhciEndpointState(epctx);
 }
 
+#define XHCI_EP_TYPE_ISOCH_OUT 1
+#define XHCI_EP_TYPE_ISOCH_IN  5
+
+static BOOL xhciEndpointIsIsoch(struct PCIController *hc,
+                                struct pciusbXHCIDevice *devCtx, UBYTE epid)
+{
+    const UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
+    volatile struct xhci_ep *epctx;
+    UBYTE eptype;
+
+    if(!hc || !devCtx || !devCtx->dc_SlotCtx.dmaa_Ptr ||
+       (epid >= MAX_DEVENDPOINTS))
+        return FALSE;
+
+    epctx = (volatile struct xhci_ep *)
+            ((volatile UBYTE *)devCtx->dc_SlotCtx.dmaa_Ptr +
+             ((UWORD)epid * ctxsize));
+
+    eptype = (UBYTE)((AROS_LE2LONG(epctx->ctx[1]) >> 3) & 0x7U);
+
+    return (eptype == XHCI_EP_TYPE_ISOCH_OUT) || (eptype == XHCI_EP_TYPE_ISOCH_IN);
+}
+
 static const char *xhciEPStateName(UBYTE st)
 {
     switch(st) {
@@ -3407,8 +3430,17 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                      * report what a queued TRB was doing when the endpoint
                      * was halted, which arrives after the request it
                      * belonged to has already been failed and reaped.
+                     * Likewise a successful completion on an isochronous
+                     * endpoint: when an RT iso client stops its stream the
+                     * packets still on the ring are reaped, and the ones
+                     * the controller had already picked up complete anyway.
                      */
-                    if((trbe_ccode != TRB_CC_RING_UNDERRUN) &&
+                    BOOL isotail = ((trbe_ccode == TRB_CC_SUCCESS) ||
+                                    (trbe_ccode == TRB_CC_SHORT_PACKET)) &&
+                                   xhciEndpointIsIsoch(hc, devCtx, trbe_epid);
+
+                    if(!isotail &&
+                       (trbe_ccode != TRB_CC_RING_UNDERRUN) &&
                        (trbe_ccode != TRB_CC_STOPPED) &&
                        (trbe_ccode != TRB_CC_STOPPED_LENGTH_INVALID) &&
                        (trbe_ccode != TRB_CC_STOPPED_SHORT_PACKET)) {
