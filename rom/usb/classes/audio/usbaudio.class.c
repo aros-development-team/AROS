@@ -3367,7 +3367,9 @@ AROS_LH2(ULONG, subLibAllocAudio,
         audioctrl->ahiac_MaxPlayerFreq <<= 16;
     }
 
-    audioctrl->ahiac_Channels = nam->nam_NumChannels;
+    /* ahiac_Channels is the number of mixer channels the application asked
+       for, not the device's output channel count - AHI sizes its per-channel
+       data by it. The device's layout is reported via AHISF_KNOWSTEREO. */
     /*audioctrl->ahiac_BuffType = nam->nam_SampleType; */
 
     for(cnt = 0; cnt < nam->nam_NumFrequencies; cnt++)
