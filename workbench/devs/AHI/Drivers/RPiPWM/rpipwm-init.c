@@ -7,6 +7,7 @@
 
 #include "library.h"
 #include "DriverData.h"
+#include "rpipwm-hwaccess.h"
 
 APTR KernelBase = NULL;
 APTR DMABase = NULL;
@@ -18,6 +19,12 @@ APTR DMABase = NULL;
 BOOL DriverInit(struct DriverBase *AHIsubBase)
 {
     struct RPiPWMBase *RPiPWMBase = (struct RPiPWMBase *) AHIsubBase;
+
+    /*
+     * No headphone jack, no driver 
+     */
+    if (!pwm_audio_present(AHIsubBase))
+        return FALSE;
 
     RPiPWMBase->dosbase = (struct DosLibrary *) OpenLibrary(DOSNAME, 37);
 

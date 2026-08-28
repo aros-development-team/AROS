@@ -60,6 +60,14 @@ static ULONG pwm_gpio_pin[PWM_GPIO_MAXPINS] = { 40, 45 };
 static ULONG pwm_gpio_count = 2;
 static ULONG pwm_gpio_fsel = 4;                 /* ALT0 = PWM0_OUT/PWM1_OUT */
 
+/*
+ * Cleared when the tree says this board has no 3.5mm jack: the Pi 400, the
+ * Compute Modules and the Zero 2 W keep the audio_pins node but leave its pin
+ * list empty, and the Pi 5/500 have no such node at all. A machine that hands
+ * us no tree keeps the defaults above and stays playable.
+ */
+static BOOL pwm_audio_wired = TRUE;
+
 static void pwm_gpio_query(struct DriverBase *AHIsubBase)
 {
     static BOOL asked = FALSE;
@@ -81,15 +89,21 @@ static void pwm_gpio_query(struct DriverBase *AHIsubBase)
     prop = node ? OF_FindProperty(node, "audio_pins") : NULL;
     node = prop ? OF_OpenKey(OF_GetPropValue(prop)) : NULL;
     if (node == NULL)
+    {
+        pwm_audio_wired = FALSE;
         return;
+    }
 
     prop = OF_FindProperty(node, "brcm,pins");
-    if (prop == NULL)
+    cells = prop ? OF_GetPropValue(prop) : NULL;
+    n = prop ? OF_GetPropLen(prop) / sizeof(ULONG) : 0;
+    if (n == 0 || cells == NULL)
+    {
+        pwm_audio_wired = FALSE;
         return;
+    }
 
-    cells = OF_GetPropValue(prop);
-    n = OF_GetPropLen(prop) / sizeof(ULONG);
-    if (cells == NULL || n == 0 || n > PWM_GPIO_MAXPINS)
+    if (n > PWM_GPIO_MAXPINS)
         return;
 
     for (i = 0; i < n; i++)
@@ -101,6 +115,13 @@ static void pwm_gpio_query(struct DriverBase *AHIsubBase)
     cells = prop ? OF_GetPropValue(prop) : NULL;
     if (cells != NULL && OF_GetPropLen(prop) >= sizeof(ULONG))
         pwm_gpio_fsel = AROS_BE2LONG(cells[0]) & 7;
+}
+
+BOOL pwm_audio_present(struct DriverBase *AHIsubBase)
+{
+    pwm_gpio_query(AHIsubBase);
+
+    return pwm_audio_wired;
 }
 
 /*
