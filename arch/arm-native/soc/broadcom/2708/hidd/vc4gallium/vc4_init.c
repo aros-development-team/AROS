@@ -210,7 +210,7 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
         __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
     D(bug("[VC4Gallium] Peripheral base: 0x%08lx\n", __arm_periiobase));
 
-    /* BCM2711 has V3D 4.2 (driven by hidds/v3d), and its hub sits exactly
+    /* BCM2711 has V3D 4.2 (driven by hidd/v3d), and its hub sits exactly
      * where V3D 2.x keeps IDENT - probing would recognise the wrong GPU.
      * Callers fall back to softpipe. */
     if (__arm_periiobase == BCM2711_PERIIOBASE)
