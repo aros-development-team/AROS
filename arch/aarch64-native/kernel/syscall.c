@@ -171,7 +171,7 @@ void handle_syscall(void *regs)
 
     D(bug("[Kernel] ## SVC %d @ 0x%p\n", svc_no, ((struct ExceptionContext *)regs)->pc));
 
-    if (svc_no <= SC_USERSTATE || svc_no == SC_REBOOT)
+    if (svc_no <= SC_USERSTATE || svc_no == SC_REBOOT || svc_no == SC_POWEROFF)
     {
         DREGS(cpu_DumpRegs(regs));
 
@@ -245,6 +245,31 @@ void handle_syscall(void *regs)
                 uint32_t rstc = rd32le(pm + 0x1c);          /* PM_RSTC */
                 wr32le(pm + 0x24, 0x5a000000 | 10);         /* PM_WDOG: short timeout */
                 wr32le(pm + 0x1c, 0x5a000000 | (rstc & ~0x30) | 0x20); /* full reset */
+                for (;;)
+                    asm volatile("wfe");
+                break;
+            }
+
+            case SC_POWEROFF:
+            {
+                D(bug("[Kernel] ## POWEROFF...\n"));
+                /*
+                 * Halt through the same PM watchdog as the reboot above,
+                 * but with the boot partition set to 63 first: the firmware
+                 * reads that as "do not boot" and drops the board into its
+                 * low-power state instead. The partition number lives in
+                 * the even bits of PM_RSTS, so 63 is 0x555.
+                 */
+                uintptr_t pm = (uintptr_t)__arm_arosintern.ARMI_PeripheralBase + 0x100000;
+                uint32_t rsts = rd32le(pm + 0x20);          /* PM_RSTS */
+                uint32_t rstc;
+
+                rsts &= ~0xfffffaaa;
+                wr32le(pm + 0x20, 0x5a000000 | rsts | 0x555);
+
+                rstc = rd32le(pm + 0x1c);                   /* PM_RSTC */
+                wr32le(pm + 0x24, 0x5a000000 | 10);         /* PM_WDOG */
+                wr32le(pm + 0x1c, 0x5a000000 | (rstc & ~0x30) | 0x20);
                 for (;;)
                     asm volatile("wfe");
                 break;
