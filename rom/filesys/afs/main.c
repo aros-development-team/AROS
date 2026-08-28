@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef DEBUG
@@ -21,6 +21,7 @@
 #include "filehandles2.h"
 #include "filehandles3.h"
 #include "misc.h"
+#include "afs_security.h"
 #include "volumes.h"
 
 #include "baseredef.h"
@@ -300,6 +301,7 @@ LONG AFS_work(struct ExecBase *SysBase)
 
             D(bug("[AFS] packet %p:%d\n", dp, dp->dp_Type));
             startFlushTimer(handler);
+            afsSecBeginPacket(handler, volume, dp);
 
             switch (dp->dp_Type) {
             case ACTION_DIE:
@@ -312,6 +314,12 @@ LONG AFS_work(struct ExecBase *SysBase)
                 break;
             case ACTION_IS_FILESYSTEM:
                 ok = TRUE;
+                break;
+            case ACTION_IS_SECFS:
+                ok = afsSecIsActive(handler) ? DOSTRUE : DOSFALSE;
+                break;
+            case ACTION_GET_SECFS_VERSION:
+                ok = secFS_API_VERSION;
                 break;
             case ACTION_INHIBIT:
                 res2 = inhibit(handler, volume, dp->dp_Arg1);
@@ -387,8 +395,32 @@ LONG AFS_work(struct ExecBase *SysBase)
 
                     fn = skipdevname(fn);
 
+                    /* multi-user: check access before touching anything */
+                    if (afsSecIsActive(handler)) {
+                        LONG err;
+
+                        if (dp->dp_Type == ACTION_FINDINPUT) {
+                            err = afsSecCheckName(handler, dh, fn, AFS_ACCESS_READ);
+                        } else if (dp->dp_Type == ACTION_FINDUPDATE) {
+                            err = afsSecCheckName(handler, dh, fn, AFS_ACCESS_WRITE);
+                            if (err == ERROR_OBJECT_NOT_FOUND)
+                                err = afsSecCheckParent(handler, dh, fn, AFS_ACCESS_WRITE);
+                        } else {
+                            err = afsSecCheckName(handler, dh, fn, AFS_ACCESS_WRITE | AFS_ACCESS_DELETE);
+                            if (err == ERROR_OBJECT_NOT_FOUND)
+                                err = 0;
+                            if (err == 0)
+                                err = afsSecCheckParent(handler, dh, fn, AFS_ACCESS_WRITE);
+                        }
+                        if (err) {
+                            res2 = err;
+                            ok = DOSFALSE;
+                            break;
+                        }
+                    }
+
                     if (dp->dp_Type == ACTION_FINDOUTPUT) {
-                        ah = openfile(handler, dh, fn, mode, 0, &res2);
+                        ah = openfile(handler, dh, fn, mode, afsSecNewProtection(handler, 0), &res2);
                     } else {
                         ah = openf(handler, dh, fn, mode, &res2);
                     }
@@ -431,6 +463,16 @@ LONG AFS_work(struct ExecBase *SysBase)
                         mode = MODE_NEWFILE;
 
                     fn = skipdevname(fn);
+
+                    /* multi-user: locking needs read access to the object */
+                    if (afsSecIsActive(handler)) {
+                        LONG err = afsSecCheckName(handler, dh, fn, AFS_ACCESS_READ);
+                        if (err && err != ERROR_OBJECT_NOT_FOUND) {
+                            res2 = err;
+                            ok = DOSFALSE;
+                            break;
+                        }
+                    }
 
                     ah = openf(handler, dh, fn, mode, &res2);
                     if (ah == NULL) {
@@ -697,7 +739,11 @@ LONG AFS_work(struct ExecBase *SysBase)
                         oh = (APTR)opl->fl_Key;
                     on = skipdevname(on);
                     nn = skipdevname(nn);
-                    res2 = renameObject(handler, oh, on, nn);
+                    /* multi-user: property access to the object, write access to both directories */
+                    if ((res2 = afsSecCheckNameProperty(handler, oh, on)) == 0 &&
+                        (res2 = afsSecCheckParent(handler, oh, on, AFS_ACCESS_WRITE)) == 0 &&
+                        (res2 = afsSecCheckParent(handler, oh, nn, AFS_ACCESS_WRITE)) == 0)
+                        res2 = renameObject(handler, oh, on, nn);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
@@ -717,9 +763,14 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
+                    /* multi-user: write access to the parent directory */
+                    if ((res2 = afsSecCheckParent(handler, h, n, AFS_ACCESS_WRITE))) {
+                        ok = DOSFALSE;
+                        break;
+                    }
                     flnew = AllocMem(sizeof(*flnew), MEMF_CLEAR);
                     if (flnew != NULL) {
-                        ah = createDir(handler, h, n, 0, &res2);
+                        ah = createDir(handler, h, n, afsSecNewProtection(handler, 0), &res2);
                         ok = res2 ? DOSFALSE : DOSTRUE;
                         if (ok) {
                             flnew->fl_Link = BNULL;
@@ -745,7 +796,10 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
-                    res2 = deleteObject(handler, h, n);
+                    /* multi-user: delete access to the object, write access to its directory */
+                    if ((res2 = afsSecCheckName(handler, h, n, AFS_ACCESS_DELETE)) == 0 &&
+                        (res2 = afsSecCheckParent(handler, h, n, AFS_ACCESS_WRITE)) == 0)
+                        res2 = deleteObject(handler, h, n);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
@@ -760,7 +814,8 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
-                    res2 = setComment(handler, h, n, c);
+                    if ((res2 = afsSecCheckNameProperty(handler, h, n)) == 0)
+                        res2 = setComment(handler, h, n, c);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
@@ -775,7 +830,8 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
-                    res2 = setProtect(handler, h, n, p);
+                    if ((res2 = afsSecCheckNameProperty(handler, h, n)) == 0)
+                        res2 = setProtect(handler, h, n, p);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
@@ -790,7 +846,24 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
-                    res2 = setDate(handler, h, n, ds);
+                    if ((res2 = afsSecCheckNameProperty(handler, h, n)) == 0)
+                        res2 = setDate(handler, h, n, ds);
+                    ok = res2 ? DOSFALSE : DOSTRUE;
+                    break;
+                }
+                case ACTION_SET_OWNER:
+                {
+                    struct FileLock   *fl = BADDR(dp->dp_Arg2);
+                    struct AfsHandle  *h;
+                    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg3);
+                    if (!mediacheck(volume, &ok, &res2))
+                        break;
+                    if (fl == NULL)
+                        h = &volume->ah;
+                    else
+                        h = (APTR)fl->fl_Key;
+                    n = skipdevname(n);
+                    res2 = afsSecSetOwner(handler, h, n, (ULONG)dp->dp_Arg4);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
@@ -820,6 +893,7 @@ LONG AFS_work(struct ExecBase *SysBase)
                 break;
             }
 
+            afsSecEndPacket(handler);
             replypkt2(dp, ok, res2);
         }
     }
