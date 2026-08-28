@@ -24,6 +24,7 @@ MA 02111-1307, USA.
 
 
 #include <exec/types.h>
+#include <aros/macros.h>
 
 
 /* Endianness macros */
@@ -41,35 +42,23 @@ MA 02111-1307, USA.
          (FlipWord(_FlipLong_A) << 16) | FlipWord(_FlipLong_A >> 16); \
    })
 
-#if defined(__i386__) || defined(__x86_64__) /* Little endian */
+/* Network values are big-endian; device register/descriptor values are
+   little-endian.  Map both to and from host order with the AROS byte-order
+   macros so this is correct on every architecture, not just x86.  Each is an
+   identity on the matching host and a byte swap otherwise, and since a swap is
+   its own inverse the same macro serves both directions. */
 
 #define BEWord(A) \
-   FlipWord(A)
+   AROS_BE2WORD(A)
 
 #define BELong(A) \
-   FlipLong(A)
+   AROS_BE2LONG(A)
 
 #define LEWord(A) \
-   (A)
+   AROS_LE2WORD(A)
 
 #define LELong(A) \
-   (A)
-
-#else /* Big endian */
-
-#define BEWord(A) \
-   (A)
-
-#define BELong(A) \
-   (A)
-
-#define LEWord(A) \
-   FlipWord(A)
-
-#define LELong(A) \
-   FlipLong(A)
-
-#endif
+   AROS_LE2LONG(A)
 
 #define MakeBEWord(A) \
    BEWord(A)
