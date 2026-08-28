@@ -2786,7 +2786,7 @@ AROS_UFH3(void, nConv8BitMono,
     WORD *srcptr = hook->h_Data;
     do
     {
-        *btarptr++ = *((BYTE *) srcptr);
+        *btarptr++ = (BYTE) (*srcptr >> 8);
         srcptr++;
     } while(--cnt);
     
@@ -2805,9 +2805,9 @@ AROS_UFH3(void, nConv8BitStereo,
     WORD *srcptr = hook->h_Data;
     do
     {
-        *btarptr++ = *((BYTE *) srcptr);
+        *btarptr++ = (BYTE) (*srcptr >> 8);
         srcptr++;
-        *btarptr++ = *((BYTE *) srcptr);
+        *btarptr++ = (BYTE) (*srcptr >> 8);
         srcptr++;
     } while(--cnt);
     
@@ -2837,16 +2837,18 @@ AROS_UFH3(void, nConv16BitMono,
 /* /// "nConv16BitStereo()" */
 AROS_UFH3(void, nConv16BitStereo,
           AROS_UFPA(struct Hook *, hook, A0),
-          AROS_UFPA(ULONG *, ltarptr, A2),
+          AROS_UFPA(UWORD *, wtarptr, A2),
           AROS_UFPA(ULONG, cnt, A1))
 {
     AROS_USERFUNC_INIT
-    
-    ULONG *lsrcptr = hook->h_Data;
+
+    UWORD *srcptr = hook->h_Data;
     do
     {
-        *ltarptr++ = ((*lsrcptr>>8) & 0x00ff00ff)|((*lsrcptr<<8) & 0xff00ff00);
-        lsrcptr++;
+        *wtarptr++ = AROS_WORD2LE(*srcptr);
+        srcptr++;
+        *wtarptr++ = AROS_WORD2LE(*srcptr);
+        srcptr++;
     } while(--cnt);
     
     AROS_USERFUNC_EXIT
