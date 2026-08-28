@@ -697,7 +697,11 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
 
         kprintf("[BOOT] Total sizes: ro=%ld rw=%ld\n", total_size_ro, total_size_rw);
 
-        kernel_phys = *mem_upper - total_size_ro - total_size_rw;
+        /* mem_upper follows the VideoCore split and is no 2MB multiple on
+         * every board; mmu_map_section() maps the 2MB block phys sits in,
+         * so an unaligned kernel_phys maps the kernel off its own image. */
+        kernel_phys = (*mem_upper - total_size_ro - total_size_rw)
+                          & ~(2*1024*1024UL - 1);
         kernel_virt = KERNEL_VIRT_ADDRESS;
 
         /*
