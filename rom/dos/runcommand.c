@@ -85,6 +85,7 @@
     };
 #endif
     D(BOOL injected;)
+    APTR seccookie = NULL;
 
     ASSERT_VALID_PROCESS(me);
 
@@ -134,7 +135,14 @@
     args.Args[2] = (IPTR)BADDR(segList) + sizeof(BPTR);
     args.Args[3] = (IPTR)me;
 
+    /* Multi-user: a setuid executable runs with the owner of its file */
+    if (SECURITY_ACTIVE)
+        seccookie = secSetUIDBegin(segList);
+
     ret = NewStackSwap(&sss, CallEntry, &args);
+
+    if (seccookie)
+        secSetUIDEnd(seccookie);
 
     me->pr_ReturnAddr = oldReturnAddr;
     me->pr_Arguments  = oldargs;

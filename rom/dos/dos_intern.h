@@ -19,6 +19,9 @@
 
 #include "fs_driver.h"
 
+#include <libraries/security.h>
+#include <proto/security.h>
+
 /*
  * These bases are historically placed in public portion of DOSBase.
  * We won't change this.
@@ -44,6 +47,7 @@ struct IntDosBase
     struct ErrorString          errors  __attribute__((aligned(4)));
     struct SignalSemaphore      segsem;
     struct List                 segdata;
+    struct Library              *securityBase;  /* security.library, only when resident in ROM */
 #ifdef __arm__
     ULONG                       arm_Arch; /* ARM-specific info for ELF loader */
     BOOL                        arm_VFP;
@@ -53,6 +57,9 @@ struct IntDosBase
 
 #define IDosBase(base) ((struct IntDosBase *)base)
 #define DebugBase IDosBase(DOSBase)->debugBase
+/* Multi-user support: NULL unless security.library is part of the ROM */
+#define secBase IDosBase(DOSBase)->securityBase
+#define SECURITY_ACTIVE (IDosBase(DOSBase)->securityBase != NULL)
 
 struct DAList
 {
