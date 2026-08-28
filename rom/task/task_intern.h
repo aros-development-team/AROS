@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef TASKRES_INTERN_H
@@ -21,6 +21,7 @@
 #include <utility/utility.h>
 #endif
 
+#include <resources/task.h>
 #include <exec_intern.h>
 #include <etask.h>
 
@@ -56,6 +57,8 @@ struct TaskResBase
     struct List                 trb_NewTasks;
     struct List                 trb_LockedLists;
     struct Library *            trb_UtilityBase;
+    struct SignalSemaphore      trb_NotifySem;                      /* Protects trb_NotifyHooks                                     */
+    struct MinList              trb_NotifyHooks;                    /* struct Hook nodes registered with AddTaskNotifyHook()        */
 };
 
 struct TaskListEntry
@@ -111,5 +114,7 @@ struct TaskListPrivate
 void task_CleanList(struct Task * task, struct TaskResBase *TaskResBase);
 struct TaskListHookEntry *GetHookTypeEntry(struct List *htList, ULONG thType, BOOL create);
 struct TaskListEntry *GetTaskEntry(struct Task *thisTask, struct TaskResBase *TaskResBase);
+
+void taskres_NotifyTasks(struct TaskResBase *TaskResBase, ULONG action, struct Task *task, struct Task *parent, struct TagItem *tags);
 
 #endif /* TASKRES_INTERN_H */

@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2023, The AROS Development Team. All rights reserved.
+# Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -51,7 +51,9 @@ TASKRES_FUNCS :=             \
         RestoreTaskStorage   \
         SetTaskStorageSlot   \
         GetTaskStorageSlot   \
-        GetParentTaskStorageSlot
+        GetParentTaskStorageSlot \
+        AddTaskNotifyHook    \
+        RemTaskNotifyHook
 
 TASKRES_FILES :=             \
         task_init            \
