@@ -719,7 +719,7 @@ OOP_Object *MNAME_DISPLAY(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHi
         if (XSD(cl)->vcsd_basegallium && msg->cl == XSD(cl)->vcsd_basegallium)
         {
             /* The display driver knows which GPU sits next to it: V3D 4.2
-             * (hidds/v3d) on the BCM2711, VideoCore IV (vc4gallium)
+             * (hidd/v3d) on the BCM2711, VideoCore IV (vc4gallium)
              * before that. Both live on the FS, so load on first request
              * so the OOP class registers before OOP_NewObject. */
             CONST_STRPTR gallium_lib = XSD(cl)->vcsd_IsBCM2711
