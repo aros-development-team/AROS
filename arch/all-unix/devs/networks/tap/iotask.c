@@ -16,7 +16,7 @@
 /* this fires whenever data is waiting to be read on the tap descriptor */
 static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
 {
-    unsigned char buf[ETH_FRAME_LEN], *packet;
+    unsigned char *buf = unit->rxbuf, *packet;
     int nread, ioerr;
     struct ethhdr *eth;
     UWORD packet_type;		/* unsigned: ethertypes >= 0x8000 (e.g. IPv6
@@ -32,7 +32,7 @@ static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
     D(bug("[tap] [io:%d] got a packet\n", unit->num));
 
     /* Try to read the packet */
-    nread = Hidd_UnixIO_ReadFile(TAPBase->unixio, unit->fd, buf, ETH_FRAME_LEN, &ioerr);
+    nread = Hidd_UnixIO_ReadFile(TAPBase->unixio, unit->fd, buf, unit->frame_max, &ioerr);
     if (nread == -1)
     {
         D(bug("[tap] [io:%d] read failed (%d)\n", unit->num, ioerr));
@@ -183,7 +183,7 @@ static void tap_send(struct tap_base *TAPBase, struct tap_unit *unit)
     struct IOSana2Req *req;
     int packet_length;
     struct tap_opener *opener;
-    unsigned char buf[ETH_FRAME_LEN], *packet;
+    unsigned char *buf = unit->txbuf, *packet;
     struct ethhdr *eth;
     int ioerr, nwritten = 0;
     struct tap_tracker *tracker, *tracker_next;
@@ -214,6 +214,21 @@ static void tap_send(struct tap_base *TAPBase, struct tap_unit *unit)
     else {
         packet = buf;
         packet_length = req->ios2_DataLength;
+    }
+
+    /* reject anything larger than the configured frame - the tx buffer is only
+     * frame_max bytes, so an oversized write must not be copied into it */
+    if (packet_length > (int)unit->frame_max) {
+        D(bug("[tap] [io:%d] frame of %d bytes exceeds MTU (max %d), rejecting\n",
+              unit->num, packet_length, (int)unit->frame_max));
+        req->ios2_Req.io_Error = S2ERR_MTU_EXCEEDED;
+        req->ios2_WireError = S2WERR_GENERIC_ERROR;
+
+        Disable();
+        Remove((APTR) req);
+        Enable();
+        ReplyMsg((APTR) req);
+        return;
     }
 
     /* user magic functions */

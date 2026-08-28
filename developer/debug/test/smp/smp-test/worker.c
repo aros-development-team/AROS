@@ -30,7 +30,7 @@ struct WorkersWork
     ULONG         workMax;
     ULONG         workOversamp;
     ULONG         workOver2;
-    spinlock_t      *lock;
+    struct SignalSemaphore *lock;
     complexno_t workTrajectories[];
 };
 
@@ -105,7 +105,7 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
             {
                 ULONG pos;
                 int i;
-                KrnSpinLock(workload->lock, NULL, SPINLOCK_MODE_WRITE);
+                ObtainSemaphore(workload->lock);
                 for(i = 0; i < trajectoryLength; i++)
                 {
                     IPTR px = (workload->workTrajectories[i].r + 2.0) / diff_sr;
@@ -127,7 +127,7 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
 
                         }
                         }
-                KrnSpinUnLock(workload->lock);
+                ReleaseSemaphore(workload->lock);
             }
         }
         else
@@ -238,7 +238,9 @@ void SMPTestWorker(struct ExecBase *SysBase)
             }
             FreeMem(workPrivate, sizeof(struct WorkersWork) + (workPrivate->workMax * sizeof(complexno_t)));
         }
+        ObtainSemaphore(worker->smpw_Lock);
         Remove(&worker->smpw_Node);
+        ReleaseSemaphore(worker->smpw_Lock);
         DeleteMsgPort(worker->smpw_MsgPort);
         Signal(worker->smpw_MasterPort->mp_SigTask, SIGBREAKF_CTRL_C);
     }

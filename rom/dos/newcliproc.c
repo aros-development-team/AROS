@@ -99,13 +99,6 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
                 AROS_UFCA(APTR, &me->pr_ReturnAddr, A3),
                 AROS_UFCA(LONG_FUNC, (IPTR)Type, A4));
         D(bug("%s: Called custom BCPL CliInit routine @%p => 0x%08x\n",__func__, Type, ret));
-        /* An interactive BCPL Shell-Seg expects zero after CliInit has
-         * installed caller-supplied input and output streams.  AROS tags
-         * that state for native shells; translate it at the BCPL boundary.
-         */
-        if ((ULONG)ret == (FNF_VALIDFLAGS | FNF_SYSTEM |
-                           FNF_USERINPUT | FNF_RUNOUTPUT))
-            ret = 0;
         if (ret > 0) {
             D(bug("%s: Calling custom BCPL reply routine @%p\n",__func__, ret));
             ret = AROS_UFC8(ULONG, BCPL_thunk,
@@ -286,8 +279,19 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
            NP_StackSize tag */
         cli->cli_DefaultStack = (me->pr_StackSize + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
 
+#ifdef __mc68000
+        /*
+         * The command stack is chip RAM on an unexpanded Amiga and is
+         * held for as long as a launched program runs. AmigaOS shells
+         * default to 4000 bytes here; 8 KB is double that for AROS's
+         * heavier C commands without pinning a full 16 KB.
+         */
+        if (cli->cli_DefaultStack < (LONG)(8192 / CLI_DEFAULTSTACK_UNIT))
+            cli->cli_DefaultStack = (LONG)(8192 / CLI_DEFAULTSTACK_UNIT);
+#else
         if (cli->cli_DefaultStack < (LONG)(AROS_STACKSIZE / CLI_DEFAULTSTACK_UNIT))
             cli->cli_DefaultStack = (LONG)(AROS_STACKSIZE / CLI_DEFAULTSTACK_UNIT);
+#endif
     }
 
     AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);

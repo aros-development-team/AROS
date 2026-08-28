@@ -98,7 +98,7 @@ static BOOL CmdWrite(struct DWMACBase *base, struct IOSana2Req *request)
     }
     else if (request->ios2_DataLength >
              ((request->ios2_Req.io_Flags & SANA2IOF_RAW) != 0 ?
-                  (ULONG)ETH_MAXPACKETSIZE : (ULONG)ETH_MTU))
+                  unit->dwu_MTU + ETH_HEADERSIZE : unit->dwu_MTU))
     {
         error = S2ERR_MTU_EXCEEDED;
     }

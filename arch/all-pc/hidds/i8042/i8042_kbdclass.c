@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: The main keyboard class.
 */
@@ -204,12 +204,29 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
 
     Disable();
     D(bug("[i8042:Kbd] %s: performing keyboard reset ...\n", __func__));
-    D(UBYTE status = )i8042_kbd_reset((struct i8042base *)cl->UserData, data);            /* Reset the keyboard */
-    D(
-        bug("[i8042:Kbd] %s: reset returned %x\n", __func__, status);
-        bug("[i8042:Kbd] %s: updating leds ...\n", __func__);
-    )
+    reset_success = i8042_kbd_reset((struct i8042base *)cl->UserData, data);            /* Reset the keyboard */
+    D(bug("[i8042:Kbd] %s: reset returned %x\n", __func__, reset_success);)
     Enable();
+
+    if (!reset_success) {
+        /*
+         * The controller passed its self test but no keyboard answered -
+         * a USB-only machine. Leave, rather than talk to a keyboard that
+         * isn't there and hook an IRQ that nothing will ever service.
+         */
+        struct IORequest *io = data->hwdata.ioTimer;
+        data->hwdata.ioTimer = NULL;
+
+        /* Signal the launching task we are done .. */
+        FreeSignal(data->LEDSigBit);
+        data->LEDSigBit = (ULONG)-1;
+        Signal(data->CtrlTask->tc_UserData, SIGF_SINGLE);
+        DeleteIORequest(io);
+        DeleteMsgPort(p);
+        return;
+    }
+
+    D(bug("[i8042:Kbd] %s: updating leds ...\n", __func__);)
     i8042_kbd_update_leds(data);
 
     D(bug("[i8042:Kbd] %s: init sequence complete <reset OK, LED sigbit %lu>\n",

@@ -1,0 +1,45 @@
+--- ./include-6.18.44/uapi/drm/drm.h
++++ ./include/uapi/drm/drm.h
+@@ -47,6 +47,26 @@
+ #include <asm/ioctl.h>
+ typedef unsigned int drm_handle_t;
+ 
++#elif defined(__AROS__)
++
++/* userspace side of the port: plain C types, no kernel headers */
++#include <stdint.h>
++#include <sys/types.h>
++#include <asm/ioctl.h>
++typedef int8_t   __s8;
++typedef uint8_t  __u8;
++typedef int16_t  __s16;
++typedef uint16_t __u16;
++typedef int32_t  __s32;
++typedef uint32_t __u32;
++typedef int64_t  __s64;
++typedef uint64_t __u64;
++typedef size_t   __kernel_size_t;
++typedef unsigned int drm_handle_t;
++#ifndef __user
++#define __user
++#endif
++
+ #else /* One of the BSDs */
+ 
+ #include <stdint.h>
+--- ./include-6.18.44/uapi/drm/nouveau_drm.h
++++ ./include/uapi/drm/nouveau_drm.h
+@@ -75,6 +75,13 @@
+  */
+ #define NOUVEAU_GETPARAM_HAS_VMA_TILEMODE 20
+ 
++#if defined(__AROS__)
++#define NOUVEAU_GETPARAM_VRAM_SIZE       128
++#define NOUVEAU_GETPARAM_GART_SIZE       129
++#define NOUVEAU_GETPARAM_VRAM_FREE       130
++#define NOUVEAU_GETPARAM_GART_FREE       131
++#endif
++
+ struct drm_nouveau_getparam {
+ 	__u64 param;
+ 	__u64 value;

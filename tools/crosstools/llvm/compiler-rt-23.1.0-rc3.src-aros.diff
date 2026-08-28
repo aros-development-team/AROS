@@ -1,0 +1,16 @@
+diff -ruN llvm-project-23.1.0-rc3.src/compiler-rt/lib/builtins/CMakeLists.txt llvm-project-23.1.0-rc3.src.aros/compiler-rt/lib/builtins/CMakeLists.txt
+--- llvm-project-23.1.0-rc3.src/compiler-rt/lib/builtins/CMakeLists.txt	2026-08-19 13:30:01.477858292 +0100
++++ llvm-project-23.1.0-rc3.src.aros/compiler-rt/lib/builtins/CMakeLists.txt	2026-08-19 13:30:01.474739092 +0100
+@@ -278,9 +278,11 @@
+   set(GENERIC_SOURCES
+     ${GENERIC_SOURCES}
+     emutls.c
+-    enable_execute_stack.c
+     eprintf.c
+   )
++  if(NOT AROS_BUILD)
++    list(APPEND GENERIC_SOURCES enable_execute_stack.c)
++  endif()
+ endif()
+ 
+ option(COMPILER_RT_LIBATOMIC_USE_PTHREAD

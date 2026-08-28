@@ -181,6 +181,30 @@ IPTR FuelGauge__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 /******************************************************************************/
 
+IPTR FuelGauge__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
+{
+    struct TextFont *font = NULL;
+    WORD h = 14;
+
+    /* Tall enough for the gadget text in the UI font */
+    if (msg->gpd_GInfo && msg->gpd_GInfo->gi_DrInfo)
+        font = msg->gpd_GInfo->gi_DrInfo->dri_Font;
+    if (!font && msg->gpd_RPort)
+        font = msg->gpd_RPort->Font;
+
+    if (font && font->tf_YSize + 6 > h)
+        h = font->tf_YSize + 6;
+
+    msg->gpd_Domain.Left   = 0;
+    msg->gpd_Domain.Top    = 0;
+    msg->gpd_Domain.Width  = 40;
+    msg->gpd_Domain.Height = h;
+
+    return TRUE;
+}
+
+/******************************************************************************/
+
 IPTR FuelGauge__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     D(bug("[FuelGauge] GM_RENDER: redraw=%d\n", msg->gpr_Redraw));
@@ -308,6 +332,47 @@ IPTR FuelGauge__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
     if (!msg->gpr_RPort && msg->gpr_GInfo)
         ReleaseGIRPort(rp);
+
+    /* Render the gadget text (GA_Text) over the gauge */
+    {
+        STRPTR text = (STRPTR)gad->GadgetText;
+
+        if (text && text[0] && dri)
+        {
+            struct TextFont *oldFont = NULL;
+            ULONG len = strlen(text);
+            WORD tx, ty, th, tb;
+
+            if (!rp->Font && dri->dri_Font)
+            {
+                oldFont = rp->Font;
+                SetFont(rp, dri->dri_Font);
+            }
+
+            th = rp->TxHeight ? rp->TxHeight : 8;
+            tb = rp->TxBaseline ? rp->TxBaseline : th - 1;
+            ty = y + (h - th) / 2 + tb;
+
+            switch (data->fgd_Justification)
+            {
+                case FGJ_LEFT:
+                    tx = x + 4;
+                    break;
+                case FGJ_CENTER:
+                default:
+                    tx = x + (w - (WORD)TextLength(rp, text, len)) / 2;
+                    break;
+            }
+
+            SetDrMd(rp, JAM1);
+            SetAPen(rp, dri->dri_Pens[TEXTPEN]);
+            Move(rp, tx, ty);
+            Text(rp, text, len);
+
+            if (oldFont)
+                SetFont(rp, oldFont);
+        }
+    }
 
     return TRUE;
 }

@@ -36,14 +36,14 @@
 #include "vc4_drm_aros.h"
 #include "vc4_v3d.h"  /* provides ARM_PERIIOBASE, bcm2708.h, GPU_BUS_ADDR */
 
-/* vc4gfx bitmap attributes — must match the aoHidd_VideoCoreGfxBitMap_*
- * enum in vc4gfx_bitmap.h */
+/* vcgfx bitmap attributes — must match the aoHidd_VideoCoreGfxBitMap_*
+ * enum in vcgfx_bitmap.h */
 #define aoHidd_VideoCoreGfxBitMap_Drawable      0
 #define aoHidd_VideoCoreGfxBitMap_BackDrawable  1
 #define aoHidd_VideoCoreGfxBitMap_Flip          2
 #define aoHidd_VideoCoreGfxBitMap_Overlay       3
 
-/* Mirrored from vc4gfx_bitmap.h, like the attr indices above. */
+/* Mirrored from vcgfx_bitmap.h, like the attr indices above. */
 struct vc4gfx_overlay
 {
     ULONG ovl_Phys;
@@ -421,26 +421,17 @@ void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd)
      * Beyond the nap window, fall back to CPU-free vblank blocking. */
     BYTE wsig = vc4_wait_enter(sd);
     ULONG ticks = 0;
-    ULONG budget = (wsig >= 0) ? 60 : 3500000;
+    /* Both paths bound the wait to roughly the same wall clock: vblank
+     * ticks are ~20 ms, the signal-less fallback paces itself at
+     * VC4_GPUWAIT_NAP_US. The fallback used to poll flat out with a
+     * 3.5M budget — seconds of spinning while holding render_lock, which
+     * is what a stalled frame looked like from the outside. */
+    ULONG budget = (wsig >= 0) ? 60 : (60 * 20000 / VC4_GPUWAIT_NAP_US);
     ULONG spin_start = gallium_now_us();
 
     while (v3d->finished_seqno < v3d->seqno && ticks < budget)
     {
-        ULONG bfc = V3D_READ(v3d, V3D_BFC) & 0xff;
-        ULONG rfc = V3D_READ(v3d, V3D_RFC) & 0xff;
-        ULONG bdelta = (bfc - v3d->last_bfc) & 0xff;
-        ULONG rdelta = (rfc - v3d->last_rfc) & 0xff;
-        v3d->last_bfc = bfc;
-        v3d->last_rfc = rfc;
-        v3d->bfc_completed += bdelta;
-        v3d->rfc_completed += rdelta;
-        if (v3d->pending_render && v3d->bfc_completed >= v3d->seqno)
-            vc4_v3d_kick_pending_render(v3d, "BFC");
-        {
-            ULONG done = v3d->rfc_completed;
-            if (done > v3d->seqno) done = v3d->seqno;
-            v3d->finished_seqno = done;
-        }
+        vc4_v3d_advance_counters(v3d);
         if (v3d->finished_seqno >= v3d->seqno)
             break;
 
@@ -486,9 +477,12 @@ void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd)
 
         ticks++;
         /* Block until the next vblank (~20 ms, CPU-free) on the registered
-         * path; spin otherwise (no free signal — rare). */
+         * path. With no free signal (the task has none left to allocate)
+         * blocking is impossible, so pace the poll instead of spinning. */
         if (wsig >= 0)
             Wait(1UL << wsig);
+        else
+            vc4_gpu_nap(sd, VC4_GPUWAIT_NAP_US);
     }
 
     vc4_wait_leave(sd, wsig);
@@ -568,11 +562,11 @@ void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd)
 }
 
 /*
- * Scanout page query for zero-copy fullscreen GL. Resolves the vc4gfx
+ * Scanout page query for zero-copy fullscreen GL. Resolves the vcgfx
  * framebuffer's two flip pages and announces them (via sd->scanout_*)
  * as acceptable GEM_OPEN names, so the Mesa side can wrap them as BOs
  * and render straight into the back page. Returns 0 on success, -1
- * when the bitmap isn't a flippable vc4gfx framebuffer.
+ * when the bitmap isn't a flippable vcgfx framebuffer.
  */
 int vc4_aros_get_scanout(struct vc4galliumstaticdata *sd, OOP_Object *bm_obj,
                          struct vc4_aros_scanout *out)
@@ -612,7 +606,7 @@ int vc4_aros_get_scanout(struct vc4galliumstaticdata *sd, OOP_Object *bm_obj,
 }
 
 /*
- * Flip the vc4gfx framebuffer pages after the GPU has rendered a full
+ * Flip the vcgfx framebuffer pages after the GPU has rendered a full
  * frame into the back page. Waits for the GPU (and any in-flight blit
  * DMA) before the page becomes visible. Returns 0 on success.
  */
@@ -742,7 +736,11 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         ReleaseSemaphore(&sd->bo_lock);
         return -1;
     }
-    if (prev && prev != src_bo_handle)
+    /* Release the pin the previous present took — including when the same
+     * BO is shown twice in a row: we added a fresh pin above, so skipping
+     * this would strand one reference per repeat and the BO could never be
+     * freed. */
+    if (prev)
         vc4_aros_bo_unref_locked(sd, prev);
     ReleaseSemaphore(&sd->bo_lock);
     return 0;
@@ -777,7 +775,7 @@ void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
 /*
  * Blit a rectangle from a BO to an AROS bitmap. Waits for GPU work
  * to finish first; pins/unpins the BO around the access; tries DMA
- * to the framebuffer phys address when the dest is a vc4gfx bitmap,
+ * to the framebuffer phys address when the dest is a vcgfx bitmap,
  * falls back to WritePixelArray otherwise.
  *
  * Caller supplies resolved fields — no Mesa types cross the API.
@@ -870,7 +868,7 @@ void vc4_aros_display_blit(struct vc4galliumstaticdata *sd,
 
     _t_after_v3d = VC4G_NOW_US();
 
-    /* Fast path: DMA into a vc4gfx framebuffer phys address. */
+    /* Fast path: DMA into a vcgfx framebuffer phys address. */
     {
         IPTR fb_addr = 0;
         IPTR fb_bpr = 0;
@@ -985,7 +983,7 @@ void vc4_aros_display_blit(struct vc4galliumstaticdata *sd,
                     width, height, dst_x, dst_y, bm_obj);
             }
 
-            /* Fallback for non-vc4gfx bitmaps — CPU reads BO data,
+            /* Fallback for non-vcgfx bitmaps — CPU reads BO data,
              * so we must flush ARM D-cache to see fresh GPU output. */
             CacheClearE(src_addr, src_stride * height, CACRF_ClearD);
 

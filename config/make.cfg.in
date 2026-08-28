@@ -29,6 +29,10 @@ include $(GENDIR)/config/target.cfg
 include $(HOSTGENDIR)/config/host.cfg
 include $(GENDIR)/config/build.cfg
 
+# Bootstrap ELF relocators cannot allocate SHN_COMMON symbols. Append the
+# feature-detected flag after USER_CFLAGS so -fcommon cannot leak into kernels.
+KERNEL_CFLAGS                += $(CFLAGS_NO_COMMON)
+
 # Cross tools installation directory.
 CROSSTOOLSDIR                 := @AROS_CROSSTOOLSDIR@
 

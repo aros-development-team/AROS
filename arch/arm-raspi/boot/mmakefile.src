@@ -83,7 +83,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-bwfm-bcm2708-quick \
 #MM hidd-i2c-quick \
 #MM kernel-hidd-gfx-quick \
-#MM hidd-vc4gfx-quick \
+#MM hidd-vcgfx-quick \
 #MM kernel-sdcard-quick \
 #MM kernel-hidd-input-quick \
 #MM kernel-hidd-kbd-quick \
@@ -140,7 +140,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-sdcard \
 #MM hidd-i2c \
 #MM hidd-i2c-bcm2708 \
-#MM hidd-vc4gfx \
+#MM hidd-vcgfx \
 #MM kernel-hidd-gfx \
 #MM kernel-hidd-input \
 #MM kernel-hidd-kbd \
@@ -167,8 +167,13 @@ RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf \
 # firmware is redistributable under LICENCE.broadcom_bcm43xx (shipped too).
 RASPIWIFIFW_BRANCH := buster
 RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
+# 43455 and 43456 are both chip id 0x4345 and cannot share a blob: bwfm.device
+# picks by chip revision (9 = CYW43456, on the Pi 400 and CM4), so both sets
+# have to be on the card.
 RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
                      brcm/brcmfmac43455-sdio.clm_blob \
+                     brcm/brcmfmac43456-sdio.bin brcm/brcmfmac43456-sdio.txt \
+                     brcm/brcmfmac43456-sdio.clm_blob \
                      brcm/brcmfmac43430-sdio.bin brcm/brcmfmac43430-sdio.txt \
                      LICENCE.broadcom_bcm43xx
 
@@ -179,7 +184,7 @@ PKG_RSRC_ARCH := processor battclock
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
-PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse i2c i2c-bcm2708 vc4gfx
+PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse i2c i2c-bcm2708 vcgfx
 PKG_CLASSES   := USB/hub USB/massstorage
 
 %make_package mmake=kernel-package-raspi-arm file=$(AROSDIR)/$(ARM_BSP) \
@@ -241,12 +246,14 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 #MM
 distfiles-raspi-armbe : $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
 	@$(ECHO) Copying RasPi-BE distfiles...
-	@$(CP) -R $(AROSDIR) $(DISTDIR)/
+# Copy the contents, not the directory - see the aarch64 rule.
+	@$(CP) -R $(AROSDIR)/. $(DISTDIR)/
 
 #MM
 distfiles-raspi-armle : $(AROSDIR)/aros-arm-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
 	@$(ECHO) Copying RasPi distfiles...
-	@$(CP) -R $(AROSDIR) $(DISTDIR)/
+# Copy the contents, not the directory - see the aarch64 rule.
+	@$(CP) -R $(AROSDIR)/. $(DISTDIR)/
 
 #MM
 clean ::

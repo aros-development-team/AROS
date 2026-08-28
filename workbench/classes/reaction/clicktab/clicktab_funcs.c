@@ -47,6 +47,12 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
             case TNA_UserData:
                 tn->tn_UserData = (APTR)tag->ti_Data;
                 break;
+            case TNA_CloseGadget:
+                tn->tn_CloseGadget = (BOOL)tag->ti_Data;
+                break;
+            case TNA_HintInfo:
+                tn->tn_HintInfo = (STRPTR)tag->ti_Data;
+                break;
         }
     }
 }
@@ -220,6 +226,12 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
                 break;
             case TNA_UserData:
                 *store = (IPTR)tn->tn_UserData;
+                break;
+            case TNA_CloseGadget:
+                *store = (IPTR)tn->tn_CloseGadget;
+                break;
+            case TNA_HintInfo:
+                *store = (IPTR)tn->tn_HintInfo;
                 break;
         }
     }

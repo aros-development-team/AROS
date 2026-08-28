@@ -80,6 +80,7 @@
 #include <datatypes/pictureclass.h>
 #include <dos/dos.h>
 #include <devices/rawkeycodes.h>
+#include <devices/timer.h>
 #include <aros/detach.h>
 
 #include <stdio.h>
@@ -108,6 +109,14 @@ static void Decode_Menu_IDCMP(struct IntuiMessage *KomIDCMP);           // decod
 static void Launch_Program(STRPTR Program);                             // start the chosed program
 static void Settings(void);                                             // open the prefs program
 static void Reload(void);                                               // reload the BiB
+static void HandleScreenNotify(void);                                   // handle Workbench screen reset
+static BOOL DrainAndReplyPort(struct MsgPort *port);                    // drain port, replying every message
+static BOOL NoIconBouncing(void);                                       // check if no icon is bouncing
+static BOOL MouseOverToolbar(void);                                     // check if mouse is over the toolbar
+static void HandleFocus(void);                                          // focus follows the mouse
+static void ParseAlign(STRPTR str);                                     // parse ALIGN parameter
+static void ComputeWindowPosition(void);                                // set toolbar position from Align
+static void RefreshBackground(void);                                    // refresh toolbar background
 static void IconLabel(void);                                            // add label to icon
 
 // ------------------------------
@@ -117,13 +126,14 @@ static void IconLabel(void);                                            // add l
 #define ICON_ACTIVE (1<<7)
 #define SELECTED_ICON (1<<6)
 
-#define TEMPLATE        "SPACE/N/K,STATIC/N/K,AUTOREMAP/S/K,NAMES/S/K,SYSFONT/K,LABELFONT/K,FONTSIZE/N/K"
+#define TEMPLATE        "SPACE/N/K,STATIC/N/K,ALIGN/K,AUTOREMAP/S/K,NAMES/S/K,SYSFONT/K,LABELFONT/K,FONTSIZE/N/K"
 
 // ------------------------------
 
 enum {
     ARG_SPACE = 0,
     ARG_STATIC,
+    ARG_ALIGN,
     ARG_AUTOREMAP,
     ARG_NAMES,
     ARG_SYSFONT,
@@ -134,7 +144,7 @@ enum {
 
 #define BIB_PREFS "ENV:Iconbar.prefs"
 
-const TEXT version[]="$VER: BoingIconBar 1.12 (01.05.2023) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
+const TEXT version[]="$VER: BoingIconBar 1.13 (23.08.2026) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
 
 static BOOL                                     BiB_Exit=FALSE, Icon_Remap=FALSE, PositionMenuOK=FALSE; 
 static BOOL                                     Window_Active=FALSE, Window_Open=FALSE, MenuWindow_Open=FALSE, FirstOpening=TRUE;
@@ -143,9 +153,10 @@ static BOOL                                     B_Labels=FALSE;
 static TEXT                                     IT_Labels[100];  // buffer for label
 
 // -----------
-static char                                     *argSysFont = NULL, *argLabelFont = NULL;
+static char                                     *argSysFont = NULL, *argLabelFont = NULL, *argAlign = NULL;
 
 static IPTR                                     Spacing=5, Static=0, FontSize = 0;
+static LONG                                     Align = 0;             // 0=center, 1=left, 2=right
 static LONG                                     Position, OldPosition; 
 static LONG                                     WindowHeight, WindowWidth, ScreenHeight, ScreenWidth, IconWidth;
 static LONG                                     IconCounter, LevelCounter, CurrentLevel=0, lbm=0, rbm=0, MouseIcon;
@@ -154,9 +165,28 @@ static BYTE                                     MovingTable[8]={0, 4, 7, 9, 10, 
 static TEXT                                     BufferList[20]; 
 static ULONG                                    WindowMask=0, MenuMask=0, WindowSignal;
 
+static struct MsgPort                           *ScreenNotifyPort = NULL;
+static ULONG                                    ScreenNotifyMask = 0;
+static APTR                                     ScreenNotifyHandle = NULL;
+static BOOL                                     ScreenResetInProgress = FALSE;
+
+static struct Window                            *PrevActiveWindow = NULL;
+static BOOL                                     FocusOver = FALSE;
+static LONG                                     FocusStableTicks = 0;
+
+static struct MsgPort                           *FocusPort = NULL;
+static struct timerequest                       *FocusTimer = NULL;
+static ULONG                                    FocusMask = 0;
+
+static struct MsgPort                           *WallpaperPort = NULL;
+static ULONG                                    WallpaperMask = 0;
+static struct NotifyRequest                     *WallpaperNotRequest = NULL;
+static BOOL                                     WallpaperPending = FALSE;
+
 static IPTR                                     args[ARG_TOTAL] = {
                         (IPTR)&Spacing,
                         (IPTR)&Static,
+                        (IPTR)&argAlign,
                         0,
                         0,
                         0,
@@ -237,6 +267,11 @@ int main(int argc, char *argv[])
             Static = *(LONG*)args[ARG_STATIC];
         }
 
+        if (args[ARG_ALIGN])
+        {
+            ParseAlign((STRPTR)args[ARG_ALIGN]);
+        }
+
         if (args[ARG_SYSFONT])
         {
             argSysFont = AllocVec(strlen((char *)args[ARG_SYSFONT]) + 1, MEMF_CLEAR);
@@ -275,6 +310,9 @@ int main(int argc, char *argv[])
 
                     if ((str = FindToolType(dob->do_ToolTypes, "STATIC")))
                         Static = atoi(str);
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "ALIGN")))
+                        ParseAlign(str);
 
                     if ((str = FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
                         Icon_Remap = TRUE;
@@ -358,6 +396,67 @@ int main(int argc, char *argv[])
         goto bailout;
     }
 
+    // start notification on Workbench screen reset (e.g. resolution change)
+    ScreenNotifyPort = CreateMsgPort();
+    if (ScreenNotifyPort)
+    {
+        ScreenNotifyHandle = StartScreenNotifyTags(
+            SNA_Notify,   SNOTIFY_WAIT_REPLY | SNOTIFY_BEFORE_CLOSEWB | SNOTIFY_AFTER_OPENWB,
+            SNA_MsgPort,  ScreenNotifyPort,
+            SNA_Priority, 0,
+            TAG_END);
+
+        if (ScreenNotifyHandle)
+        {
+            ScreenNotifyMask = 1 << ScreenNotifyPort->mp_SigBit;
+        }
+    }
+
+    // start notification on the wallpaper prefs file
+    WallpaperPort = CreateMsgPort();
+    if (WallpaperPort)
+    {
+        WallpaperNotRequest = AllocVec(sizeof(struct NotifyRequest), MEMF_CLEAR);
+        if (WallpaperNotRequest)
+        {
+            WallpaperNotRequest->nr_Name = "ENV:SYS/Wanderer/global.prefs";
+            WallpaperNotRequest->nr_Flags = NRF_SEND_MESSAGE;
+            WallpaperNotRequest->nr_stuff.nr_Msg.nr_Port = WallpaperPort;
+
+            if (StartNotify(WallpaperNotRequest) != DOSFALSE)
+            {
+                WallpaperMask = 1 << WallpaperPort->mp_SigBit;
+            }
+            else
+            {
+                WallpaperNotRequest->nr_Name = NULL;
+            }
+        }
+    }
+
+    // periodic timer for focus-follows-mouse (works even when the window is inactive)
+    FocusPort = CreateMsgPort();
+    if (FocusPort)
+    {
+        FocusTimer = (struct timerequest *)CreateIORequest(FocusPort, sizeof(struct timerequest));
+        if (FocusTimer)
+        {
+            if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)FocusTimer, 0) == 0)
+            {
+                FocusTimer->tr_node.io_Command = TR_ADDREQUEST;
+                FocusTimer->tr_time.tv_secs = 0;
+                FocusTimer->tr_time.tv_micro = 100000;   /* 100 ms */
+                SendIO((struct IORequest *)FocusTimer);
+                FocusMask = 1 << FocusPort->mp_SigBit;
+            }
+            else
+            {
+                DeleteIORequest((struct IORequest *)FocusTimer);
+                FocusTimer = NULL;
+            }
+        }
+    }
+
     // ------ Opening font if parameter NAMES is active
 
     if (FontSize)
@@ -411,14 +510,15 @@ int main(int argc, char *argv[])
         while (BiB_Exit==FALSE)
         {
 
-            if (GetMsg(BIBport) != NULL)
+            if (DrainAndReplyPort(BIBport))
             {
-                Reload();
+                if (!ScreenResetInProgress)
+                    Reload();
             }
 
             if(Window_Open || MenuWindow_Open)
             {
-                WindowSignal = Wait(WindowMask | MenuMask | SIGBREAKF_CTRL_C);
+                WindowSignal = Wait(WindowMask | MenuMask | ScreenNotifyMask | WallpaperMask | FocusMask | SIGBREAKF_CTRL_C);
 
                 if(WindowSignal & WindowMask)
                 {
@@ -446,10 +546,39 @@ int main(int argc, char *argv[])
                         CloseMenuWindow();
                 }
 
+                if(WindowSignal & ScreenNotifyMask)
+                {
+                    HandleScreenNotify();
+                }
+
+                if(WindowSignal & WallpaperMask)
+                {
+                    DrainAndReplyPort(WallpaperPort);
+                    WallpaperPending = TRUE;
+                }
+
+                if(WindowSignal & FocusMask)
+                {
+                    BOOL fired = FALSE;
+                    while(GetMsg(FocusPort) != NULL)
+                        fired = TRUE;
+                    if (fired)
+                        SendIO((struct IORequest *)FocusTimer);
+                    HandleFocus();
+                }
+
                 if(WindowSignal & SIGBREAKF_CTRL_C)
                 {
                     D(bug("CTRL-C reveived\n"));
                     BiB_Exit=TRUE;
+                }
+
+                if(WallpaperPending && Window_Open && NoIconBouncing())
+                {
+                    /* Let Wanderer repaint the new wallpaper before recapturing */
+                    Delay(20);
+                    RefreshBackground();
+                    WallpaperPending = FALSE;
                 }
 
             }
@@ -462,6 +591,26 @@ int main(int argc, char *argv[])
                     D(bug("CTRL-C reveived\n"));
                     SetSignal(0, SIGBREAKF_CTRL_C);
                     BiB_Exit=TRUE;
+                }
+
+                if (ScreenNotifyMask)
+                {
+                    HandleScreenNotify();
+                }
+
+                if (WallpaperMask)
+                {
+                    if (DrainAndReplyPort(WallpaperPort))
+                        WallpaperPending = FALSE;
+                }
+
+                if (FocusMask)
+                {
+                    BOOL fired = FALSE;
+                    while(GetMsg(FocusPort) != NULL)
+                        fired = TRUE;
+                    if (fired)
+                        SendIO((struct IORequest *)FocusTimer);
                 }
 
                 CheckMousePosition();
@@ -487,6 +636,35 @@ bailout:
 
     if (BIBport)
         DeleteMsgPort(BIBport);
+
+    if (ScreenNotifyHandle)
+        EndScreenNotify(ScreenNotifyHandle);
+
+    if (ScreenNotifyPort)
+        DeleteMsgPort(ScreenNotifyPort);
+
+    if (WallpaperNotRequest)
+    {
+        if (WallpaperNotRequest->nr_Name)
+EndNotify(WallpaperNotRequest);
+        FreeVec(WallpaperNotRequest);
+    }
+
+    if (WallpaperPort)
+        DeleteMsgPort(WallpaperPort);
+
+    if (FocusTimer)
+    {
+        if (FocusTimer->tr_node.io_Device)
+        {
+            AbortIO((struct IORequest *)FocusTimer);
+            WaitIO((struct IORequest *)FocusTimer);
+        }
+        DeleteIORequest((struct IORequest *)FocusTimer);
+    }
+
+    if (FocusPort)
+        DeleteMsgPort(FocusPort);
     
     for(x=0; x<SUM_ICON; x++)
     {
@@ -626,8 +804,7 @@ static BOOL ReadPrefs(void)
             IconCounter = Levels[1].Beginning;
             WindowWidth = Levels[0].WindowPos_X;
             WindowHeight = Levels[0].WindowPos_Y;
-            BeginningWindow = ScreenWidth / 2 - WindowWidth / 2;
-            EndingWindow = ScreenWidth / 2 + WindowWidth / 2;
+            ComputeWindowPosition();
             CurrentLevel= 0;
 
             // add Settings menu entry
@@ -928,6 +1105,7 @@ static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
                                 Icons[x].Icon_PositionY,
                                 IDS_NORMAL,
                                 ICONDRAWA_Frameless, TRUE,
+                                ICONDRAWA_Borderless, TRUE,
                                 ICONDRAWA_EraseBackground, FALSE,
                                 TAG_DONE);
                         }
@@ -1033,6 +1211,7 @@ static void Insert_Icon(LONG Mode, LONG NrIcon)
         Icons[NrIcon].Icon_PositionY - MovingTable[(Icons[NrIcon].Icon_Status & 0x07)],
         Mode,
         ICONDRAWA_Frameless, TRUE,
+        ICONDRAWA_Borderless, TRUE,
         ICONDRAWA_EraseBackground, FALSE,
         TAG_DONE);
 
@@ -1069,10 +1248,14 @@ static BOOL OpenMainWindow(void)
 {
     LONG x, y, a;
 
+    PrevActiveWindow = NULL;
+    FocusOver = FALSE;
+    FocusStableTicks = 0;
+
     if((MyScreen=LockPubScreen(NULL)))
     {
         BltBitMapRastPort(MyScreen->RastPort.BitMap,
-            ScreenWidth / 2 - WindowWidth / 2,
+            BeginningWindow,
             ScreenHeight - WindowHeight,
             &RP_Buffer,
             0, 0,
@@ -1171,7 +1354,7 @@ static BOOL OpenMainWindow(void)
             WA_MouseQueue, 3,
             WA_Borderless, TRUE,
             WA_SizeGadget, FALSE,
-            WA_Activate, ((FirstOpening && Static) ? FALSE : TRUE),
+            WA_Activate, FALSE,
             WA_PubScreenName, NULL,
             WA_BackFill, LAYERS_NOBACKFILL,
             WA_Flags, WFLG_NOCAREREFRESH|
@@ -1206,6 +1389,7 @@ static BOOL OpenMainWindow(void)
                     Icons[x].Icon_PositionY,
                     IDS_NORMAL,
                     ICONDRAWA_Frameless, TRUE,
+                    ICONDRAWA_Borderless, TRUE,
                     ICONDRAWA_EraseBackground, FALSE,
                     TAG_DONE);
             }
@@ -1242,6 +1426,9 @@ static void CloseMainWindow(void)
 
 static void CheckMousePosition(void)
 {
+    if (ScreenResetInProgress)
+        return;
+
     if((MyScreen->MouseY > ScreenHeight - 8) &&
         Window_Open == FALSE &&
         MyScreen->MouseX > BeginningWindow &&
@@ -1276,8 +1463,7 @@ static void Show_Selected_Level(void)
     IconCounter   = Levels[CurrentLevel+1].Beginning;
     WindowWidth = Levels[CurrentLevel].WindowPos_X;
     WindowHeight  = Levels[CurrentLevel].WindowPos_Y;
-    BeginningWindow = ScreenWidth / 2 - WindowWidth / 2;
-    EndingWindow   = ScreenWidth / 2 + WindowWidth / 2;
+    ComputeWindowPosition();
 
     //LJ: delay needed for AROS, otherwise garbage from old icons remains
     Delay(10); // 200 ms seems to be enough
@@ -1465,6 +1651,231 @@ static void Launch_Program(STRPTR Program)
 static void Settings(void)
 {
     OpenWorkbenchObject("SYS:Prefs/BoingIconBar", TAG_DONE);
+}
+
+
+static void ScreenResetCleanup(void)
+{
+    LONG x;
+
+    if (MenuWindow_Open)
+    {
+        MenuWindow_Open = FALSE;
+        if (MenuWindow)
+            CloseWindow(MenuWindow);
+        MenuWindow = NULL;
+        MenuMask = 0;
+    }
+
+    if (Window_Open == TRUE)
+    {
+        CloseMainWindow();
+    }
+
+    for(x=0; x<SUM_ICON; x++)
+    {
+        if(Icon[x] != NULL)
+        {
+            FreeDiskObject(Icon[x]);
+            Icon[x]=NULL;
+        }
+        Icons[x].Icon_Height  = 0;
+        Icons[x].Icon_Width = 0;
+        Icons[x].Icon_PositionX  = 0;
+        Icons[x].Icon_PositionY  = 0;
+    }
+
+    if(BMP_Buffer)
+        FreeBitMap(BMP_Buffer);
+    if(BMP_DoubleBuffer)
+        FreeBitMap(BMP_DoubleBuffer);
+
+    for(x=0; x<3; x++)
+    {
+        if(picture[x])
+            DisposeDTObject(picture[x]);
+        picture[x] = NULL;
+        bm[x] = NULL;
+    }
+}
+
+
+static void ScreenResetRestore(void)
+{
+    if(ReadPrefs() == FALSE)
+    {
+        puts("Prefs error\n");
+        return;
+    }
+
+    LoadBackground();
+
+    if(Static)
+    {
+        Delay(Static * 50);
+        OpenMainWindow();
+        FirstOpening = FALSE;
+    }
+}
+
+
+static void HandleScreenNotify(void)
+{
+    struct ScreenNotifyMessage *msg;
+
+    while((msg = (struct ScreenNotifyMessage *)GetMsg(ScreenNotifyPort)))
+    {
+        switch(msg->snm_Class)
+        {
+            case SNOTIFY_BEFORE_CLOSEWB:
+                D(bug("[IconBar] screen reset: closing toolbar\n"));
+                ScreenResetInProgress = TRUE;
+                ScreenResetCleanup();
+                break;
+
+            case SNOTIFY_AFTER_OPENWB:
+                D(bug("[IconBar] screen reset: reopening toolbar\n"));
+                ScreenResetInProgress = FALSE;
+                ScreenResetRestore();
+                break;
+
+            default:
+                break;
+        }
+
+        ReplyMsg((struct Message *)msg);
+    }
+}
+
+
+static BOOL DrainAndReplyPort(struct MsgPort *port)
+{
+    struct Message *msg;
+    BOOL got = FALSE;
+
+    while ((msg = GetMsg(port)))
+    {
+        got = TRUE;
+        ReplyMsg(msg);
+    }
+    return got;
+}
+
+
+static BOOL NoIconBouncing(void)
+{
+    LONG x;
+
+    for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+    {
+        if(Icons[x].Icon_OK && Icons[x].Icon_Status != 0)
+            return FALSE;
+    }
+    return TRUE;
+}
+
+
+static BOOL MouseOverToolbar(void)
+{
+    LONG mx = MyScreen->MouseX;
+    LONG my = MyScreen->MouseY;
+
+    return (mx >= BeginningWindow &&
+            mx < BeginningWindow + WindowWidth &&
+            my >= ScreenHeight - WindowHeight &&
+            my < ScreenHeight);
+}
+
+
+static void HandleFocus(void)
+{
+    BOOL over;
+
+    if (ScreenResetInProgress || !Window_Open || MenuWindow_Open)
+        return;
+
+    over = MouseOverToolbar();
+
+    /* Debounce: only act when the mouse-over state is stable for two
+       consecutive timer ticks, to avoid flapping activation when the
+       pointer crosses the toolbar border. */
+    if (over == FocusOver)
+        FocusStableTicks++;
+    else
+    {
+        FocusOver = over;
+        FocusStableTicks = 0;
+    }
+
+    if (FocusStableTicks < 2)
+        return;
+
+    if (over)
+    {
+        if (IntuitionBase->ActiveWindow != MainWindow)
+        {
+            if (PrevActiveWindow == NULL)
+                PrevActiveWindow = IntuitionBase->ActiveWindow;
+            ActivateWindow(MainWindow);
+        }
+    }
+    else if (PrevActiveWindow != NULL)
+    {
+        ActivateWindow(PrevActiveWindow);
+        PrevActiveWindow = NULL;
+    }
+}
+
+
+static void ParseAlign(STRPTR str)
+{
+    if (str)
+    {
+        if (stricmp(str, "LEFT") == 0)
+            Align = 1;
+        else if (stricmp(str, "RIGHT") == 0)
+            Align = 2;
+        else
+            Align = 0;
+    }
+}
+
+
+static void ComputeWindowPosition(void)
+{
+    if (Align == 1)                      /* LEFT */
+    {
+        BeginningWindow = 0;
+        EndingWindow = WindowWidth;
+    }
+    else if (Align == 2)                 /* RIGHT */
+    {
+        BeginningWindow = ScreenWidth - WindowWidth;
+        EndingWindow = ScreenWidth;
+    }
+    else                                 /* CENTER (default) */
+    {
+        BeginningWindow = ScreenWidth / 2 - WindowWidth / 2;
+        EndingWindow = ScreenWidth / 2 + WindowWidth / 2;
+    }
+}
+
+
+static void RefreshBackground(void)
+{
+    if(ScreenResetInProgress)
+        return;
+
+    CloseMainWindow();
+
+    /* Let the layers/Wanderer repaint the revealed wallpaper before we
+       recapture it, otherwise we would just grab the old cached pixels. */
+    Delay(2);
+
+    if(OpenMainWindow() == FALSE)
+    {
+        BiB_Exit = TRUE;
+    }
 }
 
 

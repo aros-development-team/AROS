@@ -29,6 +29,7 @@
 #include "netpeditor.h"
 #include "prefsdata.h"
 #include "protocols.h"
+#include "popinterface.h"
 
 #include <proto/alib.h>
 #include <utility/hooks.h>
@@ -42,6 +43,7 @@ static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
 static CONST_STRPTR ServiceTypeCycle[] = { NULL, NULL };
+static CONST_STRPTR TunnelTypeCycle[] = { "6in4", NULL };
 static const TEXT max_ip_str[] = "255.255.255.255 ";
 
 /* -----------------------------------------------------------------------
@@ -95,7 +97,7 @@ struct NetPEditor_DATA
             *netped_hostString,
             *netped_domainString,
             *netped_Autostart,
-            *netped_addButton,
+            *netped_addInterface,
             *netped_editButton,
             *netped_removeButton,
             *netped_inputGroup,
@@ -128,6 +130,20 @@ struct NetPEditor_DATA
             *netped_protoEditButton,
             *netped_applyButton,
             *netped_closeButton;
+
+    // tunnel window
+    Object  *netped_tunnelWindow,
+            *netped_tunTypeCycle,
+            *netped_tunNameString,
+            *netped_tunRemoteString,
+            *netped_tunLocalString,
+            *netped_tunTTLString,
+            *netped_tunIP6String,
+            *netped_tunPrefixString,
+            *netped_tunGate6String,
+            *netped_tunUpState,
+            *netped_tunApplyButton,
+            *netped_tunCloseButton;
 
     /* Protocol address data (authoritative while the interface window is open) */
     struct ProtocolAddress netped_protoAddrs[2]; /* [0]=IPv4  [1]=IPv6 */
@@ -181,6 +197,11 @@ AROS_UFHA(struct Interface *, entry, A1))
     if ((new = AllocPooled(pool, sizeof(*new))))
     {
         *new = *entry;
+        /* The struct copy above duplicated the list header, whose nodes still
+         * point at the original interface's storage.  Give this copy its own
+         * independent set of protocol-address nodes. */
+        NEWLIST(&new->protoAddrs);
+        ProtoAddr_CopyList(&new->protoAddrs, &entry->protoAddrs);
     }
     return new;
 
@@ -194,6 +215,7 @@ AROS_UFHA(struct Interface *, entry, A1))
 {
     AROS_USERFUNC_INIT
 
+    ProtoAddr_FreeList(&entry->protoAddrs);
     FreePooled(pool, entry, sizeof(struct Interface));
 
     AROS_USERFUNC_EXIT
@@ -208,24 +230,10 @@ AROS_UFHA(struct Interface *, entry, A1))
     if (entry)
     {
         static char namebuffer[NAMEBUFLEN + 32]; /* room for \33O[ptr] prefix */
-        static char unitbuffer[20];
-        static char addrbuffer[12 + IPBUFLEN + 2 + IP6BUFLEN + 1];
-        CONST_STRPTR ip4, ip6;
-
-        switch (entry->ipMode)
-        {
-            case IP_MODE_DHCP:   ip4 = _(MSG_IP_MODE_DHCP);  break;
-            case IP_MODE_AUTO:   ip4 = _(MSG_IP_MODE_AUTO);  break;
-            default:             ip4 = entry->IP;             break;
-        }
-        switch (entry->ip6Mode)
-        {
-            case IP_MODE_DHCP:   ip6 = _(MSG_IP_MODE_DHCP);  break;
-            case IP_MODE_AUTO:   ip6 = _(MSG_IP6_MODE_AUTO); break;
-            default:             ip6 = entry->ip6[0] ? entry->ip6 : NULL; break;
-        }
-
-        sprintf(unitbuffer, "%d", (int)entry->unit);
+        static char addrbuffer[256];
+        static char devbuffer[NAMEBUFLEN + IPBUFLEN + 8];
+        struct Node *n;
+        LONG apos = 0;
 
         /* Prepend icon to interface name if available */
         if (hook->h_Data)
@@ -235,14 +243,40 @@ AROS_UFHA(struct Interface *, entry, A1))
 
         *array++ = namebuffer;
         *array++ = entry->up ? "*" : "";
-        *array++ = FilePart(entry->device);
-        *array++ = unitbuffer;
-
-        /* Build combined IPv4 / IPv6 address string */
-        if (ip6)
-            sprintf(addrbuffer, "%s (IP4) / %s (IP6)", ip4, ip6);
+        if (entry->isTunnel)
+        {
+            /* A tunnel has no SANA-II device; show it as a 6in4 tunnel to its
+             * remote endpoint. */
+            if (entry->tunnelRemote[0])
+                sprintf(devbuffer, "6in4 \xbb%s", entry->tunnelRemote);
+            else
+                strcpy(devbuffer, "6in4");
+        }
         else
-            sprintf(addrbuffer, "%s (IP4)", ip4);
+        {
+            sprintf(devbuffer, "%s/%d", FilePart(entry->device), (int)entry->unit);
+        }
+        *array++ = devbuffer;
+
+        /* Build the address column generically from the interface's protocol
+         * objects.  The core stays protocol-agnostic: each plugin formats its
+         * own node and supplies its own label. */
+        addrbuffer[0] = '\0';
+        for (n = entry->protoAddrs.lh_Head; n->ln_Succ; n = n->ln_Succ)
+        {
+            struct ProtoHandlerNode *ph = ProtoHandler_ByID(n->ln_Type);
+            char one[IP6BUFLEN + 1];
+
+            if (!ph || !ph->ph_Display)
+                continue;
+
+            ph->ph_Display((struct ProtocolAddress *)n, one, sizeof(one));
+            apos += snprintf(addrbuffer + apos, sizeof(addrbuffer) - apos,
+                             "%s%s (%s)", apos ? " / " : "", one,
+                             ph->ph_Node.ln_Name);
+            if (apos >= (LONG)sizeof(addrbuffer))
+                break;
+        }
         *array = addrbuffer;
     }
     else
@@ -250,7 +284,6 @@ AROS_UFHA(struct Interface *, entry, A1))
         *array++ = (STRPTR)_(MSG_IFNAME);
         *array++ = (STRPTR)_(MSG_UP);
         *array++ = (STRPTR)_(MSG_DEVICE);
-        *array++ = (STRPTR)_(MSG_UNIT);
         *array = (STRPTR)_(MSG_IP);
     }
 
@@ -437,6 +470,84 @@ AROS_UFHA(struct Server *, entry, A1))
     AROS_USERFUNC_EXIT
 }
 
+/* ------------------------------------------------------------------------
+ * Protocol-address working-slot helpers.
+ *
+ * The interface config window edits a small fixed set of working slots (one
+ * per registered plugin, indexed by ProtocolFamily).  These helpers move data
+ * between those slots and an interface's authoritative protoAddrs list without
+ * the core needing to understand any protocol's fields.
+ * ---------------------------------------------------------------------- */
+
+/* TRUE if the slot carries a configuration worth writing as a node.  An empty
+ * manual slot means "this protocol is not configured on the interface" - which
+ * is how an IPv4-only (or IPv6-only) interface is expressed: the absent
+ * protocol simply has no node. */
+static BOOL proto_present(struct ProtocolAddress *pa)
+{
+    return pa->pa_mode == IP_MODE_DHCP ||
+           pa->pa_mode == IP_MODE_AUTO ||
+           pa->pa_addr[0] != '\0';
+}
+
+/* Load a working slot from the interface's node for this plugin id (or leave
+ * it as an empty manual slot if the interface has no such node). */
+static void proto_slot_load(struct ProtocolAddress *slot,
+                            struct Interface *iface, UBYTE id,
+                            enum ProtocolFamily fam)
+{
+    struct ProtocolAddress *pa = ProtoAddr_Find(&iface->protoAddrs, id);
+
+    memset(slot, 0, sizeof(*slot));
+    slot->pa_node.ln_Type = id;
+    slot->pa_family       = fam;
+    slot->pa_mode         = IP_MODE_MANUAL;
+
+    if (pa)
+    {
+        slot->pa_mode   = pa->pa_mode;
+        slot->pa_prefix = pa->pa_prefix;
+        strlcpy(slot->pa_addr, pa->pa_addr, sizeof(slot->pa_addr));
+        strlcpy(slot->pa_mask, pa->pa_mask, sizeof(slot->pa_mask));
+        strlcpy(slot->pa_gate, pa->pa_gate, sizeof(slot->pa_gate));
+    }
+}
+
+/* Copy one working slot's fields into a list node. */
+static void proto_node_store(struct ProtocolAddress *pa,
+                             struct ProtocolAddress *slot)
+{
+    pa->pa_family = slot->pa_family;
+    pa->pa_mode   = slot->pa_mode;
+    pa->pa_prefix = slot->pa_prefix;
+    strlcpy(pa->pa_addr, slot->pa_addr, sizeof(pa->pa_addr));
+    strlcpy(pa->pa_mask, slot->pa_mask, sizeof(pa->pa_mask));
+    strlcpy(pa->pa_gate, slot->pa_gate, sizeof(pa->pa_gate));
+}
+
+/* (Re)build iface->protoAddrs as a fresh, independent list holding a node for
+ * each configured working slot.  The list header is reset rather than freed -
+ * the caller holds a shallow struct copy whose header still aliases the source
+ * interface's nodes, which must not be touched.  The freshly built nodes belong
+ * to the caller and must be freed with ProtoAddr_FreeList after use. */
+static void proto_build_list(struct Interface *iface,
+                             struct ProtocolAddress *slots, ULONG count)
+{
+    ULONG f;
+
+    NEWLIST(&iface->protoAddrs);
+    for (f = 0; f < count; f++)
+    {
+        struct ProtocolAddress *pa;
+
+        if (!proto_present(&slots[f]))
+            continue;
+        pa = ProtoAddr_FindOrAdd(&iface->protoAddrs, slots[f].pa_node.ln_Type);
+        if (pa)
+            proto_node_store(pa, &slots[f]);
+    }
+}
+
 BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
 {
     STRPTR str = NULL;
@@ -455,16 +566,19 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
         );
         SetName(iface, ifaceentry->name);
         SetUp(iface, ifaceentry->up);
-        SetIPMode(iface, ifaceentry->ipMode);
         SetDevice(iface, ifaceentry->device);
         SetUnit(iface, ifaceentry->unit);
-        SetIP(iface, ifaceentry->IP);
-        SetMask(iface, ifaceentry->mask);
-        SetGate(iface, ifaceentry->gate);
-        SetIP6Mode(iface, ifaceentry->ip6Mode);
-        SetIP6(iface, ifaceentry->ip6);
-        SetIP6Prefix(iface, ifaceentry->ip6prefix);
-        SetGate6(iface, ifaceentry->gate6);
+        /* Deep-copy the interface's protocol objects into the persistent global.
+         * The core stays protocol-agnostic - it just clones whatever nodes the
+         * plugins put on the list. */
+        ProtoAddr_FreeList(&iface->protoAddrs);
+        NEWLIST(&iface->protoAddrs);
+        ProtoAddr_CopyList(&iface->protoAddrs, &ifaceentry->protoAddrs);
+        /* 6in4 tunnel fields (omitted above would be lost on save) */
+        SetIsTunnel(iface, ifaceentry->isTunnel);
+        SetTunnelRemote(iface, ifaceentry->tunnelRemote);
+        SetTunnelLocal(iface, ifaceentry->tunnelLocal);
+        SetTunnelTTL(iface, ifaceentry->tunnelTTL);
     }
     SetInterfaceCount(entries);
 
@@ -567,24 +681,10 @@ BOOL NetworkPrefs2Gadgets
     for(i = 0; i < entries; i++)
     {
         struct Interface *iface = GetInterface(i);
-        struct Interface ifaceentry;
-
-        SetInterface
-        (
-            &ifaceentry,
-            GetName(iface),
-            GetIPMode(iface),
-            GetIP(iface),
-            GetMask(iface),
-            GetGate(iface),
-            GetIP6Mode(iface),
-            GetIP6(iface),
-            GetIP6Prefix(iface),
-            GetGate6(iface),
-            GetDevice(iface),
-            GetUnit(iface),
-            GetUp(iface)
-        );
+        /* Full struct copy so ALL fields (including the 6in4 tunnel fields)
+         * carry over - a field-by-field SetInterface() would leave the tunnel
+         * members uninitialised (stack garbage) and mis-render the row. */
+        struct Interface ifaceentry = *iface;
 
         DoMethod
         (
@@ -813,10 +913,18 @@ static void LoadNetModules(struct NetPrefsBase *NetPrefsBase)
     UnLock(dirLock);
 }
 
-/*** Methods ****************************************************************/
-Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
+/* Create the registration library, load the protocol plugins and run their
+ * startups.  This MUST happen before the config is parsed: the plugins are what
+ * claim and parse the per-protocol tokens (IP=/IP6=/...) at load time, and what
+ * write them back at save time.  It is also needed in headless SAVE/USE mode,
+ * where no editor window (and therefore no OM_NEW) is ever created.  Idempotent:
+ * a base already installed (e.g. by main() before InitNetworkPrefs) is reused. */
+struct NetPrefsBase *NetPrefs_Bootstrap(void)
 {
-    struct NetPrefsBase *NetPrefsBase = NULL;
+    struct NetPrefsBase *NetPrefsBase = NetPrefs_GetBase();
+
+    if (NetPrefsBase)
+        return NetPrefsBase;
 
     /* Initialise the registration library and PAWinClass */
     netprefs_initlib(&NetPrefsBase);
@@ -848,10 +956,21 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         }
     }
 
+    return NetPrefsBase;
+}
+
+/*** Methods ****************************************************************/
+Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
+{
+    struct NetPrefsBase *NetPrefsBase = NetPrefs_Bootstrap();
+
+    if (!NetPrefsBase)
+        return NULL;
+
     // main window
     Object  *DNSString[2], *hostString, *domainString,
             *autostart, *interfaceList, *DHCPState,
-            *addButton, *editButton, *removeButton, *inputGroup,
+            *addInterface, *editButton, *removeButton, *inputGroup,
             *hostList, *hostAddButton, *hostEditButton, *hostRemoveButton,
             *networkList, *netAddButton, *netEditButton, *netRemoveButton,
             *serverList, *serverAddButton, *serverEditButton, *serverRemoveButton,
@@ -862,6 +981,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object  *deviceString, *protoAddrList, *protoEditButton,
             *unitString, *nameString, *upState,
             *ifWindow, *applyButton, *closeButton;
+
+    // tunnel window
+    Object  *tunnelWindow, *tunTypeCycle, *tunNameString, *tunRemoteString,
+            *tunLocalString, *tunTTLString, *tunIP6String, *tunPrefixString,
+            *tunGate6String, *tunUpState, *tunApplyButton, *tunCloseButton;
 
     // host window
     Object  *hostNamesString, *hostAddressString, *hostWindow,
@@ -928,7 +1052,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Listview_List, (IPTR)(interfaceList = (Object *)ListObject,
                             ReadListFrame,
                             MUIA_List_Title, TRUE,
-                            MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,BAR,",
+                            MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,",
                             MUIA_List_ConstructHook, (IPTR)&netpeditor_constructHook,
                             MUIA_List_DestructHook, (IPTR)&netpeditor_destructHook,
                             MUIA_List_DisplayHook, (IPTR)&netpeditor_displayHook,
@@ -936,7 +1060,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     End,
                     Child, (IPTR)(VGroup,
                         MUIA_HorizWeight, 0,
-                        Child, (IPTR)(addButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                        Child, (IPTR)(addInterface = (Object *)PopInterfaceObject,
+                        End),
                         Child, (IPTR)(editButton = SimpleButton(_(MSG_BUTTON_EDIT))),
                         Child, (IPTR)(removeButton = SimpleButton(_(MSG_BUTTON_REMOVE))),
                         Child, (IPTR)HVSpace,
@@ -1231,6 +1356,106 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         End,
     End;
 
+    /* The outer/inner frame and endpoint labels name the carried protocols,
+       which depend on the tunnel type (6in4 carries IPv6 over IPv4). */
+    static char tunOuterFrame[64], tunInnerFrame[64],
+                tunRemoteLabel[64], tunLocalLabel[64];
+    CONST_STRPTR outerProto = _(MSG_PROTO_IPV4), innerProto = _(MSG_PROTO_IPV6);
+    snprintf(tunOuterFrame,  sizeof(tunOuterFrame),  _(MSG_TUN_OUTER),  outerProto);
+    snprintf(tunInnerFrame,  sizeof(tunInnerFrame),  _(MSG_TUN_INNER),  innerProto);
+    snprintf(tunRemoteLabel, sizeof(tunRemoteLabel), _(MSG_TUN_REMOTE), outerProto);
+    snprintf(tunLocalLabel,  sizeof(tunLocalLabel),  _(MSG_TUN_LOCAL),  outerProto);
+
+    tunnelWindow = (Object *)WindowObject,
+        MUIA_Window_Title, __(MSG_TUNWINDOW_TITLE),
+        MUIA_Window_ID, MAKE_ID('T', 'U', 'N', 'W'),
+        MUIA_Window_CloseGadget, FALSE,
+        WindowContents, (IPTR)VGroup,
+            GroupFrame,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:interface",
+                    MUIA_FixWidth, 52,
+                    MUIA_FixHeight, 48,
+                End,
+                Child, (IPTR)HVSpace,
+            End,
+            Child, (IPTR)ColGroup(2),
+                Child, (IPTR)Label2(_(MSG_TUN_TYPE)),
+                Child, (IPTR)(tunTypeCycle = (Object *)CycleObject,
+                    MUIA_CycleChain, 1,
+                    MUIA_Cycle_Entries, (IPTR)TunnelTypeCycle,
+                End),
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrameT((IPTR)tunOuterFrame),
+                Child, (IPTR)Label2(_(MSG_IFNAME)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(tunNameString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)NAMECHARS,
+                        MUIA_CycleChain, 1,
+                    End),
+                    Child, (IPTR)(tunUpState = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)Label2(_(MSG_UP)),
+                    Child, (IPTR)HVSpace,
+                End,
+                Child, (IPTR)Label2(tunRemoteLabel),
+                Child, (IPTR)(tunRemoteString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IPCHARS,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(tunLocalLabel),
+                Child, (IPTR)(tunLocalString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IPCHARS,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(_(MSG_TUN_TTL)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(tunTTLString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)"0123456789",
+                        MUIA_CycleChain, 1,
+                        MUIA_FixWidthTxt, (IPTR)"000",
+                    End),
+                    Child, (IPTR)HVSpace,
+                End,
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrameT((IPTR)tunInnerFrame),
+                Child, (IPTR)Label2(_(MSG_IP6)),
+                Child, (IPTR)(tunIP6String = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IP6CHARS,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(_(MSG_IP6_PREFIX)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(tunPrefixString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)"0123456789",
+                        MUIA_CycleChain, 1,
+                        MUIA_FixWidthTxt, (IPTR)"000",
+                    End),
+                    Child, (IPTR)HVSpace,
+                End,
+                Child, (IPTR)Label2(_(MSG_GATE6)),
+                Child, (IPTR)(tunGate6String = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IP6CHARS,
+                    MUIA_CycleChain, 1,
+                End),
+            End,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(tunApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
+                Child, (IPTR)(tunCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
+            End,
+        End,
+    End;
+
     hostWindow = (Object *)WindowObject,
         MUIA_Window_Title, __(MSG_HOST_NAMES),
         MUIA_Window_ID, MAKE_ID('H', 'O', 'S', 'T'),
@@ -1390,7 +1615,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         End,
     End;
 
-    if (self != NULL && ifWindow != NULL && hostWindow != NULL
+    if (self != NULL && ifWindow != NULL && tunnelWindow != NULL
+        && hostWindow != NULL
         && netWindow != NULL && serverWindow != NULL
         && protoCount > 0)
     {
@@ -1406,7 +1632,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_Autostart = autostart;
         data->netped_interfaceList = interfaceList;
         data->netped_inputGroup = inputGroup;
-        data->netped_addButton = addButton;
+        data->netped_addInterface = addInterface;
         data->netped_editButton = editButton;
         data->netped_removeButton = removeButton;
         data->netped_hostList = hostList;
@@ -1442,6 +1668,20 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_protoEditButton = protoEditButton;
         data->netped_applyButton   = applyButton;
         data->netped_closeButton   = closeButton;
+
+        // tunnel window
+        data->netped_tunnelWindow    = tunnelWindow;
+        data->netped_tunTypeCycle    = tunTypeCycle;
+        data->netped_tunNameString   = tunNameString;
+        data->netped_tunRemoteString = tunRemoteString;
+        data->netped_tunLocalString  = tunLocalString;
+        data->netped_tunTTLString    = tunTTLString;
+        data->netped_tunIP6String    = tunIP6String;
+        data->netped_tunPrefixString = tunPrefixString;
+        data->netped_tunGate6String  = tunGate6String;
+        data->netped_tunUpState      = tunUpState;
+        data->netped_tunApplyButton  = tunApplyButton;
+        data->netped_tunCloseButton  = tunCloseButton;
 
         // Protocol address sub-windows (from loaded modules)
         data->netped_NetPrefsBase = NetPrefsBase;
@@ -1539,13 +1779,30 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         DoMethod
         (
-            addButton, MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR)self, 2, MUIM_NetPEditor_EditEntry, TRUE
+            addInterface, MUIM_Notify, MUIA_PopInterface_Chosen, MUIV_EveryTime,
+            (IPTR)self, 2, MUIM_NetPEditor_AddConnection, MUIV_TriggerValue
         );
         DoMethod
         (
             editButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)self, 2, MUIM_NetPEditor_EditEntry, FALSE
+        );
+
+        // tunnel window
+        DoMethod
+        (
+            tunUpState, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+        (
+            tunApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyTunnelEntry
+        );
+        DoMethod
+        (
+            tunCloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)tunnelWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
         DoMethod
         (
@@ -1768,6 +2025,7 @@ IPTR NetPEditor__MUIM_Setup
     netpeditor_displayHook.h_Data = netListIconImg;
 
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_tunnelWindow);
     for (ULONG pi = 0; pi < 2; pi++)
     {
         if (data->netped_protoWindows[pi])
@@ -1788,6 +2046,7 @@ IPTR NetPEditor__MUIM_Cleanup
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
     DoMethod(_app(self), OM_REMMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_tunnelWindow);
     for (ULONG pi = 0; pi < 2; pi++)
     {
         if (data->netped_protoWindows[pi])
@@ -2037,11 +2296,12 @@ IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
         SET(data->netped_removeButton, MUIA_Disabled, FALSE);
         SET(data->netped_editButton, MUIA_Disabled, FALSE);
 
-        /* Populate per-protocol address data from the interface struct */
-        ProtoAddr_FromInterface(&data->netped_protoAddrs[PROTO_FAMILY_IPV4],
-                                iface, PROTO_FAMILY_IPV4);
-        ProtoAddr_FromInterface(&data->netped_protoAddrs[PROTO_FAMILY_IPV6],
-                                iface, PROTO_FAMILY_IPV6);
+        /* Load the per-protocol working slots from the interface's nodes.
+         * An unconfigured protocol yields an empty manual slot. */
+        proto_slot_load(&data->netped_protoAddrs[PROTO_FAMILY_IPV4], iface,
+                        (UBYTE)(PROTO_FAMILY_IPV4 + 1), PROTO_FAMILY_IPV4);
+        proto_slot_load(&data->netped_protoAddrs[PROTO_FAMILY_IPV6], iface,
+                        (UBYTE)(PROTO_FAMILY_IPV6 + 1), PROTO_FAMILY_IPV6);
 
         /* Rebuild the protocol address list */
         SET(data->netped_protoAddrList, MUIA_List_Quiet, TRUE);
@@ -2092,12 +2352,50 @@ static void NetPEditor_AddEntry(Class *CLASS, Object *self, STRPTR devicename)
         );
     }
 
-    /* Warn about DHCP limitations with more than one interface */
-    if (entries == 1)
-        DisplayErrorMessage(self, MULTIPLE_IFACES);
-
     SET(data->netped_interfaceList, MUIA_List_Active, entries + 1);
 }
+/* Create a new 6in4 tunnel entry and make it current. */
+static void NetPEditor_AddTunnel(Class *CLASS, Object *self)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG entries = XGET(data->netped_interfaceList, MUIA_List_Entries);
+    if (entries < MAXINTERFACES)
+    {
+        struct Interface iface;
+        InitTunnel(&iface);
+        iface.name[strlen(iface.name) - 1] += entries;  // sit0 -> sit1 ...
+        DoMethod
+        (
+            data->netped_interfaceList,
+            MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
+        );
+    }
+    SET(data->netped_interfaceList, MUIA_List_Active, entries + 1);
+}
+
+/* Populate the tunnel window gadgets from an interface. */
+static void NetPEditor_ShowTunnel(Class *CLASS, Object *self, struct Interface *iface)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    SET(data->netped_tunNameString,   MUIA_String_Contents, GetName(iface));
+    SET(data->netped_tunUpState,      MUIA_Selected,        GetUp(iface) ? 1 : 0);
+    SET(data->netped_tunRemoteString, MUIA_String_Contents, GetTunnelRemote(iface));
+    SET(data->netped_tunLocalString,  MUIA_String_Contents, GetTunnelLocal(iface));
+    SET(data->netped_tunTTLString,    MUIA_String_Integer,  GetTunnelTTL(iface));
+
+    /* Inner IPv6 endpoint is just this interface's IPv6 protocol object. */
+    struct ProtocolAddress *pa =
+        ProtoAddr_Find(&iface->protoAddrs, (UBYTE)(PROTO_FAMILY_IPV6 + 1));
+    SET(data->netped_tunIP6String,    MUIA_String_Contents,
+        (IPTR)(pa ? pa->pa_addr : (STRPTR)""));
+    SET(data->netped_tunPrefixString, MUIA_String_Integer,
+        pa ? pa->pa_prefix : 0);
+    SET(data->netped_tunGate6String,  MUIA_String_Contents,
+        (IPTR)(pa ? pa->pa_gate : (STRPTR)""));
+}
+
 IPTR NetPEditor__MUIM_NetPEditor_EditEntry
 (
     Class *CLASS, Object *self,
@@ -2114,7 +2412,130 @@ IPTR NetPEditor__MUIM_NetPEditor_EditEntry
     LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
     if (active != MUIV_List_Active_Off)
     {
-        SET(data->netped_ifWindow, MUIA_Window_Open, TRUE);
+        struct Interface *iface = NULL;
+        DoMethod(data->netped_interfaceList, MUIM_List_GetEntry, active, &iface);
+        if (iface && GetIsTunnel(iface))
+        {
+            /* Editing a tunnel row -> use the tunnel window instead */
+            NetPEditor_ShowTunnel(CLASS, self, iface);
+            SET(data->netped_tunnelWindow, MUIA_Window_Open, TRUE);
+        }
+        else
+        {
+            SET(data->netped_ifWindow, MUIA_Window_Open, TRUE);
+        }
+    }
+
+    return 0;
+}
+
+/*
+    Add a new connection of the type chosen in the PopInterface gadget
+    (MUIV_PopInterface_DeviceInterface or MUIV_PopInterface_TunnelInterface).
+*/
+IPTR NetPEditor__MUIM_NetPEditor_AddConnection
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_AddConnection *message
+)
+{
+    if (message->type == MUIV_PopInterface_TunnelInterface)
+        DoMethod(self, MUIM_NetPEditor_EditTunnelEntry, TRUE);
+    else if (message->type == MUIV_PopInterface_DeviceInterface)
+        DoMethod(self, MUIM_NetPEditor_EditEntry, TRUE);
+
+    return 0;
+}
+
+/*
+    Open the tunnel window for the active entry, optionally creating one first.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_EditTunnelEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_EditTunnelEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (message->addEntry)
+        NetPEditor_AddTunnel(CLASS, self);
+
+    LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Interface *iface = NULL;
+        DoMethod(data->netped_interfaceList, MUIM_List_GetEntry, active, &iface);
+        if (iface)
+        {
+            NetPEditor_ShowTunnel(CLASS, self, iface);
+            SET(data->netped_tunnelWindow, MUIA_Window_Open, TRUE);
+        }
+    }
+
+    return 0;
+}
+
+/*
+    Store data from the tunnel window back into the current list entry.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyTunnelEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Interface *entry = NULL;
+        struct Interface iface;
+
+        DoMethod(data->netped_interfaceList, MUIM_List_GetEntry, active, &entry);
+        if (!entry) return 0;
+        iface = *entry;                 /* full copy - keep fields not edited here */
+
+        SetIsTunnel(&iface, TRUE);
+        iface.device[0] = '\0';         /* a tunnel has no SANA-II device */
+        SetName(&iface,
+            (STRPTR)XGET(data->netped_tunNameString, MUIA_String_Contents));
+        SetUp(&iface,
+            XGET(data->netped_tunUpState, MUIA_Selected));
+        SetTunnelRemote(&iface,
+            (STRPTR)XGET(data->netped_tunRemoteString, MUIA_String_Contents));
+        SetTunnelLocal(&iface,
+            (STRPTR)XGET(data->netped_tunLocalString, MUIA_String_Contents));
+        SetTunnelTTL(&iface,
+            XGET(data->netped_tunTTLString, MUIA_String_Integer));
+
+        /* Inner IPv6 endpoint (always manual for a tunnel) becomes the sole
+         * protocol object on the interface, built into a fresh independent
+         * list.  The core never learns this is "IPv6" - it is just a node. */
+        struct ProtocolAddress slot;
+        memset(&slot, 0, sizeof(slot));
+        slot.pa_node.ln_Type = (UBYTE)(PROTO_FAMILY_IPV6 + 1);
+        slot.pa_family = PROTO_FAMILY_IPV6;
+        slot.pa_mode   = IP_MODE_MANUAL;
+        slot.pa_prefix = XGET(data->netped_tunPrefixString, MUIA_String_Integer);
+        strlcpy(slot.pa_addr,
+                (STRPTR)XGET(data->netped_tunIP6String, MUIA_String_Contents),
+                sizeof(slot.pa_addr));
+        strlcpy(slot.pa_gate,
+                (STRPTR)XGET(data->netped_tunGate6String, MUIA_String_Contents),
+                sizeof(slot.pa_gate));
+
+        proto_build_list(&iface, &slot, 1);
+
+        DoMethod(data->netped_interfaceList, MUIM_List_Remove, active);
+        DoMethod(data->netped_interfaceList, MUIM_List_InsertSingle, &iface, active);
+        SET(data->netped_interfaceList, MUIA_List_Active, active);
+        SET(self, MUIA_PrefsEditor_Changed, TRUE);
+
+        /* proto_build_list gave iface its own nodes; the list InsertSingle
+         * deep-copied them, so release our transient copy. */
+        ProtoAddr_FreeList(&iface.protoAddrs);
     }
 
     return 0;
@@ -2134,11 +2555,16 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
     LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
     if (active != MUIV_List_Active_Off)
     {
+        struct Interface *entry = NULL;
         struct Interface iface;
 
-        /* Start from the current list entry so device/name/up are preserved */
+        /* Start from a full copy of the current list entry so fields not edited
+         * in this window (e.g. the 6in4 tunnel members) are preserved rather
+         * than left as stack garbage. */
         DoMethod(data->netped_interfaceList,
-                 MUIM_List_GetEntry, active, &iface);
+                 MUIM_List_GetEntry, active, &entry);
+        if (!entry) return 0;
+        iface = *entry;
 
         /* Overwrite with the current gadget values */
         SetName(&iface,
@@ -2150,15 +2576,22 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
         SetUp(&iface,
             XGET(data->netped_upState, MUIA_Selected));
 
-        /* Write the protocol address configuration from protoAddrs[] */
-        ProtoAddr_ToInterface(&iface,
-                              &data->netped_protoAddrs[PROTO_FAMILY_IPV4],
-                              &data->netped_protoAddrs[PROTO_FAMILY_IPV6]);
+        /* Rebuild the interface's protocol objects from the working slots.
+         * Only configured slots produce a node, so an interface left with just
+         * an IPv4 (or just an IPv6) address carries exactly that - no spurious
+         * empty protocol is written. */
+        proto_build_list(&iface, data->netped_protoAddrs,
+                         sizeof(data->netped_protoAddrs) /
+                         sizeof(data->netped_protoAddrs[0]));
 
         DoMethod(data->netped_interfaceList, MUIM_List_Remove, active);
         DoMethod(data->netped_interfaceList, MUIM_List_InsertSingle, &iface, active);
         SET(data->netped_interfaceList, MUIA_List_Active, active);
         SET(self, MUIA_PrefsEditor_Changed, TRUE);
+
+        /* Release the transient nodes proto_build_list created (the list
+         * InsertSingle above deep-copied them into the stored entry). */
+        ProtoAddr_FreeList(&iface.protoAddrs);
     }
 
     return 0;
@@ -2505,7 +2938,7 @@ IPTR NetPEditor__MUIM_NetPEditor_AddTetheringEntry
     return 0;
 }
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_23
+ZUNE_CUSTOMCLASS_26
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                               struct opSet *,
@@ -2530,5 +2963,8 @@ ZUNE_CUSTOMCLASS_23
     MUIM_NetPEditor_ApplyServerEntry,     Msg,
     MUIM_NetPEditor_AddTetheringEntry,    Msg,
     MUIM_NetPEditor_EditProtoEntry,       Msg,
-    MUIM_NetPEditor_ApplyProtoEntry,      struct MUIP_NetPEditor_ApplyProtoEntry *
+    MUIM_NetPEditor_ApplyProtoEntry,      struct MUIP_NetPEditor_ApplyProtoEntry *,
+    MUIM_NetPEditor_AddConnection,        struct MUIP_NetPEditor_AddConnection *,
+    MUIM_NetPEditor_EditTunnelEntry,      struct MUIP_NetPEditor_EditTunnelEntry *,
+    MUIM_NetPEditor_ApplyTunnelEntry,     Msg
 );

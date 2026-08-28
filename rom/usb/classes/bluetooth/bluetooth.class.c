@@ -10,6 +10,9 @@
 
 #include "bluetooth.class.h"
 
+#include <libraries/bluetooth.h>
+#include <proto/bluetooth.h>
+
 /* /// "Lib Stuff" */
 static const STRPTR libname = MOD_NAME_STRING;
 
@@ -129,6 +132,50 @@ ADD2EXPUNGELIB(libExpunge, 0)
  * * Library functions                                                   *
  * ***********************************************************************
  */
+
+/* /// "nStartStack()" */
+/* Registers the unit with bluetooth.library, the way pcixhci.device units are
+   registered with poseidon.library. */
+void nStartStack(struct NepClassBT *ncp)
+{
+    struct Library *BluetoothBase;
+
+    if(ncp->ncp_BTHardware)
+    {
+        return;
+    }
+    if((BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+    {
+        ncp->ncp_BTBase = BluetoothBase;
+        ncp->ncp_BTHardware = btAddHardware(DEVNAME, ncp->ncp_UnitNo);
+        if(ncp->ncp_BTHardware)
+        {
+            btEnumerateHardware(ncp->ncp_BTHardware);
+        } else {
+            CloseLibrary(BluetoothBase);
+            ncp->ncp_BTBase = NULL;
+        }
+    }
+}
+/* \\\ */
+
+/* /// "nStopStack()" */
+void nStopStack(struct NepClassBT *ncp)
+{
+    struct Library *BluetoothBase = ncp->ncp_BTBase;
+
+    if(BluetoothBase && ncp->ncp_BTHardware)
+    {
+        btRemHardware(ncp->ncp_BTHardware);
+        ncp->ncp_BTHardware = NULL;
+    }
+    if(BluetoothBase)
+    {
+        CloseLibrary(BluetoothBase);
+        ncp->ncp_BTBase = NULL;
+    }
+}
+/* \\\ */
 
 /* /// "usbAttemptInterfaceBinding()" */
 struct NepClassBT * usbAttemptInterfaceBinding(struct NepBTBase *nh, struct PsdInterface *pif)
@@ -307,6 +354,10 @@ struct NepClassBT * usbForceInterfaceBinding(struct NepBTBase *nh, struct PsdInt
                                devname, nh->nh_DevBase->np_Library.lib_Node.ln_Name,
                                ncp->ncp_UnitNo);
 
+                if(ncp->ncp_CDC->cdc_StackAuto)
+                {
+                    nStartStack(ncp);
+                }
                 CloseLibrary(ps);
                 return(ncp);
             }
@@ -334,6 +385,7 @@ void usbReleaseInterfaceBinding(struct NepBTBase *nh, struct NepClassBT *ncp)
     KPRINTF(1, ("nepBTReleaseInterfaceBinding(%08lx)\n", ncp));
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
+        nStopStack(ncp);
         Forbid();
         ncp->ncp_ReadySignal = SIGB_SINGLE;
         ncp->ncp_ReadySigTask = FindTask(NULL);

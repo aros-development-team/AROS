@@ -86,7 +86,9 @@ else
 GCC_COMMON_OPTS += --with-dwarf2
 endif
 ifneq (,$(findstring riscv,$(AROS_TARGET_CPU)))
-GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU) --with-abi=$(GCC_DEFAULT_MODE)
+# medany is mandatory for the target libraries: RAM on riscv platforms sits
+# above 2GB, out of reach of medlow's lui-materialised absolute addresses
+GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU) --with-abi=$(GCC_DEFAULT_MODE) --with-cmodel=medany
 endif
 
 GCC_COMMON_OPTS += --with-sysroot=$(AROS_DEVELOPER)

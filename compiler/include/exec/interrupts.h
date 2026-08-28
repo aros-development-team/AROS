@@ -9,11 +9,16 @@
     Lang: english
 */
 
+#include <aros/config.h>
+
 #ifndef EXEC_LISTS_H
 #   include <exec/lists.h>
 #endif
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
+#endif
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
 #endif
 
 /* CPU-dependent struct ExceptionContext */
@@ -59,6 +64,13 @@ struct SoftIntList
 {
     struct List sh_List;
     UWORD       sh_Pad;
+#if defined(__AROSPLATFORM_SMP__)
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t  sh_SpinLock;        /* SMP per-priority softint list lock */
+#else
+    spinlock_t  sh_SpinPad;
+#endif
+#endif
 };
 
 #define SIH_PRIMASK (0xf0)

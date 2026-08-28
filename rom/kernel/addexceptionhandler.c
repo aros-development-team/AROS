@@ -113,7 +113,13 @@ void *krnAddExceptionHandler(UBYTE num, APTR handler,  APTR handlerData, APTR ha
             handle->in_nr = num;
 
             Disable();
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
             ADDHEAD(&KernelBase->kb_Exceptions[num], &handle->in_Node);
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
             Enable();
         }
     }
@@ -131,6 +137,50 @@ int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, vo
     if (!KernelBase || (EXCEPTIONS_COUNT < exception))
         return 0;
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Snapshot the chain under the lock and call the handlers OUTSIDE it.
+     * On x86-64 the syscall vector is dispatched through here
+     * (core_SysCallHandler), and a scheduling syscall ends in
+     * cpu_Dispatch, which never returns to this frame: holding the read
+     * lock across the call leaked one hold per task switch, so the
+     * count could never drain and the next KrnAddIRQHandler (WRITE
+     * acquire on the same lock) spun forever. The walk itself stays
+     * protected against concurrent Add/Rem; a handler torn down between
+     * snapshot and call is the remover's lifetime problem, exactly as
+     * it already was with the lock held across the call.
+     */
+    {
+        struct
+        {
+            exhandler_t h;
+            void *d1, *d2;
+        } snap[8];
+        unsigned int n = 0, i;
+
+        KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_READ);
+        ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
+        {
+            if (in->in_Handler)
+            {
+                if (n < sizeof(snap) / sizeof(snap[0]))
+                {
+                    snap[n].h  = in->in_Handler;
+                    snap[n].d1 = in->in_HandlerData;
+                    snap[n].d2 = in->in_HandlerData2;
+                    n++;
+                }
+                else
+                    bug("[KRN] %s: exception #%u handler chain exceeds snapshot (%u), handler dropped!\n",
+                        __func__, exception, n);
+            }
+        }
+        KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+
+        for (i = 0; i < n; i++)
+            ret |= snap[i].h(ctx, snap[i].d1, snap[i].d2);
+    }
+#else
     ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
     {
         exhandler_t h = in->in_Handler;
@@ -138,6 +188,7 @@ int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, vo
         if (h)
             ret |= h(ctx, in->in_HandlerData, in->in_HandlerData2);
     }
+#endif
 
     return ret;
 }

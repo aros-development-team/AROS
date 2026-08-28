@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 NETPREFS_SRCDIR    := $(SRCDIR)/$(CURDIR)
 NETPREFS_GENINCDIR := $(GENDIR)/$(CURDIR)/include
 
-FILES 	    := main args netpeditor prefsdata locale misc protocols netprefs_library
+FILES 	    := main args netpeditor prefsdata locale misc protocols netprefs_library popinterface
 EXEDIR      := $(AROSDIR)/Prefs
 
 IPV4MODDIR  := Modules/IPv4

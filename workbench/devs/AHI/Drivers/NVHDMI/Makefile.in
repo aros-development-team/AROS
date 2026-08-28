@@ -1,0 +1,14 @@
+#  $Id$
+#
+#  Makefile.in for NVidia HDMI/DP AHI driver
+#
+
+VPATH		= @srcdir@
+srcdir		= @srcdir@
+
+DRIVER		= nvhdmi.audio
+MODEFILE	= NVHDMI
+
+OBJECTS		= driver-init.o main.o hdmi.o accel.o interrupt.o hda_hidd.o
+
+include ../Common/Makefile.common

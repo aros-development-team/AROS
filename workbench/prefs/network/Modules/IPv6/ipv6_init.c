@@ -20,6 +20,8 @@ extern BOOL Net6Win_InitClass(struct MUI_CustomClass *PAWinCl);
 extern void Net6Win_FreeClass(void);
 extern struct MUI_CustomClass *Net6WinClass;
 extern void Net6_WriteTokens(FILE *f, struct ProtocolAddress *pa);
+extern struct Node *Net6_ReadTokens(struct List *protoList, CONST_STRPTR token, UBYTE id);
+extern void Net6_Display(struct ProtocolAddress *pa, STRPTR buf, ULONG buflen);
 
 /* -----------------------------------------------------------------------
  * IPv6Startup — called after all modules are loaded.
@@ -39,7 +41,8 @@ static void IPv6Startup(struct NetPrefsBase *NetPrefsBase)
     {
         IPv6Base->npv6_WinClass = Net6WinClass;
         RegisterProtoHandler("IPv6", PROTO_FAMILY_IPV6,
-                             Net6WinClass, Net6_WriteTokens);
+                             Net6WinClass, Net6_WriteTokens,
+                             Net6_ReadTokens, Net6_Display);
     }
 }
 

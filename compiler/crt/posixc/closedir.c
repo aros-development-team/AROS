@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function closedir().
 */
@@ -62,11 +62,15 @@
         return -1;
     }
 
+    __fcb_lock(desc->fcb);
     if (--desc->fcb->opencount == 0)
     {
         UnLock(desc->fcb->handle);
+        __fcb_unlock(desc->fcb);
         FreeVec(desc->fcb);
     }
+    else
+        __fcb_unlock(desc->fcb);
     __free_fdesc(desc);
     __setfdesc(dir->fd, NULL);
 

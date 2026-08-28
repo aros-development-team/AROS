@@ -38,7 +38,8 @@ static void FNAME_BCMSDC(SDBusInit)(struct sdcard_Bus *bus)
             SDHCI_INT_END_BIT | SDHCI_INT_CRC | SDHCI_INT_TIMEOUT |
             SDHCI_INT_CARD_REMOVE | SDHCI_INT_CARD_INSERT |
             SDHCI_INT_DATA_AVAIL | SDHCI_INT_SPACE_AVAIL |
-            SDHCI_INT_DATA_END | SDHCI_INT_RESPONSE;
+            SDHCI_INT_DATA_END | SDHCI_INT_RESPONSE |
+            SDHCI_INT_ADMA_ERROR;
 
     FNAME_SDCBUS(SetClock)(bus->sdcb_ClockMin, bus);
     FNAME_SDCBUS(SetPowerLevel)(bus->sdcb_Power, FALSE, bus);
@@ -68,6 +69,9 @@ static void FNAME_BCMSDC(SDBusPostIRQInit)(struct sdcard_Bus *bus)
 static void FNAME_BCMSDC(SDSetBusWidth)(UBYTE width, struct sdcard_Bus *bus)
 {
     UBYTE sdcHostCtrl = bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, bus);
+
+    DINIT(bug("[SDCard--] %s: %u-bit bus width\n", __PRETTY_FUNCTION__, width));
+
     if (width == 4)
         sdcHostCtrl |= SDHCI_HCTRL_4BITBUS;
     else
@@ -82,15 +86,16 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
     IPTR                ctrlBase;
     ULONG               ctrlClock, ctrlIRQ;
     BOOL                isEMMC2;
-    unsigned int *MBoxMessage_ = AllocMem(8*4+16, MEMF_PUBLIC | MEMF_CLEAR);
-    unsigned int *MBoxMessage = (unsigned int *)((((IPTR)MBoxMessage_) + 15) & ~15);
+    /* Own our cache lines; see <proto/mbox.h>. */
+    unsigned int *MBoxMessage_ = AllocMem(MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1), MEMF_PUBLIC | MEMF_CLEAR);
+    unsigned int *MBoxMessage = (unsigned int *)((((IPTR)MBoxMessage_) + (MBOX_MSG_ALIGN - 1)) & ~(IPTR)(MBOX_MSG_ALIGN - 1));
 
     DINIT(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
-    isEMMC2 = (__arm_periiobase == BCM2711_PERIIOBASE);
-    if (isEMMC2)
+    isEMMC2 = (__arm_periiobase == BCM2711_PERIIOBASE || __arm_periiobase == BCM2712_PERIIOBASE);
+    if (__arm_periiobase == BCM2711_PERIIOBASE)
     {
         /*
          * The card slot sits on EMMC2, but the legacy window is still wired
@@ -105,7 +110,13 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
         }
     }
 
-    if (isEMMC2)
+    if (__arm_periiobase == BCM2712_PERIIOBASE)
+    {
+        ctrlBase  = BCM2712_EMMC2_BASE;
+        ctrlClock = VCCLOCK_EMMC2;
+        ctrlIRQ   = IRQ_BCM2712_SDHCI;
+    }
+    else if (isEMMC2)
     {
         ctrlBase  = EMMC2_BASE;
         ctrlClock = VCCLOCK_EMMC2;
@@ -126,7 +137,7 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
          */
         D(bug("[SDCard--] %s: card slot is on SDHOST for this SoC\n", __PRETTY_FUNCTION__));
         if (MBoxMessage_)
-            FreeMem(MBoxMessage_, 8*4+16);
+            FreeMem(MBoxMessage_, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
         return TRUE;
     }
 
@@ -204,12 +215,41 @@ bcminit_clock:
         __BCM2708Bus->sdcb_BusIRQ = ctrlIRQ;
 
         __BCM2708Bus->sdcb_ClockMax = AROS_LE2LONG(MBoxMessage[6]);
+
+        /*
+         * GETCLKRATE answers with the rate the clock is running at, and on
+         * BCM2711 the EMMC2 clock is parked until something asks for it, so
+         * the answer is zero and the card never gets clocked. Ask what the
+         * clock can do instead.
+         */
+        if (__BCM2708Bus->sdcb_ClockMax == 0)
+        {
+            MBoxMessage[0] = AROS_LONG2LE(8 * 4);
+            MBoxMessage[1] = AROS_LONG2LE(VCTAG_REQ);
+            MBoxMessage[2] = AROS_LONG2LE(VCTAG_GETMAXCLKRATE);
+            MBoxMessage[3] = AROS_LONG2LE(8);
+            MBoxMessage[4] = AROS_LONG2LE(4);
+            MBoxMessage[5] = AROS_LONG2LE(ctrlClock);
+            MBoxMessage[6] = 0;
+            MBoxMessage[7] = 0;
+
+            MBoxWrite((APTR)VCMB_BASE, VCMB_PROPCHAN, MBoxMessage);
+            if (MBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) == MBoxMessage)
+                __BCM2708Bus->sdcb_ClockMax = AROS_LE2LONG(MBoxMessage[6]);
+
+            if (__BCM2708Bus->sdcb_ClockMax == 0)
+                __BCM2708Bus->sdcb_ClockMax = 200000000;
+
+            DINIT(bug("[SDCard--] %s: clock was parked, max rate %d Hz\n",
+                      __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax));
+        }
         __BCM2708Bus->sdcb_ClockMin = BCM2708SDCLOCK_MIN;
 
         __BCM2708Bus->sdcb_LEDCtrl = (BYTE (*)(int))FNAME_BCMSDCBUS(BCMLEDCtrl);
         __BCM2708Bus->sdcb_IOReadByte = FNAME_BCMSDCBUS(BCMMMIOReadByte);
         __BCM2708Bus->sdcb_IOReadWord = FNAME_BCMSDCBUS(BCMMMIOReadWord);
         __BCM2708Bus->sdcb_IOReadLong = FNAME_BCMSDCBUS(BCMMMIOReadLong);
+        __BCM2708Bus->sdcb_IOReadLongs = FNAME_BCMSDCBUS(BCMMMIOReadLongs);
 
         if (isEMMC2)
         {
@@ -261,9 +301,6 @@ bcminit_clock:
 
             FNAME_SDCBUS(SoftReset)(SDHCI_RESET_ALL, __BCM2708Bus);
 
-            DINIT(bug("[SDCard--] %s: SDHC Max Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax / 1000000));
-            DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMin));
-
             __BCM2708Bus->sdcb_Version = FNAME_BCMSDCBUS(BCMMMIOReadWord)(SDHCI_HOST_VERSION, __BCM2708Bus);
             __BCM2708Bus->sdcb_Capabilities = FNAME_BCMSDCBUS(BCMMMIOReadLong)(SDHCI_CAPABILITIES, __BCM2708Bus);
             __BCM2708Bus->sdcb_Quirks = AB_Quirk_MissingCapabilities|AF_Quirk_AtomicTMAndCMD;
@@ -272,6 +309,39 @@ bcminit_clock:
             DINIT(bug("[SDCard--] %s: SDHCI Host Vers      : %d [SD Host Spec %d]\n", __PRETTY_FUNCTION__, ((__BCM2708Bus->sdcb_Version & 0xFF00) >> 8), (__BCM2708Bus->sdcb_Version & 0xFF) + 1));
             DINIT(bug("[SDCard--] %s: SDHCI Capabilities   : 0x%08x\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_Capabilities));
             DINIT(bug("[SDCard--] %s: SDHCI Voltages       : 0x%08x (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_Power));
+
+            /*
+             * The mailbox reports what the clock could be turned up to, which
+             * is not what the divider divides. The controller knows its own
+             * base clock, so believe that instead: on the BCM2711 the mailbox
+             * says 500MHz while the block actually runs off 100MHz, and using
+             * the wrong one clocks the card five times too slowly.
+             */
+            {
+                ULONG sdcClockBase;
+
+                if ((__BCM2708Bus->sdcb_Version & SDHCI_HVERS_SPEC_MASK) >= 2)
+                    sdcClockBase = (__BCM2708Bus->sdcb_Capabilities & SDHCI_CLOCK_V3_BASE_MASK) >> SDHCI_CLOCK_BASE_SHIFT;
+                else
+                    sdcClockBase = (__BCM2708Bus->sdcb_Capabilities & SDHCI_CLOCK_BASE_MASK) >> SDHCI_CLOCK_BASE_SHIFT;
+
+                if (sdcClockBase)
+                    __BCM2708Bus->sdcb_ClockMax = sdcClockBase * 1000000;
+                else
+                    DINIT(bug("[SDCard--] %s: controller reports no base clock, keeping the mailbox rate\n", __PRETTY_FUNCTION__));
+            }
+
+            DINIT(bug("[SDCard--] %s: %s @ 0x%p: base clock %uMHz, caps 0x%08x, host spec %u%s%s\n",
+                        __PRETTY_FUNCTION__, isEMMC2 ? "EMMC2" : "Arasan", (APTR)ctrlBase,
+                        __BCM2708Bus->sdcb_ClockMax / 1000000, __BCM2708Bus->sdcb_Capabilities,
+                        (__BCM2708Bus->sdcb_Version & 0xFF) + 1,
+                        (__BCM2708Bus->sdcb_Capabilities & SDHCI_CAN_DO_ADMA2) ? ", ADMA2" : "",
+                        (__BCM2708Bus->sdcb_Capabilities & SDHCI_CAN_DO_HISPD) ? ", HISPD" : ""));
+
+            DINIT(bug("[SDCard--] %s: SDHC Base Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax / 1000000));
+            DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMin));
+
+            FNAME_SDCBUS(ADMAAlloc)(__BCM2708Bus);
 
             __BCM2708Bus->sdcb_Private = (IPTR)sdcard_CurrentTime();
 
@@ -287,7 +357,7 @@ bcminit_clock:
 bcminit_fail:
 
     if (MBoxMessage_)
-        FreeMem(MBoxMessage_, 8*4+16);
+        FreeMem(MBoxMessage_, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
 
     return retVal;
 }

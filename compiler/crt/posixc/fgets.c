@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function fgets().
 */
@@ -73,7 +73,9 @@
 
     FLUSHONREADCHECK
 
+    __fcb_lock(fdesc->fcb);
     buffer = FGets (fdesc->fcb->handle, buffer, size);
+    __fcb_unlock(fdesc->fcb);
 
     if (!buffer)
     {

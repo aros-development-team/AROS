@@ -15,6 +15,7 @@
 #include <proto/exec.h>
 
 #include "kernel_intern.h"
+#include "kernel_fb.h"
 
 #include <proto/kernel.h>
 
@@ -34,6 +35,21 @@ AROS_LH1(intptr_t, KrnGetSystemAttr,
 
     case KATTR_AffinityMask:
         return (intptr_t)__arm_arosintern.ARMI_AffinityMask;
+
+    case KATTR_FrameBuffer:
+        return (intptr_t)krn_fb_base();
+
+    case KATTR_FrameBufferWidth:
+        return (intptr_t)krn_fb_width();
+
+    case KATTR_FrameBufferHeight:
+        return (intptr_t)krn_fb_height();
+
+    case KATTR_FrameBufferDepth:
+        return (intptr_t)krn_fb_depth();
+
+    case KATTR_FrameBufferPitch:
+        return (intptr_t)krn_fb_pitch();
 
     default:
         return -1;

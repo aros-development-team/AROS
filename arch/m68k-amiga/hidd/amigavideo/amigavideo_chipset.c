@@ -261,10 +261,13 @@ static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_d
     x = bm->leftedge;
     y = csd->starty + (bm->topedge >> bm->interlace);
 
+    /* A screen positioned above the view top is scrolled, not moved: pin the
+       display window at the top and turn the surplus into a bitplane offset,
+       so the lower part of an oversized bitmap comes into view. */
     yscroll = 0;
-    if (y < 10) {
-        yscroll = y - 10;
-        y = 10;
+    if (y < csd->starty) {
+        yscroll = y - csd->starty;
+        y = csd->starty;
     }
 
     xmaxscroll = 1 << (1 + csd->fmode_bpl);
@@ -898,7 +901,10 @@ VOID setspritevisible(struct amigavideo_staticdata *csd, BOOL visible)
             struct amigabm_data *bm;
             ForeachNode(csd->compositedbms, bm)
             {
-                if (csd->spritey < ((bm->topedge + bm->displayheight) >> bm->interlace))
+                /* A scrolled screen (negative topedge) starts its display band at the top */
+                WORD bmtop = bm->topedge < 0 ? 0 : bm->topedge;
+
+                if (csd->spritey < ((bmtop + bm->displayheight) >> bm->interlace))
                 {
                     setfmode(csd, bm);
                     break;
@@ -923,7 +929,10 @@ VOID new_setspritevisible(struct amigavideo_staticdata *csd, BOOL visible, int s
             struct amigabm_data *bm;
             ForeachNode(csd->compositedbms, bm)
             {
-                if (csd->new_spritey[spritenum] < ((bm->topedge + bm->displayheight) >> bm->interlace))
+                /* A scrolled screen (negative topedge) starts its display band at the top */
+                WORD bmtop = bm->topedge < 0 ? 0 : bm->topedge;
+
+                if (csd->new_spritey[spritenum] < ((bmtop + bm->displayheight) >> bm->interlace))
                 {
                     setfmode(csd, bm);
                     break;
@@ -1691,21 +1700,6 @@ VOID initcustom(struct amigavideo_staticdata *csd)
 
     D(bug("[AmigaVideo] %s()\n", __func__));
 
-#if (1)
-    /* TODO: This shouldnt be done in the gfx driver!
-     * move to somewhere more appropriate */
-
-    /* Reset audio registers to values that help emulation
-     * if some program enables audio DMA without setting period
-     * or length. Very high period emulation is very CPU intensive.
-     */
-    for (i = 0; i < 4; i++) {
-        custom->aud[i].ac_vol = 0;
-        custom->aud[i].ac_per = 100;
-        custom->aud[i].ac_len = 1000;
-    }
-#endif
-
     /* csd->cs_OOPBase was already set up.
      * See amigavideo.conf's 'oopbase_field' config
      */
@@ -1857,6 +1851,8 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     // wait_forever
     COPPEROUT(c, 0x0106, csd->bplcon3)  // Push the display bplcon3 again
     COPPEROUT(c, 0xffff, 0xfffe)
+
+    GfxBase->LOFlist = GfxBase->SHFlist = csd->copper2_backup;
 
     custom->cop1lc = (ULONG)csd->copper1;
     custom->cop2lc = (ULONG)csd->copper2_backup;

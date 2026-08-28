@@ -77,6 +77,12 @@ LONG interact(ShellState *ss)
     BOOL moreLeft = FALSE;
     LONG error = 0;
 
+    /* Executing a script marks the shell as background, so remember how the
+     * shell itself was created - that is what decides whether it goes back to
+     * being interactive once the script is done.
+     */
+    ss->background = cli->cli_Background ? TRUE : FALSE;
+
     setInteractive(cli, ss);
 
     /* pre-allocate input buffer */
@@ -164,7 +170,8 @@ LONG interact(ShellState *ss)
             }
 
             cli->cli_CurrentInput = cli->cli_StandardInput;
-            cli->cli_Background = IsInteractive(cli->cli_CurrentInput) ? DOSFALSE : DOSTRUE;
+            cli->cli_Background = (ss->background ||
+                    !IsInteractive(cli->cli_CurrentInput)) ? DOSTRUE : DOSFALSE;
 
             setInteractive(cli, ss);
         }
@@ -223,6 +230,22 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
 
         if (echo)
             cliEcho(ss, out->buf);
+
+        if (SysBase->ex_DebugFlags & EXECDEBUGF_SHELL)
+        {
+            /* name every command on the debug output, the only
+               output a machine with no display can show */
+            char tmpchr = 0;
+
+            if (out->len > 0)
+            {
+                tmpchr = out->buf[out->len - 1];
+                out->buf[out->len - 1] = 0;
+            }
+            bug("[Shell] %s %s\n", ss->command + 2, out->buf);
+            if (out->len > 0)
+                out->buf[out->len - 1] = tmpchr;
+        }
 
         /* OK, we've got a command. Let's execute it! */
         result = executeLine(ss, out->buf);

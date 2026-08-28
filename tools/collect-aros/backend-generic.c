@@ -83,7 +83,9 @@ void collect_libs(const char *file, setnode **liblist_ptr)
         if (strncmp(secname, "__aros_libreq_", 14) != 0)
             continue;
 
-        if (type == 'A') {
+        /* AROS_LIBREQ emits the version marker as a weak absolute symbol, so
+           nm reports it as 'W'/'V' rather than 'A' - accept both spellings. */
+        if (type == 'A' || type == 'W' || type == 'V') {
             char *cp, *tmp;
 
             cp = strchr(secname + 14, '.');

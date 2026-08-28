@@ -23,8 +23,25 @@
 #define BWFM_MAX_UNITS          1
 #define ETHER_ADDR_LEN          6
 
-/* BWFMRxFrame() *info flag (low byte = SDPCM channel); mirrors bwfm_sdio.h. */
+/* BWFMRxFrame() *info flags (low byte = SDPCM channel); mirrors bwfm_sdio.h. */
 #define BWFM_RX_EVENT           0x100
+#define BWFM_RX_EVENT_LINKUP    0x200
+
+/* Firmware event types we act on; mirrors bwfm_scan.h. */
+#define BWFM_E_LINK             16
+#define BWFM_E_DEAUTH           5
+#define BWFM_E_DEAUTH_IND       6
+#define BWFM_E_DISASSOC         11
+#define BWFM_E_DISASSOC_IND     12
+#define BWFM_E_REASSOC          9
+#define BWFM_E_ROAM             19
+
+/* Key slot algorithms for BWFMSetKey(); mirrors bwfm_sdio.h. */
+#define BWFM_CRYPTO_ALGO_OFF        0
+#define BWFM_CRYPTO_ALGO_WEP1       1
+#define BWFM_CRYPTO_ALGO_TKIP       2
+#define BWFM_CRYPTO_ALGO_WEP128     3
+#define BWFM_CRYPTO_ALGO_AES_CCM    4
 
 /* Per-opener state (one per OpenDevice) */
 struct bwfm_opener
@@ -70,8 +87,10 @@ struct bwfm_unit
     int                 assoc_pending;
     ULONG               assoc_ssidlen;
     ULONG               assoc_passlen;
+    ULONG               assoc_ielen;
     UBYTE               assoc_ssid[33];
     UBYTE               assoc_pass[64];
+    UBYTE               assoc_ie[64];       /* WPA/RSN IE for the assoc request */
 };
 
 struct bwfm_base

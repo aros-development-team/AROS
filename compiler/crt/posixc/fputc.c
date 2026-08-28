@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function fputc().
 */
@@ -53,11 +53,13 @@
         return EOF;
     }
 
+    __fcb_lock(fdesc->fcb);
     if (FPutC(fdesc->fcb->handle, c) == EOF)
     {
         errno = __stdc_ioerr2errno(IoErr());
         c = EOF;
     }
+    __fcb_unlock(fdesc->fcb);
 
     return c;
 } /* fputc */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function unsetenv().
 */
@@ -37,7 +37,9 @@
 
 ******************************************************************************/
 {
+   extern void __posixc_refresh_environ(void);
    DeleteVar(name, GVF_LOCAL_ONLY);
+   __posixc_refresh_environ();
    return 0;
 } /* unsetenv */
 

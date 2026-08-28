@@ -1,6 +1,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- kernel-darwin- : \
+#MM    kernel-hidd-cocoa
+
 #MM- workbench-darwin-$(CPU) : \
 #MM      workbench-hosted \
 #MM      workbench-unix

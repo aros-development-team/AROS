@@ -25,44 +25,49 @@
 
 /*****************************************************************************
 
-            Register an Interrupt Controller in Kernelbase. Assign an ID (in ln_Type)
-            returns -1 on failure.
-            
+            Register an Interrupt Controller in Kernelbase. Assign an ID (in ic_Id)
+            returns KRN_ICINTR_INVALID on failure.
+
 *****************************************************************************/
 
 icintrid_t krnAddInterruptController(struct KernelBase *KernelBase, struct IntrController *intController)
 {
     struct IntrController *regContr;
     icid_t icid = 0;
-    
+
     ForeachNode(&KernelBase->kb_ICList, regContr)
     {
         if (!strcmp(intController->ic_Node.ln_Name, regContr->ic_Node.ln_Name))
         {
             /* Already registered, return its ID */
             regContr->ic_Count++;
-            
-            D(bug("[Kernel] %s: controller id #%d, use count %d\n", __func__, regContr->ic_Node.ln_Type, regContr->ic_Count));
 
-            return (icintrid_t)((regContr->ic_Node.ln_Type << 8) | regContr->ic_Count);
+            D(bug("[Kernel] %s: controller id #%d, use count %d\n", __func__, regContr->ic_Id, regContr->ic_Count));
+
+            return ICINTR_MAKE(regContr->ic_Id, regContr->ic_Count);
         }
     }
     intController->ic_Count = 1;                                                                                  /* first user */
-    intController->ic_Node.ln_Type = KernelBase->kb_ICTypeBase++;
+    intController->ic_Id = KernelBase->kb_ICTypeBase++;
+    /*
+     * ln_Type only has room for the low byte of the id. It is kept in step
+     * for anything that reads the node directly, but ic_Id is the value.
+     */
+    intController->ic_Node.ln_Type = (UBYTE)intController->ic_Id;
 
     if (intController->ic_Register)
         icid = intController->ic_Register(KernelBase);
     else
-        icid = intController->ic_Node.ln_Type;
+        icid = intController->ic_Id;
 
-    if (icid == (icid_t)-1)
-        return (icintrid_t)-1;
+    if (icid == KRN_ICID_INVALID)
+        return KRN_ICINTR_INVALID;
 
     Enqueue(&KernelBase->kb_ICList, &intController->ic_Node);
 
-    D(bug("[Kernel] %s: new controller id #%d = '%s'\n", __func__, intController->ic_Node.ln_Type, intController->ic_Node.ln_Name));
+    D(bug("[Kernel] %s: new controller id #%d = '%s'\n", __func__, intController->ic_Id, intController->ic_Node.ln_Name));
 
-    return (icintrid_t)((icid << 8) | intController->ic_Count);
+    return ICINTR_MAKE(icid, intController->ic_Count);
 }
 
 /*****************************************************************************/
@@ -82,19 +87,19 @@ struct IntrController *krnFindInterruptController(struct KernelBase *KernelBase,
 
 /*****************************************************************************/
 
-BOOL krnInitInterrupt(struct KernelBase *KernelBase, icid_t irq, icid_t icid, icid_t icinstance)
+BOOL krnInitInterrupt(struct KernelBase *KernelBase, irqid_t irq, icid_t icid, icinstid_t icinstance)
 {
-    if (KERNELIRQ_LIST(irq).lh_Type == KBL_INTERNAL)
+    if (KERNELIRQ_ICID(irq) == KBL_INTERNAL)
     {
-        KERNELIRQ_LIST(irq).lh_Type = icid;
-        KERNELIRQ_LIST(irq).l_pad = icinstance;
+        KERNELIRQ_ICID(irq) = icid;
+        KERNELIRQ_ICINST(irq) = icinstance;
         return TRUE;
     }
     return FALSE;
 }
 
 /* Returns a mapping node for a requested Device Interrupt */
-struct IntrMapping *krnInterruptMapping(struct KernelBase *KernelBase, icid_t irq)
+struct IntrMapping *krnInterruptMapping(struct KernelBase *KernelBase, irqid_t irq)
 {
     struct IntrMapping *intrMap;
 

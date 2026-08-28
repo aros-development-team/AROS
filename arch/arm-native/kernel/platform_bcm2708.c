@@ -18,6 +18,7 @@
 
 #include "kernel_intern.h"
 #include "kernel_debug.h"
+#include "of_intern.h"
 #include "kernel_cpu.h"
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
@@ -315,29 +316,67 @@ static void bcm2708_fiq_process()
     }
 }
 
+/*
+ * A Pi 2 puts PWR on GPIO 35, a Pi 400 on 42. The Pi 3B and 4B hand theirs to 
+ * firmware controllers (expgpio, virtgpio) this code cannot reach - those keep 
+ * the state firmware left, which for the power light is lit.
+ */
+static struct
+{
+    int pin;                    /* < 0: not ours to drive */
+    int active_low;
+} bcm2708_led[2] = { { -2, 0 }, { -2, 0 } };    /* -2: not looked up yet */
+
+static int bcm2708_led_on_soc(const char *name)
+{
+    return name && name[0] == 'g' && name[1] == 'p' && name[2] == 'i' &&
+           name[3] == 'o' && (name[4] == '@' || name[4] == 0);
+}
+
+static void bcm2708_led_query(int LED)
+{
+    void *node = dt_find_node((LED == ARM_LED_ACTIVITY) ? "/leds/led-act"
+                                                        : "/leds/led-pwr");
+    void *gprop = node ? dt_find_property(node, "gpios") : NULL;
+    void *sprop = node ? dt_find_property(node, "status") : NULL;
+    uint32_t *cells;
+    of_node_t *ctrl;
+
+    bcm2708_led[LED].pin = -1;
+
+    if (!gprop || dt_get_prop_len(gprop) < 8)
+        return;
+
+    /* A node for a light the board does not have is marked disabled */
+    if (sprop && ((char *)dt_get_prop_value(sprop))[0] == 'd')
+        return;
+
+    cells = dt_get_prop_value(gprop);
+    ctrl = dt_find_node_by_phandle(AROS_BE2LONG(cells[0]));
+    if (!ctrl || !bcm2708_led_on_soc(ctrl->on_name))
+        return;
+
+    bcm2708_led[LED].pin = AROS_BE2LONG(cells[1]);
+    bcm2708_led[LED].active_low = (dt_get_prop_len(gprop) >= 12) &&
+                                  (AROS_BE2LONG(cells[2]) & 1);
+}
+
 static void bcm2708_toggle_led(int LED, int state)
 {
-    if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
-    {
-        int pin = 35;
-        IPTR gpiofunc = GPCLR1;
+    int pin, lit;
 
-        if (LED == ARM_LED_ACTIVITY)
-            pin = 47;
+    if (LED != ARM_LED_POWER && LED != ARM_LED_ACTIVITY)
+        return;
 
-        if (state == ARM_LED_ON)
-            gpiofunc = GPSET1;
+    if (bcm2708_led[LED].pin == -2)
+        bcm2708_led_query(LED);
 
-        wr32le(gpiofunc, (1 << (pin-32)));
-    }
-    else
-    {
-        // RasPi 1 only allows us to toggle the activity LED
-        if (state)
-            wr32le(GPCLR0, (1 << 16));
-        else
-            wr32le(GPSET0, (1 << 16));
-    }
+    if ((pin = bcm2708_led[LED].pin) < 0)
+        return;
+
+    lit = (state == ARM_LED_ON) != (bcm2708_led[LED].active_low != 0);
+
+    wr32le((lit ? GPSET0 : GPCLR0) + 4 * (pin / 32), 1 << (pin % 32));
 }
 
 /* Use system timer 3 for our scheduling heartbeat */

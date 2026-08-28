@@ -178,12 +178,20 @@ BOOL dosboot_DevicePresent(struct IORequest*bootDevIO, BPTR bootDevName, ULONG b
     return FALSE;
 }
 
-/* Returns TRUE if it was a BootBlock style, but couldn't
- * be booted, FALSE if not a BootBlock style, and doesn't
- * return at all on a successful boot.
+/* Does not return at all on a successful boot. Otherwise the
+ * return value tells the caller whether it is done with the node:
+ * on m68k it is always TRUE, so a node whose boot block did not
+ * boot (or that had none) is not tried any other way, as on
+ * AmigaOS; elsewhere it is always FALSE and the caller goes on to
+ * try the BootPoint and DOS methods.
+ *
+ * The boot block's init code is called after *iop and its reply
+ * port have been closed and freed. Should that code come back,
+ * both pointers are cleared so the caller does not touch them.
  */
-static BOOL dosboot_BootBlock(struct IOStdReq *io, struct BootNode *bn, struct ExpansionBase *ExpansionBase, ULONG bootblock_size)
+static BOOL dosboot_BootBlock(struct IOStdReq **iop, struct MsgPort **portp, struct BootNode *bn, struct ExpansionBase *ExpansionBase, ULONG bootblock_size)
 {
+    struct IOStdReq *io = *iop;
     VOID_FUNC init = NULL;
     UBYTE *buffer;
 
@@ -232,7 +240,9 @@ static BOOL dosboot_BootBlock(struct IOStdReq *io, struct BootNode *bn, struct E
 
        CloseDevice((struct IORequest *)io);
        DeleteIORequest((struct IORequest*)io);
-       DeleteMsgPort(((struct IORequest*)io)->io_Message.mn_ReplyPort);
+       DeleteMsgPort(*portp);
+       *iop = NULL;
+       *portp = NULL;
 
        /*
         * This is actually rt_Init calling convention for non-autoinit residents.
@@ -243,6 +253,10 @@ static BOOL dosboot_BootBlock(struct IOStdReq *io, struct BootNode *bn, struct E
         * This is needed because dos.library contains the second part of "bootable"
         * test, trying to mount a filesystem and read the volume.
         * We hope it won't do any harm for NDOS game disks.
+        *
+        * dos.library's init only returns if that second part failed (it
+        * RemTask()s itself otherwise), so landing here means the volume
+        * could not be mounted. The IORequest is already gone by now.
        */
        AROS_UFC3NR(void, init,
                  AROS_UFCA(APTR, NULL, D0),
@@ -333,23 +347,28 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                 if (!BootNodeDeviceUnit || (dosboot_DevicePresent((struct IORequest*)io, device, unit)))
                 {
                     /* First try as a BootBlock.
-                     * dosboot_BootBlock returns TRUE if it *was*
-                     * a BootBlock device, but couldn't be booted.
-                     * Returns FALSE if not a bootblock device,
-                     * and doesn't return at all if the bootblock
-                     * was successful.
+                     * dosboot_BootBlock does not return at all if
+                     * the boot block booted. TRUE (always, on m68k)
+                     * means the node is done with; FALSE (always,
+                     * elsewhere) means try BootPoint and DOS next.
+                     * Either way io and msgport may have been freed
+                     * and cleared along the way.
                      */
                     
                     D(bug("[DOSBoot:bootstrap] %s: Attempting %b\n",__func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
-                    if (!BootNodeDeviceUnit || !dosboot_BootBlock(io, bn, ExpansionBase, bootblock_size)) {
-                        if (BootNodeDeviceUnit)
+                    if (!BootNodeDeviceUnit || !dosboot_BootBlock(&io, &msgport, bn, ExpansionBase, bootblock_size)) {
+                        if (io)
                         {
-                            CloseDevice((struct IORequest *)io);
+                            if (BootNodeDeviceUnit)
+                                CloseDevice((struct IORequest *)io);
+                            DeleteIORequest((struct IORequest*)io);
+                            io = NULL;
                         }
-                        DeleteIORequest((struct IORequest*)io);
-                        io = NULL;
-                        DeleteMsgPort(msgport);
-                        msgport = NULL;
+                        if (msgport)
+                        {
+                            DeleteMsgPort(msgport);
+                            msgport = NULL;
+                        }
 
                         /* Then as a BootPoint node */
                         D(bug("[DOSBoot:bootstrap] %s: Attempting %b as BootPoint\n", __func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
@@ -361,7 +380,7 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                     }
                     else
                     {
-                        if (BootNodeDeviceUnit)
+                        if (BootNodeDeviceUnit && io)
                             CloseDevice((struct IORequest *)io);
                     }
                 }

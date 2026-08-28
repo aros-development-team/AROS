@@ -17,6 +17,7 @@
 #include <clib/macros.h>
 
 #include <graphics/rastport.h>
+#include <graphics/driver.h>
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
 #include <graphics/view.h>
@@ -170,6 +171,120 @@ void driver_Queue(struct gfxboot_entry *boote, struct GfxBase * GfxBase)
 }
 
 /*
+ * Whether two dr_Size-terminated range arrays intersect anywhere.
+ */
+static BOOL driver_RangesOverlap(const struct DisplayRange *a,
+                                 const struct DisplayRange *b)
+{
+    const struct DisplayRange *ap, *bp;
+
+    for (ap = a; ap->dr_Size; ap++)
+    {
+        IPTR abase = (IPTR)ap->dr_Base;
+
+        for (bp = b; bp->dr_Size; bp++)
+        {
+            IPTR bbase = (IPTR)bp->dr_Base;
+
+            if ((abase < bbase + bp->dr_Size) && (bbase < abase + ap->dr_Size))
+                return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/*
+ * Handover, first half: find a boot-mode display whose hardware the
+ * caller is about to take over.
+ *
+ * This is what a native driver needs before it reprograms a card. On the
+ * Titan the firmware's GOP framebuffer *is* the GPU's BAR1, so once
+ * nouveau installs its own BAR1 page tables the boot console's redraws
+ * stop landing in a framebuffer and start landing in whatever the new
+ * owner put there - in that case the channels' USERD, which is why the
+ * GPU stormed GPPTR errors while the GPU side was working perfectly.
+ *
+ * Matching is on CPU address ranges, so a boot driver serving a second,
+ * unrelated card survives - that is the whole point of doing this by
+ * range rather than shutting down every boot driver in the system.
+ *
+ * A boot driver that declared no DDRV_HWRanges is treated as a match:
+ * historically DDRV_BootMode promised it would be taken down by the next
+ * driver in, and a driver that never described its hardware must keep
+ * getting that. Being wrong in this direction only costs a display;
+ * being wrong in the other corrupts the new owner's state.
+ *
+ * Only valid from a driver's New(), where AddDisplayDriverA() holds
+ * displaydb_sem on the caller's behalf.
+ */
+static APTR driver_FindBootDisplay(APTR ctx, const struct DisplayRange *ranges)
+{
+    struct GfxBase *GfxBase = (struct GfxBase *)ctx;
+    struct gfxdisplay_data *mdd;
+
+    for (mdd = (struct gfxdisplay_data *)CDD(GfxBase); mdd; mdd = mdd->display_next)
+    {
+        const struct DisplayRange *bootranges;
+
+        if (!(mdd->display_flags & DF_BootMode))
+            continue;
+        if (mdd->display_flags & (DF_BootSurvive | DF_HandoverFail))
+            continue;
+
+        bootranges = mdd->display_cfg ? mdd->display_cfg->drv_ranges : NULL;
+
+        if (!ranges || !bootranges ||
+            driver_RangesOverlap(ranges, bootranges))
+        {
+            D(bug("[graphics.library/driver] %s: boot display 0x%p (ID 0x%08lX) shares the hardware\n",
+                  __func__, mdd, mdd->display_idbase));
+            return mdd;
+        }
+
+        D(bug("[graphics.library/driver] %s: boot display 0x%p (ID 0x%08lX) is on other hardware, left alone\n",
+              __func__, mdd, mdd->display_idbase));
+    }
+
+    return NULL;
+}
+
+/*
+ * Handover, second half: take the display found above out of the system
+ * for good - unlinked from the display database, Intuition notified, its
+ * modes no longer enumerated, its driver object disposed.
+ *
+ * Refuses, changing nothing, while anything is still displayed on it.
+ * Migrating live screens to the incoming driver is a larger change and is
+ * deliberately not attempted here; the caller finds out through the
+ * return value, and the display is flagged so a find/expunge loop moves
+ * past it instead of being handed it forever.
+ */
+static BOOL driver_ExpungeBootDisplay(APTR ctx, APTR handle)
+{
+    struct GfxBase *GfxBase = (struct GfxBase *)ctx;
+    struct monitor_displaydata *mdd = (struct monitor_displaydata *)handle;
+
+    if (!mdd)
+        return FALSE;
+
+    if (mdd->display || mdd->frontbm)
+    {
+        D(bug("[graphics.library/driver] %s: boot display 0x%p still in use, refusing\n",
+              __func__, mdd));
+        mdd->mdisplay.display_flags |= DF_HandoverFail;
+        CDD(GfxBase)->handover_refused = TRUE;
+        return FALSE;
+    }
+
+    D(bug("[graphics.library/driver] %s: expunging boot display 0x%p (ID 0x%08lX)\n",
+          __func__, mdd, mdd->mdisplay.display_idbase));
+
+    display_Expunge(mdd, GfxBase);
+    return TRUE;
+}
+
+
+/*
  * Replay queued boot-mode drivers (registered with DDRV_BootMode) until one
  * of them provides the default monitor. driver_Setup() queues such drivers
  * instead of bringing them up, so a system whose only driver is a boot-mode
@@ -212,7 +327,47 @@ BOOL driver_Setup(struct gfxdriver_data *cfg, struct TagItem *attrs, BOOL force,
 {
     if (!(cfg->drv_flags & DF_BootMode) || (force))
     {
-        OOP_Object *gfxhidd = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, cfg->drv_class, attrs);
+        /*
+         * A driver taking over real hardware is offered the handover
+         * interface, so it can retire any boot-mode driver still writing
+         * to that hardware before it reprograms it (see graphics/driver.h).
+         *
+         * The interface lives on this stack frame on purpose: it is only
+         * usable from the driver's New(), which runs inside HW_AddDriver()
+         * below, and stashing it for later is exactly what a driver must
+         * not do.
+         */
+        struct DisplayHandover handover =
+        {
+            GfxBase,
+            driver_FindBootDisplay,
+            driver_ExpungeBootDisplay
+        };
+        struct TagItem handovertags[] =
+        {
+            { DDRVA_Handover, (IPTR)&handover },
+            { TAG_MORE,       (IPTR)attrs     }
+        };
+        OOP_Object *gfxhidd;
+        BOOL offer = !(cfg->drv_flags & (DF_BootMode | DF_KeepBoot));
+
+        if (offer)
+        {
+            struct gfxdisplay_data *scan;
+
+            /*
+             * DF_HandoverFail only exists to stop one driver's
+             * find/expunge loop being handed the same unreleasable
+             * display forever. It must not outlive that loop: whatever
+             * was in use may well have gone by the time the next driver
+             * tries, and that one has to be offered the display again.
+             */
+            for (scan = (struct gfxdisplay_data *)CDD(GfxBase); scan; scan = scan->display_next)
+                scan->display_flags &= ~DF_HandoverFail;
+        }
+
+        gfxhidd = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, cfg->drv_class,
+                               offer ? handovertags : attrs);
 
         if (gfxhidd)
         {

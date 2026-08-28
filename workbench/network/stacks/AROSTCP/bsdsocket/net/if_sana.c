@@ -112,6 +112,19 @@ static void sana_ip6_read(struct sana_softc *ssc, struct IOIPReq *req);
 static void sana_online(struct sana_softc *ssc, struct IOIPReq *req);
 static void sana_connect(struct sana_softc *ssc, struct IOIPReq *req);
 static void free_written_packet(struct sana_softc *ssc, struct IOIPReq *req);
+static void sana_start(struct sana_softc *ssc);
+
+/*
+ * Prepended (as a short mbuf) to a packet held on the interface send queue so
+ * that its resolved destination and framing survive until a request is free to
+ * carry the packet to the SANA-II driver.
+ */
+struct sana_sendtag {
+    ULONG st_type;                 /* SANA-II packet type              */
+    UWORD st_ioflags;              /* ios2 io_Flags (e.g. SANA2IOF_RAW) */
+    BYTE  st_pri;                  /* request message priority         */
+    UBYTE st_dstaddr[MAXADDRSANA]; /* resolved destination address     */
+};
 static int sana_query(struct ifnet *ifn, struct TagItem *tag);
 
 /*
@@ -372,6 +385,11 @@ iface_make(struct ssconfig *ifc)
                         ssc->ss_if.if_baudrate = devicequery.BPS;
                         ssc->ss_hwtype         = devicequery.HardwareType;
 
+                        /* A jumbo interface needs proportionally more mbuf
+                         * clusters; grow the pool cap for the advertised MTU
+                         * (bounded by free memory). */
+                        mb_autosize(devicequery.MTU);
+
                         /* These might be different on different hwtypes */
                         ssc->ss_if.if_output = sana_output;
                         ssc->ss_if.if_ioctl  = sana_ioctl;
@@ -409,6 +427,9 @@ iface_make(struct ssconfig *ifc)
                         ssconfig(ssc, ifc);
 
                         NewList((struct List *)&ssc->ss_freereq);
+
+                        /* depth of the transmit queue that sana_start() drains */
+                        ssc->ss_if.if_snd.ifq_maxlen = IFQ_MAXLEN;
 
                         if_attach((struct ifnet *)ssc);
                         ifinit();
@@ -595,6 +616,25 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
         if((ifr->ifr_flags & IFF_NOARP) == 0) {
             D(bug("[AROSTCP:SANA] %s: SIFFLAGS Allocating interface ARP tables .. \n", __func__));
             alloc_arptable(ssc, 0);
+        }
+        break;
+
+    case SIOCSIFMTU:		/* Set Interface MTU */
+        /*
+         * The frame buffers were sized for ss_maxmtu (the MTU the device
+         * was configured with at init, from S2_DEVICEQUERY), so the MTU
+         * may be lowered freely but never raised above that ceiling.  The
+         * floor is 1280, the IPv6 minimum, so both address families keep
+         * working at any accepted value.  mb_autosize (grow-only) keeps
+         * the cluster pool adequate.
+         */
+        D(bug("[AROSTCP:SANA] %s: SIOCSIFMTU %ld (max %ld)\n", __func__,
+              (long)ifr->ifr_mtu, (long)ssc->ss_maxmtu));
+        if(ifr->ifr_mtu < 1280 || ifr->ifr_mtu > ssc->ss_maxmtu)
+            error = EINVAL;
+        else {
+            ssc->ss_if.if_mtu = ifr->ifr_mtu;
+            mb_autosize(ifr->ifr_mtu);
         }
         break;
 
@@ -840,6 +880,15 @@ sana_down(struct sana_softc *ssc)
             AbortSanaIO((struct IORequest *)req);
         }
         req = req->ioip_next;
+    }
+
+    /* Discard packets still parked on the transmit queue */
+    for(;;) {
+        struct mbuf *tag;
+        IF_DEQUEUE(&ssc->ss_if.if_snd, tag);
+        if(tag == NULL)
+            break;
+        m_freem(tag);		/* frees the tag and the packet behind it */
     }
     if(ssc->ss_dev && (ssc->ss_dev->dd_Library.lib_OpenCnt == 1)) {
         if(sreq = CreateIOSana2Req(ssc)) {
@@ -1122,6 +1171,49 @@ sana_connect(struct sana_softc *ssc, struct IOIPReq *req)
 }
 
 /*
+ * sana_start(): hand queued packets to the SANA-II driver, one per free
+ * request.  Submission (sana_output) and completion (free_written_packet) both
+ * call it, decoupling the two: a burst that outruns the requests waits on the
+ * send queue instead of being dropped, and each completion immediately pulls
+ * the next packet through.  Must be called at splimp.
+ */
+static void
+sana_start(struct sana_softc *ssc)
+{
+    struct ifnet *ifp = &ssc->ss_if;
+    struct IOIPReq *req;
+    struct mbuf *tag, *m;
+    struct sana_sendtag *st;
+
+    while(ifp->if_snd.ifq_head != NULL) {
+        if(!(req = (struct IOIPReq *)RemHead((struct List *)&ssc->ss_freereq)))
+            break;			/* no free request: leave packets queued */
+
+        IF_DEQUEUE(&ifp->if_snd, tag);
+        st = mtod(tag, struct sana_sendtag *);
+        m  = tag->m_next;
+        tag->m_next = NULL;
+
+        req->ioip_s2.ios2_Req.io_Flags   = st->st_ioflags;
+        req->ioip_s2.ios2_PacketType     = st->st_type;
+        bcopy(st->st_dstaddr, req->ioip_s2.ios2_DstAddr, ifp->if_addrlen);
+        req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri = st->st_pri;
+        req->ioip_Command  = (m->m_flags & M_BCAST) ? S2_BROADCAST : CMD_WRITE;
+        req->ioip_dispatch = free_written_packet;
+        req->ioip_packet   = m;
+        req->ioip_s2.ios2_DataLength = m->m_pkthdr.len;
+
+        m_free(tag);			/* metadata consumed; the packet lives on */
+
+        ifp->if_obytes += m->m_pkthdr.len;
+        if(m->m_flags & M_BCAST)
+            ifp->if_omcasts++;
+
+        BeginIO((struct IORequest *)req);
+    }
+}
+
+/*
  * sana_output: send a packet to Sana-II driver
  */
 int
@@ -1132,10 +1224,12 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
     ULONG type;
     int error = 0;
 
-    struct IOIPReq *req = NULL;
-    register struct mbuf *m = m0;
+    register struct mbuf *m = m0, *tag;
+    struct sana_sendtag *st;
+    UBYTE dst_hw[MAXADDRSANA];
+    UWORD ioflags = 0;
+    BYTE  pri = 0;
 
-    int len = m->m_pkthdr.len;
     spl_t s = splimp();
 
     ifp->if_opackets++;		/* stats */
@@ -1148,13 +1242,11 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
 
     GetSysTime(&ssc->ss_if.if_lastchange);
 
-    /* Get a free Sana-II IO request */
-    if(!(req = (struct IOIPReq *)RemHead((struct List *)&ssc->ss_freereq))) {
-        error = ENOBUFS;
-        goto bad;
-    }
-
-    req->ioip_s2.ios2_Req.io_Flags = 0;
+    /*
+     * Resolve the destination into local storage, then hand the packet to
+     * sana_start() via the send queue.  A request is only claimed there, when
+     * one is free.
+     */
 
     switch(dst->sa_family) {
 #if INET
@@ -1174,8 +1266,8 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
                  * ios2_DestAddr = destination hw address
                  * error = error return
                  */
-                !arpresolve(ssc, m, &idst, req->ioip_s2.ios2_DstAddr, &error)) {
-            AddHead((struct List *)&ssc->ss_freereq, (struct Node *)req);
+                !arpresolve(ssc, m, &idst, dst_hw, &error)) {
+            /* arpresolve queued the packet; it re-enters once resolved */
             splx(s);
             return (0);
         }
@@ -1188,9 +1280,7 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
             (void) looutput(&ssc->ss_if, mcopy, dst, rt);
         }
         /* Set the message priority */
-        req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri =
-            (IPTOS_LOWDELAY & mtod(m, struct ip *)->ip_tos) ?
-            1 : 0;
+        pri = (IPTOS_LOWDELAY & mtod(m, struct ip *)->ip_tos) ? 1 : 0;
     }
     break;
 #endif
@@ -1215,10 +1305,9 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
     case AF_INET6: {
         int nd_error;
         type = ssc->ss_ip6.type;
-        nd_error = nd6_resolve(ifp, rt, m, dst, req->ioip_s2.ios2_DstAddr);
+        nd_error = nd6_resolve(ifp, rt, m, dst, dst_hw);
         if(nd_error == EAGAIN) {
             /* packet queued by nd6_resolve, will be sent after NA arrives */
-            AddHead((struct List *)&ssc->ss_freereq, (struct Node *)req);
             splx(s);
             return 0;
         }
@@ -1226,7 +1315,6 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
             error = nd_error;
             goto bad;
         }
-        req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri = 0;
     }
     break;
 #endif /* INET6 */
@@ -1236,13 +1324,12 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
          */
         if(type = ((struct sockaddr_sana2 *)dst)->ss2_type) {
             bcopy(((struct sockaddr_sana2 *)dst)->ss2_host,
-                  req->ioip_s2.ios2_DstAddr,
+                  dst_hw,
                   ssc->ss_if.if_addrlen);
         } else {
-            req->ioip_s2.ios2_Req.io_Flags = SANA2IOF_RAW;
+            ioflags = SANA2IOF_RAW;
             type = 0L;
         }
-        req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri = 0;
         break;
 
 #if	ISO
@@ -1266,27 +1353,38 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
     if(ifp->if_bpf)
         bpf_mtap(ifp, m, BPF_D_OUT);
 
-    req->ioip_Command = (m->m_flags & M_BCAST) ? S2_BROADCAST : CMD_WRITE;
-    req->ioip_dispatch = free_written_packet;
-    req->ioip_packet = m;
-    req->ioip_s2.ios2_PacketType = type;
-    req->ioip_s2.ios2_DataLength = len;
+    /*
+     * Park the packet on the send queue behind a metadata tag and pump the
+     * queue; sana_start() binds it to a request when one becomes free.
+     */
+    MGET(tag, M_DONTWAIT, MT_DATA);
+    if(tag == NULL) {
+        error = ENOBUFS;
+        goto bad;
+    }
+    st = mtod(tag, struct sana_sendtag *);
+    st->st_type    = type;
+    st->st_ioflags = ioflags;
+    st->st_pri     = pri;
+    bcopy(dst_hw, st->st_dstaddr, ssc->ss_if.if_addrlen);
+    tag->m_len  = sizeof(struct sana_sendtag);
+    tag->m_next = m;
 
-    BeginIO((struct IORequest *)req);
-
-    /* These statistics are somewhat redundant */
-    ifp->if_obytes += len;
-    if(m->m_flags & M_BCAST)
-        ifp->if_omcasts++;
+    if(IF_QFULL(&ifp->if_snd)) {
+        IF_DROP(&ifp->if_snd);
+        ifp->if_oerrors++;
+        splx(s);
+        m_freem(tag);		/* frees the tag and the packet behind it */
+        return ENOBUFS;
+    }
+    IF_ENQUEUE(&ifp->if_snd, tag);
+    sana_start(ssc);
 
     splx(s);
     return 0;
 
 bad:
-    if(req)
-        AddHead((struct List *)&ssc->ss_freereq, (struct Node *)req);
     ifp->if_oerrors++;
-
     splx(s);
     if(m)
         m_freem(m);
@@ -1311,6 +1409,7 @@ free_written_packet(struct sana_softc *ssc, struct IOIPReq *req)
     if(debug_sana && req->ioip_Error)
         sana2perror("sana_output", (struct IOSana2Req *)req);
     AddHead((struct List *)&ssc->ss_freereq, (struct Node *)req);
+    sana_start(ssc);		/* a request is free: pump the next queued packet */
     splx(s);
 }
 

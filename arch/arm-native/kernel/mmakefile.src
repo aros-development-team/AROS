@@ -35,9 +35,15 @@ CFILES := \
         platform_init \
         kernel_debug \
         getsystemattr \
+        timestamp \
         getcpucount \
+        alloccpumask \
+        clearcpumask \
+        cpuinmask \
+        freecpumask \
         getcpumask \
         getcpunumber \
+        schedulecpu \
         maygetchar \
         tags \
         intr \
@@ -82,8 +88,6 @@ $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 #MM kernel-kernel-raspi-armeb : includes
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include -I$(SRCDIR)/rom/openfirmware
-USER_CPPFLAGS := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
-
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=raspi-arm \
   files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel

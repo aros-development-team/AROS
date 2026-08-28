@@ -249,6 +249,20 @@ static BOOL CmdWrite(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
         error = S2ERR_BAD_ADDRESS;
         wire_error = S2WERR_BAD_MULTICAST;
     }
+    else
+    {
+        /* Reject oversized frames rather than overrun the TX buffer.  For a
+         * cooked write the payload must fit the MTU; a raw write already
+         * carries the Ethernet header (but not the FCS). */
+        ULONG maxlen = (request->ios2_Req.io_Flags & SANA2IOF_RAW)
+                     ? (unit->e1ku_mtu + ETH_HEADERSIZE)
+                     : unit->e1ku_mtu;
+        if(request->ios2_DataLength > maxlen)
+        {
+            error = S2ERR_MTU_EXCEEDED;
+            wire_error = S2WERR_GENERIC_ERROR;
+        }
+    }
 
     /* Queue request for sending */
 

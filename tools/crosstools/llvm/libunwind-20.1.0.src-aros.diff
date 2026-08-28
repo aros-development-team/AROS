@@ -1,3 +1,21 @@
+diff -ruN libunwind-20.1.0.src/CMakeLists.txt libunwind-20.1.0.src.aros/CMakeLists.txt
+--- libunwind-20.1.0.src/CMakeLists.txt	2025-03-04 19:51:43.000000000 +0000
++++ libunwind-20.1.0.src.aros/CMakeLists.txt	2026-08-14 12:00:00.000000000 +0000
+@@ -4,6 +4,14 @@
+ 
+ cmake_minimum_required(VERSION 3.20.0)
+ set(LLVM_SUBPROJECT_TITLE "libunwind")
++
++# libunwind carries no project() of its own - it expects to be configured
++# through runtimes/, which declares the ASM language for it. When it is
++# configured directly CMake's implicit project enables only C and CXX, and
++# the UnwindRegisters*.S sources are then dropped without a word, leaving
++# __unw_getcontext and __libunwind_Registers_<arch>_jumpto undefined.
++# enable_language() is a no-op when ASM is already on, so this is safe either way.
++enable_language(ASM)
+ 
+ set(LLVM_COMMON_CMAKE_UTILS "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+ 
 diff -ruN libunwind-20.1.0.src/src/config.h libunwind-20.1.0.src.aros/src/config.h
 --- libunwind-20.1.0.src/src/config.h	2025-03-04 19:51:43.000000000 +0000
 +++ libunwind-20.1.0.src.aros/src/config.h	2025-07-16 02:02:45.657323674 +0000

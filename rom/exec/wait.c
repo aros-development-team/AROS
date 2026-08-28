@@ -66,7 +66,11 @@
     ULONG rcvd;
 
     D(bug("[Exec] Wait(%08lX)\n", signalSet);)
+    /* Disable() also masks the FIQ that would re-enter tc_SpinLock. */
     Disable();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&thisTask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
     /* If at least one of the signals is already set do not wait. */
     while (!(thisTask->tc_SigRecvd & signalSet))
@@ -86,11 +90,24 @@
         TDNESTCOUNT_SET(-1);
 
         thisTask->tc_State = TS_WAIT;
-        // nb: on smp builds switch will move us.
-#if !defined(__AROSEXEC_SMP__)
+
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * Move lists and set the state under tc_SpinLock, so an observer
+         * always sees TS_WAIT together with being on TaskWait.
+         */
+        exec_TaskRemoveRunning(thisTask);
+        exec_TaskEnqueueWait(thisTask);
+#else
         /* Move current task to the waiting list. */
         Enqueue(&SysBase->TaskWait, &thisTask->tc_Node);
 #endif
+
+        /*
+         * Keep tc_SpinLock held across KrnSwitch; cpu_Switch drops it
+         * once the context is saved. Releasing it here would let another
+         * core wake and dispatch the task with a stale register frame.
+         */
 
         /* And switch to the next ready task. */
         KrnSwitch();
@@ -102,6 +119,9 @@
         */
         D(bug("[Exec] Wait: Awoken...\n");)
 
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&thisTask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         /* Restore TDNestCnt. */
         TDNESTCOUNT_SET(thisTask->tc_TDNestCnt);
     }
@@ -111,6 +131,7 @@
     /* And clear them. */
 #if defined(__AROSEXEC_SMP__)
     __AROS_ATOMIC_AND_L(thisTask->tc_SigRecvd, ~signalSet);
+    EXEC_SPINLOCK_UNLOCK(&thisTask->tc_SpinLock);
 #else
     thisTask->tc_SigRecvd &= ~signalSet;
 #endif

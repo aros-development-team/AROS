@@ -1631,6 +1631,9 @@ static SIPTR dd_InhibitOff(struct DosPacket *pkt, globaldata * g)
 
 static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 {
+	struct Task *caller;
+	BOOL showrequesters = TRUE;
+
 	/* argumenten stemmen NIET met de dosmanual overeen */
 	// ARG1 = BSTR Name of device (with trailing ':')
 	// ARG2 = LONG Type of format (file system specific ==> ID_FDOS_DISK of 0)
@@ -1645,6 +1648,14 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	}
 #endif
 
+	caller = NULL;
+	if (pkt->dp_Port &&
+		(pkt->dp_Port->mp_Flags & PF_ACTION) == PA_SIGNAL)
+		caller = pkt->dp_Port->mp_SigTask;
+	if (caller && caller->tc_Node.ln_Type == NT_PROCESS)
+		showrequesters = ((struct Process *)caller)->pr_WindowPtr !=
+			(APTR)(SIPTR)-1;
+
 	/* Ik neem aan dat er geen Lock check nodig is ... */
 	/* if not inhibited then 'remove disk' */
 	if (g->inhibitcount == 0)
@@ -1657,7 +1668,8 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	}
 
 	/* format disk */
-	return FDSFormat((DSTR)BADDR(pkt->dp_Arg1), pkt->dp_Arg2, &pkt->dp_Res2, g);
+	return FDSFormat((DSTR)BADDR(pkt->dp_Arg1), pkt->dp_Arg2,
+		&pkt->dp_Res2, showrequesters, g);
 }
 
 
@@ -2205,20 +2217,28 @@ static LONG dd_MorphOSQueryAttr(struct DosPacket *pkt, globaldata *g)
 #define PKT64_ARG2(pkt)		((pkt)->dp_Arg2)
 #define PKT64_ARG3(pkt)		((pkt)->dp_Arg3)
 #else
-/* Not real one but close enough */
+/*
+ * The 64-bit fields sit at fixed offsets that the other side of the
+ * packet reads and writes: dp_Res1 at 24, dp_Arg2 at 40, dp_Arg5 at 56.
+ * A compiler that gives a 64-bit type 8-byte alignment lands on those
+ * by itself; m68k aligns them to 4 and would put every one of them 4
+ * bytes early, so the padding is spelled out and must stay.
+ */
 struct DosPacket64OS4
 {
-	ULONG dp_Link;
-	ULONG dp_Port;
-	LONG  dp_Type;
-	ULONG dp_Res0;
-	ULONG dp_Res2;
-	QUAD dp_Res1;
-	QUAD dp_Arg1;
-	QUAD dp_Arg2;
-	ULONG dp_Arg3;
-	ULONG dp_Arg4;
-	ULONG dp_Arg5;
+	ULONG dp_Link;		/* 0  */
+	ULONG dp_Port;		/* 4  */
+	LONG  dp_Type;		/* 8  */
+	ULONG dp_Res0;		/* 12 */
+	ULONG dp_Res2;		/* 16 */
+	ULONG dp_Pad0;		/* 20 */
+	QUAD  dp_Res1;		/* 24 */
+	ULONG dp_Arg1;		/* 32 */
+	ULONG dp_Pad1;		/* 36 */
+	QUAD  dp_Arg2;		/* 40 */
+	ULONG dp_Arg3;		/* 48 */
+	ULONG dp_Arg4;		/* 52 */
+	QUAD  dp_Arg5;		/* 56 */
 };
 
 #define PKT64_MARK(pkt)		(((struct DosPacket64OS4 *)(pkt))->dp_Res0 = DP64_INIT)
@@ -2316,4 +2336,3 @@ static void dd_ChangeFilePosition64(struct DosPacket *pkt, globaldata *g)
 
 
 #endif
-

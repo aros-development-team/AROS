@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
 #include <dos/dosextens.h>
+#include <aros/debug.h>
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -57,6 +58,19 @@
     while(TRUE)
     {
         struct DosList *dl2 = BADDR(dl->dol_Next);
+
+        /*
+         * The node is not in the list. Without this check the walk would
+         * dereference NULL. Report it - removing an unlinked node means
+         * the caller's idea of the list is stale, which usually precedes
+         * worse corruption.
+         */
+        if(dl2 == NULL)
+        {
+            bug("[RemDosEntry] node 0x%p not in the DOS list (task '%s')\n",
+                dlist, FindTask(NULL)->tc_Node.ln_Name);
+            break;
+        }
 
         if(dl2 == dlist)
         {

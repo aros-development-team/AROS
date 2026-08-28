@@ -23,12 +23,14 @@ extern void GfxStartup(struct SysexpBase *);
 #if (1) // TODO : Move into libbase
 OOP_AttrBase HiddAttrBase;
 OOP_AttrBase HiddGfxAttrBase;
+OOP_AttrBase HiddDisplayAttrBase;
 #endif
 
 const struct OOP_ABDescr gfx_abd[] =
 {
     {IID_Hidd,          &HiddAttrBase    },
     {IID_Hidd_Gfx,      &HiddGfxAttrBase },
+    {IID_Hidd_Display,  &HiddDisplayAttrBase },
     {NULL,              NULL             }
 };
 

@@ -54,89 +54,122 @@ QUAD __dos64_seek(fcb *fcb, QUAD position, LONG mode)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
     BPTR fh = fcb->handle;
+    QUAD r;
 
+    __fcb_lock(fcb);
     if (DOS64Base != NULL)
-        return Seek64(fh, mode, position);
-
-    if (position != (QUAD)(LONG)position)
+        r = Seek64(fh, mode, position);
+    else if (position != (QUAD)(LONG)position)
     {
         SetIoErr(ERROR_OBJECT_TOO_LARGE);
-        return -1;
+        r = -1;
     }
-    return Seek(fh, (LONG)position, mode);
+    else
+        r = Seek(fh, (LONG)position, mode);
+    __fcb_unlock(fcb);
+    return r;
 }
 
 QUAD __dos64_getpos(fcb *fcb)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
     BPTR fh = fcb->handle;
+    QUAD r;
 
+    __fcb_lock(fcb);
     if (DOS64Base != NULL)
-        return GetFilePosition64(fh);
-
-    return Seek(fh, 0, OFFSET_CURRENT);
+        r = GetFilePosition64(fh);
+    else
+        r = Seek(fh, 0, OFFSET_CURRENT);
+    __fcb_unlock(fcb);
+    return r;
 }
 
 QUAD __dos64_getsize(fcb *fcb)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
     BPTR fh = fcb->handle;
+    QUAD r;
 
+    __fcb_lock(fcb);
     if (DOS64Base != NULL)
-        return GetFileSize64(fh);
-
-    /*
-     * Seek() returns the previous position: seek to the end to learn
-     * nothing yet, then back to where we were - that second call
-     * reports the end position, i.e. the size.
-     */
-    QUAD pos = Seek(fh, 0, OFFSET_END);
-    if (pos == -1)
-        return -1;
-    return Seek(fh, (LONG)pos, OFFSET_BEGINNING);
+        r = GetFileSize64(fh);
+    else
+    {
+        /*
+         * Seek() returns the previous position: seek to the end to learn
+         * nothing yet, then back to where we were - that second call
+         * reports the end position, i.e. the size. The pair must stay
+         * atomic against other users of the handle, hence the lock spans
+         * both seeks.
+         */
+        QUAD pos = Seek(fh, 0, OFFSET_END);
+        if (pos == -1)
+            r = -1;
+        else
+            r = Seek(fh, (LONG)pos, OFFSET_BEGINNING);
+    }
+    __fcb_unlock(fcb);
+    return r;
 }
 
 QUAD __dos64_setfilesize(fcb *fcb, QUAD size, LONG mode)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
     BPTR fh = fcb->handle;
+    QUAD r;
 
+    __fcb_lock(fcb);
     if (DOS64Base != NULL)
-        return SetFileSize64(fh, mode, size);
-
-    if (size != (QUAD)(LONG)size)
+        r = SetFileSize64(fh, mode, size);
+    else if (size != (QUAD)(LONG)size)
     {
         SetIoErr(ERROR_OBJECT_TOO_LARGE);
-        return -1;
+        r = -1;
     }
-    return SetFileSize(fh, (LONG)size, mode);
+    else
+        r = SetFileSize(fh, (LONG)size, mode);
+    __fcb_unlock(fcb);
+    return r;
 }
 
 QUAD __dos64_read(fcb *fcb, APTR buf, QUAD len)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
     BPTR fh = fcb->handle;
+    QUAD r;
 
+    __fcb_lock(fcb);
     if (DOS64Base != NULL)
-        return Read64(fh, buf, len);
-
-    /* Partial transfers are permitted, so simply clamp */
-    if (len > 0x7FFFF000LL)
-        len = 0x7FFFF000LL;
-    return Read(fh, buf, (LONG)len);
+        r = Read64(fh, buf, len);
+    else
+    {
+        /* Partial transfers are permitted, so simply clamp */
+        if (len > 0x7FFFF000LL)
+            len = 0x7FFFF000LL;
+        r = Read(fh, buf, (LONG)len);
+    }
+    __fcb_unlock(fcb);
+    return r;
 }
 
 QUAD __dos64_write(fcb *fcb, CONST_APTR buf, QUAD len)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
     BPTR fh = fcb->handle;
+    QUAD r;
 
+    __fcb_lock(fcb);
     if (DOS64Base != NULL)
-        return Write64(fh, buf, len);
-
-    if (len > 0x7FFFF000LL)
-        len = 0x7FFFF000LL;
-    return Write(fh, buf, (LONG)len);
+        r = Write64(fh, buf, len);
+    else
+    {
+        if (len > 0x7FFFF000LL)
+            len = 0x7FFFF000LL;
+        r = Write(fh, buf, (LONG)len);
+    }
+    __fcb_unlock(fcb);
+    return r;
 }
 
 static void __dos64_widenfib(const struct FileInfoBlock32 *src,

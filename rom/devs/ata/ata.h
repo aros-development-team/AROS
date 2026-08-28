@@ -38,7 +38,16 @@
 
 #define MAX_DEVICEBUSES         2
 #define MAX_BUSUNITS            2
+/*
+ * The daemon and bus tasks run plain message/IO loops; measured peak
+ * stack use on m68k is a few hundred bytes, and every resident task's
+ * stack comes out of chip RAM on an unexpanded Amiga.
+ */
+#ifdef __mc68000
+#define STACK_SIZE              4096
+#else
 #define STACK_SIZE              16384
+#endif
 #define TASK_PRI                10
 #define TIMEOUT                 30
 

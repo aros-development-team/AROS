@@ -15,6 +15,9 @@ struct HIDDDisplayData
 	OOP_Object  *dmenum;        /* The display mode enumerator object            */
 	OOP_Object  *compositor;    /* The display's compositor object (if any)      */
 
+	ULONG        connectortype; /* vHidd_ConnectorType_*, 0 = unknown            */
+	ULONG        connectorid;   /* connector instance (per type), 0 = unknown    */
+
 	/* Framebuffer control stuff */
 	OOP_Object  *framebuffer;
 	OOP_Object  *shownbm;
@@ -39,7 +42,8 @@ struct HIDDDisplayData
 	 * cursor moves or is hidden.
 	 */
 	OOP_Object  *cursor_bm;        /* bitmap the cursor is composited onto       */
-	OOP_Object  *cursor_backup;    /* save-under bitmap (cursor sized)           */
+	UBYTE       *cursor_backup;    /* save-under pixels, target's native format  */
+	ULONG        cursor_backup_bpp;/* bytes per pixel of the save-under target   */
 	UBYTE       *cursor_argb;      /* extracted ARGB32 cursor image              */
 	UWORD        cursor_w;         /* cursor image width                         */
 	UWORD        cursor_h;         /* cursor image height                        */

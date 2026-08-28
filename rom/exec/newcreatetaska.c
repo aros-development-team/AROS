@@ -163,10 +163,26 @@ static const struct newMemList MemTemplate =
 
     /* We need a minimum stack to handle interrupt contexts. Additionally confirned on MorphOS that
        it sets a minimum fixed size of stack */
+#ifdef __mc68000
+    /*
+     * On m68k interrupts and exceptions run on the supervisor stack, so
+     * the floor only guards the task's own calls. AmigaOS never floored
+     * CreateTask() stacks at all; flooring at AROS_STACKSIZE (16 KB)
+     * silently pinned 16 KB of chip RAM for every task on machines that
+     * may only have 512 KB. 4 KB still covers several times the
+     * measured peak of the system's own service tasks while letting
+     * explicitly sized stacks take effect.
+     */
+    if (nml.nml_ME[1].me_Length < 4096)
+    {
+        nml.nml_ME[1].me_Length = 4096;
+    }
+#else
     if (nml.nml_ME[1].me_Length < AROS_STACKSIZE)
     {
         nml.nml_ME[1].me_Length = AROS_STACKSIZE;
     }
+#endif
 
 
     DADDTASK("NewCreateTaskA: name %s", taskname ? taskname : "<NULL>");

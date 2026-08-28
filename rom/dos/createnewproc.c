@@ -19,6 +19,9 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#define __M68KEMU_NOLIBBASE__
+#include <proto/m68kemu.h>
+
 #include "dos_intern.h"
 #include LC_LIBDEFS_FILE
 #include <string.h>
@@ -188,7 +191,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
      * Additionally, it's horribly bad practice to support broken software this way.
      */
 #if __WORDSIZE > 32
-    process = AllocMem(sizeof(struct Process), MEMF_PUBLIC | MEMF_31BIT | MEMF_CLEAR);
+    /* MEMF_NO_EXPUNGE: on machines with no 31-bit memory at all this
+       first try can never succeed, and without the flag every process
+       ever created would wake the low-memory handlers once - flushing
+       innocent libraries - before taking the fallback below. */
+    process = AllocMem(sizeof(struct Process), MEMF_PUBLIC | MEMF_31BIT | MEMF_CLEAR | MEMF_NO_EXPUNGE);
     if (!process)
 #endif
     process = AllocMem(sizeof(struct Process), MEMF_PUBLIC | MEMF_CLEAR);
@@ -687,7 +694,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
         struct LocalVar *varNode;
         struct LocalVar *newVar;
         
-        /* We use the same strategy as in the ***Var() functions */
+        /* We use the same strategy as in the ***Var() functions */
         ForeachNode(&fromProcess->pr_LocalVars, varNode)
         {
             LONG  copyLength = strlen(varNode->lv_Node.ln_Name) + 1 +
@@ -727,6 +734,32 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
     return TRUE;
 }
 
+/*
+ * A dying handler process was seen closing its saved NIL streams with the
+ * FileHandle overwritten (wild fh_Type), sending the close packet's message
+ * into garbage and taking the machine down inside PutMsg(). Validate the
+ * handle before closing; a damaged one is reported with task attribution
+ * and leaked - losing a FileHandle is recoverable, the wild store is not.
+ */
+static BOOL streamSane(BPTR file, CONST_STRPTR which, struct DosLibrary *DOSBase)
+{
+    struct FileHandle *fh = BADDR(file);
+
+    if (fh == NULL)
+        return TRUE;    /* Close(BNULL) is a no-op */
+
+    if (TypeOfMem(fh) == 0 || fh->fh_Func3 == -1 ||
+        (fh->fh_Type != NULL && TypeOfMem(fh->fh_Type) == 0))
+    {
+        bug("[DosEntry] task '%s': %s stream handle 0x%p damaged"
+            " (fh_Type 0x%p fh_Func3 0x%p) - not closing\n",
+            FindTask(NULL)->tc_Node.ln_Name, which, fh,
+            fh->fh_Type, (APTR)fh->fh_Func3);
+        return FALSE;
+    }
+    return TRUE;
+}
+
 static void DosEntry(void)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
@@ -755,8 +788,43 @@ static void DosEntry(void)
 
     D(bug("[DosEntry %p] entry=%p, CIS=%p, COS=%p, argsize=%d, arguments=\"%s\"\n", me, initialPC, BADDR(me->pr_CIS), BADDR(me->pr_COS), argSize, me->pr_Arguments));
 
+    /* Get our own private DOSBase. We'll need it for our
+     * cleanup routines.
+     *
+     * We don't want to use the parent's DOSBase, since they
+     * may have closed their handle long ago.
+     *
+     * With the current DOSBase implementation, this isn't a
+     * big deal, but if DOSBase moved to a per-opener library
+     * in the future, this would be a very subtle issue, so
+     * we're going to plan ahead and do it right.
+     */
+    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+    if (DOSBase == NULL) {
+        D(bug("[DosEntry %p] Can't open DOS library\n", me));
+        Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
+    }
+
+#if !defined(__mc68000__)
+    /* Check if this is an m68k hunk binary and route through emulator */
+    {
+        IPTR hunkinfo = 0;
+        struct TagItem htags[] = { { GSLI_68KHUNK, (IPTR)&hunkinfo }, { TAG_DONE, 0 } };
+        if (segArray[3] && GetSegListInfo(segArray[3], htags) && hunkinfo)
+        {
+            struct Library *M68KEmuBase = OpenLibrary("m68kemu.library", 0);
+            if (M68KEmuBase) {
+                result = RunHunk(segArray[3], me->pr_StackSize, me->pr_Arguments, argSize);
+                CloseLibrary(M68KEmuBase);
+                goto skip_native_entry;
+            }
+        }
+    }
+#endif
+
     /* Call entry point of our process, remembering stack in its pr_ReturnAddr */
     result = CallEntry(me->pr_Arguments, argSize, initialPC, me);
+skip_native_entry:
 
     /* Call user defined exit function before shutting down. */
     if (me->pr_ExitCode != NULL)
@@ -791,23 +859,6 @@ static void DosEntry(void)
 #endif
     }
 
-    /* Get our own private DOSBase. We'll need it for our
-     * cleanup routines.
-     *
-     * We don't want to use the parent's DOSBase, since they
-     * may have closed their handle long ago.
-     *
-     * With the current DOSBase implementation, this isn't a
-     * big deal, but if DOSBase moved to a per-opener library
-     * in the future, this would be a very subtle issue, so
-     * we're going to plan ahead and do it right.
-     */
-    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
-    if (DOSBase == NULL) {
-        D(bug("[DosEntry %p] Can't open DOS library\n", me));
-        Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
-    }
-
     D(bug("Deleting local variables\n"));
 
     /* Clean up */
@@ -817,21 +868,24 @@ static void DosEntry(void)
 
     if (me->pr_Flags & PRF_CLOSEINPUT)
     {
-        Close(cis);
+        if (streamSane(cis, "input", DOSBase))
+            Close(cis);
     }
 
     D(bug("Closing output stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEOUTPUT)
     {
-        Close(cos);
+        if (streamSane(cos, "output", DOSBase))
+            Close(cos);
     }
 
     D(bug("Closing error stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEERROR)
     {
-        Close(ces);
+        if (streamSane(ces, "error", DOSBase))
+            Close(ces);
     }
 
     D(bug("Freeing arguments\n"));

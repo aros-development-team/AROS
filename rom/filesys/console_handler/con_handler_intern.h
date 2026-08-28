@@ -123,6 +123,7 @@ struct filehandle
 #define FHFLG_WAITFORCLOSE      512 /* Console with WAIT is waiting to be closed */
 #define FHFLG_BOOTCON           1024/* Special marker for boot console */
 #define FHFLG_DEVICEMODE        2048/* Driving a plain device, no window */
+#define FHFLG_NOWINDOW          4096/* Boot console failed to get a window: act as a sink */
 
 #undef InputBase
 #undef IntuitionBase

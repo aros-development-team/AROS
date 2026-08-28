@@ -72,6 +72,11 @@
         return -1;
     }
 
+    /* Serialise the reference-count decrement and the final teardown
+       against other Tasks sharing this fcb. When the count reaches zero
+       no other Task holds a reference, so releasing the lock immediately
+       before FreeVec() is safe. */
+    __fcb_lock(fdesc->fcb);
     if (--fdesc->fcb->opencount == 0)
     {
         /* Due to a *stupid* behaviour of the dos.library we cannot handle closing failures cleanly :-(
@@ -103,8 +108,11 @@
             }
         }
 
+        __fcb_unlock(fdesc->fcb);
         FreeVec(fdesc->fcb);
     }
+    else
+        __fcb_unlock(fdesc->fcb);
 
     __free_fdesc(fdesc);
     __setfdesc(fd, NULL);

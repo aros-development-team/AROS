@@ -13,6 +13,9 @@
 
 #include <aros/debug.h>
 
+/* The in-process protocol-plugin registry (created by main.c). */
+extern struct NetPrefsBase *NetPrefs_GetBase(void);
+
 #define EX_BUF_SIZE 256
 
 enum
@@ -247,18 +250,39 @@ void SetDefaultMobilePrefsValues()
 
 void InitInterface(struct Interface *iface)
 {
+    /* Start the interface with an empty protocol-object list.  The core never
+     * adds protocol objects itself - the loader (via the plugins' ReadTokens)
+     * and the editor do.
+     *
+     * Treat the struct as raw, uninitialised storage: NEWLIST unconditionally
+     * and never inspect the incoming header.  The editor passes fresh stack
+     * locals (Add Interface / Add Tunnel) whose list header is stack garbage -
+     * testing lh_Head there and freeing would walk wild pointers and crash.  A
+     * list an interface already owned must be released by its owner (the MUI
+     * destruct hook / Gadgets2NetworkPrefs), not here where validity is
+     * unknowable. */
+    NEWLIST(&iface->protoAddrs);
+
     SetName(iface, DEFAULTNAME);
-    SetIfDHCP(iface, TRUE);
-    SetIP(iface, DEFAULTIP);
-    SetMask(iface, DEFAULTMASK);
-    SetGate(iface, "");
-    SetIP6Mode(iface, IP_MODE_AUTO);
-    SetIP6(iface, "");
-    SetIP6Prefix(iface, 64);
-    SetGate6(iface, "");
     SetDevice(iface, DEFAULTDEVICE);
     SetUnit(iface, 0);
     SetUp(iface, FALSE);
+    SetIsTunnel(iface, FALSE);
+    SetTunnelRemote(iface, "");
+    SetTunnelLocal(iface, "");
+    SetTunnelTTL(iface, 0);
+}
+
+/* Initialise an interface as a 6in4 (SIT) tunnel pseudo-interface.  Its inner
+ * IPv6 is a protocol object like any other and is added by the editor/loader. */
+void InitTunnel(struct Interface *iface)
+{
+    InitInterface(iface);
+    SetName(iface, DEFAULTTUNNELNAME);
+    SetIsTunnel(iface, TRUE);
+    iface->device[0] = '\0';    /* a tunnel has no SANA-II device */
+    SetTunnelTTL(iface, 64);
+    SetUp(iface, TRUE);
 }
 
 /* Returns TRUE if directory has been created or already existed */
@@ -394,58 +418,57 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     if (!ConfFile) return FALSE;
     for (i = 0; i < interfacecount; i++)
     {
-        iface = GetInterface(i);
+        struct ProtocolAddress *pa;
+        CONST_STRPTR upstr;
 
-        /* Write interface line using registered protocol handlers */
+        iface = GetInterface(i);
+        upstr = GetUp(iface) ? "UP" : "";
+
+        /* The line prefix differs for a device interface vs a tunnel; the rest
+         * - the protocol tokens - is written the same way for both, by asking
+         * each protocol object's plugin to emit its own tokens. */
+        if (GetIsTunnel(iface))
+        {
+            fprintf(ConfFile, "%s TUNNEL", GetName(iface));
+            if (GetTunnelRemote(iface)[0] != '\0')
+                fprintf(ConfFile, " TDST=%s", GetTunnelRemote(iface));
+            if (GetTunnelLocal(iface)[0] != '\0')
+                fprintf(ConfFile, " TSRC=%s", GetTunnelLocal(iface));
+            if (GetTunnelTTL(iface) > 0)
+                fprintf(ConfFile, " TTL=%d", (int)GetTunnelTTL(iface));
+            fprintf(ConfFile, " ");
+        }
+        else
         {
             CONST_STRPTR notrack = GetNoTracking(iface) ? "NOTRACKING" : "";
-            CONST_STRPTR upstr  = GetUp(iface) ? "UP" : "";
-
             fprintf(ConfFile, "%s DEV=%s UNIT=%d %s ",
                 GetName(iface), GetDevice(iface), (int)GetUnit(iface), notrack);
-
-            /* Iterate registered protocol handlers to write their tokens */
-            {
-                extern struct NetPrefsBase *NetPrefs_GetBase(void);
-                struct NetPrefsBase *npb = NetPrefs_GetBase();
-                if (npb)
-                {
-                    struct ProtoHandlerNode *ph;
-                    ForeachNode(&npb->npb_ProtoHandlers, ph)
-                    {
-                        if (ph->ph_WriteTokens && ph->ph_Family < 2)
-                        {
-                            struct ProtocolAddress pa;
-                            ProtoAddr_FromInterface(&pa, iface, ph->ph_Family);
-
-                            /* ppp.device uses 0.0.0.0 for DHCP placeholder */
-                            if (ph->ph_Family == PROTO_FAMILY_IPV4
-                                && pa.pa_mode == IP_MODE_DHCP
-                                && strstr(GetDevice(iface), "ppp.device") != NULL)
-                            {
-                                pa.pa_mode = IP_MODE_MANUAL;
-                                strcpy(pa.pa_addr, "0.0.0.0");
-                                strcpy(pa.pa_mask, "255.255.255.0");
-                            }
-
-                            ph->ph_WriteTokens(ConfFile, &pa);
-                        }
-                    }
-                }
-            }
-            fprintf(ConfFile, "%s\n", upstr);
         }
-        if (strstr(GetDevice(iface), "atheros5000.device") != NULL
-            || strstr(GetDevice(iface), "prism2.device") != NULL
-            || strstr(GetDevice(iface), "realtek8180.device") != NULL
-            || strstr(GetDevice(iface), "bwfm.device") != NULL)
+
+        ForeachNode(GetProtoAddrs(iface), pa)
         {
-            SetWirelessDevice(GetDevice(iface));
-            SetWirelessUnit(GetUnit(iface));
+            struct ProtoHandlerNode *ph = ProtoHandler_ByID(pa->pa_node.ln_Type);
+            if (ph && ph->ph_WriteTokens)
+                ph->ph_WriteTokens(ConfFile, pa);
         }
-        else if (strstr(GetDevice(iface), "ppp.device") != NULL)
-            SetMobile_Autostart(TRUE);
+
+        fprintf(ConfFile, "%s\n", upstr);
+
+        if (!GetIsTunnel(iface))
+        {
+            if (strstr(GetDevice(iface), "atheros5000.device") != NULL
+                || strstr(GetDevice(iface), "prism2.device") != NULL
+                || strstr(GetDevice(iface), "realtek8180.device") != NULL
+                || strstr(GetDevice(iface), "bwfm.device") != NULL)
+            {
+                SetWirelessDevice(GetDevice(iface));
+                SetWirelessUnit(GetUnit(iface));
+            }
+            else if (strstr(GetDevice(iface), "ppp.device") != NULL)
+                SetMobile_Autostart(TRUE);
+        }
     }
+
     fclose(ConfFile);
 
     CombinePath2P(filename, filenamelen, destdbdir, "netdb-myhost");
@@ -454,14 +477,17 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
 
     for (i = 0; i < interfacecount; i++)
     {
+        struct ProtocolAddress *pa;
+
         iface = GetInterface(i);
-        if (GetIPMode(iface) == IP_MODE_MANUAL)
+        /* Map each statically-configured address to the host name.  Any
+         * protocol object in Manual mode with an address qualifies; the core
+         * does not care which protocol it is. */
+        ForeachNode(GetProtoAddrs(iface), pa)
         {
-            fprintf
-            (
-                ConfFile, "HOST %s %s.%s %s\n",
-                GetIP(iface), GetHostname(), GetDomain(), GetHostname()
-            );
+            if (pa->pa_mode == IP_MODE_MANUAL && pa->pa_addr[0] != '\0')
+                fprintf(ConfFile, "HOST %s %s.%s %s\n",
+                    pa->pa_addr, GetHostname(), GetDomain(), GetHostname());
         }
     }
 
@@ -1081,68 +1107,49 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                     tstring = strchr(tok.token, '=');
                     SetUnit(iface, atol(tstring + 1));
                 }
-                else if (strncmp(tok.token, "IP=", 3) == 0)
+                else if (strncmp(tok.token, "TUNNEL", 6) == 0)
                 {
-                    tstring = strchr(tok.token, '=');
-                    if (strncmp(tstring + 1, "DHCP", 4) == 0
-                        || strstr(GetDevice(iface), "ppp.device") != NULL)
-                    {
-                        SetIPMode(iface, IP_MODE_DHCP);
-                        SetIP(iface, DEFAULTIP);
-                    }
-                    else if (strncmp(tstring + 1, "AUTO", 4) == 0)
-                    {
-                        SetIPMode(iface, IP_MODE_AUTO);
-                        SetIP(iface, DEFAULTIP);
-                    }
-                    else
-                    {
-                        SetIP(iface, tstring + 1);
-                        SetIPMode(iface, IP_MODE_MANUAL);
-                    }
+                    /* 6in4 (SIT) tunnel pseudo-interface flag */
+                    SetIsTunnel(iface, TRUE);
+                    iface->device[0] = '\0';   /* a tunnel has no device */
                 }
-                else if (strncmp(tok.token, "NETMASK=", 8) == 0)
+                else if (strncmp(tok.token, "TDST=", 5) == 0)
                 {
                     tstring = strchr(tok.token, '=');
-                    SetMask(iface, tstring + 1);
+                    SetTunnelRemote(iface, tstring + 1);
                 }
-                else if (strncmp(tok.token, "IP6=", 4) == 0)
+                else if (strncmp(tok.token, "TSRC=", 5) == 0)
                 {
                     tstring = strchr(tok.token, '=');
-                    if (strncmp(tstring + 1, "DHCP", 4) == 0)
-                    {
-                        SetIP6Mode(iface, IP_MODE_DHCP);
-                        SetIP6(iface, "");
-                    }
-                    else if (strncmp(tstring + 1, "AUTO", 4) == 0)
-                    {
-                        SetIP6Mode(iface, IP_MODE_AUTO);
-                        SetIP6(iface, "");
-                    }
-                    else
-                    {
-                        SetIP6Mode(iface, IP_MODE_MANUAL);
-                        SetIP6(iface, tstring + 1);
-                    }
+                    SetTunnelLocal(iface, tstring + 1);
                 }
-                else if (strncmp(tok.token, "PREFIXLEN=", 10) == 0)
+                else if (strncmp(tok.token, "TTL=", 4) == 0)
                 {
                     tstring = strchr(tok.token, '=');
-                    SetIP6Prefix(iface, atol(tstring + 1));
-                }
-                else if (strncmp(tok.token, "GW=", 3) == 0)
-                {
-                    tstring = strchr(tok.token, '=');
-                    SetGate(iface, tstring + 1);
-                }
-                else if (strncmp(tok.token, "GW6=", 4) == 0)
-                {
-                    tstring = strchr(tok.token, '=');
-                    SetGate6(iface, tstring + 1);
+                    SetTunnelTTL(iface, atol(tstring + 1));
                 }
                 else if (strncmp(tok.token, "UP", 2) == 0)
                 {
                     SetUp(iface, TRUE);
+                }
+                else
+                {
+                    /* Not a core token: offer it to each protocol plugin.  The
+                     * first that recognises it parses it into (creating if
+                     * needed) its address node on the interface's list. */
+                    struct NetPrefsBase *npb = NetPrefs_GetBase();
+                    if (npb)
+                    {
+                        struct ProtoHandlerNode *ph;
+                        ForeachNode(&npb->npb_ProtoHandlers, ph)
+                        {
+                            if (ph->ph_ReadTokens &&
+                                ph->ph_ReadTokens(&iface->protoAddrs,
+                                                  (CONST_STRPTR)tok.token,
+                                                  ph->ph_ID) != NULL)
+                                break;
+                        }
+                    }
                 }
             }
         }
@@ -1176,7 +1183,10 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
 
     /* static-routes is no longer used for gateway; gateways are per-interface in interfaces file */
 
-    CombinePath2P(filename, filenamelen, directory, "Autorun");
+    /* Must match the "AutoRun" filename written by SaveNetworkPrefs - on a
+     * case-sensitive host FS "Autorun" would never be found, so the autostart
+     * flag would silently read back as unset (boot autostart appears broken). */
+    CombinePath2P(filename, filenamelen, directory, "AutoRun");
     OpenTokenFile(&tok, filename);
     while (!tok.fend)
     {
@@ -1560,11 +1570,89 @@ static BOOL ReadServer(struct Server *server, BPTR file, LONG size)
 }
 
 
+/* TRUE if <root>/db/interfaces exists. */
+static BOOL InterfacesExistUnder(CONST_STRPTR root)
+{
+    ULONG len = strlen(root) + 4 + 20;
+    TEXT filename[len];
+    BPTR lock;
+
+    CombinePath3P(filename, len, root, "db", "interfaces");
+    if ((lock = Lock(filename, SHARED_LOCK)))
+    {
+        UnLock(lock);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* Resolve which directory to read the configuration from, mirroring how the
+ * AROSTCP stack itself locates its prefs (see bsdsocket/kern/amiga_main.c):
+ *
+ *   1. ENV:AROSTCP - the live/edited config, once it has been populated (by a
+ *      previous Save, or by the boot copy of ENVARC:->ENV:).
+ *   2. ENV:AROSTCP/Config - an explicit db-directory override, the same env var
+ *      the stack honours.  Its contents name the db dir, so the reader (which
+ *      appends "/db") is given the parent.
+ *   3. The install location named by SYS/Packages/AROSTCP (e.g.
+ *      SYS:System/Network/AROSTCP), whose db/ holds the shipped config - this
+ *      is the stack's default when no override is set, and the case that was
+ *      leaving the editor's interface list empty (nothing populates ENV:AROSTCP
+ *      on a freshly installed system).
+ *   4. ENV:AROSTCP as a last resort.
+ *
+ * The returned string is valid for the life of the program. */
+static CONST_STRPTR ResolveReadRoot(void)
+{
+    static TEXT root[1024];
+    TEXT cfg[1024];
+
+    /* 1. Live config already present in ENV: */
+    if (InterfacesExistUnder(PREFS_PATH_ENV))
+        return PREFS_PATH_ENV;
+
+    /* 2. Stack's AROSTCP/Config override (names the db dir directly). */
+    if (GetVar("AROSTCP/Config", cfg, sizeof(cfg), GVF_GLOBAL_ONLY) > 0 && cfg[0])
+    {
+        BPTR lock = Lock(cfg, SHARED_LOCK);
+        if (lock)
+        {
+            STRPTR pp;
+            UnLock(lock);
+            /* cfg is "<root>/db"; hand back <root> so the reader's "/db" append
+             * reconstructs it. */
+            strlcpy(root, cfg, sizeof(root));
+            pp = PathPart(root);
+            pp[0] = '\0';
+            if (root[0])
+                return root;
+        }
+    }
+
+    /* 3. Stack default: the package install location; its db/ holds the config. */
+    {
+        CONST_STRPTR loc = GetDefaultStackLocation();
+        if (loc && loc[0] && InterfacesExistUnder(loc))
+        {
+            strlcpy(root, loc, sizeof(root));
+            return root;
+        }
+    }
+
+    /* 4. Nothing found - fall back to ENV:AROSTCP (list may be empty). */
+    return PREFS_PATH_ENV;
+}
+
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save)
 {
     SetDefaultNetworkPrefsValues();
     SetDefaultWirelessPrefsValues();
     SetDefaultMobilePrefsValues();
+
+    /* When no explicit source was requested, locate the config the same way the
+     * stack does, so the editor shows the configuration actually in use. */
+    if (directory == NULL)
+        directory = ResolveReadRoot();
 
     ReadNetworkPrefs(directory);
     ReadWirelessPrefs(WIRELESS_PATH_ENV);
@@ -1617,54 +1705,11 @@ STRPTR GetName(struct Interface *iface)
     return iface->name;
 }
 
-BOOL GetIfDHCP(struct Interface *iface)
+/* The interface's protocol objects live on iface->protoAddrs; the core reaches
+ * them only through the protocols.c helpers, never through per-family getters. */
+struct List *GetProtoAddrs(struct Interface *iface)
 {
-    return iface->ipMode == IP_MODE_DHCP;
-}
-
-enum IPMode GetIPMode(struct Interface *iface)
-{
-    return iface->ipMode;
-}
-
-STRPTR GetIP(struct Interface *iface)
-{
-    return iface->IP;
-}
-
-STRPTR GetMask(struct Interface *iface)
-{
-    return iface->mask;
-}
-
-STRPTR GetGate(struct Interface *iface)
-{
-    return iface->gate;
-}
-
-STRPTR GetIP6(struct Interface *iface)
-{
-    return iface->ip6;
-}
-
-BOOL GetIfDHCP6(struct Interface *iface)
-{
-    return iface->ip6Mode == IP_MODE_DHCP;
-}
-
-enum IPMode GetIP6Mode(struct Interface *iface)
-{
-    return iface->ip6Mode;
-}
-
-LONG GetIP6Prefix(struct Interface *iface)
-{
-    return iface->ip6prefix;
-}
-
-STRPTR GetGate6(struct Interface *iface)
-{
-    return iface->gate6;
+    return &iface->protoAddrs;
 }
 
 STRPTR GetDevice(struct Interface *iface)
@@ -1680,6 +1725,26 @@ LONG GetUnit(struct Interface *iface)
 BOOL GetUp(struct Interface *iface)
 {
     return iface->up;
+}
+
+BOOL GetIsTunnel(struct Interface *iface)
+{
+    return iface->isTunnel;
+}
+
+STRPTR GetTunnelRemote(struct Interface *iface)
+{
+    return iface->tunnelRemote;
+}
+
+STRPTR GetTunnelLocal(struct Interface *iface)
+{
+    return iface->tunnelLocal;
+}
+
+LONG GetTunnelTTL(struct Interface *iface)
+{
+    return iface->tunnelTTL;
 }
 
 STRPTR GetDNS(LONG m)
@@ -1715,27 +1780,6 @@ BOOL GetDHCP(void)
 
 /* Setters */
 
-void SetInterface
-(
-    struct Interface *iface, STRPTR name, enum IPMode ipMode, STRPTR IP, STRPTR mask,
-    STRPTR gate, enum IPMode ip6Mode, STRPTR ip6, LONG ip6prefix, STRPTR gate6,
-    STRPTR device, LONG unit, BOOL up
-)
-{
-    SetName(iface, name);
-    SetIPMode(iface, ipMode);
-    SetIP(iface, IP);
-    SetMask(iface, mask);
-    SetGate(iface, gate);
-    SetIP6Mode(iface, ip6Mode);
-    SetIP6(iface, ip6);
-    SetIP6Prefix(iface, ip6prefix);
-    SetGate6(iface, gate6);
-    SetDevice(iface, device);
-    SetUnit(iface, unit);
-    SetUp(iface, up);
-}
-
 void SetName(struct Interface *iface, STRPTR w)
 {
     if (!IsLegal(w, NAMECHARS))
@@ -1743,72 +1787,6 @@ void SetName(struct Interface *iface, STRPTR w)
         w = DEFAULTNAME;
     }
     strlcpy(iface->name, w, NAMEBUFLEN);
-}
-
-void SetIfDHCP(struct Interface *iface, BOOL w)
-{
-    iface->ipMode = w ? IP_MODE_DHCP : IP_MODE_MANUAL;
-}
-
-void SetIPMode(struct Interface *iface, enum IPMode w)
-{
-    iface->ipMode = w;
-}
-
-void SetIP(struct Interface *iface, STRPTR w)
-{
-    if (!IsLegal(w, IPCHARS))
-    {
-        w = DEFAULTIP;
-    }
-    strlcpy(iface->IP, w, IPBUFLEN);
-}
-
-void SetMask(struct Interface *iface, STRPTR  w)
-{
-    if (!IsLegal(w, IPCHARS))
-    {
-        w = DEFAULTMASK;
-    }
-    strlcpy(iface->mask, w, IPBUFLEN);
-}
-
-void SetIP6(struct Interface *iface, STRPTR w)
-{
-    if (w == NULL)
-        w = "";
-    strlcpy(iface->ip6, w, IP6BUFLEN);
-}
-
-void SetIfDHCP6(struct Interface *iface, BOOL w)
-{
-    iface->ip6Mode = w ? IP_MODE_DHCP : IP_MODE_MANUAL;
-}
-
-void SetIP6Mode(struct Interface *iface, enum IPMode w)
-{
-    iface->ip6Mode = w;
-}
-
-void SetIP6Prefix(struct Interface *iface, LONG w)
-{
-    if (w < 0 || w > 128)
-        w = 64;
-    iface->ip6prefix = w;
-}
-
-void SetGate(struct Interface *iface, STRPTR w)
-{
-    if (w == NULL)
-        w = "";
-    strlcpy(iface->gate, w, IPBUFLEN);
-}
-
-void SetGate6(struct Interface *iface, STRPTR w)
-{
-    if (w == NULL)
-        w = "";
-    strlcpy(iface->gate6, w, IP6BUFLEN);
 }
 
 void SetDevice(struct Interface *iface, STRPTR w)
@@ -1828,6 +1806,30 @@ void SetUnit(struct Interface *iface, LONG w)
 void SetUp(struct Interface *iface, BOOL w)
 {
     iface->up = w;
+}
+
+void SetIsTunnel(struct Interface *iface, BOOL w)
+{
+    iface->isTunnel = w;
+}
+
+void SetTunnelRemote(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL)
+        w = "";
+    strlcpy(iface->tunnelRemote, w, IPBUFLEN);
+}
+
+void SetTunnelLocal(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL)
+        w = "";
+    strlcpy(iface->tunnelLocal, w, IPBUFLEN);
+}
+
+void SetTunnelTTL(struct Interface *iface, LONG w)
+{
+    iface->tunnelTTL = w;
 }
 
 void SetDNS(LONG m, STRPTR w)

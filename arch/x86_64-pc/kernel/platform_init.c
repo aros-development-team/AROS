@@ -219,7 +219,8 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     for (i = 0; i < HW_IRQ_COUNT; i++)
     {
         LIBBASE->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
-        LIBBASE->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
+        LIBBASE->kb_Interrupts[i].ki_ICId = KBL_INTERNAL;
+        LIBBASE->kb_Interrupts[i].ki_ICInst = 0;
     }
 
     D(bug("[Kernel:x86_64] %s: Interrupt Lists initialised\n", __func__));

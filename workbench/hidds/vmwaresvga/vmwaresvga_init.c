@@ -44,7 +44,9 @@ AROS_UFH3(void, VMWSVGAEnumerator,
 
     struct VMWareSVGA_staticdata *xsd = (struct VMWareSVGA_staticdata *)hook->h_Data;
     IPTR io_base, fb_base, mmio_base, INTLine;
+    IPTR fb_size = 0, mmio_size = 0;
     IPTR ProductID, VendorID, SubClass;
+    OOP_Object *pciDriver = NULL;
 
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
@@ -52,10 +54,23 @@ AROS_UFH3(void, VMWSVGAEnumerator,
 
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &io_base);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base1, &fb_base);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size1, &fb_size);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &mmio_base);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &mmio_size);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *)&pciDriver);
+
+    /*
+     * Base0 is an IO port range, but the framebuffer and FIFO are memory -
+     * outside the identity mapped window they have no CPU mapping yet.
+     */
     xsd->data.iobase = (APTR)io_base;
-    xsd->data.vrambase = (APTR)fb_base;
-    xsd->data.mmiobase = (APTR)mmio_base;
+    xsd->data.vrambase = HIDD_PCIDriver_MapPCI(pciDriver, (APTR)fb_base, (ULONG)fb_size);
+    xsd->data.mmiobase = HIDD_PCIDriver_MapPCI(pciDriver, (APTR)mmio_base, (ULONG)mmio_size);
+    if (!xsd->data.vrambase || !xsd->data.mmiobase)
+    {
+        D(bug("[vmwaresvga.hidd] %s: failed to map the card's memory\n", __func__);)
+        return;
+    }
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &INTLine);
     xsd->data.hwint = (ULONG)INTLine;
 

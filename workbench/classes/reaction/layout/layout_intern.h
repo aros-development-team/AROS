@@ -101,6 +101,9 @@ struct LayoutData
     ULONG               ld_BevelStyle;   /* Bevel style */
     ULONG               ld_HorizAlignment;
     ULONG               ld_VertAlignment;
+    BOOL                ld_VertAlignSet;    /* LAYOUT_VertAlignment given */
+    ULONG               ld_BevelState;      /* LAYOUT_BevelState (IDS_*) */
+    LONG                ld_FillPen;         /* LAYOUT_FillPen (-1 = none) */
 
     BOOL                ld_SpaceOuter;   /* Add outer spacing */
     BOOL                ld_SpaceInner;   /* Add inner spacing */

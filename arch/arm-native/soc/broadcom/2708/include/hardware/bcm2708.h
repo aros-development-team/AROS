@@ -29,6 +29,9 @@
 /* Peripheral window of the BCM2711, which differs from the earlier SoCs. */
 #define BCM2711_PERIIOBASE                              0xFE000000
 
+/* Peripheral window of the BCM2712 (Raspberry Pi 5). */
+#define BCM2712_PERIIOBASE                              0x107C000000ULL
+
 /*
  * The BCM2711 presents the GPU interrupts of the earlier controller as
  * GIC shared interrupts, offset by this much: GPU interrupt n arrives as
@@ -142,6 +145,108 @@
 
 /* DMA DREQ peripheral map IDs */
 #define DMA_DREQ_PWM                                    5
+
+/*
+ * BCM2711 DMA4 engines (channels 11-14): 40-bit addressing and a 128-bit
+ * AXI path. Same 0x100 channel stride as the legacy engines, but only CS
+ * and the control block address keep their offsets - everything else moved,
+ * and the control block is a different structure (see bcm2708_dma.h).
+ */
+#define DMA4_CS(ch)                                     (DMA_CH_BASE(ch) + 0x00)
+#define DMA4_CB(ch)                                     (DMA_CH_BASE(ch) + 0x04)
+#define DMA4_DEBUG(ch)                                  (DMA_CH_BASE(ch) + 0x0C)
+#define DMA4_TI(ch)                                     (DMA_CH_BASE(ch) + 0x10)
+#define DMA4_SRC(ch)                                    (DMA_CH_BASE(ch) + 0x14)
+#define DMA4_SRCI(ch)                                   (DMA_CH_BASE(ch) + 0x18)
+#define DMA4_DEST(ch)                                   (DMA_CH_BASE(ch) + 0x1C)
+#define DMA4_DESTI(ch)                                  (DMA_CH_BASE(ch) + 0x20)
+#define DMA4_LEN(ch)                                    (DMA_CH_BASE(ch) + 0x24)
+#define DMA4_NEXT_CB(ch)                                (DMA_CH_BASE(ch) + 0x28)
+#define DMA4_DEBUG2(ch)                                 (DMA_CH_BASE(ch) + 0x2C)
+
+/*
+ * DMA4 CS bits. ACTIVE/END/INT sit where the legacy engine has them, so a
+ * completion poll is shared - but bit 31 is HALT here, not RESET, and there
+ * is no reset bit in CS at all (it lives in DEBUG).
+ */
+#define DMA4_CS_ACTIVE                                  (1 << 0)
+#define DMA4_CS_END                                     (1 << 1)
+#define DMA4_CS_INT                                     (1 << 2)
+#define DMA4_CS_DREQ                                    (1 << 3)
+#define DMA4_CS_ERROR                                   (1 << 10)
+#define DMA4_CS_QOS(x)                                  (((x) & 0xF) << 16)
+#define DMA4_CS_PANIC_QOS(x)                            (((x) & 0xF) << 20)
+#define DMA4_CS_DMA_BUSY                                (1 << 24)
+#define DMA4_CS_OUTSTANDING_TRANSACTIONS                (1 << 25)
+#define DMA4_CS_WAIT_FOR_WRITES                         (1 << 28)
+#define DMA4_CS_ABORT                                   (1 << 30)
+#define DMA4_CS_HALT                                    (1UL << 31)
+
+/*
+ * DMA4 DEBUG bits. RESET is write-1-self-clearing and reads back as 0,
+ * and is documented as "probably fatal" while the AXI bus still has
+ * outstanding transactions - halt and drain first.
+ *
+ * The four error latches are READ-TO-CLEAR (RC), not W1C like the
+ * legacy engines' - reading DEBUG clears them. They matter beyond
+ * diagnostics: CS.ERROR (bit 10) mirrors them and latched error state
+ * makes the engine misbehave on subsequent transfers, so read DEBUG
+ * after every completed or failed transfer. Bit 0 is a WRITE response
+ * error on DMA4 (the legacy engines have READ_LAST_NOT_SET there).
+ * Bits 27:24 hold the channel ID, 31:28 the version - a DMA4 DEBUG
+ * readback of 0x1b000000 is just "version 1, channel 11".
+ */
+#define DMA4_DEBUG_WRITE_ERROR                          (1 << 0)
+#define DMA4_DEBUG_FIFO_ERROR                           (1 << 1)
+#define DMA4_DEBUG_READ_ERROR                           (1 << 2)
+#define DMA4_DEBUG_READ_CB_ERROR                        (1 << 3)
+#define DMA4_DEBUG_INT_ON_ERROR                         (1 << 8)
+#define DMA4_DEBUG_HALT_ON_ERROR                        (1 << 9)
+#define DMA4_DEBUG_ABORT_ON_ERROR                       (1 << 10)  /* resets to 1 */
+#define DMA4_DEBUG_DISABLE_CLK_GATE                     (1 << 11)
+#define DMA4_DEBUG_RESET                                (1 << 23)
+#define DMA4_DEBUG_ERRORS                               (DMA4_DEBUG_WRITE_ERROR |  \
+                                                         DMA4_DEBUG_FIFO_ERROR |   \
+                                                         DMA4_DEBUG_READ_ERROR |   \
+                                                         DMA4_DEBUG_READ_CB_ERROR)
+
+/* DMA4 TI bits */
+#define DMA4_TI_INTEN                                   (1 << 0)
+#define DMA4_TI_TDMODE                                  (1 << 1)
+#define DMA4_TI_WAIT_RESP                               (1 << 2)
+#define DMA4_TI_WAIT_RD_RESP                            (1 << 3)
+#define DMA4_TI_PERMAP(x)                               (((x) & 0x1F) << 9)
+#define DMA4_TI_S_DREQ                                  (1 << 14)
+#define DMA4_TI_D_DREQ                                  (1 << 15)
+#define DMA4_TI_S_WAITS(x)                              (((x) & 0xFF) << 16)
+#define DMA4_TI_D_WAITS(x)                              (((x) & 0xFF) << 24)
+
+/*
+ * DMA4 SRCI/DESTI: the top 8 address bits packed with the per-side transfer
+ * attributes. SIZE is an AXI beat width, capped at 128 bits on BCM2711.
+ */
+#define DMA4_XI_ADDR_HI(addr)                           ((ULONG)(((UQUAD)(addr) >> 32) & 0xFF))
+#define DMA4_XI_BURST_LENGTH(x)                         (((x) & 0xF) << 8)
+#define DMA4_XI_INC                                     (1 << 12)
+#define DMA4_XI_SIZE_32                                 (0 << 13)
+#define DMA4_XI_SIZE_64                                 (1 << 13)
+#define DMA4_XI_SIZE_128                                (2 << 13)
+#define DMA4_XI_IGNORE                                  (1 << 15)
+#define DMA4_XI_STRIDE(x)                               (((ULONG)(x) & 0xFFFF) << 16)
+
+/*
+ * DMA4 LEN. Linear mode treats YLENGTH as the high bits of a 30-bit byte
+ * count; 2D mode performs YLENGTH+1 rows of XLENGTH bytes.
+ */
+#define DMA4_LEN_LINEAR(bytes)                          ((ULONG)(bytes) & 0x3FFFFFFF)
+#define DMA4_LEN_2D(xlength, ylength)                   ((((ULONG)(ylength) & 0x3FFF) << 16) | \
+                                                         ((ULONG)(xlength) & 0xFFFF))
+
+/*
+ * Both the CB register and a control block's next-CB field hold the address
+ * shifted right by 5 - the block must be 32-byte aligned anyway.
+ */
+#define DMA4_CB_ADDR(addr)                              ((ULONG)((UQUAD)(addr) >> 5))
 
 #define SYSTIMER_CS                                     (SYSTIMER_BASE + 0x00)
 #define SYSTIMER_CLO                                    (SYSTIMER_BASE + 0x04)

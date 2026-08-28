@@ -31,6 +31,8 @@ struct DrawListBase_intern
 struct DrawListData
 {
     struct DrawList *dd_Directives;      /* DLST_END terminated directive array */
+    WORD             dd_RefWidth;        /* DRAWLIST_RefWidth (0 = unscaled) */
+    WORD             dd_RefHeight;       /* DRAWLIST_RefHeight (0 = unscaled) */
 };
 
 #endif /* DRAWLIST_INTERN_H */

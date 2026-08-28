@@ -14,11 +14,15 @@
 
 #include <proto/alib.h>
 #include <proto/mbox.h>
+#include <proto/openfirmware.h>
 #include <hardware/videocore.h>
 
 #include "usb2otg_intern.h"
 
 #define DEVNAME         "usb2otg.device"
+
+#define USB2OTG_DT_COMPATIBLE "brcm,bcm2835-usb"
+#define USB2OTG_DT_COMPATIBLE_LEGACY "brcm,bcm2708-usb"
 
 const char devname[]    = MOD_NAME_STRING;
 
@@ -26,6 +30,53 @@ AROS_INTP(FNAME_DEV(PendingInt));
 AROS_INTP(FNAME_DEV(NakTimeoutInt));
 
 IPTR    __arm_periiobase __attribute__((used)) = 0 ;
+
+static BOOL FNAME_DEV(StrEq)(CONST_STRPTR a, CONST_STRPTR b)
+{
+    while (*a && *a == *b)
+    {
+        a++;
+        b++;
+    }
+    return (*a == *b);
+}
+
+/*
+ * The OTG core is wired to a usable port on the BCM283x boards only. On
+ * BCM2711 it serves the USB-C socket and the firmware leaves it powered down
+ * - the USB-A ports hang off a PCIe XHCI controller instead - so the device
+ * tree marks the node disabled. Driving it there hangs the core.
+ */
+static BOOL FNAME_DEV(DTEnabled)(void)
+{
+    void *OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    CONST_STRPTR status;
+
+    /* Without a device tree, behave as before and probe the core. */
+    if (OpenFirmwareBase == NULL)
+        return TRUE;
+
+    /* By binding, not by path: the unit address in a node name is a bus
+       address and moves between SoC generations. A populated tree with no
+       such node means this machine has no OTG core of ours - BCM2712 puts a
+       different controller somewhere else entirely. */
+    key = OF_FindNodeByCompatible(NULL, USB2OTG_DT_COMPATIBLE);
+    if (key == NULL)
+        key = OF_FindNodeByCompatible(NULL, USB2OTG_DT_COMPATIBLE_LEGACY);
+    if (key == NULL)
+        return FALSE;
+
+    prop = OF_FindProperty(key, "status");
+    if (prop == NULL)
+        return TRUE;
+
+    status = OF_GetPropValue(prop);
+    if (status == NULL)
+        return TRUE;
+
+    return (FNAME_DEV(StrEq)(status, "okay") || FNAME_DEV(StrEq)(status, "ok"));
+}
 
 /*
  *===========================================================
@@ -46,6 +97,12 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 
     D(bug("[USB2OTG] %s: USB2OTGBase @ 0x%p, SysBase @ 0x%p\n",
                  __PRETTY_FUNCTION__, USB2OTGBase, SysBase));
+
+    if (!FNAME_DEV(DTEnabled)())
+    {
+        D(bug("[USB2OTG] %s: disabled in the device tree\n", __PRETTY_FUNCTION__));
+        return FALSE;
+    }
 
     otg_RegVal = rd32le(USB2OTG_VENDORID);
 
@@ -103,10 +160,10 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                     wr32le(USB2OTG_AHB, otg_RegVal);
 
                     D(bug("[USB2OTG] Powering on USB controller\n"));
-                    /* 8-ULONG message + up to 15 bytes alignment slack:
-                     * 9 ULONGs could overflow after the 16-byte round-up. */
-                    pwron = AllocVec(16*sizeof(ULONG), MEMF_CLEAR);
-                    PwrOnMsg = (ULONG*)(((IPTR)pwron + 15) & ~15);
+                    /* MBoxCall invalidates the reply a whole cache line at a
+                     * time, so the message must own its 64-byte line. */
+                    pwron = AllocVec(64 + 63, MEMF_CLEAR);
+                    PwrOnMsg = (ULONG*)(((IPTR)pwron + 63) & ~63);
 
                     D(bug("[USB2OTG] pwron=%p, PwrOnMsg=%p\n", pwron, PwrOnMsg));
 
@@ -178,6 +235,21 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
                                                 __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit));
 
+                                    /* Heap memory (VC bus alias maps it), and 64-byte
+                                     * aligned so DMA cache maintenance owns its lines. */
+                                    USB2OTGBase->hd_Unit->hu_BounceRaw = AllocMem((8 * DMA_BOUNCE_SIZE) + 63,
+                                                                                  MEMF_PUBLIC | MEMF_CLEAR);
+                                    if (USB2OTGBase->hd_Unit->hu_BounceRaw == NULL)
+                                    {
+                                        bug("[USB2OTG] Failed to allocate DMA bounce buffers\n");
+                                        return FALSE;
+                                    }
+                                    for (i = 0; i < 8; i++)
+                                        USB2OTGBase->hd_Unit->hu_BounceBuf[i] =
+                                            (UBYTE *)(((IPTR)USB2OTGBase->hd_Unit->hu_BounceRaw + 63) & ~63)
+                                            + (i * DMA_BOUNCE_SIZE);
+
+
                                     NewList(&USB2OTGBase->hd_Unit->hu_IOPendingQueue);
 
                                     NewList(&USB2OTGBase->hd_Unit->hu_CtrlXFerQueue);
@@ -235,6 +307,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     }
                                     USB2OTGBase->hd_Unit->hu_BulkOwnerDev[0] = 0;
                                     USB2OTGBase->hd_Unit->hu_BulkOwnerDev[1] = 0;
+                                    for (i = 0; i < USB2OTG_TTCLEAR_PENDING; i++)
+                                        USB2OTGBase->hd_Unit->hu_TTClearPending[i].tc_Hub = 0;
 
                                     USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, FNAME_DEV(GlobalIRQHandler), USB2OTGBase->hd_Unit, SysBase);
                                     USB2OTGBase->hd_Unit->hu_USB2OTGBase = USB2OTGBase;
@@ -649,9 +723,10 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
             (int)ioreq->iouh_DevAddr,
             (int)ioreq->iouh_Endpoint,
             loc, chan_at,
-            (unsigned long)usb2otg_wd_ticks,
+            (unsigned long)unit->hu_WdTicks,
             aborted ? "aborted" : "NOT aborted (channel/not-found)");)
         (void)loc; (void)chan_at;
+
 
         if (aborted)
         {

@@ -79,6 +79,7 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     hc->hc_CPrivate = xhcic;
 
     /* Initialize hardware... */
+    if (!(hc->hc_Flags & HCF_PLATFORM))
     {
         IPTR barbase, barsize;
 
@@ -105,7 +106,9 @@ static BOOL XHCIController__Init(struct PCIController *hc)
         return FALSE;
     }
 
-    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
+    if (!(hc->hc_Flags & HCF_PLATFORM)) {
+        OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
+    }
 
     if(hc->hc_Unit) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Initializing hardware for unit #%d" DEBUGCOLOR_RESET" \n",
@@ -263,9 +266,7 @@ takeownership:
         xhciECPOff += nextcap << 2;
     }
 
-    IPTR vendor = 0;
-    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_VendorID, &vendor);
-    if(vendor == 0x8086) {
+    if(hc->hc_VendID == 0x8086) {
         /* Intel port routing. For chipsets exposing both EHCI and xHCI and multiplexing
            physical ports between them. Switch ports to xHCI host controller. Tested on
            H18M (0x8c31 - LynxPoint) */
@@ -281,6 +282,9 @@ takeownership:
         pciusbWarn("xHCI", DEBUGCOLOR_SET "Intel PCH: USB3PSSEN=%08lx XUSB2PR=%08lx" DEBUGCOLOR_RESET" \n",
                    READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_USB3_PSSEN),
                    READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_XUSB2PR));
+
+        if (hc->hc_ProdID == 0x8c31)
+            hc->hc_Quirks |= HCQF_LYNXPOINT;
     }
 
     UWORD xhciversion;

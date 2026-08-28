@@ -45,6 +45,7 @@
 #define BUTTON_DomainString     (BUTTON_Dummy+20)   /* (STRPTR) String for domain calculation */
 #define BUTTON_Integer          (BUTTON_Dummy+21)   /* (int) Numeric value to display */
 #define BUTTON_BitMap           (BUTTON_Dummy+22)   /* (struct BitMap *) BitMap to render */
+#define BUTTON_TextPadding      (BUTTON_Dummy+23)   /* (BOOL) Pad text with extra spacing */
 
 #define BUTTON_AnimButton       (BUTTON_Dummy+50)   /* (BOOL) Enable animation mode */
 #define BUTTON_AnimImages       (BUTTON_Dummy+51)   /* (struct Image *) Animation image array */

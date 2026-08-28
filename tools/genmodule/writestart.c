@@ -700,6 +700,7 @@ static void writeresident(FILE *out, struct config *cfg)
         case IMAGE:
         case DATATYPE:
         case USBCLASS:
+        case BTCLASS:
         case HIDD:
             fprintf(out, "    NT_LIBRARY,\n");
             break;
@@ -1340,6 +1341,14 @@ static void writeopenlib(FILE *out, struct config *cfg)
                     "\n"
                     "    if (newlib == NULL)\n"
                     "    {\n"
+                    "        /* Count this opener in before anything else. The open\n"
+                    "           cascade below loads other libraries from disk, and for\n"
+                    "           all that time an expunge sweep running from any other\n"
+                    "           task would otherwise see lib_OpenCnt of 0 and unload\n"
+                    "           this library while it is being opened. */\n"
+                    "        ((struct Library *)LIBBASE)->lib_OpenCnt++;\n"
+                    "        ((struct Library *)LIBBASE)->lib_Flags &= ~LIBF_DELEXP;\n"
+                    "\n"
                     "        newlib = MakeLibrary(GM_UNIQUENAME(InitTable).FuncTable,\n"
                     "                             GM_UNIQUENAME(InitTable).DataTable,\n"
                     "                             NULL,\n"
@@ -1347,7 +1356,10 @@ static void writeopenlib(FILE *out, struct config *cfg)
                     "                             (BPTR)NULL\n"
                     "        );\n"
                     "        if (newlib == NULL)\n"
+                    "        {\n"
+                    "            ((struct Library *)LIBBASE)->lib_OpenCnt--;\n"
                     "            return NULL;\n"
+                    "        }\n"
                     "\n"
                     "        CopyMem(LIBBASE, newlib, possize);\n"
                     "        struct __GM_DupBase *dupbase = (struct __GM_DupBase *)newlib;\n"
@@ -1375,11 +1387,9 @@ static void writeopenlib(FILE *out, struct config *cfg)
                     "            __GM_SetPerTaskBase(oldpertaskbase);\n");
             fprintf(out,
                     "            __freebase(newlib);\n"
+                    "            ((struct Library *)LIBBASE)->lib_OpenCnt--;\n"
                     "            return NULL;\n"
                     "        }\n"
-                    "\n"
-                    "        ((struct Library *)LIBBASE)->lib_OpenCnt++;\n"
-                    "        ((struct Library *)LIBBASE)->lib_Flags &= ~LIBF_DELEXP;\n"
                     "    }\n"
                     "\n"
                     "    return (LIBBASETYPEPTR)newlib;\n"

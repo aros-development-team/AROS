@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Loader for shared libraries and devices.
 */
@@ -646,6 +646,34 @@ AROS_LH1(void, RemLibrary,
     AROS_LIBFUNC_EXIT
 }
 
+/*
+ * Whether an lddemon object node for this name is currently held by an
+ * open or close in progress. Called under Forbid() from LDFlush, so the
+ * list is stable; AttemptSemaphore on the object list keeps us from
+ * deadlocking against a task that holds it while allocating.
+ */
+static BOOL LDObjectIsBusy(CONST_STRPTR name, struct ExecBase *SysBase)
+{
+    struct IntLDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+    struct LDObjectNode *ldon;
+    BOOL busy = FALSE;
+
+    if (!name)
+        return FALSE;
+
+    if (!AttemptSemaphoreShared(&ldBase->dl_LDObjectsListSigSem))
+        return TRUE;    /* someone is working the list - assume busy */
+
+    ldon = (struct LDObjectNode *)FindName((struct List *)&ldBase->dl_LDObjectsList,
+                                           (STRPTR)name);
+    if (ldon && ldon->ldon_AccessCount != 0)
+        busy = TRUE;
+
+    ReleaseSemaphore(&ldBase->dl_LDObjectsListSigSem);
+
+    return busy;
+}
+
 AROS_UFH3(LONG, LDFlush,
     AROS_UFHA(struct MemHandlerData *, lmhd, A0),
     AROS_UFHA(APTR, data, A1),
@@ -673,8 +701,15 @@ AROS_UFH3(LONG, LDFlush,
     library = (struct Library *)SysBase->LibList.lh_Head;
     while(library->lib_Node.ln_Succ != NULL)
     {
-        /* Flush libraries with a 0 open count */
-        if( ! library->lib_OpenCnt )
+        /* Flush libraries with a 0 open count.
+         *
+         * A zero count is not the whole story: an open that is still
+         * being put together holds the object list node, not the
+         * library, and the count only moves at the end. Expunging such
+         * a library hands its opener a pointer into freed memory - so
+         * anything with an in-flight request is left alone. */
+        if( !library->lib_OpenCnt
+            && !LDObjectIsBusy(library->lib_Node.ln_Name, SysBase) )
         {
             /* the library list node will be wiped from memory */
             struct Library *nextLib = (struct Library *)library->lib_Node.ln_Succ;
@@ -706,8 +741,9 @@ AROS_UFH3(LONG, LDFlush,
     library = (struct Library *)SysBase->DeviceList.lh_Head;
     while(library->lib_Node.ln_Succ != NULL)
     {
-        /* Flush libraries with a 0 open count */
-        if( ! library->lib_OpenCnt )
+        /* Flush libraries with a 0 open count (see above) */
+        if( !library->lib_OpenCnt
+            && !LDObjectIsBusy(library->lib_Node.ln_Name, SysBase) )
         {
             struct Library *nextDev = (struct Library *)library->lib_Node.ln_Succ;
             RemDevice((struct Device *)library);

@@ -2,7 +2,7 @@
 #define KERNEL_BASE_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,8 +25,15 @@
 #include <aros/kernel.h>
 #endif
 
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#endif
+
 /* Early declaration for ictl functions */
 struct KernelBase;
+
+/* irqid_t/icid_t/icinstid_t - kernel_arch.h uses them in its prototypes */
+#include <kernel_irqtypes.h>
 
 /* These two specify IRQ_COUNT and EXCEPTIONS_COUNT */
 #include <kernel_arch.h>
@@ -56,9 +63,23 @@ struct KernelInt
 {
     IPTR        ki_Priv;                        /* arch specific per-irq data */
     struct List ki_List;
+#ifdef KERNELIRQ_NEEDSCONTROLLERS
+    /*
+     * Which controller serves this source. These used to live in the
+     * chain's own lh_Type/l_pad, which are UBYTE by the exec ABI and so
+     * could not name more than 256 of either.
+     */
+    icid_t      ki_ICId;
+    icinstid_t  ki_ICInst;
+#endif
 };
 #define KERNELIRQ_LIST(x)       KernelBase->kb_Interrupts[x].ki_List
+#define KERNELIRQ_ICID(x)       KernelBase->kb_Interrupts[x].ki_ICId
+#define KERNELIRQ_ICINST(x)     KernelBase->kb_Interrupts[x].ki_ICInst
 #else
+#ifdef KERNELIRQ_NEEDSCONTROLLERS
+#error interrupt controllers need the per-IRQ private area (KERNELIRQ_NEEDSPRIVATE)
+#endif
 #define KernelInt List
 #define KERNELIRQ_LIST(x)       KernelBase->kb_Interrupts[x]
 #endif
@@ -73,6 +94,9 @@ struct KernelBase
 #endif
     struct MinList      kb_Exceptions[EXCEPTIONS_COUNT];
     struct KernelInt    kb_Interrupts[HW_IRQ_COUNT];
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t          kb_IntrSpinLock;            /* guards kb_Exceptions/kb_Interrupts chains */
+#endif
     ULONG               kb_ContextFlags;            /* Hints for KrnCreateContext()         */
     ULONG               kb_ContextSize;	                /* Total length of CPU context          */
     ULONG               kb_PageSize;                /* Physical memory page size            */
@@ -80,7 +104,7 @@ struct KernelBase
     IPTR                kb_ClockUnit;
     struct PlatformData *kb_PlatformData;
 #ifdef KERNELIRQ_NEEDSCONTROLLERS
-    UBYTE               kb_ICTypeBase;                  /* used to set IC controller ID's       */
+    icid_t              kb_ICTypeBase;                  /* used to set IC controller ID's       */
 #endif
     KrnSymResolver_t    kb_gResolver;
     APTR                kb_gResolvPrivate;

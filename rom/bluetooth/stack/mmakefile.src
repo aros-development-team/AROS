@@ -1,0 +1,17 @@
+# Portable Bluetooth protocol core (imported from aros-bluzing, MIT licensed,
+# see LICENSE.aros-bluzing). Built as a link library used by bluetooth.library
+# and the virtual HCI device; its headers (btcore/) are private to rom/bluetooth.
+
+include $(SRCDIR)/config/aros.cfg
+
+include $(SRCDIR)/$(CURDIR)/core.files
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/protocols
+USER_CFLAGS := $(CFLAGS_NO_STRICT_ALIASING)
+
+#MM- linklibs-btcore : includes
+
+%build_linklib mmake=linklibs-btcore libname=btcore \
+    files="$(addprefix $(SRCDIR)/$(CURDIR)/,$(BTCORE_FILES))"
+
+%common

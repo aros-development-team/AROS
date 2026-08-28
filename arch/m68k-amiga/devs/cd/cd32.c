@@ -147,12 +147,27 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
     };
     ULONG status;
     UBYTE rxtail;
+    BOOL claimed = FALSE;
 
     AROS_INTFUNC_INIT
 
-    status = readl(AKIKO_CDINTREQ);
+    /* CDINTREQ returns the raw request latches; CDINTENA only gates the
+     * INT2 line. Completion bits stay latched until the matching index
+     * comparator is rewritten, so between exchanges the previous
+     * command's TXDMA/RXDMA bits are still visible. This server runs on
+     * every PORTS interrupt (CIA-A events included) and must only act
+     * on the sources it has armed: reacting to a stale latch signals
+     * the unit task at a moment it never asked about, desynchronising
+     * the command exchange.
+     */
+    status = readl(AKIKO_CDINTREQ) & cu->cu_IntEnable;
     if (!status)
         return FALSE;
+
+    if (status & AKIKO_CDINT_TXDMA) {
+        CD32_IntDisable(cu, AKIKO_CDINT_TXDMA);
+        claimed = TRUE;
+    }
 
     if (status & AKIKO_CDINT_RXDMA) {
         rxtail = readb(AKIKO_CDRXINX);
@@ -163,15 +178,13 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
                 D(bug("%s: Insane response byte 0x%02x\n", cu->cu_Misc->Response[cu->cu_RxHead]));
             }
             writeb(cu->cu_RxHead+len+1, AKIKO_CDRXCMP);
-            return TRUE;
+            claimed = TRUE;
+        } else {
+            CD32_IntDisable(cu, AKIKO_CDINT_RXDMA);
+            D(bug("%s: Signal %p\n", __func__, cu->cu_Task));
+            if (cu->cu_Task)
+                Signal(cu->cu_Task, SIGF_SINGLE);
         }
-        CD32_IntDisable(cu, AKIKO_CDINT_RXDMA);
-        D(bug("%s: Signal %p\n", __func__, cu->cu_Task));
-        Signal(cu->cu_Task, SIGF_SINGLE);
-    }
-
-    if (status & AKIKO_CDINT_TXDMA) {
-        CD32_IntDisable(cu, AKIKO_CDINT_TXDMA);
     }
 
 #if 0
@@ -184,11 +197,12 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
     if (status & AKIKO_CDINT_PBX) {
         UWORD pbx = readw(AKIKO_CDPBX);
         writew(0, AKIKO_CDPBX);
-        if (pbx < 0x000f)
+        if (pbx < 0x000f && cu->cu_Task)
             Signal(cu->cu_Task, SIGF_SINGLE);
+        claimed = TRUE;
     }
 
-    return FALSE;
+    return claimed;
 
     AROS_INTFUNC_EXIT
 }
@@ -231,9 +245,48 @@ static VOID CD32_UpdateTOC(struct CD32Unit *cu)
     }
 }
 
+/* Command/response timeout, in milliseconds. Unsolicited traffic
+ * (media change, SUBQ streams) arrives interleaved, so this bounds
+ * one response, not a whole TOC read.
+ */
+#define CD32_CMD_TIMEOUT_MS 3000
+
+/* Arm the device timerequest as a wait bound. Its hand-built reply
+ * port signals SIGF_SINGLE on this task - the same signal the
+ * interrupt handler uses - so a drive that stops answering turns
+ * into a normal wakeup with an empty response ring, which the
+ * checksum paths already reject, instead of an eternal Wait().
+ *
+ * The request lives in the device base and is deliberately shared
+ * without locking: every user - these timeouts and cdDelayMS() in the
+ * TOC loop - runs on the one unit task, which owns all drive I/O. A
+ * second backend with its own unit task would need a per-unit request.
+ */
+static VOID cd32TimeoutStart(struct CD32Unit *cu, ULONG ms)
+{
+    LIBBASETYPE *cb = cu->cu_CDBase;
+
+    cb->cb_TimerPort.mp_SigTask = FindTask(NULL);
+    cb->cb_TimerRequest.tr_node.io_Command = TR_ADDREQUEST;
+    cb->cb_TimerRequest.tr_time.tv_secs = ms / 1000;
+    cb->cb_TimerRequest.tr_time.tv_micro = (ms * 1000) % 1000000;
+    SendIO((struct IORequest *)&cb->cb_TimerRequest);
+}
+
+static VOID cd32TimeoutEnd(struct CD32Unit *cu)
+{
+    LIBBASETYPE *cb = cu->cu_CDBase;
+
+    if (!CheckIO((struct IORequest *)&cb->cb_TimerRequest))
+        AbortIO((struct IORequest *)&cb->cb_TimerRequest);
+    WaitIO((struct IORequest *)&cb->cb_TimerRequest);
+    SetSignal(0, SIGF_SINGLE);
+}
+
 static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp, LONG resp_len)
 {
     UBYTE csum, RxTail;
+    LONG err;
     int i;
 
     cu->cu_Sequence++;
@@ -253,14 +306,22 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
 
     cu->cu_Misc->Command[cu->cu_TxHead++] = ~csum;
 
-    /* Just wait for the RX to complete of the status */
-    CD32_IntEnable(cu, AKIKO_CDINT_RXDMA | AKIKO_CDINT_TXDMA);
-    writel(AKIKO_CDFLAG_TXD | AKIKO_CDFLAG_RXD | AKIKO_CDFLAG_CAS | AKIKO_CDFLAG_PBX | AKIKO_CDFLAG_MSB, AKIKO_CDFLAG);
-
-    /* Trigger the command by updating AKIKO_CDTXCMP */
+    /* CDINTREQ completion bits stay latched until the matching index
+     * register is written: CDRXCMP clears RXDMADONE, CDTXCMP clears
+     * TXDMADONE. Clear the previous command's stale latches before
+     * enabling their interrupts - enabling on top of a stale latch
+     * fires the handler at once, which disables RXDMA again and
+     * consumes the completion signal before this command has run.
+     */
     SetSignal(0, SIGF_SINGLE);
     writeb((cu->cu_RxHead + 1) & 0xff, AKIKO_CDRXCMP);
     writeb(cu->cu_TxHead, AKIKO_CDTXCMP);
+    CD32_IntEnable(cu, AKIKO_CDINT_RXDMA | AKIKO_CDINT_TXDMA);
+
+    /* Let the transfers run; this triggers the command */
+    writel(AKIKO_CDFLAG_TXD | AKIKO_CDFLAG_RXD | AKIKO_CDFLAG_CAS | AKIKO_CDFLAG_PBX | AKIKO_CDFLAG_MSB, AKIKO_CDFLAG);
+
+    cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
 
     for (;;) {
         UBYTE RxHead = cu->cu_RxHead;
@@ -290,7 +351,8 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
 
         if (csum != 0xff) {
             D(bug("%s: Checksum failed on RX\n", __func__));
-            return CDERR_NotSpecified;
+            err = CDERR_NotSpecified;
+            goto out;
         }
 
         RxHead = cu->cu_RxHead;
@@ -333,11 +395,34 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
             break;
 
         default:
-            D(bug("%s: Command mismatch: got 0x%02x, expected 0x%02x\n", __func__, cu->cu_Misc->Response[RxHead], cmd[0]));
-            return CDERR_InvalidState;
+            /* The drive volunteers play status with the MULTI command
+             * nibble and a zero sequence nibble: byte 1 carries the
+             * CHERR_PLAYING state (play started / play finished).
+             */
+            if (cu->cu_Misc->Response[RxHead] == CHCD_MULTI) {
+                if (cu->cu_Misc->Response[(UBYTE)(RxHead + 1)] & CHERR_PLAYING)
+                    cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
+                else
+                    cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED);
+                break;
+            }
+            /* Anything else that passed the checksum is drive chatter
+             * this driver does not know; skip it and keep waiting.
+             * Aborting the in-flight command here desynchronises the
+             * whole exchange one packet late, permanently - every
+             * later command then errors on its predecessor's reply.
+             */
+            D(bug("%s: skipping unexpected packet 0x%02x\n", __func__,
+                  cu->cu_Misc->Response[RxHead]));
+            break;
         }
 
+        /* Re-open the receive window and re-enable RXDMA for the next
+         * response; the interrupt handler disabled RXDMA when it
+         * signalled this one.
+         */
         writeb((RxTail + 1) & 0xff, AKIKO_CDRXCMP);
+        CD32_IntEnable(cu, AKIKO_CDINT_RXDMA);
     }
 
     D(bug("%s: Found expected: 0x%02x (%d)\n", __func__, cu->cu_Misc->Response[cu->cu_RxHead], (RxTail + 256 - cu->cu_RxHead) & 0xff));
@@ -359,12 +444,16 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
 
     if (csum != 0xff) {
         D(bug("%s: Checksum failed on RX\n", __func__));
-        return CDERR_NotSpecified;
+        err = CDERR_NotSpecified;
+        goto out;
     }
 
     D(bug("%s:  -- RXHead %2x --\n", __func__, cu->cu_RxHead));
 
-    return 0;
+    err = 0;
+out:
+    cd32TimeoutEnd(cu);
+    return err;
 }
 
 static VOID CD32_Led(struct CD32Unit *cu, BOOL led_on)
@@ -414,7 +503,13 @@ static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, voi
         CD32_IntEnable(cu, AKIKO_CDINT_PBX);
 
         writel(readl(AKIKO_CDFLAG) | AKIKO_CDFLAG_ENABLE, AKIKO_CDFLAG);
+        cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
         Wait(SIGF_SINGLE);
+        cd32TimeoutEnd(cu);
+        /* Nobody waits for sectors past this point: a late PBX
+         * interrupt must not signal the task under some later Wait().
+         */
+        CD32_IntDisable(cu, AKIKO_CDINT_PBX);
 
         CD32_Cmd(cu, cmd_pause, 1, resp, sizeof(resp));
         CD32_Led(cu, FALSE);
@@ -423,6 +518,12 @@ static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, voi
         if (pbx == 0) {
             D(bug("%s: Overflow during read\n", __func__));
             break;
+        }
+
+        if (pbx == 0xffff) {
+            /* Not a single sector arrived before the timeout */
+            D(bug("%s: No sectors delivered\n", __func__));
+            return CDERR_NotSpecified;
         }
 
         for (i = 15; i >= 0; i--) {
@@ -747,8 +848,8 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             cmd[3] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Frame;
             if (last > cu->cu_CDTOC[0].Summary.LastTrack) {
                 cmd[4] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Minute;
-                cmd[5] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Minute;
-                cmd[6] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Minute;
+                cmd[5] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Second;
+                cmd[6] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Frame;
             } else {
                 cmd[4] = cu->cu_CDTOC[last].Entry.Position.MSF.Minute;
                 cmd[5] = cu->cu_CDTOC[last].Entry.Position.MSF.Second;
@@ -797,10 +898,13 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         CD32_Status(cu);
         break;
     case CD_ATTENUATE:
-        io->io_Actual = cu->cu_Muted ? 0 : 0x7fff;
-        if (io->io_Offset > 0 && io->io_Offset < 0x7fff) {
+        /* AudioPrecision is 1 (mute only): 0 mutes, anything above
+         * unmutes, -1 queries. io_Actual returns the resulting volume.
+         * The fade duration in io_Length collapses to a step.
+         */
+        if ((LONG)io->io_Offset >= 0)
             CD32_Mute(cu, io->io_Offset == 0);
-        }
+        io->io_Actual = cu->cu_Muted ? 0 : 0x7fff;
         err = 0;
         break;
     default:
@@ -820,10 +924,19 @@ static VOID CD32_Expunge(APTR priv)
     FreeVec(cu);
 }
 
+static VOID CD32_UnitInit(APTR priv)
+{
+    struct CD32Unit *cu = priv;
+
+    cu->cu_Task = FindTask(NULL);
+    CD32_IsCDROM(cu);
+}
+
 static const struct cdUnitOps CD32Ops = {
     .uo_Name = "CD32 (Akiko)",
     .uo_Expunge = CD32_Expunge,
     .uo_DoIO = CD32_DoIO,
+    .uo_Init = CD32_UnitInit,
 };
 
 static const struct DosEnvec CD32Envec = {
@@ -837,7 +950,17 @@ static const struct DosEnvec CD32Envec = {
     .de_Interleave = 0,
     .de_LowCyl = 0,
     .de_HighCyl = 0,
-    .de_NumBuffers = 32,
+    /*
+     * CDVDFS sizes its sector cache as de_NumBuffers 16-sector (32 KB)
+     * prefetch chunks, so 32 here cost a full megabyte of BufMemType
+     * memory the moment CD0: mounts. A CD32 without expansion RAM backs
+     * MEMF_24BITDMA with its only 2 MB of chip RAM, and half the machine
+     * disappearing before the boot handoff is what forced fast RAM onto
+     * titles that run chip-only under the CD32 Kickstart (whose
+     * CDFileSystem treats a buffer as one 2 KB block). Four chunks
+     * (128 KB) keep sequential streaming ahead of the drive.
+     */
+    .de_NumBuffers = 4,
     .de_BufMemType = MEMF_24BITDMA,
     .de_MaxTransfer = 32 * 2048,
     .de_Mask = 0x00fffffe,
@@ -886,7 +1009,6 @@ static int CD32_InitLib(LIBBASETYPE *cb)
                 priv->cu_CDInfo.ReadSpeed = 150;
                 priv->cu_CDInfo.ReadXLSpeed = 150;
                 priv->cu_CDInfo.AudioPrecision = 1;
-                CD32_IsCDROM(priv);
 
                 unit = cdAddUnit(cb, &CD32Ops, priv, &CD32Envec);
                 if (unit >= 0) {

@@ -27,15 +27,28 @@
  */
 static struct KernelBase *irqKernelBase;
 
-void ictl_enable_irq(uint8_t irq, struct KernelBase *kb)
+/* Per-source delivery counts, for the serial debug poke: a wedged
+   device shows up as a counter that stops moving */
+ULONG __irq_counts[KRN_MAX_IRQ_SOURCES];
+
+/*
+ * Sources above the controller's own are raised by whoever owns them
+ * (see allocirq.c) and have nothing to unmask - a bridge receiving
+ * message interrupts calls KrnRunIRQ() for them once its own line has
+ * been serviced. Handing one to the controller is not an error, it
+ * simply is not its source, so say nothing and leave it alone.
+ */
+void ictl_enable_irq(irqid_t irq, struct KernelBase *kb)
 {
     irqKernelBase = kb;
-    krnPLICEnable(irq, 1);
+    if (irq <= krnPLICSourceCount())
+        krnPLICEnable(irq, 1);
 }
 
-void ictl_disable_irq(uint8_t irq, struct KernelBase *kb)
+void ictl_disable_irq(irqid_t irq, struct KernelBase *kb)
 {
-    krnPLICEnable(irq, 0);
+    if (irq <= krnPLICSourceCount())
+        krnPLICEnable(irq, 0);
 }
 
 /*
@@ -57,8 +70,43 @@ void krnHandleExternalIRQ(void)
 
     while ((src = krnPLICClaim()) != 0)
     {
+        if (src < KRN_MAX_IRQ_SOURCES)
+            __irq_counts[src]++;
+
         if (irqKernelBase)
-            krnRunIRQHandlers(irqKernelBase, (uint8_t)src);
+        {
+            struct krnMSIController *mc = krnFindMSIController(src);
+
+            if (mc)
+            {
+                /*
+                 * A controller collecting messages: nothing is wired
+                 * to this source but itself, and its pending register
+                 * is the only thing that says which devices signalled.
+                 * Clear what has arrived, then run the handlers of the
+                 * sources those vectors were given.
+                 */
+                ULONG pending = *(volatile ULONG *)mc->status;
+
+                if (pending)
+                {
+                    *(volatile ULONG *)mc->status = pending;
+                    (void)*(volatile ULONG *)mc->status;
+
+                    while (pending)
+                    {
+                        unsigned int vector = __builtin_ctz(pending);
+
+                        pending &= ~(1UL << vector);
+                        if (vector < mc->count)
+                            krnRunIRQHandlers(irqKernelBase,
+                                              (irqid_t)(mc->base + vector));
+                    }
+                }
+            }
+            else
+                krnRunIRQHandlers(irqKernelBase, (irqid_t)src);
+        }
         krnPLICComplete(src);
 
         /*

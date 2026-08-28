@@ -39,9 +39,11 @@ struct ClickTabNode
     STRPTR              tn_Text;        /* TNA_Text */
     LONG                tn_Number;      /* TNA_Number */
     BOOL                tn_Disabled;    /* TNA_Disabled */
+    BOOL                tn_CloseGadget; /* TNA_CloseGadget */
     Object              *tn_Image;      /* TNA_Image */
     Object              *tn_SelImage;   /* TNA_SelImage */
     APTR                tn_UserData;    /* TNA_UserData */
+    STRPTR              tn_HintInfo;    /* TNA_HintInfo */
 };
 
 /* ClickTab gadget instance data */
@@ -51,6 +53,12 @@ struct ClickTabData
     LONG                td_Current;      /* Currently selected tab index */
     LONG                td_NumTabs;      /* Total number of tabs */
     Object              *td_PageGroup;   /* Page group object */
+    struct Node         *td_NodeClosed;  /* CLICKTAB_NodeClosed (get) */
+    Object              *td_CloseImage;  /* CLICKTAB_CloseImage */
+    Object              *td_FlagImage;   /* CLICKTAB_FlagImage */
+    BOOL                td_LabelTruncate;/* CLICKTAB_LabelTruncate */
+    BOOL                td_AutoFit;      /* CLICKTAB_AutoFit */
+    BOOL                td_EvenSize;     /* CLICKTAB_EvenSize */
 
     /* Runtime state */
     LONG                td_HoverTab;     /* Tab under mouse (-1 = none) */

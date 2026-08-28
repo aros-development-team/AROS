@@ -192,7 +192,9 @@ VOID PCIDTDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o,
         case tHidd_PCIVector_Int:
             tag->ti_Data = (data->msiVector >= 0 &&
                             data->bridge < psd->bridgeCount)
-                           ? psd->bridges[data->bridge].msiIrq : -1;
+                           ? (psd->bridges[data->bridge].msiIrqBase +
+                              data->msiVector)
+                           : -1;
             break;
         }
     }

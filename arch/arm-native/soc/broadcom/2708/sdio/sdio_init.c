@@ -65,13 +65,19 @@ APTR MBoxBase __attribute__((used)) = NULL;
  * 3/3B+ the SoC supplies it on GPCLK2 (GPIO43), but the firmware does not
  * start it for us: GPIO43 comes up as a plain input. Without the LPO the
  * chip stays asleep and never answers CMD5.
- * Derive ~32.768 kHz from the 19.2 MHz crystal with the MASH-1 fractional
- * divider: 19.2e6 / 585.9375 = 32768 Hz (DIVI 585, DIVF 0.9375*4096=3840).
+ * Derive ~32.768 kHz from the crystal with the MASH-1 fractional divider.
+ * The oscillator feeding CM_SRC_OSC is 19.2 MHz on BCM2835/6/7 but 54 MHz on
+ * BCM2711, so the divider is per-SoC - one divider for both would clock the
+ * chip's PMU ~2.8x too fast on a Pi 4:
+ *   19.2e6 / 585.9375  = 32768 Hz (DIVI 585,  DIVF 0.9375*4096   = 3840)
+ *   54.0e6 / 1647.9492 = 32768 Hz (DIVI 1647, DIVF 0.94921875*4096 = 3888)
  */
 #define CM_GP2CTL               (CLOCK_BASE + 0x80)
 #define CM_GP2DIV               (CLOCK_BASE + 0x84)
 #define SDIO_LPO_DIVI           585
 #define SDIO_LPO_DIVF           3840
+#define SDIO_LPO_DIVI_2711      1647
+#define SDIO_LPO_DIVF_2711      3888
 
 /* MMC command opcodes reused from the memory-card set */
 #define SDIO_CMD_SEND_RELATIVE_ADDR     MMC_CMD_SET_RELATIVE_ADDR       /* CMD3, R6 */
@@ -254,13 +260,48 @@ static void sdio_gpio_mux(struct SDIOBase *SDIOBase)
 
 /*
  * Pull configuration for the SDIO bus, matching the Pi device tree:
- * CLK (GPIO34) no pull, CMD/DAT (GPIO35-39) pull-up. Uses the legacy
- * BCM2835 GPPUD/GPPUDCLK clocked sequence (bank 1 = GPIO32-53).
+ * CLK (GPIO34) no pull, CMD/DAT (GPIO35-39) pull-up.
+ *
+ * Two incompatible register sets: BCM2835/6/7 use the clocked GPPUD/GPPUDCLK
+ * sequence (bank 1 = GPIO32-53), while on BCM2711 those registers read back
+ * as reserved and writes are ignored - the pulls moved to the directly
+ * writable GPIO_PUP_PDN_CNTRL_REG0..3 (GPIO+0xE4), 16 pins per register,
+ * 2 bits each (00 none, 01 up, 10 down). Using the legacy path on a Pi 4
+ * leaves CMD/DAT floating, and the card never answers CMD5.
  */
+#define GPPUPPDN(pin)           (GPIO_BASE + 0xE4 + (((pin) >> 4) << 2))
+#define GPPUPPDN_NONE           0
+#define GPPUPPDN_UP             1
+
+static void sdio_gpio_pulls_2711(struct SDIOBase *SDIOBase)
+{
+    int pin;
+
+    for (pin = 34; pin <= 39; pin++)
+    {
+        volatile ULONG *reg = (volatile ULONG *)GPPUPPDN(pin);
+        int shift = (pin & 0x0f) << 1;
+        ULONG val = AROS_LE2LONG(*reg);
+
+        val &= ~(0x3 << shift);
+        val |= ((pin == 34) ? GPPUPPDN_NONE : GPPUPPDN_UP) << shift;
+        *reg = AROS_LONG2LE(val);
+    }
+
+    D(bug("[SDIO] GPIO34-39 pulls (2711): PUPPDN2=0x%08x\n",
+          AROS_LE2LONG(*(volatile ULONG *)GPPUPPDN(34))));
+}
+
 static void sdio_gpio_pulls(struct SDIOBase *SDIOBase)
 {
     volatile ULONG *gppud = (volatile ULONG *)GPPUD;
     volatile ULONG *clk1 = (volatile ULONG *)GPPUDCLK1;
+
+    if (SDIOBase->sdio_periiobase == BCM2711_PERIIOBASE)
+    {
+        sdio_gpio_pulls_2711(SDIOBase);
+        return;
+    }
 
     /* GPIO35-39: pull-up (GPPUD = 2) */
     *gppud = AROS_LONG2LE(2);
@@ -289,6 +330,9 @@ static void sdio_wifi_clock(struct SDIOBase *SDIOBase)
     volatile ULONG *divr = (volatile ULONG *)CM_GP2DIV;
     volatile ULONG *fsel4 = (volatile ULONG *)GPFSEL4;
     int shift = (43 % 10) * 3;          /* GPIO43 = field 3 of GPFSEL4 */
+    int is2711 = (SDIOBase->sdio_periiobase == BCM2711_PERIIOBASE);
+    ULONG divi = is2711 ? SDIO_LPO_DIVI_2711 : SDIO_LPO_DIVI;
+    ULONG divf = is2711 ? SDIO_LPO_DIVF_2711 : SDIO_LPO_DIVF;
     ULONG val, timeout;
 
     D(bug("[SDIO] GPCLK2 before: CTL=0x%08x DIV=0x%08x GPFSEL4=0x%08x\n",
@@ -300,8 +344,8 @@ static void sdio_wifi_clock(struct SDIOBase *SDIOBase)
     while ((AROS_LE2LONG(*ctl) & CM_BUSY) && timeout--)
         sdio_udelay(SDIOBase, 10);
 
-    /* Fractional (MASH-1) divider from the 19.2 MHz crystal */
-    *divr = AROS_LONG2LE(CM_PASSWORD | (SDIO_LPO_DIVI << 12) | SDIO_LPO_DIVF);
+    /* Fractional (MASH-1) divider, sized for this SoC's crystal */
+    *divr = AROS_LONG2LE(CM_PASSWORD | (divi << 12) | divf);
 
     /* Select source + MASH, then enable in a second write (per datasheet) */
     *ctl = AROS_LONG2LE(CM_PASSWORD | CM_MASH(1) | CM_SRC_OSC);
@@ -327,14 +371,15 @@ static void sdio_wifi_clock(struct SDIOBase *SDIOBase)
  */
 static void sdio_wifi_power(struct SDIOBase *SDIOBase)
 {
-    unsigned int *raw = AllocMem(16 * 4 + 16, MEMF_PUBLIC | MEMF_CLEAR);
+    /* Own our cache lines; see <proto/mbox.h>. */
+    unsigned int *raw = AllocMem(MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1), MEMF_PUBLIC | MEMF_CLEAR);
     unsigned int *msg;
     unsigned int gpio = RPI_EXP_GPIO_BASE + RPI_EXP_GPIO_WL_ON;
     int state;
 
     if (!raw)
         return;
-    msg = (unsigned int *)((((IPTR)raw) + 15) & ~15);
+    msg = (unsigned int *)((((IPTR)raw) + (MBOX_MSG_ALIGN - 1)) & ~(IPTR)(MBOX_MSG_ALIGN - 1));
 
     /* Configure the expander pin as an output (initial level low) */
     msg[0] = AROS_LONG2LE(12 * 4);
@@ -383,7 +428,7 @@ static void sdio_wifi_power(struct SDIOBase *SDIOBase)
     D(bug("[SDIO] GET_GPIO_STATE gpio %u -> state %u (tag 0x%08x)\n",
           gpio, AROS_LE2LONG(msg[6]), AROS_LE2LONG(msg[4])));
 
-    FreeMem(raw, 16 * 4 + 16);
+    FreeMem(raw, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
 
     D(bug("[SDIO] WL_REG_ON sequence done\n"));
 }
@@ -393,8 +438,9 @@ static void sdio_wifi_power(struct SDIOBase *SDIOBase)
 
 static int sdio_mbox_setup(struct SDIOBase *SDIOBase)
 {
-    unsigned int *raw = AllocMem(8 * 4 + 16, MEMF_PUBLIC | MEMF_CLEAR);
-    unsigned int *msg = (unsigned int *)((((IPTR)raw) + 15) & ~15);
+    /* Own our cache lines; see <proto/mbox.h>. */
+    unsigned int *raw = AllocMem(MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1), MEMF_PUBLIC | MEMF_CLEAR);
+    unsigned int *msg = (unsigned int *)((((IPTR)raw) + (MBOX_MSG_ALIGN - 1)) & ~(IPTR)(MBOX_MSG_ALIGN - 1));
     int ok = FALSE;
 
     if (!raw)
@@ -444,7 +490,7 @@ static int sdio_mbox_setup(struct SDIOBase *SDIOBase)
         ok = (SDIOBase->sdio_ClockMax != 0);
     }
 
-    FreeMem(raw, 8 * 4 + 16);
+    FreeMem(raw, MBOX_MSG_ALIGN + (MBOX_MSG_ALIGN - 1));
     return ok;
 }
 
@@ -937,10 +983,17 @@ static int sdio_do_probe(struct SDIOBase *SDIOBase)
      * The sdio_Present guard above ensures this runs only once. */
     if (SDIOBase->sdio_IRQHandle == NULL)
     {
-        SDIOBase->sdio_IRQHandle = KrnAddIRQHandler(IRQ_VC_ARASANSDIO,
+        /* BCM2711 presents the legacy GPU interrupts a fixed distance up
+         * through the GIC: the card lands on INTID 158, not 62. */
+        unsigned int irq = IRQ_VC_ARASANSDIO;
+
+        if (SDIOBase->sdio_periiobase == BCM2711_PERIIOBASE)
+            irq += BCM2711_GPUIRQ_OFFSET;
+
+        SDIOBase->sdio_IRQHandle = KrnAddIRQHandler(irq,
                                                     sdio_irq_handler, SDIOBase, NULL);
         D(bug("[SDIO] card IRQ handler %p on irq %u\n",
-              SDIOBase->sdio_IRQHandle, IRQ_VC_ARASANSDIO));
+              SDIOBase->sdio_IRQHandle, irq));
     }
     return TRUE;
 }
@@ -949,21 +1002,21 @@ static int sdio_do_probe(struct SDIOBase *SDIOBase)
 /* Card interrupt (SDIO DAT1) -> consumer task                             */
 
 /*
- * INT_ENABLE value with the card interrupt suppressed. On the BCM2835 Arasan
- * the card interrupt reaches the ARM whenever it is SET in INT_STATUS, which
- * is gated by INT_ENABLE (0x34) - NOT by SIGNAL_ENABLE (0x38). So masking via
- * SIGNAL_ENABLE does nothing (a storm); we mask/arm the card int by toggling
- * it in INT_ENABLE with constant writes (no read-modify-write race with the
- * handler). The other (command/data) bits stay enabled for the polled path.
+ * INT_ENABLE (0x34) decides which conditions show up in INT_STATUS - the
+ * polled command path reads those, so it wants them all. SIGNAL_ENABLE (0x38)
+ * decides which of them drive int_to_arm, and that is what gates the card
+ * interrupt. Enabling everything there storms: the command path leaves
+ * CMD_COMPLETE and DATA_END set until its own wait loop clears them, so the
+ * level-triggered line re-enters the handler without end.
  */
 #define SDIO_INTEN_BASE  (SDHCI_INT_ALL_MASK & ~SDHCI_INT_CARD_INT)
 
 /*
- * Arasan IRQ handler. The only source we arm is the SDIO card interrupt (the
- * chip pulls DAT1 low when SDPCMD_INTSTATUS has an enabled bit). Mask it here
- * (drop CARD_INT from INT_ENABLE) so it cannot re-fire, and signal the bwfm RX
- * pump. The pump clears the chip's SDPCMD_INTSTATUS - which releases DAT1 -
- * drains its frames, then re-arms via SDIOAckInterrupt().
+ * Arasan IRQ handler. The only armed source is the SDIO card interrupt (the
+ * chip pulls DAT1 low when SDPCMD_INTSTATUS has an enabled bit). Clear
+ * SIGNAL_ENABLE so it cannot re-fire while DAT1 is still low, then signal the
+ * bwfm RX pump: it clears SDPCMD_INTSTATUS, releasing DAT1, drains its frames
+ * and re-arms via SDIOAckInterrupt().
  */
 static void sdio_irq_handler(void *data1, void *data2)
 {
@@ -971,7 +1024,7 @@ static void sdio_irq_handler(void *data1, void *data2)
 
     if (sdio_rl(SDIOBase, SDHCI_INT_STATUS) & SDHCI_INT_CARD_INT)
     {
-        sdio_wl(SDIOBase, SDHCI_INT_ENABLE, SDIO_INTEN_BASE);
+        sdio_wl(SDIOBase, SDHCI_SIGNAL_ENABLE, 0);
         if (SDIOBase->sdio_IRQTask)
             Signal(SDIOBase->sdio_IRQTask, SDIOBase->sdio_IRQSig);
     }
@@ -993,7 +1046,10 @@ static int sdio_init(struct SDIOBase *SDIOBase)
         return FALSE;
 
     InitSemaphore(&SDIOBase->sdio_Sem);
-    SDIOBase->sdio_iobase = SDIOBase->sdio_periiobase + 0x300000;       /* ARASAN_BASE */
+    if (SDIOBase->sdio_periiobase == BCM2712_PERIIOBASE)
+        SDIOBase->sdio_iobase = SDIOBase->sdio_periiobase + 0x100000;
+    else
+        SDIOBase->sdio_iobase = SDIOBase->sdio_periiobase + 0x300000;       /* ARASAN_BASE */
     SDIOBase->sdio_LastWrite = sdio_now(SDIOBase);
 
     if (!sdio_mbox_setup(SDIOBase))
@@ -1265,8 +1321,9 @@ AROS_LH2(int, SDIOSetInterrupt,
                          SDIO_CCCR_IEN_MASTER | SDIO_CCCR_IEN_FUNC1, NULL);
     ReleaseSemaphore(&SDIOBase->sdio_Sem);
 
-    /* Arm the card interrupt (gated by INT_ENABLE on this controller). */
+    /* Let the card interrupt reach INT_STATUS, and only it drive int_to_arm. */
     sdio_wl(SDIOBase, SDHCI_INT_ENABLE, SDIO_INTEN_BASE | SDHCI_INT_CARD_INT);
+    sdio_wl(SDIOBase, SDHCI_SIGNAL_ENABLE, SDHCI_INT_CARD_INT);
 
     D(bug("[SDIO] card interrupt armed (CCCR err %d)\n", err));
     return err;
@@ -1283,7 +1340,7 @@ AROS_LH0(void, SDIOAckInterrupt,
 {
     AROS_LIBFUNC_INIT
 
-    sdio_wl(SDIOBase, SDHCI_INT_ENABLE, SDIO_INTEN_BASE | SDHCI_INT_CARD_INT);
+    sdio_wl(SDIOBase, SDHCI_SIGNAL_ENABLE, SDHCI_INT_CARD_INT);
 
     AROS_LIBFUNC_EXIT
 }

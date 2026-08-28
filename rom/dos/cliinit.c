@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "dos_intern.h"
+#include "../dosboot/bootflags.h"
 #include "../expansion/expansion_intern.h"
 
 #ifdef DEBUG_DOSTYPE
@@ -182,7 +183,18 @@ static void internalSetTimeFromBootVolume(BPTR lock, struct DosLibrary *DOSBase)
         return ERROR_NO_FREE_STORE;
     }
 
+#ifdef __mc68000
+    /*
+     * This process mounts the boot volume and then becomes the initial
+     * shell; commands it launches run on their own cli_DefaultStack
+     * stacks, so its own stack only carries mount packets and script
+     * parsing. 8 KB is double the classic shell budget, and the block
+     * is chip RAM on an unexpanded machine.
+     */
+    mp = CreateProc("Boot Mount", 0, seg, 8192);
+#else
     mp = CreateProc("Boot Mount", 0, seg, AROS_STACKSIZE);
+#endif
     if (mp == NULL) {
         DeleteMsgPort(reply_mp);
         if (my_dp)
@@ -657,6 +669,42 @@ static LONG internalBootCliHandler(void)
      */
     D(bug("Dos/CliInit: Assigns done, mount remaining handlers...\n"));
 
+    /* A CD-booted system runs its startup like an appliance: the CD32
+     * Kickstart suppresses DOS requesters for the entire boot (there may
+     * be no pointing device to answer one), and titles rely on it - for
+     * example probing for their harddisk-install volume by name and
+     * expecting the lookup to fail silently on CD. Mirror that when the
+     * boot filesystem is a CD filesystem: the boot shell (and thus
+     * everything the Startup-Sequence runs in it) gets pr_WindowPtr = -1.
+     */
+    ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
+    bn = (struct BootNode *)GetHead(&ExpansionBase->MountList);
+    if (bn != NULL && bn->bn_DeviceNode != NULL)
+    {
+        struct DeviceNode *bootdn = bn->bn_DeviceNode;
+        struct FileSysStartupMsg *fssm = BADDR(bootdn->dn_Startup);
+
+        /* dn_Startup may hold a small integer instead of a BPTR for some
+         * handlers; require a plausible pointer before dereferencing.
+         */
+        if ((IPTR)fssm > 0x1000 && fssm->fssm_Environ != BNULL)
+        {
+            struct DosEnvec *de = BADDR(fssm->fssm_Environ);
+
+            if (de->de_TableSize >= DE_DOSTYPE)
+            {
+                PRINT_DOSTYPE(de->de_DosType);
+                if (de->de_DosType == AROS_MAKE_ID('C', 'D', 'V', 'D') ||
+                    de->de_DosType == AROS_MAKE_ID('C', 'D', 'F', 'S'))
+                {
+                    D(bug("CliInit: appliance boot (requesters off)\n"));
+                    IntExpBase(ExpansionBase)->BootFlags |= BF_NO_BOOT_REQUESTERS;
+                }
+            }
+        }
+    }
+    ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
+
     BootFlags = IntExpBase(ExpansionBase)->BootFlags;
     Flags = ExpansionBase->Flags;
     D(bug("Dos/CliInit: BootFlags 0x%lx Flags 0x%x\n", BootFlags, Flags));
@@ -676,8 +724,14 @@ static LONG internalBootCliHandler(void)
 
     CloseLibrary((APTR)ExpansionBase);
 
-    /* Enable prompts to insert missing volumes again .. */
-    bootProc->pr_WindowPtr = bootWin;
+    /* Enable prompts to insert missing volumes again - unless this is an
+     * appliance boot: __dos_Boot runs the Initial CLI synchronously in
+     * THIS process, so the Startup-Sequence and whatever it starts
+     * execute with this pr_WindowPtr, and on a CD boot it must stay -1
+     * for the whole run, like the CD32 Kickstart behaves.
+     */
+    if (!(BootFlags & BF_NO_BOOT_REQUESTERS))
+        bootProc->pr_WindowPtr = bootWin;
 
     /* Init all the RTF_AFTERDOS code, since we now have SYS:, the dos devices, and all the other assigns */
     D(bug("Dos/CliInit: Calling InitCode(RTF_AFTERDOS, 0)\n"));

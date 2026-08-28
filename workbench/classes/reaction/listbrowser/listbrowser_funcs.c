@@ -100,6 +100,9 @@ AROS_LH2(struct Node *, AllocListBrowserNodeA,
                 case LBNA_Checked:
                     lbn->lbn_Checked = (BOOL)tag->ti_Data;
                     break;
+                case LBNA_CheckBox:
+                    lbn->lbn_HasCheckBox = (BOOL)tag->ti_Data;
+                    break;
 
                 /* Column entry tags */
                 case LBNCA_CopyText:
@@ -124,8 +127,12 @@ AROS_LH2(struct Node *, AllocListBrowserNodeA,
                     }
                     break;
                 case LBNCA_Integer:
-                    if (cur_column < columns)
-                        lbn->lbn_ColumnData[cur_column].lbce_Integer = (LONG)tag->ti_Data;
+                    if (cur_column < columns && tag->ti_Data)
+                    {
+                        /* LBNCA_Integer is a pointer to the value */
+                        lbn->lbn_ColumnData[cur_column].lbce_Integer = *(LONG *)tag->ti_Data;
+                        lbn->lbn_ColumnData[cur_column].lbce_HasInteger = TRUE;
+                    }
                     break;
                 case LBNCA_Image:
                     if (cur_column < columns)
@@ -233,6 +240,9 @@ AROS_LH2(void, SetListBrowserNodeAttrsA,
             case LBNA_Checked:
                 lbn->lbn_Checked = (BOOL)tag->ti_Data;
                 break;
+            case LBNA_CheckBox:
+                lbn->lbn_HasCheckBox = (BOOL)tag->ti_Data;
+                break;
             case LBNCA_Text:
                 if (cur_column < lbn->lbn_Columns)
                 {
@@ -255,8 +265,12 @@ AROS_LH2(void, SetListBrowserNodeAttrsA,
                 }
                 break;
             case LBNCA_Integer:
-                if (cur_column < lbn->lbn_Columns)
-                    lbn->lbn_ColumnData[cur_column].lbce_Integer = (LONG)tag->ti_Data;
+                if (cur_column < lbn->lbn_Columns && tag->ti_Data)
+                {
+                    /* LBNCA_Integer is a pointer to the value */
+                    lbn->lbn_ColumnData[cur_column].lbce_Integer = *(LONG *)tag->ti_Data;
+                    lbn->lbn_ColumnData[cur_column].lbce_HasInteger = TRUE;
+                }
                 break;
             case LBNCA_Image:
                 if (cur_column < lbn->lbn_Columns)
@@ -318,6 +332,10 @@ AROS_LH2(void, GetListBrowserNodeAttrsA,
                 break;
             case LBNA_Checked:
                 *(BOOL *)tag->ti_Data = lbn->lbn_Checked;
+                break;
+            case LBNA_CheckBox:
+                if (tag->ti_Data)
+                    *(BOOL *)tag->ti_Data = lbn->lbn_HasCheckBox;
                 break;
             case LBNCA_Text:
                 if (cur_column < lbn->lbn_Columns)
@@ -498,6 +516,7 @@ AROS_LH2(struct ColumnInfo *, AllocLBColumnInfoA,
             switch (tag->ti_Tag)
             {
                 case LBNA_Column:
+                case LBCIA_Column:
                     cur_col = (UWORD)tag->ti_Data;
                     break;
                 case LBNCA_CopyText:
@@ -505,8 +524,40 @@ AROS_LH2(struct ColumnInfo *, AllocLBColumnInfoA,
                         ci[cur_col].ci_Flags = (ULONG)tag->ti_Data;
                     break;
                 case LBNCA_Text:
+                case LBCIA_Title:
                     if (cur_col < columns)
                         ci[cur_col].ci_Title = (STRPTR)tag->ti_Data;
+                    break;
+                case LBCIA_Weight:
+                    if (cur_col < columns)
+                    {
+                        ci[cur_col].ci_Width = (LONG)tag->ti_Data;
+                        ci[cur_col].ci_Flags |= CIF_WEIGHTED;
+                    }
+                    break;
+                case LBCIA_Width:
+                    if (cur_col < columns)
+                    {
+                        ci[cur_col].ci_Width = (LONG)tag->ti_Data;
+                        ci[cur_col].ci_Flags = (ci[cur_col].ci_Flags & ~CIF_WEIGHTED) | CIF_FIXED;
+                    }
+                    break;
+                case LBCIA_Flags:
+                    if (cur_col < columns)
+                        ci[cur_col].ci_Flags = (ULONG)tag->ti_Data;
+                    break;
+                case LBCIA_DraggableSeparator:
+                    if (cur_col < columns && tag->ti_Data)
+                        ci[cur_col].ci_Flags |= CIF_DRAGGABLE;
+                    break;
+                case LBCIA_Sortable:
+                    if (cur_col < columns && tag->ti_Data)
+                        ci[cur_col].ci_Flags |= CIF_SORTABLE;
+                    break;
+                case LBCIA_SortArrow:
+                case LBCIA_AutoSort:
+                case LBCIA_CompareHook:
+                    /* Accepted; column sorting is not implemented yet */
                     break;
             }
         }

@@ -202,7 +202,7 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
 
         buffer_info = &tx_ring->buffer_info[i];
 
-        if ((buffer_info->buffer = AllocMem(ETH_MAXPACKETSIZE, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+        if ((buffer_info->buffer = AllocMem(unit->e1ku_frame_max, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
         {
             frame = buffer_info->buffer;
 
@@ -619,6 +619,85 @@ AROS_UFH3(void, e1000func_Schedular,
 }
 
 /*
+ * Jumbo-frame support.
+ *
+ * The MTU is read once, at unit creation, from ENV:SYS/Net/e1000/unit<N>/MTU
+ * (the existing environment-variable mechanism - no new device API), defaults
+ * to standard Ethernet, and is clamped to what the MAC can actually carry.
+ * The advertised S2_DEVICEQUERY MTU, the frame limits and the RX buffer class
+ * are all derived from it; a 1500-byte MTU reproduces the previous behaviour.
+ */
+static ULONG e1000_unit_max_mtu(struct e1000_hw *hw)
+{
+    /* The original 82542 cannot handle jumbo frames; the rest of the 8254x
+     * family can, up to MAX_JUMBO_FRAME_SIZE on the wire. */
+    if (hw->mac.type == e1000_82542)
+        return ETH_MTU;
+    return MAX_JUMBO_FRAME_SIZE - ETH_HEADERSIZE - ETH_CRCSIZE;
+}
+
+static ULONG e1000_unit_rx_bufsize(ULONG frame_max)
+{
+    /* Map the maximum frame onto a hardware RX buffer-size class (RCTL.SZ /
+     * BSEX, see e1000func_setup_rctl()).  A standard frame keeps the historical
+     * VLAN-sized buffer so 1500-MTU RX allocation is unchanged. */
+    if (frame_max <= MAXIMUM_ETHERNET_VLAN_SIZE)
+        return MAXIMUM_ETHERNET_VLAN_SIZE;
+    if (frame_max <= E1000_RXBUFFER_2048)
+        return E1000_RXBUFFER_2048;
+    if (frame_max <= E1000_RXBUFFER_4096)
+        return E1000_RXBUFFER_4096;
+    if (frame_max <= E1000_RXBUFFER_8192)
+        return E1000_RXBUFFER_8192;
+    return E1000_RXBUFFER_16384;
+}
+
+/* Must run after mac.type has been resolved (e1000_setup_init_funcs). */
+static void e1000_unit_config_mtu(struct e1000Unit *unit)
+{
+    struct e1000_hw *hw = (struct e1000_hw *)unit->e1ku_Private00;
+    ULONG hw_max = e1000_unit_max_mtu(hw);
+    ULONG mtu = ETH_MTU;
+    struct Library *DOSBase;
+
+    if ((DOSBase = OpenLibrary("dos.library", 36)) != NULL)
+    {
+        char varname[64], value[16];
+
+        sprintf(varname, "SYS/Net/e1000/unit%u/MTU", (unsigned)unit->e1ku_UnitNum);
+        if (GetVar(varname, value, sizeof(value), LV_VAR) > 0)
+        {
+            LONG v = 0;
+            if (StrToLong(value, &v) > 0 && v >= 576)
+                mtu = (ULONG)v;
+            else
+            {
+                D(bug("[%s] %s: ignoring out-of-range %s='%s'\n",
+                      unit->e1ku_name, __func__, varname, value);)
+            }
+        }
+        CloseLibrary(DOSBase);
+    }
+
+    if (mtu > hw_max)
+    {
+        D(bug("[%s] %s: MTU %u exceeds hardware maximum %u - clamping\n",
+              unit->e1ku_name, __func__, (unsigned)mtu, (unsigned)hw_max);)
+        mtu = hw_max;
+    }
+
+    unit->e1ku_mtu           = mtu;
+    unit->e1ku_Sana2Info.MTU = mtu;
+    unit->e1ku_frame_max     = mtu + ETH_HEADERSIZE + ETH_CRCSIZE;
+    unit->e1ku_frame_min     = 60 + ETH_CRCSIZE;
+    unit->rx_buffer_len      = e1000_unit_rx_bufsize(unit->e1ku_frame_max);
+
+    D(bug("[%s] %s: MTU %u, frame_max %u, rx_buffer_len %u\n",
+          unit->e1ku_name, __func__, (unsigned)unit->e1ku_mtu,
+          (unsigned)unit->e1ku_frame_max, (unsigned)unit->rx_buffer_len);)
+}
+
+/*
  * Create new e1000 ethernet device unit
  */
 /* TODO: Handle cleanup on failure in CreateUnit more elegantly */
@@ -781,6 +860,10 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
             }
 
             D(bug("[%s] %s: Initialised Intel NIC functions..\n", unit->e1ku_name, __func__));
+
+            /* mac.type is now known - apply the configured (jumbo) MTU and
+             * size the frame/buffer parameters accordingly */
+            e1000_unit_config_mtu(unit);
 
             unit->e1ku_txRing_QueueSize = 1;
             if ((unit->e1ku_txRing = AllocMem(sizeof(struct e1000_tx_ring) * unit->e1ku_txRing_QueueSize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)

@@ -6,6 +6,8 @@
 
 #include <aros/debug.h>
 
+#include <stdio.h>
+
 #include <proto/sysexp.h>
 
 #include <proto/alib.h>
@@ -31,6 +33,23 @@
 
 extern OOP_AttrBase HiddAttrBase;
 extern OOP_AttrBase HiddGfxAttrBase;
+extern OOP_AttrBase HiddDisplayAttrBase;
+
+/* Display names for aHidd_Display_ConnectorType values */
+static CONST_STRPTR const connectorNames[] =
+{
+    NULL,           /* unknown - omit the prefix */
+    "VGA",
+    "DVI",
+    "HDMI",
+    "DP",
+    "eDP",
+    "LVDS",
+    "TV",
+    "DSI",
+    "Virtual",
+    "USB-C",
+};
 
 static struct SysexpBase *gfxSysexpBase = NULL;
 
@@ -43,8 +62,20 @@ static void addGfxDisplay(OOP_Object *obj, struct MUI_NListtree_TreeNode *parent
         .winClass = MonitorWindow_CLASS
     };
     CONST_STRPTR name = NULL;
+    char label[80];
+    IPTR contype = 0, conid = 0;
 
     OOP_GetAttr(obj, aHidd_Name, (IPTR *)&name);
+    OOP_GetAttr(obj, aHidd_Display_ConnectorType, &contype);
+    OOP_GetAttr(obj, aHidd_Display_ConnectorID, &conid);
+
+    if ((contype > 0) && (contype < sizeof(connectorNames)/sizeof(connectorNames[0])) &&
+        connectorNames[contype])
+    {
+        snprintf(label, sizeof(label), "%s%lu: %s", connectorNames[contype],
+                 (unsigned long)conid, name ? name : (CONST_STRPTR)"Display");
+        name = label;
+    }
 
     SysexpBase->GlobalCount++;
     DoMethod(SysexpBase->sesb_Tree, MUIM_NListtree_Insert, name, &msg,

@@ -14,7 +14,7 @@ include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
 #MM mesa3d-linklib-galliumauxiliary-quick : mesa3d-linklib-galliumauxiliary-genobs
 #MM- mesa3d-linklib-galliumauxiliary-genobs : mesa3d-linklib-galliumauxiliary-generated
 
-MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter %.c, $(C_SOURCES) $(NIR_SOURCES))
+MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter %.c, $(C_SOURCES) $(NIR_SOURCES) $(VL_SOURCES))
 
 GALLIUM_AUXILIARY_GENERATED_SOURCES := $(filter %.c, $(GENERATED_SOURCES))
 

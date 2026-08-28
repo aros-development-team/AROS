@@ -3,9 +3,9 @@
 include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
-FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree \
+FILES           := startup64 boot mmu kprintf support vc_mb serialdebug elf devicetree \
                    bc/vars bc/font8x14 bc/screen_fb vc_fb
-USER_CFLAGS     := -Wall $(CFLAGS_NO_BUILTIN)
+USER_CFLAGS     := -Wall $(CFLAGS_NO_BUILTIN) $(CFLAGS_NO_VECTORIZE)
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/openfirmware
 USER_CPPFLAGS   := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
@@ -71,14 +71,20 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-bus-quick \
 #MM hidd-i2c-quick \
 #MM kernel-hidd-gfx-quick \
-#MM hidd-vc4gfx-quick \
+#MM hidd-vcgfx-quick \
+#MM hidd-fbgfx-quick \
 #MM kernel-sdcard-quick \
 #MM kernel-hidd-input-quick \
 #MM kernel-hidd-kbd-quick \
 #MM kernel-hidd-mouse-quick \
 #MM kernel-usb-nopci-quick \
 #MM kernel-usb-usb2otg-quick \
-#MM kernel-usb-romstrap-raspi-quick
+#MM kernel-usb-romstrap-raspi-quick \
+#MM kernel-hidd-pci-quick \
+#MM kernel-pcie-bcm2711-quick \
+#MM kernel-pcie-bcm2712-quick \
+#MM kernel-usb-pcixhci-quick \
+#MM kernel-usb-classes-hubss-quick
 
 #MM kernel-package-raspi-aarch64: \
 #MM linklibs-stdc-static \
@@ -128,14 +134,20 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-bus \
 #MM hidd-i2c \
 #MM hidd-i2c-bcm2708 \
-#MM hidd-vc4gfx \
+#MM hidd-vcgfx \
 #MM kernel-hidd-gfx \
+#MM hidd-fbgfx \
 #MM kernel-hidd-input \
 #MM kernel-hidd-kbd \
 #MM kernel-hidd-mouse \
 #MM kernel-usb-nopci \
 #MM kernel-usb-usb2otg \
-#MM kernel-usb-romstrap-raspi
+#MM kernel-usb-romstrap-raspi \
+#MM kernel-hidd-pci \
+#MM kernel-pcie-bcm2711 \
+#MM kernel-pcie-bcm2712 \
+#MM kernel-usb-pcixhci \
+#MM kernel-usb-classes-hubss
 
 #MM kernel-package-raspi-aarch64-missing: \
 #MM kernel-battclock
@@ -149,17 +161,29 @@ RASPIFW_URI       := https://github.com/raspberrypi/firmware/raw/$(RASPIFW_BRANC
 # start4.elf/fixup4.dat are the BCM2711 pair: the Pi 4 bootloader looks for
 # them by name and does not fall back to start.elf. The Zero 2 W ships under
 # two dtb names; which one the firmware picks depends on the board revision.
+# One dtb per supported board, named exactly as the firmware asks for it by
+# board revision - there is no fallback: with no device tree the bootstrap
+# gets no /soc ranges, so __arm_periiobase stays 0 and nothing boots.
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf \
                      fixup4.dat start4.elf \
                      bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb \
+                     bcm2710-rpi-cm3.dtb \
                      bcm2710-rpi-zero-2-w.dtb bcm2710-rpi-zero-2.dtb \
-                     bcm2711-rpi-4-b.dtb \
-                     bcm2712-rpi-5-b.dtb bcm2712-rpi-500.dtb
+                     bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb \
+                     bcm2711-rpi-cm4.dtb bcm2711-rpi-cm4-io.dtb \
+                     bcm2711-rpi-cm4s.dtb \
+                     bcm2712-rpi-5-b.dtb bcm2712-rpi-500.dtb \
+                     bcm2712-d-rpi-5-b.dtb bcm2712d0-rpi-5-b.dtb
 
 RASPIWIFIFW_BRANCH := buster
 RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
+# 43455 and 43456 are both chip id 0x4345 and cannot share a blob: bwfm.device
+# picks by chip revision (9 = CYW43456, on the Pi 400 and CM4), so both sets
+# have to be on the card.
 RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
                      brcm/brcmfmac43455-sdio.clm_blob \
+                     brcm/brcmfmac43456-sdio.bin brcm/brcmfmac43456-sdio.txt \
+                     brcm/brcmfmac43456-sdio.clm_blob \
                      brcm/brcmfmac43430-sdio.bin brcm/brcmfmac43430-sdio.txt \
                      LICENCE.broadcom_bcm43xx
 
@@ -167,11 +191,15 @@ PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands entropy mbox dma sdio bwfm
 PKG_RSRC_ARCH := processor
-PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
+PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg USBHardware/pcixhci
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
-PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus i2c i2c-bcm2708 vc4gfx
-PKG_CLASSES   := USB/hub USB/massstorage
+# vcgfx drives the BCM283x VideoCore directly and bows out on BCM2711;
+# fbgfx takes over there, painting into the framebuffer the bootstrap set up.
+# The PCIe bridge and its xHCI controller only exist on BCM2711; both drivers
+# find nothing on a Pi 2/3 and stay out of the way.
+PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus i2c i2c-bcm2708 vcgfx fbgfx pci pcibcm2711
+PKG_CLASSES   := USB/hub USB/hubss USB/massstorage
 
 %make_package mmake=kernel-package-raspi-aarch64 file=$(AROSDIR)/$(ARM_BSP) \
     libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
@@ -202,7 +230,8 @@ distfiles-raspi-aarch64le-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-rasp
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
 	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\nenable_uart=1\narm_64bit=1\ngpu_mem=128\n" > $@
 
-$(AROSDIR)/aros-aarch64-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+# .d depfiles are only generated for C sources, not startup64.S
+$(AROSDIR)/aros-aarch64-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(foreach f, $(filter-out startup64,$(FILES)), $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
 	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-aarch64-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static $(TARGET_C_LIBS) -o $(OSGENDIR)/boot/aros-aarch64-raspi.img.elf
 	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-aarch64-raspi.img.elf
@@ -215,7 +244,9 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 #MM
 distfiles-raspi-aarch64le : $(AROSDIR)/aros-aarch64-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
 	@$(ECHO) Copying RasPi AArch64 distfiles...
-	@$(CP) -R $(AROSDIR) $(DISTDIR)/
+# Contents, not the directory: once $(DISTDIR) exists, naming the directory
+# nests a fresh tree in $(DISTDIR)/AROS and the flashed one goes stale.
+	@$(CP) -R $(AROSDIR)/. $(DISTDIR)/
 
 #MM
 clean ::

@@ -115,7 +115,8 @@ struct mbconf mbconf = {
     8,		                /* # of mbuf chunks to allocate initially */
     256,				/* # of mbufs to allocate at a time */
     32,				/* # of clusters to allocate at a time */
-    4096,				/* maximum memory to use (in kilobytes) */
+    4096,				/* maximum memory to use (in kilobytes) - baseline;
+					   raised per-MTU by mb_autosize() */
     2048				/* size of the mbuf cluster */
 };
 #endif
@@ -237,6 +238,70 @@ mb_check_conf(void *dp, IPTR newvalue)
 }
 
 /*
+ * mb_autosize() - raise the cluster-pool cap (mbconf.maxmem) to suit an
+ * interface MTU and the memory currently available.
+ *
+ * A jumbo frame occupies several clusters, so for a comparable working set the
+ * pool has to scale with the per-frame cluster count.  The requirement is
+ * clamped to a fraction of free memory so a small machine is never
+ * over-committed, and the cap is only ever raised - several interfaces simply
+ * leave the largest requirement in force, and an explicit KW_MBUF_CONF value
+ * that is already larger is preserved.  Called from each interface as it is
+ * attached (and safe to call before or after mbinit()).
+ */
+#if defined(__mc68000__)
+#define MB_MAXMEM_BASE  1024		/* matches the mbconf default above */
+#else
+#define MB_MAXMEM_BASE  4096
+#endif
+#define MB_STD_MTU      1500		/* standard Ethernet payload */
+#define MB_MEM_DIVISOR  8		/* use at most 1/8 of free RAM for clusters */
+
+void
+mb_autosize(ULONG mtu)
+{
+    ULONG clusters_per_frame, want_kb, avail_kb, cap_kb;
+
+    if(mtu < MB_STD_MTU)
+        mtu = MB_STD_MTU;
+
+    /* clusters a single maximum-size frame needs (at least one) */
+    clusters_per_frame = (mtu + MHLEN + mbconf.mclbytes - 1) / mbconf.mclbytes;
+    if(clusters_per_frame < 1)
+        clusters_per_frame = 1;
+
+    /* scale the fixed baseline pool by the per-frame cluster count */
+    want_kb = MB_MAXMEM_BASE * clusters_per_frame;
+
+    /* never commit more than a fraction of the memory actually free */
+    avail_kb = (ULONG)(AvailMem(MEMF_ANY) >> 10);
+    cap_kb = avail_kb / MB_MEM_DIVISOR;
+    if(want_kb > cap_kb)
+        want_kb = cap_kb;
+
+    /* but always keep at least the baseline, even on a tiny machine */
+    if(want_kb < MB_MAXMEM_BASE)
+        want_kb = MB_MAXMEM_BASE;
+
+    if(want_kb > mbconf.maxmem) {
+        mbconf.maxmem = want_kb;
+#if defined(__AROS__)
+        D(bug("[AROSTCP](uipc_mbuf.c) mb_autosize: mtu %lu -> maxmem %lu KB"
+              " (%lu clusters/frame)\n", (unsigned long)mtu,
+              (unsigned long)mbconf.maxmem, (unsigned long)clusters_per_frame));
+#endif
+    }
+}
+
+/*
+ * Smallest initial pool worth starting with on a memory-tight machine.  The
+ * pool still grows on demand once running, so these only need to be enough to
+ * get the stack going.
+ */
+#define MB_INIT_MIN_MBUFS       64
+#define MB_INIT_MIN_CLUSTERS    4
+
+/*
  * mbinit() must be called before any other mbuf related function (exept the
  * mb_check_conf() which is called at configuration time). This
  * allocates memory from the system in one big chunk. This memory will not be
@@ -265,11 +330,30 @@ mbinit(void)
     mclfree = NULL;
 
     /*
-     * Preallocate some mbufs and mbuf clusters.
+     * Preallocate some mbufs and mbuf clusters.  The full initial pool is one
+     * large contiguous block, which may not fit on a memory-tight or
+     * fragmented machine; rather than refuse to start the stack, halve the
+     * request until it succeeds (down to a small floor).  The pool still grows
+     * on demand afterwards.
      */
-    initialized =
-        (m_alloc(mbconf.initial_mbuf_chunks * mbconf.mbufchunk, M_WAIT)
-         && m_clalloc(mbconf.clusterchunk, M_WAIT));
+    {
+        int mbufs = mbconf.initial_mbuf_chunks * mbconf.mbufchunk;
+        int cls   = mbconf.clusterchunk;
+        BOOL got_m = FALSE, got_c = FALSE;
+
+        while(mbufs >= MB_INIT_MIN_MBUFS && !(got_m = m_alloc(mbufs, M_WAIT)))
+            mbufs >>= 1;
+        while(cls >= MB_INIT_MIN_CLUSTERS && !(got_c = m_clalloc(cls, M_WAIT)))
+            cls >>= 1;
+
+        initialized = got_m && got_c;
+
+        if(initialized &&
+           (mbufs < mbconf.initial_mbuf_chunks * mbconf.mbufchunk ||
+            cls < mbconf.clusterchunk))
+            __log(LOG_WARNING, "mbinit: low memory - started with %d mbufs,"
+                  " %d clusters", mbufs, cls);
+    }
 
     splx(s);
 
@@ -398,7 +482,41 @@ m_alloc(int howmany, int canwait)
         m->m_next = mfree;
         mfree = m++;
     }
+
     return TRUE;
+}
+
+/*
+ * m_valid() returns TRUE only when m addresses an MSIZE-aligned mbuf slot that
+ * lies wholly within one of the allocated pool chunks (past its memHeader).
+ * It is meant to screen an mbuf pointer obtained from an untrusted source
+ * before it is freed, keeping a bad pointer off the free list.
+ *
+ * NB: the chunk list is scanned on every call, so this is not for use on the
+ *     hot free path.
+ */
+BOOL
+m_valid(struct mbuf *m)
+{
+    struct memHeader *mh;
+    spl_t s;
+    BOOL ok = FALSE;
+
+    if(m == NULL || ((IPTR)m & (MSIZE - 1)) != 0)	/* mbufs are MSIZE-aligned */
+        return FALSE;
+
+    s = splimp();
+    for(mh = mbufmem; mh != NULL; mh = mh->next) {
+        caddr_t lo = (caddr_t)mh + sizeof(struct memHeader);	/* after header */
+        caddr_t hi = (caddr_t)mh + mh->size;			/* chunk end     */
+
+        if((caddr_t)m >= lo && ((caddr_t)m + MSIZE) <= hi) {
+            ok = TRUE;
+            break;
+        }
+    }
+    splx(s);
+    return ok;
 }
 
 /*
@@ -641,6 +759,17 @@ int len, canwait;
     D(bug("[AROSTCP](uipc_mbuf.c) m_prepend(0x%p, len = %d)\n", m, len));
 #endif
 
+    /*
+     * The prepended header lives in a single fresh mbuf, so len must fit in
+     * MHLEN; reject a larger or negative value rather than set m_len past the
+     * mbuf's data area.
+     */
+    if(len < 0 || len > MHLEN) {
+        __log(LOG_ERR, "m_prepend: invalid len %d", len);
+        m_freem(m);
+        return (NULL);
+    }
+
     MGET(mn, canwait, m->m_type);
     if(mn == NULL) {
         m_freem(m);
@@ -864,8 +993,12 @@ m_adj(struct mbuf *mp, int req_len)
             }
         }
         m = mp;
-        if(mp->m_flags & M_PKTHDR)
+        if(mp->m_flags & M_PKTHDR) {
             m->m_pkthdr.len -= (req_len - len);
+            /* a trim longer than the chain must not leave a negative length */
+            if(m->m_pkthdr.len < 0)
+                m->m_pkthdr.len = 0;
+        }
     } else {
         /*
          * Trim from tail.  Scan the mbuf chain,

@@ -305,6 +305,10 @@ static AROS_UFH3 (APTR, Init,
         /* ROM areas */
         mmuprotect(KernelBase, 0x00e00000, 0x00080000);
         mmuprotect(KernelBase, 0x00f80000, 0x00080000);
+        if (((UWORD*)&_rom_start >= (UWORD*)0xa80000 && (UWORD*)&_rom_start <(UWORD*)0xb80000) ||
+        	((UWORD*)&_ext_start >= (UWORD*)0xa80000 && (UWORD*)&_ext_start < (UWORD*)0xb80000)) {
+	        mmuprotect(KernelBase, 0x00a80000, 0x00100000);
+       	}
 
         mmuprotectextrom(KernelBase);
 

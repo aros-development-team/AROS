@@ -1,7 +1,7 @@
 /*
 ** $PROJECT: amigaguide.datatype
 **
-** $VER: amigaguideclass.c 50.1 (13.06.03)
+** $VER: amigaguideclass.c 50.2 (14.08.26)
 **
 ** $AUTHOR: Stefan Ruppert <stefan@ruppert-it.de>
 **
@@ -169,7 +169,7 @@ IPTR om_new(Class *cl, Object *obj, struct opSet *msg)
    IPTR rv;
    INSTDATA;
 
-   STRPTR nodename = "main";
+   STRPTR nodename = NULL;
    ULONG sourcetype;
    BPTR handle;
 
@@ -202,7 +202,6 @@ IPTR om_new(Class *cl, Object *obj, struct opSet *msg)
       could be loaded. Therefore we don't need to check some
       conditions if a node is loaded or not. */
    data->ag_Actual = obj;
-   data->ag_InitialNode = CopyAGString(cl, obj, nodename);
    data->ag_Creator = FindTask(NULL);
 
    /* process attributes that only belong to this class
@@ -219,6 +218,10 @@ IPTR om_new(Class *cl, Object *obj, struct opSet *msg)
          break;
       }
    }
+
+   /* if the caller didn't ask for a specific node start with "main" */
+   data->ag_InitialNode = CopyAGString(cl, obj,
+                                       (nodename != NULL) ? nodename : (STRPTR) "main");
 
    data->ag_File = AllocAGFile(cl, obj);
    if(data->ag_File == NULL)
@@ -246,6 +249,27 @@ IPTR om_new(Class *cl, Object *obj, struct opSet *msg)
    	    data->ag_File->agf_Handle = handle;
             data->ag_File->agf_Lock = DupLockFromFH(handle);
    	    ScanFile(cl, obj, data->ag_File);
+
+            /* A database isn't required to provide a node called "main".
+               If the default initial node isn't part of this file, fall
+               back to its first node instead of letting DTM_GOTO try to
+               interpret "main" as an external file name. */
+            if(nodename == NULL &&
+               GetAGNode(cl, obj, data->ag_File, data->ag_InitialNode) == NULL)
+            {
+               struct Node *first = data->ag_File->agf_Nodes.lh_Head;
+
+               if(first->ln_Succ != NULL)
+               {
+                  STRPTR initial = CopyString(cl, obj, first->ln_Name);
+
+                  if(initial != NULL)
+                  {
+                     FreeAGVec(cl, obj, data->ag_InitialNode);
+                     data->ag_InitialNode = initial;
+                  }
+               }
+            }
 
             if(data->ag_File->agf_OnOpen != NULL)
                if(SendRexxCommand(cl, obj, data->ag_File->agf_OnOpen, AGRX_RX) != RC_OK)
@@ -614,13 +638,18 @@ IPTR gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
 
          if(data->ag_Flags.GotoLine)
          {
-            /* set possible new vertical top position (goto line). */
-            SetAttrs(obj, DTA_TopVert, data->ag_ActualObject->ago_TopVert, TAG_DONE);
-            /* and also tell others... */
-            NotifyAttrs(obj, msg->gpl_GInfo, 0,
-   	                GA_ID,       CAST_GAD(obj)->GadgetID,
-                        DTA_TopVert, data->ag_ActualObject->ago_TopVert,
-                        TAG_DONE);
+            /* ag_ActualObject stays NULL if the goto failed, ie. if no
+               node of the database could be activated at all. */
+            if(data->ag_ActualObject != NULL)
+            {
+               /* set possible new vertical top position (goto line). */
+               SetAttrs(obj, DTA_TopVert, data->ag_ActualObject->ago_TopVert, TAG_DONE);
+               /* and also tell others... */
+               NotifyAttrs(obj, msg->gpl_GInfo, 0,
+      	                   GA_ID,       CAST_GAD(obj)->GadgetID,
+                           DTA_TopVert, data->ag_ActualObject->ago_TopVert,
+                           TAG_DONE);
+            }
             data->ag_Flags.GotoLine = FALSE;
          }
       }
@@ -1026,7 +1055,8 @@ IPTR dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
    switch(msg->dtt_Function & STMF_METHOD_MASK)
    {
    case STM_RETRACE:
-      if(data->ag_ActualObject->ago_Node.ln_Succ->ln_Succ != NULL)
+      if(data->ag_ActualObject != NULL &&
+         data->ag_ActualObject->ago_Node.ln_Succ->ln_Succ != NULL)
       {
 	 struct AmigaGuideObject *old = (struct AmigaGuideObject *) RemHead(&data->ag_Visited);
 	 DB(("old is %lx (%s)\n", old, old->ago_Node.ln_Name));
@@ -1134,7 +1164,8 @@ IPTR dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
       /* no object found try previous node in linked list */
       if(rv == 0)
       {
-	 if(data->ag_ActualObject->ago_AGNode->agn_Node.ln_Pred->ln_Pred != NULL)
+	 if(data->ag_ActualObject != NULL && data->ag_ActualObject->ago_AGNode != NULL &&
+	    data->ag_ActualObject->ago_AGNode->agn_Node.ln_Pred->ln_Pred != NULL)
 	    rv = GotoObject(cl, obj, msg->dtt_GInfo, data->ag_ActualObject->ago_AGNode->agn_Node.ln_Pred->ln_Name, 0);
       }
       break;
@@ -1143,7 +1174,8 @@ IPTR dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
       /* no object found try next node in linked list */
       if(rv == 0)
       {
-	 if(data->ag_ActualObject->ago_AGNode->agn_Node.ln_Succ->ln_Succ != NULL)
+	 if(data->ag_ActualObject != NULL && data->ag_ActualObject->ago_AGNode != NULL &&
+	    data->ag_ActualObject->ago_AGNode->agn_Node.ln_Succ->ln_Succ != NULL)
 	    rv = GotoObject(cl, obj, msg->dtt_GInfo, data->ag_ActualObject->ago_AGNode->agn_Node.ln_Succ->ln_Name, 0);
       }
       break;

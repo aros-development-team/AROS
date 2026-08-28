@@ -91,6 +91,7 @@ AROS_UFH3(static IPTR, usbromstartup_init,
         D(bug("[USBROMStartup] Adding classes...\n"));
 
         psdAddClass("hub.class", 0);
+        psdAddClass("hubss.class", 0);
         msdclass = psdAddClass("massstorage.class", 0);
         /* hid/bootmouse/bootkeyboard are loaded from disk by AddUSBClasses in Startup-Sequence */
 
@@ -102,6 +103,23 @@ AROS_UFH3(static IPTR, usbromstartup_init,
             D(bug("[USBROMStartup] Added usb2otg.device unit %u\n", 0));
 
             psdEnumerateHardware(phw);
+        }
+
+        /*
+         * The Pi 4 hangs its USB-A ports off a VL805 xHCI controller behind
+         * the PCIe bridge; the OTG core there serves the USB-C socket only.
+         * On a Pi 2/3 there is no bridge and this finds nothing.
+         */
+        {
+            ULONG unit = 0;
+
+            while ((phw = psdAddHardware("pcixhci.device", unit)))
+            {
+                D(bug("[USBROMStartup] Added pcixhci.device unit %u\n", unit));
+
+                psdEnumerateHardware(phw);
+                unit++;
+            }
         }
 
         D(bug("[USBROMStartup] Scanning classes...\n"));

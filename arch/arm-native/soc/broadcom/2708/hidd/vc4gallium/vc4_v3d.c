@@ -88,6 +88,66 @@ void vc4_v3d_kick_pending_render(struct vc4_v3d_state *v3d, const char *reason)
     Enable();
 }
 
+/*
+ * Sample BFC/RFC and advance the software completion counters by the
+ * (mod-256) delta since the last sample.
+ *
+ * Under Disable(), like the rest of the shared V3D state: this is a
+ * read-modify-write of last_bfc/last_rfc and the accumulators, and both
+ * wait loops plus the interrupt path reach it. Losing one update leaves
+ * rfc_completed permanently short of the hardware, and since the waited-for
+ * seqno can then never be reached, every later frame waits out the full
+ * timeout (seen as want=N fin=N-1 with the GPU idle and BFC==RFC).
+ */
+void vc4_v3d_advance_counters(struct vc4_v3d_state *v3d)
+{
+    ULONG bfc, rfc, done;
+
+    Disable();
+
+    bfc = V3D_READ(v3d, V3D_BFC) & 0xff;
+    rfc = V3D_READ(v3d, V3D_RFC) & 0xff;
+    v3d->bfc_completed += (bfc - v3d->last_bfc) & 0xff;
+    v3d->rfc_completed += (rfc - v3d->last_rfc) & 0xff;
+    v3d->last_bfc = bfc;
+    v3d->last_rfc = rfc;
+
+    if (v3d->pending_render && v3d->bfc_completed >= v3d->seqno)
+        vc4_v3d_kick_pending_render(v3d, "BFC");
+
+    /*
+     * Resync when the hardware says the work is done but the accumulator
+     * disagrees: nothing left to kick, both control threads idle and the
+     * render count equal to the submission being waited for means every
+     * render has retired, whatever the accumulator may have lost. Without
+     * this the skew is permanent — the counters only ever move by deltas.
+     */
+    if ((v3d->rfc_completed < v3d->seqno) && !v3d->pending_render &&
+        (rfc == (v3d->seqno & 0xff)) &&
+        !(V3D_READ(v3d, V3D_CT0CS) & V3D_CTCS_CTRUN) &&
+        !(V3D_READ(v3d, V3D_CT1CS) & V3D_CTCS_CTRUN))
+    {
+        static ULONG resynclog = 0;
+
+        if (resynclog < 8)
+        {
+            resynclog++;
+            bug("[VC4Gallium] counter resync: seqno=%d rfc_completed=%d "
+                "(RFC=%d) — GPU idle, adopting seqno\n",
+                v3d->seqno, v3d->rfc_completed, rfc);
+        }
+        v3d->bfc_completed = v3d->seqno;
+        v3d->rfc_completed = v3d->seqno;
+    }
+
+    done = v3d->rfc_completed;
+    if (done > v3d->seqno)
+        done = v3d->seqno;
+    v3d->finished_seqno = done;
+
+    Enable();
+}
+
 /* Interrupt service helper. Three jobs:
  *  - OUTOMEM: binner ran out of pool memory; we count + log and feed
  *    the per-frame overspill BO.

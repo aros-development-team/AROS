@@ -3,34 +3,8 @@
 
 #include <sys/types.h>
 
-#if !defined(__AROS__)
-#if defined(__X86__)
-#define CPU_IS_LITTLE_ENDIAN 1
-#else
-#undef CPU_IS_LITTLE_ENDIAN
-#endif
-#else
-#if defined(__i386__) || defined(__x86_64__)
-#define CPU_IS_LITTLE_ENDIAN 1
-#else
-#undef CPU_IS_LITTLE_ENDIAN
-#endif
-#endif
-
-// generic C routines
-
 #ifndef IFF_IFFPARSE_H
 #include <libraries/iffparse.h>
-#endif
-
-// override with endian aware version
-#undef MAKE_ID
-#ifndef CPU_IS_LITTLE_ENDIAN
-#define MAKE_ID(a,b,c,d)	\
-	((ULONG) (a)<<24 | (ULONG) (b)<<16 | (ULONG) (c)<<8 | (ULONG) (d))
-#else
-#define MAKE_ID(a,b,c,d)	\
-	((ULONG) (d)<<24 | (ULONG) (c)<<16 | (ULONG) (b)<<8 | (ULONG) (a))
 #endif
 
 #define read_le16(P) le2nat16(*(UWORD *)(P))
@@ -48,6 +22,57 @@
 #define write_be16(P,V) *(UWORD *)(P)=nat2be16(V)
 #define write_be32(P,V) *(ULONG *)(P)=nat2be32(V)
 #define write_be64(P,V) *(UQUAD *)(P)=nat2be64(V)
+
+#if defined(__AROS__)
+
+#include <aros/cpu.h>
+#include <aros/macros.h>
+
+/* RIFF IDs are compared against longs read straight from the file, so they
+   are built in host byte order. They are used as switch case labels, so this
+   must stay an integer constant expression rather than a byte-swap macro. */
+#undef MAKE_ID
+#if AROS_BIG_ENDIAN
+#define MAKE_ID(a,b,c,d)	\
+	((ULONG) (a)<<24 | (ULONG) (b)<<16 | (ULONG) (c)<<8 | (ULONG) (d))
+#else
+#define MAKE_ID(a,b,c,d)	\
+	((ULONG) (d)<<24 | (ULONG) (c)<<16 | (ULONG) (b)<<8 | (ULONG) (a))
+#endif
+
+#define le2nat16(A) AROS_LE2WORD(A)
+#define le2nat32(A) AROS_LE2LONG(A)
+#define le2nat64(A) AROS_LE2QUAD(A)
+
+#define nat2le16(A) AROS_WORD2LE(A)
+#define nat2le32(A) AROS_LONG2LE(A)
+#define nat2le64(A) AROS_QUAD2LE(A)
+
+#define be2nat16(A) AROS_BE2WORD(A)
+#define be2nat32(A) AROS_BE2LONG(A)
+#define be2nat64(A) AROS_BE2QUAD(A)
+
+#define nat2be16(A) AROS_WORD2BE(A)
+#define nat2be32(A) AROS_LONG2BE(A)
+#define nat2be64(A) AROS_QUAD2BE(A)
+
+#else /* !__AROS__ */
+
+#if defined(__X86__)
+#define CPU_IS_LITTLE_ENDIAN 1
+#else
+#undef CPU_IS_LITTLE_ENDIAN
+#endif
+
+// override with endian aware version
+#undef MAKE_ID
+#ifndef CPU_IS_LITTLE_ENDIAN
+#define MAKE_ID(a,b,c,d)	\
+	((ULONG) (a)<<24 | (ULONG) (b)<<16 | (ULONG) (c)<<8 | (ULONG) (d))
+#else
+#define MAKE_ID(a,b,c,d)	\
+	((ULONG) (d)<<24 | (ULONG) (c)<<16 | (ULONG) (b)<<8 | (ULONG) (a))
+#endif
 
 #define endian16(A) \
 ( ( ((UWORD)(A)&0xFF00)>>8 )+( ((UWORD)(A)&0xFF)<<8 ) )
@@ -164,5 +189,7 @@ void write_le16(__reg("r3") void *, __reg("r4") WORD) =
 #define nat2le64(A) (A)
 
 #endif
+
+#endif /* !__AROS__ */
 
 #endif /* ENDIAN_H */

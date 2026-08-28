@@ -1,0 +1,135 @@
+--- ./libdrm-2.4.134/nouveau_drm.h
++++ ./libdrm/nouveau_drm.h
+@@ -84,6 +84,10 @@
+ #define NOUVEAU_GETPARAM_PTIMER_TIME     14
+ #define NOUVEAU_GETPARAM_HAS_BO_USAGE    15
+ #define NOUVEAU_GETPARAM_HAS_PAGEFLIP    16
++#define NOUVEAU_GETPARAM_VRAM_SIZE       128
++#define NOUVEAU_GETPARAM_GART_SIZE       129
++#define NOUVEAU_GETPARAM_VRAM_FREE       130
++#define NOUVEAU_GETPARAM_GART_FREE       131
+ struct drm_nouveau_getparam {
+ 	uint64_t param;
+ 	uint64_t value;
+--- ./libdrm-2.4.134/nouveau/nouveau.c
++++ ./libdrm/nouveau/nouveau.c
+@@ -46,8 +46,8 @@
+ #include "nvif/ioctl.h"
+ #include "nvif/unpack.h"
+ 
+-drm_private FILE *nouveau_out = NULL;
+-drm_private uint32_t nouveau_debug = 0;
++drm_private FILE *libdrm_nouveau_out = NULL;
++drm_private uint32_t libdrm_nouveau_debug = 0;
+ 
+ static void
+ debug_init(void)
+@@ -63,16 +63,16 @@
+ 	if (debug) {
+ 		int n = strtol(debug, NULL, 0);
+ 		if (n >= 0)
+-			nouveau_debug = n;
++			libdrm_nouveau_debug = n;
+ 
+ 	}
+ 
+-	nouveau_out = stderr;
++	libdrm_nouveau_out = stderr;
+ 	out = getenv("NOUVEAU_LIBDRM_OUT");
+ 	if (out) {
+ 		FILE *fout = fopen(out, "w");
+ 		if (fout)
+-			nouveau_out = fout;
++			libdrm_nouveau_out = fout;
+ 	}
+ }
+ 
+@@ -626,8 +626,13 @@
+ 	} else {
+ 		drmCloseBufferHandle(drm->fd, bo->handle);
+ 	}
++#if !defined(__AROS__)
+ 	if (bo->map)
+ 		drm_munmap(bo->map, bo->size);
++#else
++	if (bo->map)
++		drmMUnmap(drm->fd, bo->handle);
++#endif
+ 	free(nvbo);
+ }
+ 
+@@ -807,6 +812,7 @@
+ 	*pref = bo;
+ }
+ 
++#if !defined(__AROS__)
+ drm_public int
+ nouveau_bo_prime_handle_ref(struct nouveau_device *dev, int prime_fd,
+ 			    struct nouveau_bo **bo)
+@@ -842,6 +848,8 @@
+ 	return 0;
+ }
+ 
++#endif
++
+ drm_public int
+ nouveau_bo_wait(struct nouveau_bo *bo, uint32_t access,
+ 		struct nouveau_client *client)
+@@ -877,6 +885,16 @@
+ 	return ret;
+ }
+ 
++#if defined(__AROS__)
++/* the object moved: the mapping is stale until the next map request */
++static void
++nouveau_bo_unmapped(void *data)
++{
++	struct nouveau_bo *bo = data;
++	bo->map = NULL;
++}
++#endif
++
+ drm_public int
+ nouveau_bo_map(struct nouveau_bo *bo, uint32_t access,
+ 	       struct nouveau_client *client)
+@@ -884,12 +902,18 @@
+ 	struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
+ 	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
+ 	if (bo->map == NULL) {
++#if !defined(__AROS__)
+ 		bo->map = drm_mmap(0, bo->size, PROT_READ | PROT_WRITE,
+ 			       MAP_SHARED, drm->fd, nvbo->map_handle);
+ 		if (bo->map == MAP_FAILED) {
+ 			bo->map = NULL;
+ 			return -errno;
+ 		}
++#else
++		bo->map = drmMMap(drm->fd, bo->handle, nouveau_bo_unmapped, bo);
++		if (bo->map == NULL)
++			return -EINVAL;
++#endif
+ 	}
+ 	return nouveau_bo_wait(bo, access, client);
+ }
+--- ./libdrm-2.4.134/nouveau/private.h
++++ ./libdrm/nouveau/private.h
+@@ -16,14 +16,14 @@
+  * 0x00000002 submit pushbuffers synchronously
+  * 0x80000000 if compiled with SIMULATE return -EINVAL for all pb submissions
+  */
+-drm_private extern uint32_t nouveau_debug;
+-drm_private extern FILE *nouveau_out;
+-#define dbg_on(lvl) (nouveau_debug & (1 << lvl))
++drm_private extern uint32_t libdrm_nouveau_debug;
++drm_private extern FILE *libdrm_nouveau_out;
++#define dbg_on(lvl) (libdrm_nouveau_debug & (1 << lvl))
+ #define dbg(lvl, fmt, args...) do {                                            \
+ 	if (dbg_on((lvl)))                                                     \
+-		fprintf(nouveau_out, "nouveau: "fmt, ##args);                       \
++		fprintf(libdrm_nouveau_out, "nouveau: "fmt, ##args);                       \
+ } while(0)
+-#define err(fmt, args...) fprintf(nouveau_out, "nouveau: "fmt, ##args)
++#define err(fmt, args...) fprintf(libdrm_nouveau_out, "nouveau: "fmt, ##args)
+ 
+ struct nouveau_client_kref {
+ 	struct drm_nouveau_gem_pushbuf_bo *kref;

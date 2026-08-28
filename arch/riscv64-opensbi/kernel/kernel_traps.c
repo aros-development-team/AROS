@@ -18,6 +18,7 @@
 #include "kernel_cpu.h"
 
 #include <kernel_globals.h>
+#include <kernel_interrupts.h>
 #include <kernel_intr.h>
 #include <kernel_syscall.h>
 
@@ -48,6 +49,20 @@ static const char * const exc_names[] =
     "Load page fault",                  /* 13 */
     NULL,                               /* 14 */
     "Store/AMO page fault",             /* 15 */
+};
+
+/*
+ * scause exception code -> m68k trap number, the currency core_Trap()
+ * and exec's trap handler deal in (exec ORs in AT_DeadEnd to form the
+ * ACPU_* alert). -1 is never forwarded. Explicitly signed: plain char
+ * is unsigned on riscv64, which would turn -1 into 255.
+ */
+static const signed char exc_trap[] =
+{
+     3,  2,  4,  4,     /* misaligned/access ifetch, illegal insn, ebreak */
+     3,  2,  3,  2,     /* load/store misalign + access faults            */
+     8,  8, -1, -1,     /* environment calls                              */
+     2,  2, -1,  2,     /* page faults                                    */
 };
 
 static void krnDumpContext(struct ExceptionContext *ctx)
@@ -144,21 +159,32 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
 
     __riscv64_trap_depth++;
     action = krnTrapDispatch(ctx, scause, stval);
-    __riscv64_trap_depth--;
-
-    if (!SysBase)
-        return;
 
     /*
-     * The scheduler is only entered once the depth is back down. It may
-     * resume another task and never return here, so anything counted
-     * around it stays counted for good - and a task resumed while it
-     * still looks like trap context cannot take a semaphore.
+     * Only the outermost trap enters the scheduler, the same rule other
+     * ports get from the hardware privilege level they were interrupted
+     * from: a trap taken while the kernel is already in a trap - which
+     * includes one taken while the dispatcher itself is idling - must
+     * not reschedule, or it re-enters the dispatcher from inside itself.
+     * The depth is held across the call so that nesting stays visible to
+     * it, and released once it is done.
      */
-    if (action == TRAP_RESCHEDULE)
-        core_ExitInterrupt(ctx);
-    else if (action == TRAP_SYSCALL)
-        core_SysCall((int)ctx->x[CTX_REG_A7], ctx);
+    if (SysBase && (__riscv64_trap_depth == 1))
+    {
+        if (action == TRAP_RESCHEDULE)
+            core_ExitInterrupt(ctx);
+        else if (action == TRAP_SYSCALL)
+            core_SysCall((int)ctx->x[CTX_REG_A7], ctx);
+    }
+
+    /*
+     * __riscv64_trap_depth is released at the very end of the assembly exit
+     * in traps.S (after the register restore, immediately before sret), NOT
+     * here: decrementing it now would leave the whole exit sequence running
+     * at depth 0, so a trap taken mid-exit would be treated as the outermost
+     * one, reschedule, and snapshot this half-restored exit state as a task
+     * context - which later resumes with a wild sp and faults.
+     */
 }
 
 static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
@@ -171,7 +197,7 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
         switch (irq)
         {
         case SCAUSE_IRQ_STI:
-            krnTimerTick();
+            krnTimerTick(ctx);
             /* Run the scheduler on the way out if a switch is pending */
             return TRAP_RESCHEDULE;
 
@@ -212,6 +238,24 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
         unsigned long code = scause;
         const char *name = (code < sizeof(exc_names)/sizeof(exc_names[0]))
                             ? exc_names[code] : NULL;
+
+        /* kernel.resource exception handlers get first refusal */
+        if (getKernelBase() && (code < EXCEPTIONS_COUNT) &&
+            krnRunExceptionHandlers(getKernelBase(), code, ctx))
+            return TRAP_DONE;
+
+        /*
+         * Hand the crash to exec, as the other ports do: core_Trap()
+         * runs the task's trap handler, which points the context at
+         * exec's crash handler and returns; the normal trap exit then
+         * resumes the task there and the Alert() machinery takes over.
+         * Only the outermost trap can do this - a fault taken inside
+         * another trap has no task context to give the crash to.
+         */
+        if ((__riscv64_trap_depth == 1) && getKernelBase() &&
+            (code < sizeof(exc_trap)) && (exc_trap[code] != -1) &&
+            core_Trap(exc_trap[code], ctx))
+            return TRAP_DONE;
 
         krnSBIPutStr("\n[trap] ");
         if (name)

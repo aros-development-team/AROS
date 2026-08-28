@@ -81,6 +81,11 @@ static const struct efi_guid ACPI10_GUID =
     { 0xeb9d2d30, 0x2d88, 0x11d3,
       { 0x9a, 0x16, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } };
 
+/* {9042a9de-23dc-4a38-96fb-7aded080516a} - GRAPHICS_OUTPUT_PROTOCOL */
+static const struct efi_guid GOP_GUID =
+    { 0x9042a9de, 0x23dc, 0x4a38,
+      { 0x96, 0xfb, 0x7a, 0xde, 0xd0, 0x80, 0x51, 0x6a } };
+
 struct efi_simple_text_output
 {
     void        *reset;
@@ -124,6 +129,59 @@ struct efi_boot_services
     void *exit;
     void *unload_image;
     efi_status_t (*exit_boot_services)(efi_handle_t, uintn);
+    void *get_next_monotonic_count;
+    void *stall;
+    void *set_watchdog_timer;
+    void *connect_controller;
+    void *disconnect_controller;
+    void *open_protocol;
+    void *close_protocol;
+    void *open_protocol_information;
+    void *protocols_per_handle;
+    void *locate_handle_buffer;
+    efi_status_t (*locate_protocol)(const struct efi_guid *, void *, void **);
+};
+
+struct efi_gop_pixel_bitmask
+{
+    u32 red;
+    u32 green;
+    u32 blue;
+    u32 reserved;
+};
+
+/* Pixel byte order in memory, lowest address first */
+#define EFI_GOP_PIXEL_RGBX      0
+#define EFI_GOP_PIXEL_BGRX      1
+#define EFI_GOP_PIXEL_BITMASK   2
+#define EFI_GOP_PIXEL_BLT_ONLY  3
+
+struct efi_gop_mode_info
+{
+    u32 version;
+    u32 horizontal_resolution;
+    u32 vertical_resolution;
+    u32 pixel_format;
+    struct efi_gop_pixel_bitmask pixel_bitmask;
+    u32 pixels_per_scanline;
+};
+
+struct efi_gop_mode
+{
+    u32 max_mode;
+    u32 mode;
+    struct efi_gop_mode_info *info;
+    uintn size_of_info;
+    u64 framebuffer_base;
+    uintn framebuffer_size;
+};
+
+struct efi_gop
+{
+    void *query_mode;
+    void *set_mode;
+    void *blt;
+    struct efi_gop_mode *mode;
 };
 
 struct efi_system_table
@@ -250,6 +308,24 @@ unsigned long __efi_regions[EFI_MAX_REGIONS][2]
  * the emergency console.
  */
 char __efi_cmdline[128] __attribute__((section(".data"))) = "";
+
+/*
+ * The framebuffer the firmware's Graphics Output Protocol scans out.
+ * It has to be captured here: the protocol is gone after
+ * ExitBootServices, but the display keeps showing the surface, so the
+ * kernel can describe it to the graphics driver. Masks are in-memory
+ * 32-bit pixel values. All zero when the firmware drives no display.
+ */
+unsigned long __efi_fb_base   __attribute__((section(".data"))) = 0;
+unsigned long __efi_fb_size   __attribute__((section(".data"))) = 0;
+unsigned int  __efi_fb_width  __attribute__((section(".data"))) = 0;
+unsigned int  __efi_fb_height __attribute__((section(".data"))) = 0;
+unsigned int  __efi_fb_pitch  __attribute__((section(".data"))) = 0;
+unsigned int  __efi_fb_bpp    __attribute__((section(".data"))) = 0;
+unsigned int  __efi_fb_redmask   __attribute__((section(".data"))) = 0;
+unsigned int  __efi_fb_greenmask __attribute__((section(".data"))) = 0;
+unsigned int  __efi_fb_bluemask  __attribute__((section(".data"))) = 0;
+unsigned int  __efi_fb_resmask   __attribute__((section(".data"))) = 0;
 
 /* The real kernel entry, past the PE header (see startup.S) */
 extern void _start_kernel(unsigned long hartid, void *fdt);
@@ -593,6 +669,72 @@ out:
 }
 
 /*
+ * Capture the firmware framebuffer while the Graphics Output Protocol
+ * can still be asked about it. Only the mode the firmware already set
+ * is taken - picking a different one is a policy decision that can
+ * wait until a real display driver exists.
+ */
+static void efi_collect_gfx(struct efi_boot_services *bs)
+{
+    struct efi_gop *gop = 0;
+    struct efi_gop_mode_info *mi;
+    u32 rmask, gmask, bmask, xmask, allmask;
+    u32 bpp;
+
+    if (bs->locate_protocol(&GOP_GUID, 0, (void **)&gop) != EFI_SUCCESS ||
+        !gop || !gop->mode || !gop->mode->info)
+        return;
+
+    mi = gop->mode->info;
+
+    switch (mi->pixel_format)
+    {
+    case EFI_GOP_PIXEL_RGBX:
+        rmask = 0x000000FF; gmask = 0x0000FF00;
+        bmask = 0x00FF0000; xmask = 0xFF000000;
+        break;
+    case EFI_GOP_PIXEL_BGRX:
+        bmask = 0x000000FF; gmask = 0x0000FF00;
+        rmask = 0x00FF0000; xmask = 0xFF000000;
+        break;
+    case EFI_GOP_PIXEL_BITMASK:
+        rmask = mi->pixel_bitmask.red;
+        gmask = mi->pixel_bitmask.green;
+        bmask = mi->pixel_bitmask.blue;
+        xmask = mi->pixel_bitmask.reserved;
+        break;
+    default:
+        /* Blt-only: no linear framebuffer to draw into */
+        return;
+    }
+
+    /* Pixel size: the smallest whole number of bytes holding every mask */
+    allmask = rmask | gmask | bmask | xmask;
+    if (!allmask)
+        return;
+    for (bpp = 32; bpp > 8; bpp -= 8)
+    {
+        if (allmask & (0xFFU << (bpp - 8)))
+            break;
+    }
+
+    __efi_fb_base      = gop->mode->framebuffer_base;
+    __efi_fb_size      = gop->mode->framebuffer_size;
+    __efi_fb_width     = mi->horizontal_resolution;
+    __efi_fb_height    = mi->vertical_resolution;
+    __efi_fb_pitch     = mi->pixels_per_scanline * (bpp >> 3);
+    __efi_fb_bpp       = bpp;
+    __efi_fb_redmask   = rmask;
+    __efi_fb_greenmask = gmask;
+    __efi_fb_bluemask  = bmask;
+    __efi_fb_resmask   = xmask;
+
+    efi_puts("AROS: framebuffer at ");
+    efi_puthex(__efi_fb_base);
+    efi_puts("\n");
+}
+
+/*
  * EFI entry point. Named in the PE header (see startup.S).
  */
 efi_status_t efi_stub_entry(efi_handle_t image, struct efi_system_table *st)
@@ -669,6 +811,8 @@ efi_status_t efi_stub_entry(efi_handle_t image, struct efi_system_table *st)
         rvboot->get_boot_hartid(rvboot, &hartid);
 
     efi_load_package(st, image);
+
+    efi_collect_gfx(bs);
 
     /*
      * Move the image to its link address. The kernel is linked to run

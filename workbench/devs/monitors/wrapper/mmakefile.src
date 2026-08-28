@@ -3,6 +3,12 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES      := wrapper
 STORAGEDIR := $(AROSDIR)/Storage/Monitors
+# Cards on a PCI bus can be fitted to any machine that has one
+ifeq ($(filter pc opensbi,$(AROS_TARGET_ARCH)),)
+PCIDEVSDIR := $(STORAGEDIR)
+else
+PCIDEVSDIR := $(AROS_DEVS)/Monitors
+endif
 ifneq ($(AROS_TARGET_ARCH),pc)
 PCDEVSDIR := $(STORAGEDIR)
 else
@@ -22,18 +28,22 @@ endif
     progname=Wrapper targetdir=$(STORAGEDIR) \
     files=$(FILES)
 
-#MM
-devs-monitors-wrapper-copy: \
-			    $(PCDEVSDIR)/ATI \
-			    $(PCDEVSDIR)/NVidia \
-			    $(PCDEVSDIR)/VMWare \
-			    $(AMIGADEVSDIR)/SAGA
+WRAPPER_MONITORS := $(PCIDEVSDIR)/ATI $(PCIDEVSDIR)/NVidia
+ifeq ($(AROS_TARGET_ARCH),pc)
+WRAPPER_MONITORS += $(PCDEVSDIR)/VMWare
+endif
+ifeq ($(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU),amiga-m68k)
+WRAPPER_MONITORS += $(AMIGADEVSDIR)/SAGA
+endif
 
-$(PCDEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(PCDEVSDIR)
+#MM
+devs-monitors-wrapper-copy: $(WRAPPER_MONITORS)
+
+$(PCIDEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
 	%fileactionmsg msg="Creating   " file="$@" elipses="..."
 	@$(CP) -f $< $@
 
-$(PCDEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper | $(PCDEVSDIR)
+$(PCIDEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
 	%fileactionmsg msg="Creating   " file="$@" elipses="..."
 	@$(CP) -f $< $@
 

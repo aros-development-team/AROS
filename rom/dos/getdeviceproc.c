@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
 */
@@ -225,12 +225,32 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         /* Directly change assign type without calling AssignXXX(),
          * mimics AOS behavior, AOS programs assume it is safe to
          * keep LDF_WRITE lock while calling Lock("late assign:");
+         *
+         * The DosList is only held with a READ lock here, and the Lock()
+         * above blocks on a handler, so several tasks can race this
+         * promotion for the same entry - and each of them used to
+         * FreeVec() the same assign name, corrupting the allocator (the
+         * adjacent DosList nodes were absorbed into the free list while
+         * still linked). Claim the promotion atomically: the first task
+         * performs it, later ones discard their duplicate target lock
+         * and use the promoted entry. The name string must not be freed
+         * here - a racing task may still be inside Lock() on it - so it
+         * stays attached to the node: every path that frees or replaces
+         * dol_AssignName (AssignLock/AssignPath/AssignLate removal,
+         * AssignAddToList) runs under the WRITE lock, which cannot be
+         * acquired while any promoter still holds READ, so the normal
+         * assign teardown releases it at a safe time.
          */
-        dl->dol_Type = DLT_DIRECTORY;
-        dl->dol_Lock = lock;
-        dl->dol_Task = ((struct FileLock*)BADDR(lock))->fl_Task;
-        FreeVec(dl->dol_misc.dol_assign.dol_AssignName);
-        dl->dol_misc.dol_assign.dol_AssignName = NULL;
+        Forbid();
+        if (dl->dol_Type == DLT_LATE) {
+            dl->dol_Lock = lock;
+            dl->dol_Task = ((struct FileLock*)BADDR(lock))->fl_Task;
+            dl->dol_Type = DLT_DIRECTORY;
+            Permit();
+        } else {
+            Permit();
+            UnLock(lock);
+        }
 
         /* the added entry will be a DLT_DIRECTORY, so we can just copy the
          * details in and get out of here */

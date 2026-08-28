@@ -233,16 +233,60 @@ struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct Exec
 {
     struct MemHeaderAllocatorCtx * mhac = NULL;
 
+    /*
+     * Fast path: AllocatorCtxList is only ever appended to (on first touch of
+     * a MemHeader), never removed from, so a lockless walk is safe.
+     */
     ForeachNode(&PrivExecBase(SysBase)->AllocatorCtxList, mhac)
     {
         if (mhac->mhac_MemHeader == mh)
             return mhac;
     }
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Miss: a new ctx must be created and linked. AddTail is not SMP-safe
+     * against a concurrent first-touch of the same MemHeader, so serialize
+     * creation and re-check under the lock (another core may have just added
+     * it).
+     */
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->AllocatorCtxListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+    ForeachNode(&PrivExecBase(SysBase)->AllocatorCtxList, mhac)
+    {
+        if (mhac->mhac_MemHeader == mh)
+        {
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->AllocatorCtxListSpinLock);
+            return mhac;
+        }
+    }
+#endif
+
     /* New context is needed */
     mhac = Allocate(mh, sizeof(struct MemHeaderAllocatorCtx));
+    if (mhac == NULL)
+    {
+        /* Header too full to hold its own ctx - callers treat the ctx as
+         * an optional accelerator, so just run without one. */
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->AllocatorCtxListSpinLock);
+#endif
+        return NULL;
+    }
     mhac_SetupMemHeaderAllocatorCtx(mh, ALLOCATORCTXINDEXSIZE, mhac);
+    /*
+     * Publish the finished node before linking it: the fast path above
+     * walks this list without the lock, so on a weakly ordered CPU a
+     * reader could otherwise follow the AddTail stores while the node's
+     * own fields (mhac_MemHeader in particular) are not visible yet. The
+     * reader side needs nothing - it reaches those fields through the
+     * node pointer, and address dependencies are respected.
+     */
+    EXEC_MEMORY_BARRIER();
     AddTail(&PrivExecBase(SysBase)->AllocatorCtxList, (struct Node *)mhac);
+
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->AllocatorCtxListSpinLock);
+#endif
 
     return mhac;
 }
@@ -493,6 +537,24 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
 
         if (mhe->mhe_Alloc)
         {
+#if defined(__AROSEXEC_SMP__)
+            /*
+             * Managed headers without MEMF_SEM_PROTECTED do not serialise
+             * themselves - take the header lock, as the plain path below
+             * does. SEM_PROTECTED ones obtain a semaphore internally and
+             * may Wait(), so they must not be entered with a spinlock held.
+             */
+            if (!((IPTR)mh->mh_First & MEMF_SEM_PROTECTED))
+            {
+                APTR ret;
+
+                EXEC_SPINLOCK_LOCK(&mh->mh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+                ret = mhe->mhe_Alloc(mhe, size, &requirements);
+                EXEC_SPINLOCK_UNLOCK(&mh->mh_SpinLock);
+
+                return ret;
+            }
+#endif
             return mhe->mhe_Alloc(mhe, size, &requirements);
         }
         else
@@ -504,13 +566,24 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
         IPTR byteSize = AROS_ROUNDUP2(size, MEMCHUNK_TOTAL);
         struct MemChunk *mc=NULL, *p1, *p2;
 
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&mh->mh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+
+retry_alloc:
         /* Validate MemHeader before doing anything. */
         if (!validateHeader(mh, MM_ALLOC, NULL, size, tp, SysBase))
-            return NULL;
+        {
+            mc = NULL;
+            goto stdalloc_done;
+        }
 
         /* Validate if there is even enough total free memory */
         if (mh->mh_Free < byteSize)
-            return NULL;
+        {
+            mc = NULL;
+            goto stdalloc_done;
+        }
 
 
         /*
@@ -526,11 +599,15 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
          * On 1st pass p1 points to mh->mh_First, so that changing p1->mc_Next actually
          * changes mh->mh_First.
          */
+        mc = NULL;
         while (p2 != NULL)
         {
             /* Validate the current chunk */
             if (!validateChunk(p2, p1, mh, MM_ALLOC, NULL, size, tp, SysBase))
-                return NULL;
+            {
+                mc = NULL;
+                goto stdalloc_done;
+            }
 
             /* Check if the current block is large enough */
             if (p2->mc_Bytes>=byteSize)
@@ -601,13 +678,18 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
             {
                 /*
                  * Since chunks created during deallocation are not returned to index,
-                 * retry with cleared index.
+                 * retry with cleared index. Loop instead of recursing so we keep
+                 * holding mh_SpinLock across the retry (the index is per-mh state).
                  */
                 mhac_ClearIndex(mhac);
-                mc = stdAlloc(mh, mhac, size, requirements, tp, SysBase);
+                goto retry_alloc;
             }
         }
 
+stdalloc_done:
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&mh->mh_SpinLock);
+#endif
         return mc;
     }
 }
@@ -627,15 +709,31 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
     if ((freeList->mh_Node.ln_Type == NT_MEMORY) && IsManagedMem(freeList))
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)freeList;
-        
+
         if (mhe->mhe_Free)
+        {
+#if defined(__AROSEXEC_SMP__)
+            /* See stdAlloc: unprotected managed headers are serialised here. */
+            if (!((IPTR)freeList->mh_First & MEMF_SEM_PROTECTED))
+            {
+                EXEC_SPINLOCK_LOCK(&freeList->mh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+                mhe->mhe_Free(mhe, addr, size);
+                EXEC_SPINLOCK_UNLOCK(&freeList->mh_SpinLock);
+            }
+            else
+#endif
             mhe->mhe_Free(mhe, addr, size);
+        }
     }
     else
     {
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&freeList->mh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+
         /* Make sure the MemHeader is OK */
         if (!validateHeader(freeList, MM_FREE, addr, size, tp, SysBase))
-            return;
+            goto stddealloc_done;
 
         /* Align size to the requirements */
         byteSize = size + ((IPTR)addr & (MEMCHUNK_TOTAL - 1));
@@ -664,7 +762,7 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
             p3->mc_Next = NULL;
             p1->mc_Next = p3;
             freeList->mh_Free += byteSize;
-            return;
+            goto stddealloc_done;
         }
 
         /* Find closer chunk */
@@ -675,7 +773,7 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
         do
         {
             if (!validateChunk(p2, p1, freeList, MM_FREE, addr, size, tp, SysBase))
-                return;
+                goto stddealloc_done;
 
             /* Found a block with a higher address? */
             if (p2 >= p3)
@@ -695,7 +793,7 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
                         FindTask(NULL)->tc_Node.ln_Name);
 
                     Alert(AN_FreeTwice);
-                    return;
+                    goto stddealloc_done;
                 }
 #endif
                 /* End the loop with p2 non-zero */
@@ -723,7 +821,7 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
                     FindTask(NULL)->tc_Node.ln_Name);
 
                 Alert(AN_FreeTwice);
-                return;
+                goto stddealloc_done;
             }
 #endif
             /* Merge if possible */
@@ -762,6 +860,12 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
         p3->mc_Bytes = p4 - (UBYTE *)p3;
         freeList->mh_Free += byteSize;
         if (p1->mc_Next==p3) mhac_MemChunkCreated(p3, p1, mhac);
+
+stddealloc_done:
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&freeList->mh_SpinLock);
+#endif
+        ;
     }
 }
 
@@ -801,6 +905,12 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
     if (mh)
     {
         struct MemHeader *orig = FindMem(mh, SysBase);
+
+#if defined(__AROSEXEC_SMP__)
+        /* nommu_AllocMem() does not clear memory, and stdAlloc()/stdDealloc()
+         * lock mh_SpinLock unconditionally - garbage here spins forever. */
+        EXEC_SPINLOCK_INIT(&mh->mh_SpinLock);
+#endif
 
         if (IsManagedMem(orig))
         {
@@ -985,6 +1095,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
              * allocator ctx size in any case.
              */
             IPTR puddleSize = pool->pool.PuddleSize;
+            struct Node *head = (struct Node *)pool->pool.PuddleList.mlh_Head;
 
             if (memSize > puddleSize - (MEMHEADER_TOTAL + mhac_GetCtxSize()))
             {
@@ -993,6 +1104,20 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
                 puddleSize = memSize + MEMHEADER_TOTAL + mhac_GetCtxSize();
                 /* Align the size up to page boundary */
                 puddleSize = (puddleSize + align) & ~align;
+            }
+            else if (head->ln_Succ && head->ln_Succ->ln_Succ == NULL)
+            {
+                /*
+                 * Slow start: the only list entry is the pool's header
+                 * block, so this is the pool's first data puddle. Many
+                 * pools only ever hold a handful of small allocations;
+                 * size the first puddle for the request instead of
+                 * committing a full puddleSize up front. Pools that
+                 * keep allocating get full-size puddles from the
+                 * second one on.
+                 */
+                puddleSize = memSize + MEMHEADER_TOTAL + mhac_GetCtxSize();
+                puddleSize = (puddleSize + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL - 1);
             }
 
             mh = AllocMemHeader(puddleSize, flags, loc, SysBase);

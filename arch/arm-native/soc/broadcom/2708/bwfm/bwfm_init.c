@@ -843,6 +843,8 @@ static int bwfm_frame_rw(struct BWFMBase *BWFMBase, APTR buf, ULONG len, int wri
 /* Forward decls: bwfm_dcmd salvages frames that arrive while it polls (below). */
 static int bwfm_frame_eth(UBYTE *frame, ULONG flen, ULONG *ehoff, ULONG *ethlen);
 static void bwfm_glom_salvage(struct BWFMBase *BWFMBase, UBYTE *desc, ULONG flen);
+static void bwfm_glom_append(struct BWFMBase *BWFMBase, int chan,
+                             const UBYTE *eth, ULONG ethlen);
 
 /*
  * Push one already-extracted 802.3 event frame into the hand-off ring for an
@@ -979,20 +981,23 @@ static int bwfm_dcmd(struct BWFMBase *BWFMBase, int cmd, int set, void *data, UL
                  * any events to the ring (no-op when not listening), drop data. */
                 bwfm_glom_salvage(BWFMBase, frame, flen);
             }
-            else if (BWFMBase->bwfm_evlisten &&
-                     (ch == BWFM_SDIO_SWHDR_CHANNEL_EVENT ||
+            else if ((ch == BWFM_SDIO_SWHDR_CHANNEL_EVENT ||
                       ch == BWFM_SDIO_SWHDR_CHANNEL_DATA) &&
                      bwfm_frame_eth(frame, flen, &ehoff, &ethlen))
             {
-                /* Don't lose a firmware event (LINK_CTL) that lands while we
-                 * poll: hand it to the ring so the join/scan still sees it. A
-                 * swallowed E_LINK/E_SET_SSID here made join flaky. The full
-                 * EVENT/DATA frame was already read, so F2 is not left desynced. */
+                /* Don't lose what lands while we poll: a firmware event
+                 * (LINK_CTL) goes to the ring so the join/scan still sees it -
+                 * a swallowed E_LINK/E_SET_SSID here made join flaky - and a
+                 * data frame is queued for the pump, because with the host-side
+                 * handshake that is where EAPOL arrives. The frame was already
+                 * read in full, so F2 is not left desynced either way. */
                 struct bwfm_event *e = (struct bwfm_event *)(frame + ehoff);
 
                 if (ethlen >= sizeof(*e) &&
                     AROS_BE2WORD(e->ehdr.ether_type) == BWFM_ETHERTYPE_LINK_CTL)
                     bwfm_event_push(BWFMBase, frame + ehoff, ethlen);
+                else
+                    bwfm_glom_append(BWFMBase, ch, frame + ehoff, ethlen);
             }
             if (BWFMBase->bwfm_evlisten)
                 D(bug("[bwfm] dcmd salvaged chan %d frame (len %u) while polling reply\n",
@@ -1133,8 +1138,19 @@ static ULONG bwfm_rx_info(UBYTE *eth, ULONG ethlen, int chan)
     int is_event = (ethlen >= sizeof(*e) &&
                     AROS_BE2WORD(e->ehdr.ether_type) == BWFM_ETHERTYPE_LINK_CTL);
     ULONG etype = is_event ? (AROS_BE2LONG(e->msg.event_type) & 0xffff) : 0;
+    ULONG eflags = is_event ? (AROS_BE2WORD(e->msg.flags) & 1) : 0;
 
-    return ((ULONG)chan & 0xff) | (is_event ? BWFM_RX_EVENT : 0) | (etype << 16);
+    /* Only the type survives into *info, but status/reason are what tell a
+     * completed handshake from a looping one (E_PSK_SUP 46, E_DEAUTH 5, or an
+     * E_LINK that keeps going down), so log them where they still exist. */
+    D(if (is_event)
+        bug("[bwfm] event %u status %u reason %u flags 0x%04x\n",
+            (unsigned)etype, (unsigned)AROS_BE2LONG(e->msg.status),
+            (unsigned)AROS_BE2LONG(e->msg.reason),
+            (unsigned)AROS_BE2WORD(e->msg.flags)));
+
+    return ((ULONG)chan & 0xff) | (is_event ? BWFM_RX_EVENT : 0) |
+           (eflags ? BWFM_RX_EVENT_LINKUP : 0) | (etype << 16);
 }
 
 /* ----------------------------------------------------------------------- */
@@ -1155,6 +1171,32 @@ static struct
     UBYTE   chan;
 } bwfm_glom_q[BWFM_GLOM_MAXSUB];
 static int bwfm_glom_n, bwfm_glom_i;
+static ULONG bwfm_glom_used;            /* bytes of bwfm_glom_buf in use */
+
+/*
+ * Queue an already-parsed 802.3 frame for the pump to pick up. Used for data
+ * frames that arrive while a control op (join) holds the bus: the EAPOL
+ * handshake now runs on the host, so dropping those means the supplicant never
+ * sees M1 and the AP retries it forever. Caller holds bwfm_Sem.
+ */
+static void bwfm_glom_append(struct BWFMBase *BWFMBase, int chan,
+                             const UBYTE *eth, ULONG ethlen)
+{
+    if (bwfm_glom_n >= BWFM_GLOM_MAXSUB ||
+        bwfm_glom_used + ethlen > sizeof(bwfm_glom_buf))
+    {
+        D(bug("[bwfm] no room to queue chan %d frame (len %u)\n",
+              chan, (unsigned)ethlen));
+        return;
+    }
+
+    CopyMem((APTR)eth, bwfm_glom_buf + bwfm_glom_used, ethlen);
+    bwfm_glom_q[bwfm_glom_n].ehoff = (UWORD)bwfm_glom_used;
+    bwfm_glom_q[bwfm_glom_n].ethlen = (UWORD)ethlen;
+    bwfm_glom_q[bwfm_glom_n].chan = (UBYTE)chan;
+    bwfm_glom_n++;
+    bwfm_glom_used = (bwfm_glom_used + ethlen + 3) & ~3UL;
+}
 
 /*
  * Deaggregate a GLOM superframe. `desc` is the just-read GLOM-channel descriptor
@@ -1174,10 +1216,14 @@ static int bwfm_glom_n, bwfm_glom_i;
 static void bwfm_rx_glom(struct BWFMBase *BWFMBase, UBYTE *desc, ULONG flen)
 {
     static UBYTE discard[2048];
-    ULONG nsub = flen / 2, i, off = 0, dropped = 0;
+    ULONG nsub = flen / 2, i, off, dropped = 0;
     int bail = 0;
 
-    bwfm_glom_n = bwfm_glom_i = 0;
+    /* Only start over once the pump has taken everything: a join can leave
+     * data frames queued here, and a second glom must not wipe them. */
+    if (bwfm_glom_i >= bwfm_glom_n)
+        bwfm_glom_n = bwfm_glom_i = bwfm_glom_used = 0;
+    off = bwfm_glom_used;
     if (nsub == 0)
         return;
 
@@ -1265,6 +1311,7 @@ static void bwfm_rx_glom(struct BWFMBase *BWFMBase, UBYTE *desc, ULONG flen)
     /* Rare-path diagnostic (un-gated): a glom we could not fully buffer, or an
      * F2 read failure mid-superframe, is the prime suspect for a bulk-transfer
      * stall - surface it. bail => F2 is likely now desynced (read nothing more). */
+    bwfm_glom_used = off;
     if (bail || dropped)
         D(bug("[bwfm] glom: %u subs, %d queued, %u dropped%s\n", (unsigned)nsub,
               bwfm_glom_n, (unsigned)dropped, bail ? ", BAILED (F2 desync risk)" : ""));
@@ -1304,11 +1351,13 @@ static int bwfm_glom_pop(UBYTE *buf, ULONG bufsize, uint32_t *info)
  */
 static void bwfm_glom_salvage(struct BWFMBase *BWFMBase, UBYTE *desc, ULONG flen)
 {
-    int i;
+    int i, keep;
 
     bwfm_rx_glom(BWFMBase, desc, flen);         /* fills bwfm_glom_q from F2 */
 
-    for (i = 0; i < bwfm_glom_n; i++)
+    /* Events go to the ring for the waiting join/scan; anything else stays
+     * queued for the pump. Compacting in place keeps the buffer offsets valid. */
+    for (i = 0, keep = 0; i < bwfm_glom_n; i++)
     {
         UBYTE *eth = bwfm_glom_buf + bwfm_glom_q[i].ehoff;
         struct bwfm_event *e = (struct bwfm_event *)eth;
@@ -1317,8 +1366,11 @@ static void bwfm_glom_salvage(struct BWFMBase *BWFMBase, UBYTE *desc, ULONG flen
         if (ethlen >= sizeof(*e) &&
             AROS_BE2WORD(e->ehdr.ether_type) == BWFM_ETHERTYPE_LINK_CTL)
             bwfm_event_push(BWFMBase, eth, ethlen);
+        else
+            bwfm_glom_q[keep++] = bwfm_glom_q[i];
     }
-    bwfm_glom_n = bwfm_glom_i = 0;              /* consumed here, not by the pump */
+    bwfm_glom_n = keep;
+    bwfm_glom_i = 0;
 }
 
 /* ----------------------------------------------------------------------- */
@@ -1468,6 +1520,18 @@ AROS_LH0(uint32_t, BWFMChipID,
     AROS_LIBFUNC_EXIT
 }
 
+/* The chip id alone does not name a firmware image: BCM4345 covers both the
+ * CYW43455 and (revision 9) the CYW43456, which need different blobs. */
+AROS_LH0(uint32_t, BWFMChipRev,
+                struct BWFMBase *, BWFMBase, 17, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    return BWFMBase->bwfm_attached ? BWFMBase->bwfm_chiprev : 0;
+
+    AROS_LIBFUNC_EXIT
+}
+
 /*
  * Load firmware + nvram into chip RAM and start the CPU. The caller
  * (bwfm.device) supplies the blobs read from disk; nvram must already be
@@ -1549,6 +1613,33 @@ AROS_LH4(int, BWFMStartFirmware,
     }
 
     D(bug("[bwfm] firmware %s\n", err ? "ready timeout" : "ready"));
+
+#if DEBUG
+    /* A timeout leaves no clue on its own: the chip either never got its clocks,
+     * never came out of reset, or is running code that never landed in RAM.
+     * Dump the three, so one capture tells them apart. */
+    if (err)
+    {
+        struct bwfm_core *cr4 = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_ARM_CR4);
+
+        bug("[bwfm] timeout state: CHIPCLKCSR=0x%02x mbox=0x%08x INTSTATUS=0x%08x\n",
+            bwfm_read_1(BWFM_SDIO_FUNC1_CHIPCLKCSR),
+            bwfm_dev_read(BWFMBase, SDPCMD_TOHOSTMAILBOXDATA),
+            bwfm_dev_read(BWFMBase, SDPCMD_INTSTATUS));
+        if (cr4)
+            bug("[bwfm] timeout state: CR4 ioctl=0x%08x resetctl=0x%08x (isup %d)\n",
+                bwfm_read_4(BWFMBase, cr4->co_wrapbase + BWFM_AGENT_IOCTL),
+                bwfm_read_4(BWFMBase, cr4->co_wrapbase + BWFM_AGENT_RESET_CTL),
+                bwfm_ai_isup(BWFMBase, cr4));
+        /* Read the first firmware words back through the 4-byte window (block
+         * mode is what is unreliable here) and hold them against the image. */
+        bug("[bwfm] timeout state: RAM 0x%06x = %08x %08x, image = %08x %08x\n",
+            BWFMBase->bwfm_rambase,
+            bwfm_read_4(BWFMBase, BWFMBase->bwfm_rambase),
+            bwfm_read_4(BWFMBase, BWFMBase->bwfm_rambase + 4),
+            ((uint32_t *)fw)[0], ((uint32_t *)fw)[1]);
+    }
+#endif
 
     if (!err)
     {
@@ -1739,6 +1830,7 @@ AROS_LH2(int, BWFMScan,
 #define EV(e) (evmask[(e) / 8] |= (1 << ((e) % 8)))
     EV(BWFM_E_IF); EV(BWFM_E_LINK); EV(BWFM_E_AUTH); EV(BWFM_E_ASSOC);
     EV(BWFM_E_EAPOL_MSG); EV(BWFM_E_DEAUTH); EV(BWFM_E_DISASSOC);
+    EV(BWFM_E_REASSOC); EV(BWFM_E_ROAM);
     EV(BWFM_E_ESCAN_RESULT);
 #undef EV
     bwfm_iovar_set(BWFMBase, "event_msgs", evmask, sizeof(evmask));
@@ -2174,11 +2266,90 @@ AROS_LH3(int, BWFMRxFrame,
  * device) must NOT hold an open CMD_READ on the bus; the RX pump waits on
  * bwfm_Sem while we run.
  */
-AROS_LH4(int, BWFMJoin,
+/*
+ * Cipher + AKM the caller's WPA/RSN IE asks for, so the firmware's wsec and
+ * wpa_auth agree with the IE we put in the assoc request. Same mapping as
+ * OpenBSD's bwfm_connect(), except that it reads the suite selectors straight
+ * out of the IE instead of net80211's parsed view of them.
+ *
+ * RSN (id 48):  version[2] group[4] pcount[2] pairwise[4*n] acount[2] akm[4*n]
+ * WPA (id 221): oui[3] type[1] version[2] group[4] pcount[2] ... same tail
+ * A suite selector is OUI[3] + type[1]; only the type matters here.
+ */
+static void bwfm_ie_security(const UBYTE *ie, ULONG ielen, ULONG *wsecp,
+                             ULONG *authp)
+{
+    ULONG wsec = 0, auth = 0, off, n;
+    int rsn;
+
+    if (ie == NULL || ielen < 2 || (ULONG)ie[1] + 2 > ielen)
+        return;
+
+    rsn = (ie[0] == 48);
+    off = rsn ? 4 : 8;                  /* past version, at the group cipher */
+    if (off + 4 > ielen)
+        return;
+
+#define SUITE_CIPHER(t) do {                                    \
+        if ((t) == 2) wsec |= BWFM_WSEC_TKIP;                   \
+        else if ((t) == 4) wsec |= BWFM_WSEC_AES;               \
+        else if ((t) == 1) wsec |= BWFM_WSEC_WEP;               \
+    } while (0)
+
+    SUITE_CIPHER(ie[off + 3]);          /* group cipher */
+    off += 4;
+
+    if (off + 2 > ielen)
+        goto out;
+    n = ie[off] | ((ULONG)ie[off + 1] << 8);
+    off += 2;
+    if (n > 8 || off + n * 4 > ielen)
+        goto out;
+    while (n--)
+    {
+        SUITE_CIPHER(ie[off + 3]);      /* pairwise ciphers */
+        off += 4;
+    }
+
+    if (off + 2 > ielen)
+        goto out;
+    n = ie[off] | ((ULONG)ie[off + 1] << 8);
+    off += 2;
+    if (n > 8 || off + n * 4 > ielen)
+        goto out;
+    while (n--)
+    {
+        switch (ie[off + 3])            /* AKM suites */
+        {
+        case 1: auth |= rsn ? BWFM_WPA_AUTH_WPA2_UNSPECIFIED
+                            : BWFM_WPA_AUTH_WPA_UNSPECIFIED; break;
+        case 2: auth |= rsn ? BWFM_WPA_AUTH_WPA2_PSK
+                            : BWFM_WPA_AUTH_WPA_PSK; break;
+        case 5: auth |= BWFM_WPA_AUTH_WPA2_1X_SHA256; break;
+        case 6: auth |= BWFM_WPA_AUTH_WPA2_PSK_SHA256; break;
+        }
+        off += 4;
+    }
+#undef SUITE_CIPHER
+
+out:
+    /* An IE we could not make sense of still means "encrypted": fall back to
+     * the WPA2-PSK/CCMP pair rather than associating in the clear. */
+    if (wsec == 0)
+        wsec = BWFM_WSEC_AES;
+    if (auth == 0)
+        auth = rsn ? BWFM_WPA_AUTH_WPA2_PSK : BWFM_WPA_AUTH_WPA_PSK;
+    *wsecp = wsec;
+    *authp = auth;
+}
+
+AROS_LH6(int, BWFMJoin,
                 AROS_LHA(uint8_t *, ssid, A0),
                 AROS_LHA(uint32_t, ssidlen, D0),
                 AROS_LHA(uint8_t *, pass, A1),
                 AROS_LHA(uint32_t, passlen, D1),
+                AROS_LHA(uint8_t *, ie, A2),
+                AROS_LHA(uint32_t, ielen, D2),
                 struct BWFMBase *, BWFMBase, 11, Bwfm)
 {
     AROS_LIBFUNC_INIT
@@ -2189,6 +2360,7 @@ AROS_LH4(int, BWFMJoin,
     UBYTE evmask[BWFM_EVENT_MASK_LEN];
     ULONG psize;
     int i, tries, attempt, result = -1;
+    int e_sup = 0, e_wsec = 0, e_auth = 0, e_pmk = 0;
 
     if (!BWFMBase->bwfm_attached || ssid == NULL || ssidlen == 0 ||
         ssidlen > BWFM_MAX_SSID_LEN)
@@ -2207,6 +2379,7 @@ AROS_LH4(int, BWFMJoin,
 #define EV(e) (evmask[(e) / 8] |= (1 << ((e) % 8)))
     EV(BWFM_E_IF); EV(BWFM_E_LINK); EV(BWFM_E_AUTH); EV(BWFM_E_ASSOC);
     EV(BWFM_E_EAPOL_MSG); EV(BWFM_E_DEAUTH); EV(BWFM_E_DISASSOC);
+    EV(BWFM_E_REASSOC); EV(BWFM_E_ROAM);
     EV(BWFM_E_SET_SSID);
 #undef EV
     bwfm_iovar_set(BWFMBase, "event_msgs", evmask, sizeof(evmask));
@@ -2223,9 +2396,44 @@ AROS_LH4(int, BWFMJoin,
     bwfm_set_int(BWFMBase, BWFM_C_SET_AP, 0);
     bwfm_iovar_set_int(BWFMBase, "mpc", 0);
     bwfm_set_int(BWFMBase, BWFM_C_SET_PM, BWFM_PM_FAST_PS);
+    /*
+     * Leave the firmware's roam engine alone and it re-associates on its own,
+     * which throws the keys away: with the handshake on the host, only the
+     * supplicant can put them back, and it is not part of the conversation.
+     * The AP then drops us, the firmware roams again, and it never settles.
+     */
+    bwfm_iovar_set_int(BWFMBase, "roam_off", 1);
 
-    if (passlen > 0)
+    if (ielen > 0)
     {
+        /*
+         * Host-driven WPA: the caller (wpa_supplicant) runs the 4-way
+         * handshake and installs the keys through BWFMSetKey, so the firmware
+         * only needs the IE to put in the (re)assoc request plus the cipher
+         * and AKM it implies. Ported from OpenBSD's bwfm_connect(). Do NOT set
+         * sup_wpa here: newer firmware (CYW43456) has no internal supplicant
+         * at all, and on the chips that do, having both run fights.
+         */
+        ULONG wsec = 0, wpa_auth = 0;
+
+        bwfm_iovar_set(BWFMBase, "wpaie", ie, ielen);
+        bwfm_ie_security(ie, ielen, &wsec, &wpa_auth);
+
+        e_wsec = bwfm_iovar_set_int(BWFMBase, "sup_wpa", 0);
+        e_auth = bwfm_iovar_set_int(BWFMBase, "wpa_auth", wpa_auth);
+        e_pmk  = bwfm_iovar_set_int(BWFMBase, "wsec", wsec);
+        D(bug("[bwfm] security: host handshake, ie %u bytes ->"
+              " wsec 0x%lx wpa_auth 0x%lx (sup_wpa=%d wpa_auth=%d wsec=%d)\n",
+              (unsigned)ielen, (unsigned long)wsec, (unsigned long)wpa_auth,
+              e_wsec, e_auth, e_pmk));
+    }
+    else if (passlen > 0)
+    {
+        /*
+         * No IE, but a passphrase: the caller has no supplicant of its own
+         * (the DEVS:bwfm.prefs auto-join), so ask the firmware to be one.
+         * Only the older chips can - a refusal shows up in the log below.
+         */
         struct bwfm_wsec_pmk pmk;
 
         bwfm_zero((UBYTE *)&pmk, sizeof(pmk));
@@ -2235,10 +2443,13 @@ AROS_LH4(int, BWFMJoin,
         pmk.flags = AROS_WORD2LE(BWFM_WSEC_PASSPHRASE);
         CopyMem(pass, pmk.key, passlen);
 
-        bwfm_iovar_set_int(BWFMBase, "sup_wpa", 1);
-        bwfm_iovar_set_int(BWFMBase, "wsec", BWFM_WSEC_AES);
-        bwfm_iovar_set_int(BWFMBase, "wpa_auth", BWFM_WPA_AUTH_WPA2_PSK);
-        bwfm_dcmd(BWFMBase, BWFM_C_SET_WSEC_PMK, 1, &pmk, sizeof(pmk));
+        e_sup  = bwfm_iovar_set_int(BWFMBase, "sup_wpa", 1);
+        e_wsec = bwfm_iovar_set_int(BWFMBase, "wsec", BWFM_WSEC_AES);
+        e_auth = bwfm_iovar_set_int(BWFMBase, "wpa_auth", BWFM_WPA_AUTH_WPA2_PSK);
+        e_pmk  = bwfm_dcmd(BWFMBase, BWFM_C_SET_WSEC_PMK, 1, &pmk, sizeof(pmk));
+        D(bug("[bwfm] security: firmware supplicant, sup_wpa=%d wsec=%d"
+              " wpa_auth=%d pmk=%d (passlen %u)\n",
+              e_sup, e_wsec, e_auth, e_pmk, (unsigned)passlen));
     }
     else
     {
@@ -2305,7 +2516,9 @@ AROS_LH4(int, BWFMJoin,
         ReleaseSemaphore(&BWFMBase->bwfm_Sem);
 
         D(bug("[bwfm] join \"%s\" (%s) attempt %d - waiting for link\n", ssid,
-              passlen ? "WPA2-PSK" : "open", attempt + 1));
+              ielen ? "WPA, host handshake"
+                    : (passlen ? "WPA2-PSK, firmware supplicant" : "open"),
+              attempt + 1));
 
         /* Consume association events from the pump (~10s, 50ms ticks). */
         for (tries = 0; tries < 200 && result < 0; tries++)
@@ -2377,6 +2590,88 @@ AROS_LH4(int, BWFMJoin,
  * with `sigmask` when the chip has a frame. Thin wrapper over sdio.resource so
  * the device never touches the SDIO layer directly.
  */
+/*
+ * Install one key slot (PTK, GTK or WEP) that the host-side supplicant just
+ * negotiated. Ported from OpenBSD's bwfm_set_key_cb(): a pairwise key carries
+ * the peer address and no primary flag, a group or WEP key is the reverse, and
+ * afterwards wsec gets the cipher's bit added without disturbing the others.
+ * len == 0 clears the slot.
+ */
+AROS_LH5(int, BWFMSetKey,
+                AROS_LHA(uint32_t, index, D0),
+                AROS_LHA(uint32_t, algo, D1),
+                AROS_LHA(uint8_t *, mac, A0),
+                AROS_LHA(uint8_t *, key, A1),
+                AROS_LHA(uint32_t, keylen, D2),
+                struct BWFMBase *, BWFMBase, 18, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    struct bwfm_wsec_key k;
+    ULONG wsec_enable = 0, wsec = 0;
+    int pairwise, err;
+
+    if (!BWFMBase->bwfm_attached || keylen > sizeof(k.data))
+        return -1;
+
+    switch (algo)
+    {
+    case BWFM_CRYPTO_ALGO_WEP1:
+    case BWFM_CRYPTO_ALGO_WEP128:   wsec_enable = BWFM_WSEC_WEP; break;
+    case BWFM_CRYPTO_ALGO_TKIP:     wsec_enable = BWFM_WSEC_TKIP; break;
+    case BWFM_CRYPTO_ALGO_AES_CCM:  wsec_enable = BWFM_WSEC_AES; break;
+    case BWFM_CRYPTO_ALGO_OFF:      break;
+    default:
+        D(bug("[bwfm] SetKey: algo %u not supported\n", (unsigned)algo));
+        return -1;
+    }
+
+    /* A unicast address means this is the pairwise key. WEP is never pairwise
+     * even when the supplicant hands us a peer address for it. */
+    pairwise = (mac != NULL && (mac[0] & 1) == 0 &&
+                (mac[0] | mac[1] | mac[2] | mac[3] | mac[4] | mac[5]) != 0 &&
+                wsec_enable != BWFM_WSEC_WEP);
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    bwfm_zero((UBYTE *)&k, sizeof(k));
+    k.index = AROS_LONG2LE(index);
+    k.len = AROS_LONG2LE(keylen);
+    if (keylen)
+        CopyMem(key, k.data, keylen);
+    k.algo = AROS_LONG2LE(keylen ? algo : BWFM_CRYPTO_ALGO_OFF);
+    if (pairwise)
+        CopyMem(mac, k.ea, ETHER_ADDR_LEN);
+    else
+        k.flags = AROS_LONG2LE(BWFM_WSEC_PRIMARY_KEY);
+
+    err = bwfm_iovar_set(BWFMBase, "wsec_key", &k, sizeof(k));
+    D(bug("[bwfm] SetKey: index %u algo %u len %u %s -> %d\n",
+          (unsigned)index, (unsigned)algo, (unsigned)keylen,
+          pairwise ? "pairwise" : "primary", err));
+
+    /* Read-modify-write: the pairwise and group keys arrive separately and
+     * each has to keep the other's cipher bit. */
+    if (err == 0 && keylen && wsec_enable)
+    {
+        uint32_t cur = 0;
+
+        if (bwfm_iovar_get(BWFMBase, "wsec", &cur, sizeof(cur)) == 0)
+        {
+            wsec = AROS_LE2LONG(cur);
+            wsec &= ~(BWFM_WSEC_WEP | BWFM_WSEC_TKIP | BWFM_WSEC_AES);
+            wsec |= wsec_enable;
+            bwfm_iovar_set_int(BWFMBase, "wsec", wsec);
+        }
+    }
+
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+
+    return err;
+
+    AROS_LIBFUNC_EXIT
+}
+
 AROS_LH2(int, BWFMSetRxSignal,
                 AROS_LHA(struct Task *, task, A0),
                 AROS_LHA(uint32_t, sigmask, D0),

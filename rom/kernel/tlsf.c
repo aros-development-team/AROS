@@ -1443,11 +1443,22 @@ static void * init_Pool(struct MemHeaderExt *mhe, IPTR puddleSize, IPTR initialS
  */
 void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags)
 {
-    /* If the last available address is less than (1 << 31), MEMF_31BIT is implied */
+    /*
+     * If the last available address is less than (1 << 31), MEMF_31BIT is
+     * implied. On 64-bit systems an explicitly requested MEMF_31BIT is
+     * honoured as long as the region stays fully 32-bit addressable (see
+     * krnCreateMemHeader()); it is only stripped when the region extends
+     * beyond 4GB.
+     */
     if (((IPTR)start+size-1) < (1UL << 31))
         flags |= MEMF_31BIT;
+#if (__WORDSIZE > 32)
+    else if (((IPTR)start+size-1) > 0xFFFFFFFFUL)
+        flags &= ~MEMF_31BIT;
+#else
     else
         flags &= ~MEMF_31BIT;
+#endif
 
     flags |= MEMF_MANAGED;
 
@@ -1487,6 +1498,11 @@ void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, 
     mhe->mhe_MemHeader.mh_Lower           = start;
     mhe->mhe_MemHeader.mh_Upper           = start + size;
     mhe->mhe_MemHeader.mh_Free            = size;
+
+#if defined(__AROSEXEC_SMP__)
+    mhe->mhe_MemHeader.mh_SpinLock.lock    = SPINLOCK_UNLOCKED;
+    mhe->mhe_MemHeader.mh_SpinLock.s_Owner = NULL;
+#endif
 
     D(nbug("[Kernel:TLSF] %s: 0x%p -> 0x%p\n", __PRETTY_FUNCTION__, mhe->mhe_MemHeader.mh_Lower, mhe->mhe_MemHeader.mh_Upper));
 

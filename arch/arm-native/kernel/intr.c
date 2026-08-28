@@ -29,13 +29,13 @@
 extern void *__intvecs_start, *__intvecs_end;
 extern void __arm_halt(void);
 
-void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
+void ictl_enable_irq(irqid_t irq, struct KernelBase *KernelBase)
 {
     if (__arm_arosintern.ARMI_IRQEnable)
         __arm_arosintern.ARMI_IRQEnable(irq);
 }
 
-void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
+void ictl_disable_irq(irqid_t irq, struct KernelBase *KernelBase)
 {
     if (__arm_arosintern.ARMI_IRQDisable)
         __arm_arosintern.ARMI_IRQDisable(irq);
@@ -163,7 +163,30 @@ void handle_irq(regs_t *regs)
     entered in FIQ mode.
 */
 
-__attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
+asm (
+    ".set       MODE_SYSTEM, 0x1f              \n"
+
+    ".globl __vectorhand_fiq                   \n"
+    ".type __vectorhand_fiq,%function          \n"
+    "__vectorhand_fiq:                         \n"
+    "           sub     lr, lr, #4             \n" // adjust lr_fiq (FIQ return = lr - 4)
+    VECTCOMMON_START
+    "           bl      handle_fiq             \n"
+    "           mov     r0, sp                 \n"
+    "           ldr     r1, [r0, #16*4]        \n" // saved spsr of interrupted context
+    "           tst     r1, #0x80              \n" // were IRQs disabled (Disable())?
+    "           bne     1f                     \n" // yes - defer; Enable() reschedules later
+    "           and     r1, r1, #31            \n" // mask processor mode
+    "           cmp     r1, #0x10              \n" // returning to user mode?
+    "           cmpne   r1, #0x1f              \n" // or system mode?
+    "           bne     1f                     \n" // no - nested interrupt, don't reschedule
+    "           mov     fp, #0                 \n" // clear fp
+    "           bl      core_ExitInterrupt     \n"
+    "1:                                        \n"
+    VECTCOMMON_END
+    );
+
+void handle_fiq(regs_t *regs)
 {
     DIRQ(bug("[Kernel] ## FIQ ##\n"));
 
@@ -217,6 +240,26 @@ void handle_dataabort(regs_t *regs)
         dfsr,
         ((dfsr >> 6) & 0x10) | (dfsr & 0x0f),
         (dfsr >> 11) & 1);
+
+    /* The trap has no symbols, so matching these words against the module
+     * images is the only way to name the code that faulted. Clamped to PC's
+     * own page: a second abort while still in ABT mode dies silently. */
+    {
+        unsigned int pc = regs->pc & ~3;
+        unsigned int first = pc - 16, last = pc + 12;
+        unsigned int page = pc & ~0xfffU;
+        unsigned int a;
+
+        if (first < page)
+            first = page;
+        if (last > page + 0xffc)
+            last = page + 0xffc;
+
+        bug("[Kernel]    code at 0x%p (faulting word 0x%p):", first, pc);
+        for (a = first; a <= last; a += 4)
+            bug(" %08x", *(unsigned int *)a);
+        bug("\n");
+    }
 
     cpu_DumpRegs(regs);
 

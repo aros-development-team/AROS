@@ -18,40 +18,19 @@
 #include <exec/execbase.h>
 #include <libraries/ahi_sub.h>
 #include <aros/macros.h>
+
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "DriverData.h"
 #include "library.h"
 #include "rpihdmi-hwaccess.h"
+#include "rpihdmi-iec958.h"
+#include "rpihdmi-dma.h"
 
-#define dd ((struct RPiHDMIData *) AudioCtrl->ahiac_DriverData)
-
-
-/******************************************************************************
-** DMA interrupt handler ******************************************************
-******************************************************************************/
-
-/*
- * This is called from the DMA IRQ context via KrnAddIRQHandler.
- * We acknowledge the DMA interrupt and signal the slave task.
- */
 #undef SysBase
 
-void dma_irq_handler(struct RPiHDMIData *data, void *data2)
-{
-    struct ExecBase *SysBase = (struct ExecBase *) data2;
-    ULONG dma_base = data->periiobase + 0x007000 + data->dma_channel * 0x100;
-    ULONG cs = rd32le(dma_base + 0x00);
-
-    if (cs & DMA_CS_INT) {
-        wr32le(dma_base + 0x00, DMA_CS_INT | DMA_CS_END | DMA_CS_ACTIVE);
-
-        if (data->slavetask != NULL && data->slavesignal != -1) {
-            Signal((struct Task *) data->slavetask, 1L << data->slavesignal);
-        }
-    }
-}
-
+#define dd ((struct RPiHDMIData *) AudioCtrl->ahiac_DriverData)
 
 /******************************************************************************
 ** The slave process **********************************************************

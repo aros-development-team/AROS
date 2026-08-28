@@ -362,6 +362,12 @@ static int wpa_driver_sana2_set_key(const char *ifname, void *priv,
 	request->ios2_DataLength = key_len;
 	request->ios2_Data = (u8 *) key;
 	request->ios2_StatData = (u8 *) seq;
+	/* Which key this is - pairwise or group - is not in the arguments, only
+	 * in who it is for, so the address has to travel with it. */
+	if (addr != NULL)
+		CopyMem((APTR)addr, request->ios2_DstAddr, ETH_ALEN);
+	else
+		os_memset(request->ios2_DstAddr, 0, ETH_ALEN);
 
 	/* Work-around for a bug in MLME code */
 	if (wpa_driver_sana2_cipher(alg) == S2ENC_WEP)
@@ -392,8 +398,8 @@ static int wpa_driver_sana2_associate(
 		{S2INFO_WPAInfo, (params->wpa_ie_len > 0) ?
 			(UPINT)params->wpa_ie : (UPINT)NULL},
 		{S2INFO_AuthTypes, params->auth_alg},
-		/* PSK passphrase for the driver-side 4-way handshake (the firmware
-		 * does the handshake; see WPA_DRIVER_FLAGS_4WAY_HANDSHAKE). */
+		/* Only sent if the driver claimed the 4-way offload below; when we
+		 * run the handshake ourselves wpa_supplicant leaves these NULL. */
 		{(params->passphrase != NULL) ? S2INFO_Passphrase : TAG_IGNORE,
 			(UPINT)params->passphrase},
 		{TAG_END, 0}};
@@ -489,10 +495,10 @@ static int wpa_driver_sana2_get_capa(void *priv, struct wpa_driver_capa *capa)
 	if (!drv->hard_mac)
 		capa->flags = WPA_DRIVER_FLAGS_USER_SPACE_MLME;
 
-	/* The FullMAC firmware runs the WPA 4-way handshake itself. Tell
-	 * wpa_supplicant not to, so it hands us the passphrase/PSK in the
-	 * associate parameters instead of doing EAPOL in software. */
-	capa->flags |= WPA_DRIVER_FLAGS_4WAY_HANDSHAKE;
+	/* No 4-way offload: the newer FullMAC firmware (CYW43456) has no
+	 * internal supplicant - sup_wpa comes back BCME_UNSUPPORTED - so we run
+	 * the handshake here and hand the driver the keys with S2_SETKEY, the
+	 * way brcmfmac and OpenBSD's bwfm do it. */
 
 	return 0;
 }

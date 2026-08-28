@@ -40,6 +40,9 @@
 #define S2_GETSIGNALQUALITY 0xc010
 #define S2_GETNETWORKS      0xc011
 #define S2_SETOPTIONS       0xc012
+/* S2_SETKEY: ios2_WireError = key index, ios2_PacketType = S2ENC_*,
+ * ios2_Data/ios2_DataLength = the key, ios2_StatData = RX sequence counter,
+ * ios2_DstAddr = the peer this key is for (all-zero or multicast = group key) */
 #define S2_SETKEY           0xc013
 #define S2_GETNETWORKINFO   0xc014
 #define S2_READMGMT         0xc015

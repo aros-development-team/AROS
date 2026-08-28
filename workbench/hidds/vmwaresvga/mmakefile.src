@@ -6,7 +6,9 @@ GALLIUM_PATH = $(top_srcdir)/src/gallium
 
 include $(GALLIUM_PATH)/drivers/svga/Makefile.sources
 
-#MM- workbench-hidds-vmwaresvga : hidd-vmwaresvga
+#MM- workbench-hidds-vmwaresvga : hidd-vmwaresvga-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- hidd-vmwaresvga-pc-i386 : hidd-vmwaresvga
+#MM- hidd-vmwaresvga-pc-x86_64 : hidd-vmwaresvga
 #MM- hidd-vmwaresvga: includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib
 
 MESA3D_VMWARESVGA_C_SOURCES := $(filter %.c,$(C_SOURCES))

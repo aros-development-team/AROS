@@ -1,0 +1,25 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM hidd-vcgfx : includes hidd-gallium kernel-dma-bcm2708-includes
+
+USER_LDFLAGS := -static
+
+FILES	:=	\
+	vcgfx_init \
+	vcgfx_hiddclass \
+	vcgfx_dma \
+	vcgfx_memory \
+	vcgfx_sdtv \
+	vcgfx_hdmi \
+	vcgfx_hardware \
+	vcgfx_hvs \
+	vcgfx_hvs5 \
+	vcgfx_pixfmts \
+	vcgfx_onbitmap \
+	vcgfx_offbitmap
+
+%build_module mmake=hidd-vcgfx \
+  modname=vcgfx modtype=hidd \
+  files=$(FILES) \
+  uselibs="hiddstubs"

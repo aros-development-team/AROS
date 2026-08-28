@@ -291,7 +291,7 @@ diff -ruN clang-20.1.0.src/lib/Driver/Driver.cpp clang-20.1.0.src.aros/lib/Drive
 diff -ruN clang-20.1.0.src/lib/Driver/ToolChains/AROS.cpp clang-20.1.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-20.1.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
 +++ clang-20.1.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-16 19:03:04.095289709 +0000
-@@ -0,0 +1,441 @@
+@@ -0,0 +1,445 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -537,6 +537,10 @@ diff -ruN clang-20.1.0.src/lib/Driver/ToolChains/AROS.cpp clang-20.1.0.src.aros/
 +                }
 +            }
 +        }// 2nd OPT_nostartfiles endif
++        // Pull in the compiler runtime (compiler-rt builtins, including
++        // the emutls helpers).  Kept inside the group so its pthread
++        // references resolve against the -lpthread above.
++        AddRunTimeLibs(AROSTC, D, CmdArgs, Args);
 +        CmdArgs.push_back("--end-group");
 +    }
 +

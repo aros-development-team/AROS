@@ -1229,6 +1229,10 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
     BOOL schedule_ok = TRUE;
 
     ULONG cnt;
+    IPTR barsize = 0;
+#ifndef base
+    struct PCIDevice *base = hc->hc_Device;
+#endif
 
     struct TagItem pciActivateMem[] = {
         { aHidd_PCIDevice_isMEM,    TRUE },
@@ -1251,7 +1255,16 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
 
     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // activate memory
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Size0, &barsize);
     pciregbase = (APTR) (((IPTR) pciregbase) & (~0xf));
+
+    /* A BAR outside the identity mapped window has no CPU mapping yet */
+    pciregbase = MAPPCI(hc, hc->hc_PCIDriverObject, (APTR) pciregbase, (ULONG) barsize);
+    if (!pciregbase) {
+        pciusbEHCIDebug("EHCI", "Failed to map the register area\n");
+        FreeMem(ehcihcp, sizeof(struct EhciHCPrivate));
+        return FALSE;
+    }
 
     // we use the operational registers as RegBase.
     hc->hc_RegBase = (APTR) ((IPTR) pciregbase + READREG16_LE(pciregbase, EHCI_CAPLENGTH));

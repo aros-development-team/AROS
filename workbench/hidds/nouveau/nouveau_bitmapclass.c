@@ -4,12 +4,15 @@
 
 #include "nouveau_intern.h"
 
+unsigned long nouveau_compat_irq_count(void);
+unsigned long nouveau_compat_usecs(void);
+
 #define DEBUG 0
 #include <aros/debug.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 
-#include "arosdrmmode.h"
+#include <libdrm/arosdrmmode.h>
 
 #undef HiddBitMapAttrBase
 #undef HiddPixFmtAttrBase
@@ -74,24 +77,19 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         goto exit_fail;
 
     /* Initialize properties */
-    bmdata->width = width;
-    bmdata->height = height;
-    bmdata->depth = depth;
+    bmdata->drawable.width = width;
+    bmdata->drawable.height = height;
+    bmdata->drawable.depth = bmdata->drawable.bitsPerPixel = depth;
+    bmdata->drawable.pScreen = carddata;
     bmdata->bytesperpixel = bytesperpixel;
-    bmdata->pitch = bmdata->width * bmdata->bytesperpixel;
-    if (carddata->architecture >= NV_ARCH_50)
-        bmdata->pitch = (bmdata->pitch + 255) & ~255; 
-    else
-        bmdata->pitch = (bmdata->pitch + 63) & ~63;
 
     if (displayable) bmdata->displayable = TRUE; else bmdata->displayable = FALSE;
     InitSemaphore(&bmdata->semaphore);
 
     LOCK_ENGINE
     /* Creation of buffer object */
-    nouveau_bo_new(SD(cl)->carddata.dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
-            bmdata->pitch * bmdata->height,
-            &bmdata->bo);
+    HIDDNouveauAccelAllocSurface(&SD(cl)->carddata, bmdata->drawable.width, bmdata->drawable.height,
+        bmdata->bytesperpixel * 8, &bmdata->pitch, &bmdata->bo);
     UNLOCK_ENGINE
 
     if (bmdata->bo == NULL)
@@ -101,11 +99,15 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     if (bmdata->compositor == NULL)
         goto exit_fail;
 
+    if (displayable)
+        nvlog("[Nouveau] displayable bitmap %p: %ldx%ld depth %ld pitch %ld bo %p\n", o,
+              (long)width, (long)height, (long)depth, (long)bmdata->pitch, bmdata->bo);
+
     return o;
 
 exit_fail:
 
-    bug("[Nouveau]: Failed to create bitmap %dx%d %d %d\n", width, height, depth, stdfmt);
+    nvlog("[Nouveau]: Failed to create bitmap %dx%d %d %d\n", width, height, depth, stdfmt);
 
     if (o)
     {
@@ -126,14 +128,13 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     /* Unregister from framebuffer if needed */
     if (bmdata->fbid != 0)
     {
-        struct nouveau_device_priv *nvdev = nouveau_device(SD(cl)->carddata.dev);
+        struct nouveau_device *nvdev = SD(cl)->carddata.dev;
         drmModeRmFB(nvdev->fd, bmdata->fbid);   
         bmdata->fbid = 0;
     }
 
     if (bmdata->bo)
     {
-        UNMAP_BUFFER
         nouveau_bo_ref(NULL, &bmdata->bo); /* Release reference */
     }
     UNLOCK_ENGINE
@@ -221,6 +222,7 @@ VOID METHOD(NouveauBitMap, Root, Set)
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData *carddata = &(SD(cl)->carddata);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
 
     /* FIXME "Optimistics" synchronization (yes, I know it's wrong) */
@@ -243,10 +245,10 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
         /* Not supported */
         break;
     case(2):
-        writew(msg->pixel, (APTR)addr);
+        hidd_writew(msg->pixel, (APTR)addr);
         break;
     case(4):
-        writel(msg->pixel, (APTR)addr);
+        hidd_writel(msg->pixel, (APTR)addr);
         break;
     }
 
@@ -257,6 +259,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
 HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData *carddata = &(SD(cl)->carddata);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
     HIDDT_Pixel pixel = 0;
 
@@ -280,10 +283,10 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
         /* Not supported */
         break;
     case(2):
-        pixel = readw((APTR)addr);
+        pixel = hidd_readw((APTR)addr);
         break;
     case(4):
-        pixel = readl((APTR)addr);
+        pixel = hidd_readl((APTR)addr);
         break;
     }
     
@@ -302,9 +305,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
     LOCK_ENGINE
 
     LOCK_BITMAP
-    UNMAP_BUFFER
 
-    switch(carddata->architecture)
+    switch(carddata->Architecture)
     {
     case(NV_ARCH_03):
     case(NV_ARCH_04):
@@ -313,17 +315,28 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
     case(NV_ARCH_30):
     case(NV_ARCH_40):
         ret = HIDDNouveauNV04FillSolidRect(carddata, bmdata, 
-                    0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
+                    0, 0, bmdata->drawable.width - 1, bmdata->drawable.height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
         break;
-    case(NV_ARCH_50):
+    case(NV_TESLA):
         ret = HIDDNouveauNV50FillSolidRect(carddata, bmdata, 
-                    0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
+                    0, 0, bmdata->drawable.width - 1, bmdata->drawable.height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
         break;
-    case(NV_ARCH_C0):
+    case(NV_FERMI):
+    case(NV_KEPLER):
+    case(NV_MAXWELL):
+    case(NV_PASCAL):
+    case(NV_VOLTA):
+    case(NV_TURING):
+    case(NV_AMPERE):
+    case(NV_HOPPER):
+    case(NV_ADA):
+    case(NV_BLACKWELL):
         ret = HIDDNouveauNVC0FillSolidRect(carddata, bmdata, 
-                    0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
+                    0, 0, bmdata->drawable.width - 1, bmdata->drawable.height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
         break;
     }    
+
+nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
 
     UNLOCK_BITMAP
 
@@ -348,9 +361,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
     LOCK_ENGINE
 
     LOCK_BITMAP
-    UNMAP_BUFFER
 
-    switch(carddata->architecture)
+    switch(carddata->Architecture)
     {
     case(NV_ARCH_03):
     case(NV_ARCH_04):
@@ -361,11 +373,20 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
         ret = HIDDNouveauNV04FillSolidRect(carddata, bmdata, 
                     msg->minX, msg->minY, msg->maxX, msg->maxY, GC_DRMD(msg->gc), GC_FG(msg->gc));
         break;
-    case(NV_ARCH_50):
+    case(NV_TESLA):
         ret = HIDDNouveauNV50FillSolidRect(carddata, bmdata, 
                     msg->minX, msg->minY, msg->maxX, msg->maxY, GC_DRMD(msg->gc), GC_FG(msg->gc));
         break;
-    case(NV_ARCH_C0):
+    case(NV_FERMI):
+    case(NV_KEPLER):
+    case(NV_MAXWELL):
+    case(NV_PASCAL):
+    case(NV_VOLTA):
+    case(NV_TURING):
+    case(NV_AMPERE):
+    case(NV_HOPPER):
+    case(NV_ADA):
+    case(NV_BLACKWELL):
         ret = HIDDNouveauNVC0FillSolidRect(carddata, bmdata, 
                     msg->minX, msg->minY, msg->maxX, msg->maxY, GC_DRMD(msg->gc), GC_FG(msg->gc));
         break;
@@ -397,7 +418,6 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
         BOOL result = FALSE;
         
         /* RAM->CPU->GART GART->GPU->VRAM */
-        UNMAP_BUFFER
 
         ObtainSemaphore(&carddata->gartsemaphore);
         
@@ -405,7 +425,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
                     msg->pixels, msg->modulo, msg->pixFmt,
                     msg->x, msg->y, msg->width, msg->height, 
                     cl, o);
-        
+
+nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
+
         ReleaseSemaphore(&carddata->gartsemaphore);
 
         if (result)
@@ -453,8 +475,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     {
         BOOL result = FALSE;
         
-        /* VRAM->CPU->GART GART->GPU->RAM */
-        UNMAP_BUFFER
+        /* VRAM->GPU->GART GART->CPU->RAM */
 
         ObtainSemaphore(&carddata->gartsemaphore);
         
@@ -505,7 +526,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
 
     /* Try hardware method NV10-NV40*/
     if (
-        ((carddata->architecture >= NV_ARCH_10) && (carddata->architecture <= NV_ARCH_40))
+        ((carddata->Architecture >= NV_ARCH_10) && (carddata->Architecture <= NV_ARCH_40))
         
         && (bmdata->bytesperpixel > 1)
         && (GART_TRANSFER_ALLOWED(msg->width, msg->height)))
@@ -513,7 +534,6 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
         BOOL result = FALSE;
         
         /* RAM->CPU->GART GART->GPU->VRAM */
-        UNMAP_BUFFER
 
         ObtainSemaphore(&carddata->gartsemaphore);
         
@@ -535,7 +555,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
     
     /* Try optimization for NV50 */
     if (
-        (carddata->architecture >= NV_ARCH_50)
+        (carddata->Architecture >= NV_TESLA)
         
         && (bmdata->bytesperpixel > 1)
         && (GART_TRANSFER_ALLOWED(msg->width, msg->height)))
@@ -594,6 +614,7 @@ ULONG METHOD(NouveauBitMap, Hidd_BitMap, BytesPerLine)
 BOOL METHOD(NouveauBitMap, Hidd_BitMap, ObtainDirectAccess)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData *carddata = &(SD(cl)->carddata);
     
     LOCK_ENGINE
     LOCK_BITMAP
@@ -601,8 +622,8 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, ObtainDirectAccess)
 
     *msg->addressReturn = (UBYTE*)bmdata->bo->map;
     *msg->widthReturn = bmdata->pitch / bmdata->bytesperpixel;
-    *msg->heightReturn = bmdata->height;
-    *msg->bankSizeReturn = *msg->memSizeReturn = bmdata->pitch * bmdata->height;
+    *msg->heightReturn = bmdata->drawable.height;
+    *msg->bankSizeReturn = *msg->memSizeReturn = bmdata->pitch * bmdata->drawable.height;
 
     return TRUE;
 }
@@ -651,7 +672,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
         if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
         {
             /* These cards support 3D alpha blending */
-            if ((carddata->architecture >= NV_ARCH_10) && (carddata->architecture <= NV_ARCH_40))
+            if ((carddata->Architecture >= NV_ARCH_10) && (carddata->Architecture <= NV_ARCH_40))
             {
                 BOOL result = FALSE;
                 HIDDT_Color color;
@@ -665,7 +686,6 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
                 
                 LOCK_ENGINE
                 LOCK_BITMAP
-                UNMAP_BUFFER
                 
                 ObtainSemaphore(&carddata->gartsemaphore);
                 
@@ -683,7 +703,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
             
             /* These cards don't support 3D alpha blending (yet), but they are all
                PCIE so GetImage is fast */
-            if (carddata->architecture >= NV_ARCH_50)
+            if (carddata->Architecture >= NV_TESLA)
             {
                 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
                 return;
@@ -830,6 +850,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
 VOID METHOD(NouveauBitMap, Hidd_BitMap, DrawLine)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData *carddata = &(SD(cl)->carddata);
 
     LOCK_BITMAP
 

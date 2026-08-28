@@ -10,6 +10,7 @@
 */
 
 #define RAWKEY_ESCAPE  	    0x45
+#define RAWKEY_ESC          RAWKEY_ESCAPE /* AmigaOS 4 name */
 
 #define RAWKEY_F1   	    0x50
 #define RAWKEY_F2   	    0x51

@@ -39,6 +39,7 @@ enum modtype {
     CLASS,
     HIDD,
     USBCLASS,
+    BTCLASS,
     HANDLER
 };
 

@@ -5,6 +5,7 @@
 */
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "etask.h"
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -54,6 +55,7 @@
 
     struct Task *ThisTask = GET_THIS_TASK;
     struct ETask *et, *child;
+    BOOL found;
 
         if (ThisTask)
         {
@@ -64,6 +66,9 @@
                 if (tid == 0L)
                 {
                         Forbid();
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_LOCK(&IntETask(et)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
                 ForeachNode(&et->et_Children, child)
                 {
                         /*
@@ -73,23 +78,40 @@
                         child->et_Parent = NULL;
                 }
                 NEWLIST(&et->et_Children);
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_UNLOCK(&IntETask(et)->iet_TaskLock);
+#endif
                         Permit();
                 }
                 else
                 {
                         Forbid();
-                child = FindChild(tid);
-                if (child != NULL)
+                found = FALSE;
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_LOCK(&IntETask(et)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+                ForeachNode(&et->et_Children, child)
                 {
-                        child->et_Parent = NULL;
-                        Remove((struct Node *)child);
+                        if (child->et_UniqueID == tid)
+                        {
+                                child->et_Parent = NULL;
+                                Remove((struct Node *)child);
+                                found = TRUE;
+                                break;
+                        }
+                }
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_UNLOCK(&IntETask(et)->iet_TaskLock);
+#endif
+                if (!found)
+                {
+                        Permit();
+                        return CHILD_NOTFOUND;
                 }
                 else
                 {
-                                Permit();
-                        return CHILD_NOTFOUND;
+                        Permit();
                 }
-                Permit();
                 }
         }
     return 0;

@@ -14,6 +14,8 @@
 
 #include <aros/symbolsets.h>
 #include <aros/kernel.h>
+#include <aros/irqtypes.h>
+#include <resources/kernel.h>
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -52,15 +54,36 @@ static const struct
  */
 BOOL PCIDT_Map(struct pcidt_staticdata *psd, IPTR base, IPTR size)
 {
+    return PCIDT_MapAt(psd, base, base, size);
+}
+
+BOOL PCIDT_MapAt(struct pcidt_staticdata *psd, IPTR va, IPTR pa, IPTR size)
+{
     APTR KernelBase = psd->kernelBase;
 
-    if (!KrnMapGlobal((APTR)base, (APTR)base, size,
+    if (va + size > PCIDT_SV39_IDENTITY_LIMIT)
+    {
+        bug("[PCIDT:Driver] cannot map %p+%p at a non-canonical address\n",
+            (APTR)va, (APTR)size);
+        return FALSE;
+    }
+
+    if (!KrnMapGlobal((APTR)va, (APTR)pa, size,
                       MAP_Readable | MAP_Writable))
     {
-        D(bug("[PCIDT:Driver] could not map %p+%p\n", base, size);)
+        D(bug("[PCIDT:Driver] could not map %p+%p\n", pa, size);)
         return FALSE;
     }
     return TRUE;
+}
+
+/*
+ * Where the CPU actually reaches a window's contents: identity for
+ * canonical windows, the remap window otherwise.
+ */
+static inline IPTR pcidt_mem64_va(struct pcidt_bridge *b, IPTR cpu)
+{
+    return b->mem64Va + (cpu - b->mem64CpuBase);
 }
 
 /*
@@ -115,8 +138,12 @@ static void pcidt_mapranges(struct pcidt_staticdata *psd, fdt_node_t node,
             b->mem64PciBase = (IPTR)FDT_ReadCells(&e[1], 2);
             b->mem64CpuBase = (IPTR)cpu;
             b->mem64Size    = (IPTR)size;
+            b->mem64Va      = (IPTR)cpu;
+            if ((IPTR)cpu >= PCIDT_SV39_IDENTITY_LIMIT)
+                b->mem64Va = PCIDT_HIGH_WINDOW;
             D(bug("[PCIDT:Driver] leaving the 64-bit window at %p (%p) "
-                  "unmapped\n", (IPTR)cpu, (IPTR)size);)
+                  "unmapped, reachable at %p\n", (IPTR)cpu, (IPTR)size,
+                  (APTR)b->mem64Va);)
             continue;
         }
 
@@ -126,11 +153,13 @@ static void pcidt_mapranges(struct pcidt_staticdata *psd, fdt_node_t node,
         if (space == PCI_RANGE_IO)
         {
             b->ioPciBase = (IPTR)FDT_ReadCells(&e[1], 2);
+            b->ioCpuBase = (IPTR)cpu;
             b->ioSize    = (IPTR)size;
         }
         else
         {
             b->mem32PciBase = (IPTR)FDT_ReadCells(&e[1], 2);
+            b->mem32CpuBase = (IPTR)cpu;
             b->mem32Size    = (IPTR)size;
         }
 
@@ -215,6 +244,38 @@ static void pcidt_assignbars(struct pcidt_staticdata *psd,
                 hdr = (PCIDT_ReadConfig(b, bus, dev, sub, 0x0c) >> 16) & 0xff;
                 if (sub == 0 && (hdr & 0x80))
                     nfunc = 8;
+                if ((hdr & 0x7f) == 1)
+                {
+                    /*
+                     * A bridge only forwards upstream memory requests
+                     * with bus mastering enabled on it; firmware does
+                     * not necessarily leave it set. Devices behind it
+                     * enable their own mastering, but without this bit
+                     * their transactions die at the bridge.
+                     */
+                    ULONG cmd = PCIDT_ReadConfig(b, bus, dev, sub, 0x04);
+                    PCIDT_WriteConfig(b, bus, dev, sub, 0x04, cmd | 0x0007);
+                    D(bug("[PCIDT:Driver] %02x:%02x.%x bridge command %04x -> %04x\n",
+                        bus, dev, sub, cmd & 0xffff,
+                        PCIDT_ReadConfig(b, bus, dev, sub, 0x04) & 0xffff);)
+                    if (bus == b->busStart)
+                    {
+                        /*
+                         * The root port's own base registers claim
+                         * upstream traffic into the bridge; whatever
+                         * range firmware left in them is a hole no
+                         * device can master through. Linux clears them
+                         * unconditionally (dw_pcie_setup_rc) - do the
+                         * same.
+                         */
+                        D(bug("[PCIDT:Driver] %02x:%02x.%x root bars %08x %08x -> cleared\n",
+                            bus, dev, sub,
+                            PCIDT_ReadConfig(b, bus, dev, sub, 0x10),
+                            PCIDT_ReadConfig(b, bus, dev, sub, 0x14));)
+                        PCIDT_WriteConfig(b, bus, dev, sub, 0x10, 0x00000004);
+                        PCIDT_WriteConfig(b, bus, dev, sub, 0x14, 0x00000000);
+                    }
+                }
                 if ((hdr & 0x7f) != 0)
                     continue;
                 lastreg = 0x24;
@@ -316,6 +377,7 @@ static void pcidt_assignbars(struct pcidt_staticdata *psd,
                     PCIDT_WriteConfig(b, bus, dev, sub, 0x04,
                                       (cmd & 0xffff0000) | ((cmd & 0xffff) | 0x0003));
                 }
+
             }
         }
 
@@ -398,9 +460,13 @@ static void pcidt_map64bars(struct pcidt_staticdata *psd,
                           "%p (%p)\n", bus, dev, sub,
                           (APTR)(IPTR)addr, (APTR)(IPTR)size);)
 
-                    PCIDT_Map(psd,
-                        (IPTR)(addr - b->mem64PciBase) + b->mem64CpuBase,
-                        (IPTR)size);
+                    {
+                        IPTR cpu = (IPTR)(addr - b->mem64PciBase) +
+                                   b->mem64CpuBase;
+
+                        PCIDT_MapAt(psd, pcidt_mem64_va(b, cpu), cpu,
+                                    (IPTR)size);
+                    }
                 }
             }
         }
@@ -489,26 +555,6 @@ ULONG PCIDT_MapInterrupt(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
     }
 
     return 0;
-}
-
-/*
- * Acknowledge the controller's message interrupts.
- *
- * Runs ahead of the drivers on the same source, at a higher priority,
- * because the status register has to be cleared for the line to drop -
- * a driver that does not know about the controller cannot do it, and
- * the source would never go quiet.
- */
-static AROS_INTH1(pcidt_msiack, struct pcidt_bridge *, b)
-{
-    AROS_INTFUNC_INIT
-
-    PCIDT_MSIAck(b);
-
-    /* Let the drivers sharing this source look at their hardware */
-    return FALSE;
-
-    AROS_INTFUNC_EXIT
 }
 
 /*
@@ -657,6 +703,8 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
 
             /* The windows devices behind this bridge will answer in */
             pcidt_mapranges(psd, node, b);
+            PCIDT_DropBootCfgWindows(b);
+            PCIDT_SetupOutboundWindows(b);
             pcidt_assignbars(psd, b);
             pcidt_map64bars(psd, b);
 
@@ -683,12 +731,42 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
 
                 if (page && PCIDT_MSIInit(b, (IPTR)page))
                 {
-                    b->msiAck.is_Node.ln_Name = (STRPTR)"pcidt message interrupts";
-                    b->msiAck.is_Node.ln_Pri = 100;
-                    b->msiAck.is_Node.ln_Type = NT_INTERRUPT;
-                    b->msiAck.is_Code = (VOID_FUNC)pcidt_msiack;
-                    b->msiAck.is_Data = b;
-                    AddIntServer(INTB_KERNEL + b->msiIrq, &b->msiAck);
+                    APTR KernelBase = psd->kernelBase;
+                    ULONG vectors = PCIDT_MSI_VECTORS;
+                    ULONG base = (ULONG)-1;
+
+                    /*
+                     * Sources for the vectors, and the controller
+                     * named to whoever serves its line: everything it
+                     * receives arrives there, and only its pending
+                     * register says which device signalled.
+                     */
+                    while (vectors && base == (ULONG)-1)
+                    {
+                        base = KrnAllocIRQ(IRQTYPE_MSI, vectors);
+                        if (base == (ULONG)-1)
+                            vectors >>= 1;
+                    }
+
+                    if (base != (ULONG)-1)
+                    {
+                        struct TagItem irqattrs[] =
+                        {
+                            { KERNELTAG_IRQ_MSISTATUS, b->dbiBase + DWC_MSI_INTR0_STATUS },
+                            { KERNELTAG_IRQ_MSIBASE,   base                              },
+                            { KERNELTAG_IRQ_MSICOUNT,  vectors                           },
+                            { TAG_DONE,          0                                 }
+                        };
+
+                        b->msiIrqBase = base;
+                        b->msiVectors = vectors;
+                        KrnModifyIRQA(b->msiIrq, irqattrs);
+
+                        D(bug("[PCIDT:Driver] %u message vector(s) on source %u, from %u\n",
+                              vectors, b->msiIrq, base);)
+                    }
+                    else
+                        b->msiReady = 0;
                 }
                 else if (page)
                     FreeMem(page, 4096);
@@ -764,6 +842,54 @@ void PCIDT__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     if (!handled)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/*
+ * Translation between the addresses BARs hold and addresses the CPU
+ * can dereference. Identity everywhere except a 64-bit window above
+ * the Sv39 identity limit, whose regions are reached through the remap
+ * window instead. Already-translated addresses fall outside the
+ * window's PCI range and pass through unchanged.
+ */
+APTR PCIDT__Hidd_PCIDriver__PCItoCPU(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_PCItoCPU *msg)
+{
+    struct pcidt_bridge *b = &((struct PCIDTBusData *)OOP_INST_DATA(cl, o))->bridge;
+    IPTR addr = (IPTR)msg->address;
+
+    if (b->mem64Size && addr >= b->mem64PciBase &&
+        addr < b->mem64PciBase + b->mem64Size)
+        return (APTR)pcidt_mem64_va(b, addr - b->mem64PciBase + b->mem64CpuBase);
+
+    return (APTR)addr;
+}
+
+APTR PCIDT__Hidd_PCIDriver__CPUtoPCI(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_CPUtoPCI *msg)
+{
+    struct pcidt_bridge *b = &((struct PCIDTBusData *)OOP_INST_DATA(cl, o))->bridge;
+    IPTR addr = (IPTR)msg->address;
+
+    if (b->mem64Size && addr >= b->mem64Va &&
+        addr < b->mem64Va + b->mem64Size)
+        return (APTR)(addr - b->mem64Va + b->mem64PciBase);
+
+    return (APTR)addr;
+}
+
+APTR PCIDT__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_MapPCI *msg)
+{
+    struct pcidt_bridge *b = &((struct PCIDTBusData *)OOP_INST_DATA(cl, o))->bridge;
+    IPTR addr = (IPTR)msg->PCIAddress;
+
+    /* The regions were mapped when the bridge came up; hand out
+       the address they are reachable at */
+    if (b->mem64Size && addr >= b->mem64PciBase &&
+        addr < b->mem64PciBase + b->mem64Size)
+        return (APTR)pcidt_mem64_va(b, addr - b->mem64PciBase + b->mem64CpuBase);
+
+    return (APTR)addr;
 }
 
 ULONG PCIDT__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
@@ -866,10 +992,12 @@ void PCIDT__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 /*
  * Memory a bus master can reach.
  *
- * The base class asks for MEMF_31BIT, which on this architecture can
- * never be satisfied - RAM starts at 2GB, so nothing lives below it.
- * These controllers are cache coherent and their windows reach well
- * above 4GB, so ordinary memory is what a device should be given.
+ * The base class asks for MEMF_31BIT. RAM here starts at 2GB, so only
+ * the banks below 4GB that kernel_startup declares with that flag could
+ * serve it - a pool better left to the consumers that genuinely need
+ * 32-bit addresses (hunk relocation, 32-bit DMA bounce buffers). These
+ * controllers are cache coherent and their windows reach well above
+ * 4GB, so ordinary memory is what a device should be given.
  *
  * The layout matches the base class: the allocation is padded so the
  * address handed out is page aligned, with the real pointer stored in

@@ -42,6 +42,7 @@
 #define VCTAG_GETPOWER          0x00020001
 #define VCTAG_GETTIMING         0x00020002
 #define VCTAG_SETPOWER	        0x00028001
+#define VCTAG_NOTIFYXHCI        0x00030058
 
 /* Clock ids for the VCTAG_*CLK* tags */
 #define VCCLOCK_EMMC            1
@@ -63,6 +64,7 @@
 
 #define VCTAG_GETCLKSTATE       0x00030001
 #define VCTAG_GETCLKRATE        0x00030002
+#define VCTAG_GETMAXCLKRATE     0x00030004
 #define VCTAG_GETVOLTAGE        0x00030003
 #define VCTAG_GETCLKMAX         0x00030004
 #define VCTAG_GETVOLTMAX        0x00030005

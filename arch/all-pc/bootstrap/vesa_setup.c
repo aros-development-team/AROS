@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* #define DEBUG */
@@ -21,20 +21,8 @@
 
 void setupVESA(char *vesa)
 {
-    short r;
-    unsigned char palwidth = 6;
     BOOL prioritise_depth = FALSE, set_refresh = FALSE;
     long x = 0, y = 0, d = 0, vfreq = 0;
-    long mode;
-    unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
-    void *vesa_start = &_binary_vesa_start;
-    void *tmp = __bs_malloc(vesa_size);
-
-    if (!tmp)
-    {
-        D(kprintf("[%s] Setup failed, not enough working memory\n", str_BSVESA);)
-        return;
-    }
 
     x = strtoul(vesa, &vesa, 10);
     if (*vesa == 'x')
@@ -62,6 +50,29 @@ void setupVESA(char *vesa)
     }
     else
         vfreq = 60;
+
+    setupVESAMode(x, y, d, vfreq, prioritise_depth, set_refresh);
+}
+
+/*
+ * Ask the VBE BIOS for the mode which best matches the given geometry, set it,
+ * and describe it to AROS. Returns TRUE if a mode was actually set, in which
+ * case the KRN_VBE* tags have been added to the boot taglist.
+ */
+BOOL setupVESAMode(long x, long y, long d, long vfreq, BOOL prioritise_depth, BOOL set_refresh)
+{
+    short r;
+    unsigned char palwidth = 6;
+    long mode;
+    unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
+    void *vesa_start = &_binary_vesa_start;
+    void *tmp = __bs_malloc(vesa_size);
+
+    if (!tmp)
+    {
+        D(kprintf("[%s] Setup failed, not enough working memory\n", str_BSVESA);)
+        return FALSE;
+    }
 
     /*
      * 16-bit VBE trampoline is needed only once only here, so
@@ -139,4 +150,6 @@ void setupVESA(char *vesa)
     }
     
     D(kprintf("[%s] Setup complete\n", str_BSVESA);)
+
+    return (r == VBE_RC_SUPPORTED);
 }

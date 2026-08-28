@@ -635,6 +635,7 @@ OOP_Object *DMEnum__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         InitSemaphore(&data->mdb.sema);
         data->display = NULL;
+        data->pri = 0;
 
         while ((tag = NextTagItem(&tstate)))
         {
@@ -644,6 +645,9 @@ OOP_Object *DMEnum__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             {
             case aoHidd_DMEnum_Display:
                 data->display = (OOP_Object *)tag->ti_Data;
+                break;
+            case aoHidd_DMEnum_Priority:
+                data->pri = (LONG)tag->ti_Data;
                 break;
             }
         }
@@ -682,6 +686,9 @@ VOID DMEnum__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         return;
     case aoHidd_DMEnum_Display:
         *msg->storage = (IPTR)data->display;
+        return;
+    case aoHidd_DMEnum_Priority:
+        *msg->storage = (IPTR)data->pri;
         return;
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

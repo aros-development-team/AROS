@@ -1,12 +1,16 @@
 diff -ruN binutils-2.47/bfd/config.bfd binutils-2.47.aros/bfd/config.bfd
 --- binutils-2.47/bfd/config.bfd	2026-07-26 00:00:00.000000000 +0100
 +++ binutils-2.47.aros/bfd/config.bfd	2026-07-31 15:42:42.748808890 +0100
-@@ -249,7 +249,7 @@
+@@ -249,7 +249,12 @@
      targ_archs="$targ_archs bfd_i386_arch bfd_powerpc_arch bfd_rs6000_arch"
      want64=true
      ;;
--  aarch64-*-elf | aarch64-*-linux* | aarch64-*-netbsd* | aarch64-*-gnu* | aarch64-*-nto* | aarch64-*-rtems* | aarch64-*-genode*)
-+  aarch64-*-elf | aarch64-*-linux* | aarch64-*-netbsd* | aarch64-*-gnu* | aarch64-*-nto* | aarch64-*-rtems* | aarch64-*-genode* | aarch64-*-aros)
++  aarch64-*-aros)
++    targ_defvec=aarch64_elf64_le_vec
++    targ_selvecs="aarch64_elf64_be_vec aarch64_elf32_le_vec aarch64_elf32_be_vec arm_elf32_aros_le_vec arm_elf32_aros_be_vec arm_elf32_le_vec arm_elf32_be_vec aarch64_pei_le_vec aarch64_pe_le_vec"
++    want64=true
++    ;;
+   aarch64-*-elf | aarch64-*-linux* | aarch64-*-netbsd* | aarch64-*-gnu* | aarch64-*-nto* | aarch64-*-rtems* | aarch64-*-genode*)
      targ_defvec=aarch64_elf64_le_vec
      targ_selvecs="aarch64_elf64_be_vec aarch64_elf32_le_vec aarch64_elf32_be_vec arm_elf32_le_vec arm_elf32_be_vec aarch64_pei_le_vec aarch64_pe_le_vec"
      want64=true
@@ -92,11 +96,10 @@ diff -ruN binutils-2.47/bfd/elf32-arm.c binutils-2.47.aros/bfd/elf32-arm.c
  #include "elf/arm.h"
  #include "elf32-arm.h"
  #include "cpu-arm.h"
-@@ -20253,6 +20254,78 @@
+@@ -20253,6 +20254,77 @@
  #define ELF_COMMONPAGESIZE		0x1000
  
  
-+++ bfd/elf32-arm.c	2025-07-26 23:00:00.000000000 +0000
 +/* AROS target */
 +
 +#undef TARGET_LITTLE_SYM
@@ -166,12 +169,12 @@ diff -ruN binutils-2.47/bfd/elf32-arm.c binutils-2.47.aros/bfd/elf32-arm.c
 +#undef elf_backend_begin_write_processing
 +#define elf_backend_begin_write_processing elf32_arm_begin_write_processing
 +#undef bfd_elf32_bfd_final_link
-+#define bfd_elf32_bfd_final_link        bfd_elf_final_link
++#define bfd_elf32_bfd_final_link	elf32_arm_final_link
 +
  /* FDPIC Targets.  */
  
  #undef  TARGET_LITTLE_SYM
-@@ -20342,6 +20415,7 @@
+@@ -20342,6 +20414,7 @@
  #undef	TARGET_BIG_NAME
  #define TARGET_BIG_NAME			"elf32-bigarm-vxworks"
  
@@ -271,7 +274,7 @@ diff -ruN binutils-2.47/bfd/elf-aros.c binutils-2.47.aros/bfd/elf-aros.c
 +{
 +  link_info->emitrelocations = 1;
 +  link_info->output_bfd->flags &= ~D_PAGED;
-+  return bfd_elf_final_link(abfd, link_info);
++  return _bfd_elf_final_link(abfd, link_info);
 +}
 diff -ruN binutils-2.47/bfd/elf-aros.h binutils-2.47.aros/bfd/elf-aros.h
 --- binutils-2.47/bfd/elf-aros.h	1970-01-01 01:00:00.000000000 +0100
@@ -573,6 +576,57 @@ diff -ruN binutils-2.47/ld/emulparams/riscvelf_aros.sh binutils-2.47.aros/ld/emu
 +++ binutils-2.47.aros/ld/emulparams/riscvelf_aros.sh	2026-07-31 15:53:11.711038998 +0100
 @@ -0,0 +1 @@
 +. ${srcdir}/emulparams/elf32lriscv.sh
+diff -ruN binutils-2.47/ld/plugin.c binutils-2.47.aros/ld/plugin.c
+--- binutils-2.47/ld/plugin.c	2026-07-26 00:00:00.000000000 +0100
++++ binutils-2.47.aros/ld/plugin.c	2026-07-27 22:30:55.860898377 +0100
+@@ -207,13 +207,46 @@
+   return 0;
+ }
+ 
+-#endif /* !defined (HAVE_DLFCN_H) && defined (HAVE_WINDOWS_H)  */
++#elif !defined (HAVE_DLFCN_H)
++
++/* Hosts such as AmigaOS and AROS have no dlopen-style runtime loader
++   at all, so a plugin can never be loaded.  Stub the interface out so
++   that ld still builds, and let plugin_opt_plugin() report the failure
++   through the usual path when one is actually requested.  */
++
++#define PLUGIN_NO_DYNAMIC_LOADING 1
++
++#define RTLD_NOW 0	/* Dummy value.  */
++
++static void *
++dlopen (const char *file ATTRIBUTE_UNUSED, int mode ATTRIBUTE_UNUSED)
++{
++  return NULL;
++}
++
++static void *
++dlsym (void *handle ATTRIBUTE_UNUSED, const char *name ATTRIBUTE_UNUSED)
++{
++  return NULL;
++}
++
++static int
++dlclose (void *handle ATTRIBUTE_UNUSED)
++{
++  return 0;
++}
++
++#endif /* !defined (HAVE_DLFCN_H)  */
+ 
+ #ifndef HAVE_DLFCN_H
+ static const char *
+ dlerror (void)
+ {
++#ifdef PLUGIN_NO_DYNAMIC_LOADING
++  return "dynamic loading of plugins is not supported on this host";
++#else
+   return "";
++#endif
+ }
+ #endif
+ 
 diff -ruN binutils-2.47/ld/Makefile.am binutils-2.47.aros/ld/Makefile.am
 --- binutils-2.47/ld/Makefile.am	2026-07-26 00:00:00.000000000 +0100
 +++ binutils-2.47.aros/ld/Makefile.am	2026-07-31 15:53:11.712393198 +0100

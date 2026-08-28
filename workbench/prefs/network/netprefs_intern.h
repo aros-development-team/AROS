@@ -24,8 +24,12 @@ struct ProtoHandlerNode
 {
     struct Node             ph_Node;        /* ln_Name = display name ("IPv4","IPv6") */
     enum ProtocolFamily     ph_Family;      /* PROTO_FAMILY_IPV4 or _IPV6             */
+    UBYTE                   ph_ID;          /* ID assigned at registration; used as   */
+                                            /* ln_Type of this plugin's address nodes */
     struct MUI_CustomClass *ph_WinClass;    /* PAWinClass subclass for config window   */
     NETPREFS_WRITETOKENS    ph_WriteTokens; /* writes config tokens to FILE            */
+    NETPREFS_READTOKENS     ph_ReadTokens;  /* claims/parses a token -> address node   */
+    NETPREFS_DISPLAY        ph_Display;     /* formats a list-column string            */
 };
 
 /*

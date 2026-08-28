@@ -72,16 +72,29 @@ struct DosPacket64
     struct Message * dp_Link;   /* Pointer to a standard exec message. */
     struct MsgPort * dp_Port;   /* Reply-Port of that packet. */
 
-    LONG  dp_Type;              /* Packet type (ACTION_...) */
-    LONG  dp_Res0;              /* Set to DP64_INIT by the originator */
-    ULONG dp_Res2;              /* Secondary result (IoErr() value) */
-    QUAD  dp_Res1;              /* 64-bit primary result */
-    QUAD  dp_Arg1;              /* 64-bit arguments ... */
-    QUAD  dp_Arg2;
-    ULONG dp_Arg3;
-    ULONG dp_Arg4;
-    ULONG dp_Arg5;
+    LONG  dp_Type;              /* 8:  Packet type (ACTION_...)          */
+    LONG  dp_Res0;              /* 12: Set to DP64_INIT by the originator */
+    ULONG dp_Res2;              /* 16: Secondary result (IoErr() value)  */
+    LONG  dp_Pad0;              /* 20: see the alignment note below      */
+    QUAD  dp_Res1;              /* 24: 64-bit primary result             */
+    LONG  dp_Arg1;              /* 32: the object (fh_Arg1)              */
+    LONG  dp_Pad1;              /* 36                                    */
+    QUAD  dp_Arg2;              /* 40: 64-bit argument                   */
+    ULONG dp_Arg3;              /* 48: 32-bit argument (e.g. seek mode)  */
+    ULONG dp_Arg4;              /* 52: struct FileHandle *               */
+    QUAD  dp_Arg5;              /* 56: must be zero to validate dp_Arg4  */
 };
+
+/*
+ * The padding above is deliberate and must not be removed. The 64-bit
+ * fields of this packet sit at fixed offsets (dp_Res1 at 24, dp_Arg2 at
+ * 40, dp_Arg5 at 56), which is what a handler on the other side reads
+ * and writes. Those offsets are what a compiler that gives a 64-bit type
+ * 8-byte alignment produces on its own - but m68k aligns them to 4, so
+ * without the padding every 64-bit field would sit 4 bytes early and the
+ * two sides would disagree about where the result is. Spelling the
+ * padding out keeps the layout identical whatever the ABI decides.
+ */
 
 #define DP64_INIT               (-3)
 #endif

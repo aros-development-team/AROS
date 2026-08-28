@@ -22,7 +22,6 @@
  */
 
 #include "nouveau_intern.h"
-#include "nouveau_class.h"
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <stdlib.h>
@@ -92,7 +91,7 @@ VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
                     * Alpha blending with source and destination pixels.
                     * Get destination.
                     */
-                    destpix = readl(destaddr);
+                    destpix = hidd_readl(destaddr);
 
                     dst_red   = (destpix & 0x00FF0000) >> 16;
                     dst_green = (destpix & 0x0000FF00) >> 8;
@@ -106,7 +105,7 @@ VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
                 destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
 
                 /* Store the new pixel */
-                writel(destpix, destaddr);
+                hidd_writel(destpix, destaddr);
             }
 
             /* Advance pointers */
@@ -173,7 +172,7 @@ VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
                     * Get destination.
                     */
 
-                    destpix = readw(destaddr);
+                    destpix = hidd_readw(destaddr);
 
                     dst_red   = (destpix & 0x0000F800) >> 8;
                     dst_green = (destpix & 0x000007e0) >> 3;
@@ -186,7 +185,7 @@ VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
 
                 destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
 
-                writew(destpix, destaddr);
+                hidd_writew(destpix, destaddr);
             }
 
             /* Advance pointers */
@@ -264,7 +263,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                     }
                     else
                     {
-                        destpix = readl(destaddr);
+                        destpix = hidd_readl(destaddr);
 
                         dst_red   = (destpix & 0x00FF0000) >> 16;
                         dst_green = (destpix & 0x0000FF00) >> 8;
@@ -276,7 +275,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                     }
 
                     destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
-                    writel(destpix, destaddr);
+                    hidd_writel(destpix, destaddr);
                 }
 
                 destaddr += 4;
@@ -303,7 +302,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                     }
                     else
                     {
-                        destpix = readl(destaddr);
+                        destpix = hidd_readl(destaddr);
 
                         dst_red   = (destpix & 0x00FF0000) >> 16;
                         dst_green = (destpix & 0x0000FF00) >> 8;
@@ -315,7 +314,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                     }
 
                     destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
-                    writel(destpix, destaddr);
+                    hidd_writel(destpix, destaddr);
                 }
 
                 destaddr += 4;
@@ -334,9 +333,9 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
 
                 if (alpha >= 0x80) 
                 {
-                    destpix = readl(destaddr);
+                    destpix = hidd_readl(destaddr);
                     destpix = ~destpix;
-                    writel(destpix, destaddr);
+                    hidd_writel(destpix, destaddr);
                 }
 
                 destaddr += 4;
@@ -355,9 +354,9 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
 
                 if (alpha < 0x80)
                 {
-                    destpix = readl(destaddr);
+                    destpix = hidd_readl(destaddr);
                     destpix = ~destpix;
-                    writel(destpix, destaddr);
+                    hidd_writel(destpix, destaddr);
                 }
 
                 destaddr += 4;
@@ -380,7 +379,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
 
                 destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
 
-                writel(destpix, destaddr);
+                hidd_writel(destpix, destaddr);
                 destaddr += 4;
 
             } /* for(x = 0; x < width; x++) */
@@ -400,7 +399,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                 dst_blue  = bg_blue  + ((fg_blue  - bg_blue)  * alpha) / 256;
 
                 destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
-                writel(destpix, destaddr);
+                hidd_writel(destpix, destaddr);
 
                 destaddr += 4;
 
@@ -482,7 +481,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                     }
                     else
                     {
-                        destpix = readw(destaddr);
+                        destpix = hidd_readw(destaddr);
 
                         dst_red   = (destpix & 0x0000F800) >> 8;
                         dst_green = (destpix & 0x000007e0) >> 3;
@@ -494,7 +493,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                     }
 
                     destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-                    writew(destpix, destaddr);
+                    hidd_writew(destpix, destaddr);
                 }
 
                 destaddr += 2;
@@ -521,7 +520,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                     }
                     else
                     {
-                        destpix = readw(destaddr);
+                        destpix = hidd_readw(destaddr);
 
                         dst_red   = (destpix & 0x0000F800) >> 8;
                         dst_green = (destpix & 0x000007e0) >> 3;
@@ -533,7 +532,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                     }
 
                     destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-                    writew(destpix, destaddr);
+                    hidd_writew(destpix, destaddr);
                 }
 
                 destaddr += 2;
@@ -552,9 +551,9 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
 
                 if (alpha >= 0x80) 
                 {
-                    destpix = readw(destaddr);
+                    destpix = hidd_readw(destaddr);
                     destpix = ~destpix;
-                    writew(destpix, destaddr);
+                    hidd_writew(destpix, destaddr);
                 }
 
                 destaddr += 2;
@@ -573,9 +572,9 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
 
                 if (alpha < 0x80)
                 {
-                    destpix = readw(destaddr);
+                    destpix = hidd_readw(destaddr);
                     destpix = ~destpix;
-                    writew(destpix, destaddr);
+                    hidd_writew(destpix, destaddr);
                 }
 
                 destaddr += 2;
@@ -597,7 +596,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                 dst_blue  = bg_blue  + ((fg_blue  - bg_blue)  * alpha) / 256;
 
                 destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-                writew(destpix, destaddr);
+                hidd_writew(destpix, destaddr);
 
                 destaddr += 2;
 
@@ -618,7 +617,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                 dst_blue  = bg_blue  + ((fg_blue  - bg_blue)  * alpha) / 256;
 
                 destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-                writew(destpix, destaddr);
+                hidd_writew(destpix, destaddr);
 
                 destaddr += 2;
 
@@ -722,7 +721,7 @@ BOOL HiddNouveauWriteFromRAM(
             {
                 SD(cl)->mid_GetPixFmt, srcPixFmt
             }, *gpf = &__gpf;
-            
+
             OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstPF);
             srcPF = (OOP_Object *)OOP_DoMethod(SD(cl)->dmenum, (OOP_Msg)gpf);
 
@@ -834,7 +833,7 @@ BOOL HiddNouveauReadIntoRAM(
             {
                 SD(cl)->mid_GetPixFmt, dstPixFmt
             }, *gpf = &__gpf;
-            
+
             OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&srcPF);
             dstPF = (OOP_Object *)OOP_DoMethod(SD(cl)->dmenum, (OOP_Msg)gpf);
 
@@ -864,16 +863,17 @@ static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata,
 
     /* Wrap GART */
     srcdata.bo = carddata->GART;
-    srcdata.width = width;
-    srcdata.height = height;
-    srcdata.depth = 32;
+    srcdata.drawable.width = width;
+    srcdata.drawable.height = height;
+    srcdata.drawable.depth = srcdata.drawable.bitsPerPixel = 32;
+    srcdata.drawable.pScreen = carddata;
     srcdata.bytesperpixel = 4;
     srcdata.pitch = gartpitch;
 
     LOCK_ENGINE
 
     /* Render using 3D engine */
-    switch(carddata->architecture)
+    switch(carddata->Architecture)
     {
     case(NV_ARCH_40):
         HIDDNouveauNV403DCopyBox(carddata,
@@ -923,7 +923,7 @@ BOOL HiddNouveauAccelARGBUpload3D(
             line_count = height;
 
         /* Upload to GART */
-        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR))
+        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR, carddata->client))
             return FALSE;
         dst = carddata->GART->map;
 
@@ -972,7 +972,6 @@ BOOL HiddNouveauAccelARGBUpload3D(
 #endif
 
         src += srcpitch * line_count;
-        nouveau_bo_unmap(carddata->GART);
 
         HiddNouveau3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
 
@@ -1011,7 +1010,7 @@ BOOL HiddNouveauAccelAPENUpload3D(
             line_count = height;
 
         /* Upload to GART */
-        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR))
+        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR, carddata->client))
             return FALSE;
         dst = carddata->GART->map;
 
@@ -1042,9 +1041,7 @@ BOOL HiddNouveauAccelAPENUpload3D(
                 dst += line_len;
             }
         }
-        
-        nouveau_bo_unmap(carddata->GART);
-        
+
         HiddNouveau3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
 
         height -= line_count;
@@ -1120,9 +1117,9 @@ VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
             {
                 IPTR addr = map + (bmdata->pitch * y1) + (i * bmdata->bytesperpixel);
                 if (bmdata->bytesperpixel == 2)
-                    writew(fg, (APTR)addr);
+                    hidd_writew(fg, (APTR)addr);
                 else
-                    writel(fg, (APTR)addr);
+                    hidd_writel(fg, (APTR)addr);
             }
         }
     }
@@ -1138,9 +1135,9 @@ VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
             {
                 IPTR addr = map + (bmdata->pitch * i) + (x1 * bmdata->bytesperpixel);
                 if (bmdata->bytesperpixel == 2)
-                    writew(fg, (APTR)addr);
+                    hidd_writew(fg, (APTR)addr);
                 else
-                    writel(fg, (APTR)addr);
+                    hidd_writel(fg, (APTR)addr);
             }
         }
     }
@@ -1193,9 +1190,9 @@ VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
             {
                 IPTR addr = map + (x * bmdata->bytesperpixel) + (bmdata->pitch * y);
                 if (bmdata->bytesperpixel == 2)
-                    writew(fg, (APTR)addr);
+                    hidd_writew(fg, (APTR)addr);
                 else
-                    writel(fg, (APTR)addr);
+                    hidd_writel(fg, (APTR)addr);
             }
     
             if(d <= 0)

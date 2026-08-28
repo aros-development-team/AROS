@@ -16,6 +16,26 @@
 
 #include <exec_platform.h>
 
+/*
+ * Mask the IPI's FIQ around tc_SpinLock / scheduler-list critical sections.
+ * arm-native defines real versions in exec_platform.h (the IPI that delivers
+ * cross-CPU Signal arrives as an FIQ and would re-enter these locks on the
+ * same CPU via signal_hook). Arches without an FIQ-delivered IPI get no-ops.
+ */
+#ifndef EXEC_FIQ_DISABLE
+#define EXEC_FIQ_DISABLE()      (0)
+#define EXEC_FIQ_RESTORE(x)     do { (void)(x); } while (0)
+#endif
+
+/*
+ * Store-store barrier, for publishing a freshly built structure to a reader
+ * that walks it lock-free. SMP arches define a real one in exec_platform.h;
+ * on single-CPU builds there is no other observer, so a no-op is correct.
+ */
+#ifndef EXEC_MEMORY_BARRIER
+#define EXEC_MEMORY_BARRIER()   do { } while (0)
+#endif
+
 #if defined(__AROSEXEC_SMP__)
 #include <aros/types/spinlock_s.h>
 #endif
@@ -81,6 +101,8 @@ struct IntExecBase
     void                       *ExecLockBase;
     cpumask_t                   *CPUMask;                       /* bitmap of online core                                        */
     spinlock_t                  MemListSpinLock;
+    spinlock_t                  AllocMemListSpinLock;           /* mungwall AllocMemList (SMP-safe replacement for Forbid)       */
+    spinlock_t                  AllocatorCtxListSpinLock;       /* AllocatorCtxList lazy-create serialization                   */
     /* First the locks for arbitration of public resources ... */
     spinlock_t                  ResourceListSpinLock;
     spinlock_t                  DeviceListSpinLock;
@@ -138,5 +160,81 @@ BOOL IsSysBaseValid(struct ExecBase *sysbase);
 IPTR cpu_SuperState();
 
 void ServiceTask(struct ExecBase *SysBase);
+
+#if defined(__AROSEXEC_SMP__)
+
+/*
+ * Task list migration helpers. Single source of truth for "atomically
+ * move task on or off a SysBase task list under the matching spinlock."
+ * Caller is responsible for tc_State semantics and (if needed) the
+ * per-task tc_SpinLock around the (state, list-membership) tuple.
+ *
+ * Used by rom/exec/wait.c and by core_Switch on both x86_64 and
+ * arm-native.
+ */
+
+/*
+ * Scheduler-list spinlocks must be held with IRQ/FIQ-driven dispatch
+ * blocked: arm-native's core_ExitInterrupt runs core_Dispatch which
+ * itself acquires TaskReadySpinLock - if a dispatch fires while we
+ * hold the lock, the dispatcher self-deadlocks (same CPU) or leaks
+ * the lock to whoever runs next.
+ *
+ * EXEC_BLOCK_DISPATCH_INC/DEC bump TDNestCnt directly (per-CPU TLS,
+ * no atomics needed) without going through Forbid()/Permit(). Permit's
+ * decrement-to-fully-permitted path triggers Reschedule() if
+ * FLAG_SCHEDSWITCH is set, yielding the CPU - the LAST thing we want
+ * while holding a scheduler lock. The macros are defined per-arch in
+ * exec_platform.h.
+ */
+static inline void exec_TaskRemoveRunning(struct Task *task)
+{
+    unsigned int __fiq = EXEC_FIQ_DISABLE();
+    EXEC_BLOCK_DISPATCH_INC;
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
+                       SPINLOCK_MODE_WRITE);
+    Remove(&task->tc_Node);
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+    EXEC_BLOCK_DISPATCH_DEC;
+    EXEC_FIQ_RESTORE(__fiq);
+}
+
+static inline void exec_TaskEnqueueReady(struct Task *task)
+{
+    unsigned int __fiq = EXEC_FIQ_DISABLE();
+    EXEC_BLOCK_DISPATCH_INC;
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
+                       SPINLOCK_MODE_WRITE);
+    Enqueue(&SysBase->TaskReady, &task->tc_Node);
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    EXEC_BLOCK_DISPATCH_DEC;
+    EXEC_FIQ_RESTORE(__fiq);
+}
+
+static inline void exec_TaskEnqueueWait(struct Task *task)
+{
+    unsigned int __fiq = EXEC_FIQ_DISABLE();
+    EXEC_BLOCK_DISPATCH_INC;
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
+                       SPINLOCK_MODE_WRITE);
+    Enqueue(&SysBase->TaskWait, &task->tc_Node);
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+    EXEC_BLOCK_DISPATCH_DEC;
+    EXEC_FIQ_RESTORE(__fiq);
+}
+
+static inline void exec_TaskEnqueueSpinning(struct Task *task)
+{
+    unsigned int __fiq = EXEC_FIQ_DISABLE();
+    EXEC_BLOCK_DISPATCH_INC;
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
+                       SPINLOCK_MODE_WRITE);
+    Enqueue(&PrivExecBase(SysBase)->TaskSpinning, &task->tc_Node);
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
+    EXEC_BLOCK_DISPATCH_DEC;
+    EXEC_FIQ_RESTORE(__fiq);
+}
+
+#endif /* __AROSEXEC_SMP__ */
 
 #endif /* __EXEC_INTERN_H__ */

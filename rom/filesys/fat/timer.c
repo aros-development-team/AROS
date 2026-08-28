@@ -1,7 +1,7 @@
 /*
  * fat-handler - FAT12/16/32 filesystem handler
  *
- * Copyright (C) 2008-2015 The AROS Development Team
+ * Copyright (C) 2008-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -81,19 +81,32 @@ void RestartTimer(struct Globals *glob)
     }
 }
 
+/*
+ * A flush is postponed while packets keep arriving, so a steady trickle
+ * of writes could keep dirty blocks in memory indefinitely; bound that.
+ */
+#define MAX_DEFERRED_FLUSHES 5
+
 void HandleTimer(struct Globals *glob)
 {
     WaitIO((struct IORequest *)glob->timereq);
     glob->timer_active = 0;
-    if (glob->restart_timer)
+    if (glob->restart_timer && glob->timer_deferred < MAX_DEFERRED_FLUSHES)
     {
         D(bug("Timer restart queued\n"));
         glob->restart_timer = FALSE;
+        glob->timer_deferred++;
         RestartTimer(glob);
     }
     else
     {
         D(bug("Updating disk\n"));
+        glob->timer_deferred = 0;
         UpdateDisk(glob);
+        if (glob->restart_timer)
+        {
+            glob->restart_timer = FALSE;
+            RestartTimer(glob);
+        }
     }
 }

@@ -33,6 +33,8 @@ struct cdUnitOps {
     CONST_STRPTR  uo_Name;
     LONG        (*uo_DoIO)(struct IOStdReq *io, APTR priv);
     VOID        (*uo_Expunge)(APTR priv);
+    VOID        (*uo_Init)(APTR priv);  /* optional; runs on the unit task
+                                         * before any I/O is served */
 };
 
 LONG cdAddUnit(LIBBASETYPE *cb, const struct cdUnitOps *ops, APTR priv, const struct DosEnvec *de);

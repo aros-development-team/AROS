@@ -1,0 +1,20 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM hidd-fbgfx : kernel-hidd-gfx-includes
+
+FILES	:=	\
+	fbgfx_init \
+	fbgfx_hiddclass \
+	fbgfx_displayclass \
+	fbgfx_support \
+	fbgfx_bitmapclass
+
+USER_LDFLAGS := -static
+
+USER_CPPFLAGS := \
+               -D__OOP_NOATTRBASES__
+
+%build_module mmake=hidd-fbgfx \
+  modname=fbgfx modtype=hidd \
+  files=$(FILES)

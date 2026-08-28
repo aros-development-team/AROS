@@ -90,6 +90,9 @@ struct NepClassBT
     BOOL                ncp_UsingDefaultCfg;
     struct ClsDevCfg   *ncp_CDC;
 
+    struct Library     *ncp_BTBase;        /* bluetooth.library, if the stack was started */
+    APTR                ncp_BTHardware;    /* BtHardware registered for this unit */
+
     struct Library     *ncp_MUIBase;       /* MUI master base */
     struct Library     *ncp_PsdBase;       /* Poseidon base */
     struct Library     *ncp_IntBase;       /* Intuition base */

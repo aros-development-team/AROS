@@ -14,6 +14,8 @@
 
 #include <dos/filehandler.h>
 
+#include <resources/filesysres.h>
+
 #include <devices/cd.h>
 
 #include "cd_intern.h"
@@ -26,7 +28,11 @@ struct cdUnit {
     const struct cdUnitOps   *cu_UnitOps;
     struct Task        *cu_Task;
     struct MsgPort     *cu_MsgPort;
+    const struct DosEnvec *cu_Envec;
 };
+
+static BOOL cdRegisterVolume(struct cdBase *cb, struct cdUnit *unit,
+                             const struct DosEnvec *de);
 
 /* We have a synchonous task for dispatching IO
  * to each cd.device unit.
@@ -37,6 +43,24 @@ static VOID cdTask(IPTR base, IPTR unit)
     struct IOStdReq *io;
 
     D(bug("%s.%d Task, Port %p\n", cu->cu_UnitOps->uo_Name, cu->cu_Unit, cu->cu_MsgPort));
+
+    /* The boot node registers from here rather than from resident init:
+     * the DosType scan in cdRegisterVolume needs FileSystem.resource
+     * populated, and the filesystem modules init at lower resident
+     * priority than this device does. It must also happen before the
+     * disc probe below - the probe can take seconds with a disc in the
+     * drive, and dosboot expects its boot nodes in place by the time it
+     * runs.
+     */
+    cdRegisterVolume((struct cdBase *)base, cu, cu->cu_Envec);
+
+    /* Blocking drive probes belong here, not in resident init: a
+     * misbehaving drive must cost a failed mount, not a wedged boot
+     * task. I/O queued by early openers is served after this returns.
+     */
+    if (cu->cu_UnitOps->uo_Init)
+        cu->cu_UnitOps->uo_Init(cu->cu_Private);
+
     do {
         WaitPort(cu->cu_MsgPort);
         io = (struct IOStdReq *)GetMsg(cu->cu_MsgPort);
@@ -60,8 +84,47 @@ static VOID cdTask(IPTR base, IPTR unit)
     /* Terminate by fallthough */
 }
 
+/* Ask FileSystem.resource which CD filesystem the ROM actually carries
+ * rather than hard-coding one: the boot node's DosType must match a
+ * registered filesystem or CliInit never finds a handler for CD0:,
+ * which is how the 2019 switch from cdfs to CDVDFS broke CD boot.
+ * Registration order is not guaranteed against this unit task, so poll
+ * briefly before falling back to CDVDFS's type.
+ */
+static IPTR cdSelectDosType(struct cdBase *cb)
+{
+    static const ULONG types[] = {
+        AROS_MAKE_ID('C','D','V','D'),  /* CDVDFS */
+        AROS_MAKE_ID('C','D','F','S'),  /* the older cdfs handler */
+    };
+    int attempt, i;
+
+    for (attempt = 0; attempt < 20; attempt++) {
+        struct FileSysResource *fsr = OpenResource(FSRNAME);
+        if (fsr) {
+            for (i = 0; i < (int)(sizeof(types) / sizeof(types[0])); i++) {
+                struct FileSysEntry *fse;
+                IPTR found = 0;
+                Forbid();
+                ForeachNode(&fsr->fsr_FileSysEntries, fse) {
+                    if (fse->fse_DosType == types[i]) {
+                        found = types[i];
+                        break;
+                    }
+                }
+                Permit();
+                if (found)
+                    return found;
+            }
+        }
+        cdDelayMS(cb, 100);
+    }
+    return types[0];
+}
+
 /* Add a bootnode using expansion.library */
-static BOOL cdRegisterVolume(struct cdUnit *unit, const struct DosEnvec *de)
+static BOOL cdRegisterVolume(struct cdBase *cb, struct cdUnit *unit,
+                             const struct DosEnvec *de)
 {
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
@@ -74,7 +137,8 @@ static BOOL cdRegisterVolume(struct cdUnit *unit, const struct DosEnvec *de)
     {
         IPTR pp[24];
         
-        CopyMem((IPTR *)de, &pp[4], sizeof(IPTR)*de->de_TableSize);
+        /* de_TableSize is the highest valid index, not a count */
+        CopyMem((IPTR *)de, &pp[4], sizeof(IPTR)*(de->de_TableSize + 1));
 
         /* This should be dealt with using some sort of volume manager or such. */
         if (unit->cu_Unit < 10)
@@ -87,7 +151,8 @@ static BOOL cdRegisterVolume(struct cdUnit *unit, const struct DosEnvec *de)
         pp[2]                   = unit->cu_Unit;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
         pp[DE_BOOTPRI      + 4] = -10;
-        pp[DE_DOSTYPE      + 4] = AROS_MAKE_ID('C','D','F','S');
+        pp[DE_DOSTYPE      + 4] = cdSelectDosType(cb);
+        pp[DE_BAUD         + 4] = 0;
         pp[DE_CONTROL      + 4] = 0;
         pp[DE_BOOTBLOCKS   + 4] = 0;
     
@@ -125,18 +190,27 @@ LONG cdAddUnit(struct cdBase *cb, const struct cdUnitOps *ops, APTR priv, const 
     if (cu) {
         cu->cu_Private = priv;
         cu->cu_UnitOps = ops;
+        cu->cu_Envec   = de;
+        /* Assigned before the task starts: it names the boot node */
+        cu->cu_Unit    = cb->cb_MaxUnit++;
         cu->cu_Task = NewCreateTask(TASKTAG_PC, cdTask,
                                     TASKTAG_NAME, ops->uo_Name,
+                                    /*
+                                     * The unit task runs the drive
+                                     * protocol and sector delivery;
+                                     * measured peak stack use is well
+                                     * under 1 KB, and its stack is
+                                     * chip RAM on a stock CD32.
+                                     */
+                                    TASKTAG_STACKSIZE, 8192,
                                     TASKTAG_ARG1, cb,
                                     TASKTAG_ARG2, cu,
                                     TASKTAG_TASKMSGPORT, &cu->cu_MsgPort,
                                     TAG_END);
         if (cu->cu_Task) {
-            cu->cu_Unit = cb->cb_MaxUnit++;
             ObtainSemaphore(&cb->cb_UnitsLock);
             ADDTAIL(&cb->cb_Units, &cu->cu_Node);
             ReleaseSemaphore(&cb->cb_UnitsLock);
-            cdRegisterVolume(cu, de);
             return cu->cu_Unit;
         }
         FreeVec(cu);
@@ -150,7 +224,10 @@ static int cd_Init(LIBBASETYPE *cb)
     NEWLIST(&cb->cb_Units);
     InitSemaphore(&cb->cb_UnitsLock);
 
-    /* Hand-hacked port for timer responses */
+    /* Hand-hacked port for timer responses. ReplyMsg() enqueues on
+     * mp_MsgList before signalling, so it must be a valid empty list.
+     */
+    NEWLIST(&cb->cb_TimerPort.mp_MsgList);
     cb->cb_TimerPort.mp_SigBit = SIGB_SINGLE;
     cb->cb_TimerPort.mp_Flags = PA_SIGNAL;
     cb->cb_TimerPort.mp_SigTask = FindTask(NULL);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function fwrite().
 */
@@ -63,7 +63,11 @@
     }
 
     if (nblocks > 0 && size > 0)
+    {
+        __fcb_lock(fdesc->fcb);
         cnt = FWrite (fdesc->fcb->handle, (CONST APTR)buf, size, nblocks);
+        __fcb_unlock(fdesc->fcb);
+    }
     else
         cnt = 0;
 

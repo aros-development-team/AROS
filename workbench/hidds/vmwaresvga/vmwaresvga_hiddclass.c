@@ -616,6 +616,13 @@ BOOL VMWareSVGADisplay__Hidd_Display__SetGamma(OOP_Class *cl, OOP_Object *o, str
     return TRUE;
 }
 
+static inline BOOL VMWareSVGA_IsOwnBitMap(struct VMWareSVGA_staticdata *xsd, OOP_Object *bm)
+{
+    OOP_Class *bmcl = OOP_OCLASS(bm);
+
+    return (bmcl == xsd->vmwaresvgaonbmclass) || (bmcl == xsd->vmwaresvgaoffbmclass);
+}
+
 VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     UBYTE *src = NULL;
@@ -629,8 +636,16 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     ObtainSemaphore(&hwdata->damage_control);
 
     mode = GC_DRMD(msg->gc);
-    OOP_GetAttr(msg->src, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&src);
-    OOP_GetAttr(msg->dest, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&dst);
+    /*
+     * Only bitmaps of our own classes carry our instance data. A wrapper
+     * such as the software-pointer framebuffer forwards the Drawable
+     * attribute of the bitmap it wraps, so the attribute alone must not
+     * be taken as proof of ownership.
+     */
+    if (VMWareSVGA_IsOwnBitMap(XSD(cl), msg->src))
+        OOP_GetAttr(msg->src, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&src);
+    if (VMWareSVGA_IsOwnBitMap(XSD(cl), msg->dest))
+        OOP_GetAttr(msg->dest, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&dst);
     if (((dst == NULL) || (src == NULL))) /* no vmwaregfx bitmap */
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -799,6 +814,10 @@ BOOL VMWareSVGADisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *
 
     D(bug("[VMWareSVGA] %s()\n", __func__);)
 
+    /* Without a usable hardware cursor the base class renders one for us */
+    if (!data->hwCursor)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     if (msg->shape == NULL)
     {
         D(bug("[VMWareSVGA] %s: blanking cursor\n", __func__);)
@@ -860,6 +879,9 @@ BOOL VMWareSVGADisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o,
 {
     D(bug("[VMWareSVGA] %s()\n", __func__);)
 
+    if (!XSD(cl)->hwCursor)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     XSD(cl)->mouse.x = msg->x;
     XSD(cl)->mouse.y = msg->y;
 
@@ -878,6 +900,12 @@ BOOL VMWareSVGADisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o,
 VOID VMWareSVGADisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorVisible *msg)
 {
     D(bug("[VMWareSVGA] %s()\n", __func__);)
+
+    if (!XSD(cl)->hwCursor)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
 
     XSD(cl)->mouse.visible = msg->visible;
     if ((XSD(cl)->visible))

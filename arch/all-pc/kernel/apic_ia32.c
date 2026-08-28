@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Intel IA-32 APIC driver.
 */
@@ -70,10 +70,10 @@ icid_t APICInt_Register(struct KernelBase *KernelBase)
 {
     DINT(bug("[Kernel:APIC-IA32] %s()\n", __func__));
 
-    return (icid_t)APICInt_IntrController.ic_Node.ln_Type;
+    return APICInt_IntrController.ic_Id;
 }
 
-BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
+BOOL APICInt_Init(struct KernelBase *KernelBase, icinstid_t instanceCount)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct ACPIData *acpiData  = kernPlatD->kb_ACPI;
@@ -99,10 +99,10 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         /* Set up the APIC IRQs for CPU #0 */
         for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < irq_idt_max; irq++)
         {
-            if ((KERNELIRQ_LIST(irq).lh_Type != KBL_INTERNAL) || (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0)))
+            if ((KERNELIRQ_ICID(irq) != KBL_INTERNAL) || (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Id, 0)))
             {
                 D(
-                    if (KERNELIRQ_LIST(irq).lh_Type == KBL_INTERNAL)
+                    if (KERNELIRQ_ICID(irq) == KBL_INTERNAL)
                     {
                         bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);
                     }
@@ -166,7 +166,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     return TRUE;
 }
 
-BOOL APICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
+BOOL APICInt_DisableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
@@ -196,7 +196,7 @@ BOOL APICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     return retVal;
 }
 
-BOOL APICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
+BOOL APICInt_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
@@ -235,7 +235,7 @@ BOOL APICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     return retVal;
 }
 
-BOOL APICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
+BOOL APICInt_AckIntr(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 {
     IPTR apic_base;
 
@@ -255,15 +255,15 @@ struct IntrController APICInt_IntrController =
         .ln_Name = "x86 Local APIC",
         .ln_Pri = -50
     },
-    0,
-    IIC_ID_APIC,
-    0,
-    NULL,
-    APICInt_Register,
-    APICInt_Init,
-    APICInt_EnableIRQ,
-    APICInt_DisableIRQ,
-    APICInt_AckIntr
+    .ic_Count       = 0,
+    .ic_Type        = IIC_ID_APIC,
+    .ic_Flags       = 0,
+    .ic_Private     = NULL,
+    .ic_Register    = APICInt_Register,
+    .ic_Init        = APICInt_Init,
+    .ic_IntrEnable  = APICInt_EnableIRQ,
+    .ic_IntrDisable = APICInt_DisableIRQ,
+    .ic_IntrAck     = APICInt_AckIntr
 };
 
 /* APIC IPI Related Functions ... ***************************/
@@ -1070,7 +1070,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
     D(bug("[Kernel:APIC-IA32.%03u] %s(%p, %p)\n", cpuNum, __func__, apic, __APICBase);)
 
-    if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) != (icintrid_t)-1)
+    if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) != KRN_ICINTR_INVALID)
     {
         APTR ssp = NULL;
         D(

@@ -124,8 +124,27 @@ void cache_clear_e(void *addr, uint64_t length, uint64_t flags)
     }
     else if (flags & CACRF_InvalidateD)
     {
+        /*
+         * A pure invalidate operates on whole lines, so a range that does
+         * not start and end on a line boundary would discard dirty bytes
+         * outside it: the partial head and tail lines also cover unrelated
+         * data, and any writeback pending there is lost (seen on real
+         * hardware as unrelated allocations reverting to stale contents).
+         * Promote just those two lines to clean+invalidate, the way the
+         * arm implementation does.
+         */
+        uintptr_t head_line = ((uintptr_t)addr & 63)
+                                ? (uintptr_t)start : (uintptr_t)-1;
+        uintptr_t tail_line = (((uintptr_t)addr + length) & 63)
+                                ? ((uintptr_t)end - 64) : (uintptr_t)-1;
+
         for (p = start; p < end; p += 64)
-            asm volatile("dc ivac, %0" :: "r"(p));
+        {
+            if (((uintptr_t)p == head_line) || ((uintptr_t)p == tail_line))
+                asm volatile("dc civac, %0" :: "r"(p));
+            else
+                asm volatile("dc ivac, %0" :: "r"(p));
+        }
     }
     asm volatile("dsb ish" ::: "memory");
 
@@ -152,7 +171,7 @@ void handle_syscall(void *regs)
 
     D(bug("[Kernel] ## SVC %d @ 0x%p\n", svc_no, ((struct ExceptionContext *)regs)->pc));
 
-    if (svc_no <= SC_USERSTATE || svc_no == SC_REBOOT)
+    if (svc_no <= SC_USERSTATE || svc_no == SC_REBOOT || svc_no == SC_POWEROFF)
     {
         DREGS(cpu_DumpRegs(regs));
 
@@ -226,6 +245,31 @@ void handle_syscall(void *regs)
                 uint32_t rstc = rd32le(pm + 0x1c);          /* PM_RSTC */
                 wr32le(pm + 0x24, 0x5a000000 | 10);         /* PM_WDOG: short timeout */
                 wr32le(pm + 0x1c, 0x5a000000 | (rstc & ~0x30) | 0x20); /* full reset */
+                for (;;)
+                    asm volatile("wfe");
+                break;
+            }
+
+            case SC_POWEROFF:
+            {
+                D(bug("[Kernel] ## POWEROFF...\n"));
+                /*
+                 * Halt through the same PM watchdog as the reboot above,
+                 * but with the boot partition set to 63 first: the firmware
+                 * reads that as "do not boot" and drops the board into its
+                 * low-power state instead. The partition number lives in
+                 * the even bits of PM_RSTS, so 63 is 0x555.
+                 */
+                uintptr_t pm = (uintptr_t)__arm_arosintern.ARMI_PeripheralBase + 0x100000;
+                uint32_t rsts = rd32le(pm + 0x20);          /* PM_RSTS */
+                uint32_t rstc;
+
+                rsts &= ~0xfffffaaa;
+                wr32le(pm + 0x20, 0x5a000000 | rsts | 0x555);
+
+                rstc = rd32le(pm + 0x1c);                   /* PM_RSTC */
+                wr32le(pm + 0x24, 0x5a000000 | 10);         /* PM_WDOG */
+                wr32le(pm + 0x1c, 0x5a000000 | (rstc & ~0x30) | 0x20);
                 for (;;)
                     asm volatile("wfe");
                 break;

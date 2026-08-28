@@ -2,7 +2,7 @@
     Copyright (C) 2017, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/types/spinlock_s.h>
+#include <exec/semaphores.h>
 #include <exec/tasks.h>
 #include <exec/ports.h>
 
@@ -15,7 +15,7 @@ struct SMPMaster
     ULONG                       *smpm_WorkBuffer;
     UWORD                       smpm_Width;
     UWORD                       smpm_Height;    
-    spinlock_t                  smpm_Lock;
+    struct SignalSemaphore      smpm_Lock;
     ULONG                       smpm_MaxWork;
     ULONG                       smpm_Oversample;
     BOOL                        smpm_Buddha;
@@ -28,7 +28,7 @@ struct SMPWorker
     struct MsgPort              *smpw_MasterPort;
     struct MsgPort              *smpw_MsgPort;
     struct Task                 *smpw_SyncTask;
-    spinlock_t                  *smpw_Lock;
+    struct SignalSemaphore      *smpw_Lock;
     ULONG                       smpw_MaxWork;
     ULONG                       smpw_Oversample;
 };
@@ -42,7 +42,7 @@ struct SMPWorkMessage
     ULONG                       smpwm_Height;
     ULONG                       smpwm_Start;
     ULONG                       smpwm_End;
-    spinlock_t                  *smpwm_Lock;
+    struct SignalSemaphore      *smpwm_Lock;
 };
 
 #define SPMWORKTYPE_FINISHED    (1 << 0)

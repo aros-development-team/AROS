@@ -220,6 +220,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     SysBase->LibNode.lib_Flags        = LIBF_CHANGED | LIBF_SUMUSED;
 
 #if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&SysBase->LibNode.lib_SpinLock);
     EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->MemListSpinLock);
 #endif
     NEWLIST(&SysBase->MemList);
@@ -290,11 +291,18 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     {
         NEWLIST(&SysBase->SoftInts[i].sh_List);
         SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_INIT(&SysBase->SoftInts[i].sh_SpinLock);
+#endif
     }
 
     NEWLIST(&PrivExecBase(SysBase)->ResetHandlers);
     NEWLIST(&PrivExecBase(SysBase)->AllocMemList);
     NEWLIST(&PrivExecBase(SysBase)->AllocatorCtxList);
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->AllocMemListSpinLock);
+    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->AllocatorCtxListSpinLock);
+#endif
 
 #if defined(__AROSEXEC_BROKENMEMLOCK__)
     InitSemaphore(&PrivExecBase(SysBase)->MemListSem);

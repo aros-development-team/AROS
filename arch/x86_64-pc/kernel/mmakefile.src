@@ -45,7 +45,9 @@ FILES    += \
              kernel_trapdebug
 endif
 
-FUNCS	 :=
+FUNCS	 := \
+             mapglobal \
+             setprotection
 ASMFILES := \
              core_interrupts
 

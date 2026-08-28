@@ -6,19 +6,24 @@
 */
 
 /*
- * List of all possible (private) kernal IPI message types.
+ * Private kernel IPI message types. Values are bit flags so the
+ * BCM2836 mailbox SET register (which OR-coalesces concurrent writes
+ * from the same sender) can carry multiple message types in one IPI
+ * delivery without losing any. The receiver dispatches by testing
+ * each bit. Source CPU is encoded in the top 4 bits (see senders).
  */
 
 #define IPI_NOP                 0x000
 #define IPI_CAUSE               0x001
 #define IPI_DISPATCH            0x002
-#define IPI_SWITCH              0x003
-#define IPI_SCHEDULE            0x004
-#define IPI_CLI                 0x005
-#define IPI_STI                 0x006
-#define IPI_ADDTASK	        0x101
-#define IPI_REMTASK	        0x102
-#define IPI_REBOOT	        0x10F
+#define IPI_SWITCH              0x004
+#define IPI_SCHEDULE            0x008
+#define IPI_CLI                 0x010
+#define IPI_STI                 0x020
+#define IPI_CALL_HOOK           0x040
+#define IPI_ADDTASK             0x080
+#define IPI_REMTASK             0x100
+#define IPI_REBOOT              0x200
 
 #include <utility/hooks.h>
 
@@ -30,12 +35,25 @@ struct IPIHook
     IPTR        ih_Args[IPI_CALL_HOOK_MAX_ARGS];
 };
 
-/* Stub: arm-native IPI hook dispatch is not yet implemented. */
-static inline int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async,
-                                 int nargs, IPTR *args, APTR _KB)
-{
-    (void)hook; (void)cpu_mask; (void)async;
-    (void)nargs; (void)args; (void)_KB;
-    return 0;
-}
+extern void core_IPIInit(void);
+extern int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async,
+                          int nargs, IPTR *args, APTR _KB);
+
+/*
+ * Split claim/commit API plus cancellation, so exec can validate the
+ * target's lifetime atomically with the enqueue (see rom/exec/signal.c)
+ * and flush stale calls at task teardown (see rom/exec/remtask.c).
+ * KERNEL_IPI_CALL_CANCELABLE keys exec's lifetime-safe path off this
+ * header; platforms without it fall back to plain core_DoCallIPI.
+ */
+struct CallIPIEntry;
+
+extern struct CallIPIEntry *core_ClaimCallIPI(int cpu);
+extern void core_CommitCallIPI(struct CallIPIEntry *cie, int cpu,
+                               struct Hook *hook, int nargs, IPTR *args);
+extern void core_AbortCallIPI(struct CallIPIEntry *cie, int cpu);
+extern void core_CancelCallIPIs(APTR hookEntry, IPTR matchArg);
+
+#define KERNEL_IPI_CALL_CANCELABLE
+
 #endif

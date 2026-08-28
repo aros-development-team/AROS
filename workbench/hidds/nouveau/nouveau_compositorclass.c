@@ -151,7 +151,7 @@ static BOOL HIDDCompositorTopBitMapChanged(struct HIDDCompositorData * compdata,
     if (compdata->display != (OOP_Object *)e)
     {
         /* Provided top bitmap is not using the same driver as compositor. Fail. */
-        D(bug("[Compositor] Display different than one used by compositor\n"));
+        nvlog("[Compositor] Display different than one used by compositor\n");
         return FALSE;
     }
     
@@ -159,7 +159,7 @@ static BOOL HIDDCompositorTopBitMapChanged(struct HIDDCompositorData * compdata,
     OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
     if (modeid == vHidd_ModeID_Invalid)
     {
-        D(bug("[Compositor] Invalid ModeID\n"));
+        nvlog("[Compositor] top bitmap %p has no ModeID\n", bm);
         return FALSE;
     }
     
@@ -473,9 +473,9 @@ static VOID HIDDCompositorToggleCompositing(struct HIDDCompositorData * compdata
         compdata->screenbitmap = compdata->topbitmap;
     }
 
-    D(bug("[Compositor] Toggle te %d, oldscr 0x%x, top 0x%x, comp 0x%x, scr 0x%x\n",
-        topedge, oldscreenbitmap, compdata->topbitmap, compdata->compositedbitmap, 
-        compdata->screenbitmap));
+    if (oldscreenbitmap != compdata->screenbitmap)
+        nvlog("[Compositor] toggle: topedge %ld, screen %p -> %p (top %p, composited %p)\n",
+              (long)topedge, oldscreenbitmap, compdata->screenbitmap, compdata->topbitmap, compdata->compositedbitmap);
 
     /* If the screenbitmap changed, show the new screenbitmap */
     /* (e) */
@@ -569,8 +569,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
     struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
     struct StackBitMapNode * n = NULL;
 
-    D(bug("[Compositor] BitMapStackChanged, topbitmap: 0x%x\n", 
-        msg->data->Bitmap));
+    nvlog("[Compositor] BitMapStackChanged, topbitmap %p\n", msg->data ? msg->data->Bitmap : NULL);
 
     LOCK_COMPOSITOR_WRITE
         
@@ -588,7 +587,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
     if (!HIDDCompositorTopBitMapChanged(compdata, msg->data->Bitmap))
     {
         /* Something bad happened. Yes, bitmap stack is already erased - that's ok */
-        D(bug("[Compositor] Failed to change top bitmap\n"));
+        nvlog("[Compositor] Failed to change top bitmap\n");
         UNLOCK_COMPOSITOR
         return; 
     }
@@ -657,6 +656,17 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapPositionChanged)
     /* Check is passed bitmap is in stack, ignore if not */
     if (HIDDCompositorIsBitMapOnStack(compdata, msg->bm) != NULL)
     {
+        {
+            IPTR le = 0, te = 0;
+            static LONG reports = 0;
+
+            OOP_GetAttr(msg->bm, aHidd_BitMap_LeftEdge, &le);
+            OOP_GetAttr(msg->bm, aHidd_BitMap_TopEdge, &te);
+            if (reports++ < 40)
+                nvlog("[Compositor] position changed: bitmap %p at %ld,%ld%s\n", msg->bm, (long)le, (long)te,
+                      compdata->topbitmap == msg->bm ? " (top)" : "");
+        }
+
         /* If top bitmap position has changed, possibly toggle compositor */
         if (compdata->topbitmap == msg->bm)
             HIDDCompositorToggleCompositing(compdata);

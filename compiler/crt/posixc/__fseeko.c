@@ -100,6 +100,8 @@ int __fseeko64 (
             char zeroarray[128] = {0};
 
             __dos64_seek (fdesc->fcb, 0, OFFSET_END);
+            /* Serialise the raw FWrite/Flush burst on the shared handle. */
+            __fcb_lock(fdesc->fcb);
             while (chunkcount > 0)
             {
                 LONG n = (chunkcount > 0x100000) ? 0x100000 : (LONG)chunkcount;
@@ -109,6 +111,7 @@ int __fseeko64 (
             if (remainder > 0)
                 FWrite (fh, zeroarray, remainder, 1);
             Flush (fh);
+            __fcb_unlock(fdesc->fcb);
         }
     }
 

@@ -152,6 +152,162 @@ static void dwc_setup_dma(struct pcidt_bridge *b, IPTR base, IPTR size)
     (void)mmio_read32(atu + DWC_ATU_CTRL2);
 }
 
+/*
+ * Drop the boot firmware's outbound config windows that shadow the
+ * memory and I/O windows the device tree describes.
+ *
+ * Some firmwares hand over with ECAM-style config windows programmed
+ * into the outbound regions, parked inside those windows - here they
+ * overlay the start of the 64-bit prefetch window, where a
+ * framebuffer BAR lives. A memory access that lands in one becomes a
+ * config transaction: a wide store is malformed there and the
+ * completion never comes, which stalls the hart with no trap.
+ *
+ * The device tree is the authority on the address map on this path,
+ * and config access goes through our own viewport (see dwc_setup), so
+ * a CFG-type region contradicting the tree is broken handoff state:
+ * disable it. Regions elsewhere, and every memory and I/O region, are
+ * left exactly as the firmware set them - on a clean handoff this
+ * routine changes nothing. An address matching no region passes
+ * through untranslated, which is what the identity ranges describe.
+ */
+#define DWC_ATU_BOOT_REGIONS    8
+
+static int dwc_overlaps(IPTR rbase, IPTR rend, IPTR wbase, IPTR wsize)
+{
+    if (!wsize)
+        return 0;
+    return (rbase <= wbase + wsize - 1) && (rend >= wbase);
+}
+
+void PCIDT_DropBootCfgWindows(struct pcidt_bridge *b)
+{
+    unsigned int i;
+
+    if (b->access != PCIDT_ACCESS_DWC || !b->dbiBase)
+        return;
+
+    /* Also settles atuUnroll before the first config access */
+    dwc_probe_atu(b);
+
+    for (i = 0; i < DWC_ATU_BOOT_REGIONS; i++)
+    {
+        IPTR atu, base, end;
+        ULONG type, ctrl2;
+
+        if (b->atuUnroll)
+            atu = b->dbiBase + DWC_ATU_REGION(i);
+        else
+        {
+            dwc_vp_select(b, i, 0);
+            atu = b->dbiBase + DWC_ATU_VP_CTRL1 - DWC_ATU_CTRL1;
+        }
+
+        ctrl2 = mmio_read32(atu + DWC_ATU_CTRL2);
+        type  = mmio_read32(atu + DWC_ATU_CTRL1) & 0x1f;
+
+        if (!(ctrl2 & DWC_ATU_ENABLE) ||
+            (type != DWC_ATU_TYPE_CFG0 && type != DWC_ATU_TYPE_CFG1))
+            continue;
+
+        /* The limit register carries the low 32 bits; a config window
+           never crosses a 4GiB boundary */
+        base = ((IPTR)mmio_read32(atu + DWC_ATU_UPPER_BASE) << 32) |
+               mmio_read32(atu + DWC_ATU_LOWER_BASE);
+        end  = (base & ~(IPTR)0xffffffff) |
+               mmio_read32(atu + DWC_ATU_LIMIT);
+
+        if (!dwc_overlaps(base, end, b->mem64CpuBase, b->mem64Size) &&
+            !dwc_overlaps(base, end, b->mem32CpuBase, b->mem32Size) &&
+            !dwc_overlaps(base, end, b->ioCpuBase, b->ioSize))
+            continue;
+
+        mmio_write32(atu + DWC_ATU_CTRL2, 0);
+        (void)mmio_read32(atu + DWC_ATU_CTRL2);
+        D(bug("[PCIDT] dbi %p: dropped boot config window %u (%p-%p)\n",
+              b->dbiBase, i, base, end);)
+    }
+}
+
+/*
+ * The firmware only forwards the outbound windows it needed itself
+ * (RC0 hands over with the config shim plus the region its boot
+ * framebuffer sits in). BARs assigned outside those windows answer in
+ * config space, but their memory writes are silently discarded on the
+ * way out - so forward the ranges the tree actually describes.
+ *
+ * The limit register is 32 bits wide, so a window must not cross a
+ * 4GiB boundary; firmware assigns the BARs from the bottom of the
+ * 64-bit window, so its first 4GiB (at most) is all that is needed.
+ * Regions 2 and 3 are used: 0 is borrowed for config cycles and the
+ * firmware's own windows sit at the bottom - a same-target superset
+ * alongside them is harmless.
+ */
+#define DWC_ATU_MEM64_REGION    1
+#define DWC_ATU_MEM32_REGION    2
+
+static void dwc_outbound_mem(struct pcidt_bridge *b, unsigned int region,
+                             IPTR cpu, IPTR pci, IPTR size)
+{
+    IPTR atu;
+    IPTR limit = cpu + size - 1;
+
+    if (b->atuUnroll)
+        atu = b->dbiBase + DWC_ATU_REGION(region);
+    else
+    {
+        dwc_vp_select(b, region, 0);
+        atu = b->dbiBase + DWC_ATU_VP_CTRL1 - DWC_ATU_CTRL1;
+    }
+
+    mmio_write32(atu + DWC_ATU_LOWER_BASE, (ULONG)(cpu & 0xffffffff));
+    mmio_write32(atu + DWC_ATU_UPPER_BASE, (ULONG)(cpu >> 32));
+    mmio_write32(atu + DWC_ATU_LIMIT, (ULONG)(limit & 0xffffffff));
+    mmio_write32(atu + DWC_ATU_LOWER_TARGET, (ULONG)(pci & 0xffffffff));
+    mmio_write32(atu + DWC_ATU_UPPER_TARGET, (ULONG)(pci >> 32));
+    mmio_write32(atu + DWC_ATU_CTRL1, DWC_ATU_TYPE_MEM);
+    mmio_write32(atu + DWC_ATU_CTRL2, DWC_ATU_ENABLE);
+    (void)mmio_read32(atu + DWC_ATU_CTRL2);
+
+    /* The register block may simply not exist (the IP is configured
+       with a fixed number of regions); believe only what reads back */
+    if (mmio_read32(atu + DWC_ATU_LOWER_BASE) != (ULONG)(cpu & 0xffffffff) ||
+        !(mmio_read32(atu + DWC_ATU_CTRL2) & DWC_ATU_ENABLE))
+    {
+        bug("[PCIDT] dbi %p: outbound region %u does not stick (base %08x ctrl2 %08x)\n",
+            (APTR)b->dbiBase, region,
+            mmio_read32(atu + DWC_ATU_LOWER_BASE),
+            mmio_read32(atu + DWC_ATU_CTRL2));
+        return;
+    }
+
+    D(bug("[PCIDT] dbi %p: outbound mem window %u %p+%p -> %p\n",
+        (APTR)b->dbiBase, region, (APTR)cpu, (APTR)size, (APTR)pci);)
+}
+
+void PCIDT_SetupOutboundWindows(struct pcidt_bridge *b)
+{
+    if (b->access != PCIDT_ACCESS_DWC || !b->dbiBase)
+        return;
+
+    dwc_probe_atu(b);
+
+    if (b->mem64Size)
+    {
+        IPTR span = b->mem64Size;
+        IPTR align = 0x100000000UL - (b->mem64CpuBase & 0xffffffffUL);
+
+        if (span > align)
+            span = align;
+        dwc_outbound_mem(b, DWC_ATU_MEM64_REGION,
+                         b->mem64CpuBase, b->mem64PciBase, span);
+    }
+
+    if (b->mem32Size)
+        dwc_outbound_mem(b, DWC_ATU_MEM32_REGION,
+                         b->mem32CpuBase, b->mem32PciBase, b->mem32Size);
+}
+
 void PCIDT_EnableDMA(struct pcidt_bridge *b, IPTR base, IPTR size)
 {
     IPTR atu;
@@ -198,7 +354,6 @@ void PCIDT_EnableDMA(struct pcidt_bridge *b, IPTR base, IPTR size)
 #define DWC_MSI_ADDR_HI         0x824
 #define DWC_MSI_INTR0_ENABLE    0x828
 #define DWC_MSI_INTR0_MASK      0x82c
-#define DWC_MSI_INTR0_STATUS    0x830
 
 /*
  * Point the controller at an address and let every vector through.
@@ -263,12 +418,13 @@ LONG PCIDT_MSIEnable(struct pcidt_bridge *b, UBYTE bus, UBYTE dev, UBYTE sub)
     if (!b->msiReady)
         return -1;
 
-    for (vector = 0; vector < 32; vector++)
+    /* Only the vectors sources were found for can be handed out */
+    for (vector = 0; vector < (LONG)b->msiVectors; vector++)
     {
         if (!(b->msiUsed & (1UL << vector)))
             break;
     }
-    if (vector >= 32)
+    if (vector >= (LONG)b->msiVectors)
         return -1;
 
     cs = PCIDT_ReadConfig(b, bus, dev, sub, 0x04);

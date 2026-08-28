@@ -32,6 +32,9 @@
 #define TNA_Number          (TNA_Dummy + 8)  /* (WORD) Numeric tab ID */
 #define TNA_TextPen         (TNA_Dummy + 9)  /* (WORD) Pen for tab text */
 #define TNA_Disabled        (TNA_Dummy + 10) /* (BOOL) Tab disabled state (V42) */
+#define TNA_CloseGadget     (TNA_Dummy + 11) /* (BOOL) Show a close gadget on this tab */
+#define TNA_HintInfo        (TNA_Dummy + 12) /* (STRPTR) Bubble help text for this tab */
+#define TNA_HelpText        TNA_HintInfo     /* AmigaOS 3.2 name for TNA_HintInfo */
 
 /* ClickTab gadget attributes */
 #define CLICKTAB_Dummy              (REACTION_Dummy + 0x27000)
@@ -41,6 +44,13 @@
 #define CLICKTAB_Orientation        (CLICKTAB_Dummy + 4) /* (WORD) Layout orientation */
 #define CLICKTAB_PageGroup          (CLICKTAB_Dummy + 5) /* (Object *) Embedded page object (V42) */
 #define CLICKTAB_PageGroupBackFill  (CLICKTAB_Dummy + 6) /* (Object *) Page + backfill ptr (V42) */
+#define CLICKTAB_MinorLabelChange   (CLICKTAB_Dummy + 7) /* (BOOL) Set: label texts changed but layout kept */
+#define CLICKTAB_NodeClosed         (CLICKTAB_Dummy + 8) /* (struct Node *) Get: tab whose close gadget was used */
+#define CLICKTAB_LabelTruncate      (CLICKTAB_Dummy + 9) /* (BOOL) Truncate labels that don't fit */
+#define CLICKTAB_CloseImage         (CLICKTAB_Dummy + 10) /* (Object *) Image for tab close gadgets */
+#define CLICKTAB_FlagImage          (CLICKTAB_Dummy + 11) /* (Object *) Image for flagged tabs */
+#define CLICKTAB_AutoFit            (CLICKTAB_Dummy + 12) /* (BOOL) Auto fit tabs to gadget width */
+#define CLICKTAB_EvenSize           (CLICKTAB_Dummy + 13) /* (BOOL) Make all tabs equally wide */
 
 /* CLICKTAB_Orientation modes */
 #define CTORIENT_HORIZ      0

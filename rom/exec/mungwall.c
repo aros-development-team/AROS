@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: MungWall memory anti-trashing checker
 */
@@ -67,7 +67,13 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
         memset(res + origSize, 0xDB, MUNGWALL_SIZE);
 
         Forbid();
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->AllocMemListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         AddHead((struct List *)&PrivExecBase(SysBase)->AllocMemList, (struct Node *)&header->mwh_node);
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->AllocMemListSpinLock);
+#endif
         Permit();
     }
     return res;
@@ -187,12 +193,37 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
         header = memoryBlock - MUNGWALL_BLOCK_SHIFT;
 
         /*
+         * A block allocated before mungwall was switched on has no
+         * header - what sits below it is whatever the allocator or the
+         * caller put there. Remove() on that walks two garbage node
+         * pointers and takes the machine down inside the checker
+         * itself, so the ID has to be believed before anything trusts
+         * the rest of the header. Such a block is handed back as it
+         * came: freeing it unshifted and unmunged is exactly what
+         * FreeMem() would have done with mungwall off.
+         */
+        if (header->mwh_magicid != MUNGWALL_HEADER_ID)
+        {
+            bug("[MungWall] FreeMem(0x%p, %lu) from %s: no mungwall header"
+                " (pre-mungwall or foreign allocation) - freeing as-is\n",
+                memoryBlock, (unsigned long)byteSize,
+                loc && loc->function ? loc->function : "<unknown>");
+            return memoryBlock;
+        }
+
+        /*
          * Remove from PrivExecBase->AllocMemList.
          * Do it before checking, otherwise AvailMem() can hit into it and cause a deadlock
          * while the alert is displayed.
          */
         Forbid();
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->AllocMemListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         Remove((struct Node *)header);
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->AllocMemListSpinLock);
+#endif
         Permit();
 
         /* Reset fault state in order to see who is freeing the bad entry */
@@ -213,7 +244,10 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
          * the stack to some safe place and make sure that task structure is not
          * accessed after freeing it.
          */
-        if (GET_THIS_TASK->tc_State != TS_REMOVED)
+        /* Before multitasking starts there is no task at all, and the
+           whole reason for looking is a quirk of RemTask() - so no task
+           simply means the block is safe to munge. */
+        if ((GET_THIS_TASK == NULL) || (GET_THIS_TASK->tc_State != TS_REMOVED))
                 MUNGE_BLOCK(memoryBlock, MEMFILL_FREE, byteSize);
 
         /* Return real start of the block to deallocate */
@@ -238,6 +272,9 @@ void MungWall_Scan(APTR pool, struct TraceLocation *loc, struct ExecBase *SysBas
         DSCAN(bug("[Mungwall] Scan(), caller %s, SysBase 0x%p\n", function, SysBase);)
 
         Forbid();
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&sysBase->AllocMemListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
         ForeachNodeSafe(&sysBase->AllocMemList, allocnode, tmp)
         {
@@ -259,6 +296,9 @@ void MungWall_Scan(APTR pool, struct TraceLocation *loc, struct ExecBase *SysBas
             CheckHeader(allocnode, 0, loc, SysBase);
         }
 
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&sysBase->AllocMemListSpinLock);
+#endif
         Permit();
     }
 }

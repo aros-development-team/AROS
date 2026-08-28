@@ -34,25 +34,13 @@ All Rights Reserved.
 #include <string.h>
 
 #include "library.h"
-#include "regs.h"
 #include "misc.h"
-#include "pci_wrapper.h"
-
-
-
-extern int z, timer;
+#include "hda_hidd.h"
 
 
 /******************************************************************************
 ** Globals ********************************************************************
 ******************************************************************************/
-
-static BOOL build_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_buffers, ULONG buffer_size,
-        struct Stream *stream);
-static void free_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_buffers, struct Stream *stream);
-static BOOL stream_reset(struct Stream *stream, struct HDAudioChip *card);
-void set_converter_format(struct HDAudioChip *card, UBYTE nid);
-
 
 static const char *Inputs[INPUTS] = {
     "Line in",
@@ -137,10 +125,12 @@ ULONG _AHIsub_AllocAudio(struct TagItem *taglist,
 
         ret = AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING;
 
-        for(i = 0; i < card->nr_of_frequencies; i++) {
-            if(AudioCtrl->ahiac_MixFreq == card->frequencies[i].frequency) {
-                ret |= AHISF_CANRECORD;
-                break;
+        if(card->adc_nid != 0) {
+            for(i = 0; i < card->nr_of_frequencies; i++) {
+                if(AudioCtrl->ahiac_MixFreq == card->frequencies[i].frequency) {
+                    ret |= AHISF_CANRECORD;
+                    break;
+                }
             }
         }
 
@@ -213,27 +203,17 @@ ULONG _AHIsub_Start(ULONG flags,
 {
     struct HDAudioChip *card = (struct HDAudioChip *) AudioCtrl->ahiac_DriverData;
     ULONG dma_buffer_size = 0;
-    struct Stream *input_stream = &(card->streams[0]);
-    struct Stream *output_stream = &(card->streams[card->nr_of_input_streams]);
 
     if(flags & AHISF_PLAY) {
         ULONG dma_sample_frame_size = 2; /* 16-bit */;
-        APTR    bufftmp;
 
         detect_headphone_change(card);
 
-        bufftmp = AllocVec(AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR);
-        if(bufftmp == NULL) {
+        card->mix_buffer = AllocVec(AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR);
+        if(card->mix_buffer == NULL) {
             D(bug("[HDAudio] Unable to allocate %ld bytes for mixing buffer.", AudioCtrl->ahiac_BuffSize));
             return AHIE_NOMEM;
         }
-#if defined(__AROS__) && (__WORDSIZE==64)
-        card->lower_mix_buffer = (IPTR)bufftmp & 0xFFFFFFFF;
-        card->upper_mix_buffer = ((IPTR)bufftmp >> 32) & 0xFFFFFFFF;
-#else
-        card->lower_mix_buffer = (ULONG)bufftmp;
-        card->upper_mix_buffer = 0;
-#endif
 
         /* Allocate a buffer large enough for 16-bit or 32-bit double-buffered playback (mono or stereo) */
         if(card->bitsizes[card->selected_bitsize_index] == 24)
@@ -244,43 +224,34 @@ ULONG _AHIsub_Start(ULONG flags,
 
         dma_buffer_size = AudioCtrl->ahiac_MaxBuffSamples * dma_sample_frame_size;
 
-
         D(bug("dma_sample_frame_size = %ld, dma_buffer_size = %ld, freq = %d\n",
               dma_sample_frame_size, dma_buffer_size, AudioCtrl->ahiac_MixFreq));
-        build_buffer_descriptor_list(card, nr_of_playback_buffers, dma_buffer_size, output_stream);
 
-        card->playback_buffer1 = output_stream->bdl[0].address;
-        card->playback_buffer2 = output_stream->bdl[1].address;
-
-        //bug("BDLE[0] = %lx, BDLE[1] = %lx\n", output_stream->bdl[0].lower_address, output_stream->bdl[1].lower_address);
-        if(stream_reset(output_stream, card) == FALSE) {
-            return AHISF_ERROR;
+        card->output_stream = hda_stream_alloc(card->hda_ctrl,
+                                               vHidd_HDA_StreamDir_Out,
+                                               &card->playback_interrupt);
+        if(card->output_stream == NULL) {
+            D(bug("[HDAudio] No free output stream!\n"));
+            return AHIE_UNKNOWN;
         }
 
-        // 4.5.3 Starting Streams
-        outb_setbits((output_stream->tag << 4), output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL + 2,
-                     card); // set stream number
-        pci_outl(dma_buffer_size * nr_of_playback_buffers, output_stream->sd_reg_offset + HD_SD_OFFSET_CYCLIC_BUFFER_LEN, card);
-        pci_outw(1, output_stream->sd_reg_offset + HD_SD_OFFSET_LAST_VALID_INDEX, card); // 2 buffers, last valid index = 1
+        if(!hda_stream_setup(card->hda_ctrl, card->output_stream,
+                             get_hda_format(card), dma_buffer_size,
+                             nr_of_playback_buffers, &card->output_info)) {
+            D(bug("[HDAudio] Output stream setup failed!\n"));
+            hda_stream_free(card->hda_ctrl, card->output_stream);
+            card->output_stream = NULL;
+            return AHIE_UNKNOWN;
+        }
 
-        pci_outw(get_hda_format(card), output_stream->sd_reg_offset + HD_SD_OFFSET_FORMAT, card);
+        card->playback_buffer1 = card->output_info.si_Buffers[0];
+        card->playback_buffer2 = card->output_info.si_Buffers[1];
 
         send_command_4(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_FORMAT, get_hda_format(card), card);
 
-        // set BDL for scatter/gather
-#if defined(__AROS__) && (__WORDSIZE==64)
-        pci_outl((ULONG)((IPTR)output_stream->bdl & 0xFFFFFFFF), output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW,
-                 card);
-        pci_outl((ULONG)(((IPTR)output_stream->bdl >> 32) & 0xFFFFFFFF),
-                 output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
-#else
-        pci_outl((ULONG) output_stream->bdl, output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW, card);
-        pci_outl(0, output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
-#endif
-
         // set stream ID and channel for DAC
-        send_command_12(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_STREAM_CHANNEL, (output_stream->tag << 4),
-                        card); // stream 1, channel 0
+        send_command_12(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_STREAM_CHANNEL,
+                        (card->output_info.si_Tag << 4), card); // channel 0
 
         card->current_bytesize = dma_buffer_size;
         card->current_frames = AudioCtrl->ahiac_MaxBuffSamples;
@@ -290,50 +261,47 @@ ULONG _AHIsub_Start(ULONG flags,
     }
 
     if(flags & AHISF_RECORD) {
-        dma_buffer_size = RECORD_BUFFER_SAMPLES * 4;
+        UWORD record_format;
 
-        build_buffer_descriptor_list(card, 2, dma_buffer_size, input_stream);
-
-        card->record_buffer1 = input_stream->bdl[0].address;
-        card->record_buffer2 = input_stream->bdl[1].address;
-
-        if(stream_reset(input_stream, card) == FALSE) {
-            return AHISF_ERROR;
+        if(card->adc_nid == 0) {
+            return AHIE_UNKNOWN;
         }
 
-        // 4.5.3 Starting Streams
-        outb_setbits((input_stream->tag << 4), input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL + 2,
-                     card); // set stream number
-        pci_outl(dma_buffer_size * 2, input_stream->sd_reg_offset + HD_SD_OFFSET_CYCLIC_BUFFER_LEN, card);
-        pci_outw(1, input_stream->sd_reg_offset + HD_SD_OFFSET_LAST_VALID_INDEX, card); // 2 buffers, last valid index = 1
+        dma_buffer_size = RECORD_BUFFER_SAMPLES * 4;
 
-        // set sample rate and format
-        pci_outw(((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
-                 (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
-                 (card->frequencies[card->selected_freq_index].div << 8) | // divisor
-                 FORMAT_16BITS | // set to 16-bit for now
-                 FORMAT_STEREO,
-                 input_stream->sd_reg_offset + HD_SD_OFFSET_FORMAT, card);
+        record_format =
+            ((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
+            (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
+            (card->frequencies[card->selected_freq_index].div << 8) | // divisor
+            FORMAT_16BITS | // set to 16-bit for now
+            FORMAT_STEREO;
+
+        card->input_stream = hda_stream_alloc(card->hda_ctrl,
+                                              vHidd_HDA_StreamDir_In,
+                                              &card->record_interrupt);
+        if(card->input_stream == NULL) {
+            D(bug("[HDAudio] No free input stream!\n"));
+            return AHIE_UNKNOWN;
+        }
+
+        if(!hda_stream_setup(card->hda_ctrl, card->input_stream,
+                             record_format, dma_buffer_size, 2,
+                             &card->input_info)) {
+            D(bug("[HDAudio] Input stream setup failed!\n"));
+            hda_stream_free(card->hda_ctrl, card->input_stream);
+            card->input_stream = NULL;
+            return AHIE_UNKNOWN;
+        }
+
+        card->record_buffer1 = card->input_info.si_Buffers[0];
+        card->record_buffer2 = card->input_info.si_Buffers[1];
 
         send_command_4(card->codecnr, card->adc_nid, VERB_SET_CONVERTER_FORMAT,
-                       ((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
-                       (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
-                       (card->frequencies[card->selected_freq_index].div << 8) | // divisor
-                       FORMAT_16BITS | // set to 16-bit for now
-                       FORMAT_STEREO, card);  // stereo
-
-        // set BDL for scatter/gather
-#if defined(__AROS__) && (__WORDSIZE==64)
-        pci_outl((ULONG)((IPTR)input_stream->bdl & 0xFFFFFFFF), input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW, card);
-        pci_outl((ULONG)(((IPTR)input_stream->bdl >> 32) & 0xFFFFFFFF),
-                 input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
-#else
-        pci_outl((ULONG) input_stream->bdl, input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW, card);
-        pci_outl(0, input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
-#endif
+                       record_format, card);
 
         // set stream ID and channel for ADC
-        send_command_12(card->codecnr, card->adc_nid, VERB_SET_CONVERTER_STREAM_CHANNEL, (input_stream->tag << 4), card);
+        send_command_12(card->codecnr, card->adc_nid, VERB_SET_CONVERTER_STREAM_CHANNEL,
+                        (card->input_info.si_Tag << 4), card);
 
         D(bug("[HDAudio] RECORD\n"));
 
@@ -344,23 +312,11 @@ ULONG _AHIsub_Start(ULONG flags,
     }
 
     if(flags & AHISF_PLAY) {
-        // enable irq's
-        z = 0;
-        timer = 0; // for demo/test
-
-        //bug("GOING TO PLAY\n");
-        outl_setbits((1 << output_stream->index), HD_INTCTL, card);
-        outl_setbits(HD_SD_CONTROL_STREAM_RUN | HD_SD_STATUS_MASK, output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL,
-                     card); // Stream Run
+        hda_stream_start(card->hda_ctrl, card->output_stream);
     }
 
-
     if(flags & AHISF_RECORD) {
-        // enable irq's
-        outl_setbits((1 << input_stream->index), HD_INTCTL, card);
-        outl_setbits(HD_SD_CONTROL_STREAM_RUN | HD_SD_STATUS_MASK, input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL,
-                     card); // Stream Run
-
+        hda_stream_start(card->hda_ctrl, card->input_stream);
     }
 
     return AHIE_OK;
@@ -400,35 +356,35 @@ void _AHIsub_Stop(ULONG flags,
     //bug("Stop\n");
 
     if((flags & AHISF_PLAY) && card->is_playing) {
-        struct Stream *output_stream = &(card->streams[card->nr_of_input_streams]);
-        outl_clearbits(HD_SD_CONTROL_STREAM_RUN, output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
         card->is_playing = FALSE;
+
+        hda_stream_stop(card->hda_ctrl, card->output_stream);
+        hda_stream_free(card->hda_ctrl, card->output_stream);
+        card->output_stream = NULL;
 
         card->current_bytesize = 0;
         card->current_frames = 0;
-        card->current_buffer = 0;
+        card->current_buffer = NULL;
+        card->playback_buffer1 = NULL;
+        card->playback_buffer2 = NULL;
 
         if(card->mix_buffer) {
-            FreeVec((APTR)(IPTR)card->mix_buffer);
+            FreeVec(card->mix_buffer);
         }
-        card->mix_buffer = 0;
-
-        free_buffer_descriptor_list(card, nr_of_playback_buffers, output_stream);
-
-        D(bug("[HDAudio] IRQ's received was %d\n", z));
+        card->mix_buffer = NULL;
     }
 
     if((flags & AHISF_RECORD) && card->is_recording) {
-        struct Stream *input_stream = &(card->streams[0]);
-        outl_clearbits(HD_SD_CONTROL_STREAM_RUN, input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
-
-        card->record_buffer1 = 0;
-        card->record_buffer2 = 0;
-        card->current_record_bytesize = 0;
-
         card->is_recording = FALSE;
 
-        free_buffer_descriptor_list(card, 2, input_stream);
+        hda_stream_stop(card->hda_ctrl, card->input_stream);
+        hda_stream_free(card->hda_ctrl, card->input_stream);
+        card->input_stream = NULL;
+
+        card->record_buffer1 = NULL;
+        card->record_buffer2 = NULL;
+        card->current_record_buffer = NULL;
+        card->current_record_bytesize = 0;
     }
 
     card->current_bytesize = 0;
@@ -447,8 +403,15 @@ IPTR _AHIsub_GetAttr(ULONG attribute,
                      struct DriverBase *AHIsubBase)
 {
     struct HDAudioBase *card_base = (struct HDAudioBase *) AHIsubBase;
-    struct HDAudioChip *card = card_base->driverdatas[0];
+    struct HDAudioChip *card = NULL;
     ULONG i;
+
+    if(AudioCtrl != NULL) {
+        card = (struct HDAudioChip *) AudioCtrl->ahiac_DriverData;
+    }
+    if(card == NULL) {
+        card = card_base->driverdatas[0];
+    }
 
     switch(attribute) {
     case AHIDB_Bits:
@@ -496,10 +459,10 @@ IPTR _AHIsub_GetAttr(ULONG attribute,
         return (IPTR) "HD Audio driver";
 
     case AHIDB_Record:
-        return TRUE;
+        return (card->adc_nid != 0);
 
     case AHIDB_FullDuplex:
-        return TRUE;
+        return (card->adc_nid != 0);
 
     case AHIDB_Realtime:
         return TRUE;
@@ -534,7 +497,7 @@ IPTR _AHIsub_GetAttr(ULONG attribute,
         return (unsigned long)(0x10000 * pow(10.0, card->dac_max_gain / 20.0));
 
     case AHIDB_Inputs:
-        return INPUTS;
+        return (card->adc_nid != 0) ? INPUTS : 0;
 
     case AHIDB_Input:
         return (IPTR) Inputs[argument];
@@ -561,7 +524,14 @@ ULONG _AHIsub_HardwareControl(ULONG attribute,
                               struct DriverBase *AHIsubBase)
 {
     struct HDAudioBase *card_base = (struct HDAudioBase *) AHIsubBase;
-    struct HDAudioChip *card = card_base->driverdatas[0];
+    struct HDAudioChip *card = NULL;
+
+    if(AudioCtrl != NULL) {
+        card = (struct HDAudioChip *) AudioCtrl->ahiac_DriverData;
+    }
+    if(card == NULL) {
+        card = card_base->driverdatas[0];
+    }
 
     switch(attribute) {
     case AHIC_MonitorVolume: {
@@ -622,112 +592,4 @@ ULONG _AHIsub_HardwareControl(ULONG attribute,
     }
 }
 
-
-static BOOL build_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_buffers, ULONG buffer_size,
-        struct Stream *stream)
-{
-    unsigned int entry;
-
-    stream->bdl = pci_alloc_consistent(nr_of_buffers * sizeof(struct BDLE), &(stream->bdl_nonaligned), 128);
-    stream->bdl_nonaligned_addresses = (APTR) AllocVec(nr_of_buffers * 8, MEMF_PUBLIC | MEMF_CLEAR);
-
-    for(entry = 0; entry < nr_of_buffers; entry++) {
-        APTR non_aligned_address = 0;
-        APTR buffer;
-
-        buffer = pci_alloc_consistent(buffer_size, &non_aligned_address, 128);
-
-#if defined(__AROS__) && (__WORDSIZE==64)
-        stream->bdl[entry].lower_address = (ULONG)((IPTR)buffer & 0xFFFFFFFF);
-        stream->bdl[entry].upper_address = (ULONG)(((IPTR)buffer >> 32) & 0xFFFFFFFF);
-#else
-        stream->bdl[entry].lower_address = (ULONG)buffer;
-        stream->bdl[entry].upper_address = 0;
-#endif
-
-        stream->bdl[entry].length = buffer_size;
-        stream->bdl[entry].reserved_ioc = 1;
-
-        stream->bdl_nonaligned_addresses[entry] = non_aligned_address;
-
-        //bug("BDL %d = %lx\n", entry, stream->bdl[entry].lower_address);
-    }
-
-    return TRUE;
-}
-
-
-static void free_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_buffers, struct Stream *stream)
-{
-    unsigned int entry;
-
-    for(entry = 0; entry < nr_of_buffers; entry++) {
-        pci_free_consistent(stream->bdl_nonaligned_addresses[entry]);
-        stream->bdl[entry].lower_address = 0;
-        stream->bdl_nonaligned_addresses[entry] = NULL;
-    }
-
-    pci_free_consistent(stream->bdl_nonaligned);
-    stream->bdl_nonaligned = NULL;
-
-    FreeVec(stream->bdl_nonaligned_addresses);
-    stream->bdl_nonaligned_addresses = NULL;
-}
-
-
-static BOOL stream_reset(struct Stream *stream, struct HDAudioChip *card)
-{
-    int i;
-    UBYTE control;
-
-    outb_clearbits(HD_SD_CONTROL_STREAM_RUN, stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card); // stop stream run
-
-    outb_setbits(0x1C, stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
-    outb_setbits(0x1C, stream->sd_reg_offset + HD_SD_OFFSET_STATUS, card);
-    outb_setbits(0x1, stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card); // stream reset
-
-    for(i = 0; i < 1000; i++) {
-        if((pci_inb(stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card) & 0x1) == 0x1) {
-            break;
-        }
-
-        udelay(100);
-    }
-
-    if(i == 1000) {
-        D(bug("[HDAudio] Stream reset not ok\n"));
-        return FALSE;
-    }
-
-    outb_clearbits(0x1, stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card); // stream reset
-    udelay(10);
-    for(i = 0; i < 1000; i++) {
-        if((pci_inb(stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card) & 0x1) == 0x0) {
-            break;
-        }
-
-        udelay(100);
-    }
-
-    if(i == 1000) {
-        D(bug("[HDAudio] Stream reset 2 not ok\n"));
-        return FALSE;
-    }
-
-    outb_clearbits(HD_SD_CONTROL_STREAM_RUN, stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card); // stop stream run
-
-    control = pci_inb(stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
-    if((control & 0x1) == 1) {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-
-void set_converter_format(struct HDAudioChip *card, UBYTE nid)
-{
-    send_command_4(card->codecnr, nid, VERB_SET_CONVERTER_FORMAT, (1 << 14) | (0x3 << 4) | 1,
-                   card); // 44.1kHz 24-bits stereo
-}
 

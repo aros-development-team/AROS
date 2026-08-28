@@ -76,6 +76,7 @@
 static uint64_t *pgd;
 static uint64_t *pud;
 static uint64_t *pmd;
+static uint64_t *pmd_hi;
 
 void mmu_init(void)
 {
@@ -84,6 +85,7 @@ void mmu_init(void)
     pgd = (uint64_t *)BOOTMEMADDR(bm_pgd);
     pud = (uint64_t *)BOOTMEMADDR(bm_pud);
     pmd = (uint64_t *)BOOTMEMADDR(bm_pmd);
+    pmd_hi = (uint64_t *)BOOTMEMADDR(bm_pmd_hi);
 
     /* Clear all page table levels */
     for (i = 0; i < 512; i++)
@@ -96,6 +98,9 @@ void mmu_init(void)
     for (i = 0; i < 2048; i++)
         pmd[i] = 0;
 
+    for (i = 0; i < 512; i++)
+        pmd_hi[i] = 0;
+
     /*
      * Set up the page table hierarchy:
      * PGD[0] -> PUD (covers first 512GB, only first entry used)
@@ -103,6 +108,8 @@ void mmu_init(void)
      * PUD[1] -> PMD page 1 (covers 0x40000000 - 0x7FFFFFFF, 1GB)
      * PUD[2] -> PMD page 2 (covers 0x80000000 - 0xBFFFFFFF, 1GB)
      * PUD[3] -> PMD page 3 (covers 0xC0000000 - 0xFFFFFFFF, 1GB)
+     * PUD[24] -> PMD high page (0x600000000 - 0x63FFFFFFF, the BCM2711
+     *            PCIe outbound window; unused and harmless on Pi 2/3)
      */
     pgd[0] = (uint64_t)(uintptr_t)pud | DESC_TABLE;
 
@@ -110,6 +117,32 @@ void mmu_init(void)
     pud[1] = (uint64_t)(uintptr_t)&pmd[1 * 512] | DESC_TABLE;
     pud[2] = (uint64_t)(uintptr_t)&pmd[2 * 512] | DESC_TABLE;
     pud[3] = (uint64_t)(uintptr_t)&pmd[3 * 512] | DESC_TABLE;
+    pud[BCM2711_PCIE_WIN_BASE >> 30] = (uint64_t)(uintptr_t)pmd_hi | DESC_TABLE;
+
+    /*
+     * Raspberry Pi 5 (BCM2712): Map BCM2712 peripheral space (0x107C000000)
+     * and RP1 PCIe peripheral window (0x1F00000000) as 1GB device blocks.
+     */
+    pud[0x107C000000UL >> 30] = DESC_BLOCK | (0x1040000000UL) |
+                                 ATTR_DEVICE | ATTR_AF | ATTR_AP_RW_EL1 |
+                                 ATTR_SH_NON | ATTR_PXN | ATTR_UXN;
+    pud[0x1F00000000UL >> 30] = DESC_BLOCK | (0x1F00000000UL) |
+                                 ATTR_DEVICE | ATTR_AF | ATTR_AP_RW_EL1 |
+                                 ATTR_SH_NON | ATTR_PXN | ATTR_UXN;
+}
+
+/*
+ * Return the level-2 slot for a virtual address, or NULL if the address
+ * is outside the translated ranges (first 4GB + the PCIe window).
+ */
+static uint64_t *mmu_slot(uintptr_t virt)
+{
+    if (virt < 0x100000000UL)
+        return &pmd[virt >> 21];
+    if (virt >= BCM2711_PCIE_WIN_BASE &&
+        virt < BCM2711_PCIE_WIN_BASE + BCM2711_PCIE_WIN_SIZE)
+        return &pmd_hi[(virt - BCM2711_PCIE_WIN_BASE) >> 21];
+    return (uint64_t *)0;
 }
 
 void mmu_load(void)
@@ -119,6 +152,7 @@ void mmu_load(void)
     aarch64_flush_cache((uintptr_t)pgd, PGD_SIZE);
     aarch64_flush_cache((uintptr_t)pud, PUD_SIZE);
     aarch64_flush_cache((uintptr_t)pmd, PMD_SIZE);
+    aarch64_flush_cache((uintptr_t)pmd_hi, PMD_HI_SIZE);
 
     /* Set MAIR_EL1 */
     tmp = MAIR_VALUE;
@@ -126,14 +160,16 @@ void mmu_load(void)
 
     /*
      * Set TCR_EL1:
-     *   T0SZ = 32  (32-bit VA space = 4GB, bits [5:0])
+     *   T0SZ = 29  (35-bit VA space = 32GB, bits [5:0]; reaches the BCM2711
+     *               PCIe outbound window at 0x6_0000_0000. Lookup still
+     *               starts at level 1 for T0SZ 25-33 with a 4KB granule.)
      *   IRGN0 = 01 (Inner Write-Back Write-Allocate Cacheable, bits [9:8])
      *   ORGN0 = 01 (Outer Write-Back Write-Allocate Cacheable, bits [11:10])
      *   SH0 = 11   (Inner Shareable, bits [13:12])
      *   TG0 = 00   (4KB granule, bits [15:14])
      *   IPS = 001   (36-bit physical address space, bits [34:32])
      */
-    tmp = (32UL << 0)       /* T0SZ = 32 -> 4GB VA space */
+    tmp = (29UL << 0)       /* T0SZ = 29 -> 32GB VA space */
         | (0x1UL << 8)      /* IRGN0 = 01 */
         | (0x1UL << 10)     /* ORGN0 = 01 */
         | (0x3UL << 12)     /* SH0 = 11 (inner shareable) */
@@ -147,7 +183,7 @@ void mmu_load(void)
 
     /*
      * Set TTBR0_EL1 to the Level 1 (PUD) table.
-     * With T0SZ=32 (32-bit VA) and 4KB granule, the initial lookup
+     * With T0SZ=29 (35-bit VA) and 4KB granule, the initial lookup
      * level is 1, so TTBR0 must point to the Level 1 table directly.
      * Level 0 (PGD) is not used.
      */
@@ -180,9 +216,9 @@ void mmu_unmap_section(uintptr_t virt, uintptr_t length)
 
     while (start < end)
     {
-        uint32_t idx = start >> 21; /* 2MB per entry */
-        if (idx < 2048)
-            pmd[idx] = 0;
+        uint64_t *slot = mmu_slot(start);
+        if (slot)
+            *slot = 0;
         start += 2*1024*1024UL;
     }
 }
@@ -204,7 +240,7 @@ void mmu_map_section(uintptr_t phys, uintptr_t virt, uintptr_t length, int norma
     uintptr_t start = virt & ~(2*1024*1024UL - 1);
     uintptr_t end = (virt + length + 2*1024*1024UL - 1) & ~(2*1024*1024UL - 1);
     uintptr_t count = (end - start) >> 21;
-    uint32_t idx = start >> 21;
+    uintptr_t va = start;
     uintptr_t pa = phys >> 21;
 
     DMMU(kprintf("[BOOT] MMU map %p:%p->%p:%p, normal=%d, cacheable=%d, ap=%x, tex=%x\n",
@@ -243,10 +279,13 @@ void mmu_map_section(uintptr_t phys, uintptr_t virt, uintptr_t length, int norma
 
         desc |= (pa << 21);
 
-        if (idx < 2048)
-            pmd[idx] = desc;
+        {
+            uint64_t *slot = mmu_slot(va);
+            if (slot)
+                *slot = desc;
+        }
 
         pa++;
-        idx++;
+        va += 2*1024*1024UL;
     }
 }

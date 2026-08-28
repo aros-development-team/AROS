@@ -1,0 +1,24 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-bluetooth-btclass-includes :         \
+#MM     kernel-exec-includes                    \
+#MM     kernel-utility-includes                 \
+#MM     includes-copy
+#MM- kernel-bluetooth-btclass : linklibs
+
+# Bluetooth class libraries (SYS:Classes/Bluetooth)
+#MM- kernel-bluetooth-classes :                 \
+#MM     kernel-bluetooth-classes-bthid             \
+#MM     kernel-bluetooth-classes-btserial          \
+#MM     kernel-bluetooth-classes-btpan
+
+#MM kernel-bluetooth-classes-clean :            \
+#MM     kernel-bluetooth-classes-bthid-clean
+
+.PHONY: kernel-bluetooth-classes
+.PHONY: kernel-bluetooth-classes-clean
+
+%build_module_abi mmake=kernel-bluetooth-btclass \
+    modname=btclass modtype=library
+
+%common

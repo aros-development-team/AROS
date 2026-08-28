@@ -30,6 +30,9 @@ static LONG _rand(struct NepHidBase *nh)
 /* /// "Lib Stuff" */
 const STRPTR GM_UNIQUENAME(libname) = MOD_NAME_STRING;
 
+/* One shutdown requester at a time, however many keyboards are attached */
+BOOL GM_UNIQUENAME(powerkeybusy) = FALSE;
+
 //#define LowLevelBase nh->nh_LowLevelBase
 
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
@@ -6310,6 +6313,20 @@ BOOL nDoAction(struct NepClassHid *nch, struct NepHidAction *nha, struct NepHidI
         }
 
         case HUA_EXTRAWKEY:
+            /*
+             * The power key, whichever page it came in on - the map sends
+             * System Power Down, Keyboard Power and Consumer Power all to
+             * 0x5e.
+             */
+            if((nha->nha_RawKey == 0x5e) && !GM_UNIQUENAME(powerkeybusy))
+            {
+                GM_UNIQUENAME(powerkeybusy) = TRUE;
+                if(!psdSpawnSubTask(MOD_NAME_STRING " Power Key",
+                                    GM_UNIQUENAME(nPowerKeyTask), NULL))
+                {
+                    GM_UNIQUENAME(powerkeybusy) = FALSE;
+                }
+            }
 #if 0 // FIXME looks like AROS does not support this (yet?)
             nch->nch_FakeEvent.ie_Class = IECLASS_EXTRAWKEY;
             nch->nch_FakeEvent.ie_SubClass = 0;
@@ -7466,4 +7483,39 @@ LONG nEasyRequestA(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, RAWARG pa
     es.es_GadgetFormat = gadgets;
     return(EasyRequestArgs(NULL, &es, NULL, params));
 }
+/* \\\ */
+
+/* /// "nPowerKeyTask()" */
+#undef IntuitionBase
+#define IntuitionBase pwrIntBase
+
+AROS_UFH0(void, GM_UNIQUENAME(nPowerKeyTask))
+{
+    AROS_USERFUNC_INIT
+
+    struct Library *pwrIntBase;
+    struct EasyStruct es;
+    LONG res = 0;
+
+    if((pwrIntBase = OpenLibrary("intuition.library", 39)))
+    {
+        es.es_StructSize = sizeof(struct EasyStruct);
+        es.es_Flags = 0;
+        es.es_Title = GM_UNIQUENAME(libname);
+        es.es_TextFormat = "Shut down the system?";
+        es.es_GadgetFormat = "Shut Down|Cancel";
+
+        res = EasyRequestArgs(NULL, &es, NULL, NULL);
+        CloseLibrary(pwrIntBase);
+    }
+
+    GM_UNIQUENAME(powerkeybusy) = FALSE;
+
+    if(res)
+        ShutdownA(SD_ACTION_POWEROFF);
+
+    AROS_USERFUNC_EXIT
+}
+
+#undef IntuitionBase
 /* \\\ */

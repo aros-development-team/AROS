@@ -10,22 +10,20 @@
 #ifdef KERNELIRQ_NEEDSCONTROLLERS
 #include <inttypes.h>
 
+#include <kernel_irqtypes.h>
+
 /* Interrupt controller definitions ... */
 
 struct IntrInstance;
 
-typedef UWORD   icid_t;     /* UWORD: supports GSI numbers > 255 on large IOAPIC systems */
-typedef UWORD   icintrid_t;
-
-#define ICINTR_ICID(icintr)     ((icintr >> 8) & 0xFF)
-#define ICINTR_INST(icintr)     (icintr & 0xFF)
-
 /*
  * Details:
- * 
+ *
  * .ln_Node = "Controller Type" Name - set by the "driver".
- * .ln_Type = icid_t - value filled in by/returned from krnAddInterruptController.
  * .ln_Pri = use count - value filled in by/returned from krnAddInterruptController.
+ *
+ * The id lives in ic_Id, not in ln_Type: ln_Type is a UBYTE by the exec ABI,
+ * and on a target with KRN_ICID_BITS > 8 it cannot hold the value.
 */
 struct IntrController
 {
@@ -34,17 +32,18 @@ struct IntrController
     ULONG        ic_Type;                                                     /* IC drivers private "type"                              */
     ULONG        ic_Flags;
     APTR        ic_Private;
+    icid_t      ic_Id;                                                        /* assigned by/returned from krnAddInterruptController     */
     icid_t      (*ic_Register)(struct KernelBase *);                          /* one time initialization called during Add              */
-    BOOL        (*ic_Init)(struct KernelBase *, icid_t);                      /*                                                        */
-    BOOL        (*ic_IntrEnable)(APTR, icid_t, icid_t);
-    BOOL        (*ic_IntrDisable)(APTR, icid_t, icid_t);
-    BOOL        (*ic_IntrAck)(APTR, icid_t, icid_t);
+    BOOL        (*ic_Init)(struct KernelBase *, icinstid_t);                  /* passed the number of instances to bring up             */
+    BOOL        (*ic_IntrEnable)(APTR, icinstid_t, irqid_t);
+    BOOL        (*ic_IntrDisable)(APTR, icinstid_t, irqid_t);
+    BOOL        (*ic_IntrAck)(APTR, icinstid_t, irqid_t);
 };
 
 struct IntrMapping
 {
     struct Node im_Node;
-    UWORD       im_DeviceIRQ;                                                   /* device IRQ as used by KrnAddIRQHandler()             */
+    irqid_t     im_DeviceIRQ;                                                   /* device IRQ as used by KrnAddIRQHandler()             */
     ULONG       im_Int;                                                         /* controller specific hardware interrupt to use        */
     ULONG       im_CPU;                                                         /* target CPU for interrupt delivery                    */
     UBYTE       im_Polarity;                                                    /* 0 = Default, 1 = HIGH, 2 = LOW                       */
@@ -65,7 +64,7 @@ static inline struct IntrController *krnGetInterruptController(struct KernelBase
     struct IntrController *intContr;
     ForeachNode(&KernelBase->kb_ICList, intContr)
     {
-        if (intContr->ic_Node.ln_Type == icid)
+        if (intContr->ic_Id == icid)
         {
             return intContr;
         }
@@ -77,8 +76,8 @@ static inline struct IntrController *krnGetInterruptController(struct KernelBase
 icintrid_t krnAddInterruptController(struct KernelBase *, struct IntrController *);
 struct IntrController *krnFindInterruptController(struct KernelBase *, ULONG);
 int krnInitInterruptControllers(struct KernelBase *);
-BOOL krnInitInterrupt(struct KernelBase *, icid_t, icid_t, icid_t);
-struct IntrMapping *krnInterruptMapping(struct KernelBase *, icid_t);
+BOOL krnInitInterrupt(struct KernelBase *, irqid_t, icid_t, icinstid_t);
+struct IntrMapping *krnInterruptMapping(struct KernelBase *, irqid_t);
 struct IntrMapping *krnInterruptMapped(struct KernelBase *, ULONG);
 
 #endif /* KERNELIRQ_NEEDSCONTROLLERS */

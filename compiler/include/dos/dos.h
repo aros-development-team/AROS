@@ -2,7 +2,7 @@
 #define DOS_DOS_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic DOS structures and constants
@@ -136,6 +136,7 @@ struct FileInfoBlock32
 #define FIBB_ARCHIVE     4  /* File was archived (not used by OS). */
 #define FIBB_PURE        5  /* Make program resident on execution. */
 #define FIBB_SCRIPT      6  /* File is a script (DOS or ARexx). */
+#define FIBB_HOLD        7  /* Make program resident at boot ("H" bit). */
 /* Flag number 7 is not defined. It used to describe different conditions
    in different revisions of AmigaOS and was also misused as hidden flag.
    Because of this confusion, this flag should not be used! */
@@ -157,6 +158,7 @@ struct FileInfoBlock32
 #define FIBF_ARCHIVE     (1<<FIBB_ARCHIVE)
 #define FIBF_PURE        (1<<FIBB_PURE)
 #define FIBF_SCRIPT      (1<<FIBB_SCRIPT)
+#define FIBF_HOLD        (1<<FIBB_HOLD)
 #define FIBF_GRP_DELETE  (1<<FIBB_GRP_DELETE)
 #define FIBF_GRP_EXECUTE (1<<FIBB_GRP_EXECUTE)
 #define FIBF_GRP_WRITE   (1<<FIBB_GRP_WRITE)

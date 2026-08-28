@@ -7,6 +7,9 @@
 
 #include <config.h>
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <devices/ahi.h>
 #include <dos/dostags.h>
 #include <exec/memory.h>
@@ -90,6 +93,20 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, s
 
 void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
 {
+    struct RPiPWMBase *RPiPWMBase = (struct RPiPWMBase *) AHIsubBase;
+
+    /*
+     * Where the bias finally comes down - AHIsub_Stop leaves it standing so
+     * start/stop costs no PWEN edges. Ramp to an idle pin's level first, or
+     * the disable is heard.
+     */
+    if (RPiPWMBase->bias_up) {
+        pwm_ramp_dc(RPiPWMBase->periiobase, RPiPWMBase->bias_range / 2, 0);
+        pwm_stop(RPiPWMBase->periiobase);
+        pwm_clock_stop(AHIsubBase, RPiPWMBase->periiobase);
+        RPiPWMBase->bias_up = FALSE;
+    }
+
     if (AudioCtrl->ahiac_DriverData != NULL) {
         if (dd->dma_channel >= 0)
             DMAFreeChannel(dd->dma_channel);
@@ -151,7 +168,7 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
          * 1024 at +1.7%).
          */
         {
-            ULONG best_ppm = ~0UL;
+            ULONG best_ppm = ~0U;
             ULONG R;
 
             dd->pwm_range = PWM_AUDIO_RANGE;
@@ -190,11 +207,21 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
         if (dd->mixbuffer == NULL)
             return AHIE_NOMEM;
 
-        /* Allocate DMA buffers (need physical contiguous memory) */
+        /*
+         * DMA buffers. The engine reaches system RAM through the uncached
+         * bus alias, which only covers the first gigabyte, so ask for memory
+         * the alias can express: MEMF_31BIT keeps this out of the high range
+         * a 2GB-or-larger board contributes above 0x40000000.
+         */
         for (i = 0; i < 2; i++) {
-            dd->dmabuf[i] = AllocVec(buf_bytes, MEMF_CLEAR | MEMF_PUBLIC);
+            dd->dmabuf[i] = AllocVec(buf_bytes, MEMF_CLEAR | MEMF_PUBLIC | MEMF_31BIT);
             if (dd->dmabuf[i] == NULL)
                 return AHIE_NOMEM;
+            if (!BCM2708_DMA_ADDRESSABLE(dd->dmabuf[i])) {
+                bug("[RPiPWM] DMA buffer at 0x%p is beyond the engine's reach\n",
+                    dd->dmabuf[i]);
+                return AHIE_NOMEM;
+            }
         }
 
         /*
@@ -203,9 +230,14 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
          * Allocate enough for 2 CBs + alignment padding.
          */
         cb_alloc_size = sizeof(struct BCM2708DMACB) * 2 + 32;
-        cb_raw = AllocVec(cb_alloc_size, MEMF_CLEAR | MEMF_PUBLIC);
+        cb_raw = AllocVec(cb_alloc_size, MEMF_CLEAR | MEMF_PUBLIC | MEMF_31BIT);
         if (cb_raw == NULL)
             return AHIE_NOMEM;
+        if (!BCM2708_DMA_ADDRESSABLE(cb_raw)) {
+            bug("[RPiPWM] DMA control blocks at 0x%p are beyond the engine's reach\n",
+                cb_raw);
+            return AHIE_NOMEM;
+        }
 
         dd->cb_base = (struct BCM2708DMACB *) cb_raw;
 
@@ -226,10 +258,38 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
         CacheClearE(dd->dmabuf[0], buf_bytes, CACRF_ClearD);
         CacheClearE(dd->dmabuf[1], buf_bytes, CACRF_ClearD);
 
-        /* Configure hardware (but don't start DMA yet) */
-        pwm_gpio_setup(dd->periiobase);
-        pwm_clock_setup(AHIsubBase, dd->periiobase, dd->samplerate, dd->pwm_range);
-        pwm_init(dd->periiobase, dd->pwm_range);
+        /*
+         * Configure hardware (but don't start DMA yet). Enabling or disabling
+         * the channels moves the pin whatever the duty - both clicks this
+         * driver used to make - so PWEN is touched once, on the first session,
+         * and the bias stands until AHIsub_FreeAudio. Stopping the clock
+         * freezes the pin too, so an unchanged rate keeps it running.
+         */
+        {
+            ULONG target = dd->samplerate * dd->pwm_range;
+
+            if (RPiPWMBase->bias_up && RPiPWMBase->bias_target != target) {
+                /* A rate change needs the clock stopped, so drop the bias and
+                 * bring it back - the ramps are inaudible, PWEN is not. */
+                pwm_ramp_dc(dd->periiobase, RPiPWMBase->bias_range / 2, 0);
+                pwm_stop(dd->periiobase);
+                RPiPWMBase->bias_up = FALSE;
+            }
+
+            if (!RPiPWMBase->bias_up) {
+                pwm_clock_setup(AHIsubBase, dd->periiobase, dd->samplerate,
+                                dd->pwm_range);
+                pwm_init(dd->periiobase, dd->pwm_range);
+                pwm_gpio_setup(AHIsubBase, dd->periiobase);
+                pwm_ramp_dc(dd->periiobase, 0, dd->pwm_range / 2);
+
+                RPiPWMBase->bias_up = TRUE;
+                RPiPWMBase->bias_target = target;
+            } else
+                pwm_rearm(dd->periiobase, dd->pwm_range);
+
+            RPiPWMBase->bias_range = dd->pwm_range;
+        }
 
         /*
          * Start slave task.
@@ -265,9 +325,24 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
          * The slave has allocated slavesignal and pre-filled both
          * DMA buffers, so IRQ signals won't be lost.
          */
-        dd->irq_handle = KrnAddIRQHandler(BCM_IRQ_DMA0 + dd->dma_channel, dma_irq_handler, dd, SysBase);
+        dd->irq_handle = KrnAddIRQHandler(
+                             BCM2708_DMA_IRQ(dd->periiobase, dd->dma_channel),
+                             dma_irq_handler, dd, SysBase);
+        D(bug("[RPiPWM] DMA channel %u, irq %u, handler %p\n",
+            dd->dma_channel, BCM2708_DMA_IRQ(dd->periiobase, dd->dma_channel),
+            dd->irq_handle));
+
+#if 0   /* Re-measure the PWM DREQ on a new SoC - see dma_probe_dreq(). */
+        dd->dreq = dma_probe_dreq(AHIsubBase, dd, AudioCtrl->ahiac_MixFreq * 2 / 100);
+        dma_build_control_blocks(dd, dd->periiobase);
+        CacheClearE(dd->cb[0], sizeof(struct BCM2708DMACB) * 2, CACRF_ClearD);
+#endif
 
         dma_setup(dd->periiobase, dd->dma_channel, GPU_BUS_ADDR(dd->cb[0]));
+
+        /* The FIFO now holds the same level the data register is transmitting,
+         * so switching the channels over to it is not a step. */
+        pwm_fifo_enable(dd->periiobase);
     }
 
     if (flags & AHISF_RECORD) {
@@ -297,6 +372,14 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverB
     if (flags & AHISF_PLAY) {
         int i;
 
+        /*
+         * Nothing set up: AHIsub_Start calls us defensively on entry and AHI
+         * adds its own call after the application stops. Neither has hardware
+         * to release, and the teardown ramp would spend 64 ms going nowhere.
+         */
+        if (dd->dmabuf[0] == NULL)
+            return;
+
         /* Signal slave task to exit */
         if (dd->slavetask != NULL) {
             Signal((struct Task *) dd->slavetask, SIGBREAKF_CTRL_C);
@@ -309,11 +392,25 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverB
             dd->irq_handle = NULL;
         }
 
-        /* Stop hardware */
-        dma_stop(dd->periiobase, dd->dma_channel);
-        pwm_stop(dd->periiobase);
-        pwm_clock_stop(AHIsubBase, dd->periiobase);
-        pwm_gpio_restore(dd->periiobase);
+        /*
+         * Teardown mirrors startup: take over at the level actually being
+         * transmitted - jumping from a loud sample to anywhere else is itself
+         * the click you hear closing a player mid-note - then walk it down.
+         */
+        {
+            ULONG level = dma_current_level(dd);
+
+            /*
+             * Off the FIFO *before* stopping the DMA: the other way round,
+             * dma_stop()'s settling delays outlast the ~180us the FIFO holds,
+             * so the channels read it empty and the output drops out - GAPO1/2
+             * in STA, and a click. pwm_rearm() empties the FIFO next session.
+             * The block stays enabled and clocked; PWEN is a click of its own.
+             */
+            pwm_dat_hold(dd->periiobase, level);
+            dma_stop(dd->periiobase, dd->dma_channel);
+            pwm_ramp_dc(dd->periiobase, level, dd->pwm_range / 2);
+        }
 
         dd->slavesignal = -1;
 

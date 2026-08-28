@@ -49,6 +49,15 @@ pointer, resolver state, and a private timer. A single `MasterSocketBase` tracks
 open count for expunge. Closing a base closes all sockets it still owns (`__CloseSocket`), which
 may block for `SO_LINGER`.
 
+Descriptors are also reachable through **`fd.library`**: `api/amiga_fdhooks.c` registers
+`read`/`write`/`close`/`dup` hooks for `FD_OWNER_BSDSOCKET`, so a `posixc` program (or any other
+`fd.library` consumer) can operate on a socket descriptor without knowing it is a socket. Each
+descriptor's `fd.library` data is the `struct socket *`, and `so->so_pgid` records the owning
+`SocketBase`. A blocking hook invoked by a task that has **no** base of its own — e.g. a `posixc`
+worker thread using a socket descriptor another task created — gives that task its own base (via
+`OpenLibrary`) and uses it as the sleep context, so the operation sleeps on the **caller's** base
+rather than the socket owner's. §3.2 explains why that is required.
+
 The API layer (`amiga_syscalls.c`) implements the Berkeley calls: each builds the necessary
 `mbuf`s (for example, an address `mbuf` with `m_len = addrlen` and `sa_len` set) and invokes the
 socket-layer entry points (`sobind`, `soconnect`, `sosend`, `soreceive`, …), which in turn dispatch
@@ -73,13 +82,24 @@ nesting depth.
 - `tsleep(p, chan, …)` takes the caller's `SocketBase p`, whose private `timerPort`/`tsleep_timer`
   provide the timeout. It must be called holding `syscall_semaphore`; it releases both the `spl`
   level and `syscall_semaphore` around the actual wait and reacquires them on return.
+- The sleep state — `p_wchan`, the `p_sleep_link` queue node, and the wakeup signal — lives **in the
+  base**, so a base may hold at most **one sleeper at a time**. Two tasks sleeping on the same base
+  concurrently would enter it on the `sleep_queue` twice and corrupt the queue (a later `wakeup`
+  then walks a bad link). A task therefore always sleeps on **its own** base, never one it merely
+  borrowed: in particular the `fd.library` hooks (§3.1) use the caller's base for a blocking
+  operation, not the socket owner's (`so->so_pgid`), so that `wakeup` also signals the task that is
+  actually waiting.
 - The daemon task itself never `tsleep`s (a `DIAGNOSTIC` guard enforces this).
 
 ### 3.3 Memory management
 
 **mbufs** (`uipc_mbuf.c`) back all packet and address storage. Allocation is bounded by a
-compile-time configuration (`mbconf`): a memory cap of **4 MB** (1 MB on m68k) and a **2 KB**
-cluster size, with mbufs and clusters allocated in chunks. Free lists are `splimp`-protected.
+configuration (`mbconf`): a base memory cap of **4 MB** (1 MB on m68k) and a **2 KB** cluster size,
+with mbufs and clusters allocated in chunks. Free lists are `splimp`-protected. When an interface
+comes up advertising a large MTU, `mb_autosize` raises the cluster cap in proportion to the clusters
+a frame of that MTU needs — grow-only, and clamped to a fraction of free memory — so a jumbo
+interface has enough clusters to keep the pipe full. `m_valid` (a slot-alignment check against the
+pool chunks) and the length bounds on `m_prepend`/`m_adj` guard against malformed mbuf chains.
 
 > **`M_WAIT` semantics.** The port does not honour the blocking `M_WAIT`/`M_WAITOK` flag —
 > allocation returns `NULL` once the mbuf cap or the general pool is exhausted, unlike stock BSD
@@ -348,7 +368,15 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
 - **Interfaces** are managed in `if.c`; `if_loop.c` provides the loopback `lo0`.
 - **Link layer** is SANA-II. `if_sana.c` binds each configured interface to a SANA-II device
   (`OpenDevice`, `S2_DEVICEQUERY`/`S2_GETSTATIONADDRESS`, buffer-management callbacks), maps
-  SANA-II wire types to RFC 1573 interface types, and drives TX/RX. `sana2arp.c` implements IPv4
+  SANA-II wire types to RFC 1573 interface types, and drives TX/RX. The interface MTU is taken from
+  the device's `S2_DEVICEQUERY` rather than assumed to be 1500, so a jumbo-capable driver (tested to
+  9000) is used at its advertised size. It can be changed at runtime with `SIOCSIFMTU`
+  (`sana_ioctl`, bounded below by 1280 and above by that device maximum, since the driver's frame
+  buffers were sized at init). Oversize sends are rejected with `S2ERR_MTU_EXCEEDED`, and
+  the mbuf cap is grown for the MTU (§3.3). Transmit is **decoupled** from the caller: instead of
+  issuing a SANA-II write inline, `sana_output` enqueues the packet on `if_snd` and `sana_start`
+  feeds queued packets into the pool of write requests as earlier ones complete, so a burst of sends
+  cannot drain the request or cluster pool and wedge the interface. `sana2arp.c` implements IPv4
   ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp.table` under
   `ARPTAB_LOCK`).
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
@@ -373,8 +401,9 @@ Properties the implementation provides:
   (`udp6_usrreq.c`), TCP option parsing bounds each option length against the remaining bytes
   (`tcp_dooptions`), and the resolver bounds DNS answer parsing (`getanswer`: `MAXADDRS`/`eom`
   guards) and query construction (`res_mkquery`).
-- **IPv6 fragmentation** allocates each output fragment from an mbuf **cluster** (`MCLGET`) sized
-  for the header plus payload; payload is never copied into a bare `MHLEN` mbuf.
+- **IPv6 fragmentation** builds each output fragment as a header mbuf with the fragment payload
+  chained on via `m_copy`, so a fragment is not limited to one cluster and jumbo-MTU IPv6 fragments
+  are emitted correctly; payload is never copied into a bare `MHLEN` mbuf.
 
 > **Single-lock dependency.** Several data structures are safe only under the global
 > `syscall_semaphore` (§3.2) — for example `radix.c`'s shared `maskedKey` scratch and the cluster
@@ -390,9 +419,6 @@ Properties the implementation provides:
 - **Non-blocking allocation.** `M_WAIT`/`M_WAITOK` do not block (§3.3); allocations fail with
   `ENOBUFS` once the mbuf cap (4 MB; 1 MB on m68k) or the general pool is exhausted rather than
   waiting for memory to be freed.
-- **IPv6 output fragmentation is bounded by the cluster size.** Each fragment is built in a single
-  ~2 KB mbuf cluster, so a fragment's payload cannot exceed `MCLBYTES`. This covers standard link
-  MTUs (Ethernet/SANA-II) but not jumbo-frame IPv6.
 - **x86_64 checksum requires SSE2.** Only the SSE2 checksum is compiled on x86_64, with no scalar
   fallback. SSE2 is baseline on all x86_64 CPUs, so this is not a practical restriction.
 - **Multicast is host-only.** IGMP (IPv4) and MLD (IPv6) implement the group-member role only —

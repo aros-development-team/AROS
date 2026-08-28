@@ -46,17 +46,17 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
     IPTR                    numentries;
     OOP_Object              *src_colmap;
     APTR                    psrc_colmap = &src_colmap;
-    
+
     data = OOP_INST_DATA(cl, o);
-    
+
     /* We have to copy the colormap into the framebuffer bitmap */
     OOP_GetAttr(src_bm, aHidd_BitMap_ColorMap, (IPTR *)psrc_colmap);
     OOP_GetAttr(src_colmap, aHidd_ColorMap_NumEntries, &numentries);
-        
+
     for (i = 0; i < numentries; i ++)
     {
         HIDDT_Color col;
-        
+
         HIDD_CM_GetColor(src_colmap, i, &col);
         HIDD_BM_SetColors(dst_bm, &col, i, 1);
     }
@@ -110,9 +110,13 @@ static void cursor_Erase(OOP_Class *cl, OOP_Object *o)
     if (!data->cursor_drawn || !data->cursor_bm || !data->cursor_backup)
         return;
 
-    HIDD_Gfx_CopyBox(data->gfxhidd, data->cursor_backup, 0, 0,
-                     data->cursor_bm, data->cursor_backupX, data->cursor_backupY,
-                     data->cursor_backupW, data->cursor_backupH, data->gc);
+    /* Raw native-format restore: a colour-space CopyBox on a palettized
+       target degrades to a nearest-colour search per pixel */
+    HIDD_BM_PutImage(data->cursor_bm, data->gc, data->cursor_backup,
+                     data->cursor_backupW * data->cursor_backup_bpp,
+                     data->cursor_backupX, data->cursor_backupY,
+                     data->cursor_backupW, data->cursor_backupH,
+                     vHidd_StdPixFmt_Native);
     HIDD_BM_UpdateRect(data->cursor_bm, data->cursor_backupX, data->cursor_backupY,
                        data->cursor_backupW, data->cursor_backupH);
 
@@ -169,8 +173,9 @@ static void cursor_Draw(OOP_Class *cl, OOP_Object *o)
         return;
 
     /* Save the pixels we are about to overwrite */
-    HIDD_Gfx_CopyBox(data->gfxhidd, data->cursor_bm, x, y,
-                     data->cursor_backup, 0, 0, w, h, data->gc);
+    HIDD_BM_GetImage(data->cursor_bm, data->cursor_backup,
+                     w * data->cursor_backup_bpp,
+                     x, y, w, h, vHidd_StdPixFmt_Native);
     data->cursor_backupX = x;
     data->cursor_backupY = y;
     data->cursor_backupW = w;
@@ -205,24 +210,26 @@ static BOOL cursor_AllocBackup(OOP_Class *cl, OOP_Object *o)
 {
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
-    struct TagItem bmtags[] =
-    {
-        {aHidd_BitMap_Width , data->cursor_w     },
-        {aHidd_BitMap_Height, data->cursor_h     },
-        {aHidd_BitMap_Friend, (IPTR)data->cursor_bm},
-        {TAG_DONE           , 0                  }
-    };
+    OOP_Object *pf = NULL;
+    IPTR bpp = 0;
 
     if (data->cursor_backup)
     {
-        OOP_DisposeObject(data->cursor_backup);
+        FreeVec(data->cursor_backup);
         data->cursor_backup = NULL;
     }
 
     if (!data->cursor_bm || !data->cursor_w || !data->cursor_h)
         return FALSE;
 
-    data->cursor_backup = HIDD_Display_CreateObject(o, CSD(cl)->bitmapclass, bmtags);
+    OOP_GetAttr(data->cursor_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    if (pf)
+        OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bpp);
+    if (!bpp)
+        return FALSE;
+
+    data->cursor_backup_bpp = bpp;
+    data->cursor_backup = AllocVec(data->cursor_w * data->cursor_h * bpp, MEMF_ANY);
     return (data->cursor_backup != NULL);
 }
 
@@ -409,6 +416,12 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             case aoHidd_Display_DMEnumClass:
                 dmenumclass = (OOP_Class *)tag->ti_Data;
                 break;
+            case aoHidd_Display_ConnectorType:
+                data->connectortype = tag->ti_Data;
+                break;
+            case aoHidd_Display_ConnectorID:
+                data->connectorid = tag->ti_Data;
+                break;
             }
         }
 
@@ -452,7 +465,7 @@ VOID Display__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (NULL != data->dmenum)
         OOP_DisposeObject(data->dmenum);
     if (NULL != data->cursor_backup)
-        OOP_DisposeObject(data->cursor_backup);
+        FreeVec(data->cursor_backup);
     if (NULL != data->cursor_argb)
         FreeVec(data->cursor_argb);
 
@@ -487,6 +500,12 @@ VOID Display__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         return;
     case aoHidd_Display_SupportsGamma:
         *msg->storage = 0;
+        return;
+    case aoHidd_Display_ConnectorType:
+        *msg->storage = data->connectortype;
+        return;
+    case aoHidd_Display_ConnectorID:
+        *msg->storage = data->connectorid;
         return;
     case aoHidd_Display_SpriteTypes:
         {
@@ -700,7 +719,7 @@ VOID Display__Hidd_Display__NominalDimensions(OOP_Class *cl, OOP_Object *o, stru
                 should be created using the driver's own class or one of the system classes.
 
                 A typical implementation should pay attention to the following bitmap attributes:
-    
+
                 aHIDD_BitMap_ModeID - If this attribute is supplied, the bitmap needs to be
                               either displayable by this driver, or be a friend of a
                               displayable bitmap. A friend bitmap usually repeats the
@@ -836,23 +855,23 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                     case aoHidd_BitMap_Displayable:
                         displayable = tag->ti_Data;
                         break;
-            
+
                     case aoHidd_BitMap_FrameBuffer:
                         framebuffer = tag->ti_Data;
                         break;
-            
+
                     case aoHidd_BitMap_Width:
                         got_width = TRUE;
                         break;
-            
+
                     case aoHidd_BitMap_Height:
                         got_height = TRUE;
                         break;
-            
+
                     case aoHidd_BitMap_Depth:
                         got_depth = TRUE;
                         break;
-            
+
                     case aoHidd_BitMap_ModeID:
                         /* Make sure it is a valid mode, and retrieve sync/pixelformat data */
                         if (!HIDD_DMEnum_GetMode(data->dmenum, tag->ti_Data, &sync, &pf))
@@ -861,24 +880,24 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                             return NULL;
                         }
                         break;
-            
+
                     case aoHidd_BitMap_Friend:
                         friend_bm = (OOP_Object *)tag->ti_Data;
                         break;
-                        
+
                     case aoHidd_BitMap_PixFmt:
                         D(bug("!!! Gfx::CreateObject: USER IS NOT ALLOWED TO PASS aHidd_BitMap_PixFmt !!!\n"));
                         return NULL;
-            
+
                     case aoHidd_BitMap_StdPixFmt:
                         pixfmt = tag->ti_Data;
                         break;
-            
+
                     case aoHidd_BitMap_ClassPtr:
                         classptr = (OOP_Class *)tag->ti_Data;
                         gotclass = TRUE;
                         break;
-            
+
                     case aoHidd_BitMap_ClassID:
                         classid  = (STRPTR)tag->ti_Data;
                         gotclass = TRUE;
@@ -895,7 +914,7 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                 COPY_BM_TAG(bmtags, 2, Width, friend_bm);
                 got_width = TRUE;
             }
-            
+
             if (!got_height)
             {
                 COPY_BM_TAG(bmtags, 3, Height, friend_bm);
@@ -1202,10 +1221,7 @@ OOP_Object *Display__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHi
         ReleaseSemaphore(&data->fbsem);
 
         return data->framebuffer;
-    }
-
-    if (bm)
-    {
+    } else if (bm) {
         IPTR modeid;
 
         /*
@@ -1234,10 +1250,24 @@ OOP_Object *Display__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHi
      */
     if (oldheight) /* width and height can be zero only together, check one of them */
     {
+        IPTR fbwidth = 0, fbheight = 0;
+
+        /*
+         * The mode switch above may have resized the framebuffer itself.
+         * Clamp to what the framebuffer is now; for a driver whose
+         * framebuffer keeps a fixed size this changes nothing.
+         */
+        OOP_GetAttr(data->framebuffer, aHidd_BitMap_Width, &fbwidth);
+        OOP_GetAttr(data->framebuffer, aHidd_BitMap_Height, &fbheight);
+        if (oldwidth > fbwidth)
+            oldwidth = fbwidth;
+        if (oldheight > fbheight)
+            oldheight = fbheight;
+
         if (newwidth < oldwidth)
             HIDD_BM_FillRect(data->framebuffer, data->gc, newwidth, 0, oldwidth - 1, oldheight - 1);
         if ((newheight < oldheight) && newwidth)
-            HIDD_BM_FillRect(data->framebuffer, data->gc, 0, newheight, newwidth - 1, oldheight);
+            HIDD_BM_FillRect(data->framebuffer, data->gc, 0, newheight, newwidth - 1, oldheight - 1);
     }
 
     /* Remember new displayed bitmap */

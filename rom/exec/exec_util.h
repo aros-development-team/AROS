@@ -54,7 +54,7 @@
 
 #ifdef __riscv
 #define PC pc
-#define FP x[4]
+#define FP fp
 #define CALLER_FRAME NULL
 #endif
 
@@ -112,6 +112,11 @@ struct ETask *Exec_FindChild(ULONG id, struct ExecBase *SysBase);
 struct IntETask *FindETask(struct List *, ULONG id, struct ExecBase *SysBase);
 
 BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase);
+
+#if defined(__AROSEXEC_SMP__)
+void Exec_CancelSignalIPIs(struct Task *task, struct ExecBase *SysBase);
+#define CancelSignalIPIs(t) Exec_CancelSignalIPIs(t,SysBase)
+#endif
 
 STRPTR Alert_AddString(STRPTR dest, CONST_STRPTR src);
 STRPTR Alert_GetTitle(ULONG alertNum);

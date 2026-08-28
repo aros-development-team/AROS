@@ -5,6 +5,7 @@
 #include <exec/interrupts.h>
 #include <devices/ahi.h>
 
+#include <hidd/hda.h>
 
 /** Make the common library code initialize a global SysBase for us.
     It's required for hwaccess.c */
@@ -34,35 +35,6 @@ struct HDAudioBase {
 #define DRIVERBASE_SIZEOF (sizeof (struct HDAudioBase))
 
 #define RECORD_BUFFER_SAMPLES     1024
-#define RECORD_BUFFER_SIZE_VALUE  ADCBS_BUFSIZE_4096
-
-#define HDAADDR(name) \
-    union \
-    { \
-        UQUAD name; \
-        struct \
-        { \
-            ULONG lower_ ## name; \
-            ULONG upper_ ## name; \
-        }; \
-    };
-
-struct BDLE { // Buffer Descriptor List (3.6.2)
-    HDAADDR(address);
-    ULONG length; // in bytes
-    ULONG reserved_ioc; // bit 0 is Interrupt on Completion
-};
-
-struct Stream {
-    struct BDLE *bdl;
-    APTR bdl_nonaligned;
-    APTR *bdl_nonaligned_addresses;
-
-    ULONG sd_reg_offset; // 3.3.35 offset 0x80 + (ISS) * 0x20
-    ULONG index;
-    ULONG tag; // index + 1
-    UWORD fifo_size;
-};
 
 
 // Verb - Set Converter Format (Verb ID=2h)
@@ -76,30 +48,20 @@ struct Freq {
 
 
 struct HDAudioChip {
-    struct PCIDevice *pci_dev;
-    APTR iobase;
-    unsigned long length;
-    unsigned short model;
+    /** The hdaudio.hidd controller driving this card */
+    APTR hda_ctrl;
+
     int flip;
     int recflip;
-    unsigned char chiprev;
 
     UWORD codecbits;
     UWORD codecnr;
 
-    ULONG *corb;
-    ULONG corb_entries;
-    ULONG *rirb;
-    ULONG rirb_entries;
-    ULONG rirb_rp; // software read pointer
-    LONG rirb_irq;
-
-    APTR dma_position_buffer;
-
-    struct Stream *streams;
-    UBYTE nr_of_streams;
-    UBYTE nr_of_input_streams;
-    UBYTE nr_of_output_streams;
+    /** Streams in use while playing/recording */
+    APTR output_stream;
+    APTR input_stream;
+    struct HDA_StreamInfo output_info;
+    struct HDA_StreamInfo input_info;
 
     // important node IDs
     UBYTE function_group;
@@ -140,10 +102,7 @@ struct HDAudioChip {
 
     UBYTE eapd_gpio_mask;
 
-    /*** PCI/Card initialization progress *********************************/
-
-    /** TRUE if bus mastering is activated */
-    BOOL                pci_master_enabled;
+    /*** Card initialization progress *****************************************/
 
     /** TRUE if the Card chip has been initialized */
     BOOL                card_initialized;
@@ -166,32 +125,21 @@ struct HDAudioChip {
     /** TRUE when recording is enabled */
     BOOL                is_recording;
 
-    /** The main (hardware) interrupt */
-    struct Interrupt    interrupt;
-
-    /** TRUE if the hardware interrupt has been added to the PCI subsystem */
-    BOOL                interrupt_added;
-
-    /** The playback software interrupt */
+    /** The playback software interrupt, caused by the hidd on
+        buffer completion */
     struct Interrupt    playback_interrupt;
 
     /** The recording software interrupt */
     struct Interrupt    record_interrupt;
 
-    /** The reset handler */
-    struct Interrupt    reset_handler;
-
-    /** TRUE if the reset handler has been added to the system */
-    BOOL                reset_handler_added;
-
     /*** Card structures **************************************************/
-    HDAADDR(playback_buffer1);
-    HDAADDR(playback_buffer2);
+    APTR playback_buffer1;
+    APTR playback_buffer2;
 
     /*** Playback interrupt variables ****************************************/
 
     /** The mixing buffer (a cyclic buffer filled by AHI) */
-    HDAADDR(mix_buffer);
+    APTR mix_buffer;
 
     /** The length of each playback buffer in sample frames */
     ULONG               current_frames;
@@ -200,18 +148,16 @@ struct HDAudioChip {
     ULONG               current_bytesize;
 
     /** Where (inside the cyclic buffer) we're currently writing */
-    HDAADDR(current_buffer);
+    APTR current_buffer;
 
     /*** Recording interrupt variables ***************************************/
 
     /** The recording buffer (simple double buffering is used */
-    HDAADDR(record_buffer1);
-    HDAADDR(record_buffer2);
-    HDAADDR(record_buffer1_nonaligned);
-    HDAADDR(record_buffer2_nonaligned);
+    APTR record_buffer1;
+    APTR record_buffer2;
 
     /** Were (inside the recording buffer) the current data is */
-    HDAADDR(current_record_buffer);
+    APTR current_record_buffer;
 
     /** The length of each record buffer in sample bytes */
     ULONG               current_record_bytesize;

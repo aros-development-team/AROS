@@ -55,6 +55,7 @@ struct hunk
 struct SRBuffer
 {
     ULONG   srb_FileOffset;
+    ULONG   srb_Len;
     APTR    srb_Buffer;
 };
 
@@ -72,7 +73,7 @@ static int elf_read_block
     D(bug("[ELF Loader] elf_read_block (offset=%d, size=%d)\n", offset, size));
 
     if (size <= LOADSEG_SMALL_READ && (offset >= srb->srb_FileOffset) &&
-            ((offset + size) <= (srb->srb_FileOffset + LOADSEG_SMALL_READ)) &&
+            ((offset + size) <= (srb->srb_FileOffset + srb->srb_Len)) &&
             srb->srb_Buffer != NULL)
     {
         CopyMem(srb->srb_Buffer + (offset - srb->srb_FileOffset), buffer, size);
@@ -85,6 +86,7 @@ static int elf_read_block
 
         if (size <= LOADSEG_SMALL_READ)
         {
+            ULONG total = 0;
             LONG nread;
 
             if (srb->srb_Buffer == NULL)
@@ -95,16 +97,27 @@ static int elf_read_block
                 return 1;
 
             srb->srb_FileOffset = offset;
+            srb->srb_Len = 0;
 
             /*
-             * The buffer is deliberately larger than the request, so a
-             * short read is normal near the end of a small file. Only the
-             * bytes actually asked for have to have arrived - an empty or
-             * truncated file gives fewer, and must not be served from an
-             * uninitialised buffer as though it had succeeded.
+             * The buffer deliberately over-reads, so hitting end-of-file
+             * short of a full buffer is normal. A handler may also return
+             * less than asked mid-file, so keep reading until the buffer
+             * is full or the file ends. Only the bytes that actually
+             * arrived may be served - srb_Len guards the cache above -
+             * and an empty or truncated file must not satisfy the
+             * caller's request from uninitialised memory.
              */
-            nread = ilsRead(file, srb->srb_Buffer, LOADSEG_SMALL_READ);
-            if (nread < (LONG)size)
+            do
+            {
+                nread = ilsRead(file, srb->srb_Buffer + total, LOADSEG_SMALL_READ - total);
+                if (nread < 0)
+                    return 1;
+                total += nread;
+            } while (nread != 0 && total < LOADSEG_SMALL_READ);
+
+            srb->srb_Len = total;
+            if (total < size)
                 return 1;
 
             /* Re-read, now srb will be used */
@@ -1095,6 +1108,75 @@ static int relocate
             case R_RISCV_SET16: *(UWORD *)p = (UWORD)(s + rel->addend);   break;
             case R_RISCV_SET32: *(ULONG *)p = (ULONG)(s + rel->addend);   break;
 
+            /*
+             * ULEB128 label arithmetic (C++ .gcc_except_table call-site
+             * entries). The psABI emits SET immediately followed by SUB at
+             * the same offset to encode a label difference. The pair MUST
+             * be applied as one operation: the field is only sized for the
+             * final difference, so staging the SET's absolute address in it
+             * first would overflow encodings the assembler emitted for the
+             * (small) link-time value.
+             */
+            case R_RISCV_SET_ULEB128:
+            case R_RISCV_SUB_ULEB128:
+            {
+                UBYTE *up = (UBYTE *)p;
+                UQUAD v = 0;
+                int len = 0, shift = 0, n;
+
+                do
+                {
+                    v |= (UQUAD)(up[len] & 0x7F) << shift;
+                    shift += 7;
+                } while (up[len++] & 0x80);
+
+                if (ELF_R_TYPE(rel->info) == R_RISCV_SET_ULEB128)
+                {
+                    v = s + rel->addend;
+
+                    if (i + 1 < numrel)
+                    {
+                        struct relo *rel2 = (struct relo *)(relbase + (i + 1) * entsize);
+
+                        if (ELF_R_TYPE(rel2->info) == R_RISCV_SUB_ULEB128 &&
+                            rel2->offset == rel->offset)
+                        {
+                            struct symbol *sym2 = &symtab[ELF_R_SYM(rel2->info)];
+                            IPTR s2;
+
+                            if (sym2->shindex == SHN_ABS)
+                                s2 = sym2->value;
+                            else
+                            {
+                                ULONG shindex2 = sym2->shindex;
+
+                                if (shindex2 == SHN_XINDEX && symtab_shndx != NULL)
+                                    shindex2 = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(rel2->info)];
+                                s2 = (IPTR)sh[shindex2].addr + sym2->value;
+                            }
+
+                            v -= s2 + rel2->addend;
+                            i++; /* pair consumed */
+                        }
+                    }
+                }
+                else
+                    v -= s + rel->addend; /* unpaired SUB */
+
+                for (n = 0; n < len; n++)
+                {
+                    up[n] = (v & 0x7F) | ((n < len - 1) ? 0x80 : 0);
+                    v >>= 7;
+                }
+                if (v)
+                {
+                    bug("[ELF Loader] ULEB128 relocation overflows its %d byte field\n", len);
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                break;
+            }
+
             case R_RISCV_BRANCH:
             {
                 SIPTR off = s + rel->addend - (IPTR)p;
@@ -1125,6 +1207,21 @@ static int relocate
                 /* auipc + jalr pair */
                 *(ULONG *)p = (*(ULONG *)p & 0x00000FFF) | hi;
                 *((ULONG *)p + 1) = (*((ULONG *)p + 1) & 0x000FFFFF) | (lo << 20);
+
+                /* Diagnostic: decode the pair back and compare, so a
+                 * bad fixup is caught here rather than as a wild jump
+                 * later (an IPrefs boot crash jumped 2.4MB below
+                 * .text through one of these). Silent when correct.
+                 * Temporary - not for staging. */
+                {
+                    SIPTR dec = (SIPTR)(LONG)(*(ULONG *)p & 0xFFFFF000) +
+                                ((SIPTR)(LONG)(*((ULONG *)p + 1) & 0xFFF00000) >> 20);
+
+                    if ((IPTR)p + dec != s + rel->addend)
+                        bug("[ELF Loader] CALL fixup mismatch @ 0x%p: 0x%p != 0x%p ('%s')\n",
+                            p, (APTR)((IPTR)p + dec), (APTR)(s + rel->addend),
+                            (STRPTR)sh[shsymtab->link].addr + sym->name);
+                }
                 break;
             }
 

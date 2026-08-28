@@ -47,11 +47,21 @@
             handle the driver. Valid tags are:
 
             DDRV_BootMode     - A boolean value telling that a boot mode
-                                driver is being added. Boot mode drivers
-                                will automatically shut down on next
-                                AddDisplayDriverA() call, unless
-                                DDRV_KeepBootMode = TRUE is specified.
+                                driver is being added. A boot mode driver
+                                is offered to native drivers as they come
+                                in, through the handover interface (see
+                                <graphics/driver.h>), and is expunged by
+                                the first one that claims its hardware.
                                 Defaults to FALSE.
+            DDRV_HWRanges     - A pointer to a dr_Size-terminated array of
+                                struct DisplayRange, naming the CPU
+                                address ranges this driver writes to - for
+                                a boot mode driver, the firmware
+                                framebuffer it inherited. Without it the
+                                driver is assumed to conflict with every
+                                incoming native driver, which is the
+                                historical DDRV_BootMode behaviour.
+                                Defaults to NULL.
             DDRV_MonitorID    - Starting monitor ID to assign to the driver.
                                 Use it with care. An attempt to add already
                                 existing ID will fail with a DD_ID_EXISTS
@@ -62,11 +72,13 @@
                                 with DDRV_MonitorID tag. This tag is
                                 provided as an aid to support possible
                                 removable display devices. Defaults to 1.
-            DDRV_KeepBootMode - Do not shut down boot mode drivers. Use this
-                                tag if you are 100% sure that your driver
-                                won't conflict with boot mode driver (like
-                                VGA or VESA) and won't attempt to take over
-                                its hardware. Defaults to FALSE.
+            DDRV_KeepBootMode - Do not offer the handover interface to this
+                                driver, so it cannot take a boot mode
+                                driver down. Use this tag if you are 100%
+                                sure that your driver won't conflict with
+                                boot mode drivers (like VGA or VESA) and
+                                won't attempt to take over their hardware.
+                                Defaults to FALSE.
             DDRV_ResultID     - A pointer to a ULONG location where the ID
                                 assigned to your driver will be placed.
                                 Useful if you reserve some ID for future use.
@@ -178,6 +190,7 @@
     cfg->drv_idcnt = 1;
     cfg->drv_idmask = AROS_MONITOR_ID_MASK;
     cfg->drv_flags = 0;
+    cfg->drv_ranges = NULL;
 
     /* First parse parameters */
     while ((tag = NextTagItem(&tstate)))
@@ -201,6 +214,17 @@
                 cfg->drv_flags |= DF_BootMode;
             else
                 cfg->drv_flags &= ~DF_BootMode;
+	    break;
+
+	case DDRV_KeepBootMode:
+	    if (tag->ti_Data)
+	        cfg->drv_flags |= DF_KeepBoot;
+	    else
+	        cfg->drv_flags &= ~DF_KeepBoot;
+	    break;
+
+	case DDRV_HWRanges:
+	    cfg->drv_ranges = (const struct DisplayRange *)tag->ti_Data;
 	    break;
 
 	case DDRV_ResultID:
@@ -255,8 +279,17 @@
     }
 
     /* Now, we are ready to add the driver for the system to find. */
+    CDD(GfxBase)->handover_refused = FALSE;
+
     if ((ret == DD_OK) && !(driver_Setup(cfg, attrs, FALSE, GfxBase)))
-        ret = DD_DRIVER_ERROR;
+    {
+        /*
+         * A driver that asked for the hardware of a boot display it could
+         * not take down is expected to give up rather than share it, so
+         * tell the caller which of the two happened.
+         */
+        ret = CDD(GfxBase)->handover_refused ? DD_IN_USE : DD_DRIVER_ERROR;
+    }
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 

@@ -57,6 +57,7 @@ CFLAGS_NO_FLOAT_STORE                   := @aros_cflags_no_float_store@
 
 # Auto vectorize
 CFLAGS_TREE_VECTORIZE                   := @aros_cflags_tree_vectorize@
+CFLAGS_NO_VECTORIZE                     := @aros_cflags_no_vectorize@
 
 #
 # LTO/Graphite optimization flags
@@ -284,6 +285,7 @@ NOWARN_ENUM_COMPARE                     := @aros_nowarnflags_enum_compare@
 NOWARN_BOOL_COMPARE                     := @aros_nowarnflags_bool_compare@
 NOWARN_SIGN_COMPARE                     := @aros_nowarnflags_sign_compare@
 NOWARN_NONNULL_COMPARE                  := @aros_nowarnflags_nonnull_compare@
+NOWARN_REGISTER                         := @aros_nowarnflags_register@
 NOWARN_OVERFLOW                         := @aros_nowarnflags_overflow@
 NOWARN_STRICT_OVERFLOW                  := @aros_nowarnflags_strict_overflow@
 NOWARN_FORMAT_SECURITY                  := @aros_nowarnflags_format_security@

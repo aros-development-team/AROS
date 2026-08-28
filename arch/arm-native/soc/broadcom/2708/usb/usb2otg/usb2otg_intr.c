@@ -19,31 +19,12 @@
  * INT-pipe activity counters per dev addr (0..7). poll: ScheduleIntTDs
  * assignment; nak: IRQ requeue; comp: completion. Dumped every ~3 s.
  */
-ULONG usb2otg_int_poll_count[8];
-ULONG usb2otg_int_nak_count[8];
-ULONG usb2otg_int_comp_count[8];
-ULONG usb2otg_int_chh_count[8];      /* bare-CHHLTD silent-requeue on INT */
-ULONG usb2otg_int_chh_last_intr[8];  /* most recent intr for that path */
-ULONG usb2otg_int_chh_seen_intr[8];  /* OR of all intr values seen */
-ULONG usb2otg_int_arm_hfnum[8];      /* HFNUM at last INT arm */
-ULONG usb2otg_int_arm_char[8];       /* HCCHAR as armed (ODDFRM visible) */
-ULONG usb2otg_int_hlt_hfnum[8];      /* HFNUM at last bare-CHHLTD halt */
-static ULONG usb2otg_int_stats_ticks = 0;
 
 /* Quarantine/blackout instrumentation — see usb2otg_intern.h. */
-ULONG usb2otg_wd_ticks = 0;
-ULONG usb2otg_quar_set_tick[8];
 
 /* Control-pipe lifecycle: arms (channel), finishes, errors. */
-ULONG usb2otg_ctrl_arm_count = 0;
-ULONG usb2otg_ctrl_fin_count = 0;
-ULONG usb2otg_ctrl_err_count = 0;
-UBYTE usb2otg_ctrl_last_err = 0;
 
 /* Control failure-mode counters — which requeue path ctrl reqs take. */
-ULONG usb2otg_ctrl_nak_requeues = 0;
-ULONG usb2otg_ctrl_chh_requeues = 0;
-ULONG usb2otg_ctrl_xact_retries = 0;
 
 /*
  * Log every channel released between prev_mask and the current
@@ -58,7 +39,8 @@ static void usb2otg_quar_log_release(struct USB2OTGUnit *unit,
     {
         if ((prev_mask & (1 << c)) && !(unit->hu_DeadChannels & (1 << c)))
         {
-            D(ULONG dark = usb2otg_wd_ticks - usb2otg_quar_set_tick[c];)
+            /* Release is as important to see as the quarantine. */
+            D(ULONG dark = unit->hu_WdTicks - unit->hu_QuarSetTick[c];)
             D(bug("[USB2OTG:QUAR] chan=%d released (%s) after %lu ticks (~%lu ms)%s\n",
                 c, where, (unsigned long)dark, (unsigned long)(dark * 150),
                 (c == CHAN_CTRL) ? " — CTRL BLACKOUT ENDS" : "");)
@@ -238,7 +220,6 @@ static inline void usb2otg_post_halt_bulk_out_settle(void)
     }
 }
 
-static LONG delayed_channel[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 /*
  * Drop a pending delayed CSPLIT re-arm. Several paths free a channel
@@ -246,10 +227,10 @@ static LONG delayed_channel[8] = {0, 0, 0, 0, 0, 0, 0, 0};
  * is then reassigned, the SOF handler would re-write CHENA on the new
  * transfer and the core deschedules it instantly (bare CHHLTD).
  */
-void usb2otg_clear_delayed_channel(int chan)
+void usb2otg_clear_delayed_channel(struct USB2OTGUnit *unit, int chan)
 {
     if (chan >= 0 && chan < 8)
-        delayed_channel[chan] = 0;
+        unit->hu_DelayedChannel[chan] = 0;
 }
 
 /* TRUE if the periodic request queue holds entries (HPTXSTS.QSpcAvail
@@ -286,8 +267,9 @@ static void usb2otg_recover_periodic_queue(struct USB2OTGUnit *USBUnit)
 
         if (rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE)
             usb2otg_halt_channel_preserve_char(chan);
+        usb2otg_exorcise_channel(chan);
         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
-        delayed_channel[chan] = 0;
+        USBUnit->hu_DelayedChannel[chan] = 0;
         USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
         USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_IDLE;
         USBUnit->hu_Channel[chan].hc_WatchdogCount = 0;
@@ -514,7 +496,7 @@ static void usb2otg_escalate_hw_reset(struct USB2OTGUnit *USBUnit, int wedged_ch
             bug("[USB2OTG] WEDGE-RECOVERY: core soft reset did NOT clear CHENA chan=%d — channel quarantined\n",
                 wedged_chan);
             if (!(USBUnit->hu_DeadChannels & (1 << wedged_chan)))
-                usb2otg_quar_set_tick[wedged_chan] = usb2otg_wd_ticks;
+                USBUnit->hu_QuarSetTick[wedged_chan] = USBUnit->hu_WdTicks;
             USBUnit->hu_DeadChannels |= (1 << wedged_chan);
         }
     }
@@ -592,10 +574,12 @@ static BOOL usb2otg_set_usb_power(BOOL on)
     if (MBoxBase == NULL)
         return FALSE;
 
-    raw = AllocVec(16 * sizeof(ULONG), MEMF_CLEAR);
+    /* MBoxCall invalidates the reply a whole cache line at a time, so the
+     * message must own its 64-byte line exclusively. */
+    raw = AllocVec(64 + 63, MEMF_CLEAR);
     if (raw == NULL)
         return FALSE;
-    msg = (ULONG *)(((IPTR)raw + 15) & ~15);
+    msg = (ULONG *)(((IPTR)raw + 63) & ~63);
 
     msg[0] = AROS_LE2LONG(8 * sizeof(ULONG));
     msg[1] = AROS_LE2LONG(VCTAG_REQ);
@@ -628,11 +612,10 @@ static BOOL usb2otg_core_reset_recover(struct USB2OTGUnit *USBUnit, int wedged_c
 
 static void usb2otg_split_fsm_recover(struct USB2OTGUnit *USBUnit, int chan)
 {
-    static ULONG last_reset_tick = 0;
     int i;
 
 #if !USB2OTG_ENABLE_CORE_RESET_RECOVERY
-    (void)last_reset_tick; (void)i; (void)chan; (void)USBUnit;
+    (void)i; (void)chan; (void)USBUnit;
     return;     /* proven harmful — see the define */
 #else
     if (usb2otg_any_channel_enabled())
@@ -648,13 +631,13 @@ static void usb2otg_split_fsm_recover(struct USB2OTGUnit *USBUnit, int chan)
             return;
         }
     }
-    if (last_reset_tick != 0 &&
-        (usb2otg_wd_ticks - last_reset_tick) < 34)
+    if (USBUnit->hu_LastResetTick != 0 &&
+        (USBUnit->hu_WdTicks - USBUnit->hu_LastResetTick) < 34)
     {
         bug("[USB2OTG:RECOVER] skip core reset (chan=%d): cooldown\n", chan);
         return;
     }
-    last_reset_tick = usb2otg_wd_ticks;
+    USBUnit->hu_LastResetTick = USBUnit->hu_WdTicks;
 
     /*
      * Register-level reinit alone does NOT revive the core (round-13
@@ -683,10 +666,18 @@ static void usb2otg_split_fsm_recover(struct USB2OTGUnit *USBUnit, int chan)
  * its own disable path and clears that state. Must be followed by a
  * full reprogram, so HCSPLT/HCCHAR are scrubbed here.
  */
-static void usb2otg_exorcise_channel(int chan)
+void usb2otg_exorcise_channel(int chan)
 {
     ULONG hcchar = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
     int spin = 200000;
+
+    /*
+     * Recorded, not printed. This runs on the IRQ path, and the STALL
+     * origin alone fires ~34 times per PsdDevLister round (devices
+     * stall the string indices they do not implement) - serial output
+     * at that rate moves split timing, which is what the ring exists
+     * to avoid. The trace shows origin, channel and HCCHAR instead.
+     */
 
     wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE),
         hcchar | USB2OTG_HOSTCHAR_ENABLE | USB2OTG_HOSTCHAR_DISABLE);
@@ -699,8 +690,9 @@ static void usb2otg_exorcise_channel(int chan)
     wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), 0);
     wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
 
-    bug("[USB2OTG] split-engine reset on chan %d%s\n", chan,
-        (spin > 0) ? "" : " (halt timed out)");
+    /* Only the failure is worth the serial line. */
+    if (spin <= 0)
+        bug("[USB2OTG] split-engine reset on chan %d: halt timed out\n", chan);
 }
 
 /*
@@ -710,16 +702,49 @@ static void usb2otg_exorcise_channel(int chan)
  * the channel is only a backstop for one that keeps failing without a
  * single completed transfer in between.
  */
-static void usb2otg_split_giveup_recover(struct USB2OTGUnit *USBUnit, int chan)
+/*
+ * engine_fault says what the give-up proves about the CHANNEL. Only a
+ * bare-CHHLTD storm does (armed transactions the core never executes);
+ * NAK and XactErr are received handshakes and wire errors - the channel
+ * demonstrably ran its transactions, the problem is the device or the
+ * bus. Hot-plugging a hub throws a burst of XactErr onto the interrupt
+ * pipes of already-enumerated LS/FS devices, and counting those toward
+ * the burn threshold retired both split-INT channels for good inside
+ * 100 ms - after which no device behind any TT could interrupt-poll
+ * until reboot (hub reinsertion "not detected").
+ */
+static void usb2otg_split_giveup_recover(struct USB2OTGUnit *USBUnit, int chan,
+    BOOL engine_fault, UBYTE dev)
 {
     struct USB2OTGChannel *hc = &USBUnit->hu_Channel[chan];
+
+    usb2otg_exorcise_channel(chan);
+
+    if (!engine_fault)
+        return;
+
+    /*
+     * A streak of bare-CHHLTD give-ups all for ONE device address is
+     * explained by that device vanishing: the TT refuses transactions
+     * to a gone device with the same bare CHHLTD a poisoned engine
+     * produces, and exorcise (above) is the right response. Burning
+     * exists for the channel that hurts OTHERS - the historical case
+     * was dead-device ctrl poisoning the channel for live devices'
+     * ctrl - so the streak must span more than one device to count.
+     * Without this, every hub unplug burned one channel for good.
+     */
+    if (hc->hc_GiveupStreak == 0)
+    {
+        hc->hc_GiveupDev = dev;
+        hc->hc_GiveupCross = 0;
+    }
+    else if (hc->hc_GiveupDev != dev)
+        hc->hc_GiveupCross = 1;
 
     if (hc->hc_GiveupStreak < 255)
         hc->hc_GiveupStreak++;
 
-    usb2otg_exorcise_channel(chan);
-
-    if (hc->hc_GiveupStreak >= 4 &&
+    if (hc->hc_GiveupStreak >= 4 && hc->hc_GiveupCross &&
         !(USBUnit->hu_BurnedChannels & (1 << chan)))
     {
         /*
@@ -884,28 +909,37 @@ void FNAME_DEV(WorkerTask)(struct USB2OTGUnit *otg_Unit)
 static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, ULONG frnm_orig)
 {
     ULONG frnm = frnm_orig >> 3;
-    static ULONG last_frame = 0;
     struct IOUsbHWReq *req = NULL, *next = NULL;
     struct USB2OTGDevice * USB2OTGBase = USBUnit->hu_USB2OTGBase;
     BOOL int_scheduled = FALSE;
 
     wr32le(USB2OTG_INTR, USB2OTG_INTRCORE_DMASTARTOFFRAME);
 
-    if (frnm < last_frame)
+    if (frnm < USBUnit->hu_LastSOFFrame)
     {
-        D(bug("[USB2OTG] SOF, frame wrap %d %d\n", frnm, last_frame));
+        D(bug("[USB2OTG] SOF, frame wrap %d %d\n", frnm, USBUnit->hu_LastSOFFrame));
     }
 
-    if (frnm != last_frame)
+    if (frnm != USBUnit->hu_LastSOFFrame)
     {
         {
 #if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
+            int walk_guard = 0;
+
             ForeachNodeSafe(&USBUnit->hu_IntXFerQueue, req, next)
             {
                 ULONG last_handled = (ULONG)(IPTR)req->iouh_DriverPrivate1 >> 16;
                 ULONG next_to_handle = (ULONG)(IPTR)req->iouh_DriverPrivate1 & 0x7ff;
+
+                /* A cross-linked node turns this walk into a cycle (seen
+                 * hanging the machine); bail loudly instead of spinning. */
+                if (++walk_guard > 128)
+                {
+                    bug("[USB2OTG] SOF: IntXFerQueue walk runaway — list cycle, aborting walk\n");
+                    break;
+                }
 
                 /*
                  * Due when the frames elapsed since last_handled reach
@@ -945,7 +979,7 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
          * works. Split periodic is unaffected either way (loose
          * frame-level scheduling) — its CSPLIT re-arms below stay.
          */
-        last_frame = frnm;
+        USBUnit->hu_LastSOFFrame = frnm;
 
 
     }
@@ -953,10 +987,10 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
             int chan;
             for (chan=0; chan < 8; chan++)
             {
-                if (delayed_channel[chan] != 0)
+                if (USBUnit->hu_DelayedChannel[chan] != 0)
                 {
-                    delayed_channel[chan]--;
-                    if (delayed_channel[chan] == 0)
+                    USBUnit->hu_DelayedChannel[chan]--;
+                    if (USBUnit->hu_DelayedChannel[chan] == 0)
                     {
                         /*
                          * Only re-arm if the channel still holds the
@@ -999,7 +1033,7 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
                 struct IOUsbHWReq *sreq = hc->hc_Request;
                 ULONG elapsed;
 
-                if (sreq == NULL || delayed_channel[chan] != 0)
+                if (sreq == NULL || USBUnit->hu_DelayedChannel[chan] != 0)
                     continue;
                 if (sreq->iouh_Req.io_Command != UHCMD_INTXFER ||
                     !(sreq->iouh_Flags & UHFF_SPLITTRANS))
@@ -1018,17 +1052,17 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
                     continue;
 
                 {
-                    static ULONG stall_count = 0;
                     ULONG interval = usb2otg_clamp_interval(sreq->iouh_Interval);
 
                     if (interval < 2)
                         interval = 2;
 
-                    if (++stall_count <= 5 || (stall_count & 0xff) == 0)
+                    if (++USBUnit->hu_LogStallCount <= 5 || (USBUnit->hu_LogStallCount & 0xff) == 0)
                         bug("[USB2OTG] SOF: int split never ran, %lu uframes chan=%d dev=%d ep=%d — exorcise+requeue (#%lu)\n",
                             (unsigned long)elapsed, chan,
                             (int)sreq->iouh_DevAddr, (int)sreq->iouh_Endpoint,
-                            (unsigned long)stall_count);
+                            (unsigned long)USBUnit->hu_LogStallCount);
+
 
                     wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                     usb2otg_halt_channel_preserve_char(chan);
@@ -1064,9 +1098,6 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
      */
     Disable();
 
-    //static ULONG last_frame = 0;
-
-    //static ULONG delayed_frnm = 0;
     volatile unsigned int otg_RegVal;
     ULONG frnm = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff);
 
@@ -1118,6 +1149,52 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                  * needed at final completion to exclude the watchdog.
                  */
                 req = USBUnit->hu_Channel[chan].hc_Request;
+
+#if USB2OTG_DEBUG_FORCE_CTRL_NAK
+                /* Synthesise the TT NAK QEMU never produces — see the define. */
+                if (req != NULL && chan == USBUnit->hu_CtrlSplitChan &&
+                    req->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+                    (req->iouh_Flags & UHFF_SPLITTRANS) &&
+                    (intr & USB2OTG_INTRCHAN_TRANSFERCOMPLETE) &&
+                    (rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL)) &
+                     USB2OTG_HCSPLT_SPLITEN))
+                {
+                    static ULONG forced = 0;
+
+                    if ((++forced % USB2OTG_DEBUG_FORCE_CTRL_NAK) == 0)
+                    {
+                        bug("[USB2OTG:FORCE] faking ctrl-split NAK #%lu chan=%d dev=%d\n",
+                            (unsigned long)forced, chan, (int)req->iouh_DevAddr);
+                        intr = USB2OTG_INTR_HALT_NAK;
+                    }
+                }
+#endif
+
+#if USB2OTG_DEBUG_FORCE_XACTERR_BURST
+                /* Synthesise the hub-hot-plug XactErr burst — see the
+                 * define. The ring records the faked intr as HCINT. */
+                if (req != NULL &&
+                    (req->iouh_Flags & UHFF_SPLITTRANS) &&
+                    req->iouh_Req.io_Command == UHCMD_INTXFER &&
+                    req->iouh_DevAddr >= 3 &&
+                    (intr & USB2OTG_INTRCHAN_HALT))
+                {
+                    static ULONG seen = 0;
+
+                    seen++;
+                    if (seen > USB2OTG_DEBUG_FORCE_XACTERR_AFTER &&
+                        seen <= USB2OTG_DEBUG_FORCE_XACTERR_AFTER +
+                                USB2OTG_DEBUG_FORCE_XACTERR_BURST)
+                    {
+                        if (seen == USB2OTG_DEBUG_FORCE_XACTERR_AFTER + 1)
+                            bug("[USB2OTG:FORCE] XactErr burst begins (%d events)\n",
+                                USB2OTG_DEBUG_FORCE_XACTERR_BURST);
+                        intr = USB2OTG_INTRCHAN_HALT |
+                               USB2OTG_INTRCHAN_TRANSACTIONERROR;
+                    }
+                }
+#endif
+
 
                 /*
                  * DIAG: ctrl-split event trace. First 6 events of every
@@ -1225,16 +1302,16 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
                         /*
                          * Periodic INT split: issue the CSPLIT one microframe
-                         * later (delayed_channel[] ticks per SOF) so it lands in
+                         * later (hu_DelayedChannel[] ticks per SOF) so it lands in
                          * the TT result window instead of hammering the same
                          * uframe. Bulk keeps the immediate re-arm. Split ctrl
                          * gets the full inter-transaction pace — see
                          * USB2OTG_CTRL_SPLIT_PACE_UFRAMES.
                          */
                         if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
-                            delayed_channel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
+                            USBUnit->hu_DelayedChannel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
                         else if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
-                            delayed_channel[chan] = 1;
+                            USBUnit->hu_DelayedChannel[chan] = 1;
                         else
                             FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                     }
@@ -1258,9 +1335,10 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
                         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                         usb2otg_halt_channel_preserve_char(chan);
+                        usb2otg_exorcise_channel(chan);
 
                         USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-                        usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr, "split-csplit-nak");
+                        usb2otg_bulk_requeue(USBUnit, chan, req, intr, "split-csplit-nak");
                         /* Helper does TOCTOU vs watchdog. */
                         usb2otg_nak_gate_set(USBUnit, req->iouh_DevAddr,
                             usb2otg_gate_dir(req), USB2OTG_BULK_NAK_GATE_UFRAMES);
@@ -1288,6 +1366,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
                             /* Disable channel without clearing MPS/ep metadata */
                             usb2otg_halt_channel_preserve_char(chan);
+                            usb2otg_exorcise_channel(chan);
 
                             /* Put transfer back into queue with updated timing */
                             if (req->iouh_Req.io_Command == UHCMD_INTXFER)
@@ -1317,7 +1396,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 /*
                                  * CSPLIT NYET = TT has not finished the
                                  * LS/FS transaction yet. Retry the CSPLIT
-                                 * one microframe later (delayed_channel
+                                 * one microframe later (hu_DelayedChannel
                                  * ticks per SOF = per microframe in HS)
                                  * rather than re-arming in the same uframe.
                                  * Bound to ~8 uframes from the SSPLIT
@@ -1328,7 +1407,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if (USBUnit->hu_Channel[chan].hc_CsplitRetry < 8)
                                 {
                                     USBUnit->hu_Channel[chan].hc_CsplitRetry++;
-                                    delayed_channel[chan] = 1;
+                                    USBUnit->hu_DelayedChannel[chan] = 1;
                                 }
                                 else if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
                                 {
@@ -1353,7 +1432,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
                                     USBUnit->hu_Channel[chan].hc_CsplitRetry = 0;
                                     USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_SS;
-                                    delayed_channel[chan] = 8;
+                                    USBUnit->hu_DelayedChannel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
                                     req = NULL;
                                 }
                                 else
@@ -1372,7 +1451,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 }
                             }
                             else
-                                delayed_channel[chan] = 16;
+                                USBUnit->hu_DelayedChannel[chan] = 16;
                         }
                     }
                     else if (intr == USB2OTG_INTRCHAN_HALT &&
@@ -1415,7 +1494,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                              */
                             ULONG naks = (ULONG)(IPTR)req->iouh_DriverPrivate2 + 1;
 
-                            usb2otg_ctrl_nak_requeues++;
+                            USBUnit->hu_CtrlNakRequeues++;
                             if (naks > USB2OTG_CTRL_SPLIT_NAK_LIMIT)
                             {
                                 bug("[USB2OTG] IRQ: ctrl split-NAK give-up dev=%d ep=%d bReq=%02x after %lu NAKs tt=%d.%d\n",
@@ -1444,7 +1523,8 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                         usb2otg_split_fsm_recover(USBUnit, chan);
                                 }
                                 /* Give-up teardown poisons the channel. */
-                                usb2otg_split_giveup_recover(USBUnit, chan);
+                                /* NAK = the TT answered; not an engine fault. */
+                                usb2otg_split_giveup_recover(USBUnit, chan, FALSE, req->iouh_DevAddr);
                                 req = NULL;
                             }
                             else
@@ -1462,27 +1542,59 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  */
                                 D(bug("[USB2OTG] IRQ: ctrl split-NAK %lu, retrying SSPLIT chan=%d dev=%d\n",
                                     (unsigned long)naks, chan, (int)req->iouh_DevAddr);)
+                                /*
+                                 * Abandoning the NAKed CSPLIT leaves the
+                                 * split engine in the same poisoned state
+                                 * a STALL does: the re-issued SSPLIT is
+                                 * descheduled with a bare CHHLTD in its
+                                 * arming microframe, forever (a tester's
+                                 * low-speed keyboard died here on every
+                                 * enumeration, while its mouse - which
+                                 * never NAKed a control transaction -
+                                 * was fine). Reset the engine the way the
+                                 * STALL path does, but around a save and
+                                 * restore of the channel programming:
+                                 * exorcising zeroes HCCHAR/HCSPLT, and
+                                 * SetupChannel would restart a control
+                                 * transfer from its SETUP packet rather
+                                 * than resume this phase.
+                                 */
                                 {
-                                    ULONG splt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+                                    ULONG hcchar = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
+                                    ULONG hctsiz = rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
+                                    ULONG hcsplt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+                                    ULONG hcdma  = rd32le(USB2OTG_CHANNEL_REG(chan, DMAADDR));
 
-                                    splt &= ~USB2OTG_HCSPLT_COMPLSPLT;
-                                    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), splt);
+                                    usb2otg_exorcise_channel(chan);
+
+                                    /* Next transaction is an SSPLIT, and
+                                     * the channel must come back disarmed
+                                     * for StartChannel to enable it. */
+                                    hcsplt &= ~USB2OTG_HCSPLT_COMPLSPLT;
+                                    hcchar &= ~(USB2OTG_HOSTCHAR_ENABLE |
+                                                USB2OTG_HOSTCHAR_DISABLE);
+
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), hcdma);
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE), hctsiz);
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), hcsplt);
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), hcchar);
                                 }
                                 USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
                                 USBUnit->hu_Channel[chan].hc_CsplitRetry = 0;
                                 USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_SS;
                                 req->iouh_DriverPrivate2 = (APTR)(IPTR)naks;
-                                /* ~1 frame pause; SOF re-arms via
-                                 * StartChannel(quick=1) while the req
-                                 * still owns the channel. */
-                                delayed_channel[chan] = 8;
+                                /* SOF re-arms via StartChannel(quick=1)
+                                 * while the req still owns the channel,
+                                 * at the full pace — see the constant. */
+                                USBUnit->hu_DelayedChannel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
                                 req = NULL;
                             }
                         }
                         else if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
                         {
+                            usb2otg_exorcise_channel(chan);
                             USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-                            usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr, "split-begin-nak");
+                            usb2otg_bulk_requeue(USBUnit, chan, req, intr, "split-begin-nak");
                             D(
                                 if (usb2otg_trace_bulk_ep2(chan, req))
                                     bug("[USB2OTG:TRACE] REQUEUE-BEGIN-BULKQ chan=%d req=%p\n", chan, req);
@@ -1504,6 +1616,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                     {
                         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                         usb2otg_halt_channel_preserve_char(chan);
+                        usb2otg_exorcise_channel(chan);
 
                         D(
                             if (usb2otg_trace_bulk_ep2(chan, req))
@@ -1511,7 +1624,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                         )
 
                         USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-                        usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr, "split-csplit-halt");
+                        usb2otg_bulk_requeue(USBUnit, chan, req, intr, "split-csplit-halt");
                         usb2otg_nak_gate_set(USBUnit, req->iouh_DevAddr,
                             usb2otg_gate_dir(req), USB2OTG_BULK_NAK_GATE_UFRAMES);
 
@@ -1560,7 +1673,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  */
                                 if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
                                     (req->iouh_Flags & UHFF_SPLITTRANS))
-                                    delayed_channel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
+                                    USBUnit->hu_DelayedChannel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
                                 else
                                     FNAME_DEV(StartChannel)(USBUnit, chan, 0);
                             }
@@ -1579,7 +1692,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  */
                                 if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
                                     req->iouh_DevAddr < 8)
-                                    usb2otg_int_comp_count[req->iouh_DevAddr]++;
+                                    USBUnit->hu_IntCompCount[req->iouh_DevAddr]++;
                                 D(
                                     if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
                                         req->iouh_Actual > 0)
@@ -1603,6 +1716,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 chan, req->iouh_DevAddr, req->iouh_Endpoint, intr);
                             wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                             usb2otg_halt_channel_preserve_char(chan);
+                            usb2otg_exorcise_channel(chan);
                             req->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                         }
                         else if ((intr & (USB2OTG_INTRCHAN_TRANSACTIONERROR |
@@ -1636,22 +1750,36 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  * registers keep the transaction and the
                                  * data toggle.
                                  */
-                                usb2otg_ctrl_xact_retries++;
+                                USBUnit->hu_CtrlXactRetries++;
                                 D(bug("[USB2OTG] IRQ: ctrl split transient error %04x, retry %lu/%d chan=%d dev=%d\n",
                                     (unsigned)intr, (unsigned long)retries + 1,
                                     USB2OTG_TRANSIENT_RETRY_LIMIT, chan,
                                     (int)req->iouh_DevAddr);)
+                                /* Reset-and-restore, exactly the proven
+                                 * NAK-path medicine: the abandoned CSPLIT
+                                 * poisons the engine the same way here. */
                                 {
-                                    ULONG splt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+                                    ULONG hcchar = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
+                                    ULONG hctsiz = rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
+                                    ULONG hcsplt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+                                    ULONG hcdma  = rd32le(USB2OTG_CHANNEL_REG(chan, DMAADDR));
 
-                                    splt &= ~USB2OTG_HCSPLT_COMPLSPLT;
-                                    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), splt);
+                                    usb2otg_exorcise_channel(chan);
+
+                                    hcsplt &= ~USB2OTG_HCSPLT_COMPLSPLT;
+                                    hcchar &= ~(USB2OTG_HOSTCHAR_ENABLE |
+                                                USB2OTG_HOSTCHAR_DISABLE);
+
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), hcdma);
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE), hctsiz);
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), hcsplt);
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), hcchar);
                                 }
                                 USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
                                 USBUnit->hu_Channel[chan].hc_CsplitRetry = 0;
                                 USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_SS;
                                 req->iouh_DriverPrivate2 = (APTR)(IPTR)(retries + 1);
-                                delayed_channel[chan] = 8;
+                                USBUnit->hu_DelayedChannel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
                                 req = NULL;
                             }
                             else if ((req->iouh_Req.io_Command == UHCMD_CONTROLXFER ||
@@ -1666,7 +1794,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 ULONG tsize_snap =
                                     rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
                                 ULONG act_before_helper = req->iouh_Actual;
-                                usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr, why);
+                                usb2otg_bulk_requeue(USBUnit, chan, req, intr, why);
                                 D(bug("[USB2OTG] IRQ: %s chan=%d dev=%d intr=%04x, retry %ld/%d\n",
                                     why, chan, req->iouh_DevAddr, intr,
                                     retries + 1, USB2OTG_TRANSIENT_RETRY_LIMIT));
@@ -1676,7 +1804,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 req->iouh_DriverPrivate2 =
                                     (APTR)((IPTR)req->iouh_DriverPrivate2 + 1);
                                 if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
-                                    usb2otg_ctrl_xact_retries++;
+                                    USBUnit->hu_CtrlXactRetries++;
 
                                 /*
                                  * XactErr-with-progress on HS direct bulk OUT:
@@ -1704,6 +1832,10 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 else
                                 {
 #endif
+                                /* Abandoning a ctrl transfer mid-phase
+                                 * poisons the channel like on splits. */
+                                if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+                                    usb2otg_exorcise_channel(chan);
                                 if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
                                     ADDHEAD(&USBUnit->hu_CtrlXFerQueue, req);
                                 else
@@ -1771,9 +1903,19 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  * only cover the control endpoint).
                                  */
                                 usb2otg_queue_clear_tt_buffer(USBUnit, req);
-                                /* Give-up teardown poisons the channel. */
+                                /* Give-up teardown poisons the channel;
+                                 * XactErr is a wire error, not an engine
+                                 * fault - do not count it toward burning.
+                                 * Non-split channels need the same reset:
+                                 * ctrl to a vanished HS hub poisoned ch0
+                                 * and every later arm to the (soldered!)
+                                 * internal hub bare-CHHLTDed - hub.class
+                                 * lost port management and tore down every
+                                 * device on the bus. */
                                 if (req->iouh_Flags & UHFF_SPLITTRANS)
-                                    usb2otg_split_giveup_recover(USBUnit, chan);
+                                    usb2otg_split_giveup_recover(USBUnit, chan, FALSE, req->iouh_DevAddr);
+                                else
+                                    usb2otg_exorcise_channel(chan);
                             }
                         }
                         else if (intr & USB2OTG_INTRCHAN_STALL)
@@ -1804,7 +1946,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
                             {
                                 if (req->iouh_DevAddr < 8)
-                                    usb2otg_int_nak_count[req->iouh_DevAddr]++;
+                                    USBUnit->hu_IntNakCount[req->iouh_DevAddr]++;
                                 /* Clear interrupt flags */
                                 wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
 
@@ -1851,7 +1993,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                             bug("[USB2OTG:TRACE] IRQ-CSPLIT-NAK-REQUEUE chan=%d req=%p\n", chan, req);
                                     )
                                     USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-                                    usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr, "bulk-csplit-nak");
+                                    usb2otg_bulk_requeue(USBUnit, chan, req, intr, "bulk-csplit-nak");
                                     /* 1 ms gate; prevents NAK-storm pegging CPU 0. */
                                     usb2otg_nak_gate_set(USBUnit, req->iouh_DevAddr,
                                                          usb2otg_gate_dir(req),
@@ -1879,7 +2021,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 usb2otg_halt_channel_preserve_char(chan);
                                 usb2otg_bulk_out_advance_pktcnt(USBUnit, chan, req, tsize_snap);
                                 USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
-                                usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr, "bulk-nak");
+                                usb2otg_bulk_requeue(USBUnit, chan, req, intr, "bulk-nak");
                                 usb2otg_nak_gate_set(USBUnit, req->iouh_DevAddr,
                                                      usb2otg_gate_dir(req),
                                                      USB2OTG_BULK_NAK_GATE_UFRAMES);
@@ -1905,6 +2047,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 chan, req->iouh_DevAddr, req->iouh_Endpoint);
                             wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                             usb2otg_halt_channel_preserve_char(chan);
+                            usb2otg_exorcise_channel(chan);
                             req->iouh_Req.io_Error = UHIOERR_BABBLE;
                         }
                         else if (intr & USB2OTG_INTRCHAN_FRAMEOVERRUN)
@@ -1912,6 +2055,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             /* Frame overrun: requeue with updated timing. */
                             wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                             usb2otg_halt_channel_preserve_char(chan);
+                            usb2otg_exorcise_channel(chan);
 #if defined(__AROSEXEC_SMP__)
                             KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
                             if (USBUnit->hu_Channel[chan].hc_Request != req)
@@ -1937,7 +2081,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 ADDHEAD(&USBUnit->hu_CtrlXFerQueue, req);
                             else if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
                             {
-                                usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr, "frame-overrun");
+                                usb2otg_bulk_requeue(USBUnit, chan, req, intr, "frame-overrun");
                                 ADDHEAD(&USBUnit->hu_BulkXFerQueue, req);
                             }
                             USBUnit->hu_Channel[chan].hc_Request = NULL;
@@ -1982,10 +2126,10 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             {
                                 if (req->iouh_DevAddr < 8)
                                 {
-                                    usb2otg_int_chh_count[req->iouh_DevAddr]++;
-                                    usb2otg_int_chh_last_intr[req->iouh_DevAddr] = intr;
-                                    usb2otg_int_chh_seen_intr[req->iouh_DevAddr] |= intr;
-                                    usb2otg_int_hlt_hfnum[req->iouh_DevAddr] =
+                                    USBUnit->hu_IntChhCount[req->iouh_DevAddr]++;
+                                    USBUnit->hu_IntChhLastIntr[req->iouh_DevAddr] = intr;
+                                    USBUnit->hu_IntChhSeenIntr[req->iouh_DevAddr] |= intr;
+                                    USBUnit->hu_IntHltHfnum[req->iouh_DevAddr] =
                                         rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff;
                                 }
                                 /*
@@ -2011,7 +2155,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     if (!(req->iouh_Flags & UHFF_SPLITTRANS) &&
                                         req->iouh_DevAddr < 8)
                                     {
-                                        ULONG cc = usb2otg_int_chh_count[req->iouh_DevAddr];
+                                        ULONG cc = USBUnit->hu_IntChhCount[req->iouh_DevAddr];
 
                                         if (cc <= 5 || (cc & 0x3f) == 0)
                                         {
@@ -2029,12 +2173,12 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                     USBUnit->hu_Channel[sc].hc_Request;
 
                                                 if ((sc_char & USB2OTG_HOSTCHAR_ENABLE) ||
-                                                    sc_req != NULL || delayed_channel[sc] != 0)
+                                                    sc_req != NULL || USBUnit->hu_DelayedChannel[sc] != 0)
                                                     bug(" %d:%08lx/s=%08lx/d%d%s", sc,
                                                         (unsigned long)sc_char,
                                                         (unsigned long)rd32le(USB2OTG_CHANNEL_REG(sc, SPLITCTRL)),
                                                         sc_req ? (int)sc_req->iouh_DevAddr : -1,
-                                                        delayed_channel[sc] ? "*" : "");
+                                                        USBUnit->hu_DelayedChannel[sc] ? "*" : "");
                                             }
                                             bug("\n");
                                         }
@@ -2059,7 +2203,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  */
                                 ULONG chhs = (ULONG)(IPTR)req->iouh_DriverPrivate2 + 1;
 
-                                usb2otg_ctrl_chh_requeues++;
+                                USBUnit->hu_CtrlChhRequeues++;
                                 if (chhs > USB2OTG_CTRL_SPLIT_NAK_LIMIT)
                                 {
                                     bug("[USB2OTG] IRQ: ctrl bare-CHHLTD give-up dev=%d ep=%d bReq=%02x after %lu halts tt=%d.%d chan=%d\n",
@@ -2102,9 +2246,12 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     /* Reset only for blocked enumeration — see split-NAK site. */
                                     if (req->iouh_DevAddr == 0)
                                         usb2otg_split_fsm_recover(USBUnit, chan);
-                                    /* Give-up teardown poisons the channel. */
+                                    /* Bare CHHLTD = the engine never ran
+                                     * the transaction; this one counts. */
                                     if (req->iouh_Flags & UHFF_SPLITTRANS)
-                                        usb2otg_split_giveup_recover(USBUnit, chan);
+                                        usb2otg_split_giveup_recover(USBUnit, chan, TRUE, req->iouh_DevAddr);
+                                    else
+                                        usb2otg_exorcise_channel(chan);
                                 }
                                 else if (req->iouh_Flags & UHFF_SPLITTRANS)
                                 {
@@ -2120,10 +2267,27 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                      * bare in its arming microframe, so the
                                      * first stray halt turned into all 64.
                                      */
-                                    ULONG splt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+                                    /* Reset-and-restore, the proven NAK-
+                                     * path medicine - COMPLSPLT-clear alone
+                                     * left the engine poisoned, which is
+                                     * why one stray halt became all 64. */
+                                    {
+                                    ULONG hcchar = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
+                                    ULONG hctsiz = rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
+                                    ULONG hcsplt = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
+                                    ULONG hcdma  = rd32le(USB2OTG_CHANNEL_REG(chan, DMAADDR));
 
-                                    splt &= ~USB2OTG_HCSPLT_COMPLSPLT;
-                                    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), splt);
+                                    usb2otg_exorcise_channel(chan);
+
+                                    hcsplt &= ~USB2OTG_HCSPLT_COMPLSPLT;
+                                    hcchar &= ~(USB2OTG_HOSTCHAR_ENABLE |
+                                                USB2OTG_HOSTCHAR_DISABLE);
+
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), hcdma);
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE), hctsiz);
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), hcsplt);
+                                    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), hcchar);
+                                }
 
                                     D(bug("[USB2OTG] IRQ: ctrl bare-CHHLTD %lu, retrying SSPLIT chan=%d dev=%d\n",
                                         (unsigned long)chhs, chan, (int)req->iouh_DevAddr);)
@@ -2132,18 +2296,28 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     USBUnit->hu_Channel[chan].hc_CsplitRetry = 0;
                                     USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_SS;
                                     req->iouh_DriverPrivate2 = (APTR)(IPTR)chhs;
-                                    /* ~1 frame pause; SOF re-arms via
-                                     * StartChannel(quick=1) while the req
-                                     * still owns the channel. */
-                                    delayed_channel[chan] = 8;
+                                    /* SOF re-arms via StartChannel(quick=1)
+                                     * while the req still owns the channel,
+                                     * at the full pace — see the constant. */
+                                    USBUnit->hu_DelayedChannel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
                                     keep_channel = TRUE;
                                 }
                                 else
                                 {
+                                    /*
+                                     * Reset the engine before the retry:
+                                     * a bare CHHLTD leaves the channel FSM
+                                     * poisoned exactly as on the split
+                                     * channels, and SetupChannel's HCCHAR
+                                     * zeroing alone does not clear it. The
+                                     * requeue re-programs everything, so
+                                     * nothing needs preserving.
+                                     */
+                                    usb2otg_exorcise_channel(chan);
                                     req->iouh_DriverPrivate2 = (APTR)(IPTR)chhs;
                                     /* Timed backoff + tail: no retry storm/HOL. */
                                     req->iouh_DriverPrivate1 =
-                                        usb2otg_ctrl_backoff(frnm);
+                                        usb2otg_ctrl_backoff(USBUnit, frnm);
                                     ADDTAIL(&USBUnit->hu_CtrlXFerQueue, req);
                                 }
                             }
@@ -2152,12 +2326,12 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 /* Multi-packet bulk-OUT progress accounting. */
                                 usb2otg_bulk_out_advance_pktcnt(USBUnit, chan, req, chhltd_tsize);
 
-                                usb2otg_diag_bulk_requeue(USBUnit, chan, req, intr,
+                                usb2otg_bulk_requeue(USBUnit, chan, req, intr,
                                     "bare-chhltd");
 
                                 {
                                     struct USB2OTGChannel *hc = &USBUnit->hu_Channel[chan];
-                                    UBYTE np = hc->hc_DiagNoProgressCount;
+                                    UBYTE np = hc->hc_BulkNoProgressCount;
 
                                     /* Absolute cap: not reset by np-reset below. */
                                     if (hc->hc_BareChhltdTotal < 0xFFFF)
@@ -2194,7 +2368,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                     "  NPTXSTS=%08x HFNUM=%08x HOSTPORT=%08x\n"
                                                     "  start_hfnum=%08x ufdelta=%d coreINTR=%08x HAINT=%08x PID=%u\n",
                                                     (unsigned)np,
-                                                    (unsigned)hc->hc_DiagRequeueCount,
+                                                    (unsigned)hc->hc_BulkRequeueCount,
                                                     bare_chhltd_total,
                                                     chan,
                                                     (int)req->iouh_DevAddr,
@@ -2244,9 +2418,8 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                             USBUnit->hu_BulkGiveupStreak[req->iouh_DevAddr] < 0xFF)
                                             USBUnit->hu_BulkGiveupStreak[req->iouh_DevAddr]++;
                                         {
-                                            static ULONG giveup_count = 0;
-                                            giveup_count++;
-                                            if (usb2otg_diag_log_rate(giveup_count))
+                                            USBUnit->hu_LogGiveupCount++;
+                                            if (usb2otg_log_rate(USBUnit->hu_LogGiveupCount))
                                                 bug("[USB2OTG:MSS] BARE-CHHLTD giving up after %u no-progress chan=%d dev=%d ep=%d dir=%s act=%lu/%lu streak=%u (#%lu)\n",
                                                     (unsigned)np, chan,
                                                     (int)req->iouh_DevAddr,
@@ -2255,7 +2428,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                     (unsigned long)req->iouh_Actual,
                                                     (unsigned long)req->iouh_Length,
                                                     (unsigned)USBUnit->hu_BulkGiveupStreak[req->iouh_DevAddr],
-                                                    (unsigned long)giveup_count);
+                                                    (unsigned long)USBUnit->hu_LogGiveupCount);
                                         }
                                         req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
                                         /* Flush NPTxFIFO so next CBW lands clean —
@@ -2274,21 +2447,20 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                     asm volatile("yield\n");
                                             }
                                             {
-                                                static ULONG flush_count = 0;
-                                                flush_count++;
-                                                if (usb2otg_diag_log_rate(flush_count))
+                                                USBUnit->hu_LogFlushCount++;
+                                                if (usb2otg_log_rate(USBUnit->hu_LogFlushCount))
                                                     bug("[USB2OTG:MSS] BARE-CHHLTD NP-TX-FIFO-FLUSH after giveup chan=%d dev=%d ep=%d (#%lu)\n",
                                                         chan,
                                                         (int)req->iouh_DevAddr,
                                                         (int)req->iouh_Endpoint,
-                                                        (unsigned long)flush_count);
+                                                        (unsigned long)USBUnit->hu_LogFlushCount);
                                             }
                                         }
                                         /* Do NOT reset PID toggle: would desync
                                          * a marginal device. Canonical recovery
                                          * is BOT Reset + CLEAR_HALT, handled
                                          * in TermIO. */
-                                        usb2otg_diag_bulk_finish(USBUnit, chan, req);
+                                        usb2otg_bulk_finish(USBUnit, chan, req);
                                         USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
                                         USBUnit->hu_Channel[chan].hc_Request = NULL;
                                         ADDTAIL(&USBUnit->hu_FinishedXfers, (struct Node *)req);
@@ -2301,7 +2473,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                             /* IN-idle long backoff. */
                                             usb2otg_nak_gate_set(USBUnit,
                                                 req->iouh_DevAddr, 1, 200);
-                                            hc->hc_DiagNoProgressCount = 0;
+                                            hc->hc_BulkNoProgressCount = 0;
                                         }
                                         else
                                         {
@@ -2328,13 +2500,14 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 intr, chan, req->iouh_DevAddr, req->iouh_Endpoint));
                             wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                             usb2otg_halt_channel_preserve_char(chan);
+                            usb2otg_exorcise_channel(chan);
                         }
 
 
                         /* req==NULL means already requeued (NAK/frame-overrun/split-NYET). */
                         if (cont == 0 && req != NULL)
                         {
-                            usb2otg_diag_bulk_finish(USBUnit, chan, req);
+                            usb2otg_bulk_finish(USBUnit, chan, req);
                             usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
                                 &USBUnit->hu_FinishedXfers, FALSE);
                         }
@@ -2431,11 +2604,19 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
     AROS_INTFUNC_INIT
 
     struct USB2OTGDevice * USB2OTGBase = otg_Unit->hu_USB2OTGBase;
+    BOOL ret;
 
     if (!usb2otg_require_cpu0(USB2OTGBase, __PRETTY_FUNCTION__))
         return FALSE;
 
-    return usb2otg_process_pending(otg_Unit);
+    /* Softints run with IRQs enabled; the shared transfer queues are
+     * otherwise juggled concurrently with GlobalIRQHandler (list
+     * cross-link -> the SOF promotion walk spins forever). */
+    Disable();
+    ret = usb2otg_process_pending(otg_Unit);
+    Enable();
+
+    return ret;
 
     AROS_INTFUNC_EXIT
 }
@@ -2444,7 +2625,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
 {
     struct USB2OTGDevice *USB2OTGBase = otg_Unit->hu_USB2OTGBase;
 
-    usb2otg_wd_ticks++;
+    otg_Unit->hu_WdTicks++;
 
     /*
      * Channel watchdog: detect stuck channels (lost completion IRQ,
@@ -2551,14 +2732,14 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
 
             /*
              * SOF scheduler owns active periodic-split channels: a CSPLIT
-             * re-arm is pending within microframes (delayed_channel != 0),
+             * re-arm is pending within microframes (hu_DelayedChannel != 0),
              * so the channel is not stuck. Defer — the watchdog's lost-IRQ
              * recovery would otherwise race the SS->CS handoff and corrupt
              * CompSplt. The sequencer's bounded retry/requeue is the backstop.
              */
             if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST &&
                 otg_Unit->hu_Channel[chan].hc_SplitState != USB2OTG_SPLIT_IDLE &&
-                delayed_channel[chan] != 0)
+                otg_Unit->hu_DelayedChannel[chan] != 0)
             {
 #if defined(__AROSEXEC_SMP__)
                 KrnSpinUnLock(&otg_Unit->hu_Lock);
@@ -2704,7 +2885,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                             wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
 
                             req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
-                            usb2otg_diag_bulk_finish(otg_Unit, chan, req);
+                            usb2otg_bulk_finish(otg_Unit, chan, req);
                             otg_Unit->hu_Channel[chan].hc_Request = NULL;
                             otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
                             /* Force-halting a live split is where the TT
@@ -2842,9 +3023,10 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
 #endif
                         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                         usb2otg_halt_channel_preserve_char(chan);
+                        usb2otg_exorcise_channel(chan);
 
                         if (req->iouh_DevAddr < 8)
-                            usb2otg_int_nak_count[req->iouh_DevAddr]++;
+                            otg_Unit->hu_IntNakCount[req->iouh_DevAddr]++;
                         req->iouh_DriverPrivate1 =
                             (APTR)(IPTR)((frnm_now << 16) |
                                    ((frnm_now + interval) & 0x7ff));
@@ -2998,9 +3180,8 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                     }
 
                     {
-                        static ULONG wd_count = 0;
-                        wd_count++;
-                        if (usb2otg_diag_log_rate(wd_count))
+                        otg_Unit->hu_LogWdCount++;
+                        if (usb2otg_log_rate(otg_Unit->hu_LogWdCount))
                         {
                             /* Extended wedge dump for post-mortem. */
                             ULONG w_dmaa  = rd32le(USB2OTG_CHANNEL_REG(chan, DMAADDR));
@@ -3014,12 +3195,12 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                                 "  DMAA=%08x NPTX=%08x HPTX=%08x coreINTR=%08x HAINT=%08x HFNUM=%08x\n"
                                 "  splitstate=%d ssuf=%04x delayed=%d req=%p cmd=%lu\n",
                                 chan, req->iouh_DevAddr, req->iouh_Endpoint,
-                                (unsigned long)wd_count,
+                                (unsigned long)otg_Unit->hu_LogWdCount,
                                 w_char, w_intr, w_split, w_tsize,
                                 w_dmaa, w_nptx, w_ptx, w_corei, w_haint, w_hfnum,
                                 (int)otg_Unit->hu_Channel[chan].hc_SplitState,
                                 (unsigned)otg_Unit->hu_Channel[chan].hc_SplitSSUframe,
-                                (int)delayed_channel[chan],
+                                (int)otg_Unit->hu_DelayedChannel[chan],
                                 req,
                                 (unsigned long)req->iouh_Req.io_Command);
                         }
@@ -3139,7 +3320,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                     }
 
                     req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
-                    usb2otg_diag_bulk_finish(otg_Unit, chan, req);
+                    usb2otg_bulk_finish(otg_Unit, chan, req);
                     /* Abandoned split → unjam the TT (see helper). */
                     usb2otg_queue_clear_tt_buffer(otg_Unit, req);
                     ADDTAIL(&otg_Unit->hu_FinishedXfers, (struct Node *)req);
@@ -3178,6 +3359,13 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
 
             q_count++;
 
+            /* See the SOF walk: a cross-linked node makes this cycle. */
+            if (q_count > 128)
+            {
+                bug("[USB2OTG] WD: IntXFerQueue walk runaway — list cycle, aborting walk\n");
+                break;
+            }
+
             /* Wrap-safe due test — see the SOF promotion for rationale. */
             if (((frnm - last_handled) & 0x7ff) >=
                 ((next_to_handle - last_handled) & 0x7ff))
@@ -3209,27 +3397,27 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
      * lifecycle counters, so a stalled pipe is visible at a glance.
      */
 #if DEBUG
-    if (++usb2otg_int_stats_ticks >= 34)
+    if (++otg_Unit->hu_IntStatsTicks >= 34)
     {
         struct IOUsbHWReq *dreq;
         int d;
 
-        usb2otg_int_stats_ticks = 0;
+        otg_Unit->hu_IntStatsTicks = 0;
 
         bug("[USB2OTG:INTSTAT2] p/c/n/h:");
         for (d = 0; d < 8; d++)
         {
-            if (usb2otg_int_poll_count[d] || usb2otg_int_comp_count[d] ||
-                usb2otg_int_nak_count[d] || usb2otg_int_chh_count[d])
+            if (otg_Unit->hu_IntPollCount[d] || otg_Unit->hu_IntCompCount[d] ||
+                otg_Unit->hu_IntNakCount[d] || otg_Unit->hu_IntChhCount[d])
                 bug(" d%d=%lu/%lu/%lu/%lu[seen=%04lx arm=%04lx/%08lx hlt=%04lx]", d,
-                    (unsigned long)usb2otg_int_poll_count[d],
-                    (unsigned long)usb2otg_int_comp_count[d],
-                    (unsigned long)usb2otg_int_nak_count[d],
-                    (unsigned long)usb2otg_int_chh_count[d],
-                    (unsigned long)usb2otg_int_chh_seen_intr[d],
-                    (unsigned long)usb2otg_int_arm_hfnum[d],
-                    (unsigned long)usb2otg_int_arm_char[d],
-                    (unsigned long)usb2otg_int_hlt_hfnum[d]);
+                    (unsigned long)otg_Unit->hu_IntPollCount[d],
+                    (unsigned long)otg_Unit->hu_IntCompCount[d],
+                    (unsigned long)otg_Unit->hu_IntNakCount[d],
+                    (unsigned long)otg_Unit->hu_IntChhCount[d],
+                    (unsigned long)otg_Unit->hu_IntChhSeenIntr[d],
+                    (unsigned long)otg_Unit->hu_IntArmHfnum[d],
+                    (unsigned long)otg_Unit->hu_IntArmChar[d],
+                    (unsigned long)otg_Unit->hu_IntHltHfnum[d]);
         }
 
         Disable();
@@ -3262,14 +3450,14 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
             (unsigned)(rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff));
         bug(" dead=%02x ctl=%lu/%lu/%lu(%02x) ctlf=%lu/%lu/%lu tick=%lu",
             (unsigned)otg_Unit->hu_DeadChannels,
-            (unsigned long)usb2otg_ctrl_arm_count,
-            (unsigned long)usb2otg_ctrl_fin_count,
-            (unsigned long)usb2otg_ctrl_err_count,
-            (unsigned)usb2otg_ctrl_last_err,
-            (unsigned long)usb2otg_ctrl_nak_requeues,
-            (unsigned long)usb2otg_ctrl_chh_requeues,
-            (unsigned long)usb2otg_ctrl_xact_retries,
-            (unsigned long)usb2otg_wd_ticks);
+            (unsigned long)otg_Unit->hu_CtrlArmCount,
+            (unsigned long)otg_Unit->hu_CtrlFinCount,
+            (unsigned long)otg_Unit->hu_CtrlErrCount,
+            (unsigned)otg_Unit->hu_CtrlLastErr,
+            (unsigned long)otg_Unit->hu_CtrlNakRequeues,
+            (unsigned long)otg_Unit->hu_CtrlChhRequeues,
+            (unsigned long)otg_Unit->hu_CtrlXactRetries,
+            (unsigned long)otg_Unit->hu_WdTicks);
 #if defined(__AROSEXEC_SMP__)
         KrnSpinUnLock(&otg_Unit->hu_Lock);
 #endif
@@ -3290,12 +3478,12 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
         static BOOL force_recover_done = FALSE;
 
         if (!force_recover_done &&
-            usb2otg_wd_ticks >= USB2OTG_DEBUG_FORCE_RECOVER_TICK &&
+            otg_Unit->hu_WdTicks >= USB2OTG_DEBUG_FORCE_RECOVER_TICK &&
             otg_Unit->hu_PortRecoverState == 0)
         {
             force_recover_done = TRUE;
             bug("[USB2OTG:RECOVER] DEBUG: forcing power-cycle recovery (tick=%lu)\n",
-                (unsigned long)usb2otg_wd_ticks);
+                (unsigned long)otg_Unit->hu_WdTicks);
             otg_Unit->hu_PortRecoverState = 10;
             otg_Unit->hu_PortRecoverTick = 0;
         }
@@ -3402,11 +3590,17 @@ AROS_INTH1(FNAME_DEV(NakTimeoutInt), struct USB2OTGUnit *, otg_Unit)
     AROS_INTFUNC_INIT
 
     struct USB2OTGDevice *USB2OTGBase = otg_Unit->hu_USB2OTGBase;
+    BOOL ret;
 
     if (!usb2otg_require_cpu0(USB2OTGBase, __PRETTY_FUNCTION__))
         return FALSE;
 
-    return usb2otg_process_naktimeout(otg_Unit);
+    /* See PendingInt: serialize the watchdog against GlobalIRQHandler. */
+    Disable();
+    ret = usb2otg_process_naktimeout(otg_Unit);
+    Enable();
+
+    return ret;
 
     AROS_INTFUNC_EXIT
 }

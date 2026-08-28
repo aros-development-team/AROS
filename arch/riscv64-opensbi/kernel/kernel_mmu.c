@@ -308,7 +308,33 @@ void krnMMUMapRegion(IPTR base, IPTR size, unsigned long perms)
         }
         else
         {
-            krnMapMega(pa, MEGAPAGE_SIZE, perms);
+            /* the part of this megapage the region actually needs */
+            IPTR lo = pa > base ? pa : (base & ~(PAGE_SIZE - 1));
+            IPTR hi = (base + size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+            pte_t entry = 0;
+
+            if (hi > pa + MEGAPAGE_SIZE)
+                hi = pa + MEGAPAGE_SIZE;
+            if (root & PTE_V)
+                entry = ((pte_t *)PTE_TO_PA(root))[SV39_VPN(pa, 1)];
+
+            if ((entry & PTE_V) || lo != pa || hi != pa + MEGAPAGE_SIZE)
+            {
+                /*
+                 * The megapage is partially covered, or something is
+                 * already mapped here. Blanketing it with a fresh leaf
+                 * would strip the permissions of whatever shares the
+                 * megapage - allocatable RAM next to the DTB lost its
+                 * execute right that way, and anything loaded there
+                 * faulted on its first instruction. Map only the
+                 * region's own pages; krnMap4K splits an existing leaf
+                 * keeping its permissions for the untouched pages.
+                 */
+                krnMap4K(lo, hi - lo, perms);
+            }
+            else
+                krnMapMega(pa, MEGAPAGE_SIZE, perms);
+
             pa += MEGAPAGE_SIZE;
         }
     }

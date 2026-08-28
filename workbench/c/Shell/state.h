@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2021-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef SHELL_STATE_H
@@ -36,6 +36,8 @@ typedef struct _ShellState
     BPTR	oldHomeDir;	/* shared lock on program file's directory */
 
     LONG	cliNumber;
+
+    BOOL	background;	/* shell was created as a background one */
 
     LONG	argcount;	/* script args count */
     struct SArg	args[MAXARGS];	/* args definitions */

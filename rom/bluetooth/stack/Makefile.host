@@ -1,0 +1,42 @@
+# Host-side test build for the portable Bluetooth core (not part of the AROS
+# build; run "make -f Makefile.host test" with a native compiler).
+CC ?= gcc
+CFLAGS ?= -std=c11 -Wall -Wextra -Werror -Iinclude -Itesthost -Iprotocols
+SAN_CFLAGS := -fsanitize=address,undefined -fno-omit-frame-pointer -g
+
+include core.files
+
+PORT_SRC := testhost/virtual_transport/virtual_transport.c
+TEST_SRC := tests/main.c tests/support/test.c tests/endian/test_endian.c \
+            tests/buffer/test_buffer.c tests/hci/test_hci.c \
+            tests/h4/test_h4.c \
+            tests/virtual_transport/test_virtual_transport.c \
+            tests/queue/test_queue.c tests/timer/test_timer.c \
+            tests/controller/test_command_queue.c tests/controller/test_controller.c \
+            tests/manager/test_manager.c \
+            tests/addr/test_addr.c tests/device/test_device_registry.c \
+            tests/discovery/test_discovery.c tests/l2cap/test_l2cap.c \
+            tests/l2cap/test_signaling.c tests/l2cap/test_channel.c \
+            tests/sdp/test_sdp.c tests/sdp/test_sdp_client.c tests/sdp/test_sdp_server.c tests/att/test_att.c \
+            tests/gatt/test_gatt_client.c tests/smp/test_smp.c \
+            tests/security/test_bond_store.c tests/security/test_smp_crypto.c \
+            tests/security/test_smp_pairing.c tests/security/test_smp_manager.c \
+            tests/hid/test_hid_report.c tests/hid/test_hid_input.c \
+            tests/hid/test_hogp_client.c tests/hid/test_aros_input_bridge.c \
+            tests/vendor_init/test_vendor_init.c
+
+BUILD ?= build-host
+
+.PHONY: test clean
+
+test: $(BUILD)/test_runner
+	$(BUILD)/test_runner
+
+$(BUILD)/test_runner: $(addsuffix .c,$(BTCORE_FILES)) $(PORT_SRC) $(TEST_SRC) | $(BUILD)
+	$(CC) $(CFLAGS) $(SAN_CFLAGS) -o $@ $(addsuffix .c,$(BTCORE_FILES)) $(PORT_SRC) $(TEST_SRC)
+
+$(BUILD):
+	mkdir -p $(BUILD)
+
+clean:
+	rm -rf $(BUILD)

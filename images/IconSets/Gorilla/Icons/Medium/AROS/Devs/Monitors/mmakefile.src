@@ -1,15 +1,41 @@
-# Copyright (C) 2010-2023, The AROS Development Team. All rights reserved.
+# Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
-STORAGEICONS := Wrapper
-PCDEVSICONS    := ATI IntelGMA NVidia VMWare
+# Headless stays in Storage/ on every target - it is moved into Devs/ by
+# hand, only on machines that actually want a display-less driver.
+STORAGEICONS := Wrapper Headless
+PCIDEVSICONS   := ATI NVidia
+PCDEVSICONS    := IntelGMA VMWare
+# Cards on a PCI bus can be fitted to any machine that has one
+ifeq ($(filter pc opensbi,$(AROS_TARGET_ARCH)),)
+PCIDEVSDIR := $(AROSDIR)/Storage/Monitors
+else
+PCIDEVSDIR := $(AROS_DEVS)/Monitors
+endif
 ifneq ($(AROS_TARGET_ARCH),pc)
 PCDEVSDIR := $(AROSDIR)/Storage/Monitors
 else
 PCDEVSDIR := $(AROS_DEVS)/Monitors
 endif
 AMIGADEVSICONS    := SAGA Z3660 ZZ9000
+
+#
+# The icon set itself carries an icon for every monitor. What gets installed
+# beside a program follows the same platform rules the program does, or the
+# target is left with an icon that opens nothing.
+#
+INSTPCIDEVSICONS  := $(PCIDEVSICONS)
+ifeq ($(AROS_TARGET_ARCH),pc)
+INSTPCDEVSICONS   := $(PCDEVSICONS)
+else
+INSTPCDEVSICONS   := $(filter-out VMWare,$(PCDEVSICONS))
+endif
+ifeq ($(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU),amiga-m68k)
+INSTAMIGADEVSICONS := $(AMIGADEVSICONS)
+else
+INSTAMIGADEVSICONS :=
+endif
 ifneq ($(AROS_TARGET_ARCH),amiga)
 AMIGADEVSDIR := $(AROSDIR)/Storage/Monitors
 else
@@ -19,17 +45,24 @@ endif
 #MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-devs-monitors-clean iconset-Gorilla-wbench-icons-storage-monitors-clean
 #MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-devs-monitors iconset-Gorilla-wbench-icons-storage-monitors
 
-#MM- iconset-Gorilla-wbench-icons-devs-monitors : iconset-Gorilla-wbench-icons-devs-monitors-pc iconset-Gorilla-wbench-icons-devs-monitors-amiga
-#MM- iconset-Gorilla-wbench-icons-devs-monitors-clean : iconset-Gorilla-wbench-icons-devs-monitors-pc-clean iconset-Gorilla-wbench-icons-devs-monitors-amiga-clean
+#MM- iconset-Gorilla-wbench-icons-devs-monitors : iconset-Gorilla-wbench-icons-devs-monitors-pci iconset-Gorilla-wbench-icons-devs-monitors-pc iconset-Gorilla-wbench-icons-devs-monitors-amiga
+#MM- iconset-Gorilla-wbench-icons-devs-monitors-clean : iconset-Gorilla-wbench-icons-devs-monitors-pci-clean iconset-Gorilla-wbench-icons-devs-monitors-pc-clean iconset-Gorilla-wbench-icons-devs-monitors-amiga-clean
 
-%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-pc icons=$(PCDEVSICONS) image=Wrapper.png \
+%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-pci icons=$(INSTPCIDEVSICONS) image=Wrapper.png \
+             dir=$(PCIDEVSDIR)
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-pc icons=$(INSTPCDEVSICONS) image=Wrapper.png \
              dir=$(PCDEVSDIR)
 
-%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-amiga icons=$(AMIGADEVSICONS) image=Wrapper.png \
+%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-amiga icons=$(INSTAMIGADEVSICONS) image=Wrapper.png \
              dir=$(AMIGADEVSDIR)
 
 %build_icons mmake=iconset-Gorilla-wbench-icons-storage-monitors icons=$(STORAGEICONS) image=Wrapper.png \
              dir=$(AROS_STORAGE)/Monitors
+
+#MM- icons-wbench-devs-monitors : gorilla-icons-wbench-devs-monitors-pci
+%build_icons mmake=gorilla-icons-wbench-devs-monitors-pci icons=$(PCIDEVSICONS) image=Wrapper.png \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_STORAGE)/Monitors
 
 #MM- icons-wbench-devs-monitors : gorilla-icons-wbench-devs-monitors-pc
 %build_icons mmake=gorilla-icons-wbench-devs-monitors-pc icons=$(PCDEVSICONS) image=Wrapper.png \

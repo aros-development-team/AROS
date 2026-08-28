@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -50,18 +50,24 @@
     AROS_LIBFUNC_INIT
 
     struct IntrNode *h = handle;
-    UWORD irq = h->in_nr;
+    irqid_t irq = h->in_nr;
 
     if (h && (h->in_type == it_interrupt))
     {
         (void)goSuper();
 
         Disable();
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         REMOVE(h);
         if (IsListEmpty(&KERNELIRQ_LIST(irq)))
         {
                 ictl_disable_irq(irq, KernelBase);
         }
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
         Enable();
 
         krnFreeIntrNode(h);

@@ -257,6 +257,10 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                     if(urti->urti_OutDoneHook)
                         CallHookPkt(urti->urti_OutDoneHook, rtn, &rtn->rtn_BufferReq);
                 }
+                /* RT iso contract (cf. denebusb): advance the client buffer
+                   past the data just transferred; the next request hook
+                   continues from there unless it supplies a new buffer. */
+                rtn->rtn_BufferReq.ubr_Buffer += rtn->rtn_BufferReq.ubr_Length;
             }
 
             ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);

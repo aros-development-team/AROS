@@ -791,22 +791,47 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
         positionmode = data->app_GlobalInfo.mgi_Prefs->window_position;
         if (positionmode >= 1)
         {
-            snprintf(filename, 255, "ENV:zune/%s.prefs", data->app_Base);
             /*
-             * The config window (sys:prefs/Zune) is launched asynchronously,
-             * so we may not have refreshed our in-memory Configdata when it
-             * was opened. Reload the latest settings it has written before
-             * saving, so we don't overwrite the user's changes with our
-             * stale copy. Window positions are still persisted by Save.
+             * Capture the final window positions. Windows that are closed
+             * by the application before disposing it (e.g. FryingPan) are
+             * already snapshotted in UndisplayWindow, but apps that just
+             * dispose the application with its windows still open (e.g.
+             * iGame) would otherwise lose their position. MUIM_Window_
+             * Snapshot stores the position in the app's winpos array,
+             * which Configdata_SetWindowPos re-adds during Save.
              */
-            DoMethod(data->app_GlobalInfo.mgi_Configdata,
-                MUIM_Configdata_Load, (IPTR) filename);
+            {
+                struct MinList *children = NULL;
+                Object *cstate;
+                Object *child;
+
+                get(data->app_WindowFamily, MUIA_Family_List, &children);
+                if (children)
+                {
+                    cstate = (Object *) children->mlh_Head;
+                    while ((child = NextObject(&cstate)))
+                        DoMethod(child, MUIM_Window_Snapshot, 1);
+                }
+            }
+
+            snprintf(filename, 255, "ENV:zune/%s.prefs", data->app_Base);
             DoMethod(data->app_GlobalInfo.mgi_Configdata,
                 MUIM_Configdata_Save, (IPTR) filename);
         }
         if (positionmode == 2)
         {
+            /*
+             * ENVARC holds the settings that survive a reboot, i.e. the
+             * ones from the last "Save" in the config window. "Use" only
+             * applies the settings for the current session, so do not
+             * write the session settings here. Reload the persistent
+             * ENVARC content and save it again, which updates only the
+             * window positions (Configdata_SetWindowPos re-adds them
+             * during Save).
+             */
             snprintf(filename, 255, "ENVARC:zune/%s.prefs", data->app_Base);
+            DoMethod(data->app_GlobalInfo.mgi_Configdata,
+                MUIM_Configdata_Load, (IPTR) filename);
             DoMethod(data->app_GlobalInfo.mgi_Configdata,
                 MUIM_Configdata_Save, (IPTR) filename);
         }
@@ -2078,32 +2103,55 @@ static IPTR Application__MUIM_AboutMUI(struct IClass *cl, Object *obj,
 }
 
 
-static void Application__CloseWindows(struct IClass *cl, Object *obj)
+static struct List *Application__CloseWindows(struct IClass *cl, Object *obj)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct MinList *children = NULL;
+    struct List *windows = NULL;
     Object *cstate;
     Object *child;
 
     get(data->app_WindowFamily, MUIA_Family_List, &children);
-    if (children)
-    {
-        cstate = (Object *) children->mlh_Head;
-        while ((child = NextObject(&cstate)))
-        {
-            D(bug("[MUI:App] %s: closing window %p\n", __func__, child));
+    if (!children)
+        return NULL;
 
+    /* remember which windows were open, so they can be re-opened after a
+     * configdata change. Windows that were already closed are left alone. */
+    windows = AllocVec(sizeof(struct List), MEMF_CLEAR);
+    if (windows)
+        NewList(windows);
+
+    cstate = (Object *) children->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+        if (XGET(child, MUIA_Window_Open))
+        {
+            if (windows)
+            {
+                struct Node *n = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+
+                if (n)
+                {
+                    n->ln_Name = (STRPTR)child;
+                    AddTail(windows, n);
+                }
+            }
+            D(bug("[MUI:App] %s: closing window %p\n", __func__, child));
             set(child, MUIA_Window_Open, FALSE);
         }
     }
+    return windows;
 }
 
 static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
     struct MUIP_Application_SetConfigdata *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    struct List *windows;
 
-    Application__CloseWindows(cl, obj);
+    /* close all currently open windows and remember them, so they can be
+     * re-opened with the new settings afterwards */
+    windows = Application__CloseWindows(cl, obj);
 
     if (data->app_GlobalInfo.mgi_Configdata)
         MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
@@ -2111,8 +2159,8 @@ static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
     get(data->app_GlobalInfo.mgi_Configdata, MUIA_Configdata_ZunePrefs,
         &data->app_GlobalInfo.mgi_Prefs);
 
-    DoMethod(obj, MUIM_Application_PushMethod, (IPTR) obj, 1,
-        MUIM_Application_OpenWindows);
+    DoMethod(obj, MUIM_Application_PushMethod, (IPTR) obj, 2,
+        MUIM_Application_OpenWindows, (IPTR) windows);
     return 0;
 }
 
@@ -2210,10 +2258,14 @@ static IPTR Application__MUIM_SetConfigItem(struct IClass *cl, Object *obj,
             case MUICFG_String_MarkedText:
             case MUICFG_ActiveObject_Color:
             case MUICFG_PublicScreen:
-                Application__CloseWindows(cl, obj);
-                DoMethod(data->app_GlobalInfo.mgi_Configdata, MUIM_Configdata_SetString, msg->item, msg->data);
-                DoMethod(obj, MUIM_Application_PushMethod, (IPTR) obj, 1,
-                    MUIM_Application_OpenWindows);
+                {
+                    struct List *windows;
+
+                    windows = Application__CloseWindows(cl, obj);
+                    DoMethod(data->app_GlobalInfo.mgi_Configdata, MUIM_Configdata_SetString, msg->item, msg->data);
+                    DoMethod(obj, MUIM_Application_PushMethod, (IPTR) obj, 2,
+                        MUIM_Application_OpenWindows, (IPTR) windows);
+                }
                 break;
         }
     }
@@ -2228,18 +2280,38 @@ static IPTR Application__MUIM_OpenWindows(struct IClass *cl, Object *obj,
     struct MUIP_Application_OpenWindows *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
-    struct MinList *children = NULL;
-    Object *cstate;
-    Object *child;
 
-    get(data->app_WindowFamily, MUIA_Family_List, &children);
-    if (!children)
-        return 0;
-
-    cstate = (Object *) children->mlh_Head;
-    while ((child = NextObject(&cstate)))
+    /* a list of windows to open was passed (e.g. the ones closed by
+     * Application__CloseWindows before a configdata change) - open exactly
+     * those and free the list */
+    if (msg->windows)
     {
-        set(child, MUIA_Window_Open, TRUE);
+        struct Node *n;
+
+        while ((n = (struct Node *)RemHead(msg->windows)))
+        {
+            set((Object *)n->ln_Name, MUIA_Window_Open, TRUE);
+            FreeVec(n);
+        }
+        FreeVec(msg->windows);
+        return 0;
+    }
+
+    /* otherwise open all windows of the application */
+    {
+        struct MinList *children = NULL;
+        Object *cstate;
+        Object *child;
+
+        get(data->app_WindowFamily, MUIA_Family_List, &children);
+        if (!children)
+            return 0;
+
+        cstate = (Object *) children->mlh_Head;
+        while ((child = NextObject(&cstate)))
+        {
+            set(child, MUIA_Window_Open, TRUE);
+        }
     }
     return 0;
 }

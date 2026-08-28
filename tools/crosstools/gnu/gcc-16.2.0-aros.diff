@@ -1167,7 +1167,14 @@ diff -ruN gcc-16.2.0/gcc/config.gcc gcc-16.2.0.aros/gcc/config.gcc
 diff -ruN gcc-16.2.0/gcc/config.host gcc-16.2.0.aros/gcc/config.host
 --- gcc-16.2.0/gcc/config.host	2026-08-07 07:46:05.819684556 +0000
 +++ gcc-16.2.0.aros/gcc/config.host	2020-12-27 16:58:14.310000000 +0000
-@@ -108,7 +108,7 @@
+@@ -102,13 +102,13 @@
+   aarch64*-*-freebsd* | aarch64*-*-linux* | aarch64*-*-fuchsia* |\
+-  aarch64*-*-darwin*)
++  aarch64*-*-darwin* | aarch64*-*-aros*)
+     case ${target} in
+       aarch64*-*-*)
+ 	host_extra_gcc_objs="driver-aarch64.o"
+ 	host_xmake_file="${host_xmake_file} aarch64/x-aarch64"
  	;;
      esac
      ;;
@@ -1415,7 +1422,7 @@ diff -ruN gcc-16.2.0/gcc/system.h gcc-16.2.0.aros/gcc/system.h
  /* Define this so that inttypes.h defines the PRI?64 macros even
     when compiling with a C++ compiler.  Define it here so in the
     event inttypes.h gets pulled in by another header it is already
-@@ -733,9 +738,13 @@
+@@ -733,9 +738,14 @@
  #include "libiberty.h"
  
  #undef FFS  /* Some systems predefine this symbol; don't let it interfere.  */
@@ -1426,6 +1433,7 @@ diff -ruN gcc-16.2.0/gcc/system.h gcc-16.2.0.aros/gcc/system.h
  #undef ABS /* Likewise.  */
  #undef PC /* Likewise.  */
 +#undef CONST /* Likewise.  */
++#undef VOID /* Likewise.  */
  
  /* Provide a default for the HOST_BIT_BUCKET.
     This suffices for POSIX-like hosts.  */
@@ -1731,10 +1739,19 @@ diff -ruN gcc-16.2.0/libgcc/config.host gcc-16.2.0.aros/libgcc/config.host
  m68k-*-elf* | fido-*-elf)
  	tmake_file="$tmake_file m68k/t-floatlib"
  	;;
-@@ -1574,6 +1583,9 @@
+@@ -1574,6 +1583,18 @@
  	tmake_file="$tmake_file nvptx/t-nvptx"
  	extra_parts="crt0.o"
  	;;
++aarch64*-*-aros*)
++	# AROS has no signal frames; the generic aarch64 unwinder is the
++	# one declaring the helpers unwind-dw2-execute_cfa.h calls.
++	md_unwind_def_header=aarch64/aarch64-unwind-def.h
++	md_unwind_header=aarch64/aarch64-unwind.h
++	# Out-of-line atomics and TFmode soft float. The generic aros case
++	# below leaves tmake_file empty, which is not enough on aarch64.
++	tmake_file="${tmake_file} ${cpu_type}/t-lse ${cpu_type}/t-softfp t-softfp"
++	;;
 +*-*-aros*)
 +	tmake_file=
 +	;;

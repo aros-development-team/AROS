@@ -74,7 +74,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 #MM     kernel-security-includes \
 #MM     kernel-exec-includes \
 #MM     kernel-timer-includes \
-#MM     kernel-intuition-includes
+#MM     kernel-intuition-includes \
+#MM     kernel-m68kemu-library-includes
 
 #MM- core-linklibs : linklibs-dos
 

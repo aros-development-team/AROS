@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <inttypes.h>
@@ -25,11 +25,11 @@
 #define DIRQ(x)
 #define D(x)
 
-void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
+void ictl_enable_irq(irqid_t irq, struct KernelBase *KernelBase)
 {
 }
 
-void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
+void ictl_disable_irq(irqid_t irq, struct KernelBase *KernelBase)
 {
 }
 

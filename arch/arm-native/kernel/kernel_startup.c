@@ -29,12 +29,15 @@
 
 #include "kernel_intern.h"
 #include "kernel_debug.h"
+#include "kernel_fb.h"
 #include "kernel_romtags.h"
 
 #include "exec_platform.h"
 
 #undef KernelBase
 #include "tls.h"
+
+extern struct MemHeader *krnCreateROMHeader(CONST_STRPTR name, APTR start, APTR end);
 
 extern struct TagItem *BootMsg;
 
@@ -55,30 +58,32 @@ asm (
     "           bl      __clear_bss          \n"
     "           pop {r0}                     \n"
     "           cps     #0x1f                \n" /* system mode */
-    "           ldr     sp, stack_end        \n"
+    "           ldr     r1, =stack_end       \n"
+    "           ldr     sp, [r1]             \n"
     "           cps     #0x11                \n" /* fiq mode */
-    "           ldr     sp, stack_fiq_end    \n"
+    "           ldr     r1, =stack_fiq_end   \n"
+    "           ldr     sp, [r1]             \n"
     "           cps     #0x13                \n" /* SVC (supervisor) mode */
-    "           ldr     sp, stack_super_end  \n"
+    "           ldr     r1, =stack_super_end \n"
+    "           ldr     sp, [r1]             \n"
     "           b       kernel_cstart        \n"
+    "           .ltorg                       \n"
 
     ".string \"Native/CORE v3 (" __DATE__ ")\"" "\n\t\n\t"
 );
 
 /*
- * With clang's integrated assembler, TARGET_SECTION_COMMENT (//) is NOT
- * treated as a comment — it becomes a literal part of the section name,
- * creating ".aros.init //" as a separate section from ".aros.init".
+ * The entry code above takes the address of each of these through a literal
+ * pool ("ldr r1, =stack_end") and then dereferences it, so the reference is
+ * resolved by a relocation rather than by a PC-relative offset the assembler
+ * has to compute. That leaves these free to sit in their own section: putting
+ * data in .aros.init, which the entry code declares as "ax", would otherwise
+ * make the assembler warn about changed section attributes. The linker script
+ * globs .aros.init*, so they are still placed with the init code.
  */
-#if defined(__clang__)
-static uint32_t * const stack_end __attribute__((used, section(".aros.init"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
-static uint32_t * const stack_super_end __attribute__((used, section(".aros.init"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
-static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init"))) = &stack_fiq[1024 - sizeof(IPTR)];
-#else
-static uint32_t * const stack_end __attribute__((used, section(".aros.init " TARGET_SECTION_COMMENT))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
-static uint32_t * const stack_super_end __attribute__((used, section(".aros.init " TARGET_SECTION_COMMENT))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
-static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init " TARGET_SECTION_COMMENT))) = &stack_fiq[1024 - sizeof(IPTR)];
-#endif
+static uint32_t * const stack_end __attribute__((used, section(".aros.init.data"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_super_end __attribute__((used, section(".aros.init.data"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init.data"))) = &stack_fiq[1024 - sizeof(IPTR)];
 
 struct ARM_Implementation __arm_arosintern  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,0};
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
@@ -180,24 +185,18 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
     }
 
-    cpu_Init(&__arm_arosintern, msg);
-
-    if (__arm_arosintern.ARMI_LED_Toggle)
-    {
-        if (__arm_arosintern.ARMI_Delay)
-            __arm_arosintern.ARMI_Delay(100000);
-        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
-    }
-
-    /* NB: the bootstrap has conveniently setup the framebuffer
-            and initialised the serial port and led for us */
-
+    /*
+     * Parse memory ranges and allocate per-CPU TLS before cpu_Init.
+     * cpu_Init -> GetCPUNumber() reads TPIDRURO and dereferences it as
+     * a tls_t *, so TPIDRURO must point at a valid tls_t with CPUNumber
+     * set before any code inside cpu_Init runs. On real silicon TPIDRURO
+     * is 0 out of reset, so calling cpu_Init first faults silently.
+     */
     while(msg->ti_Tag != TAG_DONE)
     {
         switch (msg->ti_Tag)
         {
         case KRN_CmdLine:
-//            RelocateStringData(tag);
             cmdline = (char *)msg->ti_Data;
             break;
         case KRN_MEMLower:
@@ -210,18 +209,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             protlower = msg->ti_Data;
             break;
         case KRN_ProtAreaEnd:
-            // Page align
             protupper = (msg->ti_Data + 4095) & ~4095;
-            break;
-        case KRN_KernelBase:
-            /*
-             * KRN_KernelBase is actually a border between read-only
-             * (code) and read-write (data) sections of the kickstart.
-             * read-write section goes to lower addresses from this one,
-             * so we align it upwards in order not to make part of RW data
-             * read-only.
-             */
-//            addr = AROS_ROUNDUP2(msg->ti_Data, PAGE_SIZE);
             break;
         }
         msg++;
@@ -234,6 +222,21 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     __tls->KernelBase = NULL;
     __tls->SysBase = NULL;
     __tls->ThisTask = NULL;
+    __tls->CPUNumber = 0;               /* boot CPU is always logical 0 */
+
+    asm volatile("mcr p15, 0, %0, c13, c0, 3" : : "r"(__tls));
+
+    cpu_Init(&__arm_arosintern, msg);
+
+    if (__arm_arosintern.ARMI_LED_Toggle)
+    {
+        if (__arm_arosintern.ARMI_Delay)
+            __arm_arosintern.ARMI_Delay(100000);
+        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+    }
+
+    /* NB: the bootstrap has conveniently setup the framebuffer
+            and initialised the serial port and led for us */
 
     D(bug("[Kernel] AROS ARM Native Kernel built on %s\n", __DATE__));
     if (dt_find_node("/")) {
@@ -241,8 +244,6 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     }
 
     D(bug("[Kernel] Entered kernel_cstart @ 0x%p, BootMsg @ 0x%p\n", kernel_cstart, BootMsg));
-
-    asm volatile("mcr p15, 0, %0, c13, c0, 3" : : "r"(__tls));
 
     D(
         if (__arm_arosintern.ARMI_PutChar)
@@ -306,6 +307,14 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     __tls->SysBase = SysBase;
     D(bug("[Kernel] SysBase @ 0x%p\n", SysBase));
+
+    /*
+     * Register the kickstart ROM region so TypeOfMem() recognizes pointers
+     * to ROM-resident static data (attrLists, IORequest templates, etc.).
+     * Without this, ASSERT_VALID_PTR fires on every such pointer when ADEBUG
+     * is enabled, storming Alert() through hot I/O paths.
+     */
+    krnCreateROMHeader("Kickstart ROM", ranges[0], ranges[1]);
 
     /*
      * Make kickstart code area read-only.

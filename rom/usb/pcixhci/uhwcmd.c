@@ -1038,10 +1038,15 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq,
         if((unit->hu_RootHubPorts < 8) || (ioreq->iouh_Length == 1)) {
             *((UBYTE *) ioreq->iouh_Data) = unit->hu_RootPortChanges;
             ioreq->iouh_Actual = 1;
-        } else {
+        } else if((unit->hu_RootHubPorts < 16) || (ioreq->iouh_Length == 2)) {
             ((UBYTE *) ioreq->iouh_Data)[0] = unit->hu_RootPortChanges;
             ((UBYTE *) ioreq->iouh_Data)[1] = unit->hu_RootPortChanges >> 8;
             ioreq->iouh_Actual = 2;
+        } else {
+            ((UBYTE *) ioreq->iouh_Data)[0] = unit->hu_RootPortChanges;
+            ((UBYTE *) ioreq->iouh_Data)[1] = unit->hu_RootPortChanges >> 8;
+            ((UBYTE *) ioreq->iouh_Data)[2] = unit->hu_RootPortChanges >> 16;
+            ioreq->iouh_Actual = 3;
         }
         unit->hu_RootPortChanges = 0;
         return(0);
@@ -1902,10 +1907,15 @@ void uhwCheckRootHubChanges(struct PCIUnit *unit)
             if((unit->hu_RootHubPorts < 8) || (ioreq->iouh_Length == 1)) {
                 *((UBYTE *) ioreq->iouh_Data) = unit->hu_RootPortChanges;
                 ioreq->iouh_Actual = 1;
-            } else {
+            } else if((unit->hu_RootHubPorts < 16) || (ioreq->iouh_Length == 2)) {
                 ((UBYTE *) ioreq->iouh_Data)[0] = unit->hu_RootPortChanges;
                 ((UBYTE *) ioreq->iouh_Data)[1] = unit->hu_RootPortChanges >> 8;
                 ioreq->iouh_Actual = 2;
+            } else {
+                ((UBYTE *) ioreq->iouh_Data)[0] = unit->hu_RootPortChanges;
+                ((UBYTE *) ioreq->iouh_Data)[1] = unit->hu_RootPortChanges >> 8;
+                ((UBYTE *) ioreq->iouh_Data)[2] = unit->hu_RootPortChanges >> 16;
+                ioreq->iouh_Actual = 3;
             }
             ReplyMsg(&ioreq->iouh_Req.io_Message);
             ioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;

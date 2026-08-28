@@ -218,6 +218,18 @@ if test "x-$aros_tree_vectorize" = "x-yes" ; then
     aros_cflags_tree_vectorize=-ftree-vectorize
 fi
 
+AC_MSG_CHECKING([for an option to disable vectorization])
+aros_cflags_no_vectorize=
+for flag in -fno-vectorize -fno-tree-vectorize; do
+    CFLAGS="$flag -Werror"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cflags_no_vectorize=$flag; break],[])
+done
+if test -n "$aros_cflags_no_vectorize" ; then
+    AC_MSG_RESULT([$aros_cflags_no_vectorize])
+else
+    AC_MSG_RESULT([no])
+fi
+
 AC_MSG_CHECKING([whether ${CC} accepts -flto])
 CFLAGS=-flto
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_lto="yes"],[aros_lto="no"])
@@ -832,6 +844,7 @@ CFLAGS="$save_cflags"
 #  -Wunused-local-typedefs
 #  -Wmissing-braces
 #  -Wconversion-null
+#  -Wregister
 #  -Wnarrowing
 #  -Wvolatile-register-var
 #  -Wsizeof-pointer-memaccess
@@ -1559,6 +1572,17 @@ if test "x-$aros_conversion_null" = "x-yes" ; then
     aros_nowarnflags_conversion_null=-Wno-conversion-null
 fi
 
+dnl clang makes -Wregister a hard error from C++17 on, so ports that still use
+dnl the 'register' keyword need the -Wno- form to stay buildable.
+AC_MSG_CHECKING([whether ${CXX} accepts -Wregister])
+CXXFLAGS=-Wregister
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_register="yes"],[aros_register="no"])
+AC_MSG_RESULT($aros_register)
+if test "x-$aros_register" = "x-yes" ; then
+    aros_warnflags_register=-Wregister
+    aros_nowarnflags_register=-Wno-register
+fi
+
 CXXFLAGS="$save_cxxflags"
 
 AC_MSG_CHECKING([whether ${CXX} accepts -nostdlib++])
@@ -1719,6 +1743,7 @@ AC_SUBST(aros_cflags_no_trapping_math)
 AC_SUBST(aros_cflags_float_store)
 AC_SUBST(aros_cflags_no_float_store)
 AC_SUBST(aros_cflags_tree_vectorize)
+AC_SUBST(aros_cflags_no_vectorize)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)
 AC_SUBST(aros_cflags_whole_program)
@@ -1835,6 +1860,8 @@ AC_SUBST(aros_warnflags_misleading_indentation)
 AC_SUBST(aros_nowarnflags_misleading_indentation)
 AC_SUBST(aros_warnflags_nonnull_compare)
 AC_SUBST(aros_nowarnflags_nonnull_compare)
+AC_SUBST(aros_warnflags_register)
+AC_SUBST(aros_nowarnflags_register)
 AC_SUBST(aros_warnflags_unused)
 AC_SUBST(aros_nowarnflags_unused)
 AC_SUBST(aros_warnflags_unused_label)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -76,6 +76,7 @@
     }
 
     /* Follow the list */
+    struct DosList *prev = dlist;
     for (;;)
     {
         /* Get next entry. Return NULL if there is none. */
@@ -85,7 +86,27 @@
         {
             return NULL;
         }
-        
+
+        /*
+         * dol_Type indexes flagarray[dol_Type + 1] below. The array only
+         * has entries for the valid node types (DLT_DEVICE..DLT_NONBINDING,
+         * plus the -1 "never matches" slot), so a node whose dol_Type is
+         * out of that range would read past the array and, with a wild
+         * value, fault. That only happens if the list itself is damaged -
+         * typically a node that was freed while still linked, whose fields
+         * now hold allocator data. Stop the walk safely and report the bad
+         * node (and the one that pointed at it) rather than crashing, so
+         * the culprit can be identified from the log.
+         */
+        if (dlist->dol_Type < -1 || dlist->dol_Type > DLT_NONBINDING)
+        {
+            bug("[FindDosEntry] corrupt DosList node 0x%p (type 0x%p,"
+                " next 0x%p) linked after 0x%p - stopping walk\n",
+                dlist, (APTR)(IPTR)dlist->dol_Type,
+                (APTR)(IPTR)dlist->dol_Next, prev);
+            return NULL;
+        }
+
         D(bug("[FindDosEntry] Found list entry 0x%p, '%b' type %d\n", dlist, dlist->dol_Name, dlist->dol_Type));
 
         /* Check type and name */
@@ -95,6 +116,8 @@
         {
             return dlist;
         }
+
+        prev = dlist;
     }
     AROS_LIBFUNC_EXIT
 } /* FindDosEntry */

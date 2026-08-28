@@ -1,0 +1,20 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := bluetoothprefs ActionClass IconListClass ScanWinClass DevWinClass bluzinglogo icons
+
+#MM- kernel-bluetooth-prefs : kernel-bluetooth-library-includes linklibs
+
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_LDFLAGS := -static
+
+#MM- kernel-bluetooth-prefs : kernel-bluetooth-prefs-icon
+
+%build_prog progname="Bluetooth" mmake=kernel-bluetooth-prefs \
+    files=$(FILES) targetdir=$(AROS_PREFS)
+
+# Placeholder icon (reuses the Trident prefs icon) so the program is
+# clickable in the Prefs drawer; a dedicated Bluetooth icon is a follow-up.
+%copy_files_q mmake=kernel-bluetooth-prefs-icon \
+    src="$(SRCDIR)/$(CURDIR)" files="Bluetooth.info" dst="$(AROS_PREFS)"
+
+%common

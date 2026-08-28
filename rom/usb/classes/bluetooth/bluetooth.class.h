@@ -34,6 +34,9 @@ LONG nOpenBindingCfgWindow(struct NepBTBase *nh, struct NepClassBT *ncp);
 
 void nGUITaskCleanup(struct NepClassBT *nh);
 
+void nStartStack(struct NepClassBT *ncp);
+void nStopStack(struct NepClassBT *ncp);
+
 BOOL nLoadClassConfig(struct NepBTBase *nh);
 BOOL nLoadBindingConfig(struct NepClassBT *ncp);
 

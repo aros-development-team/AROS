@@ -93,6 +93,7 @@ struct p96gfx_carddata
 
     WORD                                                sprite_width, sprite_height;
     BOOL                                                hardwaresprite;
+    BOOL                                                hiressprite;
     WORD                                                spritepencnt;
 
     BOOL                                                initialized;

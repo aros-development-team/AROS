@@ -138,7 +138,7 @@ int main()
         if (oversample)
             workMaster.smpm_Oversample = oversample;
 
-        KrnSpinInit(&workMaster.smpm_Lock);
+        InitSemaphore(&workMaster.smpm_Lock);
 
         for (core = 0; core < max_cpus; core++)
         {
@@ -186,7 +186,9 @@ int main()
                         {
                             workMaster.smpm_WorkerCount++;
                             Wait(SIGBREAKF_CTRL_C);
+                            ObtainSemaphore(&workMaster.smpm_Lock);
                             AddTail(&workMaster.smpm_Workers, &coreWorker->smpw_Node);
+                            ReleaseSemaphore(&workMaster.smpm_Lock);
                             AddHead(&coreWorker->smpw_Task->tc_MemEntry, &coreML->ml_Node);
                         }
                     }
@@ -207,15 +209,18 @@ int main()
 
         do {
             complete = TRUE;
+            ObtainSemaphoreShared(&workMaster.smpm_Lock);
             ForeachNode(&workMaster.smpm_Workers, coreWorker)
             {
                 if (coreWorker->smpw_Node.ln_Type != 1)
                 {
                     complete = FALSE;
-                    Reschedule();
                     break;
                 }
             }
+            ReleaseSemaphore(&workMaster.smpm_Lock);
+            if (!complete)
+                Reschedule();
         } while (!complete);
 
         /*
@@ -302,11 +307,13 @@ int main()
                         complete = FALSE;
 
                     /* Are workers still working ? */
+                    ObtainSemaphoreShared(&workMaster.smpm_Lock);
                     ForeachNode(&workMaster.smpm_Workers, coreWorker)
                     {
                         if (!IsListEmpty(&coreWorker->smpw_MsgPort->mp_MsgList))
                             complete = FALSE;
                     }
+                    ReleaseSemaphore(&workMaster.smpm_Lock);
 
                     D(bug("[SMP-Test] %s: Updating work output ...\n", __func__);)
                     WritePixelArray(workMaster.smpm_WorkBuffer,
@@ -360,6 +367,7 @@ int main()
 
             D(bug("[SMP-Test] %s: Letting workers know we are finished ...\n", __func__);)
 
+            ObtainSemaphoreShared(&workMaster.smpm_Lock);
             ForeachNode(&workMaster.smpm_Workers, coreWorker)
             {
                 /* Tell the workers they are finished ... */
@@ -369,7 +377,8 @@ int main()
                     PutMsg(coreWorker->smpw_MsgPort, (struct Message *)workMsg);
                 }
             }
-            FreeMem(workMaster.smpm_WorkBuffer, workMaster.smpm_Width * workMaster.smpm_Height * sizeof(ULONG));
+            ReleaseSemaphore(&workMaster.smpm_Lock);
+
             CloseWindow(displayWin);
             outBMRastPort->BitMap = NULL;
             FreeRastPort(outBMRastPort);
@@ -385,9 +394,22 @@ int main()
     {
         while ((signals = Wait(SIGBREAKF_CTRL_C)) != 0)
         {
-            if ((signals & SIGBREAKF_CTRL_C) && IsListEmpty(&workMaster.smpm_Workers))
-                break;
+            if (signals & SIGBREAKF_CTRL_C)
+            {
+                BOOL workers_left;
+
+                ObtainSemaphoreShared(&workMaster.smpm_Lock);
+                workers_left = !IsListEmpty(&workMaster.smpm_Workers);
+                ReleaseSemaphore(&workMaster.smpm_Lock);
+
+                if (!workers_left)
+                    break;
+            }
         }
+
+        if (workMaster.smpm_WorkBuffer)
+            FreeMem(workMaster.smpm_WorkBuffer, workMaster.smpm_Width * workMaster.smpm_Height * sizeof(ULONG));
+
         DeleteMsgPort(workMaster.smpm_MasterPort);
     }
 

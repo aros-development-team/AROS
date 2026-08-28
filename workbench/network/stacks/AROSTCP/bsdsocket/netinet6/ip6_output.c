@@ -236,26 +236,22 @@ multicast_output:
             int more = (m->m_pkthdr.len - hlen - flen) > 0;
             struct ip6_frag fh;
 
-            /* allocate fragment mbuf */
+            /*
+             * Build the fragment as a chain: a small head mbuf carries the
+             * (copied) IPv6 header plus the 8-byte fragment header, and the
+             * payload is attached with m_copy(), which shares the original
+             * clusters.  A jumbo fragment therefore never has to fit within a
+             * single cluster (mbconf.mclbytes), which an inline copy assumed.
+             */
             m0 = m_gethdr(M_WAIT, MT_DATA);
             if(m0 == NULL) {
                 error = ENOBUFS;
                 goto bad;
             }
 
-            /* copy IPv6 header */
+            /* head mbuf: IPv6 header + fragment header (48 bytes, fits MHLEN) */
             M_COPY_PKTHDR(m0, m);
-            /* the fragment payload is stored inline, so attach a cluster
-             * large enough for the header, fragment header and payload.
-             * Done after M_COPY_PKTHDR since that resets m_flags/m_data. */
-            MCLGET(m0, M_WAIT);
-            if((m0->m_flags & M_EXT) == 0) {
-                m_freem(m0);
-                error = ENOBUFS;
-                goto bad;
-            }
-            m0->m_pkthdr.len = hlen + sizeof(fh) + flen;
-            m0->m_len = hlen + sizeof(fh) + flen;
+            m0->m_len = hlen + sizeof(fh);
             bcopy(mtod(m, caddr_t), mtod(m0, caddr_t), hlen);
 
             /* fill fragment header */
@@ -268,9 +264,14 @@ multicast_output:
 
             bcopy(&fh, mtod(m0, caddr_t) + hlen, sizeof(fh));
 
-            /* copy payload */
-            m_copydata(m, hlen + off2, flen, mtod(m0, caddr_t) + hlen + sizeof(fh));
-            /* no separate data mbuf needed as M_EXT not used here */
+            /* attach the payload as a shared chain rather than an inline copy */
+            m0->m_next = m_copy(m, hlen + off2, flen);
+            if(m0->m_next == NULL) {
+                m_freem(m0);
+                error = ENOBUFS;
+                goto bad;
+            }
+            m0->m_pkthdr.len = hlen + sizeof(fh) + flen;
 
             /* fix ip6_plen */
             ((struct ip6_hdr *)mtod(m0, caddr_t))->ip6_plen =

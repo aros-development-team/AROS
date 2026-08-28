@@ -358,6 +358,20 @@ SAVE_XMM_AND_CHECK
     {
         DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: INVALID STATE!!" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
     }
+
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Wait() carries tc_SpinLock across KrnSwitch so no other CPU can
+     * observe (TS_WAIT, on-TaskWait) and dispatch this task before its
+     * context is saved. The context is stored by now - release the lock
+     * (see rom/exec/wait.c, and the matching release in the ARM port).
+     * Without this the task stays in TS_WAIT holding its own lock, and
+     * the first Signal() aimed at it spins forever.
+     */
+    if (task && (task->tc_State == TS_WAIT))
+        KrnSpinUnLock(&task->tc_SpinLock);
+#endif
+
     core_Switch();
 }
 

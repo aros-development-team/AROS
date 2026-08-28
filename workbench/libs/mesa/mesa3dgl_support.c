@@ -4,6 +4,14 @@
 
 #include <aros/debug.h>
 
+/* Before the rest: something further down defines SCHED_RR, which turns
+ * the KRN_SchedType enum in aros/kernel.h into a syntax error. */
+#ifdef MESA3DGL_HAVE_COREAPI
+#include <aros/kernel.h>
+#include <proto/kernel.h>
+#include <hardware/bcm2708.h>
+#endif
+
 #include <proto/utility.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -21,8 +29,9 @@
 /* Render-scale divisor (ENV:VC4_RENDER_SCALE, 1-4): GL renders at 1/N
  * of the drawable size and the vc4 present path shows it through the
  * HVS hardware scaler — fragment cost drops by N^2. Only honoured when
- * the vc4 shim is linked in (weak marker below); elsewhere the fallback
- * blit can't scale and would draw a small image in the corner. */
+ * the vc4 shim is linked in (weak marker below) AND the display side can
+ * actually scale a plane; elsewhere the fallback blit can't scale and
+ * would draw a small image in the corner. */
 ULONG mesa3dgl_render_scale = 1;
 
 /* Marker: the GalliumCoreAPI table exists only in builds that carry a
@@ -32,6 +41,26 @@ ULONG mesa3dgl_render_scale = 1;
 extern const void *gallium_core_get_api(void);
 #else
 static inline const void *gallium_core_get_api(void) { return (const void *)0; }
+#endif
+
+/*
+ * Second gate: only HVS4 builds a scaled plane, so on the BCM2711 a
+ * scaled request would leave a 1/N image in the top-left corner. Not a
+ * build-time decision - one aarch64 build ships both gallium hidds - and
+ * the driver has no attribute to ask without pulling oop.library in here.
+ */
+#ifdef MESA3DGL_HAVE_COREAPI
+static BOOL MESA3DGLScalerAvailable(VOID)
+{
+    struct Library *KernelBase = OpenResource("kernel.resource");
+
+    if (!KernelBase)
+        return FALSE;
+
+    return KrnGetSystemAttr(KATTR_PeripheralBase) != BCM2711_PERIIOBASE;
+}
+#else
+static inline BOOL MESA3DGLScalerAvailable(VOID) { return FALSE; }
 #endif
 
 /* Per-program override: VC4_RENDER_SCALE tooltype in the program's icon
@@ -88,7 +117,7 @@ static VOID MESA3DGLReadRenderScale(VOID)
     TEXT buf[8];
 
     mesa3dgl_render_scale = 1;
-    if (!gallium_core_get_api())
+    if (!gallium_core_get_api() || !MESA3DGLScalerAvailable())
         return;
 
     if (GetVar("VC4_RENDER_SCALE", buf, sizeof(buf), 0) > 0

@@ -651,15 +651,25 @@ isc_result_t omapi_one_dispatch (omapi_object_t *wo,
 			   	   (unsigned int)(to.tv_usec));
 		}
 #endif
-		count = select(max + 1, &r, &w, &x, t ? &to : NULL);
 #ifdef __AROS__
-		bug("[dhclient] omapi_one_dispatch: blocking select count=%d errno=%d\n", count, errno);
-		/* AROSTCP asks us to terminate (e.g. a new WiFi association needs a
-		 * fresh lease) by sending SIGBREAKF_CTRL_C; WaitSelect() reports it as
-		 * EINTR. The count<0 recovery below assumes a bad fd, finds none, and we
-		 * would busy-spin forever. Honour the break and exit. */
-		if (count < 0 && errno == EINTR)
-			exit(0);
+		/* Plain select() on AROS waits ONLY on socket fds, so the exec
+		 * SIGBREAKF_CTRL_C the stack sends when it wants us to quit (a stack
+		 * restart from the Network prefs, or a new WiFi association needing a
+		 * fresh lease) never interrupts it: we sit here holding bsdsocket.library
+		 * open and the stack can never shut down.  WaitSelect() also waits on
+		 * exec signals - break out on CTRL-C and exit so the base is released. */
+		{
+			ULONG sigs = SIGBREAKF_CTRL_C;
+			count = WaitSelect(max + 1, &r, &w, &x, t ? &to : NULL, &sigs);
+			bug("[dhclient] omapi_one_dispatch: blocking WaitSelect count=%d errno=%d sigs=0x%08lx\n",
+			    count, errno, (unsigned long)sigs);
+			if (sigs & SIGBREAKF_CTRL_C)
+				exit(0);
+			if (count < 0 && errno == EINTR)
+				exit(0);
+		}
+#else
+		count = select(max + 1, &r, &w, &x, t ? &to : NULL);
 #endif
 	}
 

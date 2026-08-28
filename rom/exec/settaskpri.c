@@ -61,14 +61,22 @@
     struct Task *thisTask = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *task_listlock = NULL;
+    BOOL doResched = FALSE, doRemote = FALSE;
     int cpunum = KrnGetCPUNumber();
+    void *remoteCpuAffinity = NULL;
 #endif
     BYTE old;
 
     D(bug("[Exec] SetTaskPri(0x%p, %d)\n", task, priority);)
 
     /* Always Disable() when doing something with task lists. */
+    Disable();
 #if defined(__AROSEXEC_SMP__)
+    /*
+     * Take the task lock before picking the list lock: tc_State tells us
+     * which list the task is on, and only the task lock keeps it still.
+     */
+    EXEC_SPINLOCK_LOCK(&task->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
     switch (task->tc_State)
     {
         case TS_RUN:
@@ -81,9 +89,6 @@
             task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
             break;
     }
-#endif
-    Disable();
-#if defined(__AROSEXEC_SMP__)
     if (task->tc_State == TS_READY)
         EXEC_LOCK_WRITE(task_listlock);
     else
@@ -107,31 +112,39 @@
         }
 
 #if defined(__AROSEXEC_SMP__)
-        EXEC_UNLOCK(task_listlock);
-
-        task_listlock = NULL;
-        if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum) {
-#endif
+        if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum)
+            doResched = (task->tc_Node.ln_Pri > thisTask->tc_Node.ln_Pri);
+        else if (task->tc_State == TS_RUN)
+        {
+            /* Read the affinity while still locked - the ETask can be
+             * freed the moment we let go. */
+            remoteCpuAffinity = IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity;
+            doRemote = TRUE;
+        }
+#else
         if ( task->tc_Node.ln_Pri > thisTask->tc_Node.ln_Pri)
         {
             D(bug("[Exec] SetTaskPri: Task needs reschedule...\n");)
             Reschedule();
-        }
-#if defined(__AROSEXEC_SMP__)
-        }
-        else if (task->tc_State == TS_RUN)
-        {
-            D(bug("[Exec] SetTaskPri: changing priority of task running on another cpu (%03u)\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber);)
-            KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
         }
 #endif
     }
 
     /* All done. */
 #if defined(__AROSEXEC_SMP__)
-    if (task_listlock)
+    /* Drop both locks before kicking any scheduler path. */
+    EXEC_UNLOCK(task_listlock);
+    EXEC_SPINLOCK_UNLOCK(&task->tc_SpinLock);
+
+    if (doResched)
     {
-        EXEC_UNLOCK(task_listlock);
+        D(bug("[Exec] SetTaskPri: Task needs reschedule...\n");)
+        Reschedule();
+    }
+    else if (doRemote)
+    {
+        D(bug("[Exec] SetTaskPri: changing priority of task running on another cpu (%03u)\n", remoteCpuNumber);)
+        KrnScheduleCPU(remoteCpuAffinity);
     }
 #endif
     Enable();

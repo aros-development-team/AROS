@@ -13,4 +13,8 @@
 
 void core_MMUUpdatePageTables(void);
 
+/* KrnMapGlobal()/KrnUnmapGlobal() proper, see mmu.c */
+int krnMMUMap(void *virt, void *phys, uint32_t length, KRN_MapAttr flags);
+int krnMMUUnmap(void *virt, uint32_t length);
+
 #endif /* _MMU_H */

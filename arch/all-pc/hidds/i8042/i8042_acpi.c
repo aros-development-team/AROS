@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -58,7 +58,7 @@ static int i8042_acpi_probe(LIBBASETYPEPTR lh)
         if (ACPI_FAILURE(status)) {
             D(bug("[i8042:ACPI] %s: No PNP0303 PS/2 Keyboard found\n", __func__);)
         }
-        if (devicesfound & ACPI_PS2DEV_KEYBOARD) {
+        if (!(devicesfound & ACPI_PS2DEV_KEYBOARD)) {
             lh->csd.cs_Flags |= PS2F_DISABLEKEYB;
         }
 
@@ -66,13 +66,16 @@ static int i8042_acpi_probe(LIBBASETYPEPTR lh)
         if (ACPI_FAILURE(status)) {
             D(bug("[i8042:ACPI] %s: No PNP0F03 PS/2 Mouse found\n", __func__);)
         }
-        if (devicesfound & ACPI_PS2DEV_MOUSE) {
+        if (!(devicesfound & ACPI_PS2DEV_MOUSE)) {
             lh->csd.cs_Flags |= PS2F_DISABLEMOUSE;
         }
 
-        if (devicesfound) {
-            D(bug("[i8042:ACPI] %s: Found %u PS/2 device(s)\n", __func__, devicesfound);)
-        }
+        D(
+            if (devicesfound & ACPI_PS2DEV_KEYBOARD)
+                bug("[i8042:ACPI] %s: Found PS/2 keyboard\n", __func__);
+            if (devicesfound & ACPI_PS2DEV_MOUSE)
+                bug("[i8042:ACPI] %s: Found PS/2 mouse\n", __func__);
+        )
         CloseLibrary(ACPICABase);
         return (devicesfound != 0) ? TRUE  : FALSE;
     }

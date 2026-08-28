@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Backwards compatibility display driver loader.
 */
@@ -49,10 +49,10 @@ int main(void)
         } else
             myname = me->pr_Task.tc_Node.ln_Name;
     }
-    D(Printf("Command name: %s\n", myname));
+    D(bug("[MonWrapper] Command name: %s\n", myname));
 
     icon = GetDiskObject(myname);
-    D(Printf("Icon 0x%p\n", icon));
+    D(bug("[MonWrapper] Icon 0x%p\n", icon));
 
     if (icon) {
         args.hidd = FindToolType(icon->do_ToolTypes, "CLASS");
@@ -61,11 +61,11 @@ int main(void)
 
     if (!WBenchMsg) {
         rdargs = ReadArgs("CLASS=HIDD/A,LIBRARY=LIB", (IPTR *)&args, NULL);
-        D(Printf("RDArgs 0x%p\n", rdargs));
+        D(bug("[MonWrapper] RDArgs 0x%p\n", rdargs));
     }
- 
-    D(Printf("CLASS=%s, LIBRARY=%s\n", args.hidd ? args.hidd : "<none>",
-             args.lib ? args.lib : "<none>"));
+
+    D(bug("[MonWrapper] CLASS=%s, LIBRARY=%s\n", args.hidd ? (char *)args.hidd : "<none>",
+             args.lib ? (char *)args.lib : "<none>"));
  
     if (args.hidd)
     {
@@ -78,16 +78,20 @@ int main(void)
             if (args.lib)
             {
                 gfxlib = OpenLibrary(args.lib, 0);
+                D(bug("[MonWrapper] OpenLibrary('%s') = 0x%p, IoErr %ld\n", args.lib, gfxlib, (long)IoErr()));
                 if (!gfxlib)
                     res = RETURN_ERROR;
             }
-            
+
             if (res == RETURN_OK)
             {
                 cl = OOP_FindClass(args.hidd);
+                D(bug("[MonWrapper] OOP_FindClass('%s') = 0x%p\n", args.hidd, cl));
                 if (cl)
                 {
-                    if (AddDisplayDriverA(cl, NULL, NULL))
+                    ULONG adderr = AddDisplayDriverA(cl, NULL, NULL);
+                    D(bug("[MonWrapper] AddDisplayDriverA() = %lu\n", (unsigned long)adderr));
+                    if (adderr)
                     {
                         res = RETURN_FAIL;
                     }

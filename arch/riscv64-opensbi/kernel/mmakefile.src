@@ -33,6 +33,10 @@ CFILES := \
         kernel_elf \
         getcpucount \
         getcpuattr \
+        getsystemattr \
+        allocirq \
+        freeirq \
+        modifyirq \
         platform_init \
         maygetchar \
         mapglobal \
@@ -88,6 +92,7 @@ $(OSGENDIR)/boot/Image: $(OSGENDIR)/boot/core.elf
 #MM kernel-kernel-opensbi-riscv64 : includes
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
+USER_CPPFLAGS += -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
 
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=opensbi-riscv64 \

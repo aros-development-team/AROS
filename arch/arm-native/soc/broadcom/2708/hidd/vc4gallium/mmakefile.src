@@ -7,11 +7,9 @@ CUR_GALLIUMDIR = drivers/vc4
 GALLIUM_PATH = $(top_srcdir)/$(CUR_MESADIR)
 
 #
-# Only build for ARM targets
+# Only build for RasPi targets
 #
-#MM- workbench-hidds : hidd-vc4gallium-$(AROS_TARGET_CPU)
-#MM- hidd-vc4gallium-arm : hidd-vc4gallium
-#MM- hidd-vc4gallium-aarch64 : hidd-vc4gallium
+#MM- workbench-hidds-raspi : hidd-vc4gallium
 
 #MM hidd-vc4gallium : includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic linklibs-gallium_vc4 linklibs-gallium_vc4-gca kernel-mbox-bcm2708-includes kernel-dma-bcm2708-includes
 #MM linklibs-gallium_vc4 : mesa3dgl-linklibs linklibs-gallium_vc4-gen-cle
@@ -81,7 +79,7 @@ USER_INCLUDES := \
 # Compiler flags
 #
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING) $(NOWARN_MAYBE_UNINITIALIZED)
-USER_CFLAGS += $(NOWARN_FLAGS) -std=gnu99
+USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_GNU99)
 
 USER_CPPFLAGS += \
     -DGALLIUM_VC4 \
@@ -170,11 +168,20 @@ GCA_GENFILES := gallium_core_api.h gca_table.c gca_bind.c gca_glue.S \
 # hidd-vc4gallium.
 GCA_ABI_FLAGS := $(TARGET_ISA_CFLAGS) $(USER_CPPFLAGS)
 
-$(GCA_GENDIR)/.gca.stamp : $(top_libdir)/libgallium_vc4.a $(GCA_CORELIBS) $(GCA_TOOL)
+# Both pipe drivers bind against the ONE table mesa3dgl carries, and
+# gca_bind matches slots positionally, so the slot list is generated from
+# the union of their import sets. A driver added here must also appear in
+# the v3d-side consumption (hidd/v3d) and vice versa.
+GCA_CONSUMERS := $(top_libdir)/libgallium_vc4.a $(top_libdir)/libgallium_v3d.a
+
+#MM linklibs-gallium_vc4-gca : linklibs-gallium_v3d
+#MM linklibs-galliumcoreapi : linklibs-gallium_vc4 linklibs-gallium_v3d
+
+$(GCA_GENDIR)/.gca.stamp : $(GCA_CONSUMERS) $(GCA_CORELIBS) $(GCA_TOOL)
 	%mkdir_q dir="$(GCA_GENDIR)"
 	$(Q)$(ECHO) "Generating GalliumCoreAPI glue"
 	$(Q)$(PYTHON) $(GCA_TOOL) --nm $(GCA_NM) --ar $(GCA_AR) \
-		--consumer $(top_libdir)/libgallium_vc4.a \
+		--consumer $(GCA_CONSUMERS) \
 		--providers $(GCA_CORELIBS) \
 		--private-data nir_intrinsic_infos nir_op_infos util_cpu_caps \
 		--mesa-version $(MESAGLVERSION) --arch $(AROS_TARGET_CPU) \

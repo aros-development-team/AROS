@@ -35,6 +35,11 @@ If EXISTS "SYS:Classes/USB"
     Run <NIL: >NIL: QUIET AddUSBClasses
 EndIf
 
+If EXISTS "SYS:Classes/Bluetooth"
+    Assign "BTCLASSES:" "SYS:Classes/Bluetooth"
+    Run <NIL: >NIL: QUIET AddBTClasses
+EndIf
+
 If EXISTS "SYS:DiskImages"
     Assign "FDSK:" "SYS:DiskImages"
 EndIf
@@ -103,6 +108,10 @@ AddDataTypes REFRESH QUIET
 If EXISTS "C:PsdStackLoader"
     PsdStackLoader >NIL:
 EndIf
+If EXISTS "C:BTStackLoader"
+    BTStackLoader >NIL:
+EndIf
+
 Run <NIL: >NIL: QUIET ConClip
 
 If EXISTS "C:RexxMast"

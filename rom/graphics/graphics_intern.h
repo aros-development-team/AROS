@@ -21,6 +21,7 @@
 #include <exec/lists.h>
 #include <exec/nodes.h>
 #include <exec/semaphores.h>
+#include <graphics/driver.h>
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
 #include <graphics/rastport.h>
@@ -84,6 +85,7 @@ struct gfxdriver_data {
     ULONG                       drv_idcnt;
     ULONG                       drv_idmask;
     UWORD                       drv_flags;
+    const struct DisplayRange   *drv_ranges;	/* Hardware written by this driver, or NULL if it did not say */
 };
 
 struct gfxboot_entry {
@@ -98,7 +100,9 @@ struct gfxdisplay_data {
     ULONG                       display_idbase;	/* Card ID (part of display mode ID)		  */
     ULONG                       display_mask;	/* Mask of mode ID				  */
     UWORD                       display_flags;	/* Flags, see below				  */
-    UWORD                       display_private;
+    WORD                        display_pri;	/* Mode enumeration priority (higher preferred).
+							   Occupies the 'pad' slot of the public
+							   struct MonitorHandle mirror - do not grow  */
     OOP_Object                  *display_obj;	/* display object to use			  */
     OOP_Object                  *display_gfxhidd;/* displays graphics driver object		  */
     OOP_Object                  *display_compositor;	/* screen composition object		  */
@@ -140,13 +144,21 @@ struct monitor_displaydata {
 #define DF_DirectFB     (1 << 3)	/* Driver uses a direct-mode framebuffer	*/
 #define DF_BootSurvive  (1 << 15)	/* Boot mode driver that shouldnt be flushed	*/
 #define DF_BootMode     (1 << 14)	/* Boot mode driver				*/
+#define DF_KeepBoot     (1 << 13)	/* Driver asked not to be given the handover	*/
+#define DF_HandoverFail (1 << 12)	/* Expunge was attempted and refused: do not
+					   offer this display for handover again	*/
 
 /* software rasterizer, and common monitor data */
 struct gfxsoftrast_data {
     struct gfxdisplay_data      mdisplay;	/* Display chain head (must be first)		*/
+    WORD                        default_monitor_pri; /* display_pri of the default monitor's display */
 
     APTR(*DriverNotify)(APTR obj, BOOL add, APTR userdata);  /* Display driver notification callback */
     struct SignalSemaphore      displaydb_sem;	/* Display mode database semaphore */
+    BOOL                        handover_refused;	/* A driver being added asked to take a boot
+							   display down and was refused. Set under
+							   displaydb_sem, read and cleared by
+							   AddDisplayDriverA()			   */
 
     ObjectCache                 *gc_cache;	/* GC cache			   */
     ObjectCache                 *planarbm_cache;/* Planar bitmaps cache		   */

@@ -1,0 +1,2465 @@
+--- ./drm-6.18.44/display/drm_dp_mst_topology_internal.h
++++ ./drm/display/drm_dp_mst_topology_internal.h
+@@ -1,11 +1,9 @@
+-/* SPDX-License-Identifier: GPL-2.0-only
+- *
+- * Declarations for DP MST related functions which are only used in selftests
+- *
+- * Copyright © 2018 Red Hat
+- * Authors:
+- *     Lyude Paul <lyude@redhat.com>
+- */
++/*
++    Copyright 2026, The AROS Development Team. All rights reserved.
++
++    Prototypes shared between drm_dp_mst_topology.c and its selftests;
++    replaces the GPL-only upstream header.
++*/
+ 
+ #ifndef _DRM_DP_MST_HELPER_INTERNAL_H_
+ #define _DRM_DP_MST_HELPER_INTERNAL_H_
+@@ -14,13 +12,11 @@
+ struct drm_dp_sideband_msg_tx;
+ struct drm_printer;
+ 
+-void
+-drm_dp_encode_sideband_req(const struct drm_dp_sideband_msg_req_body *req,
+-			   struct drm_dp_sideband_msg_tx *raw);
++void drm_dp_encode_sideband_req(const struct drm_dp_sideband_msg_req_body *req,
++                                struct drm_dp_sideband_msg_tx *raw);
+ int drm_dp_decode_sideband_req(const struct drm_dp_sideband_msg_tx *raw,
+-			       struct drm_dp_sideband_msg_req_body *req);
+-void
+-drm_dp_dump_sideband_msg_req_body(const struct drm_dp_sideband_msg_req_body *req,
+-				  int indent, struct drm_printer *printer);
++                               struct drm_dp_sideband_msg_req_body *req);
++void drm_dp_dump_sideband_msg_req_body(const struct drm_dp_sideband_msg_req_body *req,
++                                       int indent, struct drm_printer *printer);
+ 
+ #endif /* !_DRM_DP_MST_HELPER_INTERNAL_H_ */
+--- ./drm-6.18.44/drm_connector.c
++++ ./drm/drm_connector.c
+@@ -1024,7 +1024,7 @@
+ 	}
+ }
+ 
+-#ifdef CONFIG_LOCKDEP
++#if defined(CONFIG_LOCKDEP) || defined(__AROS__)
+ static struct lockdep_map connector_list_iter_dep_map = {
+ 	.name = "drm_connector_list_iter"
+ };
+--- ./drm-6.18.44/drm_gem.c
++++ ./drm/drm_gem.c
+@@ -131,10 +131,13 @@
+ 				 struct drm_gem_object *obj, size_t size,
+ 				 struct vfsmount *gemfs)
+ {
++#if !defined(__AROS__)
+ 	struct file *filp;
++#endif
+ 
+ 	drm_gem_private_object_init(dev, obj, size);
+ 
++#if !defined(__AROS__)
+ 	if (gemfs)
+ 		filp = shmem_file_setup_with_mnt(gemfs, "drm mm object", size,
+ 						 VM_NORESERVE);
+@@ -145,6 +148,10 @@
+ 		return PTR_ERR(filp);
+ 
+ 	obj->filp = filp;
++#else
++	/* objects are backed by ttm pages, never by a file */
++	obj->filp = NULL;
++#endif
+ 
+ 	return 0;
+ }
+@@ -590,12 +597,14 @@
+  * Move folios to appropriate lru and release the folios, decrementing the
+  * ref count of those folios.
+  */
++#if !defined(__AROS__)
+ static void drm_gem_check_release_batch(struct folio_batch *fbatch)
+ {
+ 	check_move_unevictable_folios(fbatch);
+ 	__folio_batch_release(fbatch);
+ 	cond_resched();
+ }
++#endif
+ 
+ /**
+  * drm_gem_get_pages - helper to allocate backing pages for a GEM object
+@@ -624,6 +633,9 @@
+  */
+ struct page **drm_gem_get_pages(struct drm_gem_object *obj)
+ {
++#if defined(__AROS__)
++	return ERR_PTR(-ENOSYS);
++#else
+ 	struct address_space *mapping;
+ 	struct page **pages;
+ 	struct folio *folio;
+@@ -687,6 +699,7 @@
+ 
+ 	kvfree(pages);
+ 	return ERR_CAST(folio);
++#endif
+ }
+ EXPORT_SYMBOL(drm_gem_get_pages);
+ 
+@@ -700,6 +713,7 @@
+ void drm_gem_put_pages(struct drm_gem_object *obj, struct page **pages,
+ 		bool dirty, bool accessed)
+ {
++#if !defined(__AROS__)
+ 	int i, npages;
+ 	struct address_space *mapping;
+ 	struct folio_batch fbatch;
+@@ -738,6 +752,7 @@
+ 		drm_gem_check_release_batch(&fbatch);
+ 
+ 	kvfree(pages);
++#endif
+ }
+ EXPORT_SYMBOL(drm_gem_put_pages);
+ 
+--- ./drm-6.18.44/nouveau/dispnv50/base507c.c
++++ ./drm/nouveau/dispnv50/base507c.c
+@@ -150,8 +150,13 @@
+ 	s64 time = nvif_msec(device, 2000ULL,
+ 		if (NVBO_TD32(bo, offset, NV_DISP_BASE_NOTIFIER_1, _0, STATUS, ==, BEGUN))
+ 			break;
++		nv50_disp_sv_release(device);
+ 		usleep_range(1, 2);
+ 	);
++#if defined(__AROS__)
++	if (time < 0)
++		printk(KERN_ERR "[nouveau] base notifier timeout\n");
++#endif
+ 	return time < 0 ? time : 0;
+ }
+ 
+--- ./drm-6.18.44/nouveau/dispnv50/core507d.c
++++ ./drm/nouveau/dispnv50/core507d.c
+@@ -67,6 +67,10 @@
+ 			break;
+ 		usleep_range(1, 2);
+ 	);
++#if defined(__AROS__)
++	if (time < 0)
++		printk(KERN_ERR "[nouveau] core notifier timeout\n");
++#endif
+ 	return time < 0 ? time : 0;
+ }
+ 
+--- ./drm-6.18.44/nouveau/dispnv50/corec37d.c
++++ ./drm/nouveau/dispnv50/corec37d.c
+@@ -85,6 +85,7 @@
+ 	s64 time = nvif_msec(device, 2000ULL,
+ 		if (NVBO_TD32(bo, offset, NV_DISP_NOTIFIER, _0, STATUS, ==, FINISHED))
+ 			break;
++		nv50_disp_sv_release(device);
+ 		usleep_range(1, 2);
+ 	);
+ 	return time < 0 ? time : 0;
+--- ./drm-6.18.44/nouveau/dispnv50/coreca7d.c
++++ ./drm/nouveau/dispnv50/coreca7d.c
+@@ -3,19 +3,23 @@
+  * Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+  */
+ #include "core.h"
++#include "disp.h"
+ #include "head.h"
+ 
+ #include <nvif/class.h>
++#include <nvif/printf.h>
+ #include <nvif/pushc97b.h>
+ 
+ #include <nvhw/class/clca7d.h>
+ 
+ #include <nouveau_bo.h>
++#include <nvkm/engine/disp.h>
+ 
+ static int
+ coreca7d_update(struct nv50_core *core, u32 *interlock, bool ntfy)
+ {
+-	const u64 ntfy_addr = core->disp->sync->offset + NV50_DISP_CORE_NTFY;
++	u32 ntfy_target;
++	const u64 ntfy_addr = nv50_disp_sync_addr(core->disp, NV50_DISP_CORE_NTFY, &ntfy_target);
+ 	const u32 ntfy_hi = upper_32_bits(ntfy_addr);
+ 	const u32 ntfy_lo = lower_32_bits(ntfy_addr);
+ 	struct nvif_push *push = &core->chan.push;
+@@ -30,7 +34,7 @@
+ 
+ 					SET_SURFACE_ADDRESS_LO_NOTIFIER,
+ 			  NVVAL(NVCA7D, SET_SURFACE_ADDRESS_LO_NOTIFIER, ADDRESS_LO, ntfy_lo >> 4) |
+-			  NVDEF(NVCA7D, SET_SURFACE_ADDRESS_LO_NOTIFIER, TARGET, PHYSICAL_NVM) |
++			  NVVAL(NVCA7D, SET_SURFACE_ADDRESS_LO_NOTIFIER, TARGET, ntfy_target) |
+ 			  NVDEF(NVCA7D, SET_SURFACE_ADDRESS_LO_NOTIFIER, ENABLE, ENABLE));
+ 
+ 		PUSH_MTHD(push, NVCA7D, SET_NOTIFIER_CONTROL,
+@@ -54,18 +58,144 @@
+ 	return PUSH_KICK(push);
+ }
+ 
++/* The core channel's ARMed state cache follows the user area. */
++#define CORECA7D_ARMED 0x8000
++
++u32
++coreca7d_armed(struct nv50_core *core, u32 mthd)
++{
++	return nvif_rd32(&core->chan.base.user, CORECA7D_ARMED + mthd);
++}
++
++/*
++ * Tiles and physical windows are owned by heads/windows; the firmware may
++ * have left a head scanning out with several of each, and reassigning an
++ * owned tile or phywin, or giving one to two owners, fails the UPDATE with
++ * an invalid-state exception. Everything not owned by a live head is
++ * released here and handed out again when a head is enabled.
++ */
++void
++coreca7d_owned(struct nv50_core *core, u32 *pactive, u32 *ptiles, u32 *pphywins)
++{
++	u32 active = 0, tiles = 0, phywins = 0;
++	int i;
++
++	for (i = 0; i < 4; i++)
++		active |= NVVAL_GET(coreca7d_armed(core, NVCA7D_SOR_SET_CONTROL(i)),
++				    NVCA7D, SOR_SET_CONTROL, OWNER_MASK);
++
++	for (i = 0; i < 4; i++)
++		tiles |= coreca7d_armed(core, NVCA7D_HEAD_SET_TILE_MASK(i)) & 0xff;
++
++	for (i = 0; i < 8; i++)
++		phywins |= coreca7d_armed(core, NVCA7D_WINDOW_SET_PHYSICAL(i)) & 0xff;
++
++	*pactive = active;
++	*ptiles = tiles;
++	*pphywins = phywins;
++}
++
++
++/*
++ * Window ownership follows the same rule as tiles: never moved to or from
++ * a head that is currently driving an output.
++ */
++static int
++coreca7d_wndw_owner(struct nv50_core *core)
++{
++	struct nvif_push *push = &core->chan.push;
++	const u32 windows = 8;
++	u32 active, tiles, phywins;
++	int ret, i;
++
++	coreca7d_owned(core, &active, &tiles, &phywins);
++
++	if ((ret = PUSH_WAIT(push, windows * 2)))
++		return ret;
++
++	for (i = 0; i < windows; i++) {
++		u32 owner = NVVAL_GET(coreca7d_armed(core, NVCA7D_WINDOW_SET_CONTROL(i)),
++				      NVCA7D, WINDOW_SET_CONTROL, OWNER);
++		u32 head = i >> 1;
++
++		if (owner == head)
++			continue;
++		if ((owner < 4 && (active & BIT(owner))) || (active & BIT(head)))
++			continue;
++		PUSH_MTHD(push, NVCA7D, WINDOW_SET_CONTROL(i),
++			  NVDEF(NVCA7D, WINDOW_SET_CONTROL, OWNER, HEAD(head)));
++	}
++
++	return 0;
++}
++
+ static int
+ coreca7d_init(struct nv50_core *core)
+ {
+ 	struct nvif_push *push = &core->chan.push;
+ 	const u32 windows = 8, heads = 4;
++	u32 active, tiles, phywins;
+ 	int ret, i;
+ 
+-	ret = PUSH_WAIT(push, windows * 6 + heads * 6);
++	coreca7d_owned(core, &active, &tiles, &phywins);
++	for (i = 0; i < heads; i++)
++		NVIF_DEBUG(&core->chan.base.user, "head %d: tiles %08x sor-active %d", i,
++			   coreca7d_armed(core, NVCA7D_HEAD_SET_TILE_MASK(i)), !!(active & BIT(i)));
++
++	/*
++	 * RM wants an IMP query for whatever is being displayed before it
++	 * will drive updates; describe the head(s) the firmware lit.
++	 */
++	{
++		struct nvkm_disp_imp_head ih[4];
++		struct nvkm_disp_imp_result res;
++		int n = 0;
++
++		for (i = 0; i < heads; i++) {
++			u32 rs, bs, be, vb2, vp;
++
++			if (!(active & BIT(i)))
++				continue;
++			rs = coreca7d_armed(core, NVCA7D_HEAD_SET_RASTER_SIZE(i));
++			bs = coreca7d_armed(core, NVCA7D_HEAD_SET_RASTER_BLANK_START(i));
++			be = coreca7d_armed(core, NVCA7D_HEAD_SET_RASTER_BLANK_END(i));
++			vb2 = coreca7d_armed(core, 0x2074 + i * 0x800);
++			vp = coreca7d_armed(core, NVCA7D_HEAD_SET_VIEWPORT_SIZE_OUT(i));
++			ih[n].head = i;
++			ih[n].pclk_khz = coreca7d_armed(core, NVCA7D_HEAD_SET_PIXEL_CLOCK_FREQUENCY(i)) / 1000;
++			ih[n].raster_w = rs & 0xffff;
++			ih[n].raster_h = rs >> 16;
++			ih[n].blank_start_x = bs & 0x7fff;
++			ih[n].blank_start_y = (bs >> 16) & 0x7fff;
++			ih[n].blank_end_x = be & 0x7fff;
++			ih[n].blank_end_y = (be >> 16) & 0x7fff;
++			ih[n].vblank2_start = vb2 & 0x7fff;
++			ih[n].vblank2_end = (vb2 >> 16) & 0x7fff;
++			ih[n].view_w = vp & 0xffff;
++			ih[n].view_h = vp >> 16;
++			ih[n].tile_mask = coreca7d_armed(core, NVCA7D_HEAD_SET_TILE_MASK(i)) & 0xff;
++			n++;
++		}
++		if (n)
++			nv50_disp_imp(core->disp, ih, n, &res);
++	}
++	for (i = 0; i < windows; i++)
++		NVIF_DEBUG(&core->chan.base.user, "wndw %d: owner %08x phywin %08x", i,
++			   coreca7d_armed(core, NVCA7D_WINDOW_SET_CONTROL(i)),
++			   coreca7d_armed(core, NVCA7D_WINDOW_SET_PHYSICAL(i)));
++
++	ret = PUSH_WAIT(push, windows * 6 + heads * 4);
+ 	if (ret)
+ 		return ret;
+ 
+ 	for (i = 0; i < windows; i++) {
++		u32 owner = NVVAL_GET(coreca7d_armed(core, NVCA7D_WINDOW_SET_CONTROL(i)),
++				      NVCA7D, WINDOW_SET_CONTROL, OWNER);
++
++		/* A window in use by a live head keeps its firmware bounds for now. */
++		if (owner < 4 && (active & BIT(owner)))
++			continue;
++
+ 		PUSH_MTHD(push, NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS(i),
+ 			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED1BPP, TRUE) |
+ 			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED2BPP, TRUE) |
+@@ -78,21 +208,22 @@
+ 			  NVVAL(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, MAX_PIXELS_FETCHED_PER_LINE, 0x7fff) |
+ 			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, ILUT_ALLOWED, TRUE) |
+ 			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, INPUT_SCALER_TAPS, TAPS_2) |
+-			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, UPSCALING_ALLOWED, FALSE),
++			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, UPSCALING_ALLOWED, FALSE));
+ 
+-					WINDOW_SET_PHYSICAL(i), BIT(i));
++		PUSH_MTHD(push, NVCA7D, WINDOW_SET_PHYSICAL(i), 0);
+ 	}
+ 
+ 	for (i = 0; i < heads; i++) {
++		if (active & BIT(i))
++			continue;
++
+ 		PUSH_MTHD(push, NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS(i),
+ 			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, CURSOR, USAGE_W256_H256) |
+ 			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, OLUT_ALLOWED, TRUE) |
+ 			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, OUTPUT_SCALER_TAPS, TAPS_2) |
+ 			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, UPSCALING_ALLOWED, TRUE));
+ 
+-		PUSH_MTHD(push, NVCA7D, HEAD_SET_TILE_MASK(i), BIT(i));
+-
+-		PUSH_MTHD(push, NVCA7D, TILE_SET_TILE_SIZE(i), 0);
++		PUSH_MTHD(push, NVCA7D, HEAD_SET_TILE_MASK(i), 0);
+ 	}
+ 
+ 	core->assign_windows = true;
+@@ -107,7 +238,7 @@
+ 	.caps_class = GB202_DISP_CAPS,
+ 	.ntfy_wait_done = corec37d_ntfy_wait_done,
+ 	.update = coreca7d_update,
+-	.wndw.owner = corec37d_wndw_owner,
++	.wndw.owner = coreca7d_wndw_owner,
+ 	.head = &headca7d,
+ 	.sor = &sorc37d,
+ #if IS_ENABLED(CONFIG_DEBUG_FS)
+--- ./drm-6.18.44/nouveau/dispnv50/core.h
++++ ./drm/nouveau/dispnv50/core.h
+@@ -76,4 +76,6 @@
+ int corec57d_new(struct nouveau_drm *, s32, struct nv50_core **);
+ 
+ int coreca7d_new(struct nouveau_drm *, s32, struct nv50_core **);
++u32 coreca7d_armed(struct nv50_core *, u32 mthd);
++void coreca7d_owned(struct nv50_core *, u32 *active, u32 *tiles, u32 *phywins);
+ #endif
+--- ./drm-6.18.44/nouveau/dispnv50/disp.c
++++ ./drm/nouveau/dispnv50/disp.c
+@@ -62,11 +62,89 @@
+ #include <nvhw/class/cl917d.h>
+ 
+ #include "nouveau_drv.h"
++#include <nvkm/engine/disp.h>
++#include <nvhw/class/clc37d.h>
+ #include "nouveau_dma.h"
+ #include "nouveau_gem.h"
+ #include "nouveau_connector.h"
+ #include "nouveau_encoder.h"
+ #include "nouveau_fence.h"
++#include <drm/ttm/ttm_tt.h>
++
++/*
++ * GB20x display channels can address the notifier in either video or host
++ * memory (no ctxdma). NOUVEAU_DISP_SYNC_HOST=1 keeps the sync buffer in
++ * host memory as an experiment; the default is VRAM.
++ */
++int nv50_disp_sync_host_param = 0;
++bool nv50_disp_sv_release_enabled = false;
++
++int
++nv50_disp_sync_host_param_get(void)
++{
++	return nv50_disp_sync_host_param;
++}
++
++u64
++nv50_disp_sync_addr(struct nv50_disp *disp, u32 offset, u32 *target)
++{
++	struct nouveau_bo *bo = disp->sync;
++
++	if (disp->sync_host) {
++		struct ttm_tt *tt = bo->bo.ttm;
++
++		if (tt && tt->dma_address) {
++			*target = 3; /* PHYSICAL_PCI_COHERENT */
++			return tt->dma_address[0] + offset;
++		}
++	}
++
++	*target = 1; /* PHYSICAL_NVM */
++	return bo->offset + offset;
++}
++
++/*
++ * On Blackwell with GSP-RM 580 the display engine raises its supervisor
++ * events and nobody services them, so an UPDATE never completes; releasing
++ * the pending event lets it proceed. Only touched while a wait would
++ * otherwise time out, so a firmware that does service them is unaffected.
++ */
++/* Ask RM whether the given head configuration is possible (Blackwell). */
++int
++nv50_disp_imp(struct nv50_disp *disp, const struct nvkm_disp_imp_head *heads, int nheads,
++	      struct nvkm_disp_imp_result *res)
++{
++	struct nouveau_drm *drm = nouveau_drm(disp->drm_dev);
++	struct nvkm_device *device = nvxx_device(drm);
++
++	if (!device->disp)
++		return -ENODEV;
++
++	return r535_disp_imp(device->disp, heads, nheads, res);
++}
++
++void
++nv50_disp_sv_release(struct nvif_device *device)
++{
++	u32 sv;
++
++	if (!nv50_disp_sv_release_enabled)
++		return;
++
++	/*
++	 * GB20x: GSP-RM does not run the display supervisor for a client-driven
++	 * update. Service it ourselves - reset the pending SUPERVISOR event and
++	 * trigger SUPERVISOR_MAIN.RESTART - so the FE advances through its
++	 * phases and the update completes. (Register semantics from NVIDIA's
++	 * open-gpu-doc Ampere display manual: 0x611860 = EVT_STAT_CTRL_DISP,
++	 * bits 0-2 = SUPERVISOR1-3; 0x6107a8 = SUPERVISOR_MAIN, bit31 = RESTART.)
++	 */
++	sv = nvif_rd32(&device->object, 0x611860) & 0x7;
++	if (sv) {
++		nvif_wr32(&device->object, 0x611860, sv);
++		nvif_wr32(&device->object, 0x006107a8, 0x80000000);
++	}
++}
+ #include "nv50_display.h"
+ 
+ /******************************************************************************
+@@ -784,6 +862,15 @@
+ 	struct drm_hdmi_info *hdmi = &nv_connector->base.display_info.hdmi;
+ 	union hdmi_infoframe infoframe = { 0 };
+ 	const u8 rekey = 56; /* binary driver, and tegra, constant */
++	/*
++	 * SCDC arrived with GM20x. The monitor advertising it (any HDMI 2.0
++	 * display does) made nvkm reject the whole HDMI enable on earlier
++	 * chips - it refuses scdc flags it has no methods for - and the
++	 * output then ran in DVI mode: no infoframes, no audio. Only claim
++	 * scdc where the hardware has it; at TMDS rates these chips can
++	 * reach, scrambling is never required anyway.
++	 */
++	const bool has_scdc = drm->client.device.info.chipset >= 0x120;
+ 	u32 max_ac_packet;
+ 	DEFINE_RAW_FLEX(struct nvif_outp_infoframe_v0, args, data, 17);
+ 	const u8 data_len = __member_size(args->data);
+@@ -794,7 +881,7 @@
+ 	max_ac_packet -= 18; /* constant from tegra */
+ 	max_ac_packet /= 32;
+ 
+-	if (nv_encoder->i2c && hdmi->scdc.scrambling.supported) {
++	if (nv_encoder->i2c && hdmi->scdc.scrambling.supported && has_scdc) {
+ 		const bool high_tmds_clock_ratio = mode->clock > 340000;
+ 		u8 scdc;
+ 
+@@ -817,8 +904,9 @@
+ 	}
+ 
+ 	ret = nvif_outp_hdmi(&nv_encoder->outp, nv_crtc->index, true, max_ac_packet, rekey,
+-			     mode->clock, hdmi->scdc.supported, hdmi->scdc.scrambling.supported,
+-			     hdmi->scdc.scrambling.low_rates);
++			     mode->clock, has_scdc && hdmi->scdc.supported,
++			     has_scdc && hdmi->scdc.scrambling.supported,
++			     has_scdc && hdmi->scdc.scrambling.low_rates);
+ 	if (ret)
+ 		return;
+ 
+@@ -1771,6 +1859,14 @@
+ 	    nv_connector->base.display_info.has_audio)
+ 		hda = true;
+ 
++	/* An OR taken over by nvif_outp_inherit() was assigned by whoever lit the
++	 * display before us, so RM never saw AUDIO=OPTIMAL for it and there is no
++	 * audio path behind it - an ELD pushed later is accepted and ignored.
++	 * Release it so the acquire below asks for one that has the audio path.
++	 */
++	if (nvif_outp_acquired(outp) && hda && !outp->or.hda)
++		nvif_outp_release(outp);
++
+ 	if (!nvif_outp_acquired(outp))
+ 		nvif_outp_acquire_sor(outp, hda);
+ 
+@@ -2122,8 +2218,9 @@
+ 	core->func->ntfy_init(disp->sync, NV50_DISP_CORE_NTFY);
+ 	core->func->update(core, interlock, true);
+ 	if (core->func->ntfy_wait_done(disp->sync, NV50_DISP_CORE_NTFY,
+-				       disp->core->chan.base.device))
++				       disp->core->chan.base.device)) {
+ 		NV_ERROR(drm, "core notifier timeout\n");
++	}
+ 
+ 	for_each_new_mst_mgr_in_state(state, mgr, mst_state, i) {
+ 		mstm = nv50_mstm(mgr);
+@@ -2525,7 +2622,8 @@
+ 			return PTR_ERR(outp);
+ 
+ 		if (outp->encoder->encoder_type == DRM_MODE_ENCODER_DPMST ||
+-		    nouveau_encoder(outp->encoder)->dcb->type == DCB_OUTPUT_DP)
++		    nouveau_encoder(outp->encoder)->dcb->type == DCB_OUTPUT_DP ||
++		    nv50_disp(atom->state.dev)->disp->object.oclass >= GB202_DISP)
+ 			atom->flush_disable = true;
+ 		outp->clr.ctrl = true;
+ 		atom->lock_core = true;
+@@ -2850,11 +2948,26 @@
+ 	dev->mode_config.normalize_zpos = true;
+ 
+ 	/* small shared memory area we use for notifiers and semaphores */
+-	ret = nouveau_bo_new_map(&drm->client, NOUVEAU_GEM_DOMAIN_VRAM, PAGE_SIZE, &disp->sync);
++	disp->drm_dev = dev;
++	disp->sync_host = nv50_disp_sync_host_param && disp->disp->object.oclass >= GB202_DISP;
++	nv50_disp_sv_release_enabled = disp->disp->object.oclass >= GB202_DISP;
++	ret = nouveau_bo_new_map(&drm->client, disp->sync_host ? NOUVEAU_GEM_DOMAIN_GART :
++							 NOUVEAU_GEM_DOMAIN_VRAM, PAGE_SIZE, &disp->sync);
+ 	if (ret)
+ 		goto out;
+ 
+ 	/* allocate master evo channel */
++	if (disp->disp->object.oclass >= GB202_DISP) {
++		struct nvif_object *dev = &drm->client.device.object;
++		/*
++		 * The FE fires its GSP-target events on a vector nothing
++		 * services on GB20x; point it at RM's display vector so the
++		 * supervisor events reach GSP-RM (see nv50_disp_sv_release
++		 * for the phase servicing).
++		 */
++		nvif_wr32(dev, 0x611fa0, 0x4000009a);
++	}
++
+ 	ret = nv50_core_new(drm, &disp->core);
+ 	if (ret)
+ 		goto out;
+--- ./drm-6.18.44/nouveau/dispnv50/disp.h
++++ ./drm/nouveau/dispnv50/disp.h
+@@ -13,6 +13,10 @@
+ 	struct nvif_disp *disp;
+ 	struct nv50_core *core;
+ 	struct nvif_object caps;
++	bool sync_host;
++	bool change_open;
++	u32 change_mask;
++	struct drm_device *drm_dev;
+ 
+ #define NV50_DISP_SYNC(c, o)                                ((c) * 0x040 + (o))
+ #define NV50_DISP_CORE_NTFY                       NV50_DISP_SYNC(0      , 0x00)
+@@ -105,4 +109,17 @@
+ extern const u64 disp90xx_modifiers[];
+ extern const u64 wndwc57e_modifiers[];
+ extern const u64 wndwca7e_modifiers[];
++
++/* Blackwell display addresses the sync area directly: VRAM (PHYSICAL_NVM)
++ * unless the area lives in system memory (PHYSICAL_PCI_COHERENT). */
++u64 nv50_disp_sync_addr(struct nv50_disp *, u32 offset, u32 *target);
++extern int nv50_disp_sync_host_param;
++int nv50_disp_sync_host_param_get(void);
++/* GB20x: release display supervisor events GSP-RM leaves pending. */
++struct nvkm_disp_imp_head;
++struct nvkm_disp_imp_result;
++int nv50_disp_imp(struct nv50_disp *, const struct nvkm_disp_imp_head *, int,
++		  struct nvkm_disp_imp_result *);
++extern bool nv50_disp_sv_release_enabled;
++void nv50_disp_sv_release(struct nvif_device *);
+ #endif
+--- ./drm-6.18.44/nouveau/dispnv50/headca7d.c
++++ ./drm/nouveau/dispnv50/headca7d.c
+@@ -5,6 +5,8 @@
+ #include "head.h"
+ #include "atom.h"
+ #include "core.h"
++#include "disp.h"
++#include <nvkm/engine/disp.h>
+ 
+ #include <nvif/pushc97b.h>
+ 
+@@ -222,10 +224,96 @@
+ 	const int i = head->base.index;
+ 	int ret;
+ 
+-	ret = PUSH_WAIT(push, 11);
++	ret = PUSH_WAIT(push, 11 + 2 + 4 + 16 + 2 + 10);
+ 	if (ret)
+ 		return ret;
+ 
++	/* RM's mode-possible query for this head (its tiles are ours to keep). */
++	{
++		struct nvkm_disp_imp_head ih = {
++			.head = i,
++			.pclk_khz = m->clock,
++			.raster_w = m->h.active,
++			.raster_h = m->v.active,
++			.blank_start_x = m->h.blanks,
++			.blank_start_y = m->v.blanks,
++			.blank_end_x = m->h.blanke,
++			.blank_end_y = m->v.blanke,
++			.vblank2_start = m->v.blank2s,
++			.vblank2_end = m->v.blank2e,
++			.view_w = asyh->view.oW,
++			.view_h = asyh->view.oH,
++			.tile_mask = coreca7d_armed(head->disp->core, NVCA7D_HEAD_SET_TILE_MASK(i)) & 0xff,
++		};
++		struct nvkm_disp_imp_result res;
++
++		nv50_disp_imp(head->disp, &ih, 1, &res);
++	}
++
++	/*
++	 * A head being lit needs a tile and its windows need physical windows;
++	 * keep whatever it already owns (the firmware's assignment), else take
++	 * ones no live head owns. The active width is split across its tiles.
++	 */
++	{
++		struct nv50_core *core = head->disp->core;
++		const u32 hactive = m->h.blanks - m->h.blanke;
++		u32 active, tiles, phywins, mine, w, n, start = 0, t, x;
++
++		coreca7d_owned(core, &active, &tiles, &phywins);
++
++		/* Bounds for this head and its windows (deferred from init). */
++		PUSH_MTHD(push, NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS(i),
++			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, CURSOR, USAGE_W256_H256) |
++			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, OLUT_ALLOWED, TRUE) |
++			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, OUTPUT_SCALER_TAPS, TAPS_2) |
++			  NVDEF(NVCA7D, HEAD_SET_HEAD_USAGE_BOUNDS, UPSCALING_ALLOWED, TRUE));
++		for (w = i * 2; w < i * 2 + 2; w++) {
++			PUSH_MTHD(push, NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS(w),
++				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED1BPP, TRUE) |
++				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED2BPP, TRUE) |
++				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED4BPP, TRUE) |
++				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED8BPP, TRUE),
++
++						WINDOW_SET_WINDOW_ROTATED_FORMAT_USAGE_BOUNDS(w), 0x00000000);
++
++			PUSH_MTHD(push, NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS(w),
++				  NVVAL(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, MAX_PIXELS_FETCHED_PER_LINE, 0x7fff) |
++				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, ILUT_ALLOWED, TRUE) |
++				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, INPUT_SCALER_TAPS, TAPS_2) |
++				  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, UPSCALING_ALLOWED, FALSE));
++		}
++		mine = coreca7d_armed(core, NVCA7D_HEAD_SET_TILE_MASK(i)) & 0xff;
++		if (!mine) {
++			for (t = 0; t < 8 && (tiles & BIT((i + t) & 7)); t++);
++			mine = BIT((i + t) & 7);
++			PUSH_MTHD(push, NVCA7D, HEAD_SET_TILE_MASK(i), mine);
++		}
++
++		for (w = i * 2; w < i * 2 + 2; w++) {
++			u32 pw = coreca7d_armed(core, NVCA7D_WINDOW_SET_PHYSICAL(w)) & 0xff;
++			if (pw)
++				continue;
++			for (t = 0; t < 8 && (phywins & BIT((w + t) & 7)); t++);
++			pw = BIT((w + t) & 7);
++			phywins |= pw;
++			PUSH_MTHD(push, NVCA7D, WINDOW_SET_PHYSICAL(w), pw);
++		}
++
++		n = hweight32(mine);
++		x = 0;
++		for (t = 0; t < 8; t++) {
++			u32 width;
++			if (!(mine & BIT(t)))
++				continue;
++			width = (++x < n) ? DIV_ROUND_UP(hactive, n) : hactive - start;
++			PUSH_MTHD(push, NVCA7D, TILE_SET_TILE_SIZE(t),
++				  NVVAL(NVCA7D, TILE_SET_TILE_SIZE, START, start) |
++				  NVVAL(NVCA7D, TILE_SET_TILE_SIZE, WIDTH, width));
++			start += width;
++		}
++	}
++
+ 	PUSH_MTHD(push, NVCA7D, HEAD_SET_RASTER_SIZE(i),
+ 		  NVVAL(NVCA7D, HEAD_SET_RASTER_SIZE, WIDTH, m->h.active) |
+ 		  NVVAL(NVCA7D, HEAD_SET_RASTER_SIZE, HEIGHT, m->v.active),
+--- ./drm-6.18.44/nouveau/dispnv50/wndwca7e.c
++++ ./drm/nouveau/dispnv50/wndwca7e.c
+@@ -156,7 +156,8 @@
+ wndwca7e_ntfy_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
+ {
+ 	struct nv50_disp *disp = nv50_disp(wndw->plane.dev);
+-	const u64 ntfy_addr = disp->sync->offset + asyw->ntfy.offset;
++	u32 ntfy_target;
++	const u64 ntfy_addr = nv50_disp_sync_addr(disp, asyw->ntfy.offset, &ntfy_target);
+ 	const u32 ntfy_hi = upper_32_bits(ntfy_addr);
+ 	const u32 ntfy_lo = lower_32_bits(ntfy_addr);
+ 	struct nvif_push *push = &wndw->wndw.push;
+@@ -170,7 +171,7 @@
+ 
+ 				SET_SURFACE_ADDRESS_LO_NOTIFIER,
+ 		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_NOTIFIER, ADDRESS_LO, ntfy_lo >> 4) |
+-		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_NOTIFIER, TARGET, PHYSICAL_NVM) |
++		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_NOTIFIER, TARGET, ntfy_target) |
+ 		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_NOTIFIER, ENABLE, ENABLE));
+ 
+ 	PUSH_MTHD(push, NVCA7E, SET_NOTIFIER_CONTROL,
+--- ./drm-6.18.44/nouveau/include/nvif/chan.h
++++ ./drm/nouveau/include/nvif/chan.h
+@@ -46,6 +46,9 @@
+ 
+ 	struct nvif_user *usermode;
+ 	u32 doorbell_token;
++#if defined(__AROS__)
++	bool host_push;
++#endif
+ };
+ 
+ int nvif_chan_dma_wait(struct nvif_chan *, u32 push_nr);
+--- ./drm-6.18.44/nouveau/include/nvif/outp.h
++++ ./drm/nouveau/include/nvif/outp.h
+@@ -52,6 +52,11 @@
+ 	struct {
+ 		int id;
+ 		int link;
++		/* Whether this acquisition asked RM for an audio-capable OR.
++		 * An OR taken over by nvif_outp_inherit() has not, so the
++		 * enable path must re-acquire before HDMI audio can work.
++		 */
++		bool hda;
+ 	} or;
+ };
+ 
+--- ./drm-6.18.44/nouveau/include/nvkm/engine/disp.h
++++ ./drm/nouveau/include/nvkm/engine/disp.h
+@@ -17,6 +17,7 @@
+ 
+ 		struct nvkm_gsp_object objcom;
+ 		struct nvkm_gsp_object object;
++		struct nvkm_gsp_object imp;
+ 
+ #define NVKM_DPYID_PLUG   BIT(0)
+ #define NVKM_DPYID_UNPLUG BIT(1)
+@@ -87,4 +88,25 @@
+ int gv100_disp_new(struct nvkm_device *, enum nvkm_subdev_type, int inst, struct nvkm_disp **);
+ int tu102_disp_new(struct nvkm_device *, enum nvkm_subdev_type, int inst, struct nvkm_disp **);
+ int ga102_disp_new(struct nvkm_device *, enum nvkm_subdev_type, int inst, struct nvkm_disp **);
++int r535_disp_display_change(struct nvkm_disp *, bool start, u32 display_mask);
++
++/* RM "is mode possible" (IMP) query; on Blackwell RM assigns tiles by it. */
++struct nvkm_disp_imp_head {
++	int head;
++	u32 pclk_khz;
++	u32 raster_w, raster_h;
++	u32 blank_start_x, blank_start_y;
++	u32 blank_end_x, blank_end_y;
++	u32 vblank2_start, vblank2_end;
++	u32 view_w, view_h;
++	u8 tile_mask;         /* 0 = let RM assign */
++};
++struct nvkm_disp_imp_result {
++	bool possible;
++	u32 dispclk_khz;
++	u8 tiles[8];          /* required tile count per head */
++	u32 minbw_kbps;
++};
++int r535_disp_imp(struct nvkm_disp *, const struct nvkm_disp_imp_head *heads, int nheads,
++		  struct nvkm_disp_imp_result *res);
+ #endif
+--- ./drm-6.18.44/nouveau/nouveau_abi16.c
++++ ./drm/nouveau/nouveau_abi16.c
+@@ -325,6 +325,24 @@
+ 	case NOUVEAU_GETPARAM_HAS_VMA_TILEMODE:
+ 		getparam->value = 1;
+ 		break;
++#if defined(__AROS__)
++	case NOUVEAU_GETPARAM_VRAM_SIZE:
++		getparam->value = drm->gem.vram_available;
++		break;
++	case NOUVEAU_GETPARAM_GART_SIZE:
++		getparam->value = drm->gem.gart_available;
++		break;
++	case NOUVEAU_GETPARAM_VRAM_FREE: {
++		struct ttm_resource_manager *vram_mgr = ttm_manager_type(&drm->ttm.bdev, TTM_PL_VRAM);
++		getparam->value = drm->gem.vram_available - ttm_resource_manager_usage(vram_mgr);
++		break;
++	}
++	case NOUVEAU_GETPARAM_GART_FREE: {
++		struct ttm_resource_manager *gart_mgr = ttm_manager_type(&drm->ttm.bdev, TTM_PL_TT);
++		getparam->value = drm->gem.gart_available - ttm_resource_manager_usage(gart_mgr);
++		break;
++	}
++#endif
+ 	default:
+ 		NV_PRINTK(dbg, cli, "unknown parameter %lld\n", getparam->param);
+ 		return -EINVAL;
+--- ./drm-6.18.44/nouveau/nouveau_bo.c
++++ ./drm/nouveau/nouveau_bo.c
+@@ -1075,6 +1075,9 @@
+ 	if (bo->destroy != nouveau_bo_del_ttm)
+ 		return;
+ 
++#if defined(__AROS__)
++	drm_nouveau_check_userspace_mapped(bo);
++#endif
+ 	nouveau_bo_del_io_reserve_lru(bo);
+ 
+ 	if (mem && new_reg->mem_type != TTM_PL_SYSTEM &&
+--- ./drm-6.18.44/nouveau/nouveau_bo.h
++++ ./drm/nouveau/nouveau_bo.h
+@@ -46,6 +46,14 @@
+ 	unsigned mode;
+ 
+ 	struct nouveau_drm_tile *tile;
++
++#if defined(__AROS__)
++	/* userspace holds kmap.virtual directly; a move makes it stale and
++	   this tells the holder to map again before the next access */
++	bool was_gpu_unmapped;
++	void (*gpu_unmapped)(void *data);
++	void *gpu_unmapped_data;
++#endif
+ };
+ 
+ static inline struct nouveau_bo *
+@@ -54,6 +62,10 @@
+ 	return container_of(bo, struct nouveau_bo, bo);
+ }
+ 
++#if defined(__AROS__)
++void drm_nouveau_check_userspace_mapped(struct ttm_buffer_object *bo);
++#endif
++
+ static inline void
+ nouveau_bo_fini(struct nouveau_bo *bo)
+ {
+--- ./drm-6.18.44/nouveau/nouveau_chan.c
++++ ./drm/nouveau/nouveau_chan.c
+@@ -172,6 +172,9 @@
+ 	chan->chan.push.mem.object.client = &cli->base;
+ 	chan->chan.push.mem.object.name = "chanPush";
+ 	chan->chan.push.mem.object.map.ptr = chan->push.buffer->kmap.virtual;
++#if defined(__AROS__)
++	chan->chan.host_push = chan->push.buffer->bo.resource->mem_type != TTM_PL_VRAM;
++#endif
+ 	chan->chan.push.wait = nouveau_channel_wait;
+ 	chan->chan.push.kick = nouveau_channel_kick;
+ 
+--- ./drm-6.18.44/nouveau/nouveau_drm.c
++++ ./drm/nouveau/nouveau_drm.c
+@@ -470,15 +470,19 @@
+ 
+ 	/* Initialise global support for channels, and synchronisation. */
+ 	ret = nouveau_channels_init(drm);
+-	if (ret)
++	if (ret) {
++		NV_ERROR(drm, "failed to initialise channels, %d\n", ret);
+ 		return;
++	}
+ 
+ 	/*XXX: this is crap, but the fence/channel stuff is a little
+ 	 *     backwards in some places.  this will be fixed.
+ 	 */
+ 	ret = n = nvif_object_sclass_get(&device->object, &sclass);
+-	if (ret < 0)
++	if (ret < 0) {
++		NV_ERROR(drm, "failed to query device classes, %d\n", ret);
+ 		return;
++	}
+ 
+ 	for (ret = -ENOSYS, i = 0; i < n; i++) {
+ 		switch (sclass[i].oclass) {
+@@ -529,8 +533,10 @@
+ 	/* Volta requires access to a doorbell register for kickoff. */
+ 	if (drm->client.device.info.family >= NV_DEVICE_INFO_V0_VOLTA) {
+ 		ret = nvif_user_ctor(device, "drmUsermode");
+-		if (ret)
++		if (ret) {
++			NV_ERROR(drm, "failed to create usermode object, %d\n", ret);
+ 			return;
++		}
+ 	}
+ 
+ 	/* Allocate channels we need to support various functions. */
+@@ -1513,3 +1519,74 @@
+ MODULE_AUTHOR(DRIVER_AUTHOR);
+ MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_LICENSE("GPL and additional rights");
++
++#if defined(__AROS__)
++#include <proto/dos.h>
++
++/* module parameters come from environment variables of the same name */
++char *
++nouveau_aros_getenv(const char *name)
++{
++	char buf[256];
++
++	if (GetVar((STRPTR)name, buf, sizeof(buf), GVF_GLOBAL_ONLY) <= 0)
++		return NULL;
++	return kstrdup(buf, GFP_KERNEL);
++}
++
++static void
++nouveau_aros_params(void)
++{
++	char *v;
++
++	if ((v = nouveau_aros_getenv("NOUVEAU_CONFIG")))
++		nouveau_config = v;
++	if ((v = nouveau_aros_getenv("NOUVEAU_DEBUG")))
++		nouveau_debug = v;
++	if ((v = nouveau_aros_getenv("NOUVEAU_NOACCEL"))) {
++		nouveau_noaccel = (*v != '0');
++		kfree(v);
++	}
++	if ((v = nouveau_aros_getenv("NOUVEAU_ATOMIC"))) {
++		nouveau_atomic = (*v != '0');
++		kfree(v);
++	}
++	if ((v = nouveau_aros_getenv("NOUVEAU_REGISTRY"))) {
++		extern char *NVreg_RegistryDwords;
++		NVreg_RegistryDwords = v;
++	}
++	if ((v = nouveau_aros_getenv("NOUVEAU_DISP_SYNC_HOST"))) {
++		extern int nv50_disp_sync_host_param;
++		nv50_disp_sync_host_param = (*v != '0');
++		kfree(v);
++	}
++	if ((v = nouveau_aros_getenv("NOUVEAU_VRAM_PUSHBUF"))) {
++		extern int nouveau_vram_pushbuf;
++		nouveau_vram_pushbuf = (*v != '0');
++		kfree(v);
++	}
++}
++
++/*
++ * The hidd finds the card and hands it in here; module init and PCI probe
++ * are one step, and the drm_device comes back for the libdrm shim.
++ */
++int
++nouveau_aros_probe(struct pci_dev *pdev, struct drm_device **pdrm)
++{
++	struct nouveau_drm *drm;
++	int ret;
++
++	driver_pci = driver_stub;
++	nouveau_aros_params();
++	nouveau_display_options();
++
++	ret = nouveau_drm_probe(pdev, NULL);
++	if (ret)
++		return ret;
++
++	drm = pci_get_drvdata(pdev);
++	*pdrm = drm->dev;
++	return 0;
++}
++#endif
+--- ./drm-6.18.44/nouveau/nvif/chan.c
++++ ./drm/nouveau/nvif/chan.c
+@@ -3,6 +3,9 @@
+  * Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+  */
+ #include <nvif/chan.h>
++#if defined(__AROS__)
++#include <linux/dma-mapping.h>
++#endif
+ 
+ static void
+ nvif_chan_gpfifo_push_kick(struct nvif_push *push)
+@@ -21,6 +24,13 @@
+ 	cnt = push->cur - push->bgn;
+ 
+ 	chan->func->gpfifo.push(chan, true, chan->push.addr + (put << 2), cnt << 2, false);
++#if defined(__AROS__)
++	/* the GPU fetches host push buffers and the ring by DMA */
++	if (chan->host_push) {
++		compat_dma_sync_for_device(push->bgn, cnt << 2);
++		compat_dma_sync_for_device(chan->gpfifo.map.ptr, (chan->gpfifo.max + 1) * 8);
++	}
++#endif
+ 	chan->func->gpfifo.kick(chan);
+ }
+ 
+--- ./drm-6.18.44/nouveau/nvif/outp.c
++++ ./drm/nouveau/nvif/outp.c
+@@ -296,6 +296,7 @@
+ 	int ret = nvif_mthd(&outp->object, NVIF_OUTP_V0_RELEASE, NULL, 0);
+ 	NVIF_ERRON(ret, &outp->object, "[RELEASE]");
+ 	outp->or.id = -1;
++	outp->or.hda = false;
+ }
+ 
+ static inline int
+@@ -312,6 +313,7 @@
+ 
+ 	outp->or.id = args->or;
+ 	outp->or.link = args->link;
++	outp->or.hda = false;
+ 	return 0;
+ }
+ 
+@@ -336,6 +338,8 @@
+ 
+ 	ret = nvif_outp_acquire(outp, NVIF_OUTP_ACQUIRE_V0_SOR, &args);
+ 	NVIF_ERRON(ret, &outp->object, "[ACQUIRE SOR] or:%d link:%d", args.or, args.link);
++	if (!ret)
++		outp->or.hda = hda;
+ 	return ret;
+ }
+ 
+@@ -367,6 +371,10 @@
+ 
+ 	outp->or.id = args->or;
+ 	outp->or.link = args->link;
++	/* An inherited OR was assigned by whoever lit the display before us,
++	 * without AUDIO=OPTIMAL. Record that so the enable path re-acquires.
++	 */
++	outp->or.hda = false;
+ 	*proto_out = args->proto;
+ 	return 0;
+ }
+@@ -552,5 +560,6 @@
+ 	outp->info.conn = args.conn;
+ 
+ 	outp->or.id = -1;
++	outp->or.hda = false;
+ 	return 0;
+ }
+--- ./drm-6.18.44/nouveau/nvkm/core/firmware.c
++++ ./drm/nouveau/nvkm/core/firmware.c
+@@ -246,6 +246,9 @@
+ 		if (fw->img) {
+ 			memcpy(fw->img, src, fw->len);
+ 			fw->phys = addr;
++#if defined(__AROS__)
++			dma_sync_single_for_device(fw->device->dev, addr, len, DMA_TO_DEVICE);
++#endif
+ 		}
+ 
+ 		sg_init_one(&fw->mem.sgl, fw->img, len);
+--- ./drm-6.18.44/nouveau/nvkm/subdev/fsp/gh100.c
++++ ./drm/nouveau/nvkm/subdev/fsp/gh100.c
+@@ -201,6 +201,50 @@
+ 	return 0;
+ }
+ 
++#if defined(__AROS__)
++/* Send a bare command and report what the FSP answers; for experiments. */
++int
++gh100_fsp_aros_cmd(struct nvkm_fsp *fsp, u8 nvdm_type)
++{
++	struct nvkm_subdev *subdev = &fsp->subdev;
++	struct {
++		u32 mctp_header;
++		u32 nvdm_header;
++		u32 payload;
++	} msg = {};
++	struct {
++		u32 mctp_header;
++		u32 nvdm_header;
++		NVDM_PAYLOAD_COMMAND_RESPONSE response;
++	} reply = {};
++	int ret;
++
++	msg.mctp_header = NVVAL(MCTP, HEADER, SOM, 1) |
++			  NVVAL(MCTP, HEADER, EOM, 1) |
++			  NVVAL(MCTP, HEADER, SEID, 0) |
++			  NVVAL(MCTP, HEADER, SEQ, 0);
++	msg.nvdm_header = NVDEF(MCTP, MSG_HEADER, TYPE, VENDOR_PCI) |
++			  NVDEF(MCTP, MSG_HEADER, VENDOR_ID, NV) |
++			  NVVAL(MCTP, MSG_HEADER, NVDM_TYPE, nvdm_type);
++
++	ret = gh100_fsp_send(fsp, (const u8 *)&msg, sizeof(msg));
++	if (ret) {
++		nvkm_info(subdev, "cmd 0x%02x: send failed %d\n", nvdm_type, ret);
++		return ret;
++	}
++	ret = gh100_fsp_wait(fsp);
++	if (ret) {
++		nvkm_info(subdev, "cmd 0x%02x: no reply\n", nvdm_type);
++		return ret;
++	}
++	ret = gh100_fsp_recv(fsp, (u8 *)&reply, sizeof(reply));
++	nvkm_info(subdev, "cmd 0x%02x: reply %d bytes mctp %08x nvdm %08x task %08x type %08x error %08x\n",
++		  nvdm_type, ret, reply.mctp_header, reply.nvdm_header,
++		  reply.response.taskId, reply.response.commandNvdmType, reply.response.errorCode);
++	return ret < 0 ? ret : (int)reply.response.errorCode;
++}
++#endif
++
+ int
+ gh100_fsp_boot_gsp_fmc(struct nvkm_fsp *fsp, u64 args_addr, u32 rsvd_size, bool resume,
+ 		       u64 img_addr, const u8 *hash, const u8 *pkey, const u8 *sig)
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/ad102.c
++++ ./drm/nouveau/nvkm/subdev/gsp/ad102.c
+@@ -44,6 +44,7 @@
+ 
+ static struct nvkm_gsp_fwif
+ ad102_gsps[] = {
++	{ 2, tu102_gsp_load, &ad102_gsp, &r580_rm_ga102, "580.178.04" },
+ 	{ 1, tu102_gsp_load, &ad102_gsp, &r570_rm_ga102, "570.144" },
+ 	{ 0, tu102_gsp_load, &ad102_gsp, &r535_rm_ga102, "535.113.01" },
+ 	{}
+@@ -67,3 +68,9 @@
+ NVKM_GSP_FIRMWARE_BOOTER(ad104, 570.144);
+ NVKM_GSP_FIRMWARE_BOOTER(ad106, 570.144);
+ NVKM_GSP_FIRMWARE_BOOTER(ad107, 570.144);
++
++NVKM_GSP_FIRMWARE_BOOTER(ad102, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(ad103, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(ad104, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(ad106, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(ad107, 580.178.04);
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/ga100.c
++++ ./drm/nouveau/nvkm/subdev/gsp/ga100.c
+@@ -61,6 +61,7 @@
+ 
+ static struct nvkm_gsp_fwif
+ ga100_gsps[] = {
++	{  2, tu102_gsp_load, &ga100_gsp, &r580_rm_tu102, "580.178.04" },
+ 	{  1, tu102_gsp_load, &ga100_gsp, &r570_rm_tu102, "570.144" },
+ 	{  0, tu102_gsp_load, &ga100_gsp, &r535_rm_tu102, "535.113.01" },
+ 	{ -1, gv100_gsp_nofw, &gv100_gsp },
+@@ -76,3 +77,4 @@
+ 
+ NVKM_GSP_FIRMWARE_BOOTER(ga100, 535.113.01);
+ NVKM_GSP_FIRMWARE_BOOTER(ga100, 570.144);
++NVKM_GSP_FIRMWARE_BOOTER(ga100, 580.178.04);
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/ga102.c
++++ ./drm/nouveau/nvkm/subdev/gsp/ga102.c
+@@ -177,6 +177,7 @@
+ 
+ static struct nvkm_gsp_fwif
+ ga102_gsps[] = {
++	{  2, tu102_gsp_load, &ga102_gsp_r535, &r580_rm_ga102, "580.178.04" },
+ 	{  1, tu102_gsp_load, &ga102_gsp_r535, &r570_rm_ga102, "570.144" },
+ 	{  0, tu102_gsp_load, &ga102_gsp_r535, &r535_rm_ga102, "535.113.01" },
+ 	{ -1, gv100_gsp_nofw, &ga102_gsp },
+@@ -201,3 +202,9 @@
+ NVKM_GSP_FIRMWARE_BOOTER(ga104, 570.144);
+ NVKM_GSP_FIRMWARE_BOOTER(ga106, 570.144);
+ NVKM_GSP_FIRMWARE_BOOTER(ga107, 570.144);
++
++NVKM_GSP_FIRMWARE_BOOTER(ga102, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(ga103, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(ga104, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(ga106, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(ga107, 580.178.04);
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/gb100.c
++++ ./drm/nouveau/nvkm/subdev/gsp/gb100.c
+@@ -20,6 +20,7 @@
+ 
+ static struct nvkm_gsp_fwif
+ gb100_gsps[] = {
++	{ 2, gh100_gsp_load, &gb100_gsp, &r580_rm_gb10x, "580.178.04" },
+ 	{ 0, gh100_gsp_load, &gb100_gsp, &r570_rm_gb10x, "570.144" },
+ 	{}
+ };
+@@ -33,3 +34,6 @@
+ 
+ NVKM_GSP_FIRMWARE_FMC(gb100, 570.144);
+ NVKM_GSP_FIRMWARE_FMC(gb102, 570.144);
++
++NVKM_GSP_FIRMWARE_FMC(gb100, 580.178.04);
++NVKM_GSP_FIRMWARE_FMC(gb102, 580.178.04);
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/gb202.c
++++ ./drm/nouveau/nvkm/subdev/gsp/gb202.c
+@@ -20,6 +20,7 @@
+ 
+ static struct nvkm_gsp_fwif
+ gb202_gsps[] = {
++	{ 2, gh100_gsp_load, &gb202_gsp, &r580_rm_gb20x, "580.178.04" },
+ 	{ 0, gh100_gsp_load, &gb202_gsp, &r570_rm_gb20x, "570.144" },
+ 	{}
+ };
+@@ -36,3 +37,9 @@
+ NVKM_GSP_FIRMWARE_FMC(gb205, 570.144);
+ NVKM_GSP_FIRMWARE_FMC(gb206, 570.144);
+ NVKM_GSP_FIRMWARE_FMC(gb207, 570.144);
++
++NVKM_GSP_FIRMWARE_FMC(gb202, 580.178.04);
++NVKM_GSP_FIRMWARE_FMC(gb203, 580.178.04);
++NVKM_GSP_FIRMWARE_FMC(gb205, 580.178.04);
++NVKM_GSP_FIRMWARE_FMC(gb206, 580.178.04);
++NVKM_GSP_FIRMWARE_FMC(gb207, 580.178.04);
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/gh100.c
++++ ./drm/nouveau/nvkm/subdev/gsp/gh100.c
+@@ -10,7 +10,7 @@
+ #include <subdev/fb.h>
+ #include <subdev/fsp.h>
+ 
+-#include <rm/r570/nvrm/gsp.h>
++#include <rm/r580/nvrm/gsp.h>
+ 
+ #include <nvhw/drf.h>
+ #include <nvhw/ref/gh100/dev_falcon_v4.h>
+@@ -65,6 +65,502 @@
+ 	return !NVVAL_GET(data, NV_PFALCON, FALCON_HWCFG2, RISCV_BR_PRIV_LOCKDOWN);
+ }
+ 
++#if defined(__AROS__)
++#include <core/pci.h>
++#include <linux/pci.h>
++
++static bool
++gh100_gsp_aros_gfw_done(struct nvkm_device *device, u32 *pprogress, u32 *ppl)
++{
++	*ppl = nvkm_rd32(device, 0x118128);
++	*pprogress = nvkm_rd32(device, 0x118234);
++	return (*ppl & 1) && (*pprogress & 0xff) == 0xff;
++}
++
++static void
++gh100_gsp_aros_dump(struct nvkm_gsp *gsp, const char *when)
++{
++	struct nvkm_subdev *subdev = &gsp->subdev;
++	struct nvkm_device *device = subdev->device;
++	u32 progress, pl;
++
++	gh100_gsp_aros_gfw_done(device, &progress, &pl);
++	nvkm_info(subdev, "%s: GFW boot progress %08x (plm %08x), fsp status %08x\n",
++		  when, progress, pl, nvkm_rd32(device, 0x00ad00bc));
++	nvkm_info(subdev, "fsp scratch2 %08x %08x %08x %08x scratch3 %08x %08x %08x %08x\n",
++		  nvkm_rd32(device, 0x008f0320), nvkm_rd32(device, 0x008f0324),
++		  nvkm_rd32(device, 0x008f0328), nvkm_rd32(device, 0x008f032c),
++		  nvkm_rd32(device, 0x008f0330), nvkm_rd32(device, 0x008f0334),
++		  nvkm_rd32(device, 0x008f0338), nvkm_rd32(device, 0x008f033c));
++	nvkm_info(subdev, "aon scratch05 %08x %08x %08x %08x boot0 %08x strap %08x\n",
++		  nvkm_rd32(device, 0x118234), nvkm_rd32(device, 0x118238),
++		  nvkm_rd32(device, 0x11823c), nvkm_rd32(device, 0x118240),
++		  nvkm_rd32(device, 0x000000), nvkm_rd32(device, 0x101000));
++}
++
++/*
++ * The card's own firmware boot (devinit) did not finish, so RM will not
++ * start. Reset the card and watch what its firmware does afterwards:
++ * mode 1 is a secondary bus reset from the root port, mode 2 pulls the
++ * root complex PHY reset the way the platform's own bring-up does. The
++ * configuration header is put back afterwards.
++ */
++static void
++gh100_gsp_aros_watch(struct nvkm_gsp *gsp, struct pci_dev *pdev, u32 *cfg, int ms)
++{
++	struct nvkm_subdev *subdev = &gsp->subdev;
++	struct nvkm_device *device = subdev->device;
++	u32 last_id = ~0, last_fsp = ~0, last_gfw = ~0, cur, fsp, gfw, pl;
++	bool restored = false;
++	int t, i;
++
++	for (t = 0; t < ms; t += 5) {
++		pci_read_config_dword(pdev, 0, &cur);
++		if (cur != last_id) {
++			nvkm_info(subdev, "%5dms: id %08x\n", t, cur);
++			last_id = cur;
++		}
++		if (cur == cfg[0] && !restored) {
++			/* the header is gone with the reset; put it back so
++			   the registers can be watched */
++			for (i = 1; i < 64; i++)
++				pci_write_config_dword(pdev, i * 4, cfg[i]);
++			pci_write_config_dword(pdev, 4, cfg[1]);
++			restored = true;
++		}
++		if (cur == cfg[0]) {
++			fsp = nvkm_rd32(device, 0x00ad00bc);
++			gh100_gsp_aros_gfw_done(device, &gfw, &pl);
++			if (fsp != last_fsp || gfw != last_gfw) {
++				nvkm_info(subdev, "%5dms: fsp %08x gfw %08x plm %08x\n", t, fsp, gfw, pl);
++				last_fsp = fsp;
++				last_gfw = gfw;
++			}
++			if (fsp == 0xff && (gfw & 0xff) == 0xff)
++				break;
++		}
++		msleep(5);
++	}
++}
++
++static void
++gh100_gsp_aros_reset(struct nvkm_gsp *gsp, int mode)
++{
++	struct nvkm_subdev *subdev = &gsp->subdev;
++	struct nvkm_device *device = subdev->device;
++	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
++	struct pci_bus bus0 = { .number = 0 };
++	u32 cfg[64];
++	u16 bctl;
++	int i;
++
++	for (i = 0; i < 64; i++)
++		pci_read_config_dword(pdev, i * 4, &cfg[i]);
++
++	if (mode == 2) {
++		static const u32 rcs[] = { 0x21000000, 0x23000000, 0x24000000 };
++		void __iomem *dbi = NULL;
++		u32 core;
++		u8 cls, probe;
++
++		/* find the root complex this card hangs off: mark its config
++		   header through the bus and look for the mark in each DBI */
++		pci_bus_read_config_byte(&bus0, 0, 0x0c, &cls);
++		pci_bus_write_config_byte(&bus0, 0, 0x0c, cls ^ 0x55);
++		pci_bus_read_config_byte(&bus0, 0, 0x0c, &probe);
++		for (i = 0; i < ARRAY_SIZE(rcs); i++) {
++			dbi = ioremap(rcs[i], 0x401000);
++			if (dbi && (readl(dbi + 0x0c) & 0xff) == probe)
++				break;
++			if (dbi)
++				iounmap(dbi);
++			dbi = NULL;
++		}
++		pci_bus_write_config_byte(&bus0, 0, 0x0c, cls);
++		if (!dbi || probe == cls) {
++			nvkm_error(subdev, "cannot find the root complex (mark %02x/%02x)\n", cls, probe);
++			return;
++		}
++		nvkm_info(subdev, "root complex at %08x\n", rcs[i]);
++		core = readl(dbi + 0x400000);
++		nvkm_info(subdev, "phy reset (core %08x, debug1 %08x, hold %ldms)\n", core, readl(dbi + 0x72c),
++			  nvkm_longopt(device->cfgopt, "NvGfwPhyHold", 3000));
++		writel((core & ~0x00000080) | 0x00004000, dbi + 0x400000);
++		msleep(nvkm_longopt(device->cfgopt, "NvGfwPhyHold", 3000));
++		writel((core & ~0x00004000) | 0x00000080, dbi + 0x400000);
++		for (i = 0; i < 2000; i += 5) {
++			u32 dbg = readl(dbi + 0x72c);
++			if ((dbg & 0x10) && !(dbg & 0x20000))
++				break;
++			msleep(5);
++		}
++		nvkm_info(subdev, "link %s after %dms (core %08x, debug1 %08x)\n",
++			  i < 2000 ? "up" : "not up", i, readl(dbi + 0x400000), readl(dbi + 0x72c));
++		iounmap(dbi);
++	} else {
++		pci_bus_read_config_word(&bus0, 0, 0x3e, &bctl);
++		nvkm_info(subdev, "secondary bus reset (bridge control %04x)\n", bctl);
++		pci_bus_write_config_word(&bus0, 0, 0x3e, bctl | 0x40);
++		msleep(20);
++		pci_bus_write_config_word(&bus0, 0, 0x3e, bctl);
++	}
++
++	gh100_gsp_aros_watch(gsp, pdev, cfg, 8000);
++	gh100_gsp_aros_dump(gsp, "after reset");
++}
++
++int gh100_fsp_aros_cmd(struct nvkm_fsp *fsp, u8 nvdm_type);
++
++/*
++ * The slot's PERST# is a GPIO on this platform (port C of the DesignWare
++ * APB GPIO block through a level shifter). Show the ports, and if exactly
++ * one of C0..C3 is an output driven high, pulse it: a fundamental reset
++ * with the root complex already up is the one thing the card has not had.
++ */
++static void
++gh100_gsp_aros_perst(struct nvkm_gsp *gsp)
++{
++	struct nvkm_subdev *subdev = &gsp->subdev;
++	struct nvkm_device *device = subdev->device;
++	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
++	void *compat_map_mmio(unsigned long pa, unsigned long size);
++	void __iomem *gpio = compat_map_mmio(0x20200000, 0x1000);
++	u32 cfg[64], dr, ddr, ext, cand;
++	int i, bit = -1;
++
++	if (!gpio) {
++		nvkm_error(subdev, "cannot map the gpio block\n");
++		return;
++	}
++	nvkm_info(subdev, "gpio a dr %08x ddr %08x ext %08x, b dr %08x ddr %08x ext %08x\n",
++		  readl(gpio + 0x00), readl(gpio + 0x04), readl(gpio + 0x50),
++		  readl(gpio + 0x0c), readl(gpio + 0x10), readl(gpio + 0x54));
++	dr = readl(gpio + 0x18);
++	ddr = readl(gpio + 0x1c);
++	ext = readl(gpio + 0x58);
++	nvkm_info(subdev, "gpio c dr %08x ddr %08x ext %08x, d dr %08x ddr %08x ext %08x\n",
++		  dr, ddr, ext, readl(gpio + 0x24), readl(gpio + 0x28), readl(gpio + 0x5c));
++
++	/*
++	 * Every port is an input here, so PERST# is held high by a pull-up
++	 * and asserted by driving the pin low. The slot's low-speed lines
++	 * (PERST#, WAKE#, PRSNT#s) sit on C0..C3; the ones reading high are
++	 * the candidates. Try each: the one that makes the card vanish from
++	 * the bus is PERST#.
++	 */
++	if (!nvkm_boolopt(device->cfgopt, "NvGfwPerst", true)) {
++		nvkm_info(subdev, "perst: disabled\n");
++		return;
++	}
++	cand = nvkm_longopt(device->cfgopt, "NvGfwPerstMask", (ext & ~ddr) & 0x0f);
++
++	for (i = 0; i < 64; i++)
++		pci_read_config_dword(pdev, i * 4, &cfg[i]);
++
++	for (bit = 0; bit < 4; bit++) {
++		u32 id;
++		int t;
++
++		if (!(cand & (1 << bit)))
++			continue;
++		nvkm_info(subdev, "perst: pulsing gpio c%d\n", bit);
++		writel(dr & ~(1 << bit), gpio + 0x18);
++		writel(ddr | (1 << bit), gpio + 0x1c);
++		msleep(100);
++		writel(ddr, gpio + 0x1c);
++		writel(dr, gpio + 0x18);
++		for (t = 0; t < 300; t += 5) {
++			pci_read_config_dword(pdev, 0, &id);
++			if (id != cfg[0])
++				break;
++			msleep(5);
++		}
++		nvkm_info(subdev, "perst: gpio c%d: card %s\n", bit, t < 300 ? "reset" : "unaffected");
++		if (t < 300)
++			break;
++	}
++	if (bit == 4)
++		return;
++	gh100_gsp_aros_watch(gsp, pdev, cfg, 12000);
++	gh100_gsp_aros_dump(gsp, "after perst");
++}
++
++/*
++ * A function level reset is the one reset NVIDIA's own driver expects to
++ * be followed by a devinit ("FLR devinit timeout"); try it and watch.
++ */
++static void
++gh100_gsp_aros_flr(struct nvkm_gsp *gsp)
++{
++	struct nvkm_subdev *subdev = &gsp->subdev;
++	struct nvkm_device *device = subdev->device;
++	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
++	u32 cfg[64], devcap;
++	u16 devctl;
++	u8 pos = pdev->pcie_cap;
++	int i;
++
++	if (!pos) {
++		u8 next, id;
++		pci_read_config_byte(pdev, 0x34, &next);
++		for (i = 0; next && i < 32; i++) {
++			pci_read_config_byte(pdev, next, &id);
++			if (id == 0x10) {
++				pos = next;
++				break;
++			}
++			pci_read_config_byte(pdev, next + 1, &next);
++		}
++	}
++	if (!pos) {
++		nvkm_info(subdev, "flr: no pcie capability\n");
++		return;
++	}
++	pci_read_config_dword(pdev, pos + 4, &devcap);
++	pci_read_config_word(pdev, pos + 8, &devctl);
++	nvkm_info(subdev, "flr: pcie cap at %02x, devcap %08x (flr %s), devctl %04x\n",
++		  pos, devcap, (devcap & (1 << 28)) ? "supported" : "not supported", devctl);
++	if (!(devcap & (1 << 28)))
++		return;
++
++	for (i = 0; i < 64; i++)
++		pci_read_config_dword(pdev, i * 4, &cfg[i]);
++
++	pci_write_config_word(pdev, pos + 8, devctl | 0x8000);
++	msleep(100);
++	gh100_gsp_aros_watch(gsp, pdev, cfg, 12000);
++	gh100_gsp_aros_dump(gsp, "after flr");
++}
++
++/*
++ * The board's embedded controller owns the peripheral reset (and slot
++ * power); the platform tells it about suspend/resume over its UART with a
++ * three byte message. Say "suspending", then "resumed", and watch what
++ * that does to the card - the hope is a fundamental reset or power cycle
++ * while the root complex is up.
++ */
++static void
++gh100_gsp_aros_ec_cycle(struct nvkm_gsp *gsp)
++{
++	struct nvkm_subdev *subdev = &gsp->subdev;
++	struct nvkm_device *device = subdev->device;
++	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
++	void *compat_map_mmio(unsigned long pa, unsigned long size);
++	void __iomem *uart = compat_map_mmio(0x20310000, 0x1000);
++	static const u8 pre[] = { 0x05, 0x01, 0x88 }, post[] = { 0x05, 0x01, 0x89 };
++	u32 cfg[64], id;
++	int i, t;
++
++	if (!uart) {
++		nvkm_error(subdev, "cannot map the ec uart\n");
++		return;
++	}
++	for (i = 0; i < 64; i++)
++		pci_read_config_dword(pdev, i * 4, &cfg[i]);
++
++	/* 115200 8N1 from the 62.5 MHz uart clock, fifo on */
++	writel(0x83, uart + (3 << 2));
++	writel(34, uart + (0 << 2));
++	writel(0, uart + (1 << 2));
++	writel(0x03, uart + (3 << 2));
++	writel(0x07, uart + (2 << 2));
++
++	nvkm_info(subdev, "ec: suspend message\n");
++	for (i = 0; i < 3; i++) {
++		for (t = 0; t < 1000 && !(readl(uart + (5 << 2)) & 0x20); t++)
++			udelay(10);
++		writel(pre[i], uart + (0 << 2));
++	}
++	for (t = 0; t < 3000; t += 10) {
++		pci_read_config_dword(pdev, 0, &id);
++		if (id != cfg[0])
++			break;
++		msleep(10);
++	}
++	nvkm_info(subdev, "ec: card %s after %dms\n", t < 3000 ? "gone" : "still there", t);
++
++	nvkm_info(subdev, "ec: resume message\n");
++	for (i = 0; i < 3; i++) {
++		for (t = 0; t < 1000 && !(readl(uart + (5 << 2)) & 0x20); t++)
++			udelay(10);
++		writel(post[i], uart + (0 << 2));
++	}
++	gh100_gsp_aros_watch(gsp, pdev, cfg, 15000);
++	gh100_gsp_aros_dump(gsp, "after ec cycle");
++}
++
++/* D3hot and back: a device-side soft reset on cards that allow it */
++static void
++gh100_gsp_aros_d3(struct nvkm_gsp *gsp)
++{
++	struct nvkm_subdev *subdev = &gsp->subdev;
++	struct nvkm_device *device = subdev->device;
++	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
++	u32 cfg[64];
++	u16 pmcsr;
++	u8 pos = 0, next, id;
++	int i;
++
++	pci_read_config_byte(pdev, 0x34, &next);
++	for (i = 0; next && i < 32; i++) {
++		pci_read_config_byte(pdev, next, &id);
++		if (id == 0x01) {
++			pos = next;
++			break;
++		}
++		pci_read_config_byte(pdev, next + 1, &next);
++	}
++	if (!pos) {
++		nvkm_info(subdev, "d3: no pm capability\n");
++		return;
++	}
++	for (i = 0; i < 64; i++)
++		pci_read_config_dword(pdev, i * 4, &cfg[i]);
++	pci_read_config_word(pdev, pos + 4, &pmcsr);
++	nvkm_info(subdev, "d3: pm cap at %02x, pmcsr %04x -> D3hot\n", pos, pmcsr);
++	pci_write_config_word(pdev, pos + 4, (pmcsr & ~3) | 3);
++	msleep(200);
++	pci_read_config_word(pdev, pos + 4, &pmcsr);
++	nvkm_info(subdev, "d3: pmcsr %04x -> D0\n", pmcsr);
++	pci_write_config_word(pdev, pos + 4, pmcsr & ~3);
++	msleep(100);
++	gh100_gsp_aros_watch(gsp, pdev, cfg, 12000);
++	gh100_gsp_aros_dump(gsp, "after d3");
++}
++
++/* ask the FSP itself to reset, then watch what its boot does */
++static void
++gh100_gsp_aros_fsp_reset(struct nvkm_gsp *gsp)
++{
++	struct nvkm_subdev *subdev = &gsp->subdev;
++	struct nvkm_device *device = subdev->device;
++	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
++	u32 cfg[64];
++	int i;
++
++	for (i = 0; i < 64; i++)
++		pci_read_config_dword(pdev, i * 4, &cfg[i]);
++
++	nvkm_info(subdev, "fsp reset command\n");
++	gh100_fsp_aros_cmd(device->fsp, 0x04);
++	gh100_gsp_aros_watch(gsp, pdev, cfg, 10000);
++	gh100_gsp_aros_dump(gsp, "after fsp reset");
++}
++#endif
++
++int compat_dump_file(const char *name, const void *data, unsigned long size);
++
++/*
++ * Leave what the card and RM had to say on the boot volume for offline
++ * decoding: the libos log queues, the VBIOS and a few register windows.
++ */
++static void
++gh100_gsp_aros_dumpfiles(struct nvkm_gsp *gsp)
++{
++	struct nvkm_subdev *subdev = &gsp->subdev;
++	struct nvkm_device *device = subdev->device;
++	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
++	u32 *buf;
++	int i, ret;
++
++	if (!nvkm_boolopt(device->cfgopt, "NvDump", true))
++		return;
++
++	if (gsp->loginit.data)
++		compat_dump_file("loginit.bin", gsp->loginit.data, gsp->loginit.size);
++	if (gsp->logintr.data)
++		compat_dump_file("logintr.bin", gsp->logintr.data, gsp->logintr.size);
++	if (gsp->logrm.data)
++		compat_dump_file("logrm.bin", gsp->logrm.data, gsp->logrm.size);
++	if (gsp->rmargs.data)
++		compat_dump_file("rmargs.bin", gsp->rmargs.data, gsp->rmargs.size);
++	if (gsp->wpr_meta.data)
++		compat_dump_file("wprmeta.bin", gsp->wpr_meta.data, gsp->wpr_meta.size);
++
++	buf = vmalloc(0x100000);
++	if (!buf)
++		return;
++
++	/* register windows: 0x000000-0x001fff, 0x088000-0x08bfff (config mirror),
++	   0x118000-0x118fff (aon), 0x8f0000-0x8f0fff (fsp), 0xad0000-0xad0fff (therm) */
++	{
++		static const struct { u32 base, size; } win[] = {
++			{ 0x000000, 0x2000 }, { 0x088000, 0x4000 }, { 0x118000, 0x1000 },
++			{ 0x8f0000, 0x1000 }, { 0xad0000, 0x1000 }, { 0x101000, 0x1000 },
++			{ 0x110000, 0x2000 }, { 0x00e000, 0x2000 },
++		};
++		u32 off = 0;
++		for (i = 0; i < ARRAY_SIZE(win); i++) {
++			u32 j;
++			buf[off++] = 0x77696e00 | i;
++			buf[off++] = win[i].base;
++			buf[off++] = win[i].size;
++			buf[off++] = 0;
++			for (j = 0; j < win[i].size; j += 4)
++				buf[off++] = nvkm_rd32(device, win[i].base + j);
++		}
++		compat_dump_file("regs.bin", buf, off * 4);
++	}
++
++	/* PROM window */
++	for (i = 0; i < 0x100000; i += 4)
++		buf[i / 4] = nvkm_rd32(device, 0x300000 + i);
++	nvkm_info(subdev, "prom: %08x %08x %08x %08x\n", buf[0], buf[1], buf[2], buf[3]);
++	compat_dump_file("vbios-prom.rom", buf, 0x100000);
++
++	/* expansion ROM BAR */
++	{
++		size_t romsize = 0;
++		void __iomem *rom;
++		u32 romaddr;
++
++		struct pci_bus bus0 = { .number = 0 }, bus1 = { .number = 1 };
++		u32 romorig, mask, base = 0, top = 0, bar, sz;
++		u16 mem;
++
++		pci_read_config_dword(pdev, 0x30, &romorig);
++		pci_write_config_dword(pdev, 0x30, 0xfffff800);
++		pci_read_config_dword(pdev, 0x30, &mask);
++		pci_write_config_dword(pdev, 0x30, romorig);
++		romsize = mask ? (~(mask & ~0x7ff) + 1) : 0;
++		if (romsize > 0x100000)
++			romsize = 0x100000;
++
++		/* bridge non-prefetchable window; take its top, unless BAR0/BAR of fn1 sit there */
++		pci_bus_read_config_word(&bus0, 0, 0x20, &mem);
++		base = (u32)(mem & 0xfff0) << 16;
++		pci_bus_read_config_word(&bus0, 0, 0x22, &mem);
++		top = ((u32)(mem & 0xfff0) << 16) + 0x100000;
++		nvkm_info(subdev, "rom bar %08x size %zx window %08x-%08x\n", romorig, romsize, base, top);
++		romaddr = top - romsize;
++		pci_read_config_dword(pdev, 0x10, &bar);
++		bar &= ~0xf;
++		sz = 0x1000000;
++		if (bar >= base && bar < top && bar + sz > romaddr)
++			romaddr = bar - romsize;
++		pci_bus_read_config_dword(&bus1, 1, 0x10, &bar);
++		bar &= ~0xf;
++		if (bar >= base && bar < top && bar + 0x4000 > romaddr && bar < romaddr + romsize)
++			romaddr = bar - romsize;
++		if (romsize && romaddr >= base && romaddr + romsize <= top) {
++			pci_write_config_dword(pdev, 0x30, romaddr | 1);
++			rom = ioremap(romaddr, romsize);
++			if (rom) {
++				for (i = 0; i < romsize; i += 4)
++					buf[i / 4] = readl(rom + i);
++				nvkm_info(subdev, "rom @%08x: %08x %08x %08x %08x (%zx)\n", romaddr, buf[0], buf[1], buf[2], buf[3], romsize);
++				compat_dump_file("vbios-bar.rom", buf, romsize);
++				iounmap(rom);
++			}
++			pci_write_config_dword(pdev, 0x30, romorig);
++		}
++	}
++	vfree(buf);
++	ret = 0;
++	(void)ret;
++	nvkm_info(subdev, "dump written to SYS:nouveau-dump\n");
++}
++
+ int
+ gh100_gsp_init(struct nvkm_gsp *gsp)
+ {
+@@ -102,6 +598,90 @@
+ 	if (gsp->rm->wpr->rsvd_size_pmu)
+ 		rsvd_size = ALIGN(rsvd_size + gsp->rm->wpr->rsvd_size_pmu, 0x200000);
+ 
++#if defined(__AROS__)
++	/*
++	 * The GPU's own firmware boot (devinit) has to be complete before RM
++	 * is started, or RM gives up on it. Give it a moment, say where it
++	 * got to, and if it is not there try a bus reset to restart it.
++	 */
++	{
++		int gfw = 4000;
++		u32 pl, progress;
++
++		while (!gh100_gsp_aros_gfw_done(device, &progress, &pl) && gfw--)
++			usleep_range(1000, 2000);
++		gh100_gsp_aros_dump(gsp, gfw < 0 ? "GFW boot timed out" : "GFW boot complete");
++		if (gfw < 0) {
++			int mode = nvkm_longopt(device->cfgopt, "NvGfwReset", 0);
++			if (mode & 64)
++				gh100_gsp_aros_d3(gsp);
++			if ((mode & 32) && !gh100_gsp_aros_gfw_done(device, &progress, &pl))
++				gh100_gsp_aros_ec_cycle(gsp);
++			if ((mode & 16) && !gh100_gsp_aros_gfw_done(device, &progress, &pl))
++				gh100_gsp_aros_flr(gsp);
++			if ((mode & 8) && !gh100_gsp_aros_gfw_done(device, &progress, &pl))
++				gh100_gsp_aros_perst(gsp);
++			if ((mode & 4) && !gh100_gsp_aros_gfw_done(device, &progress, &pl))
++				gh100_gsp_aros_fsp_reset(gsp);
++			if ((mode & 1) && !gh100_gsp_aros_gfw_done(device, &progress, &pl))
++				gh100_gsp_aros_reset(gsp, 1);
++			if ((mode & 2) && !gh100_gsp_aros_gfw_done(device, &progress, &pl))
++				gh100_gsp_aros_reset(gsp, 2);
++		}
++	}
++	compat_dma_sync_all_coherent();
++	/*
++	 * The FMC/ACR occasionally refuses the first boot on this platform
++	 * (mailbox 0xb) although a fresh attempt a moment later succeeds;
++	 * give it a few tries before giving up.
++	 */
++	{
++		int attempt;
++
++		for (attempt = 0; attempt < 4; attempt++) {
++			if (attempt) {
++				nvkm_warn(subdev, "GSP-FMC boot retry %d\n", attempt);
++				/* the mailbox keeps the last verdict; clear it so a
++				   fresh answer (or none) is what we wait for */
++				nvkm_falcon_wr32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX0, 0);
++				nvkm_falcon_wr32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX1, 0);
++				msleep(1000);
++				compat_dma_sync_all_coherent();
++			}
++			ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
++						    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
++			if (ret) {
++				nvkm_error(subdev, "GSP-FMC boot request failed: %d\n", ret);
++				continue;
++			}
++
++			time = 4000;
++			mbox0 = 0;
++			do {
++				if (gh100_gsp_lockdown_released(gsp, &mbox0))
++					break;
++				usleep_range(1000, 2000);
++			} while (time--);
++
++			if (time < 0) {
++				nvkm_error(subdev, "GSP-FMC boot timed out\n");
++				ret = -ETIMEDOUT;
++				continue;
++			}
++			if (mbox0) {
++				nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x)\n", mbox0);
++				ret = -EIO;
++				continue;
++			}
++			ret = 0;
++			break;
++		}
++		if (ret) {
++			gh100_gsp_aros_dumpfiles(gsp);
++			return ret;
++		}
++	}
++#else
+ 	ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
+ 				    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
+ 	if (ret)
+@@ -123,6 +703,7 @@
+ 		nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x)\n", mbox0);
+ 		return -EIO;
+ 	}
++#endif
+ 
+ 	return r535_gsp_init(gsp);
+ }
+@@ -344,6 +925,7 @@
+ 
+ static struct nvkm_gsp_fwif
+ gh100_gsps[] = {
++	{ 2, gh100_gsp_load, &gh100_gsp, &r580_rm_gh100, "580.178.04" },
+ 	{ 0, gh100_gsp_load, &gh100_gsp, &r570_rm_gh100, "570.144" },
+ 	{}
+ };
+@@ -356,3 +938,4 @@
+ }
+ 
+ NVKM_GSP_FIRMWARE_FMC(gh100, 570.144);
++NVKM_GSP_FIRMWARE_FMC(gh100, 580.178.04);
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/disp.c
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/disp.c
+@@ -261,6 +261,141 @@
+ 	.user = 0,
+ };
+ 
++
++/*
++ * NVIDIA's display driver asks RM whether a mode is possible before every
++ * modeset; on Blackwell RM also hands back the tile assignment it expects
++ * (and its supervisor relies on the state this leaves behind).
++ */
++int
++r535_disp_imp(struct nvkm_disp *disp, const struct nvkm_disp_imp_head *heads, int nheads,
++	      struct nvkm_disp_imp_result *res)
++{
++	struct nvkm_subdev *subdev = &disp->engine.subdev;
++	NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *ctrl;
++	int ret, i, w = 0;
++
++	memset(res, 0, sizeof(*res));
++
++	if (!disp->rm.imp.client) {
++		ret = nvkm_gsp_rm_alloc(&disp->rm.device.object, NVC372_DISPLAY_SW << 16,
++					NVC372_DISPLAY_SW, 0, &disp->rm.imp);
++		if (ret) {
++			nvkm_error(subdev, "imp: NVC372 alloc failed: %d\n", ret);
++			return ret;
++		}
++	}
++
++	ctrl = nvkm_gsp_rm_ctrl_get(&disp->rm.imp, NVC372_CTRL_CMD_IS_MODE_POSSIBLE, sizeof(*ctrl));
++	if (IS_ERR(ctrl))
++		return PTR_ERR(ctrl);
++
++	ctrl->base.subdeviceIndex = 0;
++	for (i = 0; i < nheads && i < NVC372_CTRL_MAX_POSSIBLE_HEADS; i++) {
++		const struct nvkm_disp_imp_head *h = &heads[i];
++		NVC372_CTRL_IMP_HEAD *ih = &ctrl->head[ctrl->numHeads++];
++		u32 active_h = h->blank_start_y - h->blank_end_y;
++		u32 overscan = (active_h / 2) - (h->view_h / 2);
++		u32 leading = h->blank_end_y + overscan + 1;
++		int j;
++
++		ih->headIndex = h->head;
++		ih->maxPixelClkKHz = h->pclk_khz;
++		ih->rasterSize.width = h->raster_w;
++		ih->rasterSize.height = h->raster_h;
++		ih->rasterBlankStart.X = h->blank_start_x;
++		ih->rasterBlankStart.Y = h->blank_start_y;
++		ih->rasterBlankEnd.X = h->blank_end_x;
++		ih->rasterBlankEnd.Y = h->blank_end_y;
++		ih->rasterVertBlank2.yStart = h->vblank2_start;
++		ih->rasterVertBlank2.yEnd = h->vblank2_end;
++		ih->control.masterLockMode = NV_DISP_LOCK_MODE_NO_LOCK;
++		ih->control.masterLockPin = NV_DISP_LOCK_PIN_UNSPECIFIED;
++		ih->control.slaveLockMode = NV_DISP_LOCK_MODE_NO_LOCK;
++		ih->control.slaveLockPin = NV_DISP_LOCK_PIN_UNSPECIFIED;
++		ih->maxDownscaleFactorH = 1024;
++		ih->maxDownscaleFactorV = 1024;
++		ih->outputScalerVerticalTaps = 2;
++		ih->bUpscalingAllowedV = 1;
++		ih->minFrameIdle.leadingRasterLines = leading;
++		ih->minFrameIdle.trailingRasterLines = h->raster_h - (leading + h->view_h);
++		ih->lut = NVC372_CTRL_IMP_LUT_USAGE_1025;
++		ih->cursorSize32p = 256 / 32;
++		ih->tileMask = h->tile_mask;
++
++		/* the two windows this driver gives every head */
++		for (j = 0; j < 2 && w < NVC372_CTRL_MAX_POSSIBLE_WINDOWS; j++, w++) {
++			NVC372_CTRL_IMP_WINDOW *iw = &ctrl->window[w];
++
++			iw->windowIndex = h->head * 2 + j;
++			iw->owningHead = h->head;
++			iw->formatUsageBound = NVC372_CTRL_FORMAT_RGB_PACKED_1_BPP |
++					       NVC372_CTRL_FORMAT_RGB_PACKED_2_BPP |
++					       NVC372_CTRL_FORMAT_RGB_PACKED_4_BPP |
++					       NVC372_CTRL_FORMAT_RGB_PACKED_8_BPP;
++			iw->maxPixelsFetchedPerLine = (((h->view_w + 14) * 1024 + 1023) >> 10) + 8;
++			iw->maxDownscaleFactorH = 1024;
++			iw->maxDownscaleFactorV = 1024;
++			iw->inputScalerVerticalTaps = 2;
++			iw->bUpscalingAllowedV = 0;
++			iw->lut = NVC372_CTRL_IMP_LUT_USAGE_1025;
++			iw->tmoLut = NVC372_CTRL_IMP_LUT_USAGE_1025;
++			iw->surfaceLayout = NVC372_CTRL_LAYOUT_PITCH;
++		}
++	}
++	ctrl->numWindows = w;
++
++	ret = nvkm_gsp_rm_ctrl_push(&disp->rm.imp, &ctrl, sizeof(*ctrl));
++	if (ret) {
++		nvkm_error(subdev, "imp: control failed: %d\n", ret);
++		return ret;
++	}
++
++	res->possible = ctrl->bIsPossible;
++	res->dispclk_khz = ctrl->dispClkKHz;
++	res->minbw_kbps = ctrl->minRequiredBandwidthKBPS;
++	if (ctrl->numTilingAssignments) {
++		for (i = 0; i < ctrl->tilingAssignments[0].numTiles && i < 8; i++) {
++			u8 h = ctrl->tileList[i].head;
++
++			if (h < ctrl->numHeads && ctrl->head[h].headIndex < 8)
++				res->tiles[ctrl->head[h].headIndex]++;
++		}
++	}
++	nvkm_debug(subdev, "imp: possible %d dispclk %u kHz bw %u assignments %u tiles/head0 %d\n",
++		   res->possible, res->dispclk_khz, res->minbw_kbps, ctrl->numTilingAssignments,
++		   res->tiles[0]);
++
++	nvkm_gsp_rm_ctrl_done(&disp->rm.imp, ctrl);
++	return 0;
++}
++
++/*
++ * Bracket a modeset for RM the way its own display driver does
++ * (NV0073_CTRL_CMD_SPECIFIC_DISPLAY_CHANGE START/END).
++ */
++int
++r535_disp_display_change(struct nvkm_disp *disp, bool start, u32 display_mask)
++{
++	NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *ctrl;
++
++	if (!disp->rm.objcom.client)
++		return -ENODEV;
++
++	ctrl = nvkm_gsp_rm_ctrl_get(&disp->rm.objcom,
++				    NV0073_CTRL_CMD_SPECIFIC_DISPLAY_CHANGE, sizeof(*ctrl));
++	if (IS_ERR(ctrl))
++		return PTR_ERR(ctrl);
++
++	ctrl->subDeviceInstance = 0;
++	ctrl->newDevices = display_mask;
++	ctrl->properties = 0;
++	ctrl->enable = start ? NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_START :
++			       NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_END;
++
++	return nvkm_gsp_rm_ctrl_wr(&disp->rm.objcom, ctrl);
++}
++
+ static int
+ r535_bl_ctrl(struct nvkm_disp *disp, unsigned display_id, bool set, int *pval)
+ {
+@@ -1443,6 +1578,7 @@
+ 	if (!disp->engine.subdev.use.enabled)
+ 		return;
+ 
++	nvkm_gsp_rm_free(&disp->rm.imp);
+ 	nvkm_gsp_rm_free(&disp->rm.object);
+ 
+ 	if (!suspend) {
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/fifo.c
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/fifo.c
+@@ -150,6 +150,19 @@
+ 	return nvkm_gsp_rm_alloc_wr(chan, args);
+ }
+ 
++int
++r535_chan_schedule(struct nvkm_gsp_object *object, bool enable)
++{
++	NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS *ctrl;
++
++	ctrl = nvkm_gsp_rm_ctrl_get(object, NVA06F_CTRL_CMD_GPFIFO_SCHEDULE, sizeof(*ctrl));
++	if (WARN_ON(IS_ERR(ctrl)))
++		return PTR_ERR(ctrl);
++
++	ctrl->bEnable = enable;
++	return nvkm_gsp_rm_ctrl_wr(object, ctrl);
++}
++
+ static int
+ r535_chan_ramfc_write(struct nvkm_chan *chan, u64 offset, u64 length, u32 devm, bool priv)
+ {
+@@ -189,8 +202,6 @@
+ 		return ret;
+ 
+ 	if (1) {
+-		NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS *ctrl;
+-
+ 		if (1) {
+ 			NVA06F_CTRL_BIND_PARAMS *ctrl;
+ 
+@@ -206,13 +217,8 @@
+ 				return ret;
+ 		}
+ 
+-		ctrl = nvkm_gsp_rm_ctrl_get(&chan->rm.object,
+-					    NVA06F_CTRL_CMD_GPFIFO_SCHEDULE, sizeof(*ctrl));
+-		if (WARN_ON(IS_ERR(ctrl)))
+-			return PTR_ERR(ctrl);
+-
+-		ctrl->bEnable = 1;
+-		ret = nvkm_gsp_rm_ctrl_wr(&chan->rm.object, ctrl);
++		ret = (rmapi->fifo->chan.schedule ? rmapi->fifo->chan.schedule :
++		       r535_chan_schedule)(&chan->rm.object, true);
+ 	}
+ 
+ 	return ret;
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/gr.c
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/gr.c
+@@ -294,7 +294,7 @@
+ 	if (ret)
+ 		goto done;
+ 
+-	ret = r535_mmu_vaspace_new(golden.vmm, NVKM_RM_VASPACE, false);
++	ret = gsp->rm->api->vmm->vaspace_new(golden.vmm, NVKM_RM_VASPACE, false);
+ 	if (ret)
+ 		goto done;
+ 
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/gsp.c
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/gsp.c
+@@ -51,6 +51,9 @@
+ 	struct nvkm_gsp *gsp = container_of(work, typeof(*gsp), msgq.work);
+ 
+ 	mutex_lock(&gsp->cmdq.mutex);
++#if defined(__AROS__)
++	compat_dma_sync_for_cpu(gsp->msgq.wptr, sizeof(*gsp->msgq.wptr));
++#endif
+ 	if (*gsp->msgq.rptr != *gsp->msgq.wptr)
+ 		r535_gsp_msg_recv(gsp, 0, 0);
+ 	mutex_unlock(&gsp->cmdq.mutex);
+@@ -128,7 +131,7 @@
+ 	}
+ }
+ 
+-static int
++int
+ r535_gsp_intr_get_table(struct nvkm_gsp *gsp)
+ {
+ 	NV2080_CTRL_INTERNAL_INTR_GET_KERNEL_TABLE_PARAMS *ctrl;
+@@ -302,7 +305,7 @@
+ 
+ 	INIT_WORK(&gsp->msgq.work, r535_gsp_msgq_work);
+ 
+-	ret = r535_gsp_intr_get_table(gsp);
++	ret = (rmapi->gsp->intr_get_table ? rmapi->gsp->intr_get_table : r535_gsp_intr_get_table)(gsp);
+ 	if (WARN_ON(ret))
+ 		return ret;
+ 
+@@ -564,7 +567,11 @@
+ 
+ MODULE_PARM_DESC(NVreg_RegistryDwords,
+ 		 "A semicolon-separated list of key=integer pairs of GSP-RM registry keys");
++#if defined(__AROS__)
++char *NVreg_RegistryDwords;
++#else
+ static char *NVreg_RegistryDwords;
++#endif
+ module_param(NVreg_RegistryDwords, charp, 0400);
+ 
+ /* dword only */
+@@ -924,7 +931,7 @@
+ 	return nvkm_gsp_rpc_wr(gsp, info, NVKM_GSP_RPC_REPLY_NOSEQ);
+ }
+ 
+-static int
++int
+ r535_gsp_msg_os_error_log(void *priv, u32 fn, void *repv, u32 repc)
+ {
+ 	struct nvkm_gsp *gsp = priv;
+@@ -2170,7 +2177,9 @@
+ 	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_RC_TRIGGERED, rmapi->fifo->rc_triggered, gsp);
+ 	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_MMU_FAULT_QUEUED,
+ 			      r535_gsp_msg_mmu_fault_queued, gsp);
+-	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_OS_ERROR_LOG, r535_gsp_msg_os_error_log, gsp);
++	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_OS_ERROR_LOG,
++			      gsp->rm->api->gsp->msg_os_error_log ?
++			      gsp->rm->api->gsp->msg_os_error_log : r535_gsp_msg_os_error_log, gsp);
+ 	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_PERF_BRIDGELESS_INFO_UPDATE, NULL, NULL);
+ 	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_UCODE_LIBOS_PRINT, NULL, NULL);
+ 	if (rmapi->gsp->drop_send_user_shared_data)
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/nvrm/disp.h
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/nvrm/disp.h
+@@ -738,4 +738,122 @@
+ #define NV50VAIO_CHANNELDMA_ALLOCATION_FLAGS_CONNECT_PB_AT_GRAB_NO             0x00000001
+ 
+ } NV50VAIO_CHANNELDMA_ALLOCATION_PARAMETERS;
++typedef struct NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS {
++    NvU32 subDeviceInstance;
++    NvU32 newDevices;
++    NvU32 properties;
++    NvU32 enable;
++} NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS;
++
++#define NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_END                 (0x00000000U)
++#define NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_START               (0x00000001U)
++#define NV0073_CTRL_CMD_SPECIFIC_DISPLAY_CHANGE                 (0x7302a4U)
++
++
++/* NVC372_DISPLAY_SW: RM's display-software object, home of IMP */
++#define NVC372_DISPLAY_SW                                    (0xc372U)
++#define NVC372_CTRL_CMD_IS_MODE_POSSIBLE                     (0xc3720101U)
++#define NVC372_CTRL_MAX_POSSIBLE_HEADS                       8
++#define NVC372_CTRL_MAX_POSSIBLE_WINDOWS                     32
++#define NVC372_CTRL_MAX_POSSIBLE_TILES                       8
++#define NVC372_CTRL_IMP_LUT_USAGE_NONE                       0
++#define NVC372_CTRL_IMP_LUT_USAGE_257                        1
++#define NVC372_CTRL_IMP_LUT_USAGE_1025                       2
++#define NVC372_CTRL_IMP_LUT_USAGE_HW_MAX                     3
++#define NVC372_CTRL_FORMAT_RGB_PACKED_1_BPP                  (0x00000001)
++#define NVC372_CTRL_FORMAT_RGB_PACKED_2_BPP                  (0x00000002)
++#define NVC372_CTRL_FORMAT_RGB_PACKED_4_BPP                  (0x00000004)
++#define NVC372_CTRL_FORMAT_RGB_PACKED_8_BPP                  (0x00000008)
++#define NVC372_CTRL_LAYOUT_PITCH                             1
++#define NV_DISP_LOCK_PIN_UNSPECIFIED                         0x10
++#define NV_DISP_LOCK_MODE_NO_LOCK                            0x0
++
++typedef struct NVC372_CTRL_CMD_BASE_PARAMS {
++    NvU32 subdeviceIndex;
++} NVC372_CTRL_CMD_BASE_PARAMS;
++
++typedef struct NVC372_CTRL_IMP_HEAD {
++    NvU8  headIndex;
++    NvU32 maxPixelClkKHz;
++    struct { NvU32 width; NvU32 height; } rasterSize;
++    struct { NvU32 X; NvU32 Y; } rasterBlankStart;
++    struct { NvU32 X; NvU32 Y; } rasterBlankEnd;
++    struct { NvU32 yStart; NvU32 yEnd; } rasterVertBlank2;
++    struct {
++        NvU32 masterLockMode;
++        NvU32 masterLockPin;
++        NvU32 slaveLockMode;
++        NvU32 slaveLockPin;
++    } control;
++    NvU32  maxDownscaleFactorH;
++    NvU32  maxDownscaleFactorV;
++    NvU8   outputScalerVerticalTaps;
++    NvBool bUpscalingAllowedV;
++    NvBool bOverfetchEnabled;
++    NvBool bLtmAllowed;
++    struct { NvU16 leadingRasterLines; NvU16 trailingRasterLines; } minFrameIdle;
++    NvU8   lut;
++    NvU8   cursorSize32p;
++    NvU8   tileMask;
++    NvBool bEnableDsc;
++    NvU16  dscTargetBppX16;
++    NvU32  possibleDscSliceCountMask;
++    NvU32  maxDscSliceWidth;
++    NvBool bYUV420Format;
++    NvBool bIs2Head1Or;
++    NvBool bGetOSLDOutput;
++    NvBool bDisableMidFrameAndDWCFWatermark;
++} NVC372_CTRL_IMP_HEAD;
++
++typedef struct NVC372_CTRL_IMP_WINDOW {
++    NvU32  windowIndex;
++    NvU32  owningHead;
++    NvU32  formatUsageBound;
++    NvU32  rotatedFormatUsageBound;
++    NvU32  maxPixelsFetchedPerLine;
++    NvU32  maxDownscaleFactorH;
++    NvU32  maxDownscaleFactorV;
++    NvU8   inputScalerVerticalTaps;
++    NvBool bUpscalingAllowedV;
++    NvBool bOverfetchEnabled;
++    NvU8   lut;
++    NvU8   tmoLut;
++    NvU8   surfaceLayout;
++} NVC372_CTRL_IMP_WINDOW;
++
++typedef struct NVC372_TILING_ASSIGNMENT {
++    NvU8 numTiles;
++} NVC372_TILING_ASSIGNMENT;
++
++typedef struct NVC372_TILE_ENTRY {
++    NvU8 head;
++    NvU8 headDscSlices;
++} NVC372_TILE_ENTRY;
++
++typedef struct NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS {
++    NVC372_CTRL_CMD_BASE_PARAMS base;
++    NvU8                        numHeads;
++    NvU8                        numWindows;
++    NVC372_CTRL_IMP_HEAD        head[NVC372_CTRL_MAX_POSSIBLE_HEADS];
++    NVC372_CTRL_IMP_WINDOW      window[NVC372_CTRL_MAX_POSSIBLE_WINDOWS];
++    NvU32                       options;
++    NvU32                       testMclkFreqKHz;
++    NvBool                      bIsPossible;
++    NvBool                      bIsOSLDPossible[NVC372_CTRL_MAX_POSSIBLE_HEADS];
++    NvU32                       minImpVPState;
++    NvU32                       minPState;
++    NvU32                       minRequiredBandwidthKBPS;
++    NvU32                       floorBandwidthKBPS;
++    NvU32                       minRequiredHubclkKHz;
++    NvU32                       vblankIncreaseInLinesForOSLDMode[NVC372_CTRL_MAX_POSSIBLE_HEADS];
++    NvU32                       wakeUpRgLineForOSLDMode[NVC372_CTRL_MAX_POSSIBLE_HEADS];
++    NvU32                       worstCaseMargin;
++    NvU32                       dispClkKHz;
++    NvU32                       numTilingAssignments;
++    NVC372_TILING_ASSIGNMENT    tilingAssignments[NVC372_CTRL_MAX_POSSIBLE_TILES];
++    NVC372_TILE_ENTRY           tileList[NVC372_CTRL_MAX_POSSIBLE_TILES];
++    char                        worstCaseDomain[8];
++    NvBool                      bUseCachedPerfState;
++} NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS;
++
+ #endif
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/rm.c
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/rm.c
+@@ -37,6 +37,7 @@
+ 	.nvenc = &r535_nvenc,
+ 	.nvjpg = &r535_nvjpg,
+ 	.ofa = &r535_ofa,
++	.vmm = &r535_vmm,
+ };
+ 
+ const struct nvkm_rm_impl
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/rpc.c
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/rpc.c
+@@ -150,7 +150,12 @@
+ 		return -EINVAL;
+ 
+ 	do {
+-		u32 wptr = *gsp->msgq.wptr;
++		u32 wptr;
++
++#if defined(__AROS__)
++		compat_dma_sync_for_cpu(gsp->msgq.wptr, sizeof(*gsp->msgq.wptr));
++#endif
++		wptr = *gsp->msgq.wptr;
+ 
+ 		used = wptr + gsp->msgq.cnt - rptr;
+ 		if (used >= gsp->msgq.cnt)
+@@ -172,6 +177,10 @@
+ {
+ 	u32 rptr = *gsp->msgq.rptr;
+ 
++#if defined(__AROS__)
++	/* the queue was filled by the card behind the CPU's caches */
++	compat_dma_sync_for_cpu(gsp->shm.msgq.ptr, gsp->shm.msgq.size);
++#endif
+ 	/* Skip the first page, which is the message queue info */
+ 	return (void *)((u8 *)gsp->shm.msgq.ptr + GSP_PAGE_SIZE +
+ 	       rptr * GSP_PAGE_SIZE);
+@@ -280,6 +289,9 @@
+ 
+ 	mb();
+ 	(*gsp->msgq.rptr) = rptr;
++#if defined(__AROS__)
++	compat_dma_sync_for_device(gsp->msgq.rptr, sizeof(*gsp->msgq.rptr));
++#endif
+ 	return buf;
+ }
+ 
+@@ -377,6 +389,9 @@
+ 	wptr = *gsp->cmdq.wptr;
+ 	do {
+ 		do {
++#if defined(__AROS__)
++			compat_dma_sync_for_cpu(gsp->cmdq.rptr, sizeof(*gsp->cmdq.rptr));
++#endif
+ 			free = *gsp->cmdq.rptr + gsp->cmdq.cnt - wptr - 1;
+ 			if (free >= gsp->cmdq.cnt)
+ 				free -= gsp->cmdq.cnt;
+@@ -409,6 +424,10 @@
+ 	wmb();
+ 	(*gsp->cmdq.wptr) = wptr;
+ 	mb();
++#if defined(__AROS__)
++	/* the card fetches the queue from RAM: push it out of the caches */
++	compat_dma_sync_for_device(gsp->shm.cmdq.ptr, gsp->shm.cmdq.size);
++#endif
+ 
+ 	nvkm_falcon_wr32(&gsp->falcon, 0xc00, 0x00000000);
+ 
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/vmm.c
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/vmm.c
+@@ -154,7 +154,7 @@
+ static int
+ r535_mmu_promote_vmm(struct nvkm_vmm *vmm)
+ {
+-	return r535_mmu_vaspace_new(vmm, NVKM_RM_VASPACE, true);
++	return vmm->mmu->subdev.device->gsp->rm->api->vmm->vaspace_new(vmm, NVKM_RM_VASPACE, true);
+ }
+ 
+ static void
+@@ -189,3 +189,8 @@
+ 
+ 	return ret;
+ }
++
++const struct nvkm_rm_api_vmm
++r535_vmm = {
++	.vaspace_new = r535_mmu_vaspace_new,
++};
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r570/gr.c
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r570/gr.c
+@@ -126,7 +126,7 @@
+ 	if (ret)
+ 		goto done;
+ 
+-	ret = r535_mmu_vaspace_new(gr->scrubber.vmm, KGRAPHICS_SCRUBBER_HANDLE_VAS, false);
++	ret = device->gsp->rm->api->vmm->vaspace_new(gr->scrubber.vmm, KGRAPHICS_SCRUBBER_HANDLE_VAS, false);
+ 	if (ret)
+ 		goto done;
+ 
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r570/rm.c
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/r570/rm.c
+@@ -66,6 +66,7 @@
+ 	.nvenc = &r535_nvenc,
+ 	.nvjpg = &r535_nvjpg,
+ 	.ofa = &r570_ofa,
++	.vmm = &r535_vmm,
+ };
+ 
+ const struct nvkm_rm_impl
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/rm.h
++++ ./drm/nouveau/nvkm/subdev/gsp/rm/rm.h
+@@ -39,6 +39,8 @@
+ 		void (*drop_send_user_shared_data)(struct nvkm_gsp *);
+ 		void (*drop_post_nocat_record)(struct nvkm_gsp *);
+ 		u32 (*sr_data_size)(struct nvkm_gsp *);
++		int (*intr_get_table)(struct nvkm_gsp *);
++		int (*msg_os_error_log)(void *priv, u32 fn, void *repv, u32 repc);
+ 	} *gsp;
+ 
+ 	const struct nvkm_rm_api_rpc {
+@@ -115,9 +117,14 @@
+ 				     u64 inst_addr, u64 userd_addr, u64 mthdbuf_addr,
+ 				     struct nvkm_vmm *, u64 gpfifo_offset, u32 gpfifo_length,
+ 				     struct nvkm_gsp_object *);
++			int (*schedule)(struct nvkm_gsp_object *, bool enable);
+ 		} chan;
+ 	} *fifo;
+ 
++	const struct nvkm_rm_api_vmm {
++		int (*vaspace_new)(struct nvkm_vmm *, u32 handle, bool external);
++	} *vmm;
++
+ 	const struct nvkm_rm_api_engine {
+ 		int (*alloc)(struct nvkm_gsp_object *chan, u32 handle, u32 class, int inst,
+ 			     struct nvkm_gsp_object *);
+@@ -151,6 +158,10 @@
+ void r535_gsp_client_dtor(struct nvkm_gsp_client *);
+ extern const struct nvkm_rm_api_device r535_device;
+ int r535_mmu_vaspace_new(struct nvkm_vmm *, u32 handle, bool external);
++extern const struct nvkm_rm_api_vmm r535_vmm;
++int r535_gsp_intr_get_table(struct nvkm_gsp *);
++int r535_gsp_msg_os_error_log(void *priv, u32 fn, void *repv, u32 repc);
++int r535_chan_schedule(struct nvkm_gsp_object *, bool enable);
+ void r535_mmu_vaspace_del(struct nvkm_vmm *);
+ extern const struct nvkm_rm_api_fbsr r535_fbsr;
+ void r535_fbsr_resume(struct nvkm_gsp *);
+@@ -185,6 +196,23 @@
+ extern const struct nvkm_rm_api_disp r570_disp;
+ extern const struct nvkm_rm_api_fifo r570_fifo;
+ extern const struct nvkm_rm_api_gr r570_gr;
++
++extern const struct nvkm_rm_impl r580_rm_tu102;
++extern const struct nvkm_rm_impl r580_rm_ga102;
++extern const struct nvkm_rm_impl r580_rm_gh100;
++extern const struct nvkm_rm_impl r580_rm_gb10x;
++extern const struct nvkm_rm_impl r580_rm_gb20x;
++extern const struct nvkm_rm_api_gsp r580_gsp;
++extern const struct nvkm_rm_api_ctrl r580_ctrl;
++extern const struct nvkm_rm_api_client r580_client;
++extern const struct nvkm_rm_api_fbsr r580_fbsr;
++extern const struct nvkm_rm_api_disp r580_disp;
++extern const struct nvkm_rm_api_fifo r580_fifo;
++extern const struct nvkm_rm_api_gr r580_gr;
++extern const struct nvkm_rm_api_engine r580_ofa;
++extern const struct nvkm_rm_api_vmm r580_vmm;
++int r580_gr_gpc_mask(struct nvkm_gsp *, u32 *mask);
++int r580_gr_tpc_mask(struct nvkm_gsp *, int gpc, u32 *mask);
+ int r570_gr_gpc_mask(struct nvkm_gsp *, u32 *mask);
+ int r570_gr_tpc_mask(struct nvkm_gsp *, int gpc, u32 *mask);
+ extern const struct nvkm_rm_api_engine r570_ofa;
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/tu102.c
++++ ./drm/nouveau/nvkm/subdev/gsp/tu102.c
+@@ -201,6 +201,9 @@
+ 		mbox1 = upper_32_bits(gsp->sr.meta.addr);
+ 	}
+ 
++#if defined(__AROS__)
++	compat_dma_sync_all_coherent();
++#endif
+ 	/* Execute booter to handle (eventually...) booting GSP-RM. */
+ 	ret = tu102_gsp_booter_load(gsp, mbox0, mbox1);
+ 	if (WARN_ON(ret))
+@@ -438,6 +441,7 @@
+ 
+ static struct nvkm_gsp_fwif
+ tu102_gsps[] = {
++	{  2, tu102_gsp_load, &tu102_gsp, &r580_rm_tu102, "580.178.04" },
+ 	{  1, tu102_gsp_load, &tu102_gsp, &r570_rm_tu102, "570.144" },
+ 	{  0, tu102_gsp_load, &tu102_gsp, &r535_rm_tu102, "535.113.01" },
+ 	{ -1, gv100_gsp_nofw, &gv100_gsp },
+@@ -458,3 +462,7 @@
+ NVKM_GSP_FIRMWARE_BOOTER(tu102, 570.144);
+ NVKM_GSP_FIRMWARE_BOOTER(tu104, 570.144);
+ NVKM_GSP_FIRMWARE_BOOTER(tu106, 570.144);
++
++NVKM_GSP_FIRMWARE_BOOTER(tu102, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(tu104, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(tu106, 580.178.04);
+--- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/tu116.c
++++ ./drm/nouveau/nvkm/subdev/gsp/tu116.c
+@@ -44,6 +44,7 @@
+ 
+ static struct nvkm_gsp_fwif
+ tu116_gsps[] = {
++	{  2, tu102_gsp_load, &tu116_gsp, &r580_rm_tu102, "580.178.04" },
+ 	{  1, tu102_gsp_load, &tu116_gsp, &r570_rm_tu102, "570.144" },
+ 	{  0, tu102_gsp_load, &tu116_gsp, &r535_rm_tu102, "535.113.01" },
+ 	{ -1, gv100_gsp_nofw, &gv100_gsp },
+@@ -62,3 +63,6 @@
+ 
+ NVKM_GSP_FIRMWARE_BOOTER(tu116, 570.144);
+ NVKM_GSP_FIRMWARE_BOOTER(tu117, 570.144);
++
++NVKM_GSP_FIRMWARE_BOOTER(tu116, 580.178.04);
++NVKM_GSP_FIRMWARE_BOOTER(tu117, 580.178.04);

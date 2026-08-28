@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 
     Desc: Multiboot v2 parser
 */
@@ -234,12 +234,41 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
             fb_rgb = FALSE;
         }
 #endif
-        BOOL choose_gop = FALSE;
+        BOOL choose_gop = FALSE, mode_set_here = FALSE;
 
         if (fb_rgb)
         {
             if (!vbe_graphics || mb2_efi_systable != 0 || (fb->common.framebuffer_addr >> 32) != 0)
                 choose_gop = TRUE;
+        }
+
+        /*
+         * The bootstrap's Multiboot2 header asks for a 32bpp framebuffer, but
+         * that is only a hint and loaders are free to ignore it. GRUB hands us
+         * a packed 24bpp mode on some machines, which is the one truecolor
+         * layout our display code and the emulated hardware disagree over -
+         * the geometry comes out right but the picture is striped and
+         * discoloured. On a BIOS machine there is still a VBE BIOS to call, so
+         * ask it for the same resolution in a 32bpp mode and use that instead.
+         * setupVESAMode() describes the mode it sets itself, so there is
+         * nothing left for us to pass on when it succeeds.
+         */
+        if (choose_gop && mb2_efi_systable == 0 && fb->common.framebuffer_bpp == 24)
+        {
+            kprintf("[bootstrap:multiboot2] smartfb: loader gave a packed 24bpp framebuffer, asking VBE for %ux%ux32\n",
+                fb->common.framebuffer_width,
+                fb->common.framebuffer_height);
+
+            if (setupVESAMode(fb->common.framebuffer_width, fb->common.framebuffer_height, 32, 60, FALSE, FALSE))
+            {
+                choose_gop = FALSE;
+                fb_rgb = FALSE;
+                mode_set_here = TRUE;
+            }
+            else
+            {
+                kprintf("[bootstrap:multiboot2] smartfb: no 32bpp VBE mode available, keeping the framebuffer\n");
+            }
         }
 
         if (choose_gop)
@@ -260,7 +289,7 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
             tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
             tag++;
         }
-        else if (vbe_graphics)
+        else if (vbe_graphics && !mode_set_here)
         {
             D(kprintf("[%s] Got VESA display mode 0x%x from the bootstrap\n", str_BSMultiboot2, vbe->vbe_mode);)
             kprintf("[bootstrap:multiboot2] smartfb: using VBE mode 0x%x (%ux%ux%u, fb=0x%08X)\n",
@@ -282,7 +311,7 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
             tag->ti_Data = vbe->vbe_mode;
             tag++;
         }
-        else if (fb)
+        else if (fb && !mode_set_here)
         {
             D(
                 kprintf("[%s] Got framebuffer display %dx%dx%d from the bootstrap\n", str_BSMultiboot2,

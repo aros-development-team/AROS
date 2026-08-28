@@ -37,7 +37,14 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_EditProtoEntry   (MUIB_NetPEditor | 0x00000010)
 #define MUIM_NetPEditor_ApplyProtoEntry  (MUIB_NetPEditor | 0x00000011)
 
+/* Add-connection dispatch + 6in4 tunnel editor methods */
+#define MUIM_NetPEditor_AddConnection    (MUIB_NetPEditor | 0x00000012)
+#define MUIM_NetPEditor_EditTunnelEntry  (MUIB_NetPEditor | 0x00000013)
+#define MUIM_NetPEditor_ApplyTunnelEntry (MUIB_NetPEditor | 0x00000014)
+
 struct MUIP_NetPEditor_EditEntry    {STACKED ULONG MethodID; STACKED ULONG addEntry;};
+struct MUIP_NetPEditor_AddConnection {STACKED ULONG MethodID; STACKED LONG type;};
+struct MUIP_NetPEditor_EditTunnelEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_EditNetEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_IPModeChanged {STACKED ULONG MethodID; STACKED ULONG interface;};
 struct MUIP_NetPEditor_ApplyProtoEntry {STACKED ULONG MethodID; STACKED ULONG family;};

@@ -1,0 +1,12 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/timer
+
+include $(SRCDIR)/$(CURDIR)/make.opts
+
+%build_archspecific \
+  mainmmake=kernel-timer maindir=rom/timer \
+  arch=opensbi-riscv64 modname=timer \
+  files="timer_init beginio ticks"
+
+%common

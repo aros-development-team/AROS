@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <exec/alerts.h>
@@ -82,6 +83,9 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     {
         struct TagItem  *tag, *tstate;
         bug("[AmigaVideo:Bitmap] %s: superclass failed to instantiate a suitable bitmap...!!\n", __func__);
+        bug("[AmigaVideo:Bitmap] %s: chip free %lu, largest %lu\n", __func__,
+            (unsigned long)AvailMem(MEMF_CHIP),
+            (unsigned long)AvailMem(MEMF_CHIP | MEMF_LARGEST));
         bug("[AmigaVideo:Bitmap] %s: tags @ 0x%p\n", __func__, msg->attrList);
         tstate = msg->attrList;
         while((tag = NextTagItem(&tstate)))
@@ -234,8 +238,10 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    if (newyoffset < 0)
-        newyoffset = 0;
+    /* Negative offsets scroll an oversized screen: the surplus becomes a
+       bitplane offset in setcopperscroll(). Keep at least one line in view. */
+    if (newyoffset <= -data->height)
+        newyoffset = -(data->height - 1);
     if (newyoffset >= data->height)
         newyoffset = data->height - 1;
 

@@ -1,29 +1,49 @@
 :Per-directory license information:
 
 (a)--ROOT
-(x)----drm
-(b)-------drm
-(c)-------drm-aros
-(d)-------libdrm
-(e)----xf86-video-nouveau
+(b)----drm
+(c)----drm-aros
+(d)----drm-compat
+(e)----include/drm, include/uapi
+(f)----include/linux, include/asm*, include/acpi, include/soc, include/video, include/trace, include/kunit
+(g)----libdrm
+(h)----xf86-video-nouveau
 
-(a) 
+(a)
 All files in *this directory* are licensed under APL license.
 
-(b) 
-All files in *this directory and its subdirectories* are dual licensed GPL-MIT. 
-MIT license is selected as applicable for AROS port.
+(b)
+Linux 6.18.44 drivers/gpu/drm (core subset, display/, ttm/, nouveau/). Files
+are MIT, or dual GPL-2.0/MIT with MIT selected for the AROS port; nothing
+GPL-only is imported (display/drm_dp_mst_topology_internal.h, GPL-only
+upstream, is an APL prototype-only replacement). Files carrying no notice are
+part of the MIT-licensed nouveau driver. Local changes are recorded in
+patches/drm-aros.diff.
 
-(c) 
-The following files in *this directory* are licensed under MIT license:
-    drm_linux_lists.h
-All other files in *this directory and its subdirectories* are licensed under 
-APL license.
+(c)
+All files in *this directory and its subdirectories* are licensed under APL license.
 
 (d)
-All files in *this directory and its subdirectories* are licensed under MIT 
-license.
+APL, except: linux_dma_fence.c, linux_dma_fence_array.c (BSD-2-Clause, from
+FreeBSD drm-kmod), linux_dma_resv.c (MIT, Linux dma-buf), linux_idr.c and
+linux_compat.c (BSD-2-Clause, FreeBSD linuxkpi), linux_hdmi.c (MIT, Linux
+drivers/video/hdmi.c). Check each file for its notice.
 
 (e)
-All files in *this directory and its subdirectories* are licensed under MIT 
-license.
+Linux 6.18.44 include/drm and include/uapi/drm; MIT or dual GPL/MIT (MIT
+selected). GPL-only headers were replaced by APL versions: drm_managed.h,
+drm_gem_ttm_helper.h, drm_lease.h, drm_writeback.h, drm_sysfs.h,
+drm_gem_atomic_helper.h, drm_of.h. Local changes: patches/include-aros.diff.
+
+(f)
+APL compat headers, except those copied from FreeBSD linuxkpi (BSD-2-Clause:
+list.h, rbtree.h, idr.h, radix-tree.h, overflow.h, err.h, average.h, sys/*)
+and from FreeBSD drm-kmod (BSD-2-Clause: dma-fence.h, dma-fence-array.h) and
+Linux (MIT: hdmi.h, dma-resv.h). Check each file for its notice.
+
+(g)
+libdrm 2.4.134 nouveau (MIT); arosdrm.c/arosdrmmode.c APL. Local changes:
+patches/libdrm-aros.diff.
+
+(h)
+xf86-video-nouveau 1.0.18 (MIT). Local changes: patches/xf86-video-nouveau-aros.diff.

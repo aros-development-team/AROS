@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: stdio internals
 */
@@ -96,8 +96,13 @@ int __oflags2sflags(int omode)
             break;
 
         default:
-            errno = EINVAL;
-            return 0;
+            /* fds inherited across exec can carry unset accmode bits, and this
+               runs from __init_stdio during PosixC OpenLib - before the
+               opener's StdCBase is wired, so writing errno here would
+               dereference a NULL _errno.  Don't veto std streams and don't
+               touch errno: treat an unknown accmode as read+write. */
+            ret = __POSIXC_STDIO_READ | __POSIXC_STDIO_WRITE;
+            break;
     }
 
     if (omode & O_APPEND)

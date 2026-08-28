@@ -2,7 +2,7 @@
     Copyright (C) 2008-2014, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <inttypes.h>
 #include <aros/kernel.h>
@@ -54,6 +54,8 @@ AROS_LH1(void *, OF_OpenKey,
 
         while(*Key)
         {
+                of_node_t *found = NULL;
+
                 Key++;
                 for (i=0; i < 63; i++)
                 {
@@ -63,6 +65,10 @@ AROS_LH1(void *, OF_OpenKey,
                         Key++;
                 }
 
+                /* A trailing slash, or "/" alone, names the node itself. */
+                if (i == 0)
+                        break;
+
                 ptrbuf[i] = 0;
 
                 D(bug("[OF] looking for child '%s'\n", ptrbuf));
@@ -71,10 +77,23 @@ AROS_LH1(void *, OF_OpenKey,
                 {
                         if (!my_strcmp(node->on_name, ptrbuf))
                         {
-                                root = node;
+                                found = node;
                                 break;
                         }
                 }
+
+                /*
+                 * A path component that is not there means the caller asked
+                 * for a node this machine does not have. Say so, rather than
+                 * handing back the deepest ancestor that did match - which
+                 * reads as success and leaves the caller inspecting the
+                 * wrong node. dt_find_node() in the kernel answers the same
+                 * way.
+                 */
+                if (!found)
+                        return NULL;
+
+                root = found;
         }
     }
 
@@ -200,6 +219,75 @@ AROS_LH1I(void *, OF_GetPropValue,
     AROS_LIBFUNC_EXIT
 }
 
+
+/* Does this node's "compatible" list - a run of NUL terminated strings -
+   name the given binding? */
+static BOOL of_is_compatible(of_node_t *node, const char *compatible)
+{
+    of_property_t *p;
+    const char *v;
+    uint32_t len, i;
+
+    ForeachNode(&node->on_properties, p)
+    {
+        if (my_strcmp(p->op_name, "compatible"))
+            continue;
+
+        v = (const char *)p->op_value;
+        len = p->op_length;
+        if (!v)
+            return FALSE;
+
+        for (i = 0; i < len; i++)
+        {
+            if (!my_strcmp(&v[i], compatible))
+                return TRUE;
+            while (i < len && v[i] != '\0')
+                i++;
+        }
+        return FALSE;
+    }
+    return FALSE;
+}
+
+static of_node_t *of_search_compatible(of_node_t *node, const char *compatible)
+{
+    of_node_t *child, *found;
+
+    if (of_is_compatible(node, compatible))
+        return node;
+
+    ForeachNode(&node->on_children, child)
+    {
+        if ((found = of_search_compatible(child, compatible)) != NULL)
+            return found;
+    }
+    return NULL;
+}
+
+/*
+ * Find a node by what it is rather than where it sits. Unit addresses in
+ * node names are bus addresses and move between SoC generations - the
+ * Broadcom RNG is rng@7e104000 on a Pi 3 and rng@7d208000 on a Pi 5 - so a
+ * driver that hardcodes a path silently stops matching, or worse, matches
+ * nothing and carries on. The binding string is the stable identifier.
+ */
+AROS_LH2(void *, OF_FindNodeByCompatible,
+         AROS_LHA(void *, Start, A0),
+         AROS_LHA(char *, Compatible, A1),
+         struct OpenFirmwareBase *, OpenFirmwareBase, 9, Openfirmware)
+{
+    AROS_LIBFUNC_INIT
+
+    of_node_t *from = Start ? (of_node_t *)Start : LIBBASE->of_Root;
+
+    if (!from || !Compatible)
+        return NULL;
+
+    return of_search_compatible(from, Compatible);
+
+    AROS_LIBFUNC_EXIT
+}
 
 static int OF_Init(LIBBASETYPEPTR LIBBASE)
 {

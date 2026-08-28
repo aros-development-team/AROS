@@ -55,6 +55,9 @@ ifeq ($(AROS_TARGET_ARCH),raspi)
 SHARED_LIB_SOURCES += aros_drm_shim
 # Bridge ABI header (shared with the hidd), needed by aros_drm_shim.c.
 USER_INCLUDES += -I$(SRCDIR)/arch/arm-native/soc/broadcom/2708/hidd/vc4gallium
+# hardware/bcm2708.h: the SoC gate on the render-scale feature (HVS5 has
+# no scaled plane, so the Pi 4 must not divide the drawable).
+USER_INCLUDES += -I$(SRCDIR)/arch/arm-native/soc/broadcom/2708/include
 # The GalliumCoreAPI table linklib exists (galliumcoreapi in
 # MESA3DGL_GALLIUMCORE) — let the sources take a real reference to it.
 USER_CPPFLAGS += -DMESA3DGL_HAVE_COREAPI

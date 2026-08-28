@@ -260,6 +260,19 @@ ifeq (%(compiler),target)
         PKG_CONFIG_LIBDIR="$(AROS_DEVELOPER)/lib/pkgconfig" \
         PKG_CONFIG_SYSROOT_DIR="$(AROSDIR)"
 ifeq (%(crossbuild),yes)
+# Configure must be told which archiver/ranlib/nm to use for the
+# cross host: left unset it guesses "<host-triplet>-ar", which only
+# exists for binutils based toolchains - the llvm toolchain provides
+# the tools as (full path) llvm-ar and friends.
+ifeq ($(%(mmake)-CROSS_AR),)
+    %(mmake)-CROSS_AR := $(AR_PLAIN)
+endif
+ifeq ($(%(mmake)-CROSS_NM),)
+    %(mmake)-CROSS_NM := $(NM_PLAIN)
+endif
+ifeq ($(%(mmake)-CROSS_RANLIB),)
+    %(mmake)-CROSS_RANLIB := $(RANLIB)
+endif
     %(mmake)-cfg-env += \
         CPP="$(strip $(%(mmake)-CROSS_CPP) $(%(mmake)-CROSS_SYSROOT))" \
         CXXCPP="$(strip $(%(mmake)-CROSS_CPP) $(%(mmake)-CROSS_SYSROOT))" \
@@ -267,6 +280,8 @@ ifeq (%(crossbuild),yes)
         CXX="$(strip $(%(mmake)-CROSS_CXX) $(%(mmake)-CROSS_SYSROOT))" \
         LD="$(strip $(%(mmake)-CROSS_LD))" \
         AS="$(strip $(%(mmake)-CROSS_AS))" \
+        AR="$(strip $(%(mmake)-CROSS_AR))" \
+        NM="$(strip $(%(mmake)-CROSS_NM))" \
         AFLAGS="$(strip $(%(mmake)-CROSS_AFLAGS))" \
         OBJCOPY="$(strip $(%(mmake)-CROSS_OBJCOPY))" \
         RANLIB="$(strip $(%(mmake)-CROSS_RANLIB))" \

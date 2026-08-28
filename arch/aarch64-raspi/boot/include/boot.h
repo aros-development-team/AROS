@@ -35,6 +35,7 @@ size_t mem_avail();
 size_t mem_used();
 const char *remove_path(const char *in);
 void aarch64_flush_cache(uintptr_t addr, uintptr_t length);
+void aarch64_icache_invalidate(uintptr_t addr, uintptr_t length);
 uintptr_t elf_get_ro_virt(void);
 
 extern uint8_t __bootstrap_start;

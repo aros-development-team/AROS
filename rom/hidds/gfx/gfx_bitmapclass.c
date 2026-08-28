@@ -1144,6 +1144,8 @@ void BM__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
     if (NULL != data->colmap)
         OOP_DisposeObject(data->colmap);
 
+    FreeVec(data->invlut);
+
     D(bug("Calling super\n"));
 
     /* Release the previously registered pixel format */
@@ -1338,6 +1340,10 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     {
         return FALSE;
     }
+
+    /* The changed palette invalidates any cached nearest-colour results */
+    if (data->invlut)
+        memset(data->invlut, 0xFF, 32768 * sizeof(UWORD));
 
     /* We may need to duplicate changes on framebuffer if running in mirrored mode */
     if (data->visible)
@@ -4907,25 +4913,26 @@ VOID BM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o,
 
 *****************************************************************************************/
 
+/* Destination pixel i samples source pixel (i*sf + c) / df, where the phase
+   c is (sf-1)/2 when enlarging and df/2 when reducing. This is the
+   established sampling convention for BitMapScale(); p96cts pins it
+   pixel-exact against independent implementations. */
+static inline ULONG scale_srcpos(ULONG i, ULONG sf, ULONG df, ULONG srcsize)
+{
+    const ULONG c = sf < df ? (sf - 1) / 2 : df / 2;
+    const ULONG pos = (i * sf + c) / df;
+
+    return pos < srcsize ? pos : srcsize - 1;
+}
+
 VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
                                   struct pHidd_BitMap_BitMapScale * msg)
 {
     struct BitScaleArgs *bsa = msg->bsa;
     ULONG *srcbuf, *dstbuf;
-    WORD srcline = -1;
     UWORD *linepattern;
-    UWORD count;
-    UWORD ys = bsa->bsa_SrcY;
-    UWORD xs = bsa->bsa_SrcX;
-    UWORD dyd = bsa->bsa_DestHeight;
-    UWORD dxd = bsa->bsa_DestWidth;
-    LONG accuys = dyd;
-    LONG accuxs = dxd;
-    UWORD dxs = bsa->bsa_SrcWidth;
-    UWORD dys = bsa->bsa_SrcHeight;
-    LONG accuyd = - (dys >> 1);
-    LONG accuxd = - (dxs >> 1);
-    UWORD x;
+    LONG srcline = -1;
+    UWORD x, y;
 
     if ((srcbuf = AllocVec(bsa->bsa_SrcWidth * sizeof(ULONG), 0)) == NULL)
         return;
@@ -4941,26 +4948,11 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
         return;
     }
 
-    count = 0;
-    while (count < bsa->bsa_DestWidth) {
-        accuxd += dxs;
-        while (accuxd > accuxs) {
-            xs++;
-            accuxs += dxd;
-        }
+    for (x = 0; x < bsa->bsa_DestWidth; x++)
+        linepattern[x] = scale_srcpos(x, bsa->bsa_XSrcFactor, bsa->bsa_XDestFactor, bsa->bsa_SrcWidth);
 
-        linepattern[count] = xs;
-
-        count++;
-    }
-
-    count = bsa->bsa_DestY;
-    while (count < bsa->bsa_DestHeight + bsa->bsa_DestY) {
-        accuyd += dys;
-        while (accuyd > accuys) {
-            ys++;
-            accuys += dyd;
-        }
+    for (y = 0; y < bsa->bsa_DestHeight; y++) {
+        const LONG ys = scale_srcpos(y, bsa->bsa_YSrcFactor, bsa->bsa_YDestFactor, bsa->bsa_SrcHeight);
 
         if (srcline != ys) {
             HIDD_BM_GetImage(msg->src, (UBYTE *) srcbuf, bsa->bsa_SrcWidth * sizeof(ULONG), bsa->bsa_SrcX, bsa->bsa_SrcY + ys, bsa->bsa_SrcWidth, 1, vHidd_StdPixFmt_Native32);
@@ -4970,9 +4962,7 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
                 dstbuf[x] = srcbuf[linepattern[x]];
         }
 
-        HIDD_BM_PutImage(msg->dst, msg->gc, (UBYTE *) dstbuf, bsa->bsa_DestWidth * sizeof(ULONG), bsa->bsa_DestX, count, bsa->bsa_DestWidth, 1, vHidd_StdPixFmt_Native32);
-
-        count++;
+        HIDD_BM_PutImage(msg->dst, msg->gc, (UBYTE *) dstbuf, bsa->bsa_DestWidth * sizeof(ULONG), bsa->bsa_DestX, bsa->bsa_DestY + y, bsa->bsa_DestWidth, 1, vHidd_StdPixFmt_Native32);
     }
 
     FreeVec(linepattern);

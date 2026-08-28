@@ -23,6 +23,7 @@
 
 #include "kernel_intern.h"
 #include "kernel_debug.h"
+#include "of_intern.h"
 #include "kernel_cpu.h"
 #include "tls.h"
 #include "io.h"
@@ -228,28 +229,71 @@ void bcm27xx_fiq_process()
     }
 }
 
+/*
+ * Which pin carries which light is board wiring, and the tree spells it out:
+ * /leds/led-pwr and /leds/led-act each hold a gpios triple of (controller
+ * phandle, pin, flags). A Pi 2 puts PWR on GPIO 35, a Pi 400 on 42. The
+ * Pi 3B and 4B hand theirs to firmware controllers (expgpio, virtgpio) this
+ * code cannot reach - those keep the state firmware left, which for the
+ * power light is lit. Fixed pin numbers used to be right for one board and
+ * a stray write to somebody else's GPIO on the rest.
+ */
+static struct
+{
+    int pin;                    /* < 0: not ours to drive */
+    int active_low;
+} bcm27xx_led[2] = { { -2, 0 }, { -2, 0 } };    /* -2: not looked up yet */
+
+static int bcm27xx_led_on_soc(const char *name)
+{
+    return name && name[0] == 'g' && name[1] == 'p' && name[2] == 'i' &&
+           name[3] == 'o' && (name[4] == '@' || name[4] == 0);
+}
+
+static void bcm27xx_led_query(int LED)
+{
+    void *node = dt_find_node((LED == ARM_LED_ACTIVITY) ? "/leds/led-act"
+                                                        : "/leds/led-pwr");
+    void *gprop = node ? dt_find_property(node, "gpios") : NULL;
+    void *sprop = node ? dt_find_property(node, "status") : NULL;
+    uint32_t *cells;
+    of_node_t *ctrl;
+
+    bcm27xx_led[LED].pin = -1;
+
+    if (!gprop || dt_get_prop_len(gprop) < 8)
+        return;
+
+    /* A node for a light the board does not have is marked disabled */
+    if (sprop && ((char *)dt_get_prop_value(sprop))[0] == 'd')
+        return;
+
+    cells = dt_get_prop_value(gprop);
+    ctrl = dt_find_node_by_phandle(AROS_BE2LONG(cells[0]));
+    if (!ctrl || !bcm27xx_led_on_soc(ctrl->on_name))
+        return;
+
+    bcm27xx_led[LED].pin = AROS_BE2LONG(cells[1]);
+    bcm27xx_led[LED].active_low = (dt_get_prop_len(gprop) >= 12) &&
+                                  (AROS_BE2LONG(cells[2]) & 1);
+}
+
 void bcm27xx_toggle_led(int LED, int state)
 {
-    if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
-    {
-        int pin = 35;
-        IPTR gpiofunc = GPCLR1;
+    int pin, lit;
 
-        if (LED == ARM_LED_ACTIVITY)
-            pin = 47;
+    if (LED != ARM_LED_POWER && LED != ARM_LED_ACTIVITY)
+        return;
 
-        if (state == ARM_LED_ON)
-            gpiofunc = GPSET1;
+    if (bcm27xx_led[LED].pin == -2)
+        bcm27xx_led_query(LED);
 
-        wr32le(gpiofunc, (1 << (pin - 32)));
-    }
-    else
-    {
-        if (state)
-            wr32le(GPCLR0, (1 << 16));
-        else
-            wr32le(GPSET0, (1 << 16));
-    }
+    if ((pin = bcm27xx_led[LED].pin) < 0)
+        return;
+
+    lit = (state == ARM_LED_ON) != (bcm27xx_led[LED].active_low != 0);
+
+    wr32le((lit ? GPSET0 : GPCLR0) + 4 * (pin / 32), 1 << (pin % 32));
 }
 
 static inline void bcm27xx_ser_waitout()

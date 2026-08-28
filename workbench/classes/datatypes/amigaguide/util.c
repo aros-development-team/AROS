@@ -1,7 +1,7 @@
 /*
 ** $PROJECT: amigaguide.datatype
 **
-** $VER: util.c 50.2 (25.01.2011)
+** $VER: util.c 50.3 (14.08.2026)
 **
 ** $AUTHOR: Stefan Ruppert <stefan@ruppert-it.de>
 **
@@ -643,7 +643,10 @@ BPTR GetFileLock(Class *cl, Object *obj,
 
             if(lock == BNULL)
             {
-               if(data->ag_ActualObject->ago_AGNode != NULL)
+               /* ag_ActualObject is still NULL as long as no node could be
+                  activated, ie. while the initial node is being looked up. */
+               if(data->ag_ActualObject != NULL &&
+                  data->ag_ActualObject->ago_AGNode != NULL)
                {
                   dir = ParentDir(data->ag_ActualObject->ago_AGNode->agn_File->agf_Lock);
                   if(dir != BNULL)

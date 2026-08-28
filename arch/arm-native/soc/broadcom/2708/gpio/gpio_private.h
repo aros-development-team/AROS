@@ -13,6 +13,7 @@ struct GPIOBase {
     struct Node		        gpio_Node;
     struct SignalSemaphore      gpio_Sem;
     unsigned int		gpio_periiobase;
+    IPTR                        gpio_rp1_bar1;
 };
 
 #define ARM_PERIIOBASE GPIOBase->gpio_periiobase

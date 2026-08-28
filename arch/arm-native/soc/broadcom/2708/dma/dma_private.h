@@ -23,7 +23,7 @@ struct DMAChWait {
 struct DMABase {
     struct Node                 dma_Node;
     struct SignalSemaphore      dma_Sem;
-    unsigned int                dma_periiobase;
+    IPTR                        dma_periiobase;
     unsigned int                dma_InUse;      /* Bitmask of allocated channels */
 
     struct DMAChWait            dma_Wait[15];

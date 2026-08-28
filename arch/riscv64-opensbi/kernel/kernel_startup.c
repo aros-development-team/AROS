@@ -20,6 +20,7 @@
 #include <exec/tasks.h>
 #include <utility/tagitem.h>
 #include <aros/kernel.h>
+#include <hardware/vbe.h>
 #include <asm/cpu.h>
 #include <asm/riscv64/mmu.h>
 #include <proto/exec.h>
@@ -49,6 +50,11 @@ extern unsigned long __efi_mem_start, __efi_mem_size;
 extern unsigned long __efi_nregions, __efi_regions[][2];
 extern unsigned long __efi_systab;
 extern char __efi_cmdline[];
+extern unsigned long __efi_fb_base, __efi_fb_size;
+extern unsigned int __efi_fb_width, __efi_fb_height, __efi_fb_pitch;
+extern unsigned int __efi_fb_bpp;
+extern unsigned int __efi_fb_redmask, __efi_fb_greenmask;
+extern unsigned int __efi_fb_bluemask, __efi_fb_resmask;
 
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
 
@@ -58,6 +64,18 @@ extern char __kernel_end[];
 
 /* Lowest allocatable memory answers MEMF_CHIP requests */
 #define CHIPMEM_SIZE    (16 * 1024 * 1024)
+
+/*
+ * RAM here begins at 2GB, so exec's below-2GB rule never marks a bank
+ * MEMF_31BIT - yet hunk relocation (AmigaOS font and keymap files) and
+ * 32-bit DMA bounce buffers all allocate with that flag, and without a
+ * bank carrying it every such allocation fails outright. Any bank that
+ * stays fully below 4GB satisfies what those consumers actually need
+ * (32-bit addressability), so declare the flag on those banks.
+ * "end" is the exclusive upper bound of the bank.
+ */
+#define MEMF_BELOW4G(end) \
+    ((((IPTR)(end) - 1) <= 0xFFFFFFFFUL) ? MEMF_31BIT : 0)
 
 #define BOOTTAG_MAX 16
 static struct TagItem BootTags[BOOTTAG_MAX];
@@ -266,6 +284,90 @@ static void krnDumpResidents(UWORD *lo, UWORD *hi)
     krnSBIPutStr("--- end residents ---\n");
 }
 
+/*
+ * The framebuffer description the UEFI stub captured from the GOP,
+ * recast as the VBE mode record every consumer of KRN_VBEModeInfo
+ * (bootloader.resource, and the graphics driver through it) already
+ * understands. The same translation the pc bootstrap does for the
+ * multiboot2 framebuffer tag (arch/all-pc/bootstrap/multiboot2.c).
+ */
+static struct vbe_mode VBEModeInfo;
+
+/*
+ * Sv39 can only identity-map the lower 256GB: a virtual address with
+ * bit 38 set has to be sign-extended, so a physical address up there
+ * can never be its own virtual address - the Titan's GOP framebuffer
+ * sits in a PCIe window at 256GB exactly. Such a framebuffer is
+ * remapped into a fixed window well above every RAM bank, and the
+ * remapped address is what goes into the boot tags; every consumer
+ * just writes through the pointer and never needs the physical one.
+ */
+#define SV39_IDENTITY_LIMIT (1UL << 38)
+#define FB_WINDOW           0x2000000000UL
+
+static IPTR krnFBAddr(void)
+{
+    if (__efi_fb_base + __efi_fb_size <= SV39_IDENTITY_LIMIT)
+        return __efi_fb_base;
+    return FB_WINDOW | (__efi_fb_base & (MEGAPAGE_SIZE - 1));
+}
+
+static void krnFBMask(unsigned int mask,
+                      unsigned char *size, unsigned char *pos)
+{
+    unsigned char s = 0, p = 0;
+
+    if (mask)
+    {
+        while (!(mask & 1))
+        {
+            mask >>= 1;
+            p++;
+        }
+        while (mask & 1)
+        {
+            mask >>= 1;
+            s++;
+        }
+    }
+    *size = s;
+    *pos  = p;
+}
+
+static void krnFillVBEFromGOP(void)
+{
+    VBEModeInfo.mode_attributes = VM_SUPPORTED | VM_COLOR | VM_GRAPHICS |
+                                  VM_NO_VGA_HW | VM_NO_VGA_MEM | VM_LINEAR_FB;
+    VBEModeInfo.bytes_per_scanline = __efi_fb_pitch;
+    VBEModeInfo.x_resolution       = __efi_fb_width;
+    VBEModeInfo.y_resolution       = __efi_fb_height;
+    VBEModeInfo.bits_per_pixel     = __efi_fb_bpp;
+    VBEModeInfo.number_of_planes   = 1;
+    VBEModeInfo.memory_model       = VMEM_RGB;
+
+    krnFBMask(__efi_fb_redmask, &VBEModeInfo.red_mask_size,
+              &VBEModeInfo.red_field_position);
+    krnFBMask(__efi_fb_greenmask, &VBEModeInfo.green_mask_size,
+              &VBEModeInfo.green_field_position);
+    krnFBMask(__efi_fb_bluemask, &VBEModeInfo.blue_mask_size,
+              &VBEModeInfo.blue_field_position);
+    krnFBMask(__efi_fb_resmask, &VBEModeInfo.reserved_mask_size,
+              &VBEModeInfo.reserved_field_position);
+
+    /* Truncates above 4GB; KRN_FBAddr carries the full address */
+    VBEModeInfo.phys_base = krnFBAddr();
+
+    VBEModeInfo.linear_bytes_per_scanline      = VBEModeInfo.bytes_per_scanline;
+    VBEModeInfo.linear_red_mask_size           = VBEModeInfo.red_mask_size;
+    VBEModeInfo.linear_red_field_position      = VBEModeInfo.red_field_position;
+    VBEModeInfo.linear_green_mask_size         = VBEModeInfo.green_mask_size;
+    VBEModeInfo.linear_green_field_position    = VBEModeInfo.green_field_position;
+    VBEModeInfo.linear_blue_mask_size          = VBEModeInfo.blue_mask_size;
+    VBEModeInfo.linear_blue_field_position     = VBEModeInfo.blue_field_position;
+    VBEModeInfo.linear_reserved_mask_size      = VBEModeInfo.reserved_mask_size;
+    VBEModeInfo.linear_reserved_field_position = VBEModeInfo.reserved_field_position;
+}
+
 struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
 {
     struct TagItem *tag = BootTags;
@@ -307,6 +409,18 @@ struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
     {
         tag->ti_Tag  = KRN_EFISystemTable;
         tag->ti_Data = (IPTR)__efi_systab;
+        tag++;
+    }
+    /* The firmware left a framebuffer on display - describe it the way
+       the pc ports do, so bootloader.resource publishes it as BL_Video */
+    if (__efi_fb_base)
+    {
+        krnFillVBEFromGOP();
+        tag->ti_Tag  = KRN_VBEModeInfo;
+        tag->ti_Data = (IPTR)&VBEModeInfo;
+        tag++;
+        tag->ti_Tag  = KRN_FBAddr;
+        tag->ti_Data = krnFBAddr();
         tag++;
     }
     tag->ti_Tag  = TAG_DONE;
@@ -511,6 +625,38 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
     if (fdt)
         krnMMUMapRegion((IPTR)fdt, 2 << 20, PTE_R | PTE_W);
 
+    /*
+     * The firmware framebuffer sits in the display hardware's memory,
+     * outside every RAM bank the maps above cover. The graphics driver
+     * writes to it by address, so it has to be reachable.
+     */
+    if (__efi_fb_base && __efi_fb_size)
+    {
+        IPTR fbva = krnFBAddr();
+
+        if (fbva == __efi_fb_base)
+            krnMMUMapRegion(__efi_fb_base, __efi_fb_size, PTE_R | PTE_W);
+        else
+            krnMMUMapPages(fbva, __efi_fb_base, __efi_fb_size,
+                           PTE_R | PTE_W);
+        krnSBIPutStr("gfx:       ");
+        krnSBIPutDec(__efi_fb_width);
+        krnSBIPutStr("x");
+        krnSBIPutDec(__efi_fb_height);
+        krnSBIPutStr("x");
+        krnSBIPutDec(__efi_fb_bpp);
+        krnSBIPutStr(" framebuffer @ ");
+        krnSBIPutHex(__efi_fb_base);
+        krnSBIPutStr(" size ");
+        krnSBIPutHex(__efi_fb_size);
+        if (fbva != __efi_fb_base)
+        {
+            krnSBIPutStr(" mapped @ ");
+            krnSBIPutHex(fbva);
+        }
+        krnSBIPutStr("\n");
+    }
+
     /* Start the 100Hz scheduler heartbeat and enable S-mode
        interrupt delivery */
     if (fdtinfo.tb_freq)
@@ -668,7 +814,8 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
             chipmh = (struct MemHeader *)memlow;
             krnCreateMemHeader("Chip Memory", -6, (APTR)memlow, CHIPMEM_SIZE,
                                MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK |
-                               MEMF_LOCAL);
+                               MEMF_LOCAL |
+                               MEMF_BELOW4G(memlow + CHIPMEM_SIZE));
             if (use_tlsf)
             {
                 struct MemHeader *tmh = krnConvertMemHeaderToTLSF(chipmh);
@@ -682,7 +829,8 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
         mh = (struct MemHeader *)memlow;
         krnCreateMemHeader("System Memory", 0, (APTR)memlow,
                            memhigh - memlow,
-                           MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+                           MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL |
+                           MEMF_BELOW4G(memhigh));
         if (use_tlsf)
         {
             struct MemHeader *tmh = krnConvertMemHeaderToTLSF(mh);
@@ -783,7 +931,8 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                             krnCreateMemHeader("System Memory", 0, (APTR)glo,
                                                ghi - glo, MEMF_FAST |
                                                MEMF_PUBLIC | MEMF_KICK |
-                                               MEMF_LOCAL);
+                                               MEMF_LOCAL |
+                                               MEMF_BELOW4G(ghi));
                             if (use_tlsf) {
                                 struct MemHeader *tmh =
                                     krnConvertMemHeaderToTLSF(xmh);
@@ -800,6 +949,31 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
                         if (i < nx && ehi > p) p = ehi;
                         if (p >= re) break;
                     }
+                }
+            }
+
+            /* Diagnostic: dump Exec's actual MemHeader list (name, range,
+             * free bytes and mh_Attributes flags) so the free pool and the
+             * MEMF_* flags of every bank can be verified. Temporary. */
+            {
+                struct MemHeader *dmh;
+                krnSBIPutStr("mem: exec MemList (name lower - upper"
+                             " free attr):\n");
+                for (dmh = (struct MemHeader *)SysBase->MemList.lh_Head;
+                     dmh->mh_Node.ln_Succ;
+                     dmh = (struct MemHeader *)dmh->mh_Node.ln_Succ) {
+                    krnSBIPutStr("  MH '");
+                    krnSBIPutStr(dmh->mh_Node.ln_Name ?
+                                 dmh->mh_Node.ln_Name : "?");
+                    krnSBIPutStr("' ");
+                    krnSBIPutHex((IPTR)dmh->mh_Lower);
+                    krnSBIPutStr(" - ");
+                    krnSBIPutHex((IPTR)dmh->mh_Upper);
+                    krnSBIPutStr(" free=");
+                    krnSBIPutHex((IPTR)dmh->mh_Free);
+                    krnSBIPutStr(" attr=");
+                    krnSBIPutHex((IPTR)dmh->mh_Attributes);
+                    krnSBIPutStr("\n");
                 }
             }
 

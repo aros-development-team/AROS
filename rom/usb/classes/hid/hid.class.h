@@ -104,6 +104,9 @@ LONG nEasyRequestA(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, RAWARG pa
 // FIXME
 LONG nEasyRequest(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, ...);
 
+extern BOOL GM_UNIQUENAME(powerkeybusy);
+
+AROS_UFP0(void, GM_UNIQUENAME(nPowerKeyTask));
 AROS_UFP0(void, GM_UNIQUENAME(nHidTask));
 AROS_UFP0(void, GM_UNIQUENAME(nGUITask));
 AROS_UFP0(void, GM_UNIQUENAME(nHIDCtrlGUITask));

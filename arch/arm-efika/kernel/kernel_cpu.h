@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: cpu_arm.h
 */
@@ -8,6 +8,8 @@
 #define CPU_ARM_H_
 
 #include <inttypes.h>
+
+#include <kernel_irqtypes.h>   /* irqid_t - this header may be reached without kernel_base.h */
 
 #define EXCEPTIONS_COUNT	1
 
@@ -32,12 +34,12 @@ static inline void goBack(uint32_t mode)
 
 }
 
-static inline void ictl_enable_irq(uint8_t irq, struct KernelBase * KernelBase)
+static inline void ictl_enable_irq(irqid_t irq, struct KernelBase * KernelBase)
 {
 
 }
 
-static inline void ictl_disable_irq(uint8_t irq, struct KernelBase * KernelBase)
+static inline void ictl_disable_irq(irqid_t irq, struct KernelBase * KernelBase)
 {
 
 }

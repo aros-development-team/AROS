@@ -325,7 +325,18 @@ void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
         D(bug("[USB2OTG:TTCLEAR] completed hub=%d err=%ld\n",
             (int)ioreq->iouh_DevAddr, (LONG)ioreq->iouh_Req.io_Error);)
         ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+        Disable();
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&USB2OTGBase->hd_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         USB2OTGBase->hd_Unit->hu_TTClearBusy = FALSE;
+        /* Issue the next parked clear, if any (see the pending table). */
+        usb2otg_tt_clear_drain(USB2OTGBase->hd_Unit);
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&USB2OTGBase->hd_Unit->hu_Lock);
+#endif
+        Enable();
+        FNAME_DEV(Cause)(USB2OTGBase, &USB2OTGBase->hd_Unit->hu_PendingInt);
         return;
     }
 
@@ -361,14 +372,17 @@ void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
         }
     )
 
-    /* Control-pipe lifecycle diag — did queued ctrl reqs ever finish? */
-    if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+    /* Control-pipe lifecycle counters - did queued ctrl reqs finish? */
+    if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+        USB2OTGBase->hd_Unit != NULL)
     {
-        usb2otg_ctrl_fin_count++;
+        struct USB2OTGUnit *unit = USB2OTGBase->hd_Unit;
+
+        unit->hu_CtrlFinCount++;
         if (ioreq->iouh_Req.io_Error != 0)
         {
-            usb2otg_ctrl_err_count++;
-            usb2otg_ctrl_last_err = (UBYTE)ioreq->iouh_Req.io_Error;
+            unit->hu_CtrlErrCount++;
+            unit->hu_CtrlLastErr = (UBYTE)ioreq->iouh_Req.io_Error;
         }
     }
 
@@ -655,6 +669,7 @@ WORD FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Actual = 0;
     usb2otg_reset_retry_state(ioreq);
 
+
     /* Hotplug diagnostic: SET_ADDRESS marks a fresh enumeration. */
     D(if (ioreq->iouh_SetupData.bRequest == USR_SET_ADDRESS &&
         ioreq->iouh_SetupData.bmRequestType ==
@@ -692,6 +707,7 @@ WORD FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
     usb2otg_reset_retry_state(ioreq);
+
 
     Disable();
 #if defined(__AROSEXEC_SMP__)
@@ -742,10 +758,22 @@ WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
      * re-assigned with scheduling info right below). */
     usb2otg_reset_retry_state(ioreq);
 
-    /* Calculate "last time handled" and "next time to be handled" frame numbers */
-    ULONG next_to_handle = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
-    ULONG last_handled = (next_to_handle - usb2otg_clamp_interval(ioreq->iouh_Interval)) & 0x7ff;
+    /*
+     * Schedule the first poll one interval out, the same way the
+     * requeue paths do. Anchoring "last handled" an interval in the
+     * PAST made every submission instantly due at the SOF gate
+     * (usb2otg_intr.c: elapsed >= distance is true at once), so
+     * bInterval only ever throttled the NAK path. A device that
+     * answers every poll with a report instead of NAKing - cheap
+     * optical mice do - was then polled flat out at the split
+     * engine's ceiling: measured 1000 reports/s from a mouse asking
+     * for 10 ms, i.e. 10x the transactions, IRQs and input events
+     * while it moved.
+     */
+    ULONG last_handled = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
+    ULONG next_to_handle = (last_handled + usb2otg_clamp_interval(ioreq->iouh_Interval)) & 0x7ff;
     ioreq->iouh_DriverPrivate1 = (APTR)(IPTR)((last_handled << 16) | next_to_handle);
+
 
     Disable();
 #if defined(__AROSEXEC_SMP__)

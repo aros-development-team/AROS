@@ -2032,7 +2032,26 @@ LONG nGetBlockSize(struct NepClassMS *ncm)
     cmd10[7] = 0;
     cmd10[8] = 0;
     cmd10[9] = 0;
-    if((ioerr = nScsiDirect(ncm, &scsicmd)))
+    ioerr = nScsiDirect(ncm, &scsicmd);
+
+    /*
+     * A device coming out of reset answers the first command that reaches
+     * it with a unit attention, and the capacity is exactly the sort of
+     * command that lands there first. That is a "ask me again", not a
+     * failure, so give it a couple more chances before believing it.
+     */
+    if(ioerr)
+    {
+        UWORD retry;
+
+        for(retry = 0; ioerr && (retry < 3); retry++)
+        {
+            psdDelayMS(10);
+            ioerr = nScsiDirect(ncm, &scsicmd);
+        }
+    }
+
+    if(ioerr)
     {
         psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                        "SCSI_READ_CAPACITY failed: %ld",

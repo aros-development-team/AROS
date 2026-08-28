@@ -16,8 +16,11 @@
 #include <aros/riscv64/cpucontext.h>
 #include <asm/cpu.h>
 
+#include <hardware/intbits.h>
+
 #include <kernel_base.h>
 #include <kernel_debug.h>
+#include <kernel_intr.h>
 #include <kernel_scheduler.h>
 
 #include "etask.h"
@@ -162,19 +165,24 @@ void cpu_Dispatch(regs_t *regs)
     while (!(task = core_Dispatch()))
     {
         /*
-         * Nothing to run. Interrupts are masked inside the trap
-         * handler, so wait for one and service a pending timer tick by
-         * hand; the wakeup it causes (via Signal from a future
-         * interrupt handler) makes a task ready. The time spent waiting
-         * is what the load accounting counts as idle.
+         * Nothing to run at all - the idle task should normally keep
+         * this from happening, so this is only the window before it
+         * exists. Sleep with traps open until one arrives; the time
+         * spent here is what the load accounting counts as idle.
          */
         uint64_t idlefrom = krnReadTime();
 
+        csr_set(sstatus, SSTATUS_SIE);
         asm volatile("wfi");
+        csr_clear(sstatus, SSTATUS_SIE);
+
+        if (SysBase->SysFlags & SFF_SoftInt)
+            core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+
         __cpu_sleeptime += krnReadTime() - idlefrom;
 
         if (csr_read(sip) & SIE_STIE)
-            krnTimerTick();
+            krnTimerTick(NULL);
     }
 
     copyContext(regs, task->tc_UnionETask.tc_ETask->et_RegFrame);

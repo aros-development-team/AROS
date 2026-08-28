@@ -18,8 +18,9 @@ struct ARM_Implementation
     void                (*ARMI_InitCore) (APTR, APTR); // takes pointers to KernelBase & SysBase as input
     void                (*ARMI_SendIPI) (uint32_t, uint32_t, uint32_t); // Sends IPI msg to processors in mask
     APTR                (*ARMI_InitTimer) (APTR); // takes a pointer to KernelBase as input, and returns struct IntrNode
+    void                (*ARMI_InitTimerCore) (void); // arms the calling core's per-core scheduler heartbeat
     void                (*ARMI_Delay) (int);
-    unsigned int        (*ARMI_GetTime) (void);
+    uint64_t            (*ARMI_GetTime) (void); // full 64-bit free-running µs counter, wrap-free
     void                (*ARMI_PutChar) (int);
     void                (*ARMI_SerPutChar) (uint8_t);
     int                 (*ARMI_SerGetChar) (void);

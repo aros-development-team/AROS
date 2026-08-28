@@ -23,6 +23,10 @@ extern uintptr_t __arm_periiobase;
 
 #define D(x) /* x */
 
+/* Framebuffer base and geometry, published for the kernel boot taglist. */
+void *vcfb_base;
+unsigned int vcfb_width, vcfb_height, vcfb_depth, vcfb_pitch;
+
 int vcfb_init(void)
 {
     unsigned int fb_width, fb_height, fb_depth, fb_pitch;
@@ -81,9 +85,14 @@ int vcfb_init(void)
         vcmb_msg[c++] = AROS_LONG2LE(4);
         vcmb_msg[c++] = AROS_LONG2LE(0);
 
-        fb_depth = 16;
+        fb_depth = 32;
 
         vcmb_msg[c++] = AROS_LONG2LE(fb_depth);
+
+        vcmb_msg[c++] = AROS_LONG2LE(VCTAG_SETPIXFMT);        // channel order: RGB
+        vcmb_msg[c++] = AROS_LONG2LE(4);
+        vcmb_msg[c++] = AROS_LONG2LE(0);
+        vcmb_msg[c++] = AROS_LONG2LE(1);
 
         vcmb_msg[c++] = AROS_LONG2LE(VCTAG_FBALLOC);
         vcmb_msg[c++] = AROS_LONG2LE(8);
@@ -158,6 +167,12 @@ int vcfb_init(void)
     }
 
     scr_Type = SCR_GFX;
+
+    vcfb_base   = scr_FrameBuffer;
+    vcfb_width  = fb_width;
+    vcfb_height = fb_height;
+    vcfb_depth  = fb_depth;
+    vcfb_pitch  = fb_pitch;
 
     fb_Init(fb_width, fb_height, fb_depth, fb_pitch);
 
