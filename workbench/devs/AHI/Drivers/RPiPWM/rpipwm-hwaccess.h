@@ -140,6 +140,7 @@ static inline ULONG pwm_dreq(IPTR peribase)
 }
 
 /* Hardware setup/teardown functions */
+BOOL pwm_audio_present(struct DriverBase *AHIsubBase);
 void pwm_gpio_setup(struct DriverBase *AHIsubBase, IPTR peribase);
 void pwm_clock_setup(struct DriverBase *AHIsubBase, IPTR peribase, ULONG samplerate, ULONG range);
 void pwm_clock_stop(struct DriverBase *AHIsubBase, IPTR peribase);
