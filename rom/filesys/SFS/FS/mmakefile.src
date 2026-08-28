@@ -16,13 +16,14 @@ FILES := adminspaces \
 	 cachedio \
 	 filesystemmain \
 	 globals \
-	 req
+	 req \
+	 sfs_security
 
 USER_CPPFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_LDFLAGS := -static
 
 #MM kernel-fs-sfs : kernel-fs-sfs-deps
-#MM- kernel-fs-sfs-deps : includes kernel-$(TARGET_USELOGRES)-log-includes
+#MM- kernel-fs-sfs-deps : includes kernel-$(TARGET_USELOGRES)-log-includes kernel-security-includes kernel-task-includes
 
 %build_module mmake=kernel-fs-sfs \
     modname=sfs modtype=handler \

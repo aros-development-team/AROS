@@ -27,6 +27,13 @@ struct SFSBase
     struct Device *timerBase;
 
     struct DosPacket *packet;
+    struct Library *sec_Base;   /* security.library, if resident (sfs_security.c) */
+    APTR   sec_CurOwner;        /* struct secExtOwner * of the packet's sender     */
+    ULONG  sec_CurOwnerId;      /* uid<<16 | gid of the sender                     */
+    LONG   sec_CurDefProt;      /* default protection bits of the sender           */
+    BOOL   sec_Checked;         /* tried to open the library                       */
+    BOOL   sec_Active;          /* enforcing for the packet being processed        */
+    BYTE   sec_VolumeState;     /* 0 unknown, 1 secured, 2 not secured             */
     struct DeviceNode *devnode;
     struct DeviceList *volumenode;
     struct MsgPort *sdlhport;       // The SFS DosList handler port.
