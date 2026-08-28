@@ -85,7 +85,7 @@ SECURITYFILES := \
 
 USER_INCLUDES := $(TARGET_EXEC_INCLUDES) -I$(SRCDIR)/rom/exec
 USER_CPPFLAGS := -DUSE_EXEC_DEBUG
-USER_CPPFLAGS += -DDEBUG=1
+#USER_CPPFLAGS += -DDEBUG=1
 USER_LDFLAGS := -static
 
 #MM kernel-security : includes linklibs kernel-security-catalogs kernel-task-includes
