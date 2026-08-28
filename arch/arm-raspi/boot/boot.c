@@ -369,7 +369,14 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         ForeachNode(&e->on_children, led)
         {
             of_property_t *p = dt_find_property(led, "gpios");
+            of_property_t *st = dt_find_property(led, "status");
             int32_t gpio = 0;
+
+            /* The Pi 400 keeps a led-act node for a light it does not have
+             * and marks it disabled; driving its pin would clamp ID_SDA. */
+            if (st && !strncmp(st->op_value, "disabled", 9))
+                continue;
+
             if (p && p->op_length >= 8) {
                 uint32_t *data = p->op_value;
                 uint32_t phandle = AROS_BE2LONG(data[0]);
@@ -386,6 +393,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
                     {
                         int gpio_sel = gpio / 10;
                         int gpio_soff = 3 * (gpio - 10 * gpio_sel);
+                        of_property_t *trg = dt_find_property(led, "linux,default-trigger");
+                        int on = trg && !strncmp(trg->op_value, "default-on", 11);
+                        int low = (p->op_length >= 12) && (AROS_BE2LONG(data[2]) & 1);
 
                         kprintf("[BOOT] GPFSEL=%x, bit=%d\n", gpio_sel * 4, gpio_soff);
 
@@ -395,8 +405,8 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
                         tmp |= (1 << gpio_soff);
                         wr32le(GPFSEL0 + 4*gpio_sel, tmp);
 
-                        /* Turn LED off */
-                        wr32le(GPCLR0 + 4 * (gpio / 32), 1 << (gpio % 32));
+                        /* Turn LED off, leave PWR-LED on */
+                        wr32le((on != low ? GPSET0 : GPCLR0) + 4 * (gpio / 32), 1 << (gpio % 32));
                     }
                 }
             }
