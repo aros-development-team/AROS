@@ -84,6 +84,25 @@ static void PrintWhoAmI(ULONG owner)
     }
 }
 
+/* Point HOME: at the user's home directory from the user database */
+static void AssignHome(ULONG owner)
+{
+    struct secUserInfo *ui = secAllocUserInfo();
+
+    if (ui)
+    {
+        ui->uid = owner >> 16;
+        if (secGetUserInfo(ui, secKeyType_uid) && ui->HomeDir[0])
+        {
+            BPTR lock = Lock(ui->HomeDir, ACCESS_READ);
+
+            if (lock && !AssignLock("HOME", lock))
+                UnLock(lock);
+        }
+        secFreeUserInfo(ui);
+    }
+}
+
 int main(void)
 {
     IPTR args[ARG_COUNT] = { 0 };
@@ -118,6 +137,10 @@ int main(void)
         {
             tags[n].ti_Tag = secT_Graphical; tags[n++].ti_Data = TRUE;
         }
+        if (args[ARG_QUIET])
+        {
+            tags[n].ti_Tag = secT_Quiet; tags[n++].ti_Data = TRUE;
+        }
         tags[n].ti_Tag = TAG_DONE;
 
         owner = secLoginA(tags);
@@ -145,6 +168,7 @@ int main(void)
                     }
                 }
             }
+            AssignHome(owner);
             if (!args[ARG_QUIET])
                 PrintWhoAmI(owner);
         }
