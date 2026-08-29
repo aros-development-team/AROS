@@ -166,7 +166,7 @@ KLIBS   :=  graphics layers intuition gadtools icon workbench \
             freeanim nonvolatile nvdisk \
             mathffp mathieeesingbas \
             setpatch
-KDEVS   := cd ata
+KDEVS   := cd cd32mpeg ata
 KHNDLRS := cdrom
 KHIDDS  := bus storage system p96gfx
 KRSRCS  := battclock battmem potgo misc shellcommands workbook wbtag
