@@ -80,24 +80,24 @@ int main(void)
 
         set(LoginWin,MUIA_Window_Open,TRUE);
 
-        while (DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs) != MUIV_Application_ReturnID_Quit)
+        LONG id;
+
+        while ((id = DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs)) != LWA_RV_CANCEL)
         {
+            if (id == LWA_RV_OK)
+                break;
             if (sigs)
             {
-                if (sigs == LWA_RV_OK)
-                    break;
-
                 sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-                
-                if (sigs & SIGBREAKF_CTRL_C)
+                if (sigs & (SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D))
+                {
+                    id = LWA_RV_CANCEL;
                     break;
-                if (sigs & SIGBREAKF_CTRL_D)
-                    break;
-
+                }
             }
         }
 
-        if (sigs == LWA_RV_OK)
+        if (id == LWA_RV_OK)
         {
             get(LoginWin, MUIA_LoginWindow_UserName, &string);
             userName = StrDup(string);

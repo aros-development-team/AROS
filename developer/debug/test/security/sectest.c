@@ -131,7 +131,7 @@ int main(void)
     snprintf(mine, sizeof(mine), "Shared/sectest-%s.txt", who);
     ok = TryWrite(Join(dir, mine), "shared\n");
     Report("create file in Shared (owner 0:100, grp bits?)", ok, IoErr());
-    ok = SetOwner(Join(dir, "Home/user/mine.txt"), (0 << 16) | 0);
+    ok = SetOwner(Join(dir, "Home/user/mine.txt"), secOWNER_SYSTEM);   /* root:root */
     Report("give Home/user/mine.txt to root", ok, IoErr());
     snprintf(mine, sizeof(mine), "Home/user/sub-%s", who);
     {

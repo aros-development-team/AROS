@@ -4,12 +4,12 @@ include $(SRCDIR)/config/aros.cfg
 
 EXEDIR := $(AROS_TESTS)/security
 
-FILES := sectest
+FILES := sectest ugtest fsformat
 
 #MM- test : test-security
-#MM test-security : includes linklibs kernel-security-includes
+#MM test-security : includes linklibs kernel-security-includes workbench-libs-usergroup-includes
 
 %build_progs mmake=test-security \
-    files=$(FILES) targetdir=$(EXEDIR)
+    files=$(FILES) targetdir=$(EXEDIR) uselibs="usergroup"
 
 %common
