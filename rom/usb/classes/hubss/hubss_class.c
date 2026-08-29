@@ -426,18 +426,27 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                             psdSendEvent(EHMB_REMDEVICE, pd, NULL);
                             (nch->nch_Downstream)[num-1] = NULL;
                             pd = NULL;
-                            /* disable port */
+                            /*
+                             * Disable the port so a device that has gone
+                             * does not hold the bus. PORT_ENABLE is not a
+                             * feature a SuperSpeed hub accepts - it stalls
+                             * it, which halts the hub's EP0 in the middle
+                             * of this cleanup - and a SuperSpeed link needs
+                             * no such help: the port follows the link down
+                             * by itself when the device leaves.
+                             */
+                            if(!nch->nch_SSPortProto) {
+                                KPRINTF(1, ("hubss: USR_CLEAR_FEATURE:UFS_PORT_ENABLE for removed device..\n"));
 
-                            KPRINTF(1, ("hubss: USR_CLEAR_FEATURE:UFS_PORT_ENABLE for removed device..\n"));
-
-                            psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
-                                         USR_CLEAR_FEATURE, UFS_PORT_ENABLE, (ULONG) num);
-                            ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
-                            if(ioerr) {
-                                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                                               "CLEAR_PORT_ENABLE failed: %s (%ld)",
-                                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                                KPRINTF(1, ("CLEAR_PORT_ENABLE failed %ld.\n", ioerr));
+                                psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                                             USR_CLEAR_FEATURE, UFS_PORT_ENABLE, (ULONG) num);
+                                ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
+                                if(ioerr) {
+                                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                                   "CLEAR_PORT_ENABLE failed: %s (%ld)",
+                                                   psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                                    KPRINTF(1, ("CLEAR_PORT_ENABLE failed %ld.\n", ioerr));
+                                }
                             }
                         }
                         if(nch->nch_PowerCycle & (1<<num)) {
@@ -1462,17 +1471,25 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWOR
                 psdUnlockDevice(pd);
                 psdFreeDevice(pd);
 
-                KPRINTF(1, ("%s: USR_CLEAR_FEATURE:UFS_PORT_ENABLE for bad device\n", __func__));
+                /*
+                 * Disable port: keep misbehaving devices from keeping the
+                 * bus wedged. Not on SuperSpeed - the hub stalls
+                 * PORT_ENABLE and the stall halts its EP0, so the port
+                 * status left behind by this failure never gets cleared
+                 * and the hub stops reporting the port at all.
+                 */
+                if(!nch->nch_SSPortProto) {
+                    KPRINTF(1, ("%s: USR_CLEAR_FEATURE:UFS_PORT_ENABLE for bad device\n", __func__));
 
-                /* Disable port: keep misbehaving devices from keeping the bus wedged */
-                psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
-                             USR_CLEAR_FEATURE, UFS_PORT_ENABLE, (ULONG)port);
-                ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
-                if(ioerr) {
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR)libname,
-                                   "CLEAR_PORT_ENABLE failed: %s (%ld)",
-                                   psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                    KPRINTF(1, ("CLEAR_PORT_ENABLE failed %ld.\n", ioerr));
+                    psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                                 USR_CLEAR_FEATURE, UFS_PORT_ENABLE, (ULONG)port);
+                    ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
+                    if(ioerr) {
+                        psdAddErrorMsg(RETURN_WARN, (STRPTR)libname,
+                                       "CLEAR_PORT_ENABLE failed: %s (%ld)",
+                                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                        KPRINTF(1, ("CLEAR_PORT_ENABLE failed %ld.\n", ioerr));
+                    }
                 }
 
                 ReleaseSemaphore(&nch->nch_HubBase->nh_Adr0Sema);
