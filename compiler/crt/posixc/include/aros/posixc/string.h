@@ -8,7 +8,7 @@
     Desc: C99/POSIX.1-2008 header file string.h
 */
 
-#include <aros/posixc/locale.h>
+#include <aros/types/locale_t.h>
 #include <aros/stdc/string.h>
 
 __BEGIN_DECLS
