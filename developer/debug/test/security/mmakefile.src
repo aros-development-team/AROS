@@ -4,12 +4,19 @@ include $(SRCDIR)/config/aros.cfg
 
 EXEDIR := $(AROS_TESTS)/security
 
-FILES := sectest ugtest fsformat
+FILES   := sectest fsformat
+UGFILES := ugtest
 
 #MM- test : test-security
-#MM test-security : includes linklibs kernel-security-includes workbench-libs-usergroup-includes
+#MM test-security : includes linklibs kernel-security-includes test-security-usergroup
+#MM test-security-usergroup : includes linklibs kernel-security-includes \
+#MM     workbench-libs-usergroup-includes workbench-libs-usergroup-linklib
 
 %build_progs mmake=test-security \
-    files=$(FILES) targetdir=$(EXEDIR) uselibs="usergroup"
+    files=$(FILES) targetdir=$(EXEDIR)
+
+# UGTest needs the usergroup.library link library (per-task base)
+%build_progs mmake=test-security-usergroup \
+    files=$(UGFILES) targetdir=$(EXEDIR) uselibs="usergroup"
 
 %common
