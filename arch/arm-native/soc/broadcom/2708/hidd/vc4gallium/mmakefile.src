@@ -153,9 +153,9 @@ linklibs-gallium_vc4-gen-cle : $(CLE_GEN_HEADERS)
 #
 GCA_GENDIR   := $(top_builddir)/galliumglue
 GCA_TOOL     := $(SRCDIR)/workbench/libs/mesa/galliumglue.py
-GCA_NM       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-nm
-GCA_OBJCOPY  := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-objcopy
-GCA_AR       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-ar
+GCA_NM       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-nm
+GCA_OBJCOPY  := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-objcopy
+GCA_AR       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ar
 GCA_CORELIBS := $(addprefix $(top_libdir)/lib, \
     compiler.a galliumauxiliary.a mesautil.a mesa.a glapi.a mesadevutil.a)
 GCA_GENFILES := gallium_core_api.h gca_table.c gca_bind.c gca_glue.S \
