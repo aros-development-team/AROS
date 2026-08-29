@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
     Desc: security.library login/logout. Derived from MultiUser Log.c
           (c) Geert Uytterhoeven.
@@ -184,98 +184,6 @@ static BOOL UserHasPassword(struct SecurityBase *secBase, CONST_STRPTR userid)
 /*
  * Graphical prompts: a small intuition window with one string gadget
  */
-static BOOL GetStringGUI(struct SecurityBase *secBase, STRPTR buf, ULONG size, CONST_STRPTR title, CONST_STRPTR prompt, CONST_STRPTR scrname, BOOL hidden)
-{
-    struct Screen *scr;
-    struct Window *win;
-    struct Gadget gad;
-    struct StringInfo si;
-    struct IntuiText it;
-    UBYTE *undo;
-    BOOL ok = FALSE, done = FALSE;
-    WORD width = 400, height = 60;
-    WORD fh;
-
-    if (!(undo = MAlloc(size)))
-        return FALSE;
-    if (!(scr = LockPubScreen((STRPTR)scrname)))
-        scr = LockPubScreen(NULL);
-    if (!scr)
-    {
-        Free(undo, size);
-        return FALSE;
-    }
-    fh = scr->Font ? scr->Font->ta_YSize : 8;
-    height = fh * 4 + 20;
-
-    memset(&gad, 0, sizeof(gad));
-    memset(&si, 0, sizeof(si));
-    memset(&it, 0, sizeof(it));
-    si.Buffer = buf;
-    si.UndoBuffer = undo;
-    si.MaxChars = size;
-    buf[0] = '\0';
-    gad.LeftEdge = 10;
-    gad.TopEdge = fh * 2 + 10;
-    gad.Width = width - 20;
-    gad.Height = fh + 4;
-    gad.Flags = GFLG_GADGHCOMP;
-    gad.Activation = GACT_RELVERIFY | GACT_STRINGCENTER;
-    gad.GadgetType = GTYP_STRGADGET;
-    gad.SpecialInfo = &si;
-    gad.GadgetID = 1;
-    it.FrontPen = 1;
-    it.LeftEdge = 10;
-    it.TopEdge = fh / 2 + 4;
-    it.IText = (STRPTR)prompt;
-    it.ITextFont = scr->Font;
-
-    win = OpenWindowTags(NULL,
-                         WA_PubScreen, (IPTR)scr,
-                         WA_Left, (scr->Width - width) / 2,
-                         WA_Top, (scr->Height - height) / 2,
-                         WA_Width, width,
-                         WA_Height, height,
-                         WA_Title, (IPTR)title,
-                         WA_Flags, WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE | WFLG_RMBTRAP,
-                         WA_IDCMP, IDCMP_GADGETUP | IDCMP_VANILLAKEY,
-                         WA_Gadgets, (IPTR)&gad,
-                         TAG_DONE);
-    if (win)
-    {
-        struct IntuiMessage *msg;
-
-        PrintIText(win->RPort, &it, 0, win->BorderTop);
-        ActivateGadget(&gad, win, NULL);
-        while (!done)
-        {
-            WaitPort(win->UserPort);
-            while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
-            {
-                switch (msg->Class)
-                {
-                case IDCMP_GADGETUP:
-                    ok = TRUE;
-                    done = TRUE;
-                    break;
-                case IDCMP_VANILLAKEY:
-                    if (msg->Code == 27)
-                        done = TRUE;
-                    else
-                        ActivateGadget(&gad, win, NULL);
-                    break;
-                }
-                ReplyMsg((struct Message *)msg);
-            }
-        }
-        CloseWindow(win);
-    }
-    UnlockPubScreen(NULL, scr);
-    memset(undo, 0, size);
-    Free(undo, size);
-    (void)hidden;   /* TODO: masked input; the gadget currently echoes */
-    return ok;
-}
 
 /*
  * Ask the user for a UserID / password until a valid pair is entered.
@@ -293,6 +201,7 @@ static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct
     struct secPrivUserInfo *info = NULL;
     int retry = 0, i;
     BOOL ret;
+    BOOL guipwd = FALSE;    /* the password came with the user id from the login window */
 
     if (GetVar("Kickstart", version, sizeof(version), GVF_GLOBAL_ONLY) == -1)
         strcpy(version, "?");
@@ -318,8 +227,12 @@ static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct
                 memset(uidbuf, 0, sizeof(uidbuf));
                 if (tags->Graphical)
                 {
+                    /* the login window asks for user id and password at once */
                     FormatString(GetLocS(secBase, li, MSG_LOGINPROMPT_GUI), args, text, sizeof(text));
-                    ret = GetStringGUI(secBase, uidbuf, sizeof(uidbuf), GetLocS(secBase, li, MSG_LOGINREQ_GUI), text, tags->PubScrName, FALSE);
+                    memset(pwdbuf, 0, sizeof(pwdbuf));
+                    ret = LoginGUI(secBase, tags->PubScrName, text, failallowed,
+                                   uidbuf, sizeof(uidbuf), pwdbuf, sizeof(pwdbuf));
+                    guipwd = ret;
                 }
                 else
                 {
@@ -345,11 +258,22 @@ static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct
         else
         {
             password = pwdbuf;
-            memset(pwdbuf, 0, sizeof(pwdbuf));
+            if (!guipwd)
+                memset(pwdbuf, 0, sizeof(pwdbuf));
             if (!nopasswd && UserHasPassword(secBase, userid))
             {
-                if (tags->Graphical)
-                    ret = GetStringGUI(secBase, pwdbuf, sizeof(pwdbuf), GetLocS(secBase, li, MSG_LOGINREQ_GUI), GetLocS(secBase, li, MSG_PASSWDPROMPT_GUI), tags->PubScrName, TRUE);
+                if (guipwd)
+                    ret = TRUE;
+                else if (tags->Graphical)
+                {
+                    /* user id given by the caller: the window only needs the password */
+                    SIPTR args[2] = { (SIPTR)version, (SIPTR)hostname };
+                    FormatString(GetLocS(secBase, li, MSG_LOGINPROMPT_GUI), args, text, sizeof(text));
+                    CopyMem(userid, uidbuf, strlen(userid) + 1 > sizeof(uidbuf) ? sizeof(uidbuf) : strlen(userid) + 1);
+                    uidbuf[sizeof(uidbuf) - 1] = '\0';
+                    ret = LoginGUI(secBase, tags->PubScrName, text, failallowed,
+                                   uidbuf, sizeof(uidbuf), pwdbuf, sizeof(pwdbuf));
+                }
                 else
                     ret = ReadPasswordCon(secBase, tags->Input, tags->Output, pwdbuf, sizeof(pwdbuf), li);
                 if (!ret)
@@ -366,18 +290,14 @@ static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct
             info = (struct secPrivUserInfo *)SendServerPacket(secBase, secSAction_CheckUser, (SIPTR)userid,
                                                               (SIPTR)password, nopasswd, tags->NoLog);
             memset(pwdbuf, 0, sizeof(pwdbuf));
+            guipwd = FALSE;
             if (!info)
             {
                 if (failallowed)
                     return NULL;
                 if (tags->Graphical)
-                {
-                    struct EasyStruct es = { sizeof(struct EasyStruct), 0, NULL, "%s", NULL };
-                    SIPTR args[1] = { (SIPTR)GetLocS(secBase, li, MSG_LOGINFAIL_GUI) };
-                    es.es_Title = (STRPTR)GetLocS(secBase, li, MSG_LOGINREQ_GUI);
-                    es.es_GadgetFormat = (STRPTR)GetLocS(secBase, li, MSG_OK);
-                    EasyRequestArgs(NULL, &es, NULL, (RAWARG)args);
-                }
+                    LoginMessageGUI(secBase, GetLocS(secBase, li, MSG_LOGINREQ_GUI),
+                                    GetLocS(secBase, li, MSG_LOGINFAIL_GUI), GetLocS(secBase, li, MSG_OK));
                 else
                     myfputs(secBase, tags->Output, GetLocS(secBase, li, MSG_LOGINFAIL_CON));
             }
@@ -494,13 +414,7 @@ static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct
     {
         FormatString(GetLocS(secBase, li, neverloggedin ? MSG_FIRSTLOGIN : MSG_LASTLOGIN), args, text, sizeof(text));
         if (tags->Graphical)
-        {
-            struct EasyStruct es = { sizeof(struct EasyStruct), 0, NULL, "%s", NULL };
-            SIPTR eargs[1] = { (SIPTR)text };
-            es.es_Title = (STRPTR)GetLocS(secBase, li, MSG_LOGINREQ_GUI);
-            es.es_GadgetFormat = (STRPTR)GetLocS(secBase, li, MSG_OK);
-            EasyRequestArgs(NULL, &es, NULL, (RAWARG)eargs);
-        }
+            LoginMessageGUI(secBase, GetLocS(secBase, li, MSG_LOGINREQ_GUI), text, GetLocS(secBase, li, MSG_OK));
         else if (tags->Output)
         {
             FPuts(tags->Output, "\n");

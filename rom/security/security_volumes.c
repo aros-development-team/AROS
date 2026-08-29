@@ -57,21 +57,47 @@ static void AddNativeVolume(struct SecurityBase *secBase, BSTR bname)
     {
         CopyMem(AROS_BSTR_ADDR(bname), nv->Name, len);
         nv->Name[len] = '\0';
+        ObtainSemaphore(&secBase->VolumesSem);
         AddTail((struct List *)&secBase->NativeVolumes, (struct Node *)&nv->Node);
+        ReleaseSemaphore(&secBase->VolumesSem);
         D(bug(DEBUG_NAME_STR " %s: '%s' enforces natively (key file found)\n", __func__, nv->Name);)
     }
 }
 
-static BOOL FindVolumes(struct SecurityBase *secBase)
+/*
+ * Handlers without a multi-user dostype found by FindVolumes(): look for the
+ * key file in their root. This talks to the handlers (Lock()), and a handler
+ * answering our packet may call secIsVolumeSecured() -> VolumesSem, so this
+ * MUST run without VolumesSem held (it deadlocked SFS otherwise).
+ */
+#define MAXPROBE 64
+struct secProbeList
+{
+    struct MsgPort *port[MAXPROBE];
+    BSTR            name[MAXPROBE];
+    int             count;
+};
+
+static void ProbeNativeVolumes(struct SecurityBase *secBase, struct secProbeList *pl)
+{
+    int i;
+
+    for (i = 0; i < pl->count; i++)
+    {
+        if (ProbeKeyFile(secBase, pl->port[i]))
+            AddNativeVolume(secBase, pl->name[i]);
+    }
+}
+
+static BOOL FindVolumes(struct SecurityBase *secBase, struct secProbeList *pl)
 {
     struct DosList *dl;
     struct FileSysStartupMsg *sm;
     struct DosEnvec *de;
     struct secVolume *vol;
-    struct MsgPort *probe[64];
-    BSTR probename[64];
-    int nprobe = 0, i;
     BOOL res = FALSE;
+
+    pl->count = 0;
 
     D(bug(DEBUG_NAME_STR " %s()\n", __func__);)
 
@@ -85,10 +111,10 @@ static BOOL FindVolumes(struct SecurityBase *secBase)
         {
             /* A disk filesystem without a multi-user dostype: probe it for a
              * key file later (not while the DosList is locked) */
-            if (nprobe < 64)
+            if (pl->count < MAXPROBE)
             {
-                probe[nprobe] = dl->dol_Task;
-                probename[nprobe++] = dl->dol_Name;
+                pl->port[pl->count] = dl->dol_Task;
+                pl->name[pl->count++] = dl->dol_Name;
             }
         }
         else if (dl->dol_Task &&
@@ -112,12 +138,6 @@ static BOOL FindVolumes(struct SecurityBase *secBase)
     }
     UnLockDosList(LDF_DEVICES | LDF_READ);
 
-    /* Volumes marked multi-user by a key file in their root (e.g. SFS) */
-    for (i = 0; i < nprobe; i++)
-    {
-        if (ProbeKeyFile(secBase, probe[i]))
-            AddNativeVolume(secBase, probename[i]);
-    }
     return res;
 }
 
@@ -198,14 +218,18 @@ static void StartNotifications(struct SecurityBase *secBase)
 BOOL InitVolumes(struct SecurityBase *secBase)
 {
     BOOL located = FALSE;
+    struct secProbeList *pl;
 
     D(bug(DEBUG_NAME_STR " %s()\n", __func__);)
 
     if (!ClearBuffer(secBase))
         return FALSE;
 
+    if (!(pl = MAlloc(sizeof(struct secProbeList))))
+        return FALSE;
+
     ObtainSemaphore(&secBase->VolumesSem);
-    if (FindVolumes(secBase))
+    if (FindVolumes(secBase, pl))
     {
         if (ReadKeyFiles(secBase))
             located = TRUE;
@@ -220,6 +244,10 @@ BOOL InitVolumes(struct SecurityBase *secBase)
     if (!located && !secBase->SecurityViolation)
         located = UseDefaultConfigDir(secBase);
     ReleaseSemaphore(&secBase->VolumesSem);
+
+    /* Volumes marked multi-user by a key file in their root (e.g. SFS) */
+    ProbeNativeVolumes(secBase, pl);
+    Free(pl, sizeof(struct secProbeList));
 
     LoadConfig(secBase);
 

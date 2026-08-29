@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
     Desc: security.library login support
 */
@@ -32,6 +32,11 @@ struct secTags
 };
 
 extern BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, struct secTags *tags);
+
+/* Graphical login (security_logingui.c, Zune LoginWindow.mcc) */
+extern BOOL LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok,
+                     STRPTR uid, ULONG uidsize, STRPTR pwd, ULONG pwdsize);
+extern void LoginMessageGUI(struct SecurityBase *secBase, CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadgets);
 
 /* Console helpers: read a line / a hidden password from a filehandle */
 extern BOOL ReadLineCon(struct SecurityBase *secBase, BPTR input, STRPTR buf, ULONG size);

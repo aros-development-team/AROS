@@ -78,7 +78,8 @@ SECURITYFILES := \
 	security_server \
 	security_segment \
 	security_support \
-	security_login
+	security_login \
+	security_logingui
 
 %get_archincludes modname=exec \
     includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
