@@ -291,7 +291,12 @@ AROS_LH1(void, BeginIO,
           iostd->io_Command,
           iostd->io_Length, iostd->io_Data, iostd->io_Offset));
 
-    io->io_Error = CDERR_NOCMD;
+    /* The request has been accepted for asynchronous processing.  Its final
+     * status is supplied by the unit task before the reply; exposing NOCMD
+     * here makes callers mistake a successfully queued SendIO() for an
+     * immediate failure.
+     */
+    io->io_Error = 0;
 
     io->io_Flags &= ~IOF_QUICK;
     PutMsg(cu->cu_MsgPort, &iostd->io_Message);
@@ -310,6 +315,7 @@ AROS_LH1(LONG, AbortIO,
     D(bug("%s.%d: %p\n", __func__, ((struct cdUnit *)(io->io_Unit))->cu_Unit, io));
     Forbid();
     io->io_Flags |= IOF_ABORT;
+    Signal(((struct cdUnit *)io->io_Unit)->cu_Task, SIGF_SINGLE);
     Permit();
 
     return TRUE;
