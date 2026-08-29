@@ -59,6 +59,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-fs-afs \
 #MM     kernel-fs-cdvdfs \
 #MM     kernel-fs-sfs \
+#MM     kernel-fs-pfs3 \
 #MM     kernel-fs-fat \
 #MM     kernel-log \
 #MM     kernel-entropy \
@@ -104,7 +105,7 @@ BSP_DEVS      := console input gameport keyboard nvme virtio \
 BSP_DEVS_ARCH := timer
 BSP_USBCLASSES := USB/hub USB/hubss USB/hid USB/bootkeyboard USB/bootmouse \
                   USB/massstorage
-BSP_HANDLERS  := ram con afs cdrom sfs fat
+BSP_HANDLERS  := ram con afs cdrom sfs pfs3 fat
 BSP_HIDDS     := hiddclass inputclass gfx efifbgfx keyboard mouse bus pci pcidt \
                  storage system power telemetry ipmi dwuart i2c dwi2c \
                  acpiacad acpibattery acpifan acpibutton acpithermal \
