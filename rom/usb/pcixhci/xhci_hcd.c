@@ -1672,8 +1672,28 @@ xhciObtainDeviceCtx(struct PCIController *hc,
 
     /* DevAddr==0: resolve only by route/root-port. */
     devCtx = xhciFindRouteDevice(hc, route, rootPortIndex);
-    if(devCtx)
-        return devCtx;
+    if(devCtx) {
+        /*
+         * A device answering at the default address has just been attached
+         * and reset, so it owns no address yet. A context on that route
+         * that still carries one belongs to the previous occupant of the
+         * port, whose removal was never seen. Handing it back addresses the
+         * new device through a stale, still-configured slot and every
+         * transfer to it fails with a transaction error. Take it down and
+         * enumerate from a fresh one.
+         */
+        if(devCtx->dc_DevAddr != 0) {
+            pciusbWarn("xHCI",
+                       "Stale device on route %05lx port %lu (addr %lu slot %lu) - discarding
+",
+                       (ULONG)route, (ULONG)rootPortIndex,
+                       (ULONG)devCtx->dc_DevAddr, (ULONG)devCtx->dc_SlotID);
+            xhciDisconnectDevice(hc, devCtx, timerreq);
+            devCtx = NULL;
+        } else {
+            return devCtx;
+        }
+    }
 
     if(!allowCreate)
         return NULL;
