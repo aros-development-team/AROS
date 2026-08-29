@@ -1,6 +1,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM workbench-devs-networks-bwfm : kernel-bwfm-bcm2708-includes
+
 %build_module mmake=workbench-devs-networks-bwfm \
     modname=bwfm modtype=device \
     files="bwfm_dev" \
