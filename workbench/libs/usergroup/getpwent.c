@@ -5,7 +5,7 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025 The AROS Dev Team.
+ * Copyright © 2025-2026 The AROS Dev Team.
  * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */
@@ -125,6 +125,7 @@ AROS_LH1(struct passwd *, getpwnam,
          struct UserGroupBase *, UserGroupBase, 19, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetPwNam((struct Library *)UserGroupBase, name);
 
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
@@ -164,6 +165,7 @@ AROS_LH1(struct passwd *, getpwuid,
          struct UserGroupBase *, UserGroupBase, 20, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetPwUid((struct Library *)UserGroupBase, uid);
 
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
@@ -199,6 +201,7 @@ AROS_LH0(void, setpwent,
          struct UserGroupBase *, UserGroupBase, 21, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) { ugSecSetPwEnt((struct Library *)UserGroupBase); return; }
 
     struct NetInfoReq *nreq;
 
@@ -224,6 +227,7 @@ AROS_LH0(struct passwd *, getpwent,
          struct UserGroupBase *, UserGroupBase, 22, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetPwEnt((struct Library *)UserGroupBase);
 
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
@@ -262,6 +266,7 @@ AROS_LH0(void, endpwent,
          struct UserGroupBase *, UserGroupBase, 23, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) { ugSecEndPwEnt((struct Library *)UserGroupBase); return; }
 
     D(bug("[UserGroup] %s()\n", __func__));
 

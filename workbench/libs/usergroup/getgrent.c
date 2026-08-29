@@ -5,7 +5,7 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025 The AROS Dev Team.
+ * Copyright © 2025-2026 The AROS Dev Team.
  * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */
@@ -134,6 +134,7 @@ AROS_LH1(struct group *, getgrnam,
          struct UserGroupBase *, UserGroupBase, 24, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetGrNam((struct Library *)UserGroupBase, name);
 
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
@@ -173,6 +174,7 @@ AROS_LH1(struct group *, getgrgid,
          struct UserGroupBase *, UserGroupBase, 25, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetGrGid((struct Library *)UserGroupBase, gid);
 
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
@@ -207,6 +209,7 @@ AROS_LH0(void, setgrent,
          struct UserGroupBase *, UserGroupBase, 26, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) { ugSecSetGrEnt((struct Library *)UserGroupBase); return; }
 
     struct NetInfoReq *nreq;
 
@@ -232,6 +235,7 @@ AROS_LH0(struct group *, getgrent,
          struct UserGroupBase *, UserGroupBase, 27, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetGrEnt((struct Library *)UserGroupBase);
 
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
@@ -270,6 +274,7 @@ AROS_LH0(void, endgrent,
          struct UserGroupBase *, UserGroupBase, 28, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) { ugSecEndGrEnt((struct Library *)UserGroupBase); return; }
 
     D(bug("[UserGroup] %s()\n", __func__));
 

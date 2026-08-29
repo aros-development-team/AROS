@@ -18,12 +18,13 @@ FILES := \
         getsalt \
         crypt \
         console \
-        random
+        random \
+        usergroup_security
 
-USER_CPPFLAGS := -DDEBUG=1
+#USER_CPPFLAGS := -DDEBUG=1
 USER_LDFLAGS := -static
 
-#MM workbench-libs-usergroup : includes linklibs
+#MM workbench-libs-usergroup : includes linklibs kernel-security-includes
 %subtarget parentmmake=workbench-libs mmake=workbench-libs-usergroup
 
 %build_module mmake=workbench-libs-usergroup modname=usergroup \

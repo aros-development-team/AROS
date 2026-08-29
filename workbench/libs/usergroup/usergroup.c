@@ -3,7 +3,7 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025 The AROS Dev Team.
+ * Copyright © 2025-2026 The AROS Dev Team.
  * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */
@@ -207,6 +207,7 @@ static int UserGroup__Expunge(LIBBASETYPEPTR LIBBASE)
     CleanupUTMP((struct Library *)LIBBASE);
     CleanupNIO((struct Library *)LIBBASE);
     TimeCleanup((struct Library *)LIBBASE);
+    ugSecCleanup((struct Library *)LIBBASE);
     if (DOSBase)
         CloseLibrary((void *)DOSBase);
     if (UtilityBase)
