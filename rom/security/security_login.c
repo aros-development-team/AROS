@@ -16,6 +16,7 @@
 #include <proto/security.h>
 
 #include <dos/var.h>
+#include <exec/memory.h>
 #include <dos/datetime.h>
 #include <intuition/intuition.h>
 
@@ -230,8 +231,16 @@ static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct
                     /* the login window asks for user id and password at once */
                     FormatString(GetLocS(secBase, li, MSG_LOGINPROMPT_GUI), args, text, sizeof(text));
                     memset(pwdbuf, 0, sizeof(pwdbuf));
-                    ret = LoginGUI(secBase, tags->PubScrName, text, failallowed,
-                                   uidbuf, sizeof(uidbuf), pwdbuf, sizeof(pwdbuf));
+                    LONG g = LoginGUI(secBase, tags->PubScrName, text, failallowed,
+                                      uidbuf, sizeof(uidbuf), pwdbuf, sizeof(pwdbuf));
+                    if (g == LOGINGUI_UNAVAILABLE)
+                    {
+                        /* no MUI (yet): ask on the console instead */
+                        tags->Graphical = FALSE;
+                        ret = FALSE;
+                        continue;
+                    }
+                    ret = (g == LOGINGUI_OK);
                     guipwd = ret;
                 }
                 else
@@ -271,8 +280,15 @@ static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct
                     FormatString(GetLocS(secBase, li, MSG_LOGINPROMPT_GUI), args, text, sizeof(text));
                     CopyMem(userid, uidbuf, strlen(userid) + 1 > sizeof(uidbuf) ? sizeof(uidbuf) : strlen(userid) + 1);
                     uidbuf[sizeof(uidbuf) - 1] = '\0';
-                    ret = LoginGUI(secBase, tags->PubScrName, text, failallowed,
-                                   uidbuf, sizeof(uidbuf), pwdbuf, sizeof(pwdbuf));
+                    LONG g = LoginGUI(secBase, tags->PubScrName, text, failallowed,
+                                      uidbuf, sizeof(uidbuf), pwdbuf, sizeof(pwdbuf));
+                    if (g == LOGINGUI_UNAVAILABLE)
+                    {
+                        tags->Graphical = FALSE;
+                        ret = ReadPasswordCon(secBase, tags->Input, tags->Output, pwdbuf, sizeof(pwdbuf), li);
+                    }
+                    else
+                        ret = (g == LOGINGUI_OK);
                 }
                 else
                     ret = ReadPasswordCon(secBase, tags->Input, tags->Output, pwdbuf, sizeof(pwdbuf), li);
@@ -339,6 +355,69 @@ static BOOL RestoreOwner(struct SecurityBase *secBase, struct secTaskNode *node,
             PopOwner(secBase, TASKNODE_FROM_SIBLINGS(n));
     }
     return res;
+}
+
+/*
+ * Local shell variables live in a process' pr_LocalVars and SetVar() only
+ * reaches the calling process. Set one in another process - the shell that
+ * runs Security-Startup when "Login PARENT" is used - the way dos.library
+ * does, so that the shell can free it again.
+ */
+static void SetProcessVar(struct SecurityBase *secBase, struct Task *task, CONST_STRPTR name, CONST_STRPTR value)
+{
+    struct Process *pr = (struct Process *)task;
+    struct LocalVar *lv, *n;
+    ULONG nlen = strlen(name), vlen = strlen(value);
+
+    if (!task || task->tc_Node.ln_Type != NT_PROCESS)
+        return;
+    if (task == FindTask(NULL))
+    {
+        SetVar(name, value, -1, GVF_LOCAL_ONLY);
+        return;
+    }
+    if (!(lv = AllocVec(sizeof(struct LocalVar) + nlen + 1, MEMF_PUBLIC | MEMF_CLEAR)))
+        return;
+    lv->lv_Node.ln_Type = LV_VAR;
+    lv->lv_Node.ln_Name = (STRPTR)(lv + 1);
+    CopyMem(name, lv->lv_Node.ln_Name, nlen + 1);
+    lv->lv_Len = vlen;
+    if (vlen)
+    {
+        if (!(lv->lv_Value = AllocMem(vlen, MEMF_PUBLIC)))
+        {
+            FreeVec(lv);
+            return;
+        }
+        CopyMem(value, lv->lv_Value, vlen);
+    }
+    Forbid();
+    ForeachNode(&pr->pr_LocalVars, n)
+    {
+        if (n->lv_Node.ln_Type == LV_VAR && !Stricmp(name, n->lv_Node.ln_Name))
+        {
+            Remove(&n->lv_Node);
+            if (n->lv_Len)
+                FreeMem(n->lv_Value, n->lv_Len);
+            FreeVec(n);
+            break;
+        }
+    }
+    AddHead((struct List *)&pr->pr_LocalVars, &lv->lv_Node);
+    Permit();
+}
+
+/* "Home" = the user's home directory, for the task that just logged in */
+static void SetHomeVar(struct SecurityBase *secBase, struct Task *task, UWORD uid)
+{
+    struct secUserInfo *ui = secAllocUserInfo();
+
+    if (ui)
+    {
+        ui->uid = uid;
+        SetProcessVar(secBase, task, "Home", secGetUserInfo(ui, secKeyType_uid) ? ui->HomeDir : "");
+        secFreeUserInfo(ui);
+    }
 }
 
 /* After a fresh login from the logout prompt: home dir, lastlogin, profile */
@@ -630,6 +709,10 @@ static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct
         ApplyOwner(secBase, node, xuser, session, TRUE, tags.Global);
     }
     ReleaseSemaphore(&secBase->TaskOwnerSem);
+
+    /* $Home for the shell that logged in (Security-Startup: Login PARENT) */
+    if (node)
+        SetHomeVar(secBase, tags.Task, xuser->uid);
 
     secFreeExtOwner(xuser);
     if (info)

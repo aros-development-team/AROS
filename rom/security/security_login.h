@@ -34,7 +34,10 @@ struct secTags
 extern BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, struct secTags *tags);
 
 /* Graphical login (security_logingui.c, Zune LoginWindow.mcc) */
-extern BOOL LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok,
+#define LOGINGUI_OK           (1)
+#define LOGINGUI_CANCEL       (0)
+#define LOGINGUI_UNAVAILABLE  (-1)     /* no MUI / no LoginWindow.mcc: use the console */
+extern LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok,
                      STRPTR uid, ULONG uidsize, STRPTR pwd, ULONG pwdsize);
 extern void LoginMessageGUI(struct SecurityBase *secBase, CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadgets);
 

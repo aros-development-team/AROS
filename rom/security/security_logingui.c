@@ -22,6 +22,26 @@
 #include "security_login.h"
 #include "security_memory.h"
 
+/*
+ * S:Security-Startup makes the LIBS: assign itself before a graphical login.
+ * Should it be missing anyway, try muimaster.library by its full path.
+ */
+static struct Library *OpenMUIMaster(struct SecurityBase *secBase)
+{
+    struct Library *mb = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN);
+
+    if (mb == NULL)
+    {
+        BPTR lock = Lock("LIBS:", ACCESS_READ);
+
+        if (lock)
+            UnLock(lock);
+        else
+            mb = OpenLibrary("SYS:Libs/" MUIMASTER_NAME, MUIMASTER_VMIN);
+    }
+    return mb;
+}
+
 static void CopyStr(STRPTR dst, ULONG size, CONST_STRPTR src)
 {
     if (src == NULL)
@@ -36,14 +56,15 @@ static void CopyStr(STRPTR dst, ULONG size, CONST_STRPTR src)
  *   cancelok  - TRUE: the user may cancel (secLoginA), FALSE: must log in
  *   uid       - in: preset user id (may be empty), out: the entered user id
  *   pwd       - out: the entered password (may be empty)
- * Returns FALSE when cancelled or when MUI is not available.
+ * Returns LOGINGUI_OK, LOGINGUI_CANCEL, or LOGINGUI_UNAVAILABLE when MUI
+ * cannot be used (the caller then falls back to the console).
  */
-BOOL LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok,
+LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok,
               STRPTR uid, ULONG uidsize, STRPTR pwd, ULONG pwdsize)
 {
     struct Library *MUIMasterBase;
     Object *app = NULL, *win;
-    BOOL ok = FALSE;
+    LONG ok = LOGINGUI_CANCEL;
     struct TagItem wintags[] =
     {
         { MUIA_LoginWindow_UserName,        (IPTR)uid                                       },
@@ -62,8 +83,8 @@ BOOL LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR
         { TAG_DONE,                     0                               }
     };
 
-    if (!(MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
-        return FALSE;
+    if (!(MUIMasterBase = OpenMUIMaster(secBase)))
+        return LOGINGUI_UNAVAILABLE;
 
     if ((win = MUI_NewObjectA(MUIC_LoginWindow, wintags)))
     {
@@ -88,7 +109,7 @@ BOOL LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR
                         CopyStr(uid, uidsize, s);
                         s = (STRPTR)XGET(win, MUIA_LoginWindow_UserPass);
                         CopyStr(pwd, pwdsize, s);
-                        ok = TRUE;
+                        ok = LOGINGUI_OK;
                         break;
                     }
                     if (sigs)
@@ -103,8 +124,13 @@ BOOL LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR
             MUI_DisposeObject(app);         /* disposes the window too */
         }
         else
+        {
             MUI_DisposeObject(win);
+            ok = LOGINGUI_UNAVAILABLE;
+        }
     }
+    else
+        ok = LOGINGUI_UNAVAILABLE;      /* LoginWindow.mcc not found */
 
     CloseLibrary(MUIMasterBase);
     return ok;
@@ -115,7 +141,7 @@ void LoginMessageGUI(struct SecurityBase *secBase, CONST_STRPTR title, CONST_STR
 {
     struct Library *MUIMasterBase;
 
-    if ((MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
+    if ((MUIMasterBase = OpenMUIMaster(secBase)))
     {
         MUI_RequestA(NULL, NULL, 0, (CONST_STRPTR)title, (CONST_STRPTR)gadgets, (CONST_STRPTR)text, NULL);
         CloseLibrary(MUIMasterBase);
