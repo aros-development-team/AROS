@@ -183,8 +183,8 @@ COMBINED_V3D_SOURCES := $(V3D_SOURCES) $(V3DX_SOURCES) $(BROADCOM_COMPILER_SOURC
 # runs silently overwrote each other's glue.
 #
 GCA_GENDIR   := $(top_builddir)/galliumglue
-GCA_OBJCOPY  := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-objcopy
-GCA_AR       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-ar
+GCA_OBJCOPY  := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-objcopy
+GCA_AR       := $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ar
 
 #MM linklibs-gallium_v3d-gca : linklibs-gallium_vc4-gca
 
