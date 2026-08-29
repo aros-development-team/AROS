@@ -28,7 +28,6 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
-#include <proto/bwfm.h>
 #include <proto/openfirmware.h>
 
 #include "bwfm.h"
