@@ -46,19 +46,21 @@
 /*
  * Reserved users/groups
  *
- * WARNING: a uid may NOT be 65535!
+ * These are the original MultiUser values (root 0xffff, nobody 0), so that
+ * the owner words on real MuFS volumes mean the same thing here.
+ * WARNING: 0 is nobody, never a real user; 0xffff is the super user.
  */
-#define secOWNER_SYSTEM                 (0x00000000)    /* always owner */
-#define secOWNER_NOBODY                 (0xffffffff)    /* no rights    */
+#define secOWNER_SYSTEM                 (0xffffffff)    /* always owner */
+#define secOWNER_NOBODY                 (0x00000000)    /* no rights    */
 
 #define secMASK_UID                     (0xffff0000)    /* Mask for uid bits */
 #define secMASK_GID                     (0x0000ffff)    /* Mask for gid bits */
 
-#define secROOT_UID                     (0x0000)        /* super user uid */
-#define secROOT_GID                     (0x0000)        /* super user gid */
+#define secROOT_UID                     (0xffff)        /* super user uid */
+#define secROOT_GID                     (0xffff)        /* super user gid */
 
-#define secNOBODY_UID                   (0xffff)        /* nobody uid */
-#define secNOBODY_GID                   (0xffff)        /* nobody gid */
+#define secNOBODY_UID                   (0x0000)        /* nobody uid */
+#define secNOBODY_GID                   (0x0000)        /* nobody gid */
 
 #define secUSERIDSIZE                   (32)            /* Maximum size for a User ID       */
 #define secGROUPIDSIZE                  (32)            /* Maximum size for a Group ID      */
