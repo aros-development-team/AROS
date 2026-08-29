@@ -63,6 +63,20 @@ do {                                                                   \
 } while (0)
 
 #if MULTIUSER
+/* The volume root has no direntry: it belongs to root, everybody may read and
+ * list it, only root may create/delete/rename in it (like afs/SFS). */
+#define GetDirExtraFields(oi, ef)                                   \
+do {                                                                   \
+	if (IsVolume(oi)) {                                                \
+		memset(&(ef), 0, sizeof(struct extrafields));                  \
+		(ef).uid  = muROOT_UID;                                        \
+		(ef).gid  = muROOT_GID;                                        \
+		(ef).prot = FIBF_GRP_READ | FIBF_GRP_EXECUTE |                 \
+		            FIBF_OTR_READ | FIBF_OTR_EXECUTE;                  \
+	} else                                                             \
+		GetExtraFieldsOI(&(oi), &(ef), g);                             \
+} while (0)
+
 #define muGetRelationship(extrafields)                              \
 	((g->muFS_ready) ?                                              \
 	(muGetRelationshipA (g->user, ((extrafields).uid << 16) + (extrafields).gid, NULL)) :   \

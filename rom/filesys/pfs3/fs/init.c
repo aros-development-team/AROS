@@ -223,14 +223,14 @@ BOOL Initialize(DSTR mountname, struct FileSysStartupMsg *fssm,
 Removed because of problems with Phase 5 boards
 
 		/* check if memory allocated is ok (First fail-over) */
-		if (((ULONG)LibAllocPooled(g->bufferPool, 8)) & ~g->dosenvec->de_Mask)
+		if PFS3_MASKFAIL(LibAllocPooled(g->bufferPool, 8))
 		{
 			g->dosenvec->de_BufMemType |= MEMF_24BITDMA;
 			LibDeletePool (g->bufferPool);
 			g->bufferPool = LibCreatePool (g->dosenvec->de_BufMemType, 20*1024, 16*1024);
 		}
 		/* check if memory allocated is ok (Second fail-over) */
-		if (((ULONG)LibAllocPooled(g->bufferPool, 8)) & ~g->dosenvec->de_Mask)
+		if PFS3_MASKFAIL(LibAllocPooled(g->bufferPool, 8))
 		{
 			g->dosenvec->de_BufMemType |= MEMF_LOCAL;
 			LibDeletePool (g->bufferPool);
@@ -294,7 +294,7 @@ Removed because of problems with Phase 5 boards
 		return FALSE;
 
 	/* check memory against mask */
-	if (((IPTR)g->dc.data) & ~g->dosenvec->de_Mask)
+	if PFS3_MASKFAIL(g->dc.data)
 		ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
 
 	if (!OpenTimerDevice(&g->timeport, &g->trequest, UNIT_VBLANK, g) )

@@ -394,13 +394,8 @@ static SIPTR dd_CreateDir(struct DosPacket *pkt, globaldata * g)
 
 #if MULTIUSER
 #if MU_CHECKDIR
-	if (!IsVolume(path))
 	{
-#if DELDIR
-		GetExtraFieldsOI(&path, &extrafields);
-#else /* DELDIR */
-		GetExtraFields(path.file.direntry, &extrafields);
-#endif /* DELDIR */
+		GetDirExtraFields(path, extrafields);
 		flags = muGetRelationship(extrafields);
 		if (*error = muFS_CheckWriteAccess(extrafields.prot, flags, g))
 			return DOSFALSE;
@@ -604,14 +599,7 @@ static SIPTR dd_Open(struct DosPacket *pkt, globaldata * g)
 
 #if MULTIUSER
 #if MU_CHECKDIR
-	if (IsVolume(pathfi))
-		memset(&path_extrafields, 0, sizeof(struct extrafields));
-	else
-#if DELDIR
-		GetExtraFieldsOI(&pathfi, &path_extrafields);
-#else /* DELDIR */
-		GetExtraFields(pathfi.file.direntry, &path_extrafields);
-#endif /* DELDIR */
+	GetDirExtraFields(pathfi, path_extrafields);
 #endif /* MU_CHECKDIR */
 
 	if (found)
@@ -1190,6 +1178,21 @@ static SIPTR dd_DeleteObject(struct DosPacket *pkt, globaldata * g)
 	flags = muGetRelationship(extrafields);
 	if (*error = muFS_CheckDeleteAccess(extrafields.prot, flags, g))
 		return DOSFALSE;
+#if MU_CHECKDIR
+	/* ... and write access to the directory it is in */
+	{
+		union objectinfo diroi;
+		struct extrafields dir_extrafields;
+		ULONG dir_flags;
+
+		if (!GetFullPath(parentfi, filename, &diroi, error, g))
+			return DOSFALSE;
+		GetDirExtraFields(diroi, dir_extrafields);
+		dir_flags = muGetRelationship(dir_extrafields);
+		if ((*error = muFS_CheckWriteAccess(dir_extrafields.prot, dir_flags, g)))
+			return DOSFALSE;
+	}
+#endif /* MU_CHECKDIR */
 #endif /* MULTIUSER */
 
 	PFSDoNotify(&filefi.file, TRUE, g);
@@ -1237,13 +1240,30 @@ static SIPTR dd_Rename(struct DosPacket *pkt, globaldata * g)
 	}
 	else
 	{
-#if MU_CHECKDIR
-		--> check source AND destination directories against write access
-#endif /* MU_CHECKDIR */
-
 		if (!(objectname = GetFullPath (srcdirfi, srcname, &pathoi, error, g)) ||
 			!FindObject (&pathoi, objectname, &sourceoi, error, g))
 			return DOSFALSE;
+
+#if MU_CHECKDIR
+		/* the caller needs write access to the source and the destination
+		 * directory (the volume root is not protected) */
+		{
+			union objectinfo dstpathoi;
+			struct extrafields dir_extrafields;
+			ULONG dir_flags;
+
+			GetDirExtraFields(pathoi, dir_extrafields);
+			dir_flags = muGetRelationship(dir_extrafields);
+			if ((*error = muFS_CheckWriteAccess(dir_extrafields.prot, dir_flags, g)))
+				return DOSFALSE;
+			if (!GetFullPath (dstdirfi, dstname, &dstpathoi, error, g))
+				return DOSFALSE;
+			GetDirExtraFields(dstpathoi, dir_extrafields);
+			dir_flags = muGetRelationship(dir_extrafields);
+			if ((*error = muFS_CheckWriteAccess(dir_extrafields.prot, dir_flags, g)))
+				return DOSFALSE;
+		}
+#endif /* MU_CHECKDIR */
 
 		CheckPropertyAccess (sourceoi, extrafields, flags, error);
 		if (!CheckVolume(srcvol, 1, error, g))
@@ -1411,13 +1431,8 @@ static SIPTR dd_MakeLink(struct DosPacket *pkt, globaldata * g)
 
 #if MULTIUSER
 #if MU_CHECKDIR
-	if (!IsVolume(path))
 	{
-#if DELDIR
-		GetExtraFieldsOI(&path, &extrafields);
-#else /* DELDIR */
-		GetExtraFields(path.file.direntry, &extrafields);
-#endif /* DELDIR */
+		GetDirExtraFields(path, extrafields);
 		flags = muGetRelationship(extrafields);
 		if (pkt->dp_Res2 = muFS_CheckWriteAccess(extrafields.prot, flags, g))
 			return DOSFALSE;

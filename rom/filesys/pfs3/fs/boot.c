@@ -126,8 +126,8 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #if MULTIUSER
-#include <libraries/multiuser.h>
-#include <proto/multiuser.h>
+#include <libraries/mufs.h>
+#include <proto/security.h>
 #endif
 #ifdef __MORPHOS__
 #define muFSRendezVous() \
@@ -189,9 +189,6 @@ CONST struct muExtOwner NOBODY = {0,0,0};
 /* proto */
 static void SetTimer(int, globaldata *);
 
-#if MULTIUSER
-static BOOL FindInLibraryList (CONST_STRPTR, globaldata *);
-#endif
 
 /**********************************************************************/
 /*                               DEBUG                                */
@@ -350,8 +347,10 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 #if MULTIUSER
 		if (!g->muFS_ready)
 		{
-			if (FindInLibraryList ((CONST_STRPTR) "multiuser.library", g) &&
-				(muBase = (APTR)OpenLibrary ("multiuser.library", 39)))
+			/* security.library is RTF_AFTERDOS: keep trying while it is
+			 * resident but not yet initialised */
+			if (FindResident ((CONST_STRPTR) SECURITYNAME) &&
+				(muBase = (APTR)OpenLibrary ((CONST_STRPTR) SECURITYNAME, 0)))
 			{
 				muFSRendezVous ();
 				g->muFS_ready = TRUE;
@@ -527,20 +526,6 @@ static void SetTimer (int micros, globaldata *g)
 	SendIO ((struct IORequest *)g->trequest);
 }
 
-#if MULTIUSER
-static BOOL FindInLibraryList (CONST_STRPTR name, globaldata *g)
-{
-  struct Node *n;
-#ifdef __MORPHOS__
-	n = FindExecNode(EXECLIST_LIBRARY, name);
-#else
-	Forbid();
-	n = FindName(&SysBase->LibList, (STRPTR)name);
-	Permit();
-#endif
-	return (BOOL)(n != 0);
-}
-#endif
 
 /* ACTION_DIE */
 

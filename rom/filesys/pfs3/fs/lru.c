@@ -137,7 +137,7 @@ BOOL InitLRU (globaldata *g, UWORD reserved_blksize)
 			return FALSE;
 		}
 		/* check memory against mask */
-		if (!warned && (((ULONG)g->glob_lrudata.LRUarray) & ~g->dosenvec->de_Mask)) {
+		if (!warned && PFS3_MASKFAIL(g->glob_lrudata.LRUarray)) {
 			ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
 			warned = TRUE;
 		}

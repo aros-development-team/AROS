@@ -28,7 +28,8 @@ PFS3_CFLAGS := \
 	-DDELDIR=1 \
 	-DMAX_BUFFERS=600 \
 	-DMIN_BUFFERS=10 \
-	-DMULTIUSER=0 \
+	-DMULTIUSER=1 \
+	-DMU_CHECKDIR=1 \
 	-DPROTECTION=0 \
 	-DVERSION23=1 \
 	-DROLLOVER=1 \
@@ -48,7 +49,8 @@ PFS3DS_CFLAGS := \
 	-DDELDIR=1 \
 	-DMAX_BUFFERS=600 \
 	-DMIN_BUFFERS=10 \
-	-DMULTIUSER=0 \
+	-DMULTIUSER=1 \
+	-DMU_CHECKDIR=1 \
 	-DPROTECTION=0 \
 	-DVERSION23=1 \
 	-DROLLOVER=1 \
@@ -72,6 +74,9 @@ USER_CPPFLAGS := \
 	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
 
 USER_LDFLAGS += --static
+
+#MM- kernel-fs-pfs3 : kernel-security-includes
+#MM- kernel-fs-pfs3ds : kernel-security-includes
 
 %build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \

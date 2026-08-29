@@ -99,9 +99,9 @@
 
 #include <clib/alib_protos.h>       /*  MH  */
 #include <clib/multiuser_protos.h>  /*  MH  */
-#include <libraries/multiuser.h>    /*  MH  */
-#include <proto/multiuser.h>        /*  MH  */
-#include <pragmas/multiuser.h>      /*  MH  */
+#include <libraries/mufs.h>    /*  MH  */
+#include <proto/security.h>        /*  MH  */
+      /*  MH  */
 
 #include "debug.h"                  /*  MH  */
 

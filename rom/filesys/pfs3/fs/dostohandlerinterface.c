@@ -36,7 +36,8 @@
 #include <dos/filehandler.h>
 #include <dos/notify.h>
 #if MULTIUSER
-#include <proto/multiuser.h>
+#include <libraries/mufs.h>
+#include <proto/security.h>
 #endif
 #include <string.h>
 #include <math.h>

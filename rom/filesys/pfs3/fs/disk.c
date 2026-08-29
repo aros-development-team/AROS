@@ -641,8 +641,8 @@ static ULONG ReadFromFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 	bytesleft = t&BLOCKSIZEMASK;    /* # bytes in last incomplete block */
 
 	/* check mask, both at start and end */
-	t = (((IPTR)(buffer-blockoffset+BLOCKSIZE))&~g->dosenvec->de_Mask) ||
-		(((IPTR)(buffer+size-bytesleft))&~g->dosenvec->de_Mask);
+	t = PFS3_MASKFAIL(buffer-blockoffset+BLOCKSIZE) ||
+		PFS3_MASKFAIL(buffer+size-bytesleft);
 	t = !t;
 
 	/* read indirect if
@@ -816,8 +816,8 @@ static ULONG WriteToFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 	CorrectAnodeAC(&chnode,&anodeoffset,g);
 
 	/* check mask */
-	maskok = (((IPTR)(buffer-blockoffset+BLOCKSIZE))&~g->dosenvec->de_Mask) ||
-			 (((IPTR)(buffer-blockoffset+(totalblocks<<BLOCKSHIFT)))&~g->dosenvec->de_Mask);
+	maskok = PFS3_MASKFAIL(buffer-blockoffset+BLOCKSIZE) ||
+			 PFS3_MASKFAIL(buffer-blockoffset+(totalblocks<<BLOCKSHIFT));
 	maskok = !maskok;
 
 	/* write indirect if
@@ -1583,7 +1583,7 @@ retry:
 	if(blocknr == (ULONG)-1)   // blocknr of uninitialised anode
 		return 1;
 
-	if (write && g->softprotect)
+	if(write && g->softprotect)
 		return ERROR_DISK_WRITE_PROTECTED;
 
 	realblocknr = blocknr + g->firstblock;

@@ -70,7 +70,7 @@ void *AllocPooledBuf (ULONG size, globaldata *g)
 	if (buffer)
 		*buffer++ = size;
 
-	if (((IPTR)buffer) & ~g->dosenvec->de_Mask)
+	if PFS3_MASKFAIL(buffer)
 		ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
 
 	return buffer;

@@ -228,7 +228,8 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #if MULTIUSER
-#include <proto/multiuser.h>
+#include <libraries/mufs.h>
+#include <proto/security.h>
 #endif
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
@@ -1017,12 +1018,13 @@ static void FillFib(struct direntry *direntry, struct FileInfoBlock *fib, global
 	UBYTE *comment;
 	FSIZE size;
 	
-	size = GetDEFileSize(direntry, g);
+	/* directories have no size (their fsize field is not a size) */
+	size = (direntry->type > 0) ? 0 : GetDEFileSize(direntry, g);
 	/* fib->fib_DiskKey done by Examine(Next) */
 	fib->fib_DirEntryType = direntry->type;
 	fib->fib_EntryType = direntry->type;
 	fib->fib_Protection = (ULONG)direntry->protection;
-	fib->fib_Size = GetDEFileSize32(direntry, g);
+	fib->fib_Size = (direntry->type > 0) ? 0 : GetDEFileSize32(direntry, g);
 	fib->fib_NumBlocks = (size / BLOCKSIZE) + (size % BLOCKSIZE > 0);
 	fib->fib_Date.ds_Days = direntry->creationday;
 	fib->fib_Date.ds_Minute = direntry->creationminute;
