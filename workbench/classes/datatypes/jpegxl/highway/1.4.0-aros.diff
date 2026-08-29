@@ -13,3 +13,19 @@ diff -ruN --strip-trailing-cr highway-1.4.0/hwy/detect_compiler_arch.h highway-1
  #endif
  
  //------------------------------------------------------------------------------
+diff -ruN --strip-trailing-cr highway-1.4.0/hwy/detect_targets.h highway-1.4.0.aros/hwy/detect_targets.h
+--- highway-1.4.0/hwy/detect_targets.h	2026-04-22 17:17:25.000000000 +0100
++++ highway-1.4.0.aros/hwy/detect_targets.h	2026-08-29 17:52:52.771421649 +0100
+@@ -792,7 +792,11 @@
+ // Clang 19+ supports target attributes for RVV intrinsics (resolved in
+ // https://github.com/llvm/llvm-project/issues/56592 and
+ // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=115325).
+-#if HWY_ARCH_RISCV && HWY_COMPILER_CLANG >= 1900
++// rvv::DetectTargets() in targets.cc calls getauxval(AT_HWCAP) unguarded, so
++// this also requires the platform to actually provide auxv - targets.cc only
++// includes <sys/auxv.h> when HWY_OS_LINUX && HWY_HAVE_AUXV.
++#if HWY_ARCH_RISCV && HWY_COMPILER_CLANG >= 1900 && HWY_OS_LINUX && \
++    HWY_HAVE_AUXV
+ #define HWY_HAVE_RUNTIME_DISPATCH_RVV 1
+ #else
+ #define HWY_HAVE_RUNTIME_DISPATCH_RVV 0
