@@ -2,7 +2,7 @@
 #define _PREFSWINDOW_PRIVATE_H_
 
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2026, The AROS Development Team. All rights reserved.
     
     $Id$
 */
@@ -29,7 +29,9 @@ struct LoginWindow_DATA
                     lwd_UserName,
                     lwd_UserPass,
                     lwd_DoMethod;
-    Object          *lwd_Method;
+    Object          *lwd_Method,
+                    *lwd_MethodString;   /* the popstring's string object */
+    ULONG            lwd_NameType;
 };
 
 #endif /* _PREFSWINDOW_PRIVATE_H_ */

@@ -7,7 +7,9 @@ USER_LDFLAGS := -static
 FILES         := loginwindow
 INCLUDE_FILES := loginwindow.h
 
-#MM workbench-classes-zune-loginwindow : workbench-classes-zune-loginwindow-catalogs includes
+#MM- workbench-classes-zune : workbench-classes-zune-loginwindow
+
+#MM workbench-classes-zune-loginwindow : includes
 %build_module \
     mmake=workbench-classes-zune-loginwindow \
     modname=LoginWindow modtype=mcc \

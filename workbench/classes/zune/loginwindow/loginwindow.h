@@ -2,7 +2,7 @@
 #define ZUNE_PREFSWINDOW_H
 
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2026, The AROS Development Team. All rights reserved.
     
     $Id$
 */
@@ -39,15 +39,16 @@
 #   define  LWA_METH_None       2
 #define MUIA_LoginWindow_LocalLogin_Disabled    (MUIB_LoginWindow | 0x0000000f)
 #define MUIA_LoginWindow_Cancel_Disabled        (MUIB_LoginWindow | 0x00000010)
+#define MUIA_LoginWindow_Prompt                 (MUIB_LoginWindow | 0x00000011) /* [I] text above the inputs */
 
 /*** Macros *****************************************************************/
 #define LoginWindowObject MUIOBJMACRO_START(MUIC_LoginWindow)
 
 #define LWA_RV_CANCEL                           MUIV_Application_ReturnID_Quit
-#define LWA_RV_OK                               !LWA_RV_CANCEL
+#define LWA_RV_OK                               (1)   /* MUIM_Application_NewInput id */
 
 #define LWRV_CANCEL                             MUIV_Application_ReturnID_Quit
-#define LWRV_OK                                 !LWRV_CANCEL
+#define LWRV_OK                                 LWA_RV_OK
 
 
 #endif /* ZUNE_PREFSWINDOW_H */
