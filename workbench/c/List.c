@@ -156,7 +156,8 @@ static BOOL listOwner = FALSE;
 /* Format "user:group" for an owner, resolving names when possible */
 static void formatOwner(UWORD uid, UWORD gid, STRPTR buf, ULONG size)
 {
-    static UWORD lastuid = 0xffff, lastgid = 0xffff;
+    /* cache of the last resolved names; ~0 never matches a UWORD id */
+    static ULONG lastuid = ~0UL, lastgid = ~0UL;
     static char lastuser[secUSERIDSIZE], lastgroup[secGROUPIDSIZE];
     ULONG l;
 
@@ -657,10 +658,13 @@ int printFileData(struct AnchorPath *ap,
 
         if (flock)
         {
-            UQUAD *size_ptr = (UQUAD *)DoPkt(((struct FileLock *)flock)->fl_Task, ACTION_GET_FILE_SIZE64, (IPTR)flock, 0, 0, 0, 0);
-            if (size_ptr)
+            /* AROS handlers answer with a pointer to the 64-bit size; a handler
+               using the OS4 convention (or not knowing the packet) replies
+               DOSTRUE/DOSFALSE instead, which must not be dereferenced. */
+            SIPTR res = DoPkt(((struct FileLock *)flock)->fl_Task, ACTION_GET_FILE_SIZE64, (IPTR)flock, 0, 0, 0, 0);
+            if (res != 0 && res != DOSTRUE && ((IPTR)res & (sizeof(UQUAD) - 1)) == 0)
             {
-                size = *size_ptr;
+                size = *(UQUAD *)res;
             }
             UnLock(flock);
         }
