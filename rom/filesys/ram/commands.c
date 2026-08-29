@@ -322,6 +322,30 @@ BOOL CmdFind(struct Handler *handler, struct FileHandle *handle,
          error = IoErr();
    }
 
+   /* multi-user: check access before touching anything */
+
+   if(error == 0 && ramSecIsActive(handler))
+   {
+      if(type == MODE_NEWFILE)
+      {
+         if(file != NULL)
+            error = ramSecCheckObject(handler, file,
+               RAM_ACCESS_WRITE | RAM_ACCESS_DELETE);
+         if(error == 0)
+            error = ramSecCheckObject(handler, parent, RAM_ACCESS_WRITE);
+      }
+      else if(type == MODE_READWRITE)
+      {
+         if(file != NULL)
+            error = ramSecCheckObject(handler, file,
+               RAM_ACCESS_READ | RAM_ACCESS_WRITE);
+         else
+            error = ramSecCheckObject(handler, parent, RAM_ACCESS_WRITE);
+      }
+      else if(file != NULL)
+         error = ramSecCheckObject(handler, file, RAM_ACCESS_READ);
+   }
+
    /* Do any necessary file deletion or creation */
 
    if(error == 0)
@@ -861,6 +885,18 @@ struct Lock *CmdLocateObject(struct Handler *handler, struct Lock *lock,
 
    object = GetHardObject(handler, lock, name, NULL);
 
+   /* multi-user: locking needs read access to the object */
+
+   if(object != NULL)
+   {
+      LONG error = ramSecCheckObject(handler, object, RAM_ACCESS_READ);
+      if(error != 0)
+      {
+         SetIoErr(error);
+         object = NULL;
+      }
+   }
+
    if(object != NULL)
       lock = LockObject(handler, object, mode);
    else
@@ -1172,7 +1208,12 @@ struct Lock *CmdCreateDir(struct Handler *handler,
    {
       if(parent != NULL)
       {
-         if(!handler->locked)
+         if(handler->locked)
+            error = ERROR_DISK_WRITE_PROTECTED;
+         else
+            error = ramSecCheckObject(handler, parent, RAM_ACCESS_WRITE);
+
+         if(error == 0)
          {
             dir = CreateObject(handler, FilePart(name), ST_USERDIR, parent);
             if(dir != NULL)
@@ -1192,8 +1233,6 @@ struct Lock *CmdCreateDir(struct Handler *handler,
             else
                error = IoErr();
          }
-         else
-            error = ERROR_DISK_WRITE_PROTECTED;
       }
       else
          error = IoErr();
@@ -1475,6 +1514,10 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
             if(type >= ED_PROTECTION)
                entry->ed_Prot = real_object->protection;
 
+            if(type >= ED_OWNER)
+               ramSecFillOwner(handler, real_object, &entry->ed_OwnerUID,
+                  &entry->ed_OwnerGID);
+
             if(type >= ED_DATE)
             {
                entry->ed_Days = real_object->date.ds_Days;
@@ -1700,6 +1743,9 @@ BOOL CmdSetProtect(struct Handler *handler, struct Lock *lock,
          error = ERROR_DISK_WRITE_PROTECTED;
 
       if(error == 0)
+         error = ramSecCheckProperty(handler, object);
+
+      if(error == 0)
       {
          object = GetRealObject(object);
          object->protection = flags;
@@ -1760,6 +1806,8 @@ BOOL CmdSetComment(struct Handler *handler, struct Lock *lock,
    object = GetHardObject(handler, lock, name, NULL);
    if(object == NULL)
       error = IoErr();
+   else
+      error = ramSecCheckProperty(handler, object);
 
    /* Check comment isn't too long */
 
@@ -1871,6 +1919,16 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
 
    if(handler->locked)
       error = ERROR_DISK_WRITE_PROTECTED;
+
+   /* multi-user: property access to the object, write access to both
+      directories */
+
+   if(error == 0)
+      error = ramSecCheckProperty(handler, object);
+   if(error == 0)
+      error = ramSecCheckObject(handler, object->parent, RAM_ACCESS_WRITE);
+   if(error == 0)
+      error = ramSecCheckObject(handler, parent, RAM_ACCESS_WRITE);
 
    /* Give the object its new name */
 
@@ -2015,8 +2073,12 @@ BOOL CmdSetDate(struct Handler *handler, struct Lock *lock, STRPTR name,
       object = GetHardObject(handler, lock, name, NULL);
       if(object != NULL)
       {
-         object = GetRealObject(object);
-         CopyMem(date, &object->date, sizeof(struct DateStamp));
+         error = ramSecCheckProperty(handler, object);
+         if(error == 0)
+         {
+            object = GetRealObject(object);
+            CopyMem(date, &object->date, sizeof(struct DateStamp));
+         }
       }
       else
          error = IoErr();
@@ -2085,6 +2147,13 @@ BOOL CmdDeleteObject(struct Handler *handler, struct Lock *lock,
       if((GetRealObject(object)->protection & FIBF_DELETE) != 0)
          error = ERROR_DELETE_PROTECTED;
    }
+
+   /* multi-user: delete access to the object, write access to its directory */
+
+   if(error == 0)
+      error = ramSecCheckObject(handler, object, RAM_ACCESS_DELETE);
+   if(error == 0)
+      error = ramSecCheckObject(handler, object->parent, RAM_ACCESS_WRITE);
 
    /* Attempt to delete object */
 
@@ -2267,6 +2336,13 @@ BOOL CmdMakeLink(struct Handler *handler, struct Lock *lock, STRPTR name,
       if(handler->locked)
          error = ERROR_DISK_WRITE_PROTECTED;
    }
+
+   /* multi-user: write access to the directory, read access to the target */
+
+   if(error == 0)
+      error = ramSecCheckObject(handler, parent, RAM_ACCESS_WRITE);
+   if(error == 0 && link_type == LINK_HARD)
+      error = ramSecCheckObject(handler, target, RAM_ACCESS_READ);
 
    /* Create a new link */
 

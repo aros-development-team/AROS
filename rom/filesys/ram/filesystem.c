@@ -3,6 +3,7 @@
 File: filesystem.c
 Author: Neil Cafferkey
 Copyright (C) 2001-2008 Neil Cafferkey
+Copyright (C) 2011-2026 The AROS Development Team
 
 This file is free software; you can redistribute it and/or modify it
 under the terms of the GNU Lesser General Public License as
@@ -177,6 +178,8 @@ struct Object *CreateObject(struct Handler *handler, const TEXT *name,
       object->parent = parent;
       DateStamp(&object->date);
       NewList((struct List *)&object->notifications);
+      object->owner = ramSecNewOwner(handler);
+      object->protection = ramSecNewProtection(handler);
 
       if(type == ST_FILE)
          AddTail((APTR)&object->elements, (APTR)&object->start_block);
@@ -1104,6 +1107,7 @@ BOOL ExamineObject(struct Handler *handler, struct Object *object,
       object = GetRealObject(object);
 
       info->fib_Protection = object->protection;
+      ramSecFillOwner(handler, object, &info->fib_OwnerUID, &info->fib_OwnerGID);
       info->fib_Size = object->length;
       CopyMem(&object->date, &info->fib_Date, sizeof(struct DateStamp));
 

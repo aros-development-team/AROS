@@ -1,6 +1,8 @@
 include $(SRCDIR)/config/aros.cfg
 
-FILES := handler commands filesystem notification support
+FILES := handler commands filesystem notification support ram_security
+
+#MM- kernel-fs-ram : includes linklibs kernel-security-includes
 
 USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_CFLAGS := -fno-builtin
