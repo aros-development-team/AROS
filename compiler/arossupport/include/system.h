@@ -34,7 +34,12 @@
 
 #if defined(__GNUC__) || defined(__clang__)
 #if !defined(AROS_SAFE_HEADERINLINE)
-    #define __header_inline static inline __attribute__((__always_inline__, __unused__))
+    #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+        #define __header_inline static inline __attribute__((__always_inline__, __unused__))
+    #else
+        /* Versions before C99 don't define inline keyword */
+        #define __header_inline static
+    #endif
 #else
     #define __header_inline static inline
 #endif
