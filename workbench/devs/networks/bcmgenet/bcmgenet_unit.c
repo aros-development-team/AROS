@@ -398,10 +398,6 @@ struct BCMGENETUnit *BCMGENET_CreateUnit(struct BCMGENETBase *base)
         NEWLIST(&port->mp_MsgList);
         port->mp_Flags = PA_IGNORE;
 
-        #if defined(__AROSEXEC_SMP__)
-            port->mp_SpinLock = 0;
-        #endif
-
         unit->bgu_RequestPorts[i] = port;
     }
 
