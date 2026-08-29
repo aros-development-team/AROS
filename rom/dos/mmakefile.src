@@ -81,8 +81,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 
 DOS_CPPFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 USER_CPPFLAGS := $(DOS_CPPFLAGS)
-# TEMPORARY (security wip): boot tracing
-USER_CPPFLAGS += -DDEBUG=1
+#USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \
