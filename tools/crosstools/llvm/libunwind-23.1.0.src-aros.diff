@@ -1,6 +1,6 @@
-diff -ruN llvm-project-23.1.0-rc3.src/libunwind/CMakeLists.txt llvm-project-23.1.0-rc3.src.aros/libunwind/CMakeLists.txt
---- llvm-project-23.1.0-rc3.src/libunwind/CMakeLists.txt	2026-08-19 13:30:01.523845592 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/libunwind/CMakeLists.txt	2026-08-19 13:30:01.520813592 +0100
+diff -ruN llvm-project-23.1.0.src/libunwind/CMakeLists.txt llvm-project-23.1.0.src.aros/libunwind/CMakeLists.txt
+--- llvm-project-23.1.0.src/libunwind/CMakeLists.txt	2026-08-19 13:30:01.523845592 +0100
++++ llvm-project-23.1.0.src.aros/libunwind/CMakeLists.txt	2026-08-19 13:30:01.520813592 +0100
 @@ -13,6 +13,14 @@
  
  set(LLVM_SUBPROJECT_TITLE "libunwind")
@@ -16,9 +16,9 @@ diff -ruN llvm-project-23.1.0-rc3.src/libunwind/CMakeLists.txt llvm-project-23.1
  set(LLVM_COMMON_CMAKE_UTILS "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
  
  # Add path for custom modules
-diff -ruN llvm-project-23.1.0-rc3.src/libunwind/src/config.h llvm-project-23.1.0-rc3.src.aros/libunwind/src/config.h
---- llvm-project-23.1.0-rc3.src/libunwind/src/config.h	2026-08-19 13:30:01.529561092 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/libunwind/src/config.h	2026-08-19 13:30:01.526752392 +0100
+diff -ruN llvm-project-23.1.0.src/libunwind/src/config.h llvm-project-23.1.0.src.aros/libunwind/src/config.h
+--- llvm-project-23.1.0.src/libunwind/src/config.h	2026-08-19 13:30:01.529561092 +0100
++++ llvm-project-23.1.0.src.aros/libunwind/src/config.h	2026-08-19 13:30:01.526752392 +0100
 @@ -31,6 +31,12 @@
    #if defined(__aarch64__) || defined(__arm64__) || defined(__arm64e__)
      #define _LIBUNWIND_TRACE_RET_INJECT 1

@@ -1,6 +1,6 @@
-diff -ruN llvm-project-23.1.0-rc3.src/clang/include/clang/Options/Options.td llvm-project-23.1.0-rc3.src.aros/clang/include/clang/Options/Options.td
---- llvm-project-23.1.0-rc3.src/clang/include/clang/Options/Options.td	2026-08-19 13:30:01.442416792 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/clang/include/clang/Options/Options.td	2026-08-19 18:33:50.358803745 +0100
+diff -ruN llvm-project-23.1.0.src/clang/include/clang/Options/Options.td llvm-project-23.1.0.src.aros/clang/include/clang/Options/Options.td
+--- llvm-project-23.1.0.src/clang/include/clang/Options/Options.td	2026-08-19 13:30:01.442416792 +0100
++++ llvm-project-23.1.0.src.aros/clang/include/clang/Options/Options.td	2026-08-19 18:33:50.358803745 +0100
 @@ -1516,6 +1516,10 @@
    HelpText<"Path to libomptarget-nvptx bitcode library">;
  def libomptarget_spirv_bc_path_EQ : Joined<["--"], "libomptarget-spirv-bc-path=">, Group<i_Group>,
@@ -79,9 +79,9 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/include/clang/Options/Options.td llv
  def read__only__relocs : Separate<["-"], "read_only_relocs">;
  def remap : Flag<["-"], "remap">;
  def rewrite_objc : Flag<["-"], "rewrite-objc">, Flags<[NoXarchOption]>,
-diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Basic/Targets/OSTargets.h llvm-project-23.1.0-rc3.src.aros/clang/lib/Basic/Targets/OSTargets.h
---- llvm-project-23.1.0-rc3.src/clang/lib/Basic/Targets/OSTargets.h	2026-08-19 13:30:01.449061292 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/clang/lib/Basic/Targets/OSTargets.h	2026-08-19 13:30:01.446032292 +0100
+diff -ruN llvm-project-23.1.0.src/clang/lib/Basic/Targets/OSTargets.h llvm-project-23.1.0.src.aros/clang/lib/Basic/Targets/OSTargets.h
+--- llvm-project-23.1.0.src/clang/lib/Basic/Targets/OSTargets.h	2026-08-19 13:30:01.449061292 +0100
++++ llvm-project-23.1.0.src.aros/clang/lib/Basic/Targets/OSTargets.h	2026-08-19 13:30:01.446032292 +0100
 @@ -34,6 +34,51 @@
    }
  };
@@ -134,9 +134,9 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Basic/Targets/OSTargets.h llvm-p
  void getAppleMachODefines(MacroBuilder &Builder, const LangOptions &Opts,
                            const llvm::Triple &Triple);
  
-diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Basic/Targets.cpp llvm-project-23.1.0-rc3.src.aros/clang/lib/Basic/Targets.cpp
---- llvm-project-23.1.0-rc3.src/clang/lib/Basic/Targets.cpp	2026-08-19 13:30:01.454116492 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/clang/lib/Basic/Targets.cpp	2026-08-19 13:30:01.451563392 +0100
+diff -ruN llvm-project-23.1.0.src/clang/lib/Basic/Targets.cpp llvm-project-23.1.0.src.aros/clang/lib/Basic/Targets.cpp
+--- llvm-project-23.1.0.src/clang/lib/Basic/Targets.cpp	2026-08-19 13:30:01.454116492 +0100
++++ llvm-project-23.1.0.src.aros/clang/lib/Basic/Targets.cpp	2026-08-19 13:30:01.451563392 +0100
 @@ -149,6 +149,8 @@
        return std::make_unique<AppleMachOAArch64TargetInfo>(Triple, Opts);
  
@@ -256,9 +256,9 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Basic/Targets.cpp llvm-project-2
      case llvm::Triple::DragonFly:
        return std::make_unique<DragonFlyBSDTargetInfo<X86_64TargetInfo>>(Triple,
                                                                          Opts);
-diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Driver/CMakeLists.txt llvm-project-23.1.0-rc3.src.aros/clang/lib/Driver/CMakeLists.txt
---- llvm-project-23.1.0-rc3.src/clang/lib/Driver/CMakeLists.txt	2026-08-19 13:30:01.459438492 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/clang/lib/Driver/CMakeLists.txt	2026-08-19 13:30:01.456861592 +0100
+diff -ruN llvm-project-23.1.0.src/clang/lib/Driver/CMakeLists.txt llvm-project-23.1.0.src.aros/clang/lib/Driver/CMakeLists.txt
+--- llvm-project-23.1.0.src/clang/lib/Driver/CMakeLists.txt	2026-08-19 13:30:01.459438492 +0100
++++ llvm-project-23.1.0.src.aros/clang/lib/Driver/CMakeLists.txt	2026-08-19 13:30:01.456861592 +0100
 @@ -54,6 +54,7 @@
    ToolChains/AIX.cpp
    ToolChains/AMDGPU.cpp
@@ -267,9 +267,9 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Driver/CMakeLists.txt llvm-proje
    ToolChains/BareMetal.cpp
    ToolChains/Clang.cpp
    ToolChains/CommonArgs.cpp
-diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Driver/Driver.cpp llvm-project-23.1.0-rc3.src.aros/clang/lib/Driver/Driver.cpp
---- llvm-project-23.1.0-rc3.src/clang/lib/Driver/Driver.cpp	2026-08-19 13:30:01.464553692 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/clang/lib/Driver/Driver.cpp	2026-08-19 13:30:01.461953292 +0100
+diff -ruN llvm-project-23.1.0.src/clang/lib/Driver/Driver.cpp llvm-project-23.1.0.src.aros/clang/lib/Driver/Driver.cpp
+--- llvm-project-23.1.0.src/clang/lib/Driver/Driver.cpp	2026-08-19 13:30:01.464553692 +0100
++++ llvm-project-23.1.0.src.aros/clang/lib/Driver/Driver.cpp	2026-08-19 13:30:01.461953292 +0100
 @@ -11,6 +11,7 @@
  #include "ToolChains/AMDGPU.h"
  #include "ToolChains/AVR.h"
@@ -288,9 +288,9 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Driver/Driver.cpp llvm-project-2
      case llvm::Triple::Haiku:
        TC = std::make_unique<toolchains::Haiku>(*this, Target, Args);
        break;
-diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Driver/ToolChains/AROS.cpp llvm-project-23.1.0-rc3.src.aros/clang/lib/Driver/ToolChains/AROS.cpp
---- llvm-project-23.1.0-rc3.src/clang/lib/Driver/ToolChains/AROS.cpp	1970-01-01 01:00:00.000000000 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/clang/lib/Driver/ToolChains/AROS.cpp	2026-08-19 14:41:41.587904406 +0100
+diff -ruN llvm-project-23.1.0.src/clang/lib/Driver/ToolChains/AROS.cpp llvm-project-23.1.0.src.aros/clang/lib/Driver/ToolChains/AROS.cpp
+--- llvm-project-23.1.0.src/clang/lib/Driver/ToolChains/AROS.cpp	1970-01-01 01:00:00.000000000 +0100
++++ llvm-project-23.1.0.src.aros/clang/lib/Driver/ToolChains/AROS.cpp	2026-08-19 14:41:41.587904406 +0100
 @@ -0,0 +1,445 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
@@ -737,9 +737,9 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Driver/ToolChains/AROS.cpp llvm-
 +Tool *AROSClang::buildLinker() const {
 +    return new tools::AROS::Linker(*this);
 +}
-diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Driver/ToolChains/AROS.h llvm-project-23.1.0-rc3.src.aros/clang/lib/Driver/ToolChains/AROS.h
---- llvm-project-23.1.0-rc3.src/clang/lib/Driver/ToolChains/AROS.h	1970-01-01 01:00:00.000000000 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/clang/lib/Driver/ToolChains/AROS.h	2026-08-19 14:41:41.589104206 +0100
+diff -ruN llvm-project-23.1.0.src/clang/lib/Driver/ToolChains/AROS.h llvm-project-23.1.0.src.aros/clang/lib/Driver/ToolChains/AROS.h
+--- llvm-project-23.1.0.src/clang/lib/Driver/ToolChains/AROS.h	1970-01-01 01:00:00.000000000 +0100
++++ llvm-project-23.1.0.src.aros/clang/lib/Driver/ToolChains/AROS.h	2026-08-19 14:41:41.589104206 +0100
 @@ -0,0 +1,118 @@
 +//===--- AROS.h - AROS ToolChain Implementations ----------*- C -*-===//
 +//
@@ -859,9 +859,9 @@ diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Driver/ToolChains/AROS.h llvm-pr
 +} // end namespace clang
 +
 +#endif // LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_AROS_H
-diff -ruN llvm-project-23.1.0-rc3.src/clang/lib/Lex/InitHeaderSearch.cpp llvm-project-23.1.0-rc3.src.aros/clang/lib/Lex/InitHeaderSearch.cpp
---- llvm-project-23.1.0-rc3.src/clang/lib/Lex/InitHeaderSearch.cpp	2026-08-19 13:30:01.471412792 +0100
-+++ llvm-project-23.1.0-rc3.src.aros/clang/lib/Lex/InitHeaderSearch.cpp	2026-08-19 13:30:01.467728092 +0100
+diff -ruN llvm-project-23.1.0.src/clang/lib/Lex/InitHeaderSearch.cpp llvm-project-23.1.0.src.aros/clang/lib/Lex/InitHeaderSearch.cpp
+--- llvm-project-23.1.0.src/clang/lib/Lex/InitHeaderSearch.cpp	2026-08-19 13:30:01.471412792 +0100
++++ llvm-project-23.1.0.src.aros/clang/lib/Lex/InitHeaderSearch.cpp	2026-08-19 13:30:01.467728092 +0100
 @@ -211,6 +211,7 @@
  bool InitHeaderSearch::ShouldAddDefaultIncludePaths(
      const llvm::Triple &triple) {
