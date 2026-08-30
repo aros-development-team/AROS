@@ -302,6 +302,13 @@ static void bcm2708_init_cntp_timer(void)
 
     DTIMER(bug("[Kernel:BCM2708] %s: CPU #%02d CNTP interval %u\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cntp_interval));
 
+    /* PrepareExecBase calls SCHEDQUANTUM_SET once, but on arm that macro
+     * writes per-CPU TLS, not the SysBase field the generic code assumes,
+     * so no core ends up with a usable quantum. Set it per core, before
+     * the heartbeat starts consuming it. */
+    SCHEDQUANTUM_SET(SCHEDQUANTUM_VALUE);
+    SCHEDELAPSED_SET(SCHEDQUANTUM_VALUE);
+
     /* Route this core's non-secure physical timer interrupt as an FIQ */
     wr32le(BCM2836_TIMER_INT_CTRL0 + (0x4 * cpunum), BCM2836_TIMER_CNTPNS_FIQ);
 
