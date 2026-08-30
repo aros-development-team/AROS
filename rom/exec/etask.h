@@ -66,6 +66,7 @@ struct IntETask
     /* Last CPU-usage sample, for arches that derive iet_CpuUsage on read. */
     UQUAD               iet_LastBusy;           /* iet_private2 at the last sample         */
     UQUAD               iet_LastUsageStamp;     /* when that sample was taken              */
+    ULONG               iet_QuantumLeft;        /* scheduler ticks left of this task's slice */
 #ifdef DEBUG_ETASK
     STRPTR              iet_Me;
 #endif

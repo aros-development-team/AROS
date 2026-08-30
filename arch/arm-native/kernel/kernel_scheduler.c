@@ -170,6 +170,16 @@ void core_Switch(void)
      * and relies on Switch() to restore it. */
     task->tc_IDNestCnt = IDNESTCOUNT_GET;
 
+    /*
+     * Carry the unused part of the slice with the task. The quantum used to
+     * live only in per-CPU TLS and was reloaded on every dispatch, so a task
+     * that is preempted more often than the heartbeat ticks - by an interrupt
+     * source, say - always resumed with a full slice and could never be
+     * rotated out in favour of an equal-priority peer.
+     */
+    if (GetIntETask(task))
+        GetIntETask(task)->iet_QuantumLeft = SCHEDELAPSED_GET;
+
     if (task->tc_State == TS_RUN)
     {
         DSCHED(bug("[Kernel:%02d] Switching away from '%s' @ 0x%p\n", cpunum, task->tc_Node.ln_Name, task));
@@ -303,7 +313,20 @@ dispatch_rescan:
             SysBase->DispCount++;
             IDNESTCOUNT_SET(newtask->tc_IDNestCnt);
             SET_THIS_TASK(newtask);
-            SCHEDELAPSED_SET(SCHEDQUANTUM_GET);
+            /*
+             * Only hand out a fresh slice when the task actually changes,
+             * or when the one running used the slice it had. Re-dispatching
+             * the same task for any other reason must not reset its count -
+             * a core that dispatches faster than the heartbeat ticks would
+             * otherwise never expire a quantum, and never preempt a busy
+             * task.
+             */
+            {
+                struct IntETask *iet = GetIntETask(newtask);
+                ULONG left = iet ? iet->iet_QuantumLeft : 0;
+
+                SCHEDELAPSED_SET(left ? left : SCHEDQUANTUM_GET);
+            }
             FLAG_SCHEDQUANTUM_CLEAR;
 
             /* Check the stack of the task we are about to launch. */
