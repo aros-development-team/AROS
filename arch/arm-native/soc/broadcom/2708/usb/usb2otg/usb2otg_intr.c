@@ -872,22 +872,6 @@ static void usb2otg_remove_bulk_queue_duplicates(struct USB2OTGUnit *USBUnit,
 static BOOL usb2otg_process_pending(struct USB2OTGUnit *otg_Unit);
 static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit);
 
-/* Task context. Shorter distances arrive via a wake site, so a
- * stale delay here is safe. */
-static void usb2otg_sofgate_send(struct USB2OTGUnit *otg_Unit)
-{
-    UWORD frames = otg_Unit->hu_SofGateDelayFrames;
-
-    if (otg_Unit->hu_SofGateTimerLive || !otg_Unit->hu_SofGated || frames == 0)
-        return;
-
-    otg_Unit->hu_SofGateTimerLive = TRUE;
-    otg_Unit->hu_SofGateReq.tr_node.io_Command = TR_ADDREQUEST;
-    otg_Unit->hu_SofGateReq.tr_time.tv_secs = frames / 1000;
-    otg_Unit->hu_SofGateReq.tr_time.tv_micro = (frames % 1000) * 1000;
-    SendIO((struct IORequest *)&otg_Unit->hu_SofGateReq);
-}
-
 void FNAME_DEV(WorkerTask)(struct USB2OTGUnit *otg_Unit)
 {
     struct USB2OTGDevice *USB2OTGBase;
@@ -911,13 +895,6 @@ void FNAME_DEV(WorkerTask)(struct USB2OTGUnit *otg_Unit)
         {
             if (msg == &otg_Unit->hu_NakTimeoutReq.tr_node.io_Message)
                 usb2otg_process_naktimeout(otg_Unit);
-            else if (msg == &otg_Unit->hu_SofGateReq.tr_node.io_Message)
-            {
-                otg_Unit->hu_SofGateTimerLive = FALSE;
-                Disable();
-                usb2otg_sof_gate_wake(otg_Unit);
-                Enable();
-            }
         }
 
         Disable();
@@ -934,8 +911,6 @@ void FNAME_DEV(WorkerTask)(struct USB2OTGUnit *otg_Unit)
             usb2otg_process_naktimeout(otg_Unit);
         if (flags & USB2OTG_WORK_PENDING)
             usb2otg_process_pending(otg_Unit);
-        if (flags & USB2OTG_WORK_SOFGATE)
-            usb2otg_sofgate_send(otg_Unit);
     }
 }
 
@@ -1126,15 +1101,20 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
  * only reappear via the wake sites, so a masked SOF cannot strand a
  * transfer.
  */
-static void usb2otg_sof_gate_try(struct USB2OTGUnit *USBUnit, ULONG frnm)
+static void usb2otg_sof_gate_try(struct USB2OTGUnit *USBUnit)
 {
 #if defined(__AROSEXEC_SMP__)
     struct USB2OTGDevice *USB2OTGBase = USBUnit->hu_USB2OTGBase;
 #endif
     struct IOUsbHWReq *req;
     ULONG mindist = 0x800;
+    /* Re-read: handle_SOF can span a frame, which arms the wake late. */
+    ULONG frnm = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
     int chan, guard = 0;
 
+#if !USB2OTG_SOF_GATE
+    return;
+#endif
     if (USBUnit->hu_SofGated ||
         !IsListEmpty(&USBUnit->hu_IntXFerScheduled) ||
         !IsListEmpty(&USBUnit->hu_CtrlXFerQueue) ||
@@ -1181,22 +1161,32 @@ static void usb2otg_sof_gate_try(struct USB2OTGUnit *USBUnit, ULONG frnm)
     if (mindist == 0x800)
     {
         /* Queue empty: sleep until a submission wakes us. */
+        USBUnit->hu_SofGateWakeFrame = 0xffff;
         usb2otg_sof_gate_mask(USBUnit);
     }
     else if (mindist > USB2OTG_SOF_GATE_MIN_FRAMES)
     {
+        USBUnit->hu_SofGateWakeFrame = (frnm + mindist - 1) & 0x7ff;
         usb2otg_sof_gate_mask(USBUnit);
-        USBUnit->hu_SofGateDelayFrames = mindist - 1;
-#if defined(__AROSEXEC_SMP__)
-        KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
-#endif
-        USBUnit->hu_WorkFlags |= USB2OTG_WORK_SOFGATE;
-#if defined(__AROSEXEC_SMP__)
-        KrnSpinUnLock(&USBUnit->hu_Lock);
-#endif
-        Signal(USBUnit->hu_WorkerTask,
-            1UL << USBUnit->hu_WorkerPort->mp_SigBit);
+        if (!usb2otg_sof_gate_arm(mindist - 1))
+        {
+            /* Already passed while arming. */
+            usb2otg_sof_gate_wake(USBUnit);
+        }
     }
+}
+
+/* Runs with interrupts disabled, so no locking against wake sites. */
+AROS_INTH1(FNAME_DEV(SofGateInt), struct USB2OTGUnit *, USBUnit)
+{
+    AROS_INTFUNC_INIT
+
+    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
+    usb2otg_sof_gate_wake(USBUnit);
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
 }
 
 /* Census only; unlocked reads. */
@@ -1263,7 +1253,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
     if (otg_RegVal & USB2OTG_INTRCORE_DMASTARTOFFRAME)
     {
         handle_SOF(USBUnit, SysBase, frnm);
-        usb2otg_sof_gate_try(USBUnit, frnm >> 3);
+        usb2otg_sof_gate_try(USBUnit);
     }
 
     /*
@@ -3684,6 +3674,12 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
             (unsigned long)otg_Unit->hu_SofGateMasks,
             (unsigned long)otg_Unit->hu_SofGateWakes,
             otg_Unit->hu_SofGated ? " CLOSED" : "");
+        bug("[USB2OTG:IRQSTAT]   gatelate: <1=%lu <4=%lu <16=%lu more=%lu max=%lu frames\n",
+            (unsigned long)otg_Unit->hu_SofGateLate[0],
+            (unsigned long)otg_Unit->hu_SofGateLate[1],
+            (unsigned long)otg_Unit->hu_SofGateLate[2],
+            (unsigned long)otg_Unit->hu_SofGateLate[3],
+            (unsigned long)otg_Unit->hu_SofGateLateMax);
 
         /* i=channel IRQs, p/c/n/h=arms/completions/NAKs/bare-CHHLTDs. */
         for (d = 0; d < 8; d++)
