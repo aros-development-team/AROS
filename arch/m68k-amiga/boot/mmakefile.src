@@ -105,7 +105,7 @@ PRIV_KERNEL_INCLUDES = \
 	-I$(SRCDIR)/rom/exec
 	
 # Make sure we optimize this code for size ..
-OPTIMIZATION_CFLAGS := -Os
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 
 USELIBS := amiga arossupport autoinit libinit stdc.static
 LIBS    := -L$(GENDIR)/lib -lloadseg $(addprefix -l,$(USELIBS))

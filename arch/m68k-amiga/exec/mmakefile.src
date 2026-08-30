@@ -28,7 +28,7 @@ AFILES		:= enable disable readgayle
 
 USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
-OPTIMIZATION_CFLAGS := -Os
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=amiga-m68k \
