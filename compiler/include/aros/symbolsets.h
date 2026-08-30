@@ -190,7 +190,6 @@ for                                                                          \
     AROS_MAKE_ASM_SYM(int, __##x##__symbol_set_handler_missing, __##x##__symbol_set_handler_missing, 0); \
     AROS_EXPORT_WEAK_ASM_SYM(__##x##__symbol_set_handler_missing);
     
-#endif
 
 /* Function prototypes from autoinit and libinit */
 extern int _set_call_funcs(const void * const set[], int direction, int test_fail, struct ExecBase *sysBase);
@@ -255,3 +254,5 @@ extern int _set_libinit(const struct __aros_libinit_sets *sets, void *libbase, s
    close, per-task slot, __freebase). */
 extern void _set_libexpunge(const struct __aros_libinit_sets *sets, void *libbase, struct ExecBase *sysBase);
 #define set_libexpunge(sets, libbase) _set_libexpunge(sets, libbase, SysBase)
+
+#endif /* _AROS_SYMBOLSETS_H */
