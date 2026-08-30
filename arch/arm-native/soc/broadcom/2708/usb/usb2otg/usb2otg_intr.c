@@ -372,6 +372,7 @@ static BOOL usb2otg_core_reset_recover(struct USB2OTGUnit *USBUnit, int wedged_c
     wr32le(USB2OTG_INTR, 0xffffffff);
     wr32le(USB2OTG_INTRMASK, USB2OTG_INTRCORE_DMASTARTOFFRAME |
                              USB2OTG_INTRCORE_HOSTCHANNEL);
+    USBUnit->hu_SofGated = FALSE;
 
     /* FIFO layout — must match OpenUnit. */
     wr32le(USB2OTG_RCVSIZE, 774);
@@ -871,6 +872,22 @@ static void usb2otg_remove_bulk_queue_duplicates(struct USB2OTGUnit *USBUnit,
 static BOOL usb2otg_process_pending(struct USB2OTGUnit *otg_Unit);
 static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit);
 
+/* Task context. Shorter distances arrive via a wake site, so a
+ * stale delay here is safe. */
+static void usb2otg_sofgate_send(struct USB2OTGUnit *otg_Unit)
+{
+    UWORD frames = otg_Unit->hu_SofGateDelayFrames;
+
+    if (otg_Unit->hu_SofGateTimerLive || !otg_Unit->hu_SofGated || frames == 0)
+        return;
+
+    otg_Unit->hu_SofGateTimerLive = TRUE;
+    otg_Unit->hu_SofGateReq.tr_node.io_Command = TR_ADDREQUEST;
+    otg_Unit->hu_SofGateReq.tr_time.tv_secs = frames / 1000;
+    otg_Unit->hu_SofGateReq.tr_time.tv_micro = (frames % 1000) * 1000;
+    SendIO((struct IORequest *)&otg_Unit->hu_SofGateReq);
+}
+
 void FNAME_DEV(WorkerTask)(struct USB2OTGUnit *otg_Unit)
 {
     struct USB2OTGDevice *USB2OTGBase;
@@ -894,6 +911,13 @@ void FNAME_DEV(WorkerTask)(struct USB2OTGUnit *otg_Unit)
         {
             if (msg == &otg_Unit->hu_NakTimeoutReq.tr_node.io_Message)
                 usb2otg_process_naktimeout(otg_Unit);
+            else if (msg == &otg_Unit->hu_SofGateReq.tr_node.io_Message)
+            {
+                otg_Unit->hu_SofGateTimerLive = FALSE;
+                Disable();
+                usb2otg_sof_gate_wake(otg_Unit);
+                Enable();
+            }
         }
 
         Disable();
@@ -910,6 +934,8 @@ void FNAME_DEV(WorkerTask)(struct USB2OTGUnit *otg_Unit)
             usb2otg_process_naktimeout(otg_Unit);
         if (flags & USB2OTG_WORK_PENDING)
             usb2otg_process_pending(otg_Unit);
+        if (flags & USB2OTG_WORK_SOFGATE)
+            usb2otg_sofgate_send(otg_Unit);
     }
 }
 
@@ -995,8 +1021,6 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
          * frame-level scheduling) — its CSPLIT re-arms below stay.
          */
         USBUnit->hu_LastSOFFrame = frnm;
-
-
     }
     {
             int chan;
@@ -1097,7 +1121,85 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
         }
 }
 
-/* TRUE when no periodic work needs the SOF heartbeat. */
+/*
+ * Close the SOF gate once nothing can need the heartbeat. Work can then
+ * only reappear via the wake sites, so a masked SOF cannot strand a
+ * transfer.
+ */
+static void usb2otg_sof_gate_try(struct USB2OTGUnit *USBUnit, ULONG frnm)
+{
+#if defined(__AROSEXEC_SMP__)
+    struct USB2OTGDevice *USB2OTGBase = USBUnit->hu_USB2OTGBase;
+#endif
+    struct IOUsbHWReq *req;
+    ULONG mindist = 0x800;
+    int chan, guard = 0;
+
+    if (USBUnit->hu_SofGated ||
+        !IsListEmpty(&USBUnit->hu_IntXFerScheduled) ||
+        !IsListEmpty(&USBUnit->hu_CtrlXFerQueue) ||
+        !IsListEmpty(&USBUnit->hu_BulkXFerQueue))
+        return;
+
+    for (chan = 0; chan < 8; chan++)
+    {
+        struct IOUsbHWReq *creq = USBUnit->hu_Channel[chan].hc_Request;
+
+        if (USBUnit->hu_DelayedChannel[chan] != 0)
+            return;
+        if (creq != NULL &&
+            ((creq->iouh_Flags & UHFF_SPLITTRANS) ||
+             creq->iouh_Req.io_Command == UHCMD_INTXFER))
+            return;
+    }
+
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+    ForeachNode(&USBUnit->hu_IntXFerQueue, req)
+    {
+        ULONG last = (ULONG)(IPTR)req->iouh_DriverPrivate1 >> 16;
+        ULONG next = (ULONG)(IPTR)req->iouh_DriverPrivate1 & 0x7ff;
+        ULONG dist = (next - frnm) & 0x7ff;
+
+        /* Due or overdue polls want the next promotion walk. */
+        if (++guard > 128 ||
+            ((frnm - last) & 0x7ff) >= ((next - last) & 0x7ff))
+        {
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
+            return;
+        }
+        if (dist < mindist)
+            mindist = dist;
+    }
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
+
+    if (mindist == 0x800)
+    {
+        /* Queue empty: sleep until a submission wakes us. */
+        usb2otg_sof_gate_mask(USBUnit);
+    }
+    else if (mindist > USB2OTG_SOF_GATE_MIN_FRAMES)
+    {
+        usb2otg_sof_gate_mask(USBUnit);
+        USBUnit->hu_SofGateDelayFrames = mindist - 1;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+        USBUnit->hu_WorkFlags |= USB2OTG_WORK_SOFGATE;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
+        Signal(USBUnit->hu_WorkerTask,
+            1UL << USBUnit->hu_WorkerPort->mp_SigBit);
+    }
+}
+
+/* Census only; unlocked reads. */
 static BOOL usb2otg_periodic_idle(struct USB2OTGUnit *USBUnit)
 {
     int chan;
@@ -1161,6 +1263,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
     if (otg_RegVal & USB2OTG_INTRCORE_DMASTARTOFFRAME)
     {
         handle_SOF(USBUnit, SysBase, frnm);
+        usb2otg_sof_gate_try(USBUnit, frnm >> 3);
     }
 
     /*
@@ -1953,6 +2056,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 KrnSpinUnLock(&USBUnit->hu_Lock);
                                 }
 #endif
+                                usb2otg_sof_gate_wake(USBUnit);
                                 req = NULL;
                             }
                             else
@@ -2053,6 +2157,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 KrnSpinUnLock(&USBUnit->hu_Lock);
                                 }
 #endif
+                                usb2otg_sof_gate_wake(USBUnit);
                                 req = NULL;
                             }
                             else if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
@@ -3115,6 +3220,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                         ADDTAIL(&otg_Unit->hu_IntXFerQueue, (struct Node *)req);
                         otg_Unit->hu_Channel[chan].hc_Request = NULL;
                         otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
+                        usb2otg_sof_gate_wake(otg_Unit);
 #if defined(__AROSEXEC_SMP__)
                         KrnSpinUnLock(&otg_Unit->hu_Lock);
 #endif
@@ -3464,6 +3570,9 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
             }
         }
 
+        if (promoted)
+            usb2otg_sof_gate_wake(otg_Unit);
+
         ForeachNode(&otg_Unit->hu_IntXFerScheduled, req)
             s_count++;
         ForeachNode(&otg_Unit->hu_FinishedXfers, req)
@@ -3565,13 +3674,16 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
         otg_Unit->hu_IrqCountLast = otg_Unit->hu_IrqCount;
         otg_Unit->hu_IrqSofIdleLast = otg_Unit->hu_IrqSofIdle;
 
-        bug("[USB2OTG:IRQSTAT] irq=%lu (+%lu) sof=%lu sofonly=%lu sofidle=%lu (+%lu) hc=%lu port=%lu\n",
+        bug("[USB2OTG:IRQSTAT] irq=%lu (+%lu) sof=%lu sofonly=%lu sofidle=%lu (+%lu) hc=%lu port=%lu gate=%lu/%lu%s\n",
             (unsigned long)otg_Unit->hu_IrqCount, (unsigned long)dirq,
             (unsigned long)otg_Unit->hu_IrqSofCount,
             (unsigned long)otg_Unit->hu_IrqSofOnly,
             (unsigned long)otg_Unit->hu_IrqSofIdle, (unsigned long)didle,
             (unsigned long)otg_Unit->hu_IrqHcCount,
-            (unsigned long)otg_Unit->hu_IrqPortCount);
+            (unsigned long)otg_Unit->hu_IrqPortCount,
+            (unsigned long)otg_Unit->hu_SofGateMasks,
+            (unsigned long)otg_Unit->hu_SofGateWakes,
+            otg_Unit->hu_SofGated ? " CLOSED" : "");
 
         /* i=channel IRQs, p/c/n/h=arms/completions/NAKs/bare-CHHLTDs. */
         for (d = 0; d < 8; d++)
