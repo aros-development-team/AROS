@@ -19,7 +19,10 @@ struct LoginWindow_DATA
     /*- Protected ----------------------------------------------------------*/
 
     Object          *lwd_OKButton,
-                    *lwd_CancelButton;
+                    *lwd_CancelButton,
+                    *lwd_ShutdownButton,
+                    *lwd_RebootButton;
+    BOOL             lwd_SystemMode;
     Object          *lwd_LogonLogo,
                     *lwd_LogonHeader,
                     *lwd_UNInput,

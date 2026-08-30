@@ -40,12 +40,15 @@
 #define MUIA_LoginWindow_LocalLogin_Disabled    (MUIB_LoginWindow | 0x0000000f)
 #define MUIA_LoginWindow_Cancel_Disabled        (MUIB_LoginWindow | 0x00000010)
 #define MUIA_LoginWindow_Prompt                 (MUIB_LoginWindow | 0x00000011) /* [I] text above the inputs */
+#define MUIA_LoginWindow_SystemMode             (MUIB_LoginWindow | 0x00000012) /* [I] boot login: Shutdown/Reboot instead of Cancel */
 
 /*** Macros *****************************************************************/
 #define LoginWindowObject MUIOBJMACRO_START(MUIC_LoginWindow)
 
 #define LWA_RV_CANCEL                           MUIV_Application_ReturnID_Quit
-#define LWA_RV_OK                               (1)   /* MUIM_Application_NewInput id */
+#define LWA_RV_OK                               (1)   /* MUIM_Application_NewInput ids */
+#define LWA_RV_SHUTDOWN                         (2)   /* system mode: the caller shuts down */
+#define LWA_RV_REBOOT                           (3)   /* system mode: the caller reboots */
 
 #define LWRV_CANCEL                             MUIV_Application_ReturnID_Quit
 #define LWRV_OK                                 LWA_RV_OK

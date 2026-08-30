@@ -40,8 +40,15 @@
 #endif
 #include <aros/debug.h>
 
-#define LOGOTYPE_IMAGE "IMAGES:Logos/login.logo"
-#define USERTYPE_IMAGE "IMAGES:Gadgets/System/sys_user"
+/*
+ * IMAGES: is made by the Startup-Sequence, which has not run yet when the
+ * login window is shown at boot; fall back to where the images really are.
+ */
+#define IMAGES_ASSIGN  "IMAGES:"
+#define IMAGES_SYSPATH "SYS:System/Images/"
+#define LOGOTYPE_IMAGE "Logos/login.logo"
+#define USERTYPE_IMAGE "Gadgets/System/sys_user"
+#define IMAGESPEC_MAX  (2 + sizeof(IMAGES_SYSPATH) + sizeof(USERTYPE_IMAGE))
 
 #define ENV    ((IPTR) "ENV:")
 
@@ -63,6 +70,24 @@ CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 
 #define _(id) MSG(catalog,id)
 
+static CONST_STRPTR LoginWindow_ImageBase(void)
+{
+    struct DosList *dl = LockDosList(LDF_ASSIGNS | LDF_READ);
+    BOOL assigned = (FindDosEntry(dl, "IMAGES", LDF_ASSIGNS) != NULL);
+
+    UnLockDosList(LDF_ASSIGNS | LDF_READ);
+
+    return assigned ? IMAGES_ASSIGN : IMAGES_SYSPATH;
+}
+
+/* Builds a MUI external-image spec ("3:<path>") for one of the images */
+static void LoginWindow_ImageSpec(char *spec, CONST_STRPTR base, CONST_STRPTR image)
+{
+    strcpy(spec, "3:");
+    strcat(spec, base);
+    strcat(spec, image);
+}
+
 
 /*** Methods ****************************************************************/
 Object *LoginWindow__OM_NEW
@@ -76,6 +101,9 @@ Object *LoginWindow__OM_NEW
                             methodtype          = 0;
     APTR                    pool                = NULL;
     BPTR                    lock                = NULL;
+    CONST_STRPTR            imageBase           = LoginWindow_ImageBase();
+    char                    logoSpec[IMAGESPEC_MAX],
+                            userSpec[IMAGESPEC_MAX];
     IPTR                    logoFrame           = 0,
                             detailsFrame        = 0;
     BOOL                    localLogins         = TRUE,
@@ -100,7 +128,11 @@ Object *LoginWindow__OM_NEW
                             *passUser           = NULL,
                             *logonMethod        = NULL,
                             *okButton           = NULL,
-                            *cancelButton       = NULL;
+                            *cancelButton       = NULL,
+                            *shutdownButton     = NULL,
+                            *rebootButton       = NULL,
+                            *buttonGroup        = NULL;
+    BOOL                    systemMode          = FALSE;
 
     /* Allocate memory pool ------------------------------------------------*/
     pool = CreatePool(MEMF_ANY, 4096, 4096);
@@ -120,6 +152,10 @@ Object *LoginWindow__OM_NEW
     {
         switch (tag->ti_Tag)
         {
+        case MUIA_LoginWindow_SystemMode:
+            systemMode = tag->ti_Data ? TRUE : FALSE;
+            break;
+
         case MUIA_LoginWindow_Prompt:
             if (tag->ti_Data)
                 contents = TextObject, MUIA_Text_Contents, (IPTR) StrDup((STRPTR) tag->ti_Data), End;
@@ -295,12 +331,15 @@ Object *LoginWindow__OM_NEW
     D(bug("LOGINWINDOW checking Logo..\n"));
 
     /* Setup image ---------------------------------------------------------*/
+    LoginWindow_ImageSpec(logoSpec, imageBase, LOGOTYPE_IMAGE);
+    LoginWindow_ImageSpec(userSpec, imageBase, USERTYPE_IMAGE);
+
     if (!img_logo)
     {
-        if ((lock = Lock(LOGOTYPE_IMAGE, ACCESS_READ)) != NULL)
+        if ((lock = Lock(logoSpec + 2, ACCESS_READ)) != NULL)
         {
             img_logo = ImageObject,
-                    MUIA_Image_Spec, (IPTR)"3:"LOGOTYPE_IMAGE,
+                    MUIA_Image_Spec, (IPTR)logoSpec,
                 End;
 
             UnLock(lock);
@@ -311,15 +350,48 @@ Object *LoginWindow__OM_NEW
 
     lock = NULL;
 
-    if ((lock = Lock(USERTYPE_IMAGE, ACCESS_READ)) != NULL)
+    if ((lock = Lock(userSpec + 2, ACCESS_READ)) != NULL)
     {
         img_user = ImageObject,
-                MUIA_Image_Spec, (IPTR)"3:"USERTYPE_IMAGE,
+                MUIA_Image_Spec, (IPTR)userSpec,
             End;
 
         UnLock(lock);
     }
     else img_user = HVSpace;
+
+    /* The button row: "<space> [Login] [Cancel]", or in system mode (the
+     * boot login, nothing to cancel) "[Shutdown] [Reboot] <space> [Login]" */
+/* theme images when present (ImageButton falls back to a text button) */
+#define LWButton(text, image) ImageButton((text), "THEME:Images/Gadgets/" image)
+    if (systemMode)
+    {
+        buttonGroup = HGroup,
+            Child, (IPTR) HGroup,
+                MUIA_Group_SameWidth, TRUE,
+                MUIA_Weight, 0,
+                Child, (IPTR) (shutdownButton = LWButton(_(MSG_SHUTDOWN), "Shutdown")),
+                Child, (IPTR) (rebootButton   = LWButton(_(MSG_REBOOT), "Reboot")),
+            End,
+            Child, (IPTR) HVSpace,
+            Child, (IPTR) HGroup,
+                MUIA_Weight, 0,
+                Child, (IPTR) (okButton = LWButton(_(MSG_LOGIN), "OK")),
+            End,
+        End;
+    }
+    else
+    {
+        buttonGroup = HGroup,
+            Child, (IPTR) HVSpace,
+            Child, (IPTR) HGroup,
+                MUIA_Group_SameWidth, TRUE,
+                MUIA_Weight, 0,
+                Child, (IPTR) (okButton     = LWButton(_(MSG_LOGIN), "OK")),
+                Child, (IPTR) (cancelButton = LWButton(_(MSG_CANCEL), "Cancel")),
+            End,
+        End;
+    }
 
     D(bug("LOGINWINDOW Creating window..\n"));
 
@@ -360,12 +432,7 @@ Object *LoginWindow__OM_NEW
 
                     Child, (IPTR) logonMethod,
 
-                    Child, (IPTR) HGroup,
-                        MUIA_Group_SameWidth, TRUE,
-                        MUIA_Weight,             0,
-                        Child, (IPTR) (okButton   = ImageButton(_(MSG_OK), "THEME:Images/Gadgets/OK")),
-                        Child, (IPTR) (cancelButton = ImageButton(_(MSG_RESUME), "THEME:Images/Gadgets/Cancel")),
-                    End,
+                    Child, (IPTR) buttonGroup,
                 End,
             End,
         End,
@@ -383,6 +450,9 @@ Object *LoginWindow__OM_NEW
         data->lwd_Title         = title;
         data->lwd_OKButton      = okButton;
         data->lwd_CancelButton  = cancelButton;
+        data->lwd_ShutdownButton = shutdownButton;
+        data->lwd_RebootButton  = rebootButton;
+        data->lwd_SystemMode    = systemMode;
         data->lwd_UNInput       = nameUser;
         data->lwd_UPInput       = passUser;
 
@@ -439,24 +509,40 @@ Object *LoginWindow__OM_NEW
         /* start in the first editable field */
         set(self, MUIA_Window_ActiveObject, (IPTR) ((nametype == LWA_UNT_Input) ? nameUser : passUser));
         set(okButton, MUIA_CycleChain, 1);
-        set(cancelButton, MUIA_CycleChain, 1);
+        if (cancelButton) set(cancelButton, MUIA_CycleChain, 1);
 
         /*-- Setup notifications -------------------------------------------*/
 
-        DoMethod
-        (
-            self, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-            MUIV_Notify_Application, 2, MUIM_Application_ReturnID, LWA_RV_CANCEL
-        );
+        if (!systemMode)
+        {
+            DoMethod
+            (
+                self, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+                MUIV_Notify_Application, 2, MUIM_Application_ReturnID, LWA_RV_CANCEL
+            );
+            DoMethod
+            (
+                cancelButton, MUIM_Notify, MUIA_Pressed, FALSE,
+                MUIV_Notify_Application, 2, MUIM_Application_ReturnID, LWA_RV_CANCEL
+            );
+        }
+        else
+        {
+            DoMethod
+            (
+                shutdownButton, MUIM_Notify, MUIA_Pressed, FALSE,
+                MUIV_Notify_Application, 2, MUIM_Application_ReturnID, LWA_RV_SHUTDOWN
+            );
+            DoMethod
+            (
+                rebootButton, MUIM_Notify, MUIA_Pressed, FALSE,
+                MUIV_Notify_Application, 2, MUIM_Application_ReturnID, LWA_RV_REBOOT
+            );
+        }
         DoMethod
         (
             okButton, MUIM_Notify, MUIA_Pressed, FALSE,
             MUIV_Notify_Application, 2, MUIM_Application_ReturnID, LWA_RV_OK
-        );
-        DoMethod
-        (
-            cancelButton, MUIM_Notify, MUIA_Pressed, FALSE,
-            MUIV_Notify_Application, 2, MUIM_Application_ReturnID, LWA_RV_CANCEL
         );
         /* Return in the password field is the same as OK */
         DoMethod
@@ -529,7 +615,8 @@ IPTR LoginWindow__OM_SET
             break;
 
         case MUIA_LoginWindow_Cancel_Disabled:
-            set(data->lwd_CancelButton, MUIA_Disabled, tag->ti_Data);
+            if (data->lwd_CancelButton)
+                set(data->lwd_CancelButton, MUIA_Disabled, tag->ti_Data);
             break;
         }
     }
@@ -568,7 +655,7 @@ IPTR LoginWindow__OM_GET
         break;
 
     case MUIA_LoginWindow_Cancel_Disabled:
-        *store = XGET(data->lwd_CancelButton, MUIA_Disabled);
+        *store = data->lwd_CancelButton ? XGET(data->lwd_CancelButton, MUIA_Disabled) : TRUE;
         break;
         
     default:
