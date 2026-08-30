@@ -388,6 +388,7 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
                     (unsigned long)otg_Unit->hu_WdTicks);)
             otg_Unit->hu_Channel[chan].hc_Request = NULL;
             ADDHEAD(queue, (struct Node *)req);
+            usb2otg_sof_gate_wake(otg_Unit);
 #if defined(__AROSEXEC_SMP__)
             KrnSpinUnLock(&otg_Unit->hu_Lock);
 #endif
@@ -1246,6 +1247,20 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
 
     if (!usb2otg_require_cpu0(otg_Unit->hu_USB2OTGBase, __PRETTY_FUNCTION__))
         return;
+
+    /* Splits need SOF for CSPLIT pacing; ctrl/bulk reach here
+     * without passing an INT wake site. */
+    if (otg_Unit->hu_SofGated)
+    {
+        struct IOUsbHWReq *wreq = otg_Unit->hu_Channel[chan].hc_Request;
+
+        if (wreq != NULL && (wreq->iouh_Flags & UHFF_SPLITTRANS))
+        {
+            Disable();
+            usb2otg_sof_gate_wake(otg_Unit);
+            Enable();
+        }
+    }
 
     if (quick == 0)
     {

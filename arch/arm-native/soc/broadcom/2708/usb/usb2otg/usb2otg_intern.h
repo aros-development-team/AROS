@@ -294,6 +294,14 @@ struct USB2OTGUnit
     struct Interrupt    hu_NakTimeoutInt;
     struct timerequest  hu_NakTimeoutReq;
     struct MsgPort      hu_NakTimeoutMsgPort;
+
+    /* SOF gate: masked while no periodic work needs it. */
+    struct timerequest  hu_SofGateReq;
+    volatile UBYTE      hu_SofGated;            /* SOF masked by the gate */
+    volatile UBYTE      hu_SofGateTimerLive;    /* hu_SofGateReq in flight */
+    volatile UWORD      hu_SofGateDelayFrames;  /* wake distance for the timer */
+    ULONG               hu_SofGateMasks;        /* census: gate closures */
+    ULONG               hu_SofGateWakes;        /* census: wakes (timer or work) */
     struct Task         *hu_WorkerTask;
     struct MsgPort      *hu_WorkerPort;
     cpumask_t           hu_WorkerAffinity;
@@ -510,6 +518,7 @@ void                    usb2otg_exorcise_channel(int chan);
 
 #define USB2OTG_WORK_PENDING    (1U << 0)
 #define USB2OTG_WORK_NAKTIMEOUT (1U << 1)
+#define USB2OTG_WORK_SOFGATE    (1U << 2)
 
 #ifdef UtilityBase
 #undef UtilityBase
@@ -784,6 +793,30 @@ static inline APTR usb2otg_ctrl_backoff(struct USB2OTGUnit *unit,
  */
 #define USB2OTG_INT_NAK_BACKOFF_STREAK  4
 #define USB2OTG_INT_NAK_BACKOFF_FRAMES  8
+
+/* Shorter waits are cheaper on SOFs than a timer round-trip. */
+#define USB2OTG_SOF_GATE_MIN_FRAMES     2
+
+/* Caller runs in the IRQ or holds Disable(). */
+static inline void usb2otg_sof_gate_mask(struct USB2OTGUnit *unit)
+{
+    wr32le(USB2OTG_INTRMASK,
+        rd32le(USB2OTG_INTRMASK) & ~USB2OTG_INTRCORE_DMASTARTOFFRAME);
+    unit->hu_SofGated = TRUE;
+    unit->hu_SofGateMasks++;
+}
+
+static inline void usb2otg_sof_gate_wake(struct USB2OTGUnit *unit)
+{
+    if (!unit->hu_SofGated)
+        return;
+    unit->hu_SofGated = FALSE;
+    unit->hu_SofGateWakes++;
+    /* Start the reopened gate on a fresh frame. */
+    wr32le(USB2OTG_INTR, USB2OTG_INTRCORE_DMASTARTOFFRAME);
+    wr32le(USB2OTG_INTRMASK,
+        rd32le(USB2OTG_INTRMASK) | USB2OTG_INTRCORE_DMASTARTOFFRAME);
+}
 
 /*
  * Clamp an INT scheduling interval to the 11-bit frame window.

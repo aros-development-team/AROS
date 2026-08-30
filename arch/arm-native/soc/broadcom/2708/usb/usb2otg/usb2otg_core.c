@@ -783,6 +783,7 @@ WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&otg_Unit->hu_Lock);
 #endif
+    usb2otg_sof_gate_wake(otg_Unit);
     Enable();
     FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 

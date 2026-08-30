@@ -295,6 +295,9 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                         bug("[USB2OTG] Failed to create CPU0 worker task\n");
                                         return FALSE;
                                     }
+                                    CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_SofGateReq, sizeof(struct timerequest));
+                                    USB2OTGBase->hd_Unit->hu_SofGateReq.tr_node.io_Message.mn_ReplyPort = USB2OTGBase->hd_Unit->hu_WorkerPort;
+
                                     CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_NakTimeoutReq, sizeof(struct timerequest));
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = USB2OTGBase->hd_Unit->hu_WorkerPort;
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_time.tv_secs = 0;
