@@ -151,13 +151,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
             if (scis && scos)
             {
                 struct IntuitionBase *IntuitionBase;
-                BYTE *C = generate_banner();
 
-                if (C)
-                {
-                    FPuts(scos, C);
-                    FreeVec(C);
-                }
                 if (SystemTags(NULL,
                                NP_Name, "Security Startup",
                                SYS_Background, FALSE,
