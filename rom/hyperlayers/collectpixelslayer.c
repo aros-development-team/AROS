@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -14,7 +14,9 @@
 #include "layers_intern.h"
 #include "basicfuncs.h"
 
-#define DEBUG 1
+#ifndef DEBUG
+#define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #define MAX(a,b)    ((a) > (b) ? (a) : (b))
