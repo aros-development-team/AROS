@@ -28,6 +28,7 @@ const char devname[]    = MOD_NAME_STRING;
 
 AROS_INTP(FNAME_DEV(PendingInt));
 AROS_INTP(FNAME_DEV(NakTimeoutInt));
+AROS_INTP(FNAME_DEV(SofGateInt));
 
 IPTR    __arm_periiobase __attribute__((used)) = 0 ;
 
@@ -294,8 +295,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                         bug("[USB2OTG] Failed to create CPU0 worker task\n");
                                         return FALSE;
                                     }
-                                    CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_SofGateReq, sizeof(struct timerequest));
-                                    USB2OTGBase->hd_Unit->hu_SofGateReq.tr_node.io_Message.mn_ReplyPort = USB2OTGBase->hd_Unit->hu_WorkerPort;
+                                    USB2OTGBase->hd_Unit->hu_SofGateWakeFrame = 0xffff;
 
                                     CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_NakTimeoutReq, sizeof(struct timerequest));
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = USB2OTGBase->hd_Unit->hu_WorkerPort;
@@ -319,6 +319,11 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                         USB2OTGBase->hd_Unit->hu_TTClearPending[i].tc_Hub = 0;
 
                                     USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, FNAME_DEV(GlobalIRQHandler), USB2OTGBase->hd_Unit, SysBase);
+
+                                    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
+                                    USB2OTGBase->hd_Unit->hu_SofGateIRQHandle =
+                                        KrnAddIRQHandler(IRQ_TIMER0 + USB2OTG_SOF_GATE_TIMER,
+                                            FNAME_DEV(SofGateInt), USB2OTGBase->hd_Unit, SysBase);
                                     USB2OTGBase->hd_Unit->hu_USB2OTGBase = USB2OTGBase;
 
                                     D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p] for IRQ #%ld\n",

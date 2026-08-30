@@ -295,12 +295,14 @@ struct USB2OTGUnit
     struct MsgPort      hu_NakTimeoutMsgPort;
 
     /* SOF gate: masked while no periodic work needs it. */
-    struct timerequest  hu_SofGateReq;
     volatile UBYTE      hu_SofGated;            /* SOF masked by the gate */
-    volatile UBYTE      hu_SofGateTimerLive;    /* hu_SofGateReq in flight */
-    volatile UWORD      hu_SofGateDelayFrames;  /* wake distance for the timer */
+    volatile UWORD      hu_SofGateWakeFrame;    /* frame the wake was aimed at */
     ULONG               hu_SofGateMasks;        /* census: gate closures */
     ULONG               hu_SofGateWakes;        /* census: wakes (timer or work) */
+    APTR                hu_SofGateIRQHandle;
+    /* Wake lateness in frames: <1, <4, <16, more. */
+    ULONG               hu_SofGateLate[4];
+    ULONG               hu_SofGateLateMax;
     struct Task         *hu_WorkerTask;
     struct MsgPort      *hu_WorkerPort;
     cpumask_t           hu_WorkerAffinity;
@@ -517,7 +519,6 @@ void                    usb2otg_exorcise_channel(int chan);
 
 #define USB2OTG_WORK_PENDING    (1U << 0)
 #define USB2OTG_WORK_NAKTIMEOUT (1U << 1)
-#define USB2OTG_WORK_SOFGATE    (1U << 2)
 
 #ifdef UtilityBase
 #undef UtilityBase
@@ -793,8 +794,28 @@ static inline APTR usb2otg_ctrl_backoff(struct USB2OTGUnit *unit,
 #define USB2OTG_INT_NAK_BACKOFF_STREAK  4
 #define USB2OTG_INT_NAK_BACKOFF_FRAMES  8
 
-/* Shorter waits are cheaper on SOFs than a timer round-trip. */
+/*
+ * Shorter waits are cheaper on SOFs than re-arming the wake, which
+ * runs off system timer channel 1 (0 and 2 are the firmware's, 3 is
+ * the kernel VBlank).
+ */
+#define USB2OTG_SOF_GATE                1
 #define USB2OTG_SOF_GATE_MIN_FRAMES     2
+#define USB2OTG_SOF_GATE_TIMER          1
+
+/*
+ * The compare is an equality match, so a deadline already passed would
+ * not fire for ~71 minutes. Report that and let the caller reopen.
+ */
+static inline BOOL usb2otg_sof_gate_arm(ULONG frames)
+{
+    ULONG target = rd32le(SYSTIMER_CLO) + frames * 1000;
+
+    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
+    wr32le(SYSTIMER_C0 + (USB2OTG_SOF_GATE_TIMER * 4), target);
+
+    return ((LONG)(rd32le(SYSTIMER_CLO) - target) < 0);
+}
 
 /* Caller runs in the IRQ or holds Disable(). */
 static inline void usb2otg_sof_gate_mask(struct USB2OTGUnit *unit)
@@ -811,6 +832,20 @@ static inline void usb2otg_sof_gate_wake(struct USB2OTGUnit *unit)
         return;
     unit->hu_SofGated = FALSE;
     unit->hu_SofGateWakes++;
+
+    /* How late the reopen landed, in frames. */
+    if (unit->hu_SofGateWakeFrame != 0xffff)
+    {
+        ULONG now = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
+        ULONG late = (now - unit->hu_SofGateWakeFrame) & 0x7ff;
+
+        if (late > 0x400)
+            late = 0;                   /* reopened early — harmless */
+        if (late > unit->hu_SofGateLateMax)
+            unit->hu_SofGateLateMax = late;
+        unit->hu_SofGateLate[late < 1 ? 0 : late < 4 ? 1 : late < 16 ? 2 : 3]++;
+        unit->hu_SofGateWakeFrame = 0xffff;
+    }
     /* Start the reopened gate on a fresh frame. */
     wr32le(USB2OTG_INTR, USB2OTG_INTRCORE_DMASTARTOFFRAME);
     wr32le(USB2OTG_INTRMASK,
