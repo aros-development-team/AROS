@@ -701,20 +701,24 @@ static VOID CD32_CompleteXLNode(struct CDXL *node)
 
 static BOOL CD32_StartXLNode(struct CD32XLTransfer *xl)
 {
-    while (xl->node != NULL && !CD32_IsXLListTail(xl->node)) {
-        if (!xl->nodeStarted) {
-            xl->node->Actual = 0;
-            xl->nodeStarted = TRUE;
-        }
+    if (xl->node == NULL || CD32_IsXLListTail(xl->node))
+        goto finished;
 
-        if (xl->node->Length != 0)
-            return TRUE;
-
-        CD32_CompleteXLNode(xl->node);
-        xl->node = (struct CDXL *)xl->node->Node.mln_Succ;
-        xl->nodeStarted = FALSE;
+    if (!xl->nodeStarted) {
+        xl->node->Actual = 0;
+        xl->nodeStarted = TRUE;
     }
 
+    /* Per cd.device/CD_READXL, encountering a zero-length node terminates
+     * the transfer.  Do not complete it or follow its successor: circular
+     * clients use this to stop an otherwise unlimited stream from inside
+     * the preceding node's callback. */
+    if (xl->node->Length == 0)
+        goto finished;
+
+    return TRUE;
+
+finished:
     xl->node = NULL;
     return FALSE;
 }
