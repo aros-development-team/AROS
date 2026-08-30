@@ -422,6 +422,12 @@ struct USB2OTGUnit
     ULONG               hu_IntArmHfnum[8];      /* HFNUM at the last INT arm */
     ULONG               hu_IntArmChar[8];       /* HCCHAR as armed (ODDFRM visible) */
     ULONG               hu_IntHltHfnum[8];      /* HFNUM at the last bare-CHHLTD halt */
+    /* Bulk throughput census. */
+    ULONG               hu_BulkArmCount;
+    ULONG               hu_BulkCompCount;
+    ULONG               hu_BulkBytes;
+    ULONG               hu_PendRunCount;
+
     ULONG               hu_CtrlArmCount;        /* control transfers armed */
     ULONG               hu_CtrlFinCount;        /* control transfers finished */
 
@@ -685,6 +691,12 @@ void                    usb2otg_exorcise_channel(int chan);
 #define USB2OTG_WD_TICKS_BULK_DIRECT 20   /* HS bulk direct: 3 s */
 #define USB2OTG_WD_TICKS_BULK_SPLIT  10   /* LS/FS bulk through TT: 1.5 s */
 #define USB2OTG_WD_TICKS_DEFAULT      3   /* anything else */
+
+/*
+ * A direct bulk IN on NAK is waiting, not wedged: the core retries the
+ * token itself, so a re-latched NAK counts as liveness.
+ */
+#define USB2OTG_BULK_IN_NAK_LIVENESS  1
 
 /*
  * Consecutive watchdog-wedge retries for an INT request before it is
