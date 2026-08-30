@@ -632,6 +632,12 @@ static BOOL CD32_CopyXL(struct CD32XLTransfer *xl, APTR frame,
     return xl->node != NULL && (!xl->limited || xl->remaining != 0);
 }
 
+static ULONG CD32_XLSectorPosition(const UBYTE *frame)
+{
+    return ((bcd2dec(frame[12]) * 60) + bcd2dec(frame[13])) * 75 +
+        bcd2dec(frame[14]);
+}
+
 static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
     LONG sect_start, LONG sectors, ULONG sectorOffset)
 {
@@ -686,7 +692,7 @@ static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
 
     while (xl.node != NULL && (!xl.limited || xl.remaining != 0) &&
            !(io->io_Flags & IOF_ABORT)) {
-        UWORD pbx, consumed = 0;
+        UWORD pbx, pending, consumed = 0;
         int i;
 
         Wait(SIGF_SINGLE);
@@ -703,14 +709,34 @@ static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
             continue;
         }
 
-        for (i = 15; i >= 0; i--) {
-            UWORD mask = (UWORD)(1U << i);
+        pending = (UWORD)~pbx;
+        while (pending != 0) {
+            ULONG firstPosition = ~0UL;
+            UWORD mask;
+            int first = -1;
 
-            if ((pbx & mask) != 0)
-                continue;
+            /* Akiko always chooses the highest armed PBX slot.  A slot can
+             * be re-armed while an older sector remains in a lower slot, so
+             * slot order alone is not arrival order.  Drain this snapshot
+             * by the raw sector's absolute MSF or MPEG/CDXL streams can have
+             * adjacent sectors swapped under normal interrupt latency. */
+            for (i = 15; i >= 0; i--) {
+                ULONG position;
 
+                mask = (UWORD)(1U << i);
+                if ((pending & mask) == 0)
+                    continue;
+                position = CD32_XLSectorPosition(cu->cu_Data[i].Data);
+                if (first < 0 || position < firstPosition) {
+                    first = i;
+                    firstPosition = position;
+                }
+            }
+
+            mask = (UWORD)(1U << first);
+            pending &= ~mask;
             consumed |= mask;
-            if (!CD32_CopyXL(&xl, &cu->cu_Data[i],
+            if (!CD32_CopyXL(&xl, &cu->cu_Data[first],
                     cu->cu_CDInfo.SectorSize))
                 break;
         }
