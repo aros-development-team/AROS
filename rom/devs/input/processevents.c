@@ -97,7 +97,7 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
     struct Interrupt *ihiterator;
 
     ie_chain = GetEventsFromQueue(InputDevice);
-    if (ie_chain)
+    if (ie_chain && !InputDevice->Stopped)
     {
         ForeachNode(&(InputDevice->HandlerList), ihiterator)
         {
@@ -261,34 +261,12 @@ void ProcessEvents(struct inputbase *InputDevice)
 
     for (;;)
     {
-        wakeupsigs = Wait(commandsig |
-            kbdsig |
-            gpdsig | timersig | keytimersig | InputDevice->ResetSig);
+        wakeupsigs = Wait(commandsig | InputDevice->ResetSig |
+            (InputDevice->Stopped ? 0 :
+                (kbdsig | gpdsig | timersig | keytimersig)));
 
         D(bug("Wakeup sig: %x, cmdsig: %x, kbdsig: %x\n, timersig: %x",
                 wakeupsigs, commandsig, kbdsig, timersig));
-
-        if (wakeupsigs & timersig)
-        {
-            struct InputEvent timer_ie;
-
-            GetMsg(timermp);
-
-            timer_ie.ie_NextEvent = NULL;
-            timer_ie.ie_Class = IECLASS_TIMER;
-            timer_ie.ie_SubClass = 0;
-            timer_ie.ie_Code = 0;
-            timer_ie.ie_Qualifier = InputDevice->ActQualifier;
-            timer_ie.ie_position.ie_addr = 0;
-
-            /* Add a timestamp to the event */
-            GetSysTime(&(timer_ie.ie_TimeStamp));
-
-            AddEQTail(&timer_ie, InputDevice);
-            ForwardQueuedEvents(InputDevice);
-
-            SEND_TIMER_REQUEST(timerio);
-        }
 
         if (wakeupsigs & commandsig)
         {
@@ -301,6 +279,15 @@ void ProcessEvents(struct inputbase *InputDevice)
 
                 switch (ioreq->io_Command)
                 {
+                case CMD_STOP:
+                    InputDevice->Stopped = TRUE;
+                    break;
+
+                case CMD_START:
+                case CMD_RESET:
+                    InputDevice->Stopped = FALSE;
+                    break;
+
                 case IND_ADDHANDLER:
 #ifdef __mc68000
                     /* Older m68k programs copied input handler code without
@@ -447,7 +434,29 @@ void ProcessEvents(struct inputbase *InputDevice)
             }
         }
 
-        if (wakeupsigs & keytimersig)
+        if (!InputDevice->Stopped && (wakeupsigs & timersig))
+        {
+            struct InputEvent timer_ie;
+
+            GetMsg(timermp);
+
+            timer_ie.ie_NextEvent = NULL;
+            timer_ie.ie_Class = IECLASS_TIMER;
+            timer_ie.ie_SubClass = 0;
+            timer_ie.ie_Code = 0;
+            timer_ie.ie_Qualifier = InputDevice->ActQualifier;
+            timer_ie.ie_position.ie_addr = 0;
+
+            /* Add a timestamp to the event */
+            GetSysTime(&(timer_ie.ie_TimeStamp));
+
+            AddEQTail(&timer_ie, InputDevice);
+            ForwardQueuedEvents(InputDevice);
+
+            SEND_TIMER_REQUEST(timerio);
+        }
+
+        if (!InputDevice->Stopped && (wakeupsigs & keytimersig))
         {
             struct InputEvent ie;
 
@@ -470,7 +479,7 @@ void ProcessEvents(struct inputbase *InputDevice)
                 InputDevice->KeyRepeatInterval);
         }
 
-        if (wakeupsigs & kbdsig)
+        if (!InputDevice->Stopped && (wakeupsigs & kbdsig))
         {
             GetMsg(kbdmp);      /* Only one message */
             if (kbdio->io_Error != 0)
@@ -521,7 +530,7 @@ void ProcessEvents(struct inputbase *InputDevice)
             SEND_KBD_REQUEST(kbdio, kbdie);
         }
 
-        if (wakeupsigs & gpdsig)
+        if (!InputDevice->Stopped && (wakeupsigs & gpdsig))
         {
             GetMsg(gpdmp);      /* Only one message */
             if (gpdio->io_Error != 0)

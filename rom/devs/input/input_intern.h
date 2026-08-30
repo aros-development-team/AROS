@@ -69,6 +69,7 @@ struct inputbase
     UBYTE Prev1DownQual;
     UBYTE Prev2DownCode;
     UBYTE Prev2DownQual;
+    BOOL Stopped;
 };
 
 /* Prototypes */
