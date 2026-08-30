@@ -1698,6 +1698,7 @@ void FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *otg_Unit)
 
         REMOVE(req);
         otg_Unit->hu_Channel[chan].hc_Request = req;
+        otg_Unit->hu_BulkArmCount++;
         usb2otg_bulk_assign(otg_Unit, chan, req);
 
         KrnSpinUnLock(&otg_Unit->hu_Lock);
