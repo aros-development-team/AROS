@@ -435,6 +435,7 @@ struct USB2OTGUnit
     ULONG               hu_PromRingDev[8];
     ULONG               hu_PromRingPos;
     ULONG               hu_PromCount[8];        /* INT promotions per device */
+    UBYTE               hu_IntNakStreak[8];     /* consecutive NAKs per device */
     ULONG               hu_CtrlErrCount;        /* control transfers failed */
     ULONG               hu_CtrlNakRequeues;     /* split-NAK retry path */
     ULONG               hu_CtrlChhRequeues;     /* bare-CHHLTD retry path */
@@ -776,6 +777,13 @@ static inline APTR usb2otg_ctrl_backoff(struct USB2OTGUnit *unit,
         ((unit->hu_WdTicks & 0xff) << 12) |
         ((frnm + USB2OTG_CTRL_RETRY_BACKOFF_FRAMES) & 0x7ff));
 }
+
+/*
+ * A pipe that NAKed the last STREAK polls is polled every BACKOFF
+ * frames instead of its interval, as OpenBSD dwc2 does.
+ */
+#define USB2OTG_INT_NAK_BACKOFF_STREAK  4
+#define USB2OTG_INT_NAK_BACKOFF_FRAMES  8
 
 /*
  * Clamp an INT scheduling interval to the 11-bit frame window.
