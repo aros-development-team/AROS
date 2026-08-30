@@ -2888,10 +2888,24 @@ AROS_UFH0(void, bHWTask)
                 while(!hc->hc_BringupDone) {
                     if(hc->hc_FirmwarePending) {
                         /* HCB_FIRMWARE reached: run the (synchronous) firmware
-                           loader here, then resume the bring-up sequence. */
+                           loader here, then resume the bring-up sequence. When
+                           firmware was actually downloaded the controller
+                           restarts on it at HCI defaults and the version read
+                           before it is stale (the Realtek stayed on its ROM
+                           code, HCI x.11, and its LE reconnect never fired):
+                           run the bring-up again from Reset, as the late-load
+                           path does. bDoFirmware() is idempotent, so the second
+                           pass skips the download. */
                         hc->hc_FirmwarePending = FALSE;
-                        bDoFirmware(hc);
-                        hc->hc_BringupStep++;
+                        if(bDoFirmware(hc)) {
+                            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                           "%s/%ld: firmware loaded during bring-up - re-initialising the controller.",
+                                           bth->bth_DevName, bth->bth_Unit);
+                            hc->hc_Reinit = TRUE;
+                            hc->hc_BringupStep = HCB_RESET;
+                        } else {
+                            hc->hc_BringupStep++;
+                        }
                         bBringupStep(hc);
                         continue;
                     }
@@ -2959,10 +2973,19 @@ AROS_UFH0(void, bHWTask)
                             bArmTimer(hc);
                         }
                         if(hc->hc_FirmwarePending) {
-                            /* HCB_FIRMWARE reached during a re-run bring-up */
+                            /* HCB_FIRMWARE reached during a re-run bring-up (or
+                               the first bring-up once the controller is in
+                               service): a download here needs the Reset too */
                             hc->hc_FirmwarePending = FALSE;
-                            bDoFirmware(hc);
-                            hc->hc_BringupStep++;
+                            if(bDoFirmware(hc)) {
+                                btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                               "%s/%ld: firmware loaded during bring-up - re-initialising the controller.",
+                                               bth->bth_DevName, bth->bth_Unit);
+                                hc->hc_Reinit = TRUE;
+                                hc->hc_BringupStep = HCB_RESET;
+                            } else {
+                                hc->hc_BringupStep++;
+                            }
                             bBringupStep(hc);
                         }
                         if(sigs & SIGBREAKF_CTRL_F) {
