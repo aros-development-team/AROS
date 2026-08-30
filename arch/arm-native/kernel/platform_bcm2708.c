@@ -90,6 +90,11 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
         uint32_t tmp;
         tls_t   *__tls;
 
+        /* Firmware leaves the prescaler at its 1MHz default; run the
+         * generic timer off the crystal so CNTPCT matches CNTFRQ. */
+        wr32le(BCM2836_CTRL, 0);
+        wr32le(BCM2836_PRESCALER, 0x80000000);
+
         /* Register the boot CPU as an IPI receiver before waking the
          * secondaries (they do it themselves in cpu_Register), or
          * bcm2708_cpuipid[0] stays NULL and IPIs to it are dropped. */
@@ -223,6 +228,31 @@ static inline uint32_t bcm2708_cntfrq_get(void)
     return v;
 }
 
+static inline uint32_t bcm2708_cntpct_get(void)
+{
+    uint32_t lo, hi;
+    asm volatile ("mrrc p15, 0, %0, %1, c14" : "=r"(lo), "=r"(hi));
+    (void)hi;
+    return lo;
+}
+
+/* CNTFRQ is firmware-programmed and not always true - QEMU reports
+ * 19.2MHz while counting at 1MHz - so measure against the system timer
+ * and keep CNTFRQ as the fallback. */
+static uint32_t bcm2708_cntp_measure(void)
+{
+    const uint32_t window = 10000;      /* microseconds */
+    uint32_t s0, c0, c1;
+
+    s0 = rd32le(SYSTIMER_CLO);
+    c0 = bcm2708_cntpct_get();
+    while ((rd32le(SYSTIMER_CLO) - s0) < window)
+        ;
+    c1 = bcm2708_cntpct_get();
+
+    return (c1 - c0) * (1000000 / window);
+}
+
 static inline void bcm2708_cntp_tval_set(uint32_t v)
 {
     asm volatile ("mcr p15, 0, %0, c14, c2, 0" :: "r"(v));
@@ -260,7 +290,15 @@ static void bcm2708_init_cntp_timer(void)
     int cpunum = GetCPUNumber();
 
     if (!bcm2708_cntp_interval)
-        bcm2708_cntp_interval = bcm2708_cntfrq_get() / 50;
+    {
+        uint32_t hz = bcm2708_cntp_measure();
+
+        /* Sanity-bound the measurement before trusting it over CNTFRQ. */
+        if (hz < 100000 || hz > 100000000)
+            hz = bcm2708_cntfrq_get();
+
+        bcm2708_cntp_interval = hz / 50;
+    }
 
     DTIMER(bug("[Kernel:BCM2708] %s: CPU #%02d CNTP interval %u\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cntp_interval));
 
