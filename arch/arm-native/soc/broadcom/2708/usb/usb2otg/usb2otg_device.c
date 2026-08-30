@@ -255,7 +255,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     NewList(&USB2OTGBase->hd_Unit->hu_CtrlXFerQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_IntXFerQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_IntXFerScheduled);
-                                    NewList(&USB2OTGBase->hd_Unit->hu_IsoXFerQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_BulkXFerQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_TDQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_AbortQueue);
@@ -599,10 +598,6 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
 
             case UHCMD_INTXFER:
                 ret = FNAME_DEV(cmdIntXFer)(ioreq, otg_Unit, USB2OTGBase);
-                break;
-
-            case UHCMD_ISOXFER:
-                ret = FNAME_DEV(cmdIsoXFer)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             default:

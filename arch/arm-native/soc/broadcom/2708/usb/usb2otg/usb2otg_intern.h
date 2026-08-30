@@ -228,7 +228,6 @@ struct USB2OTGUnit
     struct List         hu_CtrlXFerQueue;
     struct List         hu_IntXFerQueue;
     struct List         hu_IntXFerScheduled;
-    struct List         hu_IsoXFerQueue;
     struct List         hu_BulkXFerQueue;
     struct List         hu_FinishedXfers;
     /*
@@ -893,7 +892,7 @@ static inline UBYTE usb2otg_watchdog_ticks(struct IOUsbHWReq *req)
 {
     BOOL split;
 
-    /* ISO is intentionally absent: cmdIsoXFer queues but nothing drains. */
+    /* ISO is absent: the driver does not implement isochronous transfers. */
     if (req == NULL)
         return USB2OTG_WD_TICKS_DEFAULT;
 
@@ -932,7 +931,6 @@ WORD                    FNAME_DEV(cmdUsbOper)(struct IOUsbHWReq *, struct USB2OT
 WORD                    FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 WORD                    FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 WORD                    FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
-WORD                    FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 
 void                    FNAME_DEV(Cause)(struct USB2OTGDevice *, struct Interrupt *);
 
