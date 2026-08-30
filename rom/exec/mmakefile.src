@@ -68,6 +68,14 @@ ifeq ($(AROS_TARGET_CPU),m68k)
 OPTIMIZATION_CFLAGS := -Os
 endif
 
+ifeq ($(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH),m68k-amiga)
+# The amiga-m68k kickstart has to fit in a 512KB ROM bank - drop the runtime
+# debug log machinery. ExecLog() only ever emits when SysBase->ex_DebugFlags
+# is set, which a ROM-resident exec has no way to do, but every DINIT() and
+# friend still carries its format string into the ROM.
+USER_CPPFLAGS += -DNO_RUNTIME_DEBUG
+endif
+
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
 -include $(SRCDIR)/arch/all-$(ARCH)/exec/make.opts
