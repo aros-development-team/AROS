@@ -212,11 +212,13 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     /* late assign. we resolve the target and then promote the doslist entry
      * to full assign */
     if (dl->dol_Type == DLT_LATE) {
-        /* obtain a lock on the target */
-        lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
+        /* AssignAddToList() (Assign PREPEND on a deferred assign) may
+         * already have given the entry its primary lock and left the type
+         * alone; only lock the target name when it has none yet */
+        lock = dl->dol_Lock ? BNULL : Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 
         /* didn't find the target */
-        if (lock == BNULL) {
+        if (lock == BNULL && dl->dol_Lock == BNULL) {
             UnLockDosList(LDF_ALL | LDF_READ);
             FreeMem(dp, sizeof(struct DevProc));
             return NULL;
@@ -243,25 +245,24 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
          */
         Forbid();
         if (dl->dol_Type == DLT_LATE) {
-            dl->dol_Lock = lock;
-            dl->dol_Task = ((struct FileLock*)BADDR(lock))->fl_Task;
+            if (dl->dol_Lock == BNULL)
+                dl->dol_Lock = lock;
+            else if (lock != BNULL)
+                UnLock(lock);
+            dl->dol_Task = ((struct FileLock*)BADDR(dl->dol_Lock))->fl_Task;
             dl->dol_Type = DLT_DIRECTORY;
             Permit();
         } else {
             Permit();
-            UnLock(lock);
+            if (lock != BNULL)
+                UnLock(lock);
         }
 
-        /* the added entry will be a DLT_DIRECTORY, so we can just copy the
-         * details in and get out of here */
-        dp->dvp_Port = dl->dol_Task;
-        dp->dvp_Lock = dl->dol_Lock;
-        dp->dvp_Flags = 0;
-        dp->dvp_DevNode = dl;
-
-        UnLockDosList(LDF_ALL | LDF_READ);
-
-        return dp;
+        /* the entry is a plain assign now - possibly a multi-directory one
+         * when directories were added before its first use - so it is
+         * handled below like any other DLT_DIRECTORY: the caller must learn
+         * about the list (DVPF_ASSIGN), or objects in the added directories
+         * are not found on the first access through the assign */
     }
 
     /* nonbinding assign. like a late assign, but with no doslist promotion */
