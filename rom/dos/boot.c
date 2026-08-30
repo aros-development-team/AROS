@@ -35,6 +35,7 @@ extern char *generate_banner(void);
 
 #endif
 
+#include <intuition/screens.h>
 #include <proto/intuition.h>
 
 #ifdef USE_SYSTEM_CONFIGURATION
@@ -167,9 +168,19 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                 Close(scis);
                 Close(scos);
 
-                /* the login is done: take the display down again */
+                /* the login is done: take the display down again. The
+                 * graphical login runs on the "SYSTEM" public screen opened
+                 * by security.library, which stays up for the rest of the
+                 * script; the console fallback may have opened Workbench. */
                 if ((IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION)))
                 {
+                    struct Screen *sysscr = LockPubScreen("SYSTEM");
+                    if (sysscr)
+                    {
+                        UnlockPubScreen(NULL, sysscr);
+                        PubScreenStatus(sysscr, PSNF_PRIVATE);
+                        CloseScreen(sysscr);
+                    }
                     CloseWorkBench();
                     CloseLibrary((struct Library *)IntuitionBase);
                 }

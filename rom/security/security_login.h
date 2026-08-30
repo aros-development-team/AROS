@@ -41,6 +41,8 @@ extern BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *tagli
 extern LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok, BOOL systemmode,
                      STRPTR uid, ULONG uidsize, STRPTR pwd, ULONG pwdsize);
 extern void LoginMessageGUI(struct SecurityBase *secBase, CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadgets);
+/* Close the "SYSTEM" boot login screen again (no-op when never opened) */
+extern void CloseSystemScreen(struct SecurityBase *secBase);
 
 /* Console helpers: read a line / a hidden password from a filehandle */
 extern BOOL ReadLineCon(struct SecurityBase *secBase, BPTR input, STRPTR buf, ULONG size);
