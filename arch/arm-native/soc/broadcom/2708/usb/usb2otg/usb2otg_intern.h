@@ -415,6 +415,26 @@ struct USB2OTGUnit
     ULONG               hu_IntHltHfnum[8];      /* HFNUM at the last bare-CHHLTD halt */
     ULONG               hu_CtrlArmCount;        /* control transfers armed */
     ULONG               hu_CtrlFinCount;        /* control transfers finished */
+
+    /* IRQ-cause census. */
+    ULONG               hu_IrqCount;            /* GlobalIRQHandler entries */
+    ULONG               hu_IrqSofCount;         /* entries with SOF asserted */
+    ULONG               hu_IrqSofOnly;          /* SOF without HOSTCHANNEL */
+    ULONG               hu_IrqSofIdle;          /* SOF-only, no periodic work */
+    ULONG               hu_IrqHcCount;          /* entries with HOSTCHANNEL */
+    ULONG               hu_IrqPortCount;        /* entries with PORT */
+    ULONG               hu_IrqStatTicks;        /* ticks until the next dump */
+    ULONG               hu_IrqCountLast;        /* snapshots at the last dump */
+    ULONG               hu_IrqSofIdleLast;
+    ULONG               hu_IntIrqCount[8];      /* raw channel IRQs per INT device */
+    UWORD               hu_IntLastIval[8];      /* iouh_Interval at the last arm */
+
+    /* Last 8 INT promotions; dev |0x100 = watchdog. */
+    ULONG               hu_PromRingF[8];
+    ULONG               hu_PromRingD[8];
+    ULONG               hu_PromRingDev[8];
+    ULONG               hu_PromRingPos;
+    ULONG               hu_PromCount[8];        /* INT promotions per device */
     ULONG               hu_CtrlErrCount;        /* control transfers failed */
     ULONG               hu_CtrlNakRequeues;     /* split-NAK retry path */
     ULONG               hu_CtrlChhRequeues;     /* bare-CHHLTD retry path */

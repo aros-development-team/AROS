@@ -1797,7 +1797,10 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
             otg_Unit->hu_Channel[chan].hc_Request = req;
             otg_Unit->hu_Channel[chan].hc_ArmedRole = new_role;
             if (req->iouh_DevAddr < 8)
+            {
                 otg_Unit->hu_IntPollCount[req->iouh_DevAddr]++;
+                otg_Unit->hu_IntLastIval[req->iouh_DevAddr] = req->iouh_Interval;
+            }
             KrnSpinUnLock(&otg_Unit->hu_Lock);
 
             /*
