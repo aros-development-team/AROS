@@ -47,6 +47,10 @@ USER_CPPFLAGS := \
 	       -DDEBUG=0
 USER_LDFLAGS  := -L$(GENDIR)/lib -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-partition \
     modname=partition modtype=library \
     files="partition_init $(FUNCS) $(FILES)" uselibs="debug loadseg fatbpb"

@@ -25,6 +25,10 @@ USER_CPPFLAGS := \
 	       -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_LDFLAGS := -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-fs-afs \
     modname=afs modtype=handler \
     files="$(FILES)"

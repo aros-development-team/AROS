@@ -26,6 +26,10 @@ USER_CPPFLAGS += \
                -DUSE_EXEC_DEBUG
 USER_LDFLAGS := -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-timer \
   modname=timer modtype=device version=$(AROS_TARGET_PLATFORM) \
   files="$(FUNCS) $(FILES)" archspecific=yes

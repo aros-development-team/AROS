@@ -195,6 +195,10 @@ ifeq ($(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH),m68k-amiga)
 USER_CPPFLAGS += -DNO_RUNTIME_DEBUG
 endif
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-intuition \
   modname=intuition modtype=library \
   files="intuition_init $(FUNCS) $(FILES)"

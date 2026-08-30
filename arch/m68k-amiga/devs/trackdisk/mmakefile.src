@@ -4,6 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-amiga-m68k-trackdisk : includes kernel-disk-includes
 #MM- kernel-amiga-m68k-trackdisk-kobj : includes kernel-disk-includes
 
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+
 %build_module mmake=kernel-amiga-m68k-trackdisk \
   modname=trackdisk modtype=device \
   files="trackdisk_device trackdisk_hw"

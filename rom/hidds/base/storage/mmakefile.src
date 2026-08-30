@@ -22,6 +22,10 @@ USER_CPPFLAGS := \
 #USER_CPPFLAGS += -DDEBUG
 USER_LDFLAGS := -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-hidd-storage \
   modname=storage modtype=hidd \
   files="$(FILES)"

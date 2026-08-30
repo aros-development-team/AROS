@@ -7,6 +7,10 @@ FILES := handler commands filesystem notification support ram_security
 USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_CFLAGS := -fno-builtin
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-fs-ram \
     modname=ram modtype=handler \
     files="$(FILES)"

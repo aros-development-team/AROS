@@ -57,6 +57,10 @@ FUNCS := \
 #MM- workbench-libs-icon : linklibs
 #MM- core-linklibs: linklibs-icon
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=workbench-libs-icon \
     modname=icon modtype=library \
     files="icon_init $(FUNCS) $(FILES)" \

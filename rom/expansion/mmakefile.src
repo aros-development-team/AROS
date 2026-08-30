@@ -29,6 +29,10 @@ USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG
 USER_LDFLAGS := -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-expansion \
   modname=expansion modtype=library version=$(VERSION) \
   files="expansion_init $(FUNCS)" archspecific=yes

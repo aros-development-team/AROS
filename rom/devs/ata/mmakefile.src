@@ -35,6 +35,10 @@ ATA_CLASSFILES := \
     ata_busclass \
     ata_unitclass
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-ata \
   modname=ata modtype=device version=$(AROS_TARGET_PLATFORM) \
   files="$(ATA_DEVICEFILES) $(ATA_CLASSFILES)"

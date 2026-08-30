@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2010, The AROS Development Team. All rights reserved.
+# Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -11,6 +11,10 @@ ifneq (,$(filter riscv riscv64,$(CPU)))
     # to be linked in; it pulls in string functions, which a kickstart
     # module must take from stdc.static.
     USER_LDFLAGS := -static -lfdt
+endif
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 endif
 
 %build_module mmake=kernel-processor modname=processor modtype=resource \

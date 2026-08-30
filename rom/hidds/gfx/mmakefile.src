@@ -31,6 +31,10 @@ USER_CPPFLAGS:= -D__GRAPHICS_NOLIBBASE__ \
                     -D__UTILITY_NOLIBBASE__
 USER_LDFLAGS := -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-hidd-gfx \
   modname=gfx modtype=hidd \
   files="$(FILES) $(COLORCONVFILES)"

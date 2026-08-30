@@ -22,6 +22,10 @@ FUNCS   := \
 #MM     kernel-exec-includes \
 #MM     includes-copy
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=workbench-libs-mathffp \
   modname=mathffp modtype=library \
   files=$(FUNCS)

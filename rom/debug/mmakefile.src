@@ -14,6 +14,10 @@ USER_LDFLAGS := -static
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/debug/make.opts
 -include $(SRCDIR)/arch/$(CPU)-all/debug/make.opts
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-debug \
   modname=debug modtype=library archspecific=yes \
   files="$(FILES) $(FUNCS)" linklibfiles=$(STATICFUNCS)

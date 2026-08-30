@@ -702,6 +702,7 @@ aros_debug_aflags
 aros_debug_cxxflags
 aros_debug_cflags
 aros_debug_cppflags
+rom_optimization_cflags
 kernel_optimization_cflags
 aros_kernel_ldflags
 aros_kernel_objcflags
@@ -11494,6 +11495,10 @@ fi
                 if test "$optimization" = "default"; then
                     optimization_level=$toolchain_size_opt_lvl
                 fi
+                # ROM-resident code must fit in two 512KB kickstart banks, so it
+                # is always built for size - even when the rest of the system is
+                # built with an explicitly requested --with-optimization level.
+                rom_optimization_level=$toolchain_size_opt_lvl
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
                 aros_nominal_width=640
@@ -19645,6 +19650,9 @@ kernel_optimization_cflags="$kernel_optimization_level"
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $kernel_optimization_level" >&5
 printf '%s\n' "$kernel_optimization_level" >&6; }
 
+rom_optimization_cflags="$rom_optimization_level"
+
+
 
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking if we should enable unit tests" >&5
 printf %s "checking if we should enable unit tests... " >&6; }
@@ -19910,6 +19918,7 @@ fi
 
 
 # Target Related #########################
+
 
 
 

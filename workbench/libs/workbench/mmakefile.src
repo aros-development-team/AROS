@@ -49,6 +49,10 @@ FUNCS := \
 #MM workbench-libs-workbench : workbench-libs-icon-linklib
 #MM- core-linklibs: linklibs-workbench
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=workbench-libs-workbench \
   modname=workbench modtype=library \
   files="workbench_init $(FUNCS) $(FILES)"

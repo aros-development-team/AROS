@@ -5,6 +5,8 @@ include $(SRCDIR)/config/aros.cfg
 
 FUNCTIONS := allocpotbits freepotbits writepotgo
 
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+
 %build_module mmake=kernel-potgo \
     modname=potgo modtype=resource \
     files="$(FUNCTIONS)"

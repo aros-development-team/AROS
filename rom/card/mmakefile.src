@@ -18,6 +18,10 @@ FUNCTIONS := card_init
 #	cardresetcard copytuple devicetuple cardforcechange \
 #	cardchangecount cardinterface
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-cardres \
     modname=card modtype=resource \
     files="$(FUNCTIONS)"

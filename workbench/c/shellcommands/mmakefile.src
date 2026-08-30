@@ -63,9 +63,10 @@ USER_CPPFLAGS := \
                -DADATE="\"$(shell date "+%d.%m.%Y")\""
 USER_CPPFLAGS += -DUSE_EMBEDDED_COMMANDS
 ifeq ($(AROS_TARGET_CPU),m68k)
-# Make sure we optimize this code for size on m68k..
-OPTIMIZATION_CFLAGS := -Os
 USER_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
+endif
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 endif
 
 OBJDIR := $(OBJDIR).kernel

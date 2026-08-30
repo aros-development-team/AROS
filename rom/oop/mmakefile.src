@@ -37,6 +37,10 @@ USER_LDFLAGS := -static
 #MM     kernel-exec-includes \
 #MM     kernel-utility-includes
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-oop \
   modname=oop modtype=library \
   files="oop_init $(FUNCS) $(FILES)"

@@ -16,9 +16,10 @@ ifneq ($(REPOTYPE),)
 endif
 USER_LDFLAGS := -static
 ifeq ($(AROS_TARGET_CPU),m68k)
-# Make sure we optimize this code for size on m68k..
-OPTIMIZATION_CFLAGS := -Os
 DOS_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
+endif
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 endif
 
 DOS_CPPFLAGS += -DDOCACHECLEAR

@@ -19,6 +19,10 @@ USER_LDFLAGS := -static
 
 #MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-fs-con \
     conffile=con_handler.conf modname=con modtype=handler \
     files="$(FILES)"

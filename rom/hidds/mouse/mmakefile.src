@@ -12,6 +12,10 @@ USER_CPPFLAGS += \
     -D__UTILITY_NOLIBBASE__
 USER_LDFLAGS := -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-hidd-mouse \
     modname=mouse modtype=hidd \
     files="$(FILES)"

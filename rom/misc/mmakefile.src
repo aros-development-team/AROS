@@ -8,6 +8,10 @@ FUNCS := allocmiscresource freemiscresource
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-misc \
   modname=misc modtype=resource \
   files="misc_init $(FUNCS)"

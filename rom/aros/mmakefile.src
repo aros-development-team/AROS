@@ -17,6 +17,10 @@ USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-aros \
   modname=aros modtype=library \
   files="aros_init arosinquirea"
