@@ -36,6 +36,10 @@ extern char *generate_banner(void);
 #endif
 
 #include <intuition/screens.h>
+#include <graphics/layers.h>
+#include <utility/hooks.h>
+#include <aros/asmcall.h>
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 
 #ifdef USE_SYSTEM_CONFIGURATION
@@ -67,6 +71,92 @@ static void load_system_configuration(struct DosLibrary *DOSBase)
 #endif
 
 extern void BCPL_cliInit(void);
+
+
+/*
+ * Display for S:Security-Startup: a black, title-less public screen "SYSTEM".
+ * It becomes the default public screen, so the boot console and the login
+ * window (and its requesters) open on it instead of forcing Workbench open.
+ * The black comes from a backdrop window with a backfill hook - the screen's
+ * pens are left alone.
+ */
+struct BootScrData
+{
+    struct Library *bsd_GfxBase;
+    LONG            bsd_Pen;
+};
+
+AROS_UFH3(static void, BootScreenBackFillFunc,
+    AROS_UFHA(struct Hook *,            hook,   A0),
+    AROS_UFHA(struct RastPort *,        rp,     A2),
+    AROS_UFHA(struct BackFillMessage *, msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct BootScrData *bsd = (struct BootScrData *)hook->h_Data;
+    struct Library *GfxBase = bsd->bsd_GfxBase;
+    struct RastPort rpc = *rp;
+
+    rpc.Layer = NULL;
+    SetAPen(&rpc, bsd->bsd_Pen);
+    RectFill(&rpc, msg->Bounds.MinX, msg->Bounds.MinY, msg->Bounds.MaxX, msg->Bounds.MaxY);
+
+    AROS_USERFUNC_EXIT
+}
+
+static struct Screen *OpenBootScreen(struct IntuitionBase *IntuitionBase, struct Library *GfxBase,
+                                     struct Window **bdwin, struct Hook *hook, struct BootScrData *bsd)
+{
+    struct Screen *scr = OpenScreenTags(NULL,
+                                        SA_PubName,       (IPTR)"SYSTEM",
+                                        SA_Type,          PUBLICSCREEN,
+                                        SA_LikeWorkbench, TRUE,
+                                        SA_ShowTitle,     FALSE,
+                                        SA_Quiet,         TRUE,
+                                        TAG_DONE);
+    if (scr == NULL)
+        return NULL;
+
+    bsd->bsd_GfxBase = GfxBase;
+    bsd->bsd_Pen = ObtainBestPenA(scr->ViewPort.ColorMap, 0, 0, 0, NULL);
+    hook->h_Entry = (HOOKFUNC)BootScreenBackFillFunc;
+    hook->h_Data  = bsd;
+    *bdwin = OpenWindowTags(NULL,
+                            WA_CustomScreen,  (IPTR)scr,
+                            WA_Left,          0,
+                            WA_Top,           0,
+                            WA_Width,         scr->Width,
+                            WA_Height,        scr->Height,
+                            WA_Borderless,    TRUE,
+                            WA_Backdrop,      TRUE,
+                            WA_Activate,      FALSE,
+                            WA_SimpleRefresh, TRUE,
+                            WA_NoCareRefresh, TRUE,
+                            WA_BackFill,      (IPTR)hook,
+                            TAG_DONE);
+    PubScreenStatus(scr, 0);
+    SetDefaultPubScreen("SYSTEM");
+    return scr;
+}
+
+static void CloseBootScreen(struct DosLibrary *DOSBase, struct IntuitionBase *IntuitionBase, struct Library *GfxBase,
+                            struct Screen *scr, struct Window *bdwin, struct BootScrData *bsd)
+{
+    LONG tries;
+
+    SetDefaultPubScreen(NULL);
+    if (bdwin)
+        CloseWindow(bdwin);
+    if (bsd->bsd_Pen != -1)
+        ReleasePen(scr->ViewPort.ColorMap, bsd->bsd_Pen);
+    for (tries = 0; tries < 50; tries++)
+    {
+        PubScreenStatus(scr, PSNF_PRIVATE);
+        if (CloseScreen(scr))
+            break;
+        Delay(10);      /* a visitor window is still closing */
+    }
+}
 
 void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 {
@@ -145,14 +235,25 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 
         if (sas)
         {
-            BPTR scis = Open("CON:////AROS/AUTO/CLOSE/SMART/BOOT", MODE_OLDFILE);
-            BPTR scos = scis ? OpenFromLock(DupLockFromFH(scis)) : BNULL;
+            struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
+            struct Library *GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+            struct Screen *sysscr = NULL;
+            struct Window *sysbdw = NULL;
+            struct Hook sysbfhook;
+            struct BootScrData sysbsd;
+            BPTR scis, scos;
+
+            /* everything below - console, login window, requesters - opens
+             * on the black "SYSTEM" screen instead of forcing Workbench */
+            if (IntuitionBase && GfxBase)
+                sysscr = OpenBootScreen(IntuitionBase, GfxBase, &sysbdw, &sysbfhook, &sysbsd);
+
+            scis = Open("CON:////AROS/AUTO/CLOSE/SMART/BOOT", MODE_OLDFILE);
+            scos = scis ? OpenFromLock(DupLockFromFH(scis)) : BNULL;
 
             D(bug("[DOS] %s: running Security-Startup\n", __func__);)
             if (scis && scos)
             {
-                struct IntuitionBase *IntuitionBase;
-
                 if (SystemTags(NULL,
                                NP_Name, "Security Startup",
                                SYS_Background, FALSE,
@@ -167,23 +268,6 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                 }
                 Close(scis);
                 Close(scos);
-
-                /* the login is done: take the display down again. The
-                 * graphical login runs on the "SYSTEM" public screen opened
-                 * by security.library, which stays up for the rest of the
-                 * script; the console fallback may have opened Workbench. */
-                if ((IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION)))
-                {
-                    struct Screen *sysscr = LockPubScreen("SYSTEM");
-                    if (sysscr)
-                    {
-                        UnlockPubScreen(NULL, sysscr);
-                        PubScreenStatus(sysscr, PSNF_PRIVATE);
-                        CloseScreen(sysscr);
-                    }
-                    CloseWorkBench();
-                    CloseLibrary((struct Library *)IntuitionBase);
-                }
             }
             else
             {
@@ -191,6 +275,19 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                     Close(scis);
                 Close(sas);
             }
+
+            /* the script is done: take the display down again before the
+             * Startup-Sequence runs. A console fallback without the SYSTEM
+             * screen may have opened Workbench instead. */
+            if (sysscr)
+                CloseBootScreen(DOSBase, IntuitionBase, GfxBase, sysscr, sysbdw, &sysbsd);
+            if (IntuitionBase)
+            {
+                CloseWorkBench();
+                CloseLibrary((struct Library *)IntuitionBase);
+            }
+            if (GfxBase)
+                CloseLibrary(GfxBase);
         }
     }
 

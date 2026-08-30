@@ -620,7 +620,6 @@ static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct
             secFreeUserInfo((struct secUserInfo *)info);
         }
         CloseLoc(secBase, &li);
-        CloseSystemScreen(secBase);
     }
 
     return user;
@@ -706,14 +705,10 @@ static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct
         CloseLoc(secBase, &li);
         if (!xuser)
         {
-            /* cancelled: nothing keeps the login screen up any more */
-            CloseSystemScreen(secBase);
             if (info)
                 secFreeUserInfo((struct secUserInfo *)info);
             return secOWNER_NOBODY;
         }
-        /* on success the "SYSTEM" screen stays up for the rest of the
-         * boot script; dos/boot.c closes it before the Startup-Sequence */
     }
 
     ObtainSemaphore(&secBase->TaskOwnerSem);

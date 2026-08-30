@@ -47,61 +47,19 @@ static struct Library *OpenMUIMaster(struct SecurityBase *secBase)
 #define SYSTEM_SCREEN_NAME "SYSTEM"
 
 /*
- * The boot login (secT_System) may run before any screen exists; MUI then has
- * nowhere to open the window and the login would fall back to the console.
- * Open a black, title-less public screen "SYSTEM" for it and make it the
- * default, so the window and any failure requesters land there. It stays up
- * across the login attempts and is closed by CloseSystemScreen() once the
- * login flow is over.
+ * The boot login runs on the black "SYSTEM" public screen that dos/boot.c
+ * opens around S:Security-Startup (it is the default public screen then, so
+ * requesters land on it too). Outside the boot there is a normal Workbench;
+ * the window just opens wherever MUI puts it.
  */
-static BOOL EnsureSystemScreen(struct SecurityBase *secBase)
+static BOOL SystemScreenPresent(struct SecurityBase *secBase)
 {
-    static const ULONG blackpen[] = { (1 << 16) | 0, 0, 0, 0, 0 };
-    struct Screen *scr;
+    struct Screen *scr = LockPubScreen(SYSTEM_SCREEN_NAME);
 
-    if ((scr = LockPubScreen(SYSTEM_SCREEN_NAME)))
-    {
-        /* still up (ours), or someone else provides it */
-        UnlockPubScreen(NULL, scr);
-        return TRUE;
-    }
-    /* dos/boot.c closes the screen behind us after the boot script */
-    secBase->sec_SystemScreen = NULL;
-
-    scr = OpenScreenTags(NULL,
-                         SA_PubName,        (IPTR)SYSTEM_SCREEN_NAME,
-                         SA_Type,           PUBLICSCREEN,
-                         SA_LikeWorkbench,  TRUE,
-                         SA_ShowTitle,      FALSE,
-                         SA_Quiet,          TRUE,
-                         SA_Colors32,       (IPTR)blackpen,
-                         TAG_DONE);
     if (scr == NULL)
         return FALSE;
-
-    PubScreenStatus(scr, 0);
-    SetDefaultPubScreen(SYSTEM_SCREEN_NAME);
-    secBase->sec_SystemScreen = scr;
+    UnlockPubScreen(NULL, scr);
     return TRUE;
-}
-
-void CloseSystemScreen(struct SecurityBase *secBase)
-{
-    struct Screen *scr = secBase->sec_SystemScreen;
-    LONG tries;
-
-    if (scr == NULL)
-        return;
-    secBase->sec_SystemScreen = NULL;
-    SetDefaultPubScreen(NULL);
-    for (tries = 0; tries < 50; tries++)
-    {
-        PubScreenStatus(scr, PSNF_PRIVATE);
-        if (CloseScreen(scr))
-            return;
-        Delay(10);      /* a visitor window is still closing */
-    }
-    /* leave it open rather than crash a visitor */
 }
 
 static void CopyStr(STRPTR dst, ULONG size, CONST_STRPTR src)
@@ -150,7 +108,7 @@ LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR
     if (!(MUIMasterBase = OpenMUIMaster(secBase)))
         return LOGINGUI_UNAVAILABLE;
 
-    if (systemmode && pubscreen == NULL && EnsureSystemScreen(secBase))
+    if (systemmode && pubscreen == NULL && SystemScreenPresent(secBase))
         pubscreen = SYSTEM_SCREEN_NAME;
     wintags[5].ti_Tag  = pubscreen ? MUIA_Window_PublicScreen : TAG_IGNORE;
     wintags[5].ti_Data = (IPTR)pubscreen;

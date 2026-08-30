@@ -50,8 +50,6 @@
 /*
  * The library base
  */
-struct Screen;
-
 struct SecurityBase
 {
     struct Library              LibNode;
@@ -67,9 +65,6 @@ struct SecurityBase
     struct Library              *sec_IntuitionBase;
     struct Library              *sec_LocaleBase;
     BOOL                        sec_AfterDOSDone;
-
-    /* "SYSTEM" public screen for the boot login (security_logingui.c) */
-    struct Screen               *sec_SystemScreen;
 
     /* task.resource notification hook */
     struct Hook                 TaskNotifyHook;
