@@ -1752,7 +1752,11 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  */
                                 if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
                                     req->iouh_DevAddr < 8)
+                                {
                                     USBUnit->hu_IntCompCount[req->iouh_DevAddr]++;
+                                    /* Data flows again — lift the NAK backoff. */
+                                    USBUnit->hu_IntNakStreak[req->iouh_DevAddr] = 0;
+                                }
                                 D(
                                     if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
                                         req->iouh_Actual > 0)
@@ -2006,7 +2010,11 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
                             {
                                 if (req->iouh_DevAddr < 8)
+                                {
                                     USBUnit->hu_IntNakCount[req->iouh_DevAddr]++;
+                                    if (USBUnit->hu_IntNakStreak[req->iouh_DevAddr] < 255)
+                                        USBUnit->hu_IntNakStreak[req->iouh_DevAddr]++;
+                                }
                                 /* Clear interrupt flags */
                                 wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
 
@@ -2018,6 +2026,11 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     ULONG interval = usb2otg_clamp_interval(req->iouh_Interval);
                                     if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
                                         interval = 2;
+                                    if (req->iouh_DevAddr < 8 &&
+                                        USBUnit->hu_IntNakStreak[req->iouh_DevAddr] >=
+                                            USB2OTG_INT_NAK_BACKOFF_STREAK &&
+                                        interval < USB2OTG_INT_NAK_BACKOFF_FRAMES)
+                                        interval = USB2OTG_INT_NAK_BACKOFF_FRAMES;
                                     ULONG next = (frnm + interval) & 0x7ff;
                                     req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                                 }
@@ -3086,7 +3099,15 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                         usb2otg_exorcise_channel(chan);
 
                         if (req->iouh_DevAddr < 8)
+                        {
                             otg_Unit->hu_IntNakCount[req->iouh_DevAddr]++;
+                            if (otg_Unit->hu_IntNakStreak[req->iouh_DevAddr] < 255)
+                                otg_Unit->hu_IntNakStreak[req->iouh_DevAddr]++;
+                            if (otg_Unit->hu_IntNakStreak[req->iouh_DevAddr] >=
+                                    USB2OTG_INT_NAK_BACKOFF_STREAK &&
+                                interval < USB2OTG_INT_NAK_BACKOFF_FRAMES)
+                                interval = USB2OTG_INT_NAK_BACKOFF_FRAMES;
+                        }
                         req->iouh_DriverPrivate1 =
                             (APTR)(IPTR)((frnm_now << 16) |
                                    ((frnm_now + interval) & 0x7ff));
