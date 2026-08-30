@@ -35,9 +35,9 @@ extern char *generate_banner(void);
 
 #endif
 
-#ifdef USE_SYSTEM_CONFIGURATION
-
 #include <proto/intuition.h>
+
+#ifdef USE_SYSTEM_CONFIGURATION
 
 static void load_system_configuration(struct DosLibrary *DOSBase)
 {
@@ -130,6 +130,65 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
         }
     }
 
+    /*
+     * Multi-user: with security.library in the ROM, S:Security-Startup runs
+     * before the Startup-Sequence. It performs the login and prepares the
+     * assigns for the per-user settings. It gets a boot console of its own;
+     * console and screen are closed again afterwards, so that the
+     * Startup-Sequence starts with a fresh display. Without the script (or
+     * the library) this is an ordinary single-user boot.
+     */
+    if (SECURITY_ACTIVE && !(BootFlags & (BF_NO_STARTUP_SEQUENCE | BF_EMERGENCY_CONSOLE | BF_NO_BOOT_REQUESTERS)))
+    {
+        BPTR sas = Open("S:Security-Startup", MODE_OLDFILE);
+
+        if (sas)
+        {
+            BPTR scis = Open("CON:////AROS/AUTO/CLOSE/SMART/BOOT", MODE_OLDFILE);
+            BPTR scos = scis ? OpenFromLock(DupLockFromFH(scis)) : BNULL;
+
+            D(bug("[DOS] %s: running Security-Startup\n", __func__);)
+            if (scis && scos)
+            {
+                struct IntuitionBase *IntuitionBase;
+                BYTE *C = generate_banner();
+
+                if (C)
+                {
+                    FPuts(scos, C);
+                    FreeVec(C);
+                }
+                if (SystemTags(NULL,
+                               NP_Name, "Security Startup",
+                               SYS_Background, FALSE,
+                               SYS_Asynch, FALSE,
+                               SYS_Input, scis,
+                               SYS_Output, scos,
+                               SYS_ScriptInput, sas,
+                               TAG_END) == -1)
+                {
+                    D(bug("[DOS] %s:  .. Security-Startup failed!\n", __func__);)
+                    Close(sas);
+                }
+                Close(scis);
+                Close(scos);
+
+                /* the login is done: take the display down again */
+                if ((IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION)))
+                {
+                    CloseWorkBench();
+                    CloseLibrary((struct Library *)IntuitionBase);
+                }
+            }
+            else
+            {
+                if (scis)
+                    Close(scis);
+                Close(sas);
+            }
+        }
+    }
+
     D(bug("[DOS] %s: preparing console\n", __func__);)
 
     if (BootFlags & BF_EMERGENCY_CONSOLE) {
@@ -169,34 +228,6 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                 }
             } else {
                 FPuts(cos, C);
-            }
-
-            /*
-             * Multi-user: with security.library in the ROM, S:Security-Startup
-             * runs before the Startup-Sequence. It performs the login and
-             * prepares the assigns for the per-user settings. Without the
-             * script (or the library) this is an ordinary single-user boot.
-             */
-            if (SECURITY_ACTIVE && !(BootFlags & BF_NO_STARTUP_SEQUENCE))
-            {
-                BPTR sas = Open("S:Security-Startup", MODE_OLDFILE);
-
-                if (sas)
-                {
-                    D(bug("[DOS] %s: running Security-Startup\n", __func__);)
-                    if (SystemTags(NULL,
-                                   NP_Name, "Security Startup",
-                                   SYS_Background, FALSE,
-                                   SYS_Asynch, FALSE,
-                                   SYS_Input, cis,
-                                   SYS_Output, cos,
-                                   SYS_ScriptInput, sas,
-                                   TAG_END) == -1)
-                    {
-                        D(bug("[DOS] %s:  .. Security-Startup failed!\n", __func__);)
-                        Close(sas);
-                    }
-                }
             }
 
             D(bug("[DOS] %s: initialising CLI\n", __func__);)

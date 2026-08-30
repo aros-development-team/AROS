@@ -75,7 +75,7 @@ enum { ARG_ENABLE, ARG_DISABLE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
 #define STARTUP_OFF     "S/Security-Startup.disabled"
 
 static const char StartupScript[] =
-    "; $VER: Security-Startup 45.4 (30.08.2026)\n"
+    "; $VER: Security-Startup 45.5 (30.08.2026)\n"
     ";\n"
     "; Installed by AMUInit ENABLE. dos.library runs this script before\n"
     "; S:Startup-Sequence when security.library is part of the ROM: it shows\n"
@@ -151,10 +151,21 @@ static const char StartupScript[] =
     "Assign LIBS: REMOVE\n"
     "\n"
     ";\n"
-    "; Per-user settings: Login sets $Home to the home directory from the\n"
-    "; user database.\n"
+    "; Per-user settings: Login sets $Home and $User from the user database.\n"
     "If \"$Home\" NOT EQ \"\"\n"
     "    Assign HOME: \"$Home\"\n"
+    "EndIf\n"
+    ";\n"
+    "; A user profile in SYS:Security/Profiles/<user>/ provides its own ENVARC\n"
+    "; and S directories; without them the system ones stay in use.\n"
+    "If \"$User\" NOT EQ \"\"\n"
+    "    If EXISTS \"SYS:Security/Profiles/$User/ENVARC\"\n"
+    "        Assign ENVARC: \"SYS:Security/Profiles/$User/ENVARC\"\n"
+    "    EndIf\n"
+    "    If EXISTS \"SYS:Security/Profiles/$User/S\"\n"
+    "        Assign S: \"SYS:Security/Profiles/$User/S\"\n"
+    "        Assign S: SYS:S ADD\n"
+    "    EndIf\n"
     "EndIf\n"
     "EndCLI >NIL:\n";
 

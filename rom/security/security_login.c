@@ -408,7 +408,7 @@ static void SetProcessVar(struct SecurityBase *secBase, struct Task *task, CONST
     Permit();
 }
 
-/* "Home" = the user's home directory, for the task that just logged in */
+/* "$Home"/"$User" = home directory and user id of the user that just logged in */
 static void SetHomeVar(struct SecurityBase *secBase, struct Task *task, UWORD uid)
 {
     struct secUserInfo *ui = secAllocUserInfo();
@@ -416,7 +416,16 @@ static void SetHomeVar(struct SecurityBase *secBase, struct Task *task, UWORD ui
     if (ui)
     {
         ui->uid = uid;
-        SetProcessVar(secBase, task, "Home", secGetUserInfo(ui, secKeyType_uid) ? ui->HomeDir : "");
+        if (secGetUserInfo(ui, secKeyType_uid))
+        {
+            SetProcessVar(secBase, task, "Home", ui->HomeDir);
+            SetProcessVar(secBase, task, "User", ui->UserID);
+        }
+        else
+        {
+            SetProcessVar(secBase, task, "Home", "");
+            SetProcessVar(secBase, task, "User", "");
+        }
         secFreeUserInfo(ui);
     }
 }
