@@ -165,6 +165,7 @@ struct secGroupInfo
 #define secT_All                (TAG_USER+12)   /* for secLogout(), logout until user stack empty   */
 #define secT_NoLog              (TAG_USER+13)   /* for secLoginA(), only root                       */
 #define secT_Force              (TAG_USER+14)   /* for secKill(): RemTask() instead of CTRL-C       */
+#define secT_System             (TAG_USER+15)   /* for secLoginA(): the boot login (Security-Startup); the graphical login offers Shutdown/Reboot instead of Cancel */
 
 /*
  * Protection bits (see also <dos/dos.h>)

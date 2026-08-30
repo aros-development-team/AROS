@@ -10,7 +10,7 @@
         Login
 
     SYNOPSIS
-        USERID,PASSWORD/K,GLOBAL/S,PARENT/S,GRAPHICAL/S,QUIET/S
+        USERID,PASSWORD/K,GLOBAL/S,PARENT/S,GRAPHICAL/S,QUIET/S,SYSTEM/S
 
     LOCATION
         C:
@@ -58,9 +58,9 @@
 
 const TEXT version[] = "$VER: Login 45.1 (28.08.2026)";
 
-#define TEMPLATE "USERID,PASSWORD/K,GLOBAL/S,PARENT/S,GRAPHICAL/S,QUIET/S"
+#define TEMPLATE "USERID,PASSWORD/K,GLOBAL/S,PARENT/S,GRAPHICAL/S,QUIET/S,SYSTEM/S"
 
-enum { ARG_USERID, ARG_PASSWORD, ARG_GLOBAL, ARG_PARENT, ARG_GRAPHICAL, ARG_QUIET, ARG_COUNT };
+enum { ARG_USERID, ARG_PASSWORD, ARG_GLOBAL, ARG_PARENT, ARG_GRAPHICAL, ARG_QUIET, ARG_SYSTEM, ARG_COUNT };
 
 struct Library *secBase;
 
@@ -118,7 +118,7 @@ int main(void)
 
     if ((rda = ReadArgs(TEMPLATE, args, NULL)))
     {
-        struct TagItem tags[8];
+        struct TagItem tags[10];
         int n = 0;
 
         if (args[ARG_USERID])
@@ -136,6 +136,14 @@ int main(void)
         if (args[ARG_GRAPHICAL])
         {
             tags[n].ti_Tag = secT_Graphical; tags[n++].ti_Data = TRUE;
+        }
+        if (args[ARG_SYSTEM])
+        {
+            tags[n].ti_Tag = secT_System; tags[n++].ti_Data = TRUE;
+        }
+        if (args[ARG_QUIET])
+        {
+            tags[n].ti_Tag = secT_Quiet; tags[n++].ti_Data = TRUE;
         }
         if (args[ARG_QUIET])
         {

@@ -8,6 +8,7 @@
           closed again; nothing MUI-related is referenced at library init.
 */
 
+#include <exec/pm.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -54,12 +55,13 @@ static void CopyStr(STRPTR dst, ULONG size, CONST_STRPTR src)
  * Put up the login window and wait for the user.
  *   prompt    - text shown above the inputs (already localised/formatted)
  *   cancelok  - TRUE: the user may cancel (secLoginA), FALSE: must log in
+ *   systemmode- the boot login: Shutdown/Reboot buttons instead of Cancel
  *   uid       - in: preset user id (may be empty), out: the entered user id
  *   pwd       - out: the entered password (may be empty)
  * Returns LOGINGUI_OK, LOGINGUI_CANCEL, or LOGINGUI_UNAVAILABLE when MUI
  * cannot be used (the caller then falls back to the console).
  */
-LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok,
+LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok, BOOL systemmode,
               STRPTR uid, ULONG uidsize, STRPTR pwd, ULONG pwdsize)
 {
     struct Library *MUIMasterBase;
@@ -71,6 +73,7 @@ LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR
         { MUIA_LoginWindow_Prompt,          (IPTR)prompt                                    },
         { MUIA_LoginWindow_Cancel_Disabled, cancelok ? FALSE : TRUE                         },
         { MUIA_LoginWindow_Method_Status,   LWA_METH_None       /* local logins only */     },
+        { MUIA_LoginWindow_SystemMode,      systemmode ? TRUE : FALSE                       },
         { pubscreen ? MUIA_Window_PublicScreen : TAG_IGNORE, (IPTR)pubscreen                },
         { TAG_DONE,                         0                                               }
     };
@@ -111,6 +114,18 @@ LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR
                         CopyStr(pwd, pwdsize, s);
                         ok = LOGINGUI_OK;
                         break;
+                    }
+                    if (id == LWA_RV_SHUTDOWN || id == LWA_RV_REBOOT)
+                    {
+                        /* system mode: the machine goes down instead of logging in */
+                        set(win, MUIA_Window_Open, FALSE);
+                        if (id == LWA_RV_REBOOT)
+                            ColdReboot();
+                        else
+                            ShutdownA(SD_ACTION_POWEROFF);
+                        /* not supported on this machine: keep asking */
+                        set(win, MUIA_Window_Open, TRUE);
+                        continue;
                     }
                     if (sigs)
                     {

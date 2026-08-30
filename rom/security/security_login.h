@@ -29,6 +29,7 @@ struct secTags
     BOOL                Quiet;
     BOOL                All;
     BOOL                NoLog;
+    BOOL                System;         /* secT_System: boot login */
 };
 
 extern BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, struct secTags *tags);
@@ -37,7 +38,7 @@ extern BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *tagli
 #define LOGINGUI_OK           (1)
 #define LOGINGUI_CANCEL       (0)
 #define LOGINGUI_UNAVAILABLE  (-1)     /* no MUI / no LoginWindow.mcc: use the console */
-extern LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok,
+extern LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR prompt, BOOL cancelok, BOOL systemmode,
                      STRPTR uid, ULONG uidsize, STRPTR pwd, ULONG pwdsize);
 extern void LoginMessageGUI(struct SecurityBase *secBase, CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadgets);
 
