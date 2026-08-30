@@ -977,6 +977,31 @@ static void writeinitlib(FILE *out, struct config *cfg)
     if (cfg->handlerlist)
         writehandler(out, cfg);
 
+    /* Per-module set descriptor - see struct __aros_libinit_sets. Handlers
+       return before ever using it, so do not emit an unused table for them. */
+    if (cfg->modtype != HANDLER)
+    {
+        fprintf(out,
+                "static const struct __aros_libinit_sets GM_UNIQUENAME(InitSets) =\n"
+                "{\n"
+        );
+        fprintf(out, "    %s,\n", (cfg->options & OPTION_NOAUTOLIB) ? "NULL" : "SETNAME(LIBS)");
+        fprintf(out, "    %s,\n", cfg->rellibs ? "SETNAME(RELLIBS)" : "NULL");
+        fprintf(out, "    SETNAME(INIT),\n");
+        fprintf(out, "    %s,\n", (cfg->classlist != NULL) ? "SETNAME(CLASSESINIT)" : "NULL");
+        fprintf(out,
+                "    SETNAME(CTORS),\n"
+                "    SETNAME(INIT_ARRAY),\n"
+                "    SETNAME(INITLIB),\n"
+                "    SETNAME(EXPUNGELIB),\n"
+                "    SETNAME(FINI_ARRAY),\n"
+                "    SETNAME(DTORS),\n"
+                "    SETNAME(EXIT),\n"
+        );
+        fprintf(out, "    %s\n", (cfg->classlist != NULL) ? "SETNAME(CLASSESEXPUNGE)" : "NULL");
+        fprintf(out, "};\n\n");
+    }
+
     fprintf(out,
             "extern const LONG __aros_libreq_SysBase __attribute__((weak));\n"
             "\n"
@@ -1008,7 +1033,6 @@ static void writeinitlib(FILE *out, struct config *cfg)
     fprintf(out,
             "\n"
             "    int ok;\n"
-            "    int initcalled = 0;\n"
     );
     /* Set the global SysBase, needed for __aros_setoffsettable()/__aros_getoffsettable() */
     if (cfg->options & OPTION_DUPBASE)
@@ -1121,45 +1145,14 @@ static void writeinitlib(FILE *out, struct config *cfg)
         fprintf(out, "    GM_SEGLIST_FIELD(LIBBASE) = segList;\n");
     if (cfg->options & OPTION_DUPBASE)
         fprintf(out, "    GM_ROOTBASE_FIELD(LIBBASE) = (LIBBASETYPEPTR)LIBBASE;\n");
-    fprintf(out, "    if (");
-    if (!(cfg->options & OPTION_NOAUTOLIB))
-        fprintf(out, "set_open_libraries() && ");
-    if (cfg->rellibs)
-        fprintf(out, "set_open_rellibraries(LIBBASE) && ");
+    /* The whole open/init/rollback sequence now lives in _set_libinit(),
+       driven by the descriptor emitted above. */
     fprintf(out,
-            "set_call_funcs(SETNAME(INIT), 1, 1) &&"
-    );
-    if (cfg->classlist != NULL)
-        fprintf(out, "set_call_libfuncs(SETNAME(CLASSESINIT), 1, 1, LIBBASE) && ");
-    fprintf(out,
-            "1)\n"
-            "    {\n"
-            "        set_call_funcs(SETNAME(CTORS), -1, 0);\n"
-            "        set_call_funcs(SETNAME(INIT_ARRAY), 1, 0);\n"
-            "\n"
-    );
-
-    fprintf(out,
-            "        initcalled = 1;\n"
-            "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, LIBBASE);\n"
-            "    }\n"
-            "    else\n"
-            "        ok = 0;\n"
+            "    ok = set_libinit(&GM_UNIQUENAME(InitSets), LIBBASE);\n"
             "\n"
             "    if (!ok)\n"
             "    {\n"
-            "        if (initcalled)\n"
-            "            set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, LIBBASE);\n"
-            "        set_call_funcs(SETNAME(FINI_ARRAY), -1, 0);\n"
-            "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
-            "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
     );
-    if (cfg->classlist != NULL)
-        fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, LIBBASE);\n");
-    if (cfg->rellibs)
-        fprintf(out, "        set_close_rellibraries(LIBBASE);\n");
-    if (!(cfg->options & OPTION_NOAUTOLIB))
-        fprintf(out, "        set_close_libraries();\n");
 
     if (cfg->options & OPTION_RESAUTOINIT)
     {
@@ -1554,17 +1547,10 @@ static void writeexpungelib(FILE *out, struct config *cfg)
                 "\n"
                 "        Remove((struct Node *)LIBBASE);\n"
                 "\n"
-                "        set_call_funcs(SETNAME(FINI_ARRAY), -1, 0);\n"
-                "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
-                "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
+                "        set_libexpunge(&GM_UNIQUENAME(InitSets), LIBBASE);\n"
         );
-        if (cfg->classlist != NULL)
-            fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, LIBBASE);\n");
-        if (cfg->rellibs)
-            fprintf(out, "        set_close_rellibraries(LIBBASE);\n");
         if (!(cfg->options & OPTION_NOAUTOLIB))
-            fprintf(out, "        set_close_libraries();\n"
-                         "#ifdef GM_OOPBASE_FIELD\n"
+            fprintf(out, "#ifdef GM_OOPBASE_FIELD\n"
                          "        CloseLibrary((struct Library *)GM_OOPBASE_FIELD(LIBBASE));\n"
                          "#endif\n"
                     );

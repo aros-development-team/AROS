@@ -2,7 +2,7 @@
 #define _AROS_SYMBOLSETS_H
 
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Symbol sets support
@@ -222,3 +222,36 @@ extern int _set_open_libraries_list(const void * const list[], struct ExecBase *
 extern int _set_open_rellibraries_list(APTR base, const void * const list[], struct ExecBase *sysBase);
 extern void _set_close_libraries_list(const void * const list[], struct ExecBase *sysBase);
 extern void _set_close_rellibraries_list(APTR base, const void * const list[], struct ExecBase *sysBase);
+
+/* Consolidated module init.
+
+   genmodule used to emit the whole open/init/rollback sequence inline into
+   every module's InitLib, which cost ~300 bytes per module. The sets are
+   gathered into this descriptor instead and the sequence runs once, here.
+   Optional sets are NULL when the module does not use them, matching the
+   calls genmodule used to omit at compile time. */
+struct __aros_libinit_sets
+{
+    const void * const *libs;           /* LIBS,     NULL if noautolib   */
+    const void * const *rellibs;        /* RELLIBS,  NULL if no rellibs  */
+    const void * const *init;           /* INIT                          */
+    const void * const *classesinit;    /* CLASSESINIT, NULL if no classes */
+    const void * const *ctors;          /* CTORS                         */
+    const void * const *init_array;     /* INIT_ARRAY                    */
+    const void * const *initlib;        /* INITLIB                       */
+    const void * const *expungelib;     /* EXPUNGELIB                    */
+    const void * const *fini_array;     /* FINI_ARRAY                    */
+    const void * const *dtors;          /* DTORS                         */
+    const void * const *exit;           /* EXIT                          */
+    const void * const *classesexpunge; /* CLASSESEXPUNGE, NULL if none  */
+};
+
+extern int _set_libinit(const struct __aros_libinit_sets *sets, void *libbase, struct ExecBase *sysBase);
+#define set_libinit(sets, libbase) _set_libinit(sets, libbase, SysBase)
+
+/* The teardown tail shared by a failed init and a real expunge:
+   FINI_ARRAY, DTORS, EXIT, then the class and library closes. The caller
+   still owns everything module-specific around it (Remove(), the OOP base
+   close, per-task slot, __freebase). */
+extern void _set_libexpunge(const struct __aros_libinit_sets *sets, void *libbase, struct ExecBase *sysBase);
+#define set_libexpunge(sets, libbase) _set_libexpunge(sets, libbase, SysBase)
