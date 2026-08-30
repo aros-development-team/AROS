@@ -21,7 +21,6 @@ static const UWORD __suported_cmds[] =
     UHCMD_USBSUSPEND,
     UHCMD_USBOPER,
     UHCMD_CONTROLXFER,
-    UHCMD_ISOXFER,
     UHCMD_INTXFER,
     UHCMD_BULKXFER,
     NSCMD_DEVICEQUERY,
@@ -792,34 +791,4 @@ WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
         ioreq->iouh_Length, ioreq->iouh_Interval, next_to_handle));
 
     return (RC_DONTREPLY);
-}
-
-WORD FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *otg_Unit,
-                       LIBBASETYPEPTR USB2OTGBase)
-{
-    D(bug("[USB2OTG] UHCMD_ISOXFER(unit:0x%p, ioreq:0x%p)\n",
-                otg_Unit, ioreq));
-
-    if(ioreq->iouh_Flags & UHFF_LOWSPEED)
-    {
-        return(UHIOERR_BADPARAMS);
-    }
-
-    ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
-    ioreq->iouh_Actual = 0;
-
-    Disable();
-#if defined(__AROSEXEC_SMP__)
-    KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
-#endif
-    AddTail(&otg_Unit->hu_IsoXFerQueue, (struct Node *) ioreq);
-#if defined(__AROSEXEC_SMP__)
-    KrnSpinUnLock(&otg_Unit->hu_Lock);
-#endif
-    Enable();
-    //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
-
-    D(bug("[USB2OTG] UHCMD_ISOXFER: handled ioreq @ 0x%p\n", ioreq));
-    return(RC_DONTREPLY);
 }
