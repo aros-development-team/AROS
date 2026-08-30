@@ -1684,8 +1684,7 @@ xhciObtainDeviceCtx(struct PCIController *hc,
          */
         if(devCtx->dc_DevAddr != 0) {
             pciusbWarn("xHCI",
-                       "Stale device on route %05lx port %lu (addr %lu slot %lu) - discarding
-",
+                       DEBUGWARNCOLOR_SET "Stale device on route %05lx port %lu (addr %lu slot %lu) - discarding" DEBUGCOLOR_RESET"\n",
                        (ULONG)route, (ULONG)rootPortIndex,
                        (ULONG)devCtx->dc_DevAddr, (ULONG)devCtx->dc_SlotID);
             xhciDisconnectDevice(hc, devCtx, timerreq);
