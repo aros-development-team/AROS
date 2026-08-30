@@ -422,13 +422,13 @@ Object *LoginWindow__OM_NEW
                         MUIA_Weight, 50,
                     End,
 
-                    Child, (IPTR) (imageGroup = HGroup,
-                        MUIA_Weight,  0,
+                    Child, (IPTR) ColGroup(2),
+                        MUIA_Group_SameWidth, FALSE,
                         Child, (IPTR) img_user,
                         Child, (IPTR) nameUser,
-                    End),
-
-                    Child, (IPTR) passUser,
+                        Child, (IPTR) HVSpace,
+                        Child, (IPTR) passUser,
+                    End,
 
                     Child, (IPTR) logonMethod,
 
