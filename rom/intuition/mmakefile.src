@@ -189,6 +189,12 @@ FUNCS := \
 #MM     includes-copy
 #MM- core-linklibs: linklibs-intuition
 
+ifeq ($(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH),m68k-amiga)
+# The amiga-m68k kickstart has to fit in a 512KB ROM bank - drop the runtime
+# debug log machinery (see rom/exec/mmakefile.src).
+USER_CPPFLAGS += -DNO_RUNTIME_DEBUG
+endif
+
 %build_module mmake=kernel-intuition \
   modname=intuition modtype=library \
   files="intuition_init $(FUNCS) $(FILES)"
