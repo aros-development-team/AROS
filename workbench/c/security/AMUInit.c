@@ -96,7 +96,7 @@ static const char StartupScript[] =
     "Assign T:       \"RAM:T\"\n"
     "Assign IMAGES:  \"SYS:System/Images\" DEFER\n"
     "Assign THEMES: \"SYS:Prefs/Presets/Themes\" >NIL:\n"
-    "Assign ENV: \"RAM:ENV\"\n"
+    "Assign ENV: \"ENVARC:\"\n"
     "If EXISTS \"ENV:SYS/theme.var\"\n"
     "    Assign THEME: \"${SYS/theme.var}\"\n"
     "Else\n"
