@@ -864,6 +864,22 @@ static void LoadBackground(void)
 }
 
 
+static void DrawBarTile(Object *obj, struct BitMap *bm, LONG x, LONG y, LONG w, LONG h)
+{
+    APTR dti;
+
+    dti = ObtainDTDrawInfoA(obj, NULL);
+    if (dti)
+    {
+        if (DrawDTObjectA(&RP_Buffer, obj, x, y, w, h, 0, 0, NULL) == FALSE)
+            BltBitMapRastPort(bm, 0, 0, &RP_Buffer, x, y, w, h, 0xC0);
+        ReleaseDTDrawInfo(obj, dti);
+    }
+    else
+        BltBitMapRastPort(bm, 0, 0, &RP_Buffer, x, y, w, h, 0xC0);
+}
+
+
 static BOOL SetWindowParameters(void)
 {
     LONG x, y, z;
@@ -1271,62 +1287,42 @@ static BOOL OpenMainWindow(void)
         y = WindowWidth - BackgroundData[0].Width - BackgroundData[2].Width;
         a = y / BackgroundData[1].Width;
 
-        BltBitMapRastPort(bm[0],
-            0,
-            0,
-            &RP_Buffer,
+        DrawBarTile(picture[0], bm[0],
             0,
             WindowHeight - BackgroundData[0].Height,
             BackgroundData[0].Width,
-            BackgroundData[0].Height,
-            0xC0);
+            BackgroundData[0].Height);
 
         for(x=0; x<a; x++)
         {
-            BltBitMapRastPort(bm[1],
-                0,
-                0,
-                &RP_Buffer,
+            DrawBarTile(picture[1], bm[1],
                 BackgroundData[0].Width + x * BackgroundData[1].Width,
                 WindowHeight - BackgroundData[1].Height,
                 BackgroundData[1].Width,
-                BackgroundData[1].Height,
-                0xC0);
+                BackgroundData[1].Height);
         }
 
-        BltBitMapRastPort(bm[1],
-            0,
-            0,
-            &RP_Buffer,
+        DrawBarTile(picture[1], bm[1],
             BackgroundData[0].Width + x * BackgroundData[1].Width,
             WindowHeight - BackgroundData[1].Height,
             y - BackgroundData[1].Width * a,
-            BackgroundData[1].Height,
-            0xC0);
+            BackgroundData[1].Height);
 
-        BltBitMapRastPort(bm[2],
-            0,
-            0,
-            &RP_Buffer,
+        DrawBarTile(picture[2], bm[2],
             WindowWidth - BackgroundData[2].Width,
             WindowHeight - BackgroundData[2].Height,
             BackgroundData[2].Width,
-            BackgroundData[2].Height,
-            0xC0);
+            BackgroundData[2].Height);
         }
         else if(picture[1])
         {
             for(x=0; x<WindowWidth; x=x+BackgroundData[1].Width)
             {
-                BltBitMapRastPort(bm[1],
-                    0,
-                    0,
-                    &RP_Buffer,
+                DrawBarTile(picture[1], bm[1],
                     x,
                     WindowHeight - BackgroundData[1].Height,
                     BackgroundData[1].Width,
-                    BackgroundData[1].Height,
-                    0xC0);
+                    BackgroundData[1].Height);
             }
         }
 
