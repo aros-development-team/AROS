@@ -701,6 +701,24 @@ EndNotify(WallpaperNotRequest);
 }
 
 
+static STRPTR TrimStr(STRPTR s)
+{
+    STRPTR end;
+
+    while (*s == ' ' || *s == '\t')
+        s++;
+
+    if (*s == '\0')
+        return s;
+
+    end = s + strlen(s) - 1;
+    while (end > s && (*end == ' ' || *end == '\t'))
+        *end-- = '\0';
+
+    return s;
+}
+
+
 static BOOL ReadPrefs(void)
 {
     BPTR Prefs;
@@ -749,6 +767,19 @@ static BOOL ReadPrefs(void)
                 }
                 else
                 {
+                    STRPTR custom = NULL;
+                    char *semi;
+
+                    // Optional ";CustomName" suffix: use it as the icon label
+                    // and strip it from the path before loading the icon.
+                    semi = strchr(Icons[IconCounter].Icon_Path, ';');
+                    if (semi)
+                    {
+                        if (semi[1] != '\0')
+                            custom = TrimStr(semi + 1);
+                        *semi = '\0';
+                    }
+
                     if((Icon[IconCounter] = GetIconTags(Icons[IconCounter].Icon_Path,
                         ICONGETA_RemapIcon, FALSE,
                         TAG_DONE)))
@@ -773,7 +804,14 @@ static BOOL ReadPrefs(void)
 
                         // ---------------------- Extract Label from path to icon
 
-                        Icons[IconCounter].IK_Label = FilePart((Icons[IconCounter].Icon_Path));
+                        if (custom && *custom != '\0')
+                        {
+                            strncpy(Icons[IconCounter].IK_LabelBuf, custom, 63);
+                            Icons[IconCounter].IK_LabelBuf[63] = '\0';
+                            Icons[IconCounter].IK_Label = Icons[IconCounter].IK_LabelBuf;
+                        }
+                        else
+                            Icons[IconCounter].IK_Label = FilePart((Icons[IconCounter].Icon_Path));
 
                         // --------------------------------------------------
 
@@ -918,7 +956,7 @@ static BOOL SetWindowParameters(void)
                 {
                     IT_Labels[z - 1] = '\0';
 
-                    if(IntuiTextLength(&Labels) < Icons[x].Icon_Width)
+                    if(IntuiTextLength(&Labels) < Icons[x].Icon_Width + Spacing)
                     {
                         Icons[x].IK_Label_Length = z;
                         break;

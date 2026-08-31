@@ -11,6 +11,7 @@ struct Icon_Struct {
     TEXT                Icon_Path[255];         // name to path of icon
     LONG                IK_Label_Length;        // length of label under icon in chars 
     STRPTR              IK_Label;               // icon label
+    TEXT                IK_LabelBuf[64];        // custom label buffer
 };
 
 struct Level_Struct {
