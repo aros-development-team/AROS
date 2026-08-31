@@ -2,6 +2,10 @@
     Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
+#include <aros/asmcall.h>
+#include <exec/interrupts.h>
+#include <exec/pm.h>
+#include <proto/exec.h>
 #include "nouveau_intern.h"
 #include "compositor.h"
 
@@ -326,6 +330,51 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
     return TRUE;
 }
 
+/*
+ * Just before the platform reset performer runs (EFI reset sits at
+ * priority -56), shut the driver down the way every other port of this
+ * stack does on module unload: stop display work, then tell GSP-RM the
+ * driver is going away and let it halt, tearing its protected region
+ * down so the next boot's GSP-FMC starts cleanly. A power-off skips all
+ * of it: the card needs no unload across a power cycle, and a machine
+ * without a power-off mechanism still needs the driver alive to render
+ * intuition's final screen.
+ */
+volatile int nouveau_shutting_down;
+
+static AROS_INTH1(HIDDNouveauShutdownHandler, struct Interrupt *, handler)
+{
+    AROS_INTFUNC_INIT
+
+    UBYTE action = handler->is_Node.ln_Type & SD_ACTION_MASK;
+
+    /* Bitwise: covers cold, warm and the combined SD_ACTION_REBOOT */
+    if (action & SD_ACTION_REBOOT)
+    {
+        nouveau_shutting_down = 1;
+        nouveau_shutdown();
+    }
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
+static struct Interrupt nouveau_shutdown_interrupt;
+
+static void HIDDNouveauInstallShutdownHandler(void)
+{
+    if (nouveau_shutdown_interrupt.is_Code)
+        return;
+
+    nouveau_shutdown_interrupt.is_Node.ln_Type = NT_INTERRUPT;
+    nouveau_shutdown_interrupt.is_Node.ln_Pri  = -48;
+    nouveau_shutdown_interrupt.is_Node.ln_Name = "nouveau.hidd";
+    nouveau_shutdown_interrupt.is_Code         = (VOID_FUNC)HIDDNouveauShutdownHandler;
+    nouveau_shutdown_interrupt.is_Data         = &nouveau_shutdown_interrupt;
+    AddResetCallback(&nouveau_shutdown_interrupt);
+}
+
 /* PUBLIC METHODS */
 /* DRM connector type -> vHidd_ConnectorType_* (0 = unknown) */
 static ULONG HIDDNouveauConnectorType(uint32_t drmtype)
@@ -386,6 +435,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
     if (nouveau_init_probe(pdev) < 0)
         return NULL;
+
+    HIDDNouveauInstallShutdownHandler();
 
     LOCK_ENGINE
 

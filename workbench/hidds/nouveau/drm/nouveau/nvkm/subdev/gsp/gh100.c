@@ -20,17 +20,24 @@ int
 gh100_gsp_fini(struct nvkm_gsp *gsp, enum nvkm_suspend_state suspend)
 {
 	struct nvkm_falcon *falcon = &gsp->falcon;
-	int ret, time = 4000;
+	struct nvkm_device *device = gsp->subdev.device;
+	int ret, time = 2000;
 
 	/* Shutdown RM. */
 	ret = r535_gsp_fini(gsp, suspend);
 	if (ret && suspend)
 		return ret;
 
-	/* Wait for RISC-V to halt. */
+	/* Wait for RISC-V to halt, servicing display supervisors so RM's
+	   teardown can make progress on this card. */
 	do {
+		u32 sv = nvkm_rd32(device, 0x611860) & 7;
 		u32 data = nvkm_falcon_rd32(falcon, falcon->addr2 + NV_PRISCV_RISCV_CPUCTL);
 
+		if (sv) {
+			nvkm_wr32(device, 0x611860, sv);
+			nvkm_wr32(device, 0x6107a8, 0x80000000);
+		}
 		if (NVVAL_GET(data, NV_PRISCV, RISCV_CPUCTL, HALTED))
 			return 0;
 
@@ -96,6 +103,10 @@ gh100_gsp_aros_dump(struct nvkm_gsp *gsp, const char *when)
 		  nvkm_rd32(device, 0x118234), nvkm_rd32(device, 0x118238),
 		  nvkm_rd32(device, 0x11823c), nvkm_rd32(device, 0x118240),
 		  nvkm_rd32(device, 0x000000), nvkm_rd32(device, 0x101000));
+	nvkm_info(subdev, "wpr2 %08x/%08x frts in %08x @ %08x, riscv %s\n",
+		  nvkm_rd32(device, 0x1fa824), nvkm_rd32(device, 0x1fa828),
+		  nvkm_rd32(device, 0x118210), nvkm_rd32(device, 0x118214),
+		  nvkm_falcon_riscv_active(&gsp->falcon) ? "active" : "halted");
 }
 
 /*
@@ -633,12 +644,25 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 	/*
 	 * The FMC/ACR occasionally refuses the first boot on this platform
 	 * (mailbox 0xb) although a fresh attempt a moment later succeeds;
-	 * give it a few tries before giving up.
+	 * give it a few tries before giving up. Not when WPR2 is already up:
+	 * then a GSP-RM the previous driver instance never unloaded is still
+	 * running behind it and every attempt is refused the same way.
 	 */
 	{
 		int attempt;
 
 		for (attempt = 0; attempt < 4; attempt++) {
+			u32 wpr2_hi = nvkm_rd32(device, 0x1fa828);
+
+			if (wpr2_hi) {
+				nvkm_error(subdev, "WPR2 is up (0x%08x, RISC-V %s): a previous "
+					   "instance's GSP-RM is still loaded and GSP-FMC will "
+					   "refuse to boot another - the card needs a reset it "
+					   "takes as power-on\n", wpr2_hi,
+					   nvkm_falcon_riscv_active(&gsp->falcon) ? "active" : "halted");
+				ret = -EBUSY;
+				break;
+			}
 			if (attempt) {
 				nvkm_warn(subdev, "GSP-FMC boot retry %d\n", attempt);
 				/* the mailbox keeps the last verdict; clear it so a
@@ -676,10 +700,8 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 			ret = 0;
 			break;
 		}
-		if (ret) {
-			gh100_gsp_aros_dumpfiles(gsp);
+		if (ret)
 			return ret;
-		}
 	}
 #else
 	ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,

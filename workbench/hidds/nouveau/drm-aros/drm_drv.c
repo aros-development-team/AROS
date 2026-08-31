@@ -598,3 +598,29 @@ int nouveau_init(void)
 {
     return nouveau_init_probe(nouveau_init_findcard());
 }
+
+int nouveau_aros_shutdown(struct drm_device *dev);
+extern int nouveau_compat_atomic;
+
+/*
+ * Called from the shutdown reset callback, after display work has been
+ * stopped and just before the platform reset performer runs. Waits spin
+ * from here on: yielding would let the callback chain reach the reset
+ * while the unload is still in flight.
+ */
+void nouveau_shutdown(void)
+{
+    int ret;
+
+    if (!current_drm_device)
+        return;
+
+    nouveau_compat_atomic = 1;
+    bug("[nouveau] shutting down: unloading GSP-RM\n");
+    ret = nouveau_aros_shutdown(current_drm_device);
+    if (ret)
+        bug("[nouveau] GSP-RM partially unloaded - far enough for the "
+            "next boot to start it fresh\n");
+    else
+        bug("[nouveau] GSP-RM unloaded\n");
+}

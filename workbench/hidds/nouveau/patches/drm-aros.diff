@@ -888,7 +888,17 @@
  
 --- ./drm-6.18.44/nouveau/nouveau_drm.c
 +++ ./drm/nouveau/nouveau_drm.c
-@@ -470,15 +470,19 @@
+@@ -43,6 +43,9 @@
+ #include <core/option.h>
+ #include <core/pci.h>
+ #include <core/tegra.h>
++#if defined(__AROS__)
++#include <subdev/gsp.h>
++#endif
+ 
+ #include <nvif/driver.h>
+ #include <nvif/fifo.h>
+@@ -470,15 +473,19 @@
  
  	/* Initialise global support for channels, and synchronisation. */
  	ret = nouveau_channels_init(drm);
@@ -910,7 +920,7 @@
  
  	for (ret = -ENOSYS, i = 0; i < n; i++) {
  		switch (sclass[i].oclass) {
-@@ -529,8 +533,10 @@
+@@ -529,8 +536,10 @@
  	/* Volta requires access to a doorbell register for kickoff. */
  	if (drm->client.device.info.family >= NV_DEVICE_INFO_V0_VOLTA) {
  		ret = nvif_user_ctor(device, "drmUsermode");
@@ -922,7 +932,7 @@
  	}
  
  	/* Allocate channels we need to support various functions. */
-@@ -1513,3 +1519,74 @@
+@@ -1513,3 +1522,106 @@
  MODULE_AUTHOR(DRIVER_AUTHOR);
  MODULE_DESCRIPTION(DRIVER_DESC);
  MODULE_LICENSE("GPL and additional rights");
@@ -994,6 +1004,38 @@
 +
 +	drm = pci_get_drvdata(pdev);
 +	*pdrm = drm->dev;
++	return 0;
++}
++
++/*
++ * The system is about to reboot. Do what every other port of this stack
++ * does on driver unload: tell GSP-RM the driver is going away and let it
++ * halt, so its write-protected region is torn down and the next boot's
++ * GSP-FMC starts cleanly instead of refusing the card.
++ */
++int
++nouveau_aros_shutdown(struct drm_device *dev)
++{
++	int nvkm_device_fini(struct nvkm_device *, enum nvkm_suspend_state);
++	struct nouveau_drm *drm = nouveau_drm(dev);
++	struct nvkm_device *device = nvxx_device(drm);
++
++	if (!device || !device->gsp)
++		return 0;
++
++	/*
++	 * The whole device, in reverse subdev order, exactly as a module
++	 * unload does it: the display pipeline has to be brought down
++	 * before GSP-RM is told to leave, or RM wedges unloading under a
++	 * live display and its protected region never comes down.
++	 */
++	nvkm_device_fini(device, NVKM_POWEROFF);
++
++	/* The fini above tolerates errors; what matters is whether the
++	 * firmware actually left - its protected region says so. */
++	if (nvkm_rd32(device, 0x1fa828))
++		return -EBUSY;
++
 +	return 0;
 +}
 +#endif
@@ -1236,7 +1278,34 @@
  
  #include <nvhw/drf.h>
  #include <nvhw/ref/gh100/dev_falcon_v4.h>
-@@ -65,6 +65,502 @@
+@@ -20,17 +20,24 @@
+ gh100_gsp_fini(struct nvkm_gsp *gsp, enum nvkm_suspend_state suspend)
+ {
+ 	struct nvkm_falcon *falcon = &gsp->falcon;
+-	int ret, time = 4000;
++	struct nvkm_device *device = gsp->subdev.device;
++	int ret, time = 2000;
+ 
+ 	/* Shutdown RM. */
+ 	ret = r535_gsp_fini(gsp, suspend);
+ 	if (ret && suspend)
+ 		return ret;
+ 
+-	/* Wait for RISC-V to halt. */
++	/* Wait for RISC-V to halt, servicing display supervisors so RM's
++	   teardown can make progress on this card. */
+ 	do {
++		u32 sv = nvkm_rd32(device, 0x611860) & 7;
+ 		u32 data = nvkm_falcon_rd32(falcon, falcon->addr2 + NV_PRISCV_RISCV_CPUCTL);
+ 
++		if (sv) {
++			nvkm_wr32(device, 0x611860, sv);
++			nvkm_wr32(device, 0x6107a8, 0x80000000);
++		}
+ 		if (NVVAL_GET(data, NV_PRISCV, RISCV_CPUCTL, HALTED))
+ 			return 0;
+ 
+@@ -65,6 +72,506 @@
  	return !NVVAL_GET(data, NV_PFALCON, FALCON_HWCFG2, RISCV_BR_PRIV_LOCKDOWN);
  }
  
@@ -1271,6 +1340,10 @@
 +		  nvkm_rd32(device, 0x118234), nvkm_rd32(device, 0x118238),
 +		  nvkm_rd32(device, 0x11823c), nvkm_rd32(device, 0x118240),
 +		  nvkm_rd32(device, 0x000000), nvkm_rd32(device, 0x101000));
++	nvkm_info(subdev, "wpr2 %08x/%08x frts in %08x @ %08x, riscv %s\n",
++		  nvkm_rd32(device, 0x1fa824), nvkm_rd32(device, 0x1fa828),
++		  nvkm_rd32(device, 0x118210), nvkm_rd32(device, 0x118214),
++		  nvkm_falcon_riscv_active(&gsp->falcon) ? "active" : "halted");
 +}
 +
 +/*
@@ -1739,7 +1812,7 @@
  int
  gh100_gsp_init(struct nvkm_gsp *gsp)
  {
-@@ -102,6 +598,90 @@
+@@ -102,6 +609,101 @@
  	if (gsp->rm->wpr->rsvd_size_pmu)
  		rsvd_size = ALIGN(rsvd_size + gsp->rm->wpr->rsvd_size_pmu, 0x200000);
  
@@ -1778,12 +1851,25 @@
 +	/*
 +	 * The FMC/ACR occasionally refuses the first boot on this platform
 +	 * (mailbox 0xb) although a fresh attempt a moment later succeeds;
-+	 * give it a few tries before giving up.
++	 * give it a few tries before giving up. Not when WPR2 is already up:
++	 * then a GSP-RM the previous driver instance never unloaded is still
++	 * running behind it and every attempt is refused the same way.
 +	 */
 +	{
 +		int attempt;
 +
 +		for (attempt = 0; attempt < 4; attempt++) {
++			u32 wpr2_hi = nvkm_rd32(device, 0x1fa828);
++
++			if (wpr2_hi) {
++				nvkm_error(subdev, "WPR2 is up (0x%08x, RISC-V %s): a previous "
++					   "instance's GSP-RM is still loaded and GSP-FMC will "
++					   "refuse to boot another - the card needs a reset it "
++					   "takes as power-on\n", wpr2_hi,
++					   nvkm_falcon_riscv_active(&gsp->falcon) ? "active" : "halted");
++				ret = -EBUSY;
++				break;
++			}
 +			if (attempt) {
 +				nvkm_warn(subdev, "GSP-FMC boot retry %d\n", attempt);
 +				/* the mailbox keeps the last verdict; clear it so a
@@ -1821,16 +1907,14 @@
 +			ret = 0;
 +			break;
 +		}
-+		if (ret) {
-+			gh100_gsp_aros_dumpfiles(gsp);
++		if (ret)
 +			return ret;
-+		}
 +	}
 +#else
  	ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
  				    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
  	if (ret)
-@@ -123,6 +703,7 @@
+@@ -123,6 +725,7 @@
  		nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x)\n", mbox0);
  		return -EIO;
  	}
@@ -1838,7 +1922,7 @@
  
  	return r535_gsp_init(gsp);
  }
-@@ -344,6 +925,7 @@
+@@ -344,6 +947,7 @@
  
  static struct nvkm_gsp_fwif
  gh100_gsps[] = {
@@ -1846,7 +1930,7 @@
  	{ 0, gh100_gsp_load, &gh100_gsp, &r570_rm_gh100, "570.144" },
  	{}
  };
-@@ -356,3 +938,4 @@
+@@ -356,3 +960,4 @@
  }
  
  NVKM_GSP_FIRMWARE_FMC(gh100, 570.144);
@@ -2112,7 +2196,45 @@
  r535_gsp_msg_os_error_log(void *priv, u32 fn, void *repv, u32 repc)
  {
  	struct nvkm_gsp *gsp = priv;
-@@ -2170,7 +2177,9 @@
+@@ -1765,13 +1772,32 @@
+ 	}
+ 
+ 	ret = r535_gsp_rpc_unloading_guest_driver(gsp, suspend);
+-	if (WARN_ON(ret))
++	if (ret && suspend)
+ 		return ret;
+ 
+-	nvkm_msec(gsp->subdev.device, 2000,
+-		if (nvkm_falcon_rd32(&gsp->falcon, 0x040) == 0x80000000)
+-			break;
+-	);
++	/*
++	 * RM's teardown raises display supervisor phases this card needs
++	 * serviced by the driver; keep doing that while waiting for the
++	 * unload handshake. The reply RPC can be lost once RM is deep in
++	 * the unload - the mailbox is the signal that matters, and a full
++	 * teardown takes its time.
++	 */
++	{
++		struct nvkm_device *device = gsp->subdev.device;
++		int t;
++
++		for (t = 0; t < 4000; t++) {
++			u32 sv = nvkm_rd32(device, 0x611860) & 7;
++
++			if (sv) {
++				nvkm_wr32(device, 0x611860, sv);
++				nvkm_wr32(device, 0x6107a8, 0x80000000);
++			}
++			if (nvkm_falcon_rd32(&gsp->falcon, 0x040) == 0x80000000)
++				break;
++			usleep_range(1000, 2000);
++		}
++	}
+ 
+ 	gsp->running = false;
+ 	return 0;
+@@ -2170,7 +2196,9 @@
  	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_RC_TRIGGERED, rmapi->fifo->rc_triggered, gsp);
  	r535_gsp_msg_ntfy_add(gsp, NV_VGPU_MSG_EVENT_MMU_FAULT_QUEUED,
  			      r535_gsp_msg_mmu_fault_queued, gsp);
@@ -2260,7 +2382,7 @@
  const struct nvkm_rm_impl
 --- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/rpc.c
 +++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/rpc.c
-@@ -150,7 +150,12 @@
+@@ -150,7 +150,30 @@
  		return -EINVAL;
  
  	do {
@@ -2268,13 +2390,31 @@
 +		u32 wptr;
 +
 +#if defined(__AROS__)
++		/*
++		 * Shutting down: RM's own display teardown raises supervisor
++		 * phases this card needs serviced by the driver (see
++		 * nv50_disp_sv_release); nothing else runs to do it here.
++		 */
++		{
++			extern volatile int nouveau_shutting_down;
++
++			if (nouveau_shutting_down) {
++				struct nvkm_device *device = gsp->subdev.device;
++				u32 sv = nvkm_rd32(device, 0x611860) & 7;
++
++				if (sv) {
++					nvkm_wr32(device, 0x611860, sv);
++					nvkm_wr32(device, 0x6107a8, 0x80000000);
++				}
++			}
++		}
 +		compat_dma_sync_for_cpu(gsp->msgq.wptr, sizeof(*gsp->msgq.wptr));
 +#endif
 +		wptr = *gsp->msgq.wptr;
  
  		used = wptr + gsp->msgq.cnt - rptr;
  		if (used >= gsp->msgq.cnt)
-@@ -172,6 +177,10 @@
+@@ -172,6 +195,10 @@
  {
  	u32 rptr = *gsp->msgq.rptr;
  
@@ -2285,7 +2425,7 @@
  	/* Skip the first page, which is the message queue info */
  	return (void *)((u8 *)gsp->shm.msgq.ptr + GSP_PAGE_SIZE +
  	       rptr * GSP_PAGE_SIZE);
-@@ -280,6 +289,9 @@
+@@ -280,6 +307,9 @@
  
  	mb();
  	(*gsp->msgq.rptr) = rptr;
@@ -2295,7 +2435,7 @@
  	return buf;
  }
  
-@@ -377,6 +389,9 @@
+@@ -377,6 +407,9 @@
  	wptr = *gsp->cmdq.wptr;
  	do {
  		do {
@@ -2305,7 +2445,7 @@
  			free = *gsp->cmdq.rptr + gsp->cmdq.cnt - wptr - 1;
  			if (free >= gsp->cmdq.cnt)
  				free -= gsp->cmdq.cnt;
-@@ -409,6 +424,10 @@
+@@ -409,6 +442,10 @@
  	wmb();
  	(*gsp->cmdq.wptr) = wptr;
  	mb();

@@ -1772,13 +1772,32 @@ r535_gsp_fini(struct nvkm_gsp *gsp, enum nvkm_suspend_state suspend)
 	}
 
 	ret = r535_gsp_rpc_unloading_guest_driver(gsp, suspend);
-	if (WARN_ON(ret))
+	if (ret && suspend)
 		return ret;
 
-	nvkm_msec(gsp->subdev.device, 2000,
-		if (nvkm_falcon_rd32(&gsp->falcon, 0x040) == 0x80000000)
-			break;
-	);
+	/*
+	 * RM's teardown raises display supervisor phases this card needs
+	 * serviced by the driver; keep doing that while waiting for the
+	 * unload handshake. The reply RPC can be lost once RM is deep in
+	 * the unload - the mailbox is the signal that matters, and a full
+	 * teardown takes its time.
+	 */
+	{
+		struct nvkm_device *device = gsp->subdev.device;
+		int t;
+
+		for (t = 0; t < 4000; t++) {
+			u32 sv = nvkm_rd32(device, 0x611860) & 7;
+
+			if (sv) {
+				nvkm_wr32(device, 0x611860, sv);
+				nvkm_wr32(device, 0x6107a8, 0x80000000);
+			}
+			if (nvkm_falcon_rd32(&gsp->falcon, 0x040) == 0x80000000)
+				break;
+			usleep_range(1000, 2000);
+		}
+	}
 
 	gsp->running = false;
 	return 0;

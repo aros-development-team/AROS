@@ -153,6 +153,24 @@ r535_gsp_msgq_wait(struct nvkm_gsp *gsp, u32 gsp_rpc_len, int *ptime)
 		u32 wptr;
 
 #if defined(__AROS__)
+		/*
+		 * Shutting down: RM's own display teardown raises supervisor
+		 * phases this card needs serviced by the driver (see
+		 * nv50_disp_sv_release); nothing else runs to do it here.
+		 */
+		{
+			extern volatile int nouveau_shutting_down;
+
+			if (nouveau_shutting_down) {
+				struct nvkm_device *device = gsp->subdev.device;
+				u32 sv = nvkm_rd32(device, 0x611860) & 7;
+
+				if (sv) {
+					nvkm_wr32(device, 0x611860, sv);
+					nvkm_wr32(device, 0x6107a8, 0x80000000);
+				}
+			}
+		}
 		compat_dma_sync_for_cpu(gsp->msgq.wptr, sizeof(*gsp->msgq.wptr));
 #endif
 		wptr = *gsp->msgq.wptr;

@@ -111,6 +111,10 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
+
+    /* Shutting down for a reboot: the mode that is up stays up. */
+    if (nouveau_shutting_down)
+        return TRUE;
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
     OOP_Object * gfx = NULL;
     struct HIDDNouveauData * gfxdata = NULL; 
@@ -358,6 +362,10 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, ShowViewPorts)
     };
 
     nvlog("[Nouveau] ShowViewPorts, top bitmap %p\n", (msg->Data ? (msg->Data->Bitmap) : NULL));
+
+    /* Shutting down for a reboot: no rearranging on the way out. */
+    if (nouveau_shutting_down)
+        return TRUE;
 
     OOP_DoMethod(SD(cl)->compositor, (OOP_Msg)&bscmsg);
 

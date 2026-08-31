@@ -43,6 +43,9 @@
 #include <core/option.h>
 #include <core/pci.h>
 #include <core/tegra.h>
+#if defined(__AROS__)
+#include <subdev/gsp.h>
+#endif
 
 #include <nvif/driver.h>
 #include <nvif/fifo.h>
@@ -1587,6 +1590,38 @@ nouveau_aros_probe(struct pci_dev *pdev, struct drm_device **pdrm)
 
 	drm = pci_get_drvdata(pdev);
 	*pdrm = drm->dev;
+	return 0;
+}
+
+/*
+ * The system is about to reboot. Do what every other port of this stack
+ * does on driver unload: tell GSP-RM the driver is going away and let it
+ * halt, so its write-protected region is torn down and the next boot's
+ * GSP-FMC starts cleanly instead of refusing the card.
+ */
+int
+nouveau_aros_shutdown(struct drm_device *dev)
+{
+	int nvkm_device_fini(struct nvkm_device *, enum nvkm_suspend_state);
+	struct nouveau_drm *drm = nouveau_drm(dev);
+	struct nvkm_device *device = nvxx_device(drm);
+
+	if (!device || !device->gsp)
+		return 0;
+
+	/*
+	 * The whole device, in reverse subdev order, exactly as a module
+	 * unload does it: the display pipeline has to be brought down
+	 * before GSP-RM is told to leave, or RM wedges unloading under a
+	 * live display and its protected region never comes down.
+	 */
+	nvkm_device_fini(device, NVKM_POWEROFF);
+
+	/* The fini above tolerates errors; what matters is whether the
+	 * firmware actually left - its protected region says so. */
+	if (nvkm_rd32(device, 0x1fa828))
+		return -EBUSY;
+
 	return 0;
 }
 #endif
