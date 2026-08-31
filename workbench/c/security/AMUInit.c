@@ -65,7 +65,7 @@
 #include <libraries/security.h>
 #include <string.h>
 
-const TEXT version[] = "$VER: AMUInit 45.1 (29.08.2026)";
+const TEXT version[] = "$VER: AMUInit 45.2 (31.08.2026)";
 
 #define TEMPLATE "ENABLE/S,DISABLE/S,VOLUME/A,FORCE/S"
 enum { ARG_ENABLE, ARG_DISABLE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
@@ -290,9 +290,38 @@ static BOOL EnsureDir(CONST_STRPTR path)
     return FALSE;
 }
 
+/*
+ * Multi-user needs a filesystem that stores file ownership: probe the volume
+ * with a scratch file before touching anything. Fails on filesystems without
+ * ACTION_SET_OWNER (e.g. FAT) and when security.library is not resident (the
+ * handlers only accept owners with it - multi-user could not work anyway).
+ */
+static BOOL VolumeSupportsOwners(CONST_STRPTR vol)
+{
+    char p[256];
+    BPTR fh;
+    BOOL ok = FALSE;
+
+    if (!MakePath(p, sizeof(p), vol, ".AMUInit-probe"))
+        return FALSE;
+    if ((fh = Open(p, MODE_NEWFILE)))
+    {
+        Close(fh);
+        ok = SetOwner(p, ((ULONG)secROOT_UID << 16) | secROOT_GID) ? TRUE : FALSE;
+        DeleteFile(p);
+    }
+    return ok;
+}
+
 static int MUEnable(CONST_STRPTR vol, BOOL force)
 {
     char p[256], p2[256];
+
+    if (!VolumeSupportsOwners(vol))
+    {
+        Printf("AMUInit: %s does not support file ownership (SetOwner) - multi-user cannot be enabled on it\n", vol);
+        return RETURN_FAIL;
+    }
 
     /* the database directory and its files */
     if (!MakePath(p, sizeof(p), vol, SEC_DIR) || !EnsureDir(p))
