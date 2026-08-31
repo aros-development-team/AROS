@@ -53,6 +53,20 @@ static void killdto(struct Dtpic_DATA *data)
     data->bm_selected = NULL;
     data->bm_highlighted = NULL;
 
+    if (data->bg)
+    {
+        FreeVec(data->bg);
+        data->bg = NULL;
+    }
+    if (data->comp)
+    {
+        FreeVec(data->comp);
+        data->comp = NULL;
+    }
+    data->buf_width = 0;
+    data->buf_height = 0;
+    data->bg_valid = FALSE;
+
     if (data->dto)
     {
         DisposeDTObject(data->dto);
@@ -62,6 +76,43 @@ static void killdto(struct Dtpic_DATA *data)
     if (data->datatypesbase)
     {
         CloseLibrary(data->datatypesbase);
+        data->datatypesbase = NULL;
+    }
+}
+
+/* Step size of the state transition per Intuitick. 255/60 gives roughly
+ * an 85ms transition at 50 Intuiticks per second. */
+#define DTPIC_STATE_FADE_STEP 60
+
+static LONG dtpic_state_target(struct Dtpic_DATA *data)
+{
+    if (data->selected)
+        return -127;
+    if (data->highlighted)
+        return 50;
+    return 0;
+}
+
+static BOOL dtpic_state_animating(struct Dtpic_DATA *data)
+{
+    return data->state_offset != dtpic_state_target(data);
+}
+
+static void update_state(struct Dtpic_DATA *data)
+{
+    LONG target = dtpic_state_target(data);
+
+    if (data->state_offset < target)
+    {
+        data->state_offset += DTPIC_STATE_FADE_STEP;
+        if (data->state_offset > target)
+            data->state_offset = target;
+    }
+    else if (data->state_offset > target)
+    {
+        data->state_offset -= DTPIC_STATE_FADE_STEP;
+        if (data->state_offset < target)
+            data->state_offset = target;
     }
 }
 
@@ -91,7 +142,7 @@ static void change_event_handler(Object *obj, struct Dtpic_DATA *data)
         data->highlighted = FALSE;
     }
 
-    if (data->deltaalpha)
+    if (data->deltaalpha || dtpic_state_animating(data))
     {
         events |= IDCMP_INTUITICKS;
     }
@@ -255,6 +306,12 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
         // initial values
         data->currentalpha = data->alpha = 0xff;
+        data->bg = NULL;
+        data->comp = NULL;
+        data->buf_width = 0;
+        data->buf_height = 0;
+        data->bg_valid = FALSE;
+        data->state_offset = 0;
 
         while ((tag = NextTagItem(&tags)) != NULL)
         {
@@ -336,12 +393,141 @@ IPTR Dtpic__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return retval;
 }
 
+/*
+ * Apply the selected/highlighted brightness offset to an ARGB pixel array
+ * in place. Pixel format is RECTFMT_ARGB: low byte alpha, then red, green,
+ * blue.
+ */
+static void dtpic_apply_state(ULONG *pixels, ULONG count, LONG offset)
+{
+    ULONG i;
+
+    if (offset == 0)
+        return;
+
+    for (i = 0; i < count; i++)
+    {
+        ULONG px = pixels[i];
+        LONG r = (px >> 8) & 0xff;
+        LONG g = (px >> 16) & 0xff;
+        LONG b = (px >> 24) & 0xff;
+
+        r += offset;
+        g += offset;
+        b += offset;
+        if (r > 255) r = 255;
+        else if (r < 0) r = 0;
+        if (g > 255) g = 255;
+        else if (g < 0) g = 0;
+        if (b > 255) b = 255;
+        else if (b < 0) b = 0;
+
+        pixels[i] = (px & 0xff) | ((ULONG) r << 8) | ((ULONG) g << 16)
+            | ((ULONG) b << 24);
+    }
+}
+
+/*
+ * Render an image with an alpha channel by compositing it off-screen and
+ * writing the result to the screen in one opaque blit. This avoids both the
+ * accumulation caused by repeatedly alpha-blending on top of the previous
+ * rendering and the flicker caused by erasing the background on screen.
+ * Returns TRUE on success, FALSE if the caller has to fall back to direct
+ * alpha blitting.
+ */
+static BOOL Dtpic_alpha_draw(Object *obj, struct Dtpic_DATA *data,
+    ULONG flags)
+{
+    ULONG w = _mwidth(obj);
+    ULONG h = _mheight(obj);
+    ULONG *img;
+    ULONG i;
+
+    if (data->bg == NULL || data->comp == NULL ||
+        data->buf_width != (LONG)w || data->buf_height != (LONG)h)
+    {
+        FreeVec(data->bg);
+        FreeVec(data->comp);
+        data->bg = AllocVec(w * h * 4, MEMF_ANY);
+        data->comp = AllocVec(w * h * 4, MEMF_ANY);
+        data->buf_width = w;
+        data->buf_height = h;
+        data->bg_valid = FALSE;
+    }
+
+    if (data->bg == NULL || data->comp == NULL)
+        return FALSE;
+
+    /* On a full redraw the superclass has already drawn the background onto
+     * the rastport. Capture it so updates can reuse it without erasing the
+     * screen. */
+    if (flags & MADF_DRAWOBJECT)
+    {
+        if (!ReadPixelArray(data->bg, 0, 0, w * 4, _rp(obj), _mleft(obj),
+            _mtop(obj), w, h, RECTFMT_ARGB))
+        {
+            /* Never reuse a possibly stale background */
+            data->bg_valid = FALSE;
+            return FALSE;
+        }
+        data->bg_valid = TRUE;
+    }
+    else if (!data->bg_valid)
+    {
+        return FALSE;
+    }
+
+    img = AllocVec(w * h * 4, MEMF_ANY);
+    if (img == NULL)
+        return FALSE;
+
+    {
+        struct pdtBlitPixelArray pa;
+        pa.MethodID = PDTM_READPIXELARRAY;
+        pa.pbpa_PixelData = (UBYTE *) img;
+        pa.pbpa_PixelFormat = PBPAFMT_ARGB;
+        pa.pbpa_PixelArrayMod = w * 4;
+        pa.pbpa_Left = 0;
+        pa.pbpa_Top = 0;
+        pa.pbpa_Width = w;
+        pa.pbpa_Height = h;
+        if (!DoMethodA(data->dto, (Msg) & pa))
+        {
+            FreeVec(img);
+            return FALSE;
+        }
+    }
+
+    /* Apply the state, then blend the image over the cached background with
+     * the global alpha value. Pixel format of all buffers is RECTFMT_ARGB:
+     * low byte alpha, then red, green, blue. */
+    dtpic_apply_state(img, w * h, data->state_offset);
+    for (i = 0; i < w * h; i++)
+    {
+        ULONG s = img[i];
+        ULONG d = data->bg[i];
+        ULONG sa = (s & 0xff) * (ULONG) data->currentalpha >> 8;
+        ULONG sr = (s >> 8) & 0xff;
+        ULONG sg = (s >> 16) & 0xff;
+        ULONG sb = (s >> 24) & 0xff;
+
+        data->comp[i] = (((sb * sa + ((d >> 24) & 0xff) * (255 - sa)) >> 8) << 24)
+            | (((sg * sa + ((d >> 16) & 0xff) * (255 - sa)) >> 8) << 16)
+            | (((sr * sa + ((d >> 8) & 0xff) * (255 - sa)) >> 8) << 8)
+            | 0xff;
+    }
+
+    WritePixelArray(data->comp, 0, 0, w * 4, _rp(obj), _mleft(obj),
+        _mtop(obj), w, h, RECTFMT_ARGB);
+
+    FreeVec(img);
+    return TRUE;
+}
+
 IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
-
-    // TODO: rendering of different states
 
     D(bug("[Dtpic/MUIM_Draw] selected %d highlighted %d alpha %d\n",
         data->selected, data->highlighted, data->currentalpha));
@@ -357,24 +543,43 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
         {
             /* Transparency on high color rast port with alpha channel in
              * picture */
-            ULONG *img =
-                AllocVec(_mwidth(obj) * _mheight(obj) * 4, MEMF_ANY);
-            if (img)
+            if (!Dtpic_alpha_draw(obj, data, msg->flags))
             {
-                struct pdtBlitPixelArray pa;
-                pa.MethodID = PDTM_READPIXELARRAY;
-                pa.pbpa_PixelData = (UBYTE *) img;
-                pa.pbpa_PixelFormat = PBPAFMT_ARGB;
-                pa.pbpa_PixelArrayMod = _mwidth(obj) * 4;
-                pa.pbpa_Left = 0;
-                pa.pbpa_Top = 0;
-                pa.pbpa_Width = _mwidth(obj);
-                pa.pbpa_Height = _mheight(obj);
-                if (DoMethodA(data->dto, (Msg) & pa))
-                    WritePixelArrayAlpha(img, 0, 0, _mwidth(obj) * 4,
-                        _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj),
-                        _mheight(obj), 0xffffffff);
-                FreeVec((APTR) img);
+                /* Fallback: blend directly onto the rastport. On updates
+                 * the superclass does not redraw the background, so the
+                 * image would be alpha-blended on top of its own previous
+                 * rendering. Restore the background first. */
+                if ((msg->flags & MADF_DRAWUPDATE) &&
+                    !(msg->flags & MADF_DRAWOBJECT))
+                {
+                    DoMethod(obj, MUIM_DrawBackground, _mleft(obj),
+                        _mtop(obj), _mwidth(obj), _mheight(obj),
+                        _mleft(obj), _mtop(obj), 0);
+                }
+
+                ULONG *img =
+                    AllocVec(_mwidth(obj) * _mheight(obj) * 4, MEMF_ANY);
+                if (img)
+                {
+                    struct pdtBlitPixelArray pa;
+                    pa.MethodID = PDTM_READPIXELARRAY;
+                    pa.pbpa_PixelData = (UBYTE *) img;
+                    pa.pbpa_PixelFormat = PBPAFMT_ARGB;
+                    pa.pbpa_PixelArrayMod = _mwidth(obj) * 4;
+                    pa.pbpa_Left = 0;
+                    pa.pbpa_Top = 0;
+                    pa.pbpa_Width = _mwidth(obj);
+                    pa.pbpa_Height = _mheight(obj);
+                    if (DoMethodA(data->dto, (Msg) & pa))
+                    {
+                        dtpic_apply_state(img, _mwidth(obj) * _mheight(obj),
+                            data->state_offset);
+                        WritePixelArrayAlpha(img, 0, 0, _mwidth(obj) * 4,
+                            _rp(obj), _mleft(obj), _mtop(obj),
+                            _mwidth(obj), _mheight(obj), 0xffffffff);
+                    }
+                    FreeVec((APTR) img);
+                }
             }
         }
         else
@@ -529,6 +734,7 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             }
             D(bug("intuitick %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY));
             update_alpha(data);
+            update_state(data);
             change_event_handler(obj, data);
             MUI_Redraw(obj, MADF_DRAWUPDATE);
 
@@ -542,16 +748,18 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     data->selected = TRUE;
                     D(bug("selectdown %d %d\n", msg->imsg->MouseX,
                         msg->imsg->MouseY));
+                    change_event_handler(obj, data);
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                 }
             }
             else if (msg->imsg->Code==SELECTUP)
             {
-                if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
+                if (data->selected)
                 {
                     data->selected = FALSE;
                     D(bug("selectup %d %d\n", msg->imsg->MouseX,
                         msg->imsg->MouseY));
+                    change_event_handler(obj, data);
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                 }
             }
@@ -560,15 +768,24 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         case IDCMP_MOUSEMOVE:
             if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
             {
-                data->highlighted = TRUE;
-                D(bug("mouse move %d %d\n", msg->imsg->MouseX,
-                    msg->imsg->MouseY));
+                if (!data->highlighted)
+                {
+                    data->highlighted = TRUE;
+                    D(bug("mouse move %d %d\n", msg->imsg->MouseX,
+                        msg->imsg->MouseY));
+                    change_event_handler(obj, data);
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                }
             }
             else
             {
-                data->highlighted = FALSE;
+                if (data->highlighted)
+                {
+                    data->highlighted = FALSE;
+                    change_event_handler(obj, data);
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                }
             }
-            MUI_Redraw(obj, MADF_DRAWUPDATE);
             break;
         }
     }
@@ -599,6 +816,7 @@ IPTR Dtpic__MUIM_Hide(struct IClass *cl, Object *obj,
     {
         DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
         data->eh_active = FALSE;
+        data->ehn.ehn_Events = 0;
     }
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -627,7 +845,7 @@ BOOPSI_DISPATCHER(IPTR, Dtpic_Dispatcher, cl, obj, msg)
     case MUIM_Show:
         return Dtpic__MUIM_Show(cl, obj, (APTR)msg);
     case MUIM_Hide:
-        return Dtpic__MUIM_Show(cl, obj, (APTR)msg);
+        return Dtpic__MUIM_Hide(cl, obj, (APTR)msg);
 
     case MUIM_AskMinMax:
         return Dtpic__MUIM_AskMinMax(cl, obj, (APTR)msg);
