@@ -23,25 +23,30 @@ void SAVEDS Prefs_Process (void)
     global = (APTR)msg->mn_Node.ln_Name;
 
     D(bug("Prefs handler process started for CDVDBase %lx\n", (IPTR)global));
+
+    /* Open codesets.library outside the filesystem handler context: loading
+     * it can itself issue filesystem requests.  If it is unavailable (as on
+     * CD32 game discs), there is no late-retry signal implemented here, so
+     * retaining this process and its stack serves no purpose. */
+    InitCharset(global);
+    if (!CodesetsBase)
+    {
+        global->PrefsProc = NULL;
+        ReplyMsg(msg);
+        return;
+    }
+
     ReplyMsg(msg);
 
     do
     {
 	/*
-	 * Init character set translation only from within here
-	 * because this can trigger loading some files from disk,
-	 * which in turn can trigger new requests to our handler.
-	 */
-	InitCharset(global);
-
-	/*
 	 * TODO:
 	 * 1. In future this process will be responsible for reading
 	 *    preferences file from disk.
 	 * 2. For AROS we need some way to trigger late codesets.library
-	 *    initialization. CDVDFS is mounder before SYS: is available.
+	 *    initialization. CDVDFS is mounted before SYS: is available.
 	 */
-
 	Sigset = Wait(SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D);
     } while (!(Sigset & SIGBREAKF_CTRL_C));
 

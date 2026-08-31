@@ -9,6 +9,7 @@
     NAME */
 
 #include "nvdisk_intern.h"
+#include <nvdisk_arch.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
 #include <exec/nodes.h>
@@ -68,6 +69,9 @@ AROS_LH1(struct MinList *, GetNVDItemList,
 
 {
     AROS_LIBFUNC_INIT
+
+    if (NVDisk_ArchActive(GPB(nvdBase)))
+        return NVDisk_ArchList(GPB(nvdBase), appName);
 
     BPTR            lock;
     BPTR            oldCDir;
@@ -186,4 +190,3 @@ void FreeAll(struct MinList *ml, struct Library *nvdBase)
 }
 
 #undef  NV_NODESIZE
-

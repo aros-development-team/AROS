@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=workbench-libs-nvdisk \
+  maindir=workbench/libs/nonvolatile/nvdisk \
+  modname=nvdisk pri=0 arch=amiga-m68k \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs/nonvolatile/nvdisk
+
+%build_archspecific \
+  mainmmake=workbench-libs-nvdisk \
+  maindir=workbench/libs/nonvolatile/nvdisk \
+  arch=amiga-m68k modname=nvdisk files="akiko"
+
+%common

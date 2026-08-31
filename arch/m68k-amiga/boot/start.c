@@ -1044,9 +1044,10 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
     /* Attempt to allocate a real stack, and switch to it. */
     do {
         const ULONG size = AROS_STACKSIZE;
+        const ULONG entries = size / sizeof(IPTR);
         IPTR *usp;
 
-        usp = AllocMem(size * sizeof(IPTR), MEMF_PUBLIC);
+        usp = AllocMem(size, MEMF_PUBLIC);
         if (usp == NULL) {
             DEBUGPUTS(("PANIC! Can't allocate a new stack for Exec!\n"));
             Early_Alert(CODE_ALLOC_FAIL);
@@ -1062,7 +1063,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
             "jmp %1@\n"
             "0:\n"
             :
-            : "a" (&usp[size-3]),
+            : "a" (&usp[entries-3]),
               "a" (doInitCode),
                   "a" (BootS)
             :);

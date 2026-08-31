@@ -11,6 +11,7 @@
 #include <aros/debug.h>
 
 #include "nvdisk_intern.h"
+#include <nvdisk_arch.h>
 
 #include <dos/dos.h>
 #include <proto/dos.h>
@@ -62,6 +63,9 @@ AROS_LH2(BOOL, DeleteNVDData,
 
 {
     AROS_LIBFUNC_INIT
+
+    if (NVDisk_ArchActive(GPB(nvdBase)))
+        return NVDisk_ArchDelete(GPB(nvdBase), appName, itemName);
 
     BPTR oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
     BPTR lock = Lock(appName, SHARED_LOCK);

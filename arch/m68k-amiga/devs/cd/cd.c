@@ -160,6 +160,10 @@ static BOOL cdRegisterVolume(struct cdBase *cb, struct cdUnit *unit,
 
         if (devnode)
         {
+            /* CDVDFS peaks below 2 KB while booting Microcosm.  The generic
+             * MakeDosNode() default is 16 KB, all of it scarce chip RAM on
+             * a stock CD32. */
+            devnode->dn_StackSize = 4096;
             AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
             
             return TRUE;
@@ -202,7 +206,7 @@ LONG cdAddUnit(struct cdBase *cb, const struct cdUnitOps *ops, APTR priv, const 
                                      * under 1 KB, and its stack is
                                      * chip RAM on a stock CD32.
                                      */
-                                    TASKTAG_STACKSIZE, 8192,
+                                    TASKTAG_STACKSIZE, 4096,
                                     TASKTAG_ARG1, cb,
                                     TASKTAG_ARG2, cu,
                                     TASKTAG_TASKMSGPORT, &cu->cu_MsgPort,
