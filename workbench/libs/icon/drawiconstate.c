@@ -168,7 +168,7 @@
 
         id = selected ? 1 : 0;
         image = &ni->ni_Image[id];
-         
+
         if (image->ARGBMap) {
             WritePixelArrayAlpha(image->ARGBMap, 0, 0, ni->ni_Width * sizeof(ULONG),
                                        rp, leftEdge, topEdge,
