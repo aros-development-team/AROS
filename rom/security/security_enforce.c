@@ -57,6 +57,11 @@ static const struct secFSE_PktHandler despatch[] =
 LONG IsAllowed(struct SecurityBase *secBase, struct secVolume *Vol, struct secExtOwner *task,
                ULONG object, LONG prot, LONG access)
 {
+    /* A volume with a bad or inconsistent key file is quarantined: it is
+     * treated as if it were not attached - nobody, root included, gets in. */
+    if (Vol && Vol->Quarantined)
+        return secAC_PERMISSION_DENIED | secAC_ROOT_DENIED;
+
     LONG retval = 0;
     ULONG who;
     LONG owner_deny = 0, grp_allow = 0, otr_allow = 0;

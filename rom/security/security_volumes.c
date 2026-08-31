@@ -229,19 +229,15 @@ BOOL InitVolumes(struct SecurityBase *secBase)
         return FALSE;
 
     ObtainSemaphore(&secBase->VolumesSem);
+    /* Key files locate the configuration on a key-file installation; a
+     * volume with a bad one is quarantined inside ReadKeyFiles(). Their
+     * absence is not an error - the configuration then comes from the
+     * bootstrap rendezvous or SYS:Security. */
     if (FindVolumes(secBase, pl))
-    {
-        if (ReadKeyFiles(secBase))
-            located = TRUE;
-        else
-        {
-            secBase->SecurityViolation = TRUE;
-            Die(secBase, GetLocStr(secBase, MSG_BADKEYFILE), 0);
-        }
-    }
-    if (!located && !secBase->SecurityViolation)
+        located = ReadKeyFiles(secBase);
+    if (!located)
         located = BootStrapRendezvous(secBase);
-    if (!located && !secBase->SecurityViolation)
+    if (!located)
         located = UseDefaultConfigDir(secBase);
     ReleaseSemaphore(&secBase->VolumesSem);
 

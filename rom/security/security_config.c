@@ -485,11 +485,11 @@ static STRPTR SafeFGets(struct SecurityBase *secBase, BPTR fh, STRPTR buf, ULONG
     return res;
 }
 
-static BOOL ReadKeyFile(struct SecurityBase *secBase, struct MsgPort *fs)
+static LONG ReadKeyFile(struct SecurityBase *secBase, struct MsgPort *fs)
 {
     BPTR dir, file, olddir;
     char buffer[secPASSWORDSIZE];
-    BOOL res = FALSE;
+    LONG res = KEYFILE_NONE;
     char *Buffer = secBase->Buffer;
     /* BSTR ":" */
     UBYTE rootname[4] = { 1, ':', 0, 0 };
@@ -500,19 +500,21 @@ static BOOL ReadKeyFile(struct SecurityBase *secBase, struct MsgPort *fs)
         olddir = CurrentDir(dir);
         if ((file = Open(KeyFileName, MODE_OLDFILE)))
         {
+            res = KEYFILE_BAD;
             if (SafeFGets(secBase, file, Buffer, secGENBUFSIZE - 1))
             {
-                res = TRUE;
                 RemTerminatingLF(Buffer);
                 if (Encrypt(buffer, Buffer, "Alpha, PowerPC or R4400?"))
                 {
+                    res = KEYFILE_OK;
                     if (secBase->Key[0])
-                        res = !strcmp(secBase->Key, buffer);
+                        res = strcmp(secBase->Key, buffer) ? KEYFILE_BAD : KEYFILE_OK;
                     else
                         strncpy(secBase->Key, buffer, sizeof(secBase->Key) - 1);
-                    if (res)
-                        res = (ParseDirLockLine(secBase, fs, file, &secBase->_pwdLock) &&
-                               ParseDirLockLine(secBase, fs, file, &secBase->_cfgLock));
+                    if (res == KEYFILE_OK &&
+                        !(ParseDirLockLine(secBase, fs, file, &secBase->_pwdLock) &&
+                          ParseDirLockLine(secBase, fs, file, &secBase->_cfgLock)))
+                        res = KEYFILE_BAD;
                 }
             }
             Close(file);
@@ -533,19 +535,40 @@ BOOL ProbeKeyFile(struct SecurityBase *secBase, struct MsgPort *fs)
 {
     if (!ClearBuffer(secBase))
         return FALSE;
-    return ReadKeyFile(secBase, fs);
+    return ReadKeyFile(secBase, fs) == KEYFILE_OK;
 }
 
+/*
+ * Read the key files of the multi-user volumes. A volume without one is
+ * simply not part of a key-file installation (a fresh AMUInit setup has
+ * none anywhere: the configuration then comes from SYS:Security). A key
+ * file that is present but unreadable, carries a different key, or
+ * conflicts over the config directories marks its volume as tampered:
+ * that volume is quarantined - treated as if it were not attached - and
+ * the rest of the system boots on.
+ *
+ * Returns TRUE only when key files located both the password and the
+ * config directory.
+ */
 BOOL ReadKeyFiles(struct SecurityBase *secBase)
 {
     struct secVolume *vol;
-    BOOL res = FALSE;
 
     if (!secBase->Volumes || !ClearBuffer(secBase))
         return FALSE;
 
-    for (vol = secBase->Volumes; vol && (res = (vol->FS_Flags ? TRUE : ReadKeyFile(secBase, vol->Process))); vol = vol->Next);
-    return (res && secBase->_pwdLock && secBase->_cfgLock);
+    for (vol = secBase->Volumes; vol; vol = vol->Next)
+    {
+        if (vol->FS_Flags)
+            continue;
+        if (ReadKeyFile(secBase, vol->Process) == KEYFILE_BAD)
+        {
+            bug(DEBUG_NAME_STR " %s: bad or inconsistent key file on '%s' - volume quarantined\n",
+                __func__, vol->FS_Name ? vol->FS_Name : (STRPTR)"?");
+            vol->Quarantined = TRUE;
+        }
+    }
+    return (secBase->_pwdLock && secBase->_cfgLock) ? TRUE : FALSE;
 }
 
 /*

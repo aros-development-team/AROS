@@ -27,6 +27,7 @@ struct secVolume
     struct MsgPort      *Process;               /* Handler port for this Volume                     */
 
     LONG                FS_Flags;               /* secFSE_#?; 0 = true muFS volume                  */
+    BOOL                Quarantined;            /* bad/inconsistent key file: deny all access       */
     LONG                RootProtection;         /* Permissions for the root dir                     */
     ULONG               RootOwner;              /* UID:GID of owner of root dir                     */
 

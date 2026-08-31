@@ -86,6 +86,11 @@ struct secGroupDef
  * Function Prototypes (all run in the server's context unless noted)
  */
 extern void LoadConfig(struct SecurityBase *secBase);
+/* ReadKeyFile() results */
+#define KEYFILE_NONE    (0)     /* the volume has no key file */
+#define KEYFILE_OK      (1)     /* valid, key matches */
+#define KEYFILE_BAD     (-1)    /* present but unreadable/mismatched/conflicting */
+
 extern BOOL ReadKeyFiles(struct SecurityBase *secBase);
 /* Does the volume behind 'fs' carry a valid key file? (server context) */
 extern BOOL ProbeKeyFile(struct SecurityBase *secBase, struct MsgPort *fs);
