@@ -23,10 +23,19 @@
 #include <proto/m68kemu.h>
 
 #include "dos_intern.h"
+#include <dos_platform.h>
 #include LC_LIBDEFS_FILE
 #include <string.h>
 
 #define SEGARRAY_LENGTH 6       /* Minimum needed for HUNK overlays */
+
+#ifndef PROC_STACKSIZE
+#define PROC_STACKSIZE AROS_STACKSIZE
+#endif
+
+#ifndef PROC_MINSTACKSIZE
+#define PROC_MINSTACKSIZE PROC_STACKSIZE
+#endif
 
 static void DosEntry(void);
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase);
@@ -104,7 +113,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* 6 */    { NP_Error         , TAGDATA_NOT_SPECIFIED       },
     /* 7 */    { NP_CloseError    , 1                           },
     /* 8 */    { NP_CurrentDir    , TAGDATA_NOT_SPECIFIED       },
-    /* 9 */    { NP_StackSize     , AROS_STACKSIZE              },
+    /* 9 */    { NP_StackSize     , PROC_STACKSIZE              },
     /*10 */    { NP_Name          , (IPTR)"New Process"         },
     /*11 */    { NP_Priority      , me->pr_Task.tc_Node.ln_Pri  },
     /*12 */    { NP_Arguments     , TAGDATA_NOT_SPECIFIED       },
@@ -139,7 +148,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
             LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 
             D(bug("[createnewproc] Parent stack: %u (0x%08X)\n", parentstack, parentstack));
-            if (parentstack > AROS_STACKSIZE)
+            if (parentstack > PROC_STACKSIZE)
             {
                 defaults[9].ti_Data = parentstack;
             }
@@ -220,10 +229,10 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
      * Yes, 64-bit systems appear to be strictly typed in such places.
      */
     process->pr_StackSize = defaults[9].ti_Data;
-    /* We need a minimum stack to handle interrupt contexts */
-    if (process->pr_StackSize < AROS_STACKSIZE)
+    /* Enforce the platform's minimum process stack. */
+    if (process->pr_StackSize < PROC_MINSTACKSIZE)
     {
-        process->pr_StackSize = AROS_STACKSIZE;
+        process->pr_StackSize = PROC_MINSTACKSIZE;
     }
 
     stack = AllocMem(process->pr_StackSize, MEMF_PUBLIC);

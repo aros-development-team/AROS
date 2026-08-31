@@ -22,11 +22,11 @@ struct ConsoleBase;
 /* Constants */
 /*
  * The console task renders through intuition/graphics, but its measured
- * peak on m68k stays under 1 KB even with a console window open; 8 KB
- * keeps generous headroom without pinning 16 KB of chip RAM.
+ * peak on m68k stays under 1 KB even with a console window open; 4 KB
+ * retains more than four times that measured requirement.
  */
 #ifdef __mc68000
-#define COTASK_STACKSIZE (8192 + 4)
+#define COTASK_STACKSIZE (4096 + 4)
 #else
 #define COTASK_STACKSIZE (AROS_STACKSIZE + 4)
 #endif

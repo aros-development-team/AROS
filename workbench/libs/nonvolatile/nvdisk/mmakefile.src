@@ -3,6 +3,12 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_LDFLAGS := -static
 
+%get_archincludes modname=nvdisk \
+    includeflag=TARGET_NVDISK_INCLUDES \
+    maindir=workbench/libs/nonvolatile/nvdisk
+
+USER_INCLUDES := $(TARGET_NVDISK_INCLUDES)
+
 FUNCS := meminfonvd \
 	 readnvddata \
 	 setnvdprotection \

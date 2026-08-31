@@ -1339,15 +1339,12 @@ static const struct DosEnvec CD32Envec = {
     .de_HighCyl = 0,
     /*
      * CDVDFS sizes its sector cache as de_NumBuffers 16-sector (32 KB)
-     * prefetch chunks, so 32 here cost a full megabyte of BufMemType
-     * memory the moment CD0: mounts. A CD32 without expansion RAM backs
-     * MEMF_24BITDMA with its only 2 MB of chip RAM, and half the machine
-     * disappearing before the boot handoff is what forced fast RAM onto
-     * titles that run chip-only under the CD32 Kickstart (whose
-     * CDFileSystem treats a buffer as one 2 KB block). Four chunks
-     * (128 KB) keep sequential streaming ahead of the drive.
+     * prefetch chunks. A CD32 without expansion RAM backs MEMF_24BITDMA
+     * with its only 2 MB of chip RAM, so keep a single readahead chunk.
+     * The Akiko data ring already buffers incoming sectors below this
+     * filesystem cache.
      */
-    .de_NumBuffers = 4,
+    .de_NumBuffers = 1,
     .de_BufMemType = MEMF_24BITDMA,
     .de_MaxTransfer = 32 * 2048,
     .de_Mask = 0x00fffffe,

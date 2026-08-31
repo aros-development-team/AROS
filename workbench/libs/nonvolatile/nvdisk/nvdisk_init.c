@@ -8,6 +8,7 @@
 #define  DEBUG  0
 
 #include "nvdisk_intern.h"
+#include <nvdisk_arch.h>
 
 #include <aros/debug.h>
 
@@ -35,6 +36,9 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     BOOL error = TRUE;    // Notice the initialization to 'TRUE' here.
     char *temp = NULL;
     BPTR locFile;
+
+    if (NVDisk_ArchInit(LIBBASE))
+        return TRUE;
 
     LIBBASE->nvd_DOSBase = OpenLibrary("dos.library",0);
     if (LIBBASE->nvd_DOSBase == NULL)
@@ -99,6 +103,12 @@ static int Expunge(LIBBASETYPEPTR LIBBASE)
         This function is single-threaded by exec by calling Forbid.
         Never break the Forbid() or strange things might happen.
     */
+
+    if (NVDisk_ArchActive(LIBBASE))
+    {
+        NVDisk_ArchExpunge(LIBBASE);
+        return TRUE;
+    }
 
     UnLock(nvdBase->nvd_location);
 

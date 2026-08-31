@@ -33,10 +33,9 @@
 /* Size of the input device's stack. Input handlers run on it, so it
  * keeps generous headroom over the measured peak (under 1 KB on m68k);
  * Kickstart gives its input.device task 4 KB and handlers are expected
- * to be frugal, so 8 KB is still double the classic budget without
- * pinning 26 KB of chip RAM. */
+ * to be frugal, so use the same size after measuring a peak below 1 KB. */
 #ifdef __mc68000
-#define IDTASK_STACKSIZE    	    8192
+#define IDTASK_STACKSIZE    	    4096
 #else
 #define IDTASK_STACKSIZE    	    (AROS_STACKSIZE + 10240)
 #endif

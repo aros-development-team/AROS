@@ -364,7 +364,12 @@
             { NP_Entry      , (IPTR)entry                   }, /* 13 */
             { NP_CurrentDir , (IPTR)BNULL                   }, /* 14 */
             { NP_ConsoleTask, (IPTR)BNULL,                  }, /* 15 */
-            { TAG_END       , 0                             }  /* 16 */
+#ifdef __mc68000
+            /* Shell-seg itself peaks below 2 KB during CD32 boot. Commands
+             * retain the conservative 8 KB m68k process default. */
+            { NP_StackSize  , 4096                          }, /* 16 */
+#endif
+            { TAG_END       , 0                             }  /* 17 */
         };
 
         Tag filterList[] =

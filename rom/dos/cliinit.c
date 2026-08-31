@@ -188,10 +188,9 @@ static void internalSetTimeFromBootVolume(BPTR lock, struct DosLibrary *DOSBase)
      * This process mounts the boot volume and then becomes the initial
      * shell; commands it launches run on their own cli_DefaultStack
      * stacks, so its own stack only carries mount packets and script
-     * parsing. 8 KB is double the classic shell budget, and the block
-     * is chip RAM on an unexpanded machine.
+     * parsing. Its measured peak during CD32 boot is below 2 KB.
      */
-    mp = CreateProc("Boot Mount", 0, seg, 8192);
+    mp = CreateProc("Boot Mount", 0, seg, 4096);
 #else
     mp = CreateProc("Boot Mount", 0, seg, AROS_STACKSIZE);
 #endif

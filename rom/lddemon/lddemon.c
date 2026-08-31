@@ -834,6 +834,10 @@ static ULONG LDDemon_Init(struct IntLDDemonBase *ldBase)
         { NP_WindowPtr, -1 },
         { NP_Name, (IPTR)ldDemonName },
         { NP_Priority, 5 },
+#ifdef __mc68000
+        /* The loader daemon peaks below 1 KB during CD32 boot. */
+        { NP_StackSize, 4096 },
+#endif
         { TAG_END , 0 }
     };
 

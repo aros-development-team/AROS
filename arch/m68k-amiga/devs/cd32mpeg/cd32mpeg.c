@@ -724,6 +724,24 @@ static void fmvTask(IPTR baseArg)
     }
 }
 
+static BOOL fmvStartTask(LIBBASETYPEPTR base)
+{
+    if (base->cmb_Task)
+        return TRUE;
+
+    base->cmb_Task = NewCreateTask(TASKTAG_PC, fmvTask,
+        TASKTAG_NAME, "cd32mpeg.device",
+        /* Match Commodore's FMV worker.  It must drain each CDXL sector into
+         * both decoders before their small input FIFOs run dry. */
+        TASKTAG_PRI, 10,
+        TASKTAG_STACKSIZE, 8192,
+        TASKTAG_ARG1, base,
+        TASKTAG_TASKMSGPORT, &base->cmb_MsgPort,
+        TAG_DONE);
+
+    return base->cmb_Task != NULL;
+}
+
 static int cd32mpeg_Init(LIBBASETYPE *base)
 {
     base->cmb_Present = FALSE;
@@ -739,17 +757,9 @@ static int cd32mpeg_Init(LIBBASETYPE *base)
     base->cmb_Interrupt.is_Node.ln_Name = "cd32mpeg.device";
     base->cmb_Interrupt.is_Data = base;
     base->cmb_Interrupt.is_Code = (VOID_FUNC)fmvInterrupt;
-    base->cmb_Task = NewCreateTask(TASKTAG_PC, fmvTask,
-        TASKTAG_NAME, "cd32mpeg.device",
-        /* Match Commodore's FMV worker.  It must drain each CDXL sector into
-         * both decoders before their small input FIFOs run dry. */
-        TASKTAG_PRI, 10,
-        TASKTAG_STACKSIZE, 8192,
-        TASKTAG_ARG1, base,
-        TASKTAG_TASKMSGPORT, &base->cmb_MsgPort,
-        TAG_DONE);
+    base->cmb_Task = NULL;
 
-    return base->cmb_Task != NULL;
+    return TRUE;
 }
 
 ADD2INITLIB(cd32mpeg_Init, 0)
@@ -767,6 +777,9 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR base,
             base->cmb_Present, unit));
         return FALSE;
     }
+
+    if (!fmvStartTask(base))
+        return FALSE;
 
     if (!base->cmb_InterruptInstalled)
     {

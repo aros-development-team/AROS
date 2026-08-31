@@ -339,11 +339,10 @@ int Exec_InitServices(struct ExecBase *SysBase)
                   TASKTAG_PRI        , 126,
 #ifdef __mc68000
                   /*
-                   * Idle until an alert fires; the alert display path
-                   * runs well within 8 KB and the stack is chip RAM on
-                   * an unexpanded machine.
+                   * Idle until an alert fires; its normal-path peak is a
+                   * few hundred bytes and 4 KB matches the m68k task floor.
                    */
-                  TASKTAG_STACKSIZE  , 8192,
+                  TASKTAG_STACKSIZE  , 4096,
 #endif
                   TASKTAG_PC         , SupervisorAlertTask,
                   TASKTAG_ARG1       , SysBase,

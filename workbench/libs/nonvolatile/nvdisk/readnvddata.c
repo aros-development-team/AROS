@@ -9,6 +9,7 @@
     NAME */
 
 #include "nvdisk_intern.h"
+#include <nvdisk_arch.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
@@ -58,6 +59,9 @@ AROS_LH2(APTR, ReadNVDData,
 
 {
     AROS_LIBFUNC_INIT
+
+    if (NVDisk_ArchActive(GPB(nvdBase)))
+        return NVDisk_ArchRead(GPB(nvdBase), appName, itemName);
 
     APTR  mem = NULL;
     BPTR  lock, lock2;
