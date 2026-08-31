@@ -192,6 +192,8 @@ static BOOL UserHasPassword(struct SecurityBase *secBase, CONST_STRPTR userid)
  * failallowed: give up after one failed attempt (secLoginA).
  * nopasswd:    root may login as anybody without a password.
  */
+static void CreateUserProfile(struct SecurityBase *secBase, struct secPrivUserInfo *info);
+
 static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct secTags *tags, BOOL failallowed, BOOL nopasswd, struct LocaleInfo *li)
 {
     char version[16];
@@ -318,10 +320,43 @@ static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct
                 else
                     myfputs(secBase, tags->Output, GetLocS(secBase, li, MSG_LOGINFAIL_CON));
             }
+            else
+                CreateUserProfile(secBase, info);
         }
     } while (!info);
 
     return info;
+}
+
+/*
+ * A user logs in: make sure SYS:Security/Profiles/<user> exists, owned by
+ * that user. Runs before the credentials are switched, so the (still
+ * privileged) boot context creates it. Without a Profiles directory the
+ * volume is not profile-enabled (Security-Startup creates it on its first
+ * run) and nothing is done.
+ */
+static void CreateUserProfile(struct SecurityBase *secBase, struct secPrivUserInfo *info)
+{
+    TEXT path[sizeof("SYS:Security/Profiles/") + secUSERIDSIZE];
+    BPTR lock;
+
+    if (!(lock = Lock("SYS:Security/Profiles", SHARED_LOCK)))
+        return;
+    UnLock(lock);
+
+    strcpy(path, "SYS:Security/Profiles/");
+    strncat(path, info->Pub.UserID, secUSERIDSIZE - 1);
+
+    if ((lock = Lock(path, SHARED_LOCK)))
+    {
+        UnLock(lock);
+        return;
+    }
+    if ((lock = CreateDir(path)))
+    {
+        UnLock(lock);
+        SetOwner(path, ((ULONG)info->Pub.uid << 16) | info->Pub.gid);
+    }
 }
 
 /*
