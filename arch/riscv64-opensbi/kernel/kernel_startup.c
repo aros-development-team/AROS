@@ -36,6 +36,8 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size,
 
 /* The hart we were booted on (see kernel_intern.h) */
 unsigned long __boot_hartid;
+/* The DTB pointer handed over with it, kept for krnWarmKick() */
+void *__boot_fdt;
 /* Harts described by the device tree; only the boot hart runs AROS
    until SMP bring-up exists, but the count is real */
 unsigned long __ncpus = 1;
@@ -439,11 +441,65 @@ struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
 static struct krnFDTInfo fdtinfo;
 struct krnFDTInfo *__bootfdtinfo = &fdtinfo;
 
+/*
+ * Warm reboot: restart AROS at its entry point, machine left alone -
+ * what ColdReboot()'s SD_ACTION_WARMREBOOT means on Amiga. The platform
+ * is not reset; we return the hart to the state OpenSBI (or the UEFI
+ * stub) handed over in and take the first-boot path again with the
+ * original arguments. _start_kernel redoes gp/sp/stvec/FPU and zeroes
+ * .bss; kernel .data is taken as it lies, the same exposure the PC
+ * port's core_Kick has always had. The modules package, the DTB and the
+ * __efi_* variables all survive - they are outside .bss.
+ *
+ * Everything runs in S-mode, so the exec reset handler calls this
+ * directly. The arguments must be in registers before translation goes
+ * off; the map is identity so the PC and stack stay valid regardless,
+ * but nothing below touches the stack after the satp write.
+ */
+void __attribute__((noreturn)) krnWarmKick(void)
+{
+    unsigned long hartid = __boot_hartid;
+    void *fdt = __boot_fdt;
+
+    /*
+     * The user-mode pass of DoResetCallbacks takes no Disable(), so the
+     * timer may still be live here - quiesce interrupts before touching
+     * anything.
+     */
+    __asm__ __volatile__ (
+        "csrw   sie, zero\n\t"
+        "csrci  sstatus, 0x2"           /* SSTATUS_SIE                  */
+        ::: "memory");
+
+    /*
+     * SysBase is .data and doubles as the "exec is up" sentinel for the
+     * timer and trap paths - stale and non-NULL, the restarted kernel
+     * would consult the dead ExecBase (and its task lists) from the
+     * first timer tick during module loading. Down it goes; nothing
+     * else in .data carries live state the first-boot path does not
+     * re-derive.
+     */
+    SysBase = NULL;
+
+    __asm__ __volatile__ (
+        "csrw   satp, zero\n\t"         /* bare mode, as on first entry */
+        "sfence.vma\n\t"
+        "mv     a0, %0\n\t"
+        "mv     a1, %1\n\t"
+        "la     t0, _start_kernel\n\t"
+        "jr     t0"
+        :: "r"(hartid), "r"(fdt)
+        : "a0", "a1", "t0", "memory");
+
+    __builtin_unreachable();
+}
+
 void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
 {
     struct TagItem *msg;
 
     __boot_hartid = hartid;
+    __boot_fdt = fdt;
 
     krnSBIPutStr("AROS64/riscv (OpenSBI)\n");
     krnSBIPutStr("boot hart: ");

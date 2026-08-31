@@ -26,6 +26,14 @@ struct KernelBase;
 /* The hart we were booted on, as handed over by OpenSBI */
 extern unsigned long __boot_hartid;
 
+/* The device tree pointer from the same handover, kept for the warm
+   reboot (kernel_startup.c) */
+extern void *__boot_fdt;
+
+/* Warm reboot: back through _start_kernel with the original boot
+   arguments, as if OpenSBI had just handed over (kernel_startup.c) */
+void krnWarmKick(void) __attribute__((noreturn));
+
 /* Harts described by the device tree (kernel_startup.c) */
 extern unsigned long __ncpus;
 
