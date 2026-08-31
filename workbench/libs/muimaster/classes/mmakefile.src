@@ -72,7 +72,7 @@ USER_LDFLAGS := -static
 #MM	workbench-classes-zune-process-clean \
 #MM	workbench-classes-zune-pixmap-clean
 
-#MM workbench-classes-zune-aboutmui : includes
+#MM workbench-classes-zune-aboutmui : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-aboutmui \
     modname=Aboutmui modtype=mui files="aboutmui ../locale" \
@@ -95,7 +95,7 @@ USER_LDFLAGS := -static
     uselibs="stdc"
 # stdc for rand()
 
-#MM workbench-classes-zune-coloradjust : includes
+#MM workbench-classes-zune-coloradjust : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-coloradjust \
     modname=Coloradjust modtype=mui files="coloradjust ../locale" \
@@ -109,7 +109,7 @@ USER_LDFLAGS := -static
     conffile=colorfield.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_COLORFIELD=0"
 
-#MM workbench-classes-zune-frameadjust : includes
+#MM workbench-classes-zune-frameadjust : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-frameadjust \
     modname=Frameadjust modtype=mui files="frameadjust ../locale" \
@@ -130,7 +130,7 @@ USER_LDFLAGS := -static
     conffile=gauge.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_GAUGE=0"
     
-#MM workbench-classes-zune-imageadjust : includes
+#MM workbench-classes-zune-imageadjust : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-imageadjust \
     modname=Imageadjust modtype=mui files="imageadjust ../locale" \
@@ -144,7 +144,7 @@ USER_LDFLAGS := -static
     conffile=imagedisplay.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_IMAGEDISPLAY=0"
     
-#MM workbench-classes-zune-penadjust : includes
+#MM workbench-classes-zune-penadjust : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-penadjust \
     modname=Penadjust modtype=mui files="penadjust ../locale" \
@@ -165,7 +165,7 @@ USER_LDFLAGS := -static
     conffile=popasl.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPASL=0"
     
-#MM workbench-classes-zune-popframe : includes
+#MM workbench-classes-zune-popframe : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-popframe \
     modname=Popframe modtype=mui files="popframe ../locale" \
@@ -179,7 +179,7 @@ USER_LDFLAGS := -static
     conffile=popimage.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPIMAGE=0"
     
-#MM workbench-classes-zune-poppen : includes
+#MM workbench-classes-zune-poppen : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-poppen \
     modname=Poppen modtype=mui files="poppen ../locale" \
@@ -228,14 +228,14 @@ USER_LDFLAGS := -static
     conffile=floattext.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_FLOATTEXT=0"
 
-#MM workbench-classes-zune-volumelist : includes
+#MM workbench-classes-zune-volumelist : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-volumelist \
     modname=Volumelist modtype=mui files="volumelist ../locale" \
     conffile=volumelist.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_VOLUMELIST=0"
 
-#MM workbench-classes-zune-dirlist : includes
+#MM workbench-classes-zune-dirlist : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-dirlist \
     modname=Dirlist modtype=mui files="dirlist ../locale" \
@@ -294,7 +294,7 @@ USER_LDFLAGS := -static
     conffile=dtpic.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_DTPIC=0"
 
-#MM workbench-classes-zune-palette : includes
+#MM workbench-classes-zune-palette : includes workbench-libs-muimaster-catalogs
 %build_module \
     mmake=workbench-classes-zune-palette \
     modname=Palette modtype=mui files="palette ../locale" \
