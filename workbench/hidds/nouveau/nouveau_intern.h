@@ -426,7 +426,6 @@ struct pci_dev;
 extern struct pci_dev *nouveau_init_findcard(void);
 extern int nouveau_init_probe(struct pci_dev *pdev);
 extern int nouveau_init(void);
-extern volatile int nouveau_reset_pending;
 
 /* Commom memory allocation */
 APTR HIDDNouveauAlloc(ULONG size);

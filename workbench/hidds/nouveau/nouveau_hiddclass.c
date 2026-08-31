@@ -2,9 +2,6 @@
     Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/asmcall.h>
-#include <exec/interrupts.h>
-#include <proto/exec.h>
 #include "nouveau_intern.h"
 #include "compositor.h"
 
@@ -329,39 +326,6 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
     return TRUE;
 }
 
-/*
- * On reset the card is already in a reboot-safe state - scanout carries
- * on unaided and the next boot recovers the firmware side - so the only
- * job here is to stop taking on new display work, instantly. Anything
- * heavier from reset context holds the shutdown sequence up.
- */
-volatile int nouveau_reset_pending;
-
-static AROS_INTH1(HIDDNouveauResetFlag, APTR, unused)
-{
-    AROS_INTFUNC_INIT
-
-    nouveau_reset_pending = 1;
-
-    return FALSE;
-
-    AROS_INTFUNC_EXIT
-}
-
-static struct Interrupt nouveau_reset_interrupt;
-
-static void HIDDNouveauInstallResetHandler(void)
-{
-    if (nouveau_reset_interrupt.is_Code)
-        return;
-
-    nouveau_reset_interrupt.is_Node.ln_Type = NT_INTERRUPT;
-    nouveau_reset_interrupt.is_Node.ln_Pri  = 127;
-    nouveau_reset_interrupt.is_Node.ln_Name = "nouveau.hidd";
-    nouveau_reset_interrupt.is_Code         = (VOID_FUNC)HIDDNouveauResetFlag;
-    AddResetCallback(&nouveau_reset_interrupt);
-}
-
 /* PUBLIC METHODS */
 /* DRM connector type -> vHidd_ConnectorType_* (0 = unknown) */
 static ULONG HIDDNouveauConnectorType(uint32_t drmtype)
@@ -422,8 +386,6 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
     if (nouveau_init_probe(pdev) < 0)
         return NULL;
-
-    HIDDNouveauInstallResetHandler();
 
     LOCK_ENGINE
 
