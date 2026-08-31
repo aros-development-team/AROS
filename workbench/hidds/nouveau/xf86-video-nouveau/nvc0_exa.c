@@ -1122,12 +1122,7 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
 					 maxX - minX + 1, maxY - minY + 1,
 					 color))
 			return FALSE;
-		/* Callers do not consistently wait before touching the
-		 * bitmap through its CPU mapping again, so the engine work
-		 * must be complete before this returns. */
-		nouveau_pushbuf_kick(carddata->ce_pushbuf,
-				     carddata->ce_pushbuf->channel);
-		nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
+		bmdata->gpu_dirty = TRUE;
 		return TRUE;
 	}
 
@@ -1138,6 +1133,7 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
     {
         NVC0EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
         NVC0EXADoneSolid(bmdata);
+        bmdata->gpu_dirty = TRUE;
         return TRUE;
     }
 
@@ -1173,11 +1169,8 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
 					 destdata->pitch, destdata->drawable.height,
 					 destX, destY))
 			return FALSE;
-		/* As above - complete before the CPU can touch either
-		 * mapping again. */
-		nouveau_pushbuf_kick(carddata->ce_pushbuf,
-				     carddata->ce_pushbuf->channel);
-		nouveau_bo_wait(destdata->bo, NOUVEAU_BO_RD, carddata->client);
+		srcdata->gpu_dirty = TRUE;
+		destdata->gpu_dirty = TRUE;
 		return TRUE;
 	}
 
@@ -1188,6 +1181,8 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
     {
         NVC0EXACopy(destdata, srcX, srcY, destX , destY, width, height);
         NVC0EXADoneCopy(destdata);
+        srcdata->gpu_dirty = TRUE;
+        destdata->gpu_dirty = TRUE;
         return TRUE;
     }
 

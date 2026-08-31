@@ -1059,6 +1059,7 @@ BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     {
         NV50EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
         NV50EXADoneSolid(bmdata);
+        bmdata->gpu_dirty = TRUE;
         return TRUE;
     }
 
@@ -1079,6 +1080,8 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     {
         NV50EXACopy(destdata, srcX, srcY, destX , destY, width, height);
         NV50EXADoneCopy(destdata);
+        srcdata->gpu_dirty = TRUE;
+        destdata->gpu_dirty = TRUE;
         return TRUE;
     }
 

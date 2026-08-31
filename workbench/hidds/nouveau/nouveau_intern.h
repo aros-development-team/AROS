@@ -74,6 +74,9 @@ struct HIDDNouveauBitMapData
 
     ULONG   pitch;          /* Width of single data row in bytes */
     UBYTE   bytesperpixel;  /* In bytes, how many bytes to store a pixel */
+    BOOL    gpu_dirty;      /* Engine work targeting this bo has been queued
+                               and not yet waited for. Any CPU access via the
+                               mapping must sync first (MAP_BUFFER does). */
     struct
     {
         ULONG height;           /* Height of bitmap in pixels */
@@ -170,6 +173,8 @@ struct CardData
             uint32_t);
 
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
+    ULONG gart_pos;         /* Ring position in the GART buffer: uploads stream
+                               without waiting until the ring wraps */
     struct SignalSemaphore  gartsemaphore;
 };
 
@@ -255,7 +260,8 @@ LIBBASETYPE
 void nouveau_compat_log(const char *fmt, ...);
 #define nvlog nouveau_compat_log
 
-#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); }
+#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); \
+                                      if (bmdata->gpu_dirty) { nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); bmdata->gpu_dirty = FALSE; } }
 
 #define IS_NOUVEAU_BM_CLASS(x)      ((x) == SD(cl)->bmclass)
 

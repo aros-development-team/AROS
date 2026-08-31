@@ -807,7 +807,6 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
             break;
         }
 
-nouveau_bo_wait(destdata->bo, NOUVEAU_BO_RD, carddata->client);
 
         UNLOCK_BITMAP_BM(destdata);
         UNLOCK_BITMAP_BM(srcdata);

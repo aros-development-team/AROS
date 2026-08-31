@@ -185,7 +185,7 @@
  static int
  nouveau_exa_scratch(NVPtr pNv, int size, struct nouveau_bo **pbo, int *off)
  {
-@@ -532,3 +537,143 @@
+@@ -532,3 +537,153 @@
  	pNv->Flush = nouveau_exa_flush;
  	return TRUE;
  }
@@ -241,29 +241,39 @@
 +
 +    while (height) {
 +        int lines = (height > 2047) ? 2047 : height;
-+        int tmp_offset = 0;
++        int chunk;
 +
 +        /* Limit transfer to GART buffer size */
 +        if ((unsigned)lines > pNv->GART->size / tmp_pitch)
 +            lines = pNv->GART->size / tmp_pitch;
++        chunk = tmp_pitch * lines;
++
++        /* The GART buffer is a ring: successive uploads stream into it
++           and only a wrap has to wait for the engine to be done reading
++           the earlier chunks. */
++        if (pNv->gart_pos + chunk > pNv->GART->size) {
++            nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
++            pNv->gart_pos = 0;
++        }
 +
 +        /* RAM -> CPU -> GART */
-+        nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
-+
-+        if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR, pNv->client))
-+            return FALSE;
-+        dst = pNv->GART->map;
++        if (!pNv->GART->map) {
++            if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR, pNv->client))
++                return FALSE;
++        }
++        dst = (char *)pNv->GART->map + pNv->gart_pos;
 +
 +        HiddNouveauWriteFromRAM( (APTR)srcpixels, srcpitch, srcPixFmt, dst, tmp_pitch,
 +            width, lines, cl, o);
 +        srcpixels += srcpitch * lines;
 +
 +        /* GART -> GPU -> VRAM */
-+        if (!NVAccelM2MF(pNv, width, lines, cpp, tmp_offset, 0, pNv->GART,
++        if (!NVAccelM2MF(pNv, width, lines, cpp, pNv->gart_pos, 0, pNv->GART,
 +                    NOUVEAU_BO_GART, tmp_pitch, lines, 0, 0,
 +                    nouveau_pixmap_bo(pdpix), NOUVEAU_BO_VRAM,
 +                    dst_pitch, pdpix->drawable.height, x, y))
 +            return FALSE;
++        pNv->gart_pos = (pNv->gart_pos + chunk + 255) & ~255UL;
 +
 +        /* next! */
 +        height -= lines;
@@ -486,7 +496,7 @@
  }
  
  Bool
-@@ -432,3 +448,50 @@
+@@ -432,3 +448,53 @@
  
  	return TRUE;
  }
@@ -512,6 +522,7 @@
 +    {
 +        NV04EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1, color);
 +        NV04EXADoneSolid(bmdata);
++        bmdata->gpu_dirty = TRUE;
 +        return TRUE;
 +    }
 +
@@ -532,6 +543,8 @@
 +    {
 +        NV04EXACopy(destdata, srcX, srcY, destX, destY, width, height);
 +        NV04EXADoneCopy(destdata);
++        srcdata->gpu_dirty = TRUE;
++        destdata->gpu_dirty = TRUE;
 +        return TRUE;
 +    }
 +
@@ -957,7 +970,7 @@
  
  Bool
  NV50EXAPrepareComposite(int op,
-@@ -1013,3 +1036,79 @@
+@@ -1013,3 +1036,82 @@
  
  	return TRUE;
  }
@@ -984,6 +997,7 @@
 +    {
 +        NV50EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
 +        NV50EXADoneSolid(bmdata);
++        bmdata->gpu_dirty = TRUE;
 +        return TRUE;
 +    }
 +
@@ -1004,6 +1018,8 @@
 +    {
 +        NV50EXACopy(destdata, srcX, srcY, destX , destY, width, height);
 +        NV50EXADoneCopy(destdata);
++        srcdata->gpu_dirty = TRUE;
++        destdata->gpu_dirty = TRUE;
 +        return TRUE;
 +    }
 +
@@ -1427,7 +1443,7 @@
  
  Bool
  NVC0EXAPrepareComposite(int op,
-@@ -1065,3 +1089,107 @@
+@@ -1065,3 +1089,102 @@
  				     src_h, src_x, src_y, dst, dst_off,
  				     dst_dom, dst_pitch, dst_h, dst_x, dst_y);
  }
@@ -1464,12 +1480,7 @@
 +					 maxX - minX + 1, maxY - minY + 1,
 +					 color))
 +			return FALSE;
-+		/* Callers do not consistently wait before touching the
-+		 * bitmap through its CPU mapping again, so the engine work
-+		 * must be complete before this returns. */
-+		nouveau_pushbuf_kick(carddata->ce_pushbuf,
-+				     carddata->ce_pushbuf->channel);
-+		nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
++		bmdata->gpu_dirty = TRUE;
 +		return TRUE;
 +	}
 +
@@ -1480,6 +1491,7 @@
 +    {
 +        NVC0EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
 +        NVC0EXADoneSolid(bmdata);
++        bmdata->gpu_dirty = TRUE;
 +        return TRUE;
 +    }
 +
@@ -1515,11 +1527,8 @@
 +					 destdata->pitch, destdata->drawable.height,
 +					 destX, destY))
 +			return FALSE;
-+		/* As above - complete before the CPU can touch either
-+		 * mapping again. */
-+		nouveau_pushbuf_kick(carddata->ce_pushbuf,
-+				     carddata->ce_pushbuf->channel);
-+		nouveau_bo_wait(destdata->bo, NOUVEAU_BO_RD, carddata->client);
++		srcdata->gpu_dirty = TRUE;
++		destdata->gpu_dirty = TRUE;
 +		return TRUE;
 +	}
 +
@@ -1530,6 +1539,8 @@
 +    {
 +        NVC0EXACopy(destdata, srcX, srcY, destX , destY, width, height);
 +        NVC0EXADoneCopy(destdata);
++        srcdata->gpu_dirty = TRUE;
++        destdata->gpu_dirty = TRUE;
 +        return TRUE;
 +    }
 +

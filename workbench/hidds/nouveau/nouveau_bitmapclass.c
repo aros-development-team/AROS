@@ -238,7 +238,13 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
     }
     else
         addr += map;
-    
+
+    if (bmdata->gpu_dirty)
+    {
+        nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client);
+        bmdata->gpu_dirty = FALSE;
+    }
+
     switch(bmdata->bytesperpixel)
     {
     case(1):
@@ -276,7 +282,13 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
     }
     else
         addr += map;
-    
+
+    if (bmdata->gpu_dirty)
+    {
+        nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client);
+        bmdata->gpu_dirty = FALSE;
+    }
+
     switch(bmdata->bytesperpixel)
     {
     case(1):
@@ -336,7 +348,6 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
         break;
     }    
 
-nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
 
     UNLOCK_BITMAP
 
@@ -426,7 +437,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
                     msg->x, msg->y, msg->width, msg->height, 
                     cl, o);
 
-nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
+if (result) bmdata->gpu_dirty = TRUE;
 
         ReleaseSemaphore(&carddata->gartsemaphore);
 
@@ -456,6 +467,7 @@ nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
         cl, o);
     }
 
+
     UNLOCK_BITMAP
 
     UNLOCK_ENGINE
@@ -476,6 +488,14 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
         BOOL result = FALSE;
         
         /* VRAM->GPU->GART GART->CPU->RAM */
+
+        /* The engine download is not ordered against work queued on the
+           other channel - settle any pending writes first */
+        if (bmdata->gpu_dirty)
+        {
+            nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client);
+            bmdata->gpu_dirty = FALSE;
+        }
 
         ObtainSemaphore(&carddata->gartsemaphore);
         

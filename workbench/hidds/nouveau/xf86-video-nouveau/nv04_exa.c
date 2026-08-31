@@ -470,6 +470,7 @@ BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
     {
         NV04EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1, color);
         NV04EXADoneSolid(bmdata);
+        bmdata->gpu_dirty = TRUE;
         return TRUE;
     }
 
@@ -490,6 +491,8 @@ BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     {
         NV04EXACopy(destdata, srcX, srcY, destX, destY, width, height);
         NV04EXADoneCopy(destdata);
+        srcdata->gpu_dirty = TRUE;
+        destdata->gpu_dirty = TRUE;
         return TRUE;
     }
 
