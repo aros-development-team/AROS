@@ -28,6 +28,13 @@ struct Dtpic_DATA
     LONG fade;
     BOOL lightenonmouse;
 
+    ULONG *bg;          /* cached background (RECTFMT_ARGB) */
+    ULONG *comp;        /* scratch composite buffer (RECTFMT_ARGB) */
+    LONG buf_width;     /* dimensions of the buffers */
+    LONG buf_height;
+    BOOL bg_valid;      /* TRUE when bg holds a valid background */
+    LONG state_offset;  /* current brightness offset for selected/highlighted */
+
 };
 
 #endif /* _DTPIC_PRIVATE_H_ */
