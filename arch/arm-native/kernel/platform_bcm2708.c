@@ -574,6 +574,9 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
         core_Cause(INTB_VERTB, 1L << INTB_VERTB);
     }
 
+    /* Close a per-task CPU-usage window if one is due */
+    core_TaskCPUUsage();
+
     /* Refresh our timer interrupt */
     stc = rd32le(SYSTIMER_CLO);
     stc += VBLANK_INTERVAL;

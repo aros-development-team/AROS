@@ -31,6 +31,9 @@ struct KernelBase;
 
 #define DSCHED(x)
 
+/* When the last CPU-usage window was closed (microseconds). */
+static ULONG core_TaskUsageStamp = 0;
+
 #if defined(__AROSEXEC_SMP__)
 /*
  * iet_CpuAffinity is a pointer to a cpumask buffer (from KrnAllocCPUMask)
@@ -409,4 +412,106 @@ dispatch_rescan:
     EXEC_FIQ_RESTORE(__fiq);
 #endif
     return newtask;
+}
+
+/*
+ * Close a CPU-usage window for one task. cpu_Switch keeps every task's
+ * cumulative busy microseconds in iet_private2; the usage is that value's
+ * growth over the elapsed window, scaled to 0..0xffffffff as on x86.
+ *
+ * iet_private2 is not reset the way the x86 and riscv64 sweeps reset it -
+ * KrnGetSystemAttr(KATTR_CPULoad) reads the same field as deltas - so the
+ * previous sample is kept per task instead. 32-bit maths throughout, to
+ * survive the microsecond counter's ~71 minute wrap.
+ */
+static void core_TaskUsageWindow(struct Task *t, ULONG now)
+{
+    struct IntETask *iet;
+    ULONG busyNow, window;
+
+    if (!(t->tc_Flags & TF_ETASK) || !t->tc_UnionETask.tc_ETask)
+        return;
+
+    iet = IntETask(t->tc_UnionETask.tc_ETask);
+    busyNow = (ULONG)iet->iet_private2;
+
+    /* A running task has not committed its current slice yet; without it
+     * a task sampled mid-slice looks idle. iet_private1 == 0 means it has
+     * never been dispatched. */
+    if ((t->tc_State == TS_RUN) && iet->iet_private1)
+        busyNow += now - (ULONG)iet->iet_private1;
+
+    window = now - (ULONG)iet->iet_LastUsageStamp;
+
+    if (iet->iet_LastUsageStamp && window)
+    {
+        ULONG busy = busyNow - (ULONG)iet->iet_LastBusy;
+
+        if (busy >= window)
+            iet->iet_CpuUsage = 0xffffffff;
+        else
+            iet->iet_CpuUsage = (ULONG)(((UQUAD)busy << 32) / window);
+    }
+    else
+        iet->iet_CpuUsage = 0;      /* first sample */
+
+    iet->iet_LastBusy = busyNow;
+    iet->iet_LastUsageStamp = now;
+}
+
+/*
+ * Refresh every task's iet_CpuUsage, which task.resource reports as
+ * TaskTag_CPUUsage. Driven from the platform's VBlank timer IRQ, not from
+ * the per-core CNTP heartbeat: that one is an FIQ, and the scheduler list
+ * locks taken below are also taken by the IPI handler in FIQ context.
+ */
+void core_TaskCPUUsage(void)
+{
+    struct Task *t;
+    ULONG now;
+#if defined(__AROSEXEC_SMP__)
+    unsigned int __fiq;
+#endif
+
+    if (!SysBase || !__arm_arosintern.ARMI_GetTime)
+        return;
+
+    now = (ULONG)__arm_arosintern.ARMI_GetTime();
+    if (core_TaskUsageStamp && ((now - core_TaskUsageStamp) < TASKUSAGE_WINDOW))
+        return;
+    core_TaskUsageStamp = now;
+
+#if defined(__AROSEXEC_SMP__)
+    __fiq = EXEC_FIQ_DISABLE();
+
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);
+    ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
+        core_TaskUsageWindow(t, now);
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
+    ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
+        core_TaskUsageWindow(t, now);
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
+
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
+#else
+    t = GET_THIS_TASK;
+    if (t)
+        core_TaskUsageWindow(t, now);
+#endif
+    ForeachNode(&SysBase->TaskReady, t)
+        core_TaskUsageWindow(t, now);
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
+#endif
+    ForeachNode(&SysBase->TaskWait, t)
+        core_TaskUsageWindow(t, now);
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+
+    EXEC_FIQ_RESTORE(__fiq);
+#endif
 }
