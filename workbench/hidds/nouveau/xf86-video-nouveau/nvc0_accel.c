@@ -149,6 +149,8 @@ NVAccelInitP2MF_NVE0(ScrnInfoPtr pScrn)
 	if (ret)
 		return FALSE;
 
+	if (!PUSH_SPACE(push, 8))
+		return FALSE;
 	BEGIN_NVC0(push, NV01_SUBC(P2MF, OBJECT), 1);
 	PUSH_DATA (push, pNv->NvMemFormat->handle);
 	return TRUE;
@@ -188,6 +190,8 @@ NVAccelInitCOPY_NVE0(ScrnInfoPtr pScrn)
 	if (ret)
 		return FALSE;
 
+	if (!PUSH_SPACE(push, 8))
+		return FALSE;
 	BEGIN_NVC0(push, NV01_SUBC(COPY, OBJECT), 1);
 	PUSH_DATA (push, pNv->NvCOPY->handle);
 	return TRUE;

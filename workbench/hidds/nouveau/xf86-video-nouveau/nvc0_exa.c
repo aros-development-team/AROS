@@ -1094,6 +1094,9 @@ NVE0EXARectCopy(NVPtr pNv, int w, int h, int cpp,
 
 VOID HIDDNouveauNVC0SetPattern(struct CardData *carddata, LONG clr0, LONG clr1, LONG pat0, LONG pat1)
 {
+	if (carddata->Architecture >= NV_BLACKWELL)
+		return;
+
     struct HIDDNouveauBitMapData fake;
     fake.drawable.pScreen = carddata;
     NVC0EXASetPattern(&fake, clr0, clr1, pat0, pat1);
@@ -1105,6 +1108,10 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color)
 {
+	/* No 2D engine on this generation - let the caller software-render */
+	if (carddata->Architecture >= NV_BLACKWELL)
+		return FALSE;
+
     if (!carddata->channel)
         return FALSE;
 
@@ -1125,6 +1132,10 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode)
 {
+	/* No 2D engine on this generation - let the caller software-render */
+	if (carddata->Architecture >= NV_BLACKWELL)
+		return FALSE;
+
     if (!carddata->channel)
         return FALSE;
 

@@ -726,8 +726,16 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	} else
 	if (pNv->Architecture < NV_FERMI) {
 		INIT_CONTEXT_OBJECT(2D_NV50);
-	} else {
+	} else
+	if (pNv->Architecture < NV_BLACKWELL) {
 		INIT_CONTEXT_OBJECT(2D_NVC0);
+	} else {
+		/*
+		 * The 2D class is gone from this generation - its ops fall
+		 * back to software until they are redone on the copy engine.
+		 */
+		xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+			   "no 2D engine on this GPU, 2D ops in software\n");
 	}
 
 	if (pNv->Architecture < NV_TESLA)

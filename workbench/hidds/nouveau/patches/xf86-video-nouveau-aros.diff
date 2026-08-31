@@ -1089,7 +1089,7 @@
  	nouveau_object_del(&pNv->Nv2D);
  	nouveau_object_del(&pNv->NvMemFormat);
  	nouveau_object_del(&pNv->NvSW);
-@@ -689,15 +710,19 @@
+@@ -689,20 +710,32 @@
  	/* 2D engine */
  	if (pNv->Architecture < NV_TESLA) {
  		INIT_CONTEXT_OBJECT(ContextSurfaces);
@@ -1109,7 +1109,21 @@
  	} else
  	if (pNv->Architecture < NV_FERMI) {
  		INIT_CONTEXT_OBJECT(2D_NV50);
-@@ -746,3 +771,23 @@
+-	} else {
++	} else
++	if (pNv->Architecture < NV_BLACKWELL) {
+ 		INIT_CONTEXT_OBJECT(2D_NVC0);
++	} else {
++		/*
++		 * The 2D class is gone from this generation - its ops fall
++		 * back to software until they are redone on the copy engine.
++		 */
++		xf86DrvMsg(pScrn->scrnIndex, X_INFO,
++			   "no 2D engine on this GPU, 2D ops in software\n");
+ 	}
+ 
+ 	if (pNv->Architecture < NV_TESLA)
+@@ -746,3 +779,23 @@
  	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Channel setup complete.\n");
  	return TRUE;
  }
@@ -1162,7 +1176,16 @@
  	int ret;
  
  	ret = nouveau_object_new(pNv->channel, class, class, NULL, 0,
-@@ -163,8 +166,22 @@
+@@ -146,6 +149,8 @@
+ 	if (ret)
+ 		return FALSE;
+ 
++	if (!PUSH_SPACE(push, 8))
++		return FALSE;
+ 	BEGIN_NVC0(push, NV01_SUBC(P2MF, OBJECT), 1);
+ 	PUSH_DATA (push, pNv->NvMemFormat->handle);
+ 	return TRUE;
+@@ -163,14 +168,30 @@
  		class = 0xa0b5;
  	else if (pNv->dev->chipset < 0x130)
  		class = 0xb0b5;
@@ -1186,6 +1209,14 @@
  
  	ret = nouveau_object_new(pNv->channel, class, class,
  				 NULL, 0, &pNv->NvCOPY);
+ 	if (ret)
+ 		return FALSE;
+ 
++	if (!PUSH_SPACE(push, 8))
++		return FALSE;
+ 	BEGIN_NVC0(push, NV01_SUBC(COPY, OBJECT), 1);
+ 	PUSH_DATA (push, pNv->NvCOPY->handle);
+ 	return TRUE;
 --- ./xf86-video-nouveau-1.0.18/nvc0_exa.c
 +++ ./xf86-video-nouveau/nvc0_exa.c
 @@ -96,11 +96,17 @@
@@ -1312,7 +1343,7 @@
  
  Bool
  NVC0EXAPrepareComposite(int op,
-@@ -1065,3 +1089,51 @@
+@@ -1065,3 +1089,62 @@
  				     src_h, src_x, src_y, dst, dst_off,
  				     dst_dom, dst_pitch, dst_h, dst_x, dst_y);
  }
@@ -1321,6 +1352,9 @@
 +
 +VOID HIDDNouveauNVC0SetPattern(struct CardData *carddata, LONG clr0, LONG clr1, LONG pat0, LONG pat1)
 +{
++	if (carddata->Architecture >= NV_BLACKWELL)
++		return;
++
 +    struct HIDDNouveauBitMapData fake;
 +    fake.drawable.pScreen = carddata;
 +    NVC0EXASetPattern(&fake, clr0, clr1, pat0, pat1);
@@ -1332,6 +1366,10 @@
 +    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
 +    LONG maxY, ULONG drawmode, ULONG color)
 +{
++	/* No 2D engine on this generation - let the caller software-render */
++	if (carddata->Architecture >= NV_BLACKWELL)
++		return FALSE;
++
 +    if (!carddata->channel)
 +        return FALSE;
 +
@@ -1352,6 +1390,10 @@
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG drawmode)
 +{
++	/* No 2D engine on this generation - let the caller software-render */
++	if (carddata->Architecture >= NV_BLACKWELL)
++		return FALSE;
++
 +    if (!carddata->channel)
 +        return FALSE;
 +
