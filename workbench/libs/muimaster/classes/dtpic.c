@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 /* Dtpic.mui. Source based on the one from MUIUndoc */
