@@ -198,6 +198,7 @@ struct LocaleInfo {
 
 /* localeinfo.c */
 void InitLocaleInfo (APTR SysBase, struct LocaleInfo *li, CONST_STRPTR catalog);
+void InitLocaleInfoVersion (APTR SysBase, struct LocaleInfo *li, CONST_STRPTR catalog, ULONG version);
 void FreeLocaleInfo (APTR SysBase, struct LocaleInfo *li);
 CONST_STRPTR GetString (struct LocaleInfo *li, LONG stringNum);
 
