@@ -29,7 +29,7 @@ kernel-efika-arm: $(AROSDIR)/boot/aros-efikamx
 $(AROSDIR)/boot/aros-efikamx: $(KOBJSDIR)/kernel_resource.o 
 		%mkdirs_q $(OSGENDIR)/boot
 		%mkdirs_q $(AROSDIR)/boot
-		$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static -laeabi
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o -L$(AROS_LIB) -larossupport -lautoinit -lamiga -llibinit -lstdc.static -laeabi
 		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
 	
 
