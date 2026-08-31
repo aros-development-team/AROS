@@ -7,6 +7,7 @@
 
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
+#include <libraries/security.h>
 #include <dos/dos.h>
 #include <zune/iconimage.h>
 #include <exec/memory.h>
@@ -139,7 +140,8 @@ Object *LoginWindow__OM_NEW
     if (pool == NULL) return NULL;
 
     /* Initialize locale ---------------------------------------------------*/
-    catalog = OpenCatalogA(NULL, "System/security.catalog", NULL);
+    catalog = OpenCatalog(NULL, SECURITYCATALOGNAME,
+        OC_Version, SECURITYCATALOGVERSION, TAG_DONE);
 
     tag = FindTagItem(WindowContents, message->ops_AttrList);
 
