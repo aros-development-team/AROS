@@ -485,7 +485,9 @@ int chdir(const char *path);
 int close(int fd);
 int dup(int oldfd);
 int dup2(int oldfd, int newfd);
-void _exit(int) __noreturn;
+/* posixc's _exit intercepts vfork() pretend-children; the asm rename routes
+   past stdc.library's weak _Exit alias of the same name. */
+void _exit(int) __asm__("__posixc__exit") __noreturn;
 int execl(const char *path, const char *arg, ...);
 int execv(const char *path, char *const argv[]);
 int execve(const char *path, char *const argv[], char *const envp[]);

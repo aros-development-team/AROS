@@ -22,12 +22,74 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <exec/semaphores.h>
+#include <exec/lists.h>
 
 #include <stdio.h>
 #include <string.h>
 
 #include "pthread_intern.h"
 #include "debug.h"
+
+/*
+ * Loosely-coupled C-runtime per-thread hook registry.  Kept in sync with the
+ * identical declarations in compiler/crt/posixc/__threadhook.c and found by
+ * name in the public semaphore list.
+ *
+ * A C runtime that uses per-task library bases (e.g. posixc.library, which is
+ * "pertaskbase") reads the calling Task's own base out of per-task storage and
+ * jumps through it directly.  A worker we create never runs the program's C
+ * startup, so its slot is NULL and the first CRT call would bus-fault.  The
+ * CRT registers enter/leave hooks here; we run them in every worker so it
+ * acquires a valid CRT base of its own.  pthread stays C-runtime agnostic - it
+ * neither knows nor names any CRT.
+ */
+#define CRT_THREADHOOKS_SEMNAME "crt.thread-hooks.v1"
+#define CRT_MAX_THREADHOOKS     8
+
+struct CRTThreadHook
+{
+    struct MinNode  th_Node;
+    void          (*th_Enter)(void);
+    void          (*th_Leave)(void);
+};
+
+struct CRTThreadHooks
+{
+    struct SignalSemaphore th_Sem;
+    struct MinList         th_Hooks;
+};
+
+static void RunCRTThreadHooks(BOOL enter)
+{
+    struct CRTThreadHooks *reg;
+    struct CRTThreadHook *h;
+    void (*fns[CRT_MAX_THREADHOOKS])(void);
+    int n = 0, i;
+
+    reg = (struct CRTThreadHooks *)FindSemaphore((STRPTR)CRT_THREADHOOKS_SEMNAME);
+    if (!reg)
+        return;
+
+    /* Snapshot the hook pointers under the lock, then call them unlocked: an
+       enter hook opens a library and must not run under our semaphore. */
+    ObtainSemaphoreShared(&reg->th_Sem);
+    for (h = (struct CRTThreadHook *)reg->th_Hooks.mlh_Head;
+         h->th_Node.mln_Succ != NULL && n < CRT_MAX_THREADHOOKS;
+         h = (struct CRTThreadHook *)h->th_Node.mln_Succ)
+    {
+        void (*fn)(void) = enter ? h->th_Enter : h->th_Leave;
+        if (fn)
+            fns[n++] = fn;
+    }
+    ReleaseSemaphore(&reg->th_Sem);
+
+    /* Leave hooks run in the reverse order of the enter hooks. */
+    if (enter)
+        for (i = 0; i < n; i++) fns[i]();
+    else
+        for (i = n - 1; i >= 0; i--) fns[i]();
+}
 
 static void StarterFunc(void)
 {
@@ -66,6 +128,10 @@ static void StarterFunc(void)
 #endif
     SetExcept(SIGBREAKF_CTRL_C, SIGBREAKF_CTRL_C);
 #endif
+
+    // give this worker its own C runtime base(s) before running any user or
+    // CRT code; run once, before the pthread_exit jump point
+    RunCRTThreadHooks(TRUE);
 
     // set a jump point for pthread_exit
     if (!setjmp(inf->jmp))
@@ -129,6 +195,10 @@ static void StarterFunc(void)
         }
     }
     ReleaseSemaphore(&tls_sem);
+
+    // release the C runtime base(s) acquired above, after all user code
+    // (including TLS destructors) has run
+    RunCRTThreadHooks(FALSE);
 
     if (!inf->detached)
     {

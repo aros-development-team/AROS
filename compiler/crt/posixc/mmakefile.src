@@ -5,6 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 
 POSIXC := \
     __dos64 \
+    _exit \
     __exec \
     __fdesc \
     __fopen \
@@ -20,6 +21,7 @@ POSIXC := \
     __get_default_file \
     __rand48 \
     __stat \
+    __threadhook \
     __usergrp \
     __upath \
     __vfork \
