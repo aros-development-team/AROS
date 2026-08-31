@@ -301,6 +301,12 @@ static struct vbe_mode VBEModeInfo;
  * remapped into a fixed window well above every RAM bank, and the
  * remapped address is what goes into the boot tags; every consumer
  * just writes through the pointer and never needs the physical one.
+ *
+ * The window is linear from the identity limit, so an address above
+ * it always lands at the same place whoever maps it: the PCI driver
+ * uses the same rule for the BARs it reaches through this window, and
+ * a native driver taking a card over matches the firmware framebuffer
+ * against those BARs by CPU address.
  */
 #define SV39_IDENTITY_LIMIT (1UL << 38)
 #define FB_WINDOW           0x2000000000UL
@@ -309,7 +315,7 @@ static IPTR krnFBAddr(void)
 {
     if (__efi_fb_base + __efi_fb_size <= SV39_IDENTITY_LIMIT)
         return __efi_fb_base;
-    return FB_WINDOW | (__efi_fb_base & (MEGAPAGE_SIZE - 1));
+    return FB_WINDOW + (__efi_fb_base - SV39_IDENTITY_LIMIT);
 }
 
 static void krnFBMask(unsigned int mask,
