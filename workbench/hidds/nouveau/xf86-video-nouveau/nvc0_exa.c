@@ -1108,9 +1108,28 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color)
 {
-	/* No 2D engine on this generation - let the caller software-render */
-	if (carddata->Architecture >= NV_BLACKWELL)
-		return FALSE;
+	if (carddata->Architecture >= NV_BLACKWELL) {
+		/* No 2D engine on this generation: plain fills go through
+		 * the copy engine's constant remap; anything needing a ROP
+		 * is left to software. */
+		if (drawmode != vHidd_GC_DrawMode_Copy ||
+		    !carddata->ce_enabled || !carddata->ce_fill)
+			return FALSE;
+		if (!carddata->ce_fill(carddata->ce_pushbuf, carddata->NvCopy,
+					 bmdata->bytesperpixel,
+					 bmdata->bo, 0, NOUVEAU_BO_VRAM,
+					 bmdata->pitch, minX, minY,
+					 maxX - minX + 1, maxY - minY + 1,
+					 color))
+			return FALSE;
+		/* Callers do not consistently wait before touching the
+		 * bitmap through its CPU mapping again, so the engine work
+		 * must be complete before this returns. */
+		nouveau_pushbuf_kick(carddata->ce_pushbuf,
+				     carddata->ce_pushbuf->channel);
+		nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
+		return TRUE;
+	}
 
     if (!carddata->channel)
         return FALSE;
@@ -1132,9 +1151,35 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode)
 {
-	/* No 2D engine on this generation - let the caller software-render */
-	if (carddata->Architecture >= NV_BLACKWELL)
-		return FALSE;
+	if (carddata->Architecture >= NV_BLACKWELL) {
+		/* No 2D engine on this generation: plain blits go through
+		 * the copy engine. It gives no ordering guarantee between
+		 * overlapping reads and writes, so overlapping blits within
+		 * one surface (scrolling) are left to software, as is
+		 * anything needing a ROP. */
+		if (drawmode != vHidd_GC_DrawMode_Copy ||
+		    !carddata->ce_enabled || !carddata->ce_rect)
+			return FALSE;
+		if (srcdata->bo == destdata->bo &&
+		    srcX < destX + width  && destX < srcX + width &&
+		    srcY < destY + height && destY < srcY + height)
+			return FALSE;
+		if (!carddata->ce_rect(carddata->ce_pushbuf, carddata->NvCopy,
+					 width, height, srcdata->bytesperpixel,
+					 srcdata->bo, 0, NOUVEAU_BO_VRAM,
+					 srcdata->pitch, srcdata->drawable.height,
+					 srcX, srcY,
+					 destdata->bo, 0, NOUVEAU_BO_VRAM,
+					 destdata->pitch, destdata->drawable.height,
+					 destX, destY))
+			return FALSE;
+		/* As above - complete before the CPU can touch either
+		 * mapping again. */
+		nouveau_pushbuf_kick(carddata->ce_pushbuf,
+				     carddata->ce_pushbuf->channel);
+		nouveau_bo_wait(destdata->bo, NOUVEAU_BO_RD, carddata->client);
+		return TRUE;
+	}
 
     if (!carddata->channel)
         return FALSE;

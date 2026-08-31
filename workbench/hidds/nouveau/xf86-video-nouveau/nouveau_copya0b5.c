@@ -83,6 +83,62 @@ nouveau_copya0b5_rect(struct nouveau_pushbuf *push, struct nouveau_object *copy,
 	return TRUE;
 }
 
+/*
+ * Solid fill through the copy engine's component remap: the constant
+ * register replaces the source data, exactly as the resource manager's
+ * own CE memset does (SET_REMAP_CONST_A + DST_X_CONST_A). With remap
+ * enabled LINE_LENGTH_IN counts components, not bytes; the pitches and
+ * offsets stay in bytes. Pitch surfaces only.
+ */
+Bool
+nouveau_copya0b5_fill(struct nouveau_pushbuf *push, struct nouveau_object *copy,
+		      int cpp, struct nouveau_bo *dst, uint32_t dst_off,
+		      int dst_dom, int dst_pitch, int dst_x, int dst_y,
+		      int w, int h, uint32_t color)
+{
+	struct nouveau_pushbuf_refn refs[] = {
+		{ dst, dst_dom | NOUVEAU_BO_WR },
+	};
+	uint64_t addr;
+	uint32_t comps;
+
+	if (dst->config.nvc0.memtype)
+		return FALSE;
+
+	switch (cpp) {
+	case 1: comps = 0x00000004; break; /* DST_X = CONST_A, size ONE */
+	case 2: comps = 0x00010004; break; /* DST_X = CONST_A, size TWO */
+	case 4: comps = 0x00030004; break; /* DST_X = CONST_A, size FOUR */
+	default:
+		return FALSE;
+	}
+
+	if (nouveau_pushbuf_space(push, 32, 0, 0) ||
+	    nouveau_pushbuf_refn (push, refs, 1))
+		return FALSE;
+
+	addr = dst->offset + dst_off +
+	       (uint64_t)dst_y * dst_pitch + (uint64_t)dst_x * cpp;
+
+	BEGIN_NVC0(push, SUBC_COPY(0x0700), 3);
+	PUSH_DATA (push, color);
+	PUSH_DATA (push, 0);
+	PUSH_DATA (push, comps);
+	BEGIN_NVC0(push, SUBC_COPY(0x0400), 8);
+	PUSH_DATA (push, addr >> 32);
+	PUSH_DATA (push, addr);
+	PUSH_DATA (push, addr >> 32);
+	PUSH_DATA (push, addr);
+	PUSH_DATA (push, dst_pitch);
+	PUSH_DATA (push, dst_pitch);
+	PUSH_DATA (push, w);
+	PUSH_DATA (push, h);
+	BEGIN_NVC0(push, SUBC_COPY(0x0300), 1);
+	PUSH_DATA (push, 0x00000786); /* non-pipelined, flush, pitch in+out,
+	                               * multi-line, remap */
+	return TRUE;
+}
+
 Bool
 nouveau_copya0b5_init(NVPtr pNv)
 {
@@ -91,6 +147,7 @@ nouveau_copya0b5_init(NVPtr pNv)
 		BEGIN_NVC0(push, NV01_SUBC(COPY, OBJECT), 1);
 		PUSH_DATA (push, pNv->NvCopy->handle);
 		pNv->ce_rect = nouveau_copya0b5_rect;
+		pNv->ce_fill = nouveau_copya0b5_fill;
 		return TRUE;
 	}
 	return FALSE;

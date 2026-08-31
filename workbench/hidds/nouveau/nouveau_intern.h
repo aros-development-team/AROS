@@ -165,6 +165,9 @@ struct CardData
             int, int, int,
             struct nouveau_bo *, uint32_t, int, int, int, int, int,
             struct nouveau_bo *, uint32_t, int, int, int, int, int);
+    BOOL (*ce_fill)(struct nouveau_pushbuf *, struct nouveau_object *, int,
+            struct nouveau_bo *, uint32_t, int, int, int, int, int, int,
+            uint32_t);
 
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
     struct SignalSemaphore  gartsemaphore;

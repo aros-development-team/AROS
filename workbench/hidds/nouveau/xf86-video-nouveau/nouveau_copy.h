@@ -14,5 +14,8 @@ Bool nouveau_copya0b5_rect(struct nouveau_pushbuf *, struct nouveau_object *,
 			   int, int, int, struct nouveau_bo *, uint32_t, int,
 			   int, int, int, int, struct nouveau_bo *, uint32_t,
 			   int, int, int, int, int);
+Bool nouveau_copya0b5_fill(struct nouveau_pushbuf *, struct nouveau_object *,
+			   int, struct nouveau_bo *, uint32_t, int, int,
+			   int, int, int, int, uint32_t);
 
 #endif
