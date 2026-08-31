@@ -65,7 +65,7 @@
 #include <libraries/security.h>
 #include <string.h>
 
-const TEXT version[] = "$VER: AMUInit 45.2 (31.08.2026)";
+const TEXT version[] = "$VER: AMUInit 45.3 (31.08.2026)";
 
 #define TEMPLATE "ENABLE/S,DISABLE/S,VOLUME/A,FORCE/S"
 enum { ARG_ENABLE, ARG_DISABLE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
@@ -75,23 +75,9 @@ enum { ARG_ENABLE, ARG_DISABLE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
 #define STARTUP_OFF     "S/Security-Startup.disabled"
 
 static const char StartupScript[] =
-    "; $VER: Security-Startup 45.7 (31.08.2026)\n"
+    "; $VER: Security-Startup 45.8 (31.08.2026)\n"
     ";\n"
-    "; Installed by AMUInit ENABLE. dos.library runs this script before\n"
-    "; S:Startup-Sequence when security.library is part of the ROM: it shows\n"
-    "; the login prompt, and the Startup-Sequence then runs as the user who\n"
-    "; logged in. 'AMUInit DISABLE SYS:' boots single-user again.\n"
-    ";\n"
-    "; This runs in a shell on the boot console and MUST end with EndCLI.\n"
-    ";\n"
-    "; The Startup-Sequence has not made the assigns yet: the graphical login\n"
-    "; (Zune) needs LIBS: for muimaster.library and the classes. It is removed\n"
-    "; again below so that the Startup-Sequence starts as usual.\n"
-    "\n"
-    "; Tolerate command failures (SetOwner/Protect on a filesystem without\n"
-    "; ownership support return ERROR); the login loop tests WARN itself.\n"
     "FailAt 21\n"
-    "Assign LIBS: SYS:Libs\n"
     "Assign LIBS: SYS:Classes ADD\n"
     "If NOT EXISTS \"RAM:T\"\n"
     "    MakeDir \"RAM:T\"\n"
@@ -182,7 +168,7 @@ static const char StartupScript[] =
     "If EXISTS \"RAM:T\"\n"
     "    Delete \"RAM:T\" FORCE QUIET ALL\n"
     "EndIf\n"
-    "Assign LIBS: REMOVE\n"
+    "Assign LIBS: SYS:Classes REMOVE\n"
     "\n"
     ";\n"
     "; Per-user settings: Login sets $Home and $User from the user database.\n"
