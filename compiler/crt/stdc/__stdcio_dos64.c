@@ -21,7 +21,7 @@
 static struct Library *__stdcio_dos64base(void)
 {
     struct StdCIOIntBase *StdCIOBase =
-        (struct StdCIOIntBase *)__aros_getbase_StdCIOBase;
+        (struct StdCIOIntBase *)__aros_getbase_StdCIOBase();
 
     if (StdCIOBase->StdCIODOS64Base == NULL)
         StdCIOBase->StdCIODOS64Base = OpenLibrary("dos64.library", 50);

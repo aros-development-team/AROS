@@ -52,7 +52,7 @@
 ******************************************************************************/
 {
     struct StdCIOIntBase *StdCIOBase =
-        (struct StdCIOIntBase *)__aros_getbase_StdCIOBase;
+        (struct StdCIOIntBase *)__aros_getbase_StdCIOBase();
     char  c;
 
     /*
