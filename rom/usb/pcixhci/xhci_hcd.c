@@ -415,6 +415,8 @@ void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *dev
                     DEBUGFUNCCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET" \n",
                     __func__, hc, devCtx);
 
+    ObtainSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
+
     xhciAbortDeviceQueue(hc, unit, &hc->hc_CtrlXFerQueue, devCtx, FALSE);
     xhciAbortDeviceQueue(hc, unit, &hc->hc_BulkXFerQueue, devCtx, FALSE);
     xhciAbortDeviceQueue(hc, unit, &hc->hc_IntXFerQueue, devCtx, TRUE);
@@ -432,6 +434,8 @@ void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *dev
     }
 
     xhciFreeDeviceCtx(hc, devCtx, TRUE, timerreq);
+
+    ReleaseSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
 }
 
 static int xhciRingEntriesFree(volatile struct pcisusbXHCIRing *ring)
@@ -2323,6 +2327,13 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
 
     epid = xhciEndpointID(ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
 
+    /*
+     * Held across the whole teardown: the port task can be taking the same
+     * device down from the other side, and it frees both the device context
+     * this walks and the timer the commands below are issued with.
+     */
+    ObtainSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
+
     if(epctx) {
         BOOL lastref;
 
@@ -2335,8 +2346,10 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
         devCtx = epctx->ectx_Device;
         Enable();
 
-        if(!lastref)
+        if(!lastref) {
+            ReleaseSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
             return;                     /* still held by another prepared endpoint */
+        }
 
         if(!devCtx) {
             /*
@@ -2344,20 +2357,30 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
              * context was still held; nothing is left to release on the
              * controller, only the context itself.
              */
+            pciusbWarn("xHCI", "Device gone while endpoint %lu was still held - releasing context only\n",
+                       (ULONG)epid);
             xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
             FreeMem(epctx, sizeof(*epctx));
+            ReleaseSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
             return;
         }
 
         epid = epctx->ectx_EPID;
+        /*
+         * Read the timer here and not before: it belongs to the endpoint
+         * context, and closing it frees the request while leaving any copy
+         * taken earlier pointing at freed memory.
+         */
         timerreq = epctx->ectx_TimerReq;
     } else {
         devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
         timerreq = unit->hu_TimerReq;
     }
 
-    if(!devCtx || (epid >= MAX_DEVENDPOINTS))
+    if(!devCtx || (epid >= MAX_DEVENDPOINTS)) {
+        ReleaseSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
         return;
+    }
 
     xhciFreeEndpointContext(hc, devCtx, epid, TRUE, timerreq);
     epctx_free = devCtx->dc_EPContexts[epid];
@@ -2390,6 +2413,8 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
         }
         FreeMem(epctx_free, sizeof(*epctx_free));
     }
+
+    ReleaseSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
 }
 
 /* Shutdown and Interrupt handlers */

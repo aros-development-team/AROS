@@ -118,6 +118,14 @@ struct XhciHCPrivate {
     volatile struct pciusbXHCITRBParams xhc_CmdResults[USB_DEV_MAX];
     UBYTE                               xhc_PortProtocol[MAX_ROOT_PORTS];
     BOOL                                xhc_PortProtocolValid;
+    /*
+     * Serialises device teardown. A device can be taken down from two
+     * directions at once - the port task seeing the port go away, and the
+     * class task freeing its pipes - and both walk and free the same
+     * device context. Nestable, so the endpoint teardown may take it and
+     * then release the device underneath it.
+     */
+    struct SignalSemaphore              xhc_DevLock;
 };
 
 static inline struct XhciHCPrivate *xhciGetHCPrivate(struct PCIController *hc)

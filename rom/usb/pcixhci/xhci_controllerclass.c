@@ -322,6 +322,8 @@ takeownership:
     hc->hc_NumPorts = xhciPortLimit;
     xhcic->xhc_NumSlots = (ULONG)(hcsparams1 & 0xFF);
 
+    InitSemaphore(&xhcic->xhc_DevLock);
+
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%d ports, %d slots" DEBUGCOLOR_RESET" \n",
                     hc->hc_NumPorts, xhcic->xhc_NumSlots);
 
