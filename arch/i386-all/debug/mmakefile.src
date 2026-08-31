@@ -22,5 +22,6 @@ FUNCS := debug_platform disassemble
   files=" $(FUNCS)"
 
 #MM kernel-debug-i386 : linklibs-udis86
+#MM kernel-debug-i386-linklib : linklibs-udis86
 
 %common
