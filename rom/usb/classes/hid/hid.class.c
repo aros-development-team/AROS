@@ -6606,7 +6606,7 @@ void nCheckReset(struct NepClassHid *nch)
         nch->nch_FakeEvent.ie_Code == RAWKEY_DELETE)
     {
         KPRINTF(20, ("Reboot!\n"));
-        ShutdownA(SD_ACTION_COLDREBOOT);
+        ShutdownA(SD_ACTION_REBOOT);
     }
 }
 /* \\\ */

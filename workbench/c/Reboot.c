@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
  
     Desc: Reboot CLI command
 */
@@ -51,9 +51,9 @@ int __nocommandline;
 int main()
 {
     struct RDArgs *rda;
-    IPTR cold = 0;
+    IPTR args[2] = { 0, 0 };
 
-    rda = ReadArgs("COLD/S", &cold, NULL);
+    rda = ReadArgs("COLD/S,WARM/S", args, NULL);
 
     if (rda == NULL)
     {
@@ -62,10 +62,13 @@ int main()
     }
     FreeArgs(rda);
 
-    if (cold)
+    if (args[0])
         ShutdownA(SD_ACTION_COLDREBOOT);
-    else
+    else if (args[1])
         ColdReboot();
+    else
+        /* Whatever the platform supports - cold preferred, warm fallback */
+        ShutdownA(SD_ACTION_REBOOT);
 
     /* If we are here, shutdown did not work for some reason */
     Delay(25);

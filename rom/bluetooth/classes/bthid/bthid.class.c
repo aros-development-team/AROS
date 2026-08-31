@@ -5863,7 +5863,7 @@ void bCheckReset(struct BTHidBinding *nhb)
                 DeleteMsgPort(mp);
             }
         }
-        ColdReboot();
+        ShutdownA(SD_ACTION_REBOOT);
     }
     else if(nhb->nhb_CDC->cdc_EnableKBReset &&
         (nhb->nhb_KeyQualifiers & IEQUALIFIER_CONTROL) &&
@@ -5871,7 +5871,7 @@ void bCheckReset(struct BTHidBinding *nhb)
         nhb->nhb_FakeEvent.ie_Code == RAWKEY_DELETE)
     {
         KPRINTF(20, ("Reboot!\n"));
-        ShutdownA(SD_ACTION_COLDREBOOT);
+        ShutdownA(SD_ACTION_REBOOT);
     }
 }
 /* \\\ */

@@ -226,9 +226,7 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
             break;
 
         case 3:
-            ColdReboot();
-            /* In case if ColdReboot() doesn't work */
-            ShutdownA(SD_ACTION_COLDREBOOT);
+            ShutdownA(SD_ACTION_REBOOT);
             break;
         }
 

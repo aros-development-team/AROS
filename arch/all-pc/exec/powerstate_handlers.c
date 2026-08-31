@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: default x86 power state handlers
 */
@@ -20,7 +20,8 @@ AROS_INTH1(Exec_X86ColdResetHandler, struct Interrupt *, handler)
 
     UBYTE action = handler->is_Node.ln_Type & SD_ACTION_MASK;
 
-    if (action == SD_ACTION_COLDREBOOT)
+    /* Bitwise: SD_ACTION_REBOOT carries both reboot bits */
+    if (action & SD_ACTION_COLDREBOOT)
     {
         krnSysCallChangePMState(PM_STATE_REBOOT);
     }
@@ -37,7 +38,8 @@ AROS_INTH1(Exec_X86WarmResetHandler, struct Interrupt *, handler)
 
     UBYTE action = handler->is_Node.ln_Type & SD_ACTION_MASK;
 
-    if (action == SD_ACTION_WARMREBOOT)
+    /* Bitwise: SD_ACTION_REBOOT lands here when no cold handler took it */
+    if (action & SD_ACTION_WARMREBOOT)
     {
         /* Tell kernel to reboot */
         __asm__ __volatile__ ("int $0xfe"::"a"(0x100));

@@ -144,7 +144,7 @@ LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST_STRPTR
                         /* system mode: the machine goes down instead of logging in */
                         set(win, MUIA_Window_Open, FALSE);
                         if (id == LWA_RV_REBOOT)
-                            ColdReboot();
+                            ShutdownA(SD_ACTION_REBOOT);
                         else
                             ShutdownA(SD_ACTION_POWEROFF);
                         /* not supported on this machine: keep asking */

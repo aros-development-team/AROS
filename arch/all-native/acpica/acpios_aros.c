@@ -83,11 +83,13 @@ static AROS_INTH1(ACPICAResetHandler, struct ACPICABase *, ACPICABase)
 
     D(bug("[ACPI] %s()\n", __func__);)
 
-    if (ACPICABase->ab_ResetInt.is_Node.ln_Type != SD_ACTION_WARMREBOOT)
+    /* Mask the supervisor/emergency bits out, and test the warm bit
+       bitwise so the combined SD_ACTION_REBOOT is accepted too */
+    if (!((ACPICABase->ab_ResetInt.is_Node.ln_Type & SD_ACTION_MASK) & SD_ACTION_WARMREBOOT))
     {
         D(bug("[ACPI] %s: Skipping ACPI shutdown (Not WARMREBOOT)\n", __func__);)
         return FALSE;
-    }            
+    }
     else
     {
         /* Install libbase into storage so that __aros_getbase_ACPICABase works on all architectures */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: ShutdownA() - Shut down the operating system.
 */
@@ -30,6 +30,7 @@ AROS_LH1(ULONG, ShutdownA,
         break;
 
     case SD_ACTION_COLDREBOOT:
+    case SD_ACTION_REBOOT:      /* hosted restart serves either flavour */
         exitcode = 0x81; /* Magic value for our bootstrap */
         break;
 

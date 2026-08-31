@@ -2,7 +2,7 @@
 #define EXEC_PM_H
 
 /*
-    Copyright © 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Power management structures and constants
@@ -14,6 +14,12 @@
 #define SD_ACTION_POWEROFF              0
 #define SD_ACTION_COLDREBOOT            1
 #define SD_ACTION_WARMREBOOT            2
+/* Both reboot flags at once: reboot by whatever means the platform
+   supports. Handlers able to perform a cold reboot sit higher in the
+   reset chain, so that is the preferred method; a warm reboot is the
+   fallback. Reset handlers must test the reboot bits bitwise (never
+   with equality) to accept this. */
+#define SD_ACTION_REBOOT                (SD_ACTION_COLDREBOOT | SD_ACTION_WARMREBOOT)
 
 #define SD_ACTION_MASK                  0x00000007
 #define SD_FLAG_EMERGENCY               0x00000008      /* Only the most basic/essential code should be executed    */

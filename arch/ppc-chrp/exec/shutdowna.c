@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: ShutdownA() - Shut down the operating system.
 */
@@ -34,7 +34,8 @@ AROS_LH1(ULONG, ShutdownA,
 
     if (RTASBase)
     {
-        if ((action & SD_ACTION_MASK) == SD_ACTION_COLDREBOOT)
+        /* Bitwise: the combined SD_ACTION_REBOOT takes the cold path */
+        if ((action & SD_ACTION_MASK) & SD_ACTION_COLDREBOOT)
                 rtas_call(SysBase, "system-reboot", 0, 1, NULL);
         else if ((action &  SD_ACTION_MASK) ==SD_ACTION_POWEROFF)
                 rtas_call(SysBase, "power-off", 2, 1, NULL, -1, -1);

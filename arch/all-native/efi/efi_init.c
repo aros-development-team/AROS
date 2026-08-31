@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -32,6 +32,7 @@ AROS_INTH1(static ResetHandler, struct EFIBase *, EFIBase)
     switch (action)
     {
     case SD_ACTION_COLDREBOOT:
+    case SD_ACTION_REBOOT:      /* either reboot - cold is the preference */
         efiAction = EFI_Reset_Cold;
         break;
 

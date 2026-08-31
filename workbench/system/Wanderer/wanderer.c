@@ -45,6 +45,10 @@
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
 
+#include <proto/exec.h>
+#include <proto/input.h>
+#include <devices/inputevent.h>
+
 #include <zune/iconimage.h>
 
 #include "iconwindow.h"
@@ -2869,13 +2873,37 @@ void wanderer_menufunc_wanderer_quit(void)
 ///
 
 ///wanderer_menufunc_wanderer_shutdown()
+/* The qualifiers held right now, straight from input.device */
+static ULONG wanderer_peekqualifier(void)
+{
+    struct MsgPort *mp;
+    struct IOStdReq *io;
+    ULONG qual = 0;
+
+    if ((mp = CreateMsgPort()) != NULL)
+    {
+        if ((io = (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq))) != NULL)
+        {
+            if (OpenDevice("input.device", 0, (struct IORequest *)io, 0) == 0)
+            {
+                struct Device *InputBase = io->io_Device;
+                qual = PeekQualifier();
+                CloseDevice((struct IORequest *)io);
+            }
+            DeleteIORequest((struct IORequest *)io);
+        }
+        DeleteMsgPort(mp);
+    }
+    return qual;
+}
+
 void wanderer_menufunc_wanderer_shutdown(void)
 {
     LONG action;
 
     action = MUI_RequestA(_WandererIntern_AppObj, NULL, 0,
-        _(MSG_SHUTDOWN_TITLE), _(MSG_SHUTDOWN_BUTTONS),
-        _(MSG_SHUTDOWN_BODY), NULL);
+        _(MSG_SHUTDOWN_TITLE), _(MSG_SHUTDOWN_BUTTONS2),
+        _(MSG_SHUTDOWN_BODY2), NULL);
     switch (action) {
     case 0:
         return;
@@ -2883,10 +2911,13 @@ void wanderer_menufunc_wanderer_shutdown(void)
         ShutdownA(SD_ACTION_POWEROFF);
         break;
     case 2:
-        ShutdownA(SD_ACTION_COLDREBOOT);
+        /* Ctrl held: only attempt the warm reboot. Otherwise let the
+           platform choose - cold is preferred, warm the fallback. */
+        if (wanderer_peekqualifier() & IEQUALIFIER_CONTROL)
+            ShutdownA(SD_ACTION_WARMREBOOT);
+        else
+            ShutdownA(SD_ACTION_REBOOT);
         break;
-    case 3:
-        ColdReboot();
     }
     MUI_RequestA(_WandererIntern_AppObj, NULL, 0, _(MSG_SHUTDOWN_TITLE), _(MSG_OK), _(MSG_ACTION_NOT_SUPPORTED), NULL);
 }

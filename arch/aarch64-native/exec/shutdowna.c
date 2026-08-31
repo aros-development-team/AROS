@@ -34,6 +34,7 @@ AROS_LH1(ULONG, ShutdownA,
         break;
 
     case SD_ACTION_COLDREBOOT:
+    case SD_ACTION_REBOOT:      /* the chain gets first refusal, then PSCI */
         Exec_DoResetCallbacks((struct IntExecBase *)SysBase, action);
         krnSysCall(SC_REBOOT);
         break;

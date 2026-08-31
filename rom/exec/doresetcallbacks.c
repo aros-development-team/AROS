@@ -1,20 +1,36 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Execute installed reset handlers.
 */
 
 #include <aros/asmcall.h>
 #include <exec/interrupts.h>
+#include <devices/timer.h>
 
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "exec_debug.h"
 
+/* How long one reset handler may take before the chain moves on without
+   it (seconds). Generous - a handler doing real work (unloading device
+   firmware, flushing) may legitimately sleep - but bounded, so a crashed
+   or hung handler can never leave the machine sitting half shut down. */
+#define RESETHANDLER_TIMEOUT    10
+
+/* Serialization state for the non-supervisor path: the launcher waits
+   here until the running handler's task reports completion */
+static struct Task *ResetCallbackWaiter;
+static ULONG ResetCallbackSignal;
+
 static void ResetCallbackHandler(struct ExecBase *SysBase, struct Interrupt *callback)
 {
     DSHUTDOWN("Calling handler: %d '%s'", callback->is_Node.ln_Pri, callback->is_Node.ln_Name);
     AROS_INTC1(callback->is_Code, callback->is_Data);
+    /* Wake the launcher - nothing may proceed, the reset performer
+       included, until this handler is done */
+    if (ResetCallbackWaiter)
+        Signal(ResetCallbackWaiter, ResetCallbackSignal);
 }
 
 /*
@@ -41,6 +57,10 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
     struct Task *shutdownTask = FindTask(NULL);
     struct Interrupt *i, *tmp;
     int issuper;
+    BYTE sigBit = -1;
+    struct MsgPort *tport = NULL;
+    struct timerequest *treq = NULL;
+    BOOL timedout = FALSE;
 
     DSHUTDOWN("Executing Reset Callbacks");
 
@@ -48,6 +68,36 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
     issuper = KrnIsSuper();
     if (issuper)
         Disable();
+    else
+    {
+        /* The handlers run from support tasks; each launch below waits
+           for the task to finish so the chain stays strictly in
+           sequence even when a handler sleeps. AllocSignal() returns a
+           bit number - Wait() needs the mask. */
+        ResetCallbackWaiter = shutdownTask;
+        sigBit = AllocSignal(-1);
+        ResetCallbackSignal = (sigBit == -1) ? SIGF_SINGLE : (1UL << sigBit);
+
+        /* A timeout source, so no handler can stall the chain forever -
+           it must reach a reset performer no matter what. Without
+           timer.device the waits below fall back to unbounded. */
+        if ((tport = CreateMsgPort()) != NULL)
+        {
+            if ((treq = (struct timerequest *)CreateIORequest(tport, sizeof(struct timerequest))) != NULL)
+            {
+                if (OpenDevice("timer.device", UNIT_VBLANK, &treq->tr_node, 0) != 0)
+                {
+                    DeleteIORequest(&treq->tr_node);
+                    treq = NULL;
+                }
+            }
+            if (treq == NULL)
+            {
+                DeleteMsgPort(tport);
+                tport = NULL;
+            }
+        }
+    }
 
     ForeachNodeSafe(&IntSysBase->ResetHandlers, i, tmp) {
         i->is_Node.ln_Type = action;
@@ -55,15 +105,73 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
             i->is_Node.ln_Type |= 0x80; /* Set the "supervisor" flag */
             ResetCallbackHandler(SysBase, i);
         } else {
+            struct Task *handlerTask;
+
             /* perform the operation from a support task,
              * so that crashes are trapped and dont stop the process
              */
-            NewCreateTask(TASKTAG_NAME    , "ResetCallbackHandler",
+            SetSignal(0, ResetCallbackSignal);
+            handlerTask = NewCreateTask(TASKTAG_NAME    , "ResetCallbackHandler",
                        TASKTAG_PRI        , 127,
                        TASKTAG_PC         , ResetCallbackHandler,
                        TASKTAG_ARG1       , SysBase,
                        TASKTAG_ARG2       , i,
                        TAG_DONE);
+            /* Strictly one handler at a time: one that sleeps must
+             * finish before the next is launched, or before the chain
+             * is declared over. But never forever - a handler that
+             * crashes or hangs is abandoned after the timeout so the
+             * chain still reaches a reset performer.
+             */
+            if (handlerTask)
+            {
+                if (treq)
+                {
+                    ULONG tsig = 1UL << tport->mp_SigBit;
+                    ULONG sigs;
+
+                    treq->tr_node.io_Command = TR_ADDREQUEST;
+                    treq->tr_time.tv_secs = RESETHANDLER_TIMEOUT;
+                    treq->tr_time.tv_micro = 0;
+                    SendIO(&treq->tr_node);
+                    sigs = Wait(ResetCallbackSignal | tsig);
+                    if (sigs & ResetCallbackSignal)
+                    {
+                        if (!CheckIO(&treq->tr_node))
+                            AbortIO(&treq->tr_node);
+                        WaitIO(&treq->tr_node);
+                        SetSignal(0, tsig);
+                    }
+                    else
+                    {
+                        WaitIO(&treq->tr_node);
+                        timedout = TRUE;
+                        bug("[exec] reset callback '%s' did not complete - moving on\n",
+                            i->is_Node.ln_Name ? i->is_Node.ln_Name : "(unnamed)");
+                    }
+                }
+                else
+                    Wait(ResetCallbackSignal);
+            }
+        }
+    }
+
+    if (!issuper)
+    {
+        if (treq)
+        {
+            CloseDevice(&treq->tr_node);
+            DeleteIORequest(&treq->tr_node);
+            DeleteMsgPort(tport);
+        }
+        /* A timed-out handler may still signal one day - keep the bit
+           and the waiter valid rather than have that land on a
+           recycled signal */
+        if (!timedout)
+        {
+            ResetCallbackWaiter = NULL;
+            if (sigBit != -1)
+                FreeSignal(sigBit);
         }
     }
 

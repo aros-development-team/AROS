@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/dos.h>
@@ -341,7 +341,7 @@ void mountPartitions(struct List *ptlist)
                 "Do you want to reboot now?";
         }
         if (EasyRequestArgs(0, &es, 0, 0))
-            ColdReboot();
+            ShutdownA(SD_ACTION_REBOOT);
     }
 }
 #endif

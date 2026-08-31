@@ -32,7 +32,8 @@ AROS_INTH1(Exec_WarmResetHandler, struct Interrupt *, handler)
 
     UBYTE action = handler->is_Node.ln_Type & SD_ACTION_MASK;
 
-    if (action == SD_ACTION_WARMREBOOT)
+    /* Bitwise: SD_ACTION_REBOOT lands here when no cold handler took it */
+    if (action & SD_ACTION_WARMREBOOT)
         krnWarmKick();
 
     return FALSE;

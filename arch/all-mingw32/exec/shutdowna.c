@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: ShutdownA() - Shut down the operating system, Windows-hosted implementation.
 */
@@ -25,6 +25,7 @@ AROS_LH1(ULONG, ShutdownA,
         break;
 
     case SD_ACTION_COLDREBOOT:
+    case SD_ACTION_REBOOT:      /* hosted restart serves either flavour */
         PD(SysBase).Reboot(FALSE);
         break;
     }
