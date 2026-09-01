@@ -783,6 +783,27 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 /* AROS CODE */
 #include "nouveau_copy.h"
 
+/* Shutdown, in the order a driver unload takes: every channel is
+ * drained and freed (the kernel idles each one as it is freed) before
+ * GSP-RM is told the driver is leaving. The engine lock is taken and
+ * never released - nothing may submit again. */
+VOID HIDDNouveauAccelShutdown(struct CardData *carddata)
+{
+    ObtainSemaphore(&globalLock);
+
+    if (carddata->ce_enabled)
+    {
+        carddata->ce_enabled = FALSE;
+        nouveau_pushbuf_kick(carddata->ce_pushbuf, carddata->ce_pushbuf->channel);
+        nouveau_copy_fini(carddata);
+    }
+    if (carddata->channel)
+    {
+        nouveau_pushbuf_kick(carddata->pushbuf, carddata->pushbuf->channel);
+        NVAccelCommonFini(carddata);
+    }
+}
+
 BOOL HIDDNouveauAccelCommonInit(struct CardData *carddata)
 {
     if (NVAccelCommonInit(carddata))

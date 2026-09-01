@@ -328,6 +328,7 @@ enum DMAObjects
 
 /* nv_accel_common.c */
 BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata);
+VOID HIDDNouveauAccelShutdown(struct CardData *carddata);
 BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch,
     struct nouveau_bo **bo);
 

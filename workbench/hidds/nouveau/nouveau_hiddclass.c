@@ -342,6 +342,8 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
  */
 volatile int nouveau_shutting_down;
 
+static struct CardData *nouveau_shutdown_carddata;
+
 static AROS_INTH1(HIDDNouveauShutdownHandler, struct Interrupt *, handler)
 {
     AROS_INTFUNC_INIT
@@ -352,6 +354,11 @@ static AROS_INTH1(HIDDNouveauShutdownHandler, struct Interrupt *, handler)
     if (action & SD_ACTION_REBOOT)
     {
         nouveau_shutting_down = 1;
+        if (nouveau_shutdown_carddata)
+        {
+            bug("[nouveau] shutting down: draining and freeing channels\n");
+            HIDDNouveauAccelShutdown(nouveau_shutdown_carddata);
+        }
         nouveau_shutdown();
     }
 
@@ -362,8 +369,9 @@ static AROS_INTH1(HIDDNouveauShutdownHandler, struct Interrupt *, handler)
 
 static struct Interrupt nouveau_shutdown_interrupt;
 
-static void HIDDNouveauInstallShutdownHandler(void)
+static void HIDDNouveauInstallShutdownHandler(struct CardData *carddata)
 {
+    nouveau_shutdown_carddata = carddata;
     if (nouveau_shutdown_interrupt.is_Code)
         return;
 
@@ -436,7 +444,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     if (nouveau_init_probe(pdev) < 0)
         return NULL;
 
-    HIDDNouveauInstallShutdownHandler();
+    HIDDNouveauInstallShutdownHandler(&(SD(cl)->carddata));
 
     LOCK_ENGINE
 

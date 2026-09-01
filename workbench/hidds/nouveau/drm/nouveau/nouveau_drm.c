@@ -1615,6 +1615,7 @@ nouveau_aros_shutdown(struct drm_device *dev)
 	 * before GSP-RM is told to leave, or RM wedges unloading under a
 	 * live display and its protected region never comes down.
 	 */
+	nouveau_accel_fini(drm);
 	nvkm_device_fini(device, NVKM_POWEROFF);
 
 	/* The fini above tolerates errors; what matters is whether the
