@@ -30,7 +30,9 @@ char name[], vers[];
 
 #define CAMDPORTCOUNT   16
 
-static struct MidiDeviceData MidiDeviceData =
+/* Nothing here references it -- camd.library finds it by scanning the loaded
+ * seglist for MDD_Magic -- so the compiler has to be told to keep it. */
+static struct MidiDeviceData MidiDeviceData __attribute__((used)) =
 {
   MDD_Magic,
   name,
