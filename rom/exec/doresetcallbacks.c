@@ -18,10 +18,10 @@
    or hung handler can never leave the machine sitting half shut down. */
 #define RESETHANDLER_TIMEOUT    10
 
-/* Serialization state for the non-supervisor path: the launcher waits
-   here until the running handler's task reports completion */
-static struct Task *ResetCallbackWaiter;
-static ULONG ResetCallbackSignal;
+/* Serialization state for the non-supervisor path lives in ExecBase:
+   the launcher waits there until the running handler's task reports
+   completion. A kickstart module may not have .bss, so this cannot be
+   file-scope state. */
 
 static void ResetCallbackHandler(struct ExecBase *SysBase, struct Interrupt *callback)
 {
@@ -29,8 +29,9 @@ static void ResetCallbackHandler(struct ExecBase *SysBase, struct Interrupt *cal
     AROS_INTC1(callback->is_Code, callback->is_Data);
     /* Wake the launcher - nothing may proceed, the reset performer
        included, until this handler is done */
-    if (ResetCallbackWaiter)
-        Signal(ResetCallbackWaiter, ResetCallbackSignal);
+    if (PrivExecBase(SysBase)->ResetCallbackWaiter)
+        Signal(PrivExecBase(SysBase)->ResetCallbackWaiter,
+               PrivExecBase(SysBase)->ResetCallbackSignal);
 }
 
 /*
@@ -74,9 +75,9 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
            for the task to finish so the chain stays strictly in
            sequence even when a handler sleeps. AllocSignal() returns a
            bit number - Wait() needs the mask. */
-        ResetCallbackWaiter = shutdownTask;
+        IntSysBase->ResetCallbackWaiter = shutdownTask;
         sigBit = AllocSignal(-1);
-        ResetCallbackSignal = (sigBit == -1) ? SIGF_SINGLE : (1UL << sigBit);
+        IntSysBase->ResetCallbackSignal = (sigBit == -1) ? SIGF_SINGLE : (1UL << sigBit);
 
         /* A timeout source, so no handler can stall the chain forever -
            it must reach a reset performer no matter what. Without
@@ -110,7 +111,7 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
             /* perform the operation from a support task,
              * so that crashes are trapped and dont stop the process
              */
-            SetSignal(0, ResetCallbackSignal);
+            SetSignal(0, IntSysBase->ResetCallbackSignal);
             handlerTask = NewCreateTask(TASKTAG_NAME    , "ResetCallbackHandler",
                        TASKTAG_PRI        , 127,
                        TASKTAG_PC         , ResetCallbackHandler,
@@ -134,8 +135,8 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
                     treq->tr_time.tv_secs = RESETHANDLER_TIMEOUT;
                     treq->tr_time.tv_micro = 0;
                     SendIO(&treq->tr_node);
-                    sigs = Wait(ResetCallbackSignal | tsig);
-                    if (sigs & ResetCallbackSignal)
+                    sigs = Wait(IntSysBase->ResetCallbackSignal | tsig);
+                    if (sigs & IntSysBase->ResetCallbackSignal)
                     {
                         if (!CheckIO(&treq->tr_node))
                             AbortIO(&treq->tr_node);
@@ -151,7 +152,7 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
                     }
                 }
                 else
-                    Wait(ResetCallbackSignal);
+                    Wait(IntSysBase->ResetCallbackSignal);
             }
         }
     }
@@ -169,7 +170,7 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
            recycled signal */
         if (!timedout)
         {
-            ResetCallbackWaiter = NULL;
+            IntSysBase->ResetCallbackWaiter = NULL;
             if (sigBit != -1)
                 FreeSignal(sigBit);
         }

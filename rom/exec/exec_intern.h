@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Private data belonging to exec.library
 */
@@ -95,6 +95,8 @@ struct IntExecBase
     ULONG                       SupervisorDeadEndCnt;           /* Counter of reaching AT_DeadEnd under Supervisor mode         */
     char                        AlertBuffer[ALERT_BUFFER_SIZE]; /* Buffer for alert text                                        */
     void                       *ExecLogBase;
+    struct Task                *ResetCallbackWaiter;           /* Launcher awaiting the running reset handler                 */
+    ULONG                       ResetCallbackSignal;           /* .. and the signal it waits on                               */
 #if defined(__AROSEXEC_BROKENMEMLOCK__)
     struct SignalSemaphore      MemListSem;                     /* Memory list protection semaphore                             */
 #elif defined(__AROSEXEC_SMP__)
