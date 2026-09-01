@@ -73,4 +73,43 @@
 #define PL011_ICR_BEIC           (1 << 9)
 #define PL011_ICR_OEIC           (1 << 10)
 
+/*
+ * The receive status the PL011 reports per byte, in the high bits of the data
+ * register. OE means the FIFO overflowed and bytes were lost before this one;
+ * a framer downstream then reads payload as a header and invents packets, so
+ * it is worth reporting rather than masking away.
+ */
+#define PL011_DR_DATA            (0xFF)
+#define PL011_DR_FE              (1 << 8)
+#define PL011_DR_PE              (1 << 9)
+#define PL011_DR_BE              (1 << 10)
+#define PL011_DR_OE              (1 << 11)
+#define PL011_DR_ERR             (0xF << 8)
+
+/*
+ * IMSC, RIS, MIS and ICR share one bit layout, so these name the interrupt
+ * rather than the register. The PL011_ICR_* names above stay for callers that
+ * only ever clear.
+ *
+ * RT is the receive timeout, and it is what delivers the tail of a burst: RX
+ * alone fires at the watermark, so the last few bytes of a packet would sit
+ * in the FIFO until the next packet arrived.
+ */
+#define PL011_INT_RX             (1 << 4)
+#define PL011_INT_TX             (1 << 5)
+#define PL011_INT_RT             (1 << 6)
+#define PL011_INT_FE             (1 << 7)
+#define PL011_INT_PE             (1 << 8)
+#define PL011_INT_BE             (1 << 9)
+#define PL011_INT_OE             (1 << 10)
+#define PL011_INT_ALL            (0x7FF)
+
+/* FIFO level selects: how full the FIFO gets before the interrupt is raised. */
+#define PL011_IFLS_TX18          (0 << 0)
+#define PL011_IFLS_TX14          (1 << 0)
+#define PL011_IFLS_TX12          (2 << 0)
+#define PL011_IFLS_RX18          (0 << 3)
+#define PL011_IFLS_RX14          (1 << 3)
+#define PL011_IFLS_RX12          (2 << 3)
+
 #endif /* PL011UART_H */
