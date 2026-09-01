@@ -2350,9 +2350,8 @@ static void NetPEditor_AddEntry(Class *CLASS, Object *self, STRPTR devicename)
             data->netped_interfaceList,
             MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
         );
+        SET(data->netped_interfaceList, MUIA_List_Active, entries);
     }
-
-    SET(data->netped_interfaceList, MUIA_List_Active, entries + 1);
 }
 /* Create a new 6in4 tunnel entry and make it current. */
 static void NetPEditor_AddTunnel(Class *CLASS, Object *self)
@@ -2370,8 +2369,8 @@ static void NetPEditor_AddTunnel(Class *CLASS, Object *self)
             data->netped_interfaceList,
             MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
         );
+        SET(data->netped_interfaceList, MUIA_List_Active, entries);
     }
-    SET(data->netped_interfaceList, MUIA_List_Active, entries + 1);
 }
 
 /* Populate the tunnel window gadgets from an interface. */
@@ -2655,8 +2654,8 @@ IPTR NetPEditor__MUIM_NetPEditor_EditHostEntry
                 data->netped_hostList,
                 MUIM_List_InsertSingle, &host, MUIV_List_Insert_Bottom
             );
+            SET(data->netped_hostList, MUIA_List_Active, entries);
         }
-        SET(data->netped_hostList, MUIA_List_Active, entries + 1);
     }
 
     LONG active = XGET(data->netped_hostList, MUIA_List_Active);
@@ -2760,8 +2759,8 @@ IPTR NetPEditor__MUIM_NetPEditor_EditNetEntry
                 data->netped_networkList,
                 MUIM_List_InsertSingle, &net, MUIV_List_Insert_Bottom
             );
+            SET(data->netped_networkList, MUIA_List_Active, entries);
         }
-        SET(data->netped_networkList, MUIA_List_Active, entries + 1);
     }
 
     LONG active = XGET(data->netped_networkList, MUIA_List_Active);
@@ -2872,8 +2871,8 @@ IPTR NetPEditor__MUIM_NetPEditor_EditServerEntry
                 data->netped_serverList,
                 MUIM_List_InsertSingle, &server, MUIV_List_Insert_Bottom
             );
+            SET(data->netped_serverList, MUIA_List_Active, entries);
         }
-        SET(data->netped_serverList, MUIA_List_Active, entries + 1);
     }
 
     LONG active = XGET(data->netped_serverList, MUIA_List_Active);
