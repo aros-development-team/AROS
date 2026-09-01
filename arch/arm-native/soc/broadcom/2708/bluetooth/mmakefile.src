@@ -1,0 +1,16 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# The PL011 that the BCM283x wires to the on-board Bluetooth radio.
+#
+# It routes the pins through gpio.resource and asks the firmware for the UART
+# clock and for BT_REG_EN through mbox.resource, so it needs both of their
+# generated headers before it compiles.
+#
+#MM kernel-pl011bt-bcm2708 : kernel-gpio-bcm2708-includes kernel-mbox-bcm2708-includes
+
+%build_module mmake=kernel-pl011bt-bcm2708 \
+    modname=pl011bt modtype=resource \
+    files="pl011bt_init"
+
+%common
