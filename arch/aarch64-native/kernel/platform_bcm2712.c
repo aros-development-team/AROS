@@ -40,7 +40,7 @@
 
 /* BCM2712 Peripheral Base and PL011 UART */
 #define BCM2712_PERIBASE        0x107C000000UL
-#define BCM2712_UART_BASE       (BCM2712_PERIBASE + 0x201000UL)
+#define BCM2712_UART_BASE       0x107D001000UL
 
 #define PL011_DR                0x00
 #define PL011_FR                0x18

@@ -160,16 +160,20 @@ void mmu_load(void)
 
     /*
      * Set TCR_EL1:
-     *   T0SZ = 29  (35-bit VA space = 32GB, bits [5:0]; reaches the BCM2711
-     *               PCIe outbound window at 0x6_0000_0000. Lookup still
-     *               starts at level 1 for T0SZ 25-33 with a 4KB granule.)
+     *   T0SZ = 25  (39-bit VA space = 512GB, bits [5:0]; reaches the BCM2711
+     *               PCIe outbound window at 0x6_0000_0000 and the BCM2712
+     *               peripheral and RP1 windows at 0x10_7C00_0000 and
+     *               0x1F_0000_0000. Lookup still starts at level 1 for
+     *               T0SZ 25-33 with a 4KB granule, so TTBR0 holds the
+     *               level-1 table.)
      *   IRGN0 = 01 (Inner Write-Back Write-Allocate Cacheable, bits [9:8])
      *   ORGN0 = 01 (Outer Write-Back Write-Allocate Cacheable, bits [11:10])
      *   SH0 = 11   (Inner Shareable, bits [13:12])
      *   TG0 = 00   (4KB granule, bits [15:14])
-     *   IPS = 001   (36-bit physical address space, bits [34:32])
+     *   IPS = 010  (40-bit physical address space, bits [34:32]; the BCM2712
+     *               windows need 37 PA bits, and 40 is Cortex-A76's PARange)
      */
-    tmp = (29UL << 0)       /* T0SZ = 29 -> 32GB VA space */
+    tmp = (25UL << 0)       /* T0SZ = 25 -> 512GB VA space */
         | (0x1UL << 8)      /* IRGN0 = 01 */
         | (0x1UL << 10)     /* ORGN0 = 01 */
         | (0x3UL << 12)     /* SH0 = 11 (inner shareable) */
@@ -177,13 +181,13 @@ void mmu_load(void)
         | (0x1UL << 23)     /* EPD1 = 1: TTBR1 walks disabled (TTBR1 is
                              * never programmed; leaving it enabled with
                              * T1SZ=0 is CONSTRAINED UNPREDICTABLE) */
-        | (0x1UL << 32);    /* IPS = 001 (36-bit PA) */
+        | (0x2UL << 32);    /* IPS = 010 (40-bit PA) */
     asm volatile ("msr TCR_EL1, %0" :: "r"(tmp));
     asm volatile ("isb");
 
     /*
      * Set TTBR0_EL1 to the Level 1 (PUD) table.
-     * With T0SZ=29 (35-bit VA) and 4KB granule, the initial lookup
+     * With T0SZ=25 (39-bit VA) and 4KB granule, the initial lookup
      * level is 1, so TTBR0 must point to the Level 1 table directly.
      * Level 0 (PGD) is not used.
      */

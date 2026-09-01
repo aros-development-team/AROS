@@ -7,6 +7,7 @@
 #include <aros/macros.h>
 
 #include <hardware/bcm2708.h>
+#include <stdint.h>
 #undef ARM_PERIIOBASE
 
 #include <hardware/videocore.h>
@@ -20,6 +21,7 @@
 #undef ARM_PERIIOBASE
 #define ARM_PERIIOBASE (__arm_periiobase)
 extern uintptr_t __arm_periiobase;
+extern uintptr_t __vcmb_base;
 
 #define D(x) /* x */
 
@@ -49,8 +51,8 @@ int vcfb_init(void)
         vcmb_msg[6] = 0;
         vcmb_msg[7] = 0;                        // terminate tag
 
-        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vcmb_msg);
-        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vcmb_msg);
+        vcmb_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
 
         if (!vcmb_msg || (vcmb_msg[1] != AROS_LONG2LE(VCTAG_RESP)))
             return 0;
@@ -104,8 +106,8 @@ int vcfb_init(void)
 
         vcmb_msg[0] = AROS_LONG2LE((c << 2));                 // fill in request size
 
-        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vcmb_msg);
-        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vcmb_msg);
+        vcmb_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
 
         if (!vcmb_msg || (vcmb_msg[1] != AROS_LONG2LE(VCTAG_RESP)))
             return 0;
@@ -154,8 +156,8 @@ int vcfb_init(void)
         vcmb_msg[5] = 0;
         vcmb_msg[6] = 0;                        // terminate tag
 
-        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vcmb_msg);
-        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vcmb_msg);
+        vcmb_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
 
         if (!vcmb_msg || (vcmb_msg[4] != AROS_LONG2LE(VCTAG_RESP + 4)))
             return 0;
