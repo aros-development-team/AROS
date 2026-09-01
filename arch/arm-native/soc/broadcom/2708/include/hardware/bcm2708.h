@@ -106,6 +106,25 @@
 #define CM_ENAB                                         (1 << 4)
 #define CM_MASH(x)                                      (((x) & 3) << 9)
 
+/*
+ * Clock Manager GPCLK2. On a Raspberry Pi 3 this drives the Bluetooth
+ * controller's 32.768 kHz low-power oscillator out of GPIO 43 in ALT0.
+ * GPCLK0 and GPCLK1 are the two register pairs below it, at 0x70 and 0x78.
+ */
+#define CM_GP2CTL                                       (CLOCK_BASE + 0x80)
+#define CM_GP2DIV                                       (CLOCK_BASE + 0x84)
+
+/*
+ * The fields of a CTL register worth carrying across a stop. Everything else
+ * in it is status (BUSY), a one-shot (KILL, FLIP) or undefined, and the
+ * datasheet forbids changing the source or the divisor while the generator
+ * runs -- so stopping one is a read, a mask down to these, and a write with
+ * ENAB clear. Writing the password alone would clear ENAB but also drive SRC
+ * to GND in the same store, which leaves BUSY set forever.
+ */
+#define CM_SRC_MASK                                     0x0000000F
+#define CM_MASH_MASK                                    0x00000600
+
 /* DMA controller */
 #define DMA_CH_BASE(ch)                                 (DMA0_BASE + (ch) * 0x100)
 #define DMA_CS(ch)                                      (DMA_CH_BASE(ch) + 0x00)
@@ -368,6 +387,16 @@
 #define GPIO_PADS_0_27                                  0x002c
 #define GPIO_PADS_28_45                                 0x0030
 #define GPIO_PADS_46_53                                 0x0034
+
+/* GPFSEL function codes: three bits per pin, ten pins per register. */
+#define GPIO_FSEL_INPUT                                 0
+#define GPIO_FSEL_OUTPUT                                1
+#define GPIO_FSEL_ALT0                                  4
+#define GPIO_FSEL_ALT1                                  5
+#define GPIO_FSEL_ALT2                                  6
+#define GPIO_FSEL_ALT3                                  7
+#define GPIO_FSEL_ALT4                                  3
+#define GPIO_FSEL_ALT5                                  2
 
 #define GPFSEL0                                         (GPIO_BASE + 0x0)               // GPIO Function Selectors..
 #define GPFSEL1                                         (GPIO_BASE + 0x4)
