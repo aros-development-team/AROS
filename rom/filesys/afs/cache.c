@@ -15,6 +15,9 @@
 #include "afsblocks.h"
 #include "baseredef.h"
 
+#define CACHE_MAX_BUFFERS 1024
+#define BULK_MAX_BYTES    65536
+
 /********************************************************
  Name  : initCache
  Descr.: initializes block cache for a volume
@@ -95,6 +98,19 @@ struct BlockCache *block;
         }
 }
 
+/* Mark a buffer as the most recently used */
+static void markRecent(struct Volume *volume, struct BlockCache *bc)
+{
+struct BlockCache *cache;
+        bc->newness = ++volume->cachecounter;
+        /* Reset cache history if counter has overflowed */
+        if (volume->cachecounter == 0)
+        {
+                for (cache = volume->blockcache; cache != NULL; cache = cache->next)
+                        cache->newness = 0;
+        }
+}
+
 struct BlockCache *getCacheBlock
         (struct AFSBase *afsbase, struct Volume *volume, ULONG blocknum)
 {
@@ -151,15 +167,7 @@ BOOL found = FALSE;
                 if (!found)
                         bestcache->blocknum = 0;
 
-                /* Mark buffer as the most recently used */
-                bestcache->newness = ++volume->cachecounter;
-
-                /* Reset cache history if counter has overflowed */
-                if (volume->cachecounter == 0)
-                {
-                        for (cache = volume->blockcache; cache != NULL; cache = cache->next)
-                                cache->newness = 0;
-                }
+                markRecent(volume, bestcache);
         }
         else
         {
@@ -222,6 +230,110 @@ UWORD i,j;
 }
 #endif
 
+/* Least recently used buffer that is free to take, or NULL if the block is cached already */
+static struct BlockCache *readAheadSlot(struct Volume *volume, ULONG blocknum)
+{
+struct BlockCache *cache;
+struct BlockCache *best = NULL;
+        for (cache = volume->blockcache; cache != NULL; cache = cache->next)
+        {
+                if (cache->blocknum == blocknum)
+                        return NULL;
+                if ((cache->flags & (BCF_USED | BCF_WRITE)) == 0
+                        && (best == NULL || cache->newness < best->newness))
+                        best = cache;
+        }
+        return best;
+}
+
+/*
+ * Fill the missed block and, from the same request, the blocks following it
+ * into free buffers. Returns TRUE if the block was filled.
+ */
+static BOOL readAhead(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *first)
+{
+struct BlockCache *bc;
+ULONG count, i;
+char *src;
+        if (first->blocknum >= volume->countblocks)
+                return FALSE;
+        count = (ULONG)volume->numbuffers / 4;
+        if (count > volume->bulkblocks)
+                count = volume->bulkblocks;
+        if (first->blocknum + count > volume->countblocks)
+                count = volume->countblocks - first->blocknum;
+        if (count < 2)
+                return FALSE;
+        if (readDisk(afsbase, volume, first->blocknum, count, volume->bulkbuffer) != 0)
+                return FALSE;
+        src = (char *)volume->bulkbuffer;
+        CopyMem(src, first->buffer, BLOCK_SIZE(volume));
+        first->flags |= BCF_USED;
+        for (i = 1; i < count; i++)
+        {
+                src += BLOCK_SIZE(volume);
+                bc = readAheadSlot(volume, first->blocknum + i);
+                if (bc == NULL)
+                        continue;
+                bc->blocknum = first->blocknum + i;
+                CopyMem(src, bc->buffer, BLOCK_SIZE(volume));
+                markRecent(volume, bc);
+        }
+        first->flags &= ~BCF_USED;
+        markRecent(volume, first);
+        return TRUE;
+}
+
+/* Shorten a run of blocks so that it stops before any block with unwritten changes */
+ULONG cleanRun(struct Volume *volume, ULONG start, ULONG count)
+{
+struct BlockCache *cache;
+        for (cache = volume->blockcache; cache != NULL; cache = cache->next)
+        {
+                if ((cache->flags & BCF_WRITE) != 0
+                        && cache->blocknum >= start && cache->blocknum - start < count)
+                        count = cache->blocknum - start;
+        }
+        return count;
+}
+
+/*
+ * Number of cache buffers for a volume. The DosEnvec value is the floor; where
+ * memory allows, the cache grows with it, except on m68k where memory is scarce.
+ */
+LONG cacheBuffers(struct Volume *volume, LONG requested)
+{
+#if defined(__AROS__) && !defined(__mc68000__)
+        IPTR want = AvailMem(MEMF_ANY) / ((IPTR)BLOCK_SIZE(volume) * 2048);
+        if (want > CACHE_MAX_BUFFERS)
+                want = CACHE_MAX_BUFFERS;
+        if ((LONG)want > requested)
+                requested = (LONG)want;
+#endif
+        if (requested < 1)
+                requested = 1;
+        return requested;
+}
+
+BOOL initBulkBuffer(struct AFSBase *afsbase, struct Volume *volume)
+{
+ULONG blocks = BULK_MAX_BYTES / BLOCK_SIZE(volume);
+        if (blocks > (ULONG)volume->numbuffers)
+                blocks = volume->numbuffers;
+        if (blocks < 2)
+                blocks = 2;
+        volume->bulkbuffer = AllocVec((IPTR)blocks * BLOCK_SIZE(volume), MEMF_PUBLIC);
+        volume->bulkblocks = volume->bulkbuffer != NULL ? blocks : 0;
+        return volume->bulkbuffer != NULL;
+}
+
+void freeBulkBuffer(struct AFSBase *afsbase, struct Volume *volume)
+{
+        FreeVec(volume->bulkbuffer);
+        volume->bulkbuffer = NULL;
+        volume->bulkblocks = 0;
+}
+
 struct BlockCache *getBlock
         (struct AFSBase *afsbase, struct Volume *volume, ULONG blocknum)
 {
@@ -233,8 +345,11 @@ struct BlockCache *blockbuffer;
                 if (blockbuffer->blocknum == 0)
                 {
                         blockbuffer->blocknum = blocknum;
-                        if (readDisk(afsbase, volume, blocknum, 1, blockbuffer->buffer) != 0)
+                        if (!readAhead(afsbase, volume, blockbuffer)
+                                && readDisk(afsbase, volume, blocknum, 1, blockbuffer->buffer) != 0)
                         {
+                                /* don't leave an unreadable block looking cached */
+                                blockbuffer->blocknum = 0;
                                 blockbuffer = NULL;
                         }
                 }

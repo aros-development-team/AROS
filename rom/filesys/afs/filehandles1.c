@@ -606,6 +606,37 @@ void closef(struct AFSBase *afsbase, struct AfsHandle *ah) {
          length  - size of data to read
  Output: read bytes
 *******************************************/
+/*
+ * Read consecutive whole data blocks, starting at the current one, in one
+ * request. Returns the number of blocks read, 0 if none qualified, -1 on error.
+ */
+static ULONG bulkRead
+        (
+                struct AFSBase *afsbase,
+                struct AfsHandle *ah,
+                struct BlockCache *extensionbuffer,
+                char *dest,
+                ULONG maxblocks
+        )
+{
+struct Volume *volume = ah->volume;
+ULONG key = ah->current.filekey;
+ULONG start = OS_BE2LONG(extensionbuffer->buffer[key]);
+ULONG count = 1;
+        if (maxblocks > volume->bulkblocks)
+                maxblocks = volume->bulkblocks;
+        while (count < maxblocks && key >= BLK_TABLE_START + count
+                && OS_BE2LONG(extensionbuffer->buffer[key - count]) == start + count)
+                count++;
+        count = cleanRun(volume, start, count);
+        if (count == 0)
+                return 0;
+        if (readDisk(afsbase, volume, start, count, volume->bulkbuffer) != 0)
+                return (ULONG)-1;
+        CopyMem(volume->bulkbuffer, dest, count * BLOCK_SIZE(volume));
+        return count;
+}
+
 LONG readData
         (
                 struct AFSBase *afsbase,
@@ -677,6 +708,26 @@ D(
                                 "[afs]   readData: reading datablock %d\n",
                                 OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey]))
                         );
+                if (ah->volume->dosflags != 0 && ah->current.byte == 0
+                        && length >= BLOCK_SIZE(ah->volume) && ah->volume->bulkblocks != 0)
+                {
+                        ULONG count = bulkRead(afsbase, ah, extensionbuffer,
+                                (char *)buffer + readbytes, length / BLOCK_SIZE(ah->volume));
+                        if (count == (ULONG)-1)
+                        {
+                                extensionbuffer->flags &= ~BCF_USED;
+                                *error = ERROR_UNKNOWN;
+                                return ENDSTREAMCH;
+                        }
+                        if (count != 0)
+                        {
+                                ah->current.filekey -= count;
+                                count *= BLOCK_SIZE(ah->volume);
+                                length -= count;
+                                readbytes += count;
+                                continue;
+                        }
+                }
                 databuffer = getBlock
                         (
                                 afsbase,

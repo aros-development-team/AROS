@@ -2,7 +2,7 @@
 #define VOLUMES_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,6 +28,8 @@ struct Volume {
 	struct IOHandle ioh;
 	struct BlockCache *blockcache;
 	LONG numbuffers;
+	APTR bulkbuffer;             /* bounce buffer for multi-block reads */
+	ULONG bulkblocks;            /* blocks it holds (0 = none) */
 	ULONG cachecounter;           /* Keeps track of cache usage */
 	ULONG state;                 /* Read-only, read/write or validating */
         ULONG key;                   /* Lock key */
