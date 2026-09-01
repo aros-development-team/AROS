@@ -15,7 +15,6 @@
 #include "afsblocks.h"
 #include "baseredef.h"
 
-#define CACHE_MAX_BUFFERS 1024
 #define BULK_MAX_BYTES    65536
 
 /********************************************************
@@ -295,24 +294,6 @@ struct BlockCache *cache;
                         count = cache->blocknum - start;
         }
         return count;
-}
-
-/*
- * Number of cache buffers for a volume. The DosEnvec value is the floor; where
- * memory allows, the cache grows with it, except on m68k where memory is scarce.
- */
-LONG cacheBuffers(struct Volume *volume, LONG requested)
-{
-#if defined(__AROS__) && !defined(__mc68000__)
-        IPTR want = AvailMem(MEMF_ANY) / ((IPTR)BLOCK_SIZE(volume) * 2048);
-        if (want > CACHE_MAX_BUFFERS)
-                want = CACHE_MAX_BUFFERS;
-        if ((LONG)want > requested)
-                requested = (LONG)want;
-#endif
-        if (requested < 1)
-                requested = 1;
-        return requested;
 }
 
 BOOL initBulkBuffer(struct AFSBase *afsbase, struct Volume *volume)

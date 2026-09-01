@@ -191,7 +191,7 @@ struct Volume *initVolume
                         volume->bootblocks=devicedef->de_BootBlocks;
                 else
                         volume->bootblocks=devicedef->de_Reserved;
-                volume->numbuffers = cacheBuffers(volume, devicedef->de_NumBuffers);
+                volume->numbuffers = devicedef->de_NumBuffers;
                 volume->blockcache=initCache(afsbase, volume, volume->numbuffers);
                 initBulkBuffer(afsbase, volume);
                 if (volume->blockcache != NULL)

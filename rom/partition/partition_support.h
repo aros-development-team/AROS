@@ -2,7 +2,7 @@
 #define PARTITION_SUPPORT_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -66,6 +66,10 @@ extern const struct PTFunctionTable PartitionGPT;
 extern const struct FSFunctionTable FilesystemRDB;
 
 LONG PartitionGetGeometry(struct Library *, struct IOExtTD *, struct DriveGeometry *);
+
+#define DE_NUMBUFFERS_MIN 20
+#define DE_NUMBUFFERS_MAX 1024
+ULONG PartitionDefaultNumBuffers(void);
 void PartitionNsdCheck(struct Library *, struct PartitionHandle *);
 ULONG getStartBlock(struct PartitionHandle *);
 LONG deviceError(LONG err);

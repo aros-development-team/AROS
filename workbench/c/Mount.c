@@ -618,6 +618,19 @@ ULONG           Status;
 /************************************************************************************************/
 /************************************************************************************************/
 
+/* Same rule as partition.library: one buffer per MiB of free memory, 20..1024; m68k keeps 20 */
+static ULONG DefaultNumBuffers(void)
+{
+#ifndef __mc68000__
+  IPTR avail = AvailMem(MEMF_ANY) >> 20;
+  if (avail > 1024)
+    return 1024;
+  if (avail > 20)
+    return (ULONG)avail;
+#endif
+  return 20;
+}
+
 void InitParams(IPTR *params)
 {
   struct DosEnvec *vec;
@@ -643,7 +656,7 @@ void InitParams(IPTR *params)
 */
 
   vec->de_HighCyl        = 79;
-  vec->de_NumBuffers     = 20;  /* On AmigaOS 3.9 it's 5 */
+  vec->de_NumBuffers     = DefaultNumBuffers();  /* On AmigaOS 3.9 it's 5 */
   vec->de_BufMemType     = 3;
   vec->de_Baud           = 1200;
   vec->de_MaxTransfer    = 0x7fffffff;

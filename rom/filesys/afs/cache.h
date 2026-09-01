@@ -25,7 +25,6 @@ void freeCache(struct AFSBase *, struct BlockCache *);
 struct BlockCache *getFreeCacheBlock(struct AFSBase *, struct Volume *, ULONG);
 struct BlockCache *getBlock(struct AFSBase *, struct Volume *, ULONG);
 ULONG cleanRun(struct Volume *, ULONG, ULONG);
-LONG cacheBuffers(struct Volume *, LONG);
 BOOL initBulkBuffer(struct AFSBase *, struct Volume *);
 void freeBulkBuffer(struct AFSBase *, struct Volume *);
 LONG writeBlock(struct AFSBase *, struct Volume *, struct BlockCache *, LONG);
