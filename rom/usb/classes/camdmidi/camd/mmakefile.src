@@ -15,10 +15,16 @@ USER_INCLUDES := -I$(OBJDIR)/../include -iquote $(SRCDIR)/$(CURDIR)/..
 $(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c | $(OBJDIR)
 	%compile_q
 
+# lld calls these armelf/aarch64elf; elf_$(cpu) only holds for i386/x86_64.
+LLD_EMULATION_arm := armelf
+LLD_EMULATION_aarch64 := aarch64elf
+
 ifeq ($(AROS_TOOLCHAIN),llvm)
-BINLDFLAGS := -m elf_$(AROS_TARGET_CPU)
+BINLDFLAGS := -m $(or $(LLD_EMULATION_$(AROS_TARGET_CPU)),elf_$(AROS_TARGET_CPU))
 endif
-BINLDFLAGS += $(LDFLAGS)
+# LDFLAGS is written for the compiler driver; this rule invokes ld directly,
+# so its -Wl, options would arrive as unknown arguments (aarch64 has one).
+BINLDFLAGS += $(filter-out -Wl%,$(LDFLAGS))
  
 %rule_link_binary ldflags=$(BINLDFLAGS) file=$(CAMDOBJDIR)/$(SRCFILE).bin.o name=$(SRCFILE) objs=$(OBJDIR)/$(SRCFILE).o
 
