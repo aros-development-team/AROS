@@ -496,7 +496,7 @@
  }
  
  Bool
-@@ -432,3 +448,53 @@
+@@ -432,3 +448,55 @@
  
  	return TRUE;
  }
@@ -523,6 +523,7 @@
 +        NV04EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1, color);
 +        NV04EXADoneSolid(bmdata);
 +        bmdata->gpu_dirty = TRUE;
++		HIDDNouveauFlushDisplayable(carddata, bmdata);
 +        return TRUE;
 +    }
 +
@@ -545,6 +546,7 @@
 +        NV04EXADoneCopy(destdata);
 +        srcdata->gpu_dirty = TRUE;
 +        destdata->gpu_dirty = TRUE;
++		HIDDNouveauFlushDisplayable(carddata, destdata);
 +        return TRUE;
 +    }
 +
@@ -970,7 +972,7 @@
  
  Bool
  NV50EXAPrepareComposite(int op,
-@@ -1013,3 +1036,82 @@
+@@ -1013,3 +1036,84 @@
  
  	return TRUE;
  }
@@ -998,6 +1000,7 @@
 +        NV50EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
 +        NV50EXADoneSolid(bmdata);
 +        bmdata->gpu_dirty = TRUE;
++		HIDDNouveauFlushDisplayable(carddata, bmdata);
 +        return TRUE;
 +    }
 +
@@ -1020,6 +1023,7 @@
 +        NV50EXADoneCopy(destdata);
 +        srcdata->gpu_dirty = TRUE;
 +        destdata->gpu_dirty = TRUE;
++		HIDDNouveauFlushDisplayable(carddata, destdata);
 +        return TRUE;
 +    }
 +
@@ -1464,7 +1468,7 @@
  
  Bool
  NVC0EXAPrepareComposite(int op,
-@@ -1065,3 +1089,102 @@
+@@ -1065,3 +1089,106 @@
  				     src_h, src_x, src_y, dst, dst_off,
  				     dst_dom, dst_pitch, dst_h, dst_x, dst_y);
  }
@@ -1502,6 +1506,7 @@
 +					 color))
 +			return FALSE;
 +		bmdata->gpu_dirty = TRUE;
++		HIDDNouveauFlushDisplayable(carddata, bmdata);
 +		return TRUE;
 +	}
 +
@@ -1513,6 +1518,7 @@
 +        NVC0EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
 +        NVC0EXADoneSolid(bmdata);
 +        bmdata->gpu_dirty = TRUE;
++		HIDDNouveauFlushDisplayable(carddata, bmdata);
 +        return TRUE;
 +    }
 +
@@ -1550,6 +1556,7 @@
 +			return FALSE;
 +		srcdata->gpu_dirty = TRUE;
 +		destdata->gpu_dirty = TRUE;
++		HIDDNouveauFlushDisplayable(carddata, destdata);
 +		return TRUE;
 +	}
 +
@@ -1562,6 +1569,7 @@
 +        NVC0EXADoneCopy(destdata);
 +        srcdata->gpu_dirty = TRUE;
 +        destdata->gpu_dirty = TRUE;
++		HIDDNouveauFlushDisplayable(carddata, destdata);
 +        return TRUE;
 +    }
 +

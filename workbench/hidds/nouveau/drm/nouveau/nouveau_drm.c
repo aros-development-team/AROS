@@ -1623,6 +1623,10 @@ nouveau_aros_shutdown(struct drm_device *dev)
 	if (nvkm_rd32(device, 0x1fa828))
 		return -EBUSY;
 
+	/* The firmware left; whether its core also halted decides what the
+	 * next boot's FMC finds. */
+	if (nvkm_falcon_riscv_active(&device->gsp->falcon))
+		return 1;
 	return 0;
 }
 #endif

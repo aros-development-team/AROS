@@ -260,6 +260,22 @@ LIBBASETYPE
 void nouveau_compat_log(const char *fmt, ...);
 #define nvlog nouveau_compat_log
 
+/* Engine work is submitted lazily; a result nobody syncs for (the
+   last operation on a visible bitmap) still has to reach the display,
+   so anything queued for a displayable bitmap is kicked right away.
+   Off-screen work is carried along by the on-screen blit that consumes
+   it, or by the sync of a CPU access. */
+static inline VOID HIDDNouveauFlushDisplayable(struct CardData *carddata,
+    struct HIDDNouveauBitMapData *bmdata)
+{
+    if (!bmdata->displayable)
+        return;
+    if (carddata->pushbuf)
+        nouveau_pushbuf_kick(carddata->pushbuf, carddata->pushbuf->channel);
+    if (carddata->ce_enabled && carddata->ce_pushbuf)
+        nouveau_pushbuf_kick(carddata->ce_pushbuf, carddata->ce_pushbuf->channel);
+}
+
 #define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); \
                                       if (bmdata->gpu_dirty) { nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); bmdata->gpu_dirty = FALSE; } }
 

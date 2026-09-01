@@ -1123,6 +1123,7 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
 					 color))
 			return FALSE;
 		bmdata->gpu_dirty = TRUE;
+		HIDDNouveauFlushDisplayable(carddata, bmdata);
 		return TRUE;
 	}
 
@@ -1134,6 +1135,7 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
         NVC0EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
         NVC0EXADoneSolid(bmdata);
         bmdata->gpu_dirty = TRUE;
+		HIDDNouveauFlushDisplayable(carddata, bmdata);
         return TRUE;
     }
 
@@ -1171,6 +1173,7 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
 			return FALSE;
 		srcdata->gpu_dirty = TRUE;
 		destdata->gpu_dirty = TRUE;
+		HIDDNouveauFlushDisplayable(carddata, destdata);
 		return TRUE;
 	}
 
@@ -1183,6 +1186,7 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
         NVC0EXADoneCopy(destdata);
         srcdata->gpu_dirty = TRUE;
         destdata->gpu_dirty = TRUE;
+		HIDDNouveauFlushDisplayable(carddata, destdata);
         return TRUE;
     }
 

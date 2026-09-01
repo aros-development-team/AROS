@@ -154,6 +154,61 @@ gh100_gsp_aros_watch(struct nvkm_gsp *gsp, struct pci_dev *pdev, u32 *cfg, int m
 	}
 }
 
+/*
+ * kgspResetHw_GH100: the resource manager resets the GSP falcon before
+ * every RISC-V bootstrap. A falcon left halted by a previous instance is
+ * refused by the FMC (mailbox 0xb) until it has been through this.
+ * NV_PGSP_FALCON_ENGINE: bit 0 RESET (1 assert), bits 10:8 RESET_STATUS
+ * (0 asserted, 2 deasserted).
+ */
+static void
+gh100_gsp_reset_hw(struct nvkm_gsp *gsp)
+{
+	struct nvkm_subdev *subdev = &gsp->subdev;
+	struct nvkm_falcon *falcon = &gsp->falcon;
+	u32 before, after, plm;
+	int i;
+
+	/* kgspResetHw_GB100: the reset register sits behind a priv level
+	 * mask that GSP-RM lowers on its way out; wait for level-0 access
+	 * (NV_PGSP_FALCON_RESET_PRIV_LEVEL_MASK read bit 0, write bit 4). */
+	for (i = 0; i < 500; i++) {
+		plm = nvkm_falcon_rd32(falcon, 0x3c4);
+		if ((plm & 0x00000011) == 0x00000011)
+			break;
+		/* Target still locked behind the BAR0 decoupler: nothing in
+		 * the falcon window can be reached yet, the reset is moot. */
+		if ((plm & 0xffffff00) == 0xbadf4100) {
+			nvkm_debug(subdev, "GSP target locked, reset not available\n");
+			return;
+		}
+		usleep_range(1000, 2000);
+	}
+	if (i == 500)
+		nvkm_warn(subdev, "GSP reset PLM not lowered (%08x)\n", plm);
+
+	before = nvkm_falcon_rd32(falcon, 0x3c0);
+	nvkm_falcon_mask(falcon, 0x3c0, 0x00000001, 0x00000001);
+	for (i = 0; i < 1000; i++) {
+		if (((nvkm_falcon_rd32(falcon, 0x3c0) >> 8) & 7) == 0)
+			break;
+		udelay(1);
+	}
+	if (i == 1000)
+		nvkm_warn(subdev, "GSP falcon reset did not assert\n");
+
+	nvkm_falcon_mask(falcon, 0x3c0, 0x00000001, 0x00000000);
+	for (i = 0; i < 1000; i++) {
+		if (((nvkm_falcon_rd32(falcon, 0x3c0) >> 8) & 7) == 2)
+			break;
+		udelay(1);
+	}
+	after = nvkm_falcon_rd32(falcon, 0x3c0);
+	if (i == 1000)
+		nvkm_warn(subdev, "GSP falcon reset did not deassert\n");
+	nvkm_debug(subdev, "GSP falcon reset: plm %08x engine %08x -> %08x\n", plm, before, after);
+}
+
 static void
 gh100_gsp_aros_reset(struct nvkm_gsp *gsp, int mode)
 {
@@ -672,6 +727,7 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 				msleep(1000);
 				compat_dma_sync_all_coherent();
 			}
+			gh100_gsp_reset_hw(gsp);
 			ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
 						    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
 			if (ret) {

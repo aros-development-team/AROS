@@ -618,9 +618,11 @@ void nouveau_shutdown(void)
     nouveau_compat_atomic = 1;
     bug("[nouveau] shutting down: unloading GSP-RM\n");
     ret = nouveau_aros_shutdown(current_drm_device);
-    if (ret)
+    if (ret < 0)
         bug("[nouveau] GSP-RM partially unloaded - far enough for the "
             "next boot to start it fresh\n");
+    else if (ret > 0)
+        bug("[nouveau] GSP-RM unloaded, RISC-V still active\n");
     else
-        bug("[nouveau] GSP-RM unloaded\n");
+        bug("[nouveau] GSP-RM unloaded, RISC-V halted\n");
 }

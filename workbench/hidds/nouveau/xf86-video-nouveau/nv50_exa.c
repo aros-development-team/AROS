@@ -1060,6 +1060,7 @@ BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
         NV50EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
         NV50EXADoneSolid(bmdata);
         bmdata->gpu_dirty = TRUE;
+		HIDDNouveauFlushDisplayable(carddata, bmdata);
         return TRUE;
     }
 
@@ -1082,6 +1083,7 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
         NV50EXADoneCopy(destdata);
         srcdata->gpu_dirty = TRUE;
         destdata->gpu_dirty = TRUE;
+		HIDDNouveauFlushDisplayable(carddata, destdata);
         return TRUE;
     }
 

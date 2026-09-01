@@ -437,7 +437,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
                     msg->x, msg->y, msg->width, msg->height, 
                     cl, o);
 
-if (result) bmdata->gpu_dirty = TRUE;
+if (result) { bmdata->gpu_dirty = TRUE; HIDDNouveauFlushDisplayable(carddata, bmdata); }
 
         ReleaseSemaphore(&carddata->gartsemaphore);
 
