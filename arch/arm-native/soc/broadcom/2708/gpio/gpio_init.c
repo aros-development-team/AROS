@@ -111,6 +111,8 @@ AROS_LH2(void, GPIOSetFunc,
     }
     else if (GPIOBase->gpio_periiobase && (pin <= 53))
     {
+        unsigned int val;
+
         reg = GPFSEL0;
         while (pin >= 10) {
             pin -= 10;
@@ -118,11 +120,18 @@ AROS_LH2(void, GPIOSetFunc,
         }
 
         pin += (pin << 1);
-        func <<= pin;
 
         ObtainSemaphore(&GPIOBase->gpio_Sem);
 
-        *(volatile unsigned int *)reg = AROS_LONG2LE(func);
+        /*
+         * Read-modify-write: one GPFSEL selects the function of ten pins,
+         * three bits each, so a plain store of this pin's field sets the
+         * other nine to input.
+         */
+        val = AROS_LE2LONG(*(volatile unsigned int *)reg);
+        val &= ~(7 << pin);
+        val |= (func & 7) << pin;
+        *(volatile unsigned int *)reg = AROS_LONG2LE(val);
 
         ReleaseSemaphore(&GPIOBase->gpio_Sem);
     }
