@@ -2,10 +2,11 @@
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: security.library - the part of the initialisation that needs
-          dos.library. genmodule marks libraries with a negative residentpri
-          as RTF_AFTERDOS, so Security_Init() itself runs from dos.library's
-          CliInit() (InitCode(RTF_AFTERDOS)) once SYS: and the boot assigns
-          exist; this is called from there.
+          dos.library. Called from the "security.boot" RTF_AFTERDOS
+          resident (security_init.c) out of dos.library's CliInit(), once
+          SYS: and the boot assigns exist; the library base itself is
+          initialised much earlier so filesystem handlers can open it at
+          mount time.
 */
 
 #include <proto/exec.h>

@@ -3,11 +3,14 @@
 
     Desc: security.library initialization.
 
-          The library is a ROM resident with residentpri -121, which
-          genmodule turns into an RTF_AFTERDOS resident: it is initialised by
-          dos.library's CliInit() once SYS: and the boot assigns exist, in
-          the context of the boot process. So dos.library is available here
-          and the server can be started right away (security_afterdos.c).
+          Two-stage startup: the library itself is an early resident
+          (residentpri 20) whose init needs only exec and task.resource -
+          the base, memory, semaphores and task hooks exist before
+          dos.library and the filesystem handlers, so a handler can open
+          the library at mount time. The DOS-dependent part (libraries,
+          catalog, the server) runs from the separate "security.boot"
+          RTF_AFTERDOS resident below, at the old -121 slot, once SYS: and
+          the boot assigns exist (security_afterdos.c).
 */
 
 #include <proto/exec.h>
@@ -18,6 +21,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/resident.h>
 #include <aros/symbolsets.h>
 
 #include "security_intern.h"
@@ -68,13 +72,6 @@ static int Security_Init(LIBBASETYPEPTR secBase)
         return FALSE;
     }
 
-    if (!Security_AfterDOS(secBase))
-    {
-        D(bug(DEBUG_NAME_STR " %s: DOS side initialisation failed\n", __func__);)
-        CleanUpTaskList(secBase);
-        CleanUpMemory(secBase);
-        return FALSE;
-    }
 
     D(bug(DEBUG_NAME_STR " %s: initialised\n", __func__);)
 
@@ -109,6 +106,53 @@ static int Security_Close(LIBBASETYPEPTR secBase)
 }
 
 ADD2INITLIB(Security_Init, 0);
+
+/*
+ * Second stage: everything that needs dos.library. A separate RTF_AFTERDOS
+ * resident (the library above initialises early), found by the kickstart
+ * resident scan like acpica.post. Runs from dos.library's CliInit() at the
+ * old -121 slot, before lddemon (-123).
+ */
+extern void securityboot_end(void);
+
+static AROS_UFP3(APTR, SecurityBoot,
+                 AROS_UFPA(struct Library *, lh, D0),
+                 AROS_UFPA(BPTR, segList, A0),
+                 AROS_UFPA(struct ExecBase *, SysBase, A6));
+
+static const TEXT securityboot_namestring[] = "security.boot";
+static const TEXT securityboot_versionstring[] = "security.boot 45.11\n";
+
+const struct Resident securityboot_romtag =
+{
+    RTC_MATCHWORD,
+    (struct Resident *)&securityboot_romtag,
+    (APTR)&securityboot_end,
+    RTF_AFTERDOS,
+    45,
+    NT_UNKNOWN,
+    -121,
+    (STRPTR)securityboot_namestring,
+    (STRPTR)securityboot_versionstring,
+    (APTR)SecurityBoot
+};
+
+static AROS_UFH3(APTR, SecurityBoot,
+                 AROS_UFHA(struct Library *, lh, D0),
+                 AROS_UFHA(BPTR, segList, A0),
+                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    if (SecurityBaseGlobal)
+        Security_AfterDOS(SecurityBaseGlobal);
+
+    AROS_USERFUNC_EXIT
+
+    return NULL;
+}
+
+void securityboot_end(void) { };
 ADD2EXPUNGELIB(Security_Expunge, 0);
 ADD2OPENLIB(Security_Open, 0);
 ADD2CLOSELIB(Security_Close, 0);
