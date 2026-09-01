@@ -183,6 +183,13 @@ RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf \
                      bcm2712-rpi-5-b.dtb bcm2712-rpi-500.dtb \
                      bcm2712-d-rpi-5-b.dtb bcm2712d0-rpi-5-b.dtb
 
+# The Pi 500(+) has no D0-specific dtb; the firmware patches the base dtb at
+# boot with the bcm2712d0.dtbo overlay (selected via overlay_map.dtb). D0
+# boards use a different address map (RP1 PCIe window at 0x1c_0000_0000, not
+# 0x1f_...), so without these files the bootstrap sees C1 addresses on D0
+# hardware.
+RASPIFW_OVERLAYS  := overlay_map.dtb bcm2712d0.dtbo
+
 RASPIWIFIFW_BRANCH := buster
 RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
 # 43455 and 43456 are both chip id 0x4345 and cannot share a blob: bwfm.device
@@ -217,6 +224,11 @@ PKG_CLASSES   := USB/hub USB/hubss USB/massstorage
 #MM
 distfiles-raspi-aarch64-fw:
 	$(foreach file, $(RASPIFW_FILES), $(shell wget -4 -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(file))" -O "$(addprefix $(AROSDIR)/, $(file))"))
+	@$(MKDIR) $(AROSDIR)/overlays
+	@for f in $(RASPIFW_OVERLAYS) ; do \
+	    wget -4 -t 5 -T 15 -c "$(RASPIFW_URI)/overlays/$$f" -O "$(AROSDIR)/overlays/$$f" \
+	        || $(ECHO) "WARNING: could not fetch overlay $$f" ; \
+	done
 
 #MM
 distfiles-raspi-aarch64-wifi-fw:
@@ -236,7 +248,7 @@ distfiles-raspi-aarch64le-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-rasp
 # framebuffer + overlay page ring + BO pools); 64 (the firmware default)
 # runs out during a full-screen GL session. 128 is the working minimum.
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
-	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\nenable_uart=1\narm_64bit=1\ngpu_mem=128\n" > $@
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=1\ngpu_mem=128\nenable_uart=1\n[pi5]\nenable_rp1_uart=1\npciex4_reset=0\n" > $@
 
 # .d depfiles are only generated for C sources, not startup64.S
 $(AROSDIR)/aros-aarch64-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(foreach f, $(filter-out startup64,$(FILES)), $(TARGETDIR)/$(f).d)

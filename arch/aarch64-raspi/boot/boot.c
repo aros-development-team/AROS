@@ -34,6 +34,8 @@
 #define ARM_PERIIOBASE (__arm_periiobase)
 
 uintptr_t __arm_periiobase = 0;
+unsigned int __arm_socid = 0;
+uintptr_t __vcmb_base = 0;
 
 extern void mem_init(void);
 extern unsigned int uartclock;
@@ -78,8 +80,8 @@ void query_vmem()
     vc_msg[6] = 0;
     vc_msg[7] = 0;
 
-    vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vc_msg);
-    vc_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+    vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vc_msg);
+    vc_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
 
     if (!vc_msg)
     {
@@ -135,8 +137,8 @@ void setup_arm_clock()
     vc_msg[5] = AROS_LONG2LE(3);            /* clock id 3 = ARM */
     vc_msg[6] = 0;
     vc_msg[7] = 0;
-    vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vc_msg);
-    vc_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+    vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vc_msg);
+    vc_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
     if (!vc_msg)
         return;
     arm_cur = AROS_LE2LONG(vc_msg[6]);
@@ -149,8 +151,8 @@ void setup_arm_clock()
     vc_msg[5] = AROS_LONG2LE(3);
     vc_msg[6] = 0;
     vc_msg[7] = 0;
-    vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vc_msg);
-    vc_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+    vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vc_msg);
+    vc_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
     if (!vc_msg)
         return;
     arm_max = AROS_LE2LONG(vc_msg[6]);
@@ -168,8 +170,8 @@ void setup_arm_clock()
         vc_msg[6] = AROS_LONG2LE(arm_max);
         vc_msg[7] = 0;                      /* skip_setting_turbo = 0 */
         vc_msg[8] = 0;
-        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vc_msg);
-        vc_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vc_msg);
+        vc_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
         if (vc_msg)
             kprintf("[BOOT] ARM clock set to %u Hz\n", AROS_LE2LONG(vc_msg[6]));
     }
@@ -274,8 +276,45 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
     mem_init();
 
     int dt_mem_usage = mem_avail();
+    
     /* Parse device tree */
     dt_parse((void *)(uintptr_t)dtb_addr);
+    
+    /*
+     * The SoC id gates the UART and mailbox register offsets, so it has to
+     * be known before serInit(). The tag itself is emitted further down.
+     */
+    {
+        of_node_t *r = dt_find_node("/");
+        of_property_t *compat = r ? dt_find_property(r, "compatible") : NULL;
+        IPTR plat = 0xc43; /* default: BCM2836/2837 (Raspberry Pi 2/3) */
+        if (compat)
+        {
+            const char *s = (const char *)compat->op_value;
+            int n = (int)compat->op_length, i;
+            for (i = 0; i + 7 <= n; i++)
+            {
+                if (s[i] == 'b' && s[i+1] == 'c' && s[i+2] == 'm' &&
+                    s[i+3] == '2' && s[i+4] == '7' && s[i+5] == '1' &&
+                    s[i+6] == '2')
+                {
+                    plat = 0x2712; /* BCM2712 (Raspberry Pi 5) */
+                    break;
+                }
+                if (s[i] == 'b' && s[i+1] == 'c' && s[i+2] == 'm' &&
+                    s[i+3] == '2' && s[i+4] == '7' && s[i+5] == '1' &&
+                    s[i+6] == '1')
+                {
+                    plat = 0xc44; /* BCM2711 (Raspberry Pi 4) */
+                    break;
+                }
+            }
+        }
+        __arm_socid = plat;
+    }
+
+    __vcmb_base = __arm_periiobase + (__arm_socid == 0x2712 ? 0x7C013880 : 0xB880);
+    
     dt_mem_usage -= mem_avail();
 
     /* Prepare mapping for peripherals. Use the data from device tree here */
@@ -391,40 +430,14 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
     /*
      * Store the SoC id for the kernel's platform probe. The peripheral base
      * itself is taken from the device tree (/soc ranges) above, so it is
-     * already correct for either SoC; here we only distinguish the interrupt
-     * controller / timer family: BCM2836/2837 (Pi 2/3, legacy controller) vs
-     * BCM2711 (Pi 4, GIC-400), by scanning the root "compatible" list.
+     * already correct; this only tells the kernel which interrupt controller
+     * and timer family to expect. Scanned near the top of boot().
      */
     boottag->ti_Tag = KRN_Platform;
-    {
-        of_node_t *r = dt_find_node("/");
-        of_property_t *compat = r ? dt_find_property(r, "compatible") : NULL;
-        IPTR plat = 0xc43; /* default: BCM2836/2837 (Raspberry Pi 2/3) */
-        if (compat)
-        {
-            const char *s = (const char *)compat->op_value;
-            int n = (int)compat->op_length, i;
-            for (i = 0; i + 7 <= n; i++)
-            {
-                if (s[i] == 'b' && s[i+1] == 'c' && s[i+2] == 'm' &&
-                    s[i+3] == '2' && s[i+4] == '7' && s[i+5] == '1' &&
-                    s[i+6] == '2')
-                {
-                    plat = 0x2712; /* BCM2712 (Raspberry Pi 5) */
-                    break;
-                }
-                if (s[i] == 'b' && s[i+1] == 'c' && s[i+2] == 'm' &&
-                    s[i+3] == '2' && s[i+4] == '7' && s[i+5] == '1' &&
-                    s[i+6] == '1')
-                {
-                    plat = 0xc44; /* BCM2711 (Raspberry Pi 4) */
-                    break;
-                }
-            }
-        }
-        boottag->ti_Data = plat;
-        kprintf("[BOOT] SoC platform id 0x%x\n", (unsigned)plat);
-    }
+    boottag->ti_Data = __arm_socid;
+    
+    kprintf("[BOOT] SoC platform id 0x%x\n", __arm_socid);
+    
     boottag++;
 
     /*
@@ -468,6 +481,12 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
         kprintf("[BOOT] Configuring LEDs\n");
         ForeachNode(&e->on_children, led)
         {
+            /* BCM2712 has no BCM283x GPIO block: the ACT LED sits on a
+             * brcmstb controller and the PWR LED behind RP1. The GPFSEL
+             * pokes below would land blindly in the /soc window. */
+            if (__arm_socid == 0x2712)
+                continue;
+            
             of_property_t *p = dt_find_property(led, "gpios");
             of_property_t *st = dt_find_property(led, "status");
             int32_t gpio = 0;
