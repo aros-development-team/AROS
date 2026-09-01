@@ -64,6 +64,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-fs-sfs-quick \
 #MM kernel-fs-ram-quick \
 #MM kernel-processor-quick \
+#MM kernel-gpio-bcm2708-quick \
 #MM kernel-mbox-bcm2708-quick \
 #MM kernel-dma-bcm2708-quick \
 #MM kernel-sdio-bcm2708-quick \
@@ -126,6 +127,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-fs-sfs \
 #MM kernel-fs-ram \
 #MM kernel-processor \
+#MM kernel-gpio-bcm2708 \
 #MM kernel-mbox-bcm2708 \
 #MM kernel-dma-bcm2708 \
 #MM kernel-sdio-bcm2708 \
@@ -189,7 +191,7 @@ RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
 
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos dos64 poseidon cgxbootpic gadtools lowlevel fd
 PKG_LIBS_ARCH := expansion
-PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands entropy mbox dma sdio bwfm
+PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands entropy gpio mbox dma sdio bwfm
 PKG_RSRC_ARCH := processor
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg USBHardware/pcixhci
 PKG_DEVS_ARCH := timer
