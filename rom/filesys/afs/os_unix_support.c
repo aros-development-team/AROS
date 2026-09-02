@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -141,7 +141,7 @@ BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
  * so the functions are no-ops.
  ****************************************************************************/
 
-LONG attemptAddDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
+LONG addDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
         return 0;
 }
 LONG osMediumInit(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {

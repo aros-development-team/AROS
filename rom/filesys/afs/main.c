@@ -167,9 +167,9 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
         /* D(bug("[afs] Alarm rang.\n")); */
         if (((volume->dostype == ID_DOS_DISK) || (volume->dostype == ID_DOS_muFS_DISK)) && mediumPresent(&volume->ioh))
         {
-            /* Check if adding volume node needs to be retried */
-            if (volume->volumenode == NULL)
-                    attemptAddDosVolume(handler, volume);
+            /* Check if publishing the volume node needs to be retried */
+            if ((volume->volumenode != NULL) && !volume->volumenodeadded)
+                    addDosVolume(handler, volume);
 
             flushCache(handler, volume);
             blockbuffer = getBlock(handler, volume, volume->rootblock);
@@ -257,6 +257,7 @@ LONG AFS_work(struct ExecBase *SysBase)
         return RETURN_FAIL;
     }
 
+    NEWLIST(&handler->offlinevols);
     volume = AFS_open_volume(handler, dp, &retval);
     if (volume == NULL) {
         D(bug("[AFS] Can't open volume\n"));

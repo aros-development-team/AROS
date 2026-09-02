@@ -2,7 +2,7 @@
 #define OS_SUPPORT_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,6 +27,6 @@ BOOL flush(struct AFSBase *, struct Volume *);
 struct IOHandle *openBlockDevice(struct AFSBase *, struct IOHandle *);
 void closeBlockDevice(struct AFSBase *, struct IOHandle *);
 void check64BitSupport(struct AFSBase *, struct Volume *);
-LONG attemptAddDosVolume(struct AFSBase *afsbase, struct Volume *volume);
+LONG addDosVolume(struct AFSBase *afsbase, struct Volume *volume);
 
 #endif

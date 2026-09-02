@@ -9,6 +9,16 @@
 #include <exec/devices.h>
 #include <devices/timer.h>
 
+struct DosList;
+
+/* A volume node kept alive by open locks after its medium went away */
+struct OfflineNode
+{
+    struct MinNode node;
+    struct DosList *dl;
+    BOOL   added;               /* node is published in the system DosList */
+};
+
 struct AFSBase
 {
     struct Library ab_Lib;
@@ -19,6 +29,7 @@ struct AFSBase
     struct MsgPort *timer_mp;
     struct MsgPort port;	/* sigtask and sigbit for changeint */
     struct List device_list;	/* list of mounted devices (struct Volume) */
+    struct MinList offlinevols;	/* offline volume nodes (struct OfflineNode) */
     struct timerequest *timer_request;
     ULONG timer_flags;
 

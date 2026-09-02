@@ -109,14 +109,60 @@ UBYTE i;
 }
 
 /*******************************************
- Name  : attemptAddDosVolume
- Descr.: adds a new volume to dos
- Input : volume - volume to add
+ Name  : findOfflineNode
+ Descr.: find a parked offline volume node for this medium,
+         matched by name and volume creation date
+ Input : volume - the mounted medium
+         name   - its volume name as a C string
+ Output: the parked node, or NULL
+********************************************/
+static struct OfflineNode *findOfflineNode
+        (struct AFSBase *afsbase, struct Volume *volume, CONST_STRPTR name)
+{
+struct OfflineNode *on;
+
+        for (on = (struct OfflineNode *)afsbase->offlinevols.mlh_Head;
+             on->node.mln_Succ != NULL;
+             on = (struct OfflineNode *)on->node.mln_Succ)
+        {
+                struct DosList *dl = on->dl;
+                BSTR bname = dl->dol_Name;
+                UBYTE len = AROS_BSTR_strlen(bname);
+                UBYTE i;
+
+                if (dl->dol_misc.dol_volume.dol_VolumeDate.ds_Days !=
+                                volume->devicelist.dl_VolumeDate.ds_Days ||
+                    dl->dol_misc.dol_volume.dol_VolumeDate.ds_Minute !=
+                                volume->devicelist.dl_VolumeDate.ds_Minute ||
+                    dl->dol_misc.dol_volume.dol_VolumeDate.ds_Tick !=
+                                volume->devicelist.dl_VolumeDate.ds_Tick)
+                        continue;
+                for (i=0; i<len; i++)
+                {
+                        if (name[i] == '\0')
+                                break;
+                        if (ToUpper(AROS_BSTR_getchar(bname, i)) != ToUpper(name[i]))
+                                break;
+                }
+                if (i == len && name[i] == '\0')
+                        return on;
+        }
+        return NULL;
+}
+
+/*******************************************
+ Name  : createDosVolume
+ Descr.: create (or reconnect) the DosList node for the current medium.
+         The node exists from here on, so every handle references its
+         final node; publishing it in the system DosList may still be
+         deferred (addDosVolume).
+ Input : volume - volume to make the node for
  Output: DOSTRUE for success; DOSFALSE otherwise
 ********************************************/
-LONG attemptAddDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
-struct DosList *doslist;
-struct DosList *dl=NULL;
+static LONG createDosVolume(struct AFSBase *afsbase, struct Volume *volume)
+{
+struct DosList *dl;
+struct OfflineNode *on;
 char string[32];
 BSTR bname;
 UBYTE i;
@@ -130,50 +176,72 @@ UBYTE i;
                 string[i] = AROS_BSTR_getchar(bname,i);
         string[AROS_BSTR_strlen(bname)] = 0;
         D(bug("[afs 0x%08lX] Processing inserted volume %s\n", volume, string));
-        /* is the volume already in the list? */
-        doslist = AttemptLockDosList(LDF_WRITE | LDF_VOLUMES);
-        if (doslist != NULL)
+        on = findOfflineNode(afsbase, volume, string);
+        if (on != NULL)
         {
-                dl = FindDosEntry(doslist,string,LDF_VOLUMES);
-                UnLockDosList(LDF_WRITE | LDF_VOLUMES);
+                D(bug("[afs 0x%08lX] Reconnecting offline VolumeNode\n", volume));
+                dl = on->dl;
+                volume->volumenodeadded = on->added;
+                Remove((struct Node *)&on->node);
+                FreeMem(on, sizeof(struct OfflineNode));
+                /* take back the locks that kept the node alive */
+                volume->locklist = BADDR(dl->dol_misc.dol_volume.dol_LockList);
+                dl->dol_misc.dol_volume.dol_LockList = BNULL;
+                Forbid();
+                dl->dol_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+                Permit();
         }
         else
-                return TRUE;
-
-        /* if not create a new doslist */
-        if (dl == NULL)
         {
                 D(bug("[afs 0x%08lX] Creating new VolumeNode\n", volume));
-                doslist = MakeDosEntry(string,DLT_VOLUME);
-                if (doslist == NULL)
+                dl = MakeDosEntry(string,DLT_VOLUME);
+                if (dl == NULL)
                         return DOSFALSE;
-                doslist->dol_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
-                doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days =
+                dl->dol_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+                dl->dol_misc.dol_volume.dol_VolumeDate.ds_Days =
                         volume->devicelist.dl_VolumeDate.ds_Days;
-                doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Minute =
+                dl->dol_misc.dol_volume.dol_VolumeDate.ds_Minute =
                         volume->devicelist.dl_VolumeDate.ds_Minute;
-                doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Tick =
+                dl->dol_misc.dol_volume.dol_VolumeDate.ds_Tick =
                         volume->devicelist.dl_VolumeDate.ds_Tick;
-                AddDosEntry(doslist);
-                /* if we re-use "volume" clear locklist */
                 volume->locklist = NULL;
-                dl = doslist;
+                volume->volumenodeadded = FALSE;
         }
         volume->volumenode = dl;
+        return DOSTRUE;
+}
+
+/*******************************************
+ Name  : addDosVolume
+ Descr.: publish the volume node in the system DosList; retried from
+         the flush timer while the list stays contended
+ Input : volume - volume whose node to publish
+ Output: DOSTRUE when published (or nothing to do); DOSFALSE to retry
+********************************************/
+LONG addDosVolume(struct AFSBase *afsbase, struct Volume *volume)
+{
+        if ((volume->volumenode == NULL) || volume->volumenodeadded)
+                return DOSTRUE;
+        /* don't block: a DosList holder may be waiting on this handler */
+        if (AttemptLockDosList(LDF_WRITE | LDF_VOLUMES) == NULL)
+                return DOSFALSE;
+        UnLockDosList(LDF_WRITE | LDF_VOLUMES);
+        AddDosEntry(volume->volumenode); /* takes LDF_READ|LDF_ENTRY itself */
+        volume->volumenodeadded = TRUE;
         SendEvent(afsbase, IECLASS_DISKINSERTED);
         return DOSTRUE;
 }
 
 /*******************************************
  Name  : remDosVolume
- Descr.: removes a volume added by addDosVolume
-         or if there are some locks active
-         set dol_LockList
+ Descr.: removes a volume's node, or parks it offline
+         while locks are active
  Input : volume - volume to remove
  Output: -
 ********************************************/
 void remDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
 struct DosList *dl;
+struct OfflineNode *on;
 
         dl = volume->volumenode;
         if (dl) {
@@ -181,27 +249,65 @@ struct DosList *dl;
                 {
                         D(bug("[afs 0x%08lX] VolumeNode in use, keeping as offline\n", volume));
                         dl->dol_misc.dol_volume.dol_LockList = MKBADDR(volume->locklist);
+                        volume->locklist = NULL;
+                        Forbid();
+                        dl->dol_Task = NULL;
+                        Permit();
+                        on = AllocMem(sizeof(struct OfflineNode), MEMF_PUBLIC | MEMF_CLEAR);
+                        if (on != NULL)
+                        {
+                                on->dl = dl;
+                                on->added = volume->volumenodeadded;
+                                AddTail((struct List *)&afsbase->offlinevols,
+                                        (struct Node *)&on->node);
+                        }
+                        /* if the record could not be made the node stays
+                           reachable through its handles only; a re-insert
+                           then makes a fresh node */
                 }
                 else
                 {
                         D(bug("[afs 0x%08lX] Removing VolumeNode\n", volume));
-                        remDosNode(afsbase, dl);
+                        if (volume->volumenodeadded)
+                                remDosNode(afsbase, dl);
+                        else
+                                FreeDosEntry(dl);
                 }
                 volume->volumenode = NULL;
+                volume->volumenodeadded = FALSE;
         }
 }
 
 /*******************************************
  Name  : remDosNode
- Descr.: removes a DOS volume node
+ Descr.: removes a DOS volume node; parked nodes that were never
+         published are only freed
  Input : dl - volume to remove
  Output: -
 ********************************************/
 void remDosNode(struct AFSBase *afsbase, struct DosList *dl)
 {
-        RemDosEntry(dl);
+struct OfflineNode *on;
+BOOL added = TRUE;
+
+        for (on = (struct OfflineNode *)afsbase->offlinevols.mlh_Head;
+             on->node.mln_Succ != NULL;
+             on = (struct OfflineNode *)on->node.mln_Succ)
+        {
+                if (on->dl == dl)
+                {
+                        added = on->added;
+                        Remove((struct Node *)&on->node);
+                        FreeMem(on, sizeof(struct OfflineNode));
+                        break;
+                }
+        }
+        if (added)
+        {
+                RemDosEntry(dl);
+                SendEvent(afsbase, IECLASS_DISKREMOVED);
+        }
         FreeDosEntry(dl);
-        SendEvent(afsbase, IECLASS_DISKREMOVED);
 }
 
 LONG osMediumInit
@@ -209,12 +315,13 @@ LONG osMediumInit
 {
         if (!initDeviceList(afsbase, volume, block))
                 return ERROR_NO_FREE_STORE;
-        if (!attemptAddDosVolume(afsbase, volume))
+        if (!createDosVolume(afsbase, volume))
         {
                 showError(afsbase, ERR_DOSENTRY);
                 remDosVolume(afsbase, volume);
                 return ERROR_UNKNOWN;
         }
+        addDosVolume(afsbase, volume);
         return 0;
 }
 

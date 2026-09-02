@@ -287,7 +287,7 @@ void remHandle(struct AFSBase *afsbase, struct AfsHandle *ah) {
 struct AfsHandle *old = NULL;
 
         D(bug("[afs 0x%p] Removing handle 0x%p\n", ah->volume, ah));
-        if (ah->volume->volumenode == ah->volumenode) {
+        if (ah->volumenode == NULL || ah->volume->volumenode == ah->volumenode) {
             D(bug("[afs 0x%p] Lock's volume is online\n", ah->volume));
             if (ah->volume->locklist==ah)
                 ah->volume->locklist=ah->next;

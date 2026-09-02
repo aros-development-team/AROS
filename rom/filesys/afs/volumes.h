@@ -15,6 +15,7 @@ struct Volume {
 	struct Device *device;       /* the handler this volume uses */
 	struct DeviceList devicelist __attribute__((aligned(4))); /* BPTR compatible */
 	struct DosList *volumenode;
+	BOOL volumenodeadded;        /* volumenode is in the system DosList */
 
 	ULONG SizeBlock;             /* Block size in words */
 	ULONG blocksectors;          /* nr of sectors per block */
