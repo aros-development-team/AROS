@@ -5,9 +5,12 @@
 */
 
 #include <aros/debug.h>
+#include <graphics/modeid.h>
 #include <graphics/view.h>
+#include <proto/oop.h>
 
 #include "graphics_intern.h"
+#include "graphics_driver.h"
 #include "gfxfuncsupport.h"
 
 /*****************************************************************************
@@ -62,15 +65,32 @@
 
     struct ViewPortExtra *vpe;
     struct HIDD_ViewPortData *vpd;
+    struct BitMap *bitmap;
+    struct gfxdisplay_data *mdd;
+    HIDDT_ModeID modeid;
     ULONG ret = MVP_OK;
     BOOL own_vpe = FALSE;
 
     if(!viewport || !viewport->RasInfo || !viewport->RasInfo->BitMap)
         return MVP_NO_DISPLAY;
 
-    /* Non-HIDD bitmaps cannot be displayed */
-    if(!IS_HIDD_BM(viewport->RasInfo->BitMap)) {
-        return MVP_NO_DISPLAY;
+    bitmap = viewport->RasInfo->BitMap;
+    modeid = GetVPModeID(viewport);
+    mdd = (struct gfxdisplay_data *)GET_VP_DRIVERDATA(viewport);
+
+    if (!IS_HIDD_BM(bitmap) && modeid == INVALID_ID) {
+        struct DisplayInfoHandle *dih;
+
+        modeid = ((GfxBase->DisplayFlags & NTSC) ?
+                  NTSC_MONITOR_ID : PAL_MONITOR_ID) |
+                 (viewport->Modes & (LACE | DOUBLESCAN | SUPERHIRES | PFBA |
+                                     EXTRA_HALFBRITE | DUALPF | HAM | HIRES));
+        if (viewport->Modes & SUPERHIRES)
+            modeid |= HIRES;
+
+        dih = (struct DisplayInfoHandle *)FindDisplayInfo(modeid);
+        if (dih)
+            mdd = dih->drv;
     }
 
     /* Attach a temporary ViewPortExtra if needed */
@@ -93,22 +113,68 @@
 
     vpd = VPE_DATA(vpe);
     if(vpd) {
+        BOOL current_owned = (vpe->Flags & VPXF_WRAPPED_BITMAP) != 0;
+
         vpd->vpe = vpe;
 
-        /*
-         * MakeVPort() can be called repeatedly on the same ViewPort.
-         * However, each time we are called, the frontmost RastInfo
-         * BitMap may be different.
-         *
-         * Updated the cached frontmost BitMap object here.
-         * We don't need to use OBTAIN_HIDD_BM(), since we can
-         * only display HIDD bitmaps (and we have verified that above).
-         */
-        vpd->Bitmap = HIDD_BM_OBJ(viewport->RasInfo->BitMap);
+        if(IS_HIDD_BM(bitmap)) {
+            if(vpd->Bitmap != HIDD_BM_OBJ(bitmap)) {
+                if(vpd->PreviousBitmap) {
+                    if(current_owned)
+                        OOP_DisposeObject(vpd->Bitmap);
+                } else {
+                    vpd->PreviousBitmap = vpd->Bitmap;
+                    if(current_owned)
+                        vpd->Flags |= HIDD_VPDF_PREVIOUS_BITMAP_OWNED;
+                    else
+                        vpd->Flags &= ~HIDD_VPDF_PREVIOUS_BITMAP_OWNED;
+                }
+                vpd->Bitmap = HIDD_BM_OBJ(bitmap);
+            }
+            vpe->Flags &= ~VPXF_WRAPPED_BITMAP;
+        } else if(current_owned) {
+            struct BitMap *wrapped = NULL;
+
+            OOP_GetAttr(vpd->Bitmap, aHidd_PlanarBM_BitMap,
+                        (IPTR *)&wrapped);
+            if(wrapped != bitmap &&
+               !HIDD_PlanarBM_SetBitMap(vpd->Bitmap, bitmap))
+                ret = MVP_NO_DISPLAY;
+        } else {
+            struct TagItem tags[] = {
+                { aHidd_PlanarBM_BitMap, (IPTR)bitmap },
+                { aHidd_BitMap_Width, bitmap->BytesPerRow << 3 },
+                { aHidd_BitMap_Height, bitmap->Rows },
+                { aHidd_BitMap_Depth, bitmap->Depth },
+                { aHidd_BitMap_Displayable, TRUE },
+                { aHidd_BitMap_ModeID, modeid },
+                { TAG_DONE, 0 }
+            };
+            OOP_Object *newbitmap = HIDD_Display_CreateObject(
+                mdd->display_obj, PrivGBase(GfxBase)->basebm, tags);
+
+            if(newbitmap) {
+                if(vpd->PreviousBitmap) {
+                    if(current_owned)
+                        OOP_DisposeObject(vpd->Bitmap);
+                } else {
+                    vpd->PreviousBitmap = vpd->Bitmap;
+                    if(current_owned)
+                        vpd->Flags |= HIDD_VPDF_PREVIOUS_BITMAP_OWNED;
+                    else
+                        vpd->Flags &= ~HIDD_VPDF_PREVIOUS_BITMAP_OWNED;
+                }
+
+                vpd->Bitmap = newbitmap;
+                vpe->Flags |= VPXF_WRAPPED_BITMAP;
+            } else {
+                ret = MVP_NO_MEM;
+            }
+        }
 
         D(bug("[MakeVPort] Bitmap object: 0x%p\n", vpd->Bitmap));
 
-        if(IS_HIDD_BM(viewport->RasInfo->BitMap)) {
+        if(IS_HIDD_BM(bitmap)) {
             /*
              * If we have a colormap attached to a HIDD bitmap, we can verify
              * that bitmap and colormap modes do not differ.
@@ -141,9 +207,7 @@
          * Ensure that we have a bitmap object.
          * OBTAIN_HIDD_BM() may fail on planar bitmap in low memory situation.
          */
-        if(vpd->Bitmap) {
-            struct monitor_displaydata *mdd = (struct monitor_displaydata *)GET_VP_DRIVERDATA(viewport);
-
+        if(ret == MVP_OK && vpd->Bitmap) {
             /*
              * Store driverdata pointer in private ViewPortExtra field.
              * It is needed because the caller can first free BitMap, then
@@ -151,9 +215,22 @@
              * driver pointer from the bitmap in FreeVPortCopLists().
              */
             vpe->DriverData[1] = mdd;
-            ret = HIDD_Display_MakeViewPort(mdd->mdisplay.display_obj, vpd);
-        } else
+            ret = HIDD_Display_MakeViewPort(mdd->display_obj, vpd, view);
+        } else if(ret == MVP_OK)
             ret = MVP_NO_MEM;
+
+        if(ret != MVP_OK && vpd->PreviousBitmap) {
+            if(vpe->Flags & VPXF_WRAPPED_BITMAP)
+                OOP_DisposeObject(vpd->Bitmap);
+
+            vpd->Bitmap = vpd->PreviousBitmap;
+            vpd->PreviousBitmap = NULL;
+            if(vpd->Flags & HIDD_VPDF_PREVIOUS_BITMAP_OWNED)
+                vpe->Flags |= VPXF_WRAPPED_BITMAP;
+            else
+                vpe->Flags &= ~VPXF_WRAPPED_BITMAP;
+            vpd->Flags &= ~HIDD_VPDF_PREVIOUS_BITMAP_OWNED;
+        }
     } else
         ret = MVP_NO_MEM;
 

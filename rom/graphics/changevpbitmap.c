@@ -79,7 +79,9 @@
                      * We don't check against vpd == NULL because we already know
                      * there's at least one ViewPort (our one) in the chain.
                      */
-                    struct monitor_displaydata *mdd = (struct monitor_displaydata *)GET_VP_DRIVERDATA(vp);
+                    struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
+                    struct monitor_displaydata *mdd =
+                        (struct monitor_displaydata *)VPE_DRIVER(vpe);
                     struct HIDD_ViewPortData *vpd = display_FindViewPorts(mdd, GfxBase->ActiView, GfxBase);
 
                     HIDD_Display_InitViewPorts(mdd->mdisplay.display_obj, vpd, GfxBase->ActiView);

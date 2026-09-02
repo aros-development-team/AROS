@@ -53,10 +53,15 @@
 
     ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
 
-    if(GfxBase->ActiView != view) {
+    if(GfxBase->ActiView != view)
         GfxBase->ActiView = view;
-        DoViewFunction(view, display_LoadViewPorts, GfxBase);
-    }
+
+    /*
+     * LoadView() also reloads a View which is already active.  Classic
+     * software uses MakeVPort() followed by LoadView() (without MrgCop()) to
+     * switch freshly prepared display instructions for the same View.
+     */
+    DoViewFunction(view, display_LoadViewPorts, GfxBase);
 
     ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
 

@@ -118,6 +118,8 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->depth = depth;
     data->pixelcacheoffset = -1;
     data->pbm = pbm;
+    data->diwstartx = csd->startx;
+    data->diwstarty = csd->starty;
 
     if ((data->disp = disp))
     {
@@ -1032,8 +1034,21 @@ VOID AmigaVideoBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct 
 BOOL AmigaVideoBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
                                    struct pHidd_PlanarBM_SetBitMap *msg)
 {
+    struct amigabm_data *data = OOP_INST_DATA(cl, o);
+    BOOL result;
+
     CMDDEBUGUNIMP(bug("[AmigaVideo:Bitmap] %s()\n", __func__);)
-    return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    result = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (result)
+    {
+        data->pbm = msg->bitMap;
+        data->width = msg->bitMap->BytesPerRow << 3;
+        data->bytesperrow = msg->bitMap->BytesPerRow;
+        data->height = msg->bitMap->Rows;
+        data->depth = msg->bitMap->Depth;
+    }
+
+    return result;
 }
 
 /****************************************************************************************/

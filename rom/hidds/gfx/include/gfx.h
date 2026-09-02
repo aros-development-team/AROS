@@ -127,7 +127,11 @@ struct HIDD_ViewPortData
     OOP_Object               *Bitmap;   /* The bitmap object itself             */
     struct ViewPortExtra     *vpe;      /* Associated ViewPortExtra             */
     APTR                      UserData; /* The driver can keep own stuff here   */
+    OOP_Object               *PreviousBitmap; /* Kept alive until display swap    */
+    ULONG                     Flags;
 };
+
+#define HIDD_VPDF_PREVIOUS_BITMAP_OWNED (1UL << 0)
 
 #define vHidd_ModeID_Invalid ((HIDDT_ModeID)-1)
 
