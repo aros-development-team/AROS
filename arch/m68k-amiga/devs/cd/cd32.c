@@ -1344,11 +1344,13 @@ static const struct DosEnvec CD32Envec = {
     /*
      * CDVDFS sizes its sector cache as de_NumBuffers 16-sector (32 KB)
      * prefetch chunks. A CD32 without expansion RAM backs MEMF_24BITDMA
-     * with its only 2 MB of chip RAM, so keep a single readahead chunk.
+     * with its only 2 MB of chip RAM.  Two chunks retain enough readahead for
+     * streamed video while keeping the cache substantially below its former
+     * boot-time footprint.
      * The Akiko data ring already buffers incoming sectors below this
      * filesystem cache.
      */
-    .de_NumBuffers = 1,
+    .de_NumBuffers = 2,
     .de_BufMemType = MEMF_24BITDMA,
     .de_MaxTransfer = 32 * 2048,
     .de_Mask = 0x00fffffe,
