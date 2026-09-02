@@ -771,6 +771,7 @@ static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
     LONG sect_start, LONG sectors, ULONG sectorOffset)
 {
     struct CD32XLTransfer *xl = &cu->cu_XL;
+    struct MinList *list = io->io_Data;
     UBYTE cmd[12], resp[2];
     UBYTE cmd_pause[1] = { CHCD_PAUSE };
     UBYTE cmd_unpause[1] = { CHCD_UNPAUSE };
@@ -779,7 +780,10 @@ static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
     LONG err;
 
     xl->io = io;
-    xl->node = io->io_Data;
+    /* CD_READXL takes a MinList containing CDXL nodes.  Starting at
+     * io_Data itself corrupts the list header and sends sector data to its
+     * tail predecessor instead of to the first node's buffer. */
+    xl->node = (struct CDXL *)list->mlh_Head;
     xl->remaining = io->io_Length;
     xl->sectorOffset = sectorOffset;
     xl->limited = io->io_Length != 0;
