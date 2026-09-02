@@ -26,6 +26,10 @@
 #define VPE_DATA(vpe)   ((struct HIDD_ViewPortData *)(vpe)->DriverData[0])
 #define VPE_DRIVER(vpe) ((struct gfxdisplay_data *)(vpe)->DriverData[1])
 
+/* The ViewPortData bitmap is a temporary display-driver object wrapping a
+ * caller-owned, classic planar struct BitMap. */
+#define VPXF_WRAPPED_BITMAP 0x8000
+
 /* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE
    THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
    HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test

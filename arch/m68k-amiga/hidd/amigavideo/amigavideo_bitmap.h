@@ -64,6 +64,7 @@ struct amigabm_data
     UBYTE                       depth;
     UBYTE                       planebuf_size;
     WORD                        topedge, leftedge;
+    WORD                        diwstartx, diwstarty;
     WORD                        updtop, updleft;
     WORD                        align;
     WORD                        displaywidth;

@@ -1816,7 +1816,7 @@ BOOL Display__Hidd_Display__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struc
     SYNOPSIS
         ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_MakeViewPort *msg);
 
-        ULONG HIDD_Display_MakeViewPort(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data)
+        ULONG HIDD_Display_MakeViewPort(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data, struct View *view)
 
     LOCATION
         hidd.gfx.display
@@ -1827,6 +1827,7 @@ BOOL Display__Hidd_Display__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struc
     INPUTS
         gfxHidd - A display driver object.
         data    - a pointer to a HIDD_ViewPortData structure.
+        view    - the View which contains the ViewPort.
 
     RESULT
         The same code as used as return value for graphics.library/MakeVPort().
