@@ -9,8 +9,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "pipe/p_shader_tokens.h"
-#if defined(TGSI_SEMANTIC_VIEWPORT_MASK)
+#if defined(__has_include)
+#if __has_include("frontend/sw_winsys.h")
+#define AROS_SOFTPIPE_HAS_FRONTEND_SW_WINSYS 1
+#endif
+#endif
+
+#if defined(AROS_SOFTPIPE_HAS_FRONTEND_SW_WINSYS)
 #include "frontend/sw_winsys.h"
 #else
 #include "state_tracker/sw_winsys.h"

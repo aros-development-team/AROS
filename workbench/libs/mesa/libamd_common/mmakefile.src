@@ -1,0 +1,186 @@
+#   Build libamd_common.a — AMD common GPU library for RadeonSI/RADV/ACO
+#
+#   Generated headers (sid_tables.h, amdgfxregs.h, gfx10_format_table.c)
+#   must be pre-generated before building. See mesa3d-generate-amd-headers target.
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/amd/common
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+
+AMD_GENDIR := $(top_builddir)/src/amd/common
+
+#MM mesa3d-linklib-amd-common : mesa3d-generate-amd-headers includes linklibs-galliumauxiliary mesa3d-linklib-addrlib
+
+# Core AMD common C sources (from meson.build amd_common_files)
+AMD_COMMON_C_SOURCES := \
+    ac_binary \
+    ac_cmdbuf \
+    ac_cmdbuf_cp \
+    ac_cmdbuf_sdma \
+    ac_shader_args \
+    ac_shader_util \
+    ac_gather_context_rolls \
+    ac_gpu_info \
+    ac_surface \
+    ac_debug \
+    ac_descriptors \
+    ac_formats \
+    ac_null_device \
+    ac_shadowed_regs \
+    ac_spm \
+    ac_sqtt \
+    ac_rgp \
+    ac_msgpack \
+    amd_family \
+    ac_parse_ib \
+    ac_perfcounter \
+    ac_perfcounter_gfx10 \
+    ac_perfcounter_gfx103 \
+    ac_perfcounter_gfx11 \
+    ac_perfcounter_gfx12 \
+    ac_pm4 \
+    ac_vcn_dec \
+    ac_vcn_enc \
+    ac_uvd_dec
+
+# NIR-based AMD common sources
+AMD_COMMON_NIR_SOURCES := \
+    nir/ac_nir \
+    nir/ac_nir_opt_outputs \
+    nir/ac_nir_cull \
+    nir/ac_nir_create_gs_copy_shader \
+    nir/ac_nir_lower_esgs_io_to_mem \
+    nir/ac_nir_lower_global_access \
+    nir/ac_nir_lower_image_opcodes_cdna \
+    nir/ac_nir_lower_intrinsics_to_args \
+    nir/ac_nir_lower_legacy_gs \
+    nir/ac_nir_lower_legacy_vs \
+    nir/ac_nir_lower_mem_access_bit_sizes \
+    nir/ac_nir_lower_resinfo \
+    nir/ac_nir_lower_taskmesh_io_to_mem \
+    nir/ac_nir_lower_tess_io_to_mem \
+    nir/ac_nir_lower_tex \
+    nir/ac_nir_lower_ngg \
+    nir/ac_nir_lower_ngg_gs \
+    nir/ac_nir_lower_ngg_mesh \
+    nir/ac_nir_lower_ps_early \
+    nir/ac_nir_lower_ps_late \
+    nir/ac_nir_lower_sin_cos \
+    nir/ac_nir_meta_cs_blit \
+    nir/ac_nir_meta_cs_clear_copy_buffer \
+    nir/ac_nir_meta_ps_resolve \
+    nir/ac_nir_opt_shared_append \
+    nir/ac_nir_prerast_utils \
+    nir/ac_nir_surface
+
+# AROS-specific sources (replaces ac_linux_drm.c)
+AMD_COMMON_AROS_SOURCES := \
+    ac_aros_drm
+
+# Generated source
+AMD_COMMON_GEN_SOURCES := \
+    $(AMD_GENDIR)/gfx10_format_table
+
+# All sources combined
+AMD_COMMON_ALL_SOURCES := \
+    $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(AMD_COMMON_C_SOURCES)) \
+    $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(AMD_COMMON_NIR_SOURCES)) \
+    $(addprefix $(SRCDIR)/$(CURDIR)/,$(AMD_COMMON_AROS_SOURCES)) \
+    $(AMD_COMMON_GEN_SOURCES)
+
+# NOTE: We skip ac_linux_drm.c (Linux-specific DRM ioctls)
+# and ac_rtld.c / ac_rgp_elf_object_pack.c (require libelf)
+# AROS replacement: ac_aros_drm.c provides stub implementations
+
+USER_INCLUDES += \
+    -iquote $(SRCDIR)/$(CURDIR) \
+    -iquote $(SRCDIR)/$(CURDIR)/../aros_compat \
+    -iquote $(top_srcdir)/src \
+    -iquote $(top_srcdir)/src/amd \
+    -iquote $(top_srcdir)/src/amd/common \
+    -iquote $(top_srcdir)/src/gallium/include \
+    -iquote $(top_srcdir)/src/gallium/auxiliary \
+    -iquote $(top_srcdir)/src/util \
+    -iquote $(top_srcdir)/src/util/format \
+    -iquote $(top_srcdir)/src/compiler \
+    -iquote $(top_srcdir)/src/compiler/glsl \
+    -iquote $(top_srcdir)/src/compiler/nir \
+    -iquote $(top_srcdir)/src/include \
+    -iquote $(top_srcdir)/include \
+    -iquote $(top_builddir)/src \
+    -iquote $(top_builddir)/src/compiler \
+    -iquote $(top_builddir)/src/compiler/glsl \
+    -iquote $(top_builddir)/src/compiler/nir \
+    -iquote $(top_builddir)/src/util \
+    -iquote $(top_builddir)/src/util/format \
+    -iquote $(AMD_GENDIR) \
+    -I $(SRCDIR)/$(CURDIR) \
+    -I $(SRCDIR)/$(CURDIR)/../aros_compat \
+    -I $(top_srcdir)/src/amd/common \
+    -I $(top_srcdir)/src/include \
+    -I $(AMD_GENDIR)
+
+USER_CPPFLAGS += \
+    -DADDR_FASTCALL= \
+    -DAMD_LLVM_AVAILABLE=0 \
+    -DNDEBUG \
+    -include $(SRCDIR)/$(CURDIR)/../aros_compat/aros_mesa_compat.h
+
+USER_CFLAGS += $(MESA_NOWARNFLAGS) $(NOWARN_STRICT_ALIASING)
+
+%build_linklib mmake=mesa3d-linklib-amd-common \
+    libname=amd_common \
+    libdir=$(top_libdir) \
+    objdir=$(top_builddir)/$(CUR_MESADIR) \
+    files="$(AMD_COMMON_ALL_SOURCES)"
+
+#MM
+mesa3d-generate-amd-headers :
+	@$(ECHO) "Generating AMD register headers..."
+	@$(MKDIR) -p $(AMD_GENDIR)
+	@python3 $(top_srcdir)/src/amd/registers/makeregheader.py \
+	    $(top_srcdir)/src/amd/registers/gfx6.json \
+	    $(top_srcdir)/src/amd/registers/gfx7.json \
+	    $(top_srcdir)/src/amd/registers/gfx8.json \
+	    $(top_srcdir)/src/amd/registers/gfx81.json \
+	    $(top_srcdir)/src/amd/registers/gfx9.json \
+	    $(top_srcdir)/src/amd/registers/gfx940.json \
+	    $(top_srcdir)/src/amd/registers/gfx10.json \
+	    $(top_srcdir)/src/amd/registers/gfx103.json \
+	    $(top_srcdir)/src/amd/registers/gfx11.json \
+	    $(top_srcdir)/src/amd/registers/gfx115.json \
+	    $(top_srcdir)/src/amd/registers/gfx12.json \
+	    $(top_srcdir)/src/amd/registers/pkt3.json \
+	    $(top_srcdir)/src/amd/registers/gfx10-rsrc.json \
+	    $(top_srcdir)/src/amd/registers/gfx11-rsrc.json \
+	    $(top_srcdir)/src/amd/registers/gfx12-rsrc.json \
+	    $(top_srcdir)/src/amd/registers/registers-manually-defined.json \
+	    --sort address --guard AMDGFXREGS_H > $(AMD_GENDIR)/amdgfxregs.h
+	@python3 $(top_srcdir)/src/amd/common/sid_tables.py \
+	    $(top_srcdir)/src/amd/common/sid.h \
+	    $(top_srcdir)/src/amd/registers/gfx6.json \
+	    $(top_srcdir)/src/amd/registers/gfx7.json \
+	    $(top_srcdir)/src/amd/registers/gfx8.json \
+	    $(top_srcdir)/src/amd/registers/gfx81.json \
+	    $(top_srcdir)/src/amd/registers/gfx9.json \
+	    $(top_srcdir)/src/amd/registers/gfx940.json \
+	    $(top_srcdir)/src/amd/registers/gfx10.json \
+	    $(top_srcdir)/src/amd/registers/gfx103.json \
+	    $(top_srcdir)/src/amd/registers/gfx11.json \
+	    $(top_srcdir)/src/amd/registers/gfx115.json \
+	    $(top_srcdir)/src/amd/registers/gfx12.json \
+	    $(top_srcdir)/src/amd/registers/pkt3.json \
+	    $(top_srcdir)/src/amd/registers/gfx10-rsrc.json \
+	    $(top_srcdir)/src/amd/registers/gfx11-rsrc.json \
+	    $(top_srcdir)/src/amd/registers/gfx12-rsrc.json \
+	    $(top_srcdir)/src/amd/registers/registers-manually-defined.json \
+	    > $(AMD_GENDIR)/sid_tables.h
+	@python3 $(top_srcdir)/src/amd/common/gfx10_format_table.py \
+	    $(top_srcdir)/src/util/format/u_format.yaml \
+	    $(top_srcdir)/src/amd/registers/gfx10-rsrc.json \
+	    $(top_srcdir)/src/amd/registers/gfx11-rsrc.json \
+	    > $(AMD_GENDIR)/gfx10_format_table.c
+	@$(ECHO) "AMD headers generated."
+
+%common

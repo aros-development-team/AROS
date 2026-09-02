@@ -1,0 +1,119 @@
+#   Build libaco.a — AMD Compiler (ACO) shader compiler
+#
+#   C++ library replacing LLVM for shader compilation on AMD GPUs.
+#   Generated files (aco_opcodes.h, aco_opcodes.cpp, aco_builder.h)
+#   must be pre-generated before building. See mesa3d-generate-aco-headers target.
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/amd/compiler
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+
+ACO_GENDIR := $(top_builddir)/src/amd/compiler
+
+#MM mesa3d-linklib-aco : mesa3d-generate-aco-headers includes linklibs-galliumauxiliary mesa3d-linklib-amd-common
+
+# C++ sources from meson.build libaco_files
+ACO_CXX_SOURCES := \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_isel_cfg \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_isel_helpers \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_isel_setup \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_nir_alu \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_nir_intrinsics \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_nir \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_ps_epilog \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_ps_prolog \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_rt_prolog \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_trap_handler \
+    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_vs_prolog \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_dead_code_analysis \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_dominance \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_interface \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_ir \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_assembler \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_form_hard_clauses \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_insert_delay_alu \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_insert_exec_mask \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_insert_fp_mode \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_insert_NOPs \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_insert_waitcnt \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_reduce_assign \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_register_allocation \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_live_var_analysis \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_lower_branches \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_lower_phis \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_lower_subdword \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_lower_to_cssa \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_lower_to_hw_instr \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_optimizer \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_optimizer_postRA \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_opt_value_numbering \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_print_asm \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_print_ir \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_reindex_ssa \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_repair_ssa \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_scheduler \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_scheduler_ilp \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_spill \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_spill_preserved \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_ssa_elimination \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_statistics \
+    $(top_srcdir)/$(CUR_MESADIR)/aco_validate
+
+# Generated C++ source
+ACO_GEN_CXX_SOURCES := \
+    $(ACO_GENDIR)/aco_opcodes
+
+USER_INCLUDES += \
+    -iquote $(top_srcdir)/$(CUR_MESADIR) \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/instruction_selection \
+    -iquote $(top_srcdir)/src \
+    -iquote $(top_srcdir)/src/amd \
+    -iquote $(top_srcdir)/src/amd/common \
+    -iquote $(top_srcdir)/src/amd/common/nir \
+    -iquote $(top_srcdir)/src/gallium/include \
+    -iquote $(top_srcdir)/src/gallium/auxiliary \
+    -iquote $(top_srcdir)/src/util \
+    -iquote $(top_srcdir)/src/compiler \
+    -iquote $(top_srcdir)/src/compiler/glsl \
+    -iquote $(top_srcdir)/src/compiler/nir \
+    -iquote $(top_srcdir)/src/include \
+    -iquote $(top_srcdir)/include \
+    -iquote $(top_builddir)/src \
+    -iquote $(top_builddir)/src/compiler \
+    -iquote $(top_builddir)/src/compiler/glsl \
+    -iquote $(top_builddir)/src/compiler/nir \
+    -iquote $(top_builddir)/src/util \
+    -iquote $(top_builddir)/src/amd/common \
+    -iquote $(ACO_GENDIR) \
+    -I $(top_srcdir)/src/amd \
+    -I $(top_srcdir)/src/amd/common \
+    -I $(top_srcdir)/src/include \
+    -I $(ACO_GENDIR) \
+    -I $(top_builddir)/src/amd \
+    -I $(top_builddir)/src/amd/common
+
+USER_CPPFLAGS += \
+    -DAMD_LLVM_AVAILABLE=0 \
+    -DNO_AMIGA_LINKAGE_TYPES \
+    -DNDEBUG
+
+USER_CXXFLAGS += -U__STDC_HOSTED__ -D__STDC_HOSTED__=1 -fno-exceptions -fno-rtti $(MESA_NOWARNFLAGS)
+
+%build_linklib mmake=mesa3d-linklib-aco \
+    libname=aco \
+    libdir=$(top_libdir) \
+    objdir=$(top_builddir)/$(CUR_MESADIR) \
+    cxxfiles="$(ACO_CXX_SOURCES) $(ACO_GEN_CXX_SOURCES)"
+
+#MM
+mesa3d-generate-aco-headers :
+	@$(ECHO) "Generating ACO headers..."
+	@$(MKDIR) -p $(ACO_GENDIR)
+	@cd $(top_srcdir)/$(CUR_MESADIR) && python3 aco_opcodes_h.py > $(ACO_GENDIR)/aco_opcodes.h
+	@sed -i '/^enum class Format/i #ifdef GLOBAL\n#undef GLOBAL\n#endif' $(ACO_GENDIR)/aco_opcodes.h
+	@cd $(top_srcdir)/$(CUR_MESADIR) && python3 aco_opcodes_cpp.py > $(ACO_GENDIR)/aco_opcodes.cpp
+	@cd $(top_srcdir)/$(CUR_MESADIR) && python3 aco_builder_h.py > $(ACO_GENDIR)/aco_builder.h
+	@$(ECHO) "ACO headers generated."
+
+%common

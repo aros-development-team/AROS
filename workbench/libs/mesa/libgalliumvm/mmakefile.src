@@ -7,9 +7,34 @@ include $(SRCDIR)/config/aros.cfg
 
 CUR_MESADIR := src/gallium/auxiliary
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+
+ifeq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources),)
+GALLIVM_SOURCES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%, $(wildcard \
+            $(top_srcdir)/$(CUR_MESADIR)/gallivm/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/gallivm/*.cpp))
+GALLIVM_SOURCES := $(filter-out gallivm/lp_bld_init_orc.cpp gallivm/f.cpp,$(GALLIVM_SOURCES))
+else
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+endif
+
+# LLVM configuration for gallivm (LLVMpipe) support
+# Get LLVM version from configuration
+ifeq ($(OPT_LLVM),)
+OPT_LLVM=11.0.0
+endif
+LLVM_ARCHBASE := llvm-$(OPT_LLVM).src
+LLVM_SRCDIR := $(PORTSDIR)/llvm/$(LLVM_ARCHBASE)
+
+# Pre-configured LLVM headers from llvm.library
+# These provide properly configured llvm-config.h, Targets.def, etc.
+# that would otherwise need CMake configuration from raw LLVM source.
+LLVM_AROS_INCLUDES := $(SRCDIR)/workbench/libs/llvm/include
 
 ##MM- mesa3dgl-linklibs : mesa3d-linklib-galliumvm
+# Depend on the target LLVM source headers (llvm-c/*.h, etc.)
+# The pre-configured headers from llvm.library take precedence via include order
+# Depend on mesa3d-linklib-compiler-generated for nir_opcodes.h and other generated headers
+#MM mesa3d-linklib-galliumvm : workbench-libs-llvm-fetch mesa3d-linklib-compiler-generated
 
 GALLIVM_C_SOURCES := $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,  $(filter %.c, $(GALLIVM_SOURCES))))
 GALLIVM_CXX_SOURCES := $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,  $(filter %.cpp, $(GALLIVM_SOURCES))))
@@ -20,18 +45,31 @@ GALLIVM_SOURCES_C := \
 GALLIVM_SOURCES_CXX := \
             $(GALLIVM_CXX_SOURCES:.cpp=)
 
+# Include order is important:
+# 1. Pre-configured LLVM headers from llvm.library (llvm/Config/llvm-config.h, etc.)
+# 2. Raw LLVM source headers (llvm-c/*.h, other headers that don't need configuration)
+# 3. Generated Mesa headers (nir_opcodes.h, etc.) from top_builddir
 USER_INCLUDES := \
             $(USER_INCLUDES) \
             -iquote $(top_srcdir)/src/gallium/include \
             -iquote $(top_srcdir)/src/gallium/auxiliary \
             -iquote $(top_srcdir)/src/gallium/auxiliary/util \
             -iquote $(top_srcdir)/src/gallium/auxiliary/indices \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/compiler \
+            -I$(LLVM_AROS_INCLUDES) \
+            -I$(LLVM_SRCDIR)/include
 
 
 USER_CFLAGS += $(MESA_NOWARNFLAGS)
 USER_CXXFLAGS += $(MESA_NOWARNFLAGS)
 
-##USER_CPPFLAGS += -DHAVE_LLVM=0x0209 -D__STDC_CONSTANT_MACROS
+# LLVM version define for gallivm compatibility (0x1201 = LLVM 18.1)
+# MESA_LLVM_VERSION_STRING is used by Mesa for logging/debug messages
+# LLVM_AVAILABLE enables LLVM-specific code paths in Mesa (draw, gallivm, etc.)
+USER_CPPFLAGS += -DHAVE_LLVM=0x1201 -DMESA_LLVM_VERSION_STRING=\"$(OPT_LLVM)\" -DLLVM_AVAILABLE
 
 %build_linklib mmake=mesa3d-linklib-galliumvm libname=galliumvm \
    libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) \

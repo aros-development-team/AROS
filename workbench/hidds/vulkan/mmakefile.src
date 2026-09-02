@@ -1,0 +1,62 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+USER_LDFLAGS := -static
+
+HIDD_VULKAN_FILES := vulkan_init vulkan_class
+
+VULKAN_HPP_FILES := \
+    vulkan.hpp \
+    vulkan_enums.hpp \
+    vulkan_format_traits.hpp \
+    vulkan_funcs.hpp \
+    vulkan_handles.hpp \
+    vulkan_hash.hpp \
+    vulkan_hpp_macros.hpp \
+    vulkan_raii.hpp \
+    vulkan_shared.hpp \
+    vulkan_static_assertions.hpp \
+    vulkan_structs.hpp \
+    vulkan_to_string.hpp \
+    vulkan_video.hpp \
+    vulkan_extension_inspection.hpp
+
+#MM includes-copy
+%copy_includes path=hidd dir=include
+%copy_includes path=vulkan dir=$(SRCDIR)/$(CURDIR)/include/vulkan includes=$(VULKAN_HPP_FILES)
+
+#MM- workbench-hidds: hidd-vulkan
+#MM hidd-vulkan : includes
+
+#MM- workbench-hidds: hidd-vulkan-loader
+#MM hidd-vulkan-loader : includes
+
+USER_INCLUDES += \
+            -iquote $(SRCDIR)/$(CURDIR)
+
+%build_module mmake=hidd-vulkan modname=vulkan modtype=hidd \
+   files="$(HIDD_VULKAN_FILES)"
+
+%build_linklib mmake=hidd-vulkan-loader \
+    libname=vulkan \
+    files="vulkan_loader" \
+    cflags="-m64 -mcmodel=large -mno-red-zone -mno-ms-bitfields"
+
+# VulkanProbe — ground-truth trigger for the radv path, the analog of
+# C:AmdgpuProbe. Drives vkCreateInstance -> EnumeratePhysicalDevices ->
+# CreateDevice + compute queue on the 9060, logging each stage to serial. Pure-C
+# client linking -lvulkan (vulkan_loader.c bridges vk* to the vulkan.hidd OOP
+# method, which dispatches to whichever driver registered a GPU — radeonsi.hidd
+# registers the 9060 at boot). Lives here (not in radeonsi) so it links clean,
+# not against the radeonsi module's Mesa-static LDFLAGS.
+%build_prog mmake=hidd-vulkan-vulkanprobe \
+    progname=VulkanProbe \
+    files=test/VulkanProbe \
+    targetdir=$(AROS_C) \
+    uselibs="vulkan"
+
+#MM- workbench-hidds: hidd-vulkan-vulkanprobe
+#MM- hidd-vulkan-vulkanprobe : hidd-vulkan-loader
+
+%common

@@ -1,0 +1,58 @@
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+LLVM_LIBS := $(patsubst lib%.a,-l%,$(notdir $(wildcard $(AROS_DEVELOPER)/lib/libLLVM*.a)))
+
+USER_LDFLAGS := $(TARGET_CXX_LDFLAGS) \
+            -L$(top_libdir) \
+            -L$(AROS_DEVELOPER)/lib \
+            -Wl,--start-group \
+            -lllvmpipe \
+            -Wl,--whole-archive \
+            -lgalliumvm \
+            -Wl,--no-whole-archive \
+            -lcompiler \
+            -lgalliumauxiliary \
+            -lmesautil \
+            $(LLVM_LIBS) \
+            -lz \
+            -lpthread \
+            -lposixc_rel \
+            -lstdc_rel \
+            -lsupc++
+ifneq ($(TARGET_LIBATOMIC),)
+USER_LDFLAGS += $(TARGET_CXX_LIBS)
+endif
+USER_LDFLAGS += -Wl,--end-group
+
+LLVMPIPE_HIDD_FILES := \
+            llvmpipe_init \
+            llvmpipe_galliumclass \
+            llvmpipe_llvm_rtti \
+            arosc_emul
+
+#MM- workbench-hidds : hidd-llvmpipe-$(AROS_TARGET_TOOLCHAIN)
+#MM- hidd-llvmpipe-yes : hidd-llvmpipe
+
+#MM hidd-llvmpipe : includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic mesa3d-linklib-llvmpipe
+
+USER_INCLUDES += \
+            -iquote $(SRCDIR)/$(CURDIR) \
+            -iquote $(top_srcdir)/src/gallium/include \
+            -iquote $(top_srcdir)/src/gallium/auxiliary \
+            -iquote $(top_srcdir)/src/gallium/drivers \
+            -iquote $(top_srcdir)/src \
+            -iquote $(top_srcdir)/src/compiler \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(top_srcdir)/include \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(top_builddir)/src/util/format
+
+%build_module mmake=hidd-llvmpipe modname=llvmpipe modtype=hidd \
+   files="$(LLVMPIPE_HIDD_FILES)" alwayscxxlink=yes uselibs=""
+
+%common

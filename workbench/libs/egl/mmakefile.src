@@ -4,16 +4,28 @@ include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 
 EGL_PATH = $(top_srcdir)/src/egl
-include $(EGL_PATH)/Makefile.sources
 
 ################################################################################
-# EGL                                                                          #
+# EGL — Mesa 26.0.0 (Makefile.sources removed; files listed explicitly)        #
 ################################################################################
 
-##MM workbench-libs-egl : includes  mesa3dgl-linklibs linklibs-libatomic
+#MM workbench-libs-egl : includes mesa3dgl-linklibs linklibs-libatomic
 
+# Mesa EGL core (src/egl/main/*.c — no glvnd, no dispatch stubs)
 EGL_SOURCES = \
-            $(addprefix $(EGL_PATH)/$(filter %.c, $(LIBEGL_C_FILES))) \
+            $(EGL_PATH)/main/eglapi \
+            $(EGL_PATH)/main/eglarray \
+            $(EGL_PATH)/main/eglconfig \
+            $(EGL_PATH)/main/eglconfigdebug \
+            $(EGL_PATH)/main/eglcontext \
+            $(EGL_PATH)/main/eglcurrent \
+            $(EGL_PATH)/main/egldevice \
+            $(EGL_PATH)/main/egldisplay \
+            $(EGL_PATH)/main/eglglobals \
+            $(EGL_PATH)/main/eglimage \
+            $(EGL_PATH)/main/egllog \
+            $(EGL_PATH)/main/eglsurface \
+            $(EGL_PATH)/main/eglsync \
             egl_arosmesa
 
 SHARED_LIB_SOURCES = \
@@ -25,26 +37,29 @@ LIBRARY_SOURCES = \
             $(SHARED_LIB_SOURCES)
 
 USER_INCLUDES += \
-            -I$(EGL_PATH)/main
+            -I$(EGL_PATH)/main \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_srcdir)/src \
+            -iquote $(top_srcdir)/src/mesa/glapi
 
-USER_CPPFLAGS :=  -DFEATURE_GL=1 \
-                -DFEATURE_VG=1 \
+USER_CPPFLAGS += -DNDEBUG -DFEATURE_GL=1 \
                 -D_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_AROS \
                 -D_EGL_OS_AROS=1 \
-                -DHAVE_AROS_BACKEND
+                -DHAVE_AROS_BACKEND \
+                -DHAVE_SURFACELESS_PLATFORM
 
 USER_LDFLAGS := \
   -L$(top_libdir) \
-  -lcompiler -lgalliumauxiliary -lmesautil \
+  -lcompiler -lgalliumauxiliary -lmesautil -lglapi \
   -lpthread -lposixc -lstdcio -lstdc
 ifneq ($(TARGET_LIBATOMIC),)
 USER_LDFLAGS += $(TARGET_CXX_LIBS)
 endif
 
-#%build_module mmake=workbench-libs-egl \
-#    modname=egl modtype=library linklibname=EGL \
-#    files="$(LIBRARY_SOURCES)" \
-#    uselibs=""
+%build_module mmake=workbench-libs-egl \
+    modname=egl modtype=library linklibname=EGL \
+    files="$(LIBRARY_SOURCES)" \
+    alwayscxxlink=yes uselibs="glapi mesa mesautil compiler galliumauxiliary GL z1 pthread"
 
 %common
 

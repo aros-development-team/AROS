@@ -7,12 +7,20 @@ include $(SRCDIR)/config/aros.cfg
 CUR_MESADIR := src/util
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
 -include $(GENDIR)/$(CURDIR)/../mesa3dgl/mesa3dgllibrary.entrypoints
+
+ifneq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources),)
+MESA_UTIL_LAYOUT := old
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+else
+MESA_UTIL_LAYOUT := new
+endif
 
 #MM- mesa3dgl-linklibs : mesa3d-linklib-mesautil mesa3d-linklib-mesadevutil
 
 USER_INCLUDES += \
+            -iquote $(top_srcdir)/src \
             -I$(top_srcdir)/$(CUR_MESADIR) \
+            -iquote $(top_builddir)/src \
             -iquote $(top_builddir)/$(CUR_MESADIR) \
             -iquote $(top_srcdir)/src/mesa \
             -iquote $(top_srcdir)/src/mapi \
@@ -27,45 +35,127 @@ endif
 
 USER_CFLAGS += $(MESA_NOWARNFLAGS)
 USER_CXXFLAGS += $(MESA_NOWARNFLAGS)
+ifeq ($(MESA_UTIL_LAYOUT),new)
+USER_CFLAGS += -Wno-error=implicit-function-declaration
+endif
 
+ifeq ($(MESA_UTIL_LAYOUT),new)
+$(top_builddir)/$(CUR_MESADIR)/format/u_format_gen.h: $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py $(top_srcdir)/$(CUR_MESADIR)/format/u_format.yaml
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py $(top_srcdir)/$(CUR_MESADIR)/format/u_format.yaml --enums > $@.tmp && mv -f $@.tmp $@
+
+$(top_builddir)/$(CUR_MESADIR)/format/u_format_pack.h: $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py $(top_srcdir)/$(CUR_MESADIR)/format/u_format.yaml
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py $(top_srcdir)/$(CUR_MESADIR)/format/u_format.yaml --header > $@.tmp && mv -f $@.tmp $@
+
+$(top_builddir)/$(CUR_MESADIR)/format/u_format_table.c: $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py $(top_srcdir)/$(CUR_MESADIR)/format/u_format.yaml
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py $(top_srcdir)/$(CUR_MESADIR)/format/u_format.yaml > $@.tmp && mv -f $@.tmp $@
+
+$(top_builddir)/$(CUR_MESADIR)/format_srgb.c: $(top_srcdir)/$(CUR_MESADIR)/format_srgb.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/format_srgb.py > $@.tmp && mv -f $@.tmp $@
+else
 $(top_builddir)/$(CUR_MESADIR)/format/u_format_pack.h: $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
-	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py --header $(top_srcdir)/$(CUR_MESADIR)/format/u_format.csv > $@
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py --header $(top_srcdir)/$(CUR_MESADIR)/format/u_format.csv > $@.tmp && mv -f $@.tmp $@
 
 $(top_builddir)/$(CUR_MESADIR)/%.c: $(top_srcdir)/$(CUR_MESADIR)/%.py $(top_srcdir)/$(CUR_MESADIR)/format/u_format.csv
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
-	$(Q)$(PYTHON)  $^ > $@
+	$(Q)$(PYTHON) $^ > $@.tmp && mv -f $@.tmp $@
+endif
 
+ifeq ($(MESA_UTIL_LAYOUT),new)
+MESA_UTIL_NEW_C_FILES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
+            $(top_srcdir)/$(CUR_MESADIR)/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/format/*.c))
+MESA_UTIL_NEW_C_FILES += \
+            perf/u_trace.c \
+            blake3/blake3.c \
+            blake3/blake3_dispatch.c \
+            blake3/blake3_portable.c \
+            ../c11/impl/time.c \
+            ../c11/impl/threads_posix.c
+MESA_UTIL_NEW_C_FILES := $(filter-out \
+            cache_ops_aarch64.c \
+            cache_ops_x86.c \
+            cache_ops_x86_clflushopt.c \
+            memstream.c \
+            os_memory_fd.c \
+            parson.c \
+            streaming-load-memcpy.c \
+            u_dl.c \
+            xmlconfig.c \
+            u_sync_provider.c, \
+            $(MESA_UTIL_NEW_C_FILES))
+
+MESA_UTIL_NEW_CXX_FILES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
+            $(top_srcdir)/$(CUR_MESADIR)/*.cpp))
+MESA_UTIL_NEW_CXX_FILES := $(filter-out \
+            u_debug_stack_android.cpp, \
+            $(MESA_UTIL_NEW_CXX_FILES))
+
+MESA3DGL_MESAUTIL_GENERATED_C_SOURCES := \
+            $(top_builddir)/$(CUR_MESADIR)/format/u_format_table.c \
+            $(top_builddir)/$(CUR_MESADIR)/format_srgb.c
+MESA3DGL_MESAUTIL_GENERATED_HEADERS := \
+            $(top_builddir)/$(CUR_MESADIR)/format/u_format_gen.h \
+            $(top_builddir)/$(CUR_MESADIR)/format/u_format_pack.h
+MESA3DGL_MESAUTIL_C_SOURCES := \
+            $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA_UTIL_NEW_C_FILES)) \
+            $(MESA3DGL_MESAUTIL_GENERATED_C_SOURCES)
+MESA3DGL_MESAUTIL_CXX_SOURCES := \
+            $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA_UTIL_NEW_CXX_FILES))
+MESA3DGL_MESAUTIL_C_SOURCES += $(SRCDIR)/$(CURDIR)/mesa_memstream_aros.c
+MESA3DGL_MESAUTIL_C_SOURCES += $(SRCDIR)/$(CURDIR)/mesa_u_dl_aros.c
+MESA3DGL_MESAUTIL_C_SOURCES += $(SRCDIR)/workbench/libs/mesa/mesa_posix_compat_aros.c
+MESA3DGL_MESAUTIL_C_SOURCES += $(SRCDIR)/workbench/libs/mesa/mesa_streaming_load_memcpy_fallback.c
+else
 MESA_UTIL_C_FILES := $(filter %.c, $(MESA_UTIL_FILES))
 MESA_UTIL_CXX_FILES := $(filter %.cpp, $(MESA_UTIL_FILES))
 
-MESA_UTIL_GENERATED_C_SOURCES := \
+MESA3DGL_MESAUTIL_GENERATED_C_SOURCES := \
             $(addprefix $(top_builddir)/$(CUR_MESADIR)/, $(filter %.c, $(MESA_UTIL_GENERATED_FILES)))
 
 MESA3DGL_MESAUTIL_C_SOURCES := \
             $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA_UTIL_C_FILES))) \
-            $(MESA_UTIL_GENERATED_C_SOURCES)
+            $(MESA3DGL_MESAUTIL_GENERATED_C_SOURCES)
 
 MESA3DGL_MESAUTIL_CXX_SOURCES := $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA_UTIL_CXX_FILES))
+
+MESA3DGL_MESAUTIL_GENERATED_HEADERS := $(addprefix $(top_builddir)/$(CUR_MESADIR)/, $(filter %.h, $(MESA_UTIL_GENERATED_FILES)))
+endif
 
 MESA3DGL_MESAUTIL_SOURCES_C := $(MESA3DGL_MESAUTIL_C_SOURCES:.c=)
 
 MESA3DGL_MESAUTIL_SOURCES_CXX := $(MESA3DGL_MESAUTIL_CXX_SOURCES:.cpp=)
-
-MESA3DGL_MESAUTIL_GENERATED_HEADERS = $(addprefix $(top_builddir)/$(CUR_MESADIR)/, $(filter %.h, $(MESA_UTIL_GENERATED_FILES)))
 
 #MM
 mesa3d-linklib-mesautil-generated : $(MESA3DGL_MESAUTIL_GENERATED_C_SOURCES) $(MESA3DGL_MESAUTIL_GENERATED_HEADERS)
 
 #MM mesa3d-linklib-mesautil : mesa3d-linklib-mesautil-generated
 
-USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG)
+MESA_UTIL_BLAKE3_FLAGS :=
+ifeq ($(MESA_UTIL_LAYOUT),new)
+MESA_UTIL_BLAKE3_FLAGS := -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512
+endif
+
+MESA_UTIL_OS_FLAGS :=
+ifeq ($(MESA_UTIL_LAYOUT),new)
+MESA_UTIL_OS_FLAGS := -DDETECT_OS_CYGWIN=1 -DDETECT_OS_POSIX=1 -DDETECT_OS_POSIX_LITE=1 -DHAVE_SYSCONF=1 -D_SC_PHYS_PAGES=-1
+endif
+
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) $(MESA_UTIL_BLAKE3_FLAGS) $(MESA_UTIL_OS_FLAGS) -DNDEBUG
 
 %build_linklib mmake=mesa3d-linklib-mesautil libname=mesautil libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR)/util files="$(MESA3DGL_MESAUTIL_SOURCES_C)" cxxfiles="$(MESA3DGL_MESAUTIL_SOURCES_CXX)"
 
-USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) -DEMBEDDED_DEVICE
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) -DEMBEDDED_DEVICE $(MESA_UTIL_BLAKE3_FLAGS) $(MESA_UTIL_OS_FLAGS) -DNDEBUG
 
 %build_linklib mmake=mesa3d-linklib-mesadevutil libname=mesadevutil libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR)/devutil files="$(MESA3DGL_MESAUTIL_SOURCES_C)" cxxfiles="$(MESA3DGL_MESAUTIL_SOURCES_CXX)"
 
