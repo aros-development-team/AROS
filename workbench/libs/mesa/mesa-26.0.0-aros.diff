@@ -1,0 +1,339 @@
+diff -ruN mesa-26.0.0/src/c11/threads.h mesa-26.0.0.aros/src/c11/threads.h
+--- mesa-26.0.0/src/c11/threads.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/c11/threads.h	2026-02-25 00:00:00.000000000 +0000
+@@ -47,6 +47,20 @@
+ #  error Not supported on this platform.
+ #endif
+
++#if defined(__AROS__)
++/* AROS exec/types.h defines these as macros; they collide with Mesa parser
++ * token names (for example VOLATILE in generated GLSL parser headers).
++ */
++# if defined(VOLATILE)
++#  undef VOLATILE
++# endif
++# if defined(RESTRICT)
++#  undef RESTRICT
++# endif
++# if defined(STATIC)
++#  undef STATIC
++# endif
++#endif
+ #if defined(HAVE_THRD_CREATE)
+ #include <threads.h>
+ #else
+diff -ruN mesa-26.0.0/src/c11/time.h mesa-26.0.0.aros/src/c11/time.h
+--- mesa-26.0.0/src/c11/time.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/c11/time.h	2026-02-18 00:00:00.000000000 +0000
+@@ -9,6 +9,10 @@
+ #define C11_TIME_H_INCLUDED_
+
+ #include <time.h>
++
++#if defined(__AROS__) && !defined(HAVE_STRUCT_TIMESPEC)
++#define HAVE_STRUCT_TIMESPEC 1
++#endif
+
+ /*---------------------------- macros ---------------------------*/
+
+diff -ruN mesa-26.0.0/src/compiler/glsl/glsl_lexer.ll mesa-26.0.0.aros/src/compiler/glsl/glsl_lexer.ll
+--- mesa-26.0.0/src/compiler/glsl/glsl_lexer.ll	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/compiler/glsl/glsl_lexer.ll	2026-02-18 00:00:00.000000000 +0000
+@@ -23,7 +23,25 @@
+ #include <ctype.h>
+ #include <limits.h>
++#include <stdlib.h>
+ #include "util/strtod.h"
+ #include "ast.h"
+ #include "glsl_parser_extras.h"
++#if defined(__AROS__)
++# if defined(ASM)
++#  undef ASM
++# endif
++# if defined(CONST)
++#  undef CONST
++# endif
++# if defined(STATIC)
++#  undef STATIC
++# endif
++# if defined(VOLATILE)
++#  undef VOLATILE
++# endif
++# if defined(RESTRICT)
++#  undef RESTRICT
++# endif
++#endif
+ #include "glsl_parser.h"
+ #include "main/consts_exts.h"
+
+diff -ruN mesa-26.0.0/src/compiler/glsl/glsl_parser.yy mesa-26.0.0.aros/src/compiler/glsl/glsl_parser.yy
+--- mesa-26.0.0/src/compiler/glsl/glsl_parser.yy	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/compiler/glsl/glsl_parser.yy	2026-02-18 00:00:00.000000000 +0000
+@@ -78,6 +78,24 @@
+    else
+       return strcasecmp(s1, s2);
+ }
++
++#if defined(__AROS__)
++# if defined(ASM)
++#  undef ASM
++# endif
++# if defined(CONST)
++#  undef CONST
++# endif
++# if defined(STATIC)
++#  undef STATIC
++# endif
++# if defined(VOLATILE)
++#  undef VOLATILE
++# endif
++# if defined(RESTRICT)
++#  undef RESTRICT
++# endif
++#endif
+ %}
+
+ %expect 0
+
+diff -ruN mesa-26.0.0/src/compiler/glsl/glsl_parser_extras.cpp mesa-26.0.0.aros/src/compiler/glsl/glsl_parser_extras.cpp
+--- mesa-26.0.0/src/compiler/glsl/glsl_parser_extras.cpp	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/compiler/glsl/glsl_parser_extras.cpp	2026-02-18 00:00:00.000000000 +0000
+@@ -37,6 +37,23 @@
+ #include "util/mesa-blake3.h"
+ #include "ast.h"
+ #include "glsl_parser_extras.h"
++#if defined(__AROS__)
++# if defined(ASM)
++#  undef ASM
++# endif
++# if defined(CONST)
++#  undef CONST
++# endif
++# if defined(STATIC)
++#  undef STATIC
++# endif
++# if defined(VOLATILE)
++#  undef VOLATILE
++# endif
++# if defined(RESTRICT)
++#  undef RESTRICT
++# endif
++#endif
+ #include "glsl_parser.h"
+ #include "glsl_to_nir.h"
+ #include "ir_optimization.h"
+diff -ruN mesa-26.0.0/src/util/os_misc.h mesa-26.0.0.aros/src/util/os_misc.h
+--- mesa-26.0.0/src/util/os_misc.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/util/os_misc.h	2026-02-18 00:00:00.000000000 +0000
+@@ -36,6 +36,7 @@
+
+ #include <stdint.h>
+ #include <stdbool.h>
++#include <stddef.h>
+
+ #include "util/detect.h"
+
+diff -ruN mesa-26.0.0/src/util/u_endian.h mesa-26.0.0.aros/src/util/u_endian.h
+--- mesa-26.0.0/src/util/u_endian.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/util/u_endian.h	2026-02-18 00:00:00.000000000 +0000
+@@ -84,6 +84,16 @@
+ #endif
+
++#elif defined(__AROS__)
++#include <aros/cpu.h>
++#if (AROS_BIG_ENDIAN)
++# define UTIL_ARCH_LITTLE_ENDIAN 0
++# define UTIL_ARCH_BIG_ENDIAN 1
++#else
++# define UTIL_ARCH_LITTLE_ENDIAN 1
++# define UTIL_ARCH_BIG_ENDIAN 0
++#endif
++
+ #elif defined(_WIN32) || defined(__ANDROID__)
+
+ #define UTIL_ARCH_LITTLE_ENDIAN 1
+
+diff -ruN mesa-26.0.0/src/gallium/drivers/radeonsi/si_pipe.c mesa-26.0.0.aros/src/gallium/drivers/radeonsi/si_pipe.c
+--- mesa-26.0.0/src/gallium/drivers/radeonsi/si_pipe.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/radeonsi/si_pipe.c	2026-02-25 00:00:00.000000000 +0000
+@@ -1294,8 +1294,8 @@
+            strstr(sscreen->info.marketing_name, "PRO") ||
+            strstr(sscreen->info.marketing_name, "Frontier");
+ }
+
+-static struct pipe_screen *radeonsi_screen_create_impl(struct radeon_winsys *ws,
+-                                                       const struct pipe_screen_config *config)
++struct pipe_screen *radeonsi_screen_create_impl(struct radeon_winsys *ws,
++                                                const struct pipe_screen_config *config)
+ {
+    struct si_screen *sscreen = CALLOC_STRUCT(si_screen);
+    unsigned hw_threads, num_comp_hi_threads, num_comp_lo_threads;
+
+diff -ruN mesa-26.0.0/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys_public.h mesa-26.0.0.aros/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys_public.h
+--- mesa-26.0.0/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys_public.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys_public.h	2026-02-25 00:00:00.000000000 +0000
+@@ -12,9 +12,30 @@
+ #ifndef RADV_AMDGPU_WINSYS_PUBLIC_H
+ #define RADV_AMDGPU_WINSYS_PUBLIC_H
+
++#ifdef __AROS__
++static inline VkResult
++radv_amdgpu_winsys_create(int fd, uint64_t debug_flags, uint64_t perftest_flags, bool is_virtio,
++                          struct radeon_winsys **winsys)
++{
++   (void)fd;
++   (void)debug_flags;
++   (void)perftest_flags;
++   (void)is_virtio;
++   if (winsys)
++      *winsys = (struct radeon_winsys *)0;
++   return VK_ERROR_INITIALIZATION_FAILED;
++}
++
++static inline struct radeon_winsys *
++radv_dummy_winsys_create(void)
++{
++   return (struct radeon_winsys *)0;
++}
++#else
+ VkResult radv_amdgpu_winsys_create(int fd, uint64_t debug_flags, uint64_t perftest_flags, bool is_virtio,
+                                    struct radeon_winsys **winsys);
+
+ struct radeon_winsys *radv_dummy_winsys_create(void);
++#endif
+
+ #endif /* RADV_AMDGPU_WINSYS_PUBLIC_H */
+diff -ruN mesa-26.0.0/include/EGL/eglplatform.h mesa-26.0.0.aros/include/EGL/eglplatform.h
+--- mesa-26.0.0/include/EGL/eglplatform.h	2026-02-11 12:07:29.000000000 -0600
++++ mesa-26.0.0.aros/include/EGL/eglplatform.h	2026-02-28 12:49:14.829947317 -0600
+@@ -145,6 +145,13 @@
+ typedef khronos_uintptr_t  EGLNativePixmapType;
+ typedef khronos_uintptr_t  EGLNativeWindowType;
+
++#elif defined(__AROS__)
++
++struct Window;  /* intuition/intuition.h */
++typedef void              *EGLNativeDisplayType;
++typedef void              *EGLNativePixmapType;
++typedef struct Window     *EGLNativeWindowType;
++
+ #else
+ #error "Platform not recognized"
+ #endif
+diff -ruN mesa-26.0.0/src/egl/main/egldisplay.h mesa-26.0.0.aros/src/egl/main/egldisplay.h
+--- mesa-26.0.0/src/egl/main/egldisplay.h	2026-02-11 12:07:29.000000000 -0600
++++ mesa-26.0.0.aros/src/egl/main/egldisplay.h	2026-02-28 12:49:14.832947296 -0600
+@@ -55,6 +55,7 @@
+    _EGL_PLATFORM_SURFACELESS,
+    _EGL_PLATFORM_DEVICE,
+    _EGL_PLATFORM_WINDOWS,
++   _EGL_PLATFORM_AROS,
+
+   _EGL_NUM_PLATFORMS,
+    _EGL_INVALID_PLATFORM = -1
+diff -ruN mesa-26.0.0/src/egl/main/egldisplay.c mesa-26.0.0.aros/src/egl/main/egldisplay.c
+--- mesa-26.0.0/src/egl/main/egldisplay.c	2026-02-11 12:07:29.000000000 -0600
++++ mesa-26.0.0.aros/src/egl/main/egldisplay.c	2026-02-28 12:49:14.834947283 -0600
+@@ -84,6 +84,7 @@
+    {_EGL_PLATFORM_SURFACELESS, "surfaceless"},
+    {_EGL_PLATFORM_DEVICE, "device"},
+    {_EGL_PLATFORM_WINDOWS, "windows"},
++   {_EGL_PLATFORM_AROS, "aros"},
+ };
+
+ /**
+diff --git a/src/gallium/auxiliary/nir/nir_to_tgsi.c b/src/gallium/auxiliary/nir/nir_to_tgsi.c
+--- a/src/gallium/auxiliary/nir/nir_to_tgsi.c
++++ b/src/gallium/auxiliary/nir/nir_to_tgsi.c
+@@ -798,7 +798,10 @@
+    /* Look for a single use for try_store_in_tgsi_output */
+    nir_src *use = NULL;
+    nir_foreach_reg_load(src, reg_decl) {
+-      nir_intrinsic_instr *load = nir_instr_as_intrinsic(nir_src_parent_instr(src));
++      nir_instr *parent = nir_src_parent_instr(src);
++      if (!parent || parent->type != nir_instr_type_intrinsic)
++         return false;
++      nir_intrinsic_instr *load = (nir_intrinsic_instr *)parent;
+       nir_foreach_use_including_if(load_use, &load->def) {
+          /* We can only have one use */
+          if (use != NULL)
+@@ -2937,17 +2940,18 @@
+ static void
+ ntt_emit_instr(struct ntt_compile *c, nir_instr *instr)
+ {
++   /* Use direct casts in this hot path to avoid assert-failure callbacks on AROS. */
+    switch (instr->type) {
+    case nir_instr_type_deref:
+       /* ignored, will be walked by nir_intrinsic_image_*_deref. */
+       break;
+
+    case nir_instr_type_alu:
+-      ntt_emit_alu(c, nir_instr_as_alu(instr));
++      ntt_emit_alu(c, (nir_alu_instr *)instr);
+       break;
+
+    case nir_instr_type_intrinsic:
+-      ntt_emit_intrinsic(c, nir_instr_as_intrinsic(instr));
++      ntt_emit_intrinsic(c, (nir_intrinsic_instr *)instr);
+       break;
+
+    case nir_instr_type_load_const:
+@@ -2958,15 +2962,15 @@
+       break;
+
+    case nir_instr_type_tex:
+-      ntt_emit_texture(c, nir_instr_as_tex(instr));
++      ntt_emit_texture(c, (nir_tex_instr *)instr);
+       break;
+
+    case nir_instr_type_jump:
+-      ntt_emit_jump(c, nir_instr_as_jump(instr));
++      ntt_emit_jump(c, (nir_jump_instr *)instr);
+       break;
+
+    case nir_instr_type_undef:
+-      ntt_emit_ssa_undef(c, nir_instr_as_undef(instr));
++      ntt_emit_ssa_undef(c, (nir_undef_instr *)instr);
+       break;
+
+    default:
+
+diff -ruN mesa-26.0.0/include/math.h mesa-26.0.0.aros/include/math.h
+--- /dev/null	2026-03-29 00:00:00.000000000 +0000
++++ mesa-26.0.0.aros/include/math.h	2026-03-29 00:00:00.000000000 +0000
+@@ -0,0 +1,10 @@
++#ifndef AROS_MESA_LOCAL_MATH_H
++#define AROS_MESA_LOCAL_MATH_H
++
++#if defined(__AROS__) && defined(__cplusplus)
++#include <aros/stdc/math.h>
++#else
++#include_next <math.h>
++#endif
++
++#endif
+diff -ruN mesa-26.0.0/include/stdlib.h mesa-26.0.0.aros/include/stdlib.h
+--- /dev/null	2026-03-29 00:00:00.000000000 +0000
++++ mesa-26.0.0.aros/include/stdlib.h	2026-03-29 00:00:00.000000000 +0000
+@@ -0,0 +1,10 @@
++#ifndef AROS_MESA_LOCAL_STDLIB_H
++#define AROS_MESA_LOCAL_STDLIB_H
++
++#if defined(__AROS__) && defined(__cplusplus)
++#include <aros/stdc/stdlib.h>
++#else
++#include_next <stdlib.h>
++#endif
++
++#endif
+diff -ruN mesa-26.0.0/include/c99_alloca.h mesa-26.0.0.aros/include/c99_alloca.h
+--- mesa-26.0.0/include/c99_alloca.h	2026-02-15 18:30:34.000000000 +0000
++++ mesa-26.0.0.aros/include/c99_alloca.h	2026-03-29 00:00:00.000000000 +0000
+@@ -36,7 +36,7 @@
+
+ #  define alloca _alloca
+
+-#elif defined(__sun) || defined(__CYGWIN__)
++#elif defined(__sun) || defined(__CYGWIN__) || defined(__AROS__)
+
+ #  include <alloca.h>

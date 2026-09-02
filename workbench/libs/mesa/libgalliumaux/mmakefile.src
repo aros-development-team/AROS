@@ -7,25 +7,70 @@ include $(SRCDIR)/config/aros.cfg
 
 CUR_MESADIR := src/gallium/auxiliary
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+
+ifeq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources),)
+MESA_GALLIUM_AUX_LAYOUT := new
+else
+MESA_GALLIUM_AUX_LAYOUT := old
+endif
+
+ifeq ($(MESA_GALLIUM_AUX_LAYOUT),old)
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter %.c, $(C_SOURCES) $(NIR_SOURCES))
+GALLIUM_AUXILIARY_GENERATED_SOURCES := $(filter %.c, $(GENERATED_SOURCES))
+GALLIUM_AUXILIARY_GENERATED_HEADERS := $(filter %.h, $(GENERATED_SOURCES))
+else
+MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
+            $(top_srcdir)/$(CUR_MESADIR)/cso_cache/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/draw/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/driver_ddebug/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/driver_noop/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/driver_trace/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/hud/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/indices/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/nir/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/pipebuffer/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/postprocess/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/rtasm/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/tgsi/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/translate/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/util/*.c))
+MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter-out \
+            nir/nir_to_tgsi_info.c \
+            indices/u_indices.c \
+            indices/u_unfilled_indices.c, \
+            $(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES))
+MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES += draw/draw_llvm_aros_stubs.c
+GALLIUM_AUXILIARY_GENERATED_SOURCES := \
+            driver_trace/tr_util.c \
+            util/u_tracepoints.c \
+            indices/u_indices_gen.c \
+            indices/u_unfilled_gen.c
+GALLIUM_AUXILIARY_GENERATED_HEADERS := \
+            driver_trace/tr_util.h \
+            util/u_tracepoints.h
+endif
 
 #MM- mesa3dgl-linklibs : mesa3d-linklib-galliumauxiliary
 #MM mesa3d-linklib-galliumauxiliary : workbench-libs-dxtn-includes mesa3d-linklib-compiler mesa3d-linklib-galliumauxiliary-genobs
 #MM mesa3d-linklib-galliumauxiliary-quick : mesa3d-linklib-galliumauxiliary-genobs
 #MM- mesa3d-linklib-galliumauxiliary-genobs : mesa3d-linklib-galliumauxiliary-generated
 
-MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter %.c, $(C_SOURCES) $(NIR_SOURCES) $(VL_SOURCES))
-
-GALLIUM_AUXILIARY_GENERATED_SOURCES := $(filter %.c, $(GENERATED_SOURCES))
-
 MESA3DGL_GALLIUM_AUXILIARY_SOURCES_C := \
             $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES:.c=))
 
 USER_INCLUDES += \
             -iquote $(top_srcdir)/src/gallium/include \
+            -iquote $(top_builddir)/src \
             -iquote $(top_srcdir)/$(CUR_MESADIR) \
             -iquote $(top_srcdir)/$(CUR_MESADIR)/util \
             -iquote $(top_srcdir)/$(CUR_MESADIR)/indices \
+            -iquote $(top_builddir)/$(CUR_MESADIR) \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/driver_trace \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/util \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/indices \
+            -iquote $(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/glsl \
             -iquote $(top_srcdir)/src/compiler/nir \
             -iquote $(top_builddir)/src/compiler/nir
 
@@ -40,6 +85,7 @@ NOWARN_FLAGS := \
 USER_CFLAGS += $(NOWARN_FLAGS)
 USER_CXXFLAGS += $(NOWARN_FLAGS)
 ##USER_CPPFLAGS += -DHAVE_LLVM=0x0209
+USER_CPPFLAGS += -DNDEBUG
 
 ifeq ($(MESA_DEBUG),)
 # We dont want to build galliumaux with debug .. but we do want the debug functions
@@ -49,24 +95,38 @@ GALLAUXDEBUGDFILES := $(patsubst %.o,%.d,$(GALLAUXDEBUGOFILES))
 $(GALLAUXDEBUGOFILES) $(GALLAUXDEBUGDFILES): mesa3d-linklib-galliumauxiliary_MC_EXTRA_CPPFLAGS:=-DDEBUG
 endif
 
+ifeq ($(MESA_GALLIUM_AUX_LAYOUT),old)
 $(top_builddir)/$(CUR_MESADIR)/util/u_format_table.c: $(top_srcdir)/$(CUR_MESADIR)/util/u_format_table.py
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/util/u_format_table.py $(top_srcdir)/$(CUR_MESADIR)/util/u_format.csv > $@
+endif
 
 $(top_builddir)/$(CUR_MESADIR)/indices/u_indices_gen.c: $(top_srcdir)/$(CUR_MESADIR)/indices/u_indices_gen.py
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+ifeq ($(MESA_GALLIUM_AUX_LAYOUT),new)
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/indices/u_indices_gen.py $@
+else
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/indices/u_indices_gen.py > $@
+endif
 
 $(top_builddir)/$(CUR_MESADIR)/indices/u_unfilled_gen.c: $(top_srcdir)/$(CUR_MESADIR)/indices/u_unfilled_gen.py
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+ifeq ($(MESA_GALLIUM_AUX_LAYOUT),new)
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/indices/u_unfilled_gen.py $@
+else
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/indices/u_unfilled_gen.py > $@
+endif
 
 u_tracepoints_deps := \
-	$(top_srcdir)/$(CUR_MESADIR)/util/u_tracepoints.py \
-	$(top_srcdir)/$(CUR_MESADIR)/util/u_trace.py
+	$(top_srcdir)/$(CUR_MESADIR)/util/u_tracepoints.py
+ifeq ($(MESA_GALLIUM_AUX_LAYOUT),new)
+u_tracepoints_deps += $(top_srcdir)/src/util/perf/u_trace.py
+else
+u_tracepoints_deps += $(top_srcdir)/$(CUR_MESADIR)/util/u_trace.py
+endif
 
 u_tracepoints_c := $(top_builddir)/$(CUR_MESADIR)/util/u_tracepoints.c
 u_tracepoints_h := $(top_builddir)/$(CUR_MESADIR)/util/u_tracepoints.h
@@ -75,10 +135,28 @@ $(top_builddir)/$(CUR_MESADIR)/util/u_tracepoints.c \
 $(top_builddir)/$(CUR_MESADIR)/util/u_tracepoints.h: $(u_tracepoints_deps)
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+ifeq ($(MESA_GALLIUM_AUX_LAYOUT),new)
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -p $(top_srcdir)/src/util/perf -C $(u_tracepoints_c) -H $(u_tracepoints_h)
+else
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -p $(top_srcdir)/$(CUR_MESADIR)/util -C $(u_tracepoints_c) -H $(u_tracepoints_h)
+endif
+
+ifeq ($(MESA_GALLIUM_AUX_LAYOUT),new)
+tr_util_inputs := \
+	$(top_srcdir)/src/gallium/include/pipe/p_defines.h \
+	$(top_srcdir)/src/gallium/include/pipe/p_video_enums.h \
+	$(top_srcdir)/src/util/blend.h
+
+$(top_builddir)/$(CUR_MESADIR)/driver_trace/tr_util.c \
+$(top_builddir)/$(CUR_MESADIR)/driver_trace/tr_util.h: \
+	$(top_srcdir)/$(CUR_MESADIR)/driver_trace/enums2names.py $(tr_util_inputs)
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/driver_trace/enums2names.py $(tr_util_inputs) -C $(top_builddir)/$(CUR_MESADIR)/driver_trace/tr_util.c -H $(top_builddir)/$(CUR_MESADIR)/driver_trace/tr_util.h
+endif
 
 #MM
-mesa3d-linklib-galliumauxiliary-generated : $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(GALLIUM_AUXILIARY_GENERATED_SOURCES) $(filter %.h, $(GENERATED_SOURCES)))
+mesa3d-linklib-galliumauxiliary-generated : $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(GALLIUM_AUXILIARY_GENERATED_SOURCES) $(GALLIUM_AUXILIARY_GENERATED_HEADERS))
 
 # We want to build galliumaux using the source tree layout since there are files
 # with the same name...

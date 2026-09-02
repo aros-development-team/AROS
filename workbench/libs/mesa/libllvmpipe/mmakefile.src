@@ -1,0 +1,112 @@
+#   Generate libllvmpipe.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/gallium/drivers/llvmpipe
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+
+ifeq ($(OPT_LLVM),)
+ifneq ($(TARGET_LLVM_VER),)
+OPT_LLVM := $(TARGET_LLVM_VER)
+else
+OPT_LLVM := 11.0.0
+endif
+endif
+LLVM_VERSION_MAJOR := $(word 1,$(subst ., ,$(OPT_LLVM)))
+LLVM_VERSION_MINOR := $(word 2,$(subst ., ,$(OPT_LLVM)))
+LLVM_VERSION_HEX := 0x$(shell printf "%02x%02x" $(LLVM_VERSION_MAJOR) $(LLVM_VERSION_MINOR))
+
+LLVMPPIPE_SOURCE_NAMES := \
+            lp_bld_alpha \
+            lp_bld_blend_aos \
+            lp_bld_blend \
+            lp_bld_blend_logicop \
+            lp_bld_depth \
+            lp_bld_interp \
+            lp_clear \
+            lp_context \
+            lp_cs_tpool \
+            lp_draw_arrays \
+            lp_fence \
+            lp_flush \
+            lp_jit \
+            lp_linear \
+            lp_linear_fastpath \
+            lp_linear_interp \
+            lp_linear_sampler \
+            lp_memory \
+            lp_perf \
+            lp_query \
+            lp_rast \
+            lp_rast_debug \
+            lp_rast_linear \
+            lp_rast_linear_fallback \
+            lp_rast_rect \
+            lp_rast_tri \
+            lp_scene \
+            lp_scene_queue \
+            lp_screen \
+            lp_setup \
+            lp_setup_analysis \
+            lp_setup_line \
+            lp_setup_point \
+            lp_setup_rect \
+            lp_setup_tri \
+            lp_setup_vbuf \
+            lp_state_blend \
+            lp_state_clip \
+            lp_state_derived \
+            lp_state_cs \
+            lp_state_fs \
+            lp_state_fs_analysis \
+            lp_state_fs_fastpath \
+            lp_state_fs_linear \
+            lp_state_fs_linear_llvm \
+            lp_state_gs \
+            lp_state_rasterizer \
+            lp_state_sampler \
+            lp_state_setup \
+            lp_state_so \
+            lp_state_surface \
+            lp_state_tess \
+            lp_state_vertex \
+            lp_state_vs \
+            lp_surface \
+            lp_tex_sample \
+            lp_texture \
+            lp_texture_handle
+
+LLVMPPIPE_SOURCES_C := \
+            $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(LLVMPPIPE_SOURCE_NAMES))
+
+#MM mesa3d-linklib-llvmpipe : workbench-libs-llvm mesa3d-linklib-galliumvm mesa3d-linklib-mesautil mesa3d-linklib-compiler-generated mesa3d-linklib-mesa-generated linklibs-galliumauxiliary
+
+USER_INCLUDES += \
+            -I$(SRCDIR)/compiler/crt/posixc/include/aros/posixc \
+            -iquote $(top_srcdir)/src/gallium/include \
+            -iquote $(top_srcdir)/src/gallium/auxiliary \
+            -iquote $(top_srcdir)/src/gallium/auxiliary/util \
+            -iquote $(top_srcdir)/src/gallium/auxiliary/indices \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(top_srcdir)/src/util \
+            -I$(top_builddir)/src \
+            -I$(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_builddir)/src/mesa/main \
+            -I$(AROS_INCLUDES) \
+            -I$(PORTSDIR)/llvm/llvm-$(OPT_LLVM).src/include
+
+USER_CPPFLAGS += -DGALLIUM_LLVMPIPE -DDRAW_LLVM_AVAILABLE=1 -DLLVM_AVAILABLE \
+                 -DHAVE_LLVM=$(LLVM_VERSION_HEX) \
+                 -DMESA_LLVM_VERSION_STRING=\"$(OPT_LLVM)\" \
+                 -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+                 -D__AROS__
+USER_CFLAGS += $(MESA_NOWARNFLAGS)
+USER_CXXFLAGS += $(MESA_NOWARNFLAGS)
+
+%build_linklib mmake=mesa3d-linklib-llvmpipe libname=llvmpipe \
+    libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) \
+    files="$(LLVMPPIPE_SOURCES_C)"
+
+%common

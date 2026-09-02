@@ -1,0 +1,59 @@
+#   Build libaddrlib.a — AMD GPU address/tiling library
+#
+#   Pure C++ library: GPU memory tiling, swizzle, and address calculations.
+#   Required by libamd_common (ac_surface.c) and radeonsi.hidd.
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/amd/addrlib
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+
+#MM mesa3d-linklib-addrlib : includes
+
+# C++ sources from meson.build files_addrlib
+ADDRLIB_CXX_SOURCES := \
+    $(top_srcdir)/$(CUR_MESADIR)/src/addrinterface \
+    $(top_srcdir)/$(CUR_MESADIR)/src/core/addrelemlib \
+    $(top_srcdir)/$(CUR_MESADIR)/src/core/addrlib \
+    $(top_srcdir)/$(CUR_MESADIR)/src/core/addrlib1 \
+    $(top_srcdir)/$(CUR_MESADIR)/src/core/addrlib2 \
+    $(top_srcdir)/$(CUR_MESADIR)/src/core/addrlib3 \
+    $(top_srcdir)/$(CUR_MESADIR)/src/core/addrobject \
+    $(top_srcdir)/$(CUR_MESADIR)/src/core/addrswizzler \
+    $(top_srcdir)/$(CUR_MESADIR)/src/core/coord \
+    $(top_srcdir)/$(CUR_MESADIR)/src/gfx9/gfx9addrlib \
+    $(top_srcdir)/$(CUR_MESADIR)/src/gfx10/gfx10addrlib \
+    $(top_srcdir)/$(CUR_MESADIR)/src/gfx11/gfx11addrlib \
+    $(top_srcdir)/$(CUR_MESADIR)/src/gfx12/gfx12addrlib \
+    $(top_srcdir)/$(CUR_MESADIR)/src/r800/ciaddrlib \
+    $(top_srcdir)/$(CUR_MESADIR)/src/r800/egbaddrlib \
+    $(top_srcdir)/$(CUR_MESADIR)/src/r800/siaddrlib
+
+USER_INCLUDES += \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/inc \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/src \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/src/core \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/src/chip/gfx9 \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/src/chip/r800 \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/src/chip/gfx10 \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/src/chip/gfx11 \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/src/chip/gfx12 \
+    -iquote $(top_srcdir)/src/amd/common \
+    -iquote $(top_srcdir)/src/include \
+    -iquote $(top_srcdir)/include \
+    -iquote $(top_srcdir)/src
+
+USER_CPPFLAGS += \
+    -DADDR_FASTCALL= \
+    -DLITTLEENDIAN_CPU \
+    -DNDEBUG
+
+USER_CXXFLAGS += $(MESA_NOWARNFLAGS) $(NOWARN_STRICT_ALIASING)
+
+%build_linklib mmake=mesa3d-linklib-addrlib \
+    libname=addrlib \
+    libdir=$(top_libdir) \
+    objdir=$(top_builddir)/$(CUR_MESADIR) \
+    cxxfiles="$(ADDRLIB_CXX_SOURCES)"
+
+%common

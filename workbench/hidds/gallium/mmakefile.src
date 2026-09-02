@@ -18,6 +18,7 @@ HIDD_GALLIUM_FILES := gallium_init gallium_class
 
 USER_INCLUDES += \
             -I$(AROS_INCLUDES)/gallium \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/src \
             -iquote $(GALLIUM_PATH)/include \
             -iquote $(GALLIUM_PATH)/.. \
             -iquote $(SRCDIR)/$(CURDIR)

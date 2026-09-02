@@ -1826,7 +1826,7 @@ Optional Packages:
   --with-iconset=NAME     Use a specific Icon-set (default=Gorilla).
   --with-theme=NAME       Use a specific GUI Theme
   --with-mesagl=family    Which version of MesaGL to build (defaults to
-                          20.0.8)
+                          26.0.0)
   --with-resolution=XRESxYRESxDEPTH
                           Default resolution of the initial WorkbenchScreen
   --with-serial-debug     Enable serial debug output in native (default=no)
@@ -12866,7 +12866,7 @@ if test ${with_mesagl+y}
 then :
   withval=$with_mesagl; aros_mesagl="$withval"
 else case e in #(
-  e) aros_mesagl="20.0.8" ;;
+  e) aros_mesagl="26.0.0" ;;
 esac
 fi
 
@@ -21683,4 +21683,3 @@ if test -n "$aros_shared_cflags" ; then
     echo "SHARED_CFLAGS := $aros_shared_cflags" >> ${aros_hostcfg_dir}/host.cfg
     echo "SHARED_AR := $aros_shared_ar" >> ${aros_hostcfg_dir}/host.cfg
 fi
-

@@ -8,12 +8,93 @@ include $(SRCDIR)/config/aros.cfg
 CUR_MESADIR := src/compiler
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
 -include $(GENDIR)/$(CURDIR)/../mesa3dgl/mesa3dgllibrary.entrypoints
+
+ifneq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources),)
+MESA_COMPILER_LAYOUT := old
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+else
+MESA_COMPILER_LAYOUT := new
+
+LIBGLSL_FILES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
+	$(top_srcdir)/$(CUR_MESADIR)/glsl/*.c \
+	$(top_srcdir)/$(CUR_MESADIR)/glsl/*.cpp))
+LIBGLSL_FILES := $(filter-out \
+	glsl/main.cpp \
+	glsl/standalone.cpp \
+	glsl/standalone_scaffolding.cpp, \
+	$(LIBGLSL_FILES))
+
+NIR_FILES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
+	$(top_srcdir)/$(CUR_MESADIR)/nir/*.c))
+
+SPIRV_FILES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
+	$(top_srcdir)/$(CUR_MESADIR)/spirv/*.c))
+SPIRV_FILES := $(filter-out \
+	spirv/spirv2nir.c \
+	spirv/vtn_bindgen2.c, \
+	$(SPIRV_FILES))
+
+LIBGLCPP_FILES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
+	$(top_srcdir)/$(CUR_MESADIR)/glsl/glcpp/*.c))
+
+LIBCOMPILER_FILES := \
+	glsl_types.c \
+	shader_enums.c
+
+LIBGLSL_GENERATED_FILES := \
+	builtin_types_data.c \
+	builtin_types.h \
+	glsl/glsl_lexer.cpp \
+	glsl/glsl_parser.cpp \
+	glsl/glsl_parser.h \
+	glsl/ir_expression_operation.h \
+	glsl/ir_expression_operation_constant.h \
+	glsl/ir_expression_operation_strings.h \
+	glsl/float64_glsl.h
+
+ifneq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/glsl/CrossPlatformSettings_piece_all.glsl),)
+LIBGLSL_GENERATED_FILES += glsl/cross_platform_settings_piece_all.h
+endif
+ifneq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/glsl/bc1.glsl),)
+LIBGLSL_GENERATED_FILES += glsl/bc1_glsl.h
+endif
+ifneq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/glsl/bc4.glsl),)
+LIBGLSL_GENERATED_FILES += glsl/bc4_glsl.h
+endif
+ifneq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/glsl/etc2_rgba_stitch.glsl),)
+LIBGLSL_GENERATED_FILES += glsl/etc2_rgba_stitch_glsl.h
+endif
+ifneq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/glsl/astc_decoder.glsl),)
+LIBGLSL_GENERATED_FILES += glsl/astc_glsl.h
+endif
+
+LIBGLCPP_GENERATED_FILES := \
+	glsl/glcpp/glcpp-lex.c \
+	glsl/glcpp/glcpp-parse.c \
+	glsl/glcpp/glcpp-parse.h
+
+NIR_GENERATED_FILES := \
+	nir/nir_builder_opcodes.h \
+	nir/nir_constant_expressions.c \
+	nir/nir_intrinsics.h \
+	nir/nir_intrinsics.c \
+	nir/nir_intrinsics_indices.h \
+	nir/nir_opcodes.h \
+	nir/nir_opcodes.c \
+	nir/nir_opt_algebraic.c
+
+SPIRV_GENERATED_FILES := \
+	spirv/spirv_info.c \
+	spirv/spirv_info.h \
+	spirv/vtn_gather_types.c \
+	spirv/vtn_generator_ids.h
+endif
 
 #MM- mesa3dgl-linklibs : mesa3d-linklib-compiler
 
 USER_INCLUDES += \
             -I$(top_srcdir)/src \
+            -iquote $(top_builddir)/src \
             -I$(top_srcdir)/src/mesa \
             -iquote $(top_srcdir)/src/mapi \
             -iquote $(top_srcdir)/$(CUR_MESADIR) \
@@ -28,6 +109,8 @@ USER_INCLUDES += \
             -iquote $(top_builddir)/$(CUR_MESADIR)/spirv \
             -iquote $(top_srcdir)/src/gallium/include \
             -iquote $(top_srcdir)/src/gallium/auxiliary
+
+USER_CPPFLAGS += -DNDEBUG
 
 ifneq ($(mesa3dgl_ENTRYPOINTS),)
 MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
@@ -68,6 +151,8 @@ $(top_builddir)/$(CUR_MESADIR)/glsl/glcpp/glcpp-lex.c : $(top_srcdir)/$(CUR_MESA
 $(top_builddir)/$(CUR_MESADIR)/glsl/glcpp/glcpp-parse.c : $(top_srcdir)/$(CUR_MESADIR)/glsl/glcpp/glcpp-parse.y
 	$(call glsl_local-y-to-c-and-h)
 
+$(top_builddir)/$(CUR_MESADIR)/glsl/glcpp/glcpp-parse.h: $(top_builddir)/$(CUR_MESADIR)/glsl/glcpp/glcpp-parse.c
+
 $(top_builddir)/$(CUR_MESADIR)/glsl/glsl_lexer.cpp : $(top_srcdir)/$(CUR_MESADIR)/glsl/glsl_lexer.ll
 	$(call local-l-or-ll-to-c-or-cpp)
 
@@ -76,6 +161,20 @@ $(top_builddir)/$(CUR_MESADIR)/glsl/glsl_parser.cpp : $(top_srcdir)/$(CUR_MESADI
 	$(call local-yy-to-cpp-and-h,.cpp)
 
 $(top_builddir)/$(CUR_MESADIR)/glsl/glsl_parser.h: $(top_builddir)/$(CUR_MESADIR)/glsl/glsl_parser.cpp
+
+$(top_builddir)/$(CUR_MESADIR)/builtin_types_data.c: \
+		$(top_srcdir)/$(CUR_MESADIR)/builtin_types_c.py \
+		$(top_srcdir)/$(CUR_MESADIR)/builtin_types.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< $@ || ($(RM) $@; false)
+
+$(top_builddir)/$(CUR_MESADIR)/builtin_types.h: \
+		$(top_srcdir)/$(CUR_MESADIR)/builtin_types_h.py \
+		$(top_srcdir)/$(CUR_MESADIR)/builtin_types.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< $@ || ($(RM) $@; false)
 
 nir_builder_opcodes_gen := $(top_srcdir)/$(CUR_MESADIR)/nir/nir_builder_opcodes_h.py
 nir_builder_opcodes_deps := \
@@ -106,7 +205,11 @@ nir_intrinsics_h_deps := \
 $(top_builddir)/$(CUR_MESADIR)/nir/nir_intrinsics.h: $(nir_intrinsics_h_deps)
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+ifeq ($(MESA_COMPILER_LAYOUT),new)
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_intrinsics_h_gen) --out $@ || ($(RM) $@; false)
+else
 	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_intrinsics_h_gen) --outdir $(dir $@) || ($(RM) $@; false)
+endif
 
 nir_intrinsics_c_gen :=$(top_srcdir)/$(CUR_MESADIR)/nir/nir_intrinsics_c.py
 nir_intrinsics_c_deps := \
@@ -116,13 +219,21 @@ nir_intrinsics_c_deps := \
 $(top_builddir)/$(CUR_MESADIR)/nir/nir_intrinsics.c: $(nir_intrinsics_c_deps)
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+ifeq ($(MESA_COMPILER_LAYOUT),new)
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_intrinsics_c_gen) --out $@ || ($(RM) $@; false)
+else
 	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_intrinsics_c_gen) --outdir $(dir $@) || ($(RM) $@; false)
+endif
 
 nir_intrinsics_indices_h_gen := $(top_srcdir)/$(CUR_MESADIR)/nir/nir_intrinsics_indices_h.py
 $(top_builddir)/$(CUR_MESADIR)/nir/nir_intrinsics_indices.h: $(top_srcdir)/$(CUR_MESADIR)/nir/nir_intrinsics.py $(nir_intrinsics_indices_h_gen)
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+ifeq ($(MESA_COMPILER_LAYOUT),new)
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_intrinsics_indices_h_gen) --out $@ || ($(RM) $@; false)
+else
 	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_intrinsics_indices_h_gen) --outdir $(dir $@) || ($(RM) $@; false)
+endif
 
 nir_opcodes_h_gen := $(top_srcdir)/$(CUR_MESADIR)/nir/nir_opcodes_h.py
 nir_opcodes_h_deps := \
@@ -152,7 +263,11 @@ nir_opt_algebraic_deps := \
 $(top_builddir)/$(CUR_MESADIR)/nir/nir_opt_algebraic.c: $(nir_opt_algebraic_deps)
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+ifeq ($(MESA_COMPILER_LAYOUT),new)
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_opt_algebraic_gen) --out $@ || ($(RM) $@; false)
+else
 	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_opt_algebraic_gen) $< > $@
+endif
 
 
 $(top_builddir)/$(CUR_MESADIR)/glsl/ir_expression_operation.h:  $(top_srcdir)/$(CUR_MESADIR)/glsl/ir_expression_operation.py
@@ -186,10 +301,72 @@ $(top_builddir)/$(CUR_MESADIR)/glsl/float64_glsl.h: $(FLOAT64DEP) $(top_srcdir)/
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $^ $@ -n float64_source || ($(RM) $@; false)
 
+$(top_builddir)/$(CUR_MESADIR)/glsl/cross_platform_settings_piece_all.h: \
+		$(FLOAT64DEP) \
+		$(top_srcdir)/$(CUR_MESADIR)/glsl/CrossPlatformSettings_piece_all.glsl
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $^ $@ -n cross_platform_settings_piece_all_header || ($(RM) $@; false)
+
+$(top_builddir)/$(CUR_MESADIR)/glsl/bc1_glsl.h: \
+		$(FLOAT64DEP) \
+		$(top_srcdir)/$(CUR_MESADIR)/glsl/bc1.glsl
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $^ $@ -n bc1_source || ($(RM) $@; false)
+
+$(top_builddir)/$(CUR_MESADIR)/glsl/bc4_glsl.h: \
+		$(FLOAT64DEP) \
+		$(top_srcdir)/$(CUR_MESADIR)/glsl/bc4.glsl
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $^ $@ -n bc4_source || ($(RM) $@; false)
+
+$(top_builddir)/$(CUR_MESADIR)/glsl/etc2_rgba_stitch_glsl.h: \
+		$(FLOAT64DEP) \
+		$(top_srcdir)/$(CUR_MESADIR)/glsl/etc2_rgba_stitch.glsl
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $^ $@ -n etc2_rgba_stitch_source || ($(RM) $@; false)
+
+$(top_builddir)/$(CUR_MESADIR)/glsl/astc_glsl.h: \
+		$(FLOAT64DEP) \
+		$(top_srcdir)/$(CUR_MESADIR)/glsl/astc_decoder.glsl
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $^ $@ -n astc_source || ($(RM) $@; false)
+
+U_FORMAT_GEN_DEPS := \
+		$(top_srcdir)/src/util/format/u_format_table.py \
+		$(top_srcdir)/src/util/format/u_format.yaml \
+		$(top_srcdir)/src/util/format/u_format_pack.py \
+		$(top_srcdir)/src/util/format/u_format_parse.py
+
+$(top_builddir)/src/util/format/u_format_gen.h: $(U_FORMAT_GEN_DEPS)
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(word 1,$^) $(word 2,$^) --enums > $@ || ($(RM) $@; false)
+
+$(top_builddir)/src/util/format/u_format_pack.h: $(U_FORMAT_GEN_DEPS)
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(word 1,$^) $(word 2,$^) --header > $@ || ($(RM) $@; false)
+
+ifeq ($(MESA_COMPILER_LAYOUT),new)
+$(top_builddir)/$(CUR_MESADIR)/spirv/spirv_info.c: \
+		$(top_srcdir)/$(CUR_MESADIR)/spirv/spirv_info_gen.py \
+		$(top_srcdir)/$(CUR_MESADIR)/spirv/spirv.core.grammar.json
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(word 1,$^) --json $(word 2,$^) --out-h $(top_builddir)/$(CUR_MESADIR)/spirv/spirv_info.h --out-c $@ || ($(RM) $(top_builddir)/$(CUR_MESADIR)/spirv/spirv_info.h $@; false)
+
+$(top_builddir)/$(CUR_MESADIR)/spirv/spirv_info.h: $(top_builddir)/$(CUR_MESADIR)/spirv/spirv_info.c
+else
 $(top_builddir)/$(CUR_MESADIR)/spirv/spirv_info.c: $(top_srcdir)/$(CUR_MESADIR)/spirv/spirv_info_c.py $(top_srcdir)/$(CUR_MESADIR)/spirv/spirv.core.grammar.json
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/spirv/spirv_info_c.py $(top_srcdir)/$(CUR_MESADIR)/spirv/spirv.core.grammar.json $@ || ($(RM) $@; false)
+endif
 
 $(top_builddir)/$(CUR_MESADIR)/spirv/vtn_gather_types.c: $(top_srcdir)/$(CUR_MESADIR)/spirv/vtn_gather_types_c.py $(top_srcdir)/$(CUR_MESADIR)/spirv/spirv.core.grammar.json
 	%mkdir_q dir="$(dir $@)"
@@ -237,6 +414,9 @@ LIBCOMPILER_CXX_SOURCES := $(LIBCOMPILER_CXX_FILES:.cpp=)
 
 #MM
 mesa3d-linklib-compiler-generated : $(MESA3DGL_GLSL_GENERATED_FILES) $(MESA3DGL_GLCPP_GENERATED_FILES) $(MESA3DGL_NIR_GENERATED_FILES) $(MESA3DGL_SPIRV_GENERATED_FILES)
+ifeq ($(MESA_COMPILER_LAYOUT),new)
+mesa3d-linklib-compiler-generated : $(top_builddir)/src/util/format/u_format_gen.h $(top_builddir)/src/util/format/u_format_pack.h
+endif
 
 #MM mesa3d-linklib-compiler : mesa3d-linklib-compiler-generated
 
