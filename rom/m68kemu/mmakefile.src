@@ -41,7 +41,7 @@ M68KEMU_CXXFILES := \
     modname=m68kemu modtype=library \
     files="$(M68KEMU_FILES)" \
     cxxfiles="$(M68KEMU_CXXFILES)" \
-    uselibs="stdc++ stdcio stdc posixc"
+    uselibs="stdc++ posixc stdc"
 
 %common
 

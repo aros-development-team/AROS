@@ -67,7 +67,7 @@ USER_LDFLAGS :=
 %build_module mmake=workbench-prefs-network-module-ipv4 \
     modname=net4 modtype=library modsuffix=netprefs \
     files="$(IPV4_FILES)" moduledir=Prefs/NetModules \
-    uselibs="amiga stdc stdcio posixc" includedir=$(NETPREFS_GENINCDIR) \
+    uselibs="amiga posixc stdc" includedir=$(NETPREFS_GENINCDIR) \
     conffile=$(NETPREFS_SRCDIR)/$(IPV4MODDIR)/ipv4.conf
 
 # --- IPv6 protocol address module ---
@@ -80,7 +80,7 @@ USER_LDFLAGS :=
 %build_module mmake=workbench-prefs-network-module-ipv6 \
     modname=net6 modtype=library modsuffix=netprefs \
     files="$(IPV6_FILES)" moduledir=Prefs/NetModules \
-    uselibs="amiga stdc stdcio posixc" includedir=$(NETPREFS_GENINCDIR) \
+    uselibs="amiga posixc stdc" includedir=$(NETPREFS_GENINCDIR) \
     conffile=$(NETPREFS_SRCDIR)/$(IPV6MODDIR)/ipv6.conf
 
 %copy_files_q mmake=workbench-prefs-network-cpy \
