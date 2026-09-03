@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 /******************************************************************************
@@ -121,7 +121,7 @@
 #define MAX_SFS_SIZE (124L * 1024)
 #define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
 
-const TEXT version_string[] = "$VER: Partition 42.1 (17.04.2025)";
+const TEXT version_string[] = "$VER: Partition 42.2 (03.09.2026)";
 
 static const struct PartitionType fat32 = { "FAT\2", 4 };
 static const struct PartitionType dos3 = { "DOS\3", 4 };
@@ -742,6 +742,21 @@ static struct PartitionHandle *CreateMBRPartition
     return partition;
 }
 
+/* partition.library fills the root partition handle's DosEnvec with its
+   platform defaults (PartitionDefaultNumBuffers()), so take the buffer count
+   from there rather than hardcoding one; fall back to the value inherited
+   from the parent entry if the root has none. */
+static ULONG LibraryDefaultNumBuffers(struct PartitionHandle *ph, ULONG inherited)
+{
+    struct DosEnvec rootDE = {0};
+
+    while (ph != NULL && ph->root != NULL)
+        ph = ph->root;
+    if (ph != NULL)
+        GetPartitionAttrsTags(ph, PT_DOSENVEC, (IPTR) &rootDE, TAG_DONE);
+    return rootDE.de_NumBuffers != 0 ? rootDE.de_NumBuffers : inherited;
+}
+
 static struct PartitionHandle *CreateRDBPartition
 (
     struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl,
@@ -793,7 +808,7 @@ static struct PartitionHandle *CreateRDBPartition
     partitionDE.de_Reserved       = 2;
     partitionDE.de_HighCyl        = highcyl;
     partitionDE.de_LowCyl         = lowcyl;
-    partitionDE.de_NumBuffers     = 100;
+    partitionDE.de_NumBuffers     = LibraryDefaultNumBuffers(parent, parentDE.de_NumBuffers);
     partitionDE.de_MaxTransfer    = 0xFFFFFF;
     partitionDE.de_Mask           = 0xFFFFFFFE;
 

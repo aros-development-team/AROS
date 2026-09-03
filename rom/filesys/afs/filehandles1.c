@@ -485,6 +485,7 @@ struct BlockCache *fileblock, *dirblock;
 UBYTE filename[34];
 ULONG block;
 ULONG fileblocknum = -1;
+ULONG dirblocknum = 0;
 
         /*
          * nicely say what's going on
@@ -540,7 +541,25 @@ ULONG fileblocknum = -1;
                                  * remove existing file if we are asked to clear its contents
                                  */
                                 if (mode == MODE_NEWFILE)
+                                {
+                                        /*
+                                         * deleteObject() walks the directory again and frees every
+                                         * block of the old file through the bitmap; each of those
+                                         * getBlock() calls may recycle the cache entry dirblock points
+                                         * at. Re-fetch the directory by block number afterwards - using
+                                         * the stale pointer made createNewEntry() treat whatever block
+                                         * now occupied the entry (typically the deleted file's own
+                                         * header) as the directory and link the new file into it.
+                                         */
+                                        dirblocknum = dirblock->blocknum;
                                         *error = deleteObject(afsbase, dirah, name);
+                                        if ((*error == 0) || (*error == ERROR_OBJECT_NOT_FOUND))
+                                        {
+                                                dirblock = getBlock(afsbase, dirah->volume, dirblocknum);
+                                                if (dirblock == NULL)
+                                                        *error = ERROR_UNKNOWN;
+                                        }
+                                }
 
                                 /*
                                  * if we cleared the file or there was no file at all, move on
