@@ -58,6 +58,7 @@
     AROS_LIBFUNC_INIT
 
     struct ViewPort *vp2;
+    BOOL displayed = FALSE;
 
     /* This is a very basic implementation. Screen refresh is completely not in sync with VBlank.
        The main problem here is that AROS completely misses VBlank interrupt. */
@@ -86,6 +87,7 @@
 
                     HIDD_Display_InitViewPorts(mdd->mdisplay.display_obj, vpd, GfxBase->ActiView);
                     display_LoadViewPorts(mdd, vpd, GfxBase->ActiView, GfxBase);
+                    displayed = TRUE;
                 }
 
                 break;
@@ -95,9 +97,13 @@
 
     ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
 
-    /* Reply both messages - the displayed bitmap has been swapped */
-    ReplyMsg(&db->dbi_SafeMessage);
-    ReplyMsg(&db->dbi_DispMessage);
+    if (displayed)
+        internal_QueueDBufInfo(db, GfxBase);
+    else
+    {
+        ReplyMsg(&db->dbi_SafeMessage);
+        ReplyMsg(&db->dbi_DispMessage);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* ChangeVPBitMap */

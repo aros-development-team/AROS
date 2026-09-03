@@ -52,6 +52,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    HIDDT_Color *hidd_colors;
     WORD t;
 
     if(!vp)
@@ -60,16 +61,42 @@
     ASSERT_VALID_PTR(vp);
     ASSERT_VALID_PTR(colors);
 
-    /* TODO: Optimization */
+    if (count <= 0)
+        return;
 
-    for(t = 0; t < count; t ++) {
-        ULONG red   = (colors[t] & 0xF00) >> 8;
-        ULONG green = (colors[t] & 0x0F0) >> 4;
-        ULONG blue  = (colors[t] & 0x00F);
+    hidd_colors = AllocMem((ULONG)count * sizeof(*hidd_colors), MEMF_PUBLIC);
+    if (!hidd_colors)
+    {
+        for (t = 0; t < count; t++)
+        {
+            ULONG red   = (colors[t] & 0xF00) >> 8;
+            ULONG green = (colors[t] & 0x0F0) >> 4;
+            ULONG blue  = colors[t] & 0x00F;
 
-        SetRGB32(vp, t, red   * 0x11111111,
-                 green * 0x11111111,
-                 blue  * 0x11111111);
+            SetRGB32(vp, t, red   * 0x11111111,
+                     green * 0x11111111,
+                     blue  * 0x11111111);
+        }
+    }
+    else
+    {
+        for (t = 0; t < count; t++)
+        {
+            ULONG red   = ((colors[t] & 0xF00) >> 8) * 0x11111111;
+            ULONG green = ((colors[t] & 0x0F0) >> 4) * 0x11111111;
+            ULONG blue  =  (colors[t] & 0x00F)       * 0x11111111;
+
+            if (vp->ColorMap)
+                SetRGB32CM(vp->ColorMap, t, red, green, blue);
+
+            hidd_colors[t].red = red >> 16;
+            hidd_colors[t].green = green >> 16;
+            hidd_colors[t].blue = blue >> 16;
+            hidd_colors[t].alpha = 0;
+        }
+
+        internal_SetRGB32Colors(vp, hidd_colors, 0, count, GfxBase);
+        FreeMem(hidd_colors, (ULONG)count * sizeof(*hidd_colors));
     }
 
     AROS_LIBFUNC_EXIT

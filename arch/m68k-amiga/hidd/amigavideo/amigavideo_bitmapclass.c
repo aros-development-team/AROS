@@ -118,6 +118,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->depth = depth;
     data->pixelcacheoffset = -1;
     data->pbm = pbm;
+    data->displayed_pbm = pbm;
     data->diwstartx = csd->startx;
     data->diwstarty = csd->starty;
 
@@ -1035,17 +1036,37 @@ BOOL AmigaVideoBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
                                    struct pHidd_PlanarBM_SetBitMap *msg)
 {
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct BitMap *oldbm = data->pbm;
+    BOOL same_layout = FALSE;
     BOOL result;
 
     CMDDEBUGUNIMP(bug("[AmigaVideo:Bitmap] %s()\n", __func__);)
     result = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (result)
     {
+        if (oldbm && data->bmcl &&
+            oldbm->BytesPerRow == msg->bitMap->BytesPerRow &&
+            oldbm->Rows == msg->bitMap->Rows &&
+            oldbm->Depth == msg->bitMap->Depth)
+        {
+            same_layout = TRUE;
+        }
+
         data->pbm = msg->bitMap;
         data->width = msg->bitMap->BytesPerRow << 3;
         data->bytesperrow = msg->bitMap->BytesPerRow;
         data->height = msg->bitMap->Rows;
         data->depth = msg->bitMap->Depth;
+
+        if (same_layout)
+        {
+            /* Publish a preceding LoadRGB*() and this plane-address change
+             * as a single copper-list transaction. */
+            data->bitmap_changed = TRUE;
+            data->bitmap_set_in_place = TRUE;
+            commitcopperchanges(csd, data, TRUE);
+        }
     }
 
     return result;

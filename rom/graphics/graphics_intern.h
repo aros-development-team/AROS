@@ -47,6 +47,10 @@
 #define BMDEPTH_COMPATIBILITY	1
 #define SIZERECTBUF		128
 
+void internal_SetRGB32Colors(struct ViewPort *vp, HIDDT_Color *colors,
+                             ULONG first, ULONG count,
+                             struct GfxBase *GfxBase);
+
 struct RegionRectangleExt {
     struct RegionRectangle     RR;
     IPTR                       Counter;
@@ -245,7 +249,12 @@ struct GfxBase_intern {
 
     /* baseclass for CreateObject */
     OOP_Class                   *basebm;
+
+    /* ChangeVPBitMap() replies due after the display's next vertical blank. */
+    struct DBufInfo             *dbuf_pending;
 };
+
+void internal_QueueDBufInfo(struct DBufInfo *db, struct GfxBase *GfxBase);
 
 
 /* Macros */

@@ -1102,7 +1102,6 @@ static ULONG AmigaVideo_BuildViewPort(struct amigavideo_staticdata *csd,
          */
         if (cm && bmdata->palette)
         {
-            ULONG rgb[3];
             UWORD count = cm->Count;
             UWORD i;
 
@@ -1111,10 +1110,22 @@ static ULONG AmigaVideo_BuildViewPort(struct amigavideo_staticdata *csd,
 
             for (i = 0; i < count; i++)
             {
-                GetRGB32(cm, i, 1, rgb);
-                bmdata->palette[i * 3 + 0] = rgb[0] >> 24;
-                bmdata->palette[i * 3 + 1] = rgb[1] >> 24;
-                bmdata->palette[i * 3 + 2] = rgb[2] >> 24;
+                UWORD hibits = cm->ColorTable[i];
+                UWORD lobits = 0;
+                UBYTE red = (hibits & 0x0f00) >> 4;
+                UBYTE green = hibits & 0x00f0;
+                UBYTE blue = (hibits & 0x000f) << 4;
+
+                if (cm->Type > COLORMAP_TYPE_V1_2)
+                    lobits = cm->LowColorBits[i];
+
+                red |= (lobits & 0x0f00) >> 8;
+                green |= (lobits & 0x00f0) >> 4;
+                blue |= lobits & 0x000f;
+
+                bmdata->palette[i * 3 + 0] = red;
+                bmdata->palette[i * 3 + 1] = green;
+                bmdata->palette[i * 3 + 2] = blue;
             }
         }
 
@@ -1161,6 +1172,10 @@ static ULONG AmigaVideo_BuildViewPort(struct amigavideo_staticdata *csd,
 
     setfmode(csd, bmdata);
     setcoppercolors(csd, bmdata, bmdata->palette, TRUE);
+    bmdata->displayed_pbm = bmdata->pbm;
+    bmdata->bitmap_changed = FALSE;
+    bmdata->bitmap_set_in_place = FALSE;
+    bmdata->palette_changed = FALSE;
 
     if (vp->UCopIns && vp->UCopIns->FirstCopList)
     {
@@ -1222,14 +1237,26 @@ ULONG AmigaVideoDisplay__Hidd_Display__MakeViewPort(OOP_Class *cl, OOP_Object *o
         retval = MVP_NO_MEM;
     else
     {
-        newcl = AllocMem(sizeof(struct CopList), MEMF_PUBLIC | MEMF_CLEAR);
-        if (!newcl)
-            return MVP_NO_MEM;
-
         struct amigavideo_staticdata *csd = CSD(cl);
         struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
         struct amigabm_data *bmdata = OOP_INST_DATA(OOP_OCLASS(vpd->Bitmap), vpd->Bitmap);
         struct CopList *oldcl = vpd->vpe->ViewPort->DspIns;
+
+        /*
+         * A same-layout classic planar ChangeVPBitMap() was already applied
+         * directly to the existing copper list by PlanarBM::SetBitMap().
+         * Rebuilding and replacing that list would separate a late palette
+         * update from its bitmap handoff by one display field.
+         */
+        if (bmdata->bitmap_set_in_place && oldcl && bmdata->bmcl == oldcl)
+        {
+            bmdata->bitmap_set_in_place = FALSE;
+            return MVP_OK;
+        }
+
+        newcl = AllocMem(sizeof(struct CopList), MEMF_PUBLIC | MEMF_CLEAR);
+        if (!newcl)
+            return MVP_NO_MEM;
 
         if (avpd->prepared)
             AmigaVideo_FreeDspIns(oldcl, GfxBase);

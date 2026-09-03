@@ -66,22 +66,41 @@
 
         while((count = (*table) >> 16)) {
             ULONG first, t;
+            HIDDT_Color *colors;
 
             first = (*table) & 0xFFFF;
 
             table ++;
 
+            colors = AllocMem(count * sizeof(*colors), MEMF_PUBLIC);
+            if (!colors)
+            {
+                for (t = 0; t < count; t++)
+                {
+                    SetRGB32(vp, t + first,
+                             table[0], table[1], table[2]);
+                    table += 3;
+                }
+                continue;
+            }
+
             D(bug("[LoadRGB32] Setting %u colors starting from %u\n", count, first));
             for(t = 0; t < count; t++) {
                 D(bug("[LoadRGB32] Color %u R 0x%08lX G 0x%08lX B %08lX\n", t + first, table[0], table[1], table[2]));
-                SetRGB32(vp,
-                         t + first,
-                         table[0],
-                         table[1],
-                         table[2]);
+                if (vp->ColorMap)
+                    SetRGB32CM(vp->ColorMap, t + first,
+                               table[0], table[1], table[2]);
+
+                colors[t].red = table[0] >> 16;
+                colors[t].green = table[1] >> 16;
+                colors[t].blue = table[2] >> 16;
+                colors[t].alpha = 0;
 
                 table += 3;
             }
+
+            internal_SetRGB32Colors(vp, colors, first, count, GfxBase);
+            FreeMem(colors, count * sizeof(*colors));
 
         } /* while (*table) */
     }

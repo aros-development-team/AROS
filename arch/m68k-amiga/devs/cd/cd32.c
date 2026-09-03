@@ -78,6 +78,7 @@ struct CD32Unit;
 
 static VOID CD32_CompleteXLNode(struct CDXL *node);
 static BOOL CD32_CopyXL(struct CD32Unit *cu, APTR frame, ULONG sectorSize);
+static VOID CD32_ProcessXL(struct CD32Unit *cu);
 static ULONG CD32_XLSectorPosition(const UBYTE *frame);
 
 struct CD32Unit {
@@ -105,6 +106,7 @@ struct CD32Unit {
     ULONG cu_IntEnable;
     ULONG cu_ChangeNum;
     struct CD32XLTransfer cu_XL;
+    struct CDXL *cu_XLCallbackNode;
     volatile ULONG cu_XLProgress;
     BOOL cu_ReadXLActive;
 };
@@ -172,85 +174,63 @@ static VOID CD32_IntDisable(struct CD32Unit *cu, ULONG mask)
     writel(cu->cu_IntEnable, AKIKO_CDINTENA);
 }
 
-static AROS_INTH1(CD32_XLInterrupt, struct CD32Unit *, cu)
+static AROS_INTH1(CD32_XLCallbackInterrupt, struct CD32Unit *, cu)
 {
-    UWORD callbackSR;
-    UWORD pbx, pending;
-    UWORD consumed = 0;
-    int i;
+    struct CDXL *node;
 
     AROS_INTFUNC_INIT
 
-    /* The CD32 ROM processes completed PBX buffers and invokes CDXL clients
-     * at SR $2000.  AROS may drain a pending softint from the level-2 exit
-     * path, so lower the CPU IPL for this work and restore it on return. */
-    asm volatile (
-        "move.w %%sr,%0\n\t"
-        "move.w #0x2000,%%sr"
-        : "=d" (callbackSR)
-        :
-        : "cc", "memory");
-
-    pbx = readw(AKIKO_CDPBX);
-    if (cu->cu_XL.io->io_Flags & IOF_ABORT) {
-        cu->cu_ReadXLActive = FALSE;
-    } else {
-        pending = (UWORD)~pbx;
-        while (pending != 0) {
-            ULONG firstPosition = ~0UL;
-            UWORD mask;
-            int first = -1;
-
-            /* Akiko always chooses the highest armed PBX slot.  A slot can
-             * be re-armed while an older sector remains in a lower slot, so
-             * slot order alone is not arrival order.  Drain this snapshot
-             * by the raw sector's absolute MSF or MPEG/CDXL streams can have
-             * adjacent sectors swapped under normal interrupt latency. */
-            for (i = 15; i >= 0; i--) {
-                ULONG position;
-
-                mask = (UWORD)(1U << i);
-                if ((pending & mask) == 0)
-                    continue;
-                position = CD32_XLSectorPosition(cu->cu_Data[i].Data);
-                if (first < 0 || position < firstPosition) {
-                    first = i;
-                    firstPosition = position;
-                }
-            }
-
-            mask = (UWORD)(1U << first);
-            pending &= ~mask;
-            consumed |= mask;
-            cu->cu_XLProgress++;
-            if (!CD32_CopyXL(cu, &cu->cu_Data[first],
-                    cu->cu_CDInfo.SectorSize)) {
-                cu->cu_ReadXLActive = FALSE;
-                break;
-            }
-        }
-    }
-
-    if (consumed != 0)
-        writew(consumed, AKIKO_CDPBX);
-    else
-        writew(0, AKIKO_CDPBX);
-
-    if (cu->cu_ReadXLActive) {
-        CD32_IntEnable(cu, AKIKO_CDINT_PBX);
-    } else if (cu->cu_Task) {
-        Signal(cu->cu_Task, SIGF_SINGLE);
-    }
-
-    asm volatile (
-        "move.w %0,%%sr"
-        :
-        : "d" (callbackSR)
-        : "cc", "memory");
+    node = cu->cu_XLCallbackNode;
+    cu->cu_XLCallbackNode = NULL;
+    if (node != NULL)
+        CD32_CompleteXLNode(node);
 
     return FALSE;
 
     AROS_INTFUNC_EXIT
+}
+
+static VOID CD32_ProcessXL(struct CD32Unit *cu)
+{
+    UWORD pbx = readw(AKIKO_CDPBX);
+    UWORD pending = (UWORD)~pbx;
+    UWORD consumed = 0;
+
+    while (pending != 0 && cu->cu_ReadXLActive) {
+        ULONG firstPosition = ~0UL;
+        UWORD mask;
+        int first = -1;
+        int i;
+
+        /* Akiko always chooses the highest armed PBX slot.  A slot can be
+         * re-armed while an older sector remains in a lower slot, so slot
+         * order alone is not arrival order. */
+        for (i = 15; i >= 0; i--) {
+            ULONG position;
+
+            mask = (UWORD)(1U << i);
+            if ((pending & mask) == 0)
+                continue;
+            position = CD32_XLSectorPosition(cu->cu_Data[i].Data);
+            if (first < 0 || position < firstPosition) {
+                first = i;
+                firstPosition = position;
+            }
+        }
+
+        mask = (UWORD)(1U << first);
+        pending &= ~mask;
+        consumed |= mask;
+        cu->cu_XLProgress++;
+        if (!CD32_CopyXL(cu, &cu->cu_Data[first],
+                cu->cu_CDInfo.SectorSize))
+            cu->cu_ReadXLActive = FALSE;
+    }
+
+    writew(consumed, AKIKO_CDPBX);
+
+    if (cu->cu_ReadXLActive)
+        CD32_IntEnable(cu, AKIKO_CDINT_PBX);
 }
 
 static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
@@ -317,10 +297,12 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
                 if (cu->cu_Task)
                     Signal(cu->cu_Task, SIGF_SINGLE);
             } else {
-                /* Prevent this source from retriggering while the IPL0
-                 * software interrupt consumes and releases the buffers. */
+                /* Match the standard CD32 cd.device scheduling boundary:
+                 * copy PBX sectors in the device task and use Cause() only
+                 * for completed-node callbacks. */
                 CD32_IntDisable(cu, AKIKO_CDINT_PBX);
-                Cause(&cu->cu_XLInterrupt);
+                if (cu->cu_Task)
+                    Signal(cu->cu_Task, SIGF_SINGLE);
             }
         } else {
             writew(0, AKIKO_CDPBX);
@@ -749,7 +731,8 @@ static BOOL CD32_CopyXL(struct CD32Unit *cu, APTR frame, ULONG sectorSize)
             xl->remaining -= length;
 
         if (xl->node->Actual == xl->node->Length) {
-            CD32_CompleteXLNode(xl->node);
+            cu->cu_XLCallbackNode = xl->node;
+            Cause(&cu->cu_XLInterrupt);
             xl->node = (struct CDXL *)xl->node->Node.mln_Succ;
             xl->nodeStarted = FALSE;
         }
@@ -825,6 +808,9 @@ static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
 
     while (cu->cu_ReadXLActive && !(io->io_Flags & IOF_ABORT)) {
         Wait(SIGF_SINGLE);
+
+        if (cu->cu_ReadXLActive)
+            CD32_ProcessXL(cu);
 
         if (CheckIO((struct IORequest *)&cu->cu_CDBase->cb_TimerRequest)) {
             ULONG progress = cu->cu_XLProgress;
@@ -1394,7 +1380,7 @@ static int CD32_InitLib(LIBBASETYPE *cb)
                 priv->cu_XLInterrupt.is_Node.ln_Type = NT_INTERRUPT;
                 priv->cu_XLInterrupt.is_Data = priv;
                 priv->cu_XLInterrupt.is_Code =
-                    (VOID_FUNC)CD32_XLInterrupt;
+                    (VOID_FUNC)CD32_XLCallbackInterrupt;
 
                 writel((IPTR)priv->cu_Data, AKIKO_CDADRDATA);
                 writel((IPTR)priv->cu_Misc,  AKIKO_CDADRMISC);
