@@ -618,7 +618,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                                 bug("[NVME:Bus] NVMEBus_Start: mdts = %u\n", data->ab_Dev->dev_mdts);
                                 bug("[NVME:Bus] NVMEBus_Start: DE_MAXTRANSFER = %u\n", pp[DE_MAXTRANSFER + 4]);
                             )
-                            pp[DE_MASK         + 4] = 0x7FFFFFFF; // & ~(data->ab_Dev->pagesize - 1);
+                            /* NVMe addresses memory with 64-bit PRPs and only needs dword alignment */
+                            pp[DE_MASK         + 4] = ~3;
                             D(bug("[NVME:Bus] NVMEBus_Start: DE_MASK= %08x\n", pp[DE_MASK + 4]);)
                             pp[DE_BOOTPRI      + 4] = 0;
                             pp[DE_DOSTYPE      + 4] = IdDOS;
