@@ -63,11 +63,15 @@ USER_LDFLAGS :=
 #MM workbench-prefs-network-includes workbench-prefs-network-catalogs
 
 USER_INCLUDES := $(NETPREFSCOMMON_INCLUDES) -I$(NETPREFS_SRCDIR)/$(IPV4MODDIR)
-USER_LDFLAGS :=
+# Link the module -static, as AROS modules are: it must carry its own C
+# library rather than depend on the caller's. That drops the compiler's
+# automatic "posixc stdcio stdc" chain, so uselibs below names the set in
+# full - posixc calls into stdcio for __aros_getbase_StdCIOBase.
+USER_LDFLAGS := -static
 %build_module mmake=workbench-prefs-network-module-ipv4 \
     modname=net4 modtype=library modsuffix=netprefs \
     files="$(IPV4_FILES)" moduledir=Prefs/NetModules \
-    uselibs="amiga posixc stdc" includedir=$(NETPREFS_GENINCDIR) \
+    uselibs="amiga posixc stdcio stdc" includedir=$(NETPREFS_GENINCDIR) \
     conffile=$(NETPREFS_SRCDIR)/$(IPV4MODDIR)/ipv4.conf
 
 # --- IPv6 protocol address module ---
@@ -76,11 +80,15 @@ USER_LDFLAGS :=
 #MM workbench-prefs-network-includes workbench-prefs-network-catalogs
 
 USER_INCLUDES := $(NETPREFSCOMMON_INCLUDES) -I$(NETPREFS_SRCDIR)/$(IPV6MODDIR)
-USER_LDFLAGS :=
+# Link the module -static, as AROS modules are: it must carry its own C
+# library rather than depend on the caller's. That drops the compiler's
+# automatic "posixc stdcio stdc" chain, so uselibs below names the set in
+# full - posixc calls into stdcio for __aros_getbase_StdCIOBase.
+USER_LDFLAGS := -static
 %build_module mmake=workbench-prefs-network-module-ipv6 \
     modname=net6 modtype=library modsuffix=netprefs \
     files="$(IPV6_FILES)" moduledir=Prefs/NetModules \
-    uselibs="amiga posixc stdc" includedir=$(NETPREFS_GENINCDIR) \
+    uselibs="amiga posixc stdcio stdc" includedir=$(NETPREFS_GENINCDIR) \
     conffile=$(NETPREFS_SRCDIR)/$(IPV6MODDIR)/ipv6.conf
 
 %copy_files_q mmake=workbench-prefs-network-cpy \
