@@ -6,9 +6,53 @@
 
 #include <aros/debug.h>
 #include <proto/oop.h>
+#include <proto/graphics.h>
 
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
+
+void internal_SetRGB32Colors(struct ViewPort *vp, HIDDT_Color *colors,
+                             ULONG first, ULONG count,
+                             struct GfxBase *GfxBase)
+{
+    struct ViewPortExtra *vpe = NULL;
+    OOP_Object *bm;
+    OOP_Object *pf;
+    HIDDT_ColorModel colmod;
+    ULONG i;
+
+    if (vp->ColorMap)
+        vpe = vp->ColorMap->cm_vpe;
+
+    if (IS_HIDD_BM(vp->RasInfo->BitMap))
+        bm = HIDD_BM_OBJ(vp->RasInfo->BitMap);
+    else
+    {
+        if (!vpe)
+            vpe = (struct ViewPortExtra *)GfxLookUp(vp);
+
+        if ((!vpe) || (!VPE_DATA(vpe)))
+            return;
+
+        bm = VPE_DATA(vpe)->Bitmap;
+    }
+
+    OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+
+    if (vHidd_ColorModel_Palette == colmod ||
+        vHidd_ColorModel_TrueColor == colmod)
+    {
+        HIDD_BM_SetColors(bm, colors, first, count);
+
+        if (IS_HIDD_BM(vp->RasInfo->BitMap))
+        {
+            for (i = 0; i < count; i++)
+                HIDD_BM_PIXTAB(vp->RasInfo->BitMap)[first + i] =
+                    colors[i].pixval;
+        }
+    }
+}
 
 /*****************************************************************************
 
@@ -66,40 +110,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ViewPortExtra *vpe = NULL;
     HIDDT_Color hidd_col;
-    OOP_Object *bm;
-    OOP_Object *pf;
-    HIDDT_ColorModel colmod;
 
-    if(vp->ColorMap) {
+    if(vp->ColorMap)
         SetRGB32CM(vp->ColorMap, n, r, g, b);
-        /* If we have a colormap, we can find ViewPortExtra faster */
-        vpe = vp->ColorMap->cm_vpe;
-    }
-
-    /*
-     * SetRGB32() can be called before MakeVPort().
-     * In order to make it working in such a situation we get bitmap object
-     * pointer from the bitmap itself, if possible.
-     * VPE_DATA is built and attached by MakeVPort(), until this it doesn't exist.
-     * Taking into account comments in SetRGB4(), perhaps order of things
-     * should be changed. It's likely MakeVPort()'s job to load ColorMap
-     * data into the driver.
-     */
-    if(IS_HIDD_BM(vp->RasInfo->BitMap))
-        /* HIDD bitmap, just take object pointer */
-        bm = HIDD_BM_OBJ(vp->RasInfo->BitMap);
-    else {
-        /* Planar bitmap. Take object from ViewPortExtra (if present). */
-        if(!vpe)
-            vpe = (struct ViewPortExtra *)GfxLookUp(vp);
-
-        if((!vpe) || (!VPE_DATA(vpe)))
-            return;
-
-        bm = VPE_DATA(vpe)->Bitmap;
-    }
 
     /* HIDDT_Color entries are UWORD */
     hidd_col.red   = r >> 16;
@@ -107,27 +121,13 @@
     hidd_col.blue  = b >> 16;
     hidd_col.alpha = 0;
 
-    OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+    internal_SetRGB32Colors(vp, &hidd_col, n, 1, GfxBase);
 
-    if(vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
-        HIDD_BM_SetColors(bm, &hidd_col, n, 1);
-
-        D(bug("SetRGB32: bm %p, hbm %p, col %d (%x %x %x %x) mapped to %x\n"
-              , vp->RasInfo->BitMap
-              , bm
-              , n
-              , hidd_col.red, hidd_col.green, hidd_col.blue, hidd_col.alpha
-              , hidd_col.pixval));
-
-        /*
-         * Store the actual pixel value in associated LUT.
-         * This LUT is used by graphics.library for blitting LUT images
-         * to direct-color screens.
-         */
-        if(IS_HIDD_BM(vp->RasInfo->BitMap))
-            HIDD_BM_PIXTAB(vp->RasInfo->BitMap)[n] = hidd_col.pixval;
-    }
+    D(bug("SetRGB32: bm %p, col %d (%x %x %x %x) mapped to %x\n"
+          , vp->RasInfo->BitMap
+          , n
+          , hidd_col.red, hidd_col.green, hidd_col.blue, hidd_col.alpha
+          , hidd_col.pixval));
 
     AROS_LIBFUNC_EXIT
 

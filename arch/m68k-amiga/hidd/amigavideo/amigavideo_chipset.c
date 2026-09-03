@@ -261,6 +261,104 @@ static VOID setcopperplanes(struct amigavideo_staticdata *csd, struct amigabm_da
     }
 }
 
+static VOID changecopperplaneslist(struct amigabm_data *bm,
+                                   struct copper2data *c2d,
+                                   struct BitMap *oldbm,
+                                   struct BitMap *newbm)
+{
+    UWORD *copbpl = c2d->copper2_bpl;
+    WORD i;
+
+    if (!copbpl)
+        return;
+
+    for (i = 0; i < bm->depth; i++)
+    {
+        UBYTE plane = bm->bploffsets[i];
+        ULONG oldptr = (ULONG)oldbm->Planes[plane];
+        ULONG newptr = (ULONG)newbm->Planes[plane];
+        ULONG displayed = ((ULONG)copbpl[1] << 16) | copbpl[3];
+
+        displayed += newptr - oldptr;
+        copbpl[1] = displayed >> 16;
+        copbpl[3] = displayed;
+        copbpl += 4;
+    }
+}
+
+static UWORD currentvpos(VOID)
+{
+    volatile struct Custom *custom = (struct Custom *)0xdff000;
+    UWORD high, low;
+
+    do
+    {
+        low = custom->vhposr >> 8;
+        high = custom->vposr;
+    } while (low != (custom->vhposr >> 8));
+
+    return low | ((high & 7) << 8);
+}
+
+/*
+ * Worst-case time budget for publishing a complete palette and plane-pointer
+ * update before the copper reaches this viewport.  This is a relative beam
+ * distance, not a screen-mode coordinate.
+ */
+#define COPPER_CHANGE_GUARD_LINES 32
+
+static BOOL copperchangedanger(struct amigabm_data *bm)
+{
+    WORD displaystart = bm->diwstarty + (bm->topedge >> bm->interlace);
+    WORD distance = (WORD)currentvpos() - displaystart;
+
+    return distance < 0 && distance >= -COPPER_CHANGE_GUARD_LINES;
+}
+
+VOID commitcopperchanges(struct amigavideo_staticdata *csd,
+                         struct amigabm_data *bm, BOOL wait_for_safe)
+{
+    BOOL topmost = csd->compositedbms != NULL &&
+        (void *)bm == (void *)csd->compositedbms->lh_Head;
+
+    for (;;)
+    {
+        if (wait_for_safe)
+        {
+            while (copperchangedanger(bm))
+                ;
+        }
+
+        if (wait_for_safe)
+            Disable();
+        if (!wait_for_safe || !copperchangedanger(bm))
+        {
+            if (bm->palette_changed)
+            {
+                setcoppercolors(csd, bm, bm->palette, topmost);
+                bm->palette_changed = FALSE;
+            }
+
+            if (bm->bitmap_changed && bm->displayed_pbm && bm->pbm)
+            {
+                changecopperplaneslist(bm, &bm->copld,
+                                       bm->displayed_pbm, bm->pbm);
+                if (bm->interlace)
+                    changecopperplaneslist(bm, &bm->copsd,
+                                           bm->displayed_pbm, bm->pbm);
+                bm->displayed_pbm = bm->pbm;
+                bm->bitmap_changed = FALSE;
+            }
+
+            if (wait_for_safe)
+                Enable();
+            break;
+        }
+        if (wait_for_safe)
+            Enable();
+    }
+}
+
 static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struct copper2data *c2d, UWORD *c2, BOOL odd)
 {
     UWORD *copptr = c2d->copper2_scroll;
@@ -1003,6 +1101,7 @@ BOOL setcolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struc
 
     UWORD i, j = 0;
 
+    Disable();
     for (i = msg->firstColor; j < msg->numColors; i++, j++) {
         UBYTE red, green, blue;
         red   = msg->colors[j].red   >> 8;
@@ -1020,9 +1119,15 @@ BOOL setcolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struc
      * Late SetRGB*() calls must therefore key off the live palette pointer,
      * not the lifetime of the preliminary list storage.
      */
-    if (bm->copld.copper2_palette)
-        setcoppercolors(csd, bm, bm->palette,
-                        (void *)bm == (void *)csd->compositedbms->lh_Head);
+    if (bm->copld.copper2_palette && bm->vis)
+        bm->palette_changed = TRUE;
+    Enable();
+
+    /* A detached bitmap has no live copper reader and can be updated now.
+     * Visible palettes are committed by ChangeVPBitMap(), or by VBlank when
+     * the application performs a palette-only change. */
+    if (bm->copld.copper2_palette && !bm->vis)
+        setcoppercolors(csd, bm, bm->palette, FALSE);
 
     return TRUE;
 }
@@ -1686,6 +1791,18 @@ static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
     struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     BOOL lof = (custom->vposr & 0x8000) != 0;
+    struct amigabm_data *bm;
+
+    /* A palette-only update has no ChangeVPBitMap() call to publish it.
+     * Commit it here, before this field's copper list is selected. */
+    if (csd->compositedbms)
+    {
+        ForeachNode(csd->compositedbms, bm)
+        {
+            if (bm->palette_changed || bm->bitmap_changed)
+                commitcopperchanges(csd, bm, FALSE);
+        }
+    }
 
     /* handle updatescroll first, since it may change the LOFlist/SHFlist pointers */
     if (csd->updatescroll) {
