@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- kernel-ata-includes : kernel-scsi-includes
+#MM- kernel-ata-includes : kernel-scsi-includes kernel-hidd-bus-includes kernel-hidd-storage-includes
 #MM- kernel-ata-kobj-includes : kernel-scsi--kobj-includes
 
 USER_CPPFLAGS := \
