@@ -682,6 +682,17 @@ if test "x-$aros_cxxgnu23" = "x-yes" ; then
     aros_cxxflags_gnu23=-std=gnu++23
 fi
 
+dnl gcc's lifetime dead-store elimination drops stores made to an object's
+dnl memory before its constructor runs; code that fills in fields from a
+dnl placement operator new (Mesa's glsl ir, for one) needs it lowered.
+AC_MSG_CHECKING([whether ${CXX} supports -flifetime-dse=1])
+CXXFLAGS=-flifetime-dse=1
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxlifetimedse="yes"],[aros_cxxlifetimedse="no"])
+AC_MSG_RESULT($aros_cxxlifetimedse)
+if test "x-$aros_cxxlifetimedse" = "x-yes" ; then
+    aros_cxxflags_lifetime_dse1=-flifetime-dse=1
+fi
+
 AC_MSG_CHECKING([whether ${CXX} accepts -fpermissive])
 CXXFLAGS=-fpermissive
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_permissive="yes"],[aros_permissive="no"])
@@ -1722,6 +1733,7 @@ AC_SUBST(aros_cxxflags_cxx20)
 AC_SUBST(aros_cxxflags_gnu20)
 AC_SUBST(aros_cxxflags_cxx23)
 AC_SUBST(aros_cxxflags_gnu23)
+AC_SUBST(aros_cxxflags_lifetime_dse1)
 
 AC_SUBST(aros_cxxflags_nostdlibxx)
 

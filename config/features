@@ -847,6 +847,7 @@ aros_cflags_exceptions
 aros_cflags_no_integrated_as
 aros_targetsection_comment
 aros_cxxflags_nostdlibxx
+aros_cxxflags_lifetime_dse1
 aros_cxxflags_gnu23
 aros_cxxflags_cxx23
 aros_cxxflags_gnu20
@@ -6204,6 +6205,34 @@ if test "x-$aros_cxxgnu23" = "x-yes" ; then
     aros_cxxflags_gnu23=-std=gnu++23
 fi
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -flifetime-dse=1" >&5
+printf %s "checking whether ${CXX} supports -flifetime-dse=1... " >&6; }
+CXXFLAGS=-flifetime-dse=1
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxxlifetimedse="yes"
+else case e in #(
+  e) aros_cxxlifetimedse="no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxxlifetimedse" >&5
+printf "%s\n" "$aros_cxxlifetimedse" >&6; }
+if test "x-$aros_cxxlifetimedse" = "x-yes" ; then
+    aros_cxxflags_lifetime_dse1=-flifetime-dse=1
+fi
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} accepts -fpermissive" >&5
 printf %s "checking whether ${CXX} accepts -fpermissive... " >&6; }
 CXXFLAGS=-fpermissive
@@ -9069,6 +9098,7 @@ fi
 rm -f $AROS_DEVELOPER/include/__testsincdir.h
 
 #
+
 
 
 
