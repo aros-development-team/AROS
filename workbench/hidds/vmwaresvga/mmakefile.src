@@ -4,9 +4,41 @@ include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 
 GALLIUM_PATH = $(top_srcdir)/src/gallium
 
+ifneq ($(wildcard $(GALLIUM_PATH)/drivers/svga/Makefile.sources),)
 include $(GALLIUM_PATH)/drivers/svga/Makefile.sources
+else
+# Mesa >= 26 ships no Makefile.sources; this mirrors files_svga in meson.build.
+C_SOURCES := \
+             svga_cmd.c svga_cmd_vgpu10.c svga_context.c \
+             svga_draw_arrays.c svga_draw.c svga_draw_elements.c \
+             svga_format.c svga_image_view.c svga_link.c \
+             svga_pipe_blend.c svga_pipe_blit.c svga_pipe_clear.c \
+             svga_pipe_constants.c svga_pipe_cs.c svga_pipe_depthstencil.c \
+             svga_pipe_draw.c svga_pipe_flush.c svga_pipe_fs.c svga_pipe_gs.c \
+             svga_pipe_ts.c svga_pipe_misc.c svga_pipe_query.c \
+             svga_pipe_rasterizer.c svga_pipe_sampler.c svga_pipe_streamout.c \
+             svga_pipe_vertex.c svga_pipe_vs.c \
+             svga_resource_buffer.c svga_resource_buffer_upload.c \
+             svga_resource.c svga_resource_texture.c svga_sampler_view.c \
+             svga_screen.c svga_screen_cache.c svga_shader.c svga_shader_buffer.c \
+             svga_state.c svga_state_constants.c svga_state_cs.c \
+             svga_state_framebuffer.c svga_state_fs.c svga_state_gs.c \
+             svga_state_ts.c svga_state_need_swtnl.c svga_state_rss.c \
+             svga_state_sampler.c svga_state_tgsi_transform.c svga_state_tss.c \
+             svga_state_uav.c svga_state_vdecl.c svga_state_vs.c \
+             svga_surface.c svga_swtnl_backend.c svga_swtnl_draw.c \
+             svga_swtnl_state.c svga_tgsi.c svga_tgsi_decl_sm30.c \
+             svga_tgsi_insn.c svga_tgsi_vgpu10.c \
+             svgadump/svga_dump.c svgadump/svga_shader_dump.c \
+             svgadump/svga_shader_op.c
+endif
 
-#MM- workbench-hidds-vmwaresvga : hidd-vmwaresvga-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+# The AROS svga glue targets the Mesa 20.x gallium driver API. Mesa 26 drops
+# Makefile.sources and changed the driver interfaces, so only hook the hidd in
+# for the Mesa version it has been ported to.
+#MM- workbench-hidds-vmwaresvga : hidd-vmwaresvga-mesa$(OPT_MESAGL)
+#MM- hidd-vmwaresvga-mesa20.0.8 : hidd-vmwaresvga-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- hidd-vmwaresvga-mesa26.0.0 : hidd-vmwaresvga-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- hidd-vmwaresvga-pc-i386 : hidd-vmwaresvga
 #MM- hidd-vmwaresvga-pc-x86_64 : hidd-vmwaresvga
 #MM- hidd-vmwaresvga: includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib
@@ -18,7 +50,7 @@ GALLIUMFILES	:=	\
 	vmwaresvga_gallium_screen \
 	vmwaresvga_gallium_surf \
 	vmwaresvga_gallium_ctx \
-	arosc_emul \
+	$(SRCDIR)/workbench/libs/mesa/emul_arosc \
 	$(addprefix $(GALLIUM_PATH)/drivers/svga/,$(MESA3D_VMWARESVGA_C_SOURCES:.c=))
 
 FILES	:=	\
@@ -40,22 +72,38 @@ USER_INCLUDES += \
             -iquote $(GALLIUM_PATH)/drivers \
             -iquote $(GALLIUM_PATH)/include \
             -iquote $(GALLIUM_PATH)/auxiliary \
-            -iquote $(GENDIR)/workbench/libs/mesa/$(MESAGLVERSION)/src/mesa/main
+            -iquote $(GENDIR)/workbench/libs/mesa/$(MESAGLVERSION)/src/mesa/main \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/glsl \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(top_builddir)/src/util/format \
+            -iquote $(top_srcdir)/src/compiler \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir
 
 USER_CPPFLAGS += \
                 -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
-                -DEMBEDDED_DEVICE
+                -DEMBEDDED_DEVICE \
+                -DGALLIUM_VMWGFX
 
 #USER_CPPFLAGS += -DDEBUG=1
 
+# The svga driver now goes through NIR, so the (C++) compiler linklib is part
+# of the group and the module is linked with the C++ driver.
 USER_LDFLAGS := \
   -L$(top_libdir) \
-  -lgalliumauxiliary -lmesadevutil \
-  -lz -lpthread -lposixc -lstdcio -lstdc
+  -Wl,--start-group -lcompiler -lgalliumauxiliary -lmesautil \
+  -lz -lpthread -lposixc -lstdc
+ifneq ($(TARGET_LIBATOMIC),)
+USER_LDFLAGS += $(TARGET_CXX_LIBS)
+endif
+USER_LDFLAGS += -Wl,--end-group
 
 %build_module mmake=hidd-vmwaresvga \
   modname=vmwaresvga modtype=hidd \
-  files=$(FILES) \
+  files=$(FILES) alwayscxxlink=yes \
   uselibs="" objdir="$(OBJDIR)/$(MESAGLVERSION)"
 
 %common

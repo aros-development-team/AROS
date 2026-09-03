@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2020, The AROS Development Team. All rights reserved.
+    Copyright 2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef DEBUG

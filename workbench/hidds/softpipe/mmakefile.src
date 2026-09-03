@@ -55,10 +55,12 @@ MESA3D_SOFTPIPE_C_SOURCES := $(filter %.c, $(C_SOURCES))
 SOFTPIPE_SOURCES := \
              $(addprefix $(GALLIUM_PATH)/drivers/softpipe/,$(MESA3D_SOFTPIPE_C_SOURCES:.c=))
 
+# emul_arosc supplies the exec based malloc/free that mesa3dgl.library also
+# uses; NIR shaders cross the module boundary and must share one allocator.
 SOFTPIPE_HIDD_SOURCES := \
             softpipe_init \
             softpipe_galliumclass \
-            arosc_emul
+            $(SRCDIR)/workbench/libs/mesa/emul_arosc
 
 USER_INCLUDES := \
             $(USER_INCLUDES) \

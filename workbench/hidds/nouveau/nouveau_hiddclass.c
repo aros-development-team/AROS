@@ -448,13 +448,27 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
     LOCK_ENGINE
 
-    nouveau_device_open("", &nvdev);
+    {
+        struct nouveau_drm *nvdrm = NULL;
+        int drmfd = drmOpen("nouveau", "");
+
+        if (drmfd < 0 || nouveau_drm_new(drmfd, &nvdrm) || nouveau_device_new(&nvdrm->client, &nvdev))
+        {
+            nvlog("[Nouveau] Not able to open the drm device\n");
+            if (nvdrm)
+                nouveau_drm_del(&nvdrm);
+            if (drmfd >= 0)
+                drmClose(drmfd);
+            UNLOCK_ENGINE
+            return NULL;
+        }
+    }
 
     nouveau_client_new(nvdev, &nvclient);
 
 
     /* Select crtc and connector */
-    if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc))
+    if (!HIDDNouveauSelectConnectorCrtc(NOUVEAU_DEV_FD(nvdev), &selectedconnector, &selectedcrtc))
     {
         nvlog("[Nouveau] Not able to select connector and crtc\n");
 
@@ -554,7 +568,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 family = NULL; break;
             }
 
-            if (!drmGetChipName(nvdev->fd, chip, sizeof(chip)))
+            if (!drmGetChipName(NOUVEAU_DEV_FD(nvdev), chip, sizeof(chip)))
                 sprintf(chip, "NV%X", (unsigned)nvdev->chipset);
 
             if (family)

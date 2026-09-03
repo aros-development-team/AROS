@@ -129,7 +129,7 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (bmdata->fbid != 0)
     {
         struct nouveau_device *nvdev = SD(cl)->carddata.dev;
-        drmModeRmFB(nvdev->fd, bmdata->fbid);   
+        drmModeRmFB(NOUVEAU_DEV_FD(nvdev), bmdata->fbid);   
         bmdata->fbid = 0;
     }
 

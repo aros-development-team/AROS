@@ -2,7 +2,7 @@
 #define _LLVMPIPE_INTERN_H
 
 /*
-    Copyright 2010-2021, The AROS Development Team. All rights reserved.
+    Copyright 2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 

@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2025, The AROS Development Team. All rights reserved.
+    Copyright 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef MESA3DGL_TYPES_H
@@ -9,16 +9,14 @@
 #include "main/mtypes.h"
 /* Mesa 21.0+ renamed st_api.h -> frontend/api.h. __has_include is
  * reliable here; a #define probe may not be pulled in yet. */
-#if defined(__has_include) && __has_include("frontend/api.h")
+/* Mesa >= 22: the state tracker is driven directly through st_api_*() and the
+ * frontend screen/drawable structures; there is no st_api object any more. */
 #include "frontend/api.h"
-#else
-#include "state_tracker/st_api.h"
-#endif
-#include "state_tracker/st_gl_api.h"
+#include "state_tracker/st_context.h"
 
 struct mesa3dgl_framebuffer
 {
-    struct st_framebuffer_iface base;
+    struct pipe_frontend_drawable base;
     struct st_visual            stvis;
 
     struct pipe_screen          *screen;
@@ -34,9 +32,9 @@ struct mesa3dgl_framebuffer
 struct mesa3dgl_context
 {
     APTR                                driver;
-    struct st_context_iface     *st;
+    struct st_context           *st;
     struct st_visual            stvis;
-    struct st_manager           *stmanager;
+    struct pipe_frontend_screen *stmanager;
 
     struct mesa3dgl_framebuffer *framebuffer;
     struct Window               *window;
@@ -51,6 +49,5 @@ struct mesa3dgl_context
 };
 
 /*  state trackers GL API */
-extern struct st_api * glstapi;
 
 #endif /* MESA3DGL_TYPES_H */

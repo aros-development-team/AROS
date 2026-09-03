@@ -337,3 +337,222 @@ diff -ruN mesa-26.0.0/include/c99_alloca.h mesa-26.0.0.aros/include/c99_alloca.h
 +#elif defined(__sun) || defined(__CYGWIN__) || defined(__AROS__)
 
  #  include <alloca.h>
+
+diff -ruN mesa-26.0.0/src/util/u_thread.h mesa-26.0.0.aros/src/util/u_thread.h
+--- mesa-26.0.0/src/util/u_thread.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/util/u_thread.h	2026-09-03 00:00:00.000000000 +0000
+@@ -45,9 +45,11 @@
+  * still want to use normal TLS (which involves a function call, but not the
+  * expensive pthread_getspecific() or its equivalent).
+  */
+-#if DETECT_OS_APPLE
++#if DETECT_OS_APPLE || defined(__AROS__)
+ /* Apple Clang emits wrappers when using thread_local that break module linkage,
+- * but not with __thread
++ * but not with __thread.  The same applies to C++ objects on AROS: GCC emits a
++ * weak reference to the TLS init wrapper for an extern thread_local, which the
++ * AROS module link rejects as an undefined symbol.
+  */
+ #define __THREAD_INITIAL_EXEC __thread
+ #elif defined(__GLIBC__)
+diff -ruN mesa-26.0.0/src/gallium/drivers/svga/svgadump/svga_shader.h mesa-26.0.0.aros/src/gallium/drivers/svga/svgadump/svga_shader.h
+--- mesa-26.0.0/src/gallium/drivers/svga/svgadump/svga_shader.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/svga/svgadump/svga_shader.h	2026-09-03 00:00:00.000000000 +0000
+@@ -16,6 +16,11 @@
+ #define ST_SHADER_SVGA_H
+ 
+ #include "util/compiler.h"
++
++#if defined(__AROS__)
++/* for uint */
++#include <sys/types.h>
++#endif
+ 
+ struct sh_op
+ {
+diff -ruN mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_fence.h mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_fence.h
+--- mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_fence.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_fence.h	2026-09-03 00:00:00.000000000 +0000
+@@ -59,6 +59,12 @@
+ void _nouveau_fence_next(struct nouveau_context *);
+ void _nouveau_fence_ref(struct nouveau_fence *, struct nouveau_fence **);
+ 
++#if defined(__AROS__)
++/* the ported kernel driver exports these names too */
++#define nouveau_fence_new   gallium_nouveau_fence_new
++#define nouveau_fence_wait  gallium_nouveau_fence_wait
++#endif
++
+ bool nouveau_fence_new(struct nouveau_context *, struct nouveau_fence **);
+ void nouveau_fence_cleanup(struct nouveau_context *);
+ bool nouveau_fence_work(struct nouveau_fence *, void (*)(void *), void *);
+diff -ruN mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_vp3_video.c mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c
+--- mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-09-03 00:00:00.000000000 +0000
+@@ -20,7 +20,15 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if defined(__AROS__)
++/* buffer objects are mapped by the drm shim for their whole life */
++#define munmap(p, s) do { (void)(p); (void)(s); } while (0)
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0
++#endif
++#else
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <stdio.h>
+ #include <fcntl.h>
+diff -ruN mesa-26.0.0/src/gallium/drivers/nouveau/nv50/nv84_video.c mesa-26.0.0.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c
+--- mesa-26.0.0/src/gallium/drivers/nouveau/nv50/nv84_video.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c	2026-09-03 00:00:00.000000000 +0000
+@@ -20,7 +20,15 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if defined(__AROS__)
++/* buffer objects are mapped by the drm shim for their whole life */
++#define munmap(p, s) do { (void)(p); (void)(s); } while (0)
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0
++#endif
++#else
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <fcntl.h>
+diff -ruN mesa-26.0.0/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c mesa-26.0.0.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c
+--- mesa-26.0.0/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2026-09-03 00:00:00.000000000 +0000
+@@ -21,7 +21,15 @@
+  */
+ 
+ #include "nv50/nv98_video.h"
++#if defined(__AROS__)
++/* buffer objects are mapped by the drm shim for their whole life */
++#define munmap(p, s) do { (void)(p); (void)(s); } while (0)
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0
++#endif
++#else
+ #include <sys/mman.h>
++#endif
+ 
+ #if NOUVEAU_VP3_DEBUG_FENCE
+ static void dump_comm_vp(struct nouveau_vp3_decoder *dec, struct comm *comm, u32 comm_seq,
+diff -ruN mesa-26.0.0/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c mesa-26.0.0.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c
+--- mesa-26.0.0/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2026-09-03 00:00:00.000000000 +0000
+@@ -21,7 +21,15 @@
+  */
+ 
+ #include "nvc0/nvc0_video.h"
++#if defined(__AROS__)
++/* buffer objects are mapped by the drm shim for their whole life */
++#define munmap(p, s) do { (void)(p); (void)(s); } while (0)
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0
++#endif
++#else
+ #include <sys/mman.h>
++#endif
+ 
+ #if NOUVEAU_VP3_DEBUG_FENCE
+ static void dump_comm_vp(struct nouveau_vp3_decoder *dec, struct comm *comm, u32 comm_seq,
+diff -ruN mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_screen.c
+--- mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_screen.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_screen.c	2026-09-03 00:00:00.000000000 +0000
+@@ -11,7 +11,9 @@
+ #include "util/u_string.h"
+ #include "util/hex.h"
+ 
++#if !defined(__AROS__)
+ #include "util/os_mman.h"
++#endif
+ #include "util/os_time.h"
+ 
+ #include <stdio.h>
+@@ -198,11 +200,16 @@
+ static void*
+ reserve_vma(uintptr_t start, uint64_t reserved_size)
+ {
++#if defined(__AROS__)
++   /* no address space reservation on AROS; SVM stays disabled */
++   return NULL;
++#else
+    void *reserved = os_mmap((void*)start, reserved_size, PROT_NONE,
+                             MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    if (reserved == MAP_FAILED)
+       return NULL;
+    return reserved;
++#endif
+ }
+ 
+ static void
+@@ -329,7 +336,11 @@
+       size = sizeof(nve0_data);
+    }
+ 
++#if defined(__AROS__)
++   const bool enable_svm = false;
++#else
+    bool enable_svm = debug_get_bool_option("NOUVEAU_SVM", false);
++#endif
+    screen->has_svm = false;
+    /* we only care about HMM with OpenCL enabled */
+    if (dev->chipset > 0x130 && enable_svm) {
+@@ -364,8 +375,10 @@
+          ret = drmCommandWrite(screen->drm->fd, DRM_NOUVEAU_SVM_INIT,
+                                &svm_args, sizeof(svm_args));
+          screen->has_svm = !ret;
++#if !defined(__AROS__)
+          if (!screen->has_svm)
+             os_munmap(screen->svm_cutout, screen->svm_cutout_size);
++#endif
+          break;
+       } while ((start + screen->svm_cutout_size) < BITFIELD64_MASK(limit_bit));
+    }
+diff -ruN mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_screen.c
+--- mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_screen.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_screen.c	2026-09-03 00:00:00.000000000 +0000
+@@ -469,8 +469,10 @@
+    return 0;
+ 
+ err:
++#if !defined(__AROS__)
+    if (screen->svm_cutout)
+       os_munmap(screen->svm_cutout, screen->svm_cutout_size);
++#endif
+    return ret;
+ }
+ 
+diff -ruN mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_screen.c
+--- mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_screen.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/nouveau/nouveau_screen.c	2026-09-03 00:00:00.000000000 +0000
+@@ -482,8 +482,10 @@
+    int fd = screen->drm->fd;
+ 
+    glsl_type_singleton_decref();
++#if !defined(__AROS__)
+    if (screen->has_svm)
+       os_munmap(screen->svm_cutout, screen->svm_cutout_size);
++#endif
+ 
+    nouveau_mm_destroy(screen->mm_GART);
+    nouveau_mm_destroy(screen->mm_VRAM);
+
+--- mesa-26.0.0/src/util/compiler.h	2026-09-03 15:19:35.505137895 +0100
++++ mesa-26.0.0.aros/src/util/compiler.h	2026-09-03 00:00:00.000000000 +0000
+@@ -62,6 +62,9 @@
+ #elif defined(__OpenBSD__)
+ #include <sys/types.h>
+ #define CPU_TO_LE32( x ) htole32( x )
++#elif defined(__AROS__)
++/* AROS has no <sys/endian.h>; use the compiler builtin. */
++#define CPU_TO_LE32( x ) __builtin_bswap32( x )
+ #else /*__linux__ */
+ #include <sys/endian.h>
+ #define CPU_TO_LE32( x ) bswap32( x )

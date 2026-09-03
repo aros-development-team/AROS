@@ -1,12 +1,12 @@
 /*
-    Copyright (C) 2014-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2014-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
 
 #include <proto/exec.h>
 
-#include "state_tracker/st_gl_api.h"
+#include "mesa3dgl_types.h"
 
 /*****************************************************************************
 
@@ -35,5 +35,7 @@
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    return (APTR)st_gl_api_create();
+    /* Mesa >= 22 has no st_api object; the GL entry points are called
+     * directly (st_api_create_context() and friends). Kept for the ABI. */
+    return NULL;
 }

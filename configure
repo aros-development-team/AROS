@@ -8000,6 +8000,68 @@ See 'config.log' for more details" "$LINENO" 5; }
 fi
 
 
+{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking if Python's yaml module is installed" >&5
+printf %s "checking if Python's yaml module is installed... " >&6; }
+
+{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking for Python 'yaml' library" >&5
+printf %s "checking for Python 'yaml' library... " >&6; }
+if test ${pc_cv_python_module_yaml+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_ext=py
+ac_compile='chmod +x conftest.$ac_ext >&5'
+ac_link='chmod +x conftest.$ac_ext && cp conftest.$ac_ext conftest >&5'
+     if test "$cross_compiling" = yes
+then :
+  { { printf '%s\n' "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf '%s\n' "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "cannot run test program while cross compiling
+See 'config.log' for more details" "$LINENO" 5; }
+else case e in #(
+  e) cat > conftest.$ac_ext <<_ACEOF
+#!$PYTHON
+import sys
+try:
+    import yaml
+except:
+    sys.exit(1)
+else:
+    sys.exit(0)
+
+
+_ACEOF
+if ac_fn_py_try_run "$LINENO"
+then :
+  pc_cv_python_module_yaml="yes"
+else case e in #(
+  e) pc_cv_python_module_yaml="no" ;;
+esac
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+esac
+fi
+
+     ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+     ;;
+esac
+fi
+{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $pc_cv_python_module_yaml" >&5
+printf '%s\n' "$pc_cv_python_module_yaml" >&6; }
+if test "$pc_cv_python_module_yaml" = "no"
+then :
+  { { printf '%s\n' "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf '%s\n' "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "failed to detect the Python yaml module (PyYAML)
+See 'config.log' for more details" "$LINENO" 5; }
+fi
+
+
 # Check whether --enable-libpng-config was given.
 if test ${enable_libpng_config+y}
 then :

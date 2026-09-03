@@ -11,14 +11,135 @@ include $(SRCDIR)/$(CURDIR)/sources.drm.mak
 # agp.hidd only exists on pc targets; elsewhere the driver runs PCIe-only
 # and the AGP calls in drm-compat resolve to no bridge at runtime.
 
-#MM- workbench-hidds-nouveau : hidd-nouveau-$(AROS_TARGET_CPU)
+# The AROS nouveau glue targets the Mesa 20.x gallium driver API. Mesa 26 drops
+# Makefile.sources and changed the driver interfaces, so only hook the hidd in
+# for the Mesa version it has been ported to.
+#MM- workbench-hidds-nouveau : hidd-nouveau-mesa$(OPT_MESAGL)
+#MM- hidd-nouveau-mesa20.0.8 : hidd-nouveau-$(AROS_TARGET_CPU)
+#MM- hidd-nouveau-mesa26.0.0 : hidd-nouveau-$(AROS_TARGET_CPU)
 #MM- hidd-nouveau-i386 : hidd-nouveau
 #MM- hidd-nouveau-x86_64 : hidd-nouveau
 #MM- hidd-nouveau-riscv64 : hidd-nouveau
 #MM hidd-nouveau : hidd-nouveau-libdrm hidd-nouveau-drm hidd-nouveau-gallium hidd-i2c hidd-agp-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) hidd-gallium mesa3dgl-linklibs linklibs-libatomic
 #MM hidd-nouveau-gallium : mesa3dgl-linklibs
 
+ifneq ($(wildcard $(GALLIUM_PATH)/drivers/nouveau/Makefile.sources),)
 include $(GALLIUM_PATH)/drivers/nouveau/Makefile.sources
+else
+# Mesa >= 26 ships no Makefile.sources; these mirror files_libnouveau and
+# files_libnouveau_codegen in the meson.build files.
+C_SOURCES := \
+             nouveau_buffer.c \
+             nouveau_fence.c \
+             nouveau_heap.c \
+             nouveau_mm.c \
+             nouveau_screen.c \
+             nouveau_video.c \
+             nouveau_vp3_video_bsp.c \
+             nouveau_vp3_video.c \
+             nouveau_vp3_video_vp.c \
+             nv30/nv30_clear.c \
+             nv30/nv30_context.c \
+             nv30/nv30_draw.c \
+             nv30/nv30_format.c \
+             nv30/nv30_fragprog.c \
+             nv30/nv30_fragtex.c \
+             nv30/nv30_miptree.c \
+             nv30/nv30_push.c \
+             nv30/nv30_query.c \
+             nv30/nv30_resource.c \
+             nv30/nv30_screen.c \
+             nv30/nv30_state.c \
+             nv30/nv30_state_validate.c \
+             nv30/nv30_texture.c \
+             nv30/nv30_transfer.c \
+             nv30/nv30_vbo.c \
+             nv30/nv30_vertprog.c \
+             nv30/nv40_verttex.c \
+             nv30/nvfx_fragprog.c \
+             nv30/nvfx_vertprog.c \
+             nv50/nv50_compute.c \
+             nv50/nv50_context.c \
+             nv50/nv50_formats.c \
+             nv50/nv50_miptree.c \
+             nv50/nv50_program.c \
+             nv50/nv50_push.c \
+             nv50/nv50_query.c \
+             nv50/nv50_query_hw.c \
+             nv50/nv50_query_hw_metric.c \
+             nv50/nv50_query_hw_sm.c \
+             nv50/nv50_resource.c \
+             nv50/nv50_screen.c \
+             nv50/nv50_shader_state.c \
+             nv50/nv50_state.c \
+             nv50/nv50_state_validate.c \
+             nv50/nv50_surface.c \
+             nv50/nv50_tex.c \
+             nv50/nv50_transfer.c \
+             nv50/nv50_vbo.c \
+             nv50/nv84_video_bsp.c \
+             nv50/nv84_video.c \
+             nv50/nv84_video_vp.c \
+             nv50/nv98_video_bsp.c \
+             nv50/nv98_video.c \
+             nv50/nv98_video_ppp.c \
+             nv50/nv98_video_vp.c \
+             nvc0/qmda0c0.c \
+             nvc0/qmdc0c0.c \
+             nvc0/qmdc3c0.c \
+             nvc0/nvc0_compute.c \
+             nvc0/nvc0_context.c \
+             nvc0/nvc0_formats.c \
+             nvc0/nvc0_miptree.c \
+             nvc0/nvc0_program.c \
+             nvc0/nvc0_query.c \
+             nvc0/nvc0_query_hw.c \
+             nvc0/nvc0_query_hw_metric.c \
+             nvc0/nvc0_query_hw_sm.c \
+             nvc0/nvc0_query_sw.c \
+             nvc0/nvc0_resource.c \
+             nvc0/nvc0_screen.c \
+             nvc0/nvc0_shader_state.c \
+             nvc0/nvc0_state.c \
+             nvc0/nvc0_state_validate.c \
+             nvc0/nvc0_surface.c \
+             nvc0/nvc0_tex.c \
+             nvc0/nvc0_transfer.c \
+             nvc0/nvc0_vbo.c \
+             nvc0/nvc0_vbo_translate.c \
+             nvc0/nvc0_video_bsp.c \
+             nvc0/nvc0_video.c \
+             nvc0/nvc0_video_ppp.c \
+             nvc0/nvc0_video_vp.c \
+             nvc0/nve4_compute.c
+NV50_CODEGEN_SOURCES := \
+             codegen/nv50_ir.cpp \
+             codegen/nv50_ir_bb.cpp \
+             codegen/nv50_ir_build_util.cpp \
+             codegen/nv50_ir_emit_nv50.cpp \
+             codegen/nv50_ir_from_nir.cpp \
+             codegen/nv50_ir_graph.cpp \
+             codegen/nv50_ir_lowering_helper.cpp \
+             codegen/nv50_ir_lowering_nv50.cpp \
+             codegen/nv50_ir_peephole.cpp \
+             codegen/nv50_ir_print.cpp \
+             codegen/nv50_ir_ra.cpp \
+             codegen/nv50_ir_serialize.cpp \
+             codegen/nv50_ir_ssa.cpp \
+             codegen/nv50_ir_target.cpp \
+             codegen/nv50_ir_target_nv50.cpp \
+             codegen/nv50_ir_util.cpp \
+             codegen/nv50_ir_emit_gv100.cpp \
+             codegen/nv50_ir_emit_gk110.cpp \
+             codegen/nv50_ir_emit_gm107.cpp \
+             codegen/nv50_ir_emit_nvc0.cpp \
+             codegen/nv50_ir_lowering_gv100.cpp \
+             codegen/nv50_ir_lowering_gm107.cpp \
+             codegen/nv50_ir_lowering_nvc0.cpp \
+             codegen/nv50_ir_target_gv100.cpp \
+             codegen/nv50_ir_target_gm107.cpp \
+             codegen/nv50_ir_target_nvc0.cpp
+endif
 
 USER_INCLUDES := \
             -iquote $(GALLIUM_PATH)/include \
@@ -28,6 +149,18 @@ USER_INCLUDES := \
             -iquote $(top_srcdir)/src/mesa \
             -iquote $(GALLIUM_PATH)/drivers/nouveau \
             -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(GALLIUM_PATH)/drivers/nouveau/codegen \
+            -iquote $(GENDIR)/workbench/libs/mesa/$(MESAGLVERSION)/src/mesa/main \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/glsl \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(top_builddir)/src/util/format \
+            -iquote $(top_srcdir)/src/compiler \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
+            -I$(top_srcdir)/src/nouveau/headers \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi \
             -I$(SRCDIR)/$(CURDIR)/include/libdrm/nouveau \
             -I$(SRCDIR)/$(CURDIR)/libdrm \
             -I$(SRCDIR)/$(CURDIR)/libdrm/nouveau \
@@ -47,7 +180,6 @@ TMP_GALLIUM_NOUVEAU_C_SOURCES := \
                 $(filter %.c, $(GALLIUM_NOUVEAU_SOURCES))
 
 GALLIUM_NOUVEAU_C_SOURCES := \
-                $(GALLIUM_PATH)/winsys/nouveau/drm/nouveau_drm_winsys \
                 $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(TMP_GALLIUM_NOUVEAU_C_SOURCES:.c=))
 
 TMP_GALLIUM_NOUVEAU_CXX_SOURCES := \
@@ -55,6 +187,8 @@ TMP_GALLIUM_NOUVEAU_CXX_SOURCES := \
 
 GALLIUM_NOUVEAU_CXX_SOURCES := \
                 $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(TMP_GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
+
+USER_CPPFLAGS += -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" -DNOUVEAU_USE_UTIL_LIST
 
 %build_linklib mmake=hidd-nouveau-gallium libname=gallium_nouveau objdir=$(GENDIR)/$(CURDIR)/gallium \
     files="$(GALLIUM_NOUVEAU_C_SOURCES)" cxxfiles="$(GALLIUM_NOUVEAU_CXX_SOURCES)"
@@ -69,7 +203,13 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/drm/nouveau/include \
             -iquote $(SRCDIR)/$(CURDIR)/drm \
             -iquote $(SRCDIR)/$(CURDIR)/include/libdrm/nouveau \
-            -iquote $(SRCDIR)/$(CURDIR)/libdrm
+            -iquote $(SRCDIR)/$(CURDIR)/libdrm \
+            -I$(SRCDIR)/$(CURDIR)/include/libdrm/nouveau \
+            -I$(top_srcdir)/src \
+            -I$(top_srcdir)/include \
+            -I$(top_srcdir)/src/nouveau/headers \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/util
 
 LIBDRM_C_SOURCES := \
             $(AROS_LIBDRM_CORE_SOURCES) \
@@ -128,6 +268,7 @@ XF86_NOUVEAU_PATH = $(SRCDIR)/$(CURDIR)/xf86-video-nouveau/
 
 NOUVEAU_HIDD_C_SOURCES := \
             arosc_emul \
+            $(SRCDIR)/workbench/libs/mesa/emul_arosc \
             nouveau_hiddclass \
             nouveau_displayclass \
             nouveau_init \
@@ -141,10 +282,13 @@ NOUVEAU_HIDD_C_SOURCES := \
 USER_INCLUDES := \
             -I$(XF86_NOUVEAU_PATH) \
             -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi \
             -I$(SRCDIR)/$(CURDIR)/include/libdrm/nouveau \
+            -I$(top_srcdir)/src/nouveau/headers \
 
 USER_INCLUDES += \
             -iquote $(top_srcdir)/src \
+            -iquote $(top_builddir)/src \
             -iquote $(GALLIUM_PATH)/auxiliary \
             -iquote $(GALLIUM_PATH)/include \
             -iquote $(top_srcdir)/include \
@@ -152,7 +296,7 @@ USER_INCLUDES += \
 
 USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG)
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING)
-USER_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_GNU99)
+USER_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_GNU11)
 
 USER_LDFLAGS += \
   -L$(top_libdir)

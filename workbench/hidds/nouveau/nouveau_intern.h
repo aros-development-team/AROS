@@ -12,6 +12,10 @@
 
 #include <nouveau.h>
 
+/* The DRM file descriptor now lives in the nouveau_drm root object */
+#define NOUVEAU_DEV_FD(dev)         (nouveau_drm(&(dev)->object)->fd)
+#define NOUVEAU_DEV_DRM_VERSION(dev) (nouveau_drm(&(dev)->object)->version)
+
 #include LC_LIBDEFS_FILE
 
 #define CLID_Hidd_Gfx_Nouveau           "hidd.gfx.nouveau"
@@ -271,9 +275,9 @@ static inline VOID HIDDNouveauFlushDisplayable(struct CardData *carddata,
     if (!bmdata->displayable)
         return;
     if (carddata->pushbuf)
-        nouveau_pushbuf_kick(carddata->pushbuf, carddata->pushbuf->channel);
+        nouveau_pushbuf_kick(carddata->pushbuf);
     if (carddata->ce_enabled && carddata->ce_pushbuf)
-        nouveau_pushbuf_kick(carddata->ce_pushbuf, carddata->ce_pushbuf->channel);
+        nouveau_pushbuf_kick(carddata->ce_pushbuf);
 }
 
 #define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); \

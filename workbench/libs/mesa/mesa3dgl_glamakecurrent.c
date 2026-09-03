@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -41,24 +41,23 @@
 
     if (_ctx)
     {
-        struct st_context_iface * cur_ctx = glstapi->get_current(glstapi);
+        struct st_context * cur_ctx = st_api_get_current();
 
         if (_ctx->st != cur_ctx)
         {
             /* Recalculate buffer dimensions */
             MESA3DGLRecalculateBufferWidthHeight(_ctx);
 
-            D(bug("[MESA3DGL] %s: calling glstapi @ 0x%p -> make_current @ 0x%p\n", __func__, glstapi, glstapi->make_current));
             D(bug("[MESA3DGL] %s: _ctx->framebuffer @ 0x%p base @ 0x%p\n", __func__, _ctx->framebuffer, &_ctx->framebuffer->base));
             /* Attach */
-            glstapi->make_current(glstapi, _ctx->st,
+            st_api_make_current(_ctx->st,
                 &_ctx->framebuffer->base, &_ctx->framebuffer->base);
         }
     }
     else
     {
         /* Detach */
-        glstapi->make_current(glstapi, NULL, NULL, NULL);
+        st_api_make_current(NULL, NULL, NULL);
     }
     D(bug("[MESA3DGL] %s: done\n", __func__));
 }

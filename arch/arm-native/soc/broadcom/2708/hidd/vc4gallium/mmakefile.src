@@ -9,7 +9,12 @@ GALLIUM_PATH = $(top_srcdir)/$(CUR_MESADIR)
 #
 # Only build for RasPi targets
 #
-#MM- workbench-hidds-raspi : hidd-vc4gallium
+# The AROS glue here targets the Mesa 20.x gallium driver API. Mesa 26 drops
+# Makefile.sources and changed the driver interfaces, so only hook it in for
+# the Mesa version it has been ported to.
+#MM- workbench-hidds-raspi : hidd-vc4gallium-mesa$(OPT_MESAGL)
+#MM- hidd-vc4gallium-mesa20.0.8 : hidd-vc4gallium
+#MM- hidd-vc4gallium-mesa26.0.0 : hidd-vc4gallium
 
 #MM hidd-vc4gallium : includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic linklibs-gallium_vc4 linklibs-gallium_vc4-gca kernel-mbox-bcm2708-includes kernel-dma-bcm2708-includes
 #MM linklibs-gallium_vc4 : mesa3dgl-linklibs linklibs-gallium_vc4-gen-cle
@@ -20,7 +25,55 @@ GALLIUM_PATH = $(top_srcdir)/$(CUR_MESADIR)
 # VC4 Gallium driver sources from Mesa
 #
 
+ifneq ($(wildcard $(GALLIUM_PATH)/$(CUR_GALLIUMDIR)/Makefile.sources),)
 include $(GALLIUM_PATH)/$(CUR_GALLIUMDIR)/Makefile.sources
+else
+# Mesa >= 26 ships no Makefile.sources; this mirrors files_libvc4 in
+# meson.build (simulator and kernel/ files are filtered out below as before).
+C_SOURCES := \
+             vc4_blit.c \
+             vc4_bufmgr.c \
+             vc4_cl.c \
+             vc4_cl_dump.c \
+             vc4_context.c \
+             vc4_draw.c \
+             vc4_emit.c \
+             vc4_fence.c \
+             vc4_formats.c \
+             vc4_job.c \
+             vc4_nir_lower_blend.c \
+             vc4_nir_lower_io.c \
+             vc4_nir_lower_txf_ms.c \
+             vc4_opt_algebraic.c \
+             vc4_opt_constant_folding.c \
+             vc4_opt_copy_propagation.c \
+             vc4_opt_dead_code.c \
+             vc4_opt_peephole_sf.c \
+             vc4_opt_small_immediates.c \
+             vc4_opt_vpm.c \
+             vc4_opt_coalesce_ff_writes.c \
+             vc4_program.c \
+             vc4_qir.c \
+             vc4_qir_emit_uniform_stream_resets.c \
+             vc4_qir_live_variables.c \
+             vc4_qir_lower_uniforms.c \
+             vc4_qir_schedule.c \
+             vc4_qir_validate.c \
+             vc4_qpu.c \
+             vc4_qpu_disasm.c \
+             vc4_qpu_emit.c \
+             vc4_qpu_schedule.c \
+             vc4_qpu_validate.c \
+             vc4_query.c \
+             vc4_register_allocate.c \
+             vc4_reorder_uniforms.c \
+             vc4_resource.c \
+             vc4_screen.c \
+             vc4_state.c \
+             vc4_tiling.c \
+             vc4_tiling_lt.c \
+             vc4_uniforms.c
+endif
 
 # Mesa VC4 driver C sources (filter .c files, exclude .h files)
 MESA3D_VC4_C_SOURCES := $(filter %.c, $(C_SOURCES))

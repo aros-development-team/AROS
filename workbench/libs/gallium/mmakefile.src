@@ -9,6 +9,7 @@ GALLIUM_PATH = $(top_srcdir)/src/gallium
 
 USER_INCLUDES += \
             -I$(AROS_INCLUDES)/gallium \
+            -iquote $(top_builddir)/src \
             -iquote $(GALLIUM_PATH)/include
 #USER_CPPFLAGS +=-DDEBUG=1
 

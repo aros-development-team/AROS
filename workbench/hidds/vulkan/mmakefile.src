@@ -40,8 +40,7 @@ USER_INCLUDES += \
 
 %build_linklib mmake=hidd-vulkan-loader \
     libname=vulkan \
-    files="vulkan_loader" \
-    cflags="-m64 -mcmodel=large -mno-red-zone -mno-ms-bitfields"
+    files="vulkan_loader"
 
 # VulkanProbe — ground-truth trigger for the radv path, the analog of
 # C:AmdgpuProbe. Drives vkCreateInstance -> EnumeratePhysicalDevices ->

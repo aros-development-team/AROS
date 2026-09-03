@@ -1149,6 +1149,11 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode)
 {
+	/* acceleration setup can fail and leave the channel torn down;
+	 * report the blit as not accelerated rather than dereference it */
+	if (!carddata->pushbuf)
+		return FALSE;
+
 	if (carddata->Architecture >= NV_BLACKWELL) {
 		/* No 2D engine on this generation: plain blits go through
 		 * the copy engine. It gives no ordering guarantee between

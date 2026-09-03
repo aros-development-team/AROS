@@ -1,5 +1,5 @@
 /*
-    Copyright 2015-2025, The AROS Development Team. All rights reserved.
+    Copyright 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -24,7 +24,7 @@
 
 #include "pipe/p_context.h"      // For struct pipe_context
 #include "pipe/p_state.h"        // For struct pipe_transfer
-#include "util/u_box.h"          // For u_box_2d()
+#include "util/u_inlines.h"      // For pipe_texture_map()
 
 #if (AROS_BIG_ENDIAN == 1)
 #define AROS_PIXFMT RECTFMT_RAW   /* Big Endian Archs. */
@@ -126,13 +126,12 @@ VOID METHOD(GalliumVMWareSVGA, Hidd_Gallium, DisplayResource)
     if (!pipe || !res || !msg->bitmap)
         return;
 
-    struct pipe_box box;
-    u_box_2d(msg->srcx, msg->srcy, msg->width, msg->height, &box);
-
     // Map the resource for CPU read
-    mapped = pipe->transfer_map(pipe, res, 0, PIPE_TRANSFER_READ, &box, &transfer);
+    mapped = pipe_texture_map(pipe, res, 0, 0, PIPE_MAP_READ,
+                              msg->srcx, msg->srcy, msg->width, msg->height,
+                              &transfer);
     if (!mapped) {
-        bug("[VMWareSVGA:Gallium] transfer_map failed\n");
+        bug("[VMWareSVGA:Gallium] texture_map failed\n");
         return;
     }
 
@@ -156,6 +155,6 @@ VOID METHOD(GalliumVMWareSVGA, Hidd_Gallium, DisplayResource)
     }
 
     // Unmap
-    pipe->transfer_unmap(pipe, transfer);
+    pipe_texture_unmap(pipe, transfer);
     D(bug("[VMWareSVGA:Gallium] %s: done\n", __func__);)
 }

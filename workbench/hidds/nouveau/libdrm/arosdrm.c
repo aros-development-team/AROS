@@ -18,6 +18,8 @@
 
 #include "drm_crtc_internal.h"
 #include "drm_internal.h"
+#include <xf86drm.h>
+#include <linux/pci.h>
 
 /*
  * libdrm expects a file descriptor and ioctls; here the "kernel" is the same
@@ -226,6 +228,51 @@ void *drmMalloc(int size)
 void drmFree(void *pt)
 {
     kfree(pt);
+}
+
+/* The card the driver probed; drm-aros records it during bring-up. */
+extern struct pci_dev *nouveau_aros_pdev;
+
+int drmGetDevice2(int fd, uint32_t flags, drmDevicePtr *device)
+{
+    struct pci_dev *pdev = nouveau_aros_pdev;
+    struct {
+        drmDevice dev;
+        drmPciBusInfo bus;
+        drmPciDeviceInfo info;
+    } *d;
+
+    if (fd < 0 || fd >= MAX_DRM_FILES || !drm_files[fd] || !pdev)
+        return -ENODEV;
+
+    d = kzalloc(sizeof(*d), GFP_KERNEL);
+    if (!d)
+        return -ENOMEM;
+
+    d->dev.bustype = DRM_BUS_PCI;
+    d->dev.businfo.pci = &d->bus;
+    d->dev.deviceinfo.pci = &d->info;
+    d->bus.domain = 0;
+    d->bus.bus = pdev->bus ? pdev->bus->number : 0;
+    d->bus.dev = PCI_SLOT(pdev->devfn);
+    d->bus.func = PCI_FUNC(pdev->devfn);
+    d->info.vendor_id = pdev->vendor;
+    d->info.device_id = pdev->device;
+    d->info.subvendor_id = pdev->subsystem_vendor;
+    d->info.subdevice_id = pdev->subsystem_device;
+    d->info.revision_id = pdev->revision;
+
+    *device = &d->dev;
+    return 0;
+}
+
+void drmFreeDevice(drmDevicePtr *device)
+{
+    if (device && *device)
+    {
+        kfree(*device);
+        *device = NULL;
+    }
 }
 
 void *drmMMap(int fd, uint32_t handle, VOID (*unmapped)(APTR), APTR data)

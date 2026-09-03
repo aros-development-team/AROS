@@ -24,6 +24,12 @@ struct VMWareSVGAPBBuf;
  */
 
 #define SVGA_ROP_CLEAR          0x00     /* 0 */
+/* Dropped from svga_reg.h in Mesa 26 (deprecated); still used to program the
+ * legacy cursor, which is all older hosts support. */
+#ifndef SVGA_REG_CURSOR_ID
+#define SVGA_REG_CURSOR_ID      24
+#endif
+
 #define SVGA_ROP_AND            0x01     /* src AND dst */
 #define SVGA_ROP_AND_REVERSE    0x02     /* src AND NOT dst */
 #define SVGA_ROP_COPY           0x03     /* src */

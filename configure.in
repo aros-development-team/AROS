@@ -676,6 +676,10 @@ dnl Check if mako templates are installed..
 AC_MSG_CHECKING(if Python's mako templates are installed)
 PC_PYTHON_CHECK_MODULE(mako, [], [AC_MSG_FAILURE([failed to detect mako templates])])
 
+dnl Mesa 26+ format table generators need PyYAML..
+AC_MSG_CHECKING(if Python's yaml module is installed)
+PC_PYTHON_CHECK_MODULE(yaml, [], [AC_MSG_FAILURE([failed to detect the Python yaml module (PyYAML)])])
+
 AC_ARG_ENABLE([libpng-config], [--disable-libpng-config    disable libpng-config test and configuration])
 if test "$enable_libpng_config" != "no"; then
   AC_CHECK_PROG([arosconfig_use_libpngconfig],[libpng-config],[yes],[no])

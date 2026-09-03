@@ -485,6 +485,11 @@ BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode)
 {
+	/* acceleration setup can fail and leave the channel torn down;
+	 * report the blit as not accelerated rather than dereference it */
+	if (!carddata->pushbuf)
+		return FALSE;
+
     if (!carddata->channel)
         return FALSE;
 

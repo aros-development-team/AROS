@@ -1,5 +1,5 @@
 /*
-    Copyright 2019-2025, The AROS Development Team. All rights reserved.
+    Copyright 2019-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -22,7 +22,7 @@
 void *
 VMWareSVGA_WSSurf_SurfaceMap(struct svga_winsys_context *swc,
                             struct svga_winsys_surface *srf,
-                            unsigned flags, boolean *retry, boolean *rebind)
+                            unsigned flags, bool *retry, bool *rebind)
 {
     struct HIDDGalliumVMWareSVGASurf *surface = VMWareSVGA_WSSurf_HiddSurfFromWinSysSurf(srf);
     void *data = (void *)((struct VMWareSVGAPBBuf *)(surface->surfbuf))->map;
@@ -37,7 +37,7 @@ VMWareSVGA_WSSurf_SurfaceMap(struct svga_winsys_context *swc,
 void
 VMWareSVGA_WSSurf_SurfaceUnMap(struct svga_winsys_context *swc,
                               struct svga_winsys_surface *srf,
-                              boolean *rebind)
+                              bool *rebind)
 {
    struct HIDDGalliumVMWareSVGASurf *surface = VMWareSVGA_WSSurf_HiddSurfFromWinSysSurf(srf);
 

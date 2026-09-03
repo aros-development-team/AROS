@@ -141,7 +141,7 @@ PUSH_RELOC(struct nouveau_pushbuf *push, struct nouveau_bo *bo, uint32_t offset,
 static inline void
 PUSH_KICK(struct nouveau_pushbuf *push)
 {
-	nouveau_pushbuf_kick(push, push->channel);
+	nouveau_pushbuf_kick(push);
 }
 
 static inline struct nouveau_bufctx *

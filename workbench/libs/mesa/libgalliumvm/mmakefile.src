@@ -34,7 +34,7 @@ LLVM_AROS_INCLUDES := $(SRCDIR)/workbench/libs/llvm/include
 # Depend on the target LLVM source headers (llvm-c/*.h, etc.)
 # The pre-configured headers from llvm.library take precedence via include order
 # Depend on mesa3d-linklib-compiler-generated for nir_opcodes.h and other generated headers
-#MM mesa3d-linklib-galliumvm : workbench-libs-llvm-fetch mesa3d-linklib-compiler-generated
+#MM mesa3d-linklib-galliumvm : workbench-libs-llvm mesa3d-linklib-compiler-generated
 
 GALLIVM_C_SOURCES := $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,  $(filter %.c, $(GALLIVM_SOURCES))))
 GALLIVM_CXX_SOURCES := $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,  $(filter %.cpp, $(GALLIVM_SOURCES))))

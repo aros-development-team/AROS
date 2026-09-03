@@ -22,27 +22,49 @@ IGMA_HIDD_SOURCES := \
             intelgma_compositorclass
 
 IGMA_HIDD_SOURCES += \
-            intelgma_copybox
+            intelgma_copybox \
+            $(SRCDIR)/workbench/libs/mesa/emul_arosc
 
 USER_INCLUDES += \
             -iquote $(GALLIUM_PATH)/drivers \
             -iquote $(GALLIUM_PATH)/include \
-            -iquote $(GALLIUM_PATH)/auxiliary
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/glsl \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(top_builddir)/src/util/format \
+            -iquote $(top_srcdir)/src/compiler \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir
 
+# The i915 driver now goes through NIR, so the (C++) compiler linklib is part
+# of the group and the driver is linked with the C++ driver.
 USER_LDFLAGS := $(TARGET_CXX_LDFLAGS) \
   -L$(top_libdir) \
-  -lgallium_i915 -lgalliumauxiliary -lmesautil \
+  -Wl,--start-group -lgallium_i915 -lcompiler -lgalliumauxiliary -lmesautil \
   -lhiddstubs -lpthread -lstdcio -lstdc
+ifneq ($(TARGET_LIBATOMIC),)
+USER_LDFLAGS += $(TARGET_CXX_LIBS)
+endif
+USER_LDFLAGS += -Wl,--end-group
 
 # disable necessary warnings
 NOWARN_FLAGS := -Wno-unused-value -Wno-unused-variable
 USER_CFLAGS += $(NOWARN_FLAGS)
 
-#MM devs-monitors-intelgma : hidd-i2c hidd-gallium intelgma-linklibs-gallium_i915 linklibs-galliumauxiliary
+# The AROS glue here targets the Mesa 20.x gallium driver API. Mesa 26 drops
+# Makefile.sources and changed the driver interfaces, so only hook it in for
+# the Mesa version it has been ported to.
+#MM- devs-monitors-intelgma : devs-monitors-intelgma-mesa$(OPT_MESAGL)
+#MM- devs-monitors-intelgma-mesa20.0.8 : devs-monitors-intelgma-driver
+#MM- devs-monitors-intelgma-mesa26.0.0 : devs-monitors-intelgma-driver
+#MM devs-monitors-intelgma-driver : hidd-i2c hidd-gallium mesa3dgl-linklibs intelgma-linklibs-gallium_i915 linklibs-galliumauxiliary
 
-%build_prog mmake=devs-monitors-intelgma \
+%build_prog mmake=devs-monitors-intelgma-driver \
            progname=IntelGMA targetdir=$(EXEDIR) \
-           files=$(IGMA_HIDD_SOURCES) uselibs=""
+           files=$(IGMA_HIDD_SOURCES) uselibs="" alwayscxxlink=yes
 
 
 %common

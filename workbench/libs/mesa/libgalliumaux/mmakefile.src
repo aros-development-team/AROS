@@ -40,7 +40,20 @@ MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter-out \
             indices/u_indices.c \
             indices/u_unfilled_indices.c, \
             $(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES))
-MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES += draw/draw_llvm_aros_stubs.c
+# Video buffer helpers the nouveau driver's decoder paths link against.
+MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES += \
+            vl/vl_video_buffer.c \
+            vl/vl_mpeg12_bitstream.c
+ifneq ($(AROS_TOOLCHAIN),llvm)
+# The gallivm based draw paths need the target-side LLVM libraries, which are
+# only built with the llvm toolchain family. Leave them out otherwise; the weak
+# fallbacks in draw_llvm_aros_stubs.c stand in for them.
+MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter-out \
+            draw/draw_llvm.c \
+            draw/draw_pt_fetch_shade_pipeline_llvm.c \
+            draw/draw_vs_llvm.c, \
+            $(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES))
+endif
 GALLIUM_AUXILIARY_GENERATED_SOURCES := \
             driver_trace/tr_util.c \
             util/u_tracepoints.c \
@@ -57,7 +70,8 @@ endif
 #MM- mesa3d-linklib-galliumauxiliary-genobs : mesa3d-linklib-galliumauxiliary-generated
 
 MESA3DGL_GALLIUM_AUXILIARY_SOURCES_C := \
-            $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES:.c=))
+            $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES:.c=)) \
+            $(SRCDIR)/$(CURDIR)/draw_llvm_aros_stubs
 
 USER_INCLUDES += \
             -iquote $(top_srcdir)/src/gallium/include \

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -55,7 +55,7 @@
     if (_ctx->framebuffer->render_resource)
     {
         /* Flush rendering cache before blitting */
-        _ctx->st->flush(_ctx->st, ST_FLUSH_FRONT, NULL, NULL, NULL);
+        st_context_flush(_ctx->st, ST_FLUSH_FRONT, NULL, NULL, NULL);
 
         /* gallium.library tries the whole-window DisplayResourceRP method
          * first (vc4 presents zero-copy there) and falls back to the

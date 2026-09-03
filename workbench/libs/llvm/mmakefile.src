@@ -55,7 +55,6 @@ LLVM_TOOLS_BUILDDIR := $(GENDIR)/$(CURDIR)/tools
 #MM llvm-fetch : workbench-libs-llvm-fetch
 #MM llvm-host-tblgen : workbench-libs-llvm-fetch workbench-libs-llvm-clang-fetch workbench-libs-llvm-lld-fetch
 #MM workbench-libs-llvm : llvm-host-tblgen
-#MM- includes-copy : workbench-libs-llvm
 
 #MM workbench-libs-llvm-tools : llvm-host-tblgen workbench-libs-llvm
 

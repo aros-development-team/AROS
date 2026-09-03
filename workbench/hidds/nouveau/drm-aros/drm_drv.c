@@ -523,6 +523,7 @@ void drm_send_event_timestamp_locked(struct drm_device *dev, struct drm_pending_
 
 int nouveau_aros_probe(struct pci_dev *pdev, struct drm_device **pdrm_dev);
 struct drm_device *current_drm_device;
+struct pci_dev *nouveau_aros_pdev;
 BOOL workqueue_init(void);
 
 /*
@@ -572,6 +573,7 @@ int nouveau_init_probe(struct pci_dev *pdev)
 
     bug("\003\n"); /* Tell vga text mode debug output to die */
 
+    nouveau_aros_pdev = pdev;
     ps.pdev = pdev;
     ps.parent = FindTask(NULL);
     ps.ret = -1;

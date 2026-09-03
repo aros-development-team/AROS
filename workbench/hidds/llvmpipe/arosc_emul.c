@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2013, The AROS Development Team. All rights reserved.
+    Copyright 2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>

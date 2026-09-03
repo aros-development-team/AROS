@@ -2,7 +2,7 @@
 #define _VMWARESVGA_INTERN_H
 
 /*
-    Copyright 2010-2025, The AROS Development Team. All rights reserved.
+    Copyright 2010-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,10 +13,10 @@
 #include "svga/svga_winsys.h"
 #include "svga/svga_public.h"
 
+#include "pipe/p_state.h"
 #include "util/u_memory.h"
-#include "pipebuffer/pb_buffer.h"
+#include "util/u_inlines.h"
 
-#include "svga3d_caps.h"
 #include "svga_cmd.h"
 
 #define CLID_Hidd_Gallium_VMWareSVGA  "hidd.gallium.vmwaresvga"
@@ -141,8 +141,8 @@ static inline struct HIDDGalliumVMWareSVGAData *VMWareSVGA_WSScr_HiddDataFromWin
 void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData *);
 void VMWareSVGA_WSCtx_WinSysInit(struct HIDDGalliumVMWareSVGAData *, struct HIDDGalliumVMWareSVGACtx *);
 
-void *VMWareSVGA_WSSurf_SurfaceMap(struct svga_winsys_context *swc, struct svga_winsys_surface *srf, unsigned flags, boolean *retry, boolean *rebind);
-void VMWareSVGA_WSSurf_SurfaceUnMap(struct svga_winsys_context *swc, struct svga_winsys_surface *srf, boolean *rebind);
+void *VMWareSVGA_WSSurf_SurfaceMap(struct svga_winsys_context *swc, struct svga_winsys_surface *srf, unsigned flags, bool *retry, bool *rebind);
+void VMWareSVGA_WSSurf_SurfaceUnMap(struct svga_winsys_context *swc, struct svga_winsys_surface *srf, bool *rebind);
 void VMWareSVGA_WSSurf_SurfaceReference(struct HIDDGalliumVMWareSVGASurf **, struct HIDDGalliumVMWareSVGASurf *);
 
 #endif

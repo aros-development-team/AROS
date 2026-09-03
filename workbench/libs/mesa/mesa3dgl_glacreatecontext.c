@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -187,10 +187,10 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
         goto error_out;
     }
 
-    attribs.profile = ST_PROFILE_DEFAULT;
+    attribs.profile = API_OPENGL_COMPAT;
     attribs.visual = ctx->stvis;
 
-    ctx->st = glstapi->create_context(glstapi, ctx->stmanager, &attribs, &st_error, NULL);
+    ctx->st = st_api_create_context(ctx->stmanager, &attribs, &st_error, NULL);
     if (!ctx->st)
     {
         bug("%s: ERROR -  failed to create mesa state tracker context\n", __func__);

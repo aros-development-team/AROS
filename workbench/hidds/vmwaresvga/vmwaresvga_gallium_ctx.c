@@ -1,5 +1,5 @@
 /*
-    Copyright 2019-2025, The AROS Development Team. All rights reserved.
+    Copyright 2019-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -236,14 +236,29 @@ VMWareSVGA_WSCtx_ShaderCreate(struct svga_winsys_context *swc,
                                      uint32 shaderId,
                                      SVGA3dShaderType shaderType,
                                      const uint32 *bytecode,
-                                     uint32 bytecodeLen)
+                                     uint32 bytecodeLen,
+                                     const SVGA3dDXShaderSignatureHeader *sgnInfo,
+                                     uint32 sgnLen)
 {
     struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
 
+    /* The shader signature only matters for VGPU10 hosts, which we do not
+     * expose yet; the screen level shader object carries the bytecode. */
     return hiddwsctx->wscsws->shader_create(hiddwsctx->wscsws, shaderType, bytecode,
                                     bytecodeLen);
+}
+
+/* Guest backed queries are not backed by a MOB on AROS; nothing to bind. */
+static enum pipe_error
+VMWareSVGA_WSCtx_QueryBind(struct svga_winsys_context *swc,
+                           struct svga_winsys_gb_query *query,
+                           unsigned flags)
+{
+    D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
+
+    return PIPE_OK;
 }
 
 static void
@@ -320,6 +335,7 @@ void VMWareSVGA_WSCtx_WinSysInit(struct HIDDGalliumVMWareSVGAData *data, struct 
     wsctx->region_relocation = VMWareSVGA_WSCtx_RegionReloc;
     wsctx->mob_relocation = VMWareSVGA_WSCtx_MObReloc;
     wsctx->query_relocation = VMWareSVGA_WSCtx_QueryReloc;
+    wsctx->query_bind = VMWareSVGA_WSCtx_QueryBind;
 
     wsctx->context_relocation = VMWareSVGA_WSCtx_ContextReloc;
     wsctx->shader_relocation = VMWareSVGA_WSCtx_ShaderReloc;

@@ -406,7 +406,7 @@ static void
 nouveau_exa_flush(ScrnInfoPtr pScrn)
 {
 	NVPtr pNv = NVPTR(pScrn);
-	nouveau_pushbuf_kick(pNv->pushbuf, pNv->pushbuf->channel);
+	nouveau_pushbuf_kick(pNv->pushbuf);
 }
 
 Bool

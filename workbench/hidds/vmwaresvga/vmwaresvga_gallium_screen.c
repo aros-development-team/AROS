@@ -1,5 +1,5 @@
 /*
-    Copyright 2019-2025, The AROS Development Team. All rights reserved.
+    Copyright 2019-2026, The AROS Development Team. All rights reserved.
 */
 
 //#define DEBUG 1
@@ -20,7 +20,7 @@
 
 #include "vmwaresvga_intern.h"
 
-#include "svga3d_surfacedefs.h"
+#include "vmw_surf_defs.h"
 
 // ****************************************************************************
 //                      winsys screen support functions
@@ -123,7 +123,7 @@ static void VMWareSVGA_WSScr_InitHW3DCaps(struct HIDDGalliumVMWareSVGAData *data
     D(bug("[VMWareSVGA:Gallium] %s: max texture size = %d\n", __func__, data->hwdata->txrmax);)
 }
 
-static boolean VMWareSVGA_WSScr_GetCap(struct svga_winsys_screen *sws,
+static bool VMWareSVGA_WSScr_GetCap(struct svga_winsys_screen *sws,
               SVGA3dDevCapIndex index,
               SVGA3dDevCapResult *result)
 {
@@ -295,7 +295,6 @@ static struct svga_winsys_surface *VMWareSVGA_WSScr_SurfaceCreate(
 {
     struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(sws);
     struct HIDDGalliumVMWareSVGASurf *surface = NULL;
-    struct pb_buffer *pb_buf;
 
     uint32_t buffer_size;
     uint32_t num_samples = 1;
@@ -311,7 +310,7 @@ static struct svga_winsys_surface *VMWareSVGA_WSScr_SurfaceCreate(
      * Used for the backing buffer GB surfaces, and to approximate
      * when to flush on non-GB hosts.
      */
-    buffer_size = svga3dsurface_get_serialized_size_extended(format, size,
+    buffer_size = vmw_surf_get_serialized_size_extended(format, size,
                                                             numMipLevels,
                                                             numLayers,
                                                             num_samples);
@@ -350,7 +349,7 @@ static struct svga_winsys_surface *VMWareSVGA_WSScr_SurfaceFromHandle(struct svg
     return NULL;
 }
 
-static boolean VMWareSVGA_WSScr_SurfaceGetHandle(struct svga_winsys_screen *sws,
+static bool VMWareSVGA_WSScr_SurfaceGetHandle(struct svga_winsys_screen *sws,
                          struct svga_winsys_surface *surface,
                          unsigned stride,
                          struct winsys_handle *whandle)
@@ -360,7 +359,7 @@ static boolean VMWareSVGA_WSScr_SurfaceGetHandle(struct svga_winsys_screen *sws,
     return FALSE;
 }
 
-static boolean VMWareSVGA_WSScr_SurfaceIsFlushed(struct svga_winsys_screen *sws,
+static bool VMWareSVGA_WSScr_SurfaceIsFlushed(struct svga_winsys_screen *sws,
                          struct svga_winsys_surface *surface)
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
@@ -377,7 +376,7 @@ static void VMWareSVGA_WSScr_SurfaceReference(struct svga_winsys_screen *sws,
     *pdst = src;
 }
 
-static boolean VMWareSVGA_WSScr_SurfaceCanCreate(struct svga_winsys_screen *sws,
+static bool VMWareSVGA_WSScr_SurfaceCanCreate(struct svga_winsys_screen *sws,
                          SVGA3dSurfaceFormat format,
                          SVGA3dSize size,
                          uint32 numLayers,
@@ -389,7 +388,7 @@ static boolean VMWareSVGA_WSScr_SurfaceCanCreate(struct svga_winsys_screen *sws,
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
 
-    buffer_size = svga3dsurface_get_serialized_size(format, size,
+    buffer_size = vmw_surf_get_serialized_size(format, size,
                                                    numMipLevels,
                                                    numLayers);
     if (numSamples > 1)
@@ -402,10 +401,40 @@ static boolean VMWareSVGA_WSScr_SurfaceCanCreate(struct svga_winsys_screen *sws,
     return TRUE;
 }
 
+/*
+ * Mesa 26 asks the winsys to (re)initialise the backing store of a guest
+ * backed surface before it first uploads into it. Ours is plain, always
+ * mapped gfx memory, so clearing it is all that is needed.
+ */
+static void VMWareSVGA_WSScr_SurfaceInit(struct svga_winsys_screen *sws,
+                         struct svga_winsys_surface *srf,
+                         unsigned surf_size,
+                         SVGA3dSurfaceAllFlags flags)
+{
+    struct HIDDGalliumVMWareSVGASurf *surface = VMWareSVGA_WSSurf_HiddSurfFromWinSysSurf(srf);
+    struct VMWareSVGAPBBuf *pbbuf;
+    void *map;
+
+    D(bug("[VMWareSVGA:Gallium] %s(0x%p, 0x%p, %u)\n", __func__, sws, srf, surf_size));
+
+    if (!surface || !surface->surfbuf)
+        return;
+
+    pbbuf = (struct VMWareSVGAPBBuf *)surface->surfbuf;
+    map = VMWareSVGA_WSScr_BufferMap(sws, surface->surfbuf, PIPE_MAP_WRITE);
+    if (map)
+    {
+        if (surf_size > pbbuf->size)
+            surf_size = pbbuf->size;
+        memset(map, 0, surf_size);
+        VMWareSVGA_WSScr_BufferUnMap(sws, surface->surfbuf);
+    }
+}
+
 static int
 VMWareSVGA_WSScr_FenceGet(struct svga_winsys_screen *sws,
                              struct pipe_fence_handle *fence,
-                             boolean duplicate)
+                             bool duplicate)
 {
     return (int)(IPTR)fence;
 }
@@ -478,7 +507,7 @@ static struct svga_winsys_gb_shader *VMWareSVGA_WSScr_ShaderCreate(struct svga_w
                                                SVGA_BUFFER_USAGE_SHADER,
                                                bytecodeLen);
 
-    code = VMWareSVGA_WSScr_BufferMap(sws, shader->shaderbuf, PIPE_TRANSFER_WRITE);
+    code = VMWareSVGA_WSScr_BufferMap(sws, shader->shaderbuf, PIPE_MAP_WRITE);
     memcpy(code, bytecode, bytecodeLen);
     VMWareSVGA_WSScr_BufferUnMap(sws, shader->shaderbuf);
 
@@ -539,20 +568,36 @@ static void VMWareSVGA_WSScr_QueryGetResult(struct svga_winsys_screen *sws,
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
 }
 
-static void VMWareSVGA_WSScr_StatsInc(enum svga_stats_count index)
+static void VMWareSVGA_WSScr_StatsInc(struct svga_winsys_screen *sws,
+                                enum svga_stats_count index)
 {
     D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
-static void VMWareSVGA_WSScr_StatsTimePush(enum svga_stats_time index,
+static void VMWareSVGA_WSScr_StatsTimePush(struct svga_winsys_screen *sws,
+                                enum svga_stats_time index,
                                 struct svga_winsys_stats_timeframe *tf)
 {
     D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
-static void VMWareSVGA_WSScr_StatsTimePop()
+static void VMWareSVGA_WSScr_StatsTimePop(struct svga_winsys_screen *sws)
 {
     D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
+}
+
+/* The screen lives as long as the hidd object; nothing to tear down here. */
+static void VMWareSVGA_WSScr_Destroy(struct svga_winsys_screen *sws)
+{
+    D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws);)
+}
+
+/* There is no DRM file descriptor behind this winsys. */
+static int VMWareSVGA_WSScr_GetFd(struct svga_winsys_screen *sws)
+{
+    D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws);)
+
+    return -1;
 }
 
 static void VMWareSVGA_WSScr_Log(struct svga_winsys_screen *sws, const char *log)
@@ -564,8 +609,9 @@ void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData * data)
 {
     D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
-    data->wssbase.destroy                       = NULL;
+    data->wssbase.destroy                       = VMWareSVGA_WSScr_Destroy;
     data->wssbase.get_hw_version                = VMWareSVGA_WSScr_GetHWVersion;
+    data->wssbase.get_fd                        = VMWareSVGA_WSScr_GetFd;
     data->wssbase.get_cap                       = VMWareSVGA_WSScr_GetCap;
 
     data->wssbase.context_create                = VMWareSVGA_WSScr_ContextCreate;
@@ -576,6 +622,7 @@ void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData * data)
     data->wssbase.surface_from_handle           = VMWareSVGA_WSScr_SurfaceFromHandle;
     data->wssbase.surface_get_handle            = VMWareSVGA_WSScr_SurfaceGetHandle;
     data->wssbase.surface_can_create            = VMWareSVGA_WSScr_SurfaceCanCreate;
+    data->wssbase.surface_init                  = VMWareSVGA_WSScr_SurfaceInit;
 
     data->wssbase.buffer_create                 = VMWareSVGA_WSScr_BufferCreate;
     data->wssbase.buffer_map                    = VMWareSVGA_WSScr_BufferMap;
@@ -611,7 +658,12 @@ void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData * data)
 
     data->wssbase.have_vgpu10 = FALSE;
     data->wssbase.have_sm4_1 = FALSE;
+    data->wssbase.have_sm5 = FALSE;
+    data->wssbase.have_gl43 = FALSE;
     data->wssbase.have_intra_surface_copy = FALSE;
+    data->wssbase.have_constant_buffer_offset_cmd = FALSE;
+    data->wssbase.have_index_vertex_buffer_offset_cmd = FALSE;
+    data->wssbase.have_rasterizer_state_v2_cmd = FALSE;
 
     if (data->use_gbobjects)
     {
