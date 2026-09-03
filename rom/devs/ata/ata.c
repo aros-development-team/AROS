@@ -540,7 +540,7 @@ static void cmd_SMART(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 #endif
     D(bug("[ATA%02ld] %s()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
 
-    if (unit->au_Flags & AF_DiscPresent)
+    if (!(unit->au_Flags & AF_DiscPresent))
     {
         io->io_Error = IOERR_OPENFAIL;
         return;
