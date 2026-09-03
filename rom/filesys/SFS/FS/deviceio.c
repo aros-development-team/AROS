@@ -637,17 +637,29 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
     UBYTE *tempbuffer;
     ULONG maxblocks=globals->blocks_maxtransfer;
     LONG errorcode;
+    ULONG bouncelimit = (64UL << 10) >> globals->shifts_block;   /* 64 KB per transfer is plenty */
 
     /* This function does a buffered transfer (in cases when the Mask
        enforces it).  It does not check if the parameters are within
        the partition.  Check those and the Mask before calling this
        function. */
 
-    if ((errorcode = getbuffer(&tempbuffer, &maxblocks)) != 0)
+    /* The bounce buffer must NOT come from the I/O cache: this path is
+       reached from copybackiocache() while the cache is evicting a dirty
+       line, and asking the cache for another line there recurses through
+       lruiocache() until the stack is exhausted. Use a private DMA-able
+       allocation for the duration of the transfer instead. */
+    if (bouncelimit == 0)
+        bouncelimit = 1;
+    if (maxblocks > bouncelimit)
+        maxblocks = bouncelimit;
+    if (maxblocks > blocklength)
+        maxblocks = blocklength;
+    while ((tempbuffer = AllocVec(maxblocks << globals->shifts_block, globals->bufmemtype)) == NULL)
     {
-    	_DEBUG("Buffered transfer: getbuffer() error %d\n", errorcode);
-
-        return errorcode;
+        if (maxblocks == 1)
+            return ERROR_NO_FREE_STORE;
+        maxblocks >>= 1;
     }
 
     while(blocklength!=0)
@@ -673,6 +685,7 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
             if ((errorcode = handleioerror(errorcode, action, globals->fsioreq.ioreq)) != 0)
             {
                 _DEBUG("Buffered transfer: SFS error %d\n", errorcode);
+                FreeVec(tempbuffer);
                 return(errorcode);
             }
         }
@@ -685,6 +698,7 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
         buffer+=blocks<<globals->shifts_block;
     }
 
+    FreeVec(tempbuffer);
     return(0);
 }
 
