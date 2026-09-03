@@ -34,13 +34,14 @@ struct cdUnit {
 static BOOL cdRegisterVolume(struct cdBase *cb, struct cdUnit *unit,
                              const struct DosEnvec *de);
 
-/* We have a synchonous task for dispatching IO
- * to each cd.device unit.
- */
+/* Each cd.device unit has a task which dispatches requests and services
+ * backend hardware completions. */
 static VOID cdTask(IPTR base, IPTR unit)
 {
     struct cdUnit *cu = (APTR)unit;
     struct IOStdReq *io;
+    ULONG portSignal;
+    BOOL running = TRUE;
 
     D(bug("%s.%d Task, Port %p\n", cu->cu_UnitOps->uo_Name, cu->cu_Unit, cu->cu_MsgPort));
 
@@ -54,6 +55,15 @@ static VOID cdTask(IPTR base, IPTR unit)
      */
     cdRegisterVolume((struct cdBase *)base, cu, cu->cu_Envec);
 
+    /* cdSelectDosType() may have to wait for FileSystem.resource while the
+     * resident initializers are still running.  Do that bootstrap work at
+     * the normal task priority so it cannot starve the initializers and
+     * make dosboot conclude temporarily that there is no boot medium.
+     * Once the boot node exists, match Commodore's priority-15 CDUITask so
+     * asynchronous requests still make progress when an application polls
+     * CheckIO() without yielding. */
+    SetTaskPri(FindTask(NULL), 15);
+
     /* Blocking drive probes belong here, not in resident init: a
      * misbehaving drive must cost a failed mount, not a wedged boot
      * task. I/O queued by early openers is served after this returns.
@@ -61,25 +71,55 @@ static VOID cdTask(IPTR base, IPTR unit)
     if (cu->cu_UnitOps->uo_Init)
         cu->cu_UnitOps->uo_Init(cu->cu_Private);
 
-    do {
-        WaitPort(cu->cu_MsgPort);
-        io = (struct IOStdReq *)GetMsg(cu->cu_MsgPort);
+    portSignal = 1UL << cu->cu_MsgPort->mp_SigBit;
 
-        D(bug("%s: Processing %p\n", __func__, io));
+    while (running) {
+        Wait(portSignal | cu->cu_UnitOps->uo_SignalMask);
 
-        if (io->io_Flags & IOF_ABORT) {
-            io->io_Error = CDERR_ABORTED;
-        } else if (io->io_Unit == (struct Unit *)cu &&
-                   cu->cu_UnitOps->uo_DoIO != NULL) {
-            io->io_Error = cu->cu_UnitOps->uo_DoIO(io, cu->cu_Private);
-        } else {
-            io->io_Error = CDERR_NOCMD;
+        /* Hardware completion and AbortIO signals are serviced in task
+         * context. A backend may retain a long-running request while this
+         * task continues to accept independent commands on the unit port. */
+        if (cu->cu_UnitOps->uo_Service) {
+            while ((io = cu->cu_UnitOps->uo_Service(cu->cu_Private)) != NULL)
+                ReplyMsg(&io->io_Message);
         }
 
-        D(bug("%s: Reply %p\n", __func__, io));
-        ReplyMsg(&io->io_Message);
+        while ((io = (struct IOStdReq *)GetMsg(cu->cu_MsgPort)) != NULL) {
+            LONG result;
 
-    } while (io->io_Unit != NULL);
+            D(bug("%s: Processing %p\n", __func__, io));
+
+            if (io->io_Flags & IOF_ABORT) {
+                result = CDERR_ABORTED;
+            } else if (io->io_Unit == (struct Unit *)cu &&
+                       cu->cu_UnitOps->uo_DoIO != NULL) {
+                result = cu->cu_UnitOps->uo_DoIO(io, cu->cu_Private);
+            } else {
+                result = CDERR_NOCMD;
+            }
+
+            if (result != CDIO_PENDING) {
+                io->io_Error = result;
+                D(bug("%s: Reply %p\n", __func__, io));
+                ReplyMsg(&io->io_Message);
+            }
+
+            if (io->io_Unit == NULL) {
+                running = FALSE;
+                break;
+            }
+
+            /* A synchronous command can consume an unsolicited response
+             * which completes an older asynchronous operation. */
+            if (cu->cu_UnitOps->uo_Service) {
+                struct IOStdReq *completed;
+
+                while ((completed = cu->cu_UnitOps->uo_Service(
+                            cu->cu_Private)) != NULL)
+                    ReplyMsg(&completed->io_Message);
+            }
+        }
+    }
 
     /* Terminate by fallthough */
 }

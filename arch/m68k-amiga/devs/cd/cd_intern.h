@@ -32,10 +32,16 @@ struct cdBase {
 struct cdUnitOps {
     CONST_STRPTR  uo_Name;
     LONG        (*uo_DoIO)(struct IOStdReq *io, APTR priv);
+    struct IOStdReq *(*uo_Service)(APTR priv); /* optional asynchronous I/O */
+    ULONG         uo_SignalMask;
     VOID        (*uo_Expunge)(APTR priv);
     VOID        (*uo_Init)(APTR priv);  /* optional; runs on the unit task
                                          * before any I/O is served */
 };
+
+/* uo_DoIO() result used when the backend retains the request and will return
+ * it from uo_Service() after the hardware operation has really completed. */
+#define CDIO_PENDING ((LONG)(1UL << 31))
 
 LONG cdAddUnit(LIBBASETYPE *cb, const struct cdUnitOps *ops, APTR priv, const struct DosEnvec *de);
 VOID cdDelayMS(LIBBASETYPE *cb, ULONG timeout_ms);
