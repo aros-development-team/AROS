@@ -23,20 +23,17 @@
 #define ARM_PERIIOBASE (__arm_periiobase)
 extern uintptr_t __arm_periiobase;
 extern unsigned int __arm_socid;
+extern uintptr_t __rp1_base;
+uintptr_t __uart_base = 0;
 
 /*
  * BCM2712 has no BCM283x UART at +0x201000. The debug connector is uart10
  * (/soc/serial@7d001000, a PL011), 0x7D001000 into the peripheral window.
  */
-#define RP1_UART0_BASE_5 0x1f00030000ULL
-#define RP1_UART0_BASE_500_PLUSS 0x1c00030000ULL
+#define RP1_UART0_BASE (__rp1_base ? __rp1_base + 0x30000 : 0x1c00030000ULL)
 
-#define UART_BASE (__arm_socid == 0x2712 \
-                    ? RP1_UART0_BASE_500_PLUSS \
-                    : PL011_0_BASE)
+#define UART_BASE (__arm_socid == 0x2712 ? RP1_UART0_BASE : PL011_0_BASE)
 
-// #define UART_BASE   (__arm_socid == 0x2712 ? (ARM_PERIIOBASE + 0x7D001000) \
-//                                            : PL011_0_BASE)
 #define PL011_ICR_FLAGS (PL011_ICR_RXIC|PL011_ICR_TXIC|PL011_ICR_RTIC|PL011_ICR_FEIC|PL011_ICR_PEIC|PL011_ICR_BEIC|PL011_ICR_OEIC|PL011_ICR_RIMIC|PL011_ICR_CTSMIC|PL011_ICR_DSRMIC|PL011_ICR_DCDMIC)
 
 #define DEF_BAUD 115200
@@ -78,16 +75,11 @@ void serInit(void)
 
     uartbaud = DEF_BAUD;
 
+    __uart_base = UART_BASE;
+
     /* BCM2712 has no BCM283x GPIO block, and uart10's pins are dedicated.
-     * Firmware has already set this up. 
+     * Firmware has already set this up.
      */
-    // if (__arm_socid == 0x2712) 
-    // {
-    //     uartclock   = 9216000;    /* /clocks/clk-uart */
-    //     uartdivint  = PL011_BAUDINT(uartbaud, uartclock);
-    //     uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
-    //     return;
-    // }
     if (__arm_socid == 0x2712)
     {
         /*
@@ -103,12 +95,10 @@ void serInit(void)
          * 115200 8N1
          */
         uartbaud = 115200;
-        // uartdivint  = PL011_BAUDINT(uartbaud, uartclock);
-        // uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
-    
+
         return;
-    } 
-    
+    }
+
     uart_msg[0] = AROS_LONG2LE(8 * 4);
     uart_msg[1] = AROS_LONG2LE(VCTAG_REQ);
     uart_msg[2] = AROS_LONG2LE(VCTAG_GETCLKRATE);
