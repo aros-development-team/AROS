@@ -124,9 +124,10 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     }
 }
 
-/* PL011 base for the early bring-up prints. The Pi 2/3 puts it at
-   0x3f201000, the Pi 4 (BCM2711) at 0xfe201000; it is selected from the
-   platform id before the first character goes out. */
+/* PL011 base for the early bring-up prints. The bootstrap passes the address
+   it printed through itself in KRN_DebugUartBase; the platform id only serves
+   as a fallback for a bootstrap that predates that tag. Either way it is
+   settled before the first character goes out. */
 static uintptr_t dbg_uart = 0x3f201000;
 
 static inline void uart_putc(char c)
@@ -153,9 +154,24 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     uint64_t fb_base = 0;
     uint32_t fb_w = 0, fb_h = 0, fb_depth = 0, fb_pitch = 0;
 
-    for (struct TagItem *t = msg; t->ti_Tag != TAG_DONE; t++)
-        if (t->ti_Tag == KRN_Platform && t->ti_Data == 0xc44)
-            dbg_uart = 0xfe201000;
+    {
+        IPTR uartbase = 0, plat = 0;
+
+        for (struct TagItem *t = msg; t->ti_Tag != TAG_DONE; t++)
+        {
+            if (t->ti_Tag == KRN_DebugUartBase)
+                uartbase = t->ti_Data;
+            else if (t->ti_Tag == KRN_Platform)
+                plat = t->ti_Data;
+        }
+
+        if (uartbase)
+            dbg_uart = uartbase;
+        else if (plat == 0xc44)
+            dbg_uart = 0xfe201000;      /* BCM2711 PL011 */
+        else if (plat == 0x2712)
+            dbg_uart = 0x1c00030000;    /* BCM2712: RP1 UART0 */
+    }
 
     uart_puts("[Kernel] kernel_cstart entered\n");
     BootMsg = msg;

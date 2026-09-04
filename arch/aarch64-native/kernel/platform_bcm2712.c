@@ -38,9 +38,9 @@
 
 #define DTIMER(x)
 
-/* BCM2712 Peripheral Base and PL011 UART */
+/* BCM2712 Peripheral Base and PL011 UART. PI5 use D0, Pi500 use C1 */
 #define BCM2712_PERIBASE        0x107C000000UL
-#define BCM2712_UART_BASE       0x107D001000UL
+#define BCM2712_UART_BASE       0x1C00030000UL
 
 #define PL011_DR                0x00
 #define PL011_FR                0x18
@@ -79,9 +79,11 @@ static int bcm2712_ser_getc(void)
     return -1;
 }
 
-/* ---- GIC-400 (GICv2), Pi 5 physical addresses ---- */
-#define GICD_BASE   0xFF841000UL
-#define GICC_BASE   0xFF842000UL
+/* ---- GIC-400 (GICv2) ---- */
+/* From the DT: /soc/interrupt-controller@7fff9000, i.e. 0x10_0000_0000 +
+   0x7fff9000. */
+#define GICD_BASE   0x107FFF9000UL
+#define GICC_BASE   0x107FFFA000UL
 #define GICD(o)     (*(volatile uint32_t *)(GICD_BASE + (o)))
 #define GICC(o)     (*(volatile uint32_t *)(GICC_BASE + (o)))
 
@@ -226,6 +228,7 @@ static APTR bcm2712_init_gentimer(APTR _kernelBase)
 static IPTR bcm2712_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     void *bootPutC = NULL;
+    IPTR periibase = 0;
     uint64_t midr;
 
     while (msg->ti_Tag != TAG_DONE)
@@ -235,7 +238,11 @@ static IPTR bcm2712_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         case KRN_FuncPutC:
             bootPutC = (void *)msg->ti_Data;
             break;
+        case KRN_PeripheralBase:
+            periibase = (IPTR)msg->ti_Data;
+            break;
         }
+
         msg++;
     }
 
@@ -246,8 +253,9 @@ static IPTR bcm2712_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         return FALSE;
 
     krnARMImpl->ARMI_Family = 8;
+    // TODO: Remove
     krnARMImpl->ARMI_Platform = 0x2712;
-    krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2712_PERIBASE;
+    krnARMImpl->ARMI_PeripheralBase = (periibase ? periibase : (APTR)BCM2712_PERIBASE);
     krnARMImpl->ARMI_InitCore = &bcm27xx_init_cpu;
     krnARMImpl->ARMI_FIQProcess = &bcm27xx_fiq_process;
     krnARMImpl->ARMI_SendIPI = &bcm27xx_send_ipi;
