@@ -32,11 +32,6 @@
 #define PGD_SIZE                        4096     /* Level 0: 512 entries x 8 bytes */
 #define PUD_SIZE                        4096     /* Level 1: 512 entries x 8 bytes */
 #define PMD_SIZE                        (4*4096) /* Level 2: 4 pages for 4GB coverage */
-#define PMD_HI_SIZE                     4096     /* Level 2: 1 page for the PCIe window at 24GB */
-
-/* CPU-side PCIe outbound window on BCM2711 (fixed in the SoC address map) */
-#define BCM2711_PCIE_WIN_BASE           0x600000000UL
-#define BCM2711_PCIE_WIN_SIZE           0x40000000UL
 
 struct bcm2708bootmem
 {
@@ -52,7 +47,6 @@ struct bcm2708bootmem
     uint8_t     bm_pgd[PGD_SIZE];                                        /* Level 0 page table */
     uint8_t     bm_pud[PUD_SIZE];                                        /* Level 1 page table */
     uint8_t     bm_pmd[PMD_SIZE];                                        /* Level 2 page tables (2MB blocks) */
-    uint8_t     bm_pmd_hi[PMD_HI_SIZE];                                  /* Level 2 page table for the PCIe window */
 }  __attribute__((packed));
 
 #define BOOTMEMADDR(offset) (&(((struct bcm2708bootmem *)0x0)->offset))
