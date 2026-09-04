@@ -224,13 +224,29 @@ endif
 #MM linklibs-gallium_vc4-gca : linklibs-gallium_v3d-mesa$(OPT_MESAGL)
 #MM linklibs-galliumcoreapi : linklibs-gallium_vc4 linklibs-gallium_v3d-mesa$(OPT_MESAGL)
 
+# The data the driver reads rather than calls, which the glue carries as
+# objects instead of trampolines. Every data import has to be named here or
+# the generator stops. Mesa 26 moved two of these: the CPU caps went behind
+# the inline util_get_cpu_caps(), which reads _util_cpu_caps_state where
+# 20.x read util_cpu_caps, and the glsl type singletons became plain
+# objects. vc4 reads the caps on arm only, to pick the NEON tiling path.
+GCA_PRIVATE_DATA := nir_intrinsic_infos nir_op_infos
+ifeq ($(OPT_MESAGL),20.0.8)
+GCA_PRIVATE_DATA += util_cpu_caps
+else
+GCA_PRIVATE_DATA += _util_cpu_caps_state \
+                    glsl_type_builtin_int \
+                    glsl_type_builtin_uint \
+                    glsl_type_builtin_vec4
+endif
+
 $(GCA_GENDIR)/.gca.stamp : $(GCA_CONSUMERS) $(GCA_CORELIBS) $(GCA_TOOL)
 	%mkdir_q dir="$(GCA_GENDIR)"
 	$(Q)$(ECHO) "Generating GalliumCoreAPI glue"
 	$(Q)$(PYTHON) $(GCA_TOOL) --nm $(GCA_NM) --ar $(GCA_AR) \
 		--consumer $(GCA_CONSUMERS) \
 		--providers $(GCA_CORELIBS) \
-		--private-data nir_intrinsic_infos nir_op_infos util_cpu_caps \
+		--private-data $(GCA_PRIVATE_DATA) \
 		--mesa-version $(MESAGLVERSION) --arch $(AROS_TARGET_CPU) \
 		--abi-flags "$(strip $(GCA_ABI_FLAGS))" \
 		--abi-files $(SRCDIR)/workbench/libs/mesa/mesa-$(MESAGLVERSION)-aros.diff \
