@@ -36,12 +36,14 @@
 uintptr_t __arm_periiobase = 0;
 unsigned int __arm_socid = 0;
 uintptr_t __vcmb_base = 0;
+uintptr_t __rp1_base = 0;
 
 extern void mem_init(void);
 extern unsigned int uartclock;
 extern unsigned int uartdivint;
 extern unsigned int uartdivfrac;
 extern unsigned int uartbaud;
+extern uintptr_t __uart_base;
 
 void boot_exception_handler(uint64_t esr, uint64_t elr, uint64_t far) __attribute__((used));
 void boot_exception_handler(uint64_t esr, uint64_t elr, uint64_t far)
@@ -255,6 +257,94 @@ void query_memory()
     }
 }
 
+/*
+ * The RP1 southbridge hangs off one of the BCM2712 PCIe host bridges.
+ * The CPU address of that window is not fixed across board and firmware revisions
+ * (0x1f_0000_0000 and 0x1c_0000_0000 both occur)
+ */
+static void query_rp1(void)
+{
+    of_node_t *axi = dt_find_node("/axi");
+    of_node_t *bridge;
+    of_property_t *p;
+    uint32_t parent_ac;
+
+    if (!axi)
+        return;
+
+    p = dt_find_property(axi, "#address-cells");
+    parent_ac = p ? AROS_BE2LONG(*(uint32_t *)p->op_value) : 2;
+
+    ForeachNode(&axi->on_children, bridge)
+    {
+        of_node_t *child;
+        uint32_t child_ac, child_sc, entry_cells;
+        volatile uint32_t *ranges;
+        int32_t cells;
+        int has_rp1 = 0;
+        uintptr_t win32 = 0, win64 = 0;
+
+        if (strncmp(bridge->on_name, "pcie", 4))
+            continue;
+
+        ForeachNode(&bridge->on_children, child)
+        {
+            if (!strncmp(child->on_name, "rp1", 4))
+                has_rp1 = 1;
+        }
+        if (!has_rp1)
+            continue;
+
+        p = dt_find_property(bridge, "#address-cells");
+        child_ac = p ? AROS_BE2LONG(*(uint32_t *)p->op_value) : 3;
+        p = dt_find_property(bridge, "#size-cells");
+        child_sc = p ? AROS_BE2LONG(*(uint32_t *)p->op_value) : 2;
+        entry_cells = child_ac + parent_ac + child_sc;
+
+        p = dt_find_property(bridge, "ranges");
+        if (!p)
+            return;
+
+        ranges = p->op_value;
+        cells = p->op_length / 4;
+
+        while (cells >= (int32_t)entry_cells)
+        {
+            /* The first child cell is the PCI space code, not an address. */
+            uint32_t space = AROS_BE2LONG(ranges[0]);
+            uint64_t addr_cpu = 0, addr_len = 0;
+            uint32_t i;
+
+            ranges += child_ac;
+            for (i = 0; i < parent_ac; i++)
+                addr_cpu = (addr_cpu << 32) | AROS_BE2LONG(*ranges++);
+            for (i = 0; i < child_sc; i++)
+                addr_len = (addr_len << 32) | AROS_BE2LONG(*ranges++);
+
+            kprintf("[BOOT] RP1 window: space %08x -> %p, %p bytes\n",
+                    space, addr_cpu, addr_len);
+
+            mmu_map_section(addr_cpu, addr_cpu, addr_len, 0, 0, 3, 0);
+
+            if (!win32 && ((space >> 24) & 0x03) == 0x02)
+                win32 = (uintptr_t)addr_cpu;
+            if (!win64 && ((space >> 24) & 0x03) == 0x03)
+                win64 = (uintptr_t)addr_cpu;
+
+            cells -= entry_cells;
+        }
+        /*
+            * Take the prefetchable window: the firmware allocates RP1's BAR1
+            * from it (UART0 answers at win64 + 0x30000), while the MEM32 entry
+            * describes where Linux will move RP1 once it re-enumerates PCIe.
+            * Both windows are the same on C1 and D0 - the d0 overlay does not
+            * touch them - so this is stepping-independent.
+            */
+        __rp1_base = win64;
+        kprintf("[BOOT] RP1 windows: mem32 %p, mem64 %p\n", win32, win64);
+        return;
+    }
+}
 
 void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3)
 {
@@ -276,10 +366,10 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
     mem_init();
 
     int dt_mem_usage = mem_avail();
-    
+
     /* Parse device tree */
     dt_parse((void *)(uintptr_t)dtb_addr);
-    
+
     /*
      * The SoC id gates the UART and mailbox register offsets, so it has to
      * be known before serInit(). The tag itself is emitted further down.
@@ -313,8 +403,6 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
         __arm_socid = plat;
     }
 
-    __vcmb_base = __arm_periiobase + (__arm_socid == 0x2712 ? 0x7C013880 : 0xB880);
-    
     dt_mem_usage -= mem_avail();
 
     /* Prepare mapping for peripherals. Use the data from device tree here */
@@ -372,6 +460,8 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
     else
         while(1) asm volatile("wfe");
 
+    __vcmb_base = __arm_periiobase + (__arm_socid == 0x2712 ? 0x7C013880 : 0xB880);
+
     /*
      * The Pi 4 describes additional MMIO windows on the /scb bus: the full
      * 0xFC000000 peripheral block (which contains the PCIe host bridge
@@ -418,7 +508,13 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
         }
     }
 
+    query_rp1();
+
     serInit();
+
+    boottag->ti_Tag = KRN_DebugUartBase;
+    boottag->ti_Data = __uart_base;   /* the address serInit() actually used */
+    boottag++;
 
     kprintf("\n\n[BOOT] AROS %s\n", bootstrapName);
     {
@@ -435,9 +531,15 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
      */
     boottag->ti_Tag = KRN_Platform;
     boottag->ti_Data = __arm_socid;
-    
+
     kprintf("[BOOT] SoC platform id 0x%x\n", __arm_socid);
-    
+
+    boottag++;
+
+    boottag->ti_Tag = KRN_PeripheralBase;
+    /* BCM2712 keeps the legacy block at bus 0x7C000000 into the window */
+    boottag->ti_Data = __arm_periiobase +
+                       (__arm_socid == 0x2712 ? 0x7C000000 : 0);
     boottag++;
 
     /*
@@ -486,7 +588,7 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
              * pokes below would land blindly in the /soc window. */
             if (__arm_socid == 0x2712)
                 continue;
-            
+
             of_property_t *p = dt_find_property(led, "gpios");
             of_property_t *st = dt_find_property(led, "status");
             int32_t gpio = 0;
