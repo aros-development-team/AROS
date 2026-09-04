@@ -214,10 +214,15 @@ GCA_ABI_FLAGS := $(TARGET_ISA_CFLAGS) $(USER_CPPFLAGS)
 # gca_bind matches slots positionally, so the slot list is generated from
 # the union of their import sets. A driver added here must also appear in
 # the v3d-side consumption (hidd/v3d) and vice versa.
-GCA_CONSUMERS := $(top_libdir)/libgallium_vc4.a $(top_libdir)/libgallium_v3d.a
+# v3d is built only where its glue has been ported, so the union is taken
+# over the drivers this Mesa version actually builds.
+GCA_CONSUMERS := $(top_libdir)/libgallium_vc4.a
+ifeq ($(OPT_MESAGL),20.0.8)
+GCA_CONSUMERS += $(top_libdir)/libgallium_v3d.a
+endif
 
-#MM linklibs-gallium_vc4-gca : linklibs-gallium_v3d
-#MM linklibs-galliumcoreapi : linklibs-gallium_vc4 linklibs-gallium_v3d
+#MM linklibs-gallium_vc4-gca : linklibs-gallium_v3d-mesa$(OPT_MESAGL)
+#MM linklibs-galliumcoreapi : linklibs-gallium_vc4 linklibs-gallium_v3d-mesa$(OPT_MESAGL)
 
 $(GCA_GENDIR)/.gca.stamp : $(GCA_CONSUMERS) $(GCA_CORELIBS) $(GCA_TOOL)
 	%mkdir_q dir="$(GCA_GENDIR)"
