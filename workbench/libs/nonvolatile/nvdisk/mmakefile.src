@@ -7,7 +7,9 @@ USER_LDFLAGS := -static
     includeflag=TARGET_NVDISK_INCLUDES \
     maindir=workbench/libs/nonvolatile/nvdisk
 
-USER_INCLUDES := $(TARGET_NVDISK_INCLUDES)
+# nvdisk_arch.h can be overridden in an arch-specific directory: the arch
+# includes come first, then this directory for the generic fallback.
+USER_INCLUDES := $(TARGET_NVDISK_INCLUDES) -I$(SRCDIR)/$(CURDIR)
 
 FUNCS := meminfonvd \
 	 readnvddata \
