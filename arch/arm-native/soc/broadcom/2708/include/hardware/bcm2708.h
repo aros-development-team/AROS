@@ -38,7 +38,7 @@
  * INTID n + 96. Anything using an IRQ_* number below has to add it when
  * running on that SoC.
  */
-#define BCM2711_GPUIRQ_OFFSET                           96
+#define BCM271X_GPUIRQ_OFFSET                           96
 
 #define SYSTIMER_BASE                                   (ARM_PERIIOBASE + 0x003000)
 #define ARMTIMER_BASE                                   (ARM_PERIIOBASE + 0x00b000)

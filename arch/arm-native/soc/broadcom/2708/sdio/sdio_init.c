@@ -988,7 +988,7 @@ static int sdio_do_probe(struct SDIOBase *SDIOBase)
         unsigned int irq = IRQ_VC_ARASANSDIO;
 
         if (SDIOBase->sdio_periiobase == BCM2711_PERIIOBASE)
-            irq += BCM2711_GPUIRQ_OFFSET;
+            irq += BCM271X_GPUIRQ_OFFSET;
 
         SDIOBase->sdio_IRQHandle = KrnAddIRQHandler(irq,
                                                     sdio_irq_handler, SDIOBase, NULL);
@@ -1043,6 +1043,13 @@ static int sdio_init(struct SDIOBase *SDIOBase)
         return FALSE;
 
     if ((SDIOBase->sdio_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase)) == 0)
+        return FALSE;
+
+    /* BCM2712 wires the WiFi to its own SDHCI block, not the Arasan; the
+     * partial iobase redirect below is not enough (GPIO mux and wdelay's
+     * timeout-less SYSTIMER spin still assume BCM283x). Bail until a real
+     * 2712 SDIO path exists. */
+    if (SDIOBase->sdio_periiobase == BCM2712_PERIIOBASE)
         return FALSE;
 
     InitSemaphore(&SDIOBase->sdio_Sem);

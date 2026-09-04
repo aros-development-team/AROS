@@ -20,8 +20,8 @@ struct SDIOBase
 {
     struct Node             sdio_Node;
     struct SignalSemaphore  sdio_Sem;       /* Serialises command issue */
-    unsigned int            sdio_periiobase;
-    unsigned int            sdio_iobase;    /* Arasan SDHCI MMIO base */
+    IPTR                    sdio_periiobase;
+    IPTR                    sdio_iobase;    /* Arasan SDHCI MMIO base */
     unsigned int            sdio_ClockMax;  /* Controller base clock (Hz) */
     uint16_t                sdio_RCA;       /* Relative card address (CMD3) */
     uint32_t                sdio_OCR;       /* I/O OCR from CMD5 */
