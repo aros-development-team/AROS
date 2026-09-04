@@ -82,14 +82,13 @@ MESA3D_VC4_C_SOURCES := $(filter %.c, $(C_SOURCES))
 MESA3D_VC4_C_SOURCES := $(filter-out vc4_simulator.c, $(MESA3D_VC4_C_SOURCES))
 MESA3D_VC4_C_SOURCES := $(filter-out kernel/%, $(MESA3D_VC4_C_SOURCES))
 
-# NEON tiling variant (upstream meson builds this; the target is compiled
-# -mfpu=neon-vfpv4 so __ARM_NEON is already defined and the runtime
-# has_neon check passes)
-MESA3D_VC4_C_SOURCES += vc4_tiling_lt_neon.c
-
-# Full paths for linklib build
+# Full paths for linklib build. vc4_tiling_lt.c is built twice: once as it
+# stands, for the _base entry points, and once through the wrapper here,
+# which defines V3D_BUILD_NEON for the _neon ones. vc4_tiling.h picks
+# between them at runtime, so both have to be present to link.
 VC4_DRIVER_SOURCES := \
-    $(addprefix $(GALLIUM_PATH)/drivers/vc4/, $(MESA3D_VC4_C_SOURCES:.c=))
+    $(addprefix $(GALLIUM_PATH)/drivers/vc4/, $(MESA3D_VC4_C_SOURCES:.c=)) \
+    $(SRCDIR)/$(CURDIR)/vc4_tiling_lt_neon
 
 #
 # AROS-specific HIDD sources. Since the runtime-binding rework the hidd
@@ -124,15 +123,21 @@ USER_INCLUDES := \
     -iquote $(top_builddir)/src \
     -iquote $(top_srcdir)/src/broadcom \
     -iquote $(top_builddir)/src/broadcom \
+    -iquote $(top_srcdir)/src/compiler \
     -iquote $(top_srcdir)/src/compiler/nir \
+    -iquote $(top_builddir)/src/compiler \
+    -iquote $(top_builddir)/src/compiler/glsl \
     -iquote $(top_builddir)/src/compiler/nir \
+    -iquote $(top_builddir)/src/util \
+    -iquote $(top_builddir)/src/util/format \
     -I$(SRCDIR)/arch/arm-native/soc/broadcom/2708/include
 
 #
 # Compiler flags
 #
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING) $(NOWARN_MAYBE_UNINITIALIZED)
-USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_GNU99)
+# Mesa 26 needs C11 for static_assert, as the mesa linklibs are built.
+USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_GNU11)
 
 USER_CPPFLAGS += \
     -DGALLIUM_VC4 \
