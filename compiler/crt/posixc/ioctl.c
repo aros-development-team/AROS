@@ -183,7 +183,11 @@ static int fill_consize(APTR fd, struct winsize *ws)
             va_start(ap, request);
             arg = va_arg(ap, APTR);
             va_end(ap);
-            r = hooks->fdh_ioctl(data, (IPTR)request, arg, &err);
+            /* request is an int but the codes are unsigned 32-bit values
+               with bit 31 set (FIONBIO = _IOW('f', 126, long) = 0x8008667e),
+               so on 64-bit targets a plain (IPTR) cast sign-extends and no
+               hook's switch can match it. Zero-extend instead. */
+            r = hooks->fdh_ioctl(data, (IPTR)(ULONG)request, arg, &err);
             if (r < 0)
                 errno = err;
             return r;
