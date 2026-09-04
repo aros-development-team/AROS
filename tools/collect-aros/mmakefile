@@ -14,18 +14,23 @@ development-collect-aros-quick :
 
 collect-aros-installflag := $(CROSSTOOLSDIR)/.installflag-collect-aros
 
+# The flag records which sources the installed binary was built from, so
+# that editing one rebuilds it. Testing only for the flag's presence left
+# an installed toolchain - a cached one above all - with a stale tool.
+collect-aros-sources := $(wildcard $(SRCDIR)/$(CURDIR)/*.c $(SRCDIR)/$(CURDIR)/*.h $(SRCDIR)/$(CURDIR)/Makefile)
+
 #MM tools-crosstools-collect-aros : tools-crosstools-binutils
 .PHONY : tools-crosstools-collect-aros
 tools-crosstools-collect-aros : tools-crosstools-collect-aros-quick
 
 #MM
-tools-crosstools-collect-aros-quick :
-	@$(IF) ! $(TEST) -f $(collect-aros-installflag) ; then \
-	       $(MAKE) COLLECTAROSBIN=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros USER_CFLAGS="-D_CROSS_ -DOBJLIBDIR=\"$(AROS_LIB)\""  CAGENDIR=$(HOSTGENDIR)/tools/collect-aros \
-	    && $(HOST_STRIP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros \
-	    && $(CP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-collect-aros \
-	    && $(TOUCH) $(CROSSTOOLSDIR) $(collect-aros-installflag) ; \
-	fi
+tools-crosstools-collect-aros-quick : $(collect-aros-installflag)
+
+$(collect-aros-installflag) : $(collect-aros-sources)
+	$(MAKE) COLLECTAROSBIN=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros USER_CFLAGS="-D_CROSS_ -DOBJLIBDIR=\"$(AROS_LIB)\""  CAGENDIR=$(HOSTGENDIR)/tools/collect-aros
+	$(HOST_STRIP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros
+	$(CP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-collect-aros
+	$(TOUCH) $(CROSSTOOLSDIR) $@
 
 #MM
 standalone-collect-aros :
