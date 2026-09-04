@@ -296,7 +296,8 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
     /* Attempt to boot until we succeed */
     for (;;)
     {
-        dosboot_BootStrap(LIBBASE);
+        if (dosboot_BootStrap(LIBBASE) == 1)
+            continue;
 
         if (!LIBBASE->bm_Screen)
             LIBBASE->bm_Screen = NoBootMediaScreen(LIBBASE);

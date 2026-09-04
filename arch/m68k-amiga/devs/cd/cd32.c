@@ -105,6 +105,8 @@ struct CD32Unit {
     union CDTOC cu_CDTOC[100];
     ULONG cu_IntEnable;
     ULONG cu_ChangeNum;
+    BOOL cu_MediaKnown;
+    BOOL cu_MediaPresent;
     struct CD32XLTransfer cu_XL;
     struct CDXL *cu_XLCallbackNode;
     volatile ULONG cu_XLProgress;
@@ -361,14 +363,18 @@ static BOOL CD32_HandleUnsolicited(struct CD32Unit *cu, UBYTE RxHead)
     case CHCD_MEDIA:
         RxHead++;
         if (cu->cu_Misc->Response[RxHead] == 0x83) {
-            if (!(cu->cu_CDInfo.Status & CDSTSF_DISK)) {
+            if (!cu->cu_MediaPresent)
                 cu->cu_ChangeNum++;
-                cu->cu_CDInfo.Status |= CDSTSF_CLOSED | CDSTSF_DISK |
-                    CDSTSF_SPIN;
-            }
-        } else if (cu->cu_CDInfo.Status & CDSTSF_DISK) {
-            cu->cu_ChangeNum++;
+            cu->cu_CDInfo.Status = CDSTSF_CLOSED | CDSTSF_DISK |
+                CDSTSF_SPIN;
+            cu->cu_MediaKnown = FALSE;
+            cu->cu_MediaPresent = FALSE;
+        } else {
+            if (cu->cu_MediaPresent)
+                cu->cu_ChangeNum++;
             cu->cu_CDInfo.Status = 0;
+            cu->cu_MediaKnown = TRUE;
+            cu->cu_MediaPresent = FALSE;
         }
         return TRUE;
 
@@ -930,7 +936,8 @@ static UBYTE CD32_Status(struct CD32Unit *cu)
     D(bug("%s: %p\n", __func__, cu));
     cmd[0] = CHCD_STATUS;
     res[1] = 0x80;
-    CD32_Cmd(cu, cmd, 1, res, 20);
+    if (CD32_Cmd(cu, cmd, 1, res, 20) != 0)
+        return cu->cu_CDInfo.Status;
     res[20] = 0;
     D(bug("%s: Drive \"%s\", state 0x%02x\n", __func__, &res[2], res[1]));
 
@@ -939,6 +946,8 @@ static UBYTE CD32_Status(struct CD32Unit *cu)
             cu->cu_ChangeNum++;
             cu->cu_CDInfo.Status = 0;
         }
+        cu->cu_MediaKnown = TRUE;
+        cu->cu_MediaPresent = FALSE;
     } else if (res[1] & CHERR_DISKPRESENT) {
         if (!(cu->cu_CDInfo.Status & CDSTSF_DISK)) {
             cu->cu_ChangeNum++;
@@ -987,16 +996,31 @@ static VOID CD32_ReadTOC(struct CD32Unit *cu)
     D(bug("%s: TotalSectors = %d\n", __func__, cu->cu_TotalSectors));
 }
 
-static LONG CD32_IsCDROM(struct CD32Unit *cu)
+static BOOL CD32_RefreshMedia(struct CD32Unit *cu)
 {
+    if (cu->cu_MediaKnown)
+        return cu->cu_MediaPresent;
+
     if ((cu->cu_CDInfo.Status & CDSTSF_DISK) == 0) {
         if ((CD32_Status(cu) & CDSTSF_DISK) == 0)
-            return CDERR_NoDisk;
+            goto done;
     }
 
-    if ((cu->cu_CDInfo.Status & CDSTSF_TOC) == 0) {
+    if ((cu->cu_CDInfo.Status & CDSTSF_TOC) == 0)
         CD32_ReadTOC(cu);
-    }
+
+done:
+    cu->cu_MediaPresent =
+        (cu->cu_CDInfo.Status & CDSTSF_TOC) != 0;
+    cu->cu_MediaKnown = TRUE;
+    CD32_ArmAsyncResponse(cu);
+    return cu->cu_MediaPresent;
+}
+
+static LONG CD32_IsCDROM(struct CD32Unit *cu)
+{
+    if (!CD32_RefreshMedia(cu))
+        return CDERR_NoDisk;
 
     if ((cu->cu_CDInfo.Status & CDSTSF_CDROM) == 0) {
         return CDERR_SeekError;
@@ -1073,7 +1097,12 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         err = 0;
         break;
     case CD_CHANGESTATE:
-        io->io_Actual = (cu->cu_CDInfo.Status & CDSTSF_TOC) ? 0 : 1;
+        /* Report current media state, not the state cached by the last
+         * command.  In particular, dosboot polls this command while the
+         * no-media screen is open; a disc inserted after power-on must
+         * cause the drive status and TOC to be refreshed here. */
+        io->io_Actual = CD32_RefreshMedia(cu) ? 0 : 1;
+        CD32_ArmAsyncResponse(cu);
         D(bug("CD_CHANGESTATE: %d\n", io->io_Actual));
         err = 0;
         break;
@@ -1391,7 +1420,6 @@ static VOID CD32_UnitInit(APTR priv)
     struct CD32Unit *cu = priv;
 
     cu->cu_Task = FindTask(NULL);
-    CD32_IsCDROM(cu);
 }
 
 static const struct cdUnitOps CD32Ops = {
@@ -1404,7 +1432,7 @@ static const struct cdUnitOps CD32Ops = {
 };
 
 static const struct DosEnvec CD32Envec = {
-    .de_TableSize = DE_MASK,
+    .de_TableSize = DE_DOSTYPE,
     .de_SizeBlock = 2048 >> 2,
     .de_Surfaces  = 1,
     .de_SectorPerBlock = 1,
@@ -1427,6 +1455,7 @@ static const struct DosEnvec CD32Envec = {
     .de_BufMemType = MEMF_24BITDMA,
     .de_MaxTransfer = 32 * 2048,
     .de_Mask = 0x00fffffe,
+    .de_DosType = AROS_MAKE_ID('C', 'D', 'V', 'D'),
 };
 
 

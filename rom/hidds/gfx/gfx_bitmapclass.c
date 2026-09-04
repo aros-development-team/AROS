@@ -5233,7 +5233,7 @@ void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf)
      * It increases number of pixfmt users, so we'll need to release it when
      * not used any more.
      */
-    data->pf_registered = TRUE;
+    data->pf_registered = (pf != NULL);
 }
 
 /*

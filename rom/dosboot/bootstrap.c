@@ -37,6 +37,10 @@
 #include "dosboot_intern.h"
 #include "../expansion/expansion_intern.h"
 
+#define DOSBOOT_RETRY_NOW 1
+
+extern void CloseNoBootMediaScreen(struct DOSBootBase *DOSBootBase);
+
 #ifdef __mc68000
 
 /* These two functions are implemented in arch/m68k/all/dosboot/bootcode.c */
@@ -89,10 +93,8 @@ static BOOL GetBootNodeDeviceUnit(struct BootNode *bn, BPTR *device, IPTR *unit,
     }
     *bootblocks = de->de_BootBlocks * de->de_SizeBlock * sizeof(ULONG);
     if (*bootblocks == 0)
-    {
-        D(bug("[DOSBoot:bootstrap] %s: No bootblocks\n", __func__));
-        return FALSE;
-    }
+        D(bug("[DOSBoot:bootstrap] %s: Device does not use bootblocks\n", __func__));
+
     return TRUE;
 }
 
@@ -346,6 +348,23 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                 BootNodeDeviceUnit = GetBootNodeDeviceUnit(bn, &device, &unit, &bootblock_size);
                 if (!BootNodeDeviceUnit || (dosboot_DevicePresent((struct IORequest*)io, device, unit)))
                 {
+                    /* A screen opened while no medium was present owns large
+                     * Chip RAM allocations. Do not start the filesystem or
+                     * boot code while those allocations are live: allocations
+                     * made by the boot path would become interleaved with the
+                     * screen bitmap and leave Chip RAM fragmented after the
+                     * screen is eventually closed. Tear down both the screen
+                     * and this probe, then retry immediately from a clean
+                     * allocation layout. */
+                    if (BootNodeDeviceUnit && LIBBASE->bm_Screen)
+                    {
+                        CloseDevice((struct IORequest *)io);
+                        DeleteIORequest((struct IORequest *)io);
+                        DeleteMsgPort(msgport);
+                        CloseNoBootMediaScreen(LIBBASE);
+                        return DOSBOOT_RETRY_NOW;
+                    }
+
                     /* First try as a BootBlock.
                      * dosboot_BootBlock does not return at all if
                      * the boot block booted. TRUE (always, on m68k)
@@ -356,7 +375,8 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                      */
                     
                     D(bug("[DOSBoot:bootstrap] %s: Attempting %b\n",__func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
-                    if (!BootNodeDeviceUnit || !dosboot_BootBlock(&io, &msgport, bn, ExpansionBase, bootblock_size)) {
+                    if (!BootNodeDeviceUnit || bootblock_size == 0 ||
+                        !dosboot_BootBlock(&io, &msgport, bn, ExpansionBase, bootblock_size)) {
                         if (io)
                         {
                             if (BootNodeDeviceUnit)
