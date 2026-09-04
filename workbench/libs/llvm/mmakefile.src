@@ -27,12 +27,12 @@ LLVM_REPOSITORY := https://github.com/llvm/llvm-project/releases/download/llvmor
 LLVM_ARCHBASE := llvm-$(OPT_LLVM).src
 LLVM_SRCDIR := $(PORTSDIR)/llvm/$(LLVM_ARCHBASE)
 
-LLVM_PATCH := $(SRCDIR)/workbench/libs/llvm/$(LLVM_ARCHBASE)-aros.diff
-LLVM_PATCH_ORIGIN := $(SRCDIR)/workbench/libs/llvm
-ifeq ($(wildcard $(LLVM_PATCH)),)
-LLVM_PATCH := $(SRCDIR)/tools/crosstools/llvm/$(LLVM_ARCHBASE)-aros.diff
+# One set of AROS patches serves both toolchains: the crosstools host build
+# and the target/native build here. The AROS specific parts are guarded by
+# __AROS__ (or CMAKE_SYSTEM_NAME), so the same diff builds a host cross
+# compiler and an AROS hosted one - which is what an AROS build host needs.
 LLVM_PATCH_ORIGIN := $(SRCDIR)/tools/crosstools/llvm
-endif
+LLVM_PATCH := $(LLVM_PATCH_ORIGIN)/$(LLVM_ARCHBASE)-aros.diff
 ifneq ($(wildcard $(LLVM_PATCH)),)
 LLVM_PATCHSPEC := $(LLVM_ARCHBASE)-aros.diff:$(LLVM_ARCHBASE):-p1
 else
