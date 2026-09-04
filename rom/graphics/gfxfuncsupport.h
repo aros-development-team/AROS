@@ -45,7 +45,7 @@
 do                                                                             \
 {                                                                              \
     if(! IS_HIDD_BM(bitmap))                                                   \
-        release_cache_object(CDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase); \
+        release_planarbm_object((bm_obj), GfxBase);                            \
 } while (0)
 
 
@@ -165,6 +165,7 @@ typedef LONG(*PIXELFUNC)(APTR, OOP_Object *, OOP_Object *, WORD, WORD, struct Gf
 /****************************************************************************************/
 
 OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase);
+VOID release_planarbm_object(OOP_Object *pbm_obj, struct GfxBase *GfxBase);
 
 ULONG do_render_func(struct RastPort *rp, Point *src, struct Rectangle *rr,
                      RENDERFUNC render_func, APTR funcdata,

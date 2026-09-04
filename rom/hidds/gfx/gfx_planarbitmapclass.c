@@ -289,6 +289,20 @@ static BOOL PBM_SetBitMap(OOP_Class *cl, OOP_Object *o, struct BitMap *bm)
     struct planarbm_data *data = OOP_INST_DATA(cl, o);
     OOP_Object *pf;
 
+    /* Detach from a caller-owned bitmap when a cached wrapper is released.
+     * Besides avoiding a stale bitmap pointer, this releases the registered
+     * pixel format while the wrapper is idle. */
+    if (!bm)
+    {
+        PBM_FreeBitMap(data);
+        data->bitmap = NULL;
+        data->planes_alloced = FALSE;
+
+        BM__Hidd_BitMap__SetBitMapTags(CSD(cl)->bitmapclass, o, bmtags);
+        BM__Hidd_BitMap__SetPixFmt(CSD(cl)->bitmapclass, o, NULL);
+        return TRUE;
+    }
+
     /* First we attempt to register a pixelformat */
     pftags[0].ti_Data = bm->Depth;      /* PixFmt_Depth */
     pftags[1].ti_Data = bm->Depth;      /* PixFmt_BitsPerPixel */

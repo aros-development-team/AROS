@@ -88,7 +88,7 @@ void anim_Stop(struct DOSBootBase *DOSBootBase)
     {
         if (ad->ad_State & STATEF_POINTERHIDE)
         {
-            FreeMem(DOSBootBase->blank_pointer, 6*2);
+            FreeMem(DOSBootBase->blank_pointer, BOOT_POINTER_SIZE);
             DOSBootBase->blank_pointer = NULL;
         }
         banm_Dispose(DOSBootBase);

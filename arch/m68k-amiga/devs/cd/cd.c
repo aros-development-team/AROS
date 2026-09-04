@@ -14,8 +14,6 @@
 
 #include <dos/filehandler.h>
 
-#include <resources/filesysres.h>
-
 #include <devices/cd.h>
 
 #include "cd_intern.h"
@@ -28,15 +26,13 @@ struct cdUnit {
     const struct cdUnitOps   *cu_UnitOps;
     struct Task        *cu_Task;
     struct MsgPort     *cu_MsgPort;
-    const struct DosEnvec *cu_Envec;
 };
 
-static BOOL cdRegisterVolume(struct cdBase *cb, struct cdUnit *unit,
-                             const struct DosEnvec *de);
+static BOOL cdRegisterVolume(struct cdUnit *unit, const struct DosEnvec *de);
 
 /* Each cd.device unit has a task which dispatches requests and services
  * backend hardware completions. */
-static VOID cdTask(IPTR base, IPTR unit)
+static VOID cdTask(IPTR unit)
 {
     struct cdUnit *cu = (APTR)unit;
     struct IOStdReq *io;
@@ -44,25 +40,6 @@ static VOID cdTask(IPTR base, IPTR unit)
     BOOL running = TRUE;
 
     D(bug("%s.%d Task, Port %p\n", cu->cu_UnitOps->uo_Name, cu->cu_Unit, cu->cu_MsgPort));
-
-    /* The boot node registers from here rather than from resident init:
-     * the DosType scan in cdRegisterVolume needs FileSystem.resource
-     * populated, and the filesystem modules init at lower resident
-     * priority than this device does. It must also happen before the
-     * disc probe below - the probe can take seconds with a disc in the
-     * drive, and dosboot expects its boot nodes in place by the time it
-     * runs.
-     */
-    cdRegisterVolume((struct cdBase *)base, cu, cu->cu_Envec);
-
-    /* cdSelectDosType() may have to wait for FileSystem.resource while the
-     * resident initializers are still running.  Do that bootstrap work at
-     * the normal task priority so it cannot starve the initializers and
-     * make dosboot conclude temporarily that there is no boot medium.
-     * Once the boot node exists, match Commodore's priority-15 CDUITask so
-     * asynchronous requests still make progress when an application polls
-     * CheckIO() without yielding. */
-    SetTaskPri(FindTask(NULL), 15);
 
     /* Blocking drive probes belong here, not in resident init: a
      * misbehaving drive must cost a failed mount, not a wedged boot
@@ -124,47 +101,8 @@ static VOID cdTask(IPTR base, IPTR unit)
     /* Terminate by fallthough */
 }
 
-/* Ask FileSystem.resource which CD filesystem the ROM actually carries
- * rather than hard-coding one: the boot node's DosType must match a
- * registered filesystem or CliInit never finds a handler for CD0:,
- * which is how the 2019 switch from cdfs to CDVDFS broke CD boot.
- * Registration order is not guaranteed against this unit task, so poll
- * briefly before falling back to CDVDFS's type.
- */
-static IPTR cdSelectDosType(struct cdBase *cb)
-{
-    static const ULONG types[] = {
-        AROS_MAKE_ID('C','D','V','D'),  /* CDVDFS */
-        AROS_MAKE_ID('C','D','F','S'),  /* the older cdfs handler */
-    };
-    int attempt, i;
-
-    for (attempt = 0; attempt < 20; attempt++) {
-        struct FileSysResource *fsr = OpenResource(FSRNAME);
-        if (fsr) {
-            for (i = 0; i < (int)(sizeof(types) / sizeof(types[0])); i++) {
-                struct FileSysEntry *fse;
-                IPTR found = 0;
-                Forbid();
-                ForeachNode(&fsr->fsr_FileSysEntries, fse) {
-                    if (fse->fse_DosType == types[i]) {
-                        found = types[i];
-                        break;
-                    }
-                }
-                Permit();
-                if (found)
-                    return found;
-            }
-        }
-        cdDelayMS(cb, 100);
-    }
-    return types[0];
-}
-
 /* Add a bootnode using expansion.library */
-static BOOL cdRegisterVolume(struct cdBase *cb, struct cdUnit *unit,
-                             const struct DosEnvec *de)
+static BOOL cdRegisterVolume(struct cdUnit *unit, const struct DosEnvec *de)
 {
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
@@ -191,7 +129,7 @@ static BOOL cdRegisterVolume(struct cdBase *cb, struct cdUnit *unit,
         pp[2]                   = unit->cu_Unit;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
         pp[DE_BOOTPRI      + 4] = -10;
-        pp[DE_DOSTYPE      + 4] = cdSelectDosType(cb);
+        pp[DE_DOSTYPE      + 4] = de->de_DosType;
         pp[DE_BAUD         + 4] = 0;
         pp[DE_CONTROL      + 4] = 0;
         pp[DE_BOOTBLOCKS   + 4] = 0;
@@ -234,11 +172,12 @@ LONG cdAddUnit(struct cdBase *cb, const struct cdUnitOps *ops, APTR priv, const 
     if (cu) {
         cu->cu_Private = priv;
         cu->cu_UnitOps = ops;
-        cu->cu_Envec   = de;
         /* Assigned before the task starts: it names the boot node */
         cu->cu_Unit    = cb->cb_MaxUnit++;
         cu->cu_Task = NewCreateTask(TASKTAG_PC, cdTask,
                                     TASKTAG_NAME, ops->uo_Name,
+                                    /* Match Commodore's CDUITask. */
+                                    TASKTAG_PRI, 15,
                                     /*
                                      * The unit task runs the drive
                                      * protocol and sector delivery;
@@ -247,11 +186,16 @@ LONG cdAddUnit(struct cdBase *cb, const struct cdUnitOps *ops, APTR priv, const 
                                      * chip RAM on a stock CD32.
                                      */
                                     TASKTAG_STACKSIZE, 4096,
-                                    TASKTAG_ARG1, cb,
-                                    TASKTAG_ARG2, cu,
+                                    TASKTAG_ARG1, cu,
                                     TASKTAG_TASKMSGPORT, &cu->cu_MsgPort,
                                     TAG_END);
         if (cu->cu_Task) {
+            /* Boot-node creation is deterministic initialization work, not
+             * part of the priority-15 hardware service task.  The backend
+             * supplies the filesystem type carried by this ROM, so this
+             * does not depend on FileSystem.resource registration timing. */
+            cdRegisterVolume(cu, de);
+
             ObtainSemaphore(&cb->cb_UnitsLock);
             ADDTAIL(&cb->cb_Units, &cu->cu_Node);
             ReleaseSemaphore(&cb->cb_UnitsLock);

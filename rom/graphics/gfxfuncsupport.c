@@ -43,7 +43,7 @@ OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase)
 
         if(!HIDD_PlanarBM_SetBitMap(pbm_obj, bitmap)) {
             DEBUG_PLANARBM(bug("!!! get_planarbm_object: HIDD_PlanarBM_SetBitMap FAILED !!!\n"));
-            release_cache_object(CDD(GfxBase)->planarbm_cache, pbm_obj, GfxBase);
+            release_planarbm_object(pbm_obj, GfxBase);
             pbm_obj = NULL;
         }
 
@@ -52,6 +52,14 @@ OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase)
     }
 
     return pbm_obj;
+}
+
+/****************************************************************************************/
+
+VOID release_planarbm_object(OOP_Object *pbm_obj, struct GfxBase *GfxBase)
+{
+    HIDD_PlanarBM_SetBitMap(pbm_obj, NULL);
+    release_cache_object(CDD(GfxBase)->planarbm_cache, pbm_obj, GfxBase);
 }
 
 /****************************************************************************************/
