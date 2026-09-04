@@ -45,6 +45,7 @@ OBJC_TARGET                   := @objc_target@
 JAVA_TARGET                   := @java_target@
 RUST_TARGET                   := @rust_target@
 JPEGXL_TOOLCHAINSUPPORT       := @jpegxl_toolchainsupport@
+NOUVEAU_TOOLCHAINSUPPORT      := @nouveau_toolchainsupport@
 @aros_target_options@
 
 # -------------------------------------------------------------------------- 
