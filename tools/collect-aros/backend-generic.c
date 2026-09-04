@@ -174,31 +174,60 @@ void collect_extra(const char *file, setnode **liblist_ptr)
     pclose(pipe);
 }
 
+/* nm marks an undefined symbol 'U', and one that is only weakly referenced
+   'w' ('v' when it is an object). A weak reference is allowed to stay
+   unresolved - it evaluates to zero, and the code using it tests for NULL
+   before calling it - so it must not be reported as a link failure. */
+static int is_weak_undefined(const char *line)
+{
+    while (*line == ' ' || *line == '\t')
+        line++;
+
+    return (line[0] == 'w' || line[0] == 'v')
+            && (line[1] == ' ' || line[1] == '\t');
+}
+
 int check_and_print_undefined_symbols(const char *file)
 {
-    char buf[200];
+    char cmd[200], line[4096];
     int undefined_syms = 0;
-    size_t cnt;
+    int skipping = 0;
 
-    strcpy(buf, NM_NAME);
-    if (!strstr(buf, "--demangle"))
-        strcat(buf, " --demangle");
-    if (!strstr(buf, "--undefined-only"))
-        strcat(buf, " --undefined-only");
-    if ((have_gnunm) && (!strstr(buf, "--line-numbers")))
-        strcat(buf, " --line-numbers");
+    strcpy(cmd, NM_NAME);
+    if (!strstr(cmd, "--demangle"))
+        strcat(cmd, " --demangle");
+    if (!strstr(cmd, "--undefined-only"))
+        strcat(cmd, " --undefined-only");
+    if ((have_gnunm) && (!strstr(cmd, "--line-numbers")))
+        strcat(cmd, " --line-numbers");
 
-    FILE *pipe = my_popen(buf, file);
+    FILE *pipe = my_popen(cmd, file);
 
-    while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0)
+    while (fgets(line, sizeof(line), pipe) != NULL)
     {
-        if (!undefined_syms)
+        int complete = (strchr(line, '\n') != NULL);
+
+        /* A line longer than the buffer arrives in pieces; the pieces
+           after the first are not symbols of their own. */
+        if (!skipping)
         {
-            undefined_syms = 1;
-            fprintf(stderr, "There are undefined symbols in '%s':\n", file);
+            if (is_weak_undefined(line))
+            {
+                skipping = !complete;
+                continue;
+            }
+
+            if (!undefined_syms)
+            {
+                undefined_syms = 1;
+                fprintf(stderr, "There are undefined symbols in '%s':\n", file);
+            }
+
+            fputs(line, stderr);
         }
 
-        fwrite(buf, cnt, 1, stderr);
+        if (complete)
+            skipping = 0;
     }
 
     pclose(pipe);
@@ -211,9 +240,8 @@ int check_and_print_undefined_symbols(const char *file)
    library re-supply fixup is needed for the final link. */
 int has_undefined_symbols(const char *file)
 {
-    char buf[200];
+    char buf[200], line[4096];
     int result = 0;
-    size_t cnt;
 
     strcpy(buf, NM_NAME);
     if (!strstr(buf, "--undefined-only"))
@@ -221,8 +249,11 @@ int has_undefined_symbols(const char *file)
 
     FILE *pipe = my_popen(buf, file);
 
-    while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0)
+    while (fgets(line, sizeof(line), pipe) != NULL)
     {
+        if (is_weak_undefined(line))
+            continue;
+
         result = 1;
         break;
     }

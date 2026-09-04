@@ -509,6 +509,20 @@ static int relocate
 
             case SHN_UNDEF:
                 /*
+                 * A weak reference that stayed undefined is not an error:
+                 * it resolves to zero, and the code using it tests for
+                 * NULL before calling it. g++ leaves such references
+                 * behind for the hooks libstdc++ lets a program override.
+                 */
+                if (ELF_ST_BIND(sym->info) == STB_WEAK)
+                {
+                    D(bug("[ELF Loader] Undefined weak symbol '%s', using 0\n",
+                          (STRPTR)sh[shsymtab->link].addr + sym->name));
+                    s = 0;
+                    break;
+                }
+
+                /*
                  * Symbol index 0 means "no symbol" and resolves to the
                  * null entry, which is SHN_UNDEF. RISC-V emits RELAX and
                  * ALIGN that way - they carry only an addend - so they

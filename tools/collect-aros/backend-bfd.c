@@ -245,6 +245,11 @@ int check_and_print_undefined_symbols(const char *file)
 
         if (bfd_is_und_section (sym->section))
         {
+            /* A weak reference may stay unresolved; it evaluates to zero
+               and the code using it tests for NULL before calling it. */
+            if (sym->flags & BSF_WEAK)
+                continue;
+
             if (!undefined_syms)
             {
                 undefined_syms = 1;
