@@ -147,38 +147,22 @@ USER_CPPFLAGS += \
 USER_LDFLAGS := -L$(top_libdir) -lstdcio -lstdc
 
 #
-# Generate broadcom CLE pack headers from XML definitions
-# (Mesa's meson build does this via custom_target; we do it manually here)
+# Generate the broadcom CLE pack header from its XML definition
+# (Mesa's meson build does this via custom_target; we do it manually here).
+# vc4 is version 21 of the packet description. Since Mesa 26 that comes from
+# vc4_packet.xml: the versioned XMLs are gone, and the versions above 21
+# belong to v3d, which AROS does not build.
 #
 CLE_SRCDIR := $(top_srcdir)/src/broadcom/cle
 CLE_GENDIR := $(top_builddir)/src/broadcom/cle
 CLE_GENSCRIPT := $(CLE_SRCDIR)/gen_pack_header.py
 
-$(CLE_GENDIR)/v3d_packet_v21_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v21.xml
+$(CLE_GENDIR)/v3d_packet_v21_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/vc4_packet.xml
 	%mkdir_q dir="$(CLE_GENDIR)"
 	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 21 > $@
 
-$(CLE_GENDIR)/v3d_packet_v33_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v33.xml
-	%mkdir_q dir="$(CLE_GENDIR)"
-	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 33 > $@
-
-$(CLE_GENDIR)/v3d_packet_v41_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v33.xml
-	%mkdir_q dir="$(CLE_GENDIR)"
-	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 41 > $@
-
-$(CLE_GENDIR)/v3d_packet_v42_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v33.xml
-	%mkdir_q dir="$(CLE_GENDIR)"
-	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 42 > $@
-
-CLE_GEN_HEADERS := \
-    $(CLE_GENDIR)/v3d_packet_v21_pack.h \
-    $(CLE_GENDIR)/v3d_packet_v33_pack.h \
-    $(CLE_GENDIR)/v3d_packet_v41_pack.h \
-    $(CLE_GENDIR)/v3d_packet_v42_pack.h
+CLE_GEN_HEADERS := $(CLE_GENDIR)/v3d_packet_v21_pack.h
 
 #MM
 linklibs-gallium_vc4-gen-cle : $(CLE_GEN_HEADERS)
