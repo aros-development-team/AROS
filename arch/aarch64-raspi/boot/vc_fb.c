@@ -144,6 +144,16 @@ int vcfb_init(void)
             D(kprintf("[VCFB] Buffer uncached\n"));
         }
         scr_FrameBuffer = (void*)((intptr_t)scr_FrameBuffer & ~0xc0000000);
+
+        /* The firmware echoes back what it actually configured, in place.
+         * The Pi 5 keeps its native mode rather than honouring the request,
+         * so never trust the values we asked for. */
+        if (AROS_LE2LONG(vcmb_msg[5]))
+            fb_width  = AROS_LE2LONG(vcmb_msg[5]);
+        if (AROS_LE2LONG(vcmb_msg[6]))
+            fb_height = AROS_LE2LONG(vcmb_msg[6]);
+        if (AROS_LE2LONG(vcmb_msg[15]))
+            fb_depth  = AROS_LE2LONG(vcmb_msg[15]);
     }
 
     /* query the framebuffer pitch */
@@ -175,6 +185,12 @@ int vcfb_init(void)
     vcfb_height = fb_height;
     vcfb_depth  = fb_depth;
     vcfb_pitch  = fb_pitch;
+
+    /* The firmware may place the fb outside both the reported VC region
+     * and the RAM ranges (Pi 5: carveout at 0x3f800000) - map it
+     * explicitly instead of relying on query_vmem()'s coverage.
+     * Normal-NC: framebuffer wants write-combining, not Device. */
+    mmu_map_section(vcfb_base, vcfb_base, vcfb_pitch * vcfb_height, 1, 0, 3, 0);
 
     fb_Init(fb_width, fb_height, fb_depth, fb_pitch);
 
