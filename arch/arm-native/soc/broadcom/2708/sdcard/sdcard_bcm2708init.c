@@ -18,6 +18,11 @@
 #include <hardware/arasan.h>
 #include <hardware/videocore.h>
 
+/* The BCM2712 mailbox sits at +0x13880, not the BCM283x/2711 +0xB880 */
+#undef VCMB_BASE
+#define VCMB_BASE ((IPTR)__arm_periiobase + \
+    (((IPTR)__arm_periiobase == BCM2712_PERIIOBASE) ? 0x13880 : 0xB880))
+
 extern APTR     MBoxBase;
 extern IPTR     __arm_periiobase;
 
