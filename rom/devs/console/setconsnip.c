@@ -23,6 +23,7 @@ AROS_LH1(LONG, SetConSnip,
 
     FreeMem((APTR) ConsoleDevice->copyBuffer,
         ConsoleDevice->copyBufferSize);
+    ConsoleDevice->copyBuffer = NULL;
     ConsoleDevice->copyBufferSize = 0;
     if (data)
     {
