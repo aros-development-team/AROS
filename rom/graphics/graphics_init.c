@@ -162,8 +162,32 @@ AROS_INTH1(TOF_VBlank, struct GfxBase *, GfxBase)
     AROS_INTFUNC_INIT
 
     struct Node *tNode;
+    struct DBufInfo **link;
 
     GfxBase->VBCounter++;
+
+    /*
+     * The native display interrupt (priority 25) has already installed the
+     * queued copper list before this graphics.library server (priority 10)
+     * runs.  The bitmap that was replaced is therefore safe to reuse now.
+     */
+    link = &PrivGBase(GfxBase)->dbuf_pending;
+    while (*link)
+    {
+        struct DBufInfo *db = *link;
+
+        if ((LONG)(GfxBase->VBCounter - db->dbi_Count1) >= 0)
+        {
+            *link = db->dbi_Link1;
+            db->dbi_Link1 = NULL;
+            db->dbi_Count1 = 0;
+            ReplyMsg(&db->dbi_SafeMessage);
+            ReplyMsg(&db->dbi_DispMessage);
+        }
+        else
+            link = (struct DBufInfo **)&db->dbi_Link1;
+    }
+
     if(!IsListEmpty(&GfxBase->TOF_WaitQ)) {
         ForeachNode(&GfxBase->TOF_WaitQ, tNode) {
             Signal((struct Task *)tNode->ln_Name, SIGF_SINGLE);
@@ -173,4 +197,13 @@ AROS_INTH1(TOF_VBlank, struct GfxBase *, GfxBase)
     return 0;
 
     AROS_INTFUNC_EXIT
+}
+
+void internal_QueueDBufInfo(struct DBufInfo *db, struct GfxBase *GfxBase)
+{
+    Disable();
+    db->dbi_Count1 = GfxBase->VBCounter + 1;
+    db->dbi_Link1 = PrivGBase(GfxBase)->dbuf_pending;
+    PrivGBase(GfxBase)->dbuf_pending = db;
+    Enable();
 }

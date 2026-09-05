@@ -51,9 +51,11 @@
 /* Shared dispatch handle, defined in aros_drm_shim.c. */
 extern struct vc4_aros_bridge *aros_drm_bridge;
 
-/* The Mesa vc4 driver's screen entry, statically linked into mesa3dgl. */
-struct renderonly;
-extern struct pipe_screen *vc4_screen_create(int fd, struct renderonly *ro);
+/* Mesa 26 renamed the wait-forever value; the vc4 code still takes it. */
+#include "util/os_time.h"
+#ifndef PIPE_TIMEOUT_INFINITE
+#define PIPE_TIMEOUT_INFINITE OS_TIMEOUT_INFINITE
+#endif
 
 /* renderonly_* stubs to satisfy the linker (renderonly.c isn't in our
  * linklib). Never called at runtime — we pass NULL renderonly to
@@ -655,9 +657,17 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
  * fails cleanly instead of corrupting.
  * Single screen at a time, matching the in-hidd single-fd model.
  */
-/* Private util_cpu_caps copy (u_cpu_detect.o is linked into this module;
- * the provider's caps live in mesa3dgl and are a different object). */
+/* Private cpu caps copy (u_cpu_detect.o is linked into this module; the
+ * provider's caps live in mesa3dgl and are a different object). Mesa 26
+ * put them behind util_get_cpu_caps(), whose once-init this calls: the
+ * accessor itself is ATTRIBUTE_CONST and would be optimised away. */
+#if AROS_MESA_MAJOR >= 26
+extern void _util_cpu_detect_once(void);
+#define aros_util_cpu_detect() _util_cpu_detect_once()
+#else
 extern void util_cpu_detect(void);
+#define aros_util_cpu_detect() util_cpu_detect()
+#endif
 
 /* Live screens created through the bridge. An app toggling between
  * fullscreen and windowed mode may create the new context before
@@ -697,7 +707,7 @@ struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
 
     /* Fill this module's private util_cpu_caps (has_neon selects the
      * tiling path) — the trampolined core never touches our copy. */
-    util_cpu_detect();
+    aros_util_cpu_detect();
 
     /* Same env/tooltype read mesa3dgl does when sizing the drawable;
      * runs on the app's process, so the values agree. */
@@ -740,7 +750,12 @@ struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
     switch (bridge->driver_id)
     {
     case AROS_GALLIUM_DRIVER_VC4:
+        /* vc4_screen.h declares it; Mesa 26 takes a screen config too. */
+#if AROS_MESA_MAJOR >= 26
+        pscreen = vc4_screen_create(1, NULL, NULL);
+#else
         pscreen = vc4_screen_create(1, NULL);
+#endif
         if (!pscreen)
             bug("[aros_drm_vc4] vc4_screen_create FAILED (bridge ok, falling back)\n");
         break;

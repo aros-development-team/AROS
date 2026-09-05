@@ -5,7 +5,7 @@ FILES:= fd_alloc fd_hooks fd_init
 
 USER_LDFLAGS := -static
 
-#MM- workbench-libs : workbench-libs-fd
+#MM- workbench-libs-complete : workbench-libs-fd
 %build_module mmake=workbench-libs-fd \
     modname=fd modtype=library \
     files="$(FILES)"

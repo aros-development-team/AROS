@@ -14,9 +14,14 @@ include $(SRCDIR)/$(CURDIR)/sources.drm.mak
 # The AROS nouveau glue targets the Mesa 20.x gallium driver API. Mesa 26 drops
 # Makefile.sources and changed the driver interfaces, so only hook the hidd in
 # for the Mesa version it has been ported to.
+# The Mesa 26 codegen reads NIR from C++, which needs a compiler that takes
+# the designated initializers its builder macros use. configure reports that
+# as NOUVEAU_TOOLCHAINSUPPORT: empty where the driver can be built, "no"
+# where it cannot, which names a metatarget nothing defines and so leaves
+# the driver out (the trick jpegxl.datatype uses for its own gcc floor).
 #MM- workbench-hidds-nouveau : hidd-nouveau-mesa$(OPT_MESAGL)
 #MM- hidd-nouveau-mesa20.0.8 : hidd-nouveau-$(AROS_TARGET_CPU)
-#MM- hidd-nouveau-mesa26.0.0 : hidd-nouveau-$(AROS_TARGET_CPU)
+#MM- hidd-nouveau-mesa26.0.0 : hidd-nouveau-$(NOUVEAU_TOOLCHAINSUPPORT)$(AROS_TARGET_CPU)
 #MM- hidd-nouveau-i386 : hidd-nouveau
 #MM- hidd-nouveau-x86_64 : hidd-nouveau
 #MM- hidd-nouveau-riscv64 : hidd-nouveau

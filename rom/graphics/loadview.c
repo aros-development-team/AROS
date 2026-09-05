@@ -53,8 +53,13 @@
 
     ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
 
-    if(GfxBase->ActiView != view) {
+    if(GfxBase->ActiView != view || view != NULL) {
         GfxBase->ActiView = view;
+        /*
+         * Reload an active View after MakeVPort(), but preserve the classic
+         * no-op behavior of repeated LoadView(NULL) calls used by programs
+         * which take over the chipset directly.
+         */
         DoViewFunction(view, display_LoadViewPorts, GfxBase);
     }
 

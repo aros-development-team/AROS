@@ -2686,6 +2686,7 @@ case "$aros_target_cpu" in
 esac
 
 jpegxl_toolchainsupport=""
+nouveau_toolchainsupport=""
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_RESULT($target_gcc_version)
 
@@ -2705,6 +2706,14 @@ if test "$aros_toolchain" = "gnu" ; then
     # libjxl (used by jpegxl.datatype) requires gcc >= 8
     if test "$GCC_VERSION_MAJOR" -lt "8" ; then
         jpegxl_toolchainsupport="no"
+    fi
+
+    # Mesa 26's nouveau codegen reads NIR from C++, where the generated
+    # builder macros mix a positional initializer with designated ones.
+    # gcc took those up in 8; before that it stops at "non-trivial
+    # designated initializers not supported" and the driver cannot build.
+    if test "$GCC_VERSION_MAJOR" -lt "8" ; then
+        nouveau_toolchainsupport="no"
     fi
 
     gcc_fix_bitfields="false"
@@ -4534,6 +4543,7 @@ AC_SUBST(rust_target)
 
 # jpegxl.datatype toolchain support (libjxl requires gcc >= 8)
 AC_SUBST(jpegxl_toolchainsupport)
+AC_SUBST(nouveau_toolchainsupport)
 
 # DBUS related
 AC_SUBST(DBUS_CFLAGS)

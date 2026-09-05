@@ -97,6 +97,7 @@ struct FMVXLStream {
     LIBBASETYPEPTR base;
     volatile ULONG readyMask;
     volatile ULONG overrunMask;
+    struct MinList list;
     struct FMVXLNode nodes[FMV_XL_NODES];
 };
 
@@ -604,6 +605,10 @@ static void playLSN(LIBBASETYPEPTR base, struct IOMPEGReq *mpeg)
         ULONG i;
 
         stream->base = base;
+        stream->list.mlh_Head = &stream->nodes[0].node.Node;
+        stream->list.mlh_Tail = NULL;
+        stream->list.mlh_TailPred =
+            &stream->nodes[FMV_XL_NODES - 1].node.Node;
         for (i = 0; i < FMV_XL_NODES; i++) {
             struct FMVXLNode *entry = &stream->nodes[i];
             struct FMVXLNode *next = &stream->nodes[
@@ -622,7 +627,7 @@ static void playLSN(LIBBASETYPEPTR base, struct IOMPEGReq *mpeg)
         }
 
         readio->io_Command = CD_READXL;
-        readio->io_Data = &stream->nodes[0].node;
+        readio->io_Data = &stream->list;
         readio->io_Length = sectorCount * FMV_SECTOR_SIZE;
         readio->io_Offset = currentLSN * FMV_SECTOR_SIZE;
         SendIO((struct IORequest *)readio);

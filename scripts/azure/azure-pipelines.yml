@@ -89,7 +89,10 @@ stages:
       displayName: 'Prepare toolchain cache directory'
     - task: Cache@2
       inputs:
-        key: 'aros-toolchain | "$(arosbuild.name)" | "$(AROSTOOLCHAINFAMILY)" | "$(AROSTOOLCHAINGCCVER)" | "$(AROSTOOLCHAINLLVMVER)" | tools/crosstools/**'
+        # collect-aros is installed into the toolchain directory and travels
+        # in the cached tarball, so a change to it has to miss the cache the
+        # way a change under tools/crosstools does.
+        key: 'aros-toolchain | "$(arosbuild.name)" | "$(AROSTOOLCHAINFAMILY)" | "$(AROSTOOLCHAINGCCVER)" | "$(AROSTOOLCHAINLLVMVER)" | tools/crosstools/** | tools/collect-aros/**'
         path: '$(Agent.TempDirectory)/toolchain-cache'
         cacheHitVar: TOOLCHAIN_RESTORED
       displayName: 'Restore cached toolchain'

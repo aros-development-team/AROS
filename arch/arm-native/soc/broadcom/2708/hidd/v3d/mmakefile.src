@@ -6,7 +6,13 @@ include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 # Only build for the aarch64 RasPi target: the BCM2711 is the only SoC
 # with a V3D 4.2, and the driver has never been built for arm.
 #
-#MM- workbench-hidds-raspi-aarch64 : hidd-v3d
+# The glue here targets the Mesa 20.x gallium driver API, and Mesa 26 both
+# rearranged the driver and dropped the hardware versions it is written for
+# (33 and 41; 26 carries 42 and 71). Hook it in only for the Mesa version
+# it has been ported to, as the vc4 driver next door does.
+#MM- workbench-hidds-raspi-aarch64 : hidd-v3d-mesa$(OPT_MESAGL)
+#MM- hidd-v3d-mesa20.0.8 : hidd-v3d
+#MM- linklibs-gallium_v3d-mesa20.0.8 : linklibs-gallium_v3d
 
 MESA_V3D_DIR = $(top_srcdir)/src/gallium/drivers/v3d
 MESA_BROADCOM_DIR = $(top_srcdir)/src/broadcom

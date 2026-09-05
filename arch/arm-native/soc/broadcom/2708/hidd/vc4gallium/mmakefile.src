@@ -82,14 +82,13 @@ MESA3D_VC4_C_SOURCES := $(filter %.c, $(C_SOURCES))
 MESA3D_VC4_C_SOURCES := $(filter-out vc4_simulator.c, $(MESA3D_VC4_C_SOURCES))
 MESA3D_VC4_C_SOURCES := $(filter-out kernel/%, $(MESA3D_VC4_C_SOURCES))
 
-# NEON tiling variant (upstream meson builds this; the target is compiled
-# -mfpu=neon-vfpv4 so __ARM_NEON is already defined and the runtime
-# has_neon check passes)
-MESA3D_VC4_C_SOURCES += vc4_tiling_lt_neon.c
-
-# Full paths for linklib build
+# Full paths for linklib build. vc4_tiling_lt.c is built twice: once as it
+# stands, for the _base entry points, and once through the wrapper here,
+# which defines V3D_BUILD_NEON for the _neon ones. vc4_tiling.h picks
+# between them at runtime, so both have to be present to link.
 VC4_DRIVER_SOURCES := \
-    $(addprefix $(GALLIUM_PATH)/drivers/vc4/, $(MESA3D_VC4_C_SOURCES:.c=))
+    $(addprefix $(GALLIUM_PATH)/drivers/vc4/, $(MESA3D_VC4_C_SOURCES:.c=)) \
+    $(SRCDIR)/$(CURDIR)/vc4_tiling_lt_neon
 
 #
 # AROS-specific HIDD sources. Since the runtime-binding rework the hidd
@@ -124,21 +123,28 @@ USER_INCLUDES := \
     -iquote $(top_builddir)/src \
     -iquote $(top_srcdir)/src/broadcom \
     -iquote $(top_builddir)/src/broadcom \
+    -iquote $(top_srcdir)/src/compiler \
     -iquote $(top_srcdir)/src/compiler/nir \
+    -iquote $(top_builddir)/src/compiler \
+    -iquote $(top_builddir)/src/compiler/glsl \
     -iquote $(top_builddir)/src/compiler/nir \
+    -iquote $(top_builddir)/src/util \
+    -iquote $(top_builddir)/src/util/format \
     -I$(SRCDIR)/arch/arm-native/soc/broadcom/2708/include
 
 #
 # Compiler flags
 #
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING) $(NOWARN_MAYBE_UNINITIALIZED)
-USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_GNU99)
+# Mesa 26 needs C11 for static_assert, as the mesa linklibs are built.
+USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_GNU11)
 
 USER_CPPFLAGS += \
     -DGALLIUM_VC4 \
     -DHAVE_STRUCT_TIMESPEC \
     -DUSE_ARM_ASM \
-    -DGCA_CONSUMER_MODULE
+    -DGCA_CONSUMER_MODULE \
+    -DAROS_MESA_MAJOR=$(firstword $(subst ., ,$(MESAGLVERSION)))
 
 #
 # Link flags. Mesa linklibs moved to mesa3dgl; vc4gallium has no Mesa
@@ -147,38 +153,22 @@ USER_CPPFLAGS += \
 USER_LDFLAGS := -L$(top_libdir) -lstdcio -lstdc
 
 #
-# Generate broadcom CLE pack headers from XML definitions
-# (Mesa's meson build does this via custom_target; we do it manually here)
+# Generate the broadcom CLE pack header from its XML definition
+# (Mesa's meson build does this via custom_target; we do it manually here).
+# vc4 is version 21 of the packet description. Since Mesa 26 that comes from
+# vc4_packet.xml: the versioned XMLs are gone, and the versions above 21
+# belong to v3d, which AROS does not build.
 #
 CLE_SRCDIR := $(top_srcdir)/src/broadcom/cle
 CLE_GENDIR := $(top_builddir)/src/broadcom/cle
 CLE_GENSCRIPT := $(CLE_SRCDIR)/gen_pack_header.py
 
-$(CLE_GENDIR)/v3d_packet_v21_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v21.xml
+$(CLE_GENDIR)/v3d_packet_v21_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/vc4_packet.xml
 	%mkdir_q dir="$(CLE_GENDIR)"
 	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 21 > $@
 
-$(CLE_GENDIR)/v3d_packet_v33_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v33.xml
-	%mkdir_q dir="$(CLE_GENDIR)"
-	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 33 > $@
-
-$(CLE_GENDIR)/v3d_packet_v41_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v33.xml
-	%mkdir_q dir="$(CLE_GENDIR)"
-	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 41 > $@
-
-$(CLE_GENDIR)/v3d_packet_v42_pack.h: $(CLE_GENSCRIPT) $(CLE_SRCDIR)/v3d_packet_v33.xml
-	%mkdir_q dir="$(CLE_GENDIR)"
-	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 42 > $@
-
-CLE_GEN_HEADERS := \
-    $(CLE_GENDIR)/v3d_packet_v21_pack.h \
-    $(CLE_GENDIR)/v3d_packet_v33_pack.h \
-    $(CLE_GENDIR)/v3d_packet_v41_pack.h \
-    $(CLE_GENDIR)/v3d_packet_v42_pack.h
+CLE_GEN_HEADERS := $(CLE_GENDIR)/v3d_packet_v21_pack.h
 
 #MM
 linklibs-gallium_vc4-gen-cle : $(CLE_GEN_HEADERS)
@@ -225,10 +215,31 @@ GCA_ABI_FLAGS := $(TARGET_ISA_CFLAGS) $(USER_CPPFLAGS)
 # gca_bind matches slots positionally, so the slot list is generated from
 # the union of their import sets. A driver added here must also appear in
 # the v3d-side consumption (hidd/v3d) and vice versa.
-GCA_CONSUMERS := $(top_libdir)/libgallium_vc4.a $(top_libdir)/libgallium_v3d.a
+# v3d is built only where its glue has been ported, so the union is taken
+# over the drivers this Mesa version actually builds.
+GCA_CONSUMERS := $(top_libdir)/libgallium_vc4.a
+ifeq ($(OPT_MESAGL),20.0.8)
+GCA_CONSUMERS += $(top_libdir)/libgallium_v3d.a
+endif
 
-#MM linklibs-gallium_vc4-gca : linklibs-gallium_v3d
-#MM linklibs-galliumcoreapi : linklibs-gallium_vc4 linklibs-gallium_v3d
+#MM linklibs-gallium_vc4-gca : linklibs-gallium_v3d-mesa$(OPT_MESAGL)
+#MM linklibs-galliumcoreapi : linklibs-gallium_vc4 linklibs-gallium_v3d-mesa$(OPT_MESAGL)
+
+# The data the driver reads rather than calls, which the glue carries as
+# objects instead of trampolines. Every data import has to be named here or
+# the generator stops. Mesa 26 moved two of these: the CPU caps went behind
+# the inline util_get_cpu_caps(), which reads _util_cpu_caps_state where
+# 20.x read util_cpu_caps, and the glsl type singletons became plain
+# objects. vc4 reads the caps on arm only, to pick the NEON tiling path.
+GCA_PRIVATE_DATA := nir_intrinsic_infos nir_op_infos
+ifeq ($(OPT_MESAGL),20.0.8)
+GCA_PRIVATE_DATA += util_cpu_caps
+else
+GCA_PRIVATE_DATA += _util_cpu_caps_state \
+                    glsl_type_builtin_int \
+                    glsl_type_builtin_uint \
+                    glsl_type_builtin_vec4
+endif
 
 $(GCA_GENDIR)/.gca.stamp : $(GCA_CONSUMERS) $(GCA_CORELIBS) $(GCA_TOOL)
 	%mkdir_q dir="$(GCA_GENDIR)"
@@ -236,7 +247,7 @@ $(GCA_GENDIR)/.gca.stamp : $(GCA_CONSUMERS) $(GCA_CORELIBS) $(GCA_TOOL)
 	$(Q)$(PYTHON) $(GCA_TOOL) --nm $(GCA_NM) --ar $(GCA_AR) \
 		--consumer $(GCA_CONSUMERS) \
 		--providers $(GCA_CORELIBS) \
-		--private-data nir_intrinsic_infos nir_op_infos util_cpu_caps \
+		--private-data $(GCA_PRIVATE_DATA) \
 		--mesa-version $(MESAGLVERSION) --arch $(AROS_TARGET_CPU) \
 		--abi-flags "$(strip $(GCA_ABI_FLAGS))" \
 		--abi-files $(SRCDIR)/workbench/libs/mesa/mesa-$(MESAGLVERSION)-aros.diff \
@@ -277,7 +288,10 @@ $(top_libdir)/libgallium_vc4_gca.a : $(top_libdir)/libgallium_vc4.a \
 		$(top_libdir)/libgallium_vc4.a $@
 	$(Q)$(GCA_AR) rs $@ $(GCA_GENDIR)/gca_bind.o $(GCA_GENDIR)/gca_glue.o \
 		$(GCA_GENDIR)/aros_drm_vc4.o
-	$(Q)cat $(GCA_GENDIR)/gca_private.list | xargs $(GCA_AR) rs $@
+	$(Q)for o in `cat $(GCA_GENDIR)/gca_private.list` ; do \
+	    $(GCA_OBJCOPY) --redefine-syms=$(GCA_GENDIR)/gca_redefs.txt $$o $$o.gca && \
+	    $(GCA_AR) rs $@ $$o.gca ; \
+	done
 
 $(top_libdir)/libgalliumcoreapi.a : $(GCA_GENDIR)/gca_table.o
 	$(Q)$(ECHO) "Creating GalliumCoreAPI provider table linklib"

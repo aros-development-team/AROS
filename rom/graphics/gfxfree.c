@@ -69,6 +69,17 @@
     D(bug("GfxFree(0x%p)\n", node));
     if(SS_GRAPHICS == node->xln_Subsystem &&
             NT_GRAPHICS == node->xln_Type) {
+        if(node->xln_Subtype == VIEWPORT_EXTRA_TYPE) {
+            struct ViewPortExtra *vpe = (struct ViewPortExtra *)node;
+
+            /* A caller may explicitly free a ViewPortExtra attached through
+             * VideoControl() before freeing the ColorMap.  Do not leave a
+             * stale ownership link that makes FreeColorMap() free it again. */
+            if(vpe->ViewPort && vpe->ViewPort->ColorMap &&
+                    vpe->ViewPort->ColorMap->cm_vpe == vpe)
+                vpe->ViewPort->ColorMap->cm_vpe = NULL;
+        }
+
         /* take the element out of the hashlist, if it is in the
            hashlist  */
         D(bug("[GfxFree] xln_Succ 0x%p, xln_Pred 0x%p\n", node->xln_Succ, node->xln_Pred));
@@ -91,4 +102,3 @@
 
     AROS_LIBFUNC_EXIT
 } /* GfxFree */
-
