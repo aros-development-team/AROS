@@ -1011,7 +1011,7 @@ BOOL process_input(struct filehandle *fh)
             /* fall through */
 
         case INP_RETURN:
-            if (fh->inputsize < INPUTBUFFER_SIZE)
+            if (fh->inputsize <= INPUTBUFFER_SIZE)
             {
                 if (inp != INP_EOF)
                 {
