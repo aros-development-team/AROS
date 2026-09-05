@@ -58,7 +58,7 @@ VOID con_inject(struct ConsoleBase *ConsoleDevice, struct ConUnit *cu,
 }
 
 /* Protos */
-static BOOL checkconunit(Object *unit, struct ConsoleBase *ConsoleDevice);
+static BOOL lockconunit(Object *unit, struct ConsoleBase *ConsoleDevice);
 static void answer_read_request(struct IOStdReq *req,
     struct ConsoleBase *ConsoleDevice);
 
@@ -282,7 +282,7 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
                 /* Check that the ConUnit has not been disposed,
                    while the message was passed
                  */
-                if (checkconunit(cdihmsg->unit, ConsoleDevice))
+                if (lockconunit(cdihmsg->unit, ConsoleDevice))
                 {
                     BOOL rawEvent = report_raw_event(cdihmsg->unit,
                         &cdihmsg->ie, ConsoleDevice);
@@ -435,7 +435,14 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
                         D(bug("cdihmsg->ie.ie_Class = %d\n",
                                 cdihmsg->ie.ie_Class));
                     } /* switch(cdihmsg->ie.ie_Class) */
-                } /* if (checkconunit(cdihmsg->unit, ConsoleDevice)) */
+
+                    /*
+                     * CloseDevice() needs the unit-list lock exclusively
+                     * before removing the unit.  Keep our shared lock until
+                     * all accesses through cdihmsg->unit are complete.
+                     */
+                    ReleaseSemaphore(&ConsoleDevice->unitListLock);
+                } /* if (lockconunit(cdihmsg->unit, ConsoleDevice)) */
 
                 /* The input handler sent this asynchronously (it must never
                    wait for us, see CDInputHandler); we own the message. */
@@ -487,10 +494,14 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 /* FIXME: Do cleanup here */
 }
 
-/********** checkconunit()  *******************************/
+/********** lockconunit()  *******************************/
 
-/* Checks that the supplied unit has not been disposed */
-static BOOL checkconunit(Object *unit, struct ConsoleBase *ConsoleDevice)
+/*
+ * Checks that the supplied unit is still in the console list.  If found,
+ * the shared unit-list lock remains held so the object cannot be removed or
+ * disposed until the caller has finished using it.
+ */
+static BOOL lockconunit(Object *unit, struct ConsoleBase *ConsoleDevice)
 {
     Object *o, *ostate;
     BOOL found = FALSE;
@@ -506,7 +517,9 @@ static BOOL checkconunit(Object *unit, struct ConsoleBase *ConsoleDevice)
         }
     }
 
-    ReleaseSemaphore(&ConsoleDevice->unitListLock);
+    if (!found)
+        ReleaseSemaphore(&ConsoleDevice->unitListLock);
+
     return found;
 }
 
