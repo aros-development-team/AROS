@@ -62,6 +62,7 @@ AROS_INTP(uhwNakTimeoutInt);
 BOOL pciInit(struct PCIDevice *hd);
 void pciExpunge(struct PCIDevice *hd);
 APTR pciAllocAligned(struct PCIController *, struct MemEntry *, ULONG, ULONG, ULONG);
+void pciFreeAligned(struct PCIController *, struct MemEntry *);
 BOOL pciAllocUnit(struct PCIUnit *hu);
 void pciFreeUnit(struct PCIUnit *hu);
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr);

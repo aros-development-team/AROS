@@ -182,6 +182,13 @@ void xhciDumpCmdTimeout(struct PCIController *hc, WORD queued)
     ULONG i;
 
     pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
+               "timeout: hc_Flags %04lx -%s%s%s" DEBUGCOLOR_RESET" \n",
+               (unsigned long)hc->hc_Flags,
+               (hc->hc_Flags & HCF_ADDR64) ? " addr64" : " addr32",
+               (hc->hc_Flags & HCF_CTX64) ? " ctx64" : " ctx32",
+               (hc->hc_Flags & HCF_PLATFORM) ? " platform" : "");
+
+    pciusbWarn("xHCI", DEBUGWARNCOLOR_SET
                "timeout: usbcmd %08lx usbsts %08lx crcr %08lx%08lx" DEBUGCOLOR_RESET" \n",
                (unsigned long)AROS_LE2LONG(hcopr->usbcmd),
                (unsigned long)AROS_LE2LONG(hcopr->usbsts),

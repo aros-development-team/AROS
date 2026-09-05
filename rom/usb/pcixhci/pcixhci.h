@@ -202,6 +202,9 @@ struct PCIController {
     OOP_Class                   *hc_PCItoCPU_Class;
 #endif
 
+    /* HCF_PLATFORM only: CPU address plus this is the bus address. */
+    IPTR                        hc_PlatformDMAOffset;
+
     ULONG                       hc_DevID;
     UWORD                       hc_FunctionNum;
     UWORD                       hc_NumPorts;
@@ -267,7 +270,7 @@ struct PCIController {
 #define HCF_ADDR64	                    (1 << HCB_ADDR64)
 #define HCB_CTX64	                    15	                    /* 64Byte context               */
 #define HCF_CTX64	                    (1 << HCB_CTX64)
-#define HCB_PLATFORM                    31                      /* Non-PCI platform device      */
+#define HCB_PLATFORM                    5                       /* Non-PCI platform device      */
 #define HCF_PLATFORM                    (1 << HCB_PLATFORM)
 
 /* hc_Quirks */
@@ -603,6 +606,10 @@ static inline APTR MAPPCI(struct PCIController *hc, OOP_Object *o, APTR PCIAddre
 static inline APTR CPUTOPCI(struct PCIController *hc, OOP_Object *o, APTR address)
 {
     struct pHidd_PCIDriver_CPUtoPCI cputopci_p;
+
+    if (hc->hc_Flags & HCF_PLATFORM)
+        return (APTR)((IPTR)address + hc->hc_PlatformDMAOffset);
+
 #if defined(__OOP_NOLIBBASE__)
 # ifdef base
 #  undef base
@@ -632,6 +639,10 @@ static inline APTR CPUTOPCI(struct PCIController *hc, OOP_Object *o, APTR addres
 static inline APTR PCITOCPU(struct PCIController *hc, OOP_Object *o, APTR address)
 {
     struct pHidd_PCIDriver_PCItoCPU pcitocpu_p;
+
+    if (hc->hc_Flags & HCF_PLATFORM)
+        return (APTR)((IPTR)address - hc->hc_PlatformDMAOffset);
+
 #if defined(__OOP_NOLIBBASE__)
 # ifdef base
 #  undef base
@@ -669,7 +680,13 @@ static inline APTR PCITOCPU(struct PCIController *hc, OOP_Object *o, APTR addres
 #define ALLOCPCIMEM(hc, obj, size)      HIDD_PCIDriver_AllocPCIMem(obj, size)
 #define FREEPCIMEM(hc, obj, address)    HIDD_PCIDriver_FreePCIMem(obj, address)
 #define MAPPCI(hc, obj, pciaddress, length) HIDD_PCIDriver_MapPCI(obj, pciaddress, length)
-#define CPUTOPCI(hc, obj, pciaddress) HIDD_PCIDriver_CPUtoPCI(obj, pciaddress)
-#define PCITOCPU(hc, obj, pciaddress) HIDD_PCIDriver_PCItoCPU(obj, pciaddress)
+#define CPUTOPCI(hc, obj, pciaddress) \
+    (((hc)->hc_Flags & HCF_PLATFORM) \
+        ? (APTR)((IPTR)(pciaddress) + (hc)->hc_PlatformDMAOffset) \
+        : HIDD_PCIDriver_CPUtoPCI(obj, pciaddress))
+#define PCITOCPU(hc, obj, pciaddress) \
+    (((hc)->hc_Flags & HCF_PLATFORM) \
+        ? (APTR)((IPTR)(pciaddress) - (hc)->hc_PlatformDMAOffset) \
+        : HIDD_PCIDriver_PCItoCPU(obj, pciaddress))
 #endif
 #endif /* PCIXHCI_H */
