@@ -15,6 +15,9 @@ static LONG getArgumentIdx(ShellState *ss, STRPTR name, LONG len)
     struct SArg *a;
     LONG i;
 
+    if (len > MAXARGLEN)
+        return -1;
+
     for (i = 0; i < ss->argcount; ++i)
     {
         a = ss->args + i;
@@ -47,6 +50,9 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
     if ((result = bufferReadItem(buf, sizeof(buf), in, ss)) == ITEM_UNQUOTED)
     {
         len = in->cur - i;
+
+        if (len > MAXARGLEN)
+            return ERROR_LINE_TOO_LONG;
 
         i = getArgumentIdx(ss, buf, len);
         if (i < 0)
@@ -116,7 +122,13 @@ static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in)
         for (len = 0; *s != '/' && *s != ',' && *s != '\n' && *s != '\0'; ++s)
             ++len;
 
+        if (len > MAXARGLEN)
+            return ERROR_LINE_TOO_LONG;
+
         j = getArgumentIdx(ss, s - len, len);
+        if (j < 0)
+            return ERROR_TOO_MANY_ARGS;
+
         arg = (STRPTR) ss->arg[j];
         a = ss->args + j;
 
