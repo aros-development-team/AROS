@@ -2,10 +2,11 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES   := ShowConfig cpu_i386 cpu_arm cpu_m68k cpu_riscv
+FILES   := ShowConfig storage cpu_i386 cpu_arm cpu_m68k cpu_riscv
 EXEDIR  := $(AROS_TOOLS)
 
 #MM- workbench-tools : kernel-kernel-includes workbench-tools-showconfig
+#MM workbench-tools-showconfig : kernel-hidd-storage-includes
 
 USER_CPPFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
