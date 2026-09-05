@@ -22,14 +22,24 @@
 #define RP1_I2C1_OFFSET         0x074000
 #define RP1_I2C2_OFFSET         0x078000
 #define RP1_GPIO_OFFSET         0x0D0000
-#define RP1_USB0_OFFSET         0x100000
-#define RP1_USB1_OFFSET         0x110000
+#define RP1_USB0_OFFSET         0x200000
+#define RP1_USB1_OFFSET         0x300000
+/* Per-controller wrapper config (datasheet 5.1) */
+#define RP1_USB0_CFG_OFFSET     0x160000
+#define RP1_USB1_CFG_OFFSET     0x164000
 #define RP1_ETH_OFFSET          0x180000
 
 struct RP1Base {
     struct Library  rp1_Lib;
     BOOL            rp1_Present;
     IPTR            rp1_BAR1;       /* PCIe BAR1 base address */
+
+    /* Added to a CPU address to get the bus address a master must use. */
+    IPTR            rp1_DMAOffset;
+
+    /* GIC INTIDs the xHCI controllers signal on, 0 if MSI is not up. */
+    ULONG           rp1_USBIrq0;
+    ULONG           rp1_USBIrq1;
 
     /* Pre-computed peripheral base addresses */
     IPTR            rp1_USB0;
