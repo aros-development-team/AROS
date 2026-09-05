@@ -17,7 +17,7 @@
 #include "storage.h"
 
 #define APPNAME "ShowConfig"
-#define VERSION "ShowConfig 0.3"
+#define VERSION "ShowConfig 0.4"
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
