@@ -8,6 +8,7 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/bootloader.h>
+#include <proto/kernel.h>
 
 #include <aros/symbolsets.h>
 #include <exec/types.h>
@@ -425,15 +426,8 @@ void pciFreeUnit(struct PCIUnit *hu)
 
     //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
     ForeachNode(&hu->hu_Controllers, hc) {
-        if(hc->hc_PCIMem.me_Un.meu_Addr) {
-            if(hc->hc_PCIMemIsExec) {
-                FreeMem(hc->hc_PCIMem.me_Un.meu_Addr, hc->hc_PCIMem.me_Length);
-                hc->hc_PCIMemIsExec = FALSE;
-            } else {
-                HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Un.meu_Addr);
-            }
-            hc->hc_PCIMem.me_Un.meu_Addr = NULL;
-        }
+        pciFreeAligned(hc, &hc->hc_PCIMem);
+        hc->hc_PCIMemIsExec = FALSE;
     }
 
     // disable and free board
@@ -494,23 +488,74 @@ void pciExpunge(struct PCIDevice *hd)
 BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt)
 {
     if (hc->hc_Flags & HCF_PLATFORM) {
+        /* A GIC INTID rather than a PCI interrupt line, with nothing in
+           front of it to demultiplex. */
+        if (hc->hc_PCIIntLine) {
+            AddIntServer(INTB_KERNEL + hc->hc_PCIIntLine, interrupt);
+            pciusbDebug("PCI", "platform interrupt on INTID %u\n",
+                        (unsigned)hc->hc_PCIIntLine);
+        } else {
+            pciusbWarn("PCI", "no platform interrupt - controller will not signal\n");
+        }
         return TRUE;
     }
     return HIDD_PCIDevice_AddInterrupt(hc->hc_PCIDeviceObject, interrupt);
+}
+
+/* A platform controller has no PCI driver object to allocate DMA-suitable
+   memory from, and RP1's DMA is not coherent.  MMU attributes are per
+   page, hence the rounding. */
+#define PCIMEM_PAGE     4096
+#define PCIMEM_ROUND(x) (((x) + PCIMEM_PAGE - 1) & ~(uintptr_t)(PCIMEM_PAGE - 1))
+
+/* Named for the Krn* macros, which call through a base of this name. */
+APTR KernelBase = NULL;
+
+static APTR pciPlatformKernelBase(void)
+{
+    if (!KernelBase)
+        KernelBase = OpenResource("kernel.resource");
+
+    return KernelBase;
 }
 
 /* /// "pciAllocAligned()" */
 APTR pciAllocAligned(struct PCIController *hc, struct MemEntry *alloc, ULONG Size, ULONG align, ULONG bounds)
 {
     if (hc->hc_Flags & HCF_PLATFORM) {
-        alloc->me_Length = align + Size;
+        IPTR  addr;
+        ULONG mapped;
+
+        if (!pciPlatformKernelBase())
+            return NULL;
+
+        /* One page extra, so the start can always be pushed up to a
+           page boundary. */
+        alloc->me_Length = PCIMEM_ROUND(align + Size) + PCIMEM_PAGE;
         alloc->me_Un.meu_Addr = AllocMem(alloc->me_Length, MEMF_FAST | MEMF_CLEAR);
-        if (alloc->me_Un.meu_Addr) {
-            hc->hc_PCIMemIsExec = TRUE;
-            IPTR addrAligned = (((IPTR)alloc->me_Un.meu_Addr + (align - 1)) & ~(align - 1));
-            return (APTR)addrAligned;
+        if (!alloc->me_Un.meu_Addr)
+            return NULL;
+
+        hc->hc_PCIMemIsExec = TRUE;
+
+        addr   = PCIMEM_ROUND((IPTR)alloc->me_Un.meu_Addr);
+        mapped = alloc->me_Length - PCIMEM_PAGE;
+
+        /* Flush while still cacheable: a dirty line left behind would
+           land in memory later, on top of the controller's data. */
+        CacheClearE((APTR)addr, mapped, CACRF_ClearD);
+
+        if (!KrnMapGlobal((APTR)addr, KrnVirtualToPhysical((APTR)addr), mapped,
+                          MAP_Readable | MAP_Writable | MAP_WriteThrough)) {
+            pciusbError("PCI", "could not map %u bytes uncached\n", (unsigned)mapped);
+            FreeMem(alloc->me_Un.meu_Addr, alloc->me_Length);
+            alloc->me_Un.meu_Addr = NULL;
+            alloc->me_Length = 0;
+            return NULL;
         }
-        return NULL;
+
+        /* A page boundary satisfies every alignment the xHCI asks for. */
+        return (APTR)addr;
     }
 
     alloc->me_Length = align + Size;
@@ -534,11 +579,37 @@ APTR pciAllocAligned(struct PCIController *hc, struct MemEntry *alloc, ULONG Siz
 }
 /* \\\ */
 
+/* /// "pciFreeAligned()" */
+void pciFreeAligned(struct PCIController *hc, struct MemEntry *alloc)
+{
+    if(!alloc->me_Un.meu_Addr)
+        return;
+
+    if(hc->hc_Flags & HCF_PLATFORM) {
+        IPTR  addr   = PCIMEM_ROUND((IPTR)alloc->me_Un.meu_Addr);
+        ULONG mapped = alloc->me_Length - PCIMEM_PAGE;
+
+        /* Cacheable again, or the next owner of these pages gets uncached
+           memory without having asked for it. */
+        if(pciPlatformKernelBase())
+            KrnMapGlobal((APTR)addr, KrnVirtualToPhysical((APTR)addr), mapped,
+                         MAP_Readable | MAP_Writable);
+
+        FreeMem(alloc->me_Un.meu_Addr, alloc->me_Length);
+    } else {
+        FREEPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Un.meu_Addr);
+    }
+
+    alloc->me_Un.meu_Addr = NULL;
+    alloc->me_Length = 0;
+}
+/* \\\ */
+
 /* /// "pciGetPhysical()" */
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)
 {
     if (hc->hc_Flags & HCF_PLATFORM) {
-        return virtaddr;
+        return (APTR)((IPTR)virtaddr + hc->hc_PlatformDMAOffset);
     }
     return(HIDD_PCIDriver_CPUtoPCI(hc->hc_PCIDriverObject, virtaddr));
 }
