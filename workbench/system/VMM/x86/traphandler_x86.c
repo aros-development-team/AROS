@@ -17,6 +17,7 @@
 #include "defs.h"
 
 static APTR TrapHandlerHandle;
+static APTR KernelBase;
 
 static BOOL ShouldHandleFault(IPTR fault_address, struct ExceptionContext *regs)
 {
@@ -96,7 +97,7 @@ static int TrapPageFault(void *ctx, void *handlerData, void *handlerData2)
 
 BOOL VMMInstallTrapHandler(void)
 {
-  APTR KernelBase = OpenResource ("kernel.resource");
+  KernelBase = OpenResource ("kernel.resource");
 
   if (KernelBase == NULL)
     return FALSE;
