@@ -108,6 +108,7 @@ FUNCTIONS := \
 	getdisplayinfodata \
 	getdrmd \
 	getextspritea \
+	getfontsemaphore \
 	getgbuffers \
 	getoutlinepen \
 	getrgb32 \

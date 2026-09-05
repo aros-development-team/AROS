@@ -60,6 +60,7 @@
     if(!textAttr->ta_Name) return NULL;
 
     /* Search for font in the fontlist */
+    ObtainSemaphore(&PrivGBase(GfxBase)->fontsem);
     Forbid();
     ForeachNode(&GfxBase->TextFonts, tf) {
         if(0 == strcmp(tf->tf_Message.mn_Node.ln_Name, textAttr->ta_Name)) {
@@ -87,6 +88,7 @@
     if(best_so_far) best_so_far->tf_Accessors ++;
 
     Permit();
+    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
 
     return best_so_far;
 
