@@ -58,7 +58,7 @@ void initprojects (void);
 void expungeprojects (void);
 struct Project * findproject (const char * pname);
 struct Project * getfirstproject (void);
-void maketarget (FILE * deplogfh,
+int maketarget (FILE * deplogfh,
         struct Project * prj,
         char * tname,
         unsigned int depth,

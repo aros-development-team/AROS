@@ -112,6 +112,7 @@ main (int argc, char ** argv)
     char * targets[64];
     int targetc;
     int doenv = 0;
+    int retval = 0;
 
     currdir = getcwd (NULL, 1024);
 
@@ -250,7 +251,8 @@ main (int argc, char ** argv)
         }
     
         debug(printf("MMAKE:mmake.c->main: calling maketarget '%s'\n", tname));
-        maketarget (deplogfh, prj, tname, 0, 0);
+        if (!maketarget (deplogfh, prj, tname, 0, 0))
+            retval = 20;
 
         if (deplogfh)
             fclose (deplogfh);
@@ -268,6 +270,6 @@ main (int argc, char ** argv)
 
     free (currdir);
 
-    return 0;
+    return retval;
 }
 
