@@ -3,7 +3,7 @@
 
     Desc: xHCI chipset driver main pciusb interface
 */
-
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -4031,11 +4031,12 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
     hc->hc_ResetInt.is_Data = hc;
     AddResetCallback(&hc->hc_ResetInt);
 
-    IPTR pciIntLine = 0;
-    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_INTLine, &pciIntLine);
-    hc->hc_PCIIntLine = pciIntLine;
+    /* A platform controller has no config space. */
+    if(!(hc->hc_Flags & HCF_PLATFORM)) {
+        IPTR pciIntLine = 0;
+        OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_INTLine, &pciIntLine);
+        hc->hc_PCIIntLine = pciIntLine;
 
-    {
         struct TagItem vectreqs[] = {
             { tHidd_PCIVector_Min, 1 },
             { tHidd_PCIVector_Max, 1 },
@@ -4225,7 +4226,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
          * controller's own transactions, so what the function recorded
          * about that transaction says far more than the halt does.
          */
-        {
+        if(!(hc->hc_Flags & HCF_PLATFORM)) {
             UWORD cmd = READCONFIGWORD(hc, hc->hc_PCIDeviceObject, 0x04);
             UWORD sts = READCONFIGWORD(hc, hc->hc_PCIDeviceObject, 0x06);
 
@@ -4265,11 +4266,32 @@ init_fail:
     return FALSE;
 }
 
+/* Must run before the private is freed - it holds the MemEntries. */
+void xhciFreeHCMem(struct PCIController *hc, struct XhciHCPrivate *xhcic)
+{
+    struct MemEntry *dmamem[] = {
+        &xhcic->xhc_DCBAA, &xhcic->xhc_SPBA, &xhcic->xhc_SPBuffers,
+        &xhcic->xhc_ERST,  &xhcic->xhc_OPR,  &xhcic->xhc_ERS
+    };
+    ULONG i;
+
+    for(i = 0; i < (sizeof(dmamem) / sizeof(dmamem[0])); i++)
+        pciFreeAligned(hc, dmamem[i]);
+
+    xhcic->xhc_DCBAAp = NULL;
+    xhcic->xhc_SPBAp = NULL;
+    xhcic->xhc_SPBuffersp = NULL;
+    xhcic->xhc_ERSTp = NULL;
+    xhcic->xhc_OPRp = NULL;
+    xhcic->xhc_ERSp = NULL;
+}
+
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu)
 {
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
 
     if(xhcic) {
+        xhciFreeHCMem(hc, xhcic);
         FreeMem(xhcic, sizeof(*xhcic));
         hc->hc_CPrivate = NULL;
     }
@@ -4363,8 +4385,7 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
             }
         }
 
-        FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_EPAllocs[epid].dmaa_Entry.me_Un.meu_Addr);
-        devCtx->dc_EPAllocs[epid].dmaa_Entry.me_Un.meu_Addr = NULL;
+        pciFreeAligned(hc, &devCtx->dc_EPAllocs[epid].dmaa_Entry);
         devCtx->dc_EPAllocs[epid].dmaa_Ptr = NULL;
         devCtx->dc_EPAllocs[epid].dmaa_DMA = NULL;
     }
@@ -4422,15 +4443,13 @@ void xhciFreeDeviceCtx(struct PCIController *hc,
     }
 
     if(devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr) {
-        FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr);
-        devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr = NULL;
+        pciFreeAligned(hc, &devCtx->dc_IN.dmaa_Entry);
         devCtx->dc_IN.dmaa_Ptr = NULL;
         devCtx->dc_IN.dmaa_DMA = NULL;
     }
 
     if(devCtx->dc_SlotCtx.dmaa_Entry.me_Un.meu_Addr) {
-        FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_SlotCtx.dmaa_Entry.me_Un.meu_Addr);
-        devCtx->dc_SlotCtx.dmaa_Entry.me_Un.meu_Addr = NULL;
+        pciFreeAligned(hc, &devCtx->dc_SlotCtx.dmaa_Entry);
         devCtx->dc_SlotCtx.dmaa_Ptr = NULL;
         devCtx->dc_SlotCtx.dmaa_DMA = NULL;
     }

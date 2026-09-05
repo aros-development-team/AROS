@@ -1,6 +1,8 @@
 /* uhwcmd.c - pcixhci.device by Chris Hodges
 */
 
+#define DEBUG 0
+
 #include <devices/usb.h>
 #include <devices/usb_hub.h>
 #include <proto/utility.h>
