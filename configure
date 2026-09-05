@@ -5189,13 +5189,15 @@ if test "$IS_SUN_COMPILER" -ne "0"; then
     HOST_TOOLCHAIN_SUFFIX=
     HOST_TOOLCHAIN_FAMILY=sun
 fi
+CC_PROG=`echo $CC_BASE | sed -e 's| .*||' -e 's|.*/||'`
+
 IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM|clang'`
 if test "$IS_LLVM_COMPILER" -ne "0"; then
-    if test "$CC_BASE" != "gcc"; then
+    if test "$CC_PROG" != "gcc"; then
         HOST_TOOLCHAIN_CC=clang
         HOST_TOOLCHAIN_CXX=clang++
         HOST_TOOLCHAIN_PREFIX=llvm-
-        HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE | sed -e \"s|clang||g\"`"
+        HOST_TOOLCHAIN_SUFFIX="`echo $CC_PROG | sed -e \"s|clang||g\"`"
         HOST_TOOLCHAIN_FAMILY=llvm
     else
         IS_GNU_COMPILER=1

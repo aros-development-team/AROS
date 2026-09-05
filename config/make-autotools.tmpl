@@ -236,7 +236,7 @@ ifeq (%(compiler),host)
     # the "plain" host compiler.
     %(mmake)-cfg-env := %(config_env_extra) \
         CPP="$(HOST_CPP)" \
-        CXXCPP="$(HOST_CPP)" \
+        CXXCPP="$(strip $(%(mmake)-HOST_CXX) -E)" \
         CC="$(strip $(%(mmake)-HOST_CC) $(%(mmake)-HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)" \
         CXX="$(strip $(%(mmake)-HOST_CXX) $(%(mmake)-HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)" \
         LDFLAGS="-L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)"
