@@ -284,7 +284,10 @@ static void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
 
     /* have we failed yet? */
     if (0 == (status & (ATAF_BUSY | ATAF_DATAREQ)))
+    {
         ata_IRQNoData(unit, status);
+        return;
+    }
     if (status & ATAF_ERROR)
     {
         ata_IRQNoData(unit, status);
@@ -330,13 +333,12 @@ static void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
 
     DIRQ(bug("[ATAPI] %s: Current status: %ld during WRITE\n", __func__, reason));
 
-    /*
-     * have we failed yet?
-     * CHECKME: This sequence actually can trigger ata_IRQNoData() twice.
-     * Is this correct ?
-     */
+    /* have we failed yet? */
     if (0 == (status & (ATAF_BUSY | ATAF_DATAREQ)))
+    {
         ata_IRQNoData(unit, status);
+        return;
+    }
     if (status & ATAF_ERROR)
     {
         ata_IRQNoData(unit, status);
