@@ -4,14 +4,14 @@ include $(SRCDIR)/config/aros.cfg
 USER_LDFLAGS := -static
 
 #MM- kernel-rp1-bcm2712 : kernel-rp1-bcm2712-resource
-#MM- kernel-rp1usb-bcm2712 : kernel-rp1usb-bcm2712-resource
+#MM- kernel-rp1pci-bcm2712 : kernel-rp1pci-bcm2712-hidd
 
 %build_module mmake=kernel-rp1-bcm2712-resource \
     modname=rp1 modtype=resource \
     files="rp1_init"
 
-%build_module mmake=kernel-rp1usb-bcm2712-resource \
-    modname=rp1usb modtype=resource \
-    files="rp1_usb"
+%build_module mmake=kernel-rp1pci-bcm2712-hidd \
+    modname=pcirp1 modtype=hidd \
+    files="rp1_pci"
 
 %common
