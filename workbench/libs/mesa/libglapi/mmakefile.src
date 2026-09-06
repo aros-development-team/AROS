@@ -136,7 +136,7 @@ $(top_builddir)/$(CUR_MESADIR)/shared-glapi/public_glapi_wrappers.c: \
 		$(SRCDIR)/$(CURDIR)/gen_public_glapi_wrappers.sh
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
-	$(Q)$(SHELL) $(SRCDIR)/$(CURDIR)/gen_public_glapi_wrappers.sh \
+	$(Q)AWK="$(AWK)" $(SHELL) $(SRCDIR)/$(CURDIR)/gen_public_glapi_wrappers.sh \
 		$(top_builddir)/$(CUR_MESADIR)/shared-glapi/shared_glapi_mapi_tmp.h \
 		$(SRCDIR)/$(CURDIR)/public_glapi_required_symbols.txt \
 		$@

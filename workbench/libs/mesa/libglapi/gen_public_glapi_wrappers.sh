@@ -17,7 +17,7 @@ tmp_c="${out_c}.tmp"
     echo "#define MAPI_TMP_DEFINES"
     echo "#include \"shared_glapi_mapi_tmp.h\""
     echo
-    awk '
+    ${AWK:-awk} '
         function trim(s) {
             gsub(/^[ \t]+|[ \t]+$/, "", s)
             return s
