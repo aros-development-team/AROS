@@ -219,8 +219,10 @@ static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
                 {
                     UBYTE c;
 
-                    strcpy(ci->match, fr->fr_Drawer);
-                    AddPart(ci->match, fr->fr_File, sizeof(ci->match));
+                    if (Strlcpy(ci->match, fr->fr_Drawer, sizeof(ci->match)) >= sizeof(ci->match))
+                        ci->match[0] = '\0';
+                    else
+                        AddPart(ci->match, fr->fr_File, sizeof(ci->match));
 
                     if (ci->match[0])
                     {
