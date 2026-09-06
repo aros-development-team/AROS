@@ -50,7 +50,10 @@
 #define SPI0_BASE                                       (ARM_PERIIOBASE + 0x204000)
 #define BSC0_BASE                                       (ARM_PERIIOBASE + 0x205000)
 #define GPIO_PWM                                        (ARM_PERIIOBASE + 0x20C000)
+/* Overridable: the BCM2712 controller is outside the peripheral window */
+#ifndef DMA0_BASE
 #define DMA0_BASE                                       (ARM_PERIIOBASE + 0x007000)
+#endif
 #define V3D_BASE                                        (ARM_PERIIOBASE + 0xc00000)
 
 /* PWM registers */
