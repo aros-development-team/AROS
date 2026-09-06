@@ -36,6 +36,12 @@ SPIRV_FILES := $(filter-out \
 
 LIBGLCPP_FILES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
 	$(top_srcdir)/$(CUR_MESADIR)/glsl/glcpp/*.c))
+# glcpp.c is the standalone preprocessor's main, and the scaffolding stubs
+# clash with the real ones in libmesa.a.
+LIBGLCPP_FILES := $(filter-out \
+	glsl/glcpp/glcpp.c \
+	glsl/glcpp/pp_standalone_scaffolding.c, \
+	$(LIBGLCPP_FILES))
 
 LIBCOMPILER_FILES := \
 	glsl_types.c \
