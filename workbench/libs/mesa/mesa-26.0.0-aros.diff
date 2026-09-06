@@ -301,16 +301,10 @@ diff --git a/src/gallium/auxiliary/nir/nir_to_tgsi.c b/src/gallium/auxiliary/nir
 diff -ruN mesa-26.0.0/include/math.h mesa-26.0.0.aros/include/math.h
 --- /dev/null	2026-03-29 00:00:00.000000000 +0000
 +++ mesa-26.0.0.aros/include/math.h	2026-03-29 00:00:00.000000000 +0000
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,4 @@
 +#ifndef AROS_MESA_LOCAL_MATH_H
 +#define AROS_MESA_LOCAL_MATH_H
-+
-+#if defined(__AROS__) && defined(__cplusplus)
-+#include <aros/stdc/math.h>
-+#else
 +#include_next <math.h>
-+#endif
-+
 +#endif
 diff -ruN mesa-26.0.0/include/stdlib.h mesa-26.0.0.aros/include/stdlib.h
 --- /dev/null	2026-03-29 00:00:00.000000000 +0000
