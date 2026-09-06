@@ -32,6 +32,10 @@
                                                  * the request fails on other SoCs. DMA4 does
                                                  * 2D as well, so TDMODE need not be set. */
 
+/* Kept here so the header stays self-contained for the AHI drivers */
+#define BCM2708_DMA_PERIIOBASE_2711 0xFE000000
+#define BCM2708_DMA_PERIIOBASE_2712 0x107C000000ULL
+
 /* DMA control block — hardware-defined layout, must be 32-byte aligned.
  * All fields are little-endian; callers convert with AROS_LONG2LE. */
 struct BCM2708DMACB
@@ -66,9 +70,37 @@ struct BCM2711DMA4CB
     ULONG   reserved;
 };
 
-/* Channels 11-14 on the BCM2711 are DMA4; nothing on the other SoCs is. */
-#define BCM2708_DMA_IS_DMA4(periiobase, ch) \
-    (((periiobase) == BCM2708_DMA_PERIIOBASE_2711) && ((ch) >= 11) && ((ch) <= 14))
+/*
+ * The BCM2712 controller is on the AXI bus: channels 0-5 at +0, 6-11 at
+ * +0x600, so the 0x100 stride holds. It has no global ENABLE/INT_STATUS.
+ */
+#define BCM2712_DMA_BASE            0x1000010000ULL
+
+static inline IPTR BCM2708_DMA_BASE(IPTR periiobase)
+{
+    if (periiobase == BCM2708_DMA_PERIIOBASE_2712)
+        return BCM2712_DMA_BASE;
+
+    return periiobase + 0x007000;
+}
+
+#define BCM2708_DMA_CH_BASE(periiobase, ch) \
+    (BCM2708_DMA_BASE(periiobase) + (ch) * 0x100)
+
+#define BCM2708_DMA_HAS_GLOBAL_REGS(periiobase) \
+    ((periiobase) != BCM2708_DMA_PERIIOBASE_2712)
+
+/* DMA4 engines: 11-14 on the BCM2711, 6-11 on the BCM2712 */
+static inline int BCM2708_DMA_IS_DMA4(IPTR periiobase, unsigned int channel)
+{
+    if (periiobase == BCM2708_DMA_PERIIOBASE_2711)
+        return (channel >= 11) && (channel <= 14);
+
+    if (periiobase == BCM2708_DMA_PERIIOBASE_2712)
+        return (channel >= 6) && (channel <= 11);
+
+    return 0;
+}
 
 /*
  * What a DMA4 caller must know, all measured on a Pi 400 (v3d bring-up
@@ -100,6 +132,16 @@ struct BCM2711DMA4CB
  *   suggests. Linear only.
  */
 #define BCM2711_DMA4_SDRAM(x)   (0x400000000ULL | (UQUAD)(IPTR)(x))
+
+/* Per SoC: the BCM2712's DMA4 address map is identity, no alias */
+static inline UQUAD BCM2708_DMA4_SDRAM(IPTR periiobase, IPTR phys)
+{
+    if (periiobase == BCM2708_DMA_PERIIOBASE_2712)
+        return (UQUAD)phys;
+
+    return BCM2711_DMA4_SDRAM(phys);
+}
+
 #define BCM2711_DMA4_CS_PROT    (3UL << 8)
 #define BCM2711_DMA4_CS_RUN     (BCM2708_DMA_CS_RUN | BCM2711_DMA4_CS_PROT)
 #define BCM2711_DMA4_CS_ACK     (BCM2708_DMA_CS_ACK | BCM2711_DMA4_CS_PROT)
@@ -149,7 +191,6 @@ struct BCM2711DMA4CB
  * as a handler checks its own channel's CS.INT.
  */
 #define BCM2708_DMA_IRQ_BASE        16          /* GPU IRQ of channel 0 */
-#define BCM2708_DMA_PERIIOBASE_2711 0xFE000000
 #define BCM2708_DMA_GPUIRQ_OFFSET   96
 
 static inline unsigned int BCM2708_DMA_IRQ(IPTR periiobase, unsigned int channel)
@@ -158,6 +199,10 @@ static inline unsigned int BCM2708_DMA_IRQ(IPTR periiobase, unsigned int channel
      * DMA4 engines get a line each again, so the sharing stops after 10. */
     static const UBYTE spi[] = { 80, 81, 82, 83, 84, 85, 86, 87, 87, 88, 88,
                                  89, 90, 91, 92 };
+
+    /* BCM2712: SPI 80-91, one per channel */
+    if (periiobase == BCM2708_DMA_PERIIOBASE_2712)
+        return 32 + 80 + channel;
 
     if (periiobase != BCM2708_DMA_PERIIOBASE_2711)
         return BCM2708_DMA_IRQ_BASE + channel;
