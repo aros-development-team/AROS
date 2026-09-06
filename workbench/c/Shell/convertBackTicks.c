@@ -111,6 +111,9 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 
 cleanup:
     Redirection_release(&ess);
+    while (ess.stack)
+        popInterpreterState(&ess);
+    popInterpreterState(&ess);
     /* TODO: delete generated file */
 freebufs:
     bufferFree(&embedIn, ss);
