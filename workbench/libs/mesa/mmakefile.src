@@ -123,11 +123,12 @@ USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) -L$(top_libdir)
 $(AROS_ENVARC)/SYS:
 	%mkdir_q dir=$@
 
-$(AROS_ENVARC)/SYS/GL.default: | $(AROS_ENVARC)/SYS
-	@$(ECHO) "mesa3dgl$(MESAGLBUILD)" > $(AROS_ENVARC)/SYS/GL.default
-
+# Rewritten on every build: as a file target it would survive an
+# OPT_MESAGL change, and gl.library would keep opening the old
+# mesa3dgl against freshly built drivers.
 #MM
-mesa3dgl-library-env : $(AROS_ENVARC)/SYS/GL.default
+mesa3dgl-library-env : | $(AROS_ENVARC)/SYS
+	@$(ECHO) "mesa3dgl$(MESAGLBUILD)" > $(AROS_ENVARC)/SYS/GL.default
 
 #
 # mesa3d includes...
