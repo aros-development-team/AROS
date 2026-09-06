@@ -5,8 +5,8 @@
 */
 
 /*
- * TODO:
- * - put a critical section around DMA transfers (shared dma channels)
+ * DMA requests are serialized per ATA bus. Providers with shared DMA state
+ * must serialize across buses; ata_pci disables secondary DMA on simplex hardware.
  */
 
 #include <aros/debug.h>
