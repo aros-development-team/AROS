@@ -3,7 +3,7 @@
 
     Desc: xHCI chipset driver main pciusb interface
 */
-#define DEBUG 0
+
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -4031,12 +4031,11 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
     hc->hc_ResetInt.is_Data = hc;
     AddResetCallback(&hc->hc_ResetInt);
 
-    /* A platform controller has no config space. */
-    if(!(hc->hc_Flags & HCF_PLATFORM)) {
-        IPTR pciIntLine = 0;
-        OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_INTLine, &pciIntLine);
-        hc->hc_PCIIntLine = pciIntLine;
+    IPTR pciIntLine = 0;
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_INTLine, &pciIntLine);
+    hc->hc_PCIIntLine = pciIntLine;
 
+    {
         struct TagItem vectreqs[] = {
             { tHidd_PCIVector_Min, 1 },
             { tHidd_PCIVector_Max, 1 },
@@ -4226,7 +4225,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
          * controller's own transactions, so what the function recorded
          * about that transaction says far more than the halt does.
          */
-        if(!(hc->hc_Flags & HCF_PLATFORM)) {
+        {
             UWORD cmd = READCONFIGWORD(hc, hc->hc_PCIDeviceObject, 0x04);
             UWORD sts = READCONFIGWORD(hc, hc->hc_PCIDeviceObject, 0x06);
 

@@ -79,7 +79,6 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     hc->hc_CPrivate = xhcic;
 
     /* Initialize hardware... */
-    if (!(hc->hc_Flags & HCF_PLATFORM))
     {
         IPTR barbase, barsize;
 
@@ -106,9 +105,7 @@ static BOOL XHCIController__Init(struct PCIController *hc)
         return FALSE;
     }
 
-    if (!(hc->hc_Flags & HCF_PLATFORM)) {
-        OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
-    }
+    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
 
     if(hc->hc_Unit) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Initializing hardware for unit #%d" DEBUGCOLOR_RESET" \n",
