@@ -24,7 +24,9 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 {
     Buffer embedIn = {0}, embedOut = {0}; /* TODO pre-alloc */
     LONG c = 0, error = 0, n = in->len, p = 0;
-    TEXT buf[512] = SHELL_EMBED;
+    TEXT buf[512];
+    TEXT tempName[sizeof(SHELL_EMBED) + 11] = SHELL_EMBED;
+    BOOL tempCreated = FALSE;
     ShellState ess = {0};
 
     ess.ss_DOSBase = DOSBase;
@@ -70,14 +72,15 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
         goto cleanup;
 
     /* Construct temporary output filename */
-    l2a(ss->cliNumber, buf + sizeof(SHELL_EMBED) - 1);
+    l2a(ss->cliNumber, tempName + sizeof(SHELL_EMBED) - 1);
 
-    if (!(ess.newOut = Open(buf, MODE_NEWFILE)))
+    if (!(ess.newOut = Open(tempName, MODE_NEWFILE)))
     {
         error = IoErr();
         goto cleanup;
     }
 
+    tempCreated = TRUE;
     ess.oldOut = SelectOutput(ess.newOut);
     
     /* Embedded command isn't echo'ed, but its result will be integrated
@@ -111,10 +114,11 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 
 cleanup:
     Redirection_release(&ess);
+    if (tempCreated)
+        DeleteFile(tempName);
     while (ess.stack)
         popInterpreterState(&ess);
     popInterpreterState(&ess);
-    /* TODO: delete generated file */
 freebufs:
     bufferFree(&embedIn, ss);
     bufferFree(&embedOut, ss);
