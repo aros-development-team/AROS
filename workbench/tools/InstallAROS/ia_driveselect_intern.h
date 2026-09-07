@@ -7,13 +7,11 @@ struct DriveSelect_Global
     ULONG                       dsg_BootUnit;
 };
 
+struct DriveSelect_Record;
+
 struct DriveSelect_Data
 {
-    struct Hook                 dsd_ActivateHook;
-    struct MUI_EventHandlerNode dsd_EHNode;
-    Object                      *dsd_PopObj;
-
-    IPTR                        dsd_CycActive;
+    struct Hook                 dsd_SelectHook;
 
     Object                      **dsd_SysObjPtr;
     Object                      **dsd_WorkObjPtr;
@@ -21,15 +19,20 @@ struct DriveSelect_Data
     CONST_STRPTR                dsd_ImgStr;
     Object                      *dsd_ImgGrpObj;
     Object                      *dsd_DevImgObj;
-    Object                      *dsd_TxtGrpObj;
-    Object                      *dsd_DevTxtObj;
-    Object                      *dsd_UnitTxtObj;
+    Object                      *dsd_DriveCycle;
+
+    struct DriveSelect_Record   *dsd_Drives;
+    struct DriveSelect_Record   *dsd_DriveTail;
+    CONST_STRPTR                *dsd_DriveEntries;
+    ULONG                        dsd_DriveCount;
+    BOOL                         dsd_DriveListFailed;
 
     char                        *dsd_SysPartName;
     char                        *dsd_WorkPartName;
 
     struct DriveSelect_Global   *dsd_Global;
 };
+
 
 BOOPSI_DISPATCHER_PROTO(IPTR, DriveSelect__Dispatcher, CLASS, self, message);
 
