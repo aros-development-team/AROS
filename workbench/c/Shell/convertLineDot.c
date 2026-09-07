@@ -22,7 +22,7 @@ static LONG getArgumentIdx(ShellState *ss, STRPTR name, LONG len)
     {
         a = ss->args + i;
 
-        if (strncmp(a->name, name, len) == 0)
+        if (a->namelen == len && strncmp(a->name, name, len) == 0)
             return i;
     }
 
