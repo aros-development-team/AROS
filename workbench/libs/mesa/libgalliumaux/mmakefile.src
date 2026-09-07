@@ -36,7 +36,6 @@ MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/
             $(top_srcdir)/$(CUR_MESADIR)/translate/*.c \
             $(top_srcdir)/$(CUR_MESADIR)/util/*.c))
 MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter-out \
-            nir/nir_to_tgsi_info.c \
             indices/u_indices.c \
             indices/u_unfilled_indices.c, \
             $(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES))
@@ -44,26 +43,15 @@ MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter-out \
 MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES += \
             vl/vl_video_buffer.c \
             vl/vl_mpeg12_bitstream.c
-ifneq ($(AROS_TOOLCHAIN),llvm)
-# The gallivm based draw paths need the target-side LLVM libraries, which are
-# only built with the llvm toolchain family. Leave them out otherwise; the weak
-# fallbacks in draw_llvm_aros_stubs.c stand in for them.
+# Every gallium consumer links this archive, so the gallivm draw paths stay out
+# of it and are built again as libgalliumdrawllvm below. nir_to_tgsi_info.c
+# joins them: its header inlines a no-op when DRAW_LLVM_AVAILABLE is unset.
 MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter-out \
             draw/draw_llvm.c \
             draw/draw_pt_fetch_shade_pipeline_llvm.c \
-            draw/draw_vs_llvm.c, \
+            draw/draw_vs_llvm.c \
+            nir/nir_to_tgsi_info.c, \
             $(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES))
-else
-# Mesa only declares the gallivm draw entry points - NUM_TCS_INPUTS in
-# draw_tess.h among them - when DRAW_LLVM_AVAILABLE is set. Set it for just
-# these files: draw_context.c and the rest have to keep their LLVM paths
-# inert, or everything linking libgalliumauxiliary would need gallivm too.
-# struct draw_context is not affected, the macro only guards a forward
-# declaration in draw_private.h, so the layout stays the same either way.
-GALLAUXLLVMOFILES := $(addprefix $(top_builddir)/$(CUR_MESADIR)/draw/,draw_llvm.o draw_pt_fetch_shade_pipeline_llvm.o draw_vs_llvm.o)
-GALLAUXLLVMDFILES := $(patsubst %.o,%.d,$(GALLAUXLLVMOFILES))
-$(GALLAUXLLVMOFILES) $(GALLAUXLLVMDFILES): mesa3d-linklib-galliumauxiliary_MC_EXTRA_CPPFLAGS:=-DDRAW_LLVM_AVAILABLE=1
-endif
 GALLIUM_AUXILIARY_GENERATED_SOURCES := \
             driver_trace/tr_util.c \
             util/u_tracepoints.c \
@@ -82,8 +70,7 @@ endif
 #MM- mesa3d-linklib-galliumauxiliary-genobs : mesa3d-linklib-galliumauxiliary-generated
 
 MESA3DGL_GALLIUM_AUXILIARY_SOURCES_C := \
-            $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES:.c=)) \
-            $(SRCDIR)/$(CURDIR)/draw_llvm_aros_stubs
+            $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES:.c=))
 
 USER_INCLUDES += \
             -iquote $(top_srcdir)/src/gallium/include \
@@ -195,5 +182,49 @@ mesa3d-linklib-galliumauxiliary_C_FILES := $(MESA3DGL_GALLIUM_AUXILIARY_SOURCES_
     basenames="$(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(GALLIUM_AUXILIARY_GENERATED_SOURCES:.c=))" targetdir="$(top_builddir)/$(CUR_MESADIR)" \
     cppflags=$(mesa3d-linklib-galliumauxiliary_CPPFLAGS) cflags=$(mesa3d-linklib-galliumauxiliary_CFLAGS) dflags=$(mesa3d-linklib-galliumauxiliary_DFLAGS) \
     compiler=target srcdir="$(top_builddir)/$(CUR_MESADIR)" usetree=yes
+
+# A second copy of draw, built with DRAW_LLVM_AVAILABLE. The macro changes
+# draw_vertex_shader and the gs/tess shader layouts, so it cannot be applied to
+# a subset. llvmpipe links this ahead of libgalliumauxiliary.
+ifeq ($(AROS_TOOLCHAIN),llvm)
+GALLIUM_DRAW_LLVM_C := \
+            $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%, \
+                $(wildcard $(top_srcdir)/$(CUR_MESADIR)/draw/*.c)) \
+            nir/nir_to_tgsi_info.c
+
+GALLDRAWLLVMOFILES := $(addprefix $(top_builddir)/$(CUR_MESADIR)/draw-llvm/,$(GALLIUM_DRAW_LLVM_C:.c=.o))
+GALLDRAWLLVMDFILES := $(patsubst %.o,%.d,$(GALLDRAWLLVMOFILES))
+$(GALLDRAWLLVMOFILES) $(GALLDRAWLLVMDFILES): mesa3d-linklib-galliumdrawllvm_MC_EXTRA_CPPFLAGS:=-DDRAW_LLVM_AVAILABLE=1
+
+# mmake reads #MM out of the .src text, so the ifeq above cannot hide these.
+# Route through $(AROS_TOOLCHAIN) instead: on gnu the -gnu spelling is never
+# declared, and an undeclared metatarget is simply empty.
+#MM- mesa3dgl-linklibs : mesa3d-linklib-galliumdrawllvm-$(AROS_TOOLCHAIN)
+#MM- mesa3d-linklib-galliumdrawllvm-llvm : mesa3d-linklib-galliumdrawllvm
+#MM mesa3d-linklib-galliumdrawllvm : workbench-libs-llvm mesa3d-linklib-compiler mesa3d-linklib-galliumauxiliary-genobs
+
+# _C_FILES must be absolute - the generated rules put the .c files in an
+# order-only prerequisite. files= stays relative for the object layout.
+mesa3d-linklib-galliumdrawllvm_C_FILES := $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(GALLIUM_DRAW_LLVM_C:.c=))
+
+%build_linklib mmake=mesa3d-linklib-galliumdrawllvm libname=galliumdrawllvm \
+    libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR)/draw-llvm srcdir=$(top_srcdir)/$(CUR_MESADIR) \
+    files="$(GALLIUM_DRAW_LLVM_C:.c=)" usetree=yes
+endif
+
+# The tessellator, reached from draw_tess.c under DRAW_LLVM_AVAILABLE. Own
+# linklib because %build_linklib resolves cxxfiles against $(SRCDIR)/$(CURDIR),
+# ignoring its own srcdir= - only the C side honours that.
+ifeq ($(AROS_TOOLCHAIN),llvm)
+GALLIUM_TESS_CXX := $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/tessellator/,p_tessellator.cpp tessellator.cpp))
+
+#MM- mesa3dgl-linklibs : mesa3d-linklib-galliumtess-$(AROS_TOOLCHAIN)
+#MM- mesa3d-linklib-galliumtess-llvm : mesa3d-linklib-galliumtess
+#MM mesa3d-linklib-galliumtess : includes
+
+%build_linklib mmake=mesa3d-linklib-galliumtess libname=galliumtess \
+    libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR)/tessellator \
+    cxxfiles="$(GALLIUM_TESS_CXX:.cpp=)"
+endif
 
 %common
