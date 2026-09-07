@@ -80,7 +80,7 @@
 BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw);
 
 void do_write(struct filehandle *fh, APTR data, ULONG length);
-void do_movecursor(struct filehandle *fh, UBYTE direction, UBYTE howmuch);
+void do_movecursor(struct filehandle *fh, UBYTE direction, UWORD howmuch);
 void do_cursorvisible(struct filehandle *fh, BOOL on);
 void do_deletechar(struct filehandle *fh);
 void do_eraseinline(struct filehandle *fh);

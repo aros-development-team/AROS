@@ -399,9 +399,9 @@ void do_write(struct filehandle *fh, APTR data, ULONG length)
 
 /******************************************************************************************/
 
-void do_movecursor(struct filehandle *fh, UBYTE direction, UBYTE howmuch)
+void do_movecursor(struct filehandle *fh, UBYTE direction, UWORD howmuch)
 {
-    UBYTE seq[6]; /* 9B <N> <N> <N> <dir> <0> */
+    UBYTE seq[8]; /* 9B <N...> <dir> <0> */
     ULONG size;
 
     if (howmuch > 0)
