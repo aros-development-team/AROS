@@ -82,6 +82,13 @@ MESA_UTIL_NEW_C_FILES += \
             blake3/blake3_portable.c \
             ../c11/impl/time.c \
             ../c11/impl/threads_posix.c
+
+# blake3_impl.h turns BLAKE3_USE_NEON on for little-endian aarch64, so the
+# dispatcher calls blake3_hash_many_neon there. Same gate as upstream meson.
+ifeq ($(CPU),aarch64)
+MESA_UTIL_NEW_C_FILES += blake3/blake3_neon.c
+endif
+
 MESA_UTIL_NEW_C_FILES := $(filter-out \
             cache_ops_aarch64.c \
             cache_ops_x86.c \

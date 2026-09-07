@@ -13,14 +13,15 @@ USER_LDFLAGS := $(TARGET_CXX_LDFLAGS) \
             -lgalliumvm \
             -Wl,--no-whole-archive \
             -lcompiler \
+            -lgalliumdrawllvm \
+            -lgalliumtess \
             -lgalliumauxiliary \
             -lmesautil \
             $(LLVM_LIBS) \
             -lz \
             -lpthread \
             -lposixc_rel \
-            -lstdc_rel \
-            -lsupc++
+            -lstdc_rel
 ifneq ($(TARGET_LIBATOMIC),)
 USER_LDFLAGS += $(TARGET_CXX_LIBS)
 endif
@@ -37,7 +38,7 @@ LLVMPIPE_HIDD_FILES := \
 #MM- workbench-hidds : hidd-llvmpipe-$(AROS_TOOLCHAIN)-$(AROS_TARGET_TOOLCHAIN)
 #MM- hidd-llvmpipe-llvm-yes : hidd-llvmpipe
 
-#MM hidd-llvmpipe : includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic mesa3d-linklib-llvmpipe
+#MM hidd-llvmpipe : includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic mesa3d-linklib-llvmpipe mesa3d-linklib-galliumdrawllvm mesa3d-linklib-galliumtess
 
 USER_INCLUDES += \
             -iquote $(SRCDIR)/$(CURDIR) \
