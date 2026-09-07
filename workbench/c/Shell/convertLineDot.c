@@ -222,7 +222,11 @@ LONG convertLineDot(ShellState *ss, Buffer *in)
     }
     else if (strncasecmp(s, "pushis", 6) == 0)
     {
-        pushInterpreterState(ss);
+        LONG error = pushInterpreterState(ss);
+
+        if (error)
+            return error;
+
         res = s;
     }
 #else /* this ugly version is 424 bytes smaller on x64 */
@@ -295,7 +299,11 @@ LONG convertLineDot(ShellState *ss, Buffer *in)
         }
         else if (*s == 'u' && s[1] == 's' && s[2] == 'h') /* .pushis */
         {
-            pushInterpreterState(ss);
+            LONG error = pushInterpreterState(ss);
+
+            if (error)
+                return error;
+
             res = s;
         }
     }
