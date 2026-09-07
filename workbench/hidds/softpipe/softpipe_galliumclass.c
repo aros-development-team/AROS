@@ -3,7 +3,7 @@
 */
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 #include <aros/debug.h>
 
@@ -91,9 +91,9 @@ HiddSoftpipe_CreateDisplaytarget( struct sw_winsys *ws,
     }
     spdt->fmt = format;
 
-    bug("[SoftPipe] %s: step 1 create dt fmt=%d size=%ux%u stride=%u align=%u front=%p dt=%p data=%p\n",
+    D(bug("[SoftPipe] %s: step 1 create dt fmt=%d size=%ux%u stride=%u align=%u front=%p dt=%p data=%p\n",
         __PRETTY_FUNCTION__, format, width, height, *stride, alignment, front_private, spdt,
-        spdt ? spdt->data : NULL);
+        spdt ? spdt->data : NULL));
 
     return (struct sw_displaytarget *)spdt;
 }
@@ -115,8 +115,8 @@ HiddSoftpipe_MapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt,
     unsigned flags)
 {
     struct HiddSoftpipeDisplaytarget * spdt = HiddSoftpipe_Displaytarget(dt);
-    bug("[SoftPipe] %s: step 2 map dt=%p flags=0x%x data=%p\n",
-        __PRETTY_FUNCTION__, dt, flags, spdt ? spdt->data : NULL);
+    D(bug("[SoftPipe] %s: step 2 map dt=%p flags=0x%x data=%p\n",
+        __PRETTY_FUNCTION__, dt, flags, spdt ? spdt->data : NULL));
     if (!spdt)
     {
         bug("[SoftPipe] %s: ERROR - map called with NULL displaytarget\n", __PRETTY_FUNCTION__);
@@ -128,7 +128,8 @@ HiddSoftpipe_MapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt,
 static void
 HiddSoftpipe_UnMapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt)
 {
-    bug("[SoftPipe] %s: step 3 unmap dt=%p\n", __PRETTY_FUNCTION__, dt);
+    D(bug("[SoftPipe] %s: step 3 unmap dt=%p\n", __PRETTY_FUNCTION__, dt));
+    return;
 }
 
 /*  Displaytarget support code ends */
