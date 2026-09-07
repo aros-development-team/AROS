@@ -551,6 +551,129 @@ static void AdoptInbound(struct PCIBcm2712Data *data)
                     data->bridge->node));
 }
 
+/*
+ * Depth first for the mip node whose registers are at base. msi-parent is not
+ * followed - the openfirmware resource cannot resolve a phandle - but the MSI
+ * block sits at the CPU address of the bridge's own 4KB dma-range, so matching
+ * on the first reg entry picks the right one of the two.
+ *
+ * OF_FindNodeByCompatible() cannot walk this: its start argument is a subtree,
+ * not a cursor, and its own root is tested first, so a match returns itself.
+ */
+static void *FindMIPNode(void *node, uint64_t base)
+{
+    void *child = NULL;
+    void *prop = OF_FindProperty(node, "compatible");
+
+    if (prop)
+    {
+        const char *val = OF_GetPropValue(prop);
+
+        /* One string in this property, so the first is the whole list. */
+        if (val && (strcmp(val, "brcm,bcm2712-mip") == 0))
+        {
+            prop = OF_FindProperty(node, "reg");
+            if (prop && (OF_GetPropLen(prop) >= 4 * 4))
+            {
+                const uint32_t *r = (const uint32_t *)OF_GetPropValue(prop);
+
+                /* Parent is /axi: two cells of address, two of size. */
+                if ((((uint64_t)AROS_BE2LONG(r[0]) << 32) | AROS_BE2LONG(r[1])) == base)
+                    return node;
+            }
+        }
+    }
+
+    while ((child = OF_GetChild(node, child)) != NULL)
+    {
+        void *found = FindMIPNode(child, base);
+
+        if (found)
+            return found;
+    }
+
+    return NULL;
+}
+
+static void AdoptMSI(struct pci_staticdata *psd, struct PCIBcm2712Data *data)
+{
+    uint64_t doorbell_cpu = 0, doorbell_pci = 0;
+    const uint32_t *r;
+    void *node, *prop;
+    uint32_t i;
+
+    for (i = 0; i < data->ndmaranges; i++)
+    {
+        if (data->dmaranges[i].size == 4096)
+        {
+            doorbell_cpu = data->dmaranges[i].cpu_base;
+            doorbell_pci = data->dmaranges[i].pci_base;
+            break;
+        }
+    }
+
+    if (!doorbell_cpu)
+    {
+        BRINGUP(bug("[PCIBcm2712] %s: no doorbell window, no MSI\n", data->bridge->node));
+        return;
+    }
+
+    node = FindMIPNode(OF_OpenKey("/"), doorbell_cpu);
+    if (!node)
+    {
+        BRINGUP(bug("[PCIBcm2712] %s: no mip node at 0x%p\n", data->bridge->node,
+                    (APTR)(IPTR)doorbell_cpu));
+        return;
+    }
+
+    /* msi-ranges is <phandle, type, base, flags, count>; only an edge
+       triggered SPI range is usable. */
+    prop = OF_FindProperty(node, "msi-ranges");
+    if (!prop || (OF_GetPropLen(prop) < 5 * 4))
+        return;
+
+    r = (const uint32_t *)OF_GetPropValue(prop);
+    if ((AROS_BE2LONG(r[1]) != 0) || (AROS_BE2LONG(r[3]) != 1))
+    {
+        BRINGUP(bug("[PCIBcm2712] %s: MSI range is not an edge triggered SPI range\n",
+                    data->bridge->node));
+        return;
+    }
+
+    data->msi_count = AROS_BE2LONG(r[4]);
+    data->msi_first_intid = AROS_BE2LONG(r[2]) + GIC_SPI_BASE;
+
+    prop = OF_FindProperty(node, "brcm,msi-offset");
+    if (prop && (OF_GetPropLen(prop) >= 4))
+        data->msi_first_intid += AROS_BE2LONG(*(const uint32_t *)OF_GetPropValue(prop));
+
+    if (data->msi_count > MIP_MAX_VECTORS)
+        data->msi_count = MIP_MAX_VECTORS;
+
+    data->mip = MapDevice(psd, doorbell_cpu, MIP_REG_SIZE);
+    if (!data->mip)
+    {
+        data->msi_count = 0;
+        return;
+    }
+
+    data->msi_target = doorbell_pci;
+
+    /* Everything to the host, nothing to the VideoCore, unmasked. */
+    wr32(data->mip, MIP_INT_MASKL_VPU, 0xffffffff);
+    wr32(data->mip, MIP_INT_MASKH_VPU, 0xffffffff);
+    wr32(data->mip, MIP_INT_CFGL_HOST, 0xffffffff);
+    wr32(data->mip, MIP_INT_CFGH_HOST, 0xffffffff);
+    wr32(data->mip, MIP_INT_MASKL_HOST, 0);
+    wr32(data->mip, MIP_INT_MASKH_HOST, 0);
+
+    BRINGUP(bug("[PCIBcm2712] %s: MSI at 0x%p, target %08x%08x, %u messages -> INTID %u..%u\n",
+                data->bridge->node, (APTR)(IPTR)doorbell_cpu,
+                (unsigned)(doorbell_pci >> 32), (unsigned)doorbell_pci,
+                (unsigned)data->msi_count, (unsigned)data->msi_first_intid,
+                (unsigned)(data->msi_first_intid + data->msi_count - 1)));
+}
+
 static BOOL LinkUp(struct PCIBcm2712Data *data)
 {
     uint32_t reg = rd32(data->regs, PCIE_MISC_PCIE_STATUS);
@@ -820,6 +943,26 @@ BOOL PCIE_BridgeSetup(struct pci_staticdata *psd, struct PCIBcm2712Data *data)
 
     if (!BridgeAdopt(data))
         return FALSE;
+
+    /*
+     * The bus numbers, on an adopted bridge too: the firmware leaves them
+     * at zero on the x4 link, and config space cannot reach an endpoint on
+     * a bus the bridge does not forward. This touches no window, so it
+     * costs the console nothing - and rp1.resource reads the secondary bus
+     * back out of the same register rather than assuming it.
+     */
+    if (!data->secondary_bus)
+    {
+        uint32_t reg = rd32(data->regs, PCI_BUSNUM);
+
+        wr32(data->regs, PCI_BUSNUM, (reg & 0xff000000) | 0x00010100);
+        data->secondary_bus = (UBYTE)(rd32(data->regs, PCI_BUSNUM) >> 8);
+
+        BRINGUP(bug("[PCIBcm2712] %s: bus numbers were unset, secondary bus now %u\n",
+                    data->bridge->node, (unsigned)data->secondary_bus));
+    }
+
+    AdoptMSI(psd, data);
 
     if (data->trained)
         SetupEndpoint(data);

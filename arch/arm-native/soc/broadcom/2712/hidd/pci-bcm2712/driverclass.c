@@ -384,23 +384,283 @@ VOID PCIBcm2712__Hidd_PCIDriver__FreePCIMem(OOP_Class *cl, OOP_Object *o,
 }
 
 /*
- * Message signalled interrupts are delivered by a separate MIP block on
- * this SoC, which is not driven yet. Until it is, a device asking for
- * vectors is told there are none and falls back to its INTx path.
+ * Message signalled interrupts. The bridge's MSI block raises a distinct
+ * GIC SPI per message, so a device that signals by message gets an
+ * interrupt of its own - no line shared with anything, and edge triggered
+ * rather than level, which is what the block emits.
  */
-ULONG PCIBcm2712Dev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
+
+/* The bridge this device hangs off, and its per bridge state. */
+static struct PCIBcm2712Data *BridgeOf(OOP_Class *cl, OOP_Object *o)
+{
+    IPTR drv = 0;
+
+    OOP_GetAttr(o, aHidd_PCIDevice_Driver, &drv);
+    if (!drv)
+        return NULL;
+
+    return OOP_INST_DATA(PSD(cl)->driverClass, (OOP_Object *)drv);
+}
+
+static ULONG FindCapability(struct PCIBcm2712Data *bridge, UBYTE bus, UBYTE dev,
+                            UBYTE sub, UBYTE want)
+{
+    ULONG cap, guard;
+
+    if (!((PCIE_ReadConfig(bridge, bus, dev, sub, PCI_CMD) >> 16) & PCISTF_CAPABILITIES))
+        return 0;
+
+    cap = PCIE_ReadConfig(bridge, bus, dev, sub, PCI_CAP_PTR) & 0xfc;
+
+    for (guard = 48; cap && guard; guard--)
+    {
+        ULONG head = PCIE_ReadConfig(bridge, bus, dev, sub, cap);
+
+        if ((head & 0xff) == want)
+            return cap;
+
+        cap = (head >> 8) & 0xfc;
+    }
+
+    return 0;
+}
+
+/* Reserve a run of messages, returning the first or -1. */
+static LONG AllocVectors(struct PCIBcm2712Data *bridge, ULONG count)
+{
+    ULONG first, i;
+
+    for (first = 0; first + count <= bridge->msi_count; first++)
+    {
+        for (i = 0; i < count; i++)
+        {
+            if (bridge->msi_used & (1UL << (first + i)))
+                break;
+        }
+
+        if (i == count)
+        {
+            for (i = 0; i < count; i++)
+                bridge->msi_used |= (1UL << (first + i));
+            return (LONG)first;
+        }
+    }
+
+    return -1;
+}
+
+/*
+ * MSI-X carries an address and a data word per message, in a table inside
+ * one of the device's own BARs, so every message can name a different
+ * number. That is what lets a driver put each of its queues on its own
+ * interrupt.
+ */
+static BOOL SetupMSIX(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridge,
+                      UBYTE bus, UBYTE dev, UBYTE sub, ULONG cap,
+                      ULONG first, ULONG count)
+{
+    struct PCIBcm2712DevData *data = OOP_INST_DATA(cl, o);
+    ULONG tbl = PCIE_ReadConfig(bridge, bus, dev, sub, cap + PCI_MSIX_TABLE);
+    ULONG ctrl = PCIE_ReadConfig(bridge, bus, dev, sub, cap);
+    ULONG bir = tbl & PCI_MSIX_TABLE_BIR_MASK;
+    ULONG size = ((ctrl & PCI_MSIX_CTRL_SIZE_MASK) >> 16) + 1;
+    uint64_t bar;
+    volatile uint32_t *table;
+    ULONG i;
+
+    if (first + count > size)
+    {
+        D(bug("[PCIBcm2712] MSI-X table holds %u entries, %u wanted\n",
+              (unsigned)size, (unsigned)(first + count)));
+        return FALSE;
+    }
+
+    bar = PCIE_ReadConfig(bridge, bus, dev, sub, PCI_BAR0 + bir * 4) & ~0xfUL;
+    if ((PCIE_ReadConfig(bridge, bus, dev, sub, PCI_BAR0 + bir * 4) & 0x06) == 0x04)
+        bar |= (uint64_t)PCIE_ReadConfig(bridge, bus, dev, sub, PCI_BAR0 + bir * 4 + 4) << 32;
+
+    if (!bar)
+        return FALSE;
+
+    /* The table is in PCI space; reach it the way any BAR is reached. */
+    {
+        struct pHidd_PCIDriver_MapPCI mapmsg = {
+            .mID        = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI),
+            .PCIAddress = (APTR)(IPTR)(bar + (tbl & PCI_MSIX_TABLE_OFF_MASK)),
+            .Length     = (first + count) * PCI_MSIX_ENTRY_SIZE,
+        };
+        IPTR drv = 0;
+
+        OOP_GetAttr(o, aHidd_PCIDevice_Driver, &drv);
+        table = (volatile uint32_t *)OOP_DoMethod((OOP_Object *)drv, (OOP_Msg)&mapmsg);
+    }
+
+    if (!table)
+        return FALSE;
+
+    for (i = 0; i < count; i++)
+    {
+        volatile uint32_t *e = &table[(first + i) * 4];
+
+        e[0] = (uint32_t)bridge->msi_target;
+        e[1] = (uint32_t)(bridge->msi_target >> 32);
+        e[2] = first + i;               /* the message number is the data */
+        e[3] = 0;                       /* unmasked */
+    }
+
+    PCIE_WriteConfig(bridge, bus, dev, sub, cap, ctrl | PCI_MSIX_CTRL_ENABLE);
+
+    data->msix = TRUE;
+    return TRUE;
+}
+
+/*
+ * Plain MSI has one address and one data word for the whole device, and the
+ * messages it may send are that word with the low bits varied - so a run has
+ * to be aligned on its own size, and only one bridge message can be aimed
+ * at precisely. A single vector is the useful case.
+ */
+static BOOL SetupMSI(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridge,
+                     UBYTE bus, UBYTE dev, UBYTE sub, ULONG cap, ULONG first)
+{
+    struct PCIBcm2712DevData *data = OOP_INST_DATA(cl, o);
+    ULONG head = PCIE_ReadConfig(bridge, bus, dev, sub, cap);
+    ULONG datareg = (head & PCI_MSI_CTRL_64BIT) ? PCI_MSI_DATA64 : PCI_MSI_DATA32;
+
+    if (!(head & PCI_MSI_CTRL_64BIT) && (bridge->msi_target >> 32))
+    {
+        D(bug("[PCIBcm2712] the doorbell is above 4GB and this function is 32 bit only\n"));
+        return FALSE;
+    }
+
+    PCIE_WriteConfig(bridge, bus, dev, sub, cap + PCI_MSI_ADDRESSLO,
+                     (ULONG)bridge->msi_target);
+    if (head & PCI_MSI_CTRL_64BIT)
+        PCIE_WriteConfig(bridge, bus, dev, sub, cap + PCI_MSI_ADDRESSHI,
+                         (ULONG)(bridge->msi_target >> 32));
+    PCIE_WriteConfig(bridge, bus, dev, sub, cap + datareg, first);
+
+    /* One message, enabled. */
+    head &= ~PCI_MSI_CTRL_MME_MASK;
+    PCIE_WriteConfig(bridge, bus, dev, sub, cap, head | PCI_MSI_CTRL_ENABLE);
+
+    data->msix = FALSE;
+    return TRUE;
+}
+
+BOOL PCIBcm2712Dev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDevice_ObtainVectors *msg)
 {
-    return 0;
+    struct PCIBcm2712DevData *data = OOP_INST_DATA(cl, o);
+    struct PCIBcm2712Data *bridge = BridgeOf(cl, o);
+    IPTR bus = 0, dev = 0, sub = 0;
+    ULONG want, cap;
+    LONG first;
+
+    if (!bridge || !bridge->msi_count)
+        return FALSE;
+
+    if (data->firstVector)
+        return TRUE;            /* already ours */
+
+    want = GetTagData(tHidd_PCIVector_Max, 1, (struct TagItem *)msg->requirements);
+    if (want > bridge->msi_count)
+        want = bridge->msi_count;
+    if (want < GetTagData(tHidd_PCIVector_Min, 1, (struct TagItem *)msg->requirements))
+        return FALSE;
+
+    OOP_GetAttr(o, aHidd_PCIDevice_Bus, &bus);
+    OOP_GetAttr(o, aHidd_PCIDevice_Dev, &dev);
+    OOP_GetAttr(o, aHidd_PCIDevice_Sub, &sub);
+
+    if ((cap = FindCapability(bridge, bus, dev, sub, PCI_CAP_ID_MSIX)) != 0)
+    {
+        if ((first = AllocVectors(bridge, want)) < 0)
+            return FALSE;
+
+        if (!SetupMSIX(cl, o, bridge, bus, dev, sub, cap, first, want))
+        {
+            bridge->msi_used &= ~(((1UL << want) - 1) << first);
+            return FALSE;
+        }
+    }
+    else if ((cap = FindCapability(bridge, bus, dev, sub, PCI_CAP_ID_MSI)) != 0)
+    {
+        want = 1;
+        if ((first = AllocVectors(bridge, 1)) < 0)
+            return FALSE;
+
+        if (!SetupMSI(cl, o, bridge, bus, dev, sub, cap, first))
+        {
+            bridge->msi_used &= ~(1UL << first);
+            return FALSE;
+        }
+    }
+    else
+        return FALSE;
+
+    data->firstVector = first + 1;
+    data->nvectors    = want;
+    data->cap         = cap;
+
+    bug("[PCIBcm2712] %02x:%02x.%x signals by message: %u vector(s) from %u -> INTID %u\n",
+        (unsigned)bus, (unsigned)dev, (unsigned)sub, (unsigned)want, (unsigned)first,
+        (unsigned)(bridge->msi_first_intid + first));
+
+    return TRUE;
 }
 
 VOID PCIBcm2712Dev__Hidd_PCIDevice__ReleaseVectors(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDevice_ReleaseVectors *msg)
 {
+    struct PCIBcm2712DevData *data = OOP_INST_DATA(cl, o);
+    struct PCIBcm2712Data *bridge = BridgeOf(cl, o);
+    IPTR bus = 0, dev = 0, sub = 0;
+    ULONG first;
+
+    if (!bridge || !data->firstVector)
+        return;
+
+    first = data->firstVector - 1;
+
+    OOP_GetAttr(o, aHidd_PCIDevice_Bus, &bus);
+    OOP_GetAttr(o, aHidd_PCIDevice_Dev, &dev);
+    OOP_GetAttr(o, aHidd_PCIDevice_Sub, &sub);
+
+    if (data->msix)
+        PCIE_WriteConfig(bridge, bus, dev, sub, data->cap,
+                         PCIE_ReadConfig(bridge, bus, dev, sub, data->cap) &
+                         ~PCI_MSIX_CTRL_ENABLE);
+    else
+        PCIE_WriteConfig(bridge, bus, dev, sub, data->cap,
+                         PCIE_ReadConfig(bridge, bus, dev, sub, data->cap) &
+                         ~PCI_MSI_CTRL_ENABLE);
+
+    bridge->msi_used &= ~(((1UL << data->nvectors) - 1) << first);
+    data->firstVector = 0;
+    data->nvectors = 0;
 }
 
-ULONG PCIBcm2712Dev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o,
+VOID PCIBcm2712Dev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDevice_GetVectorAttribs *msg)
 {
-    return 0;
+    struct PCIBcm2712DevData *data = OOP_INST_DATA(cl, o);
+    struct PCIBcm2712Data *bridge = BridgeOf(cl, o);
+    struct TagItem *tag, *tstate = msg->attribs;
+    BOOL have = bridge && data->firstVector && (msg->vectorno < data->nvectors);
+    ULONG vec = have ? (data->firstVector - 1 + msg->vectorno) : 0;
+
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+        case tHidd_PCIVector_Native:
+            tag->ti_Data = have ? vec : (IPTR)-1;
+            break;
+
+        case tHidd_PCIVector_Int:
+            tag->ti_Data = have ? (bridge->msi_first_intid + vec) : (IPTR)-1;
+            break;
+        }
+    }
 }
