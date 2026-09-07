@@ -291,7 +291,7 @@ diff -ruN llvm-project-23.1.0.src/clang/lib/Driver/Driver.cpp llvm-project-23.1.
 diff -ruN llvm-project-23.1.0.src/clang/lib/Driver/ToolChains/AROS.cpp llvm-project-23.1.0.src.aros/clang/lib/Driver/ToolChains/AROS.cpp
 --- llvm-project-23.1.0.src/clang/lib/Driver/ToolChains/AROS.cpp	1970-01-01 01:00:00.000000000 +0100
 +++ llvm-project-23.1.0.src.aros/clang/lib/Driver/ToolChains/AROS.cpp	2026-08-19 14:41:41.587904406 +0100
-@@ -0,0 +1,445 @@
+@@ -0,0 +1,448 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -636,6 +636,9 @@ diff -ruN llvm-project-23.1.0.src/clang/lib/Driver/ToolChains/AROS.cpp llvm-proj
 +    if (DriverArgs.hasArg(options::OPT_nix)) {
 +        CC1Args.push_back("-D__NIX__");
 +    }
++    // AROS has no usable hardware TLS; force emulated TLS (compiler-rt
++    // emutls + pthread keys).  A later -fno-emulated-tls still overrides.
++    CC1Args.push_back("-femulated-tls");
 +}
 +
 +
