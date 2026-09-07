@@ -538,12 +538,16 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                         bug ("[NVME:Bus] NVMEBus_Start: ns#%u           nlb %08x%08x\n", nn + 1, (rt->nlb >> 32), rt->nlb & 0xFFFFFFFF);
                     )
 
-                    if (!(rt->attributes & NVME_LBART_ATTRIB_HIDE)) {
+                    if (rt->attributes & NVME_LBART_ATTRIB_HIDE) {
+                        D(bug ("[NVME:Bus] NVMEBus_Start:      Skipping hidden namespace\n");)
+                        lbaEnd = 0;
+                    } else if (rt->nlb) {
                         lbaStart = rt->slba;
                         lbaEnd =  rt->slba + rt->nlb;
                     } else {
-                        D(bug ("[NVME:Bus] NVMEBus_Start:      Skipping hidden namespace\n");)
-                        lbaEnd = 0;
+                        /* Optional feature - no ranges defined still reports success. */
+                        D(bug ("[NVME:Bus] NVMEBus_Start:      No LBA range reported, using nsze\n");)
+                        lbaEnd = id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9);
                     }
                 } else
                     lbaEnd = id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9);
