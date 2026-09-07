@@ -8,10 +8,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-# The build host has a stale Python-wrapper cmake in /usr/local/bin.  Use the
-# system CMake explicitly so MetaMake targets are reproducible from top level.
-CMAKE := /usr/bin/cmake
-
 ifeq ($(OPT_LLVM),)
 ifneq ($(TARGET_LLVM_VER),)
 OPT_LLVM := $(TARGET_LLVM_VER)
@@ -52,8 +48,35 @@ LLD_SRCDIR := $(PORTSDIR)/llvm/$(LLD_ARCHBASE)
 LLVM_XTOOLS_PATCH_ORIGIN := $(SRCDIR)/tools/crosstools/llvm
 LLVM_TOOLS_BUILDDIR := $(GENDIR)/$(CURDIR)/tools
 
+# Apply the clang/lld patches only where they exist: %fetch treats a
+# named-but-missing patch as a hard error.
+CLANG_PATCH := $(LLVM_XTOOLS_PATCH_ORIGIN)/$(CLANG_ARCHBASE)-aros.diff
+ifneq ($(wildcard $(CLANG_PATCH)),)
+CLANG_PATCHSPEC := $(CLANG_ARCHBASE)-aros.diff:$(CLANG_ARCHBASE):-p1
+else
+CLANG_PATCHSPEC := ::
+endif
+
+LLD_PATCH := $(LLVM_XTOOLS_PATCH_ORIGIN)/$(LLD_ARCHBASE)-aros.diff
+ifneq ($(wildcard $(LLD_PATCH)),)
+LLD_PATCHSPEC := $(LLD_ARCHBASE)-aros.diff:$(LLD_ARCHBASE):-p1
+else
+LLD_PATCHSPEC := ::
+endif
+
+# From LLVM 20 the shared cmake modules ship separately, and
+# llvm/CMakeLists.txt includes them as ../cmake/Modules - a sibling.
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
+LLVM_CMAKE_FILES := yes
+endif
+
+LLVM_CMAKE_ARCHBASE := cmake-$(OPT_LLVM).src
+LLVM_CMAKE_SRCDIR := $(PORTSDIR)/llvm/$(LLVM_CMAKE_ARCHBASE)
+LLVM_CMAKE_SIBLING := $(PORTSDIR)/llvm/cmake
+llvm-cmake-setupflag := $(GENDIR)/$(CURDIR)/.setupflag-llvmcmake-$(OPT_LLVM)
+
 #MM llvm-fetch : workbench-libs-llvm-fetch
-#MM llvm-host-tblgen : workbench-libs-llvm-fetch workbench-libs-llvm-clang-fetch workbench-libs-llvm-lld-fetch
+#MM llvm-host-tblgen : workbench-libs-llvm-fetch workbench-libs-llvm-clang-fetch workbench-libs-llvm-lld-fetch workbench-libs-llvm-setup
 #MM workbench-libs-llvm : llvm-host-tblgen
 
 #MM workbench-libs-llvm-tools : llvm-host-tblgen workbench-libs-llvm
@@ -64,13 +87,36 @@ LLVM_TOOLS_BUILDDIR := $(GENDIR)/$(CURDIR)/tools
 
 %fetch mmake=workbench-libs-llvm-clang-fetch archive=$(CLANG_ARCHBASE) destination=$(PORTSDIR)/llvm \
     location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
-    patches_specs=$(CLANG_ARCHBASE)-aros.diff:$(CLANG_ARCHBASE):-p1 \
+    patches_specs=$(CLANG_PATCHSPEC) \
     patches_origins="$(LLVM_XTOOLS_PATCH_ORIGIN)"
 
 %fetch mmake=workbench-libs-llvm-lld-fetch archive=$(LLD_ARCHBASE) destination=$(PORTSDIR)/llvm \
     location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
-    patches_specs=$(LLD_ARCHBASE)-aros.diff:$(LLD_ARCHBASE):-p1 \
+    patches_specs=$(LLD_PATCHSPEC) \
     patches_origins="$(LLVM_XTOOLS_PATCH_ORIGIN)"
+
+%fetch mmake=workbench-libs-llvm-cmakefiles-fetch archive=$(LLVM_CMAKE_ARCHBASE) \
+    destination=$(PORTSDIR)/llvm \
+    location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"
+
+# The empty spelling below catches releases that ship the modules inside llvm.
+$(LLVM_CMAKE_SIBLING) $(GENDIR)/$(CURDIR):
+	%mkdir_q dir="$@"
+
+#MM
+workbench-libs-llvm-cmakefiles--setup:
+	$(Q)$(NOP)
+
+#MM
+workbench-libs-llvm-cmakefiles-yes-setup : workbench-libs-llvm-cmakefiles-fetch | $(LLVM_CMAKE_SIBLING) $(GENDIR)/$(CURDIR)
+	$(Q)$(IF) ! $(TEST) -f $(llvm-cmake-setupflag) ; then \
+	    $(ECHO) "Placing the LLVM cmake modules beside $(LLVM_ARCHBASE)" ; \
+	    cp -Rf $(LLVM_CMAKE_SRCDIR)/* $(LLVM_CMAKE_SIBLING)/ \
+	    && $(TOUCH) $(llvm-cmake-setupflag) ; \
+	fi
+
+#MM
+workbench-libs-llvm-setup : workbench-libs-llvm-cmakefiles-$(LLVM_CMAKE_FILES)-setup
 
 %create_patch mmake=workbench-libs-llvm-create-patch \
     archive=$(LLVM_ARCHBASE) suffixes="tar.xz" destination=$(PORTSDIR)/llvm
@@ -111,8 +157,15 @@ LLVM_TBLGEN_CMAKEOPTIONS := \
     cmakebuildcmd="$(CMAKE) --build $(LLVM_TBLGEN_BUILDDIR) --target llvm-tblgen --target clang-tblgen -j$(LLVM_BUILD_JOBS)" \
     cmakeinstallcmd="true" extraoptions="$(LLVM_TBLGEN_CMAKEOPTIONS)"
 
+# STATIC_LIBRARY try-compiles never link, so check_library_exists() always
+# says yes. AROS has no libdl/librt - answer them rather than probe.
+LLVM_NO_PROBE_LIBS := \
+    -DHAVE_LIBDL:INTERNAL=0 \
+    -DHAVE_LIBRT:INTERNAL=0
+
 LLVM_TARGET_CMAKEOPTIONS := \
     $(LLVM_COMMON_CMAKEOPTIONS) \
+    $(LLVM_NO_PROBE_LIBS) \
     -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
     -DUNIX=ON \
     -DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
@@ -120,6 +173,7 @@ LLVM_TARGET_CMAKEOPTIONS := \
     -DLLVM_BUILD_TOOLS=OFF \
     -DLLVM_INCLUDE_TOOLS=OFF \
     -DLLVM_INCLUDE_UTILS=OFF \
+    -DLLVM_BUILD_UTILS=OFF \
     -DLLVM_TABLEGEN=$(LLVM_TBLGEN)
 
 %build_with_cmake mmake=workbench-libs-llvm package=target srcdir=$(LLVM_SRCDIR) \
@@ -136,6 +190,7 @@ LLVM_TARGET_CMAKEOPTIONS := \
 
 LLVM_TOOLS_CMAKEOPTIONS := \
     $(LLVM_COMMON_CMAKEOPTIONS) \
+    $(LLVM_NO_PROBE_LIBS) \
     -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
     -DUNIX=ON \
     -DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
@@ -143,6 +198,7 @@ LLVM_TOOLS_CMAKEOPTIONS := \
     -DLLVM_BUILD_TOOLS=ON \
     -DLLVM_INCLUDE_TOOLS=ON \
     -DLLVM_INCLUDE_UTILS=OFF \
+    -DLLVM_BUILD_UTILS=OFF \
     -DLLVM_TABLEGEN=$(LLVM_TBLGEN) \
     -DCLANG_TABLEGEN=$(CLANG_TBLGEN) \
     -DLLVM_EXTERNAL_PROJECTS="clang;lld" \
