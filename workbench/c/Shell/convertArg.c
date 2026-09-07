@@ -12,14 +12,16 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
     STRPTR s = in->buf + in->cur;
     STRPTR p = s;
     STRPTR q = ++s;
-    LONG i;
+    LONG i, error;
     BOOL scriptarg = FALSE;
 
     if (s[0] == ss->dollar && s[1] == ss->dollar && s[2] == ss->ket)
     {
         TEXT buf[16];
         LONG len = l2a(ss->cliNumber, buf);
-        bufferAppend(buf, len, out, ss);
+        if ((error = bufferAppend(buf, len, out, ss)))
+            return error;
+
         in->cur += 4;
         return 0;
     }
@@ -37,8 +39,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
                 if (*p == '<') /* input redirection */
                     return convertRedir(ss, in, out);
 
-                bufferAppend(s, q - s, out, ss);
-                return 0;
+                return bufferAppend(s, q - s, out, ss);
             }
     }
 
@@ -74,10 +75,14 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
                 for (j = 0; (arg = m[j]); ++j)
                 {
                     if (j > 0)
-                        bufferAppend(" ", 1, out, ss);
+                    {
+                        if ((error = bufferAppend(" ", 1, out, ss)))
+                            return error;
+                    }
 
                     len = cliLen(arg);
-                    bufferAppend(arg, len, out, ss);
+                    if ((error = bufferAppend(arg, len, out, ss)))
+                        return error;
                 }
             }
             else
@@ -97,8 +102,8 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
             len = a->deflen;
         }
 
-        if (arg)
-            bufferAppend(arg, len, out, ss);
+        if (arg && (error = bufferAppend(arg, len, out, ss)))
+            return error;
         break;
     }
 
@@ -108,7 +113,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
         in->cur = q - in->buf;
     }
     else
-        bufferCopy(in, out, 1, ss);
+        return bufferCopy(in, out, 1, ss);
 
     return 0;
 }
