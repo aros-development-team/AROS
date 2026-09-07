@@ -31,6 +31,7 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 
     ess.ss_DOSBase = DOSBase;
     ess.ss_SysBase = SysBase;
+    ess.cliNumber = ss->cliNumber;
 
     for (++in->cur; in->cur < n; p = c)
     {
