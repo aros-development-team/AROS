@@ -145,9 +145,11 @@ static UBYTE srate_to_cea_sf(ULONG samplerate)
 
 static void hdmi_write_audio_infoframe(struct RPiHDMIData *dd)
 {
-    ULONG slot_base = HDMI_RAM_PKT_START(dd) + 4 * 0x24;
+    IPTR slot_base = HDMI_RAM_PKT_START(dd) + 4 * 0x24;
     UBYTE infoframe[14];
     UBYTE checksum;
+    ULONG cfg;
+    int try = 100;
     int i;
 
     /* Header */
@@ -172,6 +174,13 @@ static void hdmi_write_audio_infoframe(struct RPiHDMIData *dd)
             checksum += infoframe[i];
     infoframe[3] = (UBYTE) (0x100 - checksum);
 
+    /* The slot's RAM is locked while it is being sent, so disable the slot
+     * and wait for the status bit to drop before writing. */
+    cfg = rd32le(HDMI_RAM_PKT_CFG(dd)) & ~(1 << 4);
+    wr32le(HDMI_RAM_PKT_CFG(dd), cfg);
+    while ((rd32le(HDMI_RAM_PKT_STATUS(dd)) & (1 << 4)) && try-- > 0)
+        udelay(dd->periiobase, 100);
+
     /*
      * Write to RAM packet memory.
      * Each RAM packet slot holds data packed as 32-bit LE words.
@@ -186,8 +195,9 @@ static void hdmi_write_audio_infoframe(struct RPiHDMIData *dd)
         wr32le(slot_base + i, word);
     }
 
-    /* Enable the audio infoframe packet (bit 4 = packet_id 4) */
-    wr32le(HDMI_RAM_PKT_CFG(dd), rd32le(HDMI_RAM_PKT_CFG(dd)) | (1 << 4));
+    /* Enable the audio infoframe packet (bit 4), and the RAM packet path
+     * itself - it is off on a port the firmware found no display on. */
+    wr32le(HDMI_RAM_PKT_CFG(dd), cfg | RAM_PKT_CFG_ENABLE | (1 << 4));
 }
 
 
@@ -213,7 +223,7 @@ void hdmi_mai_init(struct RPiHDMIData *dd)
     struct DriverBase *AHIsubBase =
         (struct DriverBase *) dd->ahisubbase;
 
-    ULONG pb = dd->periiobase;
+    IPTR pb = dd->periiobase;
     ULONG srate_enum = srate_to_mai_enum(dd->samplerate);
     ULONG n_value = srate_to_n(dd->samplerate);
 

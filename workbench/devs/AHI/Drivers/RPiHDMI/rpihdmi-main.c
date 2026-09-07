@@ -55,6 +55,28 @@ static const LONG frequencies[] = {
 
 #define FREQUENCIES (sizeof frequencies / sizeof frequencies[0])
 
+
+#if DEBUG
+/* Raw register windows, for mapping the HDMI block on a new SoC. */
+static void hdmi_dump(struct RPiHDMIData *data, const char *what, IPTR base, ULONG from, ULONG to)
+{
+    struct DriverBase *AHIsubBase = (struct DriverBase *) data->ahisubbase;
+    ULONG off;
+
+    for (off = from; off < to; off += 16)
+        bug("[RPiHDMI] %s %03lx: %08lx %08lx %08lx %08lx\n", what, off,
+            rd32le(base + off), rd32le(base + off + 4),
+            rd32le(base + off + 8), rd32le(base + off + 12));
+}
+#define HDMI_DUMP(data, when) do { \
+    hdmi_dump(data, when " hdmi", (data)->periiobase + (data)->soc->hdmi_base, 0x00, 0x100); \
+    hdmi_dump(data, when " hd", (data)->periiobase + (data)->soc->mai_base, 0x00, 0x50); \
+    hdmi_dump(data, when " pkt4", (data)->periiobase + (data)->soc->packet_base + 4 * 0x24, 0x00, 0x10); \
+} while (0)
+#else
+#define HDMI_DUMP(data, when)
+#endif
+
 /******************************************************************************
 ** AHIsub_AllocAudio **********************************************************
 ******************************************************************************/
@@ -72,7 +94,11 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, s
         dd->mastertask = (struct Process *) FindTask(NULL);
         dd->ahisubbase = RPiHDMIBase;
         dd->periiobase = RPiHDMIBase->periiobase;
-        dd->dma_channel = DMAAllocChannel(0);
+        /* The BCM2712 wires HDMI audio to the dma40 window. */
+        dd->dma_channel = DMAAllocChannel(
+            (RPiHDMIBase->periiobase == BCM2712_PERIIOBASE) ? DMACHF_DMA4 : 0);
+        dd->dma4 = (dd->dma_channel >= 0) &&
+                   BCM2708_DMA_IS_DMA4(dd->periiobase, dd->dma_channel);
         dd->soc = RPiHDMIBase->soc[0];
         dd->output = 0;
         dd->dma_dreq = dd->soc->dma_dreq;
@@ -190,8 +216,12 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
         dd->cb[0] = (struct BCM2708DMACB *) cb_raw;
         dd->cb[1] = (struct BCM2708DMACB *) (cb_raw + sizeof(struct BCM2708DMACB));
 
+        HDMI_DUMP(dd, "before");
+
         /* Initialize HDMI MAI audio */
         dd->soc->init(dd);
+
+        HDMI_DUMP(dd, "after");
 
         D(bug("[RPiHDMI] MAI after init: CTL=%08lx THR=%08lx FMT=%08lx\n",
             rd32le(HDMI_MAI_CTL(dd)),
@@ -253,7 +283,10 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
          * The slave has allocated slavesignal and pre-filled both
          * DMA buffers, so IRQ signals won't be lost.
          */
+        dd->irq_count = 0;
         dd->irq_handle = KrnAddIRQHandler(BCM2708_DMA_IRQ(dd->periiobase, dd->dma_channel), dma_irq_handler, dd, SysBase);
+        D(bug("[RPiHDMI] irq %lu handle=%p dma4=%ld\n",
+            BCM2708_DMA_IRQ(dd->periiobase, dd->dma_channel), dd->irq_handle, (LONG) dd->dma4));
 
         dma_setup(dd);
     }

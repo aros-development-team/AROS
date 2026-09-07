@@ -23,7 +23,8 @@ static inline void __dmb(void)
     asm volatile("dmb sy" ::: "memory");
 }
 
-static inline ULONG rd32le(ULONG addr)
+/* IPTR, not ULONG: the BCM2712 peripheral base is 0x107C000000. */
+static inline ULONG rd32le(IPTR addr)
 {
     ULONG val;
     __dmb();
@@ -32,7 +33,7 @@ static inline ULONG rd32le(ULONG addr)
     return val;
 }
 
-static inline void wr32le(ULONG addr, ULONG val)
+static inline void wr32le(IPTR addr, ULONG val)
 {
     __dsb();
     *(volatile ULONG *) addr = AROS_LONG2LE(val);
@@ -112,6 +113,8 @@ static inline void wr32le(ULONG addr, ULONG val)
 #define AUDIO_PKT_ZERO_DATA_ON_FLAT     (1 << 29)
 
 /* CRP_CFG bits */
+#define RAM_PKT_CFG_ENABLE      (1 << 16)
+
 #define CRP_CFG_EXTERNAL_CTS_EN (1 << 24)
 #define CRP_CFG_N(x)            ((x) & 0xFFFFF)
 
