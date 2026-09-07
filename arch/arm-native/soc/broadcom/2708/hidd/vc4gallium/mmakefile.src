@@ -215,15 +215,12 @@ GCA_ABI_FLAGS := $(TARGET_ISA_CFLAGS) $(USER_CPPFLAGS)
 # gca_bind matches slots positionally, so the slot list is generated from
 # the union of their import sets. A driver added here must also appear in
 # the v3d-side consumption (hidd/v3d) and vice versa.
-# v3d is built only where its glue has been ported, so the union is taken
-# over the drivers this Mesa version actually builds.
-GCA_CONSUMERS := $(top_libdir)/libgallium_vc4.a
-ifeq ($(OPT_MESAGL),20.0.8)
-GCA_CONSUMERS += $(top_libdir)/libgallium_v3d.a
-endif
+# Both drivers are in the union: upstream gates v3d to 20.0.8, this tree ports
+# it to 26 (see hidd/v3d).
+GCA_CONSUMERS := $(top_libdir)/libgallium_vc4.a $(top_libdir)/libgallium_v3d.a
 
-#MM linklibs-gallium_vc4-gca : linklibs-gallium_v3d-mesa$(OPT_MESAGL)
-#MM linklibs-galliumcoreapi : linklibs-gallium_vc4 linklibs-gallium_v3d-mesa$(OPT_MESAGL)
+#MM linklibs-gallium_vc4-gca : linklibs-gallium_v3d
+#MM linklibs-galliumcoreapi : linklibs-gallium_vc4 linklibs-gallium_v3d
 
 # The data the driver reads rather than calls, which the glue carries as
 # objects instead of trampolines. Every data import has to be named here or
@@ -238,8 +235,13 @@ else
 GCA_PRIVATE_DATA += _util_cpu_caps_state \
                     glsl_type_builtin_int \
                     glsl_type_builtin_uint \
-                    glsl_type_builtin_vec4
+                    glsl_type_builtin_vec4 \
+                    util_dynarray_is_data_stack_allocated
 endif
+
+# util_dynarray_is_data_stack_allocated is an address sentinel, so a private
+# copy is only safe while no util_dynarray crosses the module boundary.
+# Re-audit if another one shows up here.
 
 $(GCA_GENDIR)/.gca.stamp : $(GCA_CONSUMERS) $(GCA_CORELIBS) $(GCA_TOOL)
 	%mkdir_q dir="$(GCA_GENDIR)"
