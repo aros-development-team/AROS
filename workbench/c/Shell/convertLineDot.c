@@ -292,12 +292,12 @@ LONG convertLineDot(ShellState *ss, Buffer *in)
     }
     else if (*s == 'p')
     {
-        if (*++s == 'o' && s[1] == 'p') /* .popis */
+        if (*++s == 'o' && s[1] == 'p' && s[2] == 'i' && s[3] == 's') /* .popis */
         {
             popInterpreterState(ss);
             res = s;
         }
-        else if (*s == 'u' && s[1] == 's' && s[2] == 'h') /* .pushis */
+        else if (*s == 'u' && s[1] == 's' && s[2] == 'h' && s[3] == 'i' && s[4] == 's') /* .pushis */
         {
             LONG error = pushInterpreterState(ss);
 
