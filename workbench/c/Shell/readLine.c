@@ -54,7 +54,7 @@ LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, WOR
     BOOL comment = FALSE;
     BOOL quoted = FALSE;
     BOOL escaped = FALSE;
-    LONG c, i, j, len;
+    LONG c, i, j, len, error;
     TEXT pchar[3], mchar[3];
 
     len = GetVar("_pchar", pchar, sizeof pchar, GVF_LOCAL_ONLY | LV_VAR);
@@ -118,7 +118,10 @@ LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, WOR
     bufferAppend(buf, j, out, ss);
 
     if (checkPipe(pchar, mchar, buf, j))
-        bufferInsert(PIPE_NAME, strlen(PIPE_NAME), out, ss);
+    {
+        if ((error = bufferInsert(PIPE_NAME, sizeof(PIPE_NAME) - 1, out, ss)))
+            return error;
+    }
 
     *moreLeft = (c != ENDSTREAMCH);
 
