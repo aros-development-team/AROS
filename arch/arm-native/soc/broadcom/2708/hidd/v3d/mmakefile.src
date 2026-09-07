@@ -6,70 +6,83 @@ include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 # Only build for the aarch64 RasPi target: the BCM2711 is the only SoC
 # with a V3D 4.2, and the driver has never been built for arm.
 #
-# The glue here targets the Mesa 20.x gallium driver API, and Mesa 26 both
-# rearranged the driver and dropped the hardware versions it is written for
-# (33 and 41; 26 carries 42 and 71). Hook it in only for the Mesa version
-# it has been ported to, as the vc4 driver next door does.
-#MM- workbench-hidds-raspi-aarch64 : hidd-v3d-mesa$(OPT_MESAGL)
-#MM- hidd-v3d-mesa20.0.8 : hidd-v3d
-#MM- linklibs-gallium_v3d-mesa20.0.8 : linklibs-gallium_v3d
+# Upstream gates this on OPT_MESAGL for the Mesa 20.x gallium API. Dropped
+# here: the driver is ported to 26 - generations 42 and 71, merged packet.xml.
+#MM- workbench-hidds-raspi-aarch64 : hidd-v3d
 
 MESA_V3D_DIR = $(top_srcdir)/src/gallium/drivers/v3d
 MESA_BROADCOM_DIR = $(top_srcdir)/src/broadcom
 MESA_GALLIUM_DIR = $(top_srcdir)/src/gallium
 
-# V3D Gallium driver sources (excluding simulator)
+# V3D Gallium driver sources (files_libv3d in meson.build, minus the
+# simulator). v3d_tiling.c moved to broadcom/common in Mesa 26.
 V3D_SOURCES := \
     $(MESA_V3D_DIR)/v3d_blit \
     $(MESA_V3D_DIR)/v3d_bufmgr \
     $(MESA_V3D_DIR)/v3d_cl \
     $(MESA_V3D_DIR)/v3d_context \
+    $(MESA_V3D_DIR)/v3d_disk_cache \
     $(MESA_V3D_DIR)/v3d_fence \
     $(MESA_V3D_DIR)/v3d_formats \
     $(MESA_V3D_DIR)/v3d_job \
     $(MESA_V3D_DIR)/v3d_program \
     $(MESA_V3D_DIR)/v3d_query \
+    $(MESA_V3D_DIR)/v3d_query_perfcnt \
+    $(MESA_V3D_DIR)/v3d_query_pipe \
     $(MESA_V3D_DIR)/v3d_resource \
     $(MESA_V3D_DIR)/v3d_screen \
-    $(MESA_V3D_DIR)/v3d_tiling \
     $(MESA_V3D_DIR)/v3d_uniforms
 
-#
-# The v3dx_ sources are compiled once per hardware generation, exactly as
-# Mesa's own build does: v3d_context.c dispatches on devinfo.ver and calls
-# both the v3d33_ and the v3d41_ entry points by name, so both sets have to
-# exist or the link fails. Mesa 20.0.8 builds 33 and 41 only - a V3D 4.2
-# part like the BCM2711 runs the 41 path - so there is no 42 here.
-#
-# Generated wrappers rather than two linklibs, because the version has to
-# reach the compiler as a macro and %build_linklib takes one set of flags.
-#
-V3DX_BASE   := draw emit format_table job rcl state
+# The v3dx_ sources are compiled once per generation: v3d_util.h's v3d_X()
+# dispatches on devinfo.ver and names both the v3d42_ and v3d71_ entry points,
+# so both sets must exist or the link fails. Generated wrappers rather than a
+# linklib per generation - the version has to reach the compiler as a macro.
+V3D_GENS    := 42 71
 V3DX_GENDIR := $(OBJDIR)/v3dx-gen
 
-V3DX_SOURCES := \
-    $(patsubst %,$(V3DX_GENDIR)/v3d33_%,$(V3DX_BASE)) \
-    $(patsubst %,$(V3DX_GENDIR)/v3d41_%,$(V3DX_BASE))
+# Basenames are unique across the three source directories, so one vpath does.
+V3DX_BASE := draw emit format_table job rcl state tfu dump counter
 
-$(V3DX_GENDIR)/v3d33_%.c : $(MESA_V3D_DIR)/v3dx_%.c
+vpath v3dx_%.c \
+    $(MESA_V3D_DIR) \
+    $(MESA_BROADCOM_DIR)/clif \
+    $(MESA_BROADCOM_DIR)/perfcntrs
+
+V3DX_SOURCES := $(foreach gen,$(V3D_GENS), \
+    $(patsubst %,$(V3DX_GENDIR)/v3d$(gen)_%,$(V3DX_BASE)))
+
+$(V3DX_GENDIR)/v3d42_%.c : v3dx_%.c
 	%mkdir_q dir="$(V3DX_GENDIR)"
 	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)printf '#define V3D_VERSION 33\n#include "%s"\n' $< > $@
+	$(Q)printf '#define V3D_VERSION 42\n#include "%s"\n' $< > $@
 
-$(V3DX_GENDIR)/v3d41_%.c : $(MESA_V3D_DIR)/v3dx_%.c
+$(V3DX_GENDIR)/v3d71_%.c : v3dx_%.c
 	%mkdir_q dir="$(V3DX_GENDIR)"
 	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)printf '#define V3D_VERSION 41\n#include "%s"\n' $< > $@
+	$(Q)printf '#define V3D_VERSION 71\n#include "%s"\n' $< > $@
 
 #MM
 linklibs-gallium_v3d-gen-v3dx : $(addsuffix .c,$(V3DX_SOURCES))
 
-# Broadcom compiler sources
+V3D_NIR_GENDIR := $(OBJDIR)/nir-gen
+V3D_NIR_ALGEBRAIC := $(V3D_NIR_GENDIR)/v3d_nir_lower_algebraic
+
+$(V3D_NIR_ALGEBRAIC).c : $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_algebraic.py
+	%mkdir_q dir="$(V3D_NIR_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -p $(top_srcdir)/src/compiler/nir > $@.tmp \
+	    && mv -f $@.tmp $@
+
+#MM
+linklibs-gallium_v3d-gen-nir : $(V3D_NIR_ALGEBRAIC).c
+
+# Broadcom compiler sources (libbroadcom_compiler_files in meson.build)
 BROADCOM_COMPILER_SOURCES := \
     $(MESA_BROADCOM_DIR)/compiler/nir_to_vir \
     $(MESA_BROADCOM_DIR)/compiler/vir \
     $(MESA_BROADCOM_DIR)/compiler/vir_dump \
     $(MESA_BROADCOM_DIR)/compiler/vir_live_variables \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_constant_alu \
     $(MESA_BROADCOM_DIR)/compiler/vir_opt_copy_propagate \
     $(MESA_BROADCOM_DIR)/compiler/vir_opt_dead_code \
     $(MESA_BROADCOM_DIR)/compiler/vir_opt_redundant_flags \
@@ -78,22 +91,31 @@ BROADCOM_COMPILER_SOURCES := \
     $(MESA_BROADCOM_DIR)/compiler/vir_to_qpu \
     $(MESA_BROADCOM_DIR)/compiler/qpu_schedule \
     $(MESA_BROADCOM_DIR)/compiler/qpu_validate \
-    $(MESA_BROADCOM_DIR)/compiler/v3d40_tex \
-    $(MESA_BROADCOM_DIR)/compiler/v3d33_tex \
-    $(MESA_BROADCOM_DIR)/compiler/v3d33_vpm_setup \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_tex \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_packing \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_blend \
     $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_io \
     $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_image_load_store \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_line_smooth \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_load_output \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_load_store_bitsize \
     $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_logic_ops \
     $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_scratch \
-    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_txf_ms
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_txf_ms \
+    $(V3D_NIR_ALGEBRAIC)
 
-# Broadcom common sources
+# Broadcom common, clif, qpu and perfcntrs sources (libbroadcom_v3d,
+# libbroadcom_qpu and libbroadcom_perfcntrs in meson.build)
 BROADCOM_COMMON_SOURCES := \
     $(MESA_BROADCOM_DIR)/common/v3d_debug \
     $(MESA_BROADCOM_DIR)/common/v3d_device_info \
+    $(MESA_BROADCOM_DIR)/common/v3d_tiling \
+    $(MESA_BROADCOM_DIR)/common/v3d_util \
+    $(MESA_BROADCOM_DIR)/clif/clif_dump \
     $(MESA_BROADCOM_DIR)/qpu/qpu_instr \
     $(MESA_BROADCOM_DIR)/qpu/qpu_pack \
-    $(MESA_BROADCOM_DIR)/qpu/qpu_disasm
+    $(MESA_BROADCOM_DIR)/qpu/qpu_disasm \
+    $(MESA_BROADCOM_DIR)/perfcntrs/v3d_perfcntrs
 
 # V3D HIDD sources
 V3D_HIDD_SOURCES := \
@@ -110,29 +132,31 @@ V3D_HIDD_SOURCES := \
 # these never race with vc4gallium's identical rules. Two include roots
 # because the sources reach them both ways: "cle/x.h" and "broadcom/cle/x.h".
 #
+# One v3d_packet.xml for every generation (vc4_packet.xml for the 21), with the
+# generation passed to the generator rather than picking a versioned XML.
 CLE_SRCDIR  := $(MESA_BROADCOM_DIR)/cle
 CLE_GENROOT := $(OBJDIR)/cle-gen
 CLE_GENDIR  := $(CLE_GENROOT)/broadcom/cle
 
-$(CLE_GENDIR)/v3d_packet_v33_pack.h: $(CLE_SRCDIR)/gen_pack_header.py $(CLE_SRCDIR)/v3d_packet_v33.xml
+$(CLE_GENDIR)/v3d_packet_v21_pack.h: $(CLE_SRCDIR)/gen_pack_header.py $(CLE_SRCDIR)/vc4_packet.xml
 	%mkdir_q dir="$(CLE_GENDIR)"
 	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 33 > $@
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 21 > $@
 
-$(CLE_GENDIR)/v3d_packet_v41_pack.h: $(CLE_SRCDIR)/gen_pack_header.py $(CLE_SRCDIR)/v3d_packet_v33.xml
-	%mkdir_q dir="$(CLE_GENDIR)"
-	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
-	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 41 > $@
-
-$(CLE_GENDIR)/v3d_packet_v42_pack.h: $(CLE_SRCDIR)/gen_pack_header.py $(CLE_SRCDIR)/v3d_packet_v33.xml
+$(CLE_GENDIR)/v3d_packet_v42_pack.h: $(CLE_SRCDIR)/gen_pack_header.py $(CLE_SRCDIR)/v3d_packet.xml
 	%mkdir_q dir="$(CLE_GENDIR)"
 	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 42 > $@
 
+$(CLE_GENDIR)/v3d_packet_v71_pack.h: $(CLE_SRCDIR)/gen_pack_header.py $(CLE_SRCDIR)/v3d_packet.xml
+	%mkdir_q dir="$(CLE_GENDIR)"
+	$(Q)$(ECHO) "Generating $(patsubst $(TOP)/%,%,$@)"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ 71 > $@
+
 CLE_GEN_HEADERS := \
-    $(CLE_GENDIR)/v3d_packet_v33_pack.h \
-    $(CLE_GENDIR)/v3d_packet_v41_pack.h \
-    $(CLE_GENDIR)/v3d_packet_v42_pack.h
+    $(CLE_GENDIR)/v3d_packet_v21_pack.h \
+    $(CLE_GENDIR)/v3d_packet_v42_pack.h \
+    $(CLE_GENDIR)/v3d_packet_v71_pack.h
 
 #MM
 linklibs-gallium_v3d-gen-cle : $(CLE_GEN_HEADERS)
@@ -160,11 +184,25 @@ USER_INCLUDES := \
     -I $(MESA_GALLIUM_DIR)/drivers \
     -I $(top_srcdir)/src \
     -I $(top_srcdir)/src/compiler/nir \
-    -I $(top_builddir)/src/compiler/nir
+    -I $(top_builddir)/src/compiler/nir \
+    -iquote $(MESA_BROADCOM_DIR)/compiler \
+    -iquote $(MESA_BROADCOM_DIR)/common \
+    -iquote $(top_srcdir)/src/compiler \
+    -iquote $(top_builddir)/src/compiler \
+    -iquote $(top_builddir)/src/compiler/glsl \
+    -iquote $(top_srcdir)/src/util \
+    -I $(top_srcdir)/src/util \
+    -iquote $(top_builddir)/src \
+    -iquote $(top_builddir)/src/util \
+    -iquote $(top_builddir)/src/util/format
 
+# USE_V3D_SIMULATOR is the Mesa 26 spelling; keep the older names so the
+# AROS override header still matches on either.
 USER_CPPFLAGS += \
+    -DUSE_V3D_SIMULATOR=0 \
     -DUSING_V3D_SIMULATOR=0 \
     -Dusing_v3d_simulator=0 \
+    -DV3D_BUILD_NEON \
     -UHAVE_VALGRIND \
     -DGCA_CONSUMER_MODULE \
     -include $(SRCDIR)/$(CURDIR)/v3d_aros_override.h
@@ -175,7 +213,7 @@ USER_CFLAGS += $(NOWARN_CFLAGS)
 # Build combined Mesa V3D driver archive
 COMBINED_V3D_SOURCES := $(V3D_SOURCES) $(V3DX_SOURCES) $(BROADCOM_COMPILER_SOURCES) $(BROADCOM_COMMON_SOURCES)
 
-#MM linklibs-gallium_v3d : linklibs-gallium_v3d-gen-cle linklibs-gallium_v3d-gen-v3dx
+#MM linklibs-gallium_v3d : linklibs-gallium_v3d-gen-cle linklibs-gallium_v3d-gen-v3dx linklibs-gallium_v3d-gen-nir
 
 %build_linklib mmake=linklibs-gallium_v3d libname=gallium_v3d libdir=$(top_libdir) \
     objdir=$(top_builddir)/gallium_v3d files="$(COMBINED_V3D_SOURCES)"

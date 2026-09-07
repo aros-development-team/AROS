@@ -575,6 +575,22 @@ void renderonly_scanout_destroy(struct renderonly_scanout *scanout,
     (void)scanout; (void)ro;
 }
 
+/* driconf: mesa.cfg leaves xmlconfig.c out of libmesautil, so v3d_screen.c's
+ * option handling has to be answered here. Every option reads as unset, which
+ * is what Mesa itself falls back to without a config file. */
+void driParseConfigFiles(void *cache, const void *info,
+                         int screenNum, const char *driverName,
+                         const char *kernelDriverName,
+                         const char *deviceName,
+                         const char *applicationName, uint32_t applicationVersion,
+                         const char *engineName, uint32_t engineVersion)
+{
+    (void)cache; (void)info; (void)screenNum; (void)driverName;
+    (void)kernelDriverName; (void)deviceName;
+    (void)applicationName; (void)applicationVersion;
+    (void)engineName; (void)engineVersion;
+}
+
 unsigned char driCheckOption(const void *cache, const char *name, int type)
 {
     (void)cache; (void)name; (void)type;
