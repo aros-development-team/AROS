@@ -118,15 +118,7 @@ void CheckTimer(struct TimerBase *TimerBase, UWORD unitnum)
                 if (!TimerBase->tb_micro_on) {
                         // not active, kickstart it
                         TimerBase->tb_micro_on = TRUE;
-                        /* AbortIO() can leave the one-shot CIA timer stopped
-                         * with no pending interrupt.  Start a one-tick timer
-                         * so ciaint_timer() can program the real deadline. */
-                        TimerBase->tb_micro_started = 1;
-                        *TimerBase->tb_micro_cr &= 0x40;
-                        *TimerBase->tb_micro_cr |= 0x08;
-                        *TimerBase->tb_micro_lo = 1;
-                        *TimerBase->tb_micro_hi = 0;
-                        *TimerBase->tb_micro_cr |= 0x01;
+                        TimerBase->tb_micro_started = 0;
                         D(bug("ciaint_timer kickstarted\n"));
                 } else {
                         UBYTE lo, hi;

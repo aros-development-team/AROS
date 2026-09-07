@@ -23,7 +23,7 @@
 /* protos */
 static Object *obtainconunit(struct Window *window,
     struct ConsoleBase *ConsoleDevice);
-static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
+static VOID releaseconunit(struct ConsoleBase *ConsoleDevice);
 
 /*************************************************************************
 
@@ -117,7 +117,7 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
                 }
 
                 /* deletion of unit is now allowed */
-                releaseconunit(unit, ConsoleDevice);
+                releaseconunit(ConsoleDevice);
 
             } /* if (RAWKEY event was meant for a console window) */
         }
@@ -187,41 +187,26 @@ static Object *obtainconunit(struct Window *window,
         if (CU(o)->cu_Window == activewin)
         {
             D(bug("Unit found: %p\n", o));
-            /* Delay deltion of this console object */
-            ICU(o)->conFlags |= CF_DELAYEDDISPOSE;
+            /* Keep the shared unit-list lock until the caller is done
+               using this console object. */
             break;
         }
     }
 
-    /* Unlock the console list */
-    ReleaseSemaphore(&ConsoleDevice->unitListLock);
+    /*
+     * A found unit remains protected by the shared list lock until
+     * releaseconunit().  CloseDevice() takes this lock exclusively before
+     * removing a unit, so it cannot dispose the object while this caller
+     * still uses it.
+     */
+    if (!o)
+        ReleaseSemaphore(&ConsoleDevice->unitListLock);
 
     ReturnPtr("obtainconunit", Object *, o);
 }
 
-static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice)
+static VOID releaseconunit(struct ConsoleBase *ConsoleDevice)
 {
-    struct IntuitionBase *IntuitionBase =
-        (APTR) ConsoleDevice->cb_IntuitionBase;
-
-    /* Lock all units */
-    ObtainSemaphore(&ConsoleDevice->unitListLock);
-
-    /* Needn't prevent the unit from being disposed anymore */
-    ICU(o)->conFlags &= ~CF_DELAYEDDISPOSE;
-
-    /* If unit is scheduled for deletion, then delete it */
-    if (ICU(o)->conFlags & CF_DISPOSE)
-    {
-        ULONG mID = OM_REMOVE;
-
-        /* Remove from list */
-        DoMethodA(o, (Msg) &mID);
-
-        /* Delete it */
-        DisposeObject(o);
-    }
-
     ReleaseSemaphore(&ConsoleDevice->unitListLock);
 }
 

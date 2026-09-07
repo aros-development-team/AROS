@@ -24,7 +24,9 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 {
     Buffer embedIn = {0}, embedOut = {0}; /* TODO pre-alloc */
     LONG c = 0, error = 0, n = in->len, p = 0;
-    TEXT buf[512] = SHELL_EMBED;
+    TEXT buf[512];
+    TEXT tempName[sizeof(SHELL_EMBED) + 11] = SHELL_EMBED;
+    BOOL tempCreated = FALSE;
     ShellState ess = {0};
 
     ess.ss_DOSBase = DOSBase;
@@ -37,17 +39,18 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
         if (p == '*')
         {
             c = 0;
-            bufferCopy(in, &embedIn, 1, ss);
+            if ((error = bufferCopy(in, &embedIn, 1, ss)))
+                goto freebufs;
         }
         else if (c == '`')
             break;
-        else
-            bufferCopy(in, &embedIn, 1, ss);
+        else if ((error = bufferCopy(in, &embedIn, 1, ss)))
+            goto freebufs;
     }
 
     if (c != '`')
     {
-        bufferCopy(&embedIn, out, embedIn.len, ss);
+        error = bufferCopy(&embedIn, out, embedIn.len, ss);
         goto freebufs;
     }
 
@@ -70,14 +73,15 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
         goto cleanup;
 
     /* Construct temporary output filename */
-    l2a(ss->cliNumber, buf + sizeof(SHELL_EMBED) - 1);
+    l2a(ss->cliNumber, tempName + sizeof(SHELL_EMBED) - 1);
 
-    if (!(ess.newOut = Open(buf, MODE_NEWFILE)))
+    if (!(ess.newOut = Open(tempName, MODE_NEWFILE)))
     {
         error = IoErr();
         goto cleanup;
     }
 
+    tempCreated = TRUE;
     ess.oldOut = SelectOutput(ess.newOut);
     
     /* Embedded command isn't echo'ed, but its result will be integrated
@@ -101,7 +105,8 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
                 if (size <= 0 && buf[i] == '\n')
                     --len;
 
-                bufferAppend(buf, len, out, ss);
+                if ((error = bufferAppend(buf, len, out, ss)))
+                    goto cleanup;
             }
         }
 
@@ -111,7 +116,11 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 
 cleanup:
     Redirection_release(&ess);
-    /* TODO: delete generated file */
+    if (tempCreated)
+        DeleteFile(tempName);
+    while (ess.stack)
+        popInterpreterState(&ess);
+    popInterpreterState(&ess);
 freebufs:
     bufferFree(&embedIn, ss);
     bufferFree(&embedOut, ss);

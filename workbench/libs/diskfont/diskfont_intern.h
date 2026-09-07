@@ -208,6 +208,8 @@ struct DiskfontBase
     
     struct MinList         fontsdirentrylist;
     struct SignalSemaphore fontssemaphore;
+    /* graphics.library's public TextFonts semaphore, found by name at init */
+    struct SignalSemaphore *gfxfontsem;
     
     /* MemHandler interrupt for flushing library */
     struct Interrupt       memint;

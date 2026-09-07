@@ -48,9 +48,6 @@ static const char strProductHostController[] = " Host Controller";
 static const char strEmpty[] = "";
 
 extern int XHCIControllerOOPStartup(struct PCIDevice *hd);
-#if defined(PCIXHCI_PLATFORM_PROBE)
-void pcixhci_probe_platform(struct PCIDevice *hd);
-#endif
 
 AROS_UFH3(void, pciEnumerator,
           AROS_UFHA(struct Hook *, hook, A0),
@@ -202,11 +199,6 @@ BOOL pciInit(struct PCIDevice *hd)
     XHCIControllerOOPStartup(hd);
     pciusbDebug("PCI", "xHCI USB Controller class @  0x%p\n", hd->hd_USBXHCIControllerClass);
 
-#if defined(PCIXHCI_PLATFORM_PROBE)
-    /* Probe platform xHCI controllers (implemented via arch-specific override) */
-    pcixhci_probe_platform(hd);
-#endif
-
     // Create units with a list of host controllers having the same bus and device number.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ) {
         int     cnt;
@@ -315,16 +307,12 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     ForeachNode(&hu->hu_Controllers, hc) {
         CONST_STRPTR owner;
 
-        if (!(hc->hc_Flags & HCF_PLATFORM)) {
-            owner = HIDD_PCIDevice_Obtain(hc->hc_PCIDeviceObject, hd->hd_Device.dd_Library.lib_Node.ln_Name);
-            if(!owner)
-                hc->hc_Flags |= HCF_ALLOCATED;
-            else {
-                pciusbWarn("PCI", "PCI Device already allocated <owner='%s'>\n", owner);
-                allocgood = FALSE;
-            }
-        } else {
+        owner = HIDD_PCIDevice_Obtain(hc->hc_PCIDeviceObject, hd->hd_Device.dd_Library.lib_Node.ln_Name);
+        if(!owner)
             hc->hc_Flags |= HCF_ALLOCATED;
+        else {
+            pciusbWarn("PCI", "PCI Device already allocated <owner='%s'>\n", owner);
+            allocgood = FALSE;
         }
     }
 
@@ -351,9 +339,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         ForeachNode(&hu->hu_Controllers, hc) {
             if(hc->hc_Flags & HCF_ALLOCATED) {
                 hc->hc_Flags &= ~HCF_ALLOCATED;
-                if (!(hc->hc_Flags & HCF_PLATFORM)) {
-                    HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
-                }
+                HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
             }
         }
         return FALSE;
@@ -425,41 +411,29 @@ void pciFreeUnit(struct PCIUnit *hu)
 
     //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
     ForeachNode(&hu->hu_Controllers, hc) {
-        if(hc->hc_PCIMem.me_Un.meu_Addr) {
-            if(hc->hc_PCIMemIsExec) {
-                FreeMem(hc->hc_PCIMem.me_Un.meu_Addr, hc->hc_PCIMem.me_Length);
-                hc->hc_PCIMemIsExec = FALSE;
-            } else {
-                HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Un.meu_Addr);
-            }
-            hc->hc_PCIMem.me_Un.meu_Addr = NULL;
-        }
+        pciFreeAligned(hc, &hc->hc_PCIMem);
     }
 
     // disable and free board
     ForeachNode(&hu->hu_Controllers, hc) {
-        if (!(hc->hc_Flags & HCF_PLATFORM)) {
-            OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
-            if(hc->hc_PCIIntHandler.is_Node.ln_Name) {
+        OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
+        if(hc->hc_PCIIntHandler.is_Node.ln_Name) {
 #if defined(HCF_MSI)
-                if(hc->hc_Flags & HCF_MSI) {
-                    RemIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
-                    HIDD_PCIDevice_ReleaseVectors(hc->hc_PCIDeviceObject);
-                    hc->hc_Flags &= ~HCF_MSI;
-                } else {
+            if(hc->hc_Flags & HCF_MSI) {
+                RemIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
+                HIDD_PCIDevice_ReleaseVectors(hc->hc_PCIDeviceObject);
+                hc->hc_Flags &= ~HCF_MSI;
+            } else {
 #endif
-                    HIDD_PCIDevice_RemoveInterrupt(hc->hc_PCIDeviceObject, &hc->hc_PCIIntHandler);
+                HIDD_PCIDevice_RemoveInterrupt(hc->hc_PCIDeviceObject, &hc->hc_PCIIntHandler);
 #if defined(HCF_MSI)
-                }
-#endif
-                hc->hc_PCIIntHandler.is_Node.ln_Name = NULL;
             }
-
-            hc->hc_Flags &= ~HCF_ALLOCATED;
-            HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
-        } else {
-            hc->hc_Flags &= ~HCF_ALLOCATED;
+#endif
+            hc->hc_PCIIntHandler.is_Node.ln_Name = NULL;
         }
+
+        hc->hc_Flags &= ~HCF_ALLOCATED;
+        HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
     }
 }
 /* \\\ */
@@ -493,26 +467,12 @@ void pciExpunge(struct PCIDevice *hd)
 
 BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt)
 {
-    if (hc->hc_Flags & HCF_PLATFORM) {
-        return TRUE;
-    }
     return HIDD_PCIDevice_AddInterrupt(hc->hc_PCIDeviceObject, interrupt);
 }
 
 /* /// "pciAllocAligned()" */
 APTR pciAllocAligned(struct PCIController *hc, struct MemEntry *alloc, ULONG Size, ULONG align, ULONG bounds)
 {
-    if (hc->hc_Flags & HCF_PLATFORM) {
-        alloc->me_Length = align + Size;
-        alloc->me_Un.meu_Addr = AllocMem(alloc->me_Length, MEMF_FAST | MEMF_CLEAR);
-        if (alloc->me_Un.meu_Addr) {
-            hc->hc_PCIMemIsExec = TRUE;
-            IPTR addrAligned = (((IPTR)alloc->me_Un.meu_Addr + (align - 1)) & ~(align - 1));
-            return (APTR)addrAligned;
-        }
-        return NULL;
-    }
-
     alloc->me_Length = align + Size;
     alloc->me_Un.meu_Addr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Length);
     if(alloc->me_Un.meu_Addr) {
@@ -534,12 +494,21 @@ APTR pciAllocAligned(struct PCIController *hc, struct MemEntry *alloc, ULONG Siz
 }
 /* \\\ */
 
+/* /// "pciFreeAligned()" */
+void pciFreeAligned(struct PCIController *hc, struct MemEntry *alloc)
+{
+    if(!alloc->me_Un.meu_Addr)
+        return;
+
+    FREEPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Un.meu_Addr);
+    alloc->me_Un.meu_Addr = NULL;
+    alloc->me_Length = 0;
+}
+/* \\\ */
+
 /* /// "pciGetPhysical()" */
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)
 {
-    if (hc->hc_Flags & HCF_PLATFORM) {
-        return virtaddr;
-    }
     return(HIDD_PCIDriver_CPUtoPCI(hc->hc_PCIDriverObject, virtaddr));
 }
 /* \\\ */

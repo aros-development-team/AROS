@@ -60,7 +60,10 @@ static int GfxInit(struct GfxBase *LIBBASE)
     InitSemaphore(&PrivGBase(GfxBase)->hashtab_sema);
     InitSemaphore(&PrivGBase(GfxBase)->view_sema);
     InitSemaphore(&PrivGBase(GfxBase)->tfe_hashtab_sema);
+    /* Public by name so diskfont.library can arbitrate its TextFonts walks */
     InitSemaphore(&PrivGBase(GfxBase)->fontsem);
+    PrivGBase(GfxBase)->fontsem.ss_Link.ln_Name = "graphics.library/TextFonts";
+    AddSemaphore(&PrivGBase(GfxBase)->fontsem);
 
     NEWLIST(&LIBBASE->MonitorList);
     LIBBASE->MonitorList.lh_Type = MONITOR_SPEC_TYPE;

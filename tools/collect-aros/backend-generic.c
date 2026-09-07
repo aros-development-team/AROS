@@ -237,7 +237,15 @@ int check_and_print_undefined_symbols(const char *file)
 
 /* Quiet variant of the above: returns non-zero if there is at least one
    undefined symbol, without printing anything. Used to decide whether the
-   library re-supply fixup is needed for the final link. */
+   library re-supply fixup is needed for the final link.
+
+   Unlike the error report above, weak references DO count here. They are
+   what is normally left after the relocatable pass (__aros_libreq_SysBase,
+   the DECLARESET'd __*_LIST__ symbols), and the final link also adds strong
+   EXTERN(__*__symbol_set_handler_missing) references from the generated
+   ldscript for every symbol set the objects carry - and those can only be
+   satisfied from the libraries (libautoinit's initexitsets.o). Skipping the
+   weak ones here left UserShell-Seg's INIT guard unresolvable. */
 int has_undefined_symbols(const char *file)
 {
     char buf[200], line[4096];
@@ -251,9 +259,6 @@ int has_undefined_symbols(const char *file)
 
     while (fgets(line, sizeof(line), pipe) != NULL)
     {
-        if (is_weak_undefined(line))
-            continue;
-
         result = 1;
         break;
     }

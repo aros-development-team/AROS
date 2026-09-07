@@ -5,8 +5,8 @@
 */
 
 /*
- * TODO:
- * - put a critical section around DMA transfers (shared dma channels)
+ * DMA requests are serialized per ATA bus. Providers with shared DMA state
+ * must serialize across buses; ata_pci disables secondary DMA on simplex hardware.
  */
 
 #include <aros/debug.h>
@@ -284,7 +284,10 @@ static void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
 
     /* have we failed yet? */
     if (0 == (status & (ATAF_BUSY | ATAF_DATAREQ)))
+    {
         ata_IRQNoData(unit, status);
+        return;
+    }
     if (status & ATAF_ERROR)
     {
         ata_IRQNoData(unit, status);
@@ -330,13 +333,12 @@ static void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
 
     DIRQ(bug("[ATAPI] %s: Current status: %ld during WRITE\n", __func__, reason));
 
-    /*
-     * have we failed yet?
-     * CHECKME: This sequence actually can trigger ata_IRQNoData() twice.
-     * Is this correct ?
-     */
+    /* have we failed yet? */
     if (0 == (status & (ATAF_BUSY | ATAF_DATAREQ)))
+    {
         ata_IRQNoData(unit, status);
+        return;
+    }
     if (status & ATAF_ERROR)
     {
         ata_IRQNoData(unit, status);

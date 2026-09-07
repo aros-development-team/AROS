@@ -781,19 +781,23 @@ LONG CONMain(struct ExecBase *SysBase)
                                         if (insertedlen <= (INPUTBUFFER_SIZE - 1))
                                             iconpath[insertedlen++] = ' ';
 
-                                        currentpos = fh->inputpos;
-                                        currentrest = fh->inputsize - fh->inputpos;
-                                        memmove(&fh->inputbuffer[currentpos + insertedlen],
-                                                &fh->inputbuffer[currentpos],
-                                                currentrest);
-                                        CopyMem(iconpath, &fh->inputbuffer[currentpos],
-                                                insertedlen);
-                                        fh->inputsize += insertedlen;
-                                        fh->inputpos += insertedlen;
+                                        if (fh->inputsize <= INPUTBUFFER_SIZE &&
+                                            insertedlen <= (ULONG)(INPUTBUFFER_SIZE - fh->inputsize))
+                                        {
+                                            currentpos = fh->inputpos;
+                                            currentrest = fh->inputsize - fh->inputpos;
+                                            memmove(&fh->inputbuffer[currentpos + insertedlen],
+                                                    &fh->inputbuffer[currentpos],
+                                                    currentrest);
+                                            CopyMem(iconpath, &fh->inputbuffer[currentpos],
+                                                    insertedlen);
+                                            fh->inputsize += insertedlen;
+                                            fh->inputpos += insertedlen;
 
-                                        do_write(fh, &fh->inputbuffer[currentpos],
-                                                 insertedlen + currentrest);
-                                        do_movecursor(fh, CUR_LEFT, currentrest);
+                                            do_write(fh, &fh->inputbuffer[currentpos],
+                                                     insertedlen + currentrest);
+                                            do_movecursor(fh, CUR_LEFT, currentrest);
+                                        }
                                     }
                                 }
                             } while (++i < fh->appmsg->am_NumArgs);

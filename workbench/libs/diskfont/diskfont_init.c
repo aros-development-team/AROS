@@ -39,6 +39,11 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     NEWLIST(&LIBBASE->fontsdirentrylist);
     InitSemaphore(&LIBBASE->fontssemaphore);
 
+    /* Forbid() is already in effect here; graphics.library never expunges */
+    LIBBASE->gfxfontsem = FindSemaphore("graphics.library/TextFonts");
+    if (LIBBASE->gfxfontsem == NULL)
+        return FALSE;
+
     /* Insert the fonthooks into the DiskfontBase */
 
     LIBBASE->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
@@ -87,7 +92,12 @@ AROS_UFH3(int, CleanMem,
     struct DiskFontHeader *dfh, *dfh2;
 
     D(bug("Inside CleanMem\n"));
-    
+
+    /* Unlinking needs the font semaphore, but low-memory-handler context
+     * (Forbid, possibly inside an allocator) must never block on it. */
+    if (!AttemptSemaphore(LIBBASE->gfxfontsem))
+        return MEM_DID_NOTHING;
+
     ForeachNodeSafe(&LIBBASE->diskfontlist, dfh, dfh2)
     {
         if (dfh->dfh_TF.tf_Accessors < 1)
@@ -109,8 +119,10 @@ AROS_UFH3(int, CleanMem,
         }
     }
     
+    ReleaseSemaphore(LIBBASE->gfxfontsem);
+
     D(bug("CleanMem Finished\n"));
-    
+
     return MEM_ALL_DONE;
     
     AROS_USERFUNC_EXIT

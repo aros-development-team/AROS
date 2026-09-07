@@ -8,6 +8,12 @@
 
 #include <proto/exec.h>
 
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 /* We want all other bases obtained from our base */
 #define __NOLIBBASE__
 
@@ -836,7 +842,51 @@ AROS_LH1(LONG, AbortIO,
 {
     AROS_LIBFUNC_INIT
 
-    /* Cannot Abort IO */
+    struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
+    struct MsgPort *port = unit->au_Bus->ab_MsgPort;
+    struct Node *node;
+    BOOL aborted = FALSE;
+
+#if defined(__AROSEXEC_SMP__)
+    void *ExecLockBase = OpenResource("execlock.resource");
+
+    if (!ExecLockBase)
+        return -1;
+#endif
+
+    /*
+     * Only requests which are still waiting on the bus port can be aborted.
+     * Once BusTaskCode() has removed a request, the hardware transaction is
+     * allowed to complete normally.
+     */
+    Disable();
+
+#if defined(__AROSEXEC_SMP__)
+    ObtainLock(&port->mp_SpinLock, SPINLOCK_MODE_WRITE, 0);
+#endif
+
+    for (node = port->mp_MsgList.lh_Head; node->ln_Succ;
+         node = node->ln_Succ)
+    {
+        if (node == &io->io_Message.mn_Node)
+        {
+            Remove(node);
+            io->io_Error = IOERR_ABORTED;
+            aborted = TRUE;
+            break;
+        }
+    }
+
+#if defined(__AROSEXEC_SMP__)
+    ReleaseLock(&port->mp_SpinLock, 0);
+#endif
+
+    Enable();
+
+    if (!aborted)
+        return -1;
+
+    ReplyMsg((struct Message *)io);
     return 0;
 
     AROS_LIBFUNC_EXIT

@@ -14,9 +14,10 @@
 #include <stdio.h>
 
 #include "cpuspecific.h"
+#include "storage.h"
 
 #define APPNAME "ShowConfig"
-#define VERSION "ShowConfig 0.3"
+#define VERSION "ShowConfig 0.4"
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -267,6 +268,7 @@ int main()
         printf(")\n");
     }
 
+    PrintStorageInformation();
 
     if (KernelBase)
     {

@@ -121,6 +121,42 @@ static void bcm2712_irq_init(void)
     GICC(GICC_CTLR) = 1;
 }
 
+/*
+ * MSIs are pulses where everything else on this SoC holds a level, so
+ * their SPIs - and only those - need edge triggering.  Which ones comes
+ * from the mip node's msi-ranges: <phandle type base flags count>.
+ */
+static uint32_t mip_first_intid, mip_msi_count;
+static int mip_queried;
+
+static void bcm2712_msi_range_query(void)
+{
+    void *node;
+    void *prop;
+    uint32_t *cells;
+
+    mip_queried = 1;
+
+    node = dt_find_node("/axi/pcie@1000120000");
+    prop = node ? dt_find_property(node, "msi-parent") : NULL;
+    if (!prop || (dt_get_prop_len(prop) < 4))
+        return;
+
+    node = dt_find_node_by_phandle(AROS_BE2LONG(*(uint32_t *)dt_get_prop_value(prop)));
+    prop = node ? dt_find_property(node, "msi-ranges") : NULL;
+    if (!prop || (dt_get_prop_len(prop) < 20))
+        return;
+
+    cells = dt_get_prop_value(prop);
+
+    /* Only an edge triggered range is ours to reconfigure. */
+    if (AROS_BE2LONG(cells[3]) != 1)
+        return;
+
+    mip_first_intid = AROS_BE2LONG(cells[2]) + GIC_FIRST_SPI;
+    mip_msi_count = AROS_BE2LONG(cells[4]);
+}
+
 static void bcm2712_irq_enable(int irq)
 {
     *((volatile uint8_t *)(GICD_BASE + GICD_IPRIORITYR + irq)) = 0xA0;
@@ -129,10 +165,18 @@ static void bcm2712_irq_enable(int irq)
     {
         uint32_t cfg;
 
+        /* On first use: irq_init() runs before the device tree is up. */
+        if (!mip_queried)
+            bcm2712_msi_range_query();
+
         *((volatile uint8_t *)(GICD_BASE + GICD_ITARGETSR + irq)) = 0x01;
 
         cfg = GICD(GICD_ICFGR + 4 * (irq / 16));
-        cfg &= ~(2u << ((irq % 16) * 2));
+        if (mip_msi_count && ((uint32_t)irq >= mip_first_intid) &&
+            ((uint32_t)irq < mip_first_intid + mip_msi_count))
+            cfg |= (2u << ((irq % 16) * 2));
+        else
+            cfg &= ~(2u << ((irq % 16) * 2));
         GICD(GICD_ICFGR + 4 * (irq / 16)) = cfg;
     }
 

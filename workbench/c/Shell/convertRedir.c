@@ -63,7 +63,14 @@ LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out)
             return IoErr();
 
         if (append && Seek(ss->newOut, 0, OFFSET_END) == -1)
-            return IoErr();
+        {
+            LONG error = IoErr();
+
+            Close(ss->newOut);
+            ss->newOut = BNULL;
+            SetIoErr(error);
+            return error;
+        }
 
         ss->oldOut = SelectOutput(ss->newOut);
     }

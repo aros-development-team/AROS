@@ -79,7 +79,6 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     hc->hc_CPrivate = xhcic;
 
     /* Initialize hardware... */
-    if (!(hc->hc_Flags & HCF_PLATFORM))
     {
         IPTR barbase, barsize;
 
@@ -106,9 +105,7 @@ static BOOL XHCIController__Init(struct PCIController *hc)
         return FALSE;
     }
 
-    if (!(hc->hc_Flags & HCF_PLATFORM)) {
-        OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
-    }
+    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *)pciMemEnableAttrs); /* activate memory */
 
     if(hc->hc_Unit) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Initializing hardware for unit #%d" DEBUGCOLOR_RESET" \n",
@@ -454,8 +451,6 @@ takeownership:
                                                 pagesize);
         if(!xhcic->xhc_SPBuffersp) {
             pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate Scratchpad Buffers" DEBUGCOLOR_RESET" \n");
-            if(xhcic->xhc_SPBA.me_Un.meu_Addr)
-                FREEPCIMEM(hc, hc->hc_PCIDriverObject, xhcic->xhc_SPBA.me_Un.meu_Addr);
             goto init_fail;
         }
 
@@ -488,6 +483,7 @@ takeownership:
 
 init_fail:
     if(xhcic) {
+        xhciFreeHCMem(hc, xhcic);
         FreeMem(xhcic, sizeof(*xhcic));
         hc->hc_CPrivate = NULL;
     }

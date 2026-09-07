@@ -54,9 +54,11 @@
     textFont->tf_Accessors = 0;
     textFont->tf_Flags &= ~FPF_REMOVED;
 
+    ObtainSemaphore(&PrivGBase(GfxBase)->fontsem);
     Forbid();
     AddHead(&GfxBase->TextFonts, (struct Node *)textFont);
     Permit();
+    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
 
     AROS_LIBFUNC_EXIT
 } /* AddFont */

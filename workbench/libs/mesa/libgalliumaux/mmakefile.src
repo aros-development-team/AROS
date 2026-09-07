@@ -53,6 +53,16 @@ MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter-out \
             draw/draw_pt_fetch_shade_pipeline_llvm.c \
             draw/draw_vs_llvm.c, \
             $(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES))
+else
+# Mesa only declares the gallivm draw entry points - NUM_TCS_INPUTS in
+# draw_tess.h among them - when DRAW_LLVM_AVAILABLE is set. Set it for just
+# these files: draw_context.c and the rest have to keep their LLVM paths
+# inert, or everything linking libgalliumauxiliary would need gallivm too.
+# struct draw_context is not affected, the macro only guards a forward
+# declaration in draw_private.h, so the layout stays the same either way.
+GALLAUXLLVMOFILES := $(addprefix $(top_builddir)/$(CUR_MESADIR)/draw/,draw_llvm.o draw_pt_fetch_shade_pipeline_llvm.o draw_vs_llvm.o)
+GALLAUXLLVMDFILES := $(patsubst %.o,%.d,$(GALLAUXLLVMOFILES))
+$(GALLAUXLLVMOFILES) $(GALLAUXLLVMDFILES): mesa3d-linklib-galliumauxiliary_MC_EXTRA_CPPFLAGS:=-DDRAW_LLVM_AVAILABLE=1
 endif
 GALLIUM_AUXILIARY_GENERATED_SOURCES := \
             driver_trace/tr_util.c \
