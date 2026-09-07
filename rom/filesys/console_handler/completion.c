@@ -232,7 +232,7 @@ static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
                         c = ci->match[strlen(ci->match) - 1];
                         if ((c != '/') && (c != ':'))
                         {
-                            strncat(ci->match, " ", sizeof(ci->match));
+                            Strlcat(ci->match, " ", sizeof(ci->match));
                         }
 
                         InsertIntoConBuffer(ci, ci->match);
@@ -788,7 +788,7 @@ void Completion(struct filehandle *fh, BOOL withinfo)
                     c = ci->match[strlen(ci->match) - 1];
                     if ((c != '/') && (c != ':'))
                     {
-                        strncat(ci->match, " ", sizeof(ci->match));
+                        Strlcat(ci->match, " ", sizeof(ci->match));
                     }
 
                     InsertIntoConBuffer(ci, ci->match);
