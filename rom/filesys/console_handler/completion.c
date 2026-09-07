@@ -142,7 +142,7 @@ static BOOL PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
     if (len >= sizeof(ci->dirpart))
         return FALSE;
 
-    strncpy(ci->dirpart, &ci->fh->inputbuffer[ci->wordstart], len);
+    CopyMem(&ci->fh->inputbuffer[ci->wordstart], ci->dirpart, len);
     ci->dirpart[len] = '\0';
     strcpy(ci->filepart, FilePart(ci->dirpart));
 
