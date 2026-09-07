@@ -93,6 +93,15 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     KernelBase = OpenResource("kernel.resource");
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
+    /* BCM2712 is a different display generation. Bail before vc4_hvs_init()
+     * touches anything and leave the Pi 5 display to fbgfx. */
+    if (__arm_periiobase == BCM2712_PERIIOBASE)
+    {
+        D(bug("[VideoCoreGfx] %s: BCM2712 - leaving the display to fbgfx\n",
+            __PRETTY_FUNCTION__));
+        return FALSE;
+    }
+
     /* The mailbox interface is the same on every VideoCore; the HVS is not,
      * so on BCM2711 only the mailbox half of the driver runs. */
     xsd->vcsd_IsBCM2711 = (__arm_periiobase == BCM2711_PERIIOBASE);
