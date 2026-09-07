@@ -109,9 +109,10 @@ static void CleanupCompletion(struct completioninfo *ci)
 
 /****************************************************************************************/
 
-static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
+static BOOL PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
 {
     WORD i;
+    ULONG len;
     BOOL in_quotes = FALSE;
 
     /* Find word start */
@@ -137,7 +138,12 @@ static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
         }
     }
 
-    strncpy(ci->dirpart, &ci->fh->inputbuffer[ci->wordstart], ci->fh->inputpos - ci->wordstart);
+    len = ci->fh->inputpos - ci->wordstart;
+    if (len >= sizeof(ci->dirpart))
+        return FALSE;
+
+    strncpy(ci->dirpart, &ci->fh->inputbuffer[ci->wordstart], len);
+    ci->dirpart[len] = '\0';
     strcpy(ci->filepart, FilePart(ci->dirpart));
 
     *(PathPart(ci->dirpart)) = '\0';
@@ -145,6 +151,8 @@ static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
     ci->wordquoted = in_quotes;
 
     D(bug("[con:handler] %s: dirpart = \"%s\"  filepart = \"%s\"\n", __func__, ci->dirpart, ci->filepart));
+
+    return TRUE;
 }
 
 /****************************************************************************************/
@@ -734,7 +742,11 @@ void Completion(struct filehandle *fh, BOOL withinfo)
 
     if ((ci = InitCompletion(fh, withinfo)))
     {
-        PrepareCompletion(fh, ci);
+        if (!PrepareCompletion(fh, ci))
+        {
+            CleanupCompletion(ci);
+            return;
+        }
 
         if (!ci->dirpart[0] && !ci->filepart[0])
         {
