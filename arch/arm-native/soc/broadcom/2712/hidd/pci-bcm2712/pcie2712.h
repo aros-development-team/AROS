@@ -147,6 +147,45 @@
 #define GIC_SPI_BASE                    32
 
 /*
+ * The MSI-X Interrupt Peripheral. Each host bridge has one, named by its
+ * msi-parent; a device signals by writing the message number to the target
+ * address, and the block raises one GIC SPI per message - so there is no
+ * status register to demultiplex, unlike the 2711 bridge's own MSI matcher.
+ *
+ * Register layout from OpenBSD's bcm2712_mip.c (ISC, same author as the
+ * bridge driver this one follows).
+ */
+#define MIP_INT_CFGL_HOST               0x20
+#define MIP_INT_CFGH_HOST               0x30
+#define MIP_INT_MASKL_HOST              0x40
+#define MIP_INT_MASKH_HOST              0x50
+#define MIP_INT_MASKL_VPU               0x60
+#define MIP_INT_MASKH_VPU               0x70
+
+#define MIP_REG_SIZE                    0xc0
+#define MIP_MAX_VECTORS                 32      /* what one bitmap word holds */
+
+/* Capabilities we hand out vectors through. */
+#define PCI_CAP_PTR                     0x34
+#define PCI_CAP_ID_MSI                  0x05
+#define PCI_CAP_ID_MSIX                 0x11
+
+#define PCI_MSI_CTRL_ENABLE             (1 << 16)   /* bit 0 of the 16 bit control */
+#define PCI_MSI_CTRL_64BIT              (1 << 23)   /* bit 7 */
+#define PCI_MSI_CTRL_MME_MASK           (7 << 20)   /* bits 6:4 */
+#define PCI_MSI_ADDRESSLO               0x04
+#define PCI_MSI_ADDRESSHI               0x08
+#define PCI_MSI_DATA32                  0x08
+#define PCI_MSI_DATA64                  0x0c
+
+#define PCI_MSIX_CTRL_ENABLE            (1U << 31)  /* bit 15 */
+#define PCI_MSIX_CTRL_SIZE_MASK         0x07ff0000  /* table size less one */
+#define PCI_MSIX_TABLE                  0x04
+#define  PCI_MSIX_TABLE_BIR_MASK        0x7
+#define  PCI_MSIX_TABLE_OFF_MASK        (~0x7U)
+#define PCI_MSIX_ENTRY_SIZE             16
+
+/*
  * Bring-up tracing. None of this can be exercised under emulation - QEMU's
  * raspi models have no PCIe - so the first run on real hardware is also the
  * first test. Leave this on until a controller has been seen to enumerate.
@@ -222,8 +261,31 @@ struct PCIBcm2712Data
      */
     uint32_t            intx_irq;
 
+    /*
+     * This bridge's MSI block. msi_first_intid already carries the message
+     * offset, so message n of ours raises msi_first_intid + n; msi_used is
+     * one bit per message handed out.
+     */
+    volatile uint8_t   *mip;
+    uint64_t            msi_target;     /* the PCI address a device writes */
+    uint32_t            msi_first_intid;
+    uint32_t            msi_count;
+    uint32_t            msi_used;
+
     BOOL                link_up;
     BOOL                trained;        /* we brought it up, firmware had not */
+};
+
+/*
+ * Per device vector bookkeeping. firstVector holds the first message plus
+ * one, so a freshly created device reads as holding none.
+ */
+struct PCIBcm2712DevData
+{
+    ULONG               firstVector;
+    ULONG               nvectors;
+    ULONG               cap;            /* config offset of the capability */
+    BOOL                msix;
 };
 
 /* Per module state. Only what genuinely has one instance lives here. */
@@ -243,11 +305,6 @@ struct pcibcm2712base
 {
     struct Library        lib;
     struct pci_staticdata psd;
-};
-
-struct PCIBcm2712DevData
-{
-    uint32_t               devfn;
 };
 
 #define PSD(cl) (&((struct pcibcm2712base *)(cl)->UserData)->psd)
