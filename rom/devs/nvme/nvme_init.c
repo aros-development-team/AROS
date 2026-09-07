@@ -329,13 +329,10 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
     return TRUE;
 }
 
-/*
- * nvme.device main code has two init routines with 0 and 127 priorities.
- * All bus scanners must run between them.
- */
+/* Init routines run in ascending numeric priority, so NVME_Init at 0 runs
+   before NVME_Probe at 30. */
 ADD2INITLIB(NVME_Probe, 30)
 
 ADD2INITLIB(NVME_Init, 0)
 ADD2OPENDEV(NVME_Open, 0)
 ADD2CLOSEDEV(NVME_Close, 0)
-

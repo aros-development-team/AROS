@@ -158,13 +158,16 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
      * Watching for work instead would run the count out every time on
      * a controller whose interrupt is doing its job, since the queue
      * it is looking at has already been emptied.
+     *
+     * ceh_Reply is cleared again by the queue's task after it replies, so
+     * watch the slot ceasing to be ours too - that does not come back.
      */
     {
         struct completionevent_handler *slot =
             &nvmeq->ce_entries[cmdio.common.op.command_id];
         ULONG spins = 4096;
 
-        while (spins-- && !slot->ceh_Reply)
+        while (spins-- && !slot->ceh_Reply && (slot->ceh_Msg == (APTR)io))
             nvme_process_cq(nvmeq);
     }
 
