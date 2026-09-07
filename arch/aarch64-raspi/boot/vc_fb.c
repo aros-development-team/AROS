@@ -146,8 +146,9 @@ int vcfb_init(void)
         scr_FrameBuffer = (void*)((intptr_t)scr_FrameBuffer & ~0xc0000000);
 
         /* The firmware echoes back what it actually configured, in place.
-         * The Pi 5 keeps its native mode rather than honouring the request,
-         * so never trust the values we asked for. */
+         * Never trust the values we asked for: on the Pi 5 the surface is
+         * locked to the firmware's mode and SETRES acknowledges without
+         * reprogramming. TESTRES answers honestly, GETEDID is unimplemented. */
         if (AROS_LE2LONG(vcmb_msg[5]))
             fb_width  = AROS_LE2LONG(vcmb_msg[5]);
         if (AROS_LE2LONG(vcmb_msg[6]))
