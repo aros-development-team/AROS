@@ -28,12 +28,14 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BO
         if (p == '*')
         {
             c = 0;
-            bufferCopy(in, out, 1, ss);
+            if ((error = bufferCopy(in, out, 1, ss)))
+                return error;
         }
         else if (c == '"')
         {
             quoted = !quoted;
-            bufferCopy(in, out, 1, ss);
+            if ((error = bufferCopy(in, out, 1, ss)))
+                return error;
         }
         else if (c == a)
         {
@@ -45,8 +47,8 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BO
              /* rest of line is comment, ignore it */
              break;
         }
-        else
-            bufferCopy(in, out, 1, ss);
+        else if ((error = bufferCopy(in, out, 1, ss)))
+            return error;
     }
 
     in->cur = n;
@@ -68,15 +70,20 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out)
         if (p == '*')
         {
             c = 0;
-            bufferCopy(in, out, 1, ss);
+            if ((error = bufferCopy(in, out, 1, ss)))
+                return error;
         }
         else if (c == '"')
         {
             quoted = !quoted;
-            bufferCopy(in, out, 1, ss);
+            if ((error = bufferCopy(in, out, 1, ss)))
+                return error;
         }
         else if (quoted)
-            bufferCopy(in, out, 1, ss);
+        {
+            if ((error = bufferCopy(in, out, 1, ss)))
+                return error;
+        }
         else if (c == '<' || c == '>')
         {
             if ((error = convertRedir(ss, in, out)))
@@ -85,8 +92,8 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out)
                 return error;
             }
         }
-        else
-            bufferCopy(in, out, 1, ss);
+        else if ((error = bufferCopy(in, out, 1, ss)))
+            return error;
     }
 
     in->cur = n;
@@ -157,26 +164,35 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
                 break;
 
         bufferReset(&a);
-        bufferCopy(&b, &a, i, ss);
+        if ((error = bufferCopy(&b, &a, i, ss)))
+            goto endReadAlias;
 
         if ((TEXT *)strrchr(buf, ' ') != buf + strlen(buf) - 1
             && in->len > in->cur && i == b.len)
+        {
             /*
              * We need a separator here, between the command
              * and its first argument
              */
-            bufferAppend(" ", 1, &a, ss);
+            if ((error = bufferAppend(" ", 1, &a, ss)))
+                goto endReadAlias;
+        }
 
         if (in->cur < in->len)
-            bufferCopy(in, &a, in->len - in->cur - 1, ss);
+        {
+            if ((error = bufferCopy(in, &a, in->len - in->cur - 1, ss)))
+                goto endReadAlias;
+        }
 
         if (i < b.len)
         {
             b.cur += 2; /* skip [] */
-            bufferCopy(&b, &a, b.len - b.cur, ss);
+            if ((error = bufferCopy(&b, &a, b.len - b.cur, ss)))
+                goto endReadAlias;
         }
 
-        bufferAppend("\n", 1, &a, ss);
+        if ((error = bufferAppend("\n", 1, &a, ss)))
+            goto endReadAlias;
 
         error = readCommandR(ss, &a, out, aliased);
 
