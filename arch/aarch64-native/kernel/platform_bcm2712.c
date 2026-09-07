@@ -337,7 +337,7 @@ static IPTR bcm2712_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     krnARMImpl->ARMI_Family = 8;
     // TODO: Remove
     krnARMImpl->ARMI_Platform = 0x2712;
-    krnARMImpl->ARMI_PeripheralBase = (periibase ? periibase : (APTR)BCM2712_PERIBASE);
+    krnARMImpl->ARMI_PeripheralBase = (APTR)(periibase ? periibase : BCM2712_PERIBASE);
     krnARMImpl->ARMI_InitCore = &bcm27xx_init_cpu;
     krnARMImpl->ARMI_FIQProcess = &bcm27xx_fiq_process;
     krnARMImpl->ARMI_SendIPI = &bcm27xx_send_ipi;
