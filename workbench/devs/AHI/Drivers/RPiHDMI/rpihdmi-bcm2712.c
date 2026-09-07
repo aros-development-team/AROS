@@ -8,8 +8,10 @@
 #include "rpihdmi-soc.h"
 #include "rpihdmi-hwaccess.h"
 
+/* The DREQs are board-dependent and always come from the device tree;
+ * DriverInit drops the output if the lookup fails. */
 struct RPiHDMISoc rpihdmi_bcm2712_hdmi0_soc = {
-    .dma_dreq = 10,
+    .dma_dreq = 12,
     .hsm_clock = 108000000,
 
     .regs = {
@@ -20,16 +22,16 @@ struct RPiHDMISoc rpihdmi_bcm2712_hdmi0_soc = {
         .mai_data           = 0x01C,
         .mai_smp            = 0x020,
 
-        /* HDMI block */
-        .mai_channel_map    = 0x09C,
-        .mai_config         = 0x0A0,
-        .audio_packet_cfg   = 0x0B8,
-        .ram_packet_cfg     = 0x0BC,
-        .ram_packet_status  = 0x0C4,
-        .crp_cfg            = 0x0C8,
-        .cts_0              = 0x0CC,
-        .cts_1              = 0x0D0,
-        .scheduler_control  = 0x0E0,
+        /* HDMI block: the audio group sits 8 bytes above the BCM2711 offsets */
+        .mai_channel_map    = 0x0A4,
+        .mai_config         = 0x0A8,
+        .audio_packet_cfg   = 0x0C0,
+        .ram_packet_cfg     = 0x0C4,
+        .ram_packet_status  = 0x0CC,
+        .crp_cfg            = 0x0D0,
+        .cts_0              = 0x0D4,
+        .cts_1              = 0x0D8,
+        .scheduler_control  = 0x0E8,
 
         /* Packet block */
         .packet_start       = 0x000,
@@ -45,7 +47,7 @@ struct RPiHDMISoc rpihdmi_bcm2712_hdmi0_soc = {
 };
 
 struct RPiHDMISoc rpihdmi_bcm2712_hdmi1_soc = {
-    .dma_dreq = 17,
+    .dma_dreq = 13,
     .hsm_clock = 108000000,
 
     .regs = {
@@ -56,16 +58,16 @@ struct RPiHDMISoc rpihdmi_bcm2712_hdmi1_soc = {
         .mai_data           = 0x03C,
         .mai_smp            = 0x040,
 
-        /* HDMI block */
-        .mai_channel_map    = 0x09C,
-        .mai_config         = 0x0A0,
-        .audio_packet_cfg   = 0x0B8,
-        .ram_packet_cfg     = 0x0BC,
-        .ram_packet_status  = 0x0C4,
-        .crp_cfg            = 0x0C8,
-        .cts_0              = 0x0CC,
-        .cts_1              = 0x0D0,
-        .scheduler_control  = 0x0E0,
+        /* HDMI block, see HDMI 0 */
+        .mai_channel_map    = 0x0A4,
+        .mai_config         = 0x0A8,
+        .audio_packet_cfg   = 0x0C0,
+        .ram_packet_cfg     = 0x0C4,
+        .ram_packet_status  = 0x0CC,
+        .crp_cfg            = 0x0D0,
+        .cts_0              = 0x0D4,
+        .cts_1              = 0x0D8,
+        .scheduler_control  = 0x0E8,
 
         /* Packet block */
         .packet_start       = 0x000,
