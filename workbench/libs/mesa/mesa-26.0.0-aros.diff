@@ -550,3 +550,124 @@ diff -ruN mesa-26.0.0/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.0.0.a
  #else /*__linux__ */
  #include <sys/endian.h>
  #define CPU_TO_LE32( x ) bswap32( x )
+
+diff -ruN mesa-26.0.0/src/mesa/glapi/glapi/glapi.h mesa-26.0.0.aros/src/mesa/glapi/glapi/glapi.h
+--- mesa-26.0.0/src/mesa/glapi/glapi/glapi.h	2026-02-11 19:07:29
++++ mesa-26.0.0.aros/src/mesa/glapi/glapi/glapi.h	2026-09-07 13:17:48
+@@ -69,10 +69,14 @@
+ 
+ struct _glapi_table;
+ 
++#ifndef __AROS__
+ _GLAPI_EXPORT extern __THREAD_INITIAL_EXEC struct _glapi_table * _mesa_glapi_tls_Dispatch;
+ _GLAPI_EXPORT extern __THREAD_INITIAL_EXEC void * _mesa_glapi_tls_Context;
++#endif
+ 
+-#if DETECT_OS_WINDOWS && !defined(MAPI_MODE_SHARED_GLAPI)
++/* AROS joins the accessor path: it has no TLS the static relocator can
++   handle, so the two slots live in pthread keys inside core.c. */
++#if (DETECT_OS_WINDOWS && !defined(MAPI_MODE_SHARED_GLAPI)) || defined(__AROS__)
+ # define GET_DISPATCH() _mesa_glapi_get_dispatch()
+ # define GET_CURRENT_CONTEXT(C)  struct gl_context *C = (struct gl_context *) _mesa_glapi_get_context()
+ #else
+diff -ruN mesa-26.0.0/src/mesa/glapi/shared-glapi/core.c mesa-26.0.0.aros/src/mesa/glapi/shared-glapi/core.c
+--- mesa-26.0.0/src/mesa/glapi/shared-glapi/core.c	2026-02-11 19:07:29
++++ mesa-26.0.0.aros/src/mesa/glapi/shared-glapi/core.c	2026-09-07 13:17:31
+@@ -148,9 +148,37 @@
+ #endif /* defined(_GLAPI_ENTRY_ARCH_TLS_H) */
+ 
+ /* Current dispatch and current context variables */
++#ifdef __AROS__
++/*
++ * AROS has no thread local storage. LoadSeg() is a static relocator, so
++ * neither the TPREL form of __thread nor the GOT-indirect form that
++ * -femulated-tls emits can be relocated - the loader rejects both. Keep the
++ * two per-thread slots in pthread keys instead, reached only through the
++ * accessors below; glapi.h routes GET_DISPATCH/GET_CURRENT_CONTEXT there.
++ */
++#include <pthread.h>
++
++static pthread_key_t aros_dispatch_key;
++static pthread_key_t aros_context_key;
++
++static void
++aros_glapi_keys_init(void)
++{
++   pthread_key_create(&aros_dispatch_key, NULL);
++   pthread_key_create(&aros_context_key, NULL);
++}
++
++static inline void
++aros_glapi_keys(void)
++{
++   static once_flag flag = ONCE_FLAG_INIT;
++   call_once(&flag, aros_glapi_keys_init);
++}
++#else
+ __THREAD_INITIAL_EXEC struct _glapi_table *_mesa_glapi_tls_Dispatch
+    = (struct _glapi_table *)table_noop_array;
+ __THREAD_INITIAL_EXEC void *_mesa_glapi_tls_Context;
++#endif
+ 
+ static int
+ stub_compare(const void *key, const void *elem)
+@@ -238,7 +266,12 @@
+ void
+ _mesa_glapi_set_context(void *ptr)
+ {
++#ifdef __AROS__
++   aros_glapi_keys();
++   pthread_setspecific(aros_context_key, ptr);
++#else
+    _mesa_glapi_tls_Context = ptr;
++#endif
+ }
+ 
+ /**
+@@ -249,7 +282,12 @@
+ void *
+ _mesa_glapi_get_context(void)
+ {
++#ifdef __AROS__
++   aros_glapi_keys();
++   return pthread_getspecific(aros_context_key);
++#else
+    return _mesa_glapi_tls_Context;
++#endif
+ }
+ 
+ /**
+@@ -263,8 +301,14 @@
+    static once_flag flag = ONCE_FLAG_INIT;
+    call_once(&flag, entry_patch_public);
+ 
++#ifdef __AROS__
++   aros_glapi_keys();
++   pthread_setspecific(aros_dispatch_key,
++      tbl ? tbl : (void *)table_noop_array);
++#else
+    _mesa_glapi_tls_Dispatch =
+       tbl ? tbl : (struct _glapi_table *)table_noop_array;
++#endif
+ }
+ 
+ /**
+@@ -273,5 +317,16 @@
+ struct _glapi_table *
+ _mesa_glapi_get_dispatch(void)
+ {
++#ifdef __AROS__
++   struct _glapi_table *tbl;
++
++   aros_glapi_keys();
++   tbl = pthread_getspecific(aros_dispatch_key);
++
++   /* An unset key reads NULL, where the TLS variable started out holding
++      the no-op table. Callers dispatch through this unchecked. */
++   return tbl ? tbl : (struct _glapi_table *)table_noop_array;
++#else
+    return _mesa_glapi_tls_Dispatch;
++#endif
+ }
+Binary files mesa-26.0.0/src/mesa/main/__pycache__/format_parser.cpython-314.pyc and mesa-26.0.0.aros/src/mesa/main/__pycache__/format_parser.cpython-314.pyc differ
+Binary files mesa-26.0.0/src/mesa/main/__pycache__/get_hash_params.cpython-314.pyc and mesa-26.0.0.aros/src/mesa/main/__pycache__/get_hash_params.cpython-314.pyc differ
