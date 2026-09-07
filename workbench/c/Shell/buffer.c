@@ -73,7 +73,8 @@ LONG bufferCopy(Buffer *in, Buffer *out, ULONG size, ShellState *ss)
 {
     STRPTR s = in->buf + in->cur;
     LONG ret = bufferAppend(s, size, out, ss);
-    in->cur += size;
+    if (ret == 0)
+        in->cur += size;
     return ret;
 }
 
