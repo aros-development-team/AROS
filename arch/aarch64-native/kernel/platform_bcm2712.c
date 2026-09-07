@@ -124,20 +124,31 @@ static void bcm2712_irq_init(void)
 /*
  * MSIs are pulses where everything else on this SoC holds a level, so
  * their SPIs - and only those - need edge triggering.  Which ones comes
- * from the mip node's msi-ranges: <phandle type base flags count>.
+ * from the mip node's msi-ranges: <phandle type base flags count>, plus
+ * brcm,msi-offset - the SPIs raised start at base + offset. Each host
+ * bridge has its own block, so all three are consulted.
  */
-static uint32_t mip_first_intid, mip_msi_count;
+#define MIP_MAX_RANGES  3
+
+static struct
+{
+    uint32_t    first;
+    uint32_t    count;
+} mip_ranges[MIP_MAX_RANGES];
+static int mip_nranges;
 static int mip_queried;
 
-static void bcm2712_msi_range_query(void)
+static void bcm2712_msi_range_add(char *bridge)
 {
     void *node;
     void *prop;
     uint32_t *cells;
+    uint32_t offset = 0;
 
-    mip_queried = 1;
+    if (mip_nranges >= MIP_MAX_RANGES)
+        return;
 
-    node = dt_find_node("/axi/pcie@1000120000");
+    node = dt_find_node(bridge);
     prop = node ? dt_find_property(node, "msi-parent") : NULL;
     if (!prop || (dt_get_prop_len(prop) < 4))
         return;
@@ -153,8 +164,36 @@ static void bcm2712_msi_range_query(void)
     if (AROS_BE2LONG(cells[3]) != 1)
         return;
 
-    mip_first_intid = AROS_BE2LONG(cells[2]) + GIC_FIRST_SPI;
-    mip_msi_count = AROS_BE2LONG(cells[4]);
+    prop = dt_find_property(node, "brcm,msi-offset");
+    if (prop && (dt_get_prop_len(prop) >= 4))
+        offset = AROS_BE2LONG(*(uint32_t *)dt_get_prop_value(prop));
+
+    mip_ranges[mip_nranges].first = AROS_BE2LONG(cells[2]) + offset + GIC_FIRST_SPI;
+    mip_ranges[mip_nranges].count = AROS_BE2LONG(cells[4]);
+    mip_nranges++;
+}
+
+static void bcm2712_msi_range_query(void)
+{
+    mip_queried = 1;
+
+    bcm2712_msi_range_add("/axi/pcie@1000100000");
+    bcm2712_msi_range_add("/axi/pcie@1000110000");
+    bcm2712_msi_range_add("/axi/pcie@1000120000");
+}
+
+static int bcm2712_irq_is_msi(uint32_t irq)
+{
+    int i;
+
+    for (i = 0; i < mip_nranges; i++)
+    {
+        if ((irq >= mip_ranges[i].first) &&
+            (irq < mip_ranges[i].first + mip_ranges[i].count))
+            return 1;
+    }
+
+    return 0;
 }
 
 static void bcm2712_irq_enable(int irq)
@@ -172,8 +211,7 @@ static void bcm2712_irq_enable(int irq)
         *((volatile uint8_t *)(GICD_BASE + GICD_ITARGETSR + irq)) = 0x01;
 
         cfg = GICD(GICD_ICFGR + 4 * (irq / 16));
-        if (mip_msi_count && ((uint32_t)irq >= mip_first_intid) &&
-            ((uint32_t)irq < mip_first_intid + mip_msi_count))
+        if (bcm2712_irq_is_msi((uint32_t)irq))
             cfg |= (2u << ((irq % 16) * 2));
         else
             cfg &= ~(2u << ((irq % 16) * 2));
