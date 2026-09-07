@@ -509,7 +509,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 for (i = 0; i < id_ns->nlbaf + 1; i++) {
                     D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u       lbaf[%u], ms = %u, ds = %u, rp = %u\n", nn + 1, i, id_ns->lbaf[i].ms, id_ns->lbaf[i].ds, id_ns->lbaf[i].rp);)
                 }
-                struct nvme_lba_range_type *rt = (struct nvme_lba_range_type *)(IPTR)buffer + 4096;
+                /* Second page of the buffer - casting first would scale the offset. */
+                struct nvme_lba_range_type *rt = (struct nvme_lba_range_type *)((IPTR)buffer + 4096);
 
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u lba_range_type buffer @ 0x%p\n", nn + 1, rt);)
 
