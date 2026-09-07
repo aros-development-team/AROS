@@ -3,7 +3,7 @@
 */
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 #include <aros/debug.h>
 
@@ -90,9 +90,9 @@ HiddLlvmpipe_CreateDisplaytarget( struct sw_winsys *ws,
     }
     spdt->fmt = format;
 
-    bug("[LLVMPipe] %s: step 1 create dt fmt=%d size=%ux%u stride=%u align=%u front=%p dt=%p data=%p\n",
+    D(bug("[LLVMPipe] %s: step 1 create dt fmt=%d size=%ux%u stride=%u align=%u front=%p dt=%p data=%p\n",
         __PRETTY_FUNCTION__, format, width, height, *stride, alignment, front_private, spdt,
-        spdt ? spdt->data : NULL);
+        spdt ? spdt->data : NULL));
 
     return (struct sw_displaytarget *)spdt;
 }
@@ -114,8 +114,8 @@ HiddLlvmpipe_MapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt,
     unsigned flags)
 {
     struct HiddLlvmpipeDisplaytarget * spdt = HiddLlvmpipe_Displaytarget(dt);
-    bug("[LLVMPipe] %s: step 2 map dt=%p flags=0x%x data=%p\n",
-        __PRETTY_FUNCTION__, dt, flags, spdt ? spdt->data : NULL);
+    D(bug("[LLVMPipe] %s: step 2 map dt=%p flags=0x%x data=%p\n",
+        __PRETTY_FUNCTION__, dt, flags, spdt ? spdt->data : NULL));
     if (!spdt)
     {
         bug("[LLVMPipe] %s: ERROR - map called with NULL displaytarget\n", __PRETTY_FUNCTION__);
@@ -127,7 +127,8 @@ HiddLlvmpipe_MapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt,
 static void
 HiddLlvmpipe_UnMapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt)
 {
-    bug("[LLVMPipe] %s: step 3 unmap dt=%p\n", __PRETTY_FUNCTION__, dt);
+    D(bug("[LLVMPipe] %s: step 3 unmap dt=%p\n", __PRETTY_FUNCTION__, dt));
+    return;
 }
 
 /*  Displaytarget support code ends */
