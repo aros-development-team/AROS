@@ -403,8 +403,11 @@ static struct charmap_line *charmapcon_find_line(Class *cl, Object *o,
     if (!line)
     {
         D(bug("Initializing charmap\n"));
-        data->top_of_window = data->top_of_scrollback = line =
-            charmap_newline(0, 0);
+        line = charmap_newline(0, 0);
+        if (!line)
+            return NULL;
+
+        data->top_of_window = data->top_of_scrollback = line;
         data->scrollback_size = 1;
     }
 
@@ -413,7 +416,8 @@ static struct charmap_line *charmapcon_find_line(Class *cl, Object *o,
     {
         if (!line->next)
         {
-            charmap_newline(0, line);
+            if (!charmap_newline(0, line))
+                return NULL;
             data->scrollback_size += 1;
         }
         line = line->next;
@@ -465,6 +469,9 @@ static VOID charmap_ascii(Class *cl, Object *o, ULONG xcp, ULONG ycp,
     char *str, ULONG len)
 {
     struct charmap_line *line = charmapcon_find_line(cl, o, ycp);
+    if (!line)
+        return;
+
     ULONG oldsize = line->size;
     ULONG newsize = xcp + len;
 
@@ -522,7 +529,8 @@ static VOID charmap_scroll_up(Class *cl, Object *o, ULONG y)
     {
         if (!data->top_of_window->next)
         {
-            charmap_newline(0, data->top_of_window);
+            if (!charmap_newline(0, data->top_of_window))
+                break;
             data->scrollback_size += 1;
         }
         data->top_of_window = data->top_of_window->next;
@@ -581,7 +589,8 @@ static VOID charmap_scroll_contents_down(Class *cl, Object *o, ULONG count)
     ULONG y;
 
     count = MIN(count, CHAR_YMAX(o) + 1);
-    charmapcon_find_line(cl, o, CHAR_YMAX(o));
+    if (!charmapcon_find_line(cl, o, CHAR_YMAX(o)))
+        return;
 
     while (count--)
     {
@@ -683,7 +692,7 @@ static VOID charmap_insert_char(Class *cl, Object *o, ULONG x, ULONG y)
 {
     struct charmap_line *line = charmapcon_find_line(cl, o, y);
 
-    if (x >= line->size)
+    if (!line || x >= line->size)
         return;
 
     /* FIXME: This is wasteful, since it copies the buffers straight over,
@@ -742,7 +751,8 @@ static VOID charmap_insert_lines(Class *cl, Object *o, ULONG count)
     ULONG y, first = YCP;
 
     count = MIN(count, CHAR_YMAX(o) - first + 1);
-    charmapcon_find_line(cl, o, CHAR_YMAX(o));
+    if (!charmapcon_find_line(cl, o, CHAR_YMAX(o)))
+        return;
 
     while (count--)
     {
@@ -763,7 +773,8 @@ static VOID charmap_delete_lines(Class *cl, Object *o, ULONG count)
     ULONG y, first = YCP;
 
     count = MIN(count, CHAR_YMAX(o) - first + 1);
-    charmapcon_find_line(cl, o, CHAR_YMAX(o));
+    if (!charmapcon_find_line(cl, o, CHAR_YMAX(o)))
+        return;
 
     while (count--)
     {
@@ -1078,8 +1089,8 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
          */
         if (!line->next && yc <= toLine)
         {
-            line->next = charmap_newline(0, line);
-            data->scrollback_size += 1;
+            if (charmap_newline(0, line))
+                data->scrollback_size += 1;
         }
         line = line->next;
     }
