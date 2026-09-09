@@ -5,6 +5,7 @@
 
 #include "intuition_intern.h"
 #include "menus.h"
+#include "menutask.h"
 
 void CalculateDims(struct Window *win, struct Menu *menu);
 void Characterize(struct Menu *menu);
@@ -57,6 +58,9 @@ void Characterize(struct Menu *menu);
     AROS_LIBFUNC_INIT
 
     SANITY_CHECKR(window,FALSE)
+
+    if (!EnsureDefaultMenuHandler(IntuitionBase))
+        return FALSE;
 
 #define HASSUBITEM 0x8000
 

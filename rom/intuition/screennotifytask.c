@@ -111,3 +111,17 @@ BOOL InitDefaultScreennotifyHandler(struct IntuitionBase *IntuitionBase)
     return result;
 }
 
+/**************************************************************************************************/
+
+BOOL EnsureDefaultScreennotifyHandler(struct IntuitionBase *IntuitionBase)
+{
+    struct IntIntuitionBase *priv = GetPrivIBase(IntuitionBase);
+    BOOL result = TRUE;
+
+    ObtainSemaphore(priv->IBaseLock);
+    if (!priv->ScreenNotifyReplyPort)
+        result = InitDefaultScreennotifyHandler(IntuitionBase);
+    ReleaseSemaphore(priv->IBaseLock);
+
+    return result;
+}
