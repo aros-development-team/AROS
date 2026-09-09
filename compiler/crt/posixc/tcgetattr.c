@@ -47,9 +47,22 @@
 {
     fdesc *fdesc = __getfdesc(fd);
 
-    if (!fdesc)
+    if (!fdesc || !fdesc->fcb)
     {
         errno = EBADF;
+        return -1;
+    }
+
+    if (!t)
+    {
+        errno = EFAULT;
+        return -1;
+    }
+    /* Directory descriptors contain a FileLock, not a DOS FileHandle. */
+    if ((fdesc->fcb->privflags & _FCB_ISDIR) ||
+        !IsInteractive(fdesc->fcb->handle))
+    {
+        errno = ENOTTY;
         return -1;
     }
 

@@ -1,0 +1,49 @@
+Terminal safety and compatibility tests
+=======================================
+
+Build through test-crt-posixc-general, or compile ioctl_tty.c and
+termios_tty.c individually with the mainline target compiler and SDK.
+Run with interactive DOS stdin (native CON or another interactive handler):
+
+    ioctl_tty
+    termios_tty
+
+Redirecting stdout to SER: is supported. The tests create separate RAM:
+temporary files using O_EXCL and only remove files they created. Do not
+run two instances of the same test concurrently. termios_tty restores the
+initial ICANON mode, including on failures after a successful mode change.
+
+Scope
+-----
+ioctl_tty checks invalid descriptors, DOS stdin/stdout and ordinary files,
+ENOTTY for unsupported geometry (including a NULL argument), and unchanged
+winsize output. This is an explicit failure contract, not working geometry.
+
+termios_tty checks invalid descriptors, pointers and action values, ordinary
+file rejection, and raw/cooked roundtrips through dup for TCSANOW, TCSADRAIN
+and TCSAFLUSH. Passing does not establish drain/flush behavior: all three
+actions retain the legacy immediate ICANON-only mode change. It does not
+test a full termios snapshot, independent opens, signals, timed reads or PTY.
+
+Source-level reason for removing legacy geometry
+----------------------------------------------
+At mainline base 74a2d80b7f4cf023184fd53be1e506484f5e4c38,
+rom/filesys/console_handler/con_handler.c:1156-1159, ACTION_DISK_INFO,
+stores id->id_InUse = fh->usecount. The adjacent comment explains that
+reporting an IORequest there prevented DISMOUNT. A nonzero value is not
+evidence of an IOStdReq pointer. Neither a NULL check nor an address-range
+heuristic can validate it. A safe geometry implementation needs an explicit
+terminal-control contract rather than interpretation of private InfoData.
+
+The removed path could perform an invalid read (reproduced at address 1 in
+a source-level sanitizer test). These changes do not claim an arbitrary-write
+exploit or complete POSIX terminal support.
+
+Compatibility policy
+--------------------
+Do not couple descriptor/error-path safety fixes with newly rejecting valid
+tcsetattr actions. Keeping the immediate compatibility approximation does
+not make it POSIX-compliant: TCSADRAIN must wait for output and TCSAFLUSH must
+also discard unread input when these semantics are implemented. The tty
+service must eventually supply those operations. No compatibility switch or
+private XTerm packet protocol is introduced here.
