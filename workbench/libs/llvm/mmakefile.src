@@ -20,8 +20,19 @@ LLVM_VERSION_MAJOR := $(word 1,$(subst ., ,$(OPT_LLVM)))
 LLVM_VERSION_MINOR := $(word 2,$(subst ., ,$(OPT_LLVM)))
 
 LLVM_REPOSITORY := https://github.com/llvm/llvm-project/releases/download/llvmorg-$(OPT_LLVM)
+
+# From llvm 22 upstream stopped publishing the per component archives and
+# releases only the llvm-project monorepo. That tarball already has clang,
+# lld and the shared cmake/ modules sitting beside llvm/ - the layout this
+# build wants - so it is fetched once and built where it is unpacked, with
+# no component moved or copied.
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 21; echo $$?),0)
+LLVM_MONOREPO := yes
+endif
+
 LLVM_ARCHBASE := llvm-$(OPT_LLVM).src
-LLVM_SRCDIR := $(PORTSDIR)/llvm/$(LLVM_ARCHBASE)
+LLVM_PROJECT_ARCHBASE := llvm-project-$(OPT_LLVM).src
+LLVM_PROJECT_SRCDIR := $(PORTSDIR)/llvm/llvm-project/$(LLVM_PROJECT_ARCHBASE)
 
 # One set of AROS patches serves both toolchains: the crosstools host build
 # and the target/native build here. The AROS specific parts are guarded by
@@ -43,10 +54,19 @@ CLANG_TBLGEN := $(LLVM_TBLGEN_BUILDDIR)/bin/clang-tblgen
 # Native tools (clang/lld running ON AROS) reuse the crosstools AROS patches.
 CLANG_ARCHBASE := clang-$(OPT_LLVM).src
 LLD_ARCHBASE := lld-$(OPT_LLVM).src
-CLANG_SRCDIR := $(PORTSDIR)/llvm/$(CLANG_ARCHBASE)
-LLD_SRCDIR := $(PORTSDIR)/llvm/$(LLD_ARCHBASE)
 LLVM_XTOOLS_PATCH_ORIGIN := $(SRCDIR)/tools/crosstools/llvm
 LLVM_TOOLS_BUILDDIR := $(GENDIR)/$(CURDIR)/tools
+
+# Where each component is found: inside the monorepo, or in its own archive.
+ifeq ($(LLVM_MONOREPO),yes)
+LLVM_SRCDIR := $(LLVM_PROJECT_SRCDIR)/llvm
+CLANG_SRCDIR := $(LLVM_PROJECT_SRCDIR)/clang
+LLD_SRCDIR := $(LLVM_PROJECT_SRCDIR)/lld
+else
+LLVM_SRCDIR := $(PORTSDIR)/llvm/$(LLVM_ARCHBASE)
+CLANG_SRCDIR := $(PORTSDIR)/llvm/$(CLANG_ARCHBASE)
+LLD_SRCDIR := $(PORTSDIR)/llvm/$(LLD_ARCHBASE)
+endif
 
 # Apply the clang/lld patches only where they exist: %fetch treats a
 # named-but-missing patch as a hard error.
@@ -64,10 +84,25 @@ else
 LLD_PATCHSPEC := ::
 endif
 
+# One spec per component patch, all applied inside the extracted monorepo.
+LLVM_PROJECT_PATCHSPECS := \
+    $(if $(wildcard $(LLVM_PATCH)),$(LLVM_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1) \
+    $(if $(wildcard $(CLANG_PATCH)),$(CLANG_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1) \
+    $(if $(wildcard $(LLD_PATCH)),$(LLD_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1)
+ifeq ($(strip $(LLVM_PROJECT_PATCHSPECS)),)
+LLVM_PROJECT_PATCHSPECS := ::
+endif
+
 # From LLVM 20 the shared cmake modules ship separately, and
 # llvm/CMakeLists.txt includes them as ../cmake/Modules - a sibling.
 ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
 LLVM_CMAKE_FILES := yes
+endif
+
+# The monorepo already carries cmake/ beside llvm/, so there is nothing to
+# place: the empty spelling routes the setup at the existing no-op rule.
+ifeq ($(LLVM_MONOREPO),yes)
+LLVM_CMAKE_FILES :=
 endif
 
 LLVM_CMAKE_ARCHBASE := cmake-$(OPT_LLVM).src
@@ -80,6 +115,21 @@ llvm-cmake-setupflag := $(GENDIR)/$(CURDIR)/.setupflag-llvmcmake-$(OPT_LLVM)
 #MM workbench-libs-llvm : llvm-host-tblgen
 
 #MM workbench-libs-llvm-tools : llvm-host-tblgen workbench-libs-llvm
+
+ifeq ($(LLVM_MONOREPO),yes)
+
+%fetch mmake=workbench-libs-llvm-project-fetch archive=$(LLVM_PROJECT_ARCHBASE) \
+    destination=$(PORTSDIR)/llvm/llvm-project \
+    location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
+    patches_specs=$(LLVM_PROJECT_PATCHSPECS) patches_origins="$(LLVM_PATCH_ORIGIN)"
+
+# The per component fetches the rules below depend on are all satisfied by
+# the single monorepo fetch above.
+workbench-libs-llvm-fetch workbench-libs-llvm-clang-fetch \
+workbench-libs-llvm-lld-fetch workbench-libs-llvm-cmakefiles-fetch : workbench-libs-llvm-project-fetch
+	$(Q)$(NOP)
+
+else
 
 %fetch mmake=workbench-libs-llvm-fetch archive=$(LLVM_ARCHBASE) destination=$(PORTSDIR)/llvm \
     location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -98,6 +148,8 @@ llvm-cmake-setupflag := $(GENDIR)/$(CURDIR)/.setupflag-llvmcmake-$(OPT_LLVM)
 %fetch mmake=workbench-libs-llvm-cmakefiles-fetch archive=$(LLVM_CMAKE_ARCHBASE) \
     destination=$(PORTSDIR)/llvm \
     location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"
+
+endif
 
 # The empty spelling below catches releases that ship the modules inside llvm.
 $(LLVM_CMAKE_SIBLING) $(GENDIR)/$(CURDIR):
@@ -118,8 +170,14 @@ workbench-libs-llvm-cmakefiles-yes-setup : workbench-libs-llvm-cmakefiles-fetch 
 #MM
 workbench-libs-llvm-setup : workbench-libs-llvm-cmakefiles-$(LLVM_CMAKE_FILES)-setup
 
+ifeq ($(LLVM_MONOREPO),yes)
+%create_patch mmake=workbench-libs-llvm-create-patch \
+    archive=$(LLVM_PROJECT_ARCHBASE) suffixes="tar.xz" \
+    destination=$(PORTSDIR)/llvm/llvm-project
+else
 %create_patch mmake=workbench-libs-llvm-create-patch \
     archive=$(LLVM_ARCHBASE) suffixes="tar.xz" destination=$(PORTSDIR)/llvm
+endif
 
 LLVM_COMMON_CMAKEOPTIONS := \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \

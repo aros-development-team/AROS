@@ -79,6 +79,21 @@ diff -ruN llvm-project-23.1.0.src/llvm/include/llvm/BinaryFormat/Wasm.h llvm-pro
  namespace llvm {
  namespace wasm {
  
+diff -ruN llvm-project-23.1.0.src/llvm/include/llvm/Support/AMDGPUAddrSpace.h llvm-project-23.1.0.src.aros/llvm/include/llvm/Support/AMDGPUAddrSpace.h
+--- llvm-project-23.1.0.src/llvm/include/llvm/Support/AMDGPUAddrSpace.h	2026-08-25 20:15:21.000000000 +0100
++++ llvm-project-23.1.0.src.aros/llvm/include/llvm/Support/AMDGPUAddrSpace.h	2026-09-09 16:12:16.469472655 +0100
+@@ -17,6 +17,11 @@
+ 
+ #include <cstdint>
+ 
++#if defined(__AROS__) && defined(GLOBAL)
++// AROS defines GLOBAL as 'extern', which collides with DWARFAS::GLOBAL below.
++#undef GLOBAL
++#endif
++
+ namespace llvm {
+ /// OpenCL uses address spaces to differentiate between
+ /// various memory regions on the hardware. On the CPU
 diff -ruN llvm-project-23.1.0.src/llvm/include/llvm/Support/ExitCodes.h llvm-project-23.1.0.src.aros/llvm/include/llvm/Support/ExitCodes.h
 --- llvm-project-23.1.0.src/llvm/include/llvm/Support/ExitCodes.h	2026-08-25 20:15:21.000000000 +0100
 +++ llvm-project-23.1.0.src.aros/llvm/include/llvm/Support/ExitCodes.h	2026-09-09 15:16:36.231542396 +0100
@@ -611,6 +626,34 @@ diff -ruN llvm-project-23.1.0.src/llvm/lib/ExecutionEngine/Orc/MemoryMapper.cpp 
  
  #if defined(__MVS__)
      shmdt(R.second.LocalAddr);
+diff -ruN llvm-project-23.1.0.src/llvm/lib/ExecutionEngine/Orc/Shared/SimpleRemoteEPCUtils.cpp llvm-project-23.1.0.src.aros/llvm/lib/ExecutionEngine/Orc/Shared/SimpleRemoteEPCUtils.cpp
+--- llvm-project-23.1.0.src/llvm/lib/ExecutionEngine/Orc/Shared/SimpleRemoteEPCUtils.cpp	2026-08-25 20:15:21.000000000 +0100
++++ llvm-project-23.1.0.src.aros/llvm/lib/ExecutionEngine/Orc/Shared/SimpleRemoteEPCUtils.cpp	2026-09-09 15:58:42.326701622 +0100
+@@ -118,11 +118,14 @@
+   Disconnected = true;
+   bool CloseOutFD = InFD != OutFD;
+ 
+-#ifndef _WIN32
++#if !defined(_WIN32) && !defined(__AROS__)
+   // We need to shutdown the socket to wake up (and terminate) any ongoing
+   // blocking read on this FD. If the FD is not a socket, shutdown will just
+   // complain through errno (instead of crashing).
+   // FIXME: what about Windows?
++  // AROS declares the SHUT_* constants but has no shutdown(): bsdsocket.library
++  // is reached through proto/socket.h and a per-task SocketBase. Skipping the
++  // wakeup is the same trade-off already made for Windows above.
+   ::shutdown(InFD, CloseOutFD ? SHUT_RD : SHUT_RDWR);
+ #endif
+   // Close InFD.
+@@ -133,7 +136,7 @@
+ 
+   // Close OutFD.
+   if (CloseOutFD) {
+-#ifndef _WIN32
++#if !defined(_WIN32) && !defined(__AROS__)
+     // FIXME: what about Windows?
+     ::shutdown(OutFD, SHUT_WR);
+ #endif
 diff -ruN llvm-project-23.1.0.src/llvm/lib/ExecutionEngine/Orc/TargetProcess/ExecutorSharedMemoryMapperService.cpp llvm-project-23.1.0.src.aros/llvm/lib/ExecutionEngine/Orc/TargetProcess/ExecutorSharedMemoryMapperService.cpp
 --- llvm-project-23.1.0.src/llvm/lib/ExecutionEngine/Orc/TargetProcess/ExecutorSharedMemoryMapperService.cpp	2026-08-25 20:15:21.000000000 +0100
 +++ llvm-project-23.1.0.src.aros/llvm/lib/ExecutionEngine/Orc/TargetProcess/ExecutorSharedMemoryMapperService.cpp	2026-09-09 15:16:36.237488896 +0100
@@ -1056,7 +1099,15 @@ diff -ruN llvm-project-23.1.0.src/llvm/lib/Support/Unix/Path.inc llvm-project-23
  }
  
  mapped_file_region::mapped_file_region(int fd, mapmode mode, size_t length,
-@@ -913,16 +946,22 @@
+@@ -909,20 +942,30 @@
+ 
+ void mapped_file_region::unmapImpl() {
+   if (Mapping)
++#if defined(__AROS__)
++    std::free(Mapping);
++#else
+     ::munmap(Mapping, Size);
++#endif
  }
  
  std::error_code mapped_file_region::sync() const {
@@ -1080,7 +1131,7 @@ diff -ruN llvm-project-23.1.0.src/llvm/lib/Support/Unix/Path.inc llvm-project-23
      // If we don't have madvise, or it isn't beneficial, treat this as a no-op.
  #elif defined(POSIX_MADV_DONTNEED)
    ::posix_madvise(Mapping, Size, POSIX_MADV_DONTNEED);
-@@ -935,7 +974,7 @@
+@@ -935,7 +978,7 @@
    assert(Mode == mapped_file_region::readonly);
    if (!Mapping)
      return;
@@ -1089,7 +1140,7 @@ diff -ruN llvm-project-23.1.0.src/llvm/lib/Support/Unix/Path.inc llvm-project-23
    // If we don't have madvise, or it isn't beneficial, treat this as a no-op.
  #elif defined(POSIX_MADV_WILLNEED)
    ::posix_madvise(Mapping, Size, POSIX_MADV_WILLNEED);
-@@ -948,7 +987,7 @@
+@@ -948,7 +991,7 @@
    assert(Mode == mapped_file_region::readonly);
    if (!Mapping)
      return;
