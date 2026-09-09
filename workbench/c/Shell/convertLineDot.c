@@ -10,6 +10,15 @@
 
 #include "Shell.h"
 
+static BOOL ensureArguments(ShellState *ss)
+{
+    if (!ss->arguments)
+        ss->arguments = AllocMem(sizeof(*ss->arguments),
+                                 MEMF_LOCAL | MEMF_CLEAR);
+
+    return ss->arguments != NULL;
+}
+
 static LONG getArgumentIdx(ShellState *ss, STRPTR name, LONG len)
 {
     struct SArg *a;
@@ -20,7 +29,7 @@ static LONG getArgumentIdx(ShellState *ss, STRPTR name, LONG len)
 
     for (i = 0; i < ss->argcount; ++i)
     {
-        a = ss->args + i;
+        a = ss->arguments->args + i;
 
         if (a->namelen == len && strncmp(a->name, name, len) == 0)
             return i;
@@ -29,8 +38,11 @@ static LONG getArgumentIdx(ShellState *ss, STRPTR name, LONG len)
     if (ss->argcount >= MAXARGS)
         return -1;
 
+    if (!ensureArguments(ss))
+        return -1;
+
     ss->argcount++;
-    a = ss->args + i;
+    a = ss->arguments->args + i;
     CopyMem(name, a->name, len);
     a->name[len] = '\0';
     a->namelen = len;
@@ -58,7 +70,7 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
         if (i < 0)
             return ERROR_TOO_MANY_ARGS;
 
-        a = ss->args + i;
+        a = ss->arguments->args + i;
         i = ++in->cur;
 
         switch (bufferReadItem(buf, sizeof(buf), in, ss))
@@ -107,10 +119,16 @@ static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in)
 
     /* Free the old ReadArgs value */
     if (ss->arg_rd)
+    {
         FreeDosObject(DOS_RDARGS, ss->arg_rd);
+        ss->arg_rd = NULL;
+    }
 
-    memset(ss->arg, 0, sizeof(IPTR) * MAXARGS);
-    if ((ss->arg_rd = ReadArgs(t, ss->arg, NULL)) == NULL)
+    if (!ensureArguments(ss))
+        return ERROR_NO_FREE_STORE;
+
+    memset(ss->arguments->values, 0, sizeof(ss->arguments->values));
+    if ((ss->arg_rd = ReadArgs(t, ss->arguments->values, NULL)) == NULL)
         return IoErr();
 
     ss->argcount = 0;
@@ -129,8 +147,8 @@ static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in)
         if (j < 0)
             return ERROR_TOO_MANY_ARGS;
 
-        arg = (STRPTR) ss->arg[j];
-        a = ss->args + j;
+        arg = (STRPTR) ss->arguments->values[j];
+        a = ss->arguments->args + j;
 
         while (*s == '/')
         {

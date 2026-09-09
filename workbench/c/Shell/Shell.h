@@ -138,6 +138,7 @@ void cliPrompt(ShellState *ss);
  * FIXME: some doc ?
  */
 void initDefaultInterpreterState(ShellState *ss);
+void freeInterpreterState(ShellState *ss);
 void popInterpreterState(ShellState *ss);
 LONG pushInterpreterState(ShellState *ss);
 
