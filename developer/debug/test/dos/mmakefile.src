@@ -37,6 +37,7 @@ FILES := \
     readitem \
     readitemloop \
     runcommand \
+    run_redirection \
     rwverify \
     scantest \
     scanvarstest \

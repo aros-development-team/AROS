@@ -1,0 +1,46 @@
+Run redirection regression
+==========================
+
+run_redirection takes an explicit path to a standalone Run executable.
+Build it through test-dos-common, or directly with the AROS target compiler.
+Build Run.c in standalone form with -nostartfiles -static and an ADATE string.
+Do not replace the installed/resident command for this test.
+
+    run_redirection RAM:Run-fixed
+
+The probe creates a unique directory in RAM:, verifies a successful launch
+and exact output for both > and >>, including a pre-existing PREFIX line.
+It waits up to 250 ticks for each asynchronous Echo. On success it removes
+its files and empty directory; after failure it retains them, without
+reusing a possibly still-active background command's output pathname.
+
+The unmodified Run is expected to fail these output checks on the tested
+RAM-handler. Comparing baseline/fixed executables by explicit path avoids
+accidentally running a resident command instead of the patched binary.
+
+Fault injection (host only)
+---------------------------
+From this directory:
+
+    cc -std=c99 -Wall -Wextra -Werror -fsanitize=address,undefined \
+       run_handle_host.c -o /tmp/run_handle_host
+    /tmp/run_handle_host
+
+This compiles the actual production run_handle.h with DOS boundary doubles.
+It checks source seek failures and unrepresentable positions, unsupported
+seeks, exclusive-to-shared retry, failed OpenFromLock cleanup, failed copy
+seek cleanup, and interactive handles. It is not a native handler test or
+allocation-failure test of the entire Run command.
+
+Compatibility limits
+--------------------
+The duplication helper uses the existing LONG-based Seek API. Negative
+positions other than -1/ERROR_ACTION_NOT_KNOWN are rejected rather than
+silently reopening a seekable output at offset zero. Positions above
+LONG_MAX are not supported by this path. Only interactive handles and
+explicitly unsupported Seek operations are duplicated without a position.
+
+Exclusive output is changed to SHARED_LOCK only after DupLockFromFH reports
+ERROR_OBJECT_IN_USE. That mode change is not rolled back if a later operation
+fails. Concurrent append atomicity, other filesystems and allocation-failure
+injection across the entire Shell launch are outside this regression.
