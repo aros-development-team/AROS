@@ -10,6 +10,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <oop/oop.h>
 
 #define RP1_PCIE_VENDOR_ID      0x1DE4
 #define RP1_PCIE_DEVICE_ID      0x0001
@@ -34,8 +35,10 @@ struct RP1Base {
     BOOL            rp1_Present;
     IPTR            rp1_BAR1;       /* PCIe BAR1 base address */
 
-    /* Added to a CPU address to get the bus address a master must use. */
-    IPTR            rp1_DMAOffset;
+    /* RP1 as pci.hidd sees it, and the root complex it hangs off - which
+       is what translates DMA addresses for anything behind RP1. */
+    OOP_Object     *rp1_PCIDevice;
+    OOP_Object     *rp1_PCIDriver;
 
     /* GIC INTIDs the xHCI controllers signal on, 0 if MSI is not up. */
     ULONG           rp1_USBIrq0;

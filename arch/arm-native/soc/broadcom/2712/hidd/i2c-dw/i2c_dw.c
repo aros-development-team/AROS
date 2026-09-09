@@ -11,6 +11,8 @@
 #include <proto/kernel.h>
 #include <hidd/i2c.h>
 
+#include "rp1.h"
+
 #include "i2c_dw.h"
 
 #include LC_LIBDEFS_FILE
@@ -94,8 +96,7 @@ void METHOD(I2CDW, Hidd_I2C, WriteRead)
 static int I2CDW_Init(LIBBASETYPEPTR LIBBASE)
 {
     IPTR base;
-    struct Library *rp1base;
-    IPTR *fields;
+    struct RP1Base *rp1;
 
     D(bug("[I2C-DW] Init\n"));
 
@@ -109,16 +110,12 @@ static int I2CDW_Init(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    rp1base = OpenResource("rp1.resource");
-    if (!rp1base)
+    rp1 = OpenResource("rp1.resource");
+    if (!rp1 || !rp1->rp1_Present)
         return FALSE;
 
-    fields = (IPTR *)((UBYTE *)rp1base + sizeof(struct Library));
-    if (!fields[0])
-        return FALSE;
-
-    /* Use I2C1 (GPIO 2/3 on header) at BAR1 + 0x074000 */
-    base = fields[1] + 0x074000;
+    /* I2C1 is the one on GPIO 2/3 of the header */
+    base = rp1->rp1_I2C1;
     LIBBASE->i2c_RegBase = base;
 
     D(bug("[I2C-DW] DesignWare I2C at 0x%p\n", base));

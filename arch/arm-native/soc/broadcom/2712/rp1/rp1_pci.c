@@ -36,7 +36,7 @@
 
 /*
  * The xHCI blocks are not PCI functions of their own; they sit in RP1's
- * BAR1 window, which rp1.resource has already mapped.  Each is given a
+ * BAR1 window, which rp1.resource had the root complex map.  Each is given a
  * synthetic type 0 header at 00:0n.0, so pcixhci finds them like any
  * other controller.  The BAR holds the CPU address.
  */
@@ -151,20 +151,22 @@ VOID PCIRP1__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o, struc
     WriteConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
 }
 
-/* The BAR is a CPU address inside the window rp1.resource mapped. */
+/* The BAR is a CPU address inside the already mapped BAR1 window. */
 APTR PCIRP1__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDriver_MapPCI *msg)
 {
     return msg->PCIAddress;
 }
 
+/* A master inside RP1 goes through the root complex's inbound windows, so
+   the bridge answers these; the message is the same interface's. */
 APTR PCIRP1__Hidd_PCIDriver__CPUtoPCI(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDriver_CPUtoPCI *msg)
 {
-    return (APTR)((IPTR)msg->address + PSD(cl)->dma_offset);
+    return (APTR)OOP_DoMethod(PSD(cl)->bridge, (OOP_Msg)msg);
 }
 
 APTR PCIRP1__Hidd_PCIDriver__PCItoCPU(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDriver_PCItoCPU *msg)
 {
-    return (APTR)((IPTR)msg->address - PSD(cl)->dma_offset);
+    return (APTR)OOP_DoMethod(PSD(cl)->bridge, (OOP_Msg)msg);
 }
 
 /*
@@ -244,7 +246,7 @@ static int PCIRP1_Init(LIBBASETYPEPTR LIBBASE)
     if (!psd->kernelBase || !psd->hiddAB)
         return FALSE;
 
-    psd->dma_offset = rp1->rp1_DMAOffset;
+    psd->bridge = rp1->rp1_PCIDriver;
 
     base[0] = rp1->rp1_USB0;
     base[1] = rp1->rp1_USB1;

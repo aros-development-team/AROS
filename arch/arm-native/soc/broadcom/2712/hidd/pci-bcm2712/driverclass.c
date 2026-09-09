@@ -132,7 +132,7 @@ ULONG PCIE_ReadConfig(struct PCIBcm2712Data *data, UBYTE bus, UBYTE dev, UBYTE s
          * Nothing ever wrote the endpoint's interrupt line field, so report
          * where the bridge actually raises INTx instead.
          */
-        if ((reg & 0xffc) == PCI_INTLINE && data->intx_irq && val != 0xffffffff)
+        if ((reg & 0xffc) == PCICS_INT_LINE && data->intx_irq && val != 0xffffffff)
             val = (val & ~0xffUL) | data->intx_irq;
     }
 
@@ -154,9 +154,9 @@ static BOOL ConfigWriteAllowed(struct PCIBcm2712Data *data, UWORD reg)
 
     reg &= 0xffc;
 
-    if ((reg >= PCI_BAR0) && (reg < PCI_BAR0 + 6 * 4))
+    if ((reg >= PCICS_BAR0) && (reg < PCICS_BAR0 + 6 * 4))
         return FALSE;
-    if (reg == PCI_ROMBASE)
+    if (reg == PCICS_EXPROM_BASE)
         return FALSE;
 
     return TRUE;
@@ -407,10 +407,10 @@ static ULONG FindCapability(struct PCIBcm2712Data *bridge, UBYTE bus, UBYTE dev,
 {
     ULONG cap, guard;
 
-    if (!((PCIE_ReadConfig(bridge, bus, dev, sub, PCI_CMD) >> 16) & PCISTF_CAPABILITIES))
+    if (!((PCIE_ReadConfig(bridge, bus, dev, sub, PCICS_COMMAND) >> 16) & PCISTF_CAPABILITIES))
         return 0;
 
-    cap = PCIE_ReadConfig(bridge, bus, dev, sub, PCI_CAP_PTR) & 0xfc;
+    cap = PCIE_ReadConfig(bridge, bus, dev, sub, PCICS_CAP_PTR) & 0xfc;
 
     for (guard = 48; cap && guard; guard--)
     {
@@ -425,23 +425,26 @@ static ULONG FindCapability(struct PCIBcm2712Data *bridge, UBYTE bus, UBYTE dev,
     return 0;
 }
 
+/* One bit per message in a run; count may be the whole block. */
+static uint64_t VectorMask(ULONG first, ULONG count)
+{
+    uint64_t bits = (count >= 64) ? ~0ULL : ((1ULL << count) - 1);
+
+    return bits << first;
+}
+
 /* Reserve a run of messages, returning the first or -1. */
 static LONG AllocVectors(struct PCIBcm2712Data *bridge, ULONG count)
 {
-    ULONG first, i;
+    ULONG first;
 
     for (first = 0; first + count <= bridge->msi_count; first++)
     {
-        for (i = 0; i < count; i++)
-        {
-            if (bridge->msi_used & (1UL << (first + i)))
-                break;
-        }
+        uint64_t mask = VectorMask(first, count);
 
-        if (i == count)
+        if (!(bridge->msi_used & mask))
         {
-            for (i = 0; i < count; i++)
-                bridge->msi_used |= (1UL << (first + i));
+            bridge->msi_used |= mask;
             return (LONG)first;
         }
     }
@@ -460,10 +463,10 @@ static BOOL SetupMSIX(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridg
                       ULONG first, ULONG count)
 {
     struct PCIBcm2712DevData *data = OOP_INST_DATA(cl, o);
-    ULONG tbl = PCIE_ReadConfig(bridge, bus, dev, sub, cap + PCI_MSIX_TABLE);
+    ULONG tbl = PCIE_ReadConfig(bridge, bus, dev, sub, cap + PCIMSIX_TABLE);
     ULONG ctrl = PCIE_ReadConfig(bridge, bus, dev, sub, cap);
-    ULONG bir = tbl & PCI_MSIX_TABLE_BIR_MASK;
-    ULONG size = ((ctrl & PCI_MSIX_CTRL_SIZE_MASK) >> 16) + 1;
+    ULONG bir = tbl & PCIMSIXF_BIRMASK;
+    ULONG size = (((ctrl >> 16) & PCIMSIXF_QSIZE) + 1);
     uint64_t bar;
     volatile uint32_t *table;
     ULONG i;
@@ -475,9 +478,9 @@ static BOOL SetupMSIX(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridg
         return FALSE;
     }
 
-    bar = PCIE_ReadConfig(bridge, bus, dev, sub, PCI_BAR0 + bir * 4) & ~0xfUL;
-    if ((PCIE_ReadConfig(bridge, bus, dev, sub, PCI_BAR0 + bir * 4) & 0x06) == 0x04)
-        bar |= (uint64_t)PCIE_ReadConfig(bridge, bus, dev, sub, PCI_BAR0 + bir * 4 + 4) << 32;
+    bar = PCIE_ReadConfig(bridge, bus, dev, sub, PCICS_BAR0 + bir * 4) & ~0xfUL;
+    if ((PCIE_ReadConfig(bridge, bus, dev, sub, PCICS_BAR0 + bir * 4) & 0x06) == 0x04)
+        bar |= (uint64_t)PCIE_ReadConfig(bridge, bus, dev, sub, PCICS_BAR0 + bir * 4 + 4) << 32;
 
     if (!bar)
         return FALSE;
@@ -486,8 +489,8 @@ static BOOL SetupMSIX(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridg
     {
         struct pHidd_PCIDriver_MapPCI mapmsg = {
             .mID        = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI),
-            .PCIAddress = (APTR)(IPTR)(bar + (tbl & PCI_MSIX_TABLE_OFF_MASK)),
-            .Length     = (first + count) * PCI_MSIX_ENTRY_SIZE,
+            .PCIAddress = (APTR)(IPTR)(bar + (tbl & ~(ULONG)PCIMSIXF_BIRMASK)),
+            .Length     = (first + count) * PCIMSIX_ENTRY_SIZE,
         };
         IPTR drv = 0;
 
@@ -508,7 +511,8 @@ static BOOL SetupMSIX(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridg
         e[3] = 0;                       /* unmasked */
     }
 
-    PCIE_WriteConfig(bridge, bus, dev, sub, cap, ctrl | PCI_MSIX_CTRL_ENABLE);
+    PCIE_WriteConfig(bridge, bus, dev, sub, cap,
+                     (ctrl & 0xffff) | ((ULONG)(((ctrl >> 16) | PCIMSIXF_ENABLE)) << 16));
 
     data->msix = TRUE;
     return TRUE;
@@ -525,24 +529,27 @@ static BOOL SetupMSI(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridge
 {
     struct PCIBcm2712DevData *data = OOP_INST_DATA(cl, o);
     ULONG head = PCIE_ReadConfig(bridge, bus, dev, sub, cap);
-    ULONG datareg = (head & PCI_MSI_CTRL_64BIT) ? PCI_MSI_DATA64 : PCI_MSI_DATA32;
+    UWORD ctrl = (UWORD)(head >> 16);
+    ULONG datareg = (ctrl & PCIMSIF_64BIT) ? PCIMSI_DATA64 : PCIMSI_DATA32;
 
-    if (!(head & PCI_MSI_CTRL_64BIT) && (bridge->msi_target >> 32))
+    if (!(ctrl & PCIMSIF_64BIT) && (bridge->msi_target >> 32))
     {
         D(bug("[PCIBcm2712] the doorbell is above 4GB and this function is 32 bit only\n"));
         return FALSE;
     }
 
-    PCIE_WriteConfig(bridge, bus, dev, sub, cap + PCI_MSI_ADDRESSLO,
+    PCIE_WriteConfig(bridge, bus, dev, sub, cap + PCIMSI_ADDRESSLO,
                      (ULONG)bridge->msi_target);
-    if (head & PCI_MSI_CTRL_64BIT)
-        PCIE_WriteConfig(bridge, bus, dev, sub, cap + PCI_MSI_ADDRESSHI,
+    if (ctrl & PCIMSIF_64BIT)
+        PCIE_WriteConfig(bridge, bus, dev, sub, cap + PCIMSI_ADDRESSHI,
                          (ULONG)(bridge->msi_target >> 32));
     PCIE_WriteConfig(bridge, bus, dev, sub, cap + datareg, first);
 
     /* One message, enabled. */
-    head &= ~PCI_MSI_CTRL_MME_MASK;
-    PCIE_WriteConfig(bridge, bus, dev, sub, cap, head | PCI_MSI_CTRL_ENABLE);
+    /* One message, enabled: 6:4 is ours to set, 3:1 is read only. */
+    ctrl = (ctrl & ~PCIMSIF_MMEN_MASK) | PCIMSIF_ENABLE;
+    PCIE_WriteConfig(bridge, bus, dev, sub, cap,
+                     (head & 0xffff) | ((ULONG)ctrl << 16));
 
     data->msix = FALSE;
     return TRUE;
@@ -573,18 +580,18 @@ BOOL PCIBcm2712Dev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
     OOP_GetAttr(o, aHidd_PCIDevice_Dev, &dev);
     OOP_GetAttr(o, aHidd_PCIDevice_Sub, &sub);
 
-    if ((cap = FindCapability(bridge, bus, dev, sub, PCI_CAP_ID_MSIX)) != 0)
+    if ((cap = FindCapability(bridge, bus, dev, sub, PCICAP_MSIX)) != 0)
     {
         if ((first = AllocVectors(bridge, want)) < 0)
             return FALSE;
 
         if (!SetupMSIX(cl, o, bridge, bus, dev, sub, cap, first, want))
         {
-            bridge->msi_used &= ~(((1UL << want) - 1) << first);
+            bridge->msi_used &= ~VectorMask(first, want);
             return FALSE;
         }
     }
-    else if ((cap = FindCapability(bridge, bus, dev, sub, PCI_CAP_ID_MSI)) != 0)
+    else if ((cap = FindCapability(bridge, bus, dev, sub, PCICAP_MSI)) != 0)
     {
         want = 1;
         if ((first = AllocVectors(bridge, 1)) < 0)
@@ -592,7 +599,7 @@ BOOL PCIBcm2712Dev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
 
         if (!SetupMSI(cl, o, bridge, bus, dev, sub, cap, first))
         {
-            bridge->msi_used &= ~(1UL << first);
+            bridge->msi_used &= ~VectorMask(first, 1);
             return FALSE;
         }
     }
@@ -630,13 +637,13 @@ VOID PCIBcm2712Dev__Hidd_PCIDevice__ReleaseVectors(OOP_Class *cl, OOP_Object *o,
     if (data->msix)
         PCIE_WriteConfig(bridge, bus, dev, sub, data->cap,
                          PCIE_ReadConfig(bridge, bus, dev, sub, data->cap) &
-                         ~PCI_MSIX_CTRL_ENABLE);
+                         ~((ULONG)PCIMSIXF_ENABLE << 16));
     else
         PCIE_WriteConfig(bridge, bus, dev, sub, data->cap,
                          PCIE_ReadConfig(bridge, bus, dev, sub, data->cap) &
-                         ~PCI_MSI_CTRL_ENABLE);
+                         ~((ULONG)PCIMSIF_ENABLE << 16));
 
-    bridge->msi_used &= ~(((1UL << data->nvectors) - 1) << first);
+    bridge->msi_used &= ~VectorMask(first, data->nvectors);
     data->firstVector = 0;
     data->nvectors = 0;
 }
