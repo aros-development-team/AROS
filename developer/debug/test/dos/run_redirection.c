@@ -10,13 +10,28 @@ int main(int argc, char **argv)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
     char directory[120], path[2][160], command[500], data[128];
-    const char *expected[2] = {"RUN_REDIRECT_OK\n", "PREFIX\nRUN_REDIRECT_OK\n"};
-    BPTR lock, file;
+    static const char overwrite[] = "RUN_REDIRECT_OK\n";
+    static const char append[] = "PREFIX\nRUN_REDIRECT_OK\n";
+    const char *expected[2] = {overwrite, append};
+    const size_t expected_length[2] = {sizeof overwrite - 1, sizeof append - 1};
+    BPTR file;
     unsigned attempt, round, ticks;
-    LONG result, count;
-    int all_ok = 1, matched;
+    size_t argument_length = 0;
+    LONG count;
+    int all_ok = 1;
 
-    if (argc != 2 || strlen(argv[1]) > 240 || strpbrk(argv[1], "\"*\r\n"))
+    /* Validate the bounded command argument before formatting it as a string. */
+    if (argc == 2)
+    {
+        while (argument_length < 241 && argv[1][argument_length])
+        {
+            char c = argv[1][argument_length];
+            if (c == '"' || c == '*' || c == '\r' || c == '\n')
+                break;
+            ++argument_length;
+        }
+    }
+    if (argc != 2 || argument_length > 240 || argv[1][argument_length])
     {
         puts("Usage: run_redirection <explicit standalone Run executable>");
         return RETURN_FAIL;
@@ -24,6 +39,7 @@ int main(int argc, char **argv)
     /* CreateDir is the ownership boundary. Never truncate a pre-existing file. */
     for (attempt = 0; attempt < 100; ++attempt)
     {
+        BPTR lock;
         snprintf(directory, sizeof directory, "RAM:run-redirection-%lu-%u",
                  (unsigned long)me->pr_TaskNum, attempt);
         lock = CreateDir((CONST_STRPTR)directory);
@@ -36,7 +52,8 @@ int main(int argc, char **argv)
 
     for (round = 0; round < 2; ++round)
     {
-        matched = 0;
+        LONG result;
+        int matched = 0;
         if (round)
         {
             file = Open((CONST_STRPTR)path[round], MODE_NEWFILE);
@@ -57,7 +74,7 @@ int main(int argc, char **argv)
                 if (count >= 0)
                 {
                     data[count] = 0;
-                    if ((size_t)count == strlen(expected[round]) &&
+                    if ((size_t)count == expected_length[round] &&
                         !memcmp(data, expected[round], (size_t)count))
                     { matched = 1; break; }
                 }
