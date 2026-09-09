@@ -6,97 +6,12 @@
 
 #include <unistd.h>
 
-#include <devices/conunit.h>
-#include <dos/dosextens.h>
 #include <sys/ioctl.h>
-#include <proto/dos.h>
 
 #include <errno.h>
 
 #include <libraries/fd.h>
 #include "__fdesc.h"
-
-static int send_action_packet(struct MsgPort *port, BPTR arg)
-{
-    struct MsgPort *replyport;
-    struct StandardPacket *packet;
-    SIPTR ret;
-
-    replyport = CreatePort(NULL,0L);
-    if(!replyport)
-    {
-        return 0;
-    }
-    packet = (struct StandardPacket *) AllocMem(sizeof(struct StandardPacket),
-                                                MEMF_PUBLIC|MEMF_CLEAR);
-    if(!packet)
-    {
-        DeletePort(replyport);
-        return 0;
-    }
-
-    packet->sp_Msg.mn_Node.ln_Name = (char *)&(packet->sp_Pkt);
-    packet->sp_Pkt.dp_Link         = &(packet->sp_Msg);
-    packet->sp_Pkt.dp_Port         = replyport;
-    packet->sp_Pkt.dp_Type         = ACTION_DISK_INFO;
-    packet->sp_Pkt.dp_Arg1         = (SIPTR) arg;
-
-    PutMsg(port, (struct Message *) packet);
-    WaitPort(replyport);
-    GetMsg(replyport);
-
-    ret = packet->sp_Pkt.dp_Res1;
-
-    FreeMem(packet, sizeof(struct StandardPacket));
-    DeletePort(replyport);
-
-    return ret;
-}
-
-static int fill_consize(APTR fd, struct winsize *ws)
-{
-    struct ConUnit *console_unit = NULL;
-    struct InfoData *info_data;
-    BPTR action_disk_info_arg;
-    void *console = ((struct FileHandle *) BADDR(fd))->fh_Type;
-
-    if(!console)
-    {
-        return 0;
-    }
-
-    info_data = AllocMem(sizeof(*info_data), MEMF_PUBLIC);
-    if(info_data == NULL)
-    {
-        /* no memory, ouch */
-        return 0;
-    }
-
-    action_disk_info_arg = MKBADDR(info_data);
-    if(send_action_packet((struct MsgPort *) console, action_disk_info_arg))
-    {
-        console_unit = (void *) ((struct IOStdReq *) info_data->id_InUse)->io_Unit;
-    }
-
-    /* info_data not required anymore */
-    FreeMem(info_data, sizeof(*info_data));
-
-    if (console_unit == NULL)
-    {
-        return 0;
-    }
-
-    ws->ws_row    = (unsigned short) console_unit->cu_YMax+1;
-    ws->ws_col    = (unsigned short) console_unit->cu_XMax+1;
-    if(console_unit->cu_Window)
-    {
-        /* does a console always have a window? might be iconified? */
-        ws->ws_xpixel = (unsigned short) console_unit->cu_Window->Width;
-        ws->ws_ypixel = (unsigned short) console_unit->cu_Window->Height;
-    }
-
-    return 1;
-}
 
 /*****************************************************************************
 
@@ -127,12 +42,17 @@ static int fill_consize(APTR fd, struct winsize *ws)
         ...     - Other arguments for the specified request
 
     RESULT
-        EBADF   - fd is not valid
-        EFAULT  - no valid argument
-        ENOTTY  - fd is not of required type
+        DOS handles return -1 with errno set to EBADF (invalid descriptor)
+        or ENOTTY (unsupported operation). Foreign hooks define their own
+        return values and errors.
 
     NOTES
-        Width and height are the width and height of the intuition window.
+        DOS terminal geometry is currently unsupported. ACTION_DISK_INFO
+        does not provide a validated geometry contract: mainline CON stores
+        a use count in id_InUse, not a console.device IO request pointer.
+        See rom/filesys/console_handler/con_handler.c, ACTION_DISK_INFO:
+        id->id_InUse = fh->usecount;
+        Foreign descriptor hooks retain their own request handling.
 
     EXAMPLE
         #include <stdio.h>
@@ -157,7 +77,8 @@ static int fill_consize(APTR fd, struct winsize *ws)
         }
 
     BUGS
-        Only the requests listed above are implemented.
+        TIOCGWINSZ on DOS handles returns ENOTTY until a terminal-control
+        protocol is available. The output structure is left unchanged.
 
     SEE ALSO
 
@@ -165,13 +86,11 @@ static int fill_consize(APTR fd, struct winsize *ws)
 
 ******************************************************************************/
 {
-    va_list args;
-    struct winsize *ws;
-    fdesc *desc;
+    fdesc *desc = __getfdesc(fd);
 
     /* Descriptor owned by another subsystem (e.g. a bsdsocket socket):
        dispatch the ioctl (FIONBIO/FIONREAD/...) through its hook. */
-    if (__getfdesc(fd) == NULL)
+    if (desc == NULL)
     {
         APTR data;
         const struct fd_hooks *hooks = __getfdhooks(fd, &data);
@@ -192,40 +111,18 @@ static int fill_consize(APTR fd, struct winsize *ws)
                 errno = err;
             return r;
         }
+        errno = hooks ? ENOTTY : EBADF;
+        return -1;
     }
 
-    if(request != TIOCGWINSZ)
+    if (!desc->fcb)
     {
-        /* FIXME: Implement missing ioctl() parameters */
-        AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
-        errno = ENOSYS;
-        return EFAULT;
+        errno = EBADF;
+        return -1;
     }
-
-    switch(fd)
-    {
-        case STDIN_FILENO:  desc=BADDR(Input());
-           break;
-        case STDOUT_FILENO: desc=BADDR(Output());
-           break;
-        default:
-           desc=__getfdesc(fd); /* FIXME: is this correct? why does it not work for STDOUT/STDIN? */
-    }
-
-    if(!desc || !IsInteractive(desc))
-    {
-        return EBADF;
-    }
-
-    va_start(args, request);
-    ws=(struct winsize *) va_arg(args, struct winsize *);
-    va_end(args);
-
-    if(!ws || !fill_consize(desc, ws))
-    {
-        return EFAULT;
-    }
-
-    return 0;
+    /* Never reinterpret handler-private InfoData fields as pointers.
+       No DOS request is supported here yet, so do not consume its varargs
+       or inspect its handle (which may be a directory FileLock). */
+    errno = ENOTTY;
+    return -1;
 }
-

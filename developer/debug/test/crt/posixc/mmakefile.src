@@ -15,6 +15,7 @@ POSIXCTESTFILES := \
         flock \
         getfsstat \
         getpass \
+        ioctl_tty \
         lseek \
         mnt_names \
         open \
@@ -141,4 +142,3 @@ USER_CPPFLAGS = -D_XOPEN_SOURCE=700
 
 %build_progs mmake=test-crt-posixc-2k8 \
     files="$(POSIXC2K8TESTFILES)" targetdir=$(EXEDIR)
-
