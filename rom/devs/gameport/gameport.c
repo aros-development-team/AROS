@@ -185,8 +185,7 @@ static int GM_UNIQUENAME(open)
     
     if (GPBase->gp_eventBuffer == NULL)
     {
-        GPBase->gp_eventBuffer = AllocMem(sizeof(UWORD) * GP_BUFFERSIZE,
-                                          MEMF_ANY);
+        GPBase->gp_eventBuffer = AllocMem(GP_BUFFER_BYTES, MEMF_ANY);
     }
     
     /* No memory for key buffer? */
