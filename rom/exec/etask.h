@@ -2,7 +2,7 @@
 #define _ETASK_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal description of the ETask structure
@@ -48,14 +48,18 @@ struct IntETask
     struct timespec     iet_StartTime;          /* time the task was launched              */
     struct timespec     iet_CpuTime;            /* time the task has spent running         */
     ULONG               iet_CpuUsage;           /* CPU Usage of this task                  */
+#ifndef __mc68000
     UQUAD               iet_private1;
     UQUAD               iet_private2;
+#endif
     ULONG               iet_AlertCode;          /* Alert code for crash handler            */
     UBYTE               iet_AlertType;          /* Type of the alert context               */
     UBYTE               iet_AlertFlags;         /* See below                               */
     APTR                iet_AlertLocation;      /* Alert location for crash handler        */
     APTR                iet_AlertStack;         /* Frame pointer for stack backtrace       */
+#ifndef __mc68000
     struct AlertContext iet_AlertData;          /* Extra data coming with the crash        */
+#endif
 #if defined(__AROSEXEC_SMP__)
     void                *iet_Session;
     spinlock_t          iet_TaskLock;
@@ -63,10 +67,12 @@ struct IntETask
     cpumask_t           *iet_CpuAffinity;        /* bitmap of cores this task can run on    */
     spinlock_t          *iet_SpinLock;          /* pointer to spinlock task is spinning on */
 #endif
+#ifndef __mc68000
     /* Last CPU-usage sample, for arches that sweep iet_CpuUsage. */
     UQUAD               iet_LastBusy;           /* iet_private2 at the last sample         */
     UQUAD               iet_LastUsageStamp;     /* when that sample was taken              */
     ULONG               iet_QuantumLeft;        /* scheduler ticks left of this task's slice */
+#endif
 #ifdef DEBUG_ETASK
     STRPTR              iet_Me;
 #endif
@@ -74,6 +80,13 @@ struct IntETask
 
 #define GetIntETask(task)   ((struct IntETask *)GetETask(task))
 #define IntETask(etask)     ((struct IntETask *)(etask))
+#ifdef __mc68000
+/* Integer task state lives on the task stack, leaving this context available
+ * to retain alert details while the failed task is stopped. */
+#define ETaskAlertData(iet) ((struct AlertContext *)(iet)->iet_ETask.et_RegFrame)
+#else
+#define ETaskAlertData(iet) (&(iet)->iet_AlertData)
+#endif
 
 /* iet_AlertFlags */
 #define AF_Alert    0x01    /* The task is in alert state      */
