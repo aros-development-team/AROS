@@ -246,7 +246,7 @@ linklibs-gallium_v3d-gca : $(top_libdir)/libgallium_v3d_gca.a
 
 USER_LDFLAGS := -L$(top_libdir) -lstdcio -lstdc
 
-#MM hidd-v3d: includes hidd-gallium mesa3dgl-linklibs linklibs-gallium_v3d linklibs-gallium_v3d-gca
+#MM hidd-v3d: includes kernel-mbox-bcm2708-includes hidd-gallium mesa3dgl-linklibs linklibs-gallium_v3d linklibs-gallium_v3d-gca
 
 %build_module mmake=hidd-v3d modname=v3d modtype=hidd \
     files="$(V3D_HIDD_SOURCES)" alwayscxxlink=yes \
