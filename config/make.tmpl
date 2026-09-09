@@ -3273,7 +3273,7 @@ ifneq (%(cxxfiles),)
     $(error cxx support is TODO)
 endif
 
-%buildid targets="%(mainmmake)-%(arch)"
+%buildid targets="%(mainmmake)-%(arch) %(mainmmake)-%(arch)-quick %(mainmmake)-%(arch)-linklib"
 
 #MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-includes
 #MM %(mainmmake)-%(arch)-linklib : %(mainmmake)-%(arch)-includes
