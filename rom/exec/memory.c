@@ -1105,19 +1105,46 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
                 /* Align the size up to page boundary */
                 puddleSize = (puddleSize + align) & ~align;
             }
-            else if (head->ln_Succ && head->ln_Succ->ln_Succ == NULL)
+            else
             {
+                struct MemHeader *puddle;
+                IPTR neededSize;
+
                 /*
-                 * Slow start: the only list entry is the pool's header
-                 * block, so this is the pool's first data puddle. Many
-                 * pools only ever hold a handful of small allocations;
-                 * size the first puddle for the request instead of
-                 * committing a full puddleSize up front. Pools that
-                 * keep allocating get full-size puddles from the
-                 * second one on.
+                 * Grow small pools gradually.  A large default puddle is a
+                 * useful steady-state size, but committing all of it on the
+                 * second small allocation wastes a considerable amount of
+                 * memory in pools which only ever contain a few objects.
+                 *
+                 * Derive the next size from existing puddles rather than
+                 * adding growth state to the pool header.  Only puddles with
+                 * compatible physical attributes participate because pools
+                 * are allowed to mix, for example, CHIP and FAST memory.
                  */
-                puddleSize = memSize + MEMHEADER_TOTAL + mhac_GetCtxSize();
-                puddleSize = (puddleSize + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL - 1);
+                neededSize = memSize + MEMHEADER_TOTAL + mhac_GetCtxSize();
+                neededSize = (neededSize + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL - 1);
+
+                puddleSize = neededSize;
+                for (puddle = (struct MemHeader *)head;
+                     puddle->mh_Node.ln_Succ != NULL;
+                     puddle = (struct MemHeader *)puddle->mh_Node.ln_Succ)
+                {
+                    IPTR oldSize;
+
+                    if ((APTR)puddle == poolHeader ||
+                        (physFlags & ~puddle->mh_Attributes))
+                        continue;
+
+                    oldSize = (IPTR)puddle->mh_Upper - (IPTR)puddle;
+                    if (oldSize < pool->pool.PuddleSize &&
+                        oldSize > puddleSize / 2)
+                        puddleSize = oldSize * 2;
+                }
+
+                if (puddleSize > pool->pool.PuddleSize)
+                    puddleSize = pool->pool.PuddleSize;
+                if (puddleSize < neededSize)
+                    puddleSize = neededSize;
             }
 
             mh = AllocMemHeader(puddleSize, flags, loc, SysBase);
