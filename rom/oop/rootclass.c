@@ -107,13 +107,16 @@
 OOP_Object *root_new(OOP_Class *root_cl, OOP_Class *cl, struct pRoot_New *param)
 {
     struct _OOP_Object *o;
+    ULONG size;
 
     EnterFunc(bug("Root::New(cl=%s, param = %p)\n",
         cl->ClassNode.ln_Name, param));
     
     /* Allocate memory for the object */
-    D(bug("Object size: %ld\n", MD(cl)->public.InstOffset + MD(cl)->instsize + sizeof (struct _OOP_Object)));
-    o = AllocVec(MD(cl)->public.InstOffset + MD(cl)->instsize + sizeof (struct _OOP_Object), MEMF_ANY|MEMF_CLEAR);
+    size = MD(cl)->public.InstOffset + MD(cl)->instsize
+        + sizeof(struct _OOP_Object);
+    D(bug("Object size: %ld\n", size));
+    o = AllocMem(size, MEMF_ANY | MEMF_CLEAR);
     if (o)
     {
         D(bug("Mem allocated: %p\n", o));
@@ -133,13 +136,17 @@ OOP_Object *root_new(OOP_Class *root_cl, OOP_Class *cl, struct pRoot_New *param)
 ****************/
 static VOID root_dispose(OOP_Class *root_cl, OOP_Object *o, OOP_Msg msg)
 {
+    OOP_Class *cl = OOP_OCLASS(o);
+    ULONG size = MD(cl)->public.InstOffset + MD(cl)->instsize
+        + sizeof(struct _OOP_Object);
+
     EnterFunc(bug("Root::Dispose(o=%p, oclass=%s)\n", o, _OOP_OBJECT(o)->o_Class->ClassNode.ln_Name));
 
-    AROS_ATOMIC_DEC(MD(OOP_OCLASS(o))->objectcount);
-    D(bug("Object mem: %p, size: %ld\n", _OOP_OBJECT(o), ((ULONG *)_OOP_OBJECT(o))[-1] ));
+    AROS_ATOMIC_DEC(MD(cl)->objectcount);
+    D(bug("Object mem: %p, size: %ld\n", _OOP_OBJECT(o), size));
     
     /* Free object's memory */
-    FreeVec(_OOP_OBJECT(o));
+    FreeMem(_OOP_OBJECT(o), size);
     
     ReturnVoid("Root::Dispose");
 }
@@ -243,5 +250,3 @@ static IPTR root_coercemethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 }
 
 */
-
-
