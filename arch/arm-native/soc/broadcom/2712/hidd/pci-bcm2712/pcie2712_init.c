@@ -28,6 +28,7 @@
 #include <proto/kernel.h>
 
 #include <aros/macros.h>
+#include <hardware/pci.h>
 
 #include <string.h>
 
@@ -453,7 +454,7 @@ static void SetupOutbound(struct PCIBcm2712Data *data)
     wr32(data->regs, PCIE_MISC_CPU_2_PCIE_MEM_WIN0_LIMIT_HI, (uint32_t)(cpu_limit >> 32));
 
     /* Forward it through the bridge's own header as well */
-    wr32(data->regs, PCI_MEMBASE,
+    wr32(data->regs, PCIBR_MEMBASE,
          (((uint32_t)(cpu_limit >> 16) << 16) & 0xfff00000) |
          ((uint32_t)(pci_base >> 16) & 0xfff0));
 }
@@ -490,7 +491,7 @@ static void SetupInbound(struct PCIBcm2712Data *data)
         wr32(data->regs, PCIE_MISC_RC_BAR1_CONFIG_HI + i * 8, (uint32_t)(pci_base >> 32));
 
         wr32(data->regs, PCIE_MISC_UBUS_BAR1_CONFIG_REMAP_LO + i * 8,
-             (uint32_t)cpu_base | PCIE_MISC_UBUS_BAR1_CONFIG_REMAP_EN);
+             (uint32_t)cpu_base | PCIE_MISC_UBUS_REMAP_EN);
         wr32(data->regs, PCIE_MISC_UBUS_BAR1_CONFIG_REMAP_HI + i * 8, (uint32_t)(cpu_base >> 32));
     }
 }
@@ -510,8 +511,8 @@ static uint64_t RCBarSize(uint32_t enc)
  * The inbound windows as the registers hold them. Each RC_BAR carries a PCI
  * base and a size code; the CPU address it lands on is in the UBUS remap
  * register beside it, with its own enable bit. Only BAR1 through BAR3 are read
- * - the contiguous group this driver programs; a higher BAR the firmware used
- * keeps working, we just do not describe it.
+ * - the contiguous group SetupInbound() programs; a higher BAR the firmware
+ * used keeps working, we just do not describe it.
  */
 static void AdoptInbound(struct PCIBcm2712Data *data)
 {
@@ -525,7 +526,7 @@ static void AdoptInbound(struct PCIBcm2712Data *data)
         uint32_t rhi  = rd32(data->regs, PCIE_MISC_UBUS_BAR1_CONFIG_REMAP_HI + i * 8);
         uint64_t size = RCBarSize(lo & PCIE_MISC_RC_BAR_CONFIG_SIZE_MASK);
 
-        if (!size || !(rlo & PCIE_MISC_UBUS_BAR1_CONFIG_REMAP_EN))
+        if (!size || !(rlo & PCIE_MISC_UBUS_REMAP_EN))
             continue;
 
         data->dmaranges[n].flags    = 0x03000000;
@@ -746,15 +747,10 @@ static BOOL BridgeTrain(struct PCIBcm2712Data *data, void *key)
 
     SetupClkreq(data, key);
     SetupOutbound(data);
-    SetupInbound(data);
 
     /* Bus numbers: primary 0, secondary 1, subordinate 1 */
-    reg = rd32(data->regs, PCI_BUSNUM);
-    wr32(data->regs, PCI_BUSNUM, (reg & 0xff000000) | 0x00010100);
-
-    /* Memory decode and bus mastering on the root port itself. */
-    reg = rd32(data->regs, PCI_CMD);
-    wr32(data->regs, PCI_CMD, reg | PCI_CMD_MEMORY | PCI_CMD_MASTER);
+    reg = rd32(data->regs, PCIBR_PRIBUS);
+    wr32(data->regs, PCIBR_PRIBUS, (reg & 0xff000000) | 0x00010100);
 
     data->trained = TRUE;
     return TRUE;
@@ -763,8 +759,8 @@ static BOOL BridgeTrain(struct PCIBcm2712Data *data, void *key)
 /*
  * Read the bridge's translation state back out of its registers, whoever
  * programmed it, so downstream sees what the hardware does rather than what
- * a property says. On the x4 link the firmware points the window at a PCI
- * address in no "ranges" entry, with the debug console behind it.
+ * a property says. On the x4 link the firmware points the outbound window at
+ * a PCI address in no "ranges" entry, with the debug console behind it.
  */
 static BOOL BridgeAdopt(struct PCIBcm2712Data *data)
 {
@@ -775,7 +771,7 @@ static BOOL BridgeAdopt(struct PCIBcm2712Data *data)
         return FALSE;
 
     data->link_up = TRUE;
-    data->secondary_bus = (UBYTE)(rd32(data->regs, PCI_BUSNUM) >> 8);
+    data->secondary_bus = (UBYTE)(rd32(data->regs, PCIBR_PRIBUS) >> 8);
 
     lo = rd32(data->regs, PCIE_MISC_CPU_2_PCIE_MEM_WIN0_LO);
     hi = rd32(data->regs, PCIE_MISC_CPU_2_PCIE_MEM_WIN0_HI);
@@ -876,14 +872,14 @@ static void SetupEndpoint(struct PCIBcm2712Data *data)
     PCIE_WriteConfig(data, bus, 0, 0, 0x0c,
                      (PCIE_ReadConfig(data, bus, 0, 0, 0x0c) & ~0xffUL) | 16);
 
-    PCIE_WriteConfig(data, bus, 0, 0, PCI_CMD,
-                     PCIE_ReadConfig(data, bus, 0, 0, PCI_CMD) | PCI_CMD_MEMORY);
+    PCIE_WriteConfig(data, bus, 0, 0, PCICS_COMMAND,
+                     PCIE_ReadConfig(data, bus, 0, 0, PCICS_COMMAND) | PCICMF_MEMDECODE);
 
     BRINGUP(bug("[PCIBcm2712] %s: endpoint %u:0.0 %04x:%04x class %06x cmd %04x BAR0 %08x%08x (%u bytes)\n",
                 data->bridge->node, (unsigned)bus,
                 (unsigned)(id & 0xffff), (unsigned)(id >> 16),
                 (unsigned)(PCIE_ReadConfig(data, bus, 0, 0, 0x08) >> 8),
-                (unsigned)(PCIE_ReadConfig(data, bus, 0, 0, PCI_CMD) & 0xffff),
+                (unsigned)(PCIE_ReadConfig(data, bus, 0, 0, PCICS_COMMAND) & 0xffff),
                 (unsigned)(is64 ? PCIE_ReadConfig(data, bus, 0, 0, 0x14) : 0),
                 (unsigned)PCIE_ReadConfig(data, bus, 0, 0, 0x10), (unsigned)size));
 }
@@ -897,6 +893,7 @@ static void SetupEndpoint(struct PCIBcm2712Data *data)
 BOOL PCIE_BridgeSetup(struct pci_staticdata *psd, struct PCIBcm2712Data *data)
 {
     void *key;
+    uint32_t reg;
 
     key = PCIeNode(data->bridge);
     if (!key)
@@ -941,6 +938,17 @@ BOOL PCIE_BridgeSetup(struct pci_staticdata *psd, struct PCIBcm2712Data *data)
     else
         BRINGUP(bug("[PCIBcm2712] %s: link already up, adopting it\n", data->bridge->node));
 
+    /*
+     * The inbound side is ours on both paths. Nothing is transferring during
+     * boot, and the console is outbound traffic, so reprogramming these
+     * windows costs nothing - while the firmware's leave the x4 endpoint's
+     * DMA and its MSI doorbell pointing at nothing we describe.
+     */
+    SetupInbound(data);
+
+    reg = rd32(data->regs, PCICS_COMMAND);
+    wr32(data->regs, PCICS_COMMAND, reg | PCICMF_MEMDECODE | PCICMF_BUSMASTER);
+
     if (!BridgeAdopt(data))
         return FALSE;
 
@@ -948,15 +956,14 @@ BOOL PCIE_BridgeSetup(struct pci_staticdata *psd, struct PCIBcm2712Data *data)
      * The bus numbers, on an adopted bridge too: the firmware leaves them
      * at zero on the x4 link, and config space cannot reach an endpoint on
      * a bus the bridge does not forward. This touches no window, so it
-     * costs the console nothing - and rp1.resource reads the secondary bus
-     * back out of the same register rather than assuming it.
+     * costs the console nothing.
      */
     if (!data->secondary_bus)
     {
-        uint32_t reg = rd32(data->regs, PCI_BUSNUM);
+        uint32_t reg = rd32(data->regs, PCIBR_PRIBUS);
 
-        wr32(data->regs, PCI_BUSNUM, (reg & 0xff000000) | 0x00010100);
-        data->secondary_bus = (UBYTE)(rd32(data->regs, PCI_BUSNUM) >> 8);
+        wr32(data->regs, PCIBR_PRIBUS, (reg & 0xff000000) | 0x00010100);
+        data->secondary_bus = (UBYTE)(rd32(data->regs, PCIBR_PRIBUS) >> 8);
 
         BRINGUP(bug("[PCIBcm2712] %s: bus numbers were unset, secondary bus now %u\n",
                     data->bridge->node, (unsigned)data->secondary_bus));
