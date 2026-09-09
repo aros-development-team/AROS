@@ -237,16 +237,6 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     GetPrivIBase(LIBBASE)->mosmenuclass = InitMuiMenuClass(LIBBASE);
 #endif
 
-    DEBUG_INIT(dprintf("LIB_Init: create menu handler task\n"));
-    /* FIXME: no cleanup routines for MenuHandler task */
-    if (!InitDefaultMenuHandler(GetPubIBase(LIBBASE)))
-        return FALSE;
-
-    /* FIXME: no cleanup routines for ScreennotifyHandler task */
-    if (!InitDefaultScreennotifyHandler(GetPubIBase(LIBBASE)))
-        return FALSE;
-
-
     DEBUG_INIT(dprintf("LIB_Init: load default preferences\n"));
     LoadDefaultPreferences(GetPubIBase(LIBBASE));
 #ifdef USEGETIPREFS
@@ -481,20 +471,6 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
     }
 # endif
 #endif
-
-    /* FIXME: no cleanup routines for MenuHandler task */
-    if (!GetPrivIBase(LIBBASE)->MenuHandlerPort)
-    {
-        if (!InitDefaultMenuHandler(GetPubIBase(LIBBASE)))
-            return FALSE;
-    }
-
-    /* FIXME: no cleanup routines for ScreennotifyHandler task */
-    if (!GetPrivIBase(LIBBASE)->ScreenNotifyReplyPort)
-    {
-        if (!InitDefaultScreennotifyHandler(GetPubIBase(LIBBASE)))
-            return FALSE;
-    }
 
 #ifdef INTUITION_NOTIFY_SUPPORT
     /* Add screennotify.library base if not there yet - Piru
