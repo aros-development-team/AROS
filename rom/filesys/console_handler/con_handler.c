@@ -1157,10 +1157,16 @@ LONG CONMain(struct ExecBase *SysBase)
                         id->id_VolumeNode = (fh->flags & FHFLG_DEVICEMODE)
                                                 ? (BPTR)(SIPTR)-1
                                                 : (BPTR)fh->window;
-                        /* Anyone still holding a stream on us. Reporting the
-                           IORequest here made us look busy for as long as we
-                           were alive, so DISMOUNT could never proceed. */
-                        id->id_InUse = fh->usecount;
+                        if (fh->flags & FHFLG_DEVICEMODE) {
+                            /* Device-backed consoles are shared and can be
+                               dismounted, so report their open count. */
+                            id->id_InUse = fh->usecount;
+                        } else {
+                            /* Classic console handlers return their read
+                               IORequest here. Old programs such as the 1.3
+                               SetMap command use it to find the console unit. */
+                            id->id_InUse = (IPTR)fh->conreadio;
+                        }
                         replypkt(dp, DOSTRUE);
                     }
                     break;
