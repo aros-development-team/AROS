@@ -309,16 +309,10 @@ diff -ruN mesa-26.0.0/include/math.h mesa-26.0.0.aros/include/math.h
 diff -ruN mesa-26.0.0/include/stdlib.h mesa-26.0.0.aros/include/stdlib.h
 --- /dev/null	2026-03-29 00:00:00.000000000 +0000
 +++ mesa-26.0.0.aros/include/stdlib.h	2026-03-29 00:00:00.000000000 +0000
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,4 @@
 +#ifndef AROS_MESA_LOCAL_STDLIB_H
 +#define AROS_MESA_LOCAL_STDLIB_H
-+
-+#if defined(__AROS__) && defined(__cplusplus)
-+#include <aros/stdc/stdlib.h>
-+#else
 +#include_next <stdlib.h>
-+#endif
-+
 +#endif
 diff -ruN mesa-26.0.0/include/c99_alloca.h mesa-26.0.0.aros/include/c99_alloca.h
 --- mesa-26.0.0/include/c99_alloca.h	2026-02-15 18:30:34.000000000 +0000
@@ -671,3 +665,14 @@ diff -ruN mesa-26.0.0/src/mesa/glapi/shared-glapi/core.c mesa-26.0.0.aros/src/me
  }
 Binary files mesa-26.0.0/src/mesa/main/__pycache__/format_parser.cpython-314.pyc and mesa-26.0.0.aros/src/mesa/main/__pycache__/format_parser.cpython-314.pyc differ
 Binary files mesa-26.0.0/src/mesa/main/__pycache__/get_hash_params.cpython-314.pyc and mesa-26.0.0.aros/src/mesa/main/__pycache__/get_hash_params.cpython-314.pyc differ
+diff -ruN mesa-26.0.0/src/gallium/auxiliary/gallivm/lp_bld_passmgr.c mesa-26.0.0.aros/src/gallium/auxiliary/gallivm/lp_bld_passmgr.c
+--- mesa-26.0.0/src/gallium/auxiliary/gallivm/lp_bld_passmgr.c	2026-02-11 18:07:29.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/auxiliary/gallivm/lp_bld_passmgr.c	2026-09-09 14:49:14.941915650 +0100
+@@ -26,6 +26,7 @@
+  **************************************************************************/
+ 
+ #include "util/u_debug.h"
++#include "util/u_memory.h"
+ #include "util/os_time.h"
+ #include "lp_bld_debug.h"
+ #include "lp_bld_passmgr.h"
