@@ -24,6 +24,7 @@ POSIXCTESTFILES := \
         statfs \
         strptime \
         strtok_r \
+        termios_tty \
         time_r \
         uname \
         usleep \
