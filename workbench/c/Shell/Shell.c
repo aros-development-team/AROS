@@ -747,8 +747,7 @@ __startup AROS_CLI(ShellStart)
 
     D(bug("Shell %ld: exiting, error = %ld\n", ss->cliNumber, error));
 
-    if (ss->arg_rd)
-        FreeDosObject(DOS_RDARGS, ss->arg_rd);
+    freeInterpreterState(ss);
 
     FreeMem(ss, sizeof(ShellState));
 
@@ -763,4 +762,3 @@ __startup AROS_CLI(ShellStart)
 
     return error ? RETURN_FAIL : RETURN_OK;
 }
-
