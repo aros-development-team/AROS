@@ -140,7 +140,7 @@ CDROM *Open_CDROM
         if (NULL == cd->buffer_data)
             break;
 
-        cd->buffer_io = AllocVec(SCSI_BUFSIZE, p_memory_type);
+        cd->buffer_io = AllocVec(SCSI_IO_BUFSIZE, p_memory_type);
         if (NULL == cd->buffer_io)
             break;
 
@@ -469,7 +469,7 @@ t_toc_data *Read_TOC
     /*
      * make sure it never happens (shouldn't)
      */
-    if (toc_len > SCSI_BUFSIZE)
+    if (toc_len > SCSI_IO_BUFSIZE)
         return NULL;
 
     /*
@@ -751,4 +751,3 @@ int Find_Last_Session(CDROM *p_cd, uint32_t *p_result)
     *p_result = (data[8] << 24) | (data[9] << 16) | (data[10] << 8) | (data[11]);
     return TRUE;
 }
-
