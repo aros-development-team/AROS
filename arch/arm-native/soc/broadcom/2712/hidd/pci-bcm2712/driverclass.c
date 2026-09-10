@@ -473,8 +473,8 @@ static BOOL SetupMSIX(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridg
 
     if (first + count > size)
     {
-        D(bug("[PCIBcm2712] MSI-X table holds %u entries, %u wanted\n",
-              (unsigned)size, (unsigned)(first + count)));
+        BRINGUP(bug("[PCIBcm2712] MSI-X table holds %u entries, %u wanted\n",
+                    (unsigned)size, (unsigned)(first + count)));
         return FALSE;
     }
 
@@ -573,8 +573,6 @@ BOOL PCIBcm2712Dev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
     want = GetTagData(tHidd_PCIVector_Max, 1, (struct TagItem *)msg->requirements);
     if (want > bridge->msi_count)
         want = bridge->msi_count;
-    if (want < GetTagData(tHidd_PCIVector_Min, 1, (struct TagItem *)msg->requirements))
-        return FALSE;
 
     OOP_GetAttr(o, aHidd_PCIDevice_Bus, &bus);
     OOP_GetAttr(o, aHidd_PCIDevice_Dev, &dev);
@@ -582,6 +580,18 @@ BOOL PCIBcm2712Dev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
 
     if ((cap = FindCapability(bridge, bus, dev, sub, PCICAP_MSIX)) != 0)
     {
+        /* The device's table caps a run as much as the bridge's block does. */
+        ULONG size = ((PCIE_ReadConfig(bridge, bus, dev, sub, cap) >> 16) & PCIMSIXF_QSIZE) + 1;
+
+        if (want > size)
+            want = size;
+        if (want < GetTagData(tHidd_PCIVector_Min, 1, (struct TagItem *)msg->requirements))
+        {
+            BRINGUP(bug("[PCIBcm2712] %02x:%02x.%x: MSI-X table holds %u entries, fewer than asked\n",
+                        (unsigned)bus, (unsigned)dev, (unsigned)sub, (unsigned)size));
+            return FALSE;
+        }
+
         if ((first = AllocVectors(bridge, want)) < 0)
             return FALSE;
 
@@ -593,6 +603,9 @@ BOOL PCIBcm2712Dev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
     }
     else if ((cap = FindCapability(bridge, bus, dev, sub, PCICAP_MSI)) != 0)
     {
+        if (GetTagData(tHidd_PCIVector_Min, 1, (struct TagItem *)msg->requirements) > 1)
+            return FALSE;
+
         want = 1;
         if ((first = AllocVectors(bridge, 1)) < 0)
             return FALSE;
@@ -604,7 +617,12 @@ BOOL PCIBcm2712Dev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
         }
     }
     else
+    {
+        BRINGUP(bug("[PCIBcm2712] %02x:%02x.%x: neither MSI-X nor MSI capability (status %04x)\n",
+                    (unsigned)bus, (unsigned)dev, (unsigned)sub,
+                    (unsigned)(PCIE_ReadConfig(bridge, bus, dev, sub, PCICS_COMMAND) >> 16)));
         return FALSE;
+    }
 
     data->firstVector = first + 1;
     data->nvectors    = want;

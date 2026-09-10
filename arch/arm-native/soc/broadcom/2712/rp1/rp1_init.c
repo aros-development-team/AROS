@@ -48,8 +48,10 @@ static OOP_AttrBase HiddPCIDeviceAttrBase;
 #define RP1_INT_USBHOST0_0      31
 #define RP1_INT_USBHOST1_0      36
 
-/* Interrupt n leaves as message n, so the table has to hold all of them. */
-#define RP1_MSI_COUNT           64
+/* Interrupt n leaves as message n, so entries 0 through the last USB
+   interrupt must exist; the table may hold fewer than the block's 64. */
+#define RP1_MSI_MIN             (RP1_INT_USBHOST1_0 + 1)
+#define RP1_MSI_MAX             64
 
 AROS_UFH3(static void, rp1_enum,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -116,8 +118,8 @@ static ULONG vector_intid(OOP_Object *dev, ULONG vector)
 static void setup_msi(OOP_Object *dev, IPTR win, LIBBASETYPEPTR LIBBASE)
 {
     struct TagItem req[] = {
-        { tHidd_PCIVector_Min, RP1_MSI_COUNT },
-        { tHidd_PCIVector_Max, RP1_MSI_COUNT },
+        { tHidd_PCIVector_Min, RP1_MSI_MIN },
+        { tHidd_PCIVector_Max, RP1_MSI_MAX },
         { TAG_DONE,            0             }
     };
     struct pHidd_PCIDevice_ObtainVectors msg = {
@@ -128,7 +130,7 @@ static void setup_msi(OOP_Object *dev, IPTR win, LIBBASETYPEPTR LIBBASE)
 
     if (!OOP_DoMethod(dev, (OOP_Msg)&msg))
     {
-        D(bug("[RP1MSI] the bridge has no %u messages for RP1 - no MSI\n", RP1_MSI_COUNT));
+        D(bug("[RP1MSI] could not get %u messages for RP1 - no MSI\n", RP1_MSI_MIN));
         return;
     }
 
