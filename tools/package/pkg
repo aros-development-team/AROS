@@ -109,7 +109,9 @@ def unpack( source, destination ):
         print('« %s (%d bytes)' % (path, len( data )))
         
         directory = os.path.dirname( path )
-        if directory != '' and not os.path.exists( directory ):
+        if not directory:
+            path = path.rstrip(b'\0')
+        elif not os.path.exists( directory ):
             os.makedirs( directory )
             
         output = open( path, 'wb' )
