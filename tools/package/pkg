@@ -100,7 +100,8 @@ def unpack( source, destination ):
     
     oldwd = os.getcwd()
     os.chdir( destination )
-    
+    destinationRoot = os.path.realpath( os.getcwdb() )
+
     version = readHeader( input )
     
     while input.tell() < inputSize:
@@ -108,6 +109,15 @@ def unpack( source, destination ):
         
         print('« %s (%d bytes)' % (path, len( data )))
         
+        securityPath = path.rstrip(b'\0')
+        target = os.path.realpath( os.path.abspath( securityPath ) )
+        try:
+            contained = os.path.commonpath((destinationRoot, target)) == destinationRoot
+        except ValueError:
+            contained = False
+        if os.path.isabs( securityPath ) or not contained:
+            raise ValueError('Package member path escapes destination: %r' % path)
+
         directory = os.path.dirname( path )
         if not directory:
             path = path.rstrip(b'\0')
