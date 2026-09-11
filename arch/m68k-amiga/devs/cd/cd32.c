@@ -1089,8 +1089,6 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
 
     D(bug("%s:%p io_Command=%d\n", __func__, io, io->io_Command));
 
-    cu->cu_Task = FindTask(NULL);
-
     switch (io->io_Command) {
     case CD_CHANGENUM:
         io->io_Actual = cu->cu_ChangeNum;
@@ -1406,6 +1404,16 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
     return err;
 }
 
+static BOOL CD32_CanQuick(const struct IOStdReq *io, APTR priv)
+{
+    const struct CD32Unit *cu = priv;
+
+    /* CD_INFO only consults cached state once media discovery has completed.
+     * Keeping it quick matches callers which issue this query from an
+     * interrupt server; an uncached query still belongs on the unit task. */
+    return io->io_Command == CD_INFO && cu->cu_MediaKnown;
+}
+
 static VOID CD32_Expunge(APTR priv)
 {
     struct CD32Unit *cu = priv;
@@ -1426,6 +1434,7 @@ static const struct cdUnitOps CD32Ops = {
     .uo_Name = "CD32 (Akiko)",
     .uo_Expunge = CD32_Expunge,
     .uo_DoIO = CD32_DoIO,
+    .uo_CanQuick = CD32_CanQuick,
     .uo_Service = CD32_Service,
     .uo_SignalMask = SIGF_SINGLE,
     .uo_Init = CD32_UnitInit,
