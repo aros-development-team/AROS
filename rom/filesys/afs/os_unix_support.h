@@ -2,7 +2,7 @@
 #define OS_UNIX_SUPPORT_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -197,6 +197,32 @@ struct DosEnvec {
 	IPTR de_Control;
 	IPTR de_BootBlocks;
 };
+
+/* de_TableSize indices, mirroring dos/filehandler.h - the struct above has the
+   same fields in the same order, so the handler can test de_TableSize against
+   them on the host build exactly as it does on AROS. */
+#define DE_TABLESIZE    0
+#define DE_SIZEBLOCK    1
+#define DE_BLOCKSIZE    2
+#define DE_NUMHEADS     3
+#define DE_SECSPERBLOCK 4
+#define DE_BLKSPERTRACK 5
+#define DE_RESERVEDBLKS 6
+#define DE_PREFAC       7
+#define DE_INTERLEAVE   8
+#define DE_LOWCYL       9
+#define DE_HIGHCYL      10
+#define DE_UPPERCYL     DE_HIGHCYL
+#define DE_NUMBUFFERS   11
+#define DE_BUFMEMTYPE   12
+#define DE_MEMBUFTYPE   DE_BUFMEMTYPE
+#define DE_MAXTRANSFER  13
+#define DE_MASK         14
+#define DE_BOOTPRI      15
+#define DE_DOSTYPE      16
+#define DE_BAUD         17
+#define DE_CONTROL      18
+#define DE_BOOTBLOCKS   19
 
 /* dos/dos.h */
 #define MODE_READWRITE 1004
