@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright (C) 2006 Marek Szyprowski
- * Copyright (C) 2007-2020 The AROS Development Team
+ * Copyright (C) 2007-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -244,6 +244,18 @@ static LONG InitDiskHandler(struct Globals *glob)
                 {
                     D(bug("\tDevice successfully opened\n"));
                     Probe64BitSupport(glob);
+
+                    /* Respect the device's transfer limit, if the mount
+                     * environment supplies one */
+                    {
+                        struct DosEnvec *de = BADDR(fssm->fssm_Environ);
+
+                        glob->max_transfer_bytes = 0xFFFFFFFF;
+                        if (de != NULL && de->de_TableSize >= DE_MAXTRANSFER
+                            && de->de_MaxTransfer != 0)
+                            glob->max_transfer_bytes = de->de_MaxTransfer;
+                        D(bug("\tMaxTransfer = %lu\n", glob->max_transfer_bytes));
+                    }
 
                     if ((glob->diskchgreq =
                         AllocVec(sizeof(struct IOExtTD), MEMF_PUBLIC)))

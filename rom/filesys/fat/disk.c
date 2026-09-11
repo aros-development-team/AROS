@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright (C) 2006 Marek Szyprowski
- * Copyright (C) 2007-2015 The AROS Development Team
+ * Copyright (C) 2007-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -142,6 +142,7 @@ LONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
     UQUAD off;
     ULONG err;
     ULONG start, end;
+    ULONG max_blocks, chunk;
     BOOL retry = TRUE;
     TEXT vol_name[100];
 
@@ -200,44 +201,62 @@ LONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
             nblocks = end - num;
     }
 
-    off = ((UQUAD) num) * block_size;
+    /* Never hand the device more than its MaxTransfer in one request */
+    max_blocks = glob->max_transfer_bytes / block_size;
+    if (max_blocks == 0)
+        max_blocks = 1;
 
-    while (retry)
+    err = 0;
+    while (nblocks > 0)
     {
-        glob->diskioreq->iotd_Req.io_Offset = off & 0xFFFFFFFF;
-        glob->diskioreq->iotd_Req.io_Actual = off >> 32;
+        chunk = (nblocks < max_blocks) ? nblocks : max_blocks;
+        off = ((UQUAD) num) * block_size;
+        retry = TRUE;
 
-        glob->diskioreq->iotd_Req.io_Length = nblocks * block_size;
-        glob->diskioreq->iotd_Req.io_Data = data;
-        glob->diskioreq->iotd_Req.io_Command =
-            do_write ? glob->writecmd : glob->readcmd;
+        while (retry)
+        {
+            glob->diskioreq->iotd_Req.io_Offset = off & 0xFFFFFFFF;
+            glob->diskioreq->iotd_Req.io_Actual = off >> 32;
 
-        err = DoIO((struct IORequest *)glob->diskioreq);
+            glob->diskioreq->iotd_Req.io_Length = chunk * block_size;
+            glob->diskioreq->iotd_Req.io_Data = data;
+            glob->diskioreq->iotd_Req.io_Command =
+                do_write ? glob->writecmd : glob->readcmd;
+
+            err = DoIO((struct IORequest *)glob->diskioreq);
+
+            if (err != 0)
+            {
+                if (glob->sb && glob->sb->volume.name[0] != '\0')
+                    snprintf(vol_name, 100, "Volume %s",
+                        glob->sb->volume.name + 1);
+                else
+                    snprintf(vol_name, 100, "Device %s",
+                        AROS_BSTR_ADDR(glob->devnode->dol_Name));
+
+                if (chunk > 1)
+                    retry = ErrorMessage("%s\nhas a %s error\n"
+                        "in the block range\n%lu to %lu",
+                        "Retry|Cancel", (IPTR)vol_name,
+                        (IPTR)(do_write ? "write" : "read"), num,
+                        num + chunk - 1);
+                else
+                    retry = ErrorMessage("%s\nhas a %s error\n"
+                        "on block %lu",
+                        "Retry|Cancel", (IPTR)vol_name,
+                        (IPTR)(do_write ? "write" : "read"), num);
+            }
+            else
+                retry = FALSE;
+        }
 
         if (err != 0)
-        {
-            if (glob->sb && glob->sb->volume.name[0] != '\0')
-                snprintf(vol_name, 100, "Volume %s",
-                    glob->sb->volume.name + 1);
-            else
-                snprintf(vol_name, 100, "Device %s",
-                    AROS_BSTR_ADDR(glob->devnode->dol_Name));
+            return err;
 
-            if (nblocks > 1)
-                retry = ErrorMessage("%s\nhas a %s error\n"
-                    "in the block range\n%lu to %lu",
-                    "Retry|Cancel", (IPTR)vol_name,
-                    (IPTR)(do_write ? "write" : "read"), num,
-                    num + nblocks - 1);
-            else
-                retry = ErrorMessage("%s\nhas a %s error\n"
-                    "on block %lu",
-                    "Retry|Cancel", (IPTR)vol_name,
-                    (IPTR)(do_write ? "write" : "read"), num);
-        }
-        else
-            retry = FALSE;
+        num += chunk;
+        data += chunk * block_size;
+        nblocks -= chunk;
     }
 
-    return err;
+    return 0;
 }

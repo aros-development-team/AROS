@@ -263,6 +263,7 @@ struct Globals
     struct timerequest *timereq;
     struct MsgPort *timerport;
     ULONG last_num;    /* last block number that was outside boundaries */
+    ULONG max_transfer_bytes;   /* device's DE_MAXTRANSFER, 0xFFFFFFFF if none given */
     UWORD readcmd;
     UWORD writecmd;
     BOOL timer_active;
