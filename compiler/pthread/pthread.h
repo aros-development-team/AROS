@@ -26,10 +26,12 @@
 #include <aros/posixc/sys/types.h>
 #include <aros/posixc/sys/time.h>
 #include <aros/posixc/errno.h>
+#include <aros/posixc/signal.h>
 #else
 #include <sys/types.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <signal.h>
 #endif
 #include <exec/types.h>
 #include <exec/semaphores.h>
@@ -290,6 +292,7 @@ int pthread_setcancelstate(int state, int *oldstate);
 int pthread_setcanceltype(int type, int *oldtype);
 void pthread_testcancel(void);
 int pthread_once(pthread_once_t *once_control, void (*init_routine)(void));
+int pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset);
 
 //
 // Scheduling functions
