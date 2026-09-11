@@ -56,7 +56,7 @@ IPTR Scrollbutton__OM_GET(struct IClass *cl, Object *o,
         return TRUE;
 
     case MUIA_Scrollbutton_VertProp:
-        *msg->opg_Storage = (IPTR) data->horiz_prop;
+        *msg->opg_Storage = (IPTR) data->vert_prop;
         return TRUE;
 
     default:
