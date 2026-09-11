@@ -87,6 +87,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
     struct DirEntry dir_entry;
     APTR block_ref;
     UBYTE *fat_block;
+    BOOL validated_changes = FALSE, validated_ok = FALSE;
 
     D(bug("[fat] reading boot sector\n"));
 
@@ -328,6 +329,36 @@ LONG ReadFATSuper(struct FSSuper *sb)
             /* Check everything is really written to disk before we proceed */
             if (!Cache_Flush(sb->cache))
                 err = IoErr();
+            else if (MarkVolumeClean(glob) && !Cache_Flush(sb->cache))
+                err = IoErr();
+        }
+    }
+
+    /* A volume that was not cleanly written the last time it was mounted
+     * is checked and repaired before anything follows a cluster chain */
+    if (err == 0 && !IsVolumeClean(sb))
+    {
+        BOOL complete = FALSE;
+        LONG verr;
+
+        D(bug("[fat] volume was not cleanly unmounted, validating\n"));
+
+        verr = ValidateVolume(sb, &validated_changes, &complete);
+        if (verr == ERROR_NOT_A_DOS_DISK)
+        {
+            D(bug("[fat] root directory unusable\n"));
+            FreeMem(boot, bsize);
+            FreeFATSuper(sb);
+            return verr;
+        }
+
+        if (complete)
+            validated_ok = TRUE;
+        else
+        {
+            /* Leave the bit clear so the next mount tries again */
+            D(bug("[fat] validation incomplete (%ld)\n", verr));
+            sb->needs_validation = TRUE;
         }
     }
 
@@ -396,10 +427,35 @@ LONG ReadFATSuper(struct FSSuper *sb)
                 Cache_FreeBlock(sb->cache, sb->fsinfo_block);
         }
     }
+    /* Don't trust a stored free count after the FAT was repaired */
+    if (validated_changes)
+    {
+        sb->free_clusters = -1;
+        sb->next_cluster = -1;
+    }
     if (sb->free_clusters == -1)
         CountFreeClusters(sb);
     if (sb->next_cluster == -1)
         sb->next_cluster = 2;
+    if (validated_changes && sb->fsinfo_buffer != NULL)
+    {
+        sb->fsinfo_buffer->free_count = AROS_LONG2LE(sb->free_clusters);
+        sb->fsinfo_buffer->next_free = AROS_LONG2LE(sb->next_cluster);
+        Cache_MarkBlockDirty(sb->cache, sb->fsinfo_block);
+    }
+
+    /* Everything is consistent now: get it on disk and say so */
+    if (validated_ok && err == 0)
+    {
+        if (!Cache_Flush(sb->cache))
+            sb->needs_validation = TRUE;
+        else
+        {
+            sb->volume_dirty = TRUE;
+            if (MarkVolumeClean(glob) && !Cache_Flush(sb->cache))
+                sb->needs_validation = TRUE;
+        }
+    }
 
     FreeMem(boot, bsize);
     if (err != 0)

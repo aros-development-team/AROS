@@ -219,6 +219,11 @@ struct FSSuper
     ULONG fat_cache_block;
     UWORD fat_cache_no;    /* FAT number that cached FAT blocks belong to */
 
+    /* Clean shutdown bit tracking, see validate.c */
+    BOOL volume_dirty;      /* clean shutdown bit is currently cleared */
+    BOOL suppress_dirty;    /* don't touch the bit for the writes in progress */
+    BOOL needs_validation;  /* a validation attempt did not complete */
+
     APTR fsinfo_block;
     struct FATFSInfo *fsinfo_buffer;
 

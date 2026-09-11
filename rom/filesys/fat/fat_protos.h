@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright (C) 2006 Marek Szyprowski
- * Copyright (C) 2007-2015 The AROS Development Team
+ * Copyright (C) 2007-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -138,6 +138,11 @@ void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl);
 void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de);
 void ProcessNotify(struct Globals *glob);
 
+/* validate.c */
+LONG ValidateVolume(struct FSSuper *sb, BOOL *changed, BOOL *complete);
+BOOL IsVolumeClean(struct FSSuper *sb);
+void MarkVolumeDirty(struct Globals *glob);
+BOOL MarkVolumeClean(struct Globals *glob);
 /* timer.c */
 LONG InitTimer(struct Globals *glob);
 void CleanupTimer(struct Globals *glob);

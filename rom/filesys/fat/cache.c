@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Disk cache.
  */
@@ -54,6 +54,10 @@
 #include <clib/alib_protos.h>
 
 #include "cache.h"
+
+/* Clean shutdown bit tracking (validate.c) */
+struct Globals;
+void MarkVolumeDirty(struct Globals *glob);
 
 #define SysBase (c->sys_base)
 #define DOSBase (c->dos_base)
@@ -283,6 +287,9 @@ VOID Cache_MarkBlockDirty(APTR cache, APTR block)
         b->state = BS_DIRTY;
         AddTail((struct List *)&c->dirty_list, (struct Node *)&b->node2);
     }
+
+    /* Let the volume note that it now has unwritten changes */
+    MarkVolumeDirty((struct Globals *)c->priv);
 
     return;
 }

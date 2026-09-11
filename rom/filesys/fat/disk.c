@@ -73,7 +73,12 @@ void ProcessDiskChange(struct Globals *glob)
 void UpdateDisk(struct Globals *glob)
 {
     if (glob->sb)
-        Cache_Flush(glob->sb->cache);
+    {
+        /* Once everything is on disk, mark the volume cleanly written.
+         * That itself dirties a FAT block, so flush once more. */
+        if (Cache_Flush(glob->sb->cache) && MarkVolumeClean(glob))
+            Cache_Flush(glob->sb->cache);
+    }
 
     glob->diskioreq->iotd_Req.io_Command = CMD_UPDATE;
     DoIO((struct IORequest *)glob->diskioreq);
