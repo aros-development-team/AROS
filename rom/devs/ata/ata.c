@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved
 
     Desc:
 */
@@ -485,6 +485,12 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
 
     D(bug("[ATA%02ld] %s()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
+
+    if (IOStdReq(io)->io_Data == NULL)
+    {
+        io->io_Error = IOERR_BADADDRESS;
+        return;
+    }
 
     IOStdReq(io)->io_Actual = sizeof(struct SCSICmd);
     if (unit->au_XferModes & AF_XFER_PACKET)

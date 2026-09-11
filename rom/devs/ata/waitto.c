@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved
 */
 
 #include <aros/debug.h>
@@ -25,7 +25,7 @@ ULONG ata_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
     ULONG tsigs;
 
     D(
-        struct Node *t = (struct Node *)FindTask(NULL)
+        struct Node *t = (struct Node *)FindTask(NULL);
         bug("[ATA  ] Timed wait %lds %ldu (task='%s')\n", secs, micro, t->ln_Name);
     )
 

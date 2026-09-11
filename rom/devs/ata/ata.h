@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ata.device main private include file
@@ -50,6 +50,17 @@
 #endif
 #define TASK_PRI                10
 #define TIMEOUT                 30
+
+/*
+ * Largest PIO byte count limit requested per DRQ block for ATAPI PACKET
+ * commands. 0xFFFF, 0 and odd values are not handled by every device.
+ */
+#define ATAPI_MAX_BYTECOUNT     (63 * 1024)
+
+/* SCSI status byte values reported in SCSICmd.scsi_Status */
+#define SCSI_STATUS_GOOD            0x00
+#define SCSI_STATUS_CHECK_CONDITION 0x02
+#define SCSI_STATUS_BUSY            0x08
 
 /*
    Don't blame me for information redundance here!

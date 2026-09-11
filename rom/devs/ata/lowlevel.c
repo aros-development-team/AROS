@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -66,15 +66,31 @@ static BYTE ata_Eject(struct ata_Unit *);
 static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     BOOL fake_irq, UBYTE *stout);
 
-static BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data,
-    LONG datalen, BOOL *dma, BOOL write);
+/*
+ * ATAPI transport request. Filled in by the caller; results are returned
+ * in the ap_Actual, ap_Status and ap_Error fields.
+ */
+struct atapi_Packet
+{
+    const UBYTE *ap_CDB;        /* SCSI command descriptor block              */
+    ULONG        ap_CDBLen;     /* Length of the CDB (6 .. packet size)       */
+    APTR         ap_Data;       /* Data buffer, NULL if there is no data      */
+    ULONG        ap_DataLen;    /* Data phase length in bytes                 */
+    BOOL         ap_Write;      /* Data phase direction is host -> device     */
+    BOOL         ap_DMA;        /* Caller has prepared bus master DMA         */
+    ULONG        ap_Actual;     /* Result: bytes transferred                  */
+    UBYTE        ap_Status;     /* Result: ATA status register at completion  */
+    UBYTE        ap_Error;      /* Result: ATA error register on CHECK        */
+};
+
+static BYTE atapi_SendPacket(struct ata_Unit *unit, struct atapi_Packet *pkt);
 static BYTE atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd);
 static BYTE atapi_Read(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static BYTE atapi_Write(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static BYTE atapi_Eject(struct ata_Unit *);
 static ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense,
-    ULONG senselen);
-static BYTE atapi_EndCmd(struct ata_Unit *unit);
+    ULONG senselen, ULONG *actual);
+static void atapi_DeviceReset(struct ata_Unit *unit);
 
 static void common_SetBestXferMode(struct ata_Unit* unit);
 
@@ -171,11 +187,16 @@ static void ata_IRQSetHandler(struct ata_Unit *unit,
     ULONG piolen)
 {
     if (NULL != handler)
+    {
         unit->au_cmd_error = 0;
-
-    unit->au_cmd_data = piomem;
-    unit->au_cmd_length = (piolen < blklen) ? piolen : blklen;
-    unit->au_cmd_total = piolen;
+        unit->au_cmd_data = piomem;
+        unit->au_cmd_length = (piolen < blklen) ? piolen : blklen;
+        unit->au_cmd_total = piolen;
+    }
+    /*
+     * A NULL handler ends the transfer. The counters are left alone so
+     * that the amount of data actually moved can still be reported.
+     */
     unit->au_Bus->ab_HandleIRQ = handler;
 }
 
@@ -274,13 +295,19 @@ static void ata_IRQDMAReadWrite(struct ata_Unit *unit, UBYTE status)
     }
 }
 
+/*
+ * ATAPI PIO data phase. Called once per DRQ block; the device announces the
+ * size of each block in the byte count registers and the interrupt reason
+ * register tells the direction. The data register is 16 bits wide, so odd
+ * lengths are handled by transferring the last byte through a pad word.
+ * The final (status) interrupt has DRQ clear and ends the transfer.
+ */
 static void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
 {
     struct ata_Bus *bus = unit->au_Bus;
-    ULONG size = 0;
-    LONG remainder = 0;
-    UBYTE reason = PIO_In(bus, atapi_Reason);
-    DIRQ(bug("[ATAPI] %s: Current status: %ld during READ\n", __func__, reason));
+    ULONG size, xfer;
+    UWORD tmp;
+    UBYTE reason;
 
     /* have we failed yet? */
     if (0 == (status & (ATAF_BUSY | ATAF_DATAREQ)))
@@ -293,33 +320,52 @@ static void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
         ata_IRQNoData(unit, status);
         return;
     }
+    if (status & ATAF_BUSY)
+        return;
+
+    reason = PIO_In(bus, atapi_Reason);
+    DIRQ(bug("[ATAPI] %s: Current status: %ld during READ\n", __func__, reason));
 
     /* anything for us please? */
     if (ATAPIF_READ != (reason & ATAPIF_MASK))
+    {
+        /*
+         * The device wants to move data in the wrong direction. We can not
+         * satisfy that; the command completes through the timeout path.
+         */
+        DERROR(bug("[ATAPI] %s: unexpected interrupt reason %02lx\n", __func__, reason));
+        unit->au_cmd_error = HFERR_Phase;
         return;
+    }
 
     size = PIO_In(bus, atapi_ByteCntH) << 8 | PIO_In(bus, atapi_ByteCntL);
     DIRQ(bug("[ATAPI] %s: data available for read (%ld bytes, max: %ld bytes)\n", __func__, size, unit->au_cmd_total));
 
-    if (size > unit->au_cmd_total)
+    xfer = size;
+    if (xfer > unit->au_cmd_total)
     {
-        DERROR(bug("[ATAPI] %s: CRITICAL! MORE DATA OFFERED THAN STORAGE CAN TAKE: %ld bytes vs %ld bytes left!\n", __func__, size, unit->au_cmd_total));
-        remainder = size - unit->au_cmd_total;
-        size = unit->au_cmd_total;
+        DERROR(bug("[ATAPI] %s: device offers %ld bytes, only %ld bytes of buffer left\n", __func__, size, unit->au_cmd_total));
+        xfer = unit->au_cmd_total;
     }
 
-    Unit_InS(unit, unit->au_cmd_data, size);
+    Unit_InS(unit, unit->au_cmd_data, xfer & ~1);
+    if (xfer & 1)
+    {
+        Unit_InS(unit, &tmp, 2);
+        ((UBYTE *)unit->au_cmd_data)[xfer - 1] = ((UBYTE *)&tmp)[0];
+    }
 
-    unit->au_cmd_data = &((UBYTE*)unit->au_cmd_data)[size];
-    unit->au_cmd_total -= size;
+    unit->au_cmd_data = &((UBYTE*)unit->au_cmd_data)[xfer];
+    unit->au_cmd_total -= xfer;
 
-    DIRQ(bug("[ATAPI] %s: %lu bytes read.\n", __func__, size));
+    DIRQ(bug("[ATAPI] %s: %lu bytes read.\n", __func__, xfer));
 
     /*
-     * Soak up excess bytes.
+     * Soak up whatever else the device insists on transferring in this
+     * block, so that it can move on to the next phase.
      */
-    for (; remainder > 0; remainder -= 2)
-        Unit_InS(unit, &size, 2);
+    for (size = (size + 1) & ~1, xfer = (xfer + 1) & ~1; size > xfer; size -= 2)
+        Unit_InS(unit, &tmp, 2);
 
     if (unit->au_cmd_total == 0)
         ata_IRQSetHandler(unit, &ata_IRQNoData, NULL, 0, 0);
@@ -328,10 +374,9 @@ static void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
 static void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
 {
     struct ata_Bus *bus = unit->au_Bus;
-    ULONG size = 0;
-    UBYTE reason = PIO_In(bus, atapi_Reason);
-
-    DIRQ(bug("[ATAPI] %s: Current status: %ld during WRITE\n", __func__, reason));
+    ULONG size, xfer;
+    UWORD tmp = 0;
+    UBYTE reason;
 
     /* have we failed yet? */
     if (0 == (status & (ATAF_BUSY | ATAF_DATAREQ)))
@@ -344,25 +389,46 @@ static void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
         ata_IRQNoData(unit, status);
         return;
     }
+    if (status & ATAF_BUSY)
+        return;
+
+    reason = PIO_In(bus, atapi_Reason);
+    DIRQ(bug("[ATAPI] %s: Current status: %ld during WRITE\n", __func__, reason));
 
     /* anything for us please? */
     if (ATAPIF_WRITE != (reason & ATAPIF_MASK))
+    {
+        DERROR(bug("[ATAPI] %s: unexpected interrupt reason %02lx\n", __func__, reason));
+        unit->au_cmd_error = HFERR_Phase;
         return;
+    }
 
     size = PIO_In(bus, atapi_ByteCntH) << 8 | PIO_In(bus, atapi_ByteCntL);
     DIRQ(bug("[ATAPI] %s: data requested for write (%ld bytes, max: %ld bytes)\n", __func__, size, unit->au_cmd_total));
 
-    if (size > unit->au_cmd_total)
+    xfer = size;
+    if (xfer > unit->au_cmd_total)
     {
-        DERROR(bug("[ATAPI] %s: CRITICAL! MORE DATA REQUESTED THAN STORAGE CAN GIVE: %ld bytes vs %ld bytes left!\n", __func__, size, unit->au_cmd_total));
-        size = unit->au_cmd_total;
+        DERROR(bug("[ATAPI] %s: device requests %ld bytes, only %ld bytes of data left\n", __func__, size, unit->au_cmd_total));
+        xfer = unit->au_cmd_total;
     }
 
-    Unit_OutS(unit, unit->au_cmd_data, size);
-    unit->au_cmd_data = &((UBYTE*)unit->au_cmd_data)[size];
-    unit->au_cmd_total -= size;
+    Unit_OutS(unit, unit->au_cmd_data, xfer & ~1);
+    if (xfer & 1)
+    {
+        ((UBYTE *)&tmp)[0] = ((UBYTE *)unit->au_cmd_data)[xfer - 1];
+        Unit_OutS(unit, &tmp, 2);
+        tmp = 0;
+    }
 
-    DIRQ(bug("[ATAPI] %s: %lu bytes written.\n", __func__, size));
+    unit->au_cmd_data = &((UBYTE*)unit->au_cmd_data)[xfer];
+    unit->au_cmd_total -= xfer;
+
+    DIRQ(bug("[ATAPI] %s: %lu bytes written.\n", __func__, xfer));
+
+    /* Pad the block with zeros if the device asked for more than we have */
+    for (size = (size + 1) & ~1, xfer = (xfer + 1) & ~1; size > xfer; size -= 2)
+        Unit_OutS(unit, &tmp, 2);
 
     if (unit->au_cmd_total == 0)
         ata_IRQSetHandler(unit, &ata_IRQNoData, NULL, 0, 0);
@@ -745,173 +811,371 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
 /*
  * atapi packet iface
  */
-static BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data,
-    LONG datalen, BOOL *dma, BOOL write)
+
+/*
+ * io_Error values returned for a CHECK CONDITION, indexed by the sense key
+ * reported in the ATA error register. The full sense data is fetched by
+ * atapi_DirectSCSI() when the caller asked for autosense.
+ */
+static const BYTE ErrorMap[16] = {
+    CDERR_NotSpecified,     /* NO SENSE         */
+    CDERR_NoSecHdr,         /* RECOVERED ERROR  */
+    CDERR_NoDisk,           /* NOT READY        */
+    CDERR_NoSecHdr,         /* MEDIUM ERROR     */
+    CDERR_NoSecHdr,         /* HARDWARE ERROR   */
+    CDERR_NOCMD,            /* ILLEGAL REQUEST  */
+    CDERR_NoDisk,           /* UNIT ATTENTION   */
+    CDERR_WriteProt,        /* DATA PROTECT     */
+    CDERR_NotSpecified,     /* BLANK CHECK      */
+    CDERR_NotSpecified,     /* VENDOR SPECIFIC  */
+    CDERR_NotSpecified,     /* COPY ABORTED     */
+    CDERR_ABORTED,          /* ABORTED COMMAND  */
+    CDERR_NotSpecified,     /* (obsolete)       */
+    CDERR_NotSpecified,     /* VOLUME OVERFLOW  */
+    CDERR_NoSecHdr,         /* MISCOMPARE       */
+    CDERR_NotSpecified,     /* COMPLETED        */
+};
+
+/*
+ * IDENTIFY PACKET DEVICE word 0, bits 1:0 tell the packet size:
+ * 00b = 12 bytes, 01b = 16 bytes.
+ */
+static inline ULONG atapi_PacketSize(struct ata_Unit *unit)
+{
+    return ((unit->au_Drive->id_General & 0x03) == 0x01) ? 16 : 12;
+}
+
+/*
+ * Only bulk data commands are sent using DMA. Everything else uses PIO,
+ * which copes with devices returning less data than was asked for.
+ */
+static BOOL atapi_CanDMA(UBYTE opcode)
+{
+    switch (opcode)
+    {
+        case SCSI_READ10:
+        case SCSI_READ12:
+        case 0xbe:              /* READ CD               */
+        case 0xb9:              /* READ CD MSF           */
+        case SCSI_VERIFY10:
+        case SCSI_WRITE10:
+        case SCSI_WRITE12:
+        case 0x2e:              /* WRITE AND VERIFY (10) */
+        case 0xad:              /* READ DVD STRUCTURE    */
+        case 0xa4:              /* REPORT KEY            */
+        case 0xa3:              /* SEND KEY              */
+            return TRUE;
+
+        default:
+            return FALSE;
+    }
+}
+
+/*
+ * Discard whatever the device still wants to transfer in PIO mode, so that
+ * it can leave the data phase.
+ */
+static void atapi_DrainFIFO(struct ata_Unit *unit)
 {
     struct ata_Bus *bus = unit->au_Bus;
-    *dma = *dma && (unit->au_Flags & AF_DMA) ? TRUE : FALSE;
-    LONG err = 0;
+    ULONG words = 0;
+    UWORD tmp;
 
-    UBYTE cmd[12] = {
-        0
-    };
-    register int t=5,l=0;
-
-    if (((UBYTE*)packet)[0] > 0x1f)
-        t+= 4;
-    if (((UBYTE*)packet)[0] > 0x5f)
-        t+= 2;
-
-    switch (((UBYTE*)packet)[0])
+    while (((ata_ReadAltStatus(bus) & (ATAF_BUSY | ATAF_DATAREQ)) == ATAF_DATAREQ)
+        && (words < 65536))
     {
-        case 0x28:  // read10
-        case 0xa8:  // read12
-        case 0xbe:  // readcd
-        case 0xb9:  // readcdmsf
-        case 0x2f:  // verify
-        case 0x2a:  // write
-        case 0xaa:  // write12
-        case 0x2e:  // writeverify
-        case 0xad:  // readdvdstructure
-        case 0xa4:  // reportkey
-        case 0xa3:  // sendkey
-            break;
-        default:
-            *dma = FALSE;
+        Unit_InS(unit, &tmp, 2);
+        words++;
+    }
+    DERROR(bug("[ATA%02ld] %s: drained %lu words\n", unit->au_UnitNum, __func__, words));
+}
+
+/*
+ * DEVICE RESET is mandatory for PACKET devices. It is used to recover a
+ * device which stopped responding or violated the packet protocol. The
+ * command does not generate an interrupt, so completion is polled.
+ */
+static void atapi_DeviceReset(struct ata_Unit *unit)
+{
+    struct ata_Bus *bus = unit->au_Bus;
+
+    DERROR(bug("[ATA%02ld] %s: resetting device\n", unit->au_UnitNum, __func__));
+
+    /* Whatever transfer was in progress is over: a late interrupt must not touch the buffer */
+    Disable();
+    ata_IRQSetHandler(unit, NULL, NULL, 0, 0);
+    Enable();
+
+    PIO_Out(bus, unit->au_DevMask, ata_DevHead);
+    ata_WaitNano(400, bus->ab_Base);
+    PIO_Out(bus, ATA_DEVICE_RESET, ata_Command);
+    ata_WaitNano(400, bus->ab_Base);
+
+    if (FALSE == ata_WaitBusyTO(unit, 5, FALSE, FALSE, NULL))
+        DERROR(bug("[ATA%02ld] %s: device still busy after reset\n", unit->au_UnitNum, __func__));
+
+    /* Drop a completion signal which may have arrived meanwhile */
+    SetSignal(0, 1 << bus->ab_SleepySignal);
+}
+
+/*
+ * Send one SCSI CDB through the PACKET command and run the data and status
+ * phases. Both PIO and bus master DMA transfers are handled; for DMA the
+ * caller has already called DMA_Setup() and we always call DMA_End().
+ */
+static BYTE atapi_SendPacket(struct ata_Unit *unit, struct atapi_Packet *pkt)
+{
+    struct ata_Bus *bus = unit->au_Bus;
+    ULONG plen = atapi_PacketSize(unit);
+    ULONG bytecount = pkt->ap_DataLen;
+    UBYTE cmd[16];
+    UBYTE status;
+    BYTE err = 0;
+    ULONG i;
+
+    pkt->ap_Actual = 0;
+    pkt->ap_Status = 0;
+    pkt->ap_Error  = 0;
+
+    if ((pkt->ap_CDBLen == 0) || (pkt->ap_CDBLen > plen))
+    {
+        err = IOERR_NOCMD;
+        goto done;
     }
 
-    while (l<=t)
-    {
-        cmd[l] = ((UBYTE*)packet)[l];
-        ++l;
-    }
+    /* The packet always has the size announced by the device; unused bytes are zero */
+    for (i = 0; i < sizeof(cmd); i++)
+        cmd[i] = (i < pkt->ap_CDBLen) ? pkt->ap_CDB[i] : 0;
+
+    /*
+     * Byte count limit: the most the device may transfer per DRQ assertion
+     * in PIO mode. The data phase handlers deal with any number of DRQ
+     * blocks, so large transfers are simply split by the device. Values of
+     * 0 and 0xFFFF as well as odd values are not handled by all devices.
+     */
+    if (bytecount > ATAPI_MAX_BYTECOUNT)
+        bytecount = ATAPI_MAX_BYTECOUNT;
+    if (bytecount & 1)
+        bytecount++;
 
     DATAPI({
-        bug("[ATA%02lx] %s: Sending %s ATA packet: ", unit->au_UnitNum, __func__, (*dma) ? "DMA" : "PIO");
-        l=0;
-        while (l<=t)
-        {
-            bug("%02lx ", ((UBYTE*)cmd)[l]);
-            ++l;
-        }
+        bug("[ATA%02lx] %s: Sending %s ATA packet (%lu bytes, %lu data bytes): ", unit->au_UnitNum, __func__,
+            pkt->ap_DMA ? "DMA" : "PIO", plen, pkt->ap_DataLen);
+        for (i = 0; i < plen; i++)
+            bug("%02lx ", cmd[i]);
         bug("\n");
-
-        if (datalen & 1)
-            bug("[ATAPI] %s: ERROR - DATA LENGTH NOT EVEN! Rounding Up! (%ld bytes requested)\n", __func__, datalen);
     });
-
-    datalen = (datalen+1)&~1;
 
     if (FALSE == ata_SelectUnit(unit))
     {
         DATAPI(bug("[ATAPI] WaitBusy failed at first check\n"));
-        return IOERR_UNITBUSY;
+        err = IOERR_UNITBUSY;
+        goto done;
     }
 
     /*
-     * tell device whether we want to read or write and if we want a dma transfer
+     * FEATURES: bit 0 selects DMA for the data phase, bit 2 (DMADIR) tells
+     * devices which need it that the data moves from device to host.
      */
     PIO_Out(bus,
-            ((*dma) ? 1 : 0) | (((unit->au_Drive->id_DMADir & 0x8000) && !write) ? 4 : 0),
+            (pkt->ap_DMA ? 1 : 0) | (((unit->au_Drive->id_DMADir & 0x8000) && !pkt->ap_Write) ? 4 : 0),
             atapi_Features);
-    PIO_Out(bus, (datalen & 0xff), atapi_ByteCntL);
-    PIO_Out(bus, (datalen >> 8) & 0xff, atapi_ByteCntH);
+    PIO_Out(bus, bytecount & 0xff, atapi_ByteCntL);
+    PIO_Out(bus, (bytecount >> 8) & 0xff, atapi_ByteCntH);
 
     /*
-     * once we're done with that, we can go ahead and inform device that we're about to send atapi packet
-     * after command is dispatched, we are obliged to give 400ns for the unit to parse command and set status
+     * Issue PACKET and wait for the device to request the command bytes.
+     * Devices announcing "interrupt DRQ" (IDENTIFY word 0 bits 6:5 = 01b)
+     * raise INTRQ when ready; the others set DRQ within 3 ms (or 50 us)
+     * and are polled. Either way we must give 400 ns for BSY to be set.
      */
     DATAPI(bug("[ATAPI] Issuing ATA_PACKET command.\n"));
-    ata_IRQSetHandler(unit, &ata_IRQNoData, 0, 0, 0);
+    ata_IRQSetHandler(unit, &ata_IRQNoData, NULL, 0, 0);
     PIO_Out(bus, ATA_PACKET, atapi_Command);
     ata_WaitNano(400, bus->ab_Base);
-    //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
 
-    ata_WaitBusyTO(unit, TIMEOUT, (unit->au_Drive->id_General & 0x60) == 0x20,
-        FALSE, NULL);
-    if (0 == (ata_ReadStatus(bus) & ATAF_DATAREQ))
-        return HFERR_BadStatus;
+    if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, (unit->au_Drive->id_General & 0x60) == 0x20,
+        FALSE, &status))
+    {
+        DERROR(bug("[ATA%02ld] %s: device did not accept PACKET command\n", unit->au_UnitNum, __func__));
+        atapi_DeviceReset(unit);
+        err = IOERR_UNITBUSY;
+        goto done;
+    }
+
+    pkt->ap_Status = status;
+    if (status & ATAF_ERROR)
+    {
+        /* The command was rejected before the packet was transferred */
+        pkt->ap_Error = PIO_In(bus, atapi_Error);
+        DATAPI(bug("[ATAPI] PACKET rejected, error %02lx\n", pkt->ap_Error));
+        err = ErrorMap[pkt->ap_Error >> 4];
+        goto done;
+    }
+    if (0 == (status & ATAF_DATAREQ))
+    {
+        DERROR(bug("[ATA%02ld] %s: no DRQ for packet, status %02lx\n", unit->au_UnitNum, __func__, status));
+        err = HFERR_BadStatus;
+        goto done;
+    }
 
     /*
      * setup appropriate hooks
      */
-    if (datalen == 0)
-        ata_IRQSetHandler(unit, &ata_IRQNoData, 0, 0, 0);
-    else if (*dma)
+    if (pkt->ap_DataLen == 0)
+        ata_IRQSetHandler(unit, &ata_IRQNoData, NULL, 0, 0);
+    else if (pkt->ap_DMA)
         ata_IRQSetHandler(unit, &ata_IRQDMAReadWrite, NULL, 0, 0);
-    else if (write)
-        ata_IRQSetHandler(unit, &ata_IRQPIOWriteAtapi, data, 0, datalen);
+    else if (pkt->ap_Write)
+        ata_IRQSetHandler(unit, &ata_IRQPIOWriteAtapi, pkt->ap_Data, 0, pkt->ap_DataLen);
     else
-        ata_IRQSetHandler(unit, &ata_IRQPIOReadAtapi, data, 0, datalen);
+        ata_IRQSetHandler(unit, &ata_IRQPIOReadAtapi, pkt->ap_Data, 0, pkt->ap_DataLen);
 
-    if (*dma)
+    if (pkt->ap_DMA)
     {
         DATAPI(bug("[ATAPI] Starting DMA\n"));
         DMA_Start(bus);
     }
 
     DATAPI(bug("[ATAPI] Sending packet\n"));
-    Unit_OutS(unit, cmd, 12);
+    Unit_OutS(unit, cmd, plen);
     ata_WaitNano(400, bus->ab_Base);
 
     DATAPI(bug("[ATAPI] Status after packet: %lx\n", ata_ReadAltStatus(bus)));
 
     /*
-     * Wait for command to complete. Note that two interrupts will occur
-     * before we wake up if this is a PIO data transfer
+     * Wait for command to complete. For PIO transfers the handler is run
+     * once per DRQ block and signals us from the final status interrupt.
      */
-    if (ata_WaitTO(unit->au_Bus->ab_Timer, TIMEOUT, 0,
-        1 << unit->au_Bus->ab_SleepySignal) == 0)
+    if (ata_WaitTO(bus->ab_Timer, TIMEOUT, 0, 1 << bus->ab_SleepySignal) == 0)
     {
-        DATAPI(bug("[DSCSI] Command timed out.\n"));
+        DERROR(bug("[ATA%02ld] %s: packet %02lx timed out\n", unit->au_UnitNum, __func__, cmd[0]));
+        atapi_DeviceReset(unit);
         err = IOERR_UNITBUSY;
+        goto done;
     }
-    else
-        err = atapi_EndCmd(unit);
 
-    if (*dma)
+    /*
+     * read alternate status register (per specs), then the status register
+     */
+    PIO_InAlt(bus, ata_AltStatus);
+    status = PIO_In(bus, atapi_Status);
+    pkt->ap_Status = status;
+
+    DATAPI(bug("[ATA%02ld] %s: Command complete. Status: %lx\n", unit->au_UnitNum, __func__, status));
+
+    if (!pkt->ap_DMA)
+        pkt->ap_Actual = pkt->ap_DataLen - unit->au_cmd_total;
+
+    if (status & ATAF_DATAREQ)
     {
-        DMA_End(bus, data, datalen, !write);
+        /*
+         * The device is still in a data phase: the transfer did not match
+         * what the command implied. Get it out of there.
+         */
+        DERROR(bug("[ATA%02ld] %s: device still in data phase after packet %02lx\n", unit->au_UnitNum, __func__, cmd[0]));
+        atapi_DrainFIFO(unit);
+        atapi_DeviceReset(unit);
+        err = HFERR_Phase;
+    }
+    else if (status & ATAPIF_CHECK)
+    {
+        pkt->ap_Error = PIO_In(bus, atapi_Error);
+        DATAPI(bug("[ATA%02ld] %s: CHECK CONDITION, sense key %lx\n", unit->au_UnitNum, __func__, pkt->ap_Error >> 4));
+        err = ErrorMap[pkt->ap_Error >> 4];
+    }
+    else if (unit->au_cmd_error != 0)
+    {
+        /* DMA failure or protocol violation noticed by the interrupt handler */
+        err = unit->au_cmd_error;
+    }
+    else if (pkt->ap_DMA)
+    {
+        /* Bus master hardware does not report a residual; a good status means everything was moved */
+        pkt->ap_Actual = pkt->ap_DataLen;
     }
 
-    DATAPI(bug("[ATAPI] IO error code %ld\n", err));
+done:
+    if (pkt->ap_DMA)
+        DMA_End(bus, pkt->ap_Data, pkt->ap_DataLen, !pkt->ap_Write);
+
+    DATAPI(bug("[ATA%02ld] %s: error %ld, status %02lx, %lu of %lu bytes\n", unit->au_UnitNum, __func__,
+        err, pkt->ap_Status, pkt->ap_Actual, pkt->ap_DataLen));
     return err;
 }
 
+/*
+ * HD_SCSICMD for PACKET devices: pass the caller's CDB through and fill in
+ * the scsi_Actual/scsi_Status/scsi_SenseActual results the way scsi.device
+ * does.
+ */
 static BYTE atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 {
-    APTR buffer = cmd->scsi_Data;
-    ULONG length = cmd->scsi_Length;
-    BYTE err = 0;
-    BOOL dma = FALSE;
+    struct atapi_Packet pkt;
+    BYTE err;
 
-    cmd->scsi_Actual = 0;
+    cmd->scsi_Actual      = 0;
+    cmd->scsi_CmdActual   = 0;
+    cmd->scsi_SenseActual = 0;
+    cmd->scsi_Status      = SCSI_STATUS_GOOD;
+
+    if ((cmd->scsi_Command == NULL) || (cmd->scsi_CmdLength < 6)
+        || (cmd->scsi_CmdLength > atapi_PacketSize(unit)))
+    {
+        DATAPI(bug("[ATA%02lx] %s: invalid CDB length %ld\n", unit->au_UnitNum, __func__, cmd->scsi_CmdLength));
+        return IOERR_NOCMD;
+    }
+    if ((cmd->scsi_Length != 0) && (cmd->scsi_Data == NULL))
+        return IOERR_BADADDRESS;
+
+    pkt.ap_CDB     = cmd->scsi_Command;
+    pkt.ap_CDBLen  = cmd->scsi_CmdLength;
+    pkt.ap_Data    = cmd->scsi_Data;
+    pkt.ap_DataLen = cmd->scsi_Length;
+    pkt.ap_Write   = (cmd->scsi_Flags & SCSIF_READ) == 0;
+    pkt.ap_DMA     = FALSE;
 
     DATAPI(bug("[DSCSI] Sending packet!\n"));
 
     /*
-     * setup DMA & push command
-     * it does not really mean we will use dma here btw
+     * Bulk data commands go through bus master DMA when the bus and the
+     * drive support it. If the DMA setup fails we fall back to PIO.
      */
-    if ((unit->au_Flags & AF_DMA) && (length !=0) && (buffer != 0))
-    {
-        dma = DMA_Setup(unit->au_Bus, buffer, length,
-                        cmd->scsi_Flags & SCSIF_READ);
-    }
+    if ((unit->au_Flags & AF_DMA) && (pkt.ap_DataLen != 0) && atapi_CanDMA(cmd->scsi_Command[0]))
+        pkt.ap_DMA = DMA_Setup(unit->au_Bus, pkt.ap_Data, pkt.ap_DataLen, !pkt.ap_Write);
 
-    err = atapi_SendPacket(unit, cmd->scsi_Command, cmd->scsi_Data, cmd->scsi_Length, &dma, (cmd->scsi_Flags & SCSIF_READ) == 0);
+    err = atapi_SendPacket(unit, &pkt);
 
-    DUMP({ if (cmd->scsi_Data != 0) dump(cmd->scsi_Data, cmd->scsi_Length); });
+    cmd->scsi_CmdActual = cmd->scsi_CmdLength;
+    cmd->scsi_Actual    = pkt.ap_Actual;
 
-    /*
-     * on check condition - grab sense data
-     */
+    DUMP({ if ((err == 0) && (cmd->scsi_Data != NULL)) dump(cmd->scsi_Data, cmd->scsi_Actual); });
+
     DATAPI(bug("[ATA%02lx] atapi_DirectSCSI: SCSI Flags: %02lx / Error: %ld\n", unit->au_UnitNum, cmd->scsi_Flags, err));
-    if ((err != 0) && (cmd->scsi_Flags & SCSIF_AUTOSENSE))
+    if (err == 0)
+        return 0;
+
+    if (pkt.ap_Status & ATAPIF_CHECK)
     {
-        DATAPI(bug("[DSCSI] atapi_DirectSCSI: Packet Failed. Calling atapi_RequestSense\n"));
-        atapi_RequestSense(unit, cmd->scsi_SenseData, cmd->scsi_SenseLength);
-        DUMP(dump(cmd->scsi_SenseData, cmd->scsi_SenseLength));
+        cmd->scsi_Status = SCSI_STATUS_CHECK_CONDITION;
+
+        /*
+         * on check condition - grab sense data
+         */
+        if ((cmd->scsi_Flags & SCSIF_AUTOSENSE) && (cmd->scsi_SenseData != NULL)
+            && (cmd->scsi_SenseLength != 0))
+        {
+            ULONG senseactual = 0;
+
+            DATAPI(bug("[DSCSI] atapi_DirectSCSI: Packet Failed. Calling atapi_RequestSense\n"));
+            atapi_RequestSense(unit, cmd->scsi_SenseData, cmd->scsi_SenseLength, &senseactual);
+            cmd->scsi_SenseActual = senseactual;
+            DUMP(dump(cmd->scsi_SenseData, senseactual));
+        }
+    }
+    else if (err == IOERR_UNITBUSY)
+    {
+        cmd->scsi_Status = SCSI_STATUS_BUSY;
     }
 
     return err;
@@ -2068,6 +2332,7 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
        0
     };
     UWORD i;
+    UBYTE key;
 
     D(bug("[ATA%02ld] atapi_TestUnitOK()\n", unit->au_UnitNum));
 
@@ -2082,8 +2347,13 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
     /* Send command twice, and take the second result, as some drives give
      * invalid (or at least not so useful) sense data straight after reset */
     for (i = 0; i < 2; i++)
-        unit->au_DirectSCSI(unit, &sc);
-    unit->au_SenseKey = sense[2];
+    {
+        sense[2] = 0;
+        if (unit->au_DirectSCSI(unit, &sc) == 0)
+            sense[2] = 0;
+    }
+    key = sense[2] & 0x0f;
+    unit->au_SenseKey = key;
 
     /*
      * we may have just lost the disc...?
@@ -2091,10 +2361,10 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
     /*
      * per MMC, drives are expected to return 02-3a-0# status, when disc is not present
      * that would translate into following code:
-     *    int p1 = ((sense[2] == 2) && (sense[12] == 0x3a)) ? 1 : 0;
+     *    int p1 = ((key == 2) && (sense[12] == 0x3a)) ? 1 : 0;
      * unfortunately, it's what MMC says, not what vendors code.
      */
-    int p1 = (sense[2] == 2) ? 1 : 0;
+    int p1 = (key == 2) ? 1 : 0;
     int p2 = (0 != (AF_DiscPresent & unit->au_Flags)) ? 1 : 0;
 
     if (p1 == p2)
@@ -2108,50 +2378,97 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
         unit->au_Flags |= AF_DiscChanged;
     }
 
-    DATAPI(bug("[ATA%02ld] atapi_TestUnitOK: Test Unit Ready sense: %02lx, Media %s\n", unit->au_UnitNum, sense[2], unit->au_Flags & AF_DiscPresent ? "PRESENT" : "ABSENT"));
-    return sense[2];
+    DATAPI(bug("[ATA%02ld] atapi_TestUnitOK: Test Unit Ready sense: %02lx, Media %s\n", unit->au_UnitNum, key, unit->au_Flags & AF_DiscPresent ? "PRESENT" : "ABSENT"));
+    return key;
 }
 
+/*
+ * CMD_READ / CMD_WRITE for PACKET devices are done with READ(10) and
+ * WRITE(10), whose transfer length field is 16 bits wide.
+ */
 static BYTE atapi_Read(struct ata_Unit *unit, ULONG block, ULONG count,
     APTR buffer, ULONG *act)
 {
-    UBYTE cmd[] = {
-       SCSI_READ10, 0, block>>24, block>>16, block>>8, block, 0, count>>8, count, 0
-    };
-    struct SCSICmd sc = {
-       0
-    };
+    BYTE err = 0;
 
     D(bug("[ATA%02ld] atapi_Read()\n", unit->au_UnitNum));
 
-    sc.scsi_Command = (void*) &cmd;
-    sc.scsi_CmdLength = sizeof(cmd);
-    sc.scsi_Data = buffer;
-    sc.scsi_Length = count << unit->au_SectorShift;
-    sc.scsi_Flags = SCSIF_READ;
+    *act = 0;
+    while (count > 0)
+    {
+        ULONG part = (count > 0xffff) ? 0xffff : count;
+        UBYTE cmd[10] = {
+           SCSI_READ10, 0, block>>24, block>>16, block>>8, block, 0, part>>8, part, 0
+        };
+        struct SCSICmd sc = {
+           0
+        };
 
-    return unit->au_DirectSCSI(unit, &sc);
+        sc.scsi_Command = (void*) &cmd;
+        sc.scsi_CmdLength = sizeof(cmd);
+        sc.scsi_Data = buffer;
+        sc.scsi_Length = part << unit->au_SectorShift;
+        sc.scsi_Flags = SCSIF_READ;
+
+        err = unit->au_DirectSCSI(unit, &sc);
+        *act += sc.scsi_Actual;
+        if (err != 0)
+            break;
+        if (sc.scsi_Actual != sc.scsi_Length)
+        {
+            /* Short transfer with good status: do not pretend the buffer is valid */
+            err = TDERR_NotSpecified;
+            break;
+        }
+
+        buffer = (APTR)((IPTR)buffer + sc.scsi_Length);
+        block += part;
+        count -= part;
+    }
+
+    return err;
 }
 
 static BYTE atapi_Write(struct ata_Unit *unit, ULONG block, ULONG count,
     APTR buffer, ULONG *act)
 {
-    UBYTE cmd[] = {
-       SCSI_WRITE10, 0, block>>24, block>>16, block>>8, block, 0, count>>8, count, 0
-    };
-    struct SCSICmd sc = {
-       0
-    };
+    BYTE err = 0;
 
     D(bug("[ATA%02ld] atapi_Write()\n", unit->au_UnitNum));
 
-    sc.scsi_Command = (void*) &cmd;
-    sc.scsi_CmdLength = sizeof(cmd);
-    sc.scsi_Data = buffer;
-    sc.scsi_Length = count << unit->au_SectorShift;
-    sc.scsi_Flags = SCSIF_WRITE;
+    *act = 0;
+    while (count > 0)
+    {
+        ULONG part = (count > 0xffff) ? 0xffff : count;
+        UBYTE cmd[10] = {
+           SCSI_WRITE10, 0, block>>24, block>>16, block>>8, block, 0, part>>8, part, 0
+        };
+        struct SCSICmd sc = {
+           0
+        };
 
-    return unit->au_DirectSCSI(unit, &sc);
+        sc.scsi_Command = (void*) &cmd;
+        sc.scsi_CmdLength = sizeof(cmd);
+        sc.scsi_Data = buffer;
+        sc.scsi_Length = part << unit->au_SectorShift;
+        sc.scsi_Flags = SCSIF_WRITE;
+
+        err = unit->au_DirectSCSI(unit, &sc);
+        *act += sc.scsi_Actual;
+        if (err != 0)
+            break;
+        if (sc.scsi_Actual != sc.scsi_Length)
+        {
+            err = TDERR_NotSpecified;
+            break;
+        }
+
+        buffer = (APTR)((IPTR)buffer + sc.scsi_Length);
+        block += part;
+        count -= part;
+    }
+
+    return err;
 }
 
 static BYTE atapi_Eject(struct ata_Unit *unit)
@@ -2175,31 +2492,43 @@ static BYTE atapi_Eject(struct ata_Unit *unit)
     return unit->au_DirectSCSI(unit, &sc);
 }
 
+/*
+ * REQUEST SENSE, used for autosense. Goes straight to the transport so
+ * that it can never recurse into another autosense.
+ */
 static ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense,
-    ULONG senselen)
+    ULONG senselen, ULONG *actual)
 {
-    UBYTE cmd[] = {
-       3, 0, 0, 0, senselen & 0xfe, 0
+    UBYTE cmd[6] = {
+       SCSI_REQUESTSENSE, 0, 0, 0, 0, 0
     };
-    struct SCSICmd sc = {
-       0
-    };
+    struct atapi_Packet pkt;
 
     D(bug("[ATA%02ld] atapi_RequestSense()\n", unit->au_UnitNum));
 
-    if ((senselen == 0) || (sense == 0))
-    {
+    *actual = 0;
+    if ((senselen == 0) || (sense == NULL))
        return 0;
-    }
-    sc.scsi_Data = (void*)sense;
-    sc.scsi_Length = senselen & 0xfe;
-    sc.scsi_Command = (void*)&cmd;
-    sc.scsi_CmdLength = 6;
-    sc.scsi_Flags = SCSIF_READ;
 
-    unit->au_DirectSCSI(unit, &sc);
+    /* The allocation length is a single byte */
+    if (senselen > 255)
+        senselen = 255;
+    cmd[4] = senselen;
 
-    DATAPI(dump(sense, senselen));
+    pkt.ap_CDB     = cmd;
+    pkt.ap_CDBLen  = sizeof(cmd);
+    pkt.ap_Data    = sense;
+    pkt.ap_DataLen = senselen;
+    pkt.ap_Write   = FALSE;
+    pkt.ap_DMA     = FALSE;
+
+    atapi_SendPacket(unit, &pkt);
+    *actual = pkt.ap_Actual;
+
+    DATAPI(dump(sense, pkt.ap_Actual));
+    if (pkt.ap_Actual < 14)
+        return 0;
+
     DATAPI(bug("[SENSE] atapi_RequestSense: sensed data: %lx %lx %lx\n", sense[2]&0xf, sense[12], sense[13]));
     return ((sense[2]&0xf)<<16) | (sense[12]<<8) | (sense[13]);
 }
@@ -2446,56 +2775,4 @@ void ata_InitBus(struct ata_Bus *bus)
         ata_CloseTimer(bus->ab_Timer);
     }
     DINIT(bug("[ATA  ] %s: Finished\n", __func__));
-}
-
-/*
- * not really sure what this is meant to be - TO BE REPLACED
- */
-static const ULONG ErrorMap[] = {
-    CDERR_NotSpecified,
-    CDERR_NoSecHdr,
-    CDERR_NoDisk,
-    CDERR_NoSecHdr,
-    CDERR_NoSecHdr,
-    CDERR_NOCMD,
-    CDERR_NoDisk,
-    CDERR_WriteProt,
-    CDERR_NotSpecified,
-    CDERR_NotSpecified,
-    CDERR_NotSpecified,
-    CDERR_ABORTED,
-    CDERR_NotSpecified,
-    CDERR_NotSpecified,
-    CDERR_NoSecHdr,
-    CDERR_NotSpecified,
-};
-
-static BYTE atapi_EndCmd(struct ata_Unit *unit)
-{
-    struct ata_Bus *bus = unit->au_Bus;
-    UBYTE status;
-
-    DATAPI(bug("[ATA%02ld] %s()\n", __func__, unit->au_UnitNum));
-
-    /*
-     * read alternate status register (per specs)
-     */
-    status = PIO_InAlt(bus, ata_AltStatus);
-    DATAPI(bug("[ATA%02ld] %s: Alternate status: %lx\n", __func__, unit->au_UnitNum, status));
-
-    status = PIO_In(bus, atapi_Status);
-
-    DATAPI(bug("[ATA%02ld] %s: Command complete. Status: %lx\n",
-        __func__, unit->au_UnitNum, status));
-
-    if (!(status & ATAPIF_CHECK))
-    {
-        return 0;
-    }
-    else
-    {
-       status = PIO_In(bus, atapi_Error);
-       DATAPI(bug("[ATA%02ld] %s: Error code 0x%lx\n", __func__, unit->au_UnitNum, status >> 4));
-       return ErrorMap[status >> 4];
-    }
 }
