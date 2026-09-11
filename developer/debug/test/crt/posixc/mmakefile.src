@@ -24,6 +24,7 @@ POSIXCTESTFILES := \
         statfs \
         strptime \
         strtok_r \
+        sysconf_clktck \
         termios_tty \
         time_r \
         uname \
