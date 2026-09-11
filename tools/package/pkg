@@ -54,8 +54,7 @@ def readFile( file ):
         file.read( struct.calcsize( PKG_FILE_PATHLENGTH_FORMAT ) )
     )
     
-    path = file.read( pathLength[0] )
-    file.read(1)
+    path = file.read( pathLength[0] + 1 ).split( b'\0', 1 )[0]
     
     dataLength = struct.unpack(
         PKG_FILE_DATALENGTH_FORMAT,
@@ -100,6 +99,7 @@ def unpack( source, destination ):
     
     oldwd = os.getcwd()
     os.chdir( destination )
+    destinationRoot = os.path.realpath( os.getcwdb() )
     
     version = readHeader( input )
     
@@ -108,8 +108,16 @@ def unpack( source, destination ):
         
         print('« %s (%d bytes)' % (path, len( data )))
         
+        target = os.path.realpath( os.path.abspath( path ) )
+        try:
+            contained = os.path.commonpath((destinationRoot, target)) == destinationRoot
+        except ValueError:
+            contained = False
+        if os.path.isabs( path ) or not contained:
+            raise ValueError('Package member path escapes destination: %r' % path)
+
         directory = os.path.dirname( path )
-        if directory != '' and not os.path.exists( directory ):
+        if directory and not os.path.exists( directory ):
             os.makedirs( directory )
             
         output = open( path, 'wb' )
