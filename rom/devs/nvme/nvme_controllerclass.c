@@ -418,6 +418,15 @@ resetfailed:
 
                         D(bug ("[NVME:Controller] %s: mdts = %u\n", __func__, ctrl->mdts);)
                         dev->dev_mdts = ctrl->mdts;
+                        /*
+                         * MDTS is a power of two in units of the minimum memory
+                         * page size (CAP.MPSMIN). A value of 0 means the controller
+                         * places no limit on the transfer size.
+                         */
+                        if ((ctrl->mdts == 0) || ((ctrl->mdts + dev->pageshift) >= 32))
+                            dev->dev_MaxXfer = 0;
+                        else
+                            dev->dev_MaxXfer = 1UL << (ctrl->mdts + dev->pageshift);
 
                         CopyMem(((UBYTE *)ctrl) + NVME_ID_CTRL_SGLS_OFFSET, &sglcap, sizeof(sglcap));
                         sglcap = AROS_LE2LONG(sglcap);

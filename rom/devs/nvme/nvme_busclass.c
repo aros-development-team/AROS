@@ -575,6 +575,20 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             unit->au_Low = lbaStart;
                             unit->au_High = lbaEnd - 1;
                             unit->au_Bus = data;
+                            /*
+                             * Per-unit transfer cap: the controller's MDTS (if any),
+                             * further bounded by the 16 bit zero-based NLB field,
+                             * i.e. at most 65536 LBAs in a single command.
+                             */
+                            {
+                                UQUAD nlbmax = (UQUAD)65536 << unit->au_SecShift;
+                                UQUAD cap = data->ab_Dev->dev_MaxXfer ? data->ab_Dev->dev_MaxXfer : nlbmax;
+                                if (cap > nlbmax)
+                                    cap = nlbmax;
+                                if (cap > 0xFFFFFFFFULL)
+                                    cap = 0xFFFFFFFFULL;
+                                unit->au_MaxTransfer = (ULONG)cap;
+                            }
 
                             data->ab_IDNode = HIDD_Storage_AllocateID(NVMEBase->storageRoot, NVMEIDTags);
 
@@ -618,7 +632,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             pp[DE_HIGHCYL      + 4] = unit->nu_Cyl - 1;
                             pp[DE_NUMBUFFERS   + 4] = 10;
                             pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
-                            pp[DE_MAXTRANSFER  + 4] = (1 << data->ab_Dev->dev_mdts) * data->ab_Dev->pagesize;
+                            pp[DE_MAXTRANSFER  + 4] = unit->au_MaxTransfer;
                             D(
                                 bug("[NVME:Bus] NVMEBus_Start: mdts = %u\n", data->ab_Dev->dev_mdts);
                                 bug("[NVME:Bus] NVMEBus_Start: DE_MAXTRANSFER = %u\n", pp[DE_MAXTRANSFER + 4]);

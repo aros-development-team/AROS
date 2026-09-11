@@ -52,6 +52,9 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     APTR data = iotd->iotd_Req.io_Data;
     ULONG len = iotd->iotd_Req.io_Length;
     struct nvme_queue *nvmeq;
+    UQUAD lba = off64 >> unit->au_SecShift;
+    ULONG secmask = (1UL << unit->au_SecShift) - 1;
+    ULONG nblocks = len >> unit->au_SecShift;
     struct completionevent_handler ioehandle;
     struct nvme_command cmdio;
     int queueno;
@@ -66,17 +69,31 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         bug("[NVME%02ld] %s: %u queues available\n", unit->au_UnitNum, __func__, unit->au_Bus->ab_Dev->queuecnt);
     )
 
-    if ((off64 >> unit->au_SecShift) > unit->au_High) {
-        bug("[NVME%02ld] %s: BADADDRESS %x > %x\n", unit->au_UnitNum, __func__, (off64 >> unit->au_SecShift), unit->au_High);
-        io->io_Error = IOERR_BADADDRESS;
-        return TRUE;
-    } else if ((len == 0) || (len > (1 << unit->au_Bus->ab_Dev->dev_mdts) * unit->au_Bus->ab_Dev->pagesize)) {
+    if (len == 0) {
         /* len == 0 is the standard TD64 capability probe (see e.g. fat-handler
            Probe64BitSupport); reject it quietly */
-        if (len != 0)
-            bug("[NVME%02ld] %s: BADLENGTH (%s %u bytes at block %x, cmd %u, task '%s')\n", unit->au_UnitNum, __func__,
-                is_write ? "write" : "read", len, (off64 >> unit->au_SecShift), io->io_Command,
-                FindTask(NULL)->tc_Node.ln_Name ? FindTask(NULL)->tc_Node.ln_Name : "<unnamed>");
+        io->io_Error = IOERR_BADLENGTH;
+        return TRUE;
+    }
+
+    /* The whole transfer must lie inside the namespace and start on an LBA boundary */
+    if ((off64 & secmask) || (lba > unit->au_High) || (nblocks > (unit->au_High - lba + 1))) {
+        bug("[NVME%02ld] %s: BADADDRESS (%s %u bytes at block %x%08x, last block %x%08x)\n", unit->au_UnitNum, __func__,
+            is_write ? "write" : "read", len, (ULONG)(lba >> 32), (ULONG)lba,
+            (ULONG)(unit->au_High >> 32), (ULONG)unit->au_High);
+        io->io_Error = IOERR_BADADDRESS;
+        return TRUE;
+    }
+
+    /*
+     * The length must be a whole number of LBAs (NLB is derived from it and
+     * would otherwise silently round down) and within the unit's cap, which
+     * is what we advertise as DE_MAXTRANSFER.
+     */
+    if ((len & secmask) || (len > unit->au_MaxTransfer)) {
+        bug("[NVME%02ld] %s: BADLENGTH (%s %u bytes at block %x, max %u, cmd %u, task '%s')\n", unit->au_UnitNum, __func__,
+            is_write ? "write" : "read", len, (ULONG)lba, unit->au_MaxTransfer, io->io_Command,
+            FindTask(NULL)->tc_Node.ln_Name ? FindTask(NULL)->tc_Node.ln_Name : "<unnamed>");
         io->io_Error = IOERR_BADLENGTH;
         return TRUE;
     }
@@ -125,8 +142,8 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     }
 
     cmdio.rw.nsid = AROS_LONG2LE(nsid);
-    cmdio.rw.length = AROS_WORD2LE((len >> unit->au_SecShift) - 1);
-    cmdio.rw.slba = AROS_QUAD2LE(off64 >> unit->au_SecShift);
+    cmdio.rw.length = AROS_WORD2LE(nblocks - 1);
+    cmdio.rw.slba = AROS_QUAD2LE(lba);
     cmdio.rw.control = 0;
     cmdio.rw.dsmgmt = 0;
 
