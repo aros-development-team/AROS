@@ -97,82 +97,91 @@ def unpack( source, destination ):
     inputSize = os.path.getsize( source )
     input     = open( source, 'rb' )
     
-    oldwd = os.getcwd()
     try:
-        os.chdir( destination )
-        destinationRoot = os.path.realpath( os.getcwdb() )
+        oldwd = os.getcwd()
+        try:
+            os.chdir( destination )
+            destinationRoot = os.path.realpath( os.getcwdb() )
 
-        version = readHeader( input )
+            version = readHeader( input )
 
-        while input.tell() < inputSize:
-            (path, data) = readFile( input )
+            while input.tell() < inputSize:
+                (path, data) = readFile( input )
 
-            print('« %s (%d bytes)' % (path, len( data )))
+                print('« %s (%d bytes)' % (path, len( data )))
 
-            target = os.path.realpath( os.path.abspath( path ) )
-            try:
-                contained = os.path.commonpath((destinationRoot, target)) == destinationRoot
-            except ValueError:
-                contained = False
-            if os.path.isabs( path ) or not contained:
-                raise ValueError('Package member path escapes destination: %r' % path)
+                target = os.path.realpath( os.path.abspath( path ) )
+                try:
+                    contained = os.path.commonpath((destinationRoot, target)) == destinationRoot
+                except ValueError:
+                    contained = False
+                if os.path.isabs( path ) or not contained:
+                    raise ValueError('Package member path escapes destination: %r' % path)
 
-            directory = os.path.dirname( path )
-            if directory and not os.path.exists( directory ):
-                os.makedirs( directory )
+                directory = os.path.dirname( path )
+                if directory and not os.path.exists( directory ):
+                    os.makedirs( directory )
 
-            output = open( path, 'wb' )
-            output.write( data )
-            output.close()
+                output = open( path, 'wb' )
+                try:
+                    output.write( data )
+                finally:
+                    output.close()
 
+        finally:
+            os.chdir( oldwd )
     finally:
-        os.chdir( oldwd )
+        input.close()
     
 
 def pack( destination, files ):
     'pack( source, destination ) -> None'
-    
+
     output = open( destination, 'wb' )
-
-    oldwd = os.getcwd()
     try:
-        if os.path.isdir( files[0] ):
-            os.chdir( files[0] )
-            files = files[1:]
 
-        if len(files) == 0:
-            files = listFiles()
+        oldwd = os.getcwd()
+        try:
+            if os.path.isdir( files[0] ):
+                os.chdir( files[0] )
+                files = files[1:]
 
-        writeHeader( output, PKG_VERSION )
+            if len(files) == 0:
+                files = listFiles()
 
-        for path in files:
-            print('» %s (%d bytes)' % (path, os.path.getsize( path )))
+            writeHeader( output, PKG_VERSION )
 
-            input = open( path, 'rb' )
-            # Record the name the file is known by, never the path it
-            # happened to be built at - an absolute path is a property of
-            # the build machine, not of the package.
-            name = os.path.basename( path ) if os.path.isabs( path ) else path
-            writeFile( output, name, input.read() )
-            input.close()
+            for path in files:
+                print('» %s (%d bytes)' % (path, os.path.getsize( path )))
+
+                input = open( path, 'rb' )
+                try:
+                    # Record the name the file is known by, never the path it
+                    # happened to be built at - an absolute path is a property of
+                    # the build machine, not of the package.
+                    name = os.path.basename( path ) if os.path.isabs( path ) else path
+                    writeFile( output, name, input.read() )
+                finally:
+                    input.close()
+
+        finally:
+            os.chdir( oldwd )
+
+        output.seek( struct.calcsize( PKG_HEADER_FORMAT ) )
+        st = os.fstat( output.fileno() )
+
+        output.write(
+            struct.pack(
+                PKG_FILE_DATALENGTH_FORMAT,
+                st[ST_SIZE]
+            )
+        )
+
 
     finally:
-        os.chdir( oldwd )
-    
-    output.seek( struct.calcsize( PKG_HEADER_FORMAT ) )
-    st = os.fstat( output.fileno() )
-    
-    output.write(
-        struct.pack(
-            PKG_FILE_DATALENGTH_FORMAT,
-            st[ST_SIZE]
-        )
-    )
-    
-    
-    output.close()
-    
-    
+        output.close()
+
+
 if __name__ == '__main__':
     mode        = sys.argv[1]
     
