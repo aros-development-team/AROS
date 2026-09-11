@@ -192,6 +192,12 @@ struct Volume *initVolume
                 else
                         volume->bootblocks=devicedef->de_Reserved;
                 volume->numbuffers = devicedef->de_NumBuffers;
+                /* Respect the device's transfer limit, if one is given */
+                volume->maxtransfer = 0xFFFFFFFF;
+                if ((devicedef->de_TableSize >= DE_MAXTRANSFER)
+                        && (devicedef->de_MaxTransfer != 0))
+                        volume->maxtransfer = devicedef->de_MaxTransfer;
+                D(bug("[afs] initVolume: MaxTransfer=%lu\n", volume->maxtransfer));
                 volume->blockcache=initCache(afsbase, volume, volume->numbuffers);
                 initBulkBuffer(afsbase, volume);
                 if (volume->blockcache != NULL)

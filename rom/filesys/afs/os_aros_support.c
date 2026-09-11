@@ -627,38 +627,60 @@ UQUAD offset;
         return retval;
 }
 
-LONG readDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
+/*
+ * Issue a transfer in pieces no larger than the device's MaxTransfer,
+ * offering the usual Retry/Cancel requester for each failing piece.
+ */
+static LONG readwriteDiskChunked
+        (
+                struct AFSBase *afsbase,
+                struct Volume *volume,
+                ULONG start,
+                ULONG count,
+                APTR data,
+                ULONG cmd,
+                CONST_STRPTR errtext
+        )
+{
 LONG result = 0;
-BOOL retry = TRUE;
+ULONG maxblocks = volume->maxtransfer / BLOCK_SIZE(volume);
 
-        while (retry)
+        if (maxblocks == 0)
+                maxblocks = 1;
+
+        while (count > 0)
         {
-                DB2(bug("[afs]    readDisk: reading blocks %lu to %lu\n", start, start+count-1));
-                result = readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdread);
-                if (result == 0)
-                        retry = FALSE;
-                else
-                        retry = showRetriableError(afsbase, "Read error %ld on block %lu", result, start) == 1;
+                ULONG chunk = (count < maxblocks) ? count : maxblocks;
+                BOOL retry = TRUE;
+
+                while (retry)
+                {
+                        DB2(bug("[afs]    readwriteDisk: cmd %lu blocks %lu to %lu\n", cmd, start, start+chunk-1));
+                        result = readwriteDisk(afsbase, volume, start, chunk, data, cmd);
+                        if (result == 0)
+                                retry = FALSE;
+                        else
+                                retry = showRetriableError(afsbase, errtext, result, start) == 1;
+                }
+                if (result != 0)
+                        return result;
+
+                start += chunk;
+                count -= chunk;
+                data = (UBYTE *)data + chunk * BLOCK_SIZE(volume);
         }
 
-        return result;
+        return 0;
+}
+
+LONG readDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
+        return readwriteDiskChunked(afsbase, volume, start, count, data,
+                volume->ioh.cmdread, "Read error %ld on block %lu");
 }
 
 LONG writeDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
-LONG result = 0;
-BOOL retry = TRUE;
-
-        while (retry)
-        {
-                DB2(bug("[afs]    writeDisk: writing blocks %lu to %lu\n", start, start+count-1));
-                result = readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdwrite);
-                if (result == 0)
-                        retry = FALSE;
-                else
-                        retry = showRetriableError(afsbase, "Write error %ld on block %lu", result, start) == 1;
-        }
-
-        return result;
+        return readwriteDiskChunked(afsbase, volume, start, count, data,
+                volume->ioh.cmdwrite, "Write error %ld on block %lu");
 }
 
 #undef SysBase

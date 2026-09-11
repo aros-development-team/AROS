@@ -20,6 +20,7 @@ struct Volume {
 	ULONG SizeBlock;             /* Block size in words */
 	ULONG blocksectors;          /* nr of sectors per block */
 	ULONG sectorsize;            /* nr of bytes per sector */
+	ULONG maxtransfer;           /* max bytes per device request (DE_MAXTRANSFER) */
 
         ULONG FNameMax;
 
