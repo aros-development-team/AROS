@@ -50,7 +50,7 @@ IPTR Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_Boopsi_MaxHeight:
-            data->boopsi_minwidth = tag->ti_Data;
+            data->boopsi_maxheight = tag->ti_Data;
             break;
 
         case MUIA_Boopsi_MaxWidth:
@@ -152,7 +152,7 @@ IPTR Boopsi__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_Boopsi_MaxHeight:
-            data->boopsi_minwidth = tag->ti_Data;
+            data->boopsi_maxheight = tag->ti_Data;
             break;
 
         case MUIA_Boopsi_MaxWidth:
