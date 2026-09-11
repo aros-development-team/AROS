@@ -304,6 +304,7 @@ POSIXC_ARCH := \
 
 POSIXC_LINKLIB := \
     ctype \
+    fnmatch \
     ftime \
     gcvt \
     getopt \
