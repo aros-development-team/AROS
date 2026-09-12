@@ -108,7 +108,9 @@
 #define __cond_lock(x, c)       (c)
 #define __chk_user_ptr(x)       (void)0
 #define __chk_io_ptr(x)         (void)0
+#ifndef __same_type /* Mesa util/macros.h has the same */
 #define __same_type(a, b)       __builtin_types_compatible_p(typeof(a), typeof(b))
+#endif
 #define __must_be_array(a)      __same_type(a, &(a)[0])
 #define __is_constexpr(x)       __builtin_constant_p(x)
 #define __compiletime_error(m)

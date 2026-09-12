@@ -400,7 +400,21 @@
  #define NOUVEAU_ALIGN(x,bytes) (((x) + ((bytes) - 1)) & ~((bytes) - 1))
  
  #define NV50_TILE_PITCH(m) (64 << ((m) & 0xf))
-@@ -132,7 +141,7 @@
+@@ -89,11 +98,13 @@
+    return r;
+ }
+ 
++#ifndef SWAP /* Mesa's util/macros.h defines the same */
+ #define SWAP(x, y) do {			\
+ 		typeof(x) __z = (x);	\
+ 		(x) = (y);		\
+ 		(y) = __z;		\
+ 	} while (0)
++#endif
+ 
+ static inline uint32_t
+ PUSH_AVAIL(struct nouveau_pushbuf *push)
+@@ -132,7 +143,7 @@
  static inline void
  PUSH_KICK(struct nouveau_pushbuf *push)
  {
@@ -1748,7 +1762,7 @@
 +		switch (drawmode) {
 +		case vHidd_GC_DrawMode_Copy:                          break;
 +		case vHidd_GC_DrawMode_Clear:        fill = 0;        break;
-+		case vHidd_GC_DrawMode_Set:          fill = ~0UL;     break;
++		case vHidd_GC_DrawMode_Set:          fill = ~0U;     break;
 +		case vHidd_GC_DrawMode_CopyInverted: fill = ~color;   break;
 +		case vHidd_GC_DrawMode_NoOp:         return TRUE;
 +		default:

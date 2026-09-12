@@ -98,11 +98,13 @@ static inline int round_up_pow2(int x)
    return r;
 }
 
+#ifndef SWAP /* Mesa's util/macros.h defines the same */
 #define SWAP(x, y) do {			\
 		typeof(x) __z = (x);	\
 		(x) = (y);		\
 		(y) = __z;		\
 	} while (0)
+#endif
 
 static inline uint32_t
 PUSH_AVAIL(struct nouveau_pushbuf *push)

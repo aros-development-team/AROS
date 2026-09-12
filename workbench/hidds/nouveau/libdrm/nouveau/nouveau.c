@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <xf86drm.h>
 
-#define NOUVEAU_USE_UTIL_LIST
 #include "nouveau.h"
 #include "nvif/class.h"
 #include "nvif/cl0080.h"

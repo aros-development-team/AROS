@@ -1274,7 +1274,7 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
 		switch (drawmode) {
 		case vHidd_GC_DrawMode_Copy:                          break;
 		case vHidd_GC_DrawMode_Clear:        fill = 0;        break;
-		case vHidd_GC_DrawMode_Set:          fill = ~0UL;     break;
+		case vHidd_GC_DrawMode_Set:          fill = ~0U;     break;
 		case vHidd_GC_DrawMode_CopyInverted: fill = ~color;   break;
 		case vHidd_GC_DrawMode_NoOp:         return TRUE;
 		default:
