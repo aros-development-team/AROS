@@ -131,7 +131,14 @@ typedef struct prim_vol_desc {
 /* for internal use only: */
 
 typedef struct iso_vol_info {
-  prim_vol_desc		pvd;
+  struct {
+    char                system_id[32];
+    char                volume_id[32];
+    uint32_t            space_size;
+    unsigned short      block_size;
+    directory_record    root;
+    time_and_date       vol_creation;
+  } pvd;
   int			skip;
   unsigned short	blockshift;
 } t_iso_vol_info;

@@ -127,7 +127,12 @@
     if(stacksize < AROS_STACKSIZE)
         stacksize = AROS_STACKSIZE;
 
+#ifdef __mc68000
+    /* Keep temporary command stacks out of the low-address free region. */
+    stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY | MEMF_REVERSE);
+#else
     stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY);
+#endif
     if(stack==NULL)
         return -1;
 

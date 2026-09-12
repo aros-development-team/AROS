@@ -81,8 +81,6 @@
 {
     AROS_LIBFUNC_INIT
 
-#define MAX_PUDDLE_SIZE (__WORDSIZE * 1024 / 2)     /* Maximum puddle size */
-
 /*
  * Make sure class instance data is adequately aligned on SMP capable platforms
  */
@@ -137,8 +135,6 @@
             
             if (iclass != NULL)
             {
-                int perpuddle;
-
                 /* Initialize fields */
                 iclass->cl_Super      = superClassPtr;
                 iclass->cl_ID         = classID;
@@ -155,37 +151,13 @@
                         bug("[Intuition] %s: (orig offset %d)\n", __func__, superClassPtr->cl_InstOffset + superClassPtr->cl_InstSize);
                     }
                 )
-                /* Try to limit the puddle to MAX_PUDDLE_SIZE.
-                 * This comes in to play, for example, with
-                 * picture.library, where 32 instances of the
-                 * picture class is a whopping 280K.
-                 */
-                perpuddle = MAX_PUDDLE_SIZE / iclass->cl_ObjectSize;
-                if (perpuddle == 0)
-                    perpuddle = 1;
-                if (perpuddle > 32)
-                    perpuddle = 32;
-                D(
-                    bug("[Intuition] %s:%d alloc(s) per %dbyte puddle\n", __func__, perpuddle, MAX_PUDDLE_SIZE);
-                    bug("[Intuition] %s: needed = %dbyte  puddle\n", __func__, perpuddle * iclass->cl_ObjectSize);
-                )
-                /* Initialize memory subsystem */
-                iclass->cl_MemoryPool = CreatePool
-                (
-                    MEMF_ANY | MEMF_CLEAR | MEMF_SEM_PROTECTED,
-                    perpuddle * iclass->cl_ObjectSize, iclass->cl_ObjectSize
-                );
-                   
-                if (iclass->cl_MemoryPool != NULL)
-                {
-                    /* SuperClass is used one more time now */
-                    AROS_ATOMIC_INC(superClassPtr->cl_SubclassCount);
-                }
-                else
-                {
-                    FreeMem(iclass, sizeof(Class));
-                    iclass = NULL;
-                }
+                /* The per-class pool is created by NewObjectA() when the
+                 * class is first instantiated. Most registered classes are
+                 * never used during a given session. */
+                iclass->cl_MemoryPool = NULL;
+
+                /* SuperClass is used one more time now */
+                AROS_ATOMIC_INC(superClassPtr->cl_SubclassCount);
             }
         }
         else

@@ -485,10 +485,16 @@ static LONG executeLine(ShellState *ss, STRPTR commandArgs)
     BPTR module, scriptLock = BNULL;
     LONG error = 0;
     TEXT *cmd;
+    ULONG cmdSize = (commandArgs ? strlen(commandArgs) : 0)
+        + FILE_MAX + 4;
 
     D(bug("[Shell] executeLine: %s %s\n", command, commandArgs));
 
-    cmd = AllocVec(4096 * sizeof(TEXT), MEMF_ANY);
+    /* Reserve only what can be written below: an optional quoted path
+     * (limited to FILE_MAX by NameFromLock), a separating space, the
+     * already parsed argument string, and the terminator.
+     */
+    cmd = AllocVec(cmdSize, MEMF_ANY);
     if (!cmd) {
         PrintFault(ERROR_NO_FREE_STORE, NULL);
         return ERROR_NO_FREE_STORE;
@@ -741,8 +747,7 @@ __startup AROS_CLI(ShellStart)
 
     D(bug("Shell %ld: exiting, error = %ld\n", ss->cliNumber, error));
 
-    if (ss->arg_rd)
-        FreeDosObject(DOS_RDARGS, ss->arg_rd);
+    freeInterpreterState(ss);
 
     FreeMem(ss, sizeof(ShellState));
 
@@ -757,4 +762,3 @@ __startup AROS_CLI(ShellStart)
 
     return error ? RETURN_FAIL : RETURN_OK;
 }
-

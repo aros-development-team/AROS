@@ -63,7 +63,7 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
             }
 
             Alert_DisplayKrnAlert(t, alertNum | AT_DeadEnd, iet->iet_AlertLocation, iet->iet_AlertStack,
-                    iet->iet_AlertType, (APTR)&iet->iet_AlertData, SysBase);
+                    iet->iet_AlertType, (APTR)ETaskAlertData(iet), SysBase);
 
             if (alertNum & AT_DeadEnd)
             {

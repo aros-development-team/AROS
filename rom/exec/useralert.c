@@ -116,7 +116,7 @@ reshow:
             if ((choice == 1) && !full)
             {
                 /* 'More' has been pressed. Append full alert data */
-                FormatAlertExtra(end, iet->iet_AlertStack, iet ? iet->iet_AlertType : AT_NONE, iet ? &iet->iet_AlertData : NULL, SysBase);
+                FormatAlertExtra(end, iet->iet_AlertStack, iet ? iet->iet_AlertType : AT_NONE, iet ? ETaskAlertData(iet) : NULL, SysBase);
 
                 /* Sanite the text before using in BuildEasyRequestArgs. Make sure all formatting strings are removed */
                 Sanitize(end);

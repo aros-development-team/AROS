@@ -120,13 +120,13 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
             D(bug("[Alert] Setting alert context, type %u, data 0x%p\n", type, data));
 
             iet->iet_AlertType = type;
-            CopyMem(data, &iet->iet_AlertData, contextSizes[type]);
+            CopyMem(data, ETaskAlertData(iet), contextSizes[type]);
         }
         else
         {
             /* Either no data or already present */
             type = iet->iet_AlertType;
-            data = &iet->iet_AlertData;
+            data = ETaskAlertData(iet);
             
             D(bug("[Alert] Got stored alert context, type %u, data 0x%p\n", type, data));
         }

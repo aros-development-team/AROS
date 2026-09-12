@@ -30,6 +30,8 @@ FILES := \
         platform_init \
         setprotection \
         mapglobal \
+        createcontext \
+        deletecontext \
         mmu \
         virtualtophysical \
         bushandler
