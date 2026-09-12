@@ -711,6 +711,65 @@ static UBYTE *Encode35(struct DiskObject *icon, ULONG depth, UBYTE *dtype, LONG 
 
 /****************************************************************************************/
 
+#ifdef ICON_ZLIB_STORED
+/*
+ * Kickstart builds leave zlib's deflate path (about 17 KB) out of the ROM.
+ * ARGB chunks are written as a zlib stream of stored blocks instead: any
+ * inflate reader accepts it, the icon file is simply not compressed.
+ */
+#define ZSTORED_BLOCK       65535
+#define ICON_ZBOUND(n)      ((n) + 11 + 5 * ((n) / ZSTORED_BLOCK))
+
+static int compress_stored(Bytef *dest, uLongf *destLen, const Bytef *src, uLong srcLen)
+{
+    Bytef *d = dest;
+    uLong a = 1, b = 0, left = srcLen;
+
+    if (*destLen < ICON_ZBOUND(srcLen))
+        return Z_BUF_ERROR;
+
+    /* CMF/FLG: deflate, 32K window, fastest level, FCHECK valid */
+    *d++ = 0x78;
+    *d++ = 0x01;
+
+    do {
+        uLong len = left > ZSTORED_BLOCK ? ZSTORED_BLOCK : left;
+        uLong i;
+
+        *d++ = (len == left) ? 1 : 0;   /* BFINAL, BTYPE 00 (stored) */
+        *d++ = len & 0xff;
+        *d++ = (len >> 8) & 0xff;
+        *d++ = ~len & 0xff;
+        *d++ = (~len >> 8) & 0xff;
+
+        for (i = 0; i < len; i++) {
+            a += *src;
+            b += a;
+            *d++ = *src++;
+            if ((i & 0x7ff) == 0x7ff) {
+                a %= 65521;
+                b %= 65521;
+            }
+        }
+        a %= 65521;
+        b %= 65521;
+        left -= len;
+    } while (left);
+
+    /* Adler-32, big endian */
+    *d++ = b >> 8;
+    *d++ = b;
+    *d++ = a >> 8;
+    *d++ = a;
+
+    *destLen = d - dest;
+    return Z_OK;
+}
+#define compress(dest, destLen, src, srcLen) compress_stored(dest, destLen, src, srcLen)
+#else
+#define ICON_ZBOUND(n)      (n)
+#endif
+
 static BOOL WriteARGB35(struct IFFHandle *iff, struct NativeIcon *icon,
                         APTR ARGB, struct IconBase *IconBase)
 {
@@ -725,7 +784,8 @@ static BOOL WriteARGB35(struct IFFHandle *iff, struct NativeIcon *icon,
     BOOL ok = FALSE;
 
     /* Assume uncompressible.. */
-    zsize = size = icon->ni_Face.Width * icon->ni_Face.Height * 4;
+    size = icon->ni_Face.Width * icon->ni_Face.Height * 4;
+    zsize = ICON_ZBOUND(size);
 
     zdest = AllocVec(zsize, MEMF_ANY);
     if (!zdest)
@@ -959,12 +1019,12 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 
                         if (icon->ni_Image[0].ARGB)
                         {
-                            if (WriteARGB35(iff, icon, &icon->ni_Image[0].ARGB, IconBase))
+                            if (WriteARGB35(iff, icon, icon->ni_Image[0].ARGB, IconBase))
                             {
                                 D(bug("WriteIcon35. WriteImage35() of 1st image ok.\n"));
                                 if (icon->ni_Image[1].ARGB)
                                 {
-                                        if (WriteARGB35(iff, icon, &icon->ni_Image[1].ARGB, IconBase))
+                                        if (WriteARGB35(iff, icon, icon->ni_Image[1].ARGB, IconBase))
                                         {
                                             D(bug("WriteIcon35. WriteImage35() of 2nd image ok.\n"));
                                             ok = TRUE;
@@ -972,7 +1032,7 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
                                 } else {
                                     ok = TRUE;
                                 }
-                            } /* if (WriteARGB35(iff, icon, &icon->ni_Image[0].ARGB, IconBase) */
+                            } /* if (WriteARGB35(iff, icon, icon->ni_Image[0].ARGB, IconBase) */
                         } /* if (icon->ni_Image[0].ARGB) */
 
                     } /* if (WriteChunkBytes(iff, &fc, sizeof(fc)) == sizeof(fc)) */

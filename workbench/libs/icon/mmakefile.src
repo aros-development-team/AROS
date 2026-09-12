@@ -59,6 +59,8 @@ FUNCS := \
 
 ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
 OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+# write ARGB icon chunks as stored zlib blocks: keeps deflate out of the ROM
+USER_CPPFLAGS += -DICON_ZLIB_STORED
 endif
 
 %build_module mmake=workbench-libs-icon \
