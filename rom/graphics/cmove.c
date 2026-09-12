@@ -54,7 +54,9 @@
 
     struct CopIns *copIns = ucl->CopList->CopPtr;
     copIns->OpCode = COPPER_MOVE;
-    copIns->u3.u4.u1.DestAddr = (WORD)(IPTR)reg;
+    /* reg is normally the address of a custom chip register (the CMOVE()
+       macro passes &custom.xxx): keep only the register offset. */
+    copIns->u3.u4.u1.DestAddr = (WORD)((IPTR)reg & 0x1FE);
     copIns->u3.u4.u2.DestData = value;
 
     AROS_LIBFUNC_EXIT
