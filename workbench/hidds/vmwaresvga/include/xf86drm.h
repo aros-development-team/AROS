@@ -16,8 +16,7 @@
 #define DRM_DEV_NAME            "%s/card%d"
 #define DRM_RENDER_MINOR_NAME   "renderD"
 
-#define DRM_CLOEXEC             0x80000
-#define DRM_RDWR                0x2
+/* the prime flags come from uapi/drm/drm.h, via arosdrm.h */
 
 extern int drmCloseBufferHandle(int fd, uint32_t handle);
 extern int drmPrimeHandleToFD(int fd, uint32_t handle, uint32_t flags, int *prime_fd);

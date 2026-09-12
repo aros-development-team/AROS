@@ -20,6 +20,7 @@
 #include <drm/drm_crtc.h>
 #include <drm/drm_connector.h>
 #include <drm/drm_print.h>
+#include <drm/drm_debugfs.h>      /* inline stubs for the file-level entry points */
 #include <drm/drm_client.h>
 #include <drm/drm_cache.h>
 #include <drm/drm_gem_ttm_helper.h>
@@ -227,10 +228,6 @@ struct device *drm_sysfs_minor_alloc(struct drm_minor *minor) { return NULL; }
 void drm_class_device_unregister(struct device *dev) { }
 int drm_class_device_register(struct device *dev) { return 0; }
 
-void drm_debugfs_create_files(const struct drm_info_list *files, int count, struct dentry *root, struct drm_minor *minor) { }
-int drm_debugfs_remove_files(const struct drm_info_list *files, int count, struct dentry *root, struct drm_minor *minor) { return 0; }
-void drm_debugfs_add_file(struct drm_device *dev, const char *name, int (*show)(struct seq_file *, void *), void *data) { }
-void drm_debugfs_add_files(struct drm_device *dev, const struct drm_debugfs_info *files, int count) { }
 void drm_debugfs_connector_add(struct drm_connector *connector) { }
 void drm_debugfs_connector_remove(struct drm_connector *connector) { }
 void drm_debugfs_crtc_add(struct drm_crtc *crtc) { }
@@ -242,8 +239,6 @@ void drm_debugfs_dev_fini(struct drm_device *dev) { }
 void drm_debugfs_dev_register(struct drm_device *dev) { }
 int drm_debugfs_register(struct drm_minor *minor, int minor_id, struct dentry *root) { return 0; }
 void drm_debugfs_unregister(struct drm_minor *minor) { }
-void drm_debugfs_clients_add(struct drm_file *file) { }
-void drm_debugfs_clients_remove(struct drm_file *file) { }
 void drm_debugfs_root_init(void) { }
 void drm_debugfs_root_fini(void) { }
 
