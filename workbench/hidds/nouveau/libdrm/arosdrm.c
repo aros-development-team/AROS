@@ -275,6 +275,14 @@ void drmFreeDevice(drmDevicePtr *device)
     }
 }
 
+int drm_gem_nouveau_selfsync(struct drm_device *dev, struct drm_file *f, uint32_t handle);
+int drmNouveauBoSelfSync(int fd, uint32_t handle)
+{
+    if (fd < 0 || fd >= MAX_DRM_FILES || !drm_files[fd])
+        return -EINVAL;
+    return drm_gem_nouveau_selfsync(current_drm_device, drm_files[fd], handle);
+}
+
 void *drmMMap(int fd, uint32_t handle, VOID (*unmapped)(APTR), APTR data)
 {
     if (fd < 0 || fd >= MAX_DRM_FILES || !drm_files[fd])

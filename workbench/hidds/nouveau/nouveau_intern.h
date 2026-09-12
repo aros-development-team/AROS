@@ -14,6 +14,8 @@
 
 /* The DRM file descriptor now lives in the nouveau_drm root object */
 #define NOUVEAU_DEV_FD(dev)         (nouveau_drm(&(dev)->object)->fd)
+/* drm-aros: the caller maintains this buffer's CPU cache for the ranges it exchanges */
+extern int drmNouveauBoSelfSync(int fd, uint32_t handle);
 #define NOUVEAU_DEV_DRM_VERSION(dev) (nouveau_drm(&(dev)->object)->version)
 
 #include LC_LIBDEFS_FILE
@@ -280,6 +282,21 @@ static inline VOID HIDDNouveauFlushDisplayable(struct CardData *carddata,
         nouveau_pushbuf_kick(carddata->ce_pushbuf);
 }
 
+/* The staging buffer's CPU mapping is cached; these keep the rows a
+   transfer exchanges coherent with the engine, and only those rows. */
+#include <proto/exec.h>
+#include <exec/memory.h>
+static inline VOID nouveau_staging_to_gpu(APTR p, ULONG len)
+{
+    ULONG l = len;
+    CachePreDMA(p, &l, DMA_ReadFromRAM);
+}
+static inline VOID nouveau_staging_from_gpu(APTR p, ULONG len)
+{
+    ULONG l = len;
+    CachePostDMA(p, &l, 0);
+}
+
 #define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); \
                                       if (bmdata->gpu_dirty) { nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); bmdata->gpu_dirty = FALSE; } }
 
@@ -400,6 +417,11 @@ VOID HIDDNouveauNVC0SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
 BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color);
+typedef VOID (*HIDDNouveauStagingFn)(APTR rows, ULONG pitch, LONG line0,
+    LONG lines, APTR ctx);
+BOOL HIDDNouveauNVC0StagingRect(struct CardData *carddata,
+    struct HIDDNouveauBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
+    HIDDNouveauStagingFn fn, APTR ctx);
 BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
@@ -424,14 +446,14 @@ BOOL HiddNouveauAccelAPENUpload3D(
     UBYTE * srcalpha, BOOL srcinvertalpha, ULONG srcpitch, ULONG srcpenrgb,
     LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
-VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNouveauBitMapPutAlphaImage32(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNouveauBitMapPutAlphaImage16(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNouveauBitMapPutAlphaTemplate32(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNouveauBitMapPutAlphaTemplate16(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
 VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,

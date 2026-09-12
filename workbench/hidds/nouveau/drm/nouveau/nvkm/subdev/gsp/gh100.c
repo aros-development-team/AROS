@@ -14,6 +14,11 @@
 
 #include <nvhw/drf.h>
 #include <nvhw/ref/gh100/dev_falcon_v4.h>
+#include <subdev/timer.h>
+
+#ifndef GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT
+#define GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT (1 << 1)
+#endif
 #include <nvhw/ref/gh100/dev_riscv_pri.h>
 
 int
@@ -718,8 +723,29 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 				ret = -EBUSY;
 				break;
 			}
+			u32 rsvd = rsvd_size;
+
 			if (attempt) {
-				nvkm_warn(subdev, "GSP-FMC boot retry %d\n", attempt);
+				u64 margin = 0;
+
+				if (!resume) {
+					/* kgspGetWprEndMargin: a retry puts the whole
+					 * firmware region further from the end of memory,
+					 * in case the first attempt failed on the memory it
+					 * was given - one region's worth per attempt. The
+					 * FMC lays the region out from that offset, so this
+					 * is the only place it has to change. */
+					GspFwWprMeta *wpr = gsp->wpr_meta.data;
+
+					margin = 4096 + wpr->pmuReservedSize + wpr->frtsSize +
+						 wpr->sizeOfBootloader + wpr->sizeOfRadix3Elf +
+						 wpr->gspFwHeapSize + wpr->nonWprHeapSize;
+					margin = ALIGN(margin * attempt, 0x200000);
+					wpr->flags |= GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT;
+					rsvd += margin;
+				}
+				nvkm_warn(subdev, "GSP-FMC boot retry %d, firmware region moved %llu MiB down\n",
+					  attempt, (unsigned long long)(margin >> 20));
 				/* the mailbox keeps the last verdict; clear it so a
 				   fresh answer (or none) is what we wait for */
 				nvkm_falcon_wr32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX0, 0);
@@ -728,7 +754,7 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 				compat_dma_sync_all_coherent();
 			}
 			gh100_gsp_reset_hw(gsp);
-			ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
+			ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd, resume,
 						    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
 			if (ret) {
 				nvkm_error(subdev, "GSP-FMC boot request failed: %d\n", ret);
@@ -749,7 +775,12 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 				continue;
 			}
 			if (mbox0) {
-				nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x)\n", mbox0);
+				nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x, mbox1 0x%08x, "
+					   "hwcfg2 0x%08x, reset plm 0x%08x, GPU up %llu ms)\n", mbox0,
+					   nvkm_falcon_rd32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX1),
+					   nvkm_falcon_rd32(&gsp->falcon, NV_PFALCON_FALCON_HWCFG2),
+					   nvkm_falcon_rd32(&gsp->falcon, 0x3c4),
+					   device->timer ? (unsigned long long)(nvkm_timer_read(device->timer) / 1000000) : 0ULL);
 				ret = -EIO;
 				continue;
 			}

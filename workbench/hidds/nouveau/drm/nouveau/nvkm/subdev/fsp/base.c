@@ -3,6 +3,7 @@
  * Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
  */
 #include "priv.h"
+#include <subdev/timer.h>
 
 int
 nvkm_fsp_boot_gsp_fmc(struct nvkm_fsp *fsp, u64 args_addr, u32 rsvd_size, bool resume,
@@ -24,8 +25,21 @@ static int
 nvkm_fsp_preinit(struct nvkm_subdev *subdev)
 {
 	struct nvkm_fsp *fsp = nvkm_fsp(subdev);
+	struct nvkm_device *device = subdev->device;
+	u64 t0 = device->timer ? nvkm_timer_read(device->timer) : 0;
+	int ret = fsp->func->wait_secure_boot(fsp);
 
-	return fsp->func->wait_secure_boot(fsp);
+	/* How far into the GPU's own boot the driver arrived says a lot
+	   about what the FMC will find. */
+	if (device->timer) {
+		u64 t1 = nvkm_timer_read(device->timer);
+
+		nvkm_info(subdev, "secure boot %s after %llu ms, GPU up %llu ms\n",
+			  ret ? "not complete" : "complete",
+			  (unsigned long long)((t1 - t0) / 1000000),
+			  (unsigned long long)(t1 / 1000000));
+	}
+	return ret;
 }
 
 static void *

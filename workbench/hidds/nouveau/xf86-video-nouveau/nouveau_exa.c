@@ -560,6 +560,14 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     char *dst;
     Bool ret;
 
+    /* The engine copies exactly the rectangle it is given; one that
+       leaves the bitmap faults and kills the channel. Leave such a
+       transfer to the software path, which clips. */
+    if (x < 0 || y < 0 || width <= 0 || height <= 0 ||
+        x + width > (LONG)pdpix->drawable.width ||
+        y + height > (LONG)pdpix->drawable.height)
+        return FALSE;
+
     cpp = pdpix->drawable.depth > 16 ? 4 : 2;
     dst_pitch  = exaGetPixmapPitch(pdpix);
     tmp_pitch = width * cpp;
@@ -613,6 +621,7 @@ BOOL HiddNouveauNVAccelUploadM2MF(
 
         HiddNouveauWriteFromRAM( (APTR)srcpixels, srcpitch, srcPixFmt, dst, tmp_pitch,
             width, lines, cl, o);
+        nouveau_staging_to_gpu(dst, tmp_pitch * lines);
         srcpixels += srcpitch * lines;
 
         /* GART -> GPU -> VRAM */
@@ -649,6 +658,11 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     char *src;
     Bool ret;
 
+    if (x < 0 || y < 0 || width <= 0 || height <= 0 ||
+        x + width > (LONG)pspix->drawable.width ||
+        y + height > (LONG)pspix->drawable.height)
+        return FALSE;
+
     cpp = pspix->drawable.depth > 16 ? 4 : 2;
     src_pitch  = exaGetPixmapPitch(pspix);
     tmp_pitch = width * cpp;
@@ -676,6 +690,7 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
             return FALSE;
         src = pNv->GART->map;
 
+        nouveau_staging_from_gpu(src, tmp_pitch * lines);
         HiddNouveauReadIntoRAM(src, tmp_pitch, dstpixels, dstpitch,
             dstPixFmt, width, lines, cl, o);
         dstpixels += dstpitch * lines;

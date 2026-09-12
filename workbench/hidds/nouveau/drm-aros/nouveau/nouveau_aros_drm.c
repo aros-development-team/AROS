@@ -18,6 +18,28 @@
  * a fresh one.
  */
 
+/*
+ * A buffer whose user keeps the CPU cache coherent itself, for exactly
+ * the ranges it exchanges with the engine. The driver's per-access
+ * maintenance walks the whole object (megabytes for a staging buffer),
+ * which is the wrong tool for that.
+ */
+int drm_gem_nouveau_selfsync(struct drm_device *dev, struct drm_file *f, uint32_t handle)
+{
+    struct drm_gem_object *gem_object;
+    struct nouveau_bo *nvbo;
+
+    if (!f)
+        return -EINVAL;
+    gem_object = drm_gem_object_lookup(f, handle);
+    if (!gem_object)
+        return -ENOENT;
+    nvbo = nouveau_gem_object(gem_object);
+    nvbo->force_coherent = true;
+    drm_gem_object_put(gem_object);
+    return 0;
+}
+
 void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t handle, VOID (*unmapped)(APTR), APTR data)
 {
     struct drm_gem_object *gem_object;

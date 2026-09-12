@@ -1102,6 +1102,147 @@ VOID HIDDNouveauNVC0SetPattern(struct CardData *carddata, LONG clr0, LONG clr1, 
     NVC0EXASetPattern(&fake, clr0, clr1, pat0, pat1);
 }
 
+
+Bool NVAccelM2MF(NVPtr pNv, int w, int h, int cpp, uint32_t srcoff, uint32_t dstoff,
+		 struct nouveau_bo *src, int sd, int sp, int sh, int sx, int sy,
+		 struct nouveau_bo *dst, int dd, int dp, int dh, int dx, int dy);
+
+static inline uint32_t
+nvc0_rop(ULONG mode, uint32_t s, uint32_t d)
+{
+	switch (mode) {
+	case vHidd_GC_DrawMode_And:          return s & d;
+	case vHidd_GC_DrawMode_AndReverse:   return s & ~d;
+	case vHidd_GC_DrawMode_AndInverted:  return ~s & d;
+	case vHidd_GC_DrawMode_Xor:          return s ^ d;
+	case vHidd_GC_DrawMode_Or:           return s | d;
+	case vHidd_GC_DrawMode_Nor:          return ~(s | d);
+	case vHidd_GC_DrawMode_Equiv:        return ~(s ^ d);
+	case vHidd_GC_DrawMode_Invert:       return ~d;
+	case vHidd_GC_DrawMode_OrReverse:    return s | ~d;
+	case vHidd_GC_DrawMode_OrInverted:   return ~s | d;
+	case vHidd_GC_DrawMode_Nand:         return ~(s & d);
+	default:                             return d;
+	}
+}
+
+/* CPU work on a rectangle of a bitmap without touching the aperture.
+ * A pixel at a time through BAR1 costs milliseconds per small
+ * rectangle, so the rows come into the staging ring with the engine,
+ * fn() works on them there, and they go back with the engine. fn()
+ * sees the rows tightly packed (pitch = w * cpp), starting at line
+ * `line0` of the rectangle. The rectangle has to lie inside the bitmap:
+ * the copy engine has no clip. Takes and releases the GART semaphore. */
+BOOL HIDDNouveauNVC0StagingRect(struct CardData *carddata,
+    struct HIDDNouveauBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
+    HIDDNouveauStagingFn fn, APTR ctx)
+{
+	NVPtr pNv = carddata;
+	const int cpp = bmdata->bytesperpixel;
+	const ULONG pitch = (ULONG)w * cpp;
+	LONG lines_max, line0 = 0;
+
+	if (w <= 0 || h <= 0)
+		return TRUE;
+	if (!pNv->GART || !pNv->ce_enabled || !pNv->ce_rect ||
+	    (cpp != 4 && cpp != 2))
+		return FALSE;
+	if (x < 0 || y < 0 || x + w > (LONG)bmdata->drawable.width ||
+	    y + h > (LONG)bmdata->drawable.height)
+		return FALSE;
+	lines_max = pNv->GART->size / pitch;
+	if (lines_max <= 0)
+		return FALSE;
+
+	ObtainSemaphore(&carddata->gartsemaphore);
+
+	/* whatever is queued against the bitmap has to land first */
+	if (carddata->pushbuf)
+		nouveau_pushbuf_kick(carddata->pushbuf);
+
+	while (h > 0) {
+		LONG lines = h > lines_max ? lines_max : h;
+		ULONG chunk = pitch * lines, off;
+		uint8_t *rows;
+
+		/* The staging buffer is a ring shared with uploads: only a
+		   wrap has to wait for the engine to be done with what came
+		   before. */
+		if (pNv->gart_pos + chunk > pNv->GART->size) {
+			nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
+			pNv->gart_pos = 0;
+		}
+		off = pNv->gart_pos;
+
+		if (!NVAccelM2MF(pNv, w, lines, cpp, 0, off,
+				 bmdata->bo, NOUVEAU_BO_VRAM, bmdata->pitch,
+				 bmdata->drawable.height, x, y,
+				 pNv->GART, NOUVEAU_BO_GART, pitch, lines, 0, 0))
+			goto fail;
+		/* the one wait: the rows have to be here before the CPU reads them */
+		if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_RDWR, pNv->client))
+			goto fail;
+		rows = (uint8_t *)pNv->GART->map + off;
+		nouveau_staging_from_gpu(rows, chunk);
+
+		fn(rows, pitch, line0, lines, ctx);
+
+		nouveau_staging_to_gpu(rows, chunk);
+		if (!NVAccelM2MF(pNv, w, lines, cpp, off, 0,
+				 pNv->GART, NOUVEAU_BO_GART, pitch, lines, 0, 0,
+				 bmdata->bo, NOUVEAU_BO_VRAM, bmdata->pitch,
+				 bmdata->drawable.height, x, y))
+			goto fail;
+		pNv->gart_pos = (off + chunk + 255) & ~255UL;
+
+		y += lines;
+		line0 += lines;
+		h -= lines;
+	}
+	ReleaseSemaphore(&carddata->gartsemaphore);
+	bmdata->gpu_dirty = TRUE;
+	HIDDNouveauFlushDisplayable(carddata, bmdata);
+	return TRUE;
+fail:
+	ReleaseSemaphore(&carddata->gartsemaphore);
+	return FALSE;
+}
+
+/* A fill whose result depends on the pixels already there: the copy
+ * engine has no ROP unit, so the rows are combined in the staging
+ * buffer. */
+struct nvc0_rop_ctx {
+	ULONG mode, color;
+	int cpp;
+};
+
+static VOID
+nvc0_rop_rows(APTR rows, ULONG pitch, LONG line0, LONG lines, APTR ctx)
+{
+	struct nvc0_rop_ctx *r = ctx;
+	ULONG n = pitch / r->cpp * lines, i;
+
+	if (r->cpp == 4) {
+		uint32_t *d = rows;
+		for (i = 0; i < n; i++)
+			d[i] = nvc0_rop(r->mode, r->color, d[i]);
+	} else {
+		uint16_t *d = rows;
+		for (i = 0; i < n; i++)
+			d[i] = nvc0_rop(r->mode, r->color, d[i]);
+	}
+}
+
+static BOOL
+nvc0_ce_rop_fill(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata,
+		 LONG x, LONG y, LONG w, LONG h, ULONG drawmode, ULONG color)
+{
+	struct nvc0_rop_ctx r = { drawmode, color, bmdata->bytesperpixel };
+
+	return HIDDNouveauNVC0StagingRect(carddata, bmdata, x, y, w, h,
+					  nvc0_rop_rows, &r);
+}
+
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes buffer is not mapped */
 BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
@@ -1109,24 +1250,49 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
     LONG maxY, ULONG drawmode, ULONG color)
 {
 	if (carddata->Architecture >= NV_BLACKWELL) {
-		/* No 2D engine on this generation: plain fills go through
-		 * the copy engine's constant remap; anything needing a ROP
-		 * is left to software. */
-		if (drawmode != vHidd_GC_DrawMode_Copy ||
-		    !carddata->ce_enabled || !carddata->ce_fill)
+		ULONG fill = color;
+
+		if (!carddata->ce_enabled || !carddata->ce_fill)
 			return FALSE;
+		/* The 2D engine clipped to the surface for free (SET_CLIP in
+		 * AcquireSurface2D); the copy engine walks exactly what it is
+		 * told, and a rectangle past the bitmap faults on the memory
+		 * beyond it and gets the channel killed. Clip here. */
+		if (minX < 0) minX = 0;
+		if (minY < 0) minY = 0;
+		if (maxX >= (LONG)bmdata->drawable.width)
+			maxX = bmdata->drawable.width - 1;
+		if (maxY >= (LONG)bmdata->drawable.height)
+			maxY = bmdata->drawable.height - 1;
+		if (maxX < minX || maxY < minY)
+			return TRUE;
+		/* No 2D engine on this generation: plain fills go through
+		 * the copy engine's constant remap, the modes with a constant
+		 * result are the same fill with another constant, and the
+		 * rest combine with what is there through the staging
+		 * buffer. */
+		switch (drawmode) {
+		case vHidd_GC_DrawMode_Copy:                          break;
+		case vHidd_GC_DrawMode_Clear:        fill = 0;        break;
+		case vHidd_GC_DrawMode_Set:          fill = ~0UL;     break;
+		case vHidd_GC_DrawMode_CopyInverted: fill = ~color;   break;
+		case vHidd_GC_DrawMode_NoOp:         return TRUE;
+		default:
+			return nvc0_ce_rop_fill(carddata, bmdata, minX, minY,
+						maxX - minX + 1, maxY - minY + 1,
+						drawmode, color);
+		}
 		if (!carddata->ce_fill(carddata->ce_pushbuf, carddata->NvCopy,
 					 bmdata->bytesperpixel,
 					 bmdata->bo, 0, NOUVEAU_BO_VRAM,
 					 bmdata->pitch, minX, minY,
 					 maxX - minX + 1, maxY - minY + 1,
-					 color))
+					 fill))
 			return FALSE;
 		bmdata->gpu_dirty = TRUE;
 		HIDDNouveauFlushDisplayable(carddata, bmdata);
 		return TRUE;
 	}
-
     if (!carddata->channel)
         return FALSE;
 
@@ -1155,18 +1321,84 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
 		return FALSE;
 
 	if (carddata->Architecture >= NV_BLACKWELL) {
+		BOOL overlap;
+
 		/* No 2D engine on this generation: plain blits go through
-		 * the copy engine. It gives no ordering guarantee between
-		 * overlapping reads and writes, so overlapping blits within
-		 * one surface (scrolling) are left to software, as is
-		 * anything needing a ROP. */
+		 * the copy engine; anything needing a ROP is left to
+		 * software. */
 		if (drawmode != vHidd_GC_DrawMode_Copy ||
 		    !carddata->ce_enabled || !carddata->ce_rect)
 			return FALSE;
-		if (srcdata->bo == destdata->bo &&
-		    srcX < destX + width  && destX < srcX + width &&
-		    srcY < destY + height && destY < srcY + height)
-			return FALSE;
+		overlap = srcdata->bo == destdata->bo &&
+			  srcX < destX + width  && destX < srcX + width &&
+			  srcY < destY + height && destY < srcY + height;
+		/* Same as the fill: the engine does not clip, so keep the
+		 * rectangle inside both surfaces. */
+		if (srcX < 0) { width  += srcX; destX -= srcX; srcX = 0; }
+		if (srcY < 0) { height += srcY; destY -= srcY; srcY = 0; }
+		if (destX < 0) { width  += destX; srcX -= destX; destX = 0; }
+		if (destY < 0) { height += destY; srcY -= destY; destY = 0; }
+		if (srcX + width > (LONG)srcdata->drawable.width)
+			width = srcdata->drawable.width - srcX;
+		if (destX + width > (LONG)destdata->drawable.width)
+			width = destdata->drawable.width - destX;
+		if (srcY + height > (LONG)srcdata->drawable.height)
+			height = srcdata->drawable.height - srcY;
+		if (destY + height > (LONG)destdata->drawable.height)
+			height = destdata->drawable.height - destY;
+		if (width <= 0 || height <= 0)
+			return TRUE;
+		if (overlap) {
+			/* An overlapping copy within one surface - a scroll.
+			 * The engine gives no ordering across the overlap, so
+			 * bounce the rows through the staging ring: two engine
+			 * copies in one non-pipelined stream, no CPU, no wait.
+			 * Chunks go bottom-up when the copy moves down, so no
+			 * chunk reads rows an earlier one has already written. */
+			NVPtr pNv = carddata;
+			const int cpp = srcdata->bytesperpixel;
+			const ULONG pitch = (ULONG)width * cpp;
+			LONG lines_max, done = 0;
+
+			if (!pNv->GART)
+				return FALSE;
+			lines_max = pNv->GART->size / pitch;
+			if (lines_max <= 0)
+				return FALSE;
+
+			ObtainSemaphore(&carddata->gartsemaphore);
+			while (done < height) {
+				LONG lines = height - done < lines_max ? height - done : lines_max;
+				LONG y0 = destY > srcY ? height - done - lines : done;
+				ULONG chunk = pitch * lines, off;
+
+				if (pNv->gart_pos + chunk > pNv->GART->size) {
+					nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
+					pNv->gart_pos = 0;
+				}
+				off = pNv->gart_pos;
+				if (!carddata->ce_rect(carddata->ce_pushbuf, carddata->NvCopy,
+						       width, lines, cpp,
+						       srcdata->bo, 0, NOUVEAU_BO_VRAM,
+						       srcdata->pitch, srcdata->drawable.height,
+						       srcX, srcY + y0,
+						       pNv->GART, off, NOUVEAU_BO_GART,
+						       pitch, lines, 0, 0) ||
+				    !carddata->ce_rect(carddata->ce_pushbuf, carddata->NvCopy,
+						       width, lines, cpp,
+						       pNv->GART, off, NOUVEAU_BO_GART,
+						       pitch, lines, 0, 0,
+						       destdata->bo, 0, NOUVEAU_BO_VRAM,
+						       destdata->pitch, destdata->drawable.height,
+						       destX, destY + y0)) {
+					ReleaseSemaphore(&carddata->gartsemaphore);
+					return FALSE;
+				}
+				pNv->gart_pos = (off + chunk + 255) & ~255UL;
+				done += lines;
+			}
+			ReleaseSemaphore(&carddata->gartsemaphore);
+		} else
 		if (!carddata->ce_rect(carddata->ce_pushbuf, carddata->NvCopy,
 					 width, height, srcdata->bytesperpixel,
 					 srcdata->bo, 0, NOUVEAU_BO_VRAM,

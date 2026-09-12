@@ -716,6 +716,12 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
             /* This can fail */
             nouveau_bo_new(carddata->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP, 0, gartsize, NULL, &carddata->GART);
+            /* The driver's cache maintenance walks the whole buffer on
+               every access (12MiB a time); the rows a transfer exchanges
+               are maintained where they are exchanged instead
+               (nouveau_staging_to_gpu / _from_gpu). */
+            if (carddata->GART)
+                drmNouveauBoSelfSync(NOUVEAU_DEV_FD(carddata->dev), carddata->GART->handle);
 
             InitSemaphore(&carddata->gartsemaphore);
             
