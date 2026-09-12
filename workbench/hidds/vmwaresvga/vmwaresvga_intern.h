@@ -3,32 +3,24 @@
 
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Some VMWareSVGA useful data.
-    Lang: English.
 */
 
 #include <exec/memory.h>
 #include <exec/nodes.h>
 #include <exec/types.h>
 #include <exec/semaphores.h>
+#include <exec/interrupts.h>
+#include <hidd/gfx.h>
+#include <hidd/gallium.h>
+#include <oop/oop.h>
 
-/***************** build options for debuggins and testing features ****************************/
-//#define VMWARESVGA_USEMULTIMON
-//#define VMWARESVGA_USE8BIT
-//#define VMWAREGFX_IMMEDIATEDRAW
-/***********************************************************************************************/
-
-#include "vmwaresvga_hardware.h"
-#include "vmwaresvga_gallium.h"
+#include "vmwaresvga_kms.h"
+#include "vmwaresvga_bitmap.h"
+#include "vmwaresvga_hidd.h"
 
 #define SYNC_DESCNAME_LEN               32
-
-#define VMWFIFO_CMD_SIZESHIFT           2
-#define VMWFIFO_CMD_SIZE                (1 << VMWFIFO_CMD_SIZESHIFT)
-
-#define VMWCURSOR_ID                    1
 
 #if (AROS_BIG_ENDIAN == 1)
 #define AROS_PIXFMT                     RECTFMT_RAW   /* Big Endian Archs. */
@@ -36,10 +28,30 @@
 #define AROS_PIXFMT                     RECTFMT_BGRA32   /* Little Endian Archs. */
 #endif
 
+/* The one pixel format the framebuffer is kept in */
+#define VMWSVGA_FB_BPP                  32
+#define VMWSVGA_FB_DEPTH                24
+
+struct MouseData {
+    APTR        shape;                  /* ARGB pixels as the device wants them */
+    OOP_Object  *oopshape;
+    ULONG       width;
+    ULONG       height;
+    ULONG       x;
+    ULONG       y;
+    LONG        visible;
+};
+
+/* Instance data of the gallium class: one pipe screen per GL context */
+struct HIDDGalliumVMWareSVGAData
+{
+    int                         fd;             /* this context's drm file */
+    struct pipe_screen          *screen;
+    struct pipe_context         *pipe;          /* for reading resources back */
+};
+
 struct VMWareSVGA_staticdata {
-    struct MemHeader            mh;
     struct Library              *VMWareSVGACyberGfxBase;
-    APTR                        VMWareSVGAKernelBase;
 
     /* Base classes for CreateObject */
     OOP_Class                   *basebm;
@@ -56,33 +68,26 @@ struct VMWareSVGA_staticdata {
     OOP_Object                  *vmwaresvgahidd;
     OOP_Object                  *vmwaresvgadisplay;
     OOP_Object                  *dmenum;
-    OOP_Object                  *card;
-    OOP_Object                  *pcihidd;
 
-    OOP_Object                  *visible;
+    OOP_Object                  *visible;           /* the framebuffer bitmap on screen */
 
     OOP_AttrBase                hiddGalliumAB;
 
-    VOID (*activecallback)(APTR, OOP_Object *, BOOL);
-    APTR                        callbackdata;
+    struct VMWareSVGA_KMS       kms;
     struct MouseData            mouse;
-    struct HWData               data;
-    ULONG                       prefWidth, prefHeight;
-    BOOL                        isQEMU;
     BOOL                        hwCursor;
 };
 
 struct VMWareSVGABase
 {
     struct Library              library;
-    
-    struct VMWareSVGA_staticdata vsd;    
+
+    struct VMWareSVGA_staticdata vsd;
 };
 
 #define XSD(cl) (&((struct VMWareSVGABase *)cl->UserData)->vsd)
 
 #define CyberGfxBase    (XSD(cl)->VMWareSVGACyberGfxBase)
-#define KernelBase    (XSD(cl)->VMWareSVGAKernelBase)
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (XSD(cl)->hiddGalliumAB)

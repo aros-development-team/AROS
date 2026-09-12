@@ -1,0 +1,343 @@
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/ttm_object.c b/drm/vmwgfx/ttm_object.c
+--- a/drm/vmwgfx/ttm_object.c	2026-09-12 01:16:34.828021329 +0100
++++ b/drm/vmwgfx/ttm_object.c	2026-09-12 01:42:19.253210800 +0100
+@@ -471,7 +471,12 @@
+  */
+ static bool __must_check get_dma_buf_unless_doomed(struct dma_buf *dmabuf)
+ {
++#ifdef __AROS__
++	/* there is no buffer sharing, so no dma-buf file to hold on to */
++	return false;
++#else
+ 	return file_ref_get(&dmabuf->file->f_ref);
++#endif
+ }
+ 
+ /**
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/vmwgfx_binding.c b/drm/vmwgfx/vmwgfx_binding.c
+--- a/drm/vmwgfx/vmwgfx_binding.c	2026-09-12 01:16:34.828021329 +0100
++++ b/drm/vmwgfx/vmwgfx_binding.c	2026-09-12 01:51:17.532648600 +0100
+@@ -55,6 +55,7 @@
+ #include "vmwgfx_binding.h"
+ #include "device_include/svga3d_reg.h"
+ #include <linux/vmalloc.h>
++#include <linux/bitmap.h>
+ 
+ #define VMW_BINDING_RT_BIT     0
+ #define VMW_BINDING_PS_BIT     1
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/vmwgfx_bo.c b/drm/vmwgfx/vmwgfx_bo.c
+--- a/drm/vmwgfx/vmwgfx_bo.c	2026-09-12 01:16:34.828021329 +0100
++++ b/drm/vmwgfx/vmwgfx_bo.c	2026-09-12 04:37:40.264440400 +0100
+@@ -227,6 +227,11 @@
+ 
+ 	/* For some reason we didn't end up at the start of vram */
+ 	WARN_ON(ret == 0 && bo->resource->start != 0);
++#ifdef __AROS__
++	if (ret)
++		printk(KERN_ERR "vmwgfx: pin in start of vram failed %d (mem_type %u start %lu size %lu)\n",
++		       ret, bo->resource->mem_type, (unsigned long)bo->resource->start, (unsigned long)bo->resource->size);
++#endif
+ 	if (!ret)
+ 		vmw_bo_pin_reserved(buf, true);
+ 
+@@ -844,6 +849,32 @@
+ 	vmw_bo_placement_set(bo, domain, domain);
+ }
+ 
++#ifdef __AROS__
++/*
++ * The xarray here is a small id table, so the entries are keyed by an
++ * allocated id rather than by the resource's address; a removal looks
++ * the entry up first. The tables hold a handful of entries at most.
++ */
++int vmw_bo_add_detached_resource(struct vmw_bo *vbo, struct vmw_resource *res)
++{
++	u32 id;
++
++	return xa_alloc(&vbo->detached_resources, &id, res, xa_limit_31b, GFP_KERNEL);
++}
++
++void vmw_bo_del_detached_resource(struct vmw_bo *vbo, struct vmw_resource *res)
++{
++	unsigned long index;
++	struct vmw_resource *entry;
++
++	xa_for_each(&vbo->detached_resources, index, entry) {
++		if (entry == res) {
++			xa_erase(&vbo->detached_resources, index);
++			break;
++		}
++	}
++}
++#else
+ int vmw_bo_add_detached_resource(struct vmw_bo *vbo, struct vmw_resource *res)
+ {
+ 	return xa_err(xa_store(&vbo->detached_resources, (unsigned long)res, res, GFP_KERNEL));
+@@ -853,6 +884,7 @@
+ {
+ 	xa_erase(&vbo->detached_resources, (unsigned long)res);
+ }
++#endif
+ 
+ struct vmw_surface *vmw_bo_surface(struct vmw_bo *vbo)
+ {
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/vmwgfx_cursor_plane.c b/drm/vmwgfx/vmwgfx_cursor_plane.c
+--- a/drm/vmwgfx/vmwgfx_cursor_plane.c	2026-09-12 01:16:34.828021329 +0100
++++ b/drm/vmwgfx/vmwgfx_cursor_plane.c	2026-09-12 04:32:47.591507300 +0100
+@@ -236,6 +236,10 @@
+ 
+ 	mob_max_size = vmw_read(dev_priv, SVGA_REG_MOB_MAX_SIZE);
+ 	cursor_max_dim = vmw_read(dev_priv, SVGA_REG_CURSOR_MAX_DIMENSION);
++#ifdef __AROS__
++	if (cursor_max_dim == 0)
++		cursor_max_dim = VMW_CURSOR_SNOOP_WIDTH;
++#endif
+ 
+ 	if (size > mob_max_size || vps->base.crtc_w > cursor_max_dim ||
+ 	    vps->base.crtc_h > cursor_max_dim)
+@@ -748,6 +752,11 @@
+ 		u32 cursor_max_dim =
+ 			vmw_read(vmw, SVGA_REG_CURSOR_MAX_DIMENSION);
+ 
++#ifdef __AROS__
++		/* hosts without the register answer 0; the classic limit applies */
++		if (cursor_max_dim == 0)
++			cursor_max_dim = VMW_CURSOR_SNOOP_WIDTH;
++#endif
+ 		if (new_state->crtc_w > cursor_max_dim ||
+ 		    new_state->crtc_h > cursor_max_dim) {
+ 			drm_warn(&vmw->drm,
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/vmwgfx_drv.c b/drm/vmwgfx/vmwgfx_drv.c
+--- a/drm/vmwgfx/vmwgfx_drv.c	2026-09-12 01:16:34.828021329 +0100
++++ b/drm/vmwgfx/vmwgfx_drv.c	2026-09-12 02:46:13.641477200 +0100
+@@ -868,6 +868,11 @@
+ 	dev_priv->assume_16bpp = !!vmw_assume_16bpp;
+ 
+ 	dev_priv->capabilities = vmw_read(dev_priv, SVGA_REG_CAPABILITIES);
++#ifdef __AROS__
++	/* without an interrupt line every wait polls */
++	if (!to_pci_dev(dev_priv->drm.dev)->irq)
++		dev_priv->capabilities &= ~SVGA_CAP_IRQMASK;
++#endif
+ 	vmw_print_bitmap(&dev_priv->drm, "Capabilities",
+ 			 dev_priv->capabilities,
+ 			 cap1_names, ARRAY_SIZE(cap1_names));
+@@ -990,9 +995,18 @@
+ 	if (!(dev_priv->capabilities & SVGA_CAP_DISPLAY_TOPOLOGY) &&
+ 	    !(dev_priv->capabilities & SVGA_CAP_PITCHLOCK) &&
+ 	    !vmw_fifo_have_pitchlock(dev_priv)) {
++#ifdef __AROS__
++		/*
++		 * QEMU's SVGA has no pitchlock and takes the pitch as
++		 * width * bytes per pixel, which is what the legacy display
++		 * unit programs anyway; carry on rather than refuse it.
++		 */
++		drm_warn(&dev_priv->drm, "Hardware has no pitchlock\n");
++#else
+ 		ret = -ENOSYS;
+ 		DRM_ERROR("Hardware has no pitchlock\n");
+ 		goto out_err0;
++#endif
+ 	}
+ 
+ 	dev_priv->tdev = ttm_object_device_init(&vmw_prime_dmabuf_ops);
+@@ -1663,6 +1677,26 @@
+ 
+ drm_module_pci_driver(vmw_pci_driver);
+ 
++#ifdef __AROS__
++/*
++ * There is no module loader or PCI bus driver to call the probe; the
++ * hidd does, with the device the pci.hidd found.
++ */
++int vmw_aros_probe(struct pci_dev *pdev)
++{
++	const struct pci_device_id *ent = &vmw_pci_id_list[0];
++
++	if (pdev->device == VMWGFX_PCI_ID_SVGA3)
++		ent = &vmw_pci_id_list[1];
++	return vmw_probe(pdev, ent);
++}
++
++void vmw_aros_remove(struct pci_dev *pdev)
++{
++	vmw_remove(pdev);
++}
++#endif
++
+ MODULE_AUTHOR("VMware Inc. and others");
+ MODULE_DESCRIPTION("Standalone drm driver for the VMware SVGA device");
+ MODULE_LICENSE("GPL and additional rights");
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/vmwgfx_gem.c b/drm/vmwgfx/vmwgfx_gem.c
+--- a/drm/vmwgfx/vmwgfx_gem.c	2026-09-12 01:16:34.828679229 +0100
++++ b/drm/vmwgfx/vmwgfx_gem.c	2026-09-12 01:50:44.860367300 +0100
+@@ -132,6 +132,11 @@
+ 	return drm_gem_ttm_mmap(obj, vma);
+ }
+ 
++#ifdef __AROS__
++/* buffers are never mapped through page faults here */
++static const struct vm_operations_struct vmw_vm_ops = {
++};
++#else
+ static const struct vm_operations_struct vmw_vm_ops = {
+ 	.pfn_mkwrite = vmw_bo_vm_mkwrite,
+ 	.page_mkwrite = vmw_bo_vm_mkwrite,
+@@ -139,6 +144,7 @@
+ 	.open = ttm_bo_vm_open,
+ 	.close = ttm_bo_vm_close,
+ };
++#endif
+ 
+ const struct drm_gem_object_funcs vmw_gem_object_funcs = {
+ 	.free = vmw_gem_object_free,
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/vmwgfx_kms.c b/drm/vmwgfx/vmwgfx_kms.c
+--- a/drm/vmwgfx/vmwgfx_kms.c	2026-09-12 01:16:34.828679229 +0100
++++ b/drm/vmwgfx/vmwgfx_kms.c	2026-09-12 05:51:04.384361900 +0100
+@@ -1350,6 +1350,11 @@
+ 	struct vmw_display_unit *du = vmw_connector_to_du(connector);
+ 
+ 	num_displays = vmw_read(dev_priv, SVGA_REG_NUM_DISPLAYS);
++#ifdef __AROS__
++	/* a device without display topology (QEMU) still has its one display */
++	if (num_displays == 0)
++		num_displays = 1;
++#endif
+ 
+ 	return ((vmw_connector_to_du(connector)->unit < num_displays &&
+ 		 du->pref_active) ?
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/vmwgfx_msg.c b/drm/vmwgfx/vmwgfx_msg.c
+--- a/drm/vmwgfx/vmwgfx_msg.c	2026-09-12 01:16:34.828679229 +0100
++++ b/drm/vmwgfx/vmwgfx_msg.c	2026-09-12 01:53:36.946170200 +0100
+@@ -801,6 +801,11 @@
+ 
+ static void vmw_mksstat_cleanup_descriptor(struct page *page)
+ {
++#ifdef __AROS__
++	/* no user pages were ever pinned (see vmw_mksstat_add_ioctl) */
++	__free_page(page);
++}
++#else
+ 	MKSGuestStatInstanceDescriptor *pdesc = page_address(page);
+ 	size_t i;
+ 
+@@ -815,6 +820,7 @@
+ 
+ 	__free_page(page);
+ }
++#endif
+ 
+ /**
+  * vmw_mksstat_remove_all: Resets all mksGuestStat instance descriptors
+@@ -934,6 +940,10 @@
+ int vmw_mksstat_add_ioctl(struct drm_device *dev, void *data,
+ 				struct drm_file *file_priv)
+ {
++#ifdef __AROS__
++	/* the descriptor would need user pages pinned; there is no such thing */
++	return -ENOSYS;
++#else
+ 	struct drm_vmw_mksstat_add_arg *arg =
+ 		(struct drm_vmw_mksstat_add_arg *) data;
+ 
+@@ -1075,6 +1085,8 @@
+ 	kfree(pages_stat);
+ 
+ 	return ret_err;
++
++#endif
+ }
+ 
+ /**
+@@ -1093,6 +1105,9 @@
+ int vmw_mksstat_remove_ioctl(struct drm_device *dev, void *data,
+ 				struct drm_file *file_priv)
+ {
++#ifdef __AROS__
++	return -ENOSYS;
++#else
+ 	struct drm_vmw_mksstat_remove_arg *arg =
+ 		(struct drm_vmw_mksstat_remove_arg *) data;
+ 
+@@ -1127,6 +1142,7 @@
+ 	}
+ 
+ 	return -EAGAIN;
++#endif
+ }
+ 
+ /**
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/vmwgfx_validation.c b/drm/vmwgfx/vmwgfx_validation.c
+--- a/drm/vmwgfx/vmwgfx_validation.c	2026-09-12 01:16:34.828679229 +0100
++++ b/drm/vmwgfx/vmwgfx_validation.c	2026-09-12 01:50:44.830430600 +0100
+@@ -99,6 +99,13 @@
+  *
+  * Return: Pointer to the allocated memory on success. NULL on failure.
+  */
++#ifdef __AROS__
++struct vmw_validation_page {
++	struct list_head lru;
++	u8 data[PAGE_SIZE] __aligned(16);
++};
++#endif
++
+ void *vmw_validation_mem_alloc(struct vmw_validation_context *ctx,
+ 			       unsigned int size)
+ {
+@@ -109,12 +116,22 @@
+ 		return NULL;
+ 
+ 	if (ctx->mem_size_left < size) {
++#ifdef __AROS__
++		/* struct page carries no list head here; a header does instead */
++		struct vmw_validation_page *vpage = kzalloc(sizeof(*vpage), GFP_KERNEL);
++		if (!vpage)
++			return NULL;
++
++		list_add_tail(&vpage->lru, &ctx->page_list);
++		ctx->page_address = vpage->data;
++#else
+ 		struct page *page = alloc_page(GFP_KERNEL | __GFP_ZERO);
+ 		if (!page)
+ 			return NULL;
+ 
+ 		list_add_tail(&page->lru, &ctx->page_list);
+ 		ctx->page_address = page_address(page);
++#endif
+ 		ctx->mem_size_left = PAGE_SIZE;
+ 	}
+ 
+@@ -134,12 +151,21 @@
+  */
+ static void vmw_validation_mem_free(struct vmw_validation_context *ctx)
+ {
++#ifdef __AROS__
++	struct vmw_validation_page *entry, *next;
++
++	list_for_each_entry_safe(entry, next, &ctx->page_list, lru) {
++		list_del_init(&entry->lru);
++		kfree(entry);
++	}
++#else
+ 	struct page *entry, *next;
+ 
+ 	list_for_each_entry_safe(entry, next, &ctx->page_list, lru) {
+ 		list_del_init(&entry->lru);
+ 		__free_page(entry);
+ 	}
++#endif
+ 
+ 	ctx->mem_size_left = 0;
+ }
+diff -ruN -x device_include -x '*.o' -x Makefile -x Kconfig a/drm/vmwgfx/vmwgfx_vkms.c b/drm/vmwgfx/vmwgfx_vkms.c
+--- a/drm/vmwgfx/vmwgfx_vkms.c	2026-09-12 01:16:34.828679229 +0100
++++ b/drm/vmwgfx/vmwgfx_vkms.c	2026-09-12 01:50:44.840465400 +0100
+@@ -260,7 +260,7 @@
+ 		return true;
+ 	}
+ 
+-	*vblank_time = READ_ONCE(du->vkms.timer.node.expires);
++	*vblank_time = READ_ONCE(du->vkms.timer.expires);
+ 
+ 	if (WARN_ON(*vblank_time == vblank->time))
+ 		return true;

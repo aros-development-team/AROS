@@ -676,3 +676,152 @@ diff -ruN mesa-26.0.0/src/gallium/auxiliary/gallivm/lp_bld_passmgr.c mesa-26.0.0
  #include "util/os_time.h"
  #include "lp_bld_debug.h"
  #include "lp_bld_passmgr.h"
+diff -ruN mesa-26.0.0/src/gallium/winsys/svga/drm/vmw_screen.c mesa-26.0.0.aros/src/gallium/winsys/svga/drm/vmw_screen.c
+--- mesa-26.0.0/src/gallium/winsys/svga/drm/vmw_screen.c	2026-09-12 04:12:26.106012519 +0100
++++ mesa-26.0.0.aros/src/gallium/winsys/svga/drm/vmw_screen.c	2026-09-12 04:12:26.111697719 +0100
+@@ -25,8 +25,16 @@
+ #include <sys/stat.h>
+ #include <unistd.h>
+ #include <fcntl.h>
++#ifndef __AROS__
+ #include <sys/ioctl.h>
+ #include <sys/mman.h>
++#endif
++
++#ifdef __AROS__
++/* one device, keyed by a zero dev_t */
++#define major(d) ((unsigned)((d) >> 8))
++#define minor(d) ((unsigned)((d) & 0xff))
++#endif
+ 
+ static struct hash_table *dev_hash = NULL;
+ 
+@@ -117,8 +125,13 @@
+          return NULL;
+    }
+ 
++#ifdef __AROS__
++   /* one device, and the fd is an index into the in-process shim */
++   memset(&stat_buf, 0, sizeof(stat_buf));
++#else
+    if (fstat(fd, &stat_buf))
+       return NULL;
++#endif
+ 
+    vws = util_hash_table_get(dev_hash, &stat_buf.st_rdev);
+    if (vws) {
+@@ -132,7 +145,11 @@
+ 
+    vws->device = stat_buf.st_rdev;
+    vws->open_count = 1;
++#ifdef __AROS__
++   vws->ioctl.drm_fd = fd;
++#else
+    vws->ioctl.drm_fd = os_dupfd_cloexec(fd);
++#endif
+    vws->force_coherent = false;
+    if (!vmw_ioctl_init(vws))
+       goto out_no_ioctl;
+@@ -175,7 +192,9 @@
+ out_no_fence_ops:
+    vmw_ioctl_cleanup(vws);
+ out_no_ioctl:
++#ifndef __AROS__
+    close(vws->ioctl.drm_fd);
++#endif
+    FREE(vws);
+ out_no_vws:
+    return NULL;
+@@ -194,7 +213,9 @@
+ #ifdef VMX86_STATS
+       vmw_winsys_screen_deinit_mksstat(vws);
+ #endif
++#ifndef __AROS__
+       close(vws->ioctl.drm_fd);
++#endif
+       mtx_destroy(&vws->cs_mutex);
+       cnd_destroy(&vws->cs_cond);
+       FREE(vws);
+diff -ruN mesa-26.0.0/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c mesa-26.0.0.aros/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c
+--- mesa-26.0.0/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c	2026-09-12 04:12:26.113719119 +0100
++++ mesa-26.0.0.aros/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c	2026-09-12 04:12:26.119375619 +0100
+@@ -28,7 +28,9 @@
+ #include "svga3d_devcaps.h"
+ #include "svga3d_reg.h"
+ 
++#ifndef __AROS__
+ #include "util/os_mman.h"
++#endif
+ 
+ #include <errno.h>
+ #include <unistd.h>
+@@ -58,7 +60,7 @@
+ }
+ 
+ #if defined(__DragonFly__) || defined(__FreeBSD__) || \
+-    defined(__NetBSD__) || defined(__OpenBSD__)
++    defined(__NetBSD__) || defined(__OpenBSD__) || defined(__AROS__)
+ #define ERESTART EINTR
+ #endif
+ 
+@@ -640,7 +642,11 @@
+               region->ptr.gmrId, region->ptr.offset);
+ 
+    if (region->data) {
++#ifdef __AROS__
++      drmMUnmap(region->drm_fd, region->handle);
++#else
+       os_munmap(region->data, region->size);
++#endif
+       region->data = NULL;
+    }
+ 
+@@ -667,6 +673,14 @@
+               region->ptr.gmrId, region->ptr.offset);
+ 
+    if (region->data == NULL) {
++#ifdef __AROS__
++      /* the kernel port hands out the mapping itself */
++      map = drmMMap(region->drm_fd, region->handle, NULL, NULL);
++      if (map == NULL) {
++         vmw_error("%s: Map failed.\n", __func__);
++         return NULL;
++      }
++#else
+       map = os_mmap(NULL, region->size, PROT_READ | PROT_WRITE, MAP_SHARED,
+                  region->drm_fd, region->map_handle);
+       if (map == MAP_FAILED) {
+@@ -678,6 +692,7 @@
+ #ifdef MADV_HUGEPAGE
+       (void) madvise(map, region->size, MADV_HUGEPAGE);
+ #endif
++#endif
+       region->data = map;
+    }
+ 
+@@ -693,7 +708,11 @@
+               region->ptr.gmrId, region->ptr.offset);
+ 
+    --region->map_count;
++#ifdef __AROS__
++   drmMUnmap(region->drm_fd, region->handle);
++#else
+    os_munmap(region->data, region->size);
++#endif
+    region->data = NULL;
+ }
+ 
+diff -ruN mesa-26.0.0/src/gallium/winsys/svga/drm/vmw_screen_svga.c mesa-26.0.0.aros/src/gallium/winsys/svga/drm/vmw_screen_svga.c
+--- mesa-26.0.0/src/gallium/winsys/svga/drm/vmw_screen_svga.c	2026-09-12 04:12:26.121445619 +0100
++++ mesa-26.0.0.aros/src/gallium/winsys/svga/drm/vmw_screen_svga.c	2026-09-12 04:12:26.126574419 +0100
+@@ -16,8 +16,10 @@
+ 
+ #include <libsync.h>
+ #include <stdint.h>
++#ifndef __AROS__
+ #include <sys/ioctl.h>
+ #include <sys/mman.h>
++#endif
+ 
+ #include "svga_cmd.h"
+ #include "svga3d_devcaps.h"

@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: Bitmap class for VMWareSVGA hidd.
+    Desc: Bitmap class for VMWareSVGA hidd: the framebuffer on screen.
 */
 
 #define __OOP_NOATTRBASES__
@@ -58,6 +58,73 @@ static struct OOP_ABDescr attrbases[] =
 #define DEBUG 0
 #include <aros/debug.h>
 
+/*
+ * A scanout buffer of the bitmap's size, shown in the mode of that size.
+ *
+ * The old buffer goes first: on a host without guest backed objects the
+ * scanout buffer has to sit in the (small) video RAM, and two of them
+ * rarely fit. Should the new one fail, the old size is put back.
+ */
+static BOOL VMWareSVGAOnBM_ShowSize(OOP_Class *cl, struct BitmapData *data, ULONG width, ULONG height)
+{
+    struct VMWareSVGA_KMS *kms = &XSD(cl)->kms;
+    drmModeModeInfoPtr mode;
+
+    mode = VMWareSVGA_KMS_FindMode(kms, width, height);
+    if (!mode)
+    {
+        bug(DEBUGNAME " %s: no %ux%u mode\n", __func__, width, height);
+        return FALSE;
+    }
+
+    /*
+     * The buffer lives in the bitmap's own data: the KMS layer remembers
+     * the framebuffer it is scanning out by address.
+     */
+    if (!VMWareSVGA_KMS_CreateFB(kms, &data->fb, width, height, VMWSVGA_FB_BPP, VMWSVGA_FB_DEPTH))
+        return FALSE;
+
+    if (!VMWareSVGA_KMS_SetMode(kms, &data->fb, mode))
+    {
+        VMWareSVGA_KMS_DestroyFB(kms, &data->fb);
+        return FALSE;
+    }
+
+    data->mode = mode;
+    data->VideoData = data->fb.map;
+    data->pitch = data->fb.pitch;
+    data->width = width;
+    data->height = height;
+
+    /* the crtc is now on a different buffer; the whole of it is stale */
+    VMWareSVGA_KMS_DirtyFB(kms, &data->fb, NULL);
+
+    return TRUE;
+}
+
+static BOOL VMWareSVGAOnBM_Show(OOP_Class *cl, struct BitmapData *data, ULONG width, ULONG height)
+{
+    struct VMWareSVGA_KMS *kms = &XSD(cl)->kms;
+    ULONG oldwidth = data->width, oldheight = data->height;
+    BOOL hadfb = (data->fb.handle != 0);
+
+    if (hadfb)
+    {
+        VMWareSVGA_KMS_DestroyFB(kms, &data->fb);
+        data->VideoData = NULL;
+    }
+
+    if (VMWareSVGAOnBM_ShowSize(cl, data, width, height))
+        return TRUE;
+
+    if (hadfb && VMWareSVGAOnBM_ShowSize(cl, data, oldwidth, oldheight))
+        bug(DEBUGNAME " %s: %ux%u could not be shown, back at %ux%u\n", __func__, width, height, oldwidth, oldheight);
+    else
+        bug(DEBUGNAME " %s: no framebuffer can be shown\n", __func__);
+
+    return FALSE;
+}
+
 /*********** BitMap::New() *************************************/
 
 OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -68,7 +135,6 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     if (o)
     {
         struct BitmapData *data = OOP_INST_DATA(cl, o);
-        LONG multi=1;
         OOP_Object *pf;
         IPTR width, height, depth;
         HIDDT_ModeID modeid;
@@ -77,31 +143,15 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         memset(data, 0, sizeof(struct BitmapData));
 
         /* Get attr values */
-        
         OOP_GetAttr(o, aHidd_BitMap_Width, &width);
         OOP_GetAttr(o, aHidd_BitMap_Height, &height);
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
         ASSERT (width != 0 && height != 0 && depth != 0);
 
-        /*
-            We must only create depths that are supported by the friend drawable
-            Currently we only support the default depth
-        */
-
-        width = (width + 15) & ~15;
-        data->width = width;
-        data->height = height;
         data->bpp = depth;
         data->disp = -1;
-        if (depth > 16)
-            multi = 4;
-        else if (depth > 8)
-            multi = 2;
-        data->bytesperpix = multi;
-
-        data->data = &XSD(cl)->data;
-        data->mouse = &XSD(cl)->mouse;
+        data->bytesperpix = VMWSVGA_FB_BPP / 8;
 
         /* We should be able to get modeID from the bitmap */
         OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
@@ -113,10 +163,38 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         }
         else
         {
+            OOP_Object *sync, *pixfmt;
+            IPTR mode_width = width, mode_height = height;
+
             InitSemaphore(&data->bmsem);
-            data->VideoData = data->data->vrambase;
-            XSD(cl)->visible = o;
-            setModeVMWareSVGA(&XSD(cl)->data, XSD(cl)->prefWidth, XSD(cl)->prefHeight);
+
+            /* the framebuffer is the size of the mode it is shown in */
+            HIDD_DMEnum_GetMode(XSD(cl)->dmenum, modeid, &sync, &pixfmt);
+            if (sync)
+            {
+                OOP_GetAttr(sync, aHidd_Sync_HDisp, &mode_width);
+                OOP_GetAttr(sync, aHidd_Sync_VDisp, &mode_height);
+            }
+            if (mode_width < width)
+                mode_width = width;
+            if (mode_height < height)
+                mode_height = height;
+
+            if (!VMWareSVGAOnBM_Show(cl, data, mode_width, mode_height))
+            {
+                OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+                OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+                o = NULL;
+            }
+            else
+            {
+                XSD(cl)->visible = o;
+                if (XSD(cl)->hwCursor && XSD(cl)->mouse.visible)
+                {
+                    VMWareSVGA_KMS_ShowCursor(&XSD(cl)->kms, TRUE);
+                    VMWareSVGA_KMS_MoveCursor(&XSD(cl)->kms, XSD(cl)->mouse.x, XSD(cl)->mouse.y);
+                }
+            }
         }
     } /* if created object */
 
@@ -143,19 +221,18 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
         if (data->width != width || data->height != height)
         {
-            if ((XSD(cl)->mouse.visible))
-                displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_HIDE);
-
-            setModeVMWareSVGA(&XSD(cl)->data, width, height);
-            syncfenceVMWareSVGAFIFO(&XSD(cl)->data, fenceVMWareSVGAFIFO(&XSD(cl)->data));
-            data->width = width;
-            data->height = height;
-
-            if (XSD(cl)->mouse.visible)
+            LOCK_BITMAP
+            if (!VMWareSVGAOnBM_Show(cl, data, width, height))
             {
-                defineCursorVMWareSVGA(&XSD(cl)->data, &XSD(cl)->mouse);
-                moveCursorVMWareSVGA(&XSD(cl)->data, XSD(cl)->mouse.x, XSD(cl)->mouse.y);
-                displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_SHOW);
+                UNLOCK_BITMAP
+                return FALSE;
+            }
+            UNLOCK_BITMAP
+
+            if (XSD(cl)->hwCursor && XSD(cl)->mouse.visible)
+            {
+                VMWareSVGA_KMS_ShowCursor(&XSD(cl)->kms, TRUE);
+                VMWareSVGA_KMS_MoveCursor(&XSD(cl)->kms, XSD(cl)->mouse.x, XSD(cl)->mouse.y);
             }
         }
     }
@@ -167,7 +244,15 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
 VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+
     D(bug(DEBUGNAME " %s()\n", __func__);)
+
+    if (XSD(cl)->visible == o)
+        XSD(cl)->visible = NULL;
+    if (data->fb.handle)
+        VMWareSVGA_KMS_DestroyFB(&XSD(cl)->kms, &data->fb);
+
     OOP_DoSuperMethod(cl, o, msg);
 }
 

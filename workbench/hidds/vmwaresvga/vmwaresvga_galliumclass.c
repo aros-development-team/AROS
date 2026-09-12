@@ -1,5 +1,9 @@
 /*
     Copyright 2015-2026, The AROS Development Team. All rights reserved.
+
+    Desc: The 3D side: Mesa's svga gallium driver over its stock drm
+          winsys, which talks to the in-process vmwgfx driver through the
+          libdrm shim.
 */
 
 #include <aros/debug.h>
@@ -23,14 +27,15 @@
 #include "vmwaresvga_intern.h"
 
 #include "pipe/p_context.h"      // For struct pipe_context
+#include "pipe/p_screen.h"
 #include "pipe/p_state.h"        // For struct pipe_transfer
 #include "util/u_inlines.h"      // For pipe_texture_map()
 
-#if (AROS_BIG_ENDIAN == 1)
-#define AROS_PIXFMT RECTFMT_RAW   /* Big Endian Archs. */
-#else
-#define AROS_PIXFMT RECTFMT_BGRA32   /* Little Endian Archs. */
-#endif
+#include "svga/svga_public.h"
+#include "svga/svga_winsys.h"
+#include "svga_drm_public.h"
+
+#include <xf86drm.h>
 
 // ****************************************************************************
 //                      Gallium Hidd Methods
@@ -52,11 +57,7 @@ OOP_Object *METHOD(GalliumVMWareSVGA, Root, New)
         struct HIDDGalliumVMWareSVGAData * data = OOP_INST_DATA(cl, o);
 
         memset(data, 0, sizeof(struct HIDDGalliumVMWareSVGAData));
-
-        data->wsgo                              = o;
-        data->hwdata                            = &XSD(cl)->data;
-
-        VMWareSVGA_WSScr_WinSysInit(data);
+        data->fd = -1;
     }
 
     return o;
@@ -91,27 +92,77 @@ VOID METHOD(GalliumVMWareSVGA, Root, Get)
 APTR METHOD(GalliumVMWareSVGA, Hidd_Gallium, CreatePipeScreen)
 {
     struct HIDDGalliumVMWareSVGAData * data = OOP_INST_DATA(cl, o);
+    struct svga_winsys_screen *sws;
     struct pipe_screen *screen = NULL;
-    struct pipe_context *pipe;
 
     D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
-    screen = svga_screen_create(&data->wssbase);
-    D(bug("[VMWareSVGA:Gallium] %s: screen @ 0x%p\n", __func__, screen));
-    if (screen)
+    if (data->screen)
+        return data->screen;
+
+    data->fd = drmOpen(NULL, NULL);
+    if (data->fd < 0)
     {
-        data->spipe = screen->context_create(screen, data, 0);
-        bug("[VMWareSVGA:Gallium] %s: pipe @ 0x%p\n", __func__, data->spipe);
+        bug("[VMWareSVGA:Gallium] %s: no drm file (%d)\n", __func__, data->fd);
+        return NULL;
     }
 
+    sws = svga_drm_winsys_screen_create(data->fd);
+    if (!sws)
+    {
+        bug("[VMWareSVGA:Gallium] %s: the svga winsys did not start\n", __func__);
+        drmClose(data->fd);
+        data->fd = -1;
+        return NULL;
+    }
+
+    screen = svga_screen_create(sws);
+    D(bug("[VMWareSVGA:Gallium] %s: screen @ 0x%p\n", __func__, screen));
+    if (!screen)
+    {
+        sws->destroy(sws);
+        drmClose(data->fd);
+        data->fd = -1;
+        return NULL;
+    }
+
+    data->screen = screen;
+    data->pipe = screen->context_create(screen, data, 0);
+    D(bug("[VMWareSVGA:Gallium] %s: pipe @ 0x%p\n", __func__, data->pipe));
+
     return screen;
+}
+
+VOID METHOD(GalliumVMWareSVGA, Hidd_Gallium, DestroyPipeScreen)
+{
+    struct HIDDGalliumVMWareSVGAData * data = OOP_INST_DATA(cl, o);
+    struct pipe_screen *screen = (struct pipe_screen *)msg->screen;
+
+    D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, screen);)
+
+    if (!screen || screen != data->screen)
+        return;
+
+    if (data->pipe)
+    {
+        data->pipe->destroy(data->pipe);
+        data->pipe = NULL;
+    }
+    screen->destroy(screen);
+    data->screen = NULL;
+
+    if (data->fd >= 0)
+    {
+        drmClose(data->fd);
+        data->fd = -1;
+    }
 }
 
 VOID METHOD(GalliumVMWareSVGA, Hidd_Gallium, DisplayResource)
 {
     struct HIDDGalliumVMWareSVGAData * data = OOP_INST_DATA(cl, o);
     struct pipe_resource *res = (struct pipe_resource *)msg->resource;
-    struct pipe_context *pipe = data->spipe;
+    struct pipe_context *pipe = data->pipe;
     struct pipe_transfer *transfer = NULL;
     uint8_t *mapped;
     struct RastPort *rp;

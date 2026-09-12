@@ -4,6 +4,17 @@ include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 
 GALLIUM_PATH = $(top_srcdir)/src/gallium
 
+include $(SRCDIR)/$(CURDIR)/sources.drm.mak
+
+# WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
+# (Mesa's svga gallium driver, from the mesa port)
+#
+# The 3D side is Mesa's own svga gallium driver, driven through its stock
+# drm winsys and an in-process libdrm shim by a port of the Linux vmwgfx
+# kernel driver, in the way nouveau.hidd is built. The DRM core, TTM and
+# the Linux compatibility layer are the same base the nouveau hidd carries,
+# as a copy of its own in this tree.
+
 ifneq ($(wildcard $(GALLIUM_PATH)/drivers/svga/Makefile.sources),)
 include $(GALLIUM_PATH)/drivers/svga/Makefile.sources
 else
@@ -33,40 +44,29 @@ C_SOURCES := \
              svgadump/svga_shader_op.c
 endif
 
-# The AROS svga glue targets the Mesa 20.x gallium driver API. Mesa 26 drops
-# Makefile.sources and changed the driver interfaces, so only hook the hidd in
-# for the Mesa version it has been ported to.
+# The svga glue targets the Mesa 26 gallium driver API; only hook the hidd
+# in for the Mesa version it has been ported to.
 #MM- workbench-hidds-vmwaresvga : hidd-vmwaresvga-mesa$(OPT_MESAGL)
-#MM- hidd-vmwaresvga-mesa20.0.8 : hidd-vmwaresvga-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- hidd-vmwaresvga-mesa26.0.0 : hidd-vmwaresvga-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- hidd-vmwaresvga-pc-i386 : hidd-vmwaresvga
 #MM- hidd-vmwaresvga-pc-x86_64 : hidd-vmwaresvga
-#MM- hidd-vmwaresvga: includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib
+#MM hidd-vmwaresvga: includes hidd-vmwaresvga-drmcore hidd-vmwaresvga-drm hidd-vmwaresvga-libdrm hidd-vmwaresvga-svga hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib
+#MM hidd-vmwaresvga-svga : mesa3dgl-linklibs
+#MM hidd-vmwaresvga-libdrm : mesa3dgl-linklibs
+
+###############################################
+# Mesa's svga gallium driver -> libgallium_svga.a
+###############################################
 
 MESA3D_VMWARESVGA_C_SOURCES := $(filter %.c,$(C_SOURCES))
 
-GALLIUMFILES	:=	\
-	vmwaresvga_galliumclass \
-	vmwaresvga_gallium_screen \
-	vmwaresvga_gallium_surf \
-	vmwaresvga_gallium_ctx \
-	$(SRCDIR)/workbench/libs/mesa/emul_arosc \
+GALLIUM_SVGA_SOURCES := \
 	$(addprefix $(GALLIUM_PATH)/drivers/svga/,$(MESA3D_VMWARESVGA_C_SOURCES:.c=))
 
-FILES	:=	\
-	vmwaresvga_init \
-	vmwaresvga_hiddclass \
-	vmwaresvga_hardware \
-	vmwaresvga_offbitmapclass \
-	vmwaresvga_onbitmapclass \
-	$(GALLIUMFILES) \
-	vmwaresvga_util
-
-# disable necessary warnings
-NOWARN_FLAGS := $(NOWARN_UNUSED_VALUE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_STRICT_ALIASING)
-USER_CFLAGS += $(NOWARN_FLAGS)
-
-USER_INCLUDES += \
+MESA_INCLUDES := \
+            -I$(top_srcdir)/include \
+            -I$(top_srcdir)/include/GL \
+            -I$(top_srcdir)/src \
             -iquote $(GALLIUM_PATH)/drivers/svga/include \
             -iquote $(GALLIUM_PATH)/drivers/svga \
             -iquote $(GALLIUM_PATH)/drivers \
@@ -83,19 +83,108 @@ USER_INCLUDES += \
             -iquote $(top_srcdir)/src/compiler/nir \
             -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir
 
-USER_CPPFLAGS += \
+NOWARN_FLAGS := $(NOWARN_UNUSED_VALUE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_STRICT_ALIASING)
+USER_CFLAGS := $(MESA_STD) $(MESA_COMPILEOPTIONS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
+USER_INCLUDES := $(MESA_INCLUDES)
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) \
                 -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
                 -DEMBEDDED_DEVICE \
                 -DGALLIUM_VMWGFX
 
-#USER_CPPFLAGS += -DDEBUG=1
+%build_linklib mmake=hidd-vmwaresvga-svga libname=gallium_svga objdir=$(GENDIR)/$(CURDIR)/$(MESAGLVERSION)/gallium \
+    files="$(GALLIUM_SVGA_SOURCES)"
 
-# The svga driver now goes through NIR, so the (C++) compiler linklib is part
+###############################################
+# libdrm shim + Mesa's svga drm winsys -> libdrm_vmwgfx.a
+###############################################
+
+# The libdrm shim reaches into the DRM core; the winsys is Mesa code,
+# compiled from the port tree, and sees the Mesa tree (util/, pipebuffer/)
+# the way the svga driver does.
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            $(MESA_INCLUDES) \
+            -iquote $(GALLIUM_PATH)/winsys/svga/drm \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi/drm \
+            -I$(SRCDIR)/$(CURDIR)/drm \
+
+%build_linklib mmake=hidd-vmwaresvga-libdrm libname=drm_vmwgfx objdir=$(GENDIR)/$(CURDIR)/$(MESAGLVERSION)/libdrm \
+    files="$(AROS_VMWGFX_LIBDRM_SOURCES) $(addprefix $(GALLIUM_PATH)/winsys/svga/drm/,$(AROS_VMWGFX_WINSYS_SOURCES))"
+
+###############################################
+# DRM core, TTM, linux compat -> libdrm_vmwgfx_core.a
+###############################################
+
+DRM_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi/drm \
+            -I$(SRCDIR)/$(CURDIR)/drm \
+
+# The driver and Mesa's winsys both name a fence constructor vmw_fence_create;
+# in one binary the driver's is called by its module's name.
+DRM_CPPFLAGS := -D__KERNEL__ -DCONFIG_X86 -DDRM_COMPAT_NAME=\"vmwgfx\" -Dvmw_fence_create=vmwgfx_fence_create
+DRM_NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING) $(NOWARN_UNUSED_BUT_SET_VARIABLE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_UNUSED_FUNCTION) $(NOWARN_MISSING_BRACES)
+
+USER_INCLUDES := $(DRM_INCLUDES)
+USER_CPPFLAGS := $(DRM_CPPFLAGS)
+USER_CFLAGS := $(DRM_NOWARN_FLAGS) $(CFLAGS_GNU11) -fno-strict-aliasing
+
+%build_linklib mmake=hidd-vmwaresvga-drmcore libname=drm_vmwgfx_core objdir=$(GENDIR)/$(CURDIR)/drmcore \
+    files="$(AROS_VMWGFX_DRMCORE_SOURCES)" srcdir="$(SRCDIR)/$(CURDIR)" usetree=yes
+
+###############################################
+# vmwgfx driver + AROS glue -> libdrm_vmwgfx_drv.a
+###############################################
+
+USER_INCLUDES := \
+            $(DRM_INCLUDES) \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi \
+            -iquote $(SRCDIR)/$(CURDIR)/drm/vmwgfx \
+            -iquote $(SRCDIR)/$(CURDIR)/drm/vmwgfx/device_include \
+
+USER_CPPFLAGS := $(DRM_CPPFLAGS)
+USER_CFLAGS := $(DRM_NOWARN_FLAGS) $(CFLAGS_GNU11) -fno-strict-aliasing
+
+%build_linklib mmake=hidd-vmwaresvga-drm libname=drm_vmwgfx_drv objdir=$(GENDIR)/$(CURDIR)/drm \
+    files="$(AROS_VMWGFX_DRM_SOURCES)" srcdir="$(SRCDIR)/$(CURDIR)" usetree=yes
+
+#################################################
+# hidd classes -> vmwaresvga.hidd
+#################################################
+
+FILES	:=	\
+	vmwaresvga_init \
+	vmwaresvga_hiddclass \
+	vmwaresvga_displayclass \
+	vmwaresvga_kms \
+	vmwaresvga_offbitmapclass \
+	vmwaresvga_onbitmapclass \
+	vmwaresvga_galliumclass \
+	$(SRCDIR)/workbench/libs/mesa/emul_arosc \
+	vmwaresvga_util
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            $(MESA_INCLUDES) \
+            -iquote $(GALLIUM_PATH)/winsys/svga/drm \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi/drm \
+
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) \
+                -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+                -DEMBEDDED_DEVICE \
+                -DGALLIUM_VMWGFX
+USER_CFLAGS := $(MESA_STD) $(MESA_COMPILEOPTIONS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
+
+# The svga driver goes through NIR, so the (C++) compiler linklib is part
 # of the group and the module is linked with the C++ driver.
 USER_LDFLAGS := \
-  -L$(top_libdir) \
-  -Wl,--start-group -lcompiler -lgalliumauxiliary -lmesautil \
-  -lz -lpthread -lposixc -lstdc
+  -L$(top_libdir) -L$(AROS_LIB) \
+  -Wl,--start-group -lgallium_svga -ldrm_vmwgfx -ldrm_vmwgfx_drv -ldrm_vmwgfx_core \
+  -lcompiler -lgalliumauxiliary -lmesautil \
+  -loop -lhiddstubs -lz -lpthread -lposixc -lstdc
 ifneq ($(TARGET_LIBATOMIC),)
 USER_LDFLAGS += $(TARGET_CXX_LIBS)
 endif
