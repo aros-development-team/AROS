@@ -1319,7 +1319,14 @@ static void writeopenlib(FILE *out, struct config *cfg)
                         "    if (newlib)\n"
                         "    {\n"
                         "        struct __GM_DupBase *dupbase = (struct __GM_DupBase *)newlib;\n"
-                        "        if (dupbase->task != thistask)\n"
+                        "        /* The slot may still name a dup that another task closed and\n"
+                        "           freed (an expunge sweep closing the bases a library init\n"
+                        "           opened, for instance), or a dup of an earlier incarnation of\n"
+                        "           this library that got the same slot id. A dup is a copy of\n"
+                        "           the root it was made from, so its name pointer identifies\n"
+                        "           that root; anything else is stale and must not be reused. */\n"
+                        "        if (dupbase->task != thistask\n"
+                        "            || ((struct Library *)newlib)->lib_Node.ln_Name != ((struct Library *)LIBBASE)->lib_Node.ln_Name)\n"
                         "            newlib = NULL;\n"
                         "        else if (thistask->tc_Node.ln_Type == NT_PROCESS\n"
                         "                 && dupbase->retaddr != ((struct Process *)thistask)->pr_ReturnAddr\n"
@@ -1473,7 +1480,13 @@ static void writecloselib(FILE *out, struct config *cfg)
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
-                    "    __GM_SetPerTaskBase(((struct __GM_DupBase *)LIBBASE)->oldpertaskbase);\n"
+                    "    /* Only the owning task's slot chain is ours to unwind. When another\n"
+                    "       task closes this dup (an expunge sweep, typically) its own slot\n"
+                    "       must be left alone; the owner's slot keeps pointing here, so mark\n"
+                    "       the dup dead before it is freed so OpenLib rejects it. */\n"
+                    "    if (dupbase->task == FindTask(NULL))\n"
+                    "        __GM_SetPerTaskBase(dupbase->oldpertaskbase);\n"
+                    "    dupbase->task = NULL;\n"
             );
         fprintf(out,
                 "    __freebase(LIBBASE);\n"
