@@ -147,7 +147,9 @@ def pack( destination, files ):
                 files = files[1:]
 
             if len(files) == 0:
-                files = listFiles()
+                outputStat = os.fstat( output.fileno() )
+                files = [path for path in listFiles()
+                         if not os.path.samestat( os.stat( path ), outputStat )]
 
             writeHeader( output, PKG_VERSION )
 
