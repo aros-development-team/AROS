@@ -41,7 +41,6 @@ static LONG getArgumentIdx(ShellState *ss, STRPTR name, LONG len)
 static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
 {
     struct SArg *a;
-    STRPTR def;
     LONG i, result;
     TEXT buf[256];
 
@@ -50,6 +49,8 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
 
     if ((result = bufferReadItem(buf, sizeof(buf), in, ss)) == ITEM_UNQUOTED)
     {
+        STRPTR def;
+
         len = in->cur - i;
 
         if (len > MAXARGLEN)
