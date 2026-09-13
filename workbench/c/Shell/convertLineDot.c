@@ -41,6 +41,7 @@ static LONG getArgumentIdx(ShellState *ss, STRPTR name, LONG len)
 static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
 {
     struct SArg *a;
+    STRPTR def;
     LONG i, result;
     TEXT buf[256];
 
@@ -72,12 +73,17 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
 
         len = in->cur - i;
 
+        def = AllocMem(len + 1, MEMF_LOCAL);
+        if (!def)
+            return ERROR_NO_FREE_STORE;
+
+        CopyMem(buf, def, len);
+        def[len] = '\0';
+
         if (a->def)
             FreeMem((APTR) a->def, a->deflen + 1);
 
-        a->def = (IPTR) AllocMem(len + 1, MEMF_LOCAL);
-        CopyMem(buf, (APTR) a->def, len);
-        ((STRPTR) a->def)[len] = '\0';
+        a->def = (IPTR) def;
         a->deflen = len;
         return 0;
     }
