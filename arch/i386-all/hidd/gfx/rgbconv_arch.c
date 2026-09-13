@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>
@@ -32,7 +32,8 @@ void SetArchRGBConversionFunctions(HIDDT_RGBConversionFunction rgbconvertfuncs[N
 #if (0)
     SCCF(ARGB32,BGRA32)
 #else
-    rgbconvertfuncs[FMT_ARGB32 - FIRST_RGB_STDPIXFMT][FMT_BGRA32 - FIRST_RGB_STDPIXFMT] = convert_BGRX32_XRGB32_SSE;
+    /* Do not alias ARGB32 -> BGRA32 to the BGRX32 -> XRGB32 routine: it stamps an
+     * opaque alpha into every pixel and destroys alpha in offscreen ARGB bitmaps. */
 #endif
 #endif
 }
