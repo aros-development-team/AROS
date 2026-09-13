@@ -34,7 +34,117 @@
 #include <signal.h>
 #endif
 #include <exec/types.h>
+
+#ifdef __cplusplus
+/*
+ * This header is pulled into every C++ translation unit through libstdc++'s
+ * <thread>/<mutex> support.  The exec structures embedded in the pthread
+ * types below drag exec/nodes.h, lists.h, ports.h and tasks.h along, whose
+ * global struct names (Node, List, Task, Message, ...) collide with common
+ * C++ class names as soon as a "using namespace" directive is in effect.
+ *
+ * For C++, the exec headers that have not been included yet are therefore
+ * pulled in under private struct names, and their include guards are reset
+ * afterwards so that a later explicit include still declares the real
+ * types.  The private structs have the exact same layout, so the pthread
+ * types stay ABI compatible with the (C) pthread library.
+ */
+#ifndef EXEC_NODES_H
+#define Node                __pthread_exec_Node
+#define MinNode             __pthread_exec_MinNode
+#define __PTHREAD_PRIVATE_NODES
+#endif
+#ifndef EXEC_LISTS_H
+#define List                __pthread_exec_List
+#define MinList             __pthread_exec_MinList
+#define __PTHREAD_PRIVATE_LISTS
+#endif
+#ifndef EXEC_PORTS_H
+#define Message             __pthread_exec_Message
+#define MsgPort             __pthread_exec_MsgPort
+#define __PTHREAD_PRIVATE_PORTS
+#endif
+#ifndef EXEC_TASKS_H
+#define Task                __pthread_exec_Task
+#define ETask               __pthread_exec_ETask
+#define StackSwapStruct     __pthread_exec_StackSwapStruct
+#define StackSwapArgs       __pthread_exec_StackSwapArgs
+#define __PTHREAD_PRIVATE_TASKS
+#endif
+#ifndef EXEC_SEMAPHORES_H
+#define SignalSemaphore     __pthread_exec_SignalSemaphore
+#define SemaphoreRequest    __pthread_exec_SemaphoreRequest
+#define SemaphoreMessage    __pthread_exec_SemaphoreMessage
+#define __PTHREAD_PRIVATE_SEMAPHORES
+#endif
+
 #include <exec/semaphores.h>
+
+#ifdef __PTHREAD_PRIVATE_NODES
+#undef Node
+#undef MinNode
+#undef EXEC_NODES_H
+#undef __PTHREAD_PRIVATE_NODES
+typedef struct __pthread_exec_Node __pthread_exec_node_t;
+#else
+typedef struct Node __pthread_exec_node_t;
+#endif
+#ifdef __PTHREAD_PRIVATE_LISTS
+#undef List
+#undef MinList
+#undef EXEC_LISTS_H
+#undef __PTHREAD_PRIVATE_LISTS
+typedef struct __pthread_exec_MinList __pthread_exec_minlist_t;
+#else
+typedef struct MinList __pthread_exec_minlist_t;
+#endif
+#ifdef __PTHREAD_PRIVATE_PORTS
+#undef Message
+#undef MsgPort
+#undef EXEC_PORTS_H
+#undef __PTHREAD_PRIVATE_PORTS
+#endif
+#ifdef __PTHREAD_PRIVATE_TASKS
+#undef Task
+#undef ETask
+#undef StackSwapStruct
+#undef StackSwapArgs
+#undef EXEC_TASKS_H
+#undef __PTHREAD_PRIVATE_TASKS
+#endif
+#ifdef __PTHREAD_PRIVATE_SEMAPHORES
+#undef SignalSemaphore
+#undef SemaphoreRequest
+#undef SemaphoreMessage
+#undef EXEC_SEMAPHORES_H
+#undef __PTHREAD_PRIVATE_SEMAPHORES
+typedef struct __pthread_exec_SignalSemaphore __pthread_exec_sigsem_t;
+#else
+typedef struct SignalSemaphore __pthread_exec_sigsem_t;
+#endif
+
+/*
+ * exec/types.h also defines bare storage-class helper macros (STATIC, CONST,
+ * GLOBAL, ...) which routinely appear as enumerators and identifiers in C++
+ * code, so drop them again here.  Its include guard is reset as well, so a
+ * later explicit include of an AROS header brings them back for the AROS
+ * API declarations that rely on them.
+ */
+#undef GLOBAL
+#undef IMPORT
+#undef STATIC
+#undef REGISTER
+#undef CONST
+#undef VOLATILE
+#undef RESTRICT
+#undef EXEC_TYPES_H
+#else
+#include <exec/semaphores.h>
+typedef struct Node __pthread_exec_node_t;
+typedef struct SignalSemaphore __pthread_exec_sigsem_t;
+typedef struct MinList __pthread_exec_minlist_t;
+#endif
+
 #include <sched.h>
 
 //
@@ -155,7 +265,7 @@ typedef struct pthread_mutexattr pthread_mutexattr_t;
 struct pthread_mutex
 {
     int kind;
-    struct SignalSemaphore semaphore;
+    __pthread_exec_sigsem_t semaphore;
     int incond;
 };
 
@@ -189,8 +299,8 @@ typedef struct pthread_condattr pthread_condattr_t;
 struct pthread_cond
 {
     int pad1;
-    struct SignalSemaphore semaphore;
-    struct MinList waiters;
+    __pthread_exec_sigsem_t semaphore;
+    __pthread_exec_minlist_t waiters;
 };
 
 typedef struct pthread_cond pthread_cond_t;
@@ -233,7 +343,7 @@ typedef struct pthread_rwlockattr pthread_rwlockattr_t;
 
 struct pthread_rwlock
 {
-    struct SignalSemaphore semaphore;
+    __pthread_exec_sigsem_t semaphore;
 };
 
 typedef struct pthread_rwlock pthread_rwlock_t;
