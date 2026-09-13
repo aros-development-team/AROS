@@ -7,6 +7,7 @@ POSIXC := \
     __dos64 \
     _exit \
     __exec \
+    __at \
     __fdesc \
     __fopen \
     __fseeko \

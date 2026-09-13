@@ -465,6 +465,13 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
         }
     }
 
+    /* O_DIRECTORY: only an existing directory may be opened */
+    if (flags & O_DIRECTORY)
+    {
+        __set_errno(PosixCBase, lock ? ENOTDIR : ENOENT);
+        goto err;
+    }
+
     /* the file exists and it's not a directory or the file doesn't exist */
 
     if (lock)
@@ -528,6 +535,8 @@ success:
     currdesc->fcb->handle    = fh;
     currdesc->fcb->flags     = flags;
     currdesc->fcb->opencount = 1;
+    if (flags & O_CLOEXEC)
+        currdesc->fdflags |= FD_CLOEXEC;
 
     /* Detect 64-bit filesystem support once, and cache it in the fcb */
     if (!(currdesc->fcb->privflags & _FCB_ISDIR))
