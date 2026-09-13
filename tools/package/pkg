@@ -14,15 +14,27 @@ PKG_FILE_DATALENGTH_FORMAT = '!I'
 def readHeader( file ):
     'readHeader( file ) -> version'
     
+    headerSize = struct.calcsize( PKG_HEADER_FORMAT )
+    headerData = file.read( headerSize )
+    if len( headerData ) != headerSize:
+        raise ValueError('Truncated package header')
     header = struct.unpack( 
         PKG_HEADER_FORMAT, 
-        file.read( struct.calcsize( PKG_HEADER_FORMAT ) ) 
+        headerData
     )
+    if header[:3] != (b'P', b'K', b'G'):
+        raise ValueError('Invalid package magic')
     version = header[3]
+    if version != PKG_VERSION:
+        raise ValueError('Unsupported package version: %d' % version)
     
+    sizeLength = struct.calcsize( PKG_FILE_DATALENGTH_FORMAT )
+    sizeData = file.read( sizeLength )
+    if len( sizeData ) != sizeLength:
+        raise ValueError('Truncated package size')
     size = struct.unpack(
         PKG_FILE_DATALENGTH_FORMAT,
-        file.read( struct.calcsize( PKG_FILE_DATALENGTH_FORMAT ) )
+        sizeData
     )
     
     return version
@@ -49,19 +61,34 @@ def writeHeader( file, version ):
 def readFile( file ):
     'readFile( file ) -> (path, data)'
       
+    pathLengthSize = struct.calcsize( PKG_FILE_PATHLENGTH_FORMAT )
+    pathLengthData = file.read( pathLengthSize )
+    if len( pathLengthData ) != pathLengthSize:
+        raise ValueError('Truncated package path length')
     pathLength = struct.unpack(
         PKG_FILE_PATHLENGTH_FORMAT,
-        file.read( struct.calcsize( PKG_FILE_PATHLENGTH_FORMAT ) )
+        pathLengthData
     )
     
-    path = file.read( pathLength[0] + 1 ).split( b'\0', 1 )[0]
-    
+    pathData = file.read( pathLength[0] + 1 )
+    if len( pathData ) != pathLength[0] + 1:
+        raise ValueError('Truncated package path')
+    if pathData[-1:] != b'\0':
+        raise ValueError('Package path is not NUL-terminated')
+    path = pathData.split( b'\0', 1 )[0]
+
+    dataLengthSize = struct.calcsize( PKG_FILE_DATALENGTH_FORMAT )
+    dataLengthData = file.read( dataLengthSize )
+    if len( dataLengthData ) != dataLengthSize:
+        raise ValueError('Truncated package data length')
     dataLength = struct.unpack(
         PKG_FILE_DATALENGTH_FORMAT,
-        file.read( struct.calcsize( PKG_FILE_DATALENGTH_FORMAT ) )
+        dataLengthData
     )
     
     data = file.read( dataLength[0] )
+    if len( data ) != dataLength[0]:
+        raise ValueError('Truncated package member data')
     
     return (path, data)
     
