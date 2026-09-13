@@ -49,22 +49,38 @@
  * types.  The private structs have the exact same layout, so the pthread
  * types stay ABI compatible with the (C) pthread library.
  */
+/*
+ * push_macro/pop_macro (rather than a plain #undef at the end) so that a
+ * caller-supplied command-line definition of any of these names - e.g. a C++
+ * port built with -DMessage=SomethingElse to dodge the very same collision -
+ * survives this header instead of being silently dropped.
+ */
 #ifndef EXEC_NODES_H
+#pragma push_macro("Node")
+#pragma push_macro("MinNode")
 #define Node                __pthread_exec_Node
 #define MinNode             __pthread_exec_MinNode
 #define __PTHREAD_PRIVATE_NODES
 #endif
 #ifndef EXEC_LISTS_H
+#pragma push_macro("List")
+#pragma push_macro("MinList")
 #define List                __pthread_exec_List
 #define MinList             __pthread_exec_MinList
 #define __PTHREAD_PRIVATE_LISTS
 #endif
 #ifndef EXEC_PORTS_H
+#pragma push_macro("Message")
+#pragma push_macro("MsgPort")
 #define Message             __pthread_exec_Message
 #define MsgPort             __pthread_exec_MsgPort
 #define __PTHREAD_PRIVATE_PORTS
 #endif
 #ifndef EXEC_TASKS_H
+#pragma push_macro("Task")
+#pragma push_macro("ETask")
+#pragma push_macro("StackSwapStruct")
+#pragma push_macro("StackSwapArgs")
 #define Task                __pthread_exec_Task
 #define ETask               __pthread_exec_ETask
 #define StackSwapStruct     __pthread_exec_StackSwapStruct
@@ -72,6 +88,9 @@
 #define __PTHREAD_PRIVATE_TASKS
 #endif
 #ifndef EXEC_SEMAPHORES_H
+#pragma push_macro("SignalSemaphore")
+#pragma push_macro("SemaphoreRequest")
+#pragma push_macro("SemaphoreMessage")
 #define SignalSemaphore     __pthread_exec_SignalSemaphore
 #define SemaphoreRequest    __pthread_exec_SemaphoreRequest
 #define SemaphoreMessage    __pthread_exec_SemaphoreMessage
@@ -81,8 +100,8 @@
 #include <exec/semaphores.h>
 
 #ifdef __PTHREAD_PRIVATE_NODES
-#undef Node
-#undef MinNode
+#pragma pop_macro("Node")
+#pragma pop_macro("MinNode")
 #undef EXEC_NODES_H
 #undef __PTHREAD_PRIVATE_NODES
 typedef struct __pthread_exec_Node __pthread_exec_node_t;
@@ -90,8 +109,8 @@ typedef struct __pthread_exec_Node __pthread_exec_node_t;
 typedef struct Node __pthread_exec_node_t;
 #endif
 #ifdef __PTHREAD_PRIVATE_LISTS
-#undef List
-#undef MinList
+#pragma pop_macro("List")
+#pragma pop_macro("MinList")
 #undef EXEC_LISTS_H
 #undef __PTHREAD_PRIVATE_LISTS
 typedef struct __pthread_exec_MinList __pthread_exec_minlist_t;
@@ -99,23 +118,23 @@ typedef struct __pthread_exec_MinList __pthread_exec_minlist_t;
 typedef struct MinList __pthread_exec_minlist_t;
 #endif
 #ifdef __PTHREAD_PRIVATE_PORTS
-#undef Message
-#undef MsgPort
+#pragma pop_macro("Message")
+#pragma pop_macro("MsgPort")
 #undef EXEC_PORTS_H
 #undef __PTHREAD_PRIVATE_PORTS
 #endif
 #ifdef __PTHREAD_PRIVATE_TASKS
-#undef Task
-#undef ETask
-#undef StackSwapStruct
-#undef StackSwapArgs
+#pragma pop_macro("Task")
+#pragma pop_macro("ETask")
+#pragma pop_macro("StackSwapStruct")
+#pragma pop_macro("StackSwapArgs")
 #undef EXEC_TASKS_H
 #undef __PTHREAD_PRIVATE_TASKS
 #endif
 #ifdef __PTHREAD_PRIVATE_SEMAPHORES
-#undef SignalSemaphore
-#undef SemaphoreRequest
-#undef SemaphoreMessage
+#pragma pop_macro("SignalSemaphore")
+#pragma pop_macro("SemaphoreRequest")
+#pragma pop_macro("SemaphoreMessage")
 #undef EXEC_SEMAPHORES_H
 #undef __PTHREAD_PRIVATE_SEMAPHORES
 typedef struct __pthread_exec_SignalSemaphore __pthread_exec_sigsem_t;
