@@ -133,8 +133,9 @@ void SetArchRGBConversionFunctions(HIDDT_RGBConversionFunction rgbconvertfuncs[N
 
     rgbconvertfuncs[FMT_XRGB32 - FIRST_RGB_STDPIXFMT][FMT_BGRX32 - FIRST_RGB_STDPIXFMT] = rgbconvertfuncs[FMT_XRGB32 - FIRST_RGB_STDPIXFMT][FMT_BGRA32 - FIRST_RGB_STDPIXFMT];
     rgbconvertfuncs[FMT_BGRX32 - FIRST_RGB_STDPIXFMT][FMT_XRGB32 - FIRST_RGB_STDPIXFMT] = rgbconvertfuncs[FMT_BGRA32 - FIRST_RGB_STDPIXFMT][FMT_XRGB32 - FIRST_RGB_STDPIXFMT];
-    rgbconvertfuncs[FMT_ARGB32 - FIRST_RGB_STDPIXFMT][FMT_BGRA32 - FIRST_RGB_STDPIXFMT] = rgbconvertfuncs[FMT_XRGB32 - FIRST_RGB_STDPIXFMT][FMT_BGRA32 - FIRST_RGB_STDPIXFMT];
-    rgbconvertfuncs[FMT_BGRA32 - FIRST_RGB_STDPIXFMT][FMT_ARGB32 - FIRST_RGB_STDPIXFMT] = rgbconvertfuncs[FMT_BGRX32 - FIRST_RGB_STDPIXFMT][FMT_XRGB32 - FIRST_RGB_STDPIXFMT];
+    /* ARGB32 <-> BGRA32 deliberately keep the generic byte-swap converters:
+     * the XRGB32/BGRX32 routines stamp an opaque alpha into every pixel,
+     * which destroys alpha in offscreen ARGB bitmaps (e.g. pointer images). */
 
 #if defined(__SSSE3__) || defined(__AVX__)
     if ((useSSE3) || (useAVX))
