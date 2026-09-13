@@ -825,3 +825,151 @@ diff -ruN mesa-26.0.0/src/gallium/winsys/svga/drm/vmw_screen_svga.c mesa-26.0.0.
  
  #include "svga_cmd.h"
  #include "svga3d_devcaps.h"
+diff -ruN mesa-26.0.0/src/util/set.c mesa-26.0.0.aros/src/util/set.c
+--- mesa-26.0.0/src/util/set.c
++++ mesa-26.0.0.aros/src/util/set.c
+@@ -49,7 +49,10 @@
+  */
+ 
+ static const uint32_t deleted_key_value;
+-static const void *deleted_key = &deleted_key_value;
++/* AROS: the sentinel lives in each set (ht->deleted_key) rather than in a
++ * file-static, because mesa3dgl.library and the gallium hidds are separate
++ * modules with their own copy of this file; a set marked in one module and
++ * walked in another must still agree on what "deleted" looks like. */
+ 
+ static const struct {
+    uint32_t max_entries, size, rehash;
+@@ -108,9 +111,9 @@
+ };
+ 
+ ASSERTED static inline bool
+-key_pointer_is_reserved(const void *key)
++key_pointer_is_reserved(const struct set *ht, const void *key)
+ {
+-   return key == NULL || key == deleted_key;
++   return key == NULL || key == ht->deleted_key;
+ }
+ 
+ static int
+@@ -120,15 +123,15 @@
+ }
+ 
+ static int
+-entry_is_deleted(struct set_entry *entry)
++entry_is_deleted(const struct set *ht, struct set_entry *entry)
+ {
+-   return entry->key == deleted_key;
++   return entry->key == ht->deleted_key;
+ }
+ 
+ static int
+-entry_is_present(struct set_entry *entry)
++entry_is_present(const struct set *ht, struct set_entry *entry)
+ {
+-   return entry->key != NULL && entry->key != deleted_key;
++   return entry->key != NULL && entry->key != ht->deleted_key;
+ }
+ 
+ void
+@@ -151,6 +154,7 @@
+    memset(ht->table, 0, sizeof(ht->_initial_storage));
+    ht->entries = 0;
+    ht->deleted_entries = 0;
++   ht->deleted_key = &deleted_key_value;
+ }
+ 
+ void
+@@ -304,7 +308,7 @@
+ 
+    if (delete_function) {
+       for (entry = set->table; entry != set->table + set->size; entry++) {
+-         if (entry_is_present(entry))
++         if (entry_is_present(set, entry))
+             delete_function(entry);
+ 
+          entry->key = NULL;
+@@ -323,7 +327,7 @@
+ static struct set_entry *
+ set_search(const struct set *ht, uint32_t hash, const void *key)
+ {
+-   assert(!key_pointer_is_reserved(key));
++   assert(!key_pointer_is_reserved(ht, key));
+ 
+    uint32_t size = ht->size;
+    uint32_t start_address = util_fast_urem32(hash, size, ht->size_magic);
+@@ -335,7 +339,7 @@
+ 
+       if (entry_is_free(entry)) {
+          return NULL;
+-      } else if (entry_is_present(entry) && entry->hash == hash) {
++      } else if (entry_is_present(ht, entry) && entry->hash == hash) {
+          if (ht->key_equals_function(key, entry->key)) {
+             return entry;
+          }
+@@ -462,7 +466,7 @@
+ {
+    struct set_entry *available_entry = NULL;
+ 
+-   assert(!key_pointer_is_reserved(key));
++   assert(!key_pointer_is_reserved(ht, key));
+ 
+    if (ht->entries >= ht->max_entries) {
+       set_rehash(ht, ht->size_index + 1);
+@@ -478,7 +482,7 @@
+    do {
+       struct set_entry *entry = ht->table + hash_address;
+ 
+-      if (!entry_is_present(entry)) {
++      if (!entry_is_present(ht, entry)) {
+          /* Stash the first available entry we find */
+          if (available_entry == NULL)
+             available_entry = entry;
+@@ -486,7 +490,7 @@
+             break;
+       }
+ 
+-      if (!entry_is_deleted(entry) &&
++      if (!entry_is_deleted(ht, entry) &&
+           entry->hash == hash &&
+           ht->key_equals_function(key, entry->key)) {
+          if (found)
+@@ -501,7 +505,7 @@
+ 
+    if (available_entry) {
+       /* There is no matching entry, create it. */
+-      if (entry_is_deleted(available_entry))
++      if (entry_is_deleted(ht, available_entry))
+          ht->deleted_entries--;
+       available_entry->hash = hash;
+       available_entry->key = key;
+@@ -614,7 +618,7 @@
+    if (!entry)
+       return;
+ 
+-   entry->key = deleted_key;
++   entry->key = ht->deleted_key;
+    ht->entries--;
+    ht->deleted_entries++;
+ }
+@@ -664,7 +668,7 @@
+       entry = entry + 1;
+ 
+    for (; entry != ht->table + ht->size; entry++) {
+-      if (entry_is_present(entry)) {
++      if (entry_is_present(ht, entry)) {
+          return entry;
+       }
+    }
+diff -ruN mesa-26.0.0/src/util/set.h mesa-26.0.0.aros/src/util/set.h
+--- mesa-26.0.0/src/util/set.h
++++ mesa-26.0.0.aros/src/util/set.h
+@@ -53,6 +53,8 @@
+    uint32_t size_index;
+    uint32_t entries;
+    uint32_t deleted_entries;
++   /* AROS: per-set deleted-entry sentinel (see set.c). */
++   const void *deleted_key;
+ 
+    /* "table" points to here at first. A bigger storage is allocated separately
+     * when a bigger size is needed.
