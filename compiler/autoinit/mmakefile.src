@@ -11,6 +11,7 @@ AUTOFILE := \
 # libraries_nolibs must come BEFORE libraries
 LIBHANDLINGFILES := \
 	functions \
+	dso_handle \
 	libraries_nolibs \
 	libraries
 
