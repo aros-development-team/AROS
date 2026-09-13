@@ -652,6 +652,14 @@ static VOID CD32_Led(struct CD32Unit *cu, BOOL led_on)
     CD32_Cmd(cu, cmd, 2, resp, 2);
 }
 
+static VOID CD32_CompleteSupersededPlay(struct CD32Unit *cu)
+{
+    if (cu->cu_PlayRequest != NULL) {
+        cu->cu_PlayError = 0;
+        cu->cu_PlayDone = TRUE;
+    }
+}
+
 static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, void (*copy_sector)(APTR sector, APTR priv), APTR priv)
 {
     LONG err;
@@ -685,6 +693,10 @@ static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, voi
         if ((resp[1] & 2) != 2)
             return CDERR_SeekError;
 
+        /* A data transfer supersedes an active audio play command in the
+         * drive. Complete its retained request as well, otherwise its caller
+         * waits forever for an end-of-play packet that can no longer arrive. */
+        CD32_CompleteSupersededPlay(cu);
 
         /* Wait for (most) sectors to come in */
         CD32_IntEnable(cu, AKIKO_CDINT_PBX);
@@ -880,6 +892,8 @@ static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
         err = CDERR_SeekError;
         goto out;
     }
+
+    CD32_CompleteSupersededPlay(cu);
 
     cu->cu_XLProgress = 0;
     cu->cu_ReadXLActive = TRUE;
@@ -1292,7 +1306,9 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             err = CDERR_BADLENGTH;
         } else if (io->io_Offset <= cu->cu_CDTOC[0].Summary.LastTrack) {
             ULONG last = io->io_Offset + io->io_Length;
+            BOOL paused = (cu->cu_CDInfo.Status & CDSTSF_PAUSED) != 0;
             UBYTE cmd[12], res[2];
+
             cmd[0] = CHCD_MULTI;
             cmd[1] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Minute;
             cmd[2] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Second;
@@ -1314,8 +1330,26 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             err = CD32_Cmd(cu, cmd, 12, res, 2);
             D(bug("CD_PLAYTRACK: err=%d, res[1]=0x%02x\n", err, res[1]));
             if (!err && (res[1] & 0x80) == 0) {
-                cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED | CDSTSF_SEARCH | CDSTSF_DIRECTION);
+                cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING |
+                    CDSTSF_SEARCH | CDSTSF_DIRECTION);
                 cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
+
+                /* CD_PAUSE is a persistent unit state. Starting a new
+                 * track while paused must leave the new play operation
+                 * paused until the caller explicitly resumes it. */
+                if (paused) {
+                    UBYTE pauseCmd[1] = { CHCD_PAUSE };
+                    UBYTE pauseRes[2];
+
+                    err = CD32_Cmd(cu, pauseCmd, sizeof(pauseCmd),
+                        pauseRes, sizeof(pauseRes));
+                    if (err)
+                        break;
+                    cu->cu_CDInfo.Status |= CDSTSF_PAUSED;
+                } else {
+                    cu->cu_CDInfo.Status &= ~CDSTSF_PAUSED;
+                }
+
                 cu->cu_PlayRequest = io;
                 cu->cu_PlayError = 0;
                 cu->cu_PlayDone = FALSE;
