@@ -10,3 +10,29 @@ diff -ruN boost_1_89_0/boost/assert/source_location.hpp boost_1_89_0.aros/boost/
  # define BOOST_ASSERT_SNPRINTF(buffer, format, arg) std::sprintf(buffer, format, arg)
  #else
  # define BOOST_ASSERT_SNPRINTF(buffer, format, arg) std::snprintf(buffer, sizeof(buffer)/sizeof(buffer[0]), format, arg)
+diff -ruN boost_1_89_0/libs/iostreams/src/mapped_file.cpp boost_1_89_0.aros/libs/iostreams/src/mapped_file.cpp
+--- boost_1_89_0/libs/iostreams/src/mapped_file.cpp	2025-08-06 19:49:10.000000000 +0100
++++ boost_1_89_0.aros/libs/iostreams/src/mapped_file.cpp	2026-09-13 12:41:40.485752691 +0100
+@@ -26,7 +26,21 @@
+ #else
+ # include <errno.h>
+ # include <fcntl.h>
+-# include <sys/mman.h>      // mmap, munmap.
++# ifdef __AROS__
++    // AROS has no memory mapped files; provide a stub API so that
++    // mapped_file compiles and fails cleanly at run time.
++#   define PROT_READ   1
++#   define PROT_WRITE  2
++#   define MAP_SHARED  1
++#   define MAP_PRIVATE 2
++#   define MAP_FAILED  ((void*)-1)
++    static inline void* mmap(void*, std::size_t, int, int, int, off_t)
++    { errno = ENOSYS; return MAP_FAILED; }
++#   define mmap64 mmap
++    static inline int munmap(void*, std::size_t) { return 0; }
++# else
++#   include <sys/mman.h>      // mmap, munmap.
++# endif
+ # include <sys/stat.h>
+ # include <sys/types.h>     // struct stat.
+ # include <unistd.h>        // sysconf.
