@@ -18,6 +18,10 @@ Please note we have a code of conduct, please follow it in all your interactions
 ### Pull Request Process
 
 1.  Ensure any code that is not derived from an external source follows the [AROS coding conventions](http://developers.aros.org/documentation/styleguide.html).
+    C and header source files should use Unix (LF) line endings, consistent with those conventions
+    and the repository's `.astyle` configuration.
+    Take special care when tidying MUI UI source layouts: the `.astyle` configuration can mangle
+    these layouts, so verify that they have not been malformed.
  
 2.  Make sure to bump the version numbers in any modules and update the approprate README if
     applicable.

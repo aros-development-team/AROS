@@ -1,0 +1,129 @@
+name: Report source line endings
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  source-line-ending-report:
+    name: Report C/H line-ending issues
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changed C/H files
+        shell: python
+        env:
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          import os
+          import pathlib
+          import subprocess
+
+          zero = "0" * 40
+          base = (
+              os.environ.get("PULL_REQUEST_BASE_SHA")
+              or os.environ.get("PUSH_BEFORE_SHA")
+              or ""
+          )
+          head = os.environ["HEAD_SHA"]
+
+          # A newly created branch has no meaningful "before" commit.
+          # Pull requests will be checked against their real base later;
+          # for a push-only run, inspect the current commit when possible.
+          if not base or base == zero:
+              try:
+                  base = subprocess.check_output(
+                      ["git", "rev-parse", f"{head}^"],
+                      text=True,
+                  ).strip()
+              except subprocess.CalledProcessError:
+                  base = ""
+
+          if base:
+              raw_paths = subprocess.check_output(
+                  [
+                      "git",
+                      "diff",
+                      "--name-only",
+                      "-z",
+                      "--diff-filter=ACMR",
+                      base,
+                      head,
+                      "--",
+                      "*.c",
+                      "*.h",
+                  ]
+              )
+          else:
+              raw_paths = b""
+
+          paths = [
+              os.fsdecode(path)
+              for path in raw_paths.split(b"\0")
+              if path
+          ]
+
+          def escape_command_value(value):
+              return (
+                  value.replace("%", "%25")
+                  .replace("\r", "%0D")
+                  .replace("\n", "%0A")
+              )
+
+          def escape_command_property(value):
+              return (
+                  escape_command_value(value)
+                  .replace(":", "%3A")
+                  .replace(",", "%2C")
+              )
+
+          findings = 0
+
+          for path in paths:
+              source = pathlib.Path(path)
+
+              # Never follow a source-named symlink into the runner filesystem.
+              if source.is_symlink() or not source.is_file():
+                  continue
+
+              data = source.read_bytes()
+              crlf = data.count(b"\r\n")
+              bare_cr = data.replace(b"\r\n", b"").count(b"\r")
+
+              if not crlf and not bare_cr:
+                  continue
+
+              findings += 1
+              details = []
+              if crlf:
+                  details.append(f"{crlf} CRLF sequence(s)")
+              if bare_cr:
+                  details.append(f"{bare_cr} bare CR byte(s)")
+
+              message = (
+                  f"{path} contains {', '.join(details)}; "
+                  "CONTRIBUTING.md asks for Unix (LF) line endings. "
+                  "This check is advisory and does not modify the file."
+              )
+
+              print(
+                  "::warning "
+                  f"file={escape_command_property(path)},"
+                  "title=C/H line endings"
+                  f"::{escape_command_value(message)}"
+              )
+
+          print(
+              f"Checked {len(paths)} changed C/H file(s); "
+              f"reported {findings} line-ending issue(s)."
+          )
