@@ -98,6 +98,7 @@ POSIXC := \
     ftello \
     ftello64 \
     ftruncate \
+    ftruncate64 \
     funlockfile \
     fwrite \
     getc_unlocked \
@@ -163,6 +164,7 @@ POSIXC := \
     perror \
     pipe \
     popen \
+    posix_fadvise \
     posix_memalign \
     printf \
     pselect \

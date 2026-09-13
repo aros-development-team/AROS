@@ -73,6 +73,13 @@
 #define O_NDELAY        O_NONBLOCK
 #endif
 
+#if defined(_GNU_SOURCE) || defined(_LARGEFILE64_SOURCE) || defined(__USE_FILE_OFFSET64)
+/* File offsets are handled by the underlying DOS handle regardless of
+   width, so no flag is needed to enable large files: define it as 0 for
+   source compatibility, as 64-bit Linux and the BSDs do. */
+#define O_LARGEFILE     0
+#endif
+
 #define O_NONBLOCK      0x0800
 #define O_ACCMODE       0x0003
 
@@ -138,7 +145,7 @@ int fcntl(int fd, int cmd, ...);
 int open(const char *filename, int flags, ...);
 int openat(int dirfd, const char *path, int flags, ...);
 
-/* NOTIMPL int posix_fadvise(int fd, off_t offset, size_t len, int advice); */
+int posix_fadvise(int fd, off_t offset, off_t len, int advice);
 /* NOTIMPL int posix_fallocate(int fd, off_t offset, size_t len); */
 
 __END_DECLS

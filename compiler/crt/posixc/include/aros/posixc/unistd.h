@@ -531,6 +531,9 @@ extern int optind, opterr, optopt;
 #if defined(__cplusplus) || (!defined(__STRICT_ANSI__) && \
     (!defined(_POSIX_SOURCE) || defined(_XOPEN_SOURCE)))
 int ftruncate(int fd, off_t length);
+# if defined(__off64_t_defined)
+int ftruncate64(int fd, __off64_t length);
+# endif
 int truncate(const char *path, off_t length);
 void sync(void);
 pid_t setsid(void);
