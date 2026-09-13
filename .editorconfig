@@ -1,0 +1,8 @@
+# Keep C/H line endings aligned with the AROS coding conventions and .astyle.
+root = true
+
+[*.c]
+end_of_line = lf
+
+[*.h]
+end_of_line = lf
