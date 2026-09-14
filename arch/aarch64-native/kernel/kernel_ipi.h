@@ -1,22 +1,54 @@
 #ifndef KERNEL_IPI_H_
 #define KERNEL_IPI_H_
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright � 2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 /*
- * List of all possible (private) kernal IPI message types.
+ * Private kernel IPI message types. Bit flags, so the mailbox SET
+ * register's OR-coalescing cannot lose one. Source CPU in the top 4 bits.
  */
 
 #define IPI_NOP                 0x000
 #define IPI_CAUSE               0x001
 #define IPI_DISPATCH            0x002
-#define IPI_SWITCH              0x003
-#define IPI_SCHEDULE            0x004
-#define IPI_CLI                 0x005
-#define IPI_STI                 0x006
-#define IPI_ADDTASK	        0x101
-#define IPI_REMTASK	        0x102
-#define IPI_REBOOT	        0x10F
+#define IPI_SWITCH              0x004
+#define IPI_SCHEDULE            0x008
+#define IPI_CLI                 0x010
+#define IPI_STI                 0x020
+#define IPI_CALL_HOOK           0x040
+#define IPI_ADDTASK             0x080
+#define IPI_REMTASK             0x100
+#define IPI_REBOOT              0x200
+
+#include <utility/hooks.h>
+
+#define IPI_CALL_HOOK_MAX_ARGS  5
+
+struct IPIHook
+{
+    struct Hook ih_Hook;
+    IPTR        ih_Args[IPI_CALL_HOOK_MAX_ARGS];
+};
+
+extern void core_IPIInit(void);
+extern int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async,
+                          int nargs, IPTR *args, APTR _KB);
+
+/*
+ * Split claim/commit plus cancellation, so exec can validate the target's
+ * lifetime atomically with the enqueue and flush stale calls at teardown.
+ * KERNEL_IPI_CALL_CANCELABLE keys exec's lifetime-safe path off this.
+ */
+struct CallIPIEntry;
+
+extern struct CallIPIEntry *core_ClaimCallIPI(int cpu);
+extern void core_CommitCallIPI(struct CallIPIEntry *cie, int cpu,
+                               struct Hook *hook, int nargs, IPTR *args);
+extern void core_AbortCallIPI(struct CallIPIEntry *cie, int cpu);
+extern void core_CancelCallIPIs(APTR hookEntry, IPTR matchArg);
+
+#define KERNEL_IPI_CALL_CANCELABLE
+
 #endif

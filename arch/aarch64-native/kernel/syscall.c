@@ -180,16 +180,18 @@ void handle_syscall(void *regs)
             case SC_CLI:
             {
                 D(bug("[Kernel] ## CLI...\n"));
-                /* Set IRQ mask bit in saved SPSR_EL1 */
-                ((struct ExceptionContext *)regs)->cpsr |= PSTATE_I_BIT;
+                /* Both IRQ and FIQ: the IPI arrives as an FIQ and takes
+                 * the same locks a Disable()'d task may hold. The mailbox
+                 * latches it until the matching Enable(). */
+                ((struct ExceptionContext *)regs)->cpsr |= PSTATE_I_BIT | PSTATE_F_BIT;
                 break;
             }
 
             case SC_STI:
             {
                 D(bug("[Kernel] ## STI...\n"));
-                /* Clear IRQ mask bit in saved SPSR_EL1 */
-                ((struct ExceptionContext *)regs)->cpsr &= ~PSTATE_I_BIT;
+                /* Clear IRQ and FIQ mask bits in saved SPSR_EL1 */
+                ((struct ExceptionContext *)regs)->cpsr &= ~(PSTATE_I_BIT | PSTATE_F_BIT);
                 break;
             }
 

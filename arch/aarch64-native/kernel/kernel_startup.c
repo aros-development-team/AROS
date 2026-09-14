@@ -217,15 +217,8 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
     }
 
-    cpu_Init(&__arm_arosintern, msg);
-
-    if (__arm_arosintern.ARMI_LED_Toggle)
-    {
-        if (__arm_arosintern.ARMI_Delay)
-            __arm_arosintern.ARMI_Delay(100000);
-        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
-    }
-
+    /* Tags and TLS before cpu_Init: it calls GetCPUNumber(), which
+     * dereferences TPIDR_EL1 - UNKNOWN out of reset on real silicon. */
     while (msg->ti_Tag != TAG_DONE)
     {
         switch (msg->ti_Tag)
@@ -289,6 +282,18 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     /* Set TPIDR_EL1 for TLS access BEFORE any bug() calls */
     asm volatile("msr tpidr_el1, %0" : : "r"(__tls));
+
+    /* Boot CPU is always logical 0. */
+    __tls->CPUNumber = 0;
+
+    cpu_Init(&__arm_arosintern, msg);
+
+    if (__arm_arosintern.ARMI_LED_Toggle)
+    {
+        if (__arm_arosintern.ARMI_Delay)
+            __arm_arosintern.ARMI_Delay(100000);
+        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+    }
 
     /* Bring-up diagnostic: verify the relocated stack layout */
     bug("[Kernel] stack @ %p, stack_super @ %p..%p (SP_EL1 start %p)\n",

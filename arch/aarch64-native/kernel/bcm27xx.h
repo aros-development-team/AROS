@@ -17,7 +17,10 @@ void bcm27xx_init(APTR, APTR);
 void bcm27xx_init_cpu(APTR, APTR);
 void bcm27xx_fiq_process(void);
 void bcm27xx_send_ipi(uint32_t, uint32_t, uint32_t);
-unsigned int bcm27xx_get_time(void);
+#if defined(__AROSEXEC_SMP__)
+void bcm27xx_init_cntp_timer(void);
+#endif
+uint64_t bcm27xx_get_time(void);
 void bcm27xx_toggle_led(int, int);
 void bcm27xx_ser_putc(uint8_t);
 int bcm27xx_ser_getc(void);

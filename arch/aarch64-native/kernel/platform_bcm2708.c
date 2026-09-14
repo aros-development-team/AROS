@@ -164,6 +164,9 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
         core_Cause(INTB_VERTB, 1L << INTB_VERTB);
     }
 
+    /* Close a per-task CPU-usage window if one is due */
+    core_TaskCPUUsage();
+
     /* Refresh timer */
     stc = rd32le(SYSTIMER_CLO);
     stc += VBLANK_INTERVAL;
@@ -254,6 +257,9 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     krnARMImpl->ARMI_InitCore = &bcm27xx_init_cpu;
     krnARMImpl->ARMI_FIQProcess = &bcm27xx_fiq_process;
     krnARMImpl->ARMI_SendIPI = &bcm27xx_send_ipi;
+#if defined(__AROSEXEC_SMP__)
+    krnARMImpl->ARMI_InitTimerCore = &bcm27xx_init_cntp_timer;
+#endif
 
     krnARMImpl->ARMI_GetTime = &bcm27xx_get_time;
     krnARMImpl->ARMI_InitTimer = &bcm2708_init_gputimer;

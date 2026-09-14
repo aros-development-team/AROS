@@ -43,6 +43,7 @@ void platform_Init(struct ARM_Implementation *, struct TagItem *);
 
 void core_SetupMMU(struct TagItem *msg);
 void core_SetupIntr(void);
+void core_SetupIntrCore(void);
 
 void *KrnAddSysTimerHandler(struct KernelBase *);
 

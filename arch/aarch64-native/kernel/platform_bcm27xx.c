@@ -52,6 +52,7 @@ extern void cpu_Register(void);
 extern void aarch64_flush_cache(uintptr_t, uint32_t);
 #if defined(__AROSEXEC_SMP__)
 extern void handle_ipi(uint32_t, uint32_t);
+extern void core_IPIInit(void);
 
 struct cpu_ipidata
 {
@@ -59,6 +60,125 @@ struct cpu_ipidata
 };
 
 static struct cpu_ipidata *bcm27xx_cpuipid[4] = { 0, 0, 0, 0 };
+
+/* Per-core scheduler heartbeat: the system timer only reaches core 0, so
+ * every core arms its own CNTP as an FIQ, from the target core. */
+#define CNTP_CTL_ENABLE         (1 << 0)
+#define CNTP_CTL_IMASK          (1 << 1)
+
+#define BCM2836_TIMER_CNTPNS_FIQ (1 << 5)       /* TIMER_INT_CTRLx: route CNTPNS as FIQ */
+#define BCM2836_FIQ_CNTPNS       (1 << 1)       /* FIQ_PENDx: CNTPNS pending */
+
+/* CNTP reload value (counter ticks per heartbeat). Same on every core. */
+static uint32_t bcm27xx_cntp_interval = 0;
+
+static inline uint32_t bcm27xx_cntfrq_get(void)
+{
+    uint64_t v;
+    asm volatile ("mrs %0, cntfrq_el0" : "=r"(v));
+    return (uint32_t)v;
+}
+
+static inline uint32_t bcm27xx_cntpct_get(void)
+{
+    uint64_t v;
+    asm volatile ("mrs %0, cntpct_el0" : "=r"(v));
+    return (uint32_t)v;
+}
+
+/* CNTFRQ is not always true (QEMU reports 19.2MHz while counting at
+ * 1MHz), so measure against the system timer and fall back to it. */
+static uint32_t bcm27xx_cntp_measure(void)
+{
+    const uint32_t window = 10000;      /* microseconds */
+    uint32_t s0, c0, c1;
+
+    s0 = rd32le(SYSTIMER_CLO);
+    c0 = bcm27xx_cntpct_get();
+    while ((rd32le(SYSTIMER_CLO) - s0) < window)
+        ;
+    c1 = bcm27xx_cntpct_get();
+
+    return (c1 - c0) * (1000000 / window);
+}
+
+static inline void bcm27xx_cntp_tval_set(uint32_t v)
+{
+    asm volatile ("msr cntp_tval_el0, %0" :: "r"((uint64_t)v));
+}
+
+static inline void bcm27xx_cntp_ctl_set(uint32_t v)
+{
+    asm volatile ("msr cntp_ctl_el0, %0" :: "r"((uint64_t)v));
+}
+
+static void bcm27xx_cntp_tick(void)
+{
+    tls_t *__tls;
+
+    /* Rearm for the next tick - writing TVAL clears the pending condition */
+    bcm27xx_cntp_tval_set(bcm27xx_cntp_interval);
+
+    /* Not gated on IDNESTCOUNT: a task busy-looping in short Disable
+     * windows must still expire its quantum. */
+    if (!SysBase || !KernelBase)
+        return;
+
+    /* Per-CPU TLS, owning core only, so no atomics. */
+    __tls = TLS_PTR_GET();
+    if (__tls->Elapsed)
+        __tls->Elapsed--;
+    if (__tls->Elapsed == 0)
+        __tls->ScheduleFlags |= (TLSSF_Quantum | TLSSF_Switch);
+}
+
+void bcm27xx_init_cntp_timer(void)
+{
+    int cpunum = GetCPUNumber();
+
+    if (!bcm27xx_cntp_interval)
+    {
+        uint32_t hz = bcm27xx_cntp_measure();
+
+        /* Sanity-bound the measurement before trusting it over CNTFRQ. */
+        if (hz < 100000 || hz > 100000000)
+            hz = bcm27xx_cntfrq_get();
+
+        bcm27xx_cntp_interval = hz / 50;
+    }
+
+    /* Route this core's non-secure physical timer interrupt as an FIQ */
+    wr32le(BCM2836_TIMER_INT_CTRL0 + (0x4 * cpunum), BCM2836_TIMER_CNTPNS_FIQ);
+
+    /* Arm: fire one interval from now, enabled and unmasked */
+    bcm27xx_cntp_tval_set(bcm27xx_cntp_interval);
+    bcm27xx_cntp_ctl_set(CNTP_CTL_ENABLE);
+}
+#endif
+
+#if defined(__AROSEXEC_SMP__)
+/* AArch64 firmware parks secondaries on the spin-table, not the BCM2836
+ * mailbox the 32-bit stub answers to. Address is board data:
+ * /cpus/cpu@N/cpu-release-addr; 0xd8 + 8*cpu is the fallback. */
+static volatile uint64_t *bcm27xx_cpu_release_addr(int cpu)
+{
+    char nodename[16] = "/cpus/cpu@0";
+    void *node, *prop;
+    uint32_t *cells;
+
+    nodename[10] = '0' + cpu;
+    node = dt_find_node(nodename);
+    prop = node ? dt_find_property(node, "cpu-release-addr") : NULL;
+
+    if (prop && dt_get_prop_len(prop) >= 8)
+    {
+        cells = dt_get_prop_value(prop);
+        return (volatile uint64_t *)(uintptr_t)
+            (((uint64_t)AROS_BE2LONG(cells[0]) << 32) | AROS_BE2LONG(cells[1]));
+    }
+
+    return (volatile uint64_t *)(uintptr_t)(0xd8 + 8 * cpu);
+}
 #endif
 
 void bcm27xx_init(APTR _kernelBase, APTR _sysBase)
@@ -68,19 +188,18 @@ void bcm27xx_init(APTR _kernelBase, APTR _sysBase)
 
     KrnSpinInit(&startup_lock);
 
+#if defined(__AROSEXEC_SMP__)
+    core_IPIInit();
+#endif
+
     D(bug("[Kernel:BCM27xx] %s()\n", __PRETTY_FUNCTION__));
 
     if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
 #if !defined(__AROSEXEC_SMP__)
-        /*
-         * Uniprocessor build: leave the secondary cores parked in the
-         * firmware stub. Waking them here (older armstubs respond to the
-         * BCM2836 mailbox) sends a real core through the trampoline into
-         * cpu_Register with no VBAR, no scheduler and no-op spinlocks --
-         * on real hardware it runs off into the weeds and corrupts memory
-         * behind core 0's back. QEMU's stub masks this.
-         */
+        /* Uniprocessor: leave the secondaries parked. Releasing them would
+         * run a core into cpu_Register with no VBAR, no scheduler and
+         * no-op spinlocks. */
         bug("[Kernel:BCM27xx] Uniprocessor build - secondary cores left parked\n");
 #else
         void *trampoline_src = mpcore_trampoline;
@@ -91,6 +210,16 @@ void bcm27xx_init(APTR _kernelBase, APTR _sysBase)
         uint64_t *cpu_stack;
         uint64_t tmp;
         tls_t   *__tls;
+
+        /* Run the generic timer off the crystal so CNTPCT matches
+         * CNTFRQ; firmware leaves the prescaler at 1MHz. */
+        wr32le(BCM2836_CTRL, 0);
+        wr32le(BCM2836_PRESCALER, 0x80000000);
+
+        /* Register the boot CPU as an IPI receiver first, or IPIs aimed
+         * at it are dropped. Secondaries do it in cpu_Register. */
+        if (__arm_arosintern.ARMI_InitCore)
+            __arm_arosintern.ARMI_InitCore(_kernelBase, _sysBase);
 
         bug("[Kernel:BCM27xx] Initialising Multicore System\n");
         D(bug("[Kernel:BCM27xx] %s: Copy SMP trampoline from %p to %p (%d bytes)\n", __PRETTY_FUNCTION__, trampoline_src, trampoline_dst, trampoline_length));
@@ -123,10 +252,11 @@ void bcm27xx_init(APTR _kernelBase, APTR _sysBase)
             __tls->SysBase = _sysBase;
             __tls->KernelBase = _kernelBase;
             __tls->ThisTask = NULL;
+            __tls->CPUNumber = cpu;     /* logical id - GetCPUNumber reads this */
             aarch64_flush_cache(((uintptr_t)__tls) & ~63, 512);
             ((uint64_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint64_t)__tls;
 
-            D(bug("[Kernel:BCM27xx] %s: Attempting to wake CPU #%02d\n", __PRETTY_FUNCTION__, cpu));
+            D(bug("[Kernel:BCM27xx] %s: Attempting to wake CPU #%02d (release @ 0x%p)\n", __PRETTY_FUNCTION__, cpu, bcm27xx_cpu_release_addr(cpu)));
             D(bug("[Kernel:BCM27xx] %s: CPU #%02d Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_stack, ((uint64_t *)(trampoline_dst + trampoline_data_offset))[2]));
             D(bug("[Kernel:BCM27xx] %s: CPU #%02d TLS @ 0x%p\n", __PRETTY_FUNCTION__, cpu, ((uint64_t *)(trampoline_dst + trampoline_data_offset))[3]));
 
@@ -135,8 +265,14 @@ void bcm27xx_init(APTR _kernelBase, APTR _sysBase)
             /* Lock the startup spinlock */
             KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
 
-            /* Wake up the cpu via mailbox */
-            wr32le(BCM2836_MAILBOX3_SET0 + (0x10 * cpu), (uint32_t)(uintptr_t)trampoline_dst);
+            /* The parked core polls with the MMU off, so the entry
+             * address has to reach memory, not just our cache. */
+            {
+                volatile uint64_t *release = bcm27xx_cpu_release_addr(cpu);
+
+                *release = (uint64_t)(uintptr_t)trampoline_dst;
+                aarch64_flush_cache(((uintptr_t)release) & ~63, 64);
+            }
 
             dsb();
             sev();
@@ -161,6 +297,11 @@ void bcm27xx_init_cpu(APTR _kernelBase, APTR _sysBase)
 
     D(bug("[Kernel:BCM27xx] %s(#%02d)\n", __PRETTY_FUNCTION__, cpunum));
 
+    /* SCHEDQUANTUM_SET writes per-CPU TLS, so PrepareExecBase's single
+     * call leaves the secondaries without a quantum. */
+    SCHEDQUANTUM_SET(SCHEDQUANTUM_VALUE);
+    SCHEDELAPSED_SET(SCHEDQUANTUM_VALUE);
+
     /* Clear all pending FIQ sources on mailboxes */
     wr32le(BCM2836_MAILBOX0_CLR0 + (16 * cpunum), 0xffffffff);
     wr32le(BCM2836_MAILBOX1_CLR0 + (16 * cpunum), 0xffffffff);
@@ -171,31 +312,53 @@ void bcm27xx_init_cpu(APTR _kernelBase, APTR _sysBase)
     bcm27xx_cpuipid[cpunum] = (struct cpu_ipidata *)((uintptr_t)__tls + sizeof(tls_t));
     D(bug("[Kernel:BCM27xx] %s: CPU #%02d IPI data @ 0x%p\n", __PRETTY_FUNCTION__, cpunum, bcm27xx_cpuipid[cpunum]));
 
-    /* Enable FIQ mailbox interrupt */
-    wr32le(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum), 0x10);
+    /* FIQ on all 4 mailboxes: senders index by source CPU, so enabling
+     * only mailbox 0 drops every IPI from CPU 1-3. */
+    wr32le(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum), 0xf0);
 #endif
 }
 
-unsigned int bcm27xx_get_time(void)
+uint64_t bcm27xx_get_time(void)
 {
-    return rd32le(SYSTIMER_CLO);
+    uint32_t hi, lo;
+
+    /* 64-bit 1MHz counter split over CHI:CLO - re-read CHI to close the
+     * carry window (CLO alone wraps every ~71min). */
+    do
+    {
+        hi = rd32le(SYSTIMER_CHI);
+        lo = rd32le(SYSTIMER_CLO);
+    } while (rd32le(SYSTIMER_CHI) != hi);
+
+    return ((uint64_t)hi << 32) | lo;
 }
 
 void bcm27xx_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
 {
     int cpu;
+#if defined(__AROSEXEC_SMP__)
+    /* Index by source CPU so (sender, target) pairs never OR-collide in
+     * the SET register. Same-sender coalescing is lossless: the messages
+     * are bit flags. Disable() keeps a Signal from re-entering. */
+    int mbno = GetCPUNumber();
+    Disable();
+#endif
 
     for (cpu = 0; cpu < 4; cpu++)
     {
 #if defined(__AROSEXEC_SMP__)
-        int mbno = 0;
         if ((cpumask & (1 << cpu)) && bcm27xx_cpuipid[cpu])
         {
             bcm27xx_cpuipid[cpu]->ipi_data[mbno] = ipi_data;
+            dsb();
             wr32le(BCM2836_MAILBOX0_SET0 + 4 * mbno + (0x10 * cpu), ipi);
         }
 #endif
     }
+
+#if defined(__AROSEXEC_SMP__)
+    Enable();
+#endif
 }
 
 void bcm27xx_fiq_process()
@@ -212,6 +375,11 @@ void bcm27xx_fiq_process()
 
     if (fiq)
     {
+#if defined(__AROSEXEC_SMP__)
+        /* Per-core scheduler heartbeat (CNTP) - expire the local quantum */
+        if (fiq & BCM2836_FIQ_CNTPNS)
+            bcm27xx_cntp_tick();
+#endif
         for (mbno = 0; mbno < 4; mbno++)
         {
             if (fiq & (0x10 << mbno))
@@ -220,10 +388,14 @@ void bcm27xx_fiq_process()
                 (void)fiq_data;
                 DFIQ(bug("[Kernel:BCM27xx] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, mbno, fiq_data));
 #if defined(__AROSEXEC_SMP__)
+                /* Pairs with the sender's dsb. */
+                dsb();
                 if (bcm27xx_cpuipid[cpunum])
-                    handle_ipi(fiq_data, bcm27xx_cpuipid[cpunum]->ipi_data[0]);
+                    handle_ipi(fiq_data, bcm27xx_cpuipid[cpunum]->ipi_data[mbno]);
 #endif
-                wr32le(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum), 0xffffffff);
+                /* Only the bits read: a bit set in between must stay
+                 * pending, or the IPI is lost. */
+                wr32le(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum), fiq_data);
             }
         }
     }
