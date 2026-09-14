@@ -1368,6 +1368,7 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o,
     struct charmapcondata *data = INST_DATA(cl, o);
 
     WORD old_ycp = YCP;
+    WORD old_ymax = CHAR_YMAX(o);
 
     DoSuperMethodA(cl, o, (Msg) msg);
     D(bug("CharMapCon::NewWindowSize(o=%p) x=%d, y=%d, ymax=%d\n",
@@ -1381,6 +1382,25 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o,
     if (old_ycp > CHAR_YMAX(o))
     {
         charmap_scroll_up(cl, o, old_ycp - CHAR_YMAX(o));
+    }
+    else if (!data->unrendered && old_ycp == old_ymax &&
+        CHAR_YMAX(o) > old_ymax)
+    {
+        WORD grow = CHAR_YMAX(o) - old_ymax;
+        WORD moved = 0;
+
+        while (grow-- > 0 && data->top_of_window->prev &&
+            data->scrollback_pos > 0)
+        {
+            data->top_of_window = data->top_of_window->prev;
+            data->scrollback_pos -= 1;
+            data->select_y_max += 1;
+            data->select_y_min += 1;
+            moved += 1;
+        }
+
+        YCP += moved;
+        YCCP += moved;
     }
 
     charmapcon_refresh(cl, o, 0);
