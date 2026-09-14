@@ -2840,13 +2840,19 @@ else
     java_target="no-java"
 fi
 
-AC_MSG_CHECKING([whether to enable Rust suppport])
-AC_ARG_ENABLE(rust,AS_HELP_STRING([--enable-rust],[Enable Rust support (default=no)]),rust="$enableval",rust="no")
-AC_MSG_RESULT($rust)
-if test "x$rust" != "xno"; then
-    rust_target="$rust"
+AC_MSG_CHECKING([whether to build the Rust cross compiler])
+AC_ARG_ENABLE(rust,AS_HELP_STRING([--enable-rust],[Build a Rust cross compiler (rustc, a std for the target, cargo) into the crosstools (default=no)]),aros_enable_rust="$enableval",aros_enable_rust="no")
+if test "x$aros_enable_rust" != "xno"; then
+    aros_enable_rust="yes"
+fi
+AC_MSG_RESULT($aros_enable_rust)
+
+default_rust_version="1.98.1"
+AC_ARG_WITH(rust-version,AS_HELP_STRING([--with-rust-version=VERSION],[Compile rust-VERSION for AROS (default=$default_rust_version)]),use_rust_version="$withval",use_rust_version="")
+if test "$use_rust_version" = ""; then
+    target_rust_version="$default_rust_version"
 else
-    rust_target="no-rust"
+    target_rust_version="$use_rust_version"
 fi
 
 spec_obj_format="-m $aros_object_format"
@@ -4539,7 +4545,8 @@ AC_SUBST(objc_target)
 AC_SUBST(java_target)
 
 #Rust related
-AC_SUBST(rust_target)
+AC_SUBST(aros_enable_rust)
+AC_SUBST(target_rust_version)
 
 # jpegxl.datatype toolchain support (libjxl requires gcc >= 8)
 AC_SUBST(jpegxl_toolchainsupport)

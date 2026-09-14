@@ -1,0 +1,250 @@
+include $(SRCDIR)/config/aros.cfg
+-include $(SRCDIR)/tools/crosstools/rust.cfg
+
+#
+# Rust cross compiler for AROS
+#
+# The upstream rustc source release is fetched, patched for AROS and built
+# with rust's own bootstrap (x.py) against a binary release of the same
+# version, which is also fetched. The result is a host rustc with a std for
+# $(RUST_TARGET_TRIPLE), installed into $(CROSSTOOLSDIR)/bin. The AROS C
+# cross toolchain must already exist: rustc links through it, so this works
+# the same for the gnu and the llvm toolchains.
+#
+
+#MM- tools-crosstools-rust-yes : tools-crosstools-rust
+#MM- tools-crosstools-rust-no :
+
+#MM tools-crosstools-rust : tools-crosstools-$(AROS_TOOLCHAIN)-$(AROS_TARGET_CPU) \
+#MM     crosstools-rust-fetch crosstools-rust-stage0
+
+#MM- crosstools-rust-quick : tools-crosstools-rust
+#MM crosstools-rust-create-patch : crosstools-rust-src-create-patch
+
+RUST_SRC_ARCHBASE       := rustc-$(RUST_VERSION)-src
+RUST_SRCDIR             := $(HOSTDIR)/Ports/host/rust/$(RUST_SRC_ARCHBASE)
+RUST_STAGE0_PORTDIR     := $(HOSTDIR)/Ports/host/rust-stage0
+RUST_STAGE0_DIR         := $(HOSTGENDIR)/$(CURDIR)/stage0
+RUST_BUILDDIR           := $(HOSTGENDIR)/$(CURDIR)/build
+RUST_BOOTSTRAP_TOML     := $(HOSTGENDIR)/$(CURDIR)/bootstrap.toml
+
+rust-installflag        := $(CROSSTOOLSDIR)/.installflag-rust-$(RUST_VERSION)-$(AROS_TARGET_CPU)
+rust-stage0-installflag := $(RUST_STAGE0_DIR)/.installflag-rust-stage0-$(RUST_STAGE0_VERSION)
+rust-bindgen-installflag := $(CROSSTOOLSDIR)/.installflag-rust-bindgen-$(RUST_BINDGEN_VERSION)
+rust-cbindgen-installflag := $(CROSSTOOLSDIR)/.installflag-rust-cbindgen-$(RUST_CBINDGEN_VERSION)
+
+# The C driver and flags rustc links the target with. CC_PREFIX (ccache) is
+# dropped: the wrapper is a plain program.
+RUST_TARGET_CC          := $(lastword $(TARGET_CC))
+RUST_TARGET_CXX         := $(lastword $(TARGET_CXX))
+RUST_TARGET_CCFLAGS     := $(strip $(TARGET_ISA_CFLAGS))
+ifeq ($(AROS_TOOLCHAIN),llvm)
+RUST_TARGET_AR          := $(CROSSTOOLSDIR)/bin/llvm-ar
+RUST_TARGET_RANLIB      := $(CROSSTOOLSDIR)/bin/llvm-ranlib
+RUST_TARGET_NM          := $(CROSSTOOLSDIR)/bin/llvm-nm
+else
+RUST_TARGET_AR          := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-ar
+RUST_TARGET_RANLIB      := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-ranlib
+RUST_TARGET_NM          := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-nm
+endif
+
+RUST_HOST_CC            := $(lastword $(HOST_CC))
+RUST_HOST_CXX           := $(lastword $(HOST_CXX))
+
+ifneq (,$(findstring ccache,$(CC_PREFIX)))
+RUST_CCACHE             := true
+else
+RUST_CCACHE             := false
+endif
+
+RUST_XPY                := cd $(RUST_SRCDIR) && $(PYTHON) x.py --config $(RUST_BOOTSTRAP_TOML) --build-dir $(RUST_BUILDDIR)
+
+## Sources ###
+
+%fetch mmake=crosstools-rust-fetch archive=$(RUST_SRC_ARCHBASE) \
+    archive_origins="$(RUST_REPOSITORY)" suffixes="tar.xz" \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/rust \
+    patches_specs=$(RUST_SRC_ARCHBASE)-aros.diff:$(RUST_SRC_ARCHBASE):-p1
+
+%create_patch mmake=crosstools-rust-src-create-patch \
+    archive=$(RUST_SRC_ARCHBASE) suffixes="tar.xz" \
+    destination=$(HOSTDIR)/Ports/host/rust \
+    excludes="build bootstrap.toml"
+
+## Stage 0 (binary release used to bootstrap) ###
+
+#MM crosstools-rust-stage0 : crosstools-rust-stage0-rustc-fetch crosstools-rust-stage0-rust-std-fetch crosstools-rust-stage0-cargo-fetch
+
+%fetch mmake=crosstools-rust-stage0-rustc-fetch archive=rustc-$(RUST_STAGE0_VERSION)-$(RUST_HOST_TRIPLE) \
+    archive_origins="$(RUST_REPOSITORY)" suffixes="tar.xz" \
+    location=$(PORTSSOURCEDIR) destination=$(RUST_STAGE0_PORTDIR)
+
+%fetch mmake=crosstools-rust-stage0-rust-std-fetch archive=rust-std-$(RUST_STAGE0_VERSION)-$(RUST_HOST_TRIPLE) \
+    archive_origins="$(RUST_REPOSITORY)" suffixes="tar.xz" \
+    location=$(PORTSSOURCEDIR) destination=$(RUST_STAGE0_PORTDIR)
+
+%fetch mmake=crosstools-rust-stage0-cargo-fetch archive=cargo-$(RUST_STAGE0_VERSION)-$(RUST_HOST_TRIPLE) \
+    archive_origins="$(RUST_REPOSITORY)" suffixes="tar.xz" \
+    location=$(PORTSSOURCEDIR) destination=$(RUST_STAGE0_PORTDIR)
+
+#MM
+crosstools-rust-stage0 :
+	@$(IF) ! $(TEST) -f $(rust-stage0-installflag) ; then \
+	    $(ECHO) "Installing rust $(RUST_STAGE0_VERSION) stage0 for $(RUST_HOST_TRIPLE)" ; \
+	    $(RM) $(RUST_STAGE0_DIR) ; \
+	    $(MKDIR) -p $(RUST_STAGE0_DIR) ; \
+	    $(FOR) c in $(RUST_STAGE0_COMPONENTS) ; do \
+	        $(RUST_STAGE0_PORTDIR)/$$c-$(RUST_STAGE0_VERSION)-$(RUST_HOST_TRIPLE)/install.sh \
+	            --prefix=$(RUST_STAGE0_DIR) --disable-ldconfig --without=rust-docs > /dev/null || exit 1 ; \
+	    done \
+	    && $(TOUCH) $(rust-stage0-installflag) ; \
+	fi
+
+## bootstrap.toml ###
+
+# Written on every run: it only holds paths and versions, and x.py re-uses
+# its build directory when nothing in it changed.
+$(RUST_BOOTSTRAP_TOML) : $(TOP)/$(CURDIR)/mmakefile $(SRCDIR)/tools/crosstools/rust.cfg
+	%mkdirs_q $(HOSTGENDIR)/$(CURDIR)
+	@$(ECHO) "Writing    $(subst $(TOP)/,,$@)"
+	@( \
+	    $(ECHO) 'change-id = "ignore"' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[build]' ; \
+	    $(ECHO) 'build = "$(RUST_HOST_TRIPLE)"' ; \
+	    $(ECHO) 'host = ["$(RUST_HOST_TRIPLE)"]' ; \
+	    $(ECHO) 'target = ["$(RUST_HOST_TRIPLE)", "$(RUST_TARGET_TRIPLE)"]' ; \
+	    $(ECHO) 'build-dir = "$(RUST_BUILDDIR)"' ; \
+	    $(ECHO) 'rustc = "$(RUST_STAGE0_DIR)/bin/rustc"' ; \
+	    $(ECHO) 'cargo = "$(RUST_STAGE0_DIR)/bin/cargo"' ; \
+	    $(ECHO) 'docs = false' ; \
+	    $(ECHO) 'compiler-docs = false' ; \
+	    $(ECHO) 'extended = false' ; \
+	    $(ECHO) 'vendor = true' ; \
+	    $(ECHO) 'locked-deps = true' ; \
+	    $(ECHO) 'optimized-compiler-builtins = false' ; \
+	    $(ECHO) 'sanitizers = false' ; \
+	    $(ECHO) 'profiler = false' ; \
+	    $(ECHO) 'ccache = $(RUST_CCACHE)' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[install]' ; \
+	    $(ECHO) 'prefix = "$(CROSSTOOLSDIR)"' ; \
+	    $(ECHO) 'sysconfdir = "etc"' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[llvm]' ; \
+	    $(ECHO) 'download-ci-llvm = false' ; \
+	    $(ECHO) 'ninja = true' ; \
+	    $(ECHO) 'targets = "$(RUST_LLVM_TARGETS)"' ; \
+	    $(ECHO) 'experimental-targets = "$(RUST_LLVM_EXPERIMENTAL_TARGETS)"' ; \
+	    $(ECHO) 'link-shared = false' ; \
+	    $(ECHO) 'static-libstdcpp = true' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[rust]' ; \
+	    $(ECHO) 'optimize = true' ; \
+	    $(ECHO) 'debug = false' ; \
+	    $(ECHO) 'jemalloc = false' ; \
+	    $(ECHO) 'llvm-tools = false' ; \
+	    $(ECHO) 'lld = false' ; \
+	    $(ECHO) 'rpath = true' ; \
+	    $(ECHO) 'deny-warnings = false' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[target.$(RUST_HOST_TRIPLE)]' ; \
+	    $(ECHO) 'cc = "$(RUST_HOST_CC)"' ; \
+	    $(ECHO) 'cxx = "$(RUST_HOST_CXX)"' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[target.$(RUST_TARGET_TRIPLE)]' ; \
+	    $(ECHO) 'cc = "$(TARGET_RUST_LINKER)"' ; \
+	    $(ECHO) 'cxx = "$(RUST_TARGET_CXX)"' ; \
+	    $(ECHO) 'linker = "$(TARGET_RUST_LINKER)"' ; \
+	    $(ECHO) 'ar = "$(RUST_TARGET_AR)"' ; \
+	    $(ECHO) 'ranlib = "$(RUST_TARGET_RANLIB)"' ; \
+	    $(ECHO) 'no-std = false' ; \
+	    $(ECHO) 'crt-static = true' ; \
+	) > $@
+
+## Linker wrapper ###
+
+# rustc's default linker for the AROS targets is $(AROS_TARGET_CPU)-aros-cc.
+# For gcc that could be a symlink, but clang needs --target= and the ISA
+# flags of this build, so it is always a small script around $(TARGET_CC).
+$(TARGET_RUST_LINKER) : $(TOP)/$(CURDIR)/mmakefile
+	%mkdirs_q $(RUST_BINDIR)
+	@$(ECHO) "Writing    $(subst $(TOP)/,,$@)"
+	@( \
+	    $(ECHO) '#!/bin/sh' ; \
+	    $(ECHO) '# C driver used by rustc to link $(RUST_TARGET_TRIPLE) programs.' ; \
+	    $(ECHO) '# Generated by tools/crosstools/rust for the $(AROS_TOOLCHAIN) toolchain.' ; \
+	    $(ECHO) 'exec $(RUST_TARGET_CC) $(RUST_TARGET_CCFLAGS) "$$@"' ; \
+	) > $@
+	@chmod +x $@
+
+## Build and install ###
+
+#MM
+tools-crosstools-rust : $(RUST_BOOTSTRAP_TOML) $(TARGET_RUST_LINKER)
+	@$(IF) ! $(TEST) -f $(rust-installflag) ; then \
+	    $(ECHO) "Building   rust $(RUST_VERSION) for $(RUST_TARGET_TRIPLE)" \
+	    && $(RUST_XPY) build --stage 1 compiler library \
+	    && $(RUST_XPY) install --stage 1 \
+	    && $(RUST_STAGE0_PORTDIR)/cargo-$(RUST_STAGE0_VERSION)-$(RUST_HOST_TRIPLE)/install.sh \
+	           --prefix=$(CROSSTOOLSDIR) --disable-ldconfig > /dev/null \
+	    && $(TOUCH) $(rust-installflag) ; \
+	fi
+
+#MM- tools-crosstools-rust-clean : crosstools-rust-clean
+
+crosstools-rust-clean :
+	$(RM) $(RUST_BUILDDIR) $(RUST_BOOTSTRAP_TOML) $(rust-installflag)
+
+## bindgen and cbindgen ###
+
+# Installed from crates.io with the cargo just installed; needs network
+# access. bindgen itself runs against libclang - see RUST_LIBCLANG_PATH.
+
+#MM tools-crosstools-rust-bindgen : tools-crosstools-rust tools-crosstools-rust-cbindgen
+
+#MM
+tools-crosstools-rust-bindgen :
+	@$(IF) ! $(TEST) -f $(rust-bindgen-installflag) ; then \
+	    $(ECHO) "Installing bindgen $(RUST_BINDGEN_VERSION)" \
+	    && PATH=$(RUST_BINDIR):$$PATH $(HOST_CARGO) install bindgen-cli \
+	           --version $(RUST_BINDGEN_VERSION) --locked --root $(CROSSTOOLSDIR) \
+	    && $(TOUCH) $(rust-bindgen-installflag) ; \
+	fi
+
+#MM tools-crosstools-rust-cbindgen : tools-crosstools-rust
+
+#MM
+tools-crosstools-rust-cbindgen :
+	@$(IF) ! $(TEST) -f $(rust-cbindgen-installflag) ; then \
+	    $(ECHO) "Installing cbindgen $(RUST_CBINDGEN_VERSION)" \
+	    && PATH=$(RUST_BINDIR):$$PATH $(HOST_CARGO) install cbindgen \
+	           --version $(RUST_CBINDGEN_VERSION) --locked --root $(CROSSTOOLSDIR) \
+	    && $(TOUCH) $(rust-cbindgen-installflag) ; \
+	fi
+
+## Smoke test ###
+
+# Builds a std program for the target and checks that the AROS link left no
+# undefined symbol behind (the AROS loader would refuse such a binary).
+
+RUST_CHECK_DIR := $(HOSTGENDIR)/$(CURDIR)/check
+
+#MM tools-crosstools-rust-check : tools-crosstools-rust
+
+#MM
+tools-crosstools-rust-check :
+	%mkdirs_q $(RUST_CHECK_DIR)
+	@$(ECHO) 'fn main() {' > $(RUST_CHECK_DIR)/hello.rs
+	@$(ECHO) '    let mut v: Vec<String> = std::env::args().collect();' >> $(RUST_CHECK_DIR)/hello.rs
+	@$(ECHO) '    v.push(format!("{:?}", std::time::SystemTime::now()));' >> $(RUST_CHECK_DIR)/hello.rs
+	@$(ECHO) '    let t = std::thread::spawn(|| (1..=100u64).sum::<u64>());' >> $(RUST_CHECK_DIR)/hello.rs
+	@$(ECHO) '    println!("hello from rust on AROS: {:?} cwd={:?} sum={:?}", v, std::env::current_dir(), t.join().unwrap());' >> $(RUST_CHECK_DIR)/hello.rs
+	@$(ECHO) '}' >> $(RUST_CHECK_DIR)/hello.rs
+	$(TARGET_RUSTC) $(TARGET_RUSTFLAGS) -O -o $(RUST_CHECK_DIR)/hello $(RUST_CHECK_DIR)/hello.rs
+	@$(IF) $(RUST_TARGET_NM) --undefined-only $(RUST_CHECK_DIR)/hello | grep -q . ; then \
+	    $(ECHO) "tools-crosstools-rust-check: undefined symbols in $(RUST_CHECK_DIR)/hello:" ; \
+	    $(RUST_TARGET_NM) --undefined-only $(RUST_CHECK_DIR)/hello ; \
+	    exit 1 ; \
+	fi
+	@$(ECHO) "tools-crosstools-rust-check: $(RUST_CHECK_DIR)/hello links cleanly"

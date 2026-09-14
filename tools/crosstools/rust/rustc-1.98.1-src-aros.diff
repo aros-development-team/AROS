@@ -1,0 +1,2193 @@
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/base/aros.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/base/aros.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/base/aros.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/base/aros.rs	2026-09-14 12:06:24.413770265 +0000
+@@ -0,0 +1,43 @@
++use crate::spec::{Cc, LinkerFlavor, Lld, Os, PanicStrategy, RelocModel, TargetOptions, cvs};
++
++/// Shared options for the AROS targets.
++///
++/// AROS executables are relocatable ELF objects: the AROS loader applies the
++/// relocations itself, so there is no dynamic linker, no PIC/PIE and no ELF
++/// TLS. The C driver of the AROS cross toolchain (gcc or clang) supplies the
++/// start-up objects and the default libraries, and performs the final
++/// relocatable link through `collect-aros`.
++pub(crate) fn opts() -> TargetOptions {
++    TargetOptions {
++        os: Os::Aros,
++        families: cvs!["unix"],
++        linker_flavor: LinkerFlavor::Gnu(Cc::Yes, Lld::No),
++        dynamic_linking: false,
++        executables: true,
++        relocation_model: RelocModel::Static,
++        position_independent_executables: false,
++        static_position_independent_executables: false,
++        plt_by_default: false,
++        has_thread_local: false,
++        // Everything is linked statically anyway, but the AROS driver must
++        // not see -static: its spec then drops posixc.library's link library.
++        crt_static_default: false,
++        crt_static_respected: false,
++        crt_static_allows_dylibs: false,
++        // No unwinder is linked into AROS programs: panics abort.
++        panic_strategy: PanicStrategy::Abort,
++        eh_frame_header: false,
++        default_uwtable: false,
++        // The AROS driver adds the C library, start-up code and system
++        // link libraries; do not suppress them with -nodefaultlibs.
++        no_default_libraries: false,
++        // collect-aros performs a relocatable link (ld -r), which has no
++        // entry point for --gc-sections to anchor on; undo the flag rustc
++        // adds by default.
++        post_link_args: TargetOptions::link_args(
++            LinkerFlavor::Gnu(Cc::Yes, Lld::No),
++            &["-Wl,--no-gc-sections"],
++        ),
++        ..Default::default()
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/base/mod.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/base/mod.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/base/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/base/mod.rs	2026-09-14 11:36:25.444785608 +0000
+@@ -1,6 +1,7 @@
+ pub(crate) mod aix;
+ pub(crate) mod android;
+ pub mod apple;
++pub(crate) mod aros;
+ pub(crate) mod arm_none;
+ pub(crate) mod avr;
+ pub(crate) mod bpf;
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/mod.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/mod.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/mod.rs	2026-09-14 11:37:43.301631391 +0000
+@@ -1547,6 +1547,14 @@
+     ("i686-unknown-haiku", i686_unknown_haiku),
+     ("x86_64-unknown-haiku", x86_64_unknown_haiku),
+ 
++    ("aarch64-unknown-aros", aarch64_unknown_aros),
++    ("arm-unknown-aros-eabihf", arm_unknown_aros_eabihf),
++    ("i686-unknown-aros", i686_unknown_aros),
++    ("m68k-unknown-aros", m68k_unknown_aros),
++    ("powerpc-unknown-aros", powerpc_unknown_aros),
++    ("riscv64gc-unknown-aros", riscv64gc_unknown_aros),
++    ("x86_64-unknown-aros", x86_64_unknown_aros),
++
+     ("aarch64-unknown-helenos", aarch64_unknown_helenos),
+     ("i686-unknown-helenos", i686_unknown_helenos),
+     ("powerpc-unknown-helenos", powerpc_unknown_helenos),
+@@ -1975,6 +1983,7 @@
+         Aix = "aix",
+         AmdHsa = "amdhsa",
+         Android = "android",
++        Aros = "aros",
+         Cuda = "cuda",
+         Cygwin = "cygwin",
+         Dragonfly = "dragonfly",
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/aarch64_unknown_aros.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/aarch64_unknown_aros.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/aarch64_unknown_aros.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/aarch64_unknown_aros.rs	2026-09-14 11:37:43.274011191 +0000
+@@ -0,0 +1,25 @@
++use crate::spec::{Arch, CodeModel, StackProbeType, Target, TargetMetadata, base};
++
++pub(crate) fn target() -> Target {
++    let mut base = base::aros::opts();
++    base.features = "+v8a".into();
++    base.max_atomic_width = Some(128);
++    base.stack_probes = StackProbeType::Inline;
++    // AROS aarch64 user space is built with -mcmodel=large -fno-pic -fno-pie.
++    base.code_model = Some(CodeModel::Large);
++    base.linker = Some("aarch64-aros-cc".into());
++
++    Target {
++        llvm_target: "aarch64-unknown-none".into(),
++        metadata: TargetMetadata {
++            description: Some("ARM64 AROS".into()),
++            tier: Some(3),
++            host_tools: Some(false),
++            std: Some(true),
++        },
++        pointer_width: 64,
++        data_layout: "e-m:e-p270:32:32-p271:32:32-p272:64:64-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128-Fn32".into(),
++        arch: Arch::AArch64,
++        options: base,
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/arm_unknown_aros_eabihf.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/arm_unknown_aros_eabihf.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/arm_unknown_aros_eabihf.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/arm_unknown_aros_eabihf.rs	2026-09-14 11:37:43.274727691 +0000
+@@ -0,0 +1,27 @@
++use crate::spec::{Arch, CfgAbi, FloatAbi, Target, TargetMetadata, base};
++
++pub(crate) fn target() -> Target {
++    let mut base = base::aros::opts();
++    // AROS ARM ("armhf") is built -marm -mfloat-abi=hard for an ARMv6+VFP
++    // baseline (Raspberry Pi 1 and up); newer cores are opted into with
++    // -C target-cpu / -C target-feature.
++    base.cfg_abi = CfgAbi::EabiHf;
++    base.llvm_floatabi = Some(FloatAbi::Hard);
++    base.features = "+strict-align,+v6,+vfp2,-d32,-thumb-mode".into();
++    base.max_atomic_width = Some(64);
++    base.linker = Some("arm-aros-cc".into());
++
++    Target {
++        llvm_target: "armv6-unknown-none-eabihf".into(),
++        metadata: TargetMetadata {
++            description: Some("ARMv6 AROS, hardfloat".into()),
++            tier: Some(3),
++            host_tools: Some(false),
++            std: Some(true),
++        },
++        pointer_width: 32,
++        data_layout: "e-m:e-p:32:32-Fi8-i64:64-v128:64:128-a:0:32-n32-S64".into(),
++        arch: Arch::Arm,
++        options: base,
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/i686_unknown_aros.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/i686_unknown_aros.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/i686_unknown_aros.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/i686_unknown_aros.rs	2026-09-14 11:37:43.273327591 +0000
+@@ -0,0 +1,27 @@
++use crate::spec::{Arch, Cc, LinkerFlavor, Lld, StackProbeType, Target, TargetMetadata, base};
++
++pub(crate) fn target() -> Target {
++    let mut base = base::aros::opts();
++    // AROS i386 is built for the i486 baseline (no SSE, no cmpxchg8b).
++    base.cpu = "i486".into();
++    base.max_atomic_width = Some(32);
++    base.stack_probes = StackProbeType::Inline;
++    base.linker = Some("i386-aros-cc".into());
++    base.add_pre_link_args(LinkerFlavor::Gnu(Cc::Yes, Lld::No), &["-m32"]);
++
++    Target {
++        llvm_target: "i686-unknown-none-elf".into(),
++        metadata: TargetMetadata {
++            description: Some("32-bit AROS (i486 baseline)".into()),
++            tier: Some(3),
++            host_tools: Some(false),
++            std: Some(true),
++        },
++        pointer_width: 32,
++        data_layout: "e-m:e-p:32:32-p270:32:32-p271:32:32-p272:64:64-\
++            i128:128-f64:32:64-f80:32-n8:16:32-S128"
++            .into(),
++        arch: Arch::X86,
++        options: base,
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/m68k_unknown_aros.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/m68k_unknown_aros.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/m68k_unknown_aros.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/m68k_unknown_aros.rs	2026-09-14 11:37:43.276223891 +0000
+@@ -0,0 +1,25 @@
++use crate::spec::{Arch, Endian, LinkSelfContainedDefault, Target, TargetMetadata, base};
++
++pub(crate) fn target() -> Target {
++    let mut base = base::aros::opts();
++    // AROS m68k builds for the 68000 baseline with software floating point.
++    base.cpu = "M68000".into();
++    base.max_atomic_width = Some(32);
++    base.endian = Endian::Big;
++    base.link_self_contained = LinkSelfContainedDefault::False;
++    base.linker = Some("m68k-aros-cc".into());
++
++    Target {
++        llvm_target: "m68k-unknown-none-elf".into(),
++        metadata: TargetMetadata {
++            description: Some("Motorola 680x0 AROS (experimental LLVM backend)".into()),
++            tier: Some(3),
++            host_tools: Some(false),
++            std: Some(true),
++        },
++        pointer_width: 32,
++        data_layout: "E-m:e-p:32:16:32-i8:8:8-i16:16:16-i32:16:32-n8:16:32-a:0:16-S16".into(),
++        arch: Arch::M68k,
++        options: base,
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/powerpc_unknown_aros.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/powerpc_unknown_aros.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/powerpc_unknown_aros.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/powerpc_unknown_aros.rs	2026-09-14 11:37:43.276935691 +0000
+@@ -0,0 +1,24 @@
++use crate::spec::{Arch, Cc, Endian, LinkerFlavor, Lld, StackProbeType, Target, TargetMetadata, base};
++
++pub(crate) fn target() -> Target {
++    let mut base = base::aros::opts();
++    base.endian = Endian::Big;
++    base.max_atomic_width = Some(32);
++    base.stack_probes = StackProbeType::Inline;
++    base.linker = Some("ppc-aros-cc".into());
++    base.add_pre_link_args(LinkerFlavor::Gnu(Cc::Yes, Lld::No), &["-m32"]);
++
++    Target {
++        llvm_target: "powerpc-unknown-none-elf".into(),
++        metadata: TargetMetadata {
++            description: Some("PowerPC AROS".into()),
++            tier: Some(3),
++            host_tools: Some(false),
++            std: Some(true),
++        },
++        pointer_width: 32,
++        data_layout: "E-m:e-p:32:32-Fn32-i64:64-n32".into(),
++        arch: Arch::PowerPC,
++        options: base,
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/riscv64gc_unknown_aros.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/riscv64gc_unknown_aros.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/riscv64gc_unknown_aros.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/riscv64gc_unknown_aros.rs	2026-09-14 11:37:43.275508191 +0000
+@@ -0,0 +1,33 @@
++use std::borrow::Cow;
++
++use crate::spec::{
++    Arch, CodeModel, LlvmAbi, SplitDebuginfo, Target, TargetMetadata, base,
++};
++
++pub(crate) fn target() -> Target {
++    let mut base = base::aros::opts();
++    // AROS riscv64 is built -march=<rva22u64 by default> -mabi=lp64d
++    // -mcmodel=medany; rv64gc is the portable baseline, extensions are
++    // opted into with -C target-feature.
++    base.code_model = Some(CodeModel::Medium);
++    base.cpu = "generic-rv64".into();
++    base.features = "+m,+a,+f,+d,+c,+zicsr,+zifencei".into();
++    base.llvm_abiname = LlvmAbi::Lp64d;
++    base.max_atomic_width = Some(64);
++    base.supported_split_debuginfo = Cow::Borrowed(&[SplitDebuginfo::Off]);
++    base.linker = Some("riscv64-aros-cc".into());
++
++    Target {
++        llvm_target: "riscv64-unknown-none-elf".into(),
++        metadata: TargetMetadata {
++            description: Some("RISC-V AROS (rv64gc)".into()),
++            tier: Some(3),
++            host_tools: Some(false),
++            std: Some(true),
++        },
++        pointer_width: 64,
++        data_layout: "e-m:e-p:64:64-i64:64-i128:128-n32:64-S128".into(),
++        arch: Arch::RiscV64,
++        options: base,
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/x86_64_unknown_aros.rs rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/x86_64_unknown_aros.rs
+--- rustc-1.98.1-src.orig/compiler/rustc_target/src/spec/targets/x86_64_unknown_aros.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/compiler/rustc_target/src/spec/targets/x86_64_unknown_aros.rs	2026-09-14 11:37:43.272567391 +0000
+@@ -0,0 +1,30 @@
++use crate::spec::{
++    Arch, Cc, CodeModel, LinkerFlavor, Lld, StackProbeType, Target, TargetMetadata, base,
++};
++
++pub(crate) fn target() -> Target {
++    let mut base = base::aros::opts();
++    base.cpu = "x86-64".into();
++    base.max_atomic_width = Some(64);
++    base.stack_probes = StackProbeType::Inline;
++    // AROS x86-64 user space is built with -mcmodel=large: programs may be
++    // loaded anywhere in the address space.
++    base.code_model = Some(CodeModel::Large);
++    base.linker = Some("x86_64-aros-cc".into());
++    base.add_pre_link_args(LinkerFlavor::Gnu(Cc::Yes, Lld::No), &["-m64"]);
++
++    Target {
++        llvm_target: "x86_64-unknown-none-elf".into(),
++        metadata: TargetMetadata {
++            description: Some("64-bit AROS".into()),
++            tier: Some(3),
++            host_tools: Some(false),
++            std: Some(true),
++        },
++        pointer_width: 64,
++        data_layout:
++            "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128".into(),
++        arch: Arch::X86_64,
++        options: base,
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/backtrace/src/backtrace/mod.rs rustc-1.98.1-src/library/backtrace/src/backtrace/mod.rs
+--- rustc-1.98.1-src.orig/library/backtrace/src/backtrace/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/backtrace/src/backtrace/mod.rs	2026-09-14 11:39:18.543279365 +0000
+@@ -175,6 +175,7 @@
+             all(
+                 unix,
+                 not(target_os = "emscripten"),
++                not(target_os = "aros"),
+                 not(all(target_os = "ios", target_arch = "arm")),
+             ),
+             all(
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/backtrace/src/symbolize/mod.rs rustc-1.98.1-src/library/backtrace/src/symbolize/mod.rs
+--- rustc-1.98.1-src.orig/library/backtrace/src/symbolize/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/backtrace/src/symbolize/mod.rs	2026-09-14 11:39:18.543563365 +0000
+@@ -441,6 +441,7 @@
+         any(unix, all(windows, target_env = "gnu")),
+         not(target_vendor = "uwp"),
+         not(target_os = "emscripten"),
++        not(target_os = "aros"),
+         any(not(backtrace_in_libstd), feature = "backtrace"),
+     ))] {
+         mod gimli;
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/panic_unwind/src/lib.rs rustc-1.98.1-src/library/panic_unwind/src/lib.rs
+--- rustc-1.98.1-src.orig/library/panic_unwind/src/lib.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/panic_unwind/src/lib.rs	2026-09-14 11:39:18.537599065 +0000
+@@ -41,6 +41,11 @@
+         #[path = "dummy.rs"]
+         mod imp;
+     }
++    target_os = "aros" => {
++        // AROS is unix family but links no unwinder; panics abort.
++        #[path = "dummy.rs"]
++        mod imp;
++    }
+     any(
+         all(target_family = "windows", target_env = "gnu"),
+         target_os = "psp",
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/build.rs rustc-1.98.1-src/library/std/build.rs
+--- rustc-1.98.1-src.orig/library/std/build.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/build.rs	2026-09-14 11:39:18.536567865 +0000
+@@ -39,6 +39,7 @@
+         || target_os == "l4re"
+         || target_os == "redox"
+         || target_os == "haiku"
++        || target_os == "aros"
+         || target_os == "vxworks"
+         || target_arch == "wasm32"
+         || target_arch == "wasm64"
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/os/aros/fs.rs rustc-1.98.1-src/library/std/src/os/aros/fs.rs
+--- rustc-1.98.1-src.orig/library/std/src/os/aros/fs.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/os/aros/fs.rs	2026-09-14 11:46:01.910546519 +0000
+@@ -0,0 +1,116 @@
++#![stable(feature = "metadata_ext", since = "1.1.0")]
++
++use crate::fs::Metadata;
++#[allow(deprecated)]
++use crate::os::aros::raw;
++use crate::sys::AsInner;
++
++/// OS-specific extensions to [`fs::Metadata`].
++///
++/// [`fs::Metadata`]: crate::fs::Metadata
++#[stable(feature = "metadata_ext", since = "1.1.0")]
++pub trait MetadataExt {
++    /// Gain a reference to the underlying `stat` structure which contains
++    /// the raw information returned by the OS.
++    ///
++    /// The contents of the returned `stat` are **not** consistent across
++    /// Unix platforms. The `os::unix::fs::MetadataExt` trait contains the
++    /// cross-Unix abstractions contained within the raw stat.
++    #[stable(feature = "metadata_ext", since = "1.1.0")]
++    #[deprecated(
++        since = "1.8.0",
++        note = "deprecated in favor of the accessor \
++                methods of this trait"
++    )]
++    #[allow(deprecated)]
++    fn as_raw_stat(&self) -> &raw::stat;
++
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_dev(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_ino(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_mode(&self) -> u32;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_nlink(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_uid(&self) -> u32;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_gid(&self) -> u32;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_rdev(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_size(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_atime(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_atime_nsec(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_mtime(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_mtime_nsec(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_ctime(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_ctime_nsec(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_blksize(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_blocks(&self) -> u64;
++}
++
++#[stable(feature = "metadata_ext", since = "1.1.0")]
++impl MetadataExt for Metadata {
++    #[allow(deprecated)]
++    fn as_raw_stat(&self) -> &raw::stat {
++        unsafe { &*(self.as_inner().as_inner() as *const libc::stat as *const raw::stat) }
++    }
++    fn st_dev(&self) -> u64 {
++        self.as_inner().as_inner().st_dev as u64
++    }
++    fn st_ino(&self) -> u64 {
++        self.as_inner().as_inner().st_ino as u64
++    }
++    fn st_mode(&self) -> u32 {
++        self.as_inner().as_inner().st_mode as u32
++    }
++    fn st_nlink(&self) -> u64 {
++        self.as_inner().as_inner().st_nlink as u64
++    }
++    fn st_uid(&self) -> u32 {
++        self.as_inner().as_inner().st_uid as u32
++    }
++    fn st_gid(&self) -> u32 {
++        self.as_inner().as_inner().st_gid as u32
++    }
++    fn st_rdev(&self) -> u64 {
++        self.as_inner().as_inner().st_rdev as u64
++    }
++    fn st_size(&self) -> u64 {
++        self.as_inner().as_inner().st_size as u64
++    }
++    fn st_atime(&self) -> i64 {
++        self.as_inner().as_inner().st_atime as i64
++    }
++    fn st_atime_nsec(&self) -> i64 {
++        self.as_inner().as_inner().st_atime_nsec as i64
++    }
++    fn st_mtime(&self) -> i64 {
++        self.as_inner().as_inner().st_mtime as i64
++    }
++    fn st_mtime_nsec(&self) -> i64 {
++        self.as_inner().as_inner().st_mtime_nsec as i64
++    }
++    fn st_ctime(&self) -> i64 {
++        self.as_inner().as_inner().st_ctime as i64
++    }
++    fn st_ctime_nsec(&self) -> i64 {
++        self.as_inner().as_inner().st_ctime_nsec as i64
++    }
++    fn st_blksize(&self) -> u64 {
++        self.as_inner().as_inner().st_blksize as u64
++    }
++    fn st_blocks(&self) -> u64 {
++        self.as_inner().as_inner().st_blocks as u64
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/os/aros/mod.rs rustc-1.98.1-src/library/std/src/os/aros/mod.rs
+--- rustc-1.98.1-src.orig/library/std/src/os/aros/mod.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/os/aros/mod.rs	2026-09-14 11:45:43.272165949 +0000
+@@ -0,0 +1,6 @@
++//! AROS-specific definitions
++
++#![stable(feature = "raw_ext", since = "1.1.0")]
++
++pub mod fs;
++pub mod raw;
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/os/aros/raw.rs rustc-1.98.1-src/library/std/src/os/aros/raw.rs
+--- rustc-1.98.1-src.orig/library/std/src/os/aros/raw.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/os/aros/raw.rs	2026-09-14 11:45:43.276305949 +0000
+@@ -0,0 +1,79 @@
++//! AROS-specific raw type definitions
++
++#![stable(feature = "raw_ext", since = "1.1.0")]
++#![deprecated(
++    since = "1.53.0",
++    note = "these type aliases are no longer supported by \
++            the standard library, the `libc` crate on \
++            crates.io should be used instead for the correct \
++            definitions"
++)]
++#![allow(deprecated)]
++
++use crate::os::raw::c_long;
++use crate::os::unix::raw::{gid_t, uid_t};
++
++#[stable(feature = "pthread_t", since = "1.8.0")]
++pub type pthread_t = u32;
++
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type blkcnt_t = c_long;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type blksize_t = c_long;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type dev_t = usize;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type ino_t = i32;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type mode_t = u16;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type nlink_t = u16;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type off_t = c_long;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type time_t = i32;
++
++#[repr(C)]
++#[derive(Clone)]
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub struct stat {
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_dev: dev_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_ino: ino_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_mode: mode_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_nlink: nlink_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_uid: uid_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_gid: gid_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_rdev: dev_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_size: off_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_atime: time_t,
++    __st_atime_pad: [u8; 4],
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_atime_nsec: c_long,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_mtime: time_t,
++    __st_mtime_pad: [u8; 4],
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_mtime_nsec: c_long,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_ctime: time_t,
++    __st_ctime_pad: [u8; 4],
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_ctime_nsec: c_long,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_blksize: blksize_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_blocks: blkcnt_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_flags: c_long,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_gen: c_long,
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/os/mod.rs rustc-1.98.1-src/library/std/src/os/mod.rs
+--- rustc-1.98.1-src.orig/library/std/src/os/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/os/mod.rs	2026-09-14 11:46:01.912570719 +0000
+@@ -103,6 +103,8 @@
+ pub mod fuchsia;
+ #[cfg(target_os = "haiku")]
+ pub mod haiku;
++#[cfg(target_os = "aros")]
++pub mod aros;
+ #[cfg(target_os = "hermit")]
+ pub mod hermit;
+ #[cfg(target_os = "horizon")]
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/os/unix/mod.rs rustc-1.98.1-src/library/std/src/os/unix/mod.rs
+--- rustc-1.98.1-src.orig/library/std/src/os/unix/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/os/unix/mod.rs	2026-09-14 11:46:01.915688019 +0000
+@@ -57,6 +57,8 @@
+     pub use crate::os::fuchsia::*;
+     #[cfg(target_os = "haiku")]
+     pub use crate::os::haiku::*;
++    #[cfg(target_os = "aros")]
++    pub use crate::os::aros::*;
+     #[cfg(target_os = "horizon")]
+     pub use crate::os::horizon::*;
+     #[cfg(target_os = "hurd")]
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/os/unix/process.rs rustc-1.98.1-src/library/std/src/os/unix/process.rs
+--- rustc-1.98.1-src.orig/library/std/src/os/unix/process.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/os/unix/process.rs	2026-09-14 12:04:46.271767716 +0000
+@@ -259,7 +259,7 @@
+     }
+ 
+     fn process_group(&mut self, pgroup: i32) -> &mut process::Command {
+-        self.as_inner_mut().pgroup(pgroup);
++        self.as_inner_mut().pgroup(pgroup as libc::pid_t);
+         self
+     }
+ 
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/args/unix.rs rustc-1.98.1-src/library/std/src/sys/args/unix.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/args/unix.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/args/unix.rs	2026-09-14 11:47:36.283641402 +0000
+@@ -73,6 +73,7 @@
+     target_os = "illumos",
+     target_os = "emscripten",
+     target_os = "haiku",
++    target_os = "aros",
+     target_os = "hermit",
+     target_os = "l4re",
+     target_os = "fuchsia",
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/env/unix.rs rustc-1.98.1-src/library/std/src/sys/env/unix.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/env/unix.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/env/unix.rs	2026-09-14 11:59:16.661298580 +0000
+@@ -55,8 +55,18 @@
+     ENVIRON.0
+ }
+ 
++// AROS keeps the process environment behind stdcio.library: the C start-up
++// registers the address of its `environ` with it, and programs that never did
++// so get a null pointer back.
++#[cfg(target_os = "aros")]
++pub unsafe fn environ() -> *mut *const *const c_char {
++    static mut EMPTY_ENVIRON: *const *const c_char = crate::ptr::null();
++    let environ = unsafe { libc::__stdcio_get_environptr() } as *mut *const *const c_char;
++    if environ.is_null() { &raw mut EMPTY_ENVIRON } else { environ }
++}
++
+ // Use the `environ` static which is part of POSIX.
+-#[cfg(not(any(target_os = "freebsd", target_vendor = "apple")))]
++#[cfg(not(any(target_os = "freebsd", target_vendor = "apple", target_os = "aros")))]
+ pub unsafe fn environ() -> *mut *const *const c_char {
+     unsafe extern "C" {
+         static mut environ: *const *const c_char;
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/fd/unix.rs rustc-1.98.1-src/library/std/src/sys/fd/unix.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/fd/unix.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/fd/unix.rs	2026-09-14 12:02:56.172840269 +0000
+@@ -28,6 +28,47 @@
+         // #[cfg(gnu_file_offset_bits64)].
+         use libc::pread64;
+     }
++    target_os = "aros" => {
++        // AROS has no pread/pwrite: emulate them around read/write. The
++        // file position is saved and restored, so the offset is not
++        // preserved atomically with respect to other users of the fd.
++        unsafe fn pread64(
++            fd: libc::c_int,
++            buf: *mut libc::c_void,
++            count: usize,
++            offset: off64_t,
++        ) -> isize {
++            unsafe {
++                let cur = libc::lseek(fd, 0, libc::SEEK_CUR);
++                if cur < 0 || libc::lseek(fd, offset as libc::off_t, libc::SEEK_SET) < 0 {
++                    return -1;
++                }
++                let ret = libc::read(fd, buf, count);
++                let saved = *libc::__stdc_geterrnoptr();
++                libc::lseek(fd, cur, libc::SEEK_SET);
++                *libc::__stdc_geterrnoptr() = saved;
++                ret
++            }
++        }
++        unsafe fn pwrite64(
++            fd: libc::c_int,
++            buf: *const libc::c_void,
++            count: usize,
++            offset: off64_t,
++        ) -> isize {
++            unsafe {
++                let cur = libc::lseek(fd, 0, libc::SEEK_CUR);
++                if cur < 0 || libc::lseek(fd, offset as libc::off_t, libc::SEEK_SET) < 0 {
++                    return -1;
++                }
++                let ret = libc::write(fd, buf, count);
++                let saved = *libc::__stdc_geterrnoptr();
++                libc::lseek(fd, cur, libc::SEEK_SET);
++                *libc::__stdc_geterrnoptr() = saved;
++                ret
++            }
++        }
++    }
+     _ => {
+         use libc::pread as pread64;
+     }
+@@ -124,6 +165,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nuttx"
+     )))]
+     pub fn read_vectored(&self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
+@@ -141,6 +183,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nuttx"
+     ))]
+     pub fn read_vectored(&self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
+@@ -153,6 +196,7 @@
+             target_os = "espidf",
+             target_os = "horizon",
+             target_os = "vita",
++            target_os = "aros",
+             target_os = "nuttx",
+             target_os = "wasi",
+         )))
+@@ -358,6 +402,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nuttx"
+     )))]
+     pub fn write_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
+@@ -375,6 +420,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nuttx"
+     ))]
+     pub fn write_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
+@@ -387,6 +433,7 @@
+             target_os = "espidf",
+             target_os = "horizon",
+             target_os = "vita",
++            target_os = "aros",
+             target_os = "nuttx",
+             target_os = "wasi",
+         )))
+@@ -396,7 +443,8 @@
+         #[cfg(not(any(
+             all(target_os = "linux", not(target_env = "musl")),
+             target_os = "android",
+-            target_os = "hurd"
++            target_os = "hurd",
++            target_os = "aros"
+         )))]
+         use libc::pwrite as pwrite64;
+         #[cfg(any(
+@@ -560,6 +608,7 @@
+         target_os = "linux",
+         target_os = "cygwin",
+         target_os = "haiku",
++        target_os = "aros",
+         target_os = "redox",
+         target_os = "vxworks",
+         target_os = "nto",
+@@ -585,6 +634,7 @@
+         target_os = "linux",
+         target_os = "cygwin",
+         target_os = "haiku",
++        target_os = "aros",
+         target_os = "redox",
+         target_os = "vxworks",
+         target_os = "nto",
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/fs/unix.rs rustc-1.98.1-src/library/std/src/sys/fs/unix.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/fs/unix.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/fs/unix.rs	2026-09-14 11:57:53.282581326 +0000
+@@ -32,6 +32,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+     all(target_os = "linux", target_env = "musl"),
+ ))]
+@@ -50,6 +51,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+ )))]
+ use libc::readdir_r as readdir64_r;
+@@ -283,6 +285,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nto",
+         target_os = "qnx",
+         target_os = "vxworks",
+@@ -417,6 +420,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+ ))]
+ pub struct DirEntry {
+@@ -444,6 +448,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+ ))]
+ struct dirent64_min {
+@@ -472,6 +477,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+ )))]
+ pub struct DirEntry {
+@@ -871,6 +877,7 @@
+         target_os = "redox",
+         target_os = "solaris",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "wasi",
+     ))]
+     fn next(&mut self) -> Option<io::Result<DirEntry>> {
+@@ -971,6 +978,7 @@
+         target_os = "redox",
+         target_os = "solaris",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "wasi",
+     )))]
+     fn next(&mut self) -> Option<io::Result<DirEntry>> {
+@@ -1159,6 +1167,7 @@
+         target_os = "freebsd",
+         target_os = "fuchsia",
+         target_os = "haiku",
++        target_os = "aros",
+         target_os = "horizon",
+         target_os = "hurd",
+         target_os = "illumos",
+@@ -1227,6 +1236,7 @@
+         target_os = "nto",
+         target_os = "qnx",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "hurd",
+         target_os = "wasi",
+     )))]
+@@ -1245,6 +1255,7 @@
+         target_os = "nto",
+         target_os = "qnx",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "hurd",
+         target_os = "wasi",
+     ))]
+@@ -1704,7 +1715,7 @@
+ 
+     pub fn set_times(&self, times: FileTimes) -> io::Result<()> {
+         cfg_select! {
+-            any(target_os = "redox", target_os = "espidf", target_os = "horizon", target_os = "nuttx") => {
++            any(target_os = "redox", target_os = "espidf", target_os = "horizon", target_os = "nuttx", target_os = "aros") => {
+                 // Redox doesn't appear to support `UTIME_OMIT`.
+                 // ESP-IDF and HorizonOS do not support `futimens` at all and the behavior for those OS is therefore
+                 // the same as for Redox.
+@@ -1773,6 +1784,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "nuttx",
++    target_os = "aros",
+ )))]
+ fn file_time_to_timespec(time: Option<SystemTime>) -> io::Result<libc::timespec> {
+     match time {
+@@ -2063,6 +2075,7 @@
+             // Other misc platforms
+             target_os = "horizon",
+             target_os = "vita",
++            target_os = "aros",
+             target_env = "nto70",
+         ) => {
+             cvt(unsafe { libc::link(original.as_ptr(), link.as_ptr()) })?;
+@@ -2136,7 +2149,7 @@
+ 
+ fn set_times_impl(p: &CStr, times: FileTimes, follow_symlinks: bool) -> io::Result<()> {
+     cfg_select! {
+-       any(target_os = "redox", target_os = "espidf", target_os = "horizon", target_os = "nuttx", target_os = "vita", target_os = "rtems") => {
++       any(target_os = "redox", target_os = "espidf", target_os = "horizon", target_os = "nuttx", target_os = "vita", target_os = "rtems", target_os = "aros") => {
+             let _ = (p, times, follow_symlinks);
+             Err(io::const_error!(
+                 io::ErrorKind::Unsupported,
+@@ -2428,6 +2441,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "nto",
+     target_os = "qnx",
+     target_os = "vxworks",
+@@ -2443,6 +2457,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "nto",
+     target_os = "qnx",
+     target_os = "vxworks",
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/io/error/unix.rs rustc-1.98.1-src/library/std/src/sys/io/error/unix.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/io/error/unix.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/io/error/unix.rs	2026-09-14 11:47:36.283397602 +0000
+@@ -30,6 +30,7 @@
+     #[cfg_attr(target_os = "qnx", link_name = "__get_errno_ptr")]
+     #[cfg_attr(any(target_os = "freebsd", target_vendor = "apple"), link_name = "__error")]
+     #[cfg_attr(target_os = "haiku", link_name = "_errnop")]
++    #[cfg_attr(target_os = "aros", link_name = "__stdc_geterrnoptr")]
+     #[cfg_attr(target_os = "aix", link_name = "_Errno")]
+     // SAFETY: this will always return the same pointer on a given thread.
+     #[unsafe(ffi_const)]
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/pal/unix/mod.rs rustc-1.98.1-src/library/std/src/sys/pal/unix/mod.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/pal/unix/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/pal/unix/mod.rs	2026-09-14 11:47:36.282753402 +0000
+@@ -85,6 +85,7 @@
+             target_os = "horizon",
+             target_os = "vita",
+             target_os = "rtems",
++            target_os = "aros", // no `poll`
+             // The poll on Darwin doesn't set POLLNVAL for closed fds.
+             target_vendor = "apple",
+         )))]
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/pal/unix/sync/condvar.rs rustc-1.98.1-src/library/std/src/sys/pal/unix/sync/condvar.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/pal/unix/sync/condvar.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/pal/unix/sync/condvar.rs	2026-09-14 11:47:36.283819402 +0000
+@@ -140,6 +140,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "l4re",
++    target_os = "aros",
+     target_os = "redox",
+     target_os = "teeos",
+ )))]
+@@ -195,6 +196,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "l4re",
++    target_os = "aros",
+     target_os = "redox",
+     target_os = "teeos",
+ ))]
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/paths/unix.rs rustc-1.98.1-src/library/std/src/sys/paths/unix.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/paths/unix.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/paths/unix.rs	2026-09-14 11:47:36.286722102 +0000
+@@ -342,6 +342,16 @@
+     }
+ }
+ 
++#[cfg(target_os = "aros")]
++pub fn current_exe() -> io::Result<PathBuf> {
++    // There is no /proc on AROS; the C start-up hands the program name over
++    // as argv[0], which the DOS loader fills with the path it was run by.
++    crate::env::args_os()
++        .next()
++        .map(PathBuf::from)
++        .ok_or_else(|| io::const_error!(io::ErrorKind::NotFound, "no argv[0] available"))
++}
++
+ #[cfg(target_os = "redox")]
+ pub fn current_exe() -> io::Result<PathBuf> {
+     crate::fs::read_to_string("/scheme/sys/exe").map(PathBuf::from)
+@@ -409,6 +419,7 @@
+         cfg_select! {
+             target_vendor = "apple" => darwin_temp_dir(),
+             target_os = "android" => PathBuf::from("/data/local/tmp"),
++            target_os = "aros" => PathBuf::from("T:"),
+             _ => PathBuf::from("/tmp"),
+         }
+     })
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/personality/mod.rs rustc-1.98.1-src/library/std/src/sys/personality/mod.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/personality/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/personality/mod.rs	2026-09-14 11:39:18.538133465 +0000
+@@ -17,7 +17,7 @@
+     target_os = "emscripten" => {
+         mod emcc;
+     }
+-    any(target_env = "msvc", target_family = "wasm", target_os = "motor") => {
++    any(target_env = "msvc", target_family = "wasm", target_os = "motor", target_os = "aros") => {
+         // This is required by the compiler to exist (e.g., it's a lang item),
+         // but it's never actually called by the compiler because
+         // __CxxFrameHandler3 (msvc) / __gxx_wasm_personality_v0 (wasm) is the
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/process/unix/unix.rs rustc-1.98.1-src/library/std/src/sys/process/unix/unix.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/process/unix/unix.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/process/unix/unix.rs	2026-09-14 12:03:37.815725390 +0000
+@@ -1191,8 +1191,10 @@
+         #[cfg(not(target_os = "l4re"))]
+         libc::SIGPROF => " (SIGPROF)",
+         #[cfg(not(any(target_os = "l4re", target_os = "rtems")))]
++        #[cfg(not(target_os = "aros"))]
+         libc::SIGWINCH => " (SIGWINCH)",
+         #[cfg(not(any(target_os = "haiku", target_os = "l4re")))]
++        #[cfg(not(target_os = "aros"))]
+         libc::SIGIO => " (SIGIO)",
+         #[cfg(target_os = "haiku")]
+         libc::SIGPOLL => " (SIGPOLL)",
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/random/mod.rs rustc-1.98.1-src/library/std/src/sys/random/mod.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/random/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/random/mod.rs	2026-09-14 11:47:36.286119902 +0000
+@@ -17,6 +17,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
++        target_os = "aros",
+         target_os = "illumos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/thread/unix.rs rustc-1.98.1-src/library/std/src/sys/thread/unix.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/thread/unix.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/thread/unix.rs	2026-09-14 11:47:36.287290202 +0000
+@@ -428,7 +428,8 @@
+     target_os = "freebsd",
+     target_os = "dragonfly",
+     target_os = "nuttx",
+-    target_os = "cygwin"
++    target_os = "cygwin",
++    target_os = "aros"
+ ))]
+ pub fn set_name(name: &CStr) {
+     unsafe {
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/unwind/src/lib.rs rustc-1.98.1-src/library/unwind/src/lib.rs
+--- rustc-1.98.1-src.orig/library/unwind/src/lib.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/unwind/src/lib.rs	2026-09-14 11:39:18.537113765 +0000
+@@ -19,6 +19,7 @@
+         // Windows MSVC no extra unwinder support needed
+     }
+     any(
++        target_os = "aros",
+         target_os = "l4re",
+         target_os = "none",
+         target_os = "espidf",
+Binary files rustc-1.98.1-src.orig/src/bootstrap/__pycache__/bootstrap.cpython-313.pyc and rustc-1.98.1-src/src/bootstrap/__pycache__/bootstrap.cpython-313.pyc differ
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/src/librustdoc/clean/cfg.rs rustc-1.98.1-src/src/librustdoc/clean/cfg.rs
+--- rustc-1.98.1-src.orig/src/librustdoc/clean/cfg.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/src/librustdoc/clean/cfg.rs	2026-09-14 12:18:25.879639033 +0000
+@@ -616,6 +616,7 @@
+         Aix => "AIX",
+         AmdHsa => "AMD HSA",
+         Android => "Android",
++        Aros => "AROS",
+         Cuda => "CUDA",
+         Cygwin => "Cygwin",
+         Dragonfly => "DragonFly BSD",
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/.cargo-checksum.json rustc-1.98.1-src/vendor/libc-0.2.185/.cargo-checksum.json
+--- rustc-1.98.1-src.orig/vendor/libc-0.2.185/.cargo-checksum.json	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/vendor/libc-0.2.185/.cargo-checksum.json	2026-09-14 11:45:00.926385450 +0000
+@@ -1 +1 @@
+-{"$comment":"This file only protects against accidental modifications. It is not a security mechanism and does not protect against malicious changes.","files":{".cargo_vcs_info.json":"0bbebb7f1d27737bd569e11d5f934243e59f0df3569b4a050f19aa104ed2dd89",".editorconfig":"e57fecd6b82cd69640ca1bc4e44f0c7acfe5fc12f641f14af9536e323b4159db",".git-blame-ignore-revs":"761aa385c661241fa77c15b502c361398cf500bbb9f8c3a4579b412c4c6249d7",".release-plz.toml":"fcf2d382c4a2abd96caf9cc391b63e0c94d5832f5c48e9ab9eb4b2c847c0887c",".rustfmt.toml":"c88d9ba0e884291a2904d43cc7b940fafcb1ab443cdb7bcfca7117809c4f2816","CHANGELOG.md":"06f7330cbbfa0a4b1851dade212b0b1d82d9819565372bd2226693478970a05e","CONTRIBUTING.md":"a79d97a32ebab59a5d7b360f9f9bd5b8e98b58cd83a7c0853059347f1f81cb53","Cargo.lock":"8ff70df27ecc37f9ef130b117f62f62a77db4e24580e59cc4a8ab68782ab0e92","Cargo.toml":"89d682c2bf38c3051425fd0fc4319e31d55d4d20082fc6f3445f4681e95a4b8d","Cargo.toml.orig":"e6b107bb3de87b26953d9f7f5c97330d1d4e0c828a076c09fcc2e85cae040cb7","LICENSE-APACHE":"62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a","LICENSE-MIT":"123a331b5dbf04c30097fa43b8f858bc85df671fe776de498d01f3d6b7c1f69e","README.md":"0795294e9f08f32259a9ea3d694a867998f35cbccf38263205555d2dbc1ed2a5","build.rs":"4b348c53d0a0cd0067ef9887b50f60a1fffdc5d00dda5c0e27fae6aa0ce3dee8","src/fuchsia/aarch64.rs":"34105478e20e9ce40b9e484eea6494e2408fead17c13500da90a2d44d996ce63","src/fuchsia/mod.rs":"b4fc067b8408844fb80be9d017896e41763e2595fcd3526c4fcfed809dd90459","src/fuchsia/riscv64.rs":"a91ae8276df139f6181591be7209f9a68e9f3de5eec881c2e1c9768c53c4e292","src/fuchsia/x86_64.rs":"543ea567b29d646afc026956ee5e652c10e87256789058e7e39f91bf2fe8bf14","src/hermit.rs":"b8e56d680321459a27740aa95fe6576ee6d4e223abce74c0a4795fe998c6c30f","src/lib.rs":"cc2d16d6a06b312913276cb785d637d0755e3afbafc92f18376692dc31e1dc77","src/macros.rs":"e1a7439f50a1d7a47a3268b625e36e7c9a916909f5b3a7fae35217e454e5680c","src/new/aix/mod.rs":"df0de5d8e452a8abb27727b8451b2ceff3bb856f7e5d9e9306df5177e4c6326f","src/new/aix/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/apple/libc/signal.rs":"a960b6153775d791055b278534f79e21f8ff76c2c0c2891271e7abdf26e193d3","src/new/apple/libc/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/apple/libpthread/mod.rs":"1e99efe513b0ee1fa6e53daf5950fc027380b1d71d793eca9e5b22af7b331b5b","src/new/apple/libpthread/pthread_/introspection.rs":"3c797ded6d1a55670f9537a997407cf2267e6c7e7dbfa360d32474e2432979af","src/new/apple/libpthread/pthread_/pthread.rs":"c2b680120ec8db839e702c4340bc39748ac34c806b5fc08acea0a4593131a015","src/new/apple/libpthread/pthread_/pthread_impl.rs":"57a9925a75b79d092c65288b8a8eb21bfb6c7de4c70d37a49018b4eb8b32a646","src/new/apple/libpthread/pthread_/pthread_spis.rs":"1ba51c251249822fae222db6a19e17278ffffc424fc6eea30282a6171491edbe","src/new/apple/libpthread/pthread_/qos.rs":"40f816fb6cebd19ead21197671e5425b454144515ee4b966d00db32ba6b0dfe5","src/new/apple/libpthread/pthread_/sched.rs":"7b22a3204e72d5013ebac7b830235d50883aefca86d720f1f38b93d54e309477","src/new/apple/libpthread/pthread_/spawn.rs":"daef8af8ed0b3d16922c2f5a511a67f57f69b5f80dfe37362bd0b410213f95ca","src/new/apple/libpthread/pthread_/stack_np.rs":"d1b6e2eab1850c303f8eec4059b3e8ec57d69eb47c216243f6b4b7523761fc29","src/new/apple/libpthread/sys/_pthread/_pthread_types.rs":"a7a4307d7c3f91a6b03f76599fac5f40de556e5652123c6bc3b95df2bfa685de","src/new/apple/libpthread/sys/mod.rs":"337265fe49d77a7dcc879cd23e4f5baedcffab4808433dfb6ab9deb4ab490380","src/new/apple/libpthread/sys/qos.rs":"a6297cbab4089b330416bfcbe13b6d7aa8e75352299295046429b2e9d3bada42","src/new/apple/mod.rs":"45464bc6661b88e55856acb6ce4c47467a9aba44083e42b0e0d87d80ca3c11fd","src/new/apple/xnu/arm/_mcontext.rs":"63f1c62b47e7d7181c2b85f3cd3833c69a29eb0cad37a5754bfa6b5954ae7f6f","src/new/apple/xnu/i386/_mcontext.rs":"50543eaa5cf1d87f900b0c3e531dbfefd7586e1be2be3406223b2319edfcb7f2","src/new/apple/xnu/mach/arm/_structs.rs":"8e4af554170cef61c9143f92a283fd7eef66ad78824f194bbc89b098c6049a43","src/new/apple/xnu/mach/i386/_structs.rs":"d7316b7d3fa5e55a5818cfd8a1977921bb14e07133648cffa8f4d9da2e31a604","src/new/apple/xnu/mach/machine/_structs.rs":"82f5a7f751897c882ed4c378d6282976ff21cf0c9cdf7f3be3cecd369a63b6f8","src/new/apple/xnu/mach/mod.rs":"46aad5c7197df2cc57c4392d9019034236233f0240bc7975f9e22ac33c9d40ed","src/new/apple/xnu/machine/_mcontext.rs":"166b0a450b730e2a943ca08a0c70061effb77ff9eff6f41c7b0c51b2d4215db9","src/new/apple/xnu/mod.rs":"b35c4301d54dd2a207c32750f09f989dcc2de6e470a5cfa936de69c550555c7e","src/new/apple/xnu/sys/_types/_ucontext.rs":"1651132d39042f0fc8cca7a23c890da0031b74359472189f851fb3458f2fde3e","src/new/apple/xnu/sys/mod.rs":"734e1803a311320fd6f0b7b10929fe90a0b27322e792c95d42c620cc59b25563","src/new/apple/xnu/sys/signal.rs":"a03cb64ec19326657c87ff8a5a31c2e6bc1deb55f9a7343ab1b2420819ed72bf","src/new/bionic_libc/mod.rs":"5b2b375123095ae59617ffc1b5e13970ae685c823e3cecf014a173d56162d77c","src/new/bionic_libc/pthread.rs":"d40b7f8421cf78d61f23224c3bda17407e40a1c85dd8122ca4f290624b21d8a1","src/new/bionic_libc/sys/mod.rs":"570e7c97f7c1efb14e167a3f0688547fbc907ed9dca93ad6d90dc719289cb6f1","src/new/bionic_libc/sys/socket.rs":"19877b1de0e235a01734f9aebf20fc1ff1a01fd17302ed1a7d7b520a9fa68edb","src/new/bionic_libc/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/common/bsd.rs":"8282cc2b87ca3afc6b01216fe3c3fe1818a3d57e95aa8d1e1a36cc5af1660609","src/new/common/freebsd_like.rs":"156dce9baa6b0ac57d483ffb582a913b9e4944cf10bbb5711a64da5f496a55c2","src/new/common/linux_like/mod.rs":"d42e65b3d6fccd5ba85a8397abb28267a96bfb76b6b47754000fbe9332c03fe4","src/new/common/linux_like/pthread.rs":"a1a33b1e27cd159ab1035c73e72fa8b0c266dd5a28f1079ad74d3c370857f097","src/new/common/mod.rs":"5bcbce2960ff0840ab67a1ba5011009fa1f0f7697cff745d1461bf2b1460ddc6","src/new/common/netbsd_like.rs":"4327dd28d929f2c7b316f9241c44da6f6069d3db4381fb82700ec6d70d749041","src/new/common/posix/mod.rs":"f64b9d7f78e924529c62f2cd78199075eb334e0db9479cb59787f2740bd82d51","src/new/common/posix/pthread.rs":"7bd380ac6cda7940f5e160b6f9d1cf45885f2ba1d7e96014828b13e830eaf230","src/new/common/posix/unistd.rs":"3f633a8c6776d1442f014717785fea3f068d1d3edbfad545d445f8076cb58447","src/new/common/solarish.rs":"ac208e1ad95d07b7528419fd9c573612d58af3d50766816b81667570ccb8b3b3","src/new/cygwin/mod.rs":"9de4cba157252e7731256d60192468f5a759ebd33ab2b509819ffc7557adced5","src/new/cygwin/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/dragonfly/mod.rs":"7b96df7e566874a736d0c33ffc9e75a5f80e674da990cb664556728769ff25f9","src/new/dragonfly/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/emscripten/mod.rs":"d0ec81b919d9d078bb7d66d9429c08b609e2b0fab512be30aa22cc00fa620660","src/new/emscripten/pthread.rs":"65b51deca94ba18d81608191a5523c37f9508a87a76934006d1173869996531c","src/new/emscripten/sched.rs":"6f0a5b3cefb42bb01feabf34ad92d4bdbe5743263d4cd7b754baf921da81a127","src/new/emscripten/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/espidf/mod.rs":"c89c7d3b96583d84888aae0c463dc49b5af61b34a97e9cde52fb9b62d301a023","src/new/freebsd/mod.rs":"cca5cd6815abcaf276799618b748117eee7a6484bc48c629773eaed622188ccc","src/new/freebsd/sys/file.rs":"4dffceca36eaa53c3ace434e4fed1309009448c67ea6684a067a2cf362235e02","src/new/freebsd/sys/mod.rs":"1b064e41914b6e434be2b0c9d3f21f0365eaeeb358a231010c9b817bbd8f730e","src/new/freebsd/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/fuchsia/mod.rs":"c15b2da96c52281e86d4f114522999e6e713723f4950d62c2d544be641b28722","src/new/fuchsia/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/glibc/mod.rs":"1867ccaee8fe486b3723d683db23b40b2ff0c029c9d6281fd63d6de9de77d4fd","src/new/glibc/posix/unistd.rs":"b8528999ecab0a4883c0d89b1cb3c585a666255ab4a4bf5bfc705f7613edd8f4","src/new/glibc/sysdeps/nptl/mod.rs":"36c75e15c94efdc9db1ff8747cc557b5a314e0e3fdb006581f4a96b322ccde9d","src/new/glibc/sysdeps/nptl/pthread.rs":"b3bb630c736ffbe99081f5bec4c99f50cc36fe159b8059594b1d6965d178936c","src/new/glibc/sysdeps/unix/linux/mod.rs":"9a7c4d5c62c37166b35d2daa69a3dc8f5b4548ef49955463ae41393e260a4cb5","src/new/glibc/sysdeps/unix/linux/net/route.rs":"d8ec70bbaa919692430fdd608b70db11dbfe86b202760727dfd474a4b25b35c2","src/new/glibc/sysdeps/unix/mod.rs":"aa6d2fb4c32f5e1139cae14bcf7cee5935657aeff97df9c064ae9acd67620d04","src/new/haiku/mod.rs":"b3863768692c6da24fc28fdcf0c29a9dd9e3a84f301d4bee6ccc4f802befc4f8","src/new/haiku/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/hermit_abi/mod.rs":"25e5d698f292b95057f18dfe203fa96316326e0ca103da532190bb17c29cfdcf","src/new/horizon/mod.rs":"44b47e15d429026d369adfc16a4e9783cdda1be3d0a04f17c283da06573df886","src/new/hurd/mod.rs":"190a149192c237634df3e49c4834d05299aee91a3d399f356d97c36d35571a59","src/new/illumos/mod.rs":"eb5dd158844f63375a6fbb881d63279b12865342d1bb0da221216b7aa9c474b5","src/new/illumos/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/l4re/mod.rs":"d0cd277d7c0b32cd5d3619f7a188f3e646da8f71ae07012dccd921b3fb2b2300","src/new/linux_uapi/linux/can.rs":"b30565ca3a98f76f98a6410fdd0649336270aa1ae4c677d1ce0d67a9be8803ee","src/new/linux_uapi/linux/can/bcm.rs":"1718a1c3aae686d18ec83dff1560439d61de244bfaf332256cc2b42b85fe5249","src/new/linux_uapi/linux/can/error.rs":"5c5ef6d7c2b9432ebbf6147f96cd260e10686f449f879e64db4757670a6ec638","src/new/linux_uapi/linux/can/j1939.rs":"ab2a330c3d3cca3ac6a693b381661772036e10a6dc0004db3809a4f42cf724ba","src/new/linux_uapi/linux/can/netlink.rs":"2d90a0cb5dc9a15365c99c5101db1698f2da2df66704cfefdafd06252bcabe3e","src/new/linux_uapi/linux/can/raw.rs":"933ed151ce976b869b239abc031bb626dd3fa48ec3dd63d2c2b1b891c7bedf1c","src/new/linux_uapi/linux/keyctl.rs":"c25ee20a54a14d56de2c886c32f718b7a403b18152cc81bd7726f974cdf5b3a3","src/new/linux_uapi/linux/membarrier.rs":"5d6b55b1f7410aeb24ce6bcdbac0d33144b14dc048641ebccb5adc697ea7de2f","src/new/linux_uapi/linux/mod.rs":"c17b121acb9e3bd807ab58e532a19bf76f7a19a38ae94e7812beb14ddc3362b0","src/new/linux_uapi/linux/netlink.rs":"1ee00c018a23cac0ade157d6c725b3e6f0b69b23b46b9690c5ab398c889527b7","src/new/linux_uapi/linux/pidfd.rs":"6500c63d1ccaf4b7e14a36f225fd309bce9de80a50b81bca14bc6bded6ebd04e","src/new/linux_uapi/mod.rs":"76cc081d46d008fe05fbb3d7f007fb62374d4efd9464916bbeb9b20c288c6416","src/new/mod.rs":"360bd97f6f1cc19143289c05c0f9e3b86029918f6d9ed78d09c752c81a53ae6c","src/new/musl/arch/generic/mod.rs":"106383ed35cb7526bbbb0e16ce3521ddb2a9e61fb533687922fc9b43cd654af7","src/new/musl/arch/mips/bits/socket.rs":"eb4dff2ab581eb893e0e6547ae7a7d86453caa069b61272a818256280a23ca71","src/new/musl/arch/mips/mod.rs":"cc6c0a24ef77b7c404887fb5b7a7fd15c2a79e2a3396531ea0058636cacb3018","src/new/musl/arch/mips64/bits/socket.rs":"eb4dff2ab581eb893e0e6547ae7a7d86453caa069b61272a818256280a23ca71","src/new/musl/arch/mips64/mod.rs":"40242447a56ed21249f0417f87a7ccd074a366f19eb1353d94e904f370e0f20f","src/new/musl/arch/mod.rs":"31a73fedfd8606e04352425fb4917181f2d7376f445cb61a5460bd682ce29ed4","src/new/musl/mod.rs":"6b2e092bdc907d2d236a5f6ad977d931e13e99425a3738a62769220697cc13de","src/new/musl/pthread.rs":"e76e8f71cba55b45e4aa954970f939142595b828fd7e83586fc9145299a3b1cb","src/new/musl/sched.rs":"6f0a5b3cefb42bb01feabf34ad92d4bdbe5743263d4cd7b754baf921da81a127","src/new/musl/sys/socket.rs":"ed9de77a5937115aada325ce3d68b31e24e7ac21691dc2cb52c4e4695aa1e1dd","src/new/musl/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/netbsd/mod.rs":"d7bddddf98b09188a6fe541feaaaecdee85eb55fee2aa3cf670f7e6afa4ac342","src/new/netbsd/net/if_.rs":"5083d0f9d84de47c8b6fae60c9bb74d7c0586a80ccb8d625e5e2b4876e7f9444","src/new/netbsd/sys/file.rs":"a30095d85a4f8af49494f9b38114415f5c30e1d96a8c882eb7efd83a1cb6816a","src/new/netbsd/sys/ipc.rs":"91af85c26b3dca2a0661c820871d176baf29c00d53540f4807b9b28f9f3dfae4","src/new/netbsd/sys/mod.rs":"2dfbbf18e7585b64acfeb2f39d0495b50c142caec680db64bb4655e182347262","src/new/netbsd/sys/socket.rs":"a926087991d4cd7ebe31a3f626b5a196047c20955e9e3c99f5abe50b899b1ef3","src/new/netbsd/sys/statvfs.rs":"875c73a2c18ef78c7363b2196282579b88beca2d42ed24bda4fe8e7800db9bd4","src/new/netbsd/sys/time.rs":"7d420d5384e13ca361aaf9a7fc9faafe29a55b216988c8252a891d2232407a0c","src/new/netbsd/sys/timex.rs":"1b476328c16ce06e316485bd9dc751f31e51f63d0c07e438bf3227e66da07768","src/new/netbsd/sys/types.rs":"a0ec3ac038f0026c285ebfd869a8ae062117b1ff29855cbcf570f7f55860c854","src/new/netbsd/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/netbsd/utmp_.rs":"cbd35108f4ad7fd3c4fc65b888ba7813a29e3ed4af7920604df8085345f81973","src/new/netbsd/utmpx_.rs":"27171f826d6d2bf962a1d973a3427477ae960ad5dccc947c481d45f17ae645f0","src/new/newlib/mod.rs":"046372b698393e20436c85b28dac6f02b5cc7d599d134637bbdaa89f2530d1a6","src/new/newlib/unistd.rs":"15e74fb2c22e2343faa06a7a61baca198d7867cd70f8a4ead6cdc1f4fae24905","src/new/nto/mod.rs":"2e80a71385d3344a5f0b95b8d509148b52ea1a253d87e8f27345956d119f7e58","src/new/nto/net/bpf.rs":"1ee0b92315fb2926085777a024cb92d7c1f71328eca1af09a3db0417f180d263","src/new/nto/net/if_.rs":"cdea96569bb155c7372da481dbf00630aadfadb68ef07bfe94d258a6c600b82b","src/new/nto/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/nuttx/mod.rs":"7dbbf039987cb5ca17d2a1a562dc967de1c31b970568f728339cd5b9c8e05e25","src/new/nuttx/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/openbsd/mod.rs":"7d86ff099ddfdc8c383f49a1f6fa9c1169810cbe0c1c57d0e86dc14cb1d87320","src/new/openbsd/sys/ipc.rs":"dd37c821138dbf723d637319ad0849e9ed0b2fce1d498e7e38627a8b0a8bf142","src/new/openbsd/sys/mod.rs":"a8fd8f1cb50bffb34db04d1040048e7c23043fea834c1915453b5d539034a845","src/new/openbsd/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/qurt/dlfcn.rs":"8bfec94f78786e2eee9d4306efbf9ad977cf2b3f0d930f8cc65186e922371a9a","src/new/qurt/errno.rs":"2456f7f7557e4716f8b65b1ef67281f795c70ad1d5515d6b001d26c07b943af3","src/new/qurt/fcntl.rs":"ce176e0c9fb6799004cfc9f1fe5eb20ab7226cf8d304bf8ae9cfe4e3f37ad680","src/new/qurt/limits.rs":"5c76ea0d9560d5da65fe7ecaba8e45766dd56b203523979359e5436062306359","src/new/qurt/mod.rs":"6325ef45b6ad49aaba335a52b85a90eceaf5b2d782c06210edefc1999c1fcf99","src/new/qurt/pthread.rs":"8e64d22f2c73ea8559bd7c4de5d21b077969638e1e12c979c1d77c1a2ea2aaf2","src/new/qurt/semaphore.rs":"eb995a92cdead52ee61c3f498c7e408430b8430cd6cb6be74b47e6728c6773ae","src/new/qurt/signal.rs":"3d9b0cdba135af86fed0846b710fef48edba54a034e14147c7e7785db282a335","src/new/qurt/stdio.rs":"280e1faa29c7e2749469a9f9c4b0fa4ba8e0cee42a6e53d9376be6b8e3b8c2ff","src/new/qurt/stdlib.rs":"7d2aad4837a4be08083be8153ecf3e95d8c70469598fbad25793c4cfed1939d8","src/new/qurt/sys/mman.rs":"c0b862bf262564507796b1cdda967c601d265e6a1f1abfe1a5b6d45aa0742df6","src/new/qurt/sys/mod.rs":"e8585c4d447d02d1f4b72183e3d8b8c0d57301ca7099534ce2086a7a3d384b7d","src/new/qurt/sys/sched.rs":"12dfe86d5bb8c96a8624b3a408df7bc1595dfc71ca870e9ea586f68a32bc67f6","src/new/qurt/sys/stat.rs":"bbd98cd523dfc7e34c163bc2d397be8ed08401fe24d85d617b581d31e5bdb708","src/new/qurt/sys/types.rs":"c23c7f02eaa198f04991f0dede9e55279effd49ec4a341fb13064f68c19f24ca","src/new/qurt/time.rs":"598e21d7205714c2f8c92e7dd1f6f7162d5552c453ac68aeb3d38346cff52e4a","src/new/qurt/unistd.rs":"49b2b023a1276f9de2e093f03609e8cb5b0cefa9f0ea96b5bf3009d159b0dcd8","src/new/redox/mod.rs":"aaeaa40c0bffde42973cd1809c1c845075f92fac95a074fe3d01d4fb02dc0992","src/new/relibc/mod.rs":"5c6955e052d8b7ead97179e356c369ffcc435e09fcca4def3e100568845e7296","src/new/relibc/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/rtems/mod.rs":"8ad621434ced0a9d1c0ed5d68514f59b0c8bd4c77fdad81eb09e671e7a42cf1d","src/new/sgx/mod.rs":"c500dc72eff5cbf99c9d7e0e3f1faa3c680bfd7f6ac0166fa1a35fd0d7e69f41","src/new/sgx/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/solaris/mod.rs":"ce8a152ebacb9e8e0d87829d166e3ead64222ead397371bd557e18eefdcafe3d","src/new/solaris/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/solid/mod.rs":"dc5c3c8a627972865ef0a968125e74b2f87636dc89dd2df0f7cea9a40d7c6beb","src/new/teeos/mod.rs":"1d69f212e2a848a32292eef9ad16a44a8d5cf80c7d43db5f445dbd1a49400e3b","src/new/trusty/mod.rs":"3f009fef70cbe062126c82f1f9274cba60b12d3766b825d66326666a1f240fc2","src/new/uclibc/mod.rs":"c3f988f3eb289ba6bc3b2535b82163a7ff160288b7494c156f0fba62143cf2d5","src/new/uclibc/pthread.rs":"ab235319003806c5f20aef5f851af472480e88ff13d2a5f730870efb95e7982e","src/new/uclibc/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/ucrt/mod.rs":"4fd3a973de4c4c6349e76320e09b13701ac284e7ae03c671054b1eeebb86215d","src/new/vita/mod.rs":"196d6ca5c9b1ccc602a6270c3cf0b0bdbd39246066d1a8385df03ba45b31d368","src/new/vxworks/mod.rs":"fa569763957eb87e7e1ce5fa07293116c66661ff0c21d277fda5b30c61451176","src/new/vxworks/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/wasi/mod.rs":"2a74140697bc528193214aad11edc632923bd0cf8350d24f6d600f849dd19e19","src/new/xous/mod.rs":"69016c5c153d9a14003b15558cab96b4691a927586c20ca493fc8d3bb65594eb","src/primitives.rs":"af323402fee13278461bcaec6a06a15dfca24a02d48b0570c88e2746288d7078","src/psp.rs":"081cf4e5127ba10ebb62a9a5f8f849dd92742693db443db429d446ee472b5d41","src/qurt/mod.rs":"5af8edfb34f5431586b7ae00b341daa4312737c1e39c16348b1fff1d1cb8c642","src/sgx.rs":"964d6af358f5c85f948275090e5a7854e0169c43b5c338070b6a4cd156ebc9e6","src/solid/aarch64.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/solid/arm.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/solid/mod.rs":"0b5a07cf7df8227fecc13ea5b7ddf0bb9520c8be44bfb8c15f9449715911dfa0","src/switch.rs":"5db5be2d9c235c00f74b25cceabdf2ce5ec9e1936f991815513e4edf5dec0d56","src/teeos/mod.rs":"ad18343da08ebb6c1fba77fb8efe9ce4551519bea617c1a000aa92f3e50b8565","src/trusty.rs":"cc90bf6b35a515021a3155aa3cc5fcab33457b8fbb2ac7259f0b694d33625fd8","src/types.rs":"5d7831b60664bbe955e00b9b8c75cf834e27295ad36f249f9aee534f533571bc","src/unix/aix/mod.rs":"89a4848c84c15b827021da8b92770d73505bb2edf3ca2429dbcfd007dec02721","src/unix/aix/powerpc64.rs":"724b02ca3afb2722930de172b3144a6bffb70792612a7fbe53553cac58bd2ccc","src/unix/bsd/apple/b32/mod.rs":"30a6d351260806e98666ee4ba64b783d1fe1d8b1d32c3ba7766bd5d638dab2dd","src/unix/bsd/apple/b64/aarch64/mod.rs":"bf2e39a80c8d768c2969197b80fafa50608ac0186b4f4aea53e7fa8bf40d2214","src/unix/bsd/apple/b64/mod.rs":"2619b6afd99e938157753c436e969aa1703b0404b913e456e469df5c6d69538f","src/unix/bsd/apple/b64/x86_64/mod.rs":"ff16a360cb478a4c2e912b9779a806d0e3439e4c5110e0325c82af5ee8429591","src/unix/bsd/apple/mod.rs":"953ac89b5a2ff86e6229fc774e63aea296d6c9710e99c7b95b9bfb5f3a09f154","src/unix/bsd/freebsdlike/dragonfly/mod.rs":"3ec640c35a0b5c0dfdf3fb981e6c3ac74e33781941ecca67390d076b167b5564","src/unix/bsd/freebsdlike/freebsd/aarch64.rs":"f13a68b825a58596b5d3339378b0812b778481a291aeacb41de74cb65ad66d3f","src/unix/bsd/freebsdlike/freebsd/arm.rs":"d627ed0bf17932ec0e3226944a4f9714805b27a953778b309d914545cf21b82a","src/unix/bsd/freebsdlike/freebsd/freebsd11/b32.rs":"316e70938d2b050fd67e5aaf0bcdd0a70d55f195b26ce4ad6055cdf05cea2e61","src/unix/bsd/freebsdlike/freebsd/freebsd11/b64.rs":"811c3f1aeb70dfd051abc9d3357e8eca9564c08b85d3ea6f81caacfa559e3060","src/unix/bsd/freebsdlike/freebsd/freebsd11/mod.rs":"87fdf9253ff788b9b66d0bd26b1e7e401e80d165bb4278833dfb80046ee06064","src/unix/bsd/freebsdlike/freebsd/freebsd12/mod.rs":"7153ee461d9c41e5b849603561dd118091af53a7c990d94a171a4e1412381ec8","src/unix/bsd/freebsdlike/freebsd/freebsd12/x86_64.rs":"64c4bd82eaf30a2681417f982fce28de7d1b0743bfaa14004692a56cee44be21","src/unix/bsd/freebsdlike/freebsd/freebsd13/mod.rs":"bee7fcbb5ff8d1a011b56afa025bcab87bff3e3f90d5d4e0bbbb5349f5bc6b5f","src/unix/bsd/freebsdlike/freebsd/freebsd13/x86_64.rs":"64c4bd82eaf30a2681417f982fce28de7d1b0743bfaa14004692a56cee44be21","src/unix/bsd/freebsdlike/freebsd/freebsd14/mod.rs":"4dbfaa01fce15bcaaab3d70f9f8da3b2e34a93cb2ca0d380b582926bbe43c2ce","src/unix/bsd/freebsdlike/freebsd/freebsd14/x86_64.rs":"d6e66809e109dc779efe5584b79d34fcd6fdba91973a415d64ae66f481f45940","src/unix/bsd/freebsdlike/freebsd/freebsd15/mod.rs":"55c0ce55e6c140d9c0c8b3fce76b23e975eff6c4d5eeb14c9581f8e51638e34a","src/unix/bsd/freebsdlike/freebsd/freebsd15/x86_64.rs":"d6e66809e109dc779efe5584b79d34fcd6fdba91973a415d64ae66f481f45940","src/unix/bsd/freebsdlike/freebsd/mod.rs":"ab3734f8aa742fe5c3b5e31c29f0a99e7522abe28b3f7560ccf01f7c64305ca8","src/unix/bsd/freebsdlike/freebsd/powerpc.rs":"af7a43826e3ca9e5e7c3d7c1b50defa482074fd9909de3ee2e52cd0109c1a950","src/unix/bsd/freebsdlike/freebsd/powerpc64.rs":"f7be922bddd7a4b7da863d6aba057aab2d27f500c7101596bbaaccf075133451","src/unix/bsd/freebsdlike/freebsd/riscv64.rs":"69242a001ab21b6e06b7442c37a89dbc5a67660c7c3cade1d46b65adf32a5669","src/unix/bsd/freebsdlike/freebsd/x86.rs":"5165242f0c82040898dbf711294ba45c5ab2635d39d0bbf9cc899b816415e2a4","src/unix/bsd/freebsdlike/freebsd/x86_64/mod.rs":"84044f397dbf13a1c517885c7b234efa2900d116324a4cca626d2f8df398d655","src/unix/bsd/freebsdlike/mod.rs":"c183016e0d192bd490958e4aeb5022dd203ca288abe8f1f502b2d1215b47e30c","src/unix/bsd/mod.rs":"a51588c418deaa58acecddc08c3578cd45659af7a6aec055447ec05143534b0d","src/unix/bsd/netbsdlike/mod.rs":"78f8873b9b91362253031ad6d3d6ee61640496b1c24b75b3ab9186e1eb35a545","src/unix/bsd/netbsdlike/netbsd/aarch64.rs":"ba2425edbf025f13ab3c3534d1671d310392df3a7d237539817d9cfa675971c8","src/unix/bsd/netbsdlike/netbsd/arm.rs":"8dd57613695dec1b2104ec35839f0b9b6d234c6cc80365e9fef9ca977c1865a0","src/unix/bsd/netbsdlike/netbsd/mips.rs":"20cdd8d1427c986ecc3fcf7960d337917a13cfd8386dd2d54f8693a23d60892f","src/unix/bsd/netbsdlike/netbsd/mod.rs":"12d1e288aa3c351000721502e3cbd7115d7d5584ffc5c37f5c00e9c56f657385","src/unix/bsd/netbsdlike/netbsd/powerpc.rs":"c19c4edbc73b5a97b51e3e2ad39b9fee02ad15e80c70ceb3a1abfe977e5c0ead","src/unix/bsd/netbsdlike/netbsd/riscv64.rs":"f446c996f00e4d15fd25461a30c767c05d083df9e047b0da497ce7c545acfa96","src/unix/bsd/netbsdlike/netbsd/sparc64.rs":"d50816e830225779ac9e9a55a7e3e097882153d72987061d76a96ee736c8af9c","src/unix/bsd/netbsdlike/netbsd/x86.rs":"3006b6a086c0241f5383ca101e7b9357368d713f9c38400633491656d110798e","src/unix/bsd/netbsdlike/netbsd/x86_64.rs":"13dd36a0db740930155b5f28fedfac606c7291c0276bbf2c2b3fe03a4dbd2a51","src/unix/bsd/netbsdlike/openbsd/aarch64.rs":"13c91b304dfb5c3c26777863827c7b3707fe245fcf50da32caab641aff998c63","src/unix/bsd/netbsdlike/openbsd/arm.rs":"f064d935f416ca9f7e5e767b9b46da2250c997d667c0c7f4b4c7dfe02d0258c3","src/unix/bsd/netbsdlike/openbsd/mips64.rs":"bee7664d88f8451ae22552fc0721b6b6a6dee2493cc42bcb9829c1e47e4b05f5","src/unix/bsd/netbsdlike/openbsd/mod.rs":"9943458aaf3a35ce0d3b259b0b666d29347b04cb1a1722e6450073e71f894398","src/unix/bsd/netbsdlike/openbsd/powerpc.rs":"f064d935f416ca9f7e5e767b9b46da2250c997d667c0c7f4b4c7dfe02d0258c3","src/unix/bsd/netbsdlike/openbsd/powerpc64.rs":"1f62a42e2970c42de9e3492fbf3cd5b45410889f033743579266342d1a9e2a00","src/unix/bsd/netbsdlike/openbsd/riscv64.rs":"b2cf3778bfb51d1c0277f0e92963a04f734be3e29879c6c09a25bad2d9b5ab6a","src/unix/bsd/netbsdlike/openbsd/sparc64.rs":"8d4c5a4cae63e09e1c156164ddc82e0fc77926841d4d4e419dd2e7a7b7145f58","src/unix/bsd/netbsdlike/openbsd/x86.rs":"e6da2fdff7706fd3eac147d3aaf16afdd8542f231f502660d1d89c79b5eca21b","src/unix/bsd/netbsdlike/openbsd/x86_64.rs":"bc7ed75ce66059aafa7a86986aefff267b2c951e47558453fe13ce1bdb48dc0b","src/unix/cygwin/mod.rs":"0da02791aefa8c45531abbea9a9f55b3c3d0d7e8d9af0c250d969ce22b48ee95","src/unix/haiku/b32.rs":"c3f8678ceee65a3094d8133b0d1a94470860e0b1867977f0569c52c5a20e039f","src/unix/haiku/b64.rs":"f97ce9225f4710893dab03ab3e13bc62152cc84f90c597ec88f6dc1f4c27d242","src/unix/haiku/bsd.rs":"4d9af31fdac2561ee5f942dca97dd2f48139ca74660d40b854b307fa5679d1c8","src/unix/haiku/mod.rs":"5a619d44c8e1205ada8f4bf67cf94b8f133949d15d505cba5dceb65557eaa736","src/unix/haiku/native.rs":"85836b1063ddc01c176c61cff8c006cf6f5dc4b1f465f41b5c330aa372a44ab6","src/unix/haiku/x86_64.rs":"def40c16609b5d62c3cdbba6a38340720a96b326ad98d53838554e4b6878d2ee","src/unix/hurd/b32.rs":"501f426f7aeb60acf4119064100dd94bbdfebff2cec785428708059d853dc123","src/unix/hurd/b64.rs":"b9b2082e721a5ec89ba55fd5a16bbffcc8a05ca7cef6dbfbd78aff0806cb931f","src/unix/hurd/mod.rs":"287a2fdd2065fc8a13c4932b3f241d1453607e74829b6d2012a44b6f5f36f654","src/unix/linux_like/android/b32/arm.rs":"5c6ad12746052b86846f9d7c3bd484d15bd3e2113785a19220186ab2a9bb31ba","src/unix/linux_like/android/b32/mod.rs":"04edc73374218c6b854929cae4bc5171ad5066f3636f87235640ec20a49f1559","src/unix/linux_like/android/b32/x86/mod.rs":"72cd0fb5a067170e7409359b6c0114f5472e313060b9642e2e48dc9fabfd4614","src/unix/linux_like/android/b64/aarch64/mod.rs":"66def5f0af9594af50535eba7501bce89620010a7d7aa769ef401235b03efa88","src/unix/linux_like/android/b64/mod.rs":"5afe4dc379ae30ddab9295e5ab8ac89f39f5129f519612d7528bfbfeb0a1d934","src/unix/linux_like/android/b64/riscv64/mod.rs":"47c97eeb221c48bd08c2fc2ddf5f9f4d20c185df76681fe14e3a0950fb37ecbf","src/unix/linux_like/android/b64/x86_64/mod.rs":"4d6eb98fd17e821d0e05755ccb3f4f2b6e37bfbab533894ed444138b750e6b08","src/unix/linux_like/android/mod.rs":"9f0cce22a507e263c4a9bf3501fbd85e14b2e7e9a71c6fe1e046ee051470a1eb","src/unix/linux_like/emscripten/lfs64.rs":"486f987bc39653a48e6538ab0e8263cd2c1bd3d4732a2c573f89f7a037936c38","src/unix/linux_like/emscripten/mod.rs":"538dbcd492324f0254c1ed1f66ad8e7bc9e367cdd70a004cb0183b6fb368e64a","src/unix/linux_like/l4re/mod.rs":"47c07dc3c5e368ec9a64b33af9a314f51e5ed6c7fc6456bfba919d661a812275","src/unix/linux_like/l4re/uclibc/aarch64/mod.rs":"3111d03e5f43dfe1639fe7189903044cb980591c0580a62e8b511de4943201e2","src/unix/linux_like/l4re/uclibc/mod.rs":"3678301a89b80f638ea90b4ec2e3d225bb186eaba3d07f324969e46b81a1955a","src/unix/linux_like/l4re/uclibc/x86_64/mod.rs":"89bb7c67398c836c7f17727338c6032e7667307f02ef0f5d0121031fea1aa358","src/unix/linux_like/linux/arch/generic/mod.rs":"f531e877d712eb30cddf97c76273b7ba7fef19cf8eaafd60ca9ac26019b49adf","src/unix/linux_like/linux/arch/mips/mod.rs":"dcc1d2e85dd2087f61635c753d1781ec70dcba5c95aee285255f09216ea1e0f8","src/unix/linux_like/linux/arch/mod.rs":"8bc5898b03760a95dd4f124ac76ad92e5ae36b2d0644203d752ef2b37e487c3a","src/unix/linux_like/linux/arch/powerpc/mod.rs":"77b286fce4ac755ec840b9c70824a648314b3a5ed2a385d291138589647fdbaf","src/unix/linux_like/linux/arch/sparc/mod.rs":"46f3bd08ec01147af43c93a22c21956af038fa5f6e56643f8e39ca30721bf8cd","src/unix/linux_like/linux/gnu/b32/arm/mod.rs":"60d5c7667d81db0ad9faf65edc79420b2100cab27699e03de4d415de931e9f58","src/unix/linux_like/linux/gnu/b32/csky/mod.rs":"627e61997c33fc12fca9e337d248d8531ef0751f21f70110b65631a0e481b66d","src/unix/linux_like/linux/gnu/b32/m68k/mod.rs":"2ea8f649fc9f01829de439ffe0fdbf9566602ed6ec0088128167af1080c3a1b2","src/unix/linux_like/linux/gnu/b32/mips/mod.rs":"8b3254b47401cde6118f9eea7e98319af8174d99feac451949e673a28ed4ff6e","src/unix/linux_like/linux/gnu/b32/mod.rs":"5ff89d834a09550c9393965bfd2b74e0f9ab6059bc76f2a827faed631afe10a7","src/unix/linux_like/linux/gnu/b32/powerpc.rs":"585983c6617a590ee0ac5217280d03642efcf721bd80fdabd6b9477031574fee","src/unix/linux_like/linux/gnu/b32/riscv32/mod.rs":"a5e6c931ca8da568626233f2aa5ee0dd0b8e4e1e8905d52ab9dd0ea618376c2f","src/unix/linux_like/linux/gnu/b32/sparc/mod.rs":"0ddd77054079d7f7ee7aede95552e6494f67fc3db332ec1f5f83a9d09e1a9710","src/unix/linux_like/linux/gnu/b32/x86/mod.rs":"e370a80bfdec000347c384f080b30c6f537dc51e17e715c2dd8a360e6a1407f3","src/unix/linux_like/linux/gnu/b64/aarch64/ilp32.rs":"638b2d717dcf5b59a0058c3dabab43edd84de9d1d7da6e16ad0c58e863000417","src/unix/linux_like/linux/gnu/b64/aarch64/lp64.rs":"28c11e70467b2f00735d3a04c369e96e04fd44d0587ee33359f38328b0677ee6","src/unix/linux_like/linux/gnu/b64/aarch64/mod.rs":"7948baae6e8dfbbba78caaea27a2ef059dbe5f0a2b533bd89cc5d6c5dd7f7f1d","src/unix/linux_like/linux/gnu/b64/loongarch64/mod.rs":"242cd513eca13d14fbcc326369bb54006782260a558f0c2367102471d4081631","src/unix/linux_like/linux/gnu/b64/mips64/mod.rs":"007809bca7493eab4ac99a30b4495f73b544d7c882b81b5ca719c1b70761e0bf","src/unix/linux_like/linux/gnu/b64/mod.rs":"64d4182c10180692d381d8eea3d9ce8a6d47289b9c1218070241c5a445d9f1a0","src/unix/linux_like/linux/gnu/b64/powerpc64/mod.rs":"4dafacc390ff02ae3c34591a1605e1ac380c13338928a7e2e1ce748fc1e46323","src/unix/linux_like/linux/gnu/b64/riscv64/mod.rs":"f1a54e0bc0d791ad642e07df5f8d4eda1b4d497059c0e5d20b52e094ed635b19","src/unix/linux_like/linux/gnu/b64/s390x.rs":"741d95cf29b65a9fa5c7316b888f8c79f944376b308c7929eb21054b5a16a83d","src/unix/linux_like/linux/gnu/b64/sparc64/mod.rs":"adc09bb20980ee2d5892a2f68949505bed2fa00954b837aa0a15eeb04edd53cb","src/unix/linux_like/linux/gnu/b64/x86_64/mod.rs":"d72ae5556347be715e3fdfc084e7e95a184504f1575230f163ab7a72a405cb24","src/unix/linux_like/linux/gnu/b64/x86_64/not_x32.rs":"07240332eaf44996d86e37b12d71b519b499c9c9b57898441c58ac2e8c0cb6f7","src/unix/linux_like/linux/gnu/b64/x86_64/x32.rs":"914898b781dfe6b2f755730d6000223d1beea177731e180ccbfdd84a0b8b3bd9","src/unix/linux_like/linux/gnu/mod.rs":"0ff72f74b015bc9ef4d1732fc5594945fdb5ca388e4aa0be71260fecb90e6f1f","src/unix/linux_like/linux/mod.rs":"9e31fda0ea90602bc8b6cb32a8247f8a78b9c1323c81774c73ab76119610127c","src/unix/linux_like/linux/musl/b32/arm/mod.rs":"7dc4b9a4d723d6868a84e81dbd5953b234c4540db3edd5a4a7ea0e154b101d91","src/unix/linux_like/linux/musl/b32/hexagon.rs":"17063ab52334500ec67d9f1f706bfcd493092d7a7f28f3b5558915cce756885e","src/unix/linux_like/linux/musl/b32/mips/mod.rs":"64f6b834d3d98db1c2d95d40371c644f71170d7710fcdd933f1ff51c3fbe2c70","src/unix/linux_like/linux/musl/b32/mod.rs":"6630c3ae8e27eb2bae6309bef4c96be9a21ebb877ce281b881a73589b7264a7a","src/unix/linux_like/linux/musl/b32/powerpc.rs":"a946612120ed9700ff1e4e729b0f8107a40f9ed7f5b320357552d5475441042d","src/unix/linux_like/linux/musl/b32/riscv32/mod.rs":"df3e3bbd2f69420b6de3a1d9aa242402f0bf26c77c573b2debea53af964f07d7","src/unix/linux_like/linux/musl/b32/x86/mod.rs":"83e340712e8acd89cefcb5eef0e826da79f47a7a42784699df90604c4e9a8712","src/unix/linux_like/linux/musl/b64/aarch64/mod.rs":"b165f81469b144a9c6d60486c3a8b4770fce5f4ad67958aad3c0b0ee85fde117","src/unix/linux_like/linux/musl/b64/loongarch64/mod.rs":"9885dd43e46d3f34156b2871c3c08a88775efecb9eab0b4ed9bf396c1cb509d3","src/unix/linux_like/linux/musl/b64/mips64.rs":"24dd0c412ae02b84552a1803b4369dcc0fa3b989f9b6a406f404690c757fbc8b","src/unix/linux_like/linux/musl/b64/mod.rs":"1ce1eee49b1c7c5c02fe04b1539a0316becf0295763e3e18b1088895ed937373","src/unix/linux_like/linux/musl/b64/powerpc64.rs":"5f2a8d0a5b6a4d044c75ba433b4f69e27d475cbd5ba81e659e756757b5c36111","src/unix/linux_like/linux/musl/b64/riscv64/mod.rs":"d5298d224be38474d05c53ffda6384fdb24771774e5c19f84898c23e4603459c","src/unix/linux_like/linux/musl/b64/s390x.rs":"77079b262e2fda7b569c19236f264f460c157051bac349928306a07c4cb61195","src/unix/linux_like/linux/musl/b64/wasm32/mod.rs":"bd65c06c4e422cb859be803e0dc7404513c13e9d9c3c672f5462f0bbd3dc8ef2","src/unix/linux_like/linux/musl/b64/wasm32/wali.rs":"006149b7af0145dc40123fc7991d853c7f2c5c77bbc9c8a44c276be0d99a1343","src/unix/linux_like/linux/musl/b64/x86_64/mod.rs":"4535e44cfc85c66253c4cda347366d54c3ffa8e0b47b4b89cd87d96fb4005b1e","src/unix/linux_like/linux/musl/lfs64.rs":"61b1eae698d93dbd7c665e920ef685fd6eea0c4a2d96acc1d5f111d87b88ef38","src/unix/linux_like/linux/musl/mod.rs":"56c79797cafb7949f639f84a5a34676b34d776c843f0ad49ddca0684092580f4","src/unix/linux_like/linux/uclibc/arm/mod.rs":"9eb48a19e49cd2a989f6daae9552dd477d645bc2540a8bae5ac71894565375b0","src/unix/linux_like/linux/uclibc/mips/mips32/mod.rs":"0b3c063ff6510c68577f8789ff87c1b630dc1c219611070fa91aa2b5b5ec595f","src/unix/linux_like/linux/uclibc/mips/mips64/mod.rs":"3a3b90f896a07f5d17e3440bbff7b3153aed564732ef2e468167c7a425922ea8","src/unix/linux_like/linux/uclibc/mips/mod.rs":"e552f579a8dc9e690891113aa6360607ad962bd84cbb60c370b5c5f7c7d1d8c0","src/unix/linux_like/linux/uclibc/mod.rs":"413b7cc1cd88580162836dc8b1cf1fa569b3431248c13e030a1f50519ddaa875","src/unix/linux_like/linux/uclibc/x86_64/mod.rs":"53937263439095a4af0e5d583eb6cc621dd07a41aaa154b2f4cd1ec799dd7187","src/unix/linux_like/linux_l4re_shared.rs":"c21e27065fb45df318fe76366f8250cf1e6bb0a15394f4d6bc69686d774a780c","src/unix/linux_like/mod.rs":"399dc67be0898f73946145b26e12bf23beeb9048fb86b69affdc56be5622bf19","src/unix/mod.rs":"32699be951ec02142e7de59f34ae0f6162620576a4bd88ae372d39d2027421ea","src/unix/newlib/aarch64/mod.rs":"d72d067a433bf24ee6b6255c4d04ea7c966518b8d064560c593f1ab23c025962","src/unix/newlib/arm/mod.rs":"95b6e4b3cd1eeb0386d4867e9e4c3438305aa3e8ae75697e06720aa06540a666","src/unix/newlib/espidf/mod.rs":"cbaf10ccdb429719003cac3f3cd4aa0aa63a12a383afc5bd88a4ab3abaef9e2e","src/unix/newlib/generic.rs":"c435a955d72878a71ea0719a75a4579818da6a2e01635f9fe1073d9a0d67352f","src/unix/newlib/horizon/mod.rs":"7c4680766b9986a379fc354a183f4072c1c70d643307edd1a0ca8e0f2c34d5a8","src/unix/newlib/mod.rs":"1aac15b55a852732174bcfee52f3b1452c3e491461a87b70a7ee4c97a458785f","src/unix/newlib/powerpc/mod.rs":"4d6dca09ea5dc000cbd39fb939a9b1a743d819931dfca3c896659e919a07a7da","src/unix/newlib/rtems/mod.rs":"7d06863f1942a90c9a6dd412637b93c18df00e7397cb1289176b9a2a19004b7c","src/unix/newlib/vita/mod.rs":"2f9bf66b40c2aa611033faf3ade5510dc9789af7302571fade40a1715398f06c","src/unix/nto/aarch64.rs":"73ad54ebca13454a75c7b0815e853175070a8ac2eefa338012a03e8b59f01e0c","src/unix/nto/mod.rs":"ddcb98afedf905c0af8819af1591a0c7df629a187ceb35108aeaa467c4879746","src/unix/nto/neutrino.rs":"bb9d24ccee3b9e53af6d028f04ecb646e216ac1a9e2b2ade54bc06135ce3ac59","src/unix/nto/x86_64.rs":"c2e46c6ab4c02c8f773298ec1e90eeccac43c09fa111ac9ae63408abc6eff584","src/unix/nuttx/mod.rs":"4083559d825d2af9ade2c3f14e29802315c9a79091ce8d480c438c3242c7ba80","src/unix/redox/mod.rs":"40dbff61515612a7275ca1454a912ddc08f1b6f73bc084f4b563213bd46fde94","src/unix/solarish/compat.rs":"3d120a056208c03215cfbe3eef1584105160d133c0aa4557bb38018c177640b0","src/unix/solarish/illumos.rs":"74fa022e2799fed83ddeefecfdf559fff63e315ba36304845d65c9721b3ce3b7","src/unix/solarish/mod.rs":"03d1a75ecb758dde3c9ae3c3300c6d241e5e2481329724e32cfca6ffd5882cb3","src/unix/solarish/solaris.rs":"2be39ce5f464823359e7e2e4bae94c9acac9245042570df11a0ed75d49f8acad","src/unix/solarish/x86.rs":"44261c1f1b300dac9fa0dab93ec85d0c3b3c48b15bc4515b9820c9421cff7427","src/unix/solarish/x86_64.rs":"eec1602998dbd3b3aeb2d9a5bd66fc53a6fbbcd7967ed0bb2dd61a8c176023e4","src/unix/solarish/x86_common.rs":"4ae02d88622f7f080f5e8cd328f13187edbc5e124fb3e05e4cf212597f6cce48","src/vxworks/aarch64.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/vxworks/arm.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/vxworks/mod.rs":"e687423e39c07ca03d735f464537f40cc6d45407eaf6bbcfcead4a26a2e68881","src/vxworks/powerpc.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/vxworks/powerpc64.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/vxworks/riscv32.rs":"b1f933205800f0da00f975d53b18fe0035e075cc4613acf110a09a277dc3302a","src/vxworks/riscv64.rs":"b1f933205800f0da00f975d53b18fe0035e075cc4613acf110a09a277dc3302a","src/vxworks/x86.rs":"b1f933205800f0da00f975d53b18fe0035e075cc4613acf110a09a277dc3302a","src/vxworks/x86_64.rs":"b1f933205800f0da00f975d53b18fe0035e075cc4613acf110a09a277dc3302a","src/wasi/mod.rs":"bf128fa1c53277185b638eb953c5b8d503ae7a182780470b40b06f7c29331f38","src/wasi/p2.rs":"feecc0485eabd2c32bc5d800df6ad1b9b4d282741342fb08792f2635204e1e08","src/windows/gnu/mod.rs":"6422acc5c5a82122c11efb84882778e30888c0693c0993fbf7f3baa59e4cbbb5","src/windows/mod.rs":"01da11840df8118ad12f40dc38e921b4ecfd1045badc700d456f549789df24d4","src/windows/msvc/mod.rs":"40410b26b606d1b59b0742b2632f3cd0a28a5429f784f9693fae0a78c15b3889","src/xous.rs":"1a83621c40248ad4d0c08e1fd4c1107d5efcbc2f4f0169538b7b4a885abedbfa","tests/const_fn.rs":"8ac3171d7bced3576a4e93f48570b3e00c553d7510ab85a7473ae3b716a812dc"},"package":"52ff2c0fe9bc6cb6b14a0592c2ff4fa9ceb83eea9db979b0487cd054946a2b8f"}
+\ No newline at end of file
++{"$comment": "This file only protects against accidental modifications. It is not a security mechanism and does not protect against malicious changes.", "files": {}, "package": "52ff2c0fe9bc6cb6b14a0592c2ff4fa9ceb83eea9db979b0487cd054946a2b8f"}
+\ No newline at end of file
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/new/aros/mod.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/new/aros/mod.rs
+--- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/new/aros/mod.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/new/aros/mod.rs	2026-09-14 12:00:43.526942826 +0000
+@@ -0,0 +1,5 @@
++//! AROS C library (posixc.library / stdc.library).
++// See src/unix/aros for the bindings; this module only carries the
++// header-organised parts of the new layout.
++
++pub(crate) mod unistd;
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/new/aros/unistd.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/new/aros/unistd.rs
+--- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/new/aros/unistd.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/new/aros/unistd.rs	2026-09-14 12:00:43.529731125 +0000
+@@ -0,0 +1,7 @@
++//! Header: `unistd.h`
++
++pub use crate::new::common::posix::unistd::{
++    STDERR_FILENO,
++    STDIN_FILENO,
++    STDOUT_FILENO,
++};
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/new/mod.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/new/mod.rs
+--- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/new/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/new/mod.rs	2026-09-14 12:00:43.539342525 +0000
+@@ -72,6 +72,9 @@
+     } else if #[cfg(target_os = "haiku")] {
+         mod haiku;
+         pub(crate) use haiku::*;
++    } else if #[cfg(target_os = "aros")] {
++        mod aros;
++        pub(crate) use aros::*;
+     } else if #[cfg(target_os = "hermit")] {
+         mod hermit_abi;
+         // pub(crate) use hermit_abi::*;
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs
+--- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs	2026-09-14 12:04:46.271565016 +0000
+@@ -0,0 +1,1064 @@
++//! Bindings for the AROS C library (posixc.library / stdc.library) and
++//! pthread.library, as shipped in the AROS SDK.
++//!
++//! Type widths and structure layouts follow the SDK headers
++//! (`aros/types/*.h`, `aros/posixc/*.h`, `pthread.h`). They were verified
++//! against the x86_64 and riscv64 cross compilers; the 32-bit variants
++//! follow the same headers through `__WORDSIZE`.
++
++use crate::prelude::*;
++
++pub type blkcnt_t = c_long;
++pub type blksize_t = c_long;
++pub type clock_t = c_ulong;
++pub type clockid_t = i32;
++pub type dev_t = usize;
++pub type fsblkcnt_t = c_ulong;
++pub type fsfilcnt_t = c_ulong;
++pub type gid_t = u32;
++pub type ino_t = i32;
++pub type mode_t = u16;
++pub type nfds_t = c_uint;
++pub type nlink_t = u16;
++pub type off_t = c_long;
++pub type rlim_t = c_ulong;
++pub type sa_family_t = u8;
++pub type socklen_t = u32;
++pub type speed_t = c_uint;
++pub type suseconds_t = i32;
++pub type tcflag_t = c_uint;
++pub type time_t = i32;
++pub type useconds_t = u32;
++pub type wchar_t = u32;
++pub type id_t = c_int;
++pub type key_t = c_int;
++pub type timer_t = *mut c_void;
++
++pub type pthread_t = c_uint;
++pub type pthread_key_t = c_uint;
++pub type pthread_spinlock_t = c_int;
++
++s! {
++    pub struct stat {
++        pub st_dev: dev_t,
++        pub st_ino: ino_t,
++        pub st_mode: mode_t,
++        pub st_nlink: nlink_t,
++        pub st_uid: crate::uid_t,
++        pub st_gid: gid_t,
++        pub st_rdev: dev_t,
++        pub st_size: off_t,
++        pub st_atime: time_t,
++        __st_atime_pad: [u8; 4],
++        pub st_atime_nsec: c_long,
++        pub st_mtime: time_t,
++        __st_mtime_pad: [u8; 4],
++        pub st_mtime_nsec: c_long,
++        pub st_ctime: time_t,
++        __st_ctime_pad: [u8; 4],
++        pub st_ctime_nsec: c_long,
++        pub st_blksize: blksize_t,
++        pub st_blocks: blkcnt_t,
++        pub st_flags: c_ulong,
++        pub st_gen: c_ulong,
++    }
++
++    pub struct dirent {
++        pub d_ino: ino_t,
++        pub d_off: off_t,
++        pub d_reclen: c_ushort,
++        pub d_type: c_uchar,
++        pub d_name: [c_char; 1025],
++    }
++
++    pub struct sigset_t {
++        __bits: [u32; 4],
++    }
++
++    pub struct sigaction {
++        pub sa_sigaction: crate::sighandler_t,
++        pub sa_mask: sigset_t,
++        pub sa_flags: c_int,
++    }
++
++    pub struct stack_t {
++        pub ss_sp: *mut c_void,
++        pub ss_size: size_t,
++        pub ss_flags: c_int,
++    }
++
++    pub struct siginfo_t {
++        pub si_signo: c_int,
++        pub si_code: c_int,
++        pub si_errno: c_int,
++        pub si_pid: crate::pid_t,
++        pub si_uid: crate::uid_t,
++        pub si_addr: *mut c_void,
++        pub si_status: c_int,
++        pub si_band: c_long,
++        pub si_value: crate::sigval,
++    }
++
++    pub struct fd_set {
++        pub fds_bits: [i32; 2],
++    }
++
++    pub struct passwd {
++        pub pw_name: *mut c_char,
++        pub pw_uid: crate::uid_t,
++        pub pw_gid: gid_t,
++        pub pw_dir: *mut c_char,
++        pub pw_shell: *mut c_char,
++        pub pw_passwd: *mut c_char,
++        pub pw_gecos: *mut c_char,
++    }
++
++    pub struct tm {
++        pub tm_sec: c_int,
++        pub tm_min: c_int,
++        pub tm_hour: c_int,
++        pub tm_mday: c_int,
++        pub tm_mon: c_int,
++        pub tm_year: c_int,
++        pub tm_wday: c_int,
++        pub tm_yday: c_int,
++        pub tm_isdst: c_int,
++        pub tm_gmtoff: c_long,
++        pub tm_zone: *const c_char,
++    }
++
++    pub struct flock {
++        pub l_type: c_short,
++        pub l_whence: c_short,
++        pub l_start: off_t,
++        pub l_len: off_t,
++        pub l_pid: crate::pid_t,
++    }
++
++    pub struct termios {
++        pub c_iflag: tcflag_t,
++        pub c_oflag: tcflag_t,
++        pub c_cflag: tcflag_t,
++        pub c_lflag: tcflag_t,
++        pub c_cc: [crate::cc_t; NCCS as usize],
++        __internal: [c_char; 64],
++    }
++
++    pub struct lconv {
++        pub decimal_point: *mut c_char,
++        pub thousands_sep: *mut c_char,
++        pub grouping: *mut c_char,
++        pub int_curr_symbol: *mut c_char,
++        pub currency_symbol: *mut c_char,
++        pub mon_decimal_point: *mut c_char,
++        pub mon_thousands_sep: *mut c_char,
++        pub mon_grouping: *mut c_char,
++        pub positive_sign: *mut c_char,
++        pub negative_sign: *mut c_char,
++        pub int_frac_digits: c_char,
++        pub frac_digits: c_char,
++        pub p_cs_precedes: c_char,
++        pub p_sep_by_space: c_char,
++        pub n_cs_precedes: c_char,
++        pub n_sep_by_space: c_char,
++        pub p_sign_posn: c_char,
++        pub n_sign_posn: c_char,
++        pub int_p_cs_precedes: c_char,
++        pub int_p_sep_by_space: c_char,
++        pub int_n_cs_precedes: c_char,
++        pub int_n_sep_by_space: c_char,
++        pub int_p_sign_posn: c_char,
++        pub int_n_sign_posn: c_char,
++    }
++
++    pub struct statvfs {
++        pub f_bsize: c_ulong,
++        pub f_frsize: c_ulong,
++        pub f_blocks: fsblkcnt_t,
++        pub f_bfree: fsblkcnt_t,
++        pub f_bavail: fsblkcnt_t,
++        pub f_files: fsfilcnt_t,
++        pub f_ffree: fsfilcnt_t,
++        pub f_favail: fsfilcnt_t,
++        pub f_fsid: c_ulong,
++        pub f_flag: c_ulong,
++        pub f_namemax: c_ulong,
++    }
++
++    pub struct sched_param {
++        pub sched_priority: c_int,
++    }
++
++    pub struct pthread_attr_t {
++        pub stackaddr: *mut c_void,
++        pub stacksize: size_t,
++        pub detachstate: c_int,
++        pub param: sched_param,
++        pub inheritsched: c_int,
++        pub contentionscope: c_int,
++    }
++
++    pub struct pthread_mutexattr_t {
++        pub pshared: c_int,
++        pub kind: c_int,
++    }
++
++    pub struct pthread_condattr_t {
++        pub pshared: c_int,
++    }
++
++    pub struct pthread_rwlockattr_t {
++        pub pshared: c_int,
++    }
++
++    pub struct pthread_once_t {
++        pub done: c_int,
++        pub started: c_int,
++        pub lock: c_int,
++    }
++
++    // The pthread.library synchronisation objects embed exec.library
++    // structures (SignalSemaphore, MinList) whose size depends on the CPU
++    // and on the kernel's spinlock isolation. They are only ever handled
++    // through pointers, so they are modelled as opaque, 8-byte aligned
++    // blocks that are at least as large as any AROS build defines them
++    // (x86_64 SMP: mutex 248, cond 264, sem 552 bytes).
++    pub struct pthread_mutex_t {
++        __private: [u64; 32],
++    }
++
++    pub struct pthread_cond_t {
++        __private: [u64; 40],
++    }
++
++    pub struct pthread_rwlock_t {
++        __private: [u64; 32],
++    }
++
++    pub struct sem_t {
++        __private: [u64; 72],
++    }
++
++    // Networking is not provided by the C library on AROS (bsdsocket.library
++    // is reached through its library base); these definitions only satisfy
++    // the shared unix declarations.
++    pub struct sockaddr {
++        pub sa_len: u8,
++        pub sa_family: sa_family_t,
++        pub sa_data: [c_char; 14],
++    }
++
++    pub struct sockaddr_in {
++        pub sin_len: u8,
++        pub sin_family: sa_family_t,
++        pub sin_port: crate::in_port_t,
++        pub sin_addr: crate::in_addr,
++        pub sin_zero: [c_char; 8],
++    }
++
++    pub struct sockaddr_in6 {
++        pub sin6_len: u8,
++        pub sin6_family: sa_family_t,
++        pub sin6_port: crate::in_port_t,
++        pub sin6_flowinfo: u32,
++        pub sin6_addr: crate::in6_addr,
++        pub sin6_scope_id: u32,
++    }
++
++    pub struct sockaddr_un {
++        pub sun_len: u8,
++        pub sun_family: sa_family_t,
++        pub sun_path: [c_char; 104],
++    }
++
++    pub struct sockaddr_storage {
++        pub ss_len: u8,
++        pub ss_family: sa_family_t,
++        __ss_pad1: [u8; 6],
++        __ss_align: i64,
++        __ss_pad2: [u8; 112],
++    }
++
++    pub struct in_addr {
++        pub s_addr: crate::in_addr_t,
++    }
++
++    pub struct ip_mreq {
++        pub imr_multiaddr: in_addr,
++        pub imr_interface: in_addr,
++    }
++
++    pub struct addrinfo {
++        pub ai_flags: c_int,
++        pub ai_family: c_int,
++        pub ai_socktype: c_int,
++        pub ai_protocol: c_int,
++        pub ai_addrlen: socklen_t,
++        pub ai_canonname: *mut c_char,
++        pub ai_addr: *mut sockaddr,
++        pub ai_next: *mut addrinfo,
++    }
++
++    pub struct msghdr {
++        pub msg_name: *mut c_void,
++        pub msg_namelen: socklen_t,
++        pub msg_iov: *mut crate::iovec,
++        pub msg_iovlen: c_int,
++        pub msg_control: *mut c_void,
++        pub msg_controllen: socklen_t,
++        pub msg_flags: c_int,
++    }
++
++    pub struct cmsghdr {
++        pub cmsg_len: socklen_t,
++        pub cmsg_level: c_int,
++        pub cmsg_type: c_int,
++    }
++
++    pub struct Dl_info {
++        pub dli_fname: *const c_char,
++        pub dli_fbase: *mut c_void,
++        pub dli_sname: *const c_char,
++        pub dli_saddr: *mut c_void,
++    }
++
++    pub struct utsname {
++        pub sysname: [c_char; 65],
++        pub nodename: [c_char; 65],
++        pub release: [c_char; 65],
++        pub version: [c_char; 65],
++        pub machine: [c_char; 65],
++    }
++}
++
++pub const PTHREAD_MUTEX_INITIALIZER: pthread_mutex_t = pthread_mutex_t { __private: [0; 32] };
++pub const PTHREAD_COND_INITIALIZER: pthread_cond_t = pthread_cond_t { __private: [0; 40] };
++pub const PTHREAD_RWLOCK_INITIALIZER: pthread_rwlock_t = pthread_rwlock_t { __private: [0; 32] };
++pub const PTHREAD_ONCE_INIT: pthread_once_t = pthread_once_t { done: 0, started: -1, lock: 0 };
++
++pub const RTLD_LAZY: c_int = 0x1;
++pub const RTLD_NOW: c_int = 0x2;
++pub const RTLD_GLOBAL: c_int = 0x100;
++pub const RTLD_LOCAL: c_int = 0;
++pub const RTLD_DEFAULT: *mut c_void = 0 as *mut c_void;
++
++pub const AF_UNSPEC: c_int = 0;
++pub const AF_UNIX: c_int = 1;
++pub const AF_INET: c_int = 2;
++pub const AF_INET6: c_int = 24;
++pub const SOCK_STREAM: c_int = 1;
++pub const SOCK_DGRAM: c_int = 2;
++pub const SOCK_RAW: c_int = 3;
++pub const SOL_SOCKET: c_int = 0xffff;
++pub const MSG_PEEK: c_int = 0x2;
++pub const SHUT_RD: c_int = 0;
++pub const SHUT_WR: c_int = 1;
++pub const SHUT_RDWR: c_int = 2;
++
++pub const RLIMIT_NOFILE: c_int = 8;
++pub const RLIM_INFINITY: rlim_t = !0;
++
++pub const POLLIN: c_short = 0x1;
++pub const POLLPRI: c_short = 0x2;
++pub const POLLOUT: c_short = 0x4;
++pub const POLLERR: c_short = 0x8;
++pub const POLLHUP: c_short = 0x10;
++pub const POLLNVAL: c_short = 0x20;
++
++// The following values were generated from the SDK headers with the
++// x86_64-aros cross compiler (see tools/crosstools/rust/libcprobe in the
++// AROS tree); they are identical on every AROS CPU.
++// errno
++pub const E2BIG: c_int = 7;
++pub const EACCES: c_int = 13;
++pub const EADDRINUSE: c_int = 48;
++pub const EADDRNOTAVAIL: c_int = 49;
++pub const EAFNOSUPPORT: c_int = 47;
++pub const EAGAIN: c_int = 35;
++pub const EALREADY: c_int = 37;
++pub const EBADF: c_int = 9;
++pub const EBADMSG: c_int = 88;
++pub const EBUSY: c_int = 16;
++pub const ECANCELED: c_int = 87;
++pub const ECHILD: c_int = 10;
++pub const ECHO: c_int = 1;
++pub const ECHOE: c_int = 2;
++pub const ECHOK: c_int = 4;
++pub const ECHONL: c_int = 8;
++pub const ECONNABORTED: c_int = 53;
++pub const ECONNREFUSED: c_int = 61;
++pub const ECONNRESET: c_int = 54;
++pub const EDEADLK: c_int = 11;
++pub const EDESTADDRREQ: c_int = 39;
++pub const EDOM: c_int = 33;
++pub const EDQUOT: c_int = 69;
++pub const EEXIST: c_int = 17;
++pub const EFAULT: c_int = 14;
++pub const EFBIG: c_int = 27;
++pub const EFTYPE: c_int = 79;
++pub const EHOSTUNREACH: c_int = 65;
++pub const EIDRM: c_int = 82;
++pub const EILSEQ: c_int = 85;
++pub const EINPROGRESS: c_int = 36;
++pub const EINTR: c_int = 4;
++pub const EINVAL: c_int = 22;
++pub const EIO: c_int = 5;
++pub const EISCONN: c_int = 56;
++pub const EISDIR: c_int = 21;
++pub const ELOOP: c_int = 62;
++pub const EMFILE: c_int = 24;
++pub const EMLINK: c_int = 31;
++pub const EMSGSIZE: c_int = 40;
++pub const EMULTIHOP: c_int = 94;
++pub const ENAMETOOLONG: c_int = 63;
++pub const ENETDOWN: c_int = 50;
++pub const ENETRESET: c_int = 52;
++pub const ENETUNREACH: c_int = 51;
++pub const ENFILE: c_int = 23;
++pub const ENOBUFS: c_int = 55;
++pub const ENODATA: c_int = 89;
++pub const ENODEV: c_int = 19;
++pub const ENOENT: c_int = 2;
++pub const ENOEXEC: c_int = 8;
++pub const ENOLCK: c_int = 77;
++pub const ENOLINK: c_int = 95;
++pub const ENOMEM: c_int = 12;
++pub const ENOMSG: c_int = 83;
++pub const ENOPROTOOPT: c_int = 42;
++pub const ENOSPC: c_int = 28;
++pub const ENOSR: c_int = 90;
++pub const ENOSTR: c_int = 91;
++pub const ENOSYS: c_int = 78;
++pub const ENOTBLK: c_int = 15;
++pub const ENOTCONN: c_int = 57;
++pub const ENOTDIR: c_int = 20;
++pub const ENOTEMPTY: c_int = 66;
++pub const ENOTSOCK: c_int = 38;
++pub const ENOTSUP: c_int = 86;
++pub const ENOTTY: c_int = 25;
++pub const ENXIO: c_int = 6;
++pub const EOF: c_int = -1;
++pub const EOPNOTSUPP: c_int = 45;
++pub const EOVERFLOW: c_int = 84;
++pub const EPERM: c_int = 1;
++pub const EPIPE: c_int = 32;
++pub const EPROCLIM: c_int = 67;
++pub const EPROTO: c_int = 96;
++pub const EPROTONOSUPPORT: c_int = 43;
++pub const EPROTOTYPE: c_int = 41;
++pub const ERANGE: c_int = 34;
++pub const EROFS: c_int = 30;
++pub const ESPIPE: c_int = 29;
++pub const ESRCH: c_int = 3;
++pub const ESTALE: c_int = 70;
++pub const ETIME: c_int = 92;
++pub const ETIMEDOUT: c_int = 60;
++pub const ETXTBSY: c_int = 26;
++pub const EUSERS: c_int = 68;
++pub const EWOULDBLOCK: c_int = 35;
++pub const EXDEV: c_int = 18;
++
++// open
++pub const O_ACCMODE: c_int = 3;
++pub const O_APPEND: c_int = 1024;
++pub const O_CLOEXEC: c_int = 65536;
++pub const O_CREAT: c_int = 64;
++pub const O_DIRECTORY: c_int = 131072;
++pub const O_DSYNC: c_int = 16384;
++pub const O_EXCL: c_int = 128;
++pub const O_EXEC: c_int = 4;
++pub const O_EXLOCK: c_int = 256;
++pub const O_NOCTTY: c_int = 0;
++pub const O_NOFOLLOW: c_int = 262144;
++pub const O_NONBLOCK: c_int = 2048;
++pub const O_RDONLY: c_int = 1;
++pub const O_RDWR: c_int = 3;
++pub const O_RSYNC: c_int = 32768;
++pub const O_SHLOCK: c_int = 0;
++pub const O_SYNC: c_int = 4096;
++pub const O_TRUNC: c_int = 512;
++pub const O_WRONLY: c_int = 2;
++
++// mode
++pub const S_IFBLK: mode_t = 24576;
++pub const S_IFCHR: mode_t = 8192;
++pub const S_IFDIR: mode_t = 16384;
++pub const S_IFIFO: mode_t = 4096;
++pub const S_IFLNK: mode_t = 40960;
++pub const S_IFMT: mode_t = 61440;
++pub const S_IFREG: mode_t = 32768;
++pub const S_IFSOCK: mode_t = 49152;
++pub const S_IREAD: mode_t = 256;
++pub const S_IRGRP: mode_t = 32;
++pub const S_IROTH: mode_t = 4;
++pub const S_IRUSR: mode_t = 256;
++pub const S_IRWXG: mode_t = 56;
++pub const S_IRWXO: mode_t = 7;
++pub const S_IRWXU: mode_t = 448;
++pub const S_ISGID: mode_t = 1024;
++pub const S_ISUID: mode_t = 2048;
++pub const S_ISVTX: mode_t = 512;
++pub const S_IWGRP: mode_t = 16;
++pub const S_IWOTH: mode_t = 2;
++pub const S_IWRITE: mode_t = 128;
++pub const S_IWUSR: mode_t = 128;
++pub const S_IXGRP: mode_t = 8;
++pub const S_IXOTH: mode_t = 1;
++pub const S_IXUSR: mode_t = 64;
++
++// seek
++pub const SEEK_CUR: c_int = 1;
++pub const SEEK_END: c_int = 2;
++pub const SEEK_SET: c_int = 0;
++
++// fcntl
++pub const F_DUPFD: c_int = 0;
++pub const F_DUPFD_CLOEXEC: c_int = 1;
++pub const F_EXLCK: c_int = 4;
++pub const F_GETFD: c_int = 2;
++pub const F_GETFL: c_int = 4;
++pub const F_GETLK: c_int = 6;
++pub const F_GETOWN: c_int = 9;
++pub const F_GETSIG: c_int = 11;
++pub const F_LOCK: c_int = 0;
++pub const F_OK: c_int = 0;
++pub const F_RDLCK: c_int = 0;
++pub const F_SETFD: c_int = 3;
++pub const F_SETFL: c_int = 5;
++pub const F_SETLK: c_int = 7;
++pub const F_SETLKW: c_int = 8;
++pub const F_SETOWN: c_int = 10;
++pub const F_SETSIG: c_int = 12;
++pub const F_SHLCK: c_int = 8;
++pub const F_TEST: c_int = 1;
++pub const F_TLOCK: c_int = 2;
++pub const F_ULOCK: c_int = 3;
++pub const F_UNLCK: c_int = 2;
++pub const F_WRLCK: c_int = 1;
++
++// access
++pub const R_OK: c_int = 4;
++pub const W_OK: c_int = 2;
++pub const X_OK: c_int = 1;
++
++// at
++pub const AT_EACCESS: c_int = 1;
++pub const AT_FDCWD: c_int = -100;
++pub const AT_REMOVEDIR: c_int = 8;
++pub const AT_SYMLINK_FOLLOW: c_int = 4;
++pub const AT_SYMLINK_NOFOLLOW: c_int = 2;
++
++// signal
++pub const SIGABRT: c_int = 6;
++pub const SIGALRM: c_int = 14;
++pub const SIGBUS: c_int = 10;
++pub const SIGCHLD: c_int = 20;
++pub const SIGCONT: c_int = 19;
++pub const SIGFPE: c_int = 8;
++pub const SIGHUP: c_int = 1;
++pub const SIGILL: c_int = 4;
++pub const SIGINT: c_int = 2;
++pub const SIGKILL: c_int = 9;
++pub const SIGPIPE: c_int = 13;
++pub const SIGPROF: c_int = 26;
++pub const SIGQUIT: c_int = 3;
++pub const SIGSEGV: c_int = 11;
++pub const SIGSTKSZ: c_int = 49152;
++pub const SIGSTOP: c_int = 17;
++pub const SIGSYS: c_int = 12;
++pub const SIGTERM: c_int = 15;
++pub const SIGTRAP: c_int = 5;
++pub const SIGTSTP: c_int = 18;
++pub const SIGTTIN: c_int = 21;
++pub const SIGTTOU: c_int = 22;
++pub const SIGURG: c_int = 16;
++pub const SIGUSR1: c_int = 28;
++pub const SIGUSR2: c_int = 29;
++pub const SIGVTALRM: c_int = 25;
++pub const SIGXCPU: c_int = 23;
++pub const SIGXFSZ: c_int = 24;
++
++// sigflags
++pub const SA_NOCLDSTOP: c_int = 1;
++pub const SA_NOCLDWAIT: c_int = 32;
++pub const SA_NODEFER: c_int = 64;
++pub const SA_ONSTACK: c_int = 2;
++pub const SA_RESETHAND: c_int = 4;
++pub const SA_RESTART: c_int = 8;
++pub const SA_SIGINFO: c_int = 16;
++
++// sigmask
++pub const SIG_BLOCK: c_int = 1;
++pub const SIG_SETMASK: c_int = 34;
++pub const SIG_UNBLOCK: c_int = 2;
++
++// clock
++pub const CLOCK_MONOTONIC: clockid_t = 0;
++pub const CLOCK_PROCESS_CPUTIME_ID: clockid_t = 1;
++pub const CLOCK_REALTIME: clockid_t = 2;
++pub const CLOCK_THREAD_CPUTIME_ID: clockid_t = 3;
++
++// lock
++pub const LOCK_EX: c_int = 2;
++pub const LOCK_NB: c_int = 4;
++pub const LOCK_SH: c_int = 1;
++pub const LOCK_UN: c_int = 8;
++
++// exit
++pub const EXIT_FAILURE: c_int = 20;
++pub const EXIT_SUCCESS: c_int = 0;
++
++// limits
++pub const BUFSIZ: c_int = 1024;
++pub const FD_SETSIZE: c_int = 64;
++pub const FILENAME_MAX: c_int = 256;
++pub const IOV_MAX: c_int = 16;
++pub const L_tmpnam: c_int = 256;
++pub const MINSIGSTKSZ: c_int = 8192;
++pub const NAME_MAX: c_int = 255;
++pub const NCCS: c_int = 32;
++pub const NSIG: c_int = 65;
++pub const PATH_MAX: c_int = 1024;
++pub const PIPE_BUF: c_int = 512;
++pub const RAND_MAX: c_int = 2147483647;
++pub const TMP_MAX: c_int = 10240;
++pub const _POSIX_VDISABLE: c_int = 255;
++
++// pthread
++pub const PTHREAD_CANCEL_ASYNCHRONOUS: c_int = 0;
++pub const PTHREAD_CANCEL_DEFERRED: c_int = 1;
++pub const PTHREAD_CANCEL_DISABLE: c_int = 1;
++pub const PTHREAD_CANCEL_ENABLE: c_int = 0;
++pub const PTHREAD_CREATE_DETACHED: c_int = 1;
++pub const PTHREAD_CREATE_JOINABLE: c_int = 0;
++pub const PTHREAD_DESTRUCTOR_ITERATIONS: c_int = 4;
++pub const PTHREAD_EXPLICIT_SCHED: c_int = 1;
++pub const PTHREAD_INHERIT_SCHED: c_int = 0;
++pub const PTHREAD_KEYS_MAX: c_int = 64;
++pub const PTHREAD_MUTEX_DEFAULT: c_int = 0;
++pub const PTHREAD_MUTEX_ERRORCHECK: c_int = 2;
++pub const PTHREAD_MUTEX_NORMAL: c_int = 0;
++pub const PTHREAD_MUTEX_RECURSIVE: c_int = 1;
++pub const PTHREAD_PROCESS_PRIVATE: c_int = 0;
++pub const PTHREAD_PROCESS_SHARED: c_int = 1;
++pub const PTHREAD_SCOPE_PROCESS: c_int = 0;
++pub const PTHREAD_SCOPE_SYSTEM: c_int = 1;
++pub const PTHREAD_STACK_MIN: size_t = 40960;
++pub const PTHREAD_THREADS_MAX: c_int = 2019;
++
++// sched
++pub const SCHED_BATCH: c_int = 3;
++pub const SCHED_FIFO: c_int = 1;
++pub const SCHED_NORMAL: c_int = 0;
++pub const SCHED_OTHER: c_int = 0;
++pub const SCHED_RR: c_int = 2;
++
++// termios_act
++pub const TCSADRAIN: c_int = 1;
++pub const TCSAFLUSH: c_int = 2;
++pub const TCSANOW: c_int = 0;
++
++// termios_iflag
++pub const BRKINT: tcflag_t = 1;
++pub const ICRNL: tcflag_t = 2;
++pub const IGNBRK: tcflag_t = 4;
++pub const IGNCR: tcflag_t = 8;
++pub const IGNPAR: tcflag_t = 16;
++pub const INLCR: tcflag_t = 32;
++pub const INPCK: tcflag_t = 64;
++pub const ISTRIP: tcflag_t = 128;
++pub const IXANY: tcflag_t = 256;
++pub const IXOFF: tcflag_t = 512;
++pub const IXON: tcflag_t = 1024;
++pub const PARMRK: tcflag_t = 2048;
++
++// termios_oflag
++pub const OCRNL: tcflag_t = 4;
++pub const OFDEL: tcflag_t = 32;
++pub const OFILL: tcflag_t = 64;
++pub const ONLCR: tcflag_t = 2;
++pub const ONLRET: tcflag_t = 16;
++pub const ONOCR: tcflag_t = 8;
++pub const OPOST: tcflag_t = 1;
++
++// termios_cflag
++pub const CLOCAL: tcflag_t = 128;
++pub const CREAD: tcflag_t = 8;
++pub const CS5: tcflag_t = 0;
++pub const CS6: tcflag_t = 1;
++pub const CS7: tcflag_t = 2;
++pub const CS8: tcflag_t = 3;
++pub const CSIZE: tcflag_t = 3;
++pub const CSTOPB: tcflag_t = 4;
++pub const HUPCL: tcflag_t = 64;
++pub const PARENB: tcflag_t = 16;
++pub const PARODD: tcflag_t = 32;
++
++// termios_lflag
++pub const ICANON: tcflag_t = 16;
++pub const IEXTEN: tcflag_t = 64;
++pub const ISIG: tcflag_t = 128;
++pub const NOFLSH: tcflag_t = 256;
++pub const TOSTOP: tcflag_t = 512;
++
++// termios_cc
++pub const VEOF: usize = 0;
++pub const VEOL: usize = 1;
++pub const VERASE: usize = 2;
++pub const VINTR: usize = 3;
++pub const VKILL: usize = 4;
++pub const VMIN: usize = 5;
++pub const VQUIT: usize = 6;
++pub const VSTART: usize = 7;
++pub const VSTOP: usize = 8;
++pub const VSUSP: usize = 9;
++pub const VTIME: usize = 10;
++
++// baud
++pub const B0: speed_t = 0;
++pub const B110: speed_t = 3;
++pub const B1200: speed_t = 9;
++pub const B134: speed_t = 4;
++pub const B150: speed_t = 5;
++pub const B1800: speed_t = 10;
++pub const B19200: speed_t = 14;
++pub const B200: speed_t = 6;
++pub const B2400: speed_t = 11;
++pub const B300: speed_t = 7;
++pub const B38400: speed_t = 15;
++pub const B4800: speed_t = 12;
++pub const B50: speed_t = 1;
++pub const B600: speed_t = 8;
++pub const B75: speed_t = 2;
++pub const B9600: speed_t = 13;
++
++// fadvise
++pub const POSIX_FADV_DONTNEED: c_int = 1;
++pub const POSIX_FADV_NOREUSE: c_int = 2;
++pub const POSIX_FADV_NORMAL: c_int = 3;
++pub const POSIX_FADV_RANDOM: c_int = 4;
++pub const POSIX_FADV_SEQUENTIAL: c_int = 5;
++pub const POSIX_FADV_WILLNEED: c_int = 6;
++
++// stdio
++pub const _IOFBF: c_int = 0;
++pub const _IOLBF: c_int = 1;
++pub const _IONBF: c_int = 2;
++
++// pc
++pub const _PC_PATH_MAX: c_int = 11;
++pub const _PC_VDISABLE: c_int = 21;
++
++// sysconf names (enumerators in <unistd.h>)
++pub const _SC_ARG_MAX: c_int = 19;
++pub const _SC_CLK_TCK: c_int = 28;
++pub const _SC_GETPW_R_SIZE_MAX: c_int = 36;
++pub const _SC_OPEN_MAX: c_int = 52;
++pub const _SC_PAGESIZE: c_int = 54;
++pub const _SC_THREAD_STACK_MIN: c_int = 90;
++
++// ioctl requests
++pub const FIONBIO: c_ulong = 2148034174;
++pub const FIONREAD: c_ulong = 1074292351;
++pub const TIOCGWINSZ: c_ulong = 1074295912;
++
++f! {
++    pub fn FD_CLR(fd: c_int, set: *mut fd_set) -> () {
++        let bits = 32;
++        let fd = fd as usize;
++        (*set).fds_bits[fd / bits] &= !(1 << (fd % bits));
++    }
++
++    pub fn FD_ISSET(fd: c_int, set: *const fd_set) -> bool {
++        let bits = 32;
++        let fd = fd as usize;
++        (*set).fds_bits[fd / bits] & (1 << (fd % bits)) != 0
++    }
++
++    pub fn FD_SET(fd: c_int, set: *mut fd_set) -> () {
++        let bits = 32;
++        let fd = fd as usize;
++        (*set).fds_bits[fd / bits] |= 1 << (fd % bits);
++    }
++
++    pub fn FD_ZERO(set: *mut fd_set) -> () {
++        for slot in (*set).fds_bits.iter_mut() {
++            *slot = 0;
++        }
++    }
++}
++
++safe_f! {
++    pub const fn WIFEXITED(status: c_int) -> bool {
++        (status & 0x7f) == 0
++    }
++
++    pub const fn WEXITSTATUS(status: c_int) -> c_int {
++        (status >> 8) & 0xff
++    }
++
++    pub const fn WIFSIGNALED(status: c_int) -> bool {
++        ((status & 0x7f) + 1) as i8 >= 2
++    }
++
++    pub const fn WTERMSIG(status: c_int) -> c_int {
++        status & 0x7f
++    }
++
++    pub const fn WIFSTOPPED(status: c_int) -> bool {
++        (status & 0xff) == 0x7f
++    }
++
++    pub const fn WSTOPSIG(status: c_int) -> c_int {
++        (status >> 8) & 0xff
++    }
++
++    pub const fn WCOREDUMP(status: c_int) -> bool {
++        (status & 0x80) != 0
++    }
++}
++
++extern "C" {
++    // errno lives in stdc.library's per-task data.
++    pub fn __stdc_geterrnoptr() -> *mut c_int;
++    // The process environment (posixc.library's environ replacement).
++    pub fn __stdcio_get_environptr() -> *mut *mut *mut c_char;
++
++    pub fn getentropy(buf: *mut c_void, buflen: size_t) -> c_int;
++    pub fn arc4random() -> u32;
++    pub fn arc4random_buf(buf: *mut c_void, nbytes: size_t);
++    pub fn arc4random_uniform(upper_bound: u32) -> u32;
++
++    pub fn clock_gettime(clk_id: clockid_t, tp: *mut crate::timespec) -> c_int;
++    pub fn gettimeofday(tp: *mut crate::timeval, tz: *mut c_void) -> c_int;
++
++    pub fn strerror_r(errnum: c_int, buf: *mut c_char, buflen: size_t) -> c_int;
++    pub fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
++    pub fn dirfd(dirp: *mut crate::DIR) -> c_int;
++    pub fn fdopendir(fd: c_int) -> *mut crate::DIR;
++    pub fn seekdir(dirp: *mut crate::DIR, loc: c_long);
++    pub fn telldir(dirp: *mut crate::DIR) -> c_long;
++    pub fn openat(dirfd: c_int, pathname: *const c_char, flags: c_int, ...) -> c_int;
++    pub fn getpwuid_r(
++        uid: crate::uid_t,
++        pwd: *mut passwd,
++        buf: *mut c_char,
++        buflen: size_t,
++        result: *mut *mut passwd,
++    ) -> c_int;
++    pub fn getpwnam_r(
++        name: *const c_char,
++        pwd: *mut passwd,
++        buf: *mut c_char,
++        buflen: size_t,
++        result: *mut *mut passwd,
++    ) -> c_int;
++    pub fn getrlimit(resource: c_int, rlim: *mut crate::rlimit) -> c_int;
++    pub fn setrlimit(resource: c_int, rlim: *const crate::rlimit) -> c_int;
++    pub fn uname(buf: *mut utsname) -> c_int;
++    pub fn vfork() -> crate::pid_t;
++    pub fn sigaction(signum: c_int, act: *const sigaction, oldact: *mut sigaction) -> c_int;
++    pub fn sigsuspend(mask: *const sigset_t) -> c_int;
++    pub fn pselect(
++        nfds: c_int,
++        readfds: *mut fd_set,
++        writefds: *mut fd_set,
++        errorfds: *mut fd_set,
++        timeout: *const crate::timespec,
++        sigmask: *const sigset_t,
++    ) -> c_int;
++    pub fn flock(fd: c_int, operation: c_int) -> c_int;
++    pub fn posix_fadvise(fd: c_int, offset: off_t, len: off_t, advise: c_int) -> c_int;
++    pub fn getloadavg(loadavg: *mut c_double, nelem: c_int) -> c_int;
++
++    pub fn pthread_create(
++        native: *mut pthread_t,
++        attr: *const pthread_attr_t,
++        f: extern "C" fn(*mut c_void) -> *mut c_void,
++        value: *mut c_void,
++    ) -> c_int;
++    pub fn pthread_attr_getstack(
++        attr: *const pthread_attr_t,
++        stackaddr: *mut *mut c_void,
++        stacksize: *mut size_t,
++    ) -> c_int;
++    pub fn pthread_attr_setstack(
++        attr: *mut pthread_attr_t,
++        stackaddr: *mut c_void,
++        stacksize: size_t,
++    ) -> c_int;
++    pub fn pthread_attr_getdetachstate(attr: *const pthread_attr_t, detachstate: *mut c_int) -> c_int;
++    pub fn pthread_getattr_np(native: pthread_t, attr: *mut pthread_attr_t) -> c_int;
++    pub fn pthread_setname_np(native: pthread_t, name: *const c_char) -> c_int;
++    pub fn pthread_getname_np(native: pthread_t, name: *mut c_char, len: size_t) -> c_int;
++    pub fn pthread_mutexattr_gettype(attr: *const pthread_mutexattr_t, kind: *mut c_int) -> c_int;
++    pub fn pthread_mutex_timedlock(lock: *mut pthread_mutex_t, abstime: *const crate::timespec) -> c_int;
++    pub fn pthread_cond_timedwait_relative_np(
++        cond: *mut pthread_cond_t,
++        lock: *mut pthread_mutex_t,
++        reltime: *const crate::timespec,
++    ) -> c_int;
++    pub fn pthread_once(once: *mut pthread_once_t, init: extern "C" fn()) -> c_int;
++    pub fn pthread_cancel(thread: pthread_t) -> c_int;
++    pub fn pthread_setcancelstate(state: c_int, oldstate: *mut c_int) -> c_int;
++    pub fn pthread_setcanceltype(ty: c_int, oldty: *mut c_int) -> c_int;
++    pub fn pthread_testcancel();
++    pub fn pthread_kill(thread: pthread_t, sig: c_int) -> c_int;
++    pub fn pthread_sigmask(how: c_int, set: *const sigset_t, oldset: *mut sigset_t) -> c_int;
++    pub fn pthread_spin_init(lock: *mut pthread_spinlock_t, pshared: c_int) -> c_int;
++    pub fn pthread_spin_destroy(lock: *mut pthread_spinlock_t) -> c_int;
++    pub fn pthread_spin_lock(lock: *mut pthread_spinlock_t) -> c_int;
++    pub fn pthread_spin_trylock(lock: *mut pthread_spinlock_t) -> c_int;
++    pub fn pthread_spin_unlock(lock: *mut pthread_spinlock_t) -> c_int;
++    pub fn sched_get_priority_max(policy: c_int) -> c_int;
++    pub fn sched_get_priority_min(policy: c_int) -> c_int;
++
++    pub fn sem_init(sem: *mut sem_t, pshared: c_int, value: c_uint) -> c_int;
++    pub fn sem_destroy(sem: *mut sem_t) -> c_int;
++    pub fn sem_getvalue(sem: *mut sem_t, sval: *mut c_int) -> c_int;
++    pub fn sem_timedwait(sem: *mut sem_t, abstime: *const crate::timespec) -> c_int;
++}
++
++// Socket option names as bsdsocket.library defines them (sys/socket.h);
++// std's networking code needs them to compile, sockets themselves are
++// not reachable through the C library - see the stubs below.
++pub const SO_DEBUG: c_int = 0x0001;
++pub const SO_REUSEADDR: c_int = 0x0004;
++pub const SO_KEEPALIVE: c_int = 0x0008;
++pub const SO_BROADCAST: c_int = 0x0020;
++pub const SO_LINGER: c_int = 0x0080;
++pub const SO_REUSEPORT: c_int = 0x0200;
++pub const SO_SNDBUF: c_int = 0x1001;
++pub const SO_RCVBUF: c_int = 0x1002;
++pub const SO_SNDTIMEO: c_int = 0x1005;
++pub const SO_RCVTIMEO: c_int = 0x1006;
++pub const SO_ERROR: c_int = 0x1007;
++pub const SO_TYPE: c_int = 0x1008;
++pub const SOMAXCONN: c_int = 128;
++pub const TCP_NODELAY: c_int = 1;
++pub const IP_TTL: c_int = 4;
++pub const IP_MULTICAST_TTL: c_int = 10;
++pub const IP_MULTICAST_LOOP: c_int = 11;
++pub const IP_ADD_MEMBERSHIP: c_int = 12;
++pub const IP_DROP_MEMBERSHIP: c_int = 13;
++pub const IPV6_MULTICAST_LOOP: c_int = 11;
++pub const IPV6_V6ONLY: c_int = 27;
++pub const IPV6_JOIN_GROUP: c_int = 12;
++pub const IPV6_LEAVE_GROUP: c_int = 13;
++pub const MSG_NOSIGNAL: c_int = 0x400;
++pub const EAI_SYSTEM: c_int = 11;
++pub const FIOCLEX: c_ulong = 0x20006601;
++pub const FIONCLEX: c_ulong = 0x20006602;
++pub const _SC_HOST_NAME_MAX: c_int = 72;
++pub const _SC_NPROCESSORS_ONLN: c_int = 1000;
++pub const _SC_NPROCESSORS_CONF: c_int = 1001;
++
++pub struct linger {
++    pub l_onoff: c_int,
++    pub l_linger: c_int,
++}
++
++// POSIX functions the AROS C library does not provide. They are defined
++// here, with the C symbol names, so that std's shared unix code links and
++// reports ENOSYS at run time instead of leaving undefined symbols behind
++// (the AROS loader refuses those). Sockets live in bsdsocket.library and
++// need its library base, so they are not reachable from here either.
++macro_rules! aros_enosys {
++    ($($(#[$attr:meta])* $vis:vis fn $name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty;)*) => {$(
++        $(#[$attr])*
++        #[no_mangle]
++        #[allow(dead_code, unused_variables)]
++        $vis unsafe extern "C" fn $name($($arg: $ty),*) -> $ret {
++            *__stdc_geterrnoptr() = ENOSYS;
++            !0usize as $ret
++        }
++    )*};
++}
++
++aros_enosys! {
++    pub fn fork() -> crate::pid_t;
++    pub fn socket(domain: c_int, ty: c_int, protocol: c_int) -> c_int;
++    pub fn socketpair(domain: c_int, ty: c_int, protocol: c_int, sv: *mut c_int) -> c_int;
++    pub fn bind(socket: c_int, address: *const sockaddr, address_len: socklen_t) -> c_int;
++    pub fn listen(socket: c_int, backlog: c_int) -> c_int;
++    pub fn accept(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
++    pub fn connect(socket: c_int, address: *const sockaddr, len: socklen_t) -> c_int;
++    pub fn getpeername(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
++    pub fn getsockname(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
++    pub fn setsockopt(socket: c_int, level: c_int, name: c_int, value: *const c_void, option_len: socklen_t) -> c_int;
++    pub fn getsockopt(sockfd: c_int, level: c_int, optname: c_int, optval: *mut c_void, optlen: *mut socklen_t) -> c_int;
++    pub fn shutdown(socket: c_int, how: c_int) -> c_int;
++    pub fn send(socket: c_int, buf: *const c_void, len: size_t, flags: c_int) -> isize;
++    pub fn recv(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int) -> isize;
++    pub fn sendto(socket: c_int, buf: *const c_void, len: size_t, flags: c_int, addr: *const sockaddr, addrlen: socklen_t) -> isize;
++    pub fn recvfrom(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int, addr: *mut sockaddr, addrlen: *mut socklen_t) -> isize;
++    pub fn sendmsg(fd: c_int, msg: *const msghdr, flags: c_int) -> isize;
++    pub fn recvmsg(fd: c_int, msg: *mut msghdr, flags: c_int) -> isize;
++    pub fn getaddrinfo(node: *const c_char, service: *const c_char, hints: *const addrinfo, res: *mut *mut addrinfo) -> c_int;
++    pub fn poll(fds: *mut crate::pollfd, nfds: nfds_t, timeout: c_int) -> c_int;
++    pub fn mkfifo(path: *const c_char, mode: mode_t) -> c_int;
++    pub fn lchown(path: *const c_char, uid: crate::uid_t, gid: crate::gid_t) -> c_int;
++    pub fn chroot(name: *const c_char) -> c_int;
++    pub fn pread(fd: c_int, buf: *mut c_void, count: size_t, offset: off_t) -> isize;
++    pub fn pwrite(fd: c_int, buf: *const c_void, count: size_t, offset: off_t) -> isize;
++    pub fn setpgid(pid: crate::pid_t, pgid: crate::pid_t) -> c_int;
++    pub fn setgroups(ngroups: c_int, ptr: *const crate::gid_t) -> c_int;
++    pub fn mlock(addr: *const c_void, len: size_t) -> c_int;
++    pub fn munlock(addr: *const c_void, len: size_t) -> c_int;
++    pub fn mlockall(flags: c_int) -> c_int;
++    pub fn munlockall() -> c_int;
++    pub fn munmap(addr: *mut c_void, len: size_t) -> c_int;
++    pub fn setreuid(ruid: crate::uid_t, euid: crate::uid_t) -> c_int;
++    pub fn setregid(rgid: crate::gid_t, egid: crate::gid_t) -> c_int;
++    pub fn alarm(seconds: c_uint) -> c_uint;
++    pub fn killpg(pgrp: crate::pid_t, sig: c_int) -> c_int;
++    pub fn fpathconf(filedes: c_int, name: c_int) -> c_long;
++    pub fn getrusage(resource: c_int, usage: *mut crate::rusage) -> c_int;
++    pub fn if_nametoindex(ifname: *const c_char) -> c_uint;
++    pub fn res_init() -> c_int;
++    pub fn gethostname(name: *mut c_char, len: size_t) -> c_int;
++    pub fn execvpe(file: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int;
++    pub fn execle(path: *const c_char, arg0: *const c_char) -> c_int;
++    pub fn linkat(olddirfd: c_int, oldpath: *const c_char, newdirfd: c_int, newpath: *const c_char, flags: c_int) -> c_int;
++    pub fn renameat(olddirfd: c_int, oldpath: *const c_char, newdirfd: c_int, newpath: *const c_char) -> c_int;
++    pub fn symlinkat(target: *const c_char, newdirfd: c_int, linkpath: *const c_char) -> c_int;
++    pub fn fchownat(dirfd: c_int, pathname: *const c_char, owner: crate::uid_t, group: crate::gid_t, flags: c_int) -> c_int;
++    pub fn lockf(fd: c_int, cmd: c_int, len: off_t) -> c_int;
++    pub fn ttyname_r(fd: c_int, buf: *mut c_char, buflen: size_t) -> c_int;
++    pub fn tcsetpgrp(fd: c_int, pgrp: crate::pid_t) -> c_int;
++    pub fn mkdtemp(template: *mut c_char) -> *mut c_char;
++}
++
++#[no_mangle]
++#[allow(dead_code)]
++unsafe extern "C" fn mmap(_addr: *mut c_void, _len: size_t, _prot: c_int, _flags: c_int, _fd: c_int, _offset: off_t) -> *mut c_void {
++    *__stdc_geterrnoptr() = ENOSYS;
++    !0 as *mut c_void
++}
++
++#[no_mangle]
++#[allow(dead_code)]
++unsafe extern "C" fn freeaddrinfo(_res: *mut addrinfo) {}
++
++#[no_mangle]
++#[allow(dead_code)]
++unsafe extern "C" fn gai_strerror(_errcode: c_int) -> *const c_char {
++    c"name resolution is not available".as_ptr()
++}
++
++#[no_mangle]
++#[allow(dead_code)]
++unsafe extern "C" fn hstrerror(_errcode: c_int) -> *const c_char {
++    c"name resolution is not available".as_ptr()
++}
++
++pub const IPV6_ADD_MEMBERSHIP: c_int = IPV6_JOIN_GROUP;
++pub const IPV6_DROP_MEMBERSHIP: c_int = IPV6_LEAVE_GROUP;
++pub const WNOHANG: c_int = 1;
++pub const WUNTRACED: c_int = 2;
++
++safe_f! {
++    pub const fn WIFCONTINUED(status: c_int) -> bool {
++        status == 0xffff
++    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/mod.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/mod.rs
+--- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/mod.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/mod.rs	2026-09-14 11:44:55.704766836 +0000
+@@ -14,7 +14,14 @@
+ pub type uintptr_t = usize;
+ pub type ssize_t = isize;
+ 
+-pub type pid_t = i32;
++cfg_if! {
++    if #[cfg(target_os = "aros")] {
++        // AROS pid_t is a pointer-sized integer (the process's Task pointer).
++        pub type pid_t = isize;
++    } else {
++        pub type pid_t = i32;
++    }
++}
+ pub type in_addr_t = u32;
+ pub type in_port_t = u16;
+ pub type sighandler_t = size_t;
+@@ -547,6 +554,12 @@
+         #[link(name = "root")]
+         #[link(name = "network")]
+         extern "C" {}
++    } else if #[cfg(target_os = "aros")] {
++        // The AROS C driver links the C library (posixc/stdc) and the
++        // system link libraries itself; only pthread.library's link
++        // library has to be asked for.
++        #[link(name = "pthread")]
++        extern "C" {}
+     } else if #[cfg(target_env = "newlib")] {
+         #[link(name = "c")]
+         #[link(name = "m")]
+@@ -2476,6 +2489,9 @@
+     } else if #[cfg(target_os = "haiku")] {
+         mod haiku;
+         pub use self::haiku::*;
++    } else if #[cfg(target_os = "aros")] {
++        mod aros;
++        pub use self::aros::*;
+     } else if #[cfg(target_os = "redox")] {
+         mod redox;
+         pub use self::redox::*;

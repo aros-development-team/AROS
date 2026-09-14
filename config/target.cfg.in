@@ -33,6 +33,10 @@ TARGET_LLVM_VER               := @target_llvm_version@
 # host.cfg and target.cfg, never tools/crosstools/llvm.cfg.
 TARGET_LLVM_RUNTIMES_STYLE    := @target_llvm_runtimes_style@
 
+# Rust cross compiler (tools/crosstools/rust): yes/no, and the rust release
+TARGET_RUST                   := @aros_enable_rust@
+TARGET_RUST_VER               := @target_rust_version@
+
 # Bootloader to use on platforms that support it
 AROS_TARGET_BOOTLOADER        := @aros_target_bootloader@
 
@@ -43,7 +47,6 @@ PCI_HIDD_TARGET               := @pci_hidd_target@
 CROSSTOOLS_TARGET             := @crosstools_target@
 OBJC_TARGET                   := @objc_target@
 JAVA_TARGET                   := @java_target@
-RUST_TARGET                   := @rust_target@
 JPEGXL_TOOLCHAINSUPPORT       := @jpegxl_toolchainsupport@
 NOUVEAU_TOOLCHAINSUPPORT      := @nouveau_toolchainsupport@
 @aros_target_options@
