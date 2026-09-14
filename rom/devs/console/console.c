@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Console.device
 */
@@ -68,13 +68,20 @@ static int GM_UNIQUENAME(Init) (LIBBASETYPEPTR ConsoleDevice)
     ConsoleDevice->cb_IntuitionBase =
         TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     if (!ConsoleDevice->cb_IntuitionBase)
+    {
+        CloseLibrary(ConsoleDevice->cb_UtilityBase);
+        ConsoleDevice->cb_UtilityBase = NULL;
         return FALSE;
+    }
 
     ConsoleDevice->cb_KeymapBase =
         TaggedOpenLibrary(TAGGEDOPEN_KEYMAP);
     if (!ConsoleDevice->cb_KeymapBase)
     {
         CloseLibrary(ConsoleDevice->cb_IntuitionBase);
+        ConsoleDevice->cb_IntuitionBase = NULL;
+        CloseLibrary(ConsoleDevice->cb_UtilityBase);
+        ConsoleDevice->cb_UtilityBase = NULL;
         return FALSE;
     }
 
@@ -111,8 +118,24 @@ static int GM_UNIQUENAME(Init) (LIBBASETYPEPTR ConsoleDevice)
 
 static int GM_UNIQUENAME(Expunge) (LIBBASETYPEPTR ConsoleDevice)
 {
-    CloseLibrary(ConsoleDevice->cb_IntuitionBase);
-    CloseLibrary(ConsoleDevice->cb_KeymapBase);
+    if (ConsoleDevice->cb_KeymapBase)
+    {
+        CloseLibrary(ConsoleDevice->cb_KeymapBase);
+        ConsoleDevice->cb_KeymapBase = NULL;
+    }
+
+    if (ConsoleDevice->cb_IntuitionBase)
+    {
+        CloseLibrary(ConsoleDevice->cb_IntuitionBase);
+        ConsoleDevice->cb_IntuitionBase = NULL;
+    }
+
+    if (ConsoleDevice->cb_UtilityBase)
+    {
+        CloseLibrary(ConsoleDevice->cb_UtilityBase);
+        ConsoleDevice->cb_UtilityBase = NULL;
+    }
+
     return TRUE;
 }
 
