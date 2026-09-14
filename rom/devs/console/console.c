@@ -353,16 +353,32 @@ ADD2OPENDEV(GM_UNIQUENAME(Open), 0) ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
         break;
 
     case CD_ASKKEYMAP:
-        /* FIXME: Returns always default keymap */
         if (ioreq->io_Length < sizeof(struct KeyMap))
             error = IOERR_BADLENGTH;
-        else
+        else if (ioreq->io_Unit == (struct Unit *)CONU_LIBRARY)
             CopyMem(AskKeyMapDefault(), ioreq->io_Data,
                 sizeof(struct KeyMap));
+        else
+        {
+            ObtainSemaphoreShared(&ConsoleDevice->unitListLock);
+            CopyMem(&((struct ConUnit *)ioreq->io_Unit)->cu_KeyMapStruct,
+                ioreq->io_Data, sizeof(struct KeyMap));
+            ReleaseSemaphore(&ConsoleDevice->unitListLock);
+        }
         break;
     case CD_SETKEYMAP:
-        D(bug("CD_SETKEYMAP\n"));
-        error = IOERR_NOCMD;
+        if (ioreq->io_Length < sizeof(struct KeyMap))
+            error = IOERR_BADLENGTH;
+        else if (ioreq->io_Unit == (struct Unit *)CONU_LIBRARY)
+            error = IOERR_NOCMD;
+        else
+        {
+            ObtainSemaphore(&ConsoleDevice->unitListLock);
+            CopyMem(ioreq->io_Data,
+                &((struct ConUnit *)ioreq->io_Unit)->cu_KeyMapStruct,
+                sizeof(struct KeyMap));
+            ReleaseSemaphore(&ConsoleDevice->unitListLock);
+        }
         break;
     case CD_ASKDEFAULTKEYMAP:
         if (ioreq->io_Length < sizeof(struct KeyMap))
@@ -372,8 +388,10 @@ ADD2OPENDEV(GM_UNIQUENAME(Open), 0) ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
                 sizeof(struct KeyMap));
         break;
     case CD_SETDEFAULTKEYMAP:
-        D(bug("CD_SETDEFAULTKEYMAP\n"));
-        error = IOERR_NOCMD;
+        if (ioreq->io_Length < sizeof(struct KeyMap))
+            error = IOERR_BADLENGTH;
+        else
+            SetKeyMapDefault((struct KeyMap *)ioreq->io_Data);
         break;
 
     default:

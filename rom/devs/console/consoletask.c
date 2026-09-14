@@ -338,7 +338,8 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
                                 {
                                     actual =
                                         RawKeyConvert(&cdihmsg->ie,
-                                        inputBuf, MAPRAWKEY_BUFSIZE, NULL);
+                                        inputBuf, MAPRAWKEY_BUFSIZE,
+                                        &CU(cdihmsg->unit)->cu_KeyMapStruct);
 
                                     if (cdihmsg->ie.ie_Qualifier ==
                                         IEQUALIFIER_RCOMMAND && actual == 1)
