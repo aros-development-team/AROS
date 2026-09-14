@@ -668,24 +668,28 @@ static VOID charmapcon_scroll_to(Class *cl, Object *o, ULONG y)
 }
 
 
-static VOID charmap_delete_char(Class *cl, Object *o, ULONG x, ULONG y)
+static VOID charmap_delete_chars(Class *cl, Object *o, ULONG x, ULONG y,
+    ULONG count)
 {
     struct charmap_line *line = charmapcon_find_line(cl, o, y);
+    ULONG remaining;
 
-    if (!line || x >= line->size)
+    if (!line || x >= line->size || count == 0)
         return;
 
-    // FIXME: Shrink the buffer, or keep track of capacity separately.
-    if (x + 1 >= line->size)
+    if (count > line->size - x)
+        count = line->size - x;
+
+    remaining = line->size - x - count;
+    if (remaining > 0)
     {
-        line->text[x] = 0;
-        return;
+        memmove(line->fgpen + x, line->fgpen + x + count, remaining);
+        memmove(line->bgpen + x, line->bgpen + x + count, remaining);
+        memmove(line->flags + x, line->flags + x + count, remaining);
+        memmove(line->text + x, line->text + x + count, remaining);
     }
 
-    memmove(line->fgpen + x, line->fgpen + x + 1, 1);
-    memmove(line->bgpen + x, line->bgpen + x + 1, 1);
-    memmove(line->flags + x, line->flags + x + 1, 1);
-    memmove(line->text + x, line->text + x + 1, 1);
+    charmap_resize(ConsoleDevice, line, line->size - count);
 }
 
 static VOID charmap_insert_char(Class *cl, Object *o, ULONG x, ULONG y)
@@ -835,8 +839,9 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
         DoSuperMethodA(cl, o, (Msg) msg);
         break;
 
-    case C_DELETE_CHAR:        /* FIXME: can it have params!? */
-        charmap_delete_char(cl, o, XCP, YCP);
+    case C_DELETE_CHAR:
+        charmap_delete_chars(cl, o, XCP, YCP,
+            params[0] ? params[0] : 1);
         DoSuperMethodA(cl, o, (Msg) msg);
         break;
 
