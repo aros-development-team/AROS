@@ -200,8 +200,6 @@ LLVM_COMMON_CMAKEOPTIONS := \
     -DLLVM_NO_DEAD_STRIP=ON \
     -DBUILD_SHARED_LIBS=OFF
 
-LLVM_BUILD_JOBS ?= 32
-
 LLVM_TBLGEN_CMAKEOPTIONS := \
     $(LLVM_COMMON_CMAKEOPTIONS) \
     -DLLVM_BUILD_TOOLS=ON \
@@ -212,7 +210,7 @@ LLVM_TBLGEN_CMAKEOPTIONS := \
 
 %build_with_cmake mmake=llvm-host-tblgen package=tblgen srcdir=$(LLVM_SRCDIR) \
     gendir=$(HOSTGENDIR)/$(CURDIR) compiler=host usecrosstoolsdir=no \
-    cmakebuildcmd="$(CMAKE) --build $(LLVM_TBLGEN_BUILDDIR) --target llvm-tblgen --target clang-tblgen -j$(LLVM_BUILD_JOBS)" \
+    cmakebuildcmd="$(CMAKE) --build $(LLVM_TBLGEN_BUILDDIR) --target llvm-tblgen --target clang-tblgen" \
     cmakeinstallcmd="true" extraoptions="$(LLVM_TBLGEN_CMAKEOPTIONS)"
 
 # STATIC_LIBRARY try-compiles never link, so check_library_exists() always
@@ -236,7 +234,7 @@ LLVM_TARGET_CMAKEOPTIONS := \
 
 %build_with_cmake mmake=workbench-libs-llvm package=target srcdir=$(LLVM_SRCDIR) \
     gendir=$(GENDIR)/$(CURDIR) prefix="$(AROS_DEVELOPER)" \
-    cmakebuildcmd="$(CMAKE) --build $(LLVM_NATIVE_BUILDDIR) -j$(LLVM_BUILD_JOBS)" \
+    cmakebuildcmd="$(CMAKE) --build $(LLVM_NATIVE_BUILDDIR)" \
     cmakeinstallcmd="$(CMAKE) --install $(LLVM_NATIVE_BUILDDIR)" \
     extracflags="-D_GNU_SOURCE" extracxxflags="-D_GNU_SOURCE" \
     extraoptions="$(LLVM_TARGET_CMAKEOPTIONS)"
@@ -270,7 +268,7 @@ LLVM_TOOLS_CMAKEOPTIONS := \
 
 %build_with_cmake mmake=workbench-libs-llvm-tools package=tools srcdir=$(LLVM_SRCDIR) \
     gendir=$(GENDIR)/$(CURDIR) prefix="$(AROS_DEVELOPER)" \
-    cmakebuildcmd="$(CMAKE) --build $(LLVM_TOOLS_BUILDDIR) --target clang --target lld --target llvm-ar --target llvm-nm --target llvm-objdump -j$(LLVM_BUILD_JOBS)" \
+    cmakebuildcmd="$(CMAKE) --build $(LLVM_TOOLS_BUILDDIR) --target clang --target lld --target llvm-ar --target llvm-nm --target llvm-objdump" \
     cmakeinstallcmd="mkdir -p $(AROS_DEVELOPER)/bin && cp -a $(LLVM_TOOLS_BUILDDIR)/bin/. $(AROS_DEVELOPER)/bin/ && find $(AROS_DEVELOPER)/bin -maxdepth 1 -type f \( -name 'clang*' -o -name 'lld*' -o -name 'llvm-*' \) -exec $(STRIP) --strip-unneeded {} + && cp -a $(LLVM_TOOLS_BUILDDIR)/lib/clang $(AROS_DEVELOPER)/lib/" \
     extracflags="-D_GNU_SOURCE" extracxxflags="-D_GNU_SOURCE" \
     extraoptions="$(LLVM_TOOLS_CMAKEOPTIONS)"
