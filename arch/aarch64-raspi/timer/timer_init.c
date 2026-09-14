@@ -162,6 +162,9 @@ static int Timer_Init(struct TimerBase *TimerBase)
     Forbid();
     TimerBase->tb_Platform.tbp_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
     TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
+    /* At 0 the first EClockUpdate would book the whole uptime. */
+    TimerBase->tb_Platform.tbp_EClockLast =
+        ((UQUAD)TimerBase->tb_Platform.tbp_CHI << 32) | TimerBase->tb_Platform.tbp_CLO;
     *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = (TimerBase->tb_Platform.tbp_CLO + TimerBase->tb_Platform.tbp_TickRate.tv_micro);
     Permit();
 
