@@ -1,0 +1,370 @@
+#   Build libnak.a / libnak_rs.a - NAK, the NVIDIA shader compiler used by
+#   Mesa's NVK Vulkan driver (src/nouveau/compiler).
+#
+#   NAK is written in Rust, so this needs the rust crosstool
+#   (configure --enable-rust) and bindgen. Everything mesa's meson.build does
+#   for it is done here by hand: the crates.io dependencies are fetched with
+#   the AROS fetch macro, the proc-macro crates are built for the host, the
+#   bindings are generated from the C headers with bindgen, and the target
+#   crates are compiled with rustc directly (no cargo).
+#
+#   NAK's C side needs NIL (NVK's image layout library, also Rust, whose C
+#   header is produced by cbindgen), so NIL is built here as well.
+#
+#   Results, in $(top_libdir):
+#     libnak_rs.a  the Rust code (staticlib: NAK plus the std it needs)
+#     libnak.a     the C side (nak_nir_*.c, nak_nir_algebraic.c, rust_helpers.c)
+#     libnil_rs.a  NIL (staticlib)
+#     libnil.a     NIL's C format table
+#   and the generated headers nil.h / nil_format_table.h in
+#   $(top_builddir)/src/nouveau/nil. A consumer links all four, plus
+#   libcompiler/libmesautil and -lpthread (the Rust std uses pthread.library).
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/nouveau/compiler
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+-include $(SRCDIR)/tools/crosstools/rust.cfg
+
+#MM- mesa3dgl-linklibs : mesa3d-linklib-nak-$(TARGET_RUST)
+#MM- mesa3d-linklib-nak-yes : mesa3d-linklib-nak
+
+#MM mesa3d-linklib-nak : includes mesa3d-linklib-compiler mesa3d-linklib-mesautil \
+#MM     tools-crosstools-rust tools-crosstools-rust-bindgen tools-crosstools-rust-cbindgen \
+#MM     mesa3d-nak-crates-fetch \
+#MM     mesa3d-linklib-nil-c mesa3d-linklib-nil-rs mesa3d-linklib-nak-c mesa3d-linklib-nak-rs
+
+NAK_SRCDIR    := $(top_srcdir)/$(CUR_MESADIR)
+NAK_HDRDIR    := $(top_srcdir)/src/nouveau/headers
+NIL_SRCDIR    := $(top_srcdir)/src/nouveau/nil
+NIL_GENDIR    := $(top_builddir)/src/nouveau/nil
+NAK_GENDIR    := $(top_builddir)/src/nouveau
+NAK_HOSTDIR   := $(NAK_GENDIR)/rust-host
+NAK_TGTDIR    := $(NAK_GENDIR)/rust-target
+NAK_CRATESDIR := $(PORTSDIR)/rust-crates
+
+# crates.io dependencies, the versions mesa's subprojects/*.wrap pin
+CRATE_PASTE         := paste-1.0.14
+CRATE_RUSTC_HASH    := rustc-hash-2.1.1
+CRATE_SYN           := syn-2.0.87
+CRATE_QUOTE         := quote-1.0.35
+CRATE_PROC_MACRO2   := proc-macro2-1.0.86
+CRATE_UNICODE_IDENT := unicode-ident-1.0.12
+CRATES_IO           := https://static.crates.io/crates
+
+#MM mesa3d-nak-crates-fetch : mesa3d-nak-fetch-paste mesa3d-nak-fetch-rustc-hash mesa3d-nak-fetch-syn \
+#MM     mesa3d-nak-fetch-quote mesa3d-nak-fetch-proc-macro2 mesa3d-nak-fetch-unicode-ident
+mesa3d-nak-crates-fetch :
+	$(Q)$(NOP)
+
+%fetch mmake=mesa3d-nak-fetch-paste archive=$(CRATE_PASTE) suffixes="crate" \
+    archive_origins="$(CRATES_IO)/paste" location=$(PORTSSOURCEDIR) destination=$(NAK_CRATESDIR)
+%fetch mmake=mesa3d-nak-fetch-rustc-hash archive=$(CRATE_RUSTC_HASH) suffixes="crate" \
+    archive_origins="$(CRATES_IO)/rustc-hash" location=$(PORTSSOURCEDIR) destination=$(NAK_CRATESDIR)
+%fetch mmake=mesa3d-nak-fetch-syn archive=$(CRATE_SYN) suffixes="crate" \
+    archive_origins="$(CRATES_IO)/syn" location=$(PORTSSOURCEDIR) destination=$(NAK_CRATESDIR)
+%fetch mmake=mesa3d-nak-fetch-quote archive=$(CRATE_QUOTE) suffixes="crate" \
+    archive_origins="$(CRATES_IO)/quote" location=$(PORTSSOURCEDIR) destination=$(NAK_CRATESDIR)
+%fetch mmake=mesa3d-nak-fetch-proc-macro2 archive=$(CRATE_PROC_MACRO2) suffixes="crate" \
+    archive_origins="$(CRATES_IO)/proc-macro2" location=$(PORTSSOURCEDIR) destination=$(NAK_CRATESDIR)
+%fetch mmake=mesa3d-nak-fetch-unicode-ident archive=$(CRATE_UNICODE_IDENT) suffixes="crate" \
+    archive_origins="$(CRATES_IO)/unicode-ident" location=$(PORTSSOURCEDIR) destination=$(NAK_CRATESDIR)
+
+#
+# C compiler view of mesa, shared by the C objects and by bindgen
+#
+
+USER_INCLUDES += \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(SRCDIR)/$(CURDIR)/../aros_compat \
+            -I$(top_srcdir)/include \
+            -I$(top_srcdir)/src \
+            -I$(top_srcdir)/src/compiler \
+            -I$(top_srcdir)/src/compiler/nir \
+            -I$(top_builddir)/src \
+            -I$(top_builddir)/src/compiler \
+            -I$(top_builddir)/src/compiler/nir \
+            -I$(top_srcdir)/src/util \
+            -I$(top_builddir)/src/util \
+            -I$(top_srcdir)/src/gallium/include \
+            -I$(top_srcdir)/src/gallium/auxiliary \
+            -I$(NAK_SRCDIR) \
+            -I$(NAK_HDRDIR) \
+            -I$(NAK_HDRDIR)/nvidia/classes \
+            -I$(NIL_SRCDIR) \
+            -I$(NIL_GENDIR) \
+            -I$(top_srcdir)/src/util/format \
+            -I$(top_builddir)/src/util/format \
+            -I$(top_srcdir)/src/nouveau/winsys \
+            -I$(top_srcdir)/src/nouveau \
+            -I$(top_srcdir)/include/drm-uapi \
+            -I$(SRCDIR)/workbench/hidds/nouveau/include
+
+USER_CPPFLAGS += -DNDEBUG
+USER_CFLAGS += $(MESA_NOWARNFLAGS) $(NOWARN_UNUSED_FUNCTION)
+
+NAK_BINDGEN := $(HOST_BINDGEN_ENV) $(HOST_BINDGEN)
+NAK_BINDGEN_CLANG_ARGS := $(RUST_BINDGEN_CLANG_ARGS) $(USER_CPPFLAGS) $(USER_INCLUDES)
+
+# what mesa's meson.build hands every bindgen run
+NAK_BINDGEN_OUTPUT_ARGS := --wrap-unsafe-ops \
+    --raw-line '\#![allow(clippy::all)]' \
+    --raw-line '\#![allow(improper_ctypes)]' \
+    --raw-line '\#![allow(unused_unsafe)]' \
+    --raw-line '\#![allow(non_camel_case_types)]' \
+    --raw-line '\#![allow(non_snake_case)]' \
+    --raw-line '\#![allow(non_upper_case_globals)]' \
+    --raw-line '\#![allow(unsafe_op_in_unsafe_fn)]' \
+    --raw-line '\#![allow(unnecessary_transmutes)]'
+
+#
+# Rust compiler invocations
+#
+
+# host: the proc-macro crates and what they depend on
+NAK_RUSTC_HOST := $(TARGET_RUSTC) -O --cap-lints allow -L dependency=$(NAK_HOSTDIR)
+# target: everything that ends up in libnak_rs.a
+NAK_RUSTC_TGT  := $(TARGET_RUSTC) $(TARGET_RUSTFLAGS) -O --cap-lints allow \
+                  -L dependency=$(NAK_TGTDIR) -L dependency=$(NAK_HOSTDIR)
+
+SYN_FEATURES := default derive parsing printing clone-impls proc-macro quote full visit-mut
+
+$(NAK_HOSTDIR)/libunicode_ident.rlib : $(NAK_CRATESDIR)/$(CRATE_UNICODE_IDENT)/src/lib.rs
+	%mkdir_q dir="$(NAK_HOSTDIR)"
+	$(Q)$(ECHO) "Compiling  rust crate unicode_ident (host)"
+	$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type rlib --crate-name unicode_ident -o $@ \
+	    $(NAK_CRATESDIR)/$(CRATE_UNICODE_IDENT)/src/lib.rs
+
+$(NAK_HOSTDIR)/libproc_macro2.rlib : $(NAK_HOSTDIR)/libunicode_ident.rlib
+	$(Q)$(ECHO) "Compiling  rust crate proc_macro2 (host)"
+	$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type rlib --crate-name proc_macro2 \
+	    --cfg 'feature="proc-macro"' --cfg 'feature="default"' --cfg use_proc_macro --cfg wrap_proc_macro \
+	    --extern unicode_ident=$(NAK_HOSTDIR)/libunicode_ident.rlib -o $@ \
+	    $(NAK_CRATESDIR)/$(CRATE_PROC_MACRO2)/src/lib.rs
+
+$(NAK_HOSTDIR)/libquote.rlib : $(NAK_HOSTDIR)/libproc_macro2.rlib
+	$(Q)$(ECHO) "Compiling  rust crate quote (host)"
+	$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type rlib --crate-name quote \
+	    --cfg 'feature="default"' --cfg 'feature="proc-macro"' \
+	    --extern proc_macro2=$(NAK_HOSTDIR)/libproc_macro2.rlib -o $@ \
+	    $(NAK_CRATESDIR)/$(CRATE_QUOTE)/src/lib.rs
+
+$(NAK_HOSTDIR)/libsyn.rlib : $(NAK_HOSTDIR)/libquote.rlib
+	$(Q)$(ECHO) "Compiling  rust crate syn (host)"
+	$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type rlib --crate-name syn \
+	    $(foreach f,$(SYN_FEATURES),--cfg 'feature="$(f)"') \
+	    --extern unicode_ident=$(NAK_HOSTDIR)/libunicode_ident.rlib \
+	    --extern quote=$(NAK_HOSTDIR)/libquote.rlib \
+	    --extern proc_macro2=$(NAK_HOSTDIR)/libproc_macro2.rlib -o $@ \
+	    $(NAK_CRATESDIR)/$(CRATE_SYN)/src/lib.rs
+
+$(NAK_HOSTDIR)/libpaste.so : $(NAK_CRATESDIR)/$(CRATE_PASTE)/src/lib.rs
+	%mkdir_q dir="$(NAK_HOSTDIR)"
+	$(Q)$(ECHO) "Compiling  rust proc-macro crate paste (host)"
+	$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type proc-macro --crate-name paste -o $@ \
+	    $(NAK_CRATESDIR)/$(CRATE_PASTE)/src/lib.rs
+
+$(NAK_HOSTDIR)/libcompiler_proc.rlib : $(NAK_HOSTDIR)/libsyn.rlib $(top_srcdir)/src/compiler/rust/proc/lib.rs
+	$(Q)$(ECHO) "Compiling  rust crate compiler_proc (host)"
+	$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type rlib --crate-name compiler_proc \
+	    --extern syn=$(NAK_HOSTDIR)/libsyn.rlib --extern quote=$(NAK_HOSTDIR)/libquote.rlib \
+	    --extern proc_macro2=$(NAK_HOSTDIR)/libproc_macro2.rlib -o $@ \
+	    $(top_srcdir)/src/compiler/rust/proc/lib.rs
+
+$(NAK_HOSTDIR)/libnak_ir_proc.so : $(NAK_HOSTDIR)/libcompiler_proc.rlib $(NAK_SRCDIR)/nak/ir_proc.rs
+	$(Q)$(ECHO) "Compiling  rust proc-macro crate nak_ir_proc (host)"
+	$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type proc-macro --crate-name nak_ir_proc \
+	    --extern compiler_proc=$(NAK_HOSTDIR)/libcompiler_proc.rlib --extern syn=$(NAK_HOSTDIR)/libsyn.rlib \
+	    --extern quote=$(NAK_HOSTDIR)/libquote.rlib --extern proc_macro2=$(NAK_HOSTDIR)/libproc_macro2.rlib -o $@ \
+	    $(NAK_SRCDIR)/nak/ir_proc.rs
+
+# target crates
+
+$(NAK_TGTDIR)/librustc_hash.rlib : $(NAK_CRATESDIR)/$(CRATE_RUSTC_HASH)/src/lib.rs
+	%mkdir_q dir="$(NAK_TGTDIR)"
+	$(Q)$(ECHO) "Compiling  rust crate rustc_hash"
+	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name rustc_hash --cfg 'feature="std"' -o $@ \
+	    $(NAK_CRATESDIR)/$(CRATE_RUSTC_HASH)/src/lib.rs
+
+$(NAK_TGTDIR)/libbitview.rlib : $(top_srcdir)/src/nouveau/rust/bitview/lib.rs
+	%mkdir_q dir="$(NAK_TGTDIR)"
+	$(Q)$(ECHO) "Compiling  rust crate bitview"
+	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name bitview -o $@ $<
+
+# the "compiler" crate: mesa's NIR seen from Rust. Its sources sit next to
+# a generated bindings.rs, so the sources are copied beside it.
+COMPILER_RS_GENDIR := $(NAK_GENDIR)/compiler-rs
+COMPILER_RS_BINDING_TYPES := exec_list exec_node float_controls gc_ctx gl_access_qualifier \
+    gl_frag_result gl_interp_mode mesa_shader_stage gl_subgroup_size gl_system_value \
+    gl_tess_spacing gl_varying_slot gl_vert_attrib glsl_type glsl_matrix_layout nir_.* \
+    mesa_scope mesa_prim shader_info tess_primitive_mode u_printf_info
+
+$(COMPILER_RS_GENDIR)/bindings.rs : $(top_srcdir)/src/compiler/rust/bindings.h $(wildcard $(top_srcdir)/src/compiler/rust/*.rs)
+	%mkdir_q dir="$(COMPILER_RS_GENDIR)"
+	$(Q)$(ECHO) "Generating rust bindings for NIR (compiler crate)"
+	$(Q)$(CP) $(top_srcdir)/src/compiler/rust/*.rs $(COMPILER_RS_GENDIR)/
+	$(Q)$(NAK_BINDGEN) $(NAK_BINDGEN_OUTPUT_ARGS) \
+	    --allowlist-var 'NIR_.*' --allowlist-var 'nir_.*_infos' --allowlist-var 'rust_.*' \
+	    --allowlist-function 'glsl_.*' --allowlist-function '_mesa_shader_stage_to_string' \
+	    --allowlist-function 'nir_.*' --allowlist-function 'compiler_rs.*' --allowlist-function 'u_memstream.*' \
+	    --allowlist-type u_memstream $(foreach t,$(COMPILER_RS_BINDING_TYPES),--allowlist-type '$(t)') \
+	    --no-prepend-enum-name --with-derive-default \
+	    -o $@ $< -- $(NAK_BINDGEN_CLANG_ARGS) || ($(RM) $@; false)
+
+$(NAK_TGTDIR)/libcompiler.rlib : $(COMPILER_RS_GENDIR)/bindings.rs
+	$(Q)$(ECHO) "Compiling  rust crate compiler"
+	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name compiler -A non_snake_case -o $@ \
+	    $(COMPILER_RS_GENDIR)/lib.rs
+
+# nvidia_headers: generated from the class headers (see the script)
+NVH_RS_GENDIR := $(NAK_GENDIR)/nvidia-headers-rs
+
+$(NVH_RS_GENDIR)/lib.rs : $(SRCDIR)/$(CURDIR)/gen-nvidia-headers-rs.sh $(NAK_HDRDIR)/meson.build
+	$(Q)$(ECHO) "Generating rust nvidia_headers crate"
+	$(Q)$(SRCDIR)/$(CURDIR)/gen-nvidia-headers-rs.sh $(NAK_HDRDIR) $(NVH_RS_GENDIR) "$(PYTHON)" \
+	    "$(NAK_BINDGEN) $(NAK_BINDGEN_OUTPUT_ARGS)" -- $(NAK_BINDGEN_CLANG_ARGS)
+
+$(NAK_TGTDIR)/libnvidia_headers.rlib : $(NVH_RS_GENDIR)/lib.rs
+	%mkdir_q dir="$(NAK_TGTDIR)"
+	$(Q)$(ECHO) "Compiling  rust crate nvidia_headers"
+	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nvidia_headers -o $@ $<
+
+# nak_latencies: instruction latency tables
+LAT_SRCDIR   := $(NAK_SRCDIR)/latencies
+LAT_RS_GENDIR := $(NAK_GENDIR)/nak-latencies-rs
+LAT_SMS      := sm100
+
+$(LAT_RS_GENDIR)/lib.rs : $(LAT_SRCDIR)/lib_rs_gen.py $(LAT_SRCDIR)/lat_rs_gen.py $(wildcard $(LAT_SRCDIR)/sm100/*.csv)
+	%mkdir_q dir="$(LAT_RS_GENDIR)"
+	$(Q)$(ECHO) "Generating rust nak_latencies crate"
+	$(Q)$(FOR) sm in $(LAT_SMS) ; do \
+	    $(PYTHON) $(LAT_SRCDIR)/lat_rs_gen.py -p $(NAK_HDRDIR) $(LAT_SRCDIR)/$$sm/*.csv --out-rs $(LAT_RS_GENDIR)/$$sm.rs --sm $$sm || exit 1 ; \
+	done
+	$(Q)$(PYTHON) $(LAT_SRCDIR)/lib_rs_gen.py -p $(NAK_HDRDIR) --out-rs $@ $(LAT_SMS)
+
+$(NAK_TGTDIR)/libnak_latencies.rlib : $(LAT_RS_GENDIR)/lib.rs
+	%mkdir_q dir="$(NAK_TGTDIR)"
+	$(Q)$(ECHO) "Compiling  rust crate nak_latencies"
+	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nak_latencies -o $@ $<
+
+# nak_bindings: NAK's own C headers seen from Rust
+$(NAK_GENDIR)/nak_bindings.rs : $(NAK_SRCDIR)/nak_bindings.h $(NAK_SRCDIR)/nak.h $(NAK_SRCDIR)/nak_private.h
+	%mkdir_q dir="$(NAK_GENDIR)"
+	$(Q)$(ECHO) "Generating rust bindings for NAK (nak_bindings crate)"
+	$(Q)$(NAK_BINDGEN) $(NAK_BINDGEN_OUTPUT_ARGS) \
+	    $(foreach t,$(COMPILER_RS_BINDING_TYPES),--blocklist-type '$(t)') \
+	    --raw-line 'use compiler::bindings::*;' \
+	    --allowlist-type 'drm.*' --allowlist-type 'nak_.*' --allowlist-type 'nouveau_ws_.*' \
+	    --allowlist-var 'DRM_.*' --allowlist-var 'NAK_.*' --allowlist-var NVIDIA_VENDOR_ID \
+	    --allowlist-function 'drm.*' --allowlist-function 'nak_.*' --allowlist-function 'nouveau_ws_.*' \
+	    --blocklist-type 'glsl_.*' --no-prepend-enum-name --with-derive-default \
+	    -o $@ $< -- $(NAK_BINDGEN_CLANG_ARGS) || ($(RM) $@; false)
+
+$(NAK_TGTDIR)/libnak_bindings.rlib : $(NAK_GENDIR)/nak_bindings.rs $(NAK_TGTDIR)/libcompiler.rlib
+	$(Q)$(ECHO) "Compiling  rust crate nak_bindings"
+	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nak_bindings \
+	    --extern compiler=$(NAK_TGTDIR)/libcompiler.rlib -o $@ $<
+
+# NIL: the image layout library, also Rust, with a cbindgen'd C header
+$(NIL_GENDIR)/nil_format_table.h $(NIL_GENDIR)/nil_format_table.c : $(NIL_SRCDIR)/nil_format_table_gen.py $(NIL_SRCDIR)/nil_formats.csv
+	%mkdir_q dir="$(NIL_GENDIR)"
+	$(Q)$(ECHO) "Generating nil_format_table"
+	$(Q)$(PYTHON) $< --csv $(NIL_SRCDIR)/nil_formats.csv --out-h $(NIL_GENDIR)/nil_format_table.h --out-c $(NIL_GENDIR)/nil_format_table.c
+
+$(NIL_GENDIR)/nil_bindings.rs : $(NIL_SRCDIR)/nil_bindings.h $(NIL_GENDIR)/nil_format_table.h
+	$(Q)$(ECHO) "Generating rust bindings for NIL (nil_rs_bindings crate)"
+	$(Q)$(NAK_BINDGEN) $(NAK_BINDGEN_OUTPUT_ARGS) \
+	    --allowlist-function util_format_description --allowlist-function util_format_get_blocksize \
+	    --allowlist-function util_format_is_compressed --allowlist-function util_format_is_pure_integer \
+	    --allowlist-function util_format_is_srgb --allowlist-function drm_format_mod_block_linear_2D \
+	    --allowlist-function drm_mod_is_nvidia \
+	    --allowlist-type nil_format_support_flags --allowlist-type nv_device_info --allowlist-type nv_device_type \
+	    --allowlist-type pipe_format --allowlist-type pipe_swizzle \
+	    --allowlist-var nil_format_table --allowlist-var drm_format_mod_invalid --allowlist-var drm_format_mod_linear \
+	    --no-prepend-enum-name \
+	    -o $@ $< -- $(NAK_BINDGEN_CLANG_ARGS) || ($(RM) $@; false)
+
+$(NAK_TGTDIR)/libnil_rs_bindings.rlib : $(NIL_GENDIR)/nil_bindings.rs
+	%mkdir_q dir="$(NAK_TGTDIR)"
+	$(Q)$(ECHO) "Compiling  rust crate nil_rs_bindings"
+	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nil_rs_bindings -o $@ $<
+
+$(NAK_TGTDIR)/libnil_rs.a : $(wildcard $(NIL_SRCDIR)/*.rs) $(NAK_HOSTDIR)/libpaste.so \
+        $(NAK_TGTDIR)/libbitview.rlib $(NAK_TGTDIR)/libnvidia_headers.rlib $(NAK_TGTDIR)/libnil_rs_bindings.rlib
+	$(Q)$(ECHO) "Compiling  rust crate nil (staticlib)"
+	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type staticlib --crate-name nil -A non_snake_case \
+	    --extern paste=$(NAK_HOSTDIR)/libpaste.so --extern bitview=$(NAK_TGTDIR)/libbitview.rlib \
+	    --extern nvidia_headers=$(NAK_TGTDIR)/libnvidia_headers.rlib \
+	    --extern nil_rs_bindings=$(NAK_TGTDIR)/libnil_rs_bindings.rlib \
+	    -o $@ $(NIL_SRCDIR)/lib.rs
+
+$(NIL_GENDIR)/nil.h : $(NIL_SRCDIR)/cbindgen.toml $(wildcard $(NIL_SRCDIR)/*.rs)
+	%mkdir_q dir="$(NIL_GENDIR)"
+	$(Q)$(ECHO) "Generating nil.h"
+	$(Q)$(HOST_CBINDGEN) -q --config $(NIL_SRCDIR)/cbindgen.toml --lang c --output $@ -- $(NIL_SRCDIR)/lib.rs
+
+#MM
+mesa3d-linklib-nil-rs : $(top_libdir)/libnil_rs.a
+
+$(top_libdir)/libnil_rs.a : $(NAK_TGTDIR)/libnil_rs.a
+	%mkdir_q dir="$(top_libdir)"
+	$(Q)$(CP) $< $@
+
+#MM mesa3d-linklib-nil-c : mesa3d-nil-generate-c
+#MM
+mesa3d-nil-generate-c : $(NIL_GENDIR)/nil_format_table.c $(NIL_GENDIR)/nil.h
+
+%build_linklib mmake=mesa3d-linklib-nil-c \
+    libname=nil \
+    libdir=$(top_libdir) \
+    objdir=$(NIL_GENDIR) \
+    files="$(NIL_GENDIR)/nil_format_table"
+
+# NAK itself, as a C-ABI static library
+$(NAK_TGTDIR)/libnak_rs.a : $(wildcard $(NAK_SRCDIR)/nak/*.rs) \
+        $(NAK_HOSTDIR)/libpaste.so $(NAK_HOSTDIR)/libnak_ir_proc.so \
+        $(NAK_TGTDIR)/librustc_hash.rlib $(NAK_TGTDIR)/libbitview.rlib $(NAK_TGTDIR)/libcompiler.rlib \
+        $(NAK_TGTDIR)/libnvidia_headers.rlib $(NAK_TGTDIR)/libnak_bindings.rlib $(NAK_TGTDIR)/libnak_latencies.rlib
+	$(Q)$(ECHO) "Compiling  rust crate nak (staticlib)"
+	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type staticlib --crate-name nak -A non_snake_case \
+	    --extern paste=$(NAK_HOSTDIR)/libpaste.so --extern nak_ir_proc=$(NAK_HOSTDIR)/libnak_ir_proc.so \
+	    --extern rustc_hash=$(NAK_TGTDIR)/librustc_hash.rlib --extern bitview=$(NAK_TGTDIR)/libbitview.rlib \
+	    --extern compiler=$(NAK_TGTDIR)/libcompiler.rlib --extern nvidia_headers=$(NAK_TGTDIR)/libnvidia_headers.rlib \
+	    --extern nak_bindings=$(NAK_TGTDIR)/libnak_bindings.rlib --extern nak_latencies=$(NAK_TGTDIR)/libnak_latencies.rlib \
+	    -o $@ $(NAK_SRCDIR)/nak/lib.rs
+
+#MM
+mesa3d-linklib-nak-rs : $(top_libdir)/libnak_rs.a
+
+$(top_libdir)/libnak_rs.a : $(NAK_TGTDIR)/libnak_rs.a
+	%mkdir_q dir="$(top_libdir)"
+	$(Q)$(CP) $< $@
+
+#
+# The C side
+#
+
+NAK_C_SOURCES := $(patsubst %.c,%,$(wildcard $(NAK_SRCDIR)/nak_nir*.c)) \
+                 $(top_srcdir)/src/compiler/rust/rust_helpers
+NAK_C_GEN_SOURCES := $(NAK_GENDIR)/compiler/nak_nir_algebraic
+
+$(NAK_GENDIR)/compiler/nak_nir_algebraic.c : $(NAK_SRCDIR)/nak_nir_algebraic.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(notdir $@)"
+	$(Q)$(PYTHON) $< -p $(top_srcdir)/src/compiler/nir --out $@ || ($(RM) $@; false)
+
+#MM mesa3d-linklib-nak-c : mesa3d-nak-generate-c
+#MM
+mesa3d-nak-generate-c : $(NAK_GENDIR)/compiler/nak_nir_algebraic.c $(NIL_GENDIR)/nil.h
+
+%build_linklib mmake=mesa3d-linklib-nak-c \
+    libname=nak \
+    libdir=$(top_libdir) \
+    objdir=$(NAK_GENDIR)/compiler \
+    files="$(NAK_C_SOURCES) $(NAK_C_GEN_SOURCES)"
+
+#MM
+mesa3d-linklib-nak :
+	$(Q)$(NOP)
+
+%common
