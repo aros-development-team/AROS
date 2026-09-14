@@ -41,6 +41,7 @@ exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
 exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version=`cat ${srcdir}/arch/all-pc/boot/grub2_def`
+minimum_make_version=`cat ${srcdir}/config/make_min`
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -616,6 +617,23 @@ re-running configure])])
         AC_MSG_ERROR([Unsupported host architecture $host])
         ;;
 esac
+
+AC_MSG_CHECKING([for GNU Make >= $minimum_make_version])
+aros_host_make_version=`$aros_host_make --version 2>/dev/null | $AWK 'NR == 1 && /^GNU Make / { print $3; exit }'`
+if test "x$aros_host_make_version" = "x"; then
+    AC_MSG_RESULT([no])
+    AC_MSG_ERROR([$aros_host_make is not GNU Make; GNU Make $minimum_make_version or newer is required])
+fi
+AS_VERSION_COMPARE([$aros_host_make_version], [$minimum_make_version],
+    [make_version_ok=no],
+    [make_version_ok=yes],
+    [make_version_ok=yes])
+if test "$make_version_ok" = "yes"; then
+    AC_MSG_RESULT([yes ($aros_host_make_version)])
+else
+    AC_MSG_RESULT([no ($aros_host_make_version)])
+    AC_MSG_ERROR([GNU Make $minimum_make_version or newer is required; found $aros_host_make_version])
+fi
 
 base_ar_name=${HOST_TOOLCHAIN_PREFIX}ar${HOST_TOOLCHAIN_SUFFIX}
 AROS_PROG(AR_BASE,$base_ar_name)

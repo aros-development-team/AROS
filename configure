@@ -560,6 +560,68 @@ as_tr_cpp="eval sed '$as_sed_cpp'" # deprecated
 as_sed_sh="y%*+%pp%;s%[^_$as_cr_alnum]%_%g"
 as_tr_sh="eval sed '$as_sed_sh'" # deprecated
 
+as_awk_strverscmp='
+  # Use only awk features that work with 7th edition Unix awk (1978).
+  # My, what an old awk you have, Mr. Solaris!
+  END {
+    while (length(v1) && length(v2)) {
+      # Set d1 to be the next thing to compare from v1, and likewise for d2.
+      # Normally this is a single character, but if v1 and v2 contain digits,
+      # compare them as integers and fractions as strverscmp does.
+      if (v1 ~ /^[0-9]/ && v2 ~ /^[0-9]/) {
+	# Split v1 and v2 into their leading digit string components d1 and d2,
+	# and advance v1 and v2 past the leading digit strings.
+	for (len1 = 1; substr(v1, len1 + 1) ~ /^[0-9]/; len1++) continue
+	for (len2 = 1; substr(v2, len2 + 1) ~ /^[0-9]/; len2++) continue
+	d1 = substr(v1, 1, len1); v1 = substr(v1, len1 + 1)
+	d2 = substr(v2, 1, len2); v2 = substr(v2, len2 + 1)
+	if (d1 ~ /^0/) {
+	  if (d2 ~ /^0/) {
+	    # Compare two fractions.
+	    while (d1 ~ /^0/ && d2 ~ /^0/) {
+	      d1 = substr(d1, 2); len1--
+	      d2 = substr(d2, 2); len2--
+	    }
+	    if (len1 != len2 && ! (len1 && len2 && substr(d1, 1, 1) == substr(d2, 1, 1))) {
+	      # The two components differ in length, and the common prefix
+	      # contains only leading zeros.  Consider the longer to be less.
+	      d1 = -len1
+	      d2 = -len2
+	    } else {
+	      # Otherwise, compare as strings.
+	      d1 = "x" d1
+	      d2 = "x" d2
+	    }
+	  } else {
+	    # A fraction is less than an integer.
+	    exit 1
+	  }
+	} else {
+	  if (d2 ~ /^0/) {
+	    # An integer is greater than a fraction.
+	    exit 2
+	  } else {
+	    # Compare two integers.
+	    d1 += 0
+	    d2 += 0
+	  }
+	}
+      } else {
+	# The normal case, without worrying about digits.
+	d1 = substr(v1, 1, 1); v1 = substr(v1, 2)
+	d2 = substr(v2, 1, 1); v2 = substr(v2, 2)
+      }
+      if (d1 < d2) exit 1
+      if (d1 > d2) exit 2
+    }
+    # Beware Solaris 11 /usr/xgp4/bin/awk, which mishandles some
+    # comparisons of empty strings to integers.  For example,
+    # LC_ALL=C /usr/xpg4/bin/awk "BEGIN {if (-1 < \"\") print \"a\"}"
+    # prints "a".
+    if (length(v2)) exit 1
+    if (length(v1)) exit 2
+  }
+'
 
 test -n "$DJDIR" || exec 7<&0 </dev/null
 exec 6>&1
@@ -641,10 +703,10 @@ KERNEL_DBUS_INCLUDES
 KERNEL_DBUS_KOBJ
 DBUS_LIBFLAGS
 DBUS_CFLAGS
-jpegxl_toolchainsupport
 nouveau_toolchainsupport
-aros_enable_rust
+jpegxl_toolchainsupport
 target_rust_version
+aros_enable_rust
 java_target
 objc_target
 llvm_target_cpu
@@ -1024,10 +1086,10 @@ with_aros_toolchain_install
 with_binutils_version
 with_gcc_version
 with_llvm_version
-with_rust_version
 enable_objc
 enable_java
 enable_rust
+with_rust_version
 with_cpu
 with_fpu
 with_float
@@ -1822,7 +1884,8 @@ Optional Packages:
   --with-llvm-version=VERSION
                           Compile llvm-VERSION for AROS
   --with-rust-version=VERSION
-                          Compile rust-VERSION for AROS (default=1.98.1)
+                          Compile rust-VERSION for AROS
+                          (default=$default_rust_version)
   --with-cpu=<spec>       Specify minumum CPU (default=$gcc_default_cpu).
   --with-fpu=<spec>       Specify minumum FPU (default=$gcc_float_fpu).
   --with-float=<spec>     Specify floating point ABI
@@ -3510,6 +3573,7 @@ exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
 exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version=`cat ${srcdir}/arch/all-pc/boot/grub2_def`
+minimum_make_version=`cat ${srcdir}/config/make_min`
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -6293,6 +6357,36 @@ printf '%s\n' "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
         as_fn_error $? "Unsupported host architecture $host" "$LINENO" 5
         ;;
 esac
+
+{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking for GNU Make >= $minimum_make_version" >&5
+printf %s "checking for GNU Make >= $minimum_make_version... " >&6; }
+aros_host_make_version=`$aros_host_make --version 2>/dev/null | $AWK 'NR == 1 && /^GNU Make / { print $3; exit }'`
+if test "x$aros_host_make_version" = "x"; then
+    { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf '%s\n' "no" >&6; }
+    as_fn_error $? "$aros_host_make is not GNU Make; GNU Make $minimum_make_version or newer is required" "$LINENO" 5
+fi
+as_arg_v1=$aros_host_make_version
+as_arg_v2=$minimum_make_version
+awk "$as_awk_strverscmp" v1="$as_arg_v1" v2="$as_arg_v2" /dev/null
+case $? in #(
+  1) :
+    make_version_ok=no ;; #(
+  0) :
+    make_version_ok=yes ;; #(
+  2) :
+    make_version_ok=yes ;; #(
+  *) :
+     ;;
+esac
+if test "$make_version_ok" = "yes"; then
+    { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: yes ($aros_host_make_version)" >&5
+printf '%s\n' "yes ($aros_host_make_version)" >&6; }
+else
+    { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: no ($aros_host_make_version)" >&5
+printf '%s\n' "no ($aros_host_make_version)" >&6; }
+    as_fn_error $? "GNU Make $minimum_make_version or newer is required; found $aros_host_make_version" "$LINENO" 5
+fi
 
 base_ar_name=${HOST_TOOLCHAIN_PREFIX}ar${HOST_TOOLCHAIN_SUFFIX}
 # Extract the first word of "$base_ar_name", so it can be a program name with args.
@@ -20195,7 +20289,9 @@ host_has_libelf=$have_libelf
 #Rust related
 
 
+
 # jpegxl.datatype toolchain support (libjxl requires gcc >= 8)
+
 
 
 # DBUS related
@@ -21775,3 +21871,4 @@ if test -n "$aros_shared_cflags" ; then
     echo "SHARED_CFLAGS := $aros_shared_cflags" >> ${aros_hostcfg_dir}/host.cfg
     echo "SHARED_AR := $aros_shared_ar" >> ${aros_hostcfg_dir}/host.cfg
 fi
+

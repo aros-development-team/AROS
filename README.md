@@ -5,6 +5,32 @@
 > The repository contains the main Operating System components, SDK and Build System.
 
 
+## Building from source
+
+A Git checkout must include the repository submodules:
+
+```sh
+git submodule update --init --recursive
+```
+
+AROS requires GNU Make 4.0 or newer. The canonical minimum version is
+recorded in `config/make_min` and checked by `configure`.
+
+The default target toolchain family and bundled GNU tool versions are defined
+by `config/toolchain_def`, `config/gcc_def`, and `config/binutils_def`. These
+files, rather than duplicated version numbers in build instructions, define
+the defaults.
+
+Build the main tree before distribution targets. For `pc-i386`, the normal
+full-build sequence used by `scripts/gimmearos.sh` is:
+
+```sh
+make
+make contrib
+make ports
+make distfiles
+```
+
 ## Nightly Test Builds
 
 
