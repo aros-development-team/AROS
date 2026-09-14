@@ -352,7 +352,8 @@ unpack()
         *.tar.bz2)
 	    if ! tar xfj "$archivepath/$archive"; then ret=false; fi
 	    ;;
-        *.tar.gz | *.tgz)
+        *.tar.gz | *.tgz | *.crate)
+	    # .crate is what crates.io serves: a gzipped tar
 	    if ! tar xfz "$archivepath/$archive"; then ret=false; fi
 	    ;;
         *.zip)
