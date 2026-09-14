@@ -24,12 +24,22 @@ include $(SRCDIR)/config/aros.cfg
 #MM crosstools-llvm-libcxxabi-create-patch : tools-crosstools-llvm-libcxxabi-cleanup
 #MM crosstools-libunwind-create-patch : tools-crosstools-libunwind-cleanup
 
-#MM- crosstools-compiler-rt-setup : tools-crosstools-llvm-setup tools-crosstools-compiler_rt-setup
-#MM crosstools-compiler-rt : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain tools-crosstools-autolibs
+# The toolchain linklibs are target components. Up to llvm 22 they are built
+# from the host monotree; from 23 (the umbrella runtimes build) they take their
+# sources from their own fetches into the target ports directory, and need only
+# the installed toolchain - which the top level make builds before AROS - rather
+# than the host sources and cmake configuration tools-crosstools-llvm-toolchain
+# carries with it.
+#MM- crosstools-compiler-rt-setup : crosstools-compiler-rt-source-$(TARGET_LLVM_RUNTIMES_STYLE)
+#MM- crosstools-compiler-rt-source-separate : tools-crosstools-llvm-setup tools-crosstools-compiler_rt-setup
+#MM- crosstools-compiler-rt-source-umbrella : crosstools-compiler-rt-target-fetch
+#MM- crosstools-linklibs-toolchain-separate : tools-crosstools-llvm-toolchain
+#MM- crosstools-linklibs-toolchain-umbrella :
+#MM crosstools-compiler-rt : crosstools-compiler-rt-setup crosstools-linklibs-toolchain-$(TARGET_LLVM_RUNTIMES_STYLE) tools-crosstools-autolibs
 #MM crosstools-compiler-rt-cmake : crosstools-compiler-rt-setup tools-crosstools-autolibs
 #MM- crosstools-compiler-rt-quick : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain-quick
 
-#MM crosstools-compiler-rt32 : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain tools-crosstools-autolibs32
+#MM crosstools-compiler-rt32 : crosstools-compiler-rt-setup crosstools-linklibs-toolchain-$(TARGET_LLVM_RUNTIMES_STYLE) tools-crosstools-autolibs32
 #MM crosstools-compiler-rt32-cmake : crosstools-compiler-rt-setup tools-crosstools-autolibs32
 #MM- crosstools-compiler-rt32-quick : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain-quick
 
@@ -54,15 +64,13 @@ include $(SRCDIR)/config/aros.cfg
 # because that is one of the few files metamake reads when resolving these.
 #MM- crosstools-llvm-runtimes-separate : \
 #MM           crosstools-libunwind tools-crosstools-llvm-libcxx tools-crosstools-llvm-libcxxabi
-# The umbrella replaces the three per-component *builds*, not the work they
-# depended on: every component still has to be moved into the monotree, and
-# compiler-rt still has to be in place first (the separate libcxx/libcxxabi
-# targets carried that dependency).
+# The umbrella build takes libcxx, libcxxabi and libunwind from its own fetch of
+# the target sources; compiler-rt still has to be in place first (the separate
+# libcxx/libcxxabi targets carried that dependency).
 #MM- crosstools-llvm-runtimes-umbrella : \
-#MM           tools-crosstools-llvm-setup \
-#MM           tools-crosstools-llvm-libcxx-setup tools-crosstools-llvm-libcxxabi-setup \
-#MM           tools-crosstools-libunwind-setup \
+#MM           crosstools-llvm-runtimes-target-fetch \
 #MM           crosstools-compiler-rt-fixup crosstools-llvm-runtimes
+#MM crosstools-llvm-runtimes-cmake : crosstools-llvm-runtimes-target-fetch
 #MM- crosstools-llvm-quick : \
 #MM           tools-crosstools-llvm-toolchain-quick \
 #MM           crosstools-compiler-rt-quick \
@@ -171,6 +179,16 @@ endif
 # llvm.cfg for what each is for and which versions need them. This is a plain
 # variable spliced into the setup recipe below, so it declares no metatarget.
 llvm-setup-extras := $(foreach d,$(LLVM_MONOTREE_SIBLINGS),&& mv $(LLVM_PROJECT_SRCDIR)/$(d) $(MONOTREE_BUILDBASE)/$(d))
+
+# Where the toolchain linklibs are built from - see crosstools-compiler-rt-setup.
+LLVM_TARGET_PROJECT_SRCDIR := $(PORTSDIR)/llvm/llvm-project/$(LLVM_PROJECT_ARCHBASE)
+ifeq ($(TARGET_LLVM_RUNTIMES_STYLE),umbrella)
+COMPILER_RT_LINKLIB_SRCDIR   := $(LLVM_TARGET_PROJECT_SRCDIR)/compiler-rt
+LLVM_RUNTIMES_LINKLIB_SRCDIR := $(LLVM_TARGET_PROJECT_SRCDIR)/runtimes
+else
+COMPILER_RT_LINKLIB_SRCDIR   := $(COMPILER_RT_BUILDBASE)
+LLVM_RUNTIMES_LINKLIB_SRCDIR := $(MONOTREE_BUILDBASE)/runtimes
+endif
 
 #LLVM_ALL_TARGETS        := yes
 
@@ -446,7 +464,7 @@ LLVM_RUNTIMES_CMAKEOPTIONS :=                                                   
   -DLIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY=ON                                                                                     \
   -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON
 
-%build_with_cmake mmake=crosstools-llvm-runtimes package=runtimes srcdir=$(MONOTREE_BUILDBASE)/runtimes                                  \
+%build_with_cmake mmake=crosstools-llvm-runtimes package=runtimes srcdir=$(LLVM_RUNTIMES_LINKLIB_SRCDIR)                                 \
     prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_RUNTIMES_CMAKEOPTIONS)" compiler=host usecppflags=no
 
 LLVM_COMPILER_RT_CMAKEBASE :=                                                                                                           \
@@ -499,7 +517,7 @@ LLVM_COMPILER_RT_CMAKEOPTIONS :=                                                
 
 #LLVM_COMPILER_RT_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
-%build_with_cmake mmake=crosstools-compiler-rt package=compiler-rt srcdir=$(COMPILER_RT_BUILDBASE)                                      \
+%build_with_cmake mmake=crosstools-compiler-rt package=compiler-rt srcdir=$(COMPILER_RT_LINKLIB_SRCDIR)                                 \
     prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host usecppflags=no
 
 # Clang's driver looks for libclang_rt.builtins-armhf.a on hard-float targets,
@@ -538,7 +556,7 @@ LLVM_COMPILER_RT32_CMAKEOPTIONS :=                                              
 
 #LLVM_COMPILER_RT32_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
-%build_with_cmake mmake=crosstools-compiler-rt32 package=compiler-rt32 srcdir=$(COMPILER_RT_BUILDBASE)                                  \
+%build_with_cmake mmake=crosstools-compiler-rt32 package=compiler-rt32 srcdir=$(COMPILER_RT_LINKLIB_SRCDIR)                             \
     prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_COMPILER_RT32_CMAKEOPTIONS)" compiler=host usecppflags=no
 endif
 
@@ -555,6 +573,24 @@ ifeq ($(LLVM_MONOREPO),yes)
 %create_patch mmake=crosstools-llvm-project-create-patch                                                                                \
     archive=$(LLVM_PROJECT_ARCHBASE) suffixes="tar.xz"                                                                                  \
     destination=$(HOSTDIR)/Ports/host/llvm-project
+
+# The toolchain linklibs fetch the same monorepo into the target ports
+# directory, beside workbench/libs/llvm's copy. fetch.sh unpacks an archive once
+# per destination and records each patch separately, so every fetch there
+# applies only its own components' patches to the one tree.
+LLVM_RUNTIMES_TARGET_PATCHES_SPECS := $(LIBCXX_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1 \
+                                      $(LIBCXXABI_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1 \
+                                      $(LIBUNWIND_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1
+
+%fetch mmake=crosstools-compiler-rt-target-fetch archive=$(LLVM_PROJECT_ARCHBASE)                                                       \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/llvm/llvm-project                                                                \
+    patches_specs=$(COMPILER_RT_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1
+
+%fetch mmake=crosstools-llvm-runtimes-target-fetch archive=$(LLVM_PROJECT_ARCHBASE)                                                     \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/llvm/llvm-project                                                                \
+    patches_specs=$(LLVM_RUNTIMES_TARGET_PATCHES_SPECS)
 
 # The per-component fetch targets the setup rules depend on are satisfied by
 # the single monorepo fetch above.
@@ -656,9 +692,9 @@ endif
     destination=$(HOSTDIR)/Ports/host/llvm
 
 
-# metamake collects mmake= targets from both branches above, so this one needs a
-# rule here as well - a guard alone does not remove it from the target list.
-crosstools-llvm-project-fetch :
+# metamake collects mmake= targets from both branches above, so these need a
+# rule here as well - a guard alone does not remove them from the target list.
+crosstools-llvm-project-fetch crosstools-compiler-rt-target-fetch crosstools-llvm-runtimes-target-fetch :
 	$(Q)$(NOP)
 
 endif  # LLVM_MONOREPO
