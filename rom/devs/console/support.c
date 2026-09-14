@@ -116,15 +116,15 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
     if (icu->pendingCSILen > 0)
     {
         UWORD pl = icu->pendingCSILen;
-        icu->pendingCSILen = 0;
         allocbuf = AllocMem(pl + towrite, MEMF_ANY);
-        if (allocbuf)
-        {
-            CopyMem(icu->pendingCSI, allocbuf, pl);
-            CopyMem(buf, allocbuf + pl, towrite);
-            buf = (STRPTR) allocbuf;
-            towrite += pl;
-        }
+        if (!allocbuf)
+            ReturnInt("WriteToConsole", LONG, 0);
+
+        icu->pendingCSILen = 0;
+        CopyMem(icu->pendingCSI, allocbuf, pl);
+        CopyMem(buf, allocbuf + pl, towrite);
+        buf = (STRPTR) allocbuf;
+        towrite += pl;
     }
 
     write_str = orig_write_str = (UBYTE *) buf;
