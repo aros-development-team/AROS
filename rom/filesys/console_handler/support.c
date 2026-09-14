@@ -217,7 +217,7 @@ BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
     UBYTE c;
     WORD paramid = 1;
     LONG paramval = 0;
-    BOOL ok = TRUE, done = FALSE, paramok = FALSE;
+    BOOL ok = TRUE, done = FALSE, paramok = FALSE, nodrag = FALSE;
 
     ASSERT_VALID_PTR(fh);
     ASSERT_VALID_PTR(nw);
@@ -317,6 +317,7 @@ BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
                     else if (!strnicmp(param, "NODRAG", paramlen))
                     {
                         nw->Flags &= ~WFLG_DRAGBAR;
+                        nodrag = TRUE;
                     }
                     else if (!strnicmp(param, "NOBORDER", paramlen))
                     {
@@ -382,6 +383,9 @@ BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
         } /* switch(c) */
 
     } /* while (!done) */
+
+    if (nodrag)
+        nw->Flags &= ~WFLG_CLOSEGADGET;
 
     return ok;
 }
