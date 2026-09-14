@@ -270,14 +270,11 @@ static BOOL PreparePattern(struct filehandle *fh, struct completioninfo *ci)
     {
         if (parsecode == 0)
         {
-            if (ci->withinfo)
-            {
-                strncat(ci->filepart, "#?", sizeof(ci->filepart));
-            }
-            else
-            {
-                strncat(ci->filepart, "~(#?.info)", sizeof(ci->filepart));
-            }
+            CONST_STRPTR suffix = ci->withinfo ? "#?" : "~(#?.info)";
+
+            if (Strlcat(ci->filepart, suffix, sizeof(ci->filepart)) >= sizeof(ci->filepart))
+                return FALSE;
+
             parsecode = ParsePatternNoCase(ci->filepart, ci->pattern, sizeof(ci->pattern));
         }
     }
