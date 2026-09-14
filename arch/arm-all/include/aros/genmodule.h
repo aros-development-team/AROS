@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: genmodule.h include file for arm-le systems
 */
@@ -12,6 +12,36 @@
 /* Macros for generating library stub functions and aliases for stack libcalls. */
 
 /******************* Linklib Side Thunks ******************/
+
+/* Tail shared by the two linklib stubs below: jump to JumpVec[-lvo] with the
+   libbase left in r12, where the library side thunk expects it.
+
+   ARM's ldr immediate offset is only 12 bits, so the direct form reaches just
+   the first 1024 vectors. Past that the offset has to come out of a literal,
+   and r12 is the sole register a stub may clobber - r0-r3 carry the arguments,
+   r4-r11 are callee saved, lr is the return address and r12 itself has to
+   arrive holding the base - so the target address is staged through the stack
+   instead of a second scratch register. Both paths key off operand 0, which is
+   the (negative) vector offset in each of the macros.  */
+#define __AROS_GM_STUBJMP                                               \
+            ".if (%c0) >= -4095\n"                                      \
+            "\tldr pc, [r12, #%c0]\n"                                   \
+            ".else\n"                                                   \
+            "\tpush {r0}\n"             /* [sp] = r0                 */ \
+            "\tldr r0, 3f\n"            /* r0 = -lvo*LIB_VECTSIZE    */ \
+            "\tldr r0, [r12, r0]\n"     /* r0 = JumpVec[-lvo].vec    */ \
+            "\tstr r0, [sp, #-4]!\n"    /* [sp] = target, [sp+4] = r0 */\
+            "\tldr r0, [sp, #4]\n"      /* restore r0                */ \
+            "\tldr pc, [sp], #8\n"      /* jump, releasing both slots */ \
+            ".endif\n"
+
+/* Literal holding the vector offset, emitted only when the tail above needs
+   it. Placed with the stub's other literals, past the end of the code.  */
+#define __AROS_GM_STUBLIT                                               \
+            ".if (%c0) < -4095\n"                                       \
+            ".align 2\n"                                                \
+            "3:\t.word %c0\n"                                           \
+            ".endif\n"
 
 /* Macro: AROS_GM_LIBFUNCSTUB(functionname, libbasename, lvo)
    This macro will generate code for a stub function for
@@ -30,9 +60,10 @@
             "\tldr r12, 1f\n"                                           \
             "\tldr r12, [r12]\n"                                        \
             /* Compute function address and jump */                     \
-            "\tldr pc, [r12, #%c0]\n"                                   \
+            __AROS_GM_STUBJMP                                           \
             ".align 2\n"                                                \
             "1: .word " #libbasename "\n"                               \
+            __AROS_GM_STUBLIT                                           \
             : : "i" ((-lvo*LIB_VECTSIZE))                               \
         );                                                              \
     }
@@ -62,9 +93,11 @@
             /* Restore original arguments */                            \
             "\tpop {r0, r1, r2, r3, lr}\n"                              \
             /* Compute function address and jump */                     \
-            "\tldr pc, [r12, #%c0]\n"                                   \
+            __AROS_GM_STUBJMP                                           \
+            ".align 2\n"                                                \
 	    "1:	.word __aros_rellib_offset_" #libbasename "\n"                        \
             "2: .word __aros_getoffsettable\n"                          \
+            __AROS_GM_STUBLIT                                           \
             : : "i" ((-lvo*LIB_VECTSIZE))                               \
         );                                                              \
     }
