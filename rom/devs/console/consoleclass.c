@@ -10,6 +10,7 @@
 
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/keymap.h>
 
 #include <aros/asmcall.h>
 #include <devices/conunit.h>
@@ -74,6 +75,7 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 
         /* Initialize the unit fields */
         unit->cu_Window = win;
+        unit->cu_KeyMapStruct = *AskKeyMapDefault();
 
         /* For now one should use only non-proportional fonts */
         unit->cu_XRSize = rp->Font->tf_XSize;
