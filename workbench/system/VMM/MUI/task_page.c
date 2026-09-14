@@ -1,8 +1,5 @@
 #include "defs.h"
 
-#define DEBUG 1
-#include <aros/debug.h>
-
 char *CodeEntries [3];
 char *DataEntries [4];
 
