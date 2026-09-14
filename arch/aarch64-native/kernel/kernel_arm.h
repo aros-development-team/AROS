@@ -20,8 +20,9 @@ struct ARM_Implementation
     void                (*ARMI_InitCore) (APTR, APTR);
     void                (*ARMI_SendIPI) (uint32_t, uint32_t, uint32_t);
     APTR                (*ARMI_InitTimer) (APTR);
+    void                (*ARMI_InitTimerCore) (void); // arms the calling core's per-core scheduler heartbeat
     void                (*ARMI_Delay) (int);
-    unsigned int        (*ARMI_GetTime) (void);
+    uint64_t            (*ARMI_GetTime) (void); // full 64-bit free-running µs counter, wrap-free
     void                (*ARMI_PutChar) (int);
     void                (*ARMI_SerPutChar) (uint8_t);
     int                 (*ARMI_SerGetChar) (void);

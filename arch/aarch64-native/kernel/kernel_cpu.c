@@ -98,6 +98,9 @@ asm(
 "               ldr     x3, mpcore_code        \n"
 "               br      x3                     \n"
 
+/* 8-byte aligned: the loads above run with the MMU off, where every
+ * access is Device memory and an unaligned one faults. */
+"               .balign 8                       \n"
 "       .globl mpcore_pde                       \n"
 "mpcore_pde:    .quad   0                       \n"
 "mpcore_code:   .quad   0                       \n"
@@ -113,6 +116,12 @@ asm(
 
 spinlock_t startup_lock;
 
+#if defined(__AROSEXEC_SMP__)
+/* Filled in by exec as it creates the idle tasks. */
+struct Task *aarch64_IdleTask[AARCH64_MAXCPUS];
+struct aarch64_CPULoadData aarch64_CPULoad[AARCH64_MAXCPUS];
+#endif
+
 void cpu_Register()
 {
     uint64_t tmp;
@@ -122,6 +131,9 @@ void cpu_Register()
 #endif
     struct KernelBase *KernelBase;
     cpuid_t cpunum = GetCPUNumber();
+
+    /* VBAR_EL1 is per-core and resets UNKNOWN - vectors first. */
+    core_SetupIntrCore();
 
     /* Enable I-cache, D-cache, branch prediction */
     asm volatile("mrs %0, sctlr_el1" : "=r"(tmp));
@@ -149,6 +161,11 @@ void cpu_Register()
         __arm_arosintern.ARMI_InitCore(KernelBase, SysBase);
 
     cpu_BootStrap(__tls->ThisTask, SysBase);
+
+    /* After the bootstrap task exists, so the first tick lands on a core
+     * that is already schedulable. Core 0 keeps the system timer. */
+    if (__arm_arosintern.ARMI_InitTimerCore)
+        __arm_arosintern.ARMI_InitTimerCore();
 #else
     KernelBase = (struct KernelBase *)TLS_GET(KernelBase);
 #endif
@@ -189,6 +206,12 @@ cpu_registerfatal:
     /* We now start up the interrupts */
     Permit();
     Enable();
+
+    /* Become this core's idle context - do NOT return: we were reached by
+     * a `br`, so x30 still holds firmware leftovers. An IPI arrives as an
+     * FIQ and its exit path dispatches whatever became ready. */
+    for (;;)
+        asm volatile("wfi");
 #endif
 }
 
@@ -320,10 +343,28 @@ void cpu_Switch(regs_t *regs)
     /* Cache running task's context */
     STORE_TASKSTATE(task, regs)
 
-    if (__arm_arosintern.ARMI_GetTime)
+#if defined(__AROSEXEC_SMP__)
+    /* Wait() carries tc_SpinLock across KrnSwitch so no other CPU can
+     * dispatch this task before its context is saved. Stored now. */
+    if (task->tc_State == TS_WAIT)
+        KrnSpinUnLock(&task->tc_SpinLock);
+#endif
+
+    /* iet_private1 == 0 = never dispatched (boot and bootstrap tasks are
+     * installed with SET_THIS_TASK); a delta would charge them the whole
+     * uptime. */
+    if (__arm_arosintern.ARMI_GetTime &&
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_private1)
     {
-        /* Update the task's CPU time */
-        timeCur = __arm_arosintern.ARMI_GetTime() - IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
+        /* The counter is microseconds, so scale to ns. 32-bit delta, to
+         * survive the low word's ~71 minute wrap. */
+        uint32_t deltaUS = (uint32_t)__arm_arosintern.ARMI_GetTime() -
+                           (uint32_t)IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
+
+        /* Cumulative busy us, read back by the usage sweep. */
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_private2 += deltaUS;
+
+        timeCur = (UQUAD)deltaUS * 1000;
         timeSpec.tv_sec = timeCur / 1000000000;
         timeSpec.tv_nsec = timeCur % 1000000000;
 
@@ -357,7 +398,10 @@ void cpu_Dispatch(regs_t *regs)
     while (!(task = core_Dispatch()))
     {
         DSCHED(bug("[Kernel:%02d] cpu_Dispatch: Nothing to run - idling\n", cpunum));
+        /* WFI wakes on masked interrupts, but the pending IPI must be
+         * HANDLED to make a task ready - open a brief window for it. */
         asm volatile("wfi");
+        asm volatile("msr daifclr, #3\n\tisb\n\tmsr daifset, #3" ::: "memory");
     }
 
     DSCHED(bug("[Kernel:%02d] cpu_Dispatch: 0x%p [R  ] '%s'\n", cpunum, task, task->tc_Node.ln_Name));
