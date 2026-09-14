@@ -780,6 +780,7 @@ void Completion(struct filehandle *fh, BOOL withinfo)
                 if (doprint)
                 {
                     WORD backspaces;
+                    size_t matchlen;
                     UBYTE c;
 
                     if (strchr(ci->match, ' '))
@@ -790,8 +791,16 @@ void Completion(struct filehandle *fh, BOOL withinfo)
                      before reprinting expanded filename */
 
                     backspaces = ci->fh->inputpos - ci->wordstart;
+                    matchlen = strnlen(ci->match, sizeof(ci->match));
 
-                    memmove(ci->match + backspaces, ci->match, sizeof(ci->match) - backspaces);
+                    if ((matchlen == sizeof(ci->match)) ||
+                        ((size_t)backspaces + matchlen >= sizeof(ci->match)))
+                    {
+                        CleanupCompletion(ci);
+                        return;
+                    }
+
+                    memmove(ci->match + backspaces, ci->match, matchlen + 1);
                     SetMem(ci->match, 8, backspaces);
 
                     c = ci->match[strlen(ci->match) - 1];
