@@ -292,9 +292,61 @@ D(
 #define str_Bootstrap "bootstrap"
 )
 
+static int range_available(const void *start, const void *end, IPTR size)
+{
+    IPTR first = (IPTR)start;
+    IPTR last = (IPTR)end;
+
+    return first <= last && size <= last - first;
+}
+
+static int pkg_next(void **file, void *end, char **name, void **data)
+{
+    void *cursor = *file;
+    char *path;
+    unsigned int len;
+    IPTR remaining;
+
+    if (!range_available(cursor, end, sizeof(len)))
+        return 0;
+
+    len = LONG2BE(*(unsigned int *)cursor);
+    cursor = (void *)((IPTR)cursor + sizeof(len));
+
+    remaining = (IPTR)end - (IPTR)cursor;
+    if (len >= remaining)
+        return 0;
+    if (((char *)cursor)[len] != 0)
+        return 0;
+
+    path = cursor;
+    cursor = (void *)((IPTR)cursor + len + 1);
+
+    if (!range_available(cursor, end, sizeof(len)))
+        return 0;
+
+    len = LONG2BE(*(unsigned int *)cursor);
+    cursor = (void *)((IPTR)cursor + sizeof(len));
+
+    if (!range_available(cursor, end, len))
+        return 0;
+
+    *name = __bs_remove_path(path);
+    *data = cursor;
+    *file = (void *)((IPTR)cursor + len);
+
+    return 1;
+}
+
 unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned long end)
 {
     char *p = (char *)mod_start;
+
+    if (!range_available(p, (void *)mod_end, 4))
+    {
+        D(kprintf("[%s] Truncated module @ %p\n", str_Bootstrap, p);)
+        return end;
+    }
 
     if (p[0] == 0x7f && p[1] == 'E' && p[2] == 'L' && p[3] == 'F')
     {
@@ -318,31 +370,36 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
          * The loaded file is an PKG\0 archive. Scan it to find all modules which are
          * stored here.
          */
-        void *file = p + 8;
-
-        D(kprintf("[%s] * package @ %p:\n", str_Bootstrap, mod_start);)
-
-        while (file < (void*)mod_end)
+        if (range_available(p, (void *)mod_end, 8))
         {
-            int len = LONG2BE(*(int *)file);
-            char *s = __bs_remove_path(file+4);
-            struct ELFNode *mo = module_prepare(s);
+            void *file = p + 8;
 
-            file += 5+len;
-            len = LONG2BE(*(int *)file);
-            file += 4;
+            D(kprintf("[%s] * package @ %p:\n", str_Bootstrap, mod_start);)
 
-            mo->Name = s;
-            mo->eh = file;
-            D(kprintf("[%s]   * PKG module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
+            while (file < (void *)mod_end)
+            {
+                char *s;
+                void *data;
+                struct ELFNode *mo;
 
-            file += len;
+                if (!pkg_next(&file, (void *)mod_end, &s, &data))
+                {
+                    D(kprintf("[%s]   * Malformed PKG member @ %p\n", str_Bootstrap, file);)
+                    break;
+                }
+
+                mo = module_prepare(s);
+                mo->Name = s;
+                mo->eh = data;
+                D(kprintf("[%s]   * PKG module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
+            }
         }
+        D(else kprintf("[%s] * Truncated package header @ %p\n", str_Bootstrap, p);)
 
         if (mod_end > end)
             end = mod_end;
     }
-    else if (memcmp(p,"!<arch>\n",8) == 0) {
+    else if (range_available(p, (void *)mod_end, 8) && memcmp(p,"!<arch>\n",8) == 0) {
         const struct ar_header *file;
         char *name;
         const struct ar_header *longnames = NULL;
