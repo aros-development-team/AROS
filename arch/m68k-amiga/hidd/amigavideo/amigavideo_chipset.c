@@ -2027,7 +2027,12 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     custom->cop1lc = (ULONG)csd->copper1;
     custom->cop2lc = (ULONG)csd->copper2_backup;
 
-    custom->dmacon = 0x8000 | 0x0080 | 0x0040 | 0x0020;
+    /*
+     * Keep raster DMA enabled even while the null view has no bitplanes,
+     * matching Kickstart.  Hardware-takeover programs may save DMACONR and
+     * restore it after installing their own bitplanes.
+     */
+    custom->dmacon = 0x8000 | 0x0100 | 0x0080 | 0x0040 | 0x0020;
     
     GfxBase->copinit = (struct copinit*)csd->copper1;
 

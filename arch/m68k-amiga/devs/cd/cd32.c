@@ -150,7 +150,7 @@ static UBYTE bcd2dec(UBYTE bcd)
     return (bcd & 0xf) + ((bcd >> 4) & 0xf) * 10;
 }
 
-static void sec2msf(LONG sec, UBYTE *msf)
+static void sec2bcdmsf(LONG sec, UBYTE *msf)
 {
     msf[0] = dec2bcd(sec / (60 * 75));
     sec = sec % (60 * 75);
@@ -158,15 +158,27 @@ static void sec2msf(LONG sec, UBYTE *msf)
     msf[2] = dec2bcd(sec % 75);
 }
 
-static ULONG msf2sec(struct RMSF *msf)
+static ULONG bcdmsf2sec(const struct RMSF *msf)
 {
     return ((bcd2dec(msf->Minute) * 60) + bcd2dec(msf->Second)) * 75 +
            bcd2dec(msf->Frame);
 }
 
+static ULONG binarymsf2sec(const struct RMSF *msf)
+{
+    return ((msf->Minute * 60) + msf->Second) * 75 + msf->Frame;
+}
+
+static VOID bcdmsf2binary(struct RMSF *msf)
+{
+    msf->Minute = bcd2dec(msf->Minute);
+    msf->Second = bcd2dec(msf->Second);
+    msf->Frame = bcd2dec(msf->Frame);
+}
+
 static ULONG msf2lsn(struct RMSF *msf)
 {
-    ULONG sectors = msf2sec(msf);
+    ULONG sectors = bcdmsf2sec(msf);
 
     return sectors >= 150 ? sectors - 150 : 0;
 }
@@ -660,6 +672,59 @@ static VOID CD32_CompleteSupersededPlay(struct CD32Unit *cu)
     }
 }
 
+static LONG CD32_StartPlay(struct CD32Unit *cu, struct IOStdReq *io,
+    ULONG start, ULONG length)
+{
+    BOOL paused;
+    UBYTE cmd[12], res[2];
+    LONG err;
+
+    if (cu->cu_PlayRequest != NULL)
+        return CDERR_UNITBUSY;
+    if (length == 0 || start + length < start)
+        return CDERR_BADLENGTH;
+
+    paused = (cu->cu_CDInfo.Status & CDSTSF_PAUSED) != 0;
+    cmd[0] = CHCD_MULTI;
+    sec2bcdmsf(start, &cmd[1]);
+    sec2bcdmsf(start + length, &cmd[4]);
+    cmd[7] = 0x00;
+    cmd[8] = (cu->cu_CDInfo.ReadSpeed >= 150) ? 0x40 : 0x00;
+    cmd[9] = 0x00;
+    cmd[10] = 0x04;
+    cmd[11] = 0x00;
+
+    err = CD32_Cmd(cu, cmd, sizeof(cmd), res, sizeof(res));
+    if (err)
+        return err;
+    if (res[1] & 0x80)
+        return CDERR_NotSpecified;
+
+    cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING |
+        CDSTSF_SEARCH | CDSTSF_DIRECTION);
+    cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
+
+    /* CD_PAUSE is persistent across subsequent play commands. */
+    if (paused) {
+        UBYTE pauseCmd[1] = { CHCD_PAUSE };
+        UBYTE pauseRes[2];
+
+        err = CD32_Cmd(cu, pauseCmd, sizeof(pauseCmd),
+            pauseRes, sizeof(pauseRes));
+        if (err)
+            return err;
+        cu->cu_CDInfo.Status |= CDSTSF_PAUSED;
+    } else {
+        cu->cu_CDInfo.Status &= ~CDSTSF_PAUSED;
+    }
+
+    cu->cu_PlayRequest = io;
+    cu->cu_PlayError = 0;
+    cu->cu_PlayDone = FALSE;
+    CD32_ArmAsyncResponse(cu);
+    return CDIO_PENDING;
+}
+
 static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, void (*copy_sector)(APTR sector, APTR priv), APTR priv)
 {
     LONG err;
@@ -673,8 +738,8 @@ static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, voi
         cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED | CDSTSF_SEARCH | CDSTSF_DIRECTION);
 
         cmd[0] = CHCD_MULTI;
-        sec2msf(sect_start, &cmd[1]);
-        sec2msf(sect_start + 16, &cmd[4]);
+        sec2bcdmsf(sect_start, &cmd[1]);
+        sec2bcdmsf(sect_start + 16, &cmd[4]);
         cmd[7] = 0x80;  /* Data read */
         cmd[8] = (cu->cu_CDInfo.ReadSpeed >= 150) ? 0x40 : 0x00;
         cmd[9] = 0x00;
@@ -874,8 +939,8 @@ static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
         CDSTSF_SEARCH | CDSTSF_DIRECTION);
 
     cmd[0] = CHCD_MULTI;
-    sec2msf(sect_start, &cmd[1]);
-    sec2msf(sect_start + sectors, &cmd[4]);
+    sec2bcdmsf(sect_start, &cmd[1]);
+    sec2bcdmsf(sect_start + sectors, &cmd[4]);
     cmd[7] = 0x80;
     cmd[8] = (cu->cu_CDInfo.ReadXLSpeed >= 150) ? 0x40 : 0x00;
     cmd[9] = 0;
@@ -997,11 +1062,11 @@ static VOID CD32_ReadTOC(struct CD32Unit *cu)
 
     if (cu->cu_CDInfo.Status & CDSTSF_CDROM) {
         if (cu->cu_CDTOC[0].Summary.LastTrack == 1) {
-            cu->cu_TotalSectors = msf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF) -
-                                  msf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
+            cu->cu_TotalSectors = bcdmsf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF) -
+                                  bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
         } else {
-            cu->cu_TotalSectors = msf2sec(&cu->cu_CDTOC[2].Entry.Position.MSF) -
-                                  msf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
+            cu->cu_TotalSectors = bcdmsf2sec(&cu->cu_CDTOC[2].Entry.Position.MSF) -
+                                  bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
         }
     } else {
         cu->cu_TotalSectors = 0;
@@ -1197,11 +1262,15 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         if (io->io_Data != NULL && (cu->cu_CDInfo.Status & CDSTSF_TOC)) {
             ULONG i, actual = 0;
             ULONG track = io->io_Offset;
-            APTR buff = io->io_Data;
+            union CDTOC *buff = io->io_Data;
             for (i = 0; i < io->io_Length && track <= cu->cu_CDTOC[0].Summary.LastTrack; i++, track++) {
-                CopyMem(&cu->cu_CDTOC[track], buff, sizeof(union CDTOC));
+                CopyMem(&cu->cu_CDTOC[track], buff, sizeof(*buff));
+                if (track == 0)
+                    bcdmsf2binary(&buff->Summary.LeadOut.MSF);
+                else
+                    bcdmsf2binary(&buff->Entry.Position.MSF);
                 actual++;
-                buff+=sizeof(union CDTOC);
+                buff++;
             }
             io->io_Actual = actual;
             err = 0;
@@ -1300,64 +1369,38 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         }
         break;
     case CD_PLAYTRACK:
-        if (cu->cu_PlayRequest != NULL) {
-            err = CDERR_UNITBUSY;
-        } else if (io->io_Length == 0) {
+        if (io->io_Length == 0) {
             err = CDERR_BADLENGTH;
         } else if (io->io_Offset <= cu->cu_CDTOC[0].Summary.LastTrack) {
+            ULONG start;
+            ULONG end;
             ULONG last = io->io_Offset + io->io_Length;
-            BOOL paused = (cu->cu_CDInfo.Status & CDSTSF_PAUSED) != 0;
-            UBYTE cmd[12], res[2];
 
-            cmd[0] = CHCD_MULTI;
-            cmd[1] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Minute;
-            cmd[2] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Second;
-            cmd[3] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Frame;
+            start = bcdmsf2sec(&cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF);
             if (last > cu->cu_CDTOC[0].Summary.LastTrack) {
-                cmd[4] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Minute;
-                cmd[5] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Second;
-                cmd[6] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Frame;
+                end = bcdmsf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF);
             } else {
-                cmd[4] = cu->cu_CDTOC[last].Entry.Position.MSF.Minute;
-                cmd[5] = cu->cu_CDTOC[last].Entry.Position.MSF.Second;
-                cmd[6] = cu->cu_CDTOC[last].Entry.Position.MSF.Frame;
+                end = bcdmsf2sec(&cu->cu_CDTOC[last].Entry.Position.MSF);
             }
-            cmd[7] = 0x00;
-            cmd[8] = (cu->cu_CDInfo.ReadSpeed >= 150) ? 0x40 : 0x00;
-            cmd[9] = 0x00;
-            cmd[10] = 0x04;
-            cmd[11] = 0x00;
-            err = CD32_Cmd(cu, cmd, 12, res, 2);
-            D(bug("CD_PLAYTRACK: err=%d, res[1]=0x%02x\n", err, res[1]));
-            if (!err && (res[1] & 0x80) == 0) {
-                cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING |
-                    CDSTSF_SEARCH | CDSTSF_DIRECTION);
-                cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
-
-                /* CD_PAUSE is a persistent unit state. Starting a new
-                 * track while paused must leave the new play operation
-                 * paused until the caller explicitly resumes it. */
-                if (paused) {
-                    UBYTE pauseCmd[1] = { CHCD_PAUSE };
-                    UBYTE pauseRes[2];
-
-                    err = CD32_Cmd(cu, pauseCmd, sizeof(pauseCmd),
-                        pauseRes, sizeof(pauseRes));
-                    if (err)
-                        break;
-                    cu->cu_CDInfo.Status |= CDSTSF_PAUSED;
-                } else {
-                    cu->cu_CDInfo.Status &= ~CDSTSF_PAUSED;
-                }
-
-                cu->cu_PlayRequest = io;
-                cu->cu_PlayError = 0;
-                cu->cu_PlayDone = FALSE;
-                CD32_ArmAsyncResponse(cu);
-                D(bug("CD_PLAYTRACK: Playing tracks %d-%d\n", io->io_Offset, last-1));
-                err = CDIO_PENDING;
-            }
+            err = end > start ?
+                CD32_StartPlay(cu, io, start, end - start) :
+                CDERR_BADLENGTH;
         }
+        break;
+    case CD_PLAYMSF:
+        {
+            union LSNMSF start, length;
+
+            start.LSN = io->io_Offset;
+            length.LSN = io->io_Length;
+            err = CD32_StartPlay(cu, io, binarymsf2sec(&start.MSF),
+                binarymsf2sec(&length.MSF));
+        }
+        break;
+    case CD_PLAYLSN:
+        /* LSN zero is physical frame 00:02:00. */
+        err = CD32_StartPlay(cu, io, io->io_Offset + 150,
+            io->io_Length);
         break;
     case CD_READ:
         err = CD32_IsCDROM(cu);
@@ -1370,7 +1413,7 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         io->io_Error = 0;
         io->io_Actual = 0;
 
-        origin = msf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
+        origin = bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
         sect_start = io->io_Offset / cu->cu_CDInfo.SectorSize;
         sect_end = (io->io_Offset + io->io_Length + cu->cu_CDInfo.SectorSize - 1) / cu->cu_CDInfo.SectorSize;
 
@@ -1393,7 +1436,7 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
 
         io->io_Error = 0;
         io->io_Actual = 0;
-        origin = msf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
+        origin = bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
         sect_start = io->io_Offset / cu->cu_CDInfo.SectorSize;
         if (io->io_Length != 0) {
             ULONG span = io->io_Offset % cu->cu_CDInfo.SectorSize;
@@ -1403,7 +1446,7 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
                 (span + cu->cu_CDInfo.SectorSize - 1) /
                 cu->cu_CDInfo.SectorSize;
         } else {
-            sect_end = msf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF) -
+            sect_end = bcdmsf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF) -
                 origin;
         }
 
