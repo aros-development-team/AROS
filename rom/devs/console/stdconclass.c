@@ -261,8 +261,7 @@ static VOID stdcon_docommand(Class *cl, Object *o,
         }
 
     case C_BELL:
-        /* !!! maybe trouble with LockLayers() here !!! */
-//      DisplayBeep(CU(o)->cu_Window->WScreen);
+        DisplayBeep(CU(o)->cu_Window->WScreen);
         break;
 
     case C_BACKSPACE:
