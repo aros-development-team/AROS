@@ -28,14 +28,18 @@ Please note we have a code of conduct, please follow it in all your interactions
    Take special care when tidying MUI UI source layouts: the `.astyle` configuration can mangle
    these layouts, so verify that they have not been malformed.
 
-2. Make sure to bump the version numbers in any modules where required and update the appropriate
+2. Update the AROS copyright notice year in any modified source files where a copyright notice is
+   present. Do not modify copyright notices in files derived from external sources unless required
+   by their applicable licensing terms.
+
+3. Make sure to bump the version numbers in any modules where required and update the appropriate
    README or other documentation if applicable.
 
-3. Build the affected components and run any relevant tests before submitting the pull request.
+4. Build the affected components and run any relevant tests before submitting the pull request.
    Bug fixes should, where practical, include a regression test or provide details of how the
    problem was reproduced and how the fix was verified.
 
-4. Test changes on different AROS targets where practical. In particular, changes should be tested
+5. Test changes on different AROS targets where practical. In particular, changes should be tested
    on different combinations of 32-bit and 64-bit, and big-endian (BE) and little-endian (LE)
    targets where the affected code supports them.
 
@@ -55,18 +59,18 @@ Please note we have a code of conduct, please follow it in all your interactions
    Do not assume that all AROS targets have the same pointer size, alignment requirements,
    structure layout, or endianness.
 
-5. Check that the change does not introduce unnecessary compiler-specific behaviour or assumptions
+6. Check that the change does not introduce unnecessary compiler-specific behaviour or assumptions
    about the underlying architecture. Architecture-specific code should be clearly identified
    and isolated where practical.
 
-6. Update documentation, examples, or other supporting files where a change affects user-visible
+7. Update documentation, examples, or other supporting files where a change affects user-visible
    behaviour, interfaces, configuration, or developer usage.
 
-7. Ensure that the pull request description clearly explains what the change does, why it is
+8. Ensure that the pull request description clearly explains what the change does, why it is
    required, and how it was tested. Where relevant, include the AROS targets on which the change
    was tested and identify any known limitations or untested targets.
 
-8. You may merge the Pull Request in once you have the sign-off of two core developers, or if you 
+9. You may merge the Pull Request in once you have the sign-off of two core developers, or if you 
    do not have permission to do that, you may request a core developer review and merge it for you.
 
 ### Code of Conduct
@@ -123,8 +127,8 @@ threatening, offensive, or harmful.
 
 #### Scope
 
-This Code of Conduct applies both within project spaces and in public spaces
-when an individual is representing the project or its community. Examples of
+This Code of Conduct applies both within project spaces and in public spaces when
+an individual is representing the project or its community. Examples of
 representing a project or community include using an official project e-mail
 address, posting via an official social media account, or acting as an appointed
 representative at an online or offline event. Representation of a project may
