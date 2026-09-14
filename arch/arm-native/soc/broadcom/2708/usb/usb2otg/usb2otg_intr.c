@@ -873,8 +873,15 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit);
 
 void FNAME_DEV(WorkerTask)(struct USB2OTGUnit *otg_Unit)
 {
-    struct USB2OTGDevice *USB2OTGBase = otg_Unit->hu_USB2OTGBase;
-    ULONG sigmask = 1UL << otg_Unit->hu_WorkerPort->mp_SigBit;
+    struct USB2OTGDevice *USB2OTGBase;
+    ULONG sigmask;
+
+    /* Wait to be released: at priority 50 we preempt our creator on its
+     * first port interrupt, while the unit is still being filled in. */
+    Wait(SIGF_SINGLE);
+
+    USB2OTGBase = otg_Unit->hu_USB2OTGBase;
+    sigmask = 1UL << otg_Unit->hu_WorkerPort->mp_SigBit;
 
     for (;;)
     {
