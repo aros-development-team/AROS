@@ -69,6 +69,12 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         Pointer to the new process or NULL on error.
 
     NOTES
+        NP_Affinity places the process on a set of CPUs. It only does
+        anything on an SMP build; elsewhere it is accepted and ignored.
+        Without it the process inherits the CPU it was created on. The
+        mask comes from KrnAllocCPUMask() and becomes the system's to
+        free, as for TASKTAG_AFFINITY.
+
         It is possible to supply NP_Input, NP_Output and NP_Error tags
         with BNULL values. This is equal to NIL: handle, however if NP_Input
         is set to BNULL, NP_Arguments tag will not work. Arguments are
@@ -97,6 +103,15 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     struct Process              *me = (struct Process *)FindTask(NULL);
     ULONG                        old_sig = 0;
     APTR                         entry;
+    BOOL                         added;
+#if defined(__AROSEXEC_SMP__)
+    IPTR                         affinity;
+    struct TagItem               addTaskTags[] =
+    {
+        { TASKTAG_AFFINITY, (IPTR)NULL },
+        { TAG_DONE        , 0          }
+    };
+#endif
 
     /* TODO: NP_CommandName */
 
@@ -129,6 +144,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /*22 */    { NP_Path          , TAGDATA_NOT_SPECIFIED       }, /* Default: copy path from parent */
     /*23 */    { NP_NotifyOnDeath , (IPTR)FALSE                 },
     /*24 */    { NP_ConsoleTask   , TAGDATA_NOT_SPECIFIED       },
+#if defined(__AROSEXEC_SMP__)
+    /*25 */    { NP_Affinity      , (IPTR)NULL                  },
+#endif
                { TAG_END          , 0                           }
     };
 
@@ -159,6 +177,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     }
 
     ApplyTagChanges(defaults, (struct TagItem *)tags);
+
+#if defined(__AROSEXEC_SMP__)
+    affinity = defaults[25].ti_Data;
+    addTaskTags[0].ti_Data = affinity;
+#endif
 
     D({
         int i;
@@ -507,13 +530,25 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* Use AddTask() instead of NewAddTask().
      * Blizzard SCSI Kit boot ROM plays SetFunction() tricks with
      * AddTask() and assumes it is called by a process early enough!
+     *
+     * On an SMP build NP_Affinity is the exception: it must reach
+     * PrepareContext(), which only sees a tag list, before the task is
+     * queued. Only a caller that asked for a placement takes that path.
      */
     /*
      * Multi-user: the owner of a setuid executable must be applied before
      * the new process gets to run, so hold Forbid() across AddTask().
      */
     Forbid();
-    if (AddTask(&process->pr_Task, DosEntry, NULL))
+#if defined(__AROSEXEC_SMP__)
+    if (affinity)
+        added = (NewAddTask(&process->pr_Task, DosEntry, NULL, addTaskTags) != NULL);
+    else
+        added = (AddTask(&process->pr_Task, DosEntry, NULL) != NULL);
+#else
+    added = (AddTask(&process->pr_Task, DosEntry, NULL) != NULL);
+#endif
+    if (added)
     {
         if (SECURITY_ACTIVE && segList)
             secSetTaskOwnerFromSegment(&process->pr_Task, segList);

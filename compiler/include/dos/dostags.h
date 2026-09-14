@@ -89,6 +89,12 @@
   */
 #define NP_UserData	(NP_Dummy + 26)
 
+  /* (APTR) Which CPUs the process may run on: a KrnAllocCPUMask() mask,
+     or TASKAFFINITY_ANY. The mask becomes the system's to free, as for
+     TASKTAG_AFFINITY - do not reuse or free it. Absent: the process
+     inherits the CPU it was created on. Non-SMP builds ignore it. */
+#define NP_Affinity	(NP_Dummy + 27)
+
 
 /* Tags for SystemTagList(). Additionally you may use all the tags for
    CreateNewProc(). */
@@ -168,8 +174,8 @@
 /* Tags for GetSegListInfo(). */
 
 #define GSLI_Dummy	(TAG_USER + 4000)
- 
-#define GSLI_ElfHandle  (GSLI_Dummy + 4) 
+
+#define GSLI_ElfHandle  (GSLI_Dummy + 4)
 #define GSLI_68KHUNK    (GSLI_Dummy + 5)
 #define GSLI_68KOVLAY   (GSLI_Dummy + 6)
 
