@@ -526,11 +526,17 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
     case C_INSERT_CHAR:
         {
+            ULONG count = params[0] ? params[0] : 1;
+            ULONG remaining = CHAR_XMAX(o) - XCP + 1;
             UBYTE oldpen = rp->FgPen;
+
+            if (count > remaining)
+                count = remaining;
+
             Console_UnRenderCursor(o);
             SetAPen(rp, CU(o)->cu_BgPen);
             ScrollRaster(rp,
-                -XRSIZE,
+                -count * XRSIZE,
                 0,
                 GFX_X(o, XCP),
                 GFX_Y(o, YCP), GFX_XMAX(o), GFX_Y(o, YCP + 1));
