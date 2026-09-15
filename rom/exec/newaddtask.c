@@ -181,6 +181,9 @@ static void TaskLaunch(struct Task *parent, struct Task *task, struct Hook *plHo
     struct Task *parent;
     struct MemList *mlExtra = NULL;
     struct Hook *plHook = NULL;
+#if defined(__AROSEXEC_SMP__)
+    APTR inheritedAffinity = NULL;
+#endif
     if (tagList)
         plHook = (struct Hook *)LibGetTagData(TASKTAG_PRELAUNCHHOOK, 0, tagList);
 
@@ -302,12 +305,23 @@ static void TaskLaunch(struct Task *parent, struct Task *task, struct Hook *plHo
     if (finalPC == NULL)
         finalPC = SysBase->TaskExitCode;
 
+#if defined(__AROSEXEC_SMP__)
+    inheritedAffinity = IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity;
+#endif
+
     /* Init new context. */
     if (!PrepareContext(task, initialPC, finalPC, tagList, SysBase))
     {
         CleanupETask(task);
         return NULL;
     }
+
+#if defined(__AROSEXEC_SMP__)
+    if (inheritedAffinity
+        && (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity != inheritedAffinity)
+        && ((IPTR)inheritedAffinity != TASKAFFINITY_ANY))
+        KrnFreeCPUMask(inheritedAffinity);
+#endif
 
     /* Set the task flags for switch and launch. */
     if(task->tc_Switch)
