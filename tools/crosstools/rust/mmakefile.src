@@ -241,7 +241,7 @@ tools-crosstools-rust-check :
 	@$(ECHO) '    let t = std::thread::spawn(|| (1..=100u64).sum::<u64>());' >> $(RUST_CHECK_DIR)/hello.rs
 	@$(ECHO) '    println!("hello from rust on AROS: {:?} cwd={:?} sum={:?}", v, std::env::current_dir(), t.join().unwrap());' >> $(RUST_CHECK_DIR)/hello.rs
 	@$(ECHO) '}' >> $(RUST_CHECK_DIR)/hello.rs
-	$(TARGET_RUSTC) $(TARGET_RUSTFLAGS) -O -o $(RUST_CHECK_DIR)/hello $(RUST_CHECK_DIR)/hello.rs
+	+$(TARGET_RUSTC) $(TARGET_RUSTFLAGS) -O -o $(RUST_CHECK_DIR)/hello $(RUST_CHECK_DIR)/hello.rs
 	@$(IF) $(RUST_TARGET_NM) --undefined-only $(RUST_CHECK_DIR)/hello | grep -q . ; then \
 	    $(ECHO) "tools-crosstools-rust-check: undefined symbols in $(RUST_CHECK_DIR)/hello:" ; \
 	    $(RUST_TARGET_NM) --undefined-only $(RUST_CHECK_DIR)/hello ; \
