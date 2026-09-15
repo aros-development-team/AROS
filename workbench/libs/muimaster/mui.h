@@ -381,6 +381,10 @@ struct MUI_AlphaData
 #include "classes/dataspace.h"
 #endif
 
+#ifndef _MUI_CLASSES_FLEXGROUP_H
+#include "classes/flexgroup.h"
+#endif
+
 #ifndef _MUI_CLASSES_VIRTGROUP_H
 #include "classes/virtgroup.h"
 #endif
