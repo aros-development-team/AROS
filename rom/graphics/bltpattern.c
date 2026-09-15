@@ -63,7 +63,7 @@ static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
         AROS_LHA(WORD             , yMin, D1),
         AROS_LHA(WORD             , xMax, D2),
         AROS_LHA(WORD             , yMax, D3),
-        AROS_LHA(ULONG            , byteCnt, D4),
+        AROS_LHA(WORD             , byteCnt, D4),
 
 /*  LOCATION */
         struct GfxBase *, GfxBase, 52, Graphics)

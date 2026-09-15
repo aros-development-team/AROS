@@ -54,7 +54,7 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
         AROS_LHA(WORD             , yDest, D3),
         AROS_LHA(WORD             , xSize, D4),
         AROS_LHA(WORD             , ySize, D5),
-        AROS_LHA(ULONG            , minterm, D6),
+        AROS_LHA(UBYTE            , minterm, D6),
         AROS_LHA(PLANEPTR         , bltMask, A2),
 
 /*  LOCATION */

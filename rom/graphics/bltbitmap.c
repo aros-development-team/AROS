@@ -35,8 +35,8 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
         AROS_LHA(WORD           , yDest, D3),
         AROS_LHA(WORD           , xSize, D4),
         AROS_LHA(WORD           , ySize, D5),
-        AROS_LHA(ULONG          , minterm, D6),
-        AROS_LHA(ULONG          , mask, D7),
+        AROS_LHA(UBYTE          , minterm, D6),
+        AROS_LHA(UBYTE          , mask, D7),
         AROS_LHA(PLANEPTR       , tempA, A2),
 
 /*  LOCATION */

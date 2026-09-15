@@ -15,7 +15,7 @@
 
 /*  SYNOPSIS */
         AROS_LHA(struct RastPort *, rp, A1),
-        AROS_LHA(LONG             , count, D0),
+        AROS_LHA(WORD             , count, D0),
         AROS_LHA(WORD            *, polyTable, A0),
 
 /*  LOCATION */
@@ -33,8 +33,8 @@
     RESULT
 
     NOTES
-        Official prototype files declare count as LONG but
-        original ROM code only uses low 16-bits.
+        count is a WORD (D0:16) as in the AmigaOS autodoc; it is used
+        unsigned here, as the original ROM code does.
 
     EXAMPLE
 
