@@ -230,7 +230,7 @@ tools-crosstools-rust-cbindgen :
 
 RUST_CHECK_DIR := $(HOSTGENDIR)/$(CURDIR)/check
 
-#MM tools-crosstools-rust-check : tools-crosstools-rust
+#MM tools-crosstools-rust-check : tools-crosstools-rust tools-crosstools-autolibs
 
 #MM
 tools-crosstools-rust-check :
