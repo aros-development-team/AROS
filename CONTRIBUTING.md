@@ -20,6 +20,17 @@ unrelated formatting, refactoring, or other changes in the same pull request.
 
 Please note we have a code of conduct, please follow it in all your interactions with the project.
 
+### Build system requirements
+
+The minimum supported GNU Make version is recorded in `config/make_min` and is
+currently GNU Make 4.0. Build-system changes may rely on features available in
+that version. If the minimum changes, update the canonical value,
+`configure.in`/`configure`, and user documentation together.
+
+The checked-in `configure` script is generated output. When `configure.in`
+changes, regenerate `configure` with the GNU Autoconf version recorded in its
+generated header (currently 2.73), and commit both files together.
+
 ### Pull Request Process
 
 1. Ensure any code that is not derived from an external source follows the [AROS coding conventions](http://developers.aros.org/documentation/styleguide.html).
