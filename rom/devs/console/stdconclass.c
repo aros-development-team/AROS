@@ -548,13 +548,20 @@ static VOID stdcon_docommand(Class *cl, Object *o,
     case C_INSERT_LINE:
         {
             UBYTE oldpen = rp->FgPen;
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) - YCP + 1;
+            LONG scroll;
+
+            if (count > max_count)
+                count = max_count;
+            scroll = YRSIZE * (LONG)count;
 
             Console_UnRenderCursor(o);
             SetAPen(rp, CU(o)->cu_BgPen);
 
             ScrollRaster(rp,
                 0,
-                -YRSIZE * params[0],
+                -scroll,
                 GFX_XMIN(o), GFX_Y(o, YCP), GFX_XMAX(o), GFX_YMAX(o));
 
             SetAPen(rp, oldpen);
@@ -566,13 +573,20 @@ static VOID stdcon_docommand(Class *cl, Object *o,
     case C_DELETE_LINE:
         {
             UBYTE oldpen = rp->FgPen;
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) - YCP + 1;
+            LONG scroll;
+
+            if (count > max_count)
+                count = max_count;
+            scroll = YRSIZE * (LONG)count;
 
             Console_UnRenderCursor(o);
             SetAPen(rp, CU(o)->cu_BgPen);
 
             ScrollRaster(rp,
                 0,
-                YRSIZE * params[0],
+                scroll,
                 GFX_XMIN(o), GFX_Y(o, YCP), GFX_XMAX(o), GFX_YMAX(o));
 
             SetAPen(rp, oldpen);
@@ -584,16 +598,23 @@ static VOID stdcon_docommand(Class *cl, Object *o,
     case C_SCROLL_UP:
         {
             UBYTE oldpen = rp->FgPen;
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) + 1;
+            LONG scroll;
+
+            if (count > max_count)
+                count = max_count;
+            scroll = YRSIZE * (LONG)count;
 
             D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
-                    YRSIZE * params[0]));
+                    scroll));
 
             Console_UnRenderCursor(o);
 
             SetAPen(rp, CU(o)->cu_BgPen);
 /* FIXME: LockLayers problem here ? */
-            ScrollRaster(rp, 0, YRSIZE * params[0], GFX_XMIN(o),
+            ScrollRaster(rp, 0, scroll, GFX_XMIN(o),
                 GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
             SetAPen(rp, oldpen);
 
@@ -605,16 +626,23 @@ static VOID stdcon_docommand(Class *cl, Object *o,
     case C_SCROLL_DOWN:
         {
             UBYTE oldpen = rp->FgPen;
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) + 1;
+            LONG scroll;
+
+            if (count > max_count)
+                count = max_count;
+            scroll = YRSIZE * (LONG)count;
 
             D(bug("C_SCROLL_DOWN area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
-                    YRSIZE * params[0]));
+                    scroll));
 
             Console_UnRenderCursor(o);
 
             SetAPen(rp, CU(o)->cu_BgPen);
 /* FIXME: LockLayers problem here?     */
-            ScrollRaster(rp, 0, -YRSIZE * params[0], GFX_XMIN(o),
+            ScrollRaster(rp, 0, -scroll, GFX_XMIN(o),
                 GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
             SetAPen(rp, oldpen);
 
