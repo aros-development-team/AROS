@@ -239,12 +239,19 @@ t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong
 
         if ((p_volume->cd->buffer[0] == 1) || (p_volume->cd->buffer[0] == 2))
         {
-            CopyMem
-                (
-                 p_volume->cd->buffer,
-                 &VOL(p_volume,pvd),
-                 sizeof (prim_vol_desc)
-                );
+            const prim_vol_desc *pvd =
+                (const prim_vol_desc *)p_volume->cd->buffer;
+
+            CopyMem(pvd->system_id, VOL(p_volume,pvd).system_id,
+                    sizeof(VOL(p_volume,pvd).system_id));
+            CopyMem(pvd->volume_id, VOL(p_volume,pvd).volume_id,
+                    sizeof(VOL(p_volume,pvd).volume_id));
+            VOL(p_volume,pvd).space_size = pvd->space_size;
+            VOL(p_volume,pvd).block_size = pvd->block_size;
+            CopyMem(&pvd->root, &VOL(p_volume,pvd).root,
+                    sizeof(VOL(p_volume,pvd).root));
+            CopyMem(pvd->vol_creation, VOL(p_volume,pvd).vol_creation,
+                    sizeof(VOL(p_volume,pvd).vol_creation));
             break;
         }
 
@@ -277,7 +284,7 @@ t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong
     /*
        Look at the system ID to find out if the CD is supposed
        to feature proper file names. These are CDs made for use
-       with the CDTV and the CD³² (both share the "CDTV" system ID)
+       with the CDTV and the CD32 (both share the "CDTV" system ID)
        and the "Fresh Fish", "Frozen Fish" and "Gold Fish" CDs
        created by Mkisofs. If any of these IDs is found the
        file name to lower case conversion is temporarily
@@ -1095,4 +1102,3 @@ static t_handler const g_iso_handler =
     Iso_File_Length,
     Iso_Block_Size
 };
-

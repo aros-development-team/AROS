@@ -109,7 +109,7 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
              * Note that we store only GPR part of the context. We don't copy
              * attached FPU data (if any). This can be considered TODO.
              */
-            CopyMem(ctx, &iet->iet_AlertData, sizeof(struct ExceptionContext));
+            CopyMem(ctx, ETaskAlertData(iet), sizeof(struct ExceptionContext));
 
             /*
              * Make the task to jump to crash handler. We don't care about return address etc because

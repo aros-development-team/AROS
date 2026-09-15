@@ -9,30 +9,14 @@
 
 void initDefaultInterpreterState(ShellState *ss)
 {
-    LONG i;
-
     ss->argcount = 0;
+    ss->arguments = NULL;
 
     /* Preset the first bytes to "C:" to handle C: multiassigns */
     ss->command[0] = 'C';
     ss->command[1] = ':';
 
-    for (i =  0; i < MAXARGS; ++i)
-    {
-        struct SArg *a = ss->args + i;
-
-        a->namelen  = 0;
-        a->name[0]  = '\0';
-        a->len      = 0;
-        a->def      = 0;
-        a->deflen   = 0;
-        a->type     = NORMAL;
-
-        ss->arg[i]  = 0;
-    }
-
     ss->arg_rd = NULL;
-
     ss->bra    = '<';
     ss->ket    = '>';
     ss->dollar = '$';
@@ -56,15 +40,14 @@ LONG pushInterpreterState(ShellState *ss)
     return ERROR_NO_FREE_STORE;
 }
 
-void popInterpreterState(ShellState *ss)
+void freeInterpreterState(ShellState *ss)
 {
-    ShellState *tmp_ss = ss->stack;
     struct SArg *a;
     LONG i;
 
-    for (i = 0; i < ss->argcount; ++i)
+    for (i = 0; ss->arguments && i < ss->argcount; ++i)
     {
-        a = ss->args + i;
+        a = ss->arguments->args + i;
 
         if (a->def)
             FreeMem((APTR) a->def, a->deflen + 1);
@@ -72,6 +55,20 @@ void popInterpreterState(ShellState *ss)
 
     if (ss->arg_rd)
         FreeDosObject(DOS_RDARGS, ss->arg_rd);
+
+    if (ss->arguments)
+        FreeMem(ss->arguments, sizeof(*ss->arguments));
+
+    ss->arg_rd = NULL;
+    ss->arguments = NULL;
+    ss->argcount = 0;
+}
+
+void popInterpreterState(ShellState *ss)
+{
+    ShellState *tmp_ss = ss->stack;
+
+    freeInterpreterState(ss);
 
     if (tmp_ss)
     {
