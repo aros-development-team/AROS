@@ -17,6 +17,7 @@
 #include "gui.h"
 
 #define PKG_BUFFER_SIZE (32*1024) /* 32kiB */
+#define PKG_VERSION 1
 
 /** Low-level functions *****************************************************/
 
@@ -42,6 +43,7 @@ LONG PKG_Read( APTR pkg, APTR buffer, LONG length )
 LONG /* version */ PKG_ReadHeader( APTR pkg )
 {
     UBYTE data[4] = { 0, 0, 0, 0 };
+    ULONG packageSize;
     LONG  version;
 
     if ( PKG_Read( pkg, data, 4 ) != 4 )
@@ -57,82 +59,97 @@ LONG /* version */ PKG_ReadHeader( APTR pkg )
         return -1;
     }
 
-    if ( version > 0 )
+    if ( version != PKG_VERSION )
     {
-        /* though unused at the moment we still have to read package size */
-        LONG packageSize;
-        PKG_Read( pkg, &packageSize, sizeof( packageSize ) );
-        //packageSize = AROS_BE2LONG(packageSize);
+        Printf("E:unsupported version\n");
+        return -1;
     }
-    
+
+    if ( PKG_Read( pkg, &packageSize, sizeof( packageSize ) )
+         != sizeof( packageSize ) )
+    {
+        Printf("E:read package size\n");
+        return -1;
+    }
+
     return version;
 }
 
 LONG /* error */ PKG_ExtractFile( APTR pkg )
 {
-    LONG   pathLength, dataLength, rc, result;
+    ULONG  pathLength = 0, dataLength = 0;
+    LONG   rc, result;
     STRPTR path   = NULL;
     APTR   buffer = NULL;
     BPTR   output = BNULL;
-    
+
     /* Read the path length */
     rc = PKG_Read( pkg, &pathLength, sizeof( pathLength ) );
+    if( rc == 0 ) { result = 0; goto cleanup; }
+    if( rc != sizeof( pathLength ) ) { result = -1; goto cleanup; }
+
     pathLength = AROS_BE2LONG(pathLength);
-    
-    if( rc == -1 ) { result = -1; goto cleanup; }
-    if( rc == 0  ) { result =  0; goto cleanup; }
-    
+
+    /*
+     * PKG_Read() takes a signed LONG length. Keep pathLength + 1
+     * representable before allocating or reading the path field.
+     */
+    if( pathLength >= 0x7fffffffUL ) { result = -1; goto cleanup; }
+
     /* Read the path */
     path = AllocMem( pathLength + 1, MEMF_ANY );
     if( path == NULL ) { result = -1; goto cleanup; }
+
     rc = PKG_Read( pkg, path, pathLength + 1 );
-    if( rc == -1 || rc == 0) { result = -1; goto cleanup; }
- 
+    if( rc != (LONG)(pathLength + 1) ) { result = -1; goto cleanup; }
+    if( path[pathLength] != '\0' ) { result = -1; goto cleanup; }
+
     /* Read the data length */
     rc = PKG_Read( pkg, &dataLength, sizeof( dataLength ) );
+    if( rc != sizeof( dataLength ) ) { result = -1; goto cleanup; }
+
     dataLength = AROS_BE2LONG(dataLength);
-    
-    if( rc == -1 || rc == 0 ) { result = -1; goto cleanup; }
-    
+
     //Printf( "Extracting %s (%ld bytes)...\n", path, dataLength );
-    
+
     /* Make sure the destination directory exists */
     if( !MakeDirs( path ) ) { Printf("E:makedirs\n"); result = -1; goto cleanup; }
-    
+
     /* Read and write the data in pieces */
     buffer = AllocMem( PKG_BUFFER_SIZE, MEMF_ANY );
     if( buffer == NULL ) { Printf("E:mem\n"); result = -1; goto cleanup; }
     output = Open( path, MODE_NEWFILE );
     if( output == BNULL ) { Printf("E:create\n"); result = -1; goto cleanup; }
-    
+
     {
-        LONG total = 0;
-        
+        ULONG total = 0;
+
         while( total < dataLength )
         {
-            LONG length = 0;
-            
-            if( dataLength - total >= PKG_BUFFER_SIZE )
+            LONG length;
+            ULONG remaining = dataLength - total;
+
+            if( remaining >= PKG_BUFFER_SIZE )
             {
                 length = PKG_BUFFER_SIZE;
             }
             else
             {
-                length = dataLength - total;
+                length = remaining;
             }
-            
+
             rc = PKG_Read( pkg, buffer, length );
-            if( rc == -1 || rc == 0 ) { Printf("E:read\n"); result = -1; goto cleanup; }
-            
+            if( rc != length ) { Printf("E:read\n"); result = -1; goto cleanup; }
+
             rc = FILE_Write( output, buffer, length );
-            if( rc == -1 ) { Printf("E:write\n"); result = -1; goto cleanup; }
-            
+            if( rc != length ) { Printf("E:write\n"); result = -1; goto cleanup; }
+
             total += length;
         }
     }
-    
+
     result = 1;
-    
+
 cleanup:
     if( path != NULL )   FreeMem( path, pathLength + 1 );
     if( buffer != NULL ) FreeMem( buffer, PKG_BUFFER_SIZE );
