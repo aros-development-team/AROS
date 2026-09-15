@@ -692,26 +692,33 @@ static VOID charmap_delete_chars(Class *cl, Object *o, ULONG x, ULONG y,
     charmap_resize(ConsoleDevice, line, line->size - count);
 }
 
-static VOID charmap_insert_char(Class *cl, Object *o, ULONG x, ULONG y)
+static VOID charmap_insert_chars(Class *cl, Object *o, ULONG x, ULONG y,
+    ULONG count)
 {
     struct charmap_line *line = charmapcon_find_line(cl, o, y);
+    ULONG oldsize, tail;
 
-    if (!line || x >= line->size)
+    if (!line || x >= line->size || count == 0)
         return;
 
-    /* FIXME: This is wasteful, since it copies the buffers straight over,
-     * so we have to do memmove's further down. */
-    charmap_resize(ConsoleDevice, line, line->size + 1);
+    oldsize = line->size;
+    if (count > 0xffffUL - oldsize)
+        return;
 
-    memmove(line->fgpen + x + 1, line->fgpen + x, line->size - x - 1);
-    memmove(line->bgpen + x + 1, line->bgpen + x, line->size - x - 1);
-    memmove(line->flags + x + 1, line->flags + x, line->size - x - 1);
-    memmove(line->text + x + 1, line->text + x, line->size - x - 1);
+    charmap_resize(ConsoleDevice, line, oldsize + count);
+    if (line->size != oldsize + count)
+        return;
 
-    line->fgpen[x] = CU(o)->cu_FgPen;
-    line->bgpen[x] = CU(o)->cu_BgPen;
-    line->flags[x] = CU(o)->cu_TxFlags;
-    line->text[x] = ' ';
+    tail = oldsize - x;
+    memmove(line->fgpen + x + count, line->fgpen + x, tail);
+    memmove(line->bgpen + x + count, line->bgpen + x, tail);
+    memmove(line->flags + x + count, line->flags + x, tail);
+    memmove(line->text + x + count, line->text + x, tail);
+
+    SetMem(line->fgpen + x, CU(o)->cu_FgPen, count);
+    SetMem(line->bgpen + x, CU(o)->cu_BgPen, count);
+    SetMem(line->flags + x, CU(o)->cu_TxFlags, count);
+    SetMem(line->text + x, ' ', count);
 }
 
 static VOID charmap_formfeed(Class *cl, Object *o)
@@ -846,7 +853,8 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
         break;
 
     case C_INSERT_CHAR:
-        charmap_insert_char(cl, o, XCP, YCP);
+        charmap_insert_chars(cl, o, XCP, YCP,
+            params[0] ? params[0] : 1);
         DoSuperMethodA(cl, o, (Msg) msg);
         break;
 
