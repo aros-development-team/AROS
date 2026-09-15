@@ -189,17 +189,16 @@ static int is_weak_undefined(const char *line)
 
 static char *make_nm_command(int demangle, int line_numbers)
 {
-    const char *demangle_opt =
-        (demangle && !strstr(NM_NAME, "--demangle")) ? " --demangle" : "";
-    const char *undefined_opt =
-        strstr(NM_NAME, "--undefined-only") ? "" : " --undefined-only";
-    const char *line_numbers_opt =
-        (line_numbers && !strstr(NM_NAME, "--line-numbers")) ? " --line-numbers" : "";
-    size_t needed = strlen(NM_NAME)
-                  + strlen(demangle_opt)
-                  + strlen(undefined_opt)
-                  + strlen(line_numbers_opt)
-                  + 1;
+    int add_demangle = demangle && !strstr(NM_NAME, "--demangle");
+    int add_undefined = !strstr(NM_NAME, "--undefined-only");
+    int add_line_numbers = line_numbers && !strstr(NM_NAME, "--line-numbers");
+    const char *demangle_opt = add_demangle ? " --demangle" : "";
+    const char *undefined_opt = add_undefined ? " --undefined-only" : "";
+    const char *line_numbers_opt = add_line_numbers ? " --line-numbers" : "";
+    size_t needed = sizeof(NM_NAME)
+                  + add_demangle * (sizeof(" --demangle") - 1)
+                  + add_undefined * (sizeof(" --undefined-only") - 1)
+                  + add_line_numbers * (sizeof(" --line-numbers") - 1);
     char *cmd = xmalloc(needed);
 
     snprintf(cmd, needed, "%s%s%s%s",
