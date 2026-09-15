@@ -313,7 +313,8 @@ static VOID console_docommand(Class *cl, Object *o,
     case C_SELECT_GRAPHIC_RENDITION:
         D(bug("Select graphic Rendition, params=%d\n", msg->NumParams));
         {
-            UBYTE i, param;
+            UBYTE i;
+            IPTR param;
 
             for (i = 0; i < msg->NumParams; i++)
             {
@@ -396,7 +397,8 @@ static VOID console_docommand(Class *cl, Object *o,
     case C_SET_RAWEVENTS:
         D(bug("Set Raw Events\n"));
         {
-            UBYTE i, param;
+            UBYTE i;
+            IPTR param;
 
             for (i = 0; i < msg->NumParams; i++)
             {
@@ -414,7 +416,8 @@ static VOID console_docommand(Class *cl, Object *o,
     case C_RESET_RAWEVENTS:
         D(bug("Set Raw Events\n"));
         {
-            UBYTE i, param;
+            UBYTE i;
+            IPTR param;
 
             for (i = 0; i < msg->NumParams; i++)
             {
