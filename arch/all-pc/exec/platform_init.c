@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -454,13 +454,14 @@ int Exec_X86Init(struct ExecBase *SysBase)
     D(bug("[Exec:X86] %s: PlatformData @ 0x%p\n", __func__, &sysBase->PlatformData));
 
     /* Install The default Power Management handlers */
-    sysBase->ColdResetHandler.is_Node.ln_Pri = -64;
+    /* The performers run last, after timer.device has been quiesced */
+    sysBase->ColdResetHandler.is_Node.ln_Pri = -110;
     sysBase->ColdResetHandler.is_Node.ln_Name = "Keyboard Controller Reset";
     sysBase->ColdResetHandler.is_Code = (VOID_FUNC)Exec_X86ColdResetHandler;
     sysBase->ColdResetHandler.is_Data = &sysBase->ColdResetHandler;
     AddResetCallback(&sysBase->ColdResetHandler);
 
-    sysBase->WarmResetHandler.is_Node.ln_Pri = -64;
+    sysBase->WarmResetHandler.is_Node.ln_Pri = -110;
     sysBase->WarmResetHandler.is_Node.ln_Name = "System Reset";
     sysBase->WarmResetHandler.is_Code = (VOID_FUNC)Exec_X86WarmResetHandler;
     sysBase->WarmResetHandler.is_Data = &sysBase->WarmResetHandler;
