@@ -187,21 +187,37 @@ static int is_weak_undefined(const char *line)
             && (line[1] == ' ' || line[1] == '\t');
 }
 
+static char *make_nm_command(int demangle, int line_numbers)
+{
+    const char *demangle_opt =
+        (demangle && !strstr(NM_NAME, "--demangle")) ? " --demangle" : "";
+    const char *undefined_opt =
+        strstr(NM_NAME, "--undefined-only") ? "" : " --undefined-only";
+    const char *line_numbers_opt =
+        (line_numbers && !strstr(NM_NAME, "--line-numbers")) ? " --line-numbers" : "";
+    size_t needed = strlen(NM_NAME)
+                  + strlen(demangle_opt)
+                  + strlen(undefined_opt)
+                  + strlen(line_numbers_opt)
+                  + 1;
+    char *cmd = xmalloc(needed);
+
+    snprintf(cmd, needed, "%s%s%s%s",
+        NM_NAME, demangle_opt, undefined_opt, line_numbers_opt);
+
+    return cmd;
+}
+
 int check_and_print_undefined_symbols(const char *file)
 {
-    char cmd[200], line[4096];
+    char line[4096];
+    char *cmd;
     int undefined_syms = 0;
     int skipping = 0;
 
-    strcpy(cmd, NM_NAME);
-    if (!strstr(cmd, "--demangle"))
-        strcat(cmd, " --demangle");
-    if (!strstr(cmd, "--undefined-only"))
-        strcat(cmd, " --undefined-only");
-    if ((have_gnunm) && (!strstr(cmd, "--line-numbers")))
-        strcat(cmd, " --line-numbers");
-
+    cmd = make_nm_command(1, have_gnunm);
     FILE *pipe = my_popen(cmd, file);
+    free(cmd);
 
     while (fgets(line, sizeof(line), pipe) != NULL)
     {
@@ -248,14 +264,13 @@ int check_and_print_undefined_symbols(const char *file)
    weak ones here left UserShell-Seg's INIT guard unresolvable. */
 int has_undefined_symbols(const char *file)
 {
-    char buf[200], line[4096];
+    char line[4096];
+    char *cmd;
     int result = 0;
 
-    strcpy(buf, NM_NAME);
-    if (!strstr(buf, "--undefined-only"))
-        strcat(buf, " --undefined-only");
-
-    FILE *pipe = my_popen(buf, file);
+    cmd = make_nm_command(0, 0);
+    FILE *pipe = my_popen(cmd, file);
+    free(cmd);
 
     while (fgets(line, sizeof(line), pipe) != NULL)
     {
