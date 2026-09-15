@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-FILES :=  ipmi_init ipmi_class
+FILES :=  ipmi_init ipmi_class ipmi_io ipmi_kcs ipmi_bt
 
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \

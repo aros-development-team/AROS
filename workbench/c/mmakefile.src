@@ -18,6 +18,7 @@ FILES := \
     Eject \
     Filenote \
     GPIO \
+    IPMI \
     IconX \
     Info \
     Install \

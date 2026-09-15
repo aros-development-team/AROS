@@ -2,6 +2,7 @@
 #define HIDDIPMI_INTERN_H
 
 #include <exec/libraries.h>
+#include <exec/semaphores.h>
 #include <dos/bptr.h>
 #include <oop/oop.h>
 
@@ -9,6 +10,8 @@
 
 struct HIDDIPMIData
 {
+    struct SignalSemaphore ipmi_Lock;   /* one transaction at a time per interface */
+
     ULONG ipmi_InterfaceType;
     ULONG ipmi_SpecVersionMajor;
     ULONG ipmi_SpecVersionMinor;
@@ -19,6 +22,10 @@ struct HIDDIPMIData
     ULONG ipmi_AddressSpace;
     ULONG ipmi_RegisterSpacing;
     ULONG ipmi_InterruptNumber;
+
+    ULONG ipmi_RegStride;               /* bytes between consecutive registers */
+    BOOL  ipmi_Usable;                  /* transport implemented for this interface */
+    UBYTE ipmi_BTSeq;                   /* next Block Transfer sequence number */
 };
 
 struct class_static_data

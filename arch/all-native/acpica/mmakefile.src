@@ -73,6 +73,7 @@ FILES := acpios_aros \
          $(ACPICA_SOURCES)
 
 USER_INCLUDES += \
+         -I$(SRCDIR)/arch/all-native/smbios \
          -I$(AROS_INCLUDES)/acpica \
          -iquote $(ACPICA_INCLUDES) \
          -iquote $(ACPICA_INCLUDES)/platform
@@ -84,9 +85,11 @@ USER_INCLUDES += \
 #MM- kernel-pc-acpica : kernel-acpica-sharedlib
 #MM- kernel-pc-acpica-quick : kernel-acpica-sharedlib-quick
 
+USER_LDFLAGS += -L$(GENDIR)/lib
+
 %build_module mmake=kernel-acpica-sharedlib \
   modname=acpica modtype=library \
-  files="$(FILES)"
+  files="$(FILES)" uselibs=smbios
 
 # Headers
 

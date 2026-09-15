@@ -1,0 +1,9 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := smbioslib
+
+USER_LDFLAGS := -static
+
+%build_linklib mmake=linklibs-smbios libname=smbios files="$(FILES)" libdir=$(GENDIR)/lib
+
+%common
