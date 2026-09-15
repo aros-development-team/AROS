@@ -860,33 +860,57 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
 
     case C_SCROLL_UP:
         {
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) + 1;
+
+            if (count > max_count)
+                count = max_count;
             D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
-                    YRSIZE * params[0]));
-            charmap_scroll_up(cl, o, params[0]);
+                    YRSIZE * (ULONG)count));
+            charmap_scroll_up(cl, o, (ULONG)count);
             DoSuperMethodA(cl, o, (Msg) msg);
             break;
         }
 
     case C_SCROLL_DOWN:
         {
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) + 1;
+
+            if (count > max_count)
+                count = max_count;
             D(bug("C_SCROLL_DOWN area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
-                    YRSIZE * params[0]));
-            charmap_scroll_contents_down(cl, o, params[0]);
+                    YRSIZE * (ULONG)count));
+            charmap_scroll_contents_down(cl, o, (ULONG)count);
             DoSuperMethodA(cl, o, (Msg) msg);
             break;
         }
 
     case C_INSERT_LINE:
-        charmap_insert_lines(cl, o, params[0]);
-        DoSuperMethodA(cl, o, (Msg) msg);
-        break;
+        {
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) - YCP + 1;
+
+            if (count > max_count)
+                count = max_count;
+            charmap_insert_lines(cl, o, (ULONG)count);
+            DoSuperMethodA(cl, o, (Msg) msg);
+            break;
+        }
 
     case C_DELETE_LINE:
-        charmap_delete_lines(cl, o, params[0]);
-        DoSuperMethodA(cl, o, (Msg) msg);
-        break;
+        {
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) - YCP + 1;
+
+            if (count > max_count)
+                count = max_count;
+            charmap_delete_lines(cl, o, (ULONG)count);
+            DoSuperMethodA(cl, o, (Msg) msg);
+            break;
+        }
 
     case C_SET_RAWEVENTS:
         {
