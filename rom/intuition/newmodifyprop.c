@@ -21,12 +21,12 @@
         AROS_LHA(struct Gadget    *, gadget, A0),
         AROS_LHA(struct Window    *, window, A1),
         AROS_LHA(struct Requester *, requester, A2),
-        AROS_LHA(ULONG             , flags, D0),
-        AROS_LHA(ULONG             , horizPot, D1),
-        AROS_LHA(ULONG             , vertPot, D2),
-        AROS_LHA(ULONG             , horizBody, D3),
-        AROS_LHA(ULONG             , vertBody, D4),
-        AROS_LHA(LONG              , numGad, D5),
+        AROS_LHA(UWORD             , flags, D0),
+        AROS_LHA(UWORD             , horizPot, D1),
+        AROS_LHA(UWORD             , vertPot, D2),
+        AROS_LHA(UWORD             , horizBody, D3),
+        AROS_LHA(UWORD             , vertBody, D4),
+        AROS_LHA(WORD              , numGad, D5),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 78, Intuition)
@@ -85,13 +85,6 @@
     if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_PROPGADGET
         || !gadget->SpecialInfo || !window)
         return;
-
-    EXTENDUWORD(horizPot);
-    EXTENDUWORD(vertPot);
-    EXTENDUWORD(horizBody);
-    EXTENDUWORD(vertBody);
-    EXTENDUWORD(flags);
-    EXTENDWORD(numGad);
 
 #ifdef USEGADGETLOCK
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);

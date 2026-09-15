@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
  
     Change position and size of a window.
@@ -30,10 +30,10 @@ static VOID int_changewindowbox(struct ChangeWindowBoxActionMsg *msg,
 
 /*  SYNOPSIS */
         AROS_LHA(struct Window *, window, A0),
-        AROS_LHA(LONG           , left, D0),
-        AROS_LHA(LONG           , top, D1),
-        AROS_LHA(LONG           , width, D2),
-        AROS_LHA(LONG           , height, D3),
+        AROS_LHA(WORD           , left, D0),
+        AROS_LHA(WORD           , top, D1),
+        AROS_LHA(WORD           , width, D2),
+        AROS_LHA(WORD           , height, D3),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 81, Intuition)
@@ -72,10 +72,6 @@ static VOID int_changewindowbox(struct ChangeWindowBoxActionMsg *msg,
     if (!window)
         return;
     
-    EXTENDWORD(left);
-    EXTENDWORD(top);
-    EXTENDWORD(width);
-    EXTENDWORD(height);
 
     msg.window = window;
     msg.left   = left;

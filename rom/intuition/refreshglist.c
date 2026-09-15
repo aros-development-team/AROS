@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -32,7 +32,7 @@ struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct
         AROS_LHA(struct Gadget    *, gadgets, A0),
         AROS_LHA(struct Window    *, window, A1),
         AROS_LHA(struct Requester *, requester, A2),
-        AROS_LHA(LONG              , numGad, D0),
+        AROS_LHA(WORD              , numGad, D0),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 72, Intuition)
@@ -75,8 +75,6 @@ struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    EXTENDWORD(numGad);
 
     if (!gadgets || !numGad)
         return;

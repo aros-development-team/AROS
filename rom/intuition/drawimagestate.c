@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -33,8 +33,8 @@
 /*  SYNOPSIS */
         AROS_LHA(struct RastPort *, rp,         A0),
         AROS_LHA(struct Image    *, image,      A1),
-        AROS_LHA(LONG             , leftOffset, D0),
-        AROS_LHA(LONG             , topOffset,  D1),
+        AROS_LHA(WORD             , leftOffset, D0),
+        AROS_LHA(WORD             , topOffset,  D1),
         AROS_LHA(ULONG            , state,      D2),
         AROS_LHA(struct DrawInfo *, drawInfo,   A2),
 
@@ -78,8 +78,6 @@
     IPTR penmode;
 #endif
 
-    EXTENDWORD(leftOffset);
-    EXTENDWORD(topOffset);
 
     SANITY_CHECK(rp)
     SANITY_CHECK(image)

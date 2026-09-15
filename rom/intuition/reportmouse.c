@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -14,7 +14,7 @@
         AROS_LH2(void, ReportMouse,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG           , flag, D0),
+        AROS_LHA(BOOL           , flag, D0),
         AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */

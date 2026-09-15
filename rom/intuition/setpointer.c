@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -16,10 +16,10 @@
 /*  SYNOPSIS */
         AROS_LHA(struct Window *, window, A0),
         AROS_LHA(const UWORD   *, pointer, A1),
-        AROS_LHA(LONG           , height, D0),
-        AROS_LHA(LONG           , width, D1),
-        AROS_LHA(LONG           , xOffset, D2),
-        AROS_LHA(LONG           , yOffset, D3),
+        AROS_LHA(WORD           , height, D0),
+        AROS_LHA(WORD           , width, D1),
+        AROS_LHA(WORD           , xOffset, D2),
+        AROS_LHA(WORD           , yOffset, D3),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 45, Intuition)
@@ -51,11 +51,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    EXTENDWORD(height);
-    EXTENDWORD(width);
-    EXTENDWORD(xOffset);
-    EXTENDWORD(yOffset);
 
     DEBUG_SETPOINTER(dprintf("SetPointer: window 0x%lx pointer data 0x%lx\n",
                              window, pointer));

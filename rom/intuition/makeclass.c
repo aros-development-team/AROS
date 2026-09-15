@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 
     Initialize a BOOPSI class.
@@ -19,11 +19,11 @@
         AROS_LH5(struct IClass *, MakeClass,
 
 /*  SYNOPSIS */
-        AROS_LHA(ClassID,         classID,       A0),
-        AROS_LHA(ClassID,         superClassID,  A1),
+        AROS_LHA(ClassID        , classID,       A0),
+        AROS_LHA(ClassID        , superClassID,  A1),
         AROS_LHA(struct IClass *, superClassPtr, A2),
-        AROS_LHA(ULONG,           instanceSize,  D0),
-        AROS_LHA(ULONG,           flags,         D1),
+        AROS_LHA(UWORD          , instanceSize,  D0),
+        AROS_LHA(ULONG          , flags,         D1),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 113, Intuition)
@@ -96,7 +96,6 @@
 
     Class *iclass = NULL;
     
-    EXTENDUWORD(instanceSize);
 
     DEBUG_MAKECLASS(dprintf("MakeClass: ID <%s> SuperID <%s> Super 0x%lx Size 0x%lx Flags 0x%lx\n",
                             classID ? classID : (UBYTE*)"NULL",
