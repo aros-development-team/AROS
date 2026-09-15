@@ -67,6 +67,7 @@ CLASSES := \
     cycle \
     dataspace \
     family \
+    flexgroup \
     group \
     image \
     list \
