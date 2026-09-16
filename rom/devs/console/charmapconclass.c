@@ -847,15 +847,29 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
         break;
 
     case C_DELETE_CHAR:
-        charmap_delete_chars(cl, o, XCP, YCP,
-            params[0] ? params[0] : 1);
-        DoSuperMethodA(cl, o, (Msg) msg);
+        {
+            IPTR count = params[0] ? params[0] : 1;
+            IPTR max_count = CHAR_XMAX(o) - XCP + 1;
+
+            if (count > max_count)
+                count = max_count;
+
+            charmap_delete_chars(cl, o, XCP, YCP, (ULONG) count);
+            DoSuperMethodA(cl, o, (Msg) msg);
+        }
         break;
 
     case C_INSERT_CHAR:
-        charmap_insert_chars(cl, o, XCP, YCP,
-            params[0] ? params[0] : 1);
-        DoSuperMethodA(cl, o, (Msg) msg);
+        {
+            IPTR count = params[0] ? params[0] : 1;
+            IPTR max_count = CHAR_XMAX(o) - XCP + 1;
+
+            if (count > max_count)
+                count = max_count;
+
+            charmap_insert_chars(cl, o, XCP, YCP, (ULONG) count);
+            DoSuperMethodA(cl, o, (Msg) msg);
+        }
         break;
 
     case C_SCROLL_UP:

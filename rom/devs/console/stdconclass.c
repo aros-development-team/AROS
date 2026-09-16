@@ -284,12 +284,12 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
     case C_DELETE_CHAR:
         {
-            ULONG count = params[0] ? params[0] : 1;
-            ULONG remaining = CHAR_XMAX(o) - XCP + 1;
+            IPTR count = params[0] ? params[0] : 1;
+            IPTR max_count = CHAR_XMAX(o) - XCP + 1;
             UBYTE oldpen = rp->FgPen;
 
-            if (count > remaining)
-                count = remaining;
+            if (count > max_count)
+                count = max_count;
 
             Console_UnRenderCursor(o);
             SetAPen(rp, CU(o)->cu_BgPen);
@@ -522,12 +522,12 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
     case C_INSERT_CHAR:
         {
-            ULONG count = params[0] ? params[0] : 1;
-            ULONG remaining = CHAR_XMAX(o) - XCP + 1;
+            IPTR count = params[0] ? params[0] : 1;
+            IPTR max_count = CHAR_XMAX(o) - XCP + 1;
             UBYTE oldpen = rp->FgPen;
 
-            if (count > remaining)
-                count = remaining;
+            if (count > max_count)
+                count = max_count;
 
             Console_UnRenderCursor(o);
             SetAPen(rp, CU(o)->cu_BgPen);
