@@ -7,6 +7,11 @@ ADDITIONALICONS := AHI Appearance Boot  \
  ReqTools Wanderer Zune Editor Trackdisk PSI Network Trident \
  OpenURL BoingIconBar
 
+# The WiFi preferences program is built for raspi only.
+ifeq ($(AROS_TARGET_ARCH),raspi)
+ADDITIONALICONS += WiFi
+endif
+
 #MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-prefs-clean
 #MM- iconset-GorillaSmall-additional-icons-aros-clean : iconset-GorillaSmall-additional-icons-aros-prefs-clean
 #MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-prefs
