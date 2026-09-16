@@ -25,7 +25,7 @@
 #define ELFOSABI_AROS   15
 
 
-static char *ldscriptname, *tempoutput, *ld_name, *strip_name;
+static char *ldscriptname, *tempoutput, *ldresponse, *ld_name, *strip_name;
 static FILE *ldscriptfile;
 
 int have_gnunm = 0;
@@ -37,8 +37,9 @@ static void exitfunc(void)
 
     if (getenv("COLLECT_AROS_DEBUG") != NULL)
     {
-        fprintf(stderr, "[collect-aros] keeping intermediates: tempoutput=%s ldscript=%s\n",
-            tempoutput ? tempoutput : "(none)", ldscriptname ? ldscriptname : "(none)");
+        fprintf(stderr, "[collect-aros] keeping intermediates: tempoutput=%s ldscript=%s ldresponse=%s\n",
+            tempoutput ? tempoutput : "(none)", ldscriptname ? ldscriptname : "(none)",
+            ldresponse ? ldresponse : "(none)");
         return;
     }
 
@@ -47,6 +48,9 @@ static void exitfunc(void)
 
     if (tempoutput != NULL)
         remove(tempoutput);
+
+    if (ldresponse != NULL)
+        remove(ldresponse);
 }
 
 static int set_os_and_abi(const char *file)
@@ -150,6 +154,66 @@ static char **expand_response_files(int *pargc, char **argv)
     return out;
 }
 
+static void write_response_argument(FILE *file, const char *arg)
+{
+    const unsigned char *p = (const unsigned char *)arg;
+
+    if (fputc('"', file) == EOF)
+        fatal(ldresponse, strerror(errno));
+
+    while (*p)
+    {
+        if ((*p == '\\' || *p == '"') && fputc('\\', file) == EOF)
+            fatal(ldresponse, strerror(errno));
+        if (fputc(*p++, file) == EOF)
+            fatal(ldresponse, strerror(errno));
+    }
+
+    if (fputs("\"\n", file) == EOF)
+        fatal(ldresponse, strerror(errno));
+}
+
+static void docommand_ld(char *command, char *argv[])
+{
+    FILE *response;
+    char *responsearg;
+    char *responseargv[3];
+    size_t len;
+    int i;
+
+    if (ldresponse == NULL)
+    {
+        ldresponse = make_temp_file(NULL);
+        if (ldresponse == NULL)
+            fatal("make_temp_file()", strerror(errno));
+    }
+
+    response = fopen(ldresponse, "w");
+    if (response == NULL)
+        fatal(ldresponse, strerror(errno));
+
+    for (i = 1; argv[i] != NULL; i++)
+        write_response_argument(response, argv[i]);
+
+    if (fclose(response) != 0)
+        fatal(ldresponse, strerror(errno));
+
+    len = strlen(ldresponse);
+    responsearg = xmalloc(len + 2);
+    responsearg[0] = '@';
+    strcpy(&responsearg[1], ldresponse);
+
+    responseargv[0] = command;
+    responseargv[1] = responsearg;
+    responseargv[2] = NULL;
+
+    if (getenv("COLLECT_AROS_DEBUG") != NULL)
+        fprintf(stderr, "[collect-aros] linker response file: %s\n", ldresponse);
+
+    docommandvp(command, responseargv);
+    free(responsearg);
+}
+
 int main(int argc, char *argv[])
 {
     argv = expand_response_files(&argc, argv);
@@ -169,6 +233,7 @@ int main(int argc, char *argv[])
     program_name = argv[0];
     ld_name = LD_NAME;
     strip_name = STRIP_NAME;
+    atexit(exitfunc);
 
     /* Do some stuff with the arguments */
     output = "a.out";
@@ -278,7 +343,6 @@ int main(int argc, char *argv[])
 
     if (incremental != 1)
     {
-        atexit(exitfunc);
         if
         (
             !(tempoutput   = make_temp_file(NULL))     ||
@@ -318,7 +382,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "\n");
     }
 
-    docommandvp(ld_name, ldargs);
+    docommand_ld(ld_name, ldargs);
 
     if (incremental == 1)
         return set_os_and_abi(output) ? EXIT_SUCCESS : EXIT_FAILURE;
@@ -593,7 +657,7 @@ int main(int argc, char *argv[])
         cmdargv[8 + cnt] = do_verbose;
         cmdargv[9 + cnt] = NULL;
 
-        docommandvp(ld_name, cmdargv);
+        docommand_ld(ld_name, cmdargv);
 #else
         argallocs += 9;
         cmdargv = xmalloc(sizeof(char *) * (argallocs + 1));
@@ -615,7 +679,7 @@ int main(int argc, char *argv[])
         cmdargv[7 + cnt] = do_verbose;
         cmdargv[8 + cnt] = NULL;
 
-        docommandvp(ld_name, cmdargv);
+        docommand_ld(ld_name, cmdargv);
 #endif
     }
     else
@@ -641,7 +705,7 @@ int main(int argc, char *argv[])
         cmdargv[8 + cnt] = do_verbose;
         cmdargv[9 + cnt] = NULL;
 
-        docommandvp(ld_name, cmdargv);
+        docommand_ld(ld_name, cmdargv);
     }
 #else
 #ifdef OBJECT_FORMAT_EXTRA_FINAL
@@ -669,7 +733,7 @@ int main(int argc, char *argv[])
         cmdargv[9 + cnt] = do_verbose;
         cmdargv[10 + cnt] = NULL;
 
-        docommandvp(ld_name, cmdargv);
+        docommand_ld(ld_name, cmdargv);
     }
     else
 #endif
@@ -701,7 +765,7 @@ int main(int argc, char *argv[])
         cmdargv[8 + cnt] = do_verbose;
         cmdargv[9 + cnt] = NULL;
 
-        docommandvp(ld_name, cmdargv);
+        docommand_ld(ld_name, cmdargv);
     }
 #endif
 
