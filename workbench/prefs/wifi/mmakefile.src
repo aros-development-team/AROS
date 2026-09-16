@@ -1,0 +1,20 @@
+# Makefile to make the WiFi network chooser.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main worker locale
+
+EXEDIR := $(AROS_PREFS)
+
+# Only bwfm answers the wireless SANA-II commands this needs, so the program is
+# built where that driver is - the same gate workbench-devs-networks-soc uses.
+#MM- workbench-prefs : workbench-prefs-wifi-$(AROS_TARGET_ARCH)
+#MM- workbench-prefs-wifi-raspi : workbench-prefs-wifi
+
+#MM  workbench-prefs-wifi : includes linklibs workbench-prefs-wifi-catalogs
+
+%build_prog mmake=workbench-prefs-wifi \
+    progname=WiFi targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui"
+
+%common
