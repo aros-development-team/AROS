@@ -6,7 +6,35 @@ include $(SRCDIR)/config/aros.cfg
 
 workbench-network-wirelessmanager-touchfileflag := $(GENDIR)/$(CURDIR)/.files-touched
 
+# -MD is not decoration. wpa_supplicant's Makefile sets its own CFLAGS (with
+# -MMD) only under "ifndef CFLAGS", and use_build_env passes CFLAGS in from the
+# outside - so the default, and with it the dependency generation feeding its
+# "-include $(OBJS:%.o=%.d)", is skipped. Without depfiles the port never sees a
+# changed AROS header: make -q reports up-to-date, .installed is left alone and
+# the previously linked binary keeps shipping. That is how a WirelessManager
+# built before struct Task grew tc_SpinLock survived the ABI change and kept
+# walking the old struct layout until it trapped. -MD rather than -MMD because
+# the AROS headers arrive through the sysroot, which -MMD leaves out.
 %build_with_configure mmake=workbench-network-wirelessmanager\
-    	install_env="BINDIR=$(AROS_C)" use_build_env=yes
+    	install_env="BINDIR=$(AROS_C)" use_build_env=yes \
+    	extracflags="$(OPTIMIZATION_CFLAGS) -MD"
+
+# The install stamp gates on .configured alone, so once the port is installed
+# its recipe - and the "make -q" inside it that consults the depfiles - never
+# runs again. Hang the ABI headers off .configured instead: its recipe re-touches
+# the stamp without a "touch -r $^" over its prerequisites, so listing files
+# there is safe, and a newer .configured re-enters the build recipe.
+$(workbench-network-wirelessmanager-configflag) : \
+	$(AROS_INCLUDES)/aros/config.h $(AROS_INCLUDES)/exec/tasks.h \
+	$(AROS_INCLUDES)/exec/ports.h $(AROS_INCLUDES)/dos/dosextens.h \
+	$(dir $(GENDIR)/$(CURDIR)).dirs-copied
+
+# Same for this directory's own sources: the macro copies them into the build
+# tree behind a stamp with no prerequisites, so an edit here would otherwise
+# never be compiled. Adding prerequisites to the macro's rule is enough - the
+# recipe stays where it is.
+$(workbench-network-wirelessmanager-pkgdir)/.local-copy : \
+	$(wildcard $(SRCDIR)/$(CURDIR)/*.c) $(wildcard $(SRCDIR)/$(CURDIR)/*.h) \
+	$(SRCDIR)/$(CURDIR)/Makefile $(SRCDIR)/$(CURDIR)/.config
 
 %common
