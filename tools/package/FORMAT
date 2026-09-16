@@ -7,7 +7,7 @@ file        = pathLength, path, dataLength, data
 
 header      = 'P', 'K', 'G', version, packageSize
 version     = UBYTE      # Must be 1
-packageSize = LONG
+packageSize = LONG      # total package size in bytes, including header
 
 pathLength  = LONG
 path        = BYTE[pathLength+1] # trailing '\0'
