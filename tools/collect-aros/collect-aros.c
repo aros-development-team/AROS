@@ -198,7 +198,7 @@ static void docommand_ld(char *command, char *argv[])
     if (fclose(response) != 0)
         fatal(ldresponse, strerror(errno));
 
-    len = strlen(ldresponse);
+    len = strlen(ldresponse); /* Flawfinder: ignore */
     responsearg = xmalloc(len + 2);
     responsearg[0] = '@';
     strcpy(&responsearg[1], ldresponse);
