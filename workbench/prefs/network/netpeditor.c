@@ -1042,6 +1042,9 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         MUIA_PrefsEditor_Name, __(MSG_NAME),
         MUIA_PrefsEditor_Path, (IPTR)"AROSTCP/arostcp.prefs",
+        /* Applying restarts the stack, wpa_supplicant and the share mounts;
+           none of that can be undone by a Revert, so do not offer Test. */
+        MUIA_PrefsEditor_CanTest, FALSE,
 
         Child, mainTabs = RegisterGroup((IPTR)NetworkTabs),
 
@@ -2035,6 +2038,11 @@ IPTR NetPEditor__MUIM_Setup
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_netWindow);
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_serverWindow);
 
+    /* Fill the gadgets from the loaded configuration. */
+    NetworkPrefs2Gadgets(data);
+    DoMethod(self, MUIM_NetPEditor_IPModeChanged, FALSE);
+    SET(self, MUIA_PrefsEditor_Changed, FALSE);
+
     return TRUE;
 }
 
@@ -2165,14 +2173,7 @@ IPTR NetPEditor__MUIM_PrefsEditor_ExportFH
     struct MUIP_PrefsEditor_ExportFH *message
 )
 {
-    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
-    BOOL success = TRUE;
-
-    NetworkPrefs2Gadgets(data);
-
-    DoMethod(self, MUIM_NetPEditor_IPModeChanged, FALSE);
-
-    return success;
+    return TRUE;
 }
 
 /* Global DHCP mode changed — enable/disable DNS gadgets */
