@@ -97,6 +97,7 @@ struct IntExecBase
     void                       *ExecLogBase;
     struct Task                *ResetCallbackWaiter;           /* Launcher awaiting the running reset handler                 */
     ULONG                       ResetCallbackSignal;           /* .. and the signal it waits on                               */
+    struct Task                *ResetCallbackTask;             /* The handler task itself, while it is still inside the call  */
 #if defined(__AROSEXEC_BROKENMEMLOCK__)
     struct SignalSemaphore      MemListSem;                     /* Memory list protection semaphore                             */
 #elif defined(__AROSEXEC_SMP__)

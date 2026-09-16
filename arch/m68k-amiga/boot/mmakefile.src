@@ -138,6 +138,19 @@ ROMLOC_rom := 0x0f80000
 FILES=start early debug mmu
 AFILES=rom_entry rom_init cpu_detect superstack_swap
 
+# Every module linked into the ROM is also linked as an ordinary file into the
+# AROS tree by its own %build_module rule (rom/mmakefile.src's kernel-objs and
+# the workbench metatargets pull those targets in), and the ISO would ship that
+# copy next to the ROM. Map each bank's module list back to the files' paths in
+# the tree (plain and $(AROS_DIR_BOOTARCH) locations - only existing ones are
+# removed) so the distfiles stage can drop them, see %prune_kickstart_modules.
+kick_modfiles = \
+	$(addprefix $(AROS_DIR_LIBRARIES)/,$(addsuffix .library,$(1))) \
+	$(addprefix $(AROS_DIR_DEVS)/,$(addsuffix .device,$(2))) \
+	$(addprefix $(AROS_DIR_FS)/,$(addsuffix -handler,$(3))) \
+	$(addprefix $(AROS_DIR_DEVS)/$(AROS_DIR_DRIVERS)/,$(addsuffix .hidd,$(4))) \
+	$(addprefix $(AROS_DIR_DEVS)/,$(addsuffix .resource,$(5)))
+
 KLIBS   := exec aros dos utility oop expansion partition debug \
            keymap lowlevel
 KDEVS   := timer input keyboard console trackdisk gameport audio
@@ -158,6 +171,8 @@ OBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
 
 $(GENDIR)/boot/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
+
+KMODS_rom := $(call kick_modfiles,$(KLIBS),$(KDEVS),$(KHNDLRS),$(KHIDDS),$(KRSRCS))
 
 # Expansion ROM (0xe00000-0xe7ffff)
 FILES   := 
@@ -188,11 +203,22 @@ OBJS_ext := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 
 $(GENDIR)/boot/aros-amiga-m68k-ext.elf: $(KOBJS_ext) $(OBJS_ext)
 
+KMODS_ext := $(call kick_modfiles,$(KLIBS),$(KDEVS),$(KHNDLRS),$(KHIDDS),$(KRSRCS))
+
+KMODS_PRUNELIST := $(PRUNELISTDIR)/aros-amiga-m68k.rom.prune
+
+$(KMODS_PRUNELIST) : PRUNEFILES := $(KMODS_rom) $(KMODS_ext) $(addprefix $(AROS_DIR_BOOTARCH)/,$(KMODS_rom) $(KMODS_ext))
+$(KMODS_PRUNELIST) : $(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)$(RM) $@
+	$(Q){ $(FOR) f in $(PRUNEFILES) ; do $(ECHO) $$f ; done ; } > $@
+
+%rule_makedirs dirs="$(PRUNELISTDIR)" setuptarget="$(KMODS_PRUNELIST)"
+
 #MM kernel-link-amiga-m68k:
-kernel-link-amiga-m68k : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/boot/aros-amiga-m68k-ext.bin
+kernel-link-amiga-m68k : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/boot/aros-amiga-m68k-ext.bin $(KMODS_PRUNELIST)
 
 #MM kernel-link-amiga-m68k-quick: 
-kernel-link-amiga-m68k-quick : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/boot/aros-amiga-m68k-ext.bin
+kernel-link-amiga-m68k-quick : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/boot/aros-amiga-m68k-ext.bin $(KMODS_PRUNELIST)
 
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
 	$(Q)$(HOST_CC) $(DEBUG_CFLAGS) -o $@ $<

@@ -325,26 +325,28 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
     case C_CURSOR_HTAB:
         {
-            WORD i = params[0];
+            IPTR count = params[0] ? params[0] : 1;
 
-            do
+            while (count-- > 0)
             {
                 IPTR dummy;
+                WORD oldx = XCCP;
 
                 Console_DoCommand(o, C_HTAB, 0, &dummy);
 
+                if (XCCP == oldx)
+                    break;
             }
-            while (--i > 0);
             break;
         }
 
     case C_CURSOR_BACKTAB:
         {
-            WORD count = params[0];
+            IPTR count = params[0] ? params[0] : 1;
 
             Console_UnRenderCursor(o);
 
-            do
+            while (count-- > 0)
             {
                 WORD x = XCCP, i = 0;
 
@@ -356,14 +358,11 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
                 i--;
 
-                if (i >= 0)
-                    if (CU(o)->cu_TabStops[i] != (UWORD) - 1)
-                    {
-                        Console_Left(o, x - CU(o)->cu_TabStops[i]);
-                    }
+                if ((i < 0) || (CU(o)->cu_TabStops[i] == (UWORD) - 1))
+                    break;
 
+                Console_Left(o, x - CU(o)->cu_TabStops[i]);
             }
-            while (--count > 0);
 
             Console_RenderCursor(o);
 
@@ -444,26 +443,23 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
     case C_CURSOR_POS:
         {
-            WORD y = ((WORD) params[0]) - 1;
-            WORD x = ((WORD) params[1]) - 1;
+            IPTR row = params[0];
+            IPTR col = params[1];
+            WORD x, y;
 
-            if (x < CHAR_XMIN(o))
-            {
+            if (col <= 1)
                 x = CHAR_XMIN(o);
-            }
-            else if (x > CHAR_XMAX(o))
-            {
+            else if (col > (IPTR) CHAR_XMAX(o) + 1)
                 x = CHAR_XMAX(o);
-            }
+            else
+                x = (WORD) (col - 1);
 
-            if (y < CHAR_YMIN(o))
-            {
+            if (row <= 1)
                 y = CHAR_YMIN(o);
-            }
-            else if (y > CHAR_YMAX(o))
-            {
+            else if (row > (IPTR) CHAR_YMAX(o) + 1)
                 y = CHAR_YMAX(o);
-            }
+            else
+                y = (WORD) (row - 1);
 
             Console_UnRenderCursor(o);
 
@@ -526,11 +522,17 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
     case C_INSERT_CHAR:
         {
+            ULONG count = params[0] ? params[0] : 1;
+            ULONG remaining = CHAR_XMAX(o) - XCP + 1;
             UBYTE oldpen = rp->FgPen;
+
+            if (count > remaining)
+                count = remaining;
+
             Console_UnRenderCursor(o);
             SetAPen(rp, CU(o)->cu_BgPen);
             ScrollRaster(rp,
-                -XRSIZE,
+                -count * XRSIZE,
                 0,
                 GFX_X(o, XCP),
                 GFX_Y(o, YCP), GFX_XMAX(o), GFX_Y(o, YCP + 1));
@@ -542,13 +544,20 @@ static VOID stdcon_docommand(Class *cl, Object *o,
     case C_INSERT_LINE:
         {
             UBYTE oldpen = rp->FgPen;
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) - YCP + 1;
+            LONG scroll;
+
+            if (count > max_count)
+                count = max_count;
+            scroll = YRSIZE * (LONG)count;
 
             Console_UnRenderCursor(o);
             SetAPen(rp, CU(o)->cu_BgPen);
 
             ScrollRaster(rp,
                 0,
-                -YRSIZE * params[0],
+                -scroll,
                 GFX_XMIN(o), GFX_Y(o, YCP), GFX_XMAX(o), GFX_YMAX(o));
 
             SetAPen(rp, oldpen);
@@ -560,13 +569,20 @@ static VOID stdcon_docommand(Class *cl, Object *o,
     case C_DELETE_LINE:
         {
             UBYTE oldpen = rp->FgPen;
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) - YCP + 1;
+            LONG scroll;
+
+            if (count > max_count)
+                count = max_count;
+            scroll = YRSIZE * (LONG)count;
 
             Console_UnRenderCursor(o);
             SetAPen(rp, CU(o)->cu_BgPen);
 
             ScrollRaster(rp,
                 0,
-                YRSIZE * params[0],
+                scroll,
                 GFX_XMIN(o), GFX_Y(o, YCP), GFX_XMAX(o), GFX_YMAX(o));
 
             SetAPen(rp, oldpen);
@@ -578,16 +594,23 @@ static VOID stdcon_docommand(Class *cl, Object *o,
     case C_SCROLL_UP:
         {
             UBYTE oldpen = rp->FgPen;
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) + 1;
+            LONG scroll;
+
+            if (count > max_count)
+                count = max_count;
+            scroll = YRSIZE * (LONG)count;
 
             D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
-                    YRSIZE * params[0]));
+                    scroll));
 
             Console_UnRenderCursor(o);
 
             SetAPen(rp, CU(o)->cu_BgPen);
 /* FIXME: LockLayers problem here ? */
-            ScrollRaster(rp, 0, YRSIZE * params[0], GFX_XMIN(o),
+            ScrollRaster(rp, 0, scroll, GFX_XMIN(o),
                 GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
             SetAPen(rp, oldpen);
 
@@ -599,16 +622,23 @@ static VOID stdcon_docommand(Class *cl, Object *o,
     case C_SCROLL_DOWN:
         {
             UBYTE oldpen = rp->FgPen;
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) + 1;
+            LONG scroll;
+
+            if (count > max_count)
+                count = max_count;
+            scroll = YRSIZE * (LONG)count;
 
             D(bug("C_SCROLL_DOWN area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
-                    YRSIZE * params[0]));
+                    scroll));
 
             Console_UnRenderCursor(o);
 
             SetAPen(rp, CU(o)->cu_BgPen);
 /* FIXME: LockLayers problem here?     */
-            ScrollRaster(rp, 0, -YRSIZE * params[0], GFX_XMIN(o),
+            ScrollRaster(rp, 0, -scroll, GFX_XMIN(o),
                 GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
             SetAPen(rp, oldpen);
 

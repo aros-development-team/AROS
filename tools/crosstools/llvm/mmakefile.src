@@ -217,6 +217,10 @@ LLVM_BIN_DIR            :=$(CROSSTOOLSDIR)
 LLVM_CONFIG_OPT         :=-DLLVM_CONFIG_PATH=$(LLVM_BUILD_BINDIR)/llvm-config
 endif
 LLVM_CONFIG_OPT         += -Wno-dev
+# The linklib builds only read LLVMConfig's variables. Skip its imported
+# targets: a toolchain-only install ships no libraries for them to point at,
+# and LLVMExports hard-errors on the first file it cannot find.
+LLVM_CONFIG_OPT         += -DLLVM_OMIT_EXPORTS_FROM_CONFIG=ON
 
 LLVM_CMAKEOPTIONS       := -Wno-dev                                                                                                     \
     -DDEFAULT_SYSROOT="$(AROS_DEVELOPER)"                                                                                               \
@@ -706,14 +710,20 @@ tools-crosstools-llvm-toolchain: $(llvm-installflag)
 # LLVM_INSTALL_TOOLCHAIN_ONLY=ON excludes llvm-config, llvm-as and the
 # lib/cmake/llvm export files from the install target, but the standalone
 # compiler-rt/libunwind configure steps need them - so install them by hand
-# from the build tree, before it is cleaned.
+# from the build tree, before it is cleaned. The cmake package has to be the
+# installed one: the build tree's copy points LLVM_CMAKE_DIR back at the llvm
+# source modules, which a restored toolchain no longer has beside it. The
+# export install rules are guarded out at configure time by
+# LLVM_INSTALL_TOOLCHAIN_ONLY, so lift it for the component install and put it
+# back - regenerating the build files costs seconds and rebuilds nothing.
 ifneq (,$(findstring LLVM_INSTALL_TOOLCHAIN_ONLY=ON,$(LLVM_CMAKEOPTIONS)))
 llvm-install-extras :=                                                          \
 	cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-config $(LLVM_BUILD_BINDIR)/ &&    \
 	cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-as $(LLVM_BUILD_BINDIR)/ &&        \
 	$(HOST_STRIP) $(LLVM_BUILD_BINDIR)/llvm-config $(LLVM_BUILD_BINDIR)/llvm-as && \
-	$(MKDIR) $(CROSSTOOLSDIR)/lib/cmake/llvm &&                                 \
-	cp $(HOSTGENDIR)/$(CURDIR)/llvm/lib/cmake/llvm/*.cmake $(CROSSTOOLSDIR)/lib/cmake/llvm/
+	$(CMAKE) -S $(LLVM_BUILDBASE) -B $(HOSTGENDIR)/$(CURDIR)/llvm -DLLVM_INSTALL_TOOLCHAIN_ONLY=OFF && \
+	$(CMAKE) --install $(HOSTGENDIR)/$(CURDIR)/llvm --component cmake-exports && \
+	$(CMAKE) -S $(LLVM_BUILDBASE) -B $(HOSTGENDIR)/$(CURDIR)/llvm -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON
 else
 llvm-install-extras := true
 endif
