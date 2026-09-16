@@ -18,6 +18,11 @@
    or hung handler can never leave the machine sitting half shut down. */
 #define RESETHANDLER_TIMEOUT    10
 
+/* The chain runs high, above ordinary work, but the launcher stays one step
+   above the handlers so it can always preempt one that will not finish. */
+#define RESETHANDLER_LAUNCHERPRI    120
+#define RESETHANDLER_HANDLERPRI     (RESETHANDLER_LAUNCHERPRI - 1)
+
 /* Serialization state for the non-supervisor path lives in ExecBase:
    the launcher waits there until the running handler's task reports
    completion. A kickstart module may not have .bss, so this cannot be
@@ -27,6 +32,10 @@ static void ResetCallbackHandler(struct ExecBase *SysBase, struct Interrupt *cal
 {
     DSHUTDOWN("Calling handler: %d '%s'", callback->is_Node.ln_Pri, callback->is_Node.ln_Name);
     AROS_INTC1(callback->is_Code, callback->is_Data);
+    /* Out of the handler: the launcher may no longer touch this task.
+       Cleared before the signal below, so that a launcher which sees the
+       pointer still set knows the task is inside the call and alive. */
+    PrivExecBase(SysBase)->ResetCallbackTask = NULL;
     /* Wake the launcher - nothing may proceed, the reset performer
        included, until this handler is done */
     if (PrivExecBase(SysBase)->ResetCallbackWaiter)
@@ -65,7 +74,10 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
 
     DSHUTDOWN("Executing Reset Callbacks");
 
-    BYTE prio = SetTaskPri(shutdownTask, 120);
+    /* The launcher must outrank the handler tasks it waits on (below), or a
+       handler that spins rather than sleeps starves it and the timeout can
+       never be delivered - which is the one case the timeout exists for. */
+    BYTE prio = SetTaskPri(shutdownTask, RESETHANDLER_LAUNCHERPRI);
     issuper = KrnIsSuper();
     if (issuper)
         Disable();
@@ -112,8 +124,9 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
              * so that crashes are trapped and dont stop the process
              */
             SetSignal(0, IntSysBase->ResetCallbackSignal);
+            IntSysBase->ResetCallbackTask = NULL;
             handlerTask = NewCreateTask(TASKTAG_NAME    , "ResetCallbackHandler",
-                       TASKTAG_PRI        , 127,
+                       TASKTAG_PRI        , RESETHANDLER_HANDLERPRI,
                        TASKTAG_PC         , ResetCallbackHandler,
                        TASKTAG_ARG1       , SysBase,
                        TASKTAG_ARG2       , i,
@@ -126,6 +139,7 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
              */
             if (handlerTask)
             {
+                IntSysBase->ResetCallbackTask = handlerTask;
                 if (treq)
                 {
                     ULONG tsig = 1UL << tport->mp_SigBit;
@@ -147,6 +161,17 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
                     {
                         WaitIO(&treq->tr_node);
                         timedout = TRUE;
+                        /* Abandoning it is not enough: a handler that spins
+                           rather than sleeps would go on competing with every
+                           handler still to come - including the one that
+                           finally powers the machine off - and time those out
+                           too. Drop it below everything so it cannot. Safe
+                           while ResetCallbackTask is still set: the task
+                           clears it before it leaves the handler. */
+                        Forbid();
+                        if (IntSysBase->ResetCallbackTask)
+                            SetTaskPri(IntSysBase->ResetCallbackTask, -128);
+                        Permit();
                         bug("[exec] reset callback '%s' did not complete - moving on\n",
                             i->is_Node.ln_Name ? i->is_Node.ln_Name : "(unnamed)");
                     }

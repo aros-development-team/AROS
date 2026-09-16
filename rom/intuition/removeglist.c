@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -33,7 +33,7 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
 /*  SYNOPSIS */
         AROS_LHA(struct Window *, remPtr, A0),
         AROS_LHA(struct Gadget *, gadget, A1),
-        AROS_LHA(LONG           , numGad, D0),
+        AROS_LHA(WORD           , numGad, D0),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 74, Intuition)
@@ -72,7 +72,6 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
     UWORD            count;
     BOOL             done = TRUE;
 
-    EXTENDWORD(numGad);
 
     DEBUG_REMOVEGLIST(dprintf("RemoveGList: Window 0x%lx Gadgets 0x%lx Num %ld\n",
                               remPtr, gadget, numGad));

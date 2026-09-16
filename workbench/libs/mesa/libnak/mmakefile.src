@@ -132,26 +132,26 @@ SYN_FEATURES := default derive parsing printing clone-impls proc-macro quote ful
 $(NAK_HOSTDIR)/libunicode_ident.rlib : $(NAK_CRATESDIR)/$(CRATE_UNICODE_IDENT)/src/lib.rs
 	%mkdir_q dir="$(NAK_HOSTDIR)"
 	$(Q)$(ECHO) "Compiling  rust crate unicode_ident (host)"
-	$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type rlib --crate-name unicode_ident -o $@ \
+	+$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type rlib --crate-name unicode_ident -o $@ \
 	    $(NAK_CRATESDIR)/$(CRATE_UNICODE_IDENT)/src/lib.rs
 
 $(NAK_HOSTDIR)/libproc_macro2.rlib : $(NAK_HOSTDIR)/libunicode_ident.rlib
 	$(Q)$(ECHO) "Compiling  rust crate proc_macro2 (host)"
-	$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type rlib --crate-name proc_macro2 \
+	+$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type rlib --crate-name proc_macro2 \
 	    --cfg 'feature="proc-macro"' --cfg 'feature="default"' --cfg use_proc_macro --cfg wrap_proc_macro \
 	    --extern unicode_ident=$(NAK_HOSTDIR)/libunicode_ident.rlib -o $@ \
 	    $(NAK_CRATESDIR)/$(CRATE_PROC_MACRO2)/src/lib.rs
 
 $(NAK_HOSTDIR)/libquote.rlib : $(NAK_HOSTDIR)/libproc_macro2.rlib
 	$(Q)$(ECHO) "Compiling  rust crate quote (host)"
-	$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type rlib --crate-name quote \
+	+$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type rlib --crate-name quote \
 	    --cfg 'feature="default"' --cfg 'feature="proc-macro"' \
 	    --extern proc_macro2=$(NAK_HOSTDIR)/libproc_macro2.rlib -o $@ \
 	    $(NAK_CRATESDIR)/$(CRATE_QUOTE)/src/lib.rs
 
 $(NAK_HOSTDIR)/libsyn.rlib : $(NAK_HOSTDIR)/libquote.rlib
 	$(Q)$(ECHO) "Compiling  rust crate syn (host)"
-	$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type rlib --crate-name syn \
+	+$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type rlib --crate-name syn \
 	    $(foreach f,$(SYN_FEATURES),--cfg 'feature="$(f)"') \
 	    --extern unicode_ident=$(NAK_HOSTDIR)/libunicode_ident.rlib \
 	    --extern quote=$(NAK_HOSTDIR)/libquote.rlib \
@@ -161,19 +161,19 @@ $(NAK_HOSTDIR)/libsyn.rlib : $(NAK_HOSTDIR)/libquote.rlib
 $(NAK_HOSTDIR)/libpaste.so : $(NAK_CRATESDIR)/$(CRATE_PASTE)/src/lib.rs
 	%mkdir_q dir="$(NAK_HOSTDIR)"
 	$(Q)$(ECHO) "Compiling  rust proc-macro crate paste (host)"
-	$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type proc-macro --crate-name paste -o $@ \
+	+$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type proc-macro --crate-name paste -o $@ \
 	    $(NAK_CRATESDIR)/$(CRATE_PASTE)/src/lib.rs
 
 $(NAK_HOSTDIR)/libcompiler_proc.rlib : $(NAK_HOSTDIR)/libsyn.rlib $(top_srcdir)/src/compiler/rust/proc/lib.rs
 	$(Q)$(ECHO) "Compiling  rust crate compiler_proc (host)"
-	$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type rlib --crate-name compiler_proc \
+	+$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type rlib --crate-name compiler_proc \
 	    --extern syn=$(NAK_HOSTDIR)/libsyn.rlib --extern quote=$(NAK_HOSTDIR)/libquote.rlib \
 	    --extern proc_macro2=$(NAK_HOSTDIR)/libproc_macro2.rlib -o $@ \
 	    $(top_srcdir)/src/compiler/rust/proc/lib.rs
 
 $(NAK_HOSTDIR)/libnak_ir_proc.so : $(NAK_HOSTDIR)/libcompiler_proc.rlib $(NAK_SRCDIR)/nak/ir_proc.rs
 	$(Q)$(ECHO) "Compiling  rust proc-macro crate nak_ir_proc (host)"
-	$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type proc-macro --crate-name nak_ir_proc \
+	+$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type proc-macro --crate-name nak_ir_proc \
 	    --extern compiler_proc=$(NAK_HOSTDIR)/libcompiler_proc.rlib --extern syn=$(NAK_HOSTDIR)/libsyn.rlib \
 	    --extern quote=$(NAK_HOSTDIR)/libquote.rlib --extern proc_macro2=$(NAK_HOSTDIR)/libproc_macro2.rlib -o $@ \
 	    $(NAK_SRCDIR)/nak/ir_proc.rs
@@ -183,13 +183,13 @@ $(NAK_HOSTDIR)/libnak_ir_proc.so : $(NAK_HOSTDIR)/libcompiler_proc.rlib $(NAK_SR
 $(NAK_TGTDIR)/librustc_hash.rlib : $(NAK_CRATESDIR)/$(CRATE_RUSTC_HASH)/src/lib.rs
 	%mkdir_q dir="$(NAK_TGTDIR)"
 	$(Q)$(ECHO) "Compiling  rust crate rustc_hash"
-	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name rustc_hash --cfg 'feature="std"' -o $@ \
+	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name rustc_hash --cfg 'feature="std"' -o $@ \
 	    $(NAK_CRATESDIR)/$(CRATE_RUSTC_HASH)/src/lib.rs
 
 $(NAK_TGTDIR)/libbitview.rlib : $(top_srcdir)/src/nouveau/rust/bitview/lib.rs
 	%mkdir_q dir="$(NAK_TGTDIR)"
 	$(Q)$(ECHO) "Compiling  rust crate bitview"
-	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name bitview -o $@ $<
+	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name bitview -o $@ $<
 
 # the "compiler" crate: mesa's NIR seen from Rust. Its sources sit next to
 # a generated bindings.rs, so the sources are copied beside it.
@@ -213,7 +213,7 @@ $(COMPILER_RS_GENDIR)/bindings.rs : $(top_srcdir)/src/compiler/rust/bindings.h $
 
 $(NAK_TGTDIR)/libcompiler.rlib : $(COMPILER_RS_GENDIR)/bindings.rs
 	$(Q)$(ECHO) "Compiling  rust crate compiler"
-	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name compiler -A non_snake_case -o $@ \
+	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name compiler -A non_snake_case -o $@ \
 	    $(COMPILER_RS_GENDIR)/lib.rs
 
 # nvidia_headers: generated from the class headers (see the script)
@@ -227,7 +227,7 @@ $(NVH_RS_GENDIR)/lib.rs : $(SRCDIR)/$(CURDIR)/gen-nvidia-headers-rs.sh $(NAK_HDR
 $(NAK_TGTDIR)/libnvidia_headers.rlib : $(NVH_RS_GENDIR)/lib.rs
 	%mkdir_q dir="$(NAK_TGTDIR)"
 	$(Q)$(ECHO) "Compiling  rust crate nvidia_headers"
-	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nvidia_headers -o $@ $<
+	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nvidia_headers -o $@ $<
 
 # nak_latencies: instruction latency tables
 LAT_SRCDIR   := $(NAK_SRCDIR)/latencies
@@ -245,7 +245,7 @@ $(LAT_RS_GENDIR)/lib.rs : $(LAT_SRCDIR)/lib_rs_gen.py $(LAT_SRCDIR)/lat_rs_gen.p
 $(NAK_TGTDIR)/libnak_latencies.rlib : $(LAT_RS_GENDIR)/lib.rs
 	%mkdir_q dir="$(NAK_TGTDIR)"
 	$(Q)$(ECHO) "Compiling  rust crate nak_latencies"
-	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nak_latencies -o $@ $<
+	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nak_latencies -o $@ $<
 
 # nak_bindings: NAK's own C headers seen from Rust
 $(NAK_GENDIR)/nak_bindings.rs : $(NAK_SRCDIR)/nak_bindings.h $(NAK_SRCDIR)/nak.h $(NAK_SRCDIR)/nak_private.h
@@ -262,7 +262,7 @@ $(NAK_GENDIR)/nak_bindings.rs : $(NAK_SRCDIR)/nak_bindings.h $(NAK_SRCDIR)/nak.h
 
 $(NAK_TGTDIR)/libnak_bindings.rlib : $(NAK_GENDIR)/nak_bindings.rs $(NAK_TGTDIR)/libcompiler.rlib
 	$(Q)$(ECHO) "Compiling  rust crate nak_bindings"
-	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nak_bindings \
+	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nak_bindings \
 	    --extern compiler=$(NAK_TGTDIR)/libcompiler.rlib -o $@ $<
 
 # NIL: the image layout library, also Rust, with a cbindgen'd C header
@@ -287,12 +287,12 @@ $(NIL_GENDIR)/nil_bindings.rs : $(NIL_SRCDIR)/nil_bindings.h $(NIL_GENDIR)/nil_f
 $(NAK_TGTDIR)/libnil_rs_bindings.rlib : $(NIL_GENDIR)/nil_bindings.rs
 	%mkdir_q dir="$(NAK_TGTDIR)"
 	$(Q)$(ECHO) "Compiling  rust crate nil_rs_bindings"
-	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nil_rs_bindings -o $@ $<
+	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nil_rs_bindings -o $@ $<
 
 $(NAK_TGTDIR)/libnil_rs.a : $(wildcard $(NIL_SRCDIR)/*.rs) $(NAK_HOSTDIR)/libpaste.so \
         $(NAK_TGTDIR)/libbitview.rlib $(NAK_TGTDIR)/libnvidia_headers.rlib $(NAK_TGTDIR)/libnil_rs_bindings.rlib
 	$(Q)$(ECHO) "Compiling  rust crate nil (staticlib)"
-	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type staticlib --crate-name nil -A non_snake_case \
+	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type staticlib --crate-name nil -A non_snake_case \
 	    --extern paste=$(NAK_HOSTDIR)/libpaste.so --extern bitview=$(NAK_TGTDIR)/libbitview.rlib \
 	    --extern nvidia_headers=$(NAK_TGTDIR)/libnvidia_headers.rlib \
 	    --extern nil_rs_bindings=$(NAK_TGTDIR)/libnil_rs_bindings.rlib \
@@ -326,7 +326,7 @@ $(NAK_TGTDIR)/libnak_rs.a : $(wildcard $(NAK_SRCDIR)/nak/*.rs) \
         $(NAK_TGTDIR)/librustc_hash.rlib $(NAK_TGTDIR)/libbitview.rlib $(NAK_TGTDIR)/libcompiler.rlib \
         $(NAK_TGTDIR)/libnvidia_headers.rlib $(NAK_TGTDIR)/libnak_bindings.rlib $(NAK_TGTDIR)/libnak_latencies.rlib
 	$(Q)$(ECHO) "Compiling  rust crate nak (staticlib)"
-	$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type staticlib --crate-name nak -A non_snake_case \
+	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type staticlib --crate-name nak -A non_snake_case \
 	    --extern paste=$(NAK_HOSTDIR)/libpaste.so --extern nak_ir_proc=$(NAK_HOSTDIR)/libnak_ir_proc.so \
 	    --extern rustc_hash=$(NAK_TGTDIR)/librustc_hash.rlib --extern bitview=$(NAK_TGTDIR)/libbitview.rlib \
 	    --extern compiler=$(NAK_TGTDIR)/libcompiler.rlib --extern nvidia_headers=$(NAK_TGTDIR)/libnvidia_headers.rlib \

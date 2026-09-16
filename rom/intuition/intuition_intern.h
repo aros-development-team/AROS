@@ -2,8 +2,8 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright � 1995-2023, The AROS Development Team. All rights reserved.
-    Copyright � 2001-2013, The MorphOS Development Team. All Rights Reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 #include <aros/config.h>
@@ -165,9 +165,6 @@ void * memclr(APTR, ULONG);
     ({typeof(a) _a = (a); \
     typeof(b) _b = (b); \
     _a > _b ? _b : _a;})
-
-#define EXTENDWORD(x) 	    	x = (LONG)((WORD)x);
-#define EXTENDUWORD(x)      	x = (ULONG)((UWORD)x);
 
 /* SANITY CHECK MACRO */
 //#define DEBUG_SANITYCHECK

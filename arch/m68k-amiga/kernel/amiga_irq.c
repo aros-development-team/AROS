@@ -142,6 +142,14 @@ static inline UWORD custom_r(ULONG reg)
 #define PAULA_IRQ_EXIT()	\
 	/* mask = custom_r(INTENAR) & custom_r(INTREQR) & (irq_mask); */ \
     } while (0); \
+    /* The master enable was set or we would not be here. A server that \
+     * takes a Disable()/Enable() section finds the interrupted task's \
+     * IDNestCnt >= 0 when that task has an outstanding Disable() but \
+     * re-enabled the hardware itself (demos do: Disable(), set INTENA, \
+     * AddIntServer(), spin on a VBL counter), and its Enable() then leaves \
+     * INTEN clear for good. Interrupt handling must be transparent to the \
+     * interrupted code, so put the bit back */ \
+    custom_w(INTENA, INTF_SETCLR | INTF_INTEN); \
     /* Call Exec/ExitIntr */	\
     return TRUE;
 

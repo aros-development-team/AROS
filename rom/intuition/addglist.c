@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -22,8 +22,8 @@
 /*  SYNOPSIS */
         AROS_LHA(struct Window    *, window, A0),
         AROS_LHA(struct Gadget    *, gadget, A1),
-        AROS_LHA(ULONG             , position, D0),
-        AROS_LHA(LONG              , numGad, D1),
+        AROS_LHA(UWORD             , position, D0),
+        AROS_LHA(WORD              , numGad, D1),
         AROS_LHA(struct Requester *, requester, A2),
 
 /*  LOCATION */
@@ -67,8 +67,6 @@
     struct Gadget *last;
     UWORD          count, count2;
 
-    EXTENDUWORD(position);
-    EXTENDWORD(numGad);
 
     DEBUG_ADDGLIST(dprintf("AddGList: Window 0x%lx Gadget 0x%lx Pos %ld Num %ld Req 0x%lx\n",
                            window, gadget, position, numGad, requester));

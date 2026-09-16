@@ -10,6 +10,7 @@
 
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/keymap.h>
 
 #include <aros/asmcall.h>
 #include <devices/conunit.h>
@@ -74,6 +75,7 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 
         /* Initialize the unit fields */
         unit->cu_Window = win;
+        unit->cu_KeyMapStruct = *AskKeyMapDefault();
 
         /* For now one should use only non-proportional fonts */
         unit->cu_XRSize = rp->Font->tf_XSize;
@@ -135,33 +137,45 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 **********************/
 static VOID console_left(Class *cl, Object *o, struct P_Console_Left *msg)
 {
+    IPTR count = msg->Num;
+    IPTR minx = CHAR_XMIN(o);
+    IPTR maxx = CHAR_XMAX(o);
+    IPTR span = maxx - minx + 1;
+    IPTR offset = (IPTR) XCCP - minx;
+    IPTR scrollcount = 0;
     WORD newx;
 
     EnterFunc(bug("Console::Left()\n"));
 
-    newx = XCCP - msg->Num;
-
     if (CHECK_MODE(o, PMB_AWM))
     {
-        WORD scrollcount = 0;
-
-        while (newx < CHAR_XMIN(o))
+        if (count <= offset)
         {
-            newx += (CHAR_XMAX(o) + 1);
-            scrollcount++;
+            newx = (WORD) ((IPTR) XCCP - count);
+        }
+        else
+        {
+            IPTR remaining = count - offset;
+            IPTR rem = remaining % span;
+
+            scrollcount = 1 + (remaining - 1) / span;
+            newx = (WORD) (minx + (rem ? span - rem : 0));
         }
 
         XCP = XCCP = newx;
 
-        Console_Up(o, scrollcount);
+        if (scrollcount)
+            Console_Up(o, scrollcount);
     }
     else
     {
-        if (newx < CHAR_XMIN(o))
+        if (count > offset)
             newx = CHAR_XMIN(o);
+        else
+            newx = (WORD) ((IPTR) XCCP - count);
     }
 
-    XCP = XCCP = newx;          /* XCP always same as XCCP?? */
+    XCP = XCCP = newx;
 
     D(bug("XCP=%d, XCCP=%d\n", XCP, XCCP));
 
@@ -173,33 +187,47 @@ static VOID console_left(Class *cl, Object *o, struct P_Console_Left *msg)
 ***********************/
 static VOID console_right(Class *cl, Object *o, struct P_Console_Right *msg)
 {
+    IPTR count = msg->Num;
+    IPTR minx = CHAR_XMIN(o);
+    IPTR maxx = CHAR_XMAX(o);
+    IPTR span = maxx - minx + 1;
+    IPTR offset = (IPTR) XCCP - minx;
+    IPTR to_wrap = span - offset;
+    IPTR scrollcount = 0;
     WORD newx;
 
     EnterFunc(bug("Console::Right()\n"));
 
-    newx = XCCP + msg->Num;
-
     if (CHECK_MODE(o, PMB_AWM))
     {
-        WORD scrollcount = 0;
-
-        while (newx > CHAR_XMAX(o))
+        if (count < to_wrap)
         {
-            newx -= (CHAR_XMAX(o) + 1);
-            scrollcount++;
+            newx = (WORD) ((IPTR) XCCP + count);
+        }
+        else
+        {
+            IPTR remaining = count - to_wrap;
+
+            scrollcount = 1 + remaining / span;
+            newx = (WORD) (minx + remaining % span);
         }
 
         XCP = XCCP = newx;
 
-        Console_Down(o, scrollcount);
+        if (scrollcount)
+            Console_Down(o, scrollcount);
     }
     else
     {
-        if (newx > CHAR_XMAX(o))
+        IPTR room = maxx - (IPTR) XCCP;
+
+        if (count > room)
             newx = CHAR_XMAX(o);
+        else
+            newx = (WORD) ((IPTR) XCCP + count);
     }
 
-    XCP = XCCP = newx;          /* XCP always same as XCCP?? */
+    XCP = XCCP = newx;
 
     D(bug("XCP=%d, XCCP=%d\n", XCP, XCCP));
 
@@ -211,25 +239,26 @@ static VOID console_right(Class *cl, Object *o, struct P_Console_Right *msg)
 ********************/
 static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
 {
-    EnterFunc(bug("Console::Up(num=%d)\n", msg->Num));
+    IPTR count = msg->Num;
+    IPTR distance = (IPTR) YCCP - CHAR_YMIN(o);
 
-    YCCP -= msg->Num;
+    EnterFunc(bug("Console::Up()\n"));
 
-    if (YCCP < 0)
+    if (count > distance)
     {
-        if (CHECK_MODE(o, PMB_ASM))
-        {
-            IPTR scroll_param = -YCCP;
+        IPTR scroll_param = count - distance;
 
-            YCCP = YCP = 0;
+        YCCP = YCP = CHAR_YMIN(o);
+
+        if (CHECK_MODE(o, PMB_ASM) && scroll_param)
             Console_DoCommand(o, C_SCROLL_DOWN, 1, &scroll_param);
-        }
-        else
-        {
-            YCCP = 0;
-        }
     }
-    YCP = YCCP;                 /* YCP always same as YCCP ?? */
+    else
+    {
+        YCCP = (WORD) ((IPTR) YCCP - count);
+    }
+
+    YCP = YCCP;
 
     D(bug("New coords: char (%d, %d), gfx (%d, %d)\n",
             XCCP, YCCP, CP_X(o), CP_Y(o)));
@@ -243,25 +272,26 @@ static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
 **********************/
 static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
 {
-    EnterFunc(bug("Console::Down(num=%d)\n", msg->Num));
+    IPTR count = msg->Num;
+    IPTR distance = CHAR_YMAX(o) - (IPTR) YCCP;
 
-    YCCP += msg->Num;
+    EnterFunc(bug("Console::Down()\n"));
 
-    if (YCCP > CHAR_YMAX(o))
+    if (count > distance)
     {
-        if (CHECK_MODE(o, PMB_ASM))
-        {
-            IPTR scroll_param = YCCP - CHAR_YMAX(o);
+        IPTR scroll_param = count - distance;
 
-            YCCP = YCP = CHAR_YMAX(o);
+        YCCP = YCP = CHAR_YMAX(o);
+
+        if (CHECK_MODE(o, PMB_ASM) && scroll_param)
             Console_DoCommand(o, C_SCROLL_UP, 1, &scroll_param);
-        }
-        else
-        {
-            YCCP = CHAR_YMAX(o);
-        }
     }
-    YCP = YCCP;                 /* YCP always same as YCCP ?? */
+    else
+    {
+        YCCP = (WORD) ((IPTR) YCCP + count);
+    }
+
+    YCP = YCCP;
 
     D(bug("New coords: char (%d, %d), gfx (%d, %d)\n",
             XCCP, YCCP, CP_X(o), CP_Y(o)));
@@ -311,7 +341,8 @@ static VOID console_docommand(Class *cl, Object *o,
     case C_SELECT_GRAPHIC_RENDITION:
         D(bug("Select graphic Rendition, params=%d\n", msg->NumParams));
         {
-            UBYTE i, param;
+            UBYTE i;
+            IPTR param;
 
             for (i = 0; i < msg->NumParams; i++)
             {
@@ -394,7 +425,8 @@ static VOID console_docommand(Class *cl, Object *o,
     case C_SET_RAWEVENTS:
         D(bug("Set Raw Events\n"));
         {
-            UBYTE i, param;
+            UBYTE i;
+            IPTR param;
 
             for (i = 0; i < msg->NumParams; i++)
             {
@@ -412,7 +444,8 @@ static VOID console_docommand(Class *cl, Object *o,
     case C_RESET_RAWEVENTS:
         D(bug("Set Raw Events\n"));
         {
-            UBYTE i, param;
+            UBYTE i;
+            IPTR param;
 
             for (i = 0; i < msg->NumParams; i++)
             {

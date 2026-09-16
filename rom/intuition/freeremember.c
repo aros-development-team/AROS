@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
         AROS_LHA(struct Remember **, rememberKey, A0),
-        AROS_LHA(LONG              , reallyForget, D0),
+        AROS_LHA(BOOL              , reallyForget, D0),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 68, Intuition)

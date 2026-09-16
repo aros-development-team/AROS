@@ -65,23 +65,23 @@ struct P_Console_DoCommand
 struct P_Console_Left
 {
     ULONG MethodID;
-    UWORD Num;
+    IPTR Num;
 };
 struct P_Console_Right
 {
     ULONG MethodID;
-    UWORD Num;
+    IPTR Num;
 };
 struct P_Console_Up
 {
     ULONG MethodID;
-    UWORD Num;
+    IPTR Num;
 };
 
 struct P_Console_Down
 {
     ULONG MethodID;
-    UWORD Num;
+    IPTR Num;
 };
 
 struct P_Console_RenderCursor
