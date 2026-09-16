@@ -35,9 +35,9 @@ def readHeader( file ):
     size = struct.unpack(
         PKG_FILE_DATALENGTH_FORMAT,
         sizeData
-    )
+    )[0]
     
-    return version
+    return (version, size)
     
 
 def writeHeader( file, version ):
@@ -58,10 +58,12 @@ def writeHeader( file, version ):
     )
     
 
-def readFile( file ):
-    'readFile( file ) -> (path, data)'
+def readFile( file, packageEnd=None ):
+    'readFile( file, packageEnd=None ) -> (path, data)'
       
     pathLengthSize = struct.calcsize( PKG_FILE_PATHLENGTH_FORMAT )
+    if packageEnd is not None and file.tell() + pathLengthSize > packageEnd:
+        raise ValueError('Package member exceeds declared package size')
     pathLengthData = file.read( pathLengthSize )
     if len( pathLengthData ) != pathLengthSize:
         raise ValueError('Truncated package path length')
@@ -70,14 +72,19 @@ def readFile( file ):
         pathLengthData
     )
     
-    pathData = file.read( pathLength[0] + 1 )
-    if len( pathData ) != pathLength[0] + 1:
+    pathSize = pathLength[0] + 1
+    if packageEnd is not None and file.tell() + pathSize > packageEnd:
+        raise ValueError('Package member exceeds declared package size')
+    pathData = file.read( pathSize )
+    if len( pathData ) != pathSize:
         raise ValueError('Truncated package path')
     if pathData[-1:] != b'\0':
         raise ValueError('Package path is not NUL-terminated')
     path = pathData.split( b'\0', 1 )[0]
 
     dataLengthSize = struct.calcsize( PKG_FILE_DATALENGTH_FORMAT )
+    if packageEnd is not None and file.tell() + dataLengthSize > packageEnd:
+        raise ValueError('Package member exceeds declared package size')
     dataLengthData = file.read( dataLengthSize )
     if len( dataLengthData ) != dataLengthSize:
         raise ValueError('Truncated package data length')
@@ -86,6 +93,8 @@ def readFile( file ):
         dataLengthData
     )
     
+    if packageEnd is not None and file.tell() + dataLength[0] > packageEnd:
+        raise ValueError('Package member exceeds declared package size')
     data = file.read( dataLength[0] )
     if len( data ) != dataLength[0]:
         raise ValueError('Truncated package member data')
@@ -130,10 +139,14 @@ def unpack( source, destination ):
             os.chdir( destination )
             destinationRoot = os.path.realpath( os.getcwdb() )
 
-            version = readHeader( input )
+            (version, packageSize) = readHeader( input )
+            if packageSize < input.tell():
+                raise ValueError('Declared package size is smaller than package header')
+            if packageSize > inputSize:
+                raise ValueError('Declared package size exceeds input size')
 
-            while input.tell() < inputSize:
-                (path, data) = readFile( input )
+            while input.tell() < packageSize:
+                (path, data) = readFile( input, packageSize )
 
                 print('« %s (%d bytes)' % (path, len( data )))
 
