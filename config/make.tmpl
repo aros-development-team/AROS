@@ -3740,7 +3740,7 @@ endif
 # Other arguments are self-explanatory
 
 %define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
-    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res= misc= packfmt=
+    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res= misc= packfmt= prune=yes
 
 PKG_CLASSES        := $(addprefix $(AROS_CLASSES)/,$(addsuffix .class, %(classes)))
 PKG_DEVICES        := $(addprefix $(AROS_DEVS)/,$(addsuffix .device, %(devs)))
@@ -3760,11 +3760,29 @@ PKG_FILES          := $(PKG_CLASSES) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) 
     $(PKG_CLASSES_ARCH) $(PKG_DEVICES_ARCH) $(PKG_HANDLERS_ARCH) $(PKG_HIDD_ARCH) $(PKG_LIBRARIES_ARCH) $(PKG_RESOURCES_ARCH) %(misc)
 PKG_DIR            := $(dir %(file))
 
-#MM
-%(mmake) : %(file)
+# The package is built from the modules' files in the AROS tree, so those
+# files are also shipped by anything that packages the whole tree - duplicates
+# of what the kickstart already carries. Record their tree-relative paths so
+# the distfiles stage can drop them (%prune_kickstart_modules). A package that
+# is only loaded optionally (an alternative boot menu entry) passes prune=no,
+# since its modules must stay on disk for the boot paths that don't load it.
+ifeq (%(prune),yes)
+%(mmake)_PRUNELIST := $(PRUNELISTDIR)/$(notdir %(file)).prune
+$(%(mmake)_PRUNELIST) : PRUNEFILES := $(subst $(AROSDIR)/,,$(PKG_FILES))
+$(%(mmake)_PRUNELIST) : $(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)$(RM) $@
+	$(Q){ $(FOR) f in $(PRUNEFILES) ; do $(ECHO) $$f ; done ; } > $@
+
+%rule_makedirs dirs="$(PRUNELISTDIR)" setuptarget="$(%(mmake)_PRUNELIST)"
+else
+%(mmake)_PRUNELIST :=
+endif
 
 #MM
-%(mmake)-quick : %(file)
+%(mmake) : %(file) $(%(mmake)_PRUNELIST)
+
+#MM
+%(mmake)-quick : %(file) $(%(mmake)_PRUNELIST)
 
 %(file): $(PKG_FILES) | $(PKG_DIR)
 	$(Q)$(ECHO) Packaging $@...
@@ -3774,6 +3792,30 @@ PKG_DIR            := $(dir %(file))
 
 %rule_makedirs dirs="$(PKG_DIR)"
 
+%end
+
+#------------------------------------------------------------------------------
+# Remove the kickstart-resident modules recorded in $(PRUNELISTDIR) (by
+# %make_package and the ROM link rules) from a distribution tree.
+#
+# %(dir) is the root of the tree being packaged for distribution. It must be
+# a copy, never $(AROSDIR) itself: the files there are build outputs (and the
+# inputs of the packages), and make would only regenerate them. Only paths
+# that exist are removed, so a list may name the arch-specific location of a
+# module as well as the generic one.
+#
+# Used as a recipe line, e.g.
+#	%prune_kickstart_modules dir="$(AROSDIR).HUNK"
+
+%define prune_kickstart_modules dir=/A lists="$(PRUNELISTDIR)/*.prune"
+	$(Q)$(ECHO) "Pruning kickstart-resident modules from $(subst $(TARGETDIR)/,,%(dir))..."
+	$(Q)$(FOR) l in %(lists) ; do \
+	    $(IF) $(TEST) -f "$$l" ; then \
+	        while read -r f ; do \
+	            $(IF) $(TEST) -n "$$f" -a -e "%(dir)/$$f" ; then $(RM) "%(dir)/$$f" ; else $(NOP) ; fi ; \
+	        done < "$$l" ; \
+	    else $(NOP) ; fi ; \
+	done
 %end
 
 #------------------------------------------------------------------------------
