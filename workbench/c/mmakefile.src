@@ -99,6 +99,7 @@ USER_CFLAGS      := -noposixc
 #MM workbench-c : \
 #MM        includes \
 #MM        kernel-task-includes \
+#MM        kernel-hidd-ipmi-includes \
 #MM        linklibs \
 #MM        workbench-c-adddatatypes \
 #MM        workbench-c-sh \

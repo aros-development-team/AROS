@@ -325,26 +325,28 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
     case C_CURSOR_HTAB:
         {
-            WORD i = params[0];
+            IPTR count = params[0] ? params[0] : 1;
 
-            do
+            while (count-- > 0)
             {
                 IPTR dummy;
+                WORD oldx = XCCP;
 
                 Console_DoCommand(o, C_HTAB, 0, &dummy);
 
+                if (XCCP == oldx)
+                    break;
             }
-            while (--i > 0);
             break;
         }
 
     case C_CURSOR_BACKTAB:
         {
-            WORD count = params[0];
+            IPTR count = params[0] ? params[0] : 1;
 
             Console_UnRenderCursor(o);
 
-            do
+            while (count-- > 0)
             {
                 WORD x = XCCP, i = 0;
 
@@ -356,14 +358,11 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
                 i--;
 
-                if (i >= 0)
-                    if (CU(o)->cu_TabStops[i] != (UWORD) - 1)
-                    {
-                        Console_Left(o, x - CU(o)->cu_TabStops[i]);
-                    }
+                if ((i < 0) || (CU(o)->cu_TabStops[i] == (UWORD) - 1))
+                    break;
 
+                Console_Left(o, x - CU(o)->cu_TabStops[i]);
             }
-            while (--count > 0);
 
             Console_RenderCursor(o);
 
@@ -444,26 +443,23 @@ static VOID stdcon_docommand(Class *cl, Object *o,
 
     case C_CURSOR_POS:
         {
-            WORD y = ((WORD) params[0]) - 1;
-            WORD x = ((WORD) params[1]) - 1;
+            IPTR row = params[0];
+            IPTR col = params[1];
+            WORD x, y;
 
-            if (x < CHAR_XMIN(o))
-            {
+            if (col <= 1)
                 x = CHAR_XMIN(o);
-            }
-            else if (x > CHAR_XMAX(o))
-            {
+            else if (col > (IPTR) CHAR_XMAX(o) + 1)
                 x = CHAR_XMAX(o);
-            }
+            else
+                x = (WORD) (col - 1);
 
-            if (y < CHAR_YMIN(o))
-            {
+            if (row <= 1)
                 y = CHAR_YMIN(o);
-            }
-            else if (y > CHAR_YMAX(o))
-            {
+            else if (row > (IPTR) CHAR_YMAX(o) + 1)
                 y = CHAR_YMAX(o);
-            }
+            else
+                y = (WORD) (row - 1);
 
             Console_UnRenderCursor(o);
 
