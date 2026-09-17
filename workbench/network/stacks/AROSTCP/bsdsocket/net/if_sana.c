@@ -541,7 +541,8 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
                 req->ioip_if = ssc;
                 req->ioip_next = NULL;
                 req->ioip_s2.ios2_Req.io_Command = S2_ONEVENT;
-                req->ioip_s2.ios2_WireError = S2EVENT_OFFLINE | S2EVENT_CONNECT;
+                req->ioip_s2.ios2_WireError = S2EVENT_OFFLINE | S2EVENT_CONNECT
+                                              | S2EVENT_DISCONNECT;
                 req->ioip_dispatch = sana_connect;
                 BeginIO((struct IORequest *)req);
                 ssc->ss_connectreq = req;
@@ -550,6 +551,26 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
     }
     splx(s);
 }
+
+#if __SASC
+/*
+ * "Fix" for numerous sana2 drivers, which expect to get Unit * in the
+ * register A3 when their AbortIO function is called.
+ * Note that Exec AbortIO() does NOT put it there.
+ */
+extern VOID _AbortSanaIO(struct IORequest *, struct Unit *);
+#pragma libcall DeviceBase _AbortSanaIO 24 B902
+
+static inline __asm VOID
+AbortSanaIO(register __a1 struct IORequest *ioRequest)
+{
+#define DeviceBase ioRequest->io_Device
+    _AbortSanaIO(ioRequest, ioRequest->io_Unit);
+#undef DeviceBase
+}
+#else /* implement later for other compilers */
+#define AbortSanaIO AbortIO
+#endif
 
 /*
  * Free Sana-II IO Requests
@@ -568,6 +589,15 @@ sana_unrun(struct sana_softc *ssc)
     ssc->ss_reqs = next;
 
     if(ssc->ss_connectreq) {
+        /*
+         * Abort before waiting. sana_down() only issues S2_OFFLINE when we are
+         * the device's last opener, so with a wireless device - where
+         * WirelessManager holds it open too - nothing ever replies this parked
+         * S2_ONEVENT and the wait never returns, taking the whole stack
+         * shutdown with it.
+         */
+        if(!CheckIO((struct IORequest *)ssc->ss_connectreq))
+            AbortSanaIO((struct IORequest *)ssc->ss_connectreq);
         WaitIO((struct IORequest *)ssc->ss_connectreq);
         DeleteIORequest((struct IORequest *)ssc->ss_connectreq);
     }
@@ -840,26 +870,6 @@ sana_up(struct sana_softc *ssc)
         DeleteIOSana2Req(req);
     }
 }
-
-#if __SASC
-/*
- * "Fix" for numerous sana2 drivers, which expect to get Unit * in the
- * register A3 when their AbortIO function is called.
- * Note that Exec AbortIO() does NOT put it there.
- */
-extern VOID _AbortSanaIO(struct IORequest *, struct Unit *);
-#pragma libcall DeviceBase _AbortSanaIO 24 B902
-
-static inline __asm VOID
-AbortSanaIO(register __a1 struct IORequest *ioRequest)
-{
-#define DeviceBase ioRequest->io_Device
-    _AbortSanaIO(ioRequest, ioRequest->io_Unit);
-#undef DeviceBase
-}
-#else /* implement later for other compilers */
-#define AbortSanaIO AbortIO
-#endif
 
 /*
  * sana_down(): Mark interface as down, abort all pending requests
@@ -1143,6 +1153,40 @@ sana_online(struct sana_softc *ssc, struct IOIPReq *req)
 }
 
 /*
+ * sana_linkdown(): the link went away under an interface that is still online,
+ * as happens when a wireless device loses its association. The lease and the
+ * routes belonged to that network, so give them up instead of leaving a stale
+ * address behind. IFF_UP is deliberately left alone: sana_output() refuses to
+ * transmit without it, and the DHCP client needs to send when the link returns.
+ */
+static void
+sana_linkdown(struct sana_softc *ssc)
+{
+    struct ifnet *ifp = (struct ifnet *)ssc;
+    struct ifreq ifr;
+    int deleted = 0;
+
+    kill_dhclient(ifp);
+    if(ssc->ss_autoip.state != AUTOIP_DISABLED)
+        autoip_stop(ifp);
+
+    /*
+     * A request naming no address means "the first one on this interface", so
+     * this deletes them all; in_control() scrubs their routes on the way out.
+     */
+    while(1) {
+        bzero(&ifr, sizeof(ifr));
+        if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifr, ifp) != 0)
+            break;
+        deleted++;
+    }
+
+    __log(LOG_NOTICE, "%s%d: link lost, dropped %d address(es).",
+          ifp->if_name, ifp->if_unit, deleted);
+    gui_set_interface_state(ifp, MIAMIPANELV_AddInterface_State_Offline);
+}
+
+/*
  * sana_online(): process a CONNECT event
  */
 static void
@@ -1158,12 +1202,16 @@ sana_connect(struct sana_softc *ssc, struct IOIPReq *req)
         run_dhclient((struct ifnet *) ssc);
         if(ssc->ss_autoip.state != AUTOIP_DISABLED)
             autoip_start((struct ifnet *) ssc);
+    } else if(req->ioip_s2.ios2_Req.io_Error == 0 &&
+              (events & S2EVENT_DISCONNECT)) {
+        sana_linkdown(ssc);
     }
 
     /* Send request back for next event */
     if(req->ioip_s2.ios2_Req.io_Error == 0 && !(events & S2EVENT_OFFLINE)) {
         req->ioip_s2.ios2_Req.io_Command = S2_ONEVENT;
-        req->ioip_s2.ios2_WireError =  S2EVENT_OFFLINE | S2EVENT_CONNECT;
+        req->ioip_s2.ios2_WireError =  S2EVENT_OFFLINE | S2EVENT_CONNECT
+                                       | S2EVENT_DISCONNECT;
         BeginIO((struct IORequest *)req);
     } else {
         ssc->ss_eventsent--;

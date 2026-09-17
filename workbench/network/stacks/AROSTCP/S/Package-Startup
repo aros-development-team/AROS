@@ -9,7 +9,7 @@ Protect S/stopnet s add quiet
 if ${AROSTCP/AutoRun} eq "True"
 
   if ${AROSTCP/WirelessAutoRun} eq "True"
-    Run >NIL: QUIET C:WirelessManager ${AROSTCP/WirelessDevice}
+    Run >NIL: QUIET C:WirelessManager ${AROSTCP/WirelessDevice} NOGUI
   EndIf
 
   if ${AROSTCP/MobileAutorun} eq "True"
