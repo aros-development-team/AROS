@@ -84,6 +84,7 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(MKDIR) -p "$(AROSDIR).HUNK"
 	@$(ECHO) "Converting $(subst $(TARGETDIR)/,,$(AROSDIR)) -> $(subst $(TARGETDIR)/,,$(AROSDIR).HUNK)"
 	@$(ELF2HUNK) $(QE2H) "$(AROSDIR)" "$(AROSDIR).HUNK"
+	%prune_kickstart_modules dir="$(AROSDIR).HUNK"
 	@$(RM) -rf "$(AROSDIR).HUNK/Sources"*
 	@$(RM) -rf "$(AROSDIR).HUNK/$(AROS_DIR_BOOTARCH)/aros.elf"
 	@$(CP) "$(AROSDIR)/Emergency-Boot/$(AROS_DIR_BOOTARCH)/aros.rom.$(AROS_PACKAGE_FMT)" "$(AROSDIR).HUNK/$(AROS_DIR_BOOTARCH)"

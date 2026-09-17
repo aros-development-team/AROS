@@ -220,7 +220,11 @@ LLVM_CONFIG_OPT         += -Wno-dev
 # The linklib builds only read LLVMConfig's variables. Skip its imported
 # targets: a toolchain-only install ships no libraries for them to point at,
 # and LLVMExports hard-errors on the first file it cannot find.
+# LLVMConfig only grew the switch in llvm 23; earlier versions always
+# include the exports, so there is nothing to turn off there.
+ifeq ($(TARGET_LLVM_RUNTIMES_STYLE),umbrella)
 LLVM_CONFIG_OPT         += -DLLVM_OMIT_EXPORTS_FROM_CONFIG=ON
+endif
 
 LLVM_CMAKEOPTIONS       := -Wno-dev                                                                                                     \
     -DDEFAULT_SYSROOT="$(AROS_DEVELOPER)"                                                                                               \
@@ -716,14 +720,26 @@ tools-crosstools-llvm-toolchain: $(llvm-installflag)
 # export install rules are guarded out at configure time by
 # LLVM_INSTALL_TOOLCHAIN_ONLY, so lift it for the component install and put it
 # back - regenerating the build files costs seconds and rebuilds nothing.
+ifeq ($(TARGET_LLVM_RUNTIMES_STYLE),umbrella)
+llvm-install-cmakepkg :=                                                        \
+	$(CMAKE) -S $(LLVM_BUILDBASE) -B $(HOSTGENDIR)/$(CURDIR)/llvm -DLLVM_INSTALL_TOOLCHAIN_ONLY=OFF && \
+	$(CMAKE) --install $(HOSTGENDIR)/$(CURDIR)/llvm --component cmake-exports && \
+	$(CMAKE) -S $(LLVM_BUILDBASE) -B $(HOSTGENDIR)/$(CURDIR)/llvm -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON
+else
+# Up to llvm 22 the build tree is still present when the linklibs configure,
+# and LLVMConfig cannot be told to skip its exports - so keep taking the cmake
+# files from the build tree, as those versions have always done.
+llvm-install-cmakepkg :=                                                        \
+	$(MKDIR) $(CROSSTOOLSDIR)/lib/cmake/llvm &&                                 \
+	cp $(HOSTGENDIR)/$(CURDIR)/llvm/lib/cmake/llvm/*.cmake $(CROSSTOOLSDIR)/lib/cmake/llvm/
+endif
+
 ifneq (,$(findstring LLVM_INSTALL_TOOLCHAIN_ONLY=ON,$(LLVM_CMAKEOPTIONS)))
 llvm-install-extras :=                                                          \
 	cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-config $(LLVM_BUILD_BINDIR)/ &&    \
 	cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-as $(LLVM_BUILD_BINDIR)/ &&        \
 	$(HOST_STRIP) $(LLVM_BUILD_BINDIR)/llvm-config $(LLVM_BUILD_BINDIR)/llvm-as && \
-	$(CMAKE) -S $(LLVM_BUILDBASE) -B $(HOSTGENDIR)/$(CURDIR)/llvm -DLLVM_INSTALL_TOOLCHAIN_ONLY=OFF && \
-	$(CMAKE) --install $(HOSTGENDIR)/$(CURDIR)/llvm --component cmake-exports && \
-	$(CMAKE) -S $(LLVM_BUILDBASE) -B $(HOSTGENDIR)/$(CURDIR)/llvm -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON
+	$(llvm-install-cmakepkg)
 else
 llvm-install-extras := true
 endif
