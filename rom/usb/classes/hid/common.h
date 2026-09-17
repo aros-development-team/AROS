@@ -34,6 +34,10 @@
 #include <stddef.h>
 #include <stdio.h>
 
+/* Use the inline varargs NewObject() so that the alib stub is
+   not linked in. The class is kickstart resident and initialised before
+   intuition.library exists. */
+#define INTUITION_INLINE_NEWOBJECT
 #include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/commodities.h>

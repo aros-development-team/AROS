@@ -370,7 +370,7 @@ BOOL nLoadClassConfig(struct NepHidBase *nh)
     /* Create default config */
     nch->nch_CDC->cdc_ChunkID = AROS_LONG2BE(MAKE_ID('B','M','S','E'));
     nch->nch_CDC->cdc_Length = AROS_LONG2BE(sizeof(struct ClsDevCfg)-8);
-    nch->nch_CDC->cdc_Wheelmouse = FALSE;
+    nch->nch_CDC->cdc_Wheelmouse = TRUE;
     nch->nch_UsingDefaultCfg = TRUE;
     /* try to load default config */
     pic = psdGetClsCfg(libname);
@@ -474,11 +474,9 @@ AROS_UFH0(void, nHidTask)
     UWORD qualifier;
     UWORD buts;
     UWORD oldbuts = 0;
-    WORD wheel = 0;
-    WORD oldwheel = 0;
+    WORD wheel;
     UWORD wheeliecode;
     UWORD wheeldist;
-    BOOL newmouse;
     UBYTE *buf;
     UBYTE *bufreal;
     LONG ioerr;
@@ -513,11 +511,10 @@ AROS_UFH0(void, nHidTask)
                             firstpkt = 0;
                         }
                         KPRINTF(1, ("Data: %08lx %08lx\n", (*(ULONG *) bufreal), ((ULONG *) bufreal)[1]));
-                        newmouse = FALSE;
                         qualifier = IEQUALIFIER_RELATIVEMOUSE;
                         buts = bufreal[0];
-                        iecode = wheeliecode = IECODE_NOBUTTON;
-                        wheeldist = 0;
+                        iecode = IECODE_NOBUTTON;
+                        wheel = 0;
                         if(buts & 1)
                         {
                             qualifier |= IEQUALIFIER_LEFTBUTTON;
@@ -532,32 +529,17 @@ AROS_UFH0(void, nHidTask)
                         }
                         if(nch->nch_CDC->cdc_Wheelmouse)
                         {
-                            wheel = ((BYTE *) bufreal)[3];
-                            if(wheel != oldwheel)
+                            /* The boot protocol report only defines the first three
+                               bytes (buttons, X, Y). Virtually every wheel mouse also
+                               reports the wheel as a signed relative value in the
+                               fourth byte while in boot protocol mode, which is what
+                               other operating systems rely on as well. Only trust that
+                               byte when the device actually transferred it, otherwise
+                               we would be looking at stale buffer contents. */
+                            LONG actual = (LONG) psdGetPipeActual(pp) - (LONG) (bufreal - buf);
+                            if(actual >= 4)
                             {
-                                if(oldwheel > 0)
-                                {
-                                    wheeliecode = RAWKEY_NM_WHEEL_UP|IECODE_UP_PREFIX;
-                                    newmouse = TRUE;
-                                }
-                                else if(oldwheel < 0)
-                                {
-                                    wheeliecode = RAWKEY_NM_WHEEL_DOWN|IECODE_UP_PREFIX;
-                                    newmouse = TRUE;
-                                }
-                                oldwheel = wheel;
-                            }
-                            if(wheel > 0)
-                            {
-                                wheeliecode = RAWKEY_NM_WHEEL_UP;
-                                wheeldist = wheel;
-                                newmouse = TRUE;
-                            }
-                            else if(wheel < 0)
-                            {
-                                wheeliecode = RAWKEY_NM_WHEEL_DOWN;
-                                wheeldist = -wheel;
-                                newmouse = TRUE;
+                                wheel = ((BYTE *) bufreal)[3];
                             }
                         }
 
@@ -587,31 +569,34 @@ AROS_UFH0(void, nHidTask)
                         nch->nch_InpIOReq->io_Length = sizeof(struct InputEvent);
                         nch->nch_InpIOReq->io_Command = IND_WRITEEVENT;
                         DoIO((struct IORequest *) nch->nch_InpIOReq);
-                        if(newmouse)
+                        if(wheel)
                         {
+                            /* Each report carries a relative wheel movement. Deliver it
+                               the same way hid.class does: one NewMouse rawkey press per
+                               notch, followed by a single release. */
+                            if(wheel > 0)
+                            {
+                                wheeliecode = RAWKEY_NM_WHEEL_UP;
+                                wheeldist = wheel;
+                            } else {
+                                wheeliecode = RAWKEY_NM_WHEEL_DOWN;
+                                wheeldist = -wheel;
+                            }
+                            KPRINTF(1, ("Doing wheel %ld (%ld notches)\n", wheel, wheeldist));
+                            nch->nch_FakeEvent.ie_Class = IECLASS_RAWKEY;
+                            nch->nch_FakeEvent.ie_SubClass = 0;
+                            nch->nch_FakeEvent.ie_NextEvent = NULL;
+                            nch->nch_FakeEvent.ie_Qualifier = qualifier;
+                            nch->nch_InpIOReq->io_Data = &nch->nch_FakeEvent;
+                            nch->nch_InpIOReq->io_Length = sizeof(struct InputEvent);
+                            nch->nch_InpIOReq->io_Command = IND_WRITEEVENT;
                             while(wheeldist--)
                             {
-                                KPRINTF(1, ("Doing wheel %ld\n", wheel));
-                                nch->nch_FakeEvent.ie_Class = IECLASS_RAWKEY;
-                                nch->nch_FakeEvent.ie_SubClass = 0;
                                 nch->nch_FakeEvent.ie_Code = wheeliecode;
-                                nch->nch_FakeEvent.ie_NextEvent = NULL;
-                                nch->nch_FakeEvent.ie_Qualifier = qualifier;
-                                nch->nch_InpIOReq->io_Data = &nch->nch_FakeEvent;
-                                nch->nch_InpIOReq->io_Length = sizeof(struct InputEvent);
-                                nch->nch_InpIOReq->io_Command = IND_WRITEEVENT;
                                 DoIO((struct IORequest *) nch->nch_InpIOReq);
-
-                                nch->nch_FakeEvent.ie_Class = IECLASS_NEWMOUSE;
-                                nch->nch_FakeEvent.ie_SubClass = 0;
-                                nch->nch_FakeEvent.ie_Code = wheeliecode;
-                                nch->nch_FakeEvent.ie_NextEvent = NULL;
-                                nch->nch_FakeEvent.ie_Qualifier = qualifier;
-                                nch->nch_InpIOReq->io_Data = &nch->nch_FakeEvent;
-                                nch->nch_InpIOReq->io_Length = sizeof(struct InputEvent);
-                                nch->nch_InpIOReq->io_Command = IND_WRITEEVENT;
-                                DoIO((struct IORequest *) nch->nch_InpIOReq);
-                                }
+                            }
+                            nch->nch_FakeEvent.ie_Code = wheeliecode|IECODE_UP_PREFIX;
+                            DoIO((struct IORequest *) nch->nch_InpIOReq);
                         }
                     } else {
                         KPRINTF(1, ("Int Pipe failed %ld\n", ioerr));
@@ -837,7 +822,7 @@ AROS_UFH0(void, nGUITask)
                 Child, (IPTR)HGroup, GroupFrameT((IPTR)(nch->nch_Interface ? "Device Settings" : "Default Device Settings")),
                     Child, (IPTR)HSpace(0),
                     Child, (IPTR)ColGroup(2),
-                        Child, (IPTR)Label((IPTR) "Experimental Wheelmouse support:"),
+                        Child, (IPTR)Label((IPTR) "Wheelmouse support:"),
                         Child, (IPTR)HGroup,
                             Child, (IPTR)(nch->nch_WheelmouseObj = ImageObject, ImageButtonFrame,
                                 MUIA_Background, MUII_ButtonBack,
