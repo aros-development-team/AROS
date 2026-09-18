@@ -396,11 +396,16 @@ static STRPTR GetToolTypeName(CONST_STRPTR tooltype)
 {
     CONST_STRPTR src;
     STRPTR name, dst;
+    size_t len;
 
     if (tooltype == NULL)
         return NULL;
 
-    name = AllocVec(strlen(tooltype) + 1, MEMF_ANY);
+    len = strnlen(tooltype, MAX_TOOLTYPE_LINE);
+    if (len == MAX_TOOLTYPE_LINE)
+        return NULL;
+
+    name = AllocVec(len + 1, MEMF_ANY);
     if (name == NULL)
         return NULL;
 
