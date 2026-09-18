@@ -89,16 +89,18 @@ endif
 	$(Q)$(eval LINKTARGET=%(to))
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$(LINKTARGET))..."
 	$(Q)$(eval LINKTMPFILE=%(objdir)/$(notdir $(LINKTARGET)))
-	$(Q)$(IF) %(cmd) %(ldopts) %(from) -o $(LINKTMPFILE) %(ldflags) $(strip %(libs) %(archlibs)) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+	$(Q)$(eval LINKRSPFILE=$(LINKTMPFILE).rsp)
+	$(file >$(LINKRSPFILE),%(from))
+	$(Q)$(IF) %(cmd) %(ldopts) -Wl,@$(LINKRSPFILE) -o $(LINKTMPFILE) %(ldflags) $(strip %(libs) %(archlibs)) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-				$(ECHO) "$(LINKTARGET): %(cmd) %(ldopts) %(from) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" >> $(GENDIR)/errors ; \
+				$(ECHO) "$(LINKTARGET): %(cmd) %(ldopts) -Wl,@$(LINKRSPFILE) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" >> $(GENDIR)/errors ; \
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 		else \
 			$(NOP) ; \
 		fi ; \
-		$(CP) $(LINKTMPFILE) $(LINKTARGET) ; \
+		$(CP) $(LINKTMPFILE) $(LINKTARGET) && $(RM) $(LINKRSPFILE) ; \
 	else \
-		$(ECHO) "Link failed: %(cmd) %(ldopts) %(from) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" 1>&2 ; \
+		$(ECHO) "Link failed: %(cmd) %(ldopts) -Wl,@$(LINKRSPFILE) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" 1>&2 ; \
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 		exit 1 ; \
 	fi
@@ -124,13 +126,15 @@ endif
 #
 %define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" err="$(notdir $@).err" strip="$(STRIP)" stripdebug="$(DEBUG)" objs=/A endtag= module="$(MODULE)" ldflags="$(LDFLAGS)" libs="$(LIBS)" archlibs= objdir="$(OBJDIR)"
 	$(Q)$(ECHO) "Building Module  $(subst $(TARGETDIR)/,,$@) ..."
+	$(Q)$(eval LINKRSPFILE=%(objdir)/%(module).link.rsp)
+	$(file >$(LINKRSPFILE),%(objs))
 	$(Q)$(IF) %(cmd) %(ldopts) $(NOSTARTUP_OBJECTS) \
 		$(GENMAP) %(objdir)/%(module).map \
-		%(objs) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group 2>&1 > %(objdir)/%(err) 2>&1 ; \
+		-Wl,@$(LINKRSPFILE) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group 2>&1 > %(objdir)/%(err) 2>&1 ; \
 	then \
-		cat %(objdir)/%(err); \
+		cat %(objdir)/%(err) && $(RM) $(LINKRSPFILE); \
 	else \
-		$(ECHO) "%(cmd) $(strip %(ldopts) $(GENMAP) %(objdir)/%(module).map %(objs) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group)"; \
+		$(ECHO) "%(cmd) $(strip %(ldopts) $(GENMAP) %(objdir)/%(module).map -Wl,@$(LINKRSPFILE) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group)"; \
 		cat %(objdir)/%(err); \
 		exit 1; \
 	fi
@@ -144,8 +148,10 @@ endif
 # Create the library
 %define mklib_q ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
 	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,%(to))..."
-	$(Q)%(ar) %(to) %(from)
+	$(file >%(to).ar.rsp,%(from))
+	$(Q)%(ar) %(to) @%(to).ar.rsp
 	$(Q)%(ranlib) %(to)
+	$(Q)$(RM) %(to).ar.rsp
 %end
 #------------------------------------------------------------------------------
 
@@ -2165,7 +2171,8 @@ $(%(mmake)_KOBJ) : FILTBASES:=$(addprefix -L ,$(%(mmake)_SYMBOLS))
 $(%(mmake)_KOBJ) : USER_LDFLAGS := $(USER_LDFLAGS)
 $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
-	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
+	$(file >$@.rsp,$^)
+	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ @$@.rsp $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS)) && $(RM) $@.rsp
 	$(Q)$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*\r?$$/) {print "-L " $$3;}'`
 
 ## Dependency fine-tuning
@@ -2755,7 +2762,8 @@ $(%(mmake)%(flavour)_KOBJ) : FILTBASES:=$(addprefix -L ,$(%(mmake)%(flavour)_SYM
 $(%(mmake)%(flavour)_KOBJ) : USER_LDFLAGS:=$(USER_LDFLAGS)
 $(%(mmake)%(flavour)_KOBJ) : $(%(mmake)%(flavour)_OBJS) $(USER_OBJS) $(%(mmake)%(flavour)_ENDOBJS)
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
-	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
+	$(file >$@.rsp,$^)
+	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ @$@.rsp $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS)) && $(RM) $@.rsp
 	$(Q)$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*\r?$$/) {print "-L " $$3;}'`
 endif
 
