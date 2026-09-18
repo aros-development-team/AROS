@@ -8,12 +8,12 @@
 void writeincclib(struct config *cfg)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
     struct functionhead *funclistit;
     struct functionarg *arglistit;
     struct stringlist *linelistit;
 
-    snprintf(line, 255, "%s/clib/%s_protos.h", cfg->gendir, cfg->includename);
+    line = make_output_path("%s/clib/%s_protos.h", cfg->gendir, cfg->includename);
 
     out = fopen(line, "w");
 
@@ -53,4 +53,5 @@ void writeincclib(struct config *cfg)
             "\n"
             "#endif /* CLIB_%s_PROTOS_H */\n",
             cfg->includenameupper);
+    free(line);
 }

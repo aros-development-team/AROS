@@ -37,7 +37,7 @@ static void write_fd_func(FILE *out, struct functionhead *funclistit, unsigned i
 void writefd(struct config *cfg)
 {
     FILE *out;
-    char line[256];
+    char *line;
     struct functionhead *funclistit = cfg->funclist;
     struct functionarg *arglistit;
     unsigned int lvo;
@@ -57,7 +57,7 @@ void writefd(struct config *cfg)
         }
     }
 
-    snprintf(line, 255, "%s/%s_lib.fd", cfg->gendir, cfg->includename);
+    line = make_output_path("%s/%s_lib.fd", cfg->gendir, cfg->includename);
 
     out = fopen(line, "w");
 
@@ -136,5 +136,6 @@ void writefd(struct config *cfg)
         }
 
         fclose(out);
+        free(line);
     }
 }

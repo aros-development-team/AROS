@@ -9,9 +9,9 @@
 void writegetlibbase(struct config *cfg, int is_rel)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
 
-    snprintf(line, 255, "%s/%s_%sgetlibbase.c",
+    line = make_output_path("%s/%s_%sgetlibbase.c",
              cfg->libgendir, cfg->modulename, is_rel ? "rel" : ""
     );
     out = fopen(line, "w");
@@ -57,4 +57,5 @@ void writegetlibbase(struct config *cfg, int is_rel)
          );
     }
     fclose(out);
+    free(line);
 }
