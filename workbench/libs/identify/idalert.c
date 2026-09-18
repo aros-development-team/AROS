@@ -464,15 +464,26 @@ const struct
             }
         }
 
-        // search for alert
-        searchFor = id & 0x7fffffff;
+        // search for alert: the table lists some alerts in their dead-end
+        // form (the CPU traps, 0x8000000x) and some in both forms with
+        // different texts (AN_GadgetType 0x84000001, AN_BadGadget 0x04000001),
+        // so match the full code first, then the code without its dead-end bit
         for (i = 0; alerts[i].id != -1; i++)
         {
-            if (searchFor == alerts[i].id)
+            if (alerts[i].id == id)
             {
                 strlcat(specstr, _(alerts[i].entry), strlength);
                 found = TRUE;
                 break;
+            }
+        }
+        searchFor = id & 0x7fffffff;
+        for (i = 0; !found && alerts[i].id != -1; i++)
+        {
+            if ((alerts[i].id & 0x7fffffff) == searchFor)
+            {
+                strlcat(specstr, _(alerts[i].entry), strlength);
+                found = TRUE;
             }
         }
         
