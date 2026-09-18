@@ -9,10 +9,10 @@
 void writeincproto(struct config *cfg)
 {
     FILE *out;
-    char line[256], define[256], *banner;
+    char *line, define[256], *banner;
     struct linelist *linelistit;
 
-    snprintf(line, 255, "%s/proto/%s.h",
+    line = make_output_path("%s/proto/%s.h",
              cfg->gendir, cfg->includename
     );
     out = fopen(line, "w");
@@ -156,4 +156,5 @@ void writeincproto(struct config *cfg)
     );
 
     fclose(out);
+    free(line);
 }

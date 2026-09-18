@@ -87,10 +87,10 @@ static inline const char *upname(const char *s)
 void writestart(struct config *cfg)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
     struct classinfo *cl;
 
-    snprintf(line, 255, "%s/%s_start.c", cfg->gendir, cfg->modulename);
+    line = make_output_path("%s/%s_start.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -171,6 +171,7 @@ void writestart(struct config *cfg)
     }
 
     fclose(out);
+    free(line);
 }
 
 
