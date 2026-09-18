@@ -582,6 +582,7 @@ static const struct Command
 struct cmd_params
 {
     UBYTE numparams;            /* Parameters stored */
+    BOOL overflow;              /* Decimal parameter exceeded IPTR */
 
     /* Since parameters may be optional, only supplied parameters
        are saved, along with their number. For example
@@ -594,7 +595,7 @@ struct cmd_params
     struct cmd_param
     {
         UBYTE paramno;          /* Starts counting at 0 */
-        UBYTE val;
+        IPTR val;
     } tab[PARAM_BUF_SIZE];
 };
 
@@ -748,14 +749,22 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
                 last_was_param = TRUE;
             }
 
-            params.tab[num_params - 1].val *= 10;
-            if (*write_str == '>')
+            if (!params.overflow)
             {
-                params.tab[num_params - 1].val += 5;
-            }
-            else
-            {
-                params.tab[num_params - 1].val += (*write_str) - '0';
+                IPTR digit = (*write_str == '>') ?
+                    5 : (*write_str) - '0';
+                IPTR maxval = ~(IPTR)0;
+
+                if (params.tab[num_params - 1].val >
+                    (maxval - digit) / 10)
+                {
+                    params.overflow = TRUE;
+                }
+                else
+                {
+                    params.tab[num_params - 1].val =
+                        params.tab[num_params - 1].val * 10 + digit;
+                }
             }
 
             next_can_be_separator = TRUE;
@@ -774,11 +783,19 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
 
     if (cmd != -1)
     {
-        *cmd_ptr = cmd;
         found = TRUE;
 
         /* Continue parsing on the first byte after the command */
         *writestr_ptr += cmd_next_idx;
+
+        if (params.overflow)
+        {
+            *cmd_ptr = C_NIL;
+            *numparams_ptr = 0;
+            return TRUE;
+        }
+
+        *cmd_ptr = cmd;
     }
 
     if (found)
