@@ -6,6 +6,7 @@ char *make_output_path(const char *format, ...)
     va_list args;
     char *path;
     int length;
+    int written;
     size_t size;
 
     va_start(args, format);
@@ -27,14 +28,15 @@ char *make_output_path(const char *format, ...)
     }
 
     va_start(args, format);
-    if (vsnprintf(path, size, format, args) != length)
+    written = vsnprintf(path, size, format, args);
+    va_end(args);
+
+    if (written != length)
     {
-        va_end(args);
         free(path);
         fprintf(stderr, "Could not format output path\n");
         exit(20);
     }
-    va_end(args);
 
     return path;
 }
