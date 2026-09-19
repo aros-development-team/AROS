@@ -114,7 +114,6 @@ static BOOL DrainAndReplyPort(struct MsgPort *port);                    // drain
 static BOOL NoIconBouncing(void);                                       // check if no icon is bouncing
 static BOOL MouseOverToolbar(void);                                     // check if mouse is over the toolbar
 static void HandleFocus(void);                                          // focus follows the mouse
-static void KeepToolbarAtBack(void);                                    // keep the toolbar at the bottom of the window stack
 static BOOL ToolbarAreaBlocked(LONG left, LONG top, LONG right, LONG bottom); // check if another window covers the toolbar area
 static void ParseAlign(STRPTR str);                                     // parse ALIGN parameter
 static void ComputeWindowPosition(void);                                // set toolbar position from Align
@@ -568,16 +567,6 @@ int main(int argc, char *argv[])
                     if (fired)
                         SendIO((struct IORequest *)FocusTimer);
                     HandleFocus();
-                    KeepToolbarAtBack();
-                    if (WallpaperPending && Window_Open && NoIconBouncing() &&
-                        MainWindow &&
-                        !ToolbarAreaBlocked(MainWindow->LeftEdge,
-                            MainWindow->TopEdge,
-                            MainWindow->LeftEdge + MainWindow->Width - 1,
-                            MainWindow->TopEdge + MainWindow->Height - 1))
-                    {
-                        RefreshBackground();
-                    }
                 }
 
                 if(WindowSignal & SIGBREAKF_CTRL_C)
@@ -1117,6 +1106,15 @@ static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
             break;
 
         case IDCMP_MOUSEMOVE:
+            if(KomIDCMP->MouseX < 0 ||
+                KomIDCMP->MouseX >= WindowWidth ||
+                KomIDCMP->MouseY < 0 ||
+                KomIDCMP->MouseY >= WindowHeight)
+            {
+                /* Not over the toolbar - nothing to update. */
+                break;
+            }
+
             for(MouseIcon=Levels[CurrentLevel].Beginning; MouseIcon<IconCounter; MouseIcon++)
             {
                 if(Icons[MouseIcon].Icon_OK)
@@ -1273,6 +1271,22 @@ static void Change_State(LONG Mode)
     {
         if(Icons[x].Icon_OK)
         {
+            /* Stop the hover bounce as soon as the mouse leaves the icon,
+               even if no MOUSEMOVE message was delivered for it. */
+            if(Icons[x].Icon_Status & ICON_ACTIVE)
+            {
+                LONG mx = MainWindow->MouseX;
+                LONG my = MainWindow->MouseY;
+
+                if(!(mx >= Icons[x].Icon_PositionX &&
+                        mx < Icons[x].Icon_PositionX + Icons[x].Icon_Width &&
+                        my > 0 &&
+                        my < WindowHeight - 5))
+                {
+                    Icons[x].Icon_Status = Icons[x].Icon_Status & 0x07;
+                }
+            }
+
             if(Icons[x].Icon_Status != 0)
             {
                 if(Mode == 0)
@@ -1924,6 +1938,10 @@ static void HandleFocus(void)
     if (ScreenResetInProgress || !Window_Open || MenuWindow_Open)
         return;
 
+    /* Don't steal focus from an application running on another screen. */
+    if (IntuitionBase->ActiveScreen != MyScreen)
+        return;
+
     over = MouseOverToolbar();
 
     /* Debounce: only act when the mouse-over state is stable for two
@@ -1976,28 +1994,6 @@ static BOOL ToolbarAreaBlocked(LONG left, LONG top, LONG right, LONG bottom)
             return TRUE;
     }
     return FALSE;
-}
-
-
-static void KeepToolbarAtBack(void)
-{
-    struct Window *w;
-
-    if (ScreenResetInProgress || !Window_Open || MenuWindow_Open)
-        return;
-
-    /* The front-most window is MyScreen->FirstWindow; the back-most one is
-       the last in the NextWindow chain. If the toolbar is not the back-most
-       window, push it behind all the others. */
-    w = MyScreen->FirstWindow;
-    if (!w)
-        return;
-
-    while (w->NextWindow)
-        w = w->NextWindow;
-
-    if (w != MainWindow)
-        WindowToBack(MainWindow);
 }
 
 
