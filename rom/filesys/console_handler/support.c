@@ -1007,9 +1007,8 @@ BOOL process_input(struct filehandle *fh)
                     CloseDevice((struct IORequest *) fh->conreadio);
                     fh->flags &= ~FHFLG_CONSOLEDEVICEOPEN;
                 }
-                /* Only now close the window itself */
-                CloseWindow(fh->window);
-                fh->window = NULL;
+                /* Only now drop resources tied to this window */
+                close_con_window(fh);
             }
 
             /* fall through */
