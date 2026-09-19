@@ -113,7 +113,7 @@ def listFiles( path='.' ):
     'listFiles( path ) -> []'
     
     files = []
-    for name in os.listdir( path ):
+    for name in sorted(os.listdir( path )):
         name = os.path.join( path, name )
         
         if os.path.isdir( name ):
