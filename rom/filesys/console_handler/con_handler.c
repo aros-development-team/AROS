@@ -191,6 +191,42 @@ static const struct NewWindow default_nw =
     WBENCHSCREEN    /* type */
 };
 
+void close_con_window(struct filehandle *fh)
+{
+    if (fh->appwindow) {
+        D(bug("[con:handler] Unpromote console window from being an AppWindow\n"));
+        RemoveAppWindow(fh->appwindow);
+        fh->appwindow = NULL;
+    }
+
+    if (fh->appmsgport) {
+        struct AppMessage *appmsg;
+
+        while ((appmsg = (struct AppMessage *) GetMsg(fh->appmsgport)))
+            ReplyMsg((struct Message *) appmsg);
+
+        D(bug("[con:handler] Delete MsgPort for AppWindow\n"));
+        DeleteMsgPort(fh->appmsgport);
+        fh->appmsgport = NULL;
+        fh->appmsg = NULL;
+    }
+
+#if defined(CONSOLE_SHOW_MENU)
+    if (fh->winmenu) {
+        if (fh->window && fh->window->MenuStrip == fh->winmenu)
+            ClearMenuStrip(fh->window);
+        FreeMenus(fh->winmenu);
+        fh->winmenu = NULL;
+    }
+#endif
+
+    D(bug("[con:handler] Closing window 0x%p\n", fh->window));
+    if (fh->window) {
+        CloseWindow(fh->window);
+        fh->window = NULL;
+    }
+}
+
 static LONG MakeConWindow(struct filehandle *fh)
 {
     LONG err = 0;
@@ -299,8 +335,7 @@ static LONG MakeConWindow(struct filehandle *fh)
              * both bypasses the FHFLG_NOWINDOW latch and hands console
              * I/O a freed window.
              */
-            CloseWindow(fh->window);
-            fh->window = NULL;
+            close_con_window(fh);
         }
 
     } /* if (fh->window) */
@@ -395,21 +430,7 @@ static void close_con(struct filehandle *fh)
         CloseDevice((struct IORequest *) fh->conreadio);
     }
 
-    if (fh->appwindow) {
-        D(bug("[con:handler] Unpromote console window from being an AppWindow\n"));
-        RemoveAppWindow(fh->appwindow);
-    }
-    if (fh->appmsgport) {
-        struct AppMessage  *appmsg;
-        while ((appmsg = (struct AppMessage *) GetMsg(fh->appmsgport)))
-            ReplyMsg ((struct Message *) appmsg);
-        D(bug("[con:handler] Delete MsgPort for AppWindow\n"));
-        DeleteMsgPort(fh->appmsgport);
-    }
-
-    D(bug("[con:handler] Closing window 0x%p\n", fh->window));
-    if (fh->window)
-        CloseWindow(fh->window);
+    close_con_window(fh);
 
     D(bug("[con:handler] Delete console.device IORequest 0x%p\n", fh->conreadio));
     DeleteIORequest(ioReq(fh->conreadio));
@@ -742,8 +763,8 @@ LONG CONMain(struct ExecBase *SysBase)
         ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
         ULONG timermask = 1L << fh->timermp->mp_SigBit;
         ULONG packetmask = (1L << mp->mp_SigBit) | (1L << procmp->mp_SigBit);
-        ULONG winmask = fh->window ? 1L << fh->window->UserPort->mp_SigBit : 0L;
-        ULONG appwindowmask = fh->appmsgport ? 1L << fh->appmsgport->mp_SigBit : 0L;
+        ULONG winmask;
+        ULONG appwindowmask;
         ULONG i, insertedlen;
         ULONG sigs;
         UBYTE iconpath[INPUTBUFFER_SIZE];
@@ -752,6 +773,8 @@ LONG CONMain(struct ExecBase *SysBase)
         for (;;) {
             i = 0;
             insertedlen = 0;
+            winmask = fh->window ? 1L << fh->window->UserPort->mp_SigBit : 0L;
+            appwindowmask = fh->appmsgport ? 1L << fh->appmsgport->mp_SigBit : 0L;
             sigs = Wait(packetmask | conreadmask | timermask | winmask | appwindowmask);
 
             if ((appwindowmask) && (sigs & appwindowmask)) {
