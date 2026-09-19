@@ -19,6 +19,7 @@
 #include <dos/dos.h>
 #include <exec/types.h>
 #include <exec/io.h>
+#include <exec/errors.h>
 
 #include <clib/alib_protos.h>
 
@@ -82,20 +83,31 @@ const struct OOP_ABDescr install__abd[] =
 Object *optObjDestDevice = NULL;
 Object *optObjDestUnit = NULL;
 
+CONST_STRPTR def_atadev     = "ata.device";
+CONST_STRPTR def_ahcidev    = "ahci.device";
 CONST_STRPTR def_nvmedev    = "nvme.device";
 CONST_STRPTR def_virtiodev  = "virtio.device";
 CONST_STRPTR def_usbdev     = "usbscsi.device";
 CONST_STRPTR def_imghdisk   = "PROGDIR:IA-Icons/Harddisk";
 CONST_STRPTR def_imgusbdisk = "PROGDIR:IA-Icons/USBdisk";
 
+static CONST_STRPTR DriveSelect__DeveloperDefaultDevice(void)
+{
+#ifdef __mc68000__
+    return def_atadev;
+#else
+    return def_ahcidev;
+#endif
+}
+
 static STRPTR DriveSelect__MakeLabel(CONST_STRPTR device, ULONG unit,
                                       CONST_STRPTR model,
                                       struct PartitionHandle *root)
 {
     struct DriveGeometry dg;
-    char modelText[DRIVE_MODEL_DISPLAY_MAX + 1] = "";
-    char sizeText[32] = "";
-    char unitText[16];
+    char modelText[DRIVE_MODEL_DISPLAY_MAX + 1] = ""; /* Flawfinder: ignore - bounded model display + NUL */
+    char sizeText[32] = ""; /* Flawfinder: ignore - all writes use sizeof(sizeText) */
+    char unitText[16]; /* Flawfinder: ignore - ULONG decimal + NUL fits */
     BOOL haveModel = FALSE, haveSize = FALSE;
     size_t i = 0, length;
     STRPTR label;
@@ -268,7 +280,7 @@ static BOOL DriveSelect__AddDrive(struct DriveSelect_Data *data,
         goto failed;
     }
 
-    memcpy(record->dsr_Device, device, length);
+    memcpy(record->dsr_Device, device, length); /* Flawfinder: ignore - destination allocated to strlen(device) + 1 */
     record->dsr_Unit = unit;
     record->dsr_Label = DriveSelect__MakeLabel(device, unit, model, root);
 
@@ -324,6 +336,308 @@ DriveSelect__DriveAt(struct DriveSelect_Data *data, ULONG index)
     return record;
 }
 
+static CONST_STRPTR DriveSelect__IOErrorDescription(LONG error)
+{
+    switch (error)
+    {
+    case IOERR_OPENFAIL:
+        return _(MSG_TARGETERR_OPENFAIL);
+
+    case IOERR_ABORTED:
+        return _(MSG_TARGETERR_ABORTED);
+
+    case IOERR_NOCMD:
+        return _(MSG_TARGETERR_NOCMD);
+
+    case IOERR_BADLENGTH:
+        return _(MSG_TARGETERR_BADLENGTH);
+
+    case IOERR_BADADDRESS:
+        return _(MSG_TARGETERR_BADADDRESS);
+
+    case IOERR_UNITBUSY:
+        return _(MSG_TARGETERR_UNITBUSY);
+
+    case IOERR_SELFTEST:
+        return _(MSG_TARGETERR_SELFTEST);
+
+    default:
+        return _(MSG_TARGETERR_UNKNOWN);
+    }
+}
+
+static ULONG DriveSelect__UnitDigits(ULONG unit)
+{
+    ULONG digits = 1;
+
+    while (unit >= 10)
+    {
+        unit /= 10;
+        digits++;
+    }
+
+    return digits;
+}
+
+static STRPTR
+DriveSelect__KnownUnitsText(struct DriveSelect_Data *data,
+                            CONST_STRPTR device)
+{
+    struct DriveSelect_Record *record;
+    STRPTR text, cursor;
+    size_t length = 1;
+    size_t remaining;
+    ULONG count = 0;
+
+    if (!device || !device[0])
+        return NULL;
+
+    for (record = data->dsd_Drives;
+         record;
+         record = record->dsr_Next)
+    {
+        size_t extra;
+
+        if (strcmp(record->dsr_Device, device) != 0)
+            continue;
+
+        extra = (size_t)DriveSelect__UnitDigits(record->dsr_Unit);
+        if (count)
+            extra += 2; /* ", " */
+
+        if (length > ((size_t)-1) - extra)
+            return NULL;
+
+        length += extra;
+        count++;
+    }
+
+    if (!count || (length > (size_t)((ULONG)-1)))
+        return NULL;
+
+    text = AllocVec((ULONG)length, MEMF_ANY);
+    if (!text)
+        return NULL;
+
+    cursor = text;
+    remaining = length;
+    count = 0;
+
+    for (record = data->dsd_Drives;
+         record;
+         record = record->dsr_Next)
+    {
+        int written;
+
+        if (strcmp(record->dsr_Device, device) != 0)
+            continue;
+
+        written = snprintf(cursor, remaining, "%s%lu",
+                           count ? ", " : "",
+                           (unsigned long)record->dsr_Unit);
+
+        if ((written < 0) || ((size_t)written >= remaining))
+        {
+            FreeVec(text);
+            return NULL;
+        }
+
+        cursor += written;
+        remaining -= (size_t)written;
+        count++;
+    }
+
+    return text;
+}
+
+static IPTR
+DriveSelect__MUIM_DriveSelect_ValidateTarget(
+    Class *CLASS,
+    Object *self,
+    struct MUIP_DriveSelect_ValidateTarget *message)
+{
+    struct DriveSelect_Data *data = INST_DATA(CLASS, self);
+    struct MsgPort *port = NULL;
+    struct IOExtTD *ioreq = NULL;
+    struct PartitionHandle *root = NULL;
+    CONST_STRPTR device;
+    CONST_STRPTR errorText;
+    STRPTR units = NULL;
+    ULONG unit;
+    LONG error;
+    LONG protectionError = 0;
+    BOOL opened = FALSE;
+    BOOL protectionKnown = FALSE;
+    BOOL valid = FALSE;
+
+    /*
+     * Refresh the same option values consumed by the downstream
+     * installer. Validation must never use a second target state.
+     */
+    DoMethod(optObjDestDevice, MUIM_InstallOption_Update);
+    DoMethod(optObjDestUnit, MUIM_InstallOption_Update);
+
+    device = (CONST_STRPTR)
+        XGET(optObjDestDevice, MUIA_InstallOption_Value);
+    unit = (ULONG)
+        XGET(optObjDestUnit, MUIA_InstallOption_Value);
+
+    if (!device || !device[0])
+    {
+        MUI_Request(_app(self), _win(self), 0,
+                    _(MSG_ERROR), _(MSG_OK),
+                    _(MSG_TARGETNODEVICE));
+        return FALSE;
+    }
+
+    port = CreateMsgPort();
+    if (!port)
+    {
+        MUI_Request(_app(self), _win(self), 0,
+                    _(MSG_ERROR), _(MSG_OK),
+                    _(MSG_TARGETTESTRESOURCE));
+        goto done;
+    }
+
+    ioreq = (struct IOExtTD *)
+        CreateIORequest(port, sizeof(*ioreq));
+    if (!ioreq)
+    {
+        MUI_Request(_app(self), _win(self), 0,
+                    _(MSG_ERROR), _(MSG_OK),
+                    _(MSG_TARGETTESTRESOURCE));
+        goto done;
+    }
+
+    error = OpenDevice(device, unit,
+                       (struct IORequest *)ioreq, 0);
+
+    if (error != 0)
+    {
+        errorText = DriveSelect__IOErrorDescription(error);
+        units = DriveSelect__KnownUnitsText(data, device);
+
+        if (units)
+        {
+            MUI_Request(_app(self), _win(self), 0,
+                        _(MSG_ERROR), _(MSG_OK),
+                        _(MSG_TARGETOPENERRORUNITS),
+                        device, unit,
+                        errorText, error,
+                        device, units);
+        }
+        else
+        {
+            MUI_Request(_app(self), _win(self), 0,
+                        _(MSG_ERROR), _(MSG_OK),
+                        _(MSG_TARGETOPENERROR),
+                        device, unit,
+                        errorText, error);
+        }
+
+        goto done;
+    }
+
+    opened = TRUE;
+
+    /*
+     * A positive write-protection report is authoritative and blocks
+     * destructive work. Unsupported/failed protection queries are
+     * diagnostic only so Developer Mode remains a compatibility escape.
+     */
+    ioreq->iotd_Req.io_Command = TD_PROTSTATUS;
+    ioreq->iotd_Req.io_Error = 0;
+    ioreq->iotd_Req.io_Actual = 0;
+
+    protectionError = DoIO((struct IORequest *)ioreq);
+
+    if (protectionError == 0)
+    {
+        protectionKnown = TRUE;
+
+        if (ioreq->iotd_Req.io_Actual != 0)
+        {
+            MUI_Request(_app(self), _win(self), 0,
+                        _(MSG_ERROR), _(MSG_OK),
+                        _(MSG_TARGETREADONLY),
+                        device, unit);
+            goto done;
+        }
+    }
+
+    CloseDevice((struct IORequest *)ioreq);
+    opened = FALSE;
+
+    DeleteIORequest((struct IORequest *)ioreq);
+    ioreq = NULL;
+
+    DeleteMsgPort(port);
+    port = NULL;
+
+    /*
+     * OpenDevice + the protection check above define the base target
+     * capability.  partition.library is an additional capability and
+     * must only be required by paths which actually consume it.
+     */
+    if (message->RequirePartitionRoot)
+    {
+        root = OpenRootPartition(device, unit);
+        if (!root)
+        {
+            MUI_Request(_app(self), _win(self), 0,
+                        _(MSG_ERROR), _(MSG_OK),
+                        _(MSG_TARGETBLOCKERROR),
+                        device, unit);
+            goto done;
+        }
+
+        CloseRootPartition(root);
+        root = NULL;
+    }
+
+    valid = TRUE;
+
+    if (message->ShowSuccess)
+    {
+        if (protectionKnown)
+        {
+            MUI_Request(_app(self), _win(self), 0,
+                        _(MSG_TARGETCHECK), _(MSG_OK),
+                        _(MSG_TARGETOK),
+                        device, unit);
+        }
+        else
+        {
+            errorText =
+                DriveSelect__IOErrorDescription(protectionError);
+
+            MUI_Request(_app(self), _win(self), 0,
+                        _(MSG_TARGETCHECK), _(MSG_OK),
+                        _(MSG_TARGETOKNOPROT),
+                        device, unit,
+                        errorText, protectionError);
+        }
+    }
+
+done:
+    if (root)
+        CloseRootPartition(root);
+
+    if (opened && ioreq)
+        CloseDevice((struct IORequest *)ioreq);
+
+    if (ioreq)
+        DeleteIORequest((struct IORequest *)ioreq);
+
+    if (port)
+        DeleteMsgPort(port);
+
+    if (units)
+        FreeVec(units);
+
+    return valid;
+}
+
 static BOOL DriveSelect__PublishDrives(struct DriveSelect_Data *data)
 {
     struct DriveSelect_Record *record;
@@ -353,7 +667,8 @@ static BOOL DriveSelect__PublishDrives(struct DriveSelect_Data *data)
 
     NNSET(data->dsd_DriveCycle, MUIA_Cycle_Entries,
           (IPTR)data->dsd_DriveEntries);
-    NNSET(data->dsd_DriveCycle, MUIA_Disabled, FALSE);
+    NNSET(data->dsd_DriveCycle, MUIA_Disabled,
+          data->dsd_DeveloperMode);
     return TRUE;
 }
 
@@ -397,6 +712,29 @@ static void DriveSelect__ProbeUSB(struct DriveSelect_Data *data)
     DeleteMsgPort(port);
 }
 
+static void DriveSelect__SetTarget(Object *obj,
+                                   CONST_STRPTR device,
+                                   ULONG unit,
+                                   BOOL probed)
+{
+    struct TagItem tags[] = {
+        { MUIA_DriveSelect_Device,    (IPTR)(device ? device : (CONST_STRPTR)"") },
+        { MUIA_DriveSelect_Unit,      (IPTR)unit },
+        { MUIA_DriveSelect_DevProbed, (IPTR)probed },
+        { TAG_DONE }
+    };
+
+    SetAttrsA(obj, tags);
+}
+
+static void DriveSelect__ApplyRecord(Object *obj,
+                                     struct DriveSelect_Record *record)
+{
+    if (record)
+        DriveSelect__SetTarget(obj, record->dsr_Device,
+                              record->dsr_Unit, FALSE);
+}
+
 AROS_UFH3
 (
     void, dsSelectHookFunc,
@@ -412,16 +750,89 @@ AROS_UFH3
     struct DriveSelect_Record *record =
         param ? DriveSelect__DriveAt(data, (ULONG)param[0]) : NULL;
 
-    if (record)
-    {
-        struct TagItem tags[] = {
-            { MUIA_DriveSelect_Device,    (IPTR)record->dsr_Device },
-            { MUIA_DriveSelect_Unit,      (IPTR)record->dsr_Unit },
-            { MUIA_DriveSelect_DevProbed, FALSE },
-            { TAG_DONE }
-        };
+    if (!data->dsd_DeveloperMode)
+        DriveSelect__ApplyRecord(obj, record);
 
-        SetAttrsA(obj, tags);
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3
+(
+    void, dsManualHookFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(Object *, obj, A2),
+    AROS_UFHA(IPTR *, param, A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    struct DriveSelect_Data *data =
+        (struct DriveSelect_Data *)hook->h_Data;
+
+    if (data->dsd_DeveloperMode)
+    {
+        CONST_STRPTR device =
+            (CONST_STRPTR)XGET(data->dsd_ManualDeviceObj,
+                              MUIA_String_Contents);
+        ULONG unit =
+            (ULONG)XGET(data->dsd_ManualUnitObj,
+                        MUIA_String_Integer);
+
+        DriveSelect__SetTarget(obj, device, unit, FALSE);
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3
+(
+    void, dsDeveloperHookFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(Object *, obj, A2),
+    AROS_UFHA(IPTR *, param, A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    struct DriveSelect_Data *data =
+        (struct DriveSelect_Data *)hook->h_Data;
+    BOOL enabled = param ? (BOOL)param[0] : FALSE;
+
+    data->dsd_DeveloperMode = enabled;
+
+    NNSET(data->dsd_DriveCycle, MUIA_Disabled,
+          enabled || (data->dsd_DriveCount == 0));
+
+    if (enabled)
+    {
+        CONST_STRPTR device =
+            (CONST_STRPTR)XGET(data->dsd_ManualDeviceObj,
+                              MUIA_String_Contents);
+
+        /*
+         * Preserve the old InstallAROS escape-hatch starting point,
+         * but only after Developer Mode was explicitly enabled.
+         */
+        if (!device || !device[0])
+            DriveSelect__SetTarget(
+                obj, DriveSelect__DeveloperDefaultDevice(), 0, FALSE);
+    }
+    else
+    {
+        struct DriveSelect_Record *record = NULL;
+
+        if (data->dsd_DriveCount)
+        {
+            ULONG index =
+                (ULONG)XGET(data->dsd_DriveCycle,
+                            MUIA_Cycle_Active);
+            record = DriveSelect__DriveAt(data, index);
+        }
+
+        if (record)
+            DriveSelect__ApplyRecord(obj, record);
+        else
+            DriveSelect__SetTarget(obj, "", 0, FALSE);
     }
 
     AROS_USERFUNC_EXIT
@@ -462,11 +873,19 @@ static IPTR DriveSelect__OM_NEW(Class * CLASS, Object * self, struct opSet *mess
     Object *installObj = (Object *)GetTagData(MUIA_DriveSelect_InstallInstance, 0, message->ops_AttrList);
     Object **dsSysObjPtr = (Object **)GetTagData(MUIA_DriveSelect_SysObjPtr,  0, message->ops_AttrList);
     Object **dsWorkObjPtr = (Object **)GetTagData(MUIA_DriveSelect_WorkObjPtr,  0, message->ops_AttrList);
+    Object *developerToggle =
+        (Object *)GetTagData(
+            MUIA_DriveSelect_DeveloperToggle, 0,
+            message->ops_AttrList);
     Object *imgObj, *imgGrpObj, *driveCycle;
+    Object *manualDeviceObj = NULL, *manualUnitObj = NULL;
 
     D(bug("[InstallAROS:Drive] %s()\n", __func__));
 
     if (!installObj || !dsGdata || !dsSysObjPtr || !dsWorkObjPtr)
+        return 0;
+
+    if (!developerToggle)
         return 0;
 
     OOP_ObtainAttrBases(install__abd);
@@ -474,7 +893,6 @@ static IPTR DriveSelect__OM_NEW(Class * CLASS, Object * self, struct opSet *mess
     optObjDestDevice = Install_MakeOption(installObj, 
                 MUIA_InstallOption_ID, (IPTR)"tgtdev",
                 MUIA_InstallOption_ValueTag, MUIA_String_Contents,
-                MUIA_ShowMe, FALSE,
                 MUIA_InstallOption_Obj, (IPTR)(StringObject,
                     MUIA_CycleChain, 1,
                     MUIA_FixWidthTxt , "xxxxxxxxxxxxx",
@@ -490,7 +908,6 @@ static IPTR DriveSelect__OM_NEW(Class * CLASS, Object * self, struct opSet *mess
     optObjDestUnit = Install_MakeOption(installObj, 
                 MUIA_InstallOption_ID, (IPTR)"tgtunit",
                 MUIA_InstallOption_ValueTag, MUIA_String_Integer,
-                MUIA_ShowMe, FALSE,
                 MUIA_InstallOption_Obj, (IPTR)(StringObject,
                     MUIA_CycleChain, 1,
                     MUIA_String_Integer, 0,
@@ -507,17 +924,29 @@ static IPTR DriveSelect__OM_NEW(Class * CLASS, Object * self, struct opSet *mess
         return 0;
     }
 
+    GET(optObjDestDevice, MUIA_InstallOption_Obj, &manualDeviceObj);
+    GET(optObjDestUnit, MUIA_InstallOption_Obj, &manualUnitObj);
+
+    if (!manualDeviceObj || !manualUnitObj)
+    {
+        MUI_DisposeObject(optObjDestUnit);
+        MUI_DisposeObject(optObjDestDevice);
+        return 0;
+    }
+
     self = (Object *) DoSuperNewTags
         (
             CLASS, self, NULL,
 
             MUIA_Group_Horiz, TRUE,
+
             Child, (IPTR)(imgGrpObj = HGroup,
                 MUIA_Weight, 0,
                 Child, (IPTR)(imgObj = IconImageObject,
                     MUIA_IconImage_File, (IPTR) def_imghdisk,
                 End),
             End),
+
             Child, (IPTR)(driveCycle = CycleObject,
                 MUIA_CycleChain, 1,
                 MUIA_Cycle_Entries, (IPTR)driveselect_empty_entries,
@@ -544,18 +973,38 @@ static IPTR DriveSelect__OM_NEW(Class * CLASS, Object * self, struct opSet *mess
         data->dsd_ImgGrpObj = imgGrpObj;
         data->dsd_DevImgObj = imgObj;
         data->dsd_DriveCycle = driveCycle;
+        data->dsd_ManualDeviceObj = manualDeviceObj;
+        data->dsd_ManualUnitObj = manualUnitObj;
+        data->dsd_DeveloperMode = FALSE;
 
         data->dsd_SysPartName = SYS_PART_NAME;
         data->dsd_WorkPartName = WORK_PART_NAME;
 
         data->dsd_SelectHook.h_Entry = (APTR)dsSelectHookFunc;
         data->dsd_SelectHook.h_Data = data;
-        DoMethod(driveCycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-                 self, 3, MUIM_CallHook, &data->dsd_SelectHook,
-                 MUIV_TriggerValue);
+        DoMethod(driveCycle, MUIM_Notify,
+                 MUIA_Cycle_Active, MUIV_EveryTime,
+                 self, 3, MUIM_CallHook,
+                 &data->dsd_SelectHook, MUIV_TriggerValue);
 
-        DoMethod(self, OM_ADDMEMBER, optObjDestDevice);
-        DoMethod(self, OM_ADDMEMBER, optObjDestUnit);
+        data->dsd_DeveloperHook.h_Entry = (APTR)dsDeveloperHookFunc;
+        data->dsd_DeveloperHook.h_Data = data;
+        DoMethod(developerToggle, MUIM_Notify,
+                 MUIA_Selected, MUIV_EveryTime,
+                 self, 3, MUIM_CallHook,
+                 &data->dsd_DeveloperHook, MUIV_TriggerValue);
+
+        data->dsd_ManualHook.h_Entry = (APTR)dsManualHookFunc;
+        data->dsd_ManualHook.h_Data = data;
+        DoMethod(manualDeviceObj, MUIM_Notify,
+                 MUIA_String_Contents, MUIV_EveryTime,
+                 self, 3, MUIM_CallHook,
+                 &data->dsd_ManualHook, MUIV_TriggerValue);
+        DoMethod(manualUnitObj, MUIM_Notify,
+                 MUIA_String_Contents, MUIV_EveryTime,
+                 self, 3, MUIM_CallHook,
+                 &data->dsd_ManualHook, MUIV_TriggerValue);
+
 
         return (IPTR)self;
     }
@@ -587,7 +1036,7 @@ static IPTR DriveSelect__OM_SET(Class * CLASS, Object * self, struct opSet *mess
 {
     struct TagItem         *tag, *tags;
     char *devStr = NULL, *unitStr = NULL;
-    char unttmp[16];
+    char unttmp[16]; /* Flawfinder: ignore - ULONG decimal + NUL fits */
     BOOL driveChange = FALSE;
 
     for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -604,7 +1053,8 @@ static IPTR DriveSelect__OM_SET(Class * CLASS, Object * self, struct opSet *mess
 
         case MUIA_DriveSelect_Unit:
             unitStr = unttmp;
-            sprintf(unttmp, "%lu", (unsigned long)tag->ti_Data);
+            snprintf(unttmp, sizeof(unttmp), "%lu",
+                     (unsigned long)(ULONG)tag->ti_Data);
             driveChange = TRUE;
             break;
         }
@@ -844,7 +1294,7 @@ static IPTR DriveSelect__MUIM_DriveSelect_Initialize(Class * CLASS, Object * sel
             char devnamebuffer[128];
             struct FileSysStartupMsg *fssm;
 
-            memcpy(devnamebuffer, partvol, namelen);
+            memcpy(devnamebuffer, partvol, namelen); /* Flawfinder: ignore - namelen < 127, destination is 128 bytes */
             devnamebuffer[namelen] = ':';
             devnamebuffer[namelen + 1] = '\0';
 
@@ -894,24 +1344,21 @@ static IPTR DriveSelect__MUIM_DriveSelect_Initialize(Class * CLASS, Object * sel
 
         if (record)
         {
-            struct TagItem devTags[] = {
-                { MUIA_DriveSelect_Device,    (IPTR)record->dsr_Device },
-                { MUIA_DriveSelect_Unit,      (IPTR)record->dsr_Unit },
-                { MUIA_DriveSelect_DevProbed, selectedProbed },
-                { TAG_DONE }
-            };
-
             NNSET(data->dsd_DriveCycle, MUIA_Cycle_Active, selected);
-            SetAttrsA(self, devTags);
+
+            if (!data->dsd_DeveloperMode)
+                DriveSelect__SetTarget(self, record->dsr_Device,
+                                       record->dsr_Unit,
+                                       selectedProbed);
         }
     }
-    else
+    else if (!data->dsd_DeveloperMode)
     {
-        SetAttrs(self,
-                 MUIA_DriveSelect_Device, (IPTR)"",
-                 MUIA_DriveSelect_Unit, 0,
-                 MUIA_DriveSelect_DevProbed, FALSE,
-                 TAG_DONE);
+        /*
+         * Normal Mode never invents an enumerated drive.
+         * The historical default belongs to Developer Mode only.
+         */
+        DriveSelect__SetTarget(self, "", 0, FALSE);
     }
 
     /* Note: fields dsg_BootDev and dsg_BootUnit are not expected to be used beyond this point, use options selected in UI */
@@ -973,6 +1420,11 @@ BOOPSI_DISPATCHER(IPTR, DriveSelect__Dispatcher, CLASS, self, message)
 
     case MUIM_DriveSelect_FindDrives:
         return DriveSelect__MUIM_DriveSelect_FindDrives(CLASS, self, message);
+
+    case MUIM_DriveSelect_ValidateTarget:
+        return DriveSelect__MUIM_DriveSelect_ValidateTarget(
+            CLASS, self,
+            (struct MUIP_DriveSelect_ValidateTarget *)message);
     }
     return DoSuperMethodA(CLASS, self, message);
 }

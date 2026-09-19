@@ -60,6 +60,10 @@ char *work_Path = NULL;         /* DOS DEVICE NAME of part used to store "work" 
 Object *driveObjSelect = NULL;
 struct DriveSelect_Global driveGlobalData;
 
+/* DriveSelect owns these option objects; this page only composes them. */
+extern Object *optObjDestDevice;
+extern Object *optObjDestUnit;
+
 Object *optObjCyclePartScheme = NULL;
 
 Object *optObjCheckCopyToWork = NULL;
@@ -165,6 +169,9 @@ int main(int argc, char *argv[])
     Object *optObjCheckExtras;
     Object *optObjCheckBootloader;
     Object *optObjCheckReboot;
+    Object *developerToggle = NULL;
+    Object *developerGroup = NULL;
+    Object *testTargetButton = NULL;
 
     Object *gauge1 =
         (GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE,
@@ -214,7 +221,6 @@ int main(int argc, char *argv[])
     char *work_path = NULL;
 
     char *labPad;
-    char *labDrive;
     char *labScheme;
     char *labESP;
     char *labSysPart;
@@ -226,12 +232,8 @@ int main(int argc, char *argv[])
     if (!Locale_Initialize())
         return 20;
 
-    labDrive = _(MSG_DRIVE);
-    labPad = labDrive;
-
     labScheme = _(MSG_PARTSCHEME);
-    if (strlen(labScheme) > strlen(labPad))
-        labPad = labScheme;
+    labPad = labScheme;
     labESP = _(MSG_EFIESP);
     if (strlen(labESP) > strlen(labPad))
         labPad = labESP;
@@ -339,11 +341,29 @@ int main(int argc, char *argv[])
     gad_proceed = ImageButton(_(MSG_PROCEED), "THEME:Images/Gadgets/Next");
     gad_cancel = ImageButton(_(MSG_CANCEL2), "THEME:Images/Gadgets/Cancel");
 
+    developerToggle = ImageObject,
+        CHECKBUTTONCOMMON
+        MUIA_Selected, FALSE,
+        MUIA_ShortHelp, __(MSG_HELP_DEVELOPERMODE),
+    End;
+
+    testTargetButton = TextObject,
+        ButtonFrame,
+        MUIA_Background, MUII_ButtonBack,
+        MUIA_CycleChain, 1,
+        MUIA_InputMode, MUIV_InputMode_RelVerify,
+        MUIA_HorizWeight, 0,
+        MUIA_Text_Contents, __(MSG_TESTTARGET),
+        MUIA_Text_PreParse, (IPTR)"\33c",
+        MUIA_ShortHelp, __(MSG_HELP_TESTTARGET),
+    End;
+
     driveObjSelect = NewObject(driveselMcc->mcc_Class, NULL,
             MUIA_DriveSelect_InstallInstance, (IPTR)InstallObj,
             MUIA_DriveSelect_GlobalData, (IPTR)&driveGlobalData,
             MUIA_DriveSelect_SysObjPtr,  (IPTR)&sys_devname,
             MUIA_DriveSelect_WorkObjPtr,  (IPTR)&work_devname,
+            MUIA_DriveSelect_DeveloperToggle, (IPTR)developerToggle,
         TAG_DONE);
 
     optObjCheckEFI = Install_MakeOption(InstallObj, 
@@ -718,28 +738,44 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) HVSpace,
 
-                                        Child, (IPTR) VGroup,
-                                            GroupFrame,
-                                            Child, (IPTR) HGroup,
-                                                Child, VGroup,
-                                                    Child, (IPTR) LLabel(labDrive),
-                                                    Child, (IPTR) RectangleObject,
-                                                        MUIA_FixWidthTxt, labPad,
-                                                    End,
-                                                End,
-                                                Child, (IPTR) driveObjSelect,
-                                            End,
+                                        Child, (IPTR)VGroup,
+                                            GroupFrameT(_(MSG_TARGET)),
+                                            Child, (IPTR)driveObjSelect,
+                                        End,
 
-                                            Child, (IPTR) HGroup,
-                                                Child, (IPTR) HVSpace,
-                                                Child, (IPTR) (radio_part = RadioObject,
+                                        Child, (IPTR)VGroup,
+                                            GroupFrameT(_(MSG_INSTALLATIONMODE)),
+                                            Child, (IPTR)HGroup,
+                                                Child, (IPTR)HVSpace,
+                                                Child, (IPTR)(radio_part = RadioObject,
                                                     MUIA_CycleChain, 1,
-                                                    MUIA_Radio_Entries, (IPTR) opt_partentries,
+                                                    MUIA_Radio_Entries, (IPTR)opt_partentries,
                                                 End),
-                                                Child, (IPTR) HVSpace,
+                                                Child, (IPTR)HVSpace,
                                             End,
                                         End,
-                                        Child, (IPTR) HVSpace,
+
+                                        Child, (IPTR)HGroup,
+                                            Child, (IPTR)developerToggle,
+                                            Child, (IPTR)LLabel(_(MSG_DEVELOPERMODE)),
+                                            Child, (IPTR)HVSpace,
+                                        End,
+
+                                        Child, (IPTR)(developerGroup = ColGroup(2),
+                                            GroupFrameT(_(MSG_DEVELOPEROPTIONS)),
+                                            MUIA_ShowMe, FALSE,
+
+                                            Child, (IPTR)LLabel(_(MSG_DEVICE)),
+                                            Child, (IPTR)optObjDestDevice,
+
+                                            Child, (IPTR)LLabel(_(MSG_UNIT)),
+                                            Child, (IPTR)optObjDestUnit,
+
+                                            Child, (IPTR)HVSpace,
+                                            Child, (IPTR)testTargetButton,
+                                        End),
+
+                                        Child, (IPTR)HVSpace,
 
                                         Child, ScrollgroupObject,
                                             MUIA_Scrollgroup_FreeHoriz, FALSE,
@@ -1023,6 +1059,16 @@ int main(int argc, char *argv[])
         Locale_Deinitialize();
         exit(5);
     }
+
+    DoMethod(developerToggle, MUIM_Notify,
+             MUIA_Selected, MUIV_EveryTime,
+             developerGroup, 3, MUIM_Set,
+             MUIA_ShowMe, MUIV_TriggerValue);
+
+    DoMethod(testTargetButton, MUIM_Notify,
+             MUIA_Pressed, FALSE,
+             driveObjSelect, 3,
+             MUIM_DriveSelect_ValidateTarget, TRUE, FALSE);
 
     if ((FindResident("efi.resource")))
     {
