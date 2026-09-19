@@ -111,6 +111,8 @@ struct CD32Unit {
     struct CDXL *cu_XLCallbackNode;
     volatile ULONG cu_XLProgress;
     BOOL cu_ReadXLActive;
+    ULONG cu_ReadNext;
+    ULONG cu_ReadEnd;
     struct IOStdReq *cu_PlayRequest;
     LONG cu_PlayError;
     BOOL cu_PlayDone;
@@ -211,6 +213,28 @@ static AROS_INTH1(CD32_XLCallbackInterrupt, struct CD32Unit *, cu)
     AROS_INTFUNC_EXIT
 }
 
+static int CD32_FirstSectorSlot(struct CD32Unit *cu, UWORD pending)
+{
+    ULONG firstPosition = ~0UL;
+    int first = -1;
+    int i;
+
+    for (i = 15; i >= 0; i--) {
+        ULONG position;
+        UWORD mask = (UWORD)(1U << i);
+
+        if ((pending & mask) == 0)
+            continue;
+        position = CD32_XLSectorPosition(cu->cu_Data[i].Data);
+        if (first < 0 || position < firstPosition) {
+            first = i;
+            firstPosition = position;
+        }
+    }
+
+    return first;
+}
+
 static VOID CD32_ProcessXL(struct CD32Unit *cu)
 {
     UWORD pbx = readw(AKIKO_CDPBX);
@@ -218,27 +242,13 @@ static VOID CD32_ProcessXL(struct CD32Unit *cu)
     UWORD consumed = 0;
 
     while (pending != 0 && cu->cu_ReadXLActive) {
-        ULONG firstPosition = ~0UL;
         UWORD mask;
-        int first = -1;
-        int i;
+        int first;
 
         /* Akiko always chooses the highest armed PBX slot.  A slot can be
          * re-armed while an older sector remains in a lower slot, so slot
          * order alone is not arrival order. */
-        for (i = 15; i >= 0; i--) {
-            ULONG position;
-
-            mask = (UWORD)(1U << i);
-            if ((pending & mask) == 0)
-                continue;
-            position = CD32_XLSectorPosition(cu->cu_Data[i].Data);
-            if (first < 0 || position < firstPosition) {
-                first = i;
-                firstPosition = position;
-            }
-        }
-
+        first = CD32_FirstSectorSlot(cu, pending);
         mask = (UWORD)(1U << first);
         pending &= ~mask;
         consumed |= mask;
@@ -325,7 +335,7 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
             }
         } else {
             writew(0, AKIKO_CDPBX);
-            if (pbx < 0x000f && cu->cu_Task)
+            if (cu->cu_Task)
                 Signal(cu->cu_Task, SIGF_SINGLE);
         }
         claimed = TRUE;
@@ -373,6 +383,7 @@ static BOOL CD32_HandleUnsolicited(struct CD32Unit *cu, UBYTE RxHead)
 {
     switch (cu->cu_Misc->Response[RxHead]) {
     case CHCD_MEDIA:
+        cu->cu_ReadEnd = 0;
         RxHead++;
         if (cu->cu_Misc->Response[RxHead] == 0x83) {
             if (!cu->cu_MediaPresent)
@@ -664,6 +675,14 @@ static VOID CD32_Led(struct CD32Unit *cu, BOOL led_on)
     CD32_Cmd(cu, cmd, 2, resp, 2);
 }
 
+static LONG CD32_PauseDrive(struct CD32Unit *cu)
+{
+    UBYTE cmd = CHCD_PAUSE;
+    UBYTE resp[2];
+
+    return CD32_Cmd(cu, &cmd, 1, resp, sizeof(resp));
+}
+
 static VOID CD32_CompleteSupersededPlay(struct CD32Unit *cu)
 {
     if (cu->cu_PlayRequest != NULL) {
@@ -706,11 +725,7 @@ static LONG CD32_StartPlay(struct CD32Unit *cu, struct IOStdReq *io,
 
     /* CD_PAUSE is persistent across subsequent play commands. */
     if (paused) {
-        UBYTE pauseCmd[1] = { CHCD_PAUSE };
-        UBYTE pauseRes[2];
-
-        err = CD32_Cmd(cu, pauseCmd, sizeof(pauseCmd),
-            pauseRes, sizeof(pauseRes));
+        err = CD32_PauseDrive(cu);
         if (err)
             return err;
         cu->cu_CDInfo.Status |= CDSTSF_PAUSED;
@@ -725,21 +740,36 @@ static LONG CD32_StartPlay(struct CD32Unit *cu, struct IOStdReq *io,
     return CDIO_PENDING;
 }
 
-static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, void (*copy_sector)(APTR sector, APTR priv), APTR priv)
+static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors,
+    void (*copy_sector)(APTR sector, APTR priv), APTR priv)
 {
     LONG err;
     UBYTE cmd[12], resp[2];
-    UBYTE cmd_pause[1] = { CHCD_PAUSE };
     UBYTE cmd_unpause[1] = { CHCD_UNPAUSE };
-    int i;
-    UWORD pbx;
+    int first;
+    LONG track_end;
+    UWORD consumed;
+    UWORD pending;
 
-    while (sectors > 0) {
-        cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED | CDSTSF_SEARCH | CDSTSF_DIRECTION);
+    cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED |
+        CDSTSF_SEARCH | CDSTSF_DIRECTION);
+
+    if (sect_start != cu->cu_ReadNext ||
+        sect_start + sectors > cu->cu_ReadEnd) {
+        if (cu->cu_ReadEnd != 0)
+            CD32_PauseDrive(cu);
+
+        track_end = bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF) +
+            cu->cu_TotalSectors;
+        cu->cu_ReadEnd = sect_start + sectors + 16;
+        if (cu->cu_ReadEnd > track_end)
+            cu->cu_ReadEnd = track_end;
+        cu->cu_ReadNext = sect_start;
 
         cmd[0] = CHCD_MULTI;
         sec2bcdmsf(sect_start, &cmd[1]);
-        sec2bcdmsf(sect_start + 16, &cmd[4]);
+        /* The drive command's end MSF is exclusive. */
+        sec2bcdmsf(cu->cu_ReadEnd, &cmd[4]);
         cmd[7] = 0x80;  /* Data read */
         cmd[8] = (cu->cu_CDInfo.ReadSpeed >= 150) ? 0x40 : 0x00;
         cmd[9] = 0x00;
@@ -747,63 +777,74 @@ static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, voi
         cmd[11] = 0x00;
 
         writew(0xffff, AKIKO_CDPBX);
-
-        /* Start the read */
         CD32_Led(cu, TRUE);
         CD32_Cmd(cu, cmd_unpause, 1, resp, sizeof(resp));
         err = CD32_Cmd(cu, cmd, sizeof(cmd), resp, sizeof(resp));
         if (err)
-            return err;
-
-        if ((resp[1] & 2) != 2)
-            return CDERR_SeekError;
+            goto failed;
+        if ((resp[1] & 2) != 2) {
+            err = CDERR_SeekError;
+            goto failed;
+        }
 
         /* A data transfer supersedes an active audio play command in the
          * drive. Complete its retained request as well, otherwise its caller
          * waits forever for an end-of-play packet that can no longer arrive. */
         CD32_CompleteSupersededPlay(cu);
-
-        /* Wait for (most) sectors to come in */
-        CD32_IntEnable(cu, AKIKO_CDINT_PBX);
-
         writel(readl(AKIKO_CDFLAG) | AKIKO_CDFLAG_ENABLE, AKIKO_CDFLAG);
-        cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
-        Wait(SIGF_SINGLE);
-        cd32TimeoutEnd(cu);
-        /* Nobody waits for sectors past this point: a late PBX
-         * interrupt must not signal the task under some later Wait().
-         */
-        CD32_IntDisable(cu, AKIKO_CDINT_PBX);
+    }
 
-        CD32_Cmd(cu, cmd_pause, 1, resp, sizeof(resp));
-        CD32_Led(cu, FALSE);
-        pbx = readw(AKIKO_CDPBX);
-
-        if (pbx == 0) {
-            D(bug("%s: Overflow during read\n", __func__));
-            break;
-        }
-
-        if (pbx == 0xffff) {
-            /* Not a single sector arrived before the timeout */
-            D(bug("%s: No sectors delivered\n", __func__));
-            return CDERR_NotSpecified;
-        }
-
-        for (i = 15; i >= 0; i--) {
-            if (!(pbx & (1 << i))) {
-                D(bug("%s: SECTOR: %d\n", __func__, *(ULONG *)(&cu->cu_Data[i])));
-                copy_sector(&cu->cu_Data[i], priv);
-                sectors--;
-                sect_start++;
-                if (sectors <= 0)
-                    return 0;
+    do {
+        pending = (UWORD)~readw(AKIKO_CDPBX);
+        if (pending == 0) {
+            CD32_IntEnable(cu, AKIKO_CDINT_PBX);
+            cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
+            Wait(SIGF_SINGLE);
+            cd32TimeoutEnd(cu);
+            CD32_IntDisable(cu, AKIKO_CDINT_PBX);
+            pending = (UWORD)~readw(AKIKO_CDPBX);
+            if (pending == 0) {
+                err = CDERR_NotSpecified;
+                goto failed;
             }
         }
 
-    }
+        consumed = 0;
+        while (pending != 0 && sectors > 0) {
+            UWORD mask;
 
-    return -1;
+            first = CD32_FirstSectorSlot(cu, pending);
+            if (CD32_XLSectorPosition(cu->cu_Data[first].Data) !=
+                cu->cu_ReadNext) {
+                err = CDERR_SeekError;
+                goto failed;
+            }
+            mask = (UWORD)(1U << first);
+            pending &= ~mask;
+            consumed |= mask;
+            copy_sector(&cu->cu_Data[first], priv);
+            sectors--;
+            cu->cu_ReadNext++;
+        }
+
+        /* Re-arm only consumed slots. This lets the current command fill
+         * the next sequential cache chunk while preserving any unread
+         * sectors already present in the Akiko ring. */
+        if (cu->cu_ReadNext < cu->cu_ReadEnd)
+            writew(consumed, AKIKO_CDPBX);
+    } while (sectors > 0);
+
+    if (cu->cu_ReadNext == cu->cu_ReadEnd) {
+        CD32_Led(cu, FALSE);
+        cu->cu_ReadEnd = 0;
+    }
+    return 0;
+
+failed:
+    CD32_PauseDrive(cu);
+    CD32_Led(cu, FALSE);
+    cu->cu_ReadEnd = 0;
+    return err;
 }
 
 static BOOL CD32_IsXLListTail(const struct CDXL *node)
@@ -916,7 +957,6 @@ static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
     struct CD32XLTransfer *xl = &cu->cu_XL;
     struct MinList *list = io->io_Data;
     UBYTE cmd[12], resp[2];
-    UBYTE cmd_pause[1] = { CHCD_PAUSE };
     UBYTE cmd_unpause[1] = { CHCD_UNPAUSE };
     ULONG watchdogProgress = 0;
     BOOL watchdogActive = FALSE;
@@ -1002,7 +1042,7 @@ static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
         io->io_Actual, cu->cu_XLProgress, err));
 
 out:
-    CD32_Cmd(cu, cmd_pause, 1, resp, sizeof(resp));
+    CD32_PauseDrive(cu);
     CD32_Led(cu, FALSE);
     return err;
 }
@@ -1167,6 +1207,9 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
     struct CopyREAD cr;
 
     D(bug("%s:%p io_Command=%d\n", __func__, io, io->io_Command));
+
+    if (io->io_Command != CD_READ && io->io_Command != CD_INFO)
+        cu->cu_ReadEnd = 0;
 
     switch (io->io_Command) {
     case CD_CHANGENUM:
@@ -1408,8 +1451,6 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             break;
 
         /* Convert offset and length to MSF */
-        CD32_Led(cu, TRUE);
-
         io->io_Error = 0;
         io->io_Actual = 0;
 
