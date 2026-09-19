@@ -19,7 +19,7 @@
 /* Must always be a multiple of 4 since one event consists of code, x, y and flags */
 
 #define  GP_NUMELEMENTS 	(100 * 4)
-#define  GP_BUFFERSIZE  	(sizeof (WORD) * GP_NUMELEMENTS) 
+#define  GP_BUFFER_BYTES	(sizeof (WORD) * GP_NUMELEMENTS)
 
 #define  GP_NUNITS        	2 /* Number of units supported by gameport.device */
 

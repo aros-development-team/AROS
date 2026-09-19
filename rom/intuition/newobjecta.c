@@ -12,6 +12,8 @@
 #include <proto/utility.h>
 #include "intuition_intern.h"
 
+#define MAX_PUDDLE_SIZE (__WORDSIZE * 1024 / 2)
+
 /*****************************************************************************
 
     NAME */
@@ -96,11 +98,30 @@
         }
     )
 
-    ObtainSemaphoreShared (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ClassListLock);
 
     /* No classPtr ? */
     if (!classPtr)
         classPtr = FindClass (classID);
+
+    /* Create the class pool only when the first object actually needs it.
+     * The exclusive class lock also serializes concurrent first use. */
+    if (classPtr && !classPtr->cl_MemoryPool)
+    {
+        ULONG perpuddle = MAX_PUDDLE_SIZE / classPtr->cl_ObjectSize;
+
+        if (perpuddle == 0)
+            perpuddle = 1;
+        if (perpuddle > 32)
+            perpuddle = 32;
+
+        classPtr->cl_MemoryPool = CreatePool(
+            MEMF_ANY | MEMF_CLEAR | MEMF_SEM_PROTECTED,
+            perpuddle * classPtr->cl_ObjectSize,
+            classPtr->cl_ObjectSize);
+        if (!classPtr->cl_MemoryPool)
+            classPtr = NULL;
+    }
 
     /* Make sure the class doesn't go away while we create the object */
     if (classPtr)

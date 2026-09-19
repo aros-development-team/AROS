@@ -19,6 +19,8 @@
 #define VERSION "CDROM-Handler 1.15 (03.11.94)"
 
 #define SCSI_BUFSIZE 2048
+/* Four-byte TOC header, 99 track descriptors and the lead-out descriptor. */
+#define SCSI_IO_BUFSIZE (4 + 100 * 8)
 
 
 typedef struct CDROM {
