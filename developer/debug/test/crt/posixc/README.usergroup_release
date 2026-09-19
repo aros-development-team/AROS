@@ -1,0 +1,56 @@
+usergroup_release: posixc must release usergroup.library at program exit
+==========================================================================
+
+posixc opens usergroup.library on the first getpw*() / getgr*() call and
+keeps it until its own base is finally closed. usergroup holds a reference
+on that same per-task posixc base (`rellib posixc`), so the final close never
+came: every program that looked up a user left its posixc and usergroup
+bases open, and a later program in the same process could be handed the
+stale posixc base.
+
+Native test (registered in the posixc test build)
+-------------------------------------------------
+
+    usergroup_release          runs usergroup_release_child three times with
+    usergroup_release_child    RunCommand(), in its own process, and compares
+                               the open counts of usergroup.library and
+                               posixc.library before and after.
+
+Both programs must be in the same directory. The parent does not use posixc
+itself and opens usergroup.library first, so that the child never performs
+the library's first load (a separate case, see the genmodule option
+norootrellibs). Expected output:
+
+    USERGROUP RELEASE PASS: runs=3 child_rc=0 usergroup N->N posixc M->M
+
+Before the fix both counts grow. They grow by one per invocation rather than
+per child run: the three runs start from the same point in the same process,
+so the second and third are handed the base the first one left behind, which
+is the defect itself. The counts are system-wide:
+another program opening or closing posixc.library while the test runs can
+disturb them, so run it on an otherwise idle system.
+
+Host test
+---------
+
+    usergroup_release_host.sh <AROS source tree> [compiler [compiler-arg...]]
+
+Compiles posixc's __optionallibs.c and stdc's __exitfunc.c unchanged on the
+host, against the stand-in headers in usergroup_release_host/, and checks:
+
+    release  the release runs from the program's exit list, after exit
+             handlers registered earlier (which may still read a struct passwd)
+    nostdc   without the program's C library base nothing is queued and
+             usergroup stays open until __optionallibs_close, as before
+    nomem    if the exit-list node cannot be allocated, the open is undone and
+             usergroup is reported unavailable
+    noopen   if usergroup.library cannot be opened, nothing is queued
+
+The compiler is given as the command followed by its own arguments, one word
+per argument; it defaults to cc, and CC in the environment is not used. The
+source tree and the compiler may be in directories whose names contain spaces.
+
+It passes with -Wall -Wextra -Werror, and under the sanitizers:
+
+    usergroup_release_host.sh <AROS source tree> \
+        cc -fsanitize=address,undefined -fno-sanitize-recover=all
