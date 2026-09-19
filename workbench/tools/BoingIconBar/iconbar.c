@@ -565,7 +565,13 @@ int main(int argc, char *argv[])
                     while(GetMsg(FocusPort) != NULL)
                         fired = TRUE;
                     if (fired)
+                    {
+                        /* timer.device zeroes tr_time when the request completes,
+                           so it must be re-armed with the delay re-set. */
+                        FocusTimer->tr_time.tv_secs = 0;
+                        FocusTimer->tr_time.tv_micro = 100000;
                         SendIO((struct IORequest *)FocusTimer);
+                    }
                     HandleFocus();
                 }
 
@@ -617,7 +623,11 @@ int main(int argc, char *argv[])
                     while(GetMsg(FocusPort) != NULL)
                         fired = TRUE;
                     if (fired)
+                    {
+                        FocusTimer->tr_time.tv_secs = 0;
+                        FocusTimer->tr_time.tv_micro = 100000;
                         SendIO((struct IORequest *)FocusTimer);
+                    }
                 }
 
                 CheckMousePosition();
