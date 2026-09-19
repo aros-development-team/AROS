@@ -988,7 +988,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                         "noautolib", "noexpunge", "noresident", "peropenerbase",
                         "pertaskbase", "includes", "noincludes", "nostubs",
                         "autoinit", "noautoinit", "resautoinit", "noinittable", "noresstruct", "nofunctable",
-                        "noopenclose", "selfinit", "rellinklib", "noclassquery"
+                        "noopenclose", "selfinit", "rellinklib", "noclassquery", "norootrellibs"
                     };
                     const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
                     int optionnum;
@@ -1080,6 +1080,9 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                             break;
                         case 18: /* noclassquery */
                             cfg->options |= OPTION_NOCLASSQUERY;
+                            break;
+                        case 19: /* norootrellibs */
+                            cfg->options |= OPTION_NOROOTRELLIBS;
                             break;
                         }
                         while (isspace(*s)) s++;
@@ -1351,6 +1354,12 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
         /* rootbase_field only allowed when duplicating base */
         if (cfg->rootbase_field != NULL && !(cfg->options & OPTION_DUPBASE))
             exitfileerror(20, "rootbasefield only valid for option peropenerbase or pertaskbase\n");
+        /* Without a duplicated base, the root base is the only base, and its
+           rellibs are the only ones the module ever opens. */
+        if ((cfg->options & OPTION_NOROOTRELLIBS) && !(cfg->options & OPTION_DUPBASE))
+            exitfileerror(20, "option norootrellibs only valid with option peropenerbase or pertaskbase\n");
+        if ((cfg->options & OPTION_NOROOTRELLIBS) && cfg->rellibs == NULL)
+            exitfileerror(20, "option norootrellibs given but the module has no rellib\n");
 
         /* Set default date to current date */
         if (cfg->datestring == NULL)
