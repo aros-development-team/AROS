@@ -177,7 +177,8 @@ def unpack( source, destination ):
 def pack( destination, files ):
     'pack( source, destination ) -> None'
 
-    output = open( destination, 'wb' )
+    outputFlags = os.O_RDWR | os.O_CREAT | getattr( os, 'O_BINARY', 0 )
+    output = os.fdopen( os.open( destination, outputFlags, 0o666 ), 'r+b' )
     try:
 
         oldwd = os.getcwd()
@@ -191,6 +192,8 @@ def pack( destination, files ):
                 files = [path for path in listFiles()
                          if not os.path.samestat( os.stat( path ), outputStat )]
 
+            output.seek( 0 )
+            output.truncate( 0 )
             writeHeader( output, PKG_VERSION )
 
             for path in files:
