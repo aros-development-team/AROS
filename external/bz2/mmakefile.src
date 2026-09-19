@@ -36,6 +36,9 @@ ARCHSRCDIR := $(PORTSDIR)/bzip2/$(ARCHBASE)
 FILES := blocksort huffman crctable randtable  \
          compress decompress bzlib
 
+# bz2.conf sets norootrellibs (see tools/genmodule/config.h): code that runs
+# with the root base must not call posixc.library or stdc.library. The ctype
+# support linked in from libstdc_rel opens stdc.library itself in that case.
 %build_module mmake=external-bz2-lib \
     modname=bz2 modtype=library files="$(addprefix $(ARCHSRCDIR)/,$(FILES))"
 
