@@ -28,6 +28,7 @@ POSIXCTESTFILES := \
         termios_tty \
         time_r \
         uname \
+        usergroup_release usergroup_release_child \
         usleep \
         vfork \
         vfork_execl \
