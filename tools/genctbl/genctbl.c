@@ -321,7 +321,14 @@ int main(int argc, char **argv) {
 
     char line[512];
     while (fgets(line, sizeof(line), f)) {
-        size_t len = strlen(line);
+        const char *line_end = memchr(line, '\0', sizeof(line));
+        if (!line_end) {
+            fprintf(stderr, "UnicodeData.txt line is not NUL-terminated\n");
+            fclose(f);
+            free(unicode_data_path);
+            return 1;
+        }
+        size_t len = (size_t)(line_end - line);
         if (len && (line[len - 1] == '\n' || line[len - 1] == '\r')) {
             line[len - 1] = '\0';
             if (len > 1 && line[len - 2] == '\r') {
