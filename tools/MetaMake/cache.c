@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -77,6 +77,36 @@ struct Regenerate
     char *src;
     char *dest;
 };
+
+
+static char *
+makecachepath (struct Cache_priv * cache)
+{
+    char * path;
+    int length;
+    int written;
+    size_t size;
+
+    length = snprintf (NULL, 0, "%s/mmake.cache", cache->project->buildtop);
+    if (length < 0)
+    {
+        error ("Could not format cache path");
+        exit (20);
+    }
+
+    size = (size_t)length + 1;
+    path = xmalloc (size);
+
+    written = snprintf (path, size, "%s/mmake.cache", cache->project->buildtop);
+    if (written != length)
+    {
+        xfree (path);
+        error ("Could not format cache path");
+        exit (20);
+    }
+
+    return path;
+}
 
 
 static void
@@ -162,13 +192,9 @@ progress (FILE * fh)
 void
 readcache (struct Cache_priv * cache)
 {
-    char path[256];
+    char * path = makecachepath (cache);
     FILE * fh;
     uint32_t id;
-
-    strcpy (path, cache->project->buildtop);
-    strcat (path, "/mmake.cache");
-    assert (strlen(path) < sizeof(path));
 
     fh = fopen (path, "rb");
 
@@ -222,6 +248,8 @@ readcache (struct Cache_priv * cache)
     if (fh)
         fclose (fh);
 
+    xfree (path);
+
     if (debug)
     {
         printf ("readcache()\n");
@@ -233,7 +261,7 @@ void
 writecache (struct Cache_priv * cache)
 {
     int ok = 1;
-    char path[256];
+    char * path;
     FILE * fh = NULL;
     uint32_t id;
     struct Node *addedfile;
@@ -243,9 +271,7 @@ writecache (struct Cache_priv * cache)
     if (!cache->topdir)
         return;
 
-    strcpy (path, cache->project->buildtop);
-    strcat (path, "/mmake.cache");
-    assert (strlen(path) < sizeof(path));
+    path = makecachepath (cache);
 
     fh = fopen (path, "wb");
 
@@ -288,6 +314,8 @@ writecacheend:
 
         printf ("[MMAKE] %s: Warning! - Creating the cache failed\n", __func__);
     }
+
+    xfree (path);
 }
 
 
