@@ -68,6 +68,9 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
         if (len > MAXARGLEN)
             return ERROR_LINE_TOO_LONG;
 
+        if (!ensureArguments(ss))
+            return ERROR_NO_FREE_STORE;
+
         i = getArgumentIdx(ss, buf, len);
         if (i < 0)
             return ERROR_TOO_MANY_ARGS;
