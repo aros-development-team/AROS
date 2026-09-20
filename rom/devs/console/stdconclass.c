@@ -390,14 +390,27 @@ static VOID stdcon_docommand(Class *cl, Object *o,
         break;
 
     case C_CURSOR_PREV_LINE:
-        Console_UnRenderCursor(o);
-        CU(o)->cu_XCP = CHAR_XMIN(o);
-        CU(o)->cu_XCCP = CHAR_XMIN(o);
-        Console_Up(o, 1);
-        Console_RenderCursor(o);
+        {
+            IPTR count = params[0] ? params[0] : 1;
+
+            Console_UnRenderCursor(o);
+            CU(o)->cu_XCP = CHAR_XMIN(o);
+            CU(o)->cu_XCCP = CHAR_XMIN(o);
+            Console_Up(o, count);
+            Console_RenderCursor(o);
+        }
         break;
 
     case C_CURSOR_UP:
+        {
+            IPTR count = params[0] ? params[0] : 1;
+
+            Console_UnRenderCursor(o);
+            Console_Up(o, count);
+            Console_RenderCursor(o);
+        }
+        break;
+
     case C_VTAB:
         Console_UnRenderCursor(o);
         Console_Up(o, 1);
@@ -405,17 +418,25 @@ static VOID stdcon_docommand(Class *cl, Object *o,
         break;
 
     case C_CURSOR_NEXT_LINE:
-        Console_UnRenderCursor(o);
-        CU(o)->cu_XCP = CHAR_XMIN(o);
-        CU(o)->cu_XCCP = CHAR_XMIN(o);
-        Console_Down(o, 1);
-        Console_RenderCursor(o);
+        {
+            IPTR count = params[0] ? params[0] : 1;
+
+            Console_UnRenderCursor(o);
+            CU(o)->cu_XCP = CHAR_XMIN(o);
+            CU(o)->cu_XCCP = CHAR_XMIN(o);
+            Console_Down(o, count);
+            Console_RenderCursor(o);
+        }
         break;
 
     case C_CURSOR_DOWN:
-        Console_UnRenderCursor(o);
-        Console_Down(o, 1);
-        Console_RenderCursor(o);
+        {
+            IPTR count = params[0] ? params[0] : 1;
+
+            Console_UnRenderCursor(o);
+            Console_Down(o, count);
+            Console_RenderCursor(o);
+        }
         break;
 
     case C_CARRIAGE_RETURN:
