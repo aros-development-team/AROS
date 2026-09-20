@@ -34,8 +34,19 @@ typedef struct _ShellState
 {
     BPTR	newIn;
     BPTR	newOut;
+    BPTR	newErr;
     BPTR	oldIn;
     BPTR	oldOut;
+    BPTR	oldErr;
+
+    struct MsgPort *oldConsoleTask;
+
+    TEXT	errorFile[FILE_MAX];
+    BOOL	errorRedirect;
+    BOOL	errorAppend;
+    BOOL	errorToOutput;
+    BOOL	errorActive;
+    BOOL	consoleTaskChanged;
 
     TEXT	command[FILE_MAX + 2];	/* command buffer */
 
