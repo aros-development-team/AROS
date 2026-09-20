@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -381,13 +381,14 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
     struct DirNode *subdir, *subdir2, *prevdir = NULL;
     struct Makefile * makefile;
     int goup = 0, reread = 0;
-    char curdir[1024];
+    char * curdir = NULL;
 
     debug(printf("MMAKE:cache.c->updatemflist(\"%s\")\n", node->node.name));
 
     if (strlen(node->node.name) != 0)
     {
-        if (getcwd(curdir, sizeof(curdir)) == NULL)
+        curdir = getcwd(NULL, 0);
+        if (curdir == NULL)
         {
             error("Could not get current directory");
             exit (20);
@@ -395,6 +396,7 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
         if (chdir(node->node.name) < 0)
         {
             error("Could not change to dir '%s'", node->node.name);
+            free (curdir);
             exit (20);
         }
         goup = 1;
@@ -443,7 +445,10 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
     }
 
     if (goup)
+    {
         ASSERT(chdir(curdir) == 0);
+        free (curdir);
+    }
 
     progress (stdout);
 
