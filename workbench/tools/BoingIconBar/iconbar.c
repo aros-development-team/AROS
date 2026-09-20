@@ -399,22 +399,6 @@ int main(int argc, char *argv[])
         goto bailout;
     }
 
-    // start notification on Workbench screen reset (e.g. resolution change)
-    ScreenNotifyPort = CreateMsgPort();
-    if (ScreenNotifyPort)
-    {
-        ScreenNotifyHandle = StartScreenNotifyTags(
-            SNA_Notify,   SNOTIFY_WAIT_REPLY | SNOTIFY_BEFORE_CLOSEWB | SNOTIFY_AFTER_OPENWB,
-            SNA_MsgPort,  ScreenNotifyPort,
-            SNA_Priority, 0,
-            TAG_END);
-
-        if (ScreenNotifyHandle)
-        {
-            ScreenNotifyMask = 1 << ScreenNotifyPort->mp_SigBit;
-        }
-    }
-
     // start notification on the wallpaper prefs file
     WallpaperPort = CreateMsgPort();
     if (WallpaperPort)
@@ -506,6 +490,26 @@ int main(int argc, char *argv[])
             Delay(Static * 50);
             OpenMainWindow();
             FirstOpening = FALSE;
+        }
+
+        /* Subscribe to Workbench screen notifications only after the startup
+           delay. StartScreenNotifyTags with SNOTIFY_WAIT_REPLY makes the
+           Workbench wait for our reply to SNOTIFY_AFTER_OPENWB; subscribing
+           before the delay would block the Workbench's initial wallpaper
+           render while we sleep (gray screen during the whole delay). */
+        ScreenNotifyPort = CreateMsgPort();
+        if (ScreenNotifyPort)
+        {
+            ScreenNotifyHandle = StartScreenNotifyTags(
+                SNA_Notify,   SNOTIFY_WAIT_REPLY | SNOTIFY_BEFORE_CLOSEWB | SNOTIFY_AFTER_OPENWB,
+                SNA_MsgPort,  ScreenNotifyPort,
+                SNA_Priority, 0,
+                TAG_END);
+
+            if (ScreenNotifyHandle)
+            {
+                ScreenNotifyMask = 1 << ScreenNotifyPort->mp_SigBit;
+            }
         }
 
         // ---- main loop
