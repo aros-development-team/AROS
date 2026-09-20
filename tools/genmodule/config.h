@@ -63,7 +63,8 @@ enum optionbit {
     BIT_SELFINIT,
     BIT_STACKCALL,
     BIT_RELLINKLIB,
-    BIT_NOCLASSQUERY
+    BIT_NOCLASSQUERY,
+    BIT_NOROOTRELLIBS
 };
 
 enum optionflags
@@ -88,6 +89,33 @@ enum optionflags
     OPTION_STACKCALL    = (1 << BIT_STACKCALL),
     OPTION_RELLINKLIB   = (1 << BIT_RELLINKLIB),
     OPTION_NOCLASSQUERY = (1 << BIT_NOCLASSQUERY),
+    /* options norootrellibs
+     *
+     * Do not open the module's rellibs for its root base. By default InitLib
+     * opens every rellib for the root base, in the task that loads the module
+     * (the first opener, or the library loader), and they stay open until the
+     * module is expunged. For a pertaskbase rellib such as posixc.library,
+     * that open returns the loading task's own per-task base. When the loading
+     * task is a program, its base then cannot be freed when the program closes
+     * it, and a later program in the same process can be given that base with
+     * the earlier program's state.
+     *
+     * With this option the rellibs are opened only for the bases OpenLib
+     * creates, as before, and the root base's rellib pointers stay NULL: no
+     * rellib is opened in InitLib, and none is closed at expunge or when
+     * InitLib fails. Valid only with peropenerbase or pertaskbase.
+     *
+     * It is the module author's responsibility to use it only when no code
+     * that runs with the root base calls a rellib. That covers the module's
+     * ADD2INIT, ADD2INITLIB, ADD2EXPUNGELIB and ADD2EXIT functions, C
+     * constructors and destructors, init and fini arrays and class
+     * initialisation, and also such functions linked in from static link
+     * libraries. Code that does run there must either not use the rellib or
+     * handle its NULL base, as stdc's ctype support does by opening
+     * stdc.library itself. A rellib called through a NULL root base crashes
+     * the first open of the module.
+     */
+    OPTION_NOROOTRELLIBS = (1 << BIT_NOROOTRELLIBS),
 };
 
 enum coptionbit {

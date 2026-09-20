@@ -508,6 +508,11 @@ AROS_LH2(struct Library *, OpenLibrary,
     struct Library *library;
     struct LDObjectNode *object;
 
+#ifdef __mc68000__
+    /* Match Exec's classic m68k low-word version handling before lookup. */
+    version = (UWORD)version;
+#endif
+
     D(bug("[LDDemon] %s()\n", __func__));
 
     object = LDRequestObject(libname, version, "libs", &SysBase->LibList, SysBase);

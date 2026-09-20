@@ -84,6 +84,16 @@ struct NepEthDevBase {
     struct Library *np_UtilityBase;
 };
 
+/*
+ * Bulk-IN queue depth: overlap the BULK_IN_DLY holds instead of paying
+ * one transfer per hold period. Poseidon serialises within a pipe, so
+ * each slot needs its own.
+ */
+#define LAN78XX_RX_QUEUE 4
+
+/* Consecutive empty bulk-IN reads before the link counts as idle. */
+#define LAN78XX_RX_IDLE_STREAK 1
+
 struct NepClassEth {
     struct Unit ncp_Unit;
     ULONG ncp_UnitNo;
@@ -104,7 +114,7 @@ struct NepClassEth {
     struct PsdPipe *ncp_EPOutPipe;
     IPTR ncp_EPOutMaxPktSize;
     struct PsdEndpoint *ncp_EPIn;
-    struct PsdPipe *ncp_EPInPipe;
+    struct PsdPipe *ncp_EPInPipe[LAN78XX_RX_QUEUE];
     struct MsgPort *ncp_DevMsgPort;
     UWORD ncp_UnitProdID;
     UWORD ncp_UnitVendorID;
@@ -122,10 +132,9 @@ struct NepClassEth {
     ULONG ncp_Retries;
     ULONG ncp_BadMulticasts;
 
-    UBYTE *ncp_ReadBuffer[2];
+    UBYTE *ncp_ReadBuffer[LAN78XX_RX_QUEUE];
     UBYTE *ncp_WriteBuffer[2];
 
-    UWORD ncp_ReadBufNum;
     UWORD ncp_WriteBufNum;
     UWORD ncp_RxIdleStreak;
 
@@ -142,7 +151,7 @@ struct NepClassEth {
     struct Sana2PacketTypeStats *ncp_TypeStats2048;
     struct Sana2PacketTypeStats *ncp_TypeStats2054;
 
-    UBYTE *ncp_ReadPending;
+    UBYTE ncp_ReadArmed[LAN78XX_RX_QUEUE];
     struct IOSana2Req *ncp_WritePending;
     struct List ncp_OrphanQueue;
     struct List ncp_WriteQueue;

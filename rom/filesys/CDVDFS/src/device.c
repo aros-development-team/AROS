@@ -349,7 +349,10 @@ ULONG signals;
       global->g_time = 0;
     }
 
-    global->g_vol_name = AllocVec(128, MEMF_PUBLIC | MEMF_CLEAR);
+    /* ISO/HFS Volume_ID() is capped at 32 characters below. Keep the
+     * BCPL length byte and the trailing C string terminator as well.
+     */
+    global->g_vol_name = AllocVec(34, MEMF_PUBLIC | MEMF_CLEAR);
     global->g_dos_sigbit = 1L << global->DosProc->pr_MsgPort.mp_SigBit;
     returnpacket(global, packet);
     Prefs_Init(global);

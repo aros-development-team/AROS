@@ -13,10 +13,10 @@ static void writealiases(FILE *, struct functionhead *, struct config *);
 void writeincinline(struct config *cfg)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
     struct functionhead *funclistit;
 
-    snprintf(line, 255, "%s/inline/%s.h", cfg->gendir, cfg->includename);
+    line = make_output_path("%s/inline/%s.h", cfg->gendir, cfg->includename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -215,6 +215,7 @@ void writeincinline(struct config *cfg)
             cfg->includenameupper
     );
     fclose(out);
+    free(line);
 }
 
 void

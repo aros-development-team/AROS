@@ -12,11 +12,11 @@
 static void writeincinterface(struct config *cfg, struct interfaceinfo *in)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
     struct functionhead *funclistit;
     int maxlvo = -1;
 
-    snprintf(line, 255, "%s/interface/%s.h", cfg->gendir, in->interfacename);
+    line = make_output_path("%s/interface/%s.h", cfg->gendir, in->interfacename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -304,6 +304,7 @@ done:
     );
 
     fclose(out);
+    free(line);
 }
 
 void writeincinterfaces(struct config *cfg)

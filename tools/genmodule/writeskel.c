@@ -7,15 +7,16 @@
 #include <assert.h>
 #include "functionhead.h"
 #include "config.h"
+#include "genmodule.h"
 
 static void writeskelfunc(struct config *cfg, struct functionhead *funclist)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
     struct functionarg *arglistit;
     int first;
 
-    snprintf(line, 255, "%s/%s.c", cfg->gendir, funclist->internalname);
+    line = make_output_path("%s/%s.c", cfg->gendir, funclist->internalname);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -74,6 +75,7 @@ static void writeskelfunc(struct config *cfg, struct functionhead *funclist)
         );
     }
     fclose(out);
+    free(line);
 }
 
 void writeskel(struct config *cfg)

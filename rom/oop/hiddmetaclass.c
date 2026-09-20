@@ -58,8 +58,8 @@ struct hiddmeta_inst
         {
             /* The globally unique ID of the interface */
             CONST_STRPTR interface_id;
-            ULONG num_methods;
-            ULONG mtab_offset;
+            UWORD num_methods;
+            UWORD mtab_offset;
             
         } *ifinfo;
         struct IFMethod *methodtable;
@@ -156,20 +156,27 @@ static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_a
     D(bug("Number of  interfaces: %ld, methods %ld\n",
         total_num_ifs, total_num_methods));
     
-    /* Allocate the dispatch table */
+    /* Allocate the dispatch and interface tables together. */
     disptab_size = UB(&mtab[total_num_methods]) - UB(&mtab[0]);
+    if (total_num_methods > 0xffff)
+        ReturnBool("HIIDMeta::allocdisptabs", FALSE);
 
-    data->methodtable = AllocVec(disptab_size, MEMF_ANY|MEMF_CLEAR);
+    {
+        struct if_info *ifinfo = NULL;
+        ULONG ifinfo_size = UB(&ifinfo[total_num_ifs]) - UB(&ifinfo[0]);
+
+        data->methodtable = AllocVec(disptab_size + ifinfo_size,
+            MEMF_ANY | MEMF_CLEAR);
+        if (data->methodtable)
+            data->ifinfo = (struct if_info *)
+                (UB(data->methodtable) + disptab_size);
+    }
     if (data->methodtable)
     {
         struct if_info *ifinfo = NULL;
-        ULONG ifinfo_size;
         
         mtab = data->methodtable;
 
-        /* Allocate memory for interface info table */
-        ifinfo_size = UB(&ifinfo[total_num_ifs]) - UB(&ifinfo[0]);
-        data->ifinfo = AllocVec(ifinfo_size, MEMF_ANY|MEMF_CLEAR);
         if (data->ifinfo)
         {
             /* Iterate through all parent interfaces, copying relevant info
@@ -329,11 +336,12 @@ static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_a
             
             ReturnBool("HIIDMeta::allocdisptabs", TRUE);
 init_err:
-            FreeVec(data->ifinfo);
-
+            ;
         } /* if (interface info table allocated) */
         
         FreeVec(data->methodtable);
+        data->methodtable = NULL;
+        data->ifinfo = NULL;
     
     } /* if (methodtable allocated) */
     
@@ -348,7 +356,6 @@ static VOID hiddmeta_freedisptabs(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct hiddmeta_inst *inst = (struct hiddmeta_inst *)o;
     
     FreeVec(inst->data.methodtable);
-    FreeVec(inst->data.ifinfo);
     return;
 }
 

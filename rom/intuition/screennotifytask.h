@@ -22,6 +22,7 @@
 /* Structure passed to the DefaultMenuHandler task when it's initialized */
 
 BOOL InitDefaultScreennotifyHandler(struct IntuitionBase *IntuitionBase);
+BOOL EnsureDefaultScreennotifyHandler(struct IntuitionBase *IntuitionBase);
 
 struct ScreennotifyTaskParams
 {

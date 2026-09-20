@@ -372,26 +372,38 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
          */
         if (range_available(p, (void *)mod_end, 8))
         {
-            void *file = p + 8;
+            unsigned int packageSize = LONG2BE(*(unsigned int *)(p + 4));
 
-            D(kprintf("[%s] * package @ %p:\n", str_Bootstrap, mod_start);)
-
-            while (file < (void *)mod_end)
+            if (packageSize >= 8 &&
+                range_available(p, (void *)mod_end, packageSize))
             {
-                char *s;
-                void *data;
-                struct ELFNode *mo;
+                void *pkg_end = (void *)((IPTR)p + packageSize);
+                void *file = p + 8;
 
-                if (!pkg_next(&file, (void *)mod_end, &s, &data))
+                D(kprintf("[%s] * package @ %p:\n", str_Bootstrap, mod_start);)
+
+                while (file < pkg_end)
                 {
-                    D(kprintf("[%s]   * Malformed PKG member @ %p\n", str_Bootstrap, file);)
-                    break;
-                }
+                    char *s;
+                    void *data;
+                    struct ELFNode *mo;
 
-                mo = module_prepare(s);
-                mo->Name = s;
-                mo->eh = data;
-                D(kprintf("[%s]   * PKG module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
+                    if (!pkg_next(&file, pkg_end, &s, &data))
+                    {
+                        D(kprintf("[%s]   * Malformed PKG member @ %p\n", str_Bootstrap, file);)
+                        break;
+                    }
+
+                    mo = module_prepare(s);
+                    mo->Name = s;
+                    mo->eh = data;
+                    D(kprintf("[%s]   * PKG module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
+                }
+            }
+            else
+            {
+                D(kprintf("[%s] * Invalid package size %u @ %p\n",
+                          str_Bootstrap, packageSize, p);)
             }
         }
         D(else kprintf("[%s] * Truncated package header @ %p\n", str_Bootstrap, p);)
