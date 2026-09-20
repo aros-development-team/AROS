@@ -356,10 +356,8 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
             || checkdeps (&cache->project->genmakefiledeps, dst.st_mtime)
        )
     {
-        static char currdir[PATH_MAX];
         struct Regenerate *reg = new (struct Regenerate);
 
-        ASSERT(getcwd(currdir, PATH_MAX) != NULL);
         reg->dir = xstrdup (buildpath(makefile->dir));
         reg->src = mfsrc;
         reg->dest = xstrdup (makefile->node.name);
