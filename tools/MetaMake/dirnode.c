@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -855,32 +855,74 @@ struct DirNodeRef
 const char *
 buildpath (struct DirNode * node)
 {
-    static char path[PATH_MAX];
-    struct List tree;
-    struct DirNodeRef * ref = NULL;
+    static char * path = NULL;
+    static size_t pathsize = 0;
+    struct DirNode * current;
+    size_t size = 1;
+    size_t components = 0;
+    char * ptr;
 
-    NewList (&tree);
-
-    do
+    for (current = node; current != NULL; current = current->parent)
     {
-        if ((strlen (node->node.name) > 0) && (strcmp(node->node.name, mm_srcdir) != 0))
+        const char * name = current->node.name;
+
+        if ((*name != 0) && (strcmp(name, mm_srcdir) != 0))
         {
-            ref = newnodesize ("", sizeof (struct DirNodeRef));
-            ref->dirnode = node;
-            AddHead (&tree, ref);
-        }
-        node = node->parent;
-    } while (node != NULL);
+            size_t namelen = strlen (name);
 
-    strcpy (path, "");
-    ForeachNode (&tree, ref)
-    {
-        if (path[0] != 0)
-            strcat (path, "/");
-        strcat (path, ref->dirnode->node.name);
+            if (components != 0)
+            {
+                if (size == (size_t)-1)
+                {
+                    error ("buildpath(): path is too long");
+                    exit (20);
+                }
+                size ++;
+            }
+
+            if (namelen > (size_t)-1 - size)
+            {
+                error ("buildpath(): path is too long");
+                exit (20);
+            }
+
+            size += namelen;
+            components ++;
+        }
     }
 
-    freelist (&tree);
+    if (size > pathsize)
+    {
+        char * newpath = xmalloc (size);
+
+        if (path != NULL)
+            xfree (path);
+
+        path = newpath;
+        pathsize = size;
+    }
+
+    ptr = path + size - 1;
+    *ptr = 0;
+
+    for (current = node; current != NULL; current = current->parent)
+    {
+        const char * name = current->node.name;
+
+        if ((*name != 0) && (strcmp(name, mm_srcdir) != 0))
+        {
+            size_t namelen = strlen (name);
+
+            ptr -= namelen;
+            memcpy (ptr, name, namelen);
+
+            components --;
+            if (components != 0)
+                *--ptr = '/';
+        }
+    }
+
+    assert (ptr == path);
 
     return path;
 }
