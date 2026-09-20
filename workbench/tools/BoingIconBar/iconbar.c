@@ -163,6 +163,7 @@ static LONG                                     Position, OldPosition;
 static LONG                                     WindowHeight, WindowWidth, ScreenHeight, ScreenWidth, IconWidth;
 static LONG                                     IconCounter, LevelCounter, CurrentLevel=0, lbm=0, rbm=0, MouseIcon;
 static LONG                                     Length, BeginningWindow, EndingWindow, Window_Max_X, Window_Max_Y;
+static LONG                                     CacheRelX, CacheRelY;    // window offset within the screen-anchored wallpaper cache
 static BYTE                                     MovingTable[8]={0, 4, 7, 9, 10, 9, 7, 4};
 static TEXT                                     BufferList[20]; 
 static ULONG                                    WindowMask=0, MenuMask=0, WindowSignal;
@@ -1325,8 +1326,8 @@ static void Change_State(LONG Mode)
 static void Insert_Icon(LONG Mode, LONG NrIcon)
 {
     BltBitMapRastPort(BMP_Buffer,
-        Icons[NrIcon].Icon_PositionX,
-        0,
+        CacheRelX + Icons[NrIcon].Icon_PositionX,
+        CacheRelY,
         &RP_DoubleBuffer,
         0,
         0,
@@ -1377,10 +1378,25 @@ static void Blink_Icon(LONG NrIcon)
 static BOOL OpenMainWindow(void)
 {
     LONG x, y, a;
+    LONG cacheX;
 
     PrevActiveWindow = NULL;
     FocusOver = FALSE;
     FocusStableTicks = 0;
+
+    /* The wallpaper cache is anchored to a fixed screen region so that a
+       stale capture (used while a window covers the toolbar) still lines up
+       with the current window. Vertically it covers the bottom Window_Max_Y
+       screen rows; horizontally it depends on the alignment. */
+    if (Align == 1)                          /* LEFT */
+        cacheX = 0;
+    else if (Align == 2)                     /* RIGHT */
+        cacheX = ScreenWidth - Window_Max_X;
+    else                                     /* CENTER */
+        cacheX = ScreenWidth / 2 - Window_Max_X / 2;
+
+    CacheRelX = BeginningWindow - cacheX;
+    CacheRelY = Window_Max_Y - WindowHeight;
 
     if((MyScreen=LockPubScreen(NULL)))
     {
@@ -1390,8 +1406,8 @@ static BOOL OpenMainWindow(void)
                 ScreenHeight - 1))
         {
             BltBitMapRastPort(MyScreen->RastPort.BitMap,
-                BeginningWindow,
-                ScreenHeight - WindowHeight,
+                BeginningWindow - CacheRelX,
+                ScreenHeight - Window_Max_Y,
                 &RP_Buffer,
                 0, 0,
                 Window_Max_X,
@@ -1432,29 +1448,29 @@ static BOOL OpenMainWindow(void)
         a = y / BackgroundData[1].Width;
 
         DrawBarTile(picture[0], bm[0],
-            0,
-            WindowHeight - BackgroundData[0].Height,
+            CacheRelX + 0,
+            Window_Max_Y - BackgroundData[0].Height,
             BackgroundData[0].Width,
             BackgroundData[0].Height);
 
         for(x=0; x<a; x++)
         {
             DrawBarTile(picture[1], bm[1],
-                BackgroundData[0].Width + x * BackgroundData[1].Width,
-                WindowHeight - BackgroundData[1].Height,
+                CacheRelX + BackgroundData[0].Width + x * BackgroundData[1].Width,
+                Window_Max_Y - BackgroundData[1].Height,
                 BackgroundData[1].Width,
                 BackgroundData[1].Height);
         }
 
         DrawBarTile(picture[1], bm[1],
-            BackgroundData[0].Width + x * BackgroundData[1].Width,
-            WindowHeight - BackgroundData[1].Height,
+            CacheRelX + BackgroundData[0].Width + x * BackgroundData[1].Width,
+            Window_Max_Y - BackgroundData[1].Height,
             y - BackgroundData[1].Width * a,
             BackgroundData[1].Height);
 
         DrawBarTile(picture[2], bm[2],
-            WindowWidth - BackgroundData[2].Width,
-            WindowHeight - BackgroundData[2].Height,
+            CacheRelX + WindowWidth - BackgroundData[2].Width,
+            Window_Max_Y - BackgroundData[2].Height,
             BackgroundData[2].Width,
             BackgroundData[2].Height);
         }
@@ -1463,8 +1479,8 @@ static BOOL OpenMainWindow(void)
             for(x=0; x<WindowWidth; x=x+BackgroundData[1].Width)
             {
                 DrawBarTile(picture[1], bm[1],
-                    x,
-                    WindowHeight - BackgroundData[1].Height,
+                    CacheRelX + x,
+                    Window_Max_Y - BackgroundData[1].Height,
                     BackgroundData[1].Width,
                     BackgroundData[1].Height);
             }
@@ -1511,7 +1527,7 @@ static BOOL OpenMainWindow(void)
             WindowMask = 1 << MainWindow->UserPort->mp_SigBit;
 
             BltBitMapRastPort(BMP_Buffer,
-                0, 0,
+                CacheRelX, CacheRelY,
                 MainWindow->RPort,
                 0, 0,
                 WindowWidth,
@@ -2141,15 +2157,15 @@ static void IconLabel(void)
 
         PrintIText(&RP_Buffer,
             &Labels,
-            pos_x,
-            WindowHeight - (LabelFont.ta_YSize + 3));
+            CacheRelX + pos_x,
+            Window_Max_Y - (LabelFont.ta_YSize + 3));
 
         Labels.FrontPen = 2;
 
         PrintIText(&RP_Buffer,
             &Labels,
-            pos_x + 1,
-            WindowHeight - (LabelFont.ta_YSize + 4));
+            CacheRelX + pos_x + 1,
+            Window_Max_Y - (LabelFont.ta_YSize + 4));
 
     }
 }
