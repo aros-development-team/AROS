@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -328,10 +328,8 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
             || checkdeps (&cache->project->genmakefiledeps, dst.st_mtime)
        )
     {
-        static char currdir[PATH_MAX];
         struct Regenerate *reg = new (struct Regenerate);
 
-        ASSERT(getcwd(currdir, PATH_MAX) != NULL);
         reg->dir = xstrdup (buildpath(makefile->dir));
         reg->src = mfsrc;
         reg->dest = xstrdup (makefile->node.name);
