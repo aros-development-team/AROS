@@ -177,6 +177,11 @@
 
 /* Burst cap/bulk-in defaults (micro-packet framing tuneables). */
 #define LAN78XX_DEFAULT_BULKIN_DELAY 0x00002000UL
+/*
+ * Bulk-IN aggregation hold. With a single outstanding request this is a
+ * hard ceiling of one transfer per hold period; Linux gets away with
+ * 0x800 by keeping ~7 URBs in flight so the holds overlap.
+ */
 #define LAN78XX_7800_DEFAULT_BULKIN_DELAY 0x00000800UL
 
 #define LAN78XX_BURST_MAX_BUFSZ 129
@@ -206,6 +211,10 @@
 /* MII PHY registers used by the link watcher (subset of IEEE 802.3 MII). */
 #define LAN78XX_MII_BMCR 0x00
 #define LAN78XX_MII_BMSR 0x01
+#define LAN78XX_MII_ANAR 0x04        /* our advertisement */
+#define LAN78XX_MII_ANLPAR 0x05      /* link partner ability */
+#define LAN78XX_MII_CTRL1000 0x09
+#define LAN78XX_MII_STAT1000 0x0A
 #define LAN78XX_BMSR_LSTATUS 0x0004 /* link status (sticky) */
 #define LAN78XX_BMSR_ANEGCOMPLETE 0x0020
 

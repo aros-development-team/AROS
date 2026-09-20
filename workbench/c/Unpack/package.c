@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003, 2009, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/memory.h>
@@ -19,6 +19,7 @@
 
 #define PKG_BUFFER_SIZE (32*1024) /* 32kiB */
 #define PKG_VERSION 1
+#define PKG_HEADER_SIZE 8
 
 /** Low-level functions *****************************************************/
 
@@ -37,6 +38,21 @@ void PKG_Close( APTR pkg )
 LONG PKG_Read( APTR pkg, APTR buffer, LONG length )
 {
     return BZ2_Read( pkg, buffer, length );
+}
+
+static LONG PKG_ReadBounded( APTR pkg, APTR buffer, LONG length,
+                             ULONG *remaining )
+{
+    LONG rc;
+
+    if( length < 0 || (ULONG)length > *remaining )
+        return -1;
+
+    rc = PKG_Read( pkg, buffer, length );
+    if( rc > 0 )
+        *remaining -= rc;
+
+    return rc;
 }
 
 static BPTR PKG_LockAt( BPTR directory, CONST_STRPTR name, LONG mode )
@@ -280,7 +296,7 @@ cleanup:
 
 /** High-level functions ****************************************************/
 
-LONG /* version */ PKG_ReadHeader( APTR pkg )
+LONG /* version */ PKG_ReadHeader( APTR pkg, ULONG *remaining )
 {
     UBYTE data[4] = { 0, 0, 0, 0 };
     ULONG packageSize;
@@ -312,10 +328,19 @@ LONG /* version */ PKG_ReadHeader( APTR pkg )
         return -1;
     }
 
+    packageSize = AROS_BE2LONG(packageSize);
+    if( packageSize < PKG_HEADER_SIZE )
+    {
+        Printf("E:invalid package size\n");
+        return -1;
+    }
+
+    *remaining = packageSize - PKG_HEADER_SIZE;
+
     return version;
 }
 
-LONG /* error */ PKG_ExtractFile( APTR pkg )
+LONG /* error */ PKG_ExtractFile( APTR pkg, ULONG *remaining )
 {
     ULONG  pathLength = 0, dataLength = 0;
     LONG   rc, result;
@@ -325,8 +350,8 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
     BPTR   output      = BNULL;
 
     /* Read the path length */
-    rc = PKG_Read( pkg, &pathLength, sizeof( pathLength ) );
-    if( rc == 0 ) { result = 0; goto cleanup; }
+    rc = PKG_ReadBounded( pkg, &pathLength, sizeof( pathLength ),
+                          remaining );
     if( rc != sizeof( pathLength ) ) { result = -1; goto cleanup; }
 
     pathLength = AROS_BE2LONG(pathLength);
@@ -336,20 +361,23 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
      * representable before allocating or reading the path field.
      */
     if( pathLength >= 0x7fffffffUL ) { result = -1; goto cleanup; }
+    if( pathLength + 1 > *remaining ) { result = -1; goto cleanup; }
 
     /* Read the path */
     path = AllocMem( pathLength + 1, MEMF_ANY );
     if( path == NULL ) { result = -1; goto cleanup; }
 
-    rc = PKG_Read( pkg, path, pathLength + 1 );
+    rc = PKG_ReadBounded( pkg, path, pathLength + 1, remaining );
     if( rc != (LONG)(pathLength + 1) ) { result = -1; goto cleanup; }
     if( path[pathLength] != '\0' ) { result = -1; goto cleanup; }
 
     /* Read the data length */
-    rc = PKG_Read( pkg, &dataLength, sizeof( dataLength ) );
+    rc = PKG_ReadBounded( pkg, &dataLength, sizeof( dataLength ),
+                          remaining );
     if( rc != sizeof( dataLength ) ) { result = -1; goto cleanup; }
 
     dataLength = AROS_BE2LONG(dataLength);
+    if( dataLength > *remaining ) { result = -1; goto cleanup; }
 
     /*
      * C:Unpack has already changed CurrentDir() to the selected TO path.
@@ -371,18 +399,18 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
         while( total < dataLength )
         {
             LONG length;
-            ULONG remaining = dataLength - total;
+            ULONG chunkRemaining = dataLength - total;
 
-            if( remaining >= PKG_BUFFER_SIZE )
+            if( chunkRemaining >= PKG_BUFFER_SIZE )
             {
                 length = PKG_BUFFER_SIZE;
             }
             else
             {
-                length = remaining;
+                length = chunkRemaining;
             }
 
-            rc = PKG_Read( pkg, buffer, length );
+            rc = PKG_ReadBounded( pkg, buffer, length, remaining );
             if( rc != length ) { Printf("E:read\n"); result = -1; goto cleanup; }
 
             rc = FILE_Write( output, buffer, length );
@@ -405,15 +433,17 @@ cleanup:
 
 LONG /* error */ PKG_ExtractEverything( APTR pkg )
 {
-    LONG result = PKG_ReadHeader( pkg );
+    ULONG remaining = 0;
+    LONG result = PKG_ReadHeader( pkg, &remaining );
     if ( result < 0 )
         return result;
     
-    result = PKG_ExtractFile( pkg );
-    while( result != -1 && result != 0 )
+    while( remaining > 0 )
     {
-        result = PKG_ExtractFile( pkg );
+        result = PKG_ExtractFile( pkg, &remaining );
+        if( result < 0 )
+            return result;
     }
     
-    return result;
+    return 0;
 }

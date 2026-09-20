@@ -87,10 +87,10 @@ static inline const char *upname(const char *s)
 void writestart(struct config *cfg)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
     struct classinfo *cl;
 
-    snprintf(line, 255, "%s/%s_start.c", cfg->gendir, cfg->modulename);
+    line = make_output_path("%s/%s_start.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -171,6 +171,7 @@ void writestart(struct config *cfg)
     }
 
     fclose(out);
+    free(line);
 }
 
 
@@ -986,7 +987,14 @@ static void writeinitlib(FILE *out, struct config *cfg)
                 "{\n"
         );
         fprintf(out, "    %s,\n", (cfg->options & OPTION_NOAUTOLIB) ? "NULL" : "SETNAME(LIBS)");
-        fprintf(out, "    %s,\n", cfg->rellibs ? "SETNAME(RELLIBS)" : "NULL");
+        /* norootrellibs: no rellib is opened for the root base. InitLib
+           runs in the task that loads the module, so for a pertaskbase
+           rellib the root base would hold that task's own per-task base
+           until expunge. The same NULL keeps the expunge and the InitLib
+           rollback from closing what was not opened. The bases created by
+           OpenLib still open their rellibs. */
+        fprintf(out, "    %s,\n", (cfg->rellibs && !(cfg->options & OPTION_NOROOTRELLIBS))
+                                    ? "SETNAME(RELLIBS)" : "NULL");
         fprintf(out, "    SETNAME(INIT),\n");
         fprintf(out, "    %s,\n", (cfg->classlist != NULL) ? "SETNAME(CLASSESINIT)" : "NULL");
         fprintf(out,

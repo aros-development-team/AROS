@@ -10,9 +10,16 @@ version     = UBYTE      # Must be 1
 packageSize = LONG      # total package size in bytes, including header
 
 pathLength  = LONG
-path        = BYTE[pathLength+1] # trailing '\0'
+path        = BYTE[pathLength+1] # NUL-terminated pathname field
 dataLength  = LONG
-data        = BYTE[dataLength] 
+data        = BYTE[dataLength]
+
+All LONG fields are unsigned 32-bit big-endian values.
+
+The canonical writer rounds the stored path field up to a multiple of four
+bytes with NUL padding. pathLength is the stored field size minus one. The
+pathname value ends at the first NUL byte; any remaining bytes in the field
+are padding.
 
 Example
 -------
