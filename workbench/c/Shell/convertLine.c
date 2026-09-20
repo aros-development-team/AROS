@@ -64,10 +64,31 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out)
 
     for (; in->cur < n; p = c)
     {
+        BOOL errorRedir;
+
         DB2(bug("[convertLoopRedir] cur %u (%c)\n", in->cur, in->buf[in->cur]));
         c = in->buf[in->cur];
 
-        if (p == '*')
+        errorRedir =
+            !quoted &&
+            p != '*' &&
+            c == '*' &&
+            ((in->cur + 1 < n && in->buf[in->cur + 1] == '>') ||
+             (in->cur + 2 < n &&
+              in->buf[in->cur + 1] == '<' &&
+              in->buf[in->cur + 2] == '>'));
+
+        if (errorRedir)
+        {
+            c = 0;
+            if ((error = convertRedir(ss, in, out)))
+            {
+                D(bug("[convertLoopRedir] convertRedir(%s) error %u\n",
+                      in->buf, error));
+                return error;
+            }
+        }
+        else if (p == '*')
         {
             c = 0;
             if ((error = bufferCopy(in, out, 1, ss)))
@@ -307,9 +328,15 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand)
          */
         D(bug("[convertLine] Appending a newline\n"));
         error = bufferAppend("\n", 1, out, ss);
+        if (error)
+            return error;
     }
+
+    error = Redirection_activateError(ss);
+    if (error)
+        return error;
 
     D(bug("[convertLine] Result: cur %d len %d (%s)\n", out->cur, out->len, out->buf));
 
-    return error;
+    return 0;
 }
