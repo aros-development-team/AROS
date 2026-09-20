@@ -154,6 +154,8 @@ FILES += \
     simple/simple_encoder \
     simple/simple_decoder
 
+# lzma.conf sets norootrellibs (see tools/genmodule/config.h): code that runs
+# with the root base must not call posixc.library or stdc.library.
 %build_module mmake=workbench-libs-lzma-library \
     modname=lzma modtype=library \
     files="$(addprefix $(ARCHSRCDIR)/src/liblzma/,$(FILES))"

@@ -45,9 +45,9 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 
     for (i = 0; i < ss->argcount; ++i)
     {
-        struct SArg *a = ss->args + i;
+        struct SArg *a = ss->arguments->args + i;
         STRPTR arg = NULL;
-        IPTR val = ss->arg[i];
+        IPTR val = ss->arguments->values[i];
         UBYTE t = a->type;
         LONG j, len = a->namelen;
 

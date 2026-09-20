@@ -9,6 +9,22 @@
 #include "dos_intern.h"
 #include <string.h>
 
+/* An empty path component is the AmigaDOS parent operation: a leading '/',
+ * a '/' right after the volume separator, or a doubled '/'. */
+static BOOL has_parent_reference(CONST_STRPTR name)
+{
+    CONST_STRPTR p;
+
+    if (name[0] == '/')
+        return TRUE;
+    for (p = name; *p; p++)
+    {
+        if ((p[0] == ':' || p[0] == '/') && p[1] == '/')
+            return TRUE;
+    }
+    return FALSE;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -59,6 +75,14 @@
     BSTR bstrNewName, bstrOldName;
 
     ASSERT_VALID_PROCESS(me);
+
+    /* The canonical names built below cost a Lock and a NameFromLock on
+     * each side: an Examine and a Parent packet per directory level, some
+     * 27 packets before the one that renames. They are needed when a name
+     * holds a parent reference (a/b//c); any other name goes to the handler
+     * as the caller wrote it, relative to the lock GetDeviceProc() returns. */
+    if (!has_parent_reference(oldName) && !has_parent_reference(newName))
+        goto send;
 
     len = SplitName(oldName, ':', vol, 0, sizeof(vol) - 1);
 
@@ -148,6 +172,7 @@
 
     D(bug("[Dos] rename %s %s\n", oldName, newName));
 
+send:
     /* get device pointers */
     if ((olddvp = GetDeviceProc(oldName, NULL)) == NULL ||
         (newdvp = GetDeviceProc(newName, NULL)) == NULL) {

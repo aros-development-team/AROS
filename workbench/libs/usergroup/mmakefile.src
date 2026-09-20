@@ -27,6 +27,9 @@ USER_LDFLAGS := -static
 #MM workbench-libs-usergroup : includes linklibs kernel-security-includes
 %subtarget parentmmake=workbench-libs mmake=workbench-libs-usergroup
 
+# usergroup.conf sets norootrellibs (see tools/genmodule/config.h): code that
+# runs with the root base, such as UserGroup__Init and UserGroup__Expunge, must
+# not call posixc.library or stdc.library.
 %build_module mmake=workbench-libs-usergroup modname=usergroup \
   modtype=library files="$(FILES)" \
   uselibs=""

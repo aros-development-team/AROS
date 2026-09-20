@@ -30,11 +30,14 @@ functional difference between ELF and PKG forms.
  con-handler
  hiddclass.hidd
  gfx.hidd
+ inputclass.hidd
  keyboard.hidd
  mouse.hidd
  aros.library
  debug.library
  dos.library
+ dos64.library
+ gadtools.library
  graphics.library
  intuition.library
  keymap.library
@@ -62,6 +65,15 @@ It's allowed for any module to have relevant portions in arch/<cpu>-all.
 to boot up native AROS. These components are left out if base for
 optimization purposes, because hosted AROS boots up from emul-handler.
 
+  The current package definition includes:
+
+ partition.library
+ afs-handler
+ cdrom-handler
+ sfs-handler
+ pfs3-handler
+ fat-handler
+
   For hosted flavours disk-based version of these components are built by
 default (arch/all-hosted/mmakefile). However this package also doesn't
 contain any machine specific code and can run on all ports. This package
@@ -71,10 +83,23 @@ can also be used on hosted, for deeper testing and simulation purposes.
 
 3. Poseidon.
 
-  Contains resident portion of Poseidon USB stack (poseidon.library,
-pciusb.device and several classes). Needed to boot up from USB devices
-and use USB keyboard and mice at boot time on native AROS. Does not
-ontain any other hardware-specific code than PCI device driver.
+  Contains resident portion of Poseidon USB stack. The current package
+definition includes:
+
+ bootkeyboard.class
+ bootmouse.class
+ hubss.class
+ hub.class
+ hid.class
+ massstorage.class
+ pciusb.device
+ pcixhci.device
+ poseidon.library
+ usbromstartup.resource
+
+  Needed to boot up from USB devices and use USB keyboard and mice at boot
+time on native AROS. Does not contain any other hardware-specific code than
+the PCI USB device drivers.
 
   Decribed in rom/usb/mmakefile.src.
 

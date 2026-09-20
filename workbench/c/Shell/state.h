@@ -24,6 +24,12 @@ struct SArg
     UBYTE  type;
 };
 
+struct ShellArguments
+{
+    struct SArg args[MAXARGS];
+    IPTR values[MAXARGS];
+};
+
 typedef struct _ShellState
 {
     BPTR	newIn;
@@ -40,8 +46,7 @@ typedef struct _ShellState
     BOOL	background;	/* shell was created as a background one */
 
     LONG	argcount;	/* script args count */
-    struct SArg	args[MAXARGS];	/* args definitions */
-    IPTR	arg[MAXARGS];	/* args values */
+    struct ShellArguments *arguments; /* allocated only for .key/.def */
     struct RDArgs *arg_rd;	/* Current RDArgs return state */
 
     TEXT	bra, ket, dollar, dot;

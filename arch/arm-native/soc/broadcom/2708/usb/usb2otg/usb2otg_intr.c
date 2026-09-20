@@ -372,6 +372,7 @@ static BOOL usb2otg_core_reset_recover(struct USB2OTGUnit *USBUnit, int wedged_c
     wr32le(USB2OTG_INTR, 0xffffffff);
     wr32le(USB2OTG_INTRMASK, USB2OTG_INTRCORE_DMASTARTOFFRAME |
                              USB2OTG_INTRCORE_HOSTCHANNEL);
+    USBUnit->hu_SofGated = FALSE;
 
     /* FIFO layout — must match OpenUnit. */
     wr32le(USB2OTG_RCVSIZE, 774);
@@ -962,6 +963,14 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
                 {
                     D(bug("[USB2OTG] SOF: promoting INT dev=%ld ep=%ld frnm=%ld\n",
                         (LONG)req->iouh_DevAddr, (LONG)req->iouh_Endpoint, (LONG)frnm));
+                    {
+                        ULONG pos = USBUnit->hu_PromRingPos++ & 7;
+                        USBUnit->hu_PromRingF[pos] = frnm;
+                        USBUnit->hu_PromRingD[pos] = (ULONG)(IPTR)req->iouh_DriverPrivate1;
+                        USBUnit->hu_PromRingDev[pos] = req->iouh_DevAddr;
+                        if (req->iouh_DevAddr < 8)
+                            USBUnit->hu_PromCount[req->iouh_DevAddr]++;
+                    }
                     REMOVE(req);
                     ADDTAIL(&USBUnit->hu_IntXFerScheduled, req);
                     int_scheduled = TRUE;
@@ -987,8 +996,6 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
          * frame-level scheduling) — its CSPLIT re-arms below stay.
          */
         USBUnit->hu_LastSOFFrame = frnm;
-
-
     }
     {
             int chan;
@@ -1089,6 +1096,123 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
         }
 }
 
+/*
+ * Close the SOF gate once nothing can need the heartbeat. Work can then
+ * only reappear via the wake sites, so a masked SOF cannot strand a
+ * transfer.
+ */
+static void usb2otg_sof_gate_try(struct USB2OTGUnit *USBUnit)
+{
+#if defined(__AROSEXEC_SMP__)
+    struct USB2OTGDevice *USB2OTGBase = USBUnit->hu_USB2OTGBase;
+#endif
+    struct IOUsbHWReq *req;
+    ULONG mindist = 0x800;
+    /* Re-read: handle_SOF can span a frame, which arms the wake late. */
+    ULONG frnm = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
+    int chan, guard = 0;
+
+#if !USB2OTG_SOF_GATE
+    return;
+#endif
+    if (USBUnit->hu_SofGated ||
+        !IsListEmpty(&USBUnit->hu_IntXFerScheduled) ||
+        !IsListEmpty(&USBUnit->hu_CtrlXFerQueue) ||
+        !IsListEmpty(&USBUnit->hu_BulkXFerQueue))
+        return;
+
+    for (chan = 0; chan < 8; chan++)
+    {
+        struct IOUsbHWReq *creq = USBUnit->hu_Channel[chan].hc_Request;
+
+        if (USBUnit->hu_DelayedChannel[chan] != 0)
+            return;
+        if (creq != NULL &&
+            ((creq->iouh_Flags & UHFF_SPLITTRANS) ||
+             creq->iouh_Req.io_Command == UHCMD_INTXFER))
+            return;
+    }
+
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+    ForeachNode(&USBUnit->hu_IntXFerQueue, req)
+    {
+        ULONG last = (ULONG)(IPTR)req->iouh_DriverPrivate1 >> 16;
+        ULONG next = (ULONG)(IPTR)req->iouh_DriverPrivate1 & 0x7ff;
+        ULONG dist = (next - frnm) & 0x7ff;
+
+        /* Due or overdue polls want the next promotion walk. */
+        if (++guard > 128 ||
+            ((frnm - last) & 0x7ff) >= ((next - last) & 0x7ff))
+        {
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
+            return;
+        }
+        if (dist < mindist)
+            mindist = dist;
+    }
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
+
+    if (mindist == 0x800)
+    {
+        /* Queue empty: sleep until a submission wakes us. */
+        USBUnit->hu_SofGateWakeFrame = 0xffff;
+        usb2otg_sof_gate_mask(USBUnit);
+    }
+    else if (mindist > USB2OTG_SOF_GATE_MIN_FRAMES)
+    {
+        USBUnit->hu_SofGateWakeFrame = (frnm + mindist - 1) & 0x7ff;
+        usb2otg_sof_gate_mask(USBUnit);
+        if (!usb2otg_sof_gate_arm(mindist - 1))
+        {
+            /* Already passed while arming. */
+            usb2otg_sof_gate_wake(USBUnit);
+        }
+    }
+}
+
+/* Runs with interrupts disabled, so no locking against wake sites. */
+AROS_INTH1(FNAME_DEV(SofGateInt), struct USB2OTGUnit *, USBUnit)
+{
+    AROS_INTFUNC_INIT
+
+    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
+    usb2otg_sof_gate_wake(USBUnit);
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
+/* Census only; unlocked reads. */
+static BOOL usb2otg_periodic_idle(struct USB2OTGUnit *USBUnit)
+{
+    int chan;
+
+    if (!IsListEmpty(&USBUnit->hu_IntXFerQueue) ||
+        !IsListEmpty(&USBUnit->hu_IntXFerScheduled))
+        return FALSE;
+
+    for (chan = 0; chan < 8; chan++)
+    {
+        if (USBUnit->hu_DelayedChannel[chan] != 0)
+            return FALSE;
+    }
+
+    for (chan = CHAN_INT1; chan <= CHAN_INT_LAST; chan++)
+    {
+        if (USBUnit->hu_Channel[chan].hc_Request != NULL)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase)
 {
     struct USB2OTGDevice * USB2OTGBase = USBUnit->hu_USB2OTGBase;
@@ -1110,9 +1234,26 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
     otg_RegVal = rd32le(USB2OTG_INTR);
 
+    USBUnit->hu_IrqCount++;
+    if (otg_RegVal & USB2OTG_INTRCORE_DMASTARTOFFRAME)
+    {
+        USBUnit->hu_IrqSofCount++;
+        if (!(otg_RegVal & USB2OTG_INTRCORE_HOSTCHANNEL))
+        {
+            USBUnit->hu_IrqSofOnly++;
+            if (usb2otg_periodic_idle(USBUnit))
+                USBUnit->hu_IrqSofIdle++;
+        }
+    }
+    if (otg_RegVal & USB2OTG_INTRCORE_HOSTCHANNEL)
+        USBUnit->hu_IrqHcCount++;
+    if (otg_RegVal & USB2OTG_INTRCORE_PORT)
+        USBUnit->hu_IrqPortCount++;
+
     if (otg_RegVal & USB2OTG_INTRCORE_DMASTARTOFFRAME)
     {
         handle_SOF(USBUnit, SysBase, frnm);
+        usb2otg_sof_gate_try(USBUnit);
     }
 
     /*
@@ -1156,6 +1297,11 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                  * needed at final completion to exclude the watchdog.
                  */
                 req = USBUnit->hu_Channel[chan].hc_Request;
+
+                /* Counted before dispatch so retries can't hide load. */
+                if (req != NULL && req->iouh_Req.io_Command == UHCMD_INTXFER &&
+                    req->iouh_DevAddr < 8)
+                    USBUnit->hu_IntIrqCount[req->iouh_DevAddr]++;
 
 #if USB2OTG_DEBUG_FORCE_CTRL_NAK
                 /* Synthesise the TT NAK QEMU never produces — see the define. */
@@ -1697,9 +1843,18 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  * Rate-limited; remove once the hotplug/
                                  * input-pump question is settled.
                                  */
+                                if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
+                                {
+                                    USBUnit->hu_BulkCompCount++;
+                                    USBUnit->hu_BulkBytes += req->iouh_Actual;
+                                }
                                 if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
                                     req->iouh_DevAddr < 8)
+                                {
                                     USBUnit->hu_IntCompCount[req->iouh_DevAddr]++;
+                                    /* Data flows again — lift the NAK backoff. */
+                                    USBUnit->hu_IntNakStreak[req->iouh_DevAddr] = 0;
+                                }
                                 D(
                                     if (req->iouh_Req.io_Command == UHCMD_INTXFER &&
                                         req->iouh_Actual > 0)
@@ -1896,6 +2051,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 KrnSpinUnLock(&USBUnit->hu_Lock);
                                 }
 #endif
+                                usb2otg_sof_gate_wake(USBUnit);
                                 req = NULL;
                             }
                             else
@@ -1953,7 +2109,11 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
                             {
                                 if (req->iouh_DevAddr < 8)
+                                {
                                     USBUnit->hu_IntNakCount[req->iouh_DevAddr]++;
+                                    if (USBUnit->hu_IntNakStreak[req->iouh_DevAddr] < 255)
+                                        USBUnit->hu_IntNakStreak[req->iouh_DevAddr]++;
+                                }
                                 /* Clear interrupt flags */
                                 wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
 
@@ -1965,6 +2125,11 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     ULONG interval = usb2otg_clamp_interval(req->iouh_Interval);
                                     if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
                                         interval = 2;
+                                    if (req->iouh_DevAddr < 8 &&
+                                        USBUnit->hu_IntNakStreak[req->iouh_DevAddr] >=
+                                            USB2OTG_INT_NAK_BACKOFF_STREAK &&
+                                        interval < USB2OTG_INT_NAK_BACKOFF_FRAMES)
+                                        interval = USB2OTG_INT_NAK_BACKOFF_FRAMES;
                                     ULONG next = (frnm + interval) & 0x7ff;
                                     req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                                 }
@@ -1987,6 +2152,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 KrnSpinUnLock(&USBUnit->hu_Lock);
                                 }
 #endif
+                                usb2otg_sof_gate_wake(USBUnit);
                                 req = NULL;
                             }
                             else if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
@@ -2539,6 +2705,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
 static BOOL usb2otg_process_pending(struct USB2OTGUnit *otg_Unit)
 {
+    otg_Unit->hu_PendRunCount++;
     struct USB2OTGDevice *USB2OTGBase = otg_Unit->hu_USB2OTGBase;
 
     /* **************** PROCESS DONE TRANSFERS **************** */
@@ -2925,6 +3092,21 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                     ULONG w_split = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
                     ULONG w_tsize = rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
 
+#if USB2OTG_BULK_IN_NAK_LIVENESS
+                    /* Clear it so liveness is re-proven next tick. */
+                    if (req->iouh_Req.io_Command == UHCMD_BULKXFER &&
+                        req->iouh_Dir == UHDIR_IN &&
+                        !(req->iouh_Flags & UHFF_SPLITTRANS) &&
+                        (w_char & USB2OTG_HOSTCHAR_ENABLE) &&
+                        (w_intr & USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE))
+                    {
+                        wr32le(USB2OTG_CHANNEL_REG(chan, INTR),
+                            USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE);
+                        otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
+                        continue;
+                    }
+#endif
+
                     if (w_intr & (USB2OTG_INTRCHAN_TRANSFERCOMPLETE |
                                   USB2OTG_INTRCHAN_HALT))
                     {
@@ -3033,7 +3215,15 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                         usb2otg_exorcise_channel(chan);
 
                         if (req->iouh_DevAddr < 8)
+                        {
                             otg_Unit->hu_IntNakCount[req->iouh_DevAddr]++;
+                            if (otg_Unit->hu_IntNakStreak[req->iouh_DevAddr] < 255)
+                                otg_Unit->hu_IntNakStreak[req->iouh_DevAddr]++;
+                            if (otg_Unit->hu_IntNakStreak[req->iouh_DevAddr] >=
+                                    USB2OTG_INT_NAK_BACKOFF_STREAK &&
+                                interval < USB2OTG_INT_NAK_BACKOFF_FRAMES)
+                                interval = USB2OTG_INT_NAK_BACKOFF_FRAMES;
+                        }
                         req->iouh_DriverPrivate1 =
                             (APTR)(IPTR)((frnm_now << 16) |
                                    ((frnm_now + interval) & 0x7ff));
@@ -3041,6 +3231,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                         ADDTAIL(&otg_Unit->hu_IntXFerQueue, (struct Node *)req);
                         otg_Unit->hu_Channel[chan].hc_Request = NULL;
                         otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
+                        usb2otg_sof_gate_wake(otg_Unit);
 #if defined(__AROSEXEC_SMP__)
                         KrnSpinUnLock(&otg_Unit->hu_Lock);
 #endif
@@ -3377,12 +3568,21 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
             if (((frnm - last_handled) & 0x7ff) >=
                 ((next_to_handle - last_handled) & 0x7ff))
             {
+                ULONG pos = otg_Unit->hu_PromRingPos++ & 7;
+                otg_Unit->hu_PromRingF[pos] = frnm;
+                otg_Unit->hu_PromRingD[pos] = (ULONG)(IPTR)req->iouh_DriverPrivate1;
+                otg_Unit->hu_PromRingDev[pos] = req->iouh_DevAddr | 0x100;
+                if (req->iouh_DevAddr < 8)
+                    otg_Unit->hu_PromCount[req->iouh_DevAddr]++;
                 REMOVE(req);
                 ADDTAIL(&otg_Unit->hu_IntXFerScheduled, req);
                 promoted = TRUE;
                 q_count--;
             }
         }
+
+        if (promoted)
+            usb2otg_sof_gate_wake(otg_Unit);
 
         ForeachNode(&otg_Unit->hu_IntXFerScheduled, req)
             s_count++;
@@ -3469,6 +3669,100 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
         KrnSpinUnLock(&otg_Unit->hu_Lock);
 #endif
         Enable();
+        bug("\n");
+    }
+#endif /* DEBUG */
+
+#if DEBUG
+    /* Census dump, 34 x 150ms. "+N" are deltas over the window. */
+    if (++otg_Unit->hu_IrqStatTicks >= 34)
+    {
+        ULONG dirq = otg_Unit->hu_IrqCount - otg_Unit->hu_IrqCountLast;
+        ULONG didle = otg_Unit->hu_IrqSofIdle - otg_Unit->hu_IrqSofIdleLast;
+        int d;
+
+        otg_Unit->hu_IrqStatTicks = 0;
+        otg_Unit->hu_IrqCountLast = otg_Unit->hu_IrqCount;
+        otg_Unit->hu_IrqSofIdleLast = otg_Unit->hu_IrqSofIdle;
+
+        D(bug("[USB2OTG:IRQSTAT] irq=%lu (+%lu) sof=%lu sofonly=%lu sofidle=%lu (+%lu) hc=%lu port=%lu gate=%lu/%lu%s\n",
+            (unsigned long)otg_Unit->hu_IrqCount, (unsigned long)dirq,
+            (unsigned long)otg_Unit->hu_IrqSofCount,
+            (unsigned long)otg_Unit->hu_IrqSofOnly,
+            (unsigned long)otg_Unit->hu_IrqSofIdle, (unsigned long)didle,
+            (unsigned long)otg_Unit->hu_IrqHcCount,
+            (unsigned long)otg_Unit->hu_IrqPortCount,
+            (unsigned long)otg_Unit->hu_SofGateMasks,
+            (unsigned long)otg_Unit->hu_SofGateWakes,
+            otg_Unit->hu_SofGated ? " CLOSED" : ""));
+        D(bug("[USB2OTG:IRQSTAT]   bulk: arm=%lu comp=%lu bytes=%lu pend=%lu\n",
+            (unsigned long)otg_Unit->hu_BulkArmCount,
+            (unsigned long)otg_Unit->hu_BulkCompCount,
+            (unsigned long)otg_Unit->hu_BulkBytes,
+            (unsigned long)otg_Unit->hu_PendRunCount));
+        D(bug("[USB2OTG:IRQSTAT]   gatelate: <1=%lu <4=%lu <16=%lu more=%lu max=%lu frames\n",
+            (unsigned long)otg_Unit->hu_SofGateLate[0],
+            (unsigned long)otg_Unit->hu_SofGateLate[1],
+            (unsigned long)otg_Unit->hu_SofGateLate[2],
+            (unsigned long)otg_Unit->hu_SofGateLate[3],
+            (unsigned long)otg_Unit->hu_SofGateLateMax));
+
+        /* i=channel IRQs, p/c/n/h=arms/completions/NAKs/bare-CHHLTDs. */
+        for (d = 0; d < 8; d++)
+        {
+            if (otg_Unit->hu_IntIrqCount[d] || otg_Unit->hu_IntPollCount[d] ||
+                otg_Unit->hu_IntNakCount[d] || otg_Unit->hu_IntChhCount[d])
+                D(bug("[USB2OTG:IRQSTAT]   d%d i=%lu p=%lu c=%lu n=%lu h=%lu iv=%u pr=%lu\n", d,
+                    (unsigned long)otg_Unit->hu_IntIrqCount[d],
+                    (unsigned long)otg_Unit->hu_IntPollCount[d],
+                    (unsigned long)otg_Unit->hu_IntCompCount[d],
+                    (unsigned long)otg_Unit->hu_IntNakCount[d],
+                    (unsigned long)otg_Unit->hu_IntChhCount[d],
+                    (unsigned)otg_Unit->hu_IntLastIval[d],
+                    (unsigned long)otg_Unit->hu_PromCount[d]));
+        }
+
+        /* Queue depth; >1 on a pipe defeats interval pacing. */
+        {
+            struct IOUsbHWReq *qreq;
+            int qc[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+            Disable();
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            ForeachNode(&otg_Unit->hu_IntXFerQueue, qreq)
+            {
+                if (qreq->iouh_DevAddr < 8)
+                    qc[qreq->iouh_DevAddr]++;
+            }
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
+            Enable();
+
+            D(bug("[USB2OTG:IRQSTAT]   q-depth:"));
+            for (d = 0; d < 8; d++)
+            {
+                if (qc[d])
+                    bug(" d%d=%d", d, qc[d]);
+            }
+            bug("\n");
+        }
+
+        /* Last 8 promotions: dev@frame last->next, W = watchdog. */
+        D(bug("[USB2OTG:IRQSTAT]   prom:"));
+        for (d = 0; d < 8; d++)
+        {
+            ULONG pos = (otg_Unit->hu_PromRingPos + d) & 7;
+
+            bug(" %s%lu@%lu:%lu>%lu",
+                (otg_Unit->hu_PromRingDev[pos] & 0x100) ? "W" : "",
+                (unsigned long)(otg_Unit->hu_PromRingDev[pos] & 0xff),
+                (unsigned long)otg_Unit->hu_PromRingF[pos],
+                (unsigned long)(otg_Unit->hu_PromRingD[pos] >> 16),
+                (unsigned long)(otg_Unit->hu_PromRingD[pos] & 0x7ff));
+        }
         bug("\n");
     }
 #endif /* DEBUG */

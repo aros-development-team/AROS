@@ -4,6 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- test-library : test-library-dummytest \
 #MM      test-library-dummytest_auto \
 #MM      test-library-usereltest \
+#MM      test-library-norootreltest \
 #MM      test-library-peropenertest \
 #MM      test-library-peropenertest_child \
 #MM      test-genmodule-library-cunit
@@ -15,6 +16,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- test-genmodule-library-cunit-quick : test-genmodule-library-$(TARGET_UNITTESTS)-cunit-quick
 
 #MM- test-library-userellib: includes-pertask includes-dummy linklibs-pertask linklibs-dummy
+#MM- test-library-norootrellib: includes-pertask linklibs-pertask
 
 #MM test-library-dummytest : test-library-dummylib
 #MM test-library-dummytest_auto : test-library-dummylib
@@ -27,6 +29,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM     test-library-userellib
 
 #MM test-library-usereltest :  test-library-userellib
+#MM test-library-norootreltest : test-library-norootrellib test-library-userellib \
+#MM     test-library-pertasklib test-library-dummylib
 
 #MM- test-library-clean : \
 #MM      test-library-dummytest-clean \
@@ -35,7 +39,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM      test-library-dummylib-clean \
 #MM      test-library-peropenerlib-clean \
 #MM      test-library-pertasklib-clean \
-#MM      test-library-userellib-clean
+#MM      test-library-userellib-clean \
+#MM      test-library-norootrellib-clean \
+#MM      test-library-norootreltest-clean
 
 TARGETDIR := $(AROS_TESTS)/Library
 CUNITEXEDIR := $(AROS_TESTS)/cunit/genmodule/library
@@ -64,6 +70,12 @@ USER_LDFLAGS := -L$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/lib
     progname=usereltest targetdir=$(TARGETDIR) \
     uselibs="userel pertask"
 
+# Opens the libraries itself: it defines NorootrelBase, so the linklib's
+# auto-open code is not linked in.
+%build_prog mmake=test-library-norootreltest \
+    progname=norootreltest targetdir=$(TARGETDIR) \
+    uselibs="norootrel"
+
 # Libraries
 
 %build_module mmake=test-library-dummylib \
@@ -82,6 +94,11 @@ USER_LDFLAGS := -L$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/lib
 %build_module mmake=test-library-userellib \
     modname=userel modtype=library \
     files="dummyadd pertaskgetparentbase dummyprint4 getchildvalue" \
+    prefix=$(TARGETDIR)
+
+%build_module mmake=test-library-norootrellib \
+    modname=norootrel modtype=library \
+    files="norootrelvalue" \
     prefix=$(TARGETDIR)
 
 # CUnit tests

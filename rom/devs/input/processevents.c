@@ -97,7 +97,7 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
     struct Interrupt *ihiterator;
 
     ie_chain = GetEventsFromQueue(InputDevice);
-    if (ie_chain && !InputDevice->Stopped)
+    if (ie_chain)
     {
         ForeachNode(&(InputDevice->HandlerList), ihiterator)
         {

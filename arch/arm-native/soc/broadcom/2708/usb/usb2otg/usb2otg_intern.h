@@ -228,7 +228,6 @@ struct USB2OTGUnit
     struct List         hu_CtrlXFerQueue;
     struct List         hu_IntXFerQueue;
     struct List         hu_IntXFerScheduled;
-    struct List         hu_IsoXFerQueue;
     struct List         hu_BulkXFerQueue;
     struct List         hu_FinishedXfers;
     /*
@@ -294,6 +293,16 @@ struct USB2OTGUnit
     struct Interrupt    hu_NakTimeoutInt;
     struct timerequest  hu_NakTimeoutReq;
     struct MsgPort      hu_NakTimeoutMsgPort;
+
+    /* SOF gate: masked while no periodic work needs it. */
+    volatile UBYTE      hu_SofGated;            /* SOF masked by the gate */
+    volatile UWORD      hu_SofGateWakeFrame;    /* frame the wake was aimed at */
+    ULONG               hu_SofGateMasks;        /* census: gate closures */
+    ULONG               hu_SofGateWakes;        /* census: wakes (timer or work) */
+    APTR                hu_SofGateIRQHandle;
+    /* Wake lateness in frames: <1, <4, <16, more. */
+    ULONG               hu_SofGateLate[4];
+    ULONG               hu_SofGateLateMax;
     struct Task         *hu_WorkerTask;
     struct MsgPort      *hu_WorkerPort;
     cpumask_t           hu_WorkerAffinity;
@@ -413,8 +422,35 @@ struct USB2OTGUnit
     ULONG               hu_IntArmHfnum[8];      /* HFNUM at the last INT arm */
     ULONG               hu_IntArmChar[8];       /* HCCHAR as armed (ODDFRM visible) */
     ULONG               hu_IntHltHfnum[8];      /* HFNUM at the last bare-CHHLTD halt */
+    /* Bulk throughput census. */
+    ULONG               hu_BulkArmCount;
+    ULONG               hu_BulkCompCount;
+    ULONG               hu_BulkBytes;
+    ULONG               hu_PendRunCount;
+
     ULONG               hu_CtrlArmCount;        /* control transfers armed */
     ULONG               hu_CtrlFinCount;        /* control transfers finished */
+
+    /* IRQ-cause census. */
+    ULONG               hu_IrqCount;            /* GlobalIRQHandler entries */
+    ULONG               hu_IrqSofCount;         /* entries with SOF asserted */
+    ULONG               hu_IrqSofOnly;          /* SOF without HOSTCHANNEL */
+    ULONG               hu_IrqSofIdle;          /* SOF-only, no periodic work */
+    ULONG               hu_IrqHcCount;          /* entries with HOSTCHANNEL */
+    ULONG               hu_IrqPortCount;        /* entries with PORT */
+    ULONG               hu_IrqStatTicks;        /* ticks until the next dump */
+    ULONG               hu_IrqCountLast;        /* snapshots at the last dump */
+    ULONG               hu_IrqSofIdleLast;
+    ULONG               hu_IntIrqCount[8];      /* raw channel IRQs per INT device */
+    UWORD               hu_IntLastIval[8];      /* iouh_Interval at the last arm */
+
+    /* Last 8 INT promotions; dev |0x100 = watchdog. */
+    ULONG               hu_PromRingF[8];
+    ULONG               hu_PromRingD[8];
+    ULONG               hu_PromRingDev[8];
+    ULONG               hu_PromRingPos;
+    ULONG               hu_PromCount[8];        /* INT promotions per device */
+    UBYTE               hu_IntNakStreak[8];     /* consecutive NAKs per device */
     ULONG               hu_CtrlErrCount;        /* control transfers failed */
     ULONG               hu_CtrlNakRequeues;     /* split-NAK retry path */
     ULONG               hu_CtrlChhRequeues;     /* bare-CHHLTD retry path */
@@ -657,6 +693,12 @@ void                    usb2otg_exorcise_channel(int chan);
 #define USB2OTG_WD_TICKS_DEFAULT      3   /* anything else */
 
 /*
+ * A direct bulk IN on NAK is waiting, not wedged: the core retries the
+ * token itself, so a re-latched NAK counts as liveness.
+ */
+#define USB2OTG_BULK_IN_NAK_LIVENESS  1
+
+/*
  * Consecutive watchdog-wedge retries for an INT request before it is
  * failed with UHIOERR_TIMEOUT. A timed-out interrupt pipe makes the
  * class drivers (hid/hub) treat the device as unplugged, so wedged
@@ -758,6 +800,71 @@ static inline APTR usb2otg_ctrl_backoff(struct USB2OTGUnit *unit,
 }
 
 /*
+ * A pipe that NAKed the last STREAK polls is polled every BACKOFF
+ * frames instead of its interval, as OpenBSD dwc2 does.
+ */
+#define USB2OTG_INT_NAK_BACKOFF_STREAK  4
+#define USB2OTG_INT_NAK_BACKOFF_FRAMES  8
+
+/*
+ * Shorter waits are cheaper on SOFs than re-arming the wake, which
+ * runs off system timer channel 1 (0 and 2 are the firmware's, 3 is
+ * the kernel VBlank).
+ */
+#define USB2OTG_SOF_GATE                1
+#define USB2OTG_SOF_GATE_MIN_FRAMES     2
+#define USB2OTG_SOF_GATE_TIMER          1
+
+/*
+ * The compare is an equality match, so a deadline already passed would
+ * not fire for ~71 minutes. Report that and let the caller reopen.
+ */
+static inline BOOL usb2otg_sof_gate_arm(ULONG frames)
+{
+    ULONG target = rd32le(SYSTIMER_CLO) + frames * 1000;
+
+    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
+    wr32le(SYSTIMER_C0 + (USB2OTG_SOF_GATE_TIMER * 4), target);
+
+    return ((LONG)(rd32le(SYSTIMER_CLO) - target) < 0);
+}
+
+/* Caller runs in the IRQ or holds Disable(). */
+static inline void usb2otg_sof_gate_mask(struct USB2OTGUnit *unit)
+{
+    wr32le(USB2OTG_INTRMASK,
+        rd32le(USB2OTG_INTRMASK) & ~USB2OTG_INTRCORE_DMASTARTOFFRAME);
+    unit->hu_SofGated = TRUE;
+    unit->hu_SofGateMasks++;
+}
+
+static inline void usb2otg_sof_gate_wake(struct USB2OTGUnit *unit)
+{
+    if (!unit->hu_SofGated)
+        return;
+    unit->hu_SofGated = FALSE;
+    unit->hu_SofGateWakes++;
+
+    /* How late the reopen landed, in frames. */
+    if (unit->hu_SofGateWakeFrame != 0xffff)
+    {
+        ULONG now = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
+        ULONG late = (now - unit->hu_SofGateWakeFrame) & 0x7ff;
+
+        if (late > 0x400)
+            late = 0;                   /* reopened early — harmless */
+        if (late > unit->hu_SofGateLateMax)
+            unit->hu_SofGateLateMax = late;
+        unit->hu_SofGateLate[late < 1 ? 0 : late < 4 ? 1 : late < 16 ? 2 : 3]++;
+        unit->hu_SofGateWakeFrame = 0xffff;
+    }
+    /* Start the reopened gate on a fresh frame. */
+    wr32le(USB2OTG_INTR, USB2OTG_INTRCORE_DMASTARTOFFRAME);
+    wr32le(USB2OTG_INTRMASK,
+        rd32le(USB2OTG_INTRMASK) | USB2OTG_INTRCORE_DMASTARTOFFRAME);
+}
+
+/*
  * Clamp an INT scheduling interval to the 11-bit frame window.
  * hub.class submits 2048, which aliases to +0 mod 2048 in the DP1
  * frame math — i.e. poll every single frame.
@@ -832,7 +939,7 @@ static inline UBYTE usb2otg_watchdog_ticks(struct IOUsbHWReq *req)
 {
     BOOL split;
 
-    /* ISO is intentionally absent: cmdIsoXFer queues but nothing drains. */
+    /* ISO is absent: the driver does not implement isochronous transfers. */
     if (req == NULL)
         return USB2OTG_WD_TICKS_DEFAULT;
 
@@ -871,7 +978,6 @@ WORD                    FNAME_DEV(cmdUsbOper)(struct IOUsbHWReq *, struct USB2OT
 WORD                    FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 WORD                    FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 WORD                    FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
-WORD                    FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 
 void                    FNAME_DEV(Cause)(struct USB2OTGDevice *, struct Interrupt *);
 

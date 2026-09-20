@@ -8,13 +8,13 @@
 void writefunclist(struct config *cfg)
 {
     FILE *out;
-    char line[256];
+    char *line;
     struct functionhead *funclistit;
     struct functionarg *arglistit;
     struct stringlist *aliaslistit;
     unsigned int lvo;
 
-    snprintf(line, 255, "%s/%s.funclist", cfg->gendir, cfg->modulename);
+    line = make_output_path("%s/%s.funclist", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -126,4 +126,5 @@ void writefunclist(struct config *cfg)
     }
 
     fclose(out);
+    free(line);
 }
