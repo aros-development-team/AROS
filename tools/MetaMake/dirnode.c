@@ -868,6 +868,8 @@ buildpath (struct DirNode * node)
 
         if ((*name != 0) && (strcmp(name, mm_srcdir) != 0))
         {
+            /* Node names are NUL-terminated copies owned by MetaMake. */
+            /* Flawfinder: ignore */
             size_t namelen = strlen (name);
 
             if (components != 0)
@@ -911,6 +913,8 @@ buildpath (struct DirNode * node)
 
         if ((*name != 0) && (strcmp(name, mm_srcdir) != 0))
         {
+            /* Node names are NUL-terminated copies owned by MetaMake. */
+            /* Flawfinder: ignore */
             size_t namelen = strlen (name);
 
             ptr -= namelen;
