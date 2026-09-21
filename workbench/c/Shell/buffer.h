@@ -18,6 +18,9 @@ typedef struct {
     ULONG  mem; /* allocated memory */
 } Buffer;
 
+/* make room for 'size' more bytes */
+BOOL bufferExpand(Buffer *out, LONG size, ShellState *ss);
+
 LONG bufferAppend(STRPTR str, ULONG size, Buffer *out, ShellState *ss);
 LONG bufferInsert(STRPTR str, ULONG size, Buffer *out, ShellState *ss);
 
