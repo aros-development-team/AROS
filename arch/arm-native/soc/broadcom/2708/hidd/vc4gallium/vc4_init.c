@@ -147,6 +147,8 @@ static int HiddVC4Gallium_ExpungeLib(LIBBASETYPEPTR LIBBASE)
     /* Quiesce V3D interrupts and unhook our handler before tearing down
      * the rest of the module, otherwise a late OUTOMEM IRQ would call into
      * freed memory. */
+    vc4_aros_stop_service_task(&LIBBASE->sd);
+
     if (LIBBASE->sd.v3d.v3d_available)
     {
         V3D_WRITE(&LIBBASE->sd.v3d, V3D_INTDIS,
@@ -417,6 +419,8 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
         /* Don't fail init — the module loads, but CreatePipeScreen
          * will return NULL if V3D isn't available. */
     }
+    else if (!vc4_aros_start_service_task(&LIBBASE->sd))
+        bug("[VC4Gallium] V3D service task not started; render kicks stay poll-only\n");
 
     D(bug("[VC4Gallium] Module initialized successfully\n"));
 

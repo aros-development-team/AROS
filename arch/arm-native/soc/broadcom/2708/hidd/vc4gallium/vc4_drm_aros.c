@@ -2648,6 +2648,8 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
     V3D_WRITE(v3d, V3D_CT0EA, exec_bus + bin_cl_offset + bin_cl_out_size);
 
     vc4_v3d_service_interrupts(v3d);
+    /* Start CT1 on FLDONE even if no wait path polls. */
+    vc4_aros_service_kick(sd);
 
     /* DIAG: did the V3D accept the new CL addresses? */
     D(bug("[VC4Gallium] DIAG V3D post-kick: CT0CS=0x%08x CT0CA=0x%08x CT0EA=0x%08x CT1CS=0x%08x CT1CA=0x%08x CT1EA=0x%08x PCS=0x%08x ERRSTAT=0x%08x\n",

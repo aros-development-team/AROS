@@ -78,6 +78,53 @@ static inline ULONG gallium_now_us(void)
     return AROS_LE2LONG(*(volatile ULONG *)SYSTIMER_CLO);
 }
 
+/* The V3D IRQ is masked (the firmware co-owns the line), so the FLDONE ->
+ * CT1 kick only happens when polled. Poll from submit until it is done.
+ * vc4_v3d_service_interrupts() is IRQ-safe, so no lock is needed. */
+static void vc4_service_task_entry(struct vc4galliumstaticdata *sd)
+{
+    struct vc4_v3d_state *v3d = &sd->v3d;
+
+    for (;;)
+    {
+        ULONG sigs = Wait(SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+
+        if (sigs & SIGBREAKF_CTRL_C)
+            break;
+
+        while (v3d->pending_render)
+        {
+            vc4_v3d_service_interrupts(v3d);
+            if (!v3d->pending_render)
+                break;
+            vc4_gpu_nap(sd, VC4_GPUWAIT_NAP_US);
+        }
+    }
+    sd->v3d_service_task = NULL;
+}
+
+BOOL vc4_aros_start_service_task(struct vc4galliumstaticdata *sd)
+{
+    sd->v3d_service_task = NewCreateTask(TASKTAG_PC,   vc4_service_task_entry,
+                                         TASKTAG_NAME, "VC4 V3D service",
+                                         TASKTAG_PRI,  10,
+                                         TASKTAG_ARG1, sd,
+                                         TAG_DONE);
+    return sd->v3d_service_task != NULL;
+}
+
+void vc4_aros_stop_service_task(struct vc4galliumstaticdata *sd)
+{
+    if (sd->v3d_service_task)
+        Signal(sd->v3d_service_task, SIGBREAKF_CTRL_C);
+}
+
+void vc4_aros_service_kick(struct vc4galliumstaticdata *sd)
+{
+    if (sd->v3d_service_task)
+        Signal(sd->v3d_service_task, SIGBREAKF_CTRL_F);
+}
+
 static inline void gallium_udelay(ULONG usec)
 {
     ULONG start = gallium_now_us();
