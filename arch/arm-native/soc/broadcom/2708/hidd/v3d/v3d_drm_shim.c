@@ -363,8 +363,21 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
         case DRM_V3D_PARAM_V3D_CORE0_IDENT0: p->value = sd->core_ident[0]; break;
         case DRM_V3D_PARAM_V3D_CORE0_IDENT1: p->value = sd->core_ident[1]; break;
         case DRM_V3D_PARAM_V3D_CORE0_IDENT2: p->value = sd->core_ident[2]; break;
+        /* Every kick flushes L2, L2T and the slice caches anyway. */
+        case DRM_V3D_PARAM_SUPPORTS_CACHE_FLUSH: p->value = 1; break;
+
+        /* The TFU/CSD submit ioctls below refuse. */
         case DRM_V3D_PARAM_SUPPORTS_TFU:    p->value = 0; break;
         case DRM_V3D_PARAM_SUPPORTS_CSD:    p->value = 0; break;
+
+        case DRM_V3D_PARAM_SUPPORTS_PERFMON:       p->value = 0; break;
+        case DRM_V3D_PARAM_SUPPORTS_MULTISYNC_EXT: p->value = 0; break;
+        case DRM_V3D_PARAM_SUPPORTS_CPU_QUEUE:     p->value = 0; break;
+
+        /* Resets are not tracked; 0 means none happened. */
+        case DRM_V3D_PARAM_GLOBAL_RESET_COUNTER:   p->value = 0; break;
+        case DRM_V3D_PARAM_CONTEXT_RESET_COUNTER:  p->value = 0; break;
+
         default:                            p->value = 0; break;
         }
         return 0;
@@ -624,8 +637,8 @@ void renderonly_scanout_destroy(struct renderonly_scanout *scanout,
 }
 
 /* driconf: mesa.cfg leaves xmlconfig.c out of libmesautil, so v3d_screen.c's
- * option handling has to be answered here. Every option reads as unset, which
- * is what Mesa itself falls back to without a config file. */
+ * option handling has to be answered here, with driinfo_gallium.h defaults.
+ * Without allow_compressed_fallback there is no RGTC, hence no GL 3.0. */
 void driParseConfigFiles(void *cache, const void *info,
                          int screenNum, const char *driverName,
                          const char *kernelDriverName,
@@ -647,7 +660,32 @@ unsigned char driCheckOption(const void *cache, const char *name, int type)
 
 unsigned char driQueryOptionb(const void *cache, const char *name)
 {
-    (void)cache; (void)name;
+    static const char * const default_true[] =
+    {
+        "allow_compressed_fallback",
+        "allow_draw_out_of_order",
+        "allow_rgb10_configs",
+        "allow_rgb16_configs",
+    };
+    unsigned int i;
+
+    (void)cache;
+
+    for (i = 0; i < sizeof(default_true) / sizeof(default_true[0]); i++)
+    {
+        /* Own compare: no libc here, str* needs a StdCBase. */
+        const char *a = name, *b = default_true[i];
+
+        while (*a && *a == *b)
+        {
+            a++;
+            b++;
+        }
+
+        if (*a == *b)
+            return 1;
+    }
+
     return 0;
 }
 
