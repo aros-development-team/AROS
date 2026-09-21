@@ -228,6 +228,10 @@ struct vc4galliumstaticdata
     ULONG                   overlay_pinned_handle;
     OOP_Object             *overlay_bm;
 
+    /* Polls the FLDONE -> CT1 handoff while a render kick is pending
+     * (V3D IRQ is masked). See vc4_service_task_entry. */
+    struct Task            *v3d_service_task;
+
     /* Module-internal dispatch struct; the driver's winsys shims
      * (aros_drm_shim.c) route drmIoctl/mmap through it. */
     struct vc4_aros_bridge  bridge;
@@ -285,6 +289,12 @@ void vc4_aros_dma_wait_idle(struct vc4galliumstaticdata *sd);
 /* Wait for all submitted V3D work and flush its L2. Defined in
  * vc4_galliumclass.c. */
 void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd);
+
+/* V3D service task (vc4_galliumclass.c): started at init, kicked by
+ * submit_cl after CT0 is started, stopped at expunge. */
+BOOL vc4_aros_start_service_task(struct vc4galliumstaticdata *sd);
+void vc4_aros_stop_service_task(struct vc4galliumstaticdata *sd);
+void vc4_aros_service_kick(struct vc4galliumstaticdata *sd);
 
 /* Hang forensics (vc4_drm_aros.c): dump the most recent submission's
  * geometry + RCL head/tail + first binner sublist. */
