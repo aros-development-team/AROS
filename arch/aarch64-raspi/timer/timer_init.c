@@ -69,8 +69,7 @@ static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 
     D(bug("[Timer] Timer1Tick: Reconfiguring interrupt..\n"));
 
-    TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
-    *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = (TimerBase->tb_Platform.tbp_CLO + (1000000 / TimerBase->tb_eclock_rate));
+    Timer_Reprogram(TimerBase);
 
     D(bug("[Timer] Timer1Tick: Done..\n"));
 }
