@@ -19,6 +19,7 @@ enum {
     aoHidd_VideoCoreGfxBitMap_Flip,            /* [.S.] set TRUE to flip front/back page */
     aoHidd_VideoCoreGfxBitMap_Overlay,         /* [GS.] set: struct vc4gfx_overlay * (NULL
                                                 * clears); get: 1 while an overlay is shown */
+    aoHidd_VideoCoreGfxBitMap_LatchWait,       /* [G..] wait for the last armed update to latch */
     num_Hidd_VideoCoreGfxBitMap_Attrs
 };
 
@@ -39,7 +40,11 @@ struct vc4gfx_overlay
     LONG  ovl_X, ovl_Y;             /* position in fb coordinates */
     ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
                                      * = unscaled, larger = HVS upscale */
+    ULONG ovl_Flags;                /* VC4GFX_OVL_* */
 };
+
+/* Don't wait for the latch; keep the displaced buffer until LatchWait. */
+#define VC4GFX_OVL_NOWAIT (1 << 0)
 
 /* This structure is used for both onscreen and offscreen bitmaps !! */
 

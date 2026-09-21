@@ -25,6 +25,7 @@
 #include "vcgfx_bitmap.h"
 #include "vcgfx_hidd.h"
 #include "vcgfx_hvs.h"
+#include "vcgfx_hvs6.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -90,6 +91,7 @@ ULONG vc4_fb_backpage(struct VideoCoreGfx_staticdata *xsd)
 BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
 {
     UBYTE nf;
+    BOOL  flipped;
 
     if (xsd->vcsd_FBPages < 2 || !xsd->vcsd_FBObj)
         return FALSE;
@@ -99,13 +101,18 @@ BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
     VC4_MBOX_LOCK(xsd);
 
     nf = 1 - xsd->vcsd_FBFront;
-    if (!vc4_hvs_flip_page(xsd, xsd->vcsd_FBPage[nf])
-        && !vc4_set_voffset(xsd, nf * xsd->vcsd_FBPageHeight))
+    flipped = vc4_hvs_flip_page(xsd, xsd->vcsd_FBPage[nf]);
+
+    /* BCM2712 acks SETVOFFSET without moving, and display tags risk
+     * the firmware taking the list back. */
+    if (!flipped && (xsd->vcsd_HVSGen != VCGFX_HVS_HVS6))
+        flipped = vc4_set_voffset(xsd, nf * xsd->vcsd_FBPageHeight);
+
+    if (!flipped)
     {
-        /* Firmware refused — disable flipping for good. Loud: a GL
-         * client that already wrapped the scanout pages keeps rendering
-         * to the back page and the screen freezes on the front one. */
-        bug("[VideoCoreGfx] flip: SETVOFFSET refused, flipping disabled\n");
+        /* Refused - disable for good. Loud: a GL client that wrapped the
+         * scanout pages would leave the screen frozen. */
+        bug("[VideoCoreGfx] flip refused, flipping disabled\n");
         xsd->vcsd_FBPages = 1;
         VC4_MBOX_UNLOCK(xsd);
         return FALSE;
@@ -151,8 +158,25 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     xsd->vcsd_HVS.hvs_Active = FALSE;
     VC4_MBOX_UNLOCK(xsd);
 
-    for (pages = 2; pages >= 1; pages--)
+    for (pages = (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? 1 : 2; pages >= 1; pages--)
     {
+        /* BCM2712 FBFREE+FBALLOC returns a null base and loses the
+         * scanned surface, so adopt the boot framebuffer instead. */
+        if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        {
+            if ((aligned_width > xsd->vcsd_BootFBWidth)
+                || (height > xsd->vcsd_BootFBHeight))
+            {
+                bug("[VideoCoreGfx] BCM2712: %ux%u does not fit the boot fb"
+                    " %ux%u\n", aligned_width, height,
+                    xsd->vcsd_BootFBWidth, xsd->vcsd_BootFBHeight);
+                return FALSE;
+            }
+            fb_ptr   = (APTR)(IPTR)xsd->vcsd_BootFB;
+            fb_pitch = xsd->vcsd_BootFBPitch;
+            break;
+        }
+
         /* Hold the mailbox lock across the whole multi-transaction sequence
          * (FBFREE -> batched mode/depth/pixfmt/FBALLOC -> GETPITCH). */
         VC4_MBOX_LOCK(xsd);
@@ -273,6 +297,15 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     /* Phase-1 HVS bring-up: dump the firmware's live display list and PV
      * timing for this mode (read-only, self-skips on QEMU). */
     vc4_hvs_dump(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch, aligned_width, height);
+
+    /* Unconditional report: on a black screen serial is all there is. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+    {
+        vc4_hvs6_report(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch, aligned_width, height);
+        if (vc4_hvs6_takeover(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch,
+                              aligned_width, height))
+            vc4_hvs6_add_backpage(xsd, fb_pitch, height);
+    }
 
     /* Phase 2: own the display list from here on. Flips and cursor
      * updates become dlist repoints; falls back to the firmware paths
