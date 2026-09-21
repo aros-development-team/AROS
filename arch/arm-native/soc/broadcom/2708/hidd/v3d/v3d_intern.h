@@ -302,6 +302,7 @@ struct V3DBO
     ULONG   refcount;
     ULONG   external;       /* wraps memory we do not own (a scanout
                              * page): unmap on close, never FREEMEM */
+    ULONG   last_seqno;     /* newest submission using it, 0 = none */
 };
 
 /* One BO per texture and per vertex buffer; Doom 3 keeps a few thousand
@@ -464,9 +465,10 @@ BOOL v3d_hw_init(struct V3DData *sd);
 void v3d_hw_shutdown(struct V3DData *sd);
 ULONG v3d_mmu_map(struct V3DData *sd, ULONG paddr, ULONG size);
 void v3d_mmu_unmap(struct V3DData *sd, ULONG gpu_va, ULONG size);
-BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
-                   ULONG qma, ULONG qms, ULONG qts,
-                   ULONG rcl_start, ULONG rcl_end);
+/* Returns the submission's seqno, 0 when refused */
+ULONG v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
+                    ULONG qma, ULONG qms, ULONG qts,
+                    ULONG rcl_start, ULONG rcl_end);
 void v3d_wait_idle(struct V3DData *sd);
 void v3d_hw_wait_seqno(struct V3DData *sd, ULONG seqno);
 void v3d_flush_caches(struct V3DData *sd);
