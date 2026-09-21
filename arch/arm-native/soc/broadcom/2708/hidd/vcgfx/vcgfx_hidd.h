@@ -16,6 +16,7 @@
 
 #include "vcgfx_hardware.h"
 #include "vcgfx_hvs.h"
+#include "vcgfx_hvs6state.h"
 
 /* vcsd_MBoxMessage is one shared buffer for every mailbox round-trip;
  * take vcsd_GPUMemLock around each pack-write-read sequence. */
@@ -118,7 +119,22 @@ struct VideoCoreGfx_staticdata {
 
         /* Keeps every HVS path off; see vcgfx_hvs.c. */
         BOOL                    vcsd_IsBCM2711;
+
+        UBYTE                   vcsd_HVSGen;
+
+        /* Boot framebuffer; BCM2712 cannot allocate another. */
+        ULONG                   vcsd_BootFB;
+        ULONG                   vcsd_BootFBPitch;
+        ULONG                   vcsd_BootFBWidth;
+        ULONG                   vcsd_BootFBHeight;
+
+        /* HVS6 display-list ownership (vcgfx_hvs6.c). */
+        struct vc4_hvs6_state   vcsd_HVS6;
 };
+
+#define VCGFX_HVS_VC4   0       /* BCM283x, VideoCore IV */
+#define VCGFX_HVS_HVS5  1       /* BCM2711 */
+#define VCGFX_HVS_HVS6  2       /* BCM2712 */
 
 /* DMA has a per-call setup + poll cost; below these sizes NEON wins.
  * Uncached reads are ~10x slower than writes, hence the lower thresholds

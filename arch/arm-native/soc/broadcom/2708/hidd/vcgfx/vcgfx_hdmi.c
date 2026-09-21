@@ -153,6 +153,15 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
      * the panel can't display larger modes correctly even if the HVS would
      * happily produce them.
      */
+    /* BCM2712 TESTRES echoes the current mode and SETRES is a no-op,
+     * so only the native mode is real. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+    {
+        D(bug("[VideoCoreGfx] %s: BCM2712 - native mode only\n",
+            __PRETTY_FUNCTION__));
+        return hdmi_modecount;
+    }
+
     for (i = 0; i < VC4_NUM_CANDIDATES; i++)
     {
         const struct VC4ModeEntry *e = &vc4_candidate_modes[i];
