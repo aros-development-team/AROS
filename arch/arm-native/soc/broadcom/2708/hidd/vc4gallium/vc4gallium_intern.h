@@ -57,6 +57,8 @@ struct vc4_bo_entry
     BOOL    is_shader;      /* Immutable shader BO */
     BOOL    external;       /* Wraps memory we don't own (scanout page) */
     BOOL    cpu_mapped;     /* MMAP_BO was called — CPU may hold dirty lines */
+    APTR    cached_base;    /* VC4_CACHED_BO: AllocMem base, NULL = VC pool */
+    ULONG   cached_size;
     UQUAD   tiling_modifier;/* DRM_FORMAT_MOD_* — round-tripped via set/get_tiling */
     /* Shader metadata (set by QPU scanner on CREATE_SHADER_BO) */
     ULONG   uniforms_size;          /* Bytes of uniform data GPU reads */
@@ -247,6 +249,9 @@ LIBBASETYPE
     struct Library              LibNode;
     struct vc4galliumstaticdata sd;
 };
+
+/* BOs in cacheable RAM, cleaned before each submit. Off: tried, no gain. */
+#define VC4_CACHED_BO 0
 
 /* Per-frame timing. Flip to 0 to silence. Reads SYSTIMER_CLO (1 MHz).
  * Output format is one bug() line per measured stage, so a single grep
