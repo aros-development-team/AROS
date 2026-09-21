@@ -42,6 +42,7 @@
 #define aoHidd_VideoCoreGfxBitMap_BackDrawable  1
 #define aoHidd_VideoCoreGfxBitMap_Flip          2
 #define aoHidd_VideoCoreGfxBitMap_Overlay       3
+#define aoHidd_VideoCoreGfxBitMap_LatchWait     4
 
 /* Mirrored from vcgfx_bitmap.h, like the attr indices above. */
 struct vc4gfx_overlay
@@ -51,7 +52,9 @@ struct vc4gfx_overlay
     ULONG ovl_Width, ovl_Height;
     LONG  ovl_X, ovl_Y;
     ULONG ovl_DestW, ovl_DestH;     /* 0/== source = unscaled */
+    ULONG ovl_Flags;
 };
+#define VC4GFX_OVL_NOWAIT (1 << 0)
 
 #if (AROS_BIG_ENDIAN == 1)
 #define AROS_PIXFMT RECTFMT_RAW
@@ -76,6 +79,11 @@ static inline void __gallium_dsb(void) { asm volatile("dsb sy" ::: "memory"); }
 static inline ULONG gallium_now_us(void)
 {
     return AROS_LE2LONG(*(volatile ULONG *)SYSTIMER_CLO);
+}
+
+ULONG gallium_now_us_ext(void)
+{
+    return gallium_now_us();
 }
 
 /* The V3D IRQ is masked (the firmware co-owns the line), so the FLDONE ->
@@ -740,6 +748,9 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
     desc.ovl_Y      = y;
     desc.ovl_DestW  = dest_w;
     desc.ovl_DestH  = dest_h;
+    /* No latch wait here; submit_cl waits if a job renders into the
+     * displaced page. */
+    desc.ovl_Flags  = VC4GFX_OVL_NOWAIT;
 
     /* Pin the new buffer before showing it; the previous pin is
      * released only after the hidd confirms the switch latched. */
@@ -789,8 +800,23 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
      * freed. */
     if (prev)
         vc4_aros_bo_unref_locked(sd, prev);
+    sd->overlay_displaced_handle = (prev && prev != src_bo_handle) ? prev : 0;
     ReleaseSemaphore(&sd->bo_lock);
     return 0;
+}
+
+void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
+{
+    IPTR dummy = 0;
+    OOP_Object *bm;
+
+    ObtainSemaphore(&sd->bo_lock);
+    bm = sd->overlay_bm;
+    sd->overlay_displaced_handle = 0;
+    ReleaseSemaphore(&sd->bo_lock);
+
+    if (bm && sd->hiddVC4GfxBMAB)
+        OOP_GetAttr(bm, sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_LatchWait, &dummy);
 }
 
 void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
@@ -815,6 +841,7 @@ void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
         vc4_aros_bo_unref_locked(sd, sd->overlay_pinned_handle);
         sd->overlay_pinned_handle = 0;
     }
+    sd->overlay_displaced_handle = 0;
     sd->overlay_bm = NULL;
     ReleaseSemaphore(&sd->bo_lock);
 }
