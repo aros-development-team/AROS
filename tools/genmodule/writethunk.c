@@ -6,8 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdint.h>
-#include "functionhead.h"
-#include "config.h"
+#include "genmodule.h"
 
 static void writethunkfunc(FILE *out, struct config *cfg, struct functionhead *funclist)
 {
