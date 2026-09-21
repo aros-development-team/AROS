@@ -656,9 +656,9 @@ static BOOL v3d_slot_free(struct V3DData *sd)
  * renders - waiting only when the previous frame's render has not yet
  * been handed its control list.
  */
-BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
-                   ULONG qma, ULONG qms, ULONG qts,
-                   ULONG rcl_start, ULONG rcl_end)
+ULONG v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
+                    ULONG qma, ULONG qms, ULONG qts,
+                    ULONG rcl_start, ULONG rcl_end)
 {
     ULONG seqno;
 
@@ -667,7 +667,7 @@ BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
     if (!sd->powered || !v3d_wait_for(sd, v3d_slot_free) || !sd->powered)
     {
         ReleaseSemaphore(&sd->job_lock);
-        return FALSE;
+        return 0;
     }
 
     seqno = ++sd->seqno;
@@ -750,7 +750,7 @@ BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
 #endif
 
     ReleaseSemaphore(&sd->job_lock);
-    return TRUE;
+    return seqno;
 }
 
 static BOOL v3d_seqno_reached(struct V3DData *sd)
