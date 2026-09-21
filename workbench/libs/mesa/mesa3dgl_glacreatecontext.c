@@ -190,6 +190,12 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
     attribs.profile = API_OPENGL_COMPAT;
     attribs.visual = ctx->stvis;
 
+    /* driconf defaults (driinfo_gallium.h) - we have no driconf, so the
+     * options struct would otherwise be all-false. Without the compressed
+     * fallback a driver lacking RGTC (v3d) fails compute_version()'s GL 3.0
+     * test and gets pinned at GL 2.1. */
+    attribs.options.allow_compressed_fallback = TRUE;
+
     ctx->st = st_api_create_context(ctx->stmanager, &attribs, &st_error, NULL);
     if (!ctx->st)
     {
