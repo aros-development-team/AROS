@@ -107,9 +107,6 @@ BOOL v3d_hw_init(struct V3DData *sd)
 {
     ULONG i;
 
-    sd->hub_base   = ARM_PERIIOBASE + V3D_HUB_OFFSET;
-    sd->core0_base = ARM_PERIIOBASE + V3D_CORE0_OFFSET;
-
     for (i = 0; i < 4; i++)
         sd->hub_ident[i] = v3d_hub_rd(sd, V3D_HUB_IDENT0 + 4 * i);
     for (i = 0; i < 3; i++)

@@ -334,7 +334,7 @@ static BOOL v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
     return active != 0;
 }
 
-/* Hide the plane but keep the page pair: obscure/reveal cycles must not
+/* Hide the plane but keep the pages: obscure/reveal cycles must not
  * allocate or free BOs. */
 static void v3d_ovl_suspend(struct V3DData *sd)
 {
