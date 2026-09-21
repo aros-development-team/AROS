@@ -22,16 +22,10 @@
 #include <oop/oop.h>
 #include <hidd/gallium.h>
 
-/*
- * Register blocks. The hub sits at the same peripheral offset the
- * VideoCore IV V3D did (bus 0x7ec00000), with core 0 just above it -
- * which is also why vc4gallium must never probe here: it would read
- * these registers and take them for a V3D 2.x.
- */
+/* Register blocks, based from the device tree (v3d_dt.c). On the 2711 the
+ * hub sits where the VC4 V3D did, so vc4gallium must never probe there. */
 extern IPTR __arm_periiobase;
 #define ARM_PERIIOBASE      __arm_periiobase
-#define V3D_HUB_OFFSET      0xc00000
-#define V3D_CORE0_OFFSET    0xc04000
 
 /* Hub registers */
 #define V3D_HUB_AXICFG      0x0000
@@ -47,7 +41,7 @@ extern IPTR __arm_periiobase;
 #define V3D_HUB_INT_MSK_SET 0x0060
 #define V3D_HUB_INT_MSK_CLR 0x0064
 
-/* Core registers (from V3D_CORE0_OFFSET) */
+/* Core registers, from the core0 base */
 #define V3D_CTL_IDENT0      0x0000
 #define V3D_CTL_IDENT1      0x0004
 #define V3D_CTL_IDENT2      0x0008
@@ -145,10 +139,8 @@ extern IPTR __arm_periiobase;
  */
 #define V3D_INT_FRDONE      (1 << 0)
 #define V3D_INT_FLDONE      (1 << 1)
-/* Bits 2 and 3 from Linux's v3d_regs.h. OUTOMEM is the binner asking for
- * more tile memory and stopping until BPOA/BPOS are refilled; SPILLUSE
- * (meaning not verified on hardware) has been seen latched alongside
- * FLDONE on jobs that consumed the pre-armed supply. */
+/* OUTOMEM: binner out of tile memory, stopped until BPOA/BPOS refill.
+ * SPILLUSE (unverified): seen with FLDONE when the pre-armed supply is used. */
 #define V3D_INT_OUTOMEM     (1 << 2)
 #define V3D_INT_SPILLUSE    (1 << 3)
 
@@ -203,7 +195,6 @@ extern IPTR __arm_periiobase;
  * next to V3D itself, whose bridges have to be unstalled after power-up.
  * Register and bit meanings are the BCM2835 PM block's, unchanged.
  */
-#define V3D_PM_OFFSET       0x100000    /* /soc, so periiobase-relative */
 #define V3D_PM_GRAFX        0x10c
 #define V3D_PM_PASSWORD     0x5a000000
 #define V3D_PM_POWUP        (1 << 0)
@@ -347,11 +338,12 @@ struct V3DData
 
     IPTR            hub_base;
     IPTR            core0_base;
+    IPTR            sms_base;       /* 2712 only, 0 elsewhere */
 
     /* Cached at probe; DRM_V3D_GET_PARAM serves these without MMIO. */
     ULONG           hub_ident[4];
     ULONG           core_ident[3];
-    ULONG           ver;            /* 42 on a BCM2711 */
+    ULONG           ver;            /* 42 or 71, from the hub ident */
 
     /*
      * The pipeline (all under job_lock). One frame consists of a bin job
@@ -488,5 +480,10 @@ void v3d_mem_release(struct V3DData *sd);
 /* v3d_drm_shim.c */
 int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg);
 void v3d_release_all_bos(struct V3DData *sd);
+
+/* v3d_dt.c */
+extern IPTR v3d_pm_base;
+extern IPTR v3d_asb_base;       /* 2711 only, 0 elsewhere */
+BOOL v3d_probe_dt(struct V3DData *sd);
 
 #endif /* V3D_INTERN_H */
