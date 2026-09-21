@@ -45,11 +45,6 @@ static inline void v3d_core_wr(struct V3DData *sd, ULONG off, ULONG val)
     *(volatile ULONG *)(sd->core0_base + off) = val;
 }
 
-static inline ULONG v3d_now_us(void)
-{
-    return AROS_LE2LONG(*(volatile ULONG *)V3D_SYSTIMER_CLO);
-}
-
 /*
  * Scheduler-friendly microsleep for the wait loop: a timer.device
  * UNIT_MICROHZ request lets other tasks (input, mouse) run while the GPU
@@ -671,6 +666,8 @@ ULONG v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
     }
 
     seqno = ++sd->seqno;
+    sd->last_submit_us = v3d_now_us();
+    sd->session_swept = FALSE;
 
     /* Queue the render before starting the bin: the flush can land in
      * the handler the instant the bin is kicked, and the entry has to be

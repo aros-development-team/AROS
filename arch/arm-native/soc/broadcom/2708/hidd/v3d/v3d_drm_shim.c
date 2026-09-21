@@ -144,8 +144,8 @@ void v3d_release_all_bos(struct V3DData *sd)
     if (leaked)
         bug("[V3D] session sweep: released %u leaked BOs\n", (unsigned)leaked);
 
-    /* Now that nothing is allocated from them, hand the arenas back. */
-    v3d_mem_release(sd);
+    /* The arenas stay: re-acquiring them (alloc, clean, remap) would stall
+     * the next texture load. DestroyPipeScreen releases them. */
 }
 
 /* ---- the dispatch ---- */

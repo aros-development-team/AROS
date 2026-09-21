@@ -425,9 +425,26 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
     struct pipe_screen *screen;
     int bres;
 
+    /* The teardown that resets the recovery fuse rarely runs, so a new
+     * session revives a fused-off GPU itself. */
     if (!sd->powered)
     {
-        D(bug("[V3D] GPU not available\n"));
+        sd->recoveries = 0;
+        sd->bin_running = FALSE;
+        sd->render_running = FALSE;
+        sd->rcl_head = 0;
+        sd->rcl_count = 0;
+        sd->bin_flushed_seqno = sd->seqno;
+        sd->finished_seqno = sd->seqno;
+        sd->bin_end = 0;
+        sd->render_end = 0;
+        if (v3d_block_reset() && v3d_hw_init(sd))
+            bug("[V3D] GPU revived for this session\n");
+    }
+
+    if (!sd->powered)
+    {
+        bug("[V3D] GPU stays down - GL falls back to softpipe\n");
         return NULL;
     }
 
@@ -453,24 +470,43 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
 
     g_v3d_data = sd;
 
-    /* A previous app that exited without GL teardown left the present
-     * state pointing at freed Mesa objects. Drop the pointers without
-     * dereferencing - the leaked BOs sit in the bo_table and go with the
-     * next session sweep. */
-    ObtainSemaphore(&sd->bo_lock);
-    if (sd->screen_count == 0)
+    /* Sweep a previous session that exited without GL teardown. The test
+     * is a gap since the last submission, as screen_count cannot tell a new
+     * session from an app's second screen; session_swept keeps the screen
+     * this call creates from being swept. One GL session at a time. */
+    if (!sd->session_swept && sd->screen_count > 0
+        && (v3d_now_us() - sd->last_submit_us) > 1000000)
     {
+        sd->session_swept = TRUE;
+
+        ObtainSemaphore(&sd->bo_lock);
+        /* Pointers into freed Mesa objects: drop, never dereference. */
         v3d_scan_forget();
         v3d_ovl.rsc = NULL;
         v3d_ovl.onplane = NULL;
+        v3d_ovl.queued = NULL;
+        v3d_ovl.freep = NULL;
         v3d_ovl.retiring = NULL;
+        v3d_ovl.queued_seqno = 0;
         v3d_ovl.latch_due = FALSE;
         v3d_ovl.page_handle = 0;
         v3d_ovl.shown = FALSE;
         v3d_ovl.refused = NULL;
         v3d_ovl.bm = NULL;
+        ReleaseSemaphore(&sd->bo_lock);
+
+        v3d_release_all_bos(sd);
+        sd->screen_count = 0;
+        sd->recoveries = 0;
+        sd->bin_running = FALSE;
+        sd->render_running = FALSE;
+        sd->rcl_head = 0;
+        sd->rcl_count = 0;
+        sd->bin_flushed_seqno = sd->seqno;
+        sd->finished_seqno = sd->seqno;
+        sd->bin_end = 0;
+        sd->render_end = 0;
     }
-    ReleaseSemaphore(&sd->bo_lock);
 
     /* fd is a dummy and there is no renderonly - we present ourselves. The
      * config must be a real object: v3d_screen_create derefs it for driconf. */
@@ -532,6 +568,8 @@ VOID HiddV3D__Hidd_Gallium__DestroyPipeScreen(OOP_Class *cl, OOP_Object *o,
      * GL session starts clean instead of inheriting a stale latch or a
      * blown recovery fuse - and give a fuse-disabled GPU a fresh chance. */
     v3d_release_all_bos(sd);
+    /* Only a real teardown frees the arenas: nothing uses them now. */
+    v3d_mem_release(sd);
     sd->bin_running = FALSE;
     sd->render_running = FALSE;
     sd->rcl_head = 0;
@@ -1166,3 +1204,4 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     UnlockLayerRom(L);
     return TRUE;
 }
+
