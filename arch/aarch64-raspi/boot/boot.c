@@ -708,7 +708,14 @@ void boot(uintptr_t dtb_addr, uintptr_t arch, uintptr_t dummy2, uintptr_t dummy3
     boottag->ti_Data = (IPTR)bootstrapName;
     boottag++;
 
-    if (vcfb_init())
+    /* Only picks the framebuffer default; drivers ask the firmware themselves */
+    int emulated = !vcmb_firmware_present(__vcmb_base,
+                                          (unsigned int *)BOOTMEMADDR(bm_mboxmsg));
+
+    if (emulated)
+        kprintf("[BOOT] no VideoCore firmware - running emulated\n");
+
+    if (vcfb_init(emulated))
     {
         boottag->ti_Tag = KRN_FuncPutC;
         boottag->ti_Data = (IPTR)fb_Putc;
