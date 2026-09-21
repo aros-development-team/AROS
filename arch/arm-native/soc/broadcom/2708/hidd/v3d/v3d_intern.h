@@ -223,6 +223,10 @@ extern IPTR __arm_periiobase;
 #define aoVCGfxBM_BackDrawable  1   /* [G] back page phys, 0 = no flip */
 #define aoVCGfxBM_Flip          2   /* [S] TRUE = flip front/back */
 #define aoVCGfxBM_Overlay       3   /* [GS] overlay descriptor */
+#define aoVCGfxBM_LatchWait     4   /* [G] block until the last Set latched */
+
+/* ovl_Flags: skip the latch wait; LatchWait before reusing the old page. */
+#define VC4GFX_OVL_NOWAIT       (1 << 0)
 
 /* Overlay descriptor (mirrored from vcgfx_bitmap.h, like the ids above):
  * a 32bpp plane the HVS scans straight from GPU memory, composited over
@@ -235,6 +239,7 @@ struct vc4gfx_overlay
     LONG  ovl_X, ovl_Y;             /* position in fb coordinates */
     ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
                                      * = unscaled, larger = HVS upscale */
+    ULONG ovl_Flags;                /* VC4GFX_OVL_* */
 };
 
 /*
@@ -250,6 +255,13 @@ struct vc4gfx_overlay
  * which Mesa cannot assume it owns, so it loads tiles and flushes more:
  * 2.5-3.4 jobs/frame against the overlay's 1.0. */
 #define V3D_PREFER_OVERLAY  1
+
+/* 0 = windowed presents blit, the HVS overlay plane is never used. */
+#define V3D_OVERLAY_ENABLE  1
+
+/* 0 = the overlay Set blocks until the vblank latch (vblank-paced). 1 = it
+ * returns at once and the displaced page is retired at the next present. */
+#define V3D_OVL_NOWAIT      1
 
 /* Service from the completion interrupt (GIC SPI 74). 0 = poll only,
  * which leaves a stashed render idle until the next submit. If the Pi 3
