@@ -2160,6 +2160,37 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
 
     bo_handles = (ULONG *)(IPTR)args->bo_handles;
 
+    /* The page the last present took off the plane is on scanout until
+     * vblank; wait for the latch before rendering into it. */
+    if (sd->overlay_displaced_handle
+        && args->color_write.hindex != (ULONG)~0
+        && args->color_write.hindex < args->bo_handle_count
+        && bo_handles[args->color_write.hindex] == sd->overlay_displaced_handle)
+    {
+#if VC4G_PROFILE
+        static ULONG _lw_n, _lw_us, _lw_max;
+        ULONG _lw_t0 = gallium_now_us_ext();
+#endif
+
+        vc4_aros_overlay_latch_wait(sd);
+
+#if VC4G_PROFILE
+        {
+            ULONG _lw_dt = gallium_now_us_ext() - _lw_t0;
+            _lw_us += _lw_dt;
+            if (_lw_dt > _lw_max)
+                _lw_max = _lw_dt;
+        }
+        if (++_lw_n >= 128)
+        {
+            bug("[VC4Gallium] submit latch-wait diag %lu: %lu us avg/%lu max\n",
+                (unsigned long)_lw_n, (unsigned long)(_lw_us / _lw_n),
+                (unsigned long)_lw_max);
+            _lw_n = _lw_us = _lw_max = 0;
+        }
+#endif
+    }
+
     tiles_x = args->max_x_tile - args->min_x_tile + 1;
     tiles_y = args->max_y_tile - args->min_y_tile + 1;
 
