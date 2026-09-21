@@ -15,6 +15,7 @@
 #include <proto/mbox.h>
 #include <proto/dma.h>
 #include <proto/kernel.h>
+#include <proto/openfirmware.h>
 
 #include <hardware/videocore.h>
 
@@ -210,13 +211,17 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
         __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
     D(bug("[VC4Gallium] Peripheral base: 0x%08lx\n", __arm_periiobase));
 
-    /* BCM2711 has V3D 4.2 (driven by hidd/v3d), and its hub sits exactly
-     * where V3D 2.x keeps IDENT - probing would recognise the wrong GPU.
-     * Callers fall back to softpipe. */
-    if (__arm_periiobase == BCM2711_PERIIOBASE)
+    /* The V3D 4.x hub sits where V3D 2.x keeps IDENT, so ask the device
+     * tree instead of probing. Callers fall back to softpipe. */
     {
-        D(bug("[VC4Gallium] BCM2711 has V3D 4.2, not ours - not loading\n"));
-        return FALSE;
+        APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+
+        if (!OpenFirmwareBase
+            || !OF_FindNodeByCompatible(NULL, (char *)"brcm,vc4-v3d"))
+        {
+            D(bug("[VC4Gallium] no brcm,vc4-v3d node - not loading\n"));
+            return FALSE;
+        }
     }
 
     LIBBASE->sd.MBoxBase = OpenResource("mbox.resource");
