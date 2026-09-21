@@ -30,6 +30,7 @@
 #include "vcgfx_hardware.h"
 #include "vcgfx_hvs.h"
 #include "vcgfx_hvs5.h"
+#include "vcgfx_hvs6.h"
 
 /* Set to 0 to silence the dump / skip the probe / leave the firmware
  * in control of the display list (kill switch) / leave the PV2 vsync
@@ -54,12 +55,17 @@
 #define HVS_SPIN_PROBEBIT 100000    /* ~2-4 frames per probed INTEN bit */
 #define HVS_SPIN_FLIP   500000      /* flip-latch wait bound, ~3 frames */
 
-/* Every register below is VideoCore IV's; BCM2711 carries HVS5 instead.
- * Gates the entry points that reach hardware before an hvs_Active check -
- * the rest already no-ops while hvs_Active is FALSE. */
+/* Every register below is VideoCore IV's; HVS5/HVS6 have their own
+ * files. Gates the entry points that reach hardware before an hvs_Active
+ * check - the rest already no-ops while hvs_Active is FALSE. */
 static inline BOOL hvs_hw_known(struct VideoCoreGfx_staticdata *xsd)
 {
-    return !xsd->vcsd_IsBCM2711;
+    return xsd->vcsd_HVSGen == VCGFX_HVS_VC4;
+}
+
+static inline BOOL hvs_have_hvs5(struct VideoCoreGfx_staticdata *xsd)
+{
+    return xsd->vcsd_HVSGen == VCGFX_HVS_HVS5;
 }
 
 static inline ULONG hvs_rd(ULONG offset)
@@ -540,7 +546,8 @@ void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd)
 
     if (!hvs_hw_known(xsd))
     {
-        vc4_hvs5_irq_init(xsd);
+        if (hvs_have_hvs5(xsd))
+            vc4_hvs5_irq_init(xsd);
         return;
     }
 
@@ -662,7 +669,8 @@ void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd)
 {
     if (!hvs_hw_known(xsd))
     {
-        vc4_hvs5_irq_init(xsd);
+        if (hvs_have_hvs5(xsd))
+            vc4_hvs5_irq_init(xsd);
         return;
     }
     xsd->vcsd_HVS.hvs_VSyncIrq = NULL;
@@ -677,7 +685,8 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
     st->hvs_Active = FALSE;
 
     if (!hvs_hw_known(xsd))
-        return vc4_hvs5_takeover(xsd, fb_phys, fb_pitch);
+        return hvs_have_hvs5(xsd) ? vc4_hvs5_takeover(xsd, fb_phys, fb_pitch)
+                                  : FALSE;
 
 #if VC4_HVS_TAKEOVER
     {
@@ -897,7 +906,13 @@ BOOL vc4_hvs_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
 
     if (!hvs_hw_known(xsd))
-        return vc4_hvs5_flip_page(xsd, page_phys);
+    {
+        if (hvs_have_hvs5(xsd))
+            return vc4_hvs5_flip_page(xsd, page_phys);
+        if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+            return vc4_hvs6_flip_page(xsd, page_phys);
+        return FALSE;
+    }
 
     if (!st->hvs_Active)
         return FALSE;
@@ -919,17 +934,21 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
     ULONG dw, dh;
+    LONG  ox, oy;
     BOOL structural;
 
     if (!hvs_hw_known(xsd))
-        return vc4_hvs5_overlay(xsd, ovl);
+    {
+        if (hvs_have_hvs5(xsd))
+            return vc4_hvs5_overlay(xsd, ovl);
+        if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+            return vc4_hvs6_overlay(xsd, ovl);
+        return FALSE;
+    }
 
     VC4_MBOX_LOCK(xsd);
 
-    /* Only on an owned, unity fb plane: on scaled desktops the overlay
-     * contents would need scaling too to line up — blit path instead. */
-    if (!st->hvs_Active
-        || st->hvs_DestW != st->hvs_SrcW || st->hvs_DestH != st->hvs_SrcH)
+    if (!st->hvs_Active)
     {
         st->hvs_OvlActive = FALSE;
         VC4_MBOX_UNLOCK(xsd);
@@ -949,6 +968,18 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
 
     dw = ovl->ovl_DestW ? ovl->ovl_DestW : ovl->ovl_Width;
     dh = ovl->ovl_DestH ? ovl->ovl_DestH : ovl->ovl_Height;
+    ox = ovl->ovl_X;
+    oy = ovl->ovl_Y;
+
+    /* The firmware scales a non-native fb plane; overlays are placed in
+     * output pixels, so fold that scale into the request. */
+    if (st->hvs_DestW != st->hvs_SrcW || st->hvs_DestH != st->hvs_SrcH)
+    {
+        ox = ox * (LONG)st->hvs_DestW / (LONG)st->hvs_SrcW;
+        oy = oy * (LONG)st->hvs_DestH / (LONG)st->hvs_SrcH;
+        dw = dw * st->hvs_DestW / st->hvs_SrcW;
+        dh = dh * st->hvs_DestH / st->hvs_SrcH;
+    }
 
     if (dw != ovl->ovl_Width || dh != ovl->ovl_Height)
     {
@@ -956,8 +987,8 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
          * uses a different HW mode), and — since clipping a scaled
          * plane means rescaling the source window — must lie fully
          * within the output. Refused = caller blits. */
-        LONG sx = (LONG)st->hvs_FBX + ovl->ovl_X;
-        LONG sy = (LONG)st->hvs_FBY + ovl->ovl_Y;
+        LONG sx = (LONG)st->hvs_FBX + ox;
+        LONG sy = (LONG)st->hvs_FBY + oy;
 
         if (!st->hvs_KernelOK
             || dw < ovl->ovl_Width || dh < ovl->ovl_Height
@@ -988,8 +1019,9 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
     st->hvs_OvlH     = ovl->ovl_Height;
     st->hvs_OvlDestW = dw;
     st->hvs_OvlDestH = dh;
-    st->hvs_OvlX     = ovl->ovl_X;
-    st->hvs_OvlY     = ovl->ovl_Y;
+    /* Output pixels relative to the fb plane's origin, not fb coords. */
+    st->hvs_OvlX     = ox;
+    st->hvs_OvlY     = oy;
 
     if (structural)
     {
@@ -1030,12 +1062,27 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
     }
 
     /* The old overlay buffer stays on scanout until the update latches;
-     * pace the presenter exactly like a page flip. */
+     * pace the presenter exactly like a page flip, unless deferred. */
     st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
-    hvs_latch_wait(st);
+    if (!(ovl->ovl_Flags & VC4GFX_OVL_NOWAIT))
+        hvs_latch_wait(st);
 
     VC4_MBOX_UNLOCK(xsd);
     return TRUE;
+}
+
+void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd)
+{
+    if (!hvs_hw_known(xsd))
+    {
+        if (hvs_have_hvs5(xsd))
+            vc4_hvs5_latch_wait(xsd);
+        else if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+            vc4_hvs6_latch_wait(xsd);
+        return;
+    }
+    if (xsd->vcsd_HVS.hvs_Active)
+        hvs_latch_wait(&xsd->vcsd_HVS);
 }
 
 void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd)
@@ -1047,7 +1094,10 @@ void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd)
     VC4_MBOX_LOCK(xsd);
     if (!hvs_hw_known(xsd))
     {
-        vc4_hvs5_update_cursor(xsd);
+        if (hvs_have_hvs5(xsd))
+            vc4_hvs5_update_cursor(xsd);
+        else
+            vc4_hvs6_cursor(xsd);
         VC4_MBOX_UNLOCK(xsd);
         return;
     }
@@ -1091,7 +1141,8 @@ void vc4_hvs_dump(struct VideoCoreGfx_staticdata *xsd,
 
     if (!hvs_hw_known(xsd))
     {
-        vc4_hvs5_dump(xsd, fb_phys, fb_pitch, fb_width, fb_height);
+        if (hvs_have_hvs5(xsd))
+            vc4_hvs5_dump(xsd, fb_phys, fb_pitch, fb_width, fb_height);
         return;
     }
 
