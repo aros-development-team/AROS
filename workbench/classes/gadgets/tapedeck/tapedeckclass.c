@@ -240,12 +240,6 @@ Object *TapeDeck__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
         data->tdd_ButtonPen[1] = SHADOWPEN;
         data->tdd_ButtonPen[2] = SHADOWPEN;
 
-        pproptags[3].ti_Data = data->tdd_FrameCount;
-        pproptags[4].ti_Data = data->tdd_FrameCurrent;
-        data->tdd_PosProp = NewObjectA(NULL, "propgclass", pproptags);
-
-        D(bug("[tapedeck.gadget] %s: playback position prop @ 0x%p\n", __PRETTY_FUNCTION__, data->tdd_PosProp));
-
         if (msg->ops_AttrList)
         {
             struct opSet setmsg = *msg;
@@ -254,6 +248,12 @@ Object *TapeDeck__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
             setmsg.ops_AttrList = tdinittags;
             TapeDeck__OM_SET(cl, o, &setmsg);
         }
+
+        pproptags[4].ti_Data = data->tdd_FrameCount;
+        pproptags[5].ti_Data = data->tdd_FrameCurrent;
+        data->tdd_PosProp = NewObjectA(NULL, "propgclass", pproptags);
+
+        D(bug("[tapedeck.gadget] %s: playback position prop @ 0x%p\n", __PRETTY_FUNCTION__, data->tdd_PosProp));
     }
 
     return o;
@@ -318,7 +318,7 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         { TAG_DONE,     0UL                     }
     };
     LONG rend_x, rend_y;
-    IPTR propTop;
+    IPTR propTop, propTotal;
 
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -332,7 +332,8 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     }
 
     GetAttr (PGA_Top, (Object *)data->tdd_PosProp, &propTop);
-    if (propTop != data->tdd_FrameCurrent)
+    GetAttr (PGA_Total, (Object *)data->tdd_PosProp, &propTotal);
+    if ((propTop != data->tdd_FrameCurrent) || (propTotal != data->tdd_FrameCount))
     {
         SetAttrsA((Object *)data->tdd_PosProp, proptags);
         SetAPen(msg->gpr_RPort,  msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN]);
