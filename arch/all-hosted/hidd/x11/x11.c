@@ -212,8 +212,23 @@ static VOID x11task_process_xevent(struct x11_staticdata *xsd, struct MinList *x
             xsd->x_time = event->xkey.time;
 
 #if BETTER_REPEAT_HANDLING
-            kri->keyrelease_pending = TRUE;
-            kri->keyrelease_event = *event;
+            if (xsd->detectable_repeat)
+            {
+                /* XKB sends releases only for actual key-up transitions. */
+                LOCK_X11
+                if (XCALL(XLookupKeysym, &event->xkey, 0) == XK_F12)
+                    kri->f12_down = FALSE;
+                UNLOCK_X11
+                ObtainSemaphoreShared(&xsd->sema);
+                if (xsd->kbdhidd)
+                    Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, event);
+                ReleaseSemaphore(&xsd->sema);
+            }
+            else
+            {
+                kri->keyrelease_pending = TRUE;
+                kri->keyrelease_event = *event;
+            }
 #else
             LOCK_X11
             if (XCALL(XLookupKeysym, event, 0) == XK_F12)
@@ -406,6 +421,15 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     myint.is_Node.ln_Type = NT_INTERRUPT;
 
     AddIntServer(INTB_VERTB, &myint);
+
+    if (x11_detectable_autorepeat)
+    {
+        int supported = FALSE;
+        LOCK_X11
+        xsd->detectable_repeat = x11_detectable_autorepeat(xsd->display,
+            TRUE, &supported) && supported;
+        UNLOCK_X11
+    }
 
     Signal(task_Parent, xtpparam->ok_signal);
 

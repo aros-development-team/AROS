@@ -174,6 +174,7 @@ struct x11_staticdata
     OOP_Object      	        *x11display;
     OOP_Object      	        *mousehidd;
     OOP_Object      	        *kbdhidd;
+    BOOL                        detectable_repeat;
 
 #if USE_XSHM
     struct SignalSemaphore      shm_sema;	/* singlethread access to shared mem */

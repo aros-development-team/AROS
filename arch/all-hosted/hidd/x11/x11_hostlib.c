@@ -18,6 +18,7 @@ void *xcursor_handle = NULL;
 #endif
 
 struct x11_func x11_func;
+int (*x11_detectable_autorepeat)(Display *, int, int *);
 struct libc_func libc_func;
 struct xf86vm_func xf86vm_func;
 #if !X11SOFTMOUSE
@@ -208,6 +209,14 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE)
 
     if ((x11_handle = x11_hostlib_load_so(X11_SOFILE, x11_func_names, X11_NUM_FUNCS, (void **) &x11_func)) == NULL)
         return FALSE;
+
+    {
+        char *err = NULL;
+        x11_detectable_autorepeat = HostLib_GetPointer(x11_handle,
+            "XkbSetDetectableAutoRepeat", &err);
+        if (err)
+            x11_detectable_autorepeat = NULL;
+    }
 
     if ((libc_handle = x11_hostlib_load_so(LIBC_SOFILE, libc_func_names, LIBC_NUM_FUNCS, (void **) &libc_func)) == NULL) {
         HostLib_Close(x11_handle, NULL);
