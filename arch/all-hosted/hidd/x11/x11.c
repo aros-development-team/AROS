@@ -339,7 +339,7 @@ static BOOL x11task_keyrelease_post(struct x11_staticdata *xsd, struct KeyReleas
         if (repeated_key)
         {
             /* Drop both previous keyrelease and this keypress event. */
-            TRUE;
+            return TRUE;
         }
 
         LOCK_X11
