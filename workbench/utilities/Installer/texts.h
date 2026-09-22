@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _TEXTS_H
@@ -62,7 +62,7 @@
 #define ABOUT_ON_INSTALLER  "About Installer"
 #define ABOUT_INSTALLER                        \
 " This is AROS Installer V%d.%d\n"        \
-" Copyright \xa9 1995-2003, The AROS Development Team.\n"\
+" Copyright \xa9 1995-2026, The AROS Development Team.\n"\
 " All rights reserved.\n"                \
 "\n"                                        \
 " It is intended to be compatible to\n"        \
@@ -109,6 +109,21 @@
 " Fill in the string gadget and press \"Proceed\"\n"        \
 " to proceed or abort the installation with\n"                \
 " \"Abort\"."
+
+#define HELP_ON_ASKDIR      "Help on AskDir"
+#define ASKDIR_HELP                                        \
+" Type the directory name or pick it with the\n"        \
+" drawer button, then press \"Proceed\"."
+
+#define HELP_ON_ASKFILE     "Help on AskFile"
+#define ASKFILE_HELP                                        \
+" Type the file name or pick it with the file\n"        \
+" button, then press \"Proceed\"."
+
+#define HELP_ON_ASKDISK     "Help on AskDisk"
+#define ASKDISK_HELP                                        \
+" Insert the requested disk and press \"Proceed\",\n"        \
+" or press \"Skip\" to continue without it."
 
 #define ASKQUIT_STRING      "Do you really want to abort the installation?"
 #define DONE_TEXT           "Done with Installation."
