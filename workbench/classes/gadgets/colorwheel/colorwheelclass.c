@@ -124,6 +124,8 @@ IPTR ColorWheel__OM_SET(Class *cl, Object *o, struct opSet *msg)
         gradval = 0xFFFF - gradval;
         
         old_brightness = ((ULONG)gradval) * 0x10000 + (ULONG)gradval;
+        data->hsb.cw_Brightness = old_brightness;
+        ConvertHSBToRGB(&data->hsb, &data->rgb);
     }
     
     tstate = msg->ops_AttrList;
