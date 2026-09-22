@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 2016-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef DEBUG
@@ -248,8 +248,11 @@ Object *TapeDeck__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 
         if (msg->ops_AttrList)
         {
-            msg->ops_AttrList = tdinittags;
-            TapeDeck__OM_SET(cl, o, msg);
+            struct opSet setmsg = *msg;
+
+            setmsg.MethodID = OM_SET;
+            setmsg.ops_AttrList = tdinittags;
+            TapeDeck__OM_SET(cl, o, &setmsg);
         }
     }
 
