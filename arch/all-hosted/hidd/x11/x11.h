@@ -16,6 +16,7 @@
 #include <hidd/input.h>
 
 #include "x11_class.h"
+#include "x11_keystate.h"
 
 #ifndef X11_TYPES_H
 /* Note: x11_types.h is not included intentionally to resolve compilation
@@ -71,7 +72,7 @@ struct x11kbd_data
 {
     InputIrqCallBack_t  kbd_callback;
     APTR    callbackdata;
-    UWORD   prev_keycode;
+    struct x11_keystate keys;
 };
 
 /* IDs */

@@ -10,6 +10,7 @@
 #define __OOP_NOATTRBASES__
 
 #include <proto/utility.h>
+#include <string.h>
 #include <devices/inputevent.h>
 #include <hidd/keyboard.h>
 
@@ -106,7 +107,7 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         data->kbd_callback = callback;
         OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
         D(bug("[X11:Kbd] %s: callback data = %p\n", __func__, (APTR)data->callbackdata));
-        data->prev_keycode = 0xFFFF;
+        memset(&data->keys, 0, sizeof(data->keys));
 
         ObtainSemaphore( &XSD(cl)->sema);
         XSD(cl)->kbdhidd = o;
@@ -143,22 +144,27 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
     data = OOP_INST_DATA(cl, o);
     xk = &(msg->event->xkey);
 
-    keycode = xkey2hidd(xk, XSD(cl));
-    if (keycode == (UWORD)-1) {
-        D(bug("[X11:Kbd] %s: unknown key!r - returning\n", __func__));
+    if (xk->keycode >= 256)
         return;
-    }
 
-    if (msg->event->type == KeyRelease) {
-        keycode |= IECODE_UP_PREFIX;
+    if (msg->event->type == KeyRelease)
+        keycode = x11_key_release(&data->keys, xk->keycode);
+    else if (msg->event->type == KeyPress)
+    {
+        if (data->keys.key[xk->keycode])
+            return;
+        keycode = x11_key_press(&data->keys, xk->keycode,
+                               xkey2hidd(xk, XSD(cl)));
     }
+    else
+        return;
 
-    if (keycode != data->prev_keycode) {
+    if (keycode != (UWORD)-1)
+    {
         struct pHidd_Kbd_Event x11kEvt;
         x11kEvt.flags = 0;
         x11kEvt.code = keycode;
         data->kbd_callback(data->callbackdata, &x11kEvt);
-        data->prev_keycode = keycode;
     }
 
     D(bug("[X11:Kbd] %s: returning\n", __func__));
@@ -193,6 +199,7 @@ WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable)
 
 WORD xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 {
+    XKeyEvent lookup = *xk;
     char    buffer[10];
     KeySym  ks;
     D(int     count;)
@@ -215,8 +222,8 @@ WORD xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
     }
     
     LOCK_X11
-    xk->state = 0;
-    D(count =) XCALL(XLookupString, xk, buffer, 10, &ks, NULL);
+    lookup.state = 0;
+    D(count =) XCALL(XLookupString, &lookup, buffer, 10, &ks, NULL);
     UNLOCK_X11
 
     D(bug("[X11:Kbd] %s: Code %d (0x%x). Event was decoded into %d chars: %d (0x%x)\n", __func__,xk->keycode, xk->keycode, count,ks,ks));
@@ -242,8 +249,10 @@ AROS_LH1(void , x11kdb_LoadkeyTable,
 
     if (X11Base->xsd.xtd) {
         D(bug("[X11:Kbd] %s: Copying Table Data\n", __func__));
+        ObtainSemaphore(&X11Base->xsd.sema);
         CopyMem(table, X11Base->xsd.xtd->keycode2rawkey, 256);
         X11Base->xsd.xtd->havetable = TRUE;
+        ReleaseSemaphore(&X11Base->xsd.sema);
     }
     AROS_LIBFUNC_EXIT
 }
