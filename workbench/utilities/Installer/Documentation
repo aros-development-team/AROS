@@ -3,12 +3,16 @@ Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 Command line
 ------------
 	SCRIPT,APPNAME,MINUSER,DEFUSER,LOGFILE,NOLOG/S,NOPRETEND/S,
-	NOPRINT/S,LANGUAGE,MANIFEST/K,APPBANNER/K
+	NOPRINT/S,LANGUAGE,MANIFEST/K,APPBANNER/K,PRETEND/S
 
 	The first nine are the standard Installer arguments. APPBANNER/K
 	(also a tooltype) names a picture, shown through datatypes above the
 	pages - the application's own banner; the same argument InstallerLG
-	takes, so one icon serves both. MANIFEST/K is an
+	takes, so one icon serves both. PRETEND/S runs the script as a dry
+	run without asking: the "Install for real / pretend" page is skipped
+	and nothing is written (what NOPRETEND/S forbids, this forces) - used
+	for previewing a package and for running scripts under test. Scripts
+	cannot tell it from a pretend run chosen on the page. MANIFEST/K is an
 	AROS extension for package management: a text file that lists what the
 	script created, one item per line, so a package manager can remove it
 	again. Kinds:
