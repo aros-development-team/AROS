@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _GUI_H
@@ -21,6 +21,9 @@ extern char *request_disk(struct ParameterList *pl);
 extern char *request_file(struct ParameterList *pl);
 extern long int request_options(struct ParameterList *pl);
 extern int request_confirm(struct ParameterList * pl);
+extern int request_yesno(char *msg, struct ParameterList *pl, int def);
+extern char *request_files(struct ParameterList *pl, char **names, int n);
+extern void update_working(char *msg);
 extern void final_report();
 extern void display_text(char * msg);
 extern void init_gui();
