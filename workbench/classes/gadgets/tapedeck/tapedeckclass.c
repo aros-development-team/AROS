@@ -141,16 +141,22 @@ IPTR TapeDeck__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
             case TDECK_Mode:
                 D(bug("[tapedeck.gadget] %s: TDECK_Mode %08x\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                if (data->tdd_Mode != (ULONG)tag->ti_Data)
+                    rerender = TRUE;
                 data->tdd_Mode = (ULONG)tag->ti_Data;
                 break;
 
             case TDECK_Frames:
                 D(bug("[tapedeck.gadget] %s: TDECK_Frames - %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                if (data->tdd_FrameCount != (ULONG)tag->ti_Data)
+                    rerender = TRUE;
                 data->tdd_FrameCount = (ULONG)tag->ti_Data;
                 break;
 
             case TDECK_CurrentFrame:
                 D(bug("[tapedeck.gadget] %s: TDECK_CurrentFrame - %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                if (data->tdd_FrameCurrent != (ULONG)tag->ti_Data)
+                    rerender = TRUE;
                 data->tdd_FrameCurrent = (ULONG)tag->ti_Data;
                 break;
 
@@ -180,6 +186,9 @@ IPTR TapeDeck__OM_SET(Class *cl, Object *o, struct opSet *msg)
             )
         }
     }
+
+    if (rerender)
+        result = TRUE;
 
     if (!(tdinit) && (rerender))
     {
@@ -358,9 +367,11 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         data->tdd_LastPen[0] = data->tdd_ButtonPen[0];
     }
 
-    if ((msg->gpr_Redraw != GREDRAW_UPDATE) || (data->tdd_ButtonPen[1] != data->tdd_LastPen[1]))
+    if ((msg->gpr_Redraw != GREDRAW_UPDATE) ||
+        (data->tdd_ButtonPen[1] != data->tdd_LastPen[1]) ||
+        (data->tdd_Mode != data->tdd_ModeRendered))
     {
-        if (data->tdd_Mode != data->tdd_ModeLast)
+        if (data->tdd_Mode != data->tdd_ModeRendered)
         {
             SetAPen(msg->gpr_RPort,  msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN]);
             RectFill(msg->gpr_RPort,
@@ -386,6 +397,7 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         }
 
         data->tdd_LastPen[1] = data->tdd_ButtonPen[1];
+        data->tdd_ModeRendered = data->tdd_Mode;
     }
 
     if ((msg->gpr_Redraw != GREDRAW_UPDATE) || (data->tdd_ButtonPen[2] != data->tdd_LastPen[2]))
