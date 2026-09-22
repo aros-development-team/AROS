@@ -191,3 +191,6 @@ extern struct libc_func libc_func;
 #define CCALL(func,...) (libc_func.func(__VA_ARGS__))
 
 #endif
+
+/* Optional XKB entry point: old host libraries remain supported. */
+extern int (*x11_detectable_autorepeat)(Display *, int, int *);
