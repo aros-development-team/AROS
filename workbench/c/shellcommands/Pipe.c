@@ -77,24 +77,29 @@
 static inline STRPTR NextToken(STRPTR *pstr, CONST_STRPTR tok)
 {
     STRPTR str, ostr = *pstr;
-    int toklen = strlen(tok);
+    STRPTR end;
+    size_t toklen = strlen(tok);
     BOOL quoted = FALSE;
     BOOL escaped = FALSE;
 
     if (*ostr == 0)
         return NULL;
 
+    end = ostr + strlen(ostr);
+
     if (toklen == 0)
     {
-        *pstr = ostr + strlen(ostr);
+        *pstr = end;
         return ostr;
     }
 
-    for (str = ostr; *str; str++) {
+    for (str = ostr; str < end; str++) {
         if (*str == '"' && !escaped)
             quoted = !quoted;
 
-        if (!quoted && !escaped && strncmp(str, tok, toklen) == 0) {
+        if (!quoted && !escaped &&
+            (size_t)(end - str) >= toklen &&
+            memcmp(str, tok, toklen) == 0) {
             *str = 0;
             str += toklen;
             *pstr = str;
@@ -108,7 +113,7 @@ static inline STRPTR NextToken(STRPTR *pstr, CONST_STRPTR tok)
     }
 
     /* Token not found? */
-    *pstr = ostr + strlen(ostr);
+    *pstr = end;
     return ostr;
 }
 
