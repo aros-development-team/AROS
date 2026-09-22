@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     AROS specific mutualexclude class implementation.
 */
@@ -377,6 +377,7 @@ VOID AROSMX__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct MXData *data = INST_DATA(cl, o);
     if (data->font) CloseFont(data->font);
+    if (data->mximage) DisposeObject((Object *)data->mximage);
     DoSuperMethodA(cl, o, msg);
 }
 
@@ -395,4 +396,3 @@ IPTR AROSMX__OM_GET(Class *cl, Object *o, struct opGet *msg)
 }
 
 /***********************************************************************************/
-
