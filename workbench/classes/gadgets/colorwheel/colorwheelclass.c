@@ -417,7 +417,7 @@ VOID ColorWheel__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
             
     } /* switch (redraw method) */
     
-    if (EG(o)->Flags & GFLG_DISABLED)
+    if (data->wheeldrawn && disabled)
     {
         DrawDisabledPattern(data, rp, &gbox);
     }
