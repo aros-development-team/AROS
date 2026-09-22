@@ -11,6 +11,7 @@
 
 #include <proto/utility.h>
 #include <string.h>
+#include <signal.h>
 #include <devices/inputevent.h>
 #include <hidd/keyboard.h>
 
@@ -22,6 +23,8 @@
 /****************************************************************************************/
 
 WORD xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
+
+static VOID x11kbd_cancel(struct x11kbd_data *data);
 
 static OOP_AttrBase HiddInputAB;
 
@@ -108,6 +111,10 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
         D(bug("[X11:Kbd] %s: callback data = %p\n", __func__, (APTR)data->callbackdata));
         memset(&data->keys, 0, sizeof(data->keys));
+        memset(data->f12, 0, sizeof(data->f12));
+        data->f12_count = 0;
+        data->active = FALSE;
+        data->await_keymap = FALSE;
 
         ObtainSemaphore( &XSD(cl)->sema);
         XSD(cl)->kbdhidd = o;
@@ -126,6 +133,7 @@ VOID X11Kbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     D(bug("[X11:Kbd] %s()\n", __func__));
 
     ObtainSemaphore( &XSD(cl)->sema);
+    x11kbd_cancel(OOP_INST_DATA(cl, o));
     XSD(cl)->kbdhidd = NULL;
     ReleaseSemaphore( &XSD(cl)->sema);
     OOP_DoSuperMethod(cl, o, msg);
@@ -133,43 +141,118 @@ VOID X11Kbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
+/* HandleEvent has a single writer (the X11 task) under the shared semaphore;
+ * disposal and table replacement take it exclusively.
+ * These helpers run under xsd->sema, including disposal. Only this backend's
+ * contributions are released; the shared keyboard device is not reset.
+ */
+static VOID x11kbd_emit(struct x11kbd_data *data, int code)
+{
+    if (code >= 0)
+    {
+        struct pHidd_Kbd_Event event;
+        event.flags = 0;
+        event.code = code;
+        data->kbd_callback(data->callbackdata, &event);
+    }
+}
+
+static VOID x11kbd_release(struct x11kbd_data *data, unsigned int key)
+{
+    if (data->f12[key])
+    {
+        data->f12[key] = FALSE;
+        --data->f12_count;
+    }
+    x11kbd_emit(data, x11_key_release(&data->keys, key));
+}
+
+static VOID x11kbd_cancel(struct x11kbd_data *data)
+{
+    unsigned int key;
+    for (key = 0; key < 256; ++key)
+        x11kbd_release(data, key);
+    data->active = FALSE;
+    data->await_keymap = FALSE;
+}
+
 VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_X11_HandleEvent *msg)
 {
-    struct x11kbd_data  *data;
-    XKeyEvent           *xk;
-    UWORD                keycode;
+    struct x11kbd_data *data = OOP_INST_DATA(cl, o);
+    XEvent *event = msg->event;
+    XKeyEvent *xk = &event->xkey;
+    unsigned int key;
+    KeySym sym;
 
-    D(bug("[X11:Kbd] %s()\n", __func__));
-
-    data = OOP_INST_DATA(cl, o);
-    xk = &(msg->event->xkey);
-
-    if (xk->keycode >= 256)
-        return;
-
-    if (msg->event->type == KeyRelease)
-        keycode = x11_key_release(&data->keys, xk->keycode);
-    else if (msg->event->type == KeyPress)
+    if (event->type == FocusOut)
     {
-        if (data->keys.key[xk->keycode])
+        x11kbd_cancel(data);
+        return;
+    }
+    if (event->type == FocusIn)
+    {
+        data->active = TRUE;
+        data->await_keymap = TRUE;
+        return;
+    }
+    if (event->type == KeymapNotify)
+    {
+        if (!data->active || !data->await_keymap)
             return;
-        keycode = x11_key_press(&data->keys, xk->keycode,
-                               xkey2hidd(xk, XSD(cl)));
+        data->await_keymap = FALSE;
+        /* KeymapStateMask supplies the server's ordered focus-entry snapshot.
+         * Do not query current state later: it may include subsequently typed keys.
+         */
+        for (key = 0; key < 256; ++key)
+        {
+            if (!(event->xkeymap.key_vector[key / 8] & (1U << (key % 8))))
+                x11kbd_release(data, key);
+            else if (!data->keys.key[key])
+            {
+                XKeyEvent lookup = {0};
+                int raw;
+                lookup.type = KeyPress;
+                lookup.display = XSD(cl)->display;
+                lookup.keycode = key;
+                raw = xkey2hidd(&lookup, XSD(cl));
+                /* Restore momentary modifiers only. Caps Lock is guest-owned;
+                 * other held keys must be released before they can act again.
+                 */
+                if (raw < 0x60 || raw > 0x67 || raw == 0x62)
+                    raw = -1;
+                x11kbd_emit(data, x11_key_press(&data->keys, key, raw));
+            }
+        }
+        return;
     }
-    else
+    if (!data->active || (event->type != KeyPress && event->type != KeyRelease)
+        || xk->keycode >= 256)
+        return;
+    key = xk->keycode;
+    if (event->type == KeyRelease)
+    {
+        x11kbd_release(data, key);
+        return;
+    }
+    if (data->keys.key[key])
         return;
 
-    if (keycode != (UWORD)-1)
+    LOCK_X11
+    sym = XCALL(XLookupKeysym, xk, 0);
+    UNLOCK_X11
+    /* Latch the host shortcut role too, even for an unmapped guest key. */
+    if (sym == XK_F12)
     {
-        struct pHidd_Kbd_Event x11kEvt;
-        x11kEvt.flags = 0;
-        x11kEvt.code = keycode;
-        data->kbd_callback(data->callbackdata, &x11kEvt);
+        data->f12[key] = TRUE;
+        ++data->f12_count;
     }
-
-    D(bug("[X11:Kbd] %s: returning\n", __func__));
-
-    return;
+    else if (data->f12_count && (sym == XK_Q || sym == XK_q))
+    {
+        LOCK_X11
+        CCALL(raise, SIGINT);
+        UNLOCK_X11
+    }
+    x11kbd_emit(data, x11_key_press(&data->keys, key, xkey2hidd(xk, XSD(cl))));
 }
 
 /****************************************************************************************/
@@ -213,7 +296,7 @@ WORD xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 
         result = -1;
 
-        if ((xk->keycode >= 0) && (xk->keycode < 256)) {
+        if (xk->keycode < 256) {
             result = xsd->xtd->keycode2rawkey[xk->keycode];
             if (result == 255) result = -1;
         }
