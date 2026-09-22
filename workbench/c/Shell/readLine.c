@@ -30,19 +30,21 @@ static BOOL checkPipe(STRPTR pchar, STRPTR mchar, STRPTR in, LONG inlen)
             quoted = !quoted;
         }
 
+        if (!quoted && !escaped)
+        {
+            if (mcharn > 0 && c == mchar[0] &&
+                memcmp(&in[n], mchar, mcharn) == 0)
+                return TRUE;
+
+            if (pcharn > 0 && c == pchar[0] &&
+                memcmp(&in[n], pchar, pcharn) == 0)
+                return TRUE;
+        }
+
         if (c == '*' && !escaped)
             escaped = TRUE;
         else
             escaped = FALSE;
-
-        if (quoted)
-            continue;
-
-        if (mcharn > 0 && c == mchar[0] && memcmp(&in[n], mchar, mcharn) == 0)
-            return TRUE;
-
-        if (pcharn > 0 && c == pchar[0] && memcmp(&in[n], pchar, pcharn) == 0)
-            return TRUE;
     }
     return FALSE;
 }
