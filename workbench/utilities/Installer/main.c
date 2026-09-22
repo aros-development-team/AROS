@@ -127,6 +127,10 @@ int main(int argc, char *argv[])
             preferences.novicelog = TRUE;
         }
         preferences.transcriptfile = strdup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
+        if (args[ARG_APPBANNER])
+        {
+            preferences.bannerfile = strdup((char *)args[ARG_APPBANNER]);
+        }
         if (args[ARG_MANIFEST])
         {
             preferences.manifestfile = strdup((char *)args[ARG_MANIFEST]);
@@ -200,6 +204,12 @@ int main(int argc, char *argv[])
         if (ttemp != NULL)
         {
             preferences.manifestfile = strdup(ttemp);
+        }
+        /* Picture above the pages? (APPBANNER=<file>) */
+        ttemp = ArgString(tooltypes, "APPBANNER", NULL);
+        if (ttemp != NULL)
+        {
+            preferences.bannerfile = strdup(ttemp);
         }
         /* Is PRETEND possible? */
         preferences.nopretend = (strcmp("TRUE", ArgString(tooltypes, "PRETEND", "TRUE")) != 0);
