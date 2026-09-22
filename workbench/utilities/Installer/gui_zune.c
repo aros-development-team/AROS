@@ -258,6 +258,15 @@ struct Screen *scr;
             MUIA_Window_NoMenus,        TRUE,
             MUIA_Window_ID,        MAKE_ID('A','I','N','S'),
             WindowContents, VGroup,
+                /* APPBANNER: the application's own picture, centred, or
+                   nothing at all - a page never knows it is there */
+                Child, preferences.bannerfile ? (IPTR)(HGroup,
+                    Child, HSpace(0),
+                    Child, DtpicObject,
+                        MUIA_Dtpic_Name, (IPTR)preferences.bannerfile,
+                    End,
+                    Child, HSpace(0),
+                End) : (IPTR)VSpace(0),
                 Child, root = VGroup, End,
                 Child, HBar(TRUE),
                 Child, HGroup,

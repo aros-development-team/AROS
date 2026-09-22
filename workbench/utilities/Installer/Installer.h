@@ -79,6 +79,8 @@ typedef struct InstallerPrefs
        manager to undo later -- see manifest_log() in misc.c */
     char * manifestfile;
     BPTR manifeststream;
+    /* APPBANNER: picture shown above the pages (InstallerLG-compatible) */
+    char * bannerfile;
     int debug, pretend, nopretend, novicelog, noprint;
     int welcome;
     int copyfail, copyflags;
