@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Installer V43.3
 */
@@ -28,7 +28,7 @@ int error = 0, grace_exit = 0;
 InstallerPrefs preferences;
 ScriptArg script;
 
-IPTR args[TOTAL_ARGS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+IPTR args[TOTAL_ARGS] = { 0 };
 UBYTE **tooltypes;
 
 /*
@@ -111,6 +111,8 @@ int main(int argc, char *argv[])
 
     preferences.welcome = FALSE;
     preferences.transcriptstream = BNULL;
+    preferences.manifestfile = NULL;
+    preferences.manifeststream = BNULL;
     preferences.pretend = 0;
 
     if (argc)
@@ -125,6 +127,10 @@ int main(int argc, char *argv[])
             preferences.novicelog = TRUE;
         }
         preferences.transcriptfile = strdup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
+        if (args[ARG_MANIFEST])
+        {
+            preferences.manifestfile = strdup((char *)args[ARG_MANIFEST]);
+        }
         preferences.nopretend = (int)args[ARG_NOPRETEND];
         if (args[ARG_MINUSER])
         {
@@ -189,6 +195,12 @@ int main(int argc, char *argv[])
 
         /* Write to which LOGFILE? */
         preferences.transcriptfile = strdup(ArgString(tooltypes, "LOGFILE", "install_log_file"));
+        /* Record what gets created? (MANIFEST=<file>) */
+        ttemp = ArgString(tooltypes, "MANIFEST", NULL);
+        if (ttemp != NULL)
+        {
+            preferences.manifestfile = strdup(ttemp);
+        }
         /* Is PRETEND possible? */
         preferences.nopretend = (strcmp("TRUE", ArgString(tooltypes, "PRETEND", "TRUE")) != 0);
         ttemp = ArgString(tooltypes, "MINUSER", "NOVICE");
@@ -366,6 +378,18 @@ int main(int argc, char *argv[])
         /* open transcript file */
         preferences.transcriptstream = Open(preferences.transcriptfile, MODE_NEWFILE);
         if (preferences.transcriptstream == BNULL)
+        {
+            PrintFault(IoErr(), INSTALLER_NAME);
+            cleanup();
+            exit(-1);
+        }
+    }
+
+    if (preferences.manifestfile != NULL)
+    {
+        /* open manifest file */
+        preferences.manifeststream = Open(preferences.manifestfile, MODE_NEWFILE);
+        if (preferences.manifeststream == BNULL)
         {
             PrintFault(IoErr(), INSTALLER_NAME);
             cleanup();
