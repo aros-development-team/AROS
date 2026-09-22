@@ -1,3 +1,24 @@
+Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+Command line
+------------
+	SCRIPT,APPNAME,MINUSER,DEFUSER,LOGFILE,NOLOG/S,NOPRETEND/S,
+	NOPRINT/S,LANGUAGE,MANIFEST/K
+
+	The first nine are the standard Installer arguments. MANIFEST/K is an
+	AROS extension for package management: a text file that lists what the
+	script created, one item per line, so a package manager can remove it
+	again. Kinds:
+	  F <file>        file written (copyfiles, copylib, textfile, copied
+	                  .info companions)
+	  D <dir>         directory created (makedir, copyfiles)
+	  A <assign>      assign made (makeassign, askdisk (newname))
+	  S <section>     section added to S:User-Startup (startup)
+	  T <icon>        icon written (makedir/copyfiles (infos), tooltype);
+	                  the .info suffix is not included
+	File, dir and icon names are canonical (Lock + NameFromLock). Nothing
+	is written in pretend mode. Scripts do not see the manifest.
+
 Parsing the script
 ------------------
 	Read in 'tokens' and braces and save into tree structure.
@@ -313,26 +334,51 @@ Execute an AmigaDOS script.
   the secondary is passed in '@ioerr'.
 
 
-( textfile )
-# tests with original Installer showed:
-# ( append )s are collected
-# ( include )s are replaced, i.e. only the last ( include ) is taken
-# first (append)s are printed then last (include)
-## Distinguish between overriding and appending parameters and introduce
-## according functions to collect args. Or always append/collect as multiple
-## strings and let function behave as desired.
+( textfile (dest <file>)
+      [(append <string>...)]...
+      [(include <file>)]...
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(safe)]
+)
+  Creates <file> from the (append) strings and the contents of the
+  (include) files, written in the order they appear in the script.
+  NOTE: an old comment in this file claimed the original Installer
+  collected all (append)s first and then wrote only the last (include).
+  Scripts on Aminet write (include "README") (append "\n...") and expect
+  that order, so script order is what is implemented; if a script
+  depends on the other behaviour, report it.
 
 
-( askdir )
- /* Ask user for a directory */
+( askdir (prompt <string>...)
+      (help <string>...)
+      (default <string>)
+      [(newpath)]
+      [(disk)]
+      [(assigns)]
+)
+  Asks for a directory with an ASL requester (drawers only) and returns
+  the chosen path. Novice users get the default without being asked.
 
 
-( askdisk )
- /* Ask user insert a disk */
+( askdisk (prompt <string>...)
+      (help <string>...)
+      (dest <volume>)
+      [(newname <assign>)]
+)
+  Waits until <volume>: can be locked, re-asking with Proceed (retry),
+  Skip and Abort. With (newname) an assign of that name is made to the
+  volume. Returns the volume name.
 
 
-( askfile )
- /* Ask user for a file */
+( askfile (prompt <string>...)
+      (help <string>...)
+      (default <string>)
+      [(newpath)]
+      [(disk)]
+)
+  Like askdir, but for a file.
 
 
 ( askoptions )
@@ -517,16 +563,86 @@ Execute an AmigaDOS script.
   Expands the <path>. For example "C:Mount" will become "System:C/Mount"
 
 
+( copyfiles (source <path>) (dest <path>)
+      [(prompt <string>...)]
+      [(help <string>...)]
+      [(all) | (pattern <pattern>) | (choices <name>...) | (files)]
+      [(infos)]
+      [(newname <name>)]
+      [(nogauge)]
+      [(confirm)]
+      [(safe)]
+      [(optional ...) | (delopts ...)]
+)
+  Copies a file, or the contents of a directory with (all), (pattern)
+  or (choices). (files) copies files only, no subdirectories. (infos)
+  copies the .info companions too (and never the dest.info of the
+  copied directory itself). Above the (confirm) level the user gets a
+  multi-select list of the entries to copy. Returns 1 on success.
+
+
+( copylib (source <file>) (dest <path>)
+      [(prompt <string>...)]
+      [(help <string>...)]
+      [(newname <name>)]
+      [(infos)]
+      [(confirm)]
+      [(safe)]
+      [(optional ...) | (delopts ...)]
+)
+  Like copyfiles for one file, but compares $VER: strings first: an
+  existing newer (or equal) version is kept, an older one replaced;
+  above the (confirm) level the user is asked. Returns 1 on success.
+
+
+( foreach <dir> <pattern> <command>... )
+  Runs the commands once per matching entry in <dir> with @each-name
+  set to the entry name and @each-type to its type (negative for a
+  file, positive for a directory). Returns the number of matches.
+
+
+( getsum <file> )
+  Returns a checksum of <file> (0 if it cannot be read).
+
+
+( getversion [<file> [(resident)]] )
+  Returns (version << 16) + revision, from the $VER: string of <file>,
+  with (resident) from the loaded library/device of that name, and
+  without arguments from the Installer itself. 0 if not found.
+
+
+( patmatch <pattern> <string> )
+  Returns 1 if <string> matches the AmigaDOS <pattern> (case
+  insensitive).
+
+
+( protect <file> [<flags> | <int>] [(safe)] )
+  Without a second argument returns the protection bits of <file>.
+  With a flag string such as "+s-e" or "rwed" (the latter clears
+  everything not named) or an integer, sets them and returns the new
+  value.
+
+
+( tooltype (dest <file>)
+      [(settooltype <name> [<value>])]...
+      [(setdefaulttool <string>)]
+      [(setstack <int>)]
+      [(setposition <x> <y>)]
+      [(noposition)]
+      [(swapcolors)]
+      [(prompt <string>...)]
+      [(help <string>...)]
+      [(confirm)]
+      [(safe)]
+)
+  Edits the icon of <file> (the .info suffix may be given or not).
+  (settooltype) without a value removes the tool type; with one it is
+  set as NAME=value, replacing an existing NAME=. (swapcolors) is
+  accepted and ignored.
+
+
 /* Unimplemented commands */
-( copyfiles )
-( copylib )
-( foreach )
-( getsum )
-( getversion )
-( patmatch )
-( protect )
 ( rexx )
-( tooltype )
 
 /* Here are all tags, first the ones which have to be executed */
  
