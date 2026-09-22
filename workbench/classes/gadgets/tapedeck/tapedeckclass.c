@@ -424,6 +424,7 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
     struct InputEvent   *ie = msg->gpi_IEvent;
     IPTR                retval = GMR_MEACTIVE;
     BOOL                redraw = FALSE;
+    UBYTE               button = 0;
 
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -436,7 +437,7 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
         EG(o)->Flags |= GFLG_SELECTED;
     }
 
-    if ((data->tdd_PosProp) &&
+    if (!data->tdd_ButtonActive && (data->tdd_PosProp) &&
         ((((struct Gadget *)data->tdd_PosProp)->Flags & GFLG_SELECTED) || (msg->gpi_Mouse.Y < POSPROP_HEIGHT)))
     {
         IPTR topCurrent;
@@ -472,59 +473,32 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
     {
         ULONG offset_x = msg->gpi_Mouse.X - ((EG(o)->Width - 50) >> 1);
 
-        if (offset_x <  16)
-        {
-            D(bug("[tapedeck.gadget]: %s:    <<\n", __PRETTY_FUNCTION__));
-            if (ie->ie_Code == SELECTDOWN)
-            {
-                data->tdd_ButtonActive = 1;
-                data->tdd_ButtonPen[0] = SHINEPEN;
-                data->tdd_ModeLast = data->tdd_Mode;
-                data->tdd_Mode = BUT_REWIND;
-                redraw = TRUE;
-            }
-            else if (ie->ie_Code == SELECTUP)
-            {
-                data->tdd_ButtonPen[0] = SHADOWPEN;
-                data->tdd_Mode = data->tdd_ModeLast;
-            }
-        }
+        if (offset_x < 16)
+            button = 1;
         else if ((offset_x > 20) && (offset_x < 29))
-        {
-            D(bug("[tapedeck.gadget]: %s:    PLAY/PAUSE\n", __PRETTY_FUNCTION__));
-            if (ie->ie_Code == SELECTDOWN)
-            {
-                data->tdd_ButtonActive = 2;
-                data->tdd_ButtonPen[1] = SHINEPEN;
-                redraw = TRUE;
-            }
-            else if (ie->ie_Code == SELECTUP)
-            {
-                data->tdd_ButtonPen[1] = SHADOWPEN;
-                data->tdd_ModeLast = data->tdd_Mode;
-                if (data->tdd_Mode != BUT_PLAY)
-                    data->tdd_Mode = BUT_PLAY;
-                else
-                    data->tdd_Mode = BUT_PAUSE;
-            }
-        }
+            button = 2;
         else if ((offset_x > 33) && (offset_x < 50))
-        {
-            D(bug("[tapedeck.gadget]: %s:    >>\n", __PRETTY_FUNCTION__));
-            if (ie->ie_Code == SELECTDOWN)
-            {
-                data->tdd_ButtonActive = 3;
-                data->tdd_ButtonPen[2] = SHINEPEN;
-                data->tdd_ModeLast = data->tdd_Mode;
-                data->tdd_Mode = BUT_FORWARD;
-                redraw = TRUE;
-            }
-            else if (ie->ie_Code == SELECTUP)
-            {
-                data->tdd_ButtonPen[2] = SHADOWPEN;
-                data->tdd_Mode = data->tdd_ModeLast;
-            }
-        }
+            button = 3;
+    }
+
+    if ((ie->ie_Code == SELECTDOWN) && button)
+    {
+        data->tdd_ButtonActive = button;
+        data->tdd_ButtonPen[button - 1] = SHINEPEN;
+        data->tdd_ModeLast = data->tdd_Mode;
+        if (button == 1)
+            data->tdd_Mode = BUT_REWIND;
+        else if (button == 3)
+            data->tdd_Mode = BUT_FORWARD;
+        redraw = TRUE;
+    }
+    else if ((ie->ie_Code == SELECTUP) && data->tdd_ButtonActive)
+    {
+        /* Finish the pressed button, even if the pointer has moved away. */
+        if (data->tdd_ButtonActive != 2)
+            data->tdd_Mode = data->tdd_ModeLast;
+        else if (button == 2)
+            data->tdd_Mode = (data->tdd_ModeLast == BUT_PLAY) ? BUT_PAUSE : BUT_PLAY;
     }
 
     if (ie->ie_Code == SELECTUP)
@@ -562,8 +536,17 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 IPTR TapeDeck__GM_GOINACTIVE(Class *cl, Object *o, struct gpGoInactive *msg)
 {
     struct RastPort *rport;
+    struct TapeDeckData *data = INST_DATA(cl, o);
 
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
+
+    if (data->tdd_ButtonActive)
+    {
+        data->tdd_ButtonPen[data->tdd_ButtonActive - 1] = SHADOWPEN;
+        if (data->tdd_ButtonActive != 2)
+            data->tdd_Mode = data->tdd_ModeLast;
+        data->tdd_ButtonActive = 0;
+    }
 
     EG(o)->Flags &= ~GFLG_SELECTED;
 
