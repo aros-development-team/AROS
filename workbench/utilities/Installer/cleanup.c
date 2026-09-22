@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* cleanup.c -- here are all functions used before exiting program */
@@ -34,6 +34,10 @@ void cleanup()
     if (preferences.transcriptstream != BNULL)
     {
         Close(preferences.transcriptstream);
+    }
+    if (preferences.manifeststream != BNULL)
+    {
+        Close(preferences.manifeststream);
     }
 
     free_script(script.cmd);

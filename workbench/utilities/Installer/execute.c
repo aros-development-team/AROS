@@ -1307,6 +1307,7 @@ void *params;
                     if (request_confirm(parameter) && (preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1))
                     {
                         modify_userstartup(string, parameter);
+                        manifest_log('S', string);
                     }
                     free_parameterlist(parameter);
                     free(string);
@@ -1420,6 +1421,7 @@ void *params;
                     {
                         UnLock(success);
                         current->parent->intval = 1;
+                        manifest_log('D', string);
                     }
                     else
                     {
@@ -1777,11 +1779,13 @@ void *params;
                                     else
                                     {
                                         current->parent->intval = 1;
+                                        manifest_log('A', assign);
                                     }
                                 }
                                 else
                                 {
                                     current->parent->intval = 1;
+                                    manifest_log('A', assign);
                                 }
                             }
                         }

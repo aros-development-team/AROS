@@ -1,11 +1,15 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* misc.c -- here are all miscellaneous functions for global use */
 
 #include "Installer.h"
 #include "cleanup.h"
+#include "execute.h"
+
+/* External variables */
+extern InstallerPrefs preferences;
 
 
 /*
@@ -116,3 +120,39 @@ int i=0;
     free(array);
 }
 
+
+
+/*
+ * Record one thing the script created in the MANIFEST file:
+ *   F <file>    D <directory>    A <assign>    S <User-Startup section>
+ *   T <icon whose tooltypes were changed>
+ * F/D/T paths are canonicalised with NameFromLock() so whoever removes the
+ * package later does not depend on the assigns the script used. Nothing is
+ * written in pretend mode -- callers only log what really happened.
+ */
+void manifest_log(char kind, const char *path)
+{
+BPTR lock;
+char *full = NULL;
+char prefix[2];
+
+    if (preferences.manifeststream == BNULL || path == NULL)
+    {
+        return;
+    }
+    if (kind == 'F' || kind == 'D' || kind == 'T')
+    {
+        lock = Lock((STRPTR)path, SHARED_LOCK);
+        if (lock != BNULL)
+        {
+            full = DynNameFromLock(lock);
+            UnLock(lock);
+        }
+    }
+    prefix[0] = kind;
+    prefix[1] = SPACE;
+    Write(preferences.manifeststream, prefix, 2);
+    Write(preferences.manifeststream, full ? full : (char *)path, strlen(full ? full : path));
+    Write(preferences.manifeststream, "\n", 1);
+    free(full);
+}

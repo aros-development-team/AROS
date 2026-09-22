@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _INSTALLER_H
@@ -74,6 +74,10 @@ typedef struct InstallerPrefs
 {
     char * transcriptfile;
     BPTR transcriptstream;
+    /* MANIFEST: one line per thing the script created, for a package
+       manager to undo later -- see manifest_log() in misc.c */
+    char * manifestfile;
+    BPTR manifeststream;
     int debug, pretend, nopretend, novicelog, noprint;
     int welcome;
     int copyfail, copyflags;
