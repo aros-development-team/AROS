@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include <dos/dos.h>
+#include <dos/dosextens.h>
 #include <exec/exec.h>
 #include <exec/execbase.h>
 #include <proto/dos.h>
