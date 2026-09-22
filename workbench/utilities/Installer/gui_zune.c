@@ -477,6 +477,19 @@ char *msg2;
  */
 void show_parseerror(char * msg, int errline)
 {
+char *text;
+
+    text = malloc(strlen(msg) + 64);
+    if (text == NULL)
+        return;
+    sprintf(text, "Error in script line %d:\n%s", errline, msg);
+    if (preferences.fromcli)
+    {
+        /* a shell can capture it, the way (debug) output is captured */
+        printf("Installer: %s\n", text);
+    }
+    display_text(text);
+    free(text);
 }
 
 

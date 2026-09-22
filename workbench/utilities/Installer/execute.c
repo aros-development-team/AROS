@@ -3531,6 +3531,10 @@ int i, j;
         j = (name != NULL) ? strlen(name) : 0 ;
         outmsg = malloc(i + j + 1);
         sprintf(outmsg, msg, name);
+        if (preferences.fromcli)
+        {
+            printf("Installer: %s\n", outmsg);
+        }
         display_text(outmsg);
 
         if (preferences.trap[ error - 1 ].cmd != NULL)
