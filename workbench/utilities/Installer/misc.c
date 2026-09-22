@@ -98,7 +98,12 @@ int c;
     retval = malloc(c+3);
     outofmem(retval);
     retval[0] = DQUOTE;
-    strcpy(retval+1, string);
+    /* NULL is what collect_strings() returns for no strings at all -
+     * "(welcome)" on its own - and that is the empty string, "" */
+    if (c > 0)
+    {
+        strcpy(retval+1, string);
+    }
     retval[c+1] = DQUOTE;
     retval[c+2] = 0;
 
