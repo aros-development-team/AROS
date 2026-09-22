@@ -136,6 +136,13 @@ int main(int argc, char *argv[])
             preferences.manifestfile = strdup((char *)args[ARG_MANIFEST]);
         }
         preferences.nopretend = (int)args[ARG_NOPRETEND];
+        /* PRETEND/S: dry run without asking - the pretend page is skipped
+         * and nothing is written (SoftwareCenter's preview, test harnesses) */
+        if (args[ARG_PRETEND])
+        {
+            preferences.pretend = TRUE;
+            preferences.nopretend = TRUE;
+        }
         if (args[ARG_MINUSER])
         {
             preferences.minusrlevel = _NOVICE;
