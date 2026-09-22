@@ -109,6 +109,7 @@ void Redirection_release(ShellState *ss);
  * Output:   LONG  --  DOS error code
  */
 LONG Redirection_init(ShellState *ss);
+LONG Redirection_activateError(ShellState *ss);
 
 /* Function: setPath
  *

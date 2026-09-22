@@ -116,6 +116,8 @@ def listFiles( path='.' ):
     for name in sorted(os.listdir( path )):
         name = os.path.join( path, name )
         
+        if os.path.islink( name ):
+            raise ValueError('Package input is a symbolic link: %s' % name)
         if os.path.isdir( name ):
             files.extend( listFiles( name ) )
         else:
@@ -184,6 +186,8 @@ def pack( destination, files ):
         oldwd = os.getcwd()
         try:
             if files and os.path.isdir( files[0] ):
+                if os.path.islink( files[0] ):
+                    raise ValueError('Package input is a symbolic link: %s' % files[0])
                 os.chdir( files[0] )
                 files = files[1:]
 

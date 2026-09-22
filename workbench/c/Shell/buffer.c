@@ -13,7 +13,7 @@
 
 #define BUF_SIZE 128
 
-static BOOL bufferExpand(Buffer *out, LONG size, ShellState *ss)
+BOOL bufferExpand(Buffer *out, LONG size, ShellState *ss)
 {
     ULONG newLength = out->len + size;
 
