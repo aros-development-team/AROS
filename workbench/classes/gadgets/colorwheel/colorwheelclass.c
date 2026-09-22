@@ -388,13 +388,15 @@ VOID ColorWheel__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     struct Hook                 *hook = NULL;
     struct IBox                 gbox;
     LONG                        redraw = msg->gpr_Redraw;
+    BOOL                        disabled = (EG(o)->Flags & GFLG_DISABLED) != 0;
     
     EnterFunc(bug("ColorWheel::Render()\n"));
 
     GetGadgetIBox(o, msg->gpr_GInfo, &gbox);
     data->dri = dri;
     
-    if (!data->bm || (data->bmwidth != gbox.Width) || (data->bmheight != gbox.Height))
+    if (!data->bm || (data->bmwidth != gbox.Width) || (data->bmheight != gbox.Height) ||
+        (data->disabled_drawn != disabled))
     {
         redraw = GREDRAW_REDRAW;
     }
@@ -419,6 +421,9 @@ VOID ColorWheel__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     {
         DrawDisabledPattern(data, rp, &gbox);
     }
+
+    if (data->wheeldrawn)
+        data->disabled_drawn = disabled;
 
     if( data->backfill ) InstallLayerHook( rp->Layer, hook );
                 
