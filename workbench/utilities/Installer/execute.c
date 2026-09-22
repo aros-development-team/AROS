@@ -54,7 +54,9 @@ static void callback(char, char **);
         }                                                \
         else                                                \
         {                                                \
-            string = strip_quotes(clip);                \
+            /* variable text is stored without quotes */\
+            string = strdup(clip);                        \
+            outofmem(string);                                \
         }                                                \
     }
 
@@ -505,15 +507,21 @@ void *params;
                         /* There is a quoted varname */
                         /* Strip off quotes */
                         string = strip_quotes(current->arg);
-                        current->parent->arg = get_var_arg(string);
+                        clip = get_var_arg(string);
                         current->parent->intval = get_var_int(string);
                         free(string);
                     }
                     else
                     {
                         /* Varname is stored in variable */
-                        current->parent->arg = get_var_arg(current->arg);
+                        clip = get_var_arg(current->arg);
                         current->parent->intval = get_var_int(current->arg);
+                    }
+                    /* the result is a fresh quoted string: the caller
+                       frees it, and the variable keeps its own text */
+                    if (clip != NULL)
+                    {
+                        current->parent->arg = addquotes(clip);
                     }
                 }
                 else
