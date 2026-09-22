@@ -414,6 +414,9 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
 
+    if (!ie)
+        return GMR_NOREUSE;
+
     if (ie->ie_Code == SELECTDOWN)
     {
         D(bug("[tapedeck.gadget]: %s: SELECTDOWN\n", __PRETTY_FUNCTION__));
