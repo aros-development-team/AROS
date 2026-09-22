@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* gui_zune.c -- here are all functions for the ZUNE gui */
@@ -385,16 +385,19 @@ Object *wc;
  */
 void show_complete(long int percent)
 {
-char *text;
+/* MUIA_Window_Title keeps the pointer, so the buffer must outlive the call */
+static char *text = NULL;
 
-  text = malloc(strlen(GuiWinTitle) + 13);
   if ( text == NULL )
   {
-    end_alloc();
+    text = malloc(strlen(GuiWinTitle) + 13);
+    if ( text == NULL )
+    {
+      end_alloc();
+    }
   }
   sprintf(text, "%s (Done %3ld%%)", GuiWinTitle, percent);
-  set(wnd, MUIA_Window_Title, text);
-  free(text);
+  set(wnd, MUIA_Window_Title, (IPTR)text);
 }
 
 
@@ -408,10 +411,18 @@ ULONG sigs = 0;
 Object *wc;
 char *msg2;
 
-    msg2 = malloc((strlen(msg)+strlen(DONE_TEXT))*sizeof(char));
-    msg2[0] = 0;
-    strcat(msg2,msg);
-    strcat(msg2,DONE_TEXT);
+    if (msg == NULL)
+    {
+        msg = "";
+    }
+    msg2 = malloc(strlen(msg) + strlen(DONE_TEXT) + 2);
+    outofmem(msg2);
+    strcpy(msg2, msg);
+    if (msg[0] != 0)
+    {
+        strcat(msg2, "\n");
+    }
+    strcat(msg2, DONE_TEXT);
     disable_abort(TRUE);
     disable_skip(TRUE);
     disable_help(TRUE);
