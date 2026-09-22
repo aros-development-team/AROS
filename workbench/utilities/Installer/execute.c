@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* execute.c -- Here are all functions used to execute the script */
@@ -255,9 +255,10 @@ void *params;
                 /* print summary where app has been installed unless (quiet) is given */
                 parameter = get_parameters(current->next, level);
                 string = collect_strings(current->next, LINEFEED, level);
-                show_exit(string);
-                if (GetPL(parameter, _QUIET).intval == 0)
+                /* (quiet): no "Done with installation" page, just leave */
+                if (GetPL(parameter, _QUIET).used == 0)
                 {
+                    show_exit(string);
                     final_report();
                 }
                 free(string);
@@ -1106,7 +1107,7 @@ void *params;
                 if (current->next != NULL && current->next->next != NULL)
                 {
                 int success = DOSFALSE,
-                    usrconfirm = FALSE;
+                    usrconfirm = TRUE;
                     /* Get strings */
                     current = current->next;
                     ExecuteCommand();
@@ -1303,7 +1304,7 @@ void *params;
                 {
                     string = strip_quotes(current->next->arg);
                     parameter = get_parameters(current->next, level);
-                    if (request_confirm(parameter))
+                    if (request_confirm(parameter) && (preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1))
                     {
                         modify_userstartup(string, parameter);
                     }
@@ -1321,7 +1322,7 @@ void *params;
 /* TODO: Implement (optional) and (delopts) */
                 if (current->next != NULL)
                 {
-                int success = -1, usrconfirm = FALSE;
+                int success = -1, usrconfirm = TRUE;
 
                     current = current->next;
                     ExecuteCommand();
@@ -1379,7 +1380,7 @@ void *params;
                 if (current->next != NULL)
                 {
                 BPTR success = 0;
-                int usrconfirm = FALSE;
+                int usrconfirm = TRUE;
 
                     current = current->next;
                     ExecuteCommand();
@@ -2189,7 +2190,7 @@ DMSG("   %s\n",ret);
                         /* These may be combined in any way */
                         if (strcasecmp(parameter->arg[i], "force") == 0)
                         {
-                            preferences.copyflags &= ~COPY_ASKUSER;
+                            preferences.copyflags &= ~COPY_FORCE;
                         }
                         if (strcasecmp(parameter->arg[i], "askuser") == 0)
                         {
@@ -2233,7 +2234,7 @@ DMSG("   %s\n",ret);
                         /* These may be combined in any way */
                         if (strcasecmp(parameter->arg[i], "force") == 0)
                         {
-                            preferences.copyflags |= COPY_ASKUSER;
+                            preferences.copyflags |= COPY_FORCE;
                         }
                         if (strcasecmp(parameter->arg[i], "askuser") == 0)
                         {
@@ -2998,12 +2999,7 @@ int i, changed = 0, cont = 0;
     Close(userstartup);
 
     DeleteFile("S:User-Startup");
-/* FIXME: Check correctness of Rename() */
-/*
-    IMO both arguments to Rename() should contain S:, check again if
-    Rename() is proven to work as expected
-*/
-    if (Rename("S:User-Startup.tmp", "User-Startup") == DOSFALSE)
+    if (Rename("S:User-Startup.tmp", "S:User-Startup") == DOSFALSE)
     {
         printf("Rename failed because of %s\n", DosGetString(IoErr()));
     }
