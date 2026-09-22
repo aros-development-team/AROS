@@ -432,7 +432,7 @@ char *msg2;
 
     wc = VGroup,
             Child, TextObject,
-                GroupFrameT("Aborting Installation:"),
+                GroupFrameT("Installation complete:"),
                 MUIA_Text_Contents, (IPTR)(msg2),
             End,
         End;
@@ -1239,13 +1239,20 @@ int i;
     TRANSSCRIPT();
     if ( get_var_int( "@user-level" ) > _NOVICE )
     {
-    char *out;
+    char *out, *title, *nl;
     BOOL running = TRUE;
     Object *st, *wc;
     ULONG sigs = 0;
 
         disable_skip(TRUE);
         out = collatestrings(GetPL(pl, _PROMPT).intval, GetPL(pl, _PROMPT).arg);
+        /* the requester's title bar is one line: use the prompt's first */
+        title = strdup(out);
+        outofmem(title);
+        if ((nl = strchr(title, '\n')) != NULL)
+        {
+            *nl = 0;
+        }
 
         wc = VGroup,
             Child, VGroup, GroupFrame,
@@ -1263,7 +1270,7 @@ int i;
                         MUIA_CycleChain,        TRUE,
                     End),
                     MUIA_Popstring_Button, (IPTR)PopButton(dirsonly ? MUII_PopDrawer : MUII_PopFile),
-                    ASLFR_TitleText, (IPTR)out,
+                    ASLFR_TitleText, (IPTR)title,
                     ASLFR_DrawersOnly, dirsonly,
                 End,
             End,
@@ -1308,6 +1315,7 @@ int i;
             DelContents(wc);
         }
         free(out);
+        free(title);
         disable_skip(FALSE);
     }
     retval = addquotes(string);
@@ -1341,6 +1349,8 @@ char *request_disk(struct ParameterList *pl)
 char *retval, *dest, *volname;
 BPTR lock = BNULL;
 int i, len, skipped = FALSE;
+struct Process *proc;
+APTR oldwin;
 
     NeedPROMPT(pl);
     if ( GetPL(pl, _DEST).used == 0 )
@@ -1362,6 +1372,11 @@ int i, len, skipped = FALSE;
     }
     strcat(volname, ":");
 
+    /* This page *is* the "please insert volume" requester, so DOS must
+       not put up its own one for every probe */
+    proc = (struct Process *)FindTask(NULL);
+    oldwin = proc->pr_WindowPtr;
+    proc->pr_WindowPtr = (APTR)-1;
     while ((lock = Lock(volname, SHARED_LOCK)) == BNULL && !skipped)
     {
     char *out;
@@ -1413,6 +1428,7 @@ int i, len, skipped = FALSE;
         }
         free(out);
     }
+    proc->pr_WindowPtr = oldwin;
 
     if (lock != BNULL)
     {
