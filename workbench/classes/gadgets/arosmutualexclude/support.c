@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Support functions for AROSMutualExcludeClass.
 */
@@ -50,7 +50,10 @@ struct TextFont *preparefont(struct RastPort *rport, struct IntuiText *itext,
             SetFont(rport, font);
             SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff);
         } else
+        {
+            *oldfont = NULL;
             font = rport->Font;
+        }
     } else
     {
         *oldfont = NULL;
