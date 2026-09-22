@@ -73,6 +73,10 @@ struct x11kbd_data
     InputIrqCallBack_t  kbd_callback;
     APTR    callbackdata;
     struct x11_keystate keys;
+    UBYTE f12[256];
+    UWORD f12_count;
+    BOOL active;
+    BOOL await_keymap;
 };
 
 /* IDs */
@@ -175,6 +179,7 @@ struct x11_staticdata
     OOP_Object      	        *mousehidd;
     OOP_Object      	        *kbdhidd;
     BOOL                        detectable_repeat;
+    Window                      keyboard_window;
 
 #if USE_XSHM
     struct SignalSemaphore      shm_sema;	/* singlethread access to shared mem */

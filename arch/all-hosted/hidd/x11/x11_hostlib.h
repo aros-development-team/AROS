@@ -99,6 +99,7 @@ struct x11_func {
     Window (*XRootWindow) ( Display*, int);
     XClassHint * (*XAllocClassHint) ();
     int (*XSetClassHint) (Display*, Window, XClassHint* );
+    int (*XGetInputFocus) ( Display*, Window*, int* );
     int (*XSetInputFocus) ( Display* , Window , int , Time );
     XPixmapFormatValues *(*XListPixmapFormats)( Display* , int* );
 #if DEBUG_X11_SYNCHRON
@@ -190,7 +191,7 @@ extern struct libc_func libc_func;
 #define XCALL(func,...) (x11_func.func(__VA_ARGS__))
 #define CCALL(func,...) (libc_func.func(__VA_ARGS__))
 
-#endif
-
 /* Optional XKB entry point: old host libraries remain supported. */
 extern int (*x11_detectable_autorepeat)(Display *, int, int *);
+
+#endif
