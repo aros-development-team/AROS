@@ -12,6 +12,7 @@
 #include "procedure.h"
 #include "cleanup.h"
 #include "variables.h"
+#include "copyfiles.h"
 #ifndef __AROS__
 #define VOID_FUNC APTR
 #define MAXFILENAMELENGTH 108
@@ -1377,11 +1378,10 @@ void *params;
                 break;
 
             case _MAKEDIR: /* Create directory */
-/* TODO: Implement (infos) */
                 if (current->next != NULL)
                 {
                 BPTR success = 0;
-                int usrconfirm = TRUE;
+                int usrconfirm = TRUE, infos = FALSE;
 
                     current = current->next;
                     ExecuteCommand();
@@ -1402,6 +1402,7 @@ void *params;
                         {
                             usrconfirm = request_confirm(parameter);
                         }
+                        infos = GetPL(parameter, _INFOS).used;
                         /* Create directory */
                         if ((preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1) && usrconfirm)
                         {
@@ -1422,6 +1423,19 @@ void *params;
                         UnLock(success);
                         current->parent->intval = 1;
                         manifest_log('D', string);
+                        if (infos)
+                        {
+                            /* (infos): give the new drawer a default icon */
+                            struct DiskObject *dobj = GetDefDiskObject(WBDRAWER);
+                            if (dobj != NULL)
+                            {
+                                if (PutDiskObject(string, dobj))
+                                {
+                                    manifest_log('T', string);
+                                }
+                                FreeDiskObject(dobj);
+                            }
+                        }
                     }
                     else
                     {
@@ -2111,18 +2125,500 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
+            case _COPYFILES: /* Copy files/directories: (source) (dest) [(all)|(pattern)|(files)|(choices)] ... */
+                if (current->next != NULL)
+                {
+                    parameter = get_parameters(current->next, level);
+                    current->parent->intval = do_copyfiles(parameter);
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires (source) and (dest)!\n", current->arg);
+                }
+                break;
+
+            case _COPYLIB: /* Copy a file only if it is newer than the installed one */
+                if (current->next != NULL)
+                {
+                    parameter = get_parameters(current->next, level);
+                    current->parent->intval = do_copylib(parameter);
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires (source) and (dest)!\n", current->arg);
+                }
+                break;
+
+            case _FOREACH: /* (foreach <dir> <pattern> <block>): run block per matching entry */
+                if (current->next != NULL && current->next->next != NULL && current->next->next->next != NULL)
+                {
+                char **names;
+                LONG *types;
+                int n;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a directory string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    clip = string;
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a pattern string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    if (current->next->cmd == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> has no command-block!\n", current->parent->cmd->arg);
+                    }
+                    n = dir_matches(clip, string, &names, &types);
+                    for (i = 0 ; i < n ; i++)
+                    {
+                        set_variable("@each-name", names[i], 0);
+                        set_variable("@each-type", NULL, types[i]);
+                        ExecuteNextCommand();
+                    }
+                    if (n >= 0)
+                    {
+                        freestrlist((STRPTR *)names);
+                        free(types);
+                    }
+                    else
+                    {
+                        set_variable("@ioerr", NULL, IoErr());
+                        n = 0;
+                    }
+                    current->parent->intval = n;
+                    free(clip);
+                    free(string);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires three arguments!\n", current->arg);
+                }
+                break;
+
+            case _GETSUM: /* Checksum of a file */
+                if (current->next != NULL)
+                {
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a file string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    current->parent->intval = file_checksum(string);
+                    if (current->parent->intval == 0)
+                    {
+                        set_variable("@ioerr", NULL, IoErr());
+                    }
+                    free(string);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires one argument!\n", current->arg);
+                }
+                break;
+
+            case _GETVERSION: /* (getversion [file [(resident)]]): (version << 16) + revision */
+                if (current->next != NULL)
+                {
+                ULONG ver = 0, rev = 0;
+                int resident = FALSE;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a file string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    if (current->next)
+                    {
+                        parameter = get_parameters(current->next, level);
+                        resident = GetPL(parameter, _RESIDENT).used;
+                        free_parameterlist(parameter);
+                    }
+                    if (resident)
+                    {
+                        current->parent->intval = resident_version(string);
+                    }
+                    else if (scan_version(string, &ver, &rev))
+                    {
+                        current->parent->intval = (ver << 16) + rev;
+                    }
+                    else
+                    {
+                        current->parent->intval = 0;
+                        set_variable("@ioerr", NULL, IoErr());
+                    }
+                    free(string);
+                }
+                else
+                {
+                    /* Our own version */
+                    current->parent->intval = get_var_int("@installer-version");
+                }
+                break;
+
+            case _PATMATCH: /* (patmatch <pattern> <string>): 1 if the string matches */
+                if (current->next != NULL && current->next->next != NULL)
+                {
+                char *patbuf;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    ExecuteNextCommand();
+                    if (current->arg == NULL || current->next->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires two strings!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    clip = string;
+                    GetString(current->next->arg);
+                    patbuf = malloc(strlen(clip) * 2 + 2);
+                    outofmem(patbuf);
+                    if (ParsePatternNoCase(clip, patbuf, strlen(clip) * 2 + 2) < 0)
+                    {
+                        current->parent->intval = 0;
+                    }
+                    else
+                    {
+                        current->parent->intval = MatchPatternNoCase(patbuf, string) ? 1 : 0;
+                    }
+                    free(patbuf);
+                    free(clip);
+                    free(string);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires two arguments!\n", current->arg);
+                }
+                break;
+
+            case _PROTECT: /* (protect <file> [<bits>|<"+s-e">] [(safe)]): get or set protection bits */
+                if (current->next != NULL)
+                {
+                struct FileInfoBlock *fib;
+                BPTR lock;
+                ULONG bits = 0;
+                int safe = FALSE, setbits = FALSE;
+                char *fname;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a file string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    fname = string;
+                    lock = Lock(fname, SHARED_LOCK);
+                    fib = AllocDosObject(DOS_FIB, NULL);
+                    outofmem(fib);
+                    if (lock != BNULL && Examine(lock, fib))
+                    {
+                        bits = fib->fib_Protection;
+                    }
+                    else
+                    {
+                        set_variable("@ioerr", NULL, IoErr());
+                    }
+                    if (lock != BNULL)
+                    {
+                        UnLock(lock);
+                    }
+                    FreeDosObject(DOS_FIB, fib);
+                    if (current->next != NULL && current->next->cmd == NULL)
+                    {
+                        /* a plain int or string argument sets the bits */
+                        current = current->next;
+                        if (current->arg != NULL)
+                        {
+                            GetString(current->arg);
+                            bits = apply_protect_string(bits, string);
+                            free(string);
+                        }
+                        else
+                        {
+                            bits = current->intval;
+                        }
+                        setbits = TRUE;
+                    }
+                    if (current->next)
+                    {
+                        parameter = get_parameters(current->next, level);
+                        safe = GetPL(parameter, _SAFE).used;
+                        free_parameterlist(parameter);
+                    }
+                    if (setbits && (preferences.pretend == 0 || safe))
+                    {
+                        if (SetProtection(fname, bits))
+                        {
+                            current->parent->intval = bits;
+                        }
+                        else
+                        {
+                            current->parent->intval = 0;
+                            set_variable("@ioerr", NULL, IoErr());
+                        }
+                    }
+                    else
+                    {
+                        current->parent->intval = bits;
+                    }
+                    free(fname);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires a file argument!\n", current->arg);
+                }
+                break;
+
+            case _TEXTFILE: /* Build a text file from (append) strings and (include) files, in script order */
+                if (current->next != NULL)
+                {
+                BPTR out;
+                ScriptArg *tag;
+                int usrconfirm = TRUE, ok = FALSE;
+
+                    parameter = get_parameters(current->next, level);
+                    if (GetPL(parameter, _DEST).used != 1 || GetPL(parameter, _DEST).intval < 1)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires (dest)!\n", current->arg);
+                    }
+                    if (GetPL(parameter, _CONFIRM).used == 1)
+                    {
+                        usrconfirm = request_confirm(parameter);
+                    }
+                    if ((preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1) && usrconfirm)
+                    {
+                        string = GetPL(parameter, _DEST).arg[0];
+                        out = Open(string, MODE_NEWFILE);
+                        if (out != BNULL)
+                        {
+                            ok = TRUE;
+                            for (tag = current->next ; tag != NULL && ok ; tag = tag->next)
+                            {
+                                struct ParameterList part;
+                                int which;
+
+                                if (tag->cmd == NULL || tag->cmd->arg == NULL)
+                                {
+                                    continue;
+                                }
+                                which = eval_cmd(tag->cmd->arg);
+                                if (which != _APPEND && which != _INCLUDE)
+                                {
+                                    continue;
+                                }
+                                memset(&part, 0, sizeof(part));
+                                collect_stringargs(tag->cmd->next, level, &part);
+                                for (i = 0 ; i < part.intval && ok ; i++)
+                                {
+                                    if (which == _APPEND)
+                                    {
+                                        ok = (Write(out, part.arg[i], strlen(part.arg[i])) == strlen(part.arg[i]));
+                                    }
+                                    else
+                                    {
+                                        BPTR in = Open(part.arg[i], MODE_OLDFILE);
+                                        char *buf;
+                                        LONG n;
+                                        if (in == BNULL)
+                                        {
+                                            ok = FALSE;
+                                            break;
+                                        }
+                                        buf = malloc(MAXARGSIZE);
+                                        outofmem(buf);
+                                        while ((n = Read(in, buf, MAXARGSIZE)) > 0)
+                                        {
+                                            if (Write(out, buf, n) != n)
+                                            {
+                                                ok = FALSE;
+                                                break;
+                                            }
+                                        }
+                                        free(buf);
+                                        Close(in);
+                                    }
+                                }
+                                free_parameter(part);
+                            }
+                            Close(out);
+                            if (ok)
+                            {
+                                manifest_log('F', string);
+                                if (preferences.transcriptstream != BNULL)
+                                {
+                                    Write(preferences.transcriptstream, "Created text file \"", 19);
+                                    Write(preferences.transcriptstream, string, strlen(string));
+                                    Write(preferences.transcriptstream, "\".\n", 3);
+                                }
+                            }
+                            else
+                            {
+                                set_variable("@ioerr", NULL, IoErr());
+                                DeleteFile(string);
+                            }
+                        }
+                        else
+                        {
+                            set_variable("@ioerr", NULL, IoErr());
+                        }
+                        string = NULL;
+                    }
+                    else
+                    {
+                        ok = TRUE;
+                    }
+                    current->parent->intval = ok ? 1 : 0;
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires (dest)!\n", current->arg);
+                }
+                break;
+
+            case _TOOLTYPE: /* Change an icon: (dest) (settooltype) (setdefaulttool) (setstack) (setposition) (noposition) */
+                if (current->next != NULL)
+                {
+                struct DiskObject *dobj;
+                ScriptArg *tag;
+                char **origtt, **tt;
+                char *origtool, *iconname;
+                int usrconfirm = TRUE, ok = FALSE;
+
+                    parameter = get_parameters(current->next, level);
+                    if (GetPL(parameter, _DEST).used != 1 || GetPL(parameter, _DEST).intval < 1)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires (dest)!\n", current->arg);
+                    }
+                    if (GetPL(parameter, _CONFIRM).used == 1)
+                    {
+                        usrconfirm = request_confirm(parameter);
+                    }
+                    if ((preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1) && usrconfirm)
+                    {
+                        /* icon.library wants the name without ".info" */
+                        iconname = strdup(GetPL(parameter, _DEST).arg[0]);
+                        outofmem(iconname);
+                        i = strlen(iconname);
+                        if (i > 5 && strcasecmp(iconname + i - 5, ".info") == 0)
+                        {
+                            iconname[i - 5] = 0;
+                        }
+                        dobj = GetDiskObject(iconname);
+                        if (dobj != NULL)
+                        {
+                            origtt = (char **)dobj->do_ToolTypes;
+                            origtool = dobj->do_DefaultTool;
+                            tt = tooltypes_clone(origtt);
+                            /* (settooltype) tags in script order: one string deletes, two set */
+                            for (tag = current->next ; tag != NULL ; tag = tag->next)
+                            {
+                                struct ParameterList part;
+
+                                if (tag->cmd == NULL || tag->cmd->arg == NULL || eval_cmd(tag->cmd->arg) != _SETTOOLTYPE)
+                                {
+                                    continue;
+                                }
+                                memset(&part, 0, sizeof(part));
+                                collect_stringargs(tag->cmd->next, level, &part);
+                                if (part.intval >= 1)
+                                {
+                                    tt = tooltypes_set(tt, part.arg[0], part.intval >= 2 ? part.arg[1] : NULL);
+                                }
+                                free_parameter(part);
+                            }
+                            dobj->do_ToolTypes = (STRPTR *)tt;
+                            if (GetPL(parameter, _SETDEFAULTTOOL).used == 1 && GetPL(parameter, _SETDEFAULTTOOL).intval > 0)
+                            {
+                                dobj->do_DefaultTool = GetPL(parameter, _SETDEFAULTTOOL).arg[0];
+                            }
+                            if (GetPL(parameter, _SETSTACK).used == 1)
+                            {
+                                dobj->do_StackSize = GetPL(parameter, _SETSTACK).intval;
+                            }
+                            if (GetPL(parameter, _SETPOSITION).used == 1)
+                            {
+                                dobj->do_CurrentX = GetPL(parameter, _SETPOSITION).intval;
+                                dobj->do_CurrentY = GetPL(parameter, _SETPOSITION).intval2;
+                            }
+                            if (GetPL(parameter, _NOPOSITION).used == 1)
+                            {
+                                dobj->do_CurrentX = NO_ICON_POSITION;
+                                dobj->do_CurrentY = NO_ICON_POSITION;
+                            }
+                            ok = PutDiskObject(iconname, dobj);
+                            if (!ok)
+                            {
+                                set_variable("@ioerr", NULL, IoErr());
+                            }
+                            else
+                            {
+                                manifest_log('T', GetPL(parameter, _DEST).arg[0]);
+                                if (preferences.transcriptstream != BNULL)
+                                {
+                                    Write(preferences.transcriptstream, "Changed icon \"", 14);
+                                    Write(preferences.transcriptstream, iconname, strlen(iconname));
+                                    Write(preferences.transcriptstream, "\".\n", 3);
+                                }
+                            }
+                            /* give icon.library back what it allocated */
+                            dobj->do_ToolTypes = (STRPTR *)origtt;
+                            dobj->do_DefaultTool = origtool;
+                            FreeDiskObject(dobj);
+                            tooltypes_free(tt);
+                        }
+                        else
+                        {
+                            set_variable("@ioerr", NULL, IoErr());
+                        }
+                        free(iconname);
+                    }
+                    else
+                    {
+                        ok = TRUE;
+                    }
+                    current->parent->intval = ok ? 1 : 0;
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires (dest)!\n", current->arg);
+                }
+                break;
+
       /* Here are all unimplemented commands */
-            case _COPYFILES        :
-            case _COPYLIB        :
-            case _FOREACH        :
-            case _GETSUM        :
-            case _GETVERSION        :
             case _ICONINFO        :
-            case _PATMATCH        :
-            case _PROTECT        :
             case _REXX                :
-            case _TEXTFILE        :
-            case _TOOLTYPE        :
                 fprintf(stderr, "Unimplemented command <%s>\n", current->arg);
                 break;
 

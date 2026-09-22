@@ -29,6 +29,7 @@ extern int doing_abort;
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
+#include <libraries/asl.h>
 #ifdef __AROS__
 #include <libraries/coolimages.h>
 #else
@@ -42,6 +43,7 @@ Object *reqwnd, *helpwnd, *helptext;
 Object *reqroot, *root;
 Object *btproceed, *btabort, *btskip, *bthelp;
 Object *intermediate = NULL;
+Object *working_text = NULL; /* the TextObject inside intermediate, see update_working() */
 
 enum
 {
@@ -67,6 +69,7 @@ void AddContents(Object *obj)
         DoMethod(root, OM_REMMEMBER, (IPTR)intermediate);
         MUI_DisposeObject(intermediate);
         intermediate = NULL;
+        working_text = NULL;
     }
     DoMethod(root, OM_ADDMEMBER, (IPTR)obj);
     DoMethod(root, MUIM_Group_ExitChange);
@@ -480,7 +483,7 @@ void show_working(char *msg)
     }
     
     intermediate = VGroup,
-        Child, TextObject,
+        Child, working_text = TextObject,
         GroupFrameT(_(MSG_MESSAGE)),
             MUIA_Text_Contents, (IPTR)(msg),
         End,
@@ -1217,44 +1220,229 @@ return retval;
 
 
 /*
- * Ask user for a directory
+ * Shared body of askdir/askfile: prompt, string gadget, requester popup.
+ * Novice users never see it and get the default.
  */
-char *request_dir(struct ParameterList *pl)
+static char *request_path(struct ParameterList *pl, int dirsonly)
 {
-char *retval, *string;
+char *retval, *string = NULL;
+int i;
 
+    NeedPROMPT(pl);
     if ( GetPL(pl, _DEFAULT).used == 0 )
     {
         error = SCRIPTERROR;
         traperr("No default specified!", NULL);
     }
-    string = GetPL(pl, _DEFAULT).arg[0];
+    string = strdup(GetPL(pl, _DEFAULT).arg[0]);
+    outofmem(string);
+    TRANSSCRIPT();
+    if ( get_var_int( "@user-level" ) > _NOVICE )
+    {
+    char *out;
+    BOOL running = TRUE;
+    Object *st, *wc;
+    ULONG sigs = 0;
 
-/* TODO: write whole function request_dir() */
+        disable_skip(TRUE);
+        out = collatestrings(GetPL(pl, _PROMPT).intval, GetPL(pl, _PROMPT).arg);
 
+        wc = VGroup,
+            Child, VGroup, GroupFrame,
+                MUIA_Background, MUII_GroupBack,
+                Child, TextObject,
+                    MUIA_Text_Contents, (IPTR)(out),
+                End,
+                Child, PopaslObject,
+                    MUIA_Popasl_Type, ASL_FileRequest,
+                    MUIA_Popstring_String, (IPTR)(st = StringObject,
+                        StringFrame,
+                        MUIA_String_Contents,   (IPTR)string,
+                        MUIA_String_MaxLen,     256,
+                        MUIA_String_AdvanceOnCR,TRUE,
+                        MUIA_CycleChain,        TRUE,
+                    End),
+                    MUIA_Popstring_Button, (IPTR)PopButton(dirsonly ? MUII_PopDrawer : MUII_PopFile),
+                    ASLFR_TitleText, (IPTR)out,
+                    ASLFR_DrawersOnly, dirsonly,
+                End,
+            End,
+        End;
+
+        if (wc)
+        {
+            char *str = "";
+            AddContents(wc);
+
+            while (running)
+            {
+                switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+                {
+                    case Push_Abort:
+                        abort_install();
+                        break;
+                    case Push_Proceed:
+                        running = FALSE;
+                        break;
+                    case Push_Help:
+                        if (GetPL(pl, _HELP).intval)
+                        {
+                            helpwinpl(dirsonly ? HELP_ON_ASKDIR : HELP_ON_ASKFILE, pl, _HELP);
+                        }
+                        else
+                        {
+                            helpwin(dirsonly ? HELP_ON_ASKDIR : HELP_ON_ASKFILE,
+                                    dirsonly ? ASKDIR_HELP : ASKFILE_HELP);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                WaitCTRL(sigs);
+            }
+            free(string);
+            get(st, MUIA_String_Contents, &str);
+            string = strdup(str);
+            outofmem(string);
+
+            DelContents(wc);
+        }
+        free(out);
+        disable_skip(FALSE);
+    }
     retval = addquotes(string);
+    free(string);
+    if ( preferences.transcriptstream != BNULL )
+    {
+        Write(preferences.transcriptstream, dirsonly ? "Ask Directory: Result was " : "Ask File: Result was ", dirsonly ? 26 : 21);
+        Write(preferences.transcriptstream, retval, strlen(retval));
+        Write(preferences.transcriptstream, ".\n\n", 3);
+    }
 
 return retval;
 }
 
 
 /*
- * Ask user to insert a specific disk
+ * Ask user for a directory
+ */
+char *request_dir(struct ParameterList *pl)
+{
+    return request_path(pl, TRUE);
+}
+
+
+/*
+ * Ask user to insert a specific disk: loop until "dest:" can be locked.
+ * (newname) assigns the found volume under a second name.
  */
 char *request_disk(struct ParameterList *pl)
 {
-char *retval, *string;
+char *retval, *dest, *volname;
+BPTR lock = BNULL;
+int i, len, skipped = FALSE;
 
+    NeedPROMPT(pl);
     if ( GetPL(pl, _DEST).used == 0 )
     {
         error = SCRIPTERROR;
         traperr("No dest specified!", NULL);
     }
-    string = GetPL(pl, _DEST).arg[0];
+    dest = GetPL(pl, _DEST).arg[0];
+    TRANSSCRIPT();
 
-/* TODO: write whole function request_disk() */
+    /* "Work:" or "Work" -- both mean the volume */
+    len = strlen(dest);
+    volname = malloc(len + 2);
+    outofmem(volname);
+    strcpy(volname, dest);
+    if (len > 0 && volname[len - 1] == ':')
+    {
+        volname[len - 1] = 0;
+    }
+    strcat(volname, ":");
 
-    retval = addquotes(string);
+    while ((lock = Lock(volname, SHARED_LOCK)) == BNULL && !skipped)
+    {
+    char *out;
+    BOOL running = TRUE;
+    Object *wc;
+    ULONG sigs = 0;
+
+        out = collatestrings(GetPL(pl, _PROMPT).intval, GetPL(pl, _PROMPT).arg);
+        wc = VGroup,
+            Child, TextObject,
+                GroupFrame,
+                MUIA_Background, MUII_GroupBack,
+                MUIA_Text_Contents, (IPTR)(out),
+            End,
+            End;
+        if (wc)
+        {
+            AddContents(wc);
+            while (running)
+            {
+                switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+                {
+                    case Push_Abort:
+                        abort_install();
+                        break;
+                    case Push_Proceed: /* retry */
+                        running = FALSE;
+                        break;
+                    case Push_Skip:
+                        skipped = TRUE;
+                        running = FALSE;
+                        break;
+                    case Push_Help:
+                        if (GetPL(pl, _HELP).intval)
+                        {
+                            helpwinpl(HELP_ON_ASKDISK, pl, _HELP);
+                        }
+                        else
+                        {
+                            helpwin(HELP_ON_ASKDISK, ASKDISK_HELP);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                WaitCTRL(sigs);
+            }
+            DelContents(wc);
+        }
+        free(out);
+    }
+
+    if (lock != BNULL)
+    {
+        if (GetPL(pl, _NEWNAME).used == 1 && GetPL(pl, _NEWNAME).intval > 0
+            && (preferences.pretend == 0 || GetPL(pl, _SAFE).used == 1))
+        {
+            /* AssignLock() owns the lock on success */
+            if (AssignLock(GetPL(pl, _NEWNAME).arg[0], lock) == DOSFALSE)
+            {
+                UnLock(lock);
+            }
+            else
+            {
+                manifest_log('A', GetPL(pl, _NEWNAME).arg[0]);
+            }
+        }
+        else
+        {
+            UnLock(lock);
+        }
+    }
+    free(volname);
+
+    retval = addquotes(dest);
+    if ( preferences.transcriptstream != BNULL )
+    {
+        Write(preferences.transcriptstream, "Ask Disk: Result was ", 21);
+        Write(preferences.transcriptstream, retval, strlen(retval));
+        Write(preferences.transcriptstream, lock != BNULL ? " (found).\n\n" : " (skipped).\n\n", lock != BNULL ? 11 : 13);
+    }
 
 return retval;
 }
@@ -1265,20 +1453,204 @@ return retval;
  */
 char *request_file(struct ParameterList *pl)
 {
-char *retval, *string;
+    return request_path(pl, FALSE);
+}
 
-    if ( GetPL(pl, _DEFAULT).used == 0 )
+
+/*
+ * Yes/no question during a file operation (overwrite? unprotect? replace
+ * newer library?): Proceed = yes, Skip = no. Novice never sees it and
+ * gets "def".
+ */
+int request_yesno(char *msg, struct ParameterList *pl, int def)
+{
+int retval = def;
+BOOL running = TRUE;
+Object *wc;
+ULONG sigs = 0;
+
+    if ( get_var_int("@user-level") > _NOVICE )
     {
-        error = SCRIPTERROR;
-        traperr("No default specified!", NULL);
+        wc = VGroup,
+            Child, TextObject,
+                GroupFrame,
+                MUIA_Background, MUII_GroupBack,
+                MUIA_Text_Contents, (IPTR)(msg),
+            End,
+            End;
+
+        if (wc)
+        {
+            AddContents(wc);
+
+            while (running)
+            {
+                switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+                {
+                    case Push_Abort:
+                        abort_install();
+                        break;
+                    case Push_Proceed:
+                        retval = TRUE;
+                        running = FALSE;
+                        break;
+                    case Push_Skip:
+                        retval = FALSE;
+                        running = FALSE;
+                        break;
+                    case Push_Help:
+                        if (pl != NULL && GetPL(pl, _HELP).intval)
+                        {
+                            helpwinpl(HELP_ON_CONFIRM, pl, _HELP);
+                        }
+                        else
+                        {
+                            helpwin(HELP_ON_CONFIRM, USERCONFIRM_HELP);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                WaitCTRL(sigs);
+            }
+
+            DelContents(wc);
+        }
     }
-    string = GetPL(pl, _DEFAULT).arg[0];
-
-/* TODO: write whole function request_file() */
-
-    retval = addquotes(string);
+    if ( preferences.transcriptstream != BNULL )
+    {
+        Write(preferences.transcriptstream, ">", 1);
+        Write(preferences.transcriptstream, msg, strlen(msg));
+        Write(preferences.transcriptstream, retval ? "\nAnswer: yes\n\n" : "\nAnswer: no\n\n", retval ? 14 : 13);
+    }
 
 return retval;
+}
+
+
+/*
+ * copyfiles (confirm): let the user pick which of n names to copy.
+ * Returns a malloc'd flag per name (all preselected), NULL if skipped.
+ */
+char *request_files(struct ParameterList *pl, char **names, int n)
+{
+char *flags, *out;
+BOOL running = TRUE;
+Object *wc, *lv, *list;
+ULONG sigs = 0;
+int i;
+
+    NeedPROMPT(pl);
+    NeedHELP(pl);
+    flags = malloc(n > 0 ? n : 1);
+    outofmem(flags);
+    for (i = 0 ; i < n ; i++)
+    {
+        flags[i] = 1;
+    }
+    if ( get_var_int("@user-level") < GetPL(pl, _CONFIRM).intval )
+    {
+        return flags;
+    }
+
+    out = collatestrings(GetPL(pl, _PROMPT).intval, GetPL(pl, _PROMPT).arg);
+    wc = VGroup,
+        Child, TextObject,
+            GroupFrame,
+            MUIA_Background, MUII_GroupBack,
+            MUIA_Text_Contents, (IPTR)(out),
+        End,
+        Child, lv = ListviewObject,
+            MUIA_Listview_MultiSelect, MUIV_Listview_MultiSelect_Always,
+            MUIA_Listview_List, (IPTR)(list = ListObject,
+                InputListFrame,
+                MUIA_List_SourceArray, (IPTR)names,
+            End),
+        End,
+    End;
+
+    if (wc)
+    {
+        AddContents(wc);
+        DoMethod(list, MUIM_List_Select, MUIV_List_Select_All, MUIV_List_Select_On, NULL);
+
+        while (running)
+        {
+            switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+            {
+                case Push_Abort:
+                    abort_install();
+                    break;
+                case Push_Proceed:
+                    for (i = 0 ; i < n ; i++)
+                    {
+                        LONG state = 0;
+                        DoMethod(list, MUIM_List_Select, i, MUIV_List_Select_Ask, (IPTR)&state);
+                        flags[i] = state ? 1 : 0;
+                    }
+                    running = FALSE;
+                    break;
+                case Push_Skip:
+                    free(flags);
+                    flags = NULL;
+                    running = FALSE;
+                    break;
+                case Push_Help:
+                    helpwinpl(HELP_ON_CONFIRM, pl, _HELP);
+                    break;
+                default:
+                    break;
+            }
+            WaitCTRL(sigs);
+        }
+
+        DelContents(wc);
+    }
+    free(out);
+
+    if ( preferences.transcriptstream != BNULL )
+    {
+        Write(preferences.transcriptstream, "Select files: ", 14);
+        if (flags == NULL)
+        {
+            Write(preferences.transcriptstream, "skipped.\n\n", 10);
+        }
+        else
+        {
+            for (i = 0 ; i < n ; i++)
+            {
+                if (flags[i])
+                {
+                    Write(preferences.transcriptstream, names[i], strlen(names[i]));
+                    Write(preferences.transcriptstream, " ", 1);
+                }
+            }
+            Write(preferences.transcriptstream, "\n\n", 2);
+        }
+    }
+
+return flags;
+}
+
+
+/*
+ * Refresh the "working" text (current file being copied) and give the
+ * GUI a chance to notice Abort.
+ */
+void update_working(char *msg)
+{
+ULONG sigs = 0;
+
+    if (intermediate == NULL || working_text == NULL)
+    {
+        show_working(msg);
+        return;
+    }
+    set(working_text, MUIA_Text_Contents, (IPTR)msg);
+    if (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) == Push_Abort)
+    {
+        abort_install();
+    }
 }
 
 
