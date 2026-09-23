@@ -156,6 +156,30 @@ Arguments in [...] are optional.
   The return value is 1.
 
 
+( openwbobject <name>...
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(safe)]
+)
+  V44. Opens the Workbench object <name>: a disk, a drawer, a trashcan,
+  a tool or a project, as a double-click on its icon would. Returns 1
+  when the object was opened, 0 when it was not or the user declined
+  the confirmation. When pretending it is not opened and 1 is returned
+  unless (safe) is given.
+
+
+( showwbobject <name> )
+  V44. Scrolls the open drawer window holding <name> so that the icon
+  is visible. Returns 1 on success, 0 when workbench.library could not
+  do it.
+
+
+( closewbobject <name> )
+  V44. Closes the window of the disk, drawer or trashcan <name>. Returns
+  1 on success, 0 when workbench.library could not do it.
+
+
 ( querydisplay <object> <option> )
   V44. A measure of the display, for choosing the media to show: for
   the object "screen" the options are "width", "height", "depth" and

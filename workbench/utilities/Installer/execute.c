@@ -2471,6 +2471,74 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
+            case _OPENWBOBJECT: /* (openwbobject <name> (prompt) (help) (confirm) (safe) (back)): open a disk, drawer, tool or project on the Workbench */
+                if (current->next != NULL)
+                {
+                int usrconfirm = TRUE;
+
+                    parameter = get_parameters(current->next, level);
+                    string = collect_strings(current->next, SPACE, level);
+                    if (string == NULL)
+                    {
+                        error = BADPARAMETER;
+                        traperr("<%s> requires a name string!\n", current->parent->cmd->arg);
+                    }
+                    if (GetPL(parameter, _CONFIRM).used == 1)
+                    {
+                        usrconfirm = request_confirm(parameter);
+                    }
+                    if (!usrconfirm)
+                    {
+                        current->parent->intval = 0;
+                    }
+                    else if (preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1)
+                    {
+                        current->parent->intval = OpenWorkbenchObject(string, TAG_DONE) ? 1 : 0;
+                    }
+                    else
+                    {
+                        current->parent->intval = 1;
+                    }
+                    free(string);
+                    BackResult(parameter);
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires one argument!\n", current->arg);
+                }
+                break;
+
+            case _SHOWWBOBJECT: /* (showwbobject <name>): scroll an open drawer to the named icon */
+            case _CLOSEWBOBJECT: /* (closewbobject <name>): close a disk, drawer or trashcan window */
+                if (current->next != NULL)
+                {
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a name string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    if (cmd_type == _SHOWWBOBJECT)
+                    {
+                        current->parent->intval = MakeWorkbenchObjectVisible(string, TAG_DONE) ? 1 : 0;
+                    }
+                    else
+                    {
+                        current->parent->intval = CloseWorkbenchObject(string, TAG_DONE) ? 1 : 0;
+                    }
+                    free(string);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires one argument!\n", current->arg);
+                }
+                break;
+
             case _TRACE: /* (trace): a mark for (retrace) to come back to */
                 current->parent->intval = 1;
                 break;

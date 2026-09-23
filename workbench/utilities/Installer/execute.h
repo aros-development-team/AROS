@@ -122,8 +122,11 @@ struct CommandList
 #define _TRACE          85
 #define _RETRACE        86
 #define _QUERYDISPLAY   87
+#define _OPENWBOBJECT   88
+#define _SHOWWBOBJECT   89
+#define _CLOSEWBOBJECT  90
 
-#define NUMCMDS         87
+#define NUMCMDS         90
 
 
 /* Parameters */
