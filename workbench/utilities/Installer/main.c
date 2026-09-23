@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Installer V43.3
 */
@@ -102,10 +102,13 @@ int main(int argc, char *argv[])
     inputfile = Open(filename, MODE_OLDFILE);
     if (inputfile == BNULL)
     {
-#ifdef DEBUG
-        fprintf(stderr, "Error opening script <%s>\n",filename);
-        PrintFault(IoErr(), INSTALLER_NAME);
-#endif /* DEBUG */
+        /* not a debug message: say which script, then the DOS reason
+         * (IoErr() before printf(), which may touch it) */
+        {
+            LONG ioerr = IoErr();
+            printf("Installer: Error opening script <%s>\n", filename);
+            PrintFault(ioerr, INSTALLER_NAME);
+        }
         exit(-1);
     }
 
@@ -116,15 +119,20 @@ int main(int argc, char *argv[])
     if (argc)
     {
         preferences.debug = TRUE;
+        /* NOLOG/S: no log file at all. The default "install_log_file" is
+         * relative to the current directory, and an Installer run from
+         * a CD (Workbench runs it in the script's drawer) could not
+         * create it - and quit before the first page. */
         if (args[ARG_NOLOG])
         {
             preferences.novicelog = FALSE;
+            preferences.transcriptfile = NULL;
         }
         else
         {
             preferences.novicelog = TRUE;
+            preferences.transcriptfile = strdup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
         }
-        preferences.transcriptfile = strdup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
         preferences.nopretend = (int)args[ARG_NOPRETEND];
         if (args[ARG_MINUSER])
         {
@@ -187,8 +195,16 @@ int main(int argc, char *argv[])
             preferences.novicelog = FALSE;
         }
 
-        /* Write to which LOGFILE? */
-        preferences.transcriptfile = strdup(ArgString(tooltypes, "LOGFILE", "install_log_file"));
+        /* Write to which LOGFILE? NOLOG (the original's tooltype): none */
+        if (FindToolType(tooltypes, "NOLOG") != NULL)
+        {
+            preferences.novicelog = FALSE;
+            preferences.transcriptfile = NULL;
+        }
+        else
+        {
+            preferences.transcriptfile = strdup(ArgString(tooltypes, "LOGFILE", "install_log_file"));
+        }
         /* Is PRETEND possible? */
         preferences.nopretend = (strcmp("TRUE", ArgString(tooltypes, "PRETEND", "TRUE")) != 0);
         ttemp = ArgString(tooltypes, "MINUSER", "NOVICE");
