@@ -163,9 +163,9 @@ Arguments in [...] are optional.
 
 ( procedure <name> [<arg>...] (...) )
   Procedures are defined during parsing. The name has to be a non-quoted
-  string which must not begin with digits. Consider using a prefix like
-  "P_" for your procedures to avoid a conflict with future extensions of
-  Installer.
+  string which must not begin with digits; it is not case sensitive.
+  Consider using a prefix like "P_" for your procedures to avoid a
+  conflict with future extensions of Installer.
   <arg>... is an optional list of variables which will be set when calling
   the procedure. However, you can call the procedure with less than the
   specified arguments; in this case the unset variables retain their old
@@ -208,6 +208,7 @@ Arguments in [...] are optional.
 ( set <var-name> <value> ... )
   Use (set ...) to set variables.
   Variable names have to be unquoted strings -- commands are not accepted
+  Names are not case sensitive: #Name and #name are the same variable.
   Values can be anything.
   Consider using a prefix like '#' to avoid conflicts with future versions
   of Installer. The prefix '@' is reserved for internal variables. They
