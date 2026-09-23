@@ -404,18 +404,17 @@ Execute an AmigaDOS script.
  <feature> is one of:
  "vblank"
  "cpu"
-   -> "68000" "68010" "68020" "68030" "68040" "68060"
-      "80386" "80486"
-      "Pentium" "PentiumPro" "Celeron" "PentiumII" "PentiumIII"
-      "K6" "K6-II" "K6-III" "Athlon"
+   -> "68000" "68010" "68020" "68030" "68040" "68060" on m68k;
+      "X86" "X86_64" "PowerPC" "ARM" "RISCV" elsewhere (the architecture
+      the Installer was built for, named as InstallerLG names it)
  "graphics-mem"
    -> Size of free CHIP RAM (via AvailMem(MEMF_CHIP))
  "total-mem"
    -> Total size of free RAM (via AvailMem(MEMF_TOTAL))
  "fpu"
-   -> "68881" "68882" "FPU40" "80387" "80486" "NOFPU"
+   -> "68881" "68882" "FPU40" "NOFPU" on m68k; "Unknown" elsewhere
  "chiprev"
-   -> "AA" "ECS" "AGNUS" "VGA"
+   -> "Unknown" (no custom chip set)
  Return-type is always a string except for free RAM size.
 
 

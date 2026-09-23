@@ -983,7 +983,6 @@ void *params;
                     clip = strip_quotes(current->arg);
                     i = database_keyword(clip);
                     free(clip);
-/* TODO: compute return values for "database" */
                     switch (i)
                     {
                         case _VBLANK :
@@ -996,6 +995,7 @@ void *params;
                             break;
 
                         case _CPU:
+                            current->parent->arg = addquotes((char *)database_cpu());
                             break;
 
                         case _GRAPHICS_MEM:
@@ -1007,9 +1007,11 @@ void *params;
                             break;
 
                         case _FPU:
+                            current->parent->arg = addquotes((char *)database_fpu());
                             break;
 
                         case _CHIPREV:
+                            current->parent->arg = addquotes((char *)database_chiprev());
                             break;
 
                         default :
@@ -3058,6 +3060,67 @@ int database_keyword(char *name)
         return _CHIPREV;
 
 return _UNKNOWN;
+}
+
+
+/*
+ * (database "cpu"), (database "fpu") and (database "chiprev") - the strings
+ * listed in the Documentation. On m68k they come from exec's AttnFlags, as
+ * Installer V43 reports them. Elsewhere the CPU is named by architecture,
+ * the names InstallerLG uses, and there is no FPU model or custom chip set
+ * to name.
+ */
+const char *database_cpu(void)
+{
+#if defined(__mc68000__)
+    UWORD flags = SysBase->AttnFlags;
+
+    if (flags & AFF_68060)
+        return "68060";
+    if (flags & AFF_68040)
+        return "68040";
+    if (flags & AFF_68030)
+        return "68030";
+    if (flags & AFF_68020)
+        return "68020";
+    if (flags & AFF_68010)
+        return "68010";
+    return "68000";
+#elif defined(__x86_64__)
+    return "X86_64";
+#elif defined(__i386__)
+    return "X86";
+#elif defined(__powerpc__)
+    return "PowerPC";
+#elif defined(__arm__) || defined(__aarch64__)
+    return "ARM";
+#elif defined(__riscv)
+    return "RISCV";
+#else
+    return "Unknown CPU";
+#endif
+}
+
+const char *database_fpu(void)
+{
+#if defined(__mc68000__)
+    UWORD flags = SysBase->AttnFlags;
+
+    if (flags & AFF_FPU40)
+        return "FPU40";
+    if (flags & AFF_68882)
+        return "68882";
+    if (flags & AFF_68881)
+        return "68881";
+    return "NOFPU";
+#else
+    return "Unknown";
+#endif
+}
+
+const char *database_chiprev(void)
+{
+    return "Unknown";
 }
 
 
