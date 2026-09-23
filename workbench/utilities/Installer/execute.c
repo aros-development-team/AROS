@@ -82,6 +82,16 @@ void *params;
     current = commands;
     /* Assume commands->cmd/arg to be first cmd/arg in parentheses */
 
+    /* An empty bracket "()", or the body of a (procedure name) without
+       one: nothing to do, worth 0 */
+    if (current->cmd == NULL && current->arg == NULL && current->next == NULL)
+    {
+        free(current->parent->arg);
+        current->parent->arg = NULL;
+        current->parent->intval = 0;
+        return;
+    }
+
     /* If first one is a (...)-function execute it */
     if (current->cmd != NULL)
     {
