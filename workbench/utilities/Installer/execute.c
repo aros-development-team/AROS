@@ -2746,7 +2746,9 @@ DMSG("   %s\n",ret);
                         }
                     }
 
-                    free_parameterlist(parameter);
+                    /* one ParameterList, not the NUMPARAMS of get_parameters() */
+                    free_parameter(*parameter);
+                    free(parameter);
                 }
                 break;
 
@@ -2790,7 +2792,8 @@ DMSG("   %s\n",ret);
                         }
                     }
 
-                    free_parameterlist(parameter);
+                    free_parameter(*parameter);
+                    free(parameter);
                 }
                 break;
 
