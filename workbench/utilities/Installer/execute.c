@@ -829,34 +829,51 @@ void *params;
                 free(string);
                 break;
 
-            case _UNTIL: /* execute 2nd cmd until 1st arg != 0 */
-                if (current->next != NULL && current->next->next != NULL)
+            case _UNTIL: /* (until <expr> <statements>): run the statements, then loop while <expr> == 0 */
+            case _WHILE: /* (while <expr> <statements>): loop while <expr> != 0, tested before the statements */
+                if (current->next != NULL)
                 {
                     current = current->next;
-                    if (current->next->cmd == NULL)
+                    /* Every statement after the condition is the body - the
+                       guide says <statements>, and Aminet scripts write
+                       (until (< 2 menu) (set menu (askchoice ...)) (if ...) (if ...)) */
+                    for (dummy = current->next ; dummy != NULL ; dummy = dummy->next)
                     {
-                        /* We don't have a block, so what can we execute ??? */
-                        error = SCRIPTERROR;
-                        traperr("<%s> has no command-block!\n", current->parent->cmd->arg);
-                    }
-                    i = 0;
-                    while (i == 0)
-                    {
-                        /* Execute command */
-                        ExecuteNextCommand();
-
-                        /* Now check condition */
-                        ExecuteCommand();
-                        i = getint(current);
-
-                        /* condition is true -> return values and exit */
-                        if (i != 0)
+                        if (dummy->cmd == NULL)
                         {
-                            current->parent->intval = current->next->intval;
-                            if (current->next->arg != NULL)
+                            error = SCRIPTERROR;
+                            traperr("<%s> has no command-block!\n", current->parent->cmd->arg);
+                        }
+                    }
+                    for (;;)
+                    {
+                        if (cmd_type == _WHILE)
+                        {
+                            ExecuteCommand();
+                            if (getint(current) == 0)
                             {
-                                current->parent->arg = strdup(current->next->arg);
+                                break;
+                            }
+                        }
+                        for (dummy = current->next ; dummy != NULL ; dummy = dummy->next)
+                        {
+                            execute_script(dummy->cmd, level + 1);
+                            /* the loop's value is the last statement's */
+                            current->parent->intval = dummy->intval;
+                            free(current->parent->arg);
+                            current->parent->arg = NULL;
+                            if (dummy->arg != NULL)
+                            {
+                                current->parent->arg = strdup(dummy->arg);
                                 outofmem(current->parent->arg);
+                            }
+                        }
+                        if (cmd_type == _UNTIL)
+                        {
+                            ExecuteCommand();
+                            if (getint(current) != 0)
+                            {
+                                break;
                             }
                         }
                     }
@@ -864,7 +881,7 @@ void *params;
                 else
                 {
                     error = SCRIPTERROR;
-                    traperr("<%s> requires two arguments!\n", current->arg);
+                    traperr("<%s> requires a condition!\n", current->arg);
                 }
                 break;
 
@@ -932,45 +949,6 @@ void *params;
                 /* Add surrounding quotes to string */
                 current->parent->arg = addquotes(string);
                 free(string);
-                break;
-
-            case _WHILE: /* while 1st arg != 0 execute 2nd cmd */
-                if (current->next != NULL && current->next->next != NULL)
-                {
-                    current = current->next;
-                    if (current->next->cmd == NULL)
-                    {
-                        /* We don't have a block, so what can we execute ??? */
-                        error = SCRIPTERROR;
-                        traperr("<%s> has no command-block!\n", current->parent->cmd->arg);
-                    }
-                    i = 1;
-                    while (i != 0)
-                    {
-                        ExecuteCommand();
-
-                        /* Now check condition */
-                        i = getint(current);
-                        if (i != 0)
-                        {
-                            ExecuteNextCommand();
-                        }
-                        else
-                        {
-                            current->parent->intval = current->next->intval;
-                            if (current->next->arg != NULL)
-                            {
-                                current->parent->arg = strdup(current->next->arg);
-                                outofmem(current->parent->arg);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    error = SCRIPTERROR;
-                    traperr("<%s> requires two arguments!\n", current->arg);
-                }
                 break;
 
             case _MESSAGE: /* Display strings and offer Proceed, Abort, Help */
