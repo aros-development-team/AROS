@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -576,35 +576,113 @@ AROS_LH4(BOOL, New_SetVar,
 
     if (patches[PATCH_SetVar].enabled)
     {
+        static const char hexdigits[] = "0123456789ABCDEF";
         CONST_STRPTR opt;
+        CONST_STRPTR varname = name ? name : "(NULL)";
+        const UBYTE *value = (const UBYTE *)buffer;
         char varstr[MAX_STR_LEN + 1];
-        int vlen;
+        ULONG pos = 0, i = 0;
+        BOOL truncated = FALSE;
 
         if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
         else if ((flags & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
         else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
         else                              opt = MSG(MSG_UNKNOWN);
 
-        /*
-         *              Now create a string that looks like "Variable=Value"
-         *
-         *              We go to some pains to ensure we don't overwrite our
-         *              string length
-         */
-        vlen = strlen(name);
-        if (vlen > (MAX_STR_LEN-1)) {
-            strncpy(varstr, name, MAX_STR_LEN);
-            varstr[MAX_STR_LEN] = 0;
-        } else {
-            strcpy(varstr, name);
-            strcat(varstr, "=");
-            vlen = 98 - vlen;
-            if (size != -1)
-                vlen = MIN(vlen, size);
-
-            strncat(varstr, buffer, vlen);
-            varstr[MAX_STR_LEN] = 0;
+        /* Keep formatting local: patches must not enter arosc.library. */
+        while (pos < MAX_STR_LEN && varname[pos] != '\0')
+        {
+            varstr[pos] = varname[pos];
+            pos++;
         }
+
+        if (pos == MAX_STR_LEN)
+            truncated = TRUE;
+        else
+            varstr[pos++] = '=';
+
+        if (!truncated)
+        {
+            if (!value)
+            {
+                CONST_STRPTR text = "(NULL)";
+                while (pos < MAX_STR_LEN && text[i] != '\0')
+                    varstr[pos++] = text[i++];
+                truncated = text[i] != '\0';
+            }
+            else if (size < -1)
+            {
+                CONST_STRPTR text = "(invalid size)";
+                while (pos < MAX_STR_LEN && text[i] != '\0')
+                    varstr[pos++] = text[i++];
+                truncated = text[i] != '\0';
+            }
+            else if (size == -1)
+            {
+                while (pos < MAX_STR_LEN && value[i] != '\0')
+                    varstr[pos++] = value[i++];
+                truncated = value[i] != '\0';
+            }
+            else if (flags & GVF_BINARY_VAR)
+            {
+                if (MAX_STR_LEN - pos < 2)
+                    truncated = TRUE;
+                else
+                {
+                    varstr[pos++] = '0';
+                    varstr[pos++] = 'x';
+                }
+
+                while (!truncated && i < (ULONG)size)
+                {
+                    UBYTE ch = value[i++];
+                    if (MAX_STR_LEN - pos < 2)
+                    {
+                        truncated = TRUE;
+                        break;
+                    }
+                    varstr[pos++] = hexdigits[ch >> 4];
+                    varstr[pos++] = hexdigits[ch & 15];
+                }
+            }
+            else
+            {
+                while (i < (ULONG)size)
+                {
+                    UBYTE ch = value[i++];
+                    if (ch >= 0x20 && ch <= 0x7e && ch != '\\')
+                    {
+                        if (pos == MAX_STR_LEN)
+                        {
+                            truncated = TRUE;
+                            break;
+                        }
+                        varstr[pos++] = ch;
+                    }
+                    else
+                    {
+                        if (MAX_STR_LEN - pos < 4)
+                        {
+                            truncated = TRUE;
+                            break;
+                        }
+                        varstr[pos++] = '\\';
+                        varstr[pos++] = 'x';
+                        varstr[pos++] = hexdigits[ch >> 4];
+                        varstr[pos++] = hexdigits[ch & 15];
+                    }
+                }
+            }
+        }
+
+        if (truncated)
+        {
+            varstr[MAX_STR_LEN - 3] = '.';
+            varstr[MAX_STR_LEN - 2] = '.';
+            varstr[MAX_STR_LEN - 1] = '.';
+            pos = MAX_STR_LEN;
+        }
+        varstr[pos] = '\0';
         main_output("SetVar", varstr, opt, result, TRUE, FALSE);
     }
 
