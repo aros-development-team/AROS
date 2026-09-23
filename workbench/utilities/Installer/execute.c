@@ -1213,7 +1213,7 @@ void *params;
                 {
                 int success = 0;
                 BPTR infile;
-                int safe = FALSE;
+                int safe = FALSE, usrconfirm = TRUE, backed = FALSE;
 
                     current = current->next;
                     ExecuteCommand();
@@ -1231,9 +1231,21 @@ void *params;
                     {
                         parameter = get_parameters(current->next, level);
                         safe = GetPL(parameter, _SAFE).used;
+                        if (GetPL(parameter, _CONFIRM).used == 1)
+                        {
+                            usrconfirm = request_confirm(parameter);
+                        }
+                        backed = back_pressed;
+                        BackResult(parameter);
                         free_parameterlist(parameter);
                     }
-                    if (preferences.pretend == 0 || safe)
+                    if (backed)
+                    {
+                        /* the value is the one of the (back) statements */
+                        free(string);
+                        break;
+                    }
+                    if (usrconfirm && (preferences.pretend == 0 || safe))
                     {
                         infile = Open(string, MODE_OLDFILE);
                         if(infile != BNULL)
@@ -1275,8 +1287,20 @@ void *params;
                 if (current->next != NULL)
                 {
                 BPTR seg;
+                int usrconfirm = TRUE, backed = FALSE;
+
                     parameter = get_parameters(current->next, level);
-                    if (preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1)
+                    if (GetPL(parameter, _CONFIRM).used == 1)
+                    {
+                        usrconfirm = request_confirm(parameter);
+                    }
+                    backed = back_pressed;
+                    BackResult(parameter);
+                    if (backed)
+                    {
+                        /* the value is the one of the (back) statements */
+                    }
+                    else if (usrconfirm && (preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1))
                     {
                         string = collect_strings(current->next, SPACE, level);
                         if (string == NULL)
@@ -1296,7 +1320,6 @@ void *params;
                             clip = NULL;
                             j = 0;
                         }
-                        if (get_var_int("@user-level") >= GetPL(parameter, _CONFIRM).intval)
                         {
                             if ((seg = LoadSeg(string)) == BNULL)
                             {
@@ -1323,6 +1346,7 @@ void *params;
                         }
                         free(string);
                     }
+                    free_parameterlist(parameter);
                 }
                 else
                 {
