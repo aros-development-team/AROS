@@ -2471,6 +2471,138 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
+            case _SHOWMEDIA: /* (showmedia <var> <file> <position> <size> <border> [<flag>...]): show a picture next to the window */
+                if (current->next != NULL && current->next->next != NULL && current->next->next->next != NULL
+                    && current->next->next->next->next != NULL && current->next->next->next->next->next != NULL)
+                {
+                char *file, *position;
+                long int id;
+                ScriptArg *self = current->parent;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a variable name!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    clip = string;
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        free(clip);
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a file name!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    file = string;
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        free(clip);
+                        free(file);
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a position string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    position = string;
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        free(clip);
+                        free(file);
+                        free(position);
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a size string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    current = current->next;
+                    ExecuteCommand();
+                    id = show_media(file, position, string, getint(current) != 0);
+                    free(string);
+                    free(position);
+                    free(file);
+                    /* "wordwrap", "panel", "play", "repeat": nothing a picture does */
+                    for (current = current->next ; current != NULL ; current = current->next)
+                    {
+                        ExecuteCommand();
+                    }
+                    if (id >= 0)
+                    {
+                        set_variable(clip, NULL, id);
+                    }
+                    free(clip);
+                    self->intval = id >= 0 ? 1 : 0;
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires five arguments!\n", current->arg);
+                }
+                break;
+
+            case _SETMEDIA: /* (setmedia <media> <action> [<parameter>]): act on a media */
+                if (current->next != NULL && current->next->next != NULL)
+                {
+                static const char *actions[] =
+                {
+                    "pause", "play", "contents", "index", "retrace", "browser_prev", "browser_next",
+                    "command", "rewind", "fastforward", "stop", "locate", NULL
+                };
+                long int id;
+                ScriptArg *self = current->parent;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    id = getint(current);
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires an action string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    for (i = 0 ; actions[i] != NULL && strcasecmp(actions[i], string) != 0 ; i++);
+                    if (actions[i] == NULL)
+                    {
+                        free(string);
+                        error = BADPARAMETER;
+                        traperr("Unknown media action <%s>!\n", current->arg);
+                    }
+                    free(string);
+                    /* the parameter of "command" and "locate" */
+                    for (current = current->next ; current != NULL ; current = current->next)
+                    {
+                        ExecuteCommand();
+                    }
+                    self->intval = set_media(id);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires two arguments!\n", current->arg);
+                }
+                break;
+
+            case _CLOSEMEDIA: /* (closemedia <media>): close the window of a media */
+                if (current->next != NULL)
+                {
+                    current = current->next;
+                    ExecuteCommand();
+                    current->parent->intval = close_media(getint(current));
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires one argument!\n", current->arg);
+                }
+                break;
+
             case _OPENWBOBJECT: /* (openwbobject <name> (prompt) (help) (confirm) (safe) (back)): open a disk, drawer, tool or project on the Workbench */
                 if (current->next != NULL)
                 {

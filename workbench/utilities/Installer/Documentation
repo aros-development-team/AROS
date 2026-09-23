@@ -180,6 +180,33 @@ Arguments in [...] are optional.
   1 on success, 0 when workbench.library could not do it.
 
 
+( showmedia <var-name> <file> <position> <size> <border> [<flag>...] )
+  V44. Shows <file> in a window of its own beside the Installer's and
+  sets <var-name> to the media id for (setmedia) and (closemedia).
+  <position> is "upper_left", "upper_center", "upper_right",
+  "center_left", "center", "center_right", "lower_left", "lower_center"
+  or "lower_right"; <size> "small", "medium" or "large" (1/8, 1/4, 1/2
+  of the screen, a "_small", "_medium" or "_large" suffix giving the
+  height its own class) or "none" for the size of the picture; <border>
+  is 1 for a window with a border. The flags "wordwrap", "panel",
+  "play" and "repeat" are accepted. Only pictures (datatypes) are
+  shown; the value is 1 when the media is up and 0 otherwise, when
+  <var-name> is left alone.
+
+
+( setmedia <media> <action> [<parameter>] )
+  V44. <action> is "pause", "play", "contents", "index", "retrace",
+  "browser_prev", "browser_next", "command", "rewind", "fastforward",
+  "stop" or "locate" (the last two take the <parameter>). A picture
+  has nothing to do with them, so the value is 1 when <media> is up
+  and 0 otherwise.
+
+
+( closemedia <media> )
+  V44. Closes the window of <media>. Returns 1, or 0 when there is no
+  such media.
+
+
 ( querydisplay <object> <option> )
   V44. A measure of the display, for choosing the media to show: for
   the object "screen" the options are "width", "height", "depth" and

@@ -26,6 +26,7 @@ extern int doing_abort;
 #include <stdio.h>
 #include <string.h>
 
+#include <proto/datatypes.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -388,6 +389,12 @@ printf("Failed to intialize Zune GUI\n");
  */
 void deinit_gui()
 {
+int i;
+
+    for (i = 0 ; i < MAXMEDIA ; i++)
+    {
+        close_media(i);
+    }
     set(wnd, MUIA_Window_Open, FALSE);
     MUI_DisposeObject(app);
 }
@@ -526,6 +533,177 @@ long int width = 0, height = 0, depth = 0, colors = 0, upper = 0, lower = 0, lef
     if (strcasecmp(option, "left") == 0) return left;
     if (strcasecmp(option, "right") == 0) return right;
     return 0;
+}
+
+/*
+ * (showmedia): a picture in a window of its own, next to the Installer's.
+ * The window is placed by "upper_left" ... "lower_right" (anything else
+ * centres it), sized "small", "medium" or "large" (1/8, 1/4, 1/2 of the
+ * screen, a _small/_medium/_large suffix giving the height its own class)
+ * or left at the size of the picture, with or without a border. The
+ * datatype is looked at first: only pictures are shown, the other kinds of
+ * media the original Installer knows are not. Returns the media id, or -1.
+ */
+static Object *mediawnd[MAXMEDIA];
+static char *medianame[MAXMEDIA];    /* Dtpic keeps the pointer, so do we */
+
+static int has_part(char *s, char *part)
+{
+size_t n = strlen(part);
+
+    for ( ; *s != '\0' ; s++)
+    {
+        if (strncasecmp(s, part, n) == 0)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/* "small" = 1/8, "medium" = 1/4, "large" = 1/2, else 0 */
+static int size_shift(char *s)
+{
+    if (strncasecmp(s, "small", 5) == 0) return 3;
+    if (strncasecmp(s, "medium", 6) == 0) return 2;
+    if (strncasecmp(s, "large", 5) == 0) return 1;
+    return 0;
+}
+
+long int show_media(char *file, char *position, char *size, int border)
+{
+struct Screen *scr = NULL;
+struct Window *win = NULL;
+struct DataType *dt;
+BPTR lock;
+Object *obj;
+IPTR opened = FALSE;
+long int id, width = 0, height = 0, x, y;
+int wshift, hshift, picture = FALSE;
+char *suffix;
+
+    for (id = 0 ; id < MAXMEDIA && mediawnd[id] != NULL ; id++);
+    if (id == MAXMEDIA)
+    {
+        return -1;
+    }
+
+    lock = Lock(file, SHARED_LOCK);
+    if (lock == BNULL)
+    {
+        set_variable("@ioerr", NULL, IoErr());
+        return -1;
+    }
+    dt = ObtainDataType(DTST_FILE, (APTR)lock, NULL);
+    if (dt != NULL)
+    {
+        picture = (dt->dtn_Header->dth_GroupID == GID_PICTURE);
+        ReleaseDataType(dt);
+    }
+    UnLock(lock);
+    if (!picture)
+    {
+        return -1;
+    }
+
+    get(wnd, MUIA_Window_Screen, &scr);
+    wshift = size_shift(size);
+    if (scr != NULL && wshift != 0)
+    {
+        suffix = strchr(size, '_');
+        hshift = suffix != NULL ? size_shift(suffix + 1) : 0;
+        width = scr->Width >> wshift;
+        height = scr->Height >> (hshift != 0 ? hshift : wshift);
+    }
+
+    medianame[id] = strdup(file);
+    if (medianame[id] == NULL)
+    {
+        end_alloc();
+    }
+    obj = WindowObject,
+        MUIA_Window_Activate, FALSE,
+        MUIA_Window_CloseGadget, FALSE,
+        MUIA_Window_SizeGadget, FALSE,
+        MUIA_Window_NoMenus, TRUE,
+        border ? TAG_IGNORE : MUIA_Window_Borderless, TRUE,
+        width != 0 ? MUIA_Window_Width : TAG_IGNORE, width,
+        height != 0 ? MUIA_Window_Height : TAG_IGNORE, height,
+        WindowContents, border ?
+            ScrollgroupObject,
+                MUIA_Scrollgroup_Contents, VirtgroupObject,
+                    Child, DtpicObject, MUIA_Dtpic_Name, (IPTR)medianame[id], End,
+                End,
+            End
+        :
+            VGroup,
+                Child, DtpicObject, MUIA_Dtpic_Name, (IPTR)medianame[id], End,
+            End,
+    End;
+    if (obj != NULL)
+    {
+        DoMethod(app, OM_ADDMEMBER, (IPTR)obj);
+        set(obj, MUIA_Window_Open, TRUE);
+        get(obj, MUIA_Window_Open, &opened);
+        if (!opened)
+        {
+            DoMethod(app, OM_REMMEMBER, (IPTR)obj);
+            MUI_DisposeObject(obj);
+            obj = NULL;
+        }
+    }
+    if (obj == NULL)
+    {
+        free(medianame[id]);
+        medianame[id] = NULL;
+        return -1;
+    }
+    mediawnd[id] = obj;
+
+    /* Zune places windows at the centre or at given coordinates, so the
+       right and lower edges are reached once the size is known */
+    get(obj, MUIA_Window_Window, &win);
+    if (scr != NULL && win != NULL)
+    {
+        x = win->LeftEdge;
+        y = win->TopEdge;
+        if (has_part(position, "left")) x = 0;
+        if (has_part(position, "right")) x = scr->Width - win->Width;
+        if (has_part(position, "upper")) y = 0;
+        if (has_part(position, "lower")) y = scr->Height - win->Height;
+        if (x != win->LeftEdge || y != win->TopEdge)
+        {
+            ChangeWindowBox(win, x, y, win->Width, win->Height);
+        }
+    }
+    return id;
+}
+
+/*
+ * (setmedia): pictures have nothing to play, pause or locate; the action
+ * counts when the media is there
+ */
+long int set_media(long int id)
+{
+    return (id >= 0 && id < MAXMEDIA && mediawnd[id] != NULL) ? 1 : 0;
+}
+
+/*
+ * (closemedia): close the window of the media and forget the id
+ */
+long int close_media(long int id)
+{
+    if (id < 0 || id >= MAXMEDIA || mediawnd[id] == NULL)
+    {
+        return 0;
+    }
+    set(mediawnd[id], MUIA_Window_Open, FALSE);
+    DoMethod(app, OM_REMMEMBER, (IPTR)mediawnd[id]);
+    MUI_DisposeObject(mediawnd[id]);
+    mediawnd[id] = NULL;
+    free(medianame[id]);
+    medianame[id] = NULL;
+    return 1;
 }
 
 

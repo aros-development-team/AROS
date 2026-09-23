@@ -9,6 +9,10 @@ extern void show_abort(char *msg);
 extern void show_complete(long int percent);
 extern void show_effect(unsigned long top, unsigned long bottom);
 extern long int query_display(char *object, char *option);
+#define MAXMEDIA 16 /* windows of (showmedia) open at once */
+extern long int show_media(char *file, char *position, char *size, int border);
+extern long int set_media(long int id);
+extern long int close_media(long int id);
 extern void show_exit(char *msg);
 extern void show_parseerror(char * msg, int errline);
 extern void show_working(char *msg);
