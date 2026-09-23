@@ -79,8 +79,8 @@ long int incarnation = 0;
 
     name = args[0];
     /* Check if name is in preset list */
-    for ( i = 0 ; i < _MAXCOMMAND && strcmp(name, internal_commands[i].cmdsymbol) != 0 ; i++ );
-    if (i < _MAXCOMMAND)
+    for ( i = 0 ; internal_commands[i].cmdsymbol[0] != 0 && strcmp(name, internal_commands[i].cmdsymbol) != 0 ; i++ );
+    if (internal_commands[i].cmdsymbol[0] != 0)
     {
         fprintf(stderr, "Procedure name <%s> already defined for internal function!\n", name);
         cleanup();
