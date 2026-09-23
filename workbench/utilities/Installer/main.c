@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: Installer V43.3
+    Desc: Installer V44.10
 */
 
 #include "Installer.h"

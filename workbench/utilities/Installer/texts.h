@@ -67,7 +67,7 @@
 "\n"                                        \
 " It is intended to be compatible to\n"        \
 "\n"                                        \
-"        Installer V43.3\n"                \
+"        Installer V44.10\n"                \
 "\n"                                        \
 "\n"                                        \
 " This program was mainly written by\n"        \
