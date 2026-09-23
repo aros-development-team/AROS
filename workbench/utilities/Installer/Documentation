@@ -5,7 +5,14 @@ Command line
 	SCRIPT,APPNAME,MINUSER,DEFUSER,LOGFILE,NOLOG/S,NOPRETEND/S,
 	NOPRINT/S,LANGUAGE,MANIFEST/K,APPBANNER/K,PRETEND/S
 
-	The first nine are the standard Installer arguments. APPBANNER/K
+	The first nine are the standard Installer arguments. NOLOG/S (also
+	a tooltype) means no log file at all: none is opened, and the "log
+	to file" page is not offered. Without it LOGFILE names the log
+	(default "install_log_file" in the current directory - which is the
+	script's drawer when run from Workbench, so a script on a CD-ROM or
+	other read-only volume needs NOLOG or an absolute LOGFILE); a novice
+	is not asked and gets the log unless the icon says LOG=FALSE.
+	APPBANNER/K
 	(also a tooltype) names a picture, shown through datatypes above the
 	pages - the application's own banner; the same argument InstallerLG
 	takes, so one icon serves both. PRETEND/S runs the script as a dry
