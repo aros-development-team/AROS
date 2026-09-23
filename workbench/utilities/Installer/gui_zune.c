@@ -440,6 +440,30 @@ static char *text = NULL;
 
 
 /*
+ * (effect): the original Installer opens its own screen with a colour
+ * gradient behind the window; here the gradient becomes the background of
+ * the window itself. The colours are $RRGGBB, "top" fades into "bottom";
+ * a "radial" effect is drawn as the same top-to-bottom fade (as InstallerLG
+ * does), Zune's gradients being linear.
+ */
+void show_effect(unsigned long top, unsigned long bottom)
+{
+/* Zune keeps the pointer only while it parses the spec, so a local is fine */
+char spec[80];
+Object *contents = NULL;
+
+    sprintf(spec, "7:v,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+        ((top >> 16) & 0xff) * 0x01010101UL, ((top >> 8) & 0xff) * 0x01010101UL, (top & 0xff) * 0x01010101UL,
+        ((bottom >> 16) & 0xff) * 0x01010101UL, ((bottom >> 8) & 0xff) * 0x01010101UL, (bottom & 0xff) * 0x01010101UL);
+    get(wnd, MUIA_Window_RootObject, &contents);
+    if (contents != NULL)
+    {
+        set(contents, MUIA_Background, (IPTR)spec);
+    }
+}
+
+
+/*
  * Show user that we "(exit)" the installation
  */
 void show_exit(char *msg)

@@ -37,6 +37,7 @@ struct CommandList internal_commands[] =
     {"dest",            _DEST           },
     {"disk",            _DISK           },
     {"earlier",         _EARLIER        },
+    {"effect",          _EFFECT         },
     {"execute",         _EXECUTE        },
     {"exists",          _EXISTS         },
     {"exit",            _EXIT           },

@@ -116,8 +116,9 @@ struct CommandList
 #define _WORKING        80
 #define _XOR            81
 #define _ICONINFO       82
+#define _EFFECT         83
 
-#define NUMCMDS         82
+#define NUMCMDS         83
 
 
 /* Parameters */

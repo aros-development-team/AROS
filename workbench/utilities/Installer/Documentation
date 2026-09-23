@@ -132,6 +132,17 @@ Arguments in [...] are optional.
   The return value is the quoted string of all concatenated arguments.
 
 
+( effect <position> <type> <color> <color> )
+  V44. Puts a colour gradient behind the Installer window. <type> is
+  "horizontal" or "radial" (any other type is a BADPARAMETER error); the
+  colours are $RRGGBB integers, the first at the bottom, the second at
+  the top. A radial effect is drawn as the same top-to-bottom fade.
+  <position> ("center", "upper", "lower", "left", "right") placed the
+  window on the screen the original Installer opened for the effect; we
+  do not open a screen of our own, so it is accepted and ignored.
+  The return value is 1.
+
+
 ( exit [(quiet)] [<string>...] )
   Shows the strings separated by a linefeed and exits normally.
   A summarizing message with information on where the app was installed

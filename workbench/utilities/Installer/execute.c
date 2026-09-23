@@ -2354,6 +2354,49 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
+            case _EFFECT: /* (effect <position> <type> <color> <color>): colour gradient behind the window */
+                if (current->next != NULL && current->next->next != NULL
+                    && current->next->next->next != NULL && current->next->next->next->next != NULL)
+                {
+                long int top, bottom;
+
+                    /* The position ("center", "upper", ...) placed the window
+                       on the Installer's own screen; there is no screen of
+                       our own, so it is evaluated and ignored */
+                    current = current->next;
+                    ExecuteCommand();
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a type string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    if (strcasecmp(string, "horizontal") != 0 && strcasecmp(string, "radial") != 0)
+                    {
+                        free(string);
+                        error = BADPARAMETER;
+                        traperr("Unknown effect type <%s>!\n", current->arg);
+                    }
+                    free(string);
+                    /* The first colour is at the bottom, the second at the top */
+                    current = current->next;
+                    ExecuteCommand();
+                    bottom = getint(current);
+                    current = current->next;
+                    ExecuteCommand();
+                    top = getint(current);
+                    show_effect(top, bottom);
+                    current->parent->intval = 1;
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires four arguments!\n", current->arg);
+                }
+                break;
+
             case _PROTECT: /* (protect <file> [<bits>|<"+s-e">] [(safe)]): get or set protection bits */
                 if (current->next != NULL)
                 {
