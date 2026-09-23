@@ -644,8 +644,29 @@ void *params;
             case _STRING: /* Call RawDoFmt with string as format and args and return output */
 
                 /* Prepare base string */
-                /* Strip off quotes */
-                clip = strip_quotes(current->arg);
+                if ((current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE)
+                {
+                    /* Strip off quotes */
+                    clip = strip_quotes(current->arg);
+                }
+                else
+                {
+                    /* (var arg ...): a variable in call position is a
+                       format call with the variable's value as the
+                       format string - (@each-name), ("%s" (@my-fmt) x) */
+                    clip = get_var_arg(current->arg);
+                    if (clip != NULL)
+                    {
+                        clip = strdup(clip);
+                        outofmem(clip);
+                    }
+                    else
+                    {
+                        clip = malloc(MAXARGSIZE);
+                        outofmem(clip);
+                        sprintf(clip, "%ld", get_var_int(current->arg));
+                    }
+                }
 
                 /* Now get arguments into typeless array (void *params) */
                 params = malloc(sizeof(IPTR));
@@ -2848,6 +2869,11 @@ int i;
             if (find_proc(argument) != NULL)
             {
                 return _USERDEF;
+            }
+            else if (find_var(argument) != NULL)
+            {
+                /* A variable in call position: format call */
+                return _STRING;
             }
             else
             {
