@@ -2606,7 +2606,7 @@ DMSG("   %s\n",ret);
                 struct FileInfoBlock *fib;
                 BPTR lock;
                 ULONG bits = 0;
-                int safe = FALSE, setbits = FALSE;
+                int safe = FALSE, setbits = FALSE, override = FALSE;
                 char *fname;
 
                     current = current->next;
@@ -2618,22 +2618,38 @@ DMSG("   %s\n",ret);
                     }
                     GetString(current->arg);
                     fname = string;
-                    lock = Lock(fname, SHARED_LOCK);
-                    fib = AllocDosObject(DOS_FIB, NULL);
-                    outofmem(fib);
-                    if (lock != BNULL && Examine(lock, fib))
+                    /* (override <bits>): start from these bits, not the file's */
+                    for (dummy = current->next ; dummy != NULL && dummy->cmd == NULL ; dummy = dummy->next);
+                    if (dummy != NULL)
                     {
-                        bits = fib->fib_Protection;
+                        parameter = get_parameters(dummy, level);
+                        safe = GetPL(parameter, _SAFE).used;
+                        if (GetPL(parameter, _OVERRIDE).used)
+                        {
+                            bits = GetPL(parameter, _OVERRIDE).intval;
+                            override = TRUE;
+                        }
+                        free_parameterlist(parameter);
                     }
-                    else
+                    if (!override)
                     {
-                        set_variable("@ioerr", NULL, IoErr());
+                        lock = Lock(fname, SHARED_LOCK);
+                        fib = AllocDosObject(DOS_FIB, NULL);
+                        outofmem(fib);
+                        if (lock != BNULL && Examine(lock, fib))
+                        {
+                            bits = fib->fib_Protection;
+                        }
+                        else
+                        {
+                            set_variable("@ioerr", NULL, IoErr());
+                        }
+                        if (lock != BNULL)
+                        {
+                            UnLock(lock);
+                        }
+                        FreeDosObject(DOS_FIB, fib);
                     }
-                    if (lock != BNULL)
-                    {
-                        UnLock(lock);
-                    }
-                    FreeDosObject(DOS_FIB, fib);
                     if (current->next != NULL && current->next->cmd == NULL)
                     {
                         /* a plain int or string argument sets the bits */
@@ -2649,12 +2665,6 @@ DMSG("   %s\n",ret);
                             bits = current->intval;
                         }
                         setbits = TRUE;
-                    }
-                    if (current->next)
-                    {
-                        parameter = get_parameters(current->next, level);
-                        safe = GetPL(parameter, _SAFE).used;
-                        free_parameterlist(parameter);
                     }
                     if (setbits && (preferences.pretend == 0 || safe))
                     {
@@ -3893,6 +3903,7 @@ char *string, *clip;
                                 }
                                 break;
 
+                            case _OVERRIDE: /* # */
                             case _SETSTACK: /* # */
                                 i = 0;
                                 if (current != NULL)

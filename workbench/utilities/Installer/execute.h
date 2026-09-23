@@ -157,25 +157,27 @@ struct CommandList
 #define _GETPOSITION    (_PARAMETER + 22)
 #define _GETSTACK       (_PARAMETER + 23)
 #define _GETTOOLTYPE    (_PARAMETER + 24)
+#define _OVERRIDE       (_PARAMETER + 25)
 
 /* Boolean parameters */
-#define _ALL            (_PARAMETER + 25)
-#define _ASSIGNS        (_PARAMETER + 26)
-#define _DISK           (_PARAMETER + 27)
-#define _FILES          (_PARAMETER + 28)
-#define _FONTS          (_PARAMETER + 29)
-#define _INFOS          (_PARAMETER + 30)
-#define _NEWPATH        (_PARAMETER + 31)
-#define _NOGAUGE        (_PARAMETER + 32)
-#define _NOPOSITION     (_PARAMETER + 33)
-#define _QUIET          (_PARAMETER + 34)
-#define _RESIDENT       (_PARAMETER + 35)
-#define _SAFE           (_PARAMETER + 36)
-#define _SWAPCOLORS     (_PARAMETER + 37)
-#define _NOREQ          (_PARAMETER + 38)
+#define _ALL            (_PARAMETER + 26)
+#define _ASSIGNS        (_PARAMETER + 27)
+#define _DISK           (_PARAMETER + 28)
+#define _FILES          (_PARAMETER + 29)
+#define _FONTS          (_PARAMETER + 30)
+#define _INFOS          (_PARAMETER + 31)
+#define _NEWPATH        (_PARAMETER + 32)
+#define _NOGAUGE        (_PARAMETER + 33)
+#define _NOPOSITION     (_PARAMETER + 34)
+#define _QUIET          (_PARAMETER + 35)
+#define _RESIDENT       (_PARAMETER + 36)
+#define _SAFE           (_PARAMETER + 37)
+#define _SWAPCOLORS     (_PARAMETER + 38)
+#define _NOREQ          (_PARAMETER + 39)
+#define _COMPRESSION    (_PARAMETER + 40)
 
-#define NUMPARAMS        38        /* Number of keywords used as parameters */
-#define NUMARGPARAMS     24        /* Number of keywords used as parameters which may have arguments */
+#define NUMPARAMS        40        /* Number of keywords used as parameters */
+#define NUMARGPARAMS     25        /* Number of keywords used as parameters which may have arguments */
 
 #define _MAXCOMMAND     (NUMPARAMS+NUMCMDS)        /* Total number of keywords */
 

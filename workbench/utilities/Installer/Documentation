@@ -646,12 +646,14 @@ Execute an AmigaDOS script.
       [(confirm)]
       [(safe)]
       [(optional ...) | (delopts ...)]
+      [(compression)]
 )
   Copies a file, or the contents of a directory with (all), (pattern)
   or (choices). (files) copies files only, no subdirectories. (infos)
   copies the .info companions too (and never the dest.info of the
   copied directory itself). Above the (confirm) level the user gets a
   multi-select list of the entries to copy. Returns 1 on success.
+  V44: (compression) is accepted and ignored, here and in (copylib).
 
 
 ( copylib (source <file>) (dest <path>)
@@ -689,11 +691,13 @@ Execute an AmigaDOS script.
   insensitive).
 
 
-( protect <file> [<flags> | <int>] [(safe)] )
+( protect <file> [<flags> | <int>] [(override <int>)] [(safe)] )
   Without a second argument returns the protection bits of <file>.
   With a flag string such as "+s-e" or "rwed" (the latter clears
   everything not named) or an integer, sets them and returns the new
-  value.
+  value. V44: (override <int>) starts from these bits instead of
+  reading the ones of <file>, so "+e" with (override $0f) gives 13
+  whatever the file has.
 
 
 ( reboot )
@@ -786,6 +790,7 @@ Execute an AmigaDOS script.
 ( assigns )
 ( choices )
 ( command )
+( compression )
 ( confirm )
 ( default )
 ( dest )
@@ -799,6 +804,7 @@ Execute an AmigaDOS script.
 ( newpath )
 ( nogauge )
 ( noposition )
+( override )
 ( pattern )
 ( prompt )
 ( range )
