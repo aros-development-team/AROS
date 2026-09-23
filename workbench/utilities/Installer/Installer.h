@@ -110,6 +110,7 @@ struct ParameterList
     char ** arg;
     long int intval, intval2;
     int used;
+    ScriptArg *body;          /* (back): the statements to run on Back */
 };
 
 

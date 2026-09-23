@@ -12,6 +12,7 @@ extern void show_exit(char *msg);
 extern void show_parseerror(char * msg, int errline);
 extern void show_working(char *msg);
 extern void show_message(char * msg ,struct ParameterList * pl);
+extern int back_pressed;
 extern void request_userlevel(char *msg);
 extern long int request_bool(struct ParameterList *pl);
 extern long int request_number(struct ParameterList *pl);
