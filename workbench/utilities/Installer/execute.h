@@ -8,6 +8,9 @@
 /* Function prototypes */
 extern char *strip_quotes(char *);
 extern int database_keyword(char *);
+extern const char *database_cpu(void);
+extern const char *database_fpu(void);
+extern const char *database_chiprev(void);
 extern struct ParameterList *get_parameters(ScriptArg *, int);
 extern void collect_stringargs(ScriptArg *, int, struct ParameterList *);
 extern void modify_userstartup(char *, struct ParameterList *);
