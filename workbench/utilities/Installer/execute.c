@@ -27,6 +27,8 @@ extern int error, grace_exit;
 
 /* Internal function declarations */
 static void callback(char, char **);
+static char *getstr(ScriptArg *);
+static long int compare_values(ScriptArg *, ScriptArg *);
 
 
 #define ExecuteCommand()                                \
@@ -166,10 +168,29 @@ void *params;
                     ExecuteCommand();
                     ExecuteNextCommand();
                     i = getint(current);
+                    dummy = current;
                     current = current->next;
                     j = getint(current);
                     switch (cmd_type)
                     {
+                        case _EQUAL :
+                        case _DIFF :
+                        case _LESS :
+                        case _LESSEQ :
+                        case _MORE :
+                        case _MOREEQ :
+                            /* the comparisons see strings as strings - (= @language "deutsch") */
+                            i = compare_values(dummy, current);
+                            switch (cmd_type)
+                            {
+                                case _EQUAL  : current->parent->intval = (i == 0) ? 1 : 0; break;
+                                case _DIFF   : current->parent->intval = (i != 0) ? 1 : 0; break;
+                                case _LESS   : current->parent->intval = (i <  0) ? 1 : 0; break;
+                                case _LESSEQ : current->parent->intval = (i <= 0) ? 1 : 0; break;
+                                case _MORE   : current->parent->intval = (i >  0) ? 1 : 0; break;
+                                case _MOREEQ : current->parent->intval = (i >= 0) ? 1 : 0; break;
+                            }
+                            break;
                         case _AND :
                             current->parent->intval = i && j;
                             break;
@@ -182,9 +203,6 @@ void *params;
                         case _BITXOR :
                             current->parent->intval = i ^ j;
                             break;
-                        case _DIFF :
-                            current->parent->intval = (i != j) ? 1 : 0;
-                            break;
                         case _DIV :
                             if (j == 0)
                             {
@@ -193,23 +211,8 @@ void *params;
                             }
                             current->parent->intval = (int)(i / j);
                             break;
-                        case _EQUAL :
-                            current->parent->intval = (i == j) ? 1 : 0;
-                            break;
-                        case _LESS :
-                            current->parent->intval = (i < j) ? 1 : 0;
-                            break;
-                        case _LESSEQ :
-                            current->parent->intval = (i <= j) ? 1 : 0;
-                            break;
                         case _MINUS :
                             current->parent->intval = i - j;
-                            break;
-                        case _MORE :
-                            current->parent->intval = (i > j) ? 1 : 0;
-                            break;
-                        case _MOREEQ :
-                            current->parent->intval = (i >= j) ? 1 : 0;
                             break;
                         case _OR :
                             current->parent->intval = i || j;
@@ -2950,6 +2953,89 @@ char * clip;
     }
 
 return i;
+}
+
+
+/*
+ * The string value of an argument, or NULL when it holds an integer.
+ * Quoted literals come back malloc()ed and stripped, variable text is
+ * the variable's own storage.
+ */
+static char *getstr(ScriptArg *argument)
+{
+    if (argument->arg == NULL)
+    {
+        return NULL;
+    }
+    if ((argument->arg)[0] == SQUOTE || (argument->arg)[0] == DQUOTE)
+    {
+        return strip_quotes(argument->arg);
+    }
+    return get_var_arg(argument->arg);
+}
+
+
+/*
+ * Three-way comparison of two argument values for = <> < <= > >=.
+ * Two integers compare as integers, two strings as strings. Mixed:
+ * "" is below every integer, a string that reads as a number ("12", "0")
+ * compares as that number, any other string is above every integer -
+ * so (= @language "deutsch") is only true for deutsch.
+ */
+static long int compare_values(ScriptArg *a, ScriptArg *b)
+{
+char *sa, *sb;
+long int result;
+
+    sa = getstr(a);
+    sb = getstr(b);
+    if (sa == NULL && sb == NULL)
+    {
+        result = getint(a) - getint(b);
+    }
+    else if (sa != NULL && sb != NULL)
+    {
+        result = strcmp(sa, sb);
+    }
+    else if (sa != NULL)
+    {
+        if (sa[0] == '\0')
+        {
+            result = -1;
+        }
+        else if (atol(sa) != 0 || (sa[0] == '0' && sa[1] == '\0'))
+        {
+            result = atol(sa) - getint(b);
+        }
+        else
+        {
+            result = 1;
+        }
+    }
+    else
+    {
+        if (sb[0] == '\0')
+        {
+            result = 1;
+        }
+        else if (atol(sb) != 0 || (sb[0] == '0' && sb[1] == '\0'))
+        {
+            result = getint(a) - atol(sb);
+        }
+        else
+        {
+            result = -1;
+        }
+    }
+    if (a->arg != NULL && ((a->arg)[0] == SQUOTE || (a->arg)[0] == DQUOTE))
+    {
+        free(sa);
+    }
+    if (b->arg != NULL && ((b->arg)[0] == SQUOTE || (b->arg)[0] == DQUOTE))
+    {
+        free(sb);
+    }
+    return result;
 }
 
 
