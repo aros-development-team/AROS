@@ -42,6 +42,10 @@ Object *wnd;
 Object *reqwnd, *helpwnd, *helptext;
 Object *reqroot, *root;
 Object *btproceed, *btabort, *btskip, *bthelp;
+Object *btback;              /* shown in place of Abort while (back) applies */
+Object *btabortpage;         /* the page group Abort and Back share */
+static int back_shown = FALSE;
+int back_pressed = FALSE;    /* the user went back from the page, see execute.c */
 Object *intermediate = NULL;
 Object *working_text = NULL; /* the TextObject inside intermediate, see update_working() */
 Object *copy_gauge = NULL;   /* the Gauge inside intermediate, see update_copying() */
@@ -56,6 +60,7 @@ enum
     Push_About,
     Push_Ok,
     Push_Cancel,
+    Push_Back,
     Push_Last
 };
 
@@ -100,6 +105,19 @@ void DelContents(Object *obj)
     DoMethod(root, OM_REMMEMBER, (IPTR)obj);
     DoMethod(root, MUIM_Group_ExitChange);
     MUI_DisposeObject(obj);
+}
+
+/* A page with (back) offers "Back" instead of "Abort", like the original
+   Installer. Called with the page's parameters, and with NULL to restore. */
+static void show_back(struct ParameterList *pl)
+{
+    int on = (pl != NULL && GetPL(pl, _BACK).used == 1);
+
+    if (on != back_shown)
+    {
+        set(btabortpage, MUIA_Group_ActivePage, on ? 1 : 0);
+        back_shown = on;
+    }
 }
 
 #define WaitCTRL(sigs)                                                        \
@@ -280,7 +298,11 @@ struct Screen *scr;
                 Child, HGroup,
                     MUIA_Group_SameSize, TRUE,
                     Child, btproceed = CoolImageIDButton("Proceed", COOL_USEIMAGE_ID),
-                    Child, btabort   = CoolImageIDButton("Abort", COOL_CANCELIMAGE_ID),
+                    /* a page with (back) shows Back in Abort's place */
+                    Child, btabortpage = PageGroup,
+                        Child, btabort = CoolImageIDButton("Abort", COOL_CANCELIMAGE_ID),
+                        Child, btback  = CoolImageIDButton("Back", COOL_CANCELIMAGE_ID),
+                    End,
                     Child, btskip    = CoolImageIDButton("Skip", COOL_WARNIMAGE_ID),
                     Child, bthelp    = CoolImageIDButton("Help", COOL_INFOIMAGE_ID),
                 End,
@@ -322,6 +344,7 @@ printf("Failed to intialize Zune GUI\n");
     }
     set(btproceed,MUIA_CycleChain,1);
     set(btabort,MUIA_CycleChain,1);
+    set(btback,MUIA_CycleChain,1);
     set(btskip,MUIA_CycleChain,1);
     set(bthelp,MUIA_CycleChain,1);
     DoMethod(helpwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 2,
@@ -331,6 +354,8 @@ printf("Failed to intialize Zune GUI\n");
         MUIM_Application_ReturnID, Push_Proceed);
     DoMethod(btabort, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2,
         MUIM_Application_ReturnID, Push_Abort);
+    DoMethod(btback, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2,
+        MUIM_Application_ReturnID, Push_Back);
     DoMethod(btskip, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2,
         MUIM_Application_ReturnID, Push_Skip);
     DoMethod(bthelp, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2,
@@ -579,6 +604,7 @@ Object *wc;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -586,6 +612,10 @@ Object *wc;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -600,6 +630,7 @@ Object *wc;
             }
 
             DelContents(wc);
+            show_back(NULL);
         }
 
         disable_skip(FALSE);
@@ -911,6 +942,7 @@ int i, m;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -918,6 +950,10 @@ int i, m;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -940,6 +976,7 @@ int i, m;
             GetAttr(MUIA_Radio_Active, levelmx, &retval);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -1023,6 +1060,7 @@ char minmax[MAXARGSIZE];
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1030,6 +1068,10 @@ char minmax[MAXARGSIZE];
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         GetAttr(MUIA_String_Integer, st, &retval);
@@ -1056,6 +1098,7 @@ char minmax[MAXARGSIZE];
             GetAttr(MUIA_String_Integer, st, &retval);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -1120,6 +1163,7 @@ int i;
         {
             char *str = "";
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1127,6 +1171,10 @@ int i;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1151,6 +1199,7 @@ int i;
             string = strdup(str);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -1232,6 +1281,7 @@ int i, max = 0;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1239,6 +1289,10 @@ int i, max = 0;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1261,6 +1315,7 @@ int i, max = 0;
             GetAttr(MUIA_Radio_Active, levelmx, &retval);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -1342,6 +1397,7 @@ int i;
         {
             char *str = "";
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1349,6 +1405,10 @@ int i;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1375,6 +1435,7 @@ int i;
             outofmem(string);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         free(title);
@@ -1457,12 +1518,17 @@ APTR oldwin;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
             while (running)
             {
                 switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed: /* retry */
                         running = FALSE;
@@ -1487,6 +1553,7 @@ APTR oldwin;
                 WaitCTRL(sigs);
             }
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
     }
@@ -1869,6 +1936,7 @@ BOOL j;
                 DoMethod(levelmx, OM_ADDMEMBER, (IPTR)labels[i]);
             }
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1876,6 +1944,10 @@ BOOL j;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1906,6 +1978,7 @@ BOOL j;
             }
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -1967,6 +2040,7 @@ char *out;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1974,6 +2048,11 @@ char *out;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        retval = 0;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1992,6 +2071,7 @@ char *out;
             }
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
     }
