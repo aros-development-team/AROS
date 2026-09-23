@@ -683,72 +683,81 @@ char **mxlabels;
     free(mxlabels[1]);
     free(mxlabels[2]);
 
-/* Ask for Logfile creation */
+/* Ask for Logfile creation - a novice is not asked: LOG=FALSE/NOLOG
+   decide for them; under NOLOG there is no log to ask anyone about */
+    if ( usrlevel == 0 && !preferences.novicelog )
+    {
+        free(preferences.transcriptfile);
+        preferences.transcriptfile = NULL;
+    }
     if ( usrlevel > 0 )
     {
-        mxlabels[0] = strdup(LOG_FILE_TEXT);
-        mxlabels[1] = strdup(LOG_PRINT_TEXT);
-        mxlabels[2] = strdup(LOG_NOLOG_TEXT);
-
-        wc = VGroup,
-            Child, levelmx = RadioObject,
-                GroupFrameT(LOG_QUESTION),
-                MUIA_Radio_Entries, (IPTR)(mxlabels),
-                End,
-            End;
-
-        if (wc)
+        if ( preferences.transcriptfile != NULL )
         {
-            AddContents(wc);
+            mxlabels[0] = strdup(LOG_FILE_TEXT);
+            mxlabels[1] = strdup(LOG_PRINT_TEXT);
+            mxlabels[2] = strdup(LOG_NOLOG_TEXT);
 
-            running = TRUE;
-            while (running)
+            wc = VGroup,
+                Child, levelmx = RadioObject,
+                    GroupFrameT(LOG_QUESTION),
+                    MUIA_Radio_Entries, (IPTR)(mxlabels),
+                    End,
+                End;
+
+            if (wc)
             {
-                switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+                AddContents(wc);
+
+                running = TRUE;
+                while (running)
                 {
-                    case Push_Abort:
-                        abort_install();
-                        break;
-                    case Push_Proceed:
-                        running = FALSE;
-                        break;
-                    case Push_Help:
-                        {
-                        char *helptext;
+                    switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+                    {
+                        case Push_Abort:
+                            abort_install();
+                            break;
+                        case Push_Proceed:
+                            running = FALSE;
+                            break;
+                        case Push_Help:
+                            {
+                            char *helptext;
 
 /* TODO: help for logfile-requester */
-                          helptext = malloc(512 * sizeof(char));
-                          sprintf(helptext, LOG_HELP, preferences.transcriptfile);
-                          helpwin(HELP_ON_LOGFILES, helptext);
-                            free(helptext);
-                        }
+                              helptext = malloc(512 * sizeof(char));
+                              sprintf(helptext, LOG_HELP, preferences.transcriptfile);
+                              helpwin(HELP_ON_LOGFILES, helptext);
+                                free(helptext);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    WaitCTRL(sigs);
+                }
+                GetAttr(MUIA_Radio_Active, levelmx, (IPTR *)&logval);
+                switch (logval)
+                {
+                    case 0: /* Log to file */
+/* TODO: Handle Logging output selection */
                         break;
-                    default:
+                    case 1: /* Log to printer */
+                        free(preferences.transcriptfile);
+                        preferences.transcriptfile = strdup("PRT:");
+                        break;
+                    case 2: /* No Log */
+                        free(preferences.transcriptfile);
+                        preferences.transcriptfile = NULL;
                         break;
                 }
-                WaitCTRL(sigs);
-            }
-            GetAttr(MUIA_Radio_Active, levelmx, (IPTR *)&logval);
-            switch (logval)
-            {
-                case 0: /* Log to file */
-/* TODO: Handle Logging output selection */
-                    break;
-                case 1: /* Log to printer */
-                    free(preferences.transcriptfile);
-                    preferences.transcriptfile = strdup("PRT:");
-                    break;
-                case 2: /* No Log */
-                    free(preferences.transcriptfile);
-                    preferences.transcriptfile = NULL;
-                    break;
-            }
 
-            DelContents(wc);
+                DelContents(wc);
+            }
+            free(mxlabels[0]);
+            free(mxlabels[1]);
+            free(mxlabels[2]);
         }
-        free(mxlabels[0]);
-        free(mxlabels[1]);
-        free(mxlabels[2]);
 
         if (!preferences.nopretend)
         {
