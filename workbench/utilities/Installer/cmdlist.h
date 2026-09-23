@@ -76,6 +76,7 @@ struct CommandList internal_commands[] =
     {"protect",         _PROTECT        },
     {"quiet",           _QUIET          },
     {"range",           _RANGE          },
+    {"reboot",          _REBOOT         },
     {"rename",          _RENAME         },
     {"resident",        _RESIDENT       },
     {"rexx",            _REXX           },
