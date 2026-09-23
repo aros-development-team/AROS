@@ -651,6 +651,13 @@ Execute an AmigaDOS script.
   value.
 
 
+( reboot )
+  V44. Restarts the machine (exec.library/ColdReboot) after the usual
+  clean-up; nothing happens and 0 is returned when the Installer is
+  pretending. There is no confirmation requester, scripts ask with
+  (askbool) before.
+
+
 ( tooltype (dest <file>)
       [(settooltype <name> [<value>])]...
       [(setdefaulttool <string>)]

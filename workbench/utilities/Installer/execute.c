@@ -2397,6 +2397,23 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
+            case _REBOOT: /* (reboot): restart the machine; nothing when pretending */
+                if (preferences.pretend)
+                {
+                    current->parent->intval = 0;
+                }
+                else
+                {
+                    if (preferences.transcriptstream != BNULL)
+                    {
+                        Write(preferences.transcriptstream, "Rebooting.\n", 11);
+                    }
+                    cleanup();
+                    ColdReboot();
+                    current->parent->intval = 1;
+                }
+                break;
+
             case _PROTECT: /* (protect <file> [<bits>|<"+s-e">] [(safe)]): get or set protection bits */
                 if (current->next != NULL)
                 {

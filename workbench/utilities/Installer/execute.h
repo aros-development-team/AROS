@@ -117,8 +117,9 @@ struct CommandList
 #define _XOR            81
 #define _ICONINFO       82
 #define _EFFECT         83
+#define _REBOOT         84
 
-#define NUMCMDS         83
+#define NUMCMDS         84
 
 
 /* Parameters */
