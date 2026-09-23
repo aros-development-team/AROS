@@ -125,8 +125,11 @@ struct CommandList
 #define _OPENWBOBJECT   88
 #define _SHOWWBOBJECT   89
 #define _CLOSEWBOBJECT  90
+#define _SHOWMEDIA      91
+#define _SETMEDIA       92
+#define _CLOSEMEDIA     93
 
-#define NUMCMDS         90
+#define NUMCMDS         93
 
 
 /* Parameters */
