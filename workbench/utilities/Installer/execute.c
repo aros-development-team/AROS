@@ -1470,10 +1470,11 @@ void *params;
                 break;
 
             case _EXISTS:
-/* TODO: Implement (noreq) */
                 if (current->next != NULL)
                 {
                 struct stat sb;
+                struct Process *proc = (struct Process *)FindTask(NULL);
+                APTR oldwin = proc->pr_WindowPtr;
 
                     current = current->next;
                     ExecuteCommand();
@@ -1491,6 +1492,13 @@ void *params;
                     if (current->next)
                     {
                         parameter = get_parameters(current->next, level);
+                    }
+                    /* (noreq): a file on a volume that is not mounted
+                       simply does not exist - no "Please insert volume"
+                       requester. Scripts probe their CD this way. */
+                    if (parameter && GetPL(parameter, _NOREQ).used)
+                    {
+                        proc->pr_WindowPtr = (APTR)-1;
                     }
                     if (parameter)
                     {
@@ -1517,6 +1525,7 @@ void *params;
                             current->parent->intval = 0;
                         }
                     }
+                    proc->pr_WindowPtr = oldwin;
                     free(string);
                 }
                 else

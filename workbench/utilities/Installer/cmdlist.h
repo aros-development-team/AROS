@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 #ifndef _CMDLIST_H
 #define _CMDLIST_H
@@ -64,6 +64,7 @@ struct CommandList internal_commands[] =
     {"newpath",         _NEWPATH        },
     {"nogauge",         _NOGAUGE        },
     {"noposition",      _NOPOSITION     },
+    {"noreq",           _NOREQ          },
     {"onerror",         _ONERROR        },
     {"optional",        _OPTIONAL       },
     {"pathonly",        _PATHONLY       },
