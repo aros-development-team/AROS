@@ -658,6 +658,19 @@ Execute an AmigaDOS script.
   (askbool) before.
 
 
+( trace )
+( retrace )
+  V44. (trace) marks a place in the script and returns 1. (retrace)
+  goes back to the next to last (trace) - the marks are looked for
+  among the statements before, in the same list first, then in the
+  enclosing lists, never outside the procedure the (retrace) is in -
+  and runs the statements from there to the end of that list again;
+  its value is the value of the last one. Without two marks to go back
+  to the script ends. Together with (back) this lets the user step
+  back to the previous page: (trace) (askchoice ...) (trace)
+  (askstring ... (back (retrace))).
+
+
 ( tooltype (dest <file>)
       [(settooltype <name> [<value>])]...
       [(setdefaulttool <string>)]

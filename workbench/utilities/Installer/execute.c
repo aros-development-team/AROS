@@ -30,6 +30,7 @@ static void callback(char, char **);
 static char *getstr(ScriptArg *);
 static long int compare_values(ScriptArg *, ScriptArg *);
 static char *var_string(char *);
+static ScriptArg *find_trace(ScriptArg *);
 
 
 #define ExecuteCommand()                                \
@@ -58,6 +59,7 @@ static char *var_string(char *);
 
 int doing_abort = FALSE;
 char * callbackstring = NULL, * globalstring = NULL;
+static int retrace_depth = 0;
 
 
 /*
@@ -2397,6 +2399,50 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
+            case _TRACE: /* (trace): a mark for (retrace) to come back to */
+                current->parent->intval = 1;
+                break;
+
+            case _RETRACE: /* (retrace): run again from the next to last (trace) */
+                dummy = find_trace(current->parent);
+                if (dummy != NULL)
+                {
+                    dummy = find_trace(dummy);
+                }
+                if (dummy == NULL)
+                {
+                    /* Nowhere to go back to: the script is over */
+                    cleanup();
+                    exit(0);
+                }
+                if (++retrace_depth > 100)
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> nested too deep!\n", current->arg);
+                }
+                /* From the (trace) to the end of its list; the value of the
+                   last statement is the value of the (retrace) */
+                while (dummy != NULL)
+                {
+                    if (dummy->cmd != NULL)
+                    {
+                        execute_script(dummy->cmd, level + 1);
+                    }
+                    if (dummy->next == NULL)
+                    {
+                        break;
+                    }
+                    dummy = dummy->next;
+                }
+                retrace_depth--;
+                current->parent->intval = dummy->intval;
+                if (dummy->arg != NULL)
+                {
+                    current->parent->arg = strdup(dummy->arg);
+                    outofmem(current->parent->arg);
+                }
+                break;
+
             case _REBOOT: /* (reboot): restart the machine; nothing when pretending */
                 if (preferences.pretend)
                 {
@@ -3053,6 +3099,37 @@ static char *getstr(ScriptArg *argument)
  * "" when it was never set - as Installer treats an unset variable as 0
  * and the empty string.
  */
+/*
+ * (retrace): the (trace) statement before this one: among the earlier
+ * statements of the same list, else among those of the enclosing lists.
+ * A procedure body and the script are roots (their parent is NULL): a
+ * (retrace) never leaves the procedure it is in.
+ */
+static ScriptArg *find_trace(ScriptArg *node)
+{
+ScriptArg *n, *found;
+
+    while (node != NULL && node->parent != NULL)
+    {
+        found = NULL;
+        for (n = node->parent->cmd ; n != NULL && n != node ; n = n->next)
+        {
+            if (n->cmd != NULL && n->cmd->arg != NULL && strcasecmp(n->cmd->arg, "trace") == 0)
+            {
+                found = n;
+            }
+        }
+        if (found != NULL)
+        {
+            return found;
+        }
+        node = node->parent;
+    }
+
+return NULL;
+}
+
+
 static char *var_string(char *name)
 {
 struct VariableList *var;
