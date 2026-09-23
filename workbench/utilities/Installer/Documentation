@@ -420,9 +420,13 @@ Arguments in [...] are optional.
 
 
 ( execute <file>
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
       [(safe)]
 )
-Execute an AmigaDOS script.
+  Executes an AmigaDOS script. With (confirm) the user is asked first at
+  and above the confirm level. Returns 1 when the script ran.
 
 
 ( run <string>...
@@ -432,7 +436,8 @@ Execute an AmigaDOS script.
       [(safe)]
 )
   This function returns the primary result of the called program and
-  the secondary is passed in '@ioerr'.
+  the secondary is passed in '@ioerr'. With (confirm) the user is asked
+  first at and above the confirm level.
 
 
 ( textfile (dest <file>)
