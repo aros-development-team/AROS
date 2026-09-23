@@ -29,6 +29,7 @@ extern int error, grace_exit;
 static void callback(char, char **);
 static char *getstr(ScriptArg *);
 static long int compare_values(ScriptArg *, ScriptArg *);
+static char *var_string(char *);
 
 
 #define ExecuteCommand()                                \
@@ -42,6 +43,9 @@ static long int compare_values(ScriptArg *, ScriptArg *);
         execute_script(current->next->cmd, level + 1);        \
     }
 
+/* The string value of an argument: a quoted string without its quotes,
+   otherwise the argument is a variable - its text, its number as digits,
+   or "" when it was never set */
 #define        GetString(arg)                                        \
     if((arg)[0] == SQUOTE || (arg)[0] == DQUOTE)        \
     {                                                        \
@@ -49,17 +53,7 @@ static long int compare_values(ScriptArg *, ScriptArg *);
     }                                                        \
     else                                                \
     {                                                        \
-        char *clip;                                        \
-        if((clip = get_var_arg(arg)) == NULL)                \
-        {                                                \
-            string = strdup(arg);                        \
-        }                                                \
-        else                                                \
-        {                                                \
-            /* variable text is stored without quotes */\
-            string = strdup(clip);                        \
-            outofmem(string);                                \
-        }                                                \
+        string = var_string(arg);                        \
     }
 
 int doing_abort = FALSE;
@@ -657,18 +651,7 @@ void *params;
                     /* (var arg ...): a variable in call position is a
                        format call with the variable's value as the
                        format string - (@each-name), ("%s" (@my-fmt) x) */
-                    clip = get_var_arg(current->arg);
-                    if (clip != NULL)
-                    {
-                        clip = strdup(clip);
-                        outofmem(clip);
-                    }
-                    else
-                    {
-                        clip = malloc(MAXARGSIZE);
-                        outofmem(clip);
-                        sprintf(clip, "%ld", get_var_int(current->arg));
-                    }
+                    clip = var_string(current->arg);
                 }
 
                 /* Now get arguments into typeless array (void *params) */
@@ -3004,6 +2987,37 @@ static char *getstr(ScriptArg *argument)
 
 
 /*
+ * A variable as a string, malloc'd: its text, its number as digits, or
+ * "" when it was never set - as Installer treats an unset variable as 0
+ * and the empty string.
+ */
+static char *var_string(char *name)
+{
+struct VariableList *var;
+char *string;
+
+    var = find_var(name);
+    if (var != NULL && var->vartext != NULL)
+    {
+        string = strdup(var->vartext);
+    }
+    else if (var != NULL)
+    {
+        string = malloc(MAXARGSIZE);
+        outofmem(string);
+        sprintf(string, "%ld", var->varinteger);
+    }
+    else
+    {
+        string = strdup("");
+    }
+    outofmem(string);
+
+return string;
+}
+
+
+/*
  * Three-way comparison of two argument values for = <> < <= > >=.
  * Two integers compare as integers, two strings as strings. Mixed:
  * "" is below every integer, a string that reads as a number ("12", "0")
@@ -3158,7 +3172,7 @@ const char *database_chiprev(void)
  */
 char *collect_strings(ScriptArg *current, char separator, int level)
 {
-char *string = NULL, *clip, *dummy;
+char *string = NULL, *clip;
 int i;
 
     while (current != NULL)
@@ -3176,18 +3190,7 @@ int i;
                 }
                 else
                 {
-                    dummy = get_var_arg(current->arg);
-                    if (dummy != NULL)
-                    {
-                        clip = strdup(dummy);
-                        outofmem(clip);
-                    }
-                    else
-                    {
-                        clip = malloc(MAXARGSIZE);
-                        outofmem(clip);
-                        sprintf(clip, "%ld", get_var_int(current->arg));
-                    }
+                    clip = var_string(current->arg);
                 }
             }
             else
@@ -3569,21 +3572,7 @@ int j = 0;
             }
             else
             {
-                clip = get_var_arg(current->arg);
-                if (clip != NULL)
-                {
-                    string = strdup(clip);
-                    outofmem(string);
-                }
-                else
-                {
-                    clip = malloc(MAXARGSIZE);
-                    outofmem(clip);
-                    sprintf(clip, "%ld", get_var_int(current->arg));
-                    string = strdup(clip);
-                    outofmem(string);
-                    free(clip);
-                }
+                string = var_string(current->arg);
             }
         }
         else
