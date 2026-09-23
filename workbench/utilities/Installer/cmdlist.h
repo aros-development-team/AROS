@@ -79,6 +79,7 @@ struct CommandList internal_commands[] =
     {"procedure",       _PROCEDURE      },
     {"prompt",          _PROMPT         },
     {"protect",         _PROTECT        },
+    {"querydisplay",    _QUERYDISPLAY   },
     {"quiet",           _QUIET          },
     {"range",           _RANGE          },
     {"reboot",          _REBOOT         },

@@ -121,8 +121,9 @@ struct CommandList
 #define _REBOOT         84
 #define _TRACE          85
 #define _RETRACE        86
+#define _QUERYDISPLAY   87
 
-#define NUMCMDS         86
+#define NUMCMDS         87
 
 
 /* Parameters */

@@ -2439,6 +2439,38 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
+            case _QUERYDISPLAY: /* (querydisplay <object> <option>): a measure of the screen or the window */
+                if (current->next != NULL && current->next->next != NULL)
+                {
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires an object string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        free(string);
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires an option string!\n", current->parent->cmd->arg);
+                    }
+                    clip = string;
+                    GetString(current->arg);
+                    current->parent->intval = query_display(clip, string);
+                    free(string);
+                    free(clip);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires two arguments!\n", current->arg);
+                }
+                break;
+
             case _TRACE: /* (trace): a mark for (retrace) to come back to */
                 current->parent->intval = 1;
                 break;

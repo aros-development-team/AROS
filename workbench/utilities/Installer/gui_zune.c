@@ -26,6 +26,7 @@ extern int doing_abort;
 #include <stdio.h>
 #include <string.h>
 
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
@@ -485,6 +486,46 @@ Object *contents = NULL;
     {
         set(contents, MUIA_Background, (IPTR)spec);
     }
+}
+
+/*
+ * (querydisplay <object> <option>): the width, height, depth or number of
+ * colours of the screen, or the width, height and the distances to the
+ * upper, lower, left and right edges of the screen of the window
+ */
+long int query_display(char *object, char *option)
+{
+struct Screen *scr = NULL;
+struct Window *win = NULL;
+long int width = 0, height = 0, depth = 0, colors = 0, upper = 0, lower = 0, left = 0, right = 0;
+
+    get(wnd, MUIA_Window_Screen, &scr);
+    get(wnd, MUIA_Window_Window, &win);
+    if (scr != NULL && strcasecmp(object, "screen") == 0)
+    {
+        width = scr->Width;
+        height = scr->Height;
+        depth = GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH);
+        colors = 1L << (depth > 24 ? 24 : depth);
+    }
+    else if (scr != NULL && win != NULL && strcasecmp(object, "window") == 0)
+    {
+        width = win->Width;
+        height = win->Height;
+        left = win->LeftEdge;
+        right = scr->Width - width - left;
+        upper = win->TopEdge;
+        lower = scr->Height - height - upper;
+    }
+    if (strcasecmp(option, "width") == 0) return width;
+    if (strcasecmp(option, "height") == 0) return height;
+    if (strcasecmp(option, "depth") == 0) return depth;
+    if (strcasecmp(option, "colors") == 0) return colors;
+    if (strcasecmp(option, "upper") == 0) return upper;
+    if (strcasecmp(option, "lower") == 0) return lower;
+    if (strcasecmp(option, "left") == 0) return left;
+    if (strcasecmp(option, "right") == 0) return right;
+    return 0;
 }
 
 

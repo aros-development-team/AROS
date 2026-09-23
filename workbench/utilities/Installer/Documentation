@@ -156,6 +156,14 @@ Arguments in [...] are optional.
   The return value is 1.
 
 
+( querydisplay <object> <option> )
+  V44. A measure of the display, for choosing the media to show: for
+  the object "screen" the options are "width", "height", "depth" and
+  "colors"; for "window" they are "width", "height" and "upper",
+  "lower", "left", "right", the distances from the window to the edges
+  of the screen. Any other object or option gives 0.
+
+
 ( exit [(quiet)] [<string>...] )
   Shows the strings separated by a linefeed and exits normally.
   A summarizing message with information on where the app was installed
