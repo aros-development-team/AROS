@@ -3981,9 +3981,11 @@ char *string, *clip;
                                             if (subpl[i].used == 1)
                                             {
                                                 free_parameter(pl[i]);
+                                                pl[i].used = 1;
                                                 pl[i].arg = subpl[i].arg;
                                                 pl[i].intval = subpl[i].intval;
                                                 pl[i].intval2 = subpl[i].intval2;
+                                                pl[i].body = subpl[i].body;
                                                 subpl[i].arg = NULL;
                                             }
                                         }
