@@ -450,8 +450,8 @@ Execute an AmigaDOS script.
 ...
 ;END <name-string>
 
-  into S:User-Startup. If a section with this name already exists the section
-  will be replaced by this new one.
+  into S:User-Startup. <name-string> may follow the parameters. If a
+  section with this name already exists it is replaced by this new one.
   The commands between the markers are given in (command ...).
   The user will only be prompted to confirm this action if in Expert mode.
 

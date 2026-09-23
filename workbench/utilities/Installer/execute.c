@@ -1322,20 +1322,46 @@ void *params;
                 break;
 
             case _STARTUP: /* Add a section to S:Startup-Sequence */
-                ExecuteNextCommand();
-                if (current->next->arg != NULL)
+                /* The name is whichever argument is not a parameter; it
+                   need not come first - (startup (prompt ...) (name)
+                   (help ...)) - and (name) is a variable in call
+                   position */
+                for (dummy = current->next ; dummy != NULL ; dummy = dummy->next)
                 {
-                    string = strip_quotes(current->next->arg);
-                    parameter = get_parameters(current->next, level);
-                    if (request_confirm(parameter) && (preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1))
+                    if (dummy->cmd == NULL || dummy->cmd->arg == NULL)
                     {
-                        modify_userstartup(string, parameter);
-                        manifest_log('S', string);
+                        break;
+                    }
+                    i = eval_cmd(dummy->cmd->arg);
+                    if (i <= _PARAMETER || i > (_PARAMETER + NUMPARAMS))
+                    {
+                        break;
+                    }
+                }
+                string = NULL;
+                if (dummy != NULL)
+                {
+                    parameter = get_parameters(current->next, level);
+                    current = dummy;
+                    ExecuteCommand();
+                    if (current->arg != NULL)
+                    {
+                        GetString(current->arg);
+                    }
+                    if (string != NULL)
+                    {
+                        if (request_confirm(parameter) && (preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1))
+                        {
+                            modify_userstartup(string, parameter);
+                            manifest_log('S', string);
+                        }
+                        free(string);
                     }
                     free_parameterlist(parameter);
-                    free(string);
+                    current = commands;
+                    dummy = NULL;
                 }
-                else
+                if (string == NULL)
                 {
                     error = SCRIPTERROR;
                     traperr("<%s> requires a name-string as argument!\n", current->arg);
