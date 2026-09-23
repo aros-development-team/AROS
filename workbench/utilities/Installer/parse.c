@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* parse.c -- Here are all functions used to parse the input file */
@@ -46,6 +46,7 @@ void parse_file(ScriptArg *first)
 ScriptArg *current;
 int count, i, j, ready;
 char **mclip;
+int nobody;
 
     ready = FALSE;
     current = first;
@@ -112,13 +113,10 @@ char **mclip;
                         free(current->next);
                         current->next = NULL;
                     }
-                    else
-                    {
-                        /* This is an empty bracket */
-                        show_parseerror("There is an empty bracket.", line);
-                        cleanup();
-                        exit(-1);
-                    }
+                    /* else it is an empty bracket "()": Aminet scripts use
+                     * it as an empty block - (if (...) ( )) - so it stays
+                     * as a node with neither command nor argument and
+                     * evaluates to 0 */
                     ready = TRUE;
                     break;
 
@@ -188,11 +186,18 @@ char **mclip;
                     }
                     else
                     {
+                        /* A quote ends a symbol as a bracket does:
+                         * (cat "Installation von "produkt" "version) is
+                         * how scripts write it, and the original
+                         * Installer (and InstallerLG's lexer) read it so;
+                         * taking the quote into the symbol left the
+                         * string that follows unterminated */
                         do
                         {
                             i++;
                             count = Read(inputfile, &buffer[i], 1);
-                        } while (!isspace(buffer[i]) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE);
+                        } while (!isspace(buffer[i]) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON
+                                 && buffer[i]!=DQUOTE && buffer[i]!=SQUOTE && count != 0 && i < MAXARGSIZE);
                         if (buffer[i] == LINEFEED)
                         {
                             line++;
@@ -211,7 +216,7 @@ char **mclip;
                             } while (buffer[i] != LINEFEED && count != 0);
                             line++;
                         }
-                        if (buffer[i] == LBRACK || buffer[i] == RBRACK)
+                        if (buffer[i] == LBRACK || buffer[i] == RBRACK || buffer[i] == DQUOTE || buffer[i] == SQUOTE)
                         {
                             Seek(inputfile, -1 , OFFSET_CURRENT);
                         }
@@ -280,6 +285,7 @@ char **mclip;
                                     mclip = NULL;
                                     j = 0;
                                     finish = FALSE;
+                                    nobody = FALSE;
                                     do
                                     {
                                         /* goto next argument */
@@ -294,12 +300,14 @@ char **mclip;
                                             {
                                                 if (j > 0)
                                                 {
-                                                    show_parseerror("Procedure has no body!", line);
+                                                    /* (procedure name) with no body: a stub the
+                                                     * script still calls (MCC_Pkb's
+                                                     * P_CustomExists). InstallerLG accepts it
+                                                     * too; the body is the empty node */
+                                                    finish = nobody = TRUE;
+                                                    break;
                                                 }
-                                                else
-                                                {
-                                                    show_parseerror("Procedure has no name!", line);
-                                                }
+                                                show_parseerror("Procedure has no name!", line);
                                                 cleanup();
                                                 exit(-1);
                                             }
@@ -319,7 +327,11 @@ char **mclip;
                                             }
                                         } while (isspace(buffer[0]) && count != 0);
 
-                                        if (buffer[0] != LBRACK)
+                                        if (nobody)
+                                        {
+                                            /* the closing bracket is read */
+                                        }
+                                        else if (buffer[0] != LBRACK)
                                         {
                                             i = 0;
                                             /* read in string */
@@ -369,9 +381,13 @@ char **mclip;
                                         }
                                     } while (!finish);
                                     /* Procedure body */
-                                    parse_file(proc->cmd);
-                                    finish = FALSE;
-                                    do
+                                    if (!nobody)
+                                    {
+                                        parse_file(proc->cmd);
+                                    }
+                                    /* the rest of the body, or nothing more if there was none */
+                                    finish = nobody;
+                                    while (!finish)
                                     {
                                         do
                                         {
@@ -425,7 +441,7 @@ char **mclip;
                                             cleanup();
                                             exit(-1);
                                         }
-                                    } while (!finish);
+                                    }
                                     current->next = malloc(sizeof(ScriptArg));
                                     if (current->next == NULL)
                                     {
