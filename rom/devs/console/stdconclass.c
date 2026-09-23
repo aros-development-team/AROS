@@ -163,6 +163,26 @@ static void stdcon_overwritecursor(struct stdcondata *data)
     data->rendercursorcount--;
 }
 
+/*
+ * ConUnit stores geometry in signed WORD fields. Keep parsed values wide
+ * until this boundary and reject sizes whose character maximum or raster
+ * extent cannot be represented.
+ */
+static BOOL stdcon_validsize(IPTR count, WORD origin, WORD raster)
+{
+    IPTR maxcount = 0x8000;
+    IPTR rastermax;
+
+    if (!count || raster <= 0)
+        return FALSE;
+
+    rastermax = ((IPTR)0x7fff - (IPTR)origin + 1) / (IPTR)raster;
+    if (rastermax < maxcount)
+        maxcount = rastermax;
+
+    return count <= maxcount;
+}
+
 /*********  StdCon::DoCommand()  ****************************/
 
 static VOID stdcon_docommand(Class *cl, Object *o,
@@ -697,12 +717,47 @@ static VOID stdcon_docommand(Class *cl, Object *o,
         break;
 
     case C_SET_PAGE_LENGTH:
+        if (msg->NumParams && params[0] &&
+            !stdcon_validsize(params[0], CU(o)->cu_YROrigin,
+                CU(o)->cu_YRSize))
+            break;
+
         Console_UnRenderCursor(o);
-        CU(o)->cu_YMax = params[0];
-        // FIXME: Need to set something that prevents NewWindowSize to
-        // change YMax
-        Console_RenderCursor(o);
+
+        if (!msg->NumParams || !params[0])
+        {
+            ICU(o)->conFlags &= ~CF_MANUAL_PAGE_LENGTH;
+        }
+        else
+        {
+            ICU(o)->conFlags |= CF_MANUAL_PAGE_LENGTH;
+            CU(o)->cu_YMax = (WORD)(params[0] - 1);
+        }
+
         Console_NewWindowSize(o);
+        Console_RenderCursor(o);
+        break;
+
+    case C_SET_LINE_LENGTH:
+        if (msg->NumParams && params[0] &&
+            !stdcon_validsize(params[0], CU(o)->cu_XROrigin,
+                CU(o)->cu_XRSize))
+            break;
+
+        Console_UnRenderCursor(o);
+
+        if (!msg->NumParams || !params[0])
+        {
+            ICU(o)->conFlags &= ~CF_MANUAL_LINE_LENGTH;
+        }
+        else
+        {
+            ICU(o)->conFlags |= CF_MANUAL_LINE_LENGTH;
+            CU(o)->cu_XMax = (WORD)(params[0] - 1);
+        }
+
+        Console_NewWindowSize(o);
+        Console_RenderCursor(o);
         break;
 
     case C_WINDOW_STATUS_REQUEST:
