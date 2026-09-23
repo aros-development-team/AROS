@@ -6,8 +6,8 @@
 #define _INSTALLER_H
 
 #define INSTALLER_NAME "Installer"
-#define INSTALLER_VERSION 43
-#define INSTALLER_REVISION 3
+#define INSTALLER_VERSION 44
+#define INSTALLER_REVISION 10
 
 /*
    This flag is not only for internal verbosity, but embraces outputs

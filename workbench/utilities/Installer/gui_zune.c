@@ -231,7 +231,7 @@ Object *btok, *btcancel;
 /* ######################################################################## */
 
 
-const char GuiWinTitle[] ="AROS - Installer V43.3";
+const char GuiWinTitle[] ="AROS - Installer V44.10";
 
 
 #define WINDOWWIDTH  400
