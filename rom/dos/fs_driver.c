@@ -54,6 +54,10 @@ LONG fs_Open(struct FileHandle *handle, struct MsgPort *port, BPTR lock, LONG mo
     if (!bstrname)
         return ERROR_NO_FREE_STORE;
 
+    /* Open may retry this same handle on another member of a multiassign.
+     * A failed handler (or our default below) must not select the port for
+     * the next attempt. Successful handlers may still override the port. */
+    handle->fh_Type = NULL;
     status = dopacket3(DOSBase, &error, port, action, MKBADDR(handle), lock, bstrname);
     FREEC2BSTR(bstrname);
 
