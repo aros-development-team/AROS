@@ -491,7 +491,8 @@ Object *contents = NULL;
     get(wnd, MUIA_Window_RootObject, &contents);
     if (contents != NULL)
     {
-        set(contents, MUIA_Background, (IPTR)spec);
+        /* not forwarded: the buttons and the page keep their own backgrounds */
+        nfset(contents, MUIA_Background, (IPTR)spec);
     }
 }
 
