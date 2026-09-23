@@ -5,7 +5,13 @@ Command line
 	SCRIPT,APPNAME,MINUSER,DEFUSER,LOGFILE,NOLOG/S,NOPRETEND/S,
 	NOPRINT/S,LANGUAGE
 
-	The standard Installer arguments.
+	The standard Installer arguments. NOLOG/S (also a tooltype) means no
+	log file at all: none is opened, and the "log to file" page is not
+	offered. Without it LOGFILE names the log (default "install_log_file"
+	in the current directory - which is the script's drawer when run from
+	Workbench, so a script on a CD-ROM or other read-only volume needs
+	NOLOG or an absolute LOGFILE); a novice is not asked and gets the log
+	unless the icon says LOG=FALSE.
 
 Parsing the script
 ------------------
