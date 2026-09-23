@@ -22,6 +22,7 @@ struct CommandList internal_commands[] =
     {"askoptions",      _ASKOPTIONS     },
     {"askstring",       _ASKSTRING      },
     {"assigns",         _ASSIGNS        },
+    {"back",            _BACK           },
     {"cat",             _CAT            },
     {"choices",         _CHOICES        },
     {"command",         _COMMAND        },

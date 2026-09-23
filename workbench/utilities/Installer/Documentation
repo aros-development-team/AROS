@@ -132,6 +132,19 @@ Arguments in [...] are optional.
   The return value is the quoted string of all concatenated arguments.
 
 
+( back <statement>... )
+  V44 parameter of (askbool), (asknumber), (askstring), (askchoice),
+  (askoptions), (askdir), (askdisk), (askfile), (message), and of
+  (copyfiles), (copylib), (delete), (makedir), (rename), (startup),
+  (textfile) and (tooltype) when they are shown to the user by (confirm).
+  While such a page is up the Abort button reads "Back". Pressing it
+  leaves the page without performing the action; the statements of
+  (back) are run instead and the value of the last one becomes the value
+  of the function. The (back) statements usually (retrace) to a (trace)
+  mark before the page. A page that is not shown, because the user level
+  is below the (confirm) level, never goes back.
+
+
 ( effect <position> <type> <color> <color> )
   V44. Puts a colour gradient behind the Installer window. <type> is
   "horizontal" or "radial" (any other type is a BADPARAMETER error); the

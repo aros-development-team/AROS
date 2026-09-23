@@ -57,6 +57,16 @@ static ScriptArg *find_trace(ScriptArg *);
         string = var_string(arg);                        \
     }
 
+/* (back): the user went back from the page a function showed - the value
+   of the function is the one of the (back) statements instead */
+#define BackResult(pl)                                                        \
+    if (back_pressed)                                                        \
+    {                                                                        \
+        back_pressed = FALSE;                                                \
+        free(current->parent->arg);                                        \
+        current->parent->intval = run_back(pl, &(current->parent->arg));        \
+    }
+
 int doing_abort = FALSE;
 char * callbackstring = NULL, * globalstring = NULL;
 static int retrace_depth = 0;
@@ -948,6 +958,7 @@ void *params;
                 /* Add surrounding quotes to string */
                 current->parent->arg = addquotes(string);
                 free(string);
+                BackResult(parameter);
                 free_parameterlist(parameter);
                 break;
 
@@ -1013,48 +1024,56 @@ void *params;
             case _ASKBOOL: /* Ask user for a boolean */
                 parameter = get_parameters(current->next, level);
                 current->parent->intval = request_bool(parameter);
+                BackResult(parameter);
                 free_parameterlist(parameter);
                 break;
 
             case _ASKNUMBER: /* Ask user for a number */
                 parameter = get_parameters(current->next, level);
                 current->parent->intval = request_number(parameter);
+                BackResult(parameter);
                 free_parameterlist(parameter);
                 break;
 
             case _ASKSTRING: /* Ask user for a string */
                 parameter = get_parameters(current->next, level);
                 current->parent->arg = request_string(parameter);
+                BackResult(parameter);
                 free_parameterlist(parameter);
                 break;
 
             case _ASKCHOICE: /* Ask user to choose one item */
                 parameter = get_parameters(current->next, level);
                 current->parent->intval = request_choice(parameter);
+                BackResult(parameter);
                 free_parameterlist(parameter);
                 break;
 
             case _ASKDIR: /* Ask user for a directory */
                 parameter = get_parameters(current->next, level);
                 current->parent->arg = request_dir(parameter);
+                BackResult(parameter);
                 free_parameterlist(parameter);
                 break;
 
             case _ASKDISK: /* Ask user to insert a disk */
                 parameter = get_parameters(current->next, level);
                 current->parent->arg = request_disk(parameter);
+                BackResult(parameter);
                 free_parameterlist(parameter);
                 break;
 
             case _ASKFILE: /* Ask user for a filename */
                 parameter = get_parameters(current->next, level);
                 current->parent->arg = request_file(parameter);
+                BackResult(parameter);
                 free_parameterlist(parameter);
                 break;
 
             case _ASKOPTIONS: /* Ask user to choose multiple items */
                 parameter = get_parameters(current->next, level);
                 current->parent->intval = request_options(parameter);
+                BackResult(parameter);
                 free_parameterlist(parameter);
                 break;
 
@@ -1115,7 +1134,7 @@ void *params;
                 if (current->next != NULL && current->next->next != NULL)
                 {
                 int success = DOSFALSE,
-                    usrconfirm = TRUE;
+                    usrconfirm = TRUE, backed = FALSE;
                     /* Get strings */
                     current = current->next;
                     ExecuteCommand();
@@ -1154,6 +1173,8 @@ void *params;
                                 success = Rename(string,clip);
                             }
                         }
+                        backed = back_pressed;
+                        BackResult(parameter);
                         free_parameterlist(parameter);
                     }
                     else
@@ -1163,7 +1184,11 @@ void *params;
                             success = Rename(string,clip);
                         }
                     }
-                    if (success == DOSTRUE)
+                    if (backed)
+                    {
+                        /* the value is the one of the (back) statements */
+                    }
+                    else if (success == DOSTRUE)
                     {
                         current->parent->intval = 1;
                     }
@@ -1342,6 +1367,7 @@ void *params;
                         }
                         free(string);
                     }
+                    BackResult(parameter);
                     free_parameterlist(parameter);
                     current = commands;
                     dummy = NULL;
@@ -1357,7 +1383,7 @@ void *params;
 /* TODO: Implement (optional) and (delopts) */
                 if (current->next != NULL)
                 {
-                int success = -1, usrconfirm = TRUE;
+                int success = -1, usrconfirm = TRUE, backed = FALSE;
 
                     current = current->next;
                     ExecuteCommand();
@@ -1383,6 +1409,8 @@ void *params;
                         {
                             success = DeleteFile(string);
                         }
+                        backed = back_pressed;
+                        BackResult(parameter);
                         free_parameterlist(parameter);
                     }
                     else
@@ -1392,7 +1420,11 @@ void *params;
                             success = DeleteFile(string);
                         }
                     }
-                    if (success == 0)
+                    if (backed)
+                    {
+                        /* the value is the one of the (back) statements */
+                    }
+                    else if (success == 0)
                     {
                         current->parent->intval = 1;
                     }
@@ -1414,7 +1446,7 @@ void *params;
                 if (current->next != NULL)
                 {
                 BPTR success = 0;
-                int usrconfirm = TRUE, infos = FALSE;
+                int usrconfirm = TRUE, infos = FALSE, backed = FALSE;
 
                     current = current->next;
                     ExecuteCommand();
@@ -1441,6 +1473,8 @@ void *params;
                         {
                             success = CreateDir(string);
                         }
+                        backed = back_pressed;
+                        BackResult(parameter);
                         free_parameterlist(parameter);
                     }
                     else
@@ -1451,7 +1485,11 @@ void *params;
                         }
                     }
                     /* return value of CreateDir() is a lock or 0 */
-                    if (success != 0)
+                    if (backed)
+                    {
+                        /* the value is the one of the (back) statements */
+                    }
+                    else if (success != 0)
                     {
                         UnLock(success);
                         current->parent->intval = 1;
@@ -2172,6 +2210,7 @@ DMSG("   %s\n",ret);
                 {
                     parameter = get_parameters(current->next, level);
                     current->parent->intval = do_copyfiles(parameter);
+                    BackResult(parameter);
                     free_parameterlist(parameter);
                 }
                 else
@@ -2186,6 +2225,7 @@ DMSG("   %s\n",ret);
                 {
                     parameter = get_parameters(current->next, level);
                     current->parent->intval = do_copylib(parameter);
+                    BackResult(parameter);
                     free_parameterlist(parameter);
                 }
                 else
@@ -2641,6 +2681,7 @@ DMSG("   %s\n",ret);
                         ok = TRUE;
                     }
                     current->parent->intval = ok ? 1 : 0;
+                    BackResult(parameter);
                     free_parameterlist(parameter);
                 }
                 else
@@ -2753,6 +2794,7 @@ DMSG("   %s\n",ret);
                         ok = TRUE;
                     }
                     current->parent->intval = ok ? 1 : 0;
+                    BackResult(parameter);
                     free_parameterlist(parameter);
                 }
                 else
@@ -2899,6 +2941,7 @@ DMSG("   %s\n",ret);
             case _ALL:
             case _APPEND:
             case _ASSIGNS:
+            case _BACK:
             case _CHOICES:
             case _COMMAND:
             case _CONFIRM:
@@ -3099,6 +3142,38 @@ static char *getstr(ScriptArg *argument)
  * "" when it was never set - as Installer treats an unset variable as 0
  * and the empty string.
  */
+/*
+ * (back <statement>...): run the statements the script gave for going
+ * back; the value of the last one is returned - its number, and its text
+ * in *text (NULL when it has none)
+ */
+long int run_back(struct ParameterList *pl, char **text)
+{
+ScriptArg *n, *last = NULL;
+
+    *text = NULL;
+    for (n = GetPL(pl, _BACK).body->cmd->next ; n != NULL ; n = n->next)
+    {
+        if (n->cmd != NULL)
+        {
+            execute_script(n->cmd, 0);
+        }
+        last = n;
+    }
+    if (last == NULL)
+    {
+        return 0;
+    }
+    if (last->arg != NULL)
+    {
+        *text = strdup(last->arg);
+        outofmem(*text);
+    }
+
+return last->intval;
+}
+
+
 /*
  * (retrace): the (trace) statement before this one: among the earlier
  * statements of the same list, else among those of the enclosing lists.
@@ -3453,6 +3528,10 @@ char *string, *clip;
                             case _SETTOOLTYPE        : /* $ [$] */
                             case _SOURCE        : /* $ */
                                 collect_stringargs(current, level, &(GetPL(pl, cmd)));
+                                break;
+
+                            case _BACK: /* (...)... run when the user goes back, see run_back() */
+                                GetPL(pl, cmd).body = script;
                                 break;
 
                             case _CONFIRM: /* ($->)# */
