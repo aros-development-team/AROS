@@ -567,7 +567,6 @@ char *buf;
 static int run_jobs(struct copyctx *ctx)
 {
 int i, done = 0, failed = 0, created, r;
-char *msg;
 
     for (i = 0 ; i < ctx->njobs ; i++)
     {
@@ -580,12 +579,7 @@ char *msg;
         }
         if (!ctx->nogauge && !j->isdir)
         {
-            msg = malloc(strlen(j->dst) + 16);
-            outofmem(msg);
-            sprintf(msg, "Copying \"%s\"", j->dst);
-            update_working(msg);
-            free(msg);
-            show_complete(ctx->nfiles ? (done * 100) / ctx->nfiles : 100);
+            update_copying(j->dst, done);
         }
         if (j->isdir)
         {
@@ -611,7 +605,7 @@ char *msg;
     }
     if (!ctx->nogauge && ctx->nfiles && !preferences.pretend)
     {
-        show_complete(100);
+        update_copying("", done);
     }
     return failed == 0;
 }
@@ -893,7 +887,7 @@ int result = 0, i, single;
             char *msg = malloc(strlen(dest) + 32);
             outofmem(msg);
             sprintf(msg, "Copying files to \"%s\"...", dest);
-            show_working(msg);
+            show_copying(msg, ctx.nfiles);
             free(msg);
         }
         result = run_jobs(&ctx);
@@ -1142,7 +1136,7 @@ int n;
         msg = malloc(strlen(d) + 32);
         outofmem(msg);
         sprintf(msg, "Installing \"%s\"...", d);
-        show_working(msg);
+        show_copying(msg, ctx.nfiles);
         free(msg);
     }
     result = run_jobs(&ctx);

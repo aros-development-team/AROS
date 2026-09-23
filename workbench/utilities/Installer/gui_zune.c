@@ -44,6 +44,7 @@ Object *reqroot, *root;
 Object *btproceed, *btabort, *btskip, *bthelp;
 Object *intermediate = NULL;
 Object *working_text = NULL; /* the TextObject inside intermediate, see update_working() */
+Object *copy_gauge = NULL;   /* the Gauge inside intermediate, see update_copying() */
 
 enum
 {
@@ -61,16 +62,35 @@ enum
 
 /* ######################################################################## */
 
-void AddContents(Object *obj)
+#define disable_proceed(val)        set(btproceed, MUIA_Disabled, val)
+#define disable_abort(val)        set(btabort, MUIA_Disabled, val)
+#define disable_skip(val)        set(btskip, MUIA_Disabled, val)
+#define disable_help(val)        set(bthelp, MUIA_Disabled, val)
+
+/* Take down the working/copying page, if one is up (root must be in
+   InitChange). The copy page had every button but Abort disabled. */
+static void drop_intermediate(void)
 {
-    DoMethod(root, MUIM_Group_InitChange);
     if (intermediate != NULL)
     {
         DoMethod(root, OM_REMMEMBER, (IPTR)intermediate);
         MUI_DisposeObject(intermediate);
         intermediate = NULL;
         working_text = NULL;
+        if (copy_gauge)
+        {
+            copy_gauge = NULL;
+            disable_proceed(FALSE);
+            disable_skip(FALSE);
+            disable_help(FALSE);
+        }
     }
+}
+
+void AddContents(Object *obj)
+{
+    DoMethod(root, MUIM_Group_InitChange);
+    drop_intermediate();
     DoMethod(root, OM_ADDMEMBER, (IPTR)obj);
     DoMethod(root, MUIM_Group_ExitChange);
 }
@@ -90,9 +110,6 @@ void DelContents(Object *obj)
             if (sigs & SIGBREAKF_CTRL_D) break;                                \
         }
 
-#define disable_abort(val)        set(btabort, MUIA_Disabled, val)
-#define disable_skip(val)        set(btskip, MUIA_Disabled, val)
-#define disable_help(val)        set(bthelp, MUIA_Disabled, val)
 
 #define NeedPROMPT(pl)                                        \
         if ( GetPL(pl, _PROMPT).intval == 0 )                \
@@ -508,10 +525,9 @@ char *text;
  */
 void show_working(char *msg)
 {
-    if (intermediate != NULL)
-    {
-        DelContents(intermediate);
-    }
+    DoMethod(root, MUIM_Group_InitChange);
+    drop_intermediate();
+    DoMethod(root, MUIM_Group_ExitChange);
     
     intermediate = VGroup,
         Child, working_text = TextObject,
@@ -1690,8 +1706,7 @@ return flags;
 
 
 /*
- * Refresh the "working" text (current file being copied) and give the
- * GUI a chance to notice Abort.
+ * Refresh the "working" text and give the GUI a chance to notice Abort.
  */
 void update_working(char *msg)
 {
@@ -1703,6 +1718,67 @@ ULONG sigs = 0;
         return;
     }
     set(working_text, MUIA_Text_Contents, (IPTR)msg);
+    if (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) == Push_Abort)
+    {
+        abort_install();
+    }
+}
+
+
+/*
+ * The copyfiles/copylib page: what is being copied, and the gauge the
+ * original Installer shows for it (one tick per file, the current name
+ * in the bar) - (nogauge) keeps a script from asking for this page.
+ */
+void show_copying(char *msg, long total)
+{
+    DoMethod(root, MUIM_Group_InitChange);
+    drop_intermediate();
+    DoMethod(root, MUIM_Group_ExitChange);
+
+    intermediate = VGroup,
+        GroupFrameT(_(MSG_MESSAGE)),
+        Child, working_text = TextObject,
+            MUIA_Text_Contents, (IPTR)(msg),
+        End,
+        Child, copy_gauge = GaugeObject,
+            GaugeFrame,
+            MUIA_Gauge_Horiz, TRUE,
+            MUIA_Gauge_Max, total > 0 ? total : 1,
+            MUIA_Gauge_Current, 0,
+            MUIA_Gauge_DupInfoText, TRUE,
+            MUIA_Gauge_InfoText, (IPTR)"",
+        End,
+    End;
+
+    if (intermediate)
+    {
+        /* only Abort while copying, as in the original */
+        disable_proceed(TRUE);
+        disable_skip(TRUE);
+        disable_help(TRUE);
+        DoMethod(root, MUIM_Group_InitChange);
+        DoMethod(root, OM_ADDMEMBER, (IPTR)intermediate);
+        DoMethod(root, MUIM_Group_ExitChange);
+    }
+}
+
+
+/*
+ * Advance the copy gauge to <done> files with <file> named in the bar,
+ * and give the GUI a chance to notice Abort.
+ */
+void update_copying(char *file, long done)
+{
+ULONG sigs = 0;
+
+    if (intermediate == NULL || copy_gauge == NULL)
+    {
+        update_working(file);
+        return;
+    }
+    SetAttrs(copy_gauge, MUIA_Gauge_InfoText, (IPTR)file,
+                         MUIA_Gauge_Current, done, TAG_DONE);
     if (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) == Push_Abort)
     {
         abort_install();

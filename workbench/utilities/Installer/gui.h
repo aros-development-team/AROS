@@ -24,6 +24,8 @@ extern int request_confirm(struct ParameterList * pl);
 extern int request_yesno(char *msg, struct ParameterList *pl, int def);
 extern char *request_files(struct ParameterList *pl, char **names, int n);
 extern void update_working(char *msg);
+extern void show_copying(char *msg, long total);
+extern void update_copying(char *file, long done);
 extern void final_report();
 extern void display_text(char * msg);
 extern void init_gui();
