@@ -88,6 +88,7 @@ struct CommandList internal_commands[] =
     {"settooltype",     _SETTOOLTYPE    },
     {"shiftleft",       _SHIFTLEFT      },
     {"shiftrght",       _SHIFTRGHT      },
+    {"shiftright",      _SHIFTRGHT      },
     {"source",          _SOURCE         },
     {"startup",         _STARTUP        },
     {"strlen",          _STRLEN         },

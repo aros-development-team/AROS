@@ -2854,8 +2854,10 @@ int i;
     }
     else
     {
-        for (i = 0 ; i < _MAXCOMMAND && strcasecmp(internal_commands[i].cmdsymbol, argument) != 0 ; i++);
-        if (i != _MAXCOMMAND)
+        /* The table ends with a "" entry; a keyword may have more than
+           one spelling, so its length is not the number of commands */
+        for (i = 0 ; internal_commands[i].cmdsymbol[0] != 0 && strcasecmp(internal_commands[i].cmdsymbol, argument) != 0 ; i++);
+        if (internal_commands[i].cmdsymbol[0] != 0)
         {
             return internal_commands[i].cmdnumber;
         }

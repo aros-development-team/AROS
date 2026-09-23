@@ -104,7 +104,10 @@ Arguments in [...] are optional.
 ( /	<int> <int> )
 ( shiftleft <int> <int> )
 ( shiftrght <int> <int> )
+( shiftright <int> <int> )
   These functions return the result of the operations on the two integers.
+  shiftrght is the spelling of the Commodore Installer, shiftright the one
+  of the Installer.guide and of scripts written for V44; both are accepted.
   For logical operations 1 is returned as TRUE and 0 as FALSE.
   ( / <int> <int> ) checks 2nd arg == zero and produces an error BADPARAMETER.
 
