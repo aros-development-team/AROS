@@ -439,6 +439,31 @@ void ProcessPackets(struct Globals *glob)
                 break;
             }
 
+        case ACTION_FLUSH:
+            /* Commit without detaching the mounted volume or invalidating
+             * locks held by file-backed devices and directory assignments. */
+            if (glob->disk_inhibited != 0 || glob->sb == NULL)
+            {
+                err = ERROR_NO_DISK;
+                break;
+            }
+            if (!Cache_Flush(glob->sb->cache))
+            {
+                err = IoErr();
+                if (err == 0) err = ERROR_UNKNOWN;
+                break;
+            }
+            glob->diskioreq->iotd_Req.io_Command = CMD_UPDATE;
+            glob->diskioreq->iotd_Req.io_Data = NULL;
+            glob->diskioreq->iotd_Req.io_Length = 0;
+            if (DoIO((struct IORequest *)glob->diskioreq) != 0)
+            {
+                err = ERROR_UNKNOWN;
+                break;
+            }
+            res = DOSTRUE;
+            break;
+
         case ACTION_INHIBIT:
             {
                 LONG inhibit = pkt->dp_Arg1;
