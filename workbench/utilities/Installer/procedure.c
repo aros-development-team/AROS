@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* procedure.c -- Here are all functions related to user-defined procedures */
@@ -60,8 +60,7 @@ int i;
     for ( i = 0 ; i < numactiveusrprocs && strcmp(name, activeusrprocs[i]->procname) != 0 ; i++ );
     if (i == numactiveusrprocs)
     {
-        /* Not in list */
-        fprintf(stderr, "<%s> - Procedure not found!\n", name);
+        /* Not in list - eval_cmd() decides what that means */
         return NULL;
     }
 
