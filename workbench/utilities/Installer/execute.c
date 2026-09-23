@@ -1283,10 +1283,9 @@ void *params;
                 break;
 
             case _RUN: /* Execute a command line */
-/* TODO: Check me for correctness */
                 if (current->next != NULL)
                 {
-                BPTR seg;
+                BPTR in, out;
                 int usrconfirm = TRUE, backed = FALSE;
 
                     parameter = get_parameters(current->next, level);
@@ -1308,41 +1307,28 @@ void *params;
                             error = BADPARAMETER;
                             traperr("<%s> requires a string parameter!\n", current->parent->cmd->arg);
                         }
-                        for (i = 0 ; string[i] != 0 && string[i] != SPACE ; i++);
-                        if (string[i] == SPACE)
+                        if (preferences.transcriptstream != BNULL)
                         {
-                            string[i] = 0;
-                            clip = &(string[i+1]);
-                            j = strlen(clip);
+                            Write(preferences.transcriptstream, "Started program: \"", 18);
+                            Write(preferences.transcriptstream, string, strlen(string));
+                            Write(preferences.transcriptstream, "\"\n", 2);
                         }
-                        else
+                        /* the line goes through a shell of its own, as
+                           (execute) and (rexx) do: the command is looked
+                           up along the path and gets the usual stack */
+                        in = Open("NIL:", MODE_OLDFILE);
+                        out = (preferences.transcriptstream != BNULL) ? BNULL : Open("NIL:", MODE_NEWFILE);
+                        current->parent->intval = SystemTags(string, SYS_Input, in,
+                                                                     SYS_Output, (out != BNULL) ? out : preferences.transcriptstream,
+                                                                     TAG_DONE);
+                        set_variable("@ioerr", NULL, IoErr());
+                        if (out != BNULL)
                         {
-                            clip = NULL;
-                            j = 0;
+                            Close(out);
                         }
+                        if (in != BNULL)
                         {
-                            if ((seg = LoadSeg(string)) == BNULL)
-                            {
-                                /* Couldn't load file -- set @ioerr and handle trap/onerror */
-                                i = IoErr();
-#ifdef DEBUG
-                                PrintFault(i, INSTALLER_NAME);
-#endif /* DEBUG */
-                                set_variable("@ioerr", NULL, i);
-                                error = DOSERROR;
-                                traperr("Couldn't load binary %s\n", string);
-                            }
-                            if (preferences.transcriptstream != BNULL)
-                            {
-                                Write(preferences.transcriptstream, "Started program: \"", 18);
-                                Write(preferences.transcriptstream, string, strlen(string));
-                                Write(preferences.transcriptstream, "\"\n", 2);
-                            }
-#define STACKSIZE 10000
-                            current->parent->intval = RunCommand(seg, STACKSIZE, clip, j);
-/* FIXME: is @ioerr set if command not run? */
-                            set_variable("@ioerr", NULL, IoErr());
-                            UnLoadSeg(seg);
+                            Close(in);
                         }
                         free(string);
                     }
