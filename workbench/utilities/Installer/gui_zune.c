@@ -243,8 +243,25 @@ char *text;
 void init_gui()
 {
 struct Screen *scr;
+Object *banner = NULL;
 
     scr = LockPubScreen(NULL);
+
+    /* APPBANNER: the application's own picture, centred above the pages.
+       Without one (or when it does not load) the window gets no child
+       there at all - a NULL Child would fail the group, a filler would
+       soak up the slack - so it packs around the page like the original
+       Installer's. */
+    if (preferences.bannerfile != NULL)
+    {
+        banner = HGroup,
+            Child, HSpace(0),
+            Child, DtpicObject,
+                MUIA_Dtpic_Name, (IPTR)preferences.bannerfile,
+            End,
+            Child, HSpace(0),
+        End;
+    }
 
     app = ApplicationObject,
         MUIA_Application_Title, "AROS - Installer",
@@ -258,15 +275,7 @@ struct Screen *scr;
             MUIA_Window_NoMenus,        TRUE,
             MUIA_Window_ID,        MAKE_ID('A','I','N','S'),
             WindowContents, VGroup,
-                /* APPBANNER: the application's own picture, centred, or
-                   nothing at all - a page never knows it is there */
-                Child, preferences.bannerfile ? (IPTR)(HGroup,
-                    Child, HSpace(0),
-                    Child, DtpicObject,
-                        MUIA_Dtpic_Name, (IPTR)preferences.bannerfile,
-                    End,
-                    Child, HSpace(0),
-                End) : (IPTR)VSpace(0),
+                banner ? MUIA_Group_Child : TAG_IGNORE, (IPTR)banner,
                 Child, root = VGroup, End,
                 Child, HBar(TRUE),
                 Child, HGroup,
