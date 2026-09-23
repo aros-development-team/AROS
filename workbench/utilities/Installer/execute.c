@@ -2804,8 +2804,81 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
+            case _ICONINFO: /* Read an icon into variables: (dest) (getdefaulttool) (getstack) (getposition) (gettooltype) */
+                if (current->next != NULL)
+                {
+                struct DiskObject *dobj;
+                ScriptArg *tag;
+                char *iconname;
+
+                    parameter = get_parameters(current->next, level);
+                    if (GetPL(parameter, _DEST).used != 1 || GetPL(parameter, _DEST).intval < 1)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires (dest)!\n", current->arg);
+                    }
+                    /* icon.library wants the name without ".info" */
+                    iconname = strdup(GetPL(parameter, _DEST).arg[0]);
+                    outofmem(iconname);
+                    i = strlen(iconname);
+                    if (i > 5 && strcasecmp(iconname + i - 5, ".info") == 0)
+                    {
+                        iconname[i - 5] = 0;
+                    }
+                    dobj = GetDiskObject(iconname);
+                    if (dobj != NULL)
+                    {
+                        if (GetPL(parameter, _GETDEFAULTTOOL).used == 1 && GetPL(parameter, _GETDEFAULTTOOL).intval >= 1)
+                        {
+                            set_variable(GetPL(parameter, _GETDEFAULTTOOL).arg[0], dobj->do_DefaultTool ? (char *)dobj->do_DefaultTool : "", 0);
+                        }
+                        if (GetPL(parameter, _GETSTACK).used == 1 && GetPL(parameter, _GETSTACK).intval >= 1)
+                        {
+                            set_variable(GetPL(parameter, _GETSTACK).arg[0], NULL, dobj->do_StackSize);
+                        }
+                        if (GetPL(parameter, _GETPOSITION).used == 1 && GetPL(parameter, _GETPOSITION).intval >= 2)
+                        {
+                            set_variable(GetPL(parameter, _GETPOSITION).arg[0], NULL, dobj->do_CurrentX);
+                            set_variable(GetPL(parameter, _GETPOSITION).arg[1], NULL, dobj->do_CurrentY);
+                        }
+                        /* (gettooltype) tags in script order: the value of the tooltype, or the empty string */
+                        for (tag = current->next ; tag != NULL ; tag = tag->next)
+                        {
+                            struct ParameterList part;
+                            char *value;
+
+                            if (tag->cmd == NULL || tag->cmd->arg == NULL || eval_cmd(tag->cmd->arg) != _GETTOOLTYPE)
+                            {
+                                continue;
+                            }
+                            memset(&part, 0, sizeof(part));
+                            collect_stringargs(tag->cmd->next, level, &part);
+                            if (part.intval >= 2)
+                            {
+                                value = dobj->do_ToolTypes ? (char *)FindToolType((const STRPTR *)dobj->do_ToolTypes, part.arg[0]) : NULL;
+                                set_variable(part.arg[1], value ? value : "", 0);
+                            }
+                            free_parameter(part);
+                        }
+                        FreeDiskObject(dobj);
+                        current->parent->intval = 1;
+                    }
+                    else
+                    {
+                        set_variable("@ioerr", NULL, IoErr());
+                        current->parent->intval = 0;
+                    }
+                    free(iconname);
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires (dest)!\n", current->arg);
+                }
+                break;
+
       /* Here are all unimplemented commands */
-            case _ICONINFO        :
             case _REXX                :
                 fprintf(stderr, "Unimplemented command <%s>\n", current->arg);
                 break;
@@ -3518,6 +3591,10 @@ char *string, *clip;
                             case _COMMAND        : /* $... */
                             case _DELOPTS        : /* $... */
                             case _DEST        : /* $ */
+                            case _GETDEFAULTTOOL: /* $ */
+                            case _GETPOSITION: /* $ $ */
+                            case _GETSTACK    : /* $ */
+                            case _GETTOOLTYPE : /* $ $ */
                             case _HELP        : /* $... */
                             case _INCLUDE        : /* $ */
                             case _NEWNAME        : /* $ */

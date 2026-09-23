@@ -702,6 +702,19 @@ Execute an AmigaDOS script.
   accepted and ignored.
 
 
+( iconinfo (dest <file>)
+      [(getdefaulttool <var-name>)]
+      [(getstack <var-name>)]
+      [(getposition <var-name> <var-name>)]
+      [(gettooltype <name> <var-name>)]...
+)
+  V42.12. Reads the icon of <file> (the .info suffix may be given or not)
+  into variables: the default tool and the value of tool type <name> as
+  strings (empty when the icon has none), the stack size and the x and y
+  position as integers. Returns 1, or 0 with @ioerr set when there is no
+  icon. (prompt), (help), (confirm) and (safe) are accepted and ignored.
+
+
 /* Unimplemented commands */
 ( rexx )
 
@@ -750,6 +763,10 @@ Execute an AmigaDOS script.
 ( prompt )
 ( range )
 ( safe )
+( getdefaulttool )
+( getposition )
+( getstack )
+( gettooltype )
 ( setdefaulttool )
 ( setstack )
 ( settooltype )
