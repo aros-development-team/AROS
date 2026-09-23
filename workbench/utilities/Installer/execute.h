@@ -118,8 +118,10 @@ struct CommandList
 #define _ICONINFO       82
 #define _EFFECT         83
 #define _REBOOT         84
+#define _TRACE          85
+#define _RETRACE        86
 
-#define NUMCMDS         84
+#define NUMCMDS         86
 
 
 /* Parameters */
