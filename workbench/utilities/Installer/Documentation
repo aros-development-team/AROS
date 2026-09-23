@@ -715,8 +715,16 @@ Execute an AmigaDOS script.
   icon. (prompt), (help), (confirm) and (safe) are accepted and ignored.
 
 
-/* Unimplemented commands */
-( rexx )
+( rexx <string>...
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(safe)]
+)
+  Runs an ARexx script through the rx command; the strings are the
+  script name and its arguments, separated by spaces. Its output goes
+  to the log file. The return value is the return code of the script,
+  0 when it succeeded, with the secondary result in @ioerr.
 
 /* Here are all tags, first the ones which have to be executed */
  

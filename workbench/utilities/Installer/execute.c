@@ -2878,9 +2878,65 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
-      /* Here are all unimplemented commands */
-            case _REXX                :
-                fprintf(stderr, "Unimplemented command <%s>\n", current->arg);
+            case _REXX: /* Run an ARexx script: (rexx <string>... (prompt) (help) (confirm) (safe) (back)) */
+                if (current->next != NULL)
+                {
+                BPTR in, out;
+                int usrconfirm = TRUE;
+                long int rc = 0;
+
+                    parameter = get_parameters(current->next, level);
+                    string = collect_strings(current->next, SPACE, level);
+                    if (string == NULL)
+                    {
+                        error = BADPARAMETER;
+                        traperr("<%s> requires a string parameter!\n", current->parent->cmd->arg);
+                    }
+                    if (GetPL(parameter, _CONFIRM).used == 1)
+                    {
+                        usrconfirm = request_confirm(parameter);
+                    }
+                    if (usrconfirm && (preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1))
+                    {
+                        /* the script and its arguments go to the rx command */
+                        clip = malloc(strlen(string) + 4);
+                        outofmem(clip);
+                        sprintf(clip, "rx %s", string);
+                        if (preferences.transcriptstream != BNULL)
+                        {
+                            Write(preferences.transcriptstream, "Started ARexx script: \"", 23);
+                            Write(preferences.transcriptstream, string, strlen(string));
+                            Write(preferences.transcriptstream, "\"\n", 2);
+                        }
+                        in = Open("NIL:", MODE_OLDFILE);
+                        out = (preferences.transcriptstream != BNULL) ? BNULL : Open("NIL:", MODE_NEWFILE);
+                        rc = SystemTags(clip, SYS_Input, in,
+                                              SYS_Output, (out != BNULL) ? out : preferences.transcriptstream,
+                                              TAG_DONE);
+                        if (rc != 0)
+                        {
+                            set_variable("@ioerr", NULL, IoErr());
+                        }
+                        if (out != BNULL)
+                        {
+                            Close(out);
+                        }
+                        if (in != BNULL)
+                        {
+                            Close(in);
+                        }
+                        free(clip);
+                    }
+                    free(string);
+                    current->parent->intval = rc;
+                    BackResult(parameter);
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires arguments!\n", current->arg);
+                }
                 break;
 
             case _USERDEF: /* User defined routine */
