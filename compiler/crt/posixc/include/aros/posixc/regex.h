@@ -131,10 +131,10 @@ typedef struct {
 #define	REG_BACKR	02000	/* force use of backref code */
 
 __BEGIN_DECLS
-int	regcomp(regex_t * restrict, const char * restrict, int);
-size_t	regerror(int, const regex_t * restrict, char * restrict, size_t);
-int	regexec(const regex_t * restrict,
-	    const char * restrict, size_t, regmatch_t [], int);
+int	regcomp(regex_t * __restrict, const char * __restrict, int);
+size_t	regerror(int, const regex_t * __restrict, char * __restrict, size_t);
+int	regexec(const regex_t * __restrict,
+	    const char * __restrict, size_t, regmatch_t [], int);
 void	regfree(regex_t *);
 __END_DECLS
 
