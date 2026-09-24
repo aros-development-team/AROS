@@ -27,6 +27,7 @@
 #include <aros/posixc/sys/time.h>
 #include <aros/posixc/errno.h>
 #include <aros/posixc/signal.h>
+#include <aros/posixc/time.h>
 #else
 #include <sys/types.h>
 #include <sys/time.h>
@@ -311,20 +312,40 @@ typedef struct pthread_mutex pthread_mutex_t;
 struct pthread_condattr
 {
     int pshared;
+    /* Clock an absolute pthread_cond_timedwait() deadline is read against
+     * (CLOCK_REALTIME default per POSIX; CLOCK_MONOTONIC for Mesa's
+     * u_cnd_monotonic_*). Set with pthread_condattr_setclock(); always set
+     * by pthread_condattr_init(). A manually-zeroed attr reads 0, which is
+     * CLOCK_MONOTONIC on AROS - use pthread_condattr_init(). */
+    clockid_t cond_clock;
 };
 
 typedef struct pthread_condattr pthread_condattr_t;
 
 struct pthread_cond
 {
-    int pad1;
+    /* Copied from the attr by pthread_cond_init(); REALTIME when the cond
+     * was created with a NULL attr, a static initializer, or lazy init.
+     * Lives in the slot that was the unused `int pad1` so that
+     * sizeof(pthread_cond_t) is UNCHANGED: std::condition_variable embeds
+     * this struct, and libc++.a (toolchain, prebuilt) plus every object
+     * compiled before the field appeared lay out std::__assoc_sub_state
+     * (mutex, condition_variable, __state_) from that size. Appending a
+     * member instead moved __state_ for newly compiled code only, and
+     * std::future::get() (libc++.a's __sub_wait) then waited forever on a
+     * ready future - the LLVM MCJIT resolveExternalSymbols() stall. */
+    clockid_t cond_clock;
     __pthread_exec_sigsem_t semaphore;
     __pthread_exec_minlist_t waiters;
 };
 
 typedef struct pthread_cond pthread_cond_t;
 
+#ifdef CLOCK_REALTIME
+#define PTHREAD_COND_INITIALIZER {CLOCK_REALTIME, NULL_SEMAPHORE, NULL_MINLIST}
+#else
 #define PTHREAD_COND_INITIALIZER {0, NULL_SEMAPHORE, NULL_MINLIST}
+#endif
 
 //
 // Barriers
@@ -472,6 +493,8 @@ int pthread_condattr_init(pthread_condattr_t *attr);
 int pthread_condattr_destroy(pthread_condattr_t *attr);
 int pthread_condattr_getpshared(const pthread_condattr_t *attr, int *pshared);
 int pthread_condattr_setpshared(pthread_condattr_t *attr, int pshared);
+int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock_id);
+int pthread_condattr_getclock(const pthread_condattr_t *attr, clockid_t *clock_id);
 
 //
 // Condition variable functions
