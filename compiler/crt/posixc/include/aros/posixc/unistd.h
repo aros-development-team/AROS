@@ -333,7 +333,10 @@ enum {
     _SC_XOPEN_STREAMS,
     _SC_XOPEN_UNIX,
     _SC_XOPEN_UUCP,
-    _SC_XOPEN_VERSION
+    _SC_XOPEN_VERSION,
+    /* Extensions (glibc/BSD), appended so the POSIX values above keep their
+       numbers. */
+    _SC_PHYS_PAGES
 };
 /*
     Make the sysconf() name constants visible to the preprocessor
@@ -464,6 +467,7 @@ enum {
 #define _SC_XOPEN_UNIX _SC_XOPEN_UNIX
 #define _SC_XOPEN_UUCP _SC_XOPEN_UUCP
 #define _SC_XOPEN_VERSION _SC_XOPEN_VERSION
+#define _SC_PHYS_PAGES _SC_PHYS_PAGES
 
 #define STDIN_FILENO    0
 #define STDOUT_FILENO   1
