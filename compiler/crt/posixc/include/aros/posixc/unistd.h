@@ -542,9 +542,9 @@ int seteuid(uid_t euid);
 char *getlogin(void);
 int chown(const char *path, uid_t owner, gid_t group);
 int fchown(int fd, uid_t owner, gid_t group);
-ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize);
+ssize_t readlink(const char *__restrict path, char *__restrict buf, size_t bufsize);
 int symlink(const char *name1, const char *name2);
-void swab(const void *restrict src, void *restrict dst, size_t len);
+void swab(const void *__restrict src, void *__restrict dst, size_t len);
 pid_t tcgetpgrp(int fd);
 #endif
 

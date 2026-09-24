@@ -2,7 +2,7 @@
 #define _POSIXC_SYS_TIME_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file sys/time.h
@@ -77,7 +77,7 @@ struct timezone
 __BEGIN_DECLS
 
 /* NOTIMPL int getitimer(int which, struct itimerval *); */
-int gettimeofday(struct timeval * restrict, struct timezone * restrict);
+int gettimeofday(struct timeval * __restrict, struct timezone * __restrict);
 /* NOTIMPL int setitimer(int which, const struct itimerval * restrict, struct itimerval * restrict); */
 /* select() is defined by inclusion of <sys/select.h> */
 int utimes(const char *, const struct timeval tvp[2]);
