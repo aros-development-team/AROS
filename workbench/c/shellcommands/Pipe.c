@@ -41,9 +41,12 @@
         The "_pchar" and "_mchar" environment variables are used to determine
         where to split the command, and what action to perform.
 
+        If "_pchar" is not defined, "|" is used by default. A defined value
+        overrides the default, and an empty value disables pipe splitting.
+        "_mchar" has no default.
+
     EXAMPLE
 
-        > set _pchar "|"
         > set _mchar ";"
         > echo Hello ; echo World
         Hello
@@ -181,7 +184,12 @@ AROS_SHA(STRPTR, , , /F,   ""))
     STRPTR tcmd, subcmd, cp;
 
     len = GetVar("_pchar", pchar, sizeof pchar, GVF_LOCAL_ONLY | LV_VAR);
-    if (len <= 0)
+    if (len < 0)
+    {
+        pchar[0] = '|';
+        pchar[1] = 0;
+    }
+    else if (len == 0)
         pchar[0] = 0;
     pchar[2] = 0;
 

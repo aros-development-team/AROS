@@ -60,7 +60,12 @@ LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, WOR
     TEXT pchar[3], mchar[3];
 
     len = GetVar("_pchar", pchar, sizeof pchar, GVF_LOCAL_ONLY | LV_VAR);
-    if (len <= 0)
+    if (len < 0)
+    {
+        pchar[0] = '|';
+        pchar[1] = 0;
+    }
+    else if (len == 0)
         pchar[0] = 0;
     pchar[2] = 0;
 
