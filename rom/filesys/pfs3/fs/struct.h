@@ -255,8 +255,11 @@ int stcu_d(char *out, unsigned int val);
 #define MUFS(x)
 #endif
 
-/* flags that allow SetProtect, SetOwner, SetDate, SetComment etc */
+/* flags that allow SetProtect, SetOwner, SetDate, SetComment etc
+ * (AROS' <libraries/mufs.h> already provides this one) */
+#ifndef muRel_PROPERTY_ACCESS
 #define muRel_PROPERTY_ACCESS (muRelF_ROOT_UID|muRelF_UID_MATCH|muRelF_NO_OWNER)
+#endif
 
 /****************************************************************************/
 /* CACHE related defines                                                    */
