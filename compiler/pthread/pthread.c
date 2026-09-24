@@ -365,6 +365,40 @@ int pthread_condattr_init(pthread_condattr_t *attr)
         return EINVAL;
 
     memset(attr, 0, sizeof(pthread_condattr_t));
+#ifdef CLOCK_REALTIME
+    /* POSIX default: absolute deadlines read against the realtime clock. */
+    attr->cond_clock = CLOCK_REALTIME;
+#endif
+
+    return 0;
+}
+
+int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock_id)
+{
+    D(bug("%s(%p, %d)\n", __FUNCTION__, attr, (int)clock_id));
+
+    if (attr == NULL)
+        return EINVAL;
+
+    /* Only the clocks an AROS condvar can wait on. posixc clock_gettime()
+     * serves both; anything else (process/thread CPU time) has no
+     * timer.device to wait on, so refusing is the honest answer. */
+    if (clock_id != CLOCK_REALTIME && clock_id != CLOCK_MONOTONIC)
+        return EINVAL;
+
+    attr->cond_clock = clock_id;
+
+    return 0;
+}
+
+int pthread_condattr_getclock(const pthread_condattr_t *attr, clockid_t *clock_id)
+{
+    D(bug("%s(%p, %p)\n", __FUNCTION__, attr, clock_id));
+
+    if (attr == NULL || clock_id == NULL)
+        return EINVAL;
+
+    *clock_id = attr->cond_clock;
 
     return 0;
 }

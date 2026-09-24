@@ -48,7 +48,15 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
 
     if (abstime)
     {
-        struct timeval tvabstime;
+        struct timeval tvrel;
+        struct timespec rel, now;
+        clockid_t clk;
+
+        // A garbage nanosecond field is invalid usage (POSIX: EINVAL),
+        // on both the absolute and the relative entry points.
+        if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
+            return EINVAL;
+
         // open timer.device
         if (!OpenTimerDevice((struct IORequest *)&timerio, &timermp, task))
         {
@@ -56,25 +64,59 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
             return EINVAL;
         }
 
+        if (!relative)
+        {
+            // Absolute deadlines are read against the clock the condvar
+            // was initialised with (CLOCK_REALTIME unless the attr asked
+            // for CLOCK_MONOTONIC, e.g. Mesa's u_cnd_monotonic_*). Reading
+            // a monotonic deadline against the realtime clock - as this
+            // code used to do unconditionally via gettimeofday() - puts the
+            // interval decades off and the wait never ends.
+            clk = cond->cond_clock;
+            if (clock_gettime(clk, &now) != 0)
+            {
+                CloseTimerDevice((struct IORequest *)&timerio);
+                return EINVAL;
+            }
+            // Signed 64-bit subtraction in the timespec domain: a deadline
+            // already past yields a negative rel, never a wrapped timeval.
+            rel.tv_sec = abstime->tv_sec - now.tv_sec;
+            rel.tv_nsec = abstime->tv_nsec - now.tv_nsec;
+            if (rel.tv_nsec < 0)
+            {
+                rel.tv_sec--;
+                rel.tv_nsec += 1000000000L;
+            }
+        }
+        else
+        {
+            rel = *abstime;
+        }
+
+        // Clamp non-positive intervals to a minimal wait instead of
+        // returning ETIMEDOUT up front or issuing a zero-length
+        // timer.device request (which would wait forever): the waiter is
+        // still enqueued below, so a concurrent signal wins and a timeout
+        // of "now" reports the condition if it is already signalled, per
+        // POSIX, while an unsignalled one still times out promptly.
+        if (rel.tv_sec < 0 || (rel.tv_sec == 0 && rel.tv_nsec <= 0))
+        {
+            rel.tv_sec = 0;
+            rel.tv_nsec = 1000000L; // 1 ms
+        }
+        tvrel.tv_sec = rel.tv_sec;
+        tvrel.tv_usec = rel.tv_nsec / 1000;
+        if (!timerisset(&tvrel))
+        {
+            tvrel.tv_sec = 0;
+            tvrel.tv_usec = 1; // never a zero-length request
+        }
+
         // prepare the device command and send it
         timerio.tr_node.io_Command = TR_ADDREQUEST;
         timerio.tr_node.io_Flags = 0;
-        TIMESPEC_TO_TIMEVAL(&tvabstime, abstime);
-        if (!relative)
-        {
-            struct timeval starttime;
-            // absolute time has to be converted to relative
-            // GetSysTime can't be used due to the timezone offset in abstime
-            gettimeofday(&starttime, NULL);
-            timersub(&tvabstime, &starttime, &tvabstime);
-            if (!timerisset(&tvabstime))
-            {
-                CloseTimerDevice((struct IORequest *)&timerio);
-                return ETIMEDOUT;
-            }
-        }
-        timerio.tr_time.tv_secs = tvabstime.tv_sec;
-        timerio.tr_time.tv_micro = tvabstime.tv_usec;
+        timerio.tr_time.tv_secs = tvrel.tv_sec;
+        timerio.tr_time.tv_micro = tvrel.tv_usec;
         sigs |= (1 << timermp.mp_SigBit);
         SendIO((struct IORequest *)&timerio);
     }
