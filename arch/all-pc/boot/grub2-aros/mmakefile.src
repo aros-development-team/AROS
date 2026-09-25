@@ -14,10 +14,16 @@ endif
 
 GRUB2PACKAGE    := grub
 GRUB2DESTDIR    := $(AROS_CONTRIB)/GNU
+# GRUB moved off savannah/ftp.gnu.org: releases from 2.16 on are published on
+# freedesktop GitLab, where each release's tarballs live under a directory named
+# after the tag. ftp.gnu.org is kept for the older versions still built from it.
 GRUB2REPOS      := \
     cache:// \
+    https://gitlab.freedesktop.org/api/v4/projects/26558/packages/generic/source-assets/$(GRUB2PACKAGE)-$(GRUB2_VERSION) \
     ftp://ftp.gnu.org/gnu/grub
 
+# automake terminates every link rule with $(LIBS), so setting it here
+# replaces the per-utility *_LDADD hunks the AROS patch used to carry.
 CONFIG_OPTS := \
 		--with-platform=$(GRUB_ARCH)        \
 		--datarootdir=$(GRUB2DESTDIR)/share \
@@ -27,7 +33,8 @@ CONFIG_OPTS := \
 		--disable-efiemu                    \
 		--disable-grub-mkfont               \
 		--disable-werror                    \
-		--program-prefix=
+		--program-prefix=                   \
+		LIBS=-lpthread
 
 #ifeq ($(GRUB2_USELZMA),yes)
 #CONFIG_OPTS += \
