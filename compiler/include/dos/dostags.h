@@ -92,7 +92,8 @@
   /* (APTR) Which CPUs the process may run on: a KrnAllocCPUMask() mask,
      or TASKAFFINITY_ANY. The mask becomes the system's to free, as for
      TASKTAG_AFFINITY - do not reuse or free it. Absent: the process
-     inherits its parent's affinity. Non-SMP builds ignore it. */
+     inherits its parent's affinity. Non-SMP builds ignore it.
+     SetTaskAffinity() changes it later. */
 #define NP_Affinity	(NP_Dummy + 27)
 
 

@@ -73,7 +73,8 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         anything on an SMP build; elsewhere it is accepted and ignored.
         Without it the process inherits its parent's affinity. The
         mask comes from KrnAllocCPUMask() and becomes the system's to
-        free, as for TASKTAG_AFFINITY.
+        free, as for TASKTAG_AFFINITY. SetTaskAffinity() changes it
+        afterwards.
 
         It is possible to supply NP_Input, NP_Output and NP_Error tags
         with BNULL values. This is equal to NIL: handle, however if NP_Input
