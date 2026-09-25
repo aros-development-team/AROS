@@ -57,8 +57,10 @@ void boot_exception_handler(uint64_t esr, uint64_t elr, uint64_t far)
         asm volatile("wfe");
 }
 
+struct bcm2708bootmem __bootmem __attribute__((aligned(4096)));
+
 // The bootstrap tmp stack is re-used by the reset handler so we store it at this fixed location
-static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup" TARGET_SECTION_COMMENT))) = (void *)(0x4000 - 16);
+static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup" TARGET_SECTION_COMMENT))) = (void *)__bootmem.bm_padding2;
 static struct TagItem *boottag;
 static unsigned long *mem_upper;
 static void *pkg_image = NULL;
@@ -179,6 +181,68 @@ void setup_arm_clock()
     }
 }
 
+/*
+ * Raise lower above any no-map reservation covering it (the Pi 5 keeps BL31
+ * in the first 512KB). Re-scan: children are in tree order, not address order.
+ */
+static uint64_t reserved_skip(uint64_t lower, uint64_t upper)
+{
+    of_node_t *rm = dt_find_node("/reserved-memory");
+    of_property_t *acp, *scp;
+    uint32_t ac, sc;
+    int moved = 1;
+
+    if (!rm)
+        return lower;
+
+    acp = dt_find_property(rm, "#address-cells");
+    scp = dt_find_property(rm, "#size-cells");
+    ac = acp ? AROS_BE2LONG(*(uint32_t *)acp->op_value) : 1;
+    sc = scp ? AROS_BE2LONG(*(uint32_t *)scp->op_value) : 1;
+
+    while (moved)
+    {
+        of_node_t *res;
+
+        moved = 0;
+        ForeachNode(&rm->on_children, res)
+        {
+            of_property_t *p = dt_find_property(res, "reg");
+            volatile uint32_t *cell;
+            uint32_t cells, used = 0;
+
+            if (!p || !dt_find_property(res, "no-map"))
+                continue;
+
+            cell = p->op_value;
+            cells = p->op_length / 4;
+
+            while (used + ac + sc <= cells)
+            {
+                uint64_t base = 0, size = 0;
+                uint32_t i;
+
+                for (i = 0; i < ac; i++)
+                    base = (base << 32) | AROS_BE2LONG(*cell++);
+                for (i = 0; i < sc; i++)
+                    size = (size << 32) | AROS_BE2LONG(*cell++);
+                used += ac + sc;
+
+                if (size && (lower >= base) && (lower < base + size) &&
+                    (base + size < upper))
+                {
+                    kprintf("[BOOT] %s reserves %p-%p, memory starts above it\n",
+                            res->on_name, base, base + size - 1);
+                    lower = base + size;
+                    moved = 1;
+                }
+            }
+        }
+    }
+
+    return lower;
+}
+
 void query_memory()
 {
     of_node_t *mem = dt_find_node("/memory");
@@ -235,8 +299,11 @@ void query_memory()
                     while(1) asm volatile("wfi");
                 }
 
+                /* Only the allocatable floor moves; the range is mapped in full. */
+                uint64_t usable = reserved_skip(lower, upper);
+
                 boottag->ti_Tag = KRN_MEMLower;
-                if ((boottag->ti_Data = lower) < sizeof(struct bcm2708bootmem))
+                if ((boottag->ti_Data = usable) < sizeof(struct bcm2708bootmem))
                     boottag->ti_Data = sizeof(struct bcm2708bootmem);
 
                 boottag++;
