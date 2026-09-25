@@ -383,12 +383,16 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
             if (!success)
             {
                 PrintFault(ioerr, "..error");
-                retval = RETURN_ERROR;
             }
             else
             {
                 PutStr("..done\n");
             }
+        }
+
+        if (!success)
+        {
+            retval = RETURN_ERROR;
         }
     }
 
