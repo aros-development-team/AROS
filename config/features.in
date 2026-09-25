@@ -877,6 +877,8 @@ CFLAGS="$save_cflags"
 #  -Wignored-optimization-argument
 #  -Wbuiltin-declaration-mismatch
 #  -Wold-style-definition
+#  -Wno-error=int-conversion
+#  -Wno-error=incompatible-pointer-types
 
 # C warnings first
 AC_LANG_PUSH(C)
@@ -1278,6 +1280,24 @@ AC_MSG_RESULT($aros_incompatible_function_pointer_types)
 if test "x-$aros_incompatible_function_pointer_types" = "x-yes" ; then
     aros_warnflags_incompatible_function_pointer_types=-Wincompatible-function-pointer-types
     aros_nowarnflags_incompatible_function_pointer_types=-Wno-incompatible-function-pointer-types
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wno-error=int-conversion])
+CFLAGS=-Wno-error=int-conversion
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_noerror_int_conversion="yes"],[aros_noerror_int_conversion="no"])
+AC_MSG_RESULT($aros_noerror_int_conversion)
+if test "x-$aros_noerror_int_conversion" = "x-yes" ; then
+    aros_errorflags_int_conversion=-Werror=int-conversion
+    aros_noerrorflags_int_conversion=-Wno-error=int-conversion
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wno-error=incompatible-pointer-types])
+CFLAGS=-Wno-error=incompatible-pointer-types
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_noerror_incompatible_pointer_types="yes"],[aros_noerror_incompatible_pointer_types="no"])
+AC_MSG_RESULT($aros_noerror_incompatible_pointer_types)
+if test "x-$aros_noerror_incompatible_pointer_types" = "x-yes" ; then
+    aros_errorflags_incompatible_pointer_types=-Werror=incompatible-pointer-types
+    aros_noerrorflags_incompatible_pointer_types=-Wno-error=incompatible-pointer-types
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wbool-compare])
@@ -2000,6 +2020,10 @@ AC_SUBST(aros_warnflags_builtin_declaration_mismatch)
 AC_SUBST(aros_nowarnflags_builtin_declaration_mismatch)
 AC_SUBST(aros_warnflags_old_style_definition)
 AC_SUBST(aros_nowarnflags_old_style_definition)
+AC_SUBST(aros_errorflags_int_conversion)
+AC_SUBST(aros_noerrorflags_int_conversion)
+AC_SUBST(aros_errorflags_incompatible_pointer_types)
+AC_SUBST(aros_noerrorflags_incompatible_pointer_types)
 
 # Additional toolchain support ...
 AC_SUBST(aros_toolchain_sysroot)

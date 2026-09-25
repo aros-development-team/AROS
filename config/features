@@ -610,6 +610,10 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 aros_toolchain_cflags_common
 aros_toolchain_sysroot
+aros_noerrorflags_incompatible_pointer_types
+aros_errorflags_incompatible_pointer_types
+aros_noerrorflags_int_conversion
+aros_errorflags_int_conversion
 aros_nowarnflags_old_style_definition
 aros_warnflags_old_style_definition
 aros_nowarnflags_builtin_declaration_mismatch
@@ -6599,6 +6603,8 @@ CFLAGS="$save_cflags"
 #  -Wignored-optimization-argument
 #  -Wbuiltin-declaration-mismatch
 #  -Wold-style-definition
+#  -Wno-error=int-conversion
+#  -Wno-error=incompatible-pointer-types
 
 # C warnings first
 ac_ext=c
@@ -7885,6 +7891,64 @@ printf "%s\n" "$aros_incompatible_function_pointer_types" >&6; }
 if test "x-$aros_incompatible_function_pointer_types" = "x-yes" ; then
     aros_warnflags_incompatible_function_pointer_types=-Wincompatible-function-pointer-types
     aros_nowarnflags_incompatible_function_pointer_types=-Wno-incompatible-function-pointer-types
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wno-error=int-conversion" >&5
+printf %s "checking whether ${CC} accepts -Wno-error=int-conversion... " >&6; }
+CFLAGS=-Wno-error=int-conversion
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_noerror_int_conversion="yes"
+else case e in #(
+  e) aros_noerror_int_conversion="no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_noerror_int_conversion" >&5
+printf "%s\n" "$aros_noerror_int_conversion" >&6; }
+if test "x-$aros_noerror_int_conversion" = "x-yes" ; then
+    aros_errorflags_int_conversion=-Werror=int-conversion
+    aros_noerrorflags_int_conversion=-Wno-error=int-conversion
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wno-error=incompatible-pointer-types" >&5
+printf %s "checking whether ${CC} accepts -Wno-error=incompatible-pointer-types... " >&6; }
+CFLAGS=-Wno-error=incompatible-pointer-types
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_noerror_incompatible_pointer_types="yes"
+else case e in #(
+  e) aros_noerror_incompatible_pointer_types="no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_noerror_incompatible_pointer_types" >&5
+printf "%s\n" "$aros_noerror_incompatible_pointer_types" >&6; }
+if test "x-$aros_noerror_incompatible_pointer_types" = "x-yes" ; then
+    aros_errorflags_incompatible_pointer_types=-Werror=incompatible-pointer-types
+    aros_noerrorflags_incompatible_pointer_types=-Wno-error=incompatible-pointer-types
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wbool-compare" >&5
@@ -9234,6 +9298,10 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # ...and warning flags...
 #
+
+
+
+
 
 
 
