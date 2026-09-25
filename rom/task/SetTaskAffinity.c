@@ -9,6 +9,9 @@
 #include <exec/tasks.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#ifndef __KERNEL_NOLIBBASE__
+#define __KERNEL_NOLIBBASE__
+#endif
 #include <proto/kernel.h>
 #include <resources/task.h>
 
