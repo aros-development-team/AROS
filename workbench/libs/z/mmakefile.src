@@ -130,6 +130,9 @@ endif
 USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
 USER_LDFLAGS += -lpthread
 
+# z1.conf sets norootrellibs (see tools/genmodule/config.h): code that runs
+# with the root base must not call posixc.library or stdc.library. The only
+# root-level code is the exec.library version check.
 %build_module mmake=workbench-libs-z \
   modname=z1 modtype=library \
   files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" linklibname=z

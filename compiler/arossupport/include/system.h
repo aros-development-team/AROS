@@ -2,7 +2,7 @@
 #define AROS_SYSTEM_H
 
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Analyse the current kind of system and compiler.
@@ -128,7 +128,12 @@
     C99 defines a new keyword restrict that helps the compiler optimize pointer usage.
     Enable it if the C standard version is sufficient.
 */
-#  if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#  if defined(__cplusplus)
+/* C++ has no restrict keyword: leave the spelling usable as an identifier
+ * (Khronos glslang and similar). Restrict-qualified SDK prototypes
+ * spell __restrict instead, which clang and GCC accept as a keyword in
+ * both C and C++ — so nothing is defined here. */
+#  elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 #    define __restrict__ restrict
 #  else
 #    define __restrict__

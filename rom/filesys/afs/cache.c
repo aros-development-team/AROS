@@ -229,7 +229,18 @@ UWORD i,j;
 }
 #endif
 
-/* Least recently used buffer that is free to take, or NULL if the block is cached already */
+/* A buffer that speculative read-ahead may fill, or NULL.
+ *
+ * Read-ahead is speculative: nobody asked for the sibling blocks, so it must
+ * never reassign a buffer that some caller is still holding.  AFS callers walk
+ * hash chains and directory trees holding a plain BlockCache pointer across
+ * getBlock() calls WITHOUT setting BCF_USED, relying on the historical cache
+ * contract that a populated buffer is only ever recycled to satisfy a real
+ * getBlock() miss (one per call), never proactively.  So read-ahead only ever
+ * fills a genuinely FREE buffer (blocknum == 0); it must not evict a populated
+ * clean buffer, or a directory block a caller is mid-walk on gets silently
+ * repurposed to file data (corrupt hash pointer -> getBlock() out of range).
+ * When no buffer is free, read-ahead simply does nothing this time. */
 static struct BlockCache *readAheadSlot(struct Volume *volume, ULONG blocknum)
 {
 struct BlockCache *cache;
@@ -238,7 +249,8 @@ struct BlockCache *best = NULL;
         {
                 if (cache->blocknum == blocknum)
                         return NULL;
-                if ((cache->flags & (BCF_USED | BCF_WRITE)) == 0
+                if (cache->blocknum == 0
+                        && (cache->flags & (BCF_USED | BCF_WRITE)) == 0
                         && (best == NULL || cache->newness < best->newness))
                         best = cache;
         }

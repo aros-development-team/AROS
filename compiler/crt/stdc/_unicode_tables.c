@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
  */
 
 /*
@@ -177,9 +177,13 @@ static const wctype_t unicode_wctype[UNICODE_TABLE_SIZE] = {
     /* Lowercase letters */
     [0x61 ... 0x7A] = _WCTYPE_ALPHA | _WCTYPE_LOWER | _WCTYPE_PRINT | _WCTYPE_GRAPH,
 
-    /* Hex alpha (A-F, a-f) */
-    [0x41 ... 0x46] = _WCTYPE_XDIGIT,
-    [0x61 ... 0x66] = _WCTYPE_XDIGIT,
+    /* Hex alpha (A-F, a-f). A designated initializer REPLACES the earlier
+     * value for the same index, so these rows must repeat the letter bits:
+     * the previous "= _WCTYPE_XDIGIT" alone left A-F/a-f without ALPHA/
+     * UPPER/LOWER/PRINT/GRAPH, so islower_l('a') was false and toupper_l()
+     * returned 'a' (seen through libc++'s ctype<char>::toupper on AROS). */
+    [0x41 ... 0x46] = _WCTYPE_ALPHA | _WCTYPE_UPPER | _WCTYPE_PRINT | _WCTYPE_GRAPH | _WCTYPE_XDIGIT,
+    [0x61 ... 0x66] = _WCTYPE_ALPHA | _WCTYPE_LOWER | _WCTYPE_PRINT | _WCTYPE_GRAPH | _WCTYPE_XDIGIT,
 
     /* Punctuation */
     [0x21 ... 0x2F] = _WCTYPE_PUNCT | _WCTYPE_PRINT | _WCTYPE_GRAPH,
