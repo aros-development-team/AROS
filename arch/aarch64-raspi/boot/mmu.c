@@ -80,18 +80,11 @@ void mmu_init(void)
 {
     int i;
 
-    /*
-     * The level-1 table lives in the bm_pgd page (0x7000): level 0 is unused
-     * with T0SZ=25, and the bm_pud page (0x8000) turned out to be written by
-     * another agent on the BCM2712 (the built-in armstub parking the
-     * secondary cores, by all evidence: constant content, invisible to a
-     * verified CPU watchpoint). 0x8000 is left as a sentinel-filled honeypot
-     * so its writes stay observable.
-     */
+    /* Level 0 is unused with T0SZ=25, so the level-1 table lives in bm_pgd */
     pud = (uint64_t *)BOOTMEMADDR(bm_pgd);
     pmd = (uint64_t *)BOOTMEMADDR(bm_pmd);
 
-    /* Clear the tables; sentinel-fill the ceded 0x8000 page */
+    /* Clear the tables; sentinel-fill the unused bm_pud page */
     for (i = 0; i < 512; i++)
         pud[i] = 0;
 
