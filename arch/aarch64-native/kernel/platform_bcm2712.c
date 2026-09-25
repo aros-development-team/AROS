@@ -231,6 +231,7 @@ static void bcm2712_irq_disable(int irq)
 
 static uint32_t irq_last = GIC_SPURIOUS;
 static unsigned int irq_repeats;
+static uint64_t irq_since;
 
 static void bcm2712_gentimer_tick(void);
 
@@ -240,6 +241,7 @@ static void bcm2712_irq_process(void)
     {
         uint32_t iar = GICC(GICC_IAR);
         uint32_t intid = iar & 0x3FF;
+        uint64_t now, freq;
 
         if (intid >= GIC_SPURIOUS)
             break;
@@ -260,20 +262,22 @@ static void bcm2712_irq_process(void)
             continue;
 
         /* Mask a level-triggered source that its handler never clears */
-        if (intid == irq_last)
-        {
-            if (++irq_repeats > 10000)
-            {
-                bcm2712_irq_disable(intid);
-                bug("[Kernel] IRQ %u not cleared by its handler, masked\n", intid);
-                irq_repeats = 0;
-                break;
-            }
-        }
-        else
+        asm volatile("mrs %0, cntpct_el0" : "=r"(now));
+        asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
+
+        /* Only a burst within 250ms counts, not a merely busy source */
+        if ((intid != irq_last) || (now - irq_since > freq / 4))
         {
             irq_last = intid;
             irq_repeats = 0;
+            irq_since = now;
+        }
+        else if (++irq_repeats > 10000)
+        {
+            bcm2712_irq_disable(intid);
+            bug("[Kernel] IRQ %u not cleared by its handler, masked\n", intid);
+            irq_repeats = 0;
+            break;
         }
     }
 }
