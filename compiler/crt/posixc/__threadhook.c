@@ -31,6 +31,7 @@
 #include LC_LIBDEFS_FILE
 
 #include <proto/exec.h>
+#include <proto/task.h>   /* task-storage slots; TaskResBase is the module global genmodule opens */
 #include <proto/stdc.h>
 #include <proto/stdcio.h>
 #include <exec/semaphores.h>
@@ -56,17 +57,41 @@ struct CRTThreadHooks
 
 static struct CRTThreadHook __posixc_threadhook;
 
+/* The base a worker opened in its enter hook, remembered per task.
+ *
+ * It cannot be recovered at leave time from __aros_getbase_PosixCBase(): that
+ * reads the library's offset-table slot, and every rel-linked call the worker
+ * makes into posixc (a printf, say) goes through a stub that resets that slot
+ * to the PROGRAM's PosixCBase - the creator's dup.  Closing whatever the slot
+ * names at thread exit therefore closed the creator's base: its taskopencount
+ * fell to 0, __exit_fd() closed the creator's descriptors 0/1/2 (the Shell's
+ * script input and the program's stdout) and __freebase() freed it - the
+ * process "returned" to the Shell early with its remaining output lost, and
+ * the next worker's __init_stdio() faulted on the dead base (measured with
+ * pthread workers under lavapipe, 2026-09-16).  A private task-storage slot
+ * keeps the opened base out of reach of the offset-table traffic. */
+extern APTR TaskResBase;
+static LONG __posixc_threadbase_slot;
+
 static void posixc_thread_enter(void)
 {
     /* Runs in a freshly-created pthread worker: give it its own per-task
        posixc base (inherited from the creator, descriptors routed there). */
-    OpenLibrary((STRPTR)"posixc.library", 0);
+    struct Library *base = OpenLibrary((STRPTR)"posixc.library", 0);
+    if (__posixc_threadbase_slot > 0)
+        SetTaskStorageSlot(__posixc_threadbase_slot, (IPTR)base);
 }
 
 static void posixc_thread_leave(void)
 {
-    /* Runs in the worker at thread exit: release the base opened above. */
-    struct Library *base = (struct Library *)__aros_getbase_PosixCBase();
+    /* Runs in the worker at thread exit: release exactly the base opened
+       above (never the offset-table's current base, see the note above). */
+    struct Library *base = NULL;
+    if (__posixc_threadbase_slot > 0)
+    {
+        base = (struct Library *)GetTaskStorageSlot(__posixc_threadbase_slot);
+        SetTaskStorageSlot(__posixc_threadbase_slot, 0);
+    }
     if (base)
         CloseLibrary(base);
 }
@@ -114,6 +139,9 @@ static int __posixc_threadhook_init(struct PosixCIntBase *PosixCBase)
     ObtainSemaphore(&reg->th_Sem);
     /* posixc.library is a single system-wide library; register exactly once
        even if this init runs again. */
+    if (__posixc_threadbase_slot <= 0)
+        __posixc_threadbase_slot = AllocTaskStorageSlot();
+
     if (!__posixc_threadhook.th_Node.mln_Succ)
     {
         __posixc_threadhook.th_Enter = posixc_thread_enter;
@@ -138,6 +166,11 @@ static void __posixc_threadhook_expunge(struct PosixCIntBase *PosixCBase)
     {
         Remove((struct Node *)&__posixc_threadhook.th_Node);
         __posixc_threadhook.th_Node.mln_Succ = NULL;
+    }
+    if (__posixc_threadbase_slot > 0)
+    {
+        FreeTaskStorageSlot(__posixc_threadbase_slot);
+        __posixc_threadbase_slot = 0;
     }
     ReleaseSemaphore(&reg->th_Sem);
 }

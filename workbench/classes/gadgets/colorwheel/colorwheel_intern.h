@@ -2,7 +2,7 @@
 #define COLORWHEEL_INTERN_H
 
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for colorwheel.gadget.
@@ -102,6 +102,7 @@ struct ColorWheelData
     WORD			knobsavex;
     WORD			knobsavey;
     BOOL			wheeldrawn;
+    BOOL                        disabled_drawn;
     UWORD			range;
     UWORD			levels;
     WORD    	    	    	pens[6*6*6];

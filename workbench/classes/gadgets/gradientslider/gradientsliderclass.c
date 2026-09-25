@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: AROS gradientslider gadget.
 */
@@ -148,7 +148,8 @@ IPTR GradientSlider__OM_SET(Class *cl, Object *o, struct opSet *msg)
                     if( ( pen[0] & 0xff00 ) && ( pen[0] != 0xffff ) )
                         break;
 
-                    if( ( pen[1] & 0xff00 ) && ( pen[1] != 0xffff ) )
+                    if( ( pen[0] != 0xffff ) &&
+                        ( pen[1] & 0xff00 ) && ( pen[1] != 0xffff ) )
                         break;
                 }
 
