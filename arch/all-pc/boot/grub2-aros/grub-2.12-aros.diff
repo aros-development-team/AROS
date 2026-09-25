@@ -12,6 +12,77 @@ diff -ruN grub-2.12/grub-core/fs/affs.c grub-2.12.aros/grub-core/fs/affs.c
  	  /* Test if the filesystem is a OFS filesystem.  */
  	  || !(data->bblock.flags & GRUB_AFFS_FLAG_FFS))
  	continue;
+@@ -368,6 +370,7 @@
+ 	    if (err)
+ 	      {
+ 		grub_free (*node);
++		*node = 0;
+ 		return 1;
+ 	      }
+ 	    continue;
+@@ -375,6 +378,7 @@
+ 	default:
+ 	  {
+ 	    grub_free (*node);
++	    *node = 0;
+ 	    return 0;
+ 	  }
+ 	}
+@@ -384,6 +388,7 @@
+   if (nest == 8)
+     {
+       grub_free (*node);
++      *node = 0;
+       return 0;
+     }
+ 
+@@ -404,12 +409,17 @@
+ {
+   unsigned int i;
+   struct grub_affs_file file;
+-  struct grub_fshelp_node *node, *orig_node;
++  struct grub_fshelp_node *node;
+   struct grub_affs_data *data = dir->data;
+   grub_uint32_t *hashtable;
+ 
+-  /* Create the directory entries for `.' and `..'.  */
+-  node = orig_node = grub_zalloc (sizeof (*node));
++  /* Create the directory entries for `.' and `..'.  The hook owns every
++     node it is handed (fshelp's find_file_iter frees a non-matching node,
++     grub_affs_dir_iter frees each one), so each entry gets its own
++     allocation and nothing is freed here afterwards.  Reusing one node for
++     both and freeing it again on exit was a use-after-free plus double
++     free on every lookup through an AFFS directory.  */
++  node = grub_zalloc (sizeof (*node));
+   if (!node)
+     return 1;
+ 
+@@ -418,6 +428,9 @@
+     return 1;
+   if (dir->parent)
+     {
++      node = grub_zalloc (sizeof (*node));
++      if (!node)
++	return 1;
+       *node = *dir->parent;
+       if (hook ("..", GRUB_FSHELP_DIR, node, hook_data))
+ 	return 1;
+@@ -458,7 +471,6 @@
+ 	  if (grub_affs_create_node (dir, hook, hook_data, &node, next, &file))
+ 	    {
+ 	      /* Node has been replaced in function. */
+-	      grub_free (orig_node);
+ 	      grub_free (hashtable);
+ 	      return 1;
+ 	    }
+@@ -468,7 +480,6 @@
+     }
+ 
+  fail:
+-  grub_free (orig_node);
+   grub_free (hashtable);
+   return 0;
+ }
 diff -ruN grub-2.12/grub-core/lib/gnulib/getprogname.c grub-2.12.aros/grub-core/lib/gnulib/getprogname.c
 --- grub-2.12/grub-core/lib/gnulib/getprogname.c	2023-12-20 16:00:56.000000000 +0000
 +++ grub-2.12.aros/grub-core/lib/gnulib/getprogname.c	2025-05-24 15:52:16.180558812 +0000
