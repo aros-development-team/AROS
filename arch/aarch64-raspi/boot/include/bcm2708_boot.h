@@ -11,8 +11,8 @@
 
 /*
  * AArch64 boot memory layout.
- * On RPi3 in aarch64 mode, the firmware loads kernel.img at 0x80000.
- * We place our boot data structures in the low memory area (0x0 - 0x80000).
+ * The firmware loads kernel.img at 0x80000. Boot data lives in .bss, not
+ * below it: on the Pi 5, 0x1000-0x80000 is BL31.
  *
  * Page table structure for AArch64 with 4KB granule:
  *   Level 0 (PGD): 512 entries, each covering 512GB -> 1 page  (4KB)
@@ -49,6 +49,8 @@ struct bcm2708bootmem
     uint8_t     bm_pmd[PMD_SIZE];                                        /* Level 2 page tables (2MB blocks) */
 }  __attribute__((packed));
 
-#define BOOTMEMADDR(offset) (&(((struct bcm2708bootmem *)0x0)->offset))
+extern struct bcm2708bootmem __bootmem;
+
+#define BOOTMEMADDR(offset) (&__bootmem.offset)
 
 #endif	/* _BCM2708_BOOT_H */

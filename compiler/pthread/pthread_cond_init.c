@@ -30,8 +30,22 @@ int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
     if (cond == NULL)
         return EINVAL;
 
+#ifdef CLOCK_REALTIME
+    if (attr != NULL &&
+        attr->cond_clock != CLOCK_REALTIME && attr->cond_clock != CLOCK_MONOTONIC)
+        return EINVAL;
+#endif
+
     InitSemaphore(&cond->semaphore);
     NEWLIST((struct List *)&cond->waiters);
+#ifdef CLOCK_REALTIME
+    /* The clock every absolute pthread_cond_timedwait() deadline on this
+     * condvar is read against. NULL attr (and the static initializer, and
+     * the timedwait lazy-init path) means the POSIX realtime default. */
+    cond->cond_clock = (attr != NULL) ? attr->cond_clock : CLOCK_REALTIME;
+#else
+    cond->cond_clock = (attr != NULL) ? attr->cond_clock : 0;
+#endif
 
     return 0;
 }

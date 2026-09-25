@@ -11,7 +11,7 @@
 
 // Create some temporary storage in .bss for both stack and local allocations.
 // Must match __bcm2708_bootstacksize/__bcm2708_boottagssize in bcm2708_boot.h:
-// the taglist is placed at (0x4000 - 16) - BOOT_STACK_SIZE - BOOT_TAGS_SIZE,
+// the taglist is placed at bm_padding2 - BOOT_STACK_SIZE - BOOT_TAGS_SIZE,
 // which has to land on bm_boottags in struct bcm2708bootmem.
 #define BOOT_STACK_SIZE		(768 << 3)
 #define BOOT_TAGS_SIZE          (64 << 4)

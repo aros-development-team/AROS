@@ -475,7 +475,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
                     }
                     UNLOCK_X11
                 }
-                else if (event->xselectionrequest.target = xsd->utf8_string_atom)
+                else if (event->xselectionrequest.target == xsd->utf8_string_atom)
                 {
                     LOCK_X11
                     XCALL(XChangeProperty, xsd->display,

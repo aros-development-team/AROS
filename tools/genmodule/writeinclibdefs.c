@@ -8,6 +8,7 @@
 void writeinclibdefs(struct config *cfg)
 {
     FILE *out;
+    char *path;
     char line[1024];
     struct stringlist *linelistit;
     char *_libbasetype = (cfg->libbasetype==NULL) ? "struct Library" : cfg->libbasetype;
@@ -48,20 +49,22 @@ void writeinclibdefs(struct config *cfg)
 
     if (!cfg->flavour)
     {
-        snprintf(line, sizeof(line) - 1, "%s/%s_libdefs.h", cfg->gendir, cfg->modulename);
+        path = make_output_path("%s/%s_libdefs.h", cfg->gendir, cfg->modulename);
     }
     else
     {
-        snprintf(line, sizeof(line) - 1, "%s/%s_%s_libdefs.h", cfg->gendir, cfg->modulename, cfg->flavour);
+        path = make_output_path("%s/%s_%s_libdefs.h", cfg->gendir, cfg->modulename, cfg->flavour);
     }
 
-    out = fopen(line, "w");
+    out = fopen(path, "w");
 
     if (out == NULL)
     {
-        perror(line);
+        perror(path);
+        free(path);
         exit(20);
     }
+    free(path);
 
     fprintf
     (

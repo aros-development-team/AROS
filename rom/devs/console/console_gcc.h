@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -222,6 +222,14 @@ struct intConUnit
 /* The conFlags */
 #define CF_DELAYEDDISPOSE	(1L << 0)
 #define CF_DISPOSE		(1L << 1)
+
+/*
+ * Bit 2 is kept available for the disabled CF_LF_MODE_ON definition below.
+ * Explicit page/line geometry uses private state so window-size events do not
+ * overwrite values owned by the application.
+ */
+#define CF_MANUAL_PAGE_LENGTH	(1L << 3)
+#define CF_MANUAL_LINE_LENGTH	(1L << 4)
 
 #if 0
 /* Determining whether linefeed (LF==LF+CR) mode is on */

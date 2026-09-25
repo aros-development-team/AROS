@@ -116,6 +116,7 @@ static const char *x11_func_names[] = {
     "XRootWindow",
     "XAllocClassHint",
     "XSetClassHint",
+    "XGetInputFocus",
     "XSetInputFocus",
     "XListPixmapFormats"
 #if DEBUG_X11_SYNCHRON
@@ -124,9 +125,9 @@ static const char *x11_func_names[] = {
 };
 
 #if DEBUG_X11_SYNCHRON
-#define X11_NUM_FUNCS (84)
+#define X11_NUM_FUNCS (85)
 #else
-#define X11_NUM_FUNCS (83)
+#define X11_NUM_FUNCS (84)
 #endif
 
 
@@ -209,6 +210,14 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE)
     if ((x11_handle = x11_hostlib_load_so(X11_SOFILE, x11_func_names, X11_NUM_FUNCS, (void **) &x11_func)) == NULL)
         return FALSE;
 
+    {
+        char *err = NULL;
+        x11_func.XkbSetDetectableAutoRepeat = HostLib_GetPointer(x11_handle,
+            "XkbSetDetectableAutoRepeat", &err);
+        if (err)
+            x11_func.XkbSetDetectableAutoRepeat = NULL;
+    }
+
     if ((libc_handle = x11_hostlib_load_so(LIBC_SOFILE, libc_func_names, LIBC_NUM_FUNCS, (void **) &libc_func)) == NULL) {
         HostLib_Close(x11_handle, NULL);
         return FALSE;
@@ -240,4 +249,3 @@ static int x11_hostlib_expunge(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(x11_hostlib_init, 0)
 ADD2EXPUNGELIB(x11_hostlib_expunge, 0)
-

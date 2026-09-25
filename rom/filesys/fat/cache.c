@@ -302,8 +302,10 @@ BOOL Cache_Flush(APTR cache)
     struct MinNode *n;
     struct BlockRange *b;
 
-    while((n = (struct MinNode *)RemHead((struct List *)&c->dirty_list))
-        != NULL && error == 0)
+    /* A failed range is put back at the head. Do not remove it again while
+     * evaluating the next iteration: the caller must be able to retry it. */
+    while(error == 0 &&
+        (n = (struct MinNode *)RemHead((struct List *)&c->dirty_list)) != NULL)
     {
         /* Write dirty block range to disk */
         b = NODE2(n);

@@ -333,7 +333,10 @@ enum {
     _SC_XOPEN_STREAMS,
     _SC_XOPEN_UNIX,
     _SC_XOPEN_UUCP,
-    _SC_XOPEN_VERSION
+    _SC_XOPEN_VERSION,
+    /* Extensions (glibc/BSD), appended so the POSIX values above keep their
+       numbers. */
+    _SC_PHYS_PAGES
 };
 /*
     Make the sysconf() name constants visible to the preprocessor
@@ -464,6 +467,7 @@ enum {
 #define _SC_XOPEN_UNIX _SC_XOPEN_UNIX
 #define _SC_XOPEN_UUCP _SC_XOPEN_UUCP
 #define _SC_XOPEN_VERSION _SC_XOPEN_VERSION
+#define _SC_PHYS_PAGES _SC_PHYS_PAGES
 
 #define STDIN_FILENO    0
 #define STDOUT_FILENO   1
@@ -542,9 +546,9 @@ int seteuid(uid_t euid);
 char *getlogin(void);
 int chown(const char *path, uid_t owner, gid_t group);
 int fchown(int fd, uid_t owner, gid_t group);
-ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize);
+ssize_t readlink(const char *__restrict path, char *__restrict buf, size_t bufsize);
 int symlink(const char *name1, const char *name2);
-void swab(const void *restrict src, void *restrict dst, size_t len);
+void swab(const void *__restrict src, void *__restrict dst, size_t len);
 pid_t tcgetpgrp(int fd);
 #endif
 

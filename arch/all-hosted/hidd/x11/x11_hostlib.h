@@ -99,11 +99,14 @@ struct x11_func {
     Window (*XRootWindow) ( Display*, int);
     XClassHint * (*XAllocClassHint) ();
     int (*XSetClassHint) (Display*, Window, XClassHint* );
+    int (*XGetInputFocus) ( Display*, Window*, int* );
     int (*XSetInputFocus) ( Display* , Window , int , Time );
     XPixmapFormatValues *(*XListPixmapFormats)( Display* , int* );
 #if DEBUG_X11_SYNCHRON
     void (*XSynchronize)(Display *, Bool );
 #endif
+    /* Optional XKB entry point: old host libraries remain supported. */
+    int (*XkbSetDetectableAutoRepeat)(Display *, int, int *);
 };
 
 #ifndef HAVE_XF86VMODE_H

@@ -54,16 +54,16 @@ long int atol(const char *nptr);
 long long int atoll(const char *nptr);
 #endif
 
-double strtod(const char * restrict nptr, char ** restrict endptr);
-float strtof(const char * restrict nptr, char ** restrict endptr);
-long double strtold(const char * restrict nptr, char ** restrict endptr);
-long int strtol(const char * restrict nptr, char ** restrict endptr, int base);
+double strtod(const char * __restrict nptr, char ** __restrict endptr);
+float strtof(const char * __restrict nptr, char ** __restrict endptr);
+long double strtold(const char * __restrict nptr, char ** __restrict endptr);
+long int strtol(const char * __restrict nptr, char ** __restrict endptr, int base);
 #if defined AROS_HAVE_LONG_LONG
-long long int strtoll(const char * restrict nptr, char ** restrict endptr, int base);
+long long int strtoll(const char * __restrict nptr, char ** __restrict endptr, int base);
 #endif
-unsigned long int strtoul(const char * restrict nptr, char ** restrict endptr, int base);
+unsigned long int strtoul(const char * __restrict nptr, char ** __restrict endptr, int base);
 #if defined AROS_HAVE_LONG_LONG
-unsigned long long int strtoull(const char * restrict nptr, char ** restrict endptr, int base);
+unsigned long long int strtoull(const char * __restrict nptr, char ** __restrict endptr, int base);
 #endif
 
 /* Pseudo-random sequence generation */
@@ -130,12 +130,12 @@ lldiv_t lldiv(long long int numer, long long int denom);
 
 /* Multibyte/wide character conversion */
 int mblen(const char *s, size_t n);
-int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n);
+int mbtowc(wchar_t * __restrict pwc, const char * __restrict s, size_t n);
 int wctomb(char *s, wchar_t wchar);
 
 /* Multibyte/wide string conversion */
-size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n);
-size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n);
+size_t mbstowcs(wchar_t * __restrict pwcs, const char * __restrict s, size_t n);
+size_t wcstombs(char * __restrict s, const wchar_t * __restrict pwcs, size_t n);
 
 void *aligned_alloc(size_t alignment, size_t size);
 
