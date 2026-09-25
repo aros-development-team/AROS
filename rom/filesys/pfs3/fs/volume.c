@@ -365,7 +365,7 @@ static void DiskRemoveSequence(globaldata *g)
 	if(g->trackdisk)
 	{
 		g->request->iotd_Req.io_Command = CMD_CLEAR;
-		DoIO(g->request);
+		DoIO((struct IORequest *)g->request);
 	}
 #endif
 
@@ -841,7 +841,8 @@ BOOL CheckVolume(struct volumedata *volume, BOOL write, SIPTR *error, globaldata
 				*error = ERROR_NOT_A_DOS_DISK;
 				return(DOSFALSE);
 
-			case ID_NO_DISK_PRESENT:
+			/* disktype is unsigned, ID_NO_DISK_PRESENT is -1 */
+			case (ULONG)ID_NO_DISK_PRESENT:
 				if(!volume && !g->currentvolume)
 				{
 					*error = ERROR_NO_DISK;
@@ -998,7 +999,7 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 		if (g->trackdisk)
 		{
 			g->request->iotd_Req.io_Command = CMD_CLEAR;
-			DoIO(g->request);
+			DoIO((struct IORequest *)g->request);
 		}
 #endif
 

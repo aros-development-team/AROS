@@ -1474,15 +1474,21 @@ static BOOL BoundsCheck(BOOL write, ULONG blocknr, ULONG blocks, globaldata *g)
 
 static BOOL ErrorRequest(BOOL write, ULONG errnum, ULONG blocknr, ULONG blocks, globaldata *g)
 {
-	ULONG args[5];
+	struct {
+		ULONG  tdmode;
+		ULONG  errnum;
+		ULONG  blocknr;
+		ULONG  blocks;
+		STRPTR sense;
+	} args;
 	UBYTE scsierr[1 + 18 * 3 + 1];
 	
 	scsierr[0] = 0;
-	args[0] = g->tdmode;
-	args[1] = errnum;
-	args[2] = blocknr;
-	args[3] = blocks;
-	args[4] = (ULONG)scsierr;
+	args.tdmode  = g->tdmode;
+	args.errnum  = errnum;
+	args.blocknr = blocknr;
+	args.blocks  = blocks;
+	args.sense   = scsierr;
 
 	UpdateAndMotorOff(g);
 
@@ -1502,7 +1508,7 @@ static BOOL ErrorRequest(BOOL write, ULONG errnum, ULONG blocknr, ULONG blocks, 
 		}
 	}
 	
-	while ((g->ErrorMsg)(write ? AFS_ERROR_WRITE_ERROR : AFS_ERROR_READ_ERROR, args, 2, g))
+	while ((g->ErrorMsg)(write ? AFS_ERROR_WRITE_ERROR : AFS_ERROR_READ_ERROR, &args, 2, g))
 	{
 		if (CheckCurrentVolumeBack(g))
 			return TRUE;
@@ -2169,7 +2175,14 @@ BOOL detectaccessmode(UBYTE *buffer, globaldata *g)
 	}
 
 	if (inside4G) {
-		ULONG args[3];
+		/* "%lu ... %s:%ld": the %s takes a pointer from the stream while
+		 * the numbers take 32bit each, so the pointer does not land on a
+		 * ULONG boundary and the stream has to be packed. */
+		struct {
+			ULONG  lastblock;
+			STRPTR name;
+			LONG   unit;
+		} __attribute__((packed)) args;
 		/* inside first 4G? Try standard CMD_READ first. */
 		g->tdmode = ACCESS_STD;
 		if (testread_td(buffer, g))
@@ -2182,11 +2195,11 @@ BOOL detectaccessmode(UBYTE *buffer, globaldata *g)
 #endif
 		g->tdmode = ACCESS_STD;
 		/* Both failed. Panic! */
-		args[0] = g->lastblock;
-		args[1] = (ULONG)name;
-		args[2] = g->startup->fssm_Unit;
+		args.lastblock = g->lastblock;
+		args.name      = name;
+		args.unit      = g->startup->fssm_Unit;
 		g->ErrorMsg = _NormalErrorMsg;
-		(g->ErrorMsg)(AFS_ERROR_32BIT_ACCESS_ERROR, args, 1, g);
+		(g->ErrorMsg)(AFS_ERROR_32BIT_ACCESS_ERROR, &args, 1, g);
 		return FALSE;
 	}
 	/* outside of first 4G, must use TD64, NSD or DS */

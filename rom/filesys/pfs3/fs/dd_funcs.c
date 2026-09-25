@@ -179,12 +179,12 @@ static SIPTR dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
 	if (!pkt->dp_Arg1)
 	{
 		if (g->currentvolume)
-			return MKBADDR(g->currentvolume->devlist);
+			return (SIPTR)MKBADDR(g->currentvolume->devlist);
 		else
 			return 0;
 	}
 	else
-		return MKBADDR(((fileentry_t *) pkt->dp_Arg1)->le.volume->devlist);
+		return (SIPTR)MKBADDR(((fileentry_t *) pkt->dp_Arg1)->le.volume->devlist);
 }
 
 
@@ -270,7 +270,7 @@ static SIPTR dd_Lock(struct DosPacket *pkt, globaldata * g)
 
 	DB(Trace(1, "Lock", "adres: %lx\n", filefe));
 	pkt->dp_Res2 = 0;
-	return MKBADDR(&filefe->lock);
+	return (SIPTR)MKBADDR(&filefe->lock);
 }
 
 static SIPTR dd_Unlock(struct DosPacket *pkt, globaldata * g)
@@ -363,7 +363,7 @@ static SIPTR dd_DupLock(struct DosPacket *pkt, globaldata * g)
 	}
 
 	DB(Trace(1, "DupLock", "of %lx adres: %lx\n", srcfe, dstfe));
-	return MKBADDR(&dstfe->le.lock);
+	return (SIPTR)MKBADDR(&dstfe->le.lock);
 }
 
 static SIPTR dd_CreateDir(struct DosPacket *pkt, globaldata * g)
@@ -408,7 +408,7 @@ static SIPTR dd_CreateDir(struct DosPacket *pkt, globaldata * g)
 	if (newdirle)
 	{
 		PFSDoNotify(&newdirle->le.info.file, TRUE, g);
-		return MKBADDR(&newdirle->le.lock);
+		return (SIPTR)MKBADDR(&newdirle->le.lock);
 	}
 	else
 		return DOSFALSE;
@@ -472,7 +472,7 @@ static SIPTR dd_Parent(struct DosPacket *pkt, globaldata * g)
 		return (0);
 	}
 
-	return MKBADDR(&parentfe->lock);
+	return (SIPTR)MKBADDR(&parentfe->lock);
 }
 
 
@@ -1748,7 +1748,7 @@ static SIPTR dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 	{
 		/* try to locate object */
 		found = FindObject (&oi, no->objectname+1, &filefi, &pkt->dp_Res2, g);
-		if (found && (IsVolume(filefi) || (ULONG)filefi.file.direntry > 2))
+		if (found && (IsVolume(filefi) || (IPTR)filefi.file.direntry > 2))
 		{
 			no->anodenr = IsVolume(filefi) ? ANODE_ROOTDIR : filefi.file.direntry->anode;
 		}
@@ -2255,6 +2255,15 @@ struct DosPacket64OS4
 	ULONG dp_Arg4;		/* 52 */
 	QUAD  dp_Arg5;		/* 56 */
 };
+
+/* Same offsets the sending side uses - fail the build if they move. */
+typedef char pfs3_packet64_layout_check[
+    (__builtin_offsetof(struct DosPacket64OS4, dp_Res1) == 24 &&
+     __builtin_offsetof(struct DosPacket64OS4, dp_Arg1) == 32 &&
+     __builtin_offsetof(struct DosPacket64OS4, dp_Arg2) == 40 &&
+     __builtin_offsetof(struct DosPacket64OS4, dp_Arg3) == 48 &&
+     __builtin_offsetof(struct DosPacket64OS4, dp_Arg4) == 52 &&
+     __builtin_offsetof(struct DosPacket64OS4, dp_Arg5) == 56) ? 1 : -1];
 
 #define PKT64_MARK(pkt)		(((struct DosPacket64OS4 *)(pkt))->dp_Res0 = DP64_INIT)
 #define PKT64_RES1(pkt)		(((struct DosPacket64OS4 *)(pkt))->dp_Res1)

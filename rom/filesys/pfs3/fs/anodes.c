@@ -311,7 +311,7 @@ void GetAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 	else
 	{
 		anode->clustersize = anode->next = 0;
-		anode->blocknr     = ~0UL;
+		anode->blocknr     = ~0U;
 		// ErrorMsg (AFS_ERROR_DNV_ALLOC_INFO, NULL);
 		DBERR(ErrorTrace(5,"GetAnode","ERR: anode = 0x%lx\n",anodenr));
 	}

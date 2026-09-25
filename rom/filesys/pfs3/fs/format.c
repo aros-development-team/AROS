@@ -267,7 +267,7 @@ static void ShowVersion (globaldata *g)
 	 * Show  copyright message
 	 */
 	tick = 0;
-	window = BuildEasyRequestArgs (NULL, &req, iflags, &regnr);
+	window = BuildEasyRequestArgs (NULL, (struct EasyStruct *)&req, iflags, (RAWARG)&regnr);
 	while ( (retval = SysReqHandler (window, &rec_idcmp, TRUE )) != 0 )
 	{
 		if (retval == -1)
