@@ -54,8 +54,19 @@ asm(
 "               cmp     x4, #2                 \n"
 "               bne     mpcore_el1_entry        \n"
 "               /* Drop from EL2 to EL1 */      \n"
+"               mrs     x4, cnthctl_el2        \n"
+"               orr     x4, x4, #0x3           \n" /* EL1PCTEN | EL1PCEN */
+"               msr     cnthctl_el2, x4        \n"
+"               msr     cntvoff_el2, xzr       \n"
+"               mov     x4, #0x33FF            \n"
+"               msr     cptr_el2, x4           \n"
+"               msr     hstr_el2, xzr          \n"
 "               mov     x4, #(1 << 31)         \n" /* HCR_EL2.RW = 1 (AArch64 at EL1) */
 "               msr     hcr_el2, x4            \n"
+"               /* SCTLR_EL1 is UNKNOWN out of reset */ \n"
+"               movz    x4, #0x0800            \n"
+"               movk    x4, #0x30D0, lsl #16   \n"
+"               msr     sctlr_el1, x4          \n"
 "               mov     x4, #0x3c5             \n" /* SPSR_EL2: EL1h, DAIF masked */
 "               msr     spsr_el2, x4           \n"
 "               adr     x4, mpcore_el1_entry   \n"
