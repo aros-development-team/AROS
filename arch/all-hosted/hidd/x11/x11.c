@@ -395,11 +395,11 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
     AddIntServer(INTB_VERTB, &myint);
 
-    if (x11_detectable_autorepeat)
+    if (x11_func.XkbSetDetectableAutoRepeat)
     {
         int supported = FALSE;
         LOCK_X11
-        xsd->detectable_repeat = x11_detectable_autorepeat(xsd->display,
+        xsd->detectable_repeat = XCALL(XkbSetDetectableAutoRepeat, xsd->display,
             TRUE, &supported) && supported;
         UNLOCK_X11
     }
