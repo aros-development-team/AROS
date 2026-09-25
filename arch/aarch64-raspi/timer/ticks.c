@@ -5,6 +5,7 @@
 */
 
 #include <proto/exec.h>
+#include <proto/execlock.h>
 
 #include "timer_intern.h"
 #include "timer_macros.h"
@@ -59,4 +60,58 @@ void EClockSet(struct TimerBase *TimerBase)
 {
     /* Nothing to program: the counter is read-only and free-running, and
        SetSysTime()'s value lives in tb_CurrentTime. */
+}
+
+/*
+ * Arm the tick compare for whichever comes first: the next periodic tick or
+ * the head MICROHZ request. Without this a request only completes on the
+ * 100Hz tick, so a 1ms delay took 0..10ms (measured 6-9ms on RPi3).
+ */
+#define TIMER_MIN_DELAY_US 10
+
+void Timer_Reprogram(struct TimerBase *TimerBase)
+{
+#if defined(__AROSEXEC_SMP__)
+    struct ExecLockBase *ExecLockBase = TimerBase->tb_ExecLockBase;
+#endif
+    ULONG delay = TimerBase->tb_Platform.tbp_TickRate.tv_micro;
+    struct timerequest *tr;
+    unsigned int clo, target;
+
+    EClockUpdate(TimerBase);
+
+#if defined(__AROSEXEC_SMP__)
+    if (ExecLockBase)
+        ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_READ, 0);
+#endif
+    tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_MICROHZ]);
+    if (tr)
+    {
+        struct timeval left = tr->tr_time;
+
+        if (CMPTIME(&TimerBase->tb_Elapsed, &left) <= 0)
+            delay = 0;                      /* already due */
+        else
+        {
+            SUBTIME(&left, &TimerBase->tb_Elapsed);
+            if (left.tv_secs == 0 && left.tv_micro < delay)
+                delay = left.tv_micro;
+        }
+    }
+#if defined(__AROSEXEC_SMP__)
+    if (ExecLockBase)
+        ReleaseLock(TimerBase->tb_ListLock, 0);
+#endif
+
+    if (delay < TIMER_MIN_DELAY_US)
+        delay = TIMER_MIN_DELAY_US;
+
+    /* The compare only matches on equality: never arm a value already behind
+     * CLO, or the tick is lost until the counter wraps (~71 min). */
+    do
+    {
+        clo = *((volatile unsigned int *)(SYSTIMER_CLO));
+        target = clo + delay;
+        *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = target;
+    } while ((LONG)(target - *((volatile unsigned int *)(SYSTIMER_CLO))) < 2);
 }

@@ -353,6 +353,15 @@ NOWARN_IGNORED_OPTIMIZATION_ARGUMENT    := @aros_nowarnflags_ignored_optimizatio
 NOWARN_BUILTIN_DECLARATION_MISMATCH     := @aros_nowarnflags_builtin_declaration_mismatch@
 NOWARN_OLD_STYLE_DEFINITION             := @aros_nowarnflags_old_style_definition@
 
+#
+# Per-diagnostic "error" / "no error" flags
+#
+
+ERROR_INT_CONVERSION                    := @aros_errorflags_int_conversion@
+ERROR_INCOMPAT_POINTER_TYPES            := @aros_errorflags_incompatible_pointer_types@
+NOERROR_INT_CONVERSION                  := @aros_noerrorflags_int_conversion@
+NOERROR_INCOMPAT_POINTER_TYPES          := @aros_noerrorflags_incompatible_pointer_types@
+
 # Toolchain support
 
 COMPILER_SYSROOT                        := @aros_toolchain_sysroot@

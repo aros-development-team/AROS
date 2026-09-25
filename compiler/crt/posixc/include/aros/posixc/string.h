@@ -22,7 +22,7 @@ int strerror_r(int errnum, char *buf, size_t buflen);
 /* POSIX string functions implemented in posixc.library (the ISO C / BSD
    string functions, incl. stpcpy()/strnlen(), are declared by
    <aros/stdc/string.h>, included above). */
-char *strtok_r(char *restrict str, const char *restrict sep, char **restrict saveptr);
+char *strtok_r(char *__restrict str, const char *__restrict sep, char **__restrict saveptr);
 
 __END_DECLS
 

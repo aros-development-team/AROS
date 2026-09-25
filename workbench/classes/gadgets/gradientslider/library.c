@@ -146,6 +146,8 @@ ULONG __saveds LibExpunge(REG(a6, struct GradientSliderBase_intern *GradientSlid
 {
  	if(!GradientSliderBase->library.lib_OpenCnt)
  	{
+		ULONG seglist = GradientSliderBase->seglist;
+
 		if(GradientSliderBase->classptr)
 		{
 			if( ! FreeClass(GradientSliderBase->classptr) )
@@ -162,7 +164,7 @@ ULONG __saveds LibExpunge(REG(a6, struct GradientSliderBase_intern *GradientSlid
   		FreeMem((BYTE *)GradientSliderBase-GradientSliderBase->library.lib_NegSize,
 	          GradientSliderBase->library.lib_NegSize + GradientSliderBase->library.lib_PosSize);
 
-		return( GradientSliderBase->seglist );
+		return( seglist );
  	}
  	else
 	{

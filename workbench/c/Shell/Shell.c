@@ -85,9 +85,10 @@ LONG interact(ShellState *ss)
 
     setInteractive(cli, ss);
 
-    /* pre-allocate input buffer */
-    if ((error = bufferAppend("?", 1, &in, ss))) /* FIXME drop when readLine ok */
-        return error;
+    /* readLine() writes up to LINE_MAX bytes plus a terminator straight
+     * into in.buf. */
+    if (!bufferExpand(&in, LINE_MAX + 1, ss))
+        return ERROR_NO_FREE_STORE;
 
     do {
         if ((error = Redirection_init(ss)) == 0)

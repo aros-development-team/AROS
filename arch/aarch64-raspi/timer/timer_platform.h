@@ -24,3 +24,8 @@ struct PlatformTimer
 
 #define ARM_PERIIOBASE TimerBase->tb_Platform.tbp_periiobase
 #include <hardware/bcm2708.h>
+
+/* Arm the tick compare for the earlier of the next periodic tick and the
+ * head MICROHZ request. Call with interrupts disabled or from the tick IRQ. */
+struct TimerBase;
+void Timer_Reprogram(struct TimerBase *TimerBase);

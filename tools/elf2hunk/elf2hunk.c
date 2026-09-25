@@ -150,6 +150,9 @@ typedef char *   STRPTR;
 #define SHF_EXECINSTR   (1 << 2)
 
 #define ELF_ST_TYPE(i)    ((i) & 0x0F)
+#define ELF_ST_BIND(i)    ((i) >> 4)
+
+#define STB_WEAK        2
 
 #define EI_VERSION      6
 #define EV_CURRENT      1
@@ -548,12 +551,23 @@ static int relocate
         {
 
             case SHN_UNDEF:
-                if (ELF_R_TYPE(rel->info) != 0) {
-                    bug("[ELF2HUNK] SHN_UNDEF symbol '%s', type %d unsupported\n", symname, (int)ELF_R_TYPE(rel->info));
-                    set_error(EINVAL);
-                    return 0;
+                if (ELF_R_TYPE(rel->info) == R_68k_NONE)
+                    break;
+                /*
+                 * An undefined weak symbol resolves to address 0, as the ELF
+                 * loader does (rom/dos/internalloadseg_elf.c); code referring
+                 * to one tests its address before use.  Only an absolute
+                 * reference can be expressed as a plain 0 without a hunk
+                 * relocation.
+                 */
+                if (ELF_ST_BIND(sym.info) == STB_WEAK && ELF_R_TYPE(rel->info) == R_68K_32) {
+                    D(bug("[ELF2HUNK] Undefined weak symbol '%s', using 0\n", symname));
+                    shid = ~0; value = 0;
+                    break;
                 }
-                break;
+                bug("[ELF2HUNK] SHN_UNDEF symbol '%s', type %d unsupported\n", symname, (int)ELF_R_TYPE(rel->info));
+                set_error(EINVAL);
+                return 0;
 
             case SHN_COMMON:
                 bug("[ELF2HUNK] SHN_COMMON symbol '%s' unsupported\n", symname);

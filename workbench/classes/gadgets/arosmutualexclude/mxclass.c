@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     AROS specific mutualexclude class implementation.
 */
@@ -117,8 +117,16 @@ Object *AROSMX__OM_NEW(Class * cl, Class * rootcl, struct opSet *msg)
     /* Calculate fontheight */
     if (data->tattr)
         data->fontheight = data->tattr->ta_YSize;
-    else if ((G(obj)->Flags & GFLG_LABELITEXT) && (G(obj)->GadgetText))
-        data->fontheight = G(obj)->GadgetText->ITextFont->ta_YSize;
+    else if (((G(obj)->Flags & GFLG_LABELMASK) == GFLG_LABELITEXT) &&
+             G(obj)->GadgetText)
+    {
+        if (G(obj)->GadgetText->ITextFont)
+            data->fontheight = G(obj)->GadgetText->ITextFont->ta_YSize;
+        else if (data->dri && data->dri->dri_Font)
+            data->fontheight = data->dri->dri_Font->tf_YSize;
+        else
+            data->fontheight = G(obj)->Height;
+    }
     else
         data->fontheight = G(obj)->Height;
 
@@ -377,6 +385,7 @@ VOID AROSMX__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct MXData *data = INST_DATA(cl, o);
     if (data->font) CloseFont(data->font);
+    if (data->mximage) DisposeObject((Object *)data->mximage);
     DoSuperMethodA(cl, o, msg);
 }
 
@@ -395,4 +404,3 @@ IPTR AROSMX__OM_GET(Class *cl, Object *o, struct opGet *msg)
 }
 
 /***********************************************************************************/
-

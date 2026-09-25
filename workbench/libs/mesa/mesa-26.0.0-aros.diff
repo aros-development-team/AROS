@@ -133,6 +133,150 @@ diff -ruN mesa-26.0.0/src/util/os_misc.h mesa-26.0.0.aros/src/util/os_misc.h
 
  #include "util/detect.h"
 
+--- mesa-26.0.0/src/util/set.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/util/set.c	2026-09-09 00:00:00.000000000 +0000
+@@ -48,8 +48,9 @@
+  * free to avoid exponential performance degradation as the hash table fills
+  */
+ 
++/* The tombstone address is stored per set, so a set handed to code linked
++ * against another copy of this file still sees the same sentinel. */
+ static const uint32_t deleted_key_value;
+-static const void *deleted_key = &deleted_key_value;
+ 
+ static const struct {
+    uint32_t max_entries, size, rehash;
+@@ -108,9 +109,9 @@
+ };
+ 
+ ASSERTED static inline bool
+-key_pointer_is_reserved(const void *key)
++key_pointer_is_reserved(const struct set *ht, const void *key)
+ {
+-   return key == NULL || key == deleted_key;
++   return key == NULL || key == ht->deleted_key;
+ }
+ 
+ static int
+@@ -120,15 +121,15 @@
+ }
+ 
+ static int
+-entry_is_deleted(struct set_entry *entry)
++entry_is_deleted(const struct set *ht, struct set_entry *entry)
+ {
+-   return entry->key == deleted_key;
++   return entry->key == ht->deleted_key;
+ }
+ 
+ static int
+-entry_is_present(struct set_entry *entry)
++entry_is_present(const struct set *ht, struct set_entry *entry)
+ {
+-   return entry->key != NULL && entry->key != deleted_key;
++   return entry->key != NULL && entry->key != ht->deleted_key;
+ }
+ 
+ void
+@@ -146,6 +147,7 @@
+    ht->max_entries = hash_sizes[ht->size_index].max_entries;
+    ht->key_hash_function = key_hash_function;
+    ht->key_equals_function = key_equals_function;
++   ht->deleted_key = &deleted_key_value;
+    assert(ht->size == ARRAY_SIZE(ht->_initial_storage));
+    ht->table = ht->_initial_storage;
+    memset(ht->table, 0, sizeof(ht->_initial_storage));
+@@ -304,7 +306,7 @@
+ 
+    if (delete_function) {
+       for (entry = set->table; entry != set->table + set->size; entry++) {
+-         if (entry_is_present(entry))
++         if (entry_is_present(set, entry))
+             delete_function(entry);
+ 
+          entry->key = NULL;
+@@ -323,7 +325,7 @@
+ static struct set_entry *
+ set_search(const struct set *ht, uint32_t hash, const void *key)
+ {
+-   assert(!key_pointer_is_reserved(key));
++   assert(!key_pointer_is_reserved(ht, key));
+ 
+    uint32_t size = ht->size;
+    uint32_t start_address = util_fast_urem32(hash, size, ht->size_magic);
+@@ -335,7 +337,7 @@
+ 
+       if (entry_is_free(entry)) {
+          return NULL;
+-      } else if (entry_is_present(entry) && entry->hash == hash) {
++      } else if (entry_is_present(ht, entry) && entry->hash == hash) {
+          if (ht->key_equals_function(key, entry->key)) {
+             return entry;
+          }
+@@ -462,7 +464,7 @@
+ {
+    struct set_entry *available_entry = NULL;
+ 
+-   assert(!key_pointer_is_reserved(key));
++   assert(!key_pointer_is_reserved(ht, key));
+ 
+    if (ht->entries >= ht->max_entries) {
+       set_rehash(ht, ht->size_index + 1);
+@@ -478,7 +480,7 @@
+    do {
+       struct set_entry *entry = ht->table + hash_address;
+ 
+-      if (!entry_is_present(entry)) {
++      if (!entry_is_present(ht, entry)) {
+          /* Stash the first available entry we find */
+          if (available_entry == NULL)
+             available_entry = entry;
+@@ -486,7 +488,7 @@
+             break;
+       }
+ 
+-      if (!entry_is_deleted(entry) &&
++      if (!entry_is_deleted(ht, entry) &&
+           entry->hash == hash &&
+           ht->key_equals_function(key, entry->key)) {
+          if (found)
+@@ -501,7 +503,7 @@
+ 
+    if (available_entry) {
+       /* There is no matching entry, create it. */
+-      if (entry_is_deleted(available_entry))
++      if (entry_is_deleted(ht, available_entry))
+          ht->deleted_entries--;
+       available_entry->hash = hash;
+       available_entry->key = key;
+@@ -614,7 +616,7 @@
+    if (!entry)
+       return;
+ 
+-   entry->key = deleted_key;
++   entry->key = ht->deleted_key;
+    ht->entries--;
+    ht->deleted_entries++;
+ }
+@@ -664,7 +666,7 @@
+       entry = entry + 1;
+ 
+    for (; entry != ht->table + ht->size; entry++) {
+-      if (entry_is_present(entry)) {
++      if (entry_is_present(ht, entry)) {
+          return entry;
+       }
+    }
+--- mesa-26.0.0/src/util/set.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/util/set.h	2026-09-09 00:00:00.000000000 +0000
+@@ -45,6 +45,7 @@
+    struct set_entry *table;
+    uint32_t (*key_hash_function)(const void *key);
+    bool (*key_equals_function)(const void *a, const void *b);
++   const void *deleted_key;
+    uint32_t size;
+    uint32_t rehash;
+    uint64_t size_magic;
 diff -ruN mesa-26.0.0/src/util/u_endian.h mesa-26.0.0.aros/src/util/u_endian.h
 --- mesa-26.0.0/src/util/u_endian.h	2025-02-11 12:07:00.000000000 +0000
 +++ mesa-26.0.0.aros/src/util/u_endian.h	2026-02-18 00:00:00.000000000 +0000
@@ -825,151 +969,217 @@ diff -ruN mesa-26.0.0/src/gallium/winsys/svga/drm/vmw_screen_svga.c mesa-26.0.0.
  
  #include "svga_cmd.h"
  #include "svga3d_devcaps.h"
-diff -ruN mesa-26.0.0/src/util/set.c mesa-26.0.0.aros/src/util/set.c
---- mesa-26.0.0/src/util/set.c
-+++ mesa-26.0.0.aros/src/util/set.c
-@@ -49,7 +49,10 @@
-  */
- 
- static const uint32_t deleted_key_value;
--static const void *deleted_key = &deleted_key_value;
-+/* AROS: the sentinel lives in each set (ht->deleted_key) rather than in a
-+ * file-static, because mesa3dgl.library and the gallium hidds are separate
-+ * modules with their own copy of this file; a set marked in one module and
-+ * walked in another must still agree on what "deleted" looks like. */
- 
- static const struct {
-    uint32_t max_entries, size, rehash;
-@@ -108,9 +111,9 @@
+diff -ruN mesa-26.0.0/src/mesa/main/viewport.c mesa-26.0.0.aros/src/mesa/main/viewport.c
+--- mesa-26.0.0/src/mesa/main/viewport.c	2026-02-11 19:07:29
++++ mesa-26.0.0.aros/src/mesa/main/viewport.c	2026-09-16 10:22:23
+@@ -92,12 +92,34 @@
+ struct gl_depthrange_inputs {
+    GLdouble Near, Far;          /**< Depth buffer range */
  };
++
++#ifdef __AROS__
++/* AROS vc4 render-scale (ENV:VC4_RENDER_SCALE, set up in mesa3dgl):
++ * only the window-system framebuffer is HVS-scaled (drawable is 1/N of
++ * the window), so viewport rects — given in window units — are divided
++ * at the API boundary ONLY while fb 0 is bound. Application FBOs render
++ * at full size; their viewports must pass through untouched (else an
++ * FBO-heavy renderer would confine its scene to a 1/N corner). */
++extern unsigned int mesa3dgl_render_scale __attribute__((weak));
++static inline int _aros_rscale(struct gl_context *ctx, int v)
++{
++   if (&mesa3dgl_render_scale && mesa3dgl_render_scale > 1
++       && ctx->DrawBuffer && ctx->DrawBuffer->Name == 0)
++      return v / (int)mesa3dgl_render_scale;
++   return v;
++}
++#else
++#define _aros_rscale(ctx, v) (v)
++#endif
  
- ASSERTED static inline bool
--key_pointer_is_reserved(const void *key)
-+key_pointer_is_reserved(const struct set *ht, const void *key)
+ static void
+ viewport(struct gl_context *ctx, GLint x, GLint y, GLsizei width,
+          GLsizei height)
  {
--   return key == NULL || key == deleted_key;
-+   return key == NULL || key == ht->deleted_key;
+-   struct gl_viewport_inputs input = { x, y, width, height };
++   struct gl_viewport_inputs input = { _aros_rscale(ctx, x),
++                                       _aros_rscale(ctx, y),
++                                       _aros_rscale(ctx, width),
++                                       _aros_rscale(ctx, height) };
+ 
+    /* Clamp the viewport to the implementation dependent values. */
+    clamp_viewport(ctx, &input.X, &input.Y, &input.Width, &input.Height);
+diff -ruN mesa-26.0.0/src/mesa/main/scissor.c mesa-26.0.0.aros/src/mesa/main/scissor.c
+--- mesa-26.0.0/src/mesa/main/scissor.c	2026-02-11 19:07:29
++++ mesa-26.0.0.aros/src/mesa/main/scissor.c	2026-09-16 10:22:45
+@@ -60,6 +60,22 @@
+    ctx->Scissor.ScissorArray[idx].Height = height;
  }
  
- static int
-@@ -120,15 +123,15 @@
- }
- 
- static int
--entry_is_deleted(struct set_entry *entry)
-+entry_is_deleted(const struct set *ht, struct set_entry *entry)
++#ifdef __AROS__
++/* AROS vc4 render-scale: scissor rects are in window units and are
++ * divided ONLY while the window-system framebuffer (fb 0) is bound —
++ * application FBOs are unscaled, same rule as viewport.c. */
++extern unsigned int mesa3dgl_render_scale __attribute__((weak));
++static inline int _aros_rscale_sc(struct gl_context *ctx, int v)
++{
++   if (&mesa3dgl_render_scale && mesa3dgl_render_scale > 1
++       && ctx->DrawBuffer && ctx->DrawBuffer->Name == 0)
++      return v / (int)mesa3dgl_render_scale;
++   return v;
++}
++#else
++#define _aros_rscale_sc(ctx, v) (v)
++#endif
++
+ static void
+ scissor(struct gl_context *ctx, GLint x, GLint y, GLsizei width, GLsizei height)
  {
--   return entry->key == deleted_key;
-+   return entry->key == ht->deleted_key;
+@@ -78,7 +94,10 @@
+     * implementation, but only signal the driver once at the end.
+     */
+    for (i = 0; i < ctx->Const.MaxViewports; i++)
+-      set_scissor_no_notify(ctx, i, x, y, width, height);
++      set_scissor_no_notify(ctx, i, _aros_rscale_sc(ctx, x),
++                            _aros_rscale_sc(ctx, y),
++                            _aros_rscale_sc(ctx, width),
++                            _aros_rscale_sc(ctx, height));
  }
  
- static int
--entry_is_present(struct set_entry *entry)
-+entry_is_present(const struct set *ht, struct set_entry *entry)
- {
--   return entry->key != NULL && entry->key != deleted_key;
-+   return entry->key != NULL && entry->key != ht->deleted_key;
+ /**
+diff -ruN mesa-26.0.0/src/mesa/state_tracker/st_extensions.c mesa-26.0.0.aros/src/mesa/state_tracker/st_extensions.c
+--- mesa-26.0.0/src/mesa/state_tracker/st_extensions.c	2026-09-16 10:26:16
++++ mesa-26.0.0.aros/src/mesa/state_tracker/st_extensions.c	2026-09-16 10:26:33
+@@ -787,10 +787,6 @@
+       { { o(EXT_texture_integer) },
+         { PIPE_FORMAT_R32G32B32A32_UINT,
+           PIPE_FORMAT_R32G32B32A32_SINT } },
+-
+-      { { o(ARB_texture_rg) },
+-        { PIPE_FORMAT_R8_UNORM,
+-          PIPE_FORMAT_R8G8_UNORM } },
+ 
+       { { o(EXT_texture_norm16) },
+         { PIPE_FORMAT_R16_UNORM,
+@@ -834,6 +830,16 @@
+ 
+    /* Required: sampler support */
+    static const struct st_extension_format_mapping texture_mapping[] = {
++      /* AROS: moved here from the render-target list. On vc4 R8/RG8 are
++       * samplable but not renderable, which hid the whole extension and
++       * made GL_RED an invalid internalformat (indexed-colour textures
++       * went undefined -> black screen). Sampling R8 returns
++       * spec-correct (R,0,0,1); RED framebuffer attachments still fail
++       * cleanly via the separate renderability validation. */
++      { { o(ARB_texture_rg) },
++        { PIPE_FORMAT_R8_UNORM,
++          PIPE_FORMAT_R8G8_UNORM } },
++
+       { { o(OES_texture_float) },
+         { PIPE_FORMAT_R32G32B32A32_FLOAT } },
+ 
+diff -ruN mesa-26.0.0/src/gallium/drivers/vc4/vc4_qir.h mesa-26.0.0.aros/src/gallium/drivers/vc4/vc4_qir.h
+--- mesa-26.0.0/src/gallium/drivers/vc4/vc4_qir.h	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/vc4/vc4_qir.h	2026-09-16 00:00:00.000000000 +0000
+@@ -309,6 +309,13 @@
+                                 unsigned wrap_s:3;
+                                 unsigned wrap_t:3;
+                                 bool force_first_level:1;
++                                /* NPOT texture with REPEAT wrap: the TMU
++                                 * wraps at power-of-two bounds only, so the
++                                 * shader must fract() the coordinate (and
++                                 * the P1 wrap field is forced to clamp).
++                                 */
++                                unsigned npot_s:1;
++                                unsigned npot_t:1;
+                         };
+                         struct {
+                                 uint16_t msaa_width, msaa_height;
+diff -ruN mesa-26.0.0/src/gallium/drivers/vc4/vc4_program.c mesa-26.0.0.aros/src/gallium/drivers/vc4/vc4_program.c
+--- mesa-26.0.0/src/gallium/drivers/vc4/vc4_program.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/vc4/vc4_program.c	2026-09-16 00:00:00.000000000 +0000
+@@ -395,6 +395,9 @@
+                                       qir_UNPACK_8_F(c, tex, i));
+         }
+ }
++
++static struct qreg
++ntq_ffract(struct vc4_compile *c, struct qreg src);
+ 
+ static void
+ ntq_emit_tex(struct vc4_compile *c, nir_tex_instr *instr)
+@@ -451,6 +454,17 @@
+                 lod = qir_uniform(c, QUNIFORM_TEXTURE_FIRST_LEVEL, unit);
+                 is_txl = true;
+                 is_txb = false;
++        }
++
++        /* The TMU only wraps REPEAT coordinates at power-of-two bounds, so
++         * for NPOT textures the wrap is done here instead (the P1 wrap
++         * field is forced to clamp in write_texture_p1).
++         */
++        if (instr->sampler_dim != GLSL_SAMPLER_DIM_CUBE) {
++                if (c->key->tex[unit].npot_s)
++                        s = ntq_ffract(c, s);
++                if (c->key->tex[unit].npot_t)
++                        t = ntq_ffract(c, t);
+         }
+ 
+         struct qreg texture_u[] = {
+@@ -2722,6 +2736,18 @@
+                         key->tex[i].wrap_t = sampler_state->wrap_t;
+                         key->tex[i].force_first_level =
+                                 vc4_sampler->force_first_level;
++                        /* The TMU wraps REPEAT coordinates at power-of-two
++                         * bounds only; NPOT + REPEAT samples the (stale)
++                         * POT padding.  Flag it so the shader fract()s the
++                         * coordinate instead (see ntq_emit_tex), and
++                         * write_texture_p1 forces the axis to clamp.
++                         */
++                        key->tex[i].npot_s =
++                                sampler_state->wrap_s == PIPE_TEX_WRAP_REPEAT &&
++                                !util_is_power_of_two_or_zero(sampler->texture->width0);
++                        key->tex[i].npot_t =
++                                sampler_state->wrap_t == PIPE_TEX_WRAP_REPEAT &&
++                                !util_is_power_of_two_or_zero(sampler->texture->height0);
+                 }
+         }
+ }
+diff -ruN mesa-26.0.0/src/gallium/drivers/vc4/vc4_uniforms.c mesa-26.0.0.aros/src/gallium/drivers/vc4/vc4_uniforms.c
+--- mesa-26.0.0/src/gallium/drivers/vc4/vc4_uniforms.c	2025-02-11 12:07:00.000000000 +0000
++++ mesa-26.0.0.aros/src/gallium/drivers/vc4/vc4_uniforms.c	2026-09-16 00:00:00.000000000 +0000
+@@ -23,6 +23,7 @@
+ 
+ #include "util/u_pack_color.h"
+ #include "util/u_upload_mgr.h"
++#include "util/u_math.h"
+ #include "util/format_srgb.h"
+ 
+ #include "vc4_context.h"
+@@ -51,8 +52,26 @@
+                 vc4_sampler_view(texstate->textures[unit]);
+         struct vc4_sampler_state *sampler =
+                 vc4_sampler_state(texstate->samplers[unit]);
++        uint32_t p1 = sview->texture_p1 | sampler->texture_p1;
+ 
+-        cl_aligned_u32(uniforms, sview->texture_p1 | sampler->texture_p1);
++        /* The TMU only wraps REPEAT coordinates at power-of-two bounds.
++         * For NPOT + REPEAT the shader fract()s the coordinate into [0, 1)
++         * (see ntq_emit_tex), so clamp here to keep the filter's neighbour
++         * fetches inside the actually-written texels instead of the POT
++         * padding.
++         */
++        if (sampler->base.wrap_s == PIPE_TEX_WRAP_REPEAT &&
++            !util_is_power_of_two_or_zero(sview->base.texture->width0)) {
++                p1 = (p1 & ~VC4_TEX_P1_WRAP_S_MASK) |
++                     VC4_SET_FIELD(1, VC4_TEX_P1_WRAP_S);
++        }
++        if (sampler->base.wrap_t == PIPE_TEX_WRAP_REPEAT &&
++            !util_is_power_of_two_or_zero(sview->base.texture->height0)) {
++                p1 = (p1 & ~VC4_TEX_P1_WRAP_T_MASK) |
++                     VC4_SET_FIELD(1, VC4_TEX_P1_WRAP_T);
++        }
++
++        cl_aligned_u32(uniforms, p1);
  }
  
- void
-@@ -151,6 +154,7 @@
-    memset(ht->table, 0, sizeof(ht->_initial_storage));
-    ht->entries = 0;
-    ht->deleted_entries = 0;
-+   ht->deleted_key = &deleted_key_value;
- }
- 
- void
-@@ -304,7 +308,7 @@
- 
-    if (delete_function) {
-       for (entry = set->table; entry != set->table + set->size; entry++) {
--         if (entry_is_present(entry))
-+         if (entry_is_present(set, entry))
-             delete_function(entry);
- 
-          entry->key = NULL;
-@@ -323,7 +327,7 @@
- static struct set_entry *
- set_search(const struct set *ht, uint32_t hash, const void *key)
- {
--   assert(!key_pointer_is_reserved(key));
-+   assert(!key_pointer_is_reserved(ht, key));
- 
-    uint32_t size = ht->size;
-    uint32_t start_address = util_fast_urem32(hash, size, ht->size_magic);
-@@ -335,7 +339,7 @@
- 
-       if (entry_is_free(entry)) {
-          return NULL;
--      } else if (entry_is_present(entry) && entry->hash == hash) {
-+      } else if (entry_is_present(ht, entry) && entry->hash == hash) {
-          if (ht->key_equals_function(key, entry->key)) {
-             return entry;
-          }
-@@ -462,7 +466,7 @@
- {
-    struct set_entry *available_entry = NULL;
- 
--   assert(!key_pointer_is_reserved(key));
-+   assert(!key_pointer_is_reserved(ht, key));
- 
-    if (ht->entries >= ht->max_entries) {
-       set_rehash(ht, ht->size_index + 1);
-@@ -478,7 +482,7 @@
-    do {
-       struct set_entry *entry = ht->table + hash_address;
- 
--      if (!entry_is_present(entry)) {
-+      if (!entry_is_present(ht, entry)) {
-          /* Stash the first available entry we find */
-          if (available_entry == NULL)
-             available_entry = entry;
-@@ -486,7 +490,7 @@
-             break;
-       }
- 
--      if (!entry_is_deleted(entry) &&
-+      if (!entry_is_deleted(ht, entry) &&
-           entry->hash == hash &&
-           ht->key_equals_function(key, entry->key)) {
-          if (found)
-@@ -501,7 +505,7 @@
- 
-    if (available_entry) {
-       /* There is no matching entry, create it. */
--      if (entry_is_deleted(available_entry))
-+      if (entry_is_deleted(ht, available_entry))
-          ht->deleted_entries--;
-       available_entry->hash = hash;
-       available_entry->key = key;
-@@ -614,7 +618,7 @@
-    if (!entry)
-       return;
- 
--   entry->key = deleted_key;
-+   entry->key = ht->deleted_key;
-    ht->entries--;
-    ht->deleted_entries++;
- }
-@@ -664,7 +668,7 @@
-       entry = entry + 1;
- 
-    for (; entry != ht->table + ht->size; entry++) {
--      if (entry_is_present(entry)) {
-+      if (entry_is_present(ht, entry)) {
-          return entry;
-       }
-    }
-diff -ruN mesa-26.0.0/src/util/set.h mesa-26.0.0.aros/src/util/set.h
---- mesa-26.0.0/src/util/set.h
-+++ mesa-26.0.0.aros/src/util/set.h
-@@ -53,6 +53,8 @@
-    uint32_t size_index;
-    uint32_t entries;
-    uint32_t deleted_entries;
-+   /* AROS: per-set deleted-entry sentinel (see set.c). */
-+   const void *deleted_key;
- 
-    /* "table" points to here at first. A bigger storage is allocated separately
-     * when a bigger size is needed.
+ static void
