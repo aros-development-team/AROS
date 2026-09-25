@@ -601,7 +601,7 @@ AROS_LH4(BOOL, New_SetVar,
     {
         static const char hexdigits[] = "0123456789ABCDEF";
         CONST_STRPTR opt;
-        CONST_STRPTR varname = name ? name : "(NULL)";
+        CONST_STRPTR varname = name ? name : (CONST_STRPTR)"(NULL)";
         const UBYTE *value = (const UBYTE *)buffer;
         char varstr[MAX_STR_LEN + 1];
         ULONG pos = 0, i = 0;
