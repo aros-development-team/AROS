@@ -565,7 +565,7 @@ static const struct Command
     {-1,                         },                      /* 0x72 r */
     {-1,                         },                      /* 0x73 s */
     {C_SET_PAGE_LENGTH,          1},                     /* 0x74 t */
-    {C_SET_LINE_LENGTH,          },                      /* 0x75 u */
+    {C_SET_LINE_LENGTH,          1},                     /* 0x75 u */
     {-1,                         },                      /* 0x76 v */
     {-1,                         },                      /* 0x77 w */
     {C_SET_LEFT_OFFSET,          1},                     /* 0x78 x */

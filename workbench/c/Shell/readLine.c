@@ -30,19 +30,21 @@ static BOOL checkPipe(STRPTR pchar, STRPTR mchar, STRPTR in, LONG inlen)
             quoted = !quoted;
         }
 
+        if (!quoted && !escaped)
+        {
+            if (mcharn > 0 && c == mchar[0] &&
+                memcmp(&in[n], mchar, mcharn) == 0)
+                return TRUE;
+
+            if (pcharn > 0 && c == pchar[0] &&
+                memcmp(&in[n], pchar, pcharn) == 0)
+                return TRUE;
+        }
+
         if (c == '*' && !escaped)
             escaped = TRUE;
         else
             escaped = FALSE;
-
-        if (quoted)
-            continue;
-
-        if (mcharn > 0 && c == mchar[0] && memcmp(&in[n], mchar, mcharn) == 0)
-            return TRUE;
-
-        if (pcharn > 0 && c == pchar[0] && memcmp(&in[n], pchar, pcharn) == 0)
-            return TRUE;
     }
     return FALSE;
 }
@@ -58,7 +60,12 @@ LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, WOR
     TEXT pchar[3], mchar[3];
 
     len = GetVar("_pchar", pchar, sizeof pchar, GVF_LOCAL_ONLY | LV_VAR);
-    if (len <= 0)
+    if (len < 0)
+    {
+        pchar[0] = '|';
+        pchar[1] = 0;
+    }
+    else if (len == 0)
         pchar[0] = 0;
     pchar[2] = 0;
 
