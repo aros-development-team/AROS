@@ -112,12 +112,10 @@ static inline void bcm27xx_cntp_ctl_set(uint32_t v)
     asm volatile ("msr cntp_ctl_el0, %0" :: "r"((uint64_t)v));
 }
 
-static void bcm27xx_cntp_tick(void)
+/* Tick without the CNTP rearm - the Pi 4/5 GIC handlers rearm themselves */
+void bcm27xx_sched_tick(void)
 {
     tls_t *__tls;
-
-    /* Rearm for the next tick - writing TVAL clears the pending condition */
-    bcm27xx_cntp_tval_set(bcm27xx_cntp_interval);
 
     /* Not gated on IDNESTCOUNT: a task busy-looping in short Disable
      * windows must still expire its quantum. */
@@ -130,6 +128,14 @@ static void bcm27xx_cntp_tick(void)
         __tls->Elapsed--;
     if (__tls->Elapsed == 0)
         __tls->ScheduleFlags |= (TLSSF_Quantum | TLSSF_Switch);
+}
+
+static void bcm27xx_cntp_tick(void)
+{
+    /* Rearm for the next tick - writing TVAL clears the pending condition */
+    bcm27xx_cntp_tval_set(bcm27xx_cntp_interval);
+
+    bcm27xx_sched_tick();
 }
 
 void bcm27xx_init_cntp_timer(void)

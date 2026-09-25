@@ -35,6 +35,7 @@
 
 /* SoC-common bits shared with Raspberry Pi platforms */
 #include "bcm27xx.h"
+#include "gic400.h"
 
 #define DTIMER(x)
 
@@ -95,6 +96,8 @@ static int bcm2712_ser_getc(void)
 #define GICD_ICFGR      0xC00
 
 #define GIC_FIRST_SPI   32
+/* INTIDs below this are SGIs (IPIs) */
+#define GIC_FIRST_PPI   16
 
 #define GICC_CTLR   0x000
 #define GICC_PMR    0x004
@@ -229,6 +232,8 @@ static void bcm2712_irq_disable(int irq)
 static uint32_t irq_last = GIC_SPURIOUS;
 static unsigned int irq_repeats;
 
+static void bcm2712_gentimer_tick(void);
+
 static void bcm2712_irq_process(void)
 {
     for (;;)
@@ -239,10 +244,22 @@ static void bcm2712_irq_process(void)
         if (intid >= GIC_SPURIOUS)
             break;
 
-        krnRunIRQHandlers(KernelBase, intid);
+        /* SGIs and the tick bypass krnRunIRQHandlers: the global
+         * KernelBase is still NULL while the secondaries already tick. */
+        if (intid < GIC_FIRST_PPI)
+            gic400_handle_ipi();
+        else if (intid == GENTIMER_PPI)
+            bcm2712_gentimer_tick();
+        else if (KernelBase)
+            krnRunIRQHandlers(KernelBase, intid);
 
         GICC(GICC_EOIR) = iar;
 
+        /* Self-clearing, and the tick repeats by design; only SPIs (all on CPU 0) count */
+        if (intid < GIC_FIRST_PPI || intid == GENTIMER_PPI)
+            continue;
+
+        /* Mask a level-triggered source that its handler never clears */
         if (intid == irq_last)
         {
             if (++irq_repeats > 10000)
@@ -263,46 +280,67 @@ static void bcm2712_irq_process(void)
 
 /* --------------- ARM generic timer (CNTP) scheduler tick --------------- */
 
-static void bcm2712_gentimer_handler(unsigned int irq, void *unused)
+static void bcm2712_gentimer_tick(void)
 {
-    (void)irq; (void)unused;
-
     /* Reload compare for next quantum */
     __asm__ volatile("msr cntp_tval_el0, %0" :: "r"(gentimer_interval));
 
+#if defined(__AROSEXEC_SMP__)
+    /* PPI 30 is banked: each core expires its own quantum, VBlank stays on core 0 */
+    bcm27xx_sched_tick();
+
+    if (GetCPUNumber() != 0)
+        return;
+#endif
+
     /* Cause scheduler quantum */
-    core_Cause(INTB_VERTB, 1L << INTB_VERTB);
+    if (SysBase && (IDNESTCOUNT_GET < 0))
+        core_Cause(INTB_VERTB, 1L << INTB_VERTB);
+
+    /* Without this TaskTag_CPUUsage never advances */
+    core_TaskCPUUsage();
+}
+
+/* CNTP and its PPI are per core */
+static void bcm2712_init_timer_core(void)
+{
+    if (!gentimer_interval)
+    {
+        uint64_t freq;
+
+        __asm__ volatile("mrs %0, cntfrq_el0" : "=r"(freq));
+        gentimer_interval = freq / GENTIMER_HZ;
+    }
+
+    bcm2712_irq_enable(GENTIMER_PPI);
+
+    __asm__ volatile("msr cntp_tval_el0, %0" :: "r"(gentimer_interval));
+    __asm__ volatile("msr cntp_ctl_el0, %0" :: "r"((uint64_t)1));
 }
 
 static APTR bcm2712_init_gentimer(APTR _kernelBase)
 {
-    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
-    struct IntrNode *TimerHandle;
-    uint64_t freq;
-
     DTIMER(bug("[Kernel:BCM2712] %s\n", __func__));
 
-    __asm__ volatile("mrs %0, cntfrq_el0" : "=r"(freq));
-    gentimer_interval = freq / GENTIMER_HZ;
+    bcm2712_init_timer_core();
 
-    TimerHandle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC | MEMF_CLEAR);
-    if (!TimerHandle)
-        return NULL;
+    /* No IntrNode: bcm2712_irq_process dispatches the tick directly */
+    return _kernelBase;
+}
 
-    TimerHandle->in_Handler = bcm2712_gentimer_handler;
-    TimerHandle->in_HandlerData = (void *)(uintptr_t)GENTIMER_PPI;
-    TimerHandle->in_HandlerData2 = KernelBase;
-    TimerHandle->in_type = it_interrupt;
-    TimerHandle->in_nr = GENTIMER_PPI;
+/* --------------------------- per-core setup --------------------------- */
 
-    ADDHEAD(&KernelBase->kb_Interrupts[GENTIMER_PPI], &TimerHandle->in_Node);
+static void bcm2712_init_cpu(APTR _kernelBase, APTR _sysBase)
+{
+    struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
+    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
+    (void)SysBase; (void)KernelBase;
 
-    /* Program initial interval, enable timer, unmask PPI in GIC */
-    __asm__ volatile("msr cntp_tval_el0, %0" :: "r"(gentimer_interval));
-    __asm__ volatile("msr cntp_ctl_el0, %0" :: "r"((uint64_t)1));
-    ictl_enable_irq(GENTIMER_PPI, KernelBase);
+    /* Per-CPU TLS; PrepareExecBase only sets the boot core's */
+    SCHEDQUANTUM_SET(SCHEDQUANTUM_VALUE);
+    SCHEDELAPSED_SET(SCHEDQUANTUM_VALUE);
 
-    return TimerHandle;
+    gic400_init_core();
 }
 
 /* ------------------------------- probe ------------------------------- */
@@ -338,12 +376,14 @@ static IPTR bcm2712_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     // TODO: Remove
     krnARMImpl->ARMI_Platform = 0x2712;
     krnARMImpl->ARMI_PeripheralBase = (APTR)(periibase ? periibase : BCM2712_PERIBASE);
-    krnARMImpl->ARMI_InitCore = &bcm27xx_init_cpu;
-    krnARMImpl->ARMI_FIQProcess = &bcm27xx_fiq_process;
-    krnARMImpl->ARMI_SendIPI = &bcm27xx_send_ipi;
+    krnARMImpl->ARMI_InitCore = &bcm2712_init_cpu;
+    krnARMImpl->ARMI_SendIPI = &gic400_send_ipi;
 
     krnARMImpl->ARMI_GetTime = &bcm27xx_get_time;
     krnARMImpl->ARMI_InitTimer = &bcm2712_init_gentimer;
+#if defined(__AROSEXEC_SMP__)
+    krnARMImpl->ARMI_InitTimerCore = &bcm2712_init_timer_core;
+#endif
     krnARMImpl->ARMI_LED_Toggle = &bcm27xx_toggle_led;
 
     krnARMImpl->ARMI_SerPutChar = &bcm2712_ser_putc;
@@ -353,6 +393,8 @@ static IPTR bcm2712_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     {
         krnARMImpl->ARMI_PutChar(0xFF); /* Clear the display */
     }
+
+    gic400_setbase(GICD_BASE, GICC_BASE);
 
     krnARMImpl->ARMI_IRQInit = &bcm2712_irq_init;
     krnARMImpl->ARMI_IRQEnable = &bcm2712_irq_enable;

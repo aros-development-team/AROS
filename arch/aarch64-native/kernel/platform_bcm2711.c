@@ -36,6 +36,7 @@
 
 /* SoC-common bits shared with the Pi 2/3 (platform_bcm27xx.c) */
 #include "bcm27xx.h"
+#include "gic400.h"
 
 #define DTIMER(x)
 
@@ -55,6 +56,8 @@
 /* INTIDs below this are private to a core (SGIs and PPIs); at and above
    it they are shared and need explicit routing and trigger configuration. */
 #define GIC_FIRST_SPI   32
+/* INTIDs below this are SGIs (IPIs) */
+#define GIC_FIRST_PPI   16
 
 #define GICC_CTLR   0x000
 #define GICC_PMR    0x004
@@ -116,6 +119,8 @@ static void bcm2711_irq_disable(int irq)
 static uint32_t irq_last = GIC_SPURIOUS;
 static unsigned int irq_repeats;
 
+static void bcm2711_gentimer_tick(void);
+
 static void bcm2711_irq_process(void)
 {
     for (;;)
@@ -126,15 +131,26 @@ static void bcm2711_irq_process(void)
         if (intid >= GIC_SPURIOUS)
             break;
 
-        krnRunIRQHandlers(KernelBase, intid);
+        /* SGIs and the tick bypass krnRunIRQHandlers: the global
+         * KernelBase is still NULL while the secondaries already tick. */
+        if (intid < GIC_FIRST_PPI)
+            gic400_handle_ipi();
+        else if (intid == GENTIMER_PPI)
+            bcm2711_gentimer_tick();
+        else if (KernelBase)
+            krnRunIRQHandlers(KernelBase, intid);
 
         GICC(GICC_EOIR) = iar;
+
+        /* Self-clearing, and the tick repeats by design; only SPIs (all on CPU 0) count */
+        if (intid < GIC_FIRST_PPI || intid == GENTIMER_PPI)
+            continue;
 
         /*
          * A level-triggered source that nobody acknowledges would be
          * re-presented forever and wedge the machine. Mask it once it has
          * proved it is not being cleared. Any other interrupt arriving in
-         * between, the timer included, clears the count.
+         * between clears the count.
          */
         if (intid == irq_last)
         {
@@ -156,46 +172,67 @@ static void bcm2711_irq_process(void)
 
 /* --------------- ARM generic timer (CNTP) scheduler tick --------------- */
 
-static void bcm2711_gentimer_handler(unsigned int irq, void *unused)
+static void bcm2711_gentimer_tick(void)
 {
-    (void)irq; (void)unused;
-
     /* Reload the compare for the next quantum. */
     __asm__ volatile("msr cntp_tval_el0, %0" :: "r"(gentimer_interval));
 
+#if defined(__AROSEXEC_SMP__)
+    /* PPI 30 is banked: each core expires its own quantum, VBlank stays on core 0 */
+    bcm27xx_sched_tick();
+
+    if (GetCPUNumber() != 0)
+        return;
+#endif
+
     /* Drive the exec scheduler quantum (same mechanism as bcm2708). */
-    core_Cause(INTB_VERTB, 1L << INTB_VERTB);
+    if (SysBase && (IDNESTCOUNT_GET < 0))
+        core_Cause(INTB_VERTB, 1L << INTB_VERTB);
+
+    /* Without this TaskTag_CPUUsage never advances */
+    core_TaskCPUUsage();
+}
+
+/* CNTP and its PPI are per core */
+static void bcm2711_init_timer_core(void)
+{
+    if (!gentimer_interval)
+    {
+        uint64_t freq;
+
+        __asm__ volatile("mrs %0, cntfrq_el0" : "=r"(freq));
+        gentimer_interval = freq / GENTIMER_HZ;
+    }
+
+    bcm2711_irq_enable(GENTIMER_PPI);
+
+    __asm__ volatile("msr cntp_tval_el0, %0" :: "r"(gentimer_interval));
+    __asm__ volatile("msr cntp_ctl_el0, %0" :: "r"((uint64_t)1));
 }
 
 static APTR bcm2711_init_gentimer(APTR _kernelBase)
 {
-    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
-    struct IntrNode *TimerHandle;
-    uint64_t freq;
-
     DTIMER(bug("[Kernel:BCM2711] %s\n", __func__));
 
-    __asm__ volatile("mrs %0, cntfrq_el0" : "=r"(freq));
-    gentimer_interval = freq / GENTIMER_HZ;
+    bcm2711_init_timer_core();
 
-    TimerHandle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC | MEMF_CLEAR);
-    if (!TimerHandle)
-        return NULL;
+    /* No IntrNode: bcm2711_irq_process dispatches the tick directly */
+    return _kernelBase;
+}
 
-    TimerHandle->in_Handler = bcm2711_gentimer_handler;
-    TimerHandle->in_HandlerData = (void *)(uintptr_t)GENTIMER_PPI;
-    TimerHandle->in_HandlerData2 = KernelBase;
-    TimerHandle->in_type = it_interrupt;
-    TimerHandle->in_nr = GENTIMER_PPI;
+/* --------------------------- per-core setup --------------------------- */
 
-    ADDHEAD(&KernelBase->kb_Interrupts[GENTIMER_PPI], &TimerHandle->in_Node);
+static void bcm2711_init_cpu(APTR _kernelBase, APTR _sysBase)
+{
+    struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
+    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
+    (void)SysBase; (void)KernelBase;
 
-    /* Program the first interval, enable the timer, unmask the PPI in the GIC. */
-    __asm__ volatile("msr cntp_tval_el0, %0" :: "r"(gentimer_interval));
-    __asm__ volatile("msr cntp_ctl_el0, %0" :: "r"((uint64_t)1));
-    ictl_enable_irq(GENTIMER_PPI, KernelBase);
+    /* Per-CPU TLS; PrepareExecBase only sets the boot core's */
+    SCHEDQUANTUM_SET(SCHEDQUANTUM_VALUE);
+    SCHEDELAPSED_SET(SCHEDQUANTUM_VALUE);
 
-    return TimerHandle;
+    gic400_init_core();
 }
 
 /* ------------------------------- probe ------------------------------- */
@@ -221,12 +258,14 @@ static IPTR bcm2711_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         return FALSE;
 
     krnARMImpl->ARMI_PeripheralBase = (APTR)0xFE000000;
-    krnARMImpl->ARMI_InitCore = &bcm27xx_init_cpu;
-    krnARMImpl->ARMI_FIQProcess = &bcm27xx_fiq_process;
-    krnARMImpl->ARMI_SendIPI = &bcm27xx_send_ipi;
+    krnARMImpl->ARMI_InitCore = &bcm2711_init_cpu;
+    krnARMImpl->ARMI_SendIPI = &gic400_send_ipi;
 
     krnARMImpl->ARMI_GetTime = &bcm27xx_get_time;
     krnARMImpl->ARMI_InitTimer = &bcm2711_init_gentimer;
+#if defined(__AROSEXEC_SMP__)
+    krnARMImpl->ARMI_InitTimerCore = &bcm2711_init_timer_core;
+#endif
     krnARMImpl->ARMI_LED_Toggle = &bcm27xx_toggle_led;
 
     krnARMImpl->ARMI_SerPutChar = &bcm27xx_ser_putc;
@@ -236,6 +275,8 @@ static IPTR bcm2711_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     {
         krnARMImpl->ARMI_PutChar(0xFF); /* Clear the display */
     }
+
+    gic400_setbase(GICD_BASE, GICC_BASE);
 
     krnARMImpl->ARMI_IRQInit = &bcm2711_irq_init;
     krnARMImpl->ARMI_IRQEnable = &bcm2711_irq_enable;
