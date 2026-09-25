@@ -370,6 +370,40 @@ AROS_LH2(BPTR, New_Lock,
 
 // ----------------------------------------------------------------------------------
 
+static int MakeLinkAppend(char *buffer, int pos, CONST_STRPTR text, BOOL *truncated)
+{
+    if (!text)
+        text = "(NULL)";
+
+    while ((pos < MAX_STR_LEN) && *text)
+        buffer[pos++] = *text++;
+
+    if (*text)
+        *truncated = TRUE;
+
+    buffer[pos] = '\0';
+    return pos;
+}
+
+static void MakeLinkFormat(char *buffer, CONST_STRPTR name, CONST_STRPTR dest)
+{
+    BOOL truncated = FALSE;
+    int pos = 0;
+
+    buffer[0] = '\0';
+    pos = MakeLinkAppend(buffer, pos, name, &truncated);
+    pos = MakeLinkAppend(buffer, pos, " --> ", &truncated);
+    MakeLinkAppend(buffer, pos, dest, &truncated);
+
+    if (truncated)
+    {
+        buffer[MAX_STR_LEN - 3] = '.';
+        buffer[MAX_STR_LEN - 2] = '.';
+        buffer[MAX_STR_LEN - 1] = '.';
+        buffer[MAX_STR_LEN] = '\0';
+    }
+}
+
 AROS_LH3(LONG, New_MakeLink,
     AROS_LHA(CONST_STRPTR, name, D1),
     AROS_LHA(APTR,   dest, D2),
@@ -387,43 +421,32 @@ AROS_LH3(LONG, New_MakeLink,
 
     if (patches[PATCH_MakeLink].enabled)
     {
-        struct Process *myproc = (struct Process *)FindTask(NULL);
-
         CONST_STRPTR opt;
+        CONST_STRPTR shownname = name;
+        CONST_STRPTR showndest;
+        char namebuf[MAX_STR_LEN + 1];
+        char destbuf[MAX_STR_LEN + 1];
+        char namestr[MAX_STR_LEN + 1];
+
         if (soft) opt = "Softlink";
         else      opt = "Hardlink";
 
-        int len = strlen(name);
-        char namestr[MAX_STR_LEN + 1];
-        if (len >= MAX_STR_LEN)
+        if (setup.showPaths && name)
         {
-            strncpy(namestr, name, MAX_STR_LEN);
-            namestr[MAX_STR_LEN] = 0;
+            struct Process *myproc = (struct Process *)FindTask(NULL);
+            shownname = MyNameFromLock(myproc->pr_CurrentDir,
+                        (char *)name, namebuf, sizeof(namebuf));
         }
+
+        if (soft)
+            showndest = (CONST_STRPTR)dest;
+        else if (dest)
+            showndest = MyNameFromLock((BPTR)dest, NULL,
+                        destbuf, sizeof(destbuf));
         else
-        {
-            if (setup.showPaths)
-            {
-                strcpy(namestr, MyNameFromLock(myproc->pr_CurrentDir,
-                            (char *)name, namestr, MAX_STR_LEN-2));
-                len = strlen(namestr);
-            }
-            else
-                strcpy(namestr, name);
+            showndest = NULL;
 
-            strcat(namestr, " --> ");
-            if (soft)
-            {
-                strncat(namestr, (char *)dest, MAX_STR_LEN - len - 1);
-                namestr[MAX_STR_LEN] = 0;
-            }
-            else
-            {
-                strcat(namestr, MyNameFromLock((BPTR)dest, NULL, namestr+len+1,
-                            MAX_STR_LEN-len-1));
-            }
-        }
-
+        MakeLinkFormat(namestr, shownname, showndest);
         main_output("MakeLink", namestr, opt, result, TRUE, FALSE);
     }
 
