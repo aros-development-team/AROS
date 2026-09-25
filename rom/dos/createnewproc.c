@@ -71,7 +71,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     NOTES
         NP_Affinity places the process on a set of CPUs. It only does
         anything on an SMP build; elsewhere it is accepted and ignored.
-        Without it the process inherits the CPU it was created on. The
+        Without it the process inherits its parent's affinity. The
         mask comes from KrnAllocCPUMask() and becomes the system's to
         free, as for TASKTAG_AFFINITY.
 
