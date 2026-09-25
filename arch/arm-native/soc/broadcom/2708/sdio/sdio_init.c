@@ -1,13 +1,11 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    sdio.resource - SDIO host bound to the BCM2835 Arasan SDHCI controller.
+    sdio.resource - SDIO host for the on-board Broadcom WiFi chip.
 
-    On Raspberry Pi 3/3B/4 the Arasan controller (peripheral offset 0x300000)
-    is wired to the on-board Broadcom WiFi chip over a 4-bit SDIO bus, while
-    the SD card uses the separate SDHOST controller. This resource brings up
-    the Arasan controller, performs SDIO card initialisation (CMD5/CMD3/CMD7)
-    and exposes a generic CMD52/CMD53 function-I/O API for client drivers.
+    Pi 3/3B/4: Arasan controller (offset 0x300000), SD card on SDHOST.
+    Pi 5: BCM2712 sdio2, SD card on sdio1. Does SDIO card init
+    (CMD5/CMD3/CMD7) and exposes CMD52/CMD53 function I/O for client drivers.
 
     The low-level command issue mirrors the proven sequence in
     rom/devs/sdcard/sdcard_bus.c (the BCM2835 Arasan needs an atomic 32-bit
@@ -24,6 +22,7 @@
 #include <proto/kernel.h>
 #include <proto/exec.h>
 #include <proto/mbox.h>
+#include <proto/openfirmware.h>
 #include <proto/sdio.h>
 
 #include <hardware/sdhc.h>
@@ -79,6 +78,62 @@ APTR MBoxBase __attribute__((used)) = NULL;
 #define SDIO_LPO_DIVI_2711      1647
 #define SDIO_LPO_DIVF_2711      3888
 
+/* BCM2712 sdio2. Addresses and cfg setup from edk2-platforms (BSD-2-Clause-Patent). */
+#define BCM2712_SDIO2_HOST      0x1001100000ULL
+#define BCM2712_SDIO2_CFG       0x1001100400ULL
+#define IRQ_BCM2712_SDIO2       306     /* GIC SPI 274 + 32 */
+
+#define SDIO_CFG_CTRL                           0x000
+#define  SDIO_CFG_CTRL_SDCD_N_TEST_EN           (1u << 31)
+#define  SDIO_CFG_CTRL_SDCD_N_TEST_LEV          (1u << 30)
+#define SDIO_CFG_MAX_50MHZ_MODE                 0x1ac
+#define  SDIO_CFG_MAX_50MHZ_MODE_STRAP_OVERRIDE (1u << 31)
+#define  SDIO_CFG_MAX_50MHZ_MODE_ENABLE         (1u << 0)
+
+#define BCM2712_GIO_BASE        0x107D508500ULL
+#define BCM2712_GIO_DATA        0x04
+#define BCM2712_GIO_IODIR       0x08
+#define BCM2712_PINCTRL_BASE    0x107D504100ULL
+
+#define GIO_MUX_IO              0
+#define GIO_PULL_NONE           0
+#define GIO_PULL_UP             2       /* 1 is pull-DOWN */
+
+/* Per stepping: D0 (Pi 500, later Pi 5) packs the registers tighter, SD2 = alt 1.
+ * From OpenBSD bcmstbpinctrl.c (ISC). */
+struct gio_pin
+{
+    UBYTE pin, muxreg, muxbit, pullreg, pullbit, alt, pull;
+};
+
+#define GIO_WL_ON               0       /* table index */
+#define GIO_SD2_FIRST           1
+#define GIO_NPINS               7
+
+static const struct gio_pin bcm2712c0_pins[GIO_NPINS] =
+{
+    { 28, 0x0c, 16, 0x24, 10, GIO_MUX_IO, GIO_PULL_NONE },  /* WL_ON */
+    { 30, 0x0c, 24, 0x24, 14, 4, GIO_PULL_NONE },           /* CLK   */
+    { 31, 0x0c, 28, 0x24, 16, 4, GIO_PULL_UP },             /* CMD   */
+    { 32, 0x10,  0, 0x24, 18, 4, GIO_PULL_UP },             /* DAT0  */
+    { 33, 0x10,  4, 0x24, 20, 3, GIO_PULL_UP },             /* DAT1  */
+    { 34, 0x10,  8, 0x24, 22, 4, GIO_PULL_UP },             /* DAT2  */
+    { 35, 0x10, 12, 0x24, 24, 3, GIO_PULL_UP },             /* DAT3  */
+};
+
+static const struct gio_pin bcm2712d0_pins[GIO_NPINS] =
+{
+    { 28, 0x08, 16, 0x14, 20, GIO_MUX_IO, GIO_PULL_NONE },
+    { 30, 0x08, 24, 0x14, 24, 1, GIO_PULL_NONE },
+    { 31, 0x08, 28, 0x14, 26, 1, GIO_PULL_UP },
+    { 32, 0x0c,  0, 0x14, 28, 1, GIO_PULL_UP },
+    { 33, 0x0c,  4, 0x18,  0, 1, GIO_PULL_UP },
+    { 34, 0x0c,  8, 0x18,  2, 1, GIO_PULL_UP },
+    { 35, 0x0c, 12, 0x18,  4, 1, GIO_PULL_UP },
+};
+
+#define SDIO_IS_2712(b)         ((b)->sdio_Pins != NULL)
+
 /* MMC command opcodes reused from the memory-card set */
 #define SDIO_CMD_SEND_RELATIVE_ADDR     MMC_CMD_SET_RELATIVE_ADDR       /* CMD3, R6 */
 #define SDIO_CMD_SELECT_CARD            MMC_CMD_SELECT_CARD             /* CMD7, R1b */
@@ -127,9 +182,11 @@ static void sdio_wl(struct SDIOBase *SDIOBase, ULONG reg, ULONG val)
 {
     /* BCM2835 Arasan erratum: two SD-clock cycles must elapse between
      * successive controller writes. At the 400 kHz identification clock
-     * that is 5 us; use 6 us to match the proven sdcard_bcm2708bus.c. */
-    while ((sdio_now(SDIOBase) - SDIOBase->sdio_LastWrite) < 6)
-        ;
+     * that is 5 us; use 6 us to match the proven sdcard_bcm2708bus.c.
+     * Not needed on the BCM2712. */
+    if (!SDIO_IS_2712(SDIOBase))
+        while ((sdio_now(SDIOBase) - SDIOBase->sdio_LastWrite) < 6)
+            ;
 
     *(volatile ULONG *)(SDIOBase->sdio_iobase + reg) = AROS_LONG2LE(val);
     SDIOBase->sdio_LastWrite = sdio_now(SDIOBase);
@@ -319,6 +376,101 @@ static void sdio_gpio_pulls(struct SDIOBase *SDIOBase)
     *gppud = AROS_LONG2LE(0);
     *clk1 = AROS_LONG2LE(0);
 }
+
+/* ----------------------------------------------------------------------- */
+/* BCM2712 pin mux / GPIO                                                   */
+
+static void gio_set_function(const struct gio_pin *p)
+{
+    volatile ULONG *reg = (volatile ULONG *)(BCM2712_PINCTRL_BASE + p->muxreg);
+    ULONG shift = p->muxbit;
+
+    *reg = AROS_LONG2LE((AROS_LE2LONG(*reg) & ~(0xfu << shift)) | ((ULONG)p->alt << shift));
+}
+
+static void gio_set_pull(const struct gio_pin *p)
+{
+    volatile ULONG *reg = (volatile ULONG *)(BCM2712_PINCTRL_BASE + p->pullreg);
+    ULONG shift = p->pullbit;
+
+    *reg = AROS_LONG2LE((AROS_LE2LONG(*reg) & ~(0x3u << shift)) | ((ULONG)p->pull << shift));
+}
+
+static void gio_set_output(ULONG pin, int level)
+{
+    volatile ULONG *data = (volatile ULONG *)(BCM2712_GIO_BASE + BCM2712_GIO_DATA);
+    volatile ULONG *iodir = (volatile ULONG *)(BCM2712_GIO_BASE + BCM2712_GIO_IODIR);
+    ULONG bit = 1u << pin;
+    ULONG val = AROS_LE2LONG(*data);
+
+    /* Level before direction, so the pin never glitches. IODIR 0 = output. */
+    *data = AROS_LONG2LE(level ? (val | bit) : (val & ~bit));
+    *iodir = AROS_LONG2LE(AROS_LE2LONG(*iodir) & ~bit);
+}
+
+static void sdio_gpio_mux_2712(struct SDIOBase *SDIOBase)
+{
+    const struct gio_pin *p = SDIOBase->sdio_Pins;
+    unsigned int i;
+
+    for (i = GIO_SD2_FIRST; i < GIO_NPINS; i++)
+    {
+        gio_set_function(&p[i]);
+        gio_set_pull(&p[i]);
+    }
+
+    D(bug("[SDIO] GIO30-35 -> SD2 (%s, MUX 0x%08x/0x%08x PULL 0x%08x)\n",
+          (p == bcm2712d0_pins) ? "D0" : "C0",
+          AROS_LE2LONG(*(volatile ULONG *)(BCM2712_PINCTRL_BASE + p[GIO_SD2_FIRST].muxreg)),
+          AROS_LE2LONG(*(volatile ULONG *)(BCM2712_PINCTRL_BASE + p[GIO_NPINS - 1].muxreg)),
+          AROS_LE2LONG(*(volatile ULONG *)(BCM2712_PINCTRL_BASE + p[GIO_SD2_FIRST].pullreg))));
+}
+
+/* Unknown stepping = NULL: no WiFi beats the wrong layout on live pins. */
+static const struct gio_pin *sdio_pins_2712(void)
+{
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+
+    if (!OpenFirmwareBase)
+        return NULL;
+    if (OF_FindNodeByCompatible(NULL, "brcm,bcm2712d0-pinctrl"))
+        return bcm2712d0_pins;
+    if (OF_FindNodeByCompatible(NULL, "brcm,bcm2712c0-pinctrl") ||
+        OF_FindNodeByCompatible(NULL, "brcm,bcm2712-pinctrl"))
+        return bcm2712c0_pins;
+    return NULL;
+}
+
+/* Clock from the PHY DLL, not the 50 MHz strap. Force card-detect: the
+ * chip is soldered on, and an "empty" slot is not clocked. */
+static void sdio_cfg_init_2712(struct SDIOBase *SDIOBase)
+{
+    volatile ULONG *ctrl = (volatile ULONG *)(SDIOBase->sdio_cfgbase + SDIO_CFG_CTRL);
+    volatile ULONG *mode = (volatile ULONG *)(SDIOBase->sdio_cfgbase + SDIO_CFG_MAX_50MHZ_MODE);
+
+    *mode = AROS_LONG2LE((AROS_LE2LONG(*mode) & ~SDIO_CFG_MAX_50MHZ_MODE_ENABLE) |
+                         SDIO_CFG_MAX_50MHZ_MODE_STRAP_OVERRIDE);
+    *ctrl = AROS_LONG2LE((AROS_LE2LONG(*ctrl) & ~SDIO_CFG_CTRL_SDCD_N_TEST_LEV) |
+                         SDIO_CFG_CTRL_SDCD_N_TEST_EN);
+
+    D(bug("[SDIO] 2712 cfg: CTRL=0x%08x MAX50MHZ=0x%08x\n",
+          AROS_LE2LONG(*ctrl), AROS_LE2LONG(*mode)));
+}
+
+/* Idempotent; the probe re-runs it. */
+static void sdio_pins_setup(struct SDIOBase *SDIOBase)
+{
+    if (SDIO_IS_2712(SDIOBase))
+    {
+        sdio_gpio_mux_2712(SDIOBase);
+        return;
+    }
+
+    sdio_gpio_mux(SDIOBase);
+    sdio_gpio_pulls(SDIOBase);
+}
+
+/* ----------------------------------------------------------------------- */
 
 /*
  * Start the 32.768 kHz LPO clock the WiFi chip runs from, on GPCLK2/GPIO43.
@@ -533,10 +685,13 @@ static void sdio_dumpregs(struct SDIOBase *SDIOBase, const char *when)
     /* GPIO function-select banks: GPFSEL3 must still read 0x3ffff000 (GPIO
      * 34-39 = ALT3/SD1). If it changed, the VideoCore firmware re-muxed the
      * SDIO pins away from the Arasan and our commands never reach the chip. */
-    D(bug("[SDIO]   GPFSEL3=0x%08x GPFSEL4=0x%08x GPFSEL5=0x%08x\n",
-          AROS_LE2LONG(*(volatile ULONG *)GPFSEL3),
-          AROS_LE2LONG(*(volatile ULONG *)GPFSEL4),
-          AROS_LE2LONG(*(volatile ULONG *)GPFSEL5)));
+    if (!SDIO_IS_2712(SDIOBase))
+    {
+        D(bug("[SDIO]   GPFSEL3=0x%08x GPFSEL4=0x%08x GPFSEL5=0x%08x\n",
+              AROS_LE2LONG(*(volatile ULONG *)GPFSEL3),
+              AROS_LE2LONG(*(volatile ULONG *)GPFSEL4),
+              AROS_LE2LONG(*(volatile ULONG *)GPFSEL5)));
+    }
 }
 
 /*
@@ -915,16 +1070,28 @@ static int sdio_do_probe(struct SDIOBase *SDIOBase)
      * then let the chip's power-on reset settle before probing. Done here (not
      * in sdio_init) so the chip stays unpowered until a client opens the bus.
      * Re-running on a probe retry just re-asserts the same lines (harmless). */
-    sdio_wifi_clock(SDIOBase);
-    sdio_wifi_power(SDIOBase);
+    if (SDIO_IS_2712(SDIOBase))
+    {
+        const struct gio_pin *wl = &SDIOBase->sdio_Pins[GIO_WL_ON];
+
+        /* 150 ms rail ramp per the DT. No LPO: its 2712 source is unknown. */
+        gio_set_function(wl);
+        gio_set_output(wl->pin, 0);
+        sdio_udelay(SDIOBase, 10000);
+        gio_set_output(wl->pin, 1);
+        sdio_udelay(SDIOBase, 150000);
+    }
+    else
+    {
+        sdio_wifi_clock(SDIOBase);
+        sdio_wifi_power(SDIOBase);
+    }
     sdio_udelay(SDIOBase, 50000);
 
     sdio_dumpregs(SDIOBase, "pre-probe");
 
-    /* Re-assert the SDIO pin mux: the firmware writes GPIO banks concurrently
-     * (GPFSEL4 was seen changing between reads), so 34-39 may have been
-     * re-routed since sdio_init muxed them. Harmless no-op if still ALT3. */
-    sdio_gpio_mux(SDIOBase);
+    /* Re-assert the pin mux: the firmware writes GPIO banks concurrently. */
+    sdio_pins_setup(SDIOBase);
 
     sdio_trace = 1;             /* verbose per-command tracing for the probe */
 
@@ -983,17 +1150,10 @@ static int sdio_do_probe(struct SDIOBase *SDIOBase)
      * The sdio_Present guard above ensures this runs only once. */
     if (SDIOBase->sdio_IRQHandle == NULL)
     {
-        /* BCM2711 presents the legacy GPU interrupts a fixed distance up
-         * through the GIC: the card lands on INTID 158, not 62. */
-        unsigned int irq = IRQ_VC_ARASANSDIO;
-
-        if (SDIOBase->sdio_periiobase == BCM2711_PERIIOBASE)
-            irq += BCM271X_GPUIRQ_OFFSET;
-
-        SDIOBase->sdio_IRQHandle = KrnAddIRQHandler(irq,
+        SDIOBase->sdio_IRQHandle = KrnAddIRQHandler(SDIOBase->sdio_IRQ,
                                                     sdio_irq_handler, SDIOBase, NULL);
         D(bug("[SDIO] card IRQ handler %p on irq %u\n",
-              SDIOBase->sdio_IRQHandle, irq));
+              SDIOBase->sdio_IRQHandle, SDIOBase->sdio_IRQ));
     }
     return TRUE;
 }
@@ -1045,29 +1205,50 @@ static int sdio_init(struct SDIOBase *SDIOBase)
     if ((SDIOBase->sdio_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase)) == 0)
         return FALSE;
 
-    /* BCM2712 wires the WiFi to its own SDHCI block, not the Arasan; the
-     * partial iobase redirect below is not enough (GPIO mux and wdelay's
-     * timeout-less SYSTIMER spin still assume BCM283x). Bail until a real
-     * 2712 SDIO path exists. */
-    if (SDIOBase->sdio_periiobase == BCM2712_PERIIOBASE)
-        return FALSE;
-
     InitSemaphore(&SDIOBase->sdio_Sem);
+
     if (SDIOBase->sdio_periiobase == BCM2712_PERIIOBASE)
-        SDIOBase->sdio_iobase = SDIOBase->sdio_periiobase + 0x100000;
+    {
+        if ((SDIOBase->sdio_Pins = sdio_pins_2712()) == NULL)
+        {
+            D(bug("[SDIO] no known BCM2712 pinctrl in the device tree\n"));
+            return FALSE;
+        }
+        SDIOBase->sdio_iobase = BCM2712_SDIO2_HOST;
+        SDIOBase->sdio_cfgbase = BCM2712_SDIO2_CFG;
+        SDIOBase->sdio_IRQ = IRQ_BCM2712_SDIO2;
+    }
     else
-        SDIOBase->sdio_iobase = SDIOBase->sdio_periiobase + 0x300000;       /* ARASAN_BASE */
+    {
+        SDIOBase->sdio_iobase = SDIOBase->sdio_periiobase + 0x300000;   /* ARASAN_BASE */
+        SDIOBase->sdio_IRQ = IRQ_VC_ARASANSDIO;
+
+        /* BCM2711 presents the legacy GPU interrupts a fixed distance up
+         * through the GIC: the card lands on INTID 158, not 62. */
+        if (SDIOBase->sdio_periiobase == BCM2711_PERIIOBASE)
+            SDIOBase->sdio_IRQ += BCM271X_GPUIRQ_OFFSET;
+    }
     SDIOBase->sdio_LastWrite = sdio_now(SDIOBase);
 
-    if (!sdio_mbox_setup(SDIOBase))
+    if (SDIO_IS_2712(SDIOBase))
+    {
+        sdio_cfg_init_2712(SDIOBase);
+
+        /* No mailbox: firmware clocks sdio2. Base clock from CAPABILITIES
+         * (MHz), else sdcard.device's 2712 default. */
+        SDIOBase->sdio_ClockMax =
+            ((sdio_rl(SDIOBase, SDHCI_CAPABILITIES) >> 8) & 0xff) * 1000000;
+        if (SDIOBase->sdio_ClockMax == 0)
+            SDIOBase->sdio_ClockMax = 200000000;
+    }
+    else if (!sdio_mbox_setup(SDIOBase))
     {
         D(bug("[SDIO] mailbox power/clock query failed\n"));
         return FALSE;
     }
-    D(bug("[SDIO] Arasan base clock %u Hz\n", SDIOBase->sdio_ClockMax));
+    D(bug("[SDIO] base clock %u Hz\n", SDIOBase->sdio_ClockMax));
 
-    sdio_gpio_mux(SDIOBase);
-    sdio_gpio_pulls(SDIOBase);
+    sdio_pins_setup(SDIOBase);
 
     /*
      * The firmware boots the SD card on the Arasan (SD1) with GPIO48-53 left
@@ -1079,6 +1260,7 @@ static int sdio_init(struct SDIOBase *SDIOBase)
      * ALT0/SD0 for the SD card. NOTE: assumes the SDHOST build (the Arasan is
      * not used for the SD card); see arch/.../sdcard mmakefile BCM2708BUILDFILES.
      */
+    if (!SDIO_IS_2712(SDIOBase))
     {
         volatile ULONG *fsel4 = (volatile ULONG *)GPFSEL4;
         volatile ULONG *fsel5 = (volatile ULONG *)GPFSEL5;
@@ -1105,6 +1287,7 @@ static int sdio_init(struct SDIOBase *SDIOBase)
      * controller for the boot SD card and may leave it in a UHS / 1.8V
      * signalling mode. The WiFi SDIO bus is 3.3V (1.8V is broken on the Pi),
      * so force plain 3.3V SDR12 by zeroing it. (WiFiPi does the same.)
+     * On the BCM2712 it is already the default (sdio2 is fixed 3.3V DDR).
      */
     D(bug("[SDIO] CONTROL2 (0x3C) was 0x%08x, clearing\n",
           sdio_rl(SDIOBase, SDHCI_ACMD12_ERR)));

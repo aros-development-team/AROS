@@ -1,12 +1,8 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Private state for sdio.resource: an SDIO host bound to the BCM2835
-    Arasan SDHCI controller (peripheral offset 0x300000). On the Raspberry
-    Pi 3/3B/4 this controller is wired to the on-board Broadcom WiFi chip
-    over a 4-bit SDIO bus; the SD card itself uses the separate SDHOST
-    controller (see rom/devs/sdcard). The resource exposes a generic
-    SDIO function-I/O API (CMD52/CMD53) for client drivers (e.g. bwfm).
+    Private state for sdio.resource: the SDHCI host of the on-board WiFi
+    chip (Arasan on Pi 3/3B/4, BCM2712 sdio2 on Pi 5).
 */
 
 #ifndef SDIO_PRIVATE_H_
@@ -16,12 +12,17 @@
 #include <exec/semaphores.h>
 #include <inttypes.h>
 
+struct gio_pin;
+
 struct SDIOBase
 {
     struct Node             sdio_Node;
     struct SignalSemaphore  sdio_Sem;       /* Serialises command issue */
     IPTR                    sdio_periiobase;
-    IPTR                    sdio_iobase;    /* Arasan SDHCI MMIO base */
+    IPTR                    sdio_iobase;    /* SDHCI MMIO base */
+    IPTR                    sdio_cfgbase;   /* BCM2712 "cfg" window, 0 elsewhere */
+    unsigned int            sdio_IRQ;       /* Controller interrupt */
+    const struct gio_pin   *sdio_Pins;      /* BCM2712 pin table, NULL elsewhere */
     unsigned int            sdio_ClockMax;  /* Controller base clock (Hz) */
     uint16_t                sdio_RCA;       /* Relative card address (CMD3) */
     uint32_t                sdio_OCR;       /* I/O OCR from CMD5 */
