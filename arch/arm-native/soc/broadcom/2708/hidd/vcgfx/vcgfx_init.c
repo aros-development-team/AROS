@@ -157,10 +157,6 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
             return FALSE;
     }
 
-    /* PV2 vsync IRQ handler; the source stays masked until the HVS
-     * takeover arms it (vcgfx_hvs.c). */
-    vc4_hvs_init(xsd);
-
     if (!FNAME_SUPPORT(GetAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM))
         goto failure;
 
@@ -194,6 +190,9 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
         }
     }
 
+    /* PV2 vsync IRQ, masked until the HVS takeover arms it. Must follow the
+     * check above: it probes PV_CONTROL, which emulation does not answer. */
+    vc4_hvs_init(xsd);
 
     VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
