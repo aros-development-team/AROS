@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 
     Export the module entry points e.g to use when linking with --gc-sections
 */
@@ -14,7 +14,7 @@ void writelinkentries(struct config *cfg)
 {
     FILE *out;
     char moduleversname[256];
-    char name[512];
+    char *name;
     struct functionhead *funclistit;
     unsigned int lvo;
 
@@ -27,12 +27,13 @@ void writelinkentries(struct config *cfg)
         snprintf(moduleversname, sizeof(moduleversname), "%s_%s", cfg->modulename, cfg->flavour);
     }
 
-    snprintf(name, sizeof(name), "%s/%s%s.entrypoints", cfg->gendir, moduleversname, cfg->modtypestr);
+    name = make_output_path("%s/%s%s.entrypoints", cfg->gendir, moduleversname, cfg->modtypestr);
     out = fopen(name, "w");
 
     if (out == NULL)
     {
         perror(name);
+        free(name);
         exit(20);
     }
 
@@ -139,8 +140,10 @@ void writelinkentries(struct config *cfg)
     {
         perror("Error writing entrypoints");
         fclose(out);
+        free(name);
         exit(20);
     }
 
     fclose(out);
+    free(name);
 }

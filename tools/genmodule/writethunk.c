@@ -6,8 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdint.h>
-#include "functionhead.h"
-#include "config.h"
+#include "genmodule.h"
 
 static void writethunkfunc(FILE *out, struct config *cfg, struct functionhead *funclist)
 {
@@ -81,7 +80,7 @@ void writethunk(struct config *cfg)
 {
     struct functionhead *funclistit;
     FILE *out = NULL;
-    char line[256];
+    char *line;
     struct functionarg *arglistit;
     char *type, *name;
     uint64_t argmask = 0;
@@ -92,7 +91,7 @@ void writethunk(struct config *cfg)
         argmask |= (1ULL << funclistit->argcount);
     }
 
-    snprintf(line, 255, "%s/%s_thunk.c", cfg->gendir, cfg->modulename);
+    line = make_output_path("%s/%s_thunk.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -135,4 +134,5 @@ void writethunk(struct config *cfg)
     }
 
     fclose(out);
+    free(line);
 }

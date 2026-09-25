@@ -63,6 +63,7 @@ static VOID cdTask(IPTR unit)
 
         while ((io = (struct IOStdReq *)GetMsg(cu->cu_MsgPort)) != NULL) {
             LONG result;
+            BOOL terminate = (io->io_Unit == NULL);
 
             D(bug("%s: Processing %p\n", __func__, io));
 
@@ -81,7 +82,10 @@ static VOID cdTask(IPTR unit)
                 ReplyMsg(&io->io_Message);
             }
 
-            if (io->io_Unit == NULL) {
+            /* ReplyMsg() transfers ownership back to the sender, which may
+             * immediately reuse or free the request.  Do not inspect it after
+             * replying merely to identify our private shutdown message. */
+            if (terminate) {
                 running = FALSE;
                 break;
             }
@@ -177,7 +181,7 @@ LONG cdAddUnit(struct cdBase *cb, const struct cdUnitOps *ops, APTR priv, const 
         cu->cu_Task = NewCreateTask(TASKTAG_PC, cdTask,
                                     TASKTAG_NAME, ops->uo_Name,
                                     /* Match Commodore's CDUITask. */
-                                    TASKTAG_PRI, 15,
+                                    TASKTAG_PRI, 10,
                                     /*
                                      * The unit task runs the drive
                                      * protocol and sector delivery;
@@ -191,7 +195,7 @@ LONG cdAddUnit(struct cdBase *cb, const struct cdUnitOps *ops, APTR priv, const 
                                     TAG_END);
         if (cu->cu_Task) {
             /* Boot-node creation is deterministic initialization work, not
-             * part of the priority-15 hardware service task.  The backend
+             * part of the hardware service task.  The backend
              * supplies the filesystem type carried by this ROM, so this
              * does not depend on FileSystem.resource registration timing. */
             cdRegisterVolume(cu, de);
@@ -285,6 +289,21 @@ AROS_LH1(void, BeginIO,
      * immediate failure.
      */
     io->io_Error = 0;
+
+    /* DoIO() permits a device to retain IOF_QUICK when it can finish before
+     * BeginIO() returns.  This also matters to interrupt callers, which may
+     * use cached query commands but cannot sleep in WaitIO(). */
+    if ((io->io_Flags & IOF_QUICK) &&
+        io->io_Unit == (struct Unit *)cu &&
+        cu->cu_UnitOps->uo_CanQuick != NULL &&
+        cu->cu_UnitOps->uo_CanQuick(iostd, cu->cu_Private)) {
+        LONG result = cu->cu_UnitOps->uo_DoIO(iostd, cu->cu_Private);
+
+        if (result != CDIO_PENDING) {
+            io->io_Error = result;
+            return;
+        }
+    }
 
     io->io_Flags &= ~IOF_QUICK;
     PutMsg(cu->cu_MsgPort, &iostd->io_Message);

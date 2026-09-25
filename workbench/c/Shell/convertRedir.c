@@ -4,6 +4,8 @@
 
 #include <proto/dos.h>
 
+#include <string.h>
+
 #include "Shell.h"
 
 LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out)
@@ -12,6 +14,54 @@ LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out)
     BOOL newIn = FALSE, newOut = FALSE;
     BOOL append = FALSE;
     TEXT file[FILE_MAX];
+
+    (void)out;
+
+    /* Parse error-redirection intent without touching its target. */
+    if (*s == '*' &&
+        in->cur + 2 < in->len &&
+        s[1] == '<' && s[2] == '>')
+    {
+        if (ss->errorRedirect)
+            return ERROR_TOO_MANY_LEVELS;
+
+        ss->errorRedirect = TRUE;
+        ss->errorToOutput = TRUE;
+        s += 3;
+        in->cur = s - in->buf;
+        return 0;
+    }
+
+    if (*s == '*' &&
+        in->cur + 1 < in->len &&
+        s[1] == '>')
+    {
+        if (ss->errorRedirect)
+            return ERROR_TOO_MANY_LEVELS;
+
+        ss->errorRedirect = TRUE;
+        s += 2;
+
+        if (s < in->buf + in->len && *s == '>')
+        {
+            ss->errorAppend = TRUE;
+            ++s;
+        }
+
+        in->cur = s - in->buf;
+
+        switch (bufferReadItem(file, FILE_MAX, in, ss))
+        {
+        case ITEM_QUOTED:
+        case ITEM_UNQUOTED:
+            break;
+        default:
+            return ERROR_LINE_TOO_LONG;
+        }
+
+        strcpy(ss->errorFile, file);
+        return 0;
+    }
 
     if (*s == '<')
     {

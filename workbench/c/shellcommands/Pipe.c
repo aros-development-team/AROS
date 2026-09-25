@@ -41,9 +41,12 @@
         The "_pchar" and "_mchar" environment variables are used to determine
         where to split the command, and what action to perform.
 
+        If "_pchar" is not defined, "|" is used by default. A defined value
+        overrides the default, and an empty value disables pipe splitting.
+        "_mchar" has no default.
+
     EXAMPLE
 
-        > set _pchar "|"
         > set _mchar ";"
         > echo Hello ; echo World
         Hello
@@ -78,17 +81,30 @@ static inline STRPTR NextToken(STRPTR *pstr, CONST_STRPTR tok)
 {
     STRPTR str, ostr = *pstr;
     int toklen = strlen(tok);
+    BOOL quoted = FALSE;
+    BOOL escaped = FALSE;
 
     if (*ostr == 0)
         return NULL;
 
     for (str = ostr; *str; str++) {
-        if (strncmp(str, tok, toklen) == 0) {
+        if (*str == '"' && !escaped)
+            quoted = !quoted;
+
+        if (toklen > 0 && !quoted && !escaped &&
+            *str == tok[0] &&
+            (toklen == 1 ||
+             (toklen == 2 && str[1] != 0 && str[1] == tok[1]))) {
             *str = 0;
-            str += strlen(tok);
+            str += toklen;
             *pstr = str;
             return ostr;
         }
+
+        if (*str == '*' && !escaped)
+            escaped = TRUE;
+        else
+            escaped = FALSE;
     }
 
     /* Token not found? */
@@ -168,7 +184,12 @@ AROS_SHA(STRPTR, , , /F,   ""))
     STRPTR tcmd, subcmd, cp;
 
     len = GetVar("_pchar", pchar, sizeof pchar, GVF_LOCAL_ONLY | LV_VAR);
-    if (len <= 0)
+    if (len < 0)
+    {
+        pchar[0] = '|';
+        pchar[1] = 0;
+    }
+    else if (len == 0)
         pchar[0] = 0;
     pchar[2] = 0;
 

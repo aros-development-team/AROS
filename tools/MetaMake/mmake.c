@@ -114,7 +114,12 @@ main (int argc, char ** argv)
     int doenv = 0;
     int retval = 0;
 
-    currdir = getcwd (NULL, 1024);
+    currdir = getcwd (NULL, 0);
+    if (currdir == NULL)
+    {
+        error ("Could not get current directory");
+        return 20;
+    }
 
     mm_srcdir = currdir;
     mm_builddir = currdir;

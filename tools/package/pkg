@@ -113,9 +113,11 @@ def listFiles( path='.' ):
     'listFiles( path ) -> []'
     
     files = []
-    for name in os.listdir( path ):
+    for name in sorted(os.listdir( path )):
         name = os.path.join( path, name )
         
+        if os.path.islink( name ):
+            raise ValueError('Package input is a symbolic link: %s' % name)
         if os.path.isdir( name ):
             files.extend( listFiles( name ) )
         else:
@@ -177,12 +179,15 @@ def unpack( source, destination ):
 def pack( destination, files ):
     'pack( source, destination ) -> None'
 
-    output = open( destination, 'wb' )
+    outputFlags = os.O_RDWR | os.O_CREAT | getattr( os, 'O_BINARY', 0 )
+    output = os.fdopen( os.open( destination, outputFlags, 0o666 ), 'r+b' )
     try:
 
         oldwd = os.getcwd()
         try:
             if files and os.path.isdir( files[0] ):
+                if os.path.islink( files[0] ):
+                    raise ValueError('Package input is a symbolic link: %s' % files[0])
                 os.chdir( files[0] )
                 files = files[1:]
 
@@ -191,6 +196,8 @@ def pack( destination, files ):
                 files = [path for path in listFiles()
                          if not os.path.samestat( os.stat( path ), outputStat )]
 
+            output.seek( 0 )
+            output.truncate( 0 )
             writeHeader( output, PKG_VERSION )
 
             for path in files:

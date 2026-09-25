@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright (C) 2006 Marek Szyprowski
- * Copyright (C) 2007-2015 The AROS Development Team
+ * Copyright (C) 2007-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -16,6 +16,7 @@
 #include <dos/filehandler.h>
 #include <dos/notify.h>
 #include <devices/inputevent.h>
+#include <devices/trackdisk.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -438,6 +439,31 @@ void ProcessPackets(struct Globals *glob)
                 res = DOSTRUE;
                 break;
             }
+
+        case ACTION_FLUSH:
+            /* Commit without detaching the mounted volume or invalidating
+             * locks held by file-backed devices and directory assignments. */
+            if (glob->disk_inhibited != 0 || glob->sb == NULL)
+            {
+                err = ERROR_NO_DISK;
+                break;
+            }
+            if (!Cache_Flush(glob->sb->cache))
+            {
+                err = IoErr();
+                if (err == 0) err = ERROR_UNKNOWN;
+                break;
+            }
+            glob->diskioreq->iotd_Req.io_Command = CMD_UPDATE;
+            glob->diskioreq->iotd_Req.io_Data = NULL;
+            glob->diskioreq->iotd_Req.io_Length = 0;
+            if (DoIO((struct IORequest *)glob->diskioreq) != 0)
+            {
+                err = ERROR_UNKNOWN;
+                break;
+            }
+            res = DOSTRUE;
+            break;
 
         case ACTION_INHIBIT:
             {

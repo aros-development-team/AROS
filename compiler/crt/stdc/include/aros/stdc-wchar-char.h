@@ -1,7 +1,7 @@
 #ifndef _STDC_WCHAR_CHAR_H
 #define _STDC_WCHAR_CHAR_H
 /*
-    Copyright © 2025, The AROS Development Team. All rights reserved.
+    Copyright © 2025-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -34,7 +34,7 @@ extern "C" {
 
 #if !defined(_STDC_NOINLINE_MBTOWC)
 static __inline__
-int WCHARFUNC(mbtowc)(wchar_t * restrict pwc, const char * restrict s, size_t n)
+int WCHARFUNC(mbtowc)(wchar_t * __restrict pwc, const char * __restrict s, size_t n)
 {
     if (s == NULL)
         /* No state-dependent multi-byte character encoding */
@@ -80,7 +80,7 @@ int WCHARFUNC(wctomb)(char *s, wchar_t wchar)
 
 #if !defined(_STDC_NOINLINE_MBSTOWCS)
 static __inline__
-size_t WCHARFUNC(mbstowcs)(wchar_t * restrict pwcs, const char * restrict s, size_t n)
+size_t WCHARFUNC(mbstowcs)(wchar_t * __restrict pwcs, const char * __restrict s, size_t n)
 {
     size_t l;
 
@@ -101,7 +101,7 @@ size_t WCHARFUNC(mbstowcs)(wchar_t * restrict pwcs, const char * restrict s, siz
 
 #if !defined(_STDC_NOINLINE_WCSTOMBS)
 static __inline__
-size_t WCHARFUNC(wcstombs)(char * restrict s, const wchar_t * restrict pwcs, size_t n)
+size_t WCHARFUNC(wcstombs)(char * __restrict s, const wchar_t * __restrict pwcs, size_t n)
 {
     size_t l;
 

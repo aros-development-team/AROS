@@ -73,11 +73,13 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-h4bthci-bcm2708-quick \
 #MM kernel-brcmbt-bcm2708-quick \
 #MM kernel-hidd-bus-quick \
+#MM kernel-hidd-storage-quick \
 #MM hidd-i2c-quick \
 #MM kernel-hidd-gfx-quick \
 #MM hidd-vcgfx-quick \
 #MM hidd-fbgfx-quick \
 #MM kernel-sdcard-quick \
+#MM kernel-nvme-quick \
 #MM kernel-hidd-input-quick \
 #MM kernel-hidd-kbd-quick \
 #MM kernel-hidd-mouse-quick \
@@ -141,7 +143,9 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-h4bthci-bcm2708 \
 #MM kernel-brcmbt-bcm2708 \
 #MM kernel-sdcard \
+#MM kernel-nvme \
 #MM kernel-hidd-bus \
+#MM kernel-hidd-storage \
 #MM hidd-i2c \
 #MM hidd-i2c-bcm2708 \
 #MM hidd-vcgfx \
@@ -210,14 +214,16 @@ PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands entropy gpio mbox dma sdio bwfm pl011bt rp1
 PKG_RSRC_ARCH := processor
-PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg USBHardware/pcixhci
+PKG_DEVS      := input gameport keyboard console sdcard nvme USBHardware/usb2otg USBHardware/pcixhci
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
-# vcgfx drives the BCM283x VideoCore directly and bows out on BCM2711;
-# fbgfx takes over there, painting into the framebuffer the bootstrap set up.
+# vcgfx drives the BCM283x VideoCore directly; on BCM2711 and BCM2712 only
+# its mailbox half runs, since each carries a different compositor. fbgfx is
+# the fallback, painting into the framebuffer the bootstrap set up, and takes
+# the display whenever vcgfx declines it.
 # The PCIe bridge and its xHCI controller only exist on BCM2711; both drivers
 # find nothing on a Pi 2/3 and stay out of the way.
-PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus i2c i2c-bcm2708 vcgfx fbgfx pci pcibcm2711 pcirp1
+PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus storage i2c i2c-bcm2708 vcgfx fbgfx pci pcibcm2711 pcibcm2712 pcirp1
 PKG_CLASSES   := USB/hub USB/hubss USB/massstorage
 
 %make_package mmake=kernel-package-raspi-aarch64 file=$(AROSDIR)/$(ARM_BSP) \
@@ -250,9 +256,11 @@ distfiles-raspi-aarch64le-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-rasp
 
 # gpu_mem: the vc4 GL stack needs headroom in VideoCore RAM (full-res
 # framebuffer + overlay page ring + BO pools); 64 (the firmware default)
-# runs out during a full-screen GL session. 128 is the working minimum.
+# runs out during a full-screen GL session. 128 is the bare minimum, but a
+# game's texture working set alone reaches ~90 MB, so 256 is the usable
+# size. All 64-bit Pis have at least 1 GB. (Pi 5 ignores this entirely.)
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
-	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=1\ngpu_mem=128\nenable_uart=1\nframebuffer_depth=32\nframebuffer_ignore_alpha=1\n[pi5]\nenable_rp1_uart=1\npciex4_reset=0\nframebuffer_swap=0\n" > $@
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=1\ngpu_mem=256\nenable_uart=1\nframebuffer_depth=32\nframebuffer_ignore_alpha=1\n[pi5]\nenable_rp1_uart=1\npciex4_reset=0\ndtparam=nvme\nframebuffer_swap=0\n" > $@
 
 # .d depfiles are only generated for C sources, not startup64.S
 $(AROSDIR)/aros-aarch64-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(foreach f, $(filter-out startup64,$(FILES)), $(TARGETDIR)/$(f).d)

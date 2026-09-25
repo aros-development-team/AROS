@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2005-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
 
     Code to write a Makefile with variables that provides the files
     and configuration for building the module
@@ -45,7 +45,7 @@ void writemakefile(struct config *cfg)
 {
     FILE *out;
     char moduleversname[256];
-    char name[512];
+    char *name;
     struct stringlist *s;
 
     if (!cfg->flavour)
@@ -57,12 +57,13 @@ void writemakefile(struct config *cfg)
         snprintf(moduleversname, sizeof(moduleversname), "%s_%s", cfg->modulename, cfg->flavour);
     }
 
-    snprintf(name, sizeof(name), "%s/Makefile.%s%s", cfg->gendir, moduleversname, cfg->modtypestr);
+    name = make_output_path("%s/Makefile.%s%s", cfg->gendir, moduleversname, cfg->modtypestr);
     out = fopen(name, "w");
 
     if (out == NULL)
     {
         perror(name);
+        free(name);
         exit(20);
     }
 
@@ -151,8 +152,10 @@ void writemakefile(struct config *cfg)
     {
         perror("Error writing Makefile");
         fclose(out);
+        free(name);
         exit(20);
     }
 
     fclose(out);
+    free(name);
 }

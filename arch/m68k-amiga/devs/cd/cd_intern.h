@@ -32,6 +32,7 @@ struct cdBase {
 struct cdUnitOps {
     CONST_STRPTR  uo_Name;
     LONG        (*uo_DoIO)(struct IOStdReq *io, APTR priv);
+    BOOL        (*uo_CanQuick)(const struct IOStdReq *io, APTR priv);
     struct IOStdReq *(*uo_Service)(APTR priv); /* optional asynchronous I/O */
     ULONG         uo_SignalMask;
     VOID        (*uo_Expunge)(APTR priv);
