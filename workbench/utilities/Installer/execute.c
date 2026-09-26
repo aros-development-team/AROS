@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* execute.c -- Here are all functions used to execute the script */
@@ -12,6 +12,7 @@
 #include "procedure.h"
 #include "cleanup.h"
 #include "variables.h"
+#include "copyfiles.h"
 #ifndef __AROS__
 #define VOID_FUNC APTR
 #define MAXFILENAMELENGTH 108
@@ -26,6 +27,9 @@ extern int error, grace_exit;
 
 /* Internal function declarations */
 static void callback(char, char **);
+static char *getstr(ScriptArg *);
+static long int compare_values(ScriptArg *, ScriptArg *);
+static char *var_string(char *);
 
 
 #define ExecuteCommand()                                \
@@ -39,6 +43,9 @@ static void callback(char, char **);
         execute_script(current->next->cmd, level + 1);        \
     }
 
+/* The string value of an argument: a quoted string without its quotes,
+   otherwise the argument is a variable - its text, its number as digits,
+   or "" when it was never set */
 #define        GetString(arg)                                        \
     if((arg)[0] == SQUOTE || (arg)[0] == DQUOTE)        \
     {                                                        \
@@ -46,15 +53,7 @@ static void callback(char, char **);
     }                                                        \
     else                                                \
     {                                                        \
-        char *clip;                                        \
-        if((clip = get_var_arg(arg)) == NULL)                \
-        {                                                \
-            string = strdup(arg);                        \
-        }                                                \
-        else                                                \
-        {                                                \
-            string = strip_quotes(clip);                \
-        }                                                \
+        string = var_string(arg);                        \
     }
 
 int doing_abort = FALSE;
@@ -78,6 +77,16 @@ void *params;
 
     current = commands;
     /* Assume commands->cmd/arg to be first cmd/arg in parentheses */
+
+    /* An empty bracket "()", or the body of a (procedure name) without
+       one: nothing to do, worth 0 */
+    if (current->cmd == NULL && current->arg == NULL && current->next == NULL)
+    {
+        free(current->parent->arg);
+        current->parent->arg = NULL;
+        current->parent->intval = 0;
+        return;
+    }
 
     /* If first one is a (...)-function execute it */
     if (current->cmd != NULL)
@@ -153,10 +162,29 @@ void *params;
                     ExecuteCommand();
                     ExecuteNextCommand();
                     i = getint(current);
+                    dummy = current;
                     current = current->next;
                     j = getint(current);
                     switch (cmd_type)
                     {
+                        case _EQUAL :
+                        case _DIFF :
+                        case _LESS :
+                        case _LESSEQ :
+                        case _MORE :
+                        case _MOREEQ :
+                            /* the comparisons see strings as strings - (= @language "deutsch") */
+                            i = compare_values(dummy, current);
+                            switch (cmd_type)
+                            {
+                                case _EQUAL  : current->parent->intval = (i == 0) ? 1 : 0; break;
+                                case _DIFF   : current->parent->intval = (i != 0) ? 1 : 0; break;
+                                case _LESS   : current->parent->intval = (i <  0) ? 1 : 0; break;
+                                case _LESSEQ : current->parent->intval = (i <= 0) ? 1 : 0; break;
+                                case _MORE   : current->parent->intval = (i >  0) ? 1 : 0; break;
+                                case _MOREEQ : current->parent->intval = (i >= 0) ? 1 : 0; break;
+                            }
+                            break;
                         case _AND :
                             current->parent->intval = i && j;
                             break;
@@ -169,9 +197,6 @@ void *params;
                         case _BITXOR :
                             current->parent->intval = i ^ j;
                             break;
-                        case _DIFF :
-                            current->parent->intval = (i != j) ? 1 : 0;
-                            break;
                         case _DIV :
                             if (j == 0)
                             {
@@ -180,23 +205,8 @@ void *params;
                             }
                             current->parent->intval = (int)(i / j);
                             break;
-                        case _EQUAL :
-                            current->parent->intval = (i == j) ? 1 : 0;
-                            break;
-                        case _LESS :
-                            current->parent->intval = (i < j) ? 1 : 0;
-                            break;
-                        case _LESSEQ :
-                            current->parent->intval = (i <= j) ? 1 : 0;
-                            break;
                         case _MINUS :
                             current->parent->intval = i - j;
-                            break;
-                        case _MORE :
-                            current->parent->intval = (i > j) ? 1 : 0;
-                            break;
-                        case _MOREEQ :
-                            current->parent->intval = (i >= j) ? 1 : 0;
                             break;
                         case _OR :
                             current->parent->intval = i || j;
@@ -255,9 +265,10 @@ void *params;
                 /* print summary where app has been installed unless (quiet) is given */
                 parameter = get_parameters(current->next, level);
                 string = collect_strings(current->next, LINEFEED, level);
-                show_exit(string);
-                if (GetPL(parameter, _QUIET).intval == 0)
+                /* (quiet): no "Done with installation" page, just leave */
+                if (GetPL(parameter, _QUIET).used == 0)
                 {
+                    show_exit(string);
                     final_report();
                 }
                 free(string);
@@ -503,15 +514,21 @@ void *params;
                         /* There is a quoted varname */
                         /* Strip off quotes */
                         string = strip_quotes(current->arg);
-                        current->parent->arg = get_var_arg(string);
+                        clip = get_var_arg(string);
                         current->parent->intval = get_var_int(string);
                         free(string);
                     }
                     else
                     {
                         /* Varname is stored in variable */
-                        current->parent->arg = get_var_arg(current->arg);
+                        clip = get_var_arg(current->arg);
                         current->parent->intval = get_var_int(current->arg);
+                    }
+                    /* the result is a fresh quoted string: the caller
+                       frees it, and the variable keeps its own text */
+                    if (clip != NULL)
+                    {
+                        current->parent->arg = addquotes(clip);
                     }
                 }
                 else
@@ -624,8 +641,18 @@ void *params;
             case _STRING: /* Call RawDoFmt with string as format and args and return output */
 
                 /* Prepare base string */
-                /* Strip off quotes */
-                clip = strip_quotes(current->arg);
+                if ((current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE)
+                {
+                    /* Strip off quotes */
+                    clip = strip_quotes(current->arg);
+                }
+                else
+                {
+                    /* (var arg ...): a variable in call position is a
+                       format call with the variable's value as the
+                       format string - (@each-name), ("%s" (@my-fmt) x) */
+                    clip = var_string(current->arg);
+                }
 
                 /* Now get arguments into typeless array (void *params) */
                 params = malloc(sizeof(IPTR));
@@ -788,34 +815,51 @@ void *params;
                 free(string);
                 break;
 
-            case _UNTIL: /* execute 2nd cmd until 1st arg != 0 */
-                if (current->next != NULL && current->next->next != NULL)
+            case _UNTIL: /* (until <expr> <statements>): run the statements, then loop while <expr> == 0 */
+            case _WHILE: /* (while <expr> <statements>): loop while <expr> != 0, tested before the statements */
+                if (current->next != NULL)
                 {
                     current = current->next;
-                    if (current->next->cmd == NULL)
+                    /* Every statement after the condition is the body - the
+                       guide says <statements>, and Aminet scripts write
+                       (until (< 2 menu) (set menu (askchoice ...)) (if ...) (if ...)) */
+                    for (dummy = current->next ; dummy != NULL ; dummy = dummy->next)
                     {
-                        /* We don't have a block, so what can we execute ??? */
-                        error = SCRIPTERROR;
-                        traperr("<%s> has no command-block!\n", current->parent->cmd->arg);
-                    }
-                    i = 0;
-                    while (i == 0)
-                    {
-                        /* Execute command */
-                        ExecuteNextCommand();
-
-                        /* Now check condition */
-                        ExecuteCommand();
-                        i = getint(current);
-
-                        /* condition is true -> return values and exit */
-                        if (i != 0)
+                        if (dummy->cmd == NULL)
                         {
-                            current->parent->intval = current->next->intval;
-                            if (current->next->arg != NULL)
+                            error = SCRIPTERROR;
+                            traperr("<%s> has no command-block!\n", current->parent->cmd->arg);
+                        }
+                    }
+                    for (;;)
+                    {
+                        if (cmd_type == _WHILE)
+                        {
+                            ExecuteCommand();
+                            if (getint(current) == 0)
                             {
-                                current->parent->arg = strdup(current->next->arg);
+                                break;
+                            }
+                        }
+                        for (dummy = current->next ; dummy != NULL ; dummy = dummy->next)
+                        {
+                            execute_script(dummy->cmd, level + 1);
+                            /* the loop's value is the last statement's */
+                            current->parent->intval = dummy->intval;
+                            free(current->parent->arg);
+                            current->parent->arg = NULL;
+                            if (dummy->arg != NULL)
+                            {
+                                current->parent->arg = strdup(dummy->arg);
                                 outofmem(current->parent->arg);
+                            }
+                        }
+                        if (cmd_type == _UNTIL)
+                        {
+                            ExecuteCommand();
+                            if (getint(current) != 0)
+                            {
+                                break;
                             }
                         }
                     }
@@ -823,7 +867,7 @@ void *params;
                 else
                 {
                     error = SCRIPTERROR;
-                    traperr("<%s> requires two arguments!\n", current->arg);
+                    traperr("<%s> requires a condition!\n", current->arg);
                 }
                 break;
 
@@ -893,45 +937,6 @@ void *params;
                 free(string);
                 break;
 
-            case _WHILE: /* while 1st arg != 0 execute 2nd cmd */
-                if (current->next != NULL && current->next->next != NULL)
-                {
-                    current = current->next;
-                    if (current->next->cmd == NULL)
-                    {
-                        /* We don't have a block, so what can we execute ??? */
-                        error = SCRIPTERROR;
-                        traperr("<%s> has no command-block!\n", current->parent->cmd->arg);
-                    }
-                    i = 1;
-                    while (i != 0)
-                    {
-                        ExecuteCommand();
-
-                        /* Now check condition */
-                        i = getint(current);
-                        if (i != 0)
-                        {
-                            ExecuteNextCommand();
-                        }
-                        else
-                        {
-                            current->parent->intval = current->next->intval;
-                            if (current->next->arg != NULL)
-                            {
-                                current->parent->arg = strdup(current->next->arg);
-                                outofmem(current->parent->arg);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    error = SCRIPTERROR;
-                    traperr("<%s> requires two arguments!\n", current->arg);
-                }
-                break;
-
             case _MESSAGE: /* Display strings and offer Proceed, Abort, Help */
                 string = collect_strings(current->next, LINEFEED, level);
                 parameter = get_parameters(current->next, level);
@@ -961,7 +966,6 @@ void *params;
                     clip = strip_quotes(current->arg);
                     i = database_keyword(clip);
                     free(clip);
-/* TODO: compute return values for "database" */
                     switch (i)
                     {
                         case _VBLANK :
@@ -974,6 +978,7 @@ void *params;
                             break;
 
                         case _CPU:
+                            current->parent->arg = addquotes((char *)database_cpu());
                             break;
 
                         case _GRAPHICS_MEM:
@@ -985,9 +990,11 @@ void *params;
                             break;
 
                         case _FPU:
+                            current->parent->arg = addquotes((char *)database_fpu());
                             break;
 
                         case _CHIPREV:
+                            current->parent->arg = addquotes((char *)database_chiprev());
                             break;
 
                         default :
@@ -1106,7 +1113,7 @@ void *params;
                 if (current->next != NULL && current->next->next != NULL)
                 {
                 int success = DOSFALSE,
-                    usrconfirm = FALSE;
+                    usrconfirm = TRUE;
                     /* Get strings */
                     current = current->next;
                     ExecuteCommand();
@@ -1298,19 +1305,46 @@ void *params;
                 break;
 
             case _STARTUP: /* Add a section to S:Startup-Sequence */
-                ExecuteNextCommand();
-                if (current->next->arg != NULL)
+                /* The name is whichever argument is not a parameter; it
+                   need not come first - (startup (prompt ...) (name)
+                   (help ...)) - and (name) is a variable in call
+                   position */
+                for (dummy = current->next ; dummy != NULL ; dummy = dummy->next)
                 {
-                    string = strip_quotes(current->next->arg);
-                    parameter = get_parameters(current->next, level);
-                    if (request_confirm(parameter))
+                    if (dummy->cmd == NULL || dummy->cmd->arg == NULL)
                     {
-                        modify_userstartup(string, parameter);
+                        break;
+                    }
+                    i = eval_cmd(dummy->cmd->arg);
+                    if (i <= _PARAMETER || i > (_PARAMETER + NUMPARAMS))
+                    {
+                        break;
+                    }
+                }
+                string = NULL;
+                if (dummy != NULL)
+                {
+                    parameter = get_parameters(current->next, level);
+                    current = dummy;
+                    ExecuteCommand();
+                    if (current->arg != NULL)
+                    {
+                        GetString(current->arg);
+                    }
+                    if (string != NULL)
+                    {
+                        if (request_confirm(parameter) && (preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1))
+                        {
+                            modify_userstartup(string, parameter);
+                            manifest_log('S', string);
+                        }
+                        free(string);
                     }
                     free_parameterlist(parameter);
-                    free(string);
+                    current = commands;
+                    dummy = NULL;
                 }
-                else
+                if (string == NULL)
                 {
                     error = SCRIPTERROR;
                     traperr("<%s> requires a name-string as argument!\n", current->arg);
@@ -1321,7 +1355,7 @@ void *params;
 /* TODO: Implement (optional) and (delopts) */
                 if (current->next != NULL)
                 {
-                int success = -1, usrconfirm = FALSE;
+                int success = -1, usrconfirm = TRUE;
 
                     current = current->next;
                     ExecuteCommand();
@@ -1375,11 +1409,10 @@ void *params;
                 break;
 
             case _MAKEDIR: /* Create directory */
-/* TODO: Implement (infos) */
                 if (current->next != NULL)
                 {
                 BPTR success = 0;
-                int usrconfirm = FALSE;
+                int usrconfirm = TRUE, infos = FALSE;
 
                     current = current->next;
                     ExecuteCommand();
@@ -1400,6 +1433,7 @@ void *params;
                         {
                             usrconfirm = request_confirm(parameter);
                         }
+                        infos = GetPL(parameter, _INFOS).used;
                         /* Create directory */
                         if ((preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1) && usrconfirm)
                         {
@@ -1419,6 +1453,20 @@ void *params;
                     {
                         UnLock(success);
                         current->parent->intval = 1;
+                        manifest_log('D', string);
+                        if (infos)
+                        {
+                            /* (infos): give the new drawer a default icon */
+                            struct DiskObject *dobj = GetDefDiskObject(WBDRAWER);
+                            if (dobj != NULL)
+                            {
+                                if (PutDiskObject(string, dobj))
+                                {
+                                    manifest_log('T', string);
+                                }
+                                FreeDiskObject(dobj);
+                            }
+                        }
                     }
                     else
                     {
@@ -1435,10 +1483,11 @@ void *params;
                 break;
 
             case _EXISTS:
-/* TODO: Implement (noreq) */
                 if (current->next != NULL)
                 {
                 struct stat sb;
+                struct Process *proc = (struct Process *)FindTask(NULL);
+                APTR oldwin = proc->pr_WindowPtr;
 
                     current = current->next;
                     ExecuteCommand();
@@ -1456,6 +1505,13 @@ void *params;
                     if (current->next)
                     {
                         parameter = get_parameters(current->next, level);
+                    }
+                    /* (noreq): a file on a volume that is not mounted
+                       simply does not exist - no "Please insert volume"
+                       requester. Scripts probe their CD this way. */
+                    if (parameter && GetPL(parameter, _NOREQ).used)
+                    {
+                        proc->pr_WindowPtr = (APTR)-1;
                     }
                     if (parameter)
                     {
@@ -1482,6 +1538,7 @@ void *params;
                             current->parent->intval = 0;
                         }
                     }
+                    proc->pr_WindowPtr = oldwin;
                     free(string);
                 }
                 else
@@ -1776,11 +1833,13 @@ void *params;
                                     else
                                     {
                                         current->parent->intval = 1;
+                                        manifest_log('A', assign);
                                     }
                                 }
                                 else
                                 {
                                     current->parent->intval = 1;
+                                    manifest_log('A', assign);
                                 }
                             }
                         }
@@ -2106,18 +2165,500 @@ DMSG("   %s\n",ret);
                 }
                 break;
 
+            case _COPYFILES: /* Copy files/directories: (source) (dest) [(all)|(pattern)|(files)|(choices)] ... */
+                if (current->next != NULL)
+                {
+                    parameter = get_parameters(current->next, level);
+                    current->parent->intval = do_copyfiles(parameter);
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires (source) and (dest)!\n", current->arg);
+                }
+                break;
+
+            case _COPYLIB: /* Copy a file only if it is newer than the installed one */
+                if (current->next != NULL)
+                {
+                    parameter = get_parameters(current->next, level);
+                    current->parent->intval = do_copylib(parameter);
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires (source) and (dest)!\n", current->arg);
+                }
+                break;
+
+            case _FOREACH: /* (foreach <dir> <pattern> <block>): run block per matching entry */
+                if (current->next != NULL && current->next->next != NULL && current->next->next->next != NULL)
+                {
+                char **names;
+                LONG *types;
+                int n;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a directory string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    clip = string;
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a pattern string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    if (current->next->cmd == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> has no command-block!\n", current->parent->cmd->arg);
+                    }
+                    n = dir_matches(clip, string, &names, &types);
+                    for (i = 0 ; i < n ; i++)
+                    {
+                        set_variable("@each-name", names[i], 0);
+                        set_variable("@each-type", NULL, types[i]);
+                        ExecuteNextCommand();
+                    }
+                    if (n >= 0)
+                    {
+                        freestrlist((STRPTR *)names);
+                        free(types);
+                    }
+                    else
+                    {
+                        set_variable("@ioerr", NULL, IoErr());
+                        n = 0;
+                    }
+                    current->parent->intval = n;
+                    free(clip);
+                    free(string);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires three arguments!\n", current->arg);
+                }
+                break;
+
+            case _GETSUM: /* Checksum of a file */
+                if (current->next != NULL)
+                {
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a file string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    current->parent->intval = file_checksum(string);
+                    if (current->parent->intval == 0)
+                    {
+                        set_variable("@ioerr", NULL, IoErr());
+                    }
+                    free(string);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires one argument!\n", current->arg);
+                }
+                break;
+
+            case _GETVERSION: /* (getversion [file [(resident)]]): (version << 16) + revision */
+                if (current->next != NULL)
+                {
+                ULONG ver = 0, rev = 0;
+                int resident = FALSE;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a file string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    if (current->next)
+                    {
+                        parameter = get_parameters(current->next, level);
+                        resident = GetPL(parameter, _RESIDENT).used;
+                        free_parameterlist(parameter);
+                    }
+                    if (resident)
+                    {
+                        current->parent->intval = resident_version(string);
+                    }
+                    else if (scan_version(string, &ver, &rev))
+                    {
+                        current->parent->intval = (ver << 16) + rev;
+                    }
+                    else
+                    {
+                        current->parent->intval = 0;
+                        set_variable("@ioerr", NULL, IoErr());
+                    }
+                    free(string);
+                }
+                else
+                {
+                    /* Our own version */
+                    current->parent->intval = get_var_int("@installer-version");
+                }
+                break;
+
+            case _PATMATCH: /* (patmatch <pattern> <string>): 1 if the string matches */
+                if (current->next != NULL && current->next->next != NULL)
+                {
+                char *patbuf;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    ExecuteNextCommand();
+                    if (current->arg == NULL || current->next->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires two strings!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    clip = string;
+                    GetString(current->next->arg);
+                    patbuf = malloc(strlen(clip) * 2 + 2);
+                    outofmem(patbuf);
+                    if (ParsePatternNoCase(clip, patbuf, strlen(clip) * 2 + 2) < 0)
+                    {
+                        current->parent->intval = 0;
+                    }
+                    else
+                    {
+                        current->parent->intval = MatchPatternNoCase(patbuf, string) ? 1 : 0;
+                    }
+                    free(patbuf);
+                    free(clip);
+                    free(string);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires two arguments!\n", current->arg);
+                }
+                break;
+
+            case _PROTECT: /* (protect <file> [<bits>|<"+s-e">] [(safe)]): get or set protection bits */
+                if (current->next != NULL)
+                {
+                struct FileInfoBlock *fib;
+                BPTR lock;
+                ULONG bits = 0;
+                int safe = FALSE, setbits = FALSE;
+                char *fname;
+
+                    current = current->next;
+                    ExecuteCommand();
+                    if (current->arg == NULL)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires a file string!\n", current->parent->cmd->arg);
+                    }
+                    GetString(current->arg);
+                    fname = string;
+                    lock = Lock(fname, SHARED_LOCK);
+                    fib = AllocDosObject(DOS_FIB, NULL);
+                    outofmem(fib);
+                    if (lock != BNULL && Examine(lock, fib))
+                    {
+                        bits = fib->fib_Protection;
+                    }
+                    else
+                    {
+                        set_variable("@ioerr", NULL, IoErr());
+                    }
+                    if (lock != BNULL)
+                    {
+                        UnLock(lock);
+                    }
+                    FreeDosObject(DOS_FIB, fib);
+                    if (current->next != NULL && current->next->cmd == NULL)
+                    {
+                        /* a plain int or string argument sets the bits */
+                        current = current->next;
+                        if (current->arg != NULL)
+                        {
+                            GetString(current->arg);
+                            bits = apply_protect_string(bits, string);
+                            free(string);
+                        }
+                        else
+                        {
+                            bits = current->intval;
+                        }
+                        setbits = TRUE;
+                    }
+                    if (current->next)
+                    {
+                        parameter = get_parameters(current->next, level);
+                        safe = GetPL(parameter, _SAFE).used;
+                        free_parameterlist(parameter);
+                    }
+                    if (setbits && (preferences.pretend == 0 || safe))
+                    {
+                        if (SetProtection(fname, bits))
+                        {
+                            current->parent->intval = bits;
+                        }
+                        else
+                        {
+                            current->parent->intval = 0;
+                            set_variable("@ioerr", NULL, IoErr());
+                        }
+                    }
+                    else
+                    {
+                        current->parent->intval = bits;
+                    }
+                    free(fname);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires a file argument!\n", current->arg);
+                }
+                break;
+
+            case _TEXTFILE: /* Build a text file from (append) strings and (include) files, in script order */
+                if (current->next != NULL)
+                {
+                BPTR out;
+                ScriptArg *tag;
+                int usrconfirm = TRUE, ok = FALSE;
+
+                    parameter = get_parameters(current->next, level);
+                    if (GetPL(parameter, _DEST).used != 1 || GetPL(parameter, _DEST).intval < 1)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires (dest)!\n", current->arg);
+                    }
+                    if (GetPL(parameter, _CONFIRM).used == 1)
+                    {
+                        usrconfirm = request_confirm(parameter);
+                    }
+                    if ((preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1) && usrconfirm)
+                    {
+                        string = GetPL(parameter, _DEST).arg[0];
+                        out = Open(string, MODE_NEWFILE);
+                        if (out != BNULL)
+                        {
+                            ok = TRUE;
+                            for (tag = current->next ; tag != NULL && ok ; tag = tag->next)
+                            {
+                                struct ParameterList part;
+                                int which;
+
+                                if (tag->cmd == NULL || tag->cmd->arg == NULL)
+                                {
+                                    continue;
+                                }
+                                which = eval_cmd(tag->cmd->arg);
+                                if (which != _APPEND && which != _INCLUDE)
+                                {
+                                    continue;
+                                }
+                                memset(&part, 0, sizeof(part));
+                                collect_stringargs(tag->cmd->next, level, &part);
+                                for (i = 0 ; i < part.intval && ok ; i++)
+                                {
+                                    if (which == _APPEND)
+                                    {
+                                        ok = (Write(out, part.arg[i], strlen(part.arg[i])) == strlen(part.arg[i]));
+                                    }
+                                    else
+                                    {
+                                        BPTR in = Open(part.arg[i], MODE_OLDFILE);
+                                        char *buf;
+                                        LONG n;
+                                        if (in == BNULL)
+                                        {
+                                            ok = FALSE;
+                                            break;
+                                        }
+                                        buf = malloc(MAXARGSIZE);
+                                        outofmem(buf);
+                                        while ((n = Read(in, buf, MAXARGSIZE)) > 0)
+                                        {
+                                            if (Write(out, buf, n) != n)
+                                            {
+                                                ok = FALSE;
+                                                break;
+                                            }
+                                        }
+                                        free(buf);
+                                        Close(in);
+                                    }
+                                }
+                                free_parameter(part);
+                            }
+                            Close(out);
+                            if (ok)
+                            {
+                                manifest_log('F', string);
+                                if (preferences.transcriptstream != BNULL)
+                                {
+                                    Write(preferences.transcriptstream, "Created text file \"", 19);
+                                    Write(preferences.transcriptstream, string, strlen(string));
+                                    Write(preferences.transcriptstream, "\".\n", 3);
+                                }
+                            }
+                            else
+                            {
+                                set_variable("@ioerr", NULL, IoErr());
+                                DeleteFile(string);
+                            }
+                        }
+                        else
+                        {
+                            set_variable("@ioerr", NULL, IoErr());
+                        }
+                        string = NULL;
+                    }
+                    else
+                    {
+                        ok = TRUE;
+                    }
+                    current->parent->intval = ok ? 1 : 0;
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires (dest)!\n", current->arg);
+                }
+                break;
+
+            case _TOOLTYPE: /* Change an icon: (dest) (settooltype) (setdefaulttool) (setstack) (setposition) (noposition) */
+                if (current->next != NULL)
+                {
+                struct DiskObject *dobj;
+                ScriptArg *tag;
+                char **origtt, **tt;
+                char *origtool, *iconname;
+                int usrconfirm = TRUE, ok = FALSE;
+
+                    parameter = get_parameters(current->next, level);
+                    if (GetPL(parameter, _DEST).used != 1 || GetPL(parameter, _DEST).intval < 1)
+                    {
+                        error = SCRIPTERROR;
+                        traperr("<%s> requires (dest)!\n", current->arg);
+                    }
+                    if (GetPL(parameter, _CONFIRM).used == 1)
+                    {
+                        usrconfirm = request_confirm(parameter);
+                    }
+                    if ((preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1) && usrconfirm)
+                    {
+                        /* icon.library wants the name without ".info" */
+                        iconname = strdup(GetPL(parameter, _DEST).arg[0]);
+                        outofmem(iconname);
+                        i = strlen(iconname);
+                        if (i > 5 && strcasecmp(iconname + i - 5, ".info") == 0)
+                        {
+                            iconname[i - 5] = 0;
+                        }
+                        dobj = GetDiskObject(iconname);
+                        if (dobj != NULL)
+                        {
+                            origtt = (char **)dobj->do_ToolTypes;
+                            origtool = dobj->do_DefaultTool;
+                            tt = tooltypes_clone(origtt);
+                            /* (settooltype) tags in script order: one string deletes, two set */
+                            for (tag = current->next ; tag != NULL ; tag = tag->next)
+                            {
+                                struct ParameterList part;
+
+                                if (tag->cmd == NULL || tag->cmd->arg == NULL || eval_cmd(tag->cmd->arg) != _SETTOOLTYPE)
+                                {
+                                    continue;
+                                }
+                                memset(&part, 0, sizeof(part));
+                                collect_stringargs(tag->cmd->next, level, &part);
+                                if (part.intval >= 1)
+                                {
+                                    tt = tooltypes_set(tt, part.arg[0], part.intval >= 2 ? part.arg[1] : NULL);
+                                }
+                                free_parameter(part);
+                            }
+                            dobj->do_ToolTypes = (STRPTR *)tt;
+                            if (GetPL(parameter, _SETDEFAULTTOOL).used == 1 && GetPL(parameter, _SETDEFAULTTOOL).intval > 0)
+                            {
+                                dobj->do_DefaultTool = GetPL(parameter, _SETDEFAULTTOOL).arg[0];
+                            }
+                            if (GetPL(parameter, _SETSTACK).used == 1)
+                            {
+                                dobj->do_StackSize = GetPL(parameter, _SETSTACK).intval;
+                            }
+                            if (GetPL(parameter, _SETPOSITION).used == 1)
+                            {
+                                dobj->do_CurrentX = GetPL(parameter, _SETPOSITION).intval;
+                                dobj->do_CurrentY = GetPL(parameter, _SETPOSITION).intval2;
+                            }
+                            if (GetPL(parameter, _NOPOSITION).used == 1)
+                            {
+                                dobj->do_CurrentX = NO_ICON_POSITION;
+                                dobj->do_CurrentY = NO_ICON_POSITION;
+                            }
+                            ok = PutDiskObject(iconname, dobj);
+                            if (!ok)
+                            {
+                                set_variable("@ioerr", NULL, IoErr());
+                            }
+                            else
+                            {
+                                manifest_log('T', GetPL(parameter, _DEST).arg[0]);
+                                if (preferences.transcriptstream != BNULL)
+                                {
+                                    Write(preferences.transcriptstream, "Changed icon \"", 14);
+                                    Write(preferences.transcriptstream, iconname, strlen(iconname));
+                                    Write(preferences.transcriptstream, "\".\n", 3);
+                                }
+                            }
+                            /* give icon.library back what it allocated */
+                            dobj->do_ToolTypes = (STRPTR *)origtt;
+                            dobj->do_DefaultTool = origtool;
+                            FreeDiskObject(dobj);
+                            tooltypes_free(tt);
+                        }
+                        else
+                        {
+                            set_variable("@ioerr", NULL, IoErr());
+                        }
+                        free(iconname);
+                    }
+                    else
+                    {
+                        ok = TRUE;
+                    }
+                    current->parent->intval = ok ? 1 : 0;
+                    free_parameterlist(parameter);
+                }
+                else
+                {
+                    error = SCRIPTERROR;
+                    traperr("<%s> requires (dest)!\n", current->arg);
+                }
+                break;
+
       /* Here are all unimplemented commands */
-            case _COPYFILES        :
-            case _COPYLIB        :
-            case _FOREACH        :
-            case _GETSUM        :
-            case _GETVERSION        :
             case _ICONINFO        :
-            case _PATMATCH        :
-            case _PROTECT        :
             case _REXX                :
-            case _TEXTFILE        :
-            case _TOOLTYPE        :
                 fprintf(stderr, "Unimplemented command <%s>\n", current->arg);
                 break;
 
@@ -2189,7 +2730,7 @@ DMSG("   %s\n",ret);
                         /* These may be combined in any way */
                         if (strcasecmp(parameter->arg[i], "force") == 0)
                         {
-                            preferences.copyflags &= ~COPY_ASKUSER;
+                            preferences.copyflags &= ~COPY_FORCE;
                         }
                         if (strcasecmp(parameter->arg[i], "askuser") == 0)
                         {
@@ -2197,7 +2738,9 @@ DMSG("   %s\n",ret);
                         }
                     }
 
-                    free_parameterlist(parameter);
+                    /* one ParameterList, not the NUMPARAMS of get_parameters() */
+                    free_parameter(*parameter);
+                    free(parameter);
                 }
                 break;
 
@@ -2233,7 +2776,7 @@ DMSG("   %s\n",ret);
                         /* These may be combined in any way */
                         if (strcasecmp(parameter->arg[i], "force") == 0)
                         {
-                            preferences.copyflags |= COPY_ASKUSER;
+                            preferences.copyflags |= COPY_FORCE;
                         }
                         if (strcasecmp(parameter->arg[i], "askuser") == 0)
                         {
@@ -2241,7 +2784,8 @@ DMSG("   %s\n",ret);
                         }
                     }
 
-                    free_parameterlist(parameter);
+                    free_parameter(*parameter);
+                    free(parameter);
                 }
                 break;
 
@@ -2320,6 +2864,11 @@ int i;
             if (find_proc(argument) != NULL)
             {
                 return _USERDEF;
+            }
+            else if (find_var(argument) != NULL)
+            {
+                /* A variable in call position: format call */
+                return _STRING;
             }
             else
             {
@@ -2419,6 +2968,120 @@ return i;
 
 
 /*
+ * The string value of an argument, or NULL when it holds an integer.
+ * Quoted literals come back malloc()ed and stripped, variable text is
+ * the variable's own storage.
+ */
+static char *getstr(ScriptArg *argument)
+{
+    if (argument->arg == NULL)
+    {
+        return NULL;
+    }
+    if ((argument->arg)[0] == SQUOTE || (argument->arg)[0] == DQUOTE)
+    {
+        return strip_quotes(argument->arg);
+    }
+    return get_var_arg(argument->arg);
+}
+
+
+/*
+ * A variable as a string, malloc'd: its text, its number as digits, or
+ * "" when it was never set - as Installer treats an unset variable as 0
+ * and the empty string.
+ */
+static char *var_string(char *name)
+{
+struct VariableList *var;
+char *string;
+
+    var = find_var(name);
+    if (var != NULL && var->vartext != NULL)
+    {
+        string = strdup(var->vartext);
+    }
+    else if (var != NULL)
+    {
+        string = malloc(MAXARGSIZE);
+        outofmem(string);
+        sprintf(string, "%ld", var->varinteger);
+    }
+    else
+    {
+        string = strdup("");
+    }
+    outofmem(string);
+
+return string;
+}
+
+
+/*
+ * Three-way comparison of two argument values for = <> < <= > >=.
+ * Two integers compare as integers, two strings as strings. Mixed:
+ * "" is below every integer, a string that reads as a number ("12", "0")
+ * compares as that number, any other string is above every integer -
+ * so (= @language "deutsch") is only true for deutsch.
+ */
+static long int compare_values(ScriptArg *a, ScriptArg *b)
+{
+char *sa, *sb;
+long int result;
+
+    sa = getstr(a);
+    sb = getstr(b);
+    if (sa == NULL && sb == NULL)
+    {
+        result = getint(a) - getint(b);
+    }
+    else if (sa != NULL && sb != NULL)
+    {
+        result = strcmp(sa, sb);
+    }
+    else if (sa != NULL)
+    {
+        if (sa[0] == '\0')
+        {
+            result = -1;
+        }
+        else if (atol(sa) != 0 || (sa[0] == '0' && sa[1] == '\0'))
+        {
+            result = atol(sa) - getint(b);
+        }
+        else
+        {
+            result = 1;
+        }
+    }
+    else
+    {
+        if (sb[0] == '\0')
+        {
+            result = 1;
+        }
+        else if (atol(sb) != 0 || (sb[0] == '0' && sb[1] == '\0'))
+        {
+            result = getint(a) - atol(sb);
+        }
+        else
+        {
+            result = -1;
+        }
+    }
+    if (a->arg != NULL && ((a->arg)[0] == SQUOTE || (a->arg)[0] == DQUOTE))
+    {
+        free(sa);
+    }
+    if (b->arg != NULL && ((b->arg)[0] == SQUOTE || (b->arg)[0] == DQUOTE))
+    {
+        free(sb);
+    }
+    return result;
+}
+
+
+/*
  * Get an ID for hardware descriptor
  */
 int database_keyword(char *name)
@@ -2441,6 +3104,67 @@ return _UNKNOWN;
 
 
 /*
+ * (database "cpu"), (database "fpu") and (database "chiprev") - the strings
+ * listed in the Documentation. On m68k they come from exec's AttnFlags, as
+ * Installer V43 reports them. Elsewhere the CPU is named by architecture,
+ * the names InstallerLG uses, and there is no FPU model or custom chip set
+ * to name.
+ */
+const char *database_cpu(void)
+{
+#if defined(__mc68000__)
+    UWORD flags = SysBase->AttnFlags;
+
+    if (flags & AFF_68060)
+        return "68060";
+    if (flags & AFF_68040)
+        return "68040";
+    if (flags & AFF_68030)
+        return "68030";
+    if (flags & AFF_68020)
+        return "68020";
+    if (flags & AFF_68010)
+        return "68010";
+    return "68000";
+#elif defined(__x86_64__)
+    return "X86_64";
+#elif defined(__i386__)
+    return "X86";
+#elif defined(__powerpc__)
+    return "PowerPC";
+#elif defined(__arm__) || defined(__aarch64__)
+    return "ARM";
+#elif defined(__riscv)
+    return "RISCV";
+#else
+    return "Unknown CPU";
+#endif
+}
+
+const char *database_fpu(void)
+{
+#if defined(__mc68000__)
+    UWORD flags = SysBase->AttnFlags;
+
+    if (flags & AFF_FPU40)
+        return "FPU40";
+    if (flags & AFF_68882)
+        return "68882";
+    if (flags & AFF_68881)
+        return "68881";
+    return "NOFPU";
+#else
+    return "Unknown";
+#endif
+}
+
+const char *database_chiprev(void)
+{
+    return "Unknown";
+}
+
+
+/*
  * Concatenate all arguments as a string with separating character
  * if character is 0 strings are concatenated without separator
  * <int>s are converted to strings, <cmd>s are executed,
@@ -2448,7 +3172,7 @@ return _UNKNOWN;
  */
 char *collect_strings(ScriptArg *current, char separator, int level)
 {
-char *string = NULL, *clip, *dummy;
+char *string = NULL, *clip;
 int i;
 
     while (current != NULL)
@@ -2466,18 +3190,7 @@ int i;
                 }
                 else
                 {
-                    dummy = get_var_arg(current->arg);
-                    if (dummy != NULL)
-                    {
-                        clip = strdup(dummy);
-                        outofmem(clip);
-                    }
-                    else
-                    {
-                        clip = malloc(MAXARGSIZE);
-                        outofmem(clip);
-                        sprintf(clip, "%ld", get_var_int(current->arg));
-                    }
+                    clip = var_string(current->arg);
                 }
             }
             else
@@ -2859,21 +3572,7 @@ int j = 0;
             }
             else
             {
-                clip = get_var_arg(current->arg);
-                if (clip != NULL)
-                {
-                    string = strdup(clip);
-                    outofmem(string);
-                }
-                else
-                {
-                    clip = malloc(MAXARGSIZE);
-                    outofmem(clip);
-                    sprintf(clip, "%ld", get_var_int(current->arg));
-                    string = strdup(clip);
-                    outofmem(string);
-                    free(clip);
-                }
+                string = var_string(current->arg);
             }
         }
         else
@@ -2998,12 +3697,7 @@ int i, changed = 0, cont = 0;
     Close(userstartup);
 
     DeleteFile("S:User-Startup");
-/* FIXME: Check correctness of Rename() */
-/*
-    IMO both arguments to Rename() should contain S:, check again if
-    Rename() is proven to work as expected
-*/
-    if (Rename("S:User-Startup.tmp", "User-Startup") == DOSFALSE)
+    if (Rename("S:User-Startup.tmp", "S:User-Startup") == DOSFALSE)
     {
         printf("Rename failed because of %s\n", DosGetString(IoErr()));
     }
@@ -3027,6 +3721,10 @@ int i, j;
         j = (name != NULL) ? strlen(name) : 0 ;
         outmsg = malloc(i + j + 1);
         sprintf(outmsg, msg, name);
+        if (preferences.fromcli)
+        {
+            printf("Installer: %s\n", outmsg);
+        }
         display_text(outmsg);
 
         if (preferences.trap[ error - 1 ].cmd != NULL)

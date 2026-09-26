@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _EXECUTE_H
@@ -8,6 +8,9 @@
 /* Function prototypes */
 extern char *strip_quotes(char *);
 extern int database_keyword(char *);
+extern const char *database_cpu(void);
+extern const char *database_fpu(void);
+extern const char *database_chiprev(void);
 extern struct ParameterList *get_parameters(ScriptArg *, int);
 extern void collect_stringargs(ScriptArg *, int, struct ParameterList *);
 extern void modify_userstartup(char *, struct ParameterList *);
@@ -155,8 +158,9 @@ struct CommandList
 #define _RESIDENT       (_PARAMETER + 30)
 #define _SAFE           (_PARAMETER + 31)
 #define _SWAPCOLORS     (_PARAMETER + 32)
+#define _NOREQ          (_PARAMETER + 33)
 
-#define NUMPARAMS        32        /* Number of keywords used as parameters */
+#define NUMPARAMS        33        /* Number of keywords used as parameters */
 #define NUMARGPARAMS     19        /* Number of keywords used as parameters which may have arguments */
 
 #define _MAXCOMMAND     (NUMPARAMS+NUMCMDS)        /* Total number of keywords */

@@ -1,3 +1,38 @@
+Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+Command line
+------------
+	SCRIPT,APPNAME,MINUSER,DEFUSER,LOGFILE,NOLOG/S,NOPRETEND/S,
+	NOPRINT/S,LANGUAGE,MANIFEST/K,APPBANNER/K,PRETEND/S
+
+	The first nine are the standard Installer arguments. NOLOG/S (also
+	a tooltype) means no log file at all: none is opened, and the "log
+	to file" page is not offered. Without it LOGFILE names the log
+	(default "install_log_file" in the current directory - which is the
+	script's drawer when run from Workbench, so a script on a CD-ROM or
+	other read-only volume needs NOLOG or an absolute LOGFILE); a novice
+	is not asked and gets the log unless the icon says LOG=FALSE.
+	APPBANNER/K
+	(also a tooltype) names a picture, shown through datatypes above the
+	pages - the application's own banner; the same argument InstallerLG
+	takes, so one icon serves both. PRETEND/S runs the script as a dry
+	run without asking: the "Install for real / pretend" page is skipped
+	and nothing is written (what NOPRETEND/S forbids, this forces) - used
+	for previewing a package and for running scripts under test. Scripts
+	cannot tell it from a pretend run chosen on the page. MANIFEST/K is an
+	AROS extension for package management: a text file that lists what the
+	script created, one item per line, so a package manager can remove it
+	again. Kinds:
+	  F <file>        file written (copyfiles, copylib, textfile, copied
+	                  .info companions)
+	  D <dir>         directory created (makedir, copyfiles)
+	  A <assign>      assign made (makeassign, askdisk (newname))
+	  S <section>     section added to S:User-Startup (startup)
+	  T <icon>        icon written (makedir/copyfiles (infos), tooltype);
+	                  the .info suffix is not included
+	File, dir and icon names are canonical (Lock + NameFromLock). Nothing
+	is written in pretend mode. Scripts do not see the manifest.
+
 Parsing the script
 ------------------
 	Read in 'tokens' and braces and save into tree structure.
@@ -128,9 +163,9 @@ Arguments in [...] are optional.
 
 ( procedure <name> [<arg>...] (...) )
   Procedures are defined during parsing. The name has to be a non-quoted
-  string which must not begin with digits. Consider using a prefix like
-  "P_" for your procedures to avoid a conflict with future extensions of
-  Installer.
+  string which must not begin with digits; it is not case sensitive.
+  Consider using a prefix like "P_" for your procedures to avoid a
+  conflict with future extensions of Installer.
   <arg>... is an optional list of variables which will be set when calling
   the procedure. However, you can call the procedure with less than the
   specified arguments; in this case the unset variables retain their old
@@ -173,6 +208,7 @@ Arguments in [...] are optional.
 ( set <var-name> <value> ... )
   Use (set ...) to set variables.
   Variable names have to be unquoted strings -- commands are not accepted
+  Names are not case sensitive: #Name and #name are the same variable.
   Values can be anything.
   Consider using a prefix like '#' to avoid conflicts with future versions
   of Installer. The prefix '@' is reserved for internal variables. They
@@ -313,26 +349,51 @@ Execute an AmigaDOS script.
   the secondary is passed in '@ioerr'.
 
 
-( textfile )
-# tests with original Installer showed:
-# ( append )s are collected
-# ( include )s are replaced, i.e. only the last ( include ) is taken
-# first (append)s are printed then last (include)
-## Distinguish between overriding and appending parameters and introduce
-## according functions to collect args. Or always append/collect as multiple
-## strings and let function behave as desired.
+( textfile (dest <file>)
+      [(append <string>...)]...
+      [(include <file>)]...
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(safe)]
+)
+  Creates <file> from the (append) strings and the contents of the
+  (include) files, written in the order they appear in the script.
+  NOTE: an old comment in this file claimed the original Installer
+  collected all (append)s first and then wrote only the last (include).
+  Scripts on Aminet write (include "README") (append "\n...") and expect
+  that order, so script order is what is implemented; if a script
+  depends on the other behaviour, report it.
 
 
-( askdir )
- /* Ask user for a directory */
+( askdir (prompt <string>...)
+      (help <string>...)
+      (default <string>)
+      [(newpath)]
+      [(disk)]
+      [(assigns)]
+)
+  Asks for a directory with an ASL requester (drawers only) and returns
+  the chosen path. Novice users get the default without being asked.
 
 
-( askdisk )
- /* Ask user insert a disk */
+( askdisk (prompt <string>...)
+      (help <string>...)
+      (dest <volume>)
+      [(newname <assign>)]
+)
+  Waits until <volume>: can be locked, re-asking with Proceed (retry),
+  Skip and Abort. With (newname) an assign of that name is made to the
+  volume. Returns the volume name.
 
 
-( askfile )
- /* Ask user for a file */
+( askfile (prompt <string>...)
+      (help <string>...)
+      (default <string>)
+      [(newpath)]
+      [(disk)]
+)
+  Like askdir, but for a file.
 
 
 ( askoptions )
@@ -344,18 +405,17 @@ Execute an AmigaDOS script.
  <feature> is one of:
  "vblank"
  "cpu"
-   -> "68000" "68010" "68020" "68030" "68040" "68060"
-      "80386" "80486"
-      "Pentium" "PentiumPro" "Celeron" "PentiumII" "PentiumIII"
-      "K6" "K6-II" "K6-III" "Athlon"
+   -> "68000" "68010" "68020" "68030" "68040" "68060" on m68k;
+      "X86" "X86_64" "PowerPC" "ARM" "RISCV" elsewhere (the architecture
+      the Installer was built for, named as InstallerLG names it)
  "graphics-mem"
    -> Size of free CHIP RAM (via AvailMem(MEMF_CHIP))
  "total-mem"
    -> Total size of free RAM (via AvailMem(MEMF_TOTAL))
  "fpu"
-   -> "68881" "68882" "FPU40" "80387" "80486" "NOFPU"
+   -> "68881" "68882" "FPU40" "NOFPU" on m68k; "Unknown" elsewhere
  "chiprev"
-   -> "AA" "ECS" "AGNUS" "VGA"
+   -> "Unknown" (no custom chip set)
  Return-type is always a string except for free RAM size.
 
 
@@ -391,8 +451,8 @@ Execute an AmigaDOS script.
 ...
 ;END <name-string>
 
-  into S:User-Startup. If a section with this name already exists the section
-  will be replaced by this new one.
+  into S:User-Startup. <name-string> may follow the parameters. If a
+  section with this name already exists it is replaced by this new one.
   The commands between the markers are given in (command ...).
   The user will only be prompted to confirm this action if in Expert mode.
 
@@ -517,16 +577,86 @@ Execute an AmigaDOS script.
   Expands the <path>. For example "C:Mount" will become "System:C/Mount"
 
 
+( copyfiles (source <path>) (dest <path>)
+      [(prompt <string>...)]
+      [(help <string>...)]
+      [(all) | (pattern <pattern>) | (choices <name>...) | (files)]
+      [(infos)]
+      [(newname <name>)]
+      [(nogauge)]
+      [(confirm)]
+      [(safe)]
+      [(optional ...) | (delopts ...)]
+)
+  Copies a file, or the contents of a directory with (all), (pattern)
+  or (choices). (files) copies files only, no subdirectories. (infos)
+  copies the .info companions too (and never the dest.info of the
+  copied directory itself). Above the (confirm) level the user gets a
+  multi-select list of the entries to copy. Returns 1 on success.
+
+
+( copylib (source <file>) (dest <path>)
+      [(prompt <string>...)]
+      [(help <string>...)]
+      [(newname <name>)]
+      [(infos)]
+      [(confirm)]
+      [(safe)]
+      [(optional ...) | (delopts ...)]
+)
+  Like copyfiles for one file, but compares $VER: strings first: an
+  existing newer (or equal) version is kept, an older one replaced;
+  above the (confirm) level the user is asked. Returns 1 on success.
+
+
+( foreach <dir> <pattern> <command>... )
+  Runs the commands once per matching entry in <dir> with @each-name
+  set to the entry name and @each-type to its type (negative for a
+  file, positive for a directory). Returns the number of matches.
+
+
+( getsum <file> )
+  Returns a checksum of <file> (0 if it cannot be read).
+
+
+( getversion [<file> [(resident)]] )
+  Returns (version << 16) + revision, from the $VER: string of <file>,
+  with (resident) from the loaded library/device of that name, and
+  without arguments from the Installer itself. 0 if not found.
+
+
+( patmatch <pattern> <string> )
+  Returns 1 if <string> matches the AmigaDOS <pattern> (case
+  insensitive).
+
+
+( protect <file> [<flags> | <int>] [(safe)] )
+  Without a second argument returns the protection bits of <file>.
+  With a flag string such as "+s-e" or "rwed" (the latter clears
+  everything not named) or an integer, sets them and returns the new
+  value.
+
+
+( tooltype (dest <file>)
+      [(settooltype <name> [<value>])]...
+      [(setdefaulttool <string>)]
+      [(setstack <int>)]
+      [(setposition <x> <y>)]
+      [(noposition)]
+      [(swapcolors)]
+      [(prompt <string>...)]
+      [(help <string>...)]
+      [(confirm)]
+      [(safe)]
+)
+  Edits the icon of <file> (the .info suffix may be given or not).
+  (settooltype) without a value removes the tool type; with one it is
+  set as NAME=value, replacing an existing NAME=. (swapcolors) is
+  accepted and ignored.
+
+
 /* Unimplemented commands */
-( copyfiles )
-( copylib )
-( foreach )
-( getsum )
-( getversion )
-( patmatch )
-( protect )
 ( rexx )
-( tooltype )
 
 /* Here are all tags, first the ones which have to be executed */
  

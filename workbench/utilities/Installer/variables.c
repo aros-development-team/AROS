@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* variables.c -- Here are all functions related to variables */
@@ -29,7 +29,7 @@ struct VariableList *find_var(char *name)
 int i;
 
     /* Check if variable is in list */
-    for ( i = 0 ; i < numvariables && strcmp(name, variables[i].varsymbol) != 0 ; i++ );
+    for ( i = 0 ; i < numvariables && strcasecmp(name, variables[i].varsymbol) != 0 ; i++ );
     if (i == numvariables)
     {
         return NULL;
@@ -122,7 +122,7 @@ void set_variable(char *name, char *text, long int intval)
 int i;
 
     /* Check if variable is in list */
-    for ( i = 0 ; i < numvariables && strcmp(name, variables[i].varsymbol) != 0 ; i++ );
+    for ( i = 0 ; i < numvariables && strcasecmp(name, variables[i].varsymbol) != 0 ; i++ );
     if (i == numvariables)
     {
         /* Enlarge list for one additional element */
