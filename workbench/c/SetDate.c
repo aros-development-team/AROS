@@ -162,7 +162,12 @@ int main(void)
             {
                 aPath->ap_Flags |= APF_DODIR;
             }
-            SetFileDate(aPath->ap_Info.fib_FileName, &dt.dat_Stamp);
+            if (!SetFileDate(aPath->ap_Info.fib_FileName, &dt.dat_Stamp))
+            {
+                LONG fileError = IoErr();
+                PrintFault(fileError, "SetDate");
+                retval = RETURN_FAIL;
+            }
 
             error = MatchNext(aPath);
         }
@@ -182,13 +187,20 @@ int main(void)
     
     if(error != ERROR_NO_MORE_ENTRIES)
     {
+        LONG matchRetval;
+
         if(error == ERROR_BREAK)
         {
-            retval = RETURN_WARN;
+            matchRetval = RETURN_WARN;
         }
         else
         {
-            retval = RETURN_FAIL;
+            matchRetval = RETURN_FAIL;
+        }
+
+        if (matchRetval > retval)
+        {
+            retval = matchRetval;
         }
         
         PrintFault(error, "SetDate");

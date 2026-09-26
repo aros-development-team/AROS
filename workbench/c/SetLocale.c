@@ -24,10 +24,10 @@ int main(int argc, char **av)
 
     new = OpenLocale(av[1]);
     error = IoErr();
-    FPuts(Output(), "Locale opened\n");
     if(new)
     {
         struct Locale *old = NULL;
+        FPuts(Output(), "Locale opened\n");
         old = LocalePrefsUpdate(new);
         FPuts(Output(), "Locale set\n");
         CloseLocale(old);

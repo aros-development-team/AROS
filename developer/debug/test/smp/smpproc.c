@@ -3,8 +3,7 @@
 
     Desc: SMP coverage for NP_Affinity. A process created with an affinity
           mask must actually start on a CPU from that mask - without the
-          tag a new process silently inherits the CPU of whoever created
-          it, which pins every command a shell starts to the shell's core.
+          tag a new process inherits its parent's affinity.
 */
 
 #include <exec/tasks.h>

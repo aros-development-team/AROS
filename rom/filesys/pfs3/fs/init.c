@@ -599,7 +599,7 @@ static BOOL init_device_unit_sema(struct FileSysStartupMsg *startup, globaldata 
 			sema->ss.ss_Link.ln_Type = NT_SIGNALSEM;
 			// Pre-2.x AddSemaphore() is broken.
 			if (g->g_SysBase->LibNode.lib_Version < 36) {
-				Enqueue(&g->g_SysBase->SemaphoreList, &sema->ss);
+				Enqueue(&g->g_SysBase->SemaphoreList, &sema->ss.ss_Link);
 			}  else {
 				AddSemaphore(&sema->ss);
 			}
