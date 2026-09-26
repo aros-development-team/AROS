@@ -13,6 +13,9 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <proto/dos.h>
+
+#include <dos/var.h>
 #include <aros/symbolsets.h>
 #include <devices/inputevent.h>
 #include <exec/alerts.h>
@@ -31,6 +34,7 @@
 
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
+#include "vcgfx_hvs6.h"
 #include "vcgfx_neon.h"
 
 #ifdef MBoxBase
@@ -291,6 +295,11 @@ VOID MNAME_DISPLAY_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
 int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
 {
+    /* BCM2712 has no firmware cursor or ALLOCMEM; use our own plane. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        return vc4_hvs6_init_cursor(xsd);
+
+
     /* 64x64 ARGB cursor buffer in GPU memory, locked for the driver's
      * lifetime (firmware re-reads it on each SETCURSORINFO). VCMEM_DIRECT
      * (uncached 0xC alias) lets the CPU write pixels; VCMEM_NORMAL is
@@ -388,14 +397,15 @@ BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Di
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     IPTR width = 0, height = 0;
 
+    /* Without a cursor buffer the base class renders a software pointer */
     if (!xsd->vcsd_CurBuf)
-        return FALSE;
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     if (msg->shape == NULL)
     {
         /* Hide and forget the current shape. */
         xsd->vcsd_CurVisible = FALSE;
-        if (xsd->vcsd_HVS.hvs_Active)
+        if (xsd->vcsd_HVS.hvs_Active || xsd->vcsd_HVS6.h6_Active)
         {
             vc4_hvs_update_cursor(xsd);
             return TRUE;
@@ -422,15 +432,20 @@ BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Di
         width > VC4_CURSOR_MAX_W || height > VC4_CURSOR_MAX_H)
         return FALSE;
 
-    HIDD_BM_GetImage(msg->shape, (UBYTE *)xsd->vcsd_CurBuf,
-                     width * 4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
+    /* HVS6 reads RGBA, and cannot snoop this cached buffer. */
+    HIDD_BM_GetImage(msg->shape, (UBYTE *)xsd->vcsd_CurBuf, width * 4,
+                     0, 0, width, height,
+                     (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+                         ? vHidd_StdPixFmt_RGBA32 : vHidd_StdPixFmt_BGRA32);
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        CacheClearE(xsd->vcsd_CurBuf, VC4_CURSOR_BUF_BYTES, CACRF_ClearD);
 
     xsd->vcsd_CurWidth  = width;
     xsd->vcsd_CurHeight = height;
     xsd->vcsd_CurHotX   = msg->xoffset;
     xsd->vcsd_CurHotY   = msg->yoffset;
 
-    if (xsd->vcsd_HVS.hvs_Active)
+    if (xsd->vcsd_HVS.hvs_Active || xsd->vcsd_HVS6.h6_Active)
     {
         /* Our cursor plane reads vcsd_CurBuf directly; the new geometry
          * is picked up by the list rebuild. */
@@ -471,7 +486,7 @@ BOOL MNAME_DISPLAY(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Disp
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
 
     if (!xsd->vcsd_CurBuf)
-        return FALSE;
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     /* Firmware places the image top-left at (x,y) and ignores the
      * SETCURSORINFO hotspot, so apply the AROS hotspot offset here
@@ -482,7 +497,7 @@ BOOL MNAME_DISPLAY(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Disp
     if (!xsd->vcsd_CurVisible)
         return TRUE;
 
-    if (xsd->vcsd_HVS.hvs_Active)
+    if (xsd->vcsd_HVS.hvs_Active || xsd->vcsd_HVS6.h6_Active)
     {
         vc4_hvs_update_cursor(xsd);
         return TRUE;
@@ -510,11 +525,14 @@ VOID MNAME_DISPLAY(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
 
     if (!xsd->vcsd_CurBuf)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         return;
+    }
 
     xsd->vcsd_CurVisible = msg->visible ? TRUE : FALSE;
 
-    if (xsd->vcsd_HVS.hvs_Active)
+    if (xsd->vcsd_HVS.hvs_Active || xsd->vcsd_HVS6.h6_Active)
     {
         vc4_hvs_update_cursor(xsd);
         return;
@@ -664,6 +682,25 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
     }
 }
 
+/* An explicit SYS/Gallium.default overrides the hardware driver. dos is
+ * opened here since this resident class inits before dos exists. */
+static BOOL software_gallium_requested(void)
+{
+    struct Library *DOSBase = OpenLibrary("dos.library", 0);
+    BOOL requested = FALSE;
+
+    if (DOSBase)
+    {
+        char buf[64];
+
+        requested = GetVar("SYS/Gallium.default", buf, sizeof(buf),
+                           GVF_GLOBAL_ONLY | LV_VAR) > 0;
+        CloseLibrary(DOSBase);
+    }
+
+    return requested;
+}
+
 OOP_Object *MNAME_DISPLAY(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
@@ -716,16 +753,15 @@ OOP_Object *MNAME_DISPLAY(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHi
         if (!XSD(cl)->vcsd_basegallium)
             XSD(cl)->vcsd_basegallium = OOP_FindClass(CLID_Hidd_Gallium);
 
-        if (XSD(cl)->vcsd_basegallium && msg->cl == XSD(cl)->vcsd_basegallium)
+        if (XSD(cl)->vcsd_basegallium && msg->cl == XSD(cl)->vcsd_basegallium
+            && !software_gallium_requested())
         {
-            /* The display driver knows which GPU sits next to it: V3D 4.2
-             * (hidd/v3d) on the BCM2711, VideoCore IV (vc4gallium)
-             * before that. Both live on the FS, so load on first request
-             * so the OOP class registers before OOP_NewObject. */
-            CONST_STRPTR gallium_lib = XSD(cl)->vcsd_IsBCM2711
-                                     ? "v3d.hidd" : "vc4gallium.hidd";
-            CONST_STRPTR gallium_cl  = XSD(cl)->vcsd_IsBCM2711
-                                     ? "hidd.gallium.v3d" : "hidd.gallium.vc4";
+            /* V3D on BCM2711/2712, VC4 before. Loaded from the FS on first
+             * request so the class registers before OOP_NewObject. */
+            BOOL isv3d = XSD(cl)->vcsd_HVSGen != VCGFX_HVS_VC4;
+            CONST_STRPTR gallium_lib = isv3d ? "v3d.hidd" : "vc4gallium.hidd";
+            CONST_STRPTR gallium_cl  = isv3d ? "hidd.gallium.v3d"
+                                             : "hidd.gallium.vc4";
 
             if (!XSD(cl)->vcsd_GalliumLib)
                 XSD(cl)->vcsd_GalliumLib = OpenLibrary(gallium_lib, 0);
