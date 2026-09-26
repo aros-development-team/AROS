@@ -128,7 +128,7 @@ void core_APIC_GetMask(struct APICData *data, apicid_t cpuNo, cpumask_t *mask)
         D(bug("[APIC] %s: %d -> %d:%d\n", __func__, cpuNo, idlong, idbit));
 
         if ((apicMask = (ULONG *)mask) != NULL)
-            apicMask[idlong] = (1 << idbit);
+            apicMask[idlong] |= (1 << idbit);
     }
 
     return;

@@ -150,6 +150,7 @@ curl_http() {
     local urlsrc
     local ret
     local state=0
+    local triedorig=0
 
     local protocol
 
@@ -190,6 +191,19 @@ curl_http() {
         if [ $ret -eq 60 ] && [ "$protocol" = "http" ] && [ $state -lt 3 ]; then
             curlextraflags="$curlextraflags -k"
             state=3
+            continue
+        fi
+
+        # The HEAD probe above resolved the redirect for us, but some hosts
+        # answer it with a signed, single use URL - GitLab serves package
+        # files from object storage that way, and the signature covers the
+        # probe request, so fetching it again with GET is refused. Retry the
+        # original URL once and let curl follow the redirect itself. Only on
+        # an HTTP error (22), so a stalled transfer still resumes instead.
+        if [ $ret -eq 22 ] && [ $triedorig -eq 0 ] && [ "$curlsrc" != "$tryurl$curlext" ]; then
+            triedorig=1
+            curlsrc="$tryurl$curlext"
+            rm -f "$curloutput"
             continue
         fi
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2023, The AROS Development Team. All rights reserved.
+# Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -26,6 +26,15 @@ ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub)
 USER_CPPFLAGS += -DGRUB=1
 endif
 ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub2)
+USER_CPPFLAGS += -DGRUB=2
+endif
+# grub2gfx (the pc target's bootloader) is GRUB2 with a gfx splash: select the
+# GRUB2 InstallAROS backend too. Without this, GRUB stays undefined on the
+# grub2gfx build and InstallAROS only picks GRUB2 via the lastmatch fallback;
+# worse, a build that ships only the 0.97 stages would silently default to the
+# legacy backend, whose multiboot1 stages cannot boot a multiboot2 bootstrap
+# ("No kickstart modules found").
+ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub2gfx)
 USER_CPPFLAGS += -DGRUB=2
 endif
 USER_CPPFLAGS += -DDEBUG=0

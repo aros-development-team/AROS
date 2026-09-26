@@ -53,7 +53,8 @@ TASKRES_FUNCS :=             \
         GetTaskStorageSlot   \
         GetParentTaskStorageSlot \
         AddTaskNotifyHook    \
-        RemTaskNotifyHook
+        RemTaskNotifyHook    \
+        SetTaskAffinity
 
 TASKRES_FILES :=             \
         task_init            \
