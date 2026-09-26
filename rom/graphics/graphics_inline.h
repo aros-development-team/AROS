@@ -39,6 +39,25 @@ static inline OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *d
     if (!gfxhidd)
         gfxhidd = driver->display_gfxhidd;
 
+    /* A caller-owned planar screen has no HIDD display attribute, even when
+     * MakeVPort() displays it through AmigaVideo.  Its generic wrapper must
+     * not force BltBitMapRastPort() into the pixel-by-pixel software CopyBox.
+     * The native driver checks whether the particular planes can be blitted
+     * and falls back to the generic method when they cannot. */
+    if (gfxhidd == ((struct gfxdisplay_data *)CDD(GfxBase))->display_gfxhidd &&
+        GfxBase->ActiView && GfxBase->ActiView->ViewPort)
+    {
+        struct gfxdisplay_data *active =
+            GET_VP_DRIVERDATA(GfxBase->ActiView->ViewPort);
+        struct BitMap *planar = NULL;
+
+        if (active && (active->display_flags & DF_ExternalPlanar))
+            OOP_GetAttr(dstbm_obj, aHidd_PlanarBM_BitMap, (IPTR *)&planar);
+
+        if (planar)
+            gfxhidd = active->display_gfxhidd;
+    }
+
     return gfxhidd;
 }
 
