@@ -399,7 +399,7 @@ BOOL vc4_hvs6_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
         return FALSE;
 
     for (which = 0; which < HVS6_LISTS; which++)
-        if (hvs6_rd(hvs6_slot(st, which, HVS6_SLOT_FB) + HVS6_ENT_PTR0 * 4)
+        if (hvs6_rd(hvs6_slot(st, which, HVS6_SLOT_FB) + HVS6_ENT_PTR1 * 4)
             == page_phys)
             break;
 
