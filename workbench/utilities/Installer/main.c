@@ -1,7 +1,7 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: Installer V43.3
+    Desc: Installer V44.10
 */
 
 #include "Installer.h"
@@ -28,7 +28,7 @@ int error = 0, grace_exit = 0;
 InstallerPrefs preferences;
 ScriptArg script;
 
-IPTR args[TOTAL_ARGS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+IPTR args[TOTAL_ARGS] = { 0 };
 UBYTE **tooltypes;
 
 /*
@@ -102,30 +102,55 @@ int main(int argc, char *argv[])
     inputfile = Open(filename, MODE_OLDFILE);
     if (inputfile == BNULL)
     {
-#ifdef DEBUG
-        fprintf(stderr, "Error opening script <%s>\n",filename);
-        PrintFault(IoErr(), INSTALLER_NAME);
-#endif /* DEBUG */
+        /* not a debug message: say which script, then the DOS reason
+         * (IoErr() before printf(), which may touch it) */
+        {
+            LONG ioerr = IoErr();
+            printf("Installer: Error opening script <%s>\n", filename);
+            PrintFault(ioerr, INSTALLER_NAME);
+        }
         exit(-1);
     }
 
     preferences.welcome = FALSE;
     preferences.transcriptstream = BNULL;
+    preferences.manifestfile = NULL;
+    preferences.manifeststream = BNULL;
     preferences.pretend = 0;
 
     if (argc)
     {
         preferences.debug = TRUE;
+        /* NOLOG/S: no log file at all. The default "install_log_file" is
+         * relative to the current directory, and an Installer run from
+         * a CD (Workbench runs it in the script's drawer) could not
+         * create it - and quit before the first page. */
         if (args[ARG_NOLOG])
         {
             preferences.novicelog = FALSE;
+            preferences.transcriptfile = NULL;
         }
         else
         {
             preferences.novicelog = TRUE;
+            preferences.transcriptfile = strdup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
         }
-        preferences.transcriptfile = strdup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
+        if (args[ARG_APPBANNER])
+        {
+            preferences.bannerfile = strdup((char *)args[ARG_APPBANNER]);
+        }
+        if (args[ARG_MANIFEST])
+        {
+            preferences.manifestfile = strdup((char *)args[ARG_MANIFEST]);
+        }
         preferences.nopretend = (int)args[ARG_NOPRETEND];
+        /* PRETEND/S: dry run without asking - the pretend page is skipped
+         * and nothing is written (a package manager's preview, test harnesses) */
+        if (args[ARG_PRETEND])
+        {
+            preferences.pretend = TRUE;
+            preferences.nopretend = TRUE;
+        }
         if (args[ARG_MINUSER])
         {
             preferences.minusrlevel = _NOVICE;
@@ -187,8 +212,28 @@ int main(int argc, char *argv[])
             preferences.novicelog = FALSE;
         }
 
-        /* Write to which LOGFILE? */
-        preferences.transcriptfile = strdup(ArgString(tooltypes, "LOGFILE", "install_log_file"));
+        /* Write to which LOGFILE? NOLOG (the original's tooltype): none */
+        if (FindToolType(tooltypes, "NOLOG") != NULL)
+        {
+            preferences.novicelog = FALSE;
+            preferences.transcriptfile = NULL;
+        }
+        else
+        {
+            preferences.transcriptfile = strdup(ArgString(tooltypes, "LOGFILE", "install_log_file"));
+        }
+        /* Record what gets created? (MANIFEST=<file>) */
+        ttemp = ArgString(tooltypes, "MANIFEST", NULL);
+        if (ttemp != NULL)
+        {
+            preferences.manifestfile = strdup(ttemp);
+        }
+        /* Picture above the pages? (APPBANNER=<file>) */
+        ttemp = ArgString(tooltypes, "APPBANNER", NULL);
+        if (ttemp != NULL)
+        {
+            preferences.bannerfile = strdup(ttemp);
+        }
         /* Is PRETEND possible? */
         preferences.nopretend = (strcmp("TRUE", ArgString(tooltypes, "PRETEND", "TRUE")) != 0);
         ttemp = ArgString(tooltypes, "MINUSER", "NOVICE");
@@ -366,6 +411,18 @@ int main(int argc, char *argv[])
         /* open transcript file */
         preferences.transcriptstream = Open(preferences.transcriptfile, MODE_NEWFILE);
         if (preferences.transcriptstream == BNULL)
+        {
+            PrintFault(IoErr(), INSTALLER_NAME);
+            cleanup();
+            exit(-1);
+        }
+    }
+
+    if (preferences.manifestfile != NULL)
+    {
+        /* open manifest file */
+        preferences.manifeststream = Open(preferences.manifestfile, MODE_NEWFILE);
+        if (preferences.manifeststream == BNULL)
         {
             PrintFault(IoErr(), INSTALLER_NAME);
             cleanup();

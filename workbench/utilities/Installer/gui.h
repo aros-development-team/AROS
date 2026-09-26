@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _GUI_H
@@ -7,10 +7,17 @@
 
 extern void show_abort(char *msg);
 extern void show_complete(long int percent);
+extern void show_effect(unsigned long top, unsigned long bottom);
+extern long int query_display(char *object, char *option);
+#define MAXMEDIA 16 /* windows of (showmedia) open at once */
+extern long int show_media(char *file, char *position, char *size, int border);
+extern long int set_media(long int id);
+extern long int close_media(long int id);
 extern void show_exit(char *msg);
 extern void show_parseerror(char * msg, int errline);
 extern void show_working(char *msg);
 extern void show_message(char * msg ,struct ParameterList * pl);
+extern int back_pressed;
 extern void request_userlevel(char *msg);
 extern long int request_bool(struct ParameterList *pl);
 extern long int request_number(struct ParameterList *pl);
@@ -21,6 +28,11 @@ extern char *request_disk(struct ParameterList *pl);
 extern char *request_file(struct ParameterList *pl);
 extern long int request_options(struct ParameterList *pl);
 extern int request_confirm(struct ParameterList * pl);
+extern int request_yesno(char *msg, struct ParameterList *pl, int def);
+extern char *request_files(struct ParameterList *pl, char **names, int n);
+extern void update_working(char *msg);
+extern void show_copying(char *msg, long total);
+extern void update_copying(char *file, long done);
 extern void final_report();
 extern void display_text(char * msg);
 extern void init_gui();

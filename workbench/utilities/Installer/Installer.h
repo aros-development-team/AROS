@@ -1,13 +1,13 @@
 /*
-    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _INSTALLER_H
 #define _INSTALLER_H
 
 #define INSTALLER_NAME "Installer"
-#define INSTALLER_VERSION 43
-#define INSTALLER_REVISION 3
+#define INSTALLER_VERSION 44
+#define INSTALLER_REVISION 10
 
 /*
    This flag is not only for internal verbosity, but embraces outputs
@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include <dos/dos.h>
+#include <dos/dosextens.h>
 #include <exec/exec.h>
 #include <exec/execbase.h>
 #include <proto/dos.h>
@@ -74,6 +75,12 @@ typedef struct InstallerPrefs
 {
     char * transcriptfile;
     BPTR transcriptstream;
+    /* MANIFEST: one line per thing the script created, for a package
+       manager to undo later -- see manifest_log() in misc.c */
+    char * manifestfile;
+    BPTR manifeststream;
+    /* APPBANNER: picture shown above the pages (InstallerLG-compatible) */
+    char * bannerfile;
     int debug, pretend, nopretend, novicelog, noprint;
     int welcome;
     int copyfail, copyflags;
@@ -109,6 +116,7 @@ struct ParameterList
     char ** arg;
     long int intval, intval2;
     int used;
+    ScriptArg *body;          /* (back): the statements to run on Back */
 };
 
 
