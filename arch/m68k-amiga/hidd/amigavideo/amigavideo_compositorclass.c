@@ -317,7 +317,17 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
             D(bug("[AmigaVideo:Compositor] %s:  -- screen range = %d -> %d (%d rows)\n", __func__, screen_start, screen_finish, bmdata->displayheight);)
             setcopperscroll(csd, bmdata, ((csd->interlaced == TRUE) || (bmdata->interlace != 0)));
 
-#if !USE_UCOP_DIRECT
+#if USE_UCOP_DIRECT
+            /*
+             * MakeViewPort() runs before the compositor has calculated the
+             * visible height of a newly attached bitmap. Reparse its user
+             * copper list now that displayheight is valid; otherwise a WAIT
+             * on the first visible line is mistaken for the end of the list.
+             */
+            if (bmdata->bmucl)
+                AmigaVideo_ParseCopperlist(csd, bmdata,
+                                           bmvp->UCopIns->FirstCopList);
+#else
             if ((bmdata->bmucl) && !(bmdata->bmucl->Flags & (1<<15)))
             {
                 D(bug("[AmigaVideo:Compositor] %s:  -- copying user-copperlist data ...\n", __func__);)

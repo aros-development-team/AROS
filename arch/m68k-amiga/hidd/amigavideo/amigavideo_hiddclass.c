@@ -1377,6 +1377,7 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
     {
         struct CopIns *copIns = usercopl->CopIns;
         UWORD *copl, *cops = NULL;
+        UWORD *copl_start;
         WORD count = 0;
         BOOL ucend=FALSE, passed = FALSE;
 
@@ -1387,24 +1388,28 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
             usercopl = usercopl->Next;
         }
         D(bug("[AmigaVideo:Hidd] %s: %d instructions total\n", __func__, count);)
-        bmdata->bmuclsize = (count << 2);
         usercopl = copFirst;
 
 #if !USE_UCOP_DIRECT
         if (!usercopl->CopLStart)
         {
-            /* user copperlist is allocated in any memory, since it is copied into the actual copperlist.. */
-            usercopl->CopLStart = AllocVec(((count + 2) << 2), MEMF_CLEAR | MEMF_PUBLIC);
+            /*
+             * A WAIT beyond line 255 expands to the wrap marker followed by
+             * the actual WAIT.  Reserve the worst case rather than assuming
+             * one emitted instruction for every source CopIns.
+             */
+            usercopl->CopLStart = AllocVec(((count * 2 + 2) << 2), MEMF_CLEAR | MEMF_PUBLIC);
         }
 #endif
         copl = usercopl->CopLStart;
+        copl_start = copl;
         D(bug("[AmigaVideo:Hidd] %s:   CopList->CopLStart = 0x%p\n", __func__, copl);)
         if (bmdata->interlace != 0)
         {
 #if !USE_UCOP_DIRECT
             if (!usercopl->CopSStart)
             {
-                usercopl->CopSStart = AllocVec(((count + 2) << 2), MEMF_CLEAR | MEMF_PUBLIC);
+                usercopl->CopSStart = AllocVec(((count * 2 + 2) << 2), MEMF_CLEAR | MEMF_PUBLIC);
             }
 #endif
             cops = usercopl->CopSStart;
@@ -1434,7 +1439,7 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
                                 movex = csd->startx + copIns->u3.u4.u2.HWaitPos;
 
                         /* If its the end of the user copperlist, or the displayheight of the bitmap,  bail out.. */
-                        if (!((copIns->u3.u4.u1.VWaitPos == 1000) && (copIns->u3.u4.u2.HWaitPos == 0xFF)) &&
+                        if (!((copIns->u3.u4.u1.VWaitPos == 10000) && (copIns->u3.u4.u2.HWaitPos == 0xFF)) &&
                             (copIns->u3.u4.u1.VWaitPos < (bmdata->displayheight >> bmdata->interlace)))
                         {
                             if (!passed && (movey > 256))
@@ -1465,9 +1470,8 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
         }
         if (count > 0)
         {
-            /* adjust to reflect the actual used size .. */
+            /* Fill any deliberately unused source slots when requested. */
             D(bug("[AmigaVideo:Hidd] %s: adjusting for %d unused instructions\n", __func__, count);)
-            bmdata->bmuclsize -= (count << 2);
 #if defined(USE_COPPER_NOP_FILL)
             while (count-- > 0)
             {
@@ -1479,10 +1483,19 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
             }
 #endif
         }
+
+        /*
+         * Record what was actually emitted.  A WAIT whose adjusted vertical
+         * position crosses line 255 needs an extra $ffdf/$fffe instruction,
+         * while the terminating CEND emits nothing.  Using the source CopIns
+         * count here can therefore place the display-list tail on top of the
+         * final user instruction (Gunship 2000 loses its INTREQ this way).
+         */
+        bmdata->bmuclsize = (IPTR)copl - (IPTR)copl_start;
 #if USE_UCOP_DIRECT
-        bmdata->copld.copper2_tail = (APTR)((IPTR)usercopl->CopLStart + bmdata->bmuclsize);
+        bmdata->copld.copper2_tail = copl;
         if (cops)
-            bmdata->copsd.copper2_tail = (APTR)((IPTR)usercopl->CopSStart + bmdata->bmuclsize);
+            bmdata->copsd.copper2_tail = cops;
 #endif
         bmdata->bmucl = usercopl;
     }
