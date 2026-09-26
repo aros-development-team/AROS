@@ -37,6 +37,7 @@ typedef struct CDROM {
   unsigned char 	*buffer_file2;
   unsigned char 	*buffer_metadata;
   unsigned char		*buffer_io;
+  long			io_sector;
   unsigned short	cache_io_busy;
   unsigned short	split_cache;
   unsigned short	cache_reclaimed;
