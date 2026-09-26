@@ -1404,8 +1404,8 @@ static void Create_Volume_Node (struct CDVDBase *global, LONG p_disk_type, ULONG
 
 static void Mount (struct CDVDBase *global)
 {
-  int protocol, skip;
-  t_ulong offset, svd_offset, discid;
+  int protocol;
+  t_ulong discid;
   char buf[33];
 
   if (Has_Audio_Tracks (global->g_cd)) {
@@ -1449,7 +1449,7 @@ static void Mount (struct CDVDBase *global)
   global->g_volume->locks = Reinstall_Locks (global);
   global->g_volume->file_handles = Reinstall_File_Handles (global);
 
-  protocol = Which_Protocol (global->g_cd, TRUE, TRUE, &skip, &offset, &svd_offset);
+  protocol = global->g_volume->protocol;
   switch (protocol)
   {
   case PRO_HIGH_SIERRA:
