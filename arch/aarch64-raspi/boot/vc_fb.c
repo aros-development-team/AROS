@@ -29,7 +29,7 @@ extern uintptr_t __vcmb_base;
 void *vcfb_base;
 unsigned int vcfb_width, vcfb_height, vcfb_depth, vcfb_pitch;
 
-int vcfb_init(void)
+int vcfb_init(int emulated)
 {
     unsigned int fb_width, fb_height, fb_depth, fb_pitch;
     unsigned int count;
@@ -58,6 +58,14 @@ int vcfb_init(void)
             return 0;
 
         if (((fb_width = AROS_LE2LONG(vcmb_msg[5])) == 0) || ((fb_height = AROS_LE2LONG(vcmb_msg[6])) == 0))
+        {
+            fb_width = 1024;
+            fb_height = 768;
+        }
+
+        /* An emulator reports its model's default mode; unlike the Pi 5 it
+         * honours SETRES, so ask for 1024x768 there. */
+        if (emulated)
         {
             fb_width = 1024;
             fb_height = 768;
@@ -148,7 +156,8 @@ int vcfb_init(void)
         /* The firmware echoes back what it actually configured, in place.
          * Never trust the values we asked for: on the Pi 5 the surface is
          * locked to the firmware's mode and SETRES acknowledges without
-         * reprogramming. TESTRES answers honestly, GETEDID is unimplemented. */
+         * reprogramming. TESTRES echoes the current mode, TESTVRES refuses
+         * a taller virtual surface and GETEDID is unimplemented. */
         if (AROS_LE2LONG(vcmb_msg[5]))
             fb_width  = AROS_LE2LONG(vcmb_msg[5]);
         if (AROS_LE2LONG(vcmb_msg[6]))
