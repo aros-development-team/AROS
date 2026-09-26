@@ -81,3 +81,26 @@ void vcmb_write(uintptr_t mb, unsigned int chan, void *msg)
         wr32le(mb + VCMB_WRITE, (uint32_t)((uintptr_t)msg | chan));
     }
 }
+
+/* QEMU acknowledges every tag but leaves the response length at zero for
+ * the measured clock rate, which real firmware answers. */
+int vcmb_firmware_present(uintptr_t mb, volatile unsigned int *msg)
+{
+    msg[0] = AROS_LONG2LE(8 * 4);
+    msg[1] = AROS_LONG2LE(VCTAG_REQ);
+    msg[2] = AROS_LONG2LE(VCTAG_GETCLKMEASURED);
+    msg[3] = AROS_LONG2LE(8);
+    msg[4] = AROS_LONG2LE(4);
+    msg[5] = AROS_LONG2LE(VCCLOCK_ARM);
+    msg[6] = 0;
+    msg[7] = 0;
+
+    vcmb_write(mb, VCMB_PROPCHAN, (void *)msg);
+    msg = vcmb_read(mb, VCMB_PROPCHAN);
+
+    if (!msg || (msg[1] != AROS_LONG2LE(VCTAG_RESP)))
+        return 0;
+
+    /* Response length of 8 bytes plus a plausible rate. */
+    return ((AROS_LE2LONG(msg[4]) & 0x7fffffff) >= 8) && (AROS_LE2LONG(msg[6]) != 0);
+}

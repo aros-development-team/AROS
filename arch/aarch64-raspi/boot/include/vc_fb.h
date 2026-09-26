@@ -7,7 +7,7 @@
 
 #include <inttypes.h>
 
-extern int vcfb_init(void);
+extern int vcfb_init(int emulated);
 extern void fb_Putc(char chr);
 
 /* Framebuffer base and geometry set by vcfb_init(), consumed by the kernel taglist. */
