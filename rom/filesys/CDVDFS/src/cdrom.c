@@ -68,6 +68,7 @@
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <devices/trackdisk.h>
+#include <exec/tasks.h>
 
 #ifndef TD_READ64
 #include <devices/newstyle.h>
@@ -95,15 +96,95 @@ AROS_INTH1(CDChangeHandler, struct CDVDBase *, global)
     AROS_INTFUNC_EXIT
 }
 
+static AROS_INTH1(CDCacheLowMemHandler, CDROM *, cd)
+{
+    AROS_INTFUNC_INIT
+
+    if (!cd->cache_io_busy &&
+        cd->global->DosProc->pr_Task.tc_State == TS_WAIT)
+    {
+        if (cd->split_cache && cd->cache_reclaimed == 0)
+        {
+            APTR file2 = cd->buffer_file2;
+            APTR metadata = cd->buffer_metadata;
+
+            cd->buffer_file2 = NULL;
+            cd->buffer_metadata = NULL;
+            cd->file_slots = 1;
+            Clear_Sector_Buffers(cd);
+            FreeVec(file2);
+            FreeVec(metadata);
+            cd->cache_reclaimed = 1;
+            return MEM_TRY_AGAIN;
+        }
+        else if (cd->split_cache && cd->cache_reclaimed == 1 &&
+                 cd->buffer_data != NULL)
+        {
+            APTR cache = cd->buffer_data;
+
+            cd->buffer_data = NULL;
+            cd->file_slots = 0;
+            cd->buffer_sectors = 1;
+            Clear_Sector_Buffers(cd);
+            FreeVec(cache);
+            cd->cache_reclaimed = 2;
+            return MEM_TRY_AGAIN;
+        }
+        else if (!cd->split_cache && cd->cache_reclaimed == 0 &&
+                 cd->buffer_data != NULL)
+        {
+            APTR cache = cd->buffer_data;
+
+            cd->buffer_data = NULL;
+            cd->buffer_sectors = 1;
+            Clear_Sector_Buffers(cd);
+            FreeVec(cache);
+            cd->cache_reclaimed = 1;
+            return MEM_TRY_AGAIN;
+        }
+    }
+
+    return MEM_DID_NOTHING;
+
+    AROS_INTFUNC_EXIT
+}
+
 /*
  * i decided to change few things to make this code less insane.
  * biggest change is - i don't care any more if anyone reads one sector at a time
  * reading disc 1 sector at a time is totally insane.
- * presently our schema will read 16 sectors instead, that is, 32768bytes at a time
- * that should give us SIGNIFICANT speed improvement. unfortunately has some impact
- * on a cache, too, but that will change over time. currently, cache will eat
- * STD_BUFFERS * 16 * 2048 bytes
+ * The cache allocation remains STD_BUFFERS * 16 * 2048 bytes. Normally each
+ * slot spans 16 sectors. The minimum one-buffer configuration reserves two
+ * 2-sector slots for sequential file data and twelve one-sector slots for
+ * directory and metadata traffic. Exec's low-memory handler retains one
+ * 2-sector file slot, releases the other slot and metadata cache (28 KiB),
+ * and uses a permanent one-sector buffer for uncached metadata reads.
  */
+
+static UBYTE *Sector_Buffer(CDROM *cd, int index)
+{
+    UBYTE *base;
+
+    if (cd->split_cache)
+    {
+        if (index == 0)
+            base = cd->buffer_data;
+        else if (index == 1)
+            base = cd->buffer_file2;
+        else
+            base = cd->buffer_metadata;
+    }
+    else
+        base = cd->buffer_data;
+
+    base = (UBYTE *)(((IPTR)base + 15) & ~15);
+    return base + cd->cache_slots[index].buffer_sector * SCSI_BUFSIZE;
+}
+
+static UBYTE *IO_Buffer(CDROM *cd)
+{
+    return cd->buffer_io;
+}
 
 CDROM *Open_CDROM
         (
@@ -125,35 +206,59 @@ CDROM *Open_CDROM
     do
     {
         err = CDROMERR_NO_MEMORY;
-        cd = AllocVec (sizeof (CDROM), MEMF_PUBLIC | MEMF_CLEAR | p_memory_type);
+        cd = AllocVec(sizeof (CDROM),
+            MEMF_PUBLIC | MEMF_CLEAR | p_memory_type);
 
         if (NULL == cd)
             break;
 
         cd->global = global;
-        cd->buffers_cnt  = p_std_buffers;
+        /* Preserve the historical 32 KiB minimum cache allocation. */
+        if (p_std_buffers == 1)
+        {
+            cd->buffer_sectors = 2;
+            cd->file_slots = 2;
+            cd->buffers_cnt = 14;
+            cd->split_cache = TRUE;
+        }
+        else
+        {
+            cd->buffer_sectors = 16;
+            cd->file_slots = p_std_buffers;
+            cd->buffers_cnt = p_std_buffers;
+        }
 
-        /*
-         * change: allocating 16 * SCSI_BUFSIZE * bufs; min access unit 32kB!
-         */
-        cd->buffer_data  = AllocVec (((SCSI_BUFSIZE * p_std_buffers) << 4) + 15, MEMF_PUBLIC | p_memory_type);
+        if (cd->split_cache)
+            cd->buffer_data = AllocVec(2 * SCSI_BUFSIZE + 15,
+                MEMF_PUBLIC | p_memory_type);
+        else
+            cd->buffer_data = AllocVec(
+                ((SCSI_BUFSIZE * p_std_buffers) << 4) + 15,
+                MEMF_PUBLIC | p_memory_type);
         if (NULL == cd->buffer_data)
             break;
 
-        cd->buffer_io = AllocVec(SCSI_IO_BUFSIZE, p_memory_type);
+        if (cd->split_cache)
+        {
+            cd->buffer_file2 = AllocVec(2 * SCSI_BUFSIZE + 15,
+                MEMF_PUBLIC | p_memory_type);
+            if (NULL == cd->buffer_file2)
+                break;
+
+            cd->buffer_metadata = AllocVec(12 * SCSI_BUFSIZE + 15,
+                MEMF_PUBLIC | p_memory_type);
+            if (NULL == cd->buffer_metadata)
+                break;
+        }
+
+        cd->buffer_io = AllocVec(SCSI_BUFSIZE,
+            MEMF_PUBLIC | p_memory_type);
         if (NULL == cd->buffer_io)
             break;
 
-        cd->buffers = AllocVec (sizeof (unsigned char *) * p_std_buffers, MEMF_PUBLIC);
-        if (NULL == cd->buffers)
-            break;
-
-        cd->current_sectors = AllocVec (sizeof (long) * p_std_buffers, MEMF_PUBLIC);
-        if (NULL == cd->current_sectors)
-            break;
-
-        cd->last_used = AllocVec (sizeof (uint32_t) * p_std_buffers, MEMF_PUBLIC | MEMF_CLEAR);
-        if (NULL == cd->last_used)
+        cd->cache_slots = AllocVec(sizeof (*cd->cache_slots) *
+            cd->buffers_cnt, MEMF_PUBLIC | MEMF_CLEAR);
+        if (NULL == cd->cache_slots)
             break;
 
 
@@ -162,13 +267,27 @@ CDROM *Open_CDROM
          * performance on '040-powered systems with DMA SCSI
          * controllers.
          */
-        cd->buffers[0] = (UBYTE *)(((IPTR)cd->buffer_data + 15) & ~15);
-        cd->current_sectors[0] = -1;
-
-        for (i=1; i<cd->buffers_cnt; i++)
+        for (i = 0; i < cd->buffers_cnt; i++)
         {
-            cd->current_sectors[i] = -1;
-            cd->buffers[i] = cd->buffers[i-1] + (SCSI_BUFSIZE << 4);
+            cd->cache_slots[i].current_sector = -1;
+            if (p_std_buffers == 1)
+            {
+                if (i < cd->file_slots)
+                {
+                    cd->cache_slots[i].buffer_sector = 0;
+                    cd->cache_slots[i].sector_count = 2;
+                }
+                else
+                {
+                    cd->cache_slots[i].buffer_sector = i - cd->file_slots;
+                    cd->cache_slots[i].sector_count = 1;
+                }
+            }
+            else
+            {
+                cd->cache_slots[i].buffer_sector = i * 16;
+                cd->cache_slots[i].sector_count = 16;
+            }
         }
 
         err = CDROMERR_MSGPORT;
@@ -184,6 +303,12 @@ CDROM *Open_CDROM
         err = CDROMERR_DEVICE;
         if (OpenDevice ((UBYTE *) p_device, p_scsi_id, (struct IORequest *) cd->scsireq, 0))
             break;
+
+        cd->cache_mem_handler.is_Node.ln_Name = "CDVDFS cache";
+        cd->cache_mem_handler.is_Code = (VOID_FUNC)CDCacheLowMemHandler;
+        cd->cache_mem_handler.is_Data = cd;
+        AddMemHandler(&cd->cache_mem_handler);
+        cd->cache_mem_handler_added = TRUE;
 
         cd->device_open = TRUE;
 
@@ -292,10 +417,34 @@ int Read_From_Drive
 
 /*
  * USAGE NOTE >> VERY IMPORTANT <<
- * this procedure delivers you buffer that is 'valid' until the next 16-sector-boundary.
- * if you want to read from sec 14 till 34, then you have to do 3 calls (14-16, 16-32, 32-34)
+ * File reads use slots of p_cd->buffer_sectors sectors. Metadata reads only
+ * require the requested sector to be valid.
  */
-int Read_Chunk(CDROM *p_cd, long p_sector)
+static int Find_Cache_Slot(CDROM *p_cd, int first, int last)
+{
+    int i;
+    int loc;
+
+    for (loc = first; loc < last; loc++)
+        if (p_cd->cache_slots[loc].current_sector == -1)
+            return loc;
+
+    {
+        uint32_t oldest_tick = UINT_MAX;
+
+        for (loc = first, i = first; i < last; i++)
+        {
+            uint32_t tick = p_cd->cache_slots[i].last_used;
+
+            if (tick < oldest_tick)
+                loc = i, oldest_tick = tick;
+        }
+    }
+
+    return loc;
+}
+
+static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
 {
     struct CDVDBase *global = p_cd->global;
     int status;
@@ -304,82 +453,111 @@ int Read_Chunk(CDROM *p_cd, long p_sector)
     long vol_size;
     long start;
     int count;
+    int first;
+    int last;
 
     D(bug("[CDVDFS]\tClient requested sector %ld\n", p_sector));
 
+    if (p_cd->buffer_data == NULL ||
+        (!file_data && p_cd->split_cache && p_cd->buffer_metadata == NULL))
+    {
+        p_cd->cache_io_busy = TRUE;
+        status = Read_From_Drive(p_cd, p_cd->buffer_io, SCSI_BUFSIZE,
+            p_sector, 1);
+        p_cd->cache_io_busy = FALSE;
+        if (status)
+            p_cd->buffer = p_cd->buffer_io;
+        return status;
+    }
+
     for (i=0; i<p_cd->buffers_cnt; i++)
     {
-        if ((p_sector & ~0xf) != p_cd->current_sectors[i])
+        start = p_cd->cache_slots[i].current_sector;
+        count = p_cd->cache_slots[i].sector_count;
+        if (start == -1 || p_sector < start || p_sector >= start + count)
+            continue;
+        if (file_data && count < p_cd->buffer_sectors)
             continue;
 
         /*
          * get buffer offset
          */
         D(bug("[CDVDFS]\tSector already cached\n"));
-        p_cd->buffer = p_cd->buffers[i] + ((p_sector & 0xf) << 11);
+        p_cd->buffer = Sector_Buffer(p_cd, i) +
+            ((p_sector - start) << 11);
 
         /*
          * try most frequently used
          */
-        p_cd->last_used[i] += 2;
+        p_cd->cache_slots[i].last_used += 2;
         for (i=0; i<p_cd->buffers_cnt; i++)
         {
-            if (p_cd->last_used[i] > 0)
-                p_cd->last_used[i] -= 1;
+            if (p_cd->cache_slots[i].last_used > 0)
+                p_cd->cache_slots[i].last_used -= 1;
         }
 
         return 1;
     }
 
-    /*
-     * find an empty buffer position:
+    /* Age entries on misses too. Without this, a full cache containing slots
+     * with identical scores repeatedly replaces slot zero while stale entries
+     * remain frozen forever.
      */
-    for (loc=0; loc<p_cd->buffers_cnt; loc++)
-        if (p_cd->current_sectors[loc] == -1)
-            break;
-
-    /*
-     * no free buffer position; remove the buffer that is unused
-     * for the longest time
-     */
-    if (loc==p_cd->buffers_cnt)
+    for (i = 0; i < p_cd->buffers_cnt; i++)
     {
-        uint32_t oldest_tick = UINT_MAX;
-        uint32_t tick;
-
-        for (loc=0, i=0; i<p_cd->buffers_cnt; i++)
-        {
-            tick = p_cd->last_used[i];
-            if (tick < oldest_tick)
-                loc = i, oldest_tick = tick;
-        }
+        if (p_cd->cache_slots[i].last_used > 0)
+            p_cd->cache_slots[i].last_used--;
     }
 
+    if (p_cd->file_slots < p_cd->buffers_cnt)
+    {
+        first = file_data ? 0 : p_cd->file_slots;
+        last = file_data ? p_cd->file_slots : p_cd->buffers_cnt;
+    }
+    else
+    {
+        first = 0;
+        last = p_cd->buffers_cnt;
+    }
+
+    loc = Find_Cache_Slot(p_cd, first, last);
+
     /*
-     * read **16** sectors
-     * NOTE: all DVD discs require chunk size to be at least n*16 sectors
-     * most of the CDs have enough padding (18 sectors) at the end
-     * (but not all)
+     * Read one cache slot. Most CDs have enough end padding for the default
+     * 16-sector slot, but not all, so clamp the final transfer below.
      */
-    start = p_sector & ~0xf;
-    count = 16;
+    count = p_cd->cache_slots[loc].sector_count;
+    start = p_sector & ~(count - 1);
     if (global->g_volume != NULL)
         vol_size = Volume_Size(global->g_volume);
     else
         vol_size = 0;
     if (vol_size != 0 && vol_size - start < count)
         count = vol_size - start;
-    status =
-        Read_From_Drive(p_cd, p_cd->buffers[loc], SCSI_BUFSIZE, start, count);
+    p_cd->cache_io_busy = TRUE;
+    status = Read_From_Drive(p_cd, Sector_Buffer(p_cd, loc), SCSI_BUFSIZE,
+        start, count);
+    p_cd->cache_io_busy = FALSE;
 
     if (status)
     {
-        p_cd->current_sectors[loc] = p_sector & ~0xf;
-        p_cd->buffer = p_cd->buffers[loc] + ((p_sector & 0xf) << 11);
-        p_cd->last_used[loc] = 1000;
+        p_cd->cache_slots[loc].current_sector = start;
+        p_cd->buffer = Sector_Buffer(p_cd, loc) +
+            ((p_sector - start) << 11);
+        p_cd->cache_slots[loc].last_used = 1000;
     }
 
     return status;
+}
+
+int Read_Chunk(CDROM *p_cd, long p_sector)
+{
+    return Read_Chunk_Internal(p_cd, p_sector, FALSE);
+}
+
+int Read_File_Chunk(CDROM *p_cd, long p_sector)
+{
+    return Read_Chunk_Internal(p_cd, p_sector, TRUE);
 }
 
 int Test_Unit_Ready(CDROM *p_cd)
@@ -406,6 +584,7 @@ int Mode_Select
                 int p_block_length
         )
 {
+    UBYTE *buf;
     uint8_t cmd[6] = { };
     unsigned char mode[12] = { };
 
@@ -419,20 +598,25 @@ int Mode_Select
     mode[10] = (p_block_length >> 8) & 0xff;
     mode[11] = p_block_length & 0xff;
 
-    CopyMem(mode, p_cd->buffer_io, sizeof (mode));
-    return Do_SCSI_Command(p_cd, p_cd->buffer_io, sizeof(mode), cmd, 6, SCSIF_WRITE);
+    buf = IO_Buffer(p_cd);
+
+    CopyMem(mode, buf, sizeof (mode));
+    return Do_SCSI_Command(p_cd, buf, sizeof(mode), cmd, 6, SCSIF_WRITE);
 }
 
 int Inquire (CDROM *p_cd, t_inquiry_data *p_data)
 {
+    UBYTE *buf;
     uint8_t cmd[6] = { };
     cmd[0] = 0x12;
     cmd[4] = 96;
 
-    if (!Do_SCSI_Command(p_cd,p_cd->buffer_io,96,cmd,6,SCSIF_READ))
+    buf = IO_Buffer(p_cd);
+
+    if (!Do_SCSI_Command(p_cd, buf, 96, cmd, 6, SCSIF_READ))
         return FALSE;
 
-    CopyMem(p_cd->buffer_io, p_data, sizeof (*p_data));
+    CopyMem(buf, p_data, sizeof (*p_data));
     return 1;
 }
 
@@ -445,7 +629,7 @@ t_toc_data *Read_TOC
 {
     uint8_t cmd[10] = { };
     uint32_t toc_len = 0;
-    uint8_t *buf = p_cd->buffer_io;
+    uint8_t *buf = IO_Buffer(p_cd);
 
     /*
      * check toc len
@@ -665,6 +849,8 @@ void Cleanup_CDROM (CDROM *p_cd)
 {
     if (!p_cd)
         return;
+    if (p_cd->cache_mem_handler_added)
+        RemMemHandler(&p_cd->cache_mem_handler);
     if (p_cd->iochangeint) {
         p_cd->iochangeint->io_Length  = sizeof(struct Interrupt);
         p_cd->iochangeint->io_Data    = &p_cd->changeint;
@@ -678,14 +864,14 @@ void Cleanup_CDROM (CDROM *p_cd)
         DeleteIORequest((struct IORequest *)p_cd->scsireq);
     if (p_cd->port)
         DeleteMsgPort (p_cd->port);
-    if (p_cd->last_used)
-        FreeVec (p_cd->last_used);
-    if (p_cd->current_sectors)
-        FreeVec (p_cd->current_sectors);
-    if (p_cd->buffers)
-        FreeVec (p_cd->buffers);
+    if (p_cd->cache_slots)
+        FreeVec (p_cd->cache_slots);
     if (p_cd->buffer_io)
         FreeVec (p_cd->buffer_io);
+    if (p_cd->buffer_metadata)
+        FreeVec (p_cd->buffer_metadata);
+    if (p_cd->buffer_file2)
+        FreeVec (p_cd->buffer_file2);
     if (p_cd->buffer_data)
         FreeVec (p_cd->buffer_data);
     FreeVec (p_cd);
@@ -696,7 +882,7 @@ void Clear_Sector_Buffers (CDROM *p_cd)
     int i;
 
     for (i=0; i<p_cd->buffers_cnt; i++)
-        p_cd->current_sectors[i] = -1;
+        p_cd->cache_slots[i].current_sector = -1;
 }
 
 /* Finds offset of last session. (Not supported by all CDROM drives)
@@ -709,7 +895,7 @@ void Clear_Sector_Buffers (CDROM *p_cd)
 int Find_Last_Session(CDROM *p_cd, uint32_t *p_result)
 {
     uint8_t cmd[10] = { };
-    uint8_t *data = p_cd->buffer_io;
+    uint8_t *data = IO_Buffer(p_cd);
 
     cmd[0] = 0x43;
     cmd[2] = 0x01;
