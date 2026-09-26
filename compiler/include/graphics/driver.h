@@ -27,6 +27,7 @@
 #define DDRV_ResultID	  (TAG_USER + 0x05)	/* ULONG * Obtain assigned monitor ID */
 #define DDRV_IDMask	  (TAG_USER + 0x06)	/* ULONG   Use own mask for monitor ID separation */
 #define DDRV_HWRanges	  (TAG_USER + 0x07)	/* struct DisplayRange * Hardware this driver writes to, default = NULL */
+#define DDRV_ExternalPlanar (TAG_USER + 0x08) /* BOOL Display caller-owned Chip RAM planar BitMaps */
 
 /*
  * A region of the CPU address space a display driver writes to - for a

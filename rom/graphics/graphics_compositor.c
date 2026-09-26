@@ -83,6 +83,27 @@ static inline BOOL compositor_IsSystemClass(OOP_Object *compositor, struct GfxBa
     return compositor && CDD(GfxBase)->compositorClass && (OOP_OCLASS(compositor) == CDD(GfxBase)->compositorClass);
 }
 
+static BOOL compositor_CanDisplayExternalPlanar(struct BitMap *bitmap,
+                                                struct gfxdisplay_data *display,
+                                                struct GfxBase *GfxBase)
+{
+    UBYTE plane;
+
+    if (!(display->display_flags & DF_ExternalPlanar) || !bitmap ||
+        IS_HIDD_BM(bitmap) || !bitmap->Rows || !bitmap->BytesPerRow ||
+        !bitmap->Depth || bitmap->Depth > 8)
+        return FALSE;
+
+    for (plane = 0; plane < bitmap->Depth; plane++)
+    {
+        if (!bitmap->Planes[plane] ||
+            !(TypeOfMem(bitmap->Planes[plane]) & MEMF_CHIP))
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 BOOL compositor_IsBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle, struct GfxBase *GfxBase)
 {
     if (compositor_IsSystemClass(GFXPRIVATE_DISPLAYDATA(DIH(handle)->drv)->mdisplay.display_compositor, GfxBase))
@@ -95,7 +116,7 @@ BOOL compositor_IsBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle
 
         return (BOOL)OOP_DoMethod(GFXPRIVATE_DISPLAYDATA(DIH(handle)->drv)->mdisplay.display_compositor, &msg.mID);
     }
-    return FALSE;
+    return compositor_CanDisplayExternalPlanar(bitmap, DIH(handle)->drv, GfxBase);
 }
 
 BOOL compositor_SetBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle, struct GfxBase *GfxBase)
@@ -127,5 +148,6 @@ BOOL compositor_SetBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handl
 
         return TRUE;
     }
-    return FALSE;
+    /* MakeVPort wraps classic planar BitMaps without copying their planes. */
+    return compositor_CanDisplayExternalPlanar(bitmap, DIH(handle)->drv, GfxBase);
 }
