@@ -243,8 +243,8 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
             (friend_bitmap && (friend_bitmap->Flags & BMF_SPECIALFMT)) ||
             (friend_bitmap && (friend_bitmap->pad == HIDD_BM_PAD_MAGIC)) ||
             (flags & BMF_SPECIALFMT) ||
-            (flags & BMF_DISPLAYABLE)) {
-        struct TagItem bm_tags[8];
+            ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM)) {
+        struct TagItem bm_tags[9];
         HIDDT_StdPixFmt stdpf = vHidd_StdPixFmt_Unknown;
 
         D(bug("[AllocBitMap] Allocating HIDD bitmap\n"));
@@ -325,8 +325,9 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
                    || ((flags & BMF_DISPLAYABLE) == BMF_DISPLAYABLE));
         D(bug("[AllocBitMap] Displayable: %d\n", bm_tags[5].ti_Data));
 
-
-        SET_TAG(bm_tags, 7, TAG_DONE, 0);
+        SET_TAG(bm_tags, 7, aHidd_PlanarBM_Interleaved,
+                (flags & BMF_INTERLEAVED) != 0);
+        SET_TAG(bm_tags, 8, TAG_DONE, 0);
 
         /* Allocate an extra planes for HIDD bitmap info */
         nbm = AllocVec(sizeof(struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES, MEMF_ANY | MEMF_CLEAR);
@@ -463,9 +464,11 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
                         int i;
                         for(i = 0; i < 8; i++)
                             nbm->Planes[i] = pbm->Planes[i];
+                        nbm->BytesPerRow = pbm->BytesPerRow;
                         /* Mark this as a 'standard' bitmap */
                         nbm->Flags &= ~BMF_SPECIALFMT;
-                        nbm->Flags |=  BMF_STANDARD | (flags & BMF_DISPLAYABLE);
+                        nbm->Flags |= BMF_STANDARD | (flags & BMF_DISPLAYABLE)
+                            | (pbm->Flags & BMF_INTERLEAVED);
                     }
 
                     /* Mark this is a HIDD bitmap via the pad field */
@@ -503,15 +506,21 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
 
                 /* Interleaved Bitmap? */
                 if(flags & BMF_INTERLEAVED) {
+                    ULONG planeoffset = nbm->BytesPerRow;
+
                     if((nbm->Planes[plane++] = AllocRaster(sizex * depth, sizey)) != NULL) {
                         if(clear)
                             BltClear(nbm->Planes[0],
                                 RASSIZE(sizex * depth, sizey), 1);
 
-                        /* Set the plane pointers, and clear remaining entries.. */
+                        /* Interleave the planes within each scanline. */
                         for(; plane < depth; plane++) {
-                            nbm->Planes[plane] = (void *)((IPTR)(nbm->Planes[plane - 1]) + RASSIZE(sizex, sizey));
+                            nbm->Planes[plane] = (void *)((IPTR)nbm->Planes[0]
+                                + plane * planeoffset);
                         }
+                        nbm->BytesPerRow *= depth;
+
+                        /* Clear remaining entries. */
                         for(++plane; plane < 8; plane++) {
                             nbm->Planes[plane] = NULL;
                         }

@@ -1055,6 +1055,8 @@ BOOL AmigaVideoBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 
         data->pbm = msg->bitMap;
         data->width = msg->bitMap->BytesPerRow << 3;
+        if ((msg->bitMap->Flags & BMF_INTERLEAVED) && msg->bitMap->Depth)
+            data->width /= msg->bitMap->Depth;
         data->bytesperrow = msg->bitMap->BytesPerRow;
         data->height = msg->bitMap->Rows;
         data->depth = msg->bitMap->Depth;

@@ -114,6 +114,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     IPTR height, bytesperrow;
     UBYTE depth;
     IPTR displayable = FALSE;
+    BOOL interleaved;
     BOOL ok = FALSE;
     struct planarbm_data *data;
     struct TagItem *tag;
@@ -148,6 +149,8 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     /* By default we create 1-plane bitmap */
     depth = GetTagData(aHidd_BitMap_Depth, 1, msg->attrList);
+    interleaved = GetTagData(aHidd_PlanarBM_Interleaved, FALSE,
+                             msg->attrList);
 
     /* Not late initialization. Get some info on the bitmap */
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
@@ -181,17 +184,41 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
          * clear saves a large memset at boot.)
          */
         ULONG planeflags = MEMF_CHIP | (displayable ? 0 : MEMF_CLEAR);
-        for (i = 0; i < depth; i++)
-        {
-            data->bitmap->Planes[i] = AllocMem(height * bytesperrow, planeflags);
+        ULONG planesize = height * bytesperrow;
 
-            if (NULL == data->bitmap->Planes[i])
+        if (interleaved && depth)
+        {
+            PLANEPTR planes = AllocMem(planesize * depth, planeflags);
+
+            if (planes)
             {
-                D(bug("[PlanarBM] %s: plane %d allocation failed (%lu bytes, flags 0x%lx)\n",
-                      __func__, i, (unsigned long)(height * bytesperrow),
-                      (unsigned long)planeflags));
-                ok = FALSE;
-                break;
+                for (i = 0; i < depth; i++)
+                    data->bitmap->Planes[i] = planes + i * bytesperrow;
+
+                data->bitmap->BytesPerRow *= depth;
+                data->bitmap->Flags |= BMF_INTERLEAVED;
+            }
+            else
+            {
+                /* AllocBitMap() permits falling back to separate planes. */
+                interleaved = FALSE;
+            }
+        }
+
+        if (!interleaved)
+        {
+            for (i = 0; i < depth; i++)
+            {
+                data->bitmap->Planes[i] = AllocMem(planesize, planeflags);
+
+                if (NULL == data->bitmap->Planes[i])
+                {
+                    D(bug("[PlanarBM] %s: plane %d allocation failed (%lu bytes, flags 0x%lx)\n",
+                          __func__, i, (unsigned long)planesize,
+                          (unsigned long)planeflags));
+                    ok = FALSE;
+                    break;
+                }
             }
         }
     }
@@ -219,11 +246,23 @@ static void PBM_FreeBitMap(struct planarbm_data *data)
         {
             UBYTE i;
 
-            for (i = 0; i < data->bitmap->Depth; i++)
+            if (data->bitmap->Flags & BMF_INTERLEAVED)
             {
-                if (data->bitmap->Planes[i])
+                if (data->bitmap->Planes[0])
                 {
-                    FreeMem(data->bitmap->Planes[i], data->bitmap->Rows * data->bitmap->BytesPerRow);
+                    FreeMem(data->bitmap->Planes[0],
+                            data->bitmap->Rows * data->bitmap->BytesPerRow);
+                }
+            }
+            else
+            {
+                for (i = 0; i < data->bitmap->Depth; i++)
+                {
+                    if (data->bitmap->Planes[i])
+                    {
+                        FreeMem(data->bitmap->Planes[i],
+                                data->bitmap->Rows * data->bitmap->BytesPerRow);
+                    }
                 }
             }
             FreeMem(data->bitmap, sizeof(struct BitMap));
@@ -324,6 +363,8 @@ static BOOL PBM_SetBitMap(OOP_Class *cl, OOP_Object *o, struct BitMap *bm)
 
     /* Call private bitmap method to update superclass */
     bmtags[0].ti_Data = bm->BytesPerRow * 8;
+    if ((bm->Flags & BMF_INTERLEAVED) && bm->Depth)
+        bmtags[0].ti_Data /= bm->Depth;
     bmtags[1].ti_Data = bm->Rows;
     bmtags[2].ti_Data = bm->BytesPerRow;
 
