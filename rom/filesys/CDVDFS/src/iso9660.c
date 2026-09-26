@@ -698,13 +698,14 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     /*
      * how much data available in next read chunk?
      */
-    remain_block = (SCSI_BUFSIZE << 4) - ((loc << 11) & ((SCSI_BUFSIZE << 4) - 1)) - offset;
+    remain_block = SCSI_BUFSIZE * cd->buffer_sectors -
+        ((loc << 11) & (SCSI_BUFSIZE * cd->buffer_sectors - 1)) - offset;
 
     while (todo)
     {
         D(bug("[CDVDFS]\tRead: BPos: %6ld; FPos: %6ld; Ofst: %6ld; Blck: %6ld;\n", buf_pos, p_file->pos, offset, loc));
 
-        if (!Read_Chunk(cd, loc))
+        if (!Read_File_Chunk(cd, loc))
         {
             global->iso_errno = ISOERR_SCSI_ERROR;
             return -1;
@@ -744,10 +745,11 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
         if (p_file->pos >= OBJ(p_file,dir)->data_length)
             break;
 
-        remain_block = (SCSI_BUFSIZE << 4);
+        remain_block = SCSI_BUFSIZE * cd->buffer_sectors;
         offset = 0;
 
-        loc = (loc + 16) &~ 15;
+        loc = (loc + cd->buffer_sectors) &
+            ~(cd->buffer_sectors - 1);
     }
 
     return buf_pos;

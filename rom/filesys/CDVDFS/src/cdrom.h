@@ -12,6 +12,7 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/io.h>
+#include <exec/interrupts.h>
 #include <devices/scsidisk.h>
 
 #include <inttypes.h>
@@ -22,21 +23,34 @@
 /* Four-byte TOC header, 99 track descriptors and the lead-out descriptor. */
 #define SCSI_IO_BUFSIZE (4 + 100 * 8)
 
+typedef struct SectorCacheSlot {
+  long current_sector;
+  uint32_t last_used;
+  unsigned short buffer_sector;
+  unsigned short sector_count;
+} SectorCacheSlot;
 
 typedef struct CDROM {
   struct CDVDBase *global;
   unsigned char 	*buffer;
-  unsigned char		**buffers;
   unsigned char 	*buffer_data;
+  unsigned char 	*buffer_file2;
+  unsigned char 	*buffer_metadata;
   unsigned char		*buffer_io;
+  unsigned short	cache_io_busy;
+  unsigned short	split_cache;
+  unsigned short	cache_reclaimed;
+  unsigned short	cache_mem_handler_added;
   unsigned char		sense[20];
   short			lun;
   short			buffers_cnt;
+  unsigned short	buffer_sectors;
+  unsigned short	file_slots;
   uint32_t		t_changeint;
   uint32_t		t_changeint2;
-  long 			*current_sectors;
-  uint32_t		*last_used;
+  SectorCacheSlot	*cache_slots;
   uint32_t		tick;
+  struct Interrupt	cache_mem_handler;
   struct MsgPort 	*port;
   struct IOStdReq	*scsireq;
   struct SCSICmd	cmd;
@@ -84,6 +98,7 @@ CDROM *Open_CDROM
 	);
 
 int Read_Chunk(CDROM *p_cd, long p_sector);
+int Read_File_Chunk(CDROM *p_cd, long p_sector);
 void Cleanup_CDROM(CDROM *p_cd);
 int Test_Unit_Ready(CDROM *p_cd);
 int Mode_Select(CDROM *p_cd, int p_on, int p_block_length);
