@@ -183,6 +183,8 @@ static UBYTE *Sector_Buffer(CDROM *cd, int index)
 
 static UBYTE *IO_Buffer(CDROM *cd)
 {
+    /* SCSI control commands share the fallback read buffer. */
+    cd->io_sector = -1;
     return cd->buffer_io;
 }
 
@@ -213,6 +215,7 @@ CDROM *Open_CDROM
             break;
 
         cd->global = global;
+        cd->io_sector = -1;
         /* Preserve the historical 32 KiB minimum cache allocation. */
         if (p_std_buffers == 1)
         {
@@ -461,12 +464,22 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
     if (p_cd->buffer_data == NULL ||
         (!file_data && p_cd->split_cache && p_cd->buffer_metadata == NULL))
     {
+        if (p_cd->io_sector == p_sector)
+        {
+            p_cd->buffer = p_cd->buffer_io;
+            return 1;
+        }
+
+        p_cd->io_sector = -1;
         p_cd->cache_io_busy = TRUE;
         status = Read_From_Drive(p_cd, p_cd->buffer_io, SCSI_BUFSIZE,
             p_sector, 1);
         p_cd->cache_io_busy = FALSE;
         if (status)
+        {
             p_cd->buffer = p_cd->buffer_io;
+            p_cd->io_sector = p_sector;
+        }
         return status;
     }
 
@@ -881,6 +894,7 @@ void Clear_Sector_Buffers (CDROM *p_cd)
 {
     int i;
 
+    p_cd->io_sector = -1;
     for (i=0; i<p_cd->buffers_cnt; i++)
         p_cd->cache_slots[i].current_sector = -1;
 }
