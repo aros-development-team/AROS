@@ -128,8 +128,39 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
     EXEC_SPINLOCK_INIT(&IntETask(et)->iet_TaskLock);
     if (PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity)
     {
-        IntETask(et)->iet_CpuAffinity = KrnAllocCPUMask();
-        KrnGetCPUMask(cpunum, IntETask(et)->iet_CpuAffinity);
+        struct IntETask *piet = (parent && (parent->tc_Flags & TF_ETASK)) ?
+            IntETask(parent->tc_UnionETask.tc_ETask) : NULL;
+        void *aff = KrnAllocCPUMask();
+        void *paff = NULL;
+
+        /* Inherit the parent's mask, not the creating core, or affinity
+         * narrows to one core per generation. SetTaskAffinity() rewrites
+         * the mask in place, so copy it under the parent's lock. */
+        if (piet)
+        {
+            Disable();
+            EXEC_SPINLOCK_LOCK(&parent->tc_SpinLock, NULL, SPINLOCK_MODE_READ);
+            paff = piet->iet_CpuAffinity;
+            if (paff && (IPTR)paff != TASKAFFINITY_ANY)
+            {
+                int i, count = KrnGetCPUCount();
+
+                for (i = 0; i < count; i++)
+                    if (KrnCPUInMask(i, paff))
+                        KrnGetCPUMask(i, aff);
+            }
+            EXEC_SPINLOCK_UNLOCK(&parent->tc_SpinLock);
+            Enable();
+        }
+
+        if ((IPTR)paff == TASKAFFINITY_ANY)
+        {
+            KrnFreeCPUMask(aff);
+            aff = (void *)TASKAFFINITY_ANY;
+        }
+        else if (!paff)
+            KrnGetCPUMask(cpunum, aff);
+        IntETask(et)->iet_CpuAffinity = aff;
 
         D(bug("[EXEC:ETask] Init: CPU #%d, mask %08x\n", cpunum, IntETask(et)->iet_CpuAffinity);)
     }

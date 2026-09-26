@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2001-2026, The AROS Development Team. All rights reserved.
 
     Desc: Copy CLI command
 */
@@ -319,7 +319,7 @@ typedef ULONG IPTR;
 
 #include <string.h>
 
-const TEXT version[] = "\0$VER: Copy 50.18 (08.05.2025)";
+const TEXT version[] = "\0$VER: Copy 50.19 (25.09.2026)";
 
 static const UBYTE *PARAM =
 "FROM/M/A,TO/A,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"
@@ -1120,7 +1120,16 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
                                     }
                                 }
                             }
-                            else if (i != -1)
+                            else if (i == -1)
+                            {
+                                cd->IoErr = IoErr();
+
+                                if (!(cd->Flags & COPYFLAG_QUIET))
+                                {
+                                    PrintFault(cd->IoErr, cmdname);
+                                }
+                            }
+                            else
                             {
                                 cd->RetVal2 = RETURN_OK;
                             }

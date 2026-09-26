@@ -153,6 +153,8 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
         LONG    ioerr = 0;
         UBYTE   itsWild;
         BOOL    isSingle;
+        BOOL    matched;
+        BOOL    sourceWild;
 
         ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN + MAX_PATH_LEN,
                                            MEMF_ANY | MEMF_CLEAR);
@@ -287,8 +289,13 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 
         for (i = 0; from[i]; i++)
         {
-                for (match = MatchFirst(from[i], ap); match == 0; match = MatchNext(ap))
+                matched = FALSE;
+                match = MatchFirst(from[i], ap);
+                sourceWild = (ap->ap_Flags & APF_ITSWILD) != 0;
+
+                for (; match == 0; match = MatchNext(ap))
                 {
+                        matched = TRUE;
                         /* Check for identical 'from' and 'to'? */
 
                         if (destIsDir)
@@ -319,6 +326,25 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
                                 Printf("Can't rename %s as %s because ", ap->ap_Buf, pathName);
                                 ERROR(RETURN_FAIL);
                         }
+                }
+
+                if (match != ERROR_NO_MORE_ENTRIES && match != ERROR_BREAK)
+                {
+                        ioerr = match;
+                        if (ioerr == ERROR_OBJECT_NOT_FOUND)
+                        {
+                                Printf("Can't rename %s as %s because ", from[i], to);
+                        }
+                        MatchEnd(ap);
+                        ERROR(RETURN_FAIL);
+                }
+
+                if (match == ERROR_NO_MORE_ENTRIES && !matched && !sourceWild)
+                {
+                        ioerr = ERROR_OBJECT_NOT_FOUND;
+                        Printf("Can't rename %s as %s because ", from[i], to);
+                        MatchEnd(ap);
+                        ERROR(RETURN_FAIL);
                 }
 
                 MatchEnd(ap);

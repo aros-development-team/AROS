@@ -19,6 +19,7 @@ void bcm27xx_fiq_process(void);
 void bcm27xx_send_ipi(uint32_t, uint32_t, uint32_t);
 #if defined(__AROSEXEC_SMP__)
 void bcm27xx_init_cntp_timer(void);
+void bcm27xx_sched_tick(void);
 #endif
 uint64_t bcm27xx_get_time(void);
 void bcm27xx_toggle_led(int, int);

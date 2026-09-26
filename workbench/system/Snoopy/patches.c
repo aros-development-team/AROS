@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -370,6 +370,40 @@ AROS_LH2(BPTR, New_Lock,
 
 // ----------------------------------------------------------------------------------
 
+static int MakeLinkAppend(char *buffer, int pos, CONST_STRPTR text, BOOL *truncated)
+{
+    if (!text)
+        text = "(NULL)";
+
+    while ((pos < MAX_STR_LEN) && *text)
+        buffer[pos++] = *text++;
+
+    if (*text)
+        *truncated = TRUE;
+
+    buffer[pos] = '\0';
+    return pos;
+}
+
+static void MakeLinkFormat(char *buffer, CONST_STRPTR name, CONST_STRPTR dest)
+{
+    BOOL truncated = FALSE;
+    int pos = 0;
+
+    buffer[0] = '\0';
+    pos = MakeLinkAppend(buffer, pos, name, &truncated);
+    pos = MakeLinkAppend(buffer, pos, " --> ", &truncated);
+    MakeLinkAppend(buffer, pos, dest, &truncated);
+
+    if (truncated)
+    {
+        buffer[MAX_STR_LEN - 3] = '.';
+        buffer[MAX_STR_LEN - 2] = '.';
+        buffer[MAX_STR_LEN - 1] = '.';
+        buffer[MAX_STR_LEN] = '\0';
+    }
+}
+
 AROS_LH3(LONG, New_MakeLink,
     AROS_LHA(CONST_STRPTR, name, D1),
     AROS_LHA(APTR,   dest, D2),
@@ -387,43 +421,32 @@ AROS_LH3(LONG, New_MakeLink,
 
     if (patches[PATCH_MakeLink].enabled)
     {
-        struct Process *myproc = (struct Process *)FindTask(NULL);
-
         CONST_STRPTR opt;
+        CONST_STRPTR shownname = name;
+        CONST_STRPTR showndest;
+        char namebuf[MAX_STR_LEN + 1];
+        char destbuf[MAX_STR_LEN + 1];
+        char namestr[MAX_STR_LEN + 1];
+
         if (soft) opt = "Softlink";
         else      opt = "Hardlink";
 
-        int len = strlen(name);
-        char namestr[MAX_STR_LEN + 1];
-        if (len >= MAX_STR_LEN)
+        if (setup.showPaths && name)
         {
-            strncpy(namestr, name, MAX_STR_LEN);
-            namestr[MAX_STR_LEN] = 0;
+            struct Process *myproc = (struct Process *)FindTask(NULL);
+            shownname = MyNameFromLock(myproc->pr_CurrentDir,
+                        (char *)name, namebuf, sizeof(namebuf));
         }
+
+        if (soft)
+            showndest = (CONST_STRPTR)dest;
+        else if (dest)
+            showndest = MyNameFromLock((BPTR)dest, NULL,
+                        destbuf, sizeof(destbuf));
         else
-        {
-            if (setup.showPaths)
-            {
-                strcpy(namestr, MyNameFromLock(myproc->pr_CurrentDir,
-                            (char *)name, namestr, MAX_STR_LEN-2));
-                len = strlen(namestr);
-            }
-            else
-                strcpy(namestr, name);
+            showndest = NULL;
 
-            strcat(namestr, " --> ");
-            if (soft)
-            {
-                strncat(namestr, (char *)dest, MAX_STR_LEN - len - 1);
-                namestr[MAX_STR_LEN] = 0;
-            }
-            else
-            {
-                strcat(namestr, MyNameFromLock((BPTR)dest, NULL, namestr+len+1,
-                            MAX_STR_LEN-len-1));
-            }
-        }
-
+        MakeLinkFormat(namestr, shownname, showndest);
         main_output("MakeLink", namestr, opt, result, TRUE, FALSE);
     }
 
@@ -576,35 +599,113 @@ AROS_LH4(BOOL, New_SetVar,
 
     if (patches[PATCH_SetVar].enabled)
     {
+        static const char hexdigits[] = "0123456789ABCDEF";
         CONST_STRPTR opt;
+        CONST_STRPTR varname = name ? name : (CONST_STRPTR)"(NULL)";
+        const UBYTE *value = (const UBYTE *)buffer;
         char varstr[MAX_STR_LEN + 1];
-        int vlen;
+        ULONG pos = 0, i = 0;
+        BOOL truncated = FALSE;
 
         if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
         else if ((flags & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
         else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
         else                              opt = MSG(MSG_UNKNOWN);
 
-        /*
-         *              Now create a string that looks like "Variable=Value"
-         *
-         *              We go to some pains to ensure we don't overwrite our
-         *              string length
-         */
-        vlen = strlen(name);
-        if (vlen > (MAX_STR_LEN-1)) {
-            strncpy(varstr, name, MAX_STR_LEN);
-            varstr[MAX_STR_LEN] = 0;
-        } else {
-            strcpy(varstr, name);
-            strcat(varstr, "=");
-            vlen = 98 - vlen;
-            if (size != -1)
-                vlen = MIN(vlen, size);
-
-            strncat(varstr, buffer, vlen);
-            varstr[MAX_STR_LEN] = 0;
+        /* Keep formatting local: patches must not enter arosc.library. */
+        while (pos < MAX_STR_LEN && varname[pos] != '\0')
+        {
+            varstr[pos] = varname[pos];
+            pos++;
         }
+
+        if (pos == MAX_STR_LEN)
+            truncated = TRUE;
+        else
+            varstr[pos++] = '=';
+
+        if (!truncated)
+        {
+            if (!value)
+            {
+                CONST_STRPTR text = "(NULL)";
+                while (pos < MAX_STR_LEN && text[i] != '\0')
+                    varstr[pos++] = text[i++];
+                truncated = text[i] != '\0';
+            }
+            else if (size < -1)
+            {
+                CONST_STRPTR text = "(invalid size)";
+                while (pos < MAX_STR_LEN && text[i] != '\0')
+                    varstr[pos++] = text[i++];
+                truncated = text[i] != '\0';
+            }
+            else if (size == -1)
+            {
+                while (pos < MAX_STR_LEN && value[i] != '\0')
+                    varstr[pos++] = value[i++];
+                truncated = value[i] != '\0';
+            }
+            else if (flags & GVF_BINARY_VAR)
+            {
+                if (MAX_STR_LEN - pos < 2)
+                    truncated = TRUE;
+                else
+                {
+                    varstr[pos++] = '0';
+                    varstr[pos++] = 'x';
+                }
+
+                while (!truncated && i < (ULONG)size)
+                {
+                    UBYTE ch = value[i++];
+                    if (MAX_STR_LEN - pos < 2)
+                    {
+                        truncated = TRUE;
+                        break;
+                    }
+                    varstr[pos++] = hexdigits[ch >> 4];
+                    varstr[pos++] = hexdigits[ch & 15];
+                }
+            }
+            else
+            {
+                while (i < (ULONG)size)
+                {
+                    UBYTE ch = value[i++];
+                    if (ch >= 0x20 && ch <= 0x7e && ch != '\\')
+                    {
+                        if (pos == MAX_STR_LEN)
+                        {
+                            truncated = TRUE;
+                            break;
+                        }
+                        varstr[pos++] = ch;
+                    }
+                    else
+                    {
+                        if (MAX_STR_LEN - pos < 4)
+                        {
+                            truncated = TRUE;
+                            break;
+                        }
+                        varstr[pos++] = '\\';
+                        varstr[pos++] = 'x';
+                        varstr[pos++] = hexdigits[ch >> 4];
+                        varstr[pos++] = hexdigits[ch & 15];
+                    }
+                }
+            }
+        }
+
+        if (truncated)
+        {
+            varstr[MAX_STR_LEN - 3] = '.';
+            varstr[MAX_STR_LEN - 2] = '.';
+            varstr[MAX_STR_LEN - 1] = '.';
+            pos = MAX_STR_LEN;
+        }
+        varstr[pos] = '\0';
         main_output("SetVar", varstr, opt, result, TRUE, FALSE);
     }
 
@@ -1029,6 +1130,77 @@ void patches_reset(void)
 }
 
 
+static int PathStringLength(CONST_STRPTR text)
+{
+    int len = 0;
+
+    if (text)
+    {
+        while (text[len])
+            len++;
+    }
+
+    return len;
+}
+
+static int PathBSTRLength(BSTR text)
+{
+#ifdef AROS_FAST_BSTR
+    return PathStringLength(AROS_BSTR_ADDR(text));
+#else
+    return AROS_BSTR_strlen(text);
+#endif
+}
+
+static void PathCopyBytes(char *dest, CONST_STRPTR source, int len)
+{
+    while (len > 0)
+    {
+        *dest++ = *source++;
+        len--;
+    }
+}
+
+static int PathCopyString(char *buffer, int maxlen, CONST_STRPTR text)
+{
+    int pos = 0;
+
+    if (!buffer || maxlen <= 0)
+        return 0;
+
+    if (text)
+    {
+        while ((pos < maxlen - 1) && text[pos])
+        {
+            buffer[pos] = text[pos];
+            pos++;
+        }
+    }
+
+    buffer[pos] = '\0';
+    return pos;
+}
+
+static int PathAppendString(char *buffer, int maxlen, int pos, CONST_STRPTR text)
+{
+    if (!buffer || maxlen <= 0)
+        return 0;
+
+    if (pos < 0)
+        pos = 0;
+    else if (pos >= maxlen)
+        pos = maxlen - 1;
+
+    if (text)
+    {
+        while ((pos < maxlen - 1) && *text)
+            buffer[pos++] = *text++;
+    }
+
+    buffer[pos] = '\0';
+    return pos;
+}
+
 /*
  * GetVolName(lock, buf, maxlen)
  *
@@ -1049,54 +1221,66 @@ void GetVolName(BPTR lock, char *buf, int maxlen)
     struct DosList *dl;
     int gotdev = 0;
 
+    if (!buf || maxlen <= 0)
+        return;
+
+    buf[0] = '\0';
+
     if (lock == BNULL)
     {
         NameFromLock(lock, buf, maxlen);
+        buf[maxlen - 1] = '\0';
         return;
     }
+
     vol = BADDR(((struct FileLock *)BADDR(lock))->fl_Volume);
 
     if (setup.useDevNames == 0 || vol->dl_Task == NULL)
     {
-/*
-* Use volume name, especially if the volume isn't currently
-* mounted!
-*/
-        UBYTE *volname = AROS_BSTR_ADDR(vol->dl_Name);
-        int len = MIN(maxlen-2, AROS_BSTR_strlen(volname));
+        BSTR volbstr = vol->dl_Name;
+        UBYTE *volname = AROS_BSTR_ADDR(volbstr);
+        int sourcelen = PathBSTRLength(volbstr);
+        int len = maxlen > 1 ? maxlen - 2 : 0;
 
-        memcpy(buf, volname, len);
-        buf[len++] = ':';
-        buf[len] = '\0';
+        if (len > sourcelen)
+            len = sourcelen;
+
+        PathCopyBytes(buf, (CONST_STRPTR)volname, len);
+        if (maxlen > 1)
+        {
+            buf[len++] = ':';
+            buf[len] = '\0';
+        }
         return;
     }
 
-/*
-* The user wants the device name. The only way to obtain this
-* is to search the device list looking for the device node with
-* the same task address as this volume.
-*/
     dl = LockDosList(LDF_DEVICES | LDF_READ);
     while ((dl = NextDosEntry(dl, LDF_DEVICES)))
     {
         if (dl->dol_Task == vol->dl_Task)
         {
-/*
-* Found our task, so now copy device name
-*/
-            UBYTE *devname =  AROS_BSTR_ADDR(dl->dol_Name);
-            int len = MIN(maxlen-2, AROS_BSTR_strlen(devname));
+            BSTR devbstr = dl->dol_Name;
+            UBYTE *devname = AROS_BSTR_ADDR(devbstr);
+            int sourcelen = PathBSTRLength(devbstr);
+            int len = maxlen > 1 ? maxlen - 2 : 0;
 
-            memcpy(buf, devname, len);
-            buf[len++] = ':';
-            buf[len] = '\0';
+            if (len > sourcelen)
+                len = sourcelen;
+
+            PathCopyBytes(buf, (CONST_STRPTR)devname, len);
+            if (maxlen > 1)
+            {
+                buf[len++] = ':';
+                buf[len] = '\0';
+            }
             gotdev = 1;
             break;
         }
     }
     UnLockDosList(LDF_DEVICES | LDF_READ);
+
     if (!gotdev)
-        strcpy(buf, "???:");
+        PathCopyString(buf, maxlen, "???:");
 }
 
 /*
@@ -1138,8 +1322,8 @@ void GetVolName(BPTR lock, char *buf, int maxlen)
  */
 char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
 {
-    struct Process *myproc = (struct Process *)FindTask(NULL);
-    int pos = maxlen - 1;
+    struct Process *myproc;
+    int pos;
     ALIGN4(fib, struct FileInfoBlock);
     LONG savedioerr = IoErr();
     BPTR curlock;
@@ -1147,77 +1331,87 @@ char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
     void *savewinptr;
     char *p;
     int len;
-    int skipfirstslash = 0; /* If true, skip first slash when building name */
+    int skipfirstslash = 0;
     int err = 0;
 
-/*
-* Check for special magic filehandle
-*/
     if (filename && *filename)
     {
-        if (strcmp(filename, "*") == 0)
-            return (filename);
+        if ((filename[0] == '*') && (filename[1] == '\0'))
+            return filename;
 
-/*
-* First determine if we have any work to do.
-*/
+        if (*filename != ':')
+        {
+            for (p = filename; *p; p++)
+            {
+                if (*p == ':')
+                    return filename;
+            }
+        }
+    }
+
+    if (!buf || maxlen <= 0)
+    {
+        SetIoErr(savedioerr);
+        return filename;
+    }
+
+    buf[0] = '\0';
+
+    /*
+     * The path builder needs room for its shortest truncation/error
+     * marker. Actual Snoopy callers use substantially larger buffers,
+     * but keep the helper safe for all capacities.
+     */
+    if (maxlen < 5)
+    {
+        SetIoErr(savedioerr);
+        return buf;
+    }
+
+    if (filename && *filename)
+    {
         if (*filename == ':')
         {
-/*
-* Got a reference relative to the root directory. Simply
-* grab the volume (or device) name from the lock and go
-* with that.
-*/
-            int len;
-
             GetVolName(lock, buf, maxlen);
-            len = strlen(buf);
-            strncat(buf+len, filename+1, maxlen-len);
-            buf[maxlen-1] = '\0';
+            len = PathStringLength(buf);
+            PathAppendString(buf, maxlen, len, filename + 1);
             SetIoErr(savedioerr);
-            return (buf);
-        }
-        for (p = filename; *p; p++)
-        {
-            if (*p == ':') /* If absolute path name, leave it alone */
-                return (filename);
+            return buf;
         }
     }
     else
     {
-/*
-* Filename is null, so indicate we want to skip the first
-* slash when building the directory path
-*/
         skipfirstslash = 1;
     }
 
+    myproc = (struct Process *)FindTask(NULL);
+    pos = maxlen - 1;
+
     savewinptr = myproc->pr_WindowPtr;
-    myproc->pr_WindowPtr = (APTR)-1;        /* Disable error requesters */
+    myproc->pr_WindowPtr = (APTR)-1;
 
     newlock = DupLock(lock);
     if (lock && !newlock)
     {
-        GetVolName(lock, buf, 20);
+        GetVolName(lock, buf, maxlen);
         if (filename)
         {
-            strcat(buf, ".../");
-            strcat(buf, filename);
+            len = PathStringLength(buf);
+            len = PathAppendString(buf, maxlen, len, ".../");
+            PathAppendString(buf, maxlen, len, filename);
         }
-        myproc->pr_WindowPtr = savewinptr;        /* Re-enable error requesters */
+        myproc->pr_WindowPtr = savewinptr;
         SetIoErr(savedioerr);
-        return (buf);
+        return buf;
     }
+
     buf[pos] = '\0';
     curlock = newlock;
+
     if (filename)
     {
         while (newlock && *filename == '/')
         {
-/*
-* Handle leading /'s by moving back a directory level
-* but nothing else
-*/
             newlock = ParentDir(curlock);
             if (newlock)
             {
@@ -1226,30 +1420,29 @@ char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
                 filename++;
             }
         }
-        len = strlen(filename);
-        if (len > (pos-2))
+
+        len = PathStringLength(filename);
+        if (len > (pos - 2))
         {
-            memcpy(buf+2, filename+len-pos, pos-2);
+            int copylen = pos - 2;
+
             buf[0] = buf[1] = '.';
+            PathCopyBytes(buf + 2, filename + len - copylen, copylen);
             pos = 0;
-            UnLock(curlock);
+
+            if (curlock)
+            {
+                UnLock(curlock);
+                curlock = BNULL;
+            }
         }
         else
         {
             pos -= len;
-            memcpy(buf+pos, filename, len);
+            PathCopyBytes(buf + pos, filename, len);
         }
     }
 
-/*
-* At this point, we have buf containing the filename (minus any
-* leading /'s), starting at the index given by pos. If filename
-* was NULL or empty, then pos indexes to a \0 terminator.
-*
-* Next, we want to pre-pend directory names to the front of
-* the filename (assuming there _is_ a filename) until we get
-* to the device root.
-*/
     newlock = curlock;
     while (newlock)
     {
@@ -1258,73 +1451,93 @@ char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
             err++;
             break;
         }
-        len = strlen(fib->fib_FileName);
-        if (len > (pos-3))
+
+        len = PathStringLength(fib->fib_FileName);
+        if ((pos < 3) || (len > (pos - 3)))
         {
-/*
-* Not enough room: prefix dots at start to indicate
-* an overrun. We use pos-3 since we need one char
-* for a possible slash and two more to accomodate a
-* leading ".."
-*/
-            memcpy(buf+2, fib->fib_FileName+len-pos+3, pos-2);
-            buf[0] = buf[1] = '.';
-            buf[pos-1] = '/';
+            if (pos >= 3)
+            {
+                int copylen = pos - 3;
+
+                buf[0] = buf[1] = '.';
+                PathCopyBytes(buf + 2,
+                    fib->fib_FileName + len - copylen, copylen);
+                buf[pos - 1] = '/';
+            }
+            else
+            {
+                int i;
+
+                for (i = 0; i < pos; i++)
+                    buf[i] = '.';
+            }
+
             pos = 0;
             break;
         }
+
         newlock = ParentDir(curlock);
         if (newlock)
         {
             UnLock(curlock);
             curlock = newlock;
             pos -= len + 1;
-            memcpy(buf + pos, fib->fib_FileName, len);
+            PathCopyBytes(buf + pos, fib->fib_FileName, len);
+
             if (skipfirstslash)
             {
                 skipfirstslash = 0;
-                buf[pos+len] = '\0';
+                buf[pos + len] = '\0';
             }
             else
-                buf[pos+len] = '/';
+            {
+                buf[pos + len] = '/';
+            }
         }
     }
-/*
-* Now we've built the path components; add the volume node
-* to the beginning if possible.
-*/
+
     if (err)
     {
-/*
-* If an error occurred, the volume is probably not mounted,
-* so we include a ".../" component in the path to show
-* we couldn't get all the info
-*/
-        pos -= 4;
-        memcpy(buf + pos, ".../", 4);
+        if (pos >= 4)
+        {
+            pos -= 4;
+            PathCopyBytes(buf + pos, ".../", 4);
+        }
+        else
+        {
+            while (pos > 0)
+            {
+                pos--;
+                buf[pos] = '.';
+            }
+        }
     }
+
     if (pos > 0)
     {
         char volname[20];
-        int len;
-        char *p;
 
-        GetVolName(curlock, volname, 20);
-        len = strlen(volname);
+        GetVolName(curlock, volname, sizeof(volname));
+        len = PathStringLength(volname);
+
         if (len > pos)
         {
             p = volname + len - pos;
             len = pos;
         }
         else
+        {
             p = volname;
+        }
+
         pos -= len;
-        memcpy(buf + pos, p, len);
+        PathCopyBytes(buf + pos, p, len);
     }
+
     if (curlock)
         UnLock(curlock);
 
-    myproc->pr_WindowPtr = savewinptr;        /* Re-enable error requesters */
+    myproc->pr_WindowPtr = savewinptr;
     SetIoErr(savedioerr);
-    return (buf+pos);
+    return buf + pos;
 }

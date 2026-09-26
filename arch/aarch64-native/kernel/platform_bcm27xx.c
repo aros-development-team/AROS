@@ -34,7 +34,6 @@
 
 #define ARM_PERIIOBASE ((IPTR)__arm_arosintern.ARMI_PeripheralBase)
 #include <hardware/bcm2708.h>
-#include <hardware/bcm2708_boot.h>
 #include <hardware/pl011uart.h>
 
 #undef D
@@ -112,12 +111,10 @@ static inline void bcm27xx_cntp_ctl_set(uint32_t v)
     asm volatile ("msr cntp_ctl_el0, %0" :: "r"((uint64_t)v));
 }
 
-static void bcm27xx_cntp_tick(void)
+/* Tick without the CNTP rearm - the Pi 4/5 GIC handlers rearm themselves */
+void bcm27xx_sched_tick(void)
 {
     tls_t *__tls;
-
-    /* Rearm for the next tick - writing TVAL clears the pending condition */
-    bcm27xx_cntp_tval_set(bcm27xx_cntp_interval);
 
     /* Not gated on IDNESTCOUNT: a task busy-looping in short Disable
      * windows must still expire its quantum. */
@@ -130,6 +127,14 @@ static void bcm27xx_cntp_tick(void)
         __tls->Elapsed--;
     if (__tls->Elapsed == 0)
         __tls->ScheduleFlags |= (TLSSF_Quantum | TLSSF_Switch);
+}
+
+static void bcm27xx_cntp_tick(void)
+{
+    /* Rearm for the next tick - writing TVAL clears the pending condition */
+    bcm27xx_cntp_tval_set(bcm27xx_cntp_interval);
+
+    bcm27xx_sched_tick();
 }
 
 void bcm27xx_init_cntp_timer(void)
@@ -179,6 +184,119 @@ static volatile uint64_t *bcm27xx_cpu_release_addr(int cpu)
 
     return (volatile uint64_t *)(uintptr_t)(0xd8 + 8 * cpu);
 }
+
+/* "spin-table" on the Pi 2/3/4, "psci" on the Pi 5 */
+static const char *bcm27xx_cpu_enable_method(int cpu)
+{
+    char nodename[16] = "/cpus/cpu@0";
+    void *node, *prop;
+
+    nodename[10] = '0' + cpu;
+    node = dt_find_node(nodename);
+    prop = node ? dt_find_property(node, "enable-method") : NULL;
+
+    return prop ? (const char *)dt_get_prop_value(prop) : NULL;
+}
+
+static uint64_t bcm27xx_cpu_mpidr(int cpu)
+{
+    char nodename[16] = "/cpus/cpu@0";
+    void *node, *prop;
+    uint32_t *cells;
+
+    nodename[10] = '0' + cpu;
+    node = dt_find_node(nodename);
+    prop = node ? dt_find_property(node, "reg") : NULL;
+
+    if (!prop || (dt_get_prop_len(prop) < 4))
+        return (uint64_t)cpu;
+
+    cells = dt_get_prop_value(prop);
+
+    if (dt_get_prop_len(prop) >= 8)
+        return ((uint64_t)AROS_BE2LONG(cells[0]) << 32) | AROS_BE2LONG(cells[1]);
+
+    return AROS_BE2LONG(cells[0]);
+}
+
+#define PSCI_VERSION            0x84000000
+#define PSCI_CPU_ON_AARCH64     0xC4000003
+
+static int bcm27xx_psci_smc = -1;       /* -1 not looked up, 0 hvc, 1 smc */
+
+static int64_t bcm27xx_psci_call(uint64_t fn, uint64_t a1, uint64_t a2, uint64_t a3)
+{
+    register uint64_t x0 asm("x0") = fn;
+    register uint64_t x1 asm("x1") = a1;
+    register uint64_t x2 asm("x2") = a2;
+    register uint64_t x3 asm("x3") = a3;
+
+    if (bcm27xx_psci_smc)
+        asm volatile("smc #0"
+            : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3)
+            :: "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+               "x13", "x14", "x15", "x16", "x17", "memory");
+    else
+        asm volatile("hvc #0"
+            : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3)
+            :: "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+               "x13", "x14", "x15", "x16", "x17", "memory");
+
+    return (int64_t)x0;
+}
+
+/* VERSION first, so a missing EL3 monitor shows up as a log line */
+static int bcm27xx_psci_conduit(void)
+{
+    void *node, *prop;
+    const char *method;
+    int64_t version;
+
+    if (bcm27xx_psci_smc >= 0)
+        return 1;
+
+    node = dt_find_node("/psci");
+    prop = node ? dt_find_property(node, "method") : NULL;
+    method = prop ? (const char *)dt_get_prop_value(prop) : NULL;
+
+    if (!method)
+        return 0;
+
+    bcm27xx_psci_smc = (method[0] == 's');
+
+    version = bcm27xx_psci_call(PSCI_VERSION, 0, 0, 0);
+    bug("[Kernel:BCM27xx] PSCI over %s, version %d.%d\n", method,
+        (int)((version >> 16) & 0x7fff), (int)(version & 0xffff));
+
+    if (version < 0)
+    {
+        bcm27xx_psci_smc = -1;
+        return 0;
+    }
+
+    return 1;
+}
+
+/* KernelBase is a parameter: the global is still NULL here and
+ * KrnSpinIsLocked uses whichever one is in scope. */
+static int bcm27xx_wait_core(struct KernelBase *KernelBase)
+{
+    uint64_t now, deadline;
+
+    /* CNTPCT, not ARMI_GetTime: needs no SoC peripheral mapped */
+    asm volatile("mrs %0, cntpct_el0" : "=r"(now));
+    asm volatile("mrs %0, cntfrq_el0" : "=r"(deadline));
+    deadline += now;
+
+    while (KrnSpinIsLocked(&startup_lock))
+    {
+        asm volatile("mrs %0, cntpct_el0" : "=r"(now));
+        if (now > deadline)
+            return 0;
+    }
+
+    return 1;
+}
 #endif
 
 void bcm27xx_init(APTR _kernelBase, APTR _sysBase)
@@ -194,95 +312,122 @@ void bcm27xx_init(APTR _kernelBase, APTR _sysBase)
 
     D(bug("[Kernel:BCM27xx] %s()\n", __PRETTY_FUNCTION__));
 
+#if !defined(__AROSEXEC_SMP__)
+    /* Uniprocessor: leave the secondaries parked. Releasing them would
+     * run a core into cpu_Register with no VBAR, no scheduler and
+     * no-op spinlocks. */
+    bug("[Kernel:BCM27xx] Uniprocessor build - secondary cores left parked\n");
+#else
+    void *trampoline_src = mpcore_trampoline;
+    uint32_t trampoline_length = (uintptr_t)&mpcore_end - (uintptr_t)mpcore_trampoline;
+    /* Not bootmem: on the Pi 5 low memory belongs to BL31 */
+    void *trampoline_dst = AllocMem(trampoline_length, MEMF_CLEAR);
+    uint32_t trampoline_data_offset = (uintptr_t)&mpcore_pde - (uintptr_t)mpcore_trampoline;
+    int cpu;
+    uint64_t *cpu_stack;
+    uint64_t tmp;
+    tls_t   *__tls;
+
+    /* Run the generic timer off the crystal so CNTPCT matches CNTFRQ;
+     * firmware leaves the prescaler at 1MHz. BCM2836_* is Pi 2/3 only. */
     if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
-#if !defined(__AROSEXEC_SMP__)
-        /* Uniprocessor: leave the secondaries parked. Releasing them would
-         * run a core into cpu_Register with no VBAR, no scheduler and
-         * no-op spinlocks. */
-        bug("[Kernel:BCM27xx] Uniprocessor build - secondary cores left parked\n");
-#else
-        void *trampoline_src = mpcore_trampoline;
-        void *trampoline_dst = (void *)BOOTMEMADDR(bm_mctrampoline);
-        uint32_t trampoline_length = (uintptr_t)&mpcore_end - (uintptr_t)mpcore_trampoline;
-        uint32_t trampoline_data_offset = (uintptr_t)&mpcore_pde - (uintptr_t)mpcore_trampoline;
-        int cpu;
-        uint64_t *cpu_stack;
-        uint64_t tmp;
-        tls_t   *__tls;
-
-        /* Run the generic timer off the crystal so CNTPCT matches
-         * CNTFRQ; firmware leaves the prescaler at 1MHz. */
         wr32le(BCM2836_CTRL, 0);
         wr32le(BCM2836_PRESCALER, 0x80000000);
+    }
 
-        /* Register the boot CPU as an IPI receiver first, or IPIs aimed
-         * at it are dropped. Secondaries do it in cpu_Register. */
-        if (__arm_arosintern.ARMI_InitCore)
-            __arm_arosintern.ARMI_InitCore(_kernelBase, _sysBase);
+    /* Register the boot CPU as an IPI receiver first, or IPIs aimed
+     * at it are dropped. Secondaries do it in cpu_Register. */
+    if (__arm_arosintern.ARMI_InitCore)
+        __arm_arosintern.ARMI_InitCore(_kernelBase, _sysBase);
 
-        bug("[Kernel:BCM27xx] Initialising Multicore System\n");
-        D(bug("[Kernel:BCM27xx] %s: Copy SMP trampoline from %p to %p (%d bytes)\n", __PRETTY_FUNCTION__, trampoline_src, trampoline_dst, trampoline_length));
+    bug("[Kernel:BCM27xx] Initialising Multicore System\n");
+    D(bug("[Kernel:BCM27xx] %s: Copy SMP trampoline from %p to %p (%d bytes)\n", __PRETTY_FUNCTION__, trampoline_src, trampoline_dst, trampoline_length));
 
-        bcopy(trampoline_src, trampoline_dst, trampoline_length);
+    bcopy(trampoline_src, trampoline_dst, trampoline_length);
 
-        D(bug("[Kernel:BCM27xx] %s: Patching data for trampoline at offset %d\n", __PRETTY_FUNCTION__, trampoline_data_offset));
+    D(bug("[Kernel:BCM27xx] %s: Patching data for trampoline at offset %d\n", __PRETTY_FUNCTION__, trampoline_data_offset));
 
-        /* Read TTBR0_EL1, TCR_EL1, MAIR_EL1 for secondary cores */
-        asm volatile("mrs %0, ttbr0_el1" : "=r"(tmp));
-        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[0] = tmp; /* pde / TTBR0 */
-        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[1] = (uint64_t)cpu_Register;
+    /* Read TTBR0_EL1, TCR_EL1, MAIR_EL1 for secondary cores */
+    asm volatile("mrs %0, ttbr0_el1" : "=r"(tmp));
+    ((uint64_t *)(trampoline_dst + trampoline_data_offset))[0] = tmp; /* pde / TTBR0 */
+    ((uint64_t *)(trampoline_dst + trampoline_data_offset))[1] = (uint64_t)cpu_Register;
 
-        /* Store TCR_EL1 and MAIR_EL1 for trampoline */
-        asm volatile("mrs %0, tcr_el1" : "=r"(tmp));
-        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[4] = tmp; /* TCR */
-        asm volatile("mrs %0, mair_el1" : "=r"(tmp));
-        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[5] = tmp; /* MAIR */
+    /* Store TCR_EL1 and MAIR_EL1 for trampoline */
+    asm volatile("mrs %0, tcr_el1" : "=r"(tmp));
+    ((uint64_t *)(trampoline_dst + trampoline_data_offset))[4] = tmp; /* TCR */
+    asm volatile("mrs %0, mair_el1" : "=r"(tmp));
+    ((uint64_t *)(trampoline_dst + trampoline_data_offset))[5] = tmp; /* MAIR */
 
-        for (cpu = 1; cpu < 4; cpu++)
+    for (cpu = 1; cpu < 4; cpu++)
+    {
+        const char *method = bcm27xx_cpu_enable_method(cpu);
+        int psci = method && (method[0] == 'p');
+
+        if (psci && !bcm27xx_psci_conduit())
         {
-            cpu_stack = (uint64_t *)AllocMem(AROS_STACKSIZE * sizeof(uint64_t), MEMF_CLEAR);
-            ((uint64_t *)(trampoline_dst + trampoline_data_offset))[2] = (uint64_t)&cpu_stack[AROS_STACKSIZE - sizeof(IPTR)];
+            bug("[Kernel:BCM27xx] CPU #%02d: no PSCI conduit in the tree, left parked\n", cpu);
+            continue;
+        }
 
-#if defined(__AROSEXEC_SMP__)
-            __tls = (tls_t *)AllocMem(sizeof(tls_t) + sizeof(struct cpu_ipidata), MEMF_CLEAR);
-#else
-            __tls = (tls_t *)AllocMem(sizeof(tls_t), MEMF_CLEAR);
-#endif
-            __tls->SysBase = _sysBase;
-            __tls->KernelBase = _kernelBase;
-            __tls->ThisTask = NULL;
-            __tls->CPUNumber = cpu;     /* logical id - GetCPUNumber reads this */
-            aarch64_flush_cache(((uintptr_t)__tls) & ~63, 512);
-            ((uint64_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint64_t)__tls;
+        cpu_stack = (uint64_t *)AllocMem(AROS_STACKSIZE * sizeof(uint64_t), MEMF_CLEAR);
+        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[2] = (uint64_t)&cpu_stack[AROS_STACKSIZE - sizeof(IPTR)];
 
-            D(bug("[Kernel:BCM27xx] %s: Attempting to wake CPU #%02d (release @ 0x%p)\n", __PRETTY_FUNCTION__, cpu, bcm27xx_cpu_release_addr(cpu)));
-            D(bug("[Kernel:BCM27xx] %s: CPU #%02d Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_stack, ((uint64_t *)(trampoline_dst + trampoline_data_offset))[2]));
-            D(bug("[Kernel:BCM27xx] %s: CPU #%02d TLS @ 0x%p\n", __PRETTY_FUNCTION__, cpu, ((uint64_t *)(trampoline_dst + trampoline_data_offset))[3]));
+        __tls = (tls_t *)AllocMem(sizeof(tls_t) + sizeof(struct cpu_ipidata), MEMF_CLEAR);
+        __tls->SysBase = _sysBase;
+        __tls->KernelBase = _kernelBase;
+        __tls->ThisTask = NULL;
+        __tls->CPUNumber = cpu;     /* logical id - GetCPUNumber reads this */
+        aarch64_flush_cache(((uintptr_t)__tls) & ~63, 512);
+        ((uint64_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint64_t)__tls;
 
-            aarch64_flush_cache((uintptr_t)trampoline_dst, 512);
+        D(bug("[Kernel:BCM27xx] %s: Attempting to wake CPU #%02d (%s)\n", __PRETTY_FUNCTION__, cpu, psci ? "psci" : "spin-table"));
+        D(bug("[Kernel:BCM27xx] %s: CPU #%02d Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_stack, ((uint64_t *)(trampoline_dst + trampoline_data_offset))[2]));
+        D(bug("[Kernel:BCM27xx] %s: CPU #%02d TLS @ 0x%p\n", __PRETTY_FUNCTION__, cpu, ((uint64_t *)(trampoline_dst + trampoline_data_offset))[3]));
 
-            /* Lock the startup spinlock */
-            KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
+        aarch64_flush_cache((uintptr_t)trampoline_dst, 512);
 
+        /* Lock the startup spinlock */
+        KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
+
+        dsb();
+
+        if (psci)
+        {
+            int64_t err = bcm27xx_psci_call(PSCI_CPU_ON_AARCH64,
+                                            bcm27xx_cpu_mpidr(cpu),
+                                            (uint64_t)(uintptr_t)trampoline_dst, 0);
+
+            if (err)
+            {
+                bug("[Kernel:BCM27xx] CPU #%02d: PSCI CPU_ON failed (%d)\n", cpu, (int)err);
+                KrnSpinUnLock(&startup_lock);
+                continue;
+            }
+        }
+        else
+        {
             /* The parked core polls with the MMU off, so the entry
              * address has to reach memory, not just our cache. */
-            {
-                volatile uint64_t *release = bcm27xx_cpu_release_addr(cpu);
+            volatile uint64_t *release = bcm27xx_cpu_release_addr(cpu);
 
-                *release = (uint64_t)(uintptr_t)trampoline_dst;
-                aarch64_flush_cache(((uintptr_t)release) & ~63, 64);
-            }
+            D(bug("[Kernel:BCM27xx] %s: CPU #%02d release @ 0x%p\n", __PRETTY_FUNCTION__, cpu, release));
+
+            *release = (uint64_t)(uintptr_t)trampoline_dst;
+            aarch64_flush_cache(((uintptr_t)release) & ~63, 64);
 
             dsb();
             sev();
+        }
 
-            /* Wait for secondary core to be ready */
-            KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
+        /* cpu_Register unlocks it once the core is up */
+        if (!bcm27xx_wait_core(KernelBase))
+        {
+            bug("[Kernel:BCM27xx] CPU #%02d did not report in\n", cpu);
             KrnSpinUnLock(&startup_lock);
         }
-#endif /* __AROSEXEC_SMP__ */
     }
+#endif /* __AROSEXEC_SMP__ */
 }
 
 void bcm27xx_init_cpu(APTR _kernelBase, APTR _sysBase)
