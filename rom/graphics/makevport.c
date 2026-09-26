@@ -68,6 +68,7 @@
     struct BitMap *bitmap;
     struct gfxdisplay_data *mdd;
     HIDDT_ModeID modeid;
+    ULONG bitmap_width;
     ULONG ret = MVP_OK;
     BOOL own_vpe = FALSE;
 
@@ -75,6 +76,9 @@
         return MVP_NO_DISPLAY;
 
     bitmap = viewport->RasInfo->BitMap;
+    bitmap_width = bitmap->BytesPerRow << 3;
+    if((bitmap->Flags & BMF_INTERLEAVED) && bitmap->Depth)
+        bitmap_width /= bitmap->Depth;
     modeid = GetVPModeID(viewport);
     mdd = (struct gfxdisplay_data *)GET_VP_DRIVERDATA(viewport);
 
@@ -143,7 +147,7 @@
         } else {
             struct TagItem tags[] = {
                 { aHidd_PlanarBM_BitMap, (IPTR)bitmap },
-                { aHidd_BitMap_Width, bitmap->BytesPerRow << 3 },
+                { aHidd_BitMap_Width, bitmap_width },
                 { aHidd_BitMap_Height, bitmap->Rows },
                 { aHidd_BitMap_Depth, bitmap->Depth },
                 { aHidd_BitMap_Displayable, TRUE },
