@@ -19,6 +19,11 @@
 
 #include <hidd/gfx.h>
 
+#ifdef __mc68000
+#include <hardware/custom.h>
+#include <proto/graphics.h>
+#endif
+
 #include <string.h>
 
 #include "gfx_intern.h"
@@ -430,6 +435,161 @@ VOID PBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
             }
         }
     }
+}
+
+/****************************************************************************************/
+
+VOID PBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
+                                   struct pHidd_BitMap_PutTemplate *msg)
+{
+#ifdef __mc68000
+    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    struct BitMap *bm = data->bitmap;
+    struct GfxBase *GfxBase = CSD(cl)->cs_GfxBase;
+    volatile struct Custom *custom = (struct Custom *)0xdff000;
+    ULONG src_offset, dst_offset, bitmap_width;
+    ULONG fg, bg, colmask;
+    WORD src_x2, dst_x2, src_width, dst_width, width;
+    WORD src_x, dst_x, shift;
+    UWORD first_mask, last_mask, shift_a, shift_b;
+    BOOL transparent, invert;
+    BOOL reverse;
+    UBYTE plane;
+
+    if (!bm || !msg->masktemplate || msg->width <= 0 || msg->height <= 0)
+        return;
+
+    bitmap_width = (ULONG)bm->BytesPerRow * 8;
+    if ((bm->Flags & BMF_INTERLEAVED) && bm->Depth)
+        bitmap_width /= bm->Depth;
+
+    /* Use the blitter only when every DMA source and destination is in Chip
+     * RAM. Leave other formats and out-of-range direct HIDD calls to the
+     * superclass implementation. */
+    if (msg->srcx < 0 || msg->x < 0 || msg->y < 0 ||
+        !bm->Depth || bm->Depth > 8 ||
+        (ULONG)msg->x + msg->width > bitmap_width ||
+        (ULONG)msg->y + msg->height > bm->Rows ||
+        !(TypeOfMem(msg->masktemplate) & MEMF_CHIP))
+        goto software;
+
+    for (plane = 0; plane < bm->Depth; plane++)
+    {
+        UBYTE *bits = bm->Planes[plane];
+        if (bits && bits != (UBYTE *)-1 && !(TypeOfMem(bits) & MEMF_CHIP))
+            goto software;
+    }
+
+    src_x = msg->srcx;
+    dst_x = msg->x;
+    src_x2 = src_x + msg->width - 1;
+    dst_x2 = dst_x + msg->width - 1;
+    src_width = src_x2 / 16 - src_x / 16 + 1;
+    dst_width = dst_x2 / 16 - dst_x / 16 + 1;
+    shift = (dst_x & 15) - (src_x & 15);
+    reverse = shift < 0;
+    if (reverse)
+        shift = -shift;
+
+    width = src_width > dst_width ? src_width : dst_width;
+    if (!(GfxBase->ChipRevBits0 & GFXF_BIG_BLITS) &&
+        (width > 64 || msg->height > 1024))
+        goto software;
+
+    src_offset = (src_x / 16) * 2;
+    dst_offset = bm->BytesPerRow * msg->y + (dst_x / 16) * 2;
+    src_x &= 15;
+    dst_x &= 15;
+    src_x2 &= 15;
+    dst_x2 &= 15;
+
+    if (reverse)
+    {
+        shift_a = dst_width >= src_width ? 0 : shift << 12;
+        first_mask = dst_width >= src_width
+            ? (UWORD)(0xffff << (15 - dst_x2))
+            : (UWORD)(0xffff << (15 - src_x2));
+        last_mask = dst_width >= src_width
+            ? (UWORD)(0xffff >> dst_x)
+            : (UWORD)(0xffff >> src_x);
+        src_offset += msg->modulo * (msg->height - 1) + (width - 1) * 2;
+        dst_offset += bm->BytesPerRow * (msg->height - 1) + (width - 1) * 2;
+    }
+    else
+    {
+        shift_a = dst_width >= src_width ? 0 : shift << 12;
+        first_mask = dst_width >= src_width
+            ? (UWORD)(0xffff >> dst_x)
+            : (UWORD)(0xffff >> src_x);
+        last_mask = dst_width >= src_width
+            ? (UWORD)(0xffff << (15 - dst_x2))
+            : (UWORD)(0xffff << (15 - src_x2));
+    }
+    shift_b = shift << 12;
+
+    fg = GC_FG(msg->gc);
+    bg = GC_BG(msg->gc);
+    colmask = GC_COLMASK(msg->gc);
+    transparent = GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent;
+    invert = !transparent && GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert;
+
+    OwnBlitter();
+    WaitBlit();
+    custom->bltafwm = first_mask;
+    custom->bltalwm = last_mask;
+    custom->bltbmod = msg->modulo - width * 2;
+    custom->bltcmod = bm->BytesPerRow - width * 2;
+    custom->bltdmod = bm->BytesPerRow - width * 2;
+    custom->bltadat = 0xffff;
+
+    for (plane = 0; plane < bm->Depth; plane++)
+    {
+        UBYTE *bits = bm->Planes[plane];
+        ULONG plane_bit = 1UL << plane;
+        UBYTE minterm = 0x0a; /* Preserve C where the A edge mask is zero. */
+
+        if (!(colmask & plane_bit) || !bits || bits == (UBYTE *)-1)
+            continue;
+
+        if (transparent)
+        {
+            minterm |= msg->inverttemplate ? 0x80 : 0x20;
+            if (fg & plane_bit)
+                minterm |= msg->inverttemplate ? 0x30 : 0xc0;
+        }
+        else if (invert)
+            minterm |= msg->inverttemplate ? 0x90 : 0x60;
+        else
+        {
+            if ((msg->inverttemplate ? bg : fg) & plane_bit)
+                minterm |= 0xc0;
+            if ((msg->inverttemplate ? fg : bg) & plane_bit)
+                minterm |= 0x30;
+        }
+
+        WaitBlit();
+        custom->bltcon0 = shift_a | 0x0700 | minterm;
+        custom->bltcon1 = (reverse ? 2 : 0) | shift_b;
+        custom->bltbdat = 0xffff;
+        custom->bltbpt = msg->masktemplate + src_offset;
+        custom->bltcpt = bits + dst_offset;
+        custom->bltdpt = bits + dst_offset;
+        if (GfxBase->ChipRevBits0 & GFXF_BIG_BLITS)
+        {
+            custom->bltsizv = msg->height;
+            custom->bltsizh = width;
+        }
+        else
+            custom->bltsize = (msg->height << 6) | (width & 63);
+    }
+
+    WaitBlit();
+    DisownBlitter();
+    return;
+
+software:
+#endif
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/
