@@ -902,15 +902,21 @@ VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_
     struct amigavideo_staticdata *csd = CSD(cl);
     struct Library *OOPBase = csd->cs_OOPBase;
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
-    IPTR src, dst;
+    IPTR src = 0, dst = 0;
+    struct BitMap *srcpbm = NULL;
+    struct BitMap *dstpbm = NULL;
     BOOL ok = FALSE;
  
     OOP_GetAttr(msg->src,  aHidd_BitMap_AmigaVideo_Drawable, &src);
     OOP_GetAttr(msg->dest, aHidd_BitMap_AmigaVideo_Drawable, &dst);
     if (dst) {
         struct amigabm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
-        struct BitMap *srcpbm = NULL;
+        dstpbm = ddata->pbm;
+    } else {
+        OOP_GetAttr(msg->dest, aHidd_PlanarBM_BitMap, (IPTR *)&dstpbm);
+    }
 
+    if (dstpbm) {
         if (src) {
             /* Source is an AmigaVideo bitmap. */
             struct amigabm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
@@ -926,7 +932,8 @@ VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_
         }
 
         if (srcpbm)
-            ok = blit_copybox(csd, srcpbm, ddata->pbm, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode, GC_COLMASK(msg->gc));
+            ok = blit_copybox(csd, srcpbm, dstpbm, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode, GC_COLMASK(msg->gc));
+
     }
     if (!ok)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

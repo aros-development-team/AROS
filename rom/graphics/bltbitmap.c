@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "graphics_intern.h"
+#include "dispinfo.h"
 #include "gfxfuncsupport.h"
 #include "objcache.h"
 
@@ -111,6 +112,7 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 {
     AROS_LIBFUNC_INIT
     LONG planecnt;
+    struct gfxdisplay_data *planar_driver = NULL;
 
     FIX_GFXCOORD(xSrc);
     FIX_GFXCOORD(ySrc);
@@ -120,7 +122,33 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     D(bug("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
           , srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm));
 
-    if(IS_HIDD_BM(srcBitMap) || IS_HIDD_BM(destBitMap)) {
+    /*
+     * A classic bitmap is still a plain planar BitMap.  Let the active
+     * display driver try the blit so native chipsets can accelerate copies
+     * between off-screen Chip-RAM buffers as well as copies to the display.
+     * Drivers which cannot handle the wrapped planar bitmaps fall back to
+     * their superclass implementation.
+     */
+    if(!IS_HIDD_BM(srcBitMap) && !IS_HIDD_BM(destBitMap) &&
+            GfxBase->ActiView && GfxBase->ActiView->ViewPort) {
+        planar_driver = GET_VP_DRIVERDATA(GfxBase->ActiView->ViewPort);
+    }
+
+    if ((!planar_driver ||
+            planar_driver == (struct gfxdisplay_data *)CDD(GfxBase)) &&
+            !IS_HIDD_BM(srcBitMap) && !IS_HIDD_BM(destBitMap) &&
+            GfxBase->default_monitor) {
+        struct monitor_displaydata *monitor =
+            MonitorFromSpec(GfxBase->default_monitor, GfxBase);
+
+        if (monitor)
+            planar_driver = &monitor->mdisplay;
+    }
+
+    if(planar_driver == (struct gfxdisplay_data *)CDD(GfxBase))
+        planar_driver = NULL;
+
+    if(IS_HIDD_BM(srcBitMap) || IS_HIDD_BM(destBitMap) || planar_driver) {
         ULONG wSrc, wDest;
         ULONG x;
         ULONG depth;
@@ -178,8 +206,8 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
          * driver, or the destination uses a software cursor, we use the other
          * one, which can be an accelerated video driver.
          */
-        driver     = GET_BM_DRIVERDATA(srcBitMap);
-        dst_driver = GET_BM_DRIVERDATA(destBitMap);
+        driver     = planar_driver ? planar_driver : GET_BM_DRIVERDATA(srcBitMap);
+        dst_driver = planar_driver ? planar_driver : GET_BM_DRIVERDATA(destBitMap);
 
         if((driver == (struct gfxdisplay_data *)CDD(GfxBase)) ||
                 (dst_driver->display_flags & DF_SoftCursor)) {
