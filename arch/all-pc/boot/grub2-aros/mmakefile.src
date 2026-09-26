@@ -82,6 +82,6 @@ TARGET_ISA_CFLAGS := $(NOWARN_CFLAGS)
 TARGET_ISA_CFLAGS += -D_STDC_NOINLINE_CTYPE
 
 %fetch_and_build mmake=grub2-aros \
-        package=$(GRUB2PACKAGE) version=$(GRUB2_VERSION) suffixes="tar.gz tar.xz" package_repo=$(GRUB2REPOS) \
+        package=$(GRUB2PACKAGE) version=$(GRUB2_VERSION) suffixes="tar.xz tar.gz" package_repo=$(GRUB2REPOS) \
         prefix="$(GRUB2DESTDIR)" patch=yes aros_prefix="/GNU" nix=no gnuflags=no xflag=no \
         extraoptions="$(CONFIG_OPTS)" config_env_extra="$(GRUB2_ENV)" kernelisaflags= crossbuild=$(GRUB2_CROSSFLAG)
