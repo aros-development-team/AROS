@@ -31,7 +31,12 @@ steps:
     ORG="aros-development-team"
     PROJECT="AROS"
     PIPELINE_ID=16
-    LOG_ID=32
+    # Display names of the steps whose logs contain the compiler/catalog
+    # warnings (see templates/steps-core.yml and templates/steps-contrib.yml).
+    # Log IDs are not stable between runs (they depend on which steps ran or
+    # were skipped, e.g. toolchain cache hit vs miss), so they are resolved
+    # from the run's timeline by step name rather than hardcoded.
+    BUILD_STEP_NAMES='^Build pc-i386 (core system|contrib)$'
 
     echo "Fetching latest run ID of pipeline '$ORG.$PROJECT-pc-i386'..."
     BUILD_ID=$(curl -sS -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
@@ -40,12 +45,27 @@ steps:
     echo "Pipeline ID: $PIPELINE_ID"
     echo "Latest run ID: $BUILD_ID"
 
-    echo "Downloading specific log ID ($LOG_ID) for build ID $BUILD_ID..."
-    curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-      "https://dev.azure.com/$ORG/$PROJECT/_apis/build/builds/$BUILD_ID/logs/$LOG_ID" -o log.txt
+    echo "Resolving build step log IDs from the timeline of build ID $BUILD_ID..."
+    LOG_IDS=$(curl -sS -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+      "https://dev.azure.com/$ORG/$PROJECT/_apis/build/builds/$BUILD_ID/timeline?api-version=6.0" \
+      | jq -r --arg re "$BUILD_STEP_NAMES" \
+        '[.records[] | select(.type == "Task" and .log != null and (.name | test($re)))]
+         | sort_by(.log.id) | .[] | "\(.log.id) \(.name)"')
+    if [[ -z "$LOG_IDS" ]]; then
+      echo "##[error]No build step logs matching '$BUILD_STEP_NAMES' found in build $BUILD_ID"
+      exit 1
+    fi
+
+    : > log.txt
+    while read -r log_id log_name; do
+      echo "Downloading log ID $log_id ('$log_name') for build ID $BUILD_ID..."
+      curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+        "https://dev.azure.com/$ORG/$PROJECT/_apis/build/builds/$BUILD_ID/logs/$log_id" >> log.txt
+    done <<< "$LOG_IDS"
+    echo "Downloaded $(wc -l < log.txt) log lines"
 
     echo "Extracting warning lines..."
-    grep -i warning log.txt > warnings.txt
+    grep -i warning log.txt > warnings.txt || true
     echo "Number of warning lines found: $(wc -l < warnings.txt)"
 
     echo "Stripping timestamp and absolute path..."
