@@ -21,8 +21,6 @@ steps:
 
 # Set up SSH key and config for SourceForge
 - template: templates/setup-sf-ssh.yml
-  parameters:
-    keyscanHosts: 'shell.sourceforge.net web.sourceforge.net'
 
 # Download log, parse .gitmodules, categorize warnings, and generate output
 - bash: |
@@ -137,29 +135,19 @@ steps:
     python3 scripts/azure/gen-smtranslation-pages.py submodule_localization_issues.txt
   displayName: 'Generate HTML Pages from Submodule Localization Issues'
 
-# Create target directory on SourceForge web space
+# Create target directory on SourceForge web space.
+# SourceForge has discontinued shell access (shell.sourceforge.net), so the
+# directory cannot be created with a remote mkdir. As in the main build
+# pipeline templates, an empty local directory tree is rsync'd to the web
+# space instead, which creates any missing remote directories.
 - bash: |
-    echo "Checking shell access..."
-    if ! ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER_TRANS)"@shell.sourceforge.net true; then
-      echo "Shell not active yet. Creating shell..."
-      ssh -t "$(SF_RSYNC_USER_TRANS)"@shell.sourceforge.net create
-
-      echo "Waiting for shell to become active (retrying up to 5 times)..."
-      for i in $(seq 1 5); do
-        if ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER_TRANS)"@shell.sourceforge.net true; then
-          echo "Shell is ready."
-          break
-        else
-          echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
-          sleep 5
-        fi
-      done
-    else
-      echo "Shell already active."
-    fi
+    set -e
     echo "Ensuring target directory exists on SourceForge..."
-    ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER_TRANS)"@shell.sourceforge.net \
-      "mkdir -p /home/project-web/translations/htdocs/documentation/issues"
+    mkdir -p "$(Build.BinariesDirectory)/Prepare/htdocs/documentation/issues"
+    rsync -avz -e ssh \
+      "$(Build.BinariesDirectory)/Prepare/" \
+      "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:"
+    rm -rf "$(Build.BinariesDirectory)/Prepare"
   displayName: 'Create target directory on SourceForge'
 
 # Upload the generated HTML pages using SSH key
