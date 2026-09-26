@@ -1,10 +1,15 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- workbench-hidds : workbench-hidds-controller
+#MM workbench-hidds-controller : kernel-hidd-includes kernel-hidd-input-includes
+
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 %copy_includes path=hidd dir=include
 
-FILES := controller_init driverdata controllerclass controllersubsystem
+FILES := controller_init controllerclass controllersubsystem \
+         controller_controls controller_reading controller_notify \
+         controller_mapping
 
 USER_CPPFLAGS += \
     -D__OOP_NOLIBBASE__ \
