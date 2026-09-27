@@ -721,8 +721,6 @@ static LONG internalBootCliHandler(void)
         mountBootNode(bn->bn_DeviceNode, fsr, DOSBase);
     }
 
-    CloseLibrary((APTR)ExpansionBase);
-
     /* Enable prompts to insert missing volumes again - unless this is an
      * appliance boot: __dos_Boot runs the Initial CLI synchronously in
      * THIS process, so the Startup-Sequence and whatever it starts
@@ -735,6 +733,14 @@ static LONG internalBootCliHandler(void)
     /* Init all the RTF_AFTERDOS code, since we now have SYS:, the dos devices, and all the other assigns */
     D(bug("Dos/CliInit: Calling InitCode(RTF_AFTERDOS, 0)\n"));
     InitCode(RTF_AFTERDOS, 0);
+
+    /*
+     * RTF_AFTERDOS residents may add boot flags: the hosted emul-handler
+     * loads the display drivers itself and sets BF_NO_DISPLAY_DRIVERS so
+     * that __dos_Boot() does not load them a second time.
+     */
+    BootFlags = IntExpBase(ExpansionBase)->BootFlags;
+    CloseLibrary((APTR)ExpansionBase);
 
     /*
      * Multi-user support: if security.library is part of the ROM it is
