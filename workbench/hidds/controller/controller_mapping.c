@@ -1,8 +1,8 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: GUIDs, the standard-layout mapping database (SDL gamecontrollerdb
-          format), binding evaluation and button labels
+    Desc: GUIDs, the standard-layout mapping database, binding evaluation
+          and labels
 */
 
 #define DEBUG 0
@@ -47,10 +47,13 @@ static int c_hexval(char c)
 }
 
 /*****************************************************************************************
-    GUID (SDL compatible: bus, crc16(name), vendor, 0, product, 0, version, 0; little endian)
+    GUID: bus, crc16(name), vendor, 0, product, 0, version, 0 (16 bit little endian fields).
+    The layout follows the de facto convention used by cross platform game
+    libraries and community mapping databases, so records converted from
+    those match AROS devices.
 *****************************************************************************************/
 
-/* CRC-16 with the reflected 0x8005 polynomial (0xA001), init 0, as used by SDL_crc16() */
+/* CRC-16, reflected 0x8005 polynomial (0xA001), init 0, no final xor */
 static UWORD c_crc16(UWORD crc, const char *data, ULONG len)
 {
     ULONG i;
@@ -372,24 +375,13 @@ void ctrl_ComputeStandardView(struct ControllerDevice *dev)
 #define GP(n)   vHidd_Controller_Std_Button(vHidd_Controller_GP_##n)
 #define GPA(n)  vHidd_Controller_Std_Axis(vHidd_Controller_GPA_##n)
 
-/* XInput family devices share one layout regardless of GUID (XINPUT_GAMEPAD order) */
-static const struct Hidd_Controller_Binding ctrl_xinput_bindings[] =
-{
-    B_BTN(GP(South), 0), B_BTN(GP(East), 1), B_BTN(GP(West), 2), B_BTN(GP(North), 3),
-    B_BTN(GP(LeftShoulder), 4), B_BTN(GP(RightShoulder), 5),
-    B_BTN(GP(Back), 6), B_BTN(GP(Start), 7),
-    B_BTN(GP(LeftStick), 8), B_BTN(GP(RightStick), 9), B_BTN(GP(Guide), 10),
-    B_BTN(GP(DpadUp), 11), B_BTN(GP(DpadDown), 12), B_BTN(GP(DpadLeft), 13), B_BTN(GP(DpadRight), 14),
-    B_AXIS(GPA(LeftX), 0), B_AXIS(GPA(LeftY), 1), B_AXIS(GPA(RightX), 2), B_AXIS(GPA(RightY), 3),
-    B_AXIS(GPA(LeftTrigger), 4), B_AXIS(GPA(RightTrigger), 5),
-    B_END
-};
-
-/* Built-in records, matched by GUID */
-static const struct Hidd_Controller_MappingDesc ctrl_builtin_mappings[] =
-{
-    { { 0 }, NULL, NULL }
-};
+/*
+ * There is deliberately no built-in device table here: knowledge about
+ * particular controllers (their layout, quirks, identity) belongs to the
+ * driver subclasses that represent them (hid.class, arosx.class, ...), which
+ * pass it in as aHidd_Controller_BindingTable. The database only holds
+ * records added at run time (prefs, applications).
+ */
 
 static void ctrl_MappingFree(OOP_Class *cl, struct ControllerMapping *m)
 {
@@ -429,12 +421,8 @@ static struct ControllerMapping *ctrl_MappingCopy(OOP_Class *cl, const struct Hi
 
 void ctrl_MappingInitDB(OOP_Class *cl, struct ControllerHWData *hw)
 {
-    const struct Hidd_Controller_MappingDesc *t;
-
     NEWLIST(&hw->mappings);
     InitSemaphore(&hw->maplock);
-    for (t = ctrl_builtin_mappings; t->bindings; t++)
-        ctrl_MappingAdd(cl, hw, t, vHidd_Controller_MapSrc_BuiltIn);
 }
 
 void ctrl_MappingFreeDB(OOP_Class *cl, struct ControllerHWData *hw)
@@ -486,8 +474,7 @@ BOOL ctrl_MappingRemove(OOP_Class *cl, struct ControllerHWData *hw, const UBYTE 
     ObtainSemaphore(&hw->maplock);
     ForeachNodeSafe(&hw->mappings, m, tmp)
     {
-        if (ctrl_GUIDEqual(m->guid, guid) && (source == 0 || m->source == source) &&
-            m->source != vHidd_Controller_MapSrc_BuiltIn)
+        if (ctrl_GUIDEqual(m->guid, guid) && (source == 0 || m->source == source))
         {
             REMOVE(&m->node);
             ctrl_MappingFree(cl, m);
@@ -668,8 +655,7 @@ void ctrl_FreeMapping(OOP_Class *cl, struct ControllerDevice *dev)
 
 /*
  * Choose and apply the effective mapping for a device. Priority:
- * user/API records in the database > driver supplied table > built-in records
- * > XInput family rule > synthesised.
+ * user/API records in the database > driver supplied table > synthesised.
  */
 void ctrl_ApplyMapping(OOP_Class *cl, struct ControllerDevice *dev)
 {
@@ -681,8 +667,6 @@ void ctrl_ApplyMapping(OOP_Class *cl, struct ControllerDevice *dev)
 
     ObtainSemaphore(&hw->maplock);
     m = ctrl_MappingLookup(hw, dev->guid, vHidd_Controller_MapSrc_API);
-    if (!m && !dev->drv_bindings)
-        m = ctrl_MappingLookup(hw, dev->guid, vHidd_Controller_MapSrc_BuiltIn);
     if (m)
     {
         table = m->bindings;
@@ -692,11 +676,6 @@ void ctrl_ApplyMapping(OOP_Class *cl, struct ControllerDevice *dev)
     {
         table = dev->drv_bindings;
         source = vHidd_Controller_MapSrc_Driver;
-    }
-    else if (dev->family == vHidd_Controller_Family_XInput)
-    {
-        table = ctrl_xinput_bindings;
-        source = vHidd_Controller_MapSrc_BuiltIn;
     }
     else if (ctrl_SynthesiseMapping(dev, synth, CTRL_NUM_STD + 1))
     {
@@ -755,80 +734,40 @@ ULONG ctrl_CopyBindings(struct ControllerDevice *dev, struct Hidd_Controller_Bin
 }
 
 /*****************************************************************************************
-    labels
+    labels: the label of a standard element is the label the driver gave the
+    raw control bound to it
 *****************************************************************************************/
-
-static const UWORD ctrl_labels[5][vHidd_Controller_GP_ButtonCount] =
-{
-    /* Generic */
-    { vHidd_Controller_Label_A, vHidd_Controller_Label_B, vHidd_Controller_Label_X, vHidd_Controller_Label_Y,
-      vHidd_Controller_Label_Back, vHidd_Controller_Label_Guide, vHidd_Controller_Label_Start,
-      vHidd_Controller_Label_L3, vHidd_Controller_Label_R3, vHidd_Controller_Label_L1, vHidd_Controller_Label_R1,
-      vHidd_Controller_Label_DpadUp, vHidd_Controller_Label_DpadDown, vHidd_Controller_Label_DpadLeft, vHidd_Controller_Label_DpadRight,
-      vHidd_Controller_Label_Misc, vHidd_Controller_Label_Paddle1, vHidd_Controller_Label_Paddle2,
-      vHidd_Controller_Label_Paddle3, vHidd_Controller_Label_Paddle4, vHidd_Controller_Label_Touchpad,
-      vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc },
-    /* Xbox */
-    { vHidd_Controller_Label_A, vHidd_Controller_Label_B, vHidd_Controller_Label_X, vHidd_Controller_Label_Y,
-      vHidd_Controller_Label_View, vHidd_Controller_Label_Guide, vHidd_Controller_Label_Menu,
-      vHidd_Controller_Label_L3, vHidd_Controller_Label_R3, vHidd_Controller_Label_LB, vHidd_Controller_Label_RB,
-      vHidd_Controller_Label_DpadUp, vHidd_Controller_Label_DpadDown, vHidd_Controller_Label_DpadLeft, vHidd_Controller_Label_DpadRight,
-      vHidd_Controller_Label_Share, vHidd_Controller_Label_Paddle1, vHidd_Controller_Label_Paddle2,
-      vHidd_Controller_Label_Paddle3, vHidd_Controller_Label_Paddle4, vHidd_Controller_Label_Touchpad,
-      vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc },
-    /* PlayStation */
-    { vHidd_Controller_Label_Cross, vHidd_Controller_Label_Circle, vHidd_Controller_Label_Square, vHidd_Controller_Label_Triangle,
-      vHidd_Controller_Label_Share, vHidd_Controller_Label_Home, vHidd_Controller_Label_Options,
-      vHidd_Controller_Label_L3, vHidd_Controller_Label_R3, vHidd_Controller_Label_L1, vHidd_Controller_Label_R1,
-      vHidd_Controller_Label_DpadUp, vHidd_Controller_Label_DpadDown, vHidd_Controller_Label_DpadLeft, vHidd_Controller_Label_DpadRight,
-      vHidd_Controller_Label_Misc, vHidd_Controller_Label_Paddle1, vHidd_Controller_Label_Paddle2,
-      vHidd_Controller_Label_Paddle3, vHidd_Controller_Label_Paddle4, vHidd_Controller_Label_Touchpad,
-      vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc },
-    /* Nintendo (positional: south = B, east = A, west = Y, north = X) */
-    { vHidd_Controller_Label_B, vHidd_Controller_Label_A, vHidd_Controller_Label_Y, vHidd_Controller_Label_X,
-      vHidd_Controller_Label_Minus, vHidd_Controller_Label_Home, vHidd_Controller_Label_Plus,
-      vHidd_Controller_Label_L3, vHidd_Controller_Label_R3, vHidd_Controller_Label_L1, vHidd_Controller_Label_R1,
-      vHidd_Controller_Label_DpadUp, vHidd_Controller_Label_DpadDown, vHidd_Controller_Label_DpadLeft, vHidd_Controller_Label_DpadRight,
-      vHidd_Controller_Label_Capture, vHidd_Controller_Label_Paddle1, vHidd_Controller_Label_Paddle2,
-      vHidd_Controller_Label_Paddle3, vHidd_Controller_Label_Paddle4, vHidd_Controller_Label_Touchpad,
-      vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc, vHidd_Controller_Label_Misc },
-    /* Amiga / CD32 */
-    { vHidd_Controller_Label_Red, vHidd_Controller_Label_Blue, vHidd_Controller_Label_Green, vHidd_Controller_Label_Yellow,
-      vHidd_Controller_Label_None, vHidd_Controller_Label_None, vHidd_Controller_Label_Play,
-      vHidd_Controller_Label_None, vHidd_Controller_Label_None, vHidd_Controller_Label_Reverse, vHidd_Controller_Label_Forward,
-      vHidd_Controller_Label_DpadUp, vHidd_Controller_Label_DpadDown, vHidd_Controller_Label_DpadLeft, vHidd_Controller_Label_DpadRight,
-      vHidd_Controller_Label_None, vHidd_Controller_Label_None, vHidd_Controller_Label_None,
-      vHidd_Controller_Label_None, vHidd_Controller_Label_None, vHidd_Controller_Label_None,
-      vHidd_Controller_Label_None, vHidd_Controller_Label_None, vHidd_Controller_Label_None, vHidd_Controller_Label_None, vHidd_Controller_Label_None },
-};
 
 UWORD ctrl_LabelFor(const struct ControllerDevice *dev, UWORD stdid)
 {
-    UBYTE style = dev->style;
+    LONG slot = ctrl_StdSlot(stdid);
+    const struct Hidd_Controller_Binding *b;
 
-    if (style > vHidd_Controller_Style_Amiga)
-        style = vHidd_Controller_Style_Generic;
+    if (slot < 0 || !(dev->flags & CTRL_DF_MAPPED))
+        return vHidd_Controller_Label_None;
+    b = &dev->bind[slot];
+    if (!(b->flags & vHidd_Controller_BF_Valid))
+        return vHidd_Controller_Label_None;
 
-    if (vHidd_Controller_Std_IsButton(stdid) && stdid < vHidd_Controller_GP_ButtonCount)
-        return ctrl_labels[style][stdid];
-
-    if (vHidd_Controller_Std_IsAxis(stdid))
+    switch (b->in_kind)
     {
-        switch (stdid & 0xFF)
+    case vHidd_Controller_Ctl_Button:
+        return (b->in_index < dev->nbuttons) ? dev->buttons[b->in_index].label : vHidd_Controller_Label_None;
+    case vHidd_Controller_Ctl_Axis:
+        return (b->in_index < dev->naxes) ? dev->axes[b->in_index].label : vHidd_Controller_Label_None;
+    case vHidd_Controller_Ctl_Hat:
+        if (b->in_index >= dev->nhats)
+            return vHidd_Controller_Label_None;
+        if (dev->hats[b->in_index].label != vHidd_Controller_Label_None)
+            return dev->hats[b->in_index].label;
+        switch (b->hat_mask)
         {
-        case vHidd_Controller_GPA_LeftX:
-        case vHidd_Controller_GPA_LeftY:
-            return vHidd_Controller_Label_LeftStick;
-        case vHidd_Controller_GPA_RightX:
-        case vHidd_Controller_GPA_RightY:
-            return vHidd_Controller_Label_RightStick;
-        case vHidd_Controller_GPA_LeftTrigger:
-            return (style == vHidd_Controller_Style_Xbox) ? vHidd_Controller_Label_LT :
-                   (style == vHidd_Controller_Style_Amiga) ? vHidd_Controller_Label_None : vHidd_Controller_Label_L2;
-        case vHidd_Controller_GPA_RightTrigger:
-            return (style == vHidd_Controller_Style_Xbox) ? vHidd_Controller_Label_RT :
-                   (style == vHidd_Controller_Style_Amiga) ? vHidd_Controller_Label_None : vHidd_Controller_Label_R2;
+        case vHidd_Controller_Hat_Up:    return vHidd_Controller_Label_DpadUp;
+        case vHidd_Controller_Hat_Down:  return vHidd_Controller_Label_DpadDown;
+        case vHidd_Controller_Hat_Left:  return vHidd_Controller_Label_DpadLeft;
+        case vHidd_Controller_Hat_Right: return vHidd_Controller_Label_DpadRight;
         }
+        return vHidd_Controller_Label_None;
     }
     return vHidd_Controller_Label_None;
 }

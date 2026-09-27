@@ -88,7 +88,6 @@ static void ctrl_ParseDeviceTags(OOP_Class *cl, struct ControllerDevice *dev, st
                 }
                 break;
             case aoHidd_Controller_Type:         dev->type = (UBYTE)tag->ti_Data; break;
-            case aoHidd_Controller_Style:        dev->style = (UBYTE)tag->ti_Data; break;
             case aoHidd_Controller_Family:       dev->family = (UBYTE)tag->ti_Data; break;
             case aoHidd_Controller_Connection:   dev->connection = (UBYTE)tag->ti_Data; break;
             case aoHidd_Controller_BindingTable: dev->drv_bindings = (const struct Hidd_Controller_Binding *)tag->ti_Data; break;
@@ -330,7 +329,6 @@ VOID Controller__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             case aoHidd_Controller_Path:          *msg->storage = (IPTR)dev->path; return;
             case aoHidd_Controller_GUID:          *msg->storage = (IPTR)dev->guid; return;
             case aoHidd_Controller_Type:          *msg->storage = dev->type; return;
-            case aoHidd_Controller_Style:         *msg->storage = dev->style; return;
             case aoHidd_Controller_Family:        *msg->storage = dev->family; return;
             case aoHidd_Controller_Connection:    *msg->storage = dev->connection; return;
             case aoHidd_Controller_PlayerIndex:   *msg->storage = (IPTR)(LONG)dev->player_index; return;

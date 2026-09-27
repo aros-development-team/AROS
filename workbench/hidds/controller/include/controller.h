@@ -81,23 +81,12 @@ enum {
     vHidd_Controller_Type_Other
 };
 
-/* aHidd_Controller_Style (button label style) */
-enum {
-    vHidd_Controller_Style_Generic = 0,
-    vHidd_Controller_Style_Xbox,
-    vHidd_Controller_Style_PlayStation,
-    vHidd_Controller_Style_Nintendo,
-    vHidd_Controller_Style_Amiga
-};
-
-/* aHidd_Controller_Family (protocol family) */
+/* aHidd_Controller_Family (how the driver talks to the device) */
 enum {
     vHidd_Controller_Family_Unknown = 0,
-    vHidd_Controller_Family_HID,
-    vHidd_Controller_Family_XInput,
-    vHidd_Controller_Family_PlayStation,
-    vHidd_Controller_Family_Nintendo,
-    vHidd_Controller_Family_Amiga,
+    vHidd_Controller_Family_HID,          /* generic HID report protocol            */
+    vHidd_Controller_Family_Proprietary,  /* vendor protocol handled by the driver  */
+    vHidd_Controller_Family_Native,       /* machine port (e.g. Amiga joyport)      */
     vHidd_Controller_Family_Virtual,
     vHidd_Controller_Family_Hosted
 };
@@ -313,7 +302,11 @@ enum {
 #define vHidd_Controller_Std_IsAxis(s)   ((s) >= 0x100 && (s) < 0x200)
 #define vHidd_Controller_Std_IsArch(s)   ((s) >= 0x200 && (s) < 0x300)
 
-/* Labels (glyph hints) */
+/*
+ * Labels: the glyph printed on a control, supplied by the driver in each
+ * control descriptor. GetLabel() on a standard element returns the label of
+ * the raw control bound to it.
+ */
 enum {
     vHidd_Controller_Label_None = 0,
     vHidd_Controller_Label_A, vHidd_Controller_Label_B, vHidd_Controller_Label_X, vHidd_Controller_Label_Y,
@@ -429,11 +422,12 @@ struct Hidd_Controller_Binding
 #define vHidd_Controller_BF_OutPos   0x10   /* output +axis */
 #define vHidd_Controller_BF_OutNeg   0x20   /* output -axis */
 
-/* Mapping sources (priority ascending) */
+/* Mapping sources (priority ascending). Device knowledge lives in the driver
+   subclasses (MapSrc_Driver); the subsystem has no built-in device table. */
 enum {
     vHidd_Controller_MapSrc_None = 0,
     vHidd_Controller_MapSrc_Synthesised,
-    vHidd_Controller_MapSrc_BuiltIn,
+    vHidd_Controller_MapSrc_Reserved,
     vHidd_Controller_MapSrc_Driver,
     vHidd_Controller_MapSrc_API,
     vHidd_Controller_MapSrc_User

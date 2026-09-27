@@ -69,10 +69,10 @@
         context. Output is implemented by overriding the IID_Hidd_Controller
         output methods and calling the superclass afterwards.
 
-        Devices of family vHidd_Controller_Family_XInput must expose their raw
-        controls in XINPUT_GAMEPAD order (buttons A B X Y LB RB Back Start LS RS
-        Guide DpadUp DpadDown DpadLeft DpadRight; axes LX LY RX RY LT RT) to get
-        the built-in layout.
+        Knowledge about particular devices (layouts, quirks) belongs to the driver
+        class: a driver that knows its device passes aHidd_Controller_BindingTable;
+        without it the subsystem synthesises a layout from the HID usages in the
+        control table.
 
 *****************************************************************************************/
 

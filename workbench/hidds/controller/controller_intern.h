@@ -102,7 +102,7 @@ struct ControllerDevice
     CONST_STRPTR            serial;
     CONST_STRPTR            path;
     UWORD                   vendor, product, version;
-    UBYTE                   bus, type, style, family, connection;
+    UBYTE                   bus, type, family, connection;
     UBYTE                   guid[16];
 
     /* controls */
