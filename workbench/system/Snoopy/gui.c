@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -376,6 +376,9 @@ void gui_set(void)
 
 void gui_get(void)
 {
+    CONST_STRPTR pattern;
+    int i;
+
     setup.onlyShowFails       = XGET(failCM,          MUIA_Selected);
     setup.showCliNr           = XGET(cliCM,           MUIA_Selected);
     setup.showPaths           = XGET(pathCM,          MUIA_Selected);
@@ -383,7 +386,10 @@ void gui_get(void)
     setup.ignoreWB            = XGET(ignoreCM,        MUIA_Selected);
     setup.breakPoint          = XGET(breakPointCM,    MUIA_Selected);
 
-    setup.pattern             = (STRPTR)XGET(patternStr, MUIA_String_Contents);
+    pattern = (CONST_STRPTR)XGET(patternStr, MUIA_String_Contents);
+    for (i = 0; pattern && (i < PATTERNLEN - 1) && pattern[i]; i++)
+        setup.pattern[i] = pattern[i];
+    setup.pattern[i] = '\0';
     main_parsepattern();
 
     setup.enableChangeDir     = XGET(changeDirCM,     MUIA_Selected);

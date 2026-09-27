@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef SETUP_H
@@ -26,7 +26,7 @@ struct Setup
     BOOL breakPoint; // stop AROS e.g. with asm("int3") on i386.
 
     BOOL match;  // TRUE if pattern could be successfully parsed.
-    STRPTR pattern;
+    TEXT pattern[PATTERNLEN];
     TEXT parsedpattern[PARSEDPATTERNLEN];
 
     BOOL enableChangeDir;

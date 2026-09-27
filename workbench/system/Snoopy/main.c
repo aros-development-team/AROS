@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -135,7 +135,6 @@ void main_parsepattern(void)
 {
     setup.match = FALSE;
 
-    if (!setup.pattern) return;
     if (setup.pattern[0] == '\0') return;
 
     Forbid(); // avoid that parsed pattern is used while we change it
