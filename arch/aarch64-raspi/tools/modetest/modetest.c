@@ -20,7 +20,13 @@
     draws a 1-pixel border round the mode and the framebuffer first: with
     the shift, the right border vanishes and the left one doubles.
 
-    Usage: modetest [MODE=<WxH>] [LIST] [HOLD=<s>] [LOOP=<n>] [FRAME] [GO]
+    A mode larger than the framebuffer shows it top-left with a border.
+    EXTRAPOLATE lets modes from 222 MHz up to 340 MHz through with the
+    lane settings captured below 222 MHz - a test of whether those hold
+    at a higher rate, which DISPLAY-SPEC 9.3 warns they may not.
+
+    Usage: modetest [MODE=<WxH>] [LIST] [HOLD=<s>] [LOOP=<n>] [FRAME]
+                    [EXTRAPOLATE] [GO]
 */
 
 #include <aros/debug.h>
@@ -52,8 +58,8 @@ APTR MBoxBase;
 
 #define VCMB_OFFSET_BCM2712     0x013880
 
-/* CEA-861 and VESA DMT timings, clock in kHz. Only what the captured
- * lane settings cover (< 222 MHz) and the 1920x1080 plane can show. */
+/* CEA-861 and VESA DMT timings, clock in kHz. The last one is the
+ * native mode of the ASUS VG27AQL5A this was tested on, from its EDID. */
 struct mode
 {
     const char *name;
@@ -75,6 +81,7 @@ static const struct mode modes[] =
     { "1600x900@60",  108000, 1600,  24,  80,  96,  900,  1, 3, 96, FALSE, FALSE },
     { "1680x1050@60", 146250, 1680, 104, 176, 280, 1050,  3, 6, 30, TRUE,  FALSE },
     { "1920x1080@60", 148500, 1920,  88,  44, 148, 1080,  4, 5, 36, FALSE, FALSE },
+    { "2560x1440@60", 241500, 2560,  48,  32,  80, 1440,  3, 5, 33, FALSE, TRUE  },
 };
 #define MODES                   (sizeof(modes) / sizeof(modes[0]))
 
@@ -89,6 +96,7 @@ static const ULONG lane_ctl[4] =
     0x80828700, 0x80828700, 0x80828700, 0x80828700,
 };
 #define LANE_BAND_MAX           222000          /* kHz */
+#define SCRAMBLE_MIN            340000          /* kHz, not done here */
 
 /* HDMI0 path only: HVS channel 0 -> pixelvalve 0 -> HDMI0. */
 #define PV_OFF                  0x410000
@@ -435,14 +443,14 @@ static BOOL find_slots(ULONG *out)
 
 /* The live list's first entry is the driver's framebuffer plane. Copy it
  * with the new extent, so everything else about it stays known good. */
-static void build_list(ULONG ours, ULONG live, const struct mode *m)
+static void build_list(ULONG ours, ULONG live, ULONG w, ULONG h)
 {
     ULONG i;
 
     for (i = 0; i < SLOT_WORDS; i++)
         wr(HVS_DLIST + (ours + i) * 4, rd(HVS_DLIST + (live + i) * 4));
     wr(HVS_DLIST + (ours + ENT_POS0) * 4, 0);
-    wr(HVS_DLIST + (ours + ENT_POS2) * 4, ((m->vact - 1) << 16) | (m->hact - 1));
+    wr(HVS_DLIST + (ours + ENT_POS2) * 4, ((h - 1) << 16) | (w - 1));
     wr(HVS_DLIST + (ours + SLOT_WORDS) * 4, CTL0_END);
 }
 
@@ -476,9 +484,10 @@ static void draw_frame(ULONG live, ULONG w, ULONG h)
     CacheClearE((APTR)(IPTR)fb, pitch * h, CACRF_ClearD);
 }
 
-#define TEMPLATE "MODE/K,LIST/S,HOLD/N,LOOP/N,FRAME/S,GO/S"
+#define TEMPLATE "MODE/K,LIST/S,HOLD/N,LOOP/N,FRAME/S,EXTRAPOLATE/S,GO/S"
 
-enum { ARG_MODE, ARG_LIST, ARG_HOLD, ARG_LOOP, ARG_FRAME, ARG_GO, ARG_COUNT };
+enum { ARG_MODE, ARG_LIST, ARG_HOLD, ARG_LOOP, ARG_FRAME, ARG_EXTRAPOLATE, ARG_GO,
+       ARG_COUNT };
 
 int main(void)
 {
@@ -488,6 +497,7 @@ int main(void)
     const struct mode *m = &modes[3];
     struct state fw, ours;
     ULONG hold, loops = 1, good = 0, steps = 0, slots = 0, pos2, vco_div, rm_offset, i;
+    ULONG plane_w, plane_h;
     APTR mbbuf = NULL;
     int rc = RETURN_FAIL;
 
@@ -544,18 +554,30 @@ int main(void)
     if (!(fw.pv_ctl & PV_CONTROL_EN) || !(fw.pv_vctl & PV_VC_VIDEN)
         || (fw.pv_ctl & PV_CONTROL_CLK_SELECT) || (fw.pv_vctl & PV_VC_INTERLACE)
         || (fw.pv_vctl & PV_VC_ODD_TIMING) || (rd(PHY_OFF + PHY_PLL_VCOCLK_DIV) != 0x407)
-        || (rd(HVS_DLIST + fw.lptrs * 4) & CTL0_END)
-        || ((pos2 & 0xffff) + 1 < m->hact) || ((pos2 >> 16) + 1 < m->vact))
+        || (rd(HVS_DLIST + fw.lptrs * 4) & CTL0_END))
     {
         P("modetest: not the boot state this was written for - refusing\n");
         state_print("live", &fw);
         goto out;
     }
-    if (m->khz >= LANE_BAND_MAX || !pll_params(m->khz, &vco_div, &rm_offset))
+    if ((m->khz >= SCRAMBLE_MIN) || !pll_params(m->khz, &vco_div, &rm_offset)
+        || ((m->khz >= LANE_BAND_MAX) && !args[ARG_EXTRAPOLATE]))
     {
-        P("modetest: %s is outside what the captured PHY settings cover\n", m->name);
+        P("modetest: %s is outside what the captured PHY settings cover%s\n", m->name,
+          (m->khz < SCRAMBLE_MIN) ? " - EXTRAPOLATE tries it anyway" : "");
         goto out;
     }
+    if (m->khz >= LANE_BAND_MAX)
+        P("modetest: %u kHz is above the captured lane band - extrapolating\n",
+          (unsigned)m->khz);
+
+    /* The framebuffer plane shows as much of the mode as it covers. */
+    plane_w = (pos2 & 0xffff) + 1;
+    plane_h = (pos2 >> 16) + 1;
+    if (plane_w > m->hact)
+        plane_w = m->hact;
+    if (plane_h > m->vact)
+        plane_h = m->vact;
     if (!find_slots(&slots))
     {
         P("modetest: no free display list slots\n");
@@ -578,10 +600,10 @@ int main(void)
     if (args[ARG_FRAME])
     {
         draw_frame(fw.lptrs, (pos2 & 0xffff) + 1, (pos2 >> 16) + 1);
-        draw_frame(fw.lptrs, m->hact, m->vact);
+        draw_frame(fw.lptrs, plane_w, plane_h);
     }
     measure("before", fw.khz);
-    build_list(slots, fw.lptrs, m);
+    build_list(slots, fw.lptrs, plane_w, plane_h);
 
     for (i = 1; i <= loops; i++)
     {
