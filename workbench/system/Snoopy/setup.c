@@ -95,11 +95,11 @@ static CONST_STRPTR opts[] =
     "OptionLen"
 };
 
-static void setup_write_parameter(BPTR fh, int argindex, int value)
+static BOOL setup_write_parameter(BPTR fh, int argindex, int value)
 {
     static char buffer[50];
     sprintf(buffer, "%s %d\n", opts[argindex], value);
-    FPuts(fh, (STRPTR)buffer);
+    return FPuts(fh, (STRPTR)buffer) == 0;
 }
 
 void setup_init(void)
@@ -167,47 +167,50 @@ BOOL setup_save(void)
     BPTR fh = Open(PREFFILE, MODE_NEWFILE);
     if (fh)
     {
-        setup_write_parameter(fh, onlyShowFailsOpt, setup.onlyShowFails);
-        setup_write_parameter(fh, useDevNamesOpt,   setup.useDevNames);
-        setup_write_parameter(fh, showPathsOpt,     setup.showPaths);
-        setup_write_parameter(fh, showCliNrOpt,     setup.showCliNr);
-        setup_write_parameter(fh, ignoreWBOpt,      setup.ignoreWB);
-        setup_write_parameter(fh, breakPointOpt,    setup.breakPoint);
+        retvalue = TRUE;
+        retvalue &= setup_write_parameter(fh, onlyShowFailsOpt, setup.onlyShowFails);
+        retvalue &= setup_write_parameter(fh, useDevNamesOpt,   setup.useDevNames);
+        retvalue &= setup_write_parameter(fh, showPathsOpt,     setup.showPaths);
+        retvalue &= setup_write_parameter(fh, showCliNrOpt,     setup.showCliNr);
+        retvalue &= setup_write_parameter(fh, ignoreWBOpt,      setup.ignoreWB);
+        retvalue &= setup_write_parameter(fh, breakPointOpt,    setup.breakPoint);
 
         // TODO: write pattern
 
-        setup_write_parameter(fh, ChangeDirOpt,     setup.enableChangeDir);
-        setup_write_parameter(fh, DeleteOpt,        setup.enableDelete);
-        setup_write_parameter(fh, ExecuteOpt,       setup.enableExecute);
-        setup_write_parameter(fh, GetVarOpt,        setup.enableGetVar);
-        setup_write_parameter(fh, LoadSegOpt,       setup.enableLoadSeg);
-        setup_write_parameter(fh, LockOpt,          setup.enableLock);
-        setup_write_parameter(fh, MakeDirOpt,       setup.enableMakeDir);
-        setup_write_parameter(fh, MakeLinkOpt,      setup.enableMakeLink);
-        setup_write_parameter(fh, OpenOpt,          setup.enableOpen);
-        setup_write_parameter(fh, RenameOpt,        setup.enableRename);
-        setup_write_parameter(fh, RunCommandOpt,    setup.enableRunCommand);
-        setup_write_parameter(fh, SetVarOpt,        setup.enableSetVar);
-        setup_write_parameter(fh, SystemOpt,        setup.enableSystem);
+        retvalue &= setup_write_parameter(fh, ChangeDirOpt,     setup.enableChangeDir);
+        retvalue &= setup_write_parameter(fh, DeleteOpt,        setup.enableDelete);
+        retvalue &= setup_write_parameter(fh, ExecuteOpt,       setup.enableExecute);
+        retvalue &= setup_write_parameter(fh, GetVarOpt,        setup.enableGetVar);
+        retvalue &= setup_write_parameter(fh, LoadSegOpt,       setup.enableLoadSeg);
+        retvalue &= setup_write_parameter(fh, LockOpt,          setup.enableLock);
+        retvalue &= setup_write_parameter(fh, MakeDirOpt,       setup.enableMakeDir);
+        retvalue &= setup_write_parameter(fh, MakeLinkOpt,      setup.enableMakeLink);
+        retvalue &= setup_write_parameter(fh, OpenOpt,          setup.enableOpen);
+        retvalue &= setup_write_parameter(fh, RenameOpt,        setup.enableRename);
+        retvalue &= setup_write_parameter(fh, RunCommandOpt,    setup.enableRunCommand);
+        retvalue &= setup_write_parameter(fh, SetVarOpt,        setup.enableSetVar);
+        retvalue &= setup_write_parameter(fh, SystemOpt,        setup.enableSystem);
 
-        setup_write_parameter(fh, FindPortOpt,      setup.enableFindPort);
-        setup_write_parameter(fh, FindResidentOpt,  setup.enableFindResident);
-        setup_write_parameter(fh, FindSemaphoreOpt, setup.enableFindSemaphore);
-        setup_write_parameter(fh, FindTaskOpt,      setup.enableFindTask);
-        setup_write_parameter(fh, LockScreenOpt,    setup.enableLockScreen);
-        setup_write_parameter(fh, OpenDeviceOpt,    setup.enableOpenDevice);
-        setup_write_parameter(fh, OpenFontOpt,      setup.enableOpenFont);
-        setup_write_parameter(fh, OpenLibraryOpt,   setup.enableOpenLibrary);
-        setup_write_parameter(fh, OpenResourceOpt,  setup.enableOpenResource);
-        setup_write_parameter(fh, ReadToolTypesOpt, setup.enableReadToolTypes);
+        retvalue &= setup_write_parameter(fh, FindPortOpt,      setup.enableFindPort);
+        retvalue &= setup_write_parameter(fh, FindResidentOpt,  setup.enableFindResident);
+        retvalue &= setup_write_parameter(fh, FindSemaphoreOpt, setup.enableFindSemaphore);
+        retvalue &= setup_write_parameter(fh, FindTaskOpt,      setup.enableFindTask);
+        retvalue &= setup_write_parameter(fh, LockScreenOpt,    setup.enableLockScreen);
+        retvalue &= setup_write_parameter(fh, OpenDeviceOpt,    setup.enableOpenDevice);
+        retvalue &= setup_write_parameter(fh, OpenFontOpt,      setup.enableOpenFont);
+        retvalue &= setup_write_parameter(fh, OpenLibraryOpt,   setup.enableOpenLibrary);
+        retvalue &= setup_write_parameter(fh, OpenResourceOpt,  setup.enableOpenResource);
+        retvalue &= setup_write_parameter(fh, ReadToolTypesOpt, setup.enableReadToolTypes);
 
-        setup_write_parameter(fh, nameLenOpt,       setup.nameLen);
-        setup_write_parameter(fh, actionLenOpt,     setup.actionLen);
-        setup_write_parameter(fh, targetLenOpt,     setup.targetLen);
-        setup_write_parameter(fh, optionLenOpt,     setup.optionLen);
+        retvalue &= setup_write_parameter(fh, nameLenOpt,       setup.nameLen);
+        retvalue &= setup_write_parameter(fh, actionLenOpt,     setup.actionLen);
+        retvalue &= setup_write_parameter(fh, targetLenOpt,     setup.targetLen);
+        retvalue &= setup_write_parameter(fh, optionLenOpt,     setup.optionLen);
 
-        Close(fh);
-        retvalue = TRUE;
+        if (!Flush(fh))
+            retvalue = FALSE;
+        if (!Close(fh))
+            retvalue = FALSE;
     }
     
     // restore breakpoint option
