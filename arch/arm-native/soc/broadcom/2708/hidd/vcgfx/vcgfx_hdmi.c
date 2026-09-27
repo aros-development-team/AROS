@@ -132,11 +132,26 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
     xsd->vcsd_NativeWidth  = native_w;
     xsd->vcsd_NativeHeight = native_h;
 
+    vcgfx_edid_probe(xsd);
+
     if (native_w && native_h)
     {
+        const struct vcgfx_timing *t = vcgfx_edid_find(xsd, native_w, native_h);
         struct VC4ModeEntry n = { native_w, native_h, 25174,
             native_w, native_w, native_w,
             native_h, native_h, native_h };
+
+        /* The sink's own timings for this size, where it lists them. */
+        if (t)
+        {
+            n.clock  = t->clock;
+            n.hstart = t->hstart;
+            n.hend   = t->hend;
+            n.htotal = t->htotal;
+            n.vstart = t->vstart;
+            n.vend   = t->vend;
+            n.vtotal = t->vtotal;
+        }
         if ((hdmi_mode = VC4_BuildMode(&n)) != NULL)
         {
             AddTail(modelist, &hdmi_mode->dm_Node);
