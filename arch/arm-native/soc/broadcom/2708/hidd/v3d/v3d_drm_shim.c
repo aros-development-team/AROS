@@ -696,44 +696,72 @@ unsigned char driQueryOptionb(const void *cache, const char *name)
 #define V3D_SYNCFILE_MASK   0x3fffffff
 #define V3D_SYNCOBJS        16
 
-/* 0 = free slot, else seqno + 1. */
+/* 0 = free slot, else seqno + 1. Guarded by bo_lock: contexts can live
+ * in different tasks. */
 static ULONG v3d_syncobj[V3D_SYNCOBJS];
 
 int drmSyncobjCreate(int fd, uint32_t flags, uint32_t *handle)
 {
+    struct V3DData *sd = g_v3d_data;
     ULONG i;
+    int ret = -1;
 
     (void)fd; (void)flags;
+    if (!sd)
+        return -1;
+
+    ObtainSemaphore(&sd->bo_lock);
     for (i = 0; i < V3D_SYNCOBJS; i++)
     {
         if (v3d_syncobj[i])
             continue;
         v3d_syncobj[i] = 1;             /* seqno 0: already signalled */
         *handle = (uint32_t)(i + 1);
-        return 0;
+        ret = 0;
+        break;
     }
-    return -1;
+    ReleaseSemaphore(&sd->bo_lock);
+    return ret;
 }
 
 int drmSyncobjDestroy(int fd, uint32_t handle)
 {
+    struct V3DData *sd = g_v3d_data;
+
     (void)fd;
-    if (handle && handle <= V3D_SYNCOBJS)
+    if (sd && handle && handle <= V3D_SYNCOBJS)
+    {
+        ObtainSemaphore(&sd->bo_lock);
         v3d_syncobj[handle - 1] = 0;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
     return 0;
 }
 
 static void v3d_syncobj_signal(uint32_t handle, ULONG seqno)
 {
-    if (handle && handle <= V3D_SYNCOBJS && v3d_syncobj[handle - 1])
+    struct V3DData *sd = g_v3d_data;
+
+    if (!sd || !handle || handle > V3D_SYNCOBJS)
+        return;
+    ObtainSemaphore(&sd->bo_lock);
+    if (v3d_syncobj[handle - 1])
         v3d_syncobj[handle - 1] = seqno + 1;
+    ReleaseSemaphore(&sd->bo_lock);
 }
 
 static ULONG v3d_syncobj_seqno(uint32_t handle)
 {
-    if (handle && handle <= V3D_SYNCOBJS && v3d_syncobj[handle - 1])
-        return v3d_syncobj[handle - 1] - 1;
-    return 0;
+    struct V3DData *sd = g_v3d_data;
+    ULONG seqno = 0;
+
+    if (!sd || !handle || handle > V3D_SYNCOBJS)
+        return 0;
+    ObtainSemaphore(&sd->bo_lock);
+    if (v3d_syncobj[handle - 1])
+        seqno = v3d_syncobj[handle - 1] - 1;
+    ReleaseSemaphore(&sd->bo_lock);
+    return seqno;
 }
 
 int drmSyncobjExportSyncFile(int fd, uint32_t handle, int *sync_file_fd)
@@ -756,10 +784,22 @@ int drmSyncobjExportSyncFile(int fd, uint32_t handle, int *sync_file_fd)
 
 int drmSyncobjImportSyncFile(int fd, uint32_t handle, int sync_file_fd)
 {
+    struct V3DData *sd = g_v3d_data;
+    ULONG seqno;
+
     (void)fd;
-    if (!handle || handle > V3D_SYNCOBJS)
+    if (!sd || !handle || handle > V3D_SYNCOBJS ||
+        ((ULONG)sync_file_fd & ~V3D_SYNCFILE_MASK) != V3D_SYNCFILE_TAG)
         return -1;
-    v3d_syncobj[handle - 1] = ((ULONG)sync_file_fd & V3D_SYNCFILE_MASK) + 1;
+
+    /* The fd holds the low 30 bits; the rest come from the newest seqno */
+    seqno = (sd->seqno & ~V3D_SYNCFILE_MASK) | ((ULONG)sync_file_fd & V3D_SYNCFILE_MASK);
+    if (seqno > sd->seqno)
+        seqno = (seqno > V3D_SYNCFILE_MASK) ? seqno - (V3D_SYNCFILE_MASK + 1) : sd->seqno;
+
+    ObtainSemaphore(&sd->bo_lock);
+    v3d_syncobj[handle - 1] = seqno + 1;
+    ReleaseSemaphore(&sd->bo_lock);
     return 0;
 }
 
@@ -780,8 +820,8 @@ int drmSyncobjWait(int fd, uint32_t *handles, uint32_t count, int64_t timeout,
     {
         uint32_t h = handles[i];
 
-        if (h && h <= V3D_SYNCOBJS && v3d_syncobj[h - 1])
-            v3d_hw_wait_seqno(sd, v3d_syncobj[h - 1] - 1);
+        if (h && h <= V3D_SYNCOBJS)
+            v3d_hw_wait_seqno(sd, v3d_syncobj_seqno(h));
     }
     return 0;
 }
