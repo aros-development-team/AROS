@@ -21,12 +21,13 @@
     the shift, the right border vanishes and the left one doubles.
 
     A mode larger than the framebuffer shows it top-left with a border.
-    EXTRAPOLATE lets modes from 222 MHz up to 340 MHz through with the
-    lane settings captured below 222 MHz - a test of whether those hold
-    at a higher rate, which DISPLAY-SPEC 9.3 warns they may not.
+    Modes from 340 MHz up are scrambled (DISPLAY-SPEC 7.3): the sink is
+    set up over SCDC first, and must report scrambler lock. SPECCTL runs
+    our modes with the pixelvalve CONTROL bits of 6.2 instead of the
+    firmware's.
 
-    Usage: modetest [MODE=<WxH>] [LIST] [HOLD=<s>] [LOOP=<n>] [FRAME]
-                    [EXTRAPOLATE] [GO]
+    Usage: modetest [MODE=<WxH[@Hz]>] [LIST] [HOLD=<s>] [LOOP=<n>] [FRAME]
+                    [SPECCTL] [GO]
 */
 
 #include <aros/debug.h>
@@ -82,6 +83,8 @@ static const struct mode modes[] =
     { "1680x1050@60", 146250, 1680, 104, 176, 280, 1050,  3, 6, 30, TRUE,  FALSE },
     { "1920x1080@60", 148500, 1920,  88,  44, 148, 1080,  4, 5, 36, FALSE, FALSE },
     { "2560x1440@60", 241500, 2560,  48,  32,  80, 1440,  3, 5, 33, FALSE, TRUE  },
+    { "2560x1440@120", 497750, 2560, 48,  32,  80, 1440,  3, 5, 77, FALSE, TRUE  },
+    { "2560x1440@144", 593700, 2560,  8,  32,  72, 1440, 25, 8, 70, FALSE, TRUE  },
 };
 #define MODES                   (sizeof(modes) / sizeof(modes[0]))
 
@@ -91,12 +94,12 @@ static const ULONG pll_misc[9] =
     0x810c6000, 0x00b8c451, 0x46402e31, 0x00b8c005, 0x42410261,
     0xcc021001, 0xc8301c80, 0xb0804444, 0xf80f8000,
 };
-static const ULONG lane_ctl[4] =
-{
-    0x80828700, 0x80828700, 0x80828700, 0x80828700,
-};
-#define LANE_BAND_MAX           222000          /* kHz */
-#define SCRAMBLE_MIN            340000          /* kHz, not done here */
+/* CTL_0/1/2/CK by TMDS band, read back from the hardware; spec 15. */
+static const ULONG lanes_low[4]  = { 0x80828700, 0x80828700, 0x80828700, 0x80828700 };
+static const ULONG lanes_mid[4]  = { 0xc0870000, 0xc0870000, 0xc0870000, 0xc0870800 };
+static const ULONG lanes_high[4] = { 0x848f8700, 0x848f8700, 0x848f8700, 0x849f8f00 };
+#define SCRAMBLE_MIN            340000          /* kHz */
+#define TMDS_MAX                600000          /* kHz */
 
 /* HDMI0 path only: HVS channel 0 -> pixelvalve 0 -> HDMI0. */
 #define PV_OFF                  0x410000
@@ -151,6 +154,30 @@ static const ULONG lane_ctl[4] =
 #define HDMI_VERTA1             0x100
 #define HDMI_VERTB1             0x104
 #define HDMI_HOTPLUG            0x1c8
+#define HDMI_SCRAMBLER_CTL      0x1e4
+#define SCRAMBLER_ENABLE        (1 << 0)
+
+/* HDMI0's DDC controller (Broadcom STB I2C, spec 8) and the SCDC
+ * registers of the sink behind it (slave 0x54). */
+#define DDC_OFF                 0x1508200
+#define BSC_CHIP_ADDRESS        0x00
+#define BSC_DATA_IN(i)          (0x04 + 4 * (i))
+#define BSC_CNT                 0x24
+#define BSC_CTL                 0x28
+#define BSC_IIC_ENABLE          0x2c
+#define BSC_DATA_OUT(i)         (0x30 + 4 * (i))
+#define BSC_CTLHI               0x50
+#define BSC_CTL_97K5            0x90
+#define BSC_EN_ENABLE           (1 << 0)
+#define BSC_EN_INTRP            (1 << 1)
+#define BSC_EN_NOACK            (1 << 2)
+#define BSC_CTLHI_DATAREG_32    (1 << 6)
+#define SCDC_ADDR               (0x54 << 1)
+#define SCDC_SINK_VERSION       0x01
+#define SCDC_SOURCE_VERSION     0x02
+#define SCDC_TMDS_CONFIG        0x20            /* 1 = clock ratio 1/40, 0 = scramble */
+#define SCDC_SCRAMBLER_STATUS   0x21
+#define SCDC_STATUS_FLAGS       0x40            /* clock detected, ch0-2 locked */
 #define HDMI_HORZA_VPOS         (1 << 15)
 #define HDMI_HORZA_HPOS         (1 << 14)
 #define FIFO_RECENTER           (1 << 6)
@@ -174,12 +201,15 @@ static const ULONG lane_ctl[4] =
  * was read. */
 struct state
 {
-    ULONG khz;
+    ULONG khz, hz;
     ULONG hvs_ctrl0, lptrs;
     ULONG pv_ctl, pv_vctl, pv_horza, pv_horzb, pv_verta, pv_vertb;
     ULONG hd_horza, hd_horzb, hd_verta0, hd_vertb0, hd_verta1, hd_vertb1;
     ULONG vid_ctl;
+    BOOL  scramble;
 };
+
+static BOOL scrambled;          /* what the sink was last set up for */
 
 static ULONG *mb;
 
@@ -234,8 +264,8 @@ static ULONG measured_pixel_clock(void)
     return AROS_LE2LONG(mb[6]);
 }
 
-/* 60 +- 2 frames/s and the pixel clock within 0.5% of the mode's. */
-static BOOL measure(const char *when, ULONG khz)
+/* The mode's frame rate +- 2 and its pixel clock within 0.5%. */
+static BOOL measure(const char *when, ULONG khz, ULONG hz)
 {
     ULONG f0, f1, ctrl0, clk, fps, err;
     BOOL ok;
@@ -247,7 +277,7 @@ static BOOL measure(const char *when, ULONG khz)
     clk = measured_pixel_clock();
     fps = f1 - f0;
     err = (clk > khz * 1000) ? clk - khz * 1000 : khz * 1000 - clk;
-    ok  = (fps >= 58) && (fps <= 62) && (err <= khz * 5);
+    ok  = (fps + 2 >= hz) && (fps <= hz + 2) && (err <= khz * 5);
 
     P("  %s: HDMI %u frames/s, pixel clock %u Hz, HVS ch0 %ux%u DL %#06x mode %u,"
       " FIFO_CTL %08x%s\n", when, (unsigned)fps, (unsigned)clk,
@@ -261,6 +291,7 @@ static BOOL measure(const char *when, ULONG khz)
 static void state_read(struct state *s, ULONG khz)
 {
     s->khz       = khz;
+    s->hz        = 60;          /* the boot mode checked for below */
     s->hvs_ctrl0 = rd(HVS_CH0 + HVS_CTRL0);
     s->lptrs     = rd(HVS_CH0 + HVS_LPTRS) & 0xfff;
     s->pv_ctl    = rd(PV_OFF + PV_CONTROL);
@@ -276,18 +307,27 @@ static void state_read(struct state *s, ULONG khz)
     s->hd_verta1 = rd(HDMI_OFF + HDMI_VERTA1);
     s->hd_vertb1 = rd(HDMI_OFF + HDMI_VERTB1);
     s->vid_ctl   = rd(HD_VID_CTL);
+    s->scramble  = FALSE;
 }
 
 /* Register values for a mode: pixelvalve at 1 pixel/clock with
  * ODD_TIMING (6.1, 6.2), HDMI timings unhalved (7.1), rep = 1. */
 static void state_build(struct state *s, const struct state *fw,
-                        const struct mode *m, ULONG lptrs)
+                        const struct mode *m, ULONG lptrs, BOOL specctl)
 {
+    ULONG total = (m->hact + m->hfp + m->hsync + m->hbp)
+                * (m->vact + m->vfp + m->vsync + m->vbp);
+
     s->khz       = m->khz;
+    s->hz        = (m->khz * 1000 + total / 2) / total;
+    s->scramble  = (m->khz >= SCRAMBLE_MIN);
     s->hvs_ctrl0 = (fw->hvs_ctrl0 & ~HVS_CTRL0_SIZE)
                  | ((m->hact - 1) << 16) | (m->vact - 1);
     s->lptrs     = lptrs;
-    s->pv_ctl    = fw->pv_ctl;
+    /* 6.2: CLR_AT_START | TRIGGER_UNDERFLOW | WAIT_HSTART, the firmware's
+     * FIFO level without FIFO_LEVEL_HIGH. */
+    s->pv_ctl    = specctl ? ((fw->pv_ctl & (0x3f << 15)) | (7 << 12) | PV_CONTROL_EN)
+                           : fw->pv_ctl;
     s->pv_vctl   = fw->pv_vctl | PV_VC_ODD_TIMING;
     s->pv_horza  = (m->hbp << 16) | m->hsync;
     s->pv_horzb  = (m->hfp << 16) | m->hact;
@@ -320,6 +360,7 @@ static void state_print(const char *name, const struct state *s)
 /* DISPLAY-SPEC 9.4, steps 1-16. */
 static void phy_init(ULONG khz)
 {
+    const ULONG *lanes;
     ULONG vco_div, rm_offset, i;
 
     pll_params(khz, &vco_div, &rm_offset);
@@ -338,14 +379,102 @@ static void phy_init(ULONG khz)
     wr(PHY_OFF + PHY_PLL_CFG, 0);
     wr(PHY_OFF + PHY_PLL_POST_KDIV, (2 << 2) | 1);      /* CLK0_SEL 2, KDIV 1 */
 
+    lanes = (khz < 222000) ? lanes_low : (khz <= 297000) ? lanes_mid : lanes_high;
     for (i = 0; i < 4; i++)
-        wr(PHY_OFF + PHY_CTL(i), lane_ctl[i]);
+        wr(PHY_OFF + PHY_CTL(i), lanes[i]);
     wr(PHY_OFF + PHY_TMDS_CLK_WORD_SEL, (khz >= 340000) ? 3 : 0);
     wr(PHY_OFF + PHY_POWERUP_CTL, 0x1cf);
 
     wr(PHY_OFF + PHY_PLL_POWERUP_CTL, 1);
     wr(PHY_OFF + PHY_PLL_RESET_CTL, rd(PHY_OFF + PHY_PLL_RESET_CTL) & ~1);
     wr(PHY_OFF + PHY_PLL_RESET_CTL, rd(PHY_OFF + PHY_PLL_RESET_CTL) | 1);
+}
+
+static inline ULONG now_us(void)
+{
+    return rd(0x3004);          /* the 1 MHz system timer */
+}
+
+/* One polled START..STOP transaction on HDMI0's DDC bus. */
+static BOOL ddc_xfer(UBYTE addr8, BOOL read, UBYTE *buf, ULONG len)
+{
+    ULONG w[8] = { 0 }, en = 0, i, n;
+
+    wr(DDC_OFF + BSC_IIC_ENABLE, 0);
+    wr(DDC_OFF + BSC_CHIP_ADDRESS, addr8 | (read ? 1 : 0));
+    wr(DDC_OFF + BSC_CNT, len);
+    wr(DDC_OFF + BSC_CTL, BSC_CTL_97K5 | (read ? 1 : 0));
+    if (!read)
+    {
+        for (i = 0; i < len; i++)
+            w[i >> 2] |= (ULONG)buf[i] << ((i & 3) * 8);
+        for (i = 0; i < 8; i++)
+            wr(DDC_OFF + BSC_DATA_IN(i), w[i]);
+    }
+    wr(DDC_OFF + BSC_IIC_ENABLE, BSC_EN_ENABLE);
+    for (n = 0; n < 2000000; n++)
+        if ((en = rd(DDC_OFF + BSC_IIC_ENABLE)) & BSC_EN_INTRP)
+            break;
+    wr(DDC_OFF + BSC_IIC_ENABLE, 0);
+    if ((n == 2000000) || (en & BSC_EN_NOACK))
+        return FALSE;
+    if (read)
+        for (i = 0; i < len; i++)
+            buf[i] = rd(DDC_OFF + BSC_DATA_OUT(i >> 2)) >> ((i & 3) * 8);
+    return TRUE;
+}
+
+/* SCDC register access. The firmware uses this controller too, so its
+ * set-up is put back afterwards. */
+static BOOL scdc(UBYTE reg, BOOL read, UBYTE *val)
+{
+    ULONG ctl = rd(DDC_OFF + BSC_CTL), ctlhi = rd(DDC_OFF + BSC_CTLHI);
+    ULONG addr = rd(DDC_OFF + BSC_CHIP_ADDRESS);
+    UBYTE b[2] = { reg, read ? 0 : *val };
+    BOOL ok;
+
+    wr(DDC_OFF + BSC_CTLHI, ctlhi | BSC_CTLHI_DATAREG_32);
+    if (read)
+        ok = ddc_xfer(SCDC_ADDR, FALSE, b, 1) && ddc_xfer(SCDC_ADDR, TRUE, val, 1);
+    else
+        ok = ddc_xfer(SCDC_ADDR, FALSE, b, 2);
+    wr(DDC_OFF + BSC_CTL, ctl);
+    wr(DDC_OFF + BSC_CTLHI, ctlhi);
+    wr(DDC_OFF + BSC_CHIP_ADDRESS, addr);
+    return ok;
+}
+
+static BOOL scdc_rd(UBYTE reg, UBYTE *val)
+{
+    return scdc(reg, TRUE, val);
+}
+
+static BOOL scdc_wr(UBYTE reg, UBYTE val)
+{
+    return scdc(reg, FALSE, &val);
+}
+
+/* The sink half of 7.3, before the fast clock starts. */
+static void scramble_sink(BOOL on)
+{
+    if (on)
+        scdc_wr(SCDC_SOURCE_VERSION, 1);
+    if (!scdc_wr(SCDC_TMDS_CONFIG, on ? 3 : 0))
+        P("  SCDC: TMDS_Config write not acknowledged\n");
+}
+
+/* Wait for the sink to report scrambled input, up to 250 ms. */
+static void scramble_wait(void)
+{
+    ULONG start = now_us(), t = 0;
+    UBYTE st = 0, flags = 0;
+
+    while ((t = now_us() - start) < 250000)
+        if (scdc_rd(SCDC_SCRAMBLER_STATUS, &st) && (st & 1))
+            break;
+    scdc_rd(SCDC_STATUS_FLAGS, &flags);
+    P("  SCDC: scrambler %s after %u us, status flags %02x\n",
+      (st & 1) ? "locked" : "NOT locked", (unsigned)t, flags);
 }
 
 /* DISPLAY-SPEC 10.1. */
@@ -400,6 +529,17 @@ static void mode_set(const struct state *s)
     wr(HVS_CH0 + HVS_CTRL0, HVS_CTRL0_RESET);
     wr(HVS_CH0 + HVS_CTRL0, s->hvs_ctrl0 & ~HVS_CTRL0_RESET);
 
+    /* Scrambling off on both sides while nothing is sent; the sink
+     * gets its new setting before the new clock starts. */
+    if (scrambled && !s->scramble)
+    {
+        wr(HDMI_OFF + HDMI_SCRAMBLER_CTL, rd(HDMI_OFF + HDMI_SCRAMBLER_CTL) & ~SCRAMBLER_ENABLE);
+        scramble_sink(FALSE);
+    }
+    else if (s->scramble)
+        scramble_sink(TRUE);
+    scrambled = s->scramble;
+
     phy_init(s->khz);
     Delay(1);       /* PLL lock */
 
@@ -410,6 +550,8 @@ static void mode_set(const struct state *s)
     wr(HDMI_OFF + HDMI_VERTA1, s->hd_verta1);
     wr(HDMI_OFF + HDMI_VERTB1, s->hd_vertb1);
     wr(HD_VID_CTL, s->vid_ctl);
+    if (s->scramble)
+        wr(HDMI_OFF + HDMI_SCRAMBLER_CTL, rd(HDMI_OFF + HDMI_SCRAMBLER_CTL) | SCRAMBLER_ENABLE);
 
     wr(PV_OFF + PV_HORZA, s->pv_horza);
     wr(PV_OFF + PV_HORZB, s->pv_horzb);
@@ -420,6 +562,8 @@ static void mode_set(const struct state *s)
     wr(PV_OFF + PV_V_CONTROL, s->pv_vctl);
 
     recenter();
+    if (s->scramble)
+        scramble_wait();
 }
 
 /* Two free slots - plane and END - found by the fill pattern. */
@@ -484,9 +628,9 @@ static void draw_frame(ULONG live, ULONG w, ULONG h)
     CacheClearE((APTR)(IPTR)fb, pitch * h, CACRF_ClearD);
 }
 
-#define TEMPLATE "MODE/K,LIST/S,HOLD/N,LOOP/N,FRAME/S,EXTRAPOLATE/S,GO/S"
+#define TEMPLATE "MODE/K,LIST/S,HOLD/N,LOOP/N,FRAME/S,SPECCTL/S,GO/S"
 
-enum { ARG_MODE, ARG_LIST, ARG_HOLD, ARG_LOOP, ARG_FRAME, ARG_EXTRAPOLATE, ARG_GO,
+enum { ARG_MODE, ARG_LIST, ARG_HOLD, ARG_LOOP, ARG_FRAME, ARG_SPECCTL, ARG_GO,
        ARG_COUNT };
 
 int main(void)
@@ -515,9 +659,11 @@ int main(void)
     }
     if (args[ARG_MODE])
     {
+        /* WxH picks the first rate listed, WxH@Hz that one. */
         for (i = 0; i < MODES; i++)
             if (!strncasecmp(modes[i].name, (char *)args[ARG_MODE], strlen((char *)args[ARG_MODE]))
-                && modes[i].name[strlen((char *)args[ARG_MODE])] == '@')
+                && ((modes[i].name[strlen((char *)args[ARG_MODE])] == '@')
+                    || !modes[i].name[strlen((char *)args[ARG_MODE])]))
                 break;
         if (i == MODES)
         {
@@ -560,16 +706,23 @@ int main(void)
         state_print("live", &fw);
         goto out;
     }
-    if ((m->khz >= SCRAMBLE_MIN) || !pll_params(m->khz, &vco_div, &rm_offset)
-        || ((m->khz >= LANE_BAND_MAX) && !args[ARG_EXTRAPOLATE]))
+    if ((m->khz > TMDS_MAX) || !pll_params(m->khz, &vco_div, &rm_offset))
     {
-        P("modetest: %s is outside what the captured PHY settings cover%s\n", m->name,
-          (m->khz < SCRAMBLE_MIN) ? " - EXTRAPOLATE tries it anyway" : "");
+        P("modetest: %s is outside what the PHY settings cover\n", m->name);
         goto out;
     }
-    if (m->khz >= LANE_BAND_MAX)
-        P("modetest: %u kHz is above the captured lane band - extrapolating\n",
-          (unsigned)m->khz);
+    if (m->khz >= SCRAMBLE_MIN)
+    {
+        UBYTE ver = 0, cfg = 0;
+
+        if (!scdc_rd(SCDC_SINK_VERSION, &ver))
+        {
+            P("modetest: %s needs scrambling, and the sink does not answer SCDC\n", m->name);
+            goto out;
+        }
+        scdc_rd(SCDC_TMDS_CONFIG, &cfg);
+        P("modetest: scrambled mode - SCDC sink version %u, TMDS_Config %02x\n", ver, cfg);
+    }
 
     /* The framebuffer plane shows as much of the mode as it covers. */
     plane_w = (pos2 & 0xffff) + 1;
@@ -584,7 +737,7 @@ int main(void)
         goto out;
     }
 
-    state_build(&ours, &fw, m, slots);
+    state_build(&ours, &fw, m, slots, args[ARG_SPECCTL] ? TRUE : FALSE);
     P("modetest: %s, vco_div %u, RM_OFFSET %08x, list at %#06x\n", m->name,
       (unsigned)vco_div, (unsigned)(RM_OFFSET_ONLY | rm_offset), (unsigned)slots);
     state_print("firmware", &fw);
@@ -602,19 +755,19 @@ int main(void)
         draw_frame(fw.lptrs, (pos2 & 0xffff) + 1, (pos2 >> 16) + 1);
         draw_frame(fw.lptrs, plane_w, plane_h);
     }
-    measure("before", fw.khz);
+    measure("before", fw.khz, fw.hz);
     build_list(slots, fw.lptrs, plane_w, plane_h);
 
     for (i = 1; i <= loops; i++)
     {
         P("modetest: [%u/%u] switching to %s\n", (unsigned)i, (unsigned)loops, m->name);
         mode_set(&ours);
-        good += measure("after", ours.khz);
+        good += measure("after", ours.khz, ours.hz);
         Delay(hold * 50);
 
         P("modetest: [%u/%u] back to the boot mode\n", (unsigned)i, (unsigned)loops);
         mode_set(&fw);
-        good += measure("restored", fw.khz);
+        good += measure("restored", fw.khz, fw.hz);
         steps += 2;
         if (i < loops)
             Delay(hold * 50);
