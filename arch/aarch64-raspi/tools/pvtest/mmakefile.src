@@ -1,0 +1,11 @@
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/raspi
+
+#MM raspi-pvtest : includes linklibs kernel-mbox-bcm2708-includes
+
+%build_prog mmake=raspi-pvtest \
+    progname=pvtest targetdir=$(EXEDIR) \
+    files=pvtest
+
+%common
