@@ -95,7 +95,8 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_UPM_LINES      2
 #define HVS6_UPM_FALLBACK   0x40000         /* arena if UBM_SIZE is odd   */
 
-/* Sized for the widest mode, so a mode change never re-carves */
+/* One slice each for the overlay, the cursor and our own framebuffer,
+ * sized for the widest mode, so a mode change never re-carves */
 #define HVS6_UPM_MAX_PITCH  (4096 * 4)
 #define HVS6_UPM_SLICE      ((((HVS6_UPM_MAX_PITCH + 62) / 32) * 32 *     \
                               HVS6_UPM_LINES + HVS6_UPM_GRAN - 1) &       \
@@ -112,6 +113,7 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
                        ULONG fb_pitch, ULONG fb_width, ULONG fb_height);
 BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
                            ULONG fb_pitch, ULONG fb_height);
+APTR vc4_hvs6_alloc_fb(struct VideoCoreGfx_staticdata *xsd, ULONG pitch, ULONG height);
 BOOL vc4_hvs6_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
 void vc4_hvs6_latch_wait(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs6_overlay(struct VideoCoreGfx_staticdata *xsd,

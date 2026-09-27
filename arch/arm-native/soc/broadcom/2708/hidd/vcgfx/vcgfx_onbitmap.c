@@ -164,16 +164,19 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
          * scanned surface, so adopt the boot framebuffer instead. */
         if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
         {
-            if ((aligned_width > xsd->vcsd_BootFBWidth)
-                || (height > xsd->vcsd_BootFBHeight))
+            if ((aligned_width <= xsd->vcsd_BootFBWidth)
+                && (height <= xsd->vcsd_BootFBHeight))
             {
-                bug("[VideoCoreGfx] BCM2712: %ux%u does not fit the boot fb"
-                    " %ux%u\n", aligned_width, height,
-                    xsd->vcsd_BootFBWidth, xsd->vcsd_BootFBHeight);
-                return FALSE;
+                fb_ptr   = (APTR)(IPTR)xsd->vcsd_BootFB;
+                fb_pitch = xsd->vcsd_BootFBPitch;
             }
-            fb_ptr   = (APTR)(IPTR)xsd->vcsd_BootFB;
-            fb_pitch = xsd->vcsd_BootFBPitch;
+            else
+            {
+                /* Larger than the boot surface: a framebuffer of our own. */
+                fb_pitch = aligned_width * bytesperpix;
+                if (!(fb_ptr = vc4_hvs6_alloc_fb(xsd, fb_pitch, height)))
+                    return FALSE;
+            }
             break;
         }
 
