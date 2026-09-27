@@ -152,9 +152,12 @@ int n = 0, cap = 0;
     {
         if (n == cap)
         {
+            struct entry *grown;
+
             cap = cap ? cap * 2 : 32;
-            e = realloc(e, cap * sizeof(struct entry));
-            outofmem(e);
+            grown = realloc(e, cap * sizeof(struct entry));
+            outofmem(grown);
+            e = grown;
         }
         e[n].name = strdup(fib->fib_FileName);
         outofmem(e[n].name);
@@ -617,7 +620,7 @@ int do_copyfiles(struct ParameterList *pl)
 struct copyctx ctx;
 char *source, *dest, *patbuf = NULL;
 LONG stype;
-int result = 0, i, single;
+int result = 0, single;
 
     memset(&ctx, 0, sizeof(ctx));
     ctx.pl = pl;
@@ -745,14 +748,14 @@ int result = 0, i, single;
         outofmem(names);
         if (ctx.choices)
         {
-            for (i = 0 ; i < GetPL(pl, _CHOICES).intval ; i++)
+            for (int i = 0 ; i < GetPL(pl, _CHOICES).intval ; i++)
             {
                 names[nsel++] = GetPL(pl, _CHOICES).arg[i];
             }
         }
         else
         {
-            for (i = 0 ; i < n ; i++)
+            for (int i = 0 ; i < n ; i++)
             {
                 if (ends_with_info(e[i].name) && !ctx.infos)
                 {
@@ -785,7 +788,7 @@ int result = 0, i, single;
             }
         }
 
-        for (i = 0 ; i < nsel ; i++)
+        for (int i = 0 ; i < nsel ; i++)
         {
             if (sel && !sel[i])
             {
@@ -910,8 +913,8 @@ int result = 0, i, single;
 int scan_version(const char *file, ULONG *ver, ULONG *rev)
 {
 BPTR fh;
-char *buf, *p, *end, tail[VERWINDOW + 1];
-LONG n, base = 0, keep = 0, i, found = 0;
+char *buf, *p, tail[VERWINDOW + 1];
+LONG n, base = 0, keep = 0, found = 0;
 
     fh = Open((STRPTR)file, MODE_OLDFILE);
     if (fh == BNULL)
@@ -922,16 +925,17 @@ LONG n, base = 0, keep = 0, i, found = 0;
     outofmem(buf);
     while (!found && (n = Read(fh, buf + keep, COPYBUFSIZE)) > 0)
     {
-        end = buf + keep + n;
+        char *end = buf + keep + n;
+
         for (p = buf ; p + 5 <= end ; p++)
         {
             if (p[0] == '$' && memcmp(p, "$VER:", 5) == 0)
             {
                 LONG pos = base + (p - buf) + 5;
                 Seek(fh, pos, OFFSET_BEGINNING);
-                i = Read(fh, tail, VERWINDOW);
-                if (i < 0) i = 0;
-                tail[i] = 0;
+                LONG got = Read(fh, tail, VERWINDOW);
+                if (got < 0) got = 0;
+                tail[got] = 0;
                 /* skip blanks, the name, blanks */
                 for (p = tail ; *p == ' ' || *p == '\t' ; p++);
                 while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r') p++;
@@ -1301,11 +1305,9 @@ int n = 0, i;
 
 void tooltypes_free(char **tt)
 {
-int i;
-
     if (tt)
     {
-        for (i = 0 ; tt[i] ; i++)
+        for (int i = 0 ; tt[i] ; i++)
         {
             free(tt[i]);
         }
@@ -1331,7 +1333,7 @@ int l = strlen(name);
  */
 char **tooltypes_set(char **tt, const char *name, const char *value)
 {
-int i, n = 0, hit = -1;
+int n = 0, hit = -1;
 char *entry = NULL;
 
     while (tt[n])
@@ -1364,7 +1366,7 @@ char *entry = NULL;
         }
         else
         {
-            for (i = hit ; i < n ; i++)
+            for (int i = hit ; i < n ; i++)
             {
                 tt[i] = tt[i + 1];
             }
