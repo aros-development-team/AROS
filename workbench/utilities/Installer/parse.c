@@ -168,7 +168,8 @@ int nobody;
                                     masquerade = TRUE;
                                 i++;
                             }
-                            if (i == MAXARGSIZE)
+                            /* the terminator goes at i + 1 */
+                            if (i >= MAXARGSIZE - 1)
                             {
                                 show_parseerror("Argument length overflow!" ,line);
                                 cleanup();
@@ -197,12 +198,12 @@ int nobody;
                             i++;
                             count = Read(inputfile, &buffer[i], 1);
                         } while (!isspace(buffer[i]) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON
-                                 && buffer[i]!=DQUOTE && buffer[i]!=SQUOTE && count != 0 && i < MAXARGSIZE);
+                                 && buffer[i]!=DQUOTE && buffer[i]!=SQUOTE && count != 0 && i < MAXARGSIZE - 1);
                         if (buffer[i] == LINEFEED)
                         {
                             line++;
                         }
-                        if (i == MAXARGSIZE)
+                        if (i == MAXARGSIZE - 1)
                         {
                             show_parseerror("Argument length overflow!", line);
                             cleanup();
@@ -339,8 +340,8 @@ int nobody;
                                             {
                                                 i++;
                                                 count = Read(inputfile, &buffer[i], 1);
-                                            } while (!isspace(buffer[i]) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE);
-                                            if (i == MAXARGSIZE)
+                                            } while (!isspace(buffer[i]) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE - 1);
+                                            if (i == MAXARGSIZE - 1)
                                             {
                                                 show_parseerror("Argument length overflow!", line);
                                                 cleanup();
