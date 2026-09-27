@@ -172,8 +172,11 @@ struct ControllerHWData
     UBYTE                   slot_pad[3];
     UWORD                   slot[HIDD_CONTROLLER_LEGACY_PORTS];   /* device ids, 0 = empty */
     UBYTE                   slot_flags[HIDD_CONTROLLER_LEGACY_PORTS];
+    UBYTE                   slot_type[HIDD_CONTROLLER_LEGACY_PORTS];  /* SJA_TYPE_* forced by SetJoyPortAttrs */
 };
 #define CTRL_SF_PINNED   0x01
+#define CTRL_SF_ANALOGUE 0x02   /* SJA_TYPE_ANALOGUE requested */
+#define CTRL_SF_DISABLED 0x04
 
 struct controller_staticdata
 {
@@ -198,6 +201,11 @@ struct controller_staticdata
     struct timerequest      cs_TimerReq;
     struct Device           *cs_TimerBase;
     ULONG                   cs_EClockFreq;
+
+    /* lowlevel.library joyport bridge (controller_lowlevel.c) */
+    struct Library          *cs_LowLevelBase;
+    APTR                    cs_LLOldReadJoyPort;
+    APTR                    cs_LLOldSetJoyPortAttrsA;
 };
 
 struct controllerbase
@@ -282,6 +290,12 @@ UWORD ctrl_LabelFor(const struct ControllerDevice *dev, UWORD stdid);
 ULONG ctrl_CopyBindings(struct ControllerDevice *dev, struct Hidd_Controller_Binding *buf, ULONG max);
 BOOL  ctrl_GUIDFromString(const char *s, UBYTE *guid);
 void  ctrl_GUIDToString(const UBYTE *guid, char *s);
+
+/* controller_lowlevel.c */
+BOOL  ctrl_LowLevelInstall(struct controllerbase *base);
+BOOL  ctrl_LowLevelRemove(struct controllerbase *base);
+ULONG ctrl_LowLevelRead(struct ControllerHWData *hw, ULONG port, ULONG chained);
+BOOL  ctrl_LowLevelSetAttrs(OOP_Class *cl, struct ControllerHWData *hw, ULONG port, struct TagItem *tags, BOOL chained);
 
 /* controllersubsystem.c */
 struct ControllerDevice *ctrl_FindDevice(OOP_Class *cl, struct ControllerHWData *hw, UWORD id);

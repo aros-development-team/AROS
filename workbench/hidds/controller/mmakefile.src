@@ -9,7 +9,7 @@ INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
 FILES := controller_init controllerclass controllersubsystem \
          controller_controls controller_reading controller_notify \
-         controller_mapping
+         controller_mapping controller_lowlevel
 
 USER_CPPFLAGS += \
     -D__OOP_NOLIBBASE__ \

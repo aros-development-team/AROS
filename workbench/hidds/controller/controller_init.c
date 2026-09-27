@@ -72,6 +72,8 @@ static int ControllerHidd_InitClass(struct controllerbase *LIBBASE)
     if (root && HW_AddDriver(root, LIBBASE->csd.hwClass, NULL))
     {
         D(bug("[Controller] subsystem registered, hw object 0x%p\n", LIBBASE->csd.hwObject));
+        /* lowlevel.library is disk based: when it is not reachable yet the install is retried later */
+        ctrl_LowLevelInstall(LIBBASE);
         return TRUE;
     }
 
@@ -92,6 +94,9 @@ static int ControllerHidd_ExpungeClass(struct controllerbase *LIBBASE)
     };
 
     D(bug("[Controller] %s()\n", __func__));
+
+    if (!ctrl_LowLevelRemove(LIBBASE))
+        return FALSE;               /* someone patched over us: stay resident */
 
     if (LIBBASE->csd.cs_TimerBase)
     {

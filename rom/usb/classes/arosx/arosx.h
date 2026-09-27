@@ -1,6 +1,8 @@
 #ifndef AROSXClass_H
 #define AROSXClass_H
 
+struct AROSXCtrl;
+
 #include <libraries/mui.h>
 #include <sys/time.h>
 
@@ -18,19 +20,12 @@ struct ClsGlobalCfg
     ULONG cgc_AutoKeyUp;
 };
 
-struct AROSXBase {
-    struct Library          arosx_LibNode;
-    struct AROSXClassBase  *arosxb;
-};
-
 struct AROSXClassBase
 {
     struct Library               Library;     /* standard */
 
     struct Library              *MUIBase;     /* MUI master base */
     struct Library              *PsdBase;     /* Poseidon base */
-
-    struct AROSXBase            *AROSXBase;
 
     ULONG                        tv_secs;
     ULONG                        tv_micro;
@@ -48,6 +43,14 @@ struct AROSXClassBase
     struct List                  event_port_list;
     struct MsgPort               event_reply_port;
 
+    /* controller.hidd integration (arosxcontroller.c) */
+    struct SignalSemaphore       CtrlLock;
+    BOOL                         DOSAvailable;   /* UCM_DOSAvailableEvent seen */
+    struct Library              *CtrlHiddBase;   /* controller.hidd */
+    APTR                         CtrlClass;      /* our CLID_Hidd_Controller subclass */
+    APTR                         CtrlHW;         /* CLID_HW_Controller singleton */
+    IPTR                         CtrlAB[3];      /* attr bases: Hidd, Hidd_Controller, HW */
+    IPTR                         CtrlMB[3];      /* method bases: HW, Hidd_Controller, HW_Controller */
 };
 
 struct AROSXClassController
@@ -116,6 +119,8 @@ struct AROSXClassController
 
     struct Task        *GUITask;       /* GUI Task */
 
+    struct AROSXCtrl   *Ctrl;          /* controller.hidd device (arosxcontroller.c) */
+    BOOL                CtrlWanted;    /* attach requested from another context */
 };
 
 #endif /* AROSXClass_H */
