@@ -745,6 +745,9 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
     if (!bm_obj || !sd->hiddVC4GfxBMAB || !w || !h)
         return -1;
 
+    /* A page displaced by the last Set may still be on scanout */
+    vc4_aros_overlay_latch_wait(sd);
+
     ObtainSemaphore(&sd->bo_lock);
     if (src_bo_handle >= VC4_MAX_BOS || !sd->bo_table[src_bo_handle].vaddr
         || (ULONG)src_stride * h > sd->bo_table[src_bo_handle].size)
@@ -806,13 +809,12 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         ReleaseSemaphore(&sd->bo_lock);
         return -1;
     }
-    /* Release the pin the previous present took — including when the same
-     * BO is shown twice in a row: we added a fresh pin above, so skipping
-     * this would strand one reference per repeat and the BO could never be
-     * freed. */
-    if (prev)
+    /* The displaced page keeps its pin until its latch is retired; a
+     * repeat of the same BO drops the duplicate pin now. */
+    if (prev && prev != src_bo_handle)
+        sd->overlay_displaced_handle = prev;
+    else if (prev)
         vc4_aros_bo_unref_locked(sd, prev);
-    sd->overlay_displaced_handle = (prev && prev != src_bo_handle) ? prev : 0;
     ReleaseSemaphore(&sd->bo_lock);
     return 0;
 }
@@ -821,14 +823,26 @@ void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
 {
     IPTR dummy = 0;
     OOP_Object *bm;
+    ULONG displaced;
 
     ObtainSemaphore(&sd->bo_lock);
     bm = sd->overlay_bm;
-    sd->overlay_displaced_handle = 0;
+    displaced = sd->overlay_displaced_handle;
     ReleaseSemaphore(&sd->bo_lock);
+
+    if (!displaced)
+        return;
 
     if (bm && sd->hiddVC4GfxBMAB)
         OOP_GetAttr(bm, sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_LatchWait, &dummy);
+
+    ObtainSemaphore(&sd->bo_lock);
+    if (sd->overlay_displaced_handle == displaced)
+    {
+        vc4_aros_bo_unref_locked(sd, displaced);
+        sd->overlay_displaced_handle = 0;
+    }
+    ReleaseSemaphore(&sd->bo_lock);
 }
 
 void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
@@ -853,7 +867,11 @@ void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
         vc4_aros_bo_unref_locked(sd, sd->overlay_pinned_handle);
         sd->overlay_pinned_handle = 0;
     }
-    sd->overlay_displaced_handle = 0;
+    if (sd->overlay_displaced_handle)
+    {
+        vc4_aros_bo_unref_locked(sd, sd->overlay_displaced_handle);
+        sd->overlay_displaced_handle = 0;
+    }
     sd->overlay_bm = NULL;
     ReleaseSemaphore(&sd->bo_lock);
 }
