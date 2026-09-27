@@ -138,6 +138,13 @@ int main(int argc, char *argv[])
             preferences.bannerfile = strdup((char *)args[ARG_APPBANNER]);
         }
         preferences.nopretend = (int)args[ARG_NOPRETEND];
+        /* DRYRUN/S: dry run without asking - the pretend page is skipped
+         * and nothing is written (a package manager's preview, test harnesses) */
+        if (args[ARG_DRYRUN])
+        {
+            preferences.pretend = TRUE;
+            preferences.nopretend = TRUE;
+        }
         if (args[ARG_MINUSER])
         {
             preferences.minusrlevel = _NOVICE;
