@@ -74,6 +74,8 @@ typedef struct ScriptArg
 typedef struct InstallerPrefs
 {
     char * transcriptfile;
+    /* APPBANNER: picture shown above the pages (InstallerLG-compatible) */
+    char * bannerfile;
     BPTR transcriptstream;
     int debug, pretend, nopretend, novicelog, noprint;
     int welcome;
