@@ -319,7 +319,6 @@ BOOL setup_open(void)
         while (FGets(fh, buffer, sizeof(buffer)))
         {
             ULONG len;
-            int argindex = -1;
 
             if (!setup_line_length(buffer, sizeof(buffer), &len))
             {
@@ -361,6 +360,7 @@ BOOL setup_open(void)
             }
             else if (setup_parse_parameter(buffer, option, sizeof(option), &value))
             {
+                int argindex = -1;
                 ULONG i;
 
                 for (i = 0; i < sizeof(opts) / sizeof(opts[0]); i++)
