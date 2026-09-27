@@ -139,28 +139,68 @@ void core_LoadMMU(struct CPUMMUConfig *MMU)
 
 void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop, IPTR maptop)
 {
-    IPTR top = memtop;
-
-    if (maptop > top)
-        top = maptop;
-
-    /*
-     * How many PDE entries shall be created?
-     * Build an identity map window large enough for physical RAM and the
-     * currently active GOP framebuffer range. This keeps high ReBAR/GOP BARs
-     * mapped while avoiding oversized early allocations on systems that don't
-     * need them.
-     */
-    MMU->mmu_PDEPageCount = (top + (1 << 21) - 1) >> 21;
-    if (MMU->mmu_PDEPageCount < 65536)      /* keep at least 128 GiB mapped */
-        MMU->mmu_PDEPageCount = 65536;
-    if (MMU->mmu_PDEPageCount > 262144)     /* cap at 512 GiB */
-        MMU->mmu_PDEPageCount = 262144;
-
-    D(bug("[Kernel] core_SetupMMU: Re-creating the MMU pages for first %dMB area\n", MMU->mmu_PDEPageCount << 1));
-
     if (!MMU->mmu_PML4)
     {
+        /*
+         * First (cold) start: decide how large the identity map is and
+         * allocate the paging structures for it. Both survive a warm
+         * reboot in KernBootPrivate, so the size must not be recomputed
+         * afterwards: core_InitMMU() fills exactly mmu_PDEPageCount
+         * entries of the PDE table allocated here.
+         */
+        IPTR top = memtop;
+        IPTR needed, fixed, avail, room;
+
+        if (maptop > top)
+            top = maptop;
+
+        /*
+         * How many PDE entries shall be created?
+         * The map must cover physical RAM and the boot framebuffer (GOP
+         * framebuffers can sit far above 4 GiB), and preferably a wide
+         * window so 64-bit MMIO BARs (ReBAR, large VRAM) are reachable
+         * during early driver init.
+         */
+        needed = (top + (1 << 21) - 1) >> 21;
+        if (needed > 262144)                     /* cap at 512 GiB */
+            needed = 262144;
+
+        MMU->mmu_PDEPageCount = needed;
+        if (MMU->mmu_PDEPageCount < 65536)      /* prefer at least 128 GiB mapped */
+            MMU->mmu_PDEPageCount = 65536;
+
+        /*
+         * The PDE table is by far the largest boot-time allocation and the
+         * bootstrap only guarantees a bounded reserve behind the kickstart
+         * (KICKSTART_BOOTMEM_RESERVE). Trim the preferred window to what is
+         * actually there, keeping everything that must be covered. Later
+         * boot allocations (GDT, TSS, IDT, TLS) are small; leave room for
+         * them and for page alignment.
+         */
+        fixed = sizeof(struct PML4E) * 512 + sizeof(struct PDPE) * 512
+              + sizeof(struct PTE) * 512 * MMU_SPLIT_PTE_PAGE_COUNT
+              + 8 * PAGE_SIZE;
+        avail = (IPTR)BootMemLimit - AROS_ROUNDUP2((IPTR)BootMemPtr, PAGE_SIZE);
+        room  = (avail > fixed) ? (avail - fixed) / sizeof(struct PDE2M) : 0;
+
+        if (MMU->mmu_PDEPageCount > room)
+        {
+            if (needed > room)
+            {
+                krnPanic(NULL, "Not enough boot memory for the MMU tables\n"
+                               "%lu MiB must be identity mapped (top 0x%p),\n"
+                               "room for %lu MiB behind the kickstart\n"
+                               "Increase reserved space in bootstrap",
+                               needed << 1, top, room << 1);
+            }
+
+            bug("[Kernel] core_SetupMMU: identity map trimmed from %lu MiB to %lu MiB to fit boot memory\n",
+                MMU->mmu_PDEPageCount << 1, room << 1);
+            MMU->mmu_PDEPageCount = room;
+        }
+
+        D(bug("[Kernel] core_SetupMMU: Re-creating the MMU pages for first %dMB area\n", MMU->mmu_PDEPageCount << 1));
+
         /*
          * Allocate MMU paging structures for the configured identity-mapped
          * low physical address window.
