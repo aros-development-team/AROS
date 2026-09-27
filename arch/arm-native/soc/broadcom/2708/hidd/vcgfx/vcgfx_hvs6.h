@@ -11,6 +11,16 @@
 /* Only +0x0000-0x07ff and +0x4000-0x8dff read back without an abort */
 #define HVS6_BASE           (ARM_PERIIOBASE + 0x580000)
 
+static inline ULONG hvs6_rd(ULONG offset)
+{
+    return *(volatile ULONG *)(HVS6_BASE + offset);
+}
+
+static inline void hvs6_wr(ULONG offset, ULONG value)
+{
+    *(volatile ULONG *)(HVS6_BASE + offset) = value;
+}
+
 #define HVS6_ID             0x00fc
 #define HVS6_ID_MAGIC       0x64647276
 #define HVS6_VERSION        0x0000      /* bits 7:0: 0x53 = C0, 0x54 = D0 */
@@ -108,6 +118,15 @@ BOOL vc4_hvs6_overlay(struct VideoCoreGfx_staticdata *xsd,
                       struct vc4gfx_overlay *ovl);
 BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs6_cursor(struct VideoCoreGfx_staticdata *xsd);
-void vc4_hvs6_release(struct VideoCoreGfx_staticdata *xsd);
+
+/* vcgfx_hvs6_mode.c */
+void vc4_hvs6_mode_capture(struct VideoCoreGfx_staticdata *xsd);
+const struct vcgfx_timing *vc4_hvs6_mode(struct VideoCoreGfx_staticdata *xsd, ULONG i);
+BOOL vc4_hvs6_mode_usable(struct VideoCoreGfx_staticdata *xsd,
+                          const struct vcgfx_timing *t);
+BOOL vc4_hvs6_mode_ok(struct VideoCoreGfx_staticdata *xsd, ULONG ch, ULONG w, ULONG h);
+void vc4_hvs6_mode_stop(struct VideoCoreGfx_staticdata *xsd, ULONG ch);
+BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
+                         ULONG w, ULONG h, ULONG list);
 
 #endif /* _VIDEOCOREGFX_HVS6_H */

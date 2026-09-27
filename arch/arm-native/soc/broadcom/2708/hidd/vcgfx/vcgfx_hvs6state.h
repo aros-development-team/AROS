@@ -8,6 +8,8 @@
 
 #include <exec/types.h>
 
+#include "vcgfx_edid.h"
+
 struct vc4_hvs6_state
 {
     BOOL    h6_Active;      /* our list is the one being scanned out   */
@@ -43,6 +45,19 @@ struct vc4_hvs6_state
     /* FRCNT at the last overlay write, and whether a wait is pending */
     ULONG   h6_OvlFrame;
     BOOL    h6_OvlLatchDue;
+
+    /* The firmware's boot mode on HDMI0, captured before anything was
+     * touched (vcgfx_hvs6_mode.c). Switching back to its size restores
+     * these verbatim; h6_ModeOK gates every other mode. */
+    BOOL    h6_ModeOK;
+    struct vcgfx_timing h6_BootTiming;
+    ULONG   h6_BootPV[7];       /* pixelvalve +0x00..+0x18          */
+    ULONG   h6_BootHDMI[6];     /* HORZA HORZB VERTA0 VERTB0 VERTA1 VERTB1 */
+    ULONG   h6_BootVidCtl;
+    ULONG   h6_BootCtrl0;       /* HVS channel 0 CTRL0              */
+    ULONG   h6_BootLane[4];     /* PHY CTL_0/1/2/CK                 */
+    ULONG   h6_BootVcoDiv;      /* PHY PLL_VCOCLK_DIV, divider only */
+    ULONG   h6_BootRmOffset;    /* rate manager offset, 30:0        */
 };
 
 #endif /* _VIDEOCOREGFX_HVS6STATE_H */
