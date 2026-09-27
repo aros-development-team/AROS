@@ -2431,7 +2431,6 @@ DMSG("   %s\n",ret);
             case _TEXTFILE: /* Build a text file from (append) strings and (include) files, in script order */
                 if (current->next != NULL)
                 {
-                BPTR out;
                 ScriptArg *tag;
                 int usrconfirm = TRUE, ok = FALSE;
 
@@ -2448,7 +2447,7 @@ DMSG("   %s\n",ret);
                     if ((preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1) && usrconfirm)
                     {
                         string = GetPL(parameter, _DEST).arg[0];
-                        out = Open(string, MODE_NEWFILE);
+                        BPTR out = Open(string, MODE_NEWFILE);
                         if (out != BNULL)
                         {
                             ok = TRUE;
@@ -2542,7 +2541,7 @@ DMSG("   %s\n",ret);
                 struct DiskObject *dobj;
                 ScriptArg *tag;
                 char **origtt, **tt;
-                char *origtool, *iconname;
+                char *origtool;
                 int usrconfirm = TRUE, ok = FALSE;
 
                     parameter = get_parameters(current->next, level);
@@ -2558,7 +2557,7 @@ DMSG("   %s\n",ret);
                     if ((preferences.pretend == 0 || GetPL(parameter, _SAFE).used == 1) && usrconfirm)
                     {
                         /* icon.library wants the name without ".info" */
-                        iconname = strdup(GetPL(parameter, _DEST).arg[0]);
+                        char *iconname = strdup(GetPL(parameter, _DEST).arg[0]);
                         outofmem(iconname);
                         i = strlen(iconname);
                         if (i > 5 && strcasecmp(iconname + i - 5, ".info") == 0)
