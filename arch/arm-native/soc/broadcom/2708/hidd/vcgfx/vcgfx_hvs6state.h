@@ -58,6 +58,14 @@ struct vc4_hvs6_state
     ULONG   h6_BootLane[4];     /* PHY CTL_0/1/2/CK                 */
     ULONG   h6_BootVcoDiv;      /* PHY PLL_VCOCLK_DIV, divider only */
     ULONG   h6_BootRmOffset;    /* rate manager offset, 30:0        */
+
+    /* A framebuffer of our own, for modes larger than the boot surface,
+     * and the prefetch slice its plane needs. */
+    ULONG   h6_FbPTR0;
+    APTR    h6_FBRaw;
+    ULONG   h6_FBSize;          /* bytes handed to AllocMem         */
+    UQUAD   h6_FBPhys;
+    ULONG   h6_FBMapped;        /* bytes actually remapped          */
 };
 
 #endif /* _VIDEOCOREGFX_HVS6STATE_H */

@@ -4,10 +4,11 @@
     Desc: BCM VideoCore Gfx Hidd - BCM2712 mode setting.
 
     Programs the HVS channel, the pixelvalve, the HDMI timing registers
-    and the HDMI PHY PLL for a mode of our own. The firmware clocks, the
-    CSC, the infoframes and the rest of the HDMI controller keep what the
-    firmware set up at boot. Proven step by step on a Pi 500+ with the
-    raspi-pvtest, -phytest and -modetest tools.
+    and the HDMI PHY PLL for a mode of our own, below the 340 MHz where
+    scrambling starts. The CSC, the infoframes and the rest of the HDMI
+    controller keep what the firmware set up at boot; the firmware clocks
+    are only raised where a mode needs more. Proven step by step on a
+    Pi 500+ with the raspi-pvtest, -phytest and -modetest tools.
 
     HDMI0 only: the shared hd block puts VID_CTL elsewhere for HDMI1, and
     that port has not been exercised.
@@ -17,10 +18,16 @@
 #include <aros/debug.h>
 
 #include <proto/exec.h>
+#include <proto/mbox.h>
 
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
 #include "vcgfx_hvs6.h"
+
+#ifdef MBoxBase
+#undef MBoxBase
+#endif
+#define MBoxBase            xsd->vcsd_MBoxBase
 
 /* Kill switch: 0 = the boot mode is the only one, as before. */
 #define VC4_HVS6_MODESET 1
@@ -80,8 +87,8 @@
 #define HVS6_CTRL0_SIZE     ((0x1fffUL << 16) | 0x1fff)
 #define HVS6_VERSION_D0     0x54
 
-/* Mode-independent PLL constants, read back from the firmware's own PHY
- * setup on a Pi 500+ (D0). Mode setting stays off where the live PHY
+/* Mode-independent PLL constants, read back from the PHY on a Pi 500+
+ * (D0) at every rate tried. Mode setting stays off where the live PHY
  * holds anything else. */
 static const ULONG pll_misc[9] =
 {
@@ -89,17 +96,28 @@ static const ULONG pll_misc[9] =
     0xcc021001, 0xc8301c80, 0xb0804444, 0xf80f8000,
 };
 
-/* Lane drive for TMDS below 222 MHz, the only band captured so far. */
-static const ULONG lane_ctl[4] =
-{
-    0x80828700, 0x80828700, 0x80828700, 0x80828700,
-};
-#define LANE_BAND_MAX       222000          /* kHz */
+/* Lane drive (CTL_0, CTL_1, CTL_2, CTL_CK) by TMDS band, read back from
+ * the hardware at 148.5, 241.5, 297 and 593.7 MHz; the low band is what
+ * the firmware programs at boot. DISPLAY-SPEC 15. */
+static const ULONG lanes_low[4]  = { 0x80828700, 0x80828700, 0x80828700, 0x80828700 };
+static const ULONG lanes_mid[4]  = { 0xc0870000, 0xc0870000, 0xc0870000, 0xc0870800 };
+static const ULONG lanes_high[4] = { 0x848f8700, 0x848f8700, 0x848f8700, 0x849f8f00 };
+
+/* Scrambling and SCDC are not done here, so nothing at or above this. */
+#define TMDS_MAX            340000          /* kHz */
+
+/* Widest line a prefetch slice holds (HVS6_UPM_MAX_PITCH, 32 bpp). */
+#define WIDTH_MAX           4096
+
+/* Firmware clocks with a minimum rate for a given TMDS rate (spec 3). */
+#define VCCLOCK_HSM         13
+#define VCCLOCK_PIXEL_BVB   14
 
 #define P_H                 VCGFX_TIMING_PHSYNC
 #define P_V                 VCGFX_TIMING_PVSYNC
 
-/* CEA-861 and VESA DMT, 60 Hz: clock, h disp/start/end/total, v ditto. */
+/* CEA-861 and VESA DMT, 60 Hz but for 3840x2160 at 30: clock, h disp/
+ * start/end/total, v ditto. */
 static const struct vcgfx_timing hvs6_modes[] =
 {
     {  25175,  640,  656,  752,  800,  480,  490,  492,  525, 0         },
@@ -112,6 +130,9 @@ static const struct vcgfx_timing hvs6_modes[] =
     { 108000, 1600, 1624, 1704, 1800,  900,  901,  904, 1000, P_H | P_V },
     { 146250, 1680, 1784, 1960, 2240, 1050, 1053, 1059, 1089, P_V       },
     { 148500, 1920, 2008, 2052, 2200, 1080, 1084, 1089, 1125, P_H | P_V },
+    { 154000, 1920, 1968, 2000, 2080, 1200, 1203, 1209, 1235, P_H       },
+    { 241500, 2560, 2608, 2640, 2720, 1440, 1443, 1448, 1481, P_H       },
+    { 297000, 3840, 4016, 4104, 4400, 2160, 2168, 2178, 2250, P_H | P_V },
 };
 #define HVS6_MODES          (sizeof(hvs6_modes) / sizeof(hvs6_modes[0]))
 
@@ -271,13 +292,18 @@ static BOOL hvs6_usable(struct VideoCoreGfx_staticdata *xsd, const struct vcgfx_
     const struct vcgfx_edid *e = &xsd->vcsd_EDID;
     ULONG hz, div, off;
 
-    if ((t->clock >= LANE_BAND_MAX) || !hvs6_pll(t->clock, &div, &off)
+    if ((t->clock >= TMDS_MAX) || !hvs6_pll(t->clock, &div, &off)
         || (t->flags & VCGFX_TIMING_INTERLACE) || (t->hdisp & 15)
-        || (t->hdisp > xsd->vcsd_BootFBWidth) || (t->vdisp > xsd->vcsd_BootFBHeight))
+        || (t->hdisp > WIDTH_MAX))
         return FALSE;
 
     if (e->valid)
     {
+        /* Nothing larger than the sink's preferred, i.e. native, mode. */
+        if (e->ntimings && ((t->hdisp > e->timings[0].hdisp)
+                            || (t->vdisp > e->timings[0].vdisp)))
+            return FALSE;
+
         hz = (t->clock * 1000 + t->htotal * t->vtotal / 2) / (t->htotal * t->vtotal);
         if ((e->vmax && ((hz < e->vmin) || (hz > e->vmax)))
             || (e->maxclock && (t->clock > e->maxclock)))
@@ -357,6 +383,52 @@ void vc4_hvs6_mode_stop(struct VideoCoreGfx_staticdata *xsd, ULONG ch)
     if (!hvs6_poll(HVS6_BASE + HVS6_CHAN(ch) + HVS6_DISPSTAT, 3 << 13, 0, 100000))
         bug("[VC4HVS6] ch%u did not stop\n", ch);
     hvs6_udelay(20000);
+}
+
+/* The lower edge of each band is exclusive, 297 MHz still mid band. */
+static const ULONG *hvs6_lanes(ULONG khz)
+{
+    if (khz < 222000)
+        return lanes_low;
+    if (khz <= 297000)
+        return lanes_mid;
+    return lanes_high;
+}
+
+/* Raise a firmware clock to at least hz; one left faster stays. */
+static void hvs6_clock_min(struct VideoCoreGfx_staticdata *xsd, ULONG id, ULONG hz)
+{
+    unsigned int *m = xsd->vcsd_MBoxMessage;
+    ULONG rate = 0;
+
+    VC4_MBOX_LOCK(xsd);
+    m[0] = AROS_LONG2LE(8 * 4);
+    m[1] = AROS_LONG2LE(VCTAG_REQ);
+    m[2] = AROS_LONG2LE(VCTAG_GETCLKRATE);
+    m[3] = AROS_LONG2LE(8);
+    m[4] = 0;
+    m[5] = AROS_LONG2LE(id);
+    m[6] = 0;
+    m[7] = 0;
+    if ((MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, m) != (volatile unsigned int *)-1)
+        && (m[1] == AROS_LONG2LE(VCTAG_RESP)))
+        rate = AROS_LE2LONG(m[6]);
+
+    if (rate < hz)
+    {
+        m[0] = AROS_LONG2LE(9 * 4);
+        m[1] = AROS_LONG2LE(VCTAG_REQ);
+        m[2] = AROS_LONG2LE(VCTAG_SETCLKRATE);
+        m[3] = AROS_LONG2LE(12);
+        m[4] = 0;
+        m[5] = AROS_LONG2LE(id);
+        m[6] = AROS_LONG2LE(hz);
+        m[7] = 0;
+        m[8] = 0;
+        MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, m);
+        bug("[VC4HVS6] clock %u raised from %u to %u Hz\n", id, rate, hz);
+    }
+    VC4_MBOX_UNLOCK(xsd);
 }
 
 /* DISPLAY-SPEC 9.4, steps 1-16. */
@@ -461,7 +533,12 @@ BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
     hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPCTRL, HVS6_CTRL0_RESET);
     hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPCTRL, ctrl0 & ~HVS6_CTRL0_RESET);
 
-    hvs6_phy_init(vco_div, rm_offset, boot ? st->h6_BootLane : lane_ctl);
+    /* HSM just faster than the TMDS rate, pixel BVB by band. */
+    hvs6_clock_min(xsd, VCCLOCK_HSM, (t->clock * 1010 > 120000000) ? t->clock * 1010 : 120000000);
+    hvs6_clock_min(xsd, VCCLOCK_PIXEL_BVB, (t->clock <= 148500) ? 75000000
+                                          : (t->clock <= 297000) ? 150000000 : 300000000);
+
+    hvs6_phy_init(vco_div, rm_offset, boot ? st->h6_BootLane : hvs6_lanes(t->clock));
     hvs6_udelay(20000);                                     /* PLL lock */
 
     wr(HDMI_BASE + HDMI_HORZA, hd[0]);

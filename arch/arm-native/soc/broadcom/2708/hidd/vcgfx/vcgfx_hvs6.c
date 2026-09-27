@@ -56,8 +56,8 @@ static void hvs6_plane(ULONG dst, ULONG src, UQUAD addr, ULONG pitch,
     hvs6_wr(dst + HVS6_ENT_PTR2 * 4, pitch);
 }
 
-/* Carve the overlay and cursor slices from the top of the UPM arena;
- * the firmware allocates its planes upwards from 0. */
+/* Carve the overlay, cursor and framebuffer slices from the top of the
+ * UPM arena; the firmware allocates its planes upwards from 0. */
 static void hvs6_upm_carve(struct vc4_hvs6_state *st)
 {
     ULONG arena = hvs6_rd(HVS6_UBM_SIZE);
@@ -80,8 +80,15 @@ static void hvs6_upm_carve(struct vc4_hvs6_state *st)
     st->h6_CurPTR0 = HVS6_PTR0_BASE(top) | HVS6_PTR0_HANDLE(32)
                    | HVS6_PTR0_LINES2;
 
-    bug("[VC4HVS6] UPM arena %u bytes: overlay PTR0 %08x, cursor PTR0 %08x\n",
-        arena, st->h6_OvlPTR0, st->h6_CurPTR0);
+    /* For a framebuffer of our own: the firmware's slice is sized for
+     * the boot surface's pitch, and a wider line overruns it. */
+    top = (arena - 3 * HVS6_UPM_SLICE) / HVS6_UPM_GRAN;
+    st->h6_FbPTR0  = HVS6_PTR0_BASE(top) | HVS6_PTR0_HANDLE(30)
+                   | HVS6_PTR0_LINES2;
+
+    bug("[VC4HVS6] UPM arena %u bytes: overlay PTR0 %08x, cursor PTR0 %08x,"
+        " framebuffer PTR0 %08x\n", arena, st->h6_OvlPTR0, st->h6_CurPTR0,
+        st->h6_FbPTR0);
 }
 
 /* Find a run of slots that still holds the firmware's fill pattern */
@@ -232,14 +239,14 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
 
             if ((ctl0 & HVS6_CTL0_END) || !(ctl0 & HVS6_CTL0_VALID))
                 continue;
-            if (hvs6_rd(src + HVS6_ENT_PTR1 * 4) == fb_phys)
+            if (hvs6_rd(src + HVS6_ENT_PTR1 * 4) == xsd->vcsd_BootFB)
                 break;
         }
 
         if (ch == HVS6_CHANNELS)
         {
             bug("[VC4HVS6] no channel is scanning 0x%08x - staying on firmware\n",
-                fb_phys);
+                xsd->vcsd_BootFB);
             return FALSE;
         }
     }
@@ -266,11 +273,21 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
     if (resize)
         vc4_hvs6_mode_stop(xsd, ch);
 
+    /* List 0 shows the firmware's surface, or ours with its own slice */
     dst = hvs6_slot(st, 0, HVS6_SLOT_FB);
-    for (i = 0; i < HVS6_SLOT_WORDS; i++)
-        hvs6_wr(dst + i * 4, hvs6_rd(src + i * 4));
-    hvs6_wr(dst + HVS6_ENT_POS0 * 4, HVS6_POS0(0, 0));
-    hvs6_wr(dst + HVS6_ENT_POS2 * 4, HVS6_POS2(fb_width, fb_height));
+    if (fb_phys == xsd->vcsd_BootFB)
+    {
+        for (i = 0; i < HVS6_SLOT_WORDS; i++)
+            hvs6_wr(dst + i * 4, hvs6_rd(src + i * 4));
+        hvs6_wr(dst + HVS6_ENT_POS0 * 4, HVS6_POS0(0, 0));
+        hvs6_wr(dst + HVS6_ENT_POS2 * 4, HVS6_POS2(fb_width, fb_height));
+    }
+    else
+    {
+        hvs6_upm_carve(st);
+        hvs6_plane(dst, src, (UQUAD)fb_phys, fb_pitch, st->h6_FbPTR0,
+                   0, 0, fb_width, fb_height);
+    }
     hvs6_wr(hvs6_slot(st, 0, HVS6_SLOT_OVL), HVS6_CTL0_EMPTY);
     hvs6_wr(hvs6_slot(st, 0, HVS6_SLOT_CUR), HVS6_CTL0_EMPTY);
     hvs6_wr(hvs6_slot(st, 0, HVS6_SLOT_END), HVS6_CTL0_END);
@@ -320,6 +337,70 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
     return TRUE;
 }
 
+/* Scanout memory: page-aligned, flushed, and remapped write-combining
+ * since the HVS does not see the CPU caches. A block that is already big
+ * enough is kept. */
+static BOOL hvs6_scanout(APTR *raw, ULONG *rawsize, ULONG *mapped, UQUAD *phys,
+                         ULONG size)
+{
+    ULONG need = (size + 4095) & ~4095UL;
+    IPTR  page;
+
+    if (*raw && (*mapped >= need))
+        return TRUE;
+
+    if (*raw)
+    {
+        FreeMem(*raw, *rawsize);
+        *raw = NULL;
+    }
+
+    /* 31-bit because vcsd_FBPage[] is a ULONG. Over-allocate so the
+     * page-rounded mapping stays inside our block. */
+    *rawsize = need + 4095;
+    if (!(*raw = AllocMem(*rawsize, MEMF_31BIT)))
+    {
+        *rawsize = 0;
+        return FALSE;
+    }
+
+    page = ((IPTR)*raw + 4095) & ~(IPTR)4095;
+
+    /* Flush before remapping, or a later writeback hits our pixels */
+    CacheClearE((APTR)page, need, CACRF_ClearD);
+
+    /* MAP_WriteThrough = Normal-NC; MAP_CacheInhibit would be Device */
+    if (!KrnMapGlobal((APTR)page, (APTR)page, need,
+                      MAP_WriteThrough | MAP_Readable | MAP_Writable))
+    {
+        FreeMem(*raw, *rawsize);
+        *raw     = NULL;
+        *rawsize = 0;
+        return FALSE;
+    }
+
+    *phys   = (UQUAD)page;
+    *mapped = need;
+    return TRUE;
+}
+
+/* A framebuffer for a mode larger than the firmware's boot surface */
+APTR vc4_hvs6_alloc_fb(struct VideoCoreGfx_staticdata *xsd, ULONG pitch, ULONG height)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    ULONG size = pitch * height;
+
+    if (!hvs6_scanout(&st->h6_FBRaw, &st->h6_FBSize, &st->h6_FBMapped,
+                      &st->h6_FBPhys, size))
+    {
+        bug("[VC4HVS6] no memory for a %u byte framebuffer\n", size);
+        return NULL;
+    }
+
+    memset((APTR)(IPTR)st->h6_FBPhys, 0, size);
+    return (APTR)(IPTR)st->h6_FBPhys;
+}
+
 /* Allocate a second framebuffer page, remapped write-combining since
  * the HVS does not see the CPU caches. */
 BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
@@ -327,7 +408,6 @@ BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
     ULONG size = fb_pitch * fb_height;
-    ULONG mapped = (size + 4095) & ~4095UL;
     ULONG i, dst, src;
     IPTR  page;
 
@@ -336,49 +416,13 @@ BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
 
     st->h6_Pages = 1;
 
-    if (st->h6_BackRaw && (st->h6_BackMapped >= mapped))
-        page = (IPTR)st->h6_BackPhys;
-
-    else
+    if (!hvs6_scanout(&st->h6_BackRaw, &st->h6_BackSize, &st->h6_BackMapped,
+                      &st->h6_BackPhys, size))
     {
-        if (st->h6_BackRaw)
-        {
-            FreeMem(st->h6_BackRaw, st->h6_BackSize);
-            st->h6_BackRaw = NULL;
-        }
-
-        /* 31-bit because vcsd_FBPage[] is a ULONG. Over-allocate so the
-         * page-rounded mapping stays inside our block. */
-        st->h6_BackSize = mapped + 4095;
-        st->h6_BackRaw  = AllocMem(st->h6_BackSize, MEMF_31BIT);
-        if (!st->h6_BackRaw)
-        {
-            bug("[VC4HVS6] no 31-bit memory for a %u byte back page\n", size);
-            st->h6_BackSize = 0;
-            return FALSE;
-        }
-
-        page = ((IPTR)st->h6_BackRaw + 4095) & ~(IPTR)4095;
-
-        /* Flush before remapping, or a later writeback hits our pixels */
-        CacheClearE((APTR)page, mapped, CACRF_ClearD);
-
-
-        /* MAP_WriteThrough = Normal-NC; MAP_CacheInhibit would be Device */
-        if (!KrnMapGlobal((APTR)page, (APTR)page, mapped,
-                          MAP_WriteThrough | MAP_Readable | MAP_Writable))
-        {
-            bug("[VC4HVS6] could not remap the back page write-combining\n");
-            FreeMem(st->h6_BackRaw, st->h6_BackSize);
-            st->h6_BackRaw = NULL;
-            st->h6_BackSize = 0;
-            return FALSE;
-        }
-
-        st->h6_BackPhys   = (UQUAD)page;
-        st->h6_BackMapped = mapped;
+        bug("[VC4HVS6] no memory for a %u byte back page\n", size);
+        return FALSE;
     }
-
+    page = (IPTR)st->h6_BackPhys;
 
     memset((APTR)page, 0, size);
 
