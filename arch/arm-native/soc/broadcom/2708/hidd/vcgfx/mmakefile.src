@@ -12,6 +12,7 @@ FILES	:=	\
 	vcgfx_memory \
 	vcgfx_sdtv \
 	vcgfx_hdmi \
+	vcgfx_edid \
 	vcgfx_hardware \
 	vcgfx_hvs \
 	vcgfx_hvs5 \

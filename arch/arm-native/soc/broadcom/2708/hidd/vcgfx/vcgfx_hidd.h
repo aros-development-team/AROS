@@ -17,6 +17,7 @@
 #include "vcgfx_hardware.h"
 #include "vcgfx_hvs.h"
 #include "vcgfx_hvs6state.h"
+#include "vcgfx_edid.h"
 
 /* vcsd_MBoxMessage is one shared buffer for every mailbox round-trip;
  * take vcsd_GPUMemLock around each pack-write-read sequence. */
@@ -130,6 +131,9 @@ struct VideoCoreGfx_staticdata {
 
         /* HVS6 display-list ownership (vcgfx_hvs6.c). */
         struct vc4_hvs6_state   vcsd_HVS6;
+
+        /* The sink's EDID, read once by HDMI_SyncGen (vcgfx_edid.c). */
+        struct vcgfx_edid       vcsd_EDID;
 };
 
 #define VCGFX_HVS_VC4   0       /* BCM283x, VideoCore IV */
