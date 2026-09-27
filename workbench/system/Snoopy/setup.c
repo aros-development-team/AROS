@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 */
 
 //#define DEBUG 1
@@ -118,7 +118,7 @@ void setup_reset(void)
     setup.breakPoint          = FALSE;
 
     setup.match               = FALSE;
-    setup.pattern             = NULL;
+    setup.pattern[0]          = '\0';
     setup.parsedpattern[0]    = '\0';
 
     setup.enableChangeDir     = FALSE;
