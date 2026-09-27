@@ -302,9 +302,13 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
     {
         vc4_hvs6_report(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch, aligned_width, height);
+
+        /* A mode set holds this ~100 ms; cursor updates must wait. */
+        VC4_MBOX_LOCK(xsd);
         if (vc4_hvs6_takeover(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch,
                               aligned_width, height))
             vc4_hvs6_add_backpage(xsd, fb_pitch, height);
+        VC4_MBOX_UNLOCK(xsd);
     }
 
     /* Phase 2: own the display list from here on. Flips and cursor
@@ -324,6 +328,13 @@ static VOID vc4_restore_cursor(struct VideoCoreGfx_staticdata *xsd)
 {
     if (!xsd->vcsd_CurBuf || !xsd->vcsd_CurWidth || !xsd->vcsd_CurHeight)
         return;
+
+    /* HVS6 has no firmware cursor; the takeover emptied the plane. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+    {
+        vc4_hvs_update_cursor(xsd);
+        return;
+    }
 
     /* Owning the display list: the takeover already baked the current
      * cursor state into our list, and the firmware cursor tags would

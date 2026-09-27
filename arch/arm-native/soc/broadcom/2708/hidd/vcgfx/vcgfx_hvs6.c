@@ -34,16 +34,6 @@ static inline ULONG hvs6_now_us(void)
     return *(volatile ULONG *)(ARM_PERIIOBASE + 0x3004);
 }
 
-static inline ULONG hvs6_rd(ULONG offset)
-{
-    return *(volatile ULONG *)(HVS6_BASE + offset);
-}
-
-static inline void hvs6_wr(ULONG offset, ULONG value)
-{
-    *(volatile ULONG *)(HVS6_BASE + offset) = value;
-}
-
 /* Byte offset of a slot from the HVS window base */
 static inline ULONG hvs6_slot(struct vc4_hvs6_state *st, ULONG list, ULONG n)
 {
@@ -165,18 +155,41 @@ void vc4_hvs6_report(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
     }
 }
 
+/* Back to list 0 with only the framebuffer plane, at the current size.
+ * Single-word writes: either list may be the one being scanned. */
+static BOOL hvs6_retake(struct vc4_hvs6_state *st)
+{
+    ULONG list, spin;
+
+    for (list = 0; list < HVS6_LISTS; list++)
+    {
+        hvs6_wr(hvs6_slot(st, list, HVS6_SLOT_OVL), HVS6_CTL0_EMPTY);
+        hvs6_wr(hvs6_slot(st, list, HVS6_SLOT_CUR), HVS6_CTL0_EMPTY);
+    }
+    hvs6_wr(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLIST, st->h6_List[0]);
+
+    st->h6_Pages   = 1;
+    st->h6_Overlay = FALSE;
+    st->h6_Cursor  = FALSE;
+
+    for (spin = 0; spin < HVS6_SPIN_LATCH; spin++)
+        if (hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLACT) == st->h6_List[0])
+            return TRUE;
+
+    bug("[VC4HVS6] ch%u never latched %#06x\n", st->h6_Chan, st->h6_List[0]);
+    return FALSE;
+}
+
 /* Replace the framebuffer channel's list with our own copy of the
- * firmware's plane entry; the screen should not change. */
+ * firmware's plane entry, setting the output to fb_width x fb_height
+ * first if needed; at the boot size the screen should not change. */
 BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
                        ULONG fb_pitch, ULONG fb_width, ULONG fb_height)
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
-    ULONG base, ch, list = 0, ours = 0, i, spin;
+    ULONG base, ch, list = 0, ours = 0, i, spin, out;
     ULONG src = 0, dst;
-
-    /* On a mode set, read the entry from the firmware's list, not ours */
-    if (st->h6_Active)
-        vc4_hvs6_release(xsd);
+    BOOL resize;
 
     if (!VC4_HVS6_TAKEOVER)
         return FALSE;
@@ -186,30 +199,55 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
 
     base = HVS6_DLIST_WORD;
 
-    /* The firmware picks the channel by mode */
-    for (ch = 0; ch < HVS6_CHANNELS; ch++)
+    if (st->h6_Active)
     {
-        ULONG ctl0;
+        /* Ours already: the same size only needs the front page back;
+         * any other is a mode set from the firmware's entry. */
+        ch  = st->h6_Chan;
+        out = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL);
+        if ((HVS6_DISPCTRL_W(out) == fb_width) && (HVS6_DISPCTRL_H(out) == fb_height))
+            return hvs6_retake(st);
 
-        if (!(hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL) & HVS6_DISPCTRL_EN))
-            continue;
-
-        list = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLIST);
+        if (!vc4_hvs6_mode_ok(xsd, ch, fb_width, fb_height))
+        {
+            bug("[VC4HVS6] ch%u cannot show %ux%u\n", ch, fb_width, fb_height);
+            return FALSE;
+        }
+        list = st->h6_FWList;
         src  = (base + list) * 4;
-        ctl0 = hvs6_rd(src + HVS6_ENT_CTL0 * 4);
-
-        if ((ctl0 & HVS6_CTL0_END) || !(ctl0 & HVS6_CTL0_VALID))
-            continue;
-        if (hvs6_rd(src + HVS6_ENT_PTR1 * 4) == fb_phys)
-            break;
     }
-
-    if (ch == HVS6_CHANNELS)
+    else
     {
-        bug("[VC4HVS6] no channel is scanning 0x%08x - staying on firmware\n",
-            fb_phys);
-        return FALSE;
+        /* The firmware picks the channel by mode */
+        for (ch = 0; ch < HVS6_CHANNELS; ch++)
+        {
+            ULONG ctl0;
+
+            if (!(hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL) & HVS6_DISPCTRL_EN))
+                continue;
+
+            list = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLIST);
+            src  = (base + list) * 4;
+            ctl0 = hvs6_rd(src + HVS6_ENT_CTL0 * 4);
+
+            if ((ctl0 & HVS6_CTL0_END) || !(ctl0 & HVS6_CTL0_VALID))
+                continue;
+            if (hvs6_rd(src + HVS6_ENT_PTR1 * 4) == fb_phys)
+                break;
+        }
+
+        if (ch == HVS6_CHANNELS)
+        {
+            bug("[VC4HVS6] no channel is scanning 0x%08x - staying on firmware\n",
+                fb_phys);
+            return FALSE;
+        }
     }
+
+    /* A size we cannot set is shown top-left at the current mode */
+    out    = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL);
+    resize = ((HVS6_DISPCTRL_W(out) != fb_width) || (HVS6_DISPCTRL_H(out) != fb_height))
+             && vc4_hvs6_mode_ok(xsd, ch, fb_width, fb_height);
 
     /* Reuse our lists: they no longer hold the fill pattern */
     if (st->h6_List[0] && (st->h6_ListBase == base))
@@ -224,33 +262,50 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
     st->h6_List[0]  = ours;
     st->h6_List[1]  = ours + HVS6_LIST_SLOTS * HVS6_SLOT_WORDS;
 
+    /* List 0 may be live; nothing scans it once stopped */
+    if (resize)
+        vc4_hvs6_mode_stop(xsd, ch);
+
     dst = hvs6_slot(st, 0, HVS6_SLOT_FB);
     for (i = 0; i < HVS6_SLOT_WORDS; i++)
         hvs6_wr(dst + i * 4, hvs6_rd(src + i * 4));
+    hvs6_wr(dst + HVS6_ENT_POS0 * 4, HVS6_POS0(0, 0));
+    hvs6_wr(dst + HVS6_ENT_POS2 * 4, HVS6_POS2(fb_width, fb_height));
     hvs6_wr(hvs6_slot(st, 0, HVS6_SLOT_OVL), HVS6_CTL0_EMPTY);
     hvs6_wr(hvs6_slot(st, 0, HVS6_SLOT_CUR), HVS6_CTL0_EMPTY);
     hvs6_wr(hvs6_slot(st, 0, HVS6_SLOT_END), HVS6_CTL0_END);
 
-    hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPLIST, ours);
-
-    if (hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLIST) != ours)
+    if (resize)
     {
-        bug("[VC4HVS6] ch%u DISPLIST did not take %#06x - restoring\n",
-            ch, ours);
-        hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPLIST, list);
-        return FALSE;
+        if (!vc4_hvs6_mode_start(xsd, ch, fb_width, fb_height, ours))
+        {
+            bug("[VC4HVS6] ch%u: mode set to %ux%u failed\n", ch, fb_width, fb_height);
+            return FALSE;
+        }
     }
-
-    /* DISPLIST reaches DISPLACT at the next frame start */
-    for (spin = 0; spin < HVS6_SPIN_LATCH; spin++)
-        if (hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLACT) == ours)
-            break;
-
-    if (spin == HVS6_SPIN_LATCH)
+    else
     {
-        bug("[VC4HVS6] ch%u never latched %#06x - restoring\n", ch, ours);
-        hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPLIST, list);
-        return FALSE;
+        hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPLIST, ours);
+
+        if (hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLIST) != ours)
+        {
+            bug("[VC4HVS6] ch%u DISPLIST did not take %#06x - restoring\n",
+                ch, ours);
+            hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPLIST, list);
+            return FALSE;
+        }
+
+        /* DISPLIST reaches DISPLACT at the next frame start */
+        for (spin = 0; spin < HVS6_SPIN_LATCH; spin++)
+            if (hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLACT) == ours)
+                break;
+
+        if (spin == HVS6_SPIN_LATCH)
+        {
+            bug("[VC4HVS6] ch%u never latched %#06x - restoring\n", ch, ours);
+            hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPLIST, list);
+            return FALSE;
+        }
     }
 
     st->h6_Chan    = ch;
@@ -263,20 +318,6 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
     bug("[VC4HVS6] ch%u: took over the display list, %#06x -> %#06x\n",
         ch, list, ours);
     return TRUE;
-}
-
-void vc4_hvs6_release(struct VideoCoreGfx_staticdata *xsd)
-{
-    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
-
-    if (!st->h6_Active)
-        return;
-
-    hvs6_wr(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLIST, st->h6_FWList);
-    st->h6_Active = FALSE;
-    st->h6_Pages  = 1;
-    bug("[VC4HVS6] ch%u: released back to %#06x\n",
-        st->h6_Chan, st->h6_FWList);
 }
 
 /* Allocate a second framebuffer page, remapped write-combining since

@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "vcgfx_hidd.h"
+#include "vcgfx_hvs6.h"
 
 #ifdef MBoxBase
 #undef MBoxBase
@@ -73,6 +74,16 @@ static struct DisplayMode *VC4_BuildMode(const struct VC4ModeEntry *e)
     return m;
 }
 
+static BOOL VC4_HaveMode(struct List *modelist, ULONG w, ULONG h)
+{
+    struct DisplayMode *m;
+
+    ForeachNode(modelist, m)
+        if ((m->dm_hdisp == w) && (m->dm_vdisp == h))
+            return TRUE;
+    return FALSE;
+}
+
 /* Probe a single resolution via VCTAG_TESTRES. The firmware returns the
  * (possibly snapped) width/height it would actually program.
  */
@@ -134,6 +145,10 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
 
     vcgfx_edid_probe(xsd);
 
+    /* BCM2712: record the boot mode before anything touches it. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        vc4_hvs6_mode_capture(xsd);
+
     if (native_w && native_h)
     {
         const struct vcgfx_timing *t = vcgfx_edid_find(xsd, native_w, native_h);
@@ -141,7 +156,11 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
             native_w, native_w, native_w,
             native_h, native_h, native_h };
 
-        /* The sink's own timings for this size, where it lists them. */
+        /* What the pixelvalve really runs, or else the sink's own
+         * timings for this size, where it lists them. */
+        if (xsd->vcsd_HVS6.h6_ModeOK && (xsd->vcsd_HVS6.h6_BootTiming.hdisp == native_w)
+            && (xsd->vcsd_HVS6.h6_BootTiming.vdisp == native_h))
+            t = &xsd->vcsd_HVS6.h6_BootTiming;
         if (t)
         {
             n.clock  = t->clock;
@@ -168,12 +187,27 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
      * the panel can't display larger modes correctly even if the HVS would
      * happily produce them.
      */
-    /* BCM2712 TESTRES echoes the current mode and SETRES is a no-op,
-     * so only the native mode is real. */
+    /* BCM2712 TESTRES echoes the current mode and SETRES is a no-op, so
+     * offer what vcgfx_hvs6_mode.c can set - nothing when mode setting
+     * is off. */
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
     {
-        D(bug("[VideoCoreGfx] %s: BCM2712 - native mode only\n",
-            __PRETTY_FUNCTION__));
+        const struct vcgfx_timing *t;
+
+        for (i = 0; (t = vc4_hvs6_mode(xsd, i)) != NULL; i++)
+        {
+            struct VC4ModeEntry e = { t->hdisp, t->vdisp, t->clock,
+                t->hstart, t->hend, t->htotal, t->vstart, t->vend, t->vtotal };
+
+            if (!vc4_hvs6_mode_usable(xsd, t) || VC4_HaveMode(modelist, t->hdisp, t->vdisp))
+                continue;
+            if ((hdmi_mode = VC4_BuildMode(&e)) != NULL)
+            {
+                AddTail(modelist, &hdmi_mode->dm_Node);
+                hdmi_modecount++;
+            }
+        }
+        bug("[VideoCoreGfx] BCM2712: %d HDMI mode(s)\n", hdmi_modecount);
         return hdmi_modecount;
     }
 
