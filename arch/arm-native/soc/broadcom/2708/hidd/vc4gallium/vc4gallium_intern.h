@@ -233,6 +233,7 @@ struct vc4galliumstaticdata
     ULONG                   overlay_displaced_handle;
 
     struct Task            *v3d_service_task;
+    struct Task            *v3d_service_waiter;
 
     /* Module-internal dispatch struct; the driver's winsys shims
      * (aros_drm_shim.c) route drmIoctl/mmap through it. */

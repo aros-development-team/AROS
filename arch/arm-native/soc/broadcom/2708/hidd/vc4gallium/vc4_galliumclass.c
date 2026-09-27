@@ -108,7 +108,12 @@ static void vc4_service_task_entry(struct vc4galliumstaticdata *sd)
             vc4_gpu_nap(sd, VC4_GPUWAIT_NAP_US);
         }
     }
+
+    /* Forbid until exit: the stopper may unload this code once woken */
+    Forbid();
     sd->v3d_service_task = NULL;
+    if (sd->v3d_service_waiter)
+        Signal(sd->v3d_service_waiter, SIGF_SINGLE);
 }
 
 BOOL vc4_aros_start_service_task(struct vc4galliumstaticdata *sd)
@@ -123,8 +128,15 @@ BOOL vc4_aros_start_service_task(struct vc4galliumstaticdata *sd)
 
 void vc4_aros_stop_service_task(struct vc4galliumstaticdata *sd)
 {
-    if (sd->v3d_service_task)
-        Signal(sd->v3d_service_task, SIGBREAKF_CTRL_C);
+    if (!sd->v3d_service_task)
+        return;
+
+    sd->v3d_service_waiter = FindTask(NULL);
+    SetSignal(0, SIGF_SINGLE);
+    Signal(sd->v3d_service_task, SIGBREAKF_CTRL_C);
+    while (sd->v3d_service_task)
+        Wait(SIGF_SINGLE);
+    sd->v3d_service_waiter = NULL;
 }
 
 void vc4_aros_service_kick(struct vc4galliumstaticdata *sd)
