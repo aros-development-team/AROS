@@ -73,5 +73,5 @@ int main()
     /* If we are here, shutdown did not work for some reason */
     Delay(25);
     PutStr("This action is not supported\n");
-    return 0;
+    return RETURN_FAIL;
 }
