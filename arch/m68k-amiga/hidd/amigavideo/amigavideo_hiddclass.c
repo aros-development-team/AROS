@@ -1097,10 +1097,7 @@ static ULONG AmigaVideo_BuildViewPort(struct amigavideo_staticdata *csd,
         bmdata->bytesperrow = vp->RasInfo->BitMap->BytesPerRow;
         bmdata->diwstartx = view->DxOffset +
                             STANDARD_VIEW_X - STANDARD_XOFFSET;
-        bmdata->diwstarty = view->DyOffset + STANDARD_VIEW_Y +
-                            (((bmdata->modeid & MONITOR_ID_MASK) ==
-                              PAL_MONITOR_ID) ? MIN_PAL_ROW :
-                                                MIN_NTSC_ROW) - 1;
+        bmdata->diwstarty = view->DyOffset + STANDARD_VIEW_Y;
 
         /*
          * A classic ViewPort owns its colors in ViewPort->ColorMap.  Seed
