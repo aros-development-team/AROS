@@ -71,6 +71,8 @@ struct planarbm_data
 {
     struct BitMap *bitmap;		/* Associated BitMap structure		  */
     BOOL	   planes_alloced;	/* Whether the BitMap was allocated by us */
+    UWORD      cached_depth_plus_one; /* Held pixel format's depth, 0 if none */
+    UWORD      cache_pixfmt;          /* Initially detached graphics wrapper */
 };
 
 struct chunkybm_data
