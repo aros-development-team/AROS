@@ -4,9 +4,15 @@
 */
 
 #include <proto/layers.h>
+#include <intuition/gadgetclass.h>
 #include "showhide.h"
 #include "intuition_intern.h"
+#include "inputhandler.h"
 #include "inputhandler_actions.h"
+#include "inputhandler_support.h"
+#include "boolgadgets.h"
+#include "propgadgets.h"
+#include "strgadgets.h"
 
 struct HideWindowActionMsg
 {
@@ -107,6 +113,85 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
     if (IsWindowVisible(window))
     {
         struct Requester *req;
+
+        if (window == IntuitionBase->ActiveWindow)
+        {
+            struct IIHData *iihd =
+                (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+
+            if (iihd->ActiveGadget &&
+                !IS_SCREEN_GADGET(iihd->ActiveGadget) &&
+                (iihd->GadgetInfo.gi_Window == window))
+            {
+                struct Gadget *gadget = iihd->ActiveGadget;
+
+                switch (gadget->GadgetType & GTYP_GTYPEMASK)
+                {
+                    case GTYP_CUSTOMGADGET:
+                    {
+                        struct gpGoInactive gpgi;
+
+                        gpgi.MethodID   = GM_GOINACTIVE;
+                        gpgi.gpgi_GInfo = &iihd->GadgetInfo;
+                        gpgi.gpgi_Abort = 1;
+
+                        Locked_DoMethodA(window, gadget, (Msg)&gpgi, IntuitionBase);
+                        break;
+                    }
+
+                    case GTYP_STRGADGET:
+                        gadget->Flags &= ~GFLG_SELECTED;
+                        RefreshStrGadget(gadget,
+                                         iihd->GadgetInfo.gi_Window,
+                                         iihd->GadgetInfo.gi_Requester,
+                                         IntuitionBase);
+                        break;
+
+                    case GTYP_BOOLGADGET:
+                        if (!(gadget->Activation & GACT_TOGGLESELECT))
+                        {
+                            BOOL inside;
+
+                            inside = InsideGadget(iihd->GadgetInfo.gi_Screen,
+                                                  iihd->GadgetInfo.gi_Window,
+                                                  iihd->GadgetInfo.gi_Requester,
+                                                  gadget,
+                                                  iihd->GadgetInfo.gi_Screen->MouseX,
+                                                  iihd->GadgetInfo.gi_Screen->MouseY);
+
+                            if (inside)
+                            {
+                                gadget->Flags &= ~GFLG_SELECTED;
+                                RefreshBoolGadgetState(gadget,
+                                                       iihd->GadgetInfo.gi_Window,
+                                                       iihd->GadgetInfo.gi_Requester,
+                                                       IntuitionBase);
+                            }
+                        }
+                        break;
+
+                    case GTYP_PROPGADGET:
+                        HandlePropSelectUp(gadget,
+                                           iihd->GadgetInfo.gi_Window,
+                                           NULL,
+                                           IntuitionBase);
+                        if (gadget->Activation & GACT_RELVERIFY)
+                        {
+                            ih_fire_intuimessage(iihd->GadgetInfo.gi_Window,
+                                                 IDCMP_GADGETUP,
+                                                 0,
+                                                 gadget,
+                                                 IntuitionBase);
+                        }
+                        break;
+                }
+
+                gadget->Activation &= ~GACT_ACTIVEGADGET;
+                iihd->ActiveGadget = NULL;
+            }
+
+            ActivateWindow(NULL);
+        }
 
         LOCK_REFRESH(screen);
 
