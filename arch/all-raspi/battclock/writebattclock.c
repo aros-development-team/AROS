@@ -16,6 +16,8 @@
 #include <dos/dosextens.h>
 
 #include "battclock_intern.h"
+#include "battclock_rtc.h"
+#include "battclock_ds3231.h"
 
 AROS_LH1(void, WriteBattClock,
          AROS_LHA(ULONG, time, D0),
@@ -35,28 +37,23 @@ AROS_LH1(void, WriteBattClock,
 
     if (KernelBase && MBoxBase)
     {
-        IPTR peri_base = (IPTR)KrnGetSystemAttr(KATTR_PeripheralBase);
-        if (peri_base)
-        {
-            ULONG *msg = AllocMem(32, MEMF_PUBLIC | MEMF_CLEAR);
-            if (msg)
-            {
-                msg[0] = 7 * sizeof(ULONG);                       /* Buffer size */
-                msg[1] = 0;                                       /* Request */
-                msg[2] = PROPTAG_SET_RTC;                         /* Tag */
-                msg[3] = 4;                                       /* Value buffer size */
-                msg[4] = 0;                                       /* Request flag */
-                msg[5] = time + AMIGA_POSIX_EPOCH_DIFF;          /* POSIX timestamp */
-                msg[6] = 0;                                       /* End tag */
+        ULONG posix_secs = time + AMIGA_POSIX_EPOCH_DIFF;
+        int ok = rpi_rtc_reg(KernelBase, MBoxBase, PROPTAG_SET_RTC,
+                             RPI_RTC_REG_TIME, &posix_secs);
 
-                MBoxCall((void *)(peri_base + 0x00b880UL), VCMB_PROPCHAN, msg);
-                FreeMem(msg, 32);
-            }
-        }
+        D(bug("[battclock] WriteBattClock: hardware RTC set %u -> %d\n",
+              posix_secs, ok));
+        (void)ok;
     }
 
     /*
-     * 2. Persist the time to the boot volume as fallback; see ReadBattClock().
+     * 2. DS3231 on the i2c header, if the device tree has one.
+     */
+    if (DS3231_Write(time))
+        D(bug("[battclock] WriteBattClock: DS3231 set\n"));
+
+    /*
+     * 3. Persist the time to the boot volume as fallback; see ReadBattClock().
      */
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if (DOSBase)

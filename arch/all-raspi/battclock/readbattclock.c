@@ -16,6 +16,8 @@
 #include <dos/dosextens.h>
 
 #include "battclock_intern.h"
+#include "battclock_rtc.h"
+#include "battclock_ds3231.h"
 
 AROS_LH0(ULONG, ReadBattClock,
          struct BattClockBase *, BattClockBase, 2, Battclock)
@@ -35,38 +37,32 @@ AROS_LH0(ULONG, ReadBattClock,
 
     if (KernelBase && MBoxBase)
     {
-        IPTR peri_base = (IPTR)KrnGetSystemAttr(KATTR_PeripheralBase);
-        if (peri_base)
-        {
-            ULONG *msg = AllocMem(32, MEMF_PUBLIC | MEMF_CLEAR);
-            if (msg)
-            {
-                msg[0] = 7 * sizeof(ULONG);  /* Buffer size */
-                msg[1] = 0;                  /* Request */
-                msg[2] = PROPTAG_GET_RTC;    /* Tag */
-                msg[3] = 4;                  /* Value buffer size */
-                msg[4] = 0;                  /* Request/response flag */
-                msg[5] = 0;                  /* Clock ID (0) / output timestamp */
-                msg[6] = 0;                  /* End tag */
+        ULONG posix_secs = 0;
+        int ok = rpi_rtc_reg(KernelBase, MBoxBase, PROPTAG_GET_RTC,
+                             RPI_RTC_REG_TIME, &posix_secs);
 
-                if (MBoxCall((void *)(peri_base + 0x00b880UL), VCMB_PROPCHAN, msg))
-                {
-                    ULONG posix_secs = msg[5];
-                    if (posix_secs > AMIGA_POSIX_EPOCH_DIFF)
-                    {
-                        secs = posix_secs - AMIGA_POSIX_EPOCH_DIFF;
-                        D(bug("[battclock] ReadBattClock: hardware RTC returned %lu (Amiga %lu)\n", posix_secs, secs));
-                        FreeMem(msg, 32);
-                        return secs;
-                    }
-                }
-                FreeMem(msg, 32);
-            }
+        if (ok && posix_secs > AMIGA_POSIX_EPOCH_DIFF)
+        {
+            secs = posix_secs - AMIGA_POSIX_EPOCH_DIFF;
+            D(bug("[battclock] ReadBattClock: hardware RTC returned %u (Amiga %u)\n",
+                  posix_secs, secs));
+            return secs;
         }
+        D(bug("[battclock] ReadBattClock: hardware RTC unusable (ok %d, value %u)\n",
+              ok, posix_secs));
     }
 
     /*
-     * 2. Fallback: For older boards without hardware RTC, read from DEVS:battclock.
+     * 2. DS3231 on the i2c header (Pi 2/3/4), if the device tree has one.
+     */
+    if (DS3231_Read(&secs))
+    {
+        D(bug("[battclock] ReadBattClock: DS3231 returned %u\n", secs));
+        return secs;
+    }
+
+    /*
+     * 3. Fallback: For older boards without hardware RTC, read from DEVS:battclock.
      */
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if (DOSBase)
@@ -89,7 +85,7 @@ AROS_LH0(ULONG, ReadBattClock,
         CloseLibrary((struct Library *)DOSBase);
     }
 
-    D(bug("[battclock] ReadBattClock: returning %lu\n", secs));
+    D(bug("[battclock] ReadBattClock: returning %u\n", secs));
     return secs;
 
     AROS_LIBFUNC_EXIT

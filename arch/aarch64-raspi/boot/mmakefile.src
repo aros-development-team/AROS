@@ -64,6 +64,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-fs-sfs-quick \
 #MM kernel-fs-ram-quick \
 #MM kernel-processor-quick \
+#MM kernel-battclock-quick \
 #MM kernel-gpio-bcm2708-quick \
 #MM kernel-mbox-bcm2708-quick \
 #MM kernel-dma-bcm2708-quick \
@@ -135,6 +136,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-fs-sfs \
 #MM kernel-fs-ram \
 #MM kernel-processor \
+#MM kernel-battclock \
 #MM kernel-gpio-bcm2708 \
 #MM kernel-mbox-bcm2708 \
 #MM kernel-dma-bcm2708 \
@@ -166,9 +168,6 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-usb-pcixhci \
 #MM kernel-usb-classes-hubss
 
-#MM kernel-package-raspi-aarch64-missing: \
-#MM kernel-battclock
-
 # Pin to a specific firmware release tag, not the rolling 'master' branch:
 # start.elf and fixup.dat are a version-matched pair, and fetching them from
 # master at different times (with wget -c never re-fetching) yields a mismatch
@@ -197,7 +196,9 @@ RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf \
 # boards use a different address map (RP1 PCIe window at 0x1c_0000_0000, not
 # 0x1f_...), so without these files the bootstrap sees C1 addresses on D0
 # hardware.
-RASPIFW_OVERLAYS  := overlay_map.dtb bcm2712d0.dtbo
+# i2c-rtc describes an i2c RTC for battclock; inert until config.txt has
+# e.g. dtoverlay=i2c-rtc,ds3231.
+RASPIFW_OVERLAYS  := overlay_map.dtb bcm2712d0.dtbo i2c-rtc.dtbo
 
 RASPIWIFIFW_BRANCH := buster
 RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
@@ -214,7 +215,7 @@ RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos dos64 poseidon cgxbootpic gadtools lowlevel fd
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands entropy gpio mbox dma sdio bwfm pl011bt rp1
-PKG_RSRC_ARCH := processor
+PKG_RSRC_ARCH := processor battclock
 PKG_DEVS      := input gameport keyboard console sdcard nvme USBHardware/usb2otg USBHardware/pcixhci
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
