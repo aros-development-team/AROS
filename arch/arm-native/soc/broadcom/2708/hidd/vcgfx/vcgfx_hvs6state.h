@@ -66,6 +66,14 @@ struct vc4_hvs6_state
     ULONG   h6_FBSize;          /* bytes handed to AllocMem         */
     UQUAD   h6_FBPhys;
     ULONG   h6_FBMapped;        /* bytes actually remapped          */
+
+    /* The mode the output runs, and whether the link is scrambled
+     * (TMDS from 340 MHz up); the watch task keeps the sink's SCDC
+     * set-up alive while it is. */
+    struct vcgfx_timing h6_CurTiming;
+    BOOL    h6_Scrambled;
+    struct Task *h6_Watch;
+
 };
 
 #endif /* _VIDEOCOREGFX_HVS6STATE_H */

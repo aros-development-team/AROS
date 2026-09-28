@@ -188,10 +188,12 @@ static BOOL hvs6_retake(struct vc4_hvs6_state *st)
 }
 
 /* Replace the framebuffer channel's list with our own copy of the
- * firmware's plane entry, setting the output to fb_width x fb_height
- * first if needed; at the boot size the screen should not change. */
+ * firmware's plane entry, setting the output to fb_width x fb_height at
+ * the rate in want (NULL = any) first if needed; at the boot mode the
+ * screen should not change. */
 BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
-                       ULONG fb_pitch, ULONG fb_width, ULONG fb_height)
+                       ULONG fb_pitch, ULONG fb_width, ULONG fb_height,
+                       const struct vcgfx_timing *want)
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
     ULONG base, ch, list = 0, ours = 0, i, spin, out;
@@ -208,14 +210,15 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
 
     if (st->h6_Active)
     {
-        /* Ours already: the same size only needs the front page back;
+        /* Ours already: the same mode only needs the front page back;
          * any other is a mode set from the firmware's entry. */
         ch  = st->h6_Chan;
         out = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL);
-        if ((HVS6_DISPCTRL_W(out) == fb_width) && (HVS6_DISPCTRL_H(out) == fb_height))
+        if ((HVS6_DISPCTRL_W(out) == fb_width) && (HVS6_DISPCTRL_H(out) == fb_height)
+            && vc4_hvs6_mode_current(xsd, want))
             return hvs6_retake(st);
 
-        if (!vc4_hvs6_mode_ok(xsd, ch, fb_width, fb_height))
+        if (!vc4_hvs6_mode_ok(xsd, ch, fb_width, fb_height, want))
         {
             bug("[VC4HVS6] ch%u cannot show %ux%u\n", ch, fb_width, fb_height);
             return FALSE;
@@ -251,10 +254,11 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
         }
     }
 
-    /* A size we cannot set is shown top-left at the current mode */
+    /* A mode we cannot set is shown top-left at the current one */
     out    = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL);
-    resize = ((HVS6_DISPCTRL_W(out) != fb_width) || (HVS6_DISPCTRL_H(out) != fb_height))
-             && vc4_hvs6_mode_ok(xsd, ch, fb_width, fb_height);
+    resize = ((HVS6_DISPCTRL_W(out) != fb_width) || (HVS6_DISPCTRL_H(out) != fb_height)
+              || !vc4_hvs6_mode_current(xsd, want))
+             && vc4_hvs6_mode_ok(xsd, ch, fb_width, fb_height, want);
 
     /* Reuse our lists: they no longer hold the fill pattern */
     if (st->h6_List[0] && (st->h6_ListBase == base))
@@ -294,7 +298,7 @@ BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
 
     if (resize)
     {
-        if (!vc4_hvs6_mode_start(xsd, ch, fb_width, fb_height, ours))
+        if (!vc4_hvs6_mode_start(xsd, ch, fb_width, fb_height, want, ours))
         {
             bug("[VC4HVS6] ch%u: mode set to %ux%u failed\n", ch, fb_width, fb_height);
             return FALSE;

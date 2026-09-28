@@ -70,16 +70,18 @@ static struct DisplayMode *VC4_BuildMode(const struct VC4ModeEntry *e)
     m->dm_vtotal = e->vtotal;
     m->dm_descr  = AllocVec(64, MEMF_CLEAR);
     if (m->dm_descr)
-        sprintf(m->dm_descr, "VideoCore: HDMI %dx%d", (int)e->width, (int)e->height);
+        sprintf(m->dm_descr, "VC: HDMI %dx%d", (int)e->width, (int)e->height);
     return m;
 }
 
-static BOOL VC4_HaveMode(struct List *modelist, ULONG w, ULONG h)
+/* Same size and rate - the clock alone does not tell 1080p50 from 60. */
+static BOOL VC4_HaveMode(struct List *modelist, const struct vcgfx_timing *t)
 {
     struct DisplayMode *m;
 
     ForeachNode(modelist, m)
-        if ((m->dm_hdisp == w) && (m->dm_vdisp == h))
+        if ((m->dm_hdisp == t->hdisp) && (m->dm_vdisp == t->vdisp) && (m->dm_clock == t->clock)
+            && (m->dm_htotal == t->htotal) && (m->dm_vtotal == t->vtotal))
             return TRUE;
     return FALSE;
 }
@@ -199,10 +201,16 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
             struct VC4ModeEntry e = { t->hdisp, t->vdisp, t->clock,
                 t->hstart, t->hend, t->htotal, t->vstart, t->vend, t->vtotal };
 
-            if (!vc4_hvs6_mode_usable(xsd, t) || VC4_HaveMode(modelist, t->hdisp, t->vdisp))
+            if (!vc4_hvs6_mode_usable(xsd, t)
+                || VC4_HaveMode(modelist, t))
                 continue;
             if ((hdmi_mode = VC4_BuildMode(&e)) != NULL)
             {
+                /* One size can come at several rates now. */
+                if (hdmi_mode->dm_descr)
+                    sprintf(hdmi_mode->dm_descr, "VideoCore: HDMI %dx%d@%d", (int)t->hdisp,
+                        (int)t->vdisp, (int)((t->clock * 1000 + t->htotal * t->vtotal / 2)
+                                             / (t->htotal * t->vtotal)));
                 AddTail(modelist, &hdmi_mode->dm_Node);
                 hdmi_modecount++;
             }

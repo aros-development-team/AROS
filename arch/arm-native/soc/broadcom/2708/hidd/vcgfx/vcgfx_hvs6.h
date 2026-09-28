@@ -110,7 +110,8 @@ struct VideoCoreGfx_staticdata;
 void vc4_hvs6_report(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
                      ULONG fb_pitch, ULONG fb_width, ULONG fb_height);
 BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
-                       ULONG fb_pitch, ULONG fb_width, ULONG fb_height);
+                       ULONG fb_pitch, ULONG fb_width, ULONG fb_height,
+                       const struct vcgfx_timing *want);
 BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
                            ULONG fb_pitch, ULONG fb_height);
 APTR vc4_hvs6_alloc_fb(struct VideoCoreGfx_staticdata *xsd, ULONG pitch, ULONG height);
@@ -126,9 +127,11 @@ void vc4_hvs6_mode_capture(struct VideoCoreGfx_staticdata *xsd);
 const struct vcgfx_timing *vc4_hvs6_mode(struct VideoCoreGfx_staticdata *xsd, ULONG i);
 BOOL vc4_hvs6_mode_usable(struct VideoCoreGfx_staticdata *xsd,
                           const struct vcgfx_timing *t);
-BOOL vc4_hvs6_mode_ok(struct VideoCoreGfx_staticdata *xsd, ULONG ch, ULONG w, ULONG h);
+BOOL vc4_hvs6_mode_ok(struct VideoCoreGfx_staticdata *xsd, ULONG ch, ULONG w, ULONG h,
+                      const struct vcgfx_timing *want);
+BOOL vc4_hvs6_mode_current(struct VideoCoreGfx_staticdata *xsd, const struct vcgfx_timing *want);
 void vc4_hvs6_mode_stop(struct VideoCoreGfx_staticdata *xsd, ULONG ch);
 BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
-                         ULONG w, ULONG h, ULONG list);
+                         ULONG w, ULONG h, const struct vcgfx_timing *want, ULONG list);
 
 #endif /* _VIDEOCOREGFX_HVS6_H */

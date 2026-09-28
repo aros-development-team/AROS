@@ -13,6 +13,7 @@ FILES	:=	\
 	vcgfx_sdtv \
 	vcgfx_hdmi \
 	vcgfx_edid \
+	vcgfx_ddc \
 	vcgfx_hardware \
 	vcgfx_hvs \
 	vcgfx_hvs5 \

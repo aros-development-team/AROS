@@ -4,11 +4,12 @@
     Desc: BCM VideoCore Gfx Hidd - BCM2712 mode setting.
 
     Programs the HVS channel, the pixelvalve, the HDMI timing registers
-    and the HDMI PHY PLL for a mode of our own, below the 340 MHz where
-    scrambling starts. The CSC, the infoframes and the rest of the HDMI
-    controller keep what the firmware set up at boot; the firmware clocks
-    are only raised where a mode needs more. Proven step by step on a
-    Pi 500+ with the raspi-pvtest, -phytest and -modetest tools.
+    and the HDMI PHY PLL for a mode of our own, and from 340 MHz up the
+    scrambler on both ends of the link (the sink's over SCDC). The CSC,
+    the infoframes and the rest of the HDMI controller keep what the
+    firmware set up at boot; the firmware clocks are only raised where a
+    mode needs more. Proven step by step on a Pi 500+ with the
+    raspi-pvtest, -phytest and -modetest tools.
 
     HDMI0 only: the shared hd block puts VID_CTL elsewhere for HDMI1, and
     that port has not been exercised.
@@ -17,12 +18,15 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <exec/tasks.h>
+#include <devices/timer.h>
 #include <proto/exec.h>
 #include <proto/mbox.h>
 
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
 #include "vcgfx_hvs6.h"
+#include "vcgfx_ddc.h"
 
 #ifdef MBoxBase
 #undef MBoxBase
@@ -62,6 +66,8 @@
 #define HDMI_VERTB0         0x0f8
 #define HDMI_VERTA1         0x100
 #define HDMI_VERTB1         0x104
+#define HDMI_SCRAMBLER_CTL  0x1e4
+#define SCRAMBLER_ENABLE    (1 << 0)
 #define HDMI_HORZA_VPOS     (1 << 15)
 #define HDMI_HORZA_HPOS     (1 << 14)
 #define FIFO_RECENTER       (1 << 6)
@@ -103,8 +109,16 @@ static const ULONG lanes_low[4]  = { 0x80828700, 0x80828700, 0x80828700, 0x80828
 static const ULONG lanes_mid[4]  = { 0xc0870000, 0xc0870000, 0xc0870000, 0xc0870800 };
 static const ULONG lanes_high[4] = { 0x848f8700, 0x848f8700, 0x848f8700, 0x849f8f00 };
 
-/* Scrambling and SCDC are not done here, so nothing at or above this. */
-#define TMDS_MAX            340000          /* kHz */
+/* From here up the link is scrambled (spec 7.3); the PHY's top band is
+ * characterised to about 600 MHz. */
+#define TMDS_SCRAMBLE       340000          /* kHz */
+#define TMDS_MAX            600000          /* kHz */
+
+/* SCDC registers in the sink (DDC slave 0x54). */
+#define SCDC_SOURCE_VERSION 0x02
+#define SCDC_TMDS_CONFIG    0x20            /* 1 = clock ratio 1/40, 0 = scramble */
+#define SCDC_SCRAMBLER_STAT 0x21
+#define SCDC_STATUS_FLAGS   0x40            /* clock detected, ch0-2 locked */
 
 /* Widest line a prefetch slice holds (HVS6_UPM_MAX_PITCH, 32 bpp). */
 #define WIDTH_MAX           4096
@@ -267,9 +281,9 @@ void vc4_hvs6_mode_capture(struct VideoCoreGfx_staticdata *xsd)
     t->flags  = ((st->h6_BootHDMI[0] & HDMI_HORZA_HPOS) ? VCGFX_TIMING_PHSYNC : 0)
               | ((st->h6_BootHDMI[0] & HDMI_HORZA_VPOS) ? VCGFX_TIMING_PVSYNC : 0);
 
-    /* Scrambling (above 340 MHz) is not done here, so a boot mode that
-     * needs it could not be brought back. */
-    if (t->clock >= 340000)
+    /* The boot mode is brought back without SCDC, so it must not need
+     * scrambling. */
+    if (t->clock >= TMDS_SCRAMBLE)
     {
         bug("[VC4HVS6] mode setting off: boot mode runs %u kHz\n", t->clock);
         return;
@@ -281,7 +295,8 @@ void vc4_hvs6_mode_capture(struct VideoCoreGfx_staticdata *xsd)
         return;
     }
 
-    st->h6_ModeOK = TRUE;
+    st->h6_ModeOK  = TRUE;
+    st->h6_CurTiming = *t;
     bug("[VC4HVS6] boot mode %ux%u, %u kHz: mode setting on\n", t->hdisp, t->vdisp,
         t->clock);
 }
@@ -292,9 +307,14 @@ static BOOL hvs6_usable(struct VideoCoreGfx_staticdata *xsd, const struct vcgfx_
     const struct vcgfx_edid *e = &xsd->vcsd_EDID;
     ULONG hz, div, off;
 
-    if ((t->clock >= TMDS_MAX) || !hvs6_pll(t->clock, &div, &off)
+    if ((t->clock > TMDS_MAX) || !hvs6_pll(t->clock, &div, &off)
         || (t->flags & VCGFX_TIMING_INTERLACE) || (t->hdisp & 15)
         || (t->hdisp > WIDTH_MAX))
+        return FALSE;
+
+    /* Scrambled rates only where the sink has SCDC and takes them. */
+    if ((t->clock >= TMDS_SCRAMBLE)
+        && (!e->valid || !e->scdc || (e->maxtmds && (t->clock > e->maxtmds))))
         return FALSE;
 
     if (e->valid)
@@ -326,21 +346,33 @@ const struct vcgfx_timing *vc4_hvs6_mode(struct VideoCoreGfx_staticdata *xsd, UL
     return NULL;
 }
 
-/* Timings to show w x h with, in the order vc4_hvs6_mode() offers them;
- * NULL for the boot mode's size or anything we cannot set. */
+/* One size can run at rates sharing a pixel clock (720p50/60, 1080p50/
+ * 60), so a rate is told apart by its totals too. NULL wants any. */
+static BOOL hvs6_same_rate(const struct vcgfx_timing *t, const struct vcgfx_timing *want)
+{
+    return !want || ((t->clock == want->clock) && (t->htotal == want->htotal)
+                     && (t->vtotal == want->vtotal));
+}
+
+/* Timings to show w x h with at the rate in want (NULL = the first one
+ * offered), in the order vc4_hvs6_mode() offers them; NULL for anything
+ * we cannot set. */
 static const struct vcgfx_timing *hvs6_lookup(struct VideoCoreGfx_staticdata *xsd,
-                                              ULONG w, ULONG h, BOOL *boot)
+                                              ULONG w, ULONG h,
+                                              const struct vcgfx_timing *want, BOOL *boot)
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
     const struct vcgfx_timing *t;
     ULONG i;
 
-    *boot = (w == st->h6_BootTiming.hdisp) && (h == st->h6_BootTiming.vdisp);
+    *boot = (w == st->h6_BootTiming.hdisp) && (h == st->h6_BootTiming.vdisp)
+            && hvs6_same_rate(&st->h6_BootTiming, want);
     if (*boot)
         return &st->h6_BootTiming;
 
     for (i = 0; (t = vc4_hvs6_mode(xsd, i)); i++)
-        if ((t->hdisp == w) && (t->vdisp == h) && hvs6_usable(xsd, t))
+        if ((t->hdisp == w) && (t->vdisp == h) && hvs6_same_rate(t, want)
+            && hvs6_usable(xsd, t))
             return t;
     return NULL;
 }
@@ -351,12 +383,77 @@ BOOL vc4_hvs6_mode_usable(struct VideoCoreGfx_staticdata *xsd,
     return xsd->vcsd_HVS6.h6_ModeOK && hvs6_usable(xsd, t);
 }
 
-/* Can channel ch be switched to show w x h? */
-BOOL vc4_hvs6_mode_ok(struct VideoCoreGfx_staticdata *xsd, ULONG ch, ULONG w, ULONG h)
+/* Can channel ch be switched to show w x h at the rate in want? */
+BOOL vc4_hvs6_mode_ok(struct VideoCoreGfx_staticdata *xsd, ULONG ch, ULONG w, ULONG h,
+                      const struct vcgfx_timing *want)
 {
     BOOL boot;
 
-    return xsd->vcsd_HVS6.h6_ModeOK && (ch == 0) && hvs6_lookup(xsd, w, h, &boot);
+    return xsd->vcsd_HVS6.h6_ModeOK && (ch == 0) && hvs6_lookup(xsd, w, h, want, &boot);
+}
+
+/* Is the output already at the rate in want (NULL = whatever it runs)? */
+BOOL vc4_hvs6_mode_current(struct VideoCoreGfx_staticdata *xsd, const struct vcgfx_timing *want)
+{
+    return !xsd->vcsd_HVS6.h6_ModeOK || hvs6_same_rate(&xsd->vcsd_HVS6.h6_CurTiming, want);
+}
+
+static BOOL hvs6_scdc_rd(UBYTE reg, UBYTE *val)
+{
+    return vcgfx_ddc_read(0, VCGFX_DDC_SCDC, reg, val, 1);
+}
+
+static BOOL hvs6_scdc_wr(UBYTE reg, UBYTE val)
+{
+    UBYTE b[2] = { reg, val };
+
+    return vcgfx_ddc_write(0, VCGFX_DDC_SCDC, b, 2);
+}
+
+/*
+ * A scrambled link lives in the sink's SCDC registers, which it forgets
+ * when switched off - and which something else writes too: TMDS_Config
+ * has been seen to read 3 again after we had cleared it. So check every
+ * two seconds and set the sink up again whenever it has lost it.
+ */
+static void hvs6_watch(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    struct timerequest *tr = NULL;
+    struct MsgPort *port;
+    UBYTE cfg, stat;
+
+    if (!(port = CreateMsgPort()))
+        return;
+    if (!(tr = (struct timerequest *)CreateIORequest(port, sizeof(*tr)))
+        || OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0))
+    {
+        bug("[VC4HVS6] SCDC watch: no timer\n");
+        DeleteIORequest((struct IORequest *)tr);
+        DeleteMsgPort(port);
+        return;
+    }
+
+    for (;;)
+    {
+        tr->tr_node.io_Command = TR_ADDREQUEST;
+        tr->tr_time.tv_secs    = 2;
+        tr->tr_time.tv_micro   = 0;
+        DoIO((struct IORequest *)tr);
+
+        VC4_MBOX_LOCK(xsd);
+        cfg = stat = 0;
+        if (st->h6_Scrambled && vcgfx_ddc_connected(0)
+            && hvs6_scdc_rd(SCDC_TMDS_CONFIG, &cfg) && hvs6_scdc_rd(SCDC_SCRAMBLER_STAT, &stat)
+            && (((cfg & 3) != 3) || !(stat & 1)))
+        {
+            bug("[VC4HVS6] SCDC: sink lost scrambling (config %02x, status %02x) - setting it"
+                " up again\n", cfg, stat);
+            hvs6_scdc_wr(SCDC_SOURCE_VERSION, 1);
+            hvs6_scdc_wr(SCDC_TMDS_CONFIG, 3);
+        }
+        VC4_MBOX_UNLOCK(xsd);
+    }
 }
 
 /*
@@ -383,6 +480,15 @@ void vc4_hvs6_mode_stop(struct VideoCoreGfx_staticdata *xsd, ULONG ch)
     if (!hvs6_poll(HVS6_BASE + HVS6_CHAN(ch) + HVS6_DISPSTAT, 3 << 13, 0, 100000))
         bug("[VC4HVS6] ch%u did not stop\n", ch);
     hvs6_udelay(20000);
+
+    /* Scrambling off at both ends while nothing is sent (10.2 step 3). */
+    if (xsd->vcsd_HVS6.h6_Scrambled)
+    {
+        wr(HDMI_BASE + HDMI_SCRAMBLER_CTL, rd(HDMI_BASE + HDMI_SCRAMBLER_CTL) & ~SCRAMBLER_ENABLE);
+        if (!hvs6_scdc_wr(SCDC_TMDS_CONFIG, 0))
+            bug("[VC4HVS6] SCDC: TMDS_Config not acknowledged\n");
+        xsd->vcsd_HVS6.h6_Scrambled = FALSE;
+    }
 }
 
 /* The lower edge of each band is exclusive, 297 MHz still mid band. */
@@ -432,7 +538,7 @@ static void hvs6_clock_min(struct VideoCoreGfx_staticdata *xsd, ULONG id, ULONG 
 }
 
 /* DISPLAY-SPEC 9.4, steps 1-16. */
-static void hvs6_phy_init(ULONG vco_div, ULONG rm_offset, const ULONG *lanes)
+static void hvs6_phy_init(ULONG vco_div, ULONG rm_offset, const ULONG *lanes, BOOL scramble)
 {
     ULONG i;
 
@@ -452,7 +558,7 @@ static void hvs6_phy_init(ULONG vco_div, ULONG rm_offset, const ULONG *lanes)
 
     for (i = 0; i < 4; i++)
         wr(PHY_BASE + PHY_CTL(i), lanes[i]);
-    wr(PHY_BASE + PHY_TMDS_WORD_SEL, 0);                    /* < 340 MHz */
+    wr(PHY_BASE + PHY_TMDS_WORD_SEL, scramble ? 3 : 0);
     wr(PHY_BASE + PHY_POWERUP_CTL, 0x1cf);
 
     wr(PHY_BASE + PHY_PLL_POWERUP_CTL, 1);
@@ -482,15 +588,17 @@ static void hvs6_recenter(void)
  * other runs the pixelvalve at 1 pixel/clock with ODD_TIMING.
  */
 BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
-                         ULONG w, ULONG h, ULONG list)
+                         ULONG w, ULONG h, const struct vcgfx_timing *want, ULONG list)
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
     const struct vcgfx_timing *t;
     ULONG pv[PV_REGS], hd[6], vidctl, ctrl0, vco_div, rm_offset, i;
-    BOOL boot;
+    UBYTE lock = 0, flags = 0;
+    BOOL boot, scramble;
 
-    if (!(t = hvs6_lookup(xsd, w, h, &boot)))
+    if (!(t = hvs6_lookup(xsd, w, h, want, &boot)))
         return FALSE;
+    scramble = (t->clock >= TMDS_SCRAMBLE);
 
     CopyMem(st->h6_BootPV, pv, sizeof(pv));
     CopyMem(st->h6_BootHDMI, hd, sizeof(hd));
@@ -538,7 +646,15 @@ BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
     hvs6_clock_min(xsd, VCCLOCK_PIXEL_BVB, (t->clock <= 148500) ? 75000000
                                           : (t->clock <= 297000) ? 150000000 : 300000000);
 
-    hvs6_phy_init(vco_div, rm_offset, boot ? st->h6_BootLane : hvs6_lanes(t->clock));
+    /* The sink learns about scrambling before the fast clock starts. */
+    if (scramble)
+    {
+        hvs6_scdc_wr(SCDC_SOURCE_VERSION, 1);
+        if (!hvs6_scdc_wr(SCDC_TMDS_CONFIG, 3))
+            bug("[VC4HVS6] SCDC: TMDS_Config not acknowledged\n");
+    }
+
+    hvs6_phy_init(vco_div, rm_offset, boot ? st->h6_BootLane : hvs6_lanes(t->clock), scramble);
     hvs6_udelay(20000);                                     /* PLL lock */
 
     wr(HDMI_BASE + HDMI_HORZA, hd[0]);
@@ -548,6 +664,8 @@ BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
     wr(HDMI_BASE + HDMI_VERTA1, hd[4]);
     wr(HDMI_BASE + HDMI_VERTB1, hd[5]);
     wr(HD_VID_CTL, vidctl);
+    if (scramble)
+        wr(HDMI_BASE + HDMI_SCRAMBLER_CTL, rd(HDMI_BASE + HDMI_SCRAMBLER_CTL) | SCRAMBLER_ENABLE);
 
     for (i = PV(PV_HORZA); i <= PV(PV_VERTB); i++)
         wr(PV_BASE + 4 * i, pv[i]);
@@ -556,6 +674,31 @@ BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
     wr(PV_BASE + PV_V_CONTROL, pv[PV(PV_V_CONTROL)]);
 
     hvs6_recenter();
+    st->h6_CurTiming = *t;
+
+    if (scramble)
+    {
+        /* Up to 250 ms for the sink to lock, then give its lanes a moment
+         * before reading how they settled. */
+        for (i = 0; i < 250; i++)
+        {
+            if (hvs6_scdc_rd(SCDC_SCRAMBLER_STAT, &lock) && (lock & 1))
+                break;
+            hvs6_udelay(1000);
+        }
+        hvs6_udelay(20000);
+        hvs6_scdc_rd(SCDC_STATUS_FLAGS, &flags);
+        bug("[VC4HVS6] SCDC: scrambler %s after %u ms, status flags %02x\n",
+            (lock & 1) ? "locked" : "NOT locked", i, flags);
+
+        st->h6_Scrambled = TRUE;
+        if (!st->h6_Watch)
+            st->h6_Watch = NewCreateTask(TASKTAG_PC, hvs6_watch,
+                                         TASKTAG_NAME, "vcgfx SCDC watch",
+                                         TASKTAG_PRI, 0,
+                                         TASKTAG_ARG1, xsd,
+                                         TAG_DONE);
+    }
 
     for (i = 0; i < 100; i++)
     {
