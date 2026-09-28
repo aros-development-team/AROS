@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* procedure.c -- Here are all functions related to user-defined procedures */
@@ -24,11 +24,11 @@ void link_function(char *name, long int incarnation)
 {
 int i = 0, j = 0, inc = -1;
 
-    for ( ; i < numactiveusrprocs && strcmp(name, activeusrprocs[i]->procname) != 0 ; i++ );
+    for ( ; i < numactiveusrprocs && strcasecmp(name, activeusrprocs[i]->procname) != 0 ; i++ );
 
     while (j < numusrprocs && inc != incarnation)
     {
-        if (strcmp(name, usrprocs[j].procname) == 0)
+        if (strcasecmp(name, usrprocs[j].procname) == 0)
         {
             inc++;
         }
@@ -57,11 +57,10 @@ struct ProcedureList *find_proc(char *name)
 int i;
 
     /* Check if procedure is in list */
-    for ( i = 0 ; i < numactiveusrprocs && strcmp(name, activeusrprocs[i]->procname) != 0 ; i++ );
+    for ( i = 0 ; i < numactiveusrprocs && strcasecmp(name, activeusrprocs[i]->procname) != 0 ; i++ );
     if (i == numactiveusrprocs)
     {
-        /* Not in list */
-        fprintf(stderr, "<%s> - Procedure not found!\n", name);
+        /* Not in list - eval_cmd() decides what that means */
         return NULL;
     }
 
@@ -91,7 +90,7 @@ long int incarnation = 0;
     /* Check if name is in list */
     for ( i = 0 ; i < numusrprocs ; i++)
     {
-        if (strcmp(name, usrprocs[i].procname) == 0)
+        if (strcasecmp(name, usrprocs[i].procname) == 0)
         {
             incarnation++;
         }

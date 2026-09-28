@@ -795,6 +795,35 @@ static int ioctl_get_param(struct vc4galliumstaticdata *sd, struct drm_vc4_get_p
     return 0;
 }
 
+#if VC4_CACHED_BO
+/* Normal-WB BO backing. The GPU reads through the uncached alias, so
+ * do_submit_cl cleans these first. MEMF_31BIT keeps GPU_BUS_ADDR valid. */
+static APTR cached_bo_alloc(ULONG size, APTR *out_base, ULONG *out_raw)
+{
+    ULONG raw = size + 4096;
+    APTR base = AllocMem(raw, MEMF_31BIT | MEMF_CLEAR);
+
+    if (!base)
+        return NULL;
+
+    *out_base = base;
+    *out_raw  = raw;
+    /* Retire MEMF_CLEAR's dirty lines before the GPU writes the BO. */
+    CacheClearE(base, raw, CACRF_ClearD);
+    return (APTR)(((IPTR)base + 4095) & ~(IPTR)4095);
+}
+
+static void cached_bo_free(struct vc4_bo_entry *be)
+{
+    if (be->cached_base)
+    {
+        FreeMem(be->cached_base, be->cached_size);
+        be->cached_base = NULL;
+        be->cached_size = 0;
+    }
+}
+#endif
+
 static int ioctl_create_bo(struct vc4galliumstaticdata *sd, struct drm_vc4_create_bo *args)
 {
     ULONG handle;
@@ -810,24 +839,38 @@ static int ioctl_create_bo(struct vc4galliumstaticdata *sd, struct drm_vc4_creat
         return -1;
     }
 
-    vaddr = gpu_mem_alloc(sd, args->size, 4096,
-                          VCMEM_L1NONALLOCATING | VCMEM_ZERO,
-                          &gpu_handle);
-    if (!vaddr)
+    gpu_handle = 0;
+#if VC4_CACHED_BO
     {
-        /* Retry after reclaiming pool memory */
-        ReleaseSemaphore(&sd->bo_lock);
-        gpu_mem_reclaim(sd);
-        ObtainSemaphore(&sd->bo_lock);
+        APTR cbase = NULL;
+        ULONG craw = 0;
 
+        vaddr = cached_bo_alloc(args->size, &cbase, &craw);
+        sd->bo_table[handle].cached_base = cbase;
+        sd->bo_table[handle].cached_size = craw;
+    }
+    if (!vaddr)
+#endif
+    {
         vaddr = gpu_mem_alloc(sd, args->size, 4096,
                               VCMEM_L1NONALLOCATING | VCMEM_ZERO,
                               &gpu_handle);
         if (!vaddr)
         {
+            /* Retry after reclaiming pool memory */
             ReleaseSemaphore(&sd->bo_lock);
-            bug("[VC4Gallium] create_bo: allocation failed for %d bytes (even after reclaim)\n", args->size);
-            return -1;
+            gpu_mem_reclaim(sd);
+            ObtainSemaphore(&sd->bo_lock);
+
+            vaddr = gpu_mem_alloc(sd, args->size, 4096,
+                                  VCMEM_L1NONALLOCATING | VCMEM_ZERO,
+                                  &gpu_handle);
+            if (!vaddr)
+            {
+                ReleaseSemaphore(&sd->bo_lock);
+                bug("[VC4Gallium] create_bo: allocation failed for %d bytes (even after reclaim)\n", args->size);
+                return -1;
+            }
         }
     }
 
@@ -953,6 +996,9 @@ void vc4_aros_bo_unref_locked(struct vc4galliumstaticdata *sd, ULONG handle)
         if (sd->bo_table[handle].gpu_handle)
             gpu_mem_free(sd, sd->bo_table[handle].gpu_handle,
                          sd->bo_table[handle].size);
+#if VC4_CACHED_BO
+        cached_bo_free(&sd->bo_table[handle]);
+#endif
         sd->bo_table[handle].vaddr = NULL;
         sd->bo_table[handle].bus_addr = 0;
         sd->bo_table[handle].gpu_handle = 0;
@@ -2160,6 +2206,37 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
 
     bo_handles = (ULONG *)(IPTR)args->bo_handles;
 
+    /* The page the last present took off the plane is on scanout until
+     * vblank; wait for the latch before rendering into it. */
+    if (sd->overlay_displaced_handle
+        && args->color_write.hindex != (ULONG)~0
+        && args->color_write.hindex < args->bo_handle_count
+        && bo_handles[args->color_write.hindex] == sd->overlay_displaced_handle)
+    {
+#if VC4G_PROFILE
+        static ULONG _lw_n, _lw_us, _lw_max;
+        ULONG _lw_t0 = gallium_now_us_ext();
+#endif
+
+        vc4_aros_overlay_latch_wait(sd);
+
+#if VC4G_PROFILE
+        {
+            ULONG _lw_dt = gallium_now_us_ext() - _lw_t0;
+            _lw_us += _lw_dt;
+            if (_lw_dt > _lw_max)
+                _lw_max = _lw_dt;
+        }
+        if (++_lw_n >= 128)
+        {
+            bug("[VC4Gallium] submit latch-wait diag %lu: %lu us avg/%lu max\n",
+                (unsigned long)_lw_n, (unsigned long)(_lw_us / _lw_n),
+                (unsigned long)_lw_max);
+            _lw_n = _lw_us = _lw_max = 0;
+        }
+#endif
+    }
+
     tiles_x = args->max_x_tile - args->min_x_tile + 1;
     tiles_y = args->max_y_tile - args->min_y_tile + 1;
 
@@ -2431,6 +2508,25 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
      * hands back the identity vaddr), so they were as pointless to walk as the
      * GPU-only buffers the walk already skipped.
      */
+#if VC4_CACHED_BO
+    /* Cacheable BOs: push dirty lines out before the GPU reads them. */
+    {
+        ULONG bi;
+
+        for (bi = 0; bi < args->bo_handle_count; bi++)
+        {
+            ULONG bh = bo_handles[bi];
+            struct vc4_bo_entry *be;
+
+            if (!bh || bh >= VC4_MAX_BOS)
+                continue;
+            be = &sd->bo_table[bh];
+            if (be->cached_base && be->vaddr && be->size)
+                CacheClearE(be->vaddr, be->size, CACRF_ClearD);
+        }
+    }
+#endif
+
     asm volatile("dsb sy" ::: "memory");
 
     {
@@ -2648,6 +2744,8 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
     V3D_WRITE(v3d, V3D_CT0EA, exec_bus + bin_cl_offset + bin_cl_out_size);
 
     vc4_v3d_service_interrupts(v3d);
+    /* Start CT1 on FLDONE even if no wait path polls. */
+    vc4_aros_service_kick(sd);
 
     /* DIAG: did the V3D accept the new CL addresses? */
     D(bug("[VC4Gallium] DIAG V3D post-kick: CT0CS=0x%08x CT0CA=0x%08x CT0EA=0x%08x CT1CS=0x%08x CT1CA=0x%08x CT1EA=0x%08x PCS=0x%08x ERRSTAT=0x%08x\n",
@@ -3026,6 +3124,9 @@ void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd)
             if (sd->bo_table[i].gpu_handle)
                 gpu_mem_free(sd, sd->bo_table[i].gpu_handle,
                              sd->bo_table[i].size);
+#if VC4_CACHED_BO
+            cached_bo_free(&sd->bo_table[i]);
+#endif
             sd->bo_table[i].vaddr = NULL;
             sd->bo_table[i].bus_addr = 0;
             sd->bo_table[i].gpu_handle = 0;

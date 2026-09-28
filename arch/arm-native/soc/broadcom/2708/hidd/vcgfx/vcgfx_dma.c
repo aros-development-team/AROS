@@ -57,8 +57,13 @@ int FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *xsd)
 {
     APTR raw;
 
+    /* Before any early return: callers only test vcsd_DMAChannel < 0. */
     xsd->vcsd_DMAChannel = -1;
     InitSemaphore(&xsd->vcsd_DMALock);
+
+    /* BCM2712 has no 0xC0000000 bus alias; DMA4 wants 40-bit addresses. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        return FALSE;
 
     if ((DMABase = OpenResource("dma.resource")) == NULL)
     {

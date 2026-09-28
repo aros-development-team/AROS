@@ -57,6 +57,8 @@ struct vc4_bo_entry
     BOOL    is_shader;      /* Immutable shader BO */
     BOOL    external;       /* Wraps memory we don't own (scanout page) */
     BOOL    cpu_mapped;     /* MMAP_BO was called — CPU may hold dirty lines */
+    APTR    cached_base;    /* VC4_CACHED_BO: AllocMem base, NULL = VC pool */
+    ULONG   cached_size;
     UQUAD   tiling_modifier;/* DRM_FORMAT_MOD_* — round-tripped via set/get_tiling */
     /* Shader metadata (set by QPU scanner on CREATE_SHADER_BO) */
     ULONG   uniforms_size;          /* Bytes of uniform data GPU reads */
@@ -227,6 +229,11 @@ struct vc4galliumstaticdata
      * was shown on, for clear_overlay(NULL) at context teardown. */
     ULONG                   overlay_pinned_handle;
     OOP_Object             *overlay_bm;
+    /* Page the last set_overlay took off the plane; on scanout until vblank. */
+    ULONG                   overlay_displaced_handle;
+
+    struct Task            *v3d_service_task;
+    struct Task            *v3d_service_waiter;
 
     /* Module-internal dispatch struct; the driver's winsys shims
      * (aros_drm_shim.c) route drmIoctl/mmap through it. */
@@ -243,6 +250,9 @@ LIBBASETYPE
     struct Library              LibNode;
     struct vc4galliumstaticdata sd;
 };
+
+/* BOs in cacheable RAM, cleaned before each submit. Off: tried, no gain. */
+#define VC4_CACHED_BO 0
 
 /* Per-frame timing. Flip to 0 to silence. Reads SYSTIMER_CLO (1 MHz).
  * Output format is one bug() line per measured stage, so a single grep
@@ -285,6 +295,13 @@ void vc4_aros_dma_wait_idle(struct vc4galliumstaticdata *sd);
 /* Wait for all submitted V3D work and flush its L2. Defined in
  * vc4_galliumclass.c. */
 void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd);
+void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd);
+ULONG gallium_now_us_ext(void);
+
+/* V3D service task. Defined in vc4_galliumclass.c. */
+BOOL vc4_aros_start_service_task(struct vc4galliumstaticdata *sd);
+void vc4_aros_stop_service_task(struct vc4galliumstaticdata *sd);
+void vc4_aros_service_kick(struct vc4galliumstaticdata *sd);
 
 /* Hang forensics (vc4_drm_aros.c): dump the most recent submission's
  * geometry + RCL head/tail + first binner sublist. */

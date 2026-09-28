@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES  := zune listview zunestuff windowp buttonsp groupsp cyclesp slidersp \
+FILES  := zune listview prefswindowp zunestuff windowp buttonsp groupsp cyclesp slidersp \
 scrollbarsp listviewsp stringsp specialp navigationp framesp locale \
 systemp
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* misc.c -- here are all miscellaneous functions for global use */
@@ -94,7 +94,12 @@ int c;
     retval = malloc(c+3);
     outofmem(retval);
     retval[0] = DQUOTE;
-    strcpy(retval+1, string);
+    /* NULL is what collect_strings() returns for no strings at all -
+     * "(welcome)" on its own - and that is the empty string, "" */
+    if (c > 0)
+    {
+        strcpy(retval+1, string);
+    }
     retval[c+1] = DQUOTE;
     retval[c+2] = 0;
 

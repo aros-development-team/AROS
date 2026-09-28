@@ -122,6 +122,32 @@
  * the free run below it can be carved up the same way. */
 #define HVS5_FW_KERNEL          0xff4
 
+/* Scaled entry after POS2: [5] context, [6] PTR0, [7] PTRCTX, [8] PITCH,
+ * [9] LBM base, [10]/[11] PPF x/y, [12] context, [13]/[14] kernel pointer.
+ * CTL0 is the unity word with size 15 and UNITY clear. PPF: bit 30, 1.16
+ * ratio at 23:8, 0x60 low byte. LBM is a base; the firmware allocates it
+ * down from 0xbc00, 8 bytes per source pixel of width. */
+#define HVS5_SCALED_WORDS       15
+#define HVS5_CTL0_SCALED        0x4f005807
+#define HVS5_SC_POS1            3
+#define HVS5_SC_POS2            4
+#define HVS5_SC_PTR0            6
+#define HVS5_SC_PITCH           8
+#define HVS5_SC_LBM             9
+#define HVS5_SC_PPFX            10
+#define HVS5_SC_PPFY            11
+#define HVS5_SC_KRN0            13
+#define HVS5_SC_KRN1            14
+
+#define HVS5_PPF(src, dst)      ((1UL << 30) \
+                                 | ((((ULONG)(src) << 16) / (ULONG)(dst)) << 8) \
+                                 | 0x60)
+/* The ratio field is 16 bits, so a plane cannot shrink by more than 2:1. */
+#define HVS5_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0xffff)
+
+#define HVS5_LBM_TOP            0xbc00
+#define HVS5_LBM_BYTES(w)       ((ULONG)(w) * 8)
+
 /* pixelvalve@..., "brcm,bcm2711-pixelvalveN". PV2 has moved (0x7e807000
  * on BCM283x) and PV3/PV4 are new.
  *
@@ -189,6 +215,9 @@ BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
 
 /* Patch the cursor plane in place. No-op when there is no cursor buffer. */
 void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd);
+
+/* Wait for the last armed overlay/flip to latch (VC4GFX_OVL_NOWAIT). */
+void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd);
 
 /* Show (ovl != NULL) or drop (ovl == NULL) a plane composited over the
  * framebuffer, below the cursor - what lets the GL stack present without

@@ -76,6 +76,17 @@ void con_InitVGA(void)
     txt_Clear();
 }
 
+/*
+ * Turn the screen console on regardless of the command line. Used for
+ * fatal errors: a bootstrap panic on a machine booted without "debug"
+ * would otherwise leave a blank screen (GRUB has already switched to
+ * graphics mode) and no hint of what went wrong.
+ */
+void con_Enable(void)
+{
+    bcdebugflags |= BC_DEBUGENABLE;
+}
+
 void con_InitSerial(char *cmdline)
 {
     char *opts = strstr(cmdline, " debug");

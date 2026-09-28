@@ -22,16 +22,10 @@
 #include <oop/oop.h>
 #include <hidd/gallium.h>
 
-/*
- * Register blocks. The hub sits at the same peripheral offset the
- * VideoCore IV V3D did (bus 0x7ec00000), with core 0 just above it -
- * which is also why vc4gallium must never probe here: it would read
- * these registers and take them for a V3D 2.x.
- */
+/* Register blocks, based from the device tree (v3d_dt.c). On the 2711 the
+ * hub sits where the VC4 V3D did, so vc4gallium must never probe there. */
 extern IPTR __arm_periiobase;
 #define ARM_PERIIOBASE      __arm_periiobase
-#define V3D_HUB_OFFSET      0xc00000
-#define V3D_CORE0_OFFSET    0xc04000
 
 /* Hub registers */
 #define V3D_HUB_AXICFG      0x0000
@@ -47,7 +41,7 @@ extern IPTR __arm_periiobase;
 #define V3D_HUB_INT_MSK_SET 0x0060
 #define V3D_HUB_INT_MSK_CLR 0x0064
 
-/* Core registers (from V3D_CORE0_OFFSET) */
+/* Core registers, from the core0 base */
 #define V3D_CTL_IDENT0      0x0000
 #define V3D_CTL_IDENT1      0x0004
 #define V3D_CTL_IDENT2      0x0008
@@ -145,10 +139,8 @@ extern IPTR __arm_periiobase;
  */
 #define V3D_INT_FRDONE      (1 << 0)
 #define V3D_INT_FLDONE      (1 << 1)
-/* Bits 2 and 3 from Linux's v3d_regs.h. OUTOMEM is the binner asking for
- * more tile memory and stopping until BPOA/BPOS are refilled; SPILLUSE
- * (meaning not verified on hardware) has been seen latched alongside
- * FLDONE on jobs that consumed the pre-armed supply. */
+/* OUTOMEM: binner out of tile memory, stopped until BPOA/BPOS refill.
+ * SPILLUSE (unverified): seen with FLDONE when the pre-armed supply is used. */
 #define V3D_INT_OUTOMEM     (1 << 2)
 #define V3D_INT_SPILLUSE    (1 << 3)
 
@@ -203,7 +195,6 @@ extern IPTR __arm_periiobase;
  * next to V3D itself, whose bridges have to be unstalled after power-up.
  * Register and bit meanings are the BCM2835 PM block's, unchanged.
  */
-#define V3D_PM_OFFSET       0x100000    /* /soc, so periiobase-relative */
 #define V3D_PM_GRAFX        0x10c
 #define V3D_PM_PASSWORD     0x5a000000
 #define V3D_PM_POWUP        (1 << 0)
@@ -226,12 +217,21 @@ extern IPTR __arm_periiobase;
  * waits, so their budgets don't scale with the CPU clock. */
 #define V3D_SYSTIMER_CLO    (ARM_PERIIOBASE + 0x3004)
 
+static inline ULONG v3d_now_us(void)
+{
+    return AROS_LE2LONG(*(volatile ULONG *)V3D_SYSTIMER_CLO);
+}
+
 /* vcgfx bitmap interface, mirrored from vcgfx_bitmap.h */
 #define IID_Hidd_BitMap_VideoCore4  "hidd.bitmap.bcmvc4"
 #define aoVCGfxBM_Drawable      0   /* [G] front page phys addr */
 #define aoVCGfxBM_BackDrawable  1   /* [G] back page phys, 0 = no flip */
 #define aoVCGfxBM_Flip          2   /* [S] TRUE = flip front/back */
 #define aoVCGfxBM_Overlay       3   /* [GS] overlay descriptor */
+#define aoVCGfxBM_LatchWait     4   /* [G] block until the last Set latched */
+
+/* ovl_Flags: skip the latch wait; LatchWait before reusing the old page. */
+#define VC4GFX_OVL_NOWAIT       (1 << 0)
 
 /* Overlay descriptor (mirrored from vcgfx_bitmap.h, like the ids above):
  * a 32bpp plane the HVS scans straight from GPU memory, composited over
@@ -244,6 +244,7 @@ struct vc4gfx_overlay
     LONG  ovl_X, ovl_Y;             /* position in fb coordinates */
     ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
                                      * = unscaled, larger = HVS upscale */
+    ULONG ovl_Flags;                /* VC4GFX_OVL_* */
 };
 
 /*
@@ -259,6 +260,13 @@ struct vc4gfx_overlay
  * which Mesa cannot assume it owns, so it loads tiles and flushes more:
  * 2.5-3.4 jobs/frame against the overlay's 1.0. */
 #define V3D_PREFER_OVERLAY  1
+
+/* 0 = windowed presents blit, the HVS overlay plane is never used. */
+#define V3D_OVERLAY_ENABLE  1
+
+/* 0 = the overlay Set blocks until the vblank latch (vblank-paced). 1 = it
+ * returns at once and the displaced page is retired at the next present. */
+#define V3D_OVL_NOWAIT      1
 
 /* Service from the completion interrupt (GIC SPI 74). 0 = poll only,
  * which leaves a stashed render idle until the next submit. If the Pi 3
@@ -311,6 +319,7 @@ struct V3DBO
     ULONG   refcount;
     ULONG   external;       /* wraps memory we do not own (a scanout
                              * page): unmap on close, never FREEMEM */
+    ULONG   last_seqno;     /* newest submission using it, 0 = none */
 };
 
 /* One BO per texture and per vertex buffer; Doom 3 keeps a few thousand
@@ -347,11 +356,12 @@ struct V3DData
 
     IPTR            hub_base;
     IPTR            core0_base;
+    IPTR            sms_base;       /* 2712 only, 0 elsewhere */
 
     /* Cached at probe; DRM_V3D_GET_PARAM serves these without MMIO. */
     ULONG           hub_ident[4];
     ULONG           core_ident[3];
-    ULONG           ver;            /* 42 on a BCM2711 */
+    ULONG           ver;            /* 42 or 71, from the hub ident */
 
     /*
      * The pipeline (all under job_lock). One frame consists of a bin job
@@ -437,6 +447,9 @@ struct V3DData
     LONG            screen_count;
     ULONG           recoveries;     /* hang-recovery fuse, per session */
 
+    ULONG           last_submit_us;
+    BOOL            session_swept;
+
     /* The supply is pre-armed per bin job, so OUTOMEM means even that
      * ran out and the binner has stopped until BPOA/BPOS are refilled. */
     BOOL            oom_pending;    /* latch seen, refill not yet handed */
@@ -472,9 +485,10 @@ BOOL v3d_hw_init(struct V3DData *sd);
 void v3d_hw_shutdown(struct V3DData *sd);
 ULONG v3d_mmu_map(struct V3DData *sd, ULONG paddr, ULONG size);
 void v3d_mmu_unmap(struct V3DData *sd, ULONG gpu_va, ULONG size);
-BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
-                   ULONG qma, ULONG qms, ULONG qts,
-                   ULONG rcl_start, ULONG rcl_end);
+/* Returns the submission's seqno, 0 when refused */
+ULONG v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
+                    ULONG qma, ULONG qms, ULONG qts,
+                    ULONG rcl_start, ULONG rcl_end);
 void v3d_wait_idle(struct V3DData *sd);
 void v3d_hw_wait_seqno(struct V3DData *sd, ULONG seqno);
 void v3d_flush_caches(struct V3DData *sd);
@@ -488,5 +502,10 @@ void v3d_mem_release(struct V3DData *sd);
 /* v3d_drm_shim.c */
 int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg);
 void v3d_release_all_bos(struct V3DData *sd);
+
+/* v3d_dt.c */
+extern IPTR v3d_pm_base;
+extern IPTR v3d_asb_base;       /* 2711 only, 0 elsewhere */
+BOOL v3d_probe_dt(struct V3DData *sd);
 
 #endif /* V3D_INTERN_H */

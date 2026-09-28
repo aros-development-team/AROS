@@ -38,30 +38,29 @@ APTR KernelBase __attribute__((used)) = NULL;
 #define VCTAG_GETCLKMAX     0x00030004
 #define VCTAG_SETCLKSTATE   0x00038001
 #define VCTAG_SETCLKRATE    0x00038002
-#define BCM2711_PERIIOBASE  0xFE000000
 
 #define PM_SPIN             1000000
 
+/* Bases come from v3d_probe_dt(). Only the 2711 has ASB bridges. */
 static inline ULONG pm_rd(ULONG off)
 {
-    return *(volatile ULONG *)(ARM_PERIIOBASE + V3D_PM_OFFSET + off);
+    return *(volatile ULONG *)(v3d_pm_base + off);
 }
 
 static inline void pm_wr(ULONG off, ULONG val)
 {
-    *(volatile ULONG *)(ARM_PERIIOBASE + V3D_PM_OFFSET + off)
-        = V3D_PM_PASSWORD | val;
+    *(volatile ULONG *)(v3d_pm_base + off) = V3D_PM_PASSWORD | val;
 }
 
 static inline ULONG asb_rd(ULONG off)
 {
-    return *(volatile ULONG *)(ARM_PERIIOBASE + V3D_ASB_OFFSET + off);
+    return v3d_asb_base ? *(volatile ULONG *)(v3d_asb_base + off) : 0;
 }
 
 static inline void asb_wr(ULONG off, ULONG val)
 {
-    *(volatile ULONG *)(ARM_PERIIOBASE + V3D_ASB_OFFSET + off)
-        = V3D_PM_PASSWORD | val;
+    if (v3d_asb_base)
+        *(volatile ULONG *)(v3d_asb_base + off) = V3D_PM_PASSWORD | val;
 }
 
 /* Firmware clock id 5, state then rate: an enabled but unconfigured clock
@@ -201,13 +200,8 @@ static int V3D_Init(LIBBASETYPEPTR LIBBASE)
     if (KernelBase)
         __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
-    /* V3D 4.2 exists on the BCM2711 alone. On anything older this offset
-     * is the VideoCore IV V3D, which is vc4gallium's hardware. */
-    if (__arm_periiobase != BCM2711_PERIIOBASE)
-    {
-        D(bug("[V3D] not a BCM2711 - not loading\n"));
+    if (!v3d_probe_dt(sd))
         return FALSE;
-    }
 
     if (!(sd->mbox_base = OpenResource("mbox.resource")))
         return FALSE;

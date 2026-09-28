@@ -76,6 +76,7 @@ void bootstrap_halt(void) __attribute__((noreturn));
 
 #define panic(...)                                  \
     do {                                            \
+        con_Enable();                               \
         kprintf(__VA_ARGS__);                       \
         kprintf("\n*** SYSTEM PANIC!!! ***\n");     \
         bootstrap_halt();                           \

@@ -81,8 +81,20 @@ static void push_event(int type, int x, int y, int button, int keycode) {
 
 - (NSPoint)convertToFB:(NSEvent *)event {
     NSPoint p = [self convertPoint:[event locationInWindow] fromView:nil];
+    NSSize view = [self bounds].size;
+
     /* Flip Y (Cocoa is bottom-up, AROS is top-down) */
-    p.y = g_height - p.y;
+    p.y = view.height - p.y;
+
+    /* The layer stretches the framebuffer to the view when the window is resized */
+    if (view.width > 0 && view.height > 0) {
+        p.x = p.x * g_width / view.width;
+        p.y = p.y * g_height / view.height;
+    }
+
+    /* Drags keep reporting once the pointer leaves the view */
+    if (p.x < 0) p.x = 0; else if (p.x > g_width - 1) p.x = g_width - 1;
+    if (p.y < 0) p.y = 0; else if (p.y > g_height - 1) p.y = g_height - 1;
     return p;
 }
 
