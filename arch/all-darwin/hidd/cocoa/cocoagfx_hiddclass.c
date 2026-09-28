@@ -53,13 +53,12 @@ OOP_Object *CocoaGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     };
 
     struct TagItem modetags[] = {
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags    },
-        { aHidd_Gfx_SyncTags,   (IPTR)synctags  },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags    },
+        { aHidd_DMEnum_SyncTags,   (IPTR)synctags  },
         { TAG_DONE, 0 }
     };
 
     struct TagItem msgtags[] = {
-        { aHidd_Gfx_ModeTags,    (IPTR)modetags },
         { aHidd_Name,            (IPTR)"Cocoa"  },
         { aHidd_HardwareName,    (IPTR)"macOS Cocoa Display" },
         { aHidd_ProducerName,    (IPTR)"AROS Development Team" },
@@ -72,6 +71,19 @@ OOP_Object *CocoaGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     supermsg.attrList = msgtags;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&supermsg);
+
+    if (o) {
+        struct CocoaGfx_staticdata *csd = CSD(cl);
+        struct TagItem displaytags[] = {
+            { aHidd_Display_GfxHidd,  (IPTR)o        },
+            { aHidd_Display_ModeTags, (IPTR)modetags },
+            { TAG_DONE, 0 }
+        };
+
+        csd->display = OOP_NewObject(csd->displayclass, NULL, displaytags);
+        if (csd->display)
+            OOP_GetAttr(csd->display, aHidd_Display_DMEnumerator, (IPTR *)&csd->dmenum);
+    }
 
     bug("[CocoaGfx] New: %p\n", o);
     return o;
@@ -94,15 +106,18 @@ VOID CocoaGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_Gfx_NoFrameBuffer:
             *msg->storage = FALSE;
             return;
+        case aoHidd_Gfx_DisplayDefault:
+            *msg->storage = (IPTR)CSD(cl)->display;
+            return;
         }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-/* ======== GFX class: Hidd_Gfx::CreateObject ======== */
+/* ======== Display class: Hidd_Display::CreateObject ======== */
 
-OOP_Object *CocoaGfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o,
-                                               struct pHidd_Gfx_CreateObject *msg)
+OOP_Object *CocoaGfx__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o,
+                                                   struct pHidd_Display_CreateObject *msg)
 {
     struct CocoaGfx_staticdata *csd = CSD(cl);
 
@@ -118,7 +133,7 @@ OOP_Object *CocoaGfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o,
                 { TAG_DONE, 0 }
             };
 
-            struct pHidd_Gfx_CreateObject supermsg;
+            struct pHidd_Display_CreateObject supermsg;
             supermsg.mID = msg->mID;
             supermsg.cl = msg->cl;
             supermsg.attrList = bmtags;
@@ -131,10 +146,10 @@ OOP_Object *CocoaGfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o,
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-/* ======== GFX class: Hidd_Gfx::Show ======== */
+/* ======== Display class: Hidd_Display::Show ======== */
 
-OOP_Object *CocoaGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o,
-                                       struct pHidd_Gfx_Show *msg)
+OOP_Object *CocoaGfx__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o,
+                                           struct pHidd_Display_Show *msg)
 {
     /* Refresh the Cocoa display */
     if (HostIFace && HostIFace->cocoa_display_refresh)
@@ -151,14 +166,18 @@ static struct OOP_MethodDescr CocoaGfx_Root_descr[] = {
     { NULL, 0 }
 };
 
-static struct OOP_MethodDescr CocoaGfx_Gfx_descr[] = {
-    { (OOP_MethodFunc)CocoaGfx__Hidd_Gfx__CreateObject, moHidd_Gfx_CreateObject },
-    { (OOP_MethodFunc)CocoaGfx__Hidd_Gfx__Show,        moHidd_Gfx_Show         },
+struct OOP_InterfaceDescr CocoaGfx_ifdescr[] = {
+    { CocoaGfx_Root_descr, IID_Root,     2 },
+    { NULL, NULL }
+};
+
+static struct OOP_MethodDescr CocoaGfx_Display_descr[] = {
+    { (OOP_MethodFunc)CocoaGfx__Hidd_Display__CreateObject, moHidd_Display_CreateObject },
+    { (OOP_MethodFunc)CocoaGfx__Hidd_Display__Show,         moHidd_Display_Show         },
     { NULL, 0 }
 };
 
-struct OOP_InterfaceDescr CocoaGfx_ifdescr[] = {
-    { CocoaGfx_Root_descr, IID_Root,     2 },
-    { CocoaGfx_Gfx_descr,  IID_Hidd_Gfx, 2 },
+struct OOP_InterfaceDescr CocoaGfx_Display_ifdescr[] = {
+    { CocoaGfx_Display_descr, IID_Hidd_Display, 2 },
     { NULL, NULL }
 };
