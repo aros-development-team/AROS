@@ -581,6 +581,10 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
     LONG y, y_start, y_end, y_step;
     BOOL same_row_overlap;
 
+    /* Layers restore and move windows with this; see vcgfx_ovl_yield. */
+    vcgfx_ovl_yield(XSD(cl), msg->dest, msg->destX, msg->destY,
+                    msg->destX + msg->width - 1, msg->destY + msg->height - 1);
+
     if (GC_DRMD(msg->gc) != vHidd_GC_DrawMode_Copy)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

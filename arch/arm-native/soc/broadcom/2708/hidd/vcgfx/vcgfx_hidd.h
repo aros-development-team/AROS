@@ -18,6 +18,7 @@
 #include "vcgfx_hvs.h"
 #include "vcgfx_hvs6state.h"
 #include "vcgfx_edid.h"
+#include "vcgfx_bitmap.h"
 
 /* vcsd_MBoxMessage is one shared buffer for every mailbox round-trip;
  * take vcsd_GPUMemLock around each pack-write-read sequence. */
@@ -134,6 +135,16 @@ struct VideoCoreGfx_staticdata {
 
         /* The sink's EDID, read once by HDMI_SyncGen (vcgfx_edid.c). */
         struct vcgfx_edid       vcsd_EDID;
+
+        /* The overlay a gallium driver last put up, so a draw into its
+         * rectangle can hide it (vcgfx_ovl_yield). The driver only rechecks
+         * visibility when it presents, and an app that stops presenting
+         * would leave the plane on top of whatever opens over it. */
+        struct SignalSemaphore  vcsd_OvlLock;
+        OOP_Object             *vcsd_OvlBM;
+        struct BitmapData      *vcsd_OvlBMData;
+        struct vc4gfx_overlay   vcsd_OvlDesc;
+        BOOL                    vcsd_OvlShown;
 };
 
 #define VCGFX_HVS_VC4   0       /* BCM283x, VideoCore IV */
@@ -219,6 +230,8 @@ int     FNAME_SUPPORT(SDTV_SyncGen)(struct List *, OOP_Class *);
 int     FNAME_SUPPORT(HDMI_SyncGen)(struct List *, OOP_Class *);
 APTR    FNAME_SUPPORT(GenPixFmts)(OOP_Class *);
 
+void    vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                        LONG x0, LONG y0, LONG x1, LONG y1);
 BOOL    vc4_dma_copy(struct VideoCoreGfx_staticdata *xsd,
                      ULONG src_phys, ULONG src_pitch,
                      ULONG dst_phys, ULONG dst_pitch,

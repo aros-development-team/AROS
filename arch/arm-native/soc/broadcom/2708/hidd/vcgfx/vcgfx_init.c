@@ -173,6 +173,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     /* Init the mailbox lock before the first MBoxWrite/Read so every
      * transaction (even those before InitMem) can take it. */
     InitSemaphore(&xsd->vcsd_GPUMemLock);
+    InitSemaphore(&xsd->vcsd_OvlLock);
 
     D(bug("[VideoCoreGfx] %s: VideoCore Mailbox resource @ 0x%p\n", __PRETTY_FUNCTION__, MBoxBase));
     D(bug("[VideoCoreGfx] %s: VideoCore message buffer @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_MBoxMessage));

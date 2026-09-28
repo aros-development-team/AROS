@@ -23,10 +23,21 @@
  * leave VideoData NULL and fall through to ChunkyBM.
  */
 
+/* Onscreen only: a draw into an overlay plane's rectangle takes the plane
+ * down first (vcgfx_ovl_yield in vcgfx_onbitmap.c). */
+#ifdef OnBitmap
+#define OVL_YIELD(x, y, w, h) \
+    vcgfx_ovl_yield(XSD(cl), o, (x), (y), (x) + (LONG)(w) - 1, (y) + (LONG)(h) - 1)
+#else
+#define OVL_YIELD(x, y, w, h) ((void)0)
+#endif
+
 /*********  BitMap::Clear()  *************************************/
 VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    OVL_YIELD(0, 0, data->width, data->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow)
     {
@@ -50,6 +61,8 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
 VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    OVL_YIELD(msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy)
@@ -76,6 +89,8 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
 VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    OVL_YIELD(msg->x, msg->y, msg->width, msg->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         (msg->pixFmt == vHidd_StdPixFmt_Native || msg->pixFmt == vHidd_StdPixFmt_Native32))
@@ -112,6 +127,8 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
 VOID MNAME_BM(PutTemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    OVL_YIELD(msg->x, msg->y, msg->width, msg->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy &&
@@ -158,6 +175,8 @@ VOID MNAME_BM(PutTemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
 VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    OVL_YIELD(msg->destX, msg->destY, msg->width, msg->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy &&

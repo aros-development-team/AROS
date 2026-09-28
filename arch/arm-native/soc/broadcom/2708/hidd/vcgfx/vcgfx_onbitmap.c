@@ -531,6 +531,82 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     ReturnPtr("VideoCoreGfx.OnBitMap::New: Obj", OOP_Object *, o);
 }
 
+/*
+ * A draw is about to land inside the rectangle an overlay plane covers.
+ * Nothing draws there while the plane is up - the gallium driver renders
+ * straight onto it - so this is something opening over the GL window: a
+ * window, a menu, a requester. The HVS composites the plane above the fb,
+ * so it would hide that. Hand the area back to the fb instead: copy what the
+ * plane shows into the fb under it, then take the plane down. If the app is
+ * still presenting, its next present sees the window obscured and blits as it
+ * already does; if it has stopped, the fb now holds its last frame.
+ */
+void vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                     LONG x0, LONG y0, LONG x1, LONG y1)
+{
+    const struct vc4gfx_overlay *d = &xsd->vcsd_OvlDesc;
+    struct BitmapData *fb;
+    LONG ox, oy, ow, oh, cx0, cy0, cx1, cy1, y;
+
+    /* Unlocked first: this sits in front of every fb draw. */
+    if (!xsd->vcsd_OvlShown || bm != xsd->vcsd_OvlBM)
+        return;
+
+    ObtainSemaphore(&xsd->vcsd_OvlLock);
+    if (!xsd->vcsd_OvlShown || bm != xsd->vcsd_OvlBM)
+    {
+        ReleaseSemaphore(&xsd->vcsd_OvlLock);
+        return;
+    }
+
+    ox = d->ovl_X;
+    oy = d->ovl_Y;
+    ow = d->ovl_Width;
+    oh = d->ovl_Height;
+    if (x1 < ox || y1 < oy || x0 >= ox + ow || y0 >= oy + oh)
+    {
+        ReleaseSemaphore(&xsd->vcsd_OvlLock);
+        return;
+    }
+
+    /* Unscaled 32bpp only - both planes are XRGB, so rows copy as-is. A
+     * scaled plane is just taken down; the next present repaints it. The
+     * plane's address is a valid CPU address: V3D arenas are identity
+     * mapped, vc4gallium's bus address masks back to the vaddr. */
+    fb = xsd->vcsd_OvlBMData;
+    if (fb && fb->VideoData && fb->bytesperpix == 4
+        && (!d->ovl_DestW || d->ovl_DestW == d->ovl_Width)
+        && (!d->ovl_DestH || d->ovl_DestH == d->ovl_Height))
+    {
+        cx0 = ox > 0 ? ox : 0;
+        cy0 = oy > 0 ? oy : 0;
+        cx1 = ox + ow < (LONG)fb->width  ? ox + ow : (LONG)fb->width;
+        cy1 = oy + oh < (LONG)fb->height ? oy + oh : (LONG)fb->height;
+
+        if (cx1 > cx0 && cy1 > cy0)
+        {
+            UBYTE *src = (UBYTE *)(IPTR)d->ovl_Phys
+                       + (cy0 - oy) * d->ovl_Pitch + (cx0 - ox) * 4;
+            UBYTE *dst = fb->VideoData + cy0 * fb->bytesperrow + cx0 * 4;
+            ULONG bytes = (ULONG)(cx1 - cx0) * 4;
+
+            /* V3D pages are Normal-NC; vc4gallium's may be cached. */
+            CacheClearE(src, (ULONG)(cy1 - cy0 - 1) * d->ovl_Pitch + bytes,
+                        CACRF_InvalidateD);
+            for (y = cy0; y < cy1; y++)
+            {
+                neon_copyline(dst, src, bytes);
+                src += d->ovl_Pitch;
+                dst += fb->bytesperrow;
+            }
+        }
+    }
+
+    vc4_hvs_overlay(xsd, NULL);
+    xsd->vcsd_OvlShown = FALSE;
+    ReleaseSemaphore(&xsd->vcsd_OvlLock);
+}
+
 /**********  Bitmap::Set()  ***************************************/
 
 /* gfx.hidd's Show() switches the FB ModeID via SetAttrs on us. Left to the
@@ -576,7 +652,20 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
         {
             /* Zero-copy overlay plane (vc4gallium windowed GL). Success
              * is reported via a Get on the same attribute. */
-            vc4_hvs_overlay(xsd, (const struct vc4gfx_overlay *)tag->ti_Data);
+            const struct vc4gfx_overlay *ovl =
+                (const struct vc4gfx_overlay *)tag->ti_Data;
+            BOOL shown;
+
+            ObtainSemaphore(&xsd->vcsd_OvlLock);
+            shown = vc4_hvs_overlay(xsd, ovl) && ovl;
+            if (shown)
+            {
+                xsd->vcsd_OvlDesc   = *ovl;
+                xsd->vcsd_OvlBM     = o;
+                xsd->vcsd_OvlBMData = data;
+            }
+            xsd->vcsd_OvlShown = shown;
+            ReleaseSemaphore(&xsd->vcsd_OvlLock);
             return TRUE;
         }
     }
@@ -652,7 +741,16 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
 VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
     EnterFunc(bug("VideoCoreGfx.OnBitMap::Dispose()\n"));
+    ObtainSemaphore(&xsd->vcsd_OvlLock);
+    if (xsd->vcsd_OvlBM == o)
+    {
+        xsd->vcsd_OvlShown = FALSE;
+        xsd->vcsd_OvlBM    = NULL;
+    }
+    ReleaseSemaphore(&xsd->vcsd_OvlLock);
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("VideoCoreGfx.OnBitMap::Dispose");
 }
