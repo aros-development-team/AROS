@@ -26,6 +26,8 @@ extern int doing_abort;
 #include <stdio.h>
 #include <string.h>
 
+#include <proto/datatypes.h>
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
@@ -42,6 +44,10 @@ Object *wnd;
 Object *reqwnd, *helpwnd, *helptext;
 Object *reqroot, *root;
 Object *btproceed, *btabort, *btskip, *bthelp;
+Object *btback;              /* shown in place of Abort while (back) applies */
+Object *btabortpage;         /* the page group Abort and Back share */
+static int back_shown = FALSE;
+int back_pressed = FALSE;    /* the user went back from the page, see execute.c */
 Object *intermediate = NULL;
 Object *working_text = NULL; /* the TextObject inside intermediate, see update_working() */
 Object *copy_gauge = NULL;   /* the Gauge inside intermediate, see update_copying() */
@@ -56,6 +62,7 @@ enum
     Push_About,
     Push_Ok,
     Push_Cancel,
+    Push_Back,
     Push_Last
 };
 
@@ -100,6 +107,19 @@ void DelContents(Object *obj)
     DoMethod(root, OM_REMMEMBER, (IPTR)obj);
     DoMethod(root, MUIM_Group_ExitChange);
     MUI_DisposeObject(obj);
+}
+
+/* A page with (back) offers "Back" instead of "Abort", like the original
+   Installer. Called with the page's parameters, and with NULL to restore. */
+static void show_back(struct ParameterList *pl)
+{
+    int on = (pl != NULL && GetPL(pl, _BACK).used == 1);
+
+    if (on != back_shown)
+    {
+        set(btabortpage, MUIA_Group_ActivePage, on ? 1 : 0);
+        back_shown = on;
+    }
 }
 
 #define WaitCTRL(sigs)                                                        \
@@ -211,7 +231,7 @@ Object *btok, *btcancel;
 /* ######################################################################## */
 
 
-const char GuiWinTitle[] ="AROS - Installer V43.3";
+const char GuiWinTitle[] ="AROS - Installer V44.10";
 
 
 #define WINDOWWIDTH  400
@@ -260,8 +280,25 @@ char *text;
 void init_gui()
 {
 struct Screen *scr;
+Object *banner = NULL;
 
     scr = LockPubScreen(NULL);
+
+    /* APPBANNER: the application's own picture, centred above the pages.
+       Without one (or when it does not load) the window gets no child
+       there at all - a NULL Child would fail the group, a filler would
+       soak up the slack - so it packs around the page like the original
+       Installer's. */
+    if (preferences.bannerfile != NULL)
+    {
+        banner = HGroup,
+            Child, HSpace(0),
+            Child, DtpicObject,
+                MUIA_Dtpic_Name, (IPTR)preferences.bannerfile,
+            End,
+            Child, HSpace(0),
+        End;
+    }
 
     app = ApplicationObject,
         MUIA_Application_Title, "AROS - Installer",
@@ -275,12 +312,17 @@ struct Screen *scr;
             MUIA_Window_NoMenus,        TRUE,
             MUIA_Window_ID,        MAKE_ID('A','I','N','S'),
             WindowContents, VGroup,
+                banner ? MUIA_Group_Child : TAG_IGNORE, (IPTR)banner,
                 Child, root = VGroup, End,
                 Child, HBar(TRUE),
                 Child, HGroup,
                     MUIA_Group_SameSize, TRUE,
                     Child, btproceed = CoolImageIDButton("Proceed", COOL_USEIMAGE_ID),
-                    Child, btabort   = CoolImageIDButton("Abort", COOL_CANCELIMAGE_ID),
+                    /* a page with (back) shows Back in Abort's place */
+                    Child, btabortpage = PageGroup,
+                        Child, btabort = CoolImageIDButton("Abort", COOL_CANCELIMAGE_ID),
+                        Child, btback  = CoolImageIDButton("Back", COOL_CANCELIMAGE_ID),
+                    End,
                     Child, btskip    = CoolImageIDButton("Skip", COOL_WARNIMAGE_ID),
                     Child, bthelp    = CoolImageIDButton("Help", COOL_INFOIMAGE_ID),
                 End,
@@ -322,6 +364,7 @@ printf("Failed to intialize Zune GUI\n");
     }
     set(btproceed,MUIA_CycleChain,1);
     set(btabort,MUIA_CycleChain,1);
+    set(btback,MUIA_CycleChain,1);
     set(btskip,MUIA_CycleChain,1);
     set(bthelp,MUIA_CycleChain,1);
     DoMethod(helpwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 2,
@@ -331,6 +374,8 @@ printf("Failed to intialize Zune GUI\n");
         MUIM_Application_ReturnID, Push_Proceed);
     DoMethod(btabort, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2,
         MUIM_Application_ReturnID, Push_Abort);
+    DoMethod(btback, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2,
+        MUIM_Application_ReturnID, Push_Back);
     DoMethod(btskip, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2,
         MUIM_Application_ReturnID, Push_Skip);
     DoMethod(bthelp, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2,
@@ -344,6 +389,12 @@ printf("Failed to intialize Zune GUI\n");
  */
 void deinit_gui()
 {
+int i;
+
+    for (i = 0 ; i < MAXMEDIA ; i++)
+    {
+        close_media(i);
+    }
     set(wnd, MUIA_Window_Open, FALSE);
     MUI_DisposeObject(app);
 }
@@ -418,6 +469,242 @@ static char *text = NULL;
   }
   sprintf(text, "%s (Done %3ld%%)", GuiWinTitle, percent);
   set(wnd, MUIA_Window_Title, (IPTR)text);
+}
+
+
+/*
+ * (effect): the original Installer opens its own screen with a colour
+ * gradient behind the window; here the gradient becomes the background of
+ * the window itself. The colours are $RRGGBB, "top" fades into "bottom";
+ * a "radial" effect is drawn as the same top-to-bottom fade (as InstallerLG
+ * does), Zune's gradients being linear.
+ */
+void show_effect(unsigned long top, unsigned long bottom)
+{
+/* Zune keeps the pointer only while it parses the spec, so a local is fine */
+char spec[80];
+Object *contents = NULL;
+
+    sprintf(spec, "7:v,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+        ((top >> 16) & 0xff) * 0x01010101UL, ((top >> 8) & 0xff) * 0x01010101UL, (top & 0xff) * 0x01010101UL,
+        ((bottom >> 16) & 0xff) * 0x01010101UL, ((bottom >> 8) & 0xff) * 0x01010101UL, (bottom & 0xff) * 0x01010101UL);
+    get(wnd, MUIA_Window_RootObject, &contents);
+    if (contents != NULL)
+    {
+        /* not forwarded: the buttons and the page keep their own backgrounds */
+        nfset(contents, MUIA_Background, (IPTR)spec);
+    }
+}
+
+/*
+ * (querydisplay <object> <option>): the width, height, depth or number of
+ * colours of the screen, or the width, height and the distances to the
+ * upper, lower, left and right edges of the screen of the window
+ */
+long int query_display(char *object, char *option)
+{
+struct Screen *scr = NULL;
+struct Window *win = NULL;
+long int width = 0, height = 0, depth = 0, colors = 0, upper = 0, lower = 0, left = 0, right = 0;
+
+    get(wnd, MUIA_Window_Screen, &scr);
+    get(wnd, MUIA_Window_Window, &win);
+    if (scr != NULL && strcasecmp(object, "screen") == 0)
+    {
+        width = scr->Width;
+        height = scr->Height;
+        depth = GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH);
+        colors = 1L << (depth > 24 ? 24 : depth);
+    }
+    else if (scr != NULL && win != NULL && strcasecmp(object, "window") == 0)
+    {
+        width = win->Width;
+        height = win->Height;
+        left = win->LeftEdge;
+        right = scr->Width - width - left;
+        upper = win->TopEdge;
+        lower = scr->Height - height - upper;
+    }
+    if (strcasecmp(option, "width") == 0) return width;
+    if (strcasecmp(option, "height") == 0) return height;
+    if (strcasecmp(option, "depth") == 0) return depth;
+    if (strcasecmp(option, "colors") == 0) return colors;
+    if (strcasecmp(option, "upper") == 0) return upper;
+    if (strcasecmp(option, "lower") == 0) return lower;
+    if (strcasecmp(option, "left") == 0) return left;
+    if (strcasecmp(option, "right") == 0) return right;
+    return 0;
+}
+
+/*
+ * (showmedia): a picture in a window of its own, next to the Installer's.
+ * The window is placed by "upper_left" ... "lower_right" (anything else
+ * centres it), sized "small", "medium" or "large" (1/8, 1/4, 1/2 of the
+ * screen, a _small/_medium/_large suffix giving the height its own class)
+ * or left at the size of the picture, with or without a border. The
+ * datatype is looked at first: only pictures are shown, the other kinds of
+ * media the original Installer knows are not. Returns the media id, or -1.
+ */
+static Object *mediawnd[MAXMEDIA];
+static char *medianame[MAXMEDIA];    /* Dtpic keeps the pointer, so do we */
+
+static int has_part(char *s, char *part)
+{
+size_t n = strlen(part);
+
+    for ( ; *s != '\0' ; s++)
+    {
+        if (strncasecmp(s, part, n) == 0)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/* "small" = 1/8, "medium" = 1/4, "large" = 1/2, else 0 */
+static int size_shift(char *s)
+{
+    if (strncasecmp(s, "small", 5) == 0) return 3;
+    if (strncasecmp(s, "medium", 6) == 0) return 2;
+    if (strncasecmp(s, "large", 5) == 0) return 1;
+    return 0;
+}
+
+long int show_media(char *file, char *position, char *size, int border)
+{
+struct Screen *scr = NULL;
+struct Window *win = NULL;
+struct DataType *dt;
+BPTR lock;
+Object *obj;
+IPTR opened = FALSE;
+long int id, width = 0, height = 0, x, y;
+int wshift, hshift, picture = FALSE;
+char *suffix;
+
+    for (id = 0 ; id < MAXMEDIA && mediawnd[id] != NULL ; id++);
+    if (id == MAXMEDIA)
+    {
+        return -1;
+    }
+
+    lock = Lock(file, SHARED_LOCK);
+    if (lock == BNULL)
+    {
+        set_variable("@ioerr", NULL, IoErr());
+        return -1;
+    }
+    dt = ObtainDataType(DTST_FILE, (APTR)lock, NULL);
+    if (dt != NULL)
+    {
+        picture = (dt->dtn_Header->dth_GroupID == GID_PICTURE);
+        ReleaseDataType(dt);
+    }
+    UnLock(lock);
+    if (!picture)
+    {
+        return -1;
+    }
+
+    get(wnd, MUIA_Window_Screen, &scr);
+    wshift = size_shift(size);
+    if (scr != NULL && wshift != 0)
+    {
+        suffix = strchr(size, '_');
+        hshift = suffix != NULL ? size_shift(suffix + 1) : 0;
+        width = scr->Width >> wshift;
+        height = scr->Height >> (hshift != 0 ? hshift : wshift);
+    }
+
+    medianame[id] = strdup(file);
+    if (medianame[id] == NULL)
+    {
+        end_alloc();
+    }
+    obj = WindowObject,
+        MUIA_Window_Activate, FALSE,
+        MUIA_Window_CloseGadget, FALSE,
+        MUIA_Window_SizeGadget, FALSE,
+        MUIA_Window_NoMenus, TRUE,
+        border ? TAG_IGNORE : MUIA_Window_Borderless, TRUE,
+        width != 0 ? MUIA_Window_Width : TAG_IGNORE, width,
+        height != 0 ? MUIA_Window_Height : TAG_IGNORE, height,
+        WindowContents, border ?
+            ScrollgroupObject,
+                MUIA_Scrollgroup_Contents, VirtgroupObject,
+                    Child, DtpicObject, MUIA_Dtpic_Name, (IPTR)medianame[id], End,
+                End,
+            End
+        :
+            VGroup,
+                Child, DtpicObject, MUIA_Dtpic_Name, (IPTR)medianame[id], End,
+            End,
+    End;
+    if (obj != NULL)
+    {
+        DoMethod(app, OM_ADDMEMBER, (IPTR)obj);
+        set(obj, MUIA_Window_Open, TRUE);
+        get(obj, MUIA_Window_Open, &opened);
+        if (!opened)
+        {
+            DoMethod(app, OM_REMMEMBER, (IPTR)obj);
+            MUI_DisposeObject(obj);
+            obj = NULL;
+        }
+    }
+    if (obj == NULL)
+    {
+        free(medianame[id]);
+        medianame[id] = NULL;
+        return -1;
+    }
+    mediawnd[id] = obj;
+
+    /* Zune places windows at the centre or at given coordinates, so the
+       right and lower edges are reached once the size is known */
+    get(obj, MUIA_Window_Window, &win);
+    if (scr != NULL && win != NULL)
+    {
+        x = win->LeftEdge;
+        y = win->TopEdge;
+        if (has_part(position, "left")) x = 0;
+        if (has_part(position, "right")) x = scr->Width - win->Width;
+        if (has_part(position, "upper")) y = 0;
+        if (has_part(position, "lower")) y = scr->Height - win->Height;
+        if (x != win->LeftEdge || y != win->TopEdge)
+        {
+            ChangeWindowBox(win, x, y, win->Width, win->Height);
+        }
+    }
+    return id;
+}
+
+/*
+ * (setmedia): pictures have nothing to play, pause or locate; the action
+ * counts when the media is there
+ */
+long int set_media(long int id)
+{
+    return (id >= 0 && id < MAXMEDIA && mediawnd[id] != NULL) ? 1 : 0;
+}
+
+/*
+ * (closemedia): close the window of the media and forget the id
+ */
+long int close_media(long int id)
+{
+    if (id < 0 || id >= MAXMEDIA || mediawnd[id] == NULL)
+    {
+        return 0;
+    }
+    set(mediawnd[id], MUIA_Window_Open, FALSE);
+    DoMethod(app, OM_REMMEMBER, (IPTR)mediawnd[id]);
+    MUI_DisposeObject(mediawnd[id]);
+    mediawnd[id] = NULL;
+    free(medianame[id]);
+    medianame[id] = NULL;
+    return 1;
 }
 
 
@@ -555,6 +842,7 @@ Object *wc;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -562,6 +850,10 @@ Object *wc;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -576,6 +868,7 @@ Object *wc;
             }
 
             DelContents(wc);
+            show_back(NULL);
         }
 
         disable_skip(FALSE);
@@ -887,6 +1180,7 @@ int i, m;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -894,6 +1188,10 @@ int i, m;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -916,6 +1214,7 @@ int i, m;
             GetAttr(MUIA_Radio_Active, levelmx, &retval);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -999,6 +1298,7 @@ char minmax[MAXARGSIZE];
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1006,6 +1306,10 @@ char minmax[MAXARGSIZE];
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         GetAttr(MUIA_String_Integer, st, &retval);
@@ -1032,6 +1336,7 @@ char minmax[MAXARGSIZE];
             GetAttr(MUIA_String_Integer, st, &retval);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -1096,6 +1401,7 @@ int i;
         {
             char *str = "";
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1103,6 +1409,10 @@ int i;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1127,6 +1437,7 @@ int i;
             string = strdup(str);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -1208,6 +1519,7 @@ int i, max = 0;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1215,6 +1527,10 @@ int i, max = 0;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1237,6 +1553,7 @@ int i, max = 0;
             GetAttr(MUIA_Radio_Active, levelmx, &retval);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -1318,6 +1635,7 @@ int i;
         {
             char *str = "";
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1325,6 +1643,10 @@ int i;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1351,6 +1673,7 @@ int i;
             outofmem(string);
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         free(title);
@@ -1433,12 +1756,17 @@ APTR oldwin;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
             while (running)
             {
                 switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed: /* retry */
                         running = FALSE;
@@ -1463,6 +1791,7 @@ APTR oldwin;
                 WaitCTRL(sigs);
             }
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
     }
@@ -1845,6 +2174,7 @@ BOOL j;
                 DoMethod(levelmx, OM_ADDMEMBER, (IPTR)labels[i]);
             }
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1852,6 +2182,10 @@ BOOL j;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1882,6 +2216,7 @@ BOOL j;
             }
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
         disable_skip(FALSE);
@@ -1943,6 +2278,7 @@ char *out;
         if (wc)
         {
             AddContents(wc);
+            show_back(pl);
 
             while (running)
             {
@@ -1950,6 +2286,11 @@ char *out;
                 {
                     case Push_Abort:
                         abort_install();
+                        break;
+                    case Push_Back:
+                        back_pressed = TRUE;
+                        retval = 0;
+                        running = FALSE;
                         break;
                     case Push_Proceed:
                         running = FALSE;
@@ -1968,6 +2309,7 @@ char *out;
             }
 
             DelContents(wc);
+            show_back(NULL);
         }
         free(out);
     }

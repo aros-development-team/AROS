@@ -6,8 +6,8 @@
 #define _INSTALLER_H
 
 #define INSTALLER_NAME "Installer"
-#define INSTALLER_VERSION 43
-#define INSTALLER_REVISION 3
+#define INSTALLER_VERSION 44
+#define INSTALLER_REVISION 10
 
 /*
    This flag is not only for internal verbosity, but embraces outputs
@@ -74,6 +74,8 @@ typedef struct ScriptArg
 typedef struct InstallerPrefs
 {
     char * transcriptfile;
+    /* APPBANNER: picture shown above the pages (InstallerLG-compatible) */
+    char * bannerfile;
     BPTR transcriptstream;
     int debug, pretend, nopretend, novicelog, noprint;
     int welcome;
@@ -110,6 +112,7 @@ struct ParameterList
     char ** arg;
     long int intval, intval2;
     int used;
+    ScriptArg *body;          /* (back): the statements to run on Back */
 };
 
 

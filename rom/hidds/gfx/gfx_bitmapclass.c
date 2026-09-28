@@ -2973,6 +2973,8 @@ __attribute__((always_inline, const)) do_alpha(int a, int f, int b)
     blue  = ((pix) & 0x000000FF);
 
 #define ARGB32_COMPOSE(red, green, blue, old) (((old) & 0xFF000000) + ((red) << 16) + ((green) << 8) + (blue))
+#define ARGB32_ALPHA_VALUE(pix) (((pix) & 0xFF000000) >> 24)
+#define ARGB32_COMPOSE_A(alpha, red, green, blue) (((alpha) << 24) + ((red) << 16) + ((green) << 8) + (blue))
 
 #else
 
@@ -2990,8 +2992,27 @@ __attribute__((always_inline, const)) do_alpha(int a, int f, int b)
     blue  = (pix & 0xFF000000) >> 24
 
 #define ARGB32_COMPOSE(red, green, blue, old) (((blue) << 24) + ((green) << 16) + ((red) << 8) + ((old) & 0x000000FF))
+#define ARGB32_ALPHA_VALUE(pix) ((pix) & 0x000000FF)
+#define ARGB32_COMPOSE_A(alpha, red, green, blue) (((blue) << 24) + ((green) << 16) + ((red) << 8) + (alpha))
 
 #endif
+
+/*
+ * Non-premultiplied "source over" for one channel when the destination is
+ * not opaque: out = (src * sa + dst * da * (255 - sa) / 255) / out_a
+ * where out_a = sa + da * (255 - sa) / 255 (all 0..255, out_a > 0 as sa > 0).
+ */
+static inline ULONG over_alpha(ULONG sa, ULONG da)
+{
+    return sa + ((da * (255 - sa) + 127) / 255);
+}
+
+static inline ULONG over_channel(ULONG sa, ULONG da, ULONG out_a, ULONG sc, ULONG dc)
+{
+    ULONG v = sc * sa * 255 + dc * da * (255 - sa);
+
+    return (v + out_a * 255 / 2) / (out_a * 255);
+}
 
 /*****************************************************************************************
 
@@ -3077,16 +3098,34 @@ static void PutAlphaImageBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD 
             }
             else if (ARGB32_ALPHA(srcpix) != 0)
             {
+                ULONG dst_alpha;
+
                 ARGB32_DECOMPOSE(src_alpha, src_red, src_green, src_blue, srcpix);
 
                 destpix = xbuf[x];
                 RGB32_DECOMPOSE(dst_red, dst_green, dst_blue, destpix);
+                dst_alpha = ARGB32_ALPHA_VALUE(destpix);
 
-                dst_red   += do_alpha(src_alpha, src_red, dst_red);
-                dst_green += do_alpha(src_alpha, src_green, dst_green);
-                dst_blue  += do_alpha(src_alpha, src_blue, dst_blue);
+                if (dst_alpha == 0xFF)
+                {
+                    /* Opaque destination: plain lerp, alpha stays 0xFF */
+                    dst_red   += do_alpha(src_alpha, src_red, dst_red);
+                    dst_green += do_alpha(src_alpha, src_green, dst_green);
+                    dst_blue  += do_alpha(src_alpha, src_blue, dst_blue);
 
-                xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, destpix);
+                    xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, destpix);
+                }
+                else
+                {
+                    /* Translucent destination: full source-over, alpha accumulates */
+                    ULONG out_a = over_alpha(src_alpha, dst_alpha);
+
+                    dst_red   = over_channel(src_alpha, dst_alpha, out_a, src_red,   dst_red);
+                    dst_green = over_channel(src_alpha, dst_alpha, out_a, src_green, dst_green);
+                    dst_blue  = over_channel(src_alpha, dst_alpha, out_a, src_blue,  dst_blue);
+
+                    xbuf[x] = ARGB32_COMPOSE_A(out_a, dst_red, dst_green, dst_blue);
+                }
             }
         }
 
@@ -3129,13 +3168,36 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                 srcpix = *pixarray++;
                 ARGB32_DECOMPOSE(src_alpha, src_red, src_green, src_blue, srcpix);
 
+                if (src_alpha == 0)
+                    continue;
+
                 dst_red   = col.red   >> 8;
                 dst_green = col.green >> 8;
                 dst_blue  = col.blue  >> 8;
 
-                dst_red   += do_alpha(src_alpha, src_red, dst_red);
-                dst_green += do_alpha(src_alpha, src_green, dst_green);
-                dst_blue  += do_alpha(src_alpha, src_blue, dst_blue);
+                if (src_alpha == 0xFF)
+                {
+                    dst_red   = src_red;
+                    dst_green = src_green;
+                    dst_blue  = src_blue;
+                    col.alpha = 0xFFFF;
+                }
+                else if ((col.alpha >> 8) == 0xFF)
+                {
+                    dst_red   += do_alpha(src_alpha, src_red, dst_red);
+                    dst_green += do_alpha(src_alpha, src_green, dst_green);
+                    dst_blue  += do_alpha(src_alpha, src_blue, dst_blue);
+                }
+                else
+                {
+                    ULONG dst_alpha = col.alpha >> 8;
+                    ULONG out_a = over_alpha(src_alpha, dst_alpha);
+
+                    dst_red   = over_channel(src_alpha, dst_alpha, out_a, src_red,   dst_red);
+                    dst_green = over_channel(src_alpha, dst_alpha, out_a, src_green, dst_green);
+                    dst_blue  = over_channel(src_alpha, dst_alpha, out_a, src_blue,  dst_blue);
+                    col.alpha = out_a << 8;
+                }
 
                 col.red   = dst_red << 8;
                 col.green = dst_green << 8;

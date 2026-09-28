@@ -21,6 +21,7 @@ extern char *collect_strings(ScriptArg *, char, int);
 extern long int getint(ScriptArg *);
 extern void traperr(char *, char *);
 extern void execute_script(ScriptArg *, int);
+extern long int run_back(struct ParameterList *, char **);
 extern char * DynNameFromLock(BPTR);
 
 /* Command symbols */
@@ -116,8 +117,19 @@ struct CommandList
 #define _WORKING        80
 #define _XOR            81
 #define _ICONINFO       82
+#define _EFFECT         83
+#define _REBOOT         84
+#define _TRACE          85
+#define _RETRACE        86
+#define _QUERYDISPLAY   87
+#define _OPENWBOBJECT   88
+#define _SHOWWBOBJECT   89
+#define _CLOSEWBOBJECT  90
+#define _SHOWMEDIA      91
+#define _SETMEDIA       92
+#define _CLOSEMEDIA     93
 
-#define NUMCMDS         82
+#define NUMCMDS         93
 
 
 /* Parameters */
@@ -143,25 +155,32 @@ struct CommandList
 #define _SETSTACK       (_PARAMETER + 17)
 #define _SETTOOLTYPE    (_PARAMETER + 18)
 #define _SOURCE         (_PARAMETER + 19)
+#define _BACK           (_PARAMETER + 20)
+#define _GETDEFAULTTOOL (_PARAMETER + 21)
+#define _GETPOSITION    (_PARAMETER + 22)
+#define _GETSTACK       (_PARAMETER + 23)
+#define _GETTOOLTYPE    (_PARAMETER + 24)
+#define _OVERRIDE       (_PARAMETER + 25)
 
 /* Boolean parameters */
-#define _ALL            (_PARAMETER + 20)
-#define _ASSIGNS        (_PARAMETER + 21)
-#define _DISK           (_PARAMETER + 22)
-#define _FILES          (_PARAMETER + 23)
-#define _FONTS          (_PARAMETER + 24)
-#define _INFOS          (_PARAMETER + 25)
-#define _NEWPATH        (_PARAMETER + 26)
-#define _NOGAUGE        (_PARAMETER + 27)
-#define _NOPOSITION     (_PARAMETER + 28)
-#define _QUIET          (_PARAMETER + 29)
-#define _RESIDENT       (_PARAMETER + 30)
-#define _SAFE           (_PARAMETER + 31)
-#define _SWAPCOLORS     (_PARAMETER + 32)
-#define _NOREQ          (_PARAMETER + 33)
+#define _ALL            (_PARAMETER + 26)
+#define _ASSIGNS        (_PARAMETER + 27)
+#define _DISK           (_PARAMETER + 28)
+#define _FILES          (_PARAMETER + 29)
+#define _FONTS          (_PARAMETER + 30)
+#define _INFOS          (_PARAMETER + 31)
+#define _NEWPATH        (_PARAMETER + 32)
+#define _NOGAUGE        (_PARAMETER + 33)
+#define _NOPOSITION     (_PARAMETER + 34)
+#define _QUIET          (_PARAMETER + 35)
+#define _RESIDENT       (_PARAMETER + 36)
+#define _SAFE           (_PARAMETER + 37)
+#define _SWAPCOLORS     (_PARAMETER + 38)
+#define _NOREQ          (_PARAMETER + 39)
+#define _COMPRESSION    (_PARAMETER + 40)
 
-#define NUMPARAMS        33        /* Number of keywords used as parameters */
-#define NUMARGPARAMS     19        /* Number of keywords used as parameters which may have arguments */
+#define NUMPARAMS        40        /* Number of keywords used as parameters */
+#define NUMARGPARAMS     25        /* Number of keywords used as parameters which may have arguments */
 
 #define _MAXCOMMAND     (NUMPARAMS+NUMCMDS)        /* Total number of keywords */
 

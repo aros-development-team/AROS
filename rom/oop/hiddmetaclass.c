@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: OOP HIDD metaclass
 */
@@ -19,17 +19,38 @@
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
+#include <exec/alerts.h>
+#include <proto/exec.h>
 
 #define UB(x) ((UBYTE *)x)
+
+/*
+ * A method ID past the end of the class' table, or a slot nobody
+ * implemented, used to be called anyway: the CPU ended up executing
+ * whatever followed the table. That happens whenever a caller was built
+ * against an interface with more methods than the class (or its
+ * superclass) was built with. Report it and fail the call instead.
+ */
+static IPTR hiddmeta_unimplemented(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    bug("[OOP hiddmetaclass] Unimplemented method 0x%08X called on class 0x%p (%s), object 0x%p\n",
+        (unsigned)*msg, cl, cl->ClassNode.ln_Name, o);
+    Alert(AN_OOP);
+    return 0;
+}
 
 #define IntCallMethod(cl, o, msg)                                   \
 {                                                                   \
     OOP_MethodFunc callfunc;                                        \
     register struct IFMethod *ifm;                                  \
     D(bug("mid=%ld\n", *msg));                                      \
+    if (*msg >= ((struct hiddmeta_inst *)cl)->data.num_methods)     \
+        return hiddmeta_unimplemented((OOP_Class *)cl, o, msg);     \
     ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];    \
     D(bug("ifm: func %p, cl %p\n", ifm->MethodFunc, ifm->mClass));  \
     callfunc = (OOP_MethodFunc)ifm->MethodFunc;                     \
+    if (!callfunc)                                                  \
+        return hiddmeta_unimplemented((OOP_Class *)cl, o, msg);     \
     return (callfunc(ifm->mClass, o, msg));                         \
 }
 
@@ -63,6 +84,7 @@ struct hiddmeta_inst
             
         } *ifinfo;
         struct IFMethod *methodtable;
+        ULONG num_methods;      /* entries in methodtable, all interfaces */
     } data;
 };
 
@@ -168,8 +190,11 @@ static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_a
         data->methodtable = AllocVec(disptab_size + ifinfo_size,
             MEMF_ANY | MEMF_CLEAR);
         if (data->methodtable)
+        {
             data->ifinfo = (struct if_info *)
                 (UB(data->methodtable) + disptab_size);
+            data->num_methods = total_num_methods;
+        }
     }
     if (data->methodtable)
     {
@@ -342,6 +367,7 @@ init_err:
         FreeVec(data->methodtable);
         data->methodtable = NULL;
         data->ifinfo = NULL;
+        data->num_methods = 0;
     
     } /* if (methodtable allocated) */
     
@@ -593,9 +619,13 @@ static IPTR HIDD_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     register struct IFMethod *ifm;
     D(bug("HIDD_CoerceMethod()\n"));
     D(bug("cl=%s, mid=%ld\n", cl->ClassNode.ln_Name, *msg));
+    if (*msg >= ((struct hiddmeta_inst *)cl)->data.num_methods)
+        return hiddmeta_unimplemented(cl, o, msg);
     ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];
     D(bug("ifm %p func %p, cl %p\n", ifm, ifm->MethodFunc, ifm->mClass));
     coercefunc = (OOP_MethodFunc)ifm->MethodFunc;
+    if (!coercefunc)
+        return hiddmeta_unimplemented(cl, o, msg);
     return (coercefunc(ifm->mClass, o, msg));
 }
 

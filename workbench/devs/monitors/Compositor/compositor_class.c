@@ -305,22 +305,22 @@ static inline void HIDDCompositorRedrawBitmap(struct HIDDCompositorData *compdat
         }
         else
         {
-            UBYTE *baseaddress;
-            ULONG width, height, banksize, memsize;
-            IPTR modulo;
+            /*
+             * Blend the source over the render target. CopyBoxAlpha() reads
+             * the source in its own pixel format through the driver, so it
+             * neither needs direct access to the source memory nor assumes a
+             * byte order for it.
+             */
 
             DREDRAWBM(bug("[Compositor] %s: AlphaBlending %dx%d @ %d,%d to %d,%d\n", __func__,
                   blitwidth, blitheight,
                   rect->MinX - n->leftedge, rect->MinY - n->topedge, rect->MinX, rect->MinY));
 
-            if (HIDD_BM_ObtainDirectAccess(n->bm, &baseaddress, &width, &height, &banksize, &memsize))
-            {
-                DREDRAWBM(bug("[Compositor] %s: Alpha baseaddress @ 0x%p\n", __func__, baseaddress));
-                OOP_GetAttr(n->bm, aHidd_BitMap_BytesPerRow, &modulo);
-                HIDD_BM_PutAlphaImage(renderTarget, compdata->gfx , baseaddress + ((rect->MinY - n->topedge) * modulo) + ((rect->MinX - n->leftedge) << 2), modulo,
-                                                    rect->MinX, rect->MinY, blitwidth, blitheight);
-                HIDD_BM_ReleaseDirectAccess(n->bm);
-            }
+            HIDD_Gfx_CopyBoxAlpha(compdata->gfx, n->bm,
+                            rect->MinX - n->leftedge, rect->MinY - n->topedge,
+                            renderTarget,
+                            rect->MinX, rect->MinY, blitwidth, blitheight,
+                            0xFF, compdata->gc);
         }
     }
 }

@@ -470,6 +470,18 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     OOP_Class *cl, OOP_Object *o);
 
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
+/*
+ * Nouveau used to compose screens itself (nouveau_compositorclass.c). That
+ * compositor stacks opaque screens only and has no alpha path, so the driver
+ * now leaves composition to graphics.library's compositor: ShowViewPorts()
+ * declines, ModeProperties reports no composition capability, and the
+ * compositor shows whatever it composes through Hidd_Display::Show().
+ * Set NOUVEAU_PRIVATE_COMPOSITOR to 1 to restore the old behaviour.
+ */
+#ifndef NOUVEAU_PRIVATE_COMPOSITOR
+#define NOUVEAU_PRIVATE_COMPOSITOR 0
+#endif
+
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
 VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset);
 

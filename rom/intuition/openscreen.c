@@ -2316,6 +2316,13 @@ static const char THIS_FILE[] = __FILE__;
 
     if (!ok)
     {
+        /* The bar layer is a child of the root layer: delete it before ThinLayerInfo() drops the root */
+        if (screen->Screen.BarLayer)
+        {
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: KillScreenBar\n"));
+            KillScreenBar(&screen->Screen, IntuitionBase);
+        }
+
         if (li_inited)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Get ThinLayerInfo\n"));
@@ -2339,12 +2346,6 @@ static const char THIS_FILE[] = __FILE__;
 #endif
 
             FreeColorMap(screen->Screen.ViewPort.ColorMap);
-        }
-
-        if (screen->Screen.BarLayer)
-        {
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: KillScreenBar\n"));
-            KillScreenBar(&screen->Screen, IntuitionBase);
         }
 
         if (screen->DInfo.dri_Customize)

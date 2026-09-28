@@ -753,6 +753,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 break;
             }
 
+#if NOUVEAU_PRIVATE_COMPOSITOR
             /* Create compositor object */
             {
                 struct TagItem comptags [] =
@@ -764,6 +765,10 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 SD(cl)->compositor = gfxdata->compositor;
                 /* TODO: Check if object was created, how to handle ? */
             }
+#else
+            gfxdata->compositor = NULL;
+            SD(cl)->compositor = NULL;
+#endif
 
         }
         UNLOCK_ENGINE

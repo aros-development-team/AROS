@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: Installer V43.3
+    Desc: Installer V44.10
 */
 
 #include "Installer.h"
@@ -28,7 +28,7 @@ int error = 0, grace_exit = 0;
 InstallerPrefs preferences;
 ScriptArg script;
 
-IPTR args[TOTAL_ARGS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+IPTR args[TOTAL_ARGS] = { 0 };
 UBYTE **tooltypes;
 
 /*
@@ -133,6 +133,10 @@ int main(int argc, char *argv[])
             preferences.novicelog = TRUE;
             preferences.transcriptfile = strdup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
         }
+        if (args[ARG_APPBANNER])
+        {
+            preferences.bannerfile = strdup((char *)args[ARG_APPBANNER]);
+        }
         preferences.nopretend = (int)args[ARG_NOPRETEND];
         if (args[ARG_MINUSER])
         {
@@ -204,6 +208,12 @@ int main(int argc, char *argv[])
         else
         {
             preferences.transcriptfile = strdup(ArgString(tooltypes, "LOGFILE", "install_log_file"));
+        }
+        /* Picture above the pages? (APPBANNER=<file>) */
+        ttemp = ArgString(tooltypes, "APPBANNER", NULL);
+        if (ttemp != NULL)
+        {
+            preferences.bannerfile = strdup(ttemp);
         }
         /* Is PRETEND possible? */
         preferences.nopretend = (strcmp("TRUE", ArgString(tooltypes, "PRETEND", "TRUE")) != 0);
