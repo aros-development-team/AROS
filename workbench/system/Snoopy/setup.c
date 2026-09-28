@@ -120,6 +120,7 @@ void setup_init(void)
 {
     setup_reset();
     setup_open();
+    oldsetup = setup;
 }
     
 void setup_reset(void)
@@ -165,7 +166,6 @@ void setup_reset(void)
     setup.targetLen = 40;
     setup.optionLen = 15;
 
-    oldsetup = setup;
 }
 
 BOOL setup_save(void)
