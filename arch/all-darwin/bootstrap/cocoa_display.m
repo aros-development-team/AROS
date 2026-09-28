@@ -68,11 +68,43 @@ static void push_event(int type, int x, int y, int button, int keycode) {
 
 - (BOOL)wantsUpdateLayer { return YES; }
 
+/*
+ * AROS renders into the surface as XRGB: graphics.library leaves the top
+ * byte of most pixels 0, and only alpha-blended images (icons) set it.
+ * Handing the BGRA IOSurface to the layer made Core Animation use that byte
+ * as alpha, so nearly everything came out transparent over the window
+ * background. Present the pixels as a CGImage that skips the byte instead
+ * (32-bit little-endian words, alpha in the most significant byte).
+ * The run loop asks for a redraw every step, so only build a new image when
+ * the frame differs from the last one presented.
+ */
 - (void)updateLayer {
+    static CGColorSpaceRef rgb;
+    static void *last;
+
     if (g_surface) {
-        IOSurfaceLock(g_surface, kIOSurfaceLockReadOnly, NULL);
-        self.layer.contents = (__bridge id)g_surface;
-        IOSurfaceUnlock(g_surface, kIOSurfaceLockReadOnly, NULL);
+        size_t size = (size_t)g_pitch * g_height;
+
+        if (!rgb)
+            rgb = CGColorSpaceCreateDeviceRGB();
+        if (!last)
+            last = calloc(1, size);
+
+        if (self.layer.contents && last && !memcmp(last, g_pixels, size))
+            return;
+        if (last)
+            memcpy(last, g_pixels, size);
+
+        CFDataRef frame = CFDataCreate(NULL, last ? last : g_pixels, size);
+        CGDataProviderRef data = CGDataProviderCreateWithCFData(frame);
+        CGImageRef image = CGImageCreate(g_width, g_height, 8, 32, g_pitch, rgb,
+            kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little,
+            data, NULL, false, kCGRenderingIntentDefault);
+
+        self.layer.contents = (__bridge id)image;
+        CGImageRelease(image);
+        CGDataProviderRelease(data);
+        CFRelease(frame);
     }
 }
 
