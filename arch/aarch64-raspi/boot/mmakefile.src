@@ -75,6 +75,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-bus-quick \
 #MM kernel-hidd-storage-quick \
 #MM hidd-i2c-quick \
+#MM hidd-i2c-bcm2708-quick \
 #MM kernel-hidd-gfx-quick \
 #MM hidd-vcgfx-quick \
 #MM hidd-fbgfx-quick \
