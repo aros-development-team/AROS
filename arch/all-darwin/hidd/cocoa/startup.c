@@ -193,17 +193,16 @@ int main(void)
     {
         extern struct OOP_InterfaceDescr CocoaMouse_ifdescr[];
         extern struct OOP_InterfaceDescr CocoaKbd_ifdescr[];
-        extern void cocoa_input_set_objects(OOP_Object *mouse, OOP_Object *kbd);
 
         struct TagItem mtags[] = {
-            { aMeta_SuperID,        (IPTR)CLID_Hidd },
+            { aMeta_SuperID,        (IPTR)CLID_Hidd_Mouse },
             { aMeta_InterfaceDescr, (IPTR)CocoaMouse_ifdescr },
             { aMeta_ID,             (IPTR)"hidd.mouse.cocoa" },
             { aMeta_InstSize,       16 },
             { TAG_DONE, 0 }
         };
         struct TagItem ktags[] = {
-            { aMeta_SuperID,        (IPTR)CLID_Hidd },
+            { aMeta_SuperID,        (IPTR)CLID_Hidd_Kbd },
             { aMeta_InterfaceDescr, (IPTR)CocoaKbd_ifdescr },
             { aMeta_ID,             (IPTR)"hidd.kbd.cocoa" },
             { aMeta_InstSize,       16 },
@@ -240,8 +239,6 @@ int main(void)
                 kbdriver = (OOP_Object *)OOP_DoMethod(kbd, (OOP_Msg)&amsg);
 
                 if (msdriver || kbdriver) {
-                    cocoa_input_set_objects(msdriver, kbdriver);
-
                     /* Spawn asynchronous background input poller process */
                     struct TagItem ptags[] = {
                         { NP_Entry,     (IPTR)cocoa_input_task },
