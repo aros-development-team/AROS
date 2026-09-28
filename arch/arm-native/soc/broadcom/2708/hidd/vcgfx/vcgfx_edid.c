@@ -108,9 +108,51 @@ static void parse_dtd(struct vcgfx_edid *e, const UBYTE *d)
     }
 }
 
+#define P_HV (VCGFX_TIMING_PHSYNC | VCGFX_TIMING_PVSYNC)
+
+/* CTA-861 progressive formats a VIC can name, clock in kHz. */
+static const struct { UBYTE vic; struct vcgfx_timing t; } cta_vics[] =
+{
+    {  1, {  25175,  640,  656,  752,  800,  480,  490,  492,  525, 0    } },
+    {  2, {  27000,  720,  736,  798,  858,  480,  489,  495,  525, 0    } },
+    {  3, {  27000,  720,  736,  798,  858,  480,  489,  495,  525, 0    } },
+    {  4, {  74250, 1280, 1390, 1430, 1650,  720,  725,  730,  750, P_HV } },
+    { 16, { 148500, 1920, 2008, 2052, 2200, 1080, 1084, 1089, 1125, P_HV } },
+    { 17, {  27000,  720,  732,  796,  864,  576,  581,  586,  625, 0    } },
+    { 18, {  27000,  720,  732,  796,  864,  576,  581,  586,  625, 0    } },
+    { 19, {  74250, 1280, 1720, 1760, 1980,  720,  725,  730,  750, P_HV } },
+    { 31, { 148500, 1920, 2448, 2492, 2640, 1080, 1084, 1089, 1125, P_HV } },
+    { 32, {  74250, 1920, 2558, 2602, 2750, 1080, 1084, 1089, 1125, P_HV } },
+    { 33, {  74250, 1920, 2448, 2492, 2640, 1080, 1084, 1089, 1125, P_HV } },
+    { 34, {  74250, 1920, 2008, 2052, 2200, 1080, 1084, 1089, 1125, P_HV } },
+    { 47, { 148500, 1280, 1390, 1430, 1650,  720,  725,  730,  750, P_HV } },
+    { 63, { 297000, 1920, 2008, 2052, 2200, 1080, 1084, 1089, 1125, P_HV } },
+    { 64, { 297000, 1920, 2448, 2492, 2640, 1080, 1084, 1089, 1125, P_HV } },
+    { 93, { 297000, 3840, 5116, 5204, 5500, 2160, 2168, 2178, 2250, P_HV } },
+    { 94, { 297000, 3840, 4896, 4984, 5280, 2160, 2168, 2178, 2250, P_HV } },
+    { 95, { 297000, 3840, 4016, 4104, 4400, 2160, 2168, 2178, 2250, P_HV } },
+    { 96, { 594000, 3840, 4896, 4984, 5280, 2160, 2168, 2178, 2250, P_HV } },
+    { 97, { 594000, 3840, 4016, 4104, 4400, 2160, 2168, 2178, 2250, P_HV } },
+};
+
+static void add_vic(struct vcgfx_edid *e, UBYTE svd)
+{
+    /* SVD values 129-192 are VICs 1-64 flagged native. */
+    UBYTE vic = ((svd >= 129) && (svd <= 192)) ? (svd & 0x7f) : svd;
+    ULONG i;
+
+    for (i = 0; i < sizeof(cta_vics) / sizeof(cta_vics[0]); i++)
+        if ((cta_vics[i].vic == vic) && (e->ntimings < VCGFX_EDID_TIMINGS))
+        {
+            e->timings[e->ntimings] = cta_vics[i].t;
+            e->timings[e->ntimings++].flags |= VCGFX_TIMING_VIC;
+            return;
+        }
+}
+
 static void parse_cta(struct vcgfx_edid *e, const UBYTE *b)
 {
-    ULONG i, end = b[2];
+    ULONG i, j, end = b[2];
 
     if (end < 4)
         return;
@@ -119,6 +161,14 @@ static void parse_cta(struct vcgfx_edid *e, const UBYTE *b)
     {
         ULONG len = b[i] & 0x1f, oui;
         const UBYTE *p = b + i + 1;
+
+        /* Video data block: the formats the sink lists by VIC. */
+        if ((b[i] >> 5) == 2)
+        {
+            for (j = 0; j < len; j++)
+                add_vic(e, p[j]);
+            continue;
+        }
 
         /* Vendor-specific blocks: HDMI 1.x and HDMI Forum. */
         if ((b[i] >> 5) != 3 || len < 3)
@@ -204,7 +254,8 @@ void vcgfx_edid_probe(struct VideoCoreGfx_staticdata *xsd)
     }
 }
 
-/* First progressive detailed timing of this size, or NULL. */
+/* First progressive detailed timing of this size, or NULL. VIC formats
+ * do not count: a sink may list one size at several rates. */
 const struct vcgfx_timing *vcgfx_edid_find(struct VideoCoreGfx_staticdata *xsd,
                                            ULONG width, ULONG height)
 {
@@ -213,7 +264,7 @@ const struct vcgfx_timing *vcgfx_edid_find(struct VideoCoreGfx_staticdata *xsd,
 
     for (i = 0; i < e->ntimings; i++)
         if ((e->timings[i].hdisp == width) && (e->timings[i].vdisp == height)
-            && !(e->timings[i].flags & VCGFX_TIMING_INTERLACE))
+            && !(e->timings[i].flags & (VCGFX_TIMING_INTERLACE | VCGFX_TIMING_VIC)))
             return &e->timings[i];
 
     return NULL;

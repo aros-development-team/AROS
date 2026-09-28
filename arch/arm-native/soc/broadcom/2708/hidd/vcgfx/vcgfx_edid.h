@@ -6,11 +6,12 @@
 
 #include <exec/types.h>
 
-#define VCGFX_EDID_TIMINGS      8
+#define VCGFX_EDID_TIMINGS      32
 
 #define VCGFX_TIMING_INTERLACE  (1 << 0)
 #define VCGFX_TIMING_PHSYNC     (1 << 1)
 #define VCGFX_TIMING_PVSYNC     (1 << 2)
+#define VCGFX_TIMING_VIC        (1 << 3)        /* from the VIC list, not a DTD */
 
 /* One detailed timing descriptor, clock in kHz. */
 struct vcgfx_timing
@@ -21,8 +22,9 @@ struct vcgfx_timing
     UBYTE   flags;
 };
 
-/* What the driver keeps from the sink's EDID. timings[0] is the
- * preferred mode when the base block has one. */
+/* What the driver keeps from the sink's EDID: detailed timings, then the
+ * CTA formats it lists by VIC. timings[0] is the preferred mode when the
+ * base block has one. */
 struct vcgfx_edid
 {
     BOOL                valid;
