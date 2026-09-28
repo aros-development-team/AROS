@@ -98,10 +98,10 @@ TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TA
 
 .PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
-bootiso-chrp-ppc-efika: $(AROSDIR)/.backdrop $(TARGET_ISO)
+#MM- bootiso-chrp-ppc-efika : workbench-backdrop
 
-$(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
-	@$(CP) $< $@
+bootiso-chrp-ppc-efika: $(TARGET_ISO)
+
 
 $(TARGET_ISO):
 		%mkdirs_q $(AROSDIR)/S

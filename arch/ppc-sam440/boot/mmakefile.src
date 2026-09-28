@@ -87,10 +87,10 @@ TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TA
 
 .PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 	
-bootiso-sam440-ppc: $(AROSDIR)/.backdrop $(TARGET_ISO)
+#MM- bootiso-sam440-ppc : workbench-backdrop
 
-$(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
-	@$(CP) $< $@
+bootiso-sam440-ppc: $(TARGET_ISO)
+
 
 #MM
 bootiso-sam440-ppc-quick: $(TARGET_ISO)

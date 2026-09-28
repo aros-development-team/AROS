@@ -25,12 +25,13 @@ DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
 #MM                              AROS-amiga-m68k-drivers \
 #MM                              bootdisk-amiga-m68k-gen
 
+#MM- bootiso-amiga-m68k : workbench-backdrop
+#MM- deviso-amiga-m68k : workbench-backdrop
+
 TAR ?= tar
 Q ?= @
 #QE2H ?= -v
 
-$(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
-		@$(CP) $< $@
 
 $(AROSDIR)/Emergency-Boot.adf: $(GENDIR)/boot/bootdisk-amiga-m68k.adf
 		@$(CP) $< $@
@@ -75,8 +76,7 @@ deviso-amiga-m68k-quick: $(DEVEL_ISO)
 
 $(warning LANG = $(LANG))
 
-$(TARGET_ISO): $(AROSDIR)/.backdrop \
-		$(AROSDIR)/Emergency-Boot.adf \
+$(TARGET_ISO): $(AROSDIR)/Emergency-Boot.adf \
 		$(AROSDIR)/README.txt.info  \
 		$(AROSDIR)/README.txt
 	%mkdirs_q $(AROSDIR)/S
@@ -100,8 +100,7 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
                 -l -J -r \
 		"$(AROSDIR).HUNK"
 
-$(DEVEL_ISO):   $(AROSDIR)/.backdrop \
-		$(AROSDIR)/Emergency-Boot.adf \
+$(DEVEL_ISO):   $(AROSDIR)/Emergency-Boot.adf \
 		$(AROSDIR)/Sources \
 		$(AROSDIR)/README.txt.info  \
 		$(AROSDIR)/README.txt

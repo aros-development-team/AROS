@@ -49,4 +49,18 @@ WBPRINTERS := $(AROSDIR)/Devs/Printers
 workbench-directories ::
     %mkdirs_q $(WBSTARTUPDIR) $(WBSTORAGEDIR) $(WBDOSDRIVERDIRS) $(WBPRINTERS)
 
+#
+# The Workbench backdrop list. Wanderer reads it from the volume root to
+# decide what appears on the desktop; the distributions that carry an
+# installer put it there so InstallAROS is visible on first boot. It lives
+# here rather than in each target's boot glue, which is where five private
+# copies of the same rule used to be.
+#
+#MM
+workbench-backdrop : $(AROSDIR)/.backdrop
+
+$(AROSDIR)/.backdrop : $(SRCDIR)/workbench/.backdrop
+	@$(ECHO) "Creating   $@"
+	@$(CP) $< $@
+
 #MM- clean : clean-workbench

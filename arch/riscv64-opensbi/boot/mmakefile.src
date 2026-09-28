@@ -137,7 +137,7 @@ BOOTFILES       := $(EFI_BOOTDIR)/BOOTRISCV64.EFI $(EFI_AROSDIR)/Image \
                    $(AROSDIR)/aros-bsp.pkg $(AROSDIR)/aros.cmd \
                    $(AROSDIR)/startup.nsh
 
-#MM- boot-opensbi-riscv64 : kernel-opensbi-riscv64 kernel-bsp-opensbi-riscv64
+#MM- boot-opensbi-riscv64 : kernel-opensbi-riscv64 kernel-bsp-opensbi-riscv64 workbench-backdrop
 
 #
 # The disk-based hardware drivers. "workbench" resolves to
@@ -179,6 +179,6 @@ $(AROSDIR)/startup.nsh :
 distfiles-opensbi-riscv64 :
 	%mkdir_q dir="$(DISTDIR)"
 	@$(ECHO) Copying opensbi-riscv64 distfiles...
-	@$(CP) -R $(AROSDIR)/* $(DISTDIR)/
+	@$(CP) -R $(AROSDIR)/. $(DISTDIR)/
 
 %common
