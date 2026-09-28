@@ -96,8 +96,10 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         goto exit_fail;
 
     bmdata->compositor = (OOP_Object *)GetTagData(aHidd_BitMap_Nouveau_CompositorHidd, 0, msg->attrList);
+#if NOUVEAU_PRIVATE_COMPOSITOR
     if (bmdata->compositor == NULL)
         goto exit_fail;
+#endif
 
     if (displayable)
         nvlog("[Nouveau] displayable bitmap %p: %ldx%ld depth %ld pitch %ld bo %p\n", o,
@@ -204,7 +206,12 @@ VOID METHOD(NouveauBitMap, Root, Set)
         }
     }
 
-    if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
+    if (((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset)) && !bmdata->compositor)
+    {
+        /* graphics.library's compositor validated the position already */
+        HIDDNouveauSetOffsets(o, newxoffset, newyoffset);
+    }
+    else if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
         /* If there was a change requested, validate it */
         struct pHidd_Compositor_ValidateBitMapPositionChange vbpcmsg =
@@ -1069,7 +1076,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     
-    if (bmdata->displayable)
+    /* Scan-out is direct; only the private compositor needs to hear about changes */
+    if (bmdata->displayable && bmdata->compositor)
     {
         struct pHidd_Compositor_BitMapRectChanged brcmsg =
         {

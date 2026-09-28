@@ -72,9 +72,20 @@ void compositor_Setup(struct monitor_displaydata *mdd, struct GfxBase *GfxBase)
     D(bug("[graphics.library/composit] FrameBuffer @ 0x%p\n", mdd->framebuffer));
 }
 
+/*
+ * Driver-private compositors (nouveau, IntelGMA, amigavideo) implement an
+ * older, shorter method table under the same interface ID. Only the system
+ * compositor class knows BitMapValidate/BitMapEnable; calling those indexes
+ * on a private one dispatches past its table.
+ */
+static inline BOOL compositor_IsSystemClass(OOP_Object *compositor, struct GfxBase *GfxBase)
+{
+    return compositor && CDD(GfxBase)->compositorClass && (OOP_OCLASS(compositor) == CDD(GfxBase)->compositorClass);
+}
+
 BOOL compositor_IsBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle, struct GfxBase *GfxBase)
 {
-    if (GFXPRIVATE_DISPLAYDATA(DIH(handle)->drv)->mdisplay.display_compositor)
+    if (compositor_IsSystemClass(GFXPRIVATE_DISPLAYDATA(DIH(handle)->drv)->mdisplay.display_compositor, GfxBase))
     {
         struct pHidd_Compositor_BitMapValidate msg =
         {
@@ -89,7 +100,7 @@ BOOL compositor_IsBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle
 
 BOOL compositor_SetBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle, struct GfxBase *GfxBase)
 {
-    if (GFXPRIVATE_DISPLAYDATA(DIH(handle)->drv)->mdisplay.display_compositor)
+    if (compositor_IsSystemClass(GFXPRIVATE_DISPLAYDATA(DIH(handle)->drv)->mdisplay.display_compositor, GfxBase))
     {
         struct pHidd_Compositor_BitMapEnable msg =
         {
@@ -97,7 +108,24 @@ BOOL compositor_SetBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handl
             .bm    = bitmap,
         };
 
-        return (BOOL)OOP_DoMethod(GFXPRIVATE_DISPLAYDATA(DIH(handle)->drv)->mdisplay.display_compositor, &msg.mID);
+        if (!OOP_DoMethod(GFXPRIVATE_DISPLAYDATA(DIH(handle)->drv)->mdisplay.display_compositor, &msg.mID))
+            return FALSE;
+
+        /*
+         * A bitmap allocated with an explicit pixel format (BMF_SPECIALFMT,
+         * the way to get an ARGB screen bitmap) carries no mode ID: AllocBitMap()
+         * drops it in favour of the format. It is about to be shown through
+         * this display's compositor in the mode OpenScreen() picked, so give
+         * it that mode now. MakeVPort() checks the bitmap's mode and driver
+         * against the viewport's colormap and would otherwise refuse it.
+         */
+        if (HIDD_BM_HIDDMODE(bitmap) == vHidd_ModeID_Invalid)
+        {
+            HIDD_BM_HIDDMODE(bitmap) = DIH(handle)->id;
+            HIDD_BM_DRVDATA(bitmap)  = (struct monitor_driverdata *)DIH(handle)->drv;
+        }
+
+        return TRUE;
     }
     return FALSE;
 }

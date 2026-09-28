@@ -355,6 +355,7 @@ OOP_Object * METHOD(NouveauDisplay, Hidd_Display, CreateObject)
 
 ULONG METHOD(NouveauDisplay, Hidd_Display, ShowViewPorts)
 {
+#if NOUVEAU_PRIVATE_COMPOSITOR
     struct pHidd_Compositor_BitMapStackChanged bscmsg =
     {
         .mID  = OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
@@ -370,6 +371,30 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, ShowViewPorts)
     OOP_DoMethod(SD(cl)->compositor, (OOP_Msg)&bscmsg);
 
     return TRUE; /* Indicate driver supports this method */
+#else
+    /* Composition is graphics.library's job (see NOUVEAU_PRIVATE_COMPOSITOR) */
+    return FALSE;
+#endif
+}
+
+/*
+ * Scan out the given bitmap. graphics.library's compositor calls this with
+ * the bitmap it composes into, or with the top screen's bitmap when that
+ * covers the whole display. Nothing is mirrored: the bitmap's own buffer
+ * object becomes the CRTC's framebuffer.
+ */
+OOP_Object *METHOD(NouveauDisplay, Hidd_Display, Show)
+{
+    if (msg->bitMap)
+    {
+        nvlog("[Nouveau] Show bitmap %p\n", msg->bitMap);
+
+        if (!HIDDNouveauSwitchToVideoMode(msg->bitMap))
+            return NULL;
+    }
+
+    /* Base class tracks the shown bitmap as the pointer target */
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 #if AROS_BIG_ENDIAN
@@ -487,7 +512,11 @@ static struct HIDD_ModeProperties modeprops =
 {
     DIPF_IS_SPRITES,
     1,
+#if NOUVEAU_PRIVATE_COMPOSITOR
     COMPF_ABOVE
+#else
+    0   /* no composition in hardware: graphics.library composes */
+#endif
 };
 
 ULONG METHOD(NouveauDisplay, Hidd_Display, ModeProperties)
