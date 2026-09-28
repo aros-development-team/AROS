@@ -548,6 +548,8 @@ void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd)
     {
         if (hvs_have_hvs5(xsd))
             vc4_hvs5_irq_init(xsd);
+        else if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+            vc4_hvs6_irq_init(xsd);
         return;
     }
 

@@ -28,6 +28,18 @@
 /* Register reads; several frames' worth */
 #define HVS6_SPIN_LATCH   2000000
 
+/* Vblank from pixelvalve 0 (GIC SPI 101); the bit is measured, as the
+ * documented one was wrong on VideoCore IV */
+#define HVS6_PV0          0x410000
+#define HVS6_PV_INTEN     0x24
+#define HVS6_PV_INTSTAT   0x28
+#define HVS6_PV_INT_ALL   0x3ff
+#define HVS6_PV0_IRQ      (32 + 101)
+#define HVS6_PROBE_US     60000     /* per bit: ~4 frames at 60 Hz        */
+#define HVS6_WAIT_US      50000     /* a latch wait gives up after this   */
+#define HVS6_LIVE_US      40000     /* a tick this recent means sleep     */
+#define HVS6_SETTLE_US    2000      /* from the tick to the latch, spun   */
+
 /* 1MHz system timer */
 static inline ULONG hvs6_now_us(void)
 {
@@ -478,11 +490,150 @@ BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
     return TRUE;
 }
 
+static inline volatile ULONG *hvs6_pv0(void)
+{
+    return (volatile ULONG *)(ARM_PERIIOBASE + HVS6_PV0);
+}
+
+/* Interrupt context: count, date and wake - no printing */
+static void hvs6_vsync_irq(struct vc4_hvs6_state *st, struct ExecBase *sysBase)
+{
+    volatile ULONG *pv = hvs6_pv0();
+    ULONG stat = pv[HVS6_PV_INTSTAT / 4];
+
+    if (!stat)
+        return;
+    pv[HVS6_PV_INTSTAT / 4] = stat;                 /* W1C */
+
+    if (stat & st->h6_VSyncMask)
+    {
+        st->h6_VSyncCount++;
+        st->h6_VSyncStamp = hvs6_now_us();
+        if (st->h6_VSyncTask)
+            Signal(st->h6_VSyncTask, st->h6_VSyncSigMask);
+    }
+}
+
+/* Install the vblank handler and find the per-frame bit, once at driver
+ * init: KrnAddIRQHandler allocates in supervisor mode, so never mid mode
+ * set. Measured against the HVS frame counter, the spec's bit first, in
+ * short windows so a line-rate bit cannot trip the stuck-IRQ guard. */
+void vc4_hvs6_irq_init(struct VideoCoreGfx_staticdata *xsd)
+{
+    static const UBYTE order[] = { 7, 0, 1, 2, 3, 4, 5, 6, 8, 9 };
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    volatile ULONG *pv = hvs6_pv0();
+    ULONG i, b = 0, c0, f0, frames = 0, ticks = 0, start;
+
+    if ((hvs6_rd(HVS6_ID) != HVS6_ID_MAGIC) || !(pv[0] & 1)
+        || !(hvs6_rd(HVS6_CHAN(0) + HVS6_DISPCTRL) & HVS6_DISPCTRL_EN))
+    {
+        bug("[VC4HVS6] vsync: pixelvalve 0 is not running - flips stay unpaced\n");
+        return;
+    }
+
+    st->h6_VSyncIrq = KrnAddIRQHandler(HVS6_PV0_IRQ, hvs6_vsync_irq, st, SysBase);
+    if (!st->h6_VSyncIrq)
+    {
+        bug("[VC4HVS6] vsync: KrnAddIRQHandler failed\n");
+        return;
+    }
+
+    for (i = 0; i < sizeof(order); i++)
+    {
+        b = order[i];
+        pv[HVS6_PV_INTEN / 4]   = 0;
+        pv[HVS6_PV_INTSTAT / 4] = HVS6_PV_INT_ALL;
+        c0 = st->h6_VSyncCount;
+        f0 = HVS6_DISPSTAT_FRCNT(hvs6_rd(HVS6_CHAN(0) + HVS6_DISPSTAT));
+
+        st->h6_VSyncMask      = 1UL << b;
+        pv[HVS6_PV_INTEN / 4] = 1UL << b;
+        start = hvs6_now_us();
+        while ((hvs6_now_us() - start) < HVS6_PROBE_US)
+            ;
+        pv[HVS6_PV_INTEN / 4]   = 0;
+        pv[HVS6_PV_INTSTAT / 4] = HVS6_PV_INT_ALL;
+
+        ticks  = st->h6_VSyncCount - c0;
+        frames = (HVS6_DISPSTAT_FRCNT(hvs6_rd(HVS6_CHAN(0) + HVS6_DISPSTAT)) - f0) & 0x3f;
+        if ((frames >= 2) && (ticks + 1 >= frames) && (ticks <= frames + 1))
+            break;
+    }
+
+    if (i == sizeof(order))
+    {
+        st->h6_VSyncMask = 0;
+        bug("[VC4HVS6] vsync: no INTEN bit runs at frame rate - flips stay unpaced\n");
+        return;
+    }
+
+    pv[HVS6_PV_INTEN / 4] = st->h6_VSyncMask;
+    bug("[VC4HVS6] vsync: pixelvalve 0 INTEN bit %u, %u ticks in %u frames\n",
+        b, ticks, frames);
+}
+
+/* Sleep until the next vblank if the interrupt runs and the one waiter
+ * slot is free; FALSE otherwise, and the caller spins. Any signal ends
+ * the sleep; the caller re-checks either way. */
+static BOOL hvs6_vsync_sleep(struct vc4_hvs6_state *st)
+{
+    ULONG target;
+    BYTE sig;
+
+    if (!st->h6_VSyncMask || st->h6_VSyncTask
+        || ((hvs6_now_us() - st->h6_VSyncStamp) >= HVS6_LIVE_US))
+        return FALSE;
+    if ((sig = AllocSignal(-1)) == -1)
+        return FALSE;
+
+    st->h6_VSyncSigMask = 1UL << sig;
+    target = st->h6_VSyncCount + 1;
+    Disable();
+    st->h6_VSyncTask = FindTask(NULL);
+    Enable();
+
+    /* Clear, re-test, sleep: a tick in the gap leaves the signal set */
+    SetSignal(0, st->h6_VSyncSigMask);
+    if ((LONG)(st->h6_VSyncCount - target) < 0)
+        Wait(st->h6_VSyncSigMask);
+
+    Disable();
+    st->h6_VSyncTask = NULL;
+    Enable();
+    FreeSignal(sig);
+    return TRUE;
+}
+
+/* Wait until (reg & mask) == val, or != val when !equal: sleep on the
+ * vblank, spin briefly for the latch, give up after HVS6_WAIT_US */
+static BOOL hvs6_frame_wait(struct vc4_hvs6_state *st, ULONG reg, ULONG mask,
+                            ULONG val, BOOL equal)
+{
+    ULONG start = hvs6_now_us(), t;
+
+    for (;;)
+    {
+        if (((hvs6_rd(reg) & mask) == val) == equal)
+            return TRUE;
+        if ((hvs6_now_us() - start) >= HVS6_WAIT_US)
+            return FALSE;
+
+        if (hvs6_vsync_sleep(st))
+        {
+            t = hvs6_now_us();
+            while ((((hvs6_rd(reg) & mask) == val) != equal)
+                   && ((hvs6_now_us() - t) < HVS6_SETTLE_US))
+                ;
+        }
+    }
+}
+
 /* Wait for the latch, or the caller draws into the page being scanned */
 BOOL vc4_hvs6_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
-    ULONG which, spin;
+    ULONG which;
 
     if (!st->h6_Active || (st->h6_Pages < 2))
         return FALSE;
@@ -497,16 +648,15 @@ BOOL vc4_hvs6_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
 
     hvs6_wr(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLIST, st->h6_List[which]);
 
-    for (spin = 0; spin < HVS6_SPIN_LATCH; spin++)
-        if (hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLACT)
-            == st->h6_List[which])
-            return TRUE;
+    if (hvs6_frame_wait(st, HVS6_CHAN(st->h6_Chan) + HVS6_DISPLACT, 0xffffffff,
+                        st->h6_List[which], TRUE))
+        return TRUE;
 
     bug("[VC4HVS6] flip to %#06x never latched\n", st->h6_List[which]);
     return FALSE;
 }
 
-/* The replaced buffer is scanned until FRCNT moves on */
+/* The replaced buffer is scanned until FRCNT moves on; bounded in time */
 static void hvs6_ovl_arm(struct vc4_hvs6_state *st)
 {
     st->h6_OvlFrame = HVS6_DISPSTAT_FRCNT(hvs6_rd(HVS6_CHAN(st->h6_Chan)
@@ -516,16 +666,13 @@ static void hvs6_ovl_arm(struct vc4_hvs6_state *st)
 
 static void hvs6_ovl_latch_wait(struct vc4_hvs6_state *st)
 {
-    ULONG spin;
-
     if (!st->h6_OvlLatchDue)
         return;
     st->h6_OvlLatchDue = FALSE;
 
-    for (spin = 0; spin < HVS6_SPIN_LATCH; spin++)
-        if (HVS6_DISPSTAT_FRCNT(hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPSTAT))
-            != st->h6_OvlFrame)
-            return;
+    if (hvs6_frame_wait(st, HVS6_CHAN(st->h6_Chan) + HVS6_DISPSTAT, 0x3fUL << 16,
+                        st->h6_OvlFrame << 16, FALSE))
+        return;
 
     bug("[VC4HVS6] overlay: frame counter stuck at %lu\n",
         (unsigned long)st->h6_OvlFrame);

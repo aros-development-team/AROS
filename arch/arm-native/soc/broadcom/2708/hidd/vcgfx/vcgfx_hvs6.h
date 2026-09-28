@@ -117,6 +117,7 @@ BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
 APTR vc4_hvs6_alloc_fb(struct VideoCoreGfx_staticdata *xsd, ULONG pitch, ULONG height);
 BOOL vc4_hvs6_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
 void vc4_hvs6_latch_wait(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs6_irq_init(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs6_overlay(struct VideoCoreGfx_staticdata *xsd,
                       struct vc4gfx_overlay *ovl);
 BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd);

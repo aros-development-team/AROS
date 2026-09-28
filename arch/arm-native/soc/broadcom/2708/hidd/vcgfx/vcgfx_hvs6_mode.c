@@ -474,6 +474,12 @@ void vc4_hvs6_mode_stop(struct VideoCoreGfx_staticdata *xsd, ULONG ch)
     wr(PV_BASE + PV_CONTROL, ctl);
     wr(PV_BASE + PV_CONTROL, ctl | PV_CONTROL_FIFO_CLR);
 
+    /* No vblank until the new mode runs: wake anyone sleeping on one. */
+    Disable();
+    if (xsd->vcsd_HVS6.h6_VSyncTask)
+        Signal(xsd->vcsd_HVS6.h6_VSyncTask, xsd->vcsd_HVS6.h6_VSyncSigMask);
+    Enable();
+
     ctrl0 = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL);
     hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPCTRL, ctrl0 | HVS6_CTRL0_RESET);
     hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPCTRL, (ctrl0 | HVS6_CTRL0_RESET) & ~HVS6_DISPCTRL_EN);
