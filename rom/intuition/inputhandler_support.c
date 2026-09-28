@@ -79,8 +79,8 @@ void notify_mousemove_screensandwindows(struct IntuitionBase * IntuitionBase)
         if (GetPrivScreen(scr)->IMonitorNode != GetPrivIBase(IntuitionBase)->ActiveMonitor)
             continue;
 
-        scr->MouseX = IntuitionBase->MouseX - scr->LeftEdge;
-        scr->MouseY = IntuitionBase->MouseY - scr->TopEdge;
+        scr->MouseX = IntuitionBase->MouseX / int_MouseScaleX(scr) - scr->LeftEdge;
+        scr->MouseY = IntuitionBase->MouseY / int_MouseScaleY(scr) - scr->TopEdge;
 
         /* update windows belonging to this screen */
         for (win = scr->FirstWindow; win; win = win->NextWindow)
@@ -1437,7 +1437,8 @@ struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase)
             continue;
 
         /* Check if top of screen is highest so far */
-        if (scr->TopEdge < highest->TopEdge)
+        if (scr->TopEdge * int_MouseScaleY(scr) <
+            highest->TopEdge * int_MouseScaleY(highest))
             highest = scr;
     }
     return highest;

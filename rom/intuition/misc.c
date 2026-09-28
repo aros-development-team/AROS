@@ -92,8 +92,12 @@ void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *I
         /* A crude copy from inputhandler.c. We should really handle this in monitorclass */
         if (scr)
         {
-            DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
-            DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
+            DWidth = (scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX -
+                      scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1) *
+                     int_MouseScaleX(scr) - 1;
+            DHeight = (scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY -
+                       scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1) *
+                      int_MouseScaleY(scr) - 1;
         }
         else
         {

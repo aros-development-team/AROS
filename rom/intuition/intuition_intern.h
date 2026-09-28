@@ -44,6 +44,10 @@
 #ifndef GRAPHICS_RASTPORT_H
 #   include <graphics/rastport.h>
 #endif
+#ifdef __mc68000__
+#   include <graphics/view.h>
+#   include <hidd/gfx.h>
+#endif
 #ifndef GRAPHICS_REGIONS_H
 #   include <graphics/regions.h>
 #endif
@@ -1500,5 +1504,30 @@ struct menudecor_data
 {
 	ULONG	userbuffersize;
 };
+
+/* Classic Intuition tracks the pointer in high-resolution, interlaced
+ * display coordinates. Native planar screens convert those to screen pixels;
+ * HIDD bitmaps already use the display driver's coordinate conversion. */
+static inline UWORD int_MouseScaleX(const struct Screen *screen)
+{
+#ifdef __mc68000__
+    if (screen && screen->RastPort.BitMap &&
+        !IS_HIDD_BM(screen->RastPort.BitMap) &&
+        !(screen->ViewPort.Modes & (HIRES | SUPERHIRES)))
+        return 2;
+#endif
+    return 1;
+}
+
+static inline UWORD int_MouseScaleY(const struct Screen *screen)
+{
+#ifdef __mc68000__
+    if (screen && screen->RastPort.BitMap &&
+        !IS_HIDD_BM(screen->RastPort.BitMap) &&
+        !(screen->ViewPort.Modes & LACE))
+        return 2;
+#endif
+    return 1;
+}
 
 #endif /* INTUITION_INTERN_H */

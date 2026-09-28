@@ -1480,6 +1480,14 @@ static const char THIS_FILE[] = __FILE__;
 #endif
     screen->ModeID = modeid;
 
+#ifdef __mc68000__
+    /* Classic Intuition mirrors the ModeID's legacy mode word into the
+     * ViewPort before attaching its ColorMap. For monitor-qualified modes
+     * this includes the system-owned EXTENDED_MODE bit. */
+    if (modeid != INVALID_ID)
+        screen->Screen.ViewPort.Modes = (UWORD)modeid | SPRITES;
+#endif
+
     if (ok)
     {
         struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxNew(VIEWPORT_EXTRA_TYPE);
