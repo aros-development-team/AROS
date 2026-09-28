@@ -45,11 +45,6 @@ static inline void v3d_core_wr(struct V3DData *sd, ULONG off, ULONG val)
     *(volatile ULONG *)(sd->core0_base + off) = val;
 }
 
-static inline ULONG v3d_now_us(void)
-{
-    return AROS_LE2LONG(*(volatile ULONG *)V3D_SYSTIMER_CLO);
-}
-
 /*
  * Scheduler-friendly microsleep for the wait loop: a timer.device
  * UNIT_MICROHZ request lets other tasks (input, mouse) run while the GPU
@@ -106,9 +101,6 @@ static void v3d_irq_handler(struct V3DData *sd, struct ExecBase *sysBase);
 BOOL v3d_hw_init(struct V3DData *sd)
 {
     ULONG i;
-
-    sd->hub_base   = ARM_PERIIOBASE + V3D_HUB_OFFSET;
-    sd->core0_base = ARM_PERIIOBASE + V3D_CORE0_OFFSET;
 
     for (i = 0; i < 4; i++)
         sd->hub_ident[i] = v3d_hub_rd(sd, V3D_HUB_IDENT0 + 4 * i);
@@ -659,9 +651,9 @@ static BOOL v3d_slot_free(struct V3DData *sd)
  * renders - waiting only when the previous frame's render has not yet
  * been handed its control list.
  */
-BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
-                   ULONG qma, ULONG qms, ULONG qts,
-                   ULONG rcl_start, ULONG rcl_end)
+ULONG v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
+                    ULONG qma, ULONG qms, ULONG qts,
+                    ULONG rcl_start, ULONG rcl_end)
 {
     ULONG seqno;
 
@@ -670,10 +662,12 @@ BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
     if (!sd->powered || !v3d_wait_for(sd, v3d_slot_free) || !sd->powered)
     {
         ReleaseSemaphore(&sd->job_lock);
-        return FALSE;
+        return 0;
     }
 
     seqno = ++sd->seqno;
+    sd->last_submit_us = v3d_now_us();
+    sd->session_swept = FALSE;
 
     /* Queue the render before starting the bin: the flush can land in
      * the handler the instant the bin is kicked, and the entry has to be
@@ -753,7 +747,7 @@ BOOL v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
 #endif
 
     ReleaseSemaphore(&sd->job_lock);
-    return TRUE;
+    return seqno;
 }
 
 static BOOL v3d_seqno_reached(struct V3DData *sd)

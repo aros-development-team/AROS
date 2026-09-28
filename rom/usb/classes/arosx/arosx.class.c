@@ -13,15 +13,12 @@
 #include "debug.h"
 
 #include "arosx.class.h"
-
-
-struct AROSXBase * AROSXInit(void);
+#include "arosxcontroller.h"
 
 struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR arosxb, UBYTE id);
 struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR arosxb, UBYTE type);
 void AROSXClass_DisconnectController(LIBBASETYPEPTR arosxb, struct AROSXClassController *arosxc);
 void AROSXClass_DestroyController(LIBBASETYPEPTR arosxb, struct AROSXClassController *arosxc);
-BOOL AROSXClass_SendEvent(LIBBASETYPEPTR arosxb, ULONG ehmt, APTR param1, APTR param2);
 
 
 
@@ -50,20 +47,7 @@ static int libInit(LIBBASETYPEPTR arosxb)
 
     NewList(&arosxb->event_port_list);
 
-        arosxb->AROSXBase = AROSXInit();
-
-#define AROSXBase   arosxb->AROSXBase
-
-    if(!AROSXBase)
-    {
-        mybug(-1, ("libInit: MakeLibrary(\"arosx.library\") failed!\n"));
-        return(FALSE);
-    }
-
-    AROSXBase->arosxb = arosxb;
-
-    mybug(-1, ("AROSX: AROSXBase 0x%08lx\n", AROSXBase));
-        //AROS_LC0(ULONG, Dummy1, LIBBASETYPEPTR, AROSXBase, 5, arosx);
+    InitSemaphore(&arosxb->CtrlLock);
 
     mybug(0, ("libInit: Ok\n"));
 
@@ -79,7 +63,7 @@ static int libOpen(LIBBASETYPEPTR arosxb)
 static int libExpunge(LIBBASETYPEPTR arosxb)
 {
     mybug(10, ("libExpunge arosxb: 0x%08lx\n", arosxb));
-    //CloseLibrary((struct Library *) UtilityBase);
+    arosxCtrlExit(arosxb);
     return(TRUE);
 }
 
@@ -165,6 +149,18 @@ struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *
         if( (xinput_desc[6] != 129) | (nibble_check != xinput_desc[0]) )
         {
             mybug(-1, ("nepHidAttemptInterfaceBinding(%08lx) Not a gamepad! (that we know of...)\n", pif));
+            CloseLibrary(ps);
+            return(NULL);
+        }
+
+        /*
+            controller.hidd is disk based: until DOS is available the pad stays unbound
+            and is picked up by the class scan that follows DOS startup.
+        */
+        if(arosxCtrlDeferBinding(arosxb))
+        {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                           "Gamepad binding deferred until controller.hidd is available.");
             CloseLibrary(ps);
             return(NULL);
         }
@@ -341,6 +337,10 @@ AROS_LH2(IPTR, usbDoMethodA,
 
         case UCM_OpenBindingCfgWindow:
             return(nOpenCfgWindow((struct AROSXClassController *) methoddata[0]));
+
+        case UCM_DOSAvailableEvent:
+            arosxCtrlDOSAvailable(arosxb);
+            return(TRUE);
 
         default:
             break;
@@ -565,6 +565,75 @@ BOOL AROSXClass_SendEvent(LIBBASETYPEPTR arosxb, ULONG ehmt, APTR param1, APTR p
 
 
 
+
+/*
+    Event handlers, formerly exported by arosx.library. Only the class' own
+    binding GUI uses them; applications use controller.hidd.
+*/
+struct AROSX_EventHook *AROSXClass_AddEventHandler(LIBBASETYPEPTR arosxb, struct MsgPort *mp, ULONG msgmask) {
+
+    struct AROSXClassController *pads[4];
+    struct AROSX_EventHook *eh = NULL;
+    ULONG i;
+
+    mybug(-1, ("AROSXClass_AddEventHandler(%p, %p)\n", mp, msgmask));
+
+    if(mp) {
+        if((eh = AllocVec(sizeof(struct AROSX_EventHook), (MEMF_CLEAR|MEMF_ANY)))) {
+            eh->eh_MsgPort = mp;
+            eh->eh_MsgMask = msgmask;
+            ObtainSemaphore(&arosxb->event_lock);
+            AddTail(&arosxb->event_port_list, &eh->eh_Node);
+            ReleaseSemaphore(&arosxb->event_lock);
+
+            /*
+                Send connect events from those controllers that are already connected and included in the mask
+            */
+            pads[0] = arosxb->arosxc_0;
+            pads[1] = arosxb->arosxc_1;
+            pads[2] = arosxb->arosxc_2;
+            pads[3] = arosxb->arosxc_3;
+
+            ObtainSemaphore(&arosxb->arosxc_lock);
+            for(i = 0; i < 4; i++) {
+                struct AROSXClassController *arosxc = pads[i];
+                if( arosxc && (((msgmask>>28) & (1<<i)) && (arosxc->status.connected)) ) {
+                    AROSXClass_SendEvent(arosxb, (((1<<i)<<28) | ((arosxc->controller_type)<<20) | AROSX_EHMF_CONNECT), (APTR)1, (APTR)2);
+                    mybug(-1, ("Sent connect event for %ld\n", i));
+                }
+            }
+            ReleaseSemaphore(&arosxb->arosxc_lock);
+        }
+    }
+
+    return(eh);
+}
+
+void AROSXClass_RemEventHandler(LIBBASETYPEPTR arosxb, struct AROSX_EventHook *eh) {
+
+    struct Message *msg;
+    struct AROSX_EventNote *en;
+
+    mybug(-1, ("AROSXClass_RemEventHandler(%p)\n", eh));
+    if(!eh) {
+        return;
+    }
+
+    ObtainSemaphore(&arosxb->event_lock);
+    Remove(&eh->eh_Node);
+    while((msg = GetMsg(eh->eh_MsgPort))) {
+        ReplyMsg(msg);
+    }
+    ReleaseSemaphore(&arosxb->event_lock);
+
+    while((en = (struct AROSX_EventNote *) GetMsg(&arosxb->event_reply_port))) {
+        mybug(-1, ("    Free AROSX_EventNote(%p)\n", en));
+        FreeVec(en);
+    }
+
+    FreeVec(eh);
+}
+
 /**************************************************************************/
 
 #undef  ps
@@ -690,6 +759,9 @@ AROS_UFH0(void, nHidTask)
 
         psdDoPipe(arosxc->EPOutPipe, bufout, 12);
 
+        /* the receiver type is known now, register the pad with controller.hidd */
+        arosxCtrlAttach(arosxc);
+
         psdSendPipe(arosxc->EPInPipe, epinbuf, 20);
         do
         {
@@ -706,6 +778,7 @@ AROS_UFH0(void, nHidTask)
                             AROSXClass_SendEvent(arosxb, (((1L<<(arosxc->id)))<<28), (APTR)1, (APTR)2);
                             mybug(0,("Timestamp %u #%x\n", arosxc->arosx_gamepad.Timestamp, arosxc->id));
                         }
+                        arosxCtrlHandleReport(arosxc, epinbuf, len);
 
                         /* Wait */
                         /*
@@ -728,9 +801,16 @@ AROS_UFH0(void, nHidTask)
                     break;
                 }
             }
+            if(arosxc->CtrlWanted)
+            {
+                arosxc->CtrlWanted = FALSE;
+                arosxCtrlAttach(arosxc);
+            }
+            arosxCtrlFlushOutput(arosxc);
         } while(!(sigs & SIGBREAKF_CTRL_C));
 
         mybug(-1, ("(%d) Going down the river!\n", arosxc->id));
+        arosxCtrlDetach(arosxc);
         psdAbortPipe(arosxc->EPInPipe);
         psdWaitPipe(arosxc->EPInPipe);
         nFreeHid(arosxc);

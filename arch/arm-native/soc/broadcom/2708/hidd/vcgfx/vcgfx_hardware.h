@@ -13,6 +13,13 @@ extern IPTR __arm_periiobase;
 #include "vcgfx_hidd.h"
 #include "vcgfx_bitmap.h"
 
+/* BCM2712 moved the mailbox to bus 0x7c013880; the peripheral base is
+ * the legacy block either way, so only the offset differs. */
+#undef VCMB_BASE
+#define VCMB_OFFSET_BCM2712 0x013880
+#define VCMB_BASE (ARM_PERIIOBASE + ((ARM_PERIIOBASE == BCM2712_PERIIOBASE) \
+                                     ? VCMB_OFFSET_BCM2712 : VCMB_OFFSET))
+
 #define VCMB_PROPCHAN     8
 
 struct HWData  {

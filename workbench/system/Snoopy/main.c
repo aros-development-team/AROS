@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -28,7 +28,6 @@ int main(void)
     patches_init();
     gui_handleevents();
     clean_exit(NULL);
-    Locale_Deinitialize();
     return RETURN_OK;
 }
 
@@ -131,26 +130,31 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option,
 }
 
 
-void main_parsepattern(void)
+LONG main_parsepattern(struct Setup *settings)
 {
-    setup.match = FALSE;
+    LONG result;
 
-    if (!setup.pattern) return;
-    if (setup.pattern[0] == '\0') return;
+    settings->match = FALSE;
+    settings->parsedpattern[0] = '\0';
 
-    Forbid(); // avoid that parsed pattern is used while we change it
-    setup.parsedpattern[0] = '\0';
-    if (ParsePatternNoCase(setup.pattern, setup.parsedpattern, PARSEDPATTERNLEN) != -1)
-    {
-        setup.match = TRUE;
-    }
-    Permit();
+    if (settings->pattern[0] == '\0')
+        return 0;
+
+    result = ParsePatternNoCase(settings->pattern, settings->parsedpattern,
+        PARSEDPATTERNLEN);
+    if (result == -1)
+        return IoErr();
+
+    settings->match = TRUE;
+    return 0;
 }
 
 
 void clean_exit(char *s)
 {
+    patches_reset();
     gui_cleanup();
+    Locale_Deinitialize();
     if (s)
     {
         puts(s);

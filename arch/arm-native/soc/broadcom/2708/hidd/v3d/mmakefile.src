@@ -120,6 +120,7 @@ BROADCOM_COMMON_SOURCES := \
 # V3D HIDD sources
 V3D_HIDD_SOURCES := \
     v3d_init \
+    v3d_dt \
     v3d_hw \
     v3d_mem \
     v3d_galliumclass \

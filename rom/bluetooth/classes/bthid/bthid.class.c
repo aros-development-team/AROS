@@ -17,6 +17,7 @@
 
 #include "numtostr.h"
 #include "bthid.h"
+#include "bthidcontroller.h"
 
 #include <proto/datatypes.h>
 
@@ -69,6 +70,7 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
         return(FALSE);
     }
     NewList(&nh->nh_Interfaces);
+    InitSemaphore(&nh->nh_CtrlLock);
     /* the class defaults live in a binding without a service */
     nhb = &nh->nh_DefaultBinding;
     nhb->nhb_ClsBase = nh;
@@ -121,6 +123,7 @@ static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh)
     {
         return(FALSE);
     }
+    bCtrlExit(nh);
     if(nh->nh_LowLevelBase)
     {
         APTR ourvec;
@@ -873,6 +876,7 @@ static void bHandleReport(struct BTHidBinding *nhb, UWORD n)
                         }
                     } while(--count);
                 }
+                bCtrlHandleReport(nhb, nhr, bufreal, actual - (ULONG)(bufreal - buf));
             } else {
                 KPRINTF(10, ("Illegal report ID %ld received!\n", reportid));
             }
@@ -983,6 +987,7 @@ AROS_UFH0(void, GM_UNIQUENAME(bHidTask))
             /* need to update prefs? */
             if(nhb->nhb_ReloadCfg)
             {
+                bCtrlDetach(nhb);
                 btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Reloading configuration...");
                 Forbid();
                 nhb->nhb_ReadySignal = SIGB_SINGLE;
@@ -1020,6 +1025,7 @@ AROS_UFH0(void, GM_UNIQUENAME(bHidTask))
                 if(bReadReports(nhb))
                 {
                     bAddExtraReport(nhb);
+                    bCtrlAttach(nhb);
                 } else {
                     btAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Error parsing the HID report map!");
                     sigs |= SIGBREAKF_CTRL_C;
@@ -1200,6 +1206,7 @@ struct BTHidBinding * GM_UNIQUENAME(bAllocHid)(void)
                                 if((nhb->nhb_EPOutBuf = btAllocVec(nhb->nhb_MaxReportSize + 2)))
                                 {
                                     nhb->nhb_Task = thistask;
+                                    bCtrlAttach(nhb);
                                     return(nhb);
                                 }
                             }
@@ -1262,6 +1269,7 @@ void GM_UNIQUENAME(bFreeHid)(struct BTHidBinding *nhb)
 {
     struct BtHidReport *nhr;
 
+    bCtrlDetach(nhb);
     bCloseReportChannels(nhb);
     nhr = (struct BtHidReport *) nhb->nhb_HidReports.lh_Head;
     while(nhr->nhr_Node.ln_Succ)

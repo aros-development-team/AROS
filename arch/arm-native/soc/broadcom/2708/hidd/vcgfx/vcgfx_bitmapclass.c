@@ -322,10 +322,18 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             break;
         case aoHidd_VideoCoreGfxBitMap_Overlay:
 #ifdef OnBitmap
-            *msg->storage = XSD(cl)->vcsd_HVS.hvs_OvlActive ? 1 : 0;
+            /* Callers read this back to learn whether the plane took. */
+            *msg->storage = (XSD(cl)->vcsd_HVS.hvs_OvlActive
+                             || XSD(cl)->vcsd_HVS6.h6_Overlay) ? 1 : 0;
 #else
             *msg->storage = 0;
 #endif
+            break;
+        case aoHidd_VideoCoreGfxBitMap_LatchWait:
+#ifdef OnBitmap
+            vc4_hvs_latch_wait(XSD(cl));
+#endif
+            *msg->storage = 1;
             break;
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

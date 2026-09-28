@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _INSTALLER_H
@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include <dos/dos.h>
+#include <dos/dosextens.h>
 #include <exec/exec.h>
 #include <exec/execbase.h>
 #include <proto/dos.h>

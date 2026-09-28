@@ -1,6 +1,13 @@
 #ifndef AROSX_LIBRARY_H
 #define AROSX_LIBRARY_H
 
+/*
+    DEPRECATED. arosx.library no longer exists: arosx.class registers every
+    XInput pad with controller.hidd (see <hidd/controller.h>), which is the
+    interface applications should use. The definitions below are kept for
+    the class' own use (its binding GUI) and for source compatibility only.
+*/
+
 #include <exec/types.h>
 
 #define AROSX_CONTROLLER_TYPE_UNKNOWN  0x00

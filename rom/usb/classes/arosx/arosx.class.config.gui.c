@@ -10,7 +10,6 @@
 #include "arosx.class.config.gui.h"
 
 #include "include/arosx.h"
-#include <proto/arosx.h>
 
 #undef ps
 #undef MUIMasterBase
@@ -28,7 +27,6 @@ AROS_UFH0(void, nGUITask)
 
     struct Library *MUIBase;
     struct Library *PsdBase;
-    struct Library *AROSXBase;
 
     struct AROSXClassConfigGUI *gui;
 
@@ -49,24 +47,21 @@ AROS_UFH0(void, nGUITask)
 
     if(gui = AllocVec(sizeof(struct AROSXClassConfigGUI), MEMF_CLEAR|MEMF_ANY)) {
 
-        if(AROSXBase = OpenLibrary("arosx.library", 0)) {
-            mybug(-1,("[AROSXClass GUI] arosx.library openened\n"));
-
+        {
             arosx_eventport = CreateMsgPort();
             if(!arosx_eventport)
             {
-                CloseLibrary(AROSXBase);
                 FreeVec(gui);
                 Forbid();
                 arosxc->GUITask = NULL;
                 --arosxb->Library.lib_OpenCnt;
                 return;
             }
-            arosx_eventhook = AROSX_AddEventHandler(arosx_eventport, (((1<<arosxc->id))<<28));
+            arosx_eventhook = AROSXClass_AddEventHandler(arosxb, arosx_eventport, (((1<<arosxc->id))<<28));
             /*
                 Set to listen every controller
             */
-            //arosx_eventhook = AROSX_AddEventHandler(arosx_eventport, (0xf<<28));
+            //arosx_eventhook = AROSXClass_AddEventHandler(arosxb, arosx_eventport, (0xf<<28));
 
         if((MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
         {
@@ -433,8 +428,8 @@ AROS_UFH0(void, nGUITask)
         }
         }
 
-        AROSX_RemEventHandler(arosx_eventhook);
-        CloseLibrary(AROSXBase);
+        AROSXClass_RemEventHandler(arosxb, arosx_eventhook);
+        DeleteMsgPort(arosx_eventport);
 
         FreeVec(gui);
 

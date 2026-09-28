@@ -676,18 +676,32 @@ static void __bootstrap(unsigned int magic, void *mb)
      * Boot-time allocator needs to be smarter.
      */
     /*
-     * Reserve extra room for kernel boot-time allocations.
-     * 64-bit GOP/UEFI boots may need substantially more early memory because
-     * of larger boot data relocation and MMU/GDT/TSS setup (large identity
-     * maps, per-core TSS). 32-bit targets keep the historic small reserve:
-     * requiring a 256MB contiguous region would make low-memory i386
-     * machines unbootable.
+     * Reserve room for the kernel's boot-time allocator (krnAllocBootMem()).
+     * The x86-64 kernel takes at most this much from it (kernel_startup.c,
+     * mmu.c; the identity map is capped at 512 GiB there):
+     *
+     *   supervisor, panic and ring 1 stacks      3 x 64 KiB      192 KiB
+     *   PML4 + PDP                                2 x 4 KiB         8 KiB
+     *   PDE for the 2 MiB-page identity map    262144 x 8 B    2048 KiB
+     *   4 KiB split page pool                  32 x 512 x 8 B   128 KiB
+     *   GDT, IDT, TLS, one TSS per core (<= 256)              <  64 KiB
+     *   relocated taglist, memory map, VBE
+     *   info, command line, BSS tracker                       <  64 KiB
+     *
+     * plus page alignment: under 2.5 MiB, so 4 MiB leaves a wide margin.
+     * A fixed 256 MiB was demanded here for a while; that made any machine
+     * or VM with less than about 280 MiB, or with a fragmented map below
+     * 4 GiB, stop in the bootstrap with a message nobody could see.
+     * The kernel side trims the identity map to whatever it finds behind
+     * the kickstart (core_SetupMMU()), so the two stay consistent.
+     * 32-bit targets keep the historic small reserve.
      */
 #ifdef MULTIBOOT_64BIT
-    ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x10000000;
+#define KICKSTART_BOOTMEM_RESERVE (4 << 20)
 #else
-    ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x80000;
+#define KICKSTART_BOOTMEM_RESERVE 0x80000
 #endif
+    ksize = ro_size + rw_size + PAGE_SIZE - 1 + KICKSTART_BOOTMEM_RESERVE;
 
     /* Now locate the highest appropriate region */
     while (len >= sizeof(struct mb_mmap))

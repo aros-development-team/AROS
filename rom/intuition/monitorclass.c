@@ -1885,7 +1885,7 @@ ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetC
     struct IMonitorNode *data = INST_DATA(cl, obj);
     struct HIDD_ModeProperties modeprops;
 
-    HIDD_Display_ModeProperties(data->handle->display, msg->ModeID & (!data->handle->mask),
+    HIDD_Display_ModeProperties(data->handle->display, msg->ModeID & ~data->handle->mask,
                             &modeprops, sizeof(modeprops));
     return modeprops.CompositionFlags;
 }

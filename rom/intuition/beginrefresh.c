@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -100,9 +100,14 @@
     /* I don't think I ever have to update the BorderRPort's layer */
     if (!BeginUpdate(WLAYER(window)))
     {
-        EndUpdate(WLAYER(window), FALSE);
-
-        //dprintf("%s :BeginUpdate returned FALSE!->Aborting BeginUpdate()\n",__FUNCTION__);
+        /*
+         * BeginUpdate() failed (out of memory). The layer never entered
+         * update state, so EndUpdate() must not be called for it: that would
+         * swap in the stale ClipRect list and free the live one. The locks
+         * taken above are kept; EndRefresh() releases them unconditionally
+         * and skips EndUpdate() because WFLG_WINDOWREFRESH stays clear.
+         */
+        DEBUG_REFRESH(dprintf("BeginRefresh: BeginUpdate() failed, refresh aborted\n"));
         return;
     }
 
