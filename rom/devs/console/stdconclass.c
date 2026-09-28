@@ -183,6 +183,30 @@ static BOOL stdcon_validsize(IPTR count, WORD origin, WORD raster)
     return count <= maxcount;
 }
 
+static BOOL stdcon_validoffset(IPTR offset, WORD raster, WORD max,
+    BOOL manual, IPTR limit)
+{
+    IPTR count;
+
+    if (offset > 0x7fff || raster <= 0)
+        return FALSE;
+
+    if (manual)
+    {
+        if (max < 0)
+            return FALSE;
+
+        return stdcon_validsize((IPTR)max + 1, (WORD)offset, raster);
+    }
+
+    if (limit <= offset)
+        return FALSE;
+
+    count = (limit - offset) / (IPTR)raster;
+
+    return count && count <= 0x8000;
+}
+
 /*********  StdCon::DoCommand()  ****************************/
 
 static VOID stdcon_docommand(Class *cl, Object *o,
@@ -706,15 +730,43 @@ static VOID stdcon_docommand(Class *cl, Object *o,
         }
         break;
 
+    case C_SET_LEFT_OFFSET:
+        {
+            IPTR origin = msg->NumParams ? params[0] :
+                (w->Flags & WFLG_GIMMEZEROZERO ? 0 : w->BorderLeft);
+            IPTR limit = (IPTR)w->Width - (IPTR)w->BorderRight;
+            BOOL manual =
+                (ICU(o)->conFlags & CF_MANUAL_LINE_LENGTH) != 0;
+
+            if (!stdcon_validoffset(origin, CU(o)->cu_XRSize,
+                    CU(o)->cu_XMax, manual, limit))
+                break;
+
+            Console_UnRenderCursor(o);
+            CU(o)->cu_XROrigin = (WORD)origin;
+            Console_NewWindowSize(o);
+            Console_RenderCursor(o);
+            break;
+        }
+
     case C_SET_TOP_OFFSET:
-        Console_UnRenderCursor(o);
-        CU(o)->cu_YROrigin = params[0];
-        CU(o)->cu_YMax =
-            (w->Height - (CU(o)->cu_YROrigin +
-                w->BorderBottom)) / CU(o)->cu_YRSize - 1;
-        Console_RenderCursor(o);
-        Console_NewWindowSize(o);
-        break;
+        {
+            IPTR origin = msg->NumParams ? params[0] :
+                (w->Flags & WFLG_GIMMEZEROZERO ? 0 : w->BorderTop);
+            IPTR limit = (IPTR)w->Height - (IPTR)w->BorderBottom;
+            BOOL manual =
+                (ICU(o)->conFlags & CF_MANUAL_PAGE_LENGTH) != 0;
+
+            if (!stdcon_validoffset(origin, CU(o)->cu_YRSize,
+                    CU(o)->cu_YMax, manual, limit))
+                break;
+
+            Console_UnRenderCursor(o);
+            CU(o)->cu_YROrigin = (WORD)origin;
+            Console_NewWindowSize(o);
+            Console_RenderCursor(o);
+            break;
+        }
 
     case C_SET_PAGE_LENGTH:
         if (msg->NumParams && params[0] &&
