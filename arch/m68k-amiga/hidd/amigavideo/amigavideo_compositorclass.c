@@ -311,7 +311,8 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
             }
             else
             {
-                screen_finish = bmdata->height - 1;
+                /* The bitmap height is relative to its display top edge. */
+                screen_finish = bmdata->topedge + bmdata->height - 1;
             }
             bmdata->displayheight = limitheight(csd, (screen_finish - screen_start) + 1, bmdata->interlace, FALSE);
             D(bug("[AmigaVideo:Compositor] %s:  -- screen range = %d -> %d (%d rows)\n", __func__, screen_start, screen_finish, bmdata->displayheight);)
