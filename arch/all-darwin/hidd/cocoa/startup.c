@@ -28,6 +28,7 @@
 /* Retrieved at runtime from kernel.resource */
 struct HostInterface *HostIFace = NULL;
 extern struct OOP_InterfaceDescr CocoaGfx_ifdescr[];
+extern struct OOP_InterfaceDescr CocoaGfx_Display_ifdescr[];
 extern struct OOP_InterfaceDescr CocoaBM_ifdescr[];
 
 static struct CocoaGfx_staticdata xsd;
@@ -35,9 +36,12 @@ OOP_AttrBase __IMeta;
 OOP_AttrBase __IHidd;
 OOP_AttrBase __IHidd_BitMap;
 OOP_AttrBase __IHidd_Gfx;
+OOP_AttrBase __IHidd_Display;
+OOP_AttrBase __IHidd_DMEnum;
 OOP_AttrBase __IHidd_Sync;
 OOP_AttrBase __IHidd_PixFmt;
 OOP_AttrBase __IHidd_ChunkyBM;
+OOP_AttrBase __abHidd_Input;
 
 int __nocommandline = 1;
 int __noinitexitsets = 1;
@@ -128,6 +132,8 @@ int main(void)
                     __IHidd        = OOP_ObtainAttrBase(IID_Hidd);
                     __IHidd_BitMap = OOP_ObtainAttrBase(IID_Hidd_BitMap);
                     __IHidd_Gfx    = OOP_ObtainAttrBase(IID_Hidd_Gfx);
+                    __IHidd_Display = OOP_ObtainAttrBase(IID_Hidd_Display);
+                    __IHidd_DMEnum = OOP_ObtainAttrBase(IID_Hidd_DMEnum);
                     __IHidd_Sync   = OOP_ObtainAttrBase(IID_Hidd_Sync);
                     __IHidd_PixFmt = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
                     __IHidd_ChunkyBM = OOP_ObtainAttrBase(IID_Hidd_ChunkyBM);
@@ -137,11 +143,18 @@ int main(void)
                     xsd.hiddSyncAttrBase   = __IHidd_Sync;
                     xsd.hiddPixFmtAttrBase = __IHidd_PixFmt;
 
-                    if (__IHidd_BitMap && __IHidd_Gfx) {
+                    if (__IHidd_BitMap && __IHidd_Gfx && __IHidd_Display && __IHidd_DMEnum) {
                         struct TagItem gtags[] = {
                             { aMeta_SuperID,        (IPTR)CLID_Hidd_Gfx },
                             { aMeta_InterfaceDescr, (IPTR)CocoaGfx_ifdescr },
                             { aMeta_ID,             (IPTR)"hidd.gfx.cocoa" },
+                            { aMeta_InstSize,       0 },
+                            { TAG_DONE, 0 }
+                        };
+                        struct TagItem dtags[] = {
+                            { aMeta_SuperID,        (IPTR)CLID_Hidd_Display },
+                            { aMeta_InterfaceDescr, (IPTR)CocoaGfx_Display_ifdescr },
+                            { aMeta_ID,             (IPTR)"hidd.display.cocoa" },
                             { aMeta_InstSize,       0 },
                             { TAG_DONE, 0 }
                         };
@@ -155,8 +168,11 @@ int main(void)
                         xsd.gfxclass = OOP_NewObject(NULL, CLID_HiddMeta, gtags);
                         if (xsd.gfxclass) {
                             xsd.gfxclass->UserData = &xsd;
+                            xsd.displayclass = OOP_NewObject(NULL, CLID_HiddMeta, dtags);
+                            if (xsd.displayclass)
+                                xsd.displayclass->UserData = &xsd;
                             xsd.bmclass = OOP_NewObject(NULL, CLID_HiddMeta, btags);
-                            if (xsd.bmclass) {
+                            if (xsd.displayclass && xsd.bmclass) {
                                 xsd.bmclass->UserData = &xsd;
                                 OOP_AddClass(xsd.gfxclass);
 
@@ -194,10 +210,12 @@ int main(void)
             { TAG_DONE, 0 }
         };
 
+        __abHidd_Input = OOP_ObtainAttrBase(IID_Hidd_Input);
+
         OOP_Class *mouseclass = OOP_NewObject(NULL, CLID_HiddMeta, mtags);
         OOP_Class *kbdclass = OOP_NewObject(NULL, CLID_HiddMeta, ktags);
 
-        if (mouseclass && kbdclass) {
+        if (__abHidd_Input && mouseclass && kbdclass) {
             OOP_AddClass(mouseclass);
             OOP_AddClass(kbdclass);
 
