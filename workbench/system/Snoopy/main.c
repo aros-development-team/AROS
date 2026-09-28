@@ -28,7 +28,6 @@ int main(void)
     patches_init();
     gui_handleevents();
     clean_exit(NULL);
-    Locale_Deinitialize();
     return RETURN_OK;
 }
 
@@ -153,7 +152,9 @@ LONG main_parsepattern(struct Setup *settings)
 
 void clean_exit(char *s)
 {
+    patches_reset();
     gui_cleanup();
+    Locale_Deinitialize();
     if (s)
     {
         puts(s);

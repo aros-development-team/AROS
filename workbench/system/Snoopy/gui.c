@@ -358,7 +358,12 @@ void gui_handleevents(void)
 
 void gui_cleanup(void)
 {
-    MUI_DisposeObject(app);
+    if (app)
+    {
+        MUI_DisposeObject(app);
+        app = NULL;
+        window = NULL;
+    }
 }
 
 void gui_set(void)
