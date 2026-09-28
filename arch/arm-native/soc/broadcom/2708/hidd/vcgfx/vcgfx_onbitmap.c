@@ -142,9 +142,30 @@ BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
  * A double-height virtual framebuffer is requested first; the second page
  * enables SETVOFFSET flipping. Falls back to a single page if unavailable.
  */
+/* The rate a sync object asks for, for telling modes of one size apart;
+ * NULL when it cannot say. */
+static const struct vcgfx_timing *vc4_sync_timing(OOP_Class *cl, OOP_Object *sync,
+                                                   struct vcgfx_timing *t)
+{
+    IPTR clk = 0, htotal = 0, vtotal = 0;
+
+    if (!sync)
+        return NULL;
+    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &clk);
+    OOP_GetAttr(sync, aHidd_Sync_HTotal, &htotal);
+    OOP_GetAttr(sync, aHidd_Sync_VTotal, &vtotal);
+    if (!clk || !htotal || !vtotal)
+        return NULL;
+
+    t->clock  = clk / 1000;
+    t->htotal = htotal;
+    t->vtotal = vtotal;
+    return t;
+}
+
 static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     ULONG aligned_width, ULONG height, UBYTE bytesperpix,
-    APTR *fb_ptr_out, ULONG *fb_pitch_out)
+    const struct vcgfx_timing *want, APTR *fb_ptr_out, ULONG *fb_pitch_out)
 {
     ULONG bitsperpixel = bytesperpix * 8;
     APTR fb_ptr = NULL;
@@ -309,7 +330,7 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
         /* A mode set holds this ~100 ms; cursor updates must wait. */
         VC4_MBOX_LOCK(xsd);
         if (vc4_hvs6_takeover(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch,
-                              aligned_width, height))
+                              aligned_width, height, want))
             vc4_hvs6_add_backpage(xsd, fb_pitch, height);
         VC4_MBOX_UNLOCK(xsd);
     }
@@ -386,6 +407,8 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     APTR fb_ptr = NULL;
     UBYTE bytesperpix;
     HIDDT_ModeID modeid;
+    OOP_Object *sync = NULL, *modepf = NULL;
+    struct vcgfx_timing want;
 
     D(bug("[VideoCoreGfx] VideoCoreGfx.OnBitMap::New()\n"));
 
@@ -408,13 +431,13 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         return NULL;
     }
 
+    /* The mode's sync tells refresh rates of one size apart. */
+    if (!HIDD_DMEnum_GetMode(xsd->vcsd_DMEnum, modeid, &sync, &modepf))
+        sync = NULL;
+
     if (!width || !height || !pf)
     {
-        OOP_Object *sync = NULL;
-        OOP_Object *modepf = NULL;
-
-        if (!HIDD_DMEnum_GetMode(xsd->vcsd_DMEnum, modeid, &sync, &modepf)
-            || !sync || !modepf)
+        if (!sync || !modepf)
         {
             D(bug("[VideoCoreGfx] OnBitMap::New: GetMode(0x%08x) failed\n", (ULONG)modeid));
             return NULL;
@@ -454,7 +477,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     RawPutChar(0x03);
 
     if (!vc4_program_fb(xsd, aligned_width, height, bytesperpix,
-                        &fb_ptr, &fb_pitch))
+                        vc4_sync_timing(cl, sync, &want), &fb_ptr, &fb_pitch))
     {
         D(bug("[VideoCoreGfx] OnBitMap::New: FBALLOC failed\n"));
         return NULL;
@@ -570,6 +593,7 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
         {
             IPTR width = 0, height = 0, bytesperpix_attr = 0;
             ULONG aligned_width, fb_pitch = 0;
+            struct vcgfx_timing want;
             APTR fb_ptr = NULL;
             UBYTE bytesperpix;
 
@@ -583,7 +607,8 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
                 bytesperpix   = (UBYTE)bytesperpix_attr;
 
                 if (vc4_program_fb(xsd, aligned_width, height, bytesperpix,
-                                   &fb_ptr, &fb_pitch) && fb_ptr)
+                                   vc4_sync_timing(cl, sync, &want), &fb_ptr, &fb_pitch)
+                    && fb_ptr)
                 {
                     struct TagItem extra_tags[] =
                     {

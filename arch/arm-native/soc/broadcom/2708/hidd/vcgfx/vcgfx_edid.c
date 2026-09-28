@@ -14,103 +14,13 @@
 #include <string.h>
 
 #include "vcgfx_hidd.h"
+#include "vcgfx_ddc.h"
 
 #ifdef MBoxBase
 #undef MBoxBase
 #endif
 
 #define MBoxBase      xsd->vcsd_MBoxBase
-
-/*
- * BCM2712 DDC: one Broadcom STB I2C controller per HDMI port. Layout
- * checked on a Pi 500+ against what the firmware leaves behind after
- * its own EDID read: 97.5 kHz, 32-bit little-endian data registers.
- */
-#define DDC_OFF(port)           (0x1508200 + (port) * 0x80)
-#define HDMI_HOTPLUG(port)      (((port) ? 0x706400 : 0x701400) + 0x1c8)
-
-#define BSC_CHIP_ADDRESS        0x00
-#define BSC_DATA_IN(i)          (0x04 + 4 * (i))        /* sent to the sink */
-#define BSC_CNT                 0x24
-#define BSC_CTL                 0x28
-#define BSC_IIC_ENABLE          0x2c
-#define BSC_DATA_OUT(i)         (0x30 + 4 * (i))        /* read back */
-#define BSC_CTLHI               0x50
-
-#define CTL_DTF_WR              0x00
-#define CTL_DTF_RD              0x01
-#define CTL_97K5                0x90                    /* SCL_SEL 1 | DIV_CLK */
-#define EN_ENABLE               (1 << 0)
-#define EN_INTRP                (1 << 1)
-#define EN_NOACK                (1 << 2)
-#define CTLHI_DATAREG_32        (1 << 6)
-
-#define DDC_CHUNK               32
-#define DDC_POLL_LIMIT          2000000
-#define EDID_ADDR               (0x50 << 1)
-
-static inline ULONG ddc_rd(IPTR bsc, ULONG off)
-{
-    return *(volatile ULONG *)(bsc + off);
-}
-
-static inline void ddc_wr(IPTR bsc, ULONG off, ULONG v)
-{
-    *(volatile ULONG *)(bsc + off) = v;
-}
-
-/* One START..STOP transaction of at most DDC_CHUNK bytes, polled. */
-static BOOL ddc_xfer(IPTR bsc, BOOL read, UBYTE *buf, ULONG len)
-{
-    ULONG i, en = 0, n;
-
-    ddc_wr(bsc, BSC_IIC_ENABLE, 0);
-    ddc_wr(bsc, BSC_CHIP_ADDRESS, EDID_ADDR | (read ? 1 : 0));
-    ddc_wr(bsc, BSC_CNT, len);
-    ddc_wr(bsc, BSC_CTL, CTL_97K5 | (read ? CTL_DTF_RD : CTL_DTF_WR));
-
-    if (!read)
-    {
-        ULONG w[DDC_CHUNK / 4] = { 0 };
-
-        for (i = 0; i < len; i++)
-            w[i >> 2] |= (ULONG)buf[i] << ((i & 3) * 8);
-        for (i = 0; i < DDC_CHUNK / 4; i++)
-            ddc_wr(bsc, BSC_DATA_IN(i), w[i]);
-    }
-
-    ddc_wr(bsc, BSC_IIC_ENABLE, EN_ENABLE);
-    for (n = 0; n < DDC_POLL_LIMIT; n++)
-        if ((en = ddc_rd(bsc, BSC_IIC_ENABLE)) & EN_INTRP)
-            break;
-    ddc_wr(bsc, BSC_IIC_ENABLE, 0);
-
-    if ((n == DDC_POLL_LIMIT) || (en & EN_NOACK))
-        return FALSE;
-
-    if (read)
-        for (i = 0; i < len; i++)
-            buf[i] = ddc_rd(bsc, BSC_DATA_OUT(i >> 2)) >> ((i & 3) * 8);
-
-    return TRUE;
-}
-
-/* The EDID's address pointer survives a STOP, so each chunk is an offset
- * write followed by a plain read. Blocks past 1 need the E-DDC segment
- * pointer, which this does not do. */
-static BOOL ddc_block(IPTR bsc, ULONG block, UBYTE *buf)
-{
-    ULONG done;
-
-    for (done = 0; done < 128; done += DDC_CHUNK)
-    {
-        UBYTE o = block * 128 + done;
-
-        if (!ddc_xfer(bsc, FALSE, &o, 1) || !ddc_xfer(bsc, TRUE, buf + done, DDC_CHUNK))
-            return FALSE;
-    }
-    return TRUE;
-}
 
 static BOOL mbox_block(struct VideoCoreGfx_staticdata *xsd, ULONG block, UBYTE *buf)
 {
@@ -232,35 +142,29 @@ void vcgfx_edid_probe(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vcgfx_edid *e = &xsd->vcsd_EDID;
     UBYTE blk[128];
-    IPTR bsc = 0;
-    ULONG i, n, port, ctl = 0, ctlhi = 0, addr = 0;
-    BOOL ok;
+    ULONG i, n, port = 0;
+    BOOL ddc = FALSE, ok;
 
     memset(e, 0, sizeof(*e));
 
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
     {
         for (port = 0; port < 2; port++)
-            if (*(volatile ULONG *)(__arm_periiobase + HDMI_HOTPLUG(port)) & 1)
+            if (vcgfx_ddc_connected(port))
                 break;
         if (port == 2)
         {
             bug("[VideoCoreGfx] EDID: no sink on either HDMI port\n");
             return;
         }
-
-        /* The firmware talks to this controller too (SCDC), so leave it
-         * as it was found. */
-        bsc   = __arm_periiobase + DDC_OFF(port);
-        ctl   = ddc_rd(bsc, BSC_CTL);
-        ctlhi = ddc_rd(bsc, BSC_CTLHI);
-        addr  = ddc_rd(bsc, BSC_CHIP_ADDRESS);
-        ddc_wr(bsc, BSC_CTLHI, ctlhi | CTLHI_DATAREG_32);
+        ddc = TRUE;
     }
 
     for (n = 0; n < 2; n++)
     {
-        ok = bsc ? ddc_block(bsc, n, blk) : mbox_block(xsd, n, blk);
+        /* Blocks past 1 need the E-DDC segment pointer, not done here. */
+        ok = ddc ? vcgfx_ddc_read(port, VCGFX_DDC_EDID, n * 128, blk, 128)
+                 : mbox_block(xsd, n, blk);
         if (!ok || !edid_sum_ok(blk))
             break;
 
@@ -276,13 +180,6 @@ void vcgfx_edid_probe(struct VideoCoreGfx_staticdata *xsd)
         }
         else if (blk[0] == 0x02)
             parse_cta(e, blk);
-    }
-
-    if (bsc)
-    {
-        ddc_wr(bsc, BSC_CTL, ctl);
-        ddc_wr(bsc, BSC_CTLHI, ctlhi);
-        ddc_wr(bsc, BSC_CHIP_ADDRESS, addr);
     }
 
     if (!e->valid)
