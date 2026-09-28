@@ -74,6 +74,26 @@ typedef LONG    SWITCH;
 typedef LONG *    NUMBER;
 typedef STRPTR    KEY;
 
+enum
+{
+    SASHIMI_ARG_RECOVER,
+    SASHIMI_ARG_ON,
+    SASHIMI_ARG_BUFK,
+    SASHIMI_ARG_BUFFERSIZE,
+    SASHIMI_ARG_NOPROMPT,
+    SASHIMI_ARG_QUIET,
+    SASHIMI_ARG_ASKEXIT,
+    SASHIMI_ARG_ASKSAVE,
+    SASHIMI_ARG_TIMERON,
+    SASHIMI_ARG_CONSOLE,
+    SASHIMI_ARG_WINDOW,
+    SASHIMI_ARG_OFF,
+    SASHIMI_ARG_SAVE,
+    SASHIMI_ARG_SAVEAS,
+    SASHIMI_ARG_EMPTY,
+    SASHIMI_ARG_COUNT
+};
+
 STATIC struct
 {
     /* Startup options */
@@ -768,10 +788,27 @@ main(int argc,char **argv)
     if(argc > 0)
     {
         struct RDArgs * rdargs;
+        SIPTR shellArgs[SASHIMI_ARG_COUNT] = { 0 };
 
-        rdargs = ReadArgs((STRPTR)ShellTemplate,(IPTR *)&ShellArguments,NULL);
+        rdargs = ReadArgs((STRPTR)ShellTemplate,shellArgs,NULL);
         if(rdargs != NULL)
         {
+            ShellArguments.Recover    = (KEY)shellArgs[SASHIMI_ARG_RECOVER];
+            ShellArguments.On         = (SWITCH)shellArgs[SASHIMI_ARG_ON];
+            ShellArguments.BufferK    = (NUMBER)shellArgs[SASHIMI_ARG_BUFK];
+            ShellArguments.BufferSize = (NUMBER)shellArgs[SASHIMI_ARG_BUFFERSIZE];
+            ShellArguments.NoPrompt   = (SWITCH)shellArgs[SASHIMI_ARG_NOPROMPT];
+            ShellArguments.Quiet      = (SWITCH)shellArgs[SASHIMI_ARG_QUIET];
+            ShellArguments.AskExit    = (SWITCH)shellArgs[SASHIMI_ARG_ASKEXIT];
+            ShellArguments.AskSave    = (SWITCH)shellArgs[SASHIMI_ARG_ASKSAVE];
+            ShellArguments.TimerOn    = (SWITCH)shellArgs[SASHIMI_ARG_TIMERON];
+            ShellArguments.Console    = (SWITCH)shellArgs[SASHIMI_ARG_CONSOLE];
+            ShellArguments.Window     = (KEY)shellArgs[SASHIMI_ARG_WINDOW];
+            ShellArguments.Off        = (SWITCH)shellArgs[SASHIMI_ARG_OFF];
+            ShellArguments.Save       = (SWITCH)shellArgs[SASHIMI_ARG_SAVE];
+            ShellArguments.SaveAs     = (KEY)shellArgs[SASHIMI_ARG_SAVEAS];
+            ShellArguments.Empty      = (SWITCH)shellArgs[SASHIMI_ARG_EMPTY];
+
             /* Before anything else happens, check if
              * we should recover any old data.
              */
