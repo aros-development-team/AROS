@@ -86,6 +86,47 @@ static BOOL VC4_HaveMode(struct List *modelist, const struct vcgfx_timing *t)
     return FALSE;
 }
 
+/* Refresh rate in mHz, for ordering. */
+static ULONG VC4_ModeRate(const struct DisplayMode *m)
+{
+    return (m->dm_htotal && m->dm_vtotal)
+           ? (ULONG)((UQUAD)m->dm_clock * 1000000 / (m->dm_htotal * m->dm_vtotal)) : 0;
+}
+
+static BOOL VC4_ModeBefore(const struct DisplayMode *a, const struct DisplayMode *b)
+{
+    if (a->dm_hdisp != b->dm_hdisp)
+        return a->dm_hdisp < b->dm_hdisp;
+    if (a->dm_vdisp != b->dm_vdisp)
+        return a->dm_vdisp < b->dm_vdisp;
+    return VC4_ModeRate(a) < VC4_ModeRate(b);
+}
+
+/* ScreenMode shows modes in the order they are given: by size, then rate. */
+static void VC4_SortModes(struct List *modelist)
+{
+    struct List sorted;
+    struct DisplayMode *m, *pos;
+
+    NewList(&sorted);
+    while ((m = (struct DisplayMode *)RemHead(modelist)) != NULL)
+    {
+        ForeachNode(&sorted, pos)
+            if (VC4_ModeBefore(m, pos))
+                break;
+
+        if (!pos->dm_Node.ln_Succ)
+            AddTail(&sorted, &m->dm_Node);
+        else if (pos == (struct DisplayMode *)sorted.lh_Head)
+            AddHead(&sorted, &m->dm_Node);
+        else
+            Insert(&sorted, &m->dm_Node, pos->dm_Node.ln_Pred);
+    }
+
+    while ((m = (struct DisplayMode *)RemHead(&sorted)) != NULL)
+        AddTail(modelist, &m->dm_Node);
+}
+
 /* Probe a single resolution via VCTAG_TESTRES. The firmware returns the
  * (possibly snapped) width/height it would actually program.
  */
@@ -215,6 +256,7 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
                 hdmi_modecount++;
             }
         }
+        VC4_SortModes(modelist);
         bug("[VideoCoreGfx] BCM2712: %d HDMI mode(s)\n", hdmi_modecount);
         return hdmi_modecount;
     }
