@@ -129,12 +129,17 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         return NULL;
 
     data = OOP_INST_DATA(cl, o);
+    data->cached_depth_plus_one = 0;
+    data->cache_pixfmt = FALSE;
 
     /* Check if we want to use existing bitmap */
 
     tag = FindTagItem(aHidd_PlanarBM_BitMap, msg->attrList);
     if (tag)
     {
+        /* graphics.library's reusable wrapper starts with no BitMap. It may
+         * retain the independent pixel-format reference while detached. */
+        data->cache_pixfmt = (tag->ti_Data == 0);
         /* It's not our own bitmap */
         data->planes_alloced = FALSE;
         /* Remember the bitmap. It can be NULL here. */
@@ -323,40 +328,39 @@ static BOOL PBM_SetBitMap(OOP_Class *cl, OOP_Object *o, struct BitMap *bm)
         { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Plane     },
         { TAG_DONE                  , 0UL                       }
     };
-    struct TagItem      bmtags[] =
-    {
-        { aHidd_BitMap_Width        , 0 }, /* 0 */
-        { aHidd_BitMap_Height       , 0 }, /* 1 */
-        { aHidd_BitMap_BytesPerRow  , 0 }, /* 2 */
-        { TAG_DONE                  , 0 }
-    };
     struct planarbm_data *data = OOP_INST_DATA(cl, o);
-    OOP_Object *pf;
+    struct HIDDBitMapData *bmdata = OOP_INST_DATA(CSD(cl)->bitmapclass, o);
+    OOP_Object *pf = NULL;
+    BOOL reuse_pf;
 
-    /* Detach from a caller-owned bitmap when a cached wrapper is released.
-     * Besides avoiding a stale bitmap pointer, this releases the registered
-     * pixel format while the wrapper is idle. */
+    /* Detach from the caller-owned bitmap. A graphics cache wrapper keeps
+     * only its own registered pixel format, never the BitMap or its planes. */
     if (!bm)
     {
         PBM_FreeBitMap(data);
         data->bitmap = NULL;
         data->planes_alloced = FALSE;
 
-        BM__Hidd_BitMap__SetBitMapTags(CSD(cl)->bitmapclass, o, bmtags);
-        BM__Hidd_BitMap__SetPixFmt(CSD(cl)->bitmapclass, o, NULL);
+        bmdata->width = 0;
+        bmdata->height = 0;
+        bmdata->bytesPerRow = 0;
+        if (!data->cache_pixfmt)
+        {
+            BM__Hidd_BitMap__SetPixFmt(CSD(cl)->bitmapclass, o, NULL);
+            data->cached_depth_plus_one = 0;
+        }
         return TRUE;
     }
 
-    /* First we attempt to register a pixelformat */
-    pftags[0].ti_Data = bm->Depth;      /* PixFmt_Depth */
-    pftags[1].ti_Data = bm->Depth;      /* PixFmt_BitsPerPixel */
-
-    pf = DMEnum__Internal__RegisterPixFmt(CSD(cl)->dmenumclass, pftags);
-
-    if (!pf)
+    reuse_pf = data->cache_pixfmt &&
+               data->cached_depth_plus_one == (UWORD)bm->Depth + 1;
+    if (!reuse_pf)
     {
-        /* Fail is pixelformat registration failed */
-        return FALSE;
+        pftags[0].ti_Data = bm->Depth;
+        pftags[1].ti_Data = bm->Depth;
+        pf = DMEnum__Internal__RegisterPixFmt(CSD(cl)->dmenumclass, pftags);
+        if (!pf)
+            return FALSE;
     }
 
     /* Free old bitmap, if it was ours. */
@@ -366,15 +370,20 @@ static BOOL PBM_SetBitMap(OOP_Class *cl, OOP_Object *o, struct BitMap *bm)
     data->bitmap = bm;
     data->planes_alloced = FALSE;
 
-    /* Call private bitmap method to update superclass */
-    bmtags[0].ti_Data = bm->BytesPerRow * 8;
+    /* These are the only three attributes SetBitMapTags would update here;
+     * setting the superclass data directly avoids parsing a tag list twice
+     * for every short-lived render wrapper. */
+    bmdata->width = bm->BytesPerRow * 8;
     if ((bm->Flags & BMF_INTERLEAVED) && bm->Depth)
-        bmtags[0].ti_Data /= bm->Depth;
-    bmtags[1].ti_Data = bm->Rows;
-    bmtags[2].ti_Data = bm->BytesPerRow;
+        bmdata->width /= bm->Depth;
+    bmdata->height = bm->Rows;
+    bmdata->bytesPerRow = bm->BytesPerRow;
 
-    BM__Hidd_BitMap__SetBitMapTags(CSD(cl)->bitmapclass, o, bmtags);
-    BM__Hidd_BitMap__SetPixFmt(CSD(cl)->bitmapclass, o, pf);
+    if (!reuse_pf)
+    {
+        BM__Hidd_BitMap__SetPixFmt(CSD(cl)->bitmapclass, o, pf);
+        data->cached_depth_plus_one = (UWORD)bm->Depth + 1;
+    }
 
     return TRUE;
 }
@@ -664,6 +673,74 @@ VOID PBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o,
     fg = GC_FG(msg->gc);
     x1 = msg->minX; y1 = msg->minY;
     x2 = msg->maxX; y2 = msg->maxY;
+
+#ifdef __mc68000
+    /* RectFill on an off-screen Chip bitmap must not fall back to a CPU
+     * byte loop.  In particular, CD32 titles repeatedly clear narrow
+     * status bands before redrawing their text.  Keep the software path for
+     * non-Chip planes, clipped/out-of-range HIDD calls, and other modes. */
+    if (bm->Depth && bm->Depth <= 8 &&
+        (GC_COLMASK(msg->gc) & ((1UL << bm->Depth) - 1)) ==
+            ((1UL << bm->Depth) - 1) &&
+        x1 >= 0 && y1 >= 0 && x2 >= x1 && y2 >= y1 &&
+        y2 < bm->Rows)
+    {
+        ULONG bitmap_width = (ULONG)bm->BytesPerRow * 8;
+        UWORD words = x2 / 16 - x1 / 16 + 1;
+        UWORD lines = y2 - y1 + 1;
+        BOOL chip_planes = TRUE;
+
+        if (bm->Flags & BMF_INTERLEAVED)
+            bitmap_width /= bm->Depth;
+
+        if ((ULONG)x2 < bitmap_width && words <= 63 && lines <= 1023)
+        {
+            for (d = 0; d < bm->Depth; d++)
+            {
+                UBYTE *plane = bm->Planes[d];
+                if (plane && plane != (UBYTE *)-1 &&
+                    !(TypeOfMem(plane) & MEMF_CHIP))
+                {
+                    chip_planes = FALSE;
+                    break;
+                }
+            }
+
+            if (chip_planes)
+            {
+                struct GfxBase *GfxBase = CSD(cl)->cs_GfxBase;
+                volatile struct Custom *custom = (struct Custom *)0xdff000;
+                ULONG offset = (ULONG)y1 * bm->BytesPerRow + (x1 / 16) * 2;
+
+                OwnBlitter();
+                WaitBlit();
+                custom->bltafwm = (UWORD)(0xffff >> (x1 & 15));
+                custom->bltalwm = (UWORD)(0xffff << (15 - (x2 & 15)));
+                custom->bltcmod = bm->BytesPerRow - words * 2;
+                custom->bltdmod = bm->BytesPerRow - words * 2;
+                custom->bltcon1 = 0;
+                custom->bltcon0 = 0x0300 | 0xca; /* A ? B : C */
+                custom->bltadat = 0xffff;
+
+                for (d = 0; d < bm->Depth; d++)
+                {
+                    UBYTE *plane = bm->Planes[d];
+                    if (!plane || plane == (UBYTE *)-1)
+                        continue;
+
+                    WaitBlit();
+                    custom->bltbdat = (fg & (1UL << d)) ? 0xffff : 0;
+                    custom->bltcpt = plane + offset;
+                    custom->bltdpt = plane + offset;
+                    custom->bltsize = (lines << 6) | words;
+                }
+                WaitBlit();
+                DisownBlitter();
+                return;
+            }
+        }
+    }
+#endif
 
     firstbyte = x1 >> 3;
     lastbyte  = x2 >> 3;

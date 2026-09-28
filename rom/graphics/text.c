@@ -255,7 +255,34 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
             }
 
 
-            for(bold = 0; bold <= is_bold; bold++) {
+            if (!is_bold && !is_italic && glyphwidth <= 8) {
+                WORD wx = x;
+                UWORD srcshift = glyphpos & 7;
+                UWORD dstshift = wx & 7;
+
+                glyphdata = (UBYTE *)tf->tf_CharData + glyphpos / 8;
+                dst = raster + wx / 8;
+
+                for (y = 0; y < rasheight; y++) {
+                    UWORD source = (UWORD)glyphdata[0] << 8;
+                    UBYTE bits;
+                    UWORD packed;
+
+                    if (srcshift + glyphwidth > 8)
+                        source |= glyphdata[1];
+                    bits = (source >> (8 - srcshift)) &
+                           (0xff << (8 - glyphwidth));
+                    packed = ((UWORD)bits << 8) >> dstshift;
+
+                    if (packed & 0xff00)
+                        dst[0] |= packed >> 8;
+                    if ((dstshift + glyphwidth > 8) && (packed & 0xff))
+                        dst[1] |= packed;
+
+                    glyphdata += tf->tf_Modulo;
+                    dst += raswidth_bpr;
+                }
+            } else for(bold = 0; bold <= is_bold; bold++) {
                 WORD wx;
                 WORD italicshift, italiccheck = 0;
 
