@@ -1365,7 +1365,8 @@ static BOOL gfx_vblank_attachbm(struct amigavideo_staticdata *csd, struct amigab
     }
     else
     {
-        screen_finish = bm->height - 1;
+        /* screen_finish is an absolute display coordinate. */
+        screen_finish = bm->topedge + bm->height - 1;
     }
     bm->displayheight = limitheight(csd, (screen_finish - screen_start) + 1, bm->interlace, FALSE);
     D(bug("[AmigaVideo] %s: screen range = %d -> %d (%d rows)\n", __func__, screen_start, screen_finish, bm->displayheight);)
@@ -1762,7 +1763,7 @@ static BOOL gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
                 bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);
             }
             else
-                bm->displayheight = limitheight(csd, (bm->height - bm->topedge), bm->interlace, FALSE);
+                bm->displayheight = limitheight(csd, bm->height, bm->interlace, FALSE);
             if (bm->displayheight > 1)
             {
                 setcopperscroll(csd, csd->updatescroll, ((csd->interlaced == TRUE) || (csd->updatescroll->interlace == TRUE)));
