@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>
@@ -88,10 +88,17 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
       
       if (priority != ROOTPRIORITY) /* avoid endless recursion */
       {
+        /*
+         * The root layer is what gets backfilled where no other layer
+         * is. Its backfill hook is the Layer_Info's BlankHook, which
+         * InstallLayerInfoHook() may already have set before any layer
+         * existed (Intuition installs SA_BackFill right after InitLayers()).
+         */
         struct TagItem tags[] =
         {
-            {LA_Hidden, TRUE            },
-            {TAG_DONE                   }
+            {LA_Hidden      , TRUE                  },
+            {LA_BackfillHook, (IPTR)li->BlankHook   },
+            {TAG_DONE                               }
         };
 
         if (!(CreateLayerTagList(li,

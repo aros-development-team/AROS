@@ -268,6 +268,8 @@ struct vc4_hvs_state
     LONG        hvs_OvlX, hvs_OvlY;
     ULONG       hvs_OvlOff;
     ULONG       hvs_OvlWords;               /* entry length in the list */
+    ULONG       hvs_OvlLBM;                 /* line-buffer base, scaled only */
+    ULONG       hvs_FBLBM;                  /* LBM ceiling left by the fb plane */
 
     /* Filter kernel for scaled planes, copied from the firmware's at
      * takeover; hvs_KernelOK gates scaled-overlay support. */
@@ -282,6 +284,12 @@ struct vc4_hvs_state
     ULONG           hvs_VSyncMask;
     volatile ULONG  hvs_VSyncCount;
     ULONG           hvs_FlipArmed;
+
+    /* The vsync IRQ signals hvs_VSyncTask (NULL = no waiter).
+     * hvs_VSyncStamp: time of the last counted vsync. */
+    struct Task * volatile hvs_VSyncTask;
+    ULONG           hvs_VSyncSigMask;
+    volatile ULONG  hvs_VSyncStamp;
 };
 
 /* Phase 1: read-only state dump (parses the firmware's live display
@@ -324,5 +332,8 @@ void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd);
 struct vc4gfx_overlay;
 BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
                      const struct vc4gfx_overlay *ovl);
+
+/* Wait for the last armed flip/overlay to latch (VC4GFX_OVL_NOWAIT). */
+void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd);
 
 #endif /* _VIDEOCOREGFX_HVS_H */

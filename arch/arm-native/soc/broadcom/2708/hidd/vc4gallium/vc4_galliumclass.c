@@ -42,6 +42,7 @@
 #define aoHidd_VideoCoreGfxBitMap_BackDrawable  1
 #define aoHidd_VideoCoreGfxBitMap_Flip          2
 #define aoHidd_VideoCoreGfxBitMap_Overlay       3
+#define aoHidd_VideoCoreGfxBitMap_LatchWait     4
 
 /* Mirrored from vcgfx_bitmap.h, like the attr indices above. */
 struct vc4gfx_overlay
@@ -51,7 +52,9 @@ struct vc4gfx_overlay
     ULONG ovl_Width, ovl_Height;
     LONG  ovl_X, ovl_Y;
     ULONG ovl_DestW, ovl_DestH;     /* 0/== source = unscaled */
+    ULONG ovl_Flags;
 };
+#define VC4GFX_OVL_NOWAIT (1 << 0)
 
 #if (AROS_BIG_ENDIAN == 1)
 #define AROS_PIXFMT RECTFMT_RAW
@@ -76,6 +79,70 @@ static inline void __gallium_dsb(void) { asm volatile("dsb sy" ::: "memory"); }
 static inline ULONG gallium_now_us(void)
 {
     return AROS_LE2LONG(*(volatile ULONG *)SYSTIMER_CLO);
+}
+
+ULONG gallium_now_us_ext(void)
+{
+    return gallium_now_us();
+}
+
+/* The V3D IRQ is masked (the firmware co-owns the line), so the FLDONE ->
+ * CT1 kick only happens when polled. Poll from submit until it is done.
+ * vc4_v3d_service_interrupts() is IRQ-safe, so no lock is needed. */
+static void vc4_service_task_entry(struct vc4galliumstaticdata *sd)
+{
+    struct vc4_v3d_state *v3d = &sd->v3d;
+
+    for (;;)
+    {
+        ULONG sigs = Wait(SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+
+        if (sigs & SIGBREAKF_CTRL_C)
+            break;
+
+        while (v3d->pending_render)
+        {
+            vc4_v3d_service_interrupts(v3d);
+            if (!v3d->pending_render)
+                break;
+            vc4_gpu_nap(sd, VC4_GPUWAIT_NAP_US);
+        }
+    }
+
+    /* Forbid until exit: the stopper may unload this code once woken */
+    Forbid();
+    sd->v3d_service_task = NULL;
+    if (sd->v3d_service_waiter)
+        Signal(sd->v3d_service_waiter, SIGF_SINGLE);
+}
+
+BOOL vc4_aros_start_service_task(struct vc4galliumstaticdata *sd)
+{
+    sd->v3d_service_task = NewCreateTask(TASKTAG_PC,   vc4_service_task_entry,
+                                         TASKTAG_NAME, "VC4 V3D service",
+                                         TASKTAG_PRI,  10,
+                                         TASKTAG_ARG1, sd,
+                                         TAG_DONE);
+    return sd->v3d_service_task != NULL;
+}
+
+void vc4_aros_stop_service_task(struct vc4galliumstaticdata *sd)
+{
+    if (!sd->v3d_service_task)
+        return;
+
+    sd->v3d_service_waiter = FindTask(NULL);
+    SetSignal(0, SIGF_SINGLE);
+    Signal(sd->v3d_service_task, SIGBREAKF_CTRL_C);
+    while (sd->v3d_service_task)
+        Wait(SIGF_SINGLE);
+    sd->v3d_service_waiter = NULL;
+}
+
+void vc4_aros_service_kick(struct vc4galliumstaticdata *sd)
+{
+    if (sd->v3d_service_task)
+        Signal(sd->v3d_service_task, SIGBREAKF_CTRL_F);
 }
 
 static inline void gallium_udelay(ULONG usec)
@@ -678,6 +745,9 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
     if (!bm_obj || !sd->hiddVC4GfxBMAB || !w || !h)
         return -1;
 
+    /* A page displaced by the last Set may still be on scanout */
+    vc4_aros_overlay_latch_wait(sd);
+
     ObtainSemaphore(&sd->bo_lock);
     if (src_bo_handle >= VC4_MAX_BOS || !sd->bo_table[src_bo_handle].vaddr
         || (ULONG)src_stride * h > sd->bo_table[src_bo_handle].size)
@@ -693,6 +763,9 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
     desc.ovl_Y      = y;
     desc.ovl_DestW  = dest_w;
     desc.ovl_DestH  = dest_h;
+    /* No latch wait here; submit_cl waits if a job renders into the
+     * displaced page. */
+    desc.ovl_Flags  = VC4GFX_OVL_NOWAIT;
 
     /* Pin the new buffer before showing it; the previous pin is
      * released only after the hidd confirms the switch latched. */
@@ -736,14 +809,40 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         ReleaseSemaphore(&sd->bo_lock);
         return -1;
     }
-    /* Release the pin the previous present took — including when the same
-     * BO is shown twice in a row: we added a fresh pin above, so skipping
-     * this would strand one reference per repeat and the BO could never be
-     * freed. */
-    if (prev)
+    /* The displaced page keeps its pin until its latch is retired; a
+     * repeat of the same BO drops the duplicate pin now. */
+    if (prev && prev != src_bo_handle)
+        sd->overlay_displaced_handle = prev;
+    else if (prev)
         vc4_aros_bo_unref_locked(sd, prev);
     ReleaseSemaphore(&sd->bo_lock);
     return 0;
+}
+
+void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
+{
+    IPTR dummy = 0;
+    OOP_Object *bm;
+    ULONG displaced;
+
+    ObtainSemaphore(&sd->bo_lock);
+    bm = sd->overlay_bm;
+    displaced = sd->overlay_displaced_handle;
+    ReleaseSemaphore(&sd->bo_lock);
+
+    if (!displaced)
+        return;
+
+    if (bm && sd->hiddVC4GfxBMAB)
+        OOP_GetAttr(bm, sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_LatchWait, &dummy);
+
+    ObtainSemaphore(&sd->bo_lock);
+    if (sd->overlay_displaced_handle == displaced)
+    {
+        vc4_aros_bo_unref_locked(sd, displaced);
+        sd->overlay_displaced_handle = 0;
+    }
+    ReleaseSemaphore(&sd->bo_lock);
 }
 
 void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
@@ -767,6 +866,11 @@ void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
     {
         vc4_aros_bo_unref_locked(sd, sd->overlay_pinned_handle);
         sd->overlay_pinned_handle = 0;
+    }
+    if (sd->overlay_displaced_handle)
+    {
+        vc4_aros_bo_unref_locked(sd, sd->overlay_displaced_handle);
+        sd->overlay_displaced_handle = 0;
     }
     sd->overlay_bm = NULL;
     ReleaseSemaphore(&sd->bo_lock);

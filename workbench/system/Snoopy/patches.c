@@ -930,7 +930,7 @@ AROS_LH1(struct Screen *, New_LockPubScreen,
 
     if (patches[PATCH_LockPubScreen].enabled)
     {
-        main_output("LockPubScreen", name, 0, (IPTR)result, TRUE, TRUE);
+        main_output("LockPubScreen", name, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;

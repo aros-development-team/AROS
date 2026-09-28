@@ -144,11 +144,14 @@ void v3d_release_all_bos(struct V3DData *sd)
     if (leaked)
         bug("[V3D] session sweep: released %u leaked BOs\n", (unsigned)leaked);
 
-    /* Now that nothing is allocated from them, hand the arenas back. */
-    v3d_mem_release(sd);
+    /* The arenas stay: re-acquiring them (alloc, clean, remap) would stall
+     * the next texture load. DestroyPipeScreen releases them. */
 }
 
 /* ---- the dispatch ---- */
+
+static void v3d_syncobj_signal(uint32_t handle, ULONG seqno);
+static ULONG v3d_syncobj_seqno(uint32_t handle);
 
 static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
                               void *arg)
@@ -184,6 +187,7 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
         sd->bo_table[h].size       = create->size;
         sd->bo_table[h].refcount   = 1;
         sd->bo_table[h].external   = FALSE;
+        sd->bo_table[h].last_seqno = 0;
         ReleaseSemaphore(&sd->bo_lock);
 
         create->handle = h;
@@ -234,6 +238,7 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
                                                      sd->scanout_size);
             sd->bo_table[h].size       = sd->scanout_size;
             sd->bo_table[h].refcount   = 1;
+            sd->bo_table[h].last_seqno = 0;
         }
         open->handle = h;
         open->size = sd->bo_table[h].size;
@@ -244,12 +249,18 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
     case DRM_IOCTL_GEM_CLOSE:
     {
         struct drm_gem_close *close = arg;
+        struct V3DBO *bo;
+        ULONG seqno = 0;
 
-        /* With jobs in flight the GPU may still read this BO - no
-         * per-job references exist, so drain first. Rare: Mesa's BO
-         * cache absorbs the per-frame churn, real closes are eviction. */
-        if (sd->finished_seqno != sd->seqno)
-            v3d_wait_idle(sd);
+        /* Let the BO's newest job retire. Not under bo_lock: the wait
+         * takes job_lock. */
+        ObtainSemaphore(&sd->bo_lock);
+        bo = bo_lookup(sd, close->handle);
+        if (bo)
+            seqno = bo->last_seqno;
+        ReleaseSemaphore(&sd->bo_lock);
+        if (seqno)
+            v3d_hw_wait_seqno(sd, seqno);
 
         ObtainSemaphore(&sd->bo_lock);
         bo_unref(sd, close->handle);
@@ -284,21 +295,58 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
     }
 
     case DRM_IOCTL_V3D_WAIT_BO:
-        /* No per-BO tracking: any BO may belong to the jobs in flight,
-         * so waiting on one means draining the pipeline. Mesa only asks
-         * before CPU access, which is rare on the hot path. */
-        v3d_wait_idle(sd);
+    {
+        struct drm_v3d_wait_bo *wait = arg;
+        struct V3DBO *bo;
+        ULONG seqno = 0;
+
+        /* timeout_ns == 0 is Mesa's BO-cache busy probe; a cached BO's
+         * job has retired, so a plain wait is safe. */
+        (void)wait->timeout_ns;
+        ObtainSemaphore(&sd->bo_lock);
+        bo = bo_lookup(sd, wait->handle);
+        if (bo)
+            seqno = bo->last_seqno;
+        ReleaseSemaphore(&sd->bo_lock);
+        if (seqno)
+            v3d_hw_wait_seqno(sd, seqno);
         return 0;
+    }
 
     case DRM_IOCTL_V3D_SUBMIT_CL:
     {
         struct drm_v3d_submit_cl *submit = arg;
 
+        ULONG seqno;
+
         /* Asynchronous: returns once the bin job is kicked; the render
          * is stashed and handed over on the binner's flush. */
-        v3d_submit_cl(sd, submit->bcl_start, submit->bcl_end,
-                      submit->qma, submit->qms, submit->qts,
-                      submit->rcl_start, submit->rcl_end);
+        seqno = v3d_submit_cl(sd, submit->bcl_start, submit->bcl_end,
+                              submit->qma, submit->qms, submit->qts,
+                              submit->rcl_start, submit->rcl_end);
+
+        /* Stamp the job's BOs for WAIT_BO and GEM_CLOSE. Safe after the
+         * kick: Mesa is single-threaded per context. */
+        if (seqno && submit->bo_handle_count)
+        {
+            const ULONG *handles = (const ULONG *)(IPTR)submit->bo_handles;
+            ULONG i;
+
+            ObtainSemaphore(&sd->bo_lock);
+            for (i = 0; i < submit->bo_handle_count; i++)
+            {
+                struct V3DBO *bo = bo_lookup(sd, handles[i]);
+
+                if (bo)
+                    bo->last_seqno = seqno;
+            }
+            ReleaseSemaphore(&sd->bo_lock);
+        }
+
+        /* Exported fences and the context's teardown wait use out_sync. */
+        if (seqno)
+            v3d_syncobj_signal(submit->out_sync, seqno);
+
         return 0;
     }
 
@@ -315,8 +363,21 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
         case DRM_V3D_PARAM_V3D_CORE0_IDENT0: p->value = sd->core_ident[0]; break;
         case DRM_V3D_PARAM_V3D_CORE0_IDENT1: p->value = sd->core_ident[1]; break;
         case DRM_V3D_PARAM_V3D_CORE0_IDENT2: p->value = sd->core_ident[2]; break;
+        /* Every kick flushes L2, L2T and the slice caches anyway. */
+        case DRM_V3D_PARAM_SUPPORTS_CACHE_FLUSH: p->value = 1; break;
+
+        /* The TFU/CSD submit ioctls below refuse. */
         case DRM_V3D_PARAM_SUPPORTS_TFU:    p->value = 0; break;
         case DRM_V3D_PARAM_SUPPORTS_CSD:    p->value = 0; break;
+
+        case DRM_V3D_PARAM_SUPPORTS_PERFMON:       p->value = 0; break;
+        case DRM_V3D_PARAM_SUPPORTS_MULTISYNC_EXT: p->value = 0; break;
+        case DRM_V3D_PARAM_SUPPORTS_CPU_QUEUE:     p->value = 0; break;
+
+        /* Resets are not tracked; 0 means none happened. */
+        case DRM_V3D_PARAM_GLOBAL_RESET_COUNTER:   p->value = 0; break;
+        case DRM_V3D_PARAM_CONTEXT_RESET_COUNTER:  p->value = 0; break;
+
         default:                            p->value = 0; break;
         }
         return 0;
@@ -576,8 +637,8 @@ void renderonly_scanout_destroy(struct renderonly_scanout *scanout,
 }
 
 /* driconf: mesa.cfg leaves xmlconfig.c out of libmesautil, so v3d_screen.c's
- * option handling has to be answered here. Every option reads as unset, which
- * is what Mesa itself falls back to without a config file. */
+ * option handling has to be answered here, with driinfo_gallium.h defaults.
+ * Without allow_compressed_fallback there is no RGTC, hence no GL 3.0. */
 void driParseConfigFiles(void *cache, const void *info,
                          int screenNum, const char *driverName,
                          const char *kernelDriverName,
@@ -599,6 +660,168 @@ unsigned char driCheckOption(const void *cache, const char *name, int type)
 
 unsigned char driQueryOptionb(const void *cache, const char *name)
 {
-    (void)cache; (void)name;
+    static const char * const default_true[] =
+    {
+        "allow_compressed_fallback",
+        "allow_draw_out_of_order",
+        "allow_rgb10_configs",
+        "allow_rgb16_configs",
+    };
+    unsigned int i;
+
+    (void)cache;
+
+    for (i = 0; i < sizeof(default_true) / sizeof(default_true[0]); i++)
+    {
+        /* Own compare: no libc here, str* needs a StdCBase. */
+        const char *a = name, *b = default_true[i];
+
+        while (*a && *a == *b)
+        {
+            a++;
+            b++;
+        }
+
+        if (*a == *b)
+            return 1;
+    }
+
+    return 0;
+}
+
+/* Sync objects. Mesa exports a fence as a sync-file fd, then imports and
+ * waits on it. Here the fd is a seqno plus a tag bit no real fd has, as
+ * Mesa close()s it and that must not hit an open file. */
+#define V3D_SYNCFILE_TAG    0x40000000
+#define V3D_SYNCFILE_MASK   0x3fffffff
+#define V3D_SYNCOBJS        16
+
+/* 0 = free slot, else seqno + 1. Guarded by bo_lock: contexts can live
+ * in different tasks. */
+static ULONG v3d_syncobj[V3D_SYNCOBJS];
+
+int drmSyncobjCreate(int fd, uint32_t flags, uint32_t *handle)
+{
+    struct V3DData *sd = g_v3d_data;
+    ULONG i;
+    int ret = -1;
+
+    (void)fd; (void)flags;
+    if (!sd)
+        return -1;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; i < V3D_SYNCOBJS; i++)
+    {
+        if (v3d_syncobj[i])
+            continue;
+        v3d_syncobj[i] = 1;             /* seqno 0: already signalled */
+        *handle = (uint32_t)(i + 1);
+        ret = 0;
+        break;
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    return ret;
+}
+
+int drmSyncobjDestroy(int fd, uint32_t handle)
+{
+    struct V3DData *sd = g_v3d_data;
+
+    (void)fd;
+    if (sd && handle && handle <= V3D_SYNCOBJS)
+    {
+        ObtainSemaphore(&sd->bo_lock);
+        v3d_syncobj[handle - 1] = 0;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+    return 0;
+}
+
+static void v3d_syncobj_signal(uint32_t handle, ULONG seqno)
+{
+    struct V3DData *sd = g_v3d_data;
+
+    if (!sd || !handle || handle > V3D_SYNCOBJS)
+        return;
+    ObtainSemaphore(&sd->bo_lock);
+    if (v3d_syncobj[handle - 1])
+        v3d_syncobj[handle - 1] = seqno + 1;
+    ReleaseSemaphore(&sd->bo_lock);
+}
+
+static ULONG v3d_syncobj_seqno(uint32_t handle)
+{
+    struct V3DData *sd = g_v3d_data;
+    ULONG seqno = 0;
+
+    if (!sd || !handle || handle > V3D_SYNCOBJS)
+        return 0;
+    ObtainSemaphore(&sd->bo_lock);
+    if (v3d_syncobj[handle - 1])
+        seqno = v3d_syncobj[handle - 1] - 1;
+    ReleaseSemaphore(&sd->bo_lock);
+    return seqno;
+}
+
+int drmSyncobjExportSyncFile(int fd, uint32_t handle, int *sync_file_fd)
+{
+    struct V3DData *sd = g_v3d_data;
+    ULONG seqno;
+
+    (void)fd;
+    if (!sd)
+        return -1;
+
+    /* No submission yet: the newest seqno is never too early. */
+    seqno = v3d_syncobj_seqno(handle);
+    if (!seqno)
+        seqno = sd->seqno;
+
+    *sync_file_fd = V3D_SYNCFILE_TAG | (int)(seqno & V3D_SYNCFILE_MASK);
+    return 0;
+}
+
+int drmSyncobjImportSyncFile(int fd, uint32_t handle, int sync_file_fd)
+{
+    struct V3DData *sd = g_v3d_data;
+    ULONG seqno;
+
+    (void)fd;
+    if (!sd || !handle || handle > V3D_SYNCOBJS ||
+        ((ULONG)sync_file_fd & ~V3D_SYNCFILE_MASK) != V3D_SYNCFILE_TAG)
+        return -1;
+
+    /* The fd holds the low 30 bits; the rest come from the newest seqno */
+    seqno = (sd->seqno & ~V3D_SYNCFILE_MASK) | ((ULONG)sync_file_fd & V3D_SYNCFILE_MASK);
+    if (seqno > sd->seqno)
+        seqno = (seqno > V3D_SYNCFILE_MASK) ? seqno - (V3D_SYNCFILE_MASK + 1) : sd->seqno;
+
+    ObtainSemaphore(&sd->bo_lock);
+    v3d_syncobj[handle - 1] = seqno + 1;
+    ReleaseSemaphore(&sd->bo_lock);
+    return 0;
+}
+
+/* timeout is ignored: v3d_wait_for() ends in GPU recovery, not "not yet". */
+int drmSyncobjWait(int fd, uint32_t *handles, uint32_t count, int64_t timeout,
+                   uint32_t flags, uint32_t *first)
+{
+    struct V3DData *sd = g_v3d_data;
+    uint32_t i;
+
+    (void)fd; (void)timeout; (void)flags;
+    if (first)
+        *first = 0;
+    if (!sd || !handles)
+        return 0;
+
+    for (i = 0; i < count; i++)
+    {
+        uint32_t h = handles[i];
+
+        if (h && h <= V3D_SYNCOBJS)
+            v3d_hw_wait_seqno(sd, v3d_syncobj_seqno(h));
+    }
     return 0;
 }

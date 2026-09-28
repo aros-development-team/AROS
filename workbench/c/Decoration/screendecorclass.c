@@ -24,7 +24,9 @@
 
 struct IClass *screenchildgclass = NULL;
 
-#define CHILDPADDING 1
+/* Padding around the title child, as a fraction of the bar height (the bar is
+   BarHeight + 1 rows tall) so the child scales with the screen font */
+#define SCRBAR_CHILDPAD(barh) ((((barh) / 20) > 0) ? ((barh) / 20) : 1)
 
 #define TITLE_DEFCOLORTEXT     0x00CCCCCC
 #define TITLE_DEFCOLORSHADOW   0x00444444
@@ -38,7 +40,17 @@ struct scrdecor_data
     struct DecorImages * di;
     struct DecorConfig * dc;
     Object *FirstChild;
+    BOOL ChildLayoutPending;
 };
+
+/*
+ * The screen title child is registered once, through the MAGIC_PRIVATE_TITLECHILD
+ * message, but intuition creates a new decorator object for every screen it
+ * opens. Keep the child at decorator level so the default public (Workbench)
+ * screen picks it up again whenever it is reopened, e.g. by IPrefs applying
+ * a new screen font after the tray has attached.
+ */
+static Object *scrdecor_TitleChild = NULL;
 
 struct scrdecorchildg_data
 {
@@ -163,6 +175,48 @@ static void scr_findtitlearea(struct scrdecor_data *data, struct Screen *scr, LO
     *right = maxx;
 }
 
+static void scrdecor_layoutchild(struct scrdecor_data *data, struct Screen *scr, struct RastPort *rp, struct DrawInfo *dri)
+{
+    struct Gadget *child = (struct Gadget *)data->FirstChild;
+    struct GadgetInfo childgadinf;
+    struct gpLayout childlayoutmsg;
+    LONG left, right = 0;
+    LONG barh = scr->BarHeight + 1;
+    LONG cpad = SCRBAR_CHILDPAD(barh);
+
+    memset(&childgadinf, 0, sizeof(childgadinf));
+    childgadinf.gi_Screen = scr;
+    childgadinf.gi_RastPort = rp;
+    childgadinf.gi_DrInfo = dri;
+    if (dri)
+    {
+        childgadinf.gi_Pens.DetailPen = dri->dri_Pens[DETAILPEN];
+        childgadinf.gi_Pens.BlockPen = dri->dri_Pens[BLOCKPEN];
+    }
+
+    child->SpecialInfo = scr;
+    child->TopEdge = cpad;
+    child->Height = barh - (cpad << 1);
+
+    D(bug("[screendecor] %s: child @ 0x%p on screen 0x%p: top %u, height %u\n", __func__, child, scr, child->TopEdge, child->Height));
+
+    childlayoutmsg.MethodID = GM_LAYOUT;
+    childlayoutmsg.gpl_GInfo = &childgadinf;
+    childlayoutmsg.gpl_Initial = 0;
+    DoMethodA(data->FirstChild, (Msg)&childlayoutmsg);
+
+    scr_findtitlearea(data, scr, &left, &right);
+    child->LeftEdge = right - (child->Width + data->dc->SBarGadPost_s + 1);
+
+    D(bug("[screendecor] %s: screen %ux%u BarHeight %u (theme SBarHeight %u), title area %d..%d, child width %u -> LeftEdge %d\n", __func__,
+        scr->Width, scr->Height, scr->BarHeight, data->dc->SBarHeight, left, right, child->Width, child->LeftEdge));
+
+    childlayoutmsg.MethodID = GM_GOACTIVE;
+    DoMethodA(data->FirstChild, (Msg)&childlayoutmsg);
+
+    data->ChildLayoutPending = FALSE;
+}
+
 static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
@@ -176,49 +230,25 @@ static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
             case SDA_TitleChild:
-                if (tag->ti_Data)
+                scrdecor_TitleChild = (Object *)tag->ti_Data;
+                if (!tag->ti_Data)
                 {
-                    if (!(data->FirstChild))
+                    data->FirstChild = NULL;
+                    data->ChildLayoutPending = FALSE;
+                }
+                else if (!(data->FirstChild))
+                {
+                    struct Screen *pubscr;
+
+                    D(bug("[screendecor] SDA_TitleChild: 0x%p\n", tag->ti_Data));
+
+                    /* The child only ever lives on the default public screen */
+                    if ((pubscr = LockPubScreen(NULL)) != NULL)
                     {
-                        LONG                    left, right = 0;
-                        struct GadgetInfo childgadinf;
-                        struct gpLayout childlayoutmsg;
-                        D(bug("[screendecor] SDA_TitleChild: 0x%p\n", tag->ti_Data));
-
-                        if ((childgadinf.gi_Screen = LockPubScreen(NULL)) != NULL)
-                        {
-                            UnlockPubScreen(NULL, childgadinf.gi_Screen);
-                            data->FirstChild = (Object *)tag->ti_Data;
-                            ((struct Gadget *)(data->FirstChild))->SpecialInfo = childgadinf.gi_Screen;
-
-                            childgadinf.gi_RastPort = childgadinf.gi_Screen->BarLayer->rp;
-
-                            if ((childgadinf.gi_DrInfo = GetScreenDrawInfo(childgadinf.gi_Screen)) != NULL)
-                            {
-                                childgadinf.gi_Pens.DetailPen = childgadinf.gi_DrInfo->dri_Pens[DETAILPEN];
-                                childgadinf.gi_Pens.BlockPen = childgadinf.gi_DrInfo->dri_Pens[BLOCKPEN];
-                            }
-
-                            childlayoutmsg.MethodID = GM_LAYOUT;
-                            childlayoutmsg.gpl_GInfo = &childgadinf;
-                            childlayoutmsg.gpl_Initial = 0;
-
-                            D(bug("[screendecor] %s: FirstChild @ 0x%p\n", __func__, data->FirstChild));
-
-                            ((struct Gadget *)(data->FirstChild))->TopEdge = 0 + CHILDPADDING;
-                            ((struct Gadget *)(data->FirstChild))->Height = childgadinf.gi_Screen->BarHeight - (CHILDPADDING << 1);
-
-                            D(bug("[screendecor] %s: top %u, height %u\n", __func__, ((struct Gadget *)(data->FirstChild))->TopEdge, ((struct Gadget *)(data->FirstChild))->Height));
-
-                            DoMethodA(data->FirstChild, &childlayoutmsg);
-
-                            scr_findtitlearea(data, (childgadinf.gi_Screen), &left, &right);
-
-                            ((struct Gadget *)(data->FirstChild))->LeftEdge = right - (((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarGadPost_s + 1);
-
-                            childlayoutmsg.MethodID = GM_GOACTIVE;
-                            DoMethodA(data->FirstChild, &childlayoutmsg);
-                        }
+                        UnlockPubScreen(NULL, pubscr);
+                        data->FirstChild = (Object *)tag->ti_Data;
+                        D(bug("[screendecor] %s: FirstChild @ 0x%p\n", __func__, data->FirstChild));
+                        scrdecor_layoutchild(data, pubscr, pubscr->BarLayer ? pubscr->BarLayer->rp : NULL, GetScreenDrawInfo(pubscr));
                     }
                 }
                 break;
@@ -241,7 +271,12 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     LONG                    left, right = 0, len;
     BOOL                    beeping = scr->Flags & BEEPING;
 
+    if (data->FirstChild && data->ChildLayoutPending)
+        scrdecor_layoutchild(data, scr, rp, dri);
+
     scr_findtitlearea(data, scr, &left, &right);
+
+    D(bug("[screendecor] draw_screenbar: flags 0x%lx%s\n", (unsigned long)msg->sdp_Flags, (msg->sdp_Flags & SDF_DSB_TITLEONLY) ? " (title only)" : ""));
 
     if (beeping)
     {
@@ -250,7 +285,14 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     }
     else
     {
-        if (sd->img_stitlebar->ok)
+        /*
+         * A title-only redraw (SetWindowTitles() on the screen title) does
+         * not get its system gadgets refreshed by intuition afterwards, so
+         * the gadget area to the right of the title must be left alone or
+         * the depth gadget is painted over and disappears until the next
+         * full redraw.
+         */
+        if (sd->img_stitlebar->ok && !(msg->sdp_Flags & SDF_DSB_TITLEONLY))
         {
             if (data->dc->SBarGadPre_s > 0)
             {
@@ -272,9 +314,14 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
             }
         }
 
+        D(bug("[screendecor] draw_screenbar: screen %ux%u BarHeight %u, bar image h %u, title area %d..%d, child @ 0x%p width %d\n",
+            scr->Width, scr->Height, scr->BarHeight, sd->img_stitlebar->h, left, right,
+            data->FirstChild, data->FirstChild ? ((struct Gadget *)(data->FirstChild))->Width : -1));
         if ((data->FirstChild) && (((struct Gadget *)(data->FirstChild))->Width > 2)) {
             D(bug("[screendecor] draw_screenbar: titlechild width = %d\n", ((struct Gadget *)(data->FirstChild))->Width));
             right = right - (((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarChildPre_s + data->dc->SBarChildPost_s);
+            D(bug("[screendecor] draw_screenbar: child area right edge now %d (pre %u fill %u post %u)\n", right,
+                data->dc->SBarChildPre_s, data->dc->SBarChildFill_s, data->dc->SBarChildPost_s));
             if (sd->img_stitlebar->ok)
             {
                 if (data->dc->SBarChildPre_s > 0)
@@ -396,10 +443,14 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
             GREDRAW_REDRAW
         };
 
-        ULONG barheight = sd->img_stitlebar->h;
+        /* The bar is BarHeight + 1 rows tall (see the element heights above) */
+        ULONG barheight = scr->BarHeight + 1;
+        LONG cpad = SCRBAR_CHILDPAD(barheight);
         childgadinf.gi_Screen = ((struct Gadget *)(data->FirstChild))->SpecialInfo = scr;
-        if (barheight < childgadinf.gi_Screen->BarHeight)
-            barheight = childgadinf.gi_Screen->BarHeight;
+        D(bug("[screendecor] %s: bar height %u child pad %d, child gadget LeftEdge %d Top %d %ux%u\n", __func__,
+            barheight, cpad,
+            ((struct Gadget *)(data->FirstChild))->LeftEdge, ((struct Gadget *)(data->FirstChild))->TopEdge,
+            ((struct Gadget *)(data->FirstChild))->Width, ((struct Gadget *)(data->FirstChild))->Height));
         childgadinf.gi_RastPort = rp;
         childgadinf.gi_Pens.DetailPen = pens[BARDETAILPEN];
         childgadinf.gi_Pens.BlockPen = pens[BARBLOCKPEN];
@@ -407,8 +458,8 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         // TODO: Query the real area padding from the theme..
         childgadinf.gi_Domain.Left = right + data->dc->SBarChildPre_s + 1;
         childgadinf.gi_Domain.Width = ((struct Gadget *)(data->FirstChild))->Width;
-        childgadinf.gi_Domain.Top = 0 + CHILDPADDING; 
-        childgadinf.gi_Domain.Height = barheight - (CHILDPADDING << 1);
+        childgadinf.gi_Domain.Top = cpad;
+        childgadinf.gi_Domain.Height = barheight - (cpad << 1);
         D(
             bug("[screendecor] %s: rendering titlechild @ 0x%p, msg @ 0x%p, info @ 0x%p\n", __func__, data->FirstChild, &childrendermsg, &childgadinf);
             bug("[screendecor] %s: %u,%u->%u,%u\n", __func__, childgadinf.gi_Domain.Left, childgadinf.gi_Domain.Top, childgadinf.gi_Domain.Left + childgadinf.gi_Domain.Width - 1, childgadinf.gi_Domain.Top + childgadinf.gi_Domain.Height - 1);
@@ -450,6 +501,8 @@ static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImag
 
     if (msg->sdp_Which == SDEPTHIMAGE)
     {
+        D(bug("[screendecor] draw_sysimage: SDEPTHIMAGE @ %d,%d %dx%d state %d (image %s, rp bitmap %ux%u)\n", left, top, width, height, state,
+            sd->img_sdepth ? "themed" : "default", rp->BitMap ? GetBitMapAttr(rp->BitMap, BMA_WIDTH) : 0, rp->BitMap ? GetBitMapAttr(rp->BitMap, BMA_HEIGHT) : 0));
         if (sd->img_sdepth)
         {
             DRenderElement(&sd->dts->dts_Elements[DECOR_ELEM_ScrDepth], rp, state, left, top, width, height, 0);
@@ -477,6 +530,8 @@ static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutSc
                 gadget->TopEdge = (data->dc->SBarHeight - sd->img_sdepth->h) >> 1;
                 gadget->Flags &= ~GFLG_RELWIDTH;
                 gadget->Flags |= GFLG_RELRIGHT;
+                D(bug("[screendecor] layoutscrgadgets: depth gadget %ux%u -> LeftEdge %d (rel right, GadPost %u) TopEdge %d (SBarHeight %u, image h %u)\n",
+                    gadget->Width, gadget->Height, gadget->LeftEdge, data->dc->SBarGadPost_s, gadget->TopEdge, data->dc->SBarHeight, sd->img_sdepth->h));
                 break;
         }
 
@@ -547,12 +602,30 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
     sd->img_menucheck   = sd->di->img_menucheck;
     sd->img_submenu     = sd->di->img_submenu;
 
+    /*
+     * The Workbench screen is the default public screen: if a title child is
+     * registered it belongs on this screen. The bar layer does not exist yet,
+     * so the layout is completed on the first bar draw.
+     */
+    if (scrdecor_TitleChild && ((screen->Flags & SCREENTYPE) == WBENCHSCREEN))
+    {
+        D(bug("[screendecor] %s: adopting title child 0x%p for screen 0x%p\n", __func__, scrdecor_TitleChild, screen));
+        data->FirstChild = scrdecor_TitleChild;
+        ((struct Gadget *)data->FirstChild)->SpecialInfo = screen;
+        data->ChildLayoutPending = TRUE;
+    }
+
     return TRUE;
 }
 
 static IPTR scrdecor_exitscreen(Class *cl, Object *obj, struct sdpExitScreen *msg)
 {
+    struct scrdecor_data *data = INST_DATA(cl, obj);
     struct ScreenData *sd = (struct ScreenData *)msg->sdp_UserBuffer;
+
+    /* The title child is owned by whoever registered it and stays registered */
+    data->FirstChild = NULL;
+    data->ChildLayoutPending = FALSE;
 
     DTReleaseScreenTheme(sd->dts);
 

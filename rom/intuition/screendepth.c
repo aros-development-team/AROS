@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 
     Change order of screens.
@@ -227,7 +227,8 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                 if ( GetPrivScreen(current)->SpecialFlags & SF_IsChild )
                 {
                     /* Go to last screen of this family */
-                    while ( !GetPrivScreen(current->NextScreen)->SpecialFlags & SF_IsParent )
+                    while ( current->NextScreen &&
+                            !(GetPrivScreen(current->NextScreen)->SpecialFlags & SF_IsParent) )
                     {
                         current = current->NextScreen;
                     }
