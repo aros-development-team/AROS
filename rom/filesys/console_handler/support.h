@@ -72,6 +72,8 @@
 #define INP_CTRL_F              58
 #define INP_EOF                 59
 #define INP_PASTE               60
+#define INP_CONTROL_K           61
+#define INP_CONTROL_Y           62
 
 #define INP_UNKNOWN             99
 #define INP_STRING              100

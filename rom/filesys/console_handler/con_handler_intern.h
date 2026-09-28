@@ -78,6 +78,7 @@ struct filehandle
     WORD                    inputstart; /* usually 0, but needed for multi-lines (CONTROL RETURN) */
     WORD                    inputpos; /* cursor pos. inside line */
     WORD                    inputsize; /* length of input string */
+    WORD                    killsize;
     WORD                    canreadsize;
     WORD                    historysize;
     WORD                    historypos;
@@ -87,6 +88,7 @@ struct filehandle
 
     UBYTE                   consolebuffer[CONSOLEBUFFER_SIZE + 2];
     UBYTE                   inputbuffer[INPUTBUFFER_SIZE + 2];
+    UBYTE                   killbuffer[INPUTBUFFER_SIZE + 1];
     UBYTE                   historybuffer[CMD_HISTORY_SIZE][INPUTBUFFER_SIZE + 1];
 
     /* If pastebuffer != 0, this contains data to paste from ConClip */
