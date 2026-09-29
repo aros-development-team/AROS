@@ -16,6 +16,7 @@
 
 #define FNF_VALIDFLAGS  (1 << 31)       /* Valid flags */
 #define FNF_ASYNCSYSTEM (1 <<  3)       /* Async System() call */
+#define FNF_INITIALCOMMAND (1 << 4)    /* First input line was injected */
 #define FNF_SYSTEM      (1 <<  2)       /* If this a System() call */
 #define FNF_USERINPUT   (1 <<  1)       /* User provided input stream */
 #define FNF_RUNOUTPUT   (1 <<  0)       /* C:Run provided output stream */

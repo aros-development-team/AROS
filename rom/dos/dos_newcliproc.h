@@ -20,5 +20,6 @@ struct ExtArg
 };
 
 #define EAF_CLOSECES (1L << 0)
+#define EAF_INITIALCOMMAND (1L << 1)
 
 #endif /* DOS_NEWCLIPROC_H */

@@ -75,6 +75,7 @@ LONG interact(ShellState *ss)
     struct CommandLineInterface *cli = Cli();
     Buffer in = {0}, out = {0};
     BOOL moreLeft = FALSE;
+    BOOL initialCommand = (ss->flags & FNF_INITIALCOMMAND) != 0;
     LONG error = 0;
 
     /* Executing a script marks the shell as background, so remember how the
@@ -93,7 +94,9 @@ LONG interact(ShellState *ss)
     do {
         if ((error = Redirection_init(ss)) == 0)
         {
-            cliPrompt(ss);
+            if (!initialCommand)
+                cliPrompt(ss);
+            initialCommand = FALSE;
 
             bufferReset(&in); /* reuse allocated buffers */
             bufferReset(&out);
