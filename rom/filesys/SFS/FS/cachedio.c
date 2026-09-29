@@ -310,9 +310,12 @@ LONG initcachedio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
 
     /* Note: There MUST be atleast 4 IOCache_lines for cachedio to work correctly at the moment!! */
 
-    if((setiocache(8, 8192, TRUE))==0) {
+    /* A cache that could not be set up is an error: returning 0 here let
+       the handler run with no IOCache. */
+    if((errorcode=setiocache(8, 8192, TRUE))==0) {
       return(0);
     }
+    cleanupdeviceio();
   }
 
   return(errorcode);
