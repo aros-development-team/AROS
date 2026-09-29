@@ -177,6 +177,7 @@ struct SocketBase {
 int readErrnoValue(struct SocketBase *);
 
 extern struct SignalSemaphore syscall_semaphore;
+extern struct SignalSemaphore baselist_semaphore;
 extern struct List releasedSocketList;
 
 /*
@@ -225,15 +226,15 @@ static inline struct SocketBase *FindSocketBase(struct Task *task)
   extern struct List socketBaseList;
   struct Node *libNode;
 
-  Forbid();
+  ObtainSemaphoreShared(&baselist_semaphore);
   for (libNode = socketBaseList.lh_Head; libNode->ln_Succ;
        libNode = libNode->ln_Succ)
     if (((struct SocketBase *)libNode)->thisTask == task) {
-      Permit();
+      ReleaseSemaphore(&baselist_semaphore);
       return (struct SocketBase *)libNode;
     }
   /* here if Task wasn't in socketBaseList */
-  Permit();
+  ReleaseSemaphore(&baselist_semaphore);
   return NULL;
 }
 

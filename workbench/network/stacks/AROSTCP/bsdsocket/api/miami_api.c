@@ -121,7 +121,9 @@ AROS_LH1(struct Library *, Open,
         SocketBase = (APTR)OpenLibrary("bsdsocket.library", VERSION);
         if(SocketBase) {
             D(__log(LOG_DEBUG, "miami.library opened: SocketBase = 0x%p, MiamiBase = 0x%p", (IPTR)SocketBase, (IPTR)MiamiBase);)
+            ObtainSemaphore(&baselist_semaphore);
             MasterBase->lib_OpenCnt++;
+            ReleaseSemaphore(&baselist_semaphore);
             return((struct Library *)MiamiBase);
         }
         D(else kprintf("Unable to open bsdsocket.library\n");)
@@ -149,7 +151,9 @@ AROS_LH0(ULONG *, Close, struct MiamiBase *, MiamiBase, 2, Miami)
         CloseLibrary(MiamiBase->_UserGroupBase);
 
     __MiamiLIB_Cleanup(MiamiBase);
+    ObtainSemaphore(&baselist_semaphore);
     MasterMiamiBase->lib_OpenCnt--;
+    ReleaseSemaphore(&baselist_semaphore);
     D(kprintf("MiamiLIB_Close: done\n"));
 
     return(0);
