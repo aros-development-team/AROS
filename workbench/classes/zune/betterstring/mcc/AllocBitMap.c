@@ -38,7 +38,7 @@ struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG he
   #if defined(__amigaos4__)
   return AllocBitMap(width,height,depth,flags,friend);
   #elif defined(__MORPHOS__) || defined(__AROS__)
-  // FIXME: check if this is correct for AROS
+  // AROS requires both flags for a displayable bitmap.
   return AllocBitMap(width,height,depth,flags|BMF_MINPLANES|BMF_DISPLAYABLE,friend);
   #else
   if(USE_OS3)
