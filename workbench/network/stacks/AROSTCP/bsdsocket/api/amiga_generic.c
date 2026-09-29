@@ -1103,8 +1103,10 @@ AROS_LH4(LONG, ObtainSocket,
     if(libPtr->fdCallback)
         if(error = AROS_UFC2(int, libPtr->fdCallback,
                              AROS_UFCA(int, fd, D0),
-                             AROS_UFCA(int, FDCB_ALLOC, D1)))
+                             AROS_UFCA(int, FDCB_ALLOC, D1))) {
+            sdFree(fd);
             goto Return;
+        }
 
     Forbid();
     for(sn = releasedSocketList.lh_Head; sn->ln_Succ; sn = sn->ln_Succ)
@@ -1116,6 +1118,11 @@ AROS_LH4(LONG, ObtainSocket,
             libPtr->dTable[fd] = ((struct SocketNode *)sn)->sn_Socket;
 //    ((struct SocketNode *)sn)->sn_Socket->so_pgid = libPtr;
             FD_SET(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
+#if defined(ENABLE_FDLIBRARY)
+            /* posixc's read()/write()/close() hooks take the socket from here */
+            if(FDBase != NULL)
+                FD_SetData(fd, FD_OWNER_BSDSOCKET, libPtr->dTable[fd]);
+#endif
             FreeMem(sn, sizeof(struct SocketNode));
             goto Return;
         }
@@ -1129,6 +1136,7 @@ AROS_LH4(LONG, ObtainSocket,
         AROS_UFC2(int, libPtr->fdCallback,
                   AROS_UFCA(int, fd, D0),
                   AROS_UFCA(int, FDCB_FREE, D1));
+    sdFree(fd);
 
     error = EWOULDBLOCK;
 
@@ -1147,7 +1155,7 @@ AROS_LH2(LONG, Dup2Socket,
          struct SocketBase *, libPtr, 44, UL)
 {
     AROS_LIBFUNC_INIT
-    LONG newfd;
+    LONG newfd = -1;
     int error = 0;
     struct socket *so;
 
@@ -1188,14 +1196,21 @@ AROS_LH2(LONG, Dup2Socket,
     if(libPtr->fdCallback)
         if(error = AROS_UFC2(int, libPtr->fdCallback,
                              AROS_UFCA(int, fd2, D0),
-                             AROS_UFCA(int, FDCB_ALLOC, D1)))
+                             AROS_UFCA(int, FDCB_ALLOC, D1))) {
+            if(fd2 == newfd)
+                sdFree(fd2);
             goto Return;
+        }
 
     FD_SET(fd2, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
 
     if(so != NULL) {
         so->so_refcnt++;
         libPtr->dTable[fd2] = so;
+#if defined(ENABLE_FDLIBRARY)
+        if(FDBase != NULL && fd2 == newfd)
+            FD_SetData(fd2, FD_OWNER_BSDSOCKET, so);
+#endif
     }
 
 Return:
