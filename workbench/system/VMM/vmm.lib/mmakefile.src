@@ -35,8 +35,11 @@ USER_LDFLAGS :=
 
 USER_LDFLAGS := -static
 
+# incextra: modules search the parent dir for quoted includes first, where the
+# handler's VMM_intern.h shadows this library's vmm_intern.h on case-insensitive
+# filesystems.
 %build_module mmake=workbench-system-vmm-library \
     modname=vmm modtype=library \
     files="vmm_init $(FUNCS)" \
-    uselibs=""
+    uselibs="" incextra="$(SRCDIR)/$(CURDIR)"
 
