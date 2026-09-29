@@ -1005,7 +1005,7 @@ VOID setspritepos(struct amigavideo_staticdata *csd, WORD x, WORD y, UBYTE res, 
 
     x += csd->sprite_offset_x << res;
     x <<= (2 - res); // convert x to shres coordinates
-    x += (csd->startx - STANDARD_XOFFSET) << 2; // display left edge offset
+    x += csd->startx << 2; // sprite origin is not the bitplane fetch offset
  
     if (interlace)
         y >>= 1; // y is always in nonlaced
