@@ -246,7 +246,7 @@ arptimer()
 {
     struct sana_softc *ssc;
     register struct arptable *atab;
-    register struct arptab *at;
+    register struct arptab *at, *next;
     register int i;
 
     for(ssc = ssq; ssc; ssc = ssc->ss_next) {
@@ -256,9 +256,10 @@ arptimer()
         ARPTAB_LOCK(atab);
 
         for(i = 0; i < ARPTAB_HSIZE; i++) {
+            /* next is taken first: arptfree() moves at onto the free list */
             for(at = (struct arptab *)atab->atb_entries[i].mlh_Head;
-                    at->at_succ;
-                    at = at->at_succ) {
+                    (next = at->at_succ) != NULL;
+                    at = next) {
                 if(at->at_flags == 0 || (at->at_flags & ATF_PERM))
                     continue;
                 if(++at->at_timer < ((at->at_flags & ATF_COM) ?
