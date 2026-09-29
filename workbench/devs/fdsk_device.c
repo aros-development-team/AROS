@@ -341,6 +341,31 @@ static LONG error(LONG error)
 
 /****************************************************************************************/
 
+/* Open the unit's image for writing when it allows it. MODE_OLDFILE first,
+ * so a missing file is never created; then MODE_READWRITE, because some
+ * handlers (fat-handler) grant only a shared, read-only lock to
+ * MODE_OLDFILE and refuse every write through it. If the read-write open is
+ * refused the image stays read-only rather than failing. */
+static BPTR open_image(CONST_STRPTR name, BOOL *writable)
+{
+    struct FileInfoBlock fib;
+    BPTR file = Open(name, MODE_OLDFILE);
+
+    *writable = FALSE;
+    if (file == BNULL)
+        return BNULL;
+    if (!ExamineFH(file, &fib) || (fib.fib_Protection & FIBF_WRITE))
+        return file;
+    Close(file);
+    file = Open(name, MODE_READWRITE);
+    if (file != BNULL)
+    {
+        *writable = TRUE;
+        return file;
+    }
+    return Open(name, MODE_OLDFILE);
+}
+
 static LONG read(struct unit *unit, struct IOExtTD *iotd)
 {
     STRPTR      buf;
@@ -470,7 +495,6 @@ struct FileInfoBlock fib;
 
 void eject(struct unit *unit, BOOL eject) {
     struct IOExtTD *iotd;
-    struct FileInfoBlock fib;
 
     if((eject && unit->file != BNULL) || (!eject && unit->file == BNULL))
     {
@@ -481,11 +505,12 @@ void eject(struct unit *unit, BOOL eject) {
         }
         else
         {
-            unit->file = Open(unit->filename, MODE_OLDFILE);
+            BOOL writable;
+
+            unit->file = open_image(unit->filename, &writable);
             if (unit->file == BNULL)
                 return;
-            ExamineFH(unit->file, &fib);
-            unit->writable = !(fib.fib_Protection & FIBF_WRITE);
+            unit->writable = writable;
         }
 
         unit->changecount++;
@@ -527,7 +552,6 @@ AROS_UFH3(LONG, unitentry,
     struct IOExtTD  *iotd;
     struct unit     *unit;
     APTR            win;
-    struct FileInfoBlock fib;
 
     me = (struct Process *)FindTask(NULL);
 
@@ -546,12 +570,11 @@ AROS_UFH3(LONG, unitentry,
     D(bug("[FDSK%02ld] Trying to open \"%s\" ...\n", unit->unitnum, buf));
 
     unit->filename = buf;
-    unit->file = Open(buf, MODE_OLDFILE);
-
-    if(unit->file != BNULL)
     {
-        ExamineFH(unit->file, &fib);
-        unit->writable = !(fib.fib_Protection & FIBF_WRITE);
+        BOOL writable;
+
+        unit->file = open_image(buf, &writable);
+        unit->writable = writable;
     }
 
     /* enable requesters */
