@@ -29,11 +29,11 @@ OOP_Object *CocoaGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         { aHidd_PixFmt_RedMask,        0x00FF0000 },
         { aHidd_PixFmt_GreenMask,      0x0000FF00 },
         { aHidd_PixFmt_BlueMask,       0x000000FF },
-        { aHidd_PixFmt_AlphaMask,      0xFF000000 },
-        { aHidd_PixFmt_Depth,          32 },
-        { aHidd_PixFmt_BitsPerPixel,   32 },
+        { aHidd_PixFmt_AlphaMask,      0x00000000 },
+        { aHidd_PixFmt_Depth,          24 },
+        { aHidd_PixFmt_BitsPerPixel,   24 },
         { aHidd_PixFmt_BytesPerPixel,  4  },
-        { aHidd_PixFmt_StdPixFmt,      vHidd_StdPixFmt_BGRA32 },
+        { aHidd_PixFmt_StdPixFmt,      vHidd_StdPixFmt_BGR032 },
         { aHidd_PixFmt_BitMapType,     vHidd_BitMapType_Chunky },
         { TAG_DONE, 0 }
     };
