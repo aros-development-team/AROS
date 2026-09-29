@@ -26,8 +26,13 @@
     our modes with the pixelvalve CONTROL bits of 6.2 instead of the
     firmware's.
 
+    CSC=full|limited replaces the firmware's colour path while the test
+    mode runs: the CSC loaded with identity or 219/255 plus 16, the output
+    crossbar set as for RGB (XBAR=fw keeps the firmware's), and an AVI
+    infoframe saying so, with the mode's VIC where it has one.
+
     Usage: modetest [MODE=<WxH[@Hz]>] [LIST] [HOLD=<s>] [LOOP=<n>] [FRAME]
-                    [SPECCTL] [GO]
+                    [SPECCTL] [CSC=full|limited] [XBAR=fw] [GO]
 */
 
 #include <aros/debug.h>
@@ -68,20 +73,22 @@ struct mode
     ULONG hact, hfp, hsync, hbp;
     ULONG vact, vfp, vsync, vbp;
     BOOL  hneg, vneg;
+    UBYTE vic, aspect;          /* CEA format, AVI M: 1 = 4:3, 2 = 16:9 */
 };
 
 static const struct mode modes[] =
 {
-    { "640x480@60",    25175,  640,  16,  96,  48,  480, 10, 2, 33, TRUE,  TRUE  },
+    { "640x480@60",    25175,  640,  16,  96,  48,  480, 10, 2, 33, TRUE,  TRUE,   1, 1 },
     { "800x600@60",    40000,  800,  40, 128,  88,  600,  1, 4, 23, FALSE, FALSE },
     { "1024x768@60",   65000, 1024,  24, 136, 160,  768,  3, 6, 29, TRUE,  TRUE  },
-    { "1280x720@60",   74250, 1280, 110,  40, 220,  720,  5, 5, 20, FALSE, FALSE },
+    { "1280x720@60",   74250, 1280, 110,  40, 220,  720,  5, 5, 20, FALSE, FALSE,  4, 2 },
+    { "1280x720@50",   74250, 1280, 440,  40, 220,  720,  5, 5, 20, FALSE, FALSE, 19, 2 },
     { "1280x800@60",   83500, 1280,  72, 128, 200,  800,  3, 6, 22, TRUE,  FALSE },
     { "1440x900@60",  106500, 1440,  80, 152, 232,  900,  3, 6, 25, TRUE,  FALSE },
     { "1280x1024@60", 108000, 1280,  48, 112, 248, 1024,  1, 3, 38, FALSE, FALSE },
     { "1600x900@60",  108000, 1600,  24,  80,  96,  900,  1, 3, 96, FALSE, FALSE },
     { "1680x1050@60", 146250, 1680, 104, 176, 280, 1050,  3, 6, 30, TRUE,  FALSE },
-    { "1920x1080@60", 148500, 1920,  88,  44, 148, 1080,  4, 5, 36, FALSE, FALSE },
+    { "1920x1080@60", 148500, 1920,  88,  44, 148, 1080,  4, 5, 36, FALSE, FALSE, 16, 2 },
     { "2560x1440@60", 241500, 2560,  48,  32,  80, 1440,  3, 5, 33, FALSE, TRUE  },
     { "2560x1440@120", 497750, 2560, 48,  32,  80, 1440,  3, 5, 77, FALSE, TRUE  },
     { "2560x1440@144", 593700, 2560,  8,  32,  72, 1440, 25, 8, 70, FALSE, TRUE  },
@@ -155,6 +162,34 @@ static const ULONG lanes_high[4] = { 0x848f8700, 0x848f8700, 0x848f8700, 0x849f8
 #define HDMI_VERTB1             0x104
 #define HDMI_HOTPLUG            0x1c8
 #define HDMI_SCRAMBLER_CTL      0x1e4
+
+/* HDMI0's CSC and output crossbar (spec 7.2), and the AVI infoframe's
+ * packet RAM slot (spec 15). */
+#define CSC_OFF                 0x700100
+#define CSC_CTL                 0x000
+#define CSC_COEF(i)             (0x004 + 4 * (i))
+#define CSC_CHANNEL_CTL         0x02c
+#define CSC_CTL_ON              0x07        /* as wherever a matrix is loaded */
+#define DVP_XBAR                (0x701000 + 0x0f4)
+#define XBAR_RGB                0x00354021
+#define HDMI_RAM_PACKET_CONFIG  0x0c4
+#define HDMI_RAM_PACKET_STATUS  0x0cc
+#define PKT_AVI_SLOT            2
+#define PKT_AVI                 (0x703800 + PKT_AVI_SLOT * 0x24)
+
+/* Identity, and 219/255 plus 16 - read back from the hardware running
+ * full and limited range RGB. s2.13, two per register. */
+static const ULONG csc_full[6] =
+    { 0x00002000, 0x00000000, 0x20000000, 0x00000000, 0x00000000, 0x00002000 };
+static const ULONG csc_limited[6] =
+    { 0x00001b80, 0x04000000, 0x1b800000, 0x04000000, 0x00000000, 0x04001b80 };
+
+/* The colour path: what the firmware left, or what a test mode sets. */
+struct colour
+{
+    ULONG ctl, coef[6], chan, xbar, avi[9];
+    BOOL  avi_on;
+};
 #define SCRAMBLER_ENABLE        (1 << 0)
 
 /* HDMI0's DDC controller (Broadcom STB I2C, spec 8) and the SCDC
@@ -477,6 +512,88 @@ static void scramble_wait(void)
       (st & 1) ? "locked" : "NOT locked", (unsigned)t, flags);
 }
 
+static void colour_read(struct colour *c)
+{
+    ULONG i;
+
+    c->ctl  = rd(CSC_OFF + CSC_CTL);
+    for (i = 0; i < 6; i++)
+        c->coef[i] = rd(CSC_OFF + CSC_COEF(i));
+    c->chan = rd(CSC_OFF + CSC_CHANNEL_CTL);
+    c->xbar = rd(DVP_XBAR);
+    for (i = 0; i < 9; i++)
+        c->avi[i] = rd(PKT_AVI + 4 * i);
+    c->avi_on = (rd(HDMI_OFF + HDMI_RAM_PACKET_CONFIG) & (1UL << PKT_AVI_SLOT)) != 0;
+}
+
+/* A packet RAM slot is locked while its enable bit is set. */
+static void colour_write(const struct colour *c)
+{
+    ULONG i, start;
+
+    wr(CSC_OFF + CSC_CTL, c->ctl);
+    for (i = 0; i < 6; i++)
+        wr(CSC_OFF + CSC_COEF(i), c->coef[i]);
+    wr(CSC_OFF + CSC_CHANNEL_CTL, c->chan);
+    wr(DVP_XBAR, c->xbar);
+
+    wr(HDMI_OFF + HDMI_RAM_PACKET_CONFIG,
+       rd(HDMI_OFF + HDMI_RAM_PACKET_CONFIG) & ~(1UL << PKT_AVI_SLOT));
+    start = now_us();
+    while ((rd(HDMI_OFF + HDMI_RAM_PACKET_STATUS) & (1UL << PKT_AVI_SLOT))
+           && ((now_us() - start) < 100000))
+        ;
+    if (rd(HDMI_OFF + HDMI_RAM_PACKET_STATUS) & (1UL << PKT_AVI_SLOT))
+        P("  AVI slot did not unlock\n");
+    for (i = 0; i < 9; i++)
+        wr(PKT_AVI + 4 * i, c->avi[i]);
+    if (c->avi_on)
+        wr(HDMI_OFF + HDMI_RAM_PACKET_CONFIG,
+           rd(HDMI_OFF + HDMI_RAM_PACKET_CONFIG) | (1UL << PKT_AVI_SLOT));
+}
+
+/* RGB at the range asked for, and an AVI infoframe saying so: Q and YQ
+ * from the range, VIC and picture aspect from the mode. */
+static void colour_build(struct colour *c, const struct colour *fw, const struct mode *m,
+                         BOOL limited, BOOL fwxbar)
+{
+    UBYTE hb[3] = { 0x82, 0x02, 0x0d }, pb[14] = { 0 };
+    ULONG i, sum;
+
+    c->ctl = CSC_CTL_ON;
+    for (i = 0; i < 6; i++)
+        c->coef[i] = limited ? csc_limited[i] : csc_full[i];
+    c->chan = 0;
+    c->xbar = fwxbar ? fw->xbar : XBAR_RGB;
+
+    pb[1] = 0x12;                               /* RGB, active format, underscan */
+    pb[2] = (m->aspect << 4) | 0x08;            /* aspect, same as picture */
+    pb[3] = (limited ? 1 : 2) << 2;             /* Q */
+    pb[4] = m->vic;
+    pb[5] = limited ? 0x00 : 0x40;              /* YQ */
+    for (sum = hb[0] + hb[1] + hb[2], i = 1; i < 14; i++)
+        sum += pb[i];
+    pb[0] = (0x100 - (sum & 0xff)) & 0xff;
+
+    c->avi[0] = hb[0] | (hb[1] << 8) | (hb[2] << 16);
+    c->avi[1] = pb[0] | (pb[1] << 8) | (pb[2] << 16) | ((ULONG)pb[3] << 24);
+    c->avi[2] = pb[4] | (pb[5] << 8) | (pb[6] << 16);
+    c->avi[3] = pb[7] | (pb[8] << 8) | (pb[9] << 16) | ((ULONG)pb[10] << 24);
+    c->avi[4] = pb[11] | (pb[12] << 8) | (pb[13] << 16);
+    for (i = 5; i < 9; i++)
+        c->avi[i] = 0;
+    c->avi_on = TRUE;
+}
+
+static void colour_print(const char *name, const struct colour *c)
+{
+    P("  %s: CSC_CTL %02x coef %08x %08x %08x %08x %08x %08x XBAR %06x\n"
+      "    AVI %s %08x %08x %08x\n", name, (unsigned)c->ctl, (unsigned)c->coef[0],
+      (unsigned)c->coef[1], (unsigned)c->coef[2], (unsigned)c->coef[3], (unsigned)c->coef[4],
+      (unsigned)c->coef[5], (unsigned)c->xbar, c->avi_on ? "on " : "off",
+      (unsigned)c->avi[0], (unsigned)c->avi[1], (unsigned)c->avi[2]);
+}
+
 /* DISPLAY-SPEC 10.1. */
 static void recenter(void)
 {
@@ -628,9 +745,9 @@ static void draw_frame(ULONG live, ULONG w, ULONG h)
     CacheClearE((APTR)(IPTR)fb, pitch * h, CACRF_ClearD);
 }
 
-#define TEMPLATE "MODE/K,LIST/S,HOLD/N,LOOP/N,FRAME/S,SPECCTL/S,GO/S"
+#define TEMPLATE "MODE/K,LIST/S,HOLD/N,LOOP/N,FRAME/S,SPECCTL/S,CSC/K,XBAR/K,GO/S"
 
-enum { ARG_MODE, ARG_LIST, ARG_HOLD, ARG_LOOP, ARG_FRAME, ARG_SPECCTL, ARG_GO,
+enum { ARG_MODE, ARG_LIST, ARG_HOLD, ARG_LOOP, ARG_FRAME, ARG_SPECCTL, ARG_CSC, ARG_XBAR, ARG_GO,
        ARG_COUNT };
 
 int main(void)
@@ -640,6 +757,8 @@ int main(void)
     struct RDArgs *rda;
     const struct mode *m = &modes[3];
     struct state fw, ours;
+    struct colour fwc, ourc;
+    ULONG csc = 0;
     ULONG hold, loops = 1, good = 0, steps = 0, slots = 0, pos2, vco_div, rm_offset, i;
     ULONG plane_w, plane_h;
     APTR mbbuf = NULL;
@@ -738,10 +857,28 @@ int main(void)
     }
 
     state_build(&ours, &fw, m, slots, args[ARG_SPECCTL] ? TRUE : FALSE);
+    if (args[ARG_CSC])
+    {
+        csc = !strcasecmp((char *)args[ARG_CSC], "limited") ? 2
+            : !strcasecmp((char *)args[ARG_CSC], "full") ? 1 : 0;
+        if (!csc)
+        {
+            P("modetest: CSC is full or limited\n");
+            goto out;
+        }
+        colour_read(&fwc);
+        colour_build(&ourc, &fwc, m, csc == 2,
+                     args[ARG_XBAR] && !strcasecmp((char *)args[ARG_XBAR], "fw"));
+    }
     P("modetest: %s, vco_div %u, RM_OFFSET %08x, list at %#06x\n", m->name,
       (unsigned)vco_div, (unsigned)(RM_OFFSET_ONLY | rm_offset), (unsigned)slots);
     state_print("firmware", &fw);
     state_print("planned ", &ours);
+    if (csc)
+    {
+        colour_print("firmware", &fwc);
+        colour_print("planned ", &ourc);
+    }
 
     if (!args[ARG_GO])
     {
@@ -763,7 +900,14 @@ int main(void)
         P("modetest: [%u/%u] switching to %s\n", (unsigned)i, (unsigned)loops, m->name);
         mode_set(&ours);
         good += measure("after", ours.khz, ours.hz);
+        if (csc)
+        {
+            colour_write(&ourc);
+            P("  colour path set: %s range\n", (csc == 2) ? "limited" : "full");
+        }
         Delay(hold * 50);
+        if (csc)
+            colour_write(&fwc);
 
         P("modetest: [%u/%u] back to the boot mode\n", (unsigned)i, (unsigned)loops);
         mode_set(&fw);
