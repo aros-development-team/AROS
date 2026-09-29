@@ -433,8 +433,10 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
      *	will keep selenter from doing anything.
      */
     libPtr->p_sb = 0;
+    ObtainSyscallSemaphore(libPtr);
     error = selscan(libPtr, readfds, writefds, exeptfds,
                     obits, nfds, &retval, &selitemcount);
+    ReleaseSyscallSemaphore(libPtr);
 
     /*
      *	Check if the 'real' loop should be entered.
@@ -480,8 +482,10 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
                 newselbuf->s_count = 0;
                 libPtr->p_sb = newselbuf;
 
+                ObtainSyscallSemaphore(libPtr);
                 error = selscan(libPtr, readfds, writefds, exeptfds,
                                 obits, nfds, &retval, &selitemcount);
+                ReleaseSyscallSemaphore(libPtr);
                 if(error || retval) {
                     ObtainSemaphore(&select_semaphore);
                     unselect(newselbuf);
@@ -533,8 +537,10 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
                  *	will keep selenter from doing anything.
                  */
                 libPtr->p_sb = 0;
+                ObtainSyscallSemaphore(libPtr);
                 error = selscan(libPtr, readfds, writefds, exeptfds,
                                 obits, nfds, &retval, &selitemcount);
+                ReleaseSyscallSemaphore(libPtr);
                 if(error || retval)
                     break;
             } /* while (TRUE) */
@@ -593,7 +599,7 @@ AROS_LH1(LONG, GetSocketEvents,
     AROS_LIBFUNC_INIT
     struct soevent *se;
     struct socket *so;
-    int i;
+    int i, fd = -1;
 
     ObtainSemaphore(&libPtr->EventLock);
     se = (struct soevent *)RemHead((struct List *)&libPtr->EventList);
@@ -604,9 +610,16 @@ AROS_LH1(LONG, GetSocketEvents,
                     libPtr);)
         so = se->socket;
         bsd_free(se, NULL);
+        /* another task's dup can swap the table under the semaphore */
+        ObtainSyscallSemaphore(libPtr);
         for(i = 0; i < libPtr->dTableSize; i++)
-            if(libPtr->dTable[i] == so)
-                return i;
+            if(libPtr->dTable[i] == so) {
+                fd = i;
+                break;
+            }
+        ReleaseSyscallSemaphore(libPtr);
+        if(fd >= 0)
+            return fd;
         DEVENTS(log(LOG_CRIT, "GetSocketEvents(): unreferenced socket 0x%p libPtr = 0x%p", so, libPtr);)
     }
     DEVENTS(else log(LOG_DEBUG, "GetSocketEvents(): no events pending libPtr = 0x%p", libPtr);)
@@ -913,20 +926,17 @@ struct SocketNode {
 
 /*
  * checkId() checks that there are no released sockets w/ given id.
- * used from function makeId().
+ * used from function makeId(). releasedSocketList, and makeId()'s
+ * uniqueId, are guarded by syscall_semaphore.
  */
 
 static LONG checkId(int id)
 {
     struct Node *sn;
 
-    Forbid();
     for(sn = releasedSocketList.lh_Head; sn->ln_Succ; sn = sn->ln_Succ)
-        if(((struct SocketNode *)sn)->sn_Id == id) {
-            Permit();
+        if(((struct SocketNode *)sn)->sn_Id == id)
             return EINVAL;
-        }
-    Permit();
     return 0;
 }
 
@@ -973,6 +983,7 @@ AROS_LH2(LONG, ReleaseSocket,
 
     CHECK_TASK();
     DSYSCALLS(log(LOG_DEBUG, "ReleaseSocket(%ld, %ld) called", fd, id);)
+    ObtainSyscallSemaphore(libPtr);
     if((ULONG)id >= FIRSTUNIQUEID && (id = makeId(id)) == -1) {
         error = EINVAL;
         goto Return;
@@ -1002,12 +1013,12 @@ AROS_LH2(LONG, ReleaseSocket,
     sn->sn_Socket = so;
     libPtr->dTable[fd] = NULL;
     FD_CLR(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
+    sdFree(fd);
 
-    Forbid();
     AddTail(&releasedSocketList, (struct Node *)sn);
-    Permit();
 
 Return:
+    ReleaseSyscallSemaphore(libPtr);
     API_STD_RETURN(error, id);
     AROS_LIBFUNC_EXIT
 }
@@ -1028,6 +1039,7 @@ AROS_LH2(LONG, ReleaseCopyOfSocket,
 
     CHECK_TASK();
     DSYSCALLS(log(LOG_DEBUG, "ReleaseCopyOfSocket(%ld, %ld) called", fd, id);)
+    ObtainSyscallSemaphore(libPtr);
     if((ULONG)id >= FIRSTUNIQUEID && (id = makeId(id)) == -1) {
         error = EINVAL;
         goto Return;
@@ -1044,11 +1056,10 @@ AROS_LH2(LONG, ReleaseCopyOfSocket,
     sn->sn_Id = id;
     sn->sn_Socket = so;
     so->so_refcnt++;
-    Forbid();
     AddTail(&releasedSocketList, (struct Node *)sn);
-    Permit();
 
 Return:
+    ReleaseSyscallSemaphore(libPtr);
     API_STD_RETURN(error, id);
     AROS_LIBFUNC_EXIT
 }
@@ -1074,6 +1085,7 @@ AROS_LH4(LONG, ObtainSocket,
 
     CHECK_TASK();
     DSYSCALLS(log(LOG_DEBUG, "ObtainSocket(%ld, %ld, %ld, %ld) called", id, domain, type, protocol);)
+    ObtainSyscallSemaphore(libPtr);
     if(domain == 0) {
         if(id < FIRSTUNIQUEID) {
             error = EPFNOSUPPORT;
@@ -1108,13 +1120,11 @@ AROS_LH4(LONG, ObtainSocket,
             goto Return;
         }
 
-    Forbid();
     for(sn = releasedSocketList.lh_Head; sn->ln_Succ; sn = sn->ln_Succ)
         if(((struct SocketNode *)sn)->sn_Id == id) {
             if(prp != ((struct SocketNode *)sn)->sn_Socket->so_proto)
                 continue;
             Remove(sn);
-            Permit();
             libPtr->dTable[fd] = ((struct SocketNode *)sn)->sn_Socket;
 //    ((struct SocketNode *)sn)->sn_Socket->so_pgid = libPtr;
             FD_SET(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
@@ -1127,7 +1137,6 @@ AROS_LH4(LONG, ObtainSocket,
             goto Return;
         }
     /* here if sdFind succeeded but search of socket failed */
-    Permit();
 
     /*
      * Free the just allocated fd
@@ -1141,6 +1150,7 @@ AROS_LH4(LONG, ObtainSocket,
     error = EWOULDBLOCK;
 
 Return:
+    ReleaseSyscallSemaphore(libPtr);
     API_STD_RETURN(error, fd);
     AROS_LIBFUNC_EXIT
 }
