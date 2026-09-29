@@ -5175,7 +5175,6 @@ IPTR _New(struct IClass *cl, Object *obj, struct opSet *msg)
         MUIA_NList_EntryValueDependent, TRUE,
         isFlagSet(ld.Flags, NLTF_TITLE) ? MUIA_NList_Title  : TAG_IGNORE, TRUE,
         ld.Format           ? MUIA_NList_Format : TAG_IGNORE, ld.Format,
-        //$$$ Not implemented
         MUIA_ContextMenu,       MUIV_NList_ContextMenu_Always,
         TAG_MORE, msg->ops_AttrList );
 
