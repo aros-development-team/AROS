@@ -600,8 +600,11 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         (sde.e.entry.first_cluster_hi << 16) | sde.e.entry.first_cluster_lo,
         &dde, glob)) != 0)
     {
+        /* The new name could not be made (directory or volume full): keep
+         * the original entry. Falling through would delete it below. */
         ReleaseDirHandle(&ddh, glob);
         ReleaseDirHandle(&sdh, glob);
+        return err;
     }
 
     /* Copy in the leftover attributes */
