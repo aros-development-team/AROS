@@ -488,7 +488,6 @@ IPTR Numeric__MUIM_Stringify(struct IClass *cl, Object *obj,
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
-    /* TODO: use RawDoFmt() and buffer overrun */
     snprintf(data->buf, 49, data->format, (long)msg->value);
     data->buf[49] = 0;
 
