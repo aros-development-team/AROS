@@ -164,7 +164,7 @@ MUIA_Application_WindowList [..G]         done
 
 OM_ADDMEMBER                              done
 OM_REMMEMBER                              done
-MUIM_Application_AboutMUI                 todo
+MUIM_Application_AboutMUI                 done
 MUIM_Application_AddInputHandler          done ?
 MUIM_Application_CheckRefresh             done
 MUIM_Application_GetMenuCheck             OBSOLETE
