@@ -742,8 +742,12 @@ AROS_LH1(ULONG, SocketBaseTagList,
                 *tagData = (IPTR)libPtr->dTableSize;
                 break;
             case(SBTC_DTABLESIZE << SBTB_CODE) | SBTF_SET:  /* set */
-                if((tmp = (WORD) * tagData) > 0)
+                if((tmp = (WORD) * tagData) > 0) {
+                    /* fd hooks of other tasks use the table under it */
+                    ObtainSyscallSemaphore(libPtr);
                     setdtablesize(libPtr, tmp);
+                    ReleaseSyscallSemaphore(libPtr);
+                }
                 break;
 
                 CASE_IPTR(SBTC_FDCALLBACK,   fdCallback);

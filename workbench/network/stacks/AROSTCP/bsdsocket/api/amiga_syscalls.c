@@ -82,7 +82,6 @@ LONG __socket(LONG domain, LONG type, LONG protocol, struct SocketBase *libPtr)
 
     ObtainSyscallSemaphore(libPtr);
     error = socreate(domain, &so, type, protocol);
-    ReleaseSyscallSemaphore(libPtr);
 
     if(! error) {
         /*
@@ -107,12 +106,10 @@ LONG __socket(LONG domain, LONG type, LONG protocol, struct SocketBase *libPtr)
             D(bug("[AROSTCP](amiga_syscalls.c) __socket: created socket 0x%p fd = %ld libPtr = 0x%p\n", so, fd, libPtr));
 #endif
             DEVENTS(__log(LOG_DEBUG, "socket(): created socket 0x%p fd = %ld libPtr = 0x%p", so, fd, libPtr);)
-        } else {
-            ObtainSyscallSemaphore(libPtr);
+        } else
             soclose(so);
-            ReleaseSyscallSemaphore(libPtr);
-        }
     }
+    ReleaseSyscallSemaphore(libPtr);
     if(error)
         sdFree(fd);
 
