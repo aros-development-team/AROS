@@ -783,6 +783,8 @@ void ProcessPackets(struct Globals *glob)
 
                 err = OpSetProtect(fl, AROS_BSTR_ADDR(pkt->dp_Arg3),
                     AROS_BSTR_strlen(pkt->dp_Arg3), prot, glob);
+                if (err == 0)
+                    res = DOSTRUE;
 
                 break;
             }
@@ -822,6 +824,8 @@ void ProcessPackets(struct Globals *glob)
 
                 err = OpSetDate(fl, AROS_BSTR_ADDR(pkt->dp_Arg3),
                     AROS_BSTR_strlen(pkt->dp_Arg3), ds, glob);
+                if (err == 0)
+                    res = DOSTRUE;
 
                 break;
             }
@@ -835,6 +839,8 @@ void ProcessPackets(struct Globals *glob)
                     nr->nr_FullName));
 
                 err = OpAddNotify(nr, glob);
+                if (err == 0)
+                    res = DOSTRUE;
 
                 break;
             }
@@ -848,6 +854,8 @@ void ProcessPackets(struct Globals *glob)
                     nr->nr_FullName));
 
                 err = OpRemoveNotify(nr, glob);
+                if (err == 0)
+                    res = DOSTRUE;
 
                 break;
             }
