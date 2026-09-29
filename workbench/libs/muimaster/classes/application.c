@@ -141,7 +141,7 @@ MUIA_Application_Commands [ISG]           done
 MUIA_Application_Copyright [I.G]          done
 MUIA_Application_Description [I.G]        done
 MUIA_Application_DiskObject [ISG]         done
-MUIA_Application_DoubleStart [..G]        not triggered yet (todo)
+MUIA_Application_DoubleStart [..G]        triggered; OM_GET value todo
 MUIA_Application_DropObject [IS.]         todo
 MUIA_Application_ForceQuit [..G]          not triggered yet
 MUIA_Application_HelpFile [ISG]           unused/dummy
@@ -170,7 +170,7 @@ MUIM_Application_CheckRefresh             done
 MUIM_Application_GetMenuCheck             OBSOLETE
 MUIM_Application_GetMenuState             OBSOLETE
 MUIM_Application_Input                    OBSOLETE
-MUIM_Application_InputBuffered            todo
+MUIM_Application_InputBuffered            todo: drain all pending window messages
 MUIM_Application_Load
 MUIM_Application_NewInput                 done
 MUIM_Application_OpenConfigWindow
