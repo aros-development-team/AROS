@@ -7,10 +7,12 @@
              child's DosEntry waits on the LDDemon semaphore as it starts
           2. per-task bsdsocket bases opened and closed on every CPU
           3. TCP echo over loopback with a client on every CPU
+          4. sockets handed between tasks on different CPUs with
+             ReleaseSocket()/ReleaseCopyOfSocket() and ObtainSocket()
           A corrupted semaphore or a lost wakeup can show up as a hang or
           an alert instead of a FAIL line: a thread that never starts may
           own the LDDemon semaphore, and every later OpenLibrary() waits.
-          Parts 2 and 3 need the TCP/IP stack running.
+          Parts 2-4 need the TCP/IP stack running.
 */
 
 #include <exec/tasks.h>
@@ -26,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <libraries/bsdsocket.h>
 
 #include <pthread.h>
 #include <stdio.h>
@@ -53,6 +56,8 @@ static int pass, fail, invalid;
 #define TCP_ROUNDS      50
 #define MSGLEN          512
 #define IO_SECS         5
+
+#define HAND_ROUNDS     200
 
 #define DONE_TICKS      3000    /* 60s for a part to finish */
 
@@ -443,6 +448,123 @@ static void test_tcp(void)
           "every loopback echo matched");
 }
 
+/* ---- 4. socket hand-off between CPUs ---- */
+
+#define HAND_MAX (MAXCPUS * HAND_ROUNDS)
+
+static volatile LONG g_Ids[HAND_MAX];
+static volatile ULONG g_IdReady[HAND_MAX];
+static volatile ULONG g_Pushed, g_Popped, g_HandDone, g_HandFail;
+static ULONG g_HandTotal;
+
+static void Giver(void)
+{
+    struct Library *SocketBase = OpenLibrary("bsdsocket.library", 4);
+    int r;
+
+    for (r = 0; r < HAND_ROUNDS; r++)
+    {
+        ULONG slot = __atomic_fetch_add(&g_Pushed, 1, __ATOMIC_RELAXED);
+        LONG fd = SocketBase ? socket(AF_INET, SOCK_STREAM, 0) : -1;
+        LONG id = -1;
+
+        if (fd >= 0)
+        {
+            /* Every other one is a copy, so the refcount goes 2 -> 1 -> 0 */
+            if (r & 1)
+            {
+                id = ReleaseCopyOfSocket(fd, UNIQUE_ID);
+                CloseSocket(fd);
+            }
+            else
+                id = ReleaseSocket(fd, UNIQUE_ID);
+        }
+        if (id == -1)
+            __atomic_add_fetch(&g_HandFail, 1, __ATOMIC_RELAXED);
+        g_Ids[slot] = id;
+        __atomic_store_n(&g_IdReady[slot], 1, __ATOMIC_RELEASE);
+    }
+    if (SocketBase)
+        CloseLibrary(SocketBase);
+    __atomic_add_fetch(&g_HandDone, 1, __ATOMIC_RELAXED);
+}
+
+static void Taker(void)
+{
+    struct Library *SocketBase = OpenLibrary("bsdsocket.library", 4);
+    ULONG slot;
+
+    while (SocketBase &&
+           (slot = __atomic_fetch_add(&g_Popped, 1, __ATOMIC_RELAXED)) < g_HandTotal)
+    {
+        LONG fd;
+        int ticks = START_TICKS;
+
+        while (!__atomic_load_n(&g_IdReady[slot], __ATOMIC_ACQUIRE) && ticks-- > 0)
+            Delay(1);
+        if (g_Ids[slot] == -1)
+            continue;       /* the giver already counted it */
+        fd = ObtainSocket(g_Ids[slot], AF_INET, SOCK_STREAM, 0);
+        if (fd < 0)
+        {
+            bug("[smpnet] ObtainSocket(%ld) failed (errno %ld)\n", (long)g_Ids[slot], (long)Errno());
+            __atomic_add_fetch(&g_HandFail, 1, __ATOMIC_RELAXED);
+        }
+        else
+            CloseSocket(fd);
+    }
+    if (SocketBase)
+        CloseLibrary(SocketBase);
+    __atomic_add_fetch(&g_HandDone, 1, __ATOMIC_RELAXED);
+}
+
+static void test_handoff(void)
+{
+    struct Library *SocketBase = OpenLibrary("bsdsocket.library", 4);
+    char names[MAXCPUS * 2][32];
+    LONG before, after;
+    int i, j, tasks = 0, dups = 0;
+    BOOL done;
+
+    if (!SocketBase)
+        return;
+    before = socket(AF_INET, SOCK_STREAM, 0);
+    CloseSocket(before);
+
+    g_Pushed = g_Popped = g_HandDone = g_HandFail = 0;
+    g_HandTotal = g_NumCPUs * HAND_ROUNDS;
+    memset((void *)g_IdReady, 0, sizeof(g_IdReady));
+
+    for (i = 0; i < g_NumCPUs; i++)
+    {
+        snprintf(names[2 * i], sizeof(names[0]), "smpnet.giver.%d", i);
+        snprintf(names[2 * i + 1], sizeof(names[0]), "smpnet.taker.%d", i);
+        if (spawn(Giver, names[2 * i], i, NULL))
+            tasks++;
+        if (spawn(Taker, names[2 * i + 1], (i + 1) % g_NumCPUs, NULL))
+            tasks++;
+    }
+
+    done = wait_count(&g_HandDone, tasks, DONE_TICKS);
+
+    for (i = 0; i < (int)g_HandTotal; i++)
+        for (j = i + 1; j < (int)g_HandTotal; j++)
+            if (g_Ids[i] != -1 && g_Ids[i] == g_Ids[j])
+                dups++;
+
+    after = socket(AF_INET, SOCK_STREAM, 0);
+    CloseSocket(after);
+    CloseLibrary(SocketBase);
+
+    bug("[smpnet] handoff: %d tasks, %lu sockets, fail=%lu dup ids=%d, fd %ld -> %ld\n",
+        tasks, (unsigned long)g_HandTotal, (unsigned long)g_HandFail, dups,
+        (long)before, (long)after);
+    check(done, "all hand-off tasks finished");
+    check(g_HandFail == 0, "every release and obtain succeeded");
+    check(dups == 0, "released ids are unique");
+    check(after == before, "no descriptor number leaked");
+}
+
 int main(void)
 {
     struct Library *SocketBase;
@@ -469,6 +591,7 @@ int main(void)
         CloseLibrary(SocketBase);
         test_bases();
         test_tcp();
+        test_handoff();
     }
     else
     {
