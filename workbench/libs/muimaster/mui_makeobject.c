@@ -494,7 +494,7 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath,
             MUIA_Menuitem_Checked, !!(params[2] & CHECKED),
             MUIA_Menuitem_Toggle,  !!(params[2] & MENUTOGGLE),
             MUIA_Menuitem_Enabled, !(params[2] & NM_ITEMDISABLED),
-            /* flags NYI */
+            /* TODO: implement MUIO_Menuitem_CopyStrings */
             MUIA_UserData, params[3],
             TAG_DONE);
 

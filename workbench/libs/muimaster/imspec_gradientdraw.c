@@ -144,8 +144,7 @@ void FillPixelArrayGradientRelative(struct RastPort *rp, int xt, int yt,
      *
      * Having the intersection point we then know the color of the pixel.
      *
-     * TODO: Turn the algorithm into a incremental one
-     *       Remove the use of floating point variables
+     * TODO: Remove the remaining use of floating point variables
      */
     double rad = angle * M_PI / 180;
     double cosarc = cos(rad);
@@ -325,8 +324,7 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt,
      *
      * Having the intersection point we then know the color of the pixel.
      *
-     * TODO: Turn the algorithm into a incremental one
-     *       Remove the use of floating point variables
+     * TODO: Remove the remaining use of floating point variables
      */
 
     double rad = angle * M_PI / 180;

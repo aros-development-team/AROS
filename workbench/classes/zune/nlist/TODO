@@ -23,4 +23,4 @@
 ***************************************************************************/
 
 move.c (replacement functions for memory copying):
-- change them with memmove, etc
+- replace pointer-copy loops with memmove while preserving entpos updates
