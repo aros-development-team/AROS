@@ -562,8 +562,6 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     zframe->draw(zframe->customframe, muiRenderInfo(obj), 0, 0, winw, winh,
         0, 0, winw, winh);
 
-    /* FIXME: Render with popup background */
-
     if (data->popbg)
     {
         zune_imspec_draw(data->popbg, muiRenderInfo(obj),

@@ -319,7 +319,6 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
                             (IPTR) & ele, MUIV_List_Insert_Bottom);
                     }
                 }
-                // FIXME: where does num's value come from here?
                 if (num != -1 && is_directory)
                 {
                     AddDirectory(list, buf, num);
