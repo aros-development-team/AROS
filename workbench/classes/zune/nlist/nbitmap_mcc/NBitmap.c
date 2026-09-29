@@ -118,8 +118,6 @@ ULONG GetConfigItem(Object *obj, ULONG configitem, ULONG defaultsetting)
   if(DoMethod(obj, MUIM_GetConfigItem, configitem, &value))
     result = *(ULONG *)value;
 
-  /* XXX: On 64-bit AROS I'm getting for the line above the warning "cast to pointer from integer of different size". */
-
   RETURN(result);
   return result;
 }
