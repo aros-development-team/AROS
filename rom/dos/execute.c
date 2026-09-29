@@ -80,10 +80,10 @@
 
     D(bug("[Execute] input = %p, output = %p, cmd = \"%s\"\n", input, output, string));
 
-    /* Check for the special cases where we want a new
-     * interactive shell.
+    /* Keep reading an interactive input after the initial command finishes.
+     * Workbench 1.3's CLI launcher passes its Shell-Startup command here.
      */
-    if ((!string || string[0] == 0) && IsInteractive(input) && output == BNULL)
+    if (input != BNULL && IsInteractive(input) && output == BNULL)
         tags[0].ti_Data = FALSE;
 
     if ((!string || string[0] == 0) && input == BNULL && output == BNULL)

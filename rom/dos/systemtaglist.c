@@ -412,6 +412,8 @@
                 ea->ea_CES = ses;
                 if (isAsynch || ses_opened)
                     ea->ea_Flags |= EAF_CLOSECES;
+                if (commandlen && cliType == CLI_BOOT)
+                    ea->ea_Flags |= EAF_INITIALCOMMAND;
 
                 D(bug("[SystemTagList] cliType = %d (background=%d, asynch=%d)\n", cliType, isBackground, isAsynch));
 #ifdef __mc68000
