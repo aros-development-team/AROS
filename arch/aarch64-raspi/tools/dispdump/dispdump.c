@@ -5,8 +5,9 @@
 
     Read-only. Records what the firmware programmed for the boot mode and
     nothing can be derived from: the HDMI PHY PLL_MISC words and lane
-    drive settings, the CSC coefficients, the HVS memory sizes and the
-    pixelvalve FIFO level. Ends with those values as C constants.
+    drive settings, the CSC coefficients, the HVS memory sizes, the
+    pixelvalve FIFO level and the infoframes in the packet RAM. Ends with
+    the constants as C.
 
     Usage: dispdump [PORT=<0|1>]      default = the port with a sink
 */
@@ -49,6 +50,14 @@ static const ULONG dvp_off[2]  = { 0x701000, 0x706000 };
 static const ULONG hdmi_off[2] = { 0x701400, 0x706400 };
 static const ULONG phy_off[2]  = { 0x701d00, 0x706d00 };
 static const ULONG rm_off[2]   = { 0x702000, 0x707000 };
+static const ULONG pkt_off[2]  = { 0x703800, 0x708800 };
+
+/* Packet RAM: slot n holds infoframe type 0x80 + n, 9 words each - a
+ * header word (HB0-2), then four 7-byte subpackets as 4 + 3 bytes. */
+#define PKT_SLOTS               14
+#define PKT_SLOT_WORDS          9
+#define HDMI_RAM_PACKET_CONFIG  0x0c4
+#define HDMI_RAM_PACKET_STATUS  0x0cc
 
 #define HDMI_HOTPLUG            0x1c8
 
@@ -275,6 +284,50 @@ static void dump_phy(int port, ULONG *misc, ULONG *lane)
     }
 }
 
+static void dump_packets(int port)
+{
+    static const char *names[] = { "?", "vendor", "AVI", "SPD", "audio", "MPEG", "?", "DRM" };
+    ULONG cfg = R(hdmi_off[port] + HDMI_RAM_PACKET_CONFIG);
+    ULONG sta = R(hdmi_off[port] + HDMI_RAM_PACKET_STATUS);
+    ULONG slot, i;
+
+    P("\nHDMI%d packet RAM: RAM_PACKET_CONFIG %08x STATUS %08x\n", port,
+      (unsigned)cfg, (unsigned)sta);
+
+    for (slot = 0; slot < PKT_SLOTS; slot++)
+    {
+        ULONG base = pkt_off[port] + slot * PKT_SLOT_WORDS * 4;
+        ULONG hdr = R(base);
+        UBYTE pb[28];
+
+        if (!(cfg & (1UL << slot)) && ((hdr & 0xff) != 0x80 + slot))
+            continue;
+
+        for (i = 0; i < 4; i++)
+        {
+            ULONG a = R(base + 4 + i * 8), b = R(base + 8 + i * 8);
+
+            pb[i * 7 + 0] = a;       pb[i * 7 + 1] = a >> 8;
+            pb[i * 7 + 2] = a >> 16; pb[i * 7 + 3] = a >> 24;
+            pb[i * 7 + 4] = b;       pb[i * 7 + 5] = b >> 8;
+            pb[i * 7 + 6] = b >> 16;
+        }
+
+        P("  slot %2u %s %-6s HB %02x %02x %02x  PB", (unsigned)slot,
+          (cfg & (1UL << slot)) ? "on " : "off",
+          ((hdr & 0xff) >= 0x80 && (hdr & 0xff) <= 0x87) ? names[(hdr & 0xff) - 0x80] : "-",
+          (unsigned)(hdr & 0xff), (unsigned)((hdr >> 8) & 0xff), (unsigned)((hdr >> 16) & 0xff));
+        for (i = 0; i <= ((hdr >> 16) & 0x1f) && i < 28; i++)
+            P(" %02x", pb[i]);
+        P("\n");
+
+        if ((hdr & 0xff) == 0x82)
+            P("          AVI: Y %u (0 RGB, 1 422, 2 444), Q %u (0 default, 1 limited, 2 full),"
+              " VIC %u, YQ %u, aspect %u\n", pb[1] >> 5 & 3, pb[3] >> 2 & 3, pb[4] & 0x7f,
+              pb[5] >> 6 & 3, pb[2] >> 4 & 3);
+    }
+}
+
 static void dump_csc(int port, ULONG *coef)
 {
     ULONG b = csc_off[port], i;
@@ -326,6 +379,7 @@ int main(void)
     dump_hdmi(port);
     dump_phy(port, misc, lane);
     dump_csc(port, coef);
+    dump_packets(port);
 
     P("\n/* BCM2712 %s, HDMI%d, captured at the boot mode by dispdump */\n",
       d0 ? "D0" : "C0", port);
