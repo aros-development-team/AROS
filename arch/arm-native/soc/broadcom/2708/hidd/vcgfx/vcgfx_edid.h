@@ -42,5 +42,6 @@ struct VideoCoreGfx_staticdata;
 void vcgfx_edid_probe(struct VideoCoreGfx_staticdata *xsd);
 const struct vcgfx_timing *vcgfx_edid_find(struct VideoCoreGfx_staticdata *xsd,
                                            ULONG width, ULONG height);
+UBYTE vcgfx_edid_vic(const struct vcgfx_timing *t, UBYTE *aspect);
 
 #endif /* _VIDEOCOREGFX_EDID_H */

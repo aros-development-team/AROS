@@ -75,6 +75,27 @@
 #define VID_CTL_VSYNC_LOW   (1UL << 28)
 #define VID_CTL_HSYNC_LOW   (1UL << 27)
 
+/* HDMI0's CSC and output crossbar, and the AVI infoframe's slot in the
+ * packet RAM (DISPLAY-SPEC 7.2, 15). */
+#define CSC_BASE            (ARM_PERIIOBASE + 0x700100)
+#define CSC_CTL             0x000
+#define CSC_COEF(i)         (0x004 + 4 * (i))
+#define CSC_CHANNEL_CTL     0x02c
+#define CSC_CTL_ON          0x07
+#define DVP_XBAR            (ARM_PERIIOBASE + 0x7010f4)
+#define XBAR_RGB            0x00354021
+#define HDMI_RAM_PKT_CONFIG 0x0c4
+#define HDMI_RAM_PKT_STATUS 0x0cc
+#define PKT_AVI_SLOT        2
+#define PKT_AVI             (ARM_PERIIOBASE + 0x703800 + PKT_AVI_SLOT * 0x24)
+
+/* Identity, and 219/255 plus 16 for limited range: read back from the
+ * hardware running each. s2.13, two per register. */
+static const ULONG csc_full[6] =
+    { 0x00002000, 0x00000000, 0x20000000, 0x00000000, 0x00000000, 0x00002000 };
+static const ULONG csc_limited[6] =
+    { 0x00001b80, 0x04000000, 0x1b800000, 0x04000000, 0x00000000, 0x04001b80 };
+
 #define PHY_RESET_CTL       0x000
 #define PHY_POWERUP_CTL     0x004
 #define PHY_CTL(i)          (0x008 + 4 * (i))
@@ -239,6 +260,14 @@ void vc4_hvs6_mode_capture(struct VideoCoreGfx_staticdata *xsd)
     st->h6_BootCtrl0   = ctrl0;
     for (i = 0; i < 4; i++)
         st->h6_BootLane[i] = rd(PHY_BASE + PHY_CTL(i));
+    st->h6_BootCSC[0] = rd(CSC_BASE + CSC_CTL);
+    for (i = 0; i < 6; i++)
+        st->h6_BootCSC[1 + i] = rd(CSC_BASE + CSC_COEF(i));
+    st->h6_BootCSC[7] = rd(CSC_BASE + CSC_CHANNEL_CTL);
+    st->h6_BootXbar   = rd(DVP_XBAR);
+    for (i = 0; i < 9; i++)
+        st->h6_BootAVI[i] = rd(PKT_AVI + 4 * i);
+    st->h6_BootAVIOn  = (rd(HDMI_BASE + HDMI_RAM_PKT_CONFIG) & (1UL << PKT_AVI_SLOT)) != 0;
 
     if (!(ctrl0 & HVS6_DISPCTRL_EN) || !(st->h6_BootPV[PV(PV_CONTROL)] & PV_CONTROL_EN)
         || !(st->h6_BootPV[PV(PV_V_CONTROL)] & PV_VC_VIDEN)
@@ -572,6 +601,58 @@ static void hvs6_phy_init(ULONG vco_div, ULONG rm_offset, const ULONG *lanes, BO
     wr(PHY_BASE + PHY_PLL_RESET_CTL, rd(PHY_BASE + PHY_PLL_RESET_CTL) | 1);
 }
 
+/* Load a colour path: CSC, output crossbar and AVI infoframe. The slot's
+ * RAM is locked while it is enabled, so take it off first. */
+static void hvs6_colour(ULONG ctl, const ULONG *coef, ULONG chan, ULONG xbar,
+                        const ULONG *avi, BOOL avi_on)
+{
+    ULONG i;
+
+    wr(CSC_BASE + CSC_CTL, ctl);
+    for (i = 0; i < 6; i++)
+        wr(CSC_BASE + CSC_COEF(i), coef[i]);
+    wr(CSC_BASE + CSC_CHANNEL_CTL, chan);
+    wr(DVP_XBAR, xbar);
+
+    wr(HDMI_BASE + HDMI_RAM_PKT_CONFIG, rd(HDMI_BASE + HDMI_RAM_PKT_CONFIG) & ~(1UL << PKT_AVI_SLOT));
+    if (!hvs6_poll(HDMI_BASE + HDMI_RAM_PKT_STATUS, 1UL << PKT_AVI_SLOT, 0, 100000))
+        bug("[VC4HVS6] AVI infoframe slot did not unlock\n");
+    for (i = 0; i < 9; i++)
+        wr(PKT_AVI + 4 * i, avi[i]);
+    if (avi_on)
+        wr(HDMI_BASE + HDMI_RAM_PKT_CONFIG, rd(HDMI_BASE + HDMI_RAM_PKT_CONFIG) | (1UL << PKT_AVI_SLOT));
+}
+
+/* RGB for a mode of our own: limited range for a CEA format past VIC 1,
+ * full otherwise, and an AVI infoframe that says so - its VIC and
+ * picture aspect where it is a CEA format. Returns the VIC. */
+static UBYTE hvs6_colour_mode(const struct vcgfx_timing *t, BOOL *limited)
+{
+    UBYTE hb[3] = { 0x82, 0x02, 0x0d }, pb[14] = { 0 }, aspect;
+    ULONG avi[9] = { 0 }, sum, i;
+    UBYTE vic = vcgfx_edid_vic(t, &aspect);
+
+    *limited = (vic > 1);
+
+    pb[1] = 0x12;                               /* RGB, active format, underscan */
+    pb[2] = (aspect << 4) | 0x08;               /* aspect, same as picture */
+    pb[3] = (*limited ? 1 : 2) << 2;            /* Q */
+    pb[4] = vic;
+    pb[5] = *limited ? 0x00 : 0x40;             /* YQ */
+    for (sum = hb[0] + hb[1] + hb[2], i = 1; i < 14; i++)
+        sum += pb[i];
+    pb[0] = (0x100 - (sum & 0xff)) & 0xff;
+
+    avi[0] = hb[0] | (hb[1] << 8) | (hb[2] << 16);
+    avi[1] = pb[0] | (pb[1] << 8) | (pb[2] << 16) | ((ULONG)pb[3] << 24);
+    avi[2] = pb[4] | (pb[5] << 8) | (pb[6] << 16);
+    avi[3] = pb[7] | (pb[8] << 8) | (pb[9] << 16) | ((ULONG)pb[10] << 24);
+    avi[4] = pb[11] | (pb[12] << 8) | (pb[13] << 16);
+
+    hvs6_colour(CSC_CTL_ON, *limited ? csc_limited : csc_full, 0, XBAR_RGB, avi, TRUE);
+    return vic;
+}
+
 /* DISPLAY-SPEC 10.1. */
 static void hvs6_recenter(void)
 {
@@ -599,8 +680,8 @@ BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
     const struct vcgfx_timing *t;
     ULONG pv[PV_REGS], hd[6], vidctl, ctrl0, vco_div, rm_offset, i;
-    UBYTE lock = 0, flags = 0;
-    BOOL boot, scramble;
+    UBYTE lock = 0, flags = 0, vic = 0;
+    BOOL boot, scramble, limited = FALSE;
 
     if (!(t = hvs6_lookup(xsd, w, h, want, &boot)))
         return FALSE;
@@ -670,6 +751,14 @@ BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
     wr(HDMI_BASE + HDMI_VERTA1, hd[4]);
     wr(HDMI_BASE + HDMI_VERTB1, hd[5]);
     wr(HD_VID_CTL, vidctl);
+
+    /* The boot mode gets the firmware's colour path back as it was. */
+    if (boot)
+        hvs6_colour(st->h6_BootCSC[0], &st->h6_BootCSC[1], st->h6_BootCSC[7], st->h6_BootXbar,
+                    st->h6_BootAVI, st->h6_BootAVIOn);
+    else
+        vic = hvs6_colour_mode(t, &limited);
+
     if (scramble)
         wr(HDMI_BASE + HDMI_SCRAMBLER_CTL, rd(HDMI_BASE + HDMI_SCRAMBLER_CTL) | SCRAMBLER_ENABLE);
 
@@ -713,7 +802,11 @@ BOOL vc4_hvs6_mode_start(struct VideoCoreGfx_staticdata *xsd, ULONG ch,
         hvs6_udelay(1000);
     }
 
-    bug("[VC4HVS6] mode %ux%u, %u kHz%s%s\n", w, h, t->clock,
-        boot ? " (boot mode)" : "", (i == 100) ? " - list never latched" : "");
+    if (boot)
+        bug("[VC4HVS6] mode %ux%u, %u kHz (boot mode)%s\n", w, h, t->clock,
+            (i == 100) ? " - list never latched" : "");
+    else
+        bug("[VC4HVS6] mode %ux%u, %u kHz, VIC %u, %s range RGB%s\n", w, h, t->clock, vic,
+            limited ? "limited" : "full", (i == 100) ? " - list never latched" : "");
     return i < 100;
 }

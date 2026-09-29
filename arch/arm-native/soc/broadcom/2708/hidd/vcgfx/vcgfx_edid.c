@@ -269,3 +269,27 @@ const struct vcgfx_timing *vcgfx_edid_find(struct VideoCoreGfx_staticdata *xsd,
 
     return NULL;
 }
+
+/* The CEA format a timing is, if any: its VIC, and the picture aspect for
+ * the AVI infoframe (1 = 4:3, 2 = 16:9). 0 for anything else. */
+UBYTE vcgfx_edid_vic(const struct vcgfx_timing *t, UBYTE *aspect)
+{
+    const struct vcgfx_timing *v;
+    ULONG i;
+
+    for (i = 0; i < sizeof(cta_vics) / sizeof(cta_vics[0]); i++)
+    {
+        v = &cta_vics[i].t;
+        if ((v->clock == t->clock) && (v->hdisp == t->hdisp) && (v->hstart == t->hstart)
+            && (v->hend == t->hend) && (v->htotal == t->htotal) && (v->vdisp == t->vdisp)
+            && (v->vstart == t->vstart) && (v->vend == t->vend) && (v->vtotal == t->vtotal))
+        {
+            *aspect = ((cta_vics[i].vic == 1) || (cta_vics[i].vic == 2)
+                       || (cta_vics[i].vic == 17)) ? 1 : 2;
+            return cta_vics[i].vic;
+        }
+    }
+
+    *aspect = 0;
+    return 0;
+}
