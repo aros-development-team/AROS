@@ -104,6 +104,8 @@ static inline LONG getSock(struct SocketBase *p, int fd, struct socket **sop)
  * fdAlloc there. libPtr->nextDToSearch is dumped.
  */
 LONG sdFind(struct SocketBase * libPtr, LONG *fdp);
+void sdFree(LONG fd);
+LONG setdtablesize(struct SocketBase *libPtr, UWORD size); /* amiga_generic2.c */
 
 #ifndef AMIGA_RAF_H
 #include <api/amiga_raf.h>

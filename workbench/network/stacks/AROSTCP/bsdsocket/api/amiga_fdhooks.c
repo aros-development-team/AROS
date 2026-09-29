@@ -111,7 +111,7 @@ static struct SocketBase *fdh_task_base(struct socket *so)
         if (p != NULL)
             fdh_track_base(p); /* remember it so shutdown can release it */
     }
-    if (p == NULL)
+    if (p == NULL && so != NULL)
         p = (struct SocketBase *)so->so_pgid; /* last resort */
 
     return p;
@@ -126,6 +126,7 @@ static SIPTR fdh_sock_read(APTR data, APTR buf, IPTR nbytes, LONG *perror)
     struct mbuf *from = NULL, *control = NULL;
     LONG error, flags = 0, len;
 
+    if (so == NULL) { *perror = EBADF; return -1; }  /* fd without a socket */
     if (nbytes < 0) { *perror = EINVAL; return -1; }
 
     aiov.iov_base = buf;
@@ -160,6 +161,7 @@ static SIPTR fdh_sock_write(APTR data, CONST_APTR buf, IPTR nbytes, LONG *perror
     struct iovec aiov;
     LONG error, len;
 
+    if (so == NULL) { *perror = EBADF; return -1; }  /* fd without a socket */
     if (nbytes < 0) { *perror = EINVAL; return -1; }
 
     aiov.iov_base = (caddr_t)buf;
@@ -184,8 +186,11 @@ static SIPTR fdh_sock_write(APTR data, CONST_APTR buf, IPTR nbytes, LONG *perror
 static LONG fdh_sock_close(APTR data, LONG fd, LONG *perror)
 {
     struct socket *so = (struct socket *)data;
-    struct SocketBase *p = (struct SocketBase *)so->so_pgid;
+    struct SocketBase *p;
     LONG error;
+
+    if (so == NULL) { *perror = EBADF; return -1; }  /* fd without a socket */
+    p = (struct SocketBase *)so->so_pgid;
 
     /* Close exactly this descriptor.  With dup()'d descriptors several fds
        share one socket, so closing must target the requested fd (which
@@ -200,9 +205,11 @@ static LONG fdh_sock_close(APTR data, LONG fd, LONG *perror)
 static LONG fdh_sock_dup(APTR data, LONG newfd, LONG *perror)
 {
     struct socket *so = (struct socket *)data;
-    struct SocketBase *p = (struct SocketBase *)so->so_pgid;
+    struct SocketBase *p;
     LONG error;
 
+    if (so == NULL) { *perror = EBADF; return -1; }  /* fd without a socket */
+    p = (struct SocketBase *)so->so_pgid;
     if (FDBase == NULL) { *perror = EBADF; return -1; }
 
     /* Claim newfd for this socket in the system-wide table. */
@@ -210,6 +217,9 @@ static LONG fdh_sock_dup(APTR data, LONG newfd, LONG *perror)
     if (error) { *perror = error; return -1; }
 
     ObtainSyscallSemaphore(p);
+    /* Numbers are system-wide: grow the table as sdFind() does */
+    if ((ULONG)newfd >= p->dTableSize && newfd < 0xFFC0)
+        setdtablesize(p, (newfd / 64 + 1) * 64);
     if ((ULONG)newfd >= p->dTableSize) {
         ReleaseSyscallSemaphore(p);
         FD_Free(newfd, FD_OWNER_BSDSOCKET);
@@ -233,6 +243,8 @@ static LONG fdh_sock_dup(APTR data, LONG newfd, LONG *perror)
 static LONG fdh_sock_ioctl(APTR data, IPTR request, APTR arg, LONG *perror)
 {
     struct socket *so = (struct socket *)data;
+
+    if (so == NULL) { *perror = EBADF; return -1; }  /* fd without a socket */
 
     switch (request)
     {

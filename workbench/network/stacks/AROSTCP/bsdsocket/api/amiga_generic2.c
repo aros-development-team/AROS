@@ -323,7 +323,7 @@ static int getLastSockFd(struct SocketBase *libPtr)
 /*
  * Set size of descriptor tab|e
  */
-static LONG
+LONG
 setdtablesize(struct SocketBase *libPtr, UWORD size)
 {
 
