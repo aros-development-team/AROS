@@ -510,6 +510,8 @@ SIPTR error;
                 dirblock, &block, &error);
         if (existingfile != NULL && existingfile->blocknum != oldfile->blocknum)
         {
+                /* Release the source header too, as every other exit does. */
+                oldfile->flags &= ~BCF_USED;
                 dirblock->flags &= ~BCF_USED;
                 return ERROR_OBJECT_EXISTS;
         }
