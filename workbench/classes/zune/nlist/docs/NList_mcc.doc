@@ -168,9 +168,10 @@ What is to do in future ?
 
 - Make NList subclasses. I think about Volumelist, Dirlist.
   Tell me if you want to do one of them.
-- Pref for the copy to clipboard key. (is there anyone which have a source
-  to test a rawkey event against a string pref (like 'alt c') ?).
-- Pref for the mark/block qualifier key (both for mouse and key handling)
+- The copy to clipboard key is configurable through the NListviews
+  key-binding preferences.
+- The mark/block qualifier is configurable through the NListviews
+  key-binding preferences for mouse and key handling.
 - Fix bugs you will find and inform me.
 
 
