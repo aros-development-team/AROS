@@ -455,9 +455,19 @@ UBYTE buffer[256];
         end = PathPart(name);
         if (end[0] == '/')
                 end++;
+        len = strlen(name)+name-end;
+        /*
+         * Every caller passes a 34-byte entryname, and FFS names are at most
+         * MAX_NAME_LENGTH - 1 characters: a longer component, or a path
+         * longer than buffer, used to overrun the handler's stack.
+         */
+        if ((ULONG)(end-name) >= sizeof(buffer) || len >= MAX_NAME_LENGTH)
+        {
+                *error = ERROR_INVALID_COMPONENT_NAME;
+                return NULL;
+        }
         CopyMem(name, buffer, end-name);
         buffer[end-name] = 0;
-        len = strlen(name)+name-end;
         CopyMem(end, entryname, len);   /* skip slash or colon */
         entryname[len] = 0;
         return findBlock(afsbase, ah, buffer, &block, error);

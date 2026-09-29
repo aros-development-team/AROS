@@ -140,8 +140,10 @@ STRPTR string;
                 else
                 {
                         string = (char *)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4);
-                        CopyMem(string+1, cstr, string[0]);
-                        cstr[(ULONG)string[0]] = 0;
+                        /* The length byte comes from the disk: bound it. */
+                        ULONG n = string[0] < sizeof(cstr) ? string[0] : sizeof(cstr) - 1;
+                        CopyMem(string+1, cstr, n);
+                        cstr[n] = 0;
                         *pos = BLK_TABLE_START+getHashKey(cstr, ah->volume->SizeBlock-56, ah->volume->dosflags)+1;
                         if (*pos > BLK_TABLE_END(ah->volume))
                                 return ERROR_NO_MORE_ENTRIES;
