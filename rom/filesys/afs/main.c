@@ -187,6 +187,31 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
     }
 }
 
+/*
+ * ACTION_FLUSH: write every dirty block and the root, then ask the device
+ * to commit its own cache, without detaching the volume. A failed device
+ * commit is reported: a caller asking for a barrier must not be told the
+ * data is durable when it is not.
+ */
+static LONG flushVolumeNow(struct AFSBase *handler, struct Volume *volume)
+{
+    struct BlockCache *blockbuffer;
+
+    flushCache(handler, volume);
+    blockbuffer = getBlock(handler, volume, volume->rootblock);
+    if (blockbuffer != NULL && (blockbuffer->flags & BCF_WRITE) != 0)
+    {
+        writeBlock(handler, volume, blockbuffer, -1);
+        blockbuffer->flags &= ~BCF_WRITE;
+    }
+    volume->ioh.ioreq->iotd_Req.io_Command = CMD_UPDATE;
+    volume->ioh.ioreq->iotd_Req.io_Data = NULL;
+    volume->ioh.ioreq->iotd_Req.io_Length = 0;
+    if (DoIO((struct IORequest *)&volume->ioh.ioreq->iotd_Req) != 0)
+        return ERROR_UNKNOWN;
+    return 0;
+}
+
 static BOOL mediacheck(struct Volume *volume, SIPTR *ok, SIPTR *res2)
 {
     if (!mediumPresent(&volume->ioh)) {
@@ -870,6 +895,16 @@ LONG AFS_work(struct ExecBase *SysBase)
                 }
                 case ACTION_INHIBIT:
                     res2 = inhibit(handler, volume, dp->dp_Arg1);
+                    ok = res2 ? DOSFALSE : DOSTRUE;
+                    break;
+                case ACTION_FLUSH:
+                    if (volume->inhibitcounter != 0 || !mediacheck(volume, &ok, &res2))
+                    {
+                        ok = DOSFALSE;
+                        res2 = ERROR_NO_DISK;
+                        break;
+                    }
+                    res2 = flushVolumeNow(handler, volume);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 case ACTION_FORMAT:
