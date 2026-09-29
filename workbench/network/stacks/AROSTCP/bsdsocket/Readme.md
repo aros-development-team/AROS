@@ -70,6 +70,11 @@ through the library API acquires it, so all protocol processing is serialized â€
 parallelism across sockets or tasks. This is the AmiTCP model; it is simple and correct, and much
 of the code's safety rests on this single-threaded assumption.
 
+Exec calls a library's `Open`/`Close` under `Forbid()` only, which on SMP does not exclude other
+CPUs. The list of per-opener bases (`socketBaseList`) and the master bases' `lib_OpenCnt` are
+therefore guarded by `baselist_semaphore` (`FindSocketBase` takes it shared). It is a leaf lock:
+nothing else is taken while it is held, so it may be used under `syscall_semaphore` and `spl`.
+
 BSD interrupt-priority levels are emulated in `kern_synch.c`: `splnet`/`splimp`/`splx` manipulate a
 single `spl_semaphore` mutex and a `spl_level` counter, so raising to any level effectively waits
 for the current holder. There is exactly one held mutex whenever `spl_level > 0`, regardless of

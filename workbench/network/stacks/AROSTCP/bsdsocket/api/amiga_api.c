@@ -56,6 +56,13 @@
 struct SignalSemaphore syscall_semaphore = { {0} };
 
 /*
+ *  Protects socketBaseList and the master bases' lib_OpenCnt. Exec only
+ *  Forbid()s around Open/Close, which does not exclude other CPUs.
+ *  Leaf lock: take nothing else while holding it.
+ */
+struct SignalSemaphore baselist_semaphore = { {0} };
+
+/*
  *  some globals.
  */
 struct Library *MasterSocketBase = NULL;
@@ -200,18 +207,6 @@ AROS_LH1(struct Library *, Open,
         return NULL;
 
     /*
-     * add this newly allocated library base to our list of opened
-     * socket libraries
-     */
-    AddTail(&socketBaseList, (struct Node *)newBase);
-
-    /*
-     * Modify some MASTER library base fields
-     */
-    libPtr->lib_OpenCnt++;		/* mark us as having another opener */
-    libPtr->lib_Flags &= ~LIBF_DELEXP;	/* prevent delayed expunges */
-
-    /*
      * Initialize new library base
      */
     for(i = (WORD *)((struct Library *)newBase + 1);
@@ -223,6 +218,16 @@ AROS_LH1(struct Library *, Open,
     newBase->errnoSize = sizeof newBase->defErrno;
     newBase->thisTask = FindTask(NULL);
     newBase->sigIntrMask = SIGBREAKF_CTRL_C;
+
+    /*
+     * add this newly allocated library base to our list of opened
+     * socket libraries, and modify some MASTER library base fields
+     */
+    ObtainSemaphore(&baselist_semaphore);
+    AddTail(&socketBaseList, (struct Node *)newBase);
+    libPtr->lib_OpenCnt++;		/* mark us as having another opener */
+    libPtr->lib_Flags &= ~LIBF_DELEXP;	/* prevent delayed expunges */
+    ReleaseSemaphore(&baselist_semaphore);
 
     /* initialize syslog variables */
 #if 0 /* initialization to zero is implicit */
@@ -350,6 +355,7 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
     VOID *freestart;
     ULONG  size;
     int	 i;
+    BOOL expunge;
 
     /*
      * one task may have SocketLibrary opened more than once.
@@ -387,8 +393,10 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
             if(libPtr->dTable[i] != NULL)
                 __CloseSocket(i, libPtr);
 
+    ObtainSemaphore(&baselist_semaphore);
     Remove((struct Node *)libPtr); /* remove this librarybase from our list
 				    of opened library bases */
+    ReleaseSemaphore(&baselist_semaphore);
 
     if(libPtr->tsleep_timer) {
         if(libPtr->tsleep_timer->tr_node.io_Device != NULL) {
@@ -421,15 +429,17 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
     bzero(freestart, size);
     FreeMem(freestart, size);
 
+    ObtainSemaphore(&baselist_semaphore);
     MasterSocketBase->lib_OpenCnt--;
     /*
      * If no more libraries are open and delayed expunge is asked,
      * ELL_expunge() is called.
      */
-    if(MasterSocketBase->lib_OpenCnt == 0 &&
-            (MasterSocketBase->lib_Flags & LIBF_DELEXP)) {
+    expunge = MasterSocketBase->lib_OpenCnt == 0 &&
+            (MasterSocketBase->lib_Flags & LIBF_DELEXP);
+    ReleaseSemaphore(&baselist_semaphore);
+    if(expunge)
         return __ELL_Expunge(MasterSocketBase);
-    }
 
     return NULL; /* always return null */
 }
@@ -516,6 +526,7 @@ BOOL api_init()
         return FALSE;
 
     InitSemaphore(&syscall_semaphore);
+    InitSemaphore(&baselist_semaphore);
     select_init(); /* initializes data Select() needs */
     NewList(&socketBaseList);
     NewList(&garbageSocketBaseList);
@@ -635,13 +646,13 @@ VOID api_sendbreaktotasks()
     D(bug("[AROSTCP](amiga_api.c) api_sendbreaktotask()\n"));
 #endif
 
-    Forbid();
+    ObtainSemaphoreShared(&baselist_semaphore);
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ)
         if(((struct SocketBase *)libNode)->thisTask != Nettrace_Task)
             Signal(((struct SocketBase *)libNode)->thisTask, SIGBREAKF_CTRL_C);
 
-    Permit();
+    ReleaseSemaphore(&baselist_semaphore);
 }
 
 /*
