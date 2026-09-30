@@ -1148,7 +1148,8 @@ AROS_LH4(LONG, ObtainSocket,
 
     for(sn = releasedSocketList.lh_Head; sn->ln_Succ; sn = sn->ln_Succ)
         if(((struct SocketNode *)sn)->sn_Id == id) {
-            if(prp != ((struct SocketNode *)sn)->sn_Socket->so_proto)
+            /* domain 0 (unique ids only) takes any protocol */
+            if(prp != NULL && prp != ((struct SocketNode *)sn)->sn_Socket->so_proto)
                 continue;
             Remove(sn);
             libPtr->dTable[fd] = ((struct SocketNode *)sn)->sn_Socket;
