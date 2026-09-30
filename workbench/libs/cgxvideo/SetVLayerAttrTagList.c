@@ -49,7 +49,8 @@
     EXAMPLE
 
     BUGS
-        This function is unimplemented.
+        The null backend has no runtime attributes, so all tags are
+        ignored.
 
     SEE ALSO
         GetVLayerAttr()
@@ -62,7 +63,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("SetVLayerAttrTagList");
+    /* Nothing to update until a display backend exists */
 
     AROS_LIBFUNC_EXIT
 } /* SetVLayerAttrTagList */

@@ -43,10 +43,15 @@
         VOA_ColorKey -  returns the 24 bit color value used for color keying.
                                 If color keying is not enabled, -1 is returned.
 
+        VOA_Width, VOA_Height - source dimensions in pixels
+
+        VOA_Modulo -            bytes per source row
+
     EXAMPLE
 
     BUGS
-        This function is unimplemented.
+        VOA_BaseAddress returns NULL unless the layer is locked. Color
+        keying is not supported yet. Other attributes return 0.
 
     SEE ALSO
         SetVLayerAttrTagList()
@@ -59,7 +64,28 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("GetVLayerAttr");
+    if (!VLayerHandle)
+        return 0;
+
+    switch (AttrNum)
+    {
+    case VOA_BaseAddress:
+        return VLayerHandle->locked ? (IPTR)VLayerHandle->buffer : 0;
+
+    case VOA_ColorKeyPen:
+    case VOA_ColorKey:
+        return (IPTR)-1;
+
+    case VOA_Width:
+        return VLayerHandle->width;
+
+    case VOA_Height:
+        return VLayerHandle->height;
+
+    case VOA_Modulo:
+        return VLayerHandle->modulo;
+    }
+
     return 0;
 
     AROS_LIBFUNC_EXIT
