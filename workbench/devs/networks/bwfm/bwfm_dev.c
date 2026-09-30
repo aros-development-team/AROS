@@ -300,6 +300,9 @@ static APTR nvram_convert(const UBYTE *src, ULONG size, ULONG *newlenp)
 
 struct bwfm_tracker *find_tracker(struct bwfm_unit *unit, ULONG type);
 static void report_events(struct bwfm_unit *unit, ULONG events);
+static void report_events_to(struct bwfm_unit *unit, ULONG events,
+                             struct bwfm_opener *only,
+                             struct bwfm_opener *skip);
 
 /*
  * Deliver one received 802.3 frame to whichever opener has a matching pending
@@ -420,14 +423,58 @@ static void report_events(struct bwfm_unit *unit, ULONG events);
  * The stack restarts DHCP off exactly this event - miss it and the interface
  * keeps an address from the network we just left, or never gets one.
  */
-static void link_up(struct bwfm_unit *unit)
+static void link_up(struct bwfm_unit *unit, BOOL handshake)
 {
+    struct bwfm_opener *hs;
+
     ObtainSemaphore(&unit->lock);
     unit->joined = 1;
+    hs = handshake ? unit->assoc_opener : NULL;
+    unit->keys_pending = (hs != NULL);
     ReleaseSemaphore(&unit->lock);
 
-    D(bug("[bwfm.device] link up\n"));
-    report_events(unit, S2EVENT_CONNECT);
+    D(bug("[bwfm.device] link up%s\n", hs ? " - keys pending" : ""));
+    /* Without keys the link carries nothing but EAPOL: only the supplicant
+     * may know yet, or the stack runs DHCP into the void. */
+    if (hs != NULL)
+        report_events_to(unit, S2EVENT_CONNECT, hs, NULL);
+    else
+        report_events(unit, S2EVENT_CONNECT);
+
+    /* The AP's M1 lands before the join returns, and the supplicant drops
+     * EAPOL older than 100ms at its association event: replay it behind it. */
+    ObtainSemaphore(&unit->lock);
+    if (unit->held_eapol_len != 0)
+    {
+        D(bug("[bwfm.device] replaying held EAPOL (%u bytes)\n",
+              (unsigned)unit->held_eapol_len));
+        rx_deliver(PumpBase, unit, unit->held_eapol, unit->held_eapol_len);
+        unit->held_eapol_len = 0;
+    }
+    ReleaseSemaphore(&unit->lock);
+}
+
+/* Before the link is announced, keep the latest EAPOL frame for link_up(). */
+static BOOL hold_eapol(struct bwfm_unit *unit, UBYTE *buf, ULONG len)
+{
+    struct bwfm_ethhdr *eth = (struct bwfm_ethhdr *)buf;
+    BOOL held = FALSE;
+
+    if (len < ETH_HLEN || len > sizeof(unit->held_eapol) ||
+        AROS_BE2WORD(eth->h_proto) != 0x888e)
+        return FALSE;
+
+    ObtainSemaphore(&unit->lock);
+    if (!unit->joined)
+    {
+        CopyMem(buf, unit->held_eapol, len);
+        unit->held_eapol_len = len;
+        held = TRUE;
+    }
+    ReleaseSemaphore(&unit->lock);
+
+    D(if (held) bug("[bwfm.device] EAPOL before link up - held\n"));
+    return held;
 }
 
 /*
@@ -442,6 +489,8 @@ static void link_down(struct bwfm_unit *unit)
     ObtainSemaphore(&unit->lock);
     changed = (unit->joined != 0);
     unit->joined = 0;
+    unit->held_eapol_len = 0;
+    unit->keys_pending = 0;
     ReleaseSemaphore(&unit->lock);
 
     if (!changed)
@@ -499,7 +548,8 @@ static void bwfm_pump(void)
             {
                 ULONG etype = (info >> 16) & 0xffff;
 
-                D(bug("[bwfm.device] RX event type %u\n", etype));
+                D(if (etype != BWFM_E_ESCAN_RESULT)
+                      bug("[bwfm.device] RX event type %u\n", etype));
                 BWFMEventPost(rxbuf, len);  /* hand to a waiting join/scan */
 
                 /*
@@ -526,7 +576,7 @@ static void bwfm_pump(void)
                     link_down(unit);
                 }
             }
-            else if (unit->online)
+            else if (unit->online && !hold_eapol(unit, rxbuf, len))
                 rx_deliver(LIBBASE, unit, rxbuf, len);
             got = 1;
         }
@@ -900,9 +950,9 @@ static void try_join(struct bwfm_unit *unit)
     CopyMem(ssid, unit->assoc_ssid, ssidlen + 1);
     unit->assoc_ssidlen = ssidlen;
     ReleaseSemaphore(&unit->lock);
-    if (BWFMJoin(ssid, ssidlen, keylen ? key : NULL, keylen, NULL, 0) == 0)
+    if (BWFMJoin(ssid, ssidlen, keylen ? key : NULL, keylen, NULL, 0, NULL) == 0)
     {
-        link_up(unit);
+        link_up(unit, FALSE);
         D(bug("[bwfm.device] auto-join OK\n"));
     }
     else
@@ -1208,6 +1258,8 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req)
             ReplyMsg(&r->ios2_Req.io_Message);
         }
 
+        if (unit->assoc_opener == opener)
+            unit->assoc_opener = NULL;
         Remove((struct Node *)opener);
         unit->refcount--;
         ReleaseSemaphore(&unit->lock);
@@ -1252,11 +1304,22 @@ static void TermIO(struct IOSana2Req *req)
  * later step must move the scan to a worker. Good enough to bring the device
  * side up and test via WiFiTest.
  */
+/* How long another task's scan stands in for our own (cfg80211 keeps 30s). */
+#define BWFM_SCAN_REUSE_TICKS   (30 * TICKS_PER_SECOND)
+
 static void get_networks(struct bwfm_unit *unit, struct IOSana2Req *req)
 {
     static struct bwfm_scanresult results[BWFM_MAX_SCAN];
+    static int cached_n = -1;
+    static struct Task *cached_by;
+    static struct DateStamp cached_at;
     APTR pool = req->ios2_Data;
+    struct Task *me = req->ios2_Req.io_Message.mn_ReplyPort->mp_SigTask;
+    IPTR directed = GetTagData(S2INFO_SSID, (IPTR)NULL,
+                               (struct TagItem *)req->ios2_StatData);
     struct TagItem **lists;
+    struct DateStamp now;
+    LONG age;
     int n, i;
 
     if (pool == NULL)
@@ -1269,9 +1332,33 @@ static void get_networks(struct bwfm_unit *unit, struct IOSana2Req *req)
     req->ios2_DataLength = 0;        /* set to the network count only on success */
     req->ios2_StatData = NULL;
 
-    n = BWFMScan(results, BWFM_MAX_SCAN);
-    if (n < 0)
-        n = 0;
+    /*
+     * The supplicant scans before it joins, right after the WiFi prefs scanned
+     * to show the list. Hand it that scan once instead of scanning again. The
+     * same task always scans afresh, so a rescan button gets new results, and
+     * a directed (hidden-SSID) scan cannot be answered from a broadcast one.
+     */
+    DateStamp(&now);
+    age = (now.ds_Days - cached_at.ds_Days) * 24 * 60 * 60 * TICKS_PER_SECOND +
+          (now.ds_Minute - cached_at.ds_Minute) * 60 * TICKS_PER_SECOND +
+          (now.ds_Tick - cached_at.ds_Tick);
+    if (cached_n > 0 && cached_by != me && age >= 0 &&
+        age < BWFM_SCAN_REUSE_TICKS && directed == (IPTR)NULL)
+    {
+        n = cached_n;
+        cached_n = -1;
+        D(bug("[bwfm.device] S2_GETNETWORKS: reusing scan from %ld ticks ago\n",
+              (long)age));
+    }
+    else
+    {
+        n = BWFMScan(results, BWFM_MAX_SCAN);
+        if (n < 0)
+            n = 0;
+        cached_n = n;
+        cached_by = me;
+        cached_at = now;
+    }
 
     lists = AllocPooled(pool, sizeof(struct TagItem *) * (n > 0 ? n : 1));
     if (lists == NULL)
@@ -1361,17 +1448,34 @@ static void get_crypttypes(struct IOSana2Req *req)
  */
 static void report_events(struct bwfm_unit *unit, ULONG events)
 {
+    report_events_to(unit, events, NULL, NULL);
+}
+
+/* As report_events(), limited to one opener (only) or all but one (skip). */
+static void report_events_to(struct bwfm_unit *unit, ULONG events,
+                             struct bwfm_opener *only,
+                             struct bwfm_opener *skip)
+{
+    const ULONG edges = S2EVENT_CONNECT | S2EVENT_DISCONNECT;
     struct MinList done;
     struct IOSana2Req *req, *next;
-    ULONG consumed = 0, pend_mask_or = 0;
+    struct bwfm_opener *opener;
+    ULONG pend_mask_or = 0, latched_or = 0;
     int matched = 0, pend_count = 0;
 
     NEWLIST((struct List *)&done);
 
     ObtainSemaphore(&unit->lock);
+    ForeachNode(&unit->openers, opener)
+        opener->took = 0;
+
     ForeachNodeSafe(&unit->event_pending, req, next)
     {
         ULONG hit;
+
+        opener = (struct bwfm_opener *)req->ios2_BufferManagement;
+        if ((only != NULL && opener != only) || opener == skip)
+            continue;
 
         pend_count++;                       /* DIAGNOSTIC: who is listening */
         pend_mask_or |= req->ios2_WireError; /* and for which events */
@@ -1383,24 +1487,32 @@ static void report_events(struct bwfm_unit *unit, ULONG events)
             req->ios2_WireError = hit;
             req->ios2_Req.io_Error = 0;
             AddTail((struct List *)&done, (struct Node *)req);
-            consumed |= hit;
+            opener->took |= hit;
             matched++;
         }
     }
-    /* Latch edge events (CONNECT/DISCONNECT) that no parked listener took, so a
-     * listener arming slightly later still sees them. The synchronous scan/
-     * associate blocks wpa_supplicant's event loop, so its S2_ONEVENT is often
-     * not parked at the instant the join fires CONNECT - without this the event
-     * is lost and wpa_supplicant times out and re-scans forever. */
-    unit->pending_events |= (events & ~consumed) &
-                            (S2EVENT_CONNECT | S2EVENT_DISCONNECT);
+
+    /* Latch edge events an opener's listener missed, so a listener arming
+     * slightly later still sees them. The synchronous scan/associate blocks
+     * wpa_supplicant's event loop, so its S2_ONEVENT is often not parked at
+     * the instant the join fires CONNECT. Per opener, or whoever arms first
+     * takes it from the rest; the latest edge replaces an older one. */
+    ForeachNode(&unit->openers, opener)
+    {
+        ULONG missed = events & edges & ~opener->took;
+
+        if ((only != NULL && opener != only) || opener == skip)
+            continue;
+        if (missed)
+            opener->pending_events = (opener->pending_events & ~edges) | missed;
+        latched_or |= opener->pending_events;
+    }
     ReleaseSemaphore(&unit->lock);
 
-    /* DIAGNOSTIC: if CONNECT (0x200) fired but no parked mask wants it,
-     * wpa_supplicant is in soft-MAC mode => hard-MAC detection failed. */
-    D(bug("[bwfm.device] report_events 0x%lx -> %ld/%ld listener(s) masks 0x%lx latched 0x%lx\n",
-          (unsigned long)events, (long)matched, (long)pend_count,
-          (unsigned long)pend_mask_or, (unsigned long)unit->pending_events));
+    D(bug("[bwfm.device] report_events 0x%lx%s -> %ld/%ld listener(s) masks 0x%lx latched 0x%lx\n",
+          (unsigned long)events, only ? " (supplicant)" : (skip ? " (stack)" : ""),
+          (long)matched, (long)pend_count,
+          (unsigned long)pend_mask_or, (unsigned long)latched_or));
 
     while ((req = (struct IOSana2Req *)RemHead((struct List *)&done)) != NULL)
         ReplyMsg(&req->ios2_Req.io_Message);
@@ -1421,7 +1533,7 @@ static void report_events(struct bwfm_unit *unit, ULONG events)
 static void queue_associate(struct bwfm_unit *unit, struct IOSana2Req *req)
 {
     struct TagItem *tags = (struct TagItem *)req->ios2_Data;
-    UBYTE *ssid, *pass, *ie;
+    UBYTE *ssid, *pass, *ie, *bssid;
     ULONG ssidlen = 0, passlen = 0, ielen = 0;
 
     if (tags == NULL)
@@ -1456,6 +1568,7 @@ static void queue_associate(struct bwfm_unit *unit, struct IOSana2Req *req)
             passlen++;
     /* The WPA/RSN IE the caller wants in the assoc request. It is self
      * describing (id, length, body), which is also how we know its size. */
+    bssid = (UBYTE *)GetTagData(S2INFO_BSSID, (IPTR)NULL, tags);
     ie = (UBYTE *)GetTagData(S2INFO_WPAInfo, (IPTR)NULL, tags);
     if (ie != NULL)
     {
@@ -1481,6 +1594,10 @@ static void queue_associate(struct bwfm_unit *unit, struct IOSana2Req *req)
     if (ielen)
         CopyMem(ie, unit->assoc_ie, ielen);
     unit->assoc_ielen = ielen;
+    unit->assoc_hasbssid = (bssid != NULL);
+    if (bssid != NULL)
+        CopyMem(bssid, unit->assoc_bssid, ETH_ALEN);
+    unit->assoc_opener = (struct bwfm_opener *)req->ios2_BufferManagement;
     unit->assoc_pending = TRUE;
     ReleaseSemaphore(&unit->lock);
 
@@ -1501,8 +1618,9 @@ static void queue_associate(struct bwfm_unit *unit, struct IOSana2Req *req)
  */
 static void do_associate(struct bwfm_unit *unit)
 {
-    UBYTE ssid[33], pass[64], ie[64];
+    UBYTE ssid[33], pass[64], ie[64], bssid[ETH_ALEN];
     ULONG ssidlen, passlen, ielen;
+    int hasbssid;
 
     ObtainSemaphore(&unit->lock);
     if (!unit->assoc_pending)
@@ -1511,9 +1629,12 @@ static void do_associate(struct bwfm_unit *unit)
         return;
     }
     unit->assoc_pending = FALSE;
+    unit->held_eapol_len = 0;
     ssidlen = unit->assoc_ssidlen;
     passlen = unit->assoc_passlen;
     ielen = unit->assoc_ielen;
+    hasbssid = unit->assoc_hasbssid;
+    CopyMem(unit->assoc_bssid, bssid, ETH_ALEN);
     CopyMem(unit->assoc_ssid, ssid, ssidlen + 1);
     CopyMem(unit->assoc_pass, pass, passlen + 1);
     if (ielen)
@@ -1524,9 +1645,9 @@ static void do_associate(struct bwfm_unit *unit)
           ssid, ielen ? "host handshake" : (passlen ? "WPA2-PSK" : "open")));
 
     if (BWFMJoin(ssid, ssidlen, passlen ? pass : NULL, passlen,
-                 ielen ? ie : NULL, ielen) == 0)
+                 ielen ? ie : NULL, ielen, hasbssid ? bssid : NULL) == 0)
     {
-        link_up(unit);
+        link_up(unit, ielen != 0);
     }
     else
         D(bug("[bwfm.device] ctrl worker: associate failed\n"));
@@ -1678,6 +1799,8 @@ static void handle_request(struct IOSana2Req *req)
          * report_events() fires (e.g. CONNECT/DISCONNECT from association). */
         const ULONG supported = S2EVENT_ONLINE | S2EVENT_OFFLINE |
                                 S2EVENT_CONNECT | S2EVENT_DISCONNECT;
+        struct bwfm_opener *opener =
+            (struct bwfm_opener *)req->ios2_BufferManagement;
         ULONG mask = wirein;
         ULONG cur = unit->online ? S2EVENT_ONLINE : S2EVENT_OFFLINE;
         ULONG latched, ready;
@@ -1697,8 +1820,8 @@ static void handle_request(struct IOSana2Req *req)
          * latched bit once means no spin even though wpa_supplicant keeps CONNECT
          * in its mask permanently. */
         ObtainSemaphore(&unit->lock);
-        latched = mask & unit->pending_events;
-        unit->pending_events &= ~latched;
+        latched = mask & opener->pending_events;
+        opener->pending_events &= ~latched;
         ReleaseSemaphore(&unit->lock);
         ready = (mask & cur) | latched;
 
@@ -1822,6 +1945,27 @@ static void handle_request(struct IOSana2Req *req)
         {
             req->ios2_Req.io_Error = S2ERR_SOFTWARE;
             req->ios2_WireError = S2WERR_GENERIC_ERROR;
+        }
+
+        /* The group key comes last in the handshake (a pairwise key goes to
+         * the AP's address): now the stack may use the link. */
+        if (req->ios2_Req.io_Error == 0 && algo != BWFM_CRYPTO_ALGO_OFF &&
+            (req->ios2_DstAddr[0] & 0x01))
+        {
+            struct bwfm_opener *hs;
+            int ready;
+
+            ObtainSemaphore(&unit->lock);
+            ready = unit->keys_pending;
+            unit->keys_pending = 0;
+            hs = unit->assoc_opener;
+            ReleaseSemaphore(&unit->lock);
+
+            if (ready)
+            {
+                D(bug("[bwfm.device] keys in - link usable\n"));
+                report_events_to(unit, S2EVENT_CONNECT, NULL, hs);
+            }
         }
         break;
     }
