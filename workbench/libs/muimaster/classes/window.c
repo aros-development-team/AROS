@@ -3299,7 +3299,7 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     data->wd_SleepMaxHeight=data->wd_RenderInfo.mri_Window->MaxHeight;
                     data->wd_SleepMinHeight=data->wd_RenderInfo.mri_Window->MinHeight;
                     data->wd_SleepMaxWidth=data->wd_RenderInfo.mri_Window->MaxWidth;
-                    data->wd_SleepMinWidth=data->wd_RenderInfo.mri_Window->MaxWidth;
+                    data->wd_SleepMinWidth=data->wd_RenderInfo.mri_Window->MinWidth;
                     /* According to MUI autodocs, sleeping windows can't be resized.
                      * MUI 3.8/AmigaOS also changes min/max values with WindowLimits */
                     WindowLimits(data->wd_RenderInfo.mri_Window,

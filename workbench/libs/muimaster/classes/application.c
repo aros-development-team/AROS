@@ -154,7 +154,7 @@ MUIA_Application_RexxHook [ISG]           stored; not invoked
 MUIA_Application_RexxMsg [..G]            done
 MUIA_Application_RexxString [.S.]         done
 MUIA_Application_SingleTask [I..]         done
-MUIA_Application_Sleep [.S.]              todo
+MUIA_Application_Sleep [.S.]              done
 MUIA_Application_Title [I.G]              done
 MUIA_Application_UseCommodities [I..]     done
 MUIA_Application_UseRexx [I..]            done
