@@ -144,13 +144,13 @@ MUIA_Application_DiskObject [ISG]         done
 MUIA_Application_DoubleStart [..G]        triggered; OM_GET value todo
 MUIA_Application_DropObject [IS.]         todo
 MUIA_Application_ForceQuit [..G]          not triggered yet
-MUIA_Application_HelpFile [ISG]           unused/dummy
+MUIA_Application_HelpFile [ISG]           stored; otherwise unused
 MUIA_Application_Iconified [.SG]          done
 MUIA_Application_Menu [I.G]               unimplemented (OBSOLETE)
 MUIA_Application_MenuAction [..G]         done
-MUIA_Application_MenuHelp [..G]           todo (ditto)
+MUIA_Application_MenuHelp [..G]           not triggered yet
 MUIA_Application_Menustrip [I..]          done
-MUIA_Application_RexxHook [ISG]           todo
+MUIA_Application_RexxHook [ISG]           stored; not invoked
 MUIA_Application_RexxMsg [..G]            done
 MUIA_Application_RexxString [.S.]         done
 MUIA_Application_SingleTask [I..]         done
