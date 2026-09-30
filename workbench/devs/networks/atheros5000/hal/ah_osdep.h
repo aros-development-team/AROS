@@ -101,6 +101,19 @@ extern	uint32_t __ahdecl ath_hal_getuptime(struct ath_hal *);
 #endif
 #endif /* AH_BYTE_ORDER */
 
+/*
+ * Register access goes through mmio_inl/mmio_outl rather than a bare
+ * volatile dereference: on x86 AROS pins those to scalar moves so the
+ * compiler cannot turn a register access into an SSE load, which a
+ * hypervisor's MMIO emulator may reject with #UD.
+ */
+#ifdef __AROS__
+#include <asm/io.h>
+#else
+#define mmio_inl(_addr)		(*((volatile uint32_t *)(_addr)))
+#define mmio_outl(_val, _addr)	(*((volatile uint32_t *)(_addr)) = (_val))
+#endif
+
 #ifdef __MORPHOS__
 #include <hardware/byteswap.h>
 #define __bswap16	SWAPWORD
@@ -184,23 +197,22 @@ __bswap32(uint32_t _x)
 	 ((_reg) >= 0x7000 && (_reg) < 0x8000))
 #define _OS_REG_WRITE(_ah, _reg, _val) do {				    \
 	if (OS_REG_UNSWAPPED(_reg))					    \
-		*((volatile uint32_t *)((_ah)->ah_sh + (_reg))) =	    \
-			__bswap32((_val));				    \
+		mmio_outl(__bswap32((_val)), (_ah)->ah_sh + (_reg));	    \
 	else								    \
-		*((volatile uint32_t *)((_ah)->ah_sh + (_reg))) = (_val);  \
+		mmio_outl((_val), (_ah)->ah_sh + (_reg));		    \
 	SYNCIO; \
 } while (0)
 #define _OS_REG_READ(_ah, _reg) \
 	(OS_REG_UNSWAPPED(_reg) ? \
-		__bswap32(*((volatile uint32_t *)((_ah)->ah_sh + (_reg)))) : \
-		*((volatile uint32_t *)((_ah)->ah_sh + (_reg))))
+		__bswap32(mmio_inl((_ah)->ah_sh + (_reg))) : \
+		mmio_inl((_ah)->ah_sh + (_reg)))
 #else /* AH_LITTLE_ENDIAN */
 #define	OS_REG_UNSWAPPED(_reg)	(0)
 #define _OS_REG_WRITE(_ah, _reg, _val) do { \
-	*((volatile uint32_t *)((_ah)->ah_sh + (_reg))) = (_val); \
+	mmio_outl((_val), (_ah)->ah_sh + (_reg)); \
 } while (0)
 #define _OS_REG_READ(_ah, _reg) \
-	*((volatile uint32_t *)((_ah)->ah_sh + (_reg)))
+	mmio_inl((_ah)->ah_sh + (_reg))
 #endif /* AH_BYTE_ORDER */
 
 #if 0 && defined(AH_DEBUG) || defined(AH_REGOPS_FUNC) || defined(AH_DEBUG_ALQ)

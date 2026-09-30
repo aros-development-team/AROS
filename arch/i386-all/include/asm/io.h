@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef ASM_I386_IO_H
@@ -106,5 +106,57 @@ __INS(l)
 __OUTS(b)
 __OUTS(w)
 __OUTS(l)
+
+/*
+ * Memory-mapped I/O.
+ *
+ * Every access is pinned to one scalar mov so the compiler cannot merge,
+ * split or vectorise it. A plain volatile dereference gives no such
+ * guarantee: once the surrounding code is vectorised, GCC will load a
+ * device register with an SSE movd. Real hardware does not care, but a
+ * hypervisor has to emulate the access and KVM's MMIO emulator implements
+ * only a handful of SSE opcodes - for the rest it injects #UD into the
+ * guest, which surfaces as an "Illegal instruction" in the driver task.
+ *
+ * The "memory" clobber keeps ordinary loads and stores (descriptor rings,
+ * DMA buffers) ordered against the register access.
+ */
+#define HAVE_MMIO_IO
+
+static inline unsigned char mmio_inb(const volatile void *address)
+{
+    unsigned char value;
+    __asm__ __volatile__("movb %1,%0" : "=q" (value) : "m" (*(const volatile unsigned char *)address) : "memory");
+    return value;
+}
+
+static inline unsigned short mmio_inw(const volatile void *address)
+{
+    unsigned short value;
+    __asm__ __volatile__("movw %1,%0" : "=r" (value) : "m" (*(const volatile unsigned short *)address) : "memory");
+    return value;
+}
+
+static inline unsigned int mmio_inl(const volatile void *address)
+{
+    unsigned int value;
+    __asm__ __volatile__("movl %1,%0" : "=r" (value) : "m" (*(const volatile unsigned int *)address) : "memory");
+    return value;
+}
+
+static inline void mmio_outb(unsigned char value, volatile void *address)
+{
+    __asm__ __volatile__("movb %1,%0" : "=m" (*(volatile unsigned char *)address) : "q" (value) : "memory");
+}
+
+static inline void mmio_outw(unsigned short value, volatile void *address)
+{
+    __asm__ __volatile__("movw %1,%0" : "=m" (*(volatile unsigned short *)address) : "r" (value) : "memory");
+}
+
+static inline void mmio_outl(unsigned int value, volatile void *address)
+{
+    __asm__ __volatile__("movl %1,%0" : "=m" (*(volatile unsigned int *)address) : "r" (value) : "memory");
+}
 
 #endif
