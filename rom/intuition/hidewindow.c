@@ -43,7 +43,8 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
         window - The window to affect.
 
     RESULT
-        Success indicator. On AROS this is always TRUE.
+        TRUE if the operation was performed or queued successfully,
+        FALSE otherwise.
 
     NOTES
         This function is source-compatible with AmigaOS v4.
@@ -73,9 +74,7 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
 #endif
 
     msg.window = window;
-    DoASyncAction((APTR)int_hidewindow, &msg.msg, sizeof(msg), IntuitionBase);
-
-    return TRUE;
+    return DoASyncAction((APTR)int_hidewindow, &msg.msg, sizeof(msg), IntuitionBase);
 
     AROS_LIBFUNC_EXIT
 } /* HideWindow */

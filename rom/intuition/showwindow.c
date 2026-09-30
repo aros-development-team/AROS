@@ -40,7 +40,8 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
         window - The window to affect.
 
     RESULT
-        Success indicator. On AROS it's always TRUE.
+        TRUE if the operation was performed or queued successfully,
+        FALSE otherwise.
 
     NOTES
         This function is soure-compatible with AmigaOS v4.
@@ -71,9 +72,7 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
      */
 
     msg.window = window;
-    DoASyncAction((APTR)int_showwindow, &msg.msg, sizeof(msg), IntuitionBase);
-
-    return TRUE;
+    return DoASyncAction((APTR)int_showwindow, &msg.msg, sizeof(msg), IntuitionBase);
 
     AROS_LIBFUNC_EXIT
 } /* ShowWindow */
