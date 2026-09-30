@@ -17,6 +17,8 @@
 
 #pragma pack()
 
+#include "../../include/host_vacall.h"
+
 typedef int file_t;
 
 #define INVALID_HANDLE_VALUE -1

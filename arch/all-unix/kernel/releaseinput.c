@@ -32,7 +32,7 @@ AROS_LH0I(void, KrnReleaseInput,
     /* Reset nonblocking mode on STDERR */
     res = KernelBase->kb_PlatformData->iface->fcntl(STDERR_FILENO, F_GETFL);
     AROS_HOST_BARRIER
-    KernelBase->kb_PlatformData->iface->fcntl(STDERR_FILENO, F_SETFL, res & ~O_NONBLOCK);
+    HOST_VACALL3(KernelBase->kb_PlatformData->iface->fcntl, STDERR_FILENO, F_SETFL, res & ~O_NONBLOCK);
     AROS_HOST_BARRIER
 
     AROS_LIBFUNC_EXIT
