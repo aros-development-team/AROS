@@ -345,7 +345,10 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE){
 
 	D(bug("[PPP] Expunge()\n"));
 
-	if(LIBBASE->sd_OpenCnt){  // Sorry, we're busy.  We'll expunge later on if we can.
+	/* The unit process outlives Close() and runs our code, so stay loaded
+	   while it exists; it can't be stopped from here (Expunge runs under
+	   Forbid() and must not wait). */
+	if(LIBBASE->sd_OpenCnt || LIBBASE->sdu_Proc_run){  // Sorry, we're busy.  We'll expunge later on if we can.
 		LIBBASE->sd_Flags |= LIBF_DELEXP;
 		D(bug("[PPP] Expunge,busy\n"));
 		return FALSE;
