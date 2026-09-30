@@ -6,6 +6,7 @@
 */
 #include <exec/types.h>
 #include <exec/memory.h>
+#include <aros/atomic.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -2405,11 +2406,11 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
         if (ContextMenuUnderPointer(data, data->wd_RootObject,
                 event->MouseX, event->MouseY))
         {
-            iWin->Flags |= WFLG_RMBTRAP;
+            AROS_ATOMIC_OR(iWin->Flags, WFLG_RMBTRAP);
         }
         else if (!data->wd_NoMenus)
         {
-            iWin->Flags &= ~WFLG_RMBTRAP;
+            AROS_ATOMIC_AND(iWin->Flags, ~WFLG_RMBTRAP);
         }
     }
 
@@ -3228,9 +3229,9 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             if (data->wd_RenderInfo.mri_Window)
             {
                 if (data->wd_NoMenus)
-                    data->wd_RenderInfo.mri_Window->Flags |= WFLG_RMBTRAP;
+                    AROS_ATOMIC_OR(data->wd_RenderInfo.mri_Window->Flags, WFLG_RMBTRAP);
                 else
-                    data->wd_RenderInfo.mri_Window->Flags &= ~WFLG_RMBTRAP;
+                    AROS_ATOMIC_AND(data->wd_RenderInfo.mri_Window->Flags, ~WFLG_RMBTRAP);
             }
             break;
 

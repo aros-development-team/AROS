@@ -164,7 +164,7 @@ kprintf("======= setting messagecache\n");
     {
         if (imsg->Class == IDCMP_INTUITICKS)
         {
-            window->Flags |= WFLG_WINDOWTICKED;
+            AROS_ATOMIC_OR(window->Flags, WFLG_WINDOWTICKED);
         }
         DEBUG_SENDINTUIMESSAGE(dprintf("SendIntuiMessage: Class 0x%lx Code 0x%lx Qual 0x%lx Mouse %d,%d IAddress 0x%lx\n", imsg->Class, imsg->Code, imsg->Qualifier, imsg->MouseX, imsg->MouseY, imsg->IAddress));
 
