@@ -45,11 +45,6 @@
 	if( handle = Open( fileName, PrivateOpenModes[ mode ] ) )
 	{
 		file = AS_OpenAsyncFH( handle, mode, bufferSize, TRUE );
-
-		if( !file )
-		{
-			Close( handle );
-		}
 	}
 
 	return( file );
