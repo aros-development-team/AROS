@@ -3063,6 +3063,7 @@ struct paib_data
 {
     void *pixels;
     ULONG modulo;
+    BOOL  dst_opaque;   /* the destination has no alpha channel */
 };
 
 /*
@@ -3104,7 +3105,11 @@ static void PutAlphaImageBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD 
 
                 destpix = xbuf[x];
                 RGB32_DECOMPOSE(dst_red, dst_green, dst_blue, destpix);
-                dst_alpha = ARGB32_ALPHA_VALUE(destpix);
+                /*
+                 * A destination without an alpha channel converts to ARGB32
+                 * with alpha 0; it is opaque all the same.
+                 */
+                dst_alpha = data->dst_opaque ? 0xFF : ARGB32_ALPHA_VALUE(destpix);
 
                 if (dst_alpha == 0xFF)
                 {
@@ -3138,6 +3143,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                                     struct pHidd_BitMap_PutAlphaImage *msg)
 {
     WORD x, y;
+    struct HIDDBitMapData *bmdata = OOP_INST_DATA(cl, o);
     struct paib_data data = {msg->pixels, msg->modulo};
 
     EnterFunc(bug("BitMap::PutAlphaImage(x=%d, y=%d, width=%d, height=%d)\n"
@@ -3145,6 +3151,13 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
 
     if (msg->width <= 0 || msg->height <= 0)
         return;
+
+    /*
+     * Only a destination with an alpha channel of its own takes part in the
+     * blend; anything else (RGB framebuffers, palettes) is opaque, whatever
+     * alpha its pixels convert to.
+     */
+    data.dst_opaque = (((HIDDT_PixelFormat *)bmdata->prot.pixfmt)->alpha_mask == 0);
 
     if (!DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, TRUE, vHidd_StdPixFmt_ARGB32,
                             (VOID_FUNC)PutAlphaImageBuffered, &data))
@@ -3182,7 +3195,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                     dst_blue  = src_blue;
                     col.alpha = 0xFFFF;
                 }
-                else if ((col.alpha >> 8) == 0xFF)
+                else if (data.dst_opaque || ((col.alpha >> 8) == 0xFF))
                 {
                     dst_red   += do_alpha(src_alpha, src_red, dst_red);
                     dst_green += do_alpha(src_alpha, src_green, dst_green);
