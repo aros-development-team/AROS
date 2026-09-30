@@ -251,10 +251,15 @@ static LONG fdh_sock_ioctl(APTR data, IPTR request, APTR arg, LONG *perror)
     case FIONBIO:
         if (arg == NULL)
             return (so->so_state & SS_NBIO) ? 1 : 0;
-        if (*(int *)arg)
-            so->so_state |= SS_NBIO;
-        else
-            so->so_state &= ~SS_NBIO;
+        {
+            spl_t s = splnet();     /* the daemon writes so_state too */
+
+            if (*(int *)arg)
+                so->so_state |= SS_NBIO;
+            else
+                so->so_state &= ~SS_NBIO;
+            splx(s);
+        }
         return 0;
 
     case FIONREAD:

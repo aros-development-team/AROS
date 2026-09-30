@@ -122,6 +122,7 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
     register int error;
     register u_int size;
     struct socket *so;
+    spl_t s;
 
     /*
      * Note: Syscall semaphore is essential here if two processes can access
@@ -175,7 +176,9 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
         /*
          * data is a struct Task **, find corresponding SocketBase * and set owner
          */
+        s = splnet();
         so->so_pgid = FindSocketBase(*(struct Task **)data);
+        splx(s);
         goto Return;
 
     case FIOGETOWN:
@@ -187,13 +190,16 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
         goto Return;
 
     case FIONBIO:
+        s = splnet();
         if(*(int *)data)
             so->so_state |= SS_NBIO;
         else
             so->so_state &= ~SS_NBIO;
+        splx(s);
         goto Return;
 
     case FIOASYNC:
+        s = splnet();
         if(*(int *)data) {
             so->so_state |= SS_ASYNC;
             so->so_rcv.sb_flags |= SB_ASYNC;
@@ -203,6 +209,7 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
             so->so_rcv.sb_flags &= ~SB_ASYNC;
             so->so_snd.sb_flags &= ~SB_ASYNC;
         }
+        splx(s);
         goto Return;
 
     case FIONREAD:
@@ -867,8 +874,12 @@ LONG __CloseSocket(LONG fd, struct SocketBase *libPtr)
         error = 0; /* ignore silently */
         goto Return;
     }
-    if(so->so_pgid == libPtr && countSockets(libPtr, so) == 1)
+    if(so->so_pgid == libPtr && countSockets(libPtr, so) == 1) {
+        /* sowakeup() tests and uses so_pgid at splnet */
+        spl_t s = splnet();
         so->so_pgid = NULL;		/* not ours any more */
+        splx(s);
+    }
 
     /*
      * Decrease the reference count of a socket (AmiTCP addition) and return if

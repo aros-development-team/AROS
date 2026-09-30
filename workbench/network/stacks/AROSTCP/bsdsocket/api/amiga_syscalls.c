@@ -341,8 +341,10 @@ LONG __connect(LONG s, caddr_t name, LONG namelen, struct SocketBase *libPtr)
     if(error = sockArgs(&nam, name, namelen, MT_SONAME))
         goto Return;
     error = soconnect(so, nam);
-    if(error)
+    if(error) {
+        old_spl = splnet();
         goto bad;
+    }
     if((so->so_state & SS_NBIO) && (so->so_state & SS_ISCONNECTING)) {
         m_freem(nam);
         error = EINPROGRESS;
@@ -356,9 +358,10 @@ LONG __connect(LONG s, caddr_t name, LONG namelen, struct SocketBase *libPtr)
         error = so->so_error;
         so->so_error = 0;
     }
-    splx(old_spl);
 bad:
+    /* Under splnet: tcp_input may be setting SS_ISCONNECTED right now */
     so->so_state &= ~SS_ISCONNECTING;
+    splx(old_spl);
     m_freem(nam);
     if(error == ERESTART)
         error = EINTR;
