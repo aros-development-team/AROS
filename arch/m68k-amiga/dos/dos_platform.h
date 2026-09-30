@@ -7,4 +7,8 @@
 #define PROC_STACKSIZE     8192
 #define PROC_MINSTACKSIZE  PROC_STACKSIZE
 
+/* Default FileHandle buffer. Every buffered handle pins this much chip RAM
+ * on an unexpanded machine; AmigaOS uses 208 bytes. */
+#define IOBUFSIZE          1024
+
 #endif
