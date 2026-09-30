@@ -13,6 +13,8 @@ struct Exec_PlatformData
 	APTR  realRawDoFmt;     /* AOS 3.1 locale.library workaround - see
 	                           exec.library/SetFunction() */
 	struct TagItem *BootMsg;
+	APTR  BootStack;        /* Boot task stack, handed to its tc_MemEntry */
+	ULONG BootStackSize;
 };
 
 #ifdef AROS_NO_ATOMIC_OPERATIONS
