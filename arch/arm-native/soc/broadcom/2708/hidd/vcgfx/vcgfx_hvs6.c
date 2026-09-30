@@ -741,9 +741,9 @@ BOOL vc4_hvs6_overlay(struct VideoCoreGfx_staticdata *xsd,
                        (ULONG)ovl->ovl_X, (ULONG)ovl->ovl_Y,
                        ovl->ovl_Width, ovl->ovl_Height);
 
-            /* Gallium output is the opposite byte order to the fb */
+            /* Gallium renders B,G,R,A; the fb entry we copied reads R,G,B,A */
             hvs6_wr(ent + HVS6_ENT_CTL0 * 4,
-                    hvs6_rd(ent + HVS6_ENT_CTL0 * 4) & ~HVS6_CTL0_RGBA);
+                    (hvs6_rd(ent + HVS6_ENT_CTL0 * 4) & ~HVS6_CTL0_ORDER) | HVS6_ORDER_BGRA);
         }
     }
 
