@@ -29,6 +29,9 @@
 
 //#define ENABLE_ATAPOWERFLYER
 
+#define AKIKO_ID        0xb80002
+#define AKIKO_ID_MAGIC  0xcafe
+
 static BOOL custom_check(APTR addr)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -74,8 +77,11 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
         port = (UBYTE*)GAYLE_BASE_1200;
         ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_1200;
     } else {
+        /* A CD32 is AGA too but has no A4000 IDE: probing that unmapped
+         * space reads floating bus values that can fake a controller. */
         // AGA does not have custom mirror here but lets make sure..
-        if (!custom_check((APTR)0xdd4000) && (custom->vposr & 0x7f00) >= 0x2200) {
+        if (*(volatile UWORD *)AKIKO_ID != AKIKO_ID_MAGIC &&
+            !custom_check((APTR)0xdd4000) && (custom->vposr & 0x7f00) >= 0x2200) {
             port = (UBYTE*)GAYLE_BASE_4000;
             ddata->a4000 = TRUE;
             ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_4000;
