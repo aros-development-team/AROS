@@ -65,9 +65,11 @@ tools-crosstools-icu :
 
 HOST_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(HOST_CXXFLAGS)))
 
-# specify the gendir for icu to be in HOSTDIR so can be reused
+# specify the gendir for icu to be in HOSTDIR so can be reused.
+# CROSSTOOLSDIR is kept out: with llvm it holds the target libc++ (ELF), which
+# the host compiler and linker would otherwise pick up.
 %fetch_and_build mmake=crosstools-icu package=$(ICU_PKGNAME) version=$(ICU_PKGVERSION)-$(ICU_ARCHKIND) compiler=host \
 	package_repo="$(ICU_REPOSITORY)" suffixes="tgz" \
 	patch=yes srcdir=icu builddir=source gendir=$(TOOLDIR) basedir= \
 	prefix="$(TOOLDIR)" \
-	extraoptions="$(ICU_EXTRA_OPTS)" extracflags=$(ICU_FLAGS)
+	extraoptions="$(ICU_EXTRA_OPTS)" extracflags=$(ICU_FLAGS) usecrosstoolsdir=no
