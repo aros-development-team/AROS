@@ -16,6 +16,11 @@
 #include <dos/stdio.h>
 
 #include "dos_intern.h"
+#include <dos_platform.h>
+
+#ifndef PROC_STACKSIZE
+#define PROC_STACKSIZE AROS_STACKSIZE
+#endif
 
 /*****************************************************************************
 
@@ -124,8 +129,8 @@
      * (e.g. internal/ROM resident command) - allow execution. */
 #endif
 
-    if(stacksize < AROS_STACKSIZE)
-        stacksize = AROS_STACKSIZE;
+    if(stacksize < PROC_STACKSIZE)
+        stacksize = PROC_STACKSIZE;
 
 #ifdef __mc68000
     /* Keep temporary command stacks out of the low-address free region. */
