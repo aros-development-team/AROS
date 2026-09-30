@@ -66,7 +66,9 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_CTL0_EMPTY     ((ULONG)HVS6_SLOT_WORDS << 24)
 #define HVS6_CTL0_ALPHAMASK (3UL << 18)     /* 0 = per-pixel, 3 = fixed   */
 #define HVS6_CTL0_UNITY     (1UL << 15)     /* source size == dest size   */
-#define HVS6_CTL0_RGBA      (3UL << 13)     /* clear = ARGB byte order    */
+#define HVS6_CTL0_ORDER     (3UL << 13)     /* channel order, by memory:  */
+#define HVS6_ORDER_RGBA     (3UL << 13)     /* R,G,B,A - the framebuffer  */
+#define HVS6_ORDER_BGRA     (2UL << 13)     /* B,G,R,A - gallium, as HVS5 */
 #define HVS6_CTL0_FMT_MASK  0xf
 #define HVS6_CTL0_FMT_8888  7
 
