@@ -1017,7 +1017,6 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 
         MatchEnd(ap);
 
-        FreeVec(ap);
         
         if (error == ERROR_BREAK)
         {
@@ -1034,6 +1033,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
             BOOL printEmpty = !(ap->ap_Flags & APF_ITSWILD);
             printSummary(filename, files, dirs, nBlocks, noHead, printEmpty);
         }
+        FreeVec(ap);
 
         /* Update global statistics for (possible) ALL option */
         stats->nFiles += files;
