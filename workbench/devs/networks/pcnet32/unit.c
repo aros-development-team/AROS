@@ -69,14 +69,16 @@ void writew(UWORD val, APTR base)
     WORDOUT(base, val);
 }
 
-/* LONG IO */
+/* LONG IO - the PCnet's registers live in I/O space (BAR0), in 32-bit DWIO
+ * mode as much as in 16-bit WIO mode, so these are port accesses like the
+ * byte and word versions above, not a dereference of the port number. */
 ULONG readl(APTR base)
 {
-    return *((volatile ULONG*)base);
+    return LONGIN(base);
 }
 void writel(ULONG val, APTR base)
 {
-    *((volatile ULONG*)base) = val;
+    LONGOUT(base, val);
 }
 
 /* 16/32bit control funcs */
@@ -169,7 +171,7 @@ static void pcnet32_reset_32(APTR base)
 static int pcnet32_check_32(APTR base)
 {
    writel(88, base + 0x14);
-   return ((readw( base + 0x14) & 0xffff) == 88);
+   return ((readl( base + 0x14) & 0xffff) == 88);
 }
 
 /*
