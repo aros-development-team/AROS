@@ -285,7 +285,7 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
                     is_directory = 1;
                     if (ead->ed_Type == ST_SOFTLINK)
                     {
-                        /* TODO: Special handling */
+                        /* TODO: Determine whether ST_SOFTLINK targets a file or directory. */
                     }
                 }
                 else

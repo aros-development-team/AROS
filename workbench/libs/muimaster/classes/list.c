@@ -2910,7 +2910,8 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
             FreeListEntry(data, lentry);
             RemoveListEntries(data, pos, until - pos);
 
-            /* TODO: Also check for visible stuff like below */
+            /* TODO: Update visible-entry state before returning on
+             * MUIM_List_Construct failure. */
             if (data->entries_num != data->confirm_entries_num)
                 set(obj, MUIA_List_Entries, data->confirm_entries_num);
             return ~0;
