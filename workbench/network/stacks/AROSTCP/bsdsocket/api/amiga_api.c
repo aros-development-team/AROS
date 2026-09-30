@@ -45,6 +45,14 @@
 #include <kern/amiga_subr.h>
 #include <kern/amiga_log.h>
 
+#include <api/dns_cache.h>
+
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 #include <sys/synch.h>
 #include <sys/socketvar.h>
 #include <netinet/in.h>
@@ -564,6 +572,7 @@ BOOL api_init()
 
     InitSemaphore(&syscall_semaphore);
     InitSemaphore(&baselist_semaphore);
+    dns_cache_init();   /* before any base exists to look names up */
     select_init(); /* initializes data Select() needs */
     NewList(&socketBaseList);
     NewList(&garbageSocketBaseList);
@@ -581,10 +590,41 @@ BOOL api_init()
 
 LONG nthLibrary = 0;
 
+/*
+ * Forbid() does not keep other CPUs out of SysBase->LibList: OpenLibrary()
+ * takes execlock.resource's lock for it, so take that one too.
+ */
+static APTR liblist_lock(BOOL write)
+{
+#if defined(__AROSPLATFORM_SMP__)
+    APTR ExecLockBase = OpenResource("execlock.resource");
+
+    if(ExecLockBase) {
+        ObtainSystemLock(&SysBase->LibList,
+                         write ? SPINLOCK_MODE_WRITE : SPINLOCK_MODE_READ, LOCKF_FORBID);
+        return ExecLockBase;
+    }
+#endif
+    Forbid();
+    return NULL;
+}
+
+static void liblist_unlock(APTR ExecLockBase)
+{
+#if defined(__AROSPLATFORM_SMP__)
+    if(ExecLockBase) {
+        ReleaseSystemLock(&SysBase->LibList, LOCKF_FORBID);
+        return;
+    }
+#endif
+    Permit();
+}
+
 BOOL api_show()
 {
     struct Node *libNode;
     STRPTR libName = SOCLIBNAME;
+    APTR lock;
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_api.c) api_show()\n"));
@@ -595,7 +635,7 @@ BOOL api_show()
     if(api_state == API_SCRATCH)
         return FALSE;
 
-    Forbid();
+    lock = liblist_lock(FALSE);
     for(libNode = SysBase->LibList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ) {
         if(!strncmp(libNode->ln_Name, libName, sizeof(SOCLIBNAME) - 3)) {
@@ -608,12 +648,12 @@ BOOL api_show()
             if(nthLibrary < i)
                 nthLibrary = i;
 #else
-            Permit();
+            liblist_unlock(lock);
             return FALSE;
 #endif
         }
     }
-    Permit();
+    liblist_unlock(lock);
 #ifdef DEBUG
     if(nthLibrary > 8)
         return FALSE;
@@ -633,17 +673,19 @@ BOOL api_show()
 
 VOID api_hide()
 {
+    APTR lock;
+
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_api.c) api_hide()\n"));
 #endif
 
     if(api_state != API_SHOWN)
         return;
-    Forbid();
+    lock = liblist_lock(TRUE);
     /* unlink Master SocketBase from System Library list */
     Remove((struct Node *)MasterSocketBase);
     Remove((struct Node *)MasterMiamiBase);
-    Permit();
+    liblist_unlock(lock);
     api_state = API_HIDDEN;
 }
 
@@ -659,10 +701,11 @@ VOID api_setfunctions() /* DOES NOTHING NOW */
         return;
     if(api_state == API_SHOWN) {
         /* unlink Master SocketBase from System Library list */
-        Forbid();
+        APTR lock = liblist_lock(TRUE);
+
         Remove((struct Node *)MasterMiamiBase);
         Remove((struct Node *)MasterSocketBase);
-        Permit();
+        liblist_unlock(lock);
     }
 
     /* here SetFunction()s to patch libray calls (forbid()/permit()) */
