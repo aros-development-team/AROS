@@ -50,28 +50,28 @@ static inline ULONG llPollGameCtrl(int port)
     int i;
     UBYTE cmask = (port == 0) ? (1 << 6) : (1 << 7);
 
-    /* Set Pin 5 as output, shift mode */
+    /* Prepare Pin 5 for shift mode, keeping the pad loaded for now. */
     pot = custom->potinp;
     pot &= ~((port == 0) ? (3 << 8) : (3 << 12));
-    custom->potgo = pot | ((port == 0) ? (2 << 8) : (2 << 12));
     cia->ciapra  &= ~cmask;
     /*
-     * Clocking the buttons out means driving pin 5, so the line has to
-     * become an output for the duration. Remember how the port was set
+     * Clocking the buttons out means driving /FIRx (pin 6), so the line
+     * has to become an output for the duration. Remember how the port was set
      * up: a pin left driving afterwards reads as a button held down,
      * and a game polling it never sees the player let go.
      */
     ciaddra = cia->ciaddra;
     cia->ciaddra |= cmask;
+    custom->potgo = pot | ((port == 0) ? (2 << 8) : (2 << 12));
 
-    /* Shift in the button values */
+    /* Read Blue first, then clock the next button onto Pin 9. */
     D(bug("Sin: \n"));
     for (i = 0; i < 9; i++) {
-        cia->ciapra |= cmask;
-        cia->ciapra &= ~cmask;
         bits <<= 1;
         bits |= ((custom->potinp >> ((port == 0) ? 10 : 14)) & 1) ? 0 : 1;
         D(bug(" %d", bits & 1));
+        cia->ciapra |= cmask;
+        cia->ciapra &= ~cmask;
     }
     D(bug("\n"));
 
@@ -79,7 +79,8 @@ static inline ULONG llPollGameCtrl(int port)
     custom->potgo = pot;
     cia->ciaddra = ciaddra;
 
-    if ((bits & 3) != 2) {
+    /* The final pad bits are high then low: 01 after active-low inversion. */
+    if ((bits & 3) != 1) {
         /* Stuck bits? Probably not a game controller */
         D(bug("%s: Stuck bits? (0x%04x)\n", __func__, bits));
         /* Revert to autosense */
