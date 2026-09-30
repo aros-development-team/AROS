@@ -17,7 +17,7 @@ PRIV_EXEC_INCLUDES = \
     $(TARGET_KERNEL_INCLUDES) \
     -I$(SRCDIR)/rom/kernel
 
-CFILES          := coldreboot moveexecbase shutdowna exec_globals
+CFILES          := coldreboot moveexecbase shutdowna exec_globals bootstack
 AFILES		:= enable disable readgayle
 
 #MM kernel-exec-amiga-m68k : \
