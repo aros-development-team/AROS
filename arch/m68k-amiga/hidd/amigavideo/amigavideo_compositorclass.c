@@ -95,7 +95,7 @@ OOP_Object *METHOD(AmigaVideoCompositor, Root, New)
                                  * stack is chip RAM on an unexpanded
                                  * machine.
                                  */
-                                TASKTAG_STACKSIZE  , 4096,
+                                TASKTAG_STACKSIZE  , 2048,
                                 TASKTAG_PC         , DisplayServiceTask,
                                 TASKTAG_ARG1       , o,
                                 TAG_DONE);
