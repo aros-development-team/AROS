@@ -9,7 +9,8 @@
           3. TCP echo over loopback with a client on every CPU; every other
              round connects non-blocking and waits in WaitSelect()
           4. sockets handed between tasks on different CPUs with
-             ReleaseSocket()/ReleaseCopyOfSocket() and ObtainSocket()
+             ReleaseSocket()/ReleaseCopyOfSocket() and ObtainSocket(),
+             half of them obtained by unique id alone (domain 0)
           5. posixc read()/write()/close() from threads that never
              opened bsdsocket.library, and an exited FIOSETOWN owner
           A corrupted semaphore or a lost wakeup can show up as a hang or
@@ -528,7 +529,9 @@ static void Taker(void)
             Delay(1);
         if (g_Ids[slot] == -1)
             continue;       /* the giver already counted it */
-        fd = ObtainSocket(g_Ids[slot], AF_INET, SOCK_STREAM, 0);
+        /* Every other one by the unique id alone (domain 0) */
+        fd = (slot & 1) ? ObtainSocket(g_Ids[slot], 0, 0, 0)
+                        : ObtainSocket(g_Ids[slot], AF_INET, SOCK_STREAM, 0);
         if (fd < 0)
         {
             bug("[smpnet] ObtainSocket(%ld) failed (errno %ld)\n", (long)g_Ids[slot], (long)Errno());
