@@ -22,6 +22,15 @@
 
 /* Correspondingly, there's no struct stat64. Use struct stat instead. */
 #define stat64 stat
+#elif defined(HOST_OS_darwin) && !defined(__i386__) && !defined(__x86_64__)
+
+/*
+ * MacOS on anything but x86 (e.g. arm64) only has 64-bit inode_t, like iOS:
+ * struct stat is the 64-bit one, there's no struct stat64, and the SDK
+ * forbids _DARWIN_NO_64_BIT_INODE. libSystem exports fstat64/stat64 as
+ * aliases of fstat/stat, so the symbol names below still resolve.
+ */
+#define stat64 stat
 #else
 
 /*
