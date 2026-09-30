@@ -6,7 +6,8 @@
           1. pthread_create() while every CPU hammers OpenLibrary() - the
              child's DosEntry waits on the LDDemon semaphore as it starts
           2. per-task bsdsocket bases opened and closed on every CPU
-          3. TCP echo over loopback with a client on every CPU
+          3. TCP echo over loopback with a client on every CPU; every other
+             round connects non-blocking and waits in WaitSelect()
           4. sockets handed between tasks on different CPUs with
              ReleaseSocket()/ReleaseCopyOfSocket() and ObtainSocket()
           A corrupted semaphore or a lost wakeup can show up as a hang or
@@ -27,6 +28,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <libraries/bsdsocket.h>
 
@@ -372,6 +374,22 @@ out:
     __atomic_add_fetch(&g_ServerDone, 1, __ATOMIC_RELAXED);
 }
 
+/* Non-blocking connect: wait until writable, then back to blocking */
+static BOOL connect_nbio(struct Library *SocketBase, LONG fd, struct sockaddr_in *sin)
+{
+    LONG on = 1, off = 0, err = 0;
+    socklen_t len = sizeof(err);
+
+    if (IoctlSocket(fd, FIONBIO, (char *)&on) < 0)
+        return FALSE;
+    if (connect(fd, (struct sockaddr *)sin, sizeof(*sin)) < 0 && Errno() != EINPROGRESS)
+        return FALSE;
+    if (wait_ready(SocketBase, fd, TRUE) <= 0 ||
+        getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0 || err != 0)
+        return FALSE;
+    return IoctlSocket(fd, FIONBIO, (char *)&off) == 0;
+}
+
 static void EchoClient(void)
 {
     ULONG id = (ULONG)(IPTR)FindTask(NULL)->tc_UserData;
@@ -383,13 +401,16 @@ static void EchoClient(void)
     {
         struct sockaddr_in sin;
         LONG fd = socket(AF_INET, SOCK_STREAM, 0);
+        LONG tos = 0x10;
         BOOL ok = FALSE;
 
         for (i = 0; i < MSGLEN; i++)
             out[i] = (UBYTE)(id * 31 + r * 7 + i);
         loopback(&sin, g_Port);
         if (fd >= 0 &&
-            connect(fd, (struct sockaddr *)&sin, sizeof(sin)) == 0 &&
+            setsockopt(fd, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)) == 0 &&
+            ((r & 1) ? connect_nbio(SocketBase, fd, &sin)
+                     : connect(fd, (struct sockaddr *)&sin, sizeof(sin)) == 0) &&
             send(fd, out, MSGLEN, 0) == MSGLEN &&
             recv_all(SocketBase, fd, in, MSGLEN))
             ok = memcmp(in, out, MSGLEN) == 0;
