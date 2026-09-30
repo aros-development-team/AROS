@@ -9,13 +9,23 @@
 #include <exec/memory.h>
 #include <proto/hostlib.h>
 
-#include <sys/disk.h>
+/*
+ * <sys/disk.h> pulls in <net/if.h>, which only declares the types it needs
+ * when __APPLE__ is defined, and the AROS compiler doesn't define it. Take
+ * just the two ioctls used here, as defined in <sys/disk.h>.
+ */
+#include <stdint.h>
+#include <sys/ioccom.h>
+
+#define DKIOCGETBLOCKSIZE   _IOR('d', 24, uint32_t)
+#define DKIOCGETBLOCKCOUNT  _IOR('d', 25, uint64_t)
 
 #include "hostdisk_host.h"
 #include "hostdisk_device.h"
 
 ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBase *hdskBase)
 {
+    UQUAD sectors = 0;
     int ret, err;
 
     HostLib_Lock();
@@ -23,7 +33,7 @@ ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBas
     ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKSIZE, &dg->dg_SectorSize);
 
     if (ret != -1)
-        ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKCOUNT, &dg->dg_TotalSectors);
+        ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKCOUNT, &sectors);
 
     err = *hdskBase->errnoPtr;
 
@@ -35,6 +45,9 @@ ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBas
 
         return err;
     }
+
+    /* The block count is 64-bit; dg_TotalSectors is 32-bit. */
+    dg->dg_TotalSectors = sectors > 0xFFFFFFFF ? 0xFFFFFFFF : (ULONG)sectors;
 
     D(bug("hostdisk: %u sectors per %u bytes\n", dg->dg_TotalSectors, dg->dg_SectorSize));
 

@@ -10,8 +10,10 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-unix/devs/hostdisk			\
 # Dash after darwin is intentional. It stands for empty $(AROS_TARGET_VARIANT)
 # in $(ARCH)-$(AROS_TARGET_VARIANT) expression.
 # iOS SDK doesn't have disk IOCTL definitions, so no geometry routines.
+# incextra makes "hostdisk_host.h" resolve to the unix version rather than the
+# dummy one in maindir.
 
 %build_archspecific mainmmake=workbench-devs-hostdisk modname=hostdisk maindir=arch/all-hosted/devs/hostdisk \
-    arch=darwin- files="geometry"
+    arch=darwin- files="geometry" incextra="$(SRCDIR)/arch/all-unix/devs/hostdisk"
 
 %common
