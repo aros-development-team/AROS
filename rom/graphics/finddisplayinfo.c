@@ -6,6 +6,7 @@
 #include <aros/debug.h>
 #include <proto/graphics.h>
 #include <graphics/displayinfo.h>
+#include <graphics/modeid.h>
 #include <hidd/gfx.h>
 
 #include "graphics_intern.h"
@@ -61,6 +62,17 @@
     /* The database may fail on INVALID_ID, so handle this explicitly */
     if(ID == INVALID_ID)
         return NULL;
+
+    /* Resolve default-monitor IDs consistently with OpenScreenTags(), so
+     * display and overscan queries describe the mode that will be opened.
+     */
+    if ((ID & MONITOR_ID_MASK) == DEFAULT_MONITOR_ID)
+    {
+        if (GfxBase->DisplayFlags & PAL)
+            ID |= PAL_MONITOR_ID;
+        else if (GfxBase->DisplayFlags & NTSC)
+            ID |= NTSC_MONITOR_ID;
+    }
 
     /* Find display driver data */
     for(mdd = GFXPRIVATE_MONITORFIRST; mdd; mdd = (struct monitor_displaydata *)mdd->mdisplay.display_next) {
