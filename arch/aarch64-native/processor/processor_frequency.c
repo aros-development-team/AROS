@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -11,6 +11,7 @@
 #include <proto/mbox.h>
 #include <resources/processor.h>
 
+#include <hardware/bcm2708.h>
 #include <hardware/videocore.h>
 
 #include "processor_intern.h"
@@ -25,6 +26,11 @@ APTR MBoxBase = NULL;
 static IPTR __arm_periiobase;
 #define ARM_PERIIOBASE __arm_periiobase
 
+/* The BCM2712 moved the mailbox within the peripheral window */
+#define VCMB_OFFSET_BCM2712 0x013880
+#define VCMB_ADDR           ((APTR)(__arm_periiobase + \
+    ((__arm_periiobase == BCM2712_PERIIOBASE) ? VCMB_OFFSET_BCM2712 : VCMB_OFFSET)))
+
 static UQUAD vcQueryClock(struct ProcessorBase *ProcessorBase, ULONG tag, ULONG clockid)
 {
     unsigned int *msg_, *msg;
@@ -32,8 +38,7 @@ static UQUAD vcQueryClock(struct ProcessorBase *ProcessorBase, ULONG tag, ULONG 
 
     if (!MBoxBase)
     {
-        /* On demand, not at init: processor.resource has residentpri 99
-         * against mbox.resource's 88, so it does not exist yet. */
+        /* On demand: mbox.resource (residentpri 88) inits after us (99). */
         if ((MBoxBase = OpenResource("mbox.resource")) == NULL)
             return 0;
 
@@ -53,21 +58,20 @@ static UQUAD vcQueryClock(struct ProcessorBase *ProcessorBase, ULONG tag, ULONG 
     msg[6] = 0;                         /* rate comes back here */
     msg[7] = 0;                         /* terminating tag      */
 
-    /* MBoxCall, not MBoxWrite+MBoxRead: it serialises the exchange under
-     * the mailbox semaphore, which vc4gfx shares. */
-    if (MBoxCall((APTR)VCMB_BASE, VCMB_PROPCHAN, msg) == (volatile unsigned int *)msg)
+    /* MBoxCall, not Write+Read: it serialises against vc4gfx. */
+    if (MBoxCall(VCMB_ADDR, VCMB_PROPCHAN, msg) == (volatile unsigned int *)msg)
         rate = (UQUAD)AROS_LE2LONG(msg[6]);
 
     FreeMem(msg_, MBOXMSG_SIZE);
 
-    D(bug("[processor.ARM] %s: tag %08x clock %u -> %u Hz\n", __func__, tag, clockid, (ULONG)rate));
+    D(bug("[processor.AArch64] %s: tag %08x clock %u -> %u Hz\n", __func__, tag, clockid, (ULONG)rate));
 
     return rate;
 }
 
 VOID ReadMaxFrequencyInformation(struct ARMProcessorInformation * info)
 {
-    D(bug("[processor.ARM] :%s()\n", __PRETTY_FUNCTION__));
+    D(bug("[processor.AArch64] :%s()\n", __PRETTY_FUNCTION__));
 
     /* Left for the first query - the mailbox is not up yet here. */
     info->MaxCPUFrequency = 0;
@@ -75,11 +79,9 @@ VOID ReadMaxFrequencyInformation(struct ARMProcessorInformation * info)
 
 UQUAD GetCurrentProcessorFrequency(struct ProcessorBase *ProcessorBase, struct ARMProcessorInformation * info)
 {
-    D(bug("[processor.ARM] :%s()\n", __PRETTY_FUNCTION__));
+    D(bug("[processor.AArch64] :%s()\n", __PRETTY_FUNCTION__));
 
-    /* Sampled once, then cached - a mailbox round trip per SysMon
-     * refresh is not worth it. A failure leaves the cache at zero and
-     * is retried. */
+    /* Cached; a failed query (zero) is retried. */
     if (info->CPUFrequency == 0)
     {
         if (info->MaxCPUFrequency == 0)
