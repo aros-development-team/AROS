@@ -120,6 +120,7 @@ static struct CIABase *InitResource(char *Name, struct ExecBase *SysBase)
         base->lib.lib_IdString     = (STRPTR)&resident_id[6];
         base->lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
         base->lib.lib_Revision     = RESIDENT_REVISION;
+        base->sysbase              = SysBase;
 
         AddResource(base);
     }
