@@ -452,8 +452,8 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
         ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
         if ((other_app = find_application_by_base(cl, obj, data->app_Base)))
         {
-            //FIXME "Is calling MUIM_Application_PushMethod on an alien
-            //application object safe?"
+            // FIXME: Lifetime of other_app until the queued PushMethod
+            // executes is not established here.
             DoMethod(other_app, MUIM_Application_PushMethod,
                 (IPTR) other_app, 3, MUIM_Set, MUIA_Application_DoubleStart,
                 TRUE);
