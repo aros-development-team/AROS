@@ -665,13 +665,13 @@ caddr_t data;
         break;
     }
 
-    case SIOCSIFFLAGS:
+    case SIOCSIFFLAGS: {
+        /* the daemon changes if_flags too, e.g. when the link comes up */
+        spl_t s = splimp();
+
         /* if_down() is kludged for Sana-II driver ioctl */
-        if(ifp->if_flags & IFF_UP && (ifr->ifr_flags & IFF_UP) == 0) {
-            spl_t s = splimp();
+        if(ifp->if_flags & IFF_UP && (ifr->ifr_flags & IFF_UP) == 0)
             if_down(ifp);
-            splx(s);
-        }
 
         if(ifp->if_ioctl)
             (void)(*ifp->if_ioctl)(ifp, cmd, data);
@@ -705,7 +705,9 @@ caddr_t data;
             }
 #endif
         }
+        splx(s);
         break;
+    }
 
     case SIOCSIFMETRIC:
 #ifndef AMITCP /* no protection on AmigaOS */
@@ -746,20 +748,19 @@ caddr_t data;
 void ifupdown(struct ifnet *ifp, int up)
 {
     struct ifreq ifr;
+    spl_t s = splimp();     /* as in SIOCSIFFLAGS */
 
     if(up) {
         ifr.ifr_flags = ifp->if_flags & ~IFF_UP;
-        if(ifp->if_flags & IFF_UP) {
-            spl_t s = splimp();
+        if(ifp->if_flags & IFF_UP)
             if_down(ifp);
-            splx(s);
-        }
     } else {
         ifr.ifr_flags = ifp->if_flags | IFF_UP;
     }
     if(ifp->if_ioctl)
         (void)(*ifp->if_ioctl)(ifp, SIOCSIFFLAGS, (caddr_t)&ifr);
     ifp->if_flags = ifr.ifr_flags;
+    splx(s);
 }
 
 /*

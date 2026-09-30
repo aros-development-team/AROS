@@ -860,8 +860,11 @@ register int len;
         n->m_len = MIN(len, m->m_len - off);
 
         if(m->m_flags & M_EXT) {
+            spl_t ms = splimp();    /* MCLFREE drops it at splimp */
+
             n->m_data = m->m_data + off;
             m->m_ext.ext_buf->mcl.mcl_refcnt++;
+            splx(ms);
             n->m_ext = m->m_ext;
             n->m_flags |= M_EXT;
         } else
