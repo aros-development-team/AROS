@@ -26,7 +26,6 @@ Items that ought to be implemented in future TextEditor.mcc releases:
 * Fix the problem that parts of italic letters are erased (happens only
   if fonts are anti aliased)
 * Implement more different Import/Export hooks.
-* Change all import/export hooks to use a flex template whereever possible.
 * Inline image display
 * Fix background rendering when certain types of gradients are used.
 

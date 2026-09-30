@@ -237,7 +237,7 @@ static void DrawKnob(Object *obj, struct Numericbutton_DATA *data,
 
     if (data->knob_bg)
     {
-        // FIXME: Ugly hack?
+        /* Gradient image specs use the object's area box as reference geometry. */
 
         struct IBox old_mad_Box = muiAreaData(obj)->mad_Box;
 
