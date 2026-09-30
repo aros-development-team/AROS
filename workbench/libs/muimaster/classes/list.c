@@ -740,7 +740,7 @@ static BOOL ParseListFormat(struct MUI_ListData *data, STRPTR format,
         if (!IncreaseColumns(data, new_columns))
         {
             bug("[Zune:List] not enough memory for new columns!!\n");
-            /* FIXME: proper handling? */
+            /* FIXME: failure can leave list entries with mixed allocation sizes. */
             return FALSE;
         }
         data->columns_allocated = new_columns;
@@ -1450,7 +1450,7 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_List_Format:
             data->format = (STRPTR) tag->ti_Data;
             ParseListFormat(data, data->format, FALSE);
-            // FIXME: should we check for errors?
+            // FIXME: ParseListFormat() failure is ignored.
             DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
             break;
 
