@@ -75,8 +75,21 @@ in6_addrscope(struct in6_addr *addr)
 /* ------------------------------------------------------------------
  * in6_control - ioctl handler for IPv6 interface addresses.
  * ------------------------------------------------------------------ */
+static int in6_control_locked(struct socket *, int, caddr_t, struct ifnet *);
+
+/* The address lists are walked by ip6_input, so they change at splimp */
 int
 in6_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
+{
+    spl_t s = splimp();
+    int error = in6_control_locked(so, cmd, data, ifp);
+
+    splx(s);
+    return (error);
+}
+
+static int
+in6_control_locked(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 {
     struct in6_ifreq  *ifr  = (struct in6_ifreq *)data;
     struct in6_aliasreq *ifra = (struct in6_aliasreq *)data;

@@ -277,12 +277,25 @@ struct in_addr in;
 int	in_interfaces;		/* number of external internet interfaces */
 extern	struct ifnet loif;
 
+static int in_control_locked(struct socket *, int, caddr_t, struct ifnet *);
+
 /*
  * Generic internet control operations (ioctl's).
  * Ifp is 0 if not an interface-specific ioctl.
+ * The address lists are walked by ip_input, so they change at splimp.
  */
 int
-in_control(so, cmd, data, ifp)
+in_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
+{
+    spl_t s = splimp();
+    int error = in_control_locked(so, cmd, data, ifp);
+
+    splx(s);
+    return (error);
+}
+
+static int
+in_control_locked(so, cmd, data, ifp)
 struct socket *so;
 int cmd;
 caddr_t data;

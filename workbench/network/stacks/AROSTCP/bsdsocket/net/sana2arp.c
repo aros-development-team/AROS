@@ -898,8 +898,24 @@ out:
     return;
 }
 
+static int arpioctl_locked(int cmd, caddr_t data);
+
+/*
+ * The daemon takes spl before ARPTAB_LOCK, and arptfree() frees at splimp,
+ * so the ioctls must hold spl first too or the two orders deadlock.
+ */
 int
-arpioctl(cmd, data)
+arpioctl(int cmd, caddr_t data)
+{
+    spl_t s = splimp();
+    int error = arpioctl_locked(cmd, data);
+
+    splx(s);
+    return (error);
+}
+
+static int
+arpioctl_locked(cmd, data)
 int cmd;
 caddr_t data;
 {
