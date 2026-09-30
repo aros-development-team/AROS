@@ -82,27 +82,39 @@ static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
     struct Requester    *req;
     struct Layer        *layer = WLAYER(window);
     
+    struct Layer *behindlayer;
+
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
     if (!ResourceExisting(behindwindow, RESOURCE_WINDOW, IntuitionBase)) return;
+    if ((window == behindwindow) || (window->WScreen != behindwindow->WScreen)) return;
 
     LOCK_REFRESH(screen);
 
-    /* FIXXXXXXXXXXXXXXXXXXXXXXXXXXXX FIXME FIXXXXXXXXXXXXXXXXXX */
-
-    /* If GZZ window then also move outer window */
-
-    MoveLayerInFrontOf(layer, WLAYER(behindwindow));
+    behindlayer = WLAYER(behindwindow);
+    for (req = behindwindow->FirstRequest; req; req = req->OlderRequest)
+    {
+        if (req->ReqLayer)
+        {
+            behindlayer = req->ReqLayer;
+            break;
+        }
+    }
 
     if (BLAYER(window))
     {
-        MoveLayerInFrontOf(BLAYER(window), BLAYER(behindwindow));
+        MoveLayerInFrontOf(BLAYER(window), behindlayer);
+        MoveLayerInFrontOf(layer, BLAYER(window));
+    }
+    else
+    {
+        MoveLayerInFrontOf(layer, behindlayer);
     }
 
     for (req = window->FirstRequest; req; req = req->OlderRequest)
     {
         if (req->ReqLayer)
         {
-            MoveLayerInFrontOf(layer, req->ReqLayer);
+            MoveLayerInFrontOf(req->ReqLayer, layer);
         }
     }
 
