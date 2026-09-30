@@ -1627,7 +1627,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
             AddResourceToList(w, RESOURCE_WINDOW, IntuitionBase);
 
-            if (w->Flags & WFLG_ACTIVATE)
+            if ((w->Flags & WFLG_ACTIVATE) && !invisible)
             {
                 ActivateWindow(w);
             }
