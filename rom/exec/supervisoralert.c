@@ -28,7 +28,7 @@ void Alert_DisplayKrnAlert(struct Task * task, ULONG alertNum, APTR location, AP
 void SupervisorAlertTask(struct ExecBase *SysBase)
 {
     struct IntExecBase * IntSysBase = PrivExecBase(SysBase);
-    char * buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
+    char * buffer;
     LONG res, i;
     struct Task * t = NULL;
     ULONG alertNum = 0;
@@ -47,7 +47,12 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
         alertNum = IntSysBase->SAT.sat_Params[0];
         Enable();
 
-        res = Alert_AskSuspend(t, alertNum | AT_DeadEnd, buffer, SysBase);
+        /* Only needed while an alert is shown; without it, use the critical error path */
+        buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
+        if (buffer)
+            res = Alert_AskSuspend(t, alertNum | AT_DeadEnd, buffer, SysBase);
+        else
+            res = -1;
 
         if (res == -1)
         {
@@ -75,6 +80,9 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
 
             Enable();
         }
+
+        if (buffer)
+            FreeMem(buffer, ALERT_BUFFER_SIZE);
 
         switch (res)
         {
