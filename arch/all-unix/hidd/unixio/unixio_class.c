@@ -463,7 +463,7 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct pHidd_Unix
 
     HostLib_Lock();
 
-    retval = (APTR)(unsigned long)data->SysIFace->open(msg->FileName, (int)msg->Flags, (int)msg->Mode);
+    retval = (APTR)(unsigned long)HOST_VACALL3(data->SysIFace->open, msg->FileName, (int)msg->Flags, (int)msg->Mode);
     AROS_HOST_BARRIER
 
     if (msg->ErrNoPtr)
@@ -759,7 +759,7 @@ IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct pHidd
         if (user)
             HostLib_Lock();
 
-        retval = data->SysIFace->ioctl((long)msg->FD, (int)msg->Request, msg->Param);
+        retval = HOST_VACALL3(data->SysIFace->ioctl, (long)msg->FD, (int)msg->Request, msg->Param);
         AROS_HOST_BARRIER
 
         err = *data->uio_Public.uio_ErrnoPtr;
@@ -838,14 +838,14 @@ int UXIO__Hidd_UnixIO__AddInterrupt(OOP_Class *cl, OOP_Object *o, struct pHidd_U
     /* Now own the filedescriptor and enable SIGIO on it */
     HostLib_Lock();
 
-    res = data->SysIFace->fcntl(msg->Int->fd, F_SETOWN, data->aros_PID);
+    res = HOST_VACALL3(data->SysIFace->fcntl, msg->Int->fd, F_SETOWN, data->aros_PID);
     AROS_HOST_BARRIER
 
     if (res != -1)
     {
         res = data->SysIFace->fcntl(msg->Int->fd, F_GETFL);
         AROS_HOST_BARRIER
-        res = data->SysIFace->fcntl(msg->Int->fd, F_SETFL, res|O_ASYNC);
+        res = HOST_VACALL3(data->SysIFace->fcntl, msg->Int->fd, F_SETFL, res|O_ASYNC);
         AROS_HOST_BARRIER
     }
     err = *data->uio_Public.uio_ErrnoPtr;

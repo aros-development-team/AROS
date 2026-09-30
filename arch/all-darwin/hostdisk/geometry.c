@@ -30,10 +30,10 @@ ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBas
 
     HostLib_Lock();
  
-    ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKSIZE, &dg->dg_SectorSize);
+    ret = HOST_VACALL3(hdskBase->iface->ioctl, file, DKIOCGETBLOCKSIZE, &dg->dg_SectorSize);
 
     if (ret != -1)
-        ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKCOUNT, &sectors);
+        ret = HOST_VACALL3(hdskBase->iface->ioctl, file, DKIOCGETBLOCKCOUNT, &sectors);
 
     err = *hdskBase->errnoPtr;
 

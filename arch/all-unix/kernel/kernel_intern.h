@@ -2,6 +2,8 @@
 #include <sys/types.h>
 #include <signal.h>
 
+#include "../include/host_vacall.h"
+
 /* Android is not a true Linux ;-) */
 #ifdef HOST_OS_android
 #undef HOST_OS_linux
