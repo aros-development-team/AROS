@@ -18,6 +18,7 @@
 
 #include <dos/dos.h>
 #include <dos/datetime.h>
+#include <dos/dosextens.h>
 #include <exec/memory.h>
 #include <libraries/asl.h>
 #include <libraries/commodities.h>
@@ -35,6 +36,7 @@
 #include <stdio.h>
 
 #include <string.h>
+#include <strings.h>
 
 #define RETURNID_SLEEP      1
 #define RETURNID_WAKE       2
@@ -64,6 +66,7 @@
 static Object *window, *commentspace, *filename_string, *stackspace, *savebutton;
 static Object *readobject, *writeobject, *executeobject, *deleteobject;
 static Object *scriptobject, *pureobject, *archiveobject, *sizespace = NULL;
+static Object *knownlist;
 struct DirScanProcess
 {
     struct Process    *scanProcess;
@@ -382,6 +385,177 @@ void FreeToolTypes(UBYTE **ttypes)
         DeletePool((APTR)ttypes[-1]);
     }
 #endif
+}
+
+static BOOL IsToolTypeSpace(char c)
+{
+    return c == ' ' || c == '\t';
+}
+
+static STRPTR GetToolTypeName(CONST_STRPTR tooltype)
+{
+    CONST_STRPTR src;
+    STRPTR name, dst;
+    size_t len;
+
+    if (tooltype == NULL)
+        return NULL;
+
+    len = strnlen(tooltype, MAX_TOOLTYPE_LINE);
+    if (len == MAX_TOOLTYPE_LINE)
+        return NULL;
+
+    name = AllocVec(len + 1, MEMF_ANY);
+    if (name == NULL)
+        return NULL;
+
+    src = tooltype;
+    while (IsToolTypeSpace(*src))
+        src++;
+
+    if (*src == '(')
+    {
+        src++;
+        while (IsToolTypeSpace(*src))
+            src++;
+    }
+
+    if (*src == '\0' || *src == '#')
+    {
+        FreeVec(name);
+        return NULL;
+    }
+
+    dst = name;
+    while (*src != '\0' && *src != '=' && *src != ')' && !IsToolTypeSpace(*src))
+        *dst++ = *src++;
+    *dst = '\0';
+
+    if (name[0] == '\0' || strchr(name, '|') != NULL)
+    {
+        FreeVec(name);
+        return NULL;
+    }
+
+    return name;
+}
+
+static BOOL IsDisabledToolType(CONST_STRPTR tooltype)
+{
+    if (tooltype == NULL)
+        return FALSE;
+
+    while (IsToolTypeSpace(*tooltype))
+        tooltype++;
+
+    return *tooltype == '(';
+}
+
+static BOOL ActiveToolTypeContains(STRPTR *tooltypes, CONST_STRPTR name)
+{
+    ULONG i;
+
+    if (tooltypes == NULL || name == NULL)
+        return FALSE;
+
+    for (i = 0; tooltypes[i] != NULL; i++)
+    {
+        STRPTR activeName;
+
+        if (IsDisabledToolType(tooltypes[i]))
+            continue;
+
+        activeName = GetToolTypeName(tooltypes[i]);
+        if (activeName != NULL)
+        {
+            BOOL found = strcasecmp(activeName, name) == 0;
+            FreeVec(activeName);
+            if (found)
+                return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+static BOOL KnownToolTypeContains(CONST_STRPTR name)
+{
+    IPTR entries = 0;
+    IPTR i;
+
+    if (knownlist == NULL || name == NULL)
+        return FALSE;
+
+    get(knownlist, MUIA_List_Entries, &entries);
+    for (i = 0; i < entries; i++)
+    {
+        STRPTR entry = NULL;
+
+        DoMethod(knownlist, MUIM_List_GetEntry, i, (IPTR)&entry);
+        if (entry != NULL && strcasecmp(entry, name) == 0)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static struct DiskObject *GetKnownToolIcon(CONST_STRPTR tool)
+{
+    struct DiskObject *toolicon;
+
+    if (tool == NULL || tool[0] == '\0')
+        return NULL;
+
+    toolicon = GetDiskObject(tool);
+    if (toolicon != NULL || strpbrk(tool, "/:") != NULL)
+        return toolicon;
+
+    {
+        struct CommandLineInterface *cli = Cli();
+
+        if (cli != NULL)
+        {
+            BPTR *paths;
+
+            for (paths = (BPTR *)BADDR(cli->cli_CommandDir);
+                 paths != NULL;
+                 paths = (BPTR *)BADDR(paths[0]))
+            {
+                BPTR olddir = CurrentDir(paths[1]);
+
+                toolicon = GetDiskObject(tool);
+                CurrentDir(olddir);
+                if (toolicon != NULL)
+                    return toolicon;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+static void AddKnownToolTypes(STRPTR *tooltypes, STRPTR *activeToolTypes)
+{
+    ULONG i;
+
+    if (knownlist == NULL || tooltypes == NULL)
+        return;
+
+    for (i = 0; tooltypes[i] != NULL; i++)
+    {
+        STRPTR name = GetToolTypeName(tooltypes[i]);
+
+        if (name != NULL)
+        {
+            if (!ActiveToolTypeContains(activeToolTypes, name) &&
+                !KnownToolTypeContains(name))
+            {
+                DoMethod(knownlist, MUIM_List_InsertSingle, name,
+                         MUIV_List_Insert_Bottom);
+            }
+            FreeVec(name);
+        }
+    }
 }
 
 void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
@@ -706,7 +880,9 @@ int main(int argc, char **argv)
     Object *newkey = NULL, *delkey = NULL;
 #endif
     struct WBStartup *startup;
-    struct DiskObject *icon = NULL;
+    struct DiskObject *icon = NULL, *knownicon = NULL;
+    CONST_STRPTR knownowner = NULL;
+    char knowntitle[MAX_PATH_LEN] = {0};
     struct AnchorPath *ap = NULL;
     struct DateStamp *ds = NULL;
     struct DateTime dt;
@@ -875,6 +1051,23 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         retval = RETURN_FAIL;
         goto funcmain_exit;
     }
+
+    if (icon->do_Type == WBTOOL)
+    {
+        knownicon = icon;
+        knownowner = FilePart(file);
+    }
+    else if (icon->do_Type == WBPROJECT &&
+             icon->do_DefaultTool != NULL && icon->do_DefaultTool[0] != '\0')
+    {
+        knownicon = GetKnownToolIcon(icon->do_DefaultTool);
+        if (knownicon != NULL)
+            knownowner = FilePart(icon->do_DefaultTool);
+    }
+
+    if (knownowner != NULL)
+        snprintf(knowntitle, sizeof(knowntitle),
+                 _(MSG_TOOLTYPES_KNOWN_FOR), knownowner);
 
     if (icon->do_Type == 2)
     {
@@ -1059,6 +1252,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                             Child, (IPTR) HGroup,
                                 Child, (IPTR) VGroup,
                                 GroupSpacing(0),
+                                GroupFrameT(_(MSG_TOOLTYPES_IN_ICON)),
                 #if !USE_TEXTEDITOR
                                     Child, (IPTR) ListviewObject,
                                         MUIA_Listview_List, (IPTR) (list = ListObject,
@@ -1081,6 +1275,18 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                     End),
                     End,
                 #endif
+                                End,
+                                Child, (IPTR) VGroup,
+                                    GroupFrameT(knowntitle),
+                                    Child, (IPTR) ListviewObject,
+                                        MUIA_Listview_Input, FALSE,
+                                        MUIA_Listview_List, (IPTR) (knownlist = ListObject,
+                                            ReadListFrame,
+                                            MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+                                            MUIA_List_DestructHook, MUIV_List_DestructHook_String,
+                                            MUIA_List_AutoVisible, TRUE,
+                                        End),
+                                    End,
                                 End,
                             End,
             #if !USE_TEXTEDITOR
@@ -1238,6 +1444,9 @@ D(bug("[WBInfo] icon type is: %s\n", type));
             }
         }
     #endif
+
+        if (knownicon != NULL)
+            AddKnownToolTypes(knownicon->do_ToolTypes, icon->do_ToolTypes);
     
         switch(icon->do_Type)
         {
@@ -1439,6 +1648,7 @@ D(bug("[WBInfo: Couldn't create app\n"));
    
 funcmain_exit:
     if (scanStruct) FreeMem(scanStruct, sizeof(struct DirScanProcess));
+    if (knownicon && knownicon != icon) FreeDiskObject(knownicon);
     if (icon) FreeDiskObject(icon);
     FreeVec(ap);
     return retval;
