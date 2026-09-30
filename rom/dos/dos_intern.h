@@ -72,6 +72,7 @@ struct DAList
 #ifndef EOF
 #define EOF -1
 #endif
+#include <dos_platform.h>
 #ifndef IOBUFSIZE
 #define IOBUFSIZE 4096
 #endif
