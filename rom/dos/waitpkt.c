@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -79,6 +79,15 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort)
                 AROS_UFCA(struct MsgPort *, msgPort, A1),
                 AROS_UFCA(struct ExecBase *, SysBase, A6));
         }
+#ifdef __mc68000
+        else if (msgPort == &me->pr_MsgPort)
+        {
+            struct DosPacket *dp = BCPL_WaitPkt(me);
+
+            if (dp)
+                return dp;
+        }
+#endif
     }
 
     if (!msg)

@@ -125,6 +125,7 @@ SIPTR handleNIL(LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3);
 
 #ifdef __mc68000
 extern void BCPL_Fixup(struct Process *me);
+extern struct DosPacket *BCPL_WaitPkt(struct Process *me);
 #else
 #define BCPL_Fixup(p) do { } while (0)
 #endif
