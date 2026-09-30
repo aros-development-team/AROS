@@ -1104,8 +1104,8 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
     if (data->wd_X == MUIV_Window_LeftEdge_Centered)
     {
         if (data->wd_RefWindow != NULL)
-            /* FIXME: only correct if border thickness is the same for both
-               windows */
+            /* FIXME: refw/refh are GZZ client sizes while width/height
+               include borders; reference-window centering mixes geometry bases. */
             data->wd_X = refx + (refw - width) / 2;
         else
             data->wd_X = (scr->ViewPort.DWidth - width) / 2;

@@ -2956,7 +2956,8 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
      */
     if (sort)
     {
-        /* TODO: which pos to return here !?        */
+        /* TODO: define which position to return after
+           MUIV_List_Insert_Sorted reorders the list. */
         DoMethod(obj, MUIM_List_Sort);
 
         if ((adjusted) && (data->flags & LIST_QUIET))

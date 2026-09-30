@@ -223,7 +223,7 @@ static BOOL NBitmap_ExamineData(Object *dt_obj, uint32 item, struct IClass *cl, 
     else if(data->depth >=24)
     {
       #if defined(__MORPHOS__)
-      /* XXX: Check out is this needed in OS 3 and AROS */
+      /* TODO: establish the PDTA_AlphaChannel contract on OS 3 and AROS. */
       IPTR use_alpha;
 
       GetDTAttrs(dt_obj, PDTA_AlphaChannel, (IPTR)&use_alpha, TAG_DONE);

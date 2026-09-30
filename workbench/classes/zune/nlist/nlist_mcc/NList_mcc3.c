@@ -694,7 +694,8 @@ IPTR mNL_Draw(struct IClass *cl,Object *obj,struct MUIP_Draw *msg)
 #ifndef __AROS__
       muiAreaData(obj)->mad_Flags &= ~0x00000001;
 #else
-      /* "AROS: FIXME: No frame drawn if doing: muiAreaData(obj)->mad_Flags &= ~0x00000001;" This is still valid 16.01.2012 */
+      /* AROS FIXME: clearing mad_Flags bit 0 here was observed to suppress
+         frame drawing; current runtime status is unverified. */
 #endif
       DoSuperMethodA(cl,obj,(Msg) msg);
     }
@@ -734,7 +735,8 @@ IPTR mNL_Draw(struct IClass *cl,Object *obj,struct MUIP_Draw *msg)
 #ifndef __AROS__
   muiAreaData(obj)->mad_Flags &= ~0x00000001;
 #else
-  /* "AROS: FIXME: No frame drawn if doing: muiAreaData(obj)->mad_Flags &= ~0x00000001;" This is still valid 16.01.2012 */
+  /* AROS FIXME: clearing mad_Flags bit 0 here was observed to suppress
+     frame drawing; current runtime status is unverified. */
 #endif
   DoSuperMethodA(cl,obj,(Msg) msg);
 

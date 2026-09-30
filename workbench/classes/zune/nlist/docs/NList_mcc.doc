@@ -164,7 +164,7 @@ Known bugs
 What is to do in future ?
 *************************
 
-- Make a nice user configuration for title marks.
+- Add user configuration for title-mark appearance.
 
 - Make NList subclasses. I think about Volumelist, Dirlist.
   Tell me if you want to do one of them.
