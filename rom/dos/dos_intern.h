@@ -333,6 +333,7 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
 
 /* Shell utilities */
 BPTR findseg_cli(BOOL isBoot, struct DosLibrary *DOSBase);
+LONG internal_RunBootShell(BPTR sis, BPTR sos, BPTR script, struct DosLibrary *DOSBase);
 
 BPTR findseg_shell(BOOL isBoot, struct DosLibrary *DOSBase);
 

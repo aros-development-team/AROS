@@ -514,3 +514,59 @@ end:
 
     AROS_LIBFUNC_EXIT
 } /* SystemTagList */
+
+/*
+ * Run the boot shell in the calling process, the way the AmigaOS boot
+ * process becomes the Initial CLI, instead of starting a second process
+ * and blocking on it for as long as the boot shell runs. The startup
+ * packet is the one SystemTagList() sends for CLI_BOOT; the shell replies
+ * it to our own port when it exits.
+ */
+LONG internal_RunBootShell(BPTR sis, BPTR sos, BPTR script, struct DosLibrary *DOSBase)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct DosPacket *dp;
+    struct ExtArg *ea;
+    BPTR shellseg;
+    APTR oldReturnAddr;
+    LONG rc = -1;
+
+    shellseg = findseg_shell(TRUE, DOSBase);
+    if (!shellseg)
+        return -1;
+
+    dp = AllocDosObject(DOS_STDPKT, NULL);
+    ea = AllocMem(sizeof(struct ExtArg), MEMF_PUBLIC | MEMF_CLEAR);
+    if (dp && ea)
+    {
+        dp->dp_Port = &me->pr_MsgPort;
+        dp->dp_Type = CLI_BOOT;
+        dp->dp_Res1 = 0;                /* CliInitRun style */
+        dp->dp_Res2 = 0;
+        dp->dp_Arg1 = (IPTR)MKBADDR(Cli());
+        dp->dp_Arg2 = (IPTR)sis;
+        dp->dp_Arg3 = (IPTR)sos;
+        dp->dp_Arg4 = (IPTR)(script ? script : sis);
+        dp->dp_Arg5 = (IPTR)(me->pr_CurrentDir ? DupLock(me->pr_CurrentDir) : BNULL);
+        dp->dp_Arg6 = 1;
+        dp->dp_Arg7 = (IPTR)ea;         /* freed by CliInitRun() */
+        ea = NULL;
+
+        oldReturnAddr = me->pr_ReturnAddr;
+        CallEntry((STRPTR)dp, 0, (LONG_FUNC)((BPTR *)BADDR(shellseg) + 1), me);
+        me->pr_ReturnAddr = oldReturnAddr;
+
+        if (WaitPkt() != dp)
+            Alert(AN_QPktFail);
+
+        rc = dp->dp_Res1;
+        SetIoErr(dp->dp_Res2);
+    }
+
+    if (ea)
+        FreeMem(ea, sizeof(struct ExtArg));
+    if (dp)
+        FreeDosObject(DOS_STDPKT, dp);
+
+    return rc;
+}

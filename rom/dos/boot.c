@@ -334,7 +334,15 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 
             D(bug("[DOS] %s: initialising CLI\n", __func__);)
 
-            if (SystemTags(NULL,
+            if (BootFlags & BF_NO_BOOT_REQUESTERS) {
+                /* Appliance boot: this process becomes the Initial CLI
+                 * rather than waiting on a second one, which would pin
+                 * another process and stack for the whole game. */
+                if (internal_RunBootShell(cis, cos, cas, DOSBase) == -1) {
+                    D(bug("[DOS] %s:  .. failed!\n", __func__);)
+                    Alert(AT_DeadEnd | AN_BootStrap);
+                }
+            } else if (SystemTags(NULL,
                            NP_Name, "Initial CLI",
                            NP_WindowPtr,
                                (BootFlags & BF_NO_BOOT_REQUESTERS)
