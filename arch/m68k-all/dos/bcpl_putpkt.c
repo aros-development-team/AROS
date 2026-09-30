@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Desc: BCPL support
 */
@@ -37,8 +37,9 @@ AROS_UFH2(ULONG, Dos_BCPL_putpkt,
 {
     AROS_USERFUNC_INIT
 
-    D(struct Process *me   = (struct Process *)FindTask(NULL);)
+    struct Process *me = (struct Process *)FindTask(NULL);
     struct DosPacket *dp = BADDR(bdospacket);
+    struct MsgPort *port = dp->dp_Port;
 
     D(bug("BCPL putPkt: me->pr_MsgPort        = %p\n", &me->pr_MsgPort));
     D(bug("BCPL putPkt: me->pr_FileSystemTask = %p\n", me->pr_FileSystemTask));
@@ -71,7 +72,11 @@ AROS_UFH2(ULONG, Dos_BCPL_putpkt,
     D(bug("BCPL putPkt: Send to port %p, reply on port %p, DosPacket %p\n",
         dp->dp_Port, &me->pr_MsgPort, dp));
 
-    PutMsg(dp->dp_Port, dp->dp_Link);
+    /* BCPL putPkt uses dp_Port as the destination on entry. Replace it
+     * with the sender's port so the receiver can return the packet, and
+     * the sender can reuse the returned packet for its next request.
+     */
+    SendPkt(dp, port, &me->pr_MsgPort);
     return DOSTRUE;
 
     AROS_USERFUNC_EXIT
