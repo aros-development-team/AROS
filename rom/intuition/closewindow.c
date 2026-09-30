@@ -322,7 +322,11 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
            active now. We first check whether we have a "parent",
            which is a msg->window that was open before the one we're closing. */
         if (msg->window->Parent)
+        {
             newactive = msg->window->Parent;
+            while (newactive && !IsWindowVisible(newactive))
+                newactive = newactive->Parent;
+        }
         else {
             /* Otherwise, we find out which was the latest one, and activate it.
                It's debatable whether this is the best policy, but this is how
