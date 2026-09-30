@@ -69,7 +69,7 @@ void dump_sockaddr_in(struct sockaddr_in *name, struct SocketBase *libPtr)
 LONG __socket(LONG domain, LONG type, LONG protocol, struct SocketBase *libPtr)
 {
     struct socket *so;
-    LONG fd, error;
+    LONG fd, error, flags;
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_syscalls.c) __socket()\n"));
@@ -77,11 +77,17 @@ LONG __socket(LONG domain, LONG type, LONG protocol, struct SocketBase *libPtr)
 
     CHECK_TASK();
 
+    /* Creation flags are OR'ed into type; CLOEXEC/CLOFORK mean nothing here */
+    flags = type & (SOCK_CLOEXEC | SOCK_NONBLOCK | SOCK_CLOFORK);
+    type &= ~(SOCK_CLOEXEC | SOCK_NONBLOCK | SOCK_CLOFORK);
+
     if(error = sdFind(libPtr, &fd))
         goto Return;
 
     ObtainSyscallSemaphore(libPtr);
     error = socreate(domain, &so, type, protocol);
+    if(! error && (flags & SOCK_NONBLOCK))
+        so->so_state |= SS_NBIO;
 
     if(! error) {
         /*
