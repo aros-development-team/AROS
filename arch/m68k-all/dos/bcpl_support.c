@@ -20,6 +20,7 @@
 
 /* Externs */
 extern void BCPL_dummy(void);
+extern void BCPL_thunk(void);
 #define BCPL(id, name)  extern void BCPL_##name(void);
 #include "bcpl.inc"
 #undef BCPL
@@ -66,6 +67,42 @@ APTR BCPL_TaskWait(void)
     }
 
     return NULL;
+}
+
+/* Old BCPL applications replace global vector 100 to intercept asynchronous
+ * packets while DOS waits for a synchronous reply. Keep the original raw
+ * taskwait entry available to the callback, and use its caller's active BCPL
+ * frame rather than overwriting the frames at tc_SPLower.
+ */
+struct DosPacket *BCPL_WaitPkt(struct Process *me)
+{
+    APTR globvec = me->pr_GlobVec;
+    LONG_FUNC waitfunc;
+    APTR frame, oldReturnAddr;
+    BPTR packet;
+
+    if (!globvec)
+        return NULL;
+
+    waitfunc = *(LONG_FUNC *)(globvec + GV_PktWait);
+    if (!waitfunc || waitfunc == (LONG_FUNC)BCPL_taskwait_190)
+        return NULL;
+
+    frame = *(APTR *)(globvec + GV_PktWaitFrame);
+    oldReturnAddr = me->pr_ReturnAddr;
+    packet = AROS_UFC8(BPTR, BCPL_thunk,
+        AROS_UFCA(ULONG, 0, D1),
+        AROS_UFCA(ULONG, 0, D2),
+        AROS_UFCA(ULONG, 0, D3),
+        AROS_UFCA(ULONG, 0, D4),
+        AROS_UFCA(APTR, frame, A1),
+        AROS_UFCA(APTR, globvec, A2),
+        AROS_UFCA(APTR, &me->pr_ReturnAddr, A3),
+        AROS_UFCA(LONG_FUNC, waitfunc, A4));
+    me->pr_ReturnAddr = oldReturnAddr;
+    *(APTR *)(globvec + GV_PktWaitFrame) = frame;
+
+    return BADDR(packet);
 }
 
 /*
@@ -193,8 +230,6 @@ void BCPL_Fixup(struct Process *me)
         segment[6] = (ULONG)me->pr_GlobVec;
     }
 }
-
-extern void BCPL_thunk(void);
 
 /* Under AOS, BCPL handlers expect the OS to build
  * their GlobalVector, and to receive a pointer to their
