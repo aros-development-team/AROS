@@ -249,7 +249,7 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
             {
                 /* One size can come at several rates now. */
                 if (hdmi_mode->dm_descr)
-                    sprintf(hdmi_mode->dm_descr, "VideoCore: HDMI %dx%d@%d", (int)t->hdisp,
+                    sprintf(hdmi_mode->dm_descr, "VC: HDMI %dx%d@%d", (int)t->hdisp,
                         (int)t->vdisp, (int)((t->clock * 1000 + t->htotal * t->vtotal / 2)
                                              / (t->htotal * t->vtotal)));
                 AddTail(modelist, &hdmi_mode->dm_Node);
