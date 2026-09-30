@@ -9,6 +9,8 @@
 
 #define FETCHERR    (-2)
 
+static LONG direct_fetch(BPTR file, UBYTE *buffer, ULONG fetchsize, struct DosLibrary *DOSBase);
+
 /*****************************************************************************
 
     NAME */
@@ -69,7 +71,9 @@
 
     while(fetchsize > 0)
     {
-        res = vbuf_fetch(fh, ptr, fetchsize, DOSBase);
+        res = direct_fetch(fh, ptr, fetchsize, DOSBase);
+        if (res == 0)
+            res = vbuf_fetch(fh, ptr, fetchsize, DOSBase);
         if (res < 0)
             break;
         ptr += res;
@@ -117,6 +121,37 @@ static LONG handle_write_mode(BPTR file, struct DosLibrary * DOSBase)
     }
 
     return 0;
+}
+
+/*
+ * A request at least one buffer long gains nothing from the buffer: once
+ * it is empty, read straight into the caller's memory with one packet.
+ * Returns 0 when the buffered path must be used instead, otherwise the
+ * same values as vbuf_fetch().
+ */
+static LONG direct_fetch(BPTR file, UBYTE *buffer, ULONG fetchsize, struct DosLibrary *DOSBase)
+{
+    struct FileHandle *fh = (struct FileHandle *)BADDR(file);
+    ULONG bufsize;
+    LONG  size;
+
+    /* Buffered characters, a pushed back EOF, or a pending write */
+    if (fh == NULL || fh->fh_Pos != fh->fh_End || (fh->fh_Flags & FHF_WRITE))
+        return 0;
+
+    if (fh->fh_Buf == BNULL)
+        bufsize = IOBUFSIZE;
+    else if (fh->fh_Buf != fh->fh_OrigBuf)
+        bufsize = 208;
+    else
+        bufsize = fh->fh_BufSize;
+    if (fetchsize < bufsize)
+        return 0;
+
+    size = Read(file, buffer, fetchsize);
+    fh->fh_Pos = fh->fh_End = 0;
+
+    return (size > 0) ? size : EOF;
 }
 
 /* Fetches up to remaining buffer content from file buffer

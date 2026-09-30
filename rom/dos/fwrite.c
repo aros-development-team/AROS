@@ -145,6 +145,13 @@ FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOS
             written = Write(file, buffer, length);
         }
     }
+    else if (!(fh->fh_Flags & FHF_LINEBUF) && length >= (ULONG)fh->fh_End)
+    {
+        /* At least a buffer's worth: write it with one packet. Flush()
+         * also moves an append-mode handle to the end of the file. */
+        if ((fh->fh_Pos == 0 && !(fh->fh_Flags & FHF_APPEND)) || Flush(file))
+            written = Write(file, buffer, length);
+    }
     else
     {
         for (written = 0; written < length; ++written)
