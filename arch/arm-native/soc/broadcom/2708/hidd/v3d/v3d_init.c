@@ -32,7 +32,6 @@ APTR KernelBase __attribute__((used)) = NULL;
 
 #define MBoxBase (sd->mbox_base)
 
-#define VCMB_BASE           (ARM_PERIIOBASE + 0xB880)
 #define VCMB_PROPCHAN       8
 #define VCTAG_REQ           0
 #define VCTAG_GETCLKMAX     0x00030004

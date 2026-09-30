@@ -21,11 +21,16 @@
 #include <devices/timer.h>
 #include <oop/oop.h>
 #include <hidd/gallium.h>
+#include <hardware/bcm2708.h>
 
 /* Register blocks, based from the device tree (v3d_dt.c). On the 2711 the
  * hub sits where the VC4 V3D did, so vc4gallium must never probe there. */
 extern IPTR __arm_periiobase;
 #define ARM_PERIIOBASE      __arm_periiobase
+
+/* The BCM2712 moved the mailbox within the peripheral window */
+#define VCMB_BASE           (ARM_PERIIOBASE + \
+    ((ARM_PERIIOBASE == BCM2712_PERIIOBASE) ? 0x13880 : 0xB880))
 
 /* Hub registers */
 #define V3D_HUB_AXICFG      0x0000
