@@ -10,8 +10,10 @@
 #include <proto/arossupport.h>
 #include <proto/debug.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <aros/asmcall.h>
+#include <aros/kernel.h>
 #include <aros/macros.h>
 #include <exec/memory.h>
 #include <dos/elf.h>
@@ -39,7 +41,7 @@ struct hunk
     char  data[0];
 } __attribute__((packed));
 
-#define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
+#define BPTR2HUNK(bptr) ((struct hunk *)((char *)bptr - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
 #define LOADSEG_SMALL_READ  4096 /* Size adjusted by profiling in Callgrind */
@@ -1575,8 +1577,11 @@ static BPTR load_seg_elf_int
     struct sheader   *symtab_shndx = NULL;
     struct sheader   *strtab = NULL;
     BPTR   hunks         = 0;
-#if defined(DOCACHECLEAR)
+#if defined(DOCACHECLEAR) || defined(__AROSPLATFORM_WXSEG__)
     BPTR curr;
+#endif
+#if defined(__AROSPLATFORM_WXSEG__)
+    struct KernelBase *KernelBase = NULL;
 #endif
     BPTR  *next_hunk_ptr = &hunks;
     ULONG  i;
@@ -1815,15 +1820,33 @@ error:
 
 end:
 
-#if defined(DOCACHECLEAR)
-    /* Clear the caches to let the CPU see the new data and instructions. */
+#if defined(DOCACHECLEAR) || defined(__AROSPLATFORM_WXSEG__)
     curr = hunks;
 
     while (curr)
     {
         struct hunk *hunk = BPTR2HUNK(BADDR(curr));
 
+#if defined(DOCACHECLEAR)
+        /* Clear the caches to let the CPU see the new data and instructions. */
         ils_ClearCache(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
+#endif
+#if defined(__AROSPLATFORM_WXSEG__)
+        /*
+         * Executable hunks were served by KrnAllocPages() as read/write pages
+         * outside any MemHeader (TypeOfMem() == 0, as in LoadSeg's FreeFunc
+         * and UnLoadSeg). Now that they are populated and relocated, flip
+         * them to read/execute. The base is the hunk itself, not hunk->data:
+         * the page-granular mapping starts at the struct.
+         */
+        if (hunk->size && TypeOfMem(hunk) == 0)
+        {
+            if (!KernelBase)
+                KernelBase = OpenResource("kernel.resource");
+            if (KernelBase)
+                KrnSetProtection(hunk, hunk->size, MAP_Readable | MAP_Executable);
+        }
+#endif
         curr = hunk->next;
     }
 #endif
