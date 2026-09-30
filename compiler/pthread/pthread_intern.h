@@ -126,6 +126,7 @@ extern ThreadInfo threads[PTHREAD_THREADS_MAX];
 extern struct SignalSemaphore thread_sem;
 extern TLSKey tlskeys[PTHREAD_KEYS_MAX];
 extern struct SignalSemaphore tls_sem;
+extern volatile BOOL __pthread_exiting;
 
 /* .c */
 extern int SemaphoreIsInvalid(struct SignalSemaphore *sem);
