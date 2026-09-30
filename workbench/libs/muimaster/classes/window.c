@@ -3880,7 +3880,7 @@ IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj,
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     LONG left, top, width, height;
-    BOOL resized, reshow = FALSE;
+    BOOL reshow = FALSE;
     Object *current_obj;
 
     if (!(data->wd_Flags & MUIWF_OPENED))
@@ -3941,14 +3941,7 @@ IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj,
 
     /* resize window ? */
     WindowSelectDimensions(data);
-    resized = WindowResize(data);
-
-    if (!resized)
-    {
-        /* FIXME: Should we short circuit the following
-         *        if the window size didn't change?
-         */
-    }
+    WindowResize(data);
 
     {
         struct Window *win = data->wd_RenderInfo.mri_Window;
