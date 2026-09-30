@@ -12,6 +12,7 @@ struct ShowWindowActionMsg
 {
     struct IntuiActionMsg    msg;
     struct Window           *window;
+    struct Window           *other;
 };
 
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
@@ -38,6 +39,8 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 
     INPUTS
         window - The window to affect.
+        other - The window to place this window in front of, or
+            WINDOW_FRONTMOST / WINDOW_BACKMOST.
 
     RESULT
         TRUE if the operation was performed or queued successfully,
@@ -66,12 +69,8 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
     DEBUG_SHOWWINDOW(dprintf("ShowWindow: Window 0x%p\n", window));
     SANITY_CHECKR(window, FALSE)
 
-    /*
-     * TODO: in AmigaOS v4 we have additional 'other' parameter,
-     * and the window is moved in front of that window. Implement this.
-     */
-
     msg.window = window;
+    msg.other = other;
     return DoASyncAction((APTR)int_showwindow, &msg.msg, sizeof(msg), IntuitionBase);
 
     AROS_LIBFUNC_EXIT
@@ -82,6 +81,7 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 {
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window  *window = msg->window;
+    struct Window  *other = msg->other;
 #ifdef CGXSHOWHIDESUPPORT
     struct Library *CGXSystemBase;
     
@@ -123,4 +123,19 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
         UNLOCK_REFRESH(screen);
     }
 #endif
+
+    if (other == WINDOW_FRONTMOST)
+    {
+        WindowToFront(window);
+    }
+    else if (other == WINDOW_BACKMOST)
+    {
+        WindowToBack(window);
+    }
+    else if ((other != window) &&
+             ResourceExisting(other, RESOURCE_WINDOW, IntuitionBase) &&
+             (other->WScreen == window->WScreen))
+    {
+        MoveWindowInFrontOf(window, other);
+    }
 }
