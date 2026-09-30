@@ -1215,12 +1215,17 @@ AROS_LH2(LONG, Dup2Socket,
         else
             fd2 = newfd;
     else {
+        /* Numbers are system-wide: grow the table as sdFind() does */
+        if((ULONG)fd2 >= libPtr->dTableSize && fd2 < 0xFFC0)
+            setdtablesize(libPtr, (fd2 / 64 + 1) * 64);
         if((ULONG)fd2 >= libPtr->dTableSize) {
             error = EBADF;
             goto Return;
         }
+        /* Not __CloseSocket(): a nested ObtainSyscallSemaphore() leaves
+           the task at the raised priority */
         if(libPtr->dTable[fd2] != NULL)
-            __CloseSocket(fd2, libPtr);
+            closeSocketLocked(fd2, libPtr);
         /*
          * Check if the fd is free on the link library
          */
@@ -1229,7 +1234,13 @@ AROS_LH2(LONG, Dup2Socket,
                                  AROS_UFCA(int, fd2, D0),
                                  AROS_UFCA(int, FDCB_CHECK, D1)))
                 goto Return;
-
+#if defined(ENABLE_FDLIBRARY)
+        /* Claim the number; a posixc file there is not ours to close */
+        if(FDBase != NULL && FD_Reserve(fd2, FD_OWNER_BSDSOCKET, so) != 0) {
+            error = EBADF;
+            goto Return;
+        }
+#endif
     }
     /*
      * Tell the link library about the new fd
@@ -1238,8 +1249,7 @@ AROS_LH2(LONG, Dup2Socket,
         if(error = AROS_UFC2(int, libPtr->fdCallback,
                              AROS_UFCA(int, fd2, D0),
                              AROS_UFCA(int, FDCB_ALLOC, D1))) {
-            if(fd2 == newfd)
-                sdFree(fd2);
+            sdFree(fd2);    /* reserved by sdFind() or above */
             goto Return;
         }
 
