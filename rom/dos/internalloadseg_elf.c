@@ -1587,6 +1587,7 @@ static BPTR load_seg_elf_int
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
     ULONG  int_shnum;
+    ULONG  int_shstrndx;
     struct SRBuffer srb = { 0 };
     UBYTE *arena = NULL;
     UBYTE *arena_cursor = NULL;
@@ -1604,6 +1605,9 @@ static BPTR load_seg_elf_int
     /* load section headers */
     if (!(sh = load_block(file, eh.shoff, int_shnum * eh.shentsize, funcarray, &srb, DOSBase)))
         return 0;
+
+    /* with extended numbering the real index is in the first section header */
+    int_shstrndx = eh.shstrndx == SHN_XINDEX ? sh[0].link : eh.shstrndx;
 
 #ifdef __arm__
     for (i = 0; i < int_shnum; i++)
@@ -1646,7 +1650,7 @@ static BPTR load_seg_elf_int
             if (!sh[i].addr)
                 goto error;
 
-            if (sh[i].type == SHT_STRTAB && i == eh.shstrndx) {
+            if (sh[i].type == SHT_STRTAB && i == int_shstrndx) {
                 if (strtab == NULL) {
                     strtab = &sh[i];
                 } else {
