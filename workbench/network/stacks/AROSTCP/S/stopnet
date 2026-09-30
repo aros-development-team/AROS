@@ -1,1 +1,2 @@
-RX "address AROSTCP; KILL" ; Send "KILL" to the TCP/IP stack
+; The ARexx KILL command only sends CTRL-C, and needs RexxMast to do it
+Break PORT AROSTCP C
