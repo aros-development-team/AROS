@@ -17,6 +17,7 @@
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
 #include <proto/workbench.h>
+#include <proto/icon.h>
 
 #include <exec/libraries.h>
 #include <exec/resident.h>
@@ -29,6 +30,8 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <intuition/intuition.h>
+#include <intuition/extensions.h>
+#include <workbench/workbench.h>
 #include <workbench/startup.h>
 #include <devices/conunit.h>
 
@@ -191,6 +194,128 @@ static const struct NewWindow default_nw =
     WBENCHSCREEN    /* type */
 };
 
+static BOOL con_iconify_available(struct filehandle *fh)
+{
+    return fh->otherwindow == NULL &&
+           !(fh->flags & (FHFLG_BOOTCON | FHFLG_DEVICEMODE)) &&
+           fh->workbenchbase && fh->iconbase;
+}
+
+static BOOL ensure_appmsgport(struct filehandle *fh)
+{
+    if (!fh->appmsgport)
+        fh->appmsgport = CreateMsgPort();
+
+    return fh->appmsgport != NULL;
+}
+
+static void add_con_appwindow(struct filehandle *fh)
+{
+    if (!(fh->flags & FHFLG_ICONIFIED) &&
+        !fh->appwindow && fh->workbenchbase && fh->window &&
+        ensure_appmsgport(fh))
+    {
+        fh->appwindow = AddAppWindow(0, 0, fh->window,
+                                     fh->appmsgport, NULL);
+        if (fh->appwindow)
+            D(bug("[con:handler] %s: promoted to AppWindow\n", __func__));
+    }
+}
+
+static void remove_con_appicon(struct filehandle *fh)
+{
+    if (fh->appicon) {
+        RemoveAppIcon(fh->appicon);
+        fh->appicon = NULL;
+    }
+
+    if (fh->appicondiskobject) {
+        FreeDiskObject(fh->appicondiskobject);
+        fh->appicondiskobject = NULL;
+    }
+
+    if (fh->appiconlabel) {
+        FreeVec(fh->appiconlabel);
+        fh->appiconlabel = NULL;
+    }
+}
+
+static BOOL iconify_con_window(struct filehandle *fh)
+{
+    struct DiskObject *dobj;
+    CONST_STRPTR title;
+    ULONG len;
+
+    if (!fh->window || !con_iconify_available(fh) ||
+        (fh->flags & FHFLG_ICONIFIED) || fh->appicon)
+        return FALSE;
+
+    if (!ensure_appmsgport(fh))
+        return FALSE;
+
+    dobj = GetDefDiskObject(WBAPPICON);
+    if (!dobj)
+        dobj = GetDefDiskObject(WBTOOL);
+    if (!dobj)
+        return FALSE;
+
+    title = (CONST_STRPTR)fh->window->Title;
+    if (!title)
+        title = "CON:";
+    len = strlen(title); /* Flawfinder: ignore */
+
+    fh->appiconlabel = AllocVec(len + 1, MEMF_ANY);
+    if (!fh->appiconlabel) {
+        FreeDiskObject(dobj);
+        return FALSE;
+    }
+
+    CopyMem(title, fh->appiconlabel, len + 1);
+    fh->appicondiskobject = dobj;
+
+    dobj->do_CurrentX = NO_ICON_POSITION;
+    dobj->do_CurrentY = NO_ICON_POSITION;
+
+    fh->appicon = AddAppIconA(0, 0, fh->appiconlabel,
+                              fh->appmsgport, BNULL, dobj, NULL);
+    if (!fh->appicon) {
+        remove_con_appicon(fh);
+        return FALSE;
+    }
+
+    if (fh->appwindow) {
+        RemoveAppWindow(fh->appwindow);
+        fh->appwindow = NULL;
+    }
+
+    if (!HideWindow(fh->window)) {
+        remove_con_appicon(fh);
+        add_con_appwindow(fh);
+        return FALSE;
+    }
+
+    fh->flags |= FHFLG_ICONIFIED;
+    D(bug("[con:handler] %s: iconified\n", __func__));
+    return TRUE;
+}
+
+static BOOL deiconify_con_window(struct filehandle *fh)
+{
+    if (!(fh->flags & FHFLG_ICONIFIED) || !fh->window)
+        return FALSE;
+
+    if (!ShowWindow(fh->window, NULL))
+        return FALSE;
+
+    fh->flags &= ~FHFLG_ICONIFIED;
+    remove_con_appicon(fh);
+    add_con_appwindow(fh);
+    ActivateWindow(fh->window);
+
+    D(bug("[con:handler] %s: restored\n", __func__));
+    return TRUE;
+}
+
 void close_con_window(struct filehandle *fh)
 {
     if (fh->appwindow) {
@@ -198,6 +323,9 @@ void close_con_window(struct filehandle *fh)
         RemoveAppWindow(fh->appwindow);
         fh->appwindow = NULL;
     }
+
+    remove_con_appicon(fh);
+    fh->flags &= ~FHFLG_ICONIFIED;
 
     if (fh->appmsgport) {
         struct AppMessage *appmsg;
@@ -240,10 +368,16 @@ static LONG MakeConWindow(struct filehandle *fh)
             { WA_AutoAdjust,        TRUE },
             { WA_PubScreenName,     0 },
             { WA_PubScreenFallBack, TRUE },
+            { TAG_IGNORE,            0 },
             { TAG_DONE }
         };
 
         win_tags[2].ti_Data = (IPTR) fh->screenname;
+        if (con_iconify_available(fh)) {
+            win_tags[4].ti_Tag = WA_ExtraGadget_Iconify;
+            win_tags[4].ti_Data = TRUE;
+            fh->nw.IDCMPFlags |= IDCMP_GADGETUP;
+        }
         D(bug("[con:handler] %s: Using screen '%s', IntuitionBase = 0x%p\n", __func__, fh->screenname, IntuitionBase));
 
         /*  Autoadjust doesn't enforce the window's width and height to be larger than
@@ -320,10 +454,7 @@ static LONG MakeConWindow(struct filehandle *fh)
 
             DoIO(ioReq(&fh->conwriteio));
 
-            if (fh->workbenchbase && (fh->appmsgport = CreateMsgPort())) {
-                if ((fh->appwindow = AddAppWindow(0, 0, fh->window, fh->appmsgport, NULL)))
-                    D(bug("[con:handler] %s: promoted to AppWindow\n", __func__));
-            }
+            add_con_appwindow(fh);
 
         } /* if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conreadio), 0)) */
         else
@@ -448,6 +579,7 @@ static void close_con(struct filehandle *fh)
     CloseLibrary((struct Library*) fh->intuibase);
     CloseLibrary((struct Library*) fh->dosbase);
     CloseLibrary((struct Library*) fh->workbenchbase);
+    CloseLibrary((struct Library*) fh->iconbase);
 
     /* These libraries are opened only if completion was used */
     if (fh->gfxbase)
@@ -513,6 +645,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     fh->dosbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_DOS);
     fh->utilbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     fh->workbenchbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_WORKBENCH);
+    fh->iconbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_ICON);
 
 #if defined(__AROSPLATFORM_SMP__)
     if (ExecLockBase)
@@ -542,6 +675,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
         CloseLibrary((APTR) fh->dosbase);
         CloseLibrary((APTR) fh->intuibase);
         CloseLibrary((APTR) fh->workbenchbase);
+        CloseLibrary((APTR) fh->iconbase);
         FreeVec(fh);
         return NULL;
     }
@@ -780,7 +914,25 @@ LONG CONMain(struct ExecBase *SysBase)
             if ((appwindowmask) && (sigs & appwindowmask)) {
                 D(bug("[con:handler] %s: appwindow msg signal\n", __func__));
                 while ((fh->appmsg = (struct AppMessage *)GetMsg(fh->appmsgport))) {
-                    if (fh->appmsg->am_Type == AMTYPE_APPWINDOW) {
+                    if ((fh->appmsg->am_Type == AMTYPE_APPICON) &&
+                        (fh->flags & FHFLG_ICONIFIED) &&
+                        (fh->appmsg->am_NumArgs == 0) &&
+                        (fh->appmsg->am_ArgList == NULL))
+                    {
+                        /*
+                         * Workbench may still own the message while the
+                         * AppIcon exists. Reply first, matching the native
+                         * Zune AppIcon lifecycle, then remove it only after
+                         * ShowWindow accepted the restore request.
+                         */
+                        ReplyMsg((struct Message *)fh->appmsg);
+                        fh->appmsg = NULL;
+                        deiconify_con_window(fh);
+                        continue;
+                    }
+
+                    if ((fh->appmsg->am_Type == AMTYPE_APPWINDOW) &&
+                        !(fh->flags & FHFLG_ICONIFIED)) {
                         if (fh->appmsg->am_NumArgs >= 1) {
                             do {
                                 if (fh->appmsg->am_ArgList[i].wa_Lock) {
@@ -828,7 +980,8 @@ LONG CONMain(struct ExecBase *SysBase)
                     }
                     ReplyMsg((struct Message *)fh->appmsg);
                 }
-                ActivateWindow(fh->window);
+                if (!(fh->flags & FHFLG_ICONIFIED) && fh->window)
+                    ActivateWindow(fh->window);
             }
 
     #if defined(CONSOLE_SHOW_MENU)
@@ -840,6 +993,37 @@ LONG CONMain(struct ExecBase *SysBase)
                     UWORD   msgcode  = msg->Code;
 
                     switch (msgclass) {
+                    case IDCMP_GADGETUP:
+                        {
+                            struct Gadget *gadget = (struct Gadget *)msg->IAddress;
+                            UWORD gadgetid = gadget ? gadget->GadgetID : 0;
+                            struct InputEvent ie = {0};
+                            struct Library *ConsoleDevice =
+                                (struct Library *)fh->conreadio->io_Device;
+
+                            /*
+                             * Requesting IDCMP_GADGETUP moves these events
+                             * out of the normal input-event path. Feed every
+                             * intercepted GadgetUp back into console.device
+                             * before acting on the handler-owned Iconify
+                             * gadget, so its scrollback gadget state remains
+                             * balanced.
+                             */
+                            ie.ie_Class = IECLASS_GADGETUP;
+                            ie.ie_Code = msg->Code;
+                            ie.ie_Qualifier = msg->Qualifier;
+                            ie.ie_X = msg->MouseX;
+                            ie.ie_Y = msg->MouseY;
+                            ie.ie_EventAddress = msg->IAddress;
+                            ie.ie_TimeStamp.tv_secs = msg->Seconds;
+                            ie.ie_TimeStamp.tv_micro = msg->Micros;
+                            CDInputHandler(&ie, ConsoleDevice);
+
+                            if (gadget && gadgetid == ETI_Iconify)
+                                iconify_con_window(fh);
+                        }
+                        break;
+
                     case IDCMP_MENUPICK:
                         {
                             struct MenuItem *item;
