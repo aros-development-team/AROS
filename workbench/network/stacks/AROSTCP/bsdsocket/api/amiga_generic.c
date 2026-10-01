@@ -176,9 +176,15 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
         /*
          * data is a struct Task **, find corresponding SocketBase * and set owner
          */
-        s = splnet();
-        so->so_pgid = FindSocketBase(*(struct Task **)data);
-        splx(s);
+        {
+            struct SocketBase *owner = FindSocketBase(*(struct Task **)data);
+
+            /* A closing base is past its owner sweep; a hook base is
+               freed when its call returns */
+            if(owner && (owner->closing || owner->hookBase))
+                owner = NULL;
+            setSocketOwner(so, owner);
+        }
         goto Return;
 
     case FIOGETOWN:
@@ -837,6 +843,52 @@ countSockets(struct SocketBase *libPtr, struct socket *so)
 }
 
 /*
+ * Make owner the base that gets so's signals and events. soevent() queues
+ * on the owner's list only, so the old owner's events for so go with it:
+ * none is left behind to outlive the socket. Caller holds syscall_semaphore.
+ */
+void setSocketOwner(struct socket *so, struct SocketBase *owner)
+{
+    struct SocketBase *old;
+    struct soevent *se, *nextse;
+    spl_t s;
+
+    /* sowakeup() tests and uses so_pgid at splnet */
+    s = splnet();
+    old = so->so_pgid;
+    so->so_pgid = owner;
+    splx(s);
+
+    if(old == NULL || old == owner)
+        return;
+    ObtainSemaphore(&old->EventLock);
+    for(se = (struct soevent *)old->EventList.mlh_Head;
+            se->node.mln_Succ;
+            se = nextse) {
+        /* Save the successor before a possible free (avoid UAF) */
+        nextse = (struct soevent *)se->node.mln_Succ;
+        if(se->socket == so) {
+            Remove((struct Node *)se);
+            bsd_free(se, NULL);
+        }
+    }
+    ReleaseSemaphore(&old->EventLock);
+}
+
+/*
+ * Drop a reference (AmiTCP addition); the last one closes the socket.
+ * Caller holds syscall_semaphore.
+ */
+LONG releaseSocketRef(struct socket *so)
+{
+    if(--so->so_refcnt > 0)
+        return 0;
+    /* No owner: nothing queues events for it while soclose() lingers */
+    setSocketOwner(so, NULL);
+    return soclose(so);
+}
+
+/*
  * Close fd in libPtr's table. The caller holds syscall_semaphore; it need
  * not be libPtr's task (fd.library hooks close for other threads).
  */
@@ -844,9 +896,8 @@ LONG closeSocketLocked(LONG fd, struct SocketBase *libPtr)
 {
     register int error;
     struct socket *so;
-    struct soevent *se;
 
-    if(fd < 0) {
+    if((ULONG)fd >= (ULONG)libPtr->dTableSize) {
         error = EBADF;
         goto Return;
     }
@@ -870,50 +921,26 @@ LONG closeSocketLocked(LONG fd, struct SocketBase *libPtr)
 
     FD_CLR(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
 
-    if(error = getSock(libPtr, fd, &so)) {
-//    error = ENOTSOCK;	/* well, bit set, but socket == NULL */
-        error = 0; /* ignore silently */
-        goto Return;
-    }
-    if(so->so_pgid == libPtr && countSockets(libPtr, so) == 1) {
-        /* sowakeup() tests and uses so_pgid at splnet */
-        spl_t s = splnet();
-        so->so_pgid = NULL;		/* not ours any more */
-        splx(s);
-    }
-
     /*
-     * Decrease the reference count of a socket (AmiTCP addition) and return if
-     * not zero.
+     * Clear the descriptor before soclose(): a linger drops the semaphore,
+     * and fd must not lead a hook to the socket meanwhile. The socket may
+     * be NULL, a number Dup2Socket(-1, fd) marked used; it is freed too.
      */
-    if(--so->so_refcnt <= 0) {
-        struct soevent *nextse;
-        error = soclose(so);
-        /* Remove all events associated with this socket */
-        ObtainSemaphore(&libPtr->EventLock);
-        for(se = (struct soevent *)libPtr->EventList.mlh_Head;
-                se->node.mln_Succ;
-                se = nextse) {
-            /* Save the successor before a possible free (avoid UAF) */
-            nextse = (struct soevent *)se->node.mln_Succ;
-            if(se->socket == so) {
-                Remove((struct Node *)se);
-                bsd_free(se, NULL);
-            }
-        }
-        ReleaseSemaphore(&libPtr->EventLock);
-    }
-
-    /*
-     * now clear socket from descriptor table. Socket usage bitmask has been
-     * cleared earlier
-     */
+    so = libPtr->dTable[fd];
     libPtr->dTable[fd] = NULL;
 #if defined(ENABLE_FDLIBRARY)
     /* Release the system-wide descriptor-number reservation. */
     if(FDBase != NULL)
         FD_Free(fd, FD_OWNER_BSDSOCKET);
 #endif
+    error = 0;
+    if(so == NULL)
+        goto Return;
+
+    if(so->so_pgid == libPtr && countSockets(libPtr, so) == 0)
+        setSocketOwner(so, NULL);	/* not ours any more */
+
+    error = releaseSocketRef(so);
 
 Return:
     return error;
@@ -939,12 +966,6 @@ AROS_LH1(LONG, CloseSocket,
     return __CloseSocket(fd, libPtr);
     AROS_LIBFUNC_EXIT
 }
-
-struct SocketNode {
-    struct MinNode	sn_Node;
-    LONG			sn_Id;
-    struct socket 	*sn_Socket;
-};
 
 /*
  * checkId() checks that there are no released sockets w/ given id.
@@ -1029,12 +1050,8 @@ AROS_LH2(LONG, ReleaseSocket,
             goto Return;
         }
 
-    if(so->so_pgid == libPtr && countSockets(libPtr, so) == 1) {
-        /* nobody's until obtained; sowakeup() uses so_pgid at splnet */
-        spl_t s = splnet();
-        so->so_pgid = NULL;
-        splx(s);
-    }
+    if(so->so_pgid == libPtr && countSockets(libPtr, so) == 1)
+        setSocketOwner(so, NULL);	/* nobody's until obtained */
     sn->sn_Id = id;
     sn->sn_Socket = so;
     libPtr->dTable[fd] = NULL;
@@ -1153,12 +1170,8 @@ AROS_LH4(LONG, ObtainSocket,
                 continue;
             Remove(sn);
             libPtr->dTable[fd] = ((struct SocketNode *)sn)->sn_Socket;
-            {
-                /* events and signals go to the new owner */
-                spl_t s = splnet();
-                libPtr->dTable[fd]->so_pgid = libPtr;
-                splx(s);
-            }
+            /* events and signals go to the new owner */
+            setSocketOwner(libPtr->dTable[fd], libPtr);
             FD_SET(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
 #if defined(ENABLE_FDLIBRARY)
             /* posixc's read()/write()/close() hooks take the socket from here */
@@ -1210,6 +1223,10 @@ AROS_LH2(LONG, Dup2Socket,
     else if((error = getSock(libPtr, fd1, &so)))
         goto Return;
 
+    /* Closing fd2 first could free the socket */
+    if(fd1 == fd2 && so != NULL)
+        goto Return;
+
     if(fd2 == -1)
         if((error = sdFind(libPtr, &newfd)))
             goto Return;
@@ -1224,8 +1241,9 @@ AROS_LH2(LONG, Dup2Socket,
             goto Return;
         }
         /* Not __CloseSocket(): a nested ObtainSyscallSemaphore() leaves
-           the task at the raised priority */
-        if(libPtr->dTable[fd2] != NULL)
+           the task at the raised priority. The bit, not the socket: a
+           number marked used without one is released as well */
+        if(FD_ISSET(fd2, (fd_set *)(libPtr->dTable + libPtr->dTableSize)))
             closeSocketLocked(fd2, libPtr);
         /*
          * Check if the fd is free on the link library
