@@ -161,6 +161,9 @@ static void CloseBootScreen(struct DosLibrary *DOSBase, struct IntuitionBase *In
 void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 {
     BPTR cis = BNULL;
+#ifdef DOS_REUSE_BOOT_PROCESS
+    BPTR shellseg = BNULL;
+#endif
 
     /*  We have been created as a process by DOS, we should now
         try and boot the system. */
@@ -293,6 +296,11 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 
     D(bug("[DOS] %s: preparing console\n", __func__);)
 
+#ifdef DOS_REUSE_BOOT_PROCESS
+    if (BootFlags & BF_NO_BOOT_REQUESTERS)
+        shellseg = findseg_shell(TRUE, DOSBase);
+#endif
+
     if (BootFlags & BF_EMERGENCY_CONSOLE) {
         D(bug("[DOS] %s:     (emergency console)\n", __func__);)
         BootFlags |= BF_NO_STARTUP_SEQUENCE;
@@ -300,13 +308,15 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
     }
 
     if (cis == BNULL) {
-        if (BootFlags & BF_NO_BOOT_REQUESTERS) {
+#ifdef DOS_REUSE_BOOT_PROCESS
+        if ((BootFlags & BF_NO_BOOT_REQUESTERS) && shellseg) {
             /* Appliance boot (CD): no boot console window either - the
              * CD32 Kickstart never opens one, and the console's window
              * is what would drag in a Workbench screen.
              */
             cis = Open("NIL:", MODE_OLDFILE);
         } else
+#endif
             cis = Open("CON:////AROS/AUTO/CLOSE/SMART/BOOT", MODE_OLDFILE);
     }
 
@@ -319,9 +329,6 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
         if (cos) {
             BPTR cas = BNULL;
             LONG shellrc;
-#ifdef DOS_REUSE_BOOT_PROCESS
-            BPTR shellseg = BNULL;
-#endif
 
             if (!(BootFlags & BF_NO_STARTUP_SEQUENCE))
                 cas = Open("S:Startup-Sequence", MODE_OLDFILE);
@@ -339,8 +346,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
             D(bug("[DOS] %s: initialising CLI\n", __func__);)
 
 #ifdef DOS_REUSE_BOOT_PROCESS
-            if ((BootFlags & BF_NO_BOOT_REQUESTERS) &&
-                (shellseg = findseg_shell(TRUE, DOSBase)) != BNULL) {
+            if ((BootFlags & BF_NO_BOOT_REQUESTERS) && shellseg) {
                 /* Appliance boot: this process becomes the Initial CLI
                  * rather than waiting on a second one, which would pin
                  * another process and stack for the whole game. */
