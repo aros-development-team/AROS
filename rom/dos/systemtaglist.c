@@ -530,6 +530,7 @@ LONG internal_RunBootShell(BPTR shellseg, BPTR sis, BPTR sos, BPTR script, struc
     struct ExtArg *ea;
     struct MsgPort *replyport;
     BPTR currdir = BNULL;
+    BPTR olddir;
     APTR oldReturnAddr;
     STRPTR oldName;
     LONG rc = -1;
@@ -566,11 +567,13 @@ LONG internal_RunBootShell(BPTR shellseg, BPTR sis, BPTR sos, BPTR script, struc
         ea = NULL;
         currdir = BNULL;                /* handed to CliInitRun() */
 
-        /* CliInitRun replaces the original boot-directory lock with the
-         * duplicate. Let it free the original; AROS_CLI frees the duplicate
-         * on shell exit and leaves pr_CurrentDir at BNULL.
+        /* Detach the old directory before CliInitRun installs the duplicate.
+         * Only free an owned lock: a borrowed lock may belong to SYS: or
+         * another assign. AROS_CLI frees the duplicate on shell exit.
          */
-        me->pr_Flags |= PRF_FREECURRDIR;
+        olddir = CurrentDir(BNULL);
+        if (olddir && (me->pr_Flags & PRF_FREECURRDIR))
+            UnLock(olddir);
 
         oldReturnAddr = me->pr_ReturnAddr;
         oldName = me->pr_Task.tc_Node.ln_Name;
