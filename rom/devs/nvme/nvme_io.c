@@ -131,6 +131,11 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     ioehandle.ceh_SigSet = SIGF_SINGLE;
     ioehandle.ceh_Msg = io;
 
+    /*
+     * Take the request off the unit's list before it is submitted: once the
+     * controller has it, it may be answered and replied at any moment, and
+     * its node then belongs to the caller's reply port.
+     */
     ObtainSemaphore(&unit->au_Lock);
     Remove(&io->io_Message.mn_Node);
     ReleaseSemaphore(&unit->au_Lock);
@@ -158,6 +163,17 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         }
         nvme_dma_release(&ioehandle, TRUE);
         io->io_Error = IOERR_ABORTED;
+
+        /*
+         * The command never reached the controller, so BeginIO() finishes
+         * the request itself and removes it from the unit's list. Put it
+         * back there first - it was taken off above - or that would be a
+         * second Remove() of the same node, through stale links.
+         */
+        ObtainSemaphore(&unit->au_Lock);
+        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
+        ReleaseSemaphore(&unit->au_Lock);
+
         return TRUE;
     }
 
