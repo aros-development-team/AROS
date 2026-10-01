@@ -47,6 +47,8 @@ SKIP_FUNCTIONS = {
     "AddDisplayData", "AddDisplayInfoData", "SetDisplayInfoData",
     "LocRawDoFmt", "LocStrnicmp", "LocStricmp", "LocToLower", "LocToUpper",
     "LocDateToStr", "LocStrToDate", "LocDosGetLocalizedString", "LocVNewRawDoFmt",
+    # takes a native va_list, which cannot be built from a m68k argument stream
+    "VNewRawDoFmt",
     "AVL_AddNode", "AVL_FindNode", "AVL_RemNodeByAddress", "AddDevice",
     "AddIntServer", "AddLibrary", "AddMemHandler", "AddMemList",
     "AddResetCallback", "Alert", "AllocDosObject", "CachePostDMA",
