@@ -162,6 +162,54 @@ BOOL AROSTCP_FLAG_CANEXPUNGE = FALSE;
 
 BOOL SB_Expunged = FALSE; /* boolean value set by ELL_Expunge */
 
+/* The timer tsleep() uses for timeouts */
+static BOOL openSleepTimer(struct SocketBase *p)
+{
+    /*
+     * allocate and initialize the timer message reply port
+     */
+    p->timerPort = CreateMsgPort();
+    if(p->timerPort == NULL)
+        return FALSE;
+    /*
+     * Disable signalling for now
+     */
+    p->timerPort->mp_Flags = PA_IGNORE;
+    /*
+     * allocate and initialize the timerequest
+     */
+    p->tsleep_timer = (struct timerequest *)
+                      CreateIORequest(p->timerPort, sizeof(struct timerequest));
+    if(p->tsleep_timer == NULL)
+        return FALSE;
+    if(OpenDevice(TIMERNAME, UNIT_VBLANK,
+                  (struct IORequest *)p->tsleep_timer, 0) != 0)
+        return FALSE;
+    /*
+     * Initialize some fields of the IO request to common values
+     */
+    p->tsleep_timer->tr_node.io_Command = TR_ADDREQUEST;
+    p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
+    return TRUE;
+}
+
+static void closeSleepTimer(struct SocketBase *p)
+{
+    if(p->tsleep_timer) {
+        if(p->tsleep_timer->tr_node.io_Device != NULL) {
+            if(p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type != NT_UNKNOWN) {
+                /* NC: must check if request has been used */
+                AbortIO((struct IORequest *)(p->tsleep_timer));
+                WaitIO((struct IORequest *)(p->tsleep_timer));
+            }
+            CloseDevice((struct IORequest *)p->tsleep_timer);
+        }
+        DeleteIORequest((struct IORequest *)p->tsleep_timer);
+    }
+    if(p->timerPort)
+        DeleteMsgPort(p->timerPort);
+}
+
 
 AROS_LH1(struct Library *, Open,
          AROS_LHA(ULONG, version, D0),
@@ -169,7 +217,6 @@ AROS_LH1(struct Library *, Open,
 {
     AROS_LIBFUNC_INIT
     struct SocketBase *newBase;
-    LONG error;
     WORD *i;
 
 #if defined(__AROS__)
@@ -267,35 +314,9 @@ AROS_LH1(struct Library *, Open,
     if((newBase->dTable =
                 AllocMem(newBase->dTableSize * sizeof(struct socket *) +
                          ((newBase->dTableSize - 1) / NFDBITS + 1) * sizeof(fd_mask),
-                         MEMF_CLEAR | MEMF_PUBLIC)) != NULL) {
-        /*
-         * allocate and initialize the timer message reply port
-         */
-        newBase->timerPort = CreateMsgPort();
-        if(newBase->timerPort != NULL) {
-            /*
-             * Disable signalling for now
-             */
-            newBase->timerPort->mp_Flags = PA_IGNORE;
-            /*
-             * allocate and initialize the timerequest
-             */
-            newBase->tsleep_timer = (struct timerequest *)
-                                    CreateIORequest(newBase->timerPort, sizeof(struct timerequest));
-            if(newBase->tsleep_timer != NULL) {
-                error = OpenDevice(TIMERNAME, UNIT_VBLANK,
-                                   (struct IORequest *)newBase->tsleep_timer, 0);
-                if(error == 0) {
-                    /*
-                     * Initialize some fields of the IO request to common values
-                     */
-                    newBase->tsleep_timer->tr_node.io_Command = TR_ADDREQUEST;
-                    newBase->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
-                    return (struct Library *)newBase;
-                }
-            }
-        }
-    }
+                         MEMF_CLEAR | MEMF_PUBLIC)) != NULL &&
+            openSleepTimer(newBase))
+        return (struct Library *)newBase;
     /*
      * There was some error if we reached here. Call Close to clean up.
      */
@@ -367,6 +388,7 @@ AROS_LH0I(LONG, Null, struct Library *, libPtr, 0, LIB)
 /*
  * A socket can name a base whose table it is not in (FIOSETOWN), and the
  * daemon signals so_pgid, so every socket forgets a base before it is freed.
+ * Caller holds syscall_semaphore, which FIOGETOWN reads it under.
  */
 static void forgetSocketOwner(struct SocketBase *libPtr)
 {
@@ -374,10 +396,12 @@ static void forgetSocketOwner(struct SocketBase *libPtr)
     extern struct rawcb rawcb;
     struct inpcb *inp;
     struct rawcb *rp;
+    struct Node *n;
+    int i;
     spl_t s;
 
-    ObtainSemaphore(&syscall_semaphore);    /* FIOGETOWN reads it under this */
     s = splnet();
+    /* Sockets with a pcb, those not accepted yet included */
     for(inp = tcb.lh_first; inp; inp = inp->inp_list.le_next)
         if(inp->inp_socket && inp->inp_socket->so_pgid == libPtr)
             inp->inp_socket->so_pgid = NULL;
@@ -387,8 +411,23 @@ static void forgetSocketOwner(struct SocketBase *libPtr)
     for(rp = rawcb.rcb_next; rp && rp != &rawcb; rp = rp->rcb_next)
         if(rp->rcb_socket && rp->rcb_socket->so_pgid == libPtr)
             rp->rcb_socket->so_pgid = NULL;
+
+    /* Open or released sockets whose pcb is gone (a reset connection) */
+    ObtainSemaphoreShared(&baselist_semaphore);
+    for(n = socketBaseList.lh_Head; n->ln_Succ; n = n->ln_Succ) {
+        struct SocketBase *b = (struct SocketBase *)n;
+
+        if(b->dTable == NULL)
+            continue;
+        for(i = 0; i < b->dTableSize; i++)
+            if(b->dTable[i] && b->dTable[i]->so_pgid == libPtr)
+                b->dTable[i]->so_pgid = NULL;
+    }
+    ReleaseSemaphore(&baselist_semaphore);
+    for(n = releasedSocketList.lh_Head; n->ln_Succ; n = n->ln_Succ)
+        if(((struct SocketNode *)n)->sn_Socket->so_pgid == libPtr)
+            ((struct SocketNode *)n)->sn_Socket->so_pgid = NULL;
     splx(s);
-    ReleaseSemaphore(&syscall_semaphore);
 }
 
 ULONG *__UL_Close(struct SocketBase *libPtr)
@@ -425,37 +464,30 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
      * waited. The linger may be interrupted by any signal in sigIntrMask.
      */
     libPtr->fdCallback = NULL; /* don't call the callback any more */
+    ObtainSyscallSemaphore(libPtr);
+    /*
+     * From here no other task can name the base (FIOSETOWN) or dup into
+     * its table. It stays listed: a lingering close finds it for tsleep().
+     */
+    libPtr->closing = TRUE;
     /*
      * dTable may be NULL if Open() failed before allocating it and called
      * us to clean up (dTableSize is set before dTable is allocated).
-     */
-    /*
-     * Another task's dup can swap the table, so leave the reading to
-     * CloseSocket(), which holds the semaphore; unused numbers are EBADF.
+     * A linger drops the semaphore, so re-read the table every round.
      */
     if(libPtr->dTable)
         for(i = 0; i < libPtr->dTableSize; i++)
-            __CloseSocket(i, libPtr);
+            if(FD_ISSET(i, (fd_set *)(libPtr->dTable + libPtr->dTableSize)))
+                closeSocketLocked(i, libPtr);
     forgetSocketOwner(libPtr);
+    ReleaseSyscallSemaphore(libPtr);
 
     ObtainSemaphore(&baselist_semaphore);
     Remove((struct Node *)libPtr); /* remove this librarybase from our list
 				    of opened library bases */
     ReleaseSemaphore(&baselist_semaphore);
 
-    if(libPtr->tsleep_timer) {
-        if(libPtr->tsleep_timer->tr_node.io_Device != NULL) {
-            if(libPtr->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type != NT_UNKNOWN) {
-                /* NC: must check if request has been used */
-                AbortIO((struct IORequest *)(libPtr->tsleep_timer));
-                WaitIO((struct IORequest *)(libPtr->tsleep_timer));
-            }
-            CloseDevice((struct IORequest *)libPtr->tsleep_timer);
-        }
-        DeleteIORequest((struct IORequest *)libPtr->tsleep_timer);
-    }
-    if(libPtr->timerPort)
-        DeleteMsgPort(libPtr->timerPort);
+    closeSleepTimer(libPtr);
 
     freeDataBuffer(&libPtr->selitems);
     freeDataBuffer(&libPtr->hostents);
@@ -497,6 +529,65 @@ AROS_LH0(ULONG *, Close, struct SocketBase *, libPtr, 2, UL)
 #endif
     return __UL_Close(libPtr);
     AROS_LIBFUNC_EXIT
+}
+
+/*
+ * A base for an fd.library hook caller that has none, for one call. It only
+ * sleeps: no library vectors, no descriptor table, and FIOSETOWN will not
+ * name it, so closing it needs no socket or owner sweep. It is listed so the
+ * socket code finds it (FindSocketBase) and a stack shutdown breaks it.
+ */
+struct SocketBase *api_hookbase_open(VOID)
+{
+    struct SocketBase *p;
+    BOOL ok;
+
+    if((p = AllocMem(sizeof(*p), MEMF_CLEAR | MEMF_PUBLIC)) == NULL)
+        return NULL;
+    p->errnoPtr = (VOID *)&p->defErrno;
+    p->errnoSize = sizeof p->defErrno;
+    p->thisTask = FindTask(NULL);
+    p->sigIntrMask = SIGBREAKF_CTRL_C;
+    p->hErrnoPtr = &p->defHErrno;
+    p->res_socket = -1;
+    p->hookBase = TRUE;
+    InitSemaphore(&p->EventLock);
+    NewList((struct List *)&p->EventList);
+
+    ok = openSleepTimer(p);
+    if(ok) {
+        ObtainSemaphore(&baselist_semaphore);
+        ok = MasterSocketBase != NULL &&
+             (api_state == API_SHOWN || api_state == API_HIDDEN);
+        if(ok) {
+            AddTail(&socketBaseList, (struct Node *)p);
+            MasterSocketBase->lib_OpenCnt++;	/* holds off the expunge */
+        }
+        ReleaseSemaphore(&baselist_semaphore);
+    }
+    if(!ok) {
+        closeSleepTimer(p);
+        FreeMem(p, sizeof(*p));
+        return NULL;
+    }
+    return p;
+}
+
+VOID api_hookbase_close(struct SocketBase *p)
+{
+    BOOL expunge;
+
+    ObtainSemaphore(&baselist_semaphore);
+    Remove((struct Node *)p);
+    MasterSocketBase->lib_OpenCnt--;
+    expunge = MasterSocketBase->lib_OpenCnt == 0 &&
+            (MasterSocketBase->lib_Flags & LIBF_DELEXP);
+    ReleaseSemaphore(&baselist_semaphore);
+
+    closeSleepTimer(p);
+    FreeMem(p, sizeof(*p));
+    if(expunge)
+        __ELL_Expunge(MasterSocketBase);
 }
 
 

@@ -161,6 +161,9 @@ struct SocketBase {
   struct ProtoentNode *ProtoentNode;
   struct NetentNode *NetentNode;
   struct ServentNode *ServentNode;
+/* -- set under syscall_semaphore -- */
+  UBYTE			closing;      /* UL_Close is closing the table */
+  UBYTE			hookBase;     /* api_hookbase_open(), sleeping only */
 };
 
 /* 
@@ -180,10 +183,19 @@ extern struct SignalSemaphore syscall_semaphore;
 extern struct SignalSemaphore baselist_semaphore;
 extern struct List releasedSocketList;
 
+/* A releasedSocketList entry */
+struct SocketNode {
+    struct MinNode	sn_Node;
+    LONG			sn_Id;
+    struct socket 	*sn_Socket;
+};
+
 /*
  *  Functions to put and remove application library to/from exec library list
  */
 BOOL api_init(VOID);
+struct SocketBase *api_hookbase_open(VOID);
+VOID api_hookbase_close(struct SocketBase *);
 BOOL api_show(VOID);
 VOID api_hide(VOID);
 VOID api_setfunctions(VOID);

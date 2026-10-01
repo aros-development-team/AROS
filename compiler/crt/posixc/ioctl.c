@@ -106,7 +106,7 @@
                with bit 31 set (FIONBIO = _IOW('f', 126, long) = 0x8008667e),
                so on 64-bit targets a plain (IPTR) cast sign-extends and no
                hook's switch can match it. Zero-extend instead. */
-            r = hooks->fdh_ioctl(data, (IPTR)(ULONG)request, arg, &err);
+            r = hooks->fdh_ioctl(data, fd, (IPTR)(ULONG)request, arg, &err);
             if (r < 0)
                 errno = err;
             return r;

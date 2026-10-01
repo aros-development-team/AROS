@@ -53,10 +53,13 @@ Descriptors are also reachable through **`fd.library`**: `api/amiga_fdhooks.c` r
 `read`/`write`/`close`/`dup` hooks for `FD_OWNER_BSDSOCKET`, so a `posixc` program (or any other
 `fd.library` consumer) can operate on a socket descriptor without knowing it is a socket. Each
 descriptor's `fd.library` data is the `struct socket *`, and `so->so_pgid` records the owning
-`SocketBase`. A blocking hook invoked by a task that has **no** base of its own — e.g. a `posixc`
-worker thread using a socket descriptor another task created — gives that task its own base (via
-`OpenLibrary`) and uses it as the sleep context, so the operation sleeps on the **caller's** base
-rather than the socket owner's. §3.2 explains why that is required.
+`SocketBase`. The caller reads that data without a lock, so every hook also gets the descriptor
+and first checks, under `syscall_semaphore`, that it still leads to the socket; a descriptor holds
+a socket reference, so one that does keeps the socket alive. A blocking hook invoked by a task
+that has **no** base of its own — e.g. a `posixc` worker thread using a socket descriptor another
+task created — gives that task a minimal base for the call (`api_hookbase_open`: sleep state and
+timer, no descriptor table) and uses it as the sleep context, so the operation sleeps on the
+**caller's** base rather than the socket owner's. §3.2 explains why that is required.
 
 The API layer (`amiga_syscalls.c`) implements the Berkeley calls: each builds the necessary
 `mbuf`s (for example, an address `mbuf` with `m_len = addrlen` and `sa_len` set) and invokes the
@@ -92,8 +95,12 @@ so internal paths that already hold it use the `*Locked` helpers (`closeSocketLo
 use the plain form.
 
 A socket's `so_pgid` names the base that receives its signals and events. It is changed at
-`splnet`, `ObtainSocket` hands it to the new owner, and `UL_Close` clears every socket's reference
-to a base (walking `tcb`, `udb` and `rawcb`) before the base is freed.
+`splnet` through `setSocketOwner`, which also drops the old owner's queued events for the socket,
+so events only ever sit on the current owner's list; the last reference clears it before
+`soclose`. `ObtainSocket` hands it to the new owner. `UL_Close` marks the base `closing` (no
+`FIOSETOWN` or `dup` into it from then on), closes its table and clears every socket's reference
+to it (walking `tcb`, `udb`, `rawcb`, every descriptor table and `releasedSocketList`) before the
+base is freed.
 
 BSD interrupt-priority levels are emulated in `kern_synch.c`: `splnet`/`splimp`/`splx` manipulate a
 single `spl_semaphore` mutex and a `spl_level` counter, so raising to any level effectively waits

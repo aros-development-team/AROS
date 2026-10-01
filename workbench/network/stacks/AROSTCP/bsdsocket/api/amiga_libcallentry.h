@@ -106,6 +106,8 @@ static inline LONG getSock(struct SocketBase *p, int fd, struct socket **sop)
 LONG sdFind(struct SocketBase * libPtr, LONG *fdp);
 void sdFree(LONG fd);
 LONG closeSocketLocked(LONG fd, struct SocketBase *libPtr); /* amiga_generic.c */
+LONG releaseSocketRef(struct socket *so);                   /* amiga_generic.c */
+void setSocketOwner(struct socket *so, struct SocketBase *owner); /* amiga_generic.c */
 LONG setdtablesize(struct SocketBase *libPtr, UWORD size); /* amiga_generic2.c */
 
 #ifndef AMIGA_RAF_H

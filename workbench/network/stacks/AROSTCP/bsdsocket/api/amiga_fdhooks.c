@@ -47,8 +47,11 @@ struct Library *FDBase = NULL;
 
 /*
  * The fd.library data for a socket descriptor is the struct socket * itself.
- * so->so_pgid holds the owning (per-task) SocketBase, so a hook invoked from
- * another library's context can recover everything it needs from the socket.
+ * The caller read it without a lock, so the socket may have been closed and
+ * freed since: a hook first checks, under syscall_semaphore, that fd still
+ * leads to it. A socket's descriptors are set and freed under that semaphore,
+ * and each holds a reference, so a descriptor that still leads to the socket
+ * keeps it alive.
  */
 
 /*
@@ -74,8 +77,7 @@ static struct SocketBase *fdh_task_base(BOOL *temp)
     struct SocketBase *p = FindSocketBase(FindTask(NULL));
 
     *temp = FALSE;
-    if (p == NULL &&
-        (p = (struct SocketBase *)OpenLibrary("bsdsocket.library", 0)) != NULL)
+    if (p == NULL && (p = api_hookbase_open()) != NULL)
         *temp = TRUE;
 
     return p;
@@ -84,14 +86,14 @@ static struct SocketBase *fdh_task_base(BOOL *temp)
 static void fdh_task_done(struct SocketBase *p, BOOL temp)
 {
     if (temp)
-        CloseLibrary((struct Library *)p);
+        api_hookbase_close(p);
 }
 
-/* Drop the reference a hook took; the owner may have closed meanwhile */
-static void fdh_unhold(struct socket *so)
+/* fd still leads to so; the caller holds syscall_semaphore */
+static BOOL fdh_valid(LONG fd, struct socket *so)
 {
-    if (--so->so_refcnt <= 0)
-        soclose(so);
+    return so != NULL && FD_GetOwner(fd) == FD_OWNER_BSDSOCKET &&
+           FD_GetData(fd) == so;
 }
 
 /* The base whose table holds fd; so_pgid need not be it (FIOSETOWN) */
@@ -106,7 +108,7 @@ static struct SocketBase *fdh_fd_base(LONG fd, struct socket *so)
     {
         struct SocketBase *b = (struct SocketBase *)n;
 
-        if ((ULONG)fd < b->dTableSize && b->dTable[fd] == so)
+        if (b->dTable && (ULONG)fd < b->dTableSize && b->dTable[fd] == so)
         {
             p = b;
             break;
@@ -116,7 +118,7 @@ static struct SocketBase *fdh_fd_base(LONG fd, struct socket *so)
     return p;
 }
 
-static SIPTR fdh_sock_read(APTR data, APTR buf, IPTR nbytes, LONG *perror)
+static SIPTR fdh_sock_read(APTR data, LONG fd, APTR buf, IPTR nbytes, LONG *perror)
 {
     struct socket *so = (struct socket *)data;
     struct SocketBase *p;
@@ -139,12 +141,17 @@ static SIPTR fdh_sock_read(APTR data, APTR buf, IPTR nbytes, LONG *perror)
     len = nbytes;
 
     ObtainSyscallSemaphore(p);
-    so->so_refcnt++;        /* the owner may close it while we sleep */
-    error = soreceive(so, &from, &auio, (struct mbuf **)0, &control, (int *)&flags);
-    if (error && auio.uio_resid != len &&
-        (error == ERESTART || error == EINTR || error == EWOULDBLOCK))
-        error = 0;
-    fdh_unhold(so);
+    if (fdh_valid(fd, so))
+    {
+        so->so_refcnt++;    /* the owner may close it while we sleep */
+        error = soreceive(so, &from, &auio, (struct mbuf **)0, &control, (int *)&flags);
+        if (error && auio.uio_resid != len &&
+            (error == ERESTART || error == EINTR || error == EWOULDBLOCK))
+            error = 0;
+        releaseSocketRef(so);
+    }
+    else
+        error = EBADF;
     ReleaseSyscallSemaphore(p);
     fdh_task_done(p, temp);
 
@@ -157,7 +164,7 @@ static SIPTR fdh_sock_read(APTR data, APTR buf, IPTR nbytes, LONG *perror)
     return (SIPTR)(len - auio.uio_resid);
 }
 
-static SIPTR fdh_sock_write(APTR data, CONST_APTR buf, IPTR nbytes, LONG *perror)
+static SIPTR fdh_sock_write(APTR data, LONG fd, CONST_APTR buf, IPTR nbytes, LONG *perror)
 {
     struct socket *so = (struct socket *)data;
     struct SocketBase *p;
@@ -179,12 +186,17 @@ static SIPTR fdh_sock_write(APTR data, CONST_APTR buf, IPTR nbytes, LONG *perror
     len = nbytes;
 
     ObtainSyscallSemaphore(p);
-    so->so_refcnt++;        /* the owner may close it while we sleep */
-    error = sosend(so, (struct mbuf *)0, &auio, (struct mbuf *)0, (struct mbuf *)0, 0);
-    if (error && auio.uio_resid != len &&
-        (error == ERESTART || error == EINTR || error == EWOULDBLOCK))
-        error = 0;
-    fdh_unhold(so);
+    if (fdh_valid(fd, so))
+    {
+        so->so_refcnt++;    /* the owner may close it while we sleep */
+        error = sosend(so, (struct mbuf *)0, &auio, (struct mbuf *)0, (struct mbuf *)0, 0);
+        if (error && auio.uio_resid != len &&
+            (error == ERESTART || error == EINTR || error == EWOULDBLOCK))
+            error = 0;
+        releaseSocketRef(so);
+    }
+    else
+        error = EBADF;
     ReleaseSyscallSemaphore(p);
     fdh_task_done(p, temp);
 
@@ -214,41 +226,38 @@ static LONG fdh_sock_close(APTR data, LONG fd, LONG *perror)
     return 0;
 }
 
-static LONG fdh_sock_dup(APTR data, LONG newfd, LONG *perror)
+static LONG fdh_sock_dup(APTR data, LONG fd, LONG newfd, LONG *perror)
 {
     struct socket *so = (struct socket *)data;
     struct SocketBase *p;
-    LONG error;
+    LONG error = 0;
 
     if (so == NULL) { *perror = EBADF; return -1; }  /* fd without a socket */
     if (FDBase == NULL) { *perror = EBADF; return -1; }
 
-    /* Claim newfd for this socket in the system-wide table. */
-    error = FD_Reserve(newfd, FD_OWNER_BSDSOCKET, so);
-    if (error) { *perror = error; return -1; }
-
     /* Not ObtainSyscallSemaphore(p): p may be another task's base */
     ObtainSemaphore(&syscall_semaphore);
-    if ((p = (struct SocketBase *)so->so_pgid) == NULL) {
-        ReleaseSemaphore(&syscall_semaphore);
-        FD_Free(newfd, FD_OWNER_BSDSOCKET);
-        *perror = EBADF;
-        return -1;
+    /* newfd joins the table that holds fd, which also proves so alive */
+    if ((p = fdh_fd_base(fd, so)) == NULL || p->closing)
+        error = EBADF;
+    else
+    {
+        /* Numbers are system-wide: grow the table as sdFind() does */
+        if ((ULONG)newfd >= p->dTableSize && newfd < 0xFFC0)
+            setdtablesize(p, (newfd / 64 + 1) * 64);
+        if ((ULONG)newfd >= p->dTableSize)
+            error = EMFILE;
+        /* Claim newfd for this socket in the system-wide table. */
+        else if ((error = FD_Reserve(newfd, FD_OWNER_BSDSOCKET, so)) == 0)
+        {
+            p->dTable[newfd] = so;
+            FD_SET(newfd, (fd_set *)(p->dTable + p->dTableSize));
+            so->so_refcnt++;
+        }
     }
-    /* Numbers are system-wide: grow the table as sdFind() does */
-    if ((ULONG)newfd >= p->dTableSize && newfd < 0xFFC0)
-        setdtablesize(p, (newfd / 64 + 1) * 64);
-    if ((ULONG)newfd >= p->dTableSize) {
-        ReleaseSemaphore(&syscall_semaphore);
-        FD_Free(newfd, FD_OWNER_BSDSOCKET);
-        *perror = EMFILE;
-        return -1;
-    }
-    p->dTable[newfd] = so;
-    FD_SET(newfd, (fd_set *)(p->dTable + p->dTableSize));
-    so->so_refcnt++;
     ReleaseSemaphore(&syscall_semaphore);
 
+    if (error) { *perror = error; return -1; }
     return 0;
 }
 
@@ -258,17 +267,20 @@ static LONG fdh_sock_dup(APTR data, LONG newfd, LONG *perror)
  * extension, FIONBIO with a NULL argument *queries* the non-blocking flag
  * (returned as the result) so posixc's fcntl(F_GETFL) can report O_NONBLOCK.
  */
-static LONG fdh_sock_ioctl(APTR data, IPTR request, APTR arg, LONG *perror)
+static LONG fdh_sock_ioctl(APTR data, LONG fd, IPTR request, APTR arg, LONG *perror)
 {
     struct socket *so = (struct socket *)data;
+    LONG result = 0, error = 0;
 
-    if (so == NULL) { *perror = EBADF; return -1; }  /* fd without a socket */
-
-    switch (request)
+    ObtainSemaphore(&syscall_semaphore);
+    if (!fdh_valid(fd, so))
+        error = EBADF;
+    else switch (request)
     {
     case FIONBIO:
         if (arg == NULL)
-            return (so->so_state & SS_NBIO) ? 1 : 0;
+            result = (so->so_state & SS_NBIO) ? 1 : 0;
+        else
         {
             spl_t s = splnet();     /* the daemon writes so_state too */
 
@@ -278,17 +290,21 @@ static LONG fdh_sock_ioctl(APTR data, IPTR request, APTR arg, LONG *perror)
                 so->so_state &= ~SS_NBIO;
             splx(s);
         }
-        return 0;
+        break;
 
     case FIONREAD:
         if (arg)
             *(int *)arg = (int)so->so_rcv.sb_cc;
-        return 0;
+        break;
 
     default:
-        *perror = EINVAL;
-        return -1;
+        error = EINVAL;
+        break;
     }
+    ReleaseSemaphore(&syscall_semaphore);
+
+    if (error) { *perror = error; return -1; }
+    return result;
 }
 
 static const struct fd_hooks bsdsocket_fd_hooks =
