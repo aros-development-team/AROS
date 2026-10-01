@@ -678,12 +678,14 @@ void history_walk(struct filehandle *fh, WORD inp)
         switch (inp)
         {
         case INP_SHIFT_CURSORUP:
-            fh->historyviewpos = 0;
+            fh->historyviewpos = (fh->historysize == CMD_HISTORY_SIZE)
+                ? fh->historypos : 0;
             break;
 
         case INP_SHIFT_CURSORDOWN:
-            fh->historyviewpos = fh->historysize - 1;
-            ;
+            fh->historyviewpos = fh->historypos - 1;
+            if (fh->historyviewpos < 0)
+                fh->historyviewpos = fh->historysize - 1;
             break;
 
         case INP_CURSORUP:
