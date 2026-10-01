@@ -99,7 +99,7 @@ extern struct Library *CxBase;
                 break;
             case 'r':
             case 'n':
-                ansiCode = '\n';
+                ansiCode = '\r';
                 break;
             case '\\':
                 ansiCode = '\\';
