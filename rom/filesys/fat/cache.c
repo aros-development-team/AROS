@@ -71,6 +71,24 @@ void MarkVolumeDirty(struct Globals *glob);
    (((BYTE *)(A)) - (IPTR)&((struct BlockRange *)NULL)->node2) : NULL))
 
 
+/* Ranges to cache for a volume: 1/1024 of its size (the size of its FAT at
+ * 4 KB clusters), from 16 ranges up to 4 MB. A power of two, as the hash
+ * table needs */
+ULONG Cache_RangeCount(UQUAD volume_size, ULONG block_size)
+{
+    UQUAD range_size = (UQUAD)block_size << RANGE_SHIFT;
+    UQUAD budget = volume_size >> 10;
+    ULONG count = 16;
+
+    if(budget > (4 << 20))
+        budget = 4 << 20;
+    while((UQUAD)count * 2 * range_size <= budget)
+        count <<= 1;
+
+    return count;
+}
+
+
 APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
     ULONG block_size, struct ExecBase *sys_base, struct DosLibrary *dos_base)
 {
@@ -119,23 +137,22 @@ APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
         {
             b = AllocVec(sizeof(struct BlockRange)
                 + (c->block_size << RANGE_SHIFT), MEMF_PUBLIC);
-            b->use_count = 0;
-            b->state = BS_EMPTY;
-            b->num = 0;
-            b->data = (UBYTE *)b + sizeof(struct BlockRange);
-
             if(b != NULL)
+            {
+                b->use_count = 0;
+                b->state = BS_EMPTY;
+                b->num = 0;
+                b->data = (UBYTE *)b + sizeof(struct BlockRange);
                 c->blocks[i] = b;
-            else
-                success = FALSE;
-
-            if(success)
                 AddTail((struct List *)&c->free_list,
                     (struct Node *)&b->node2);
+            }
+            else
+                success = FALSE;
         }
     }
 
-    if(!success)
+    if(!success && c != NULL)
     {
         Cache_DestroyCache(c);
         c = NULL;
@@ -152,7 +169,7 @@ VOID Cache_DestroyCache(APTR cache)
 
     Cache_Flush(c);
 
-    for(i = 0; i < c->block_count; i++)
+    for(i = 0; c->blocks != NULL && i < c->block_count; i++)
         FreeVec(c->blocks[i]);
     FreeVec(c->blocks);
     FreeVec(c->hash_table);

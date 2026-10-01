@@ -42,6 +42,7 @@ struct Cache
 
 /* Prototypes */
 
+ULONG Cache_RangeCount(UQUAD volume_size, ULONG block_size);
 APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
     ULONG block_size, struct ExecBase *sys_base, struct DosLibrary *dos_base);
 VOID Cache_DestroyCache(APTR cache);
