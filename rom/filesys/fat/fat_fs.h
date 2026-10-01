@@ -218,6 +218,8 @@ struct FSSuper
     ULONG fat_cachesize_bits;
     ULONG fat_cache_block;
     UWORD fat_cache_no;    /* FAT number that cached FAT blocks belong to */
+    BOOL fat_io_error;     /* a FAT sector could not be read; cleared by
+                              whoever needs to know */
 
     /* Clean shutdown bit tracking, see validate.c */
     BOOL volume_dirty;      /* clean shutdown bit is currently cleared */
@@ -268,6 +270,8 @@ struct Globals
     struct timerequest *timereq;
     struct MsgPort *timerport;
     ULONG last_num;    /* last block number that was outside boundaries */
+    BOOL io_muted[2];  /* a read ([0]) or write ([1]) error was cancelled and
+                          no transfer of that kind has succeeded since */
     ULONG max_transfer_bytes;   /* device's DE_MAXTRANSFER, 0xFFFFFFFF if none given */
     UWORD readcmd;
     UWORD writecmd;

@@ -38,6 +38,12 @@
  * Long name entries are skipped: they carry no allocation information,
  * and a stale one is harmless to the handler. FAT12 volumes have no clean
  * shutdown bit and so are never validated automatically.
+ *
+ * Nothing is ever repaired on the strength of a sector that could not be
+ * read. The FAT access functions return a zero entry when the read fails,
+ * which is indistinguishable from a free cluster, so every FAT access here
+ * goes through fat_read()/fat_write() and the first failure ends the run,
+ * leaving the volume marked for another attempt at the next mount.
  */
 
 #include <proto/exec.h>
@@ -83,6 +89,7 @@ struct Validator
 
     BOOL             asked_data_loss; /* the data loss requester was shown */
     BOOL             aborted;         /* the user declined to continue */
+    BOOL             io_error;        /* the device failed us: stop, repair nothing more */
     BOOL             incomplete;      /* some part of the tree was not walked */
 };
 
@@ -104,6 +111,38 @@ static inline void bm_set(struct Validator *v, ULONG cl)
 {
     cl -= 2;
     v->used[cl >> 5] |= 1UL << (cl & 31);
+}
+
+/* TRUE once nothing further may be examined or changed */
+static inline BOOL stopped(struct Validator *v)
+{
+    return v->aborted || v->io_error;
+}
+
+/*
+ * FAT access. A failed read must never be taken for a free cluster.
+ */
+static BOOL fat_read(struct Validator *v, ULONG cl, ULONG *val)
+{
+    struct FSSuper *sb = v->sb;
+
+    sb->fat_io_error = FALSE;
+    *val = GET_NEXT_CLUSTER(sb, cl);
+    if (sb->fat_io_error)
+    {
+        v->io_error = TRUE;
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static void fat_write(struct Validator *v, ULONG cl, ULONG val)
+{
+    if (SET_NEXT_CLUSTER(v->sb, cl, val))
+        v->fixes++;
+    else
+        v->io_error = TRUE;
 }
 
 /*
@@ -135,7 +174,7 @@ static BOOL confirm_data_loss(struct Validator *v)
  * visited is marked in the bitmap. If 'max' is non-zero the chain is cut
  * after that many clusters. Returns the number of clusters in the chain
  * after any repair; *pfirst is set to 0 if the first cluster itself was
- * unusable.
+ * unusable. The result means nothing once stopped(v) is true.
  */
 static ULONG walk_chain(struct Validator *v, ULONG *pfirst, ULONG max)
 {
@@ -155,25 +194,27 @@ static ULONG walk_chain(struct Validator *v, ULONG *pfirst, ULONG max)
                 return count;
 
             if (prev == 0)
+            {
                 *pfirst = 0;
+                v->fixes++;
+            }
             else
-                SET_NEXT_CLUSTER(sb, prev, sb->eoc_mark);
-            v->fixes++;
+                fat_write(v, prev, sb->eoc_mark);
             return count;
         }
 
+        if (!fat_read(v, cl, &next))
+            return count;
+
         bm_set(v, cl);
         count++;
-
-        next = GET_NEXT_CLUSTER(sb, cl);
 
         /* Chain longer than the file needs: cut it here */
         if (max != 0 && count >= max && !IS_EOC(sb, next))
         {
             D(bug("[fat validate] chain at %lu longer than needed, cutting"
                 " at cluster %lu\n", *pfirst, cl));
-            SET_NEXT_CLUSTER(sb, cl, sb->eoc_mark);
-            v->fixes++;
+            fat_write(v, cl, sb->eoc_mark);
             return count;
         }
 
@@ -186,8 +227,7 @@ static ULONG walk_chain(struct Validator *v, ULONG *pfirst, ULONG max)
             D(bug("[fat validate] chain at %lu runs into %s cluster after"
                 " %lu, terminating\n", *pfirst,
                 next == 0 ? "a free" : "a bad", cl));
-            SET_NEXT_CLUSTER(sb, cl, sb->eoc_mark);
-            v->fixes++;
+            fat_write(v, cl, sb->eoc_mark);
             return count;
         }
 
@@ -248,9 +288,12 @@ static LONG check_dir_sector(struct Validator *v, ULONG sector,
     block = Cache_GetBlock(sb->cache, sb->first_device_sector + sector,
         &data);
     if (block == NULL)
+    {
+        v->io_error = TRUE;
         return -IoErr();
+    }
 
-    for (i = 0; i < ENTRIES_PER_SECTOR(sb) && !done && !v->aborted; i++)
+    for (i = 0; i < ENTRIES_PER_SECTOR(sb) && !done && !stopped(v); i++)
     {
         e = (struct FATDirEntry *)(data + i * sizeof(struct FATDirEntry));
 
@@ -327,7 +370,7 @@ static LONG check_dir_sector(struct Validator *v, ULONG sector,
             }
 
             walk_chain(v, &cl, 0);
-            if (v->aborted)
+            if (stopped(v))
                 break;
 
             if (depth < MAX_DIR_DEPTH)
@@ -345,7 +388,10 @@ static LONG check_dir_sector(struct Validator *v, ULONG sector,
                 block = Cache_GetBlock(sb->cache,
                     sb->first_device_sector + sector, &data);
                 if (block == NULL)
+                {
+                    v->io_error = TRUE;
                     return -IoErr();
+                }
                 if (err != 0)
                     break;
             }
@@ -390,7 +436,7 @@ static LONG check_dir_sector(struct Validator *v, ULONG sector,
             + sb->clustersize - 1) >> sb->clustersize_bits);
 
         got = walk_chain(v, &cl, need);
-        if (v->aborted)
+        if (stopped(v))
             break;
 
         if (cl == 0)
@@ -443,7 +489,7 @@ static LONG check_directory(struct Validator *v, ULONG cluster,
                 0, 0, depth);
             if (res != 0)
                 return res < 0 ? -res : 0;
-            if (v->aborted)
+            if (stopped(v))
                 return 0;
         }
         return 0;
@@ -460,10 +506,11 @@ static LONG check_directory(struct Validator *v, ULONG cluster,
             res = check_dir_sector(v, sector + i, cluster, parent, depth);
             if (res != 0)
                 return res < 0 ? -res : 0;
-            if (v->aborted)
+            if (stopped(v))
                 return 0;
         }
-        cl = GET_NEXT_CLUSTER(sb, cl);
+        if (!fat_read(v, cl, &cl))
+            return 0;
     }
 
     return 0;
@@ -483,19 +530,19 @@ static void free_lost_clusters(struct Validator *v)
         if (bm_test(v, cl))
             continue;
 
-        val = GET_NEXT_CLUSTER(sb, cl);
+        if (!fat_read(v, cl, &val))
+            break;
         if (val == 0 || val == BAD_CLUSTER(sb))
             continue;
 
+        fat_write(v, cl, 0);
+        if (v->io_error)
+            break;
         v->lost++;
-        SET_NEXT_CLUSTER(sb, cl, 0);
     }
 
-    if (v->lost != 0)
-    {
-        D(bug("[fat validate] freed %lu lost clusters\n", v->lost));
-        v->fixes += v->lost;
-    }
+    D(if (v->lost != 0)
+        bug("[fat validate] freed %lu lost clusters\n", v->lost));
 }
 
 /*
@@ -512,12 +559,18 @@ static ULONG clean_bit(struct FSSuper *sb)
 
 BOOL IsVolumeClean(struct FSSuper *sb)
 {
-    ULONG bit = clean_bit(sb);
+    ULONG bit = clean_bit(sb), val;
 
     if (bit == 0)
         return TRUE;
 
-    return (GET_NEXT_CLUSTER(sb, 1) & bit) != 0;
+    /* A FAT that cannot be read cannot be checked either */
+    sb->fat_io_error = FALSE;
+    val = GET_NEXT_CLUSTER(sb, 1);
+    if (sb->fat_io_error)
+        return TRUE;
+
+    return (val & bit) != 0;
 }
 
 static void set_clean_bit(struct FSSuper *sb, BOOL clean)
@@ -527,7 +580,11 @@ static void set_clean_bit(struct FSSuper *sb, BOOL clean)
     if (bit == 0)
         return;
 
+    sb->fat_io_error = FALSE;
     val = GET_NEXT_CLUSTER(sb, 1);
+    if (sb->fat_io_error)
+        return;
+
     if (clean)
         val |= bit;
     else
@@ -615,7 +672,7 @@ LONG ValidateVolume(struct FSSuper *sb, BOOL *changed, BOOL *complete)
             return ERROR_NOT_A_DOS_DISK;
         }
         walk_chain(&v, &root, 0);
-        if (root == 0)
+        if (root == 0 && !v.io_error)
         {
             FreeVec(v.used);
             sb->suppress_dirty = FALSE;
@@ -623,14 +680,20 @@ LONG ValidateVolume(struct FSSuper *sb, BOOL *changed, BOOL *complete)
         }
     }
 
-    err = check_directory(&v, root, root, 0);
+    err = 0;
+    if (!v.io_error)
+        err = check_directory(&v, root, root, 0);
 
-    if (err == 0 && !v.aborted && !v.incomplete)
+    if (err == 0 && !stopped(&v) && !v.incomplete)
         free_lost_clusters(&v);
+
+    if (err == 0 && v.io_error)
+        err = ERROR_UNKNOWN;
 
     D(bug("[fat validate] done: %lu files, %lu dirs, %lu lost clusters,"
         " %lu fixes%s\n", v.files, v.dirs, v.lost, v.fixes,
-        v.aborted ? " (aborted)" : v.incomplete ? " (incomplete)" : ""));
+        v.io_error ? " (I/O error)" : v.aborted ? " (aborted)"
+        : v.incomplete ? " (incomplete)" : ""));
 
     FreeVec(v.used);
     sb->suppress_dirty = FALSE;
@@ -638,7 +701,7 @@ LONG ValidateVolume(struct FSSuper *sb, BOOL *changed, BOOL *complete)
     if (changed != NULL)
         *changed = (v.fixes != 0);
     if (complete != NULL)
-        *complete = (err == 0 && !v.aborted && !v.incomplete);
+        *complete = (err == 0 && !stopped(&v) && !v.incomplete);
 
     return err;
 }
