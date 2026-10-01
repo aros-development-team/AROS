@@ -318,6 +318,10 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 
         if (cos) {
             BPTR cas = BNULL;
+            LONG shellrc;
+#ifdef DOS_REUSE_BOOT_PROCESS
+            BPTR shellseg = BNULL;
+#endif
 
             if (!(BootFlags & BF_NO_STARTUP_SEQUENCE))
                 cas = Open("S:Startup-Sequence", MODE_OLDFILE);
@@ -334,15 +338,18 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 
             D(bug("[DOS] %s: initialising CLI\n", __func__);)
 
-            if (BootFlags & BF_NO_BOOT_REQUESTERS) {
+#ifdef DOS_REUSE_BOOT_PROCESS
+            if ((BootFlags & BF_NO_BOOT_REQUESTERS) &&
+                (shellseg = findseg_shell(TRUE, DOSBase)) != BNULL) {
                 /* Appliance boot: this process becomes the Initial CLI
                  * rather than waiting on a second one, which would pin
                  * another process and stack for the whole game. */
-                if (internal_RunBootShell(cis, cos, cas, DOSBase) == -1) {
-                    D(bug("[DOS] %s:  .. failed!\n", __func__);)
-                    Alert(AT_DeadEnd | AN_BootStrap);
-                }
-            } else if (SystemTags(NULL,
+                shellrc = internal_RunBootShell(shellseg, cis, cos, cas, DOSBase);
+            } else
+#endif
+            {
+                /* Also retain the BCPL CLI fallback when no C shell exists. */
+                shellrc = SystemTags(NULL,
                            NP_Name, "Initial CLI",
                            NP_WindowPtr,
                                (BootFlags & BF_NO_BOOT_REQUESTERS)
@@ -352,7 +359,9 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                            SYS_Input, cis,
                            SYS_Output, cos,
                            SYS_ScriptInput, cas,
-                           TAG_END) == -1) {
+                           TAG_END);
+            }
+            if (shellrc == -1) {
                 D(bug("[DOS] %s:  .. failed!\n", __func__);)
                 Alert(AT_DeadEnd | AN_BootStrap);
             }
