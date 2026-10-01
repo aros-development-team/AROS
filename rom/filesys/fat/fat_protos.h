@@ -54,6 +54,8 @@ LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib,
 LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len,
     struct Globals *glob);
 LONG GetDirEntryLongName(struct DirEntry *de, STRPTR name, ULONG *len);
+LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *de,
+    STRPTR name, ULONG *len);
 LONG SetDirEntryName(struct DirEntry *de, STRPTR name, ULONG len);
 ULONG NumLongNameEntries(STRPTR name, ULONG len);
 
