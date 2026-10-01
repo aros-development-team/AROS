@@ -186,10 +186,17 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
         /*
          * Print out a warning to the user, in case the interrupt line was not assigned by BIOS
          * and we have failed to find routing information to configure it.
+         * Only this driver's devices are of interest - the others were
+         * reported when their own driver was added - and only those that
+         * have an interrupt pin to route in the first place.
          */
         ForeachNode(&pciBase->psd.devices, pcidev)
         {
-            IPTR devVal1 = 0, devVal2 = 0;
+            IPTR devVal1 = 0, devVal2 = 0, devDrv = 0, devPin = 0;
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_Driver, &devDrv);
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_IRQLine, &devPin);
+            if ((devDrv != (IPTR)drv) || !devPin)
+                continue;
             OOP_GetAttr(pcidev, aHidd_PCIDevice_INTLine, &devVal1);
             OOP_GetAttr(pcidev, aHidd_PCIDevice_isBridge, &devVal2);
             if (devVal1 == 255 && !devVal2)

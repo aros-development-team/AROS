@@ -57,6 +57,7 @@ void ProcessDiskChange(struct Globals *glob)
         /* Disk has been inserted. */
         D(bug("\tDisk has been inserted\n"));
         glob->disk_inserted = TRUE;
+        glob->io_muted[0] = glob->io_muted[1] = FALSE;
         DoDiskInsert(glob);
     }
     else
@@ -230,7 +231,20 @@ LONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
 
             err = DoIO((struct IORequest *)glob->diskioreq);
 
-            if (err != 0)
+            if (err == 0)
+            {
+                glob->io_muted[do_write ? 1 : 0] = FALSE;
+                retry = FALSE;
+            }
+            else if (glob->io_muted[do_write ? 1 : 0])
+            {
+                /* The user has already been told, and nothing has worked
+                 * since. Fail quietly rather than ask again for every
+                 * block: a flush is retried every second, and a scan of
+                 * the FAT covers thousands of them. */
+                retry = FALSE;
+            }
+            else
             {
                 if (glob->sb && glob->sb->volume.name[0] != '\0')
                     snprintf(vol_name, 100, "Volume %s",
@@ -250,9 +264,10 @@ LONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
                         "on block %lu",
                         "Retry|Cancel", (IPTR)vol_name,
                         (IPTR)(do_write ? "write" : "read"), num);
+
+                if (!retry)
+                    glob->io_muted[do_write ? 1 : 0] = TRUE;
             }
-            else
-                retry = FALSE;
         }
 
         if (err != 0)

@@ -218,6 +218,27 @@ static BOOL nvme_wait_ready(device_t dev, struct IORequest *tmr, UQUAD cap, ULON
     return FALSE;
 }
 
+/*
+ * INTMS and INTMC only mean anything while the controller signals with
+ * its pin or with plain MSI. Once MSI-X is enabled they must be left
+ * alone - the result of touching them is undefined - and it can already
+ * be enabled before we have asked for any vectors: a previous owner may
+ * have left it on, and a bus with no interrupt pins to offer (a device
+ * behind an Intel VMD, say) turns it on to give us an interrupt at all.
+ */
+static BOOL nvme_msix_enabled(device_t dev)
+{
+    struct NVMEBase *NVMEBase = dev->dev_NVMEBase;
+    IPTR capmsix = 0;
+
+    OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_CapabilityMSIX, &capmsix);
+    if (!capmsix)
+        return FALSE;
+
+    return (HIDD_PCIDevice_ReadConfigWord(dev->dev_Object,
+                capmsix + PCIMSIX_FLAGS) & PCIMSIXF_ENABLE) != 0;
+}
+
 /* Controller class methods */
 OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -325,7 +346,8 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                  * Mask at the controller as well, so the line stays quiet
                  * until there is a handler able to service it.
                  */
-                dev->dev_nvmeregbase->intms = ~0;
+                if (!nvme_msix_enabled(dev))
+                    dev->dev_nvmeregbase->intms = ~0;
                 dev->dev_nvmeregbase->cc = 0;
                 if (!nvme_wait_ready(dev, nvmeTimer, cap, 0))
                     goto resetfailed;
@@ -365,8 +387,13 @@ resetfailed:
                     return NULL;
                 }
 
-                /* There is someone to answer the line now - let it speak */
-                dev->dev_nvmeregbase->intmc = ~0;
+                /*
+                 * There is someone to answer the line now - let it speak.
+                 * Adding the handler may itself have switched the device
+                 * to MSI-X, in which case there is no mask to lift.
+                 */
+                if (!nvme_msix_enabled(dev))
+                    dev->dev_nvmeregbase->intmc = ~0;
 
                 /*
                  * Nothing to retire here: the controller was taken down

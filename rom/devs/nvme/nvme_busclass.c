@@ -95,6 +95,12 @@ static void nvme_iotask(struct nvme_queue *nvmeq)
 
                 D(bug ("[NVME:Bus] %s: replying to IO @ 0x%p\n", __func__, iotd);)
 
+                /*
+                 * Release the transfer's DMA mappings and PRP/SGL storage here, in
+                 * task context (the completion hook may have run from the interrupt),
+                 * and before the request is handed back.
+                 */
+                nvme_finish_ioevent(slot);
                 ReplyMsg((struct Message *)iotd);
 
                 slot->ceh_Reply = FALSE;
