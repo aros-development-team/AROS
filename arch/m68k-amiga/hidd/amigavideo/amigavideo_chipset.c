@@ -1863,8 +1863,15 @@ static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
       }
     }
 
-    if (bqvar & BQ_BEAMSYNC)
+    if (bqvar & BQ_BEAMSYNC) {
         bqvar |= BQ_MISSED;
+        /* A queued beam target may fall beyond this field. Once the beam
+         * wraps, restart the waiting queue rather than relying on an alarm
+         * for a position that the field could not reach.
+         */
+        if (bqvar & BQ_BEAMSYNCWAITING)
+            custom->intreq = INTF_SETCLR | INTF_BLIT;
+    }
 
     return FALSE;
 
