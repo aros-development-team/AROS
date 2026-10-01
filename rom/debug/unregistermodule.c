@@ -14,7 +14,7 @@
 
 static module_t * FindModule(BPTR segList, struct Library * DebugBase);
 static LONG FindIndex(module_t * mod, BPTR segList);
-static VOID RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
+static BOOL RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
 
 /*****************************************************************************
 
@@ -77,13 +77,35 @@ static VOID RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
                 i = rangestart = FindIndex(mod, segList);
 
             /* Optimization assumes order of segments is similar to order of DOS segments */
-            if ((i >= mod->m_segcnt) || (mod->m_segments[i]->s_seg != segList))
+            if ((rangestart == -1) || (i >= mod->m_segcnt) || (mod->m_segments[i]->s_seg != segList))
             {
                 /* Order broken, clear ordered segments */
-                RemoveSegmentRange(mod, rangestart, (i - rangestart));
+                if ((rangestart != -1) && RemoveSegmentRange(mod, rangestart, (i - rangestart)))
+                {
+                    /*
+                     * That was the module's last segment, so the module
+                     * itself is gone and must not be touched again. Any DOS
+                     * segments that follow were never registered with it
+                     * (e.g. the ELF loader's arena container hunk, which is
+                     * linked after the section hunks).
+                     */
+                    mod = NULL;
+                    rangestart = -1;
+                    i = 0;
+
+                    /* Look this DOS segment up again, in the other modules */
+                    continue;
+                }
 
                 /* Restart */
                 i = rangestart = FindIndex(mod, segList);
+                if (rangestart == -1)
+                {
+                    /* This DOS segment does not belong to the module */
+                    mod = NULL;
+                    i = 0;
+                    continue;
+                }
             }
 
             i++;
@@ -136,7 +158,8 @@ static LONG FindIndex(module_t * mod, BPTR segList)
     return -1;
 }
 
-static VOID RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count)
+/* Returns TRUE if the module itself was freed along with its last segment */
+static BOOL RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count)
 {
     struct segment * seg;
     LONG i;
@@ -179,7 +202,7 @@ static VOID RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count)
             /* Free module descriptor at last */
             FreeVec(mod);
 
-            return;
+            return TRUE;
         }
     }
 
@@ -189,4 +212,5 @@ static VOID RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count)
     for (i = firstidx;i < mod->m_segcnt; i++)
         mod->m_segments[i] = mod->m_segments[i + count];
 
+    return FALSE;
 }
