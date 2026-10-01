@@ -515,31 +515,44 @@ end:
     AROS_LIBFUNC_EXIT
 } /* SystemTagList */
 
+#ifdef DOS_REUSE_BOOT_PROCESS
 /*
  * Run the boot shell in the calling process, the way the AmigaOS boot
  * process becomes the Initial CLI, instead of starting a second process
  * and blocking on it for as long as the boot shell runs. The startup
- * packet is the one SystemTagList() sends for CLI_BOOT; the shell replies
- * it to our own port when it exits.
+ * packet is the one SystemTagList() sends for CLI_BOOT. Its reply uses a
+ * private port because the shell does further DOS I/O after replying it.
  */
-LONG internal_RunBootShell(BPTR sis, BPTR sos, BPTR script, struct DosLibrary *DOSBase)
+LONG internal_RunBootShell(BPTR shellseg, BPTR sis, BPTR sos, BPTR script, struct DosLibrary *DOSBase)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
     struct DosPacket *dp;
     struct ExtArg *ea;
-    BPTR shellseg;
+    struct MsgPort *replyport;
+    BPTR currdir = BNULL;
     APTR oldReturnAddr;
+    STRPTR oldName;
     LONG rc = -1;
-
-    shellseg = findseg_shell(TRUE, DOSBase);
-    if (!shellseg)
-        return -1;
 
     dp = AllocDosObject(DOS_STDPKT, NULL);
     ea = AllocMem(sizeof(struct ExtArg), MEMF_PUBLIC | MEMF_CLEAR);
-    if (dp && ea)
+    replyport = CreateMsgPort();
+    if (!dp || !ea || !replyport)
     {
-        dp->dp_Port = &me->pr_MsgPort;
+        SetIoErr(ERROR_NO_FREE_STORE);
+        goto end;
+    }
+
+    if (me->pr_CurrentDir)
+    {
+        currdir = DupLock(me->pr_CurrentDir);
+        if (!currdir)
+            goto end;
+    }
+
+    {
+        dp->dp_Port = replyport;
+        dp->dp_Link->mn_ReplyPort = replyport;
         dp->dp_Type = CLI_BOOT;
         dp->dp_Res1 = 0;                /* CliInitRun style */
         dp->dp_Res2 = 0;
@@ -547,22 +560,37 @@ LONG internal_RunBootShell(BPTR sis, BPTR sos, BPTR script, struct DosLibrary *D
         dp->dp_Arg2 = (IPTR)sis;
         dp->dp_Arg3 = (IPTR)sos;
         dp->dp_Arg4 = (IPTR)(script ? script : sis);
-        dp->dp_Arg5 = (IPTR)(me->pr_CurrentDir ? DupLock(me->pr_CurrentDir) : BNULL);
+        dp->dp_Arg5 = (IPTR)currdir;
         dp->dp_Arg6 = 1;
         dp->dp_Arg7 = (IPTR)ea;         /* freed by CliInitRun() */
         ea = NULL;
+        currdir = BNULL;                /* handed to CliInitRun() */
+
+        /* CliInitRun replaces the original boot-directory lock with the
+         * duplicate. Let it free the original; AROS_CLI frees the duplicate
+         * on shell exit and leaves pr_CurrentDir at BNULL.
+         */
+        me->pr_Flags |= PRF_FREECURRDIR;
 
         oldReturnAddr = me->pr_ReturnAddr;
+        oldName = me->pr_Task.tc_Node.ln_Name;
+        me->pr_Task.tc_Node.ln_Name = "Initial CLI";
         CallEntry((STRPTR)dp, 0, (LONG_FUNC)((BPTR *)BADDR(shellseg) + 1), me);
         me->pr_ReturnAddr = oldReturnAddr;
+        me->pr_Task.tc_Node.ln_Name = oldName;
 
-        if (WaitPkt() != dp)
+        if (GetMsg(replyport) != dp->dp_Link)
             Alert(AN_QPktFail);
 
         rc = dp->dp_Res1;
         SetIoErr(dp->dp_Res2);
     }
 
+end:
+    if (currdir)
+        UnLock(currdir);
+    if (replyport)
+        DeleteMsgPort(replyport);
     if (ea)
         FreeMem(ea, sizeof(struct ExtArg));
     if (dp)
@@ -570,3 +598,4 @@ LONG internal_RunBootShell(BPTR sis, BPTR sos, BPTR script, struct DosLibrary *D
 
     return rc;
 }
+#endif

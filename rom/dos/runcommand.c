@@ -16,11 +16,6 @@
 #include <dos/stdio.h>
 
 #include "dos_intern.h"
-#include <dos_platform.h>
-
-#ifndef PROC_STACKSIZE
-#define PROC_STACKSIZE AROS_STACKSIZE
-#endif
 
 /*****************************************************************************
 
