@@ -27,6 +27,9 @@ Boston, MA 02111-1307, USA.  */
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
+#ifndef _WIN32
+#   include <fcntl.h>
+#endif
 #ifdef HAVE_STRING_H
 #   include <string.h>
 #else
@@ -723,14 +726,24 @@ scanmakefiles (struct Project * prj, struct DirNode * node, struct List * vars)
 struct Makefile *
 addmakefile (struct DirNode * node, const char * filename)
 {
+#ifdef _WIN32
     static char curdir[PATH_MAX];
+#else
+    int curdir;
+#endif
     const char * ptr = filename;
     char * name;
     int len = 0;
     struct DirNode * subnode;
     struct Makefile * makefile = NULL;
 
+#ifdef _WIN32
     ASSERT(getcwd(curdir, PATH_MAX) != NULL);
+#else
+    /* Flawfinder: ignore */
+    curdir = open(".", O_RDONLY);
+    ASSERT(curdir >= 0);
+#endif
 
     while (ptr != NULL)
     {
@@ -748,7 +761,15 @@ addmakefile (struct DirNode * node, const char * filename)
             if (subnode == NULL)
             {
                 xfree(name);
+#ifdef _WIN32
                 ASSERT(chdir (curdir) == 0);
+#else
+                {
+                    int rc = fchdir(curdir);
+                    close(curdir);
+                    ASSERT(rc == 0);
+                }
+#endif
                 return NULL;
             }
             ASSERT(chdir (name) == 0);
@@ -775,7 +796,15 @@ addmakefile (struct DirNode * node, const char * filename)
                     if (stat (name, &st) != 0)
                     {
                         xfree (name);
-                        ASSERT(chdir (curdir) == 0);
+        #ifdef _WIN32
+                ASSERT(chdir (curdir) == 0);
+#else
+                {
+                    int rc = fchdir(curdir);
+                    close(curdir);
+                    ASSERT(rc == 0);
+                }
+#endif
                         return NULL;
                     }
                     name[len]=0;
@@ -794,7 +823,15 @@ addmakefile (struct DirNode * node, const char * filename)
         xfree (name);
     }
 
+#ifdef _WIN32
     ASSERT(chdir (curdir) == 0);
+#else
+    {
+        int rc = fchdir(curdir);
+        close(curdir);
+        ASSERT(rc == 0);
+    }
+#endif
 
     return makefile;
 }
