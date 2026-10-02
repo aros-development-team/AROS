@@ -8,6 +8,7 @@
 
 #include <aros/system.h>
 #include <exec/io.h>
+#include <exec/memory.h>
 #include <dos/dos.h>
 #include <dos/exall.h>
 #include <dos/dosextens.h>
@@ -71,6 +72,13 @@ struct DAList
 
 #ifndef EOF
 #define EOF -1
+#endif
+#include <dos_platform.h>
+#ifndef PROC_STACKSIZE
+#define PROC_STACKSIZE AROS_STACKSIZE
+#endif
+#ifndef PROC_MINSTACKSIZE
+#define PROC_MINSTACKSIZE PROC_STACKSIZE
 #endif
 #ifndef IOBUFSIZE
 #define IOBUFSIZE 4096
@@ -332,6 +340,9 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
 
 /* Shell utilities */
 BPTR findseg_cli(BOOL isBoot, struct DosLibrary *DOSBase);
+#ifdef DOS_REUSE_BOOT_PROCESS
+LONG internal_RunBootShell(BPTR shellseg, BPTR sis, BPTR sos, BPTR script, struct DosLibrary *DOSBase);
+#endif
 
 BPTR findseg_shell(BOOL isBoot, struct DosLibrary *DOSBase);
 

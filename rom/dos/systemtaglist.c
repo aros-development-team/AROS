@@ -514,3 +514,91 @@ end:
 
     AROS_LIBFUNC_EXIT
 } /* SystemTagList */
+
+#ifdef DOS_REUSE_BOOT_PROCESS
+/*
+ * Run the boot shell in the calling process, the way the AmigaOS boot
+ * process becomes the Initial CLI, instead of starting a second process
+ * and blocking on it for as long as the boot shell runs. The startup
+ * packet is the one SystemTagList() sends for CLI_BOOT. Its reply uses a
+ * private port because the shell does further DOS I/O after replying it.
+ */
+LONG internal_RunBootShell(BPTR shellseg, BPTR sis, BPTR sos, BPTR script, struct DosLibrary *DOSBase)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct DosPacket *dp;
+    struct ExtArg *ea;
+    struct MsgPort *replyport;
+    BPTR currdir = BNULL;
+    BPTR olddir;
+    APTR oldReturnAddr;
+    STRPTR oldName;
+    LONG rc = -1;
+
+    dp = AllocDosObject(DOS_STDPKT, NULL);
+    ea = AllocMem(sizeof(struct ExtArg), MEMF_PUBLIC | MEMF_CLEAR);
+    replyport = CreateMsgPort();
+    if (!dp || !ea || !replyport)
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        goto end;
+    }
+
+    if (me->pr_CurrentDir)
+    {
+        currdir = DupLock(me->pr_CurrentDir);
+        if (!currdir)
+            goto end;
+    }
+
+    {
+        dp->dp_Port = replyport;
+        dp->dp_Link->mn_ReplyPort = replyport;
+        dp->dp_Type = CLI_BOOT;
+        dp->dp_Res1 = 0;                /* CliInitRun style */
+        dp->dp_Res2 = 0;
+        dp->dp_Arg1 = (IPTR)MKBADDR(Cli());
+        dp->dp_Arg2 = (IPTR)sis;
+        dp->dp_Arg3 = (IPTR)sos;
+        dp->dp_Arg4 = (IPTR)(script ? script : sis);
+        dp->dp_Arg5 = (IPTR)currdir;
+        dp->dp_Arg6 = 1;
+        dp->dp_Arg7 = (IPTR)ea;         /* freed by CliInitRun() */
+        ea = NULL;
+        currdir = BNULL;                /* handed to CliInitRun() */
+
+        /* Detach the old directory before CliInitRun installs the duplicate.
+         * Only free an owned lock: a borrowed lock may belong to SYS: or
+         * another assign. AROS_CLI frees the duplicate on shell exit.
+         */
+        olddir = CurrentDir(BNULL);
+        if (olddir && (me->pr_Flags & PRF_FREECURRDIR))
+            UnLock(olddir);
+
+        oldReturnAddr = me->pr_ReturnAddr;
+        oldName = me->pr_Task.tc_Node.ln_Name;
+        me->pr_Task.tc_Node.ln_Name = "Initial CLI";
+        CallEntry((STRPTR)dp, 0, (LONG_FUNC)((BPTR *)BADDR(shellseg) + 1), me);
+        me->pr_ReturnAddr = oldReturnAddr;
+        me->pr_Task.tc_Node.ln_Name = oldName;
+
+        if (GetMsg(replyport) != dp->dp_Link)
+            Alert(AN_QPktFail);
+
+        rc = dp->dp_Res1;
+        SetIoErr(dp->dp_Res2);
+    }
+
+end:
+    if (currdir)
+        UnLock(currdir);
+    if (replyport)
+        DeleteMsgPort(replyport);
+    if (ea)
+        FreeMem(ea, sizeof(struct ExtArg));
+    if (dp)
+        FreeDosObject(DOS_STDPKT, dp);
+
+    return rc;
+}
+#endif

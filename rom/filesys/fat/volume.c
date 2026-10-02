@@ -76,7 +76,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
     struct Globals *glob = sb->glob;
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
     LONG err = 0, td_err;
-    ULONG bsize = de->de_SizeBlock * 4, id;
+    ULONG bsize = de->de_SizeBlock * 4, id, ranges;
     struct FATBootSector *boot;
     struct FATBPBInfo bpb;
     struct FATEBPB *ebpb;
@@ -186,8 +186,13 @@ LONG ReadFATSuper(struct FSSuper *sb)
         return ERROR_UNKNOWN;
     }
 
-    sb->cache = Cache_CreateCache(glob, 64, 64, sb->sectorsize, SysBase,
-        DOSBase);
+    /* Scaled with the volume: a big directory written file by file spreads
+     * over many ranges, and a lookup misses on every one of them once they
+     * do not all fit (LRU against a sequential scan) */
+    ranges = Cache_RangeCount((UQUAD)sb->total_sectors * bsize,
+        sb->sectorsize);
+    sb->cache = Cache_CreateCache(glob, ranges, ranges, sb->sectorsize,
+        SysBase, DOSBase);
     if (sb->cache == NULL)
     {
         err = IoErr();
