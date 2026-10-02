@@ -4041,25 +4041,24 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                                 }
                                 ncm->ncm_HasMounted = TRUE;
 
+                                if((ncm->ncm_DeviceType == PDT_CDROM) || (ncm->ncm_DeviceType == PDT_WORM))
+                                {
+                                    /* Optical media belong to the CD filesystem: mount it
+                                       and let it decide what the disc holds, as the
+                                       ATA/AHCI CD drives do. Probing here would only find
+                                       the partition table or FAT EFI system partition of
+                                       a hybrid ISO, and would keep CDFS from discs that
+                                       are not ISO9660. */
+                                    if(ncm->ncm_CUC->cuc_AutoMountCD && ncm->ncm_BlockSize)
+                                    {
+                                        AutoMountCD(ncm);
+                                    }
+                                }
                                 // find and mount partitions
-                                /* Optical media are mounted through the ISO9660 check
-                                   below. A hybrid ISO also carries a FAT EFI system
-                                   partition; probing for an unpartitioned FAT volume
-                                   would mount that instead, ahead of the CD. */
-                                if(!CheckPartitions(ncm) && ncm->ncm_CUC->cuc_AutoMountFAT &&
-                                   (ncm->ncm_DeviceType != PDT_CDROM) &&
-                                   (ncm->ncm_DeviceType != PDT_WORM))
+                                else if(!CheckPartitions(ncm) && ncm->ncm_CUC->cuc_AutoMountFAT)
                                 {
                                     // check for FAT volume with no partition table
                                     CheckFATPartition(ncm, 0);
-                                }
-                                if((ncm->ncm_BlockSize == 2048) &&
-                                   ((ncm->ncm_DeviceType == PDT_WORM) || (ncm->ncm_DeviceType == PDT_CDROM)))
-                                {
-                                    if(ncm->ncm_CUC->cuc_AutoMountCD)
-                                    {
-                                        CheckISO9660(ncm);
-                                    }
                                 }
                             }
                             ncm->ncm_LastChange = ncm->ncm_ChangeCount;
@@ -5283,42 +5282,6 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
         }
     }
     psdFreeVec(mbr);
-}
-/* \\\ */
-
-/* /// "CheckISO9660()" */
-void CheckISO9660(struct NepClassMS *ncm)
-{
-    struct NepMSBase *nh = ncm->ncm_ClsBase;
-    UBYTE *blockbuf;
-    struct IOStdReq *stdIO = &nh->nh_IOReq;
-
-    blockbuf = (UBYTE *) psdAllocVec(ncm->ncm_BlockSize);
-    if(!blockbuf)
-    {
-        return;
-    }
-    stdIO->io_Command = TD_READ64;
-    stdIO->io_Offset = 0x8000;
-    stdIO->io_Actual = 0;
-    stdIO->io_Length = ncm->ncm_BlockSize;
-    stdIO->io_Data = blockbuf;
-    if(!nIOCmdTunnel(ncm, stdIO))
-    {
-        if((((ULONG *) blockbuf)[0] == AROS_LONG2BE(0x01434430)) && (((ULONG *) blockbuf)[1] == AROS_LONG2BE(0x30310100)))
-        {
-            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Media is ISO9660.");
-            AutoMountCD(ncm);
-        }
-    } else {
-        KPRINTF(10, ("failed to read ISO sector\n"));
-        if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
-        {
-            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                           "Failed to read block 16 for CDFS AutoMounting.");
-        }
-    }
-    psdFreeVec(blockbuf);
 }
 /* \\\ */
 
