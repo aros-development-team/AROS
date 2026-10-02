@@ -102,6 +102,8 @@ typedef struct tlsf_area_s {
 
 typedef struct {
     tlsf_area_t *       memory_area;
+    IPTR                area_lo;    // Lowest and highest address of all areas
+    IPTR                area_hi;
 
     IPTR                total_size;
     IPTR                free_size;
@@ -311,21 +313,38 @@ static inline __attribute__((always_inline)) bhdr_t * MEM_TO_BHDR(void *ptr)
     return (bhdr_t *)(ptr - offsetof(bhdr_t, mem));
 }
 
-/* These checks turn corrupted free-list metadata into a traceable failure. */
+/* These checks turn corrupted free-list metadata into a traceable failure.
+   A block must lie within the bounds of the pool's areas, which makes it
+   safe to read, and the block after it must link back to it. That stays
+   O(1) however many areas the pool has. */
 static BOOL tlsf_block_in_area(tlsf_t *tlsf, const bhdr_t *block)
+{
+    bhdr_t *next;
+
+    if ((IPTR)block < tlsf->area_lo || (IPTR)block >= tlsf->area_hi)
+        return FALSE;
+
+    /* An area's header has no previous block, its sentinel no size */
+    next = GET_NEXT_BHDR((bhdr_t *)block, GET_SIZE((bhdr_t *)block));
+    if (!block->header.prev || (IPTR)next <= (IPTR)block || (IPTR)next > tlsf->area_hi)
+        return FALSE;
+
+    return next->header.prev == block;
+}
+
+static void tlsf_update_bounds(tlsf_t *tlsf)
 {
     tlsf_area_t *area;
 
+    tlsf->area_lo = ~(IPTR)0;
+    tlsf->area_hi = 0;
     for (area = tlsf->memory_area; area; area = area->next)
     {
-        bhdr_t *first = MEM_TO_BHDR(area);
-
-        first = GET_NEXT_BHDR(first, GET_SIZE(first));
-        if ((IPTR)block >= (IPTR)first && (IPTR)block < (IPTR)area->end)
-            return TRUE;
+        if ((IPTR)area < tlsf->area_lo)
+            tlsf->area_lo = (IPTR)area;
+        if ((IPTR)area->end > tlsf->area_hi)
+            tlsf->area_hi = (IPTR)area->end;
     }
-
-    return FALSE;
 }
 
 static BOOL tlsf_valid_bucket(int fl, int sl)
@@ -694,6 +713,7 @@ static void tlsf_release_memory_area(struct MemHeaderExt * mhe, tlsf_area_t * ar
             p->next = area->next;
             break;
         }
+    tlsf_update_bounds(tlsf);
 
     /* release */
     if (tlsf->autogrow_release_fn)
@@ -1187,6 +1207,10 @@ void tlsf_add_memory(struct MemHeaderExt *mhe, void *memory, IPTR size)
 
         area->next = tlsf->memory_area;
         tlsf->memory_area = area;
+        if (!tlsf->area_hi || (IPTR)area < tlsf->area_lo)
+            tlsf->area_lo = (IPTR)area;
+        if ((IPTR)area->end > tlsf->area_hi)
+            tlsf->area_hi = (IPTR)area->end;
 
         /* User added memory. Not autogrown */
         area->autogrown = 0;
