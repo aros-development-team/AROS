@@ -1246,7 +1246,22 @@ void PatCopy(STRPTR name, struct CopyData *cd)
         failval = RETURN_OK;
     }
 
-    cd->CurDest = cd->Destination;
+    /* Own the traversal lock separately from Destination. A filesystem may
+     * return the same BPTR for separately acquired shared-lock references.
+     */
+    cd->CurDest = BNULL;
+    if (cd->Destination)
+    {
+        cd->CurDest = DupLock(cd->Destination);
+        if (!cd->CurDest)
+        {
+            cd->IoErr = IoErr();
+            cd->RetVal = RETURN_FAIL;
+            if (!(cd->Flags & COPYFLAG_QUIET))
+                PrintFault(cd->IoErr, cmdname);
+            return;
+        }
+    }
     cd->DestPathSize = 0;
 
     if (cd->Mode == COPYMODE_COPY && !TestFileSys(name, cd))
@@ -1256,7 +1271,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
         DoWork(FilePart(name), cd);
         cd->Flags &= ~COPYFLAG_SRCNOFILESYS;
 
-        return;
+        goto out;
     }
 
     if ((APath = (struct AnchorPath *)AllocMem(sizeof(struct AnchorPath) + FILEPATH_SIZE,
@@ -1324,10 +1339,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                     cd->CurDest = ParentDir(i);
                     cd->DestPathSize = 0;
 
-                    if (i != cd->Destination)
-                    {
-                        UnLock(i);
-                    }
+                    UnLock(i);
 
                     if (!cd->CurDest)
                     {
@@ -1461,7 +1473,8 @@ void PatCopy(STRPTR name, struct CopyData *cd)
         }
     }
 
-    if (cd->CurDest && cd->CurDest != cd->Destination)
+out:
+    if (cd->CurDest)
     {
         UnLock(cd->CurDest);
     }
@@ -1962,7 +1975,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
             {
                 cd->CurDest = i;
             }
-            else if (i != cd->Destination)
+            else
             {
                 UnLock(i);
             }
