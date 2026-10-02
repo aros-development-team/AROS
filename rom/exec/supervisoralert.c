@@ -28,7 +28,12 @@ void Alert_DisplayKrnAlert(struct Task * task, ULONG alertNum, APTR location, AP
 void SupervisorAlertTask(struct ExecBase *SysBase)
 {
     struct IntExecBase * IntSysBase = PrivExecBase(SysBase);
+#ifdef AROS_ARCH_amiga
     char * buffer;
+#else
+    /* Allocate while the system is healthy, rather than during a crash. */
+    char * buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
+#endif
     LONG res, i;
     struct Task * t = NULL;
     ULONG alertNum = 0;
@@ -47,8 +52,12 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
         alertNum = IntSysBase->SAT.sat_Params[0];
         Enable();
 
-        /* Only needed while an alert is shown; without it, use the critical error path */
+#ifdef AROS_ARCH_amiga
+        /* Save the idle buffer on memory-limited Amigas. Allocation failure
+         * falls back to the critical error path below.
+         */
         buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
+#endif
         if (buffer)
             res = Alert_AskSuspend(t, alertNum | AT_DeadEnd, buffer, SysBase);
         else
@@ -81,8 +90,10 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
             Enable();
         }
 
+#ifdef AROS_ARCH_amiga
         if (buffer)
             FreeMem(buffer, ALERT_BUFFER_SIZE);
+#endif
 
         switch (res)
         {
