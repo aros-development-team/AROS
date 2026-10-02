@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -148,8 +148,27 @@ static LONG direct_fetch(BPTR file, UBYTE *buffer, ULONG fetchsize, struct DosLi
     if (fetchsize < bufsize)
         return 0;
 
+    /* Keep room for the last character so UnGetC() remains valid. Allocate
+     * before reading, so allocation failure cannot consume input.
+     */
+    if (fh->fh_Buf == BNULL && vbuf_alloc(fh, NULL, bufsize) == NULL)
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return FETCHERR;
+    }
+
+    /* Read() takes a signed 32-bit length, including on 64-bit targets. */
+    if (fetchsize > 0x7FFFFFFFUL)
+        fetchsize = 0x7FFFFFFFUL;
+
     size = Read(file, buffer, fetchsize);
-    fh->fh_Pos = fh->fh_End = 0;
+    if (size > 0)
+    {
+        ((UBYTE *)BADDR(fh->fh_Buf))[0] = buffer[size - 1];
+        fh->fh_Pos = fh->fh_End = 1;
+    }
+    else
+        fh->fh_Pos = fh->fh_End = 0;
 
     return (size > 0) ? size : EOF;
 }
