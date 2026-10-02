@@ -732,8 +732,25 @@ AROS_UFH0(void, nBTTask)
                     if((bem = ncp->ncp_CurrEventMsg))
                     {
                         len = psdGetPipeActual(pp);
+                        if(ioerr)
+                        {
+                            /* The partial event cannot be trusted; restart
+                               reception at an event boundary. Leaving the
+                               request unissued would stop all event delivery. */
+                            bem->bem_Msg.mn_Length = 0;
+                            psdSendPipe(ncp->ncp_EPEventIntPipe, &bem->bem_Event, ncp->ncp_EPEventIntMaxPktSize);
+                            continue;
+                        }
                         bem->bem_Msg.mn_Length += len;
-                        if(bem->bem_Msg.mn_Length >= 2)
+                        if(bem->bem_Msg.mn_Length < 2)
+                        {
+                            /* Header not complete yet (zero-length or
+                               one-byte transfer): keep reading. */
+                            psdSendPipe(ncp->ncp_EPEventIntPipe,
+                                        (((UBYTE *) &bem->bem_Event.bhe_EventType) + bem->bem_Msg.mn_Length),
+                                        ncp->ncp_EPEventIntMaxPktSize - bem->bem_Msg.mn_Length);
+                        }
+                        else
                         {
                             if(bem->bem_Msg.mn_Length < bem->bem_Event.bhe_PayloadLength+2)
                             {
