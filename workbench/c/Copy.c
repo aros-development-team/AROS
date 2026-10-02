@@ -289,6 +289,11 @@
         arguments mandatory and the command now returns ERROR_REQUIRED_ARG_MISSING
         if required arguments are missing. 
 
+        October 2026, Nicolas Ramz
+        Release destination traversal lock references independently. This
+        prevents recursive copies to RAM: from leaving the destination
+        directory locked when shared-lock references use the same BPTR.
+
 ******************************************************************************/
 
 #define CTRL_C          (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
@@ -319,7 +324,7 @@ typedef ULONG IPTR;
 
 #include <string.h>
 
-const TEXT version[] = "\0$VER: Copy 50.19 (25.09.2026)";
+const TEXT version[] = "\0$VER: Copy 50.20 (02.10.2026)";
 
 static const UBYTE *PARAM =
 "FROM/M/A,TO/A,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"
