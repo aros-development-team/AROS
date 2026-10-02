@@ -5293,12 +5293,9 @@ void AutoMountCD(struct NepClassMS *ncm)
 
     nh->nh_RDsk.rdsk_PART.pb_DevFlags = 0;
 
-    if(*(ncm->ncm_CUC->cuc_FATDOSName))
-    {
-        c2bstr(ncm->ncm_CUC->cuc_FATDOSName, nh->nh_RDsk.rdsk_PART.pb_DriveName);
-    } else {
-        c2bstr("UCD0", nh->nh_RDsk.rdsk_PART.pb_DriveName);
-    }
+    /* Do not reuse the FAT automount DOS name (UMSD by default) for CDs:
+       the CD and a FAT volume would be indistinguishable. */
+    c2bstr("UCD0", nh->nh_RDsk.rdsk_PART.pb_DriveName);
 
     envec = (struct DosEnvec *) nh->nh_RDsk.rdsk_PART.pb_Environment;
     memset(envec, 0x00, sizeof(struct DosEnvec));
