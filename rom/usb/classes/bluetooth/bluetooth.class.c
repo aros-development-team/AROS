@@ -188,13 +188,32 @@ struct NepClassBT * usbAttemptInterfaceBinding(struct NepBTBase *nh, struct PsdI
     KPRINTF(1, ("nepBTAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
+        struct PsdConfig *pc = NULL;
+        struct PsdDevice *pd = NULL;
+        IPTR vendid = 0;
+
         psdGetAttrs(PGA_INTERFACE, pif,
                     IFA_Class, &ifclass,
                     IFA_SubClass, &subclass,
                     IFA_Protocol, &proto,
+                    IFA_Config, &pc,
                     TAG_DONE);
+        if(pc)
+            psdGetAttrs(PGA_CONFIG, pc, CA_Device, &pd, TAG_DONE);
+        if(pd)
+            psdGetAttrs(PGA_DEVICE, pd, DA_VendorID, &vendid, TAG_DONE);
         CloseLibrary(ps);
-        if((ifclass == BLUETOOTH_CLASSCODE) &&
+        /*
+         * Broadcom dongles (BCM20702 and relatives, including OEM-branded
+         * ones that keep Broadcom's vendor ID) present the standard HCI
+         * interface with the vendor-specific class code ff/01/01 instead
+         * of e0/01/01. Accept that only for Broadcom's vendor ID, as Linux
+         * btusb does, so unrelated vendor-class devices are not claimed;
+         * the endpoint check below still requires bulk-in, bulk-out and
+         * interrupt-in.
+         */
+        if(((ifclass == BLUETOOTH_CLASSCODE) ||
+            ((ifclass == 0xff) && (vendid == 0x0a5c))) &&
            (subclass == BLUETOOTH_RF_SUBCLASS) &&
            (proto == BLUETOOTH_PROTO_PRG))
         {
