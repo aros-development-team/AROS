@@ -2061,6 +2061,9 @@ LONG nGetBlockSize(struct NepClassMS *ncm)
             ncm->ncm_Geometry.dg_SectorSize = ncm->ncm_BlockSize = 512;
             ncm->ncm_BlockShift = 9;
         }
+        /* Do not keep a stale sector count: nFakeGeometry() would build a
+           volume out of it. Zero sectors means no usable medium. */
+        ncm->ncm_Geometry.dg_TotalSectors = 0;
     } else {
         ncm->ncm_Geometry.dg_SectorSize = ncm->ncm_BlockSize = AROS_BE2LONG(capacity[1]);
         ncm->ncm_BlockShift = 0;
@@ -5330,7 +5333,10 @@ void AutoMountCD(struct NepClassMS *ncm)
     envec->de_SizeBlock = ncm->ncm_BlockSize>>2;
     envec->de_Surfaces = 1;
     envec->de_SectorPerBlock = 1;
-    envec->de_Reserved = 0xffffffff;
+    /* The CD filesystem ignores this, but an AFS/FFS-family probe of the
+       same node computes its root block from it; 0xffffffff put that at
+       the 32-bit sign bit and raised a "block outside range" requester. */
+    envec->de_Reserved = 2;
     envec->de_NumBuffers = ncm->ncm_CUC->cuc_FATBuffers;
     envec->de_BufMemType = MEMF_PUBLIC;
     envec->de_MaxTransfer = (1UL<<(ncm->ncm_CDC->cdc_MaxTransfer+16))-1;
@@ -5358,7 +5364,12 @@ void AutoMountCD(struct NepClassMS *ncm)
     envec->de_Interleave = 0;
     envec->de_DosType = ncm->ncm_CDC->cdc_CDDosType;
     envec->de_LowCyl = 0;
-    envec->de_HighCyl = 1;
+    /* With one surface and one block per track, HighCyl is the last block.
+       A fixed 1 described a two-block volume, on which an AFS/FFS-family
+       probe looped or raised read error requesters instead of rejecting
+       the CD. */
+    envec->de_HighCyl = (ncm->ncm_Geometry.dg_TotalSectors > 1) ?
+                        (ncm->ncm_Geometry.dg_TotalSectors - 1) : 1;
 
     strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_CDFSName, 84);
     CheckPartition(ncm);
