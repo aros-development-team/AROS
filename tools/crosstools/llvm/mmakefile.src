@@ -220,10 +220,15 @@ LLVM_CONFIG_OPT         += -Wno-dev
 # The linklib builds only read LLVMConfig's variables. Skip its imported
 # targets: a toolchain-only install ships no libraries for them to point at,
 # and LLVMExports hard-errors on the first file it cannot find.
-# LLVMConfig only grew the switch in llvm 23; earlier versions always
-# include the exports, so there is nothing to turn off there.
+# LLVMConfig only grew the switch in llvm 23. Before that it skips the
+# exports once LLVMSupport is a target, so for llvm 20 to 22
+# skip-llvm-exports.cmake defines it: a shared-library build exports SHARED
+# imports, and the exports CMake >= 4.0 writes enable CMP0164, which rejects
+# those on Generic. llvm 11 doesn't configure with CMake >= 4.0 at all.
 ifeq ($(TARGET_LLVM_RUNTIMES_STYLE),umbrella)
 LLVM_CONFIG_OPT         += -DLLVM_OMIT_EXPORTS_FROM_CONFIG=ON
+else ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
+LLVM_CONFIG_OPT         += -DCMAKE_PROJECT_INCLUDE=$(SRCDIR)/$(CURDIR)/skip-llvm-exports.cmake
 endif
 
 LLVM_CMAKEOPTIONS       := -Wno-dev                                                                                                     \
