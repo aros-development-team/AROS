@@ -4042,7 +4042,13 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                                 ncm->ncm_HasMounted = TRUE;
 
                                 // find and mount partitions
-                                if(!CheckPartitions(ncm) && ncm->ncm_CUC->cuc_AutoMountFAT)
+                                /* Optical media are mounted through the ISO9660 check
+                                   below. A hybrid ISO also carries a FAT EFI system
+                                   partition; probing for an unpartitioned FAT volume
+                                   would mount that instead, ahead of the CD. */
+                                if(!CheckPartitions(ncm) && ncm->ncm_CUC->cuc_AutoMountFAT &&
+                                   (ncm->ncm_DeviceType != PDT_CDROM) &&
+                                   (ncm->ncm_DeviceType != PDT_WORM))
                                 {
                                     // check for FAT volume with no partition table
                                     CheckFATPartition(ncm, 0);
