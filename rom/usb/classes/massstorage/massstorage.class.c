@@ -4916,8 +4916,16 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
     BOOL fsFound = FALSE;
     BOOL result = FALSE;
     STRPTR devname = DEVNAME;
+    /* pb_Environment[] holds the environment as built by AutoMountCD() and
+     * CheckFATPartition(), which write it through a struct DosEnvec overlay,
+     * and MakeDosNode() below copies it as a struct DosEnvec too. On 64-bit
+     * the DosEnvec fields are IPTR-sized, so indexing pb_Environment[] as a
+     * ULONG array (DE_DOSTYPE, DE_BOOTPRI) reads the wrong slot: the DosType
+     * came back as 0, FindFileSystem() missed the resident CD filesystem and
+     * the CD never mounted. Read it through the same DosEnvec view. */
+    struct DosEnvec *envec = (struct DosEnvec *) rdsk->rdsk_PART.pb_Environment;
 
-    if((fse = FindFileSystem(ncm, rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE])))
+    if((fse = FindFileSystem(ncm, envec->de_DosType)))
     {
         KPRINTF(10, ("fs found in filesys resource\n"));
         psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Found FS in filesystem.resource!");
@@ -4926,9 +4934,9 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
         fsFound = TRUE;
     } else {
         memset(&patch, 0x00, sizeof(struct FileSysEntry));
-        patch.fse_DosType = rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE];
+        patch.fse_DosType = envec->de_DosType;
 
-        if((segList = LoadFileSystem(ncm, rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE], &patch)))
+        if((segList = LoadFileSystem(ncm, envec->de_DosType, &patch)))
         {
             KPRINTF(10, ("fs loaded from RDB\n"));
 
@@ -5026,7 +5034,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
                     GM_UNIQUENAME(nStoreConfig)(ncm);
                 }
 
-                if(AddBootNode(nh->nh_RDsk.rdsk_PART.pb_Environment[DE_BOOTPRI], ADNF_STARTPROC, node, NULL))
+                if(AddBootNode(envec->de_BootPri, ADNF_STARTPROC, node, NULL))
                 {
                     KPRINTF(10, ("AddBootNode() succeeded\n"));
                     psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
@@ -5054,7 +5062,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
         psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                        "Couldn't find/load filesystem for %s unit %ld as %s:",
                        devname, ncm->ncm_UnitNo, dosDevice);
-        KPRINTF(10, ("fs %08lx not found\n", rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE]));
+        KPRINTF(10, ("fs %08lx not found\n", envec->de_DosType));
     }
 
     return(result);
@@ -5356,7 +5364,9 @@ void AutoMountCD(struct NepClassMS *ncm)
 
     envec->de_BlocksPerTrack = 1;
     envec->de_Interleave = 0;
-    envec->de_DosType = ncm->ncm_CDC->cdc_CDDosType;
+    /* A saved class configuration can carry a zero CD DosType, which would
+       again make FindFileSystem() miss the resident CD filesystem. */
+    envec->de_DosType = ncm->ncm_CDC->cdc_CDDosType ? ncm->ncm_CDC->cdc_CDDosType : 0x43444653; /* CDFS, as the class default */
     envec->de_LowCyl = 0;
     envec->de_HighCyl = 1;
 
