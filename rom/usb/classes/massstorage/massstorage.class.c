@@ -1217,6 +1217,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
         }
 
         ncm->ncm_UnitReady = FALSE;
+        ncm->ncm_HasMounted = FALSE;
         ncm->ncm_Removable = TRUE;
         ncm->ncm_DenyRequests = FALSE;
 
@@ -1415,6 +1416,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
         ncm->ncm_DenyRequests = TRUE;
         /* Device ejected */
         ncm->ncm_UnitReady = FALSE;
+        ncm->ncm_HasMounted = FALSE;
         ncm->ncm_ChangeCount++;
         ioreq = (struct IOStdReq *) ncm->ncm_DCInts.lh_Head;
         while(((struct Node *) ioreq)->ln_Succ)
@@ -3978,6 +3980,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                                     if(ncm->ncm_UnitReady)
                                     {
                                         ncm->ncm_UnitReady = FALSE;
+                                        ncm->ncm_HasMounted = FALSE;
                                         ncm->ncm_ChangeCount++;
                                         KPRINTF(10, ("Diskchange: Medium removed (count = %ld)!\n", ncm->ncm_ChangeCount));
                                         if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
@@ -4042,7 +4045,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                                     nh->nh_IOReq.io_Length = sizeof(ncm->ncm_Geometry);
                                     nIOCmdTunnel(ncm, &nh->nh_IOReq);
                                 }
-                                ncm->ncm_HasMounted = TRUE;
+                                BOOL mounted = FALSE;
 
                                 if((ncm->ncm_DeviceType == PDT_CDROM) || (ncm->ncm_DeviceType == PDT_WORM))
                                 {
@@ -4054,14 +4057,24 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                                        are not ISO9660. */
                                     if(ncm->ncm_CUC->cuc_AutoMountCD && ncm->ncm_BlockSize)
                                     {
-                                        AutoMountCD(ncm);
+                                        mounted = AutoMountCD(ncm);
                                     }
                                 }
                                 // find and mount partitions
-                                else if(!CheckPartitions(ncm) && ncm->ncm_CUC->cuc_AutoMountFAT)
+                                else if(CheckPartitions(ncm))
+                                {
+                                    mounted = TRUE;
+                                }
+                                else if(ncm->ncm_CUC->cuc_AutoMountFAT)
                                 {
                                     // check for FAT volume with no partition table
-                                    CheckFATPartition(ncm, 0);
+                                    mounted = CheckFATPartition(ncm, 0);
+                                }
+                                /* Only a medium that was actually mounted counts as
+                                   mounted; otherwise it is retried once DOS is up. */
+                                if(mounted)
+                                {
+                                    ncm->ncm_HasMounted = TRUE;
                                 }
                             }
                             ncm->ncm_LastChange = ncm->ncm_ChangeCount;
@@ -4090,8 +4103,13 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                     ncm = (struct NepClassMS *) nh->nh_Units.lh_Head;
                     while(ncm->ncm_Unit.unit_MsgPort.mp_Node.ln_Succ)
                     {
-                        ncm->ncm_ChangeCount++;
-                        ncm->ncm_ForceRTCheck = TRUE;
+                        /* Units mounted before DOS (the boot medium) keep their
+                           mount; forcing a change would mount them again. */
+                        if(!ncm->ncm_HasMounted)
+                        {
+                            ncm->ncm_ChangeCount++;
+                            ncm->ncm_ForceRTCheck = TRUE;
+                        }
                         ncm = (struct NepClassMS *) ncm->ncm_Unit.unit_MsgPort.mp_Node.ln_Succ;
                     }
 
@@ -5078,7 +5096,8 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
 /* \\\ */
 
 /* /// "CheckPartition()" */
-void CheckPartition(struct NepClassMS *ncm)
+/* Returns TRUE if the partition is mounted, either now or already before. */
+BOOL CheckPartition(struct NepClassMS *ncm)
 {
     struct NepMSBase *nh = ncm->ncm_ClsBase;
     struct RigidDisk *rdsk = &nh->nh_RDsk;
@@ -5100,6 +5119,7 @@ void CheckPartition(struct NepClassMS *ncm)
                        "Matching partition for %s unit %ld already found. No remount required.",
                        devname, ncm->ncm_UnitNo);
         doMount = FALSE;
+        done = TRUE;
     } else {
         spareNum = 0;
 
@@ -5170,13 +5190,14 @@ void CheckPartition(struct NepClassMS *ncm)
     {
         KPRINTF(10, ("mounting %s\n", dosDevice));
 
-        MountPartition(ncm, dosDevice);
+        return(MountPartition(ncm, dosDevice));
     }
+    return(done && !doMount);
 }
 /* \\\ */
 
 /* /// "CheckFATPartition()" */
-void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
+BOOL CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
 {
     struct NepMSBase *nh = ncm->ncm_ClsBase;
     struct MasterBootRecord *mbr;
@@ -5189,7 +5210,7 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
     mbr = (struct MasterBootRecord *) psdAllocVec(ncm->ncm_BlockSize<<1);
     if(!mbr)
     {
-        return;
+        return(FALSE);
     }
 
     stdIO->io_Command = TD_READ64;
@@ -5269,7 +5290,11 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
             KPRINTF(5, ("building FAT95 style environment\n"));
 
             strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_FATFSName, 84);
-            CheckPartition(ncm);
+            if(CheckPartition(ncm))
+            {
+                psdFreeVec(mbr);
+                return(TRUE);
+            }
         }
         if(!isfat)
         {
@@ -5285,11 +5310,12 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
         }
     }
     psdFreeVec(mbr);
+    return(FALSE);
 }
 /* \\\ */
 
 /* /// "AutoMountCD()" */
-void AutoMountCD(struct NepClassMS *ncm)
+BOOL AutoMountCD(struct NepClassMS *ncm)
 {
     struct NepMSBase *nh = ncm->ncm_ClsBase;
     struct DosEnvec *envec;
@@ -5348,7 +5374,7 @@ void AutoMountCD(struct NepClassMS *ncm)
                         (ncm->ncm_Geometry.dg_TotalSectors - 1) : 1;
 
     strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_CDFSName, 84);
-    CheckPartition(ncm);
+    return(CheckPartition(ncm));
 }
 /* \\\ */
 
