@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 
     Desc: A600/A1200/A4000 ATA HIDD hardware detection routine
 */
