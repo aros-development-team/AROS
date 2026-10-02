@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: VESA Gfx hardware support functions
 */
@@ -29,6 +29,15 @@ BOOL initVesaGfxHW(struct HWData *data)
 {
     struct BootLoaderBase *BootLoaderBase;
     struct VesaInfo *vi;
+
+#if defined(__x86_64__)
+    /* UEFI (GOP) framebuffers are efifbgfx.hidd's */
+    if (OpenResource("efi.resource"))
+    {
+        D(bug("[Vesa] Init: EFI boot, leaving the framebuffer to efifbgfx\n"));
+        return FALSE;
+    }
+#endif
 
     if ((BootLoaderBase = OpenResource("bootloader.resource")))
     {

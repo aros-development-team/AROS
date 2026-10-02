@@ -75,6 +75,17 @@ BOOL initEFIFBGfxHW(struct HWData *data)
 
     data->fbsize = data->height * data->bytesperline;
 
+    /* 24bpp: keep bitmaps at 4 bytes per pixel, efifbDoRefreshArea() packs them */
+    data->shadowbytesperpixel = data->bytesperpixel;
+    data->linebuf = NULL;
+    if (data->bytesperpixel == 3)
+    {
+        data->shadowbytesperpixel = 4;
+        data->linebuf = AllocMem(data->bytesperline, MEMF_ANY);
+        if (!data->linebuf)
+            return FALSE;
+    }
+
     D(bug("[EFIFBGfx] HwInit: %ux%ux%u linear FB @ 0x%p, pitch %u\n",
           data->width, data->height, data->depth,
           data->framebuffer, data->bytesperline));
@@ -115,12 +126,38 @@ void efifbDoRefreshArea(struct HWData *hwdata, struct EFIFBGfxBitMapData *data,
     h = y2 - y1;
     sx = x1 - data->xoffset;
     sy = y1 - data->yoffset;
-    w *= data->bytesperpix;
 
     srcmod = data->bytesperline;
     dstmod = hwdata->bytesperline;
     src = data->VideoData + sy * data->bytesperline + sx * data->bytesperpix;
     dst = (UBYTE *)hwdata->framebuffer + y1 * hwdata->bytesperline + x1 * hwdata->bytesperpixel;
+
+    if (hwdata->linebuf && data->bytesperpix == 4)
+    {
+        /* Pack each line of 4-byte pixels to 24bpp, then copy it out */
+        for (y = 0; y < h; y++)
+        {
+            const ULONG *s = (const ULONG *)src;
+            UBYTE *d = hwdata->linebuf;
+            LONG x;
+
+            for (x = 0; x < w; x++)
+            {
+                ULONG p = s[x];
+
+                d[0] = p;
+                d[1] = p >> 8;
+                d[2] = p >> 16;
+                d += 3;
+            }
+            CopyMem(hwdata->linebuf, dst, w * 3);
+            src += srcmod;
+            dst += dstmod;
+        }
+        return;
+    }
+
+    w *= data->bytesperpix;
 
     if ((srcmod != dstmod) || (srcmod != (ULONG)w))
     {

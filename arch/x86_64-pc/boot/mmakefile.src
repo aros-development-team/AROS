@@ -54,6 +54,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM                     kernel-pc-i386-parallel                 \
 #MM                     kernel-hidd-vgagfx                      \
 #MM                     kernel-hidd-vesagfx                     \
+#MM                     kernel-hidd-efifbgfx                    \
 #MM                     kernel-hidd-pci                         \
 #MM                     kernel-hidd-pci-pcipc                   \
 #MM                     kernel-hidd-pci-pcivmd                  \
@@ -66,7 +67,7 @@ KLIBS       := acpica security
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci nvme virtio
 KDEVS_ARCH  := timer
-KHIDDS      := ata_pci bus i8042 ipmi smbios-ipmi parallel pci pcipc pcivmd telemetry power serial vesagfx vgagfx storage system
+KHIDDS      := ata_pci bus i8042 ipmi smbios-ipmi parallel pci pcipc pcivmd telemetry power serial vesagfx efifbgfx vgagfx storage system
 
 LOG_RESOURCES := serial.logger
 BSP_MISC := \

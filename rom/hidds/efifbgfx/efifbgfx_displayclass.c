@@ -90,7 +90,7 @@ OOP_Object *EFIFBGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoo
     pftags[6].ti_Data = XSD(cl)->data.bluemask;
     pftags[8].ti_Data = (XSD(cl)->data.depth > 8) ? vHidd_ColorModel_TrueColor : vHidd_ColorModel_Palette;
     pftags[9].ti_Data = (XSD(cl)->data.depth > 24) ? 24 : XSD(cl)->data.depth;
-    pftags[10].ti_Data = XSD(cl)->data.bytesperpixel;
+    pftags[10].ti_Data = XSD(cl)->data.shadowbytesperpixel;
     pftags[11].ti_Data = (XSD(cl)->data.bitsperpixel > 24) ? 24 : XSD(cl)->data.bitsperpixel;
     pftags[14].ti_Data = (1 << XSD(cl)->data.depth) - 1;
 

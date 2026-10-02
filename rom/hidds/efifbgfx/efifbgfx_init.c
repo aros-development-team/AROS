@@ -95,6 +95,15 @@ static int EFIFBGfx_Init(LIBBASETYPEPTR LIBBASE)
      * after adding the driver.
      * Autoinit code would close it only upon driver expunge.
      */
+#if defined(__x86_64__)
+    /* On pc, BIOS/VBE framebuffers are vesagfx.hidd's */
+    if (!OpenResource("efi.resource"))
+    {
+        D(bug("[EFIFBGfx] Not an EFI boot, leaving the display to vesagfx\n"));
+        return FALSE;
+    }
+#endif
+
     GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     if (GfxBase)
     {

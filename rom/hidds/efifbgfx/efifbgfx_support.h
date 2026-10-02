@@ -21,6 +21,8 @@ struct HWData
     ULONG	 blueshift;
     ULONG	 bytesperline;
     UBYTE	 palettewidth;
+    ULONG	 shadowbytesperpixel;	/* pixel size of the bitmaps we publish */
+    UBYTE	*linebuf;		/* one packed line, for 24bpp framebuffers */
 };
 
 struct EFIFBGfx_staticdata;
