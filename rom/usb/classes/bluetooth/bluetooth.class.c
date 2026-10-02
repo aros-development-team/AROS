@@ -302,6 +302,7 @@ struct NepClassBT * usbForceInterfaceBinding(struct NepBTBase *nh, struct PsdInt
             NewList(&ncp->ncp_Unit.unit_MsgPort.mp_MsgList);
             NewList(&ncp->ncp_ReadQueue);
             NewList(&ncp->ncp_WriteQueue);
+            NewList(&ncp->ncp_CmdQueue);
             AddTail(&nh->nh_Units, &ncp->ncp_Unit.unit_MsgPort.mp_Node);
         }
         ncp->ncp_ClsBase = nh;
@@ -771,6 +772,24 @@ AROS_UFH0(void, nBTTask)
                         }
                     }
                 }
+                else if(pp == ncp->ncp_EPCmdPipe)
+                {
+                    if((ioreq = ncp->ncp_CmdPending))
+                    {
+                        ioerr = psdGetPipeError(pp);
+                        ioreq->iobt_Actual = psdGetPipeActual(pp);
+                        if(ioerr)
+                        {
+                            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                           "BT HCI command transmit failed: %s (%ld)",
+                                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                        }
+                        ioreq->iobt_Req.io_Error = ioerr;
+                        KPRINTF(10, ("Actual/Length: %ld/%ld\n", ioreq->iobt_Actual, ioreq->iobt_Length));
+                        ReplyMsg((struct Message *) ioreq);
+                        ncp->ncp_CmdPending = NULL;
+                    }
+                }
                 else if(pp == ncp->ncp_EPACLOutPipe)
                 {
                     if((ioreq = ncp->ncp_WritePending))
@@ -830,19 +849,28 @@ AROS_UFH0(void, nBTTask)
                     case BTCMD_WRITEHCI:
                         KPRINTF(10, ("WriteHCI: %04lx (%ld)\n",
                                      *((UWORD *) ioreq->iobt_Data), ((UBYTE *) ioreq->iobt_Data)[2]));
-                        psdPipeSetup(ncp->ncp_EPCmdPipe, URTF_CLASS|URTF_DEVICE,
-                                     0, 0, 0);
-                        ioreq->iobt_Req.io_Error = psdDoPipe(ncp->ncp_EPCmdPipe, ioreq->iobt_Data, ioreq->iobt_Length);
-                        ioreq->iobt_Actual = psdGetPipeActual(ncp->ncp_EPCmdPipe);
-
-                        KPRINTF(10, ("Actual/Length: %ld\n", ioreq->iobt_Actual, ioreq->iobt_Length));
-                        ReplyMsg((struct Message *) ioreq);
+                        /* Sent asynchronously: while the control transfer is in
+                           flight the task must keep re-arming the event pipe,
+                           otherwise a controller with a full event queue holds
+                           the command until the queue drains. */
+                        ioreq->iobt_Actual = 0;
+                        Forbid();
+                        AddTail(&ncp->ncp_CmdQueue, &ioreq->iobt_Req.io_Message.mn_Node);
+                        Permit();
                         break;
 
                     case CMD_RESET:
                         // nop
                         /* Reset does a flush too */
                     case CMD_FLUSH:
+                        ioreq2 = (struct IOBTHCIReq *) ncp->ncp_CmdQueue.lh_Head;
+                        while(ioreq2->iobt_Req.io_Message.mn_Node.ln_Succ)
+                        {
+                            Remove((struct Node *) ioreq2);
+                            ioreq2->iobt_Req.io_Error = IOERR_ABORTED;
+                            ReplyMsg((struct Message *) ioreq2);
+                            ioreq2 = (struct IOBTHCIReq *) ncp->ncp_CmdQueue.lh_Head;
+                        }
                         ioreq2 = (struct IOBTHCIReq *) ncp->ncp_WriteQueue.lh_Head;
                         while(ioreq2->iobt_Req.io_Message.mn_Node.ln_Succ)
                         {
@@ -884,6 +912,17 @@ AROS_UFH0(void, nBTTask)
                         break;
                 }
             }
+            ioreq = (struct IOBTHCIReq *) ncp->ncp_CmdQueue.lh_Head;
+            if((!ncp->ncp_CmdPending) && ioreq->iobt_Req.io_Message.mn_Node.ln_Succ)
+            {
+                Remove((struct Node *) ioreq);
+                ncp->ncp_CmdPending = ioreq;
+                KPRINTF(10, ("WriteHCI: %04lx (%ld)\n",
+                             *((UWORD *) ioreq->iobt_Data), ((UBYTE *) ioreq->iobt_Data)[2]));
+                psdPipeSetup(ncp->ncp_EPCmdPipe, URTF_CLASS|URTF_DEVICE,
+                             0, 0, 0);
+                psdSendPipe(ncp->ncp_EPCmdPipe, ioreq->iobt_Data, ioreq->iobt_Length);
+            }
             ioreq = (struct IOBTHCIReq *) ncp->ncp_WriteQueue.lh_Head;
             if((!ncp->ncp_WritePending) && ioreq->iobt_Req.io_Message.mn_Node.ln_Succ)
             {
@@ -904,6 +943,15 @@ AROS_UFH0(void, nBTTask)
         /* Now remove all requests still pending *anywhere* */
         ncp->ncp_DenyRequests = TRUE;
         /* Current transfers */
+        if((ioreq = ncp->ncp_CmdPending))
+        {
+            KPRINTF(1, ("Aborting pending command...\n"));
+            psdAbortPipe(ncp->ncp_EPCmdPipe);
+            psdWaitPipe(ncp->ncp_EPCmdPipe);
+            ioreq->iobt_Req.io_Error = IOERR_ABORTED;
+            ReplyMsg((struct Message *) ioreq);
+            ncp->ncp_CmdPending = NULL;
+        }
         if((ioreq = ncp->ncp_WritePending))
         {
             KPRINTF(1, ("Aborting pending write...\n"));
@@ -930,7 +978,16 @@ AROS_UFH0(void, nBTTask)
             psdFreeVec(ncp->ncp_CurrEventMsg);
             ncp->ncp_CurrEventMsg = NULL;
         }
-        /* Read/Write queues */
+        /* Command/Read/Write queues */
+        ioreq = (struct IOBTHCIReq *) ncp->ncp_CmdQueue.lh_Head;
+        while(ioreq->iobt_Req.io_Message.mn_Node.ln_Succ)
+        {
+            KPRINTF(1, ("Removing command request...\n"));
+            Remove((struct Node *) ioreq);
+            ioreq->iobt_Req.io_Error = IOERR_ABORTED;
+            ReplyMsg((struct Message *) ioreq);
+            ioreq = (struct IOBTHCIReq *) ncp->ncp_CmdQueue.lh_Head;
+        }
         ioreq = (struct IOBTHCIReq *) ncp->ncp_WriteQueue.lh_Head;
         while(ioreq->iobt_Req.io_Message.mn_Node.ln_Succ)
         {
