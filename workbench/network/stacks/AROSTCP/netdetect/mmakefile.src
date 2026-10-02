@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-netdetect
+
+%build_prog mmake=workbench-network-stacks-arostcp-netdetect \
+    progname=netdetect files="netdetect" \
+    targetdir=$(AROS_SYSTEM)/Network/AROSTCP/C
+
+%common

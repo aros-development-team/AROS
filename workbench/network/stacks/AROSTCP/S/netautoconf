@@ -1,0 +1,51 @@
+; $VER: AROSTCP-netautoconf 1.3 (2.10.2026)
+; AROSTCP-netautoconf (c) The AROS Dev Team.
+;
+; Build a usable configuration in ENV: when the machine has none.
+;
+; Nothing populates ENVARC:AROSTCP on a fresh install, and a Live CD has no
+; writable ENVARC: at all, so ${AROSTCP/AutoRun} is empty and the stack never
+; starts - the system comes up with a browser and no network. ENV: is RAM on
+; every AROS system, so a configuration written here works on read-only media
+; too; it simply does not survive a reboot, which is what Prefs/Network and
+; ENVARC: are for.
+;
+; Only called when ENV:AROSTCP/Config does not exist, so a machine configured
+; through Prefs/Network keeps its own settings.
+;
+If NOT EXISTS ENV:AROSTCP
+  MakeDir >NIL: ENV:AROSTCP
+EndIf
+If NOT EXISTS ENV:AROSTCP/db
+  MakeDir >NIL: ENV:AROSTCP/db
+EndIf
+
+; The shipped db carries hosts/protocols/services and friends but no
+; interfaces file - that is the one we write here.
+Copy >NIL: SYS:System/Network/AROSTCP/db ENV:AROSTCP/db ALL QUIET NOREQ
+
+; Ask netdetect which adapter is present.
+;
+; A USB adapter wins: one that is plugged in is the one the user means. Only
+; USB network devices Poseidon has already loaded are tried, and only a unit
+; that opens is used, so nothing is loaded from disk.
+;
+; Otherwise netdetect identifies the PCI card by enumerating PCI and matching
+; vendor/product IDs against the drivers AROS ships - it never opens a PCI
+; driver. That matters: e1000's Close() does not stop the unit (its own
+; FIXME), so an open/close probe consumes the driver's one-time bring-up and
+; the stack that opens afterwards inherits an unconfigured unit and moves no
+; traffic. Reading PCI costs nothing and leaves AROSTCP as the card's first
+; opener.
+;
+; One interface is written: dhclient supports a single interface only.
+;
+netdetect INTERFACES ENV:AROSTCP/db/interfaces IFNAME eth0 QUIET
+
+If NOT WARN
+  ; SetEnv, not Echo: Echo appends a newline, and Package-Startup's
+  ; ${AROSTCP/AutoRun} eq "True" then compares against "True\n" and never
+  ; matches - the config looks right on disk and the stack still never starts.
+  SetEnv AROSTCP/Config "ENV:AROSTCP/db"
+  SetEnv AROSTCP/AutoRun "True"
+EndIf
