@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Function to write libdefs.h. Part of genmodule.
 */
@@ -9,7 +9,7 @@ void writeinclibdefs(struct config *cfg)
 {
     FILE *out;
     char *path;
-    char line[1024];
+    char *line;
     struct stringlist *linelistit;
     char *_libbasetype = (cfg->libbasetype==NULL) ? "struct Library" : cfg->libbasetype;
     char residentflags[256];
@@ -149,13 +149,32 @@ void writeinclibdefs(struct config *cfg)
 
         if (classlistit->classptr_field != NULL)
         {
+            /* Class pointer fields are duplicated from NUL-terminated config strings. */
+            size_t size = strlen(classlistit->classptr_field) /* Flawfinder: ignore */
+                        + sizeof("((LIBBASETYPEPTR)lh)->");
+
             storeptr = 1;
-            snprintf(line, 1023, "((LIBBASETYPEPTR)lh)->%s", classlistit->classptr_field);
+            line = malloc(size);
+            if (line == NULL)
+            {
+                fprintf(stderr, "Out of memory\n");
+                exit(20);
+            }
+            snprintf(line, size, "((LIBBASETYPEPTR)lh)->%s", classlistit->classptr_field);
         }
         else if ((classlistit->classid != NULL) && !(classlistit->options & COPTION_PRIVATE))
         {
+            /* Class IDs are duplicated from NUL-terminated config strings. */
+            size_t size = strlen(classlistit->classid) + sizeof("FindClass()"); /* Flawfinder: ignore */
+
             storeptr = 0;
-            snprintf(line, 1023, "FindClass(%s)", classlistit->classid);
+            line = malloc(size);
+            if (line == NULL)
+            {
+                fprintf(stderr, "Out of memory\n");
+                exit(20);
+            }
+            snprintf(line, size, "FindClass(%s)", classlistit->classid);
         }
         else
             /* Don't write anything */
@@ -174,6 +193,8 @@ void writeinclibdefs(struct config *cfg)
                 "#define %s_CLASSPTR_FIELD(lh) (%s)\n",
                 classlistit->basename, line
         );
+
+        free(line);
     }
 
     if (cfg->options & OPTION_DUPBASE)
