@@ -590,6 +590,13 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
         }
     }
 
+    /*
+     * Search local database (first) if usens is not FIRST
+     */
+    if(usens != 1)
+        if((anshost = _gethtbyname2(libPtr, name, AF_INET6)) != NULL || usens == 0)
+            return anshost;
+
     if((HS = bsd_malloc(sizeof(querybuf) + sizeof(struct hoststruct),
                         M_TEMP, M_WAITOK)) == NULL) {
         writeErrnoValue(libPtr, ENOMEM);
@@ -640,6 +647,11 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
 
     if(HS)
         bsd_free(HS, M_TEMP);
+    /*
+     * If usens is FIRST and host not found using resolver.
+     */
+    if(anshost == NULL && usens != 2)
+        anshost = _gethtbyname2(libPtr, name, AF_INET6);
     return anshost;
 }
 
@@ -987,6 +999,8 @@ _gethtbyname_r(struct SocketBase *libPtr, const char *name,
     for (entNode = (struct HostentNode *)NDB->ndb_Hosts.mlh_Head;
          entNode->hn_Node.mln_Succ;
          entNode = (struct HostentNode *)entNode->hn_Node.mln_Succ) {
+        if (entNode->hn_Ent.h_addrtype != AF_INET)
+            continue;   /* the table also holds IPv6 entries */
         if (strcasecmp(entNode->hn_Ent.h_name, (char *)name) == 0) {
             rc = hostent_copyout_r(&entNode->hn_Ent, result, buf, buflen);
             break;

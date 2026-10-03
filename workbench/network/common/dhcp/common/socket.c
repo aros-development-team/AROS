@@ -246,6 +246,23 @@ if_register_socket(struct interface_info *info, int family,
 			  " %s: %m", info->name);
 	}
 
+#if defined(__AROS__) && defined(SO_BINDTODEVICE) && defined(SO_REUSEPORT)
+	/*
+	 * One socket per interface, each bound to the client port and then
+	 * to its interface (SO_BINDTODEVICE, below): the stack only lets a
+	 * second socket bind the same port when both ask for SO_REUSEPORT.
+	 */
+	if (local_family == AF_INET) {
+		flag = 1;
+		if ((setsockopt(sock, SOL_SOCKET, SO_REUSEPORT,
+			        (char *)&flag, sizeof(flag)) < 0) &&
+		    (errno != ENOPROTOOPT)) {
+			log_fatal("Can't set SO_REUSEPORT on dhcp socket for"
+				  " %s: %m", info->name);
+		}
+	}
+#endif
+
 #if defined(DHCPv6) && defined(SO_REUSEPORT)
 	/*
 	 * We only set SO_REUSEPORT on AF_INET6 sockets, so that multiple

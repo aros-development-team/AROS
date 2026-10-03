@@ -105,6 +105,16 @@
 
 #include <sys/uio.h>
 
+/* SO_BINDTODEVICE */
+#include <net/if.h>
+#include <net/route.h>
+#include <netinet/in.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
+#include <netinet/in_pcb.h>
+
+extern struct ifnet *ifunit(register char *);
+
 #ifndef SO_EVENTMASK
 #define SO_EVENTMASK	0x2001
 #endif
@@ -1084,6 +1094,38 @@ struct mbuf *m0;
             else
                 so->so_options &= ~optname;
             break;
+
+        case SO_BINDTODEVICE:
+            /*
+             * Tie the socket to one interface: what it sends leaves there
+             * whatever the routing table says, and it is only handed what
+             * arrived there. The argument is a struct ifreq or just the
+             * interface name; an empty name removes the binding. This is
+             * what lets a DHCP client run on several interfaces at once.
+             */
+        {
+            char ifname[IFNAMSIZ + 1];
+            struct ifnet *ifp = NULL;
+            int n;
+
+            if(so->so_proto == NULL || so->so_proto->pr_domain == NULL ||
+                    so->so_proto->pr_domain->dom_family != AF_INET || so->so_pcb == NULL) {
+                error = ENOPROTOOPT;
+                goto bad;
+            }
+            n = m ? m->m_len : 0;
+            if(n > IFNAMSIZ)
+                n = IFNAMSIZ;
+            if(n > 0)
+                bcopy(mtod(m, caddr_t), ifname, n);
+            ifname[n > 0 ? n : 0] = '\0';
+            if(ifname[0] != '\0' && (ifp = ifunit(ifname)) == NULL) {
+                error = ENXIO;
+                goto bad;
+            }
+            sotoinpcb(so)->inp_boundif = ifp;
+            break;
+        }
 
         case SO_SNDBUF:
         case SO_RCVBUF:

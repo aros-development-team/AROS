@@ -598,6 +598,17 @@ int scrub;
             }
     }
     /*
+     * The unspecified address is a placeholder - a DHCP client holding the
+     * interface up while it waits for a lease. It names no network: a route
+     * for it would send whole address ranges out of this interface, and a
+     * second interface doing the same would be refused its address (EEXIST).
+     */
+    if(sin->sin_addr.s_addr == INADDR_ANY) {
+        if(ifp->if_flags & IFF_BROADCAST)
+            ia->ia_broadaddr.sin_addr.s_addr = INADDR_BROADCAST;
+        return (0);
+    }
+    /*
      * Add route for the network.
      */
     if(ifp->if_flags & IFF_BROADCAST) {

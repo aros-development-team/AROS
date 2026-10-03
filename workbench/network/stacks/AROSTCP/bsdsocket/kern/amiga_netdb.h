@@ -154,5 +154,7 @@ LONG do_netdb(struct CSource *cs, UBYTE **errstrp, struct CSource *res);
 LONG reset_netdb(struct CSource *cs, UBYTE **errstrp, struct CSource *res);
 LONG init_netdb(void);
 void netdb_deinit(void);
+#define NETDB_DEFER_SECS 5      /* how often a DEFER interface is tried again */
+void netdb_defer_timer(void);   /* periodic retry of DEFER interfaces */
      
 #endif /* AMIGA_NETDB_H */

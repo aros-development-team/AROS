@@ -45,7 +45,8 @@
   "NOARP/S," \
   "ARPHDR/N/K," \
   "P2P=POINT2POINT/S,NOSIMPLEX/S,LOOPBACK/S," \
-  "TUNNEL/S,TSRC/K,TDST/K,TTL/N/K"
+  "TUNNEL/S,TSRC/K,TDST/K,TTL/N/K," \
+  "DEFER/S"
 
 struct ssc_args {
   UBYTE *a_name;
@@ -73,6 +74,7 @@ struct ssc_args {
   UBYTE  *a_tsrc;		/* tunnel outer IPv4 local endpoint */
   UBYTE  *a_tdst;		/* tunnel outer IPv4 remote endpoint */
   LONG   *a_ttl;		/* tunnel outer IPv4 TTL */
+  SIPTR   a_defer;		/* device may not be there yet: keep trying in the background */
 };
 
 struct ssconfig {

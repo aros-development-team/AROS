@@ -28,6 +28,8 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
 
 struct hostent * _gethtbyname(struct SocketBase * libPtr,
 			      const char * name);
+struct hostent * _gethtbyname2(struct SocketBase * libPtr,
+			       const char * name, int af);
 struct hostent * _gethtbyaddr(struct SocketBase * libPtr,
 			      const char * addr, int len, int type);
 

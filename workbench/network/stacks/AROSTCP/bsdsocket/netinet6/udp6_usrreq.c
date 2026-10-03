@@ -143,9 +143,45 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     struct ip6_hdr *ip6;
     int len, udplen, error;
     int s;
+    /*
+     * The interface the sender asks for: IPV6_PKTINFO on this datagram, or
+     * the destination's scope id. Link-local and multicast destinations do
+     * not say which link they mean any other way.
+     */
+    unsigned int oindex = 0;
+    struct ifnet *oifp = NULL;
+    struct in6_addr osrc;
+    struct ip6_moptions oim6o;
 
-    if(control)
+    bzero(&osrc, sizeof(osrc));
+    if(control) {
+        struct cmsghdr *cm = mtod(control, struct cmsghdr *);
+        int left = control->m_len;
+
+        while(left >= (int)sizeof(*cm) && cm->cmsg_len >= sizeof(*cm) &&
+                (int)cm->cmsg_len <= left) {
+            if(cm->cmsg_level == IPPROTO_IPV6 && cm->cmsg_type == IPV6_PKTINFO &&
+                    cm->cmsg_len >= CMSG_LEN(sizeof(struct in6_pktinfo))) {
+                struct in6_pktinfo pi6;
+
+                bcopy(CMSG_DATA(cm), (caddr_t)&pi6, sizeof(pi6));
+                oindex = pi6.ipi6_ifindex;
+                osrc   = pi6.ipi6_addr;
+            }
+            left -= _ALIGN(cm->cmsg_len);
+            cm = (struct cmsghdr *)((caddr_t)cm + _ALIGN(cm->cmsg_len));
+        }
         m_freem(control);
+    }
+    if(addr_m && oindex == 0 && addr_m->m_len >= (int)sizeof(struct sockaddr_in6))
+        oindex = mtod(addr_m, struct sockaddr_in6 *)->sin6_scope_id;
+    if(oindex != 0) {
+        extern struct ifnet *ifnet;
+
+        for(oifp = ifnet; oifp; oifp = oifp->if_next)
+            if((unsigned int)oifp->if_index == oindex)
+                break;
+    }
 
     len = m->m_pkthdr.len;
     udplen = len + sizeof(struct udphdr);
@@ -187,6 +223,15 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     /* ---- Resolve source address ---- */
     if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
         laddr6 = inp->inp_laddr6;
+    } else if(!IN6_IS_ADDR_UNSPECIFIED(&osrc)) {
+        laddr6 = osrc;                  /* IPV6_PKTINFO named it */
+    } else if(oifp != NULL) {
+        /* the interface asked for supplies the address */
+        struct in6_ifaddr *ia = in6_ifawithifp(oifp, &faddr6);
+
+        bzero(&laddr6, sizeof(laddr6));
+        if(ia)
+            laddr6 = ia->ia_addr.sin6_addr;
     } else {
         /* Auto-select from routing table */
         struct route_in6 ro;
@@ -248,8 +293,21 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     if(uh->uh_sum == 0)
         uh->uh_sum = 0xffff; /* RFC 2460: UDP6 checksum must not be zero */
 
-    error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
-                       inp->in6p_moptions, (struct ifnet **)NULL, inp);
+    if(oifp != NULL) {
+        /* hand the interface on the way multicast options do */
+        if(inp->in6p_moptions)
+            oim6o = *inp->in6p_moptions;
+        else {
+            bzero(&oim6o, sizeof(oim6o));
+            oim6o.im6o_multicast_hlim = IP6_DEFAULT_MULTICAST_HLIM;
+            oim6o.im6o_multicast_loop = 1;
+        }
+        oim6o.im6o_multicast_ifp = oifp;
+        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+                           &oim6o, (struct ifnet **)NULL, inp);
+    } else
+        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+                           inp->in6p_moptions, (struct ifnet **)NULL, inp);
 
     if(addr_m) {
         in6_pcbdisconnect(inp);

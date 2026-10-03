@@ -277,6 +277,51 @@ nd6_lookup(struct in6_addr *dst, int create, struct ifnet *ifp)
     sin6.sin6_addr   = *dst;
 
     rt = rtalloc1((struct sockaddr *)&sin6, create);
+    /*
+     * A link-local neighbour belongs to the link it is on, but fe80::/64
+     * is the same prefix on every interface and the routing table holds
+     * it once: an entry is cloned from whichever interface registered the
+     * prefix first, and so claims to be on that interface. When the caller
+     * knows the link (the interface a packet arrived on, or is to leave
+     * by), the entry is moved there and resolved afresh.
+     */
+    if(rt && ifp && rt->rt_ifp != ifp && (rt->rt_flags & RTF_LLINFO) &&
+            IN6_IS_ADDR_LINKLOCAL(dst) &&
+            !(ifp->if_flags & (IFF_LOOPBACK | IFF_POINTOPOINT))) {
+        struct llinfo_nd6 *ln = (struct llinfo_nd6 *)rt->rt_llinfo;
+
+        /* our own addresses (permanent entries) stay where they are */
+        if(ln != NULL && ln->ln_expire != 0) {
+            struct in6_ifaddr *ia = in6_ifaof_ifpforlinklocal(ifp);
+            struct timeval _tv;
+
+            rt->rt_ifp = ifp;
+            if(ia)
+                rt->rt_ifa = &ia->ia_ifa;
+            if(rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK) {
+                /*
+                 * Forget the link-layer address learned on the other link.
+                 * Edited in place: the gateway buffer was sized for the
+                 * sockaddr_dl it holds, so it is not rebuilt (the name in
+                 * it stays; index and type are what is used).
+                 */
+                struct sockaddr_dl *sdl = (struct sockaddr_dl *)rt->rt_gateway;
+
+                sdl->sdl_index = ifp->if_index;
+                sdl->sdl_type  = ifp->if_type;
+                sdl->sdl_alen  = 0;
+            }
+            if(ln->ln_hold) {
+                m_freem(ln->ln_hold);
+                ln->ln_hold = NULL;
+            }
+            GetSysTime(&_tv);
+            ln->ln_state  = ND6_LLINFO_NOSTATE;
+            ln->ln_asked  = 0;
+            ln->ln_router = 0;
+            ln->ln_expire = _tv.tv_sec ? _tv.tv_sec : 1;
+        }
+    }
     if(rt) {
         if((rt->rt_flags & RTF_LLINFO) == 0) {
             /*

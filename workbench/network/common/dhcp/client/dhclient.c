@@ -4592,6 +4592,167 @@ sin6_from_str(struct sockaddr_in6 *sin6, const char *s)
 	return inet_pton(AF_INET6, s, &sin6->sin6_addr) == 1;
 }
 
+/*
+ * Several interfaces can hold a lease at the same time, but there is one
+ * default route and one set of name servers and search domain. Taking them
+ * from whichever lease happened to arrive last made the result a matter of
+ * timing. They follow the "primary" lease instead: of the interfaces that
+ * are bound, the one that comes first in the stack's interface list (lowest
+ * interface index, i.e. the order of the interfaces file). When that lease
+ * ends, the next bound interface takes over.
+ */
+#define AROS_MAXLEASES 8
+
+struct aros_lease {
+	char		name[IFNAMSIZ];
+	unsigned int	index;		/* interface index: lower = preferred */
+	int		bound;
+	char		gw[64];		/* first router, "" if none */
+	char		dns[256];	/* as handed out, space/comma separated */
+	char		domain[256];
+};
+
+static struct aros_lease aros_leases[AROS_MAXLEASES];
+static struct aros_lease aros_applied;	/* what is installed now (name "" = nothing) */
+
+static struct aros_lease *
+aros_lease_slot(const char *ifname)
+{
+	struct aros_lease *freeslot = NULL;
+	int i;
+
+	for (i = 0; i < AROS_MAXLEASES; i++) {
+		if (aros_leases[i].name[0] == '\0') {
+			if (freeslot == NULL)
+				freeslot = &aros_leases[i];
+		} else if (strncmp(aros_leases[i].name, ifname, IFNAMSIZ) == 0)
+			return &aros_leases[i];
+	}
+	if (freeslot != NULL) {
+		memset(freeslot, 0, sizeof(*freeslot));
+		strncpy(freeslot->name, ifname, IFNAMSIZ - 1);
+		freeslot->index = if_nametoindex(freeslot->name);
+		if (freeslot->index == 0)
+			freeslot->index = ~0U;	/* unknown: last */
+	}
+	return freeslot;
+}
+
+static void
+aros_default_route(int sock, const char *gateway, int add)
+{
+	struct ortentry rt;
+	struct sockaddr_in *dst, *gw;
+
+	memset(&rt, 0, sizeof(rt));
+	dst = (struct sockaddr_in *)&rt.rt_dst;
+	dst->sin_family      = AF_INET;
+	dst->sin_len         = sizeof(*dst);
+	dst->sin_addr.s_addr = INADDR_ANY;	/* default route */
+	gw = (struct sockaddr_in *)&rt.rt_gateway;
+	gw->sin_family       = AF_INET;
+	gw->sin_len          = sizeof(*gw);
+	gw->sin_addr.s_addr  = INADDR_ANY;
+	rt.rt_flags = RTF_UP | RTF_GATEWAY;
+
+	if (!add) {
+		IoctlSocket(sock, SIOCDELRT, (char *)&rt);
+		return;
+	}
+	if (!sin_from_str(gw, gateway)) {
+		log_error("aros_apply_lease: bad router %s", gateway);
+		return;
+	}
+	if (IoctlSocket(sock, SIOCADDRT, (char *)&rt) < 0 && errno != EEXIST) {
+		bug("[dhclient] aros_apply_lease: SIOCADDRT(gw=%s) failed errno=%d\n", gateway, errno);
+		log_error("aros_apply_lease: SIOCADDRT: %m");
+	}
+}
+
+/*
+ * Install the default route, name servers and search domain of the primary
+ * lease, if they are not the ones in place already.
+ */
+static void
+aros_apply_primary(int sock)
+{
+	struct aros_lease *best = NULL;
+	int i;
+
+	for (i = 0; i < AROS_MAXLEASES; i++) {
+		if (aros_leases[i].name[0] == '\0' || !aros_leases[i].bound)
+			continue;
+		if (best == NULL || aros_leases[i].index < best->index)
+			best = &aros_leases[i];
+	}
+
+	if (best == NULL) {
+		if (aros_applied.name[0] != '\0') {
+			bug("[dhclient] aros_apply_lease: no lease left - default route and DNS of %s removed\n",
+			    aros_applied.name);
+			log_info("aros_apply_lease: no lease left, default route and DNS of %s removed",
+				 aros_applied.name);
+			if (aros_applied.gw[0])
+				aros_default_route(sock, NULL, 0);
+			ClearDynNameServ();
+			EndDynNameServ();
+			ClearDynDomain();
+			EndDynDomain();
+			memset(&aros_applied, 0, sizeof(aros_applied));
+		}
+		return;
+	}
+
+	if (strcmp(aros_applied.name, best->name) == 0 &&
+	    strcmp(aros_applied.gw, best->gw) == 0 &&
+	    strcmp(aros_applied.dns, best->dns) == 0 &&
+	    strcmp(aros_applied.domain, best->domain) == 0)
+		return;		/* nothing changed */
+
+	bug("[dhclient] aros_apply_lease: primary lease is %s: default route via %s, DNS %s, domain %s\n",
+	    best->name, best->gw[0] ? best->gw : "(none)",
+	    best->dns[0] ? best->dns : "(none)", best->domain[0] ? best->domain : "(none)");
+	log_info("aros_apply_lease: primary lease is %s: default route via %s, DNS %s",
+		 best->name, best->gw[0] ? best->gw : "(none)", best->dns[0] ? best->dns : "(none)");
+
+	/* default route: out with the old one (ours or a stale one), in with this */
+	if (aros_applied.gw[0] || best->gw[0])
+		aros_default_route(sock, NULL, 0);
+	if (best->gw[0])
+		aros_default_route(sock, best->gw, 1);
+
+	/* name servers, via the Miami library */
+	ClearDynNameServ();
+	if (best->dns[0]) {
+		char dns_buf[sizeof(best->dns)];
+		char *p, *tok;
+		struct sockaddr_in ns_addr;
+
+		strncpy(dns_buf, best->dns, sizeof(dns_buf) - 1);
+		dns_buf[sizeof(dns_buf) - 1] = '\0';
+
+		ns_addr.sin_len    = sizeof(ns_addr);
+		ns_addr.sin_family = AF_INET;
+		ns_addr.sin_port   = 0;
+
+		for (tok = strtok_r(dns_buf, " ,", &p);
+		     tok != NULL;
+		     tok = strtok_r(NULL, " ,", &p)) {
+			if (inet_aton(tok, &ns_addr.sin_addr))
+				AddDynNameServ((struct sockaddr *)&ns_addr);
+		}
+	}
+	EndDynNameServ();
+
+	/* search domain */
+	ClearDynDomain();
+	if (best->domain[0])
+		AddDynDomain((unsigned char *)best->domain);
+	EndDynDomain();
+
+	aros_applied = *best;
+}
+
 static void
 aros_apply_lease(char **envp)
 {
@@ -4702,54 +4863,33 @@ aros_apply_lease(char **envp)
 			}
 		}
 
-		/* Add default gateway */
-		if (new_gw) {
-			struct ortentry rt;
-			struct sockaddr_in *dst, *gw;
-			char gw_copy[64];
-			char *sp;
+		/*
+		 * Note this lease's router, name servers and domain. Which
+		 * lease's are installed is decided by aros_apply_primary().
+		 */
+		{
+			struct aros_lease *al = aros_lease_slot(interface);
 
-			/* Remove stale default route before adding new one */
-			memset(&rt, 0, sizeof(rt));
-			dst = (struct sockaddr_in *)&rt.rt_dst;
-			dst->sin_family      = AF_INET;
-			dst->sin_len         = sizeof(*dst);
-			dst->sin_addr.s_addr = INADDR_ANY;
-			gw = (struct sockaddr_in *)&rt.rt_gateway;
-			gw->sin_family       = AF_INET;
-			gw->sin_len          = sizeof(*gw);
-			gw->sin_addr.s_addr  = INADDR_ANY;
-			rt.rt_flags = RTF_UP | RTF_GATEWAY;
-			IoctlSocket(sock, SIOCDELRT, (char *)&rt);
+			if (al != NULL) {
+				char *sp;
 
-			/* new_routers may be space-separated; use first */
-			strncpy(gw_copy, new_gw, sizeof(gw_copy) - 1);
-			gw_copy[sizeof(gw_copy) - 1] = '\0';
-			if ((sp = strchr(gw_copy, ' ')) != NULL)
-				*sp = '\0';
-
-			memset(&rt, 0, sizeof(rt));
-			dst = (struct sockaddr_in *)&rt.rt_dst;
-			dst->sin_family = AF_INET;
-			dst->sin_len    = sizeof(*dst);
-			dst->sin_addr.s_addr = INADDR_ANY;	/* default route */
-
-			gw = (struct sockaddr_in *)&rt.rt_gateway;
-			if (!sin_from_str(gw, gw_copy)) {
-				log_error("aros_apply_lease: bad router %s", gw_copy);
-				goto done;
-			}
-
-			rt.rt_flags = RTF_UP | RTF_GATEWAY;
-
-			/* Best-effort: ignore EEXIST (route already present) */
-			if (IoctlSocket(sock, SIOCADDRT, (char *)&rt) < 0 &&
-			    errno != EEXIST) {
-				bug("[dhclient] aros_apply_lease: SIOCADDRT(gw=%s) failed errno=%d\n", gw_copy, errno);
-				log_error("aros_apply_lease: SIOCADDRT: %m");
-			} else {
-				bug("[dhclient] aros_apply_lease: default route via %s OK\n", gw_copy);
-				log_info("aros_apply_lease: default route via %s", gw_copy);
+				al->bound = 1;
+				al->gw[0] = al->dns[0] = al->domain[0] = '\0';
+				if (new_gw) {
+					/* new_routers may be space-separated; use first */
+					strncpy(al->gw, new_gw, sizeof(al->gw) - 1);
+					al->gw[sizeof(al->gw) - 1] = '\0';
+					if ((sp = strchr(al->gw, ' ')) != NULL)
+						*sp = '\0';
+				}
+				if (new_dns) {
+					strncpy(al->dns, new_dns, sizeof(al->dns) - 1);
+					al->dns[sizeof(al->dns) - 1] = '\0';
+				}
+				if (new_domain) {
+					strncpy(al->domain, new_domain, sizeof(al->domain) - 1);
+					al->domain[sizeof(al->domain) - 1] = '\0';
+				}
 			}
 		}
 
@@ -4759,38 +4899,14 @@ aros_apply_lease(char **envp)
 			sethostname(new_host, strlen(new_host));
 		}
 
-		/* Configure DNS servers via Miami library */
-		ClearDynNameServ();
-		if (new_dns) {
-			char dns_buf[256];
-			char *p, *tok;
-			struct sockaddr_in ns_addr;
-
-			strncpy(dns_buf, new_dns, sizeof(dns_buf) - 1);
-			dns_buf[sizeof(dns_buf) - 1] = '\0';
-
-			ns_addr.sin_len    = sizeof(ns_addr);
-			ns_addr.sin_family = AF_INET;
-			ns_addr.sin_port   = 0;
-
-			for (tok = strtok_r(dns_buf, " ,", &p);
-			     tok != NULL;
-			     tok = strtok_r(NULL, " ,", &p)) {
-				if (inet_aton(tok, &ns_addr.sin_addr)) {
-					bug("[dhclient] aros_apply_lease: DNS server %s\n", tok);
-					AddDynNameServ((struct sockaddr *)&ns_addr);
-				}
-			}
+		aros_apply_primary(sock);
+		if (aros_applied.name[0] != '\0' &&
+		    strncmp(aros_applied.name, interface, IFNAMSIZ) != 0) {
+			bug("[dhclient] aros_apply_lease: %s holds a secondary lease - default route and DNS stay with %s\n",
+			    interface, aros_applied.name);
+			log_info("aros_apply_lease: %s is a secondary lease, default route and DNS stay with %s",
+				 interface, aros_applied.name);
 		}
-		EndDynNameServ();
-
-		/* Configure search domain via Miami library */
-		ClearDynDomain();
-		if (new_domain) {
-			bug("[dhclient] aros_apply_lease: domain=%s\n", new_domain);
-			AddDynDomain((unsigned char *)new_domain);
-		}
-		EndDynDomain();
 
 	} else if (strcmp(reason, "EXPIRE")  == 0 ||
 		   strcmp(reason, "RELEASE") == 0 ||
@@ -4814,11 +4930,14 @@ aros_apply_lease(char **envp)
 			}
 		}
 
-		/* Clear DNS and domain settings */
-		ClearDynNameServ();
-		EndDynNameServ();
-		ClearDynDomain();
-		EndDynDomain();
+		/* this lease is gone: if it was the primary, the next one takes over */
+		{
+			struct aros_lease *al = aros_lease_slot(interface);
+
+			if (al != NULL)
+				al->bound = 0;
+		}
+		aros_apply_primary(sock);
 
 	} else if (strcmp(reason, "PREINIT") == 0) {
 		/* Bring interface up */

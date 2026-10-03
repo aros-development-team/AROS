@@ -213,6 +213,9 @@ void udp_input(void *args, ...)
         for(inp = udb.lh_first; inp != NULL; inp = inp->inp_list.le_next) {
             if(inp->inp_lport != uh->uh_dport)
                 continue;
+            /* a socket bound to an interface only hears that interface */
+            if(inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif)
+                continue;
             if(inp->inp_laddr.s_addr != INADDR_ANY) {
                 if(inp->inp_laddr.s_addr !=
                         ip->ip_dst.s_addr)
@@ -279,6 +282,35 @@ void udp_input(void *args, ...)
     if(inp == NULL) {
         inp = in_pcblookup(&udb, ip->ip_src, uh->uh_sport, ip->ip_dst,
                            uh->uh_dport, INPLOOKUP_WILDCARD);
+    }
+    if(inp != NULL && inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif) {
+        /*
+         * The best match is bound to another interface (SO_BINDTODEVICE):
+         * take the socket on this port that listens on the interface the
+         * datagram came in by, or failing that one not bound at all.
+         */
+        struct inpcb *t, *unbound = NULL;
+
+        for(t = udb.lh_first; t != NULL; t = t->inp_list.le_next) {
+            if(t->inp_lport != uh->uh_dport)
+                continue;
+            if(t->inp_laddr.s_addr != INADDR_ANY &&
+                    t->inp_laddr.s_addr != ip->ip_dst.s_addr)
+                continue;
+            if(t->inp_faddr.s_addr != INADDR_ANY &&
+                    (t->inp_faddr.s_addr != ip->ip_src.s_addr ||
+                     t->inp_fport != uh->uh_sport))
+                continue;
+            if(t->inp_boundif == m->m_pkthdr.rcvif)
+                break;
+            if(t->inp_boundif == NULL && unbound == NULL)
+                unbound = t;
+        }
+        inp = t ? t : unbound;
+        if(inp == NULL) {
+            udpstat.udps_noport++;
+            goto bad;       /* not for anybody on this interface */
+        }
     }
     if(inp == NULL) {
         udpstat.udps_noport++;
@@ -423,6 +455,9 @@ udp_output(void *arg, ...)
         m_freem(control);		/* XXX */
 
     if(addr) {
+        int tobroadcast = (mtod(addr, struct sockaddr_in *)->sin_addr.s_addr ==
+                           (u_long)INADDR_BROADCAST);
+
         laddr = inp->inp_laddr;
         if(inp->inp_faddr.s_addr != INADDR_ANY) {
             error = EISCONN;
@@ -436,6 +471,27 @@ udp_output(void *arg, ...)
         if(error) {
             splx(s);
             goto release;
+        }
+        if(inp->inp_boundif) {
+            /*
+             * Bound to an interface (SO_BINDTODEVICE): in_pcbconnect()
+             * chose the source by the routing table and may have turned a
+             * limited broadcast into the primary interface's broadcast
+             * address. The source is this interface's own address - none
+             * yet for a DHCP client - and 255.255.255.255 stays as it is.
+             */
+            if(laddr.s_addr == INADDR_ANY) {
+                struct in_ifaddr *ia;
+
+                inp->inp_laddr.s_addr = INADDR_ANY;
+                for(ia = in_ifaddr; ia; ia = ia->ia_next)
+                    if(ia->ia_ifp == inp->inp_boundif) {
+                        inp->inp_laddr = IA_SIN(ia)->sin_addr;
+                        break;
+                    }
+            }
+            if(tobroadcast)
+                inp->inp_faddr.s_addr = INADDR_BROADCAST;
         }
     } else {
         if(inp->inp_faddr.s_addr == INADDR_ANY) {
@@ -481,9 +537,17 @@ udp_output(void *arg, ...)
     ((struct ip *)ui)->ip_ttl = inp->inp_ip.ip_ttl;	/* XXX */
     ((struct ip *)ui)->ip_tos = inp->inp_ip.ip_tos;	/* XXX */
     udpstat.udps_opackets++;
-    error = ip_output(m, inp->inp_options, &inp->inp_route,
-                      inp->inp_socket->so_options & (SO_DONTROUTE | SO_BROADCAST),
-                      inp->inp_moptions);
+    {
+        int ipflags = inp->inp_socket->so_options & (SO_DONTROUTE | SO_BROADCAST);
+
+        if(inp->inp_boundif) {
+            /* SO_BINDTODEVICE: ip_output() takes the interface from the header */
+            m->m_pkthdr.rcvif = inp->inp_boundif;
+            ipflags |= IP_BOUNDIF;
+        }
+        error = ip_output(m, inp->inp_options, &inp->inp_route, ipflags,
+                          inp->inp_moptions);
+    }
 
     if(addr) {
         in_pcbdisconnect(inp);

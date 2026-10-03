@@ -471,6 +471,63 @@ static void setprefixmask6(struct sockaddr_in6 *mask, int plen)
 }
 #endif /* INET6 */
 
+static UBYTE ERR_IFSHUTDOWN[] = "Shut down because an interface failed to start";
+/* the user asked for the shutdown: the fatal-error requesters would only repeat it */
+static BOOL ndb_userquit = FALSE;
+
+/*
+ * Interfaces marked DEFER whose device did not open: hardware that turns up
+ * later (a hot-plugged adapter, a wireless or Bluetooth link). Their
+ * interface line is kept and tried again from netdb_defer_timer() until the
+ * device opens; from then on the line is applied exactly as at startup.
+ */
+struct deferred_if {
+    struct MinNode di_Node;
+    char           di_Name[IFNAMSIZ];
+    ULONG          di_Length;
+    char           di_Line[1];      /* the interface line, '\n' terminated */
+};
+
+static struct MinList deferred_ifs;
+static BOOL deferred_ready = FALSE;
+static BOOL ndb_deferretry = FALSE;   /* addifent() is being run for a deferred line */
+static BOOL ndb_deferfailed;          /* ... and its device still did not open */
+
+static void defer_forget(const char *name)
+{
+    struct deferred_if *di, *next;
+
+    if(!deferred_ready)
+        return;
+    for(di = (struct deferred_if *)deferred_ifs.mlh_Head;
+            (next = (struct deferred_if *)di->di_Node.mln_Succ); di = next) {
+        if(name == NULL || strncmp(di->di_Name, name, IFNAMSIZ) == 0) {
+            Remove((struct Node *)di);
+            FreeVec(di);
+        }
+    }
+}
+
+static BOOL defer_remember(const char *name, const char *line, ULONG length)
+{
+    struct deferred_if *di;
+
+    if(!deferred_ready) {
+        NewList((struct List *)&deferred_ifs);
+        deferred_ready = TRUE;
+    }
+    defer_forget(name);
+    if(!(di = AllocVec(sizeof(*di) + length + 1, MEMF_PUBLIC | MEMF_CLEAR)))
+        return FALSE;
+    strncpy(di->di_Name, name, IFNAMSIZ - 1);
+    memcpy(di->di_Line, line, length);
+    if(length == 0 || di->di_Line[length - 1] != '\n')
+        di->di_Line[length++] = '\n';   /* ReadArgs() depends on it */
+    di->di_Length = length;
+    AddTail((struct List *)&deferred_ifs, (struct Node *)di);
+    return TRUE;
+}
+
 /*
  * Parse an interface entry.
  */
@@ -484,6 +541,9 @@ addifent(struct NetDataBase *ndb,
     struct ifaliasreq ifr;
     char *cp, *ep;
     LONG retval = RETURN_OK;
+    /* the unparsed line, in case the interface has to be deferred */
+    const char *srcline = (const char *)rdargs->RDA_Source.CS_Buffer + rdargs->RDA_Source.CS_CurChr;
+    LONG srclen = rdargs->RDA_Source.CS_Length - rdargs->RDA_Source.CS_CurChr;
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_netdb.c) addifent()\n"));
@@ -537,9 +597,46 @@ addifent(struct NetDataBase *ndb,
                           ssc->args->a_name);
                     ifp = NULL;
                 } else {
-                    ifp = iface_make(ssc);
+                    /*
+                     * A device or unit that does not open - hardware that is
+                     * absent or not ready yet - is that interface's problem,
+                     * not a reason to quit. An interface marked DEFER is
+                     * tried again in the background until it opens; for any
+                     * other the user is asked.
+                     */
+                    while(!(ifp = iface_make(ssc))) {
+                        LONG choice;
+
+                        if(ndb_deferretry) {
+                            ndb_deferfailed = TRUE;     /* netdb_defer_timer() comes back */
+                            break;
+                        }
+                        if(ssc->args->a_defer && srclen > 0 &&
+                                defer_remember(ssc->args->a_name, srcline, srclen)) {
+                            __log(LOG_NOTICE, "%s: device %s not available yet, will keep trying.\n",
+                                  ssc->args->a_name, ssc->args->a_dev);
+                            break;
+                        }
+                        choice = iface_fail_request(ssc->args->a_name, ssc->args->a_dev,
+                                                    ssc->args->a_unit ? *ssc->args->a_unit : 0);
+                        if(choice == IFFAIL_RETRY)
+                            continue;
+                        if(choice == IFFAIL_SHUTDOWN)
+                            ndb_userquit = TRUE;
+                        else
+                            __log(LOG_ERR, "addifent: interface %s did not start, skipped\n",
+                                  ssc->args->a_name);
+                        break;
+                    }
+                    if(!ifp && !ndb_userquit) {
+                        ssconfig_free(ssc);
+                        return RETURN_OK;
+                    }
                 }
-                if(!ifp) {
+                if(!ifp && ndb_userquit) {
+                    *errstrp = ERR_IFSHUTDOWN;
+                    retval = RETURN_FAIL;
+                } else if(!ifp) {
 #if defined(__AROS__)
                     D(bug("[AROSTCP](amiga_netdb.c) addifent: failed to create interface '%s'\n", ssc->args->a_name));
 #endif
@@ -785,12 +882,47 @@ addhostent(struct NetDataBase *ndb,
     struct HostentNode *hn;
     struct in_addr addr;
     int aliases;
+#if INET6
+    struct in6_addr addr6;
+#endif
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_netdb.c) addhostent()\n"));
 #endif
 
     if(rdargs = ReadArgs(NETDBTEMPLATE, Args, rdargs)) {
+#if INET6
+        /* an IPv6 address: the same kind of entry, of the other family */
+        if(strchr((char *)Args[KNDB_NAME], ':') != NULL &&
+                inet6_aton((char *)Args[KNDB_NAME], &addr6)) {
+            hn = node_alloc(sizeof(*hn) + 2 * sizeof(&addr6) + sizeof(addr6),
+                            (UBYTE *)Args[KNDB_DATA],
+                            (UBYTE **)Args[KNDB_ALIAS], &aliases);
+            if(hn) {
+                struct in6_addr **addrtbl = (struct in6_addr **)(hn + 1);
+                UBYTE **alias = (UBYTE **)((UBYTE *)(addrtbl + 2) + sizeof(addr6));
+                UBYTE *name = (UBYTE *)(alias + aliases);
+
+                hn->hn_Ent.h_addrtype = AF_INET6;
+                hn->hn_Ent.h_length = sizeof(addr6);
+                hn->hn_Ent.h_addr_list = (char **)addrtbl;
+                hn->hn_Ent.h_name = name;
+                hn->hn_Ent.h_aliases = (char **)alias;
+
+                addrtbl[0] = (struct in6_addr *)(addrtbl + 2);
+                addrtbl[1] = NULL;
+                bcopy(&addr6, addrtbl[0], sizeof(addr6));
+
+                aliascpy(hn->hn_Ent.h_name, (UBYTE *)Args[KNDB_DATA],
+                         alias, (UBYTE **)Args[KNDB_ALIAS]);
+                AddTail((struct List *)&ndb->ndb_Hosts, (struct Node *)hn);
+                retval = RETURN_OK;
+            } else {
+                *errstrp = ERR_MEMORY;
+                retval = RETURN_FAIL;
+            }
+        } else
+#endif
         /* convert ip address */
         if(__inet_aton((char *)Args[KNDB_NAME], &addr)) {
             hn = node_alloc(sizeof(*hn) + 2 * sizeof(&addr) + sizeof(addr),
@@ -1363,8 +1495,9 @@ read_netdb(struct NetDataBase *ndb, UBYTE *fname,
                     if(retval == RETURN_OK)
                         continue;
                     if(retval != RETURN_WARN) {  /* severe error */
-                        error_request("Fatal error in NetDB file %s at line %ld, col %ld\n%s\nAROSTCP will quit",
-                                      (IPTR)fname, (IPTR)line, (IPTR)rdargs->RDA_Source.CS_CurChr, (IPTR)*errstrp);
+                        if(!ndb_userquit)
+                            error_request("Fatal error in NetDB file %s at line %ld, col %ld\n%s\nAROSTCP will quit",
+                                          (IPTR)fname, (IPTR)line, (IPTR)rdargs->RDA_Source.CS_CurChr, (IPTR)*errstrp);
                         break;
                     }
                     /* Log the error */
@@ -1504,7 +1637,63 @@ void netdb_deinit(void)
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_netdb.c) netdb_deinit()\n"));
 #endif
-    /* A Placeholder for possible future deinitializations */
+    defer_forget(NULL);
+}
+
+/*
+ * Periodic (timer framework): try the deferred interfaces again. A line whose
+ * device now opens goes through addifent() as it would have at startup, so
+ * its addresses, DHCP and routes are set up the same way.
+ */
+void netdb_defer_timer(void)
+{
+    struct deferred_if *di, *next;
+    struct RDArgs *rdargs;
+    UBYTE result[REPLYBUFLEN + 1];
+    struct CSource res;
+    UBYTE *errstr = NULL;
+
+    if(!deferred_ready || NDB == NULL || IsListEmpty((struct List *)&deferred_ifs))
+        return;
+    /* never wait for the database here: whoever holds it may be waiting on us */
+    if(!ATTEMPT_NDB(NDB))
+        return;
+
+    if((rdargs = AllocDosObjectTags(DOS_RDARGS, TAG_END))) {
+        for(di = (struct deferred_if *)deferred_ifs.mlh_Head;
+                (next = (struct deferred_if *)di->di_Node.mln_Succ); di = next) {
+            res.CS_Buffer = result;
+            res.CS_Length = sizeof(result);
+            res.CS_CurChr = 0;
+
+            rdargs->RDA_Source.CS_Buffer = (UBYTE *)di->di_Line;
+            rdargs->RDA_Source.CS_Length = di->di_Length;
+            rdargs->RDA_Source.CS_CurChr = 0;
+            rdargs->RDA_DAList = 0;
+            rdargs->RDA_Buffer = NULL;
+            rdargs->RDA_BufSiz = 0;
+            rdargs->RDA_ExtHelp = NULL;
+            rdargs->RDA_Flags = 0;
+
+            ndb_deferretry = TRUE;
+            ndb_deferfailed = FALSE;
+            addifent(NDB, rdargs, &errstr, &res, NETDB_IFF_ADDNEW);
+            ndb_deferretry = FALSE;
+
+            if(!ndb_deferfailed) {
+                /* it opened (or the line turned out unusable): either way done */
+                if(ifunit(di->di_Name))
+                    __log(LOG_NOTICE, "%s: device available, interface started.\n", di->di_Name);
+                else
+                    __log(LOG_ERR, "%s: deferred interface dropped (%s).\n", di->di_Name,
+                          errstr ? (char *)errstr : "not created");
+                Remove((struct Node *)di);
+                FreeVec(di);
+            }
+        }
+        FreeDosObject(DOS_RDARGS, rdargs);
+    }
+    UNLOCK_NDB(NDB);
 }
 
 /*
