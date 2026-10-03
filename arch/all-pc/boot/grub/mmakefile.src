@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -35,22 +35,55 @@ ARCHSRCDIR := $(PORTSDIR)/grub/$(ARCHBASE)
     archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
     destination=$(PORTSDIR)/grub
 
-%build_with_configure mmake=grub compiler=kernel install_target= \
+# GRUB legacy stage images are freestanding 32-bit i386 raw binaries: they
+# need GNU as (.code16/addr32), GNU ld (-Ttext with a bare hex address,
+# --oformat binary) and GCC nested functions (31 sites in stage2/). On the
+# llvm toolchain-family build the kernel compiler is clang, which rejects all three (and its
+# x86-64 -mcmodel=large ISA flag with -m32), so the target only ever built
+# on gcc toolchain-family builds. The images do not depend on the target OS or libc, so on
+# the llvm toolchain-family build build them with the HOST gcc in -m32 mode instead - the
+# same compiler family the gcc toolchain-family builds use for them.
+ifeq ($(AROS_TOOLCHAIN),llvm)
+GRUBCOMPILER := host
+# A distro gcc defaults to PIE; GRUB's -Ttext/-N raw links then fail with
+# "PHDR segment not covered by LOAD segment". The AROS cross gcc never did.
+# The flags ride in the ISA slot because that is what ends up inside $CC,
+# which GRUB's configure uses verbatim for its link-at-address probes.
+# ... and a distro gcc also adds .note.gnu.property (CET), .eh_frame and a
+# build-id note to every link; all three are ALLOC sections that land in the
+# -O binary dumps GRUB's "absolute objcopy" probe compares (they differ
+# between the two link addresses), so switch them off in the same slot.
+GRUBISAFLAGS := -m32 -fno-pie -no-pie -fcf-protection=none \
+                -fno-asynchronous-unwind-tables -fno-stack-clash-protection \
+                -Wa,-mx86-used-note=no -Wl,--build-id=none
+GRUBBUILDDIR := $(HOSTGENDIR)/$(CURDIR)
+# GRUB's "absolute objcopy" probe compares two -O binary dumps linked at
+# different addresses; llvm-objcopy pads them differently and fails it, so
+# name the host GNU objcopy explicitly.
+GRUBOPTS += OBJCOPY=/usr/bin/objcopy
+else
+GRUBCOMPILER := kernel
+GRUBISAFLAGS := $(KERNEL_ISA_CFLAGS)
+GRUBBUILDDIR := $(GENDIR)/$(CURDIR)
+endif
+
+%build_with_configure mmake=grub compiler=$(GRUBCOMPILER) install_target= \
     srcdir=$(ARCHSRCDIR) \
+    hostisaflags="$(GRUBISAFLAGS)" kernelisaflags="$(GRUBISAFLAGS)" \
     extraoptions="$(GRUBOPTS)" extracflags="$(GRUBCFLAGS)"
 
-$(AROS_BOOT)/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
+$(AROS_BOOT)/grub/stage1: $(GRUBBUILDDIR)/stage1/stage1
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
 
-$(AROS_BOOT)/grub/stage2: $(GENDIR)/$(CURDIR)/stage2/stage2_eltorito
+$(AROS_BOOT)/grub/stage2: $(GRUBBUILDDIR)/stage2/stage2_eltorito
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
 
-$(AROS_BOOT)/grub/stage2_hdisk: $(GENDIR)/$(CURDIR)/stage2/stage2
+$(AROS_BOOT)/grub/stage2_hdisk: $(GRUBBUILDDIR)/stage2/stage2
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
 
-$(AROS_BOOT)/grub/iso9660_stage1_5: $(GENDIR)/$(CURDIR)/stage2/iso9660_stage1_5
+$(AROS_BOOT)/grub/iso9660_stage1_5: $(GRUBBUILDDIR)/stage2/iso9660_stage1_5
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
