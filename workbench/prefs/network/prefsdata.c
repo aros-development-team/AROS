@@ -267,6 +267,7 @@ void InitInterface(struct Interface *iface)
     SetDevice(iface, DEFAULTDEVICE);
     SetUnit(iface, 0);
     SetUp(iface, FALSE);
+    SetDefer(iface, FALSE);
     SetIsTunnel(iface, FALSE);
     SetTunnelRemote(iface, "");
     SetTunnelLocal(iface, "");
@@ -452,7 +453,8 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
                 ph->ph_WriteTokens(ConfFile, pa);
         }
 
-        fprintf(ConfFile, "%s\n", upstr);
+        /* "Connect once available" in the interface window */
+        fprintf(ConfFile, "%s%s\n", GetDefer(iface) ? "DEFER " : "", upstr);
 
         if (!GetIsTunnel(iface))
         {
@@ -1128,6 +1130,10 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                     tstring = strchr(tok.token, '=');
                     SetTunnelTTL(iface, atol(tstring + 1));
                 }
+                else if (strcmp(tok.token, "DEFER") == 0)
+                {
+                    SetDefer(iface, TRUE);
+                }
                 else if (strncmp(tok.token, "UP", 2) == 0)
                 {
                     SetUp(iface, TRUE);
@@ -1727,6 +1733,11 @@ BOOL GetUp(struct Interface *iface)
     return iface->up;
 }
 
+BOOL GetDefer(struct Interface *iface)
+{
+    return iface->defer;
+}
+
 BOOL GetIsTunnel(struct Interface *iface)
 {
     return iface->isTunnel;
@@ -1806,6 +1817,11 @@ void SetUnit(struct Interface *iface, LONG w)
 void SetUp(struct Interface *iface, BOOL w)
 {
     iface->up = w;
+}
+
+void SetDefer(struct Interface *iface, BOOL w)
+{
+    iface->defer = w;
 }
 
 void SetIsTunnel(struct Interface *iface, BOOL w)

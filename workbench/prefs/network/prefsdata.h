@@ -86,6 +86,11 @@ struct Interface
     TEXT device[NAMEBUFLEN];
     LONG unit;
     BOOL up;
+    /* DEFER ("Connect once available"): the device may not be there when the
+     * stack starts (hot-plugged, wireless, Bluetooth); the stack keeps trying
+     * in the background instead of asking what to do.  See AROSTCP
+     * SSC_TEMPLATE. */
+    BOOL defer;
     /* 6in4 (SIT) tunnel pseudo-interface.  When isTunnel is TRUE the interface
      * has no SANA-II device; the outer IPv4 endpoints below carry the tunnel,
      * and the inner IPv6 is just another protocol object on protoAddrs.
@@ -166,6 +171,7 @@ struct List *GetProtoAddrs(struct Interface *iface); /* interface's protocol obj
 STRPTR GetDevice(struct Interface *iface);
 LONG   GetUnit(struct Interface *iface);
 BOOL   GetUp(struct Interface *iface);
+BOOL   GetDefer(struct Interface *iface);
 BOOL   GetIsTunnel(struct Interface *iface);
 STRPTR GetTunnelRemote(struct Interface *iface);
 STRPTR GetTunnelLocal(struct Interface *iface);
@@ -182,6 +188,7 @@ void SetName(struct Interface *iface, STRPTR w);
 void SetDevice(struct Interface *iface, STRPTR w);
 void SetUnit(struct Interface *iface, LONG w);
 void SetUp(struct Interface *iface, BOOL w);
+void SetDefer(struct Interface *iface, BOOL w);
 void SetIsTunnel(struct Interface *iface, BOOL w);
 void SetTunnelRemote(struct Interface *iface, STRPTR w);
 void SetTunnelLocal(struct Interface *iface, STRPTR w);

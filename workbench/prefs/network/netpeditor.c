@@ -123,6 +123,7 @@ struct NetPEditor_DATA
     // Interface window
     Object  *netped_ifWindow,
             *netped_upState,
+            *netped_deferState,
             *netped_nameString,
             *netped_deviceString,
             *netped_unitString,
@@ -566,6 +567,7 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
         );
         SetName(iface, ifaceentry->name);
         SetUp(iface, ifaceentry->up);
+        SetDefer(iface, ifaceentry->defer);
         SetDevice(iface, ifaceentry->device);
         SetUnit(iface, ifaceentry->unit);
         /* Deep-copy the interface's protocol objects into the persistent global.
@@ -979,7 +981,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     // inferface window
     Object  *deviceString, *protoAddrList, *protoEditButton,
-            *unitString, *nameString, *upState,
+            *unitString, *nameString, *upState, *deferState,
             *ifWindow, *applyButton, *closeButton;
 
     // tunnel window
@@ -1352,6 +1354,13 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR)HVSpace,
                 End,
             End,
+            /* DEFER in the interfaces file: the device may turn up after
+               the stack has started */
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(deferState = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                Child, (IPTR)Label2(_(MSG_DEFER)),
+                Child, (IPTR)HVSpace,
+            End,
             Child, (IPTR)HGroup,
                 Child, (IPTR)(applyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
                 Child, (IPTR)(closeButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
@@ -1664,6 +1673,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         // interface window
         data->netped_ifWindow      = ifWindow;
         data->netped_upState       = upState;
+        data->netped_deferState    = deferState;
         data->netped_nameString    = nameString;
         data->netped_deviceString  = deviceString;
         data->netped_unitString    = unitString;
@@ -1943,6 +1953,13 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         DoMethod
         (
             upState, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        SET(deferState, MUIA_CycleChain, 1);
+        SET(deferState, MUIA_ShortHelp, (IPTR)_(MSG_DEFER_HELP));
+        DoMethod
+        (
+            deferState, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
         DoMethod
@@ -2318,6 +2335,7 @@ IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
         /* Set the remaining interface-window gadgets */
         SET(data->netped_nameString,   MUIA_String_Contents, GetName(iface));
         SET(data->netped_upState,      MUIA_Selected,        GetUp(iface) ? 1 : 0);
+        SET(data->netped_deferState,   MUIA_Selected,        GetDefer(iface) ? 1 : 0);
         SET(data->netped_deviceString, MUIA_String_Contents, GetDevice(iface));
         SET(data->netped_unitString,   MUIA_String_Integer,  GetUnit(iface));
     }
@@ -2575,6 +2593,8 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
             XGET(data->netped_unitString, MUIA_String_Integer));
         SetUp(&iface,
             XGET(data->netped_upState, MUIA_Selected));
+        SetDefer(&iface,
+            XGET(data->netped_deferState, MUIA_Selected));
 
         /* Rebuild the interface's protocol objects from the working slots.
          * Only configured slots produce a node, so an interface left with just
