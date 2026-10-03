@@ -13,18 +13,18 @@
 void writelinkentries(struct config *cfg)
 {
     FILE *out;
-    char moduleversname[256];
+    char *moduleversname;
     char *name;
     struct functionhead *funclistit;
     unsigned int lvo;
 
     if (!cfg->flavour)
     {
-        snprintf(moduleversname, sizeof(moduleversname), "%s", cfg->modulename);
+        moduleversname = make_output_path("%s", cfg->modulename);
     }
     else
     {
-        snprintf(moduleversname, sizeof(moduleversname), "%s_%s", cfg->modulename, cfg->flavour);
+        moduleversname = make_output_path("%s_%s", cfg->modulename, cfg->flavour);
     }
 
     name = make_output_path("%s/%s%s.entrypoints", cfg->gendir, moduleversname, cfg->modtypestr);
@@ -34,6 +34,7 @@ void writelinkentries(struct config *cfg)
     {
         perror(name);
         free(name);
+        free(moduleversname);
         exit(20);
     }
 
@@ -141,9 +142,11 @@ void writelinkentries(struct config *cfg)
         perror("Error writing entrypoints");
         fclose(out);
         free(name);
+        free(moduleversname);
         exit(20);
     }
 
     fclose(out);
     free(name);
+    free(moduleversname);
 }

@@ -60,17 +60,17 @@ static inline void writemakefilestubs(struct config *cfg, int is_rel, FILE *out)
 void writemakefile(struct config *cfg)
 {
     FILE *out;
-    char moduleversname[256];
+    char *moduleversname;
     char *name;
     struct stringlist *s;
 
     if (!cfg->flavour)
     {
-        snprintf(moduleversname, sizeof(moduleversname), "%s", cfg->modulename);
+        moduleversname = make_output_path("%s", cfg->modulename);
     }
     else
     {
-        snprintf(moduleversname, sizeof(moduleversname), "%s_%s", cfg->modulename, cfg->flavour);
+        moduleversname = make_output_path("%s_%s", cfg->modulename, cfg->flavour);
     }
 
     name = make_output_path("%s/Makefile.%s%s", cfg->gendir, moduleversname, cfg->modtypestr);
@@ -80,6 +80,7 @@ void writemakefile(struct config *cfg)
     {
         perror(name);
         free(name);
+        free(moduleversname);
         exit(20);
     }
 
@@ -169,9 +170,11 @@ void writemakefile(struct config *cfg)
         perror("Error writing Makefile");
         fclose(out);
         free(name);
+        free(moduleversname);
         exit(20);
     }
 
     fclose(out);
     free(name);
+    free(moduleversname);
 }
