@@ -1,0 +1,14 @@
+# Device exceeding the fixed maxima: truncated to 64 buttons, 16 axes, 4 hats
+btn 63 1
+expect reading button 63 1
+btn 69 1
+expect reading button 63 1
+axis 15 100
+expect reading axis 15 32767
+axis 19 100
+expect reading axis 15 32767
+hat 3 0
+expect reading hat 3 1
+hat 4 0
+expect reading hat 3 1
+dump info
