@@ -29,8 +29,8 @@
 
 /* Protos */
 
-struct NepClassEth * usbAttemptDeviceBinding(struct NepEthBase *nh, struct PsdDevice *pd);
-struct NepClassEth * usbForceDeviceBinding(struct NepEthBase *nh, struct PsdDevice *pd);
+struct NepClassEth * usbAttemptInterfaceBinding(struct NepEthBase *nh, struct PsdInterface *pif);
+struct NepClassEth * usbForceInterfaceBinding(struct NepEthBase *nh, struct PsdInterface *pif);
 void usbReleaseDeviceBinding(struct NepEthBase *nh, struct NepClassEth *ncp);
 
 struct NepClassEth * nAllocEth(void);

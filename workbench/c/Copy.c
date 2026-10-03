@@ -289,6 +289,11 @@
         arguments mandatory and the command now returns ERROR_REQUIRED_ARG_MISSING
         if required arguments are missing. 
 
+        October 2026, Nicolas Ramz
+        Release destination traversal lock references independently. This
+        prevents recursive copies to RAM: from leaving the destination
+        directory locked when shared-lock references use the same BPTR.
+
 ******************************************************************************/
 
 #define CTRL_C          (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
@@ -319,7 +324,7 @@ typedef ULONG IPTR;
 
 #include <string.h>
 
-const TEXT version[] = "\0$VER: Copy 50.19 (25.09.2026)";
+const TEXT version[] = "\0$VER: Copy 50.20 (02.10.2026)";
 
 static const UBYTE *PARAM =
 "FROM/M/A,TO/A,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"
@@ -1246,7 +1251,22 @@ void PatCopy(STRPTR name, struct CopyData *cd)
         failval = RETURN_OK;
     }
 
-    cd->CurDest = cd->Destination;
+    /* Own the traversal lock separately from Destination. A filesystem may
+     * return the same BPTR for separately acquired shared-lock references.
+     */
+    cd->CurDest = BNULL;
+    if (cd->Destination)
+    {
+        cd->CurDest = DupLock(cd->Destination);
+        if (!cd->CurDest)
+        {
+            cd->IoErr = IoErr();
+            cd->RetVal = RETURN_FAIL;
+            if (!(cd->Flags & COPYFLAG_QUIET))
+                PrintFault(cd->IoErr, cmdname);
+            return;
+        }
+    }
     cd->DestPathSize = 0;
 
     if (cd->Mode == COPYMODE_COPY && !TestFileSys(name, cd))
@@ -1256,7 +1276,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
         DoWork(FilePart(name), cd);
         cd->Flags &= ~COPYFLAG_SRCNOFILESYS;
 
-        return;
+        goto out;
     }
 
     if ((APath = (struct AnchorPath *)AllocMem(sizeof(struct AnchorPath) + FILEPATH_SIZE,
@@ -1324,10 +1344,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                     cd->CurDest = ParentDir(i);
                     cd->DestPathSize = 0;
 
-                    if (i != cd->Destination)
-                    {
-                        UnLock(i);
-                    }
+                    UnLock(i);
 
                     if (!cd->CurDest)
                     {
@@ -1461,7 +1478,8 @@ void PatCopy(STRPTR name, struct CopyData *cd)
         }
     }
 
-    if (cd->CurDest && cd->CurDest != cd->Destination)
+out:
+    if (cd->CurDest)
     {
         UnLock(cd->CurDest);
     }
@@ -1962,7 +1980,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
             {
                 cd->CurDest = i;
             }
-            else if (i != cd->Destination)
+            else
             {
                 UnLock(i);
             }

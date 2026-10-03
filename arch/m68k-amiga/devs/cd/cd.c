@@ -185,11 +185,11 @@ LONG cdAddUnit(struct cdBase *cb, const struct cdUnitOps *ops, APTR priv, const 
                                     /*
                                      * The unit task runs the drive
                                      * protocol and sector delivery;
-                                     * measured peak stack use is well
-                                     * under 1 KB, and its stack is
-                                     * chip RAM on a stock CD32.
+                                     * measured peak stack use is under
+                                     * 500 bytes, and its stack is chip
+                                     * RAM on a stock CD32.
                                      */
-                                    TASKTAG_STACKSIZE, 4096,
+                                    TASKTAG_STACKSIZE, 2048,
                                     TASKTAG_ARG1, cu,
                                     TASKTAG_TASKMSGPORT, &cu->cu_MsgPort,
                                     TAG_END);

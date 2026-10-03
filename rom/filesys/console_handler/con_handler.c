@@ -51,7 +51,7 @@
 
 #if defined(CONSOLE_SHOW_MENU)
 extern const char GM_UNIQUENAME(LibName)[];
-__section(".text.romtag") const char GM_UNIQUENAME(CopyDateStr)[] = "1995-2025";
+__section(".text.romtag") const char GM_UNIQUENAME(CopyDateStr)[] = "1995-2026";
 __section(".text.romtag") const char GM_UNIQUENAME(AROSTeamStr)[] = "AROS Development Team";
 __section(".text.romtag") const char GM_UNIQUENAME(AboutTemplateStr)[] = "%s V%ld.%ld\n%s V%ld.%ld\n\nCopyright \xa9 %s by %s";
 

@@ -68,7 +68,7 @@ AROS_LD1(WORD, SetICR,
 #define RESIDENT_PRIORITY 80
 #define RESIDENT_NAME     "cia.resource"
 #define RESIDENT_VERSION  0
-#define RESIDENT_REVISION 1
+#define RESIDENT_REVISION 2
 
 static const char resident_name[] = RESIDENT_NAME;
 static const char resident_id[]   = "\0$VER:" RESIDENT_NAME " " STR(RESIDENT_VERSION) "." STR(RESIDENT_REVISION) " (" ADATE ")";
@@ -120,6 +120,7 @@ static struct CIABase *InitResource(char *Name, struct ExecBase *SysBase)
         base->lib.lib_IdString     = (STRPTR)&resident_id[6];
         base->lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
         base->lib.lib_Revision     = RESIDENT_REVISION;
+        base->sysbase              = SysBase;
 
         AddResource(base);
     }

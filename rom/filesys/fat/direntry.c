@@ -258,11 +258,16 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen,
     UBYTE buf[256];
     ULONG buflen;
     LONG err;
+    struct DirHandle lfn_dh;
 
     D(bug("[fat] looking for dir entry with name '%s'\n", name));
 
     /* Start at the start */
     RESET_DIRHANDLE(dh);
+
+    /* One handle for all long names: it stays near the scan position, so
+     * the lookup does not walk the cluster chain once per entry */
+    InitDirHandle(dh->ioh.sb, dh->ioh.first_cluster, &lfn_dh, FALSE, glob);
 
     /* Loop through the entries until we find a match */
     while ((err = GetNextDirEntry(dh, de, glob)) == 0)
@@ -274,20 +279,23 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen,
         {
             D(bug("[fat] matched short name '%s' at entry %ld, returning\n",
                 buf, dh->cur_index));
+            ReleaseDirHandle(&lfn_dh, glob);
             return 0;
         }
 
         /* No match, extract the long name and compare with that instead */
-        GetDirEntryLongName(de, buf, &buflen);
+        GetDirEntryLongNameFrom(&lfn_dh, de, buf, &buflen);
         if (namelen == buflen
             && strnicmp((char *)name, (char *)buf, buflen) == 0)
         {
             D(bug("[fat] matched long name '%s' at entry %ld, returning\n",
                 buf, dh->cur_index));
+            ReleaseDirHandle(&lfn_dh, glob);
             return 0;
         }
     }
 
+    ReleaseDirHandle(&lfn_dh, glob);
     return err;
 }
 

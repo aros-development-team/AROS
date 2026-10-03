@@ -152,7 +152,7 @@ kick_modfiles = \
 	$(addprefix $(AROS_DIR_DEVS)/,$(addsuffix .resource,$(5)))
 
 KLIBS   := exec aros dos utility oop expansion partition debug \
-           keymap lowlevel
+           keymap
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass inputclass keyboard mouse
@@ -175,13 +175,15 @@ $(GENDIR)/boot/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
 KMODS_rom := $(call kick_modfiles,$(KLIBS),$(KDEVS),$(KHNDLRS),$(KHIDDS),$(KRSRCS))
 
 # Expansion ROM (0xe00000-0xe7ffff)
+# lowlevel.library already needs graphics.library and potgo.resource from
+# this bank. Keep it here to leave room for growth in the main ROM bank.
 FILES   := 
 AFILES  := ext_entry
 
 KLIBS   :=  graphics layers intuition gadtools icon workbench \
             freeanim nonvolatile nvdisk \
             mathffp mathieeesingbas \
-            setpatch
+            setpatch lowlevel
 KDEVS   := cd cd32mpeg ata
 KHNDLRS := cdrom
 KHIDDS  := bus storage system p96gfx

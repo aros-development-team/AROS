@@ -23,19 +23,10 @@
 #include <proto/m68kemu.h>
 
 #include "dos_intern.h"
-#include <dos_platform.h>
 #include LC_LIBDEFS_FILE
 #include <string.h>
 
 #define SEGARRAY_LENGTH 6       /* Minimum needed for HUNK overlays */
-
-#ifndef PROC_STACKSIZE
-#define PROC_STACKSIZE AROS_STACKSIZE
-#endif
-
-#ifndef PROC_MINSTACKSIZE
-#define PROC_MINSTACKSIZE PROC_STACKSIZE
-#endif
 
 static void DosEntry(void);
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase);

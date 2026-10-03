@@ -169,13 +169,14 @@ static const struct newMemList MemTemplate =
      * the floor only guards the task's own calls. AmigaOS never floored
      * CreateTask() stacks at all; flooring at AROS_STACKSIZE (16 KB)
      * silently pinned 16 KB of chip RAM for every task on machines that
-     * may only have 512 KB. 4 KB still covers several times the
+     * may only have 512 KB. 2 KB still covers at least twice the
      * measured peak of the system's own service tasks while letting
-     * explicitly sized stacks take effect.
+     * explicitly sized stacks take effect. Programs linked with the
+     * Commodore amiga.lib call AddTask() directly and never get here.
      */
-    if (nml.nml_ME[1].me_Length < 4096)
+    if (nml.nml_ME[1].me_Length < 2048)
     {
-        nml.nml_ME[1].me_Length = 4096;
+        nml.nml_ME[1].me_Length = 2048;
     }
 #else
     if (nml.nml_ME[1].me_Length < AROS_STACKSIZE)
