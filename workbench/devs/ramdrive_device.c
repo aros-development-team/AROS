@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /****************************************************************************************/
@@ -9,8 +9,7 @@
 #define NUM_SECS    11
 #define BLOCKSIZE   512
 
-#define DISKSIZE    (NUM_HEADS * NUM_CYL * NUM_SECS * BLOCKSIZE)
-#define NUM_TRACKS  (NUM_CYL * NUM_HEADS)
+#define BITMAP_BLOCKS ((BLOCKSIZE / sizeof(ULONG) - 1) * 32)
 
 /****************************************************************************************/
 
@@ -21,8 +20,10 @@
 #include <exec/memory.h>
 #include <exec/initializers.h>
 #include <proto/exec.h>
+#include <dos/filehandler.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
+#define __DOS_NOLIBBASE__
 #include <proto/dos.h>
 #include <aros/macros.h>
 #include <aros/libcall.h>
@@ -37,6 +38,9 @@
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
+
+/* Open DOS lazily, after DOS has started, and keep the base out of ROM. */
+#define DOSBase (ramdrivebase->dosbase)
 
 /****************************************************************************************/
 
@@ -83,6 +87,80 @@ static const UWORD SupportedCommands[] =
 
 static void FormatOFS(UBYTE *mem, ULONG number, struct unit *unit);
 
+/* A filesystem does not pass its DosEnvec to OpenDevice(). Find the mounted
+ * device for this unit, as the classic RAM drive does. Direct device openers
+ * without a mount entry retain the original floppy-sized default.
+ */
+static BOOL SetGeometry(struct unit *unit)
+{
+    struct ramdrivebase *ramdrivebase = unit->ramdrivebase;
+    struct DosList *list, *entry;
+    BOOL valid = TRUE;
+
+    unit->blocks = NUM_HEADS * NUM_CYL * NUM_SECS;
+    unit->firstblock = 0;
+    unit->tracks = NUM_CYL * NUM_HEADS;
+    unit->dostype = ID_DOS_DISK;
+
+    list = LockDosList(LDF_DEVICES | LDF_READ);
+    if (!list)
+        return FALSE;
+
+    entry = list;
+    while ((entry = NextDosEntry(entry, LDF_DEVICES)) != NULL)
+    {
+        struct FileSysStartupMsg *startup;
+        struct DosEnvec *env;
+        ULONG cylinderblocks, cylinders, blocks;
+
+        startup = BADDR(entry->dol_misc.dol_handler.dol_Startup);
+        if (!startup || !TypeOfMem(startup))
+            continue;
+        if (startup->fssm_Unit != unit->unitnum ||
+            !startup->fssm_Device ||
+            /* MakeDosNode includes the NUL in the device BSTR's length. */
+            AROS_BSTR_strlen(startup->fssm_Device) < sizeof("ramdrive.device") - 1 ||
+            AROS_BSTR_strlen(startup->fssm_Device) > sizeof("ramdrive.device") ||
+            memcmp(AROS_BSTR_ADDR(startup->fssm_Device), "ramdrive.device",
+                sizeof("ramdrive.device") - 1) != 0)
+            continue;
+
+        env = BADDR(startup->fssm_Environ);
+        valid = FALSE;
+        /* The formatter uses 512-byte blocks and one bitmap block. Reject
+         * unsupported or overflowing layouts before allocating any memory.
+         */
+        if (!env || env->de_TableSize < DE_HIGHCYL ||
+            env->de_SizeBlock != BLOCKSIZE / sizeof(ULONG) ||
+            env->de_SectorPerBlock != 1 || env->de_Reserved != 2 ||
+            !env->de_Surfaces || !env->de_BlocksPerTrack ||
+            env->de_Surfaces > BITMAP_BLOCKS / env->de_BlocksPerTrack ||
+            env->de_LowCyl > env->de_HighCyl ||
+            env->de_HighCyl >= BITMAP_BLOCKS)
+            break;
+
+        cylinderblocks = env->de_Surfaces * env->de_BlocksPerTrack;
+        cylinders = env->de_HighCyl + 1;
+        if (cylinders > (BITMAP_BLOCKS + 2) / cylinderblocks)
+            break;
+        blocks = cylinders * cylinderblocks;
+        unit->firstblock = env->de_LowCyl * cylinderblocks;
+        if (blocks - unit->firstblock < 4)
+            break;
+        if (env->de_TableSize >= DE_DOSTYPE)
+            unit->dostype = env->de_DosType;
+        if ((unit->dostype & ~1UL) != ID_DOS_DISK)
+            break;
+
+        unit->blocks = blocks;
+        unit->tracks = cylinders * env->de_Surfaces;
+        valid = TRUE;
+        break;
+    }
+    UnLockDosList(LDF_DEVICES | LDF_READ);
+    return valid;
+}
+
 /****************************************************************************************/
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ramdrivebase)
@@ -90,6 +168,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ramdrivebase)
     D(bug("ramdrive_device: in libinit func\n"));
 
     InitSemaphore(&ramdrivebase->sigsem);
+    ramdrivebase->dosbase = NULL;
     NEWLIST((struct List *)&ramdrivebase->units);
     memset( &ramdrivebase->port, 0, sizeof( ramdrivebase->port ) );
     ramdrivebase->port.mp_Node.ln_Type = NT_MSGPORT;
@@ -146,6 +225,15 @@ static int GM_UNIQUENAME(Open)
 
     ObtainSemaphore(&ramdrivebase->sigsem);
 
+    if (!ramdrivebase->dosbase)
+        ramdrivebase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
+    if (!ramdrivebase->dosbase)
+    {
+        ReleaseSemaphore(&ramdrivebase->sigsem);
+        iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
+        return FALSE;
+    }
+
     for(unit = (struct unit *)ramdrivebase->units.mlh_Head;
         unit->msg.mn_Node.ln_Succ != NULL;
         unit = (struct unit *)unit->msg.mn_Node.ln_Succ)
@@ -165,7 +253,7 @@ static int GM_UNIQUENAME(Open)
 
     D(bug("ramdrive_device: in libopen func. No, it is not. So creating new unit ...\n"));
 
-    unit = (struct unit *)AllocMem(sizeof(struct unit), MEMF_PUBLIC);
+    unit = (struct unit *)AllocMem(sizeof(struct unit), MEMF_PUBLIC | MEMF_CLEAR);
     if(unit != NULL)
     {
         D(bug("ramdrive_device: in libopen func. Allocation of unit memory okay. Setting up unit and calling CreateNewProc ...\n"));
@@ -173,6 +261,13 @@ static int GM_UNIQUENAME(Open)
         unit->usecount                  = 1;
         unit->ramdrivebase              = ramdrivebase;
         unit->unitnum                   = unitnum;
+        if (!SetGeometry(unit))
+        {
+            FreeMem(unit, sizeof(struct unit));
+            ReleaseSemaphore(&ramdrivebase->sigsem);
+            iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
+            return FALSE;
+        }
         unit->msg.mn_ReplyPort          = &ramdrivebase->port;
         unit->msg.mn_Length             = sizeof(struct unit);
         unit->port.mp_Node.ln_Type      = NT_MSGPORT;
@@ -251,6 +346,15 @@ ADD2INITLIB(GM_UNIQUENAME(Init), 0)
 ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR ramdrivebase)
+{
+    if (ramdrivebase->dosbase)
+        CloseLibrary((struct Library *)ramdrivebase->dosbase);
+    return TRUE;
+}
+
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
+
 /****************************************************************************************/
 
 AROS_LH1(void, beginio,
@@ -316,7 +420,7 @@ AROS_LH1(void, beginio,
             break;
             
         case TD_GETNUMTRACKS:
-            iotd->iotd_Req.io_Actual = NUM_TRACKS;
+            iotd->iotd_Req.io_Actual = ((struct unit *)iotd->iotd_Req.io_Unit)->tracks;
             iotd->iotd_Req.io_Error = 0;
             break;
             
@@ -440,7 +544,8 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
 
     unit->headpos = offset;
     
-    if (offset + size > DISKSIZE)
+    if (offset > unit->blocks * BLOCKSIZE ||
+        size > unit->blocks * BLOCKSIZE - offset)
     {
         D(bug("ramdrive_device/read: Seek to offset %d failed. Returning TDERR_SeekError\n", offset));
         return TDERR_SeekError;
@@ -474,7 +579,8 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     
     unit->headpos = offset;
     
-    if (offset + size > DISKSIZE)
+    if (offset > unit->blocks * BLOCKSIZE ||
+        size > unit->blocks * BLOCKSIZE - offset)
     {
         D(bug("ramdrive_device/write: Seek to offset %d failed. Returning TDERR_SeekError\n", offset));
         return TDERR_SeekError;
@@ -512,7 +618,7 @@ AROS_UFH3(LONG, unitentry,
 
     D(bug("ramdrive_device/unitentry: Trying to allocate memory disk\n"));
 
-    unit->mem = AllocVec(DISKSIZE, MEMF_PUBLIC | MEMF_CLEAR);
+    unit->mem = AllocVec(unit->blocks * BLOCKSIZE, MEMF_PUBLIC | MEMF_CLEAR);
     if(!unit->mem)
     {
         D(bug("ramdrive_device/unitentry: Memory allocation failed :-( Replying startup msg.\n"));
@@ -615,16 +721,16 @@ AROS_UFH3(LONG, unitentry,
 
 /****************************************************************************************/
 
-static ULONG CalcRootBlock(void)
+static ULONG CalcRootBlock(struct unit *unit)
 {
-    return NUM_CYL * NUM_HEADS * NUM_SECS / 2;
+    return (unit->blocks - unit->firstblock) / 2;
 }
 
 /****************************************************************************************/
 
-static ULONG CalcBitMap(void)
+static ULONG CalcBitMap(struct unit *unit)
 {
-    return CalcRootBlock() + 1;
+    return CalcRootBlock(unit) + 1;
 }
 
 /****************************************************************************************/
@@ -696,9 +802,9 @@ VOID InstallRootBlock(UBYTE *buf, STRPTR diskname, ULONG bitmap,
 
 /****************************************************************************************/
 
-static ULONG CalcBlocks(void)
+static ULONG CalcBlocks(struct unit *unit)
 {
-    return NUM_CYL * NUM_HEADS * NUM_SECS - 1;
+    return unit->blocks - unit->firstblock - 1;
 }
 
 /****************************************************************************************/
@@ -741,13 +847,11 @@ static void FormatOFS(UBYTE *mem, ULONG number, struct unit *unit)
     UBYTE *cmem;
     UBYTE Name[6];
 
-    mem[0]='D';
-    mem[1]='O';
-    mem[2]='S';
-    mem[3]=0x00;
+    mem += unit->firstblock * BLOCKSIZE;
+    ((ULONG *)mem)[0] = AROS_LONG2BE(unit->dostype);
 
-    a = CalcRootBlock();
-    b = CalcBitMap();
+    a = CalcRootBlock(unit);
+    b = CalcBitMap(unit);
 
     cmem = mem + (a * TD_SECTOR);
     strcpy(Name, "RAM_#");
@@ -755,7 +859,7 @@ static void FormatOFS(UBYTE *mem, ULONG number, struct unit *unit)
 
     InstallRootBlock(cmem, Name, b, unit);
     cmem = mem + (b * TD_SECTOR);
-    d = CalcBlocks();
+    d = CalcBlocks(unit);
     for(c = 2; c <= d; c++)
     {
         FreeBitMapBlock(c, cmem);
