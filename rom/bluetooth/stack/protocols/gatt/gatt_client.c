@@ -117,9 +117,19 @@ static void handle_discover_services_response(struct bt_gatt_client *client, uin
             svc->start_handle = entry.handle;
             svc->end_handle = entry.end_group_handle;
             svc->uuid16 = bt_read_le16(entry.value);
+            memset(svc->uuid128, 0, sizeof(svc->uuid128));
         }
-        /* 128-bit service UUIDs (value_len == 16) are skipped -- see the
-         * scope reduction documented in btcore/gatt_client.h. */
+        else if (entry.value_len == 16 && client->result_count < BT_GATT_CLIENT_MAX_SERVICES)
+        {
+            /* a vendor's own service; left out rather than failing the
+             * discovery if there is no room for it */
+            struct bt_gatt_service *svc = &client->result.services[client->result_count++];
+
+            svc->start_handle = entry.handle;
+            svc->end_handle = entry.end_group_handle;
+            svc->uuid16 = 0;
+            memcpy(svc->uuid128, entry.value, 16);
+        }
     }
 
     if (!any)
@@ -173,9 +183,18 @@ static void handle_discover_characteristics_response(struct bt_gatt_client *clie
             ch->properties = entry.value[0];
             ch->value_handle = bt_read_le16(entry.value + 1);
             ch->uuid16 = bt_read_le16(entry.value + 3);
+            memset(ch->uuid128, 0, sizeof(ch->uuid128));
         }
-        /* 128-bit characteristic UUIDs (value_len == 19) skipped, same
-         * reduction as service discovery. */
+        else if (entry.value_len == 19 && client->result_count < BT_GATT_CLIENT_MAX_CHARACTERISTICS)
+        {
+            struct bt_gatt_characteristic *ch = &client->result.characteristics[client->result_count++];
+
+            ch->declaration_handle = entry.handle;
+            ch->properties = entry.value[0];
+            ch->value_handle = bt_read_le16(entry.value + 1);
+            ch->uuid16 = 0;
+            memcpy(ch->uuid128, entry.value + 3, 16);
+        }
     }
 
     if (!any)

@@ -10,6 +10,12 @@
  * in bluetooth.library; this class only reads and writes its endpoint
  * channels, buffering input in a ring so SDCMD_QUERY and partial CMD_READs
  * behave like a real serial port.
+ *
+ * Low Energy devices have no Serial Port Profile; boards and sensors use a
+ * handful of vendor GATT services with one characteristic to write to and
+ * one that notifies (bLEProfiles). Those are bound the same way and look
+ * the same to the user of btserial.device: writes go out as characteristic
+ * writes of at most 20 bytes, notifications fill the ring.
  */
 
 #include "debug.h"
@@ -117,12 +123,56 @@ ADD2INITLIB(GM_UNIQUENAME(libInit), 0)
 ADD2EXPUNGELIB(GM_UNIQUENAME(libExpunge), 0)
 /* \\\ */
 
+/* /// "bLEProfiles" */
+#define UUID128(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) \
+    { 0x##a,0x##b,0x##c,0x##d,0x##e,0x##f,0x##g,0x##h,0x##i,0x##j,0x##k,0x##l,0x##m,0x##n,0x##o,0x##p }
+
+static const struct BTSerLEProfile bLEProfiles[] =
+{
+    {   /* Nordic UART Service */
+        UUID128(6e,40,00,01,b5,a3,f3,93,e0,a9,e5,0e,24,dc,ca,9e),
+        UUID128(6e,40,00,03,b5,a3,f3,93,e0,a9,e5,0e,24,dc,ca,9e),
+        UUID128(6e,40,00,02,b5,a3,f3,93,e0,a9,e5,0e,24,dc,ca,9e),
+        "Nordic UART"
+    },
+    {   /* Microchip (ISSC) Transparent UART */
+        UUID128(49,53,53,43,fe,7d,4a,e5,8f,a9,9f,af,d2,05,e4,55),
+        UUID128(49,53,53,43,1e,4d,4b,d9,ba,61,23,c6,47,24,96,16),
+        UUID128(49,53,53,43,88,41,43,f4,a8,d4,ec,be,34,72,9b,b3),
+        "Microchip Transparent UART"
+    },
+    {   /* HM-10 and its many relatives: one characteristic for both ways */
+        UUID128(00,00,ff,e0,00,00,10,00,80,00,00,80,5f,9b,34,fb),
+        UUID128(00,00,ff,e1,00,00,10,00,80,00,00,80,5f,9b,34,fb),
+        UUID128(00,00,ff,e1,00,00,10,00,80,00,00,80,5f,9b,34,fb),
+        "HM-10 serial"
+    }
+};
+#define NUM_LEPROFILES (sizeof(bLEProfiles) / sizeof(bLEProfiles[0]))
+
+/* the index of the profile a GATT service belongs to, or -1 */
+static LONG bFindLEProfile(const UBYTE *uuid)
+{
+    ULONG n;
+
+    for(n = 0; uuid && (n < NUM_LEPROFILES); n++)
+    {
+        if(!memcmp(bLEProfiles[n].lp_Service, uuid, 16))
+        {
+            return((LONG) n);
+        }
+    }
+    return(-1);
+}
+/* \\\ */
+
 /* /// "bAttemptServiceBinding()" */
 struct BTSerialUnit * GM_UNIQUENAME(bAttemptServiceBinding)(struct BTSerialBase *nh, struct BtService *bsv)
 {
     struct Library *BluetoothBase;
     IPTR uuid16 = 0;
     IPTR proto = 0;
+    UBYTE *uuid = NULL;
     BOOL isser = FALSE;
 
     KPRINTF(1, ("bAttemptServiceBinding(%08lx)\n", bsv));
@@ -130,12 +180,15 @@ struct BTSerialUnit * GM_UNIQUENAME(bAttemptServiceBinding)(struct BTSerialBase 
     {
         btGetAttrs(BGA_SERVICE, bsv,
                    BSVA_UUID16, &uuid16,
+                   BSVA_UUID, &uuid,
                    BSVA_Protocol, &proto,
                    TAG_END);
-        CloseLibrary(BluetoothBase);
         /* 0x1101 Serial Port; 0x1103 Dialup Networking is a modem behind
-           the same profile and works the same way */
-        isser = (proto == BSVP_RFCOMM) && ((uuid16 == 0x1101) || (uuid16 == 0x1103));
+           the same profile and works the same way. On LE: the vendor
+           services that carry a serial stream. */
+        isser = ((proto == BSVP_RFCOMM) && ((uuid16 == 0x1101) || (uuid16 == 0x1103))) ||
+                ((proto == BSVP_ATT) && (bFindLEProfile(uuid) >= 0));
+        CloseLibrary(BluetoothBase);
     }
     return(isser ? GM_UNIQUENAME(bForceServiceBinding)(nh, bsv) : NULL);
 }
@@ -148,8 +201,13 @@ struct BTSerialUnit * GM_UNIQUENAME(bForceServiceBinding)(struct BTSerialBase *n
     struct BTSerialUnit *nsu;
     struct BtDevice *bd = NULL;
     struct BtEndpoint *bep;
+    struct BtEndpoint *wep;
     UBYTE *addr = NULL;
+    UBYTE *uuid = NULL;
     IPTR channel = 0;
+    IPTR proto = 0;
+    IPTR whandle = 0, wprops = 0;
+    LONG leprofile = -1;
     STRPTR devname = NULL;
     ULONG unitno;
     BOOL unitfound;
@@ -161,15 +219,36 @@ struct BTSerialUnit * GM_UNIQUENAME(bForceServiceBinding)(struct BTSerialBase *n
     {
         return(NULL);
     }
-    btGetAttrs(BGA_SERVICE, bsv, BSVA_Device, &bd, TAG_END);
+    btGetAttrs(BGA_SERVICE, bsv, BSVA_Device, &bd, BSVA_Protocol, &proto, BSVA_UUID, &uuid, TAG_END);
     btGetAttrs(BGA_DEVICE, bd, BDA_Name, &devname, BDA_Address, &addr, TAG_END);
-    bep = btFindEndpoint(bsv, NULL, BEA_Type, BEPT_RFCOMM, TAG_END);
-    if(!bep)
+    if(proto == BSVP_ATT)
+    {
+        /* a serial service over GATT: one characteristic notifies what the
+           device sends, one takes what we send */
+        if((leprofile = bFindLEProfile(uuid)) < 0)
+        {
+            CloseLibrary(BluetoothBase);
+            return(NULL);
+        }
+        bep = btFindEndpoint(bsv, NULL, BEA_UUID, (IPTR) bLEProfiles[leprofile].lp_Notify, TAG_END);
+        wep = btFindEndpoint(bsv, NULL, BEA_UUID, (IPTR) bLEProfiles[leprofile].lp_Write, TAG_END);
+        if(wep)
+        {
+            btGetAttrs(BGA_ENDPOINT, wep, BEA_Handle, &whandle, BEA_Properties, &wprops, TAG_END);
+        }
+        channel = BTSER_LECHANNEL + leprofile;
+    } else {
+        bep = wep = btFindEndpoint(bsv, NULL, BEA_Type, BEPT_RFCOMM, TAG_END);
+        if(bep)
+        {
+            btGetAttrs(BGA_ENDPOINT, bep, BEA_RFCOMMChannel, &channel, TAG_END);
+        }
+    }
+    if(!bep || !wep)
     {
         CloseLibrary(BluetoothBase);
         return(NULL);
     }
-    btGetAttrs(BGA_ENDPOINT, bep, BEA_RFCOMMChannel, &channel, TAG_END);
 
     Forbid();
     /* Find next free unit number */
@@ -228,6 +307,12 @@ struct BTSerialUnit * GM_UNIQUENAME(bForceServiceBinding)(struct BTSerialBase *n
     nsu->nsu_Device = bd;
     nsu->nsu_Service = bsv;
     nsu->nsu_Endpoint = bep;
+    nsu->nsu_WriteEndpoint = wep;
+    nsu->nsu_LE = (leprofile >= 0) ? TRUE : FALSE;
+    /* with a response where the device offers it: that is the only flow
+       control there is */
+    nsu->nsu_WriteReq = (wprops & 0x08) ? BTPR_GATTWRITE : BTPR_GATTWRITENORSP;
+    nsu->nsu_WriteHandle = whandle;
     if(addr)
     {
         CopyMem(addr, nsu->nsu_UnitAddr, 6);
@@ -245,9 +330,17 @@ struct BTSerialUnit * GM_UNIQUENAME(bForceServiceBinding)(struct BTSerialBase *n
         if(nsu->nsu_Task)
         {
             nsu->nsu_ReadySigTask = NULL;
-            btAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                           "Serial port on '%s' (channel %ld) at btserial.device unit %ld.",
-                           devname ? devname : (STRPTR) "device", channel, nsu->nsu_UnitNo);
+            if(leprofile >= 0)
+            {
+                btAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                               "Serial port on '%s' (LE, %s) at btserial.device unit %ld.",
+                               devname ? devname : (STRPTR) "device", bLEProfiles[leprofile].lp_Name,
+                               nsu->nsu_UnitNo);
+            } else {
+                btAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                               "Serial port on '%s' (channel %ld) at btserial.device unit %ld.",
+                               devname ? devname : (STRPTR) "device", channel, nsu->nsu_UnitNo);
+            }
             CloseLibrary(BluetoothBase);
             return(nsu);
         }
@@ -512,7 +605,7 @@ static void bServeWrites(struct BTSerialUnit *nsu)
         nsu->nsu_WritePending = ioreq;
         nsu->nsu_WriteOffset = 0;
     }
-    btGetAttrs(BGA_ENDPOINT, nsu->nsu_Endpoint, BEA_MaxPktSize, &mtu, TAG_END);
+    btGetAttrs(BGA_ENDPOINT, nsu->nsu_WriteEndpoint, BEA_MaxPktSize, &mtu, TAG_END);
     if(!mtu)
     {
         mtu = BTSER_CHUNK;
@@ -522,6 +615,7 @@ static void bServeWrites(struct BTSerialUnit *nsu)
     {
         chunk = mtu;
     }
+    nsu->nsu_WriteChunk = chunk;
     btSendChannel(nsu->nsu_WriteCh, ((UBYTE *) ioreq->IOSer.io_Data) + nsu->nsu_WriteOffset, chunk);
     nsu->nsu_WriteBusy = TRUE;
 }
@@ -570,14 +664,23 @@ AROS_UFH0(void, GM_UNIQUENAME(bSerialTask))
         {
             break;
         }
-        if(!(nsu->nsu_WriteCh = btAllocChannel(nsu->nsu_Device, nsu->nsu_TaskMsgPort, nsu->nsu_Endpoint)))
+        /* an LE serial service is written to by handle, on the device: that
+           lets us pick the kind of write its characteristic takes */
+        if(!(nsu->nsu_WriteCh = btAllocChannel(nsu->nsu_Device, nsu->nsu_TaskMsgPort,
+                                                nsu->nsu_LE ? NULL : nsu->nsu_Endpoint)))
         {
             break;
         }
         btSetAttrs(BGA_CHANNEL, nsu->nsu_ReadCh, BCHA_AutoConnect, TRUE, TAG_END);
         btSetAttrs(BGA_CHANNEL, nsu->nsu_WriteCh, BCHA_AutoConnect, TRUE, TAG_END);
         btChannelSetup(nsu->nsu_ReadCh, BTPR_READ, 0, 0);
-        btChannelSetup(nsu->nsu_WriteCh, BTPR_WRITE, 0, 0);
+        if(nsu->nsu_LE)
+        {
+            btChannelSetup(nsu->nsu_WriteCh, nsu->nsu_WriteReq, nsu->nsu_WriteHandle, 0);
+        } else {
+            btChannelSetup(nsu->nsu_WriteCh, BTPR_WRITE, 0, 0);
+        }
+        nsu->nsu_BusyRetries = 0;
         btSendChannel(nsu->nsu_ReadCh, nsu->nsu_ReadBuf, sizeof(nsu->nsu_ReadBuf));
         nsu->nsu_ReadPosted = TRUE;
         nsu->nsu_RingHead = nsu->nsu_RingTail = 0;
@@ -625,8 +728,16 @@ AROS_UFH0(void, GM_UNIQUENAME(bSerialTask))
                 {
                     LONG err = btGetChannelError(ch);
                     nsu->nsu_WriteBusy = FALSE;
-                    if((ioreq = nsu->nsu_WritePending))
+                    if(nsu->nsu_LE && (err == IOERR_UNITBUSY) && nsu->nsu_WritePending &&
+                       (++nsu->nsu_BusyRetries < BTSER_BUSYRETRIES))
                     {
+                        /* an LE link serves one GATT request at a time, and
+                           another class had it: the same bytes go out again */
+                        btDelayMS(25);
+                    }
+                    else if((ioreq = nsu->nsu_WritePending))
+                    {
+                        nsu->nsu_BusyRetries = 0;
                         if(err)
                         {
                             ioreq->IOSer.io_Error = SerErr_LineErr;
@@ -634,7 +745,8 @@ AROS_UFH0(void, GM_UNIQUENAME(bSerialTask))
                             nsu->nsu_WritePending = NULL;
                             ReplyMsg((struct Message *) ioreq);
                         } else {
-                            nsu->nsu_WriteOffset += btGetChannelActual(ch);
+                            /* a characteristic write reports no length */
+                            nsu->nsu_WriteOffset += nsu->nsu_LE ? nsu->nsu_WriteChunk : btGetChannelActual(ch);
                             if(nsu->nsu_WriteAbort)
                             {
                                 nsu->nsu_WriteAbort = FALSE;

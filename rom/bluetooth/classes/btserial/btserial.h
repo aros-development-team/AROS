@@ -42,6 +42,18 @@
 #define DEFREADBUFLEN 2048
 #define BTSER_RINGSIZE 8192      /* readahead ring per unit */
 #define BTSER_CHUNK    127       /* fallback write chunk (RFCOMM default frame) */
+#define BTSER_LECHANNEL 0x100    /* "channel" of an LE serial unit (+ profile): never an RFCOMM one */
+#define BTSER_BUSYRETRIES 400    /* x 25 ms: how long a busy LE link is waited for */
+
+/* Serial over GATT has no profile of its own; these vendor services are
+   what devices actually use. UUIDs most significant byte first. */
+struct BTSerLEProfile
+{
+    UBYTE       lp_Service[16];
+    UBYTE       lp_Notify[16];    /* device -> host */
+    UBYTE       lp_Write[16];     /* host -> device */
+    CONST_STRPTR lp_Name;
+};
 
 struct BTSerialBase
 {
@@ -73,7 +85,13 @@ struct BTSerialUnit
     struct Library     *nsu_Base;         /* bluetooth.library base (unit task) */
     struct BtDevice    *nsu_Device;       /* Up linkage */
     struct BtService   *nsu_Service;      /* the RFCOMM service bound */
-    struct BtEndpoint  *nsu_Endpoint;     /* its RFCOMM endpoint */
+    struct BtEndpoint  *nsu_Endpoint;     /* its RFCOMM endpoint, or the characteristic the device notifies */
+    struct BtEndpoint  *nsu_WriteEndpoint; /* what we write to (the same, but for an LE serial service) */
+    BOOL                nsu_LE;           /* a serial service over GATT */
+    UWORD               nsu_WriteReq;     /* LE: BTPR_GATTWRITE or BTPR_GATTWRITENORSP */
+    ULONG               nsu_WriteHandle;  /* LE: value handle written to */
+    ULONG               nsu_WriteChunk;   /* bytes in flight */
+    ULONG               nsu_BusyRetries;  /* LE: writes refused because the link was busy */
     struct Task        *nsu_ReadySigTask; /* Task to send ready signal to */
     LONG                nsu_ReadySignal;  /* Signal to send when ready */
     struct Task        *nsu_Task;         /* Subtask */

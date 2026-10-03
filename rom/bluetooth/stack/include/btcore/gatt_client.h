@@ -15,23 +15,23 @@
  * "no more results" signal, not treated as an error).
  *
  * Scope reductions, documented:
- *   - 16-bit UUIDs only for discovered services/characteristics (128-bit
- *     custom UUIDs are skipped during discovery, not reported).
  *   - Discovery results accumulate into fixed-size arrays
- *     (BT_GATT_CLIENT_MAX_SERVICES / _CHARACTERISTICS); a device with
- *     more doesn't get the rest.
- *   - GATT Server, and anything beyond Exchange MTU/discovery/Read/
- *     Write/notifications (e.g. Write Without Response, Reliable
- *     Writes and Long Write) aren't implemented. Read automatically
- *     continues with Read Blob up to the fixed result limit.
+ *     (BT_GATT_CLIENT_MAX_SERVICES / _CHARACTERISTICS). More services or
+ *     characteristics with a 16-bit UUID than fit fail the discovery;
+ *     ones with a 128-bit (vendor) UUID are left out once it is full.
+ *     Descriptors are still reported with 16-bit UUIDs only.
+ *   - The server side is btcore/gatt_server.h. Anything beyond Exchange
+ *     MTU/discovery/Read/Write/notifications (e.g. Write Without
+ *     Response, Reliable Writes and Long Write) isn't implemented. Read
+ *     automatically continues with Read Blob up to the fixed result limit.
  */
 
 #ifndef BT_GATT_CLIENT_MAX_SERVICES
-#define BT_GATT_CLIENT_MAX_SERVICES 16
+#define BT_GATT_CLIENT_MAX_SERVICES 24
 #endif
 
 #ifndef BT_GATT_CLIENT_MAX_CHARACTERISTICS
-#define BT_GATT_CLIENT_MAX_CHARACTERISTICS 16
+#define BT_GATT_CLIENT_MAX_CHARACTERISTICS 24
 #endif
 
 #ifndef BT_GATT_CLIENT_MAX_VALUE_LEN
@@ -54,7 +54,8 @@ struct bt_gatt_service
 {
     uint16_t start_handle;
     uint16_t end_handle;
-    uint16_t uuid16;
+    uint16_t uuid16;      /* 0: the service has a 128-bit UUID */
+    uint8_t uuid128[16];  /* that UUID, little-endian as on the wire */
 };
 
 struct bt_gatt_characteristic
@@ -62,7 +63,8 @@ struct bt_gatt_characteristic
     uint16_t declaration_handle;
     uint16_t value_handle;
     uint8_t properties;
-    uint16_t uuid16;
+    uint16_t uuid16;      /* 0: the characteristic has a 128-bit UUID */
+    uint8_t uuid128[16];  /* that UUID, little-endian as on the wire */
 };
 
 enum bt_gatt_client_op
