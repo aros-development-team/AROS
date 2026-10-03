@@ -40,6 +40,19 @@ static FILE *my_popen(const char *command, const char *file)
     return pipe;
 }
 
+/* The target nm without NM_NAME's options: the symbol scans below need the
+   defined symbols too, and the host's plain "nm" may not read target ELF. */
+static FILE *nm_popen(const char *file)
+{
+    size_t len = strcspn(NM_NAME, " ");
+    char cmd[sizeof(NM_NAME)];
+
+    memcpy(cmd, NM_NAME, len);
+    cmd[len] = '\0';
+
+    return my_popen(cmd, file);
+}
+
 /*
     The following routines are slow, but do the work and are the simplest to write down.
     All this will get integrated into the linker anyway, so there's no point
@@ -68,7 +81,7 @@ void collect_libs(const char *file, setnode **liblist_ptr)
     unsigned long offset;
     char type;
 
-    FILE *pipe = my_popen("nm ", file);
+    FILE *pipe = nm_popen(file);
 
     while (fgets(buff, sizeof(buff), pipe)) {
         struct setnode *node;
@@ -122,7 +135,7 @@ void collect_extra(const char *file, setnode **liblist_ptr)
     char type;
     int pthread_added = 0;
 
-    FILE *pipe = my_popen("nm ", file);
+    FILE *pipe = nm_popen(file);
 
     while (fgets(buff, sizeof(buff), pipe)) {
         struct setnode *node;
