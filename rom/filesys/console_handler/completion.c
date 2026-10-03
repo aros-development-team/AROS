@@ -113,7 +113,9 @@ static BOOL PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
 {
     WORD i;
     ULONG len;
+    UBYTE c;
     BOOL in_quotes = FALSE;
+    BOOL escaped = FALSE;
 
     /* Find word start */
 
@@ -121,21 +123,31 @@ static BOOL PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
 
     while (i != ci->fh->inputpos)
     {
-        switch (ci->fh->inputbuffer[i++])
+        c = ci->fh->inputbuffer[i++];
+
+        switch (c)
         {
         case '"':
-            in_quotes = !in_quotes;
-            if (in_quotes)
-                ci->wordstart = i;
+            if (!escaped)
+            {
+                in_quotes = !in_quotes;
+                if (in_quotes)
+                    ci->wordstart = i;
+            }
             break;
 
         case ' ':
         case '>':
         case '<':
-            if (!in_quotes)
+            if (!in_quotes && !escaped)
                 ci->wordstart = i;
             break;
         }
+
+        if (c == '*' && !escaped)
+            escaped = TRUE;
+        else
+            escaped = FALSE;
     }
 
     len = ci->fh->inputpos - ci->wordstart;
@@ -793,7 +805,7 @@ void Completion(struct filehandle *fh, BOOL withinfo)
                     size_t matchlen;
                     UBYTE c;
 
-                    if (strchr(ci->match, ' ') &&
+                    if ((ci->wordquoted || strchr(ci->match, ' ')) &&
                         !AddQuotes(ci, ci->match, sizeof(ci->match)))
                     {
                         CleanupCompletion(ci);
