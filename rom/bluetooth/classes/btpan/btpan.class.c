@@ -1,8 +1,7 @@
 /*
  *----------------------------------------------------------------------------
- *                         ethwrap class for poseidon
+ *                         bt pan class for poseidon
  *----------------------------------------------------------------------------
- *                   By Chris Hodges <chrisly@platon42.de>
  */
 
 #include <aros/isoascii.h>
@@ -142,6 +141,112 @@ struct AutoBindData ClassBinds[] =
     { 0, 0 }
 };
 
+/* /// "bNewUnit()" */
+/* a unit with nothing bound to it yet; call under Forbid() */
+static struct BTPanUnit * bNewUnit(struct BTPanBase *nh, ULONG unitno)
+{
+    struct BTPanUnit *ncp;
+
+    if(!(ncp = AllocVec(sizeof(struct BTPanUnit), MEMF_PUBLIC|MEMF_CLEAR)))
+    {
+        return(NULL);
+    }
+    ncp->ncp_CDC = AllocVec(sizeof(struct ClsDevCfg), MEMF_PUBLIC|MEMF_CLEAR);
+    if(!ncp->ncp_CDC)
+    {
+        FreeVec(ncp);
+        return(NULL);
+    }
+    /* IORequests may be queued even if the task is gone. */
+    NewList(&ncp->ncp_Unit.unit_MsgPort.mp_MsgList);
+    NewList(&ncp->ncp_BufManList);
+    NewList(&ncp->ncp_EventList);
+    NewList(&ncp->ncp_TrackList);
+    NewList(&ncp->ncp_Multicasts);
+    NewList(&ncp->ncp_OrphanQueue);
+    NewList(&ncp->ncp_WriteQueue);
+    ncp->ncp_UnitNo = unitno;
+    ncp->ncp_ClsBase = nh;
+    ncp->ncp_DevBase = nh->nh_DevBase;
+    AddTail(&nh->nh_Units, &ncp->ncp_Unit.unit_MsgPort.mp_Node);
+    return(ncp);
+}
+/* \\\ */
+
+/* /// "bStandbyUnit()" */
+/* A network stack reads its interface list when it starts, which is usually
+   before the peer has connected - and treats a device it cannot open as
+   fatal. So a unit that is asked for and does not exist yet is created
+   unbound: it can be opened, configured and put online, has no link, and is
+   taken over by the next network that binds (S2EVENT_CONNECT then tells the
+   stack). One at a time, so a caller probing unit numbers finds an end. */
+struct BTPanUnit * bStandbyUnit(struct BTPanBase *nh, ULONG unitno)
+{
+    struct Library *BluetoothBase;
+    struct BTPanUnit *ncp;
+    struct List *hwlist = NULL;
+    UBYTE mac[ETHER_ADDR_SIZE];
+    BOOL gotmac = FALSE;
+    UWORD cnt;
+
+    /* the station address a stack reads right after opening: the radio's
+       BD address, as it will be once a network is bound */
+    if((BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+    {
+        btLockReadBase();
+        btGetAttrs(BGA_STACK, NULL, BSA_HardwareList, &hwlist, TAG_END);
+        if(hwlist && hwlist->lh_Head->ln_Succ)
+        {
+            UBYTE *hwaddr = NULL;
+            btGetAttrs(BGA_HARDWARE, hwlist->lh_Head, BHA_Address, &hwaddr, TAG_END);
+            if(hwaddr)
+            {
+                for(cnt = 0; cnt < ETHER_ADDR_SIZE; cnt++)
+                {
+                    mac[cnt] = hwaddr[ETHER_ADDR_SIZE - 1 - cnt];
+                    if(mac[cnt])
+                    {
+                        gotmac = TRUE;
+                    }
+                }
+            }
+        }
+        btUnlockBase();
+        CloseLibrary(BluetoothBase);
+    }
+
+    Forbid();
+    ncp = (struct BTPanUnit *) nh->nh_Units.lh_Head;
+    while(ncp->ncp_Unit.unit_MsgPort.mp_Node.ln_Succ)
+    {
+        if(ncp->ncp_UnitNo == unitno)
+        {
+            Permit();
+            return(ncp);   /* appeared meanwhile */
+        }
+        if(ncp->ncp_Standby)
+        {
+            Permit();
+            return(NULL);  /* there is a standby unit already */
+        }
+        ncp = (struct BTPanUnit *) ncp->ncp_Unit.unit_MsgPort.mp_Node.ln_Succ;
+    }
+    if((ncp = bNewUnit(nh, unitno)))
+    {
+        *ncp->ncp_CDC = *nh->nh_DefaultUnit.ncp_CDC;
+        ncp->ncp_UsingDefaultCfg = TRUE;
+        /* no radio yet: the configured address stands in, and stays the
+           station address if the stack configures the unit with it */
+        CopyMem(gotmac ? mac : ncp->ncp_CDC->cdc_MACAddress, ncp->ncp_ROMAddress, ETHER_ADDR_SIZE);
+        CopyMem(ncp->ncp_ROMAddress, ncp->ncp_MacAddress, ETHER_ADDR_SIZE);
+        ncp->ncp_StateFlags |= DDF_ONLINE;
+        ncp->ncp_Standby = TRUE;
+    }
+    Permit();
+    return(ncp);
+}
+/* \\\ */
+
 /* /// "bAttemptServiceBinding()" */
 struct BTPanUnit * GM_UNIQUENAME(bAttemptServiceBinding)(struct BTPanBase *nh, struct BtService *bsv)
 {
@@ -237,29 +342,29 @@ struct BTPanUnit * GM_UNIQUENAME(bForceServiceBinding)(struct BTPanBase *nh, str
     }
     if(!unitfound)
     {
-        if(!(ncp = AllocVec(sizeof(struct BTPanUnit), MEMF_PUBLIC|MEMF_CLEAR)))
+        /* a unit opened before any network was there (bStandbyUnit()) is
+           what the stack is waiting on: this network becomes that unit */
+        ncp = (struct BTPanUnit *) nh->nh_Units.lh_Head;
+        while(ncp->ncp_Unit.unit_MsgPort.mp_Node.ln_Succ)
+        {
+            if(ncp->ncp_Standby)
+            {
+                ncp->ncp_Standby = FALSE;
+                unitno = ncp->ncp_UnitNo;
+                unitfound = TRUE;
+                break;
+            }
+            ncp = (struct BTPanUnit *) ncp->ncp_Unit.unit_MsgPort.mp_Node.ln_Succ;
+        }
+    }
+    if(!unitfound)
+    {
+        if(!(ncp = bNewUnit(nh, unitno)))
         {
             Permit();
             CloseLibrary(BluetoothBase);
             return(NULL);
         }
-        ncp->ncp_CDC = AllocVec(sizeof(struct ClsDevCfg), MEMF_PUBLIC|MEMF_CLEAR);
-        if(!ncp->ncp_CDC)
-        {
-            Permit();
-            FreeVec(ncp);
-            CloseLibrary(BluetoothBase);
-            return(NULL);
-        }
-        /* IORequests may be queued even if the task is gone. */
-        NewList(&ncp->ncp_Unit.unit_MsgPort.mp_MsgList);
-        NewList(&ncp->ncp_BufManList);
-        NewList(&ncp->ncp_EventList);
-        NewList(&ncp->ncp_TrackList);
-        NewList(&ncp->ncp_Multicasts);
-        NewList(&ncp->ncp_OrphanQueue);
-        NewList(&ncp->ncp_WriteQueue);
-        AddTail(&nh->nh_Units, &ncp->ncp_Unit.unit_MsgPort.mp_Node);
     }
     ncp->ncp_UnitNo = unitno;
     ncp->ncp_ClsBase = nh;
@@ -270,8 +375,14 @@ struct BTPanUnit * GM_UNIQUENAME(bForceServiceBinding)(struct BTPanBase *nh, str
     ncp->ncp_Interface = (APTR) ncp;   /* marks a real binding (vs the defaults) */
     if(addr)
     {
+        UWORD cnt;
         CopyMem(addr, ncp->ncp_UnitAddr, 6);
-        CopyMem(addr, ncp->ncp_PeerAddr, 6);
+        /* BD addresses are kept in HCI (LSB first) order; as an ethernet
+           address the same bytes go MSB first */
+        for(cnt = 0; cnt < 6; cnt++)
+        {
+            ncp->ncp_PeerAddr[cnt] = addr[5 - cnt];
+        }
     }
     ncp->ncp_UnitUUID = uuid16;
     if(devidstr)
@@ -604,6 +715,32 @@ LONG bOpenBindingCfgWindow(struct BTPanBase *nh, struct BTPanUnit *ncp)
 #undef  BluetoothBase
 #define BluetoothBase ncp->ncp_Base
 
+/* /// "bLinkEvent()" */
+/* the BNEP connection came up or went away: what a wireless device reports
+   as association/loss, and what makes the stack (re)start DHCP or give the
+   lease up */
+static void bLinkEvent(struct BTPanUnit *ncp, BOOL up)
+{
+    bDoEvent(ncp, up ? S2EVENT_CONNECT : S2EVENT_DISCONNECT);
+}
+/* \\\ */
+
+/* /// "bDropWrites()" */
+/* no BNEP connection: what is still queued goes the way new writes go
+   (see cmdWrite()) instead of waiting to be sent stale */
+static void bDropWrites(struct BTPanUnit *ncp)
+{
+    struct IOSana2Req *ioreq;
+
+    Forbid();
+    while((ioreq = (struct IOSana2Req *) RemHead(&ncp->ncp_WriteQueue)))
+    {
+        ReplyMsg((struct Message *) ioreq);
+    }
+    Permit();
+}
+/* \\\ */
+
 /* /// "bBNEPQueueCtl()" */
 /* queue one control message; sent when the write channel is idle */
 static void bBNEPQueueCtl(struct BTPanUnit *ncp, const UBYTE *msg, ULONG len)
@@ -652,6 +789,7 @@ static void bBNEPServe(struct BTPanUnit *ncp)
         }
         if(ncp->ncp_BNEPState != BPS_UP)
         {
+            bDropWrites(ncp);
             return;
         }
         Forbid();
@@ -689,6 +827,7 @@ static void bBNEPControl(struct BTPanUnit *ncp, const UBYTE *p, ULONG len)
                     if(code == 0)
                     {
                         ncp->ncp_BNEPState = BPS_UP;
+                        bLinkEvent(ncp, TRUE);
                         /* a peer with tethering disabled accepts the setup and
                            then drops the channel over and over: say it once,
                            and report loss/recovery instead of every cycle */
@@ -769,16 +908,18 @@ static void bBNEPInput(struct BTPanUnit *ncp, const UBYTE *p, ULONG len)
             pos += 2;
             break;
         case BNEP_COMPRESSED_SRC:
+            /* carries the source only: addressed to us */
             if(len < pos + 8) return;
-            CopyMem((APTR) &p[pos], eth, 6);
-            CopyMem(ncp->ncp_PeerAddr, eth + 6, 6);
+            CopyMem(ncp->ncp_MacAddress, eth, 6);
+            CopyMem((APTR) &p[pos], eth + 6, 6);
             eth[12] = p[pos + 6]; eth[13] = p[pos + 7];
             pos += 8;
             break;
         case BNEP_COMPRESSED_DST:
+            /* carries the destination only: sent by the peer itself */
             if(len < pos + 8) return;
-            CopyMem(ncp->ncp_MacAddress, eth, 6);
-            CopyMem((APTR) &p[pos], eth + 6, 6);
+            CopyMem((APTR) &p[pos], eth, 6);
+            CopyMem(ncp->ncp_PeerAddr, eth + 6, 6);
             eth[12] = p[pos + 6]; eth[13] = p[pos + 7];
             pos += 8;
             break;
@@ -883,6 +1024,10 @@ AROS_UFH0(void, bEthTask)
                                            ncp->ncp_UnitNo);
                             ncp->ncp_LossLogged = TRUE;
                         }
+                        if(ncp->ncp_BNEPState == BPS_UP)
+                        {
+                            bLinkEvent(ncp, FALSE);
+                        }
                         ncp->ncp_BNEPState = BPS_DOWN;
                         ncp->ncp_RetryMS = ncp->ncp_RetryMS ?
                             ((ncp->ncp_RetryMS >= 30000) ? 60000 : ncp->ncp_RetryMS * 2) : 2000;
@@ -924,6 +1069,10 @@ AROS_UFH0(void, bEthTask)
                                            ncp->ncp_UnitNo);
                             ncp->ncp_LossLogged = TRUE;
                         }
+                        if(ncp->ncp_BNEPState == BPS_UP)
+                        {
+                            bLinkEvent(ncp, FALSE);
+                        }
                         ncp->ncp_BNEPState = BPS_DOWN;
                         ncp->ncp_RetryMS = ncp->ncp_RetryMS ?
                             ((ncp->ncp_RetryMS >= 30000) ? 60000 : ncp->ncp_RetryMS * 2) : 2000;
@@ -944,7 +1093,14 @@ AROS_UFH0(void, bEthTask)
         }
         Permit();
 
-        bDoEvent(ncp, S2EVENT_OFFLINE);
+        /* the unit stays (and stays online) for the next binding: to its
+           openers this is a lost link, not a device going away */
+        if(ncp->ncp_BNEPState == BPS_UP)
+        {
+            bLinkEvent(ncp, FALSE);
+        }
+        ncp->ncp_BNEPState = BPS_DOWN;
+        bDropWrites(ncp);
 
         KPRINTF(20, ("Going down the river!\n"));
         bFreeEth(ncp);
@@ -980,7 +1136,14 @@ struct BTPanUnit * bAllocEth(void)
         }
         if(hwaddr)
         {
-            CopyMem(hwaddr, ncp->ncp_ROMAddress, ETHER_ADDR_SIZE);
+            UWORD cnt;
+            /* HCI order is LSB first, an ethernet address MSB first: copied
+               straight, the OUI's low byte led and the station address came
+               out as a group (multicast) address */
+            for(cnt = 0; cnt < ETHER_ADDR_SIZE; cnt++)
+            {
+                ncp->ncp_ROMAddress[cnt] = hwaddr[ETHER_ADDR_SIZE - 1 - cnt];
+            }
         }
 
         ncp->ncp_ReadPending = NULL;
@@ -1108,6 +1271,8 @@ void bDoEvent(struct BTPanUnit *ncp, ULONG events)
         {
             Remove(&worknode->ios2_Req.io_Message.mn_Node);
             worknode->ios2_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+            /* the waiter learns which of its events happened */
+            worknode->ios2_WireError = events;
             KPRINTF(1, ("DoEvent: returned eventreq 0x%08lx\n", worknode));
             ReplyMsg(&worknode->ios2_Req.io_Message);
         }

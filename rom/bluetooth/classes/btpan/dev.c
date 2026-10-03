@@ -89,6 +89,15 @@ AROS_LH3(DEVBASETYPEPTR, devOpen,
             ncp = (struct BTPanUnit *) ncp->ncp_Unit.unit_MsgPort.mp_Node.ln_Succ;
         }
 
+        if(!ioreq->ios2_Req.io_Unit && (ioreq->ios2_Req.io_Error != IOERR_UNITBUSY))
+        {
+            /* not there yet: opened ahead of the network it will carry */
+            if((ncp = bStandbyUnit(base->np_ClsBase, unit)))
+            {
+                ioreq->ios2_Req.io_Unit = (struct Unit *) ncp;
+            }
+        }
+
         if(!ioreq->ios2_Req.io_Unit)
         {
             ioreq->ios2_Req.io_Error = IOERR_OPENFAIL;
@@ -368,6 +377,14 @@ WORD cmdWrite(struct BTPanUnit *ncp, struct IOSana2Req *ioreq)
         return deverror(S2ERR_MTU_EXCEEDED, S2WERR_GENERIC_ERROR);
     }
 
+    /* No BNEP connection (nothing bound yet, or the peer is away): like a
+       cable that is not plugged in, the frame goes nowhere. Holding it would
+       tie up the caller's requests and send stale traffic on reconnect. */
+    if(!ncp->ncp_Task || (ncp->ncp_BNEPState != BPS_UP))
+    {
+        return RC_OK;
+    }
+
     /* Must be queued */
     ioreq->ios2_Req.io_Flags &= ~IOF_QUICK;
     Forbid();
@@ -519,8 +536,8 @@ WORD cmdConfigInterface(struct BTPanUnit *ncp, struct IOSana2Req *ioreq)
         return deverror(S2ERR_BAD_STATE, S2WERR_IS_CONFIGURED);
     }
 
-    /* Check for valid address */
-    if(ioreq->ios2_SrcAddr[0] & 0x80)
+    /* Check for valid address: a station address is never a group address */
+    if(ioreq->ios2_SrcAddr[0] & 0x01)
     {
         Permit();
         return deverror(S2ERR_BAD_ADDRESS, S2WERR_SRC_ADDRESS);
@@ -886,7 +903,9 @@ WORD cmdGetGlobalStats(struct BTPanUnit *ncp, struct IOSana2Req *ioreq)
                       S2EVENT_ONLINE |  \
                       S2EVENT_OFFLINE | \
                       S2EVENT_BUFF |    \
-                      S2EVENT_HARDWARE)
+                      S2EVENT_HARDWARE | \
+                      S2EVENT_CONNECT | \
+                      S2EVENT_DISCONNECT)
 
 WORD cmdOnEvent(struct BTPanUnit *ncp, struct IOSana2Req *ioreq)
 {
