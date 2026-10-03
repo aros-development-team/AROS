@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013, The AROS Development Team
+ * Copyright (C) 2013-2026, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -76,6 +76,12 @@ struct CD32XLTransfer {
 
 struct CD32Unit;
 
+struct CD32FrameInt {
+    struct MinNode node;
+    struct IOStdReq *io;
+    struct Interrupt *interrupt;
+};
+
 static VOID CD32_CompleteXLNode(struct CDXL *node);
 static BOOL CD32_CopyXL(struct CD32Unit *cu, APTR frame, ULONG sectorSize);
 static VOID CD32_ProcessXL(struct CD32Unit *cu);
@@ -116,6 +122,7 @@ struct CD32Unit {
     struct IOStdReq *cu_PlayRequest;
     LONG cu_PlayError;
     BOOL cu_PlayDone;
+    struct MinList cu_FrameInts;
 };
 
 static const UBYTE CD32_ResponseLength[16] = {
@@ -287,6 +294,19 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
 
     if (status & AKIKO_CDINT_TXDMA) {
         CD32_IntDisable(cu, AKIKO_CDINT_TXDMA);
+        claimed = TRUE;
+    }
+
+    if (status & AKIKO_CDINT_SUBCODE) {
+        struct CD32FrameInt *frame;
+
+        /* Writing the subcode index acknowledges the filled DMA buffer. */
+        writeb(0, AKIKO_CDSUBINX);
+        if ((cu->cu_CDInfo.Status & (CDSTSF_PLAYING | CDSTSF_PAUSED)) ==
+            CDSTSF_PLAYING) {
+            ForeachNode(&cu->cu_FrameInts, frame)
+                Cause(frame->interrupt);
+        }
         claimed = TRUE;
     }
 
@@ -544,7 +564,12 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
     CD32_IntEnable(cu, AKIKO_CDINT_RXDMA | AKIKO_CDINT_TXDMA);
 
     /* Let the transfers run; this triggers the command */
-    writel(AKIKO_CDFLAG_TXD | AKIKO_CDFLAG_RXD | AKIKO_CDFLAG_CAS | AKIKO_CDFLAG_PBX | AKIKO_CDFLAG_MSB, AKIKO_CDFLAG);
+    /* Command exchanges reset the data DMA window, but registered frame
+     * listeners still need subcode DMA during the ensuing audio playback. */
+    writel(AKIKO_CDFLAG_TXD | AKIKO_CDFLAG_RXD | AKIKO_CDFLAG_CAS |
+        AKIKO_CDFLAG_PBX | AKIKO_CDFLAG_MSB |
+        (IsListEmpty((struct List *)&cu->cu_FrameInts) ? 0 : AKIKO_CDFLAG_SUBCODE),
+        AKIKO_CDFLAG);
 
     cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
 
@@ -633,12 +658,35 @@ out:
     return err;
 }
 
+static VOID CD32_RemoveFrameInt(struct CD32Unit *cu, struct CD32FrameInt *frame)
+{
+    Disable();
+    Remove((struct Node *)&frame->node);
+    if (IsListEmpty((struct List *)&cu->cu_FrameInts)) {
+        CD32_IntDisable(cu, AKIKO_CDINT_SUBCODE);
+        writel(readl(AKIKO_CDFLAG) & ~AKIKO_CDFLAG_SUBCODE, AKIKO_CDFLAG);
+        writeb(0, AKIKO_CDSUBINX);
+    }
+    Enable();
+    FreeMem(frame, sizeof(*frame));
+}
+
 static struct IOStdReq *CD32_Service(APTR priv)
 {
     struct CD32Unit *cu = priv;
     struct IOStdReq *io;
+    struct CD32FrameInt *frame;
 
     CD32_DrainAsyncResponse(cu);
+
+    ForeachNode(&cu->cu_FrameInts, frame) {
+        if (frame->io->io_Flags & IOF_ABORT) {
+            io = frame->io;
+            CD32_RemoveFrameInt(cu, frame);
+            io->io_Error = CDERR_ABORTED;
+            return io;
+        }
+    }
 
     io = cu->cu_PlayRequest;
     if (io == NULL)
@@ -1208,10 +1256,53 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
 
     D(bug("%s:%p io_Command=%d\n", __func__, io, io->io_Command));
 
-    if (io->io_Command != CD_READ && io->io_Command != CD_INFO)
+    if (io->io_Command != CD_READ && io->io_Command != CD_INFO &&
+        io->io_Command != CD_ADDFRAMEINT && io->io_Command != CD_REMFRAMEINT)
         cu->cu_ReadEnd = 0;
 
     switch (io->io_Command) {
+    case CD_ADDFRAMEINT:
+        {
+            struct CD32FrameInt *frame;
+
+            if (io->io_Length != sizeof(struct Interrupt)) {
+                err = CDERR_BADLENGTH;
+                break;
+            }
+            if (!io->io_Data || !((struct Interrupt *)io->io_Data)->is_Code) {
+                err = CDERR_BADADDRESS;
+                break;
+            }
+            frame = AllocMem(sizeof(*frame), MEMF_PUBLIC);
+            if (!frame) {
+                err = CDERR_NoMem;
+                break;
+            }
+            frame->io = io;
+            frame->interrupt = io->io_Data;
+            /* Keep the request pending. Its Message node must remain free
+             * for the caller to send REMFRAMEINT with this same request. */
+            Disable();
+            AddTail((struct List *)&cu->cu_FrameInts, (struct Node *)&frame->node);
+            writeb(0, AKIKO_CDSUBINX);
+            writel(readl(AKIKO_CDFLAG) | AKIKO_CDFLAG_SUBCODE, AKIKO_CDFLAG);
+            CD32_IntEnable(cu, AKIKO_CDINT_SUBCODE);
+            Enable();
+            return CDIO_PENDING;
+        }
+    case CD_REMFRAMEINT:
+        {
+            struct CD32FrameInt *frame;
+
+            ForeachNode(&cu->cu_FrameInts, frame) {
+                if (frame->io == io) {
+                    CD32_RemoveFrameInt(cu, frame);
+                    err = 0;
+                    break;
+                }
+            }
+        }
+        break;
     case CD_CHANGENUM:
         io->io_Actual = cu->cu_ChangeNum;
         err = 0;
@@ -1396,6 +1487,15 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
                 else
                     cu->cu_CDInfo.Status &= ~CDSTSF_PAUSED;
             }
+        }
+        break;
+    case CD_SEARCH:
+        /* Titles reset the search mode before starting ordinary playback.
+         * Fast search modes still need a drive-command implementation. */
+        if (io->io_Length == CDMODE_NORMAL) {
+            io->io_Actual = CDMODE_NORMAL;
+            cu->cu_CDInfo.Status &= ~(CDSTSF_SEARCH | CDSTSF_DIRECTION);
+            err = 0;
         }
         break;
     case CD_MOTOR:
@@ -1604,6 +1704,7 @@ static int CD32_InitLib(LIBBASETYPE *cb)
     priv = AllocVec(sizeof(*priv), MEMF_ANY | MEMF_CLEAR);
     if (priv) {
         priv->cu_CDBase = cb;
+        NEWLIST(&priv->cu_FrameInts);
         priv->cu_Misc = LibAllocAligned(sizeof(struct CD32Misc),
             MEMF_24BITDMA | MEMF_CLEAR, 1024);
         if (priv->cu_Misc) {
