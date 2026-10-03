@@ -75,8 +75,8 @@ static UBYTE mac_keycode_to_rawkey(int keycode)
     case 0x1B: return 0x0B; /* - / _ */
     case 0x1E: return 0x1B; /* ] / } */
     case 0x21: return 0x1A; /* [ / { */
-    case 0x27: return 0x2B; /* ' / " */
-    case 0x29: return 0x2A; /* ; / : */
+    case 0x27: return 0x2A; /* ' / " */
+    case 0x29: return 0x29; /* ; / : */
     case 0x2A: return 0x0D; /* \ / | */
     case 0x2B: return 0x38; /* , / < */
     case 0x2C: return 0x3A; /* / / ? */
