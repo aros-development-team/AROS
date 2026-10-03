@@ -548,6 +548,10 @@ static const struct bt_sdp_record *bSDPRecordAt(void *context, size_t index)
     btLockReadBase();
     for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head; bsr->bsr_Node.ln_Succ;
         bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
+        if((bsr->bsr_Protocol == BSVP_ATT) || !bsr->bsr_Enabled) {
+            continue; /* GATT services are not in the SDP database, and neither
+                         is what the user does not want offered */
+        }
         if(n++ == index) {
             cn->cn_SDPRecTmp.handle = bsr->bsr_Handle;
             cn->cn_SDPRecTmp.attrs = bsr->bsr_Attrs;
@@ -600,7 +604,7 @@ static bool bRFCOMMAccept(void *context, uint8_t channel, bt_rfcomm_dlc_fn *cb, 
     btLockReadBase();
     for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head; bsr->bsr_Node.ln_Succ;
         bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
-        if((bsr->bsr_Protocol == BSVP_RFCOMM) && (bsr->bsr_Channel == channel)) {
+        if((bsr->bsr_Protocol == BSVP_RFCOMM) && (bsr->bsr_Channel == channel) && bsr->bsr_Enabled) {
             found = bsr;
             break;
         }
@@ -917,6 +921,7 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
     bt_sdp_client_init(&cn->cn_SDP, &cn->cn_L2CAP);
     bt_gatt_client_init(&cn->cn_GATT, &cn->cn_L2CAP);
     bt_gatt_client_set_notify_handler(&cn->cn_GATT, bGATTNotify, cn);
+    bGattSrvInit(cn);
 
     if(cn->cn_LinkType == BDLT_ACL) {
         /* the peer may browse our SDP records and connect to the RFCOMM
@@ -989,6 +994,10 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
         p[1] = handle >> 8;
         bSubmitCmd(hc, HC_OP_AUTH_REQUESTED, p, 2, bIgnoreCompletion, hc);
     }
+    if((cn->cn_LinkType == BDLT_LE) && (role == BDR_PERIPHERAL) && !(bd->bd_Flags & BDFF_REGISTERED)) {
+        /* somebody who came for our GATT services: we want nothing of theirs */
+        cn->cn_Enumerated = TRUE;
+    }
     /* enumerate this bearer's services once (each bearer of a dual-mode device
        enumerates independently, accumulating onto the one device). A pending
        re-encryption defers this until the Encryption Change event. */
@@ -1029,6 +1038,9 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
     }
     cn->cn_State = HCNS_FREE;
     cn->cn_Reason = reason;
+    if(wasup && (cn->cn_LinkType == BDLT_LE)) {
+        bGattSrvRefresh(hc); /* advertise again if we are asked to */
+    }
 
     while((mn = cn->cn_Endpoints.mlh_Head)->mln_Succ) {
         bFreeHWEndpoint((struct BtHWEndpoint *) mn, error); /* removes the node */
@@ -3293,9 +3305,14 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                 return(TRUE);
             }
             BOOL autoconn = FALSE;
+            BOOL incoming;
             status = params[1];
             handle = (params[2] | (params[3] << 8)) & 0x0fff;
-            if(hc->hc_AutoConnArmed && !(hc->hc_Connecting && (hc->hc_Connecting->cn_LinkType == BDLT_LE))) {
+            /* a device that answered our advertising (we are the peripheral):
+               nothing to do with the connections we initiate */
+            incoming = !status && (params[4] == 0x01);
+            if(hc->hc_AutoConnArmed && !incoming &&
+               !(hc->hc_Connecting && (hc->hc_Connecting->cn_LinkType == BDLT_LE))) {
                 /* the controller's own initiator (accept list) answered: a
                    link to one of ours, or the cancel bAutoConnDisarm() asked
                    for (status 0x02, no address). A BR/EDR page in flight is
@@ -3320,6 +3337,9 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                 bConnDown(cn, BTIOERR_CONNFAILED, status);
                 bStartNextConnect(hc);
                 return(TRUE);
+            }
+            if(!bd && incoming && BluetoothBase->bt_LEAdvertising) {
+                bd = bNoteIncomingLE(hc, &params[6], params[5]);
             }
             if(!bd) {
                 /* the address may be unknown to us when the peer used a
@@ -3351,6 +3371,10 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                 bConnDown(cn, BTIOERR_CONNFAILED, status);
             } else {
                 bConnUp(cn, handle, params[4] ? BDR_PERIPHERAL : BDR_CENTRAL);
+            }
+            if(incoming) {
+                /* the controller stopped advertising for this link */
+                bGattSrvRefresh(hc);
             }
             if(autoconn) {
                 bAutoConnDone(hc);   /* re-arms for the others, resumes a deferred discovery */

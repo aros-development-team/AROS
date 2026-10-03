@@ -40,7 +40,8 @@
 #define BGA_APPBINDING 0x09
 #define BGA_EVENTNOTE  0x0a
 #define BGA_STACKCFG   0x0b
-#define BGA_LAST       0x0b
+#define BGA_SERVICERECORD 0x0c /* a record from btAddServiceRecord() */
+#define BGA_LAST       0x0c
 
 /* Tag bases: one block of 256 per object type */
 #define BT_TAGBASE           (TAG_USER + 0xB100)
@@ -51,12 +52,19 @@
 #define BSA_HardwareList     (BSA_Dummy + 0x20) /* struct List * of BtHardware (lock the library base first!) */
 #define BSA_ClassList        (BSA_Dummy + 0x21) /* struct List * of BtClass */
 #define BSA_ErrorMsgList     (BSA_Dummy + 0x22) /* struct List * of BtErrorMsg */
+#define BSA_ServiceRecordList (BSA_Dummy + 0x23) /* struct List * of service records (lock the library base first!) */
 #define BSA_GlobalConfig     (BSA_Dummy + 0x44) /* struct BtGlobalCfg * */
 #define BSA_CurrConfigHash   (BSA_Dummy + 0x45) /* ULONG */
 #define BSA_SavedConfigHash  (BSA_Dummy + 0x46) /* ULONG */
 #define BSA_MemPoolUsage     (BSA_Dummy + 0x50) /* ULONG bytes allocated */
 #define BSA_ReleaseVersion   (BSA_Dummy + 0x60) /* ULONG */
 #define BSA_OSVersion        (BSA_Dummy + 0x61) /* ULONG */
+#define BSA_EIRServices      (BSA_Dummy + 0x71) /* BOOL (settable): tell devices that scan for this machine its
+                                                   name and the enabled classic services (extended inquiry
+                                                   response), so they need not connect to find out */
+#define BSA_LEAdvertising    (BSA_Dummy + 0x70) /* BOOL (settable): advertise on the LE radios, so that LE
+                                                   devices can find this machine, connect to it and use
+                                                   the enabled GATT services */
 
 /* Tags for btGetAttrs(BGA_BTCLASS,...) */
 #define BCA_Dummy            (BT_TAGBASE + 0x100)
@@ -338,7 +346,9 @@
 /* Tags for btAddServiceRecord(): a service record the stack advertises in
    its SDP server, the transport a class serves it on. Peers connecting to
    it show up as BSVA_Incoming services of their device, bound like any
-   other service. */
+   other service. A record is offered from the start; the SDP server class
+   (btsdp.class) and its user may disable it (BSRA_Enabled), which hides it
+   from the devices browsing our records and refuses connections to it. */
 #define BSRA_Dummy           (BT_TAGBASE + 0xd00)
 #define BSRA_UUID16          (BSRA_Dummy + 0x01) /* ULONG service class (e.g. 0x1101 Serial Port) - required */
 #define BSRA_Protocol        (BSRA_Dummy + 0x02) /* ULONG BSVP_RFCOMM or BSVP_L2CAP - required */
@@ -347,6 +357,41 @@
 #define BSRA_Name            (BSRA_Dummy + 0x05) /* STRPTR ServiceName */
 #define BSRA_ProfileUUID16   (BSRA_Dummy + 0x06) /* ULONG profile in the ProfileDescriptorList (default: BSRA_UUID16) */
 #define BSRA_ProfileVersion  (BSRA_Dummy + 0x07) /* ULONG (default 0x0102) */
+
+/* GATT services (BSRA_Protocol = BSVP_ATT) are registered the same way. The
+   stack keeps the values and answers the requests of connecting devices; a
+   record is only offered to them while it is enabled, which is the decision
+   of the GATT server class (btgatt.class) and its user - a new record is
+   disabled. btSetServiceValue() changes a value and notifies the devices
+   that subscribed to it; a device writing one raises BEHMB_SERVICEWRITE. */
+#define BSRA_UUID128         (BSRA_Dummy + 0x08) /* UBYTE * service UUID, 16 bytes, most significant first (instead of BSRA_UUID16) */
+#define BSRA_Characteristics (BSRA_Dummy + 0x09) /* struct BtGattCharDef * array (copied) */
+#define BSRA_NumCharacteristics (BSRA_Dummy + 0x0a) /* ULONG entries in that array */
+/* for every kind of record */
+#define BSRA_Owner           (BSRA_Dummy + 0x0b) /* STRPTR who offers the service (default: the name of the calling task) */
+/* btGetAttrs(BGA_SERVICERECORD): the above (not BSRA_Characteristics) and */
+#define BSRA_Enabled         (BSRA_Dummy + 0x10) /* BOOL (settable): offered to connecting devices */
+#define BSRA_FirstHandle     (BSRA_Dummy + 0x11) /* ULONG first attribute handle (BSVP_ATT) */
+#define BSRA_LastHandle      (BSRA_Dummy + 0x12) /* ULONG last attribute handle (BSVP_ATT) */
+
+struct BtGattCharDef
+{
+    UWORD        bgd_UUID16;     /* characteristic UUID, or 0 and bgd_UUID128 */
+    UWORD        bgd_Properties; /* BGDP_xxx */
+    UWORD        bgd_MaxLen;     /* room for the value, up to 512 (0: bgd_Len) */
+    UWORD        bgd_Len;        /* length of the initial value */
+    CONST UBYTE *bgd_UUID128;    /* 16 bytes, most significant first */
+    CONST UBYTE *bgd_Value;      /* initial value or NULL */
+};
+
+/* bgd_Properties: the GATT characteristic properties */
+#define BGDP_READ     0x02 /* devices may read the value */
+#define BGDP_WRITENR  0x04 /* devices may write it without a response */
+#define BGDP_WRITE    0x08 /* devices may write it */
+#define BGDP_NOTIFY   0x10 /* devices may subscribe to changes */
+#define BGDP_INDICATE 0x20 /* the same, acknowledged */
+
+#define BGATT_MAXVALUE 512
 
 #define BDSA_Dummy           (BT_TAGBASE + 0xb00)
 #define BDSA_Duration        (BDSA_Dummy + 0x01) /* ULONG seconds (default BGCA_DiscoveryTime) */
@@ -434,6 +479,9 @@
 #define BEHMB_PAIRINGDONE     0x16 /* Param1 = bd, Param2 = (IPTR) 0 = ok, else HCI/SMP status */
 #define BEHMB_SERVICESCHG     0x17 /* Param1 = bd */
 #define BEHMB_SERVICEGONE     0x18 /* Param1 = bsv (an incoming service whose connection closed; released and freed by the stack) */
+#define BEHMB_ADDSERVICEREC   0x19 /* Param1 = service record */
+#define BEHMB_REMSERVICEREC   0x1a /* Param1 = service record (already gone: only good for comparing) */
+#define BEHMB_SERVICEWRITE    0x1b /* Param1 = service record, Param2 = (IPTR) index of the characteristic a device wrote */
 
 #define BEHMF_ADDHARDWARE     (1L<<BEHMB_ADDHARDWARE)
 #define BEHMF_REMHARDWARE     (1L<<BEHMB_REMHARDWARE)
@@ -458,6 +506,9 @@
 #define BEHMF_PAIRINGREQUEST  (1L<<BEHMB_PAIRINGREQUEST)
 #define BEHMF_PAIRINGDONE     (1L<<BEHMB_PAIRINGDONE)
 #define BEHMF_SERVICESCHG     (1L<<BEHMB_SERVICESCHG)
+#define BEHMF_ADDSERVICEREC   (1L<<BEHMB_ADDSERVICEREC)
+#define BEHMF_REMSERVICEREC   (1L<<BEHMB_REMSERVICEREC)
+#define BEHMF_SERVICEWRITE    (1L<<BEHMB_SERVICEWRITE)
 
 /* Configuration stuff */
 

@@ -8,6 +8,7 @@ FILES :=    \
     aes128 \
     hwtask \
     hwconn \
+    gattsrv \
     config \
     numtostr \
     popupicon \

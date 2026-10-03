@@ -60,7 +60,7 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
             {
                 nh->nh_Record = btAddServiceRecord(BSRA_UUID16, 0x1101, BSRA_Protocol, BSVP_RFCOMM,
                                                    BSRA_RFCOMMChannel, 1, BSRA_Name, (IPTR) "Serial Port",
-                                                   TAG_END);
+                                                   BSRA_Owner, (IPTR) libname, TAG_END);
                 CloseLibrary(BluetoothBase);
             }
             ret = nh;

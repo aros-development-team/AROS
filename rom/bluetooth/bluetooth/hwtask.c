@@ -284,7 +284,7 @@ static BOOL bNoteDevice(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype, 
     if(!bd && isle && (addrtype == BDAT_RANDOM)) {
         bd = bResolvePrivateAddr(hc, addr);
     }
-    if(!bd && hc->hc_BgScanActive && !(bth->bth_Flags & BTHF_DISCOVERING)) {
+    if(!bd && hc->hc_BgScanActive && !(bth->bth_Flags & BTHF_DISCOVERING) && !hc->hc_NoteForce) {
         /* the background scan only exists to catch our own bonded devices
            waking up; strangers are not listed outside a discovery */
         btUnlockBase();
@@ -301,7 +301,8 @@ static BOOL bNoteDevice(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype, 
             BOOL discoverable = info && info->has_flags && (info->flags & 0x03);
             BOOL hid = info && info->hid;
             CopyMem((APTR) addr, ba.b, 6);
-            if(!bt_le_addr_is_stable(&ba, addrtype) && !namelen && !appearance && !discoverable && !hid) {
+            if(!bt_le_addr_is_stable(&ba, addrtype) && !namelen && !appearance && !discoverable && !hid &&
+               !hc->hc_NoteForce) {
                 btUnlockBase();
                 hc->hc_DiagDropped++;
                 return(FALSE);
@@ -392,6 +393,80 @@ static BOOL bNoteDevice(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype, 
         bd->bd_NextAttempt = hc->hc_Tick;
     }
     return(TRUE);
+}
+/* \\\ */
+
+/* /// "bEIRUpdate()" */
+/*
+ * The extended inquiry response: what a device scanning for us learns
+ * without connecting. If the stack is asked to (the SDP server class and its
+ * user decide), it carries the name of the radio and the 16-bit UUIDs of the
+ * enabled classic service records.
+ */
+static void bEIRUpdate(struct BtHWCore *hc)
+{
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtHardware *bth = hc->hc_Hardware;
+    struct BtServiceRecord *bsr;
+    UBYTE p[241];
+    ULONG pos = 1, lenpos, nlen;
+
+    if(!(bth->bth_Flags & BTHF_CLASSIC) || !(bth->bth_Features[6] & 0x01) || !hc->hc_BringupDone ||
+       hc->hc_Shutdown) {
+        return;
+    }
+    if(!BluetoothBase->bt_EIRServices && !hc->hc_EIRWritten) {
+        return; /* never asked for, nothing to take back */
+    }
+    memset(p, 0, sizeof(p));
+    if(BluetoothBase->bt_EIRServices) {
+        STRPTR name = bth->bth_LocalName ? bth->bth_LocalName : (STRPTR) "AROS";
+        nlen = strlen((char *) name);
+        p[pos + 1] = 0x09;           /* complete local name */
+        if(nlen > 120) {
+            nlen = 120;
+            p[pos + 1] = 0x08;       /* shortened */
+        }
+        p[pos] = nlen + 1;
+        CopyMem(name, &p[pos + 2], nlen);
+        pos += nlen + 2;
+        lenpos = pos;
+        pos += 2;
+        btLockReadBase();
+        for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head; bsr->bsr_Node.ln_Succ;
+            bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
+            if((bsr->bsr_Protocol == BSVP_ATT) || !bsr->bsr_Enabled || !bsr->bsr_UUID16 || (pos + 2 > sizeof(p))) {
+                continue;
+            }
+            p[pos++] = bsr->bsr_UUID16 & 0xff;
+            p[pos++] = bsr->bsr_UUID16 >> 8;
+        }
+        btUnlockBase();
+        if(pos > lenpos + 2) {
+            p[lenpos] = pos - lenpos - 1;
+            p[lenpos + 1] = 0x03;    /* 16-bit service UUIDs */
+        }
+    }
+    bSubmitCmd(hc, HC_OP_WRITE_EIR, p, sizeof(p), bIgnoreCompletion, hc);
+    hc->hc_EIRWritten = BluetoothBase->bt_EIRServices;
+}
+/* \\\ */
+
+/* /// "bNoteIncomingLE()" */
+/* A device connected to us (we advertise) that no discovery listed: it gets
+   a device like any other, whatever kind of address it uses. */
+struct BtDevice * bNoteIncomingLE(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype)
+{
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtDevice *bd;
+
+    hc->hc_NoteForce = TRUE;
+    bNoteDevice(hc, addr, addrtype & 1, TRUE, 0, 127, NULL, 0, NULL, 0, 0, NULL);
+    hc->hc_NoteForce = FALSE;
+    btLockReadBase();
+    bd = bFindDeviceByAddr(hc, addr);
+    btUnlockBase();
+    return(bd);
 }
 /* \\\ */
 
@@ -2210,6 +2285,12 @@ static void bBringupStep(struct BtHWCore *hc)
                            (bth->bth_Flags & BTHF_LE) ? (STRPTR) "LE" : (STRPTR) "",
                            bth->bth_AddrString);
             hc->hc_BringupDone = TRUE;
+            /* advertise again if we are asked to (a reset stopped it) */
+            hc->hc_LEAdvOn = FALSE;
+            hc->hc_LEAdvAsked = FALSE;
+            bGattSrvRefresh(hc);
+            hc->hc_EIRWritten = FALSE;
+            hc->hc_EIRSeq = BluetoothBase->bt_EIRSeq - 1;
             /* stock up on controller entropy for LE pairing */
             bConnRequestEntropy(hc, 4);
             /* and start listening for our bonded LE devices */
@@ -2293,6 +2374,8 @@ void bHandleChannel(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth, struct
             btFreeVec(bth->bth_WantedName);
             bth->bth_WantedName = btCopyStr((STRPTR) params);
             bSubmitCmd(hc, HC_OP_WRITE_LOCAL_NAME, params, 248, bIgnoreCompletion, hc);
+            bGattSrvRefresh(hc); /* the advertised name follows */
+            hc->hc_EIRSeq = BluetoothBase->bt_EIRSeq - 1;
             bReplyChannel(BluetoothBase, bch, 0, 0);
             return;
         }
@@ -2707,6 +2790,11 @@ static void bTick(struct BtHWCore *hc)
         }
     }
     bConnTick(hc);
+    bGattSrvPoll(hc);
+    if(hc->hc_EIRSeq != hc->hc_Base->bt_EIRSeq) {
+        hc->hc_EIRSeq = hc->hc_Base->bt_EIRSeq;
+        bEIRUpdate(hc);
+    }
     /* registrations and policies change from other tasks: re-check the
        background scan every few seconds as a catch-all */
     if((LONG) (hc->hc_Tick - hc->hc_BgScanCheckTick) >= 5000) {

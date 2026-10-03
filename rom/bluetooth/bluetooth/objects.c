@@ -1565,6 +1565,151 @@ AROS_LH1(BOOL, btEnumerateServices,
 
 /* *** Service records (our SDP server) *** */
 
+/* /// "bServiceRecordEvent()" */
+/* Tell the classes (the GATT and SDP server classes decide whether the
+   record is offered) and whoever listens for events. */
+static void bServiceRecordEvent(LIBBASETYPEPTR BluetoothBase, struct BtServiceRecord *bsr, BOOL added)
+{
+    struct BtClass *bc;
+
+    btLockReadBase();
+    for(bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head; bc->bc_Node.ln_Succ;
+        bc = (struct BtClass *) bc->bc_Node.ln_Succ) {
+        btcDoMethod(BCM_ServiceRecordEvent, bsr, (IPTR) added);
+    }
+    btUnlockBase();
+    btSendEvent(added ? BEHMB_ADDSERVICEREC : BEHMB_REMSERVICEREC, bsr, NULL);
+}
+/* \\\ */
+
+/* /// "bFreeServiceRecord()" */
+static void bFreeServiceRecord(LIBBASETYPEPTR BluetoothBase, struct BtServiceRecord *bsr)
+{
+    ULONG n;
+
+    btFreeVec(bsr->bsr_Attrs);
+    if(bsr->bsr_Chars) {
+        for(n = 0; n < bsr->bsr_NumChars; n++) {
+            btFreeVec(bsr->bsr_Chars[n].bgc_Value);
+        }
+        btFreeVec(bsr->bsr_Chars);
+    }
+    btFreeVec(bsr->bsr_Owner);
+    btFreeVec(bsr->bsr_Name);
+    btFreeVec(bsr);
+}
+/* \\\ */
+
+/* /// "bSetGattUUID()" */
+/* uuid128 is most significant byte first, the wire wants the reverse */
+static UWORD bSetGattUUID(UBYTE *le, UWORD uuid16, CONST UBYTE *uuid128)
+{
+    ULONG n;
+
+    if(uuid16 || !uuid128) {
+        le[0] = uuid16 & 0xff;
+        le[1] = uuid16 >> 8;
+        return(2);
+    }
+    for(n = 0; n < 16; n++) {
+        le[n] = uuid128[15 - n];
+    }
+    return(16);
+}
+/* \\\ */
+
+/* /// "bAddGattRecord()" */
+/*
+ * A GATT service: its declaration and its characteristics become attributes
+ * of the stack's GATT server. The record starts disabled; the GATT server
+ * class enables what its user wants offered.
+ */
+static struct BtServiceRecord *bAddGattRecord(LIBBASETYPEPTR BluetoothBase, struct TagItem *tags)
+{
+    struct BtServiceRecord *bsr;
+    ULONG uuid16 = GetTagData(BSRA_UUID16, 0, tags);
+    CONST UBYTE *uuid128 = (CONST UBYTE *) GetTagData(BSRA_UUID128, 0, tags);
+    struct BtGattCharDef *defs = (struct BtGattCharDef *) GetTagData(BSRA_Characteristics, 0, tags);
+    ULONG num = GetTagData(BSRA_NumCharacteristics, 0, tags);
+    STRPTR name = (STRPTR) GetTagData(BSRA_Name, 0, tags);
+    STRPTR owner = (STRPTR) GetTagData(BSRA_Owner, 0, tags);
+    ULONG n;
+
+    if((!uuid16 && !uuid128) || (num && !defs) || (num > 64)) {
+        return(NULL);
+    }
+    for(n = 0; n < num; n++) {
+        if((!defs[n].bgd_UUID16 && !defs[n].bgd_UUID128) || (defs[n].bgd_Len > BGATT_MAXVALUE) ||
+           (defs[n].bgd_MaxLen > BGATT_MAXVALUE) || (defs[n].bgd_Len && !defs[n].bgd_Value)) {
+            return(NULL);
+        }
+    }
+    if(!(bsr = btAllocVec(sizeof(struct BtServiceRecord)))) {
+        return(NULL);
+    }
+    memset(bsr, 0, sizeof(struct BtServiceRecord));
+    bsr->bsr_Protocol = BSVP_ATT;
+    bsr->bsr_UUID16 = uuid128 ? 0 : uuid16;
+    bsr->bsr_UUIDLen = bSetGattUUID(bsr->bsr_UUID, bsr->bsr_UUID16, uuid128);
+    if(bsr->bsr_UUIDLen == 16) {
+        CopyMem((APTR) uuid128, bsr->bsr_UUID128, 16);
+    }
+    bsr->bsr_Name = name ? btCopyStr(name) : NULL;
+    bsr->bsr_Node.ln_Name = bsr->bsr_Name;
+    if(!owner) {
+        owner = (STRPTR) FindTask(NULL)->tc_Node.ln_Name;
+    }
+    bsr->bsr_Owner = owner ? btCopyStr(owner) : NULL;
+    bsr->bsr_NumChars = num;
+    if(num) {
+        if(!(bsr->bsr_Chars = btAllocVec(num * sizeof(struct BtGattChar)))) {
+            bFreeServiceRecord(BluetoothBase, bsr);
+            return(NULL);
+        }
+        memset(bsr->bsr_Chars, 0, num * sizeof(struct BtGattChar));
+        for(n = 0; n < num; n++) {
+            struct BtGattChar *bgc = &bsr->bsr_Chars[n];
+            bgc->bgc_UUIDLen = bSetGattUUID(bgc->bgc_UUID, defs[n].bgd_UUID16,
+                                            defs[n].bgd_UUID16 ? NULL : defs[n].bgd_UUID128);
+            bgc->bgc_Properties = defs[n].bgd_Properties;
+            bgc->bgc_MaxLen = (defs[n].bgd_MaxLen > defs[n].bgd_Len) ? defs[n].bgd_MaxLen : defs[n].bgd_Len;
+            bgc->bgc_Len = defs[n].bgd_Len;
+            if(bgc->bgc_MaxLen) {
+                if(!(bgc->bgc_Value = btAllocVec(bgc->bgc_MaxLen))) {
+                    bFreeServiceRecord(BluetoothBase, bsr);
+                    return(NULL);
+                }
+                memset(bgc->bgc_Value, 0, bgc->bgc_MaxLen);
+                if(bgc->bgc_Len) {
+                    CopyMem((APTR) defs[n].bgd_Value, bgc->bgc_Value, bgc->bgc_Len);
+                }
+            }
+        }
+    }
+
+    /* the handles are never used again, so that a device which remembers
+       them cannot end up at another service */
+    btLockWriteBase();
+    if((ULONG) BluetoothBase->bt_NextGattHandle + 1 + 3 * num > 0xff00) {
+        btUnlockBase();
+        bFreeServiceRecord(BluetoothBase, bsr);
+        return(NULL);
+    }
+    bsr->bsr_Handle = BluetoothBase->bt_NextRecordHandle++;
+    bsr->bsr_FirstHandle = BluetoothBase->bt_NextGattHandle;
+    BluetoothBase->bt_NextGattHandle += 1 + 3 * num;
+    bsr->bsr_LastHandle = bsr->bsr_FirstHandle + 3 * num;
+    if(num && !(bsr->bsr_Chars[num - 1].bgc_Properties & (BGDP_NOTIFY|BGDP_INDICATE))) {
+        bsr->bsr_LastHandle--; /* the last characteristic has no client configuration */
+    }
+    AddTail(&BluetoothBase->bt_ServiceRecords, &bsr->bsr_Node);
+    btUnlockBase();
+    KPRINTF(5, ("GATT service %04lx: handles %04lx-%04lx\n", uuid16, bsr->bsr_FirstHandle, bsr->bsr_LastHandle));
+    bServiceRecordEvent(BluetoothBase, bsr, TRUE);
+    return(bsr);
+}
+/* \\\ */
+
 /* /// "btAddServiceRecordA()" */
 /*
  * A record the SDP server advertises: ServiceRecordHandle, ServiceClassIDList,
@@ -1586,12 +1731,16 @@ AROS_LH1(APTR, btAddServiceRecordA,
     ULONG profile = GetTagData(BSRA_ProfileUUID16, uuid16, tags);
     ULONG version = GetTagData(BSRA_ProfileVersion, 0x0102, tags);
     STRPTR name = (STRPTR) GetTagData(BSRA_Name, 0, tags);
+    STRPTR owner = (STRPTR) GetTagData(BSRA_Owner, 0, tags);
     UBYTE buf[256];
     struct bt_buf_writer w;
     ULONG nlen = name ? strlen((char *) name) : 0;
     ULONG protolen;
 
     KPRINTF(5, ("btAddServiceRecordA(%04lx, %ld)\n", uuid16, proto));
+    if(proto == BSVP_ATT) {
+        return(bAddGattRecord(BluetoothBase, tags));
+    }
     if(!uuid16 || ((proto == BSVP_RFCOMM) && ((channel < 1) || (channel > 30))) ||
        ((proto == BSVP_L2CAP) && !psm) || ((proto != BSVP_RFCOMM) && (proto != BSVP_L2CAP))) {
         return(NULL);
@@ -1602,11 +1751,17 @@ AROS_LH1(APTR, btAddServiceRecordA,
     if(!(bsr = btAllocVec(sizeof(struct BtServiceRecord)))) {
         return(NULL);
     }
+    memset(bsr, 0, sizeof(struct BtServiceRecord));
+    bsr->bsr_Enabled = TRUE;
     bsr->bsr_UUID16 = uuid16;
     bsr->bsr_Protocol = proto;
     bsr->bsr_Channel = channel;
     bsr->bsr_PSM = psm;
     bsr->bsr_Name = name ? btCopyStr(name) : NULL;
+    if(!owner) {
+        owner = (STRPTR) FindTask(NULL)->tc_Node.ln_Name;
+    }
+    bsr->bsr_Owner = owner ? btCopyStr(owner) : NULL;
 
     btLockWriteBase();
     bsr->bsr_Handle = BluetoothBase->bt_NextRecordHandle++;
@@ -1649,8 +1804,7 @@ AROS_LH1(APTR, btAddServiceRecordA,
     }
     bsr->bsr_AttrsLen = bt_buf_writer_len(&w);
     if(!(bsr->bsr_Attrs = btAllocVec(bsr->bsr_AttrsLen))) {
-        btFreeVec(bsr->bsr_Name);
-        btFreeVec(bsr);
+        bFreeServiceRecord(BluetoothBase, bsr);
         return(NULL);
     }
     CopyMem(buf, bsr->bsr_Attrs, bsr->bsr_AttrsLen);
@@ -1660,6 +1814,8 @@ AROS_LH1(APTR, btAddServiceRecordA,
     AddTail(&BluetoothBase->bt_ServiceRecords, &bsr->bsr_Node);
     btUnlockBase();
     KPRINTF(5, ("service record %08lx: class %04lx, %ld bytes\n", bsr->bsr_Handle, uuid16, bsr->bsr_AttrsLen));
+    BluetoothBase->bt_EIRSeq++;
+    bServiceRecordEvent(BluetoothBase, bsr, TRUE);
     return(bsr);
     AROS_LIBFUNC_EXIT
 }
@@ -1675,12 +1831,80 @@ AROS_LH1(void, btRemServiceRecord,
     if(!bsr) {
         return;
     }
+    /* the radio tasks only look at the records with the base locked */
     btLockWriteBase();
     Remove(&bsr->bsr_Node);
     btUnlockBase();
-    btFreeVec(bsr->bsr_Attrs);
-    btFreeVec(bsr->bsr_Name);
-    btFreeVec(bsr);
+    BluetoothBase->bt_LEAdvSeq++;
+    BluetoothBase->bt_EIRSeq++;
+    bServiceRecordEvent(BluetoothBase, bsr, FALSE);
+    bFreeServiceRecord(BluetoothBase, bsr);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btSetServiceValue()" */
+/*
+ * Change the value of a characteristic of one of our GATT services. Devices
+ * that subscribed to it are notified by the radio tasks shortly after.
+ * Returns the length stored or -1.
+ */
+AROS_LH4(LONG, btSetServiceValue,
+         AROS_LHA(APTR, record, A0),
+         AROS_LHA(ULONG, index, D0),
+         AROS_LHA(APTR, data, A1),
+         AROS_LHA(ULONG, len, D1),
+         LIBBASETYPEPTR, BluetoothBase, 90, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtServiceRecord *bsr = record;
+    struct BtGattChar *bgc;
+
+    if(!bsr || (bsr->bsr_Protocol != BSVP_ATT) || (index >= bsr->bsr_NumChars) || (len && !data)) {
+        return(-1);
+    }
+    bgc = &bsr->bsr_Chars[index];
+    if(len > bgc->bgc_MaxLen) {
+        return(-1);
+    }
+    Forbid();
+    if(len) {
+        CopyMem(data, bgc->bgc_Value, len);
+    }
+    bgc->bgc_Len = len;
+    bgc->bgc_Seq = ++BluetoothBase->bt_GattSeq;
+    Permit();
+    return((LONG) len);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btGetServiceValue()" */
+/* The current value (a device may have written it: BEHMB_SERVICEWRITE).
+   Returns its length, of which at most len bytes were copied, or -1. */
+AROS_LH4(LONG, btGetServiceValue,
+         AROS_LHA(APTR, record, A0),
+         AROS_LHA(ULONG, index, D0),
+         AROS_LHA(APTR, buf, A1),
+         AROS_LHA(ULONG, len, D1),
+         LIBBASETYPEPTR, BluetoothBase, 91, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtServiceRecord *bsr = record;
+    struct BtGattChar *bgc;
+    LONG actual;
+
+    if(!bsr || (bsr->bsr_Protocol != BSVP_ATT) || (index >= bsr->bsr_NumChars)) {
+        return(-1);
+    }
+    bgc = &bsr->bsr_Chars[index];
+    Forbid();
+    actual = bgc->bgc_Len;
+    if(buf && len && actual) {
+        CopyMem(bgc->bgc_Value, buf, min((ULONG) actual, len));
+    }
+    Permit();
+    return(actual);
     AROS_LIBFUNC_EXIT
 }
 /* \\\ */

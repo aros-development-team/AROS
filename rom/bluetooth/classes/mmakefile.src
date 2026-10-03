@@ -10,7 +10,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-bluetooth-classes :                 \
 #MM     kernel-bluetooth-classes-bthid             \
 #MM     kernel-bluetooth-classes-btserial          \
-#MM     kernel-bluetooth-classes-btpan
+#MM     kernel-bluetooth-classes-btpan             \
+#MM     kernel-bluetooth-classes-btgatt            \
+#MM     kernel-bluetooth-classes-btsdp
 
 #MM kernel-bluetooth-classes-clean :            \
 #MM     kernel-bluetooth-classes-bthid-clean

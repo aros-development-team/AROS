@@ -306,6 +306,15 @@ static void handle_response(struct bt_gatt_client *client, const uint8_t *data, 
     params = data + 1;
     params_len = len - 1;
 
+    if (!(opcode & 0x01u))
+    {
+        /* a request, a command or a confirmation: the peer is talking to a
+         * server, not answering us */
+        if (client->on_request != NULL)
+            client->on_request(data, len, now_us, client->request_user_data);
+        return;
+    }
+
     if (opcode == BT_ATT_OPCODE_HANDLE_VALUE_NOTIFICATION ||
         opcode == BT_ATT_OPCODE_HANDLE_VALUE_INDICATION)
     {
@@ -460,6 +469,8 @@ static void on_l2cap_event(struct bt_l2cap_channel_event_info *info, void *user_
     {
     case BT_L2CAP_CHANNEL_EVENT_OPENED:
         client->channel_ready = true;
+        if (client->listen_only)
+            break; /* bt_gatt_client_listen(): nothing to negotiate yet */
         client->busy = true;
         client->op = BT_GATT_CLIENT_OP_MTU;
         issue_current_request(client, client->connect_started_us);
@@ -501,8 +512,40 @@ bt_status_t bt_gatt_client_connect(struct bt_gatt_client *client, bt_gatt_client
     client->connect_user_data = user_data;
     client->connect_started_us = now_us;
 
+    if (client->channel_ready && client->listen_only)
+    {
+        /* the channel is already there (bt_gatt_client_listen()) */
+        client->listen_only = false;
+        client->busy = true;
+        client->op = BT_GATT_CLIENT_OP_MTU;
+        issue_current_request(client, now_us);
+        return BT_OK;
+    }
+    client->listen_only = false;
+
     return bt_l2cap_channel_manager_open_fixed(client->l2cap, BT_L2CAP_CID_ATT, on_l2cap_event,
                                                 client);
+}
+
+bt_status_t bt_gatt_client_listen(struct bt_gatt_client *client)
+{
+    bt_status_t status;
+
+    if (client->channel_ready)
+        return BT_OK;
+    client->listen_only = true;
+    status = bt_l2cap_channel_manager_open_fixed(client->l2cap, BT_L2CAP_CID_ATT, on_l2cap_event,
+                                                  client);
+    if (status != BT_OK)
+        client->listen_only = false;
+    return status;
+}
+
+void bt_gatt_client_set_request_handler(struct bt_gatt_client *client, bt_gatt_client_request_fn fn,
+                                         void *user_data)
+{
+    client->on_request = fn;
+    client->request_user_data = user_data;
 }
 
 void bt_gatt_client_disconnect(struct bt_gatt_client *client, uint64_t now_us)

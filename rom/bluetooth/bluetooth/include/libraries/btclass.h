@@ -67,5 +67,6 @@
 #define BCM_HardRestart             0x0041
 #define BCM_DeviceConnected         0x0050 /* { binding } link came up */
 #define BCM_DeviceDisconnected      0x0051 /* { binding, (IPTR) reason } link went down */
+#define BCM_ServiceRecordEvent      0x0060 /* { record, (IPTR) added } a service record was added or is being removed */
 
 #endif /* LIBRARIES_BTCLASS_H */

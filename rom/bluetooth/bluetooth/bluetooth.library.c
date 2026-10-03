@@ -89,6 +89,7 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR BluetoothBase)
         NewList(&BluetoothBase->bt_DeadlockDebug);
         NewList(&BluetoothBase->bt_ServiceRecords);
         BluetoothBase->bt_NextRecordHandle = 0x00010000;
+        BluetoothBase->bt_NextGattHandle = 0x0001;
 
         InitSemaphore(&BluetoothBase->bt_ReentrantLock);
 
@@ -1225,6 +1226,8 @@ static const ULONG BtBasePT[] = {
     PACK_ENTRY(BSA_Dummy, BSA_SavedConfigHash, BtBase, bt_SavedConfigHash, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
     PACK_ENTRY(BSA_Dummy, BSA_ReleaseVersion, BtBase, bt_ReleaseVersion, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSA_Dummy, BSA_OSVersion, BtBase, bt_OSVersion, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSA_Dummy, BSA_LEAdvertising, BtBase, bt_LEAdvertising, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSA_Dummy, BSA_EIRServices, BtBase, bt_EIRServices, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
 
@@ -1433,6 +1436,22 @@ static const ULONG BtGlobalCfgPT[] = {
     PACK_ENDTABLE
 };
 
+/* Pack table for BtServiceRecord */
+static const ULONG BtServiceRecordPT[] = {
+    PACK_STARTTABLE(BSRA_Dummy),
+    PACK_ENTRY(BSRA_Dummy, BSRA_UUID16, BtServiceRecord, bsr_UUID16, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_Protocol, BtServiceRecord, bsr_Protocol, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_RFCOMMChannel, BtServiceRecord, bsr_Channel, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_PSM, BtServiceRecord, bsr_PSM, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_Name, BtServiceRecord, bsr_Name, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_NumCharacteristics, BtServiceRecord, bsr_NumChars, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_Owner, BtServiceRecord, bsr_Owner, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_Enabled, BtServiceRecord, bsr_Enabled, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_FirstHandle, BtServiceRecord, bsr_FirstHandle, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_LastHandle, BtServiceRecord, bsr_LastHandle, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENDTABLE
+};
+
 static const ULONG *BtPTArray[BGA_LAST+1] = {
     NULL,
     BtBasePT,       /* BGA_STACK */
@@ -1445,7 +1464,8 @@ static const ULONG *BtPTArray[BGA_LAST+1] = {
     BtChannelPT,       /* BGA_CHANNEL */
     BtAppBindingPT, /* BGA_APPBINDING */
     BtEventNotePT,  /* BGA_EVENTNOTE */
-    BtGlobalCfgPT   /* BGA_STACKCFG */
+    BtGlobalCfgPT,  /* BGA_STACKCFG */
+    BtServiceRecordPT /* BGA_SERVICERECORD */
 };
 /* \\\ */
 
@@ -1480,6 +1500,18 @@ AROS_LH3(LONG, btGetAttrsA,
         }
         if((ti = FindTagItem(BSA_ErrorMsgList, tags))) {
             *((struct List **) ti->ti_Data) = &BluetoothBase->bt_ErrorMsgs;
+            count++;
+        }
+        if((ti = FindTagItem(BSA_ServiceRecordList, tags))) {
+            *((struct List **) ti->ti_Data) = &BluetoothBase->bt_ServiceRecords;
+            count++;
+        }
+        break;
+
+    case BGA_SERVICERECORD:
+        if((ti = FindTagItem(BSRA_UUID128, tags))) {
+            struct BtServiceRecord *bsr = (struct BtServiceRecord *) btstruct;
+            *((UBYTE **) ti->ti_Data) = (bsr->bsr_UUIDLen == 16) ? bsr->bsr_UUID128 : NULL;
             count++;
         }
         break;
@@ -1698,7 +1730,33 @@ AROS_LH3(LONG, btSetAttrsA,
 
     case BGA_STACK:
         btstruct = BluetoothBase;
+        if((ti = FindTagItem(BSA_LEAdvertising, tags))) {
+            /* the radio tasks pick the change up with their next tick */
+            BluetoothBase->bt_LEAdvertising = ti->ti_Data ? TRUE : FALSE;
+            BluetoothBase->bt_LEAdvSeq++;
+            count++;
+        }
+        if((ti = FindTagItem(BSA_EIRServices, tags))) {
+            BluetoothBase->bt_EIRServices = ti->ti_Data ? TRUE : FALSE;
+            BluetoothBase->bt_EIRSeq++;
+            count++;
+        }
         break;
+
+    case BGA_SERVICERECORD: {
+        struct BtServiceRecord *bsr = (struct BtServiceRecord *) btstruct;
+        if((ti = FindTagItem(BSRA_Enabled, tags))) {
+            bsr->bsr_Enabled = ti->ti_Data ? TRUE : FALSE;
+            /* the service list the radios broadcast follows */
+            if(bsr->bsr_Protocol == BSVP_ATT) {
+                BluetoothBase->bt_LEAdvSeq++;
+            } else {
+                BluetoothBase->bt_EIRSeq++;
+            }
+            count++;
+        }
+        break;
+    }
 
     case BGA_STACKCFG:
         btstruct = BluetoothBase->bt_GlobalCfg;

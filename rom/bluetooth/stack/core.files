@@ -26,6 +26,7 @@ BTCORE_FILES := \
     protocols/sdp/sdp_server \
     protocols/att/att \
     protocols/gatt/gatt_client \
+    protocols/gatt/gatt_server \
     protocols/smp/smp \
     protocols/vendor_init/dummy/dummy_vendor_init \
     profiles/hogp/hogp_client \

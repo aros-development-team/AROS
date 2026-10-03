@@ -185,6 +185,14 @@ struct BtBase
     BOOL                bt_StartedAsTask; /* Did we start in Task Mode before DOS was available? */
     struct BtHandlerTask bt_EventHandler; /* Event handler */
     struct BtPopupTask   bt_Popup;        /* PoPo-style pairing popup task */
+    /* GATT server */
+    UWORD               bt_NextGattHandle; /* next free attribute handle */
+    BOOL                bt_LEAdvertising; /* advertise on the LE radios */
+    ULONG               bt_LEAdvSeq;      /* bumped when what is advertised changed */
+    ULONG               bt_GattSeq;       /* bumped with every value set */
+    /* SDP server */
+    BOOL                bt_EIRServices;   /* name and classic services in the extended inquiry response */
+    ULONG               bt_EIRSeq;        /* bumped when what it would say changed */
 };
 
 /* bt_Flags */
@@ -205,6 +213,29 @@ struct BtServiceRecord
     STRPTR              bsr_Name;
     UBYTE              *bsr_Attrs;        /* encoded attribute list content */
     ULONG               bsr_AttrsLen;
+    BOOL                bsr_Enabled;      /* offered to connecting devices */
+    STRPTR              bsr_Owner;
+    /* BSVP_ATT: a GATT service. Handles: the declaration at bsr_FirstHandle,
+       then three per characteristic (declaration, value, client configuration;
+       the last only exists with BGDP_NOTIFY/BGDP_INDICATE). */
+    UBYTE               bsr_UUID[16];     /* little-endian, as on the wire */
+    UBYTE               bsr_UUID128[16];  /* most significant first, for btGetAttrs() */
+    UWORD               bsr_UUIDLen;      /* 2 or 16 */
+    UWORD               bsr_FirstHandle;
+    UWORD               bsr_LastHandle;
+    UWORD               bsr_NumChars;
+    struct BtGattChar  *bsr_Chars;
+};
+
+struct BtGattChar
+{
+    UBYTE               bgc_UUID[16];     /* little-endian */
+    UWORD               bgc_UUIDLen;      /* 2 or 16 */
+    UWORD               bgc_Properties;   /* BGDP_xxx */
+    UWORD               bgc_MaxLen;
+    UWORD               bgc_Len;
+    UBYTE              *bgc_Value;        /* bgc_MaxLen bytes; changed under Forbid() */
+    ULONG               bgc_Seq;          /* bt_GattSeq of the last btSetServiceValue() */
 };
 
 struct BtEventHook

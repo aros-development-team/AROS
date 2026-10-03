@@ -1718,7 +1718,7 @@ AROS_UFH0(void, bGUITask)
 
         SubWindow, (IPTR)(ncp->ncp_MainWindow = WindowObject,
             MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-            MUIA_Window_Title, (IPTR)libname,
+            MUIA_Window_Title, (IPTR)"Bluetooth networking (PAN)",
             MUIA_HelpNode, (IPTR)libname,
 
             WindowContents, (IPTR)VGroup,

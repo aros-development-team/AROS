@@ -24,6 +24,7 @@
 #include <btcore/sdp_server.h>
 #include <btcore/att.h>
 #include <btcore/gatt_client.h>
+#include <btcore/gatt_server.h>
 #include <btcore/rfcomm.h>
 #include <btcore/smp.h>
 #include <btcore/smp_manager.h>
@@ -33,6 +34,12 @@
 #define HC_NUMACLWRITES 4
 #define HC_ACLBUFSIZE   MAX_ACL_IN_BUFFER_SIZE
 #define HC_TICK_MS      100
+
+/* GATT server: subscriptions kept per link, and what an attribute is */
+#define HC_GATT_MAXSUBS     16
+#define HC_GATT_KIND_DECL   0
+#define HC_GATT_KIND_VALUE  1
+#define HC_GATT_KIND_CONFIG 2
 #define HC_MAXCONNS     8
 #define HC_RXQUEUE_MAX  8      /* SDUs kept per L2CAP channel when no read request is pending */
 #define HC_CHANCLOSE_MS 2000   /* grace period before an unused L2CAP channel is closed */
@@ -67,6 +74,7 @@
 #define HC_OP_WRITE_SCAN_ENABLE       HC_OP(0x03, 0x001a)
 #define HC_OP_WRITE_CLASS_OF_DEVICE   HC_OP(0x03, 0x0024)
 #define HC_OP_WRITE_INQUIRY_MODE      HC_OP(0x03, 0x0045)
+#define HC_OP_WRITE_EIR               HC_OP(0x03, 0x0052)
 #define HC_OP_WRITE_SIMPLE_PAIRING    HC_OP(0x03, 0x0056)
 #define HC_OP_WRITE_LE_HOST_SUPPORT   HC_OP(0x03, 0x006d)
 #define HC_OP_READ_LOCAL_VERSION      HC_OP(0x04, 0x0001)
@@ -78,6 +86,10 @@
 #define HC_OP_LE_SET_EVENT_MASK       HC_OP(0x08, 0x0001)
 #define HC_OP_LE_READ_BUFFER_SIZE     HC_OP(0x08, 0x0002)
 #define HC_OP_LE_READ_LOCAL_FEATURES  HC_OP(0x08, 0x0003)
+#define HC_OP_LE_SET_ADV_PARAMS       HC_OP(0x08, 0x0006)
+#define HC_OP_LE_SET_ADV_DATA         HC_OP(0x08, 0x0008)
+#define HC_OP_LE_SET_SCAN_RSP_DATA    HC_OP(0x08, 0x0009)
+#define HC_OP_LE_SET_ADV_ENABLE       HC_OP(0x08, 0x000a)
 #define HC_OP_LE_SET_SCAN_PARAMETERS  HC_OP(0x08, 0x000b)
 #define HC_OP_LE_SET_SCAN_ENABLE      HC_OP(0x08, 0x000c)
 #define HC_OP_LE_READ_WHITE_LIST_SIZE HC_OP(0x08, 0x000f)
@@ -224,6 +236,16 @@ struct BtHWConn
     struct bt_gatt_client cn_GATT;
     BOOL                cn_SDPReady;
     BOOL                cn_GATTReady;
+    /* our GATT services on this link (gattsrv.c) */
+    struct bt_gatt_server cn_GATTServer;
+    struct {
+        UWORD handle;                  /* of a client configuration, 0 = free */
+        UWORD value;                   /* bit 0 notify, bit 1 indicate */
+    }                   cn_GATTSubs[HC_GATT_MAXSUBS];
+    struct BtServiceRecord *cn_GATTWrRec; /* a value the device wrote during this request */
+    UWORD               cn_GATTWrIdx;
+    BOOL                cn_GATTSeen;   /* the device has asked for something */
+    UBYTE               cn_GATTVal[BGATT_MAXVALUE]; /* the value being read */
     struct MinList      cn_Endpoints;  /* BtHWEndpoint */
     struct MinList      cn_WaitReqs;   /* BtChannel requests waiting for the link */
     /* service enumeration */
@@ -423,6 +445,18 @@ struct BtHWCore
     struct MinList      hc_Conns;          /* BtHWConn */
     struct BtHWConn    *hc_Connecting;     /* outgoing connection in progress (one at a time) */
     struct BtDevice    *hc_LEConnecting;
+
+    /* GATT server (gattsrv.c) */
+    ULONG               hc_LEAdvSeq;       /* bt_LEAdvSeq the advertising was set up for */
+    ULONG               hc_GattSeq;        /* bt_GattSeq up to which subscribers were notified */
+    BOOL                hc_LEAdvAsked;     /* we asked the controller to advertise ... */
+    BOOL                hc_LEAdvOn;        /* ... and it does */
+    BOOL                hc_LEAdvWarned;    /* its refusal has been reported */
+    BOOL                hc_NoteForce;      /* bNoteDevice(): list the device whatever it is */
+
+    /* SDP server: the extended inquiry response */
+    ULONG               hc_EIRSeq;         /* bt_EIRSeq it was written for */
+    BOOL                hc_EIRWritten;     /* the controller has one of ours */
 };
 
 /* queue node for discovery name resolution */
@@ -446,6 +480,12 @@ LONG bHciDoSync(struct BtHWCore *hc, UWORD opcode, CONST_APTR params, UWORD plen
    TRUE if a loader downloaded firmware (the controller restarted on it) */
 BOOL bDoFirmware(struct BtHWCore *hc);
 struct BtDevice * bFindDeviceByAddr(struct BtHWCore *hc, const UBYTE *addr);
+/* hwtask.c: a device that connected to us without having been seen before */
+struct BtDevice * bNoteIncomingLE(struct BtHWCore *hc, const UBYTE *addr, UBYTE addrtype);
+/* gattsrv.c */
+void bGattSrvInit(struct BtHWConn *cn);
+void bGattSrvRefresh(struct BtHWCore *hc);
+void bGattSrvPoll(struct BtHWCore *hc);
 LONG bStopDiscovery(struct BtHWCore *hc);
 void bReplyChannel(struct BtBase *BluetoothBase, struct BtChannel *bch, LONG error, ULONG actual);
 void bStartACLWrite(struct BtHWCore *hc);

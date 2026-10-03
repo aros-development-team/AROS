@@ -115,6 +115,11 @@ typedef void (*bt_gatt_client_connect_fn)(bool success, void *user_data);
 typedef void (*bt_gatt_client_notify_fn)(uint16_t handle, const uint8_t *value, size_t value_len,
                                           bool is_indication, void *user_data);
 
+/* An ATT PDU for a GATT server on the same bearer: a request, a command or
+ * the Handle Value Confirmation (opcode bit 0 clear). */
+typedef void (*bt_gatt_client_request_fn)(const uint8_t *pdu, size_t len, uint64_t now_us,
+                                           void *user_data);
+
 struct bt_gatt_client
 {
     struct bt_l2cap_channel_manager *l2cap;
@@ -126,6 +131,11 @@ struct bt_gatt_client
 
     bt_gatt_client_notify_fn on_notify;
     void *notify_user_data;
+
+    /* the server's share of the bearer, see bt_gatt_client_set_request_handler() */
+    bt_gatt_client_request_fn on_request;
+    void *request_user_data;
+    bool listen_only;
 
     bool busy;
     enum bt_gatt_client_op op;
@@ -197,5 +207,16 @@ bt_status_t bt_gatt_client_write(struct bt_gatt_client *client, uint16_t handle,
 /* Must be called by the owning event loop as time advances. Times out the
  * current ATT transaction; late responses are ignored. */
 void bt_gatt_client_tick(struct bt_gatt_client *client, uint64_t now_us);
+
+/* The ATT bearer carries both roles. PDUs meant for a server are handed to
+ * this handler instead of being dropped; it sends its answers itself on
+ * BT_L2CAP_CID_ATT. */
+void bt_gatt_client_set_request_handler(struct bt_gatt_client *client, bt_gatt_client_request_fn fn,
+                                         void *user_data);
+
+/* Opens the fixed ATT channel without negotiating anything, so the peer's
+ * requests are received even if we never act as a client on this link. A
+ * later bt_gatt_client_connect() takes it from there. */
+bt_status_t bt_gatt_client_listen(struct bt_gatt_client *client);
 
 #endif /* BTCORE_GATT_CLIENT_H */
