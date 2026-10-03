@@ -6,6 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 
 SFILES := \
     Package-Startup \
+    netautoconf \
     startnet \
     stopnet \
     Check-Firewall-Rules \

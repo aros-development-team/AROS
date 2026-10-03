@@ -3,6 +3,13 @@
 ;
 Path "C" "S" ADD QUIET
 
+; Nothing populates ENVARC:AROSTCP on a fresh install, and a Live CD cannot
+; write ENVARC: at all, so without this the stack never starts and the system
+; boots with no network. Only runs when nothing is configured.
+If NOT EXISTS ENV:AROSTCP/Config
+  Execute S/netautoconf
+EndIf
+
 Protect S/startnet s add quiet
 Protect S/stopnet s add quiet
 
