@@ -6,6 +6,7 @@
  */
 
 #import <Cocoa/Cocoa.h>
+#import <Carbon/Carbon.h>
 #import <IOSurface/IOSurface.h>
 #import <QuartzCore/QuartzCore.h>
 #include <pthread.h>
@@ -188,11 +189,16 @@ static void sync_modifiers(NSUInteger flags) {
     push_event(COCOA_EVENT_MOUSE_RELEASE, (int)p.x, (int)p.y, 2, 0);
 }
 
+/* Key events carry the keyboard type in button: some ISO keycodes differ */
+static int key_iso(void) {
+    return KBGetLayoutType(LMGetKbdType()) == kKeyboardISO;
+}
+
 - (void)keyDown:(NSEvent *)event {
-    push_event(COCOA_EVENT_KEY_PRESS, 0, 0, 0, [event keyCode]);
+    push_event(COCOA_EVENT_KEY_PRESS, 0, 0, key_iso(), [event keyCode]);
 }
 - (void)keyUp:(NSEvent *)event {
-    push_event(COCOA_EVENT_KEY_RELEASE, 0, 0, 0, [event keyCode]);
+    push_event(COCOA_EVENT_KEY_RELEASE, 0, 0, key_iso(), [event keyCode]);
 }
 
 - (void)flagsChanged:(NSEvent *)event {

@@ -2,7 +2,7 @@ USER_LDFLAGS+=-static-libstdc++
 
 # Cocoa display backend for darwin-aarch64 (cocoa_display.o is built by
 # ./mmakefile into the arch object directory and linked from there)
-USER_LDFLAGS += -framework Cocoa -framework IOSurface -framework QuartzCore
+USER_LDFLAGS += -framework Cocoa -framework Carbon -framework IOSurface -framework QuartzCore
 
 ifeq ("$(HOST_TOOLCHAIN)","gnu")
 KERNEL_GCC_VERSION=`$(KERNEL_CC) --version 2>/dev/null`

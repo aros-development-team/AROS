@@ -26,8 +26,12 @@ extern OOP_AttrBase __abHidd_Input;
 /*
  * macOS Virtual KeyCode -> Amiga RawKey Code Translation Table
  * (ISO/ANSI Apple Keyboard Layout mapping to Amiga RawKey values)
+ *
+ * On ISO keyboards macOS swaps the codes of the key top left (0x0A) and the
+ * one right of left Shift (0x32), and gives the key left of Return the ANSI
+ * backslash code, so those three depend on the keyboard type.
  */
-static UBYTE mac_keycode_to_rawkey(int keycode)
+static UBYTE mac_keycode_to_rawkey(int keycode, BOOL iso)
 {
     switch (keycode) {
     /* Letters */
@@ -77,11 +81,12 @@ static UBYTE mac_keycode_to_rawkey(int keycode)
     case 0x21: return 0x1A; /* [ / { */
     case 0x27: return 0x2A; /* ' / " */
     case 0x29: return 0x29; /* ; / : */
-    case 0x2A: return 0x0D; /* \ / | */
+    case 0x2A: return iso ? 0x2B : 0x0D; /* \ / | (ISO: key left of Return) */
     case 0x2B: return 0x38; /* , / < */
     case 0x2C: return 0x3A; /* / / ? */
     case 0x2F: return 0x39; /* . / > */
-    case 0x32: return 0x00; /* ` / ~ */
+    case 0x32: return iso ? 0x30 : 0x00; /* ` / ~ (ISO: key right of left Shift) */
+    case 0x0A: return iso ? 0x00 : 0x30; /* ISO: key top left */
 
     /* Control / Modifiers */
     case 0x24: return 0x44; /* Return */
@@ -227,7 +232,7 @@ void cocoa_input_poll(struct HostInterface *hif)
                          ev->type == COCOA_EVENT_KEY_RELEASE)) {
             struct CocoaKbdData *kd = OOP_INST_DATA(OOP_OCLASS(g_kbdobj), g_kbdobj);
             if (kd->callback) {
-                UBYTE rawkey = mac_keycode_to_rawkey(ev->keycode);
+                UBYTE rawkey = mac_keycode_to_rawkey(ev->keycode, ev->button == 1);
                 if (rawkey != 0xFF) {
                     struct pHidd_Kbd_Event kev;
 
