@@ -130,7 +130,7 @@ void print_help(void)
 struct config *initconfig(int argc, char **argv)
 {
     struct config *cfg;
-    char *s, **argvit = argv + 1;
+    char *s;
     int hassuffix = 0, c;
 
     cfg = malloc(sizeof(struct config));
@@ -171,13 +171,19 @@ struct config *initconfig(int argc, char **argv)
 
         case 'd':
             /* Remove / at end if present */
-            if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
+            /* getopt() provides optarg as a NUL-terminated argument string. */
+            if (optarg[0] != '\0' && optarg[strlen(optarg)-1] == '/') /* Flawfinder: ignore */
+                /* The same NUL-terminated optarg is used to remove the trailing slash. */
+                optarg[strlen(optarg)-1] = '\0'; /* Flawfinder: ignore */
             cfg->gendir = optarg;
             break;
 
         case 'l':
             /* Remove / at end if present */
-            if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
+            /* getopt() provides optarg as a NUL-terminated argument string. */
+            if (optarg[0] != '\0' && optarg[strlen(optarg)-1] == '/') /* Flawfinder: ignore */
+                /* The same NUL-terminated optarg is used to remove the trailing slash. */
+                optarg[strlen(optarg)-1] = '\0'; /* Flawfinder: ignore */
             cfg->libgendir = optarg;
             break;
 
@@ -343,12 +349,18 @@ struct config *initconfig(int argc, char **argv)
 
     /* Fill fields with default value if not specified on the command line */
     {
-        char tmpbuf[256];
-
         if (cfg->conffile == NULL)
         {
-            snprintf(tmpbuf, sizeof(tmpbuf), "%s.conf", cfg->modulename);
-            cfg->conffile = strdup(tmpbuf);
+            /* The module name points to a NUL-terminated argv string. */
+            size_t size = strlen(cfg->modulename) + sizeof(".conf"); /* Flawfinder: ignore */
+
+            cfg->conffile = malloc(size);
+            if (cfg->conffile == NULL)
+            {
+                fprintf(stderr, "Out of memory\n");
+                exit(20);
+            }
+            snprintf(cfg->conffile, size, "%s.conf", cfg->modulename);
         }
 
         if (cfg->gendir == NULL)
@@ -1458,17 +1470,25 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
             }
             else
             {
-                char s[256] = "";
+                const char *name = inclass ? cl->basename : cfg->modulename;
+                const char *suffix;
+                size_t size;
 
                 if (cl->classtype == GADGET || cl->classtype == IMAGE || cl->classtype == CLASS || cl->classtype == USBCLASS || cl->classtype == BTCLASS)
+                    suffix = "class";
+                else
+                    suffix = ".datatype";
+
+                /* name aliases only NUL-terminated class or module names. suffix points only to NUL-terminated string literals. */
+                size = strlen(name) + strlen(suffix) + 3; /* Flawfinder: ignore */
+                cl->classid = malloc(size);
+                if (cl->classid == NULL)
                 {
-                    sprintf(s, "\"%sclass\"", inclass ? cl->basename : cfg->modulename);
+                    fprintf(stderr, "Out of memory\n");
+                    exit(20);
                 }
-                else if (cl->classtype == DATATYPE)
-                {
-                    sprintf(s, "\"%s.datatype\"", inclass ? cl->basename : cfg->modulename);
-                }
-                cl->classid = strdup(s);
+
+                snprintf(cl->classid, size, "\"%s%s\"", name, suffix);
             }
         }
 
