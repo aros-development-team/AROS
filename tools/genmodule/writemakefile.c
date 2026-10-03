@@ -13,14 +13,30 @@
 
 static inline const char *upname(const char *s)
 {
-    static char name[512];
-    int i = 0;
+    static char *name;
+    static size_t size;
+    /* upname() is called only with NUL-terminated string-list entries. */
+    size_t len = s ? strlen(s) : 0; /* Flawfinder: ignore */
+    size_t i;
+    char *newname;
 
-    while (s && i < (sizeof(name)-1))
-        name[i++] = toupper(*(s++));
-    name[i] = 0;
+    if (len + 1 > size)
+    {
+        newname = realloc(name, len + 1);
+        if (newname == NULL)
+        {
+            fprintf(stderr, "Out of memory\n");
+            exit(20);
+        }
+        name = newname;
+        size = len + 1;
+    }
 
-    return &name[0];
+    for (i = 0; i < len; i++)
+        name[i] = toupper(s[i]);
+    name[len] = 0;
+
+    return name;
 }
 
 static inline void writemakefilestubs(struct config *cfg, int is_rel, FILE *out)
