@@ -59,6 +59,39 @@ static void push_event(int type, int x, int y, int button, int keycode) {
     __atomic_store_n(&g_hiface->cocoa_event_write, next, __ATOMIC_RELEASE);
 }
 
+/*
+ * Modifier keys never arrive through keyDown:/keyUp:, only as flagsChanged:
+ * with the new modifier state, in which each key has its own device bit.
+ * Tell AROS about every key whose bit differs from what it last saw. While the
+ * window isn't key, the releases go to another app (Cmd+Tab would leave Left
+ * Amiga held), so release everything on resign and resync on becoming key.
+ * Caps Lock reports its lock state: down while locked, as on an Amiga.
+ */
+static const struct { unsigned short keycode; NSUInteger mask; } g_modkeys[] = {
+    { 0x38, NX_DEVICELSHIFTKEYMASK },
+    { 0x3C, NX_DEVICERSHIFTKEYMASK },
+    { 0x3B, NX_DEVICELCTLKEYMASK },
+    { 0x3E, NX_DEVICERCTLKEYMASK },
+    { 0x3A, NX_DEVICELALTKEYMASK },
+    { 0x3D, NX_DEVICERALTKEYMASK },
+    { 0x37, NX_DEVICELCMDKEYMASK },
+    { 0x36, NX_DEVICERCMDKEYMASK },
+    { 0x39, NSEventModifierFlagCapsLock },
+};
+static NSUInteger g_moddown;    /* g_modkeys masks AROS has seen go down */
+
+static void sync_modifiers(NSUInteger flags) {
+    for (size_t i = 0; i < sizeof(g_modkeys) / sizeof(g_modkeys[0]); i++) {
+        NSUInteger mask = g_modkeys[i].mask;
+
+        if ((flags ^ g_moddown) & mask) {
+            push_event((flags & mask) ? COCOA_EVENT_KEY_PRESS : COCOA_EVENT_KEY_RELEASE,
+                       0, 0, 0, g_modkeys[i].keycode);
+            g_moddown ^= mask;
+        }
+    }
+}
+
 /* ---------- View ---------- */
 
 @interface AROSView : NSView
@@ -162,6 +195,10 @@ static void push_event(int type, int x, int y, int button, int keycode) {
     push_event(COCOA_EVENT_KEY_RELEASE, 0, 0, 0, [event keyCode]);
 }
 
+- (void)flagsChanged:(NSEvent *)event {
+    sync_modifiers([event modifierFlags]);
+}
+
 @end
 
 /* ---------- Window Delegate ---------- */
@@ -173,6 +210,14 @@ static void push_event(int type, int x, int y, int button, int keycode) {
 
 - (void)windowWillClose:(NSNotification *)notification {
     _exit(0);
+}
+
+- (void)windowDidResignKey:(NSNotification *)notification {
+    sync_modifiers(0);
+}
+
+- (void)windowDidBecomeKey:(NSNotification *)notification {
+    sync_modifiers([NSEvent modifierFlags]);
 }
 
 @end
