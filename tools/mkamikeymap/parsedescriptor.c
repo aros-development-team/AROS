@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2021-2026, The AROS Development Team. All rights reserved.
 
     Code to parse the command line options and the module config file for
     the genmodule program
@@ -53,7 +53,7 @@ char *readline(FILE *descf)
             if (newline)
             {
                 line = newline;
-                if (fgets(line+len, slen, descf))
+                if (fgets(line+len, slen-len, descf))
                 {
                     len = strlen(line);
                     haseol = line[len-1]=='\n';
