@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Function to write proto/modulename(_rel).h. Part of genmodule.
 */
@@ -9,7 +9,8 @@
 void writeincproto(struct config *cfg)
 {
     FILE *out;
-    char *line, define[256], *banner;
+    char *line, *define, *banner;
+    size_t define_size;
     struct linelist *linelistit;
 
     line = make_output_path("%s/proto/%s.h",
@@ -131,14 +132,19 @@ void writeincproto(struct config *cfg)
 
     // define name must not start with a digit
     // this solves a problem with proto/8svx.h
-    if (isdigit(cfg->includenameupper[0]))
+    /* The uppercase include name is duplicated from a NUL-terminated string. */
+    define_size = strlen(cfg->includenameupper) + 2; /* Flawfinder: ignore */
+    define = malloc(define_size);
+    if (define == NULL)
     {
-        snprintf(define, sizeof define, "X%s", cfg->includenameupper);
+        fclose(out);
+        free(line);
+        fprintf(stderr, "Out of memory\n");
+        exit(20);
     }
-    else
-    {
-        strncpy(define, cfg->includenameupper, sizeof define);
-    }
+    snprintf(define, define_size, "%s%s",
+             isdigit(cfg->includenameupper[0]) ? "X" : "",
+             cfg->includenameupper);
 
     fprintf(out,
             "#if !defined(NOLIBINLINE) && !defined(%s_NOLIBINLINE) && !defined(__%s_RELLIBBASE__)\n"
@@ -157,4 +163,5 @@ void writeincproto(struct config *cfg)
 
     fclose(out);
     free(line);
+    free(define);
 }
