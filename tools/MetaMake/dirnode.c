@@ -740,8 +740,8 @@ addmakefile (struct DirNode * node, const char * filename)
 #ifdef _WIN32
     ASSERT(getcwd(curdir, PATH_MAX) != NULL);
 #else
-    /* Flawfinder: ignore */
-    curdir = open(".", O_RDONLY);
+    /* Preserve the current directory across temporary path traversal. */
+    curdir = open(".", O_RDONLY); /* Flawfinder: ignore */
     ASSERT(curdir >= 0);
 #endif
 
@@ -796,14 +796,14 @@ addmakefile (struct DirNode * node, const char * filename)
                     if (stat (name, &st) != 0)
                     {
                         xfree (name);
-        #ifdef _WIN32
-                ASSERT(chdir (curdir) == 0);
+#ifdef _WIN32
+                        ASSERT(chdir (curdir) == 0);
 #else
-                {
-                    int rc = fchdir(curdir);
-                    close(curdir);
-                    ASSERT(rc == 0);
-                }
+                        {
+                            int rc = fchdir(curdir);
+                            close(curdir);
+                            ASSERT(rc == 0);
+                        }
 #endif
                         return NULL;
                     }
