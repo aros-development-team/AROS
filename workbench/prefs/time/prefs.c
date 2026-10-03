@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -48,6 +48,20 @@ BOOL SavePrefs(void)
     ULONG secs;
 
     secs = Date2Amiga(&clockdata);
+
+    if (LocaleBase)
+    {
+        struct Locale *locale = OpenLocale(NULL);
+
+        if (locale)
+        {
+            if (locale->loc_Flags & LOCF_GMT_CLOCK)
+                secs += locale->loc_GMTOffset * 60;
+
+            CloseLocale(locale);
+        }
+    }
+
     WriteBattClock(secs);
     UsePrefs();
 
