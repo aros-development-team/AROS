@@ -118,20 +118,20 @@ IPTR GTMX__OM_NEW(Class *cl, Object *objcl, struct opSet *msg)
         data->font = OpenFont(data->tattr);
         
     /* Calculate fontheight */
+    UWORD height = g->Height;
+
     if (data->tattr)
-        data->fontheight = data->tattr->ta_YSize;
+        height = data->tattr->ta_YSize;
     else if (((g->Flags & GFLG_LABELMASK) == GFLG_LABELITEXT) &&
              g->GadgetText)
     {
         if (g->GadgetText->ITextFont)
-            data->fontheight = g->GadgetText->ITextFont->ta_YSize;
+            height = g->GadgetText->ITextFont->ta_YSize;
         else if (data->dri && data->dri->dri_Font)
-            data->fontheight = data->dri->dri_Font->tf_YSize;
-        else
-            data->fontheight = g->Height;
+            height = data->dri->dri_Font->tf_YSize;
     }
-    else
-        data->fontheight = g->Height;
+
+    data->fontheight = height;
 
     /* Calculate gadget size */
     if (g->Width == 0)
