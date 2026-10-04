@@ -230,6 +230,8 @@ LONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
                 do_write ? glob->writecmd : glob->readcmd;
 
             err = DoIO((struct IORequest *)glob->diskioreq);
+            if (err == 0 && glob->diskioreq->iotd_Req.io_Actual != chunk * block_size)
+                err = IOERR_BADLENGTH;
 
             if (err == 0)
             {
