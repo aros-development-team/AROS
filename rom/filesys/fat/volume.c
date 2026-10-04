@@ -130,6 +130,13 @@ LONG ReadFATSuper(struct FSSuper *sb)
         return ERROR_NOT_A_DOS_DISK;
     }
 
+    /* Device and FAT sector numbers must use the same unit here. */
+    if (bpb.sector_size != bsize)
+    {
+        FreeMem(boot, bsize);
+        return ERROR_NOT_A_DOS_DISK;
+    }
+
     sb->sectorsize = bpb.sector_size;
     sb->sectorsize_bits = log2(sb->sectorsize);
     D(bug("\tSectorSize = %ld\n", sb->sectorsize));
@@ -1075,11 +1082,24 @@ void DoDiskInsert(struct Globals *glob)
                             sb->doslist = newvol;
                         }
                     }
-                    if (vol_info == NULL || newvol == NULL)
+                    if (vol_info == NULL || newvol == NULL || sb->doslist == NULL)
+                    {
                         DeletePool(pool);
+                        vol_info = NULL;
+                        newvol = NULL;
+                        sb->doslist = NULL;
+                    }
                 }
             }
 
+            if (vol_info == NULL || sb->doslist == NULL)
+            {
+                glob->sb = NULL;
+                FreeFATSuper(sb);
+                FreeVecPooled(glob->mempool, sb);
+                SendEvent(IECLASS_DISKINSERTED, glob);
+                return;
+            }
             sb->info = vol_info;
             glob->last_num = -1;
 
@@ -1093,6 +1113,8 @@ void DoDiskInsert(struct Globals *glob)
             return;
         }
 
+        if (glob->sb == sb)
+            glob->sb = NULL;
         FreeVecPooled(glob->mempool, sb);
     }
 
