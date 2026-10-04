@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012-2025 The AROS Development Team
+ * Copyright (C) 2012-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -82,6 +82,7 @@ struct NTFSRunLstEntry
 {
     struct NTFSMFTAttr 		*attr;
     UBYTE 			*mappingpair;
+    UBYTE                   *mappingend; /* End of the enclosing attribute */
     UQUAD 			target_vcn;
     UQUAD 			curr_vcn;
     UQUAD 			next_vcn;
