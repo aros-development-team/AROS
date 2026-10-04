@@ -472,6 +472,11 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         }
 
         ReleaseDirHandle(&dh, glob);
+        if (err != 0 && err != ERROR_OBJECT_NOT_FOUND)
+        {
+            FreeLock(lock, glob);
+            return err;
+        }
     }
 
     /* Open the containing directory */
@@ -486,7 +491,8 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
      * write protected */
     if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster)
     {
-        GetDirEntry(&dh, 0, &de, glob);
+        if ((err = GetDirEntry(&dh, 0, &de, glob)) != 0)
+            goto delete_failed;
         if (de.e.entry.attr & ATTR_READ_ONLY)
         {
             D(bug("[fat] containing dir is write protected, doing nothing\n"));
@@ -497,10 +503,12 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     }
 
     /* Get the entry for the file */
-    GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+    if ((err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob)) != 0)
+        goto delete_failed;
 
-    /* Kill it */
-    DeleteDirEntry(&de, glob);
+    /* Release data only after the directory entry was removed successfully. */
+    if ((err = DeleteDirEntry(&de, glob)) != 0)
+        goto delete_failed;
 
     /* It's all good */
     ReleaseDirHandle(&dh, glob);
@@ -521,6 +529,10 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     )
 
     return 0;
+delete_failed:
+    ReleaseDirHandle(&dh, glob);
+    FreeLock(lock, glob);
+    return err;
 }
 
 LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
@@ -728,6 +740,12 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         return ERROR_OBJECT_EXISTS;
     }
 
+    if (err != ERROR_OBJECT_NOT_FOUND)
+    {
+        ReleaseDirHandle(&dh, glob);
+        return err;
+    }
+
     /* Find a free cluster to store the dir in */
     if ((err = FindFreeCluster(dh.ioh.sb, &cluster)) != 0)
     {
@@ -736,7 +754,11 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     }
 
     /* Allocate it */
-    AllocCluster(dh.ioh.sb, cluster);
+    if (!AllocCluster(dh.ioh.sb, cluster))
+    {
+        ReleaseDirHandle(&dh, glob);
+        return ERROR_UNKNOWN;
+    }
 
     D(bug("[fat] allocated cluster %ld for directory\n", cluster));
 
@@ -756,14 +778,17 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
 
     /* Create the dot entry. It's a direct copy of the just-created entry, but
      * with a different name */
-    GetDirEntry(&sdh, 0, &sde, glob);
+    if ((err = GetDirEntry(&sdh, 0, &sde, glob)) != 0)
+        goto create_failed;
     CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
     CopyMem(".          ", &sde.e.entry.name, FAT_MAX_SHORT_NAME);
-    UpdateDirEntry(&sde, glob);
+    if ((err = UpdateDirEntry(&sde, glob)) != 0)
+        goto create_failed;
 
     /* Create the dot-dot entry. Again, a copy, with the cluster pointer set
      * up to point to the parent */
-    GetDirEntry(&sdh, 1, &sde, glob);
+    if ((err = GetDirEntry(&sdh, 1, &sde, glob)) != 0)
+        goto create_failed;
     CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
     CopyMem("..         ", &sde.e.entry.name, FAT_MAX_SHORT_NAME);
     cluster = dh.ioh.first_cluster;
@@ -771,15 +796,20 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         cluster = 0;
     sde.e.entry.first_cluster_lo = cluster & 0xffff;
     sde.e.entry.first_cluster_hi = cluster >> 16;
-    UpdateDirEntry(&sde, glob);
+    if ((err = UpdateDirEntry(&sde, glob)) != 0)
+        goto create_failed;
 
     /* Clear all remaining entries (the first of which marks the end of the
      * directory) */
-    for (i = 2; GetDirEntry(&sdh, i, &sde, glob) == 0; i++)
+    for (i = 2; (err = GetDirEntry(&sdh, i, &sde, glob)) == 0; i++)
     {
         SetMem(&sde.e.entry, 0, sizeof(struct FATDirEntry));
-        UpdateDirEntry(&sde, glob);
+        if ((err = UpdateDirEntry(&sde, glob)) != 0)
+            goto create_failed;
     }
+
+    if (err != ERROR_OBJECT_NOT_FOUND)
+        goto create_failed;
 
     /* New dir created */
     ReleaseDirHandle(&sdh, glob);
@@ -791,8 +821,18 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     ReleaseDirHandle(&dh, glob);
 
     /* Notify */
-    SendNotifyByLock((*newdirlock)->ioh.sb, (*newdirlock)->gl);
+    if (err == 0)
+        SendNotifyByLock((*newdirlock)->ioh.sb, (*newdirlock)->gl);
 
+    return err;
+
+create_failed:
+    cluster = sdh.ioh.first_cluster;
+    ReleaseDirHandle(&sdh, glob);
+    /* A failed unlink may have changed part of the entry: retain its data. */
+    if (DeleteDirEntry(&de, glob) == 0)
+        FreeCluster(dh.ioh.sb, cluster);
+    ReleaseDirHandle(&dh, glob);
     return err;
 }
 
@@ -1097,7 +1137,11 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     /* Only set read-only if neither writable nor deletable */
     if ((prot & (FIBF_WRITE | FIBF_DELETE)) == (FIBF_WRITE | FIBF_DELETE))
         de.e.entry.attr |= ATTR_READ_ONLY;
-    UpdateDirEntry(&de, glob);
+    if ((err = UpdateDirEntry(&de, glob)) != 0)
+    {
+        ReleaseDirHandle(&dh, glob);
+        return err;
+    }
 
     D(bug("[fat] new protection is 0x%08x\n", de.e.entry.attr));
 
@@ -1111,15 +1155,19 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
 
         D(bug("[fat] setting protections for directory '.' entry\n"));
 
-        InitDirHandle(glob->sb, FIRST_FILE_CLUSTER(&de), &dh, TRUE, glob);
-        GetDirEntry(&dh, 0, &de, glob);
-        de.e.entry.attr = attr;
-        UpdateDirEntry(&de, glob);
+        err = InitDirHandle(glob->sb, FIRST_FILE_CLUSTER(&de), &dh, TRUE, glob);
+        if (err == 0)
+            err = GetDirEntry(&dh, 0, &de, glob);
+        if (err == 0)
+        {
+            de.e.entry.attr = attr;
+            err = UpdateDirEntry(&de, glob);
+        }
     }
 
     ReleaseDirHandle(&dh, glob);
 
-    return 0;
+    return err;
 }
 
 LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
@@ -1166,13 +1214,13 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     de.e.entry.write_date = wdate;
     de.e.entry.write_time = wtime;
     de.e.entry.last_access_date = wdate;
-    UpdateDirEntry(&de, glob);
-
-    SendNotifyByDirEntry(glob->sb, &de);
+    err = UpdateDirEntry(&de, glob);
+    if (err == 0)
+        SendNotifyByDirEntry(glob->sb, &de);
 
     ReleaseDirHandle(&dh, glob);
 
-    return 0;
+    return err;
 }
 
 LONG OpAddNotify(struct NotifyRequest *nr, struct Globals *glob)
