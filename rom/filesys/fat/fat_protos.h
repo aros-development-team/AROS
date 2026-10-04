@@ -68,8 +68,8 @@ BOOL SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val);
 BOOL SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val);
 LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 void CountFreeClusters(struct FSSuper *sb);
-void AllocCluster(struct FSSuper *sb, ULONG cluster);
-void FreeCluster(struct FSSuper *sb, ULONG cluster);
+BOOL AllocCluster(struct FSSuper *sb, ULONG cluster);
+BOOL FreeCluster(struct FSSuper *sb, ULONG cluster);
 
 /* volume.c */
 LONG ReadFATSuper(struct FSSuper *s);
