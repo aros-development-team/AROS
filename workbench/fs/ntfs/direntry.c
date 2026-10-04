@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012-2025 The AROS Development Team
+ * Copyright (C) 2012-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -111,7 +111,7 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
                     D(bug("[NTFS] %s: failed to read $BITMAP\n", __func__));
                     goto done;
                 }
-                dh->ioh.bitmap_len = AROS_LE2LONG(*((ULONG *)(curattr + 0x30)));
+                dh->ioh.bitmap_len = bitmap_len;
             }
 
             dh->ioh.bitmap = (UBYTE *) bmp;
@@ -174,6 +174,8 @@ LONG GetDirEntry(struct DirHandle *dh, ULONG no, struct DirEntry *de)
 
     if (de->key == NULL) {
         de->key = AllocMem(sizeof(struct Index_Key), MEMF_ANY|MEMF_CLEAR);
+        if (de->key == NULL)
+            return ERROR_NO_FREE_STORE;
         dh->cur_no = -1;
         de->key->indx = dh->ioh.mft.buf;
         de->key->pos = dh->idx_root;
