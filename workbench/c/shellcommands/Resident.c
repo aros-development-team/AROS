@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Resident CLI command
 */
@@ -61,6 +61,9 @@
 
     HISTORY
 
+        41.3: Balance Forbid()/Permit() when adding a new resident command
+              or removing an existing one.
+
 ******************************************************************************/
 
 #include <proto/dos.h>
@@ -82,7 +85,7 @@ struct SegNode
 
 static struct SegNode *NewSegNode(struct ExecBase *SysBase, STRPTR name, LONG uc);
 
-AROS_SH7(Resident, 41.2,
+AROS_SH7(Resident, 41.3,
 AROS_SHA(STRPTR, ,NAME, ,NULL),
 AROS_SHA(STRPTR, ,FILE, ,NULL),
 AROS_SHA(BOOL, ,REMOVE,/S,FALSE),
@@ -122,7 +125,6 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
                 found = FindSegment(name, NULL, TRUE);
             if (!found)
             {
-                Permit();
                 SetIoErr(ERROR_OBJECT_NOT_FOUND);
             }
             else
@@ -133,6 +135,7 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
                 else
                     SetIoErr(ERROR_OBJECT_IN_USE);
             }
+            Permit();
 
             if (IoErr())
             {
@@ -207,6 +210,7 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 
                 return RETURN_OK;
             }
+            Permit();
         /* Fall through */
         }
 
