@@ -765,7 +765,11 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
     /* Search the directory for the volume ID entry. It would've been nice to
      * just use GetNextDirEntry but I didn't want a flag or something to tell
      * it not to skip the volume name */
-    InitDirHandle(sb, 0, &dh, FALSE, glob);
+    if ((err = InitDirHandle(sb, 0, &dh, FALSE, glob)) != 0)
+    {
+        FreeMem(boot, bsize);
+        return err;
+    }
 
     while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de, glob)) == 0)
     {
@@ -790,7 +794,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
     }
 
     /* Create a new volume ID entry if there wasn't one */
-    if (err != 0)
+    if (err == ERROR_OBJECT_NOT_FOUND)
     {
         err = AllocDirEntry(&dh, 0, &de, glob);
         if (err == 0)
@@ -809,9 +813,12 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
         if ((err = UpdateDirEntry(&de, glob)) != 0)
         {
             D(bug("[fat] couldn't change volume name\n"));
-            return err;
+            goto rename_cleanup;
         }
     }
+
+    if (err != 0)
+        goto rename_cleanup;
 
     /* Copy name to boot block as well, and save */
     if (sb->type == 32)
@@ -823,18 +830,23 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
 
     if ((td_err = AccessDisk(TRUE, sb->first_device_sector, 1, bsize,
         (UBYTE *) boot, glob)) != 0)
-        D(bug("[fat] couldn't write boot block (%ld)\n", td_err));
-    FreeMem(boot, bsize);
+    {
+        err = ERROR_UNKNOWN;
+        goto rename_cleanup;
+    }
 
     /* Update name in SB */
     sb->volume.name[0] = len;
-    sb->volume.name[1] = toupper(name[0]);
+    if (len != 0)
+        sb->volume.name[1] = toupper(name[0]);
     for (i = 1; i < len; i++)
         sb->volume.name[i + 1] = tolower(name[i]);
     sb->volume.name[len + 1] = '\0';
 
     D(bug("[fat] new volume name is '%s'\n", &(sb->volume.name[1])));
 
+rename_cleanup:
+    FreeMem(boot, bsize);
     ReleaseDirHandle(&dh, glob);
     return err;
 }
