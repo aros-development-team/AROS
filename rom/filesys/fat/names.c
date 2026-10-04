@@ -566,7 +566,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
     D(bug("[fat] successfully wrote short & long names\n"));
 
     /* Set hidden flags on .info files */
-    if (strcmp(name + len - 5, ".info") == 0)
+    if (len >= 5 && memcmp(name + len - 5, ".info", 5) == 0)
         short_de->e.entry.attr |= ATTR_HIDDEN;
 
     return 0;
