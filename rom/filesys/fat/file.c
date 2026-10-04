@@ -296,7 +296,11 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                 }
 
                 /* Mark the cluster used */
-                AllocCluster(ioh->sb, cluster);
+                if (!AllocCluster(ioh->sb, cluster))
+                {
+                    RESET_HANDLE(ioh);
+                    return ERROR_UNKNOWN;
+                }
 
                 /* Now setup the ioh */
                 ioh->first_cluster = cluster;
@@ -336,12 +340,21 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                         return err;
                     }
 
-                    /* Link the current cluster to the new one */
-                    SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster,
-                        next_cluster);
-
-                    /* And mark the new one used */
-                    AllocCluster(ioh->sb, next_cluster);
+                    /* Reserve before linking it into the existing chain. */
+                    if (!AllocCluster(ioh->sb, next_cluster))
+                    {
+                        RESET_HANDLE(ioh);
+                        return ERROR_UNKNOWN;
+                    }
+                    if (!SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster, next_cluster))
+                    {
+                        /* A mirror failure can have changed the first FAT. */
+                        if (SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster,
+                            ioh->sb->eoc_mark))
+                            FreeCluster(ioh->sb, next_cluster);
+                        RESET_HANDLE(ioh);
+                        return ERROR_UNKNOWN;
+                    }
 
                     ioh->cur_cluster = next_cluster;
 
