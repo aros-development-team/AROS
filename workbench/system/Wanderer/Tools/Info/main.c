@@ -558,6 +558,36 @@ static void AddKnownToolTypes(STRPTR *tooltypes, STRPTR *activeToolTypes)
     }
 }
 
+static void BuildKnownTitle(STRPTR title, size_t titleSize,
+                            CONST_STRPTR format, CONST_STRPTR owner)
+{
+    CONST_STRPTR placeholder;
+    size_t prefix;
+
+    if (title == NULL || titleSize == 0)
+        return;
+
+    title[0] = '\0';
+    if (format == NULL || owner == NULL)
+        return;
+
+    placeholder = strstr(format, "%s");
+    if (placeholder == NULL)
+    {
+        strlcpy(title, format, titleSize);
+        return;
+    }
+
+    prefix = placeholder - format;
+    if (prefix >= titleSize)
+        prefix = titleSize - 1;
+
+    CopyMem(format, title, prefix);
+    title[prefix] = '\0';
+    strlcat(title, owner, titleSize);
+    strlcat(title, placeholder + 2, titleSize);
+}
+
 void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
 {
     STRPTR tool = NULL, stack = NULL;
@@ -1066,8 +1096,8 @@ D(bug("[WBInfo] icon type is: %s\n", type));
     }
 
     if (knownowner != NULL)
-        snprintf(knowntitle, sizeof(knowntitle),
-                 _(MSG_TOOLTYPES_KNOWN_FOR), knownowner);
+        BuildKnownTitle(knowntitle, sizeof(knowntitle),
+                        _(MSG_TOOLTYPES_KNOWN_FOR), knownowner);
 
     if (icon->do_Type == 2)
     {
